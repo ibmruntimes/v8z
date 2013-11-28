@@ -87,6 +87,8 @@ def GuessArchitecture():
     return 'ia32'
   elif id == 'ppc64':
     return 'ppc'
+  elif id == 's390x':
+    return 's390'
   else:
     return None
 

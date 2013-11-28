@@ -98,6 +98,13 @@ namespace internal {
 #else
 #define V8_HOST_ARCH_32_BIT 1
 #endif
+#elif defined(__s390__)
+#define V8_HOST_ARCH_S390 1
+#if defined(__s390x__)
+#define V8_HOST_ARCH_64_BIT 1
+#else
+#define V8_HOST_ARCH_32_BIT 1
+#endif
 #else
 #error Host architecture was not detected as supported by v8
 #endif
@@ -130,8 +137,8 @@ namespace internal {
 #endif
 #if (defined(V8_TARGET_ARCH_ARM) && \
     !(defined(V8_HOST_ARCH_IA32) || defined(V8_HOST_ARCH_ARM) || \
-      defined(V8_HOST_ARCH_PPC)))
-#error Target architecture arm is only supported on arm, ppc and ia32 host
+      defined(V8_HOST_ARCH_PPC) || defined(V8_HOST_ARCH_S390)))
+#error Target architecture arm is only supported on arm, ppc, s390 and ia32 host
 #endif
 #if (defined(V8_TARGET_ARCH_MIPS) && \
     !(defined(V8_HOST_ARCH_IA32) || defined(V8_HOST_ARCH_MIPS)))

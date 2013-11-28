@@ -415,6 +415,8 @@ void OS::DebugBreak() {
 #elif defined(__PPC__)
   asm("twge 2,2");
 //  asm("nop");  // roohack - nothing for now;
+#elif defined(__s390__)
+  asm("trap2");
 #else
   asm("int $3");
 #endif
@@ -1049,7 +1051,7 @@ static void ProfilerSignalHandler(int signal, siginfo_t* info, void* context) {
 
   // Extracting the sample from the context is extremely machine dependent.
   ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
-#ifndef V8_HOST_ARCH_PPC
+#if !(defined(V8_HOST_ARCH_PPC) || defined(V8_HOST_ARCH_S390))
   mcontext_t& mcontext = ucontext->uc_mcontext;
 #endif
   sample->state = isolate->current_vm_state();
@@ -1085,6 +1087,10 @@ static void ProfilerSignalHandler(int signal, siginfo_t* info, void* context) {
     reinterpret_cast<Address>(ucontext->uc_mcontext.regs->gpr[PT_R1]);
   sample->fp =
     reinterpret_cast<Address>(ucontext->uc_mcontext.regs->gpr[PT_R31]);
+#elif V8_HOST_ARCH_S390
+  sample->pc = reinterpret_cast<Address>(ucontext->uc_mcontext.psw.addr);
+  sample->sp = reinterpret_cast<Address>(ucontext->uc_mcontext.gregs[15]);
+  sample->fp = reinterpret_cast<Address>(ucontext->uc_mcontext.gregs[11]);
 #endif  // V8_HOST_ARCH_*
   sampler->SampleStack(sample);
   sampler->Tick(sample);
