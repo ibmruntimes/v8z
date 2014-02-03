@@ -86,7 +86,7 @@ inline void NoBarrier_Store(volatile Atomic32* ptr, Atomic32 value) {
 inline void MemoryBarrier() {
   // gcc built-in
   __sync_synchronize();
-  //__asm__ __volatile__("sync" : : : "memory");
+  // __asm__ __volatile__("sync" : : : "memory");
 }
 
 inline void Acquire_Store(volatile Atomic32* ptr, Atomic32 value) {

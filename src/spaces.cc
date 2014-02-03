@@ -706,7 +706,9 @@ void MemoryAllocator::ReportStatistics() {
   PrintF("  capacity: %" V8_PTR_PREFIX "d"
              ", used: %" V8_PTR_PREFIX "d"
              ", available: %%%d\n\n",
-         static_cast<int>(capacity_), static_cast<int>(size_), static_cast<int>(pct*100));
+         static_cast<int>(capacity_),
+         static_cast<int>(size_),
+         static_cast<int>(pct*100));
 #endif
 }
 #endif
