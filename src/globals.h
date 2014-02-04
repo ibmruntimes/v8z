@@ -156,7 +156,7 @@ namespace internal {
 #define USE_SIMULATOR 1
 #endif
 #if (defined(V8_TARGET_ARCH_S390) && !defined(V8_HOST_ARCH_S390X))
-#define USE_SIMULATOR 1
+//#define USE_SIMULATOR 1
 #endif
 #if (defined(V8_TARGET_ARCH_MIPS) && !defined(V8_HOST_ARCH_MIPS))
 #define USE_SIMULATOR 1

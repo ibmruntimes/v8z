@@ -102,7 +102,6 @@ class DebuggerAgent;
 class Redirection;
 class Simulator;
 #endif
-class Simulator;
 
 
 // Static indirection table for handles to constants.  If a frame

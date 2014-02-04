@@ -63,6 +63,7 @@ void CPU::FlushICache(void* buffer, size_t size) {
   Simulator::FlushICache(Isolate::Current()->simulator_i_cache(), buffer, size);
 #else
 
+  /*
   intptr_t mask = kCacheLineSize - 1;
   byte *start = reinterpret_cast<byte *>(
                  reinterpret_cast<intptr_t>(buffer) & ~mask);
@@ -73,9 +74,10 @@ void CPU::FlushICache(void* buffer, size_t size) {
       "sync        \n"  \
       "icbi 0, %0  \n"  \
       "isync       \n"
-      : /* no output */
+      : 
       : "r" (pointer));
   }
+  */
 
 #endif  // USE_SIMULATOR
 }
