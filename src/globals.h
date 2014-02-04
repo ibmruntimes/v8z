@@ -100,11 +100,10 @@ namespace internal {
 #endif
 #elif defined(__s390__)
 #define V8_HOST_ARCH_S390 1
-#if defined(__s390x__)
-#define V8_HOST_ARCH_64_BIT 1
-#else
 #define V8_HOST_ARCH_32_BIT 1
-#endif
+#elif defined(__s390x__)
+#define V8_HOST_ARCH_S390 1
+#define V8_HOST_ARCH_64_BIT 1
 #else
 #error Host architecture was not detected as supported by v8
 #endif
