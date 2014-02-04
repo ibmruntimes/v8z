@@ -155,8 +155,8 @@ namespace internal {
 #if (defined(V8_TARGET_ARCH_PPC) && !defined(V8_HOST_ARCH_PPC))
 #define USE_SIMULATOR 1
 #endif
-#if (defined(V8_TARGET_ARCH_S390) && !defined(V8_HOST_ARCH_S390X))
-//#define USE_SIMULATOR 1
+#if (defined(V8_TARGET_ARCH_S390) && !defined(V8_HOST_ARCH_S390))
+#define USE_SIMULATOR 1
 #endif
 #if (defined(V8_TARGET_ARCH_MIPS) && !defined(V8_HOST_ARCH_MIPS))
 #define USE_SIMULATOR 1
