@@ -656,8 +656,6 @@ void GlobalHandles::PrintStats() {
   }
 
   PrintF("Global Handle Statistics:\n");
-  // PrintF("  allocated memory = %" V8_PTR_PREFIX "dB\n",
-  //        sizeof(Node) * total);
 #ifdef V8_HOST_ARCH_64_BIT
   PrintF("  allocated memory = %" V8_PTR_PREFIX "dB\n", sizeof(Node)*total);
 #else
