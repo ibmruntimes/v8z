@@ -195,6 +195,17 @@
           'V8_TARGET_ARCH_PPC64',
         ],
       }],  # v8_target_arch=="ppc64"
+      ['v8_target_arch=="s390"', {
+        'defines': [
+          'V8_TARGET_ARCH_S390',
+        ],
+      }],  # v8_target_arch=="s390"
+      ['v8_target_arch=="s390x"', {
+        'defines': [
+          'V8_TARGET_ARCH_S390',
+          'V8_TARGET_ARCH_S390X',
+        ],
+      }],  # v8_target_arch=="s390x"
       ['v8_target_arch=="ia32"', {
         'defines': [
           'V8_TARGET_ARCH_IA32',
@@ -314,7 +325,8 @@
       ['(OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="solaris" \
          or OS=="netbsd" or OS=="mac" or OS=="android") and \
         (v8_target_arch=="arm" or v8_target_arch=="ia32" or \
-         v8_target_arch=="mipsel" or v8_target_arch=="ppc")', {
+         v8_target_arch=="mipsel" or v8_target_arch=="ppc" or \
+         v8_target_arch=="s390")', {
         # Check whether the host compiler and target compiler support the
         # '-m32' option and set it if so.
         'target_conditions': [

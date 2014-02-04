@@ -40,6 +40,8 @@
 #include "arm/frames-arm.h"
 #elif V8_TARGET_ARCH_PPC
 #include "ppc/frames-ppc.h"
+#elif V8_TARGET_ARCH_S390
+#include "s390/frames-s390.h"
 #elif V8_TARGET_ARCH_MIPS
 #include "mips/frames-mips.h"
 #else

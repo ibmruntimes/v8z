@@ -118,6 +118,8 @@ void ThreadLocalTop::Initialize() {
   simulator_ = Simulator::current(isolate_);
 #elif V8_TARGET_ARCH_PPC
   simulator_ = Simulator::current(isolate_);
+#elif V8_TARGET_ARCH_S390
+  simulator_ = Simulator::current(isolate_);
 #elif V8_TARGET_ARCH_MIPS
   simulator_ = Simulator::current(isolate_);
 #endif
@@ -1402,6 +1404,8 @@ char* Isolate::RestoreThread(char* from) {
   thread_local_top()->simulator_ = Simulator::current(this);
 #elif V8_TARGET_ARCH_PPC
   thread_local_top()->simulator_ = Simulator::current(this);
+#elif V8_TARGET_ARCH_S390
+  thread_local_top()->simulator_ = Simulator::current(this);
 #elif V8_TARGET_ARCH_MIPS
   thread_local_top()->simulator_ = Simulator::current(this);
 #endif
@@ -1539,6 +1543,7 @@ Isolate::Isolate()
 
 #if defined(V8_TARGET_ARCH_ARM) && !defined(__arm__) || \
     defined(V8_TARGET_ARCH_PPC) && !defined(__PPC__) || \
+    defined(V8_TARGET_ARCH_S390) && !defined(__s390__) || \
     defined(V8_TARGET_ARCH_MIPS) && !defined(__mips__)
   simulator_initialized_ = false;
   simulator_i_cache_ = NULL;
@@ -1856,8 +1861,8 @@ bool Isolate::Init(Deserializer* des) {
 
   // Initialize other runtime facilities
 #if defined(USE_SIMULATOR)
-#if defined(V8_TARGET_ARCH_ARM) || defined(V8_TARGET_ARCH_MIPS) \
-  || defined(V8_TARGET_ARCH_PPC)
+#if defined(V8_TARGET_ARCH_ARM) || defined(V8_TARGET_ARCH_MIPS) || \
+    defined(V8_TARGET_ARCH_PPC) || defined(V8_TARGET_ARCH_S390)
   Simulator::Initialize(this);
 #endif
 #endif

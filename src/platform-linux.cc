@@ -293,6 +293,8 @@ int OS::ActivationFrameAlignment() {
   return 8;
 #elif V8_TARGET_ARCH_PPC
   return 8;
+#elif V8_TARGET_ARCH_S390
+  return 8;
 #endif
   // With gcc 4.4 the tree vectorization optimizer can generate code
   // that requires 16 byte alignment such as movdqa on x86.
@@ -303,6 +305,7 @@ int OS::ActivationFrameAlignment() {
 void OS::ReleaseStore(volatile AtomicWord* ptr, AtomicWord value) {
 #if (defined(V8_TARGET_ARCH_ARM) && defined(__arm__)) || \
     (defined(V8_TARGET_ARCH_PPC) && defined(__PPC__)) || \
+    (defined(V8_TARGET_ARCH_S390) && defined(__s390__)) || \
     (defined(V8_TARGET_ARCH_MIPS) && defined(__mips__))
   // Only use on ARM or MIPS hardware.
   MemoryBarrier();
@@ -822,6 +825,8 @@ void Thread::SetThreadLocal(LocalStorageKey key, void* value) {
 
 void Thread::YieldCPU() {
 #ifdef V8_TARGET_ARCH_PPC
+  i::OS::Sleep(0);
+#elif V8_TARGET_ARCH_S390
   i::OS::Sleep(0);
 #else
   sched_yield();

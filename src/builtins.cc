@@ -1619,6 +1619,8 @@ void Builtins::SetUp(bool create_heap_objects) {
 
 #if V8_TARGET_ARCH_PPC64
   const int kBufferSize = 9 * KB;
+#elif V8_TARGET_ARCH_S390X
+  const int kBufferSize = 9 * KB;
 #else
   const int kBufferSize = 8 * KB;
 #endif

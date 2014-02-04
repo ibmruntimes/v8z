@@ -100,6 +100,19 @@ namespace internal {
 #define CODE_STUB_LIST_PPC(V)
 #endif
 
+// List of code stubs only used on S390 platforms.
+#ifdef V8_TARGET_ARCH_S390
+#define CODE_STUB_LIST_S390(V)  \
+  V(GetProperty)               \
+  V(SetProperty)               \
+  V(InvokeBuiltin)             \
+  V(RegExpCEntry)              \
+  V(DirectCEntry)
+#else
+#define CODE_STUB_LIST_S390(V)
+#endif
+
+
 // List of code stubs only used on MIPS platforms.
 #ifdef V8_TARGET_ARCH_MIPS
 #define CODE_STUB_LIST_MIPS(V)  \
@@ -114,6 +127,7 @@ namespace internal {
   CODE_STUB_LIST_ALL_PLATFORMS(V)    \
   CODE_STUB_LIST_ARM(V)              \
   CODE_STUB_LIST_PPC(V)              \
+  CODE_STUB_LIST_S390(V)              \
   CODE_STUB_LIST_MIPS(V)
 
 // Mode to overwrite BinaryExpression values.
@@ -269,6 +283,8 @@ class RuntimeCallHelper {
 #include "arm/code-stubs-arm.h"
 #elif V8_TARGET_ARCH_PPC
 #include "ppc/code-stubs-ppc.h"
+#elif V8_TARGET_ARCH_S390
+#include "s390/code-stubs-s390.h"
 #elif V8_TARGET_ARCH_MIPS
 #include "mips/code-stubs-mips.h"
 #else

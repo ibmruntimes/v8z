@@ -160,6 +160,8 @@ static int DecodeIt(FILE* f,
                      ptr - begin);
 #if V8_TARGET_ARCH_PPC64
         pc += 8;
+#elif V8_TARGET_ARCH_S390X
+        pc += 8;
 #else
         pc += 4;
 #endif

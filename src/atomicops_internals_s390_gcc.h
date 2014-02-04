@@ -28,8 +28,8 @@
 // This file is an internal atomic implementation, use atomicops.h instead.
 //
 
-#ifndef V8_ATOMICOPS_INTERNALS_PPC_H_
-#define V8_ATOMICOPS_INTERNALS_PPC_H_
+#ifndef V8_ATOMICOPS_INTERNALS_S390_H_
+#define V8_ATOMICOPS_INTERNALS_S390_H_
 
 namespace v8 {
 namespace internal {
@@ -86,7 +86,7 @@ inline void NoBarrier_Store(volatile Atomic32* ptr, Atomic32 value) {
 inline void MemoryBarrier() {
   // gcc built-in
   __sync_synchronize();
-  //__asm__ __volatile__("sync" : : : "memory");
+  // __asm__ __volatile__("sync" : : : "memory");
 }
 
 inline void Acquire_Store(volatile Atomic32* ptr, Atomic32 value) {
@@ -114,7 +114,7 @@ inline Atomic32 Release_Load(volatile const Atomic32* ptr) {
   return *ptr;
 }
 
-#ifdef V8_TARGET_ARCH_PPC64
+#ifdef V8_TARGET_ARCH_S390X
 inline Atomic64 NoBarrier_CompareAndSwap(volatile Atomic64* ptr,
                                          Atomic64 old_value,
                                          Atomic64 new_value) {
@@ -166,4 +166,4 @@ inline Atomic64 Release_Load(volatile const Atomic64* ptr) {
 
 } }  // namespace v8::internal
 
-#endif  // V8_ATOMICOPS_INTERNALS_PPC_GCC_H_
+#endif  // V8_ATOMICOPS_INTERNALS_S390_H_

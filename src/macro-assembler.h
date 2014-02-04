@@ -65,6 +65,13 @@ const int kInvalidProtoDepth = -1;
 #include "ppc/assembler-ppc-inl.h"
 #include "code.h"  // must be after assembler_*.h
 #include "ppc/macro-assembler-ppc.h"
+#elif V8_TARGET_ARCH_S390
+#include "s390/constants-s390.h"
+#include "assembler.h"
+#include "s390/assembler-s390.h"
+#include "s390/assembler-s390-inl.h"
+#include "code.h"  // must be after assembler_*.h
+#include "s390/macro-assembler-s390.h"
 #elif V8_TARGET_ARCH_MIPS
 #include "mips/constants-mips.h"
 #include "assembler.h"
