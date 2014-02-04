@@ -3048,7 +3048,7 @@ void Simulator::InstructionDecode(Instruction* instr) {
     }
 
     case STHU:
-    case STH: {
+    case STH_ppc: {
       int ra = instr->RAValue();
       int rs = instr->RSValue();
       intptr_t ra_val = ra == 0 ? 0 : get_register(ra);
@@ -3143,7 +3143,7 @@ void Simulator::InstructionDecode(Instruction* instr) {
       DecodeExt5(instr);
       break;
     }
-    case LD: {
+    case LD_ppc: {
       int ra = instr->RAValue();
       int rt = instr->RTValue();
       int64_t ra_val = ra == 0 ? 0 : get_register(ra);
@@ -3170,7 +3170,7 @@ void Simulator::InstructionDecode(Instruction* instr) {
       break;
     }
 
-    case STD: {
+    case STD_ppc: {
       int ra = instr->RAValue();
       int rs = instr->RSValue();
       int64_t ra_val = ra == 0 ? 0 : get_register(ra);

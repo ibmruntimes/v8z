@@ -1032,7 +1032,7 @@ void Assembler::lwa(Register dst, const MemOperand &src) {
   ASSERT(!src.ra_.is(r0));
   ASSERT(!(offset & 3) && is_int16(offset));
   offset = kImm16Mask & offset;
-  emit(LD | dst.code()*B21 | src.ra().code()*B16 | offset | 2);
+  emit(LD_ppc | dst.code()*B21 | src.ra().code()*B16 | offset | 2);
 #else
   lwz(dst, src);
 #endif
@@ -1059,7 +1059,7 @@ void Assembler::stbux(Register rs, const MemOperand &src) {
 
 void Assembler::sth(Register dst, const MemOperand &src) {
   ASSERT(!src.ra_.is(r0));
-  d_form(STH, dst, src.ra(), src.offset(), true);
+  d_form(STH_ppc, dst, src.ra(), src.offset(), true);
 }
 
 void Assembler::sthx(Register rs, const MemOperand &src) {
@@ -1123,7 +1123,7 @@ void Assembler::ld(Register rd, const MemOperand &src) {
   ASSERT(!src.ra_.is(r0));
   ASSERT(!(offset & 3) && is_int16(offset));
   offset = kImm16Mask & offset;
-  emit(LD | rd.code()*B21 | src.ra().code()*B16 | offset);
+  emit(LD_ppc | rd.code()*B21 | src.ra().code()*B16 | offset);
 }
 
 void Assembler::ldx(Register rd, const MemOperand &src) {
@@ -1138,7 +1138,7 @@ void Assembler::ldu(Register rd, const MemOperand &src) {
   ASSERT(!src.ra_.is(r0));
   ASSERT(!(offset & 3) && is_int16(offset));
   offset = kImm16Mask & offset;
-  emit(LD | rd.code()*B21 | src.ra().code()*B16 | offset | 1);
+  emit(LD_ppc | rd.code()*B21 | src.ra().code()*B16 | offset | 1);
 }
 
 void Assembler::ldux(Register rd, const MemOperand &src) {
@@ -1153,7 +1153,7 @@ void Assembler::std(Register rs, const MemOperand &src) {
   ASSERT(!src.ra_.is(r0));
   ASSERT(!(offset & 3) && is_int16(offset));
   offset = kImm16Mask & offset;
-  emit(STD | rs.code()*B21 | src.ra().code()*B16 | offset);
+  emit(STD_ppc | rs.code()*B21 | src.ra().code()*B16 | offset);
 }
 
 void Assembler::stdx(Register rs, const MemOperand &src) {
@@ -1168,7 +1168,7 @@ void Assembler::stdu(Register rs, const MemOperand &src) {
   ASSERT(!src.ra_.is(r0));
   ASSERT(!(offset & 3) && is_int16(offset));
   offset = kImm16Mask & offset;
-  emit(STD | rs.code()*B21 | src.ra().code()*B16 | offset | 1);
+  emit(STD_ppc | rs.code()*B21 | src.ra().code()*B16 | offset | 1);
 }
 
 void Assembler::stdux(Register rs, const MemOperand &src) {
