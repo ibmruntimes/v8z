@@ -29,8 +29,8 @@
 
 #include "disassembler.h"
 #include "factory.h"
-#include "ppc/simulator-ppc.h"
-#include "ppc/assembler-ppc-inl.h"
+#include "s390/simulator-s390.h"
+#include "s390/assembler-s390-inl.h"
 #include "cctest.h"
 
 using namespace v8::internal;
@@ -62,7 +62,7 @@ TEST(0) {
 
   Assembler assm(Isolate::Current(), NULL, 0);
 
-#if defined(_AIX) || defined(V8_TARGET_ARCH_PPC64)
+#if defined(_AIX) || defined(V8_TARGET_ARCH_S390X)
   __ function_descriptor();
 #endif
 
@@ -94,7 +94,7 @@ TEST(1) {
   Assembler assm(Isolate::Current(), NULL, 0);
   Label L, C;
 
-#if defined(_AIX) || defined(V8_TARGET_ARCH_PPC64)
+#if defined(_AIX) || defined(V8_TARGET_ARCH_S390X)
   __ function_descriptor();
 #endif
 
@@ -136,7 +136,7 @@ TEST(2) {
   Assembler assm(Isolate::Current(), NULL, 0);
   Label L, C;
 
-#if defined(_AIX) || defined(V8_TARGET_ARCH_PPC64)
+#if defined(_AIX) || defined(V8_TARGET_ARCH_S390X)
   __ function_descriptor();
 #endif
 
@@ -145,7 +145,7 @@ TEST(2) {
   __ b(&C);
 
   __ bind(&L);
-#if defined(V8_TARGET_ARCH_PPC64)
+#if defined(V8_TARGET_ARCH_S390X)
   __ mulld(r3, r4, r3);
 #else
   __ mullw(r3, r4, r3);
@@ -199,12 +199,12 @@ TEST(3) {
   Assembler assm(Isolate::Current(), NULL, 0);
   Label L, C;
 
-#if defined(_AIX) || defined(V8_TARGET_ARCH_PPC64)
+#if defined(_AIX) || defined(V8_TARGET_ARCH_S390X)
   __ function_descriptor();
 #endif
 
   // build a frame
-#if V8_TARGET_ARCH_PPC64
+#if V8_TARGET_ARCH_S390X
   __ stdu(sp, MemOperand(sp, -32));
   __ std(fp, MemOperand(sp, 24));
 #else
@@ -234,7 +234,7 @@ TEST(3) {
   __ sth(r5, MemOperand(r4, OFFSET_OF(T, s)));
 
   // restore frame
-#if V8_TARGET_ARCH_PPC64
+#if V8_TARGET_ARCH_S390X
   __ addi(r11, fp, Operand(32));
   __ ld(fp, MemOperand(r11, -8));
 #else
