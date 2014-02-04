@@ -1149,7 +1149,7 @@ int Decoder::InstructionDecode(byte* instr_ptr) {
       Format(instr, "lhau    'rt, 'int16('ra)");
       break;
     }
-    case STH: {
+    case STH_ppc: {
       Format(instr, "sth 'rs, 'int16('ra)");
       break;
     }
@@ -1207,7 +1207,7 @@ int Decoder::InstructionDecode(byte* instr_ptr) {
       break;
     }
 #if V8_TARGET_ARCH_S390X
-    case LD: {
+    case LD_ppc: {
       switch (instr->Bits(1, 0)) {
         case 0:
           Format(instr, "ld      'rt, 'd('ra)");
@@ -1221,7 +1221,7 @@ int Decoder::InstructionDecode(byte* instr_ptr) {
       }
       break;
     }
-    case STD: {  // could be STD or STDU
+    case STD_ppc: {  // could be STD or STDU
       if (instr->Bit(0) == 0) {
         Format(instr, "std     'rs, 'd('ra)");
       } else {
