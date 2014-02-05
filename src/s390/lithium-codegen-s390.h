@@ -28,8 +28,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef V8_PPC_LITHIUM_CODEGEN_PPC_H_
-#define V8_PPC_LITHIUM_CODEGEN_PPC_H_
+#ifndef V8_S390_LITHIUM_CODEGEN_S390_H_
+#define V8_S390_LITHIUM_CODEGEN_S390_H_
 
 #include "s390/lithium-s390.h"
 #include "s390/lithium-gap-resolver-s390.h"
@@ -476,4 +476,4 @@ class LDeferredCode: public ZoneObject {
 
 } }  // namespace v8::internal
 
-#endif  // V8_PPC_LITHIUM_CODEGEN_PPC_H_
+#endif  // V8_S390_LITHIUM_CODEGEN_S390_H_

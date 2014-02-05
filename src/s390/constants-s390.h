@@ -28,8 +28,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef V8_PPC_CONSTANTS_PPC_H_
-#define V8_PPC_CONSTANTS_PPC_H_
+#ifndef V8_S390_CONSTANTS_S390_H_
+#define V8_S390_CONSTANTS_S390_H_
 
 namespace v8 {
 namespace internal {
@@ -1485,4 +1485,4 @@ class FPRegisters {
 
 } }  // namespace v8::internal
 
-#endif  // V8_PPC_CONSTANTS_PPC_H_
+#endif  // V8_S390_CONSTANTS_S390_H_

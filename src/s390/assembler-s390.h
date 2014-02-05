@@ -38,11 +38,11 @@
 // Copyright IBM Corp. 2012, 2013. All rights reserved.
 //
 
-// A light-weight PPC Assembler
-// Generates user mode instructions for the PPC architecture up
+// A light-weight S390 Assembler
+// Generates user mode instructions for the S390 architecture up
 
-#ifndef V8_PPC_ASSEMBLER_PPC_H_
-#define V8_PPC_ASSEMBLER_PPC_H_
+#ifndef V8_S390_ASSEMBLER_S390_H_
+#define V8_S390_ASSEMBLER_S390_H_
 #include <stdio.h>
 #if !defined(_AIX)
 #include <elf.h>
@@ -1360,4 +1360,4 @@ class EnsureSpace BASE_EMBEDDED {
 
 } }  // namespace v8::internal
 
-#endif  // V8_PPC_ASSEMBLER_PPC_H_
+#endif  // V8_S390_ASSEMBLER_S390_H_
