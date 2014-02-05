@@ -36,8 +36,8 @@
 // which will start execution in the Simulator or forwards to the real entry
 // on a PPC HW platform.
 
-#ifndef V8_PPC_SIMULATOR_PPC_H_
-#define V8_PPC_SIMULATOR_PPC_H_
+#ifndef V8_S390_SIMULATOR_S390_H_
+#define V8_S390_SIMULATOR_S390_H_
 
 #include "allocation.h"
 
@@ -407,4 +407,4 @@ class SimulatorStack : public v8::internal::AllStatic {
 } }  // namespace v8::internal
 
 #endif  // !defined(USE_SIMULATOR)
-#endif  // V8_PPC_SIMULATOR_PPC_H_
+#endif  // V8_S390_SIMULATOR_S390_H_
