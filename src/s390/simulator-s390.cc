@@ -37,6 +37,7 @@
 
 #include "disasm.h"
 #include "assembler.h"
+#include "codegen.h"
 #include "s390/constants-s390.h"
 #include "s390/simulator-s390.h"
 #include "s390/frames-s390.h"
