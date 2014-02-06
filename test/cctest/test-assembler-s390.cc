@@ -66,8 +66,10 @@ TEST(0) {
   __ function_descriptor();
 #endif
 
-  __ add(r3, r3, r4);
-  __ blr();
+  // __ add(r3, r3, r4);
+  __ ar(gpr1, gpr2);
+  // __ blr();
+  __ bcr((S390Mask)0xF, gpr14);
 
   CodeDesc desc;
   assm.GetCode(&desc);
