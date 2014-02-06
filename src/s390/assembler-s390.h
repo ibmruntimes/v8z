@@ -229,6 +229,106 @@ const Register r29  = { kRegister_r29_Code };
 const Register r30  = { kRegister_r30_Code };
 const Register fp = { kRegister_fp_Code };
 
+
+struct S390Register {
+  static const int kNumRegisters = 16;
+  static const int kNumAllocatableRegisters = 16;  // TODO
+  static const int kSizeInBytes = 4; // TODO
+
+  static int ToAllocationIndex(Register reg) {
+    int index = reg.code(); 
+    ASSERT(index < kNumAllocatableRegisters);
+    return index;
+  }
+
+  static S390Register FromAllocationIndex(int index) {
+    ASSERT(index >= 0 && index < kNumAllocatableRegisters);
+    return from_code(index);  // r0-r2 are skipped
+  }
+
+  static const char* AllocationIndexToString(int index) {
+    ASSERT(index >= 0 && index < kNumAllocatableRegisters);
+    const char* const names[] = {
+        "gpr0",
+        "gpr1",
+        "gpr2",
+        "gpr3",
+        "gpr4",
+        "gpr5",
+        "gpr6",
+        "gpr7",
+        "gpr8",
+        "gpr9",
+        "gpr10",
+        "gpr11",
+        "gpr12",
+        "gpr13",
+        "gpr14",
+        "gpr15"
+    };
+    return names[index];
+  }
+
+  static S390Register from_code(int code) {
+    S390Register r = { code };
+    return r;
+  }
+
+  bool is_valid() const { return 0 <= code_ && code_ < kNumRegisters; }
+  bool is(S390Register reg) const { return code_ == reg.code_; }
+  int code() const {
+    ASSERT(is_valid());
+    return code_;
+  }
+
+  void set_code(int code) {
+    code_ = code;
+    ASSERT(is_valid());
+  }
+
+  // Unfortunately we can't make this private in a struct.
+  int code_;
+};
+
+const int kRegister_no_s390reg_Code = -1;
+const int kRegister_gpr0_Code = 0;
+const int kRegister_gpr1_Code = 1;
+const int kRegister_gpr2_Code = 2;
+const int kRegister_gpr3_Code = 3;
+const int kRegister_gpr4_Code = 4;
+const int kRegister_gpr5_Code = 5;
+const int kRegister_gpr6_Code = 6;
+const int kRegister_gpr7_Code = 7;
+const int kRegister_gpr8_Code = 8;
+const int kRegister_gpr9_Code = 9;
+const int kRegister_gpr10_Code = 10;
+const int kRegister_gpr11_Code = 11;
+const int kRegister_gpr12_Code = 12;
+const int kRegister_gpr13_Code = 13;
+const int kRegister_gpr14_Code = 14;
+const int kRegister_gpr15_Code = 15;
+
+
+const S390Register gpr0 =  { kRegister_gpr0_Code };
+const S390Register gpr1 =  { kRegister_gpr1_Code };
+const S390Register gpr2 =  { kRegister_gpr2_Code };
+const S390Register gpr3 =  { kRegister_gpr3_Code };
+const S390Register gpr4 =  { kRegister_gpr4_Code };
+const S390Register gpr5 =  { kRegister_gpr5_Code };
+const S390Register gpr6 =  { kRegister_gpr6_Code };
+const S390Register gpr7 =  { kRegister_gpr7_Code };
+const S390Register gpr8 =  { kRegister_gpr8_Code };
+const S390Register gpr9 =  { kRegister_gpr9_Code };
+const S390Register gpr10 = { kRegister_gpr10_Code };
+const S390Register gpr11 = { kRegister_gpr11_Code };
+const S390Register gpr12 = { kRegister_gpr12_Code };
+const S390Register gpr13 = { kRegister_gpr13_Code };
+const S390Register gpr14 = { kRegister_gpr14_Code };
+const S390Register gpr15 = { kRegister_gpr15_Code };
+
+
+
+
 // Double word FP register.
 struct DwVfpRegister {
   static const int kNumRegisters = 32;
@@ -408,7 +508,33 @@ class Operand BASE_EMBEDDED {
   friend class Assembler;
   friend class MacroAssembler;
 };
+//defining immediate numbers and masks
+typedef int16_t S390Immediate16;
+typedef int8_t  S390Mask;
+typedef int16_t S390Displacement;
 
+class S390Operand BASE_EMBEDDED {
+  public:
+      //register
+      INLINE(explicit S390Operand(S390Register r));
+      INLINE(explicit S390Operand(S390Register r, S390Register x,
+                              S390Displacement d));
+      
+      //return true if this is a register operand.
+      INLINE(bool is_reg() const);
+
+      S390Register getBaseRegister() {return r_;}
+      S390Register getIndexRegister() {return x_;}
+      S390Displacement getDisplacement() {return d_;}
+
+  private:
+      S390Register r_;
+      S390Register x_;
+      S390Displacement d_;
+
+  friend class Assembler;
+  friend class MacroAssembler;
+};
 
 // Class MemOperand represents a memory operand in load and store instructions
 // On PowerPC we have base register + 16bit signed value
@@ -813,6 +939,39 @@ class Assembler : public AssemblerBase {
   }
 
   // Data-processing instructions
+
+  //S390 instruction generation
+#define RR1INSTR(name) \
+void name(S390Register r1, S390Register r2)
+#define RR2INSTR(name) \
+void name(S390Mask r1, S390Register r2)
+#define RXINSTR(name) \
+void name(S390Register r1, S390Operand opnd)
+#define RI1INSTR(name) \
+void name(S390Register r,  S390Immediate16 i)
+
+
+  // loads/stores
+  RR1INSTR(lr );
+  RXINSTR (st );
+  RI1INSTR(lhi);
+  
+  // arithmetics
+  RR1INSTR (ar );
+  RR1INSTR (sr );
+  RR1INSTR (mr );
+  RR1INSTR (dr );
+
+  // logics
+  RR1INSTR (clr );
+  RR1INSTR (xr );
+  RR1INSTR (or_z );
+  RR1INSTR (nr );
+
+  // branches
+  RXINSTR (bc );
+  RR2INSTR(bcr);
+
 
   // PowerPC
   void sub(Register dst, Register src1, Register src2,
@@ -1270,6 +1429,14 @@ class Assembler : public AssemblerBase {
   inline void CheckBuffer();
   void GrowBuffer();
   inline void emit(Instr x);
+
+  inline void emitRR1(Opcode op, S390Register r1, S390Register r2);
+  inline void emitRR2(Opcode op, S390Mask m, S390Register r);
+  inline void emitRI1(Opcode op, S390Register r, S390Immediate16 i);
+  inline void emitRI2(Opcode op, S390Mask m, S390Immediate16 i);
+  inline void emitRX (Opcode op, S390Register r1, S390Operand opnd2);
+  
+
   inline void CheckTrampolinePoolQuick();
 
   // Instruction generation

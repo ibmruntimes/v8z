@@ -354,6 +354,50 @@ void Assembler::emit(Instr x) {
   CheckTrampolinePoolQuick();
 }
 
+//S390 specific emitting helpers
+void Assembler::emitRR1(Opcode op, S390Register r1, S390Register r2) {
+  CheckBuffer();
+  *reinterpret_cast<uint16_t*>(pc_) = op*B8 | r1.code()*B4 | r2.code();
+  pc_ += 4;
+  CheckTrampolinePoolQuick();
+}
+
+void Assembler::emitRR2(Opcode op, S390Mask m, S390Register r) {
+  CheckBuffer();
+  *reinterpret_cast<uint16_t*>(pc_) = op*B8 | m*B4 | r.code();
+  pc_ += 4;
+  CheckTrampolinePoolQuick();
+}
+
+void Assembler::emitRI1(Opcode op, S390Register r, S390Immediate16 i) {
+  CheckBuffer();
+  *reinterpret_cast<uint32_t*>(pc_) = (op >> 4)*B24 | r.code()*B20
+                                    | (op & 0x0F)*B16 | i;
+  pc_ += 4;
+  CheckTrampolinePoolQuick();
+}
+
+void Assembler::emitRI2(Opcode op, S390Mask m, S390Immediate16 i) {
+  CheckBuffer();
+  *reinterpret_cast<uint32_t*>(pc_) = (op >> 4)*B24 | m*B20
+                                    | (op & 0x0F)*B16 | i;
+  pc_ += 4;
+  CheckTrampolinePoolQuick();
+}
+
+void Assembler::emitRX(Opcode op, S390Register r1, S390Operand opnd2) {
+    CheckBuffer();
+    S390Register x2 = opnd2.getIndexRegister();
+    S390Register b2 = opnd2.getBaseRegister();
+    *reinterpret_cast<uint32_t*>(pc_) = op*B24 | r1.code()*B20
+                                      | x2.code()*B20
+                                      | b2.code()*B16
+                                      | opnd2.getDisplacement();
+    pc_ += 4;
+    CheckTrampolinePoolQuick();
+}
+//end of S390 specific emitting helpers
+
 bool Operand::is_reg() const {
   return rm_.is_valid();
 }

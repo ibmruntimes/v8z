@@ -1680,6 +1680,52 @@ void Assembler::nop(int type) {
   }
 }
 
+// S390 instructions
+#define RR1_INSTR_IMPL(name, op) \
+void Assembler::name(S390Register r1, S390Register r2) { \
+    emitRR1(op, r1, r2); \
+}\
+
+#define RR2_INSTR_IMPL(name, op) \
+void Assembler::name(S390Mask m, S390Register r) { \
+    emitRR2(op, m, r); \
+}\
+
+#define RX_INSTR_IMPL(name, op) \
+void Assembler::name(S390Register r, S390Operand opnd) { \
+    emitRX(op, r, opnd); \
+}\
+
+#define RI1_INSTR_IMPL(name, op) \
+void Assembler::name(S390Register r, S390Immediate16 i) { \
+    emitRI1(op, r, i); \
+}\
+
+
+// arithmetics
+RR1_INSTR_IMPL(ar , AR )
+RR1_INSTR_IMPL(sr , SR )
+RR1_INSTR_IMPL(mr , MR )
+RR1_INSTR_IMPL(dr , DR )
+
+// logical
+RR1_INSTR_IMPL(clr, CLR)
+RR1_INSTR_IMPL(nr , NR )
+RR1_INSTR_IMPL(or_z , OR)
+RR1_INSTR_IMPL(xr , XR )
+
+// loads/stores
+RR1_INSTR_IMPL(lr , LR )
+RX_INSTR_IMPL (st , ST )
+RI1_INSTR_IMPL(lhi, LHI)
+ 
+// branches
+RR2_INSTR_IMPL(bcr, BCR)
+RX_INSTR_IMPL (bc , BC )
+
+
+
+// end of S390instructions
 
 bool Assembler::IsNop(Instr instr, int type) {
   ASSERT((0 == type) || (DEBUG_BREAK_NOP == type));
