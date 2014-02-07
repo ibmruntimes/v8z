@@ -246,11 +246,11 @@ const Register fp = { kRegister_fp_Code };
 
 struct S390Register {
   static const int kNumRegisters = 16;
-  static const int kNumAllocatableRegisters = 16;  // TODO
-  static const int kSizeInBytes = 4; // TODO
+  static const int kNumAllocatableRegisters = 16;  // TODO(Alan): check
+  static const int kSizeInBytes = 4;  // TODO(Alan): check
 
   static int ToAllocationIndex(Register reg) {
-    int index = reg.code(); 
+    int index = reg.code();
     ASSERT(index < kNumAllocatableRegisters);
     return index;
   }
@@ -522,19 +522,19 @@ class Operand BASE_EMBEDDED {
   friend class Assembler;
   friend class MacroAssembler;
 };
-//defining immediate numbers and masks
+// defining immediate numbers and masks
 typedef int16_t S390Immediate16;
 typedef int8_t  S390Mask;
 typedef int16_t S390Displacement;
 
 class S390Operand BASE_EMBEDDED {
   public:
-      //register
+      // register
       INLINE(explicit S390Operand(S390Register r));
       INLINE(explicit S390Operand(S390Register r, S390Register x,
                               S390Displacement d));
-      
-      //return true if this is a register operand.
+
+      // return true if this is a register operand.
       INLINE(bool is_reg() const);
 
       S390Register getBaseRegister() {return r_;}
@@ -954,36 +954,36 @@ class Assembler : public AssemblerBase {
 
   // Data-processing instructions
 
-  //S390 instruction generation
-#define RR_FORM(name) \
-void name(S390Register r1, S390Register r2); \
+  // S390 instruction generation
+#define RR_FORM(name)\
+void name(S390Register r1, S390Register r2);\
 void name(S390Mask r1, S390Register r2)
-#define RX_FORM(name) \
+#define RX_FORM(name)\
 void name(S390Register r1, S390Operand opnd)
-#define RI_FORM(name) \
+#define RI_FORM(name)\
 void name(S390Register r,  S390Immediate16 i)
 
 
-  // loads/stores
-  RR_FORM(lr );
-  RX_FORM(st );
-  RI_FORM(lhi);
-  
-  // arithmetics
-  RR_FORM (ar );
-  RR_FORM (sr );
-  RR_FORM (mr );
-  RR_FORM (dr );
+// loads/stores
+RR_FORM(lr);
+RX_FORM(st);
+RI_FORM(lhi);
 
-  // logics
-  RR_FORM (clr );
-  RR_FORM (xr );
-  RR_FORM (or_z );
-  RR_FORM (nr );
+// arithmetics
+RR_FORM(ar);
+RR_FORM(sr);
+RR_FORM(mr);
+RR_FORM(dr);
 
-  // branches
-  RX_FORM(bc );
-  RR_FORM(bcr);
+// logics
+RR_FORM(clr);
+RR_FORM(xr);
+RR_FORM(or_z);  // TODO(Alan): or instr is now or_z 2 avoid name confict
+RR_FORM(nr);
+
+// branches
+RX_FORM(bc);
+RR_FORM(bcr);
 
 
   // PowerPC
@@ -1448,7 +1448,7 @@ void name(S390Register r,  S390Immediate16 i)
   inline void emit4bytes(Opcode op, S390Register r, S390Immediate16 i);
   inline void emit4bytes(Opcode op, S390Mask m, S390Immediate16 i);
   inline void emit4bytes(Opcode op, S390Register r1, S390Operand opnd2);
-  
+
 
   inline void CheckTrampolinePoolQuick();
 
