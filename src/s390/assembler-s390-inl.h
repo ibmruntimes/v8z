@@ -354,7 +354,7 @@ void Assembler::emit(Instr x) {
   CheckTrampolinePoolQuick();
 }
 
-//S390 specific emitting helpers
+// S390 specific emitting helpers
 void Assembler::emit2bytes(Opcode op, S390Register r1, S390Register r2) {
   CheckBuffer();
   *reinterpret_cast<uint16_t*>(pc_) = op*B8 | r1.code()*B4 | r2.code();
@@ -396,7 +396,7 @@ void Assembler::emit4bytes(Opcode op, S390Register r1, S390Operand opnd2) {
     pc_ += 4;
     CheckTrampolinePoolQuick();
 }
-//end of S390 specific emitting helpers
+// end of S390 specific emitting helpers
 
 bool Operand::is_reg() const {
   return rm_.is_valid();

@@ -1717,7 +1717,7 @@ RR_FORM_EMIT(xr , XR )
 RR_FORM_EMIT(lr , LR )
 RX_FORM_EMIT(st , ST )
 RI_FORM_EMIT(lhi, LHI)
- 
+
 // branches
 RR_FORM_EMIT(bcr, BCR)
 RX_FORM_EMIT(bc , BC )
