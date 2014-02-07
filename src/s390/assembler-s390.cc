@@ -1681,47 +1681,46 @@ void Assembler::nop(int type) {
 }
 
 // S390 instructions
-#define RR1_INSTR_IMPL(name, op) \
+#define RR_FORM_EMIT(name, op) \
 void Assembler::name(S390Register r1, S390Register r2) { \
-    emitRR1(op, r1, r2); \
+    emit2bytes(op, r1, r2); \
 }\
-
-#define RR2_INSTR_IMPL(name, op) \
+\
 void Assembler::name(S390Mask m, S390Register r) { \
-    emitRR2(op, m, r); \
+    emit2bytes(op, m, r); \
 }\
 
-#define RX_INSTR_IMPL(name, op) \
+#define RX_FORM_EMIT(name, op) \
 void Assembler::name(S390Register r, S390Operand opnd) { \
-    emitRX(op, r, opnd); \
+    emit4bytes(op, r, opnd); \
 }\
 
-#define RI1_INSTR_IMPL(name, op) \
+#define RI_FORM_EMIT(name, op) \
 void Assembler::name(S390Register r, S390Immediate16 i) { \
-    emitRI1(op, r, i); \
+    emit4bytes(op, r, i); \
 }\
 
 
 // arithmetics
-RR1_INSTR_IMPL(ar , AR )
-RR1_INSTR_IMPL(sr , SR )
-RR1_INSTR_IMPL(mr , MR )
-RR1_INSTR_IMPL(dr , DR )
+RR_FORM_EMIT(ar , AR )
+RR_FORM_EMIT(sr , SR )
+RR_FORM_EMIT(mr , MR )
+RR_FORM_EMIT(dr , DR )
 
 // logical
-RR1_INSTR_IMPL(clr, CLR)
-RR1_INSTR_IMPL(nr , NR )
-RR1_INSTR_IMPL(or_z , OR)
-RR1_INSTR_IMPL(xr , XR )
+RR_FORM_EMIT(clr, CLR)
+RR_FORM_EMIT(nr , NR )
+RR_FORM_EMIT(or_z , OR)
+RR_FORM_EMIT(xr , XR )
 
 // loads/stores
-RR1_INSTR_IMPL(lr , LR )
-RX_INSTR_IMPL (st , ST )
-RI1_INSTR_IMPL(lhi, LHI)
+RR_FORM_EMIT(lr , LR )
+RX_FORM_EMIT(st , ST )
+RI_FORM_EMIT(lhi, LHI)
  
 // branches
-RR2_INSTR_IMPL(bcr, BCR)
-RX_INSTR_IMPL (bc , BC )
+RR_FORM_EMIT(bcr, BCR)
+RX_FORM_EMIT(bc , BC )
 
 
 
