@@ -955,36 +955,35 @@ class Assembler : public AssemblerBase {
   // Data-processing instructions
 
   //S390 instruction generation
-#define RR1INSTR(name) \
-void name(S390Register r1, S390Register r2)
-#define RR2INSTR(name) \
+#define RR_FORM(name) \
+void name(S390Register r1, S390Register r2); \
 void name(S390Mask r1, S390Register r2)
-#define RXINSTR(name) \
+#define RX_FORM(name) \
 void name(S390Register r1, S390Operand opnd)
-#define RI1INSTR(name) \
+#define RI_FORM(name) \
 void name(S390Register r,  S390Immediate16 i)
 
 
   // loads/stores
-  RR1INSTR(lr );
-  RXINSTR (st );
-  RI1INSTR(lhi);
+  RR_FORM(lr );
+  RX_FORM(st );
+  RI_FORM(lhi);
   
   // arithmetics
-  RR1INSTR (ar );
-  RR1INSTR (sr );
-  RR1INSTR (mr );
-  RR1INSTR (dr );
+  RR_FORM (ar );
+  RR_FORM (sr );
+  RR_FORM (mr );
+  RR_FORM (dr );
 
   // logics
-  RR1INSTR (clr );
-  RR1INSTR (xr );
-  RR1INSTR (or_z );
-  RR1INSTR (nr );
+  RR_FORM (clr );
+  RR_FORM (xr );
+  RR_FORM (or_z );
+  RR_FORM (nr );
 
   // branches
-  RXINSTR (bc );
-  RR2INSTR(bcr);
+  RX_FORM(bc );
+  RR_FORM(bcr);
 
 
   // PowerPC
@@ -1444,11 +1443,11 @@ void name(S390Register r,  S390Immediate16 i)
   void GrowBuffer();
   inline void emit(Instr x);
 
-  inline void emitRR1(Opcode op, S390Register r1, S390Register r2);
-  inline void emitRR2(Opcode op, S390Mask m, S390Register r);
-  inline void emitRI1(Opcode op, S390Register r, S390Immediate16 i);
-  inline void emitRI2(Opcode op, S390Mask m, S390Immediate16 i);
-  inline void emitRX (Opcode op, S390Register r1, S390Operand opnd2);
+  inline void emit2bytes(Opcode op, S390Register r1, S390Register r2);
+  inline void emit2bytes(Opcode op, S390Mask m, S390Register r);
+  inline void emit4bytes(Opcode op, S390Register r, S390Immediate16 i);
+  inline void emit4bytes(Opcode op, S390Mask m, S390Immediate16 i);
+  inline void emit4bytes(Opcode op, S390Register r1, S390Operand opnd2);
   
 
   inline void CheckTrampolinePoolQuick();
