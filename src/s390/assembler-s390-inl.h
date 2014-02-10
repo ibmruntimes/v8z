@@ -313,8 +313,6 @@ void RelocInfo::Visit(Heap* heap) {
 }
 
 // S390Operand constructors
-S390Operand::S390Operand(S390Register r) : r_(r) { }
-
 S390Operand::S390Operand(S390Register r, S390Register x,
                          S390Displacement d) : r_(r), x_(x), d_(d) { } 
 
