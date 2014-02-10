@@ -1681,153 +1681,384 @@ void Assembler::nop(int type) {
 }
 
 // S390 instructions
+
+/*
+ * RR format: <insn> R1,R2
+ *    
+ *    +--------+----+----+
+ *    | OpCode | R1 | R2 |
+ *    +--------+----+----+
+ *    0        8    12  15
+ */
 #define RR_FORM_EMIT(name, op) \
 void Assembler::name(S390Register r1, S390Register r2) { \
-    emit2bytes(op, r1, r2); \
+    emit2bytes(op*B8 | r1.code()*B4 | r2.code()); \
 }\
 void Assembler::name(S390Mask m, S390Register r) { \
-    emit2bytes(op, m, r); \
+    emit2bytes(op*B8 | m.value()*B4 | r.code()); \
 }
 
+/*
+ * RX format: <insn> R1,D2(X2,B2)
+ *    
+ *    +--------+----+----+----+-------------+
+ *    | OpCode | R1 | X2 | B2 |     D2      |
+ *    +--------+----+----+----+-------------+
+ *    0        8    12   16   20           31
+ */
 #define RX_FORM_EMIT(name, op) \
 void Assembler::name(S390Register r, S390Operand opnd) { \
-    emit4bytes(op, r, opnd.getBaseRegister(), \
-               opnd.getIndexRegister(), opnd.getDisplacement());\
+    name( r.code()*B20\
+        | opnd.getIndexRegister().code()*B20\
+        | opnd.getBaseRegister().code()*B16\
+        | opnd.getDisplacement().lowValue());\
 }\
-void Assembler::name(S390Register r1, S390Register b2, \
-                     S390Register x2, S390Displacement d2) {\
-    emit4bytes(op, r1, b2, x2, d2);\
+void Assembler::name(S390Register r1, S390Register x2, \
+                     S390Register b2, S390Displacement d2) {\
+    emit4bytes(op*B24 | r1.code()*B20\
+                      | x2.code()*B20\
+                      | b2.code()*B16\
+                      | d2.lowValue());\
 }
 
+/*
+ * RI1 format: <insn> R1,I2
+ *    
+ *    +--------+----+----+------------------+
+ *    | OpCode | R1 |OpCd|        I2        |
+ *    +--------+----+----+------------------+
+ *    0        8    12   16                31
+ */
 #define RI_FORM_EMIT(name, op) \
 void Assembler::name(S390Register r, S390Immediate16 i) { \
-    emit4bytes(op, r, i); \
+    emit4bytes( (op >> 4)*B24\
+              | r.code()*B20\
+              | (op & 0x0F)*B16\
+              | i); \
 }
 
+/*
+ * RI2 format: <insn> M1,I2
+ *    
+ *    +--------+----+----+------------------+
+ *    | OpCode | M1 |OpCd|        I2        |
+ *    +--------+----+----+------------------+
+ *    0        8    12   16                31
+ */
+#define RI2_FORM_EMIT(name, op) \
+void Assembler::name(S390Mask m, S390Immediate16 i) {\
+    emit4bytes( (op >> 4)*B24\
+              | m.value()*B20\
+              | (op & 0x0F)*B16\
+              | i );\
+}
+
+/*
+ * RIE format: <insn> R1,R3,I2
+ *    
+ *    +--------+----+----+------------------+--------+--------+
+ *    | OpCode | R1 | R3 |        I2        |////////| OpCode |
+ *    +--------+----+----+------------------+--------+--------+
+ *    0        8    12   16                 32       40      47
+ */
 #define RIE_FORM_EMIT(name, op) \
-void Assembler::name(S390Register r1, S390Register r2, \
+void Assembler::name(S390Register r1, S390Register r3, \
                      S390Immediate16 i) {\
-    emit6bytes(op, r1, r2, i);\
+    emit6bytes( (op >> 8)*B24\
+              | r1.code()*B20\
+              | r3.code()*B16\
+              | i2 );\
 }
 
+/*
+ * RIL format: <insn> R1,I2
+ *   
+ *   +--------+----+----+------------------------------------+
+ *   | OpCode | R1 |OpCd|                  I2                |
+ *   +--------+----+----+------------------------------------+
+ *   0        8    12   16                                  47
+ */
 #define RIL_FORM_EMIT(name, op) \
 void Assembler::name(S390Register r1, S390Immediate32 i) {\
-    emit6bytes(op, r1, i);\
+    emit6bytes( (op >> 8)*B40\
+              | r1.code()*B36\
+              | (op & 0x0F)*B32\
+              | i2 );\
 }
 
+/*
+ * RRE format: <insn> R1,R2
+ *    
+ *    +------------------+--------+----+----+
+ *    |      OpCode      |////////| R1 | R2 |
+ *    +------------------+--------+----+----+
+ *    0                  16       24   28  31
+ */
 #define RRE_FORM_EMIT(name, op) \
 void Assembler::name(S390Register r1, S390Register r2) {\
-    emit4bytes(op, r1, r2);\
+    emit4bytes( op*B16\
+              | r1.code()*B4\
+              | r2.code() );\
 }
 
-#define RS_FORM_EMIT(name, op) \
+/*
+ * RS1 format: <insn> R1,R3,D2(B2)
+ *    
+ *    +--------+----+----+----+-------------+
+ *    | OpCode | R1 | R3 | B2 |     D2      |
+ *    +--------+----+----+----+-------------+
+ *    0        8    12   16   20           31
+ */
+#define RS1_FORM_EMIT(name, op) \
 void Assembler::name(S390Register r1, S390Register r3, \
                      S390Register b2, S390Displacement d2) {\
-    emit4bytes(op, r1, r3, b2, d2);\
+    emit4bytes( op*B24\
+              | r1.code()*B20\
+              | r3.code()*B16\
+              | b2.code()*B12\
+              | d2.lowValue() );\
 }\
 void Assembler::name(S390Register r1, S390Register r2, \
                      S390Operand opnd) {\
-    emit4bytes(op, r1, r3, opnd.getBaseRegister(), \
-               opnd.getDisplacement());\
+    name(r1, r3, opnd.getBaseRegister(), opnd.getDisplacement());\
 }
 
-#define RSE_FORM_EMIT(name, op)\
-void Assembler::name(S390Register r1, S390Register r3, S390Register b2, \
-                     S390Displacement d2) {\
-    emit6bytes(op, r1, r3, b2, d2);\
+/*
+ * RS2 format: <insn> R1,M3,D2(B2)
+ *    
+ *    +--------+----+----+----+-------------+
+ *    | OpCode | R1 | M3 | B2 |     D2      |
+ *    +--------+----+----+----+-------------+
+ *    0        8    12   16   20           31
+ */
+#define RS2_FORM_EMIT(name, op) \
+void Assembler::name(S390Register r1, S390Mask m3, \
+                     S390Register b2, S390Displacement d2) {\
+    emit4bytes( op*B24\
+              | r1.code()*B20\
+              | m3.value()*B16\
+              | b2.code()*B12\
+              | d2.lowValue() );\
 }\
-void Assembler::name(S390Register r1, S390Register r3, S390Operand opnd) {\
-    emit6bytes(op, r1, r3, opnd.getBaseRegister(), opnd.getDisplacement());\
+void Assembler::name(S390Register r1, S390Register r2, \
+                     S390Operand opnd) {\
+    name(r1, r3, opnd.getBaseRegister(), opnd.getDisplacement());\
 }
 
+/*
+ * RSI format: <insn> R1,R3,I2
+ *    
+ *    +--------+----+----+------------------------------------+
+ *    | OpCode | R1 | R3 |                  I2                |
+ *    +--------+----+----+------------------------------------+
+ *    0        8    12   16                                  47
+ */
 #define RSI_FORM_EMIT(name, op)\
-void Assembler::name(S390Register r1, S390Register r3, S390Immediate32 i2) {\
-    emit6bytes(op, r1, r3, i2);\
+void Assembler::name(S390Register r1, S390Register r3, S390Immediate16 i2) {\
+    uint64_t instr = op*B40 | r1.code()*B36 | r3.code()*B32 | i2;\
+    emit6bytes(instr);\
 }
 
-#define RSY_FORM_EMIT(name, op)\
+/*
+ * RSY1 format: <insn> R1,R3,D2(B2)
+ *    
+ *    +--------+----+----+----+-------------+--------+--------+
+ *    | OpCode | R1 | R3 | B2 |    DL2      |  DH2   | OpCode |
+ *    +--------+----+----+----+-------------+--------+--------+
+ *    0        8    12   16   20            32       40      47
+ */
+#define RSY1_FORM_EMIT(name, op)\
 void Assembler::name(S390Register r1, S390Register r3, S390Register b2, \
                      S390Displacement d2) {\
-    emit6bytes(op, r1, r3, b2, d2);\
+    uint64_t instr = (op >> 8)*B40 | r1.code()*B36 | r3.code()*B32\
+                   | b2.code()*B28 | d2.lowValue()*B16\
+                   | d2.highValue()*B8 | (op & 0x00FF);\
+    emit6bytes(instr);\
 }\
 void Assembler::name(S390Register r1, S390Register r3, S390Operand opnd) {\
-    emit6bytes(op, r1, r3, opnd.getBaseRegister(), opnd.getDisplacement());\
+    name(r1, r3, opnd.getBaseRegister(), opnd.getDisplacement());\
 }
 
+/*
+ * RSY2 format: <insn> R1,M3,D2(B2)
+ *    
+ *    +--------+----+----+----+-------------+--------+--------+
+ *    | OpCode | R1 | M3 | B2 |    DL2      |  DH2   | OpCode |
+ *    +--------+----+----+----+-------------+--------+--------+
+ *    0        8    12   16   20            32       40      47
+ */
+#define RSY1_FORM_EMIT(name, op)\
+void Assembler::name(S390Register r1, S390Mask m3, S390Register b2, \
+                     S390Displacement d2) {\
+    uint64_t instr = (op >> 8)*B40 | m3.value()*B36 | r3.code()*B32\
+                   | b2.code()*B28 | d2.lowValue()*B16\
+                   | d2.highValue()*B8 | (op & 0x00FF);\
+    emit6bytes(instr);\
+}\
+void Assembler::name(S390Register r1, S390Register r3, S390Operand opnd) {\
+    name(r1, r3, opnd.getBaseRegister(), opnd.getDisplacement());\
+}
+
+/*
+ * RXE format: <insn> R1,D2(X2,B2)
+ *    
+ *    +--------+----+----+----+-------------+--------+--------+
+ *    | OpCode | R1 | X2 | B2 |     D2      |////////| OpCode |
+ *    +--------+----+----+----+-------------+--------+--------+
+ *    0        8    12   16   20            32       40      47
+ */
 #define RXE_FORM_EMIT(name, op)\
-void Assembler::name(S390Register r1, S390Register b2, S390Register x2, \
+void Assembler::name(S390Register r1, S390Register x2, S390Register b2, \
                      S390Displacement d2) {\
-    emit6bytes(op, r1, b2, x2, d2);\
+    uint64_t instr = (op >> 8)*B40 | r1.code()*B36 | x2.code()*B32\
+                   | b2.code()*B28 | d2.lowValue()*B16\
+                   | (op & 0x00FF);\
+    emit6bytes(instr);\
 }\
 void Assembler::name(S390Register r1, S390Operand opnd) {\
-    emit6bytes(op, r1, opnd.getBaseRegister(), opnd.getIndexRegister(), \
-               opnd.getDisplacement());\
+    name(r1, opnd.getIndexRegister(), opnd.getBaseRegister(), \
+         opnd.getDisplacement());\
 }
 
+/*
+ * RXY format: <insn> R1,D2(X2,B2)
+     
+     +--------+----+----+----+-------------+--------+--------+
+     | OpCode | R1 | X2 | B2 |     DL2     |   DH2  | OpCode |
+     +--------+----+----+----+-------------+--------+--------+
+     0        8    12   16   20            32   36   40      47
+ */
 #define RXY_FORM_EMIT(name, op)\
-void Assembler::name(S390Register r1, S390Register b2, S390Register x2, \
+void Assembler::name(S390Register r1, S390Register x2, S390Register b2, \
                      S390Displacement d2) {\
-    emit6bytes(op, r1, b2, x2, d2);\
+    uint64_t instr = (op >> 8)*B40 | r1.code()*B36 | x2.code()*B32\
+                   | b2.code()*B28 | d2.lowValue()*B16\
+                   | d2.highValue()*B8 | (op & 0x00FF);\
+    emit6bytes(instr);\
 }\
-void Assembler::name(S390Register r1, S390Operand opnd) {\
-    emit6bytes(op, r1, opnd.getBaseRegister(), opnd.getIndexRegister(), \
-               opnod.getDisplacement());\
+void Assembler::name(S390Register r1, S390Register r3, S390Operand opnd) {\
+    name(r1, opnd.getIndexRegister(), opnd.getBaseRegister(),\
+         opnd.getDisplacement());\
 }
 
+/*
+ * S format: <insn> D2(B2)
+ *    
+ *    +------------------+----+-------------+
+ *    |      OpCode      | B2 |     D2      |
+ *    +------------------+----+-------------+
+ *    0                  16   20           31
+ */
 #define S_FORM_EMIT(name, op)\
-void Assembler::name(S390Register b2, S390Displacement d2) {\
-    emit4bytes(op, b2, d2);\
+void Assembler::name(S390Register b1, S390Displacement d2) {\
+    emit4bytes(op*B16 | b1.code()*B12 | d2.lowValue());\
+}\
+void Assembler::name(S390Operand opnd) {\
+    emit4bytes( op*B16 | opnd.getBaseRegister()\
+              | opnd.getDisplacement() );\
 }
 
+/*
+ * SI format: <insn> D1(B1),I2
+ *    
+ *    +--------+---------+----+-------------+
+ *    | OpCode |   I2    | B1 |     D1      |
+ *    +--------+---------+----+-------------+
+ *    0        8         16   20           31
+ */
 #define SI_FORM_EMIT(name, op)\
-void Assembler::name(S390Register b1, S390Displacement d1, \
-                     S390Immediate8 i2) {\
-    emit4bytes(op, b1, d1, i2);\
+void Assembler::name(S390Immediate8 i2, S390Register b1,\
+                     S390Displacement d1) {\
+    emit4bytes(op*B24 | i2*B16 | b1.code()*B12 | d1.lowValue());\
 }\
 void Assembler::name(S390Operand opnd, S390Immediate8 i2) {\
-    emit4bytes(op, opnd.getBaseRegister(), opnd.getDisplacement(), i2); \
+    name(i2, opnd.getBaseRegister(), opnd.getDisplacement()); \
 }
 
+/*
+ * SIY format: <insn> D1(B1),U2
+ *    
+ *    +--------+---------+----+-------------+--------+--------+
+ *    | OpCode |   I2    | B1 |     DL1     |  DH1   | OpCode |
+ *    +--------+---------+----+-------------+--------+--------+
+ *    0        8         16   20            32   36   40      47
+ */
 #define SIY_FORM_EMIT(name, op)\
-void Assembler::name(S390Register b1, S390Displacement d1, \
-                     S390Immediate8 i2) {\
-    emit6bytes(op, b1, d1, i2);\
+void Assembler::name(S390Immediate8 i2, S390Register b1,\
+                     S390Displacement d1) {\
+    uint64_t instr = (op >> 8)*B40 | i2*B32 | b1.code()*B28\
+                   | d1.lowValue()*B16 | d1.highValue()*B8\
+                   | (op & 0x00FF);\ 
+    emit6bytes(instr);\
 }\
 void Assembler::name(S390Operand opnd, S390Immediate i2) {\
-    emit6bytes(op, opnd.getBaseRegister(), opnd.getDisplacement(), i2);\
+    name(i2, opnd.getBaseRegister(), opnd.getDisplacement());\
 }
 
+/*
+ * RXF format: <insn> R1,R3,D2(X2,B2)
+ *    
+ *    +--------+----+----+----+-------------+----+---+--------+
+ *    | OpCode | R3 | X2 | B2 |     D2      | R1 |///| OpCode |
+ *    +--------+----+----+----+-------------+----+---+--------+
+ *    0        8    12   16   20            32   36  40      47
+ */
 #define RXF_FORM_EMIT(name, op)\
 void Assembler::name(S390Register r1, S390Register r3, S390Register b2, \
                      S390Register x2, S390Displacement d2) {\
-    emit6bytes(op, r1, r3, b2, x2, d2);\
+    uint64_t instr = (op >> 8)*B40 | r3.code()*B36 | x2.code()*B32\
+                   | b2.code()*B28 | d2.lowValue()*B16 | r1.code()*B12\
+                   | (op & 0x00FF);\
+    emit6bytes(instr);\
 }\
 void Assembler::name(S390Register r1, S390Register r3, S390Operand opnd) {\
-    emit6bytes(op, r1, r3, opnd.getBaseRegister(), opnd.getIndexRegister(), \
-               opnd.getDisplacement());\
+    name(r1, r3, opnd.getBaseRegister(), opnd.getIndexRegister(), \
+         opnd.getDisplacement());\
 }
 
-#define SS_FORM_EMIT(name, op)\
-void Assembler::name(S390Register b1, S390Register r1, S390Displacement d1, \
-                     S390Register b3, S390Displacement d2, S390Register r3) {\
-    emit6bytes(b1, r1, d1, b3, d2, r3);\
+/*
+ * SS1 format: <insn> D1(L,B1),D2(B3)
+ *    
+ *    +--------+----+----+----+-------------+----+------------+
+ *    | OpCode |    L    | B1 |     D1      | B2 |     D2     |
+ *    +--------+----+----+----+-------------+----+------------+
+ *    0        8    12   16   20            32   36          47
+ */
+#define SS1_FORM_EMIT(name, op)\
+void Assembler::name(S390Immediate8 l, S390Register b1, S390Displacement d1, \
+                     S390Register b2, S390Displacement d2) {\
+    uint64_t instr = (op >> 8)*B40 | l*B32 | b1.code()*B28\
+                   | d1.lowValue()*B16 | b2.code()*B12 | d2.lowValue();\
+    emit6bytes(instr);\
 }\
-void Assembler::name(S390Operand opnd1, S390Operand opnd2, S390Register r3) {\
-    emit6bytes(op, opnd1.getBaseRegister(), opnd1.getIndexRegister(), \
-               opnd1.getDisplacement(), opnd2.getBaseRegister(), \
-               opnd2.getDisplacement(), r3);\
+void Assembler::name(S390Operand opnd1, S390Operand opnd2) {\
+    name(opnd1.getLength(), opnd1.getBaseRegister(), \
+         opnd1.getDisplacement(), opnd2.getBaseRegister(), \
+         opnd2.getDisplacement(), r3);\
 }
 
+// SS2, SS3 and SS4 definition will be generated when used.
+
+/*
+ * SSE format: <insn> D1(B1),D2(B2)
+     
+     +------------------+----+-------------+----+------------+
+     |      OpCode      | B1 |     D1      | B2 |     D2     |
+     +------------------+----+-------------+----+------------+
+     0        8    12   16   20            32   36           47
+ */
 #define SSE_FORM_EMIT(name, op)\
 void Assembler::name(S390Register b1, S390Displacement d1, S390Register b2, \
                      S390Displacement d2) {\
-    emit6bytes(op, b1, d1, b2, d2);\
+    uint64_t instr = op*B32 | b1.code()*B28 | d1.lowValue()*B16\
+                   | b2.code()*B12 | d2.lowValue();\
+    emit6bytes(instr);\
 }\
 void Assembler::name(S390Operand opnd1, S390Operand opnd2) {\
-    emit6bytes(op, opnd1.getBaseRegister(), opnd1.getDisplacement(), \
-               opnd2.getBaseRegister(), opnd2.getDisplacement());\
+    name(op, opnd1.getBaseRegister(), opnd1.getDisplacement(), \
+         opnd2.getBaseRegister(), opnd2.getDisplacement());\
 }
-
+// end of S390 Instruction generation
 
 
 // arithmetics
