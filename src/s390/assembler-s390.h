@@ -545,7 +545,7 @@ struct S390Displacement {
   int32_t disp;
 };
 
-// represents a memory operand 
+// represents a memory operand
 class S390Operand BASE_EMBEDDED {
   public:
       // register
