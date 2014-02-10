@@ -525,9 +525,24 @@ class Operand BASE_EMBEDDED {
 // defining immediate numbers and masks
 typedef int16_t S390Immediate16;
 typedef int8_t  S390Immediate8;
-typdef  int32_t S390Immediate32;
-typedef int8_t  S390Mask;
-typedef int16_t S390Displacement;
+typedef  int32_t S390Immediate32;
+
+struct S390Mask {
+  uint8_t mask;
+  uint8_t value() {return mask;}
+  static S390Mask from_value(uint8_t input) {
+    ASSERT(input < 0x0F);
+    S390Mask m = {input};
+    return m;
+  }
+};
+
+struct S390Displacement {
+  int16_t lowValue() {return disp & 0x0FFF;}
+  int8_t  highValue() {return disp >> 12;}
+  int32_t value() {return disp;}
+  int32_t disp;
+};
 
 class S390Operand BASE_EMBEDDED {
   public:
@@ -963,11 +978,11 @@ void name(S390Mask r1, S390Register r2)
 
 #define RX_FORM(name)\
 void name(S390Register r1, S390Operand opnd);\
-void name(S390Register r1, S390Register b2, S390Register x2,\
+void name(S390Register r1, S390Register b2, S390Register x2, \
           S390Displacement d2)
 
 #define RI_FORM(name)\
-void name(S390Register r,  S390Immediate16 i)\
+void name(S390Register r,  S390Immediate16 i);\
 void name(S390Mask m, S390Immediate16 i)
 
 #define RIE_FORM(name)\
@@ -977,17 +992,17 @@ void name(S390Register r1, S390Register R3, S390Immediate32 i)
 void name(S390Register r1, S390Immediate32 i2)
 
 #define RXE_FORM(name)\
-void name(S390Register r1, S390Operand opnd)\
-void name(S390Register r1, S390Register b2, S390Register x2,\
+void name(S390Register r1, S390Operand opnd);\
+void name(S390Register r1, S390Register b2, S390Register x2, \
           S390Displacement d2)
 
 #define RXF_FORM(name)\
-void name(S390Register r1, S390Register r3, S390Operand opnd)\
-void name(S390Register r1, S390Register r3, S390Register b2,\
+void name(S390Register r1, S390Register r3, S390Operand opnd);\
+void name(S390Register r1, S390Register r3, S390Register b2, \
           S390Register x2, S390Displacement d2)
 
 #define RXY_FORM(name)\
-void name(S390Register r1, S390Register b2, S390Register x2,\
+void name(S390Register r1, S390Register b2, S390Register x2, \
           S390Displacement d2);\
 void name(S390Register r1, S390Operand opnd)
 
@@ -1003,15 +1018,13 @@ void name(S390Register r, S390Register r)
 
 #define RS_FORM(name)\
 void name(S390Register r1, S390Register r3, S390Operand opnd);\
-void name(S390Register r1, S390Register r3, S390Register B2,\
+void name(S390Register r1, S390Register r3, S390Register B2, \
           S390Displacement d2)
 
 #define RSE_FORM(name)\
 void name(S390Register r1, S390Register r3, S390Operand opnd);\
-void name(S390Register r1, S390Register r3, S390Register b2,\
+void name(S390Register r1, S390Register r3, S390Register b2, \
           S390Displacement d2)
-
-
 
 #define RSY_FORM(name)\
 void name(S390Register r1, S390Register r3, S390Immediate32 i)
@@ -1020,14 +1033,14 @@ void name(S390Register r1, S390Register r3, S390Immediate32 i)
 void name(S390Register b2, S390Displacement d2)
 
 #define SS_FORM(name)\
-void name(S390Register r1, S390Register b1, S390Displacement d1,\
+void name(S390Register r1, S390Register b1, S390Displacement d1, \
           S390Register b3, S390Displacement d2, S390Register r3)
 
 #define SSE_FORM(name)\
-void name(S390Register b1, S390Displacement d1,\
+void name(S390Register b1, S390Displacement d1, \
           S390Register b2, S390Displacement d2);\
-void name(S390Register b1, S390Displacement d1,\
-          S390Register d2, S390Displacement d2,\
+void name(S390Register b1, S390Displacement d1, \
+          S390Register d2, S390Displacement d2, \
           S390Register r3)
 
 
@@ -1522,36 +1535,19 @@ RR_FORM(bcr);
                          S390Register x2, S390Displacement d2);
   // RIE
   inline void emit6bytes(Opcode op, S390Register r1, S390Register r3,
-                         S390Immeiate16 i2);
+                         S390Immediate16 i2);
+  // RRE
+  inline void emit4bytes(Opcode op, S390Register r1, S390Register r2);
   // RIL
   inline void emit6bytes(Opcode op, S390Register r1, S390Immediate32 i);
-  // RXE
-  inline void emit6bytes(Opcode op, S390Register r1, S390Register b2,
-                         S390Register x2, S390Displacement d2);
-  // RXF
-  inline void emit6bytes(Opcode op, S390Register r1, S390Register r3, 
-                         S390Register b2, S390Register x2, 
-                         S390Displacement d2);
-  // RXY
-  inline void emit6bytes(Opcode op, S390Register r1, S390Register b2,
-                         S390Register x2, S390Displacement d2);
-  // RS
-  inline void emit4bytes(Opcode op, S390Register r1, S390Register r3,
-                         S390Register b2, S390Displacement d2);
-  // RSE
-  inline void emit6bytes(Opcode op, S390Register r1, S390Register r3, 
+  // RXY & RS & RSE & RXE & RSY
+  inline void emit6bytes(Opcode op, S390Register r1, S390Register r3,
                          S390Register b2, S390Displacement d2);
   // RSI
-  inline void emit6bytes(Opcode op, S390Register r1, S390Register r3, 
+  inline void emit6bytes(Opcode op, S390Register r1, S390Register r3,
                          S390Immediate32 i);
-  // RSY
-  inline void emit6bytes(Opcode op, S390Register r1, S390Register r3, 
-                         S390Register b2, S390Displacement d2);
-  // RXE
-  inline void emit6bytes(Opcode op, S390Register r1, S390Register b2,
-                         S390Register x2, S390Displacement d2);
   // RXF
-  inline void emit6bytes(Opcode op, S390Register r1, S390Register r3, 
+  inline void emit6bytes(Opcode op, S390Register r1, S390Register r3,
                          S390Register b2, S390Register x2,
                          S390Displacement d2);
   // S
@@ -1571,7 +1567,6 @@ RR_FORM(bcr);
   inline void emit6bytes(Opcode op, S390Register b1, S390Displacement d1,
                          S390Register b2, S390Displacement d2);
 
-  
   inline void CheckTrampolinePoolQuick();
 
   // Instruction generation

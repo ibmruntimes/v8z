@@ -366,7 +366,7 @@ void Assembler::emit2bytes(Opcode op, S390Register r1, S390Register r2) {
 // RR2
 void Assembler::emit2bytes(Opcode op, S390Mask m, S390Register r) {
   CheckBuffer();
-  *reinterpret_cast<uint16_t*>(pc_) = op*B8 | m*B4 | r.code();
+  *reinterpret_cast<uint16_t*>(pc_) = op*B8 | m.value()*B4 | r.code();
   pc_ += 4;
   CheckTrampolinePoolQuick();
 }
@@ -383,20 +383,22 @@ void Assembler::emit4bytes(Opcode op, S390Register r, S390Immediate16 i) {
 // RI2
 void Assembler::emit4bytes(Opcode op, S390Mask m, S390Immediate16 i) {
   CheckBuffer();
-  *reinterpret_cast<uint32_t*>(pc_) = (op >> 4)*B24 | m*B20
-                                    | (op & 0x0F)*B16 | i;
+  *reinterpret_cast<uint32_t*>(pc_) = (op >> 4) * B24
+                                    | m.value()*B20
+                                    | (op & 0x0F)*B16
+                                    | i;
   pc_ += 4;
   CheckTrampolinePoolQuick();
 }
 
-// RX
+// RX & RS
 void Assembler::emit4bytes(Opcode op, S390Register r1, S390Register b2,
                            S390Register x2, S390Displacement d2) {
     CheckBuffer();
     *reinterpret_cast<uint32_t*>(pc_) = op*B24 | r1.code()*B20
                                       | x2.code()*B20
                                       | b2.code()*B16
-                                      | d2;
+                                      | d2.lowValue();
     pc_ += 4;
     CheckTrampolinePoolQuick();
 }
@@ -405,12 +407,12 @@ void Assembler::emit4bytes(Opcode op, S390Register r1, S390Register b2,
 void Assembler::emit6bytes(Opcode op, S390Register r1, S390Register r3,
                            S390Immediate16 i2) {\
     CheckBuffer();
-    *reinterpret_cast<uint32_t*>(pc_) = op.first()*B24 //TODO
+    *reinterpret_cast<uint32_t*>(pc_) = (op >> 8)*B24
                                       | r1.code()*B20
-                                      | r3.code()*16
+                                      | r3.code()*B16
                                       | i2;
     pc_ += 4;
-    *reinterpret_cast<uint16_t*>(pc_) = op.last();
+    *reinterpret_cast<uint16_t*>(pc_) = (op & 0x00FF);
     pc_ += 2;
     CheckTrampolinePoolQuick();
 }
@@ -418,9 +420,9 @@ void Assembler::emit6bytes(Opcode op, S390Register r1, S390Register r3,
 // RIL
 void Assembler::emit6bytes(Opcode op, S390Register r1, S390Immediate32 i2) {
     CheckBuffer();
-    *reinterpret_cast<uint16_t*>(pc_) = op.first()*B24 //TODO
+    *reinterpret_cast<uint16_t*>(pc_) = (op >> 8)*B24
                                       | r1.code()*B20
-                                      | op.last4bits();
+                                      | (op & 0x0F);
     pc_ += 2;
     *reinterpret_cast<uint32_t*>(pc_) = i2;
     pc_ += 4;
@@ -428,40 +430,12 @@ void Assembler::emit6bytes(Opcode op, S390Register r1, S390Immediate32 i2) {
 }
 
 // RRE
-void Assembler::emit6bytes(Opcode op, S390Register r1, S390Register r2) {
+void Assembler::emit4bytes(Opcode op, S390Register r1, S390Register r2) {
     CheckBuffer();
     *reinterpret_cast<uint32_t*>(pc_) = op*B16
                                       | r1.code()*B4
                                       | r2.code();
     pc_ += 4;
-    CheckTrampolinePoolQuick();
-}
-
-// RS
-void Assembler::emit4bytes(Opcode op, S390Register r1, S390Register r3,
-                           S390Register b2, S390Displacement d2) {
-    CheckBuffer();
-    *reinterpret_cast<uin32_t*>(pc_) = op*B24
-                                     | r1.code()*B20
-                                     | r3.code()*B16
-                                     | b2.code()*B12
-                                     | d2;
-    pc_ += 4;
-    CheckTrampolinePoolQuick();
-}
-
-// RSE
-void Assembler::emit6bytes(Opcode op, S390Register r1, S390Register r3,
-                           S390Register b2, S390Displacement d2) {
-    CheckBuffer();
-    *reinterpret_cast<uint32_t*>(pc_) = op.first8bits()*B24
-                                      | r1.code()*B20
-                                      | r3.code()*B16
-                                      | b2.code()*B12
-                                      | d2;
-    pc_ += 4;
-    *reinterpret_cast<uint16_t*>(pc_) = op.last8bits();
-    pc_ += 2;
     CheckTrampolinePoolQuick();
 }
 
@@ -472,49 +446,23 @@ void Assembler::emit6bytes(Opcode op, S390Register r1, S390Register r3,
     *reinterpret_cast<uint16_t*>(pc_) = op*B8 | r1.code()*B4 | r3.code();
     pc_ += 2;
     // TODO(Alanli) is it correct for a signed value?
-    *reinterpret_cast<uint32_t*>(pc_) = i2; 
+    *reinterpret_cast<uint32_t*>(pc_) = i2;
     pc_ += 4;
     CheckTrampolinePoolQuick();
 }
 
-// RSY
-void Assembler::emit6bytes(Opcode op, S390Register r1, S390Register r3,
-                           S390Register b2, S390Displacement d2) {
-    CheckBuffer();
-    *reinterpret_cast<uint16_t*>(pc_) = op*B8 | r1.code()*B4 | r3.code();
-    pc_ += 2;
-    *reinterpret_cast<uint32_t*>(pc_) = b2.code()*B28 | d2*B8
-                                      | op.last8bits();
-    pc_ += 4;
-    CheckTrampolinePoolQuick();
-}
-
-// RXE
+// RSY & RXE & RXY
 void Assembler::emit6bytes(Opcode op, S390Register r1, S390Register b2,
                            S390Register x2, S390Displacement d2) {
     CheckBuffer();
-    *reinterpret_cast<uint16_t*>(pc_) = op.first8bits()*B8
+    *reinterpret_cast<uint16_t*>(pc_) = (op >> 8)*B8
                                       | r1.code()*B4
                                       | x2.code();
     pc_ += 2;
-    *reinterpret_cast<uint32_t*>(pc_) = b2.code()*B28 
-                                      | d2*B16 
-                                      | op.last8bits();
-    pc_ += 4;
-    CheckTrampolinePoolQuick();
-}
-
-// RXY
-void Assembler::emit6bytes(Opcode op, S390Register r1, S390Register b2,
-                           S390Register x2, S390Displacement d2) {
-    CheckBuffer();
-    *reinterpret_cast<uint16_t*>(pc_) = op.first8bits()
-                                      | r1.code()*B4 
-                                      | x2.code();
-    pc_ += 2;
     *reinterpret_cast<uint32_t*>(pc_) = b2.code()*B28
-                                      | d2*B8
-                                      | op.last8bits();
+                                      | d2.lowValue()*B16
+                                      | d2.highValue()*B8
+                                      | (op & 0x00FF);
     pc_ += 4;
     CheckTrampolinePoolQuick();
 }
@@ -524,20 +472,20 @@ void Assembler::emit4bytes(Opcode op, S390Register b2, S390Displacement d2) {
     CheckBuffer();
     *reinterpret_cast<uint16_t*>(pc_) = op;
     pc_ += 2;
-    *reinterpret_cast<uint16_t*>(pc_) = b2.code()*B12
-                                      | d2;
+    *reinterpret_cast<uint16_t*>(pc_) = b2.code() * B12
+                                      | d2.lowValue();
     pc_ += 2;
-    checkTrampolinePoolQuick();
+    CheckTrampolinePoolQuick();
 }
 
 // SI
-void Assembler::emit4bytes(Opcode op, S390Register b1, S390Displacement d1, 
+void Assembler::emit4bytes(Opcode op, S390Register b1, S390Displacement d1,
                            S390Immediate8 i2) {
     CheckBuffer();
     *reinterpret_cast<uint32_t*>(pc_) = op * B24
                                       | i2 * B16
                                       | b1.code() * B12
-                                      | d1;
+                                      | d1.lowValue();
     pc_ += 4;
     CheckTrampolinePoolQuick();
 }
@@ -546,44 +494,43 @@ void Assembler::emit4bytes(Opcode op, S390Register b1, S390Displacement d1,
 void Assembler::emit6bytes(Opcode op, S390Register b1, S390Displacement d1,
                            S390Immediate8 i2) {
     CheckBuffer();
-    *reinterpret_cast<uint16_t*>(pc_) = op.first8bits(); * B8
+    *reinterpret_cast<uint16_t*>(pc_) = (op >> 8) * B8
                                       | i2;
     pc_ += 2;
     *reinterpret_cast<uint32_t*>(pc_) = b1.code() * B28
-                                      | d1 * B8
-                                      | op.last8bits();
+                                      | d1.lowValue() * B8
+                                      | (op & 0x00FF);
     pc_ += 4;
     CheckTrampolinePoolQuick();
 }
 
 // SS
 void Assembler::emit6bytes(Opcode op, S390Register b1, S390Register r1,
-                           S390Displacement d1, S390Register b3, 
+                           S390Displacement d1, S390Register b3,
                            S390Displacement d2, S390Register r3) {
     CheckBuffer();
     *reinterpret_cast<uint32_t*>(pc_) = op * B24
                                       | r1.code() * B20
                                       | r3.code() * B16
                                       | b1.code() * B12
-                                      | d1;
+                                      | d1.lowValue();
     pc_ += 4;
-    *reinterpret_cast<uint16_t*>(pc_) = b2 * B12
-                                      | d2;
+    *reinterpret_cast<uint16_t*>(pc_) = b3.code() * B12
+                                      | d2.lowValue();
     pc_ += 2;
     CheckTrampolinePoolQuick();
 }
 
 // SSE
-void Assembler::emit6bytes(Opcode op, S390Register b1, S390Displacement 1,
-                           S390Register b3, S390Displacement d2,
-                           S390Register r3) {
+void Assembler::emit6bytes(Opcode op, S390Register b1, S390Displacement d1,
+                           S390Register b2, S390Displacement d2) {
     CheckBuffer();
     *reinterpret_cast<uint16_t*>(pc_) = op;
     pc_ += 2;
     *reinterpret_cast<uint32_t*>(pc_) = b1.code() * B28
-                                      | d1 * B16
+                                      | d1.lowValue() * B16
                                       | b2.code() * B12
-                                      | d2;
+                                      | d2.lowValue();
     pc_ += 2;
     CheckTrampolinePoolQuick();
 }
