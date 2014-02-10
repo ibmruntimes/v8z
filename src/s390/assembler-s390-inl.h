@@ -312,6 +312,13 @@ void RelocInfo::Visit(Heap* heap) {
   }
 }
 
+// S390Operand constructors
+S390Operand::S390Operand(S390Register r, S390Register x,
+                         S390Displacement d) : r_(r), x_(x), d_(d) { } 
+
+S390Operand::S390Operand(S390Register r, S390Displacement d,
+                         S390Length l) : r_(r), d_(d), l_(l) { }
+
 Operand::Operand(intptr_t immediate, RelocInfo::Mode rmode)  {
   rm_ = no_reg;
   imm_ = immediate;
@@ -355,46 +362,25 @@ void Assembler::emit(Instr x) {
 }
 
 // S390 specific emitting helpers
-void Assembler::emit2bytes(Opcode op, S390Register r1, S390Register r2) {
-  CheckBuffer();
-  *reinterpret_cast<uint16_t*>(pc_) = op*B8 | r1.code()*B4 | r2.code();
-  pc_ += 4;
-  CheckTrampolinePoolQuick();
-}
-
-void Assembler::emit2bytes(Opcode op, S390Mask m, S390Register r) {
-  CheckBuffer();
-  *reinterpret_cast<uint16_t*>(pc_) = op*B8 | m*B4 | r.code();
-  pc_ += 4;
-  CheckTrampolinePoolQuick();
-}
-
-void Assembler::emit4bytes(Opcode op, S390Register r, S390Immediate16 i) {
-  CheckBuffer();
-  *reinterpret_cast<uint32_t*>(pc_) = (op >> 4)*B24 | r.code()*B20
-                                    | (op & 0x0F)*B16 | i;
-  pc_ += 4;
-  CheckTrampolinePoolQuick();
-}
-
-void Assembler::emit4bytes(Opcode op, S390Mask m, S390Immediate16 i) {
-  CheckBuffer();
-  *reinterpret_cast<uint32_t*>(pc_) = (op >> 4)*B24 | m*B20
-                                    | (op & 0x0F)*B16 | i;
-  pc_ += 4;
-  CheckTrampolinePoolQuick();
-}
-
-void Assembler::emit4bytes(Opcode op, S390Register r1, S390Operand opnd2) {
+void Assembler::emit2bytes(uint16_t x) {
     CheckBuffer();
-    S390Register x2 = opnd2.getIndexRegister();
-    S390Register b2 = opnd2.getBaseRegister();
-    *reinterpret_cast<uint32_t*>(pc_) = op*B24 | r1.code()*B20
-                                      | x2.code()*B20
-                                      | b2.code()*B16
-                                      | opnd2.getDisplacement();
+    *reinterpret_cast<uint16_t*>(pc_) = x;
+    pc_ += 2;
+    CheckTrampolinePoolQuick();
+}
+
+void Assembler::emit4bytes(uint32_t x) {
+    CheckBuffer();
+    *reinterpret_cast<uint32_t*>(pc_) = x;
     pc_ += 4;
     CheckTrampolinePoolQuick();
+}
+
+void Assembler::emit6bytes(uint64_t x) {
+    CheckBuffer();
+    *reinterpret_cast<uint16_t*>(pc_) = (uint16_t)((x >> 32) & 0x00FF);
+    pc_ += 4;
+    *reinterpret_cast<uint32_t*>(pc_) = (uint32_t)(x & 0x00000000FFFFFFFF);
 }
 // end of S390 specific emitting helpers
 
