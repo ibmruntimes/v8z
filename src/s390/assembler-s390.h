@@ -975,73 +975,73 @@ class Assembler : public AssemblerBase {
 
   // S390 instruction generation
 #define RR_FORM(name)\
-inline void name(S390Register r1, S390Register r2);\
-inline void name(S390Mask r1, S390Register r2)
+void name(S390Register r1, S390Register r2);\
+void name(S390Mask r1, S390Register r2)
 
 #define RX_FORM(name)\
-inline void name(S390Register r1, S390Operand opnd);\
-inline void name(S390Register r1, S390Register b2, S390Register x2, \
+void name(S390Register r1, S390Operand opnd);\
+void name(S390Register r1, S390Register b2, S390Register x2, \
                  S390Displacement d2)
 
 #define RI_FORM(name)\
-inline void name(S390Register r,  S390Immediate16 i);\
-inline void name(S390Mask m, S390Immediate16 i)
+void name(S390Register r,  S390Immediate16 i);\
+void name(S390Mask m, S390Immediate16 i)
 
 #define RIE_FORM(name)\
-inline void name(S390Register r1, S390Register R3, S390Immediate32 i)
+void name(S390Register r1, S390Register R3, S390Immediate32 i)
 
 #define RIL_FORM(name)\
-inline void name(S390Register r1, S390Immediate32 i2)
+void name(S390Register r1, S390Immediate32 i2)
 
 #define RXE_FORM(name)\
-inline void name(S390Register r1, S390Operand opnd);\
-inline void name(S390Register r1, S390Register b2, S390Register x2, \
+void name(S390Register r1, S390Operand opnd);\
+void name(S390Register r1, S390Register b2, S390Register x2, \
                  S390Displacement d2)
 
 #define RXF_FORM(name)\
-inline void name(S390Register r1, S390Register r3, S390Operand opnd);\
-inline void name(S390Register r1, S390Register r3, S390Register b2, \
+void name(S390Register r1, S390Register r3, S390Operand opnd);\
+void name(S390Register r1, S390Register r3, S390Register b2, \
                  S390Register x2, S390Displacement d2)
 
 #define RXY_FORM(name)\
-inline void name(S390Register r1, S390Register b2, S390Register x2, \
+void name(S390Register r1, S390Register b2, S390Register x2, \
                  S390Displacement d2);\
-inline void name(S390Register r1, S390Operand opnd)
+void name(S390Register r1, S390Operand opnd)
 
 #define RSI_FORM(name)\
-inline void name(S390Register r1, S390Register r3, S390Immediate32 i)
+void name(S390Register r1, S390Register r3, S390Immediate32 i)
 
 #define SI_FORM(name)\
-inline void name(S390Operand opnd, S390Immediate8 i);\
-inline void name(S390Register b1, S390Displacement d1, S390Immediate8 i2)
+void name(S390Operand opnd, S390Immediate8 i);\
+void name(S390Register b1, S390Displacement d1, S390Immediate8 i2)
 
 #define RRE_FORM(name)\
-inline void name(S390Register r, S390Register r)
+void name(S390Register r, S390Register r)
 
 #define RS_FORM(name)\
-inline void name(S390Register r1, S390Register r3, S390Operand opnd);\
-inline void name(S390Register r1, S390Register r3, S390Register B2, \
+void name(S390Register r1, S390Register r3, S390Operand opnd);\
+void name(S390Register r1, S390Register r3, S390Register B2, \
                  S390Displacement d2)
 
 #define RSE_FORM(name)\
-inline void name(S390Register r1, S390Register r3, S390Operand opnd);\
-inline void name(S390Register r1, S390Register r3, S390Register b2, \
+void name(S390Register r1, S390Register r3, S390Operand opnd);\
+void name(S390Register r1, S390Register r3, S390Register b2, \
                  S390Displacement d2)
 
 #define RSY_FORM(name)\
-inline void name(S390Register r1, S390Register r3, S390Immediate32 i)
+void name(S390Register r1, S390Register r3, S390Immediate32 i)
 
 #define S_FORM(name)\
-inline void name(S390Register b2, S390Displacement d2)
+void name(S390Register b2, S390Displacement d2)
 
 #define SS_FORM(name)\
-inline void name(S390Register r1, S390Register b1, S390Displacement d1, \
+void name(S390Register r1, S390Register b1, S390Displacement d1, \
           S390Register b3, S390Displacement d2, S390Register r3)
 
 #define SSE_FORM(name)\
-inline void name(S390Register b1, S390Displacement d1, \
+void name(S390Register b1, S390Displacement d1, \
           S390Register b2, S390Displacement d2);\
-inline void name(S390Register b1, S390Displacement d1, \
+void name(S390Register b1, S390Displacement d1, \
           S390Register d2, S390Displacement d2, \
           S390Register r3)
 
