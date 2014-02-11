@@ -974,6 +974,12 @@ class Assembler : public AssemblerBase {
   // Data-processing instructions
 
   // S390 instruction generation
+#define E_FORM(name)\
+void name()
+
+#define I_FORM(name)\
+void name(S390Immediate8 i)
+
 #define RR_FORM(name)\
 void name(S390Register r1, S390Register r2);\
 void name(S390Mask r1, S390Register r2)
@@ -990,8 +996,11 @@ void name(S390Mask m, S390Immediate16 i)
 #define RIE_FORM(name)\
 void name(S390Register r1, S390Register R3, S390Immediate32 i)
 
-#define RIL_FORM(name)\
+#define RIL1_FORM(name)\
 void name(S390Register r1, S390Immediate32 i2)
+
+#define RIL2_FORM(name)\
+void name(S390Mask m1, S390Immediate32 i2)
 
 #define RXE_FORM(name)\
 void name(S390Register r1, S390Operand opnd);\
@@ -1018,6 +1027,15 @@ void name(S390Register b1, S390Displacement d1, S390Immediate8 i2)
 #define RRE_FORM(name)\
 void name(S390Register r, S390Register r)
 
+#define RRF1_FORM(name)\
+void name(S390Register r1, S390Register r2, S390Register r3)
+
+#define RRF2_FORM(name)\
+void name(S390Mask m1, S390Register r1, S390Register r2)
+
+#define RRF3_FORM(name)\
+void name(S390Register r3, S390Mask m4, S390Register r1, S390Register r2)
+
 #define RS_FORM(name)\
 void name(S390Register r1, S390Register r3, S390Operand opnd);\
 void name(S390Register r1, S390Register r3, S390Register B2, \
@@ -1028,15 +1046,39 @@ void name(S390Register r1, S390Register r3, S390Operand opnd);\
 void name(S390Register r1, S390Register r3, S390Register b2, \
                  S390Displacement d2)
 
+#define RSL_FORM(name)\
+void name(S390Length l, S390Register b2, S390Displacement d2);\
+void name(S390Operand opnd)
+
 #define RSY_FORM(name)\
 void name(S390Register r1, S390Register r3, S390Immediate32 i)
 
 #define S_FORM(name)\
 void name(S390Register b2, S390Displacement d2)
 
-#define SS_FORM(name)\
+#define SS1_FORM(name)\
 void name(S390Register r1, S390Register b1, S390Displacement d1, \
           S390Register b3, S390Displacement d2, S390Register r3)
+
+#define SS2_FORM(name)\
+void name(S390Operand opnd1, S390Operand opnd2);\
+void name(S390Length l1, S390Length l3, S390Register r3, \
+          S390Displacement d1, S390Register b2, S390Displacement d2)
+
+#define SS3_FORM(name)\
+void name(S390Operand opnd1, S390Operand opnd2);\
+void name(S390Length l1, S390Immediate8 i3, S390Register b1, \
+          S390Displacement d1, S390Register b2, S390Register d2)
+
+#define SS4_FORM(name)\
+void name(S390Operand opnd1, S390Operand opnd2);\
+void name(S390Regiser r1, S390Register r3, S390Register b1, \
+          S390Displacement d1, S390Register b2, S390Displacement d2)
+
+#define SS5_FORM(name)\
+void name(S390Operand opnd1, S390Operand opnd2);\
+void name(S390Register r1, S390Register r3, S390Register b3, \
+          S390Displacement d2, S390Register b4, S390Displacement d4)
 
 #define SSE_FORM(name)\
 void name(S390Register b1, S390Displacement d1, \
@@ -1045,28 +1087,23 @@ void name(S390Register b1, S390Displacement d1, \
           S390Register d2, S390Displacement d2, \
           S390Register r3)
 
-
-// loads/stores
-RR_FORM(lr);
-RX_FORM(st);
-RI_FORM(lhi);
-
-// arithmetics
 RR_FORM(ar);
 RR_FORM(sr);
 RR_FORM(mr);
 RR_FORM(dr);
 
-// logics
+
 RR_FORM(clr);
-RR_FORM(xr);
-RR_FORM(or_z);  // TODO(Alan): or instr is now or_z 2 avoid name confict
 RR_FORM(nr);
+RR_FORM(or_z);
+RR_FORM(xr);
 
-// branches
-RX_FORM(bc);
+RR_FORM(lr);
+RX_FORM(st);
+RI_FORM(lhi);
+
 RR_FORM(bcr);
-
+RX_FORM(bc);
 
   // PowerPC
   void sub(Register dst, Register src1, Register src2,
