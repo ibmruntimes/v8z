@@ -2074,7 +2074,7 @@ void Assembler::name(S390Operand opnd1, S390Operand opnd2) {\
  *    +--------+----+----+----+-------------+----+------------+
  *    0        8    12   16   20            32   36          47
  */
-#define SS3_FORM_EMIT(name, op)\
+#define SS4_FORM_EMIT(name, op)\
 void Assembler::name(S390Register r1, S390Register r2, S390Register b1, \
                      S390Displacement d1, S390Register b2, \
                      S390Displacement d2) {\
@@ -2093,7 +2093,7 @@ void Assembler::name(S390Operand opnd1, S390Operand opnd2) {\
  *    +--------+----+----+----+-------------+----+------------+
  *    0        8    12   16   20            32   36          47
  */
-#define SS3_FORM_EMIT(name, op)\
+#define SS5_FORM_EMIT(name, op)\
 void Assembler::name(S390Register r1, S390Register r3, S390Register b2, \
                      S390Displacement d2, S390Register b4, \
                      S390Displacement d4) {\
@@ -2155,7 +2155,7 @@ void Assembler::name(S390Mask m3, S390Register r1, S390Register r2) {\
  *    +------------------+----+----+----+----+
  *    0                  16   20   24   28  31
  */
-#define RRF2_FORM_EMIT(name, op)\
+#define RRF3_FORM_EMIT(name, op)\
 void Assembler::name(S390Mask r3, S390Mask m4, S390Register r1, \
                      S390Register r2) {\
     emit4bytes(op*B16 | r3.value()*B12 | m4.value()*B8 | \

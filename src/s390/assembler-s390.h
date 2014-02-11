@@ -980,8 +980,6 @@ void name()
 #define I_FORM(name)\
 void name(S390Immediate8 i)
 
-#
-
 #define RR_FORM(name)\
 void name(S390Register r1, S390Register r2);\
 void name(S390Mask r1, S390Register r2)
@@ -1089,8 +1087,23 @@ void name(S390Register b1, S390Displacement d1, \
           S390Register d2, S390Displacement d2, \
           S390Register r3)
 
+RR_FORM(ar);
+RR_FORM(sr);
+RR_FORM(mr);
+RR_FORM(dr);
 
 
+RR_FORM(clr);
+RR_FORM(nr);
+RR_FORM(or_z);
+RR_FORM(xr);
+
+RR_FORM(lr);
+RX_FORM(st);
+RI_FORM(lhi);
+
+RR_FORM(bcr);
+RX_FORM(bc);
 
   // PowerPC
   void sub(Register dst, Register src1, Register src2,
