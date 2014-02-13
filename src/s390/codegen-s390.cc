@@ -283,7 +283,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   // r8: number of elements (smi-tagged)
 
   // Allocate new FixedArray.
-  __ li(r3, Operand(FixedDoubleArray::kHeaderSize));
+  __ lhi(r3, Operand(FixedDoubleArray::kHeaderSize));
   __ SmiToPtrArrayOffset(r0, r8);
   __ add(r3, r3, r0);
   __ AllocateInNewSpace(r3, r9, r10, r22, &gc_required, NO_ALLOCATION_FLAGS);

@@ -949,8 +949,9 @@ void Assembler::cmpl(Register src1, Register src2, CRegister cr) {
        src2.code()*B11);
 }
 
-// Pseudo op - load immediate
-void Assembler::li(Register dst, const Operand &imm) {
+// Pseudo op - load halfword immediate (16-bits signed immediate)
+void Assembler::lhi(Register dst, const Operand &imm) {
+  // ri_form(LHI, dst, imm.imm_, true);
   d_form(ADDI, dst, r0, imm.imm_, true);
 }
 
@@ -1318,7 +1319,7 @@ void Assembler::mov(Register dst, const Operand& src) {
   int value = src.immediate();
   if (!is_trampoline_pool_blocked()) {
     if (is_int16(value)) {
-      li(dst, Operand(value));
+      lhi(dst, Operand(value));
       return;
     }
   }

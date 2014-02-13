@@ -104,7 +104,7 @@ static void ProbeTable(Isolate* isolate,
   __ lwz(flags_reg, FieldMemOperand(code, Code::kFlagsOffset));
 
   ASSERT(!r0.is(flags_reg));
-  __ li(r0, Operand(Code::kFlagsNotUsedInLookup));
+  __ lhi(r0, Operand(Code::kFlagsNotUsedInLookup));
   __ andc(flags_reg, flags_reg, r0);
   __ mov(r0, Operand(flags));
   __ cmpl(flags_reg, r0);
@@ -663,7 +663,7 @@ static void CompileCallLoadPropertyWithInterceptor(
   ExternalReference ref =
       ExternalReference(IC_Utility(IC::kLoadPropertyWithInterceptorOnly),
                         masm->isolate());
-  __ li(r3, Operand(6));
+  __ lhi(r3, Operand(6));
   __ mov(r4, Operand(ref));
 
   CEntryStub stub(1);
@@ -764,10 +764,10 @@ static void GenerateFastApiDirectCall(MacroAssembler* masm,
   __ addi(ip, r5, Operand(argc * kPointerSize));
   __ StoreP(ip, MemOperand(arg0, 1 * kPointerSize));
   // v8::Arguments::length_ = argc
-  __ li(ip, Operand(argc));
+  __ lhi(ip, Operand(argc));
   __ stw(ip, MemOperand(arg0, 2 * kPointerSize));
   // v8::Arguments::is_construct_call = 0
-  __ li(ip, Operand::Zero());
+  __ lhi(ip, Operand::Zero());
   __ StoreP(ip, MemOperand(arg0, 3 * kPointerSize));
 
   const int kStackUnwindSpace = argc + kFastApiCallArguments + 1;

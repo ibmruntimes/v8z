@@ -629,7 +629,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   subi(sp, sp, Operand(2 * kPointerSize));
 
   if (emit_debug_code()) {
-    li(r8, Operand::Zero());
+    lhi(r8, Operand::Zero());
     StoreP(r8, MemOperand(fp, ExitFrameConstants::kSPOffset));
   }
   mov(r8, Operand(CodeObject()));
@@ -679,7 +679,7 @@ void MacroAssembler::InitializeNewString(Register string,
   SmiTag(scratch1, length);
   LoadRoot(scratch2, map_index);
   StoreP(scratch1, FieldMemOperand(string, String::kLengthOffset), r0);
-  li(scratch1, Operand(String::kEmptyHashField));
+  lhi(scratch1, Operand(String::kEmptyHashField));
   StoreP(scratch2, FieldMemOperand(string, HeapObject::kMapOffset), r0);
   StoreP(scratch1, FieldMemOperand(string, String::kHashFieldSlot), r0);
 }
@@ -717,7 +717,7 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles,
   }
 
   // Clear top frame.
-  li(r6, Operand(0, RelocInfo::NONE));
+  lhi(r6, Operand(0, RelocInfo::NONE));
   mov(ip, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate())));
   StoreP(r6, MemOperand(ip));
 
@@ -991,7 +991,7 @@ void MacroAssembler::IsObjectJSStringType(Register object,
 
 #ifdef ENABLE_DEBUGGER_SUPPORT
 void MacroAssembler::DebugBreak() {
-  li(r3, Operand(0, RelocInfo::NONE));
+  lhi(r3, Operand(0, RelocInfo::NONE));
   mov(r4, Operand(ExternalReference(Runtime::kDebugBreak, isolate())));
   CEntryStub ces(1);
   ASSERT(AllowThisStubCall(&ces));
@@ -1026,7 +1026,7 @@ void MacroAssembler::PushTryHandler(StackHandler::Kind kind,
   StoreP(sp, MemOperand(r8));
 
   if (kind == StackHandler::JS_ENTRY) {
-    li(r8, Operand(0, RelocInfo::NONE));  // NULL frame pointer.
+    lhi(r8, Operand(0, RelocInfo::NONE));  // NULL frame pointer.
     StoreP(r8, MemOperand(sp, StackHandlerConstants::kFPOffset));
     LoadSmiLiteral(r8, Smi::FromInt(0));    // Indicates no context.
     StoreP(r8, MemOperand(sp, StackHandlerConstants::kContextOffset));
@@ -1360,9 +1360,9 @@ void MacroAssembler::AllocateInNewSpace(int object_size,
   if (!FLAG_inline_new) {
     if (emit_debug_code()) {
       // Trash the registers to simulate an allocation failure.
-      li(result, Operand(0x7091));
-      li(scratch1, Operand(0x7191));
-      li(scratch2, Operand(0x7291));
+      lhi(result, Operand(0x7091));
+      lhi(scratch1, Operand(0x7191));
+      lhi(scratch2, Operand(0x7291));
     }
     b(gc_required);
     return;
@@ -1400,7 +1400,7 @@ void MacroAssembler::AllocateInNewSpace(int object_size,
   Register obj_size_reg = scratch2;
   mov(topaddr, Operand(new_space_allocation_top));
   // this won't work for very large object on PowerPC
-  li(obj_size_reg, Operand(object_size));
+  lhi(obj_size_reg, Operand(object_size));
 
   // This code stores a temporary value in ip. This is OK, as the code below
   // does not need ip for implicit literal generation.
@@ -1423,7 +1423,7 @@ void MacroAssembler::AllocateInNewSpace(int object_size,
 
   // Calculate new top and bail out if new space is exhausted. Use result
   // to calculate the new top.
-  li(r0, Operand(-1));
+  lhi(r0, Operand(-1));
   addc(scratch2, result, obj_size_reg);
   addze(r0, r0, LeaveOE, SetRC);
   beq(gc_required, cr0);
@@ -1447,9 +1447,9 @@ void MacroAssembler::AllocateInNewSpace(Register object_size,
   if (!FLAG_inline_new) {
     if (emit_debug_code()) {
       // Trash the registers to simulate an allocation failure.
-      li(result, Operand(0x7091));
-      li(scratch1, Operand(0x7191));
-      li(scratch2, Operand(0x7291));
+      lhi(result, Operand(0x7091));
+      lhi(scratch1, Operand(0x7191));
+      lhi(scratch2, Operand(0x7291));
     }
     b(gc_required);
     return;
@@ -1506,7 +1506,7 @@ void MacroAssembler::AllocateInNewSpace(Register object_size,
   // Calculate new top and bail out if new space is exhausted. Use result
   // to calculate the new top. Object size may be in words so a shift is
   // required to get the number of bytes.
-  li(r0, Operand(-1));
+  lhi(r0, Operand(-1));
   if ((flags & SIZE_IN_WORDS) != 0) {
     ShiftLeftImm(scratch2, object_size, Operand(kPointerSizeLog2));
     addc(scratch2, result, scratch2);
@@ -1598,7 +1598,7 @@ void MacroAssembler::AllocateAsciiString(Register result,
   ASSERT(kCharSize == 1);
   addi(scratch1, length,
        Operand(kObjectAlignmentMask + SeqAsciiString::kHeaderSize));
-  li(r0, Operand(~kObjectAlignmentMask));
+  lhi(r0, Operand(~kObjectAlignmentMask));
   and_(scratch1, scratch1, r0);
 
   // Allocate ASCII string in new space.
@@ -2344,7 +2344,7 @@ void MacroAssembler::EmitOutOfInt32RangeTruncate(Register result,
                                                  Register scratch) {
   Label done, high_shift_needed, pos_shift, neg_shift, shift_done;
 
-  li(result, Operand::Zero());
+  lhi(result, Operand::Zero());
 
   // check for NaN or +/-Infinity
   // by extracting exponent (mask: 0x7ff00000)
@@ -2377,7 +2377,7 @@ void MacroAssembler::EmitOutOfInt32RangeTruncate(Register result,
   // slw extracts only the 6 most significant bits of the shift value.
   cmpi(scratch, Operand(32));
   blt(&high_shift_needed);
-  li(input_high, Operand::Zero());
+  lhi(input_high, Operand::Zero());
   subfic(scratch, scratch, Operand(32));
   b(&neg_shift);
 
@@ -2535,7 +2535,7 @@ void MacroAssembler::CallRuntime(Runtime::FunctionId fid, int num_arguments) {
 
 void MacroAssembler::CallRuntimeSaveDoubles(Runtime::FunctionId id) {
   const Runtime::Function* function = Runtime::FunctionForId(id);
-  li(r3, Operand(function->nargs));
+  lhi(r3, Operand(function->nargs));
   mov(r4, Operand(ExternalReference(function, isolate())));
   CEntryStub stub(1, kSaveFPRegs);
   CallStub(&stub);
@@ -3270,7 +3270,7 @@ void MacroAssembler::PrepareCallCFunction(int num_reg_arguments,
     subi(sp, sp, Operand((stack_passed_arguments + 1) * kPointerSize));
 #endif
     ASSERT(IsPowerOf2(frame_alignment));
-    li(r0, Operand(-frame_alignment));
+    lhi(r0, Operand(-frame_alignment));
     and_(sp, sp, r0);
 #if !defined(USE_SIMULATOR)
     // On the simulator we pass args on the stack
@@ -3648,7 +3648,7 @@ void MacroAssembler::GetMarkBits(Register addr_reg,
                   kLowBits);
   ShiftLeftImm(ip, ip, Operand(Bitmap::kBytesPerCellLog2));
   add(bitmap_reg, bitmap_reg, ip);
-  li(ip, Operand(1));
+  lhi(ip, Operand(1));
   slw(mask_reg, ip, mask_reg);
 }
 
@@ -3701,7 +3701,7 @@ void MacroAssembler::EnsureNotWhite(
   LoadP(map, FieldMemOperand(value, HeapObject::kMapOffset));
   CompareRoot(map, Heap::kHeapNumberMapRootIndex);
   bne(&maybe_string_object);
-  li(length, Operand(HeapNumber::kSize));
+  lhi(length, Operand(HeapNumber::kSize));
   b(&is_data_object);
   bind(&maybe_string_object);
 
@@ -3723,7 +3723,7 @@ void MacroAssembler::EnsureNotWhite(
   ASSERT_EQ(0, kConsStringTag & kExternalStringTag);
   andi(r0, instance_type, Operand(kExternalStringTag));
   beq(&is_string_object, cr0);
-  li(length, Operand(ExternalString::kSize));
+  lhi(length, Operand(ExternalString::kSize));
   b(&is_data_object);
   bind(&is_string_object);
 
@@ -3749,7 +3749,7 @@ void MacroAssembler::EnsureNotWhite(
   ASSERT(kSmiShift == 1);
 #endif
   addi(length, ip, Operand(SeqString::kHeaderSize + kObjectAlignmentMask));
-  li(r0, Operand(~kObjectAlignmentMask));
+  lhi(r0, Operand(~kObjectAlignmentMask));
   and_(length, length, r0);
 
   bind(&is_data_object);
@@ -3787,12 +3787,12 @@ void MacroAssembler::ClampUint8(Register output_reg, Register input_reg) {
   b(&done);
 
   bind(&negative_label);
-  li(output_reg, Operand::Zero());  // set to 0 if negative
+  lhi(output_reg, Operand::Zero());  // set to 0 if negative
   b(&done);
 
 
   bind(&overflow_label);  // set to satval if > satval
-  li(output_reg, Operand(satval));
+  lhi(output_reg, Operand(satval));
 
   bind(&done);
 }
@@ -3908,12 +3908,12 @@ void MacroAssembler::CheckEnumCache(Register null_value, Label* call_runtime) {
 
 ////////////////////////////////////////////////////////////////////////////////
 //
-// New MacroAssembler Interfaces added for PPC
+// New MacroAssembler Interfaces added for S390
 //
 ////////////////////////////////////////////////////////////////////////////////
 void MacroAssembler::LoadIntLiteral(Register dst, int value) {
   if (is_int16(value)) {
-    li(dst, Operand(value));
+    lhi(dst, Operand(value));
   } else {
     int hi_word = static_cast<int>(value) >> 16;
     if ((hi_word << 16) == value) {

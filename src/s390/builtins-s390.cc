@@ -146,7 +146,7 @@ static void AllocateEmptyJSArray(MacroAssembler* masm,
   __ LoadRoot(scratch1, Heap::kEmptyFixedArrayRootIndex);
   __ StoreP(scratch1, FieldMemOperand(result, JSArray::kPropertiesOffset), r0);
   // Field JSArray::kElementsOffset is initialized later.
-  __ li(scratch3,  Operand(0, RelocInfo::NONE));
+  __ lhi(scratch3,  Operand(0, RelocInfo::NONE));
   __ StoreP(scratch3, FieldMemOperand(result, JSArray::kLengthOffset), r0);
 
   if (initial_capacity == 0) {
@@ -232,7 +232,7 @@ static void AllocateJSArray(MacroAssembler* masm,
   // requested number of elements.  We omit the TAG_OBJECT flag and defer
   // tagging the pointer until the end so that we can more efficiently perform
   // aligned memory accesses.
-  __ li(elements_array_end,
+  __ lhi(elements_array_end,
          Operand((JSArray::kSize + FixedArray::kHeaderSize) / kPointerSize));
   __ SmiUntag(scratch1, array_size);
   __ add(elements_array_end, elements_array_end, scratch1);
@@ -363,7 +363,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
   __ cmpi(r5, Operand::Zero());
   __ bne(&not_empty_array);
   __ Drop(1);  // Adjust stack.
-  __ li(r3, Operand::Zero());  // Treat this as a call with argc of zero.
+  __ lhi(r3, Operand::Zero());  // Treat this as a call with argc of zero.
   __ b(&empty_array);
 
   __ bind(&not_empty_array);
@@ -1158,7 +1158,7 @@ static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
   // r0,r8-r9, cp may be clobbered
 
   // Clear the context before we push it when entering the internal frame.
-  __ li(cp, Operand(0, RelocInfo::NONE));
+  __ lhi(cp, Operand(0, RelocInfo::NONE));
 
   // Enter an internal frame.
   {
@@ -1403,7 +1403,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
   // r3: actual number of arguments
   // r4: function
   Label shift_arguments;
-  __ li(r7, Operand(0, RelocInfo::NONE));  // indicate regular JS_FUNCTION
+  __ lhi(r7, Operand(0, RelocInfo::NONE));  // indicate regular JS_FUNCTION
   { Label convert_to_object, use_global_receiver, patch_receiver;
     // Change context eagerly in case we need the global receiver.
     __ LoadP(cp, FieldMemOperand(r4, JSFunction::kContextOffset));
@@ -1472,7 +1472,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
     __ ShiftLeftImm(r7, r3, Operand(kPointerSizeLog2));
     __ add(r7, sp, r7);
     __ LoadP(r4, MemOperand(r7));
-    __ li(r7, Operand(0, RelocInfo::NONE));
+    __ lhi(r7, Operand(0, RelocInfo::NONE));
     __ b(&patch_receiver);
 
     // Use the global receiver object from the called function as the
@@ -1495,11 +1495,11 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
 
   // 3b. Check for function proxy.
   __ bind(&slow);
-  __ li(r7, Operand(1, RelocInfo::NONE));  // indicate function proxy
+  __ lhi(r7, Operand(1, RelocInfo::NONE));  // indicate function proxy
   __ cmpi(r5, Operand(JS_FUNCTION_PROXY_TYPE));
   __ beq(&shift_arguments);
   __ bind(&non_function);
-  __ li(r7, Operand(2, RelocInfo::NONE));  // indicate non-function
+  __ lhi(r7, Operand(2, RelocInfo::NONE));  // indicate non-function
 
   // 3c. Patch the first argument when calling a non-function.  The
   //     CALL_NON_FUNCTION builtin expects the non-function callee as
@@ -1545,7 +1545,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
     __ cmpi(r7, Operand::Zero());
     __ beq(&function);
     // Expected number of arguments is 0 for CALL_NON_FUNCTION.
-    __ li(r5, Operand(0, RelocInfo::NONE));
+    __ lhi(r5, Operand(0, RelocInfo::NONE));
     __ SetCallKind(r8, CALL_AS_METHOD);
     __ cmpi(r7, Operand(1));
     __ bne(&non_proxy);
@@ -1628,7 +1628,7 @@ void Builtins::Generate_FunctionApply(MacroAssembler* masm) {
     // Push current limit and index.
     __ bind(&okay);
     __ push(r3);  // limit
-    __ li(r4, Operand(0, RelocInfo::NONE));  // initial index
+    __ lhi(r4, Operand(0, RelocInfo::NONE));  // initial index
     __ push(r4);
 
     // Get the receiver.
@@ -1751,7 +1751,7 @@ void Builtins::Generate_FunctionApply(MacroAssembler* masm) {
     __ bind(&call_proxy);
     __ push(r4);  // add function proxy as last argument
     __ addi(r3, r3, Operand(1));
-    __ li(r5, Operand(0, RelocInfo::NONE));
+    __ lhi(r5, Operand(0, RelocInfo::NONE));
     __ SetCallKind(r8, CALL_AS_METHOD);
     __ GetBuiltinEntry(r6, Builtins::CALL_FUNCTION_PROXY);
     __ Call(masm->isolate()->builtins()->ArgumentsAdaptorTrampoline(),
