@@ -101,7 +101,7 @@ TEST(1) {
 #endif
 
   __ mr(r4, r3);
-  __ li(r3, Operand(0, RelocInfo::NONE));
+  __ lhi(r3, Operand(0, RelocInfo::NONE));
   __ b(&C);
 
   __ bind(&L);
@@ -143,7 +143,7 @@ TEST(2) {
 #endif
 
   __ mr(r4, r3);
-  __ li(r3, Operand(1));
+  __ lhi(r3, Operand(1));
   __ b(&C);
 
   __ bind(&L);

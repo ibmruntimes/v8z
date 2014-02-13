@@ -696,7 +696,7 @@ void FloatingPointHelper::ConvertUnsignedIntToDouble(MacroAssembler* masm,
   __ clrldi(r0, src, Operand(32));
   __ std(r0, MemOperand(sp, 0));
 #else
-  __ li(r0, Operand::Zero());
+  __ lhi(r0, Operand::Zero());
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
   __ stw(r0, MemOperand(sp, 4));
   __ stw(src, MemOperand(sp, 0));
@@ -881,7 +881,7 @@ void FloatingPointHelper::DoubleIs32BitInteger(MacroAssembler* masm,
 
   // Create the mask and test the lower bits (of the higher bits).
   __ subfic(scratch, scratch, Operand(32));
-  __ li(src2, Operand(1));
+  __ lhi(src2, Operand(1));
   __ ShiftLeft(src1, src2, scratch);
   __ addi(src1, src1, Operand(-1));
   __ and_(r0, dst, src1, SetRC);
@@ -967,10 +967,10 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm,
           __ bne(&return_equal);
           if (cond == le) {
             // undefined <= undefined should fail.
-            __ li(r3, Operand(GREATER));
+            __ lhi(r3, Operand(GREATER));
           } else  {
             // undefined >= undefined should fail.
-            __ li(r3, Operand(LESS));
+            __ lhi(r3, Operand(LESS));
           }
           __ Ret();
         }
@@ -980,11 +980,11 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm,
 
   __ bind(&return_equal);
   if (cond == lt) {
-    __ li(r3, Operand(GREATER));  // Things aren't less than themselves.
+    __ lhi(r3, Operand(GREATER));  // Things aren't less than themselves.
   } else if (cond == gt) {
-    __ li(r3, Operand(LESS));     // Things aren't greater than themselves.
+    __ lhi(r3, Operand(LESS));     // Things aren't greater than themselves.
   } else {
-    __ li(r3, Operand(EQUAL));    // Things are <=, >=, ==, === themselves.
+    __ lhi(r3, Operand(EQUAL));    // Things are <=, >=, ==, === themselves.
   }
   __ Ret();
 
@@ -1024,9 +1024,9 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm,
         __ Ret();
         __ bind(&not_equal);
         if (cond == le) {
-          __ li(r3, Operand(GREATER));  // NaN <= NaN should fail.
+          __ lhi(r3, Operand(GREATER));  // NaN <= NaN should fail.
         } else {
-          __ li(r3, Operand(LESS));     // NaN >= NaN should fail.
+          __ lhi(r3, Operand(LESS));     // NaN >= NaN should fail.
         }
       }
       __ Ret();
@@ -1200,7 +1200,7 @@ static void EmitCheckForSymbolsOrObjects(MacroAssembler* masm,
 
   // Both are symbols.  We already checked they weren't the same pointer
   // so they are not equal.
-  __ li(r3, Operand(NOT_EQUAL));
+  __ lhi(r3, Operand(NOT_EQUAL));
   __ Ret();
 
   __ bind(&object_test);
@@ -1383,13 +1383,13 @@ void CompareStub::Generate(MacroAssembler* masm) {
   __ bunordered(&nan);
   __ beq(&equal);
   __ blt(&less_than);
-  __ li(r3, Operand(GREATER));
+  __ lhi(r3, Operand(GREATER));
   __ Ret();
   __ bind(&equal);
-  __ li(r3, Operand(EQUAL));
+  __ lhi(r3, Operand(EQUAL));
   __ Ret();
   __ bind(&less_than);
-  __ li(r3, Operand(LESS));
+  __ lhi(r3, Operand(LESS));
   __ Ret();
 
   __ bind(&nan);
@@ -1397,9 +1397,9 @@ void CompareStub::Generate(MacroAssembler* masm) {
   // whatever it takes to make the comparison fail, since comparisons with NaN
   // always fail.
   if (cc_ == lt || cc_ == le) {
-    __ li(r3, Operand(GREATER));
+    __ lhi(r3, Operand(GREATER));
   } else {
-    __ li(r3, Operand(LESS));
+    __ lhi(r3, Operand(LESS));
   }
   __ Ret();
 
@@ -1524,7 +1524,7 @@ void ToBooleanStub::Generate(MacroAssembler* masm) {
       __ andi(r0, ip, Operand(1 << Map::kIsUndetectable));
       __ beq(&not_undetectable, cr0);
       // Undetectable -> false.
-      __ li(tos_, Operand(0, RelocInfo::NONE));
+      __ lhi(tos_, Operand(0, RelocInfo::NONE));
       __ Ret();
       __ bind(&not_undetectable);
     }
@@ -1557,7 +1557,7 @@ void ToBooleanStub::Generate(MacroAssembler* masm) {
     __ bne(&not_heap_number);
 
     __ lfd(d1, FieldMemOperand(tos_, HeapNumber::kValueOffset));
-    __ li(r0, Operand::Zero());
+    __ lhi(r0, Operand::Zero());
     __ push(r0);
 #if !V8_TARGET_ARCH_S390X
     __ push(r0);
@@ -1573,7 +1573,7 @@ void ToBooleanStub::Generate(MacroAssembler* masm) {
     __ Ret();
 
     __ bind(&nan_or_zero);
-    __ li(tos_, Operand::Zero());
+    __ lhi(tos_, Operand::Zero());
     __ Ret();
 
     __ bind(&not_heap_number);
@@ -1597,7 +1597,7 @@ void ToBooleanStub::CheckOddball(MacroAssembler* masm,
     // The value of a root is never NULL, so we can avoid loading a non-null
     // value into tos_ when we want to return 'true'.
     if (!result) {
-      __ li(tos_, Operand(0, RelocInfo::NONE));
+      __ lhi(tos_, Operand(0, RelocInfo::NONE));
     }
     // Intel has some logic here not present on ARM
     // unclear if it's needed or not
@@ -3388,7 +3388,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
     __ mr(exponent, scratch);
   }
   __ fmr(double_scratch, double_base);  // Back up base.
-  __ li(scratch2, Operand(1));
+  __ lhi(scratch2, Operand(1));
   FloatingPointHelper::ConvertIntToDouble(masm, scratch2, double_result);
 
   // Get absolute value of exponent.
@@ -3413,7 +3413,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
   __ cmpi(exponent, Operand::Zero());
   __ bge(&done);
 
-  __ li(scratch2, Operand(1));
+  __ lhi(scratch2, Operand(1));
   FloatingPointHelper::ConvertIntToDouble(masm, scratch2, double_scratch);
   __ fdiv(double_result, double_scratch, double_result);
   // Test whether result is zero.  Bail out to check for subnormal result.
@@ -3781,7 +3781,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   Isolate* isolate = masm->isolate();
   ExternalReference external_caught(Isolate::kExternalCaughtExceptionAddress,
                                     isolate);
-  __ li(r3, Operand(false, RelocInfo::NONE));
+  __ lhi(r3, Operand(false, RelocInfo::NONE));
   __ mov(r5, Operand(external_caught));
   __ StoreP(r3, MemOperand(r5));
 
@@ -3836,7 +3836,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   // r6: argc
   // r7: argv
   Isolate* isolate = masm->isolate();
-  __ li(r0, Operand(-1));  // Push a bad frame pointer to fail if it is used.
+  __ lhi(r0, Operand(-1));  // Push a bad frame pointer to fail if it is used.
   __ push(r0);
   int marker = is_construct ? StackFrame::ENTRY_CONSTRUCT : StackFrame::ENTRY;
   __ LoadSmiLiteral(r0, Smi::FromInt(marker));
@@ -4294,7 +4294,7 @@ void ArgumentsAccessStub::GenerateNewNonStrictFast(MacroAssembler* masm) {
   Label skip2, skip3;
   __ CmpSmiLiteral(r4, Smi::FromInt(0), r0);
   __ bne(&skip2);
-  __ li(r22, Operand::Zero());
+  __ lhi(r22, Operand::Zero());
   __ b(&skip3);
   __ bind(&skip2);
   __ SmiToPtrArrayOffset(r22, r4);
@@ -4702,7 +4702,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ bgt(&runtime);
 
   // Reset offset for possibly sliced string.
-  __ li(r11, Operand::Zero());
+  __ lhi(r11, Operand::Zero());
   // subject: Subject string
   // regexp_data: RegExp data (FixedArray)
   // Check the representation and encoding of the subject string.
@@ -4820,7 +4820,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // the return address added by the ExitFrame in native calls.
 
   // Argument 8 (r10): Indicate that this is a direct call from JavaScript.
-  __ li(r10, Operand(1));
+  __ lhi(r10, Operand(1));
 
   // Argument 7 (r9): Start (high end) of backtracking stack memory area.
   __ mov(r3, Operand(address_of_regexp_stack_memory_address));
@@ -4832,7 +4832,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // Argument 6 (r8): Set the number of capture registers to zero to force
   // global egexps to behave as non-global.  This does not affect non-global
   // regexps.
-  __ li(r8, Operand::Zero());
+  __ lhi(r8, Operand::Zero());
 
   // Argument 5 (r7): static offsets vector buffer.
   __ mov(r7,
@@ -5234,8 +5234,8 @@ void CallFunctionStub::Generate(MacroAssembler* masm) {
   __ cmpi(r6, Operand(JS_FUNCTION_PROXY_TYPE));
   __ bne(&non_function);
   __ push(r4);  // put proxy as additional argument
-  __ li(r3, Operand(argc_ + 1));
-  __ li(r5, Operand::Zero());
+  __ lhi(r3, Operand(argc_ + 1));
+  __ lhi(r5, Operand::Zero());
   __ GetBuiltinEntry(r6, Builtins::CALL_FUNCTION_PROXY);
   __ SetCallKind(r8, CALL_AS_METHOD);
   {
@@ -5248,8 +5248,8 @@ void CallFunctionStub::Generate(MacroAssembler* masm) {
   // of the original receiver from the call site).
   __ bind(&non_function);
   __ StoreP(r4, MemOperand(sp, argc_ * kPointerSize), r0);
-  __ li(r3, Operand(argc_));  // Set up the number of arguments.
-  __ li(r5, Operand::Zero());
+  __ lhi(r3, Operand(argc_));  // Set up the number of arguments.
+  __ lhi(r5, Operand::Zero());
   __ GetBuiltinEntry(r6, Builtins::CALL_NON_FUNCTION);
   __ SetCallKind(r8, CALL_AS_METHOD);
   __ Jump(masm->isolate()->builtins()->ArgumentsAdaptorTrampoline(),
@@ -5294,7 +5294,7 @@ void CallConstructStub::Generate(MacroAssembler* masm) {
   __ GetBuiltinEntry(r6, Builtins::CALL_NON_FUNCTION_AS_CONSTRUCTOR);
   __ bind(&do_call);
   // Set expected number of arguments to zero (not changing r3).
-  __ li(r5, Operand::Zero());
+  __ lhi(r5, Operand::Zero());
   __ SetCallKind(r8, CALL_AS_METHOD);
   __ Jump(masm->isolate()->builtins()->ArgumentsAdaptorTrampoline(),
           RelocInfo::CODE_TARGET);
@@ -5772,7 +5772,7 @@ void StringHelper::GenerateHashGetHash(MacroAssembler* masm,
   // if (hash == 0) hash = 27;
   Label done;
   __ bne(&done, cr0);
-  __ li(hash, Operand(StringHasher::kZeroHash));
+  __ lhi(hash, Operand(StringHasher::kZeroHash));
   __ bind(&done);
 }
 
@@ -6258,7 +6258,7 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   // are combined into single halfword in r5 register.
   // So we can fill resulting string without two loops by a single
   // halfword store instruction
-  __ li(r9, Operand(2));
+  __ lhi(r9, Operand(2));
   __ AllocateAsciiString(r3, r9, r7, r8, r22, &call_runtime);
   __ sth(r5, FieldMemOperand(r3, SeqAsciiString::kHeaderSize));
   __ IncrementCounter(counters->string_add_native(), 1, r5, r6);
@@ -6534,13 +6534,13 @@ void ICCompareStub::GenerateHeapNumbers(MacroAssembler* masm) {
   __ beq(&equal);
   __ blt(&less_than);
   //  assume greater than
-  __ li(r3, Operand(GREATER));
+  __ lhi(r3, Operand(GREATER));
   __ Ret();
   __ bind(&equal);
-  __ li(r3, Operand(EQUAL));
+  __ lhi(r3, Operand(EQUAL));
   __ Ret();
   __ bind(&less_than);
-  __ li(r3, Operand(LESS));
+  __ lhi(r3, Operand(LESS));
   __ Ret();
 
   __ bind(&unordered);
@@ -7058,16 +7058,16 @@ void StringDictionaryLookupStub::Generate(MacroAssembler* masm) {
   // treated as a lookup success. For positive lookup probing failure
   // should be treated as lookup failure.
   if (mode_ == POSITIVE_LOOKUP) {
-    __ li(result, Operand::Zero());
+    __ lhi(result, Operand::Zero());
     __ Ret();
   }
 
   __ bind(&in_dictionary);
-  __ li(result, Operand(1));
+  __ lhi(result, Operand(1));
   __ Ret();
 
   __ bind(&not_in_dictionary);
-  __ li(result, Operand::Zero());
+  __ lhi(result, Operand::Zero());
   __ Ret();
 }
 
