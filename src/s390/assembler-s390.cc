@@ -192,7 +192,7 @@ void RelocInfo::PatchCodeWithCall(Address target, int guard_bytes) {
 
 // -----------------------------------------------------------------------------
 // Implementation of Operand and MemOperand
-// See assembler-ppc-inl.h for inlined constructors
+// See assembler-s390-inl.h for inlined constructors
 
 Operand::Operand(Handle<Object> handle) {
   rm_ = no_reg;
@@ -215,10 +215,10 @@ MemOperand::MemOperand(Register rn, int32_t offset) {
   offset_ = offset;
 }
 
-MemOperand::MemOperand(Register ra, Register rb) {
+MemOperand::MemOperand(Register ra, Register rb, int32_t offset) {
   ra_ = ra;
   rb_ = rb;
-  offset_ = 0;
+  offset_ = offset;
 }
 
 // -----------------------------------------------------------------------------
