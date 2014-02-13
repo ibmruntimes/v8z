@@ -69,7 +69,7 @@ TEST(0) {
   // __ add(r3, r3, r4);
   __ ar(gpr1, gpr2);
   // __ blr();
-  __ bcr(S390Mask::from_value(0xF), gpr14);
+  __ bcr(Mask::from_value(0xF), gpr14);
 
   CodeDesc desc;
   assm.GetCode(&desc);
