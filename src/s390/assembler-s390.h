@@ -93,52 +93,40 @@ namespace internal {
 
 // Core register
 struct Register {
-  static const int kNumRegisters = 32;
-  static const int kNumAllocatableRegisters = 8;  // r3-r10
-  static const int kSizeInBytes = 4;
+  static const int kNumRegisters = 32;  // TODO(Alan): for now
+  static const int kNumAllocatableRegisters = 12;  // TODO(Alan): check
+  static const int kSizeInBytes = 4;  // TODO(Alan): check
 
   static int ToAllocationIndex(Register reg) {
-    int index = reg.code() - 3;  // r0-r2 are skipped
+    int index = reg.code();
     ASSERT(index < kNumAllocatableRegisters);
     return index;
   }
 
   static Register FromAllocationIndex(int index) {
     ASSERT(index >= 0 && index < kNumAllocatableRegisters);
-    return from_code(index + 3);  // r0-r2 are skipped
+    return from_code(index);  // r0-r2 are skipped
   }
 
   static const char* AllocationIndexToString(int index) {
     ASSERT(index >= 0 && index < kNumAllocatableRegisters);
     const char* const names[] = {
-      "r3",
-      "r4",
-      "r5",
-      "r6",
-      "r7",
-      "r8",
-      "r9",
-      "r10",  // currently last allocated register
-      "r11",  // lithium scratch
-      "r12",  // ip
-      "r13",
-      "r14",
-      "r15",
-      "r16",
-      "r17",
-      "r18",
-      "r19",
-      "r20",
-      "r21",
-      "r22",
-      "r23",
-      "r24",
-      "r25",
-      "r26",
-      "r27",
-      "r28",
-      "r29",
-      "r30",
+        "gpr0",
+        "gpr1",
+        "gpr2",
+        "gpr3",
+        "gpr4",
+        "gpr5",
+        "gpr6",
+        "gpr7",
+        "gpr8",
+        "gpr9",
+        "gpr10",
+        "gpr11",
+        "gpr12",
+        "gpr13",
+        "gpr14",
+        "gpr15"
     };
     return names[index];
   }
@@ -149,11 +137,13 @@ struct Register {
   }
 
   bool is_valid() const { return 0 <= code_ && code_ < kNumRegisters; }
+
   bool is(Register reg) const { return code_ == reg.code_; }
   int code() const {
     ASSERT(is_valid());
     return code_;
   }
+
   int bit() const {
     ASSERT(is_valid());
     return 1 << code_;
@@ -168,6 +158,46 @@ struct Register {
   int code_;
 };
 
+typedef struct Register Register;
+
+const int kRegister_no_s390reg_Code = -1;
+const int kRegister_gpr0_Code = 0;
+const int kRegister_gpr1_Code = 1;
+const int kRegister_gpr2_Code = 2;
+const int kRegister_gpr3_Code = 3;
+const int kRegister_gpr4_Code = 4;
+const int kRegister_gpr5_Code = 5;
+const int kRegister_gpr6_Code = 6;
+const int kRegister_gpr7_Code = 7;
+const int kRegister_gpr8_Code = 8;
+const int kRegister_gpr9_Code = 9;
+const int kRegister_gpr10_Code = 10;
+const int kRegister_gpr11_Code = 11;
+const int kRegister_gpr12_Code = 12;
+const int kRegister_gpr13_Code = 13;
+const int kRegister_gpr14_Code = 14;
+const int kRegister_gpr15_Code = 15;
+
+
+const Register gpr0 =  { kRegister_gpr0_Code };
+const Register gpr1 =  { kRegister_gpr1_Code };
+const Register gpr2 =  { kRegister_gpr2_Code };
+const Register gpr3 =  { kRegister_gpr3_Code };
+const Register gpr4 =  { kRegister_gpr4_Code };
+const Register gpr5 =  { kRegister_gpr5_Code };
+const Register gpr6 =  { kRegister_gpr6_Code };
+const Register gpr7 =  { kRegister_gpr7_Code };
+const Register gpr8 =  { kRegister_gpr8_Code };
+const Register gpr9 =  { kRegister_gpr9_Code };
+const Register gpr10 = { kRegister_gpr10_Code };
+const Register gpr11 = { kRegister_gpr11_Code };
+const Register gpr12 = { kRegister_gpr12_Code };
+const Register gpr13 = { kRegister_gpr13_Code };
+const Register gpr14 = { kRegister_gpr14_Code };
+const Register gpr15 = { kRegister_gpr15_Code };
+
+
+// PPC specific
 // These constants are used in several locations, including static initializers
 const int kRegister_no_reg_Code = -1;
 const int kRegister_r0_Code = 0;
@@ -242,105 +272,6 @@ const Register r28  = { kRegister_r28_Code };
 const Register r29  = { kRegister_r29_Code };
 const Register r30  = { kRegister_r30_Code };
 const Register fp = { kRegister_fp_Code };
-
-
-struct S390Register {
-  static const int kNumRegisters = 16;
-  static const int kNumAllocatableRegisters = 16;  // TODO(Alan): check
-  static const int kSizeInBytes = 4;  // TODO(Alan): check
-
-  static int ToAllocationIndex(Register reg) {
-    int index = reg.code();
-    ASSERT(index < kNumAllocatableRegisters);
-    return index;
-  }
-
-  static S390Register FromAllocationIndex(int index) {
-    ASSERT(index >= 0 && index < kNumAllocatableRegisters);
-    return from_code(index);  // r0-r2 are skipped
-  }
-
-  static const char* AllocationIndexToString(int index) {
-    ASSERT(index >= 0 && index < kNumAllocatableRegisters);
-    const char* const names[] = {
-        "gpr0",
-        "gpr1",
-        "gpr2",
-        "gpr3",
-        "gpr4",
-        "gpr5",
-        "gpr6",
-        "gpr7",
-        "gpr8",
-        "gpr9",
-        "gpr10",
-        "gpr11",
-        "gpr12",
-        "gpr13",
-        "gpr14",
-        "gpr15"
-    };
-    return names[index];
-  }
-
-  static S390Register from_code(int code) {
-    S390Register r = { code };
-    return r;
-  }
-
-  bool is_valid() const { return 0 <= code_ && code_ < kNumRegisters; }
-  bool is(S390Register reg) const { return code_ == reg.code_; }
-  int code() const {
-    ASSERT(is_valid());
-    return code_;
-  }
-
-  void set_code(int code) {
-    code_ = code;
-    ASSERT(is_valid());
-  }
-
-  // Unfortunately we can't make this private in a struct.
-  int code_;
-};
-
-const int kRegister_no_s390reg_Code = -1;
-const int kRegister_gpr0_Code = 0;
-const int kRegister_gpr1_Code = 1;
-const int kRegister_gpr2_Code = 2;
-const int kRegister_gpr3_Code = 3;
-const int kRegister_gpr4_Code = 4;
-const int kRegister_gpr5_Code = 5;
-const int kRegister_gpr6_Code = 6;
-const int kRegister_gpr7_Code = 7;
-const int kRegister_gpr8_Code = 8;
-const int kRegister_gpr9_Code = 9;
-const int kRegister_gpr10_Code = 10;
-const int kRegister_gpr11_Code = 11;
-const int kRegister_gpr12_Code = 12;
-const int kRegister_gpr13_Code = 13;
-const int kRegister_gpr14_Code = 14;
-const int kRegister_gpr15_Code = 15;
-
-
-const S390Register gpr0 =  { kRegister_gpr0_Code };
-const S390Register gpr1 =  { kRegister_gpr1_Code };
-const S390Register gpr2 =  { kRegister_gpr2_Code };
-const S390Register gpr3 =  { kRegister_gpr3_Code };
-const S390Register gpr4 =  { kRegister_gpr4_Code };
-const S390Register gpr5 =  { kRegister_gpr5_Code };
-const S390Register gpr6 =  { kRegister_gpr6_Code };
-const S390Register gpr7 =  { kRegister_gpr7_Code };
-const S390Register gpr8 =  { kRegister_gpr8_Code };
-const S390Register gpr9 =  { kRegister_gpr9_Code };
-const S390Register gpr10 = { kRegister_gpr10_Code };
-const S390Register gpr11 = { kRegister_gpr11_Code };
-const S390Register gpr12 = { kRegister_gpr12_Code };
-const S390Register gpr13 = { kRegister_gpr13_Code };
-const S390Register gpr14 = { kRegister_gpr14_Code };
-const S390Register gpr15 = { kRegister_gpr15_Code };
-
-
 
 
 // Double word FP register.
@@ -489,6 +420,29 @@ const CRegister cr15 = { 15 };
 // Machine instruction Operands
 
 // Class Operand represents a shifter operand in data processing instructions
+// defining immediate numbers and masks
+typedef int16_t Immediate16;
+typedef int8_t  Immediate8;
+typedef int32_t Immediate32;
+typedef uint8_t Length;
+
+struct Mask {
+  uint8_t mask;
+  uint8_t value() {return mask;}
+  static Mask from_value(uint8_t input) {
+    ASSERT(input < 0x0F);
+    Mask m = {input};
+    return m;
+  }
+};
+
+struct Displacement {
+  int16_t lowValue() {return disp & 0x0FFF;}
+  int8_t  highValue() {return disp >> 12;}
+  int32_t value() {return disp;}
+  int32_t disp;
+};
+
 class Operand BASE_EMBEDDED {
  public:
   // immediate
@@ -500,6 +454,14 @@ class Operand BASE_EMBEDDED {
   INLINE(explicit Operand(const ExternalReference& f));
   explicit Operand(Handle<Object> handle);
   INLINE(explicit Operand(Smi* value));
+
+  // S390
+  INLINE(explicit Operand(Register r, Register x, Displacement d));
+  INLINE(explicit Operand(Register r, Displacement d, Length l));
+
+  Register getBaseRegister() {return r_;}
+  Register getIndexRegister() {return x_;}
+  Displacement getDisplacement() {return d_;}
 
   // rm
   INLINE(explicit Operand(Register rm));
@@ -513,57 +475,16 @@ class Operand BASE_EMBEDDED {
   }
 
   Register rm() const { return rm_; }
+  uint8_t getLength() {return l_;}
 
  private:
+  Register r_;
+  Register x_;
+  Displacement d_;
+  Length l_;
   Register rm_;
   intptr_t imm_;  // valid if rm_ == no_reg
   RelocInfo::Mode rmode_;
-
-  friend class Assembler;
-  friend class MacroAssembler;
-};
-// defining immediate numbers and masks
-typedef int16_t S390Immediate16;
-typedef int8_t  S390Immediate8;
-typedef int32_t S390Immediate32;
-typedef uint8_t S390Length;
-
-struct S390Mask {
-  uint8_t mask;
-  uint8_t value() {return mask;}
-  static S390Mask from_value(uint8_t input) {
-    ASSERT(input < 0x0F);
-    S390Mask m = {input};
-    return m;
-  }
-};
-
-struct S390Displacement {
-  int16_t lowValue() {return disp & 0x0FFF;}
-  int8_t  highValue() {return disp >> 12;}
-  int32_t value() {return disp;}
-  int32_t disp;
-};
-
-// represents a memory operand
-class S390Operand BASE_EMBEDDED {
-  public:
-      // register
-      INLINE(explicit S390Operand(S390Register r, S390Register x,
-                              S390Displacement d));
-      INLINE(explicit S390Operand(S390Register r, S390Displacement d,
-                              S390Length l));
-
-      S390Register getBaseRegister() {return r_;}
-      S390Register getIndexRegister() {return x_;}
-      S390Displacement getDisplacement() {return d_;}
-      uint8_t getLength() {return l_;}
-
-  private:
-      S390Register r_;
-      S390Register x_;
-      S390Displacement d_;
-      S390Length l_;
 
   friend class Assembler;
   friend class MacroAssembler;
@@ -980,163 +901,163 @@ class Assembler : public AssemblerBase {
 void name()
 
 #define IE_FORM(name)\
-void name(S390Immediate8 i1, S390Immediate8 i2)
+void name(Immediate8 i1, Immediate8 i2)
 
 #define I_FORM(name)\
-void name(S390Immediate8 i)
+void name(Immediate8 i)
 
 #define RR_FORM(name)\
-void name(S390Register r1, S390Register r2)
+void name(Register r1, Register r2)
 
 #define RR2_FORM(name)\
-void name(S390Mask m1, S390Register r2)
+void name(Mask m1, Register r2)
 
 #define RX_FORM(name)\
-void name(S390Register r1, S390Register x2, S390Register b2, \
-                 S390Displacement d2);\
-void name(S390Register r1, S390Operand opnd)
+void name(Register r1, Register x2, Register b2, \
+                 Displacement d2);\
+void name(Register r1, Operand opnd)
 
 #define RI1_FORM(name)\
-void name(S390Register r,  S390Immediate16 i)
+void name(Register r,  Immediate16 i)
 
 #define RI2_FORM(name)\
-void name(S390Mask m, S390Immediate16 i)
+void name(Mask m, Immediate16 i)
 
 #define RIE_FORM(name)\
-void name(S390Register r1, S390Register R3, S390Immediate16 i)
+void name(Register r1, Register R3, Immediate16 i)
 
 #define RIL1_FORM(name)\
-void name(S390Register r1, S390Immediate32 i2)
+void name(Register r1, Immediate32 i2)
 
 #define RIL2_FORM(name)\
-void name(S390Mask m1, S390Immediate32 i2)
+void name(Mask m1, Immediate32 i2)
 
 #define RXE_FORM(name)\
-void name(S390Register r1, S390Operand opnd);\
-void name(S390Register r1, S390Register b2, S390Register x2, \
-          S390Displacement d2)
+void name(Register r1, Operand opnd);\
+void name(Register r1, Register b2, Register x2, \
+          Displacement d2)
 
 #define RXF_FORM(name)\
-void name(S390Register r1, S390Register r3, S390Operand opnd);\
-void name(S390Register r1, S390Register r3, S390Register b2, \
-                 S390Register x2, S390Displacement d2)
+void name(Register r1, Register r3, Operand opnd);\
+void name(Register r1, Register r3, Register b2, \
+                 Register x2, Displacement d2)
 
 #define RXY_FORM(name)\
-void name(S390Register r1, S390Register x2, S390Register b2, \
-                 S390Displacement d2);\
-void name(S390Register r1, S390Operand opnd)
+void name(Register r1, Register x2, Register b2, \
+                 Displacement d2);\
+void name(Register r1, Operand opnd)
 
 #define RSI_FORM(name)\
-void name(S390Register r1, S390Register r3, S390Immediate16 i)
+void name(Register r1, Register r3, Immediate16 i)
 
 #define RIS_FORM(name)\
-void name(S390Register r1, S390Mask m3, S390Register b4, \
-          S390Displacement d4, S390Immediate8 i2);\
-void name(S390Register r1, S390Immediate8 i2, S390Mask m3, \
-          S390Operand opnd)
+void name(Register r1, Mask m3, Register b4, \
+          Displacement d4, Immediate8 i2);\
+void name(Register r1, Immediate8 i2, Mask m3, \
+          Operand opnd)
 
 #define SI_FORM(name)\
-void name(S390Operand opnd, S390Immediate8 i);\
-void name(S390Immediate8 i2, S390Register b1, S390Displacement d1)
+void name(Operand opnd, Immediate8 i);\
+void name(Immediate8 i2, Register b1, Displacement d1)
 
 #define SIL_FORM(name)\
-void name(S390Register b1, S390Displacement d1, S390Immediate16 i2);\
-void name(S390Operand opnd, S390Immediate16 i2)
+void name(Register b1, Displacement d1, Immediate16 i2);\
+void name(Operand opnd, Immediate16 i2)
 
 #define RRE_FORM(name)\
-void name(S390Register r1, S390Register r2)
+void name(Register r1, Register r2)
 
 #define RRF1_FORM(name)\
-void name(S390Register r1, S390Register r2, S390Register r3)
+void name(Register r1, Register r2, Register r3)
 
 #define RRF2_FORM(name)\
-void name(S390Mask m1, S390Register r1, S390Register r2)
+void name(Mask m1, Register r1, Register r2)
 
 #define RRF3_FORM(name)\
-void name(S390Register r3, S390Mask m4, S390Register r1, S390Register r2)
+void name(Register r3, Mask m4, Register r1, Register r2)
 
 #define RS1_FORM(name)\
-void name(S390Register r1, S390Register r3, S390Operand opnd);\
-void name(S390Register r1, S390Register r3, S390Register b2, \
-                 S390Displacement d2)
+void name(Register r1, Register r3, Operand opnd);\
+void name(Register r1, Register r3, Register b2, \
+                 Displacement d2)
 
 #define RS2_FORM(name)\
-void name(S390Register r1, S390Mask m3, S390Operand opnd);\
-void name(S390Register r1, S390Mask m3, S390Register b2, \
-                 S390Displacement d2)
+void name(Register r1, Mask m3, Operand opnd);\
+void name(Register r1, Mask m3, Register b2, \
+                 Displacement d2)
 
 #define RSE_FORM(name)\
-void name(S390Register r1, S390Register r3, S390Operand opnd);\
-void name(S390Register r1, S390Register r3, S390Register b2, \
-                 S390Displacement d2)
+void name(Register r1, Register r3, Operand opnd);\
+void name(Register r1, Register r3, Register b2, \
+                 Displacement d2)
 
 #define RSL_FORM(name)\
-void name(S390Length l, S390Register b2, S390Displacement d2);\
-void name(S390Operand opnd)
+void name(Length l, Register b2, Displacement d2);\
+void name(Operand opnd)
 
 #define RSY1_FORM(name)\
-void name(S390Register r1, S390Register r3, S390Register b2, \
-          S390Displacement d2);\
-void name(S390Register r1, S390Register r3, S390Operand opnd)
+void name(Register r1, Register r3, Register b2, \
+          Displacement d2);\
+void name(Register r1, Register r3, Operand opnd)
 
 #define RSY2_FORM(name)\
-void name(S390Register r1, S390Mask m3, S390Register b2, \
-          S390Displacement d2);\
-void name(S390Register r1, S390Mask m3, S390Operand opnd)
+void name(Register r1, Mask m3, Register b2, \
+          Displacement d2);\
+void name(Register r1, Mask m3, Operand opnd)
 
 #define RRD_FORM(name)\
-void name(S390Register r1, S390Register r3, S390Register r2)
+void name(Register r1, Register r3, Register r2)
 
 #define RRS_FORM(name)\
-void name(S390Register r1, S390Register r2, S390Register b4, \
-          S390Displacement d4, S390Mask m3);\
-void name(S390Register r1, S390Register r2, S390Mask m3, \
-          S390Operand opnd)
+void name(Register r1, Register r2, Register b4, \
+          Displacement d4, Mask m3);\
+void name(Register r1, Register r2, Mask m3, \
+          Operand opnd)
 
 #define S_FORM(name)\
-void name(S390Register b2, S390Displacement d2);\
-void name(S390Operand opnd)
+void name(Register b2, Displacement d2);\
+void name(Operand opnd)
 
 #define SIY_FORM(name)\
-void name(S390Immediate8 i2, S390Register b1, S390Displacement d1);\
-void name(S390Operand opnd, S390Immediate8 i)
+void name(Immediate8 i2, Register b1, Displacement d1);\
+void name(Operand opnd, Immediate8 i)
 
 #define SS1_FORM(name)\
-void name(S390Length r1, S390Register b1, S390Displacement d1, \
-          S390Register b3, S390Displacement d2);\
-void name(S390Operand opnd1, S390Operand opnd2)
+void name(Length r1, Register b1, Displacement d1, \
+          Register b3, Displacement d2);\
+void name(Operand opnd1, Operand opnd2)
 
 #define SS2_FORM(name)\
-void name(S390Operand opnd1, S390Operand opnd2);\
-void name(S390Length l1, S390Length l2, S390Register b1, \
-          S390Displacement d1, S390Register b2, S390Displacement d2)
+void name(Operand opnd1, Operand opnd2);\
+void name(Length l1, Length l2, Register b1, \
+          Displacement d1, Register b2, Displacement d2)
 
 #define SS3_FORM(name)\
-void name(S390Operand opnd1, S390Operand opnd2);\
-void name(S390Length l1, S390Immediate8 i3, S390Register b1, \
-          S390Displacement d1, S390Register b2, S390Displacement d2)
+void name(Operand opnd1, Operand opnd2);\
+void name(Length l1, Immediate8 i3, Register b1, \
+          Displacement d1, Register b2, Displacement d2)
 
 #define SS4_FORM(name)\
-void name(S390Operand opnd1, S390Operand opnd2);\
-void name(S390Register r1, S390Register r3, S390Register b1, \
-          S390Displacement d1, S390Register b2, S390Displacement d2)
+void name(Operand opnd1, Operand opnd2);\
+void name(Register r1, Register r3, Register b1, \
+          Displacement d1, Register b2, Displacement d2)
 
 #define SS5_FORM(name)\
-void name(S390Operand opnd1, S390Operand opnd2);\
-void name(S390Register r1, S390Register r3, S390Register b3, \
-          S390Displacement d2, S390Register b4, S390Displacement d4)
+void name(Operand opnd1, Operand opnd2);\
+void name(Register r1, Register r3, Register b3, \
+          Displacement d2, Register b4, Displacement d4)
 
 #define SSE_FORM(name)\
-void name(S390Register b1, S390Displacement d1, \
-          S390Register b2, S390Displacement d2);\
-void name(S390Register b1, S390Displacement d1, \
-          S390Register b2, S390Displacement d2, \
-          S390Register r3)
+void name(Register b1, Displacement d1, \
+          Register b2, Displacement d2);\
+void name(Register b1, Displacement d1, \
+          Register b2, Displacement d2, \
+          Register r3)
 
 #define SSF_FORM(name)\
-void name(S390Register r3, S390Register b1, S390Displacement d1, \
-          S390Register b2, S390Displacement d2);\
-void name(S390Register r3, S390Operand opnd1, S390Operand opnd2)
+void name(Register r3, Register b1, Displacement d1, \
+          Register b2, Displacement d2);\
+void name(Register r3, Operand opnd1, Operand opnd2)
 
 // S390 instruction sets
 RX_FORM(a);

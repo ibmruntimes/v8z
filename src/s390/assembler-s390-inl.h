@@ -312,12 +312,12 @@ void RelocInfo::Visit(Heap* heap) {
   }
 }
 
-// S390Operand constructors
-S390Operand::S390Operand(S390Register r, S390Register x,
-                         S390Displacement d) : r_(r), x_(x), d_(d) { }
+// Operand constructors
+Operand::Operand(Register r, Register x,
+                         Displacement d) : r_(r), x_(x), d_(d) { }
 
-S390Operand::S390Operand(S390Register r, S390Displacement d,
-                         S390Length l) : r_(r), d_(d), l_(l) { }
+Operand::Operand(Register r, Displacement d,
+                         Length l) : r_(r), d_(d), l_(l) { }
 
 Operand::Operand(intptr_t immediate, RelocInfo::Mode rmode)  {
   rm_ = no_reg;
