@@ -570,34 +570,36 @@ class S390Operand BASE_EMBEDDED {
 };
 
 // Class MemOperand represents a memory operand in load and store instructions
-// On PowerPC we have base register + 16bit signed value
-// Alternatively we can have a 16bit signed value immediate
+// On S390, we have various flavours of memory operands:
+//   1) a base register + 16 bit unsigned displacement
+//   2) a base register + index register + 16 bit unsigned displacement
+//   3) a base register + index register + 20 bit signed displacement
 class MemOperand BASE_EMBEDDED {
  public:
-  explicit MemOperand(Register rn, int32_t offset = 0);
-
-  explicit MemOperand(Register ra, Register rb);
+  explicit MemOperand(Register rb, int32_t offset = 0);
+  explicit MemOperand(Register rb, Register ri, int32_t offset = 0);
 
   uint32_t offset() const {
     ASSERT(rb_.is(no_reg));
     return offset_;
   }
 
-  // PowerPC - base register
+  // Base register
   Register ra() const {
     ASSERT(!ra_.is(no_reg));
     return ra_;
   }
 
+  // Index Register
   Register rb() const {
-    ASSERT(offset_ == 0 && !rb_.is(no_reg));
+    ASSERT(!rb_.is(no_reg));
     return rb_;
   }
 
  private:
-  Register ra_;  // base
+  Register ra_;     // base
   int32_t offset_;  // offset
-  Register rb_;  // index
+  Register rb_;     // index
 
   friend class Assembler;
 };
@@ -2036,7 +2038,7 @@ SS2_FORM(zap);
   void xor_(Register dst, Register src1, Register src2, RCBit rc = LeaveRC);
   void cmpi(Register src1, const Operand& src2, CRegister cr = cr7);
   void cmpli(Register src1, const Operand& src2, CRegister cr = cr7);
-  void li(Register dst, const Operand& src);
+  void lhi(Register dst, const Operand& src);
   void lis(Register dst, const Operand& imm);
   void mr(Register dst, Register src);
 

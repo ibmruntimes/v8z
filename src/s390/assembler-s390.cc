@@ -192,7 +192,7 @@ void RelocInfo::PatchCodeWithCall(Address target, int guard_bytes) {
 
 // -----------------------------------------------------------------------------
 // Implementation of Operand and MemOperand
-// See assembler-ppc-inl.h for inlined constructors
+// See assembler-s390-inl.h for inlined constructors
 
 Operand::Operand(Handle<Object> handle) {
   rm_ = no_reg;
@@ -215,10 +215,10 @@ MemOperand::MemOperand(Register rn, int32_t offset) {
   offset_ = offset;
 }
 
-MemOperand::MemOperand(Register ra, Register rb) {
+MemOperand::MemOperand(Register ra, Register rb, int32_t offset) {
   ra_ = ra;
   rb_ = rb;
-  offset_ = 0;
+  offset_ = offset;
 }
 
 // -----------------------------------------------------------------------------
@@ -949,8 +949,9 @@ void Assembler::cmpl(Register src1, Register src2, CRegister cr) {
        src2.code()*B11);
 }
 
-// Pseudo op - load immediate
-void Assembler::li(Register dst, const Operand &imm) {
+// Pseudo op - load halfword immediate (16-bits signed immediate)
+void Assembler::lhi(Register dst, const Operand &imm) {
+  // ri_form(LHI, dst, imm.imm_, true);
   d_form(ADDI, dst, r0, imm.imm_, true);
 }
 
@@ -1318,7 +1319,7 @@ void Assembler::mov(Register dst, const Operand& src) {
   int value = src.immediate();
   if (!is_trampoline_pool_blocked()) {
     if (is_int16(value)) {
-      li(dst, Operand(value));
+      lhi(dst, Operand(value));
       return;
     }
   }
