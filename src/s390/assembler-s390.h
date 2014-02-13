@@ -977,24 +977,31 @@ class Assembler : public AssemblerBase {
 #define E_FORM(name)\
 void name()
 
+#define IE_FORM(name)\
+void name(S390Immediate8 i1, S390Immediate8 i2)
+
 #define I_FORM(name)\
 void name(S390Immediate8 i)
 
 #define RR_FORM(name)\
-void name(S390Register r1, S390Register r2);\
-void name(S390Mask r1, S390Register r2)
+void name(S390Register r1, S390Register r2)
+
+#define RR2_FORM(name)\
+void name(S390Mask m1, S390Register r2)
 
 #define RX_FORM(name)\
-void name(S390Register r1, S390Operand opnd);\
-void name(S390Register r1, S390Register b2, S390Register x2, \
-                 S390Displacement d2)
+void name(S390Register r1, S390Register x2, S390Register b2, \
+                 S390Displacement d2);\
+void name(S390Register r1, S390Operand opnd)
 
-#define RI_FORM(name)\
-void name(S390Register r,  S390Immediate16 i);\
+#define RI1_FORM(name)\
+void name(S390Register r,  S390Immediate16 i)
+
+#define RI2_FORM(name)\
 void name(S390Mask m, S390Immediate16 i)
 
 #define RIE_FORM(name)\
-void name(S390Register r1, S390Register R3, S390Immediate32 i)
+void name(S390Register r1, S390Register R3, S390Immediate16 i)
 
 #define RIL1_FORM(name)\
 void name(S390Register r1, S390Immediate32 i2)
@@ -1005,7 +1012,7 @@ void name(S390Mask m1, S390Immediate32 i2)
 #define RXE_FORM(name)\
 void name(S390Register r1, S390Operand opnd);\
 void name(S390Register r1, S390Register b2, S390Register x2, \
-                 S390Displacement d2)
+          S390Displacement d2)
 
 #define RXF_FORM(name)\
 void name(S390Register r1, S390Register r3, S390Operand opnd);\
@@ -1013,19 +1020,29 @@ void name(S390Register r1, S390Register r3, S390Register b2, \
                  S390Register x2, S390Displacement d2)
 
 #define RXY_FORM(name)\
-void name(S390Register r1, S390Register b2, S390Register x2, \
+void name(S390Register r1, S390Register x2, S390Register b2, \
                  S390Displacement d2);\
 void name(S390Register r1, S390Operand opnd)
 
 #define RSI_FORM(name)\
-void name(S390Register r1, S390Register r3, S390Immediate32 i)
+void name(S390Register r1, S390Register r3, S390Immediate16 i)
+
+#define RIS_FORM(name)\
+void name(S390Register r1, S390Mask m3, S390Register b4, \
+          S390Displacement d4, S390Immediate8 i2);\
+void name(S390Register r1, S390Immediate8 i2, S390Mask m3, \
+          S390Operand opnd)
 
 #define SI_FORM(name)\
 void name(S390Operand opnd, S390Immediate8 i);\
-void name(S390Register b1, S390Displacement d1, S390Immediate8 i2)
+void name(S390Immediate8 i2, S390Register b1, S390Displacement d1)
+
+#define SIL_FORM(name)\
+void name(S390Register b1, S390Displacement d1, S390Immediate16 i2);\
+void name(S390Operand opnd, S390Immediate16 i2)
 
 #define RRE_FORM(name)\
-void name(S390Register r, S390Register r)
+void name(S390Register r1, S390Register r2)
 
 #define RRF1_FORM(name)\
 void name(S390Register r1, S390Register r2, S390Register r3)
@@ -1036,9 +1053,14 @@ void name(S390Mask m1, S390Register r1, S390Register r2)
 #define RRF3_FORM(name)\
 void name(S390Register r3, S390Mask m4, S390Register r1, S390Register r2)
 
-#define RS_FORM(name)\
+#define RS1_FORM(name)\
 void name(S390Register r1, S390Register r3, S390Operand opnd);\
-void name(S390Register r1, S390Register r3, S390Register B2, \
+void name(S390Register r1, S390Register r3, S390Register b2, \
+                 S390Displacement d2)
+
+#define RS2_FORM(name)\
+void name(S390Register r1, S390Mask m3, S390Operand opnd);\
+void name(S390Register r1, S390Mask m3, S390Register b2, \
                  S390Displacement d2)
 
 #define RSE_FORM(name)\
@@ -1050,29 +1072,51 @@ void name(S390Register r1, S390Register r3, S390Register b2, \
 void name(S390Length l, S390Register b2, S390Displacement d2);\
 void name(S390Operand opnd)
 
-#define RSY_FORM(name)\
-void name(S390Register r1, S390Register r3, S390Immediate32 i)
+#define RSY1_FORM(name)\
+void name(S390Register r1, S390Register r3, S390Register b2, \
+          S390Displacement d2);\
+void name(S390Register r1, S390Register r3, S390Operand opnd)
+
+#define RSY2_FORM(name)\
+void name(S390Register r1, S390Mask m3, S390Register b2, \
+          S390Displacement d2);\
+void name(S390Register r1, S390Mask m3, S390Operand opnd)
+
+#define RRD_FORM(name)\
+void name(S390Register r1, S390Register r3, S390Register r2)
+
+#define RRS_FORM(name)\
+void name(S390Register r1, S390Register r2, S390Register b4, \
+          S390Displacement d4, S390Mask m3);\
+void name(S390Register r1, S390Register r2, S390Mask m3, \
+          S390Operand opnd)
 
 #define S_FORM(name)\
-void name(S390Register b2, S390Displacement d2)
+void name(S390Register b2, S390Displacement d2);\
+void name(S390Operand opnd)
+
+#define SIY_FORM(name)\
+void name(S390Immediate8 i2, S390Register b1, S390Displacement d1);\
+void name(S390Operand opnd, S390Immediate8 i)
 
 #define SS1_FORM(name)\
-void name(S390Register r1, S390Register b1, S390Displacement d1, \
-          S390Register b3, S390Displacement d2, S390Register r3)
+void name(S390Length r1, S390Register b1, S390Displacement d1, \
+          S390Register b3, S390Displacement d2);\
+void name(S390Operand opnd1, S390Operand opnd2)
 
 #define SS2_FORM(name)\
 void name(S390Operand opnd1, S390Operand opnd2);\
-void name(S390Length l1, S390Length l3, S390Register r3, \
+void name(S390Length l1, S390Length l2, S390Register b1, \
           S390Displacement d1, S390Register b2, S390Displacement d2)
 
 #define SS3_FORM(name)\
 void name(S390Operand opnd1, S390Operand opnd2);\
 void name(S390Length l1, S390Immediate8 i3, S390Register b1, \
-          S390Displacement d1, S390Register b2, S390Register d2)
+          S390Displacement d1, S390Register b2, S390Displacement d2)
 
 #define SS4_FORM(name)\
 void name(S390Operand opnd1, S390Operand opnd2);\
-void name(S390Regiser r1, S390Register r3, S390Register b1, \
+void name(S390Register r1, S390Register r3, S390Register b1, \
           S390Displacement d1, S390Register b2, S390Displacement d2)
 
 #define SS5_FORM(name)\
@@ -1084,26 +1128,869 @@ void name(S390Register r1, S390Register r3, S390Register b3, \
 void name(S390Register b1, S390Displacement d1, \
           S390Register b2, S390Displacement d2);\
 void name(S390Register b1, S390Displacement d1, \
-          S390Register d2, S390Displacement d2, \
+          S390Register b2, S390Displacement d2, \
           S390Register r3)
 
+#define SSF_FORM(name)\
+void name(S390Register r3, S390Register b1, S390Displacement d1, \
+          S390Register b2, S390Displacement d2);\
+void name(S390Register r3, S390Operand opnd1, S390Operand opnd2)
+
+// S390 instruction sets
+RX_FORM(a);
+RX_FORM(ad);
+RXE_FORM(adb);
+RRE_FORM(adbr);
+RR_FORM(adr);
+RRF1_FORM(adtr);
+RRF1_FORM(adtra);
+RX_FORM(ae);
+RXE_FORM(aeb);
+RRE_FORM(aebr);
+RR_FORM(aer);
+RIL1_FORM(afi);
+RXY_FORM(ag);
+RXY_FORM(agf);
+RIL1_FORM(agfi);
+RRE_FORM(agfr);
+RI1_FORM(aghi);
+RIE_FORM(aghik);
+RRE_FORM(agr);
+RRF1_FORM(agrk);
+SIY_FORM(agsi);
+RX_FORM(ah);
+RRF1_FORM(ahhhr);
+RRF1_FORM(ahhlr);
+RI1_FORM(ahi);
+RIE_FORM(ahik);
+RXY_FORM(ahy);
+RIL1_FORM(aih);
+RX_FORM(al_z);
+RXY_FORM(alc);
+RXY_FORM(alcg);
+RRE_FORM(alcgr);
+RRE_FORM(alcr);
+RIL1_FORM(alfi);
+RXY_FORM(alg);
+RXY_FORM(algf);
+RIL1_FORM(algfi);
+RRE_FORM(algfr);
+RIE_FORM(alghsik);
+RRE_FORM(algr);
+RRF1_FORM(algrk);
+SIY_FORM(algsi);
+RRF1_FORM(alhhhr);
+RRF1_FORM(alhhlr);
+RIE_FORM(alhsik);
+RR_FORM(alr);
+RRF1_FORM(alrk);
+SIY_FORM(alsi);
+RIL1_FORM(alsih);
+RIL1_FORM(alsihn);
+RXY_FORM(aly);
+SS2_FORM(ap);
 RR_FORM(ar);
-RR_FORM(sr);
-RR_FORM(mr);
-RR_FORM(dr);
-
-
-RR_FORM(clr);
-RR_FORM(nr);
-RR_FORM(or_z);
-RR_FORM(xr);
-
-RR_FORM(lr);
-RX_FORM(st);
-RI_FORM(lhi);
-
-RR_FORM(bcr);
+RRF1_FORM(ark);
+SIY_FORM(asi);
+RX_FORM(au);
+RR_FORM(aur);
+RX_FORM(aw);
+RR_FORM(awr);
+RRE_FORM(axbr);
+RR_FORM(axr);
+RRF1_FORM(axtr);
+RRF1_FORM(axtra);
+RXY_FORM(ay);
+RX_FORM(bal);
+RR_FORM(balr);
+RX_FORM(bas);
+RR_FORM(basr);
+RR_FORM(bassm);
 RX_FORM(bc);
+RR2_FORM(bcr);
+RX_FORM(bct);
+RXY_FORM(bctg);
+RRE_FORM(bctgr);
+RR_FORM(bctr);
+RI2_FORM(bras);
+RIL1_FORM(brasl);
+RI2_FORM(brc);
+RIL2_FORM(brcl);
+RI2_FORM(brct);
+RI2_FORM(brctg);
+RIL1_FORM(brcth);
+RSI_FORM(brxh);
+RIE_FORM(brxhg);
+RSI_FORM(brxle);
+RIE_FORM(brxlg);
+RR_FORM(bsm);
+RS1_FORM(bxle);
+RSY1_FORM(bxleg);
+RX_FORM(c);
+RX_FORM(cd);
+RXE_FORM(cdb);
+RRE_FORM(cdbr);
+RRE_FORM(cdfbr);
+RRF2_FORM(cdfbra);
+RRE_FORM(cdfr);
+RRE_FORM(cdftr);
+RRE_FORM(cdgbr);
+RRF2_FORM(cdgbra);
+RRE_FORM(cdgr);
+RRE_FORM(cdgtr);
+RRF2_FORM(cdgtra);
+RRF2_FORM(cdlfbr);
+RRF2_FORM(cdlftr);
+RRF2_FORM(cdlgbr);
+RRF2_FORM(cdlgtr);
+RR_FORM(cdr);
+RS1_FORM(cds);
+RSY1_FORM(cdsg);
+RRE_FORM(cdstr);
+RSY1_FORM(cdsy);
+RRE_FORM(cdtr);
+RRE_FORM(cdutr);
+RSL_FORM(cdzt);
+RX_FORM(ce);
+RXE_FORM(ceb);
+RRE_FORM(cebr);
+RRE_FORM(cedtr);
+RRE_FORM(cefbr);
+RRF2_FORM(cefbra);
+RRE_FORM(cefr);
+RRE_FORM(cegbr);
+RRF2_FORM(cegbra);
+RRE_FORM(cegr);
+RRF2_FORM(celfbr);
+RRF2_FORM(celgbr);
+RR_FORM(cer);
+RRE_FORM(cextr);
+S_FORM(cfc);
+RRF2_FORM(cfdbr);
+RRF2_FORM(cfdbra);
+RRF2_FORM(cfdr);
+RRF2_FORM(cfdtr);
+RRF2_FORM(cfebr);
+RRF2_FORM(cfebra);
+RRF2_FORM(cfer);
+RIL1_FORM(cfi);
+RRF2_FORM(cfxbr);
+RRF2_FORM(cfxbra);
+RRF2_FORM(cfxr);
+RRF2_FORM(cfxtr);
+RXY_FORM(cg);
+RRF2_FORM(cgdbr);
+RRF2_FORM(cgdbra);
+RRF2_FORM(cgdr);
+RRF2_FORM(cgdtr);
+RRF2_FORM(cgdtra);
+RRF2_FORM(cgebr);
+RRF2_FORM(cgebra);
+RRF2_FORM(cger);
+RXY_FORM(cgf);
+RIL1_FORM(cgfi);
+RRE_FORM(cgfr);
+RIL1_FORM(cgfrl);
+RXY_FORM(cgh);
+RI1_FORM(cghi);
+RIL1_FORM(cghrl);
+SIL_FORM(cghsi);
+RIS_FORM(cgib);
+RIE_FORM(cgij);
+RIE_FORM(cgit);
+RRE_FORM(cgr);
+RRS_FORM(cgrb);
+RIE_FORM(cgrj);
+RIL1_FORM(cgrl);
+RRF2_FORM(cgrt);
+RRF2_FORM(cgxbr);
+RRF2_FORM(cgxbra);
+RRF2_FORM(cgxr);
+RRF2_FORM(cgxtr);
+RRF2_FORM(cgxtra);
+RX_FORM(ch);
+RXY_FORM(chf);
+RRE_FORM(chhr);
+SIL_FORM(chhsi);
+RI1_FORM(chi);
+RRE_FORM(chlr);
+RIL1_FORM(chrl);
+SIL_FORM(chsi);
+RXY_FORM(chy);
+RIS_FORM(cib);
+RIL1_FORM(cih);
+RIE_FORM(cij);
+RIE_FORM(cit);
+RRE_FORM(cksm);
+RX_FORM(cl);
+SS1_FORM(clc);
+RR_FORM(clcl);
+RS1_FORM(clcle);
+RSY1_FORM(clclu);
+RRF2_FORM(clfdbr);
+RRF2_FORM(clfdtr);
+RRF2_FORM(clfebr);
+SIL_FORM(clfhsi);
+RIL1_FORM(clfi);
+RIE_FORM(clfit);
+RRF2_FORM(clfxbr);
+RRF2_FORM(clfxtr);
+RXY_FORM(clg);
+RRF2_FORM(clgdbr);
+RRF2_FORM(clgdtr);
+RRF2_FORM(clgebr);
+RXY_FORM(clgf);
+RIL1_FORM(clgfi);
+RR_FORM(clr);
+SSF_FORM(csst);
+RRF2_FORM(csxtr);
+RSY1_FORM(csy);
+RRF2_FORM(cu12);
+RRF2_FORM(cu14);
+RRF2_FORM(cu21);
+RRF2_FORM(cu24);
+RRE_FORM(cu41);
+RRE_FORM(cu42);
+RRE_FORM(cudtr);
+RRE_FORM(cuse);
+RRF2_FORM(cutfu);
+RRF2_FORM(cuutf);
+RRE_FORM(cuxtr);
+RX_FORM(cvb);
+RXY_FORM(cvbg);
+RXY_FORM(cvby);
+RX_FORM(cvd);
+RXY_FORM(cvdg);
+RXY_FORM(cvdy);
+RRE_FORM(cxbr);
+RRE_FORM(cxfbr);
+RRF2_FORM(cxfbra);
+RRE_FORM(cxfr);
+RRE_FORM(cxftr);
+RRE_FORM(cxgbr);
+RRF2_FORM(cxgbra);
+RRE_FORM(cxgr);
+RRE_FORM(cxgtr);
+RRF2_FORM(cxgtra);
+RRF2_FORM(cxlfbr);
+RRF2_FORM(cxlftr);
+RRF2_FORM(cxlgbr);
+RRF2_FORM(cxlgtr);
+RRE_FORM(cxr);
+RRE_FORM(cxstr);
+RRE_FORM(cxtr);
+RRE_FORM(cxutr);
+RSL_FORM(cxzt);
+RXY_FORM(cy);
+RSL_FORM(czdt);
+RSL_FORM(czxt);
+RX_FORM(d);
+RX_FORM(dd);
+RXE_FORM(ddb);
+RRE_FORM(ddbr);
+RR_FORM(ddr);
+RRF1_FORM(ddtr);
+RRF1_FORM(ddtra);
+RX_FORM(de);
+RXE_FORM(deb);
+RRE_FORM(debr);
+RR_FORM(der);
+RRF1_FORM(didbr);
+RRF1_FORM(diebr);
+RXY_FORM(dl);
+RXY_FORM(dlg);
+RRE_FORM(dlgr);
+RRE_FORM(dlr);
+SS2_FORM(dp);
+RR_FORM(dr);
+RXY_FORM(dsg);
+RXY_FORM(dsgf);
+RRE_FORM(dsgfr);
+RRE_FORM(dsgr);
+RRE_FORM(dxbr);
+RRE_FORM(dxr);
+RRF1_FORM(dxtr);
+RRF1_FORM(dxtra);
+RRE_FORM(ear);
+RSY1_FORM(ecag);
+SSF_FORM(ectg);
+SS1_FORM(ed);
+SS1_FORM(edmk);
+RRE_FORM(eedtr);
+RRE_FORM(eextr);
+RRE_FORM(efpc);
+RRE_FORM(epair);
+RRE_FORM(epsw);
+RRE_FORM(esdtr);
+RRE_FORM(esxtr);
+RRE_FORM(etnd);
+RX_FORM(ex);
+RIL1_FORM(exrl);
+RRF2_FORM(fidbr);
+RRF2_FORM(fidbra);
+RRE_FORM(fidr);
+RRF2_FORM(fidtr);
+RRF2_FORM(fiebr);
+RRF2_FORM(fiebra);
+RRE_FORM(fier);
+RRF2_FORM(fixbr);
+RRF2_FORM(fixbra);
+RRE_FORM(fixr);
+RRF2_FORM(fixtr);
+RRE_FORM(flogr);
+RR_FORM(hdr);
+RR_FORM(her);
+S_FORM(hsch);
+RX_FORM(ic_z);
+RS2_FORM(icm);
+RSY2_FORM(icmh);
+RSY2_FORM(icmy);
+RXY_FORM(icy);
+RRF1_FORM(iedtr);
+RRF1_FORM(iextr);
+RIL1_FORM(iihf);
+RI1_FORM(iihh);
+RI1_FORM(iihl);
+RIL1_FORM(iilf);
+RI1_FORM(iilh);
+RI1_FORM(iill);
+RRE_FORM(ipm);
+RXE_FORM(kdb);
+RRE_FORM(kdbr);
+RRE_FORM(kdtr);
+RXE_FORM(keb);
+RRE_FORM(kebr);
+RRE_FORM(kimd);
+RRE_FORM(klmd);
+RRE_FORM(km);
+RRE_FORM(kmac);
+RRE_FORM(kmc);
+RRF1_FORM(kmctr);
+RRE_FORM(kmf);
+RRE_FORM(kmo);
+RRE_FORM(kxbr);
+RRE_FORM(kxtr);
+RX_FORM(l);
+RX_FORM(la);
+RSY1_FORM(laa);
+RSY1_FORM(laag);
+RSY1_FORM(laal);
+RSY1_FORM(laalg);
+RX_FORM(lae);
+RXY_FORM(laey);
+RS1_FORM(lam);
+RSY1_FORM(lamy);
+RSY1_FORM(lan);
+RSY1_FORM(lang);
+RSY1_FORM(lao);
+RSY1_FORM(laog);
+RIL1_FORM(larl);
+RXY_FORM(lat);
+RSY1_FORM(lax);
+RSY1_FORM(laxg);
+RXY_FORM(lay);
+RXY_FORM(lb);
+RXY_FORM(lbh);
+RRE_FORM(lbr);
+RRE_FORM(lcdbr);
+RRE_FORM(lcdfr);
+RR_FORM(lcdr);
+RRE_FORM(lcebr);
+RR_FORM(lcer);
+RRE_FORM(lcgfr);
+RRE_FORM(lcgr);
+RR_FORM(lcr);
+RRE_FORM(lcxbr);
+RRE_FORM(lcxr);
+RX_FORM(ld);
+RXE_FORM(lde);
+RXE_FORM(ldeb);
+RRE_FORM(ldebr);
+RRE_FORM(lder);
+RRF2_FORM(ldetr);
+RRE_FORM(ldgr);
+RR_FORM(ldr);
+RRE_FORM(ldxbr);
+RRF2_FORM(ldxbra);
+RR_FORM(ldxr);
+RRF2_FORM(ldxtr);
+RXY_FORM(ldy);
+RX_FORM(le_z);
+RRE_FORM(ledbr);
+RRF2_FORM(ledbra);
+RR_FORM(ledr);
+RRF2_FORM(ledtr);
+RR_FORM(ler);
+RRE_FORM(lexbr);
+RRF2_FORM(lexbra);
+RRE_FORM(lexr);
+RXY_FORM(ley);
+S_FORM(lfas);
+RXY_FORM(lfh);
+RXY_FORM(lfhat);
+S_FORM(lfpc);
+RXY_FORM(lg);
+RXY_FORM(lgat);
+RXY_FORM(lgb);
+RRE_FORM(lgbr);
+RRE_FORM(lgdr);
+RXY_FORM(lgf);
+RIL1_FORM(lgfi);
+RRE_FORM(lgfr);
+RIL1_FORM(lgfrl);
+RXY_FORM(lgh);
+RI1_FORM(lghi);
+RRE_FORM(lghr);
+RIL1_FORM(lghrl);
+RRE_FORM(lgr);
+RIL1_FORM(lgrl);
+RX_FORM(lh);
+RXY_FORM(lhh);
+RI1_FORM(lhi);
+RRE_FORM(lhr);
+RIL1_FORM(lhrl);
+RXY_FORM(lhy);
+RXY_FORM(llc);
+RXY_FORM(llch);
+RRE_FORM(llcr);
+RXY_FORM(llgc);
+RRE_FORM(llgcr);
+RXY_FORM(llgf);
+RXY_FORM(llgfat);
+RRE_FORM(llgfr);
+RIL1_FORM(llgfrl);
+RXY_FORM(llgh);
+RRE_FORM(llghr);
+RIL1_FORM(llghrl);
+RXY_FORM(llgt);
+RXY_FORM(llgtat);
+RRE_FORM(llgtr);
+RXY_FORM(llh);
+RXY_FORM(llhh);
+RRE_FORM(llhr);
+RIL1_FORM(llhrl);
+RIL1_FORM(llihf);
+RI1_FORM(llihh);
+RI1_FORM(llihl);
+RIL1_FORM(llilf);
+RI1_FORM(llilh);
+RI1_FORM(llill);
+RS1_FORM(lm);
+SS5_FORM(lmd);
+RSY1_FORM(lmg);
+RSY1_FORM(lmh);
+RSY1_FORM(lmy);
+RRE_FORM(lndbr);
+RRE_FORM(lndfr);
+RR_FORM(lndr);
+RRE_FORM(lnebr);
+RR_FORM(lner);
+RRE_FORM(lngfr);
+RRE_FORM(lngr);
+RR_FORM(lnr);
+RRE_FORM(lnxbr);
+RRE_FORM(lnxr);
+RSY1_FORM(loc);
+RSY1_FORM(locg);
+RRF2_FORM(locgr);
+RRF2_FORM(locr);
+SSF_FORM(lpd);
+RRE_FORM(lpdbr);
+RRE_FORM(lpdfr);
+SSF_FORM(lpdg);
+RR_FORM(lpdr);
+RRE_FORM(lpebr);
+RR_FORM(lper);
+RRE_FORM(lpgfr);
+RRE_FORM(lpgr);
+RXY_FORM(lpq);
+RR_FORM(lpr);
+RRE_FORM(lpxbr);
+RRE_FORM(lpxr);
+RR_FORM(lr);
+RR_FORM(lrdr);
+RR_FORM(lrer);
+RIL1_FORM(lrl);
+RXY_FORM(lrv);
+RXY_FORM(lrvg);
+RRE_FORM(lrvgr);
+RXY_FORM(lrvh);
+RRE_FORM(lrvr);
+RXY_FORM(lt_z);
+RRE_FORM(ltdbr);
+RR_FORM(ltdr);
+RRE_FORM(ltdtr);
+RRE_FORM(ltebr);
+RR_FORM(lter);
+RXY_FORM(ltg);
+RXY_FORM(ltgf);
+RRE_FORM(ltgfr);
+RRE_FORM(ltgr);
+RR_FORM(ltr);
+RRE_FORM(ltxbr);
+RRE_FORM(ltxr);
+RRE_FORM(ltxtr);
+RXE_FORM(lxd);
+RXE_FORM(lxdb);
+RRE_FORM(lxdbr);
+RRE_FORM(lxdr);
+RRF2_FORM(lxdtr);
+RXE_FORM(lxe);
+RXE_FORM(lxeb);
+RRE_FORM(lxebr);
+RRE_FORM(lxer);
+RRE_FORM(lxr);
+RXY_FORM(ly);
+RRE_FORM(lzdr);
+RRE_FORM(lzer);
+RRE_FORM(lzxr);
+RX_FORM(m);
+RXF_FORM(mad);
+RXF_FORM(madb);
+RRD_FORM(madbr);
+RRD_FORM(madr);
+RXF_FORM(mae);
+RXF_FORM(maeb);
+RRD_FORM(maebr);
+RRD_FORM(maer);
+RXF_FORM(may);
+RXF_FORM(mayh);
+RRD_FORM(mayhr);
+RXF_FORM(mayl);
+RRD_FORM(maylr);
+RRD_FORM(mayr);
+SI_FORM(mc);
+RX_FORM(md);
+RXE_FORM(mdb);
+RRE_FORM(mdbr);
+RX_FORM(mde);
+RXE_FORM(mdeb);
+RRE_FORM(mdebr);
+RR_FORM(mder);
+RR_FORM(mdr);
+RRF1_FORM(mdtr);
+RRF1_FORM(mdtra);
+RX_FORM(me);
+RXE_FORM(mee);
+RXE_FORM(meeb);
+RRE_FORM(meebr);
+RRE_FORM(meer);
+RR_FORM(mer);
+RXY_FORM(mfy);
+RI1_FORM(mghi);
+RX_FORM(mh);
+RI1_FORM(mhi);
+RXY_FORM(mhy);
+RXY_FORM(ml);
+RXY_FORM(mlg);
+RRE_FORM(mlgr);
+RRE_FORM(mlr);
+SS2_FORM(mp);
+RR_FORM(mr_z);
+RX_FORM(ms);
+S_FORM(msch);
+RXF_FORM(msd);
+RXF_FORM(msdb);
+RRD_FORM(msdbr);
+RRD_FORM(msdr);
+RXF_FORM(mse);
+RXF_FORM(mseb);
+RRD_FORM(msebr);
+RRD_FORM(mser);
+RIL1_FORM(msfi);
+RXY_FORM(msg);
+RXY_FORM(msgf);
+RIL1_FORM(msgfi);
+RRE_FORM(msgfr);
+RRE_FORM(msgr);
+RRE_FORM(msr);
+RXY_FORM(msy);
+SS1_FORM(mvc);
+SS1_FORM(mvcin);
+SS4_FORM(mvck);
+RR_FORM(mvcl);
+RS1_FORM(mvcle);
+RSY1_FORM(mvclu);
+SSF_FORM(mvcos);
+SS4_FORM(mvcp);
+SS4_FORM(mvcs);
+SIL_FORM(mvghi);
+SIL_FORM(mvhhi);
+SIL_FORM(mvhi);
+SI_FORM(mvi);
+SIY_FORM(mviy);
+SS1_FORM(mvn);
+SS2_FORM(mvo);
+RRE_FORM(mvst);
+SS1_FORM(mvz);
+RRE_FORM(mxbr);
+RX_FORM(mxd);
+RXE_FORM(mxdb);
+RRE_FORM(mxdbr);
+RR_FORM(mxdr);
+RR_FORM(mxr);
+RRF1_FORM(mxtr);
+RRF1_FORM(mxtra);
+RXF_FORM(my);
+RXF_FORM(myh);
+RRD_FORM(myhr);
+RXF_FORM(myl);
+RRD_FORM(mylr);
+RRD_FORM(myr);
+RX_FORM(n);
+SS1_FORM(nc);
+RXY_FORM(ng);
+RRE_FORM(ngr);
+RRF1_FORM(ngrk);
+SI_FORM(ni);
+IE_FORM(niai);
+RIL1_FORM(nihf);
+RI1_FORM(nihh);
+RI1_FORM(nihl);
+RIL1_FORM(nilf);
+RI1_FORM(nilh);
+RI1_FORM(nill);
+SIY_FORM(niy);
+RR_FORM(nr);
+RRF1_FORM(nrk);
+RXY_FORM(ntstg);
+RXY_FORM(ny);
+RX_FORM(o);
+SS1_FORM(oc);
+RXY_FORM(og);
+RRE_FORM(ogr);
+RRF1_FORM(ogrk);
+SI_FORM(oi);
+RIL1_FORM(oihf);
+RI1_FORM(oihh);
+RI1_FORM(oihl);
+RIL1_FORM(oilf);
+RI1_FORM(oilh);
+RI1_FORM(oill);
+SIY_FORM(oiy);
+RR_FORM(or_z);
+RRF1_FORM(ork);
+RXY_FORM(oy);
+SS2_FORM(pack);
+RRE_FORM(pcc);
+RXY_FORM(pfd);
+RIL2_FORM(pfdrl);
+E_FORM(pfpo);
+SS1_FORM(pka);
+SS1_FORM(pku);
+SS5_FORM(plo);
+RRE_FORM(popcnt);
+RRF1_FORM(ppa);
+RRF1_FORM(qadtr);
+RRF1_FORM(qaxtr);
+S_FORM(rchp);
+RIE_FORM(risbg);
+RIE_FORM(risbgn);
+RIE_FORM(risbhg);
+RIE_FORM(risblg);
+RSY1_FORM(rll);
+RSY1_FORM(rllg);
+RIE_FORM(rnsbg);
+RIE_FORM(rosbg);
+S_FORM(rp);
+RRF1_FORM(rrdtr);
+RRF1_FORM(rrxtr);
+S_FORM(rsch);
+RIE_FORM(rxsbg);
+RX_FORM(s);
+S_FORM(sal);
+E_FORM(sam24);
+E_FORM(sam31);
+E_FORM(sam64);
+RRE_FORM(sar);
+S_FORM(schm);
+RX_FORM(sd);
+RXE_FORM(sdb);
+RRE_FORM(sdbr);
+RR_FORM(sdr);
+RRF1_FORM(sdtr);
+RRF1_FORM(sdtra);
+RX_FORM(se);
+RXE_FORM(seb);
+RRE_FORM(sebr);
+RR_FORM(ser);
+RRE_FORM(sfasr);
+RRE_FORM(sfpc);
+RXY_FORM(sg);
+RXY_FORM(sgf);
+RRE_FORM(sgfr);
+RRE_FORM(sgr);
+RRF1_FORM(sgrk);
+RX_FORM(sh);
+RRF1_FORM(shhhr);
+RRF1_FORM(shhlr);
+RXY_FORM(shy);
+RX_FORM(sl);
+RS1_FORM(sla);
+RSY1_FORM(slag);
+RSY1_FORM(slak);
+RXY_FORM(slb);
+RXY_FORM(slbg);
+RRE_FORM(slbgr);
+RRE_FORM(slbr);
+RS1_FORM(slda);
+RS1_FORM(sldl);
+RXF_FORM(sldt);
+RIL1_FORM(slfi);
+RXY_FORM(slg);
+RXY_FORM(slgf);
+RIL1_FORM(slgfi);
+RRE_FORM(slgfr);
+RRE_FORM(slgr);
+RRF1_FORM(slgrk);
+RRF1_FORM(slhhhr);
+RRF1_FORM(slhhlr);
+RS1_FORM(sll);
+RSY1_FORM(sllg);
+RSY1_FORM(sllk);
+RR_FORM(slr);
+RRF1_FORM(slrk);
+RXF_FORM(slxt);
+RXY_FORM(sly);
+SS2_FORM(sp_z);
+RR_FORM(spm);
+RXE_FORM(sqd);
+RXE_FORM(sqdb);
+RRE_FORM(sqdbr);
+RRE_FORM(sqdr);
+RXE_FORM(sqe);
+RXE_FORM(sqeb);
+RRE_FORM(sqebr);
+RRE_FORM(sqer);
+RRE_FORM(sqxbr);
+RRE_FORM(sqxr);
+RR_FORM(sr);
+RS1_FORM(sra);
+RSY1_FORM(srag);
+RSY1_FORM(srak);
+RS1_FORM(srda);
+RS1_FORM(srdl);
+RXF_FORM(srdt);
+RRF1_FORM(srk);
+RS1_FORM(srl);
+RSY1_FORM(srlg);
+RSY1_FORM(srlk);
+S_FORM(srnm);
+S_FORM(srnmb);
+S_FORM(srnmt);
+SS3_FORM(srp);
+RRE_FORM(srst);
+RRE_FORM(srstu);
+RXF_FORM(srxt);
+S_FORM(ssch);
+RX_FORM(st);
+RS1_FORM(stam);
+RSY1_FORM(stamy);
+RXY_FORM(stch);
+S_FORM(stck);
+S_FORM(stcke);
+S_FORM(stckf);
+RS2_FORM(stcm);
+RSY2_FORM(stcmh);
+RSY2_FORM(stcmy);
+S_FORM(stcps);
+S_FORM(stcrw);
+RXY_FORM(stcy);
+RX_FORM(std);
+RXY_FORM(stdy);
+RX_FORM(ste);
+RXY_FORM(stey);
+RXY_FORM(stfh);
+S_FORM(stfle);
+S_FORM(stfpc);
+RXY_FORM(stg);
+RIL1_FORM(stgrl);
+RX_FORM(sth);
+RXY_FORM(sthh);
+RIL1_FORM(sthrl);
+RXY_FORM(sthy);
+RS2_FORM(stm);
+RSY1_FORM(stmg);
+RSY1_FORM(stmh);
+RSY1_FORM(stmy);
+RSY2_FORM(stoc);
+RSY2_FORM(stocg);
+RXY_FORM(stpq);
+RIL1_FORM(strl);
+RXY_FORM(strv);
+RXY_FORM(strvg);
+RXY_FORM(strvh);
+S_FORM(stsch);
+RXY_FORM(sty);
+RX_FORM(su);
+RR_FORM(sur);
+I_FORM(svc);
+RX_FORM(sw);
+RR_FORM(swr);
+RRE_FORM(sxbr);
+RR_FORM(sxr);
+RRF1_FORM(sxtr);
+RRF1_FORM(sxtra);
+RXY_FORM(sy);
+S_FORM(tabort);
+E_FORM(tam);
+RRF2_FORM(tbdr);
+RRF2_FORM(tbedr);
+SIL_FORM(tbegin);
+SIL_FORM(tbeginc);
+RXE_FORM(tcdb);
+RXE_FORM(tceb);
+RXE_FORM(tcxb);
+RXE_FORM(tdcdt);
+RXE_FORM(tdcet);
+RXE_FORM(tdcxt);
+RXE_FORM(tdgdt);
+RXE_FORM(tdget);
+RXE_FORM(tdgxt);
+S_FORM(tend);
+RRE_FORM(thder);
+RRE_FORM(thdr);
+SI_FORM(tm);
+RI1_FORM(tmh);
+RI1_FORM(tmhh);
+RI1_FORM(tmhl);
+RI1_FORM(tml);
+RI1_FORM(tmlh);
+RI1_FORM(tmll);
+SIY_FORM(tmy);
+RSL_FORM(tp);
+S_FORM(tpi);
+SS1_FORM(tr);
+RRE_FORM(tre);
+RRF2_FORM(troo);
+RRF2_FORM(trot);
+SS1_FORM(trt);
+RRF2_FORM(trte);
+RRF2_FORM(trto);
+SS1_FORM(trtr);
+RRF2_FORM(trtre);
+RRF2_FORM(trtt);
+S_FORM(ts);
+S_FORM(tsch);
+SS2_FORM(unpk);
+SS1_FORM(unpka);
+SS1_FORM(unpku);
+E_FORM(upt);
+RX_FORM(x);
+SS1_FORM(xc);
+RXY_FORM(xg);
+RRE_FORM(xgr);
+RRF1_FORM(xgrk);
+SI_FORM(xi);
+RIL1_FORM(xihf);
+RIL1_FORM(xilf);
+SIY_FORM(xiy);
+RR_FORM(xr);
+RRF1_FORM(xrk);
+S_FORM(xsch);
+RXY_FORM(xy);
+SS2_FORM(zap);
+// end of S390instructions
 
   // PowerPC
   void sub(Register dst, Register src1, Register src2,
@@ -1351,14 +2238,17 @@ RX_FORM(bc);
   void nop(int type = 0);   // 0 is the default non-marking type.
 
   void push(Register src) {
+/*
 #if V8_TARGET_ARCH_S390X
     stdu(src, MemOperand(sp, -8));
 #else
     stwu(src, MemOperand(sp, -4));
 #endif
+*/
   }
 
   void pop(Register dst) {
+/*
 #if V8_TARGET_ARCH_S390X
     ld(dst, MemOperand(sp));
     addi(sp, sp, Operand(8));
@@ -1366,6 +2256,7 @@ RX_FORM(bc);
     lwz(dst, MemOperand(sp));
     addi(sp, sp, Operand(4));
 #endif
+*/
   }
 
   void pop() {
@@ -1566,6 +2457,45 @@ RX_FORM(bc);
   inline void emit2bytes(uint16_t x);
   inline void emit4bytes(uint32_t x);
   inline void emit6bytes(uint64_t x);
+
+  inline void i_form(uint16_t x);
+  inline void e_form(uint16_t x);
+  inline void ie_form(uint32_t x);
+  inline void rr_form(uint16_t x);
+  inline void rr2_form(uint16_t x);
+  inline void rx_form(uint32_t x);
+  inline void ri1_form(uint32_t x);
+  inline void ri2_form(uint32_t x);
+  inline void rie_form(uint64_t x);
+  inline void ril1_form(uint64_t x);
+  inline void ril2_form(uint64_t x);
+  inline void rre_form(uint32_t x);
+  inline void rrd_form(uint32_t x);
+  inline void rs1_form(uint32_t x);
+  inline void rs2_form(uint32_t x);
+  inline void rsi_form(uint64_t x);
+  inline void rsl_form(uint64_t x);
+  inline void rsy1_form(uint64_t x);
+  inline void rsy2_form(uint64_t x);
+  inline void rxe_form(uint64_t x);
+  inline void rxy_form(uint64_t x);
+  inline void rrs_form(uint64_t x);
+  inline void ris_form(uint64_t x);
+  inline void s_form(uint32_t x);
+  inline void si_form(uint32_t x);
+  inline void siy_form(uint64_t x);
+  inline void sil_form(uint64_t x);
+  inline void rxf_form(uint64_t x);
+  inline void ss1_form(uint64_t x);
+  inline void ss2_form(uint64_t x);
+  inline void ss3_form(uint64_t x);
+  inline void ss4_form(uint64_t x);
+  inline void ss5_form(uint64_t x);
+  inline void sse_form(uint64_t x);
+  inline void ssf_form(uint64_t x);
+  inline void rrf1_form(uint32_t x);
+  inline void rrf2_form(uint32_t x);
+  inline void rrf3_form(uint32_t x);
 
   inline void CheckTrampolinePoolQuick();
 

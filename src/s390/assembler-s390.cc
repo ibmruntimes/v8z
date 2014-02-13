@@ -1681,29 +1681,82 @@ void Assembler::nop(int type) {
 }
 
 // S390 instructions
-
-/*
- * RR format: <insn> R1,R2
- *    +--------+----+----+
- *    | OpCode | R1 | R2 |
- *    +--------+----+----+
- *    0        8    12  15
- */
-#define RR_FORM_EMIT(name, op) \
-void Assembler::name(S390Register r1, S390Register r2) { \
-    emit2bytes(op*B8 | r1.code()*B4 | r2.code()); \
-}\
-void Assembler::name(S390Mask m, S390Register r) { \
-    emit2bytes(op*B8 | m.value()*B4 | r.code()); \
+#define B32 ((uint64_t)1<<32)
+#define B36 ((uint64_t)1<<36)
+#define B40 ((uint64_t)1<<40)
+// I format <insn> i
+//    +--------+---------+
+//    | OpCode |    i    |
+//    +--------+---------+
+//    0        8        15
+//
+#define I_FORM_EMIT(name, op)\
+void Assembler::name(S390Immediate8 i) {\
+    i_form(op << 8 | i);\
+}
+void Assembler::i_form(uint16_t code) {
+    emit2bytes(code);
 }
 
-/*
- * RX format: <insn> R1,D2(X2,B2)
- *    +--------+----+----+----+-------------+
- *    | OpCode | R1 | X2 | B2 |     D2      |
- *    +--------+----+----+----+-------------+
- *    0        8    12   16   20           31
- */
+// E format <insn>
+//    +------------------+
+//    |      OpCode      |
+//    +------------------+
+//    0                 15
+//
+#define E_FORM_EMIT(name, op)\
+void Assembler::name() {\
+    e_form(op);\
+}
+void Assembler::e_form(uint16_t code) {
+    emit2bytes(code);
+}
+
+// IE format: <insn> i1, i2
+//    +--------+---------+--------+----+----+
+//    |      OpCode      |////////| I1 | I2 |
+//    +--------+---------+--------+----+----+
+//    0        8         16      24   28   31
+#define IE_FORM_EMIT(name, op)\
+void Assembler::name(S390Immediate8 i1, S390Immediate8 i2) {\
+    ie_form(op << 16 | i1*B4 | i2);\
+}
+void Assembler::ie_form(uint32_t code) {
+    emit4bytes(code);
+}
+
+// RR format: <insn> R1,R2
+//    +--------+----+----+
+//    | OpCode | R1 | R2 |
+//    +--------+----+----+
+//    0        8    12  15
+#define RR_FORM_EMIT(name, op) \
+void Assembler::name(S390Register r1, S390Register r2) { \
+    rr_form(op*B8 | r1.code()*B4 | r2.code()); \
+}
+void Assembler::rr_form(uint16_t code) {
+    emit2bytes(code);
+}
+
+// RR2 format: <insn> M1,R2
+//    +--------+----+----+
+//    | OpCode | M1 | R2 |
+//    +--------+----+----+
+//    0        8    12  15
+#define RR2_FORM_EMIT(name, op) \
+void Assembler::name(S390Mask m1, S390Register r2) { \
+    rr2_form(op*B8 | m1.value()*B4 | r2.code()); \
+}
+void Assembler::rr2_form(uint16_t code) {
+    emit2bytes(code);
+}
+
+
+// RX format: <insn> R1,D2(X2,B2)
+//    +--------+----+----+----+-------------+
+//    | OpCode | R1 | X2 | B2 |     D2      |
+//    +--------+----+----+----+-------------+
+//    0        8    12   16   20           31
 #define RX_FORM_EMIT(name, op) \
 void Assembler::name(S390Register r, S390Operand opnd) { \
     name(r, opnd.getIndexRegister(), opnd.getBaseRegister(), \
@@ -1711,484 +1764,1418 @@ void Assembler::name(S390Register r, S390Operand opnd) { \
 }\
 void Assembler::name(S390Register r1, S390Register x2, \
                      S390Register b2, S390Displacement d2) {\
-    emit4bytes(op*B24 | r1.code()*B20\
-                      | x2.code()*B20\
-                      | b2.code()*B16\
-                      | d2.lowValue());\
+    rx_form(op*B24 | r1.code()*B20\
+                   | x2.code()*B20\
+                   | b2.code()*B16\
+                   | d2.lowValue());\
+}
+void Assembler::rx_form(uint32_t code) {
+    emit4bytes(code);
 }
 
-/*
- * RI1 format: <insn> R1,I2
- *    +--------+----+----+------------------+
- *    | OpCode | R1 |OpCd|        I2        |
- *    +--------+----+----+------------------+
- *    0        8    12   16                31
- */
-#define RI_FORM_EMIT(name, op) \
+
+// RI1 format: <insn> R1,I2
+//    +--------+----+----+------------------+
+//    | OpCode | R1 |OpCd|        I2        |
+//    +--------+----+----+------------------+
+//    0        8    12   16                31
+#define RI1_FORM_EMIT(name, op) \
 void Assembler::name(S390Register r, S390Immediate16 i) { \
-    emit2bytes((op & 0x0FF0)*B8 | r.code()*B4 | (op & 0x000F));\
-    emit2bytes(i);\
+    ri1_form((op & 0x0FF0) << 8 | r.code()*B4 | (op & 0x000F));\
+}
+void Assembler::ri1_form(uint32_t code) {
+    emit4bytes(code);
 }
 
-/*
- * RI2 format: <insn> M1,I2
- *    +--------+----+----+------------------+
- *    | OpCode | M1 |OpCd|        I2        |
- *    +--------+----+----+------------------+
- *    0        8    12   16                31
- */
+
+// RI2 format: <insn> M1,I2
+//    +--------+----+----+------------------+
+//    | OpCode | M1 |OpCd|        I2        |
+//    +--------+----+----+------------------+
+//    0        8    12   16                31
 #define RI2_FORM_EMIT(name, op) \
 void Assembler::name(S390Mask m, S390Immediate16 i) {\
-    emit4bytes((op >> 4)*B24\
-              | m.value()*B20\
-              | (op & 0x0F)*B16\
-              | i);\
+    ri2_form((op & 0x0FF0) << 20 | m.value() << 20 | (op & 0x000F)*B16 | i);\
+}
+void Assembler::ri2_form(uint32_t code) {
+    emit4bytes(code);
 }
 
-/*
- * RIE format: <insn> R1,R3,I2
- *    +--------+----+----+------------------+--------+--------+
- *    | OpCode | R1 | R3 |        I2        |////////| OpCode |
- *    +--------+----+----+------------------+--------+--------+
- *    0        8    12   16                 32       40      47
- */
+// RIE format: <insn> R1,R3,I2
+//    +--------+----+----+------------------+--------+--------+
+//    | OpCode | R1 | R3 |        I2        |////////| OpCode |
+//    +--------+----+----+------------------+--------+--------+
+//    0        8    12   16                 32       40      47
 #define RIE_FORM_EMIT(name, op) \
 void Assembler::name(S390Register r1, S390Register r3, \
                      S390Immediate16 i) {\
-    emit6bytes((op >> 8)*B24\
-              | r1.code()*B20\
-              | r3.code()*B16\
-              | i2);\
+    rie_form((op & 0xFF00)*B36 | r1.code()*B36 | r3.code()*B32\
+            | i*B16 | (op & 0x00FF));\
+}
+void Assembler::rie_form(uint64_t code) {
+    emit6bytes(code);
 }
 
-/*
- * RIL format: <insn> R1,I2
- *   +--------+----+----+------------------------------------+
- *   | OpCode | R1 |OpCd|                  I2                |
- *   +--------+----+----+------------------------------------+
- *   0        8    12   16                                  47
- */
-#define RIL_FORM_EMIT(name, op) \
-void Assembler::name(S390Register r1, S390Immediate32 i) {\
-    emit6bytes((op >> 8)*B40\
-              | r1.code()*B36\
-              | (op & 0x0F)*B32\
-              | i2);\
+// RIL1 format: <insn> R1,I2
+//   +--------+----+----+------------------------------------+
+//   | OpCode | R1 |OpCd|                  I2                |
+//   +--------+----+----+------------------------------------+
+//   0        8    12   16                                  47
+#define RIL1_FORM_EMIT(name, op) \
+void Assembler::name(S390Register r, S390Immediate32 i) {\
+    ril1_form((op & 0x0FF0)*B36 | r.code()*B36\
+            | (op & 0x000F)*B32 | i);\
+}
+void Assembler::ril1_form(uint64_t code) {
+    emit6bytes(code);
 }
 
-/*
- * RRE format: <insn> R1,R2
- *    +------------------+--------+----+----+
- *    |      OpCode      |////////| R1 | R2 |
- *    +------------------+--------+----+----+
- *    0                  16       24   28  31
- */
+// RIL2 format: <insn> M1,I2
+//   +--------+----+----+------------------------------------+
+//   | OpCode | M1 |OpCd|                  I2                |
+//   +--------+----+----+------------------------------------+
+//   0        8    12   16                                  47
+#define RIL2_FORM_EMIT(name, op) \
+void Assembler::name(S390Mask m, S390Immediate32 i) {\
+    ril2_form((op & 0x0FF0)*B36 | m.value()*B36\
+             |(op & 0x000F)*B32 | i);\
+}
+void Assembler::ril2_form(uint64_t code) {
+    emit6bytes(code);
+}
+
+// RRE format: <insn> R1,R2
+//    +------------------+--------+----+----+
+//    |      OpCode      |////////| R1 | R2 |
+//    +------------------+--------+----+----+
+//    0                  16       24   28  31
 #define RRE_FORM_EMIT(name, op) \
 void Assembler::name(S390Register r1, S390Register r2) {\
-    emit4bytes(op*B16\
-              | r1.code()*B4\
-              | r2.code());\
+    rrd_form(op << 16 | r1.code()*B4 | r2.code());\
+}
+void Assembler::rre_form(uint32_t code) {
+    emit4bytes(code);
 }
 
-/*
- * RS1 format: <insn> R1,R3,D2(B2)
- *    +--------+----+----+----+-------------+
- *    | OpCode | R1 | R3 | B2 |     D2      |
- *    +--------+----+----+----+-------------+
- *    0        8    12   16   20           31
- */
+// RRD format: <insn> R1,R3, R2
+//    +------------------+----+----+----+----+
+//    |      OpCode      | R1 |////| R3 | R2 |
+//    +------------------+----+----+----+----+
+//    0                  16  20   24   28   31
+#define RRD_FORM_EMIT(name, op) \
+void Assembler::name(S390Register r1, S390Register r3, \
+                     S390Register r2) {\
+    rrd_form(op << 16 | r1.code()*B12 | r3.code()*B4\
+            | r2.code());\
+}
+void Assembler::rrd_form(uint32_t code) {
+    emit4bytes(code);
+}
+
+// RS1 format: <insn> R1,R3,D2(B2)
+//    +--------+----+----+----+-------------+
+//    | OpCode | R1 | R3 | B2 |     D2      |
+//    +--------+----+----+----+-------------+
+//    0        8    12   16   20           31
 #define RS1_FORM_EMIT(name, op) \
 void Assembler::name(S390Register r1, S390Register r3, \
                      S390Register b2, S390Displacement d2) {\
-    emit4bytes(op*B24\
-              | r1.code()*B20\
-              | r3.code()*B16\
-              | b2.code()*B12\
-              | d2.lowValue());\
+    rs1_form(op << 24 | r1.code()*B20 | r3.code()*B16\
+            | b2.code()*B12 | d2.lowValue());\
 }\
-void Assembler::name(S390Register r1, S390Register r2, \
+void Assembler::name(S390Register r1, S390Register r3, \
                      S390Operand opnd) {\
     name(r1, r3, opnd.getBaseRegister(), opnd.getDisplacement());\
 }
+void Assembler::rs1_form(uint32_t code) {
+    emit4bytes(code);
+}
 
-/*
- * RS2 format: <insn> R1,M3,D2(B2)
- *    +--------+----+----+----+-------------+
- *    | OpCode | R1 | M3 | B2 |     D2      |
- *    +--------+----+----+----+-------------+
- *    0        8    12   16   20           31
- */
+// RS2 format: <insn> R1,M3,D2(B2)
+//    +--------+----+----+----+-------------+
+//    | OpCode | R1 | M3 | B2 |     D2      |
+//    +--------+----+----+----+-------------+
+//    0        8    12   16   20           31
 #define RS2_FORM_EMIT(name, op) \
 void Assembler::name(S390Register r1, S390Mask m3, \
                      S390Register b2, S390Displacement d2) {\
-    emit4bytes(op*B24\
-              | r1.code()*B20\
-              | m3.value()*B16\
-              | b2.code()*B12\
-              | d2.lowValue());\
+    rs2_form(op << 24 | r1.code()*B20 | m3.value()*B16\
+            | b2.code()*B12 | d2.lowValue());\
 }\
-void Assembler::name(S390Register r1, S390Register r2, \
+void Assembler::name(S390Register r1, S390Mask m3, \
                      S390Operand opnd) {\
-    name(r1, r3, opnd.getBaseRegister(), opnd.getDisplacement());\
+    name(r1, m3, opnd.getBaseRegister(), opnd.getDisplacement());\
+}
+void Assembler::rs2_form(uint32_t code) {
+    emit4bytes(code);
 }
 
-/*
- * RSI format: <insn> R1,R3,I2
- *    +--------+----+----+------------------------------------+
- *    | OpCode | R1 | R3 |                  I2                |
- *    +--------+----+----+------------------------------------+
- *    0        8    12   16                                  47
- */
+// RSI format: <insn> R1,R3,I2
+//    +--------+----+----+------------------------------------+
+//    | OpCode | R1 | R3 |                  I2                |
+//    +--------+----+----+------------------------------------+
+//    0        8    12   16                                  47
 #define RSI_FORM_EMIT(name, op)\
 void Assembler::name(S390Register r1, S390Register r3, S390Immediate16 i2) {\
-    uint64_t instr = op*B40 | r1.code()*B36 | r3.code()*B32 | i2;\
-    emit6bytes(instr);\
+    rsi_form(op*B40 | r1.code()*B36 | r3.code()*B32 | i2);\
+}
+void Assembler::rsi_form(uint64_t code) {
+    emit6bytes(code);
 }
 
-/*
- * RSL format: <insn> R1,R3,D2(B2)
- *    +--------+----+----+----+-------------+--------+--------+
- *    | OpCode | L1 |    | B2 |    D2       |        | OpCode |
- *    +--------+----+----+----+-------------+--------+--------+
- *    0        8    12   16   20            32       40      47
- */
+// RSL format: <insn> R1,R3,D2(B2)
+//    +--------+----+----+----+-------------+--------+--------+
+//    | OpCode | L1 |    | B2 |    D2       |        | OpCode |
+//    +--------+----+----+----+-------------+--------+--------+
+//    0        8    12   16   20            32       40      47
 #define RSL_FORM_EMIT(name, op)\
 void Assembler::name(S390Length l1, S390Register b2, S390Displacement d2) {\
-    emit4bytes((op & 0xFF00)*B24 | l1*B20 | b2.code()*B12 \
-               | d2.lowValue());\
-    emit2bytes((op & 0x00FF));\
+    rsl_form((op & 0xFF00)*B32 | l1*B36 | b2.code()*B28\
+            | d2.lowValue()*B16 | (op & 0x00FF));\
+}
+void Assembler::rsl_form(uint64_t code) {
+    emit6bytes(code);
 }
 
-/*
- * RSY1 format: <insn> R1,R3,D2(B2)
- *    +--------+----+----+----+-------------+--------+--------+
- *    | OpCode | R1 | R3 | B2 |    DL2      |  DH2   | OpCode |
- *    +--------+----+----+----+-------------+--------+--------+
- *    0        8    12   16   20            32       40      47
- */
+// RSY1 format: <insn> R1,R3,D2(B2)
+//    +--------+----+----+----+-------------+--------+--------+
+//    | OpCode | R1 | R3 | B2 |    DL2      |  DH2   | OpCode |
+//    +--------+----+----+----+-------------+--------+--------+
+//    0        8    12   16   20            32       40      47
 #define RSY1_FORM_EMIT(name, op)\
 void Assembler::name(S390Register r1, S390Register r3, S390Register b2, \
                      S390Displacement d2) {\
-    uint64_t instr = (op >> 8)*B40 | r1.code()*B36 | r3.code()*B32\
-                   | b2.code()*B28 | d2.lowValue()*B16\
-                   | d2.highValue()*B8 | (op & 0x00FF);\
-    emit6bytes(instr);\
+    rsy1_form((op & 0xFF00)*B32 | r1.code()*B36 | r3.code()*B32\
+             | b2.code()*B28 | d2.lowValue()*B16 | d2.highValue()*B8\
+             | (op & 0x00FF));\
 }\
 void Assembler::name(S390Register r1, S390Register r3, S390Operand opnd) {\
     name(r1, r3, opnd.getBaseRegister(), opnd.getDisplacement());\
 }
+void Assembler::rsy1_form(uint64_t code) {
+    emit6bytes(code);
+}
 
-/*
- * RSY2 format: <insn> R1,M3,D2(B2)
- *    +--------+----+----+----+-------------+--------+--------+
- *    | OpCode | R1 | M3 | B2 |    DL2      |  DH2   | OpCode |
- *    +--------+----+----+----+-------------+--------+--------+
- *    0        8    12   16   20            32       40      47
- */
+
+// RSY2 format: <insn> R1,M3,D2(B2)
+//    +--------+----+----+----+-------------+--------+--------+
+//    | OpCode | R1 | M3 | B2 |    DL2      |  DH2   | OpCode |
+//    +--------+----+----+----+-------------+--------+--------+
+//    0        8    12   16   20            32       40      47
 #define RSY2_FORM_EMIT(name, op)\
 void Assembler::name(S390Register r1, S390Mask m3, S390Register b2, \
                      S390Displacement d2) {\
-    uint64_t instr = (op >> 8)*B40 | m3.value()*B36 | r3.code()*B32\
-                   | b2.code()*B28 | d2.lowValue()*B16\
-                   | d2.highValue()*B8 | (op & 0x00FF);\
-    emit6bytes(instr);\
+    rsy2_form((op & 0xFF00)*B32 | r1.code()*B36 | m3.value()*B32\
+             | b2.code()*B28 | d2.lowValue()*B16 | d2.highValue()*B8\
+             | (op & 0x00FF));\
 }\
-void Assembler::name(S390Register r1, S390Register r3, S390Operand opnd) {\
-    name(r1, r3, opnd.getBaseRegister(), opnd.getDisplacement());\
+void Assembler::name(S390Register r1, S390Mask m3, S390Operand opnd) {\
+    name(r1, m3, opnd.getBaseRegister(), opnd.getDisplacement());\
+}
+void Assembler::rsy2_form(uint64_t code) {
+    emit6bytes(code);
 }
 
-/*
- * RXE format: <insn> R1,D2(X2,B2)
- *    +--------+----+----+----+-------------+--------+--------+
- *    | OpCode | R1 | X2 | B2 |     D2      |////////| OpCode |
- *    +--------+----+----+----+-------------+--------+--------+
- *    0        8    12   16   20            32       40      47
- */
+// RXE format: <insn> R1,D2(X2,B2)
+//    +--------+----+----+----+-------------+--------+--------+
+//    | OpCode | R1 | X2 | B2 |     D2      |////////| OpCode |
+//    +--------+----+----+----+-------------+--------+--------+
+//    0        8    12   16   20            32       40      47
 #define RXE_FORM_EMIT(name, op)\
 void Assembler::name(S390Register r1, S390Register x2, S390Register b2, \
                      S390Displacement d2) {\
-    uint64_t instr = (op >> 8)*B40 | r1.code()*B36 | x2.code()*B32\
-                   | b2.code()*B28 | d2.lowValue()*B16\
-                   | (op & 0x00FF);\
-    emit6bytes(instr);\
+    rxe_form(((uint64_t)op & 0xFF00)*B32 | r1.code()*B36 | x2.code()*B32\
+            | b2.code()*B28 | d2.lowValue()*B16 \
+            | (op & 0x00FF));\
 }\
 void Assembler::name(S390Register r1, S390Operand opnd) {\
     name(r1, opnd.getIndexRegister(), opnd.getBaseRegister(), \
          opnd.getDisplacement());\
 }
+void Assembler::rxe_form(uint64_t code) {
+    emit6bytes(code);
+}
 
-/*
- * RXY format: <insn> R1,D2(X2,B2)
- *    +--------+----+----+----+-------------+--------+--------+
- *    | OpCode | R1 | X2 | B2 |     DL2     |   DH2  | OpCode |
- *    +--------+----+----+----+-------------+--------+--------+
- *    0        8    12   16   20            32   36   40      47
- */
+// RXY format: <insn> R1,D2(X2,B2)
+//    +--------+----+----+----+-------------+--------+--------+
+//    | OpCode | R1 | X2 | B2 |     DL2     |   DH2  | OpCode |
+//    +--------+----+----+----+-------------+--------+--------+
+//    0        8    12   16   20            32   36   40      47
 #define RXY_FORM_EMIT(name, op)\
 void Assembler::name(S390Register r1, S390Register x2, S390Register b2, \
                      S390Displacement d2) {\
-    uint64_t instr = (op >> 8)*B40 | r1.code()*B36 | x2.code()*B32\
-                   | b2.code()*B28 | d2.lowValue()*B16\
-                   | d2.highValue()*B8 | (op & 0x00FF);\
-    emit6bytes(instr);\
+    rxy_form((uint64_t)(op & 0xFF00)*B32 | (uint64_t)r1.code()*B36\
+            | (uint64_t)x2.code()*B32 | b2.code()*B28 | d2.lowValue()*B16\
+            | d2.highValue()*B8 | (op & 0x00FF));\
 }\
-void Assembler::name(S390Register r1, S390Register r3, S390Operand opnd) {\
+void Assembler::name(S390Register r1, S390Operand opnd) {\
     name(r1, opnd.getIndexRegister(), opnd.getBaseRegister(), \
          opnd.getDisplacement());\
 }
-
-/*
- * S format: <insn> D2(B2)
- *    +------------------+----+-------------+
- *    |      OpCode      | B2 |     D2      |
- *    +------------------+----+-------------+
- *    0                  16   20           31
- */
-#define S_FORM_EMIT(name, op)\
-void Assembler::name(S390Register b1, S390Displacement d2) {\
-    emit4bytes(op*B16 | b1.code()*B12 | d2.lowValue());\
-}\
-void Assembler::name(S390Operand opnd) {\
-    emit4bytes(op*B16 | opnd.getBaseRegister()\
-              | opnd.getDisplacement());\
+void Assembler::rxy_form(uint64_t code) {
+    emit6bytes(code);
 }
 
-/*
- * SI format: <insn> D1(B1),I2
- *    +--------+---------+----+-------------+
- *    | OpCode |   I2    | B1 |     D1      |
- *    +--------+---------+----+-------------+
- *    0        8         16   20           31
- */
+// RRS format: <insn> R1,R2,M3,D4(B4)
+//    +--------+----+----+----+-------------+----+---+--------+
+//    | OpCode | R1 | R2 | B4 |     D4      | M3 |///| OpCode |
+//    +--------+----+----+----+-------------+----+---+--------+
+//    0        8    12   16   20            32   36   40      47
+#define RRS_FORM_EMIT(name, op)\
+void Assembler::name(S390Register r1, S390Register r2, S390Register b4, \
+                     S390Displacement d4, S390Mask m3) {\
+    rrs_form((op & 0xFF00)*B32 | r1.code()*B32 | r2.code()*B32 \
+            | b4.code()*B28 | d4.lowValue()*B16 | m3.value()*B12 \
+            | (op & 0x00FF));\
+}\
+void Assembler::name(S390Register r1, S390Register r2, S390Mask m3, \
+                     S390Operand opnd) {\
+    name(r1, r2, opnd.getBaseRegister(), opnd.getDisplacement(), m3);\
+}
+void Assembler::rrs_form(uint64_t code) {
+    emit6bytes(code);
+}
+
+// RIS format: <insn> R1,I2,M3,D4(B4)
+//    +--------+----+----+----+-------------+--------+--------+
+//    | OpCode | R1 | M3 | B4 |     D4      |   I2   | OpCode |
+//    +--------+----+----+----+-------------+--------+--------+
+//    0        8    12   16   20            32        40      47
+#define RIS_FORM_EMIT(name, op)\
+void Assembler::name(S390Register r1, S390Mask m3, S390Register b4, \
+                     S390Displacement d4, S390Immediate8 i2) {\
+    ris_form((op & 0xFF00)*B32 | r1.code()*B32 | m3.value() \
+            | b4.code()*B28 | d4.lowValue()*B16 | i2*B8 | (op & 0x00FF));\
+}\
+void Assembler::name(S390Register r1, S390Immediate8 i2, S390Mask m3, \
+                     S390Operand opnd) {\
+    name(r1, m3, opnd.getBaseRegister(), opnd.getDisplacement(), i2);\
+}
+void Assembler::ris_form(uint64_t code) {
+    emit6bytes(code);
+}
+
+
+// S format: <insn> D2(B2)
+//    +------------------+----+-------------+
+//    |      OpCode      | B2 |     D2      |
+//    +------------------+----+-------------+
+//    0                  16   20           31
+#define S_FORM_EMIT(name, op)\
+void Assembler::name(S390Register b1, S390Displacement d2) {\
+    s_form(op << 16 | b1.code()*B12 | d2.lowValue());\
+}\
+void Assembler::name(S390Operand opnd) {\
+    name(opnd.getBaseRegister(), opnd.getDisplacement());\
+}
+void Assembler::s_form(uint32_t code) {
+    emit4bytes(code);
+}
+
+// SI format: <insn> D1(B1),I2
+//    +--------+---------+----+-------------+
+//    | OpCode |   I2    | B1 |     D1      |
+//    +--------+---------+----+-------------+
+//    0        8         16   20           31
 #define SI_FORM_EMIT(name, op)\
 void Assembler::name(S390Immediate8 i2, S390Register b1, \
                      S390Displacement d1) {\
-    emit4bytes(op*B24 | i2*B16 | b1.code()*B12 | d1.lowValue());\
+    si_form((op & 0x00FF) << 24 | i2*B16 | b1.code()*B12 | d1.lowValue());\
 }\
 void Assembler::name(S390Operand opnd, S390Immediate8 i2) {\
     name(i2, opnd.getBaseRegister(), opnd.getDisplacement()); \
 }
+void Assembler::si_form(uint32_t code) {
+    emit4bytes(code);
+}
 
-/*
- * SIY format: <insn> D1(B1),U2
- *    +--------+---------+----+-------------+--------+--------+
- *    | OpCode |   I2    | B1 |     DL1     |  DH1   | OpCode |
- *    +--------+---------+----+-------------+--------+--------+
- *    0        8         16   20            32   36   40      47
- */
+// SIY format: <insn> D1(B1),I2
+//    +--------+---------+----+-------------+--------+--------+
+//    | OpCode |   I2    | B1 |     DL1     |  DH1   | OpCode |
+//    +--------+---------+----+-------------+--------+--------+
+//    0        8         16   20            32   36   40      47
 #define SIY_FORM_EMIT(name, op)\
 void Assembler::name(S390Immediate8 i2, S390Register b1, \
                      S390Displacement d1) {\
-    uint64_t instr = (op >> 8)*B40 | i2*B32 | b1.code()*B28\
-                   | d1.lowValue()*B16 | d1.highValue()*B8\
-                   | (op & 0x00FF);\
-    emit6bytes(instr);\
+    siy_form((op & 0xFF00)*B32 | i2*B32 | b1.code()*B20\
+            | d1.lowValue()*B16 | d1.highValue()*B8 | (op & 0x00FF));\
 }\
-void Assembler::name(S390Operand opnd, S390Immediate i2) {\
+void Assembler::name(S390Operand opnd, S390Immediate8 i2) {\
     name(i2, opnd.getBaseRegister(), opnd.getDisplacement());\
 }
+void Assembler::siy_form(uint64_t code) {
+    emit6bytes(code);
+}
 
-/*
- * RXF format: <insn> R1,R3,D2(X2,B2)
- *    +--------+----+----+----+-------------+----+---+--------+
- *    | OpCode | R3 | X2 | B2 |     D2      | R1 |///| OpCode |
- *    +--------+----+----+----+-------------+----+---+--------+
- *    0        8    12   16   20            32   36  40      47
- */
+// SIL format: <insn> D1(B1),I2
+//    +------------------+----+-------------+-----------------+
+//    |     OpCode       | B1 |      D1     |        I2       |
+//    +------------------+----+-------------+-----------------+
+//    0                 16   20            32                47
+#define SIL_FORM_EMIT(name, op)\
+void Assembler::name(S390Register b1, S390Displacement d1, \
+                     S390Immediate16 i2) {\
+    sil_form(op*B32 | b1.code()*B28 | d1.lowValue()*B16 | i2);\
+}\
+void Assembler::name(S390Operand opnd, S390Immediate16 i2) {\
+    name(opnd.getBaseRegister(), opnd.getDisplacement(), i2);\
+}
+void Assembler::sil_form(uint64_t code) {
+    emit6bytes(code);
+}
+
+// RXF format: <insn> R1,R3,D2(X2,B2)
+//    +--------+----+----+----+-------------+----+---+--------+
+//    | OpCode | R3 | X2 | B2 |     D2      | R1 |///| OpCode |
+//    +--------+----+----+----+-------------+----+---+--------+
+//    0        8    12   16   20            32   36  40      47
 #define RXF_FORM_EMIT(name, op)\
 void Assembler::name(S390Register r1, S390Register r3, S390Register b2, \
                      S390Register x2, S390Displacement d2) {\
-    uint64_t instr = (op >> 8)*B40 | r3.code()*B36 | x2.code()*B32\
-                   | b2.code()*B28 | d2.lowValue()*B16 | r1.code()*B12\
-                   | (op & 0x00FF);\
-    emit6bytes(instr);\
+    rxf_form((op & 0xFF00)*B32 | r3.code()*B36 | x2.code()*B32\
+            | b2.code()*B28 | d2.lowValue()*B16 | r1.code()*B12\
+            | (op & 0x00FF));\
 }\
 void Assembler::name(S390Register r1, S390Register r3, S390Operand opnd) {\
     name(r1, r3, opnd.getBaseRegister(), opnd.getIndexRegister(), \
          opnd.getDisplacement());\
 }
+void Assembler::rxf_form(uint64_t code) {
+    emit6bytes(code);
+}
 
-/*
- * SS1 format: <insn> D1(L,B1),D2(B3)
- *    +--------+----+----+----+-------------+----+------------+
- *    | OpCode |    L    | B1 |     D1      | B2 |     D2     |
- *    +--------+----+----+----+-------------+----+------------+
- *    0        8    12   16   20            32   36          47
- */
+// SS1 format: <insn> D1(L,B1),D2(B3)
+//    +--------+----+----+----+-------------+----+------------+
+//    | OpCode |    L    | B1 |     D1      | B2 |     D2     |
+//    +--------+----+----+----+-------------+----+------------+
+//    0        8    12   16   20            32   36          47
 #define SS1_FORM_EMIT(name, op)\
 void Assembler::name(S390Length l, S390Register b1, S390Displacement d1, \
                      S390Register b2, S390Displacement d2) {\
-    uint64_t instr = op*B40 | l*B32 | b1.code()*B28\
-                   | d1.lowValue()*B16 | b2.code()*B12 | d2.lowValue();\
-    emit6bytes(instr);\
+    ss1_form(op*B40 | l*B32 | b1.code()*B28\
+            | d1.lowValue()*B16 | b2.code()*B12 | d2.lowValue());\
 }\
 void Assembler::name(S390Operand opnd1, S390Operand opnd2) {\
     name(opnd1.getLength(), opnd1.getBaseRegister(), \
          opnd1.getDisplacement(), opnd2.getBaseRegister(), \
-         opnd2.getDisplacement(), r3);\
+         opnd2.getDisplacement());\
+}
+void Assembler::ss1_form(uint64_t code) {
+    emit6bytes(code);
 }
 
-/*
- * SS2 format: <insn> D1(L1,B1), D2(L3,B3)
- *    +--------+----+----+----+-------------+----+------------+
- *    | OpCode | L1 | L2 | B1 |     D1      | B2 |     D2     |
- *    +--------+----+----+----+-------------+----+------------+
- *    0        8    12   16   20            32   36          47
- */
+// SS2 format: <insn> D1(L1,B1), D2(L3,B3)
+//    +--------+----+----+----+-------------+----+------------+
+//    | OpCode | L1 | L2 | B1 |     D1      | B2 |     D2     |
+//    +--------+----+----+----+-------------+----+------------+
+//    0        8    12   16   20            32   36          47
 #define SS2_FORM_EMIT(name, op)\
 void Assembler::name(S390Length l1, S390Length l2, S390Register b1, \
                      S390Displacement d1, S390Register b2, \
                      S390Displacement d2) {\
-    emit6bytes(op*B40 | l1*B36 | l2*B32 | b1.code()*B28 | d1.lowValue()*B16\
-               b2.code()*B12 | d2.lowValue());\
+    uint64_t instr = op*B40 | l1*B36 | l2*B32\
+                   | b1.code()*B28 | d1.lowValue()*B16 | b2.code()*B12\
+                   | d2.lowValue();\
+    emit6bytes(instr);\
 }\
 void Assembler::name(S390Operand opnd1, S390Operand opnd2) {\
     name(opnd1.getLength(), opnd2.getLength(), opnd1.getBaseRegister(), \
          opnd1.getDisplacement(), opnd2.getBaseRegister(), \
-         opnd2.getDisplacement(), r3);\
+         opnd2.getDisplacement());\
+}
+void Assembler::ss2_form(uint64_t code) {
+    emit6bytes(code);
 }
 
-/*
- * SS3 format: <insn> D1(L1,B1), D2(I2,B2)
- *    +--------+----+----+----+-------------+----+------------+
- *    | OpCode | L1 | I2 | B1 |     D1      | B2 |     D2     |
- *    +--------+----+----+----+-------------+----+------------+
- *    0        8    12   16   20            32   36          47
- */
+// SS3 format: <insn> D1(L1,B1), D2(I2,B2)
+//    +--------+----+----+----+-------------+----+------------+
+//    | OpCode | L1 | I2 | B1 |     D1      | B2 |     D2     |
+//    +--------+----+----+----+-------------+----+------------+
+//    0        8    12   16   20            32   36          47
 #define SS3_FORM_EMIT(name, op)\
 void Assembler::name(S390Length l1, S390Immediate8 i2, S390Register b1, \
                      S390Displacement d1, S390Register b2, \
                      S390Displacement d2) {\
-    \/\/ not implemented.\
-    ASSERT(false);\
+    ss3_form(op*B40 | l1*B36 | i2*B32 | b1.code()*B28\
+            | d1.lowValue()*B16 | b2.code()*B12 | d2.lowValue());\
 }\
 void Assembler::name(S390Operand opnd1, S390Operand opnd2) {\
-    \/\/ not implemented.\
     ASSERT(false);\
 }
+void Assembler::ss3_form(uint64_t code) {
+    emit6bytes(code);
+}
 
-/*
- * SS4 format: <insn> D1(R1,B1), D2(R2,B2)
- *    +--------+----+----+----+-------------+----+------------+
- *    | OpCode | R1 | R2 | B1 |     D1      | B2 |     D2     |
- *    +--------+----+----+----+-------------+----+------------+
- *    0        8    12   16   20            32   36          47
- */
+// SS4 format: <insn> D1(R1,B1), D2(R2,B2)
+//    +--------+----+----+----+-------------+----+------------+
+//    | OpCode | R1 | R2 | B1 |     D1      | B2 |     D2     |
+//    +--------+----+----+----+-------------+----+------------+
+//    0        8    12   16   20            32   36          47
 #define SS4_FORM_EMIT(name, op)\
 void Assembler::name(S390Register r1, S390Register r2, S390Register b1, \
                      S390Displacement d1, S390Register b2, \
                      S390Displacement d2) {\
-    \/\/ not implemented.\
-    ASSERT(false);\
+    ss4_form(op*B40 | r1.code()*B36 | r2.code()*B32 | b1.code()*B28\
+            | d1.lowValue()*B16 | b2.code()*B12 | d2.lowValue());\
 }\
 void Assembler::name(S390Operand opnd1, S390Operand opnd2) {\
-    \/\/ not implemented.\
     ASSERT(false);\
 }
+void Assembler::ss4_form(uint64_t code) {
+    emit6bytes(code);
+}
 
-/*
- * SS5 format: <insn> D1(R1,B1), D2(R2,B2)
- *    +--------+----+----+----+-------------+----+------------+
- *    | OpCode | R1 | R3 | B2 |     D2      | B4 |     D4     |
- *    +--------+----+----+----+-------------+----+------------+
- *    0        8    12   16   20            32   36          47
- */
+// SS5 format: <insn> D1(R1,B1), D2(R2,B2)
+//    +--------+----+----+----+-------------+----+------------+
+//    | OpCode | R1 | R3 | B2 |     D2      | B4 |     D4     |
+//    +--------+----+----+----+-------------+----+------------+
+//    0        8    12   16   20            32   36          47
 #define SS5_FORM_EMIT(name, op)\
 void Assembler::name(S390Register r1, S390Register r3, S390Register b2, \
                      S390Displacement d2, S390Register b4, \
                      S390Displacement d4) {\
-    \/\/ not implemented.\
-    ASSERT(false);\
+    ss5_form(op*B40 | r1.code()*B36 | r3.code()*B32 | b2.code()*B28\
+            | d2.lowValue()*B16 | b4.code()*B12 | d4.lowValue());\
 }\
 void Assembler::name(S390Operand opnd1, S390Operand opnd2) {\
-    \/\/ not implemented.\
     ASSERT(false);\
 }
+void Assembler::ss5_form(uint64_t code) {
+    emit6bytes(code);
+}
 
-/*
- * SSE format: <insn> D1(B1),D2(B2)
- *    +------------------+----+-------------+----+------------+
- *    |      OpCode      | B1 |     D1      | B2 |     D2     |
- *    +------------------+----+-------------+----+------------+
- *    0        8    12   16   20            32   36           47
- */
+// SSE format: <insn> D1(B1),D2(B2)
+//    +------------------+----+-------------+----+------------+
+//    |      OpCode      | B1 |     D1      | B2 |     D2     |
+//    +------------------+----+-------------+----+------------+
+//    0        8    12   16   20            32   36           47
 #define SSE_FORM_EMIT(name, op)\
 void Assembler::name(S390Register b1, S390Displacement d1, S390Register b2, \
                      S390Displacement d2) {\
-    uint64_t instr = op*B32 | b1.code()*B28 | d1.lowValue()*B16\
-                   | b2.code()*B12 | d2.lowValue();\
-    emit6bytes(instr);\
+    sse_form(op << 32 | b1.code()*B28 | d1.lowValue()*B16\
+            | b2.code()*B12 | d2.lowValue());\
 }\
 void Assembler::name(S390Operand opnd1, S390Operand opnd2) {\
     name(op, opnd1.getBaseRegister(), opnd1.getDisplacement(), \
          opnd2.getBaseRegister(), opnd2.getDisplacement());\
 }
+void Assembler::sse_form(uint64_t code) {
+    emit6bytes(code);
+}
 
-/*
- *  RRF1 format: <insn> R1,R2,R3
- *    +------------------+----+----+----+----+
- *    |      OpCode      | R1 |    | R3 | R2 |
- *    +------------------+----+----+----+----+
- *    0                  16   20   24   28  31
- */
+// SSF format: <insn> R3, D1(B1),D2(B2),R3
+//    +--------+----+----+----+-------------+----+------------+
+//    | OpCode | R3 |OpCd| B1 |     D1      | B2 |     D2     |
+//    +--------+----+----+----+-------------+----+------------+
+//    0        8    12   16   20            32   36           47
+#define SSF_FORM_EMIT(name, op)\
+void Assembler::name(S390Register r3, S390Register b1, S390Displacement d1, \
+                     S390Register b2, S390Displacement d2) {\
+    ssf_form((op & 0x0FF0)*B40 | r3.code()*B36 | (op & 0x000F)*B32\
+            | d1.lowValue()*B16 | b2.code()*B12 | d2.lowValue());\
+}\
+void Assembler::name(S390Register r3, S390Operand opnd1, S390Operand opnd2) {\
+    name(r3, opnd1.getBaseRegister(), opnd1.getDisplacement(), \
+         opnd2.getBaseRegister(), opnd2.getDisplacement());\
+}
+void Assembler::ssf_form(uint64_t code) {
+    emit6bytes(code);
+}
+
+//  RRF1 format: <insn> R1,R2,R3
+//    +------------------+----+----+----+----+
+//    |      OpCode      | R1 |    | R3 | R2 |
+//    +------------------+----+----+----+----+
+//    0                  16   20   24   28  31
 #define RRF1_FORM_EMIT(name, op)\
 void Assembler::name(S390Register r1, S390Register r3, S390Register r2) {\
-    emit4bytes(op*B16 | r1.code()*B12 | r3.code()*B4 | r2.code());\
+    rrf1_form(op << 16 | r1.code()*B12 | r3.code()*B4 | r2.code());\
+}
+void Assembler::rrf1_form(uint32_t code) {
+    emit4bytes(code);
 }
 
-/*
- *  RRF2 format: <insn> R1,R2,M3
- *    +------------------+----+----+----+----+
- *    |      OpCode      | M3 |    | R1 | R2 |
- *    +------------------+----+----+----+----+
- *    0                  16   20   24   28  31
- */
+//  RRF2 format: <insn> R1,R2,M3
+//    +------------------+----+----+----+----+
+//    |      OpCode      | M3 |    | R1 | R2 |
+//    +------------------+----+----+----+----+
+//    0                  16   20   24   28  31
 #define RRF2_FORM_EMIT(name, op)\
 void Assembler::name(S390Mask m3, S390Register r1, S390Register r2) {\
-    emit4bytes(op*B16 | m3.value()*B12 | r1.code()*B4 | r2.code());\
+    rrf2_form(op << 16 |m3.value()*B12 | r1.code()*B4 | r2.code());\
+}
+void Assembler::rrf2_form(uint32_t code) {
+    emit4bytes(code);
 }
 
-/*
- *  RRF3 format: <insn> R1,R2,R3,M4
- *    +------------------+----+----+----+----+
- *    |      OpCode      | R3 | M4 | R1 | R2 |
- *    +------------------+----+----+----+----+
- *    0                  16   20   24   28  31
- */
+//  RRF3 format: <insn> R1,R2,R3,M4
+//    +------------------+----+----+----+----+
+//    |      OpCode      | R3 | M4 | R1 | R2 |
+//    +------------------+----+----+----+----+
+//    0                  16   20   24   28  31
 #define RRF3_FORM_EMIT(name, op)\
 void Assembler::name(S390Mask r3, S390Mask m4, S390Register r1, \
                      S390Register r2) {\
-    emit4bytes(op*B16 | r3.value()*B12 | m4.value()*B8 | \
-               r1.code()*B4 | r2.code());\
+    rrf3_form(op << 16 | r3.value()*B12 | m4.value()*B8 | \
+              r1.code()*B4 | r2.code());\
+}
+void Assembler::rrf3_form(uint32_t code) {
+    emit4bytes(code);
 }
 
 // end of S390 Instruction generation
 
-
-// arithmetics
-RR_FORM_EMIT(ar , AR )
-RR_FORM_EMIT(sr , SR )
-RR_FORM_EMIT(mr , MR )
-RR_FORM_EMIT(dr , DR )
-
-// logical
+// start of S390 instruction
+RX_FORM_EMIT(a, A)
+RX_FORM_EMIT(ad, AD)
+RXE_FORM_EMIT(adb, ADB)
+RRE_FORM_EMIT(adbr, ADBR)
+RR_FORM_EMIT(adr, ADR)
+RRF1_FORM_EMIT(adtr, ADTR)
+RRF1_FORM_EMIT(adtra, ADTRA)
+RX_FORM_EMIT(ae, AE)
+RXE_FORM_EMIT(aeb, AEB)
+RRE_FORM_EMIT(aebr, AEBR)
+RR_FORM_EMIT(aer, AER)
+RIL1_FORM_EMIT(afi, AFI)
+RXY_FORM_EMIT(ag, AG)
+RXY_FORM_EMIT(agf, AGF)
+RIL1_FORM_EMIT(agfi, AGFI)
+RRE_FORM_EMIT(agfr, AGFR)
+RI1_FORM_EMIT(aghi, AGHI)
+RIE_FORM_EMIT(aghik, AGHIK)
+RRE_FORM_EMIT(agr, AGR)
+RRF1_FORM_EMIT(agrk, AGRK)
+SIY_FORM_EMIT(agsi, AGSI)
+RX_FORM_EMIT(ah, AH)
+RRF1_FORM_EMIT(ahhhr, AHHHR)
+RRF1_FORM_EMIT(ahhlr, AHHLR)
+RI1_FORM_EMIT(ahi, AHI)
+RIE_FORM_EMIT(ahik, AHIK)
+RXY_FORM_EMIT(ahy, AHY)
+RIL1_FORM_EMIT(aih, AIH)
+RX_FORM_EMIT(al_z, AL)
+RXY_FORM_EMIT(alc, ALC)
+RXY_FORM_EMIT(alcg, ALCG)
+RRE_FORM_EMIT(alcgr, ALCGR)
+RRE_FORM_EMIT(alcr, ALCR)
+RIL1_FORM_EMIT(alfi, ALFI)
+RXY_FORM_EMIT(alg, ALG)
+RXY_FORM_EMIT(algf, ALGF)
+RIL1_FORM_EMIT(algfi, ALGFI)
+RRE_FORM_EMIT(algfr, ALGFR)
+RIE_FORM_EMIT(alghsik, ALGHSIK)
+RRE_FORM_EMIT(algr, ALGR)
+RRF1_FORM_EMIT(algrk, ALGRK)
+SIY_FORM_EMIT(algsi, ALGSI)
+RRF1_FORM_EMIT(alhhhr, ALHHHR)
+RRF1_FORM_EMIT(alhhlr, ALHHLR)
+RIE_FORM_EMIT(alhsik, ALHSIK)
+RR_FORM_EMIT(alr, ALR)
+RRF1_FORM_EMIT(alrk, ALRK)
+SIY_FORM_EMIT(alsi, ALSI)
+RIL1_FORM_EMIT(alsih, ALSIH)
+RIL1_FORM_EMIT(alsihn, ALSIHN)
+RXY_FORM_EMIT(aly, ALY)
+SS2_FORM_EMIT(ap, AP)
+RR_FORM_EMIT(ar, AR)
+RRF1_FORM_EMIT(ark, ARK)
+SIY_FORM_EMIT(asi, ASI)
+RX_FORM_EMIT(au, AU)
+RR_FORM_EMIT(aur, AUR)
+RX_FORM_EMIT(aw, AW)
+RR_FORM_EMIT(awr, AWR)
+RRE_FORM_EMIT(axbr, AXBR)
+RR_FORM_EMIT(axr, AXR)
+RRF1_FORM_EMIT(axtr, AXTR)
+RRF1_FORM_EMIT(axtra, AXTRA)
+RXY_FORM_EMIT(ay, AY)
+RX_FORM_EMIT(bal, BAL)
+RR_FORM_EMIT(balr, BALR)
+RX_FORM_EMIT(bas, BAS)
+RR_FORM_EMIT(basr, BASR)
+RR_FORM_EMIT(bassm, BASSM)
+RX_FORM_EMIT(bc, BC)
+RR2_FORM_EMIT(bcr, BCR)
+RX_FORM_EMIT(bct, BCT)
+RXY_FORM_EMIT(bctg, BCTG)
+RRE_FORM_EMIT(bctgr, BCTGR)
+RR_FORM_EMIT(bctr, BCTR)
+RI2_FORM_EMIT(bras, BRAS)
+RIL1_FORM_EMIT(brasl, BRASL)
+RI2_FORM_EMIT(brc, BRC)
+RIL2_FORM_EMIT(brcl, BRCL)
+RI2_FORM_EMIT(brct, BRCT)
+RI2_FORM_EMIT(brctg, BRCTG)
+RIL1_FORM_EMIT(brcth, BRCTH)
+RSI_FORM_EMIT(brxh, BRXH)
+RIE_FORM_EMIT(brxhg, BRXHG)
+RSI_FORM_EMIT(brxle, BRXLE)
+RIE_FORM_EMIT(brxlg, BRXLG)
+RR_FORM_EMIT(bsm, BSM)
+RS1_FORM_EMIT(bxle, BXLE)
+RSY1_FORM_EMIT(bxleg, BXLEG)
+RX_FORM_EMIT(c, C)
+RX_FORM_EMIT(cd, CD)
+RXE_FORM_EMIT(cdb, CDB)
+RRE_FORM_EMIT(cdbr, CDBR)
+RRE_FORM_EMIT(cdfbr, CDFBR)
+RRF2_FORM_EMIT(cdfbra, CDFBRA)
+RRE_FORM_EMIT(cdfr, CDFR)
+RRE_FORM_EMIT(cdftr, CDFTR)
+RRE_FORM_EMIT(cdgbr, CDGBR)
+RRF2_FORM_EMIT(cdgbra, CDGBRA)
+RRE_FORM_EMIT(cdgr, CDGR)
+RRE_FORM_EMIT(cdgtr, CDGTR)
+RRF2_FORM_EMIT(cdgtra, CDGTRA)
+RRF2_FORM_EMIT(cdlfbr, CDLFBR)
+RRF2_FORM_EMIT(cdlftr, CDLFTR)
+RRF2_FORM_EMIT(cdlgbr, CDLGBR)
+RRF2_FORM_EMIT(cdlgtr, CDLGTR)
+RR_FORM_EMIT(cdr, CDR)
+RS1_FORM_EMIT(cds, CDS)
+RSY1_FORM_EMIT(cdsg, CDSG)
+RRE_FORM_EMIT(cdstr, CDSTR)
+RSY1_FORM_EMIT(cdsy, CDSY)
+RRE_FORM_EMIT(cdtr, CDTR)
+RRE_FORM_EMIT(cdutr, CDUTR)
+RSL_FORM_EMIT(cdzt, CDZT)
+RX_FORM_EMIT(ce, CE)
+RXE_FORM_EMIT(ceb, CEB)
+RRE_FORM_EMIT(cebr, CEBR)
+RRE_FORM_EMIT(cedtr, CEDTR)
+RRE_FORM_EMIT(cefbr, CEFBR)
+RRF2_FORM_EMIT(cefbra, CEFBRA)
+RRE_FORM_EMIT(cefr, CEFR)
+RRE_FORM_EMIT(cegbr, CEGBR)
+RRF2_FORM_EMIT(cegbra, CEGBRA)
+RRE_FORM_EMIT(cegr, CEGR)
+RRF2_FORM_EMIT(celfbr, CELFBR)
+RRF2_FORM_EMIT(celgbr, CELGBR)
+RR_FORM_EMIT(cer, CER)
+RRE_FORM_EMIT(cextr, CEXTR)
+S_FORM_EMIT(cfc, CFC)
+RRF2_FORM_EMIT(cfdbr, CFDBR)
+RRF2_FORM_EMIT(cfdbra, CFDBRA)
+RRF2_FORM_EMIT(cfdr, CFDR)
+RRF2_FORM_EMIT(cfdtr, CFDTR)
+RRF2_FORM_EMIT(cfebr, CFEBR)
+RRF2_FORM_EMIT(cfebra, CFEBRA)
+RRF2_FORM_EMIT(cfer, CFER)
+RIL1_FORM_EMIT(cfi, CFI)
+RRF2_FORM_EMIT(cfxbr, CFXBR)
+RRF2_FORM_EMIT(cfxbra, CFXBRA)
+RRF2_FORM_EMIT(cfxr, CFXR)
+RRF2_FORM_EMIT(cfxtr, CFXTR)
+RXY_FORM_EMIT(cg, CG)
+RRF2_FORM_EMIT(cgdbr, CGDBR)
+RRF2_FORM_EMIT(cgdbra, CGDBRA)
+RRF2_FORM_EMIT(cgdr, CGDR)
+RRF2_FORM_EMIT(cgdtr, CGDTR)
+RRF2_FORM_EMIT(cgdtra, CGDTRA)
+RRF2_FORM_EMIT(cgebr, CGEBR)
+RRF2_FORM_EMIT(cgebra, CGEBRA)
+RRF2_FORM_EMIT(cger, CGER)
+RXY_FORM_EMIT(cgf, CGF)
+RIL1_FORM_EMIT(cgfi, CGFI)
+RRE_FORM_EMIT(cgfr, CGFR)
+RIL1_FORM_EMIT(cgfrl, CGFRL)
+RXY_FORM_EMIT(cgh, CGH)
+RI1_FORM_EMIT(cghi, CGHI)
+RIL1_FORM_EMIT(cghrl, CGHRL)
+SIL_FORM_EMIT(cghsi, CGHSI)
+RIS_FORM_EMIT(cgib, CGIB)
+RIE_FORM_EMIT(cgij, CGIJ)
+RIE_FORM_EMIT(cgit, CGIT)
+RRE_FORM_EMIT(cgr, CGR)
+RRS_FORM_EMIT(cgrb, CGRB)
+RIE_FORM_EMIT(cgrj, CGRJ)
+RIL1_FORM_EMIT(cgrl, CGRL)
+RRF2_FORM_EMIT(cgrt, CGRT)
+RRF2_FORM_EMIT(cgxbr, CGXBR)
+RRF2_FORM_EMIT(cgxbra, CGXBRA)
+RRF2_FORM_EMIT(cgxr, CGXR)
+RRF2_FORM_EMIT(cgxtr, CGXTR)
+RRF2_FORM_EMIT(cgxtra, CGXTRA)
+RX_FORM_EMIT(ch, CH)
+RXY_FORM_EMIT(chf, CHF)
+RRE_FORM_EMIT(chhr, CHHR)
+SIL_FORM_EMIT(chhsi, CHHSI)
+RI1_FORM_EMIT(chi, CHI)
+RRE_FORM_EMIT(chlr, CHLR)
+RIL1_FORM_EMIT(chrl, CHRL)
+SIL_FORM_EMIT(chsi, CHSI)
+RXY_FORM_EMIT(chy, CHY)
+RIS_FORM_EMIT(cib, CIB)
+RIL1_FORM_EMIT(cih, CIH)
+RIE_FORM_EMIT(cij, CIJ)
+RIE_FORM_EMIT(cit, CIT)
+RRE_FORM_EMIT(cksm, CKSM)
+RX_FORM_EMIT(cl, CL)
+SS1_FORM_EMIT(clc, CLC)
+RR_FORM_EMIT(clcl, CLCL)
+RS1_FORM_EMIT(clcle, CLCLE)
+RSY1_FORM_EMIT(clclu, CLCLU)
+RRF2_FORM_EMIT(clfdbr, CLFDBR)
+RRF2_FORM_EMIT(clfdtr, CLFDTR)
+RRF2_FORM_EMIT(clfebr, CLFEBR)
+SIL_FORM_EMIT(clfhsi, CLFHSI)
+RIL1_FORM_EMIT(clfi, CLFI)
+RIE_FORM_EMIT(clfit, CLFIT)
+RRF2_FORM_EMIT(clfxbr, CLFXBR)
+RRF2_FORM_EMIT(clfxtr, CLFXTR)
+RXY_FORM_EMIT(clg, CLG)
+RRF2_FORM_EMIT(clgdbr, CLGDBR)
+RRF2_FORM_EMIT(clgdtr, CLGDTR)
+RRF2_FORM_EMIT(clgebr, CLGEBR)
+RXY_FORM_EMIT(clgf, CLGF)
+RIL1_FORM_EMIT(clgfi, CLGFI)
 RR_FORM_EMIT(clr, CLR)
-RR_FORM_EMIT(nr , NR )
-RR_FORM_EMIT(or_z , OR)
-RR_FORM_EMIT(xr , XR )
-
-// loads/stores
-RR_FORM_EMIT(lr , LR )
-RX_FORM_EMIT(st , ST )
-RI_FORM_EMIT(lhi, LHI)
-
-// branches
-RR_FORM_EMIT(bcr, BCR)
-RX_FORM_EMIT(bc , BC )
-
-
-
+SSF_FORM_EMIT(csst, CSST)
+RRF2_FORM_EMIT(csxtr, CSXTR)
+RSY1_FORM_EMIT(csy, CSY)
+RRF2_FORM_EMIT(cu12, CU12)
+RRF2_FORM_EMIT(cu14, CU14)
+RRF2_FORM_EMIT(cu21, CU21)
+RRF2_FORM_EMIT(cu24, CU24)
+RRE_FORM_EMIT(cu41, CU41)
+RRE_FORM_EMIT(cu42, CU42)
+RRE_FORM_EMIT(cudtr, CUDTR)
+RRE_FORM_EMIT(cuse, CUSE)
+RRF2_FORM_EMIT(cutfu, CUTFU)
+RRF2_FORM_EMIT(cuutf, CUUTF)
+RRE_FORM_EMIT(cuxtr, CUXTR)
+RX_FORM_EMIT(cvb, CVB)
+RXY_FORM_EMIT(cvbg, CVBG)
+RXY_FORM_EMIT(cvby, CVBY)
+RX_FORM_EMIT(cvd, CVD)
+RXY_FORM_EMIT(cvdg, CVDG)
+RXY_FORM_EMIT(cvdy, CVDY)
+RRE_FORM_EMIT(cxbr, CXBR)
+RRE_FORM_EMIT(cxfbr, CXFBR)
+RRF2_FORM_EMIT(cxfbra, CXFBRA)
+RRE_FORM_EMIT(cxfr, CXFR)
+RRE_FORM_EMIT(cxftr, CXFTR)
+RRE_FORM_EMIT(cxgbr, CXGBR)
+RRF2_FORM_EMIT(cxgbra, CXGBRA)
+RRE_FORM_EMIT(cxgr, CXGR)
+RRE_FORM_EMIT(cxgtr, CXGTR)
+RRF2_FORM_EMIT(cxgtra, CXGTRA)
+RRF2_FORM_EMIT(cxlfbr, CXLFBR)
+RRF2_FORM_EMIT(cxlftr, CXLFTR)
+RRF2_FORM_EMIT(cxlgbr, CXLGBR)
+RRF2_FORM_EMIT(cxlgtr, CXLGTR)
+RRE_FORM_EMIT(cxr, CXR)
+RRE_FORM_EMIT(cxstr, CXSTR)
+RRE_FORM_EMIT(cxtr, CXTR)
+RRE_FORM_EMIT(cxutr, CXUTR)
+RSL_FORM_EMIT(cxzt, CXZT)
+RXY_FORM_EMIT(cy, CY)
+RSL_FORM_EMIT(czdt, CZDT)
+RSL_FORM_EMIT(czxt, CZXT)
+RX_FORM_EMIT(d, D)
+RX_FORM_EMIT(dd, DD)
+RXE_FORM_EMIT(ddb, DDB)
+RRE_FORM_EMIT(ddbr, DDBR)
+RR_FORM_EMIT(ddr, DDR)
+RRF1_FORM_EMIT(ddtr, DDTR)
+RRF1_FORM_EMIT(ddtra, DDTRA)
+RX_FORM_EMIT(de, DE)
+RXE_FORM_EMIT(deb, DEB)
+RRE_FORM_EMIT(debr, DEBR)
+RR_FORM_EMIT(der, DER)
+RRF1_FORM_EMIT(didbr, DIDBR)
+RRF1_FORM_EMIT(diebr, DIEBR)
+RXY_FORM_EMIT(dl, DL)
+RXY_FORM_EMIT(dlg, DLG)
+RRE_FORM_EMIT(dlgr, DLGR)
+RRE_FORM_EMIT(dlr, DLR)
+SS2_FORM_EMIT(dp, DP)
+RR_FORM_EMIT(dr, DR)
+RXY_FORM_EMIT(dsg, DSG)
+RXY_FORM_EMIT(dsgf, DSGF)
+RRE_FORM_EMIT(dsgfr, DSGFR)
+RRE_FORM_EMIT(dsgr, DSGR)
+RRE_FORM_EMIT(dxbr, DXBR)
+RRE_FORM_EMIT(dxr, DXR)
+RRF1_FORM_EMIT(dxtr, DXTR)
+RRF1_FORM_EMIT(dxtra, DXTRA)
+RRE_FORM_EMIT(ear, EAR)
+RSY1_FORM_EMIT(ecag, ECAG)
+SSF_FORM_EMIT(ectg, ECTG)
+SS1_FORM_EMIT(ed, ED)
+SS1_FORM_EMIT(edmk, EDMK)
+RRE_FORM_EMIT(eedtr, EEDTR)
+RRE_FORM_EMIT(eextr, EEXTR)
+RRE_FORM_EMIT(efpc, EFPC)
+RRE_FORM_EMIT(epsw, EPSW)
+RRE_FORM_EMIT(esdtr, ESDTR)
+RRE_FORM_EMIT(esxtr, ESXTR)
+RRE_FORM_EMIT(etnd, ETND)
+RX_FORM_EMIT(ex, EX)
+RIL1_FORM_EMIT(exrl, EXRL)
+RRF2_FORM_EMIT(fidbr, FIDBR)
+RRF2_FORM_EMIT(fidbra, FIDBRA)
+RRE_FORM_EMIT(fidr, FIDR)
+RRF2_FORM_EMIT(fidtr, FIDTR)
+RRF2_FORM_EMIT(fiebr, FIEBR)
+RRF2_FORM_EMIT(fiebra, FIEBRA)
+RRE_FORM_EMIT(fier, FIER)
+RRF2_FORM_EMIT(fixbr, FIXBR)
+RRF2_FORM_EMIT(fixbra, FIXBRA)
+RRE_FORM_EMIT(fixr, FIXR)
+RRF2_FORM_EMIT(fixtr, FIXTR)
+RRE_FORM_EMIT(flogr, FLOGR)
+RR_FORM_EMIT(hdr, HDR)
+RR_FORM_EMIT(her, HER)
+S_FORM_EMIT(hsch, HSCH)
+RX_FORM_EMIT(ic_z, IC_z)
+RS2_FORM_EMIT(icm, ICM)
+RSY2_FORM_EMIT(icmh, ICMH)
+RSY2_FORM_EMIT(icmy, ICMY)
+RXY_FORM_EMIT(icy, ICY)
+RRF1_FORM_EMIT(iedtr, IEDTR)
+RRF1_FORM_EMIT(iextr, IEXTR)
+RIL1_FORM_EMIT(iihf, IIHF)
+RI1_FORM_EMIT(iihh, IIHH)
+RI1_FORM_EMIT(iihl, IIHL)
+RIL1_FORM_EMIT(iilf, IILF)
+RI1_FORM_EMIT(iilh, IILH)
+RI1_FORM_EMIT(iill, IILL)
+RRE_FORM_EMIT(ipm, IPM)
+RXE_FORM_EMIT(kdb, KDB)
+RRE_FORM_EMIT(kdbr, KDBR)
+RRE_FORM_EMIT(kdtr, KDTR)
+RXE_FORM_EMIT(keb, KEB)
+RRE_FORM_EMIT(kebr, KEBR)
+RRE_FORM_EMIT(kimd, KIMD)
+RRE_FORM_EMIT(klmd, KLMD)
+RRE_FORM_EMIT(km, KM)
+RRE_FORM_EMIT(kmac, KMAC)
+RRE_FORM_EMIT(kmc, KMC)
+RRF1_FORM_EMIT(kmctr, KMCTR)
+RRE_FORM_EMIT(kmf, KMF)
+RRE_FORM_EMIT(kmo, KMO)
+RRE_FORM_EMIT(kxbr, KXBR)
+RRE_FORM_EMIT(kxtr, KXTR)
+RX_FORM_EMIT(l, L)
+RX_FORM_EMIT(la, LA)
+RSY1_FORM_EMIT(laa, LAA)
+RSY1_FORM_EMIT(laag, LAAG)
+RSY1_FORM_EMIT(laal, LAAL)
+RSY1_FORM_EMIT(laalg, LAALG)
+RX_FORM_EMIT(lae, LAE)
+RXY_FORM_EMIT(laey, LAEY)
+RS1_FORM_EMIT(lam, LAM)
+RSY1_FORM_EMIT(lamy, LAMY)
+RSY1_FORM_EMIT(lan, LAN)
+RSY1_FORM_EMIT(lang, LANG)
+RSY1_FORM_EMIT(lao, LAO)
+RSY1_FORM_EMIT(laog, LAOG)
+RIL1_FORM_EMIT(larl, LARL)
+RXY_FORM_EMIT(lat, LAT)
+RSY1_FORM_EMIT(lax, LAX)
+RSY1_FORM_EMIT(laxg, LAXG)
+RXY_FORM_EMIT(lay, LAY)
+RXY_FORM_EMIT(lb, LB)
+RXY_FORM_EMIT(lbh, LBH)
+RRE_FORM_EMIT(lbr, LBR)
+RRE_FORM_EMIT(lcdbr, LCDBR)
+RRE_FORM_EMIT(lcdfr, LCDFR)
+RR_FORM_EMIT(lcdr, LCDR)
+RRE_FORM_EMIT(lcebr, LCEBR)
+RR_FORM_EMIT(lcer, LCER)
+RRE_FORM_EMIT(lcgfr, LCGFR)
+RRE_FORM_EMIT(lcgr, LCGR)
+RR_FORM_EMIT(lcr, LCR)
+RRE_FORM_EMIT(lcxbr, LCXBR)
+RRE_FORM_EMIT(lcxr, LCXR)
+RX_FORM_EMIT(ld, LD)
+RXE_FORM_EMIT(lde, LDE)
+RXE_FORM_EMIT(ldeb, LDEB)
+RRE_FORM_EMIT(ldebr, LDEBR)
+RRE_FORM_EMIT(lder, LDER)
+RRF2_FORM_EMIT(ldetr, LDETR)
+RRE_FORM_EMIT(ldgr, LDGR)
+RR_FORM_EMIT(ldr, LDR)
+RRE_FORM_EMIT(ldxbr, LDXBR)
+RRF2_FORM_EMIT(ldxbra, LDXBRA)
+RR_FORM_EMIT(ldxr, LDXR)
+RRF2_FORM_EMIT(ldxtr, LDXTR)
+RXY_FORM_EMIT(ldy, LDY)
+RX_FORM_EMIT(le_z, LE)
+RRE_FORM_EMIT(ledbr, LEDBR)
+RRF2_FORM_EMIT(ledbra, LEDBRA)
+RR_FORM_EMIT(ledr, LEDR)
+RRF2_FORM_EMIT(ledtr, LEDTR)
+RR_FORM_EMIT(ler, LER)
+RRE_FORM_EMIT(lexbr, LEXBR)
+RRF2_FORM_EMIT(lexbra, LEXBRA)
+RRE_FORM_EMIT(lexr, LEXR)
+RXY_FORM_EMIT(ley, LEY)
+S_FORM_EMIT(lfas, LFAS)
+RXY_FORM_EMIT(lfh, LFH)
+RXY_FORM_EMIT(lfhat, LFHAT)
+S_FORM_EMIT(lfpc, LFPC)
+RXY_FORM_EMIT(lg, LG)
+RXY_FORM_EMIT(lgat, LGAT)
+RXY_FORM_EMIT(lgb, LGB)
+RRE_FORM_EMIT(lgbr, LGBR)
+RRE_FORM_EMIT(lgdr, LGDR)
+RXY_FORM_EMIT(lgf, LGF)
+RIL1_FORM_EMIT(lgfi, LGFI)
+RRE_FORM_EMIT(lgfr, LGFR)
+RIL1_FORM_EMIT(lgfrl, LGFRL)
+RXY_FORM_EMIT(lgh, LGH)
+RI1_FORM_EMIT(lghi, LGHI)
+RRE_FORM_EMIT(lghr, LGHR)
+RIL1_FORM_EMIT(lghrl, LGHRL)
+RRE_FORM_EMIT(lgr, LGR)
+RIL1_FORM_EMIT(lgrl, LGRL)
+RX_FORM_EMIT(lh, LH)
+RXY_FORM_EMIT(lhh, LHH)
+RI1_FORM_EMIT(lhi, LHI)
+RRE_FORM_EMIT(lhr, LHR)
+RIL1_FORM_EMIT(lhrl, LHRL)
+RXY_FORM_EMIT(lhy, LHY)
+RXY_FORM_EMIT(llc, LLC)
+RXY_FORM_EMIT(llch, LLCH)
+RRE_FORM_EMIT(llcr, LLCR)
+RXY_FORM_EMIT(llgc, LLGC)
+RRE_FORM_EMIT(llgcr, LLGCR)
+RXY_FORM_EMIT(llgf, LLGF)
+RXY_FORM_EMIT(llgfat, LLGFAT)
+RRE_FORM_EMIT(llgfr, LLGFR)
+RIL1_FORM_EMIT(llgfrl, LLGFRL)
+RXY_FORM_EMIT(llgh, LLGH)
+RRE_FORM_EMIT(llghr, LLGHR)
+RIL1_FORM_EMIT(llghrl, LLGHRL)
+RXY_FORM_EMIT(llgt, LLGT)
+RXY_FORM_EMIT(llgtat, LLGTAT)
+RRE_FORM_EMIT(llgtr, LLGTR)
+RXY_FORM_EMIT(llh, LLH)
+RXY_FORM_EMIT(llhh, LLHH)
+RRE_FORM_EMIT(llhr, LLHR)
+RIL1_FORM_EMIT(llhrl, LLHRL)
+RIL1_FORM_EMIT(llihf, LLIHF)
+RI1_FORM_EMIT(llihh, LLIHH)
+RI1_FORM_EMIT(llihl, LLIHL)
+RIL1_FORM_EMIT(llilf, LLILF)
+RI1_FORM_EMIT(llilh, LLILH)
+RI1_FORM_EMIT(llill, LLILL)
+RS1_FORM_EMIT(lm, LM)
+SS5_FORM_EMIT(lmd, LMD)
+RSY1_FORM_EMIT(lmg, LMG)
+RSY1_FORM_EMIT(lmh, LMH)
+RSY1_FORM_EMIT(lmy, LMY)
+RRE_FORM_EMIT(lndbr, LNDBR)
+RRE_FORM_EMIT(lndfr, LNDFR)
+RR_FORM_EMIT(lndr, LNDR)
+RRE_FORM_EMIT(lnebr, LNEBR)
+RR_FORM_EMIT(lner, LNER)
+RRE_FORM_EMIT(lngfr, LNGFR)
+RRE_FORM_EMIT(lngr, LNGR)
+RR_FORM_EMIT(lnr, LNR)
+RRE_FORM_EMIT(lnxbr, LNXBR)
+RRE_FORM_EMIT(lnxr, LNXR)
+RSY1_FORM_EMIT(loc, LOC)
+RSY1_FORM_EMIT(locg, LOCG)
+RRF2_FORM_EMIT(locgr, LOCGR)
+RRF2_FORM_EMIT(locr, LOCR)
+SSF_FORM_EMIT(lpd, LPD)
+RRE_FORM_EMIT(lpdbr, LPDBR)
+RRE_FORM_EMIT(lpdfr, LPDFR)
+SSF_FORM_EMIT(lpdg, LPDG)
+RR_FORM_EMIT(lpdr, LPDR)
+RRE_FORM_EMIT(lpebr, LPEBR)
+RR_FORM_EMIT(lper, LPER)
+RRE_FORM_EMIT(lpgfr, LPGFR)
+RRE_FORM_EMIT(lpgr, LPGR)
+RXY_FORM_EMIT(lpq, LPQ)
+RR_FORM_EMIT(lpr, LPR)
+RRE_FORM_EMIT(lpxbr, LPXBR)
+RRE_FORM_EMIT(lpxr, LPXR)
+RR_FORM_EMIT(lr, LR)
+RR_FORM_EMIT(lrdr, LRDR)
+RR_FORM_EMIT(lrer, LRER)
+RIL1_FORM_EMIT(lrl, LRL)
+RXY_FORM_EMIT(lrv, LRV)
+RXY_FORM_EMIT(lrvg, LRVG)
+RRE_FORM_EMIT(lrvgr, LRVGR)
+RXY_FORM_EMIT(lrvh, LRVH)
+RRE_FORM_EMIT(lrvr, LRVR)
+RXY_FORM_EMIT(lt_z, LT)
+RRE_FORM_EMIT(ltdbr, LTDBR)
+RR_FORM_EMIT(ltdr, LTDR)
+RRE_FORM_EMIT(ltdtr, LTDTR)
+RRE_FORM_EMIT(ltebr, LTEBR)
+RR_FORM_EMIT(lter, LTER)
+RXY_FORM_EMIT(ltg, LTG)
+RXY_FORM_EMIT(ltgf, LTGF)
+RRE_FORM_EMIT(ltgfr, LTGFR)
+RRE_FORM_EMIT(ltgr, LTGR)
+RR_FORM_EMIT(ltr, LTR)
+RRE_FORM_EMIT(ltxbr, LTXBR)
+RRE_FORM_EMIT(ltxr, LTXR)
+RRE_FORM_EMIT(ltxtr, LTXTR)
+RXE_FORM_EMIT(lxd, LXD)
+RXE_FORM_EMIT(lxdb, LXDB)
+RRE_FORM_EMIT(lxdbr, LXDBR)
+RRE_FORM_EMIT(lxdr, LXDR)
+RRF2_FORM_EMIT(lxdtr, LXDTR)
+RXE_FORM_EMIT(lxe, LXE)
+RXE_FORM_EMIT(lxeb, LXEB)
+RRE_FORM_EMIT(lxebr, LXEBR)
+RRE_FORM_EMIT(lxer, LXER)
+RRE_FORM_EMIT(lxr, LXR)
+RXY_FORM_EMIT(ly, LY)
+RRE_FORM_EMIT(lzdr, LZDR)
+RRE_FORM_EMIT(lzer, LZER)
+RRE_FORM_EMIT(lzxr, LZXR)
+RX_FORM_EMIT(m, M)
+RXF_FORM_EMIT(mad, MAD)
+RXF_FORM_EMIT(madb, MADB)
+RRD_FORM_EMIT(madbr, MADBR)
+RRD_FORM_EMIT(madr, MADR)
+RXF_FORM_EMIT(mae, MAE)
+RXF_FORM_EMIT(maeb, MAEB)
+RRD_FORM_EMIT(maebr, MAEBR)
+RRD_FORM_EMIT(maer, MAER)
+RXF_FORM_EMIT(may, MAY)
+RXF_FORM_EMIT(mayh, MAYH)
+RRD_FORM_EMIT(mayhr, MAYHR)
+RXF_FORM_EMIT(mayl, MAYL)
+RRD_FORM_EMIT(maylr, MAYLR)
+RRD_FORM_EMIT(mayr, MAYR)
+SI_FORM_EMIT(mc, MC)
+RX_FORM_EMIT(md, MD)
+RXE_FORM_EMIT(mdb, MDB)
+RRE_FORM_EMIT(mdbr, MDBR)
+RX_FORM_EMIT(mde, MDE)
+RXE_FORM_EMIT(mdeb, MDEB)
+RRE_FORM_EMIT(mdebr, MDEBR)
+RR_FORM_EMIT(mder, MDER)
+RR_FORM_EMIT(mdr, MDR)
+RRF1_FORM_EMIT(mdtr, MDTR)
+RRF1_FORM_EMIT(mdtra, MDTRA)
+RX_FORM_EMIT(me, ME)
+RXE_FORM_EMIT(mee, MEE)
+RXE_FORM_EMIT(meeb, MEEB)
+RRE_FORM_EMIT(meebr, MEEBR)
+RRE_FORM_EMIT(meer, MEER)
+RR_FORM_EMIT(mer, MER)
+RXY_FORM_EMIT(mfy, MFY)
+RI1_FORM_EMIT(mghi, MGHI)
+RX_FORM_EMIT(mh, MH)
+RI1_FORM_EMIT(mhi, MHI)
+RXY_FORM_EMIT(mhy, MHY)
+RXY_FORM_EMIT(ml, ML)
+RXY_FORM_EMIT(mlg, MLG)
+RRE_FORM_EMIT(mlgr, MLGR)
+RRE_FORM_EMIT(mlr, MLR)
+SS2_FORM_EMIT(mp, MP)
+RR_FORM_EMIT(mr_z, MR)
+RX_FORM_EMIT(ms, MS)
+S_FORM_EMIT(msch, MSCH)
+RXF_FORM_EMIT(msd, MSD)
+RXF_FORM_EMIT(msdb, MSDB)
+RRD_FORM_EMIT(msdbr, MSDBR)
+RRD_FORM_EMIT(msdr, MSDR)
+RXF_FORM_EMIT(mse, MSE)
+RXF_FORM_EMIT(mseb, MSEB)
+RRD_FORM_EMIT(msebr, MSEBR)
+RRD_FORM_EMIT(mser, MSER)
+RIL1_FORM_EMIT(msfi, MSFI)
+RXY_FORM_EMIT(msg, MSG)
+RXY_FORM_EMIT(msgf, MSGF)
+RIL1_FORM_EMIT(msgfi, MSGFI)
+RRE_FORM_EMIT(msgfr, MSGFR)
+RRE_FORM_EMIT(msgr, MSGR)
+RRE_FORM_EMIT(msr, MSR)
+RXY_FORM_EMIT(msy, MSY)
+SS1_FORM_EMIT(mvc, MVC)
+SS1_FORM_EMIT(mvcin, MVCIN)
+RR_FORM_EMIT(mvcl, MVCL)
+RS1_FORM_EMIT(mvcle, MVCLE)
+RSY1_FORM_EMIT(mvclu, MVCLU)
+SIL_FORM_EMIT(mvghi, MVGHI)
+SIL_FORM_EMIT(mvhhi, MVHHI)
+SIL_FORM_EMIT(mvhi, MVHI)
+SI_FORM_EMIT(mvi, MVI)
+SIY_FORM_EMIT(mviy, MVIY)
+SS1_FORM_EMIT(mvn, MVN)
+SS2_FORM_EMIT(mvo, MVO)
+RRE_FORM_EMIT(mvst, MVST)
+SS1_FORM_EMIT(mvz, MVZ)
+RRE_FORM_EMIT(mxbr, MXBR)
+RX_FORM_EMIT(mxd, MXD)
+RXE_FORM_EMIT(mxdb, MXDB)
+RRE_FORM_EMIT(mxdbr, MXDBR)
+RR_FORM_EMIT(mxdr, MXDR)
+RR_FORM_EMIT(mxr, MXR)
+RRF1_FORM_EMIT(mxtr, MXTR)
+RRF1_FORM_EMIT(mxtra, MXTRA)
+RXF_FORM_EMIT(my, MY)
+RXF_FORM_EMIT(myh, MYH)
+RRD_FORM_EMIT(myhr, MYHR)
+RXF_FORM_EMIT(myl, MYL)
+RRD_FORM_EMIT(mylr, MYLR)
+RRD_FORM_EMIT(myr, MYR)
+RX_FORM_EMIT(n, N)
+SS1_FORM_EMIT(nc, NC)
+RXY_FORM_EMIT(ng, NG)
+RRE_FORM_EMIT(ngr, NGR)
+RRF1_FORM_EMIT(ngrk, NGRK)
+SI_FORM_EMIT(ni, NI)
+IE_FORM_EMIT(niai, NIAI)
+RIL1_FORM_EMIT(nihf, NIHF)
+RI1_FORM_EMIT(nihh, NIHH)
+RI1_FORM_EMIT(nihl, NIHL)
+RIL1_FORM_EMIT(nilf, NILF)
+RI1_FORM_EMIT(nilh, NILH)
+RI1_FORM_EMIT(nill, NILL)
+SIY_FORM_EMIT(niy, NIY)
+RR_FORM_EMIT(nr, NR)
+RRF1_FORM_EMIT(nrk, NRK)
+RXY_FORM_EMIT(ntstg, NTSTG)
+RXY_FORM_EMIT(ny, NY)
+RX_FORM_EMIT(o, O)
+SS1_FORM_EMIT(oc, OC)
+RXY_FORM_EMIT(og, OG)
+RRE_FORM_EMIT(ogr, OGR)
+RRF1_FORM_EMIT(ogrk, OGRK)
+SI_FORM_EMIT(oi, OI)
+RIL1_FORM_EMIT(oihf, OIHF)
+RI1_FORM_EMIT(oihh, OIHH)
+RI1_FORM_EMIT(oihl, OIHL)
+RIL1_FORM_EMIT(oilf, OILF)
+RI1_FORM_EMIT(oilh, OILH)
+RI1_FORM_EMIT(oill, OILL)
+SIY_FORM_EMIT(oiy, OIY)
+RR_FORM_EMIT(or_z, OR)
+RRF1_FORM_EMIT(ork, ORK)
+RXY_FORM_EMIT(oy, OY)
+SS2_FORM_EMIT(pack, PACK)
+RRE_FORM_EMIT(pcc, PCC)
+RXY_FORM_EMIT(pfd, PFD)
+RIL2_FORM_EMIT(pfdrl, PFDRL)
+E_FORM_EMIT(pfpo, PFPO)
+SS1_FORM_EMIT(pka, PKA)
+SS1_FORM_EMIT(pku, PKU)
+SS5_FORM_EMIT(plo, PLO)
+RRE_FORM_EMIT(popcnt, POPCNT)
+RRF1_FORM_EMIT(ppa, PPA)
+RRF1_FORM_EMIT(qadtr, QADTR)
+RRF1_FORM_EMIT(qaxtr, QAXTR)
+S_FORM_EMIT(rchp, RCHP)
+RIE_FORM_EMIT(risbg, RISBG)
+RIE_FORM_EMIT(risbgn, RISBGN)
+RIE_FORM_EMIT(risbhg, RISBHG)
+RIE_FORM_EMIT(risblg, RISBLG)
+RSY1_FORM_EMIT(rll, RLL)
+RSY1_FORM_EMIT(rllg, RLLG)
+RIE_FORM_EMIT(rnsbg, RNSBG)
+RIE_FORM_EMIT(rosbg, ROSBG)
+S_FORM_EMIT(rp, RP)
+RRF1_FORM_EMIT(rrdtr, RRDTR)
+RRF1_FORM_EMIT(rrxtr, RRXTR)
+S_FORM_EMIT(rsch, RSCH)
+RIE_FORM_EMIT(rxsbg, RXSBG)
+RX_FORM_EMIT(s, S)
+S_FORM_EMIT(sal, SAL)
+E_FORM_EMIT(sam24, SAM24)
+E_FORM_EMIT(sam31, SAM31)
+E_FORM_EMIT(sam64, SAM64)
+RRE_FORM_EMIT(sar, SAR)
+S_FORM_EMIT(schm, SCHM)
+RX_FORM_EMIT(sd, SD)
+RXE_FORM_EMIT(sdb, SDB)
+RRE_FORM_EMIT(sdbr, SDBR)
+RR_FORM_EMIT(sdr, SDR)
+RRF1_FORM_EMIT(sdtr, SDTR)
+RRF1_FORM_EMIT(sdtra, SDTRA)
+RX_FORM_EMIT(se, SE)
+RXE_FORM_EMIT(seb, SEB)
+RRE_FORM_EMIT(sebr, SEBR)
+RR_FORM_EMIT(ser, SER)
+RRE_FORM_EMIT(sfasr, SFASR)
+RRE_FORM_EMIT(sfpc, SFPC)
+RXY_FORM_EMIT(sg, SG)
+RXY_FORM_EMIT(sgf, SGF)
+RRE_FORM_EMIT(sgfr, SGFR)
+RRE_FORM_EMIT(sgr, SGR)
+RRF1_FORM_EMIT(sgrk, SGRK)
+RX_FORM_EMIT(sh, SH)
+RRF1_FORM_EMIT(shhhr, SHHHR)
+RRF1_FORM_EMIT(shhlr, SHHLR)
+RXY_FORM_EMIT(shy, SHY)
+RX_FORM_EMIT(sl, SL)
+RS1_FORM_EMIT(sla, SLA)
+RSY1_FORM_EMIT(slag, SLAG)
+RSY1_FORM_EMIT(slak, SLAK)
+RXY_FORM_EMIT(slb, SLB)
+RXY_FORM_EMIT(slbg, SLBG)
+RRE_FORM_EMIT(slbgr, SLBGR)
+RRE_FORM_EMIT(slbr, SLBR)
+RS1_FORM_EMIT(slda, SLDA)
+RS1_FORM_EMIT(sldl, SLDL)
+RXF_FORM_EMIT(sldt, SLDT)
+RIL1_FORM_EMIT(slfi, SLFI)
+RXY_FORM_EMIT(slg, SLG)
+RXY_FORM_EMIT(slgf, SLGF)
+RIL1_FORM_EMIT(slgfi, SLGFI)
+RRE_FORM_EMIT(slgfr, SLGFR)
+RRE_FORM_EMIT(slgr, SLGR)
+RRF1_FORM_EMIT(slgrk, SLGRK)
+RRF1_FORM_EMIT(slhhhr, SLHHHR)
+RRF1_FORM_EMIT(slhhlr, SLHHLR)
+RS1_FORM_EMIT(sll, SLL)
+RSY1_FORM_EMIT(sllg, SLLG)
+RSY1_FORM_EMIT(sllk, SLLK)
+RR_FORM_EMIT(slr, SLR)
+RRF1_FORM_EMIT(slrk, SLRK)
+RXF_FORM_EMIT(slxt, SLXT)
+RXY_FORM_EMIT(sly, SLY)
+SS2_FORM_EMIT(sp_z, SP)
+RR_FORM_EMIT(spm, SPM)
+RXE_FORM_EMIT(sqd, SQD)
+RXE_FORM_EMIT(sqdb, SQDB)
+RRE_FORM_EMIT(sqdbr, SQDBR)
+RRE_FORM_EMIT(sqdr, SQDR)
+RXE_FORM_EMIT(sqe, SQE)
+RXE_FORM_EMIT(sqeb, SQEB)
+RRE_FORM_EMIT(sqebr, SQEBR)
+RRE_FORM_EMIT(sqer, SQER)
+RRE_FORM_EMIT(sqxbr, SQXBR)
+RRE_FORM_EMIT(sqxr, SQXR)
+RR_FORM_EMIT(sr, SR)
+RS1_FORM_EMIT(sra, SRA)
+RSY1_FORM_EMIT(srag, SRAG)
+RSY1_FORM_EMIT(srak, SRAK)
+RS1_FORM_EMIT(srda, SRDA)
+RS1_FORM_EMIT(srdl, SRDL)
+RXF_FORM_EMIT(srdt, SRDT)
+RRF1_FORM_EMIT(srk, SRK)
+RS1_FORM_EMIT(srl, SRL)
+RSY1_FORM_EMIT(srlg, SRLG)
+RSY1_FORM_EMIT(srlk, SRLK)
+S_FORM_EMIT(srnm, SRNM)
+S_FORM_EMIT(srnmb, SRNMB)
+S_FORM_EMIT(srnmt, SRNMT)
+SS3_FORM_EMIT(srp, SRP)
+RRE_FORM_EMIT(srst, SRST)
+RRE_FORM_EMIT(srstu, SRSTU)
+RXF_FORM_EMIT(srxt, SRXT)
+S_FORM_EMIT(ssch, SSCH)
+RX_FORM_EMIT(st, ST)
+RS1_FORM_EMIT(stam, STAM)
+RSY1_FORM_EMIT(stamy, STAMY)
+RXY_FORM_EMIT(stch, STCH)
+S_FORM_EMIT(stck, STCK)
+S_FORM_EMIT(stcke, STCKE)
+S_FORM_EMIT(stckf, STCKF)
+RS2_FORM_EMIT(stcm, STCM)
+RSY2_FORM_EMIT(stcmh, STCMH)
+RSY2_FORM_EMIT(stcmy, STCMY)
+S_FORM_EMIT(stcps, STCPS)
+S_FORM_EMIT(stcrw, STCRW)
+RXY_FORM_EMIT(stcy, STCY)
+RX_FORM_EMIT(std, STD)
+RXY_FORM_EMIT(stdy, STDY)
+RX_FORM_EMIT(ste, STE)
+RXY_FORM_EMIT(stey, STEY)
+RXY_FORM_EMIT(stfh, STFH)
+S_FORM_EMIT(stfle, STFLE)
+S_FORM_EMIT(stfpc, STFPC)
+RXY_FORM_EMIT(stg, STG)
+RIL1_FORM_EMIT(stgrl, STGRL)
+RX_FORM_EMIT(sth, STH)
+RXY_FORM_EMIT(sthh, STHH)
+RIL1_FORM_EMIT(sthrl, STHRL)
+RXY_FORM_EMIT(sthy, STHY)
+RS2_FORM_EMIT(stm, STM)
+RSY1_FORM_EMIT(stmg, STMG)
+RSY1_FORM_EMIT(stmh, STMH)
+RSY1_FORM_EMIT(stmy, STMY)
+RSY2_FORM_EMIT(stoc, STOC)
+RSY2_FORM_EMIT(stocg, STOCG)
+RXY_FORM_EMIT(stpq, STPQ)
+RIL1_FORM_EMIT(strl, STRL)
+RXY_FORM_EMIT(strv, STRV)
+RXY_FORM_EMIT(strvg, STRVG)
+RXY_FORM_EMIT(strvh, STRVH)
+S_FORM_EMIT(stsch, STSCH)
+RXY_FORM_EMIT(sty, STY)
+RX_FORM_EMIT(su, SU)
+RR_FORM_EMIT(sur, SUR)
+I_FORM_EMIT(svc, SVC)
+RX_FORM_EMIT(sw, SW)
+RR_FORM_EMIT(swr, SWR)
+RRE_FORM_EMIT(sxbr, SXBR)
+RR_FORM_EMIT(sxr, SXR)
+RRF1_FORM_EMIT(sxtr, SXTR)
+RRF1_FORM_EMIT(sxtra, SXTRA)
+RXY_FORM_EMIT(sy, SY)
+S_FORM_EMIT(tabort, TABORT)
+E_FORM_EMIT(tam, TAM)
+RRF2_FORM_EMIT(tbdr, TBDR)
+RRF2_FORM_EMIT(tbedr, TBEDR)
+SIL_FORM_EMIT(tbegin, TBEGIN)
+SIL_FORM_EMIT(tbeginc, TBEGINC)
+RXE_FORM_EMIT(tcdb, TCDB)
+RXE_FORM_EMIT(tceb, TCEB)
+RXE_FORM_EMIT(tcxb, TCXB)
+RXE_FORM_EMIT(tdcdt, TDCDT)
+RXE_FORM_EMIT(tdcet, TDCET)
+RXE_FORM_EMIT(tdcxt, TDCXT)
+RXE_FORM_EMIT(tdgdt, TDGDT)
+RXE_FORM_EMIT(tdget, TDGET)
+RXE_FORM_EMIT(tdgxt, TDGXT)
+S_FORM_EMIT(tend, TEND)
+RRE_FORM_EMIT(thder, THDER)
+RRE_FORM_EMIT(thdr, THDR)
+SI_FORM_EMIT(tm, TM)
+RI1_FORM_EMIT(tmh, TMH)
+RI1_FORM_EMIT(tmhh, TMHH)
+RI1_FORM_EMIT(tmhl, TMHL)
+RI1_FORM_EMIT(tml, TML)
+RI1_FORM_EMIT(tmlh, TMLH)
+RI1_FORM_EMIT(tmll, TMLL)
+SIY_FORM_EMIT(tmy, TMY)
+RSL_FORM_EMIT(tp, TP)
+S_FORM_EMIT(tpi, TPI)
+SS1_FORM_EMIT(tr, TR)
+RRE_FORM_EMIT(tre, TRE)
+RRF2_FORM_EMIT(troo, TROO)
+RRF2_FORM_EMIT(trot, TROT)
+SS1_FORM_EMIT(trt, TRT)
+RRF2_FORM_EMIT(trte, TRTE)
+RRF2_FORM_EMIT(trto, TRTO)
+SS1_FORM_EMIT(trtr, TRTR)
+RRF2_FORM_EMIT(trtre, TRTRE)
+RRF2_FORM_EMIT(trtt, TRTT)
+S_FORM_EMIT(ts, TS)
+S_FORM_EMIT(tsch, TSCH)
+SS2_FORM_EMIT(unpk, UNPK)
+SS1_FORM_EMIT(unpka, UNPKA)
+SS1_FORM_EMIT(unpku, UNPKU)
+E_FORM_EMIT(upt, UPT)
+RX_FORM_EMIT(x, X)
+SS1_FORM_EMIT(xc, XC)
+RXY_FORM_EMIT(xg, XG)
+RRE_FORM_EMIT(xgr, XGR)
+RRF1_FORM_EMIT(xgrk, XGRK)
+SI_FORM_EMIT(xi, XI)
+RIL1_FORM_EMIT(xihf, XIHF)
+RIL1_FORM_EMIT(xilf, XILF)
+SIY_FORM_EMIT(xiy, XIY)
+RR_FORM_EMIT(xr, XR)
+RRF1_FORM_EMIT(xrk, XRK)
+S_FORM_EMIT(xsch, XSCH)
+RXY_FORM_EMIT(xy, XY)
+SS2_FORM_EMIT(zap, ZAP)
 // end of S390instructions
+
 
 bool Assembler::IsNop(Instr instr, int type) {
   ASSERT((0 == type) || (DEBUG_BREAK_NOP == type));
