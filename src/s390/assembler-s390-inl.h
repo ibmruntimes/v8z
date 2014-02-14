@@ -313,12 +313,6 @@ void RelocInfo::Visit(Heap* heap) {
 }
 
 // Operand constructors
-Operand::Operand(Register r, Register x,
-                         Displacement d) : r_(r), x_(x), d_(d) { }
-
-Operand::Operand(Register r, Displacement d,
-                         Length l) : r_(r), d_(d), l_(l) { }
-
 Operand::Operand(intptr_t immediate, RelocInfo::Mode rmode)  {
   rm_ = no_reg;
   imm_ = immediate;
