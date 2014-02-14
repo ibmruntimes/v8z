@@ -421,9 +421,6 @@ const CRegister cr15 = { 15 };
 
 // Class Operand represents a shifter operand in data processing instructions
 // defining immediate numbers and masks
-typedef int16_t Immediate16;
-typedef int8_t  Immediate8;
-typedef int32_t Immediate32;
 typedef uint8_t Length;
 
 struct Mask {
@@ -434,13 +431,6 @@ struct Mask {
     Mask m = {input};
     return m;
   }
-};
-
-struct Displacement {
-  int16_t lowValue() {return disp & 0x0FFF;}
-  int8_t  highValue() {return disp >> 12;}
-  int32_t value() {return disp;}
-  int32_t disp;
 };
 
 class Operand BASE_EMBEDDED {
@@ -455,14 +445,6 @@ class Operand BASE_EMBEDDED {
   explicit Operand(Handle<Object> handle);
   INLINE(explicit Operand(Smi* value));
 
-  // S390
-  INLINE(explicit Operand(Register r, Register x, Displacement d));
-  INLINE(explicit Operand(Register r, Displacement d, Length l));
-
-  Register getBaseRegister() {return r_;}
-  Register getIndexRegister() {return x_;}
-  Displacement getDisplacement() {return d_;}
-
   // rm
   INLINE(explicit Operand(Register rm));
 
@@ -475,13 +457,8 @@ class Operand BASE_EMBEDDED {
   }
 
   Register rm() const { return rm_; }
-  uint8_t getLength() {return l_;}
 
  private:
-  Register r_;
-  Register x_;
-  Displacement d_;
-  Length l_;
   Register rm_;
   intptr_t imm_;  // valid if rm_ == no_reg
   RelocInfo::Mode rmode_;
@@ -490,6 +467,8 @@ class Operand BASE_EMBEDDED {
   friend class MacroAssembler;
 };
 
+typedef int32_t Disp;
+
 // Class MemOperand represents a memory operand in load and store instructions
 // On S390, we have various flavours of memory operands:
 //   1) a base register + 16 bit unsigned displacement
@@ -497,13 +476,14 @@ class Operand BASE_EMBEDDED {
 //   3) a base register + index register + 20 bit signed displacement
 class MemOperand BASE_EMBEDDED {
  public:
-  explicit MemOperand(Register rb, int32_t offset = 0);
-  explicit MemOperand(Register rb, Register ri, int32_t offset = 0);
+  explicit MemOperand(Register rb, Disp offset = 0);
+  explicit MemOperand(Register rb, Register ri, Disp offset = 0);
 
   uint32_t offset() const {
     ASSERT(rb_.is(no_reg));
     return offset_;
   }
+  uint32_t getDisplacement() const { return offset(); }
 
   // Base register
   Register ra() const {
@@ -511,16 +491,25 @@ class MemOperand BASE_EMBEDDED {
     return ra_;
   }
 
+  Register getBaseRegister() const { return ra(); }
+
   // Index Register
   Register rb() const {
     ASSERT(!rb_.is(no_reg));
     return rb_;
   }
+  Register getIndexRegister() const { return rb(); }
+
+  // length of the memory operand
+  void setLength(Length l) { l_ = l; }
+  Length getLength() const { return l_; }
+
 
  private:
   Register ra_;     // base
   int32_t offset_;  // offset
   Register rb_;     // index
+  Length l_;        // length of the memory operand
 
   friend class Assembler;
 };
@@ -901,10 +890,10 @@ class Assembler : public AssemblerBase {
 void name()
 
 #define IE_FORM(name)\
-void name(Immediate8 i1, Immediate8 i2)
+void name(const Operand& i1, const Operand& i2)
 
 #define I_FORM(name)\
-void name(Immediate8 i)
+void name(const Operand& i)
 
 #define RR_FORM(name)\
 void name(Register r1, Register r2)
@@ -914,55 +903,55 @@ void name(Mask m1, Register r2)
 
 #define RX_FORM(name)\
 void name(Register r1, Register x2, Register b2, \
-                 Displacement d2);\
-void name(Register r1, Operand opnd)
+                 Disp d2);\
+void name(Register r1, const MemOperand& opnd)
 
 #define RI1_FORM(name)\
-void name(Register r,  Immediate16 i)
+void name(Register r,  const Operand& i)
 
 #define RI2_FORM(name)\
-void name(Mask m, Immediate16 i)
+void name(Mask m, const Operand& i)
 
 #define RIE_FORM(name)\
-void name(Register r1, Register R3, Immediate16 i)
+void name(Register r1, Register R3, const Operand& i)
 
 #define RIL1_FORM(name)\
-void name(Register r1, Immediate32 i2)
+void name(Register r1, const Operand& i2)
 
 #define RIL2_FORM(name)\
-void name(Mask m1, Immediate32 i2)
+void name(Mask m1, const Operand& i2)
 
 #define RXE_FORM(name)\
-void name(Register r1, Operand opnd);\
+void name(Register r1, const MemOperand& opnd);\
 void name(Register r1, Register b2, Register x2, \
-          Displacement d2)
+          Disp d2)
 
 #define RXF_FORM(name)\
-void name(Register r1, Register r3, Operand opnd);\
+void name(Register r1, Register r3, const MemOperand& opnd);\
 void name(Register r1, Register r3, Register b2, \
-                 Register x2, Displacement d2)
+                 Register x2, Disp d2)
 
 #define RXY_FORM(name)\
 void name(Register r1, Register x2, Register b2, \
-                 Displacement d2);\
-void name(Register r1, Operand opnd)
+                 Disp d2);\
+void name(Register r1, const MemOperand& opnd)
 
 #define RSI_FORM(name)\
-void name(Register r1, Register r3, Immediate16 i)
+void name(Register r1, Register r3, const Operand& i)
 
 #define RIS_FORM(name)\
 void name(Register r1, Mask m3, Register b4, \
-          Displacement d4, Immediate8 i2);\
-void name(Register r1, Immediate8 i2, Mask m3, \
-          Operand opnd)
+          Disp d4, const Operand& i2);\
+void name(Register r1, const Operand& i2, Mask m3, \
+          const MemOperand& opnd)
 
 #define SI_FORM(name)\
-void name(Operand opnd, Immediate8 i);\
-void name(Immediate8 i2, Register b1, Displacement d1)
+void name(const MemOperand& opnd, const Operand& i);\
+void name(const Operand& i2, Register b1, Disp d1)
 
 #define SIL_FORM(name)\
-void name(Register b1, Displacement d1, Immediate16 i2);\
-void name(Operand opnd, Immediate16 i2)
+void name(Register b1, Disp d1, const Operand& i2);\
+void name(const MemOperand& opnd, const Operand& i2)
 
 #define RRE_FORM(name)\
 void name(Register r1, Register r2)
@@ -977,87 +966,85 @@ void name(Mask m1, Register r1, Register r2)
 void name(Register r3, Mask m4, Register r1, Register r2)
 
 #define RS1_FORM(name)\
-void name(Register r1, Register r3, Operand opnd);\
+void name(Register r1, Register r3, const MemOperand& opnd);\
 void name(Register r1, Register r3, Register b2, \
-                 Displacement d2)
+                 Disp d2)
 
 #define RS2_FORM(name)\
-void name(Register r1, Mask m3, Operand opnd);\
+void name(Register r1, Mask m3, const MemOperand& opnd);\
 void name(Register r1, Mask m3, Register b2, \
-                 Displacement d2)
+                 Disp d2)
 
 #define RSE_FORM(name)\
-void name(Register r1, Register r3, Operand opnd);\
+void name(Register r1, Register r3, const MemOperand& opnd);\
 void name(Register r1, Register r3, Register b2, \
-                 Displacement d2)
+                 Disp d2)
 
 #define RSL_FORM(name)\
-void name(Length l, Register b2, Displacement d2);\
-void name(Operand opnd)
+void name(Length l, Register b2, Disp d2);\
+void name(const MemOperand& opnd)
 
 #define RSY1_FORM(name)\
 void name(Register r1, Register r3, Register b2, \
-          Displacement d2);\
-void name(Register r1, Register r3, Operand opnd)
+          Disp d2);\
+void name(Register r1, Register r3, const MemOperand& opnd)
 
 #define RSY2_FORM(name)\
 void name(Register r1, Mask m3, Register b2, \
-          Displacement d2);\
-void name(Register r1, Mask m3, Operand opnd)
+          Disp d2);\
+void name(Register r1, Mask m3, const MemOperand& opnd)
 
 #define RRD_FORM(name)\
 void name(Register r1, Register r3, Register r2)
 
 #define RRS_FORM(name)\
 void name(Register r1, Register r2, Register b4, \
-          Displacement d4, Mask m3);\
+          Disp d4, Mask m3);\
 void name(Register r1, Register r2, Mask m3, \
-          Operand opnd)
+          const MemOperand& opnd)
 
 #define S_FORM(name)\
-void name(Register b2, Displacement d2);\
-void name(Operand opnd)
+void name(Register b2, Disp d2);\
+void name(const MemOperand& opnd)
 
 #define SIY_FORM(name)\
-void name(Immediate8 i2, Register b1, Displacement d1);\
-void name(Operand opnd, Immediate8 i)
+void name(const Operand& i2, Register b1, Disp d1);\
+void name(const MemOperand& opnd, const Operand& i)
 
 #define SS1_FORM(name)\
-void name(Length r1, Register b1, Displacement d1, \
-          Register b3, Displacement d2);\
-void name(Operand opnd1, Operand opnd2)
+void name(Length r1, Register b1, Disp d1, \
+          Register b3, Disp d2);\
+void name(const MemOperand& opnd1, const MemOperand& opnd2)
 
 #define SS2_FORM(name)\
-void name(Operand opnd1, Operand opnd2);\
+void name(const MemOperand& opnd1, const MemOperand& opnd2);\
 void name(Length l1, Length l2, Register b1, \
-          Displacement d1, Register b2, Displacement d2)
+          Disp d1, Register b2, Disp d2)
 
 #define SS3_FORM(name)\
-void name(Operand opnd1, Operand opnd2);\
-void name(Length l1, Immediate8 i3, Register b1, \
-          Displacement d1, Register b2, Displacement d2)
+void name(const MemOperand& opnd1, const MemOperand& opnd2);\
+void name(Length l1, const Operand& i3, Register b1, \
+          Disp d1, Register b2, Disp d2)
 
 #define SS4_FORM(name)\
-void name(Operand opnd1, Operand opnd2);\
+void name(const MemOperand& opnd1, const MemOperand& opnd2);\
 void name(Register r1, Register r3, Register b1, \
-          Displacement d1, Register b2, Displacement d2)
+          Disp d1, Register b2, Disp d2)
 
 #define SS5_FORM(name)\
-void name(Operand opnd1, Operand opnd2);\
+void name(const MemOperand& opnd1, const MemOperand& opnd2);\
 void name(Register r1, Register r3, Register b3, \
-          Displacement d2, Register b4, Displacement d4)
+          Disp d2, Register b4, Disp d4)
 
 #define SSE_FORM(name)\
-void name(Register b1, Displacement d1, \
-          Register b2, Displacement d2);\
-void name(Register b1, Displacement d1, \
-          Register b2, Displacement d2, \
-          Register r3)
+void name(Register b1, Disp d1, \
+          Register b2, Disp d2);\
+void name(const MemOperand& opnd1, const MemOperand& opnd2)
 
 #define SSF_FORM(name)\
-void name(Register r3, Register b1, Displacement d1, \
-          Register b2, Displacement d2);\
-void name(Register r3, Operand opnd1, Operand opnd2)
+void name(Register r3, Register b1, Disp d1, \
+          Register b2, Disp d2);\
+void name(Register r3, const MemOperand& opnd1, const MemOperand& opnd2)
 
 // S390 instruction sets
 RX_FORM(a);
@@ -1959,7 +1946,6 @@ SS2_FORM(zap);
   void xor_(Register dst, Register src1, Register src2, RCBit rc = LeaveRC);
   void cmpi(Register src1, const Operand& src2, CRegister cr = cr7);
   void cmpli(Register src1, const Operand& src2, CRegister cr = cr7);
-  void lhi(Register dst, const Operand& src);
   void lis(Register dst, const Operand& imm);
   void mr(Register dst, Register src);
 
@@ -1977,7 +1963,6 @@ SS2_FORM(zap);
   void stb(Register dst, const MemOperand& src);
   void stbx(Register dst, const MemOperand& src);
   void stbux(Register dst, const MemOperand& src);
-  void sth(Register dst, const MemOperand& src);
   void sthx(Register dst, const MemOperand& src);
   void sthux(Register dst, const MemOperand& src);
   void stw(Register dst, const MemOperand& src);

@@ -947,12 +947,6 @@ void Assembler::cmpl(Register src1, Register src2, CRegister cr) {
        src2.code()*B11);
 }
 
-// Pseudo op - load halfword immediate (16-bits signed immediate)
-void Assembler::lhi(Register dst, const Operand &imm) {
-  // ri_form(LHI, dst, imm.imm_, true);
-  d_form(ADDI, dst, r0, imm.imm_, true);
-}
-
 void  Assembler::lis(Register dst, const Operand& imm) {
   d_form(ADDIS, dst, r0, imm.imm_, true);
 }
@@ -1046,10 +1040,6 @@ void Assembler::stbux(Register rs, const MemOperand &src) {
   Register ra = src.ra();
   Register rb = src.rb();
   emit(EXT2 | STBUX | rs.code()*B21 | ra.code()*B16 | rb.code()*B11 | LeaveRC);
-}
-
-void Assembler::sth(Register dst, const MemOperand &src) {
-  d_form(STH_ppc, dst, src.ra(), src.offset(), true);
 }
 
 void Assembler::sthx(Register rs, const MemOperand &src) {
@@ -1667,8 +1657,8 @@ void Assembler::nop(int type) {
 //    0        8        15
 //
 #define I_FORM_EMIT(name, op)\
-void Assembler::name(Immediate8 i) {\
-    i_form(op << 8 | i);\
+void Assembler::name(const Operand& i) {\
+    i_form(op << 8 | i.imm_);\
 }
 void Assembler::i_form(uint16_t code) {
     emit2bytes(code);
@@ -1694,8 +1684,8 @@ void Assembler::e_form(uint16_t code) {
 //    +--------+---------+--------+----+----+
 //    0        8         16      24   28   31
 #define IE_FORM_EMIT(name, op)\
-void Assembler::name(Immediate8 i1, Immediate8 i2) {\
-    ie_form(op << 16 | i1*B4 | i2);\
+void Assembler::name(const Operand& i1, const Operand& i2) {\
+    ie_form(op << 16 | i1.imm_*B4 | i2.imm_);\
 }
 void Assembler::ie_form(uint32_t code) {
     emit4bytes(code);
@@ -1734,16 +1724,16 @@ void Assembler::rr2_form(uint16_t code) {
 //    +--------+----+----+----+-------------+
 //    0        8    12   16   20           31
 #define RX_FORM_EMIT(name, op) \
-void Assembler::name(Register r, Operand opnd) { \
+void Assembler::name(Register r, const MemOperand& opnd) { \
     name(r, opnd.getIndexRegister(), opnd.getBaseRegister(), \
          opnd.getDisplacement());\
 }\
 void Assembler::name(Register r1, Register x2, \
-                     Register b2, Displacement d2) {\
+                     Register b2, Disp d2) {\
     rx_form(op*B24 | r1.code()*B20\
                    | x2.code()*B20\
                    | b2.code()*B16\
-                   | d2.lowValue());\
+                   | d2);\
 }
 void Assembler::rx_form(uint32_t code) {
     emit4bytes(code);
@@ -1756,8 +1746,8 @@ void Assembler::rx_form(uint32_t code) {
 //    +--------+----+----+------------------+
 //    0        8    12   16                31
 #define RI1_FORM_EMIT(name, op) \
-void Assembler::name(Register r, Immediate16 i) { \
-    ri1_form((op & 0x0FF0) << 8 | r.code()*B4 | (op & 0x000F));\
+void Assembler::name(Register r, const Operand& i) { \
+    ri1_form(op << 24 | r.code()*B4 | i.imm_);\
 }
 void Assembler::ri1_form(uint32_t code) {
     emit4bytes(code);
@@ -1770,8 +1760,8 @@ void Assembler::ri1_form(uint32_t code) {
 //    +--------+----+----+------------------+
 //    0        8    12   16                31
 #define RI2_FORM_EMIT(name, op) \
-void Assembler::name(Mask m, Immediate16 i) {\
-    ri2_form((op & 0x0FF0) << 20 | m.value() << 20 | (op & 0x000F)*B16 | i);\
+void Assembler::name(Mask m, const Operand& i) {\
+    ri2_form(op << 24 | m.value() << 20 | i.imm_);\
 }
 void Assembler::ri2_form(uint32_t code) {
     emit4bytes(code);
@@ -1784,9 +1774,9 @@ void Assembler::ri2_form(uint32_t code) {
 //    0        8    12   16                 32       40      47
 #define RIE_FORM_EMIT(name, op) \
 void Assembler::name(Register r1, Register r3, \
-                     Immediate16 i) {\
+                     const Operand& i) {\
     rie_form((op & 0xFF00)*B36 | r1.code()*B36 | r3.code()*B32\
-            | i*B16 | (op & 0x00FF));\
+            | i.imm_*B16 | (op & 0x00FF));\
 }
 void Assembler::rie_form(uint64_t code) {
     emit6bytes(code);
@@ -1798,9 +1788,9 @@ void Assembler::rie_form(uint64_t code) {
 //   +--------+----+----+------------------------------------+
 //   0        8    12   16                                  47
 #define RIL1_FORM_EMIT(name, op) \
-void Assembler::name(Register r, Immediate32 i) {\
+void Assembler::name(Register r, const Operand& i) {\
     ril1_form((op & 0x0FF0)*B36 | r.code()*B36\
-            | (op & 0x000F)*B32 | i);\
+            | (op & 0x000F)*B32 | i.imm_);\
 }
 void Assembler::ril1_form(uint64_t code) {
     emit6bytes(code);
@@ -1812,9 +1802,9 @@ void Assembler::ril1_form(uint64_t code) {
 //   +--------+----+----+------------------------------------+
 //   0        8    12   16                                  47
 #define RIL2_FORM_EMIT(name, op) \
-void Assembler::name(Mask m, Immediate32 i) {\
+void Assembler::name(Mask m, const Operand& i) {\
     ril2_form((op & 0x0FF0)*B36 | m.value()*B36\
-             |(op & 0x000F)*B32 | i);\
+             |(op & 0x000F)*B32 | i.imm_);\
 }
 void Assembler::ril2_form(uint64_t code) {
     emit6bytes(code);
@@ -1855,12 +1845,12 @@ void Assembler::rrd_form(uint32_t code) {
 //    0        8    12   16   20           31
 #define RS1_FORM_EMIT(name, op) \
 void Assembler::name(Register r1, Register r3, \
-                     Register b2, Displacement d2) {\
+                     Register b2, Disp d2) {\
     rs1_form(op << 24 | r1.code()*B20 | r3.code()*B16\
-            | b2.code()*B12 | d2.lowValue());\
+            | b2.code()*B12 | d2);\
 }\
 void Assembler::name(Register r1, Register r3, \
-                     Operand opnd) {\
+                     const MemOperand& opnd) {\
     name(r1, r3, opnd.getBaseRegister(), opnd.getDisplacement());\
 }
 void Assembler::rs1_form(uint32_t code) {
@@ -1874,12 +1864,12 @@ void Assembler::rs1_form(uint32_t code) {
 //    0        8    12   16   20           31
 #define RS2_FORM_EMIT(name, op) \
 void Assembler::name(Register r1, Mask m3, \
-                     Register b2, Displacement d2) {\
+                     Register b2, Disp d2) {\
     rs2_form(op << 24 | r1.code()*B20 | m3.value()*B16\
-            | b2.code()*B12 | d2.lowValue());\
+            | b2.code()*B12 | d2);\
 }\
 void Assembler::name(Register r1, Mask m3, \
-                     Operand opnd) {\
+                     const MemOperand& opnd) {\
     name(r1, m3, opnd.getBaseRegister(), opnd.getDisplacement());\
 }
 void Assembler::rs2_form(uint32_t code) {
@@ -1892,8 +1882,8 @@ void Assembler::rs2_form(uint32_t code) {
 //    +--------+----+----+------------------------------------+
 //    0        8    12   16                                  47
 #define RSI_FORM_EMIT(name, op)\
-void Assembler::name(Register r1, Register r3, Immediate16 i2) {\
-    rsi_form(op*B40 | r1.code()*B36 | r3.code()*B32 | i2);\
+void Assembler::name(Register r1, Register r3, const Operand& i2) {\
+    rsi_form(op*B40 | r1.code()*B36 | r3.code()*B32 | i2.imm_);\
 }
 void Assembler::rsi_form(uint64_t code) {
     emit6bytes(code);
@@ -1905,9 +1895,9 @@ void Assembler::rsi_form(uint64_t code) {
 //    +--------+----+----+----+-------------+--------+--------+
 //    0        8    12   16   20            32       40      47
 #define RSL_FORM_EMIT(name, op)\
-void Assembler::name(Length l1, Register b2, Displacement d2) {\
+void Assembler::name(Length l1, Register b2, Disp d2) {\
     rsl_form((op & 0xFF00)*B32 | l1*B36 | b2.code()*B28\
-            | d2.lowValue()*B16 | (op & 0x00FF));\
+            | d2*B16 | (op & 0x00FF));\
 }
 void Assembler::rsl_form(uint64_t code) {
     emit6bytes(code);
@@ -1920,12 +1910,12 @@ void Assembler::rsl_form(uint64_t code) {
 //    0        8    12   16   20            32       40      47
 #define RSY1_FORM_EMIT(name, op)\
 void Assembler::name(Register r1, Register r3, Register b2, \
-                     Displacement d2) {\
+                     Disp d2) {\
     rsy1_form((op & 0xFF00)*B32 | r1.code()*B36 | r3.code()*B32\
-             | b2.code()*B28 | d2.lowValue()*B16 | d2.highValue()*B8\
+             | b2.code()*B28 | (d2 & 0x0FFF)*B16 | (d2 & 0x0FF000) >> 4\
              | (op & 0x00FF));\
 }\
-void Assembler::name(Register r1, Register r3, Operand opnd) {\
+void Assembler::name(Register r1, Register r3, const MemOperand& opnd) {\
     name(r1, r3, opnd.getBaseRegister(), opnd.getDisplacement());\
 }
 void Assembler::rsy1_form(uint64_t code) {
@@ -1940,12 +1930,12 @@ void Assembler::rsy1_form(uint64_t code) {
 //    0        8    12   16   20            32       40      47
 #define RSY2_FORM_EMIT(name, op)\
 void Assembler::name(Register r1, Mask m3, Register b2, \
-                     Displacement d2) {\
+                     Disp d2) {\
     rsy2_form((op & 0xFF00)*B32 | r1.code()*B36 | m3.value()*B32\
-             | b2.code()*B28 | d2.lowValue()*B16 | d2.highValue()*B8\
+             | b2.code()*B28 | (d2 & 0x0FFF)*B16 | (d2 & 0x0FF000) >> 4\
              | (op & 0x00FF));\
 }\
-void Assembler::name(Register r1, Mask m3, Operand opnd) {\
+void Assembler::name(Register r1, Mask m3, const MemOperand& opnd) {\
     name(r1, m3, opnd.getBaseRegister(), opnd.getDisplacement());\
 }
 void Assembler::rsy2_form(uint64_t code) {
@@ -1959,12 +1949,12 @@ void Assembler::rsy2_form(uint64_t code) {
 //    0        8    12   16   20            32       40      47
 #define RXE_FORM_EMIT(name, op)\
 void Assembler::name(Register r1, Register x2, Register b2, \
-                     Displacement d2) {\
+                     Disp d2) {\
     rxe_form(((uint64_t)op & 0xFF00)*B32 | r1.code()*B36 | x2.code()*B32\
-            | b2.code()*B28 | d2.lowValue()*B16 \
+            | b2.code()*B28 | d2*B16 \
             | (op & 0x00FF));\
 }\
-void Assembler::name(Register r1, Operand opnd) {\
+void Assembler::name(Register r1, const MemOperand& opnd) {\
     name(r1, opnd.getIndexRegister(), opnd.getBaseRegister(), \
          opnd.getDisplacement());\
 }
@@ -1979,12 +1969,12 @@ void Assembler::rxe_form(uint64_t code) {
 //    0        8    12   16   20            32   36   40      47
 #define RXY_FORM_EMIT(name, op)\
 void Assembler::name(Register r1, Register x2, Register b2, \
-                     Displacement d2) {\
+                     Disp d2) {\
     rxy_form((uint64_t)(op & 0xFF00)*B32 | (uint64_t)r1.code()*B36\
-            | (uint64_t)x2.code()*B32 | b2.code()*B28 | d2.lowValue()*B16\
-            | d2.highValue()*B8 | (op & 0x00FF));\
+            | (uint64_t)x2.code()*B32 | b2.code()*B28 | (d2 & 0x0FFF)*B16\
+            | (d2 & 0x0FF000) >> 4 | (op & 0x00FF));\
 }\
-void Assembler::name(Register r1, Operand opnd) {\
+void Assembler::name(Register r1, const MemOperand& opnd) {\
     name(r1, opnd.getIndexRegister(), opnd.getBaseRegister(), \
          opnd.getDisplacement());\
 }
@@ -1999,13 +1989,13 @@ void Assembler::rxy_form(uint64_t code) {
 //    0        8    12   16   20            32   36   40      47
 #define RRS_FORM_EMIT(name, op)\
 void Assembler::name(Register r1, Register r2, Register b4, \
-                     Displacement d4, Mask m3) {\
+                     Disp d4, Mask m3) {\
     rrs_form((op & 0xFF00)*B32 | r1.code()*B32 | r2.code()*B32 \
-            | b4.code()*B28 | d4.lowValue()*B16 | m3.value()*B12 \
+            | b4.code()*B28 | d4*B16 | m3.value()*B12 \
             | (op & 0x00FF));\
 }\
 void Assembler::name(Register r1, Register r2, Mask m3, \
-                     Operand opnd) {\
+                     const MemOperand& opnd) {\
     name(r1, r2, opnd.getBaseRegister(), opnd.getDisplacement(), m3);\
 }
 void Assembler::rrs_form(uint64_t code) {
@@ -2019,12 +2009,12 @@ void Assembler::rrs_form(uint64_t code) {
 //    0        8    12   16   20            32        40      47
 #define RIS_FORM_EMIT(name, op)\
 void Assembler::name(Register r1, Mask m3, Register b4, \
-                     Displacement d4, Immediate8 i2) {\
+                     Disp d4, const Operand& i2) {\
     ris_form((op & 0xFF00)*B32 | r1.code()*B32 | m3.value() \
-            | b4.code()*B28 | d4.lowValue()*B16 | i2*B8 | (op & 0x00FF));\
+            | b4.code()*B28 | d4*B16 | i2.imm_*B8 | (op & 0x00FF));\
 }\
-void Assembler::name(Register r1, Immediate8 i2, Mask m3, \
-                     Operand opnd) {\
+void Assembler::name(Register r1, const Operand& i2, Mask m3, \
+                     const MemOperand& opnd) {\
     name(r1, m3, opnd.getBaseRegister(), opnd.getDisplacement(), i2);\
 }
 void Assembler::ris_form(uint64_t code) {
@@ -2038,10 +2028,10 @@ void Assembler::ris_form(uint64_t code) {
 //    +------------------+----+-------------+
 //    0                  16   20           31
 #define S_FORM_EMIT(name, op)\
-void Assembler::name(Register b1, Displacement d2) {\
-    s_form(op << 16 | b1.code()*B12 | d2.lowValue());\
+void Assembler::name(Register b1, Disp d2) {\
+    s_form(op << 16 | b1.code()*B12 | d2);\
 }\
-void Assembler::name(Operand opnd) {\
+void Assembler::name(const MemOperand& opnd) {\
     name(opnd.getBaseRegister(), opnd.getDisplacement());\
 }
 void Assembler::s_form(uint32_t code) {
@@ -2054,11 +2044,11 @@ void Assembler::s_form(uint32_t code) {
 //    +--------+---------+----+-------------+
 //    0        8         16   20           31
 #define SI_FORM_EMIT(name, op)\
-void Assembler::name(Immediate8 i2, Register b1, \
-                     Displacement d1) {\
-    si_form((op & 0x00FF) << 24 | i2*B16 | b1.code()*B12 | d1.lowValue());\
+void Assembler::name(const Operand& i2, Register b1, \
+                     Disp d1) {\
+    si_form((op & 0x00FF) << 24 | i2.imm_*B16 | b1.code()*B12 | d1);\
 }\
-void Assembler::name(Operand opnd, Immediate8 i2) {\
+void Assembler::name(const MemOperand& opnd, const Operand& i2) {\
     name(i2, opnd.getBaseRegister(), opnd.getDisplacement()); \
 }
 void Assembler::si_form(uint32_t code) {
@@ -2071,12 +2061,12 @@ void Assembler::si_form(uint32_t code) {
 //    +--------+---------+----+-------------+--------+--------+
 //    0        8         16   20            32   36   40      47
 #define SIY_FORM_EMIT(name, op)\
-void Assembler::name(Immediate8 i2, Register b1, \
-                     Displacement d1) {\
-    siy_form((op & 0xFF00)*B32 | i2*B32 | b1.code()*B20\
-            | d1.lowValue()*B16 | d1.highValue()*B8 | (op & 0x00FF));\
+void Assembler::name(const Operand& i2, Register b1, \
+                     Disp d1) {\
+    siy_form((op & 0xFF00)*B32 | i2.imm_*B32 | b1.code()*B20\
+            | (d1 & 0x0FFF)*B16 | (d1 & 0x0FF000) >> 4 | (op & 0x00FF));\
 }\
-void Assembler::name(Operand opnd, Immediate8 i2) {\
+void Assembler::name(const MemOperand& opnd, const Operand& i2) {\
     name(i2, opnd.getBaseRegister(), opnd.getDisplacement());\
 }
 void Assembler::siy_form(uint64_t code) {
@@ -2089,11 +2079,11 @@ void Assembler::siy_form(uint64_t code) {
 //    +------------------+----+-------------+-----------------+
 //    0                 16   20            32                47
 #define SIL_FORM_EMIT(name, op)\
-void Assembler::name(Register b1, Displacement d1, \
-                     Immediate16 i2) {\
-    sil_form(op*B32 | b1.code()*B28 | d1.lowValue()*B16 | i2);\
+void Assembler::name(Register b1, Disp d1, \
+                     const Operand& i2) {\
+    sil_form(op*B32 | b1.code()*B28 | d1*B16 | i2.imm_);\
 }\
-void Assembler::name(Operand opnd, Immediate16 i2) {\
+void Assembler::name(const MemOperand& opnd, const Operand& i2) {\
     name(opnd.getBaseRegister(), opnd.getDisplacement(), i2);\
 }
 void Assembler::sil_form(uint64_t code) {
@@ -2107,12 +2097,12 @@ void Assembler::sil_form(uint64_t code) {
 //    0        8    12   16   20            32   36  40      47
 #define RXF_FORM_EMIT(name, op)\
 void Assembler::name(Register r1, Register r3, Register b2, \
-                     Register x2, Displacement d2) {\
+                     Register x2, Disp d2) {\
     rxf_form((op & 0xFF00)*B32 | r3.code()*B36 | x2.code()*B32\
-            | b2.code()*B28 | d2.lowValue()*B16 | r1.code()*B12\
+            | b2.code()*B28 | d2*B16 | r1.code()*B12\
             | (op & 0x00FF));\
 }\
-void Assembler::name(Register r1, Register r3, Operand opnd) {\
+void Assembler::name(Register r1, Register r3, const MemOperand& opnd) {\
     name(r1, r3, opnd.getBaseRegister(), opnd.getIndexRegister(), \
          opnd.getDisplacement());\
 }
@@ -2126,12 +2116,12 @@ void Assembler::rxf_form(uint64_t code) {
 //    +--------+----+----+----+-------------+----+------------+
 //    0        8    12   16   20            32   36          47
 #define SS1_FORM_EMIT(name, op)\
-void Assembler::name(Length l, Register b1, Displacement d1, \
-                     Register b2, Displacement d2) {\
+void Assembler::name(Length l, Register b1, Disp d1, \
+                     Register b2, Disp d2) {\
     ss1_form(op*B40 | l*B32 | b1.code()*B28\
-            | d1.lowValue()*B16 | b2.code()*B12 | d2.lowValue());\
+            | d1*B16 | b2.code()*B12 | d2);\
 }\
-void Assembler::name(Operand opnd1, Operand opnd2) {\
+void Assembler::name(const MemOperand& opnd1, const MemOperand& opnd2) {\
     name(opnd1.getLength(), opnd1.getBaseRegister(), \
          opnd1.getDisplacement(), opnd2.getBaseRegister(), \
          opnd2.getDisplacement());\
@@ -2147,14 +2137,13 @@ void Assembler::ss1_form(uint64_t code) {
 //    0        8    12   16   20            32   36          47
 #define SS2_FORM_EMIT(name, op)\
 void Assembler::name(Length l1, Length l2, Register b1, \
-                     Displacement d1, Register b2, \
-                     Displacement d2) {\
+                     Disp d1, Register b2, \
+                     Disp d2) {\
     uint64_t instr = op*B40 | l1*B36 | l2*B32\
-                   | b1.code()*B28 | d1.lowValue()*B16 | b2.code()*B12\
-                   | d2.lowValue();\
+                   | b1.code()*B28 | d1*B16 | b2.code()*B12 | d2;\
     emit6bytes(instr);\
 }\
-void Assembler::name(Operand opnd1, Operand opnd2) {\
+void Assembler::name(const MemOperand& opnd1, const MemOperand& opnd2) {\
     name(opnd1.getLength(), opnd2.getLength(), opnd1.getBaseRegister(), \
          opnd1.getDisplacement(), opnd2.getBaseRegister(), \
          opnd2.getDisplacement());\
@@ -2169,13 +2158,13 @@ void Assembler::ss2_form(uint64_t code) {
 //    +--------+----+----+----+-------------+----+------------+
 //    0        8    12   16   20            32   36          47
 #define SS3_FORM_EMIT(name, op)\
-void Assembler::name(Length l1, Immediate8 i2, Register b1, \
-                     Displacement d1, Register b2, \
-                     Displacement d2) {\
-    ss3_form(op*B40 | l1*B36 | i2*B32 | b1.code()*B28\
-            | d1.lowValue()*B16 | b2.code()*B12 | d2.lowValue());\
+void Assembler::name(Length l1, const Operand& i2, Register b1, \
+                     Disp d1, Register b2, \
+                     Disp d2) {\
+    ss3_form(op*B40 | l1*B36 | i2.imm_*B32 | b1.code()*B28\
+            | d1*B16 | b2.code()*B12 | d2);\
 }\
-void Assembler::name(Operand opnd1, Operand opnd2) {\
+void Assembler::name(const MemOperand& opnd1, const MemOperand& opnd2) {\
     ASSERT(false);\
 }
 void Assembler::ss3_form(uint64_t code) {
@@ -2189,12 +2178,12 @@ void Assembler::ss3_form(uint64_t code) {
 //    0        8    12   16   20            32   36          47
 #define SS4_FORM_EMIT(name, op)\
 void Assembler::name(Register r1, Register r2, Register b1, \
-                     Displacement d1, Register b2, \
-                     Displacement d2) {\
+                     Disp d1, Register b2, \
+                     Disp d2) {\
     ss4_form(op*B40 | r1.code()*B36 | r2.code()*B32 | b1.code()*B28\
-            | d1.lowValue()*B16 | b2.code()*B12 | d2.lowValue());\
+            | d1*B16 | b2.code()*B12 | d2);\
 }\
-void Assembler::name(Operand opnd1, Operand opnd2) {\
+void Assembler::name(const MemOperand& opnd1, const MemOperand& opnd2) {\
     ASSERT(false);\
 }
 void Assembler::ss4_form(uint64_t code) {
@@ -2208,12 +2197,12 @@ void Assembler::ss4_form(uint64_t code) {
 //    0        8    12   16   20            32   36          47
 #define SS5_FORM_EMIT(name, op)\
 void Assembler::name(Register r1, Register r3, Register b2, \
-                     Displacement d2, Register b4, \
-                     Displacement d4) {\
+                     Disp d2, Register b4, \
+                     Disp d4) {\
     ss5_form(op*B40 | r1.code()*B36 | r3.code()*B32 | b2.code()*B28\
-            | d2.lowValue()*B16 | b4.code()*B12 | d4.lowValue());\
+            | d2*B16 | b4.code()*B12 | d4);\
 }\
-void Assembler::name(Operand opnd1, Operand opnd2) {\
+void Assembler::name(const MemOperand& opnd1, const MemOperand& opnd2) {\
     ASSERT(false);\
 }
 void Assembler::ss5_form(uint64_t code) {
@@ -2226,12 +2215,12 @@ void Assembler::ss5_form(uint64_t code) {
 //    +------------------+----+-------------+----+------------+
 //    0        8    12   16   20            32   36           47
 #define SSE_FORM_EMIT(name, op)\
-void Assembler::name(Register b1, Displacement d1, Register b2, \
-                     Displacement d2) {\
-    sse_form(op << 32 | b1.code()*B28 | d1.lowValue()*B16\
-            | b2.code()*B12 | d2.lowValue());\
+void Assembler::name(Register b1, Disp d1, Register b2, \
+                     Disp d2) {\
+    sse_form(op << 32 | b1.code()*B28 | d1*B16\
+            | b2.code()*B12 | d2);\
 }\
-void Assembler::name(Operand opnd1, Operand opnd2) {\
+void Assembler::name(const MemOperand& opnd1, const MemOperand& opnd2) {\
     name(op, opnd1.getBaseRegister(), opnd1.getDisplacement(), \
          opnd2.getBaseRegister(), opnd2.getDisplacement());\
 }
@@ -2245,12 +2234,13 @@ void Assembler::sse_form(uint64_t code) {
 //    +--------+----+----+----+-------------+----+------------+
 //    0        8    12   16   20            32   36           47
 #define SSF_FORM_EMIT(name, op)\
-void Assembler::name(Register r3, Register b1, Displacement d1, \
-                     Register b2, Displacement d2) {\
+void Assembler::name(Register r3, Register b1, Disp d1, \
+                     Register b2, Disp d2) {\
     ssf_form((op & 0x0FF0)*B40 | r3.code()*B36 | (op & 0x000F)*B32\
-            | d1.lowValue()*B16 | b2.code()*B12 | d2.lowValue());\
+            | d1*B16 | b2.code()*B12 | d2);\
 }\
-void Assembler::name(Register r3, Operand opnd1, Operand opnd2) {\
+void Assembler::name(Register r3, const MemOperand& opnd1, \
+                     const MemOperand& opnd2) {\
     name(r3, opnd1.getBaseRegister(), opnd1.getDisplacement(), \
          opnd2.getBaseRegister(), opnd2.getDisplacement());\
 }
