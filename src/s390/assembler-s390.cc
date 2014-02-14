@@ -1703,10 +1703,10 @@ void Assembler::ie_form(uint16_t op, const Operand& i1, const Operand& i2) {
 //    0        8    12  15
 #define RR_FORM_EMIT(name, op) \
 void Assembler::name(Register r1, Register r2) { \
-    rr_form(op*B8 | r1.code()*B4 | r2.code()); \
+    rr_form(op, r1, r2); \
 }
-void Assembler::rr_form(uint16_t code) {
-    emit2bytes(code);
+void Assembler::rr_form(uint8_t op, Register r1, Register r2) {
+    emit2bytes(op*B8 | r1.code()*B4 | r2.code());
 }
 
 // RR2 format: <insn> M1,R2
@@ -1716,10 +1716,10 @@ void Assembler::rr_form(uint16_t code) {
 //    0        8    12  15
 #define RR2_FORM_EMIT(name, op) \
 void Assembler::name(Mask m1, Register r2) { \
-    rr2_form(op*B8 | m1.value()*B4 | r2.code()); \
+    rr2_form(op, m1, r2); \
 }
-void Assembler::rr2_form(uint16_t code) {
-    emit2bytes(code);
+void Assembler::rr2_form(uint8_t op, Mask m1, Register r2) {
+    emit2bytes(op*B8 | m1.value()*B4 | r2.code());
 }
 
 
@@ -1735,13 +1735,13 @@ void Assembler::name(Register r, const MemOperand& opnd) { \
 }\
 void Assembler::name(Register r1, Register x2, \
                      Register b2, Disp d2) {\
-    rx_form(op*B24 | r1.code()*B20\
-                   | x2.code()*B20\
-                   | b2.code()*B16\
-                   | d2);\
+    rx_form(op, r1, x2, b2, d2);\
 }
-void Assembler::rx_form(uint32_t code) {
-    emit4bytes(code);
+void Assembler::rx_form(uint8_t op, Register r1, Register x2, Register b2, Disp d2) {
+    emit4bytes(op*B24 | r1.code()*B20
+                      | x2.code()*B16
+                      | b2.code()*B12
+                      | d2);
 }
 
 void Assembler::rx_form(Instr instr,
