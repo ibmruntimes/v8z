@@ -2365,9 +2365,9 @@ SS2_FORM(zap);
   inline void i_form(uint8_t op, const Operand& i);
   inline void e_form(uint16_t op);
   inline void ie_form(uint16_t op, const Operand& i1, const Operand& i2);
-  inline void rr_form(uint16_t x);
-  inline void rr2_form(uint16_t x);
-  inline void rx_form(uint32_t x);
+  inline void rr_form(uint8_t op, Register r1, Register r2);
+  inline void rr2_form(uint8_t op, Mask m1, Register r2);
+  inline void rx_form(uint8_t op, Register r1, Register x2, Register b2, Disp d2);
 
   inline void rx_form(Instr instr,
                       Register r1,
