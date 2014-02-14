@@ -2362,9 +2362,9 @@ SS2_FORM(zap);
   inline void emit4bytes(uint32_t x);
   inline void emit6bytes(uint64_t x);
 
-  inline void i_form(uint16_t x);
-  inline void e_form(uint16_t x);
-  inline void ie_form(uint32_t x);
+  inline void i_form(uint8_t op, const Operand& i);
+  inline void e_form(uint16_t op);
+  inline void ie_form(uint16_t op, const Operand& i1, const Operand& i2);
   inline void rr_form(uint16_t x);
   inline void rr2_form(uint16_t x);
   inline void rx_form(uint32_t x);

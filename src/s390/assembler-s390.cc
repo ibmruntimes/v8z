@@ -1649,6 +1649,9 @@ void Assembler::nop(int type) {
 #define B32 ((uint64_t)1<<32)
 #define B36 ((uint64_t)1<<36)
 #define B40 ((uint64_t)1<<40)
+#define GET1BYTE(ptr) (*((uint8_t *)ptr))
+#define GET2BYTE(ptr) (*((uint16_t *)ptr))
+#define GET4BYTE(ptr) (*((uint32_t *)ptr))
 // I format <insn> i
 //    +--------+---------+
 //    | OpCode |    i    |
@@ -1657,10 +1660,10 @@ void Assembler::nop(int type) {
 //
 #define I_FORM_EMIT(name, op)\
 void Assembler::name(const Operand& i) {\
-    i_form(op << 8 | i.imm_);\
+    i_form(op, i);\
 }
-void Assembler::i_form(uint16_t code) {
-    emit2bytes(code);
+void Assembler::i_form(uint8_t op, const Operand& i) {
+    emit2bytes(op << 8 | GET1BYTE(i.imm_));
 }
 
 // E format <insn>
@@ -1673,8 +1676,8 @@ void Assembler::i_form(uint16_t code) {
 void Assembler::name() {\
     e_form(op);\
 }
-void Assembler::e_form(uint16_t code) {
-    emit2bytes(code);
+void Assembler::e_form(uint16_t op) {
+    emit2bytes(op);
 }
 
 // IE format: <insn> i1, i2
@@ -1684,10 +1687,10 @@ void Assembler::e_form(uint16_t code) {
 //    0        8         16      24   28   31
 #define IE_FORM_EMIT(name, op)\
 void Assembler::name(const Operand& i1, const Operand& i2) {\
-    ie_form(op << 16 | i1.imm_*B4 | i2.imm_);\
+    ie_form(op, i1, i2);\
 }
-void Assembler::ie_form(uint32_t code) {
-    emit4bytes(code);
+void Assembler::ie_form(uint16_t op, const Operand& i1, const Operand& i2) {
+    emit4bytes((op << 16) | ((GET1BYTE(i1.imm_) & 0xf) * B4) | (GET1BYTE(i2.imm_) & 0xf));
 }
 
 // RR format: <insn> R1,R2
