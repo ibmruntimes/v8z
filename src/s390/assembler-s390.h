@@ -1793,7 +1793,6 @@ RRE_FORM(srst);
 RRE_FORM(srstu);
 RXF_FORM(srxt);
 S_FORM(ssch);
-RX_FORM(st);
 RS1_FORM(stam);
 RSY1_FORM(stamy);
 RXY_FORM(stch);
@@ -1965,9 +1964,8 @@ SS2_FORM(zap);
   void stbux(Register dst, const MemOperand& src);
   void sthx(Register dst, const MemOperand& src);
   void sthux(Register dst, const MemOperand& src);
-  void stw(Register dst, const MemOperand& src);
+  void st(Register dst, const MemOperand& src);
   void stwu(Register dst, const MemOperand& src);
-  void stwx(Register rs, const MemOperand& src);
   void stwux(Register rs, const MemOperand& src);
 
   void extsb(Register rs, Register ra, RCBit r = LeaveRC);

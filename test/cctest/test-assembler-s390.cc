@@ -211,7 +211,7 @@ TEST(3) {
   __ std(fp, MemOperand(sp, 24));
 #else
   __ stwu(sp, MemOperand(sp, -16));
-  __ stw(fp, MemOperand(sp, 12));
+  __ st(fp, MemOperand(sp, 12));
 #endif
   __ mr(fp, sp);
 
@@ -221,7 +221,7 @@ TEST(3) {
   // modify field int i of struct
   __ lwz(r3, MemOperand(r4, OFFSET_OF(T, i)));
   __ srwi(r5, r3, Operand(1));
-  __ stw(r5, MemOperand(r4, OFFSET_OF(T, i)));
+  __ st(r5, MemOperand(r4, OFFSET_OF(T, i)));
 
   // modify field char c of struct
   __ lbz(r5, MemOperand(r4, OFFSET_OF(T, c)));

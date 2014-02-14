@@ -289,9 +289,9 @@ void LGapResolver::EmitMove(int index) {
         MemOperand destination_high_operand =
             cgen_->ToHighMemOperand(destination);
         __ lwz(kSavedValueRegister, source_operand);
-        __ stw(kSavedValueRegister, destination_operand);
+        __ st(kSavedValueRegister, destination_operand);
         __ lwz(kSavedValueRegister, source_high_operand);
-        __ stw(kSavedValueRegister, destination_high_operand);
+        __ st(kSavedValueRegister, destination_high_operand);
 #endif
       } else {
         __ lfd(kScratchDoubleReg, source_operand);
