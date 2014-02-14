@@ -1816,13 +1816,13 @@ void MacroAssembler::StoreNumberToDoubleElements(Register value_reg,
   std(double_reg, MemOperand(scratch1, FixedDoubleArray::kHeaderSize));
 #else
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-  stw(mantissa_reg, FieldMemOperand(scratch1, FixedDoubleArray::kHeaderSize));
+  st(mantissa_reg, FieldMemOperand(scratch1, FixedDoubleArray::kHeaderSize));
   uint32_t offset = FixedDoubleArray::kHeaderSize + sizeof(kHoleNanLower32);
-  stw(exponent_reg, FieldMemOperand(scratch1, offset));
+  st(exponent_reg, FieldMemOperand(scratch1, offset));
 #elif __BYTE_ORDER == __BIG_ENDIAN
-  stw(exponent_reg, FieldMemOperand(scratch1, FixedDoubleArray::kHeaderSize));
+  st(exponent_reg, FieldMemOperand(scratch1, FixedDoubleArray::kHeaderSize));
   uint32_t offset = FixedDoubleArray::kHeaderSize + sizeof(kHoleNanLower32);
-  stw(mantissa_reg, FieldMemOperand(scratch1, offset));
+  st(mantissa_reg, FieldMemOperand(scratch1, offset));
 #endif
 #endif
   b(&done);
@@ -2120,7 +2120,7 @@ void MacroAssembler::CallApiFunctionAndReturn(ExternalReference function,
   LoadP(r28, MemOperand(r26, kLimitOffset));
   lwz(r29, MemOperand(r26, kLevelOffset));
   addi(r29, r29, Operand(1));
-  stw(r29, MemOperand(r26, kLevelOffset));
+  st(r29, MemOperand(r26, kLevelOffset));
 
 #if !ABI_RETURNS_HANDLES_IN_REGS
   // PPC LINUX ABI
@@ -2165,7 +2165,7 @@ void MacroAssembler::CallApiFunctionAndReturn(ExternalReference function,
     Check(eq, "Unexpected level after return from api call");
   }
   subi(r29, r29, Operand(1));
-  stw(r29, MemOperand(r26, kLevelOffset));
+  st(r29, MemOperand(r26, kLevelOffset));
   LoadP(ip, MemOperand(r26, kLimitOffset));
   cmp(r28, ip);
   bne(&delete_allocated_handles);
@@ -2626,7 +2626,7 @@ void MacroAssembler::SetCounter(StatsCounter* counter, int value,
   if (FLAG_native_code_counters && counter->Enabled()) {
     mov(scratch1, Operand(value));
     mov(scratch2, Operand(ExternalReference(counter)));
-    stw(scratch1, MemOperand(scratch2));
+    st(scratch1, MemOperand(scratch2));
   }
 }
 
@@ -2638,7 +2638,7 @@ void MacroAssembler::IncrementCounter(StatsCounter* counter, int value,
     mov(scratch2, Operand(ExternalReference(counter)));
     lwz(scratch1, MemOperand(scratch2));
     addi(scratch1, scratch1, Operand(value));
-    stw(scratch1, MemOperand(scratch2));
+    st(scratch1, MemOperand(scratch2));
   }
 }
 
@@ -2650,7 +2650,7 @@ void MacroAssembler::DecrementCounter(StatsCounter* counter, int value,
     mov(scratch2, Operand(ExternalReference(counter)));
     lwz(scratch1, MemOperand(scratch2));
     subi(scratch1, scratch1, Operand(value));
-    stw(scratch1, MemOperand(scratch2));
+    st(scratch1, MemOperand(scratch2));
   }
 }
 
@@ -3428,7 +3428,7 @@ void MacroAssembler::PatchRelocatedValue(Register lis_location,
   rlwimi(scratch, new_value, 16, 16, 31);
 #endif
 
-  stw(scratch, MemOperand(lis_location));
+  st(scratch, MemOperand(lis_location));
 
   lwz(scratch, MemOperand(lis_location, kInstrSize));
   // scratch is now ori.
@@ -3445,7 +3445,7 @@ void MacroAssembler::PatchRelocatedValue(Register lis_location,
 #else
   rlwimi(scratch, new_value, 0, 16, 31);
 #endif
-  stw(scratch, MemOperand(lis_location, kInstrSize));
+  st(scratch, MemOperand(lis_location, kInstrSize));
 
 #if V8_TARGET_ARCH_S390X
   if (emit_debug_code()) {
@@ -3466,7 +3466,7 @@ void MacroAssembler::PatchRelocatedValue(Register lis_location,
   }
 
   rlwimi(scratch, new_value, 16, 16, 31);
-  stw(scratch, MemOperand(lis_location, 3*kInstrSize));
+  st(scratch, MemOperand(lis_location, 3*kInstrSize));
 
   lwz(scratch, MemOperand(lis_location, 4*kInstrSize));
   // scratch is now ori.
@@ -3477,7 +3477,7 @@ void MacroAssembler::PatchRelocatedValue(Register lis_location,
     lwz(scratch, MemOperand(lis_location, 4*kInstrSize));
   }
   rlwimi(scratch, new_value, 0, 16, 31);
-  stw(scratch, MemOperand(lis_location, 4*kInstrSize));
+  st(scratch, MemOperand(lis_location, 4*kInstrSize));
 #endif
 
   // Update the I-cache so the new lis and addic can be executed.
@@ -3757,13 +3757,13 @@ void MacroAssembler::EnsureNotWhite(
   // that the object is white we can make it black by flipping one bit.
   lwz(ip, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
   orx(ip, ip, mask_scratch);
-  stw(ip, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
+  st(ip, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
 
   mov(ip, Operand(~Page::kPageAlignmentMask));
   and_(bitmap_scratch, bitmap_scratch, ip);
   lwz(ip, MemOperand(bitmap_scratch, MemoryChunk::kLiveBytesOffset));
   add(ip, ip, length);
-  stw(ip, MemOperand(bitmap_scratch, MemoryChunk::kLiveBytesOffset));
+  st(ip, MemOperand(bitmap_scratch, MemoryChunk::kLiveBytesOffset));
 
   bind(&done);
 }
@@ -3956,9 +3956,9 @@ void MacroAssembler::LoadDoubleLiteral(DwVfpRegister result,
   std(scratch, MemOperand(sp));
 #else
   LoadIntLiteral(scratch, litVal.ival[0]);
-  stw(scratch, MemOperand(sp, 0));
+  st(scratch, MemOperand(sp, 0));
   LoadIntLiteral(scratch, litVal.ival[1]);
-  stw(scratch, MemOperand(sp, 4));
+  st(scratch, MemOperand(sp, 4));
 #endif
   lfd(result, MemOperand(sp, 0));
 
@@ -4138,7 +4138,7 @@ void MacroAssembler::StoreP(Register src, const MemOperand& mem,
 #if V8_TARGET_ARCH_S390X
     stdx(src, MemOperand(mem.ra(), scratch));
 #else
-    stwx(src, MemOperand(mem.ra(), scratch));
+    st(src, MemOperand(mem.ra(), scratch));
 #endif
   } else {
 #if V8_TARGET_ARCH_S390X
@@ -4158,7 +4158,7 @@ void MacroAssembler::StoreP(Register src, const MemOperand& mem,
       std(src, mem);
     }
 #else
-    stw(src, mem);
+    st(src, mem);
 #endif
   }
 }

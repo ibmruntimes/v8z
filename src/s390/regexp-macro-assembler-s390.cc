@@ -863,9 +863,9 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
             __ add(r5, r4, r5);
             __ add(r6, r4, r6);
           }
-          __ stw(r5, MemOperand(r3));
+          __ st(r5, MemOperand(r3));
           __ addi(r3, r3, Operand(kIntSize));
-          __ stw(r6, MemOperand(r3));
+          __ st(r6, MemOperand(r3));
           __ addi(r3, r3, Operand(kIntSize));
         }
       }

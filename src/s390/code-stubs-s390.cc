@@ -666,11 +666,11 @@ void FloatingPointHelper::ConvertIntToDouble(MacroAssembler* masm,
 #else
   __ srawi(r0, src, 31);
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  __ stw(r0, MemOperand(sp, 4));
-  __ stw(src, MemOperand(sp, 0));
+  __ st(r0, MemOperand(sp, 4));
+  __ st(src, MemOperand(sp, 0));
 #else
-  __ stw(r0, MemOperand(sp, 0));
-  __ stw(src, MemOperand(sp, 4));
+  __ st(r0, MemOperand(sp, 0));
+  __ st(src, MemOperand(sp, 4));
 #endif
 #endif
 
@@ -698,11 +698,11 @@ void FloatingPointHelper::ConvertUnsignedIntToDouble(MacroAssembler* masm,
 #else
   __ lhi(r0, Operand::Zero());
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  __ stw(r0, MemOperand(sp, 4));
-  __ stw(src, MemOperand(sp, 0));
+  __ st(r0, MemOperand(sp, 4));
+  __ st(src, MemOperand(sp, 0));
 #else
-  __ stw(r0, MemOperand(sp, 0));
-  __ stw(src, MemOperand(sp, 4));
+  __ st(r0, MemOperand(sp, 0));
+  __ st(src, MemOperand(sp, 4));
 #endif
 #endif
 
@@ -728,11 +728,11 @@ void FloatingPointHelper::ConvertIntToFloat(MacroAssembler* masm,
 #else
   __ srawi(int_scratch, src, 31);
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  __ stw(int_scratch, MemOperand(sp, 4));
-  __ stw(src, MemOperand(sp, 0));
+  __ st(int_scratch, MemOperand(sp, 4));
+  __ st(src, MemOperand(sp, 0));
 #else
-  __ stw(int_scratch, MemOperand(sp, 0));
-  __ stw(src, MemOperand(sp, 4));
+  __ st(int_scratch, MemOperand(sp, 0));
+  __ st(src, MemOperand(sp, 4));
 #endif
 #endif
 
@@ -1808,7 +1808,7 @@ void UnaryOpStub::GenerateHeapNumberCodeSub(MacroAssembler* masm,
   if (mode_ == UNARY_OVERWRITE) {
     __ lwz(r5, FieldMemOperand(r3, HeapNumber::kExponentOffset));
     __ xoris(r5, r5, Operand(HeapNumber::kSignMask >> 16));  // Flip sign.
-    __ stw(r5, FieldMemOperand(r3, HeapNumber::kExponentOffset));
+    __ st(r5, FieldMemOperand(r3, HeapNumber::kExponentOffset));
   } else {
     Label slow_allocate_heapnumber, heapnumber_allocated;
     __ AllocateHeapNumber(r4, r5, r6, r9, &slow_allocate_heapnumber);
@@ -1826,10 +1826,10 @@ void UnaryOpStub::GenerateHeapNumberCodeSub(MacroAssembler* masm,
     __ bind(&heapnumber_allocated);
     __ lwz(r6, FieldMemOperand(r3, HeapNumber::kMantissaOffset));
     __ lwz(r5, FieldMemOperand(r3, HeapNumber::kExponentOffset));
-    __ stw(r6, FieldMemOperand(r4, HeapNumber::kMantissaOffset));
+    __ st(r6, FieldMemOperand(r4, HeapNumber::kMantissaOffset));
     __ mov(r0, Operand(HeapNumber::kSignMask));
     __ xor_(r5, r5, r0);
-    __ stw(r5, FieldMemOperand(r4, HeapNumber::kExponentOffset));
+    __ st(r5, FieldMemOperand(r4, HeapNumber::kExponentOffset));
     __ mr(r3, r4);
   }
   __ Ret();
@@ -3153,8 +3153,8 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
     __ LoadRoot(r8, Heap::kHeapNumberMapRootIndex);
     __ AllocateHeapNumber(r9, scratch0, scratch1, r8, &no_update);
     __ stfd(d2, FieldMemOperand(r9, HeapNumber::kValueOffset));
-    __ stw(r5, MemOperand(cache_entry, 0));
-    __ stw(r6, MemOperand(cache_entry, 4));
+    __ st(r5, MemOperand(cache_entry, 0));
+    __ st(r6, MemOperand(cache_entry, 4));
     __ StoreP(r9, MemOperand(cache_entry, 8));
     __ Ret();
 
@@ -3524,7 +3524,7 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
     __ mov(r3, Operand(scope_depth));
     __ lwz(r4, MemOperand(r3));
     __ addi(r4, r4, Operand(1));
-    __ stw(r4, MemOperand(r3));
+    __ st(r4, MemOperand(r3));
   }
 
   // PPC LINUX ABI:
@@ -3633,7 +3633,7 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
     __ mov(r5, Operand(scope_depth));
     __ lwz(r6, MemOperand(r5));
     __ subi(r6, r6, Operand(1));
-    __ stw(r6, MemOperand(r5));
+    __ st(r6, MemOperand(r5));
   }
 
   // check for failure result

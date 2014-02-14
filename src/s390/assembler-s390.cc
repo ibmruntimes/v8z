@@ -1054,18 +1054,22 @@ void Assembler::sthux(Register rs, const MemOperand &src) {
   emit(EXT2 | STHUX | rs.code()*B21 | ra.code()*B16 | rb.code()*B11 | LeaveRC);
 }
 
-void Assembler::stw(Register dst, const MemOperand &src) {
+// 32-bit Store
+void Assembler::st(Register dst, const MemOperand &src) {
+  int offset = src.offset();
+  if (!is_uint12(offset)) {
+    // @TODO Remove once things are clean....
+    // Check limits... should check if STY is usable and replace at source.
+    PrintF("ST offset exceeded limits = %" V8PRIdPTR ", 0x%" V8PRIxPTR "\n",
+           offset, offset);
+  }
+  ASSERT(is_uint12(offset));
+  // rx_form (ST, dst, src.ra(), src.rb(), src.offset());
   d_form(STW, dst, src.ra(), src.offset(), true);
 }
 
 void Assembler::stwu(Register dst, const MemOperand &src) {
   d_form(STWU, dst, src.ra(), src.offset(), true);
-}
-
-void Assembler::stwx(Register rs, const MemOperand &src) {
-  Register ra = src.ra();
-  Register rb = src.rb();
-  emit(EXT2 | STWX | rs.code()*B21 | ra.code()*B16 | rb.code()*B11 | LeaveRC);
 }
 
 void Assembler::stwux(Register rs, const MemOperand &src) {
@@ -3033,7 +3037,6 @@ RRE_FORM_EMIT(srst, SRST)
 RRE_FORM_EMIT(srstu, SRSTU)
 RXF_FORM_EMIT(srxt, SRXT)
 S_FORM_EMIT(ssch, SSCH)
-RX_FORM_EMIT(st, ST)
 RS1_FORM_EMIT(stam, STAM)
 RSY1_FORM_EMIT(stamy, STAMY)
 RXY_FORM_EMIT(stch, STCH)

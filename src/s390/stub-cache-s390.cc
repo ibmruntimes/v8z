@@ -765,7 +765,7 @@ static void GenerateFastApiDirectCall(MacroAssembler* masm,
   __ StoreP(ip, MemOperand(arg0, 1 * kPointerSize));
   // v8::Arguments::length_ = argc
   __ lhi(ip, Operand(argc));
-  __ stw(ip, MemOperand(arg0, 2 * kPointerSize));
+  __ st(ip, MemOperand(arg0, 2 * kPointerSize));
   // v8::Arguments::is_construct_call = 0
   __ lhi(ip, Operand::Zero());
   __ StoreP(ip, MemOperand(arg0, 3 * kPointerSize));
@@ -2311,8 +2311,8 @@ Handle<Code> CallStubCompiler::CompileMathAbsCall(
   __ lwz(r6, FieldMemOperand(r3, HeapNumber::kMantissaOffset));
   __ LoadRoot(r9, Heap::kHeapNumberMapRootIndex);
   __ AllocateHeapNumber(r3, r7, r8, r9, &slow);
-  __ stw(r4, FieldMemOperand(r3, HeapNumber::kExponentOffset));
-  __ stw(r6, FieldMemOperand(r3, HeapNumber::kMantissaOffset));
+  __ st(r4, FieldMemOperand(r3, HeapNumber::kExponentOffset));
+  __ st(r6, FieldMemOperand(r3, HeapNumber::kMantissaOffset));
   __ Drop(argc + 1);
   __ Ret();
 
@@ -3890,7 +3890,7 @@ void KeyedStoreStubCompiler::GenerateStoreExternalArray(
     case EXTERNAL_INT_ELEMENTS:
     case EXTERNAL_UNSIGNED_INT_ELEMENTS:
       __ SmiToIntArrayOffset(r10, key);
-      __ stwx(r8, MemOperand(r6, r10));
+      __ st(r8, MemOperand(r6, r10));
       break;
     case EXTERNAL_FLOAT_ELEMENTS:
       // Perform int-to-float conversion and store to memory.
@@ -3965,7 +3965,7 @@ void KeyedStoreStubCompiler::GenerateStoreExternalArray(
           case EXTERNAL_INT_ELEMENTS:
           case EXTERNAL_UNSIGNED_INT_ELEMENTS:
             __ SmiToIntArrayOffset(r10, key);
-            __ stwx(r8, MemOperand(r6, r10));
+            __ st(r8, MemOperand(r6, r10));
             break;
           case EXTERNAL_PIXEL_ELEMENTS:
           case EXTERNAL_FLOAT_ELEMENTS:
@@ -4111,7 +4111,7 @@ void KeyedLoadStubCompiler::GenerateLoadFastDoubleElement(
 
   // Don't need to reload the upper 32 bits of the double, it's already in
   // scratch.
-  __ stw(scratch, FieldMemOperand(heap_number_reg,
+  __ st(scratch, FieldMemOperand(heap_number_reg,
                                   HeapNumber::kExponentOffset));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
   __ lwz(scratch, FieldMemOperand(indexed_double_offset,
@@ -4120,7 +4120,7 @@ void KeyedLoadStubCompiler::GenerateLoadFastDoubleElement(
   __ lwz(scratch, FieldMemOperand(indexed_double_offset,
                                   FixedArray::kHeaderSize+4));
 #endif
-  __ stw(scratch, FieldMemOperand(heap_number_reg,
+  __ st(scratch, FieldMemOperand(heap_number_reg,
                                   HeapNumber::kMantissaOffset));
 
   __ mr(r3, heap_number_reg);
