@@ -1122,17 +1122,12 @@ void Assembler::ldux(Register rd, const MemOperand &src) {
   emit(EXT2 | LDUX | rd.code()*B21 | ra.code()*B16 | rb.code()*B11);
 }
 
-void Assembler::std(Register rs, const MemOperand &src) {
+// 64-bit Store
+void Assembler::stg(Register rs, const MemOperand &src) {
   int offset = src.offset();
-  ASSERT(!(offset & 3) && is_int16(offset));
-  offset = kImm16Mask & offset;
+  ASSERT(is_int20(offset));
+  // RXY_from(STG, rs, src.ra(), src.rb(), src.offset());
   emit(STD_ppc | rs.code()*B21 | src.ra().code()*B16 | offset);
-}
-
-void Assembler::stdx(Register rs, const MemOperand &src) {
-  Register ra = src.ra();
-  Register rb = src.rb();
-  emit(EXT2 | STDX | rs.code()*B21 | ra.code()*B16 | rb.code()*B11);
 }
 
 void Assembler::stdu(Register rs, const MemOperand &src) {
@@ -3056,7 +3051,6 @@ RXY_FORM_EMIT(stey, STEY)
 RXY_FORM_EMIT(stfh, STFH)
 S_FORM_EMIT(stfle, STFLE)
 S_FORM_EMIT(stfpc, STFPC)
-RXY_FORM_EMIT(stg, STG)
 RIL1_FORM_EMIT(stgrl, STGRL)
 RX_FORM_EMIT(sth, STH)
 RXY_FORM_EMIT(sthh, STHH)

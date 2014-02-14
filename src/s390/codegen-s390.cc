@@ -237,7 +237,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
     __ Assert(eq, "object found in smi-only array");
   }
 #if V8_TARGET_ARCH_S390X
-  __ std(r7, MemOperand(r10, 0));
+  __ stg(r7, MemOperand(r10, 0));
 #else
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
   __ st(r7, MemOperand(r10, 0));
@@ -333,7 +333,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
 #if V8_TARGET_ARCH_S390X
   __ ld(r3, MemOperand(r7, -8));
   __ addi(r4, r5, Operand(-1));  // subtract tag for std
-  __ std(r3, MemOperand(r4, HeapNumber::kValueOffset));
+  __ stg(r3, MemOperand(r4, HeapNumber::kValueOffset));
 #else
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
   __ lwz(r3, MemOperand(r7, -8));

@@ -282,7 +282,7 @@ void LGapResolver::EmitMove(int index) {
         // but kSavedValueRegister is free.
 #if V8_TARGET_ARCH_S390X
         __ ld(kSavedValueRegister, source_operand);
-        __ std(kSavedValueRegister, destination_operand);
+        __ stg(kSavedValueRegister, destination_operand);
 #else
         MemOperand source_high_operand =
             cgen_->ToHighMemOperand(source);
