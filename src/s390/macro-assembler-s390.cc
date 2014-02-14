@@ -4223,29 +4223,47 @@ void MacroAssembler::LoadWord(Register dst, const MemOperand& mem,
 }
 
 // Variable length depending on whether offset fits into immediate field
-// MemOperand current only supports d-form
+// MemOperand of RX or RXY format
 void MacroAssembler::StoreWord(Register src, const MemOperand& mem,
                                Register scratch, bool updateForm) {
   Register base = mem.ra();
   int offset = mem.offset();
 
-  bool use_dform = true;
-  if (!is_int16(offset)) {
-    use_dform = false;
+  bool use_RXform = is_uint16(offset);
+  bool use_RXYform = !use_RXform && is_int20(offset);
+
+  if (is_uint12(offset)) {
+    // RX-format supports unsigned 12-bits offset.
+    use_RXform = true;
+  } else if (is_int20(offset)) {
+    // RXY-format supports signed 20-bits offset.
+    use_RXYform = true;
+  } else {
+    // Materialize offset into scratch register.
     LoadIntLiteral(scratch, offset);
   }
 
   if (!updateForm) {
-    if (use_dform) {
-      stw(src, mem);
+    if (use_RXform) {
+      st(src, mem);
+    } else if (use_RXYform) {
+      sty(src, mem);
     } else {
-      stwx(src, MemOperand(base, scratch));
+      st(src, MemOperand(base, scratch));
     }
   } else {
-    if (use_dform) {
-      stwu(src, mem);
+    // @TODO S390 doesn't have an instruction that updates.  Temporarily using
+    // LA to materialize the base address manually... but we should probably fix
+    // this at a higher level.
+    if (use_RXform) {
+      st(src, mem);
+      la(base, mem);
+    } else if (use_RXYform) {
+      sty(src, mem);
+      lay(base, mem);
     } else {
-      stwux(src, MemOperand(base, scratch));
+      st(src, MemOperand(base, scratch));
+      la(base, MemOperand(base, scratch));
     }
   }
 }
