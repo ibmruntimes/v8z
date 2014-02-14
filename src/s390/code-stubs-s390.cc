@@ -662,7 +662,7 @@ void FloatingPointHelper::ConvertIntToDouble(MacroAssembler* masm,
   // sign-extend src to 64-bit and store it to temp double on the stack
 #if V8_TARGET_ARCH_S390X
   __ extsw(r0, src);
-  __ std(r0, MemOperand(sp, 0));
+  __ stg(r0, MemOperand(sp, 0));
 #else
   __ srawi(r0, src, 31);
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
@@ -694,7 +694,7 @@ void FloatingPointHelper::ConvertUnsignedIntToDouble(MacroAssembler* masm,
   // zero-extend src to 64-bit and store it to temp double on the stack
 #if V8_TARGET_ARCH_S390X
   __ clrldi(r0, src, Operand(32));
-  __ std(r0, MemOperand(sp, 0));
+  __ stg(r0, MemOperand(sp, 0));
 #else
   __ lhi(r0, Operand::Zero());
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
@@ -724,7 +724,7 @@ void FloatingPointHelper::ConvertIntToFloat(MacroAssembler* masm,
   // sign-extend src to 64-bit and store it to temp double on the stack
 #if V8_TARGET_ARCH_S390X
   __ extsw(int_scratch, src);
-  __ std(int_scratch, MemOperand(sp, 0));
+  __ stg(int_scratch, MemOperand(sp, 0));
 #else
   __ srawi(int_scratch, src, 31);
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN

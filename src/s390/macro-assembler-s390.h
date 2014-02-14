@@ -105,7 +105,7 @@ bool AreAliased(Register reg1,
 #define LoadPX             ldx
 #define LoadPUX            ldux
 #define StorePU            stdu
-#define StorePX            stdx
+#define StorePX            stg
 #define StorePUX           stdux
 #define ShiftLeftImm       sldi
 #define ShiftRightImm      srdi

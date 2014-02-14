@@ -1813,7 +1813,7 @@ void MacroAssembler::StoreNumberToDoubleElements(Register value_reg,
   add(scratch1, elements_reg, scratch1);
 #if V8_TARGET_ARCH_S390X
   addi(scratch1, scratch1, Operand(-kHeapObjectTag));
-  std(double_reg, MemOperand(scratch1, FixedDoubleArray::kHeaderSize));
+  stg(double_reg, MemOperand(scratch1, FixedDoubleArray::kHeaderSize));
 #else
 #if __BYTE_ORDER == __LITTLE_ENDIAN
   st(mantissa_reg, FieldMemOperand(scratch1, FixedDoubleArray::kHeaderSize));
@@ -3953,7 +3953,7 @@ void MacroAssembler::LoadDoubleLiteral(DwVfpRegister result,
   litVal.dval = value;
 #if V8_TARGET_ARCH_S390X
   mov(scratch, Operand(litVal.ival));
-  std(scratch, MemOperand(sp));
+  stg(scratch, MemOperand(sp));
 #else
   LoadIntLiteral(scratch, litVal.ival[0]);
   st(scratch, MemOperand(sp, 0));
@@ -4132,33 +4132,21 @@ void MacroAssembler::StoreP(Register src, const MemOperand& mem,
                             Register scratch) {
   int offset = mem.offset();
 
-  if (!scratch.is(no_reg) && !is_int16(offset)) {
+  if (!scratch.is(no_reg) && !is_int20(offset)) {
     /* cannot use d-form */
     LoadIntLiteral(scratch, offset);
 #if V8_TARGET_ARCH_S390X
-    stdx(src, MemOperand(mem.ra(), scratch));
+    stg(src, MemOperand(mem.ra(), scratch));
 #else
     st(src, MemOperand(mem.ra(), scratch));
 #endif
   } else {
 #if V8_TARGET_ARCH_S390X
-    int misaligned = (offset & 3);
-    if (misaligned) {
-      // adjust base to conform to offset alignment requirements
-      // a suitable scratch is required here
-      ASSERT(!scratch.is(no_reg));
-      if (scratch.is(r0)) {
-        LoadIntLiteral(scratch, offset);
-        stdx(src, MemOperand(mem.ra(), scratch));
-      } else {
-        addi(scratch, mem.ra(), Operand((offset & 3) - 4));
-        std(src, MemOperand(scratch, (offset & ~3) + 4));
-      }
-    } else {
-      std(src, mem);
-    }
+    stg(src, mem);
 #else
-    st(src, mem);
+    // StoreWord will try to generate ST if offset fits, otherwise
+    // it'll generate STY.
+    StoreWord(src, mem, scratch, false);
 #endif
   }
 }
