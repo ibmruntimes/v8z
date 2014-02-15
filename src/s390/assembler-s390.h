@@ -2368,6 +2368,13 @@ SS2_FORM(zap);
   inline void rr_form(uint16_t x);
   inline void rr2_form(uint16_t x);
   inline void rx_form(uint32_t x);
+
+  inline void rx_form(Instr instr, 
+                      Register r1,
+                      Register x2,
+                      Register b2,
+                      const intptr_t d2);
+
   inline void ri1_form(uint32_t x);
   inline void ri2_form(uint32_t x);
   inline void rie_form(uint64_t x);

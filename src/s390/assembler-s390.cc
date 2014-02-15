@@ -1063,9 +1063,7 @@ void Assembler::st(Register dst, const MemOperand &src) {
     PrintF("ST offset exceeded limits = %" V8PRIdPTR ", 0x%" V8PRIxPTR "\n",
            offset, offset);
   }
-  ASSERT(is_uint12(offset));
-  // rx_form (ST, dst, src.ra(), src.rb(), src.offset());
-  d_form(STW, dst, src.ra(), src.offset(), true);
+  rx_form(ST, dst, src.ra(), src.rb(), src.offset());
 }
 
 void Assembler::stwu(Register dst, const MemOperand &src) {
@@ -1740,6 +1738,17 @@ void Assembler::name(Register r1, Register x2, \
 void Assembler::rx_form(uint32_t code) {
     emit4bytes(code);
 }
+
+void Assembler::rx_form(Instr instr,
+                        Register r1,
+                        Register x2,
+                        Register b2,
+                        const intptr_t d2) {
+  ASSERT(is_uint12(d2));
+  emit4bytes(instr * B24 | r1.code() * B20 |
+             x2.code() * B20 | b2.code() * B16 | d2);
+}
+
 
 
 // RI1 format: <insn> R1,I2
