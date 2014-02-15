@@ -1652,9 +1652,9 @@ void Assembler::nop(int type) {
 #define B32 ((uint64_t)1<<32)
 #define B36 ((uint64_t)1<<36)
 #define B40 ((uint64_t)1<<40)
-#define GET1BYTE(ptr) (*((uint8_t *)ptr))
-#define GET2BYTE(ptr) (*((uint16_t *)ptr))
-#define GET4BYTE(ptr) (*((uint32_t *)ptr))
+#define GET1BYTE(ptr) (*(reinterpret_cast<uint8_t *>(ptr)))
+#define GET2BYTE(ptr) (*(reinterpret_cast<uint16_t *>(ptr)))
+#define GET4BYTE(ptr) (*(reinterpret_cast<uint32_t *>(ptr)))
 // I format <insn> i
 //    +--------+---------+
 //    | OpCode |    i    |
@@ -1693,7 +1693,9 @@ void Assembler::name(const Operand& i1, const Operand& i2) {\
     ie_form(op, i1, i2);\
 }
 void Assembler::ie_form(uint16_t op, const Operand& i1, const Operand& i2) {
-    emit4bytes((op << 16) | ((GET1BYTE(i1.imm_) & 0xf) * B4) | (GET1BYTE(i2.imm_) & 0xf));
+    emit4bytes((op << 16) |
+               ((GET1BYTE(i1.imm_) & 0xf) * B4) |
+               (GET1BYTE(i2.imm_) & 0xf));
 }
 
 // RR format: <insn> R1,R2
@@ -1737,7 +1739,11 @@ void Assembler::name(Register r1, Register x2, \
                      Register b2, Disp d2) {\
     rx_form(op, r1, x2, b2, d2);\
 }
-void Assembler::rx_form(uint8_t op, Register r1, Register x2, Register b2, Disp d2) {
+void Assembler::rx_form(uint8_t op,
+                        Register r1,
+                        Register x2,
+                        Register b2,
+                        Disp d2) {
     emit4bytes(op*B24 | r1.code()*B20
                       | x2.code()*B16
                       | b2.code()*B12
