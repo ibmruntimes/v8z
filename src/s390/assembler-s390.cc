@@ -1076,6 +1076,11 @@ void Assembler::stwux(Register rs, const MemOperand &src) {
   emit(EXT2 | STWUX | rs.code()*B21 | ra.code()*B16 | rb.code()*B11 | LeaveRC);
 }
 
+// 32-bit Store Multiple
+void Assembler::stm(Register r1, Register r2, const MemOperand& src) {
+  rs_form(STM, r1, r2, src.rb(), src.offset());
+}
+
 void Assembler::extsb(Register rs, Register ra, RCBit rc) {
   emit(EXT2 | EXTSB | ra.code()*B21 | rs.code()*B16 | rc);
 }
@@ -1867,6 +1872,15 @@ void Assembler::name(Register r1, Register r3, \
 void Assembler::rs1_form(uint32_t code) {
     emit4bytes(code);
 }
+void Assembler::rs_form(Instr instr,
+                        Register r1,
+                        Register r2,
+                        Register b2,
+                        const intptr_t d2) {
+  ASSERT(is_uint12(d2));
+  emit4bytes(instr * B24 | r1.code() * B20 | r2.code() * B16 |
+             b2.code() * B12 | d2);
+}
 
 // RS2 format: <insn> R1,M3,D2(B2)
 //    +--------+----+----+----+-------------+
@@ -1885,6 +1899,16 @@ void Assembler::name(Register r1, Mask m3, \
 }
 void Assembler::rs2_form(uint32_t code) {
     emit4bytes(code);
+}
+
+void Assembler::rs_form(Instr instr,
+                        Register r1,
+                        Mask m3,
+                        Register b2,
+                        const intptr_t d2) {
+  ASSERT(is_uint12(d2));
+  emit4bytes(instr * B24 | r1.code() * B20 | m3.value() * B16 |
+             b2.code() * B12 | d2);
 }
 
 // RSI format: <insn> R1,R3,I2
@@ -3068,7 +3092,6 @@ RX_FORM_EMIT(sth, STH)
 RXY_FORM_EMIT(sthh, STHH)
 RIL1_FORM_EMIT(sthrl, STHRL)
 RXY_FORM_EMIT(sthy, STHY)
-RS2_FORM_EMIT(stm, STM)
 RSY1_FORM_EMIT(stmg, STMG)
 RSY1_FORM_EMIT(stmh, STMH)
 RSY1_FORM_EMIT(stmy, STMY)
