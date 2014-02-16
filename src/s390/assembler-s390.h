@@ -2360,8 +2360,16 @@ SS2_FORM(zap);
   inline void rre_form(Opcode op, Register r1, Register r2);
   inline void rrd_form(Opcode op, Register r1, Register r3, \
                      Register r2);
-  inline void rs1_form(uint32_t x);
-  inline void rs2_form(uint32_t x);
+  inline void rs_form(Opcode op,
+                        Register r1,
+                        Mask m3,
+                        Register b2,
+                        const Disp d2);
+  inline void rs_form(Opcode op,
+                        Register r1,
+                        Register r3,
+                        Register b2,
+                        const Disp d2);
 
 // RS format: <insn> R1,R3,D2(B2)
 //    +--------+----+----+----+-------------+
