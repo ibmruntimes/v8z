@@ -1846,11 +1846,16 @@ void Assembler::rie_form(Opcode op, Register r1, Register r3,
 //   +--------+----+----+------------------------------------+
 //   0        8    12   16                                  47
 #define RIL1_FORM_EMIT(name, op) \
-void Assembler::name(Register r, const Operand& i) {\
-    ril1_form((op & 0x0FF0)*B36 | r.code()*B36\
-            | (op & 0x000F)*B32 | i.imm_);\
+void Assembler::name(Register r, const Operand& i2) {\
+    ril_form(op, r, i2);\
 }
-void Assembler::ril1_form(uint64_t code) {
+void Assembler::ril_form(Opcode op, Register r1, const Operand& i2) {
+    ASSERT(is_uint12(op));
+    ASSERT(is_uint4(r1.code()));
+    uint64_t code = (static_cast<uint64_t>(op & 0xFF0)) * B36        |
+                    (static_cast<uint64_t>(r1.code())) * B36         |
+                    (static_cast<uint64_t>(op & 0x00F)) * B32        |
+                    (static_cast<uint64_t>(GET4BYTE(i2.imm_)));
     emit6bytes(code);
 }
 
@@ -1860,11 +1865,16 @@ void Assembler::ril1_form(uint64_t code) {
 //   +--------+----+----+------------------------------------+
 //   0        8    12   16                                  47
 #define RIL2_FORM_EMIT(name, op) \
-void Assembler::name(Mask m, const Operand& i) {\
-    ril2_form((op & 0x0FF0)*B36 | m.value()*B36\
-             |(op & 0x000F)*B32 | i.imm_);\
+void Assembler::name(Mask m1, const Operand& i2) {\
+    ril_form(op, m1, i2);\
 }
-void Assembler::ril2_form(uint64_t code) {
+void Assembler::ril_form(Opcode op, Mask m1, const Operand& i2) {
+    ASSERT(is_uint12(op));
+    ASSERT(is_uint4(m1.value()));
+    uint64_t code = (static_cast<uint64_t>(op & 0xFF0)) * B36        |
+                    (static_cast<uint64_t>(m1.value())) * B36        |
+                    (static_cast<uint64_t>(op & 0x00F)) * B32        |
+                    (static_cast<uint64_t>(GET4BYTE(i2.imm_)));
     emit6bytes(code);
 }
 
