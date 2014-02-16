@@ -1450,11 +1450,8 @@ RI1_FORM(llihl);
 RIL1_FORM(llilf);
 RI1_FORM(llilh);
 RI1_FORM(llill);
-RS1_FORM(lm);
 SS5_FORM(lmd);
-RSY1_FORM(lmg);
 RSY1_FORM(lmh);
-RSY1_FORM(lmy);
 RRE_FORM(lndbr);
 RRE_FORM(lndfr);
 RR_FORM(lndr);
@@ -1921,6 +1918,12 @@ SS2_FORM(zap);
   void lwzx(Register dst, const MemOperand& src);
   void lwzux(Register dst, const MemOperand& src);
   void lwa(Register dst, const MemOperand& src);
+  void lm(Register r1, Register r2, const MemOperand& src);
+  void lmy(Register r1, Register r2, const MemOperand& src);
+  void lmg(Register r1, Register r2, const MemOperand& src);
+
+
+
   void stb(Register dst, const MemOperand& src);
   void stbx(Register dst, const MemOperand& src);
   void stbux(Register dst, const MemOperand& src);

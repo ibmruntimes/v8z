@@ -1031,6 +1031,19 @@ void Assembler::lwa(Register dst, const MemOperand &src) {
 #endif
 }
 
+// 32-bit Load Multiple - short displacement (12-bits unsigned)
+void Assembler::lm(Register r1, Register r2, const MemOperand& src) {
+  rs_form(LM, r1, r2, src.ra(), src.offset());
+}
+// 32-bit Load Multiple - long displacement (20-bits signed)
+void Assembler::lmy(Register r1, Register r2, const MemOperand& src) {
+  rsy_form(LMY, r1, r2, src.ra(), src.offset());
+}
+// 64-bit Load Multiple - long displacement (20-bits signed)
+void Assembler::lmg(Register r1, Register r2, const MemOperand& src) {
+  rsy_form(LMG, r1, r2, src.ra(), src.offset());
+}
+
 void Assembler::stb(Register dst, const MemOperand &src) {
   d_form(STB, dst, src.ra(), src.offset(), true);
 }
@@ -1089,7 +1102,7 @@ void Assembler::stm(Register r1, Register r2, const MemOperand& src) {
 void Assembler::stmy(Register r1, Register r2, const MemOperand& src) {
   rsy_form(STMY, r1, r2, src.ra(), src.offset());
 }
-// 64-bit Store Multiple - long dispalcement (20-bits signed)
+// 64-bit Store Multiple - long displacement (20-bits signed)
 void Assembler::stmg(Register r1, Register r2, const MemOperand& src) {
   rsy_form(STMG, r1, r2, src.ra(), src.offset());
 }
@@ -2833,11 +2846,8 @@ RI1_FORM_EMIT(llihl, LLIHL)
 RIL1_FORM_EMIT(llilf, LLILF)
 RI1_FORM_EMIT(llilh, LLILH)
 RI1_FORM_EMIT(llill, LLILL)
-RS1_FORM_EMIT(lm, LM)
 SS5_FORM_EMIT(lmd, LMD)
-RSY1_FORM_EMIT(lmg, LMG)
 RSY1_FORM_EMIT(lmh, LMH)
-RSY1_FORM_EMIT(lmy, LMY)
 RRE_FORM_EMIT(lndbr, LNDBR)
 RRE_FORM_EMIT(lndfr, LNDFR)
 RR_FORM_EMIT(lndr, LNDR)

@@ -3964,9 +3964,14 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   }
 #endif
 
-  __ MultiPop(kCalleeSaved);
+  // __ MultiPop(kCalleeSaved); // PPC
 
-  __ LoadP(r0, MemOperand(sp, kStackFrameLRSlot * kPointerSize));
+  // __ LoadP(r0, MemOperand(sp, kStackFrameLRSlot * kPointerSize)); // PPC
+  // Reload callee-saved preserved regs and return address reg (r14)
+  // 31-bit ABI - R6-R15/sp register save area starts @ 24.
+  // 64-bit ABI - R6-R15/sp register save area starts @ 48.
+  // @TODO Fix up the stack offsets properly instead of 6 * kPointerSize.
+  __ LoadMultipleP(r6, r15, MemOperand(r15, 6 * kPointerSize));
   __ mtctr(r0);
   __ bcr();
 }
