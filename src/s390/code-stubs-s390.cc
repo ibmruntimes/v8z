@@ -3815,13 +3815,20 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   __ function_descriptor();
 #endif
 
-  // PPC LINUX ABI:
+  // @TODO: [OLDPPC code - Remove later] PPC LINUX ABI:
   // preserve LR in pre-reserved slot in caller's frame
-  __ mflr(r0);
-  __ StoreP(r0, MemOperand(sp, kStackFrameLRSlot * kPointerSize));
-
+  // __ mflr(r0);
+  // __ StoreP(r0, MemOperand(sp, kStackFrameLRSlot * kPointerSize));
   // Save callee saved registers on the stack.
-  __ MultiPush(kCalleeSaved);
+  // __ MultiPush(kCalleeSaved);
+
+  // zLinux ABI
+  // Preserved callee saved registers + return address regs are saved
+  // into caller's frame.
+  // 31-bit ABI - R6-R15/sp register save area starts @ 24.
+  // 64-bit ABI - R6-R15/sp register save area starts @ 48.
+  // @TODO Fix up the stack offsets properly instead of 6 * kPointerSize.
+  __ StoreMultipleP(r6, sp, MemOperand(sp, 6 * kPointerSize));
 
   // Floating point regs FPR0 - FRP13 are volatile
   // FPR14-FPR31 are non-volatile, but sub-calls will save them for us

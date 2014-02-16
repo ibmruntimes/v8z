@@ -160,49 +160,13 @@ struct Register {
 
 typedef struct Register Register;
 
-const int kRegister_no_s390reg_Code = -1;
-const int kRegister_gpr0_Code = 0;
-const int kRegister_gpr1_Code = 1;
-const int kRegister_gpr2_Code = 2;
-const int kRegister_gpr3_Code = 3;
-const int kRegister_gpr4_Code = 4;
-const int kRegister_gpr5_Code = 5;
-const int kRegister_gpr6_Code = 6;
-const int kRegister_gpr7_Code = 7;
-const int kRegister_gpr8_Code = 8;
-const int kRegister_gpr9_Code = 9;
-const int kRegister_gpr10_Code = 10;
-const int kRegister_gpr11_Code = 11;
-const int kRegister_gpr12_Code = 12;
-const int kRegister_gpr13_Code = 13;
-const int kRegister_gpr14_Code = 14;
-const int kRegister_gpr15_Code = 15;
-
-
-const Register gpr0 =  { kRegister_gpr0_Code };
-const Register gpr1 =  { kRegister_gpr1_Code };
-const Register gpr2 =  { kRegister_gpr2_Code };
-const Register gpr3 =  { kRegister_gpr3_Code };
-const Register gpr4 =  { kRegister_gpr4_Code };
-const Register gpr5 =  { kRegister_gpr5_Code };
-const Register gpr6 =  { kRegister_gpr6_Code };
-const Register gpr7 =  { kRegister_gpr7_Code };
-const Register gpr8 =  { kRegister_gpr8_Code };
-const Register gpr9 =  { kRegister_gpr9_Code };
-const Register gpr10 = { kRegister_gpr10_Code };
-const Register gpr11 = { kRegister_gpr11_Code };
-const Register gpr12 = { kRegister_gpr12_Code };
-const Register gpr13 = { kRegister_gpr13_Code };
-const Register gpr14 = { kRegister_gpr14_Code };
-const Register gpr15 = { kRegister_gpr15_Code };
-
 
 // PPC specific
 // These constants are used in several locations, including static initializers
 const int kRegister_no_reg_Code = -1;
 const int kRegister_r0_Code = 0;
-const int kRegister_sp_Code = 1;  // todo - rename to SP
-const int kRegister_r2_Code = 2;  // special on PowerPC
+const int kRegister_r1_Code = 1;
+const int kRegister_r2_Code = 2;
 const int kRegister_r3_Code = 3;
 const int kRegister_r4_Code = 4;
 const int kRegister_r5_Code = 5;
@@ -212,10 +176,10 @@ const int kRegister_r8_Code = 8;
 const int kRegister_r9_Code = 9;
 const int kRegister_r10_Code = 10;
 const int kRegister_r11_Code = 11;
-const int kRegister_ip_Code = 12;  // todo - fix
+const int kRegister_r12_Code = 12;
 const int kRegister_r13_Code = 13;
 const int kRegister_r14_Code = 14;
-const int kRegister_r15_Code = 15;
+const int kRegister_sp_Code = 15;
 
 const int kRegister_r16_Code = 16;
 const int kRegister_r17_Code = 17;
@@ -237,7 +201,7 @@ const int kRegister_fp_Code = 31;
 const Register no_reg = { kRegister_no_reg_Code };
 
 const Register r0  = { kRegister_r0_Code };
-const Register sp  = { kRegister_sp_Code };
+const Register r1  = { kRegister_r1_Code };
 const Register r2  = { kRegister_r2_Code };
 const Register r3  = { kRegister_r3_Code };
 const Register r4  = { kRegister_r4_Code };
@@ -249,11 +213,14 @@ const Register r9  = { kRegister_r9_Code };
 const Register r10 = { kRegister_r10_Code };
 // Used as lithium codegen scratch register.
 const Register r11 = { kRegister_r11_Code };
-const Register ip  = { kRegister_ip_Code };
+// @TODO: ip is PPC relic, rename to r12.
+const Register ip  = { kRegister_r12_Code };
 // Used as roots register.
 const Register r13  = { kRegister_r13_Code };
 const Register r14  = { kRegister_r14_Code };
-const Register r15  = { kRegister_r15_Code };
+const Register sp   = { kRegister_sp_Code };
+// @TODO: Left r15 in here to not break PPC.
+const Register r15  = { kRegister_sp_Code };
 
 const Register r16  = { kRegister_r16_Code };
 const Register r17  = { kRegister_r17_Code };
@@ -480,7 +447,6 @@ class MemOperand BASE_EMBEDDED {
   explicit MemOperand(Register rb, Register ri, Disp offset = 0);
 
   uint32_t offset() const {
-    ASSERT(rb_.is(no_reg));
     return offset_;
   }
   uint32_t getDisplacement() const { return offset(); }
@@ -1456,7 +1422,6 @@ RRE_FORM(lgr);
 RIL1_FORM(lgrl);
 RX_FORM(lh);
 RXY_FORM(lhh);
-RI1_FORM(lhi);
 RRE_FORM(lhr);
 RIL1_FORM(lhrl);
 RXY_FORM(lhy);
@@ -1941,6 +1906,7 @@ SS2_FORM(zap);
   void xor_(Register dst, Register src1, Register src2, RCBit rc = LeaveRC);
   void cmpi(Register src1, const Operand& src2, CRegister cr = cr7);
   void cmpli(Register src1, const Operand& src2, CRegister cr = cr7);
+  void lhi(Register dst, const Operand& imm);
   void lis(Register dst, const Operand& imm);
   void mr(Register dst, Register src);
 
@@ -2373,6 +2339,14 @@ SS2_FORM(zap);
                       Register b2,
                       const Disp d2);
   inline void ri1_form(uint32_t x);
+
+// RI format: <insn> R1,I2
+//    +--------+----+----+------------------+
+//    | OpCode | R1 |OpCd|        I2        |
+//    +--------+----+----+------------------+
+//    0        8    12   16                31
+  inline void ri_form(Instr instr, Register r1, const Disp i2);
+
   inline void ri2_form(uint32_t x);
   inline void rie_form(uint64_t x);
   inline void ril1_form(uint64_t x);
