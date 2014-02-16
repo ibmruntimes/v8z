@@ -1720,7 +1720,7 @@ void Assembler::ie_form(uint16_t op, const Operand& i1, const Operand& i2) {
 void Assembler::name(Register r1, Register r2) { \
     rr_form(op, r1, r2); \
 }
-void Assembler::rr_form(uint8_t op, Register r1, Register r2) {
+void Assembler::rr_form(Opcode op, Register r1, Register r2) {
     emit2bytes(op*B8 | r1.code()*B4 | r2.code());
 }
 
@@ -1733,7 +1733,7 @@ void Assembler::rr_form(uint8_t op, Register r1, Register r2) {
 void Assembler::name(Mask m1, Register r2) { \
     rr_form(op, m1, r2); \
 }
-void Assembler::rr_form(uint8_t op, Mask m1, Register r2) {
+void Assembler::rr_form(Opcode op, Mask m1, Register r2) {
     emit2bytes(op*B8 | m1.value()*B4 | r2.code());
 }
 
@@ -1776,7 +1776,7 @@ void Assembler::ri_form(Opcode op, Register r1, const Disp i2) {
   emit4bytes((op & 0xFF0) * B20 |
              r1.code() * B20 |
              (op & 0xF) * B16 |
-             (imm & 0xFFFF));
+             (i2 & 0xFFFF));
 }
 
 // RI2 format: <insn> M1,I2
