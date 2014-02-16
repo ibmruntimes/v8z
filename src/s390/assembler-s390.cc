@@ -1785,11 +1785,15 @@ void Assembler::ri_form(Opcode op, Register r1, const Operand& i2) {
 //    +--------+----+----+------------------+
 //    0        8    12   16                31
 #define RI2_FORM_EMIT(name, op) \
-void Assembler::name(Mask m, const Operand& i) {\
-    ri2_form(op << 24 | m.value() << 20 | i.imm_);\
+void Assembler::name(Mask m, const Operand& i2) {\
+    ri_form(op, m, i2);\
 }
-void Assembler::ri2_form(uint32_t code) {
-    emit4bytes(code);
+void Assembler::ri_form(Opcode op, Mask m1, const Operand& i2) {
+  ASSERT(is_int16(GET2BYTE(i2.imm_)));
+  emit4bytes((op & 0xFF0) * B20 |
+             m1.value() * B20 |
+             (op & 0xF) * B16 |
+             (GET2BYTE(i2.imm_) & 0xFFFF));
 }
 
 // RIE format: <insn> R1,R3,I2
