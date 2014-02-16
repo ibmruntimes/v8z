@@ -1918,23 +1918,19 @@ void Assembler::rrd_form(Opcode op, Register r1, Register r3, \
 #define RS1_FORM_EMIT(name, op) \
 void Assembler::name(Register r1, Register r3, \
                      Register b2, Disp d2) {\
-    rs1_form(op << 24 | r1.code()*B20 | r3.code()*B16\
-            | b2.code()*B12 | d2);\
+    rs_form(op, r1, r3, b2, d2);\
 }\
 void Assembler::name(Register r1, Register r3, \
                      const MemOperand& opnd) {\
     name(r1, r3, opnd.getBaseRegister(), opnd.getDisplacement());\
 }
-void Assembler::rs1_form(uint32_t code) {
-    emit4bytes(code);
-}
-void Assembler::rs_form(Instr instr,
+void Assembler::rs_form(Opcode op,
                         Register r1,
                         Register r3,
                         Register b2,
                         const Disp d2) {
   ASSERT(is_uint12(d2));
-  emit4bytes(instr * B24 | r1.code() * B20 | r3.code() * B16 |
+  emit4bytes(op * B24 | r1.code() * B20 | r3.code() * B16 |
              b2.code() * B12 | d2);
 }
 
@@ -1946,24 +1942,19 @@ void Assembler::rs_form(Instr instr,
 #define RS2_FORM_EMIT(name, op) \
 void Assembler::name(Register r1, Mask m3, \
                      Register b2, Disp d2) {\
-    rs2_form(op << 24 | r1.code()*B20 | m3.value()*B16\
-            | b2.code()*B12 | d2);\
+    rs_form(op, r1, m3, b2, d2);\
 }\
 void Assembler::name(Register r1, Mask m3, \
                      const MemOperand& opnd) {\
     name(r1, m3, opnd.getBaseRegister(), opnd.getDisplacement());\
 }
-void Assembler::rs2_form(uint32_t code) {
-    emit4bytes(code);
-}
-
-void Assembler::rs_form(Instr instr,
+void Assembler::rs_form(Opcode op,
                         Register r1,
                         Mask m3,
                         Register b2,
-                        const intptr_t d2) {
+                        const Disp d2) {
   ASSERT(is_uint12(d2));
-  emit4bytes(instr * B24 | r1.code() * B20 | m3.value() * B16 |
+  emit4bytes(op * B24 | r1.code() * B20 | m3.value() * B16 |
              b2.code() * B12 | d2);
 }
 
