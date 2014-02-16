@@ -2363,41 +2363,30 @@ SS2_FORM(zap);
   inline void rre_form(Opcode op, Register r1, Register r2);
   inline void rrd_form(Opcode op, Register r1, Register r3, \
                      Register r2);
-  inline void rs_form(Opcode op,
-                        Register r1,
-                        Mask m3,
-                        Register b2,
-                        const Disp d2);
-  inline void rs_form(Opcode op,
-                        Register r1,
-                        Register r3,
-                        Register b2,
-                        const Disp d2);
-
-// RS format: <insn> R1,R3,D2(B2)
-//    +--------+----+----+----+-------------+
-//    | OpCode | R1 | R3 | B2 |     D2      |
-//    +--------+----+----+----+-------------+
-//    0        8    12   16   20           31
-//
-  inline void rs_form(Instr instr,
-                      Register r1,
-                      Register r3,
-                      Register b2,
-                      const Disp d2);
 // RS format: <insn> R1,M3,D2(B2)
 //     +--------+----+----+----+-------------+
 //     | OpCode | R1 | M3 | B2 |     D2      |
 //     +--------+----+----+----+-------------+
 //     0        8    12   16   20           31
 //
-  inline void rs_form(Instr instr,
-                      Register r1,
-                      Mask m3,
-                      Register b2,
-                      const intptr_t d2);
+  inline void rs_form(Opcode op,
+                        Register r1,
+                        Mask m3,
+                        Register b2,
+                        const Disp d2);
+// RS format: <insn> R1,R3,D2(B2)
+//    +--------+----+----+----+-------------+
+//    | OpCode | R1 | R3 | B2 |     D2      |
+//    +--------+----+----+----+-------------+
+//    0        8    12   16   20           31
+//
+  inline void rs_form(Opcode op,
+                        Register r1,
+                        Register r3,
+                        Register b2,
+                        const Disp d2);
 
-  inline void rsi_form(uint64_t x);
+  inline void rsi_form(Opcode op, Register r1, Register r3, const Operand& i2);
   inline void rsl_form(uint64_t x);
   inline void rsy1_form(uint64_t x);
   inline void rsy2_form(uint64_t x);
