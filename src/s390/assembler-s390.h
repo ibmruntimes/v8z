@@ -2357,7 +2357,7 @@ SS2_FORM(zap);
                      const Operand& i2);
   inline void ril_form(Opcode op, Register r1, const Operand& i2);
   inline void ril_form(Opcode op, Mask m1, const Operand& i2);
-  inline void rre_form(uint32_t x);
+  inline void rre_form(Opcode op, Register r1, Register r2);
   inline void rrd_form(uint32_t x);
   inline void rs1_form(uint32_t x);
   inline void rs2_form(uint32_t x);

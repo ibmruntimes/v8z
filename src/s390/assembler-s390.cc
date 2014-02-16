@@ -1885,10 +1885,13 @@ void Assembler::ril_form(Opcode op, Mask m1, const Operand& i2) {
 //    0                  16       24   28  31
 #define RRE_FORM_EMIT(name, op) \
 void Assembler::name(Register r1, Register r2) {\
-    rrd_form(op << 16 | r1.code()*B4 | r2.code());\
+    rre_form(op, r1, r2);\
 }
-void Assembler::rre_form(uint32_t code) {
-    emit4bytes(code);
+void Assembler::rre_form(Opcode op, Register r1, Register r2) {
+    ASSERT(is_uint16(op));
+    ASSERT(is_uint4(r1.code()));
+    ASSERT(is_uint4(r2.code()));
+    emit4bytes(op << 16 | r1.code()*B4 | r2.code());
 }
 
 // RRD format: <insn> R1,R3, R2
