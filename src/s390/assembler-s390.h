@@ -2387,7 +2387,7 @@ SS2_FORM(zap);
                         const Disp d2);
 
   inline void rsi_form(Opcode op, Register r1, Register r3, const Operand& i2);
-  inline void rsl_form(uint64_t x);
+  inline void rsl_form(Opcode op, Length l1, Register b2, Disp d2);
   inline void rsy1_form(uint64_t x);
   inline void rsy2_form(uint64_t x);
 

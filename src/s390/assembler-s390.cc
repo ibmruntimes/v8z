@@ -1988,10 +1988,15 @@ void Assembler::rsi_form(Opcode op, Register r1,
 //    0        8    12   16   20            32       40      47
 #define RSL_FORM_EMIT(name, op)\
 void Assembler::name(Length l1, Register b2, Disp d2) {\
-    rsl_form((op & 0xFF00)*B32 | l1*B36 | b2.code()*B28\
-            | d2*B16 | (op & 0x00FF));\
+    rsl_form(op, l1, b2, d2);\
 }
-void Assembler::rsl_form(uint64_t code) {
+void Assembler::rsl_form(Opcode op, Length l1, Register b2, Disp d2) {
+    ASSERT(is_uint8(op));
+    uint64_t code = (static_cast<uint64_t>(op && 0xFF00)) * B32  |
+                    (static_cast<uint64_t>(l1)) * B36            |
+                    (static_cast<uint64_t>(b2.code())) * B28     |
+                    (static_cast<uint64_t>(d2)) * B16            |
+                    (static_cast<uint64_t>(op && 0x00FF));
     emit6bytes(code);
 }
 
