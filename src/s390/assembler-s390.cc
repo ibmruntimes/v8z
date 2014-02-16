@@ -2182,13 +2182,14 @@ void Assembler::ris_form(Opcode op, Register r1, Mask m3, Register b4, \
 //    0                  16   20           31
 #define S_FORM_EMIT(name, op)\
 void Assembler::name(Register b1, Disp d2) {\
-    s_form(op << 16 | b1.code()*B12 | d2);\
+    s_form(op, b1, d2);\
 }\
 void Assembler::name(const MemOperand& opnd) {\
     name(opnd.getBaseRegister(), opnd.getDisplacement());\
 }
-void Assembler::s_form(uint32_t code) {
-    emit4bytes(code);
+void Assembler::s_form(Opcode op, Register b1, Disp d2) {
+    ASSERT(is_uint12(d2));
+    emit4bytes(op << 16 | b1.code()*B12 | d2);
 }
 
 // SI format: <insn> D1(B1),I2
@@ -3091,7 +3092,7 @@ RSY1_FORM_EMIT(rll, RLL)
 RSY1_FORM_EMIT(rllg, RLLG)
 RIE_FORM_EMIT(rnsbg, RNSBG)
 RIE_FORM_EMIT(rosbg, ROSBG)
-S_FORM_EMIT(rp, RP)
+// S_FORM_EMIT(rp, RP) RP is not a opcode
 RRF1_FORM_EMIT(rrdtr, RRDTR)
 RRF1_FORM_EMIT(rrxtr, RRXTR)
 S_FORM_EMIT(rsch, RSCH)
