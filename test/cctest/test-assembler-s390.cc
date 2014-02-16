@@ -67,9 +67,9 @@ TEST(0) {
 #endif
 
   // __ add(r3, r3, r4);
-  __ ar(gpr1, gpr2);
+  __ ar(r1, r2);
   // __ blr();
-  __ bcr(Mask::from_value(0xF), gpr14);
+  __ bcr(Mask::from_value(0xF), r14);
 
   CodeDesc desc;
   assm.GetCode(&desc);

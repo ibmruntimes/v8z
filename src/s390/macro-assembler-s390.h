@@ -107,6 +107,7 @@ bool AreAliased(Register reg1,
 #define StorePU            stdu
 #define StorePX            stg
 #define StorePUX           stdux
+#define StoreMultipleP     stmg
 #define ShiftLeftImm       sldi
 #define ShiftRightImm      srdi
 #define ClearLeftImm       clrldi
@@ -124,6 +125,7 @@ bool AreAliased(Register reg1,
 #define StorePU            stwu
 #define StorePX            st
 #define StorePUX           stwux
+#define StoreMultipleP     stm
 #define ShiftLeftImm       slwi
 #define ShiftRightImm      srwi
 #define ClearLeftImm       clrlwi

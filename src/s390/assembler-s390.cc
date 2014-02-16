@@ -144,9 +144,9 @@ Register ToRegister(int num) {
   ASSERT(num >= 0 && num < kNumRegisters);
   const Register kRegisters[] = {
     r0,
-    sp,
+    r1,
     r2, r3, r4, r5, r6, r7, r8, r9, r10,
-    r11, ip, r13, r14, r15,
+    r11, ip, r13, r14, sp,
     r16, r17, r18, r19, r20, r21, r22, r23, r24,
     r25, r26, r27, r28, r29, r30, fp
   };
@@ -211,7 +211,7 @@ Operand::Operand(Handle<Object> handle) {
 
 MemOperand::MemOperand(Register rn, int32_t offset) {
   ra_ = rn;
-  rb_ = no_reg;
+  rb_ = r0;
   offset_ = offset;
 }
 
@@ -947,6 +947,11 @@ void Assembler::cmpl(Register src1, Register src2, CRegister cr) {
        src2.code()*B11);
 }
 
+// Load Halfword Immediate - 16-bit signed immediate
+void Assembler::lhi(Register dst, const Operand& imm) {
+  ri_form(LHI, dst, imm.imm_);
+}
+
 void  Assembler::lis(Register dst, const Operand& imm) {
   d_form(ADDIS, dst, r0, imm.imm_, true);
 }
@@ -1078,15 +1083,15 @@ void Assembler::stwux(Register rs, const MemOperand &src) {
 
 // 32-bit Store Multiple - short displacement (12-bits unsigned)
 void Assembler::stm(Register r1, Register r2, const MemOperand& src) {
-  rs_form(STM, r1, r2, src.rb(), src.offset());
+  rs_form(STM, r1, r2, src.ra(), src.offset());
 }
 // 32-bit Store Multiple - long displacement (20-bits signed)
 void Assembler::stmy(Register r1, Register r2, const MemOperand& src) {
-  rsy_form(STMY, r1, r2, src.rb(), src.offset());
+  rsy_form(STMY, r1, r2, src.ra(), src.offset());
 }
 // 64-bit Store Multiple - long dispalcement (20-bits signed)
 void Assembler::stmg(Register r1, Register r2, const MemOperand& src) {
-  rsy_form(STMG, r1, r2, src.rb(), src.offset());
+  rsy_form(STMG, r1, r2, src.ra(), src.offset());
 }
 
 void Assembler::extsb(Register rs, Register ra, RCBit rc) {
@@ -1771,6 +1776,13 @@ void Assembler::name(Register r, const Operand& i) { \
 }
 void Assembler::ri1_form(uint32_t code) {
     emit4bytes(code);
+}
+
+void Assembler::ri_form(Instr instr, Register r1,
+                        const Disp i2) {
+  ASSERT(is_int16(i2));
+  emit4bytes((instr >> 4) * B24 | r1.code() * B20 |
+             (instr & 0xF) * B16 | (i2 & 0xFFFF));
 }
 
 
@@ -2762,7 +2774,6 @@ RRE_FORM_EMIT(lgr, LGR)
 RIL1_FORM_EMIT(lgrl, LGRL)
 RX_FORM_EMIT(lh, LH)
 RXY_FORM_EMIT(lhh, LHH)
-RI1_FORM_EMIT(lhi, LHI)
 RRE_FORM_EMIT(lhr, LHR)
 RIL1_FORM_EMIT(lhrl, LHRL)
 RXY_FORM_EMIT(lhy, LHY)
