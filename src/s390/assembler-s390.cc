@@ -2070,15 +2070,22 @@ void Assembler::rsy_form(Opcode op,
 #define RXE_FORM_EMIT(name, op)\
 void Assembler::name(Register r1, Register x2, Register b2, \
                      Disp d2) {\
-    rxe_form(((uint64_t)op & 0xFF00)*B32 | r1.code()*B36 | x2.code()*B32\
-            | b2.code()*B28 | d2*B16 \
-            | (op & 0x00FF));\
+    rxe_form(op, r1, x2, b2, d2);\
 }\
 void Assembler::name(Register r1, const MemOperand& opnd) {\
     name(r1, opnd.getIndexRegister(), opnd.getBaseRegister(), \
          opnd.getDisplacement());\
 }
-void Assembler::rxe_form(uint64_t code) {
+void Assembler::rxe_form(Opcode op, Register r1, Register x2, Register b2,
+                     Disp d2) {
+    ASSERT(is_uint12(d2));
+    ASSERT(is_uint16(op));
+    uint64_t code = (static_cast<uint64_t>(op && 0xFF00)) * B32  |
+                    (static_cast<uint64_t>(r1.code())) * B36     |
+                    (static_cast<uint64_t>(x2.code())) * B32     |
+                    (static_cast<uint64_t>(b2.code())) * B28     |
+                    (static_cast<uint64_t>(d2 & 0x0FFF)) * B16   |
+                    (static_cast<uint64_t>(op && 0x00FF));
     emit6bytes(code);
 }
 
