@@ -2125,15 +2125,23 @@ void Assembler::rxy_form(Opcode op, Register r1, Register x2, Register b2,
 #define RRS_FORM_EMIT(name, op)\
 void Assembler::name(Register r1, Register r2, Register b4, \
                      Disp d4, Mask m3) {\
-    rrs_form((op & 0xFF00)*B32 | r1.code()*B32 | r2.code()*B32 \
-            | b4.code()*B28 | d4*B16 | m3.value()*B12 \
-            | (op & 0x00FF));\
+    rrs_form(op, r1, r2, b4, d4, m3);\
 }\
 void Assembler::name(Register r1, Register r2, Mask m3, \
                      const MemOperand& opnd) {\
     name(r1, r2, opnd.getBaseRegister(), opnd.getDisplacement(), m3);\
 }
-void Assembler::rrs_form(uint64_t code) {
+void Assembler::rrs_form(Opcode op, Register r1, Register r2, Register b4,
+                     Disp d4, Mask m3) {
+    ASSERT(is_uint12(d4));
+    ASSERT(is_uint16(op));
+    uint64_t code = (static_cast<uint64_t>(op && 0xFF00)) * B32  |
+                    (static_cast<uint64_t>(r1.code())) * B36     |
+                    (static_cast<uint64_t>(r2.code())) * B32     |
+                    (static_cast<uint64_t>(b4.code())) * B28     |
+                    (static_cast<uint64_t>(d4)) * B16            |
+                    (static_cast<uint64_t>(m3.value())) << 12    |
+                    (static_cast<uint64_t>(op && 0x00FF));
     emit6bytes(code);
 }
 
