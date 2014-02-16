@@ -1783,9 +1783,6 @@ void Assembler::rx_form(Opcode op,
                         Register b2,
                         Disp d2) {
     ASSERT(is_uint8(op));
-    ASSERT(is_uint4(r1.code()));
-    ASSERT(is_uint4(x2.code()));
-    ASSERT(is_uint4(b2.code()));
     ASSERT(is_uint12(d2));
     emit4bytes(op*B24 | r1.code()*B20 |
              x2.code()*B16 | b2.code()*B12 | d2);
@@ -1802,12 +1799,11 @@ void Assembler::name(Register r, const Operand& i2) { \
 }
 void Assembler::ri_form(Opcode op, Register r1, const Operand& i2) {
     ASSERT(is_uint12(op));
-    ASSERT(is_uint4(r1.code()));
-    ASSERT(is_int16(GET2BYTE(i2.imm_)));
+    ASSERT(is_int16(i2.imm_));
     emit4bytes((op & 0xFF0) * B20 |
              r1.code() * B20 |
              (op & 0xF) * B16 |
-             (GET2BYTE(i2.imm_) & 0xFFFF));
+             (i2.imm_ & 0xFFFF));
 }
 
 // RI2 format: <insn> M1,I2
@@ -1822,11 +1818,11 @@ void Assembler::name(Mask m, const Operand& i2) {\
 void Assembler::ri_form(Opcode op, Mask m1, const Operand& i2) {
     ASSERT(is_uint12(op));
     ASSERT(is_uint4(m1.value()));
-    ASSERT(is_int16(GET2BYTE(i2.imm_)));
+    ASSERT(is_int16(i2.imm_));
     emit4bytes((op & 0xFF0) * B20 |
              m1.value() * B20 |
              (op & 0xF) * B16 |
-             (GET2BYTE(i2.imm_) & 0xFFFF));
+             (i2.imm_ & 0xFFFF));
 }
 
 // RIE format: <insn> R1,R3,I2
@@ -1842,8 +1838,6 @@ void Assembler::name(Register r1, Register r3, \
 void Assembler::rie_form(Opcode op, Register r1, Register r3,
                      const Operand& i2) {
     ASSERT(is_uint16(op));
-    ASSERT(is_uint4(r1.code()));
-    ASSERT(is_uint4(r3.code()));
     ASSERT(is_uint16(GET2BYTE(i2.imm_)));
     uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32       |
                     (static_cast<uint64_t>(r1.code())) * B36         |
