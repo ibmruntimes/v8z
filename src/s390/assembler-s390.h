@@ -2413,7 +2413,8 @@ SS2_FORM(zap);
 
   inline void rxe_form(Opcode op, Register r1, Register x2, Register b2,
                      Disp d2);
-  inline void rxy_form(uint64_t x);
+  inline void rxy_form(Opcode op, Register r1, Register x2, Register b2,
+                     Disp d2);
   inline void rrs_form(uint64_t x);
   inline void ris_form(uint64_t x);
   inline void s_form(uint32_t x);
