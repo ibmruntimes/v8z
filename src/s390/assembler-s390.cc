@@ -949,7 +949,7 @@ void Assembler::cmpl(Register src1, Register src2, CRegister cr) {
 
 // Load Halfword Immediate - 16-bit signed immediate
 void Assembler::lhi(Register dst, const Operand& imm) {
-  ri_form(LHI, dst, imm.imm_);
+  ri_form(LHI, dst, imm);
 }
 
 void  Assembler::lis(Register dst, const Operand& imm) {
@@ -1678,7 +1678,7 @@ void Assembler::nop(int type) {
 void Assembler::name(const Operand& i) {\
     i_form(op, i);\
 }
-void Assembler::i_form(uint8_t op, const Operand& i) {
+void Assembler::i_form(Opcode op, const Operand& i) {
     emit2bytes(op << 8 | GET1BYTE(i.imm_));
 }
 
@@ -1692,7 +1692,7 @@ void Assembler::i_form(uint8_t op, const Operand& i) {
 void Assembler::name() {\
     e_form(op);\
 }
-void Assembler::e_form(uint16_t op) {
+void Assembler::e_form(Opcode op) {
     emit2bytes(op);
 }
 
@@ -1705,7 +1705,7 @@ void Assembler::e_form(uint16_t op) {
 void Assembler::name(const Operand& i1, const Operand& i2) {\
     ie_form(op, i1, i2);\
 }
-void Assembler::ie_form(uint16_t op, const Operand& i1, const Operand& i2) {
+void Assembler::ie_form(Opcode op, const Operand& i1, const Operand& i2) {
     emit4bytes((op << 16) |
                ((GET1BYTE(i1.imm_) & 0xf) * B4) |
                (GET1BYTE(i2.imm_) & 0xf));
@@ -1768,15 +1768,15 @@ void Assembler::rx_form(Opcode op,
 //    +--------+----+----+------------------+
 //    0        8    12   16                31
 #define RI1_FORM_EMIT(name, op) \
-void Assembler::name(Register r, const Operand& i) { \
-    ri_form(op, r, i.imm_);\
+void Assembler::name(Register r, const Operand& i2) { \
+    ri_form(op, r, i2);\
 }
-void Assembler::ri_form(Opcode op, Register r1, const Disp i2) {
-  ASSERT(is_int16(i2));
+void Assembler::ri_form(Opcode op, Register r1, const Operand& i2) {
+  ASSERT(is_int16(GET2BYTE(i2.imm_)));
   emit4bytes((op & 0xFF0) * B20 |
              r1.code() * B20 |
              (op & 0xF) * B16 |
-             (i2 & 0xFFFF));
+             (GET2BYTE(i2.imm_) & 0xFFFF));
 }
 
 // RI2 format: <insn> M1,I2
