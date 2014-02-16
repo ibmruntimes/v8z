@@ -1739,28 +1739,17 @@ void Assembler::name(Register r1, Register x2, \
                      Register b2, Disp d2) {\
     rx_form(op, r1, x2, b2, d2);\
 }
-void Assembler::rx_form(uint8_t op,
+void Assembler::rx_form(Opcode op,
                         Register r1,
                         Register x2,
                         Register b2,
                         Disp d2) {
+    ASSERT(is_uint12(d2));
     emit4bytes(op*B24 | r1.code()*B20
                       | x2.code()*B16
                       | b2.code()*B12
                       | d2);
 }
-
-void Assembler::rx_form(Instr instr,
-                        Register r1,
-                        Register x2,
-                        Register b2,
-                        const intptr_t d2) {
-  ASSERT(is_uint12(d2));
-  emit4bytes(instr * B24 | r1.code() * B20 |
-             x2.code() * B20 | b2.code() * B16 | d2);
-}
-
-
 
 // RI1 format: <insn> R1,I2
 //    +--------+----+----+------------------+
@@ -1769,10 +1758,13 @@ void Assembler::rx_form(Instr instr,
 //    0        8    12   16                31
 #define RI1_FORM_EMIT(name, op) \
 void Assembler::name(Register r, const Operand& i) { \
-    ri1_form(op << 24 | r.code()*B4 | i.imm_);\
+    ri1_form(op, r, i);\
 }
-void Assembler::ri1_form(uint32_t code) {
-    emit4bytes(code);
+void Assembler::ri1_form(Opcode op, Register r, const Operand& i) {
+    emit4bytes((op & 0xff0) << 20 |
+               r.code() << 20 |
+               (op & 0xf) << 16 |
+               GET2BYTE(i.imm_));
 }
 
 
