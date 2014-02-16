@@ -2332,21 +2332,21 @@ SS2_FORM(zap);
   inline void e_form(uint16_t op);
   inline void ie_form(uint16_t op, const Operand& i1, const Operand& i2);
   inline void rr_form(uint8_t op, Register r1, Register r2);
-  inline void rr_form(uint8_t op, Mask m1, Register r2);
-  inline void rx_form(Instr instr,
-                      Register r1,
-                      Register x2,
-                      Register b2,
-                      const Disp d2);
-  inline void ri1_form(uint32_t x);
+
+  inline void ri_form(Instr instr, Register r1, const Disp i2);
+  inline void rr2_form(uint8_t op, Mask m1, Register r2);
+  inline void rx_form(Opcode op,
+                     Register r1,
+                     Register x2,
+                     Register b2,
+                     Disp d2);
 
 // RI format: <insn> R1,I2
 //    +--------+----+----+------------------+
 //    | OpCode | R1 |OpCd|        I2        |
 //    +--------+----+----+------------------+
 //    0        8    12   16                31
-  inline void ri_form(Instr instr, Register r1, const Disp i2);
-
+  inline void ri_form(Opcode op, Register r1, const Disp i2);
   inline void ri2_form(uint32_t x);
   inline void rie_form(uint64_t x);
   inline void ril1_form(uint64_t x);
