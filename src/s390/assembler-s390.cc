@@ -1678,9 +1678,6 @@ void Assembler::nop(int type) {
 #define B32 ((uint64_t)1<<32)
 #define B36 ((uint64_t)1<<36)
 #define B40 ((uint64_t)1<<40)
-#define GET1BYTE(ptr) (*(reinterpret_cast<uint8_t *>(ptr)))
-#define GET2BYTE(ptr) (*(reinterpret_cast<uint16_t *>(ptr)))
-#define GET4BYTE(ptr) (*(reinterpret_cast<uint32_t *>(ptr)))
 // I format <insn> i
 //    +--------+---------+
 //    | OpCode |    i    |
@@ -1692,9 +1689,9 @@ void Assembler::name(const Operand& i) {\
     i_form(op, i);\
 }
 void Assembler::i_form(Opcode op, const Operand& i) {
-    ASSERT(is_uint8(GET1BYTE(i.imm_)));
+    ASSERT(is_uint8(i.imm_));
     ASSERT(is_uint8(op));
-    emit2bytes(op << 8 | GET1BYTE(i.imm_));
+    emit2bytes(op << 8 | i.imm_);
 }
 
 // E format <insn>
@@ -1723,11 +1720,11 @@ void Assembler::name(const Operand& i1, const Operand& i2) {\
 }
 void Assembler::ie_form(Opcode op, const Operand& i1, const Operand& i2) {
     ASSERT(is_uint16(op));
-    ASSERT(is_uint4(GET1BYTE(i1.imm_)));
-    ASSERT(is_uint4(GET1BYTE(i2.imm_)));
+    ASSERT(is_uint4(i1.imm_));
+    ASSERT(is_uint4(i2.imm_));
     emit4bytes((op << 16) |
-               ((GET1BYTE(i1.imm_) & 0xf) * B4) |
-               (GET1BYTE(i2.imm_) & 0xf));
+               ((i1.imm_ & 0xf) * B4) |
+               (i2.imm_ & 0xf));
 }
 
 // RR format: <insn> R1,R2
@@ -1838,11 +1835,11 @@ void Assembler::name(Register r1, Register r3, \
 void Assembler::rie_form(Opcode op, Register r1, Register r3,
                      const Operand& i2) {
     ASSERT(is_uint16(op));
-    ASSERT(is_uint16(GET2BYTE(i2.imm_)));
+    ASSERT(is_uint16(i2.imm_));
     uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32       |
                     (static_cast<uint64_t>(r1.code())) * B36         |
                     (static_cast<uint64_t>(r3.code())) * B32         |
-                    (static_cast<uint64_t>(GET2BYTE(i2.imm_))) * B16 |
+                    (static_cast<uint64_t>(i2.imm_)) * B16 |
                     (static_cast<uint64_t>(op & 0x00FF));
     emit6bytes(code);
 }
@@ -1862,7 +1859,7 @@ void Assembler::ril_form(Opcode op, Register r1, const Operand& i2) {
     uint64_t code = (static_cast<uint64_t>(op & 0xFF0)) * B36        |
                     (static_cast<uint64_t>(r1.code())) * B36         |
                     (static_cast<uint64_t>(op & 0x00F)) * B32        |
-                    (static_cast<uint64_t>(GET4BYTE(i2.imm_)));
+                    (static_cast<uint64_t>(i2.imm_));
     emit6bytes(code);
 }
 
@@ -1881,7 +1878,7 @@ void Assembler::ril_form(Opcode op, Mask m1, const Operand& i2) {
     uint64_t code = (static_cast<uint64_t>(op & 0xFF0)) * B36        |
                     (static_cast<uint64_t>(m1.value())) * B36        |
                     (static_cast<uint64_t>(op & 0x00F)) * B32        |
-                    (static_cast<uint64_t>(GET4BYTE(i2.imm_)));
+                    (static_cast<uint64_t>(i2.imm_));
     emit6bytes(code);
 }
 
@@ -1980,7 +1977,7 @@ void Assembler::rsi_form(Opcode op, Register r1,
     uint64_t code = (static_cast<uint64_t>(op)) * B40                |
                     (static_cast<uint64_t>(r1.code() )) * B36        |
                     (static_cast<uint64_t>(r3.code() )) * B32        |
-                    (static_cast<uint64_t>(GET4BYTE(i2.imm_)));
+                    (static_cast<uint64_t>(i2.imm_));
     emit6bytes(code);
 }
 
