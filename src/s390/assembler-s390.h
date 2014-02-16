@@ -2347,7 +2347,12 @@ SS2_FORM(zap);
 //    +--------+----+----+------------------+
 //    0        8    12   16                31
   inline void ri_form(Opcode op, Register r1, const Operand& i2);
-  inline void ri2_form(uint32_t x);
+// RI2 format: <insn> M1,I2
+//    +--------+----+----+------------------+
+//    | OpCode | M1 |OpCd|        I2        |
+//    +--------+----+----+------------------+
+//    0        8    12   16                31
+  inline void ri_form(Opcode op, Mask m1, const Operand& i2);
   inline void rie_form(uint64_t x);
   inline void ril1_form(uint64_t x);
   inline void ril2_form(uint64_t x);
