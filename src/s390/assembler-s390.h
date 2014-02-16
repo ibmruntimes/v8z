@@ -1817,9 +1817,7 @@ RX_FORM(sth);
 RXY_FORM(sthh);
 RIL1_FORM(sthrl);
 RXY_FORM(sthy);
-RSY1_FORM(stmg);
 RSY1_FORM(stmh);
-RSY1_FORM(stmy);
 RSY2_FORM(stoc);
 RSY2_FORM(stocg);
 RXY_FORM(stpq);
@@ -1966,6 +1964,8 @@ SS2_FORM(zap);
   void stwu(Register dst, const MemOperand& src);
   void stwux(Register rs, const MemOperand& src);
   void stm(Register r1, Register r2, const MemOperand& src);
+  void stmy(Register r1, Register r2, const MemOperand& src);
+  void stmg(Register r1, Register r2, const MemOperand& src);
 
   void extsb(Register rs, Register ra, RCBit r = LeaveRC);
   void extsh(Register rs, Register ra, RCBit r = LeaveRC);
@@ -2366,19 +2366,12 @@ SS2_FORM(zap);
   inline void e_form(uint16_t op);
   inline void ie_form(uint16_t op, const Operand& i1, const Operand& i2);
   inline void rr_form(uint8_t op, Register r1, Register r2);
-  inline void rr2_form(uint8_t op, Mask m1, Register r2);
-  inline void rx_form(uint8_t op,
-                     Register r1,
-                     Register x2,
-                     Register b2,
-                     Disp d2);
-
+  inline void rr_form(uint8_t op, Mask m1, Register r2);
   inline void rx_form(Instr instr,
                       Register r1,
                       Register x2,
                       Register b2,
-                      const intptr_t d2);
-
+                      const Disp d2);
   inline void ri1_form(uint32_t x);
   inline void ri2_form(uint32_t x);
   inline void rie_form(uint64_t x);
@@ -2399,7 +2392,7 @@ SS2_FORM(zap);
                       Register r1,
                       Register r3,
                       Register b2,
-                      const intptr_t d2);
+                      const Disp d2);
 // RS format: <insn> R1,M3,D2(B2)
 //     +--------+----+----+----+-------------+
 //     | OpCode | R1 | M3 | B2 |     D2      |
@@ -2416,6 +2409,29 @@ SS2_FORM(zap);
   inline void rsl_form(uint64_t x);
   inline void rsy1_form(uint64_t x);
   inline void rsy2_form(uint64_t x);
+
+// RSY format: <insn> R1,R3,D2(B2)
+//     +--------+----+----+----+-------------+--------+--------+
+//     | OpCode | R1 | R3 | B2 |    DL2      |  DH2   | OpCode |
+//     +--------+----+----+----+-------------+--------+--------+
+//     0        8    12   16   20            32       40      47
+  inline void rsy_form(Instr instr,
+                        Register r1,
+                        Register r3,
+                        Register b2,
+                        const Disp d2);
+
+// RSY format: <insn> R1,M3,D2(B2)
+//     +--------+----+----+----+-------------+--------+--------+
+//     | OpCode | R1 | M3 | B2 |    DL2      |  DH2   | OpCode |
+//     +--------+----+----+----+-------------+--------+--------+
+//     0        8    12   16   20            32       40      47
+  inline void rsy_form(Instr instr,
+                        Register r1,
+                        Mask m3,
+                        Register b2,
+                        const Disp d2);
+
   inline void rxe_form(uint64_t x);
   inline void rxy_form(uint64_t x);
   inline void rrs_form(uint64_t x);

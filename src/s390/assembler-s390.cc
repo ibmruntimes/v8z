@@ -1076,9 +1076,17 @@ void Assembler::stwux(Register rs, const MemOperand &src) {
   emit(EXT2 | STWUX | rs.code()*B21 | ra.code()*B16 | rb.code()*B11 | LeaveRC);
 }
 
-// 32-bit Store Multiple
+// 32-bit Store Multiple - short displacement (12-bits unsigned)
 void Assembler::stm(Register r1, Register r2, const MemOperand& src) {
   rs_form(STM, r1, r2, src.rb(), src.offset());
+}
+// 32-bit Store Multiple - long displacement (20-bits signed)
+void Assembler::stmy(Register r1, Register r2, const MemOperand& src) {
+  rsy_form(STMY, r1, r2, src.rb(), src.offset());
+}
+// 64-bit Store Multiple - long dispalcement (20-bits signed)
+void Assembler::stmg(Register r1, Register r2, const MemOperand& src) {
+  rsy_form(STMG, r1, r2, src.rb(), src.offset());
 }
 
 void Assembler::extsb(Register rs, Register ra, RCBit rc) {
@@ -1718,9 +1726,9 @@ void Assembler::rr_form(uint8_t op, Register r1, Register r2) {
 //    0        8    12  15
 #define RR2_FORM_EMIT(name, op) \
 void Assembler::name(Mask m1, Register r2) { \
-    rr2_form(op, m1, r2); \
+    rr_form(op, m1, r2); \
 }
-void Assembler::rr2_form(uint8_t op, Mask m1, Register r2) {
+void Assembler::rr_form(uint8_t op, Mask m1, Register r2) {
     emit2bytes(op*B8 | m1.value()*B4 | r2.code());
 }
 
@@ -1739,22 +1747,12 @@ void Assembler::name(Register r1, Register x2, \
                      Register b2, Disp d2) {\
     rx_form(op, r1, x2, b2, d2);\
 }
-void Assembler::rx_form(uint8_t op,
-                        Register r1,
-                        Register x2,
-                        Register b2,
-                        Disp d2) {
-    emit4bytes(op*B24 | r1.code()*B20
-                      | x2.code()*B16
-                      | b2.code()*B12
-                      | d2);
-}
 
 void Assembler::rx_form(Instr instr,
                         Register r1,
                         Register x2,
                         Register b2,
-                        const intptr_t d2) {
+                        const Disp d2) {
   ASSERT(is_uint12(d2));
   emit4bytes(instr * B24 | r1.code() * B20 |
              x2.code() * B20 | b2.code() * B16 | d2);
@@ -1880,11 +1878,11 @@ void Assembler::rs1_form(uint32_t code) {
 }
 void Assembler::rs_form(Instr instr,
                         Register r1,
-                        Register r2,
+                        Register r3,
                         Register b2,
-                        const intptr_t d2) {
+                        const Disp d2) {
   ASSERT(is_uint12(d2));
-  emit4bytes(instr * B24 | r1.code() * B20 | r2.code() * B16 |
+  emit4bytes(instr * B24 | r1.code() * B20 | r3.code() * B16 |
              b2.code() * B12 | d2);
 }
 
@@ -1963,6 +1961,17 @@ void Assembler::rsy1_form(uint64_t code) {
     emit6bytes(code);
 }
 
+void Assembler::rsy_form(Instr instr,
+                        Register r1,
+                        Register r3,
+                        Register b2,
+                        const Disp d2) {
+  ASSERT(is_int20(d2));
+  emit6bytes((instr & 0xFF00) * B32 | r1.code() * B36 | r3.code() * B32 |
+             b2.code() * B28 | (d2 & 0x0FFF) * B16 | (d2 & 0x0FF000) >> 4 |
+             (instr & 0x00FF)) ;
+}
+
 
 // RSY2 format: <insn> R1,M3,D2(B2)
 //    +--------+----+----+----+-------------+--------+--------+
@@ -1982,6 +1991,18 @@ void Assembler::name(Register r1, Mask m3, const MemOperand& opnd) {\
 void Assembler::rsy2_form(uint64_t code) {
     emit6bytes(code);
 }
+
+void Assembler::rsy_form(Instr instr,
+                        Register r1,
+                        Mask m3,
+                        Register b2,
+                        const Disp d2) {
+  ASSERT(is_int20(d2));
+  emit6bytes((instr & 0xFF00) * B32 | r1.code() * B36 | m3.value() * B32 |
+             b2.code() * B28 | (d2 & 0x0FFF) * B16 | (d2 & 0x0FF000) >> 4 |
+             (instr & 0x00FF)) ;
+}
+
 
 // RXE format: <insn> R1,D2(X2,B2)
 //    +--------+----+----+----+-------------+--------+--------+
@@ -3098,9 +3119,7 @@ RX_FORM_EMIT(sth, STH)
 RXY_FORM_EMIT(sthh, STHH)
 RIL1_FORM_EMIT(sthrl, STHRL)
 RXY_FORM_EMIT(sthy, STHY)
-RSY1_FORM_EMIT(stmg, STMG)
 RSY1_FORM_EMIT(stmh, STMH)
-RSY1_FORM_EMIT(stmy, STMY)
 RSY2_FORM_EMIT(stoc, STOC)
 RSY2_FORM_EMIT(stocg, STOCG)
 RXY_FORM_EMIT(stpq, STPQ)
