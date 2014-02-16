@@ -2417,7 +2417,8 @@ SS2_FORM(zap);
                      Disp d2);
   inline void rrs_form(Opcode op, Register r1, Register r2, Register b4,
                      Disp d4, Mask m3);
-  inline void ris_form(uint64_t x);
+  inline void ris_form(Opcode op, Register r1, Mask m3, Register b4, \
+                     Disp d4, const Operand& i2);
   inline void s_form(uint32_t x);
   inline void si_form(uint32_t x);
   inline void siy_form(uint64_t x);
