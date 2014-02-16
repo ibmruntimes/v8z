@@ -2008,26 +2008,26 @@ void Assembler::rsl_form(Opcode op, Length l1, Register b2, Disp d2) {
 #define RSY1_FORM_EMIT(name, op)\
 void Assembler::name(Register r1, Register r3, Register b2, \
                      Disp d2) {\
-    rsy1_form((op & 0xFF00)*B32 | r1.code()*B36 | r3.code()*B32\
-             | b2.code()*B28 | (d2 & 0x0FFF)*B16 | (d2 & 0x0FF000) >> 4\
-             | (op & 0x00FF));\
+    rsy_form(op, r1, r3, b2, d2);\
 }\
 void Assembler::name(Register r1, Register r3, const MemOperand& opnd) {\
     name(r1, r3, opnd.getBaseRegister(), opnd.getDisplacement());\
 }
-void Assembler::rsy1_form(uint64_t code) {
-    emit6bytes(code);
-}
-
-void Assembler::rsy_form(Instr instr,
+void Assembler::rsy_form(Opcode op,
                         Register r1,
                         Register r3,
                         Register b2,
                         const Disp d2) {
-  ASSERT(is_int20(d2));
-  emit6bytes((instr & 0xFF00) * B32 | r1.code() * B36 | r3.code() * B32 |
-             b2.code() * B28 | (d2 & 0x0FFF) * B16 | (d2 & 0x0FF000) >> 4 |
-             (instr & 0x00FF)) ;
+    ASSERT(is_int20(d2));
+    ASSERT(is_uint16(op));
+    uint64_t code = (static_cast<uint64_t>(op && 0xFF00)) * B32  |
+                    (static_cast<uint64_t>(r1.code())) * B36     |
+                    (static_cast<uint64_t>(r3.code())) * B32     |
+                    (static_cast<uint64_t>(b2.code())) * B28     |
+                    (static_cast<uint64_t>(d2 & 0x0FFF)) * B16   |
+                    (static_cast<uint64_t>(d2 & 0x0FF000)) >> 4  |
+                    (static_cast<uint64_t>(op && 0x00FF));
+    emit6bytes(code);
 }
 
 
@@ -2039,26 +2039,26 @@ void Assembler::rsy_form(Instr instr,
 #define RSY2_FORM_EMIT(name, op)\
 void Assembler::name(Register r1, Mask m3, Register b2, \
                      Disp d2) {\
-    rsy2_form((op & 0xFF00)*B32 | r1.code()*B36 | m3.value()*B32\
-             | b2.code()*B28 | (d2 & 0x0FFF)*B16 | (d2 & 0x0FF000) >> 4\
-             | (op & 0x00FF));\
+    rsy_form(op, r1, m3, b2, d2);\
 }\
 void Assembler::name(Register r1, Mask m3, const MemOperand& opnd) {\
     name(r1, m3, opnd.getBaseRegister(), opnd.getDisplacement());\
 }
-void Assembler::rsy2_form(uint64_t code) {
-    emit6bytes(code);
-}
-
-void Assembler::rsy_form(Instr instr,
+void Assembler::rsy_form(Opcode op,
                         Register r1,
                         Mask m3,
                         Register b2,
                         const Disp d2) {
-  ASSERT(is_int20(d2));
-  emit6bytes((instr & 0xFF00) * B32 | r1.code() * B36 | m3.value() * B32 |
-             b2.code() * B28 | (d2 & 0x0FFF) * B16 | (d2 & 0x0FF000) >> 4 |
-             (instr & 0x00FF)) ;
+    ASSERT(is_int20(d2));
+    ASSERT(is_uint16(op));
+    uint64_t code = (static_cast<uint64_t>(op && 0xFF00)) * B32  |
+                    (static_cast<uint64_t>(r1.code())) * B36     |
+                    (static_cast<uint64_t>(m3.value())) * B32    |
+                    (static_cast<uint64_t>(b2.code())) * B28     |
+                    (static_cast<uint64_t>(d2 & 0x0FFF)) * B16   |
+                    (static_cast<uint64_t>(d2 & 0x0FF000)) >> 4  |
+                    (static_cast<uint64_t>(op && 0x00FF));
+    emit6bytes(code);
 }
 
 
