@@ -1823,11 +1823,20 @@ void Assembler::ri_form(Opcode op, Mask m1, const Operand& i2) {
 //    0        8    12   16                 32       40      47
 #define RIE_FORM_EMIT(name, op) \
 void Assembler::name(Register r1, Register r3, \
-                     const Operand& i) {\
-    rie_form((op & 0xFF00)*B36 | r1.code()*B36 | r3.code()*B32\
-            | i.imm_*B16 | (op & 0x00FF));\
+                     const Operand& i2) {\
+    rie_form(op, r1, r3, i2);\
 }
-void Assembler::rie_form(uint64_t code) {
+void Assembler::rie_form(Opcode op, Register r1, Register r3,
+                     const Operand& i2) {
+    ASSERT(is_uint16(op));
+    ASSERT(is_uint4(r1.code()));
+    ASSERT(is_uint4(r3.code()));
+    ASSERT(is_uint16(GET2BYTE(i2.imm_)));
+    uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32       |
+                    (static_cast<uint64_t>(r1.code())) * B36         |
+                    (static_cast<uint64_t>(r3.code())) * B32         |
+                    (static_cast<uint64_t>(GET2BYTE(i2.imm_))) * B16 |
+                    (static_cast<uint64_t>(op & 0x00FF));
     emit6bytes(code);
 }
 
