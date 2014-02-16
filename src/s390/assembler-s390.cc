@@ -1902,11 +1902,12 @@ void Assembler::rre_form(Opcode op, Register r1, Register r2) {
 #define RRD_FORM_EMIT(name, op) \
 void Assembler::name(Register r1, Register r3, \
                      Register r2) {\
-    rrd_form(op << 16 | r1.code()*B12 | r3.code()*B4\
-            | r2.code());\
+    rrd_form(op, r1, r3, r2);\
 }
-void Assembler::rrd_form(uint32_t code) {
-    emit4bytes(code);
+void Assembler::rrd_form(Opcode op, Register r1, Register r3, \
+                     Register r2) {
+    emit4bytes(op << 16 | r1.code()*B12 | r3.code()*B4\
+            | r2.code());
 }
 
 // RS1 format: <insn> R1,R3,D2(B2)
