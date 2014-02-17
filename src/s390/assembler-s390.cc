@@ -2200,13 +2200,14 @@ void Assembler::s_form(Opcode op, Register b1, Disp d2) {
 #define SI_FORM_EMIT(name, op)\
 void Assembler::name(const Operand& i2, Register b1, \
                      Disp d1) {\
-    si_form((op & 0x00FF) << 24 | i2.imm_*B16 | b1.code()*B12 | d1);\
+    si_form(op, i2, b1, d1);\
 }\
 void Assembler::name(const MemOperand& opnd, const Operand& i2) {\
     name(i2, opnd.getBaseRegister(), opnd.getDisplacement()); \
 }
-void Assembler::si_form(uint32_t code) {
-    emit4bytes(code);
+void Assembler::si_form(Opcode op, const Operand& i2, Register b1,
+                     Disp d1) {
+    emit4bytes((op & 0x00FF) << 24 | i2.imm_*B16 | b1.code()*B12 | d1);
 }
 
 // SIY format: <insn> D1(B1),I2
