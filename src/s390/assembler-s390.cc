@@ -2218,13 +2218,22 @@ void Assembler::si_form(Opcode op, const Operand& i2, Register b1,
 #define SIY_FORM_EMIT(name, op)\
 void Assembler::name(const Operand& i2, Register b1, \
                      Disp d1) {\
-    siy_form((op & 0xFF00)*B32 | i2.imm_*B32 | b1.code()*B20\
-            | (d1 & 0x0FFF)*B16 | (d1 & 0x0FF000) >> 4 | (op & 0x00FF));\
+    siy_form(op, i2, b1, d1);\
 }\
 void Assembler::name(const MemOperand& opnd, const Operand& i2) {\
     name(i2, opnd.getBaseRegister(), opnd.getDisplacement());\
 }
-void Assembler::siy_form(uint64_t code) {
+void Assembler::siy_form(Opcode op, const Operand& i2, Register b1, \
+                     Disp d1) {
+    ASSERT(is_uint12(d1));
+    ASSERT(is_uint16(op));
+    ASSERT(is_uint8(i2.imm_));
+    uint64_t code = (static_cast<uint64_t>(op && 0xFF00)) * B32  |
+                    (static_cast<uint64_t>(i2.imm_)) * B32       |
+                    (static_cast<uint64_t>(b1.code())) * B28     |
+                    (static_cast<uint64_t>(d1 & 0x0FFF)) * B16   |
+                    (static_cast<uint64_t>(d1 & 0x0FF000)) >> 4  |
+                    (static_cast<uint64_t>(op && 0x00FF));
     emit6bytes(code);
 }
 
