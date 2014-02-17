@@ -2438,14 +2438,22 @@ void Assembler::name(const MemOperand& opnd1, const MemOperand& opnd2) {\
 #define SSE_FORM_EMIT(name, op)\
 void Assembler::name(Register b1, Disp d1, Register b2, \
                      Disp d2) {\
-    sse_form(op << 32 | b1.code()*B28 | d1*B16\
-            | b2.code()*B12 | d2);\
+    sse_form(op, b1, d1, b2, d2);\
 }\
 void Assembler::name(const MemOperand& opnd1, const MemOperand& opnd2) {\
     name(op, opnd1.getBaseRegister(), opnd1.getDisplacement(), \
          opnd2.getBaseRegister(), opnd2.getDisplacement());\
 }
-void Assembler::sse_form(uint64_t code) {
+void Assembler::sse_form(Opcode op, Register b1, Disp d1, Register b2,
+                     Disp d2) {
+    ASSERT(is_uint12(d2));
+    ASSERT(is_uint12(d1));
+    ASSERT(is_uint16(op));
+    uint64_t code = (static_cast<uint64_t>(op)) * B32            |
+                    (static_cast<uint64_t>(b1.code())) * B28     |
+                    (static_cast<uint64_t>(d1))        * B16     |
+                    (static_cast<uint64_t>(b2.code())) * B12     |
+                    (static_cast<uint64_t>(d2));
     emit6bytes(code);
 }
 
@@ -2457,15 +2465,25 @@ void Assembler::sse_form(uint64_t code) {
 #define SSF_FORM_EMIT(name, op)\
 void Assembler::name(Register r3, Register b1, Disp d1, \
                      Register b2, Disp d2) {\
-    ssf_form((op & 0x0FF0)*B40 | r3.code()*B36 | (op & 0x000F)*B32\
-            | d1*B16 | b2.code()*B12 | d2);\
+    ssf_form(op, r3, b1, d1, b2, d2);\
 }\
 void Assembler::name(Register r3, const MemOperand& opnd1, \
                      const MemOperand& opnd2) {\
     name(r3, opnd1.getBaseRegister(), opnd1.getDisplacement(), \
          opnd2.getBaseRegister(), opnd2.getDisplacement());\
 }
-void Assembler::ssf_form(uint64_t code) {
+void Assembler::ssf_form(Opcode op, Register r3, Register b1, Disp d1,
+                     Register b2, Disp d2) {
+    ASSERT(is_uint12(d2));
+    ASSERT(is_uint12(d1));
+    ASSERT(is_uint12(op));
+    uint64_t code = (static_cast<uint64_t>(op & 0xFF0)) * B36    |
+                    (static_cast<uint64_t>(r3.code())) * B36     |
+                    (static_cast<uint64_t>(op & 0x00F)) * B32    |
+                    (static_cast<uint64_t>(b1.code())) * B28     |
+                    (static_cast<uint64_t>(d1))        * B16     |
+                    (static_cast<uint64_t>(b2.code())) * B12     |
+                    (static_cast<uint64_t>(d2));
     emit6bytes(code);
 }
 

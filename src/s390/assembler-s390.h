@@ -2436,8 +2436,10 @@ SS2_FORM(zap);
                      Disp d1, Register b2, Disp d2);
   inline void ss_form(Opcode op, Register r1, Register r2, Register b1,
                      Disp d1, Register b2, Disp d2);
-  inline void sse_form(uint64_t x);
-  inline void ssf_form(uint64_t x);
+  inline void sse_form(Opcode op, Register b1, Disp d1, Register b2,
+                     Disp d2);
+  inline void ssf_form(Opcode op, Register r3, Register b1, Disp d1,
+                     Register b2, Disp d2);
   inline void rrf1_form(uint32_t x);
   inline void rrf2_form(uint32_t x);
   inline void rrf3_form(uint32_t x);
