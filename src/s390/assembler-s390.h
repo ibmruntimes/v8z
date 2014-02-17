@@ -2428,11 +2428,14 @@ SS2_FORM(zap);
                      const Operand& i2);
   inline void rxf_form(Opcode op, Register r1, Register r3, Register b2, \
                      Register x2, Disp d2);
-  inline void ss1_form(uint64_t x);
-  inline void ss2_form(uint64_t x);
-  inline void ss3_form(uint64_t x);
-  inline void ss4_form(uint64_t x);
-  inline void ss5_form(uint64_t x);
+  inline void ss_form(Opcode op, Length l, Register b1, Disp d1, \
+                     Register b2, Disp d2);
+  inline void ss_form(Opcode op, Length l1, Length l2, Register b1,
+                     Disp d1, Register b2, Disp d2);
+  inline void ss_form(Opcode op, Length l1, const Operand& i3, Register b1,
+                     Disp d1, Register b2, Disp d2);
+  inline void ss_form(Opcode op, Register r1, Register r2, Register b1,
+                     Disp d1, Register b2, Disp d2);
   inline void sse_form(uint64_t x);
   inline void ssf_form(uint64_t x);
   inline void rrf1_form(uint32_t x);

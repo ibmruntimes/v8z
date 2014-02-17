@@ -2298,15 +2298,25 @@ void Assembler::rxf_form(Opcode op, Register r1, Register r3, Register b2, \
 #define SS1_FORM_EMIT(name, op)\
 void Assembler::name(Length l, Register b1, Disp d1, \
                      Register b2, Disp d2) {\
-    ss1_form(op*B40 | l*B32 | b1.code()*B28\
-            | d1*B16 | b2.code()*B12 | d2);\
+    ss_form(op, l, b1, d1, b2, d2);\
 }\
 void Assembler::name(const MemOperand& opnd1, const MemOperand& opnd2) {\
     name(opnd1.getLength(), opnd1.getBaseRegister(), \
          opnd1.getDisplacement(), opnd2.getBaseRegister(), \
          opnd2.getDisplacement());\
 }
-void Assembler::ss1_form(uint64_t code) {
+void Assembler::ss_form(Opcode op, Length l, Register b1, Disp d1,
+                     Register b2, Disp d2) {
+    ASSERT(is_uint12(d2));
+    ASSERT(is_uint12(d1));
+    ASSERT(is_uint8(op));
+    ASSERT(is_uint8(l));
+    uint64_t code = (static_cast<uint64_t>(op)) * B40            |
+                    (static_cast<uint64_t>(l)) * B32             |
+                    (static_cast<uint64_t>(b1.code())) * B28     |
+                    (static_cast<uint64_t>(d1))        * B16     |
+                    (static_cast<uint64_t>(b2.code())) * B12     |
+                    (static_cast<uint64_t>(d2));
     emit6bytes(code);
 }
 
@@ -2319,58 +2329,91 @@ void Assembler::ss1_form(uint64_t code) {
 void Assembler::name(Length l1, Length l2, Register b1, \
                      Disp d1, Register b2, \
                      Disp d2) {\
-    uint64_t instr = op*B40 | l1*B36 | l2*B32\
-                   | b1.code()*B28 | d1*B16 | b2.code()*B12 | d2;\
-    emit6bytes(instr);\
+    ss_form(op, l1, l2, b1, d1, b2, d2);\
 }\
 void Assembler::name(const MemOperand& opnd1, const MemOperand& opnd2) {\
     name(opnd1.getLength(), opnd2.getLength(), opnd1.getBaseRegister(), \
          opnd1.getDisplacement(), opnd2.getBaseRegister(), \
          opnd2.getDisplacement());\
 }
-void Assembler::ss2_form(uint64_t code) {
+void Assembler::ss_form(Opcode op, Length l1, Length l2, Register b1,
+                     Disp d1, Register b2, Disp d2) {
+    ASSERT(is_uint12(d2));
+    ASSERT(is_uint12(d1));
+    ASSERT(is_uint8(op));
+    ASSERT(is_uint4(l2));
+    ASSERT(is_uint4(l1));
+    uint64_t code = (static_cast<uint64_t>(op)) * B40            |
+                    (static_cast<uint64_t>(l1)) * B36            |
+                    (static_cast<uint64_t>(l2)) * B32            |
+                    (static_cast<uint64_t>(b1.code())) * B28     |
+                    (static_cast<uint64_t>(d1))        * B16     |
+                    (static_cast<uint64_t>(b2.code())) * B12     |
+                    (static_cast<uint64_t>(d2));
     emit6bytes(code);
 }
 
-// SS3 format: <insn> D1(L1,B1), D2(I2,B2)
+// SS3 format: <insn> D1(L1,B1), D2(I3,B2)
 //    +--------+----+----+----+-------------+----+------------+
-//    | OpCode | L1 | I2 | B1 |     D1      | B2 |     D2     |
+//    | OpCode | L1 | I3 | B1 |     D1      | B2 |     D2     |
 //    +--------+----+----+----+-------------+----+------------+
 //    0        8    12   16   20            32   36          47
 #define SS3_FORM_EMIT(name, op)\
-void Assembler::name(Length l1, const Operand& i2, Register b1, \
+void Assembler::name(Length l1, const Operand& i3, Register b1, \
                      Disp d1, Register b2, \
                      Disp d2) {\
-    ss3_form(op*B40 | l1*B36 | i2.imm_*B32 | b1.code()*B28\
-            | d1*B16 | b2.code()*B12 | d2);\
+    ss_form(op, l1, i3, b1, d1, b2, d2);\
 }\
 void Assembler::name(const MemOperand& opnd1, const MemOperand& opnd2) {\
     ASSERT(false);\
 }
-void Assembler::ss3_form(uint64_t code) {
+void Assembler::ss_form(Opcode op, Length l1, const Operand& i3, Register b1,
+                     Disp d1, Register b2, Disp d2) {
+    ASSERT(is_uint12(d2));
+    ASSERT(is_uint12(d1));
+    ASSERT(is_uint8(op));
+    ASSERT(is_uint4(l1));
+    ASSERT(is_uint4(i3.imm_));
+    uint64_t code = (static_cast<uint64_t>(op)) * B40            |
+                    (static_cast<uint64_t>(l1)) * B36            |
+                    (static_cast<uint64_t>(i3.imm_)) * B32       |
+                    (static_cast<uint64_t>(b1.code())) * B28     |
+                    (static_cast<uint64_t>(d1))        * B16     |
+                    (static_cast<uint64_t>(b2.code())) * B12     |
+                    (static_cast<uint64_t>(d2));
     emit6bytes(code);
 }
 
-// SS4 format: <insn> D1(R1,B1), D2(R2,B2)
+// SS4 format: <insn> D1(R1,B1), D2(R3,B2)
 //    +--------+----+----+----+-------------+----+------------+
-//    | OpCode | R1 | R2 | B1 |     D1      | B2 |     D2     |
+//    | OpCode | R1 | R3 | B1 |     D1      | B2 |     D2     |
 //    +--------+----+----+----+-------------+----+------------+
 //    0        8    12   16   20            32   36          47
 #define SS4_FORM_EMIT(name, op)\
-void Assembler::name(Register r1, Register r2, Register b1, \
+void Assembler::name(Register r1, Register r3, Register b1, \
                      Disp d1, Register b2, \
                      Disp d2) {\
-    ss4_form(op*B40 | r1.code()*B36 | r2.code()*B32 | b1.code()*B28\
-            | d1*B16 | b2.code()*B12 | d2);\
+    ss_form(op, r1, r3, b1, d1, b2, d2);\
 }\
 void Assembler::name(const MemOperand& opnd1, const MemOperand& opnd2) {\
     ASSERT(false);\
 }
-void Assembler::ss4_form(uint64_t code) {
+void Assembler::ss_form(Opcode op, Register r1, Register r3, Register b1,
+                     Disp d1, Register b2, Disp d2) {
+    ASSERT(is_uint12(d2));
+    ASSERT(is_uint12(d1));
+    ASSERT(is_uint8(op));
+    uint64_t code = (static_cast<uint64_t>(op)) * B40            |
+                    (static_cast<uint64_t>(r1.code())) * B36     |
+                    (static_cast<uint64_t>(r3.code())) * B32     |
+                    (static_cast<uint64_t>(b1.code())) * B28     |
+                    (static_cast<uint64_t>(d1))        * B16     |
+                    (static_cast<uint64_t>(b2.code())) * B12     |
+                    (static_cast<uint64_t>(d2));
     emit6bytes(code);
 }
 
-// SS5 format: <insn> D1(R1,B1), D2(R2,B2)
+// SS5 format: <insn> D1(R1,B1), D2(R3,B2)
 //    +--------+----+----+----+-------------+----+------------+
 //    | OpCode | R1 | R3 | B2 |     D2      | B4 |     D4     |
 //    +--------+----+----+----+-------------+----+------------+
@@ -2379,15 +2422,13 @@ void Assembler::ss4_form(uint64_t code) {
 void Assembler::name(Register r1, Register r3, Register b2, \
                      Disp d2, Register b4, \
                      Disp d4) {\
-    ss5_form(op*B40 | r1.code()*B36 | r3.code()*B32 | b2.code()*B28\
-            | d2*B16 | b4.code()*B12 | d4);\
+    ss_form(op, r1, r3, b2, d2, b4, d4); /*SS5 use the same form as SS4*/ \
 }\
 void Assembler::name(const MemOperand& opnd1, const MemOperand& opnd2) {\
     ASSERT(false);\
 }
-void Assembler::ss5_form(uint64_t code) {
-    emit6bytes(code);
-}
+
+#define SS6_FORM_EMIT(name, op) SS1_FORM_EMIT(name, op)
 
 // SSE format: <insn> D1(B1),D2(B2)
 //    +------------------+----+-------------+----+------------+
