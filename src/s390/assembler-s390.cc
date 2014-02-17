@@ -2245,12 +2245,20 @@ void Assembler::siy_form(Opcode op, const Operand& i2, Register b1, \
 #define SIL_FORM_EMIT(name, op)\
 void Assembler::name(Register b1, Disp d1, \
                      const Operand& i2) {\
-    sil_form(op*B32 | b1.code()*B28 | d1*B16 | i2.imm_);\
+    sil_form(op, b1, d1, i2);\
 }\
 void Assembler::name(const MemOperand& opnd, const Operand& i2) {\
     name(opnd.getBaseRegister(), opnd.getDisplacement(), i2);\
 }
-void Assembler::sil_form(uint64_t code) {
+void Assembler::sil_form(Opcode op, Register b1, Disp d1,
+                     const Operand& i2) {
+    ASSERT(is_uint12(d1));
+    ASSERT(is_uint16(op));
+    ASSERT(is_uint16(i2.imm_));
+    uint64_t code = (static_cast<uint64_t>(op)) * B32            |
+                    (static_cast<uint64_t>(b1.code())) * B28     |
+                    (static_cast<uint64_t>(d1)) * B16            |
+                    (static_cast<uint64_t>(i2.imm_));
     emit6bytes(code);
 }
 
