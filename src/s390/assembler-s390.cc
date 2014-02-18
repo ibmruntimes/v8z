@@ -1056,8 +1056,7 @@ void Assembler::lwzu(Register dst, const MemOperand &src) {
 void Assembler::lwzx(Register rt, const MemOperand &src) {
     // same as lwz, but in lwz we have gpr0 as index reg
     // here displacement is 0
-    Disp d = src.offset();
-    ASSERT(d == 0);
+    ASSERT(src.offset() == 0);
 #if V8_TARGET_ARCH_S390X
     llgf(rt, src);
 #else
@@ -1104,8 +1103,7 @@ void Assembler::stb(Register dst, const MemOperand &src) {
 }
 
 void Assembler::stbx(Register rs, const MemOperand &src) {
-    Disp disp = src.getDisplacement();
-    ASSERT(disp == 0);
+    ASSERT(src.offset() == 0);
     // temporarily use stcy here because stc in ppc contains
     // 16 bit displacement
     stcy(rs, src);
