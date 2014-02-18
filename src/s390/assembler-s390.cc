@@ -466,14 +466,12 @@ void Assembler::target_at_put(int pos, int target_pos) {
   // check which type of branch this is 16 or 26 bit offset
   if (BX == opcode) {
     int imm26 = target_pos - pos;
-    ASSERT((imm26 & (kAAMask|kLKMask)) == 0);
     instr &= ((~kImm26Mask)|kAAMask|kLKMask);
     ASSERT(is_int26(imm26));
     instr_at_put(pos, instr | (imm26 & kImm26Mask));
     return;
   } else if (BCX == opcode) {
     int imm16 = target_pos - pos;
-    ASSERT((imm16 & (kAAMask|kLKMask)) == 0);
     instr &= ((~kImm16Mask)|kAAMask|kLKMask);
     ASSERT(is_int16(imm16));
     instr_at_put(pos, instr | (imm16 & kImm16Mask));
@@ -1799,8 +1797,6 @@ void Assembler::name(Register r1, Register r2) { \
 }
 void Assembler::rr_form(Opcode op, Register r1, Register r2) {
     ASSERT(is_uint8(op));
-    ASSERT(is_uint4(r1.code()));
-    ASSERT(is_uint4(r2.code()));
     emit2bytes(op*B8 | r1.code()*B4 | r2.code());
 }
 
@@ -1816,7 +1812,6 @@ void Assembler::name(Mask m1, Register r2) { \
 void Assembler::rr_form(Opcode op, Mask m1, Register r2) {
     ASSERT(is_uint8(op));
     ASSERT(is_uint4(m1.value()));
-    ASSERT(is_uint4(r2.code()));
     emit2bytes(op*B8 | m1.value()*B4 | r2.code());
 }
 
