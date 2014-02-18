@@ -457,8 +457,6 @@ enum Opcode {
   LAALG   = 0xEBEA,  // Load And Add Logical (64)
   LAE     = 0x51,    // Load Address Extended
   LAEY    = 0xE375,  // Load Address Extended
-  LAM     = 0x9A,    // Load Access Multiple
-  LAMY    = 0xEB9A,  // Load Access Multiple
   LAN     = 0xEBF4,  // Load And And (32)
   LANG    = 0xEBE4,  // Load And And (64)
   LAO     = 0xEBF6,  // Load And Or (32)
@@ -773,9 +771,6 @@ enum Opcode {
   RXSBG   = 0xEC57,  // Rotate Then Exclusive Or Selected Bits
   S       = 0x5B,    // Subtract (32)
   SAL     = 0xB237,  // Set Address Limit
-  SAM24   = 0x010C,  // Set Addressing Mode (24)
-  SAM31   = 0x010D,  // Set Addressing Mode (31)
-  SAM64   = 0x010E,  // Set Addressing Mode (64)
   SAR     = 0xB24E,  // Set Access
   SCHM    = 0xB23C,  // Set Channel Monitor
   SD      = 0x6B,    // Subtract Normalized (long HFP)
@@ -858,8 +853,6 @@ enum Opcode {
   SRXT    = 0xED49,  // Shift Significand Right (extended DFP)
   SSCH    = 0xB233,  // Start Subchannel
   ST      = 0x50,    // Store (32)
-  STAM    = 0x9B,    // Store Access Multiple
-  STAMY   = 0xEB9B,  // Store Access Multiple
   STC     = 0x42,    // Store Character
   STCH    = 0xE3C3,  // Store Character High (8)
   STCK    = 0xB205,  // Store Clock
@@ -908,7 +901,6 @@ enum Opcode {
   SXTRA   = 0xB3DB,  // Subtract (extended DFP)
   SY      = 0xE35B,  // Subtract (32)
   TABORT  = 0xB2FC,  // Transaction Abort
-  TAM     = 0x010B,  // Test Addressing Mode
   TBDR    = 0xB351,  // Convert HFP To BFP (long)
   TBEDR   = 0xB350,  // Convert HFP To BFP (long to short)
   TBEGIN  = 0xE560,  // Transaction Begin
