@@ -1205,6 +1205,12 @@ enum {
   kTOMask = 0x1f << 21
 };
 
+// S390 instructions requires bigger shifts,
+// make them macros instead of enum because of the typing issue
+#define B32 ((uint64_t)1<<32)
+#define B36 ((uint64_t)1<<36)
+#define B40 ((uint64_t)1<<40)
+
 // the following is to differentiate different faked opcodes for
 // the BOGUS PPC instruction we invented (when bit 25 is 0) or to mark
 // different stub code (when bit 25 is 1)

@@ -1731,10 +1731,6 @@ void Assembler::nop(int type) {
   }
 }
 
-// S390 instructions
-#define B32 ((uint64_t)1<<32)
-#define B36 ((uint64_t)1<<36)
-#define B40 ((uint64_t)1<<40)
 // I format <insn> i
 //    +--------+---------+
 //    | OpCode |    i    |
