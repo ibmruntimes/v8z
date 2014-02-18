@@ -860,7 +860,21 @@ void Assembler::divw(Register dst, Register src1, Register src2,
 }
 
 void Assembler::addi(Register dst, Register src, const Operand& imm) {
-  d_form(ADDI, dst, src, imm.imm_, true);
+    if (dst.code() == src.code()) {
+#ifdef V8_TARGET_ARCH_S390X
+        aghi(dst, imm);
+#else
+        ahi(dst, imm);
+#endif
+    } else {
+#ifdef V8_TARGET_ARCH_S390X
+        lghi(dst, imm);
+        agr(dst, src);
+#else
+        lhi(dst, imm);
+        ar(dst, src);
+#endif
+    }
 }
 
 void  Assembler::addis(Register dst, Register src, const Operand& imm) {
@@ -872,7 +886,18 @@ void Assembler::addic(Register dst, Register src, const Operand& imm) {
 }
 
 void  Assembler::andi(Register ra, Register rs, const Operand& imm) {
-  d_form(ANDIx, rs, ra, imm.imm_, false);
+  // not correct
+  if (ra.code() == rs.code()) {
+    nilf(rs, imm);
+  } else {
+#ifdef V8_TARGET_ARCH_S390X
+    agr(ra, rs);
+    nill(ra, imm);
+#else
+    ar(ra, rs);
+    nill(ra, imm);
+#endif
+  }
 }
 
 void Assembler::andis(Register ra, Register rs, const Operand& imm) {
@@ -888,7 +913,14 @@ void Assembler::notx(Register dst, Register src, RCBit r) {
 }
 
 void Assembler::ori(Register ra, Register rs, const Operand& imm) {
-  d_form(ORI, rs, ra, imm.imm_, false);
+    if (ra.code() != rs.code()) {
+#ifdef V8_TARGET_ARCH_S390X
+        agr(ra, rs);
+#else
+        ar(ra, rs);
+#endif
+    }
+    oill(ra, imm);
 }
 
 void Assembler::oris(Register dst, Register src, const Operand& imm) {
@@ -900,29 +932,27 @@ void Assembler::orx(Register dst, Register src1, Register src2, RCBit rc) {
 }
 
 void Assembler::cmpi(Register src1, const Operand& src2, CRegister cr) {
-  intptr_t imm16 = src2.imm_;
+    intptr_t imm16 = src2.imm_;
+    ASSERT(is_int16(imm16));
+    imm16 &= kImm16Mask;
 #if V8_TARGET_ARCH_S390X
-  int L = 1;
+    cghi(src1, src2);
 #else
-  int L = 0;
+    chi(src1, src2);
 #endif
-  ASSERT(is_int16(imm16));
-  ASSERT(cr.code() >= 0 && cr.code() <= 7);
-  imm16 &= kImm16Mask;
-  emit(CMPI | cr.code()*B23 | L*B21 | src1.code()*B16 | imm16);
 }
 
 void Assembler::cmpli(Register src1, const Operand& src2, CRegister cr) {
   uintptr_t uimm16 = src2.imm_;
-#if V8_TARGET_ARCH_S390X
-  int L = 1;
-#else
-  int L = 0;
-#endif
   ASSERT(is_uint16(uimm16));
-  ASSERT(cr.code() >= 0 && cr.code() <= 7);
   uimm16 &= kImm16Mask;
-  emit(CMPLI | cr.code()*B23 | L*B21 | src1.code()*B16 | uimm16);
+  // we could you CLFHSI but z9 does not have it.
+  // use CLFI instead
+#if V8_TARGET_ARCH_S390X
+    clgfhi(src1, src2);
+#else
+    clfi(src1, src2);
+#endif
 }
 
 void Assembler::cmp(Register src1, Register src2, CRegister cr) {
@@ -938,13 +968,10 @@ void Assembler::cmp(Register src1, Register src2, CRegister cr) {
 
 void Assembler::cmpl(Register src1, Register src2, CRegister cr) {
 #if V8_TARGET_ARCH_S390X
-  int L = 1;
+    clgr(src1, src2);
 #else
-  int L = 0;
+    clr(src1, src2);
 #endif
-  ASSERT(cr.code() >= 0 && cr.code() <= 7);
-  emit(EXT2 | CMPL | cr.code()*B23 | L*B21 | src1.code()*B16 |
-       src2.code()*B11);
 }
 
 // Load Halfword Immediate - 16-bit signed immediate
@@ -958,8 +985,11 @@ void  Assembler::lis(Register dst, const Operand& imm) {
 
 // Pseudo op - move register
 void Assembler::mr(Register dst, Register src) {
-  // actually or(dst, src, src)
-  orx(dst, src, src);
+#if V8_TARGET_ARCH_S390X
+    lgr(dst, src);
+#else
+    lr(dst, src);
+#endif
 }
 
 void Assembler::lbz(Register dst, const MemOperand &src) {
@@ -982,26 +1012,41 @@ void Assembler::lbzux(Register rt, const MemOperand & src) {
 }
 
 void Assembler::lhz(Register dst, const MemOperand &src) {
-  ASSERT(!src.ra_.is(r0));
-  d_form(LHZ, dst, src.ra(), src.offset(), true);
+#ifdef V8_TARGET_ARCH_S390X
+    llgh(dst, src);
+#else
+    llh(dst, src);
+#endif
 }
 
 void Assembler::lhzx(Register rt, const MemOperand &src) {
-  Register ra = src.ra();
-  Register rb = src.rb();
-  ASSERT(!ra.is(r0));
-  emit(EXT2 | LHZX | rt.code()*B21 | ra.code()*B16 | rb.code()*B11 | LeaveRC);
+    // same as lhz, we can use RX form
+#ifdef V8_TARGET_ARCH_S390X
+    llgh(rt, src);
+#else
+    llh(rt, src);
+#endif
 }
 
 void Assembler::lhzux(Register rt, const MemOperand & src) {
-  Register ra = src.ra();
-  Register rb = src.rb();
-  ASSERT(!ra.is(r0));
-  emit(EXT2 | LHZUX | rt.code()*B21 | ra.code()*B16 | rb.code()*B11 | LeaveRC);
+    Register ra = src.ra();
+#ifdef V8_TARGET_ARCH_S390X
+    lay(ra, src);
+    llghr(rt, ra);
+#else
+    la(ra, src);
+    llhr(rt, ra);
+#endif
 }
 
 void Assembler::lwz(Register dst, const MemOperand &src) {
-  d_form(LWZ, dst, src.ra(), src.offset(), true);
+    Register rb = src.rb();
+    ASSERT(rb.code() == 0);
+#ifdef V8_TARGET_ARCH_S390X
+    llgf(dst, src);
+#else
+    ly(dst, src);
+#endif
 }
 
 void Assembler::lwzu(Register dst, const MemOperand &src) {
@@ -1009,9 +1054,15 @@ void Assembler::lwzu(Register dst, const MemOperand &src) {
 }
 
 void Assembler::lwzx(Register rt, const MemOperand &src) {
-  Register ra = src.ra();
-  Register rb = src.rb();
-  emit(EXT2 | LWZX | rt.code()*B21 | ra.code()*B16 | rb.code()*B11 | LeaveRC);
+    // same as lwz, but in lwz we have gpr0 as index reg
+    // here displacement is 0
+    Disp d = src.offset();
+    ASSERT(d == 0);
+#if V8_TARGET_ARCH_S390X
+    llgf(rt, src);
+#else
+    ly(rt, src);
+#endif
 }
 
 void Assembler::lwzux(Register rt, const MemOperand & src) {
@@ -1045,13 +1096,19 @@ void Assembler::lmg(Register r1, Register r2, const MemOperand& src) {
 }
 
 void Assembler::stb(Register dst, const MemOperand &src) {
-  d_form(STB, dst, src.ra(), src.offset(), true);
+    Register rb = src.rb();
+    ASSERT(rb.code() == 0);
+    // temporarily use stcy here because stc in ppc contains
+    // 16 bit displacement
+    stcy(dst, src);
 }
 
 void Assembler::stbx(Register rs, const MemOperand &src) {
-  Register ra = src.ra();
-  Register rb = src.rb();
-  emit(EXT2 | STBX | rs.code()*B21 | ra.code()*B16 | rb.code()*B11 | LeaveRC);
+    Disp disp = src.getDisplacement();
+    ASSERT(disp == 0);
+    // temporarily use stcy here because stc in ppc contains
+    // 16 bit displacement
+    stcy(rs, src);
 }
 
 void Assembler::stbux(Register rs, const MemOperand &src) {
@@ -3561,7 +3618,6 @@ void Assembler::CheckTrampolinePool() {
   }
   return;
 }
-
 } }  // namespace v8::internal
 
 #endif  // V8_TARGET_ARCH_S390
