@@ -394,7 +394,7 @@ struct Mask {
   uint8_t mask;
   uint8_t value() {return mask;}
   static Mask from_value(uint8_t input) {
-    ASSERT(input < 0x0F);
+    ASSERT(input <= 0x0F);
     Mask m = {input};
     return m;
   }
@@ -756,6 +756,11 @@ class Assembler : public AssemblerBase {
   void bcctr(BOfield bo, LKBit lk);
   void bcr();
 
+  // Indirect Branch via register
+  void br(Register target);
+  // Indirect Conditional Branch via register
+  void bcr(Mask m, Register target);
+
   // Convenience branch instructions using labels
   void b(Label* L, LKBit lk = LeaveLK)  {
     b(branch_offset(L, false), lk);
@@ -1083,7 +1088,6 @@ RX_FORM(bas);
 RR_FORM(basr);
 RR_FORM(bassm);
 RX_FORM(bc);
-RR2_FORM(bcr);
 RX_FORM(bct);
 RXY_FORM(bctg);
 RRE_FORM(bctgr);

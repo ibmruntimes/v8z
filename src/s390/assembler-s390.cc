@@ -733,6 +733,16 @@ void Assembler::b(int branch_offset, LKBit lk) {
   emit(BX | (imm26 & kImm26Mask) | lk);
 }
 
+// Indirect Branch via register
+void Assembler::br(Register target) {
+  bcr(Mask::from_value(0xF), target);
+}
+
+// Indirect Conditional Branch via register
+void Assembler::bcr(Mask m, Register target) {
+  rr_form(BCR, m, target);
+}
+
 void Assembler::xori(Register dst, Register src, const Operand& imm) {
   d_form(XORI, src, dst, imm.imm_, false);
 }
@@ -2601,7 +2611,6 @@ RX_FORM_EMIT(bas, BAS)
 RR_FORM_EMIT(basr, BASR)
 RR_FORM_EMIT(bassm, BASSM)
 RX_FORM_EMIT(bc, BC)
-RR2_FORM_EMIT(bcr, BCR)
 RX_FORM_EMIT(bct, BCT)
 RXY_FORM_EMIT(bctg, BCTG)
 RRE_FORM_EMIT(bctgr, BCTGR)
