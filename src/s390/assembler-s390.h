@@ -1194,6 +1194,7 @@ RRF2_FORM(clgdtr);
 RRF2_FORM(clgebr);
 RXY_FORM(clgf);
 RIL1_FORM(clgfi);
+RRE_FORM(clgr);
 RR_FORM(clr);
 RR_FORM(cr_z);
 SSF_FORM(csst);
