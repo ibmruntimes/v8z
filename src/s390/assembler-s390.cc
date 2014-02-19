@@ -1094,17 +1094,6 @@ void Assembler::sthux(Register rs, const MemOperand &src) {
   emit(EXT2 | STHUX | rs.code()*B21 | ra.code()*B16 | rb.code()*B11 | LeaveRC);
 }
 
-// 32-bit Store
-void Assembler::st(Register dst, const MemOperand &src) {
-  int offset = src.offset();
-  if (!is_uint12(offset)) {
-    // @TODO Remove once things are clean....
-    // Check limits... should check if STY is usable and replace at source.
-    PrintF("ST offset exceeded limits = %" V8PRIdPTR ", 0x%" V8PRIxPTR "\n",
-           offset, offset);
-  }
-  rx_form(ST, dst, src.ra(), src.rb(), src.offset());
-}
 
 void Assembler::stwu(Register dst, const MemOperand &src) {
   d_form(STWU, dst, src.ra(), src.offset(), true);
@@ -2595,7 +2584,6 @@ SIY_FORM_EMIT(asi, ASI)
 RRE_FORM_EMIT(axbr, AXBR)
 RRF1_FORM_EMIT(axtr, AXTR)
 RRF1_FORM_EMIT(axtra, AXTRA)
-RXY_FORM_EMIT(ay, AY)
 RX_FORM_EMIT(bal, BAL)
 RR_FORM_EMIT(balr, BALR)
 RX_FORM_EMIT(bas, BAS)
@@ -2776,7 +2764,6 @@ RXY_FORM_EMIT(dlg, DLG)
 RRE_FORM_EMIT(dlgr, DLGR)
 RRE_FORM_EMIT(dlr, DLR)
 SS2_FORM_EMIT(dp, DP)
-RR_FORM_EMIT(dr, DR)
 RXY_FORM_EMIT(dsg, DSG)
 RXY_FORM_EMIT(dsgf, DSGF)
 RRE_FORM_EMIT(dsgfr, DSGFR)
@@ -2992,12 +2979,7 @@ RI1_FORM_EMIT(mghi, MGHI)
 RX_FORM_EMIT(mh, MH)
 RI1_FORM_EMIT(mhi, MHI)
 RXY_FORM_EMIT(mhy, MHY)
-RXY_FORM_EMIT(ml, ML)
-RXY_FORM_EMIT(mlg, MLG)
-RRE_FORM_EMIT(mlgr, MLGR)
-RRE_FORM_EMIT(mlr, MLR)
 SS2_FORM_EMIT(mp, MP)
-RR_FORM_EMIT(mr_z, MR)
 RX_FORM_EMIT(ms, MS)
 S_FORM_EMIT(msch, MSCH)
 RXF_FORM_EMIT(msdb, MSDB)
@@ -3045,10 +3027,7 @@ RI1_FORM_EMIT(nill, NILL)
 SIY_FORM_EMIT(niy, NIY)
 RRF1_FORM_EMIT(nrk, NRK)
 RXY_FORM_EMIT(ntstg, NTSTG)
-RXY_FORM_EMIT(ny, NY)
-RX_FORM_EMIT(o, O)
 SS1_FORM_EMIT(oc, OC)
-RXY_FORM_EMIT(og, OG)
 SI_FORM_EMIT(oi, OI)
 RIL1_FORM_EMIT(oihf, OIHF)
 RI1_FORM_EMIT(oihh, OIHH)
@@ -3058,7 +3037,6 @@ RI1_FORM_EMIT(oilh, OILH)
 RI1_FORM_EMIT(oill, OILL)
 SIY_FORM_EMIT(oiy, OIY)
 RRF1_FORM_EMIT(ork, ORK)
-RXY_FORM_EMIT(oy, OY)
 SS2_FORM_EMIT(pack, PACK)
 RRE_FORM_EMIT(pcc, PCC)
 RXY_FORM_EMIT(pfd, PFD)
@@ -3185,12 +3163,10 @@ RXY_FORM_EMIT(strv, STRV)
 RXY_FORM_EMIT(strvg, STRVG)
 RXY_FORM_EMIT(strvh, STRVH)
 S_FORM_EMIT(stsch, STSCH)
-RXY_FORM_EMIT(sty, STY)
 I_FORM_EMIT(svc, SVC)
 RRE_FORM_EMIT(sxbr, SXBR)
 RRF1_FORM_EMIT(sxtr, SXTR)
 RRF1_FORM_EMIT(sxtra, SXTRA)
-RXY_FORM_EMIT(sy, SY)
 S_FORM_EMIT(tabort, TABORT)
 RRF2_FORM_EMIT(tbdr, TBDR)
 RRF2_FORM_EMIT(tbedr, TBEDR)
@@ -3243,7 +3219,6 @@ RIL1_FORM_EMIT(xilf, XILF)
 SIY_FORM_EMIT(xiy, XIY)
 RRF1_FORM_EMIT(xrk, XRK)
 S_FORM_EMIT(xsch, XSCH)
-RXY_FORM_EMIT(xy, XY)
 SS2_FORM_EMIT(zap, ZAP)
 
 // materialized assemblers
@@ -3253,6 +3228,18 @@ void Assembler::ar(Register r1, Register r2) {
 
 void Assembler::sr(Register r1, Register r2) {
   rr_form(SR, r1, r2);
+}
+
+void Assembler::mr_z(Register r1, Register r2) {
+  rr_form(MR, r1, r2);
+}
+
+void Assembler::mlr(Register r1, Register r2) {
+  rre_form(MLR, r1, r2);
+}
+
+void Assembler::dr(Register r1, Register r2) {
+  rr_form(DR, r1, r2);
 }
 
 void Assembler::or_z(Register r1, Register r2) {
@@ -3275,6 +3262,10 @@ void Assembler::sgr(Register r1, Register r2) {
   rre_form(SGR, r1, r2);
 }
 
+void Assembler::mlgr(Register r1, Register r2) {
+  rre_form(MLGR, r1, r2);
+}
+
 void Assembler::ogr(Register r1, Register r2) {
   rre_form(OGR, r1, r2);
 }
@@ -3293,6 +3284,33 @@ void Assembler::s(Register r1, const MemOperand& opnd) {
   rx_form(S, r1, opnd.rb(), opnd.ra(), opnd.offset());
 }
 
+void Assembler::ml(Register r1, const MemOperand& opnd) {
+  rxy_form(ML, r1, opnd.ra(), opnd.rb(), opnd.offset());
+}
+
+void Assembler::o(Register r1, const MemOperand& opnd) {
+  rx_form(O, r1, opnd.rb(), opnd.ra(), opnd.offset());
+}
+
+void Assembler::ay(Register r1, const MemOperand& opnd) {
+  rxy_form(AY, r1, opnd.ra(), opnd.rb(), opnd.offset());
+}
+
+void Assembler::sy(Register r1, const MemOperand& opnd) {
+  rxy_form(SY, r1, opnd.ra(), opnd.rb(), opnd.offset());
+}
+
+void Assembler::ny(Register r1, const MemOperand& opnd) {
+  rxy_form(NY, r1, opnd.ra(), opnd.rb(), opnd.offset());
+}
+
+void Assembler::oy(Register r1, const MemOperand& opnd) {
+  rxy_form(OY, r1, opnd.ra(), opnd.rb(), opnd.offset());
+}
+
+void Assembler::xy(Register r1, const MemOperand& opnd) {
+  rxy_form(XY, r1, opnd.ra(), opnd.rb(), opnd.offset());
+}
 
 void Assembler::ag(Register r1, const MemOperand& opnd) {
   rxy_form(AG, r1, opnd.rb(), opnd.ra(), opnd.offset());
@@ -3300,6 +3318,14 @@ void Assembler::ag(Register r1, const MemOperand& opnd) {
 
 void Assembler::sg(Register r1, const MemOperand& opnd) {
   rxy_form(SG, r1, opnd.ra(), opnd.rb(), opnd.offset());
+}
+
+void Assembler::og(Register r1, const MemOperand& opnd) {
+  rxy_form(OG, r1, opnd.ra(), opnd.rb(), opnd.offset());
+}
+
+void Assembler::mlg(Register r1, const MemOperand& opnd) {
+  rxy_form(MLG, r1, opnd.ra(), opnd.rb(), opnd.offset());
 }
 
 void Assembler::lr(Register r1, Register r2) {
@@ -3369,6 +3395,26 @@ void Assembler::clgr(Register r1, Register r2) {
 void Assembler::clr(Register r1, Register r2) {
   rre_form(CLR, r1, r2);
 }
+
+void Assembler::st(Register dst, const MemOperand &src) {
+  int offset = src.offset();
+  if (!is_uint12(offset)) {
+    // @TODO Remove once things are clean....
+    // Check limits... should check if STY is usable and replace at source.
+    PrintF("ST offset exceeded limits = %" V8PRIdPTR ", 0x%" V8PRIxPTR "\n",
+           offset, offset);
+  }
+  rx_form(ST, dst, src.ra(), src.rb(), src.offset());
+}
+
+void Assembler::stc(Register dst, const MemOperand &src) {
+  rx_form(STC, dst, src.ra(), src.rb(), src.offset());
+}
+
+void Assembler::sty(Register dst, const MemOperand& src) {
+  rxy_form(STY, dst, src.rb(), src.ra(), src.offset());
+}
+
 // end of S390instructions
 
 
