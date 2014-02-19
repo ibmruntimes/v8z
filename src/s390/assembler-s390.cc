@@ -907,10 +907,14 @@ void Assembler::notx(Register dst, Register src, RCBit r) {
 }
 
 void Assembler::ori(Register ra, Register rs, const Operand& imm) {
-  if (ra.code() != rs.code()) {
-    AddRR(ra, rs);
-    }
-    oill(ra, imm);
+  // TODO(AlanLi): we keep the d_form because it is 
+  // part of the address materilzation (lis, ori). pattern matcher
+  // will need to identify its d_form.
+  // if (ra.code() != rs.code()) {
+  //   AddRR(ra, rs);
+  // }
+  // oill(ra, imm);
+  d_form(ORI, rs, ra, imm.imm_, false);
 }
 
 void Assembler::oris(Register dst, Register src, const Operand& imm) {
