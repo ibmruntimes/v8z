@@ -76,7 +76,24 @@ enum Condition {
   ordered    =  7,
   overflow   =  8,         // Summary overflow
   nooverflow =  9,
-  al         = 10          // Always.
+  al         = 10,         // Always.
+
+  mask0x0    =  0,         // no jumps
+  mask0x1    =  1,
+  mask0x2    =  2,
+  mask0x3    =  3,
+  mask0x4    =  4,
+  mask0x5    =  5,
+  mask0x6    =  6,
+  mask0x7    =  7,
+  mask0x8    =  8,
+  mask0x9    =  9,
+  mask0xA    = 10,
+  mask0xB    = 11,
+  mask0xC    = 12,
+  mask0xD    = 13,
+  mask0xE    = 14,
+  mask0xF    = 15
 };
 
 
