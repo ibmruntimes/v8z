@@ -868,21 +868,12 @@ void Assembler::divw(Register dst, Register src1, Register src2,
 }
 
 void Assembler::addi(Register dst, Register src, const Operand& imm) {
-    if (dst.code() == src.code()) {
-#ifdef V8_TARGET_ARCH_S390X
-        aghi(dst, imm);
-#else
-        ahi(dst, imm);
-#endif
-    } else {
-#ifdef V8_TARGET_ARCH_S390X
-        lghi(dst, imm);
-        agr(dst, src);
-#else
-        lhi(dst, imm);
-        ar(dst, src);
-#endif
-    }
+  if (dst.code() == src.code()) {
+    AddRIHW(dst, imm);
+  } else {
+    LoadHW(dst, imm);
+    AddRR(dst, src);
+  }
 }
 
 void  Assembler::addis(Register dst, Register src, const Operand& imm) {
@@ -898,13 +889,8 @@ void  Assembler::andi(Register ra, Register rs, const Operand& imm) {
   if (ra.code() == rs.code()) {
     nilf(rs, imm);
   } else {
-#ifdef V8_TARGET_ARCH_S390X
-    agr(ra, rs);
+    AddRR(ra, rs);
     nill(ra, imm);
-#else
-    ar(ra, rs);
-    nill(ra, imm);
-#endif
   }
 }
 
@@ -921,12 +907,8 @@ void Assembler::notx(Register dst, Register src, RCBit r) {
 }
 
 void Assembler::ori(Register ra, Register rs, const Operand& imm) {
-    if (ra.code() != rs.code()) {
-#ifdef V8_TARGET_ARCH_S390X
-        agr(ra, rs);
-#else
-        ar(ra, rs);
-#endif
+  if (ra.code() != rs.code()) {
+    AddRR(ra, rs);
     }
     oill(ra, imm);
 }
@@ -940,27 +922,17 @@ void Assembler::orx(Register dst, Register src1, Register src2, RCBit rc) {
 }
 
 void Assembler::cmpi(Register src1, const Operand& src2, CRegister cr) {
-    intptr_t imm16 = src2.imm_;
-    ASSERT(is_int16(imm16));
-    imm16 &= kImm16Mask;
-#if V8_TARGET_ARCH_S390X
-    cghi(src1, src2);
-#else
-    chi(src1, src2);
-#endif
+  intptr_t imm16 = src2.imm_;
+  ASSERT(is_int16(imm16));
+  imm16 &= kImm16Mask;
+  CmpHW(src1, src2);
 }
 
 void Assembler::cmpli(Register src1, const Operand& src2, CRegister cr) {
   uintptr_t uimm16 = src2.imm_;
   ASSERT(is_uint16(uimm16));
   uimm16 &= kImm16Mask;
-  // we could you CLFHSI but z9 does not have it.
-  // use CLFI instead
-#if V8_TARGET_ARCH_S390X
-    clgfhi(src1, src2);
-#else
-    clfi(src1, src2);
-#endif
+  CmpLogicalImm(src1, src2);
 }
 
 void Assembler::cmp(Register src1, Register src2, CRegister cr) {
@@ -975,11 +947,7 @@ void Assembler::cmp(Register src1, Register src2, CRegister cr) {
 }
 
 void Assembler::cmpl(Register src1, Register src2, CRegister cr) {
-#if V8_TARGET_ARCH_S390X
-    clgr(src1, src2);
-#else
-    clr(src1, src2);
-#endif
+  CmpLogicalRR(src1, src2);
 }
 
 // Load Halfword Immediate - 16-bit signed immediate
@@ -993,11 +961,7 @@ void  Assembler::lis(Register dst, const Operand& imm) {
 
 // Pseudo op - move register
 void Assembler::mr(Register dst, Register src) {
-#if V8_TARGET_ARCH_S390X
-    lgr(dst, src);
-#else
-    lr(dst, src);
-#endif
+  LoadRR(dst, src);
 }
 
 void Assembler::lbz(Register dst, const MemOperand &src) {
@@ -1020,36 +984,22 @@ void Assembler::lbzux(Register rt, const MemOperand & src) {
 }
 
 void Assembler::lhz(Register dst, const MemOperand &src) {
-#ifdef V8_TARGET_ARCH_S390X
-    llgh(dst, src);
-#else
-    llh(dst, src);
-#endif
+  LoadRXHW(dst, src);
 }
 
 void Assembler::lhzx(Register rt, const MemOperand &src) {
-    // same as lhz, we can use RX form
-#ifdef V8_TARGET_ARCH_S390X
-    llgh(rt, src);
-#else
-    llh(rt, src);
-#endif
+  // same as lhz, we can use RX form
+  LoadRXHW(rt, src);
 }
 
 void Assembler::lhzux(Register rt, const MemOperand & src) {
-    Register ra = src.ra();
-#ifdef V8_TARGET_ARCH_S390X
-    lay(ra, src);
-    llghr(rt, ra);
-#else
-    la(ra, src);
-    llhr(rt, ra);
-#endif
+  Register ra = src.ra();
+  LoadAddr(ra, src);
+  LoadLogicalRRHW(rt, ra);
 }
 
 void Assembler::lwz(Register dst, const MemOperand &src) {
-    Register rb = src.rb();
-    ASSERT(rb.code() == 0);
+  ASSERT(src.rb().code() == 0);
 #ifdef V8_TARGET_ARCH_S390X
     llgf(dst, src);
 #else

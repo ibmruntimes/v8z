@@ -119,25 +119,6 @@ bool AreAliased(Register reg1,
 #define ShiftRightArith    srad
 #define Mul                mulld
 #define Div                divd
-
-// arithmetics and bitwise
-// Reg-Reg
-#define AddRR              agr
-#define SubRR              sgr
-#define OrRR               ogr
-#define AndRR              ngr
-#define XorRR              xgr
-
-// Reg-Imm
-#define AddRI              ag
-#define SubRI              sg
-
-// Reg-Imm half words
-#define AddRIHW            aghi
-
-// Load / Store
-#define LoadRR             lr
-
 #else
 #define LoadPU             lwzu
 #define LoadPX             lwzx
@@ -157,23 +138,6 @@ bool AreAliased(Register reg1,
 #define ShiftRightArith    sraw
 #define Mul                mullw
 #define Div                divw
-
-// arithmetics and bitwise
-// Reg2Reg
-#define AddRR              ar
-#define SubRR              sr
-#define OrRR               or_z
-#define AndRR              nr
-#define XorRR              xr
-
-// Reg-Imm
-#define AddRI              a
-#define SubRI              s
-#define AddRIHW            ahi
-
-// Load / Store
-#define LoadRR             lgr
-
 #endif
 
 
