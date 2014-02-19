@@ -111,6 +111,11 @@ class Decoder {
   void UnknownFormat(Instruction* instr, const char* opcname);
   void MarkerFormat(Instruction* instr, const char* opcname, int id);
 
+  // S390 decoding
+  bool DecodeTwoByte(Instruction* instr);
+  bool DecodeFourByte(Instruction* instr);
+  bool DecodeSixByte(Instruction* instr);
+
   // PowerPC decoding
   void DecodeExt1(Instruction* instr);
   void DecodeExt2(Instruction* instr);
@@ -949,17 +954,76 @@ void Decoder::DecodeExt5(Instruction* instr) {
   }
 }
 
+// Disassembles Two Byte S390 Instructions
+// @return true if successfully decoded
+bool Decoder::DecodeTwoByte(Instruction* instr) {
+  Opcode opcode = instr->S390OpcodeValue();
+  switch (opcode) {
+    case OR:
+      Format(instr, "or");
+      break;
+    default:
+      return false;
+  }
+  return true;
+}
+
+// Disassembles Four Byte S390 Instructions
+// @return true if successfully decoded
+bool Decoder::DecodeFourByte(Instruction* instr) {
+  Opcode opcode = instr->S390OpcodeValue();
+  switch (opcode) {
+    case STM:
+      Format(instr, "stm");
+      break;
+    default:
+      return false;
+  }
+  return true;
+}
+
+// Disassembles Six Byte S390 Instructions
+// @return true if successfully decoded
+bool Decoder::DecodeSixByte(Instruction* instr) {
+  Opcode opcode = instr->S390OpcodeValue();
+  switch (opcode) {
+    case STMG:
+      Format(instr, "stmg");
+      break;
+    default:
+      return false;
+  }
+  return true;
+}
+
 #undef VERIFIY
 
 // Disassemble the instruction at *instr_ptr into the output buffer.
 int Decoder::InstructionDecode(byte* instr_ptr) {
   Instruction* instr = Instruction::At(instr_ptr);
+
+  // Try to decode as S390 instruction first.
+  bool processed = true;
+  int instrLength = instr->InstructionLength();
+
+  if (instrLength == 2)
+    processed = DecodeTwoByte(instr);
+  else if (instrLength == 4)
+    processed = DecodeFourByte(instr);
+  else if (instrLength == 6)
+    processed = DecodeSixByte(instr);
+
+  // @TODO Remove eventually.
+  // if we cannot process as S390, treat it as PPC instr
+  if (processed)
+    return instrLength;
+
   // Print raw instruction bytes.
   out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
                                   "%08x       ",
                                   instr->InstructionBits());
 
-    switch (instr->OpcodeValue() << 26) {
+  switch (instr->OpcodeValue() << 26) {
     case TWI: {
       PrintSoftwareInterrupt(instr->SvcValue());
       break;
