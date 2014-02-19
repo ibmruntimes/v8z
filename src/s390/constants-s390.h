@@ -1240,6 +1240,16 @@ const Instr rtCallRedirInstr = TWI;
 // -----------------------------------------------------------------------------
 // Instruction abstraction.
 
+// S390 Opcode Format Types
+//   Based on the first byte of the opcode, we can determine how to extract
+//   the entire opcode of the instruction.  The various favours include:
+enum OpcodeFormatType {
+  ONE_BYTE_OPCODE,            // One Byte - Bits 0 to 7
+  TWO_BYTE_OPCODE,            // Two Bytes - Bits 0 to 15
+  TWO_BYTE_DISJOINT_OPCODE,   // Two Bytes - Bits 0 to 7, 40 to 47
+  THREE_NIBBLE_OPCODE         // Three Nibbles - Bits 0 to 7, 12 to 15
+};
+
 // The class Instruction enables access to individual fields defined in the PPC
 // architecture instruction set encoding.
 // Note that the Assembler uses typedef int32_t Instr.
@@ -1312,6 +1322,85 @@ class Instruction {
   // Read a bit field out of the instruction bits.
   static inline int BitField(Instr instr, int hi, int lo) {
     return instr & (((2 << (hi - lo)) - 1) << lo);
+  }
+
+  // Determine the instruction length on given instruction
+  static int getInstructionLength(byte *instr) {
+    // Length can be determined by the first nibble.
+    // 0x0 to 0x3 => 2-bytes
+    // 0x4 to 0xB => 4-bytes
+    // 0xC to 0xF => 6-bytes
+    byte topNibble = (*instr >> 4) & 0xF;
+    if (topNibble <= 3)
+      return 2;
+    else if (topNibble <= 0xB)
+      return 4;
+    return 6;
+  }
+
+  // Get Instruction Format Type
+  static OpcodeFormatType getOpcodeFormatType(byte *instr) {
+    byte firstByte = *instr;
+    // Based on Figure B-3 in z/Architecture Principles of
+    // Operation.
+
+    // 1-byte opcodes
+    //   I, RR, RS, RSI, RX, SS Formats
+    if ((0x04 <= firstByte && 0x9B >= firstByte) ||
+        (0xA8 <= firstByte && 0xB1 >= firstByte) ||
+        (0xBA <= firstByte && 0xBF >= firstByte) ||
+        (0xC5 == firstByte) ||
+        (0xC7 == firstByte) ||
+        (0xD0 <= firstByte && 0xE2 >= firstByte) ||
+        (0xE8 <= firstByte && 0xEA >= firstByte) ||
+        (0xEE <= firstByte && 0xFD >= firstByte)) {
+       return ONE_BYTE_OPCODE;
+     }
+
+     // 2-byte opcodes
+     //   E, IE, RRD, RRE, RRF, SIL, S, SSE Formats
+     if ((0x01 == firstByte) ||
+         (0xB2 == firstByte) ||
+         (0xB3 == firstByte) ||
+         (0xB9 == firstByte) ||
+         (0xE5 == firstByte)) {
+       return TWO_BYTE_OPCODE;
+     }
+
+     // 3-nibble opcodes
+     //   RI, RIL, SSF Formats
+     if ((0xA5 == firstByte) ||
+         (0xA7 == firstByte) ||
+         (0xC0 <= firstByte && 0xCC >= firstByte)) {  // C5,C7 handled above
+       return THREE_NIBBLE_OPCODE;
+     }
+     // Remaining ones are all TWO_BYTE_DISJOINT OPCODES.
+     ASSERT(getInstructionLength(instr) == 6);
+     return TWO_BYTE_DISJOINT_OPCODE;
+  }
+
+  // Extract the full opcode from the instruction.
+  static Opcode extractOpcode(byte *instr) {
+    OpcodeFormatType opcodeType = getOpcodeFormatType(instr);
+    switch (opcodeType) {
+      case ONE_BYTE_OPCODE:
+        // One Byte - Bits 0 to 7
+        return static_cast<Opcode>(*instr);
+      case TWO_BYTE_OPCODE:
+        // Two Bytes - Bits 0 to 15
+        return static_cast<Opcode>(*reinterpret_cast<uint16_t*>(instr));
+      case TWO_BYTE_DISJOINT_OPCODE:
+        // Two Bytes - Bits 0 to 7, 40 to 47
+        return static_cast<Opcode>((*instr << 8) | (*(instr+5) & 0xFF));
+      case THREE_NIBBLE_OPCODE:
+        // Three Nibbles - Bits 0 to 7, 12 to 15
+        return static_cast<Opcode>((*instr << 4) | (*(instr+1) & 0xF));
+      default:
+        break;
+      }
+
+    UNREACHABLE();
+    return static_cast<Opcode>(-1);
   }
 
   // PowerPC

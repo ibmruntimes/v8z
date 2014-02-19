@@ -372,9 +372,10 @@ void Assembler::emit4bytes(uint32_t x) {
 
 void Assembler::emit6bytes(uint64_t x) {
     CheckBuffer();
-    *reinterpret_cast<uint16_t*>(pc_) = (uint16_t)((x >> 32) & 0x00FF);
-    pc_ += 4;
+    *reinterpret_cast<uint16_t*>(pc_) = (uint16_t)((x >> 32) & 0xFFFF);
+    pc_ += 2;
     *reinterpret_cast<uint32_t*>(pc_) = (uint32_t)(x & 0x00000000FFFFFFFF);
+    pc_ += 4;
 }
 // end of S390 specific emitting helpers
 
