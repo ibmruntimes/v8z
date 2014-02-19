@@ -1751,6 +1751,8 @@ void Assembler::name(Register r1, Register r2) { \
 }
 void Assembler::rr_form(Opcode op, Register r1, Register r2) {
     ASSERT(is_uint8(op));
+    // ASSERT(is_uint4(r1.code()));
+    // ASSERT(is_uint4(r2.code()));
     emit2bytes(op*B8 | r1.code()*B4 | r2.code());
 }
 
@@ -1765,8 +1767,9 @@ void Assembler::name(Condition m1, Register r2) { \
 }
 void Assembler::rr_form(Opcode op, Condition m1, Register r2) {
     ASSERT(is_uint8(op));
-    ASSERT(is_uint4(m1.value()));
-    emit2bytes(op*B8 | m1.value()*B4 | r2.code());
+    ASSERT(is_uint4(m1));
+    // ASSERT(is_uint4(r2.code()));
+    emit2bytes(op*B8 | m1*B4 | r2.code());
 }
 
 
@@ -1866,7 +1869,7 @@ void Assembler::name(Register r, const Operand& i2) {\
 }
 void Assembler::ril_form(Opcode op, Register r1, const Operand& i2) {
     ASSERT(is_uint12(op));
-    ASSERT(is_uint4(r1.code()));
+    // ASSERT(is_uint4(r1.code()));
     uint64_t code = (static_cast<uint64_t>(op & 0xFF0)) * B36        |
                     (static_cast<uint64_t>(r1.code())) * B36         |
                     (static_cast<uint64_t>(op & 0x00F)) * B32        |
@@ -1904,8 +1907,8 @@ void Assembler::name(Register r1, Register r2) {\
 }
 void Assembler::rre_form(Opcode op, Register r1, Register r2) {
     ASSERT(is_uint16(op));
-    ASSERT(is_uint4(r1.code()));
-    ASSERT(is_uint4(r2.code()));
+    // ASSERT(is_uint4(r1.code()));
+    // ASSERT(is_uint4(r2.code()));
     emit4bytes(op << 16 | r1.code()*B4 | r2.code());
 }
 
