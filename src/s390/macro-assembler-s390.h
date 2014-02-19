@@ -119,6 +119,39 @@ bool AreAliased(Register reg1,
 #define ShiftRightArith    srad
 #define Mul                mulld
 #define Div                divd
+
+// the macro comprises 3 parts: op, format, length
+// if the length is not defined then it is the length
+// of register.
+
+// arithmetics and bitwise
+// Reg-Reg
+#define AddRR              agr
+#define SubRR              sgr
+#define OrRR               ogr
+#define AndRR              ngr
+#define XorRR              xgr
+
+// Reg-Imm
+#define AddRI              ag
+#define SubRI              sg
+
+// Reg-Imm half words
+#define AddRIHW            aghi
+
+// Load / Store
+#define LoadRR             lr
+#define LoadHW             lghi
+#define LoadRXHW           llgh
+#define LoadAddr           lay
+#define LoadLogicalRRHW    llghr
+#define LoadLogicalRXHW    llgh
+
+// Compare
+#define CmpHW              cghi
+#define CmpLogicalImm      clgfi
+#define CmpLogicalRR       clgr
+
 #else
 #define LoadPU             lwzu
 #define LoadPX             lwzx
@@ -138,6 +171,33 @@ bool AreAliased(Register reg1,
 #define ShiftRightArith    sraw
 #define Mul                mullw
 #define Div                divw
+
+// arithmetics and bitwise
+// Reg2Reg
+#define AddRR              ar
+#define SubRR              sr
+#define OrRR               or_z
+#define AndRR              nr
+#define XorRR              xr
+
+// Reg-Imm
+#define AddRI              a
+#define SubRI              s
+#define AddRIHW            ahi
+
+// Load / Store
+#define LoadRR             lgr
+#define LoadHW             lhi
+#define LoadRXHW           llh
+#define LoadAddr           la
+#define LoadLogicalRRHW    llhr
+#define LoadLogicalRXHW    llh
+
+// Compare
+#define CmpHW              chi
+#define CmpLogicalImm      clfi
+#define CmpLogicalRR       clr
+
 #endif
 
 
