@@ -2544,7 +2544,6 @@ void Assembler::rrf3_form(uint32_t code) {
 // end of S390 Instruction generation
 
 // start of S390 instruction
-RX_FORM_EMIT(a, A)
 RXE_FORM_EMIT(adb, ADB)
 RRE_FORM_EMIT(adbr, ADBR)
 RRF1_FORM_EMIT(adtr, ADTR)
@@ -2552,19 +2551,13 @@ RRF1_FORM_EMIT(adtra, ADTRA)
 RXE_FORM_EMIT(aeb, AEB)
 RRE_FORM_EMIT(aebr, AEBR)
 RIL1_FORM_EMIT(afi, AFI)
-RXY_FORM_EMIT(ag, AG)
 RXY_FORM_EMIT(agf, AGF)
 RIL1_FORM_EMIT(agfi, AGFI)
 RRE_FORM_EMIT(agfr, AGFR)
-RI1_FORM_EMIT(aghi, AGHI)
-RIE_FORM_EMIT(aghik, AGHIK)
-RRE_FORM_EMIT(agr, AGR)
-RRF1_FORM_EMIT(agrk, AGRK)
 SIY_FORM_EMIT(agsi, AGSI)
 RX_FORM_EMIT(ah, AH)
 RRF1_FORM_EMIT(ahhhr, AHHHR)
 RRF1_FORM_EMIT(ahhlr, AHHLR)
-RI1_FORM_EMIT(ahi, AHI)
 RIE_FORM_EMIT(ahik, AHIK)
 RXY_FORM_EMIT(ahy, AHY)
 RIL1_FORM_EMIT(aih, AIH)
@@ -2592,7 +2585,6 @@ RIL1_FORM_EMIT(alsih, ALSIH)
 RIL1_FORM_EMIT(alsihn, ALSIHN)
 RXY_FORM_EMIT(aly, ALY)
 SS2_FORM_EMIT(ap, AP)
-RR_FORM_EMIT(ar, AR)
 RRF1_FORM_EMIT(ark, ARK)
 SIY_FORM_EMIT(asi, ASI)
 RRE_FORM_EMIT(axbr, AXBR)
@@ -2681,7 +2673,6 @@ RIL1_FORM_EMIT(cgfi, CGFI)
 RRE_FORM_EMIT(cgfr, CGFR)
 RIL1_FORM_EMIT(cgfrl, CGFRL)
 RXY_FORM_EMIT(cgh, CGH)
-RI1_FORM_EMIT(cghi, CGHI)
 RIL1_FORM_EMIT(cghrl, CGHRL)
 SIL_FORM_EMIT(cghsi, CGHSI)
 RIS_FORM_EMIT(cgib, CGIB)
@@ -2701,7 +2692,6 @@ RX_FORM_EMIT(ch, CH)
 RXY_FORM_EMIT(chf, CHF)
 RRE_FORM_EMIT(chhr, CHHR)
 SIL_FORM_EMIT(chhsi, CHHSI)
-RI1_FORM_EMIT(chi, CHI)
 RRE_FORM_EMIT(chlr, CHLR)
 RIL1_FORM_EMIT(chrl, CHRL)
 SIL_FORM_EMIT(chsi, CHSI)
@@ -2720,7 +2710,6 @@ RRF2_FORM_EMIT(clfdbr, CLFDBR)
 RRF2_FORM_EMIT(clfdtr, CLFDTR)
 RRF2_FORM_EMIT(clfebr, CLFEBR)
 SIL_FORM_EMIT(clfhsi, CLFHSI)
-RIL1_FORM_EMIT(clfi, CLFI)
 RIE_FORM_EMIT(clfit, CLFIT)
 RRF2_FORM_EMIT(clfxbr, CLFXBR)
 RRF2_FORM_EMIT(clfxtr, CLFXTR)
@@ -2729,8 +2718,6 @@ RRF2_FORM_EMIT(clgdbr, CLGDBR)
 RRF2_FORM_EMIT(clgdtr, CLGDTR)
 RRF2_FORM_EMIT(clgebr, CLGEBR)
 RXY_FORM_EMIT(clgf, CLGF)
-RIL1_FORM_EMIT(clgfi, CLGFI)
-RR_FORM_EMIT(clr, CLR)
 SSF_FORM_EMIT(csst, CSST)
 RRF2_FORM_EMIT(csxtr, CSXTR)
 RSY1_FORM_EMIT(csy, CSY)
@@ -2846,7 +2833,6 @@ RRE_FORM_EMIT(kmo, KMO)
 RRE_FORM_EMIT(kxbr, KXBR)
 RRE_FORM_EMIT(kxtr, KXTR)
 RX_FORM_EMIT(l, L)
-RX_FORM_EMIT(la, LA)
 RSY1_FORM_EMIT(laa, LAA)
 RSY1_FORM_EMIT(laag, LAAG)
 RSY1_FORM_EMIT(laal, LAAL)
@@ -2861,7 +2847,6 @@ RIL1_FORM_EMIT(larl, LARL)
 RXY_FORM_EMIT(lat, LAT)
 RSY1_FORM_EMIT(lax, LAX)
 RSY1_FORM_EMIT(laxg, LAXG)
-RXY_FORM_EMIT(lay, LAY)
 RXY_FORM_EMIT(lb, LB)
 RXY_FORM_EMIT(lbh, LBH)
 RRE_FORM_EMIT(lbr, LBR)
@@ -2904,10 +2889,8 @@ RIL1_FORM_EMIT(lgfi, LGFI)
 RRE_FORM_EMIT(lgfr, LGFR)
 RIL1_FORM_EMIT(lgfrl, LGFRL)
 RXY_FORM_EMIT(lgh, LGH)
-RI1_FORM_EMIT(lghi, LGHI)
 RRE_FORM_EMIT(lghr, LGHR)
 RIL1_FORM_EMIT(lghrl, LGHRL)
-RRE_FORM_EMIT(lgr, LGR)
 RIL1_FORM_EMIT(lgrl, LGRL)
 RX_FORM_EMIT(lh, LH)
 RXY_FORM_EMIT(lhh, LHH)
@@ -2923,15 +2906,11 @@ RXY_FORM_EMIT(llgf, LLGF)
 RXY_FORM_EMIT(llgfat, LLGFAT)
 RRE_FORM_EMIT(llgfr, LLGFR)
 RIL1_FORM_EMIT(llgfrl, LLGFRL)
-RXY_FORM_EMIT(llgh, LLGH)
-RRE_FORM_EMIT(llghr, LLGHR)
 RIL1_FORM_EMIT(llghrl, LLGHRL)
 RXY_FORM_EMIT(llgt, LLGT)
 RXY_FORM_EMIT(llgtat, LLGTAT)
 RRE_FORM_EMIT(llgtr, LLGTR)
-RXY_FORM_EMIT(llh, LLH)
 RXY_FORM_EMIT(llhh, LLHH)
-RRE_FORM_EMIT(llhr, LLHR)
 RIL1_FORM_EMIT(llhrl, LLHRL)
 RIL1_FORM_EMIT(llihf, LLIHF)
 RI1_FORM_EMIT(llihh, LLIHH)
@@ -2962,7 +2941,6 @@ RRE_FORM_EMIT(lpgr, LPGR)
 RXY_FORM_EMIT(lpq, LPQ)
 RR_FORM_EMIT(lpr, LPR)
 RRE_FORM_EMIT(lpxbr, LPXBR)
-RR_FORM_EMIT(lr, LR)
 RIL1_FORM_EMIT(lrl, LRL)
 RXY_FORM_EMIT(lrv, LRV)
 RXY_FORM_EMIT(lrvg, LRVG)
@@ -3051,8 +3029,6 @@ RRF1_FORM_EMIT(mxtra, MXTRA)
 RX_FORM_EMIT(n, N)
 SS1_FORM_EMIT(nc, NC)
 RXY_FORM_EMIT(ng, NG)
-RRE_FORM_EMIT(ngr, NGR)
-RRF1_FORM_EMIT(ngrk, NGRK)
 SI_FORM_EMIT(ni, NI)
 IE_FORM_EMIT(niai, NIAI)
 RIL1_FORM_EMIT(nihf, NIHF)
@@ -3062,15 +3038,12 @@ RIL1_FORM_EMIT(nilf, NILF)
 RI1_FORM_EMIT(nilh, NILH)
 RI1_FORM_EMIT(nill, NILL)
 SIY_FORM_EMIT(niy, NIY)
-RR_FORM_EMIT(nr, NR)
 RRF1_FORM_EMIT(nrk, NRK)
 RXY_FORM_EMIT(ntstg, NTSTG)
 RXY_FORM_EMIT(ny, NY)
 RX_FORM_EMIT(o, O)
 SS1_FORM_EMIT(oc, OC)
 RXY_FORM_EMIT(og, OG)
-RRE_FORM_EMIT(ogr, OGR)
-RRF1_FORM_EMIT(ogrk, OGRK)
 SI_FORM_EMIT(oi, OI)
 RIL1_FORM_EMIT(oihf, OIHF)
 RI1_FORM_EMIT(oihh, OIHH)
@@ -3079,7 +3052,6 @@ RIL1_FORM_EMIT(oilf, OILF)
 RI1_FORM_EMIT(oilh, OILH)
 RI1_FORM_EMIT(oill, OILL)
 SIY_FORM_EMIT(oiy, OIY)
-RR_FORM_EMIT(or_z, OR)
 RRF1_FORM_EMIT(ork, ORK)
 RXY_FORM_EMIT(oy, OY)
 SS2_FORM_EMIT(pack, PACK)
@@ -3108,7 +3080,6 @@ RRF1_FORM_EMIT(rrdtr, RRDTR)
 RRF1_FORM_EMIT(rrxtr, RRXTR)
 S_FORM_EMIT(rsch, RSCH)
 RIE_FORM_EMIT(rxsbg, RXSBG)
-RX_FORM_EMIT(s, S)
 S_FORM_EMIT(sal, SAL)
 RRE_FORM_EMIT(sar, SAR)
 S_FORM_EMIT(schm, SCHM)
@@ -3120,11 +3091,8 @@ RXE_FORM_EMIT(seb, SEB)
 RRE_FORM_EMIT(sebr, SEBR)
 RRE_FORM_EMIT(sfasr, SFASR)
 RRE_FORM_EMIT(sfpc, SFPC)
-RXY_FORM_EMIT(sg, SG)
 RXY_FORM_EMIT(sgf, SGF)
 RRE_FORM_EMIT(sgfr, SGFR)
-RRE_FORM_EMIT(sgr, SGR)
-RRF1_FORM_EMIT(sgrk, SGRK)
 RX_FORM_EMIT(sh, SH)
 RRF1_FORM_EMIT(shhhr, SHHHR)
 RRF1_FORM_EMIT(shhlr, SHHLR)
@@ -3163,7 +3131,6 @@ RRE_FORM_EMIT(sqdbr, SQDBR)
 RXE_FORM_EMIT(sqeb, SQEB)
 RRE_FORM_EMIT(sqebr, SQEBR)
 RRE_FORM_EMIT(sqxbr, SQXBR)
-RR_FORM_EMIT(sr, SR)
 RS1_FORM_EMIT(sra, SRA)
 RSY1_FORM_EMIT(srag, SRAG)
 RSY1_FORM_EMIT(srak, SRAK)
@@ -3265,17 +3232,138 @@ E_FORM_EMIT(upt, UPT)
 RX_FORM_EMIT(x, X)
 SS1_FORM_EMIT(xc, XC)
 RXY_FORM_EMIT(xg, XG)
-RRE_FORM_EMIT(xgr, XGR)
-RRF1_FORM_EMIT(xgrk, XGRK)
 SI_FORM_EMIT(xi, XI)
 RIL1_FORM_EMIT(xihf, XIHF)
 RIL1_FORM_EMIT(xilf, XILF)
 SIY_FORM_EMIT(xiy, XIY)
-RR_FORM_EMIT(xr, XR)
 RRF1_FORM_EMIT(xrk, XRK)
 S_FORM_EMIT(xsch, XSCH)
 RXY_FORM_EMIT(xy, XY)
 SS2_FORM_EMIT(zap, ZAP)
+
+// materialized assemblers
+void Assembler::ar(Register r1, Register r2) {
+  rr_form(AR, r1, r2);
+}
+
+void Assembler::sr(Register r1, Register r2) {
+  rr_form(SR, r1, r2);
+}
+
+void Assembler::or_z(Register r1, Register r2) {
+  rr_form(OR, r1, r2);
+}
+
+void Assembler::nr(Register r1, Register r2) {
+  rr_form(NR, r1, r2);
+}
+
+void Assembler::xr(Register r1, Register r2) {
+  rr_form(XR, r1, r2);
+}
+
+void Assembler::agr(Register r1, Register r2) {
+  rre_form(AGR, r1, r2);
+}
+
+void Assembler::sgr(Register r1, Register r2) {
+  rre_form(SGR, r1, r2);
+}
+
+void Assembler::ogr(Register r1, Register r2) {
+  rre_form(OGR, r1, r2);
+}
+void Assembler::ngr(Register r1, Register r2) {
+  rre_form(NGR, r1, r2);
+}
+void Assembler::xgr(Register r1, Register r2) {
+  rre_form(XGR, r1, r2);
+}
+
+void Assembler::a(Register r1, const MemOperand& opnd) {
+  rx_form(A, r1, opnd.rb(), opnd.ra(), opnd.offset());
+}
+
+void Assembler::s(Register r1, const MemOperand& opnd) {
+  rx_form(S, r1, opnd.rb(), opnd.ra(), opnd.offset());
+}
+
+
+void Assembler::ag(Register r1, const MemOperand& opnd) {
+  rxy_form(AG, r1, opnd.rb(), opnd.ra(), opnd.offset());
+}
+
+void Assembler::sg(Register r1, const MemOperand& opnd) {
+  rxy_form(SG, r1, opnd.ra(), opnd.rb(), opnd.offset());
+}
+
+void Assembler::lr(Register r1, Register r2) {
+  rr_form(LR, r1, r2);
+}
+
+void Assembler::lgr(Register r1, Register r2) {
+  rre_form(LGR, r1, r2);
+}
+
+void Assembler::ahi(Register r1, const Operand& i2) {
+  ri_form(AHI, r1, i2);
+}
+
+void Assembler::aghi(Register r1, const Operand& i2) {
+  ri_form(AGHI, r1, i2);
+}
+
+void Assembler::lghi(Register r1, const Operand& i2) {
+  ri_form(LGHI, r1, i2);
+}
+
+void Assembler::llh(Register r1, const MemOperand& opnd) {
+  rxy_form(LLH, r1, opnd.ra(), opnd.rb(), opnd.offset());
+}
+
+void Assembler::llgh(Register r1, const MemOperand& opnd) {
+  rxy_form(LLH, r1, opnd.ra(), opnd.rb(), opnd.offset());
+}
+
+void Assembler::la(Register r1, const MemOperand& opnd) {
+  rx_form(LA, r1, opnd.rb(), opnd.ra(), opnd.offset());
+}
+
+void Assembler::lay(Register r1, const MemOperand& opnd) {
+  rxy_form(LAY, r1, opnd.ra(), opnd.rb(), opnd.offset());
+}
+
+void Assembler::llghr(Register r1, Register r2) {
+  rre_form(LLGHR, r1, r2);
+}
+
+void Assembler::llhr(Register r1, Register r2) {
+  rre_form(LLHR, r1, r2);
+}
+
+void Assembler::chi(Register r1, const Operand& i2) {
+  ri_form(CHI, r1, i2);
+}
+
+void Assembler::cghi(Register r1, const Operand& i2) {
+  ri_form(CGHI, r1, i2);
+}
+
+void Assembler::clgfi(Register r1, const Operand& i2) {
+  ril_form(CLGFI, r1, i2);
+}
+
+void Assembler::clfi(Register r1, const Operand& i2) {
+  ril_form(CLFI, r1, i2);
+}
+
+void Assembler::clgr(Register r1, Register r2) {
+  rre_form(CLGR, r1, r2);
+}
+
+void Assembler::clr(Register r1, Register r2) {
+  rre_form(CLR, r1, r2);
+}
 // end of S390instructions
 
 
