@@ -733,11 +733,11 @@ void Assembler::b(int branch_offset, LKBit lk) {
 
 // Indirect Branch via register
 void Assembler::br(Register target) {
-  bcr(Mask::from_value(0xF), target);
+  bcr((Condition)0xF, target);
 }
 
 // Indirect Conditional Branch via register
-void Assembler::bcr(Mask m, Register target) {
+void Assembler::bcr(Condition m, Register target) {
   rr_form(BCR, m, target);
 }
 
@@ -1876,7 +1876,7 @@ void Assembler::ri_form(Opcode op, Condition m1, const Operand& i2) {
     ASSERT(is_uint4(m1));
     ASSERT(is_int16(i2.imm_));
     emit4bytes((op & 0xFF0) * B20 |
-             m1.value() * B20 |
+             m1 * B20 |
              (op & 0xF) * B16 |
              (i2.imm_ & 0xFFFF));
 }

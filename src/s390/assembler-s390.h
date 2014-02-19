@@ -749,7 +749,7 @@ class Assembler : public AssemblerBase {
   // Indirect Branch via register
   void br(Register target);
   // Indirect Conditional Branch via register
-  void bcr(Mask m, Register target);
+  void bcr(Condition m, Register target);
 
   // Convenience branch instructions using labels
   void b(Label* L, LKBit lk = LeaveLK)  {
