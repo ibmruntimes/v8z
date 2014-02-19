@@ -1800,14 +1800,14 @@ void Assembler::rr_form(Opcode op, Register r1, Register r2) {
 //    +--------+----+----+
 //    0        8    12  15
 #define RR2_FORM_EMIT(name, op) \
-void Assembler::name(Mask m1, Register r2) { \
+void Assembler::name(Condition m1, Register r2) { \
     rr_form(op, m1, r2); \
 }
-void Assembler::rr_form(Opcode op, Mask m1, Register r2) {
+void Assembler::rr_form(Opcode op, Condition m1, Register r2) {
     ASSERT(is_uint8(op));
-    ASSERT(is_uint4(m1.value()));
+    ASSERT(is_uint4(m1));
     ASSERT(is_uint4(r2.code()));
-    emit2bytes(op*B8 | m1.value()*B4 | r2.code());
+    emit2bytes(op*B8 | m1*B4 | r2.code());
 }
 
 
@@ -1860,17 +1860,17 @@ void Assembler::ri_form(Opcode op, Register r1, const Operand& i2) {
 //    +--------+----+----+------------------+
 //    0        8    12   16                31
 #define RI2_FORM_EMIT(name, op) \
-void Assembler::name(Mask m, const Operand& i2) {\
+void Assembler::name(Condition m, const Operand& i2) {\
     ri_form(op, m, i2);\
 }
-void Assembler::ri_form(Opcode op, Mask m1, const Operand& i2) {
+void Assembler::ri_form(Opcode op, Condition m1, const Operand& i2) {
     ASSERT(is_uint12(op));
-    ASSERT(is_uint4(m1.value()));
+    ASSERT(is_uint4(m1));
     ASSERT(is_int16(i2.imm_));
     emit4bytes((op & 0xFF0) * B20 |
-             m1.value() * B20 |
-             (op & 0xF) * B16 |
-             (i2.imm_ & 0xFFFF));
+                m1 * B20 |
+              (op & 0xF) * B16 |
+              (i2.imm_ & 0xFFFF));
 }
 
 // RIE format: <insn> R1,R3,I2
@@ -1920,14 +1920,14 @@ void Assembler::ril_form(Opcode op, Register r1, const Operand& i2) {
 //   +--------+----+----+------------------------------------+
 //   0        8    12   16                                  47
 #define RIL2_FORM_EMIT(name, op) \
-void Assembler::name(Mask m1, const Operand& i2) {\
+void Assembler::name(Condition m1, const Operand& i2) {\
     ril_form(op, m1, i2);\
 }
-void Assembler::ril_form(Opcode op, Mask m1, const Operand& i2) {
+void Assembler::ril_form(Opcode op, Condition m1, const Operand& i2) {
     ASSERT(is_uint12(op));
-    ASSERT(is_uint4(m1.value()));
+    ASSERT(is_uint4(m1));
     uint64_t code = (static_cast<uint64_t>(op & 0xFF0)) * B36        |
-                    (static_cast<uint64_t>(m1.value())) * B36        |
+                    (static_cast<uint64_t>(m1)) * B36        |
                     (static_cast<uint64_t>(op & 0x00F)) * B32        |
                     (static_cast<uint64_t>(i2.imm_));
     emit6bytes(code);
@@ -1995,21 +1995,21 @@ void Assembler::rs_form(Opcode op,
 //    +--------+----+----+----+-------------+
 //    0        8    12   16   20           31
 #define RS2_FORM_EMIT(name, op) \
-void Assembler::name(Register r1, Mask m3, \
+void Assembler::name(Register r1, Condition m3, \
                      Register b2, Disp d2) {\
     rs_form(op, r1, m3, b2, d2);\
 }\
-void Assembler::name(Register r1, Mask m3, \
+void Assembler::name(Register r1, Condition m3, \
                      const MemOperand& opnd) {\
     name(r1, m3, opnd.getBaseRegister(), opnd.getDisplacement());\
 }
 void Assembler::rs_form(Opcode op,
                         Register r1,
-                        Mask m3,
+                        Condition m3,
                         Register b2,
                         const Disp d2) {
   ASSERT(is_uint12(d2));
-  emit4bytes(op * B24 | r1.code() * B20 | m3.value() * B16 |
+  emit4bytes(op * B24 | r1.code() * B20 | m3 * B16 |
              b2.code() * B12 | d2);
 }
 
@@ -2088,23 +2088,23 @@ void Assembler::rsy_form(Opcode op,
 //    +--------+----+----+----+-------------+--------+--------+
 //    0        8    12   16   20            32       40      47
 #define RSY2_FORM_EMIT(name, op)\
-void Assembler::name(Register r1, Mask m3, Register b2, \
+void Assembler::name(Register r1, Condition m3, Register b2, \
                      Disp d2) {\
     rsy_form(op, r1, m3, b2, d2);\
 }\
-void Assembler::name(Register r1, Mask m3, const MemOperand& opnd) {\
+void Assembler::name(Register r1, Condition m3, const MemOperand& opnd) {\
     name(r1, m3, opnd.getBaseRegister(), opnd.getDisplacement());\
 }
 void Assembler::rsy_form(Opcode op,
                         Register r1,
-                        Mask m3,
+                        Condition m3,
                         Register b2,
                         const Disp d2) {
     ASSERT(is_int20(d2));
     ASSERT(is_uint16(op));
     uint64_t code = (static_cast<uint64_t>(op && 0xFF00)) * B32  |
                     (static_cast<uint64_t>(r1.code())) * B36     |
-                    (static_cast<uint64_t>(m3.value())) * B32    |
+                    (static_cast<uint64_t>(m3)) * B32    |
                     (static_cast<uint64_t>(b2.code())) * B28     |
                     (static_cast<uint64_t>(d2 & 0x0FFF)) * B16   |
                     (static_cast<uint64_t>(d2 & 0x0FF000)) >> 4  |
@@ -2175,15 +2175,15 @@ void Assembler::rxy_form(Opcode op, Register r1, Register x2, Register b2,
 //    0        8    12   16   20            32   36   40      47
 #define RRS_FORM_EMIT(name, op)\
 void Assembler::name(Register r1, Register r2, Register b4, \
-                     Disp d4, Mask m3) {\
+                     Disp d4, Condition m3) {\
     rrs_form(op, r1, r2, b4, d4, m3);\
 }\
-void Assembler::name(Register r1, Register r2, Mask m3, \
+void Assembler::name(Register r1, Register r2, Condition m3, \
                      const MemOperand& opnd) {\
     name(r1, r2, opnd.getBaseRegister(), opnd.getDisplacement(), m3);\
 }
 void Assembler::rrs_form(Opcode op, Register r1, Register r2, Register b4,
-                     Disp d4, Mask m3) {
+                     Disp d4, Condition m3) {
     ASSERT(is_uint12(d4));
     ASSERT(is_uint16(op));
     uint64_t code = (static_cast<uint64_t>(op && 0xFF00)) * B32  |
@@ -2191,7 +2191,7 @@ void Assembler::rrs_form(Opcode op, Register r1, Register r2, Register b4,
                     (static_cast<uint64_t>(r2.code())) * B32     |
                     (static_cast<uint64_t>(b4.code())) * B28     |
                     (static_cast<uint64_t>(d4)) * B16            |
-                    (static_cast<uint64_t>(m3.value())) << 12    |
+                    (static_cast<uint64_t>(m3)) << 12    |
                     (static_cast<uint64_t>(op && 0x00FF));
     emit6bytes(code);
 }
@@ -2202,22 +2202,22 @@ void Assembler::rrs_form(Opcode op, Register r1, Register r2, Register b4,
 //    +--------+----+----+----+-------------+--------+--------+
 //    0        8    12   16   20            32        40      47
 #define RIS_FORM_EMIT(name, op)\
-void Assembler::name(Register r1, Mask m3, Register b4, \
+void Assembler::name(Register r1, Condition m3, Register b4, \
                      Disp d4, const Operand& i2) {\
     ris_form(op, r1, m3, b4, d4, i2);\
 }\
-void Assembler::name(Register r1, const Operand& i2, Mask m3, \
+void Assembler::name(Register r1, const Operand& i2, Condition m3, \
                      const MemOperand& opnd) {\
     name(r1, m3, opnd.getBaseRegister(), opnd.getDisplacement(), i2);\
 }
-void Assembler::ris_form(Opcode op, Register r1, Mask m3, Register b4, \
+void Assembler::ris_form(Opcode op, Register r1, Condition m3, Register b4, \
                      Disp d4, const Operand& i2) {
     ASSERT(is_uint12(d4));
     ASSERT(is_uint16(op));
     ASSERT(is_uint8(i2.imm_));
     uint64_t code = (static_cast<uint64_t>(op && 0xFF00)) * B32  |
                     (static_cast<uint64_t>(r1.code())) * B36     |
-                    (static_cast<uint64_t>(m3.value())) * B32    |
+                    (static_cast<uint64_t>(m3)) * B32    |
                     (static_cast<uint64_t>(b4.code())) * B28     |
                     (static_cast<uint64_t>(d4)) * B16            |
                     (static_cast<uint64_t>(i2.imm_)) << 8        |
@@ -2557,8 +2557,8 @@ void Assembler::rrf1_form(uint32_t code) {
 //    +------------------+----+----+----+----+
 //    0                  16   20   24   28  31
 #define RRF2_FORM_EMIT(name, op)\
-void Assembler::name(Mask m3, Register r1, Register r2) {\
-    rrf2_form(op << 16 |m3.value()*B12 | r1.code()*B4 | r2.code());\
+void Assembler::name(Condition m3, Register r1, Register r2) {\
+    rrf2_form(op << 16 |m3*B12 | r1.code()*B4 | r2.code());\
 }
 void Assembler::rrf2_form(uint32_t code) {
     emit4bytes(code);
@@ -2570,9 +2570,9 @@ void Assembler::rrf2_form(uint32_t code) {
 //    +------------------+----+----+----+----+
 //    0                  16   20   24   28  31
 #define RRF3_FORM_EMIT(name, op)\
-void Assembler::name(Mask r3, Mask m4, Register r1, \
+void Assembler::name(Register r3, Conition m4, Register r1, \
                      Register r2) {\
-    rrf3_form(op << 16 | r3.value()*B12 | m4.value()*B8 | \
+    rrf3_form(op << 16 | r3.code()*B12 | m4*B8 | \
               r1.code()*B4 | r2.code());\
 }
 void Assembler::rrf3_form(uint32_t code) {

@@ -390,16 +390,6 @@ const CRegister cr15 = { 15 };
 // defining immediate numbers and masks
 typedef uint8_t Length;
 
-struct Mask {
-  uint8_t mask;
-  uint8_t value() {return mask;}
-  static Mask from_value(uint8_t input) {
-    ASSERT(input < 0x0F);
-    Mask m = {input};
-    return m;
-  }
-};
-
 class Operand BASE_EMBEDDED {
  public:
   // immediate
@@ -865,7 +855,7 @@ void name(const Operand& i)
 void name(Register r1, Register r2)
 
 #define RR2_FORM(name)\
-void name(Mask m1, Register r2)
+void name(Condition m1, Register r2)
 
 #define RX_FORM(name)\
 void name(Register r1, Register x2, Register b2, \
@@ -876,7 +866,7 @@ void name(Register r1, const MemOperand& opnd)
 void name(Register r,  const Operand& i)
 
 #define RI2_FORM(name)\
-void name(Mask m, const Operand& i)
+void name(Condition m, const Operand& i)
 
 #define RIE_FORM(name)\
 void name(Register r1, Register R3, const Operand& i)
@@ -885,7 +875,7 @@ void name(Register r1, Register R3, const Operand& i)
 void name(Register r1, const Operand& i2)
 
 #define RIL2_FORM(name)\
-void name(Mask m1, const Operand& i2)
+void name(Condition m1, const Operand& i2)
 
 #define RXE_FORM(name)\
 void name(Register r1, const MemOperand& opnd);\
@@ -906,9 +896,9 @@ void name(Register r1, const MemOperand& opnd)
 void name(Register r1, Register r3, const Operand& i)
 
 #define RIS_FORM(name)\
-void name(Register r1, Mask m3, Register b4, \
+void name(Register r1, Condition m3, Register b4, \
           Disp d4, const Operand& i2);\
-void name(Register r1, const Operand& i2, Mask m3, \
+void name(Register r1, const Operand& i2, Condition m3, \
           const MemOperand& opnd)
 
 #define SI_FORM(name)\
@@ -926,10 +916,10 @@ void name(Register r1, Register r2)
 void name(Register r1, Register r2, Register r3)
 
 #define RRF2_FORM(name)\
-void name(Mask m1, Register r1, Register r2)
+void name(Condition m1, Register r1, Register r2)
 
 #define RRF3_FORM(name)\
-void name(Register r3, Mask m4, Register r1, Register r2)
+void name(Register r3, Condition m4, Register r1, Register r2)
 
 #define RS1_FORM(name)\
 void name(Register r1, Register r3, const MemOperand& opnd);\
@@ -937,8 +927,8 @@ void name(Register r1, Register r3, Register b2, \
                  Disp d2)
 
 #define RS2_FORM(name)\
-void name(Register r1, Mask m3, const MemOperand& opnd);\
-void name(Register r1, Mask m3, Register b2, \
+void name(Register r1, Condition m3, const MemOperand& opnd);\
+void name(Register r1, Condition m3, Register b2, \
                  Disp d2)
 
 #define RSE_FORM(name)\
@@ -956,17 +946,17 @@ void name(Register r1, Register r3, Register b2, \
 void name(Register r1, Register r3, const MemOperand& opnd)
 
 #define RSY2_FORM(name)\
-void name(Register r1, Mask m3, Register b2, \
+void name(Register r1, Condition m3, Register b2, \
           Disp d2);\
-void name(Register r1, Mask m3, const MemOperand& opnd)
+void name(Register r1, Condition m3, const MemOperand& opnd)
 
 #define RRD_FORM(name)\
 void name(Register r1, Register r3, Register r2)
 
 #define RRS_FORM(name)\
 void name(Register r1, Register r2, Register b4, \
-          Disp d4, Mask m3);\
-void name(Register r1, Register r2, Mask m3, \
+          Disp d4, Condition m3);\
+void name(Register r1, Register r2, Condition m3, \
           const MemOperand& opnd)
 
 #define S_FORM(name)\
@@ -2336,9 +2326,9 @@ SS2_FORM(zap);
   inline void e_form(Opcode op);
   inline void ie_form(Opcode op, const Operand& i1, const Operand& i2);
   inline void rr_form(Opcode op, Register r1, Register r2);
-  inline void rr_form(Opcode op, Mask m1, Register r2);
+  inline void rr_form(Opcode op, Condition m1, Register r2);
 
-  inline void rr2_form(uint8_t op, Mask m1, Register r2);
+  inline void rr2_form(uint8_t op, Condition m1, Register r2);
   inline void rx_form(Opcode op,
                      Register r1,
                      Register x2,
@@ -2356,11 +2346,11 @@ SS2_FORM(zap);
 //    | OpCode | M1 |OpCd|        I2        |
 //    +--------+----+----+------------------+
 //    0        8    12   16                31
-  inline void ri_form(Opcode op, Mask m1, const Operand& i2);
+  inline void ri_form(Opcode op, Condition m1, const Operand& i2);
   inline void rie_form(Opcode op, Register r1, Register r3,
                      const Operand& i2);
   inline void ril_form(Opcode op, Register r1, const Operand& i2);
-  inline void ril_form(Opcode op, Mask m1, const Operand& i2);
+  inline void ril_form(Opcode op, Condition m1, const Operand& i2);
   inline void rre_form(Opcode op, Register r1, Register r2);
   inline void rrd_form(Opcode op, Register r1, Register r3, \
                      Register r2);
@@ -2372,7 +2362,7 @@ SS2_FORM(zap);
 //
   inline void rs_form(Opcode op,
                         Register r1,
-                        Mask m3,
+                        Condition m3,
                         Register b2,
                         const Disp d2);
 // RS format: <insn> R1,R3,D2(B2)
@@ -2408,7 +2398,7 @@ SS2_FORM(zap);
 //     0        8    12   16   20            32       40      47
   inline void rsy_form(Opcode op,
                         Register r1,
-                        Mask m3,
+                        Condition m3,
                         Register b2,
                         const Disp d2);
 
@@ -2417,8 +2407,8 @@ SS2_FORM(zap);
   inline void rxy_form(Opcode op, Register r1, Register x2, Register b2,
                      Disp d2);
   inline void rrs_form(Opcode op, Register r1, Register r2, Register b4,
-                     Disp d4, Mask m3);
-  inline void ris_form(Opcode op, Register r1, Mask m3, Register b4, \
+                     Disp d4, Condition m3);
+  inline void ris_form(Opcode op, Register r1, Condition m3, Register b4, \
                      Disp d4, const Operand& i2);
   inline void s_form(Opcode op, Register b1, Disp d2);
   inline void si_form(Opcode op, const Operand& i2, Register b1,
