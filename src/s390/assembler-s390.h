@@ -1663,6 +1663,7 @@ RRE_FORM(srst);
 RRE_FORM(srstu);
 RXF_FORM(srxt);
 S_FORM(ssch);
+RX_FORM(stc);
 RXY_FORM(stch);
 S_FORM(stck);
 S_FORM(stcke);
