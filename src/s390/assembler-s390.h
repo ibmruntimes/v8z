@@ -2198,6 +2198,9 @@ SS2_FORM(zap);
   void BlockTrampolinePoolFor(int instructions);
   void CheckTrampolinePool();
 
+ public:
+  byte* buffer_pos() const { return buffer_; }
+
  protected:
   // Relocation for a type-recording IC has the AST id added to it.  This
   // member variable is a way to pass the information from the call site to
