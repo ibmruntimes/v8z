@@ -1756,23 +1756,6 @@ void Assembler::rr_form(Opcode op, Register r1, Register r2) {
     emit2bytes(op*B8 | r1.code()*B4 | r2.code());
 }
 
-// RR2 format: <insn> M1,R2
-//    +--------+----+----+
-//    | OpCode | M1 | R2 |
-//    +--------+----+----+
-//    0        8    12  15
-#define RR2_FORM_EMIT(name, op) \
-void Assembler::name(Condition m1, Register r2) { \
-    rr_form(op, m1, r2); \
-}
-void Assembler::rr_form(Opcode op, Condition m1, Register r2) {
-    ASSERT(is_uint8(op));
-    ASSERT(is_uint4(m1));
-    // ASSERT(is_uint4(r2.code()));
-    emit2bytes(op*B8 | m1*B4 | r2.code());
-}
-
-
 // RX format: <insn> R1,D2(X2,B2)
 //    +--------+----+----+----+-------------+
 //    | OpCode | R1 | X2 | B2 |     D2      |
