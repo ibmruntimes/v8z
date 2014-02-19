@@ -1803,7 +1803,7 @@ void Assembler::name(Register r, const Operand& i2) { \
 }
 void Assembler::ri_form(Opcode op, Register r1, const Operand& i2) {
     ASSERT(is_uint12(op));
-    ASSERT(is_int16(i2.imm_));
+    ASSERT(is_uint16(i2.imm_));
     emit4bytes((op & 0xFF0) * B20 |
              r1.code() * B20 |
              (op & 0xF) * B16 |
@@ -1822,7 +1822,7 @@ void Assembler::name(Condition m, const Operand& i2) {\
 void Assembler::ri_form(Opcode op, Condition m1, const Operand& i2) {
     ASSERT(is_uint12(op));
     ASSERT(is_uint4(m1));
-    ASSERT(is_int16(i2.imm_));
+    ASSERT(is_uint16(i2.imm_));
     emit4bytes((op & 0xFF0) * B20 |
              m1 * B20 |
              (op & 0xF) * B16 |
