@@ -1391,7 +1391,7 @@ class Instruction {
         return static_cast<Opcode>(*reinterpret_cast<uint16_t*>(instr));
       case TWO_BYTE_DISJOINT_OPCODE:
         // Two Bytes - Bits 0 to 7, 40 to 47
-        return static_cast<Opcode>((*instr << 8) || (*(instr+5) & 0xFF));
+        return static_cast<Opcode>((*instr << 8) | (*(instr+5) & 0xFF));
       case THREE_NIBBLE_OPCODE:
         // Three Nibbles - Bits 0 to 7, 12 to 15
         return static_cast<Opcode>((*instr << 4) | (*(instr+1) & 0xF));
