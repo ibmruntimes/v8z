@@ -304,6 +304,7 @@ enum Opcode {
   CLGEBR  = 0xB3AC,  // Convert To Logical (short BFP to 64)
   CLGF    = 0xE331,  // Compare Logical (64<-32)
   CLGFI   = 0xC2E,   // Compare Logical Immediate (64<-32)
+  CLGR    = 0xB921,  // Compare Logical (64)
   CLR     = 0x15,    // Compare Logical (32)
   CSST    = 0xC82,   // Compare And Swap And Store
   CSXTR   = 0xB3EB,  // Convert To Signed Packed (extended DFP to 128)
