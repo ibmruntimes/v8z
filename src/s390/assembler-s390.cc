@@ -1847,7 +1847,7 @@ void Assembler::rie_form(Opcode op, Register r1, Register r3,
     uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32       |
                     (static_cast<uint64_t>(r1.code())) * B36         |
                     (static_cast<uint64_t>(r3.code())) * B32         |
-                    (static_cast<uint64_t>(i2.imm_)) * B16 |
+                    (static_cast<uint64_t>(i2.imm_)) * B16           |
                     (static_cast<uint64_t>(op & 0x00FF));
     emit6bytes(code);
 }
@@ -1867,7 +1867,7 @@ void Assembler::ril_form(Opcode op, Register r1, const Operand& i2) {
     uint64_t code = (static_cast<uint64_t>(op & 0xFF0)) * B36        |
                     (static_cast<uint64_t>(r1.code())) * B36         |
                     (static_cast<uint64_t>(op & 0x00F)) * B32        |
-                    (static_cast<uint64_t>(i2.imm_));
+                    (static_cast<uint64_t>(i2.imm_) & 0xFFFFFFFF);
     emit6bytes(code);
 }
 
@@ -1884,9 +1884,9 @@ void Assembler::ril_form(Opcode op, Condition m1, const Operand& i2) {
     ASSERT(is_uint12(op));
     ASSERT(is_uint4(m1));
     uint64_t code = (static_cast<uint64_t>(op & 0xFF0)) * B36        |
-                    (static_cast<uint64_t>(m1)) * B36        |
+                    (static_cast<uint64_t>(m1)) * B36                |
                     (static_cast<uint64_t>(op & 0x00F)) * B32        |
-                    (static_cast<uint64_t>(i2.imm_));
+                    (static_cast<uint64_t>(i2.imm_ & 0xFFFFFFFF));
     emit6bytes(code);
 }
 
@@ -1985,7 +1985,7 @@ void Assembler::rsi_form(Opcode op, Register r1,
     uint64_t code = (static_cast<uint64_t>(op)) * B40                |
                     (static_cast<uint64_t>(r1.code() )) * B36        |
                     (static_cast<uint64_t>(r3.code() )) * B32        |
-                    (static_cast<uint64_t>(i2.imm_));
+                    (static_cast<uint64_t>(i2.imm_ & 0xFFFFFFFF));
     emit6bytes(code);
 }
 
