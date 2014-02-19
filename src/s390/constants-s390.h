@@ -127,6 +127,9 @@ inline Condition ReverseCondition(Condition cond) {
 // Instruction objects are pointers to 32bit values, and provide methods to
 // access the various ISA fields.
 typedef int32_t Instr;
+typedef int16_t TwoByteInstr;
+typedef int32_t FourByteInstr;
+typedef int64_t SixByteInstr;
 
 // Opcodes as defined in Appendix B-2 table
 enum Opcode {
@@ -1258,15 +1261,6 @@ const Instr rtCallRedirInstr = TWI;
 // -----------------------------------------------------------------------------
 // Instruction abstraction.
 
-// S390 Opcode Format Types
-//   Based on the first byte of the opcode, we can determine how to extract
-//   the entire opcode of the instruction.  The various favours include:
-enum OpcodeFormatType {
-  ONE_BYTE_OPCODE,            // One Byte - Bits 0 to 7
-  TWO_BYTE_OPCODE,            // Two Bytes - Bits 0 to 15
-  TWO_BYTE_DISJOINT_OPCODE,   // Two Bytes - Bits 0 to 7, 40 to 47
-  THREE_NIBBLE_OPCODE         // Three Nibbles - Bits 0 to 7, 12 to 15
-};
 
 // The class Instruction enables access to individual fields defined in the PPC
 // architecture instruction set encoding.
@@ -1287,6 +1281,16 @@ class Instruction {
     kInstrSize = 4,
     kInstrSizeLog2 = 2,
     kPCReadOffset = 8
+  };
+
+  // S390 Opcode Format Types
+  //   Based on the first byte of the opcode, we can determine how to extract
+  //   the entire opcode of the instruction.  The various favours include:
+  enum OpcodeFormatType {
+    ONE_BYTE_OPCODE,            // One Byte - Bits 0 to 7
+    TWO_BYTE_OPCODE,            // Two Bytes - Bits 0 to 15
+    TWO_BYTE_DISJOINT_OPCODE,   // Two Bytes - Bits 0 to 7, 40 to 47
+    THREE_NIBBLE_OPCODE         // Three Nibbles - Bits 0 to 7, 12 to 15
   };
 
   // Helper macro to define static accessors.
@@ -1343,12 +1347,12 @@ class Instruction {
   }
 
   // Determine the instruction length on given instruction
-  static int getInstructionLength(byte *instr) {
+  inline int InstructionLength() {
     // Length can be determined by the first nibble.
     // 0x0 to 0x3 => 2-bytes
     // 0x4 to 0xB => 4-bytes
     // 0xC to 0xF => 6-bytes
-    byte topNibble = (*instr >> 4) & 0xF;
+    byte topNibble = (*reinterpret_cast<const byte*>(this) >> 4) & 0xF;
     if (topNibble <= 3)
       return 2;
     else if (topNibble <= 0xB)
@@ -1357,8 +1361,8 @@ class Instruction {
   }
 
   // Get Instruction Format Type
-  static OpcodeFormatType getOpcodeFormatType(byte *instr) {
-    byte firstByte = *instr;
+  OpcodeFormatType getOpcodeFormatType() {
+    byte firstByte = *reinterpret_cast<const byte*>(this);
     // Based on Figure B-3 in z/Architecture Principles of
     // Operation.
 
@@ -1393,20 +1397,21 @@ class Instruction {
        return THREE_NIBBLE_OPCODE;
      }
      // Remaining ones are all TWO_BYTE_DISJOINT OPCODES.
-     ASSERT(getInstructionLength(instr) == 6);
+     ASSERT(InstructionLength() == 6);
      return TWO_BYTE_DISJOINT_OPCODE;
   }
 
   // Extract the full opcode from the instruction.
-  static Opcode extractOpcode(byte *instr) {
-    OpcodeFormatType opcodeType = getOpcodeFormatType(instr);
+  Opcode S390OpcodeValue() {
+    OpcodeFormatType opcodeType = getOpcodeFormatType();
+    const byte *instr = reinterpret_cast<const byte *>(this);
     switch (opcodeType) {
       case ONE_BYTE_OPCODE:
         // One Byte - Bits 0 to 7
         return static_cast<Opcode>(*instr);
       case TWO_BYTE_OPCODE:
         // Two Bytes - Bits 0 to 15
-        return static_cast<Opcode>(*reinterpret_cast<uint16_t*>(instr));
+        return static_cast<Opcode>(*reinterpret_cast<uint16_t*>(this));
       case TWO_BYTE_DISJOINT_OPCODE:
         // Two Bytes - Bits 0 to 7, 40 to 47
         return static_cast<Opcode>((*instr << 8) | (*(instr+5) & 0xFF));
