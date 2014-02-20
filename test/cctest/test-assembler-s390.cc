@@ -1118,6 +1118,10 @@ TEST(13) {
 
   __ cgrb(r15, r15, r15, 0x123, al);         // RRS FORMAT
   __ ar(r0, r0);                             // add 2 bytes to align
+  __ cib(r15, al, r15, 0x123,                // RIS FORMAT
+         Operand(0x45));
+  __ ar(r0, r0);                             // add 2 bytes to align
+  __ lfpc(r15, 0xFFF);                       // S FORMAT
 
   bufPos += 48;
   OS::DebugBreak();
