@@ -2541,11 +2541,9 @@ RXY_FORM_EMIT(agf, AGF)
 RIL1_FORM_EMIT(agfi, AGFI)
 RRE_FORM_EMIT(agfr, AGFR)
 SIY_FORM_EMIT(agsi, AGSI)
-RX_FORM_EMIT(ah, AH)
 RRF1_FORM_EMIT(ahhhr, AHHHR)
 RRF1_FORM_EMIT(ahhlr, AHHLR)
 RIE_FORM_EMIT(ahik, AHIK)
-RXY_FORM_EMIT(ahy, AHY)
 RIL1_FORM_EMIT(aih, AIH)
 RX_FORM_EMIT(al_z, AL)
 RXY_FORM_EMIT(alc, ALC)
@@ -2558,14 +2556,10 @@ RXY_FORM_EMIT(algf, ALGF)
 RIL1_FORM_EMIT(algfi, ALGFI)
 RRE_FORM_EMIT(algfr, ALGFR)
 RIE_FORM_EMIT(alghsik, ALGHSIK)
-RRE_FORM_EMIT(algr, ALGR)
-RRF1_FORM_EMIT(algrk, ALGRK)
 SIY_FORM_EMIT(algsi, ALGSI)
 RRF1_FORM_EMIT(alhhhr, ALHHHR)
 RRF1_FORM_EMIT(alhhlr, ALHHLR)
 RIE_FORM_EMIT(alhsik, ALHSIK)
-RR_FORM_EMIT(alr, ALR)
-RRF1_FORM_EMIT(alrk, ALRK)
 SIY_FORM_EMIT(alsi, ALSI)
 RIL1_FORM_EMIT(alsih, ALSIH)
 RIL1_FORM_EMIT(alsihn, ALSIHN)
@@ -3344,6 +3338,16 @@ void Assembler::lgr(Register r1, Register r2) {
   rre_form(LGR, r1, r2);
 }
 
+// Add Halfword Register-Storage (32)
+void Assembler::ah(Register r1, const MemOperand& opnd) {
+  rx_form(AH, r1, opnd.rb(), opnd.ra(), opnd.offset());
+}
+
+// Add Halfword Register-Storage (32)
+void Assembler::ahy(Register r1, const MemOperand& opnd) {
+  rxy_form(AHY, r1, opnd.ra(), opnd.rb(), opnd.offset());
+}
+
 // Add Halfword Immediate (32)
 void Assembler::ahi(Register r1, const Operand& i2) {
   ri_form(AHI, r1, i2);
@@ -3352,6 +3356,26 @@ void Assembler::ahi(Register r1, const Operand& i2) {
 // Add Halfword Immediate (64)
 void Assembler::aghi(Register r1, const Operand& i2) {
   ri_form(AGHI, r1, i2);
+}
+
+// Add Logical Register-Storage (32)
+void Assembler::al(Register r1, const MemOperand& opnd) {
+  rx_form(AL, r1, opnd.rb(), opnd.ra(), opnd.offset());
+}
+
+// Add Logical Register-Storage (32)
+void Assembler::aly(Register r1, const MemOperand& opnd) {
+  rxy_form(ALY, r1, opnd.ra(), opnd.rb(), opnd.offset());
+}
+
+// Add Logical Register-Register (32)
+void Assembler::alr(Register r1, Register r2) {
+  rr_form(ALR, r1, r1);
+}
+
+// Add Logical Register-Register (64)
+void Assembler::algr(Register r1, Register r2) {
+  rre_form(ALGR, r1, r1);
 }
 
 // Load Halfword Immediate (32)
