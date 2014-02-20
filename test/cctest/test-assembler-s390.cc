@@ -1102,6 +1102,12 @@ TEST(13) {
 
   __ stcm(r15, al, r15, 0xFFF);              // RS2 FORMAT
   __ brxh(r15, r15, Operand(0xF12F));        // RSI FORMAT
+  __ cdzt(0xF, r15, 0xFFF);                  // RSL FORMAT
+  __ ar(r0, r0);                             // 4 byte align
+  __ cdsg(r15, r15, r15, 0x12345);           // RSY1 FORMAT
+  __ ar(r0, r0);                             // 4 byte align
+  __ stoc(r15, al, r15, 0x12345);            // RSY2 FORMAT
+  __ ar(r0, r0);                             // 4 byte align
 
   bufPos += 54;
   OS::DebugBreak();
