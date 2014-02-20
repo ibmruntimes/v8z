@@ -1075,4 +1075,37 @@ TEST(12) {
 }
 #endif  // roohack
 
+// Testing for instruction format
+TEST(13) {
+  Assembler assm(Isolate::Current(), NULL, 0);
+
+  __ svc(Operand(0xFF));                     // I FORMAT
+  // __ pfpo();                                 // E FORMAT
+  // __ niai(Operand(0xF), Operand(0xF));       // IE FORMAT
+  __ ar(r15, r15);                           // RR FORMAT
+  __ bcr(al, r15);                           // RR2 FORMAT
+  __ ah(r15, r15, r15, 0xFF);                // RX FORMAT
+  __ llihh(r15, Operand(0xFFFF));            // RI1 FORMAT
+  __ brc(al, Operand(0xFFFF));               // RI2 FORMAT
+  __ ahik(r15, r15, Operand(0xFFFF));        // RIE FORMAT
+  __ ar(r0, r0);                             // 4 byte align
+  __ afi(r15, Operand(0xF123321F));          // RIL1 FORMAT
+  __ ar(r0, r0);                             // 4 byte align
+  __ brcl(al, Operand(0xF123321F));          // RIL2 FORMAT
+  __ ar(r0, r0);                             // 4 byte align
+  __ adbr(r15, r15);                         // RRE FORMAT
+  __ madbr(r15, r15, r15);                   // RRD FORMAT
+  __ bxle(r15, r15, r15, 0xFFF);             // RS1 FORMAT
+
+  v8::internal::byte * bufPos = assm.buffer_pos();
+  // OS::DebugBreak();
+
+  __ stcm(r15, al, r15, 0xFFF);              // RS2 FORMAT
+
+  bufPos = assm.buffer_pos();
+  OS::DebugBreak();
+  ::exit(0);
+  ::printf("buffer position = %p", bufPos);
+}
+
 #undef __
