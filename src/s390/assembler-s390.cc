@@ -1976,10 +1976,10 @@ void Assembler::rs_form(Opcode op,
 }
 
 // RSI format: <insn> R1,R3,I2
-//    +--------+----+----+------------------------------------+
-//    | OpCode | R1 | R3 |                  I2                |
-//    +--------+----+----+------------------------------------+
-//    0        8    12   16                                  47
+//    +--------+----+----+------------------+
+//    | OpCode | R1 | R3 |        RI2       |
+//    +--------+----+----+------------------+
+//    0        8    12   16                 31
 #define RSI_FORM_EMIT(name, op)\
 void Assembler::name(Register r1, Register r3, const Operand& i2) {\
     rsi_form(op, r1, r3, i2);\
@@ -1987,11 +1987,9 @@ void Assembler::name(Register r1, Register r3, const Operand& i2) {\
 void Assembler::rsi_form(Opcode op, Register r1,
                            Register r3, const Operand& i2) {
     ASSERT(is_uint8(op));
-    uint64_t code = (static_cast<uint64_t>(op)) * B40                |
-                    (static_cast<uint64_t>(r1.code() )) * B36        |
-                    (static_cast<uint64_t>(r3.code() )) * B32        |
-                    (static_cast<uint64_t>(i2.imm_ & 0xFFFFFFFF));
-    emit6bytes(code);
+    ASSERT(is_uint16(i2.imm_));
+    emit4bytes(op * B24 | r1.code() * B20 | r3.code() * B16 |
+               (i2.imm_ & 0xFFFF));
 }
 
 // RSL format: <insn> R1,R3,D2(B2)
