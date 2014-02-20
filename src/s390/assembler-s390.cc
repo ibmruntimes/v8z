@@ -448,7 +448,7 @@ int Assembler::target_at(int pos)  {
     // Line commented out because S390 may jump to 2byte granularity!!
     // Masking with kAAMask|kLKMask will round to nearest 4 bytes, messing
     // up linked labels.
-    //imm16 &= ~(kAAMask|kLKMask);  // discard AA|LK bits if present
+    // imm16 &= ~(kAAMask|kLKMask);  // discard AA|LK bits if present
     if (imm16 == 0)
         return kEndOfChain;
     return pos + imm16;
@@ -1681,7 +1681,7 @@ void Assembler::fabs(const DwVfpRegister frt,
 void Assembler::nop(int type) {
   switch (type) {
     case 0:
-      lr(r0,r0);
+      lr(r0, r0);
       break;
     case DEBUG_BREAK_NOP:
       ori(r3, r3, Operand::Zero());
