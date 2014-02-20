@@ -127,9 +127,9 @@ inline Condition ReverseCondition(Condition cond) {
 // Instruction objects are pointers to 32bit values, and provide methods to
 // access the various ISA fields.
 typedef int32_t Instr;
-typedef int16_t TwoByteInstr;
-typedef int32_t FourByteInstr;
-typedef int64_t SixByteInstr;
+typedef uint16_t TwoByteInstr;
+typedef uint32_t FourByteInstr;
+typedef uint64_t SixByteInstr;
 
 // Opcodes as defined in Appendix B-2 table
 enum Opcode {
@@ -1307,6 +1307,10 @@ class Instruction {
   #define DECLARE_STATIC_ACCESSOR(Name) DECLARE_STATIC_TYPED_ACCESSOR(int, Name)
 
   // Get the raw instruction bits.
+  template<typename T>
+  inline T InstructionBits() const {
+    return *reinterpret_cast<const T*>(this);
+  }
   inline Instr InstructionBits() const {
     return *reinterpret_cast<const Instr*>(this);
   }

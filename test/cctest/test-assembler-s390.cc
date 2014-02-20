@@ -67,7 +67,9 @@ TEST(0) {
 #endif
 
   // __ add(r3, r3, r4);
-  __ ar(r1, r2);
+  __ lhi(r1, Operand(3));
+  __ llilf(r2, Operand(4));
+  __ ar(r2, r1);
   // __ blr();
   __ br(r14);
 
