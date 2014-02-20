@@ -109,6 +109,10 @@
     # Interpreted regexp engine exists as platform-independent alternative
     # based where the regular expression is compiled to a bytecode.
     'v8_interpreted_regexp%': 0,
+
+    # Temporarily workaround to disable natives
+    # @TODO Remove me and conditional below later.
+    'RUN_ASM%': 0,
   },
   'target_defaults': {
     'conditions': [
@@ -141,6 +145,9 @@
           'NATIVE_SIMULATION',
           'USE_SIMULATOR',
         ],
+      }],
+      ['RUN_ASM==1', {
+        'defines': ['RUN_ASM',],
       }],
       ['v8_target_arch=="arm"', {
         'defines': [

@@ -2361,7 +2361,13 @@ Genesis::Genesis(Isolate* isolate,
     if (!InitializeGlobal(inner_global, empty_function)) return;
     InstallJSFunctionResultCaches();
     InitializeNormalizedMapCaches();
+
+#ifndef RUN_ASM
+    // @TODO Disable natives temporarily until we get those
+    // working on S390 so we can run cctest test-assembler-s390
+    // stuff. Remove similar change in build/common.gypi
     if (!InstallNatives()) return;
+#endif
 
     MakeFunctionInstancePrototypeWritable();
 

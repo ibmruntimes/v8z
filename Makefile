@@ -39,6 +39,11 @@ ANDROID_V8 ?= /data/local/v8
 
 # Special build flags. Use them like this: "make library=shared"
 
+# @TODO Bypass Install natives to run test-assembler
+# Remove later
+ifdef RUN_ASM
+  GYPFLAGS += -DRUN_ASM=1
+endif
 # library=shared || component=shared_library
 ifeq ($(library), shared)
   GYPFLAGS += -Dcomponent=shared_library
