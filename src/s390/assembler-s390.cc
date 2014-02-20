@@ -2593,17 +2593,10 @@ RRF1_FORM_EMIT(axtra, AXTRA)
 RX_FORM_EMIT(bal, BAL)
 RR_FORM_EMIT(balr, BALR)
 RX_FORM_EMIT(bas, BAS)
-RR_FORM_EMIT(basr, BASR)
 RR_FORM_EMIT(bassm, BASSM)
 RX_FORM_EMIT(bc, BC)
-RX_FORM_EMIT(bct, BCT)
-RXY_FORM_EMIT(bctg, BCTG)
 RRE_FORM_EMIT(bctgr, BCTGR)
 RR_FORM_EMIT(bctr, BCTR)
-RI2_FORM_EMIT(bras, BRAS)
-RIL1_FORM_EMIT(brasl, BRASL)
-RI2_FORM_EMIT(brc, BRC)
-RIL2_FORM_EMIT(brcl, BRCL)
 RI2_FORM_EMIT(brct, BRCT)
 RI2_FORM_EMIT(brctg, BRCTG)
 RIL1_FORM_EMIT(brcth, BRCTH)
@@ -2614,7 +2607,6 @@ RIE_FORM_EMIT(brxlg, BRXLG)
 RR_FORM_EMIT(bsm, BSM)
 RS1_FORM_EMIT(bxle, BXLE)
 RSY1_FORM_EMIT(bxleg, BXLEG)
-RX_FORM_EMIT(c, C)
 RXE_FORM_EMIT(cdb, CDB)
 RRE_FORM_EMIT(cdbr, CDBR)
 RRE_FORM_EMIT(cdfbr, CDFBR)
@@ -2653,12 +2645,10 @@ RRF2_FORM_EMIT(cfdtr, CFDTR)
 RRF2_FORM_EMIT(cfebr, CFEBR)
 RRF2_FORM_EMIT(cfebra, CFEBRA)
 RRF2_FORM_EMIT(cfer, CFER)
-RIL1_FORM_EMIT(cfi, CFI)
 RRF2_FORM_EMIT(cfxbr, CFXBR)
 RRF2_FORM_EMIT(cfxbra, CFXBRA)
 RRF2_FORM_EMIT(cfxr, CFXR)
 RRF2_FORM_EMIT(cfxtr, CFXTR)
-RXY_FORM_EMIT(cg, CG)
 RRF2_FORM_EMIT(cgdbr, CGDBR)
 RRF2_FORM_EMIT(cgdbra, CGDBRA)
 RRF2_FORM_EMIT(cgdr, CGDR)
@@ -2677,7 +2667,6 @@ SIL_FORM_EMIT(cghsi, CGHSI)
 RIS_FORM_EMIT(cgib, CGIB)
 RIE_FORM_EMIT(cgij, CGIJ)
 RIE_FORM_EMIT(cgit, CGIT)
-RRE_FORM_EMIT(cgr, CGR)
 RRS_FORM_EMIT(cgrb, CGRB)
 RIE_FORM_EMIT(cgrj, CGRJ)
 RIL1_FORM_EMIT(cgrl, CGRL)
@@ -2687,20 +2676,17 @@ RRF2_FORM_EMIT(cgxbra, CGXBRA)
 RRF2_FORM_EMIT(cgxr, CGXR)
 RRF2_FORM_EMIT(cgxtr, CGXTR)
 RRF2_FORM_EMIT(cgxtra, CGXTRA)
-RX_FORM_EMIT(ch, CH)
 RXY_FORM_EMIT(chf, CHF)
 RRE_FORM_EMIT(chhr, CHHR)
 SIL_FORM_EMIT(chhsi, CHHSI)
 RRE_FORM_EMIT(chlr, CHLR)
 RIL1_FORM_EMIT(chrl, CHRL)
 SIL_FORM_EMIT(chsi, CHSI)
-RXY_FORM_EMIT(chy, CHY)
 RIS_FORM_EMIT(cib, CIB)
 RIL1_FORM_EMIT(cih, CIH)
 RIE_FORM_EMIT(cij, CIJ)
 RIE_FORM_EMIT(cit, CIT)
 RRE_FORM_EMIT(cksm, CKSM)
-RX_FORM_EMIT(cl, CL)
 SS1_FORM_EMIT(clc, CLC)
 RR_FORM_EMIT(clcl, CLCL)
 RS1_FORM_EMIT(clcle, CLCLE)
@@ -2753,7 +2739,6 @@ RRE_FORM_EMIT(cxstr, CXSTR)
 RRE_FORM_EMIT(cxtr, CXTR)
 RRE_FORM_EMIT(cxutr, CXUTR)
 RSL_FORM_EMIT(cxzt, CXZT)
-RXY_FORM_EMIT(cy, CY)
 RSL_FORM_EMIT(czdt, CZDT)
 RSL_FORM_EMIT(czxt, CZXT)
 RX_FORM_EMIT(d, D)
@@ -3382,6 +3367,14 @@ void Assembler::chi(Register r1, const Operand& i2) {
   ri_form(CHI, r1, i2);
 }
 
+void Assembler::ch(Register r1, const MemOperand& opnd) {
+  rx_form(CH, r1, opnd.rb(), opnd.ra(), opnd.offset());
+}
+
+void Assembler::chy(Register r1, const MemOperand& opnd) {
+  rxy_form(CHY, r1, opnd.ra(), opnd.rb(), opnd.offset());
+}
+
 void Assembler::cghi(Register r1, const Operand& i2) {
   ri_form(CGHI, r1, i2);
 }
@@ -3402,25 +3395,84 @@ void Assembler::clr(Register r1, Register r2) {
   rre_form(CLR, r1, r2);
 }
 
-void Assembler::st(Register dst, const MemOperand &src) {
-  int offset = src.offset();
+void Assembler::cl(Register r, const MemOperand& opnd) {
+  rx_form(CL, r, opnd.rb(), opnd.ra(), opnd.offset());
+}
+
+void Assembler::cly(Register r, const MemOperand& opnd) {
+  rxy_form(CLY, r, opnd.rb(), opnd.ra(), opnd.offset());
+}
+
+void Assembler::c(Register r, const MemOperand& opnd) {
+  rx_form(C, r, opnd.ra(), opnd.rb(), opnd.offset());
+}
+
+void Assembler::cy(Register r, const MemOperand& opnd) {
+  rxy_form(CY, r, opnd.rb(), opnd.ra(), opnd.offset());
+}
+
+void Assembler::cg(Register r, const MemOperand& opnd) {
+  rxy_form(CG, r, opnd.rb(), opnd.ra(), opnd.offset());
+}
+
+void Assembler::cr_z(Register r1, Register r2) {
+  rr_form(CR, r1, r2);
+}
+
+void Assembler::cgr(Register r1, Register r2) {
+  rr_form(CGR, r1, r2);
+}
+
+void Assembler::cfi(Register r, const Operand& opnd) {
+  ril_form(CFI, r, opnd);
+}
+
+void Assembler::bras(Register r, const Operand& opnd) {
+  ri_form(BRAS, r, opnd);
+}
+
+void Assembler::brasl(Register r, const Operand& opnd) {
+  ril_form(BRASL, r, opnd);
+}
+
+void Assembler::brc(Condition c, const Operand& opnd) {
+  ri_form(BRC, c, opnd);
+}
+
+void Assembler::basr(Register r1, Register r2) {
+  rr_form(BASR, r1, r2);
+}
+
+void Assembler::bct(Register r, const MemOperand& opnd) {
+  rx_form(BCT, r, opnd.ra(), opnd.rb(), opnd.offset());
+}
+
+void Assembler::bctg(Register r, const MemOperand& opnd) {
+  rxy_form(BCTG, r, opnd.rb(), opnd.ra(), opnd.offset());
+}
+
+void Assembler::brcl(Condition c, const Operand& opnd) {
+  ril_form(BRCL, c, opnd);
+}
+
+void Assembler::st(Register src, const MemOperand &dst) {
+  int offset = dst.offset();
   if (!is_uint12(offset)) {
     // @TODO Remove once things are clean....
     // Check limits... should check if STY is usable and replace at source.
     PrintF("ST offset exceeded limits = %" V8PRIdPTR ", 0x%" V8PRIxPTR "\n",
            offset, offset);
   }
-  rx_form(ST, dst, src.ra(), src.rb(), src.offset());
+  rx_form(ST, src, dst.ra(), dst.rb(), dst.offset());
 }
 
-void Assembler::stc(Register dst, const MemOperand &src) {
-  rx_form(STC, dst, src.ra(), src.rb(), src.offset());
+void Assembler::stc(Register src, const MemOperand &dst) {
+  rx_form(STC, src, dst.ra(), dst.rb(), dst.offset());
 }
 
-void Assembler::sty(Register dst, const MemOperand& src) {
-  rxy_form(STY, dst, src.rb(), src.ra(), src.offset());
+void Assembler::sty(Register src, const MemOperand& dst) {
+  rxy_form(STY, src, dst.rb(), dst.ra(), dst.offset());
 }
-
 // end of S390instructions
 
 
