@@ -2002,12 +2002,12 @@ void Assembler::name(Length l1, Register b2, Disp d2) {\
     rsl_form(op, l1, b2, d2);\
 }
 void Assembler::rsl_form(Opcode op, Length l1, Register b2, Disp d2) {
-    ASSERT(is_uint8(op));
-    uint64_t code = (static_cast<uint64_t>(op && 0xFF00)) * B32  |
+    ASSERT(is_uint16(op));
+    uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32   |
                     (static_cast<uint64_t>(l1)) * B36            |
                     (static_cast<uint64_t>(b2.code())) * B28     |
                     (static_cast<uint64_t>(d2)) * B16            |
-                    (static_cast<uint64_t>(op && 0x00FF));
+                    (static_cast<uint64_t>(op & 0x00FF));
     emit6bytes(code);
 }
 
@@ -2031,13 +2031,13 @@ void Assembler::rsy_form(Opcode op,
                         const Disp d2) {
     ASSERT(is_int20(d2));
     ASSERT(is_uint16(op));
-    uint64_t code = (static_cast<uint64_t>(op && 0xFF00)) * B32  |
+    uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32  |
                     (static_cast<uint64_t>(r1.code())) * B36     |
                     (static_cast<uint64_t>(r3.code())) * B32     |
                     (static_cast<uint64_t>(b2.code())) * B28     |
                     (static_cast<uint64_t>(d2 & 0x0FFF)) * B16   |
                     (static_cast<uint64_t>(d2 & 0x0FF000)) >> 4  |
-                    (static_cast<uint64_t>(op && 0x00FF));
+                    (static_cast<uint64_t>(op & 0x00FF));
     emit6bytes(code);
 }
 
@@ -2062,13 +2062,13 @@ void Assembler::rsy_form(Opcode op,
                         const Disp d2) {
     ASSERT(is_int20(d2));
     ASSERT(is_uint16(op));
-    uint64_t code = (static_cast<uint64_t>(op && 0xFF00)) * B32  |
+    uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32  |
                     (static_cast<uint64_t>(r1.code())) * B36     |
                     (static_cast<uint64_t>(m3)) * B32    |
                     (static_cast<uint64_t>(b2.code())) * B28     |
                     (static_cast<uint64_t>(d2 & 0x0FFF)) * B16   |
                     (static_cast<uint64_t>(d2 & 0x0FF000)) >> 4  |
-                    (static_cast<uint64_t>(op && 0x00FF));
+                    (static_cast<uint64_t>(op & 0x00FF));
     emit6bytes(code);
 }
 
@@ -2091,12 +2091,12 @@ void Assembler::rxe_form(Opcode op, Register r1, Register x2, Register b2,
                      Disp d2) {
     ASSERT(is_uint12(d2));
     ASSERT(is_uint16(op));
-    uint64_t code = (static_cast<uint64_t>(op && 0xFF00)) * B32  |
+    uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32  |
                     (static_cast<uint64_t>(r1.code())) * B36     |
                     (static_cast<uint64_t>(x2.code())) * B32     |
                     (static_cast<uint64_t>(b2.code())) * B28     |
                     (static_cast<uint64_t>(d2 & 0x0FFF)) * B16   |
-                    (static_cast<uint64_t>(op && 0x00FF));
+                    (static_cast<uint64_t>(op & 0x00FF));
     emit6bytes(code);
 }
 
@@ -2118,13 +2118,13 @@ void Assembler::rxy_form(Opcode op, Register r1, Register x2, Register b2,
                      Disp d2) {
     ASSERT(is_int20(d2));
     ASSERT(is_uint16(op));
-    uint64_t code = (static_cast<uint64_t>(op && 0xFF00)) * B32  |
+    uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32  |
                     (static_cast<uint64_t>(r1.code())) * B36     |
                     (static_cast<uint64_t>(x2.code())) * B32     |
                     (static_cast<uint64_t>(b2.code())) * B28     |
                     (static_cast<uint64_t>(d2 & 0x0FFF)) * B16   |
                     (static_cast<uint64_t>(d2 & 0x0FF000)) >> 4  |
-                    (static_cast<uint64_t>(op && 0x00FF));
+                    (static_cast<uint64_t>(op & 0x00FF));
     emit6bytes(code);
 }
 
@@ -2146,13 +2146,13 @@ void Assembler::rrs_form(Opcode op, Register r1, Register r2, Register b4,
                      Disp d4, Condition m3) {
     ASSERT(is_uint12(d4));
     ASSERT(is_uint16(op));
-    uint64_t code = (static_cast<uint64_t>(op && 0xFF00)) * B32  |
+    uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32  |
                     (static_cast<uint64_t>(r1.code())) * B36     |
                     (static_cast<uint64_t>(r2.code())) * B32     |
                     (static_cast<uint64_t>(b4.code())) * B28     |
                     (static_cast<uint64_t>(d4)) * B16            |
                     (static_cast<uint64_t>(m3)) << 12    |
-                    (static_cast<uint64_t>(op && 0x00FF));
+                    (static_cast<uint64_t>(op & 0x00FF));
     emit6bytes(code);
 }
 
@@ -2175,13 +2175,13 @@ void Assembler::ris_form(Opcode op, Register r1, Condition m3, Register b4, \
     ASSERT(is_uint12(d4));
     ASSERT(is_uint16(op));
     ASSERT(is_uint8(i2.imm_));
-    uint64_t code = (static_cast<uint64_t>(op && 0xFF00)) * B32  |
+    uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32  |
                     (static_cast<uint64_t>(r1.code())) * B36     |
                     (static_cast<uint64_t>(m3)) * B32    |
                     (static_cast<uint64_t>(b4.code())) * B28     |
                     (static_cast<uint64_t>(d4)) * B16            |
                     (static_cast<uint64_t>(i2.imm_)) << 8        |
-                    (static_cast<uint64_t>(op && 0x00FF));
+                    (static_cast<uint64_t>(op & 0x00FF));
     emit6bytes(code);
 }
 
@@ -2239,12 +2239,12 @@ void Assembler::siy_form(Opcode op, const Operand& i2, Register b1, \
     ASSERT(is_uint12(d1));
     ASSERT(is_uint16(op));
     ASSERT(is_uint8(i2.imm_));
-    uint64_t code = (static_cast<uint64_t>(op && 0xFF00)) * B32  |
+    uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32  |
                     (static_cast<uint64_t>(i2.imm_)) * B32       |
                     (static_cast<uint64_t>(b1.code())) * B28     |
                     (static_cast<uint64_t>(d1 & 0x0FFF)) * B16   |
                     (static_cast<uint64_t>(d1 & 0x0FF000)) >> 4  |
-                    (static_cast<uint64_t>(op && 0x00FF));
+                    (static_cast<uint64_t>(op & 0x00FF));
     emit6bytes(code);
 }
 
@@ -2297,7 +2297,7 @@ void Assembler::rxf_form(Opcode op, Register r1, Register r3, Register b2, \
                     (static_cast<uint64_t>(b2.code())) * B28     |
                     (static_cast<uint64_t>(d2))        * B16     |
                     (static_cast<uint64_t>(r1.code())) * B12     |
-                    (static_cast<uint64_t>(op && 0x00FF));
+                    (static_cast<uint64_t>(op & 0x00FF));
     emit6bytes(code);
 }
 
