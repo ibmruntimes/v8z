@@ -326,6 +326,8 @@ enum Opcode {
   CLGFI   = 0xC2E,   // Compare Logical Immediate (64<-32)
   CLGR    = 0xB921,  // Compare Logical (64)
   CLR     = 0x15,    // Compare Logical (32)
+  CLY     = 0xE355,  // Compare Logical (32)
+  CR      = 0x19,    // Compare (32)
   CSST    = 0xC82,   // Compare And Swap And Store
   CSXTR   = 0xB3EB,  // Convert To Signed Packed (extended DFP to 128)
   CSY     = 0xEB14,  // Compare And Swap (32)
