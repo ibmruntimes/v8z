@@ -631,6 +631,7 @@ enum Opcode {
   MSR     = 0xB252,  // Multiply Single (32)
   MSY     = 0xE351,  // Multiply Single (32)
   MVC     = 0xD2,    // Move (character)
+  MVCP    = 0xDA,    // Move To Primary
   MVCIN   = 0xE8,    // Move Inverse
   MVCL    = 0x0E,    // Move Long
   MVCLE   = 0xA8,    // Move Long Extended
