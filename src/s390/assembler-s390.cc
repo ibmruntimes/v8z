@@ -2104,7 +2104,7 @@ void Assembler::name(Register r1, const MemOperand& opnd) {\
 }
 void Assembler::rxy_form(Opcode op, Register r1, Register x2, Register b2,
                      Disp d2) {
-    ASSERT(is_uint20(d2));
+    ASSERT(is_int20(d2));
     ASSERT(is_uint16(op));
     uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32  |
                     (static_cast<uint64_t>(r1.code())) * B36     |
