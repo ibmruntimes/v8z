@@ -1122,6 +1122,10 @@ TEST(13) {
          Operand(0x45));
   __ ar(r0, r0);                             // add 2 bytes to align
   __ lfpc(r15, 0xFFF);                       // S FORMAT
+  __ mvi(Operand(0x12), r15, 0x123);         // SI FORMAT
+  __ agsi(Operand(0x12), r15, 0x12345);      // SIY FORMAT
+  __ ar(r0, r0);                             // add 2 bytes to align
+  __ chsi(r15, 0x123, Operand(0x4567));      // SIL FORMAT
 
   bufPos += 48;
   OS::DebugBreak();
