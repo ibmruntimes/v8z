@@ -724,7 +724,6 @@ void Assembler::bc(int branch_offset, BOfield bo, int condition_bit, LKBit lk) {
 
 void Assembler::b(int branch_offset, LKBit lk) {
   positions_recorder()->WriteRecordedPositions();
-  ASSERT((branch_offset & 3) == 0);
   int imm26 = branch_offset;
   ASSERT(is_int26(imm26));
   // todo add AA and LK bits
