@@ -1126,10 +1126,26 @@ TEST(13) {
   __ agsi(Operand(0x12), r15, 0x12345);      // SIY FORMAT
   __ ar(r0, r0);                             // add 2 bytes to align
   __ chsi(r15, 0x123, Operand(0x4567));      // SIL FORMAT
+  __ ar(r0, r0);                             // add 2 bytes to align
+  __ madb(r15, r15, r15, r15, 0x123);        // RXF FORMAT
+  __ ar(r0, r0);                             // add 2 bytes to align
+  __ clc(0x12, r15, 0x456, r15, 0x789);      // SS1 FORMAT
+  __ ar(r0, r0);                             // add 2 bytes to align
 
   bufPos += 48;
-  OS::DebugBreak();
+  // OS::DebugBreak();
 
+  __ mvo(0x1, 0x2, r15, 0x345, r15, 0x678);  // SS2 FORMAT
+  __ ar(r0, r0);                             // add 2 bytes to align
+  __ srp(0x1, Operand(0x2), r15,             // SS3 FORMAT
+         0x345, r15, 0x678);
+  __ ar(r0, r0);                             // add 2 bytes to align
+  __ mvcp(r15, r15, r15, 0x123,              // SS4 FORMAT
+          r15, 0x456);
+  __ ar(r0, r0);                             // add 2 bytes to align
+
+  bufPos += 56;
+  OS::DebugBreak();
   ::exit(0);
   ::printf("buffer position = %p", bufPos);
 }
