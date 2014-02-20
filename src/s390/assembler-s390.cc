@@ -2236,7 +2236,7 @@ void Assembler::name(const MemOperand& opnd, const Operand& i2) {\
 }
 void Assembler::siy_form(Opcode op, const Operand& i2, Register b1, \
                      Disp d1) {
-    ASSERT(is_uint12(d1));
+    ASSERT(is_uint20(d1));
     ASSERT(is_uint16(op));
     ASSERT(is_uint8(i2.imm_));
     uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32  |
