@@ -1681,7 +1681,7 @@ void Assembler::fabs(const DwVfpRegister frt,
 void Assembler::nop(int type) {
   switch (type) {
     case 0:
-      ori(r0, r0, Operand::Zero());
+      lr(r0,r0);
       break;
     case DEBUG_BREAK_NOP:
       ori(r3, r3, Operand::Zero());
