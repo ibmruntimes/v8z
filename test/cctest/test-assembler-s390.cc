@@ -1171,6 +1171,7 @@ TEST(14) {
 
   v8::internal::byte * bufPos = assm.buffer_pos();
   ::printf("buffer position = %p", bufPos);
+  ::fflush(stdout);
   OS::DebugBreak();
 
   ::exit(0);
