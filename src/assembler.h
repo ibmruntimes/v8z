@@ -854,6 +854,7 @@ inline bool is_uint8(int x)  { return is_uintn(x, 8); }
 inline bool is_uint10(int x)  { return is_uintn(x, 10); }
 inline bool is_uint12(int x)  { return is_uintn(x, 12); }
 inline bool is_uint16(int x)  { return is_uintn(x, 16); }
+inline bool is_uint20(int x)  { return is_uintn(x, 20); }
 inline bool is_uint24(int x)  { return is_uintn(x, 24); }
 inline bool is_uint26(int x)  { return is_uintn(x, 26); }
 inline bool is_uint28(int x)  { return is_uintn(x, 28); }
