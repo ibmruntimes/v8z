@@ -1101,8 +1101,9 @@ TEST(13) {
   // OS::DebugBreak();
 
   __ stcm(r15, al, r15, 0xFFF);              // RS2 FORMAT
+  __ brxh(r15, r15, Operand(0xF12F));        // RSI FORMAT
 
-  bufPos = assm.buffer_pos();
+  bufPos += 54;
   OS::DebugBreak();
   ::exit(0);
   ::printf("buffer position = %p", bufPos);
