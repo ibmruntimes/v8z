@@ -868,7 +868,6 @@ void Assembler::divw(Register dst, Register src1, Register src2,
 }
 
 void Assembler::addi(Register dst, Register src, const Operand& imm) {
-  ASSERT(!src.is(r0));  // use li instead to show intent
   d_form(ADDI, dst, src, imm.imm_, true);
 }
 
