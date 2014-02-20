@@ -1108,4 +1108,27 @@ TEST(13) {
   ::printf("buffer position = %p", bufPos);
 }
 
+
+TEST(14) {
+  Assembler assm(Isolate::Current(), NULL, 0);
+  __ ar(r15, r15);
+  __ sr(r15, r15);
+  __ mr_z(r15, r15);
+  __ dr(r15, r15);
+  __ or_z(r15, r15);
+  __ nr(r15, r15);
+  __ xr(r15, r15);
+
+  __ agr(r15, r15);
+  __ sgr(r15, r15);
+  __ ogr(r15, r15);
+  __ ngr(r15, r15);
+  __ xgr(r15, r15);
+
+  v8::internal::byte * bufPos = assm.buffer_pos();
+  ::printf("buffer position = %p", bufPos);
+  OS::DebugBreak();
+
+  ::exit(0);
+}
 #undef __
