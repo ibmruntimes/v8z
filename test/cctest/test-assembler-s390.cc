@@ -1114,7 +1114,14 @@ TEST(13) {
   __ ar(r0, r0);                             // add 2 bytes to align
 
   bufPos += 54;
+  // OS::DebugBreak();
+
+  __ cgrb(r15, r15, r15, 0x123, al);         // RRS FORMAT
+  __ ar(r0, r0);                             // add 2 bytes to align
+
+  bufPos += 48;
   OS::DebugBreak();
+
   ::exit(0);
   ::printf("buffer position = %p", bufPos);
 }
