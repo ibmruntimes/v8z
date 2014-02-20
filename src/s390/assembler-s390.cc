@@ -434,13 +434,21 @@ int Assembler::target_at(int pos)  {
   int opcode = instr & kOpcodeMask;
   if (BX == opcode) {
     int imm26 = ((instr & kImm26Mask) << 6) >> 6;
-    imm26 &= ~(kAAMask|kLKMask);  // discard AA|LK bits if present
+    // @TODO to be removed.
+    // Line commented out because S390 may jump to 2byte granularity!!
+    // Masking with kAAMask|kLKMask will round to nearest 4 bytes, messing
+    // up linked labels.
+    // imm26 &= ~(kAAMask|kLKMask);  // PPC discard AA|LK bits if present
     if (imm26 == 0)
         return kEndOfChain;
     return pos + imm26;
   } else if (BCX == opcode) {
     int imm16 = SIGN_EXT_IMM16((instr & kImm16Mask));
-    imm16 &= ~(kAAMask|kLKMask);  // discard AA|LK bits if present
+    // @TODO to be removed.
+    // Line commented out because S390 may jump to 2byte granularity!!
+    // Masking with kAAMask|kLKMask will round to nearest 4 bytes, messing
+    // up linked labels.
+    //imm16 &= ~(kAAMask|kLKMask);  // discard AA|LK bits if present
     if (imm16 == 0)
         return kEndOfChain;
     return pos + imm16;
