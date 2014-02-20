@@ -957,8 +957,19 @@ void Decoder::DecodeExt5(Instruction* instr) {
 // Disassembles Two Byte S390 Instructions
 // @return true if successfully decoded
 bool Decoder::DecodeTwoByte(Instruction* instr) {
+  // Print the Instruction bits.
+  out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
+                                  "%04x           ",
+                                  instr->InstructionBits<TwoByteInstr>());
+
   Opcode opcode = instr->S390OpcodeValue();
   switch (opcode) {
+    case AR:
+      Format(instr, "ar");
+      break;
+    case BCR:
+      Format(instr, "bcr");
+      break;
     case OR:
       Format(instr, "or");
       break;
@@ -971,8 +982,16 @@ bool Decoder::DecodeTwoByte(Instruction* instr) {
 // Disassembles Four Byte S390 Instructions
 // @return true if successfully decoded
 bool Decoder::DecodeFourByte(Instruction* instr) {
+  // Print the Instruction bits.
+  out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
+                                  "%08x       ",
+                                  instr->InstructionBits<FourByteInstr>());
+
   Opcode opcode = instr->S390OpcodeValue();
   switch (opcode) {
+    case LHI:
+      Format(instr, "lhi");
+      break;
     case STM:
       Format(instr, "stm");
       break;
@@ -985,8 +1004,18 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
 // Disassembles Six Byte S390 Instructions
 // @return true if successfully decoded
 bool Decoder::DecodeSixByte(Instruction* instr) {
+  // Print the Instruction bits.
+  out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
+                                  "%012llx   ",
+                                  instr->InstructionBits<SixByteInstr>() >> 16);
+  // @TODO Need to fix that InstructionBits<SixByteInstr> to properly return
+  // the bits shifted properly.
+
   Opcode opcode = instr->S390OpcodeValue();
   switch (opcode) {
+    case LLILF:
+      Format(instr, "llilf");
+      break;
     case STMG:
       Format(instr, "stmg");
       break;
@@ -1004,6 +1033,7 @@ int Decoder::InstructionDecode(byte* instr_ptr) {
 
   // Try to decode as S390 instruction first.
   bool processed = true;
+  int orig_out_buffer_pos_ = out_buffer_pos_;
   int instrLength = instr->InstructionLength();
 
   if (instrLength == 2)
@@ -1018,6 +1048,10 @@ int Decoder::InstructionDecode(byte* instr_ptr) {
   if (processed)
     return instrLength;
 
+
+  // S390 will try to print the bits.  If ppc instruction
+  // we'll reset it back to the original position.
+  out_buffer_pos_ = orig_out_buffer_pos_;
   // Print raw instruction bytes.
   out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
                                   "%08x       ",
