@@ -1088,11 +1088,11 @@ TEST(13) {
   __ llihh(r15, Operand(0xFFFF));            // RI1 FORMAT
   __ brc(al, Operand(0xFFFF));               // RI2 FORMAT
   __ ahik(r15, r15, Operand(0xFFFF));        // RIE FORMAT
-  __ ar(r0, r0);                             // 4 byte align
+  __ ar(r0, r0);                             // add 2 bytes to align
   __ afi(r15, Operand(0xF123321F));          // RIL1 FORMAT
-  __ ar(r0, r0);                             // 4 byte align
+  __ ar(r0, r0);                             // add 2 bytes to align
   __ brcl(al, Operand(0xF123321F));          // RIL2 FORMAT
-  __ ar(r0, r0);                             // 4 byte align
+  __ ar(r0, r0);                             // add 2 bytes to align
   __ adbr(r15, r15);                         // RRE FORMAT
   __ madbr(r15, r15, r15);                   // RRD FORMAT
   __ bxle(r15, r15, r15, 0xFFF);             // RS1 FORMAT
@@ -1103,11 +1103,15 @@ TEST(13) {
   __ stcm(r15, al, r15, 0xFFF);              // RS2 FORMAT
   __ brxh(r15, r15, Operand(0xF12F));        // RSI FORMAT
   __ cdzt(0xF, r15, 0xFFF);                  // RSL FORMAT
-  __ ar(r0, r0);                             // 4 byte align
+  __ ar(r0, r0);                             // add 2 bytes to align
   __ cdsg(r15, r15, r15, 0x12345);           // RSY1 FORMAT
-  __ ar(r0, r0);                             // 4 byte align
+  __ ar(r0, r0);                             // add 2 bytes to align
   __ stoc(r15, al, r15, 0x12345);            // RSY2 FORMAT
-  __ ar(r0, r0);                             // 4 byte align
+  __ ar(r0, r0);                             // add 2 bytes to align
+  __ adb(r15, r15, r15, 0xFFF);              // RXE FORMAT
+  __ ar(r0, r0);                             // add 2 bytes to align
+  __ agf(r15, r15, r15, 0x12345);            // RXY FORMAT
+  __ ar(r0, r0);                             // add 2 bytes to align
 
   bufPos += 54;
   OS::DebugBreak();
