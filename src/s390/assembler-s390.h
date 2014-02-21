@@ -1088,6 +1088,8 @@ RR_FORM(bsm);
 RS1_FORM(bxle);
 RSY1_FORM(bxleg);
 RX_FORM(c);
+RX_FORM(cd);
+RRE_FORM(cdr);
 RXE_FORM(cdb);
 RRE_FORM(cdbr);
 RRE_FORM(cdfbr);

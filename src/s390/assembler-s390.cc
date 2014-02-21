@@ -2530,8 +2530,6 @@ void Assembler::rrf3_form(uint32_t code) {
 // end of S390 Instruction generation
 
 // start of S390 instruction
-RXE_FORM_EMIT(adb, ADB)
-RRE_FORM_EMIT(adbr, ADBR)
 RRF1_FORM_EMIT(adtr, ADTR)
 RRF1_FORM_EMIT(adtra, ADTRA)
 RXE_FORM_EMIT(aeb, AEB)
@@ -2545,7 +2543,6 @@ RRF1_FORM_EMIT(ahhhr, AHHHR)
 RRF1_FORM_EMIT(ahhlr, AHHLR)
 RIE_FORM_EMIT(ahik, AHIK)
 RIL1_FORM_EMIT(aih, AIH)
-RX_FORM_EMIT(al_z, AL)
 RXY_FORM_EMIT(alc, ALC)
 RXY_FORM_EMIT(alcg, ALCG)
 RRE_FORM_EMIT(alcgr, ALCGR)
@@ -2563,7 +2560,6 @@ RIE_FORM_EMIT(alhsik, ALHSIK)
 SIY_FORM_EMIT(alsi, ALSI)
 RIL1_FORM_EMIT(alsih, ALSIH)
 RIL1_FORM_EMIT(alsihn, ALSIHN)
-RXY_FORM_EMIT(aly, ALY)
 SS2_FORM_EMIT(ap, AP)
 RRF1_FORM_EMIT(ark, ARK)
 SIY_FORM_EMIT(asi, ASI)
@@ -2587,8 +2583,6 @@ RIE_FORM_EMIT(brxlg, BRXLG)
 RR_FORM_EMIT(bsm, BSM)
 RS1_FORM_EMIT(bxle, BXLE)
 RSY1_FORM_EMIT(bxleg, BXLEG)
-RXE_FORM_EMIT(cdb, CDB)
-RRE_FORM_EMIT(cdbr, CDBR)
 RRE_FORM_EMIT(cdfbr, CDFBR)
 RRF2_FORM_EMIT(cdfbra, CDFBRA)
 RRE_FORM_EMIT(cdftr, CDFTR)
@@ -2721,8 +2715,6 @@ RSL_FORM_EMIT(cxzt, CXZT)
 RSL_FORM_EMIT(czdt, CZDT)
 RSL_FORM_EMIT(czxt, CZXT)
 RX_FORM_EMIT(d, D)
-RXE_FORM_EMIT(ddb, DDB)
-RRE_FORM_EMIT(ddbr, DDBR)
 RRF1_FORM_EMIT(ddtr, DDTR)
 RRF1_FORM_EMIT(ddtra, DDTRA)
 RXE_FORM_EMIT(deb, DEB)
@@ -2819,16 +2811,13 @@ RRE_FORM_EMIT(lcgfr, LCGFR)
 RRE_FORM_EMIT(lcgr, LCGR)
 RR_FORM_EMIT(lcr, LCR)
 RRE_FORM_EMIT(lcxbr, LCXBR)
-RX_FORM_EMIT(ld, LD)
 RXE_FORM_EMIT(ldeb, LDEB)
 RRE_FORM_EMIT(ldebr, LDEBR)
 RRF2_FORM_EMIT(ldetr, LDETR)
 RRE_FORM_EMIT(ldgr, LDGR)
-RR_FORM_EMIT(ldr, LDR)
 RRE_FORM_EMIT(ldxbr, LDXBR)
 RRF2_FORM_EMIT(ldxbra, LDXBRA)
 RRF2_FORM_EMIT(ldxtr, LDXTR)
-RXY_FORM_EMIT(ldy, LDY)
 RX_FORM_EMIT(le_z, LE)
 RRE_FORM_EMIT(ledbr, LEDBR)
 RRF2_FORM_EMIT(ledbra, LEDBRA)
@@ -2936,8 +2925,6 @@ RRD_FORM_EMIT(madbr, MADBR)
 RXF_FORM_EMIT(maeb, MAEB)
 RRD_FORM_EMIT(maebr, MAEBR)
 SI_FORM_EMIT(mc, MC)
-RXE_FORM_EMIT(mdb, MDB)
-RRE_FORM_EMIT(mdbr, MDBR)
 RXE_FORM_EMIT(mdeb, MDEB)
 RRE_FORM_EMIT(mdebr, MDEBR)
 RRF1_FORM_EMIT(mdtr, MDTR)
@@ -3037,8 +3024,6 @@ RIE_FORM_EMIT(rxsbg, RXSBG)
 S_FORM_EMIT(sal, SAL)
 RRE_FORM_EMIT(sar, SAR)
 S_FORM_EMIT(schm, SCHM)
-RXE_FORM_EMIT(sdb, SDB)
-RRE_FORM_EMIT(sdbr, SDBR)
 RRF1_FORM_EMIT(sdtr, SDTR)
 RRF1_FORM_EMIT(sdtra, SDTRA)
 RXE_FORM_EMIT(seb, SEB)
@@ -3113,8 +3098,6 @@ RSY2_FORM_EMIT(stcmy, STCMY)
 S_FORM_EMIT(stcps, STCPS)
 S_FORM_EMIT(stcrw, STCRW)
 RXY_FORM_EMIT(stcy, STCY)
-RX_FORM_EMIT(std, STD)
-RXY_FORM_EMIT(stdy, STDY)
 RX_FORM_EMIT(ste, STE)
 RXY_FORM_EMIT(stey, STEY)
 RXY_FORM_EMIT(stfh, STFH)
@@ -3359,7 +3342,7 @@ void Assembler::aghi(Register r1, const Operand& i2) {
 }
 
 // Add Logical Register-Storage (32)
-void Assembler::al(Register r1, const MemOperand& opnd) {
+void Assembler::al_z(Register r1, const MemOperand& opnd) {
   rx_form(AL, r1, opnd.rb(), opnd.ra(), opnd.offset());
 }
 
@@ -3569,6 +3552,85 @@ void Assembler::stg(Register rs, const MemOperand &src) {
   emit(STD_ppc | rs.code()*B21 | src.ra().code()*B16 | offset);
 }
 #endif
+
+// Floating point instructions
+// @TODO we should use floating point registers here.
+
+// Add Register-Storage (LB)
+void Assembler::adb(Register r1, const MemOperand& opnd) {
+  rxe_form(ADB, r1, opnd.rb(), opnd.ra(), opnd.offset());
+}
+
+// Add Register-Register (LB)
+void Assembler::adbr(Register r1, Register r2) {
+  rre_form(ADBR, r1, r2);
+}
+
+// Compare Register-Storage (LB)
+void Assembler::cd(Register r1, const MemOperand& opnd) {
+  rx_form(CD, r1, opnd.ra(), opnd.rb(), opnd.offset());
+}
+
+// Compare Register-Register (LB)
+void Assembler::cdr(Register r1, Register r2) {
+  rr_form(CDR, r1, r2);
+}
+
+// Divide Register-Storage (LB)
+void Assembler::ddb(Register r1, const MemOperand& opnd) {
+  rxe_form(DDB, r1, opnd.ra(), opnd.rb(), opnd.offset());
+}
+
+// Divide Register-Register (LB)
+void Assembler::ddbr(Register r1, Register r2) {
+  rre_form(DDBR, r1, r2);
+}
+
+// Multiply Register-Storage (LB)
+void Assembler::mdb(Register r1, const MemOperand& opnd) {
+  rxe_form(MDB, r1, opnd.ra(), opnd.rb(), opnd.offset());
+}
+
+// Multiply Register-Register (LB)
+void Assembler::mdbr(Register r1, Register r2) {
+  rre_form(MDBR, r1, r2);
+}
+
+// Subtract Register-Storage (LB)
+void Assembler::sdb(Register r1, const MemOperand& opnd) {
+  rxe_form(SDB, r1, opnd.ra(), opnd.rb(), opnd.offset());
+}
+
+// Subtract Register-Register (LB)
+void Assembler::sdbr(Register r1, Register r2) {
+  rre_form(SDBR, r1, r2);
+}
+
+// Store (L)
+void Assembler::std(Register r1, const MemOperand& opnd) {
+  rx_form(STD, r1, opnd.ra(), opnd.rb(), opnd.offset());
+}
+
+// Store (L)
+void Assembler::stdy(Register r1, const MemOperand& opnd) {
+  rxe_form(STDY, r1, opnd.ra(), opnd.rb(), opnd.offset());
+}
+
+// Load (L)
+void Assembler::ld(Register r1, const MemOperand& opnd) {
+  rx_form(LD, r1, opnd.ra(), opnd.rb(), opnd.offset());
+}
+
+// Load (L)
+void Assembler::ldy(Register r1, const MemOperand& opnd) {
+  rx_form(LDY, r1, opnd.ra(), opnd.rb(), opnd.offset());
+}
+
+// Load Register-Register (L)
+void Assembler::ldr(Register r1, Register r2) {
+  rr_form(LDR, r1, r2);
+}
+
 // end of S390instructions
 
 
