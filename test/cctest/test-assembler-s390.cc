@@ -1086,7 +1086,7 @@ TEST(13) {
   // __ niai(Operand(0xF), Operand(0xF));       // IE FORMAT
   __ ar(r15, r15);                           // RR FORMAT
   __ bcr(al, r15);                           // RR2 FORMAT
-  __ ah(r15, r15, r15, 0xFF);                // RX FORMAT
+  __ ah(r15, MemOperand(r15, r15, 0xFF));                // RX FORMAT
   __ llihh(r15, Operand(0xFFFF));            // RI1 FORMAT
   __ brc(al, Operand(0xFFFF));               // RI2 FORMAT
   __ ahik(r15, r15, Operand(0xFFFF));        // RIE FORMAT
@@ -1110,7 +1110,7 @@ TEST(13) {
   __ ar(r0, r0);                             // add 2 bytes to align
   __ stoc(r15, al, r15, 0x12345);            // RSY2 FORMAT
   __ ar(r0, r0);                             // add 2 bytes to align
-  __ adb(r15, r15, r15, 0xFFF);              // RXE FORMAT
+  __ adb(r15, MemOperand(r15, r15, 0xFFF));              // RXE FORMAT
   __ ar(r0, r0);                             // add 2 bytes to align
   __ agf(r15, r15, r15, 0x12345);            // RXY FORMAT
   __ ar(r0, r0);                             // add 2 bytes to align
