@@ -275,93 +275,14 @@ class MacroAssembler: public Assembler {
     }
   }
 
-  // S390 Macro assemblers, put them in header file for inlining
-  // because there is a choice of generating RX or RXY format inside,
-  // instead of putting them into macros, we make it functions.
-  void CompareRX(Register dst, const MemOperand& opnd) {
-    // make sure offset is within 20 bit range
-    ASSERT(is_int20(opnd.offset()));
-#ifdef V8_TARGET_ARCH_S390X
-    cg(dst, opnd);
-#else
-    if (is_uint12(opnd.offset()))
-      c(dst, opnd);
-    else
-      cy(dst, opnd);
-#endif
-  }
-
-  void CompareLogicalRX(Register dst, const MemOperand& opnd) {
-    ASSERT(is_int20(opnd.offset()));
-#ifdef V8_TARGET_ARCH_S390X
-    clg(dst, opnd);
-#else
-    if (is_uint12(opnd.offset()))
-      cl(dst, opnd);
-    else
-      cly(dst, opnd);
-#endif
-  }
-
-  void AddLogicalRX(Register dst, const MemOperand& opnd) {
-    ASSERT(is_int20(opnd.offset()));
-#ifdef V8_TARGET_ARCH_S390X
-    alg(dst, opnd);
-#else
-    if (is_uint12(opnd.offset()))
-      al_z(dst, opnd);
-    else
-      aly(dst, opnd);
-#endif
-  }
-
-  void AddRX(Register dst, const MemOperand& opnd) {
-    ASSERT(is_int20(opnd.offset()));
-#ifdef V8_TARGET_ARCH_S390X
-    ag(dst, opnd);
-#else
-    if (is_uint12(opnd.offset()))
-      a(dst, opnd);
-    else
-      ay(dst, opnd);
-#endif
-  }
-
-  void SubtractLogicalRX(Register dst, const MemOperand& opnd) {
-    ASSERT(is_int20(opnd.offset()));
-#ifdef V8_TARGET_ARCH_S390X
-    slg(dst, opnd);
-#else
-    if (is_uint12(opnd.offset()))
-      sl(dst, opnd);
-    else
-      sly(dst, opnd);
-#endif
-  }
-
-  void SubtractRX(Register dst, const MemOperand& opnd) {
-    ASSERT(is_int20(opnd.offset()));
-#ifdef V8_TARGET_ARCH_S390X
-    sg(dst, opnd);
-#else
-    if (is_uint12(opnd.offset()))
-      s(dst, opnd);
-    else
-      sy(dst, opnd);
-#endif
-  }
-
-  void AndRX(Register dst, const MemOperand& opnd) {
-    ASSERT(is_int20(opnd.offset()));
-#ifdef V8_TARGET_ARCH_S390X
-    ng(dst, opnd);
-#else
-    if (is_uint12(opnd.offset()))
-      n(dst, opnd);
-    else
-      ny(dst, opnd);
-#endif
-  }
+  // S390 Macro assemblers
+  void CompareRX(Register dst, const MemOperand& opnd);
+  void CompareLogicalRX(Register dst, const MemOperand& opnd);
+  void AddLogicalRX(Register dst, const MemOperand& opnd);
+  void AddRX(Register dst, const MemOperand& opnd);
+  void SubtractLogicalRX(Register dst, const MemOperand& opnd);
+  void SubtractRX(Register dst, const MemOperand& opnd);
+  void AndRX(Register dst, const MemOperand& opnd);
 
   // ---------------------------------------------------------------------------
   // GC Support
