@@ -276,7 +276,7 @@ class MacroAssembler: public Assembler {
   }
 
   // S390 Macro assemblers, put them in header file for inlining
-  // because there is a choice of generating RX or RXY format inside, 
+  // because there is a choice of generating RX or RXY format inside,
   // instead of putting them into macros, we make it functions.
   void CompareRX(Register dst, const MemOperand& opnd) {
     // make sure offset is within 20 bit range
@@ -310,7 +310,7 @@ class MacroAssembler: public Assembler {
 #else
     if (is_uint12(opnd.offset()))
       al_z(dst, opnd);
-    else 
+    else
       aly(dst, opnd);
 #endif
   }
@@ -322,7 +322,7 @@ class MacroAssembler: public Assembler {
 #else
     if (is_uint12(opnd.offset()))
       a(dst, opnd);
-    else 
+    else
       ay(dst, opnd);
 #endif
   }
