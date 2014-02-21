@@ -1507,6 +1507,7 @@ RS1_FORM(mvcle);
 RSY1_FORM(mvclu);
 SSF_FORM(mvcos);
 SS4_FORM(mvcp);
+SSE_FORM(mvcdk);
 SS4_FORM(mvcs);
 SIL_FORM(mvghi);
 SIL_FORM(mvhhi);

@@ -2427,7 +2427,7 @@ void Assembler::name(Register b1, Disp d1, Register b2, \
     sse_form(op, b1, d1, b2, d2);\
 }\
 void Assembler::name(const MemOperand& opnd1, const MemOperand& opnd2) {\
-    name(op, opnd1.getBaseRegister(), opnd1.getDisplacement(), \
+    name(opnd1.getBaseRegister(), opnd1.getDisplacement(), \
          opnd2.getBaseRegister(), opnd2.getDisplacement());\
 }
 void Assembler::sse_form(Opcode op, Register b1, Disp d1, Register b2,
@@ -2912,6 +2912,7 @@ RRE_FORM_EMIT(msr, MSR)
 RXY_FORM_EMIT(msy, MSY)
 SS1_FORM_EMIT(mvc, MVC)
 SS4_FORM_EMIT(mvcp, MVCP)
+SSE_FORM_EMIT(mvcdk, MVCDK)
 SS1_FORM_EMIT(mvcin, MVCIN)
 RR_FORM_EMIT(mvcl, MVCL)
 RS1_FORM_EMIT(mvcle, MVCLE)
