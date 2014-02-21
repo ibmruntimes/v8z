@@ -2742,11 +2742,9 @@ RRF2_FORM_EMIT(fixbra, FIXBRA)
 RRF2_FORM_EMIT(fixtr, FIXTR)
 RRE_FORM_EMIT(flogr, FLOGR)
 S_FORM_EMIT(hsch, HSCH)
-RX_FORM_EMIT(ic_z, IC_z)
 RS2_FORM_EMIT(icm, ICM)
 RSY2_FORM_EMIT(icmh, ICMH)
 RSY2_FORM_EMIT(icmy, ICMY)
-RXY_FORM_EMIT(icy, ICY)
 RRF1_FORM_EMIT(iedtr, IEDTR)
 RRF1_FORM_EMIT(iextr, IEXTR)
 RRE_FORM_EMIT(ipm, IPM)
@@ -2807,8 +2805,6 @@ RXY_FORM_EMIT(lfh, LFH)
 RXY_FORM_EMIT(lfhat, LFHAT)
 S_FORM_EMIT(lfpc, LFPC)
 RXY_FORM_EMIT(lgat, LGAT)
-RXY_FORM_EMIT(lgb, LGB)
-RRE_FORM_EMIT(lgbr, LGBR)
 RRE_FORM_EMIT(lgdr, LGDR)
 RXY_FORM_EMIT(lgf, LGF)
 RIL1_FORM_EMIT(lgfi, LGFI)
@@ -2997,10 +2993,6 @@ RXY_FORM_EMIT(sgf, SGF)
 RRE_FORM_EMIT(sgfr, SGFR)
 RRF1_FORM_EMIT(shhhr, SHHHR)
 RRF1_FORM_EMIT(shhlr, SHHLR)
-RX_FORM_EMIT(sl, SL)
-RS1_FORM_EMIT(sla, SLA)
-RSY1_FORM_EMIT(slag, SLAG)
-RSY1_FORM_EMIT(slak, SLAK)
 RXY_FORM_EMIT(slb, SLB)
 RXY_FORM_EMIT(slbg, SLBG)
 RRE_FORM_EMIT(slbgr, SLBGR)
@@ -3009,21 +3001,13 @@ RS1_FORM_EMIT(slda, SLDA)
 RS1_FORM_EMIT(sldl, SLDL)
 RXF_FORM_EMIT(sldt, SLDT)
 RIL1_FORM_EMIT(slfi, SLFI)
-RXY_FORM_EMIT(slg, SLG)
 RXY_FORM_EMIT(slgf, SLGF)
 RIL1_FORM_EMIT(slgfi, SLGFI)
 RRE_FORM_EMIT(slgfr, SLGFR)
-RRE_FORM_EMIT(slgr, SLGR)
 RRF1_FORM_EMIT(slgrk, SLGRK)
 RRF1_FORM_EMIT(slhhhr, SLHHHR)
 RRF1_FORM_EMIT(slhhlr, SLHHLR)
-RS1_FORM_EMIT(sll, SLL)
-RSY1_FORM_EMIT(sllg, SLLG)
-RSY1_FORM_EMIT(sllk, SLLK)
-RR_FORM_EMIT(slr, SLR)
-RRF1_FORM_EMIT(slrk, SLRK)
 RXF_FORM_EMIT(slxt, SLXT)
-RXY_FORM_EMIT(sly, SLY)
 SS2_FORM_EMIT(sp_z, SP)
 RR_FORM_EMIT(spm, SPM)
 RXE_FORM_EMIT(sqdb, SQDB)
@@ -3031,16 +3015,10 @@ RRE_FORM_EMIT(sqdbr, SQDBR)
 RXE_FORM_EMIT(sqeb, SQEB)
 RRE_FORM_EMIT(sqebr, SQEBR)
 RRE_FORM_EMIT(sqxbr, SQXBR)
-RS1_FORM_EMIT(sra, SRA)
-RSY1_FORM_EMIT(srag, SRAG)
-RSY1_FORM_EMIT(srak, SRAK)
 RS1_FORM_EMIT(srda, SRDA)
 RS1_FORM_EMIT(srdl, SRDL)
 RXF_FORM_EMIT(srdt, SRDT)
 RRF1_FORM_EMIT(srk, SRK)
-RS1_FORM_EMIT(srl, SRL)
-RSY1_FORM_EMIT(srlg, SRLG)
-RSY1_FORM_EMIT(srlk, SRLK)
 S_FORM_EMIT(srnm, SRNM)
 S_FORM_EMIT(srnmb, SRNMB)
 S_FORM_EMIT(srnmt, SRNMT)
@@ -3365,7 +3343,7 @@ void Assembler::aly(Register r1, const MemOperand& opnd) {
 
 // Add Logical (64)
 void Assembler::alg(Register r1, const MemOperand& opnd) {
-  rxy_form(ALG, opnd.rb(), opnd.ra(), opnd.offset());
+  rxy_form(ALG, r1, opnd.rb(), opnd.ra(), opnd.offset());
 }
 
 // Add Logical Register-Register (32)
@@ -3383,6 +3361,31 @@ void Assembler::alfi(Register r1, const Operand& opnd) {
   ril_form(ALFI, r1, opnd);
 }
 
+// Subtract Logical Register-Storage (32)
+void Assembler::sl(Register r1, const MemOperand& opnd) {
+  rx_form(SL, r1, opnd.rb(), opnd.ra(), opnd.offset());
+}
+
+// Subtract Logical Register-Storage (32)
+void Assembler::sly(Register r1, const MemOperand& opnd) {
+  rxy_form(SL, r1, opnd.rb(), opnd.ra(), opnd.offset());
+}
+
+// Subtract Logical Register-Storage (64)
+void Assembler::slg(Register r1, const MemOperand& opnd) {
+  rxy_form(SLG, r1, opnd.rb(), opnd.ra(), opnd.offset());
+}
+
+// Subtract Logical Register-Register (32)
+void Assembler::slr(Register r1, Register r2) {
+  rr_form(SLR, r1, r2);
+}
+
+// Subtract Logical Register-Register (64)
+void Assembler::slgr(Register r1, Register r2) {
+  rre_form(SLGR, r1, r2);
+}
+
 // Multiply Halfword Immediate (32)
 void Assembler::mhi(Register r1, const Operand& opnd) {
   ri_form(MHI, r1, opnd);
@@ -3396,7 +3399,7 @@ void Assembler::mghi(Register r1, const Operand& opnd) {
 
 // Load (32)
 void Assembler::l(Register r1, const MemOperand& opnd) {
-  rx_form(r1, opnd.rb(), opnd.ra(), opnd.offset());
+  rx_form(L, r1, opnd.rb(), opnd.ra(), opnd.offset());
 }
 
 // Load (32)
@@ -3467,6 +3470,46 @@ void Assembler::llhr(Register r1, Register r2) {
 // Load Logical halfword Register-Register (64)
 void Assembler::llghr(Register r1, Register r2) {
   rre_form(LLGHR, r1, r2);
+}
+
+// Shift Left Single Logical (32)
+void Assembler::sll(Register r1, Register r3, const MemOperand& opnd) {
+  rs_form(SLL, r1, r3, opnd.ra(), opnd.offset());
+}
+
+// Shift Left Single Logical (64)
+void Assembler::sllg(Register r1, Register r3, const MemOperand& opnd) {
+  rsy_form(SLLG, r1, r3, opnd.ra(), opnd.offset());
+}
+
+// Shift Right Single Logical (32)
+void Assembler::srl(Register r1, Register r3, const MemOperand& opnd) {
+  rs_form(SRL, r1, r3, opnd.ra(), opnd.offset());
+}
+
+// Shift Right Single Logical (64)
+void Assembler::srlg(Register r1, Register r3, const MemOperand& opnd) {
+  rsy_form(SRLG, r1, r3, opnd.ra(), opnd.offset());
+}
+
+// Shift Left Single (32)
+void Assembler::sla(Register r1, Register r3, const MemOperand& opnd) {
+  rs_form(SLA, r1, r3, opnd.ra(), opnd.offset());
+}
+
+// Shift Left Signle (64)
+void Assembler::slag(Register r1, Register r3, const MemOperand& opnd) {
+  rsy_form(SLAG, r1, r3, opnd.ra(), opnd.offset());
+}
+
+// Shift Right Single (32)
+void Assembler::sra(Register r1, Register r3, const MemOperand& opnd) {
+  rs_form(SRA, r1, r3, opnd.ra(), opnd.offset());
+}
+
+// Shift Right Signle (64)
+void Assembler::srag(Register r1, Register r3, const MemOperand& opnd) {
+  rsy_form(SRAG, r1, r3, opnd.ra(), opnd.offset());
 }
 
 // Compare Halfword Immediate (32)
@@ -3635,8 +3678,8 @@ void Assembler::stg(Register rs, const MemOperand &src) {
 #endif
 
 // Insert Character
-void Assembler::ic(Register r1, const MemOperand& opnd) {
-  rx_form(IC, r1, opnd.rb(), opnd.ra(), opnd.offset());
+void Assembler::ic_z(Register r1, const MemOperand& opnd) {
+  rx_form(IC_z, r1, opnd.rb(), opnd.ra(), opnd.offset());
 }
 
 // Insert Character
