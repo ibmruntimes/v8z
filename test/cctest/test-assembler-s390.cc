@@ -1154,6 +1154,9 @@ TEST(13) {
 
 
 TEST(14) {
+  InitializeVM();
+  v8::HandleScope scope;
+
   Assembler assm(Isolate::Current(), NULL, 0);
   __ ar(r15, r15);
   __ sr(r15, r15);
@@ -1172,7 +1175,18 @@ TEST(14) {
   v8::internal::byte * bufPos = assm.buffer_pos();
   ::printf("buffer position = %p", bufPos);
   ::fflush(stdout);
-  OS::DebugBreak();
+  // OS::DebugBreak();
+
+  CodeDesc desc;
+  assm.GetCode(&desc);
+  Object* code = HEAP->CreateCode(
+      desc,
+      Code::ComputeFlags(Code::STUB),
+      Handle<Object>(HEAP->undefined_value()))->ToObjectChecked();
+  CHECK(code->IsCode());
+#ifdef DEBUG
+  Code::cast(code)->Print();
+#endif
 
   ::exit(0);
 }
