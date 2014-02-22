@@ -1486,6 +1486,54 @@ class RRInstruction : Instruction {
   }
 };
 
+// RRE Instruction
+class RREInstruction : Instruction {
+  public:
+  inline int R1Value() const {
+    const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
+    return (*instr >> 4) & 0x0F;
+  }
+  inline int R2Value() const {
+    const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
+    return (*instr) & 0x0F;
+  }
+};
+
+// RI Instruction
+class RIInstruction : Instruction {
+  public:
+    inline int R1Value() const {
+      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
+      return (*instr >> 20) & 0x0F;
+    }
+    inline int I1Value() const {
+      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
+      return *instr & 0x0000FFFF;
+    }
+};
+
+// RX Instruction
+class RXInstruction : Instruction {
+  public:
+    inline int R1Value() const {
+      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
+      return (*instr >> 20) & 0x0F;
+    }
+    inline int X2Value() const {
+      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
+      return (*instr >> 16) & 0x0F;
+    }
+    inline int B2Value() const {
+      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
+      return (*instr >> 12) & 0x0F;
+    }
+    inline int D2Value() const {
+      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
+      return *instr & 0x0FFF;
+    }
+};
+
+
 // Helper functions for converting between register numbers and names.
 class Registers {
  public:
