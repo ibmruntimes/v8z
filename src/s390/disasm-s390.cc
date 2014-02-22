@@ -203,6 +203,17 @@ int Decoder::FormatRegister(Instruction* instr, const char* format) {
     int reg = instr->RBValue();
     PrintRegister(reg);
     return 2;
+  // S390 specific instructions
+  } else if (format[1] == '1') {  // 'r1: RR register r1
+    RRInstruction* rrinstr = reinterpret_cast<RRInstruction*>(instr);
+    int reg = rrinstr->R1Value();
+    PrintRegister(reg);
+    return 2;
+  } else if (format[1] == '2') {  // 'r2: RR register r2
+    RRInstruction* rrinstr = reinterpret_cast<RRInstruction*>(instr);
+    int reg = rrinstr->R2Value();
+    PrintRegister(reg);
+    return 2;
   }
 
   UNREACHABLE();
@@ -967,6 +978,11 @@ void Decoder::DecodeExt5(Instruction* instr) {
 
 // Disassembles Two Byte S390 Instructions
 // @return true if successfully decoded
+#define FORMAT_RR(name) Format(instr, #name"\t'r1,'r2")
+#define FORMAT_RR_CASE(name) \
+  case name:\
+    Format(instr, #name"\t'r1,'r2");\
+  break
 bool Decoder::DecodeTwoByte(Instruction* instr) {
   // Print the Instruction bits.
   out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
@@ -977,40 +993,40 @@ bool Decoder::DecodeTwoByte(Instruction* instr) {
   // @TODO should we have FormatRR that calls Format here?
   switch (opcode) {
     case AR:
-      Format(instr, "ar");
+      FORMAT_RR(ar);
       break;
     case SR:
-      Format(instr, "sr");
+      FORMAT_RR(sr);
       break;
     case MR:
-      Format(instr, "mr");
+      FORMAT_RR(mr);
       break;
     case DR:
-      Format(instr, "dr");
+      FORMAT_RR(dr);
       break;
     case OR:
-      Format(instr, "or");
+      FORMAT_RR(or);
       break;
     case NR:
-      Format(instr, "nr");
+      FORMAT_RR(nr);
       break;
     case XR:
-      Format(instr, "xr");
+      FORMAT_RR(xr);
       break;
     case LR:
-      Format(instr, "lr");
+      FORMAT_RR(lr);
       break;
     case LLHR:
-      Format(instr, "llhr");
+      FORMAT_RR(llhr);
       break;
     case CR:
-      Format(instr, "cr");
+      FORMAT_RR(cr);
       break;
     case CLR:
-      Format(instr, "clr");
+      FORMAT_RR(clr);
       break;
     case BCR:
-      Format(instr, "bcr");
+      FORMAT_RR(bcr);
       break;
     default:
       return false;
