@@ -1289,6 +1289,9 @@ class Instruction {
     kPCReadOffset = 8
   };
 
+  // the compiler should devirtualize it. @TODO verify this.
+  virtual int instrSize() { return 4; }
+
   // S390 Opcode Format Types
   //   Based on the first byte of the opcode, we can determine how to extract
   //   the entire opcode of the instruction.  The various favours include:
@@ -1473,6 +1476,14 @@ class Instruction {
   DISALLOW_IMPLICIT_CONSTRUCTORS(Instruction);
 };
 
+// RR Instruction
+class RRInstruction : Instruction {
+  int instrSize() { return 2; }
+  void output() { printf("ALANLI: output: %d04X\n", 
+        reinterpret_cast<const uint16_t *>(this); }
+  inline int R1Value() const { return Bits(11, 8); }
+  inline int R2Value() const { return Bits(15, 12); }
+}
 
 // Helper functions for converting between register numbers and names.
 class Registers {

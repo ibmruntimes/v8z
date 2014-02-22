@@ -386,6 +386,17 @@ void Decoder::Format(Instruction* instr, const char* format) {
   out_buffer_[out_buffer_pos_]  = '\0';
 }
 
+/*
+void Decoder::PrintRegister(Instruction* instr) {
+
+}
+
+void Decoder::FormatRR(Instruction *instr, const char* name) {
+  while (name) out_buffer_[out_buffer_pos_++] = name++;
+
+}
+*/
+
 
 // The disassembler may end up decoding data inlined in the code. We do not want
 // it to crash if the data does not ressemble any known instruction.
