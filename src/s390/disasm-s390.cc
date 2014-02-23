@@ -205,7 +205,7 @@ int Decoder::FormatRegister(Instruction* instr, const char* format) {
     int reg = instr->RBValue();
     PrintRegister(reg);
     return 2;
-  // S390 specific instructions
+  // S390 specific instructions, and they can be refactored
   } else if (format[1] == '1') {  // 'r1: register resides in bit 8-11
     RRInstruction* rrinstr = reinterpret_cast<RRInstruction*>(instr);
     int reg = rrinstr->R1Value();
@@ -219,6 +219,21 @@ int Decoder::FormatRegister(Instruction* instr, const char* format) {
   } else if (format[1] == '3') {  // 'r3: register resides in bit 16-19
     RSInstruction* rsinstr = reinterpret_cast<RSInstruction*>(instr);
     int reg = rsinstr->B2Value();
+    PrintRegister(reg);
+    return 2;
+  } else if (format[1] == '4') {  // 'r4: register resides in bit 20-23
+    RSInstruction* rsinstr = reinterpret_cast<RSInstruction*>(instr);
+    int reg = rsinstr->B2Value();
+    PrintRegister(reg);
+    return 2;
+  } else if (format[1] == '5') {  // 'r5: register resides in bit 24-28
+    RREInstruction* rreinstr = reinterpret_cast<RREInstruction*>(instr);
+    int reg = rreinstr->R1Value();
+    PrintRegister(reg);
+    return 2;
+  } else if (format[1] == '6') {  // 'r6: register resides in bit 29-32
+    RREInstruction* rreinstr = reinterpret_cast<RREInstruction*>(instr);
+    int reg = rreinstr->R2Value();
     PrintRegister(reg);
     return 2;
   }
@@ -415,6 +430,12 @@ int Decoder::FormatImmediate(Instruction *instr, const char* format) {
   } else if (format[1] == '2') {  // immediate in 16-48
     RILInstruction* rilinstr = reinterpret_cast<RILInstruction*>(instr);
     int16_t value = rilinstr->I2Value();
+    out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
+                                    "%d", value);
+    return 2;
+  } else if (format[1] == '3') {
+    IInstruction* iinstr = reinterpret_cast<IInstruction*>(instr);
+    int16_t value = iinstr->IValue();
     out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
                                     "%d", value);
     return 2;
@@ -1018,6 +1039,10 @@ void Decoder::DecodeExt5(Instruction* instr) {
   case OP:\
     Format(instr, #name"\t'r1,'r2");\
   break
+#define FORMAT_I_CASE(OP, name) \
+  case OP:\
+    Format(instr, #name"\t'i3");\
+  break
 bool Decoder::DecodeTwoByte(Instruction* instr) {
   // Print the Instruction bits.
   out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
@@ -1027,6 +1052,7 @@ bool Decoder::DecodeTwoByte(Instruction* instr) {
   Opcode opcode = instr->S390OpcodeValue();
   // @TODO should we have FormatRR that calls Format here?
   switch (opcode) {
+      FORMAT_I_CASE(SVC, svc);
       FORMAT_RR_CASE(AR, ar);
       FORMAT_RR_CASE(SR, sr);
       FORMAT_RR_CASE(MR, mr);
@@ -1057,6 +1083,10 @@ bool Decoder::DecodeTwoByte(Instruction* instr) {
   case OP:\
     Format(instr, #name"\t'r1,'r2,'d1('r3)");\
   break
+#define FORMAT_RRE_CASE(OP, name) \
+  case OP:\
+    Format(instr, #name"\t'r5,'r6");\
+  break
 // Disassembles Four Byte S390 Instructions
 // @return true if successfully decoded
 bool Decoder::DecodeFourByte(Instruction* instr) {
@@ -1069,6 +1099,11 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
   switch (opcode) {
       FORMAT_RI_CASE(LHI, lhi);
       FORMAT_RS_CASE(STM, stm);
+      FORMAT_RRE_CASE(AGR, agr);
+      FORMAT_RRE_CASE(SGR, sgr);
+      FORMAT_RRE_CASE(NGR, ngr);
+      FORMAT_RRE_CASE(OGR, ogr);
+      FORMAT_RRE_CASE(XGR, xgr);
     default:
       return false;
   }
