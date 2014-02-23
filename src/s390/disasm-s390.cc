@@ -979,8 +979,8 @@ void Decoder::DecodeExt5(Instruction* instr) {
 // Disassembles Two Byte S390 Instructions
 // @return true if successfully decoded
 #define FORMAT_RR(name) Format(instr, #name"\t'r1,'r2")
-#define FORMAT_RR_CASE(name) \
-  case name:\
+#define FORMAT_RR_CASE(OP, name) \
+  case OP:\
     Format(instr, #name"\t'r1,'r2");\
   break
 bool Decoder::DecodeTwoByte(Instruction* instr) {
@@ -992,42 +992,18 @@ bool Decoder::DecodeTwoByte(Instruction* instr) {
   Opcode opcode = instr->S390OpcodeValue();
   // @TODO should we have FormatRR that calls Format here?
   switch (opcode) {
-    case AR:
-      FORMAT_RR(ar);
-      break;
-    case SR:
-      FORMAT_RR(sr);
-      break;
-    case MR:
-      FORMAT_RR(mr);
-      break;
-    case DR:
-      FORMAT_RR(dr);
-      break;
-    case OR:
-      FORMAT_RR(or);
-      break;
-    case NR:
-      FORMAT_RR(nr);
-      break;
-    case XR:
-      FORMAT_RR(xr);
-      break;
-    case LR:
-      FORMAT_RR(lr);
-      break;
-    case LLHR:
-      FORMAT_RR(llhr);
-      break;
-    case CR:
-      FORMAT_RR(cr);
-      break;
-    case CLR:
-      FORMAT_RR(clr);
-      break;
-    case BCR:
-      FORMAT_RR(bcr);
-      break;
+      FORMAT_RR_CASE(AR, ar);
+      FORMAT_RR_CASE(SR, sr);
+      FORMAT_RR_CASE(MR, mr);
+      FORMAT_RR_CASE(DR, dr);
+      FORMAT_RR_CASE(OR, or);
+      FORMAT_RR_CASE(NR, nr);
+      FORMAT_RR_CASE(XR, xr);
+      FORMAT_RR_CASE(LR, lr);
+      FORMAT_RR_CASE(LLHR, llhr);
+      FORMAT_RR_CASE(CR, cr);
+      FORMAT_RR_CASE(CLR, clr);
+      FORMAT_RR_CASE(BCR, bcr);
     default:
       return false;
   }
