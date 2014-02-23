@@ -1473,6 +1473,16 @@ class Instruction {
   DISALLOW_IMPLICIT_CONSTRUCTORS(Instruction);
 };
 
+// I Instruction -- suspect this will not be used,
+// but implement for completeness
+class IInstruction : Instruction {
+  public:
+    inline int IValue() const {
+    const uint16_t *instr = reinterpret_cast<const uint16_t *>(this);
+    return *instr& 0x00FF;
+    }
+};
+
 // RR Instruction
 class RRInstruction : Instruction {
   public:
