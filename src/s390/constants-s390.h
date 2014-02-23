@@ -1527,9 +1527,45 @@ class RXInstruction : Instruction {
       const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
       return (*instr >> 12) & 0x0F;
     }
-    inline int D2Value() const {
+    inline uint32_t D2Value() const {
       const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
       return *instr & 0x0FFF;
+    }
+};
+
+// RXY Instruction
+class RXYInstruction : Instruction {
+  public:
+    inline int R1Value() const {
+      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
+      return (*instr >> 20) & 0x0F;
+    }
+    inline int X2Value() const {
+      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
+      return (*instr >> 16) & 0x0F;
+    }
+    inline int B2Value() const {
+      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
+      return (*instr >> 12) & 0x0F;
+    }
+    inline int32_t D2Value() const {
+      const uint64_t *instr = reinterpret_cast<const uint64_t *>(this);
+      int32_t value = (*instr >> 32) & 0x0FFF;
+      value &= ((*instr >> 40) & 0x00FF) << 12;
+      return value;
+    }
+};
+
+// RIL Instruction
+class RILInstruction : Instruction {
+  public:
+    inline int R1Value() const {
+      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
+      return (*instr >> 20) & 0x0F;
+    }
+    inline int32_t I2Value() const {
+      const uint64_t *instr = reinterpret_cast<const uint64_t *>(this);
+      return (*instr >> 16) & 0xFFFF;
     }
 };
 
