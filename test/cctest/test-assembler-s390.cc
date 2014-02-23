@@ -1079,6 +1079,8 @@ TEST(12) {
 
 // Testing for instruction format
 TEST(13) {
+  InitializeVM();
+  v8::HandleScope scope;
   Assembler assm(Isolate::Current(), NULL, 0);
 
   __ svc(Operand(0xFF));                     // I FORMAT
@@ -1152,9 +1154,21 @@ TEST(13) {
   __ ar(r0, r0);                             // add 2 bytes to align
 
   bufPos += 56;
-  OS::DebugBreak();
-  ::exit(0);
   ::printf("buffer position = %p", bufPos);
+  ::fflush(stdout);
+
+  CodeDesc desc;
+  assm.GetCode(&desc);
+  Object* code = HEAP->CreateCode(
+      desc,
+      Code::ComputeFlags(Code::STUB),
+      Handle<Object>(HEAP->undefined_value()))->ToObjectChecked();
+  CHECK(code->IsCode());
+#ifdef DEBUG
+  Code::cast(code)->Print();
+#endif
+
+  ::exit(0);
 }
 
 

@@ -1506,9 +1506,30 @@ class RIInstruction : Instruction {
       const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
       return (*instr >> 20) & 0x0F;
     }
-    inline int I1Value() const {
+    inline int I2Value() const {
       const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
       return *instr & 0x0000FFFF;
+    }
+};
+
+// RS Instruction
+class RSInstruction : Instruction {
+  public:
+    inline int R1Value() const {
+      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
+      return (*instr >> 20) & 0x0F;
+    }
+    inline int R3Value() const {
+      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
+      return (*instr >> 16) & 0x0F;
+    }
+    inline int B2Value() const {
+      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
+      return (*instr >> 12) & 0x0F;
+    }
+    inline unsigned int D2Value() const {
+      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
+      return *instr & 0x0FFF;
     }
 };
 
