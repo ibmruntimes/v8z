@@ -105,6 +105,8 @@ class Decoder {
 
   // Handle formatting of instructions and their options.
   int FormatRegister(Instruction* instr, const char* option);
+  int FormatDisplacement(Instruction* instr, const char* option);
+  int FormatImmediate(Instruction* instr, const char* option);
   int FormatOption(Instruction* instr, const char* option);
   void Format(Instruction* instr, const char* format);
   void Unknown(Instruction* instr);
@@ -204,14 +206,19 @@ int Decoder::FormatRegister(Instruction* instr, const char* format) {
     PrintRegister(reg);
     return 2;
   // S390 specific instructions
-  } else if (format[1] == '1') {  // 'r1: RR register r1
+  } else if (format[1] == '1') {  // 'r1: register resides in bit 8-11
     RRInstruction* rrinstr = reinterpret_cast<RRInstruction*>(instr);
     int reg = rrinstr->R1Value();
     PrintRegister(reg);
     return 2;
-  } else if (format[1] == '2') {  // 'r2: RR register r2
+  } else if (format[1] == '2') {  // 'r2: register resides in bit 12-15
     RRInstruction* rrinstr = reinterpret_cast<RRInstruction*>(instr);
     int reg = rrinstr->R2Value();
+    PrintRegister(reg);
+    return 2;
+  } else if (format[1] == '3') {  // 'r3: register resides in bit 16-19
+    RSInstruction* rsinstr = reinterpret_cast<RSInstruction*>(instr);
+    int reg = rsinstr->B2Value();
     PrintRegister(reg);
     return 2;
   }
@@ -273,10 +280,7 @@ int Decoder::FormatOption(Instruction* instr, const char* format) {
       return FormatFPRegister(instr, format);
     }
     case 'i': {  // int16
-      int32_t value = (instr->Bits(15, 0) << 16) >> 16;
-      out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
-                                      "%d", value);
-      return 5;
+      return FormatImmediate(instr, format);
     }
     case 'u': {  // uint16
       int32_t value = instr->Bits(15, 0);
@@ -362,14 +366,9 @@ int Decoder::FormatOption(Instruction* instr, const char* format) {
        return 2;
      }
     }
-#if V8_TARGET_ARCH_S390X
     case 'd': {  // ds value for offset
-      int32_t value = SIGN_EXT_IMM16(instr->Bits(15, 0) & ~3);
-      out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
-                                      "%d", value);
-      return 1;
+      return FormatDisplacement(instr, format);
     }
-#endif
     default: {
       UNREACHABLE();
       break;
@@ -380,6 +379,55 @@ int Decoder::FormatOption(Instruction* instr, const char* format) {
   return -1;
 }
 
+int Decoder::FormatDisplacement(Instruction* instr, const char* format) {
+  ASSERT(format[0] == 'd');
+
+  if (format[1] == '1') {  // displacement in 20-31
+    RSInstruction* rsinstr = reinterpret_cast<RSInstruction*>(instr);
+    uint16_t value = rsinstr->D2Value();
+    out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
+                                    "%d", value);
+
+    return 2;
+  } else if (format[1] == '2') {  // displacement in 20-39
+    RXYInstruction* rxyinstr = reinterpret_cast<RXYInstruction*>(instr);
+    int32_t value = rxyinstr->D2Value();
+    out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
+                                    "%d", value);
+    return 2;
+  } else {  // ppc specific
+      int32_t value = SIGN_EXT_IMM16(instr->Bits(15, 0) & ~3);
+      out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
+                                      "%d", value);
+      return 1;
+  }
+}
+
+int Decoder::FormatImmediate(Instruction *instr, const char* format) {
+  ASSERT(format[0] == 'i');
+
+  if (format[1] == '1') {  // immediate in 16-31
+    RIInstruction* riinstr = reinterpret_cast<RIInstruction*>(instr);
+    int16_t value = riinstr->I2Value();
+    out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
+                                    "%d", value);
+    return 2;
+  } else if (format[1] == '2') {  // immediate in 16-48
+    RILInstruction* rilinstr = reinterpret_cast<RILInstruction*>(instr);
+    int16_t value = rilinstr->I2Value();
+    out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
+                                    "%d", value);
+    return 2;
+  } else {
+    int32_t value = (instr->Bits(15, 0) << 16) >> 16;
+    out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
+        "%d", value);
+    return 5;
+  }
+
+  UNREACHABLE();
+  return -1;
+}
 
 // Format takes a formatting string for a whole instruction and prints it into
 // the output buffer. All escaped options are handed to FormatOption to be
@@ -396,18 +444,6 @@ void Decoder::Format(Instruction* instr, const char* format) {
   }
   out_buffer_[out_buffer_pos_]  = '\0';
 }
-
-/*
-void Decoder::PrintRegister(Instruction* instr) {
-
-}
-
-void Decoder::FormatRR(Instruction *instr, const char* name) {
-  while (name) out_buffer_[out_buffer_pos_++] = name++;
-
-}
-*/
-
 
 // The disassembler may end up decoding data inlined in the code. We do not want
 // it to crash if the data does not ressemble any known instruction.
@@ -978,7 +1014,6 @@ void Decoder::DecodeExt5(Instruction* instr) {
 
 // Disassembles Two Byte S390 Instructions
 // @return true if successfully decoded
-#define FORMAT_RR(name) Format(instr, #name"\t'r1,'r2")
 #define FORMAT_RR_CASE(OP, name) \
   case OP:\
     Format(instr, #name"\t'r1,'r2");\
@@ -1010,6 +1045,18 @@ bool Decoder::DecodeTwoByte(Instruction* instr) {
   return true;
 }
 
+#define FORMAT_RX_CASE(OP, name) \
+  case OP:\
+    Format(instr, #name"\t'd1('r2,'r3)");\
+  break
+#define FORMAT_RI_CASE(OP, name) \
+  case OP:\
+    Format(instr, #name"\t'r1,'i1");\
+  break
+#define FORMAT_RS_CASE(OP, name) \
+  case OP:\
+    Format(instr, #name"\t'r1,'r2,'d1('r3)");\
+  break
 // Disassembles Four Byte S390 Instructions
 // @return true if successfully decoded
 bool Decoder::DecodeFourByte(Instruction* instr) {
@@ -1020,18 +1067,22 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
 
   Opcode opcode = instr->S390OpcodeValue();
   switch (opcode) {
-    case LHI:
-      Format(instr, "lhi");
-      break;
-    case STM:
-      Format(instr, "stm");
-      break;
+      FORMAT_RI_CASE(LHI, lhi);
+      FORMAT_RS_CASE(STM, stm);
     default:
       return false;
   }
   return true;
 }
 
+#define FORMAT_RIL_CASE(OP, name) \
+  case OP:\
+    Format(instr, #name"\t'r1,'i2");\
+  break
+#define FORMAT_RSY_CASE(OP, name) \
+  case OP:\
+    Format(instr, #name"\t'r1,'r2,'d2('r3)");\
+  break
 // Disassembles Six Byte S390 Instructions
 // @return true if successfully decoded
 bool Decoder::DecodeSixByte(Instruction* instr) {
@@ -1044,12 +1095,8 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
 
   Opcode opcode = instr->S390OpcodeValue();
   switch (opcode) {
-    case LLILF:
-      Format(instr, "llilf");
-      break;
-    case STMG:
-      Format(instr, "stmg");
-      break;
+    FORMAT_RIL_CASE(LLILF, llilf);
+    FORMAT_RSY_CASE(STMG, stmg);
     default:
       return false;
   }
