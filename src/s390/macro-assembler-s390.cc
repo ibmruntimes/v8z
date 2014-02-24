@@ -45,20 +45,16 @@ namespace internal {
 
 // because there is a choice of generating RX or RXY format inside,
 // instead of putting them into macros, we make it functions.
-void MacroAssembler::CompareRX(Register dst, const MemOperand& opnd) {
+void MacroAssembler::Compare(Register dst, const MemOperand& opnd) {
   // make sure offset is within 20 bit range
   ASSERT(is_int20(opnd.offset()));
-#ifdef V8_TARGET_ARCH_S390X
-  cg(dst, opnd);
-#else
   if (is_uint12(opnd.offset()))
     c(dst, opnd);
   else
     cy(dst, opnd);
-#endif
 }
 
-void MacroAssembler::CompareLogicalRX(Register dst, const MemOperand& opnd) {
+void MacroAssembler::CompareLogical(Register dst, const MemOperand& opnd) {
   ASSERT(is_int20(opnd.offset()));
 #ifdef V8_TARGET_ARCH_S390X
   clg(dst, opnd);
@@ -70,7 +66,7 @@ void MacroAssembler::CompareLogicalRX(Register dst, const MemOperand& opnd) {
 #endif
 }
 
-void MacroAssembler::AddLogicalRX(Register dst, const MemOperand& opnd) {
+void MacroAssembler::AddLogical(Register dst, const MemOperand& opnd) {
   ASSERT(is_int20(opnd.offset()));
 #ifdef V8_TARGET_ARCH_S390X
   alg(dst, opnd);
@@ -82,19 +78,15 @@ void MacroAssembler::AddLogicalRX(Register dst, const MemOperand& opnd) {
 #endif
 }
 
-void MacroAssembler::AddRX(Register dst, const MemOperand& opnd) {
+void MacroAssembler::Add(Register dst, const MemOperand& opnd) {
   ASSERT(is_int20(opnd.offset()));
-#ifdef V8_TARGET_ARCH_S390X
-  ag(dst, opnd);
-#else
   if (is_uint12(opnd.offset()))
     a(dst, opnd);
   else
     ay(dst, opnd);
-#endif
 }
 
-void MacroAssembler::SubtractLogicalRX(Register dst, const MemOperand& opnd) {
+void MacroAssembler::SubtractLogical(Register dst, const MemOperand& opnd) {
   ASSERT(is_int20(opnd.offset()));
 #ifdef V8_TARGET_ARCH_S390X
   slg(dst, opnd);
@@ -106,28 +98,28 @@ void MacroAssembler::SubtractLogicalRX(Register dst, const MemOperand& opnd) {
 #endif
 }
 
-void MacroAssembler::SubtractRX(Register dst, const MemOperand& opnd) {
+void MacroAssembler::Subtract(Register dst, const MemOperand& opnd) {
   ASSERT(is_int20(opnd.offset()));
-#ifdef V8_TARGET_ARCH_S390X
-  sg(dst, opnd);
-#else
   if (is_uint12(opnd.offset()))
     s(dst, opnd);
   else
     sy(dst, opnd);
-#endif
 }
 
-void MacroAssembler::AndRX(Register dst, const MemOperand& opnd) {
+void MacroAssembler::And(Register dst, const MemOperand& opnd) {
   ASSERT(is_int20(opnd.offset()));
-#ifdef V8_TARGET_ARCH_S390X
-  ng(dst, opnd);
-#else
   if (is_uint12(opnd.offset()))
     n(dst, opnd);
   else
     ny(dst, opnd);
-#endif
+}
+
+void MacroAssembler::LoadImm(Register dst, const Operand& opnd) {
+  intptr_t value = opnd.immediate();
+  if (is_int16(value))
+      lhi(dst, opnd);
+  else
+    UNIMPLEMENTED();
 }
 
 MacroAssembler::MacroAssembler(Isolate* arg_isolate, void* buffer, int size)
@@ -354,9 +346,8 @@ void MacroAssembler::Move(Register dst, Handle<Object> value) {
 
 
 void MacroAssembler::Move(Register dst, Register src, Condition cond) {
-  ASSERT(cond == al);
   if (!dst.is(src)) {
-    mr(dst, src);
+    LoadRR(dst, src);
   }
 }
 

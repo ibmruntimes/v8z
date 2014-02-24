@@ -123,35 +123,36 @@ bool AreAliased(Register reg1,
 // the macro comprises 3 parts: op, format, length
 // if the length is not defined then it is the length
 // of register.
+//
+// Formats:
+// P = Pointer, Op between mem/imm and Register
+// X = RX form
+// RR = Register to Register op
+
+// Length:
+// H = halfword
+// W = word
 
 // arithmetics and bitwise
-// Reg-Reg
 #define AddRR              agr
 #define SubRR              sgr
 #define OrRR               ogr
 #define AndRR              ngr
 #define XorRR              xgr
 
-// Reg-Imm
-#define AddRI              ag
-#define SubRI              sg
-
-// Reg-Imm half words
-#define AddRIHW            aghi
+// Pointer-Imm (both word and half word)
+#define AddPW              agfi
+#define AddPH              aghi
 
 // Load / Store
-#define LoadRR             lr
-#define LoadHW             lghi
-#define LoadRXHW           llgh
+#define LoadRR             lgr
 #define LoadAddr           lay
-#define LoadLogicalRRHW    llghr
-#define LoadLogicalRXHW    llgh
 
 // Compare
-#define CmpHW              cghi
-#define CmpLogicalImm      clgfi
+#define CmpPH              cghi
+#define CmpLogicalPW       clgfi
 #define CmpLogicalRR       clgr
-#define CmpRR              cg
+#define CmpRR              cgr
 
 #else
 #define LoadPU             lwzu
@@ -182,23 +183,19 @@ bool AreAliased(Register reg1,
 #define XorRR              xr
 
 // Reg-Imm
-#define AddRI              a
-#define SubRI              s
+#define AddPI              a
+#define SubPI              s
 #define AddRIHW            ahi
 
 // Load / Store
 #define LoadRR             lgr
-#define LoadHW             lhi
-#define LoadRXHW           llh
 #define LoadAddr           la
-#define LoadLogicalRRHW    llhr
-#define LoadLogicalRXHW    llh
 
 // Compare
-#define CmpHW              chi
-#define CmpLogicalImm      clfi
+#define CmpPH              chi
+#define CmpLogicalPW       clfi
 #define CmpLogicalRR       clr
-#define CmpRR              c
+#define CmpRR              cr
 
 #endif
 
@@ -275,14 +272,18 @@ class MacroAssembler: public Assembler {
     }
   }
 
-  // S390 Macro assemblers
-  void CompareRX(Register dst, const MemOperand& opnd);
-  void CompareLogicalRX(Register dst, const MemOperand& opnd);
-  void AddLogicalRX(Register dst, const MemOperand& opnd);
-  void AddRX(Register dst, const MemOperand& opnd);
-  void SubtractLogicalRX(Register dst, const MemOperand& opnd);
-  void SubtractRX(Register dst, const MemOperand& opnd);
-  void AndRX(Register dst, const MemOperand& opnd);
+  // S390 Macro assemblers. for arithmetic operations,
+  // if not specified, they are referring to 32bit integer ops
+  void LoadImm(Register dst, const Operand& opnd);
+
+  void Compare(Register dst, const MemOperand& opnd);
+  void CompareLogical(Register dst, const MemOperand& opnd);
+  void AddLogical(Register dst, const MemOperand& opnd);
+  void Add(Register dst, const MemOperand& opnd);
+  void SubtractLogical(Register dst, const MemOperand& opnd);
+  void Subtract(Register dst, const MemOperand& opnd);
+  void And(Register dst, const MemOperand& opnd);
+  void AndLogical(Register dst, const MemOperand& opnd);
 
   // ---------------------------------------------------------------------------
   // GC Support
