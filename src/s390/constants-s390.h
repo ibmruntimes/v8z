@@ -1333,6 +1333,16 @@ class Instruction {
     return (InstructionBits() >> lo) & ((2 << (hi - lo)) - 1);
   }
 
+  // Read bits according to instruction type
+  template<typename T>
+  inline T Bits(int hi, int lo) const {
+    if (sizeof(T) <= 4) {
+      return (InstructionBits<T>() >> lo) & ((2 << (hi - lo)) - 1);
+    } else {  // we need to right shift 16 bits because it is 6-byte instr.
+      return (InstructionBits<T>() >> (lo + 16)) & ((2 << (hi - lo)) - 1);
+    }
+  }
+
   // Read a bit field out of the instruction bits.
   inline int BitField(int hi, int lo) const {
     return InstructionBits() & (((2 << (hi - lo)) - 1) << lo);
@@ -1478,8 +1488,7 @@ class Instruction {
 class IInstruction : Instruction {
   public:
     inline int IValue() const {
-    const uint16_t *instr = reinterpret_cast<const uint16_t *>(this);
-    return *instr& 0x00FF;
+    return Bits(16+7, 16);
     }
 
     inline int size() const { return 2; }
@@ -1489,12 +1498,12 @@ class IInstruction : Instruction {
 class RRInstruction : Instruction {
   public:
   inline int R1Value() const {
-    const uint16_t *instr = reinterpret_cast<const uint16_t *>(this);
-    return (*instr >> 4) & 0x0F;
+    // the high and low parameters of Bits is the number of bits from
+    // rightmost place
+    return Bits<TwoByteInstr>(7, 4);
   }
   inline int R2Value() const {
-    const uint16_t *instr = reinterpret_cast<const uint16_t *>(this);
-    return (*instr) & 0x0F;
+    return Bits<TwoByteInstr>(3, 0);
   }
 
   inline int size() const { return 2; }
@@ -1504,12 +1513,10 @@ class RRInstruction : Instruction {
 class RREInstruction : Instruction {
   public:
   inline int R1Value() const {
-    const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
-    return (*instr >> 4) & 0x0F;
+    return Bits<FourByteInstr>(7, 4);
   }
   inline int R2Value() const {
-    const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
-    return (*instr) & 0x0F;
+    return Bits<FourByteInstr>(3, 0);
   }
 
   inline int size() const { return 4; }
@@ -1519,12 +1526,10 @@ class RREInstruction : Instruction {
 class RIInstruction : Instruction {
   public:
     inline int R1Value() const {
-      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
-      return (*instr >> 20) & 0x0F;
+      return Bits<FourByteInstr>(23, 20);
     }
     inline int I2Value() const {
-      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
-      return *instr & 0x0000FFFF;
+      return Bits<FourByteInstr>(15, 0);
     }
     inline int size() const { return 4; }
 };
@@ -1533,20 +1538,16 @@ class RIInstruction : Instruction {
 class RSInstruction : Instruction {
   public:
     inline int R1Value() const {
-      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
-      return (*instr >> 20) & 0x0F;
+      return Bits<FourByteInstr>(23, 20);
     }
     inline int R3Value() const {
-      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
-      return (*instr >> 16) & 0x0F;
+      return Bits<FourByteInstr>(19, 16);
     }
     inline int B2Value() const {
-      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
-      return (*instr >> 12) & 0x0F;
+      return Bits<FourByteInstr>(15, 12);
     }
     inline unsigned int D2Value() const {
-      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
-      return *instr & 0x0FFF;
+      return Bits<FourByteInstr>(11, 0);
     }
     inline int size() const { return 4; }
 };
@@ -1555,20 +1556,16 @@ class RSInstruction : Instruction {
 class RXInstruction : Instruction {
   public:
     inline int R1Value() const {
-      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
-      return (*instr >> 20) & 0x0F;
+      return Bits<FourByteInstr>(23, 20);
     }
     inline int X2Value() const {
-      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
-      return (*instr >> 16) & 0x0F;
+      return Bits<FourByteInstr>(19, 16);
     }
     inline int B2Value() const {
-      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
-      return (*instr >> 12) & 0x0F;
+      return Bits<FourByteInstr>(15, 12);
     }
     inline uint32_t D2Value() const {
-      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
-      return *instr & 0x0FFF;
+      return Bits<FourByteInstr>(11, 0);
     }
     inline int size() const { return 4; }
 };
@@ -1577,21 +1574,17 @@ class RXInstruction : Instruction {
 class RXYInstruction : Instruction {
   public:
     inline int R1Value() const {
-      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
-      return (*instr >> 20) & 0x0F;
+      return Bits<SixByteInstr>(23, 20);
     }
     inline int X2Value() const {
-      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
-      return (*instr >> 16) & 0x0F;
+      return Bits<SixByteInstr>(19, 16);
     }
     inline int B2Value() const {
-      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
-      return (*instr >> 12) & 0x0F;
+      return Bits<SixByteInstr>(15, 12);
     }
     inline int32_t D2Value() const {
-      const uint64_t *instr = reinterpret_cast<const uint64_t *>(this);
-      int32_t value = (*instr >> 32) & 0x0FFF;
-      value &= ((*instr >> 40) & 0x00FF) << 12;
+      int32_t value = Bits<SixByteInstr>(27, 16);
+      value &= Bits<SixByteInstr>(15, 8) << 12;
       return value;
     }
     inline int size() const { return 6; }
@@ -1601,12 +1594,10 @@ class RXYInstruction : Instruction {
 class RILInstruction : Instruction {
   public:
     inline int R1Value() const {
-      const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
-      return (*instr >> 20) & 0x0F;
+      return Bits<SixByteInstr>(23, 20);
     }
     inline int32_t I2Value() const {
-      const uint64_t *instr = reinterpret_cast<const uint64_t *>(this);
-      return (*instr >> 16) & 0xFFFF;
+      return Bits<SixByteInstr>(31, 0);
     }
     inline int size() const { return 6; }
 };
