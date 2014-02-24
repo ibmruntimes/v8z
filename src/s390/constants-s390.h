@@ -1481,6 +1481,8 @@ class IInstruction : Instruction {
     const uint16_t *instr = reinterpret_cast<const uint16_t *>(this);
     return *instr& 0x00FF;
     }
+
+    inline int size() const { return 2; }
 };
 
 // RR Instruction
@@ -1494,6 +1496,8 @@ class RRInstruction : Instruction {
     const uint16_t *instr = reinterpret_cast<const uint16_t *>(this);
     return (*instr) & 0x0F;
   }
+
+  inline int size() const { return 2; }
 };
 
 // RRE Instruction
@@ -1507,6 +1511,8 @@ class RREInstruction : Instruction {
     const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
     return (*instr) & 0x0F;
   }
+
+  inline int size() const { return 4; }
 };
 
 // RI Instruction
@@ -1520,6 +1526,7 @@ class RIInstruction : Instruction {
       const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
       return *instr & 0x0000FFFF;
     }
+    inline int size() const { return 4; }
 };
 
 // RS Instruction
@@ -1541,6 +1548,7 @@ class RSInstruction : Instruction {
       const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
       return *instr & 0x0FFF;
     }
+    inline int size() const { return 4; }
 };
 
 // RX Instruction
@@ -1562,6 +1570,7 @@ class RXInstruction : Instruction {
       const uint32_t *instr = reinterpret_cast<const uint32_t *>(this);
       return *instr & 0x0FFF;
     }
+    inline int size() const { return 4; }
 };
 
 // RXY Instruction
@@ -1585,6 +1594,7 @@ class RXYInstruction : Instruction {
       value &= ((*instr >> 40) & 0x00FF) << 12;
       return value;
     }
+    inline int size() const { return 6; }
 };
 
 // RIL Instruction
@@ -1598,6 +1608,7 @@ class RILInstruction : Instruction {
       const uint64_t *instr = reinterpret_cast<const uint64_t *>(this);
       return (*instr >> 16) & 0xFFFF;
     }
+    inline int size() const { return 6; }
 };
 
 
