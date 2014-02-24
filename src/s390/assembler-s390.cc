@@ -436,9 +436,10 @@ int Assembler::target_at(int pos)  {
     int imm26 = ((instr & kImm26Mask) << 6) >> 6;
     // @TODO to be removed.
     // Line commented out because S390 may jump to 2byte granularity!!
-    // Masking with kAAMask|kLKMask will round to nearest 4 bytes, messing
+    // Masking with kAAMask will round to nearest 4 bytes, messing
     // up linked labels.
-    // imm26 &= ~(kAAMask|kLKMask);  // PPC discard AA|LK bits if present
+    // imm26 &= ~(kAAMask|kLKMask);  // original PPC code
+    imm26 &= ~(kLKMask);  // Remove link bit until we use 390 instr
     if (imm26 == 0)
         return kEndOfChain;
     return pos + imm26;
@@ -446,9 +447,10 @@ int Assembler::target_at(int pos)  {
     int imm16 = SIGN_EXT_IMM16((instr & kImm16Mask));
     // @TODO to be removed.
     // Line commented out because S390 may jump to 2byte granularity!!
-    // Masking with kAAMask|kLKMask will round to nearest 4 bytes, messing
+    // Masking with kAAMask will round to nearest 4 bytes, messing
     // up linked labels.
-    // imm16 &= ~(kAAMask|kLKMask);  // discard AA|LK bits if present
+    // imm16 &= ~(kAAMask|kLKMask);  // original PPC code
+    imm16 &= ~(kLKMask);  // Remove link bit until we use 390 instr
     if (imm16 == 0)
         return kEndOfChain;
     return pos + imm16;
