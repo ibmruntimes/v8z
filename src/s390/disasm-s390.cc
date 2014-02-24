@@ -1035,14 +1035,6 @@ void Decoder::DecodeExt5(Instruction* instr) {
 
 // Disassembles Two Byte S390 Instructions
 // @return true if successfully decoded
-#define FORMAT_RR_CASE(OP, name) \
-  case OP:\
-    Format(instr, #name"\t'r1,'r2");\
-  break
-#define FORMAT_I_CASE(OP, name) \
-  case OP:\
-    Format(instr, #name"\t'i3");\
-  break
 bool Decoder::DecodeTwoByte(Instruction* instr) {
   // Print the Instruction bits.
   out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
@@ -1052,25 +1044,25 @@ bool Decoder::DecodeTwoByte(Instruction* instr) {
   Opcode opcode = instr->S390OpcodeValue();
   // @TODO should we have FormatRR that calls Format here?
   switch (opcode) {
-      FORMAT_I_CASE(SVC, svc);
-      FORMAT_RR_CASE(AR, ar);
-      FORMAT_RR_CASE(SR, sr);
-      FORMAT_RR_CASE(MR, mr);
-      FORMAT_RR_CASE(DR, dr);
-      FORMAT_RR_CASE(OR, or);
-      FORMAT_RR_CASE(NR, nr);
-      FORMAT_RR_CASE(XR, xr);
-      FORMAT_RR_CASE(CGR, cgr);
-      FORMAT_RR_CASE(LR, lr);
-      FORMAT_RR_CASE(LLHR, llhr);
-      FORMAT_RR_CASE(CR, cr);
-      FORMAT_RR_CASE(CLR, clr);
-      FORMAT_RR_CASE(BCR, bcr);
-      FORMAT_RR_CASE(LTR, ltr);
-      FORMAT_RR_CASE(ALR, alr);
-      FORMAT_RR_CASE(SLR, slr);
-      FORMAT_RR_CASE(LBR, lbr);
-      FORMAT_RR_CASE(BASR, BASR);
+      case SVC: Format(instr, "svc\t'i3"); break;
+      case AR: Format(instr, "ar\t'r1,'r2"); break;
+      case SR: Format(instr, "sr\t'r1,'r2"); break;
+      case MR: Format(instr, "mr\t'r1,'r2"); break;
+      case DR: Format(instr, "dr\t'r1,'r2"); break;
+      case OR: Format(instr, "or\t'r1,'r2"); break;
+      case NR: Format(instr, "nr\t'r1,'r2"); break;
+      case XR: Format(instr, "xr\t'r1,'r2"); break;
+      case CGR: Format(instr, "cgr\t'r1,'r2"); break;
+      case LR: Format(instr, "lr\t'r1,'r2"); break;
+      case LLHR: Format(instr, "llhr\t'r1,'r2"); break;
+      case CR: Format(instr, "cr\t'r1,'r2"); break;
+      case CLR: Format(instr, "clr\t'r1,'r2"); break;
+      case BCR: Format(instr, "bcr\t'r1,'r2"); break;
+      case LTR: Format(instr, "ltr\t'r1,'r2"); break;
+      case ALR: Format(instr, "alr\t'r1,'r2"); break;
+      case SLR: Format(instr, "slr\t'r1,'r2"); break;
+      case LBR: Format(instr, "lbr\t'r1,'r2"); break;
+      case BASR: Format(instr, "BASR\t'r1,'r2"); break;
 
     default:
       return false;
@@ -1078,22 +1070,6 @@ bool Decoder::DecodeTwoByte(Instruction* instr) {
   return true;
 }
 
-#define FORMAT_RX_CASE(OP, name) \
-  case OP:\
-    Format(instr, #name"\t'd1('r2,'r3)");\
-  break
-#define FORMAT_RI_CASE(OP, name) \
-  case OP:\
-    Format(instr, #name"\t'r1,'i1");\
-  break
-#define FORMAT_RS_CASE(OP, name) \
-  case OP:\
-    Format(instr, #name"\t'r1,'r2,'d1('r3)");\
-  break
-#define FORMAT_RRE_CASE(OP, name) \
-  case OP:\
-    Format(instr, #name"\t'r5,'r6");\
-  break
 // Disassembles Four Byte S390 Instructions
 // @return true if successfully decoded
 bool Decoder::DecodeFourByte(Instruction* instr) {
@@ -1104,82 +1080,70 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
 
   Opcode opcode = instr->S390OpcodeValue();
   switch (opcode) {
-      FORMAT_RI_CASE(AHI, ahi);
-      FORMAT_RI_CASE(AGHI, aghi);
-      FORMAT_RI_CASE(LHI, lhi);
-      FORMAT_RI_CASE(LGHI, lghi);
-      FORMAT_RI_CASE(MHI, mhi);
-      FORMAT_RI_CASE(MGHI, mghi);
-      FORMAT_RI_CASE(CHI, chi);
-      FORMAT_RI_CASE(CGHI, cghi);
-      FORMAT_RI_CASE(BRAS, bras);
-      FORMAT_RI_CASE(BRC, brc);
-      FORMAT_RI_CASE(IIHH, iihh);
-      FORMAT_RI_CASE(IIHL, iihl);
-      FORMAT_RI_CASE(IILH, iilh);
-      FORMAT_RI_CASE(IILL, iill);
-      FORMAT_RS_CASE(STM, stm);
-      FORMAT_RS_CASE(SLL, sll);
-      FORMAT_RS_CASE(SRL, srl);
-      FORMAT_RS_CASE(SLAG, slag);
-      FORMAT_RS_CASE(SRAG, srag);
-      FORMAT_RS_CASE(LM, lm);
-      FORMAT_RRE_CASE(AGR, agr);
-      FORMAT_RRE_CASE(SGR, sgr);
-      FORMAT_RRE_CASE(NGR, ngr);
-      FORMAT_RRE_CASE(OGR, ogr);
-      FORMAT_RRE_CASE(XGR, xgr);
-      FORMAT_RRE_CASE(LTGR, ltgr);
-      FORMAT_RRE_CASE(LGR, lgr);
-      FORMAT_RRE_CASE(LGBR, lgbr);
-      FORMAT_RRE_CASE(LGHR, lghr);
-      FORMAT_RRE_CASE(MLR, mlr);
-      FORMAT_RRE_CASE(MLGR, mlgr);
-      FORMAT_RRE_CASE(ALGR, algr);
-      FORMAT_RRE_CASE(SLGR, slgr);
-      FORMAT_RRE_CASE(LLHR, llhr);
-      FORMAT_RRE_CASE(LLGHR, llghr);
-      FORMAT_RX_CASE(A, a);
-      FORMAT_RX_CASE(S, s);
-      FORMAT_RX_CASE(M, m);
-      FORMAT_RX_CASE(D, d);
-      FORMAT_RX_CASE(O, o);
-      FORMAT_RX_CASE(L, l);
-      FORMAT_RX_CASE(C, c);
-      FORMAT_RX_CASE(AH, ah);
-      FORMAT_RX_CASE(SH, sh);
-      FORMAT_RX_CASE(MH, mh);
-      FORMAT_RX_CASE(AHY, ahy);
-      FORMAT_RX_CASE(SHY, shy);
-      FORMAT_RX_CASE(LGH, lgh);
-      FORMAT_RX_CASE(AL, al);
-      FORMAT_RX_CASE(SL, sl);
-      FORMAT_RX_CASE(LA, la);
-      FORMAT_RX_CASE(LB, lb);
-      FORMAT_RX_CASE(CH, ch);
-      FORMAT_RX_CASE(CL, cl);
-      FORMAT_RX_CASE(BCT, bct);
-      FORMAT_RX_CASE(ST, st);
-      FORMAT_RX_CASE(STC, stc);
-      FORMAT_RX_CASE(IC_z, ic);
+      case AHI: Format(instr, "ahi\t'r1,'i1"); break;
+      case AGHI: Format(instr, "aghi\t'r1,'i1"); break;
+      case LHI: Format(instr, "lhi\t'r1,'i1"); break;
+      case LGHI: Format(instr, "lghi\t'r1,'i1"); break;
+      case MHI: Format(instr, "mhi\t'r1,'i1"); break;
+      case MGHI: Format(instr, "mghi\t'r1,'i1"); break;
+      case CHI: Format(instr, "chi\t'r1,'i1"); break;
+      case CGHI: Format(instr, "cghi\t'r1,'i1"); break;
+      case BRAS: Format(instr, "bras\t'r1,'i1"); break;
+      case BRC: Format(instr, "brc\t'r1,'i1"); break;
+      case IIHH: Format(instr, "iihh\t'r1,'i1"); break;
+      case IIHL: Format(instr, "iihl\t'r1,'i1"); break;
+      case IILH: Format(instr, "iilh\t'r1,'i1"); break;
+      case IILL: Format(instr, "iill\t'r1,'i1"); break;
+      case STM: Format(instr, "stm\t'r1,'r2,'d1('r3)"); break;
+      case SLL: Format(instr, "sll\t'r1,'r2,'d1('r3)"); break;
+      case SRL: Format(instr, "srl\t'r1,'r2,'d1('r3)"); break;
+      case SLAG: Format(instr, "slag\t'r1,'r2,'d1('r3)"); break;
+      case SRAG: Format(instr, "srag\t'r1,'r2,'d1('r3)"); break;
+      case LM: Format(instr, "lm\t'r1,'r2,'d1('r3)"); break;
+      case AGR: Format(instr, "agr\t'r5,'r6"); break;
+      case SGR: Format(instr, "sgr\t'r5,'r6"); break;
+      case NGR: Format(instr, "ngr\t'r5,'r6"); break;
+      case OGR: Format(instr, "ogr\t'r5,'r6"); break;
+      case XGR: Format(instr, "xgr\t'r5,'r6"); break;
+      case LTGR: Format(instr, "ltgr\t'r5,'r6"); break;
+      case LGR: Format(instr, "lgr\t'r5,'r6"); break;
+      case LGBR: Format(instr, "lgbr\t'r5,'r6"); break;
+      case LGHR: Format(instr, "lghr\t'r5,'r6"); break;
+      case MLR: Format(instr, "mlr\t'r5,'r6"); break;
+      case MLGR: Format(instr, "mlgr\t'r5,'r6"); break;
+      case ALGR: Format(instr, "algr\t'r5,'r6"); break;
+      case SLGR: Format(instr, "slgr\t'r5,'r6"); break;
+      case LLHR: Format(instr, "llhr\t'r5,'r6"); break;
+      case LLGHR: Format(instr, "llghr\t'r5,'r6"); break;
+      case A: Format(instr, "a\t'd1('r2,'r3)"); break;
+      case S: Format(instr, "s\t'd1('r2,'r3)"); break;
+      case M: Format(instr, "m\t'd1('r2,'r3)"); break;
+      case D: Format(instr, "d\t'd1('r2,'r3)"); break;
+      case O: Format(instr, "o\t'd1('r2,'r3)"); break;
+      case L: Format(instr, "l\t'd1('r2,'r3)"); break;
+      case C: Format(instr, "c\t'd1('r2,'r3)"); break;
+      case AH: Format(instr, "ah\t'd1('r2,'r3)"); break;
+      case SH: Format(instr, "sh\t'd1('r2,'r3)"); break;
+      case MH: Format(instr, "mh\t'd1('r2,'r3)"); break;
+      case AHY: Format(instr, "ahy\t'd1('r2,'r3)"); break;
+      case SHY: Format(instr, "shy\t'd1('r2,'r3)"); break;
+      case LGH: Format(instr, "lgh\t'd1('r2,'r3)"); break;
+      case AL: Format(instr, "al\t'd1('r2,'r3)"); break;
+      case SL: Format(instr, "sl\t'd1('r2,'r3)"); break;
+      case LA: Format(instr, "la\t'd1('r2,'r3)"); break;
+      case LB: Format(instr, "lb\t'd1('r2,'r3)"); break;
+      case CH: Format(instr, "ch\t'd1('r2,'r3)"); break;
+      case CL: Format(instr, "cl\t'd1('r2,'r3)"); break;
+      case BCT: Format(instr, "bct\t'd1('r2,'r3)"); break;
+      case ST: Format(instr, "st\t'd1('r2,'r3)"); break;
+      case STC: Format(instr, "stc\t'd1('r2,'r3)"); break;
+      case IC_z: Format(instr, "ic\t'd1('r2,'r3)"); break;
     default:
       return false;
   }
   return true;
 }
 
-#define FORMAT_RIL_CASE(OP, name) \
-  case OP:\
-    Format(instr, #name"\t'r1,'i2");\
-  break
-#define FORMAT_RSY_CASE(OP, name) \
-  case OP:\
-    Format(instr, #name"\t'r1,'r2,'d2('r3)");\
-  break
-#define FORMAT_RXY_CASE(OP, name) \
-  case OP:\
-    Format(instr, #name"\t'r1,'d2('r2,'r3)");\
-  break
 // Disassembles Six Byte S390 Instructions
 // @return true if successfully decoded
 bool Decoder::DecodeSixByte(Instruction* instr) {
@@ -1192,53 +1156,53 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
 
   Opcode opcode = instr->S390OpcodeValue();
   switch (opcode) {
-    FORMAT_RIL_CASE(LLILF, llilf);
-    FORMAT_RIL_CASE(ALFI, alfi);
-    FORMAT_RIL_CASE(CLGFI, clgfi);
-    FORMAT_RIL_CASE(CLFI, clfi);
-    FORMAT_RIL_CASE(CFI, cfi);
-    FORMAT_RIL_CASE(BRASL, brasl);
-    FORMAT_RIL_CASE(BRCL, brcl);
-    FORMAT_RIL_CASE(IIHF, iihf);
-    FORMAT_RIL_CASE(IILF, iilf);
-    FORMAT_RSY_CASE(STMG, stmg);
-    FORMAT_RSY_CASE(SLLG, sllg);
-    FORMAT_RSY_CASE(SRLG, srlg);
-    FORMAT_RSY_CASE(SLAG, slag);
-    FORMAT_RSY_CASE(SRAG, srag);
-    FORMAT_RSY_CASE(LMY, lmy);
-    FORMAT_RSY_CASE(LMG, lmg);
-    FORMAT_RXY_CASE(LT, lt);
-    FORMAT_RXY_CASE(LTG, ltg);
-    FORMAT_RXY_CASE(ML, ml);
-    FORMAT_RXY_CASE(AY, ay);
-    FORMAT_RXY_CASE(SY, sy);
-    FORMAT_RXY_CASE(NY, ny);
-    FORMAT_RXY_CASE(OY, oy);
-    FORMAT_RXY_CASE(XY, xy);
-    FORMAT_RXY_CASE(CY, cy);
-    FORMAT_RXY_CASE(AG, ag);
-    FORMAT_RXY_CASE(SG, sg);
-    FORMAT_RXY_CASE(NG, ng);
-    FORMAT_RXY_CASE(OG, og);
-    FORMAT_RXY_CASE(XG, xg);
-    FORMAT_RXY_CASE(CG, cg);
-    FORMAT_RXY_CASE(LG, lg);
-    FORMAT_RXY_CASE(LY, ly);
-    FORMAT_RXY_CASE(ALY, aly);
-    FORMAT_RXY_CASE(ALG, alg);
-    FORMAT_RXY_CASE(SLY, sly);
-    FORMAT_RXY_CASE(LLH, llh);
-    FORMAT_RXY_CASE(LLGH, llgh);
-    FORMAT_RXY_CASE(LAY, lay);
-    FORMAT_RXY_CASE(LGB, lgb);
-    FORMAT_RXY_CASE(CHY, chy);
-    FORMAT_RXY_CASE(CLY, cly);
-    FORMAT_RXY_CASE(CLG, clg);
-    FORMAT_RXY_CASE(BCTG, bctg);
-    FORMAT_RXY_CASE(STY, sty);
-    FORMAT_RXY_CASE(STG, stg);
-    FORMAT_RXY_CASE(ICY, icy);
+    case LLILF: Format(instr, "llilf\t'r1,'i2"); break;
+    case ALFI: Format(instr, "alfi\t'r1,'i2"); break;
+    case CLGFI: Format(instr, "clgfi\t'r1,'i2"); break;
+    case CLFI: Format(instr, "clfi\t'r1,'i2"); break;
+    case CFI: Format(instr, "cfi\t'r1,'i2"); break;
+    case BRASL: Format(instr, "brasl\t'r1,'i2"); break;
+    case BRCL: Format(instr, "brcl\t'r1,'i2"); break;
+    case IIHF: Format(instr, "iihf\t'r1,'i2"); break;
+    case IILF: Format(instr, "iilf\t'r1,'i2"); break;
+    case STMG: Format(instr, "stmg\t'r1,'r2,'d2('r3)"); break;
+    case SLLG: Format(instr, "sllg\t'r1,'r2,'d2('r3)"); break;
+    case SRLG: Format(instr, "srlg\t'r1,'r2,'d2('r3)"); break;
+    case SLAG: Format(instr, "slag\t'r1,'r2,'d2('r3)"); break;
+    case SRAG: Format(instr, "srag\t'r1,'r2,'d2('r3)"); break;
+    case LMY: Format(instr, "lmy\t'r1,'r2,'d2('r3)"); break;
+    case LMG: Format(instr, "lmg\t'r1,'r2,'d2('r3)"); break;
+    case LT: Format(instr, "lt\t'r1,'d2('r2,'r3)"); break;
+    case LTG: Format(instr, "ltg\t'r1,'d2('r2,'r3)"); break;
+    case ML: Format(instr, "ml\t'r1,'d2('r2,'r3)"); break;
+    case AY: Format(instr, "ay\t'r1,'d2('r2,'r3)"); break;
+    case SY: Format(instr, "sy\t'r1,'d2('r2,'r3)"); break;
+    case NY: Format(instr, "ny\t'r1,'d2('r2,'r3)"); break;
+    case OY: Format(instr, "oy\t'r1,'d2('r2,'r3)"); break;
+    case XY: Format(instr, "xy\t'r1,'d2('r2,'r3)"); break;
+    case CY: Format(instr, "cy\t'r1,'d2('r2,'r3)"); break;
+    case AG: Format(instr, "ag\t'r1,'d2('r2,'r3)"); break;
+    case SG: Format(instr, "sg\t'r1,'d2('r2,'r3)"); break;
+    case NG: Format(instr, "ng\t'r1,'d2('r2,'r3)"); break;
+    case OG: Format(instr, "og\t'r1,'d2('r2,'r3)"); break;
+    case XG: Format(instr, "xg\t'r1,'d2('r2,'r3)"); break;
+    case CG: Format(instr, "cg\t'r1,'d2('r2,'r3)"); break;
+    case LG: Format(instr, "lg\t'r1,'d2('r2,'r3)"); break;
+    case LY: Format(instr, "ly\t'r1,'d2('r2,'r3)"); break;
+    case ALY: Format(instr, "aly\t'r1,'d2('r2,'r3)"); break;
+    case ALG: Format(instr, "alg\t'r1,'d2('r2,'r3)"); break;
+    case SLY: Format(instr, "sly\t'r1,'d2('r2,'r3)"); break;
+    case LLH: Format(instr, "llh\t'r1,'d2('r2,'r3)"); break;
+    case LLGH: Format(instr, "llgh\t'r1,'d2('r2,'r3)"); break;
+    case LAY: Format(instr, "lay\t'r1,'d2('r2,'r3)"); break;
+    case LGB: Format(instr, "lgb\t'r1,'d2('r2,'r3)"); break;
+    case CHY: Format(instr, "chy\t'r1,'d2('r2,'r3)"); break;
+    case CLY: Format(instr, "cly\t'r1,'d2('r2,'r3)"); break;
+    case CLG: Format(instr, "clg\t'r1,'d2('r2,'r3)"); break;
+    case BCTG: Format(instr, "bctg\t'r1,'d2('r2,'r3)"); break;
+    case STY: Format(instr, "sty\t'r1,'d2('r2,'r3)"); break;
+    case STG: Format(instr, "stg\t'r1,'d2('r2,'r3)"); break;
+    case ICY: Format(instr, "icy\t'r1,'d2('r2,'r3)"); break;
     default:
       return false;
   }
