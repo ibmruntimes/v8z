@@ -105,6 +105,7 @@ class Decoder {
 
   // Handle formatting of instructions and their options.
   int FormatRegister(Instruction* instr, const char* option);
+  int FormatMask(Instruction* instr, const char* option);
   int FormatDisplacement(Instruction* instr, const char* option);
   int FormatImmediate(Instruction* instr, const char* option);
   int FormatOption(Instruction* instr, const char* option);
@@ -356,29 +357,7 @@ int Decoder::FormatOption(Instruction* instr, const char* format) {
        return 2;
      }
      case 'm': {
-       int32_t value = 0;
-       if (format[1] == 'e') {
-         if (instr->OpcodeValue() << 26 != EXT5) {
-           // ME Bits 10-6
-           value = (instr->Bits(10, 6) << 26) >> 26;
-         } else {
-           // ME Bits 5 and 10-6 (split field)
-           value = (instr->Bits(10, 6) | (instr->Bit(5) << 5));
-         }
-       } else if (format[1] == 'b') {
-         if (instr->OpcodeValue() << 26 != EXT5) {
-           // MB Bits 5-1
-           value = (instr->Bits(5, 1) << 26) >> 26;
-         } else {
-           // MB Bits 5 and 10-6 (split field)
-           value = (instr->Bits(10, 6) | (instr->Bit(5) << 5));
-         }
-       } else {
-         UNREACHABLE();  // bad format
-       }
-       out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
-                                     "%d", value);
-       return 2;
+       return FormatMask(instr, format);
      }
     }
     case 'd': {  // ds value for offset
@@ -392,6 +371,40 @@ int Decoder::FormatOption(Instruction* instr, const char* format) {
 
   UNREACHABLE();
   return -1;
+}
+
+int Decoder::FormatMask(Instruction* instr, const char* format) {
+  ASSERT(format[0] == 'm');
+  int32_t value = 0;
+  if ((format[1] == '1')) {  // prints the mask format in bit 8-12
+    value = reinterpret_cast<RRInstruction*>(instr)->R1Value();
+    out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
+        "0x%x", value);
+  return 2;
+  }
+
+  if (format[1] == 'e') {
+    if (instr->OpcodeValue() << 26 != EXT5) {
+      // ME Bits 10-6
+      value = (instr->Bits(10, 6) << 26) >> 26;
+    } else {
+      // ME Bits 5 and 10-6 (split field)
+      value = (instr->Bits(10, 6) | (instr->Bit(5) << 5));
+    }
+  } else if (format[1] == 'b') {
+    if (instr->OpcodeValue() << 26 != EXT5) {
+      // MB Bits 5-1
+      value = (instr->Bits(5, 1) << 26) >> 26;
+    } else {
+      // MB Bits 5 and 10-6 (split field)
+      value = (instr->Bits(10, 6) | (instr->Bit(5) << 5));
+    }
+  } else {
+    UNREACHABLE();  // bad format
+  }
+  out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
+      "%d", value);
+  return 2;
 }
 
 int Decoder::FormatDisplacement(Instruction* instr, const char* format) {
@@ -1057,7 +1070,7 @@ bool Decoder::DecodeTwoByte(Instruction* instr) {
       case LLHR: Format(instr, "llhr\t'r1,'r2"); break;
       case CR: Format(instr, "cr\t'r1,'r2"); break;
       case CLR: Format(instr, "clr\t'r1,'r2"); break;
-      case BCR: Format(instr, "bcr\t'r1,'r2"); break;
+      case BCR: Format(instr, "bcr\t'm1,'r2"); break;
       case LTR: Format(instr, "ltr\t'r1,'r2"); break;
       case ALR: Format(instr, "alr\t'r1,'r2"); break;
       case SLR: Format(instr, "slr\t'r1,'r2"); break;
@@ -1089,7 +1102,7 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case CHI: Format(instr, "chi\t'r1,'i1"); break;
       case CGHI: Format(instr, "cghi\t'r1,'i1"); break;
       case BRAS: Format(instr, "bras\t'r1,'i1"); break;
-      case BRC: Format(instr, "brc\t'r1,'i1"); break;
+      case BRC: Format(instr, "brc\t'm1,'i1"); break;
       case IIHH: Format(instr, "iihh\t'r1,'i1"); break;
       case IIHL: Format(instr, "iihl\t'r1,'i1"); break;
       case IILH: Format(instr, "iilh\t'r1,'i1"); break;
@@ -1134,6 +1147,7 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case LB: Format(instr, "lb\t'd1('r2,'r3)"); break;
       case CH: Format(instr, "ch\t'd1('r2,'r3)"); break;
       case CL: Format(instr, "cl\t'd1('r2,'r3)"); break;
+      case BC: Format(instr, "bc\t'm1,'d1('r2,'r3)"); break;
       case BCT: Format(instr, "bct\t'd1('r2,'r3)"); break;
       case ST: Format(instr, "st\t'd1('r2,'r3)"); break;
       case STC: Format(instr, "stc\t'd1('r2,'r3)"); break;
@@ -1162,7 +1176,7 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
     case CLFI: Format(instr, "clfi\t'r1,'i2"); break;
     case CFI: Format(instr, "cfi\t'r1,'i2"); break;
     case BRASL: Format(instr, "brasl\t'r1,'i2"); break;
-    case BRCL: Format(instr, "brcl\t'r1,'i2"); break;
+    case BRCL: Format(instr, "brcl\t'm1,'i2"); break;
     case IIHF: Format(instr, "iihf\t'r1,'i2"); break;
     case IILF: Format(instr, "iilf\t'r1,'i2"); break;
     case STMG: Format(instr, "stmg\t'r1,'r2,'d2('r3)"); break;
