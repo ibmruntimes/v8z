@@ -1177,19 +1177,27 @@ TEST(14) {
   v8::HandleScope scope;
 
   Assembler assm(Isolate::Current(), NULL, 0);
-  __ ar(r15, r15);
-  __ sr(r15, r15);
-  __ mr_z(r15, r15);
-  __ dr(r15, r15);
-  __ or_z(r15, r15);
-  __ nr(r15, r15);
-  __ xr(r15, r15);
+  __ ar(r14, r15);
+  __ sr(r14, r15);
+  __ mr_z(r14, r15);
+  __ dr(r14, r15);
+  __ or_z(r14, r15);
+  __ nr(r14, r15);
+  __ xr(r14, r15);
 
-  __ agr(r15, r15);
-  __ sgr(r15, r15);
-  __ ogr(r15, r15);
-  __ ngr(r15, r15);
-  __ xgr(r15, r15);
+  __ agr(r14, r15);
+  __ sgr(r14, r15);
+  __ ogr(r14, r15);
+  __ ngr(r14, r15);
+  __ xgr(r14, r15);
+
+  __ svc(Operand(123));
+  __ ahi(r15, Operand(123));
+  __ aghi(r15, Operand(123));
+  __ stm(r1, r2, MemOperand(r3, r0, 123));
+  __ slag(r1, r2, MemOperand(r3, r0, 123));
+  __ a(r15, MemOperand(r1, r2, 123));
+  __ ay(r15, MemOperand(r1, r2, 123));
 
   v8::internal::byte * bufPos = assm.buffer_pos();
   ::printf("buffer position = %p", bufPos);
