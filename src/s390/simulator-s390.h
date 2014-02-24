@@ -263,6 +263,11 @@ class Simulator {
   intptr_t* ReadDW(intptr_t addr);
   void WriteDW(intptr_t addr, int64_t value);
 
+  // S390
+  bool DecodeTwoByte(Instruction* instr);
+  bool DecodeFourByte(Instruction* instr);
+  bool DecodeSixByte(Instruction* instr);
+
   // PowerPC
   void SetCR0(intptr_t result, bool setSO = false);
   void DecodeBranchConditional(Instruction* instr);

@@ -2734,6 +2734,48 @@ void Simulator::DecodeExt5(Instruction* instr) {
 }
 #endif
 
+// S390 Decode and simulate helpers
+
+// Decode routine for two-byte instructions
+bool Simulator::DecodeTwoByte(Instruction* instr) {
+  Opcode opcode = instr->S390OpcodeValue();
+
+  switch (opcode) {
+    case AR:
+      break;
+    default:
+      return false;
+  }
+  return true;
+}
+
+// Decode routine for four-byte instructions
+void Simulator::DecodeFourByte(Instruction* instr) {
+  Opcode opcode = instr->S390OpcodeValue();
+
+  switch (opcode) {
+    case A:
+      break;
+    default:
+      return false;
+  }
+  return true;
+}
+
+// Decode routine for six-byte instructions
+void Simulator::DecodeSixByte(Instruction* instr) {
+  Opcode opcode = instr->S390OpcodeValue();
+
+  switch (opcode) {
+    case LILLF:
+      break;
+    default:
+      return false;
+  }
+  return true;
+}
+
+
 // Executes the current instruction.
 void Simulator::InstructionDecode(Instruction* instr) {
   if (v8::internal::FLAG_check_icache) {
@@ -2749,6 +2791,27 @@ void Simulator::InstructionDecode(Instruction* instr) {
     PrintF("%05d  %08" V8PRIxPTR "  %s\n", icount_,
            reinterpret_cast<intptr_t>(instr), buffer.start());
   }
+  // Try to simulate as S390 Instruction first.
+
+  bool processed = true;
+  int orig_out_buffer_pos_ = out_buffer_pos_;
+  int instrLength = instr->InstructionLength();
+
+  if (instrLength == 2)
+    processed = DecodeTwoByte(instr);
+  else if (instrLength == 4)
+    processed = DecodeFourByte(instr);
+  else if (instrLength == 6)
+    processed = DecodeSixByte(instr);
+
+  if (processed) {
+    if (!pc_modified_) {
+      set_pc(reinterpret_cast<intptr_t>(instr) + instrLength);
+    }
+    return;
+  }
+
+  // PPC!!
   int opcode = instr->OpcodeValue() << 26;
   switch (opcode) {
     case TWI: {
