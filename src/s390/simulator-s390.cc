@@ -2811,6 +2811,96 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
   return true;
 }
 
+void Simulator::S390InstructionDecode(Instruction* instr) {
+  Opcode op = instr->S390OpcodeValue();
+
+  switch (op) {
+    // RR format instructions
+    case AR: {
+      RRInstruction rrinst = reinterpret_cast<RRInstruction*>(instr);
+      int r1 = rrinst->R1Value();
+      int r2 = rrinst->R2Value();
+      intptr_t r1_val = get_register(r1);
+      intptr_t r2_val = get_register(r2);
+      intptr_t alu_out = r1_val + r2_val;
+      set_register(r1, alu_out);
+      return true;
+    }
+    case SR: {
+      RRInstruction rrinst = reinterpret_cast<RRInstruction*>(instr);
+      int r1 = rrinst->R1Value();
+      int r2 = rrinst->R2Value();
+      intptr_t r1_val = get_register(r1);
+      intptr_t r2_val = get_register(r2);
+      intptr_t alu_out = r1_val - r2_val;
+      set_register(r1, alu_out);
+      return true;
+    }
+    case MR: {
+      UNIMPLEMENTED();  // need register extension
+      return false;
+    }
+    case DR: {
+      UNIMPLEMENTED();  // requires register pairs
+      return false;
+    }
+    case OR: {
+      RRInstruction rrinst = reinterpret_cast<RRInstruction*>(instr);
+      int r1 = rrinst->R1Value();
+      int r2 = rrinst->R2Value();
+      intptr_t r1_val = get_register(r1);
+      intptr_t r2_val = get_register(r2);
+      intptr_t alu_out = r1_val | r2_val;
+      set_register(r1, alu_out);
+      return true;
+    }
+    case NR: {
+      RRInstruction rrinst = reinterpret_cast<RRInstruction*>(instr);
+      int r1 = rrinst->R1Value();
+      int r2 = rrinst->R2Value();
+      intptr_t r1_val = get_register(r1);
+      intptr_t r2_val = get_register(r2);
+      intptr_t alu_out = r1_val & r2_val;
+      set_register(r1, alu_out);
+      return true;
+    }
+    case XR: {
+      RRInstruction rrinst = reinterpret_cast<RRInstruction*>(instr);
+      int r1 = rrinst->R1Value();
+      int r2 = rrinst->R2Value();
+      intptr_t r1_val = get_register(r1);
+      intptr_t r2_val = get_register(r2);
+      intptr_t alu_out = r1_val ^ r2_val;
+      set_register(r1, alu_out);
+      return true;
+    }
+    case LR: {
+      RRInstruction rrinst = reinterpret_cast<RRInstruction*>(instr);
+      int r1 = rrinst->R1Value();
+      int r2 = rrinst->R2Value();
+      set_register(r1, get_register(r2));
+      return true;
+    }
+    case CR: {
+      RRInstruction rrinst = reinterpret_cast<RRInstruction*>(instr);
+      int r1 = rrinst->R1Value();
+      int r2 = rrinst->R2Value();
+      intptr_t r1_val = get_register(r1);
+      intptr_t r2_val = get_register(r2);
+      if (r1_val == r2_val) {
+       condition_reg_ = 0x08;
+      } else if (r1_val < r2_val) {
+       condition_reg_ = 0x04;
+      } else if (r1_val > r2_val) {
+       condition_reg_ = 0x02;
+      }
+      return true;
+    }
+    default:  // at the moment jump to PPC decoding.
+      return false;
+  }
+  return true;
+}
 
 // Executes the current instruction.
 void Simulator::InstructionDecode(Instruction* instr) {
@@ -2827,11 +2917,11 @@ void Simulator::InstructionDecode(Instruction* instr) {
     PrintF("%05d  %08" V8PRIxPTR "  %s\n", icount_,
            reinterpret_cast<intptr_t>(instr), buffer.start());
   }
+
   // Try to simulate as S390 Instruction first.
+  bool processed = S390InstructionDecode(instr);
 
-  bool processed = true;
   int instrLength = instr->InstructionLength();
-
   if (instrLength == 2)
     processed = DecodeTwoByte(instr);
   else if (instrLength == 4)
