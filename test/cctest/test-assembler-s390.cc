@@ -66,11 +66,10 @@ TEST(0) {
   __ function_descriptor();
 #endif
 
-  // __ add(r3, r3, r4);
-  __ lhi(r1, Operand(3));
-  __ llilf(r2, Operand(4));
-  __ ar(r2, r1);
-  // __ blr();
+  __ lhi(r1, Operand(3));    // test 4-byte instr
+  __ llilf(r2, Operand(4));  // test 6-byte instr
+  __ lgr(r2, r2);            // test 2-byte opcode
+  __ ar(r2, r1);             // test 2-byte instr
   __ br(r14);
 
   CodeDesc desc;
