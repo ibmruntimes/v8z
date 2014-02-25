@@ -272,18 +272,32 @@ class MacroAssembler: public Assembler {
     }
   }
 
-  // S390 Macro assemblers. for arithmetic operations,
-  // if not specified, they are referring to 32bit integer ops
-  void LoadImm(Register dst, const Operand& opnd);
-
+  // s390 Macro assemblers.
+  // For arithmetic operations, if not specified, they are 
+  // referring to 32bit integer ops;
+  // for logical operations, if not specified, the size of the
+  // register operand is based on architecture (31bit or 64bit)
+  void Load(Register dst, const MemOperand& opnd);
+  void Load(Register dst, const Operand& opnd);
   void Compare(Register dst, const MemOperand& opnd);
+  void Compare(Register dst, const Operand& opnd);
   void CompareLogical(Register dst, const MemOperand& opnd);
+  void CompareLogical(Register dst, const Operand& opnd);
+  void CompareLogical(Register dst, Register src);
   void AddLogical(Register dst, const MemOperand& opnd);
+  void AddLogical(Register dst, const Operand& opnd);
+  void AddLogical(Register dst, Register src);
   void Add(Register dst, const MemOperand& opnd);
+  void Add(Register dst, const Operand& opnd);
   void SubtractLogical(Register dst, const MemOperand& opnd);
+  void SubtractLogical(Register dst, const Operand& opnd);
+  void SubtractLogical(Register dst, Register src);
   void Subtract(Register dst, const MemOperand& opnd);
   void And(Register dst, const MemOperand& opnd);
+  void And(Register dst, const Operand& opnd);
   void AndLogical(Register dst, const MemOperand& opnd);
+  void AndLogical(Register dst, const Operand& opnd);
+  void AndLogical(Register dst, Register src);
 
   // ---------------------------------------------------------------------------
   // GC Support
