@@ -273,7 +273,7 @@ class MacroAssembler: public Assembler {
   }
 
   // s390 Macro assemblers.
-  // For arithmetic operations, if not specified, they are 
+  // For arithmetic operations, if not specified, they are
   // referring to 32bit integer ops;
   // for logical operations, if not specified, the size of the
   // register operand is based on architecture (31bit or 64bit)
