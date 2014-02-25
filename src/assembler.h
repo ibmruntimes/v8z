@@ -834,6 +834,7 @@ inline bool is_intn(int x, int n)  {
 }
 
 inline bool is_int8(int x)  { return is_intn(x, 8); }
+inline bool is_int12(int x)  { return is_intn(x, 12); }
 inline bool is_int16(int x)  { return is_intn(x, 16); }
 inline bool is_int18(int x)  { return is_intn(x, 18); }
 inline bool is_int20(int x)  { return is_intn(x, 20); }
