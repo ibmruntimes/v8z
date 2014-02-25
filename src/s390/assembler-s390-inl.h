@@ -358,6 +358,12 @@ void Assembler::emit(Instr x) {
 // S390 specific emitting helpers
 void Assembler::emit2bytes(uint16_t x) {
     CheckBuffer();
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    // We need to emit instructions in big endian format as disassembler /
+    // simulator require the first byte of the instruction in order to decode
+    // the instruction length.  Swap the bytes.
+    x = ((x & 0x00FF) << 8) | ((x & 0xFF00) >> 8);
+#endif
     *reinterpret_cast<uint16_t*>(pc_) = x;
     pc_ += 2;
     CheckTrampolinePoolQuick();
@@ -365,6 +371,13 @@ void Assembler::emit2bytes(uint16_t x) {
 
 void Assembler::emit4bytes(uint32_t x) {
     CheckBuffer();
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    // We need to emit instructions in big endian format as disassembler /
+    // simulator require the first byte of the instruction in order to decode
+    // the instruction length.  Swap the bytes.
+    x = ((x & 0x000000FF) << 24) | ((x & 0x0000FF00) << 8) |
+        ((x & 0x00FF0000) >>  8) | ((x & 0xFF000000) >> 24);
+#endif
     *reinterpret_cast<uint32_t*>(pc_) = x;
     pc_ += 4;
     CheckTrampolinePoolQuick();
@@ -372,13 +385,20 @@ void Assembler::emit4bytes(uint32_t x) {
 
 void Assembler::emit6bytes(uint64_t x) {
     CheckBuffer();
-    // We need to store 6-bytes at given pc_
-    // On Big Endian, we need to pad 16 bits
-    // of zeros to get the proper instruction
-    // alignment.
-#if __BYTE_ORDER != __LITTLE_ENDIAN
-    x <<= 16;
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    // We need to emit instructions in big endian format as disassembler /
+    // simulator require the first byte of the instruction in order to decode
+    // the instruction length.  Swap the bytes.
+    x = ((x & 0x00000000FFUL) << 40) | ((x & 0x00000000FF00UL) << 24) |
+        ((x & 0x0000FF0000UL) <<  8) | ((x & 0x0000FF000000UL) >>  8) |
+        ((x & 0x00FF000000UL) << 24) | ((x & 0xFF0000000000UL) >> 40);
+#else
+    // We need to pad two bytes of zeros in order to get the 6-bytes
+    // stored from low address.
+    x = x << 16;
 #endif
+    // It is safe to store 8-bytes, as CheckBuffer() guarantees we have kGap
+    // space left over.
     *reinterpret_cast<uint64_t*>(pc_) = x;
     pc_ += 6;
 }
