@@ -1312,7 +1312,30 @@ class Instruction {
   // Get the raw instruction bits.
   template<typename T>
   inline T InstructionBits() const {
-    return *reinterpret_cast<const T*>(this);
+  #if __BYTE_ORDER == __BIG_ENDIAN
+    if (sizeof(T) <= 4) {
+      return *reinterpret_cast<const T*>(this);
+    } else {
+      // 6-byte instr requires a right shift of 16-bit after 64-bit load
+      return *reinterpret_cast<const T*>(this) >> 16;
+    }
+  #else
+    // Even on little endian hosts (simulation), the instructions
+    // are stored as big-endian in order to decode the opcode and
+    // instruction length.
+    const byte *instr = reinterpret_cast<const byte*>(this);
+    T instr_bits = 0;
+    for (T i = 0; i < sizeof(T); i++) {
+       instr_bits <<= 8;
+       instr_bits |= *(instr + i);
+    }
+
+    // 6-byte instr requires a right shift of 16-bit after 64-bit load
+    if (sizeof(T) == 8)
+      instr_bits >>= 16;
+
+    return instr_bits;
+  #endif
   }
   inline Instr InstructionBits() const {
     return *reinterpret_cast<const Instr*>(this);
@@ -1336,11 +1359,7 @@ class Instruction {
   // Read bits according to instruction type
   template<typename T>
   inline T Bits(int hi, int lo) const {
-    if (sizeof(T) <= 4) {
-      return (InstructionBits<T>() >> lo) & ((2 << (hi - lo)) - 1);
-    } else {  // we need to right shift 16 bits because it is 6-byte instr.
-      return (InstructionBits<T>() >> (lo + 16)) & ((2 << (hi - lo)) - 1);
-    }
+    return (InstructionBits<T>() >> lo) & ((2 << (hi - lo)) - 1);
   }
 
   // Read a bit field out of the instruction bits.
