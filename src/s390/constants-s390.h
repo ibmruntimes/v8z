@@ -1613,6 +1613,13 @@ class RXInstruction : Instruction {
       return Bits<FourByteInstr, uint32_t>(11, 0);
     }
     inline int size() const { return 4; }
+
+    // the the memory address referred in this instruction
+    inline intptr_t get_mem_address const (const Simulator& sim) {
+      intptr_t x2_val = sim.get_register(X2Value());
+      intptr_t b2_val = sim.get_register(B2Value());
+      return x2_val + b2_val + D2Value();
+    }
 };
 
 // RXY Instruction

@@ -2820,9 +2820,9 @@ void Simulator::S390InstructionDecode(Instruction* instr) {
       RRInstruction rrinst = reinterpret_cast<RRInstruction*>(instr);
       int r1 = rrinst->R1Value();
       int r2 = rrinst->R2Value();
-      intptr_t r1_val = get_register(r1);
-      intptr_t r2_val = get_register(r2);
-      intptr_t alu_out = r1_val + r2_val;
+      int32_t r1_val = get_register(r1);
+      int32_t r2_val = get_register(r2);
+      int32_t alu_out = r1_val + r2_val;
       set_register(r1, alu_out);
       return true;
     }
@@ -2830,9 +2830,9 @@ void Simulator::S390InstructionDecode(Instruction* instr) {
       RRInstruction rrinst = reinterpret_cast<RRInstruction*>(instr);
       int r1 = rrinst->R1Value();
       int r2 = rrinst->R2Value();
-      intptr_t r1_val = get_register(r1);
-      intptr_t r2_val = get_register(r2);
-      intptr_t alu_out = r1_val - r2_val;
+      int32_t r1_val = get_register(r1);
+      int32_t r2_val = get_register(r2);
+      int32_t alu_out = r1_val - r2_val;
       set_register(r1, alu_out);
       return true;
     }
@@ -2848,9 +2848,9 @@ void Simulator::S390InstructionDecode(Instruction* instr) {
       RRInstruction rrinst = reinterpret_cast<RRInstruction*>(instr);
       int r1 = rrinst->R1Value();
       int r2 = rrinst->R2Value();
-      intptr_t r1_val = get_register(r1);
-      intptr_t r2_val = get_register(r2);
-      intptr_t alu_out = r1_val | r2_val;
+      int32_t r1_val = get_register(r1);
+      int32_t r2_val = get_register(r2);
+      int32_t alu_out = r1_val | r2_val;
       set_register(r1, alu_out);
       return true;
     }
@@ -2858,9 +2858,9 @@ void Simulator::S390InstructionDecode(Instruction* instr) {
       RRInstruction rrinst = reinterpret_cast<RRInstruction*>(instr);
       int r1 = rrinst->R1Value();
       int r2 = rrinst->R2Value();
-      intptr_t r1_val = get_register(r1);
-      intptr_t r2_val = get_register(r2);
-      intptr_t alu_out = r1_val & r2_val;
+      int32_t r1_val = get_register(r1);
+      int32_t r2_val = get_register(r2);
+      int32_t alu_out = r1_val & r2_val;
       set_register(r1, alu_out);
       return true;
     }
@@ -2868,9 +2868,9 @@ void Simulator::S390InstructionDecode(Instruction* instr) {
       RRInstruction rrinst = reinterpret_cast<RRInstruction*>(instr);
       int r1 = rrinst->R1Value();
       int r2 = rrinst->R2Value();
-      intptr_t r1_val = get_register(r1);
-      intptr_t r2_val = get_register(r2);
-      intptr_t alu_out = r1_val ^ r2_val;
+      int32_t r1_val = get_register(r1);
+      int32_t r2_val = get_register(r2);
+      int32_t alu_out = r1_val ^ r2_val;
       set_register(r1, alu_out);
       return true;
     }
@@ -2885,8 +2885,8 @@ void Simulator::S390InstructionDecode(Instruction* instr) {
       RRInstruction rrinst = reinterpret_cast<RRInstruction*>(instr);
       int r1 = rrinst->R1Value();
       int r2 = rrinst->R2Value();
-      intptr_t r1_val = get_register(r1);
-      intptr_t r2_val = get_register(r2);
+      int32_t r1_val = get_register(r1);
+      int32_t r2_val = get_register(r2);
       if (r1_val == r2_val) {
        condition_reg_ = 0x08;
       } else if (r1_val < r2_val) {
@@ -2896,10 +2896,145 @@ void Simulator::S390InstructionDecode(Instruction* instr) {
       }
       return true;
     }
+    case CLR: {
+      RRInstruction rrinst = reinterpret_cast<RRInstruction*>(instr);
+      int r1 = rrinst->R1Value();
+      int r2 = rrinst->R2Value();
+      uint32_t r1_val = get_register(r1);
+      uint32_t r2_val = get_register(r2);
+      if (r1_val == r2_val) {
+       condition_reg_ = 0x08;
+      } else if (r1_val < r2_val) {
+       condition_reg_ = 0x04;
+      } else if (r1_val > r2_val) {
+       condition_reg_ = 0x02;
+      }
+      return true;
+    }
+    case AHI: {
+      RIInstruction riinst = reinterpret_cast<RIInstruction*>(instr);
+      int r1 = rrinst->R1Value();
+      int i  = rrinst->I2Value();
+      int32_t r1_val = get_register(r1);
+      int32_t alu_out = r1_val + i;
+      set_register(r1, alu_out);
+      return true;
+    }
+    case LHI: {
+      RIInstruction riinst = reinterpret_cast<RIInstruction*>(instr);
+      int r1 = rrinst->R1Value();
+      int32_t i = rrinst->I2Value();
+      set_register(r1, i);
+      return true;
+    }
+    case MHI: {  // no overflow indication is given
+      RIInstruction riinst = reinterpret_cast<RIInstruction*>(instr);
+      int r1 = rrinst->R1Value();
+      int16_t i = rrinst->I2Value();
+      int32_t alu_out = r1 * i;
+      set_register(r1, i);
+      return true;
+    }
+    case CHI: {
+      RIInstruction riinst = reinterpret_cast<RIInstruction*>(instr);
+      int r1 = rrinst->R1Value();
+      int16_t i = rrinst->I2Value();
+      int32_t r1_val = get_register(r1);
+      if (r1_val == i) {
+        condition_reg_ = 0x08;
+      } else if (r1_val < i) {
+        condition_reg_ = 0x04;
+      } else {
+        condition_reg_ = 0x02;
+      }
+      return true;
+    }
+    case A: {
+      RXInstruction rxinst = reinterpret_cast<RXInstruction*>(instr);
+      int r1 = rxinst->R1Value();
+      int32_t r1_val = get_register(r1);
+      int32_t mem_val = ReadW(rxinst->get_mem_address(&this), instr);
+      int32_t alu_out = r1_val + mem_val;
+      set_register(r1, alu_out);
+      return true;
+    }
+    case S: {
+      RXInstruction rxinst = reinterpret_cast<RXInstruction*>(instr);
+      int r1 = rxinst->R1Value();
+      int32_t r1_val = get_register(r1);
+      int32_t mem_val = ReadW(rxinst->get_mem_address(&this), instr);
+      int32_t alu_out = r1_val - mem_val;
+      set_register(r1, alu_out);
+      return true;
+    }
+    case M: { // requires register pairs/64bit register
+      UNIMPLEMENTED();
+      return true;
+    }
+    case D: {
+      UNIMPLEMENTED();
+      return true;
+    }
+    case O: {
+      RXInstruction rxinst = reinterpret_cast<RXInstruction*>(instr);
+      int r1 = rxinst->R1Value();
+      int32_t r1_val = get_register(r1);
+      int32_t mem_val = ReadW(rxinst->get_mem_address(&this), instr);
+      int32_t alu_out = r1_val | mem_val;
+      set_register(r1, alu_out);
+      return true;
+    }
+    case N: {
+      RXInstruction rxinst = reinterpret_cast<RXInstruction*>(instr);
+      int r1 = rxinst->R1Value();
+      int32_t r1_val = get_register(r1);
+      int32_t mem_val = ReadW(rxinst->get_mem_address(&this), instr);
+      int32_t alu_out = r1_val & mem_val;
+      set_register(r1, alu_out);
+      return true;
+    }
+    case X: {
+      RXInstruction rxinst = reinterpret_cast<RXInstruction*>(instr);
+      int r1 = rxinst->R1Value();
+      int32_t mem_val = ReadW(rxinst->get_mem_address(&this), instr);
+      int32_t alu_out = r1_val ^ mem_val;
+      set_register(r1, alu_out);
+      return true;
+    }
+    case L: {
+      RXInstruction rxinst = reinterpret_cast<RXInstruction*>(instr);
+      int r1 = rxinst->R1Value();
+      int32_t mem_val = ReadW(rxinst->get_mem_address(&this), instr);
+      set_register(r1, mem_val);
+    }
+    case C: {
+      RXInstruction rxinst = reinterpret_cast<RXInstruction*>(instr);
+      int r1 = rxinst->R1Value();
+      int32_t r1_val = get_register(r1);
+      
+
+      if (r1_val == mem_val) {
+        condition_reg_ = 0x08;
+      } else if (r1_val < mem_val) {
+        condition_reg_ = 0x04;
+      } else {
+        condition_reg_ = 0x02;
+      }
+      retur true;
+    }
+    case AH: {
+      RXInstruction rxinst = reinterpret_cast<RXInstruction*>(instr);
+      int r1 = rxinst->R1Value();
+      int32_t r1_val = get_register(r1);
+      int16_t mem_val = ReadH(rxinst->get_mem_address(&this), instr);
+      int32_t alu_out = r1_val + mem_val;
+      set_register(r1, alu_out);
+
+      // @TODO set condition code
+    }
     default:  // at the moment jump to PPC decoding.
       return false;
   }
-  return true;
 }
 
 // Executes the current instruction.
