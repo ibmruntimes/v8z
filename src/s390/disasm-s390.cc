@@ -1164,9 +1164,7 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
   // Print the Instruction bits.
   out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
                                   "%012llx   ",
-                                  instr->InstructionBits<SixByteInstr>() >> 16);
-  // @TODO Need to fix that InstructionBits<SixByteInstr> to properly return
-  // the bits shifted properly.
+                                  instr->InstructionBits<SixByteInstr>());
 
   Opcode opcode = instr->S390OpcodeValue();
   switch (opcode) {
