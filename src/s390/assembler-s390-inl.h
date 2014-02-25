@@ -389,9 +389,12 @@ void Assembler::emit6bytes(uint64_t x) {
     // We need to emit instructions in big endian format as disassembler /
     // simulator require the first byte of the instruction in order to decode
     // the instruction length.  Swap the bytes.
-    x = ((x & 0x00000000FFUL) << 40) | ((x & 0x00000000FF00UL) << 24) |
-        ((x & 0x0000FF0000UL) <<  8) | ((x & 0x0000FF000000UL) >>  8) |
-        ((x & 0x00FF000000UL) << 24) | ((x & 0xFF0000000000UL) >> 40);
+    x = (static_cast<uint64_t>(x & 0xFF) << 40) |
+        (static_cast<uint64_t>((x >>  8) & 0xFF) << 32) |
+        (static_cast<uint64_t>((x >> 16) & 0xFF) << 24) |
+        (static_cast<uint64_t>((x >> 24) & 0xFF) << 16) |
+        (static_cast<uint64_t>((x >> 32) & 0xFF) << 8) |
+        (static_cast<uint64_t>((x >> 40) & 0xFF));
 #else
     // We need to pad two bytes of zeros in order to get the 6-bytes
     // stored from low address.
