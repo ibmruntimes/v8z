@@ -86,6 +86,14 @@ void MacroAssembler::Add(Register dst, const MemOperand& opnd) {
     ay(dst, opnd);
 }
 
+void MacroAssembler::Add(Register dst, const Operand& opnd) {
+  intptr_t value = opnd.immediate();
+  if (is_int16(value))
+    ahi(dst, opnd);
+  else
+    afi(dst, opnd);
+}
+
 void MacroAssembler::SubtractLogical(Register dst, const MemOperand& opnd) {
   ASSERT(is_int20(opnd.offset()));
 #ifdef V8_TARGET_ARCH_S390X
@@ -96,6 +104,10 @@ void MacroAssembler::SubtractLogical(Register dst, const MemOperand& opnd) {
   else
     sly(dst, opnd);
 #endif
+}
+
+void MacroAssembler::SubtractLogical(Register dst, const Operand& opnd) {
+  UNIMPLEMENTED();
 }
 
 void MacroAssembler::Subtract(Register dst, const MemOperand& opnd) {
@@ -114,12 +126,61 @@ void MacroAssembler::And(Register dst, const MemOperand& opnd) {
     ny(dst, opnd);
 }
 
-void MacroAssembler::LoadImm(Register dst, const Operand& opnd) {
+void MacroAssembler::And(Register dst, const Operand& opnd) {
+  intptr_t value = opnd.immediate();
+  if (is_int16(value))
+    nill(dst, opnd);
+  else
+    nilf(dst, opnd);
+}
+
+void MacroAssembler::Load(Register dst, const Operand& opnd) {
   intptr_t value = opnd.immediate();
   if (is_int16(value))
       lhi(dst, opnd);
   else
     UNIMPLEMENTED();
+}
+
+void MacroAssembler::Load(Register dst, const MemOperand& opnd) {
+  ASSERT(is_int20(opnd.offset()));
+  if (is_uint12(opnd.offset())) {
+    l(dst, opnd);
+  } else {
+    ly(dst, opnd);
+  }
+}
+
+void MacroAssembler::Compare(Register dst, const Operand& opnd) {
+  intptr_t value = opnd.immediate();
+  if (is_int16(value))
+    chi(dst, opnd);
+  else
+    cfi(dst, opnd);
+}
+
+void MacroAssembler::CompareLogical(Register dst, const Operand& opnd) {
+  UNIMPLEMENTED();
+}
+
+void MacroAssembler::CompareLogical(Register dst, Register src) {
+#ifdef V8_TARGET_S390X
+  clgr(dst, src);
+#else
+  clr(dst, src);
+#endif
+}
+
+void MacroAssembler::AddLogical(Register dst, const Operand& opnd) {
+  alfi(dst, opnd);
+}
+
+void MacroAssembler::AddLogical(Register dst, Register src) {
+#ifdef V8_TARGET_ARCH_S390X
+  algr(dst, src);
+#else
+  alr(dst, src);
+#endif
 }
 
 MacroAssembler::MacroAssembler(Isolate* arg_isolate, void* buffer, int size)
