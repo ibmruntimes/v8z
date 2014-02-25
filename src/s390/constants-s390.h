@@ -1425,13 +1425,17 @@ class Instruction {
   Opcode S390OpcodeValue() {
     OpcodeFormatType opcodeType = getOpcodeFormatType();
     const byte *instr = reinterpret_cast<const byte *>(this);
+
+    // The native instructions are encoded in big-endian format
+    // even if running on little-endian host.  Hence, we need
+    // to ensure we use byte* based bit-wise logic.
     switch (opcodeType) {
       case ONE_BYTE_OPCODE:
         // One Byte - Bits 0 to 7
         return static_cast<Opcode>(*instr);
       case TWO_BYTE_OPCODE:
         // Two Bytes - Bits 0 to 15
-        return static_cast<Opcode>(*reinterpret_cast<uint16_t*>(this));
+        return static_cast<Opcode>((*instr << 8) | (*(instr+1)));
       case TWO_BYTE_DISJOINT_OPCODE:
         // Two Bytes - Bits 0 to 7, 40 to 47
         return static_cast<Opcode>((*instr << 8) | (*(instr+5) & 0xFF));
