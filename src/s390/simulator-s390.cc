@@ -2756,8 +2756,30 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
   switch (opcode) {
     case A:
       break;
-    case STM:
+    case STM: {
+      // Store Multiple 32-bits.
+      RSInstruction* rsinstr = reinterpret_cast<RSInstruction*>(instr);
+      int r1 = rsinstr->R1Value();
+      int r3 = rsinstr->R3Value();
+      int rb = rsinstr->B2Value();
+      int offset = rsinstr->D2Value();
+
+      // Regs roll around if r3 is less than r1.
+      // Artifically increase r3 by 16 so we can calculate
+      // the number of regs stored properly.
+      if (r3 < r1)
+        r3 += 16;
+
+      intptr_t rb_val = (rb == 0) ? 0 : get_register(rb);
+
+      // Store each register in ascending order.
+      for (int i = 0; i < r3 - r1; i++) {
+        int32_t value = get_register((r1 + i) % 16);
+        WriteW(rb_val + offset + 4 * i, value, instr);
+      }
       break;
+    }
+
     default:
       return false;
   }
