@@ -2750,11 +2750,13 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
 }
 
 // Decode routine for four-byte instructions
-void Simulator::DecodeFourByte(Instruction* instr) {
+bool Simulator::DecodeFourByte(Instruction* instr) {
   Opcode opcode = instr->S390OpcodeValue();
 
   switch (opcode) {
     case A:
+      break;
+    case STM:
       break;
     default:
       return false;
@@ -2763,11 +2765,11 @@ void Simulator::DecodeFourByte(Instruction* instr) {
 }
 
 // Decode routine for six-byte instructions
-void Simulator::DecodeSixByte(Instruction* instr) {
+bool Simulator::DecodeSixByte(Instruction* instr) {
   Opcode opcode = instr->S390OpcodeValue();
 
   switch (opcode) {
-    case LILLF:
+    case LLILF:
       break;
     default:
       return false;
@@ -2794,7 +2796,6 @@ void Simulator::InstructionDecode(Instruction* instr) {
   // Try to simulate as S390 Instruction first.
 
   bool processed = true;
-  int orig_out_buffer_pos_ = out_buffer_pos_;
   int instrLength = instr->InstructionLength();
 
   if (instrLength == 2)
