@@ -4084,50 +4084,50 @@ void MacroAssembler::Cmpli(Register src1, const Operand& src2, Register scratch,
   }
 }
 
-void MacroAssembler::And(Register ra, Register rs, const Operand& rb,
+void MacroAssembler::And(Register rb, Register rs, const Operand& rx,
                          RCBit rc) {
-  if (rb.is_reg()) {
-    and_(ra, rs, rb.rm(), rc);
+  if (rx.is_reg()) {
+    and_(rb, rs, rx.rm(), rc);
   } else {
-    if (is_uint16(rb.imm_) && rb.rmode_ == RelocInfo::NONE
+    if (is_uint16(rx.imm_) && rx.rmode_ == RelocInfo::NONE
         && rc == SetRC) {
-      andi(ra, rs, rb);
+      andi(rb, rs, rx);
     } else {
       // mov handles the relocation.
       ASSERT(!rs.is(r0));
-      mov(r0, rb);
-      and_(ra, rs, r0, rc);
+      mov(r0, rx);
+      and_(rb, rs, r0, rc);
     }
   }
 }
 
-void MacroAssembler::Or(Register ra, Register rs, const Operand& rb, RCBit rc) {
-  if (rb.is_reg()) {
-    orx(ra, rs, rb.rm(), rc);
+void MacroAssembler::Or(Register rb, Register rs, const Operand& rx, RCBit rc) {
+  if (rx.is_reg()) {
+    orx(rb, rs, rx.rm(), rc);
   } else {
-    if (is_uint16(rb.imm_) && rb.rmode_ == RelocInfo::NONE && rc == LeaveRC) {
-      ori(ra, rs, rb);
+    if (is_uint16(rx.imm_) && rx.rmode_ == RelocInfo::NONE && rc == LeaveRC) {
+      ori(rb, rs, rx);
     } else {
       // mov handles the relocation.
       ASSERT(!rs.is(r0));
-      mov(r0, rb);
-      orx(ra, rs, r0, rc);
+      mov(r0, rx);
+      orx(rb, rs, r0, rc);
     }
   }
 }
 
-void MacroAssembler::Xor(Register ra, Register rs, const Operand& rb,
+void MacroAssembler::Xor(Register rb, Register rs, const Operand& rx,
                          RCBit rc) {
-  if (rb.is_reg()) {
-    xor_(ra, rs, rb.rm(), rc);
+  if (rx.is_reg()) {
+    xor_(rb, rs, rx.rm(), rc);
   } else {
-    if (is_uint16(rb.imm_) && rb.rmode_ == RelocInfo::NONE && rc == LeaveRC) {
-      xori(ra, rs, rb);
+    if (is_uint16(rx.imm_) && rx.rmode_ == RelocInfo::NONE && rc == LeaveRC) {
+      xori(rb, rs, rx);
     } else {
       // mov handles the relocation.
       ASSERT(!rs.is(r0));
-      mov(r0, rb);
-      xor_(ra, rs, r0, rc);
+      mov(r0, rx);
+      xor_(rb, rs, r0, rc);
     }
   }
 }
@@ -4192,9 +4192,9 @@ void MacroAssembler::LoadP(Register dst, const MemOperand& mem,
     /* cannot use d-form */
     LoadIntLiteral(scratch, offset);
 #if V8_TARGET_ARCH_S390X
-    ldx(dst, MemOperand(mem.ra(), scratch));
+    ldx(dst, MemOperand(mem.rb(), scratch));
 #else
-    lwzx(dst, MemOperand(mem.ra(), scratch));
+    lwzx(dst, MemOperand(mem.rb(), scratch));
 #endif
   } else {
 #if V8_TARGET_ARCH_S390X
@@ -4203,7 +4203,7 @@ void MacroAssembler::LoadP(Register dst, const MemOperand& mem,
       // adjust base to conform to offset alignment requirements
       // Todo: enhance to use scratch if dst is unsuitable
       ASSERT(!dst.is(r0));
-      addi(dst, mem.ra(), Operand((offset & 3) - 4));
+      addi(dst, mem.rb(), Operand((offset & 3) - 4));
       ld(dst, MemOperand(dst, (offset & ~3) + 4));
     } else {
       ld(dst, mem);
@@ -4223,9 +4223,9 @@ void MacroAssembler::StoreP(Register src, const MemOperand& mem,
     /* cannot use d-form */
     LoadIntLiteral(scratch, offset);
 #if V8_TARGET_ARCH_S390X
-    stg(src, MemOperand(mem.ra(), scratch));
+    stg(src, MemOperand(mem.rb(), scratch));
 #else
-    st(src, MemOperand(mem.ra(), scratch));
+    st(src, MemOperand(mem.rb(), scratch));
 #endif
   } else {
 #if V8_TARGET_ARCH_S390X
@@ -4246,10 +4246,10 @@ void MacroAssembler::LoadWordArith(Register dst, const MemOperand& mem,
     /* cannot use d-form */
     LoadIntLiteral(scratch, offset);
 #if V8_TARGET_ARCH_S390X
-    // lwax(dst, MemOperand(mem.ra(), scratch));
+    // lwax(dst, MemOperand(mem.rb(), scratch));
     ASSERT(0);  // lwax not yet implemented
 #else
-    lwzx(dst, MemOperand(mem.ra(), scratch));
+    lwzx(dst, MemOperand(mem.rb(), scratch));
 #endif
   } else {
 #if V8_TARGET_ARCH_S390X
@@ -4258,7 +4258,7 @@ void MacroAssembler::LoadWordArith(Register dst, const MemOperand& mem,
       // adjust base to conform to offset alignment requirements
       // Todo: enhance to use scratch if dst is unsuitable
       ASSERT(!dst.is(r0));
-      addi(dst, mem.ra(), Operand((offset & 3) - 4));
+      addi(dst, mem.rb(), Operand((offset & 3) - 4));
       lwa(dst, MemOperand(dst, (offset & ~3) + 4));
     } else {
       lwa(dst, mem);
@@ -4273,7 +4273,7 @@ void MacroAssembler::LoadWordArith(Register dst, const MemOperand& mem,
 // MemOperand currently only supports d-form
 void MacroAssembler::LoadWord(Register dst, const MemOperand& mem,
                               Register scratch, bool updateForm) {
-  Register base = mem.ra();
+  Register base = mem.rb();
   int offset = mem.offset();
 
   bool use_dform = true;
@@ -4301,7 +4301,7 @@ void MacroAssembler::LoadWord(Register dst, const MemOperand& mem,
 // MemOperand of RX or RXY format
 void MacroAssembler::StoreWord(Register src, const MemOperand& mem,
                                Register scratch, bool updateForm) {
-  Register base = mem.ra();
+  Register base = mem.rb();
   int offset = mem.offset();
 
   bool use_RXform = is_uint16(offset);
@@ -4347,7 +4347,7 @@ void MacroAssembler::StoreWord(Register src, const MemOperand& mem,
 // MemOperand currently only supports d-form
 void MacroAssembler::LoadHalfWord(Register dst, const MemOperand& mem,
                                   Register scratch, bool updateForm) {
-  Register base = mem.ra();
+  Register base = mem.rb();
   int offset = mem.offset();
 
   bool use_dform = true;
@@ -4380,7 +4380,7 @@ void MacroAssembler::LoadHalfWord(Register dst, const MemOperand& mem,
 // MemOperand current only supports d-form
 void MacroAssembler::StoreHalfWord(Register src, const MemOperand& mem,
                                    Register scratch, bool updateForm) {
-  Register base = mem.ra();
+  Register base = mem.rb();
   int offset = mem.offset();
 
   bool use_dform = true;
@@ -4413,7 +4413,7 @@ void MacroAssembler::StoreHalfWord(Register src, const MemOperand& mem,
 // MemOperand currently only supports d-form
 void MacroAssembler::LoadByte(Register dst, const MemOperand& mem,
                               Register scratch, bool updateForm) {
-  Register base = mem.ra();
+  Register base = mem.rb();
   int offset = mem.offset();
 
   bool use_dform = true;
@@ -4446,7 +4446,7 @@ void MacroAssembler::LoadByte(Register dst, const MemOperand& mem,
 // MemOperand current only supports d-form
 void MacroAssembler::StoreByte(Register src, const MemOperand& mem,
                                Register scratch, bool updateForm) {
-  Register base = mem.ra();
+  Register base = mem.rb();
   int offset = mem.offset();
 
   bool use_dform = true;

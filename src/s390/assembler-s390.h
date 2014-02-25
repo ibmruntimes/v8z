@@ -433,8 +433,8 @@ typedef int32_t Disp;
 //   3) a base register + index register + 20 bit signed displacement
 class MemOperand BASE_EMBEDDED {
  public:
-  explicit MemOperand(Register rb, Disp offset = 0);
-  explicit MemOperand(Register rb, Register ri, Disp offset = 0);
+  explicit MemOperand(Register rx, Disp offset = 0);
+  explicit MemOperand(Register rx, Register rb, Disp offset = 0);
 
   uint32_t offset() const {
     return offset_;
@@ -442,19 +442,19 @@ class MemOperand BASE_EMBEDDED {
   uint32_t getDisplacement() const { return offset(); }
 
   // Base register
-  Register ra() const {
-    ASSERT(!ra_.is(no_reg));
-    return ra_;
+  Register rb() const {
+    ASSERT(!baseRegister.is(no_reg));
+    return baseRegister;
   }
 
-  Register getBaseRegister() const { return ra(); }
+  Register getBaseRegister() const { return rb(); }
 
   // Index Register
-  Register rb() const {
-    ASSERT(!rb_.is(no_reg));
-    return rb_;
+  Register rx() const {
+    ASSERT(!indexRegister.is(no_reg));
+    return indexRegister;
   }
-  Register getIndexRegister() const { return rb(); }
+  Register getIndexRegister() const { return rx(); }
 
   // length of the memory operand
   void setLength(Length l) { l_ = l; }
@@ -462,9 +462,9 @@ class MemOperand BASE_EMBEDDED {
 
 
  private:
-  Register ra_;     // base
+  Register baseRegister;     // base
   int32_t offset_;  // offset
-  Register rb_;     // index
+  Register indexRegister;     // index
   Length l_;        // length of the memory operand
 
   friend class Assembler;
@@ -1786,15 +1786,15 @@ SS2_FORM(zap);
 
   void and_(Register dst, Register src1, Register src2, RCBit rc = LeaveRC);
   void andc(Register dst, Register src1, Register src2, RCBit rc = LeaveRC);
-  void andi(Register ra, Register rs, const Operand& imm);
-  void andis(Register ra, Register rs, const Operand& imm);
+  void andi(Register rb, Register rs, const Operand& imm);
+  void andis(Register rb, Register rs, const Operand& imm);
   void nor(Register dst, Register src1, Register src2, RCBit r = LeaveRC);
   void notx(Register dst, Register src, RCBit r = LeaveRC);
   void ori(Register dst, Register src, const Operand& imm);
   void oris(Register dst, Register src, const Operand& imm);
   void orx(Register dst, Register src1, Register src2, RCBit rc = LeaveRC);
   void xori(Register dst, Register src, const Operand& imm);
-  void xoris(Register ra, Register rs, const Operand& imm);
+  void xoris(Register rb, Register rs, const Operand& imm);
   void xor_(Register dst, Register src1, Register src2, RCBit rc = LeaveRC);
   void cmpi(Register src1, const Operand& src2, CRegister cr = cr7);
   void cmpli(Register src1, const Operand& src2, CRegister cr = cr7);
@@ -1831,10 +1831,10 @@ SS2_FORM(zap);
   void stmy(Register r1, Register r2, const MemOperand& src);
   void stmg(Register r1, Register r2, const MemOperand& src);
 
-  void extsb(Register rs, Register ra, RCBit r = LeaveRC);
-  void extsh(Register rs, Register ra, RCBit r = LeaveRC);
+  void extsb(Register rs, Register rb, RCBit r = LeaveRC);
+  void extsh(Register rs, Register rb, RCBit r = LeaveRC);
 
-  void neg(Register rt, Register ra, OEBit o = LeaveOE, RCBit c = LeaveRC);
+  void neg(Register rt, Register rb, OEBit o = LeaveOE, RCBit c = LeaveRC);
 
 #if V8_TARGET_ARCH_S390X
   void ld(Register rd, const MemOperand &src);
@@ -1853,21 +1853,21 @@ SS2_FORM(zap);
               RCBit rc = LeaveRC);
   void clrldi(Register dst, Register src, const Operand& val,
               RCBit rc = LeaveRC);
-  void sradi(Register ra, Register rs, int sh, RCBit r = LeaveRC);
+  void sradi(Register rb, Register rs, int sh, RCBit r = LeaveRC);
   void srd(Register dst, Register src1, Register src2, RCBit r = LeaveRC);
   void sld(Register dst, Register src1, Register src2, RCBit r = LeaveRC);
   void srad(Register dst, Register src1, Register src2, RCBit r = LeaveRC);
   void cntlzd_(Register dst, Register src, RCBit rc = LeaveRC);
-  void extsw(Register rs, Register ra, RCBit r = LeaveRC);
+  void extsw(Register rs, Register rb, RCBit r = LeaveRC);
   void mulld(Register dst, Register src1, Register src2,
              OEBit o = LeaveOE, RCBit r = LeaveRC);
   void divd(Register dst, Register src1, Register src2,
             OEBit o = LeaveOE, RCBit r = LeaveRC);
 #endif
 
-  void rlwinm(Register ra, Register rs, int sh, int mb, int me,
+  void rlwinm(Register rb, Register rs, int sh, int mb, int me,
               RCBit rc = LeaveRC);
-  void rlwimi(Register ra, Register rs, int sh, int mb, int me,
+  void rlwimi(Register rb, Register rs, int sh, int mb, int me,
               RCBit rc = LeaveRC);
   void slwi(Register dst, Register src, const Operand& val, RCBit rc = LeaveRC);
   void srwi(Register dst, Register src, const Operand& val, RCBit rc = LeaveRC);
@@ -1875,7 +1875,7 @@ SS2_FORM(zap);
               RCBit rc = LeaveRC);
   void clrlwi(Register dst, Register src, const Operand& val,
               RCBit rc = LeaveRC);
-  void srawi(Register ra, Register rs, int sh, RCBit r = LeaveRC);
+  void srawi(Register rb, Register rs, int sh, RCBit r = LeaveRC);
   void srw(Register dst, Register src1, Register src2, RCBit r = LeaveRC);
   void slw(Register dst, Register src1, Register src2, RCBit r = LeaveRC);
   void sraw(Register dst, Register src1, Register src2, RCBit r = LeaveRC);
@@ -1927,9 +1927,9 @@ SS2_FORM(zap);
             int32_t code = kDefaultStopCode,
             CRegister cr = cr7);
 
-  void dcbf(Register ra, Register rb);
+  void dcbf(Register rb, Register rx);
   void sync();
-  void icbi(Register ra, Register rb);
+  void icbi(Register rb, Register rx);
   void isync();
 
   // Support for floating point
@@ -2347,12 +2347,12 @@ SS2_FORM(zap);
   // Instruction generation
   void a_form(Instr instr, DwVfpRegister frt, DwVfpRegister fra,
               DwVfpRegister frb, RCBit r);
-  void d_form(Instr instr, Register rt, Register ra, const intptr_t val,
+  void d_form(Instr instr, Register rt, Register rb, const intptr_t val,
               bool signed_disp);
-  void x_form(Instr instr, Register ra, Register rs, Register rb, RCBit r);
-  void xo_form(Instr instr, Register rt, Register ra, Register rb,
+  void x_form(Instr instr, Register rb, Register rs, Register rx, RCBit r);
+  void xo_form(Instr instr, Register rt, Register rb, Register rx,
                OEBit o, RCBit r);
-  void md_form(Instr instr, Register ra, Register rs, int shift, int maskbit,
+  void md_form(Instr instr, Register rb, Register rs, int shift, int maskbit,
                RCBit r);
 
   // Labels

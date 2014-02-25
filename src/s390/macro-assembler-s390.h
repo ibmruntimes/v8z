@@ -600,9 +600,9 @@ class MacroAssembler: public Assembler {
             CRegister cr = cr7);
   void Cmpli(Register src1, const Operand& src2, Register scratch,
              CRegister cr = cr7);
-  void And(Register ra, Register rs, const Operand& rb, RCBit rc = LeaveRC);
-  void Or(Register ra, Register rs, const Operand& rb, RCBit rc = LeaveRC);
-  void Xor(Register ra, Register rs, const Operand& rb, RCBit rc = LeaveRC);
+  void And(Register rb, Register rs, const Operand& rx, RCBit rc = LeaveRC);
+  void Or(Register rb, Register rs, const Operand& rx, RCBit rc = LeaveRC);
+  void Xor(Register rb, Register rs, const Operand& rx, RCBit rc = LeaveRC);
 
   void AddSmiLiteral(Register dst, Register src, Smi *smi, Register scratch);
   void SubSmiLiteral(Register dst, Register src, Smi *smi, Register scratch);
