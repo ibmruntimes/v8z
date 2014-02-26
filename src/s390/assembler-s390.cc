@@ -496,8 +496,10 @@ void Assembler::bind_to(Label* L, int pos) {
 
   while (L->is_linked()) {
     int fixup_pos = L->pos();
+#ifdef DEBUG
     int32_t offset = pos - fixup_pos;
     int maxReach = max_reach_from(fixup_pos);
+#endif
     next(L);  // call next before overwriting link with target at fixup_pos
     // if (is_intn(offset, maxReach) == false) {
       // if (trampoline_pos == kInvalidSlotPos) {
