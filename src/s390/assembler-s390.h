@@ -736,8 +736,11 @@ class Assembler : public AssemblerBase {
 
   // S390 Branch Instruction
   void b_s390(Condition c, Label* l) {
+    bc_s390(c, branch_offset(l, false));
+  }
+  void bc_s390(Condition c, int branch_offset) {
     positions_recorder()->WriteRecordedPositions();
-    int offset = branch_offset(l, false);
+    int offset = branch_offset;
     if (is_int16(offset)) {
       brc(c, Operand(offset & 0xFFFF));  // short jump
     } else {
@@ -764,7 +767,7 @@ class Assembler : public AssemblerBase {
   // Branch instructions
   void bclr(BOfield bo, LKBit lk);
   void blr();
-  void bc(int branch_offset, BOfield bo, int condition_bit, LKBit lk = LeaveLK);
+  void bc(Condition c, int branch_offset);
 
   void bcctr(BOfield bo, LKBit lk);
   void bcr();
@@ -828,7 +831,8 @@ class Assembler : public AssemblerBase {
 
   // Decrement CTR; branch if CTR != 0
   void bdnz(Label* L, LKBit lk = LeaveLK) {
-    bc(branch_offset(L, false), DCBNZ, 0, lk);
+    // TODO(john): has to be replaced by native s390 instruction
+    ASSERT(false);
   }
 
   // Data-processing instructions
