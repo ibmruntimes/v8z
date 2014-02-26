@@ -1077,7 +1077,6 @@ bool Decoder::DecodeTwoByte(Instruction* instr) {
                                   instr->InstructionBits<TwoByteInstr>());
 
   Opcode opcode = instr->S390OpcodeValue();
-  // @TODO should we have FormatRR that calls Format here?
   switch (opcode) {
       case SVC: Format(instr, "svc\t'i3"); break;
       case AR: Format(instr, "ar\t'r1,'r2"); break;
