@@ -1227,15 +1227,24 @@ TEST(15) {
   __ function_descriptor();
 #endif
 
-  Label L2, L3;
+  Label L2, L3, L4;
 
-  __ ltgr(r2, r2);
-  __ je_s390(&L2);
-  __ ar(r3, r4);
-  __ j_s390(&L3);
+  __ chi(r2, Operand(10));
+  __ ble_s390(&L2);
+  __ lr(r2, r4);
+  __ ar(r2, r3);
+  __ b_s390(&L3);
 
   __ bind(&L2);
-  __ sr(r3, r4);
+  __ chi(r2, Operand(5));
+  __ bh_s390(&L4);
+
+  __ lhi(r2, Operand(0));
+  __ b_s390(&L3);
+
+  __ bind(&L4);
+  __ lr(r2, r3);
+  __ sr(r2, r4);
 
   __ bind(&L3);
   __ lgfr(r2, r3);
