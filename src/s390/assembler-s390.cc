@@ -706,14 +706,6 @@ void Assembler::bc(int branch_offset, BOfield bo, int condition_bit, LKBit lk) {
   emit(BCX | bo | condition_bit*B16 | (kImm16Mask & branch_offset) | lk);
 }
 
-void Assembler::b(int branch_offset, LKBit lk) {
-  positions_recorder()->WriteRecordedPositions();
-  int imm26 = branch_offset;
-  ASSERT(is_int26(imm26));
-  // todo add AA and LK bits
-  emit(BX | (imm26 & kImm26Mask) | lk);
-}
-
 // Indirect Branch via register
 void Assembler::br(Register target) {
   bcr((Condition)0xF, target);

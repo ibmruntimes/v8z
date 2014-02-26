@@ -746,6 +746,7 @@ class Assembler : public AssemblerBase {
 
   // S390 Branch Instruction
   void b_s390(Condition c, Label* l) {
+    positions_recorder()->WriteRecordedPositions();
     int offset = branch_offset(l, false);
     if (is_int16(offset)) {
       brc(c, Operand(offset & 0xFFFF));  // short jump
@@ -774,7 +775,6 @@ class Assembler : public AssemblerBase {
   void bclr(BOfield bo, LKBit lk);
   void blr();
   void bc(int branch_offset, BOfield bo, int condition_bit, LKBit lk = LeaveLK);
-  void b(int branch_offset, LKBit lk);
 
   void bcctr(BOfield bo, LKBit lk);
   void bcr();
