@@ -278,6 +278,9 @@ class Simulator {
       condition_reg_ = CC_GT;
     }
   }
+  bool TestConditionCode(Condition mask) {
+    return (condition_reg_ & mask) != 0;
+  }
 
   // PowerPC
   void SetCR0(intptr_t result, bool setSO = false);

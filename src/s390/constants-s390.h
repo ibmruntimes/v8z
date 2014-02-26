@@ -1555,6 +1555,9 @@ class RRInstruction : Instruction {
   inline int R2Value() const {
     return Bits<TwoByteInstr, int>(3, 0);
   }
+  inline Condition M1Value() const {
+    return static_cast<Condition>(Bits<TwoByteInstr>(7, 4));
+  }
 
   inline int size() const { return 2; }
 };
@@ -1580,6 +1583,9 @@ class RIInstruction : Instruction {
     }
     inline int16_t I2Value() const {
       return Bits<FourByteInstr, int16_t>(15, 0);
+    }
+    inline Condition M1Value() const {
+      return static_cast<Condition>(Bits<FourByteInstr>(23, 20));
     }
     inline int size() const { return 4; }
 };
@@ -1618,13 +1624,6 @@ class RXInstruction : Instruction {
       return Bits<FourByteInstr, uint32_t>(11, 0);
     }
     inline int size() const { return 4; }
-
-    // the the memory address referred in this instruction
-    inline intptr_t get_mem_address const (const Simulator& sim) {
-      intptr_t x2_val = sim.get_register(X2Value());
-      intptr_t b2_val = sim.get_register(B2Value());
-      return x2_val + b2_val + D2Value();
-    }
 };
 
 // RXY Instruction
@@ -1645,12 +1644,6 @@ class RXYInstruction : Instruction {
       return (int32_t)value;
     }
     inline int size() const { return 6; }
-    // the the memory address referred in this instruction
-    inline intptr_t get_mem_address const (const Simulator& sim) {
-      intptr_t x2_val = sim.get_register(X2Value());
-      intptr_t b2_val = sim.get_register(B2Value());
-      return x2_val + b2_val + D2Value();
-    }
 };
 
 // RIL Instruction
