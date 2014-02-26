@@ -1556,7 +1556,7 @@ class RRInstruction : Instruction {
     return Bits<TwoByteInstr, int>(3, 0);
   }
   inline Condition M1Value() const {
-    return static_cast<Condition>(Bits<TwoByteInstr>(7, 4));
+    return static_cast<Condition>(Bits<TwoByteInstr, int>(7, 4));
   }
 
   inline int size() const { return 2; }
@@ -1585,7 +1585,7 @@ class RIInstruction : Instruction {
       return Bits<FourByteInstr, int16_t>(15, 0);
     }
     inline Condition M1Value() const {
-      return static_cast<Condition>(Bits<FourByteInstr>(23, 20));
+      return static_cast<Condition>(Bits<FourByteInstr, int>(23, 20));
     }
     inline int size() const { return 4; }
 };
