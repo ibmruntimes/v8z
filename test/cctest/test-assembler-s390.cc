@@ -1216,4 +1216,46 @@ TEST(14) {
 
   ::exit(0);
 }
+
+TEST(15) {
+  InitializeVM();
+  v8::HandleScope scope;
+
+  Assembler assm(Isolate::Current(), NULL, 0);
+
+#if defined(_AIX) || defined(V8_TARGET_ARCH_S390X)
+  __ function_descriptor();
+#endif
+
+  Label L2, L3;
+
+  __ ltgr(r2, r2);
+  __ je_s390(&L2);
+  __ ar(r3, r4);
+  __ j_s390(&L3);
+
+  __ bind(&L2);
+  __ sr(r3, r4);
+
+  __ bind(&L3);
+  __ lgfr(r2, r3);
+  __ br(r14);
+
+  CodeDesc desc;
+  assm.GetCode(&desc);
+  Object* code = HEAP->CreateCode(
+      desc,
+      Code::ComputeFlags(Code::STUB),
+      Handle<Object>(HEAP->undefined_value()))->ToObjectChecked();
+  CHECK(code->IsCode());
+#ifdef DEBUG
+  // Code::cast(code)->Print();
+#endif
+  F2 f = FUNCTION_CAST<F2>(Code::cast(code)->entry());
+  intptr_t res =
+    reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(f, 3, 4, 3, 0, 0));
+  ::printf("f() = %" V8PRIdPTR "\n", res);
+  CHECK_EQ(7, static_cast<int>(res));
+}
+
 #undef __

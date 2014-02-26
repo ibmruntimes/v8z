@@ -66,17 +66,17 @@ const unsigned int kCacheLineSize = (1 << kCacheLineSizeLog2);
 // General constants are in an anonymous enum in class Instr.
 enum Condition {
   kNoCondition = -1,
-  eq         =  0,         // Equal.
-  ne         =  1,         // Not equal.
-  ge         =  2,         // Greater or equal.
-  lt         =  3,         // Less than.
-  gt         =  4,         // Greater than.
-  le         =  5,         // Less then or equal
+  eq         =  0x8,         // Equal.
+  ne         =  0x7,         // Not equal.
+  ge         =  0xd,         // Greater or equal.
+  lt         =  0x4,         // Less than.
+  gt         =  0x2,         // Greater than.
+  le         =  0xc,         // Less then or equal
   unordered  =  6,         // Floating-point unordered
   ordered    =  7,
   overflow   =  8,         // Summary overflow
   nooverflow =  9,
-  al         = 10,         // Always.
+  al         =  0xf,         // Always.
 
   mask0x0    =  0,         // no jumps
   mask0x1    =  1,

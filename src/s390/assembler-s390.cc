@@ -431,38 +431,45 @@ const int kEndOfChain = -4;
 int Assembler::target_at(int pos)  {
   Instr instr = instr_at(pos);
   // check which type of branch this is 16 or 26 bit offset
-  int opcode = instr & kOpcodeMask;
-  if (BX == opcode) {
-    int imm26 = ((instr & kImm26Mask) << 6) >> 6;
-    // @TODO to be removed.
-    // Line commented out because S390 may jump to 2byte granularity!!
-    // Masking with kAAMask will round to nearest 4 bytes, messing
-    // up linked labels.
-    // imm26 &= ~(kAAMask|kLKMask);  // original PPC code
-    imm26 &= ~(kLKMask);  // Remove link bit until we use 390 instr
-    if (imm26 == 0)
-        return kEndOfChain;
-    return pos + imm26;
-  } else if (BCX == opcode) {
-    int imm16 = SIGN_EXT_IMM16((instr & kImm16Mask));
-    // @TODO to be removed.
-    // Line commented out because S390 may jump to 2byte granularity!!
-    // Masking with kAAMask will round to nearest 4 bytes, messing
-    // up linked labels.
-    // imm16 &= ~(kAAMask|kLKMask);  // original PPC code
-    imm16 &= ~(kLKMask);  // Remove link bit until we use 390 instr
-    if (imm16 == 0)
-        return kEndOfChain;
-    return pos + imm16;
-  } else if ((instr & ~kImm16Mask) == 0) {
-    // Emitted label constant, not part of a branch (regexp PushBacktrack).
-     if (instr == 0) {
-       return kEndOfChain;
-     } else {
-       int32_t imm16 = SIGN_EXT_IMM16(instr);
-       return (imm16 + pos);
-     }
-  }
+  uint32_t opcode = (instr & 0xff0f0000);
+  ASSERT(opcode == 0xa7040000);
+  int16_t imm16 = SIGN_EXT_IMM16((instr & kImm16Mask));
+  imm16 &= ~(kLKMask);  // Remove link bit until we use 390 instr
+  if (imm16 == 0)
+    return kEndOfChain;
+  return pos + imm16;
+
+//  if (BX == opcode) {
+//    int imm26 = ((instr & kImm26Mask) << 6) >> 6;
+//    // @TODO to be removed.
+//    // Line commented out because S390 may jump to 2byte granularity!!
+//    // Masking with kAAMask will round to nearest 4 bytes, messing
+//    // up linked labels.
+//    // imm26 &= ~(kAAMask|kLKMask);  // original PPC code
+//    imm26 &= ~(kLKMask);  // Remove link bit until we use 390 instr
+//    if (imm26 == 0)
+//        return kEndOfChain;
+//    return pos + imm26;
+//  } else if (BCX == opcode) {
+//    int imm16 = SIGN_EXT_IMM16((instr & kImm16Mask));
+//    // @TODO to be removed.
+//    // Line commented out because S390 may jump to 2byte granularity!!
+//    // Masking with kAAMask will round to nearest 4 bytes, messing
+//    // up linked labels.
+//    // imm16 &= ~(kAAMask|kLKMask);  // original PPC code
+//    imm16 &= ~(kLKMask);  // Remove link bit until we use 390 instr
+//    if (imm16 == 0)
+//        return kEndOfChain;
+//    return pos + imm16;
+//  } else if ((instr & ~kImm16Mask) == 0) {
+//    // Emitted label constant, not part of a branch (regexp PushBacktrack).
+//     if (instr == 0) {
+//       return kEndOfChain;
+//     } else {
+//       int32_t imm16 = SIGN_EXT_IMM16(instr);
+//       return (imm16 + pos);
+//     }
+//  }
 
   PPCPORT_UNIMPLEMENTED();
   ASSERT(false);
@@ -471,48 +478,46 @@ int Assembler::target_at(int pos)  {
 
 void Assembler::target_at_put(int pos, int target_pos) {
   Instr instr = instr_at(pos);
-  int opcode = instr & kOpcodeMask;
+  uint32_t opcode = (instr & 0xff0f0000);
+  ASSERT(opcode == 0xa7040000);
+
+  int16_t imm16 = target_pos - pos;
+  instr &= (~0xffff);
+  ASSERT(is_int16(imm16));
+  instr_at_put(pos, instr | (imm16 >> 1));
+  return;
 
   // check which type of branch this is 16 or 26 bit offset
-  if (BX == opcode) {
-    int imm26 = target_pos - pos;
-    instr &= ((~kImm26Mask)|kAAMask|kLKMask);
-    ASSERT(is_int26(imm26));
-    instr_at_put(pos, instr | (imm26 & kImm26Mask));
-    return;
-  } else if (BCX == opcode) {
-    int imm16 = target_pos - pos;
-    instr &= ((~kImm16Mask)|kAAMask|kLKMask);
-    ASSERT(is_int16(imm16));
-    instr_at_put(pos, instr | (imm16 & kImm16Mask));
-    return;
-  } else if ((instr & ~kImm16Mask) == 0) {
-    ASSERT(target_pos == kEndOfChain || target_pos >= 0);
-    // Emitted label constant, not part of a branch.
-    // Make label relative to Code* of generated Code object.
-    instr_at_put(pos, target_pos + (Code::kHeaderSize - kHeapObjectTag));
-    return;
-  }
+//  if (BX == opcode) {
+//    int imm26 = target_pos - pos;
+//    instr &= ((~kImm26Mask)|kAAMask|kLKMask);
+//    ASSERT(is_int26(imm26));
+//    instr_at_put(pos, instr | (imm26 & kImm26Mask));
+//    return;
+//  } else if (BCX == opcode) {
+//    int imm16 = target_pos - pos;
+//    instr &= ((~kImm16Mask)|kAAMask|kLKMask);
+//    ASSERT(is_int16(imm16));
+//    instr_at_put(pos, instr | (imm16 & kImm16Mask));
+//    return;
+//  } else if ((instr & ~kImm16Mask) == 0) {
+//    ASSERT(target_pos == kEndOfChain || target_pos >= 0);
+//    // Emitted label constant, not part of a branch.
+//    // Make label relative to Code* of generated Code object.
+//    instr_at_put(pos, target_pos + (Code::kHeaderSize - kHeapObjectTag));
+//    return;
+//  }
 
   ASSERT(false);
 }
 
 int Assembler::max_reach_from(int pos) {
-  Instr instr = instr_at(pos);
-  int opcode = instr & kOpcodeMask;
+//  Instr instr = instr_at(pos);
+//  int opcode = instr & kOpcodeMask;
 
-  // check which type of branch this is 16 or 26 bit offset
-  if (BX == opcode) {
-    return 26;
-  } else if (BCX == opcode) {
-    return 16;
-  } else if ((instr & ~kImm16Mask) == 0) {
-    // Emitted label constant, not part of a branch (regexp PushBacktrack).
-    return 16;
-  }
-
-  ASSERT(false);
-  return 0;
+  // TODO: check which type of branch this is 16 or 26 bit offset
+  // assume using bcr only by now
+  return 16;
 }
 
 void Assembler::bind_to(Label* L, int pos) {
@@ -3612,7 +3617,9 @@ void Assembler::brasl(Register r, const Operand& opnd) {
 
 // Branch relative on Condition (32)
 void Assembler::brc(Condition c, const Operand& opnd) {
-  ri_form(BRC, c, opnd);
+  Operand opd = opnd;
+  opd.setBits(16);
+  ri_form(BRC, c, opd);
 }
 
 // Branch Relative on Condition (64)

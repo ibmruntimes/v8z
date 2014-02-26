@@ -413,6 +413,10 @@ class Operand BASE_EMBEDDED {
     return imm_;
   }
 
+  inline void setBits(int n) {
+    imm_ = (static_cast<uint32_t>(imm_) << (32 - n)) >> (32 - n);
+  }
+
   Register rm() const { return rm_; }
 
  private:
@@ -730,6 +734,20 @@ class Assembler : public AssemblerBase {
   // ---------------------------------------------------------------------------
   // Code generation
 
+  // S390 Branch Instruction
+  void j_s390(Condition c, Label* l) {
+    brc(c, Operand(branch_offset(l, false)));
+  }
+  void je_s390(Label * l) { j_s390(eq, l); }
+  void jne_s390(Label * l) { j_s390(ne, l); }
+  void jl_s390(Label * l) { j_s390(lt, l); }
+  void jle_s390(Label * l) { j_s390(le, l); }
+  void jh_s390(Label * l) { j_s390(gt, l); }
+  void jhe_s390(Label * l) { j_s390(ge, l); }
+  void j_s390(Label * l) { j_s390(al, l); }
+  // ---------------------------------------------------------------------------
+  // Code generation
+
   // Insert the smallest number of nop instructions
   // possible to align the pc offset to a multiple
   // of m. m must be a power of 2 (>= 4).
@@ -753,11 +771,14 @@ class Assembler : public AssemblerBase {
 
   // Convenience branch instructions using labels
   void b(Label* L, LKBit lk = LeaveLK)  {
-    b(branch_offset(L, false), lk);
+    j_s390(L);
+    // b(branch_offset(L, false), lk);
   }
 
   void bc_short(Condition cond, Label* L, CRegister cr = cr7,
                 LKBit lk = LeaveLK)  {
+    return j_s390(cond, L);
+/*
     ASSERT(cond != al);
     ASSERT(cr.code() >= 0 && cr.code() <= 7);
 
@@ -797,9 +818,12 @@ class Assembler : public AssemblerBase {
       default:
         UNIMPLEMENTED();
     }
+*/
   }
-
   void b(Condition cond, Label* L, CRegister cr = cr7, LKBit lk = LeaveLK)  {
+    j_s390(cond, L);
+    return;
+
     if (cond == al) {
         b(L, lk);
         return;
