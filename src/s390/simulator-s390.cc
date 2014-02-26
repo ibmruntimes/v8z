@@ -3362,11 +3362,11 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   va_start(parameters, argument_count);
   // Set up arguments
 
-  // First eight arguments passed in registers r3-r10.
-  int reg_arg_count   = (argument_count > 8) ? 8 : argument_count;
+  // First eight arguments passed in registers r2-r6.
+  int reg_arg_count   = (argument_count > 5) ? 5 : argument_count;
   int stack_arg_count = argument_count - reg_arg_count;
   for (int i = 0; i < reg_arg_count; i++) {
-      set_register(i + 3, va_arg(parameters, intptr_t));
+      set_register(i + 2, va_arg(parameters, intptr_t));
   }
 
   // Remaining arguments passed on stack.
@@ -3405,103 +3405,56 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   special_reg_lr_ = end_sim_pc;
 
   // Remember the values of non-volatile registers.
-  intptr_t r2_val = get_register(r2);
+  intptr_t r6_val = get_register(r6);
+  intptr_t r7_val = get_register(r7);
+  intptr_t r8_val = get_register(r8);
+  intptr_t r9_val = get_register(r9);
+  intptr_t r10_val = get_register(r10);
+  intptr_t r11_val = get_register(r11);
+  intptr_t r12_val = get_register(r12);
   intptr_t r13_val = get_register(r13);
-  intptr_t r14_val = get_register(r14);
-  intptr_t r15_val = get_register(r15);
-  intptr_t r16_val = get_register(r16);
-  intptr_t r17_val = get_register(r17);
-  intptr_t r18_val = get_register(r18);
-  intptr_t r19_val = get_register(r19);
-  intptr_t r20_val = get_register(r20);
-  intptr_t r21_val = get_register(r21);
-  intptr_t r22_val = get_register(r22);
-  intptr_t r23_val = get_register(r23);
-  intptr_t r24_val = get_register(r24);
-  intptr_t r25_val = get_register(r25);
-  intptr_t r26_val = get_register(r26);
-  intptr_t r27_val = get_register(r27);
-  intptr_t r28_val = get_register(r28);
-  intptr_t r29_val = get_register(r29);
-  intptr_t r30_val = get_register(r30);
-  intptr_t r31_val = get_register(fp);
 
   // Set up the non-volatile registers with a known value. To be able to check
   // that they are preserved properly across JS execution.
   intptr_t callee_saved_value = icount_;
-  set_register(r2, callee_saved_value);
+  set_register(r6, callee_saved_value);
+  set_register(r7, callee_saved_value);
+  set_register(r8, callee_saved_value);
+  set_register(r9, callee_saved_value);
+  set_register(r10, callee_saved_value);
+  set_register(r11, callee_saved_value);
+  set_register(r12, callee_saved_value);
   set_register(r13, callee_saved_value);
-  set_register(r14, callee_saved_value);
-  set_register(r15, callee_saved_value);
-  set_register(r16, callee_saved_value);
-  set_register(r17, callee_saved_value);
-  set_register(r18, callee_saved_value);
-  set_register(r19, callee_saved_value);
-  set_register(r20, callee_saved_value);
-  set_register(r21, callee_saved_value);
-  set_register(r22, callee_saved_value);
-  set_register(r23, callee_saved_value);
-  set_register(r24, callee_saved_value);
-  set_register(r25, callee_saved_value);
-  set_register(r26, callee_saved_value);
-  set_register(r27, callee_saved_value);
-  set_register(r28, callee_saved_value);
-  set_register(r29, callee_saved_value);
-  set_register(r30, callee_saved_value);
-  set_register(fp, callee_saved_value);
 
   // Start the simulation
   Execute();
 
   // Check that the non-volatile registers have been preserved.
-  CHECK_EQ(callee_saved_value, get_register(r2));
+  CHECK_EQ(callee_saved_value, get_register(r6));
+  CHECK_EQ(callee_saved_value, get_register(r7));
+  CHECK_EQ(callee_saved_value, get_register(r8));
+  CHECK_EQ(callee_saved_value, get_register(r9));
+  CHECK_EQ(callee_saved_value, get_register(r10));
+  CHECK_EQ(callee_saved_value, get_register(r11));
+  CHECK_EQ(callee_saved_value, get_register(r12));
   CHECK_EQ(callee_saved_value, get_register(r13));
-  CHECK_EQ(callee_saved_value, get_register(r14));
-  CHECK_EQ(callee_saved_value, get_register(r15));
-  CHECK_EQ(callee_saved_value, get_register(r16));
-  CHECK_EQ(callee_saved_value, get_register(r17));
-  CHECK_EQ(callee_saved_value, get_register(r18));
-  CHECK_EQ(callee_saved_value, get_register(r19));
-  CHECK_EQ(callee_saved_value, get_register(r20));
-  CHECK_EQ(callee_saved_value, get_register(r21));
-  CHECK_EQ(callee_saved_value, get_register(r22));
-  CHECK_EQ(callee_saved_value, get_register(r23));
-  CHECK_EQ(callee_saved_value, get_register(r24));
-  CHECK_EQ(callee_saved_value, get_register(r25));
-  CHECK_EQ(callee_saved_value, get_register(r26));
-  CHECK_EQ(callee_saved_value, get_register(r27));
-  CHECK_EQ(callee_saved_value, get_register(r28));
-  CHECK_EQ(callee_saved_value, get_register(r29));
-  CHECK_EQ(callee_saved_value, get_register(r30));
-  CHECK_EQ(callee_saved_value, get_register(fp));
 
   // Restore non-volatile registers with the original value.
-  set_register(r2, r2_val);
+  set_register(r6, r6_val);
+  set_register(r7, r7_val);
+  set_register(r8, r8_val);
+  set_register(r9, r9_val);
+  set_register(r10, r10_val);
+  set_register(r11, r11_val);
+  set_register(r12, r12_val);
   set_register(r13, r13_val);
-  set_register(r14, r14_val);
-  set_register(r15, r15_val);
-  set_register(r16, r16_val);
-  set_register(r17, r17_val);
-  set_register(r18, r18_val);
-  set_register(r19, r19_val);
-  set_register(r20, r20_val);
-  set_register(r21, r21_val);
-  set_register(r22, r22_val);
-  set_register(r23, r23_val);
-  set_register(r24, r24_val);
-  set_register(r25, r25_val);
-  set_register(r26, r26_val);
-  set_register(r27, r27_val);
-  set_register(r28, r28_val);
-  set_register(r29, r29_val);
-  set_register(r30, r30_val);
-  set_register(fp, r31_val);
 
   // Pop stack passed arguments.
   CHECK_EQ(entry_stack, get_register(sp));
   set_register(sp, original_stack);
 
-  intptr_t result = get_register(r3);   // PowerPC
+  // Return value register
+  intptr_t result = get_register(r2);
   return result;
 }
 
