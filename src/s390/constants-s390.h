@@ -78,6 +78,11 @@ enum Condition {
   nooverflow =  9,
   al         =  0xf,         // Always.
 
+  CC_EQ      = 0x08,       // S390 condition code 0b1000
+  CC_LT      = 0x04,       // S390 condition code 0b0100
+  CC_GT      = 0x02,       // S390 condition code 0b0010
+  CC_OF      = 0x01,       // S390 condition code 0b0001
+
   mask0x0    =  0,         // no jumps
   mask0x1    =  1,
   mask0x2    =  2,
@@ -1640,6 +1645,12 @@ class RXYInstruction : Instruction {
       return (int32_t)value;
     }
     inline int size() const { return 6; }
+    // the the memory address referred in this instruction
+    inline intptr_t get_mem_address const (const Simulator& sim) {
+      intptr_t x2_val = sim.get_register(X2Value());
+      intptr_t b2_val = sim.get_register(B2Value());
+      return x2_val + b2_val + D2Value();
+    }
 };
 
 // RIL Instruction

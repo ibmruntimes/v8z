@@ -268,6 +268,16 @@ class Simulator {
   bool DecodeFourByte(Instruction* instr);
   bool DecodeSixByte(Instruction* instr);
   bool S390InstructionDecode(Instruction *instr);
+  template <typename T>
+  void SetS390ConditionCode(T lhs, T rhs, bool check_overflow = false) {
+    if (lhs == rhs) {
+      condition_reg_ = CC_EQ;
+    } else if (lhs < rhs) {
+      condition_reg_ = CC_LT;
+    } else {
+      condition_reg_ = CC_GT;
+    }
+  }
 
   // PowerPC
   void SetCR0(intptr_t result, bool setSO = false);
@@ -312,6 +322,8 @@ class Simulator {
   // Saturating instructions require a Q flag to indicate saturation.
   // There is currently no way to read the CPSR directly, and thus read the Q
   // flag, so this is left unimplemented.
+  // @TODO (AlanLi): we might need to change the type, because we can
+  // still use 32bit instructions on 64bit builds
   intptr_t registers_[kNumGPRs];  // PowerPC
   // condition register. In s390, the last 4 bits are used.
   int32_t condition_reg_;
