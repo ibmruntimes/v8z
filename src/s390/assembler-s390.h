@@ -735,16 +735,21 @@ class Assembler : public AssemblerBase {
   // Code generation
 
   // S390 Branch Instruction
-  void j_s390(Condition c, Label* l) {
-    brc(c, Operand(branch_offset(l, false)));
+  void b_s390(Condition c, Label* l) {
+    int offset = branch_offset(l, false);
+    if (is_int16(offset)) {
+      brc(c, Operand(offset & 0xFFFF));  // short jump
+    } else {
+      brcl(c, Operand(offset));          // long jump
+    }
   }
-  void je_s390(Label * l) { j_s390(eq, l); }
-  void jne_s390(Label * l) { j_s390(ne, l); }
-  void jl_s390(Label * l) { j_s390(lt, l); }
-  void jle_s390(Label * l) { j_s390(le, l); }
-  void jh_s390(Label * l) { j_s390(gt, l); }
-  void jhe_s390(Label * l) { j_s390(ge, l); }
-  void j_s390(Label * l) { j_s390(al, l); }
+  void be_s390(Label * l) { b_s390(eq, l); }
+  void bne_s390(Label * l) { b_s390(ne, l); }
+  void bl_s390(Label * l) { b_s390(lt, l); }
+  void ble_s390(Label * l) { b_s390(le, l); }
+  void bh_s390(Label * l) { b_s390(gt, l); }
+  void bhe_s390(Label * l) { b_s390(ge, l); }
+  void b_s390(Label * l) { b_s390(al, l); }
   // ---------------------------------------------------------------------------
   // Code generation
 
@@ -771,57 +776,15 @@ class Assembler : public AssemblerBase {
 
   // Convenience branch instructions using labels
   void b(Label* L, LKBit lk = LeaveLK)  {
-    j_s390(L);
-    // b(branch_offset(L, false), lk);
+    b_s390(L);
   }
 
   void bc_short(Condition cond, Label* L, CRegister cr = cr7,
                 LKBit lk = LeaveLK)  {
-    return j_s390(cond, L);
-/*
-    ASSERT(cond != al);
-    ASSERT(cr.code() >= 0 && cr.code() <= 7);
-
-    int b_offset = branch_offset(L, false);
-
-    switch (cond) {
-      case eq:
-        bc(b_offset, BT, encode_crbit(cr, CR_EQ), lk);
-        break;
-      case ne:
-        bc(b_offset, BF, encode_crbit(cr, CR_EQ), lk);
-        break;
-      case gt:
-        bc(b_offset, BT, encode_crbit(cr, CR_GT), lk);
-        break;
-      case le:
-        bc(b_offset, BF, encode_crbit(cr, CR_GT), lk);
-        break;
-      case lt:
-        bc(b_offset, BT, encode_crbit(cr, CR_LT), lk);
-        break;
-      case ge:
-        bc(b_offset, BF, encode_crbit(cr, CR_LT), lk);
-        break;
-      case unordered:
-        bc(b_offset, BT, encode_crbit(cr, CR_FU), lk);
-        break;
-      case ordered:
-        bc(b_offset, BF, encode_crbit(cr, CR_FU), lk);
-        break;
-      case overflow:
-        bc(b_offset, BT, encode_crbit(cr, CR_SO), lk);
-        break;
-      case nooverflow:
-        bc(b_offset, BF, encode_crbit(cr, CR_SO), lk);
-        break;
-      default:
-        UNIMPLEMENTED();
-    }
-*/
+    return b_s390(cond, L);
   }
   void b(Condition cond, Label* L, CRegister cr = cr7, LKBit lk = LeaveLK)  {
-    j_s390(cond, L);
+    b_s390(cond, L);
     return;
 
     if (cond == al) {
