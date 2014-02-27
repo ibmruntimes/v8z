@@ -1334,8 +1334,8 @@ class Instruction {
   }
 
   // Read bits according to instruction type
-  template<typename T>
-  inline T Bits(int hi, int lo) const {
+  template<typename T, typename U>
+  inline U Bits(int hi, int lo) const {
     return (InstructionBits<T>() >> lo) & ((2 << (hi - lo)) - 1);
   }
 
@@ -1545,10 +1545,10 @@ class RRInstruction : Instruction {
   inline int R1Value() const {
     // the high and low parameters of Bits is the number of bits from
     // rightmost place
-    return Bits<TwoByteInstr>(7, 4);
+    return Bits<TwoByteInstr, int>(7, 4);
   }
   inline int R2Value() const {
-    return Bits<TwoByteInstr>(3, 0);
+    return Bits<TwoByteInstr, int>(3, 0);
   }
 
   inline int size() const { return 2; }
@@ -1558,10 +1558,10 @@ class RRInstruction : Instruction {
 class RREInstruction : Instruction {
   public:
   inline int R1Value() const {
-    return Bits<FourByteInstr>(7, 4);
+    return Bits<FourByteInstr, int>(7, 4);
   }
   inline int R2Value() const {
-    return Bits<FourByteInstr>(3, 0);
+    return Bits<FourByteInstr, int>(3, 0);
   }
 
   inline int size() const { return 4; }
@@ -1571,10 +1571,10 @@ class RREInstruction : Instruction {
 class RIInstruction : Instruction {
   public:
     inline int R1Value() const {
-      return Bits<FourByteInstr>(23, 20);
+      return Bits<FourByteInstr, int>(23, 20);
     }
     inline int I2Value() const {
-      return Bits<FourByteInstr>(15, 0);
+      return Bits<FourByteInstr, int>(15, 0);
     }
     inline int size() const { return 4; }
 };
@@ -1583,16 +1583,16 @@ class RIInstruction : Instruction {
 class RSInstruction : Instruction {
   public:
     inline int R1Value() const {
-      return Bits<FourByteInstr>(23, 20);
+      return Bits<FourByteInstr, int>(23, 20);
     }
     inline int R3Value() const {
-      return Bits<FourByteInstr>(19, 16);
+      return Bits<FourByteInstr, int>(19, 16);
     }
     inline int B2Value() const {
-      return Bits<FourByteInstr>(15, 12);
+      return Bits<FourByteInstr, int>(15, 12);
     }
     inline unsigned int D2Value() const {
-      return Bits<FourByteInstr>(11, 0);
+      return Bits<FourByteInstr, unsigned int>(11, 0);
     }
     inline int size() const { return 4; }
 };
@@ -1601,16 +1601,16 @@ class RSInstruction : Instruction {
 class RXInstruction : Instruction {
   public:
     inline int R1Value() const {
-      return Bits<FourByteInstr>(23, 20);
+      return Bits<FourByteInstr, int>(23, 20);
     }
     inline int X2Value() const {
-      return Bits<FourByteInstr>(19, 16);
+      return Bits<FourByteInstr, int>(19, 16);
     }
     inline int B2Value() const {
-      return Bits<FourByteInstr>(15, 12);
+      return Bits<FourByteInstr, int>(15, 12);
     }
     inline uint32_t D2Value() const {
-      return Bits<FourByteInstr>(11, 0);
+      return Bits<FourByteInstr, uint32_t>(11, 0);
     }
     inline int size() const { return 4; }
 };
@@ -1619,18 +1619,18 @@ class RXInstruction : Instruction {
 class RXYInstruction : Instruction {
   public:
     inline int R1Value() const {
-      return Bits<SixByteInstr>(23, 20);
+      return Bits<SixByteInstr, int>(23, 20);
     }
     inline int X2Value() const {
-      return Bits<SixByteInstr>(19, 16);
+      return Bits<SixByteInstr, int>(19, 16);
     }
     inline int B2Value() const {
-      return Bits<SixByteInstr>(15, 12);
+      return Bits<SixByteInstr, int>(15, 12);
     }
     inline int32_t D2Value() const {
-      int32_t value = Bits<SixByteInstr>(27, 16);
-      value &= Bits<SixByteInstr>(15, 8) << 12;
-      return value;
+      int32_t value = Bits<SixByteInstr, int32_t>(27, 16);
+      value += Bits<SixByteInstr, int8_t>(15, 8) << 12;
+      return (int32_t)value;
     }
     inline int size() const { return 6; }
 };
@@ -1639,10 +1639,10 @@ class RXYInstruction : Instruction {
 class RILInstruction : Instruction {
   public:
     inline int R1Value() const {
-      return Bits<SixByteInstr>(23, 20);
+      return Bits<SixByteInstr, int>(23, 20);
     }
     inline int32_t I2Value() const {
-      return Bits<SixByteInstr>(31, 0);
+      return Bits<SixByteInstr, int>(31, 0);
     }
     inline int size() const { return 6; }
 };
