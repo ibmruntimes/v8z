@@ -70,7 +70,7 @@ TEST(0) {
   __ llilf(r2, Operand(4));  // test 6-byte instr
   __ lgr(r2, r2);            // test 2-byte opcode
   __ ar(r2, r1);             // test 2-byte instr
-  __ br(r14);
+  __ b(r14);
 
   CodeDesc desc;
   assm.GetCode(&desc);
@@ -1248,7 +1248,7 @@ TEST(15) {
 
   __ bind(&L3);
   __ lgfr(r2, r3);
-  __ br(r14);
+  __ b(r14);
 
   CodeDesc desc;
   assm.GetCode(&desc);

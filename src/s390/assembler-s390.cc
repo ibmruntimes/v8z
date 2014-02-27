@@ -711,11 +711,6 @@ void Assembler::branchOnCond(Condition c, int branch_offset) {
   }
 }
 
-// Indirect Branch via register
-void Assembler::br(Register target) {
-  bcr((Condition)0xF, target);
-}
-
 // Indirect Conditional Branch via register
 void Assembler::bcr(Condition m, Register target) {
   rr_form(BCR, m, target);
