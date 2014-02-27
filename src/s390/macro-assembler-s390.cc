@@ -4066,10 +4066,10 @@ void MacroAssembler::LoadSmiLiteral(Register dst, Smi *smi) {
   intptr_t value = reinterpret_cast<intptr_t>(smi);
 #if V8_TARGET_ARCH_S390X
   ASSERT((value & 0xffffffff) == 0);
-  LoadIntLiteral(dst, value >> 32);
-  ShiftLeftImm(dst, dst, Operand(32));
+  // The smi value is loaded in upper 32-bits.  Lower 32-bit are zeros.
+  llihf(dst, Operand(value));
 #else
-  LoadIntLiteral(dst, value);
+  llilf(dst, Operand(value));
 #endif
 }
 

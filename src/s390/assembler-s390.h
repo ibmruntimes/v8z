@@ -1994,17 +1994,14 @@ SS2_FORM(zap);
   void nop(int type = 0);   // 0 is the default non-marking type.
 
   void push(Register src) {
-/*
 #if V8_TARGET_ARCH_S390X
     stdu(src, MemOperand(sp, -8));
 #else
     stwu(src, MemOperand(sp, -4));
 #endif
-*/
   }
 
   void pop(Register dst) {
-/*
 #if V8_TARGET_ARCH_S390X
     ld(dst, MemOperand(sp));
     addi(sp, sp, Operand(8));
@@ -2012,7 +2009,6 @@ SS2_FORM(zap);
     lwz(dst, MemOperand(sp));
     addi(sp, sp, Operand(4));
 #endif
-*/
   }
 
   void pop() {

@@ -3802,11 +3802,11 @@ void CEntryStub::Generate(MacroAssembler* masm) {
 
 
 void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
-  // r3: code entry
-  // r4: function
-  // r5: receiver
-  // r6: argc
-  // [sp+0]: argv
+  // r2: code entry
+  // r3: function
+  // r4: receiver
+  // r5: argc
+  // r6: argv
 
   Label invoke, handler_entry, exit;
 
@@ -3823,25 +3823,25 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   // __ MultiPush(kCalleeSaved);
 
   // zLinux ABI
-  // Preserved callee saved registers + return address regs are saved
-  // into caller's frame.
-  // 31-bit ABI - R6-R15/sp register save area starts @ 24.
-  // 64-bit ABI - R6-R15/sp register save area starts @ 48.
-  // @TODO Fix up the stack offsets properly instead of 6 * kPointerSize.
-  __ StoreMultipleP(r6, sp, MemOperand(sp, 6 * kPointerSize));
+  //    Requires us to save the callee-preserved registers r6-r13
+  //    General convention is to also save r14 (return addr) and
+  //    sp/r15 as well in a single STM/STMG
+  __ lay(sp, MemOperand(sp, -10 * kPointerSize));
+  __ StoreMultipleP(r6, sp, MemOperand(sp, 0));
 
   // Floating point regs FPR0 - FRP13 are volatile
   // FPR14-FPR31 are non-volatile, but sub-calls will save them for us
+  // @TODO Figure out if we need to preserve any S390 FP regs
 
 //  int offset_to_argv = kPointerSize * 22; // matches (22*4) above
 //  __ lwz(r7, MemOperand(sp, offset_to_argv));
 
   // Push a frame with special values setup to mark it as an entry frame.
-  // r3: code entry
-  // r4: function
-  // r5: receiver
-  // r6: argc
-  // r7: argv
+  // r2: code entry
+  // r3: function
+  // r4: receiver
+  // r5: argc
+  // r6: argv
   Isolate* isolate = masm->isolate();
   __ lhi(r0, Operand(-1));  // Push a bad frame pointer to fail if it is used.
   __ push(r0);
@@ -3973,7 +3973,10 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   // 31-bit ABI - R6-R15/sp register save area starts @ 24.
   // 64-bit ABI - R6-R15/sp register save area starts @ 48.
   // @TODO Fix up the stack offsets properly instead of 6 * kPointerSize.
-  __ LoadMultipleP(r6, r15, MemOperand(r15, 6 * kPointerSize));
+  __ LoadMultipleP(r6, sp, MemOperand(sp, 0));
+  // zLinux ABI
+  //    Reload the callee-preserved registers r6-r13, r14, and sp.
+  __ lay(sp, MemOperand(sp, 10 * kPointerSize));
   __ br(r14);
 }
 
