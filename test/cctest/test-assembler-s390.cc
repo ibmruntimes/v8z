@@ -1198,6 +1198,10 @@ TEST(14) {
   __ lay(r1, MemOperand(r2, r3, -123));
   __ a(r15, MemOperand(r1, r2, 123));
   __ ay(r15, MemOperand(r1, r2, 123));
+  __ brc(Condition(14), Operand(123));
+  __ brc(Condition(14), Operand(-123));
+  __ brcl(Condition(14), Operand(123));
+  __ brcl(Condition(14), Operand(-123));
 
   v8::internal::byte * bufPos = assm.buffer_pos();
   ::printf("buffer position = %p", bufPos);
