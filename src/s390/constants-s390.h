@@ -1573,8 +1573,8 @@ class RIInstruction : Instruction {
     inline int R1Value() const {
       return Bits<FourByteInstr, int>(23, 20);
     }
-    inline int I2Value() const {
-      return Bits<FourByteInstr, int>(15, 0);
+    inline int16_t I2Value() const {
+      return Bits<FourByteInstr, int16_t>(15, 0);
     }
     inline int size() const { return 4; }
 };
@@ -1642,7 +1642,7 @@ class RILInstruction : Instruction {
       return Bits<SixByteInstr, int>(23, 20);
     }
     inline int32_t I2Value() const {
-      return Bits<SixByteInstr, int>(31, 0);
+      return Bits<SixByteInstr, int32_t>(31, 0);
     }
     inline int size() const { return 6; }
 };

@@ -452,6 +452,28 @@ int Decoder::FormatImmediate(Instruction *instr, const char* format) {
     out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
                                     "%d", value);
     return 2;
+  } else if (format[1] == '4') {  // immediate in 16-31, but outputs as offset
+    RIInstruction* riinstr = reinterpret_cast<RIInstruction*>(instr);
+    int16_t value = riinstr->I2Value()*2;
+    if (value >= 0)
+      out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_, "*+");
+    else
+      out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_, "*");
+
+    out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
+                                    "%d", value);
+    return 2;
+  } else if (format[1] == '5') {  // immediate in 16-31, but outputs as offset
+    RILInstruction* rilinstr = reinterpret_cast<RILInstruction*>(instr);
+    int32_t value = rilinstr->I2Value()*2;
+    if (value >= 0)
+      out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_, "*+");
+    else
+      out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_, "*");
+
+    out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
+                                    "%d", value);
+    return 2;
   } else {
     int32_t value = (instr->Bits(15, 0) << 16) >> 16;
     out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
@@ -1102,7 +1124,7 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case CHI: Format(instr, "chi\t'r1,'i1"); break;
       case CGHI: Format(instr, "cghi\t'r1,'i1"); break;
       case BRAS: Format(instr, "bras\t'r1,'i1"); break;
-      case BRC: Format(instr, "brc\t'm1,'i1"); break;
+      case BRC: Format(instr, "brc\t'm1,'i4"); break;
       case IIHH: Format(instr, "iihh\t'r1,'i1"); break;
       case IIHL: Format(instr, "iihl\t'r1,'i1"); break;
       case IILH: Format(instr, "iilh\t'r1,'i1"); break;
@@ -1174,7 +1196,7 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
     case CLFI: Format(instr, "clfi\t'r1,'i2"); break;
     case CFI: Format(instr, "cfi\t'r1,'i2"); break;
     case BRASL: Format(instr, "brasl\t'r1,'i2"); break;
-    case BRCL: Format(instr, "brcl\t'm1,'i2"); break;
+    case BRCL: Format(instr, "brcl\t'm1,'i5"); break;
     case IIHF: Format(instr, "iihf\t'r1,'i2"); break;
     case IILF: Format(instr, "iilf\t'r1,'i2"); break;
     case STMG: Format(instr, "stmg\t'r1,'r2,'d2('r3)"); break;
