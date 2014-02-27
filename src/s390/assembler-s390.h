@@ -734,26 +734,24 @@ class Assembler : public AssemblerBase {
   // ---------------------------------------------------------------------------
   // Code generation
 
-  // S390 Branch Instruction
-  void b_s390(Condition c, Label* l) {
-    bc_s390(c, branch_offset(l, false));
+  // S390 Pseudo Branch Instruction
+  void branchOnCond(Condition c, int branch_offset);  // jump on condition
+  void branchOnCond(Condition c, Label* l) {
+    branchOnCond(c, branch_offset(l, false));
   }
-  void bc_s390(Condition c, int branch_offset) {
-    positions_recorder()->WriteRecordedPositions();
-    int offset = branch_offset;
-    if (is_int16(offset)) {
-      brc(c, Operand(offset & 0xFFFF));  // short jump
-    } else {
-      brcl(c, Operand(offset));          // long jump
-    }
+  void branchOnCond(Condition c, Register r) {
+    bcr(c, r);
   }
-  void be_s390(Label * l) { b_s390(eq, l); }
-  void bne_s390(Label * l) { b_s390(ne, l); }
-  void bl_s390(Label * l) { b_s390(lt, l); }
-  void ble_s390(Label * l) { b_s390(le, l); }
-  void bh_s390(Label * l) { b_s390(gt, l); }
-  void bhe_s390(Label * l) { b_s390(ge, l); }
-  void b_s390(Label * l) { b_s390(al, l); }
+
+  void beq_s390(Label * l) { branchOnCond(eq, l); }
+  void bne_s390(Label * l) { branchOnCond(ne, l); }
+  void blt_s390(Label * l) { branchOnCond(lt, l); }
+  void ble_s390(Label * l) { branchOnCond(le, l); }
+  void bgt_s390(Label * l) { branchOnCond(gt, l); }
+  void bge_s390(Label * l) { branchOnCond(ge, l); }
+  void b_s390(Label * l) { branchOnCond(al, l); }
+  void jmp(Label * l) { branchOnCond(al, l); }
+
   // ---------------------------------------------------------------------------
   // Code generation
 
@@ -767,7 +765,6 @@ class Assembler : public AssemblerBase {
   // Branch instructions
   void bclr(BOfield bo, LKBit lk);
   void blr();
-  void bc(Condition c, int branch_offset);
 
   void bcctr(BOfield bo, LKBit lk);
   void bcr();
@@ -784,10 +781,10 @@ class Assembler : public AssemblerBase {
 
   void bc_short(Condition cond, Label* L, CRegister cr = cr7,
                 LKBit lk = LeaveLK)  {
-    return b_s390(cond, L);
+    return branchOnCond(cond, L);
   }
   void b(Condition cond, Label* L, CRegister cr = cr7, LKBit lk = LeaveLK)  {
-    b_s390(cond, L);
+    branchOnCond(cond, L);
     return;
 
     if (cond == al) {
@@ -2021,9 +2018,6 @@ SS2_FORM(zap);
   void pop() {
     addi(sp, sp, Operand(kPointerSize));
   }
-
-  // Jump unconditionally to given label.
-  void jmp(Label* L) { b(L); }
 
   bool predictable_code_size() const { return predictable_code_size_; }
 

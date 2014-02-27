@@ -1237,7 +1237,7 @@ TEST(15) {
 
   __ bind(&L2);
   __ chi(r2, Operand(5));
-  __ bh_s390(&L4);
+  __ bgt_s390(&L4);
 
   __ lhi(r2, Operand(0));
   __ b_s390(&L3);

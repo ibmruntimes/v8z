@@ -259,11 +259,11 @@ void Deoptimizer::RevertStackCheckCodeAt(Code* unoptimized_code,
   // Replace NOP with conditional jump.
   CodePatcher patcher(pc_after - 8 * kInstrSize, 6);
   if (FLAG_count_based_interrupts) {
-      patcher.masm()->bc(ge, +68);  // bge
+      patcher.masm()->branchOnCond(ge, +68);  // bge
     ASSERT_EQ(kBranchBeforeInterrupt,
               Memory::int32_at(pc_after - 8 * kInstrSize));
   } else {
-    patcher.masm()->bc(ge, +32);  // bge
+    patcher.masm()->branchOnCond(ge, +32);  // bge
     ASSERT_EQ(kBranchBeforeStackCheck,
               Memory::int32_at(pc_after - 8 * kInstrSize));
   }
@@ -271,11 +271,11 @@ void Deoptimizer::RevertStackCheckCodeAt(Code* unoptimized_code,
   // Replace NOP with conditional jump.
   CodePatcher patcher(pc_after - 5 * kInstrSize, 3);
   if (FLAG_count_based_interrupts) {
-      patcher.masm()->bc(ge, +36);  // bge
+      patcher.masm()->branchOnCond(ge, +36);  // bge
     ASSERT_EQ(kBranchBeforeInterrupt,
               Memory::int32_at(pc_after - 5 * kInstrSize));
   } else {
-    patcher.masm()->bc(ge, +20);  // bge
+    patcher.masm()->branchOnCond(ge, +20);  // bge
     ASSERT_EQ(kBranchBeforeStackCheck,
               Memory::int32_at(pc_after - 5 * kInstrSize));
   }

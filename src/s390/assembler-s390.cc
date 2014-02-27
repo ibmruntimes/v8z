@@ -700,8 +700,15 @@ void Assembler::bcr() {
   bcctr(BA, LeaveLK);
 }
 
-void Assembler::bc(Condition c, int branch_offset) {
-  bc_s390(c, branch_offset);
+// Pseudo op - branch on condition
+void Assembler::branchOnCond(Condition c, int branch_offset) {
+  positions_recorder()->WriteRecordedPositions();
+  int offset = branch_offset;
+  if (is_int16(offset)) {
+    brc(c, Operand(offset & 0xFFFF));  // short jump
+  } else {
+    brcl(c, Operand(offset));          // long jump
+  }
 }
 
 // Indirect Branch via register
