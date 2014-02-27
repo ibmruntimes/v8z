@@ -1348,6 +1348,10 @@ class Instruction {
   inline int InstructionLength() {
     return Instruction::InstructionLength(reinterpret_cast<const byte*>(this));
   }
+  // Extract the Instruction Opcode
+  inline Opcode S390OpcodeValue() {
+    return Instruction::S390OpcodeValue(reinterpret_cast<const byte*>(this));
+  }
 
   // Static support.
 
@@ -1405,23 +1409,22 @@ class Instruction {
     // are stored as big-endian in order to decode the opcode and
     // instruction length.
     T instr_bits = 0;
-    for (T i = 0; i < sizeof(T); i++) {
+
+    // 6-byte instrs are represented by uint64_t
+    int size = (sizeof(T) == 8)? 6 : sizeof(T);
+
+    for (T i = 0; i < size; i++) {
        instr_bits <<= 8;
        instr_bits |= *(instr + i);
     }
-
-    // 6-byte instr requires a right shift of 16-bit after 64-bit load
-    if (sizeof(T) == 8)
-      instr_bits >>= 16;
-
     return instr_bits;
   #endif
   }
 
 
   // Get Instruction Format Type
-  OpcodeFormatType getOpcodeFormatType() {
-    byte firstByte = *reinterpret_cast<const byte*>(this);
+  static OpcodeFormatType getOpcodeFormatType(const byte *instr) {
+    const byte firstByte = *instr;
     // Based on Figure B-3 in z/Architecture Principles of
     // Operation.
 
@@ -1456,14 +1459,13 @@ class Instruction {
        return THREE_NIBBLE_OPCODE;
      }
      // Remaining ones are all TWO_BYTE_DISJOINT OPCODES.
-     ASSERT(InstructionLength() == 6);
+     ASSERT(InstructionLength(instr) == 6);
      return TWO_BYTE_DISJOINT_OPCODE;
   }
 
   // Extract the full opcode from the instruction.
-  Opcode S390OpcodeValue() {
-    OpcodeFormatType opcodeType = getOpcodeFormatType();
-    const byte *instr = reinterpret_cast<const byte *>(this);
+  static inline Opcode S390OpcodeValue(const byte *instr) {
+    OpcodeFormatType opcodeType = getOpcodeFormatType(instr);
 
     // The native instructions are encoded in big-endian format
     // even if running on little-endian host.  Hence, we need

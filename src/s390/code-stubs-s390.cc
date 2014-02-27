@@ -3837,24 +3837,27 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
 //  __ lwz(r7, MemOperand(sp, offset_to_argv));
 
   // Push a frame with special values setup to mark it as an entry frame.
+  //   Bad FP (-1)
+  //   SMI Marker
+  //   SMI Marker
+  //   kCEntryFPAddress
+  Isolate* isolate = masm->isolate();
+  __ lay(sp, MemOperand(sp, -4 * kPointerSize));
+  __ lhi(r7, Operand(-1));  // Push a bad frame pointer to fail if it is used.
+  int marker = is_construct ? StackFrame::ENTRY_CONSTRUCT : StackFrame::ENTRY;
+  __ LoadSmiLiteral(r8, Smi::FromInt(marker));
+  __ LoadSmiLiteral(r9, Smi::FromInt(marker));
+  // Save copies of the top frame descriptor on the stack.
+  __ mov(r10, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate)));
+  __ LoadP(r10, MemOperand(r10));
+  __ StoreMultipleP(r7, r10, MemOperand(sp, 0));
+
+  // Set up frame pointer for the frame to be pushed.
   // r2: code entry
   // r3: function
   // r4: receiver
   // r5: argc
   // r6: argv
-  Isolate* isolate = masm->isolate();
-  __ lhi(r0, Operand(-1));  // Push a bad frame pointer to fail if it is used.
-  __ push(r0);
-  int marker = is_construct ? StackFrame::ENTRY_CONSTRUCT : StackFrame::ENTRY;
-  __ LoadSmiLiteral(r0, Smi::FromInt(marker));
-  __ push(r0);
-  __ push(r0);
-  // Save copies of the top frame descriptor on the stack.
-  __ mov(r8, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate)));
-  __ LoadP(r0, MemOperand(r8));
-  __ push(r0);
-
-  // Set up frame pointer for the frame to be pushed.
   __ addi(fp, sp, Operand(-EntryFrameConstants::kCallerFPOffset));
 
   // If this is the outermost JS call, set js_entry_sp value.

@@ -1284,6 +1284,9 @@ void Assembler::mov(Register dst, const Operand& src) {
     return;
   }
   ori(dst, dst, Operand(lo_word));
+
+  // @TODO Enable this one relocation bugs are fixed
+  // illf(dst, Operand(value));
 #endif
 }
 
