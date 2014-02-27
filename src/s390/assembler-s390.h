@@ -736,29 +736,41 @@ class Assembler : public AssemblerBase {
 
   // S390 Pseudo Branch Instruction
   void branchOnCond(Condition c, int branch_offset);  // jump on condition
-  void branchOnCond(Condition c, Label* l) {
-    branchOnCond(c, branch_offset(l, false));
-  }
-  void branchOnCond(Condition c, Register r) {
-    bcr(c, r);
+
+  // Label version
+  void b(Condition cond, Label* l) {
+    branchOnCond(cond, branch_offset(l, false));
   }
 
-  void b(Condition cond, Label* L) {
-    branchOnCond(cond, L);
-  }
-  void beq(Label * l) { branchOnCond(eq, l); }
-  void bne(Label * l) { branchOnCond(ne, l); }
-  void blt(Label * l) { branchOnCond(lt, l); }
-  void ble(Label * l) { branchOnCond(le, l); }
-  void bgt(Label * l) { branchOnCond(gt, l); }
-  void bge(Label * l) { branchOnCond(ge, l); }
-  void b(Label * l) { branchOnCond(al, l); }
-  void jmp(Label * l) { branchOnCond(al, l); }
-  void bunordered(Label* L) {
-    branchOnCond(unordered, L); }
-  void bordered(Label* L) {
-    branchOnCond(ordered, L); }
+  void beq(Label * l) { b(eq, l); }
+  void bne(Label * l) { b(ne, l); }
+  void blt(Label * l) { b(lt, l); }
+  void ble(Label * l) { b(le, l); }
+  void bgt(Label * l) { b(gt, l); }
+  void bge(Label * l) { b(ge, l); }
+  void b(Label * l)   { b(al, l); }
+  void jmp(Label * l) { b(al, l); }
+  void bunordered(Label* L) { b(unordered, L); }
+  void bordered(Label* L)   { b(ordered, L);   }
 
+  // Register version
+  void b(Condition cond, Register r) {
+    bcr(cond, r);
+  }
+  void beq(Register r) { b(eq, r); }
+  void bne(Register r) { b(ne, r); }
+  void blt(Register r) { b(lt, r); }
+  void ble(Register r) { b(le, r); }
+  void bgt(Register r) { b(gt, r); }
+  void bge(Register r) { b(ge, r); }
+  void b(Register r)   { b(al, r); }
+  void jmp(Register r) { b(al, r); }
+  void bunordered(Register r) { b(unordered, r); }
+  void bordered(Register r)   { b(ordered, r);   }
+
+  // S390 native instructions
+  // Indirect Conditional Branch via register
+  void bcr(Condition m, Register target);
   // ---------------------------------------------------------------------------
   // Code generation
 
@@ -776,15 +788,10 @@ class Assembler : public AssemblerBase {
   void bcctr(BOfield bo, LKBit lk);
   void bcr();
 
-  // Indirect Branch via register
-  void br(Register target);
-  // Indirect Conditional Branch via register
-  void bcr(Condition m, Register target);
-
   // Decrement CTR; branch if CTR != 0
   void bdnz(Label* L, LKBit lk = LeaveLK) {
     // TODO(john): has to be replaced by native s390 instruction
-    branchOnCond(al, L);
+    b(al, L);
   }
 
   // Data-processing instructions

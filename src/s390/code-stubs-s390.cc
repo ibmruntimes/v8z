@@ -3977,7 +3977,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   // zLinux ABI
   //    Reload the callee-preserved registers r6-r13, r14, and sp.
   __ lay(sp, MemOperand(sp, 10 * kPointerSize));
-  __ br(r14);
+  __ b(r14);
 }
 
 
