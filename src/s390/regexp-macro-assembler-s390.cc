@@ -328,7 +328,7 @@ void RegExpMacroAssemblerPPC::CheckNotBackReferenceIgnoreCase(
 
   // If length is zero, either the capture is empty or it is not participating.
   // In either case succeed immediately.
-  __ beq(&fallthrough, cr0);
+  __ beq(&fallthrough);
 
   // Check that there are enough characters left in the input.
   __ add(r0, r4, current_input_offset(), LeaveOE, SetRC);
@@ -435,7 +435,7 @@ void RegExpMacroAssemblerPPC::CheckNotBackReference(
   __ LoadP(r4, register_location(start_reg + 1), r0);
   __ sub(r4, r4, r3, LeaveOE, SetRC);  // Length to check.
   // Succeed on empty capture (including no capture).
-  __ beq(&fallthrough, cr0);
+  __ beq(&fallthrough);
 
   // Check that there are enough characters left in the input.
   __ add(r0, r4, current_input_offset(), LeaveOE, SetRC);
@@ -744,7 +744,7 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
     __ LoadP(r3, MemOperand(r3));
     __ sub(r3, sp, r3, LeaveOE, SetRC);
     // Handle it if the stack pointer is already below the stack limit.
-    __ ble(&stack_limit_hit, cr0);
+    __ ble(&stack_limit_hit);
     // Check if there is room for the variable number of registers above
     // the stack limit.
     __ Cmpli(r3, Operand(num_registers_ * kPointerSize), r0);
@@ -1306,16 +1306,16 @@ void RegExpMacroAssemblerPPC::BranchOrBacktrack(Condition condition,
     return;
   }
   if (to == NULL) {
-    __ b(condition, &backtrack_label_, cr);
+    __ b(condition, &backtrack_label_);
     return;
   }
-  __ b(condition, to, cr);
+  __ b(condition, to);
 }
 
 
 void RegExpMacroAssemblerPPC::SafeCall(Label* to, Condition cond,
                                        CRegister cr) {
-  __ b(cond, to, cr, SetLK);
+  __ b(cond, to);
 }
 
 

@@ -1230,17 +1230,17 @@ TEST(15) {
   Label L2, L3, L4;
 
   __ chi(r2, Operand(10));
-  __ ble_s390(&L2);
+  __ ble(&L2);
   __ lr(r2, r4);
   __ ar(r2, r3);
-  __ b_s390(&L3);
+  __ b(&L3);
 
   __ bind(&L2);
   __ chi(r2, Operand(5));
-  __ bgt_s390(&L4);
+  __ bgt(&L4);
 
   __ lhi(r2, Operand(0));
-  __ b_s390(&L3);
+  __ b(&L3);
 
   __ bind(&L4);
   __ lr(r2, r3);

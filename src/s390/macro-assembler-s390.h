@@ -1041,17 +1041,17 @@ class MacroAssembler: public Assembler {
                               Register scratch = r0);
 
   void BranchOnOverflow(Label* label) {
-    blt(label, cr0);
+    blt(label);
   }
 
   void BranchOnNoOverflow(Label* label) {
-    bge(label, cr0);
+    bge(label);
   }
 
   void RetOnOverflow(void) {
     Label label;
 
-    blt(&label, cr0);
+    blt(&label);
     Ret();
     bind(&label);
   }
@@ -1059,7 +1059,7 @@ class MacroAssembler: public Assembler {
   void RetOnNoOverflow(void) {
     Label label;
 
-    bge(&label, cr0);
+    bge(&label);
     Ret();
     bind(&label);
   }
@@ -1399,7 +1399,7 @@ class MacroAssembler: public Assembler {
                  kBitsPerPointer - 1,
                  kBitsPerPointer - 1 - kSmiShift,
                  scratch);
-    bne(not_smi_label, cr0);
+    bne(not_smi_label);
   }
 
   void SmiUntag(Register reg, RCBit rc = LeaveRC) {
@@ -1502,12 +1502,12 @@ class MacroAssembler: public Assembler {
   // Jump the register contains a smi.
   inline void JumpIfSmi(Register value, Label* smi_label) {
     TestIfSmi(value, r0);
-    beq(smi_label, cr0);  // branch if SMI
+    beq(smi_label);  // branch if SMI
   }
   // Jump if either of the registers contain a non-smi.
   inline void JumpIfNotSmi(Register value, Label* not_smi_label) {
     TestIfSmi(value, r0);
-    bne(not_smi_label, cr0);
+    bne(not_smi_label);
   }
   // Jump if either of the registers contain a non-smi.
   void JumpIfNotBothSmi(Register reg1, Register reg2, Label* on_not_both_smi);

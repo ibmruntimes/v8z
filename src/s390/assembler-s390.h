@@ -743,14 +743,21 @@ class Assembler : public AssemblerBase {
     bcr(c, r);
   }
 
-  void beq_s390(Label * l) { branchOnCond(eq, l); }
-  void bne_s390(Label * l) { branchOnCond(ne, l); }
-  void blt_s390(Label * l) { branchOnCond(lt, l); }
-  void ble_s390(Label * l) { branchOnCond(le, l); }
-  void bgt_s390(Label * l) { branchOnCond(gt, l); }
-  void bge_s390(Label * l) { branchOnCond(ge, l); }
-  void b_s390(Label * l) { branchOnCond(al, l); }
+  void b(Condition cond, Label* L) {
+    branchOnCond(cond, L);
+  }
+  void beq(Label * l) { branchOnCond(eq, l); }
+  void bne(Label * l) { branchOnCond(ne, l); }
+  void blt(Label * l) { branchOnCond(lt, l); }
+  void ble(Label * l) { branchOnCond(le, l); }
+  void bgt(Label * l) { branchOnCond(gt, l); }
+  void bge(Label * l) { branchOnCond(ge, l); }
+  void b(Label * l) { branchOnCond(al, l); }
   void jmp(Label * l) { branchOnCond(al, l); }
+  void bunordered(Label* L) {
+    branchOnCond(unordered, L); }
+  void bordered(Label* L) {
+    branchOnCond(ordered, L); }
 
   // ---------------------------------------------------------------------------
   // Code generation
@@ -773,58 +780,6 @@ class Assembler : public AssemblerBase {
   void br(Register target);
   // Indirect Conditional Branch via register
   void bcr(Condition m, Register target);
-
-  // Convenience branch instructions using labels
-  void b(Label* L, LKBit lk = LeaveLK)  {
-    b_s390(L);
-  }
-
-  void bc_short(Condition cond, Label* L, CRegister cr = cr7,
-                LKBit lk = LeaveLK)  {
-    return branchOnCond(cond, L);
-  }
-  void b(Condition cond, Label* L, CRegister cr = cr7, LKBit lk = LeaveLK)  {
-    branchOnCond(cond, L);
-    return;
-
-    if (cond == al) {
-        b(L, lk);
-        return;
-    }
-
-    if ((L->is_bound() && is_near(L, cond)) ||
-        !is_trampoline_emitted()) {
-      bc_short(cond, L, cr, lk);
-      return;
-    }
-
-    Label skip;
-    Condition neg_cond = NegateCondition(cond);
-    bc_short(neg_cond, &skip, cr);
-    b(L, lk);
-    bind(&skip);
-  }
-
-  void bne(Label* L, CRegister cr = cr7, LKBit lk = LeaveLK) {
-    b(ne, L, cr, lk); }
-  void beq(Label* L, CRegister cr = cr7, LKBit lk = LeaveLK) {
-    b(eq, L, cr, lk); }
-  void blt(Label* L, CRegister cr = cr7, LKBit lk = LeaveLK) {
-    b(lt, L, cr, lk); }
-  void bge(Label* L, CRegister cr = cr7, LKBit lk = LeaveLK) {
-    b(ge, L, cr, lk); }
-  void ble(Label* L, CRegister cr = cr7, LKBit lk = LeaveLK) {
-    b(le, L, cr, lk); }
-  void bgt(Label* L, CRegister cr = cr7, LKBit lk = LeaveLK) {
-    b(gt, L, cr, lk); }
-  void bunordered(Label* L, CRegister cr = cr7, LKBit lk = LeaveLK) {
-    b(unordered, L, cr, lk); }
-  void bordered(Label* L, CRegister cr = cr7, LKBit lk = LeaveLK) {
-    b(ordered, L, cr, lk); }
-  void boverflow(Label* L, CRegister cr = cr0, LKBit lk = LeaveLK) {
-    b(overflow, L, cr, lk); }
-  void bnooverflow(Label* L, CRegister cr = cr0, LKBit lk = LeaveLK) {
-    b(nooverflow, L, cr, lk); }
 
   // Decrement CTR; branch if CTR != 0
   void bdnz(Label* L, LKBit lk = LeaveLK) {
