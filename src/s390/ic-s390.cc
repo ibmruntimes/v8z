@@ -96,7 +96,7 @@ static void GenerateStringDictionaryReceiverCheck(MacroAssembler* masm,
   __ lbz(t1, FieldMemOperand(t0, Map::kBitFieldOffset));
   __ andi(r0, t1, Operand((1 << Map::kIsAccessCheckNeeded) |
                      (1 << Map::kHasNamedInterceptor)));
-  __ bne(miss, cr0);
+  __ bne(miss);
 
   __ LoadP(elements, FieldMemOperand(receiver, JSObject::kPropertiesOffset));
   __ LoadP(t1, FieldMemOperand(elements, HeapObject::kMapOffset));
@@ -151,7 +151,7 @@ static void GenerateDictionaryLoad(MacroAssembler* masm,
   __ mr(r0, scratch2);
   __ LoadSmiLiteral(scratch2, Smi::FromInt(PropertyDetails::TypeField::kMask));
   __ and_(scratch2, scratch1, scratch2, SetRC);
-  __ bne(miss, cr0);
+  __ bne(miss);
   __ mr(scratch2, r0);
 
   // Get the value at the masked, scaled index and return.
@@ -205,7 +205,7 @@ static void GenerateDictionaryStore(MacroAssembler* masm,
   __ mr(r0, scratch2);
   __ LoadSmiLiteral(scratch2, Smi::FromInt(kTypeAndReadOnlyMask));
   __ and_(scratch2, scratch1, scratch2, SetRC);
-  __ bne(miss, cr0);
+  __ bne(miss);
   __ mr(scratch2, r0);
 
   // Store the value at the masked, scaled index and return.
@@ -284,7 +284,7 @@ static void GenerateKeyedLoadReceiverCheck(MacroAssembler* masm,
   ASSERT(((1 << Map::kIsAccessCheckNeeded) | (1 << interceptor_bit)) < 0x8000);
   __ andi(r0, scratch,
           Operand((1 << Map::kIsAccessCheckNeeded) | (1 << interceptor_bit)));
-  __ bne(slow, cr0);
+  __ bne(slow);
   // Check that the object is some kind of JS object EXCEPT JS Value type.
   // In the case that the object is a value-wrapper object,
   // we enter the runtime system to make sure that indexing into string
@@ -376,14 +376,14 @@ static void GenerateKeyStringCheck(MacroAssembler* masm,
   __ lwz(hash, FieldMemOperand(key, String::kHashFieldOffset));
   __ mov(r8, Operand(String::kContainsCachedArrayIndexMask));
   __ and_(r0, hash, r8, SetRC);
-  __ beq(index_string, cr0);
+  __ beq(index_string);
 
   // Is the string a symbol?
   // map: key map
   __ lbz(hash, FieldMemOperand(map, Map::kInstanceTypeOffset));
   STATIC_ASSERT(kSymbolTag != 0);
   __ andi(r0, hash, Operand(kIsSymbolMask));
-  __ beq(not_symbol, cr0);
+  __ beq(not_symbol);
 }
 
 
@@ -785,7 +785,7 @@ static MemOperand GenerateMappedArgumentsLookup(MacroAssembler* masm,
   // Check that the key is a positive smi.
   __ mov(scratch1, Operand(0x80000001));
   __ and_(r0, key, scratch1, SetRC);
-  __ bne(slow_case, cr0);
+  __ bne(slow_case);
 
   // Load the elements into scratch1 and check its map.
   Handle<Map> arguments_map(heap->non_strict_arguments_elements_map());
@@ -1195,7 +1195,7 @@ void KeyedLoadIC::GenerateIndexedInterceptor(MacroAssembler* masm) {
 
   // Check that the key is an array index, that is Uint32.
   __ TestIfPositiveSmi(r3, r0);
-  __ bne(&slow, cr0);
+  __ bne(&slow);
 
   // Get the map of the receiver.
   __ LoadP(r5, FieldMemOperand(r4, HeapObject::kMapOffset));
@@ -1494,7 +1494,7 @@ void KeyedStoreIC::GenerateGeneric(MacroAssembler* masm,
   // to do this because this generic stub does not perform map checks.
   __ lbz(ip, FieldMemOperand(receiver_map, Map::kBitFieldOffset));
   __ andi(r0, ip, Operand(1 << Map::kIsAccessCheckNeeded));
-  __ bne(&slow, cr0);
+  __ bne(&slow);
   // Check if the object is a JS array or not.
   __ lbz(r7, FieldMemOperand(receiver_map, Map::kInstanceTypeOffset));
   __ cmpi(r7, Operand(JS_ARRAY_TYPE));

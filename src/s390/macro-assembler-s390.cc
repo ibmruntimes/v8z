@@ -67,7 +67,7 @@ void MacroAssembler::Jump(intptr_t target, RelocInfo::Mode rmode,
                           Condition cond, CRegister cr) {
   Label skip;
 
-  if (cond != al) b(NegateCondition(cond), &skip, cr);
+  if (cond != al) b(NegateCondition(cond), &skip);
 
   ASSERT(rmode == RelocInfo::CODE_TARGET ||
          rmode == RelocInfo::RUNTIME_ENTRY);
@@ -252,7 +252,7 @@ void MacroAssembler::Ret(int drop, Condition cond) {
 }
 
 void MacroAssembler::Call(Label* target) {
-  b(target, SetLK);
+  b(target);
 }
 
 
@@ -377,7 +377,7 @@ void MacroAssembler::RecordWriteField(
   if (emit_debug_code()) {
     Label ok;
     andi(r0, dst, Operand((1 << kPointerSizeLog2) - 1));
-    beq(&ok, cr0);
+    beq(&ok);
     stop("Unaligned cell in write barrier");
     bind(&ok);
   }
@@ -490,10 +490,10 @@ void MacroAssembler::RememberedSetHelper(Register object,  // For debug tests.
   and_(r0, scratch, r0, SetRC);
 
   if (and_then == kFallThroughAtEnd) {
-    beq(&done, cr0);
+    beq(&done);
   } else {
     ASSERT(and_then == kReturnAtEnd);
-    beq(&done, cr0);
+    beq(&done);
   }
   mflr(r0);
   push(r0);
@@ -985,7 +985,7 @@ void MacroAssembler::IsObjectJSStringType(Register object,
   LoadP(scratch, FieldMemOperand(object, HeapObject::kMapOffset));
   lbz(scratch, FieldMemOperand(scratch, Map::kInstanceTypeOffset));
   andi(r0, scratch, Operand(kIsNotStringMask));
-  bne(fail, cr0);
+  bne(fail);
 }
 
 
@@ -1139,7 +1139,7 @@ void MacroAssembler::ThrowUncatchable(Register value) {
   STATIC_ASSERT(StackHandler::JS_ENTRY == 0);
   LoadP(r5, MemOperand(sp, StackHandlerConstants::kStateSlot));
   andi(r0, r5, Operand(StackHandler::KindField::kMask));
-  bne(&fetch_next, cr0);
+  bne(&fetch_next);
 
   // Set the top handler address to next handler past the top ENTRY handler.
   pop(r5);
@@ -1342,7 +1342,7 @@ void MacroAssembler::LoadFromNumberDictionary(Label* miss,
   LoadP(t1, FieldMemOperand(t2, kDetailsOffset));
   LoadSmiLiteral(ip, Smi::FromInt(PropertyDetails::TypeField::kMask));
   and_(r0, t1, ip, SetRC);
-  bne(miss, cr0);
+  bne(miss);
 
   // Get the value at the masked, scaled index and return.
   const int kValueOffset =
@@ -1426,7 +1426,7 @@ void MacroAssembler::AllocateInNewSpace(int object_size,
   lhi(r0, Operand(-1));
   addc(scratch2, result, obj_size_reg);
   addze(r0, r0, LeaveOE, SetRC);
-  beq(gc_required, cr0);
+  beq(gc_required);
   cmpl(scratch2, ip);
   bgt(gc_required);
   StoreP(scratch2, MemOperand(topaddr));
@@ -1514,7 +1514,7 @@ void MacroAssembler::AllocateInNewSpace(Register object_size,
     addc(scratch2, result, object_size);
   }
   addze(r0, r0, LeaveOE, SetRC);
-  beq(gc_required, cr0);
+  beq(gc_required);
   cmpl(scratch2, ip);
   bgt(gc_required);
 
@@ -1833,7 +1833,7 @@ void MacroAssembler::StoreNumberToDoubleElements(Register value_reg,
   bgt(&is_nan);
 #if V8_TARGET_ARCH_S390X
   clrldi(r0, double_reg, Operand(32), SetRC);
-  beq(&have_double_value, cr0);
+  beq(&have_double_value);
 #else
   lwz(mantissa_reg, FieldMemOperand(value_reg, HeapNumber::kMantissaOffset));
   cmpi(mantissa_reg, Operand::Zero());
@@ -2042,14 +2042,14 @@ void MacroAssembler::TryGetFunctionPrototype(Register function,
             SharedFunctionInfo::kBoundFunction + kSmiTagSize,
 #endif
             r0);
-    bne(miss, cr0);
+    bne(miss);
   }
 
   // Make sure that the function has an instance prototype.
   Label non_instance;
   lbz(scratch, FieldMemOperand(result, Map::kBitFieldOffset));
   andi(r0, scratch, Operand(1 << Map::kHasNonInstancePrototype));
-  bne(&non_instance, cr0);
+  bne(&non_instance);
 
   // Get the prototype or initial map from the function.
   LoadP(result,
@@ -2695,7 +2695,7 @@ void MacroAssembler::AssertFastElements(Register elements) {
 
 void MacroAssembler::Check(Condition cond, const char* msg, CRegister cr) {
   Label L;
-  b(cond, &L, cr);
+  b(cond, &L);
   Abort(msg);
   // will not return here
   bind(&L);
@@ -2843,7 +2843,7 @@ void MacroAssembler::JumpIfNotPowerOfTwoOrZero(
   cmpi(scratch, Operand::Zero());
   blt(not_power_of_two_or_zero);
   and_(r0, scratch, reg, SetRC);
-  bne(not_power_of_two_or_zero, cr0);
+  bne(not_power_of_two_or_zero);
 }
 
 
@@ -2856,7 +2856,7 @@ void MacroAssembler::JumpIfNotPowerOfTwoOrZeroAndNeg(
   cmpi(scratch, Operand::Zero());
   blt(zero_and_neg);
   and_(r0, scratch, reg, SetRC);
-  bne(not_power_of_two, cr0);
+  bne(not_power_of_two);
 }
 
 #if !V8_TARGET_ARCH_S390X
@@ -2900,7 +2900,7 @@ void MacroAssembler::UntagAndJumpIfSmi(
   STATIC_ASSERT(kSmiTagSize == 1);
   TestBit(src, 0, r0);
   SmiUntag(dst, src);
-  beq(smi_case, cr0);
+  beq(smi_case);
 }
 
 
@@ -2910,7 +2910,7 @@ void MacroAssembler::UntagAndJumpIfNotSmi(
   STATIC_ASSERT(kSmiTagSize == 1);
   TestBit(src, 0, r0);
   SmiUntag(dst, src);
-  bne(non_smi_case, cr0);
+  bne(non_smi_case);
 }
 
 
@@ -3095,7 +3095,7 @@ void MacroAssembler::CopyBytes(Register src,
 
   // Check src alignment and length to see whether word_loop is possible
   andi(scratch, src, Operand(kPointerSize - 1));
-  beq(&aligned, cr0);
+  beq(&aligned);
   subfic(scratch, scratch, Operand(kPointerSize * 2));
   cmp(length, scratch);
   blt(&byte_loop);
@@ -3560,10 +3560,10 @@ void MacroAssembler::CheckPageFlag(
   And(r0, scratch, Operand(mask), SetRC);
 
   if (cc == ne) {
-    bne(condition_met, cr0);
+    bne(condition_met);
   }
   if (cc == eq) {
-    beq(condition_met, cr0);
+    beq(condition_met);
   }
 }
 
@@ -3591,21 +3591,21 @@ void MacroAssembler::HasColor(Register object,
   lwz(ip, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
   // Test the first bit
   and_(r0, ip, mask_scratch, SetRC);
-  b(first_bit == 1 ? eq : ne, &other_color, cr0);
+  b(first_bit == 1 ? eq : ne, &other_color);
   // Shift left 1
   // May need to load the next cell
   slwi(mask_scratch, mask_scratch, Operand(1), SetRC);
-  beq(&word_boundary, cr0);
+  beq(&word_boundary);
   // Test the second bit
   and_(r0, ip, mask_scratch, SetRC);
-  b(second_bit == 1 ? ne : eq, has_color, cr0);
+  b(second_bit == 1 ? ne : eq, has_color);
   b(&other_color);
 
   bind(&word_boundary);
   lwz(ip, MemOperand(bitmap_scratch,
                      MemoryChunk::kHeaderSize + kIntSize));
   andi(r0, ip, Operand(1));
-  b(second_bit == 1 ? ne : eq, has_color, cr0);
+  b(second_bit == 1 ? ne : eq, has_color);
   bind(&other_color);
 }
 
@@ -3627,7 +3627,7 @@ void MacroAssembler::JumpIfDataObject(Register value,
   lbz(scratch, FieldMemOperand(scratch, Map::kInstanceTypeOffset));
   STATIC_ASSERT((kIsIndirectStringMask | kIsNotStringMask) == 0x81);
   andi(scratch, scratch, Operand(kIsIndirectStringMask | kIsNotStringMask));
-  bne(not_data_object, cr0);
+  bne(not_data_object);
   bind(&is_data_object);
 }
 
@@ -3674,7 +3674,7 @@ void MacroAssembler::EnsureNotWhite(
   // not have a 1 there we only need to check one bit.
   lwz(load_scratch, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
   and_(r0, mask_scratch, load_scratch, SetRC);
-  bne(&done, cr0);
+  bne(&done);
 
   if (emit_debug_code()) {
     // Check for impossible bit pattern.
@@ -3682,7 +3682,7 @@ void MacroAssembler::EnsureNotWhite(
     // LSL may overflow, making the check conservative.
     slwi(r0, mask_scratch, Operand(1));
     and_(r0, load_scratch, r0, SetRC);
-    beq(&ok, cr0);
+    beq(&ok);
     stop("Impossible marking bit pattern");
     bind(&ok);
   }
@@ -3713,7 +3713,7 @@ void MacroAssembler::EnsureNotWhite(
   Register instance_type = load_scratch;
   lbz(instance_type, FieldMemOperand(map, Map::kInstanceTypeOffset));
   andi(r0, instance_type, Operand(kIsIndirectStringMask | kIsNotStringMask));
-  bne(value_is_white_and_not_data, cr0);
+  bne(value_is_white_and_not_data);
   // It's a non-indirect (non-cons and non-slice) string.
   // If it's external, the length is just ExternalString::kSize.
   // Otherwise it's String::kHeaderSize + string->length() * (1 or 2).
@@ -3722,7 +3722,7 @@ void MacroAssembler::EnsureNotWhite(
   ASSERT_EQ(0, kSeqStringTag & kExternalStringTag);
   ASSERT_EQ(0, kConsStringTag & kExternalStringTag);
   andi(r0, instance_type, Operand(kExternalStringTag));
-  beq(&is_string_object, cr0);
+  beq(&is_string_object);
   lhi(length, Operand(ExternalString::kSize));
   b(&is_data_object);
   bind(&is_string_object);
@@ -3736,7 +3736,7 @@ void MacroAssembler::EnsureNotWhite(
   ASSERT(kAsciiStringTag == 4 && kStringEncodingMask == 4);
   LoadP(ip, FieldMemOperand(value, String::kLengthOffset));
   andi(r0, instance_type, Operand(kStringEncodingMask));
-  beq(&is_encoded, cr0);
+  beq(&is_encoded);
   SmiUntag(ip);
 #if V8_TARGET_ARCH_S390X
   b(&length_computed);

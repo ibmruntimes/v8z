@@ -368,7 +368,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
 
   __ bind(&not_empty_array);
   __ TestIfPositiveSmi(r5, r6);
-  __ bne(call_generic_code, cr0);
+  __ bne(call_generic_code);
 
   // Handle construction of an empty array of a certain size. Bail out if size
   // is too large to actually allocate an elements array.
@@ -684,7 +684,7 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
   __ lbz(r6, FieldMemOperand(r5, Map::kInstanceTypeOffset));
   STATIC_ASSERT(kNotStringTag != 0);
   __ andi(r0, r6, Operand(kIsNotStringMask));
-  __ bne(&convert_argument, cr0);
+  __ bne(&convert_argument);
   __ mr(argument, r3);
   __ IncrementCounter(counters->string_ctor_conversions(), 1, r6, r7);
   __ b(&argument_is_string);
@@ -1418,7 +1418,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
                SharedFunctionInfo::kStrictModeFunction + kSmiTagSize,
 #endif
                r0);
-    __ bne(&shift_arguments, cr0);
+    __ bne(&shift_arguments);
 
     // Do not transform the receiver for native (Compilerhints already in r6).
     __ TestBit(r6,
@@ -1428,7 +1428,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
                SharedFunctionInfo::kNative + kSmiTagSize,
 #endif
                r0);
-    __ bne(&shift_arguments, cr0);
+    __ bne(&shift_arguments);
 
     // Compute the receiver in non-strict mode.
     __ ShiftLeftImm(ip, r3, Operand(kPointerSizeLog2));
@@ -1656,7 +1656,7 @@ void Builtins::Generate_FunctionApply(MacroAssembler* masm) {
                SharedFunctionInfo::kStrictModeFunction + kSmiTagSize,
 #endif
                r0);
-    __ bne(&push_receiver, cr0);
+    __ bne(&push_receiver);
 
     // Do not transform the receiver for strict mode functions.
     __ TestBit(r5,
@@ -1666,7 +1666,7 @@ void Builtins::Generate_FunctionApply(MacroAssembler* masm) {
                SharedFunctionInfo::kNative + kSmiTagSize,
 #endif
                r0);
-    __ bne(&push_receiver, cr0);
+    __ bne(&push_receiver);
 
     // Compute the receiver in non-strict mode.
     __ JumpIfSmi(r3, &call_to_object);

@@ -76,7 +76,7 @@ class JumpPatchSite BASE_EMBEDDED {
     Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm_);
     __ bind(&patch_site_);
     __ cmp(reg, reg, cr0);
-    __ beq(target, cr0);  // Always taken before patched.
+    __ beq(target);  // Always taken before patched.
   }
 
   // When initially emitting this ensure that a jump is never generated to skip
@@ -86,7 +86,7 @@ class JumpPatchSite BASE_EMBEDDED {
     ASSERT(!patch_site_.is_bound() && !info_emitted_);
     __ bind(&patch_site_);
     __ cmp(reg, reg, cr0);
-    __ bne(target, cr0);  // Never taken before patched.
+    __ bne(target);  // Never taken before patched.
   }
 
   void EmitPatchInfo() {
@@ -291,7 +291,7 @@ void FullCodeGenerator::Generate() {
       __ LoadRoot(ip, Heap::kStackLimitRootIndex);
       __ cmpl(sp, ip);
       // This is a FIXED_SEQUENCE and must match the other StackCheck code
-      __ bc_short(ge, &ok);
+      __ b(ge, &ok);
       StackCheckStub stub;
       __ CallStub(&stub);
       __ bind(&ok);
@@ -363,14 +363,14 @@ void FullCodeGenerator::EmitStackCheck(IterationStatement* stmt,
                    Max(1, distance / kBackEdgeDistanceUnit));
     }
     EmitProfilingCounterDecrement(weight);
-    __ bc_short(ge, &ok);
+    __ b(ge, &ok);
     InterruptStub stub;
     __ CallStub(&stub);
   } else {
     __ LoadRoot(ip, Heap::kStackLimitRootIndex);
     __ cmpl(sp, ip);
     // This is a FIXED_SEQUENCE and must match the other StackCheck code
-    __ bc_short(ge, &ok);
+    __ b(ge, &ok);
     StackCheckStub stub;
     __ CallStub(&stub);
   }
@@ -704,11 +704,11 @@ void FullCodeGenerator::Split(Condition cond,
                               Label* fall_through,
                               CRegister cr) {
   if (if_false == fall_through) {
-    __ b(cond, if_true, cr);
+    __ b(cond, if_true);
   } else if (if_true == fall_through) {
-    __ b(NegateCondition(cond), if_false, cr);
+    __ b(NegateCondition(cond), if_false);
   } else {
-    __ b(cond, if_true, cr);
+    __ b(cond, if_true);
     __ b(if_false);
   }
 }
@@ -2001,10 +2001,10 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
       __ xor_(r0, left, right);
       __ add(scratch1, left, right);
       __ TestSignBit(r0, r0);
-      __ bne(&add_no_overflow, cr0);
+      __ bne(&add_no_overflow);
       __ xor_(r0, right, scratch1);
       __ TestSignBit(r0, r0);
-      __ bne(&stub_call, cr0);
+      __ bne(&stub_call);
       __ bind(&add_no_overflow);
       __ mr(right, scratch1);
       break;
@@ -2015,10 +2015,10 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
       __ xor_(r0, left, right);
       __ sub(scratch1, left, right);
       __ TestSignBit(r0, r0);
-      __ beq(&sub_no_overflow, cr0);
+      __ beq(&sub_no_overflow);
       __ xor_(r0, scratch1, left);
       __ TestSignBit(r0, r0);
-      __ bne(&stub_call, cr0);
+      __ bne(&stub_call);
       __ bind(&sub_no_overflow);
       __ mr(right, scratch1);
       break;
@@ -2654,7 +2654,7 @@ void FullCodeGenerator::EmitIsObject(CallRuntime* expr) {
   // Undetectable objects behave like undefined when tested with typeof.
   __ lbz(r4, FieldMemOperand(r5, Map::kBitFieldOffset));
   __ andi(r0, r4, Operand(1 << Map::kIsUndetectable));
-  __ bne(if_false, cr0);
+  __ bne(if_false);
   __ lbz(r4, FieldMemOperand(r5, Map::kInstanceTypeOffset));
   __ cmpi(r4, Operand(FIRST_NONCALLABLE_SPEC_OBJECT_TYPE));
   __ blt(if_false);
@@ -2731,7 +2731,7 @@ void FullCodeGenerator::EmitIsStringWrapperSafeForDefaultValueOf(
   __ LoadP(r4, FieldMemOperand(r3, HeapObject::kMapOffset));
   __ lbz(ip, FieldMemOperand(r4, Map::kBitField2Offset));
   __ andi(r0, ip, Operand(1 << Map::kStringWrapperSafeForDefaultValueOf));
-  __ bne(if_true, cr0);
+  __ bne(if_true);
 
   // Check for fast case object. Generate false result for slow case object.
   __ LoadP(r5, FieldMemOperand(r3, JSObject::kPropertiesOffset));
@@ -3701,7 +3701,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   // Check for smi overflow. No overflow if higher 33 bits of 64-bit result are
   // zero.
   __ ShiftRightImm(ip, scratch2, Operand(31), SetRC);
-  __ bne(&bailout, cr0);
+  __ bne(&bailout);
   __ SmiTag(scratch2, scratch2);
 #else
   // array_length is not smi but the other values are, so the result is a smi
@@ -3712,7 +3712,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   __ cmpi(ip, Operand::Zero());
   __ bne(&bailout);
   __ TestSignBit32(scratch2, r0);
-  __ bne(&bailout, cr0);
+  __ bne(&bailout);
 #endif
 
   __ AddAndCheckForOverflow(string_length, string_length, scratch2,
@@ -4596,7 +4596,7 @@ FullCodeGenerator::NestedStatement* FullCodeGenerator::TryFinally::Exit(
     __ StoreP(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
   }
   __ PopTryHandler();
-  __ b(finally_entry_, SetLK);
+  __ b(finally_entry_);
 
   *stack_depth = 0;
   *context_length = 0;

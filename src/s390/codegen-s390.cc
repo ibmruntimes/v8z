@@ -136,7 +136,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   Label aligned, aligned_done;
   __ andi(r0, r9, Operand(kDoubleAlignmentMask));
   __ mov(ip, Operand(masm->isolate()->factory()->one_pointer_filler_map()));
-  __ beq(&aligned, cr0);
+  __ beq(&aligned);
   // Store at the beginning of the allocated memory and update the base pointer.
   __ StoreP(ip, MemOperand(r9));
   __ addi(r9, r9, Operand(kPointerSize));
@@ -407,13 +407,13 @@ void StringCharLoadGenerator::Generate(MacroAssembler* masm,
   // We need special handling for indirect strings.
   Label check_sequential;
   __ andi(r0, result, Operand(kIsIndirectStringMask));
-  __ beq(&check_sequential, cr0);
+  __ beq(&check_sequential);
 
   // Dispatch on the indirect string shape: slice or cons.
   Label cons_string;
   __ mov(ip, Operand(kSlicedNotConsMask));
   __ and_(r0, result, ip, SetRC);
-  __ beq(&cons_string, cr0);
+  __ beq(&cons_string);
 
   // Handle slices.
   Label indirect_string_loaded;
@@ -446,7 +446,7 @@ void StringCharLoadGenerator::Generate(MacroAssembler* masm,
   __ bind(&check_sequential);
   STATIC_ASSERT(kSeqStringTag == 0);
   __ andi(r0, result, Operand(kStringRepresentationMask));
-  __ bne(&external_string, cr0);
+  __ bne(&external_string);
 
   // Prepare sequential strings
   STATIC_ASSERT(SeqTwoByteString::kHeaderSize == SeqAsciiString::kHeaderSize);
@@ -466,7 +466,7 @@ void StringCharLoadGenerator::Generate(MacroAssembler* masm,
   // Rule out short external strings.
   STATIC_CHECK(kShortExternalStringTag != 0);
   __ andi(r0, result, Operand(kShortExternalStringMask));
-  __ bne(call_runtime, cr0);
+  __ bne(call_runtime);
   __ LoadP(string,
            FieldMemOperand(string, ExternalString::kResourceDataOffset));
 
@@ -474,7 +474,7 @@ void StringCharLoadGenerator::Generate(MacroAssembler* masm,
   __ bind(&check_encoding);
   STATIC_ASSERT(kTwoByteStringTag == 0);
   __ andi(r0, result, Operand(kStringEncodingMask));
-  __ bne(&ascii, cr0);
+  __ bne(&ascii);
   // Two-byte string.
   __ ShiftLeftImm(result, index, Operand(1));
   __ lhzx(result, MemOperand(string, result));
