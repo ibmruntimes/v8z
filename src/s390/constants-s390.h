@@ -1411,7 +1411,7 @@ class Instruction {
     T instr_bits = 0;
 
     // 6-byte instrs are represented by uint64_t
-    int size = (sizeof(T) == 8)? 6 : sizeof(T);
+    uint32_t size = (sizeof(T) == 8)? 6 : sizeof(T);
 
     for (T i = 0; i < size; i++) {
        instr_bits <<= 8;
