@@ -829,7 +829,7 @@ class Assembler : public AssemblerBase {
   // Decrement CTR; branch if CTR != 0
   void bdnz(Label* L, LKBit lk = LeaveLK) {
     // TODO(john): has to be replaced by native s390 instruction
-    ASSERT(false);
+    branchOnCond(al, L);
   }
 
   // Data-processing instructions
