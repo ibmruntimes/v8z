@@ -1312,30 +1312,7 @@ class Instruction {
   // Get the raw instruction bits.
   template<typename T>
   inline T InstructionBits() const {
-  #if __BYTE_ORDER == __BIG_ENDIAN
-    if (sizeof(T) <= 4) {
-      return *reinterpret_cast<const T*>(this);
-    } else {
-      // 6-byte instr requires a right shift of 16-bit after 64-bit load
-      return *reinterpret_cast<const T*>(this) >> 16;
-    }
-  #else
-    // Even on little endian hosts (simulation), the instructions
-    // are stored as big-endian in order to decode the opcode and
-    // instruction length.
-    const byte *instr = reinterpret_cast<const byte*>(this);
-    T instr_bits = 0;
-    for (T i = 0; i < sizeof(T); i++) {
-       instr_bits <<= 8;
-       instr_bits |= *(instr + i);
-    }
-
-    // 6-byte instr requires a right shift of 16-bit after 64-bit load
-    if (sizeof(T) == 8)
-      instr_bits >>= 16;
-
-    return instr_bits;
-  #endif
+    return Instruction::InstructionBits<T>(reinterpret_cast<const byte*>(this));
   }
   inline Instr InstructionBits() const {
     return *reinterpret_cast<const Instr*>(this);
@@ -1367,6 +1344,11 @@ class Instruction {
     return InstructionBits() & (((2 << (hi - lo)) - 1) << lo);
   }
 
+  // Determine the instruction length
+  inline int InstructionLength() {
+    return Instruction::InstructionLength(reinterpret_cast<const byte*>(this));
+  }
+
   // Static support.
 
   // Read one particular bit out of the instruction bits.
@@ -1379,25 +1361,63 @@ class Instruction {
     return (instr >> lo) & ((2 << (hi - lo)) - 1);
   }
 
-
   // Read a bit field out of the instruction bits.
   static inline int BitField(Instr instr, int hi, int lo) {
     return instr & (((2 << (hi - lo)) - 1) << lo);
   }
 
-  // Determine the instruction length on given instruction
-  inline int InstructionLength() {
+  // Determine the instruction length of the given instruction
+  static inline int InstructionLength(const byte *instr) {
     // Length can be determined by the first nibble.
     // 0x0 to 0x3 => 2-bytes
     // 0x4 to 0xB => 4-bytes
     // 0xC to 0xF => 6-bytes
-    byte topNibble = (*reinterpret_cast<const byte*>(this) >> 4) & 0xF;
+    byte topNibble = (*instr >> 4) & 0xF;
     if (topNibble <= 3)
       return 2;
     else if (topNibble <= 0xB)
       return 4;
     return 6;
   }
+
+  // Returns the instruction bits of the given instruction
+  static inline uint64_t InstructionBits(const byte *instr) {
+    int length = InstructionLength(instr);
+    if (2 == length)
+      return static_cast<uint64_t>(InstructionBits<TwoByteInstr>(instr));
+    else if (4 == length)
+      return static_cast<uint64_t>(InstructionBits<FourByteInstr>(instr));
+    else
+      return InstructionBits<SixByteInstr>(instr);
+  }
+
+  template <typename T>
+  static inline T InstructionBits(const byte *instr) {
+  #if __BYTE_ORDER == __BIG_ENDIAN
+    if (sizeof(T) <= 4) {
+      return *reinterpret_cast<const T*>(instr);
+    } else {
+      // 6-byte instr requires a right shift of 16-bit after 64-bit load
+      return *reinterpret_cast<const T*>(instr) >> 16;
+    }
+  #else
+    // Even on little endian hosts (simulation), the instructions
+    // are stored as big-endian in order to decode the opcode and
+    // instruction length.
+    T instr_bits = 0;
+    for (T i = 0; i < sizeof(T); i++) {
+       instr_bits <<= 8;
+       instr_bits |= *(instr + i);
+    }
+
+    // 6-byte instr requires a right shift of 16-bit after 64-bit load
+    if (sizeof(T) == 8)
+      instr_bits >>= 16;
+
+    return instr_bits;
+  #endif
+  }
+
 
   // Get Instruction Format Type
   OpcodeFormatType getOpcodeFormatType() {
