@@ -2791,6 +2791,18 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
   Opcode opcode = instr->S390OpcodeValue();
 
   switch (opcode) {
+    case LAY: {
+      // Load Address
+      RXYInstruction *rxyInstr = reinterpret_cast<RXYInstruction*>(instr);
+      int r1 = rxyInstr->R1Value();
+      int rb = rxyInstr->B2Value();
+      int rx = rxyInstr->X2Value();
+      int offset = rxyInstr->D2Value();
+      intptr_t rb_val = (rb == 0) ? 0 : get_register(rb);
+      intptr_t rx_val = (rb == 0) ? 0 : get_register(rx);
+      set_register(r1, rx_val + rb_val + offset);
+      break;
+    }
     case LLILF:
       break;
     default:

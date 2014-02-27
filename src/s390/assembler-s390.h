@@ -2034,7 +2034,9 @@ SS2_FORM(zap);
   PositionsRecorder* positions_recorder() { return &positions_recorder_; }
 
   // Read/patch instructions
-  Instr instr_at(int pos) { return *reinterpret_cast<Instr*>(buffer_ + pos); }
+  uint64_t instr_at(int pos) {
+    return Instruction::InstructionBits(buffer_ + pos);
+  }
   void instr_at_put(int pos, Instr instr) {
     *reinterpret_cast<Instr*>(buffer_ + pos) = instr;
   }
