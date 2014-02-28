@@ -570,8 +570,8 @@ void Assembler::set_target_address_at(Address pc, Address target) {
     instr_1 <<= 32;
     instr_1 |= reinterpret_cast<uint32_t>(target);
 
-    // Instruction::SetInstructionBits<SixByteInstr>(
-    //                                  reinterpret_cast<byte*>(pc), instr_1);
+    Instruction::SetInstructionBits<SixByteInstr>(
+                                     reinterpret_cast<byte*>(pc), instr_1);
     CPU::FlushICache(pc, 6);
     patched = true;
   }

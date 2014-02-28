@@ -144,13 +144,11 @@ int MacroAssembler::CallSize(
 #endif
 
   // S390 Assembler::move sequence are IILF / IIHF
-/*
 #if V8_TARGET_ARCH_S390X
-  size = 8 + 12; // 8 comes from the 2 * kInstrSize from PPC code above
+  size = 8 + 12;  // 8 comes from the 2 * kInstrSize from PPC code above
 #else
   size = 8 + 6;
 #endif
-*/
 
   return size;
 }
@@ -180,13 +178,11 @@ int MacroAssembler::CallSizeNotPredictableCodeSize(
 #endif
 
   // S390 Assembler::move sequence are IILF / IIHF
-/*
 #if V8_TARGET_ARCH_S390X
-  size = 8 + 12; // 8 comes from the 2 * kInstrSize from PPC code above
+  size = 8 + 12;  // 8 comes from the 2 * kInstrSize from PPC code above
 #else
   size = 8 + 6;
 #endif
-*/
 
   return size;
 }

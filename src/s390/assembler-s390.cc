@@ -1259,7 +1259,7 @@ void Assembler::mov(Register dst, const Operand& src) {
   int64_t value = src.immediate();
   int32_t hi_32 = static_cast<int64_t>(value) >> 32;
   int32_t lo_32 = static_cast<int32_t>(value);
-  int hi_word = static_cast<int>(hi_32) >> 16;
+  /*int hi_word = static_cast<int>(hi_32) >> 16;
   int lo_word = static_cast<int>(hi_32) & 0xFFFF;
   lis(dst, Operand(SIGN_EXT_IMM16(hi_word)));
   ori(dst, dst, Operand(lo_word));
@@ -1268,9 +1268,12 @@ void Assembler::mov(Register dst, const Operand& src) {
   lo_word = static_cast<int>(lo_32) & 0xFFFF;
   oris(dst, dst, Operand(hi_word));
   ori(dst, dst, Operand(lo_word));
+*/
+  iihf(dst, Operand(hi_32));
+  iilf(dst, Operand(lo_32));
 #else
   int value = src.immediate();
-  if (!is_trampoline_pool_blocked()) {
+  /*if (!is_trampoline_pool_blocked()) {
     if (is_int16(value)) {
       lhi(dst, Operand(value));
       return;
@@ -1284,9 +1287,9 @@ void Assembler::mov(Register dst, const Operand& src) {
     return;
   }
   ori(dst, dst, Operand(lo_word));
+  */
 
-  // @TODO Enable this one relocation bugs are fixed
-  // illf(dst, Operand(value));
+  iilf(dst, Operand(value));
 #endif
 }
 
