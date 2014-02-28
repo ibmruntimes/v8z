@@ -246,7 +246,7 @@ void MacroAssembler::Call(Handle<Code> code,
 
 void MacroAssembler::Ret(Condition cond) {
   ASSERT(cond == al);
-  blr();
+  b(r14);
 }
 
 
