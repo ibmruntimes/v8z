@@ -1324,6 +1324,11 @@ class Instruction {
   }
 
   // Set the raw instruction bits to value.
+  template<typename T>
+  inline void SetInstructionBits(T value) const {
+    Instruction::SetInstructionBits<T>(
+        reinterpret_cast<const byte*>(this), value);
+  }
   inline void SetInstructionBits(Instr value) {
     *reinterpret_cast<Instr*>(this) = value;
   }
@@ -1400,6 +1405,7 @@ class Instruction {
       return InstructionBits<SixByteInstr>(instr);
   }
 
+  // Extract the raw instruction bits
   template <typename T>
   static inline T InstructionBits(const byte *instr) {
   #if __BYTE_ORDER == __BIG_ENDIAN
@@ -1426,6 +1432,40 @@ class Instruction {
   #endif
   }
 
+  // Set the Instruction Bits to value
+  template <typename T>
+  static inline void SetInstructionBits(byte *instr, T value) {
+  #if __BYTE_ORDER == __LITTLE_ENDIAN
+    // The instruction bits are stored in big endian format even on little
+    // endian hosts, in order to decode instruction length and opcode.
+    // The following code will reverse the bytes so that the stores later
+    // (which are in native endianess) will effectively save the instruction
+    // in big endian.
+    if (sizeof(T) == 2) {
+      // Two Byte Instruction
+      value = ((value & 0x00FF) << 8) | ((value & 0xFF00) >> 8);
+    } else if (sizeof(T) == 4) {
+      // Four Byte Instruction
+      value = ((value & 0x000000FF) << 24) | ((value & 0x0000FF00) << 8) |
+              ((value & 0x00FF0000) >>  8) | ((value & 0xFF000000) >> 24);
+    } else if (sizeof(T) == 8) {
+      // Six Byte Instruction
+      value = (static_cast<uint64_t>(value & 0xFF) << 40) |
+              (static_cast<uint64_t>((value >>  8) & 0xFF) << 32) |
+              (static_cast<uint64_t>((value >> 16) & 0xFF) << 24) |
+              (static_cast<uint64_t>((value >> 24) & 0xFF) << 16) |
+              (static_cast<uint64_t>((value >> 32) & 0xFF) << 8) |
+              (static_cast<uint64_t>((value >> 40) & 0xFF));
+    }
+#endif
+    if (sizeof(T) <= 4) {
+      *reinterpret_cast<T*>(instr) = value;
+    } else {
+      *reinterpret_cast<uint32_t*>(instr) = static_cast<uint32_t>(value >> 16);
+      *reinterpret_cast<uint16_t*>(instr + 4) =
+                                         static_cast<uint16_t>(value & 0xFFFF);
+    }
+  }
 
   // Get Instruction Format Type
   static OpcodeFormatType getOpcodeFormatType(const byte *instr) {
