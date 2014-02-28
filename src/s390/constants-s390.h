@@ -1624,6 +1624,9 @@ class RIInstruction : Instruction {
     inline int16_t I2Value() const {
       return Bits<FourByteInstr, int16_t>(15, 0);
     }
+    inline uint16_t I2UnsignedValue() const {
+      return Bits<FourByteInstr, uint16_t>(15, 0);
+    }
     inline Condition M1Value() const {
       return static_cast<Condition>(Bits<FourByteInstr, int>(23, 20));
     }
@@ -1694,6 +1697,9 @@ class RILInstruction : Instruction {
     }
     inline int32_t I2Value() const {
       return Bits<SixByteInstr, int32_t>(31, 0);
+    }
+    inline uint32_t I2UnsignedValue() const {
+      return Bits<SixByteInstr, uint32_t>(31, 0);
     }
     inline int size() const { return 6; }
 };
