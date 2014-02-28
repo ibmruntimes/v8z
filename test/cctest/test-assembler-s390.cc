@@ -1202,6 +1202,7 @@ TEST(14) {
   __ brc(Condition(14), Operand(-123));
   __ brcl(Condition(14), Operand(123));
   __ brcl(Condition(14), Operand(-123));
+  __ iilf(r15, Operand(123456789));
 
   v8::internal::byte * bufPos = assm.buffer_pos();
   ::printf("buffer position = %p", bufPos);
