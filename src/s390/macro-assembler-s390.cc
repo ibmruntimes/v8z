@@ -58,8 +58,7 @@ MacroAssembler::MacroAssembler(Isolate* arg_isolate, void* buffer, int size)
 
 void MacroAssembler::Jump(Register target, Condition cond) {
   ASSERT(cond == al);
-  mtctr(target);
-  bcr();
+  b(cond, target);
 }
 
 
