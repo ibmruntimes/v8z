@@ -1269,7 +1269,7 @@ TEST(15) {
   intptr_t res =
     reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(f, 3, 4, 3, 0, 0));
   ::printf("f() = %" V8PRIdPTR "\n", res);
-  CHECK_EQ(7, static_cast<int>(res));
+  CHECK_EQ(4, static_cast<int>(res));
 }
 
 #undef __
