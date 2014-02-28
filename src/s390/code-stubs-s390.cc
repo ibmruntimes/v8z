@@ -3843,22 +3843,23 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   //   kCEntryFPAddress
   Isolate* isolate = masm->isolate();
   __ lay(sp, MemOperand(sp, -4 * kPointerSize));
-  __ lhi(r7, Operand(-1));  // Push a bad frame pointer to fail if it is used.
+  __ lhi(r10, Operand(-1));  // Push a bad frame pointer to fail if it is used.
   int marker = is_construct ? StackFrame::ENTRY_CONSTRUCT : StackFrame::ENTRY;
-  __ LoadSmiLiteral(r8, Smi::FromInt(marker));
   __ LoadSmiLiteral(r9, Smi::FromInt(marker));
+  __ LoadSmiLiteral(r8, Smi::FromInt(marker));
   // Save copies of the top frame descriptor on the stack.
-  __ mov(r10, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate)));
-  __ LoadP(r10, MemOperand(r10));
+  __ mov(r7, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate)));
+  __ LoadP(r7, MemOperand(r7));
   __ StoreMultipleP(r7, r10, MemOperand(sp, 0));
 
   // Set up frame pointer for the frame to be pushed.
+  __ lay(fp, MemOperand(sp, -EntryFrameConstants::kCallerFPOffset));
+
   // r2: code entry
   // r3: function
   // r4: receiver
   // r5: argc
   // r6: argv
-  __ addi(fp, sp, Operand(-EntryFrameConstants::kCallerFPOffset));
 
   // If this is the outermost JS call, set js_entry_sp value.
   Label non_outermost_js;
