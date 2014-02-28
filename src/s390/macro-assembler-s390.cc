@@ -4251,17 +4251,19 @@ void MacroAssembler::LoadP(Register dst, const MemOperand& mem,
                            Register scratch) {
   int offset = mem.offset();
 
-  if (!scratch.is(no_reg) && !is_int16(offset)) {
+  if (!scratch.is(no_reg) && !is_int20(offset)) {
     /* cannot use d-form */
     LoadIntLiteral(scratch, offset);
 #if V8_TARGET_ARCH_S390X
-    ldx(dst, MemOperand(mem.rb(), scratch));
+    lg(dst, MemOperand(mem.rb(), scratch));
+    // ldx(dst, MemOperand(mem.rb(), scratch));
 #else
-    lwzx(dst, MemOperand(mem.rb(), scratch));
+    // lwzx(dst, MemOperand(mem.rb(), scratch));
+    l(dst, MemOperand(mem.rb(), scratch));
 #endif
   } else {
 #if V8_TARGET_ARCH_S390X
-    int misaligned = (offset & 3);
+    /*int misaligned = (offset & 3);
     if (misaligned) {
       // adjust base to conform to offset alignment requirements
       // Todo: enhance to use scratch if dst is unsuitable
@@ -4271,8 +4273,15 @@ void MacroAssembler::LoadP(Register dst, const MemOperand& mem,
     } else {
       ld(dst, mem);
     }
+    */
+    lg(dst, mem);
 #else
-    lwz(dst, mem);
+    // lwz(dst, mem);
+    if (is_uint12(offset)) {
+        l(dst, mem);
+    } else {
+        ly(dst, mem);
+    }
 #endif
   }
 }
