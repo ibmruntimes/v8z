@@ -1389,11 +1389,9 @@ RXY_FORM(lrvg);
 RRE_FORM(lrvgr);
 RXY_FORM(lrvh);
 RRE_FORM(lrvr);
-RXY_FORM(lt_z);
 RRE_FORM(ltdbr);
 RRE_FORM(ltdtr);
 RRE_FORM(ltebr);
-RXY_FORM(ltg);
 RXY_FORM(ltgf);
 RRE_FORM(ltgfr);
 RRE_FORM(ltgr);
@@ -1702,6 +1700,19 @@ RRF1_FORM(xrk);
 S_FORM(xsch);
 RXY_FORM(xy);
 SS2_FORM(zap);
+
+  // Load Instructions
+  void lt_z(Register r1, const MemOperand& src);
+  void ltg(Register r1, const MemOperand& src);
+
+  void lm(Register r1, Register r2, const MemOperand& src);
+  void lmy(Register r1, Register r2, const MemOperand& src);
+  void lmg(Register r1, Register r2, const MemOperand& src);
+
+  // Store Instructions
+  void stm(Register r1, Register r2, const MemOperand& src);
+  void stmy(Register r1, Register r2, const MemOperand& src);
+  void stmg(Register r1, Register r2, const MemOperand& src);
 // end of S390instructions
 
   // PowerPC
@@ -1763,9 +1774,6 @@ SS2_FORM(zap);
   void lwzx(Register dst, const MemOperand& src);
   void lwzux(Register dst, const MemOperand& src);
   void lwa(Register dst, const MemOperand& src);
-  void lm(Register r1, Register r2, const MemOperand& src);
-  void lmy(Register r1, Register r2, const MemOperand& src);
-  void lmg(Register r1, Register r2, const MemOperand& src);
 
 
 
@@ -1777,9 +1785,6 @@ SS2_FORM(zap);
   void st(Register dst, const MemOperand& src);
   void stwu(Register dst, const MemOperand& src);
   void stwux(Register rs, const MemOperand& src);
-  void stm(Register r1, Register r2, const MemOperand& src);
-  void stmy(Register r1, Register r2, const MemOperand& src);
-  void stmg(Register r1, Register r2, const MemOperand& src);
 
   void extsb(Register rs, Register rb, RCBit r = LeaveRC);
   void extsh(Register rs, Register rb, RCBit r = LeaveRC);

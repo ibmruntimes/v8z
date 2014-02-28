@@ -4256,31 +4256,17 @@ void MacroAssembler::LoadP(Register dst, const MemOperand& mem,
     LoadIntLiteral(scratch, offset);
 #if V8_TARGET_ARCH_S390X
     lg(dst, MemOperand(mem.rb(), scratch));
-    // ldx(dst, MemOperand(mem.rb(), scratch));
 #else
-    // lwzx(dst, MemOperand(mem.rb(), scratch));
     l(dst, MemOperand(mem.rb(), scratch));
 #endif
   } else {
 #if V8_TARGET_ARCH_S390X
-    /*int misaligned = (offset & 3);
-    if (misaligned) {
-      // adjust base to conform to offset alignment requirements
-      // Todo: enhance to use scratch if dst is unsuitable
-      ASSERT(!dst.is(r0));
-      addi(dst, mem.rb(), Operand((offset & 3) - 4));
-      ld(dst, MemOperand(dst, (offset & ~3) + 4));
-    } else {
-      ld(dst, mem);
-    }
-    */
     lg(dst, mem);
 #else
-    // lwz(dst, mem);
     if (is_uint12(offset)) {
-        l(dst, mem);
+      l(dst, mem);
     } else {
-        ly(dst, mem);
+      ly(dst, mem);
     }
 #endif
   }

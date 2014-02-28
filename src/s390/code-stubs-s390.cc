@@ -3865,8 +3865,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   Label non_outermost_js;
   ExternalReference js_entry_sp(Isolate::kJSEntrySPAddress, isolate);
   __ mov(r8, Operand(ExternalReference(js_entry_sp)));
-  __ LoadP(r9, MemOperand(r8));
-  __ cmpi(r9, Operand::Zero());
+  __ LoadAndTestP(r9, MemOperand(r8));
   __ bne(&non_outermost_js);
   __ StoreP(fp, MemOperand(r8));
   __ LoadSmiLiteral(ip, Smi::FromInt(StackFrame::OUTERMOST_JSENTRY_FRAME));
