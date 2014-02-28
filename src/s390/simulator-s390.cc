@@ -2735,57 +2735,6 @@ void Simulator::DecodeExt5(Instruction* instr) {
 #endif
 
 // S390 Decode and simulate helpers
-
-// Decode routine for two-byte instructions
-bool Simulator::DecodeTwoByte(Instruction* instr) {
-  Opcode opcode = instr->S390OpcodeValue();
-
-  switch (opcode) {
-    case AR:
-      break;
-    default:
-      return false;
-  }
-  return true;
-}
-
-// Decode routine for four-byte instructions
-bool Simulator::DecodeFourByte(Instruction* instr) {
-  Opcode opcode = instr->S390OpcodeValue();
-
-  switch (opcode) {
-    case A:
-      break;
-    case STM: {
-      // Store Multiple 32-bits.
-      RSInstruction* rsinstr = reinterpret_cast<RSInstruction*>(instr);
-      int r1 = rsinstr->R1Value();
-      int r3 = rsinstr->R3Value();
-      int rb = rsinstr->B2Value();
-      int offset = rsinstr->D2Value();
-
-      // Regs roll around if r3 is less than r1.
-      // Artifically increase r3 by 16 so we can calculate
-      // the number of regs stored properly.
-      if (r3 < r1)
-        r3 += 16;
-
-      intptr_t rb_val = (rb == 0) ? 0 : get_register(rb);
-
-      // Store each register in ascending order.
-      for (int i = 0; i < r3 - r1; i++) {
-        int32_t value = get_register((r1 + i) % 16);
-        WriteW(rb_val + offset + 4 * i, value, instr);
-      }
-      break;
-    }
-
-    default:
-      return false;
-  }
-  return true;
-}
-
 // Decode routine for six-byte instructions
 bool Simulator::DecodeSixByte(Instruction* instr) {
   Opcode opcode = instr->S390OpcodeValue();
@@ -2811,7 +2760,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
   return true;
 }
 
-void Simulator::S390InstructionDecode(Instruction* instr) {
+bool Simulator::DecodeTwoByte(Instruction* instr) {
   Opcode op = instr->S390OpcodeValue();
 
   switch (op) {
@@ -2826,12 +2775,12 @@ void Simulator::S390InstructionDecode(Instruction* instr) {
     case XR:
     case LR:
       {
-      RRInstruction rrinst = reinterpret_cast<RRInstruction*>(instr);
+      RRInstruction* rrinst = reinterpret_cast<RRInstruction*>(instr);
       int r1 = rrinst->R1Value();
       int r2 = rrinst->R2Value();
       int32_t r1_val = get_register(r1);
       int32_t r2_val = get_register(r2);
-      int32_t alu_out;
+      int32_t alu_out = 0;
       switch (op) {
         case AR: alu_out = r1_val + r2_val; break;
         case SR: alu_out = r1_val - r2_val; break;
@@ -2841,12 +2790,13 @@ void Simulator::S390InstructionDecode(Instruction* instr) {
         case NR: alu_out = r1_val & r2_val; break;
         case XR: alu_out = r1_val ^ r2_val; break;
         case LR: alu_out = r2_val; break;
+        default: UNREACHABLE(); break;
       }
       set_register(r1, alu_out);
       break;
     }
     case CR: {
-      RRInstruction rrinst = reinterpret_cast<RRInstruction*>(instr);
+      RRInstruction* rrinst = reinterpret_cast<RRInstruction*>(instr);
       int r1 = rrinst->R1Value();
       int r2 = rrinst->R2Value();
       int32_t r1_val = get_register(r1);
@@ -2855,7 +2805,7 @@ void Simulator::S390InstructionDecode(Instruction* instr) {
       break;
     }
     case CLR: {
-      RRInstruction rrinst = reinterpret_cast<RRInstruction*>(instr);
+      RRInstruction* rrinst = reinterpret_cast<RRInstruction*>(instr);
       int r1 = rrinst->R1Value();
       int r2 = rrinst->R2Value();
       uint32_t r1_val = get_register(r1);
@@ -2868,7 +2818,7 @@ void Simulator::S390InstructionDecode(Instruction* instr) {
       break;
     }
     case LTR: {
-      RRInstruction rrinst = reinterpret_cast<RRInstruction*>(instr);
+      RRInstruction* rrinst = reinterpret_cast<RRInstruction*>(instr);
       int r1 = rrinst->R1Value();
       int r2 = rrinst->R2Value();
       int32_t r2_val = get_register(r2);
@@ -2878,7 +2828,7 @@ void Simulator::S390InstructionDecode(Instruction* instr) {
     }
     case ALR:
     case SLR: {
-      RRInstruction rrinst = reinterpret_cast<RRInstruction*>(instr);
+      RRInstruction* rrinst = reinterpret_cast<RRInstruction*>(instr);
       int r1 = rrinst->R1Value();
       int r2 = rrinst->R2Value();
       uint32_t r1_val = get_register(r1);
@@ -2899,21 +2849,22 @@ void Simulator::S390InstructionDecode(Instruction* instr) {
     }
     default:
       return false;
+      break;
   }
   return true;
 }
 
 // Decode routine for four-byte instructions
 bool Simulator::DecodeFourByte(Instruction* instr) {
-  Opcode opcode = instr->S390OpcodeValue();
+  Opcode op = instr->S390OpcodeValue();
 
-  switch (opcode) {
+  switch (op) {
     case AHI:  // @TODO (AlanLi): set condition code for overflow
     case MHI:
     case LHI: {
-      RIInstruction riinst = reinterpret_cast<RIInstruction*>(instr);
-      int r1 = rrinst->R1Value();
-      int i  = rrinst->I2Value();
+      RIInstruction* riinst = reinterpret_cast<RIInstruction*>(instr);
+      int r1 = riinst->R1Value();
+      int i  = riinst->I2Value();
       int32_t r1_val = get_register(r1);
       int32_t alu_out;
       if (op == AHI) {
@@ -2927,18 +2878,18 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       break;
     }
     case CHI: {
-      RIInstruction riinst = reinterpret_cast<RIInstruction*>(instr);
-      int r1 = rrinst->R1Value();
-      int16_t i = rrinst->I2Value();
+      RIInstruction* riinst = reinterpret_cast<RIInstruction*>(instr);
+      int r1 = riinst->R1Value();
+      int16_t i = riinst->I2Value();
       int32_t r1_val = get_register(r1);
       SetS390ConditionCode<int32_t>(r1_val, i);
       break;
     }
     case BRAS: { UNIMPLEMENTED(); break; }
     case BRC: {
-      RIInstruction riinst = reinterpret_cast<RIInstruction*>(instr);
+      RIInstruction* riinst = reinterpret_cast<RIInstruction*>(instr);
       int m1 = riinst->M1Value();
-      if (TestConditionCode(m1)) {
+      if (TestConditionCode((Condition)m1)) {
         intptr_t offset = riinst->I2Value();
         set_pc(get_pc() + offset);
       }
@@ -2993,13 +2944,13 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
     case O:
     case N:
     case X: {
-      RXInstruction rxinst = reinterpret_cast<RXInstruction*>(instr);
+      RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
       int32_t  r1_val = get_register(rxinst->R1Value());
       intptr_t b2_val = get_register(rxinst->B2Value());
       intptr_t x2_val = get_register(rxinst->X2Value());
       intptr_t d2_val = rxinst->D2Value();
       int32_t mem_val = ReadW(b2_val + x2_val + d2_val, instr);
-      int32_t alu_out;
+      int32_t alu_out = 0;
       switch (op) {
         case A: alu_out = r1_val + mem_val; break;
         case S: alu_out = r1_val - mem_val; break;
@@ -3008,6 +2959,7 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
         case O: alu_out = r1_val | mem_val; break;
         case N: alu_out = r1_val & mem_val; break;
         case X: alu_out = r1_val ^ mem_val; break;
+        default: UNREACHABLE(); break;
       }
       set_register(r1, alu_out);
       break;
@@ -3015,34 +2967,38 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
     case L:
     case LA:
     case LB: {
-      RXInstruction rxinst = reinterpret_cast<RXInstruction*>(instr);
-      int32_t  r1_val = get_register(rxinst->R1Value());
+      RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
+      int32_t  r1 = rxinst->R1Value();
       intptr_t b2_val = get_register(rxinst->B2Value());
       intptr_t x2_val = get_register(rxinst->X2Value());
       intptr_t d2_val = rxinst->D2Value();
       intptr_t addr = b2_val + x2_val + d2_val;
-      int32_t mem_val;
+      int32_t mem_val = 0;
       if (op == L) {
         mem_val = ReadW(addr, instr);
       } else if (op == LA) {
         UNIMPLEMENTED();
       } else if (op == LB) {
-        mem_val = ReadB(addr, instr);
+        mem_val = ReadB(addr);
       }
       set_register(r1, mem_val);
       break;
     }
     case C: {
-      RXInstruction rxinst = reinterpret_cast<RXInstruction*>(instr);
-      int r1 = rxinst->R1Value();
-      int32_t r1_val = get_register(r1);
+      RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
+      int32_t  r1_val = get_register(rxinst->R1Value());
+      intptr_t b2_val = get_register(rxinst->B2Value());
+      intptr_t x2_val = get_register(rxinst->X2Value());
+      intptr_t d2_val = rxinst->D2Value();
+      intptr_t addr = b2_val + x2_val + d2_val;
+      int32_t mem_val = ReadW(addr, instr);
       SetS390ConditionCode<int32_t>(r1_val, mem_val);
       break;
     }
     case AH:
     case SH:
     case MH: {
-      RXInstruction rxinst = reinterpret_cast<RXInstruction*>(instr);
+      RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
       int32_t r1_val = get_register(rxinst->R1Value());
       intptr_t b2_val = get_register(rxinst->B2Value());
       intptr_t x2_val = get_register(rxinst->X2Value());
@@ -3064,11 +3020,11 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
     }
     case AHY:
     case SHY: {
-      RXYInstruction rxyinst = reinterpret_cast<RXYInstruction*>(instr);
+      RXYInstruction* rxyinst = reinterpret_cast<RXYInstruction*>(instr);
       int32_t r1_val = get_register(rxyinst->R1Value());
-      intptr_t b2_val = get_register(rxinst->B2Value());
-      intptr_t x2_val = get_register(rxinst->X2Value());
-      intptr_t d2_val = rxinst->D2Value();
+      intptr_t b2_val = get_register(rxyinst->B2Value());
+      intptr_t x2_val = get_register(rxyinst->X2Value());
+      intptr_t d2_val = rxyinst->D2Value();
       int16_t mem_val = ReadH(b2_val + d2_val + x2_val, instr);
       int32_t alu_out = r1_val + mem_val;
       set_register(r1, alu_out);
