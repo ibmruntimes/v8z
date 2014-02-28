@@ -449,7 +449,7 @@ void FullCodeGenerator::EmitReturnSequence() {
       masm_->LoadP(fp, MemOperand(sp));
       masm_->LoadP(r0, MemOperand(sp, kPointerSize));
       masm_->mtlr(r0);
-      masm_->Add(sp, sp, (uint32_t)(sp_delta + (2 * kPointerSize)), r0);
+      masm_->Add(sp, sp, (uint32_t)(sp_delta + (2 * kPointerSize)));
       masm_->blr();
 #if V8_TARGET_ARCH_S390X
       // With 64bit we need a couple of nop() instructions to ensure we have

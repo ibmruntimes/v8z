@@ -253,7 +253,7 @@ void MacroAssembler::Ret(Condition cond) {
 void MacroAssembler::Drop(int count, Condition cond) {
   ASSERT(cond == al);
   if (count > 0) {
-    Add(sp, sp, count * kPointerSize, r0);
+    Add(sp, sp, count * kPointerSize);
   }
 }
 
@@ -2222,7 +2222,7 @@ bool MacroAssembler::AllowThisStubCall(CodeStub* stub) {
 
 void MacroAssembler::IllegalOperation(int num_arguments) {
   if (num_arguments > 0) {
-    Add(sp, sp, num_arguments * kPointerSize, r0);
+    Add(sp, sp, num_arguments * kPointerSize);
   }
   LoadRoot(r0, Heap::kUndefinedValueRootIndex);
 }
@@ -4116,13 +4116,11 @@ void MacroAssembler::LoadDoubleLiteral(DwVfpRegister result,
 }
 
 void MacroAssembler::Add(Register dst, Register src,
-                         uint32_t value, Register scratch) {
-  if (is_int16(value)) {
-    addi(dst, src, Operand(value));
-  } else {
-    mov(scratch, Operand(value));
-    add(dst, src, scratch);
+                         int value) {
+  if (!dst.is(src)) {
+    Load(dst, Operand(value));
   }
+  afi(dst, Operand(value));
 }
 
 void MacroAssembler::Cmpi(Register src1, const Operand& src2, Register scratch,
@@ -4221,7 +4219,7 @@ void MacroAssembler::AddSmiLiteral(Register dst, Register src, Smi *smi,
   LoadSmiLiteral(scratch, smi);
   add(dst, src, scratch);
 #else
-  Add(dst, src, reinterpret_cast<intptr_t>(smi), scratch);
+  Add(dst, src, reinterpret_cast<intptr_t>(smi));
 #endif
 }
 
@@ -4231,7 +4229,7 @@ void MacroAssembler::SubSmiLiteral(Register dst, Register src, Smi *smi,
   LoadSmiLiteral(scratch, smi);
   sub(dst, src, scratch);
 #else
-  Add(dst, src, -(reinterpret_cast<intptr_t>(smi)), scratch);
+  Add(dst, src, -(reinterpret_cast<intptr_t>(smi)));
 #endif
 }
 
