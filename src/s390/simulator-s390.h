@@ -154,6 +154,10 @@ class Simulator {
   // Accessors for register state.
   void set_register(int reg, intptr_t value);
   intptr_t get_register(int reg) const;
+  template<typename T>
+  T get_low_register(int reg) const;
+  template<typename T>
+  T get_high_register(int reg) const;
   double get_double_from_register_pair(int reg);
   void set_d_register_from_double(int dreg, const double dbl) {
     ASSERT(dreg >= 0 && dreg < kNumFPRs);
@@ -325,8 +329,6 @@ class Simulator {
   // Saturating instructions require a Q flag to indicate saturation.
   // There is currently no way to read the CPSR directly, and thus read the Q
   // flag, so this is left unimplemented.
-  // @TODO (AlanLi): we might need to change the type, because we can
-  // still use 32bit instructions on 64bit builds
   intptr_t registers_[kNumGPRs];  // PowerPC
   // condition register. In s390, the last 4 bits are used.
   int32_t condition_reg_;
