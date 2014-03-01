@@ -669,7 +669,7 @@ void LCodeGen::DeoptimizeIf(Condition cond, LEnvironment* environment,
         (deopt_jump_table_.last().address != entry)) {
       deopt_jump_table_.Add(JumpTableEntry(entry), zone());
     }
-    __ b(cond, &deopt_jump_table_.last().label);
+    __ b(cond, &deopt_jump_table_.last().label /*, cr*/);
   }
 }
 
@@ -1673,11 +1673,11 @@ void LCodeGen::EmitBranch(int left_block, int right_block, Condition cond,
   if (right_block == left_block) {
     EmitGoto(left_block);
   } else if (left_block == next_block) {
-    __ b(NegateCondition(cond), chunk_->GetAssemblyLabel(right_block));
+    __ b(NegateCondition(cond), chunk_->GetAssemblyLabel(right_block) /*, cr*/);
   } else if (right_block == next_block) {
-    __ b(cond, chunk_->GetAssemblyLabel(left_block));
+    __ b(cond, chunk_->GetAssemblyLabel(left_block) /*, cr*/);
   } else {
-    __ b(cond, chunk_->GetAssemblyLabel(left_block));
+    __ b(cond, chunk_->GetAssemblyLabel(left_block) /*, cr*/);
     __ b(chunk_->GetAssemblyLabel(right_block));
   }
 }
@@ -1758,7 +1758,7 @@ void LCodeGen::DoBranch(LBranch* instr) {
           // Undetectable -> false.
           __ lbz(ip, FieldMemOperand(map, Map::kBitFieldOffset));
           __ TestBit(ip, Map::kIsUndetectable, r0);
-          __ bne(false_label);
+          __ bne(false_label /*, cr0*/);
         }
       }
 
@@ -1963,7 +1963,7 @@ Condition LCodeGen::EmitIsObject(Register input,
   // Undetectable objects behave like undefined.
   __ lbz(temp2, FieldMemOperand(temp1, Map::kBitFieldOffset));
   __ TestBit(temp2, Map::kIsUndetectable, r0);
-  __ bne(is_not_object);
+  __ bne(is_not_object /*, cr0*/);
 
   // Load instance type and check that it is in object type range.
   __ lbz(temp2, FieldMemOperand(temp1, Map::kInstanceTypeOffset));
@@ -2322,7 +2322,7 @@ void LCodeGen::DoInstanceOfKnownGlobal(LInstanceOfKnownGlobal* instr) {
 
   // String values is not instance of anything.
   Condition is_string = masm_->IsObjectStringType(object, temp);
-  __ b(is_string, &false_result);
+  __ b(is_string, &false_result /*, cr0*/);
 
   // Go to the deferred code.
   __ b(deferred->entry());
@@ -2668,7 +2668,7 @@ void LCodeGen::DoLoadFunctionPrototype(LLoadFunctionPrototype* instr) {
   Label non_instance;
   __ lbz(scratch, FieldMemOperand(result, Map::kBitFieldOffset));
   __ TestBit(scratch, Map::kHasNonInstancePrototype, r0);
-  __ bne(&non_instance);
+  __ bne(&non_instance /*, cr0*/);
 
   // Get the prototype or initial map from the function.
   __ LoadP(result,
@@ -3100,7 +3100,7 @@ void LCodeGen::DoWrapReceiver(LWrapReceiver* instr) {
              SharedFunctionInfo::kStrictModeFunction + kSmiTagSize,
 #endif
              r0);
-  __ bne(&receiver_ok);
+  __ bne(&receiver_ok /*, cr0*/);
 
   // Do not transform the receiver to object for builtins.
   __ TestBit(scratch,
@@ -3110,7 +3110,7 @@ void LCodeGen::DoWrapReceiver(LWrapReceiver* instr) {
              SharedFunctionInfo::kNative + kSmiTagSize,
 #endif
              r0);
-  __ bne(&receiver_ok);
+  __ bne(&receiver_ok /*, cr0*/);
 
   // Normal function. Replace undefined or null with global receiver.
   __ LoadRoot(scratch, Heap::kNullValueRootIndex);
@@ -3324,7 +3324,7 @@ void LCodeGen::DoDeferredMathAbsTaggedHeapNumber(LUnaryMathOperation* instr) {
   __ TestSignBit32(exponent, r0);
   // Move the input to the result if necessary.
   __ Move(result, input);
-  __ beq(&done);
+  __ beq(&done /*, cr0*/);
 
   // Input is negative. Reverse its sign.
   // Preserve the value of all registers.
