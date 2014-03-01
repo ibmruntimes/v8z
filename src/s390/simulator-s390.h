@@ -154,10 +154,11 @@ class Simulator {
   // Accessors for register state.
   void set_register(int reg, intptr_t value);
   intptr_t get_register(int reg) const;
-  template<typename T>
-  T get_low_register(int reg) const;
-  template<typename T>
-  T get_high_register(int reg) const;
+  template<typename T> T get_low_register(int reg) const;
+  template<typename T> T get_high_register(int reg) const;
+  template<typename T> void set_low_register(int reg, T value);
+  template<typename T> void set_high_register(int reg, T value);
+
   double get_double_from_register_pair(int reg);
   void set_d_register_from_double(int dreg, const double dbl) {
     ASSERT(dreg >= 0 && dreg < kNumFPRs);
