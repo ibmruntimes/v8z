@@ -961,6 +961,34 @@ intptr_t Simulator::get_register(int reg) const {
   return registers_[reg];
 }
 
+template<typename T>
+T Simulator::get_low_register(int reg) const {
+  ASSERT((reg >= 0) && (reg < kNumGPRs));
+  // Stupid code added to avoid bug in GCC.
+  // See: http://gcc.gnu.org/bugzilla/show_bug.cgi?id=43949
+  if (reg >= kNumGPRs) return 0;
+  // End stupid code.
+#ifdef V8_TARGET_S390X
+  return static_cast<T>(registers_[reg] & 0xFFFFFFFF);
+#else
+  return static_cast<T>(registers_[reg]);
+#endif
+}
+
+template<typename T>
+T Simulator::get_high_register(int reg) const {
+  ASSERT((reg >= 0) && (reg < kNumGPRs));
+  // Stupid code added to avoid bug in GCC.
+  // See: http://gcc.gnu.org/bugzilla/show_bug.cgi?id=43949
+  if (reg >= kNumGPRs) return 0;
+  // End stupid code.
+#ifdef V8_TARGET_S390X
+  return static_cast<T>(registers_[reg] & 0xFFFFFFFF);
+#else
+  return static_cast<T>(registers_[reg]);
+#endif
+}
+
 
 double Simulator::get_double_from_register_pair(int reg) {
   ASSERT((reg >= 0) && (reg < kNumGPRs) && ((reg % 2) == 0));
@@ -2752,8 +2780,9 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       set_register(r1, rx_val + rb_val + offset);
       break;
     }
-    case LLILF:
+    case LLILF: {
       break;
+    }
     default:
       return false;
   }
