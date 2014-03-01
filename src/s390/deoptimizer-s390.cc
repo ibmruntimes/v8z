@@ -259,11 +259,15 @@ void Deoptimizer::RevertStackCheckCodeAt(Code* unoptimized_code,
   // Replace NOP with conditional jump.
   CodePatcher patcher(pc_after - 8 * kInstrSize, 6);
   if (FLAG_count_based_interrupts) {
-      patcher.masm()->branchOnCond(ge, +68);  // bge
+      // TODO(john): remove link bit and BF bit
+      patcher.masm()->branchOnCond(ge, +68);  // , BF,
+                // v8::internal::Assembler::encode_crbit(cr7, CR_LT));  // bge
     ASSERT_EQ(kBranchBeforeInterrupt,
               Memory::int32_at(pc_after - 8 * kInstrSize));
   } else {
-    patcher.masm()->branchOnCond(ge, +32);  // bge
+      // TODO(john): remove link bit and BF bit
+    patcher.masm()->branchOnCond(ge, +32);  //  , BF,
+                // v8::internal::Assembler::encode_crbit(cr7, CR_LT));  // bge
     ASSERT_EQ(kBranchBeforeStackCheck,
               Memory::int32_at(pc_after - 8 * kInstrSize));
   }
@@ -271,11 +275,15 @@ void Deoptimizer::RevertStackCheckCodeAt(Code* unoptimized_code,
   // Replace NOP with conditional jump.
   CodePatcher patcher(pc_after - 5 * kInstrSize, 3);
   if (FLAG_count_based_interrupts) {
-      patcher.masm()->branchOnCond(ge, +36);  // bge
+      // TODO(john): remove link bit and BF bit
+      patcher.masm()->branchOnCond(ge, +36);  // BF,
+                // v8::internal::Assembler::encode_crbit(cr7, CR_LT))  // bge
     ASSERT_EQ(kBranchBeforeInterrupt,
               Memory::int32_at(pc_after - 5 * kInstrSize));
   } else {
-    patcher.masm()->branchOnCond(ge, +20);  // bge
+      // TODO(john): remove link bit and BF bit
+    patcher.masm()->branchOnCond(ge, +20);  // BF,
+                // v8::internal::Assembler::encode_crbit(cr7, CR_LT))  // bge
     ASSERT_EQ(kBranchBeforeStackCheck,
               Memory::int32_at(pc_after - 5 * kInstrSize));
   }

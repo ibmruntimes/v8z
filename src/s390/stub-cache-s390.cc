@@ -154,7 +154,7 @@ static void GenerateDictionaryNegativeLookup(MacroAssembler* masm,
   __ LoadP(map, FieldMemOperand(receiver, HeapObject::kMapOffset));
   __ lbz(scratch0, FieldMemOperand(map, Map::kBitFieldOffset));
   __ andi(r0, scratch0, Operand(kInterceptorOrAccessCheckNeededMask));
-  __ bne(miss_label);
+  __ bne(miss_label /*, cr0*/);
 
   // Check that receiver is a JSObject.
   __ lbz(scratch0, FieldMemOperand(map, Map::kInstanceTypeOffset));
@@ -2140,7 +2140,7 @@ Handle<Code> CallStubCompiler::CompileMathFloorCall(
   // If the argument is a smi, just return.
   STATIC_ASSERT(kSmiTag == 0);
   __ andi(r0, r3, Operand(kSmiTagMask));
-  __ bne(&not_smi);
+  __ bne(&not_smi /*, cr0*/);
   __ Drop(argc + 1);
   __ Ret();
   __ bind(&not_smi);
@@ -2189,7 +2189,7 @@ Handle<Code> CallStubCompiler::CompileMathFloorCall(
   // if resulting conversion is negative, invert for bit tests
   __ TestSignBit(r3, r0);
   __ mr(r0, r3);
-  __ beq(&positive);
+  __ beq(&positive /*, cr0*/);
   __ neg(r0, r3);
   __ bind(&positive);
 
@@ -2207,7 +2207,7 @@ Handle<Code> CallStubCompiler::CompileMathFloorCall(
   __ LoadP(r4, MemOperand(sp, 0 * kPointerSize));
   __ lwz(r4, FieldMemOperand(r4, HeapNumber::kExponentOffset));
   __ TestSignBit32(r4, r0);
-  __ beq(&drop_arg_return);
+  __ beq(&drop_arg_return /*, cr0*/);
   // If our HeapNumber is negative it was -0, so load its address and return.
   __ LoadP(r3, MemOperand(sp));
 
@@ -2283,7 +2283,7 @@ Handle<Code> CallStubCompiler::CompileMathAbsCall(
   // If the result is still negative, go to the slow case.
   // This only happens for the most negative smi.
   Label slow;
-  __ blt(&slow);
+  __ blt(&slow /*, cr0*/);
 
   // Smi case done.
   __ Drop(argc + 1);
@@ -2299,7 +2299,7 @@ Handle<Code> CallStubCompiler::CompileMathAbsCall(
   // just return it.
   Label negative_sign;
   __ andis(r0, r4, Operand(HeapNumber::kSignMask >> 16));
-  __ bne(&negative_sign);
+  __ bne(&negative_sign /*, cr0*/);
   __ Drop(argc + 1);
   __ Ret();
 
