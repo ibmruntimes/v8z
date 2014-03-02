@@ -291,6 +291,7 @@ class MacroAssembler: public Assembler {
   void AddLogical(Register dst, Register src);
   void Add(Register dst, const MemOperand& opnd);
   void Add(Register dst, const Operand& opnd);
+  void Add(Register dst, Register src, const Operand& opnd);
   void SubtractLogical(Register dst, const MemOperand& opnd);
   void SubtractLogical(Register dst, const Operand& opnd);
   void SubtractLogical(Register dst, Register src);
@@ -613,7 +614,6 @@ class MacroAssembler: public Assembler {
 
 
 
-  void Add(Register dst, Register src, int value);
   void Cmpi(Register src1, const Operand& src2, Register scratch,
             CRegister cr = cr7);
   void Cmpli(Register src1, const Operand& src2, Register scratch,
