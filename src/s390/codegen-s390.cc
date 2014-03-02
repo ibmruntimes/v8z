@@ -127,7 +127,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
 
   // Allocate new FixedDoubleArray.
   __ SmiToDoubleArrayOffset(r30, r8);
-  __ addi(r30, r30, Operand(FixedDoubleArray::kHeaderSize + kPointerSize));
+  __ Add(r30, Operand(FixedDoubleArray::kHeaderSize + kPointerSize));
   __ AllocateInNewSpace(r30, r9, r10, r22, &gc_required, NO_ALLOCATION_FLAGS);
   // r9: destination FixedDoubleArray, not tagged as heap object.
 
@@ -139,7 +139,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   __ beq(&aligned /*, cr0*/);
   // Store at the beginning of the allocated memory and update the base pointer.
   __ StoreP(ip, MemOperand(r9));
-  __ addi(r9, r9, Operand(kPointerSize));
+  __ Add(r9, Operand(kPointerSize));
   __ b(&aligned_done);
 
   __ bind(&aligned);
@@ -165,7 +165,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
                       OMIT_REMEMBERED_SET,
                       OMIT_SMI_CHECK);
   // Replace receiver's backing store with newly created FixedDoubleArray.
-  __ addi(r6, r9, Operand(kHeapObjectTag));
+  __ Add(r6, r9, Operand(kHeapObjectTag));
   __ StoreP(r6, FieldMemOperand(r5, JSObject::kElementsOffset), r0);
   __ RecordWriteField(r5,
                       JSObject::kElementsOffset,
@@ -177,8 +177,8 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
                       OMIT_SMI_CHECK);
 
   // Prepare for conversion loop.
-  __ addi(r6, r7, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
-  __ addi(r10, r9, Operand(FixedDoubleArray::kHeaderSize));
+  __ Add(r6, r7, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ Add(r10, r9, Operand(FixedDoubleArray::kHeaderSize));
   __ SmiToDoubleArrayOffset(r9, r8);
   __ add(r9, r10, r9);
 #if V8_TARGET_ARCH_S390X
@@ -216,7 +216,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   // Convert and copy elements.
   __ bind(&loop);
   __ LoadP(r22, MemOperand(r6));
-  __ addi(r6, r6, Operand(kPointerSize));
+  __ Add(r6, Operand(kPointerSize));
   // r22: current element
   __ UntagAndJumpIfNotSmi(r22, r22, &convert_hole);
 
@@ -224,7 +224,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   FloatingPointHelper::ConvertIntToDouble(
     masm, r22, d0);
   __ stfd(d0, MemOperand(r10, 0));
-  __ addi(r10, r10, Operand(8));
+  __ Add(r10, Operand(8));
 
   __ b(&entry);
 
@@ -247,7 +247,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   __ st(r7, MemOperand(r10, 4));
 #endif
 #endif
-  __ addi(r10, r10, Operand(8));
+  __ Add(r10, Operand(8));
 
   __ bind(&entry);
   __ cmp(r10, r9);
@@ -294,9 +294,9 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   __ StoreP(r22, MemOperand(r9, HeapObject::kMapOffset));
 
   // Prepare for conversion loop.
-  __ addi(r7, r7, Operand(FixedDoubleArray::kHeaderSize - kHeapObjectTag));
-  __ addi(r6, r9, Operand(FixedArray::kHeaderSize));
-  __ addi(r9, r9, Operand(kHeapObjectTag));
+  __ Add(r7, Operand(FixedDoubleArray::kHeaderSize - kHeapObjectTag));
+  __ Add(r6, r9, Operand(FixedArray::kHeaderSize));
+  __ Add(r9, Operand(kHeapObjectTag));
   __ SmiToPtrArrayOffset(r8, r8);
   __ add(r8, r6, r8);
   __ LoadRoot(r10, Heap::kTheHoleValueRootIndex);
@@ -321,7 +321,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
 #else
   __ lwz(r4, MemOperand(r7));
 #endif
-  __ addi(r7, r7, Operand(8));
+  __ Add(r7, Operand(8));
   // r4: current element's upper 32 bit
   // r7: address of next element's upper 32 bit
   __ Cmpi(r4, Operand(kHoleNanUpper32), r0);
@@ -332,7 +332,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   // r5: new heap number
 #if V8_TARGET_ARCH_S390X
   __ ld(r3, MemOperand(r7, -8));
-  __ addi(r4, r5, Operand(-1));  // subtract tag for std
+  __ Add(r4, r5, Operand(-1));  // subtract tag for std
   __ stg(r3, MemOperand(r4, HeapNumber::kValueOffset));
 #else
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
@@ -349,7 +349,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
 #endif
   __ mr(r3, r6);
   __ StoreP(r5, MemOperand(r6));
-  __ addi(r6, r6, Operand(kPointerSize));
+  __ Add(r6, Operand(kPointerSize));
   __ RecordWrite(r9,
                  r3,
                  r5,
@@ -362,7 +362,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   // Replace the-hole NaN with the-hole pointer.
   __ bind(&convert_hole);
   __ StoreP(r10, MemOperand(r6));
-  __ addi(r6, r6, Operand(kPointerSize));
+  __ Add(r6, Operand(kPointerSize));
 
   __ bind(&entry);
   __ cmpl(r6, r8);
@@ -450,7 +450,7 @@ void StringCharLoadGenerator::Generate(MacroAssembler* masm,
 
   // Prepare sequential strings
   STATIC_ASSERT(SeqTwoByteString::kHeaderSize == SeqAsciiString::kHeaderSize);
-  __ addi(string,
+  __ Add(string,
           string,
           Operand(SeqTwoByteString::kHeaderSize - kHeapObjectTag));
   __ b(&check_encoding);

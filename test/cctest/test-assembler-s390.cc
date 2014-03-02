@@ -238,10 +238,12 @@ TEST(3) {
 
   // restore frame
 #if V8_TARGET_ARCH_S390X
-  __ addi(r11, fp, Operand(32));
+  __ lr(r11, fp);
+  __ ahi(r11, Operand(32));
   __ ld(fp, MemOperand(r11, -8));
 #else
-  __ addi(r11, fp, Operand(16));
+  __ lr(r11, fp);
+  __ ahi(r11, Operand(16));
   __ lwz(fp, MemOperand(r11, -4));
 #endif
   __ mr(sp, r11);
