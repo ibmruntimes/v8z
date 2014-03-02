@@ -657,7 +657,7 @@ void FloatingPointHelper::ConvertIntToDouble(MacroAssembler* masm,
                                              DwVfpRegister double_dst) {
   ASSERT(!src.is(r0));
 
-  __ subi(sp, sp, Operand(8));  // reserve one temporary double on the stack
+  __ Sub(sp, Operand(8));  // reserve one temporary double on the stack
 
   // sign-extend src to 64-bit and store it to temp double on the stack
 #if V8_TARGET_ARCH_S390X
@@ -689,7 +689,7 @@ void FloatingPointHelper::ConvertUnsignedIntToDouble(MacroAssembler* masm,
                                                      DwVfpRegister double_dst) {
   ASSERT(!src.is(r0));
 
-  __ subi(sp, sp, Operand(8));  // reserve one temporary double on the stack
+  __ Sub(sp, Operand(8));  // reserve one temporary double on the stack
 
   // zero-extend src to 64-bit and store it to temp double on the stack
 #if V8_TARGET_ARCH_S390X
@@ -719,7 +719,7 @@ void FloatingPointHelper::ConvertIntToFloat(MacroAssembler* masm,
                                             const DwVfpRegister dst,
                                             const Register src,
                                             const Register int_scratch) {
-  __ subi(sp, sp, Operand(8));  // reserve one temporary double on the stack
+  __ Sub(sp, Operand(8));  // reserve one temporary double on the stack
 
   // sign-extend src to 64-bit and store it to temp double on the stack
 #if V8_TARGET_ARCH_S390X
@@ -1242,7 +1242,7 @@ void NumberToStringStub::GenerateLookupNumberStringCache(MacroAssembler* masm,
                                  FixedArray::kLengthOffset));
   // Divide length by two (length is a smi).
   __ ShiftRightArithImm(mask, mask, kSmiTagSize + kSmiShiftSize + 1);
-  __ subi(mask, mask, Operand(1));  // Make mask.
+  __ Sub(mask, Operand(1));  // Make mask.
 
   // Calculate the entry in the number string cache. The hash value in the
   // number string cache for smis is just the smi value, and the hash for
@@ -1631,7 +1631,7 @@ void StoreBufferOverflowStub::Generate(MacroAssembler* masm) {
   __ MultiPush(kJSCallerSaved | r0.bit());
   if (save_doubles_ == kSaveFPRegs) {
     const int kNumRegs = DwVfpRegister::kNumVolatileRegisters;
-    __ subi(sp, sp, Operand(kDoubleSize * kNumRegs));
+    __ Sub(sp, Operand(kDoubleSize * kNumRegs));
     for (int i = 0; i < kNumRegs; i++) {
       DwVfpRegister reg = DwVfpRegister::from_code(i);
       __ stfd(reg, MemOperand(sp, i * kDoubleSize));
@@ -2641,7 +2641,7 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
         __ cmpi(scratch1, Operand::Zero());
         __ bne(&not_zero);
 
-        __ subi(sp, sp, Operand(8));
+        __ Sub(sp, Operand(8));
         __ stfd(d1, MemOperand(sp, 0));
 #if V8_TARGET_ARCH_S390X
         __ ld(scratch2, MemOperand(sp, 0));
@@ -3010,7 +3010,7 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
     // Input is a smi. Convert to double and load the low and high words
     // of the double into r5, r6.
     __ SmiToDoubleFPRegister(r3, d6, scratch0);
-    __ subi(sp, sp, Operand(8));
+    __ Sub(sp, Operand(8));
     __ stfd(d6, MemOperand(sp, 0));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
     __ lwz(r5, MemOperand(sp));
@@ -3035,7 +3035,7 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
     __ lwz(r5, FieldMemOperand(r3, HeapNumber::kMantissaOffset));
   } else {
     // Input is untagged double in d2. Output goes to d2.
-    __ subi(sp, sp, Operand(8));
+    __ Sub(sp, Operand(8));
     __ stfd(d2, MemOperand(sp, 0));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
     __ lwz(r5, MemOperand(sp, 4));
@@ -3632,7 +3632,7 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
     // though (contain the result).
     __ mov(r5, Operand(scope_depth));
     __ lwz(r6, MemOperand(r5));
-    __ subi(r6, r6, Operand(1));
+    __ Sub(r6, Operand(1));
     __ st(r6, MemOperand(r5));
   }
 
@@ -3711,7 +3711,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // Compute the argv pointer in a callee-saved register.
   __ ShiftLeftImm(r16, r3, Operand(kPointerSizeLog2));
   __ add(r16, r16, sp);
-  __ subi(r16, r16, Operand(kPointerSize));
+  __ Sub(r16, Operand(kPointerSize));
 
   // Enter the exit frame that transitions from JavaScript to C++.
   FrameScope scope(masm, StackFrame::MANUAL);
@@ -4439,7 +4439,7 @@ void ArgumentsAccessStub::GenerateNewNonStrictFast(MacroAssembler* masm) {
   __ SmiToPtrArrayOffset(r8, r9);
   __ Add(r8, Operand(kParameterMapHeaderSize - kHeapObjectTag));
   __ StorePX(r22, MemOperand(r8, r7));
-  __ subi(r8, r8, Operand(kParameterMapHeaderSize - FixedArray::kHeaderSize));
+  __ Sub(r8, Operand(kParameterMapHeaderSize - FixedArray::kHeaderSize));
   __ StorePX(r10, MemOperand(r8, r6));
   __ AddSmiLiteral(r22, r22, Smi::FromInt(1), r0);
   __ bind(&parameters_test);
@@ -4463,7 +4463,7 @@ void ArgumentsAccessStub::GenerateNewNonStrictFast(MacroAssembler* masm) {
   __ b(&arguments_test);
 
   __ bind(&arguments_loop);
-  __ subi(r7, r7, Operand(kPointerSize));
+  __ Sub(r7, Operand(kPointerSize));
   __ LoadP(r9, MemOperand(r7, 0));
   __ SmiToPtrArrayOffset(r8, r22);
   __ add(r8, r6, r8);
@@ -4576,7 +4576,7 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
   // Post-increment r7 with kPointerSize on each iteration.
   __ StoreP(r6, MemOperand(r7));
   __ Add(r7, Operand(kPointerSize));
-  __ subi(r4, r4, Operand(1));
+  __ Sub(r4, Operand(1));
   __ cmpi(r4, Operand(0, RelocInfo::NONE));
   __ bne(&loop);
 
@@ -5034,7 +5034,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
          FieldMemOperand(subject, ExternalString::kResourceDataOffset));
   // Move the pointer so that offset-wise, it looks like a sequential string.
   STATIC_ASSERT(SeqTwoByteString::kHeaderSize == SeqAsciiString::kHeaderSize);
-  __ subi(subject,
+  __ Sub(subject,
          subject,
          Operand(SeqTwoByteString::kHeaderSize - kHeapObjectTag));
   __ b(&seq_string);
@@ -5123,7 +5123,7 @@ void RegExpConstructResultStub::Generate(MacroAssembler* masm) {
   __ cmpi(r8, Operand::Zero());
   __ bind(&loop);
   __ ble(&done);  // Jump if r8 is negative or zero.
-  __ subi(r8, r8, Operand(1));
+  __ Sub(r8, Operand(1));
   __ ShiftLeftImm(ip, r8, Operand(kPointerSizeLog2));
   __ StorePX(r5, MemOperand(ip, r6));
   __ cmpi(r8, Operand::Zero());
@@ -5533,7 +5533,7 @@ void StringHelper::GenerateCopyCharacters(MacroAssembler* masm,
     __ Add(src, Operand(2));
     __ Add(dest, Operand(2));
   }
-  __ subi(count, count, Operand(1));
+  __ Sub(count, Operand(1));
   __ cmpi(count, Operand::Zero());
   __ bgt(&loop);
 }
@@ -5608,10 +5608,10 @@ void StringHelper::GenerateTwoCharacterSymbolTableProbe(MacroAssembler* masm,
   // Make sure that both characters are not digits as such strings has a
   // different hash algorithm. Don't try to look for these in the symbol table.
   Label not_array_index;
-  __ subi(scratch, c1, Operand(static_cast<intptr_t>('0')));
+  __ Sub(scratch, c1, Operand(static_cast<intptr_t>('0')));
   __ cmpli(scratch, Operand(static_cast<intptr_t>('9' - '0')));
   __ bgt(&not_array_index);
-  __ subi(scratch, c2, Operand(static_cast<intptr_t>('0')));
+  __ Sub(scratch, c2, Operand(static_cast<intptr_t>('0')));
   __ cmpli(scratch, Operand(static_cast<intptr_t>('9' - '0')));
   __ bgt(&not_array_index);
 
@@ -5659,7 +5659,7 @@ void StringHelper::GenerateTwoCharacterSymbolTableProbe(MacroAssembler* masm,
   Register mask = scratch2;
   __ LoadP(mask, FieldMemOperand(symbol_table, SymbolTable::kCapacityOffset));
   __ SmiUntag(mask);
-  __ subi(mask, mask, Operand(1));
+  __ Sub(mask, Operand(1));
 
   // Calculate untagged address of the first element of the symbol table.
   Register first_symbol_table_element = symbol_table;
@@ -6841,7 +6841,7 @@ void StringDictionaryLookupStub::GenerateNegativeLookup(MacroAssembler* masm,
     Register index = scratch0;
     // Capacity is smi 2^n.
     __ LoadP(index, FieldMemOperand(properties, kCapacityOffset));
-    __ subi(index, index, Operand(1));
+    __ Sub(index, Operand(1));
     __ LoadSmiLiteral(ip, Smi::FromInt(name->Hash() +
                                        StringDictionary::GetProbeOffset(i)));
     __ and_(index, index, ip);
@@ -6934,7 +6934,7 @@ void StringDictionaryLookupStub::GeneratePositiveLookup(MacroAssembler* masm,
   // Compute the capacity mask.
   __ LoadP(scratch1, FieldMemOperand(elements, kCapacityOffset));
   __ SmiUntag(scratch1);  // convert smi to int
-  __ subi(scratch1, scratch1, Operand(1));
+  __ Sub(scratch1, Operand(1));
 
   // Generate an unrolled loop that performs a few probes before
   // giving up. Measurements done on Gmail indicate that 2 probes
@@ -7021,7 +7021,7 @@ void StringDictionaryLookupStub::Generate(MacroAssembler* masm) {
 
   __ LoadP(mask, FieldMemOperand(dictionary, kCapacityOffset));
   __ SmiUntag(mask);
-  __ subi(mask, mask, Operand(1));
+  __ Sub(mask, Operand(1));
 
   __ lwz(hash, FieldMemOperand(key, String::kHashFieldOffset));
 
@@ -7312,7 +7312,7 @@ void RecordWriteStub::CheckNeedsToInformIncrementalMarker(
   __ LoadP(regs_.scratch1(),
          MemOperand(regs_.scratch0(),
                     MemoryChunk::kWriteBarrierCounterOffset));
-  __ subi(regs_.scratch1(), regs_.scratch1(), Operand(1));
+  __ Sub(regs_.scratch1(), regs_.scratch1(), Operand(1));
   __ StoreP(regs_.scratch1(),
             MemOperand(regs_.scratch0(),
                        MemoryChunk::kWriteBarrierCounterOffset));
@@ -7477,7 +7477,7 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
   const int32_t kNumSavedRegs = 3;
 
   // Compute the function's address for the first argument.
-  __ subi(r3, r3, Operand(kReturnAddressDistanceFromFunctionStart));
+  __ Sub(r3, Operand(kReturnAddressDistanceFromFunctionStart));
 
   // The caller's return address is above the saved temporaries.
   // Grab that for the second argument to the hook.

@@ -1063,7 +1063,7 @@ void Deoptimizer::EntryGenerator::Generate() {
       kDoubleSize * DwVfpRegister::kNumAllocatableRegisters;
 
   // Save all FPU registers before messing with them.
-  __ subi(sp, sp, Operand(kDoubleRegsSize));
+  __ Sub(sp, Operand(kDoubleRegsSize));
   for (int i = 0; i < DwVfpRegister::kNumAllocatableRegisters; ++i) {
     DwVfpRegister fpu_reg = DwVfpRegister::FromAllocationIndex(i);
     int offset = i * kDoubleSize;
@@ -1072,7 +1072,7 @@ void Deoptimizer::EntryGenerator::Generate() {
 
   // Push saved_regs (needed to populate FrameDescription::registers_).
   // Leave gaps for other registers.
-  __ subi(sp, sp, Operand(kNumberOfRegisters * kPointerSize));
+  __ Sub(sp, Operand(kNumberOfRegisters * kPointerSize));
   for (int16_t i = kNumberOfRegisters - 1; i >= 0; i--) {
     if ((saved_regs & (1 << i)) != 0) {
       __ StoreP(ToRegister(i), MemOperand(sp, kPointerSize * i));

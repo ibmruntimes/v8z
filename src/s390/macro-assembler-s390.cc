@@ -297,7 +297,7 @@ void MacroAssembler::MultiPush(RegList regs) {
   int16_t num_to_push = NumberOfBitsSet(regs);
   int16_t stack_offset = num_to_push * kPointerSize;
 
-  subi(sp, sp, Operand(stack_offset));
+  Sub(sp, Operand(stack_offset));
   for (int16_t i = kNumRegisters - 1; i >= 0; i--) {
     if ((regs & (1 << i)) != 0) {
       stack_offset -= kPointerSize;
@@ -528,7 +528,7 @@ void MacroAssembler::PushSafepointRegisters() {
   const int num_unsaved = kNumSafepointRegisters - kNumSafepointSavedRegisters;
   ASSERT(num_unsaved >= 0);
   if (num_unsaved > 0) {
-    subi(sp, sp, Operand(num_unsaved * kPointerSize));
+    Sub(sp, Operand(num_unsaved * kPointerSize));
   }
   MultiPush(kSafepointSavedRegisters);
 }
@@ -638,7 +638,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   Push(r0, fp);
   mr(fp, sp);
   // Reserve room for saved entry sp and code object.
-  subi(sp, sp, Operand(2 * kPointerSize));
+  Sub(sp, Operand(2 * kPointerSize));
 
   if (emit_debug_code()) {
     lhi(r8, Operand::Zero());
@@ -656,7 +656,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   // Optionally save all volatile double registers.
   if (save_doubles) {
     const int kNumRegs = DwVfpRegister::kNumVolatileRegisters;
-    subi(sp, sp, Operand(kNumRegs * kDoubleSize));
+    Sub(sp, Operand(kNumRegs * kDoubleSize));
     for (int i = 0; i < kNumRegs; i++) {
       DwVfpRegister reg = DwVfpRegister::from_code(i);
       stfd(reg, MemOperand(sp, i * kDoubleSize));
@@ -669,7 +669,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   // Allocate and align the frame preparing for calling the runtime
   // function.
   stack_space += kNumRequiredStackFrameSlots;
-  subi(sp, sp, Operand(stack_space * kPointerSize));
+  Sub(sp, Operand(stack_space * kPointerSize));
   const int frame_alignment = MacroAssembler::ActivationFrameAlignment();
   if (frame_alignment > 0) {
     ASSERT(frame_alignment == 8);
@@ -1315,7 +1315,7 @@ void MacroAssembler::LoadFromNumberDictionary(Label* miss,
   // Compute the capacity mask.
   LoadP(t1, FieldMemOperand(elements, SeededNumberDictionary::kCapacityOffset));
   SmiUntag(t1);
-  subi(t1, t1, Operand(1));
+  Sub(t1, Operand(1));
 
   // Generate an unrolled loop that performs a few probes before giving up.
   static const int kProbes = 4;
@@ -2176,7 +2176,7 @@ void MacroAssembler::CallApiFunctionAndReturn(ExternalReference function,
     cmp(r4, r29);
     Check(eq, "Unexpected level after return from api call");
   }
-  subi(r29, r29, Operand(1));
+  Sub(r29, Operand(1));
   st(r29, MemOperand(r26, kLevelOffset));
   LoadP(ip, MemOperand(r26, kLimitOffset));
   cmp(r28, ip);
@@ -2661,7 +2661,7 @@ void MacroAssembler::DecrementCounter(StatsCounter* counter, int value,
   if (FLAG_native_code_counters && counter->Enabled()) {
     mov(scratch2, Operand(ExternalReference(counter)));
     lwz(scratch1, MemOperand(scratch2));
-    subi(scratch1, scratch1, Operand(value));
+    Sub(scratch1, Operand(value));
     st(scratch1, MemOperand(scratch2));
   }
 }
@@ -2851,7 +2851,7 @@ void MacroAssembler::JumpIfNotPowerOfTwoOrZero(
     Register reg,
     Register scratch,
     Label* not_power_of_two_or_zero) {
-  subi(scratch, reg, Operand(1));
+  Sub(scratch, reg, Operand(1));
   cmpi(scratch, Operand::Zero());
   blt(not_power_of_two_or_zero);
   and_(r0, scratch, reg, SetRC);
@@ -2864,7 +2864,7 @@ void MacroAssembler::JumpIfNotPowerOfTwoOrZeroAndNeg(
     Register scratch,
     Label* zero_and_neg,
     Label* not_power_of_two) {
-  subi(scratch, reg, Operand(1));
+  Sub(scratch, reg, Operand(1));
   cmpi(scratch, Operand::Zero());
   blt(zero_and_neg);
   and_(r0, scratch, reg, SetRC);
@@ -3113,12 +3113,12 @@ void MacroAssembler::CopyBytes(Register src,
   blt(&byte_loop);
 
   // Align src before copying in word size chunks.
-  subi(scratch, scratch, Operand(kPointerSize));
+  Sub(scratch, Operand(kPointerSize));
   mtctr(scratch);
   bind(&align_loop);
   lbz(scratch, MemOperand(src));
   Add(src, Operand(1));
-  subi(length, length, Operand(1));
+  Sub(length, Operand(1));
   stb(scratch, MemOperand(dst));
   Add(dst, Operand(1));
   bdnz(&align_loop);
@@ -3139,7 +3139,7 @@ void MacroAssembler::CopyBytes(Register src,
   bind(&word_loop);
   LoadP(scratch, MemOperand(src));
   Add(src, Operand(kPointerSize));
-  subi(length, length, Operand(kPointerSize));
+  Sub(length, Operand(kPointerSize));
   if (CpuFeatures::IsSupported(UNALIGNED_ACCESSES)) {
     // currently false for PPC - but possible future opt
     StoreP(scratch, MemOperand(dst));
@@ -3276,10 +3276,10 @@ void MacroAssembler::PrepareCallCFunction(int num_reg_arguments,
     // make ABI work.
     mr(scratch, sp);
 #if !defined(USE_SIMULATOR)
-    subi(sp, sp, Operand((stack_passed_arguments +
+    Sub(sp, Operand((stack_passed_arguments +
                           kNumRequiredStackFrameSlots) * kPointerSize));
 #else
-    subi(sp, sp, Operand((stack_passed_arguments + 1) * kPointerSize));
+    Sub(sp, Operand((stack_passed_arguments + 1) * kPointerSize));
 #endif
     ASSERT(IsPowerOf2(frame_alignment));
     lhi(r0, Operand(-frame_alignment));
@@ -3293,7 +3293,7 @@ void MacroAssembler::PrepareCallCFunction(int num_reg_arguments,
            MemOperand(sp, stack_passed_arguments * kPointerSize), r0);
 #endif
   } else {
-    subi(sp, sp, Operand((stack_passed_arguments +
+    Sub(sp, Operand((stack_passed_arguments +
                           kNumRequiredStackFrameSlots) * kPointerSize));
   }
 }
@@ -3982,6 +3982,15 @@ void MacroAssembler::AddLogical(Register dst, const MemOperand& opnd) {
   else
     aly(dst, opnd);
 #endif
+}
+
+void MacroAssembler::Sub(Register dst, Register src, const Operand& imm) {
+  if (!dst.is(src)) lr(dst, src);
+  afi(dst, Operand(-(imm.imm_)));
+}
+
+void MacroAssembler::Sub(Register dst, const Operand& imm) {
+  afi(dst, Operand(-(imm.imm_)));
 }
 
 void MacroAssembler::Add(Register dst, const MemOperand& opnd) {

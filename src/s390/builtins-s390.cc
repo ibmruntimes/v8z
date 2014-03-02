@@ -162,7 +162,7 @@ static void AllocateEmptyJSArray(MacroAssembler* masm,
   __ StoreP(scratch1, FieldMemOperand(result, JSArray::kElementsOffset), r0);
 
   // Clear the heap tag on the elements array.
-  __ subi(scratch1, scratch1, Operand(kHeapObjectTag));
+  __ Sub(scratch1, Operand(kHeapObjectTag));
 
   // Initialize the FixedArray and fill it with holes. FixedArray length is
   // stored as a smi.
@@ -267,7 +267,7 @@ static void AllocateJSArray(MacroAssembler* masm,
 
   // Clear the heap tag on the elements array.
   STATIC_ASSERT(kSmiTag == 0);
-  __ subi(elements_array_storage,
+  __ Sub(elements_array_storage,
          elements_array_storage,
          Operand(kHeapObjectTag));
   // Initialize the fixed array and fill it with holes. FixedArray length is
@@ -479,7 +479,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
                       EMIT_REMEMBERED_SET,
                       OMIT_SMI_CHECK);
   Label loop2;
-  __ subi(r10, r10, Operand(kPointerSize));
+  __ Sub(r10, Operand(kPointerSize));
   __ bind(&loop2);
   __ LoadP(r5, MemOperand(r10));
   __ Add(r10, Operand(kPointerSize));
@@ -614,7 +614,7 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
   __ cmpi(r3, Operand(0, RelocInfo::NONE));
   __ beq(&no_arguments);
   // First args = sp[(argc - 1) * 4].
-  __ subi(r3, r3, Operand(1));
+  __ Sub(r3, Operand(1));
   __ ShiftLeftImm(r3, r3, Operand(kPointerSizeLog2));
   __ add(sp, sp, r3);
   __ LoadP(r3, MemOperand(sp));
@@ -1056,7 +1056,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     __ ShiftLeftImm(ip, r3, Operand(kPointerSizeLog2));
     __ mtctr(r3);
     __ bind(&loop);
-    __ subi(ip, ip, Operand(kPointerSize));
+    __ Sub(ip, Operand(kPointerSize));
     __ LoadPX(r0, MemOperand(r5, ip));
     __ push(r0);
     __ bdnz(&loop);
@@ -1527,12 +1527,12 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
     __ bind(&loop);
     __ LoadP(ip, MemOperand(r5, -kPointerSize));
     __ StoreP(ip, MemOperand(r5));
-    __ subi(r5, r5, Operand(kPointerSize));
+    __ Sub(r5, Operand(kPointerSize));
     __ cmp(r5, sp);
     __ bne(&loop);
     // Adjust the actual number of arguments and remove the top element
     // (which is a copy of the last argument).
-    __ subi(r3, r3, Operand(1));
+    __ Sub(r3, Operand(1));
     __ pop();
   }
 
@@ -1835,7 +1835,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     __ LoadP(ip, MemOperand(r3, 0));
     __ push(ip);
     __ cmp(r3, r5);  // Compare before moving to next argument.
-    __ subi(r3, r3, Operand(kPointerSize));
+    __ Sub(r3, Operand(kPointerSize));
     __ bne(&copy);
 
     __ b(&invoke);
@@ -1864,7 +1864,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     __ LoadP(ip, MemOperand(r3, 2 * kPointerSize));
     __ push(ip);
     __ cmp(r3, fp);  // Compare before moving to next argument.
-    __ subi(r3, r3, Operand(kPointerSize));
+    __ Sub(r3, Operand(kPointerSize));
     __ bne(&copy);
 
     // Fill the remaining expected arguments with undefined.
@@ -1874,7 +1874,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     __ LoadRoot(ip, Heap::kUndefinedValueRootIndex);
     __ ShiftLeftImm(r5, r5, Operand(kPointerSizeLog2));
     __ sub(r5, fp, r5);
-    __ subi(r5, r5, Operand(4 * kPointerSize));  // Adjust for frame.
+    __ Sub(r5, Operand(4 * kPointerSize));  // Adjust for frame.
 
     Label fill;
     __ bind(&fill);
