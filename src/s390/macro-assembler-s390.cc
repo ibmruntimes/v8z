@@ -3923,6 +3923,32 @@ void MacroAssembler::CheckEnumCache(Register null_value, Label* call_runtime) {
 // New MacroAssembler Interfaces added for S390
 //
 ////////////////////////////////////////////////////////////////////////////////
+// Primarily used for loading constants
+// This should really move to be in macro-assembler as it
+// is really a pseudo instruction
+// Some usages of this intend for a FIXED_SEQUENCE to be used
+// Todo - break this dependency so we can optimize mov() in general
+// and only use the generic version when we require a fixed sequence
+void MacroAssembler::mov(Register dst, const Operand& src) {
+  BlockTrampolinePoolScope block_trampoline_pool(this);
+  if (src.rmode_ != RelocInfo::NONE) {
+    // some form of relocation needed
+    RecordRelocInfo(src.rmode_, src.imm_);
+  }
+
+#if V8_TARGET_ARCH_S390X
+  int64_t value = src.immediate();
+  int32_t hi_32 = static_cast<int64_t>(value) >> 32;
+  int32_t lo_32 = static_cast<int32_t>(value);
+
+  iihf(dst, Operand(hi_32));
+  iilf(dst, Operand(lo_32));
+#else
+  int value = src.immediate();
+  iilf(dst, Operand(value));
+#endif
+}
+
 // because there is a choice of generating RX or RXY format inside,
 // instead of putting them into macros, we make it functions.
 void MacroAssembler::Compare(Register dst, const MemOperand& opnd) {

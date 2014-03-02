@@ -303,6 +303,9 @@ class MacroAssembler: public Assembler {
   void AndLogical(Register dst, Register src);
   void Branch(Condition c, const Operand& opnd);
 
+
+  void mov(Register dst, const Operand& src);
+
   // ---------------------------------------------------------------------------
   // GC Support
 

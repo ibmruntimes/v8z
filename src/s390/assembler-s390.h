@@ -1842,8 +1842,6 @@ SS2_FORM(zap);
   void cmp(Register src1, Register src2, CRegister cr = cr7);
   void cmpl(Register src1, Register src2, CRegister cr = cr7);
 
-  void mov(Register dst, const Operand& src);
-
   // Multiply instructions
 
   // PowerPC

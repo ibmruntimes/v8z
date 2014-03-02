@@ -1240,57 +1240,6 @@ void Assembler::function_descriptor() {
 }
 // end PowerPC
 
-// Primarily used for loading constants
-// This should really move to be in macro-assembler as it
-// is really a pseudo instruction
-// Some usages of this intend for a FIXED_SEQUENCE to be used
-// Todo - break this dependency so we can optimize mov() in general
-// and only use the generic version when we require a fixed sequence
-void Assembler::mov(Register dst, const Operand& src) {
-  BlockTrampolinePoolScope block_trampoline_pool(this);
-  if (src.rmode_ != RelocInfo::NONE) {
-    // some form of relocation needed
-    RecordRelocInfo(src.rmode_, src.imm_);
-  }
-
-#if V8_TARGET_ARCH_S390X
-  int64_t value = src.immediate();
-  int32_t hi_32 = static_cast<int64_t>(value) >> 32;
-  int32_t lo_32 = static_cast<int32_t>(value);
-  /*int hi_word = static_cast<int>(hi_32) >> 16;
-  int lo_word = static_cast<int>(hi_32) & 0xFFFF;
-  lis(dst, Operand(SIGN_EXT_IMM16(hi_word)));
-  ori(dst, dst, Operand(lo_word));
-  sldi(dst, dst, Operand(32));
-  hi_word = (static_cast<int>(lo_32) >> 16) & 0xFFFF;
-  lo_word = static_cast<int>(lo_32) & 0xFFFF;
-  oris(dst, dst, Operand(hi_word));
-  ori(dst, dst, Operand(lo_word));
-*/
-  iihf(dst, Operand(hi_32));
-  iilf(dst, Operand(lo_32));
-#else
-  int value = src.immediate();
-  /*if (!is_trampoline_pool_blocked()) {
-    if (is_int16(value)) {
-      lhi(dst, Operand(value));
-      return;
-    }
-  }
-  int hi_word = static_cast<int>(value) >> 16;
-  int lo_word = static_cast<int>(value) & 0XFFFF;
-
-  lis(dst, Operand(SIGN_EXT_IMM16(hi_word)));
-  if ((!is_trampoline_pool_blocked()) && (lo_word == 0)) {
-    return;
-  }
-  ori(dst, dst, Operand(lo_word));
-  */
-
-  iilf(dst, Operand(value));
-#endif
-}
-
 // Special register instructions
 void Assembler::crxor(int bt, int ba, int bb) {
   emit(EXT1 | CRXOR | bt*B21 | ba*B16 | bb*B11);
