@@ -253,7 +253,7 @@ void MacroAssembler::Ret(Condition cond) {
 void MacroAssembler::Drop(int count, Condition cond) {
   ASSERT(cond == al);
   if (count > 0) {
-    Add(sp, sp, count * kPointerSize);
+    Add(sp, Operand(count * kPointerSize));
   }
 }
 
@@ -2222,7 +2222,7 @@ bool MacroAssembler::AllowThisStubCall(CodeStub* stub) {
 
 void MacroAssembler::IllegalOperation(int num_arguments) {
   if (num_arguments > 0) {
-    Add(sp, sp, num_arguments * kPointerSize);
+    Add(sp, Operand(num_arguments * kPointerSize));
   }
   LoadRoot(r0, Heap::kUndefinedValueRootIndex);
 }
@@ -3974,6 +3974,14 @@ void MacroAssembler::Add(Register dst, const Operand& opnd) {
     afi(dst, opnd);
 }
 
+void MacroAssembler::Add(Register dst, Register src,
+                        const Operand& opnd) {
+  if (!dst.is(src)) {
+    Load(dst, opnd);
+  }
+  Add(dst, opnd);
+}
+
 void MacroAssembler::SubtractLogical(Register dst, const MemOperand& opnd) {
   ASSERT(is_int20(opnd.offset()));
 #ifdef V8_TARGET_ARCH_S390X
@@ -4115,14 +4123,6 @@ void MacroAssembler::LoadDoubleLiteral(DwVfpRegister result,
   addi(sp, sp, Operand(8));  // restore the stack ptr
 }
 
-void MacroAssembler::Add(Register dst, Register src,
-                         int value) {
-  if (!dst.is(src)) {
-    Load(dst, Operand(value));
-  }
-  afi(dst, Operand(value));
-}
-
 void MacroAssembler::Cmpi(Register src1, const Operand& src2, Register scratch,
                           CRegister cr) {
   intptr_t value = src2.immediate();
@@ -4219,7 +4219,7 @@ void MacroAssembler::AddSmiLiteral(Register dst, Register src, Smi *smi,
   LoadSmiLiteral(scratch, smi);
   add(dst, src, scratch);
 #else
-  Add(dst, src, reinterpret_cast<intptr_t>(smi));
+  Add(dst, src, Operand(reinterpret_cast<intptr_t>(smi)));
 #endif
 }
 
@@ -4229,7 +4229,7 @@ void MacroAssembler::SubSmiLiteral(Register dst, Register src, Smi *smi,
   LoadSmiLiteral(scratch, smi);
   sub(dst, src, scratch);
 #else
-  Add(dst, src, -(reinterpret_cast<intptr_t>(smi)));
+  Add(dst, src, Operand(-(reinterpret_cast<intptr_t>(smi))));
 #endif
 }
 

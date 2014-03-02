@@ -2819,9 +2819,9 @@ void LCodeGen::DoLoadKeyedFastDoubleElement(
   }
 
   if (key_is_constant) {
-    __ Add(elements, elements,
-           (FixedDoubleArray::kHeaderSize - kHeapObjectTag) +
-           ((constant_key + instr->additional_index()) << element_size_shift));
+    __ Add(elements,
+           Operand((FixedDoubleArray::kHeaderSize - kHeapObjectTag) +
+           ((constant_key + instr->additional_index()) << element_size_shift)));
   } else {
     __ IndexToArrayOffset(r0, key, element_size_shift, key_is_tagged);
     __ add(elements, elements, r0);
@@ -2897,7 +2897,7 @@ MemOperand LCodeGen::PrepareKeyedOperand(Register key,
 #endif
     }
 
-    __ Add(scratch, key, additional_index);
+    __ Add(scratch, key, Operand(additional_index));
     key = scratch;
   }
 
@@ -2933,7 +2933,7 @@ void LCodeGen::DoLoadKeyedSpecializedArrayElement(
     DwVfpRegister result = ToDoubleRegister(instr->result());
     if (key_is_constant) {
       __ Add(scratch0(), external_pointer,
-             constant_key << element_size_shift);
+             Operand(constant_key << element_size_shift));
     } else {
       __ IndexToArrayOffset(r0, key, element_size_shift, key_is_tagged);
       __ add(scratch0(), external_pointer, r0);
@@ -4022,7 +4022,7 @@ void LCodeGen::DoStoreKeyedFastElement(LStoreKeyedFastElement* instr) {
     SmiCheck check_needed =
         type.IsHeapObject() ? OMIT_SMI_CHECK : INLINE_SMI_CHECK;
     // Compute address of modified element and store it into key register.
-    __ Add(key, store_base, offset - kHeapObjectTag);
+    __ Add(key, store_base, Operand(offset - kHeapObjectTag));
     __ RecordWrite(elements,
                    key,
                    value,
@@ -4059,8 +4059,8 @@ void LCodeGen::DoStoreKeyedFastDoubleElement(
   int dst_offset = instr->additional_index() << element_size_shift;
   if (key_is_constant) {
     __ Add(scratch, elements,
-           (constant_key << element_size_shift) +
-           FixedDoubleArray::kHeaderSize - kHeapObjectTag);
+           Operand((constant_key << element_size_shift) +
+           FixedDoubleArray::kHeaderSize - kHeapObjectTag));
   } else {
     __ IndexToArrayOffset(scratch, key, element_size_shift, key_is_tagged);
     __ add(scratch, elements, scratch);
@@ -4121,7 +4121,7 @@ void LCodeGen::DoStoreKeyedSpecializedArrayElement(
     DwVfpRegister value(ToDoubleRegister(instr->value()));
     if (key_is_constant) {
       __ Add(scratch0(), external_pointer,
-             constant_key << element_size_shift);
+             Operand(constant_key << element_size_shift));
     } else {
       __ IndexToArrayOffset(r0, key, element_size_shift, key_is_tagged);
       __ add(scratch0(), external_pointer, r0);
@@ -5117,7 +5117,7 @@ void LCodeGen::EmitDeepCopy(Handle<JSObject> object,
   int header_size = object_size - inobject_properties * kPointerSize;
   for (int i = 0; i < header_size; i += kPointerSize) {
     if (has_elements && i == JSObject::kElementsOffset) {
-      __ Add(r5, result, elements_offset);
+      __ Add(r5, result, Operand(elements_offset));
     } else {
       __ LoadP(r5, FieldMemOperand(source, i));
     }
@@ -5130,7 +5130,7 @@ void LCodeGen::EmitDeepCopy(Handle<JSObject> object,
     Handle<Object> value = Handle<Object>(object->InObjectPropertyAt(i));
     if (value->IsJSObject()) {
       Handle<JSObject> value_object = Handle<JSObject>::cast(value);
-      __ Add(r5, result, *offset);
+      __ Add(r5, result, Operand(*offset));
       __ StoreP(r5, FieldMemOperand(result, total_offset), r0);
       __ LoadHeapObject(source, value_object);
       EmitDeepCopy(value_object, result, source, offset);
@@ -5181,7 +5181,7 @@ void LCodeGen::EmitDeepCopy(Handle<JSObject> object,
         Handle<Object> value(fast_elements->get(i));
         if (value->IsJSObject()) {
           Handle<JSObject> value_object = Handle<JSObject>::cast(value);
-          __ Add(r5, result, *offset);
+          __ Add(r5, result, Operand(*offset));
           __ StoreP(r5, FieldMemOperand(result, total_offset), r0);
           __ LoadHeapObject(source, value_object);
           EmitDeepCopy(value_object, result, source, offset);
