@@ -1091,15 +1091,15 @@ void Deoptimizer::EntryGenerator::Generate() {
   if (type() == EAGER) {
     __ lhi(r6, Operand::Zero());
     // Correct one word for bailout id.
-    __ addi(r7, sp, Operand(kSavedRegistersAreaSize + (1 * kPointerSize)));
+    __ Add(r7, sp, Operand(kSavedRegistersAreaSize + (1 * kPointerSize)));
   } else if (type() == OSR) {
     __ mflr(r6);
     // Correct one word for bailout id.
-    __ addi(r7, sp, Operand(kSavedRegistersAreaSize + (1 * kPointerSize)));
+    __ Add(r7, sp, Operand(kSavedRegistersAreaSize + (1 * kPointerSize)));
   } else {
     __ mflr(r6);
     // Correct two words for bailout id and return address.
-    __ addi(r7, sp, Operand(kSavedRegistersAreaSize + (2 * kPointerSize)));
+    __ Add(r7, sp, Operand(kSavedRegistersAreaSize + (2 * kPointerSize)));
   }
   __ sub(r7, fp, r7);
 
@@ -1143,9 +1143,9 @@ void Deoptimizer::EntryGenerator::Generate() {
   // Remove the bailout id, eventually return address, and the saved registers
   // from the stack.
   if (type() == EAGER || type() == OSR) {
-    __ addi(sp, sp, Operand(kSavedRegistersAreaSize + (1 * kPointerSize)));
+    __ Add(sp, Operand(kSavedRegistersAreaSize + (1 * kPointerSize)));
   } else {
-    __ addi(sp, sp, Operand(kSavedRegistersAreaSize + (2 * kPointerSize)));
+    __ Add(sp, Operand(kSavedRegistersAreaSize + (2 * kPointerSize)));
   }
 
   // Compute a pointer to the unwinding limit in register r5; that is
@@ -1156,12 +1156,12 @@ void Deoptimizer::EntryGenerator::Generate() {
   // Unwind the stack down to - but not including - the unwinding
   // limit and copy the contents of the activation frame to the input
   // frame description.
-  __ addi(r6,  r4, Operand(FrameDescription::frame_content_offset()));
+  __ Add(r6,  r4, Operand(FrameDescription::frame_content_offset()));
   Label pop_loop;
   __ bind(&pop_loop);
   __ pop(r7);
   __ StoreP(r7, MemOperand(r6, 0));
-  __ addi(r6, r6, Operand(sizeof(intptr_t)));
+  __ Add(r6, Operand(sizeof(intptr_t)));
   __ cmp(r5, sp);
   __ bne(&pop_loop);
 
@@ -1191,14 +1191,14 @@ void Deoptimizer::EntryGenerator::Generate() {
   __ LoadP(r6, MemOperand(r5, FrameDescription::frame_size_offset()));
 
   __ bind(&inner_push_loop);
-  __ addi(r6, r6, Operand(-sizeof(intptr_t)));
+  __ Add(r6, Operand(-sizeof(intptr_t)));
   __ add(r9, r5, r6);
   __ LoadP(r10, MemOperand(r9, FrameDescription::frame_content_offset()));
   __ push(r10);
   __ cmpi(r6, Operand::Zero());
   __ bne(&inner_push_loop);  // test for gt?
 
-  __ addi(r3, r3, Operand(kPointerSize));
+  __ Add(r3, Operand(kPointerSize));
   __ cmp(r3, r4);
   __ blt(&outer_push_loop);
 

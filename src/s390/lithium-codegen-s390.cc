@@ -150,7 +150,7 @@ bool LCodeGen::GeneratePrologue() {
 
   __ mflr(r0);
   __ Push(r0, fp, cp, r4);
-  __ addi(fp, sp, Operand(2 * kPointerSize));  // Adjust FP to point to saved FP
+  __ Add(fp, sp, Operand(2 * kPointerSize));  // Adjust FP to point to saved FP
 
   // Reserve space for the stack slots needed by the code.
   int slots = GetStackSlotCount();
@@ -164,7 +164,7 @@ bool LCodeGen::GeneratePrologue() {
       __ push(r5);
       __ bdnz(&loop);
     } else {
-      __ addi(sp, sp, Operand(-slots * kPointerSize));
+      __ Add(sp, Operand(-slots * kPointerSize));
     }
   }
 
@@ -1079,14 +1079,14 @@ void LCodeGen::DoMathFloorOfDiv(LMathFloorOfDiv* instr) {
       // Subtract one from result if -(low word) < 0xC0000000
       __ neg(ip, ip);
       __ srwi(scratch, ip, Operand(30));
-      __ addi(scratch, scratch, Operand(1));
+      __ Add(scratch, Operand(1));
       __ srwi(scratch, scratch, Operand(2));
-      __ addi(scratch, scratch, Operand(-1));
+      __ Add(scratch, Operand(-1));
       __ add(result, result, scratch);
     } else {
       // Add one to result if low word >= 0xC0000000
       __ srwi(scratch, ip, Operand(30));
-      __ addi(scratch, scratch, Operand(1));
+      __ Add(scratch, Operand(1));
       __ srwi(scratch, scratch, Operand(2));
       __ add(result, result, scratch);
     }
@@ -1515,7 +1515,7 @@ void LCodeGen::DoAddI(LAddI* instr) {
 
   if (!can_overflow && right->IsConstantOperand()) {
     if (is_int16(ToInteger32(LConstantOperand::cast(right)))) {
-      __ addi(ToRegister(result), ToRegister(left),
+      __ Add(ToRegister(result), ToRegister(left),
               Operand(ToInteger32(LConstantOperand::cast(right))));
       return;
     }
@@ -2419,7 +2419,7 @@ void LCodeGen::DoReturn(LReturn* instr) {
   __ mr(sp, fp);
   __ Pop(r0, fp);
   __ mtlr(r0);
-  __ addi(sp, sp, Operand(sp_delta));
+  __ Add(sp, Operand(sp_delta));
   __ blr();
 }
 
@@ -2749,7 +2749,7 @@ void LCodeGen::DoAccessArgumentsAt(LAccessArgumentsAt* instr) {
   // There are two words between the frame pointer and the last argument.
   // Subtracting from length accounts for one of them add one more.
   __ sub(length, length, index);
-  __ addi(length, length, Operand(1));
+  __ Add(length, Operand(1));
   __ ShiftLeftImm(r0, length, Operand(kPointerSizeLog2));
   __ LoadPX(result, MemOperand(arguments, r0));
 }
@@ -3156,7 +3156,7 @@ void LCodeGen::DoApplyArguments(LApplyArguments* instr) {
   __ push(receiver);
   __ mr(receiver, length);
   // The arguments are at a one pointer size offset from elements.
-  __ addi(elements, elements, Operand(1 * kPointerSize));
+  __ Add(elements, Operand(1 * kPointerSize));
 
   // Loop through the arguments pushing them onto the execution
   // stack.
@@ -3169,7 +3169,7 @@ void LCodeGen::DoApplyArguments(LApplyArguments* instr) {
   __ ShiftLeftImm(r0, length, Operand(kPointerSizeLog2));
   __ LoadPX(scratch, MemOperand(elements, r0));
   __ push(scratch);
-  __ addi(length, length, Operand(-1));
+  __ Add(length, Operand(-1));
   __ bdnz(&loop);
 
   __ bind(&invoke);
@@ -3448,7 +3448,7 @@ void LCodeGen::DoMathFloor(LUnaryMathOperation* instr) {
 #else
     __ lwz(scratch, MemOperand(sp, 0));
 #endif
-    __ addi(sp, sp, Operand(8));
+    __ Add(sp, Operand(8));
     __ TestSignBit32(scratch, r0);
     DeoptimizeIf(ne, instr->environment(), cr0);
     __ bind(&done);
@@ -3471,7 +3471,7 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
 #else
   __ lwz(result, MemOperand(sp, 0));
 #endif
-  __ addi(sp, sp, Operand(8));
+  __ Add(sp, Operand(8));
   __ ExtractBitMask(scratch, result, HeapNumber::kExponentMask);
 
   // If the number is in ]-0.5, +0.5[, the result is +/- 0.
@@ -3506,7 +3506,7 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
 #else
   __ lwz(result, MemOperand(sp, 0));
 #endif
-  __ addi(sp, sp, Operand(8));
+  __ Add(sp, Operand(8));
   __ xor_(result, result, scratch, SetRC);
   if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
     DeoptimizeIf(lt, instr->environment(), cr0);
@@ -3537,7 +3537,7 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
 #else
     __ lwz(scratch, MemOperand(sp, 0));
 #endif
-    __ addi(sp, sp, Operand(8));
+    __ Add(sp, Operand(8));
     __ TestSignBit32(scratch, r0);
     DeoptimizeIf(ne, instr->environment(), cr0);
   }
@@ -3672,7 +3672,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
   __ bind(deferred->exit());
 
   // Allocate temp stack space to for double
-  __ addi(sp, sp, Operand(-8));
+  __ Add(sp, Operand(-8));
 
   // 0x41300000 is the top half of 1.0 x 2^20 as a double.
   __ lis(r4, Operand(0x4130));
@@ -3698,7 +3698,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
 #endif
   __ lfd(d8, MemOperand(sp, 0));
 
-  __ addi(sp, sp, Operand(8));
+  __ Add(sp, Operand(8));
 
   // Subtract and store the result in the heap number.
   __ fsub(d7, d7, d8);
@@ -4064,7 +4064,7 @@ void LCodeGen::DoStoreKeyedFastDoubleElement(
   } else {
     __ IndexToArrayOffset(scratch, key, element_size_shift, key_is_tagged);
     __ add(scratch, elements, scratch);
-    __ addi(scratch, scratch,
+    __ Add(scratch,
             Operand(FixedDoubleArray::kHeaderSize - kHeapObjectTag));
   }
 
@@ -4596,7 +4596,7 @@ void LCodeGen::EmitNumberUntagD(Register input_reg,
     __ lwz(ip, MemOperand(sp, 4));
     __ lwz(scratch, MemOperand(sp, 0));
 #endif
-    __ addi(sp, sp, Operand(8));
+    __ Add(sp, Operand(8));
 
     __ cmpi(ip, Operand::Zero());
     __ bne(&done);

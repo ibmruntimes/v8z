@@ -175,7 +175,7 @@ void FullCodeGenerator::Generate() {
     __ LoadRoot(ip, Heap::kUndefinedValueRootIndex);
   }
   // Adjust fp to point to caller's fp.
-  __ addi(fp, sp, Operand(2 * kPointerSize));
+  __ Add(fp, sp, Operand(2 * kPointerSize));
 
   { Comment cmnt(masm_, "[ Allocate locals");
     for (int i = 0; i < locals_count; i++) {
@@ -237,7 +237,7 @@ void FullCodeGenerator::Generate() {
     // Receiver is just before the parameters on the caller's stack.
     int num_parameters = info->scope()->num_parameters();
     int offset = num_parameters * kPointerSize;
-    __ addi(r5, fp,
+    __ Add(r5, fp,
             Operand(StandardFrameConstants::kCallerSPOffset + offset));
     __ LoadSmiLiteral(r4, Smi::FromInt(num_parameters));
     __ Push(r6, r5, r4);
@@ -1206,7 +1206,7 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
 
   // Get the current entry of the array into register r6.
   __ LoadP(r5, MemOperand(sp, 2 * kPointerSize));
-  __ addi(r5, r5, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ Add(r5, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ SmiToPtrArrayOffset(r6, r3);
   __ LoadPX(r6, MemOperand(r6, r5));
 
@@ -2756,7 +2756,7 @@ void FullCodeGenerator::EmitIsStringWrapperSafeForDefaultValueOf(
   __ mov(ip, Operand(DescriptorArray::kDescriptorSize));
   __ Mul(r6, r6, ip);
   // Calculate location of the first key name.
-  __ addi(r7, r7, Operand(DescriptorArray::kFirstOffset - kHeapObjectTag));
+  __ Add(r7, Operand(DescriptorArray::kFirstOffset - kHeapObjectTag));
   // Calculate the end of the descriptor array.
   __ mr(r5, r7);
   __ SmiToPtrArrayOffset(ip, r6);
@@ -2772,7 +2772,7 @@ void FullCodeGenerator::EmitIsStringWrapperSafeForDefaultValueOf(
   __ LoadP(r6, MemOperand(r7, 0));
   __ cmp(r6, ip);
   __ beq(if_false);
-  __ addi(r7, r7, Operand(DescriptorArray::kDescriptorSize * kPointerSize));
+  __ Add(r7, Operand(DescriptorArray::kDescriptorSize * kPointerSize));
   __ bind(&entry);
   __ cmp(r7, r5);
   __ bne(&loop);
@@ -3487,7 +3487,7 @@ void FullCodeGenerator::EmitGetFromCache(CallRuntime* expr) {
   // tmp now holds finger offset as a smi.
   __ LoadP(r5, FieldMemOperand(cache, JSFunctionResultCache::kFingerOffset));
   // r5 now holds finger offset as a smi.
-  __ addi(r6, cache, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ Add(r6, cache, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   // r6 now points to the start of fixed array elements.
   __ SmiToPtrArrayOffset(r5, r5);
   __ LoadPUX(r5, MemOperand(r6, r5));
@@ -3639,7 +3639,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   // Check that all array elements are sequential ASCII strings, and
   // accumulate the sum of their lengths, as a smi-encoded value.
   __ lhi(string_length, Operand::Zero());
-  __ addi(element,
+  __ Add(element,
           elements, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ ShiftLeftImm(elements_end, array_length, Operand(kPointerSizeLog2));
   __ add(elements_end, element, elements_end);
@@ -3657,7 +3657,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   }
   __ bind(&loop);
   __ LoadP(string, MemOperand(element));
-  __ addi(element, element, Operand(kPointerSize));
+  __ Add(element, Operand(kPointerSize));
   __ JumpIfSmi(string, &bailout);
   __ LoadP(scratch1, FieldMemOperand(string, HeapObject::kMapOffset));
   __ lbz(scratch1, FieldMemOperand(scratch1, Map::kInstanceTypeOffset));
@@ -3722,7 +3722,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
 
   // Get first element in the array to free up the elements register to be used
   // for the result.
-  __ addi(element,
+  __ Add(element,
           elements, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   result = elements;  // End of live range for elements.
   elements = no_reg;
@@ -3744,7 +3744,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   __ add(elements_end, element, elements_end);
   result_pos = array_length;  // End of live range for array_length.
   array_length = no_reg;
-  __ addi(result_pos,
+  __ Add(result_pos,
           result,
           Operand(SeqAsciiString::kHeaderSize - kHeapObjectTag));
 
@@ -3763,10 +3763,10 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
 
   // Copy next array element to the result.
   __ LoadP(string, MemOperand(element));
-  __ addi(element, element, Operand(kPointerSize));
+  __ Add(element, Operand(kPointerSize));
   __ LoadP(string_length, FieldMemOperand(string, String::kLengthOffset));
   __ SmiUntag(string_length);
-  __ addi(string, string,
+  __ Add(string,
           Operand(SeqAsciiString::kHeaderSize - kHeapObjectTag));
   __ CopyBytes(string, result_pos, string_length, scratch1);
   __ cmp(element, elements_end);
@@ -3791,15 +3791,15 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
 
   // Copy the separator character to the result.
   __ stb(separator, MemOperand(result_pos));
-  __ addi(result_pos, result_pos, Operand(1));
+  __ Add(result_pos, Operand(1));
 
   // Copy next array element to the result.
   __ bind(&one_char_separator_loop_entry);
   __ LoadP(string, MemOperand(element));
-  __ addi(element, element, Operand(kPointerSize));
+  __ Add(element, Operand(kPointerSize));
   __ LoadP(string_length, FieldMemOperand(string, String::kLengthOffset));
   __ SmiUntag(string_length);
-  __ addi(string, string,
+  __ Add(string,
           Operand(SeqAsciiString::kHeaderSize - kHeapObjectTag));
   __ CopyBytes(string, result_pos, string_length, scratch1);
   __ cmpl(element, elements_end);
@@ -3819,17 +3819,17 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   // Copy the separator to the result.
   __ LoadP(string_length, FieldMemOperand(separator, String::kLengthOffset));
   __ SmiUntag(string_length);
-  __ addi(string,
+  __ Add(string,
           separator,
           Operand(SeqAsciiString::kHeaderSize - kHeapObjectTag));
   __ CopyBytes(string, result_pos, string_length, scratch1);
 
   __ bind(&long_separator);
   __ LoadP(string, MemOperand(element));
-  __ addi(element, element, Operand(kPointerSize));
+  __ Add(element, Operand(kPointerSize));
   __ LoadP(string_length, FieldMemOperand(string, String::kLengthOffset));
   __ SmiUntag(string_length);
-  __ addi(string, string,
+  __ Add(string,
           Operand(SeqAsciiString::kHeaderSize - kHeapObjectTag));
   __ CopyBytes(string, result_pos, string_length, scratch1);
   __ cmpl(element, elements_end);

@@ -1741,7 +1741,6 @@ SS2_FORM(zap);
   void divw(Register dst, Register src1, Register src2,
             OEBit o = LeaveOE, RCBit r = LeaveRC);
 
-  void addi(Register dst, Register src, const Operand& imm);
   void addis(Register dst, Register src, const Operand& imm);
   void addic(Register dst, Register src, const Operand& imm);
 
@@ -1968,18 +1967,19 @@ SS2_FORM(zap);
 #endif
   }
 
+  // TODO(john): should be move to MacroAssembler
   void pop(Register dst) {
 #if V8_TARGET_ARCH_S390X
     ld(dst, MemOperand(sp));
-    addi(sp, sp, Operand(8));
+    ahi(sp, Operand(8));
 #else
     lwz(dst, MemOperand(sp));
-    addi(sp, sp, Operand(4));
+    ahi(sp, Operand(4));
 #endif
   }
 
   void pop() {
-    addi(sp, sp, Operand(kPointerSize));
+    ahi(sp, Operand(kPointerSize));
   }
 
   bool predictable_code_size() const { return predictable_code_size_; }

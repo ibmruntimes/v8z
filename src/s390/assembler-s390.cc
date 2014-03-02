@@ -791,8 +791,10 @@ void Assembler::sraw(Register rb, Register rs, Register rx, RCBit r) {
   x_form(EXT2 | SRAW, rb, rs, rx, r);
 }
 
+// TODO(JOHN): should be removed
 void Assembler::subi(Register dst, Register src, const Operand& imm) {
-  addi(dst, src, Operand(-(imm.imm_)));
+  if (!dst.is(src)) lr(dst, src);
+  afi(dst, Operand(-(imm.imm_)));
 }
 
 void Assembler::addc(Register dst, Register src1, Register src2,
@@ -840,10 +842,6 @@ void Assembler::mulhw(Register dst, Register src1, Register src2,
 void Assembler::divw(Register dst, Register src1, Register src2,
                      OEBit o, RCBit r) {
   xo_form(EXT2 | DIVW, dst, src1, src2, o, r);
-}
-
-void Assembler::addi(Register dst, Register src, const Operand& imm) {
-  d_form(ADDI, dst, src, imm.imm_, true);
 }
 
 void  Assembler::addis(Register dst, Register src, const Operand& imm) {

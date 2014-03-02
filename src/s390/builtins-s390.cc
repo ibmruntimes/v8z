@@ -69,7 +69,7 @@ void Builtins::Generate_Adaptor(MacroAssembler* masm,
 
   // JumpToExternalReference expects r0 to contain the number of arguments
   // including the receiver and the extra arguments.
-  __ addi(r3, r3, Operand(num_extra_args + 1));
+  __ Add(r3, Operand(num_extra_args + 1));
   __ JumpToExternalReference(ExternalReference(id, masm->isolate()));
 }
 
@@ -158,7 +158,7 @@ static void AllocateEmptyJSArray(MacroAssembler* masm,
   // of the JSArray.
   // result: JSObject
   // scratch2: start of next object
-  __ addi(scratch1, result, Operand(JSArray::kSize));
+  __ Add(scratch1, result, Operand(JSArray::kSize));
   __ StoreP(scratch1, FieldMemOperand(result, JSArray::kElementsOffset), r0);
 
   // Clear the heap tag on the elements array.
@@ -172,11 +172,11 @@ static void AllocateEmptyJSArray(MacroAssembler* masm,
   __ LoadRoot(scratch3, Heap::kFixedArrayMapRootIndex);
   STATIC_ASSERT(0 * kPointerSize == FixedArray::kMapOffset);
   __ StoreP(scratch3, MemOperand(scratch1));
-  __ addi(scratch1, scratch1, Operand(kPointerSize));
+  __ Add(scratch1, Operand(kPointerSize));
   __ LoadSmiLiteral(scratch3,  Smi::FromInt(initial_capacity));
   STATIC_ASSERT(1 * kPointerSize == FixedArray::kLengthOffset);
   __ StoreP(scratch3, MemOperand(scratch1));
-  __ addi(scratch1, scratch1, Operand(kPointerSize));
+  __ Add(scratch1, Operand(kPointerSize));
 
   // Fill the FixedArray with the hole value. Inline the code if short.
   STATIC_ASSERT(2 * kPointerSize == FixedArray::kHeaderSize);
@@ -185,15 +185,15 @@ static void AllocateEmptyJSArray(MacroAssembler* masm,
   if (initial_capacity <= kLoopUnfoldLimit) {
     for (int i = 0; i < initial_capacity; i++) {
       __ StoreP(scratch3, MemOperand(scratch1));
-      __ addi(scratch1, scratch1, Operand(kPointerSize));
+      __ Add(scratch1, Operand(kPointerSize));
     }
   } else {
     Label loop, entry;
-    __ addi(scratch2, scratch1, Operand(initial_capacity * kPointerSize));
+    __ Add(scratch2, scratch1, Operand(initial_capacity * kPointerSize));
     __ b(&entry);
     __ bind(&loop);
     __ StoreP(scratch3, MemOperand(scratch1));
-    __ addi(scratch1, scratch1, Operand(kPointerSize));
+    __ Add(scratch1, Operand(kPointerSize));
     __ bind(&entry);
     __ cmp(scratch1, scratch2);
     __ blt(&loop);
@@ -260,7 +260,7 @@ static void AllocateJSArray(MacroAssembler* masm,
   // of the JSArray.
   // result: JSObject (untagged)
   // array_size: size of array (smi)
-  __ addi(elements_array_storage, result,
+  __ Add(elements_array_storage, result,
           Operand(JSArray::kSize + kHeapObjectTag));
   __ StoreP(elements_array_storage,
             MemOperand(result, JSArray::kElementsOffset));
@@ -278,12 +278,12 @@ static void AllocateJSArray(MacroAssembler* masm,
   __ LoadRoot(scratch1, Heap::kFixedArrayMapRootIndex);
   ASSERT_EQ(0 * kPointerSize, FixedArray::kMapOffset);
   __ StoreP(scratch1, MemOperand(elements_array_storage));
-  __ addi(elements_array_storage, elements_array_storage,
+  __ Add(elements_array_storage,
           Operand(kPointerSize));
   STATIC_ASSERT(kSmiTag == 0);
   ASSERT_EQ(1 * kPointerSize, FixedArray::kLengthOffset);
   __ StoreP(array_size, MemOperand(elements_array_storage));
-  __ addi(elements_array_storage, elements_array_storage,
+  __ Add(elements_array_storage,
           Operand(kPointerSize));
 
   // Calculate elements array and elements array end.
@@ -303,7 +303,7 @@ static void AllocateJSArray(MacroAssembler* masm,
     __ b(&entry);
     __ bind(&loop);
     __ StoreP(scratch1, MemOperand(elements_array_storage));
-    __ addi(elements_array_storage, elements_array_storage,
+    __ Add(elements_array_storage,
            Operand(kPointerSize));
     __ bind(&entry);
     __ cmp(elements_array_storage, elements_array_end);
@@ -311,7 +311,7 @@ static void AllocateJSArray(MacroAssembler* masm,
   }
 
   // Tag object
-  __ addi(result, result, Operand(kHeapObjectTag));
+  __ Add(result, Operand(kHeapObjectTag));
 }
 
 // Create a new array for the built-in Array function. This function allocates
@@ -350,7 +350,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
   __ IncrementCounter(counters->array_function_native(), 1, r6, r7);
   // Set up return value, remove receiver from stack and return.
   __ mr(r3, r5);
-  __ addi(sp, sp, Operand(kPointerSize));
+  __ Add(sp, Operand(kPointerSize));
   __ blr();
 
   // Check for one argument. Bail out if argument is not smi or if it is
@@ -393,7 +393,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
   __ IncrementCounter(counters->array_function_native(), 1, r5, r7);
   // Set up return value, remove receiver and argument from stack and return.
   __ mr(r3, r6);
-  __ addi(sp, sp, Operand(2 * kPointerSize));
+  __ Add(sp, Operand(2 * kPointerSize));
   __ blr();
 
   // Handle construction of an array from a list of arguments.
@@ -431,7 +431,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
   __ b(&entry);
   __ bind(&loop);
   __ LoadP(r5, MemOperand(r10));
-  __ addi(r10, r10, Operand(kPointerSize));
+  __ Add(r10, Operand(kPointerSize));
   if (FLAG_smi_only_arrays) {
     __ JumpIfNotSmi(r5, &has_non_smi_element);
   }
@@ -448,7 +448,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
   // r3: argc
   // r6: JSArray
   // sp[0]: receiver
-  __ addi(sp, sp, Operand(kPointerSize));
+  __ Add(sp, Operand(kPointerSize));
   __ mr(r3, r6);
   __ blr();
 
@@ -482,7 +482,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
   __ subi(r10, r10, Operand(kPointerSize));
   __ bind(&loop2);
   __ LoadP(r5, MemOperand(r10));
-  __ addi(r10, r10, Operand(kPointerSize));
+  __ Add(r10, Operand(kPointerSize));
   __ StorePU(r5, MemOperand(r8, -kPointerSize));
   __ cmp(r7, r8);
   __ blt(&loop2);
@@ -725,7 +725,7 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
 static void GenerateTailCallToSharedCode(MacroAssembler* masm) {
   __ LoadP(r5, FieldMemOperand(r4, JSFunction::kSharedFunctionInfoOffset));
   __ LoadP(r5, FieldMemOperand(r5, SharedFunctionInfo::kCodeOffset));
-  __ addi(r5, r5, Operand(Code::kHeaderSize - kHeapObjectTag));
+  __ Add(r5, Operand(Code::kHeaderSize - kHeapObjectTag));
   __ mtctr(r5);
   __ bcr();
 }
@@ -822,7 +822,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
         MemOperand constructor_count =
             FieldMemOperand(r6, SharedFunctionInfo::kConstructionCountOffset);
         __ lbz(r7, constructor_count);
-        __ addi(r7, r7, Operand(-1));
+        __ Add(r7, Operand(-1));
         __ stb(r7, constructor_count);
         __ cmpi(r7, Operand::Zero());
         __ bne(&allocate);
@@ -860,7 +860,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       __ StorePU(r9, MemOperand(r8, kPointerSize));
       ASSERT_EQ(2 * kPointerSize, JSObject::kElementsOffset);
       __ StorePU(r9, MemOperand(r8, kPointerSize));
-      __ addi(r8, r8, Operand(kPointerSize));
+      __ Add(r8, Operand(kPointerSize));
 
       // Fill all the in-object properties with the appropriate filler.
       // r4: constructor function
@@ -902,7 +902,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // and jump into the continuation code at any time from now on. Any
       // failures need to undo the allocation, so that the heap is in a
       // consistent state and verifiable.
-      __ addi(r7, r7, Operand(kHeapObjectTag));
+      __ Add(r7, Operand(kHeapObjectTag));
 
       // Check if a non-empty properties array is needed. Continue with
       // allocated object if not fall through to runtime call if it is.
@@ -944,7 +944,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // r6: number of elements in properties array
       // r7: JSObject
       // r8: start of next object
-      __ addi(r3, r6, Operand(FixedArray::kHeaderSize / kPointerSize));
+      __ Add(r3, r6, Operand(FixedArray::kHeaderSize / kPointerSize));
       __ AllocateInNewSpace(
           r3,
           r8,
@@ -965,7 +965,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       ASSERT_EQ(1 * kPointerSize, FixedArray::kLengthOffset);
       __ SmiTag(r3, r6);
       __ StorePU(r3, MemOperand(r5, kPointerSize));
-      __ addi(r5, r5, Operand(kPointerSize));
+      __ Add(r5, Operand(kPointerSize));
 
       // Initialize the fields to undefined.
       // r4: constructor function
@@ -987,7 +987,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
         __ b(&entry);
         __ bind(&loop);
         __ StoreP(r10, MemOperand(r5));
-        __ addi(r5, r5, Operand(kPointerSize));
+        __ Add(r5, Operand(kPointerSize));
         __ bind(&entry);
         __ cmp(r5, r9);
         __ blt(&loop);
@@ -998,7 +998,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // r4: constructor function
       // r7: JSObject
       // r8: FixedArray (not tagged)
-      __ addi(r8, r8, Operand(kHeapObjectTag));  // Add the heap tag.
+      __ Add(r8, Operand(kHeapObjectTag));  // Add the heap tag.
       __ StoreP(r8, FieldMemOperand(r7, JSObject::kPropertiesOffset), r0);
 
       // Continue with JSObject being successfully allocated
@@ -1036,7 +1036,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     __ LoadP(r6, MemOperand(sp, 3 * kPointerSize));
 
     // Set up pointer to last argument.
-    __ addi(r5, fp, Operand(StandardFrameConstants::kCallerSPOffset));
+    __ Add(r5, fp, Operand(StandardFrameConstants::kCallerSPOffset));
 
     // Set up number of arguments for function call below
     __ SmiUntag(r3, r6);
@@ -1126,7 +1126,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
 
   __ SmiToPtrArrayOffset(r4, r4);
   __ add(sp, sp, r4);
-  __ addi(sp, sp, Operand(kPointerSize));
+  __ Add(sp, Operand(kPointerSize));
   __ IncrementCounter(isolate->counters()->constructed_objects(), 1, r4, r5);
   __ blr();
 }
@@ -1184,7 +1184,7 @@ static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
     __ b(&entry);
     __ bind(&loop);
     __ LoadP(r8, MemOperand(r7));  // read next parameter
-    __ addi(r7, r7, Operand(kPointerSize));
+    __ Add(r7, Operand(kPointerSize));
     __ LoadP(r0, MemOperand(r8));  // dereference handle
     __ push(r0);  // push parameter
     __ bind(&entry);
@@ -1242,7 +1242,7 @@ void Builtins::Generate_LazyCompile(MacroAssembler* masm) {
     __ push(r4);
     __ CallRuntime(Runtime::kLazyCompile, 1);
     // Calculate the entry point.
-    __ addi(r5, r3, Operand(Code::kHeaderSize - kHeapObjectTag));
+    __ Add(r5, r3, Operand(Code::kHeaderSize - kHeapObjectTag));
 
     // Restore call kind information.
     __ pop(r8);
@@ -1271,7 +1271,7 @@ void Builtins::Generate_LazyRecompile(MacroAssembler* masm) {
     __ push(r4);
     __ CallRuntime(Runtime::kLazyRecompile, 1);
     // Calculate the entry point.
-    __ addi(r5, r3, Operand(Code::kHeaderSize - kHeapObjectTag));
+    __ Add(r5, r3, Operand(Code::kHeaderSize - kHeapObjectTag));
 
     // Restore call kind information.
     __ pop(r8);
@@ -1303,14 +1303,14 @@ static void Generate_NotifyDeoptimizedHelper(MacroAssembler* masm,
   Label with_tos_register, unknown_state;
   __ cmpi(r9, Operand(FullCodeGenerator::NO_REGISTERS));
   __ bne(&with_tos_register);
-  __ addi(sp, sp, Operand(1 * kPointerSize));  // Remove state.
+  __ Add(sp, Operand(1 * kPointerSize));  // Remove state.
   __ Ret();
 
   __ bind(&with_tos_register);
   __ LoadP(r3, MemOperand(sp, 1 * kPointerSize));
   __ cmpi(r9, Operand(FullCodeGenerator::TOS_REG));
   __ bne(&unknown_state);
-  __ addi(sp, sp, Operand(2 * kPointerSize));  // Remove state.
+  __ Add(sp, Operand(2 * kPointerSize));  // Remove state.
   __ Ret();
 
   __ bind(&unknown_state);
@@ -1384,7 +1384,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
     __ bne(&done);
     __ LoadRoot(r5, Heap::kUndefinedValueRootIndex);
     __ push(r5);
-    __ addi(r3, r3, Operand(1));
+    __ Add(r3, Operand(1));
     __ bind(&done);
   }
 
@@ -1551,7 +1551,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
     __ bne(&non_proxy);
 
     __ push(r4);  // re-add proxy object as additional argument
-    __ addi(r3, r3, Operand(1));
+    __ Add(r3, Operand(1));
     __ GetBuiltinEntry(r6, Builtins::CALL_FUNCTION_PROXY);
     __ Jump(masm->isolate()->builtins()->ArgumentsAdaptorTrampoline(),
             RelocInfo::CODE_TARGET);
@@ -1744,13 +1744,13 @@ void Builtins::Generate_FunctionApply(MacroAssembler* masm) {
                       NullCallWrapper(), CALL_AS_METHOD);
 
     frame_scope.GenerateLeaveFrame();
-    __ addi(sp, sp, Operand(3 * kPointerSize));
+    __ Add(sp, Operand(3 * kPointerSize));
     __ blr();
 
     // Invoke the function proxy.
     __ bind(&call_proxy);
     __ push(r4);  // add function proxy as last argument
-    __ addi(r3, r3, Operand(1));
+    __ Add(r3, Operand(1));
     __ lhi(r5, Operand(0, RelocInfo::NONE));
     __ SetCallKind(r8, CALL_AS_METHOD);
     __ GetBuiltinEntry(r6, Builtins::CALL_FUNCTION_PROXY);
@@ -1759,7 +1759,7 @@ void Builtins::Generate_FunctionApply(MacroAssembler* masm) {
 
     // Tear down the internal frame and remove function, receiver and args.
   }
-  __ addi(sp, sp, Operand(3 * kPointerSize));
+  __ Add(sp, Operand(3 * kPointerSize));
   __ blr();
 }
 
@@ -1770,7 +1770,7 @@ static void EnterArgumentsAdaptorFrame(MacroAssembler* masm) {
   __ mflr(r0);
   __ push(r0);
   __ Push(fp, r7, r4, r3);
-  __ addi(fp, sp, Operand(3 * kPointerSize));
+  __ Add(fp, sp, Operand(3 * kPointerSize));
 }
 
 
@@ -1787,7 +1787,7 @@ static void LeaveArgumentsAdaptorFrame(MacroAssembler* masm) {
   __ mtlr(r0);
   __ SmiToPtrArrayOffset(r0, r4);
   __ add(sp, sp, r0);
-  __ addi(sp, sp, Operand(3 * kPointerSize));  // adjust for receiver + fp + lr
+  __ Add(sp, Operand(3 * kPointerSize));  // adjust for receiver + fp + lr
 }
 
 
@@ -1820,7 +1820,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     __ SmiToPtrArrayOffset(r3, r3);
     __ add(r3, r3, fp);
     // adjust for return address and receiver
-    __ addi(r3, r3, Operand(2 * kPointerSize));
+    __ Add(r3, Operand(2 * kPointerSize));
     __ ShiftLeftImm(r5, r5, Operand(kPointerSizeLog2));
     __ sub(r5, r3, r5);
 

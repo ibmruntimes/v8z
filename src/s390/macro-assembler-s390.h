@@ -466,7 +466,7 @@ class MacroAssembler: public Assembler {
     ASSERT(cond == al);
     LoadP(src2, MemOperand(sp, 0));
     LoadP(src1, MemOperand(sp, kPointerSize));
-    addi(sp, sp, Operand(2 * kPointerSize));
+    Add(sp, Operand(2 * kPointerSize));
   }
 
   // Pop three registers.  Pops rightmost register first (from lower address).
@@ -478,7 +478,7 @@ class MacroAssembler: public Assembler {
     LoadP(src3, MemOperand(sp, 0));
     LoadP(src2, MemOperand(sp, kPointerSize));
     LoadP(src1, MemOperand(sp, 2 * kPointerSize));
-    addi(sp, sp, Operand(3 * kPointerSize));
+    Add(sp, Operand(3 * kPointerSize));
   }
 
   // Pop four registers.  Pops rightmost register first (from lower address).
@@ -498,7 +498,7 @@ class MacroAssembler: public Assembler {
     LoadP(src3, MemOperand(sp, kPointerSize));
     LoadP(src2, MemOperand(sp, 2 * kPointerSize));
     LoadP(src1, MemOperand(sp, 3 * kPointerSize));
-    addi(sp, sp, Operand(4 * kPointerSize));
+    Add(sp, Operand(4 * kPointerSize));
   }
 
   // Push and pop the registers that can hold pointers, as defined by the

@@ -210,7 +210,7 @@ static void GenerateDictionaryStore(MacroAssembler* masm,
 
   // Store the value at the masked, scaled index and return.
   const int kValueOffset = kElementsStartOffset + kPointerSize;
-  __ addi(scratch2, scratch2, Operand(kValueOffset - kHeapObjectTag));
+  __ Add(scratch2, Operand(kValueOffset - kHeapObjectTag));
   __ StoreP(value, MemOperand(scratch2));
 
   // Update the write barrier. Make sure not to clobber the value.
@@ -344,7 +344,7 @@ static void GenerateFastArrayLoad(MacroAssembler* masm,
   __ cmpl(key, scratch1);
   __ bge(out_of_range);
   // Fast case: Do the load.
-  __ addi(scratch1, elements,
+  __ Add(scratch1, elements,
           Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   // The key is a smi.
   __ SmiToPtrArrayOffset(scratch2, key);
@@ -804,7 +804,7 @@ static MemOperand GenerateMappedArgumentsLookup(MacroAssembler* masm,
       FixedArray::kHeaderSize + 2 * kPointerSize - kHeapObjectTag;
 
   __ SmiToPtrArrayOffset(scratch3, key);
-  __ addi(scratch3, scratch3, Operand(kOffset));
+  __ Add(scratch3, Operand(kOffset));
 
   __ LoadPX(scratch2, MemOperand(scratch1, scratch3));
   __ LoadRoot(scratch3, Heap::kTheHoleValueRootIndex);
@@ -816,7 +816,7 @@ static MemOperand GenerateMappedArgumentsLookup(MacroAssembler* masm,
   // map in scratch1).
   __ LoadP(scratch1, FieldMemOperand(scratch1, FixedArray::kHeaderSize));
   __ SmiToPtrArrayOffset(scratch3, scratch2);
-  __ addi(scratch3, scratch3, Operand(Context::kHeaderSize - kHeapObjectTag));
+  __ Add(scratch3, Operand(Context::kHeaderSize - kHeapObjectTag));
   __ add(scratch1, scratch1, scratch3);
   return MemOperand(scratch1);
 }
@@ -841,7 +841,7 @@ static MemOperand GenerateUnmappedArgumentsLookup(MacroAssembler* masm,
   __ cmpl(key, scratch);
   __ bge(slow_case);
   __ SmiToPtrArrayOffset(scratch, key);
-  __ addi(scratch,
+  __ Add(scratch,
           scratch,
           Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ add(backing_store, backing_store, scratch);
@@ -1063,7 +1063,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
     Label try_next_entry;
     // Load map and move r7 to next entry.
     __ LoadP(r8, MemOperand(r7));
-    __ addi(r7, r7, Operand(kPointerSize * 2));
+    __ Add(r7, Operand(kPointerSize * 2));
     __ cmp(r5, r8);
     __ bne(&try_next_entry);
     __ LoadP(r8, MemOperand(r7, -kPointerSize));  // Load symbol
@@ -1074,7 +1074,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
 
   // Last entry: Load map and move r7 to symbol.
   __ LoadP(r8, MemOperand(r7));
-  __ addi(r7, r7, Operand(kPointerSize));
+  __ Add(r7, Operand(kPointerSize));
   __ cmp(r5, r8);
   __ bne(&slow);
   __ LoadP(r8, MemOperand(r7));
@@ -1094,7 +1094,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
     __ bind(&hit_on_nth_entry[i]);
     __ mov(r7, Operand(cache_field_offsets));
     if (i != 0) {
-      __ addi(r6, r6, Operand(i));
+      __ Add(r6, Operand(i));
     }
     __ ShiftLeftImm(r8, r6, Operand(2));
     __ lwzx(r8, MemOperand(r8, r7));
@@ -1121,7 +1121,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   // Load property array property.
   __ bind(&property_array_property);
   __ LoadP(r4, FieldMemOperand(r4, JSObject::kPropertiesOffset));
-  __ addi(r4, r4, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ Add(r4, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ ShiftLeftImm(r3, r8, Operand(kPointerSizeLog2));
   __ LoadPX(r3, MemOperand(r3, r4));
   __ IncrementCounter(isolate->counters()->keyed_load_generic_lookup_cache(),
@@ -1360,7 +1360,7 @@ static void KeyedStoreGenerateGenericHelper(
               r0);
   }
   // It's irrelevant whether array is smi-only or not when writing a smi.
-  __ addi(address, elements, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ Add(address, elements, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ SmiToPtrArrayOffset(scratch_value, key);
   __ StorePX(value, MemOperand(address, scratch_value));
   __ Ret();
@@ -1378,7 +1378,7 @@ static void KeyedStoreGenerateGenericHelper(
     __ StoreP(scratch_value, FieldMemOperand(receiver, JSArray::kLengthOffset),
               r0);
   }
-  __ addi(address, elements, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ Add(address, elements, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ SmiToPtrArrayOffset(scratch_value, key);
   __ StorePUX(value, MemOperand(address, scratch_value));
   // Update write barrier for the elements array address.
