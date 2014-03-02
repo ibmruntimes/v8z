@@ -1345,7 +1345,7 @@ void LCodeGen::DoSubI(LSubI* instr) {
   bool can_overflow = instr->hydrogen()->CheckFlag(HValue::kCanOverflow);
   if (!can_overflow && right->IsConstantOperand()) {
     if (is_int16(ToInteger32(LConstantOperand::cast(right)))) {
-      __ subi(ToRegister(result), ToRegister(left),
+      __ Sub(ToRegister(result), ToRegister(left),
               Operand(ToInteger32(LConstantOperand::cast(right))));
       return;
     }
@@ -2172,7 +2172,7 @@ void LCodeGen::EmitClassOfTest(Label* is_true,
     // actual type and do a signed compare with the width of the type range.
     __ LoadP(temp, FieldMemOperand(input, HeapObject::kMapOffset));
     __ lbz(temp2, FieldMemOperand(temp, Map::kInstanceTypeOffset));
-    __ subi(temp2, temp2, Operand(FIRST_NONCALLABLE_SPEC_OBJECT_TYPE));
+    __ Sub(temp2, Operand(FIRST_NONCALLABLE_SPEC_OBJECT_TYPE));
     __ cmpi(temp2, Operand(LAST_NONCALLABLE_SPEC_OBJECT_TYPE -
                           FIRST_NONCALLABLE_SPEC_OBJECT_TYPE));
     __ bgt(is_false);
@@ -3033,7 +3033,7 @@ void LCodeGen::DoArgumentsElements(LArgumentsElements* instr) {
   Register result = ToRegister(instr->result());
 
   if (instr->hydrogen()->from_inlined()) {
-    __ subi(result, sp, Operand(2 * kPointerSize));
+    __ Sub(result, sp, Operand(2 * kPointerSize));
   } else {
     // Check if the calling frame is an arguments adaptor frame.
     Label done, adapted;
@@ -3441,7 +3441,7 @@ void LCodeGen::DoMathFloor(LUnaryMathOperation* instr) {
     __ cmpi(result, Operand::Zero());
     __ bne(&done);
     // Move high word to scrach and test sign bit
-    __ subi(sp, sp, Operand(8));
+    __ Sub(sp, Operand(8));
     __ stfd(input, MemOperand(sp));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
     __ lwz(scratch, MemOperand(sp, 4));
@@ -3464,7 +3464,7 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
   Label done, check_sign_on_zero, skip1, skip2;
 
   // Extract exponent bits.
-  __ subi(sp, sp, Operand(8));
+  __ Sub(sp, Operand(8));
   __ stfd(input, MemOperand(sp));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
   __ lwz(result, MemOperand(sp, 4));
@@ -3499,7 +3499,7 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
 
   // Check sign of the result: if the sign changed, the input
   // value was in ]0.5, 0[ and the result should be -0.
-  __ subi(sp, sp, Operand(8));
+  __ Sub(sp, Operand(8));
   __ stfd(double_scratch0(), MemOperand(sp, 0));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
   __ lwz(result, MemOperand(sp, 4));
@@ -3530,7 +3530,7 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
     __ bne(&done);
     __ bind(&check_sign_on_zero);
     // Move high word to scrach and test sign bit
-    __ subi(sp, sp, Operand(8));
+    __ Sub(sp, Operand(8));
     __ stfd(input, MemOperand(sp));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
     __ lwz(scratch, MemOperand(sp, 4));
@@ -4587,7 +4587,7 @@ void LCodeGen::EmitNumberUntagD(Register input_reg,
   // Heap number to double register conversion.
   __ lfd(result_reg, FieldMemOperand(input_reg, HeapNumber::kValueOffset));
   if (deoptimize_on_minus_zero) {
-    __ subi(sp, sp, Operand(8));
+    __ Sub(sp, Operand(8));
     __ stfd(result_reg, MemOperand(sp));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
     __ lwz(ip, MemOperand(sp, 0));

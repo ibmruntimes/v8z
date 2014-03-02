@@ -364,7 +364,7 @@ void RegExpMacroAssemblerPPC::CheckNotBackReferenceIgnoreCase(
     __ ori(r25, r25, Operand(0x20));  // Also convert input character.
     __ cmp(r25, r6);
     __ bne(&fail);
-    __ subi(r6, r6, Operand('a'));
+    __ Sub(r6, Operand('a'));
     __ cmpli(r6, Operand('z' - 'a'));  // Is r6 a lowercase letter?
     __ bgt(&fail);
 
@@ -512,7 +512,7 @@ void RegExpMacroAssemblerPPC::CheckNotCharacterAfterMinusAnd(
     uc16 mask,
     Label* on_not_equal) {
   ASSERT(minus < String::kMaxUtf16CodeUnit);
-  __ subi(r3, current_character(), Operand(minus));
+  __ Sub(r3, current_character(), Operand(minus));
   __ mov(r0, Operand(mask));
   __ and_(r3, r3, r0);
   __ Cmpli(r3, Operand(c), r0);
@@ -573,7 +573,7 @@ bool RegExpMacroAssemblerPPC::CheckSpecialCharacterClass(uc16 type,
       __ cmpi(current_character(), Operand(' '));
       __ beq(&success);
       // Check range 0x09..0x0d
-      __ subi(r3, current_character(), Operand('\t'));
+      __ Sub(r3, current_character(), Operand('\t'));
       __ cmpli(r3, Operand('\r' - '\t'));
       BranchOrBacktrack(gt, on_no_match);
       __ bind(&success);
@@ -586,7 +586,7 @@ bool RegExpMacroAssemblerPPC::CheckSpecialCharacterClass(uc16 type,
       // ASCII space characters are '\t'..'\r' and ' '.
       __ cmpi(current_character(), Operand(' '));
       BranchOrBacktrack(eq, on_no_match);
-      __ subi(r3, current_character(), Operand('\t'));
+      __ Sub(r3, current_character(), Operand('\t'));
       __ cmpli(r3, Operand('\r' - '\t'));
       BranchOrBacktrack(le, on_no_match);
       return true;
@@ -594,13 +594,13 @@ bool RegExpMacroAssemblerPPC::CheckSpecialCharacterClass(uc16 type,
     return false;
   case 'd':
     // Match ASCII digits ('0'..'9')
-    __ subi(r3, current_character(), Operand('0'));
+    __ Sub(r3, current_character(), Operand('0'));
     __ cmpli(current_character(), Operand('9' - '0'));
     BranchOrBacktrack(gt, on_no_match);
     return true;
   case 'D':
     // Match non ASCII-digits
-    __ subi(r3, current_character(), Operand('0'));
+    __ Sub(r3, current_character(), Operand('0'));
     __ cmpli(r3, Operand('9' - '0'));
     BranchOrBacktrack(le, on_no_match);
     return true;
@@ -608,14 +608,14 @@ bool RegExpMacroAssemblerPPC::CheckSpecialCharacterClass(uc16 type,
     // Match non-newlines (not 0x0a('\n'), 0x0d('\r'), 0x2028 and 0x2029)
     __ xori(r3, current_character(), Operand(0x01));
     // See if current character is '\n'^1 or '\r'^1, i.e., 0x0b or 0x0c
-    __ subi(r3, r3, Operand(0x0b));
+    __ Sub(r3, Operand(0x0b));
     __ cmpli(r3, Operand(0x0c - 0x0b));
     BranchOrBacktrack(le, on_no_match);
     if (mode_ == UC16) {
       // Compare original value to 0x2028 and 0x2029, using the already
       // computed (current_char ^ 0x01 - 0x0b). I.e., check for
       // 0x201d (0x2028 - 0x0b) or 0x201e.
-      __ subi(r3, r3, Operand(0x2028 - 0x0b));
+      __ Sub(r3, Operand(0x2028 - 0x0b));
       __ cmpli(r3, Operand(1));
       BranchOrBacktrack(le, on_no_match);
     }
@@ -625,7 +625,7 @@ bool RegExpMacroAssemblerPPC::CheckSpecialCharacterClass(uc16 type,
     // Match newlines (0x0a('\n'), 0x0d('\r'), 0x2028 and 0x2029)
     __ xori(r3, current_character(), Operand(0x01));
     // See if current character is '\n'^1 or '\r'^1, i.e., 0x0b or 0x0c
-    __ subi(r3, r3, Operand(0x0b));
+    __ Sub(r3, Operand(0x0b));
     __ cmpli(r3, Operand(0x0c - 0x0b));
     if (mode_ == ASCII) {
       BranchOrBacktrack(gt, on_no_match);
@@ -635,7 +635,7 @@ bool RegExpMacroAssemblerPPC::CheckSpecialCharacterClass(uc16 type,
       // Compare original value to 0x2028 and 0x2029, using the already
       // computed (current_char ^ 0x01 - 0x0b). I.e., check for
       // 0x201d (0x2028 - 0x0b) or 0x201e.
-      __ subi(r3, r3, Operand(0x2028 - 0x0b));
+      __ Sub(r3, Operand(0x2028 - 0x0b));
       __ cmpli(r3, Operand(1));
       BranchOrBacktrack(gt, on_no_match);
       __ bind(&done);
@@ -773,7 +773,7 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
     // Set r3 to address of char before start of the input string
     // (effectively string position -1).
     __ LoadP(r4, MemOperand(frame_pointer(), kStartIndex));
-    __ subi(r3, current_input_offset(), Operand(char_size()));
+    __ Sub(r3, current_input_offset(), Operand(char_size()));
     if (mode_ == UC16) {
       __ ShiftLeftImm(r0, r4, Operand(1));
       __ sub(r3, r3, r0);
@@ -880,7 +880,7 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
         __ StoreP(r3, MemOperand(frame_pointer(), kSuccessfulCaptures));
         // Capture results have been stored, so the number of remaining global
         // output registers is reduced by the number of stored captures.
-        __ subi(r4, r4, Operand(num_saved_registers_));
+        __ Sub(r4, Operand(num_saved_registers_));
         // Check whether we have enough room for another set of capture results.
         __ cmpi(r4, Operand(num_saved_registers_));
         __ blt(&return_r3);
