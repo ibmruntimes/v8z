@@ -429,6 +429,29 @@ class MacroAssembler: public Assembler {
       RememberedSetAction remembered_set_action = EMIT_REMEMBERED_SET,
       SmiCheck smi_check = INLINE_SMI_CHECK);
 
+
+  void push(Register src) {
+#if V8_TARGET_ARCH_S390X
+    stdu(src, MemOperand(sp, -8));
+#else
+    stwu(src, MemOperand(sp, -4));
+#endif
+  }
+
+  // TODO(john): should be move to MacroAssembler
+  void pop(Register dst) {
+#if V8_TARGET_ARCH_S390X
+    ld(dst, MemOperand(sp));
+    ahi(sp, Operand(8));
+#else
+    lwz(dst, MemOperand(sp));
+    ahi(sp, Operand(4));
+#endif
+  }
+
+  void pop() {
+    ahi(sp, Operand(kPointerSize));
+  }
   // Push a handle.
   void Push(Handle<Object> handle);
 

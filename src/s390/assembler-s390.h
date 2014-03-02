@@ -1955,29 +1955,6 @@ SS2_FORM(zap);
 
   void nop(int type = 0);   // 0 is the default non-marking type.
 
-  void push(Register src) {
-#if V8_TARGET_ARCH_S390X
-    stdu(src, MemOperand(sp, -8));
-#else
-    stwu(src, MemOperand(sp, -4));
-#endif
-  }
-
-  // TODO(john): should be move to MacroAssembler
-  void pop(Register dst) {
-#if V8_TARGET_ARCH_S390X
-    ld(dst, MemOperand(sp));
-    ahi(sp, Operand(8));
-#else
-    lwz(dst, MemOperand(sp));
-    ahi(sp, Operand(4));
-#endif
-  }
-
-  void pop() {
-    ahi(sp, Operand(kPointerSize));
-  }
-
   bool predictable_code_size() const { return predictable_code_size_; }
 
   // Check the code size generated from label to here.
