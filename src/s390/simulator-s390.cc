@@ -2819,8 +2819,53 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
     case IILF: {
       RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
       int r1 = rilInstr->R1Value();
-      uint32_t imm = rilInstr->I2UnsignedValue();
+      uint32_t imm = rilInstr->I2Value();
       set_low_register<uint32_t>(r1, imm);
+      break;
+    }
+    case IIHF: {
+      RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
+      int r1 = rilInstr->R1Value();
+      uint32_t imm = rilInstr->I2Value();
+      set_high_register<uint32_t>(r1, imm);
+      break;
+    }
+    case ALFI: {
+      RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
+      int r1 = rilInstr->R1Value();
+      uint32_t imm = rilInstr->I2UnsignedValue();
+      uint32_t alu_out = get_low_register<uint32_t>(r1) + imm;
+      set_low_register<uint32_t>(r1, alu_out);
+      break;
+    }
+    case CLFI: {
+      RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
+      int r1 = rilInstr->R1Value();
+      uint32_t imm = rilInstr->I2UnsignedValue();
+      SetS390ConditionCode<uint32_t>(get_low_register<uint32_t>(r1), imm);
+      break;
+    }
+    case CFI: {
+      RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
+      int r1 = rilInstr->R1Value();
+      int32_t imm = rilInstr->I2Value();
+      SetS390ConditionCode<int32_t>(get_low_register<int32_t>(r1), imm);
+      break;
+    }
+    case BRASL: {
+      UNIMPLEMENTED();
+      break;
+    }
+    case BRCL: {
+      UNIMPLEMENTED();
+      break;
+    }
+    case STMG: {
+      UNIMPLEMENTED();
+      break;
+    }
+    case SLLG: {
+      UNIMPLEMENTED();
       break;
     }
     default:
