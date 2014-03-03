@@ -2810,6 +2810,17 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       break;
     }
     case LLILF: {
+      RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
+      int r1 = rilInstr->R1Value();
+      uint64_t imm = static_cast<uint64_t>(rilInstr->I2UnsignedValue());
+      set_register(r1, imm);
+      break;
+    }
+    case IILF: {
+      RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
+      int r1 = rilInstr->R1Value();
+      uint32_t imm = rilInstr->I2UnsignedValue();
+      set_low_register<uint32_t>(r1, imm);
       break;
     }
     default:
@@ -3094,11 +3105,6 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       break;
     }
     case BRCL: {
-      UNIMPLEMENTED();
-      break;
-    }
-    case IIHF:
-    case IILF: {
       UNIMPLEMENTED();
       break;
     }
