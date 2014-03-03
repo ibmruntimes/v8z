@@ -432,20 +432,21 @@ class MacroAssembler: public Assembler {
 
   void push(Register src) {
 #if V8_TARGET_ARCH_S390X
-    stdu(src, MemOperand(sp, -8));
+    lay(sp, MemOperand(sp, -8));
+    stg(src, MemOperand(sp));
 #else
-    stwu(src, MemOperand(sp, -4));
+    lay(sp, MemOperand(sp, -4));
+    st(src, MemOperand(sp));
 #endif
   }
 
-  // TODO(john): should be move to MacroAssembler
   void pop(Register dst) {
 #if V8_TARGET_ARCH_S390X
-    ld(dst, MemOperand(sp));
-    ahi(sp, Operand(8));
+    lg(dst, MemOperand(sp));
+    la(sp, MemOperand(sp, 8));
 #else
-    lwz(dst, MemOperand(sp));
-    ahi(sp, Operand(4));
+    l(dst, MemOperand(sp));
+    la(sp, MemOperand(sp, 4));
 #endif
   }
 
