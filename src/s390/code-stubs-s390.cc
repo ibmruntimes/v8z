@@ -3841,8 +3841,9 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   //   SMI Marker
   //   SMI Marker
   //   kCEntryFPAddress
+  //   Frame type
   Isolate* isolate = masm->isolate();
-  __ lay(sp, MemOperand(sp, -4 * kPointerSize));
+  __ lay(sp, MemOperand(sp, -5 * kPointerSize));
   __ lhi(r10, Operand(-1));  // Push a bad frame pointer to fail if it is used.
   int marker = is_construct ? StackFrame::ENTRY_CONSTRUCT : StackFrame::ENTRY;
   __ LoadSmiLiteral(r9, Smi::FromInt(marker));
@@ -3850,10 +3851,13 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   // Save copies of the top frame descriptor on the stack.
   __ mov(r7, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate)));
   __ LoadP(r7, MemOperand(r7));
-  __ StoreMultipleP(r7, r10, MemOperand(sp, 0));
+  __ StoreMultipleP(r7, r10, MemOperand(sp, kPointerSize));
 
   // Set up frame pointer for the frame to be pushed.
-  __ lay(fp, MemOperand(sp, -EntryFrameConstants::kCallerFPOffset));
+  // Need to add kPointerSize, because sp has one extra
+  // frame already for the frame type being pushed later.
+  __ lay(fp, MemOperand(sp, -EntryFrameConstants::kCallerFPOffset +
+                            kPointerSize));
 
   // r2: code entry
   // r3: function
@@ -3874,7 +3878,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   __ bind(&non_outermost_js);
   __ LoadSmiLiteral(ip, Smi::FromInt(StackFrame::INNER_JSENTRY_FRAME));
   __ bind(&cont);
-  __ push(ip);  // frame-type
+  __ StoreP(ip, MemOperand(sp));  // frame-type
 
   // Jump to a faked try block that does the invoke, with a faked catch
   // block that sets the pending exception.
@@ -3889,8 +3893,9 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   __ mov(ip, Operand(ExternalReference(Isolate::kPendingExceptionAddress,
                                        isolate)));
 
-  __ StoreP(r3, MemOperand(ip));
-  __ mov(r3, Operand(reinterpret_cast<intptr_t>(Failure::Exception())));
+  // @TODO Verify that on S390 r2 is the correct register here. (PPC used r3)
+  __ StoreP(r2, MemOperand(ip));
+  __ mov(r2, Operand(reinterpret_cast<intptr_t>(Failure::Exception())));
   __ b(&exit);
 
   // Invoke: Link this frame into the handler chain.  There's only one
