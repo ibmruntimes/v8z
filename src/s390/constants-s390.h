@@ -1693,7 +1693,7 @@ class RXYInstruction : Instruction {
 class RILInstruction : Instruction {
   public:
     inline int R1Value() const {
-      return Bits<SixByteInstr, int>(23, 20);
+      return Bits<SixByteInstr, int>(39, 36);
     }
     inline int32_t I2Value() const {
       return Bits<SixByteInstr, int32_t>(31, 0);
