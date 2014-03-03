@@ -2794,9 +2794,9 @@ void Simulator::DecodeExt5(Instruction* instr) {
 // S390 Decode and simulate helpers
 // Decode routine for six-byte instructions
 bool Simulator::DecodeSixByte(Instruction* instr) {
-  Opcode opcode = instr->S390OpcodeValue();
+  Opcode op = instr->S390OpcodeValue();
 
-  switch (opcode) {
+  switch (op) {
     case LAY: {
       // Load Address
       RXYInstruction *rxyInstr = reinterpret_cast<RXYInstruction*>(instr);
@@ -2864,7 +2864,101 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       UNIMPLEMENTED();
       break;
     }
-    case SLLG: {
+    case SLLG:
+    case SRLG:
+    case SLAG:
+    case SRAG: {
+      UNIMPLEMENTED();
+      break;
+    }
+    case LMY:
+    case STMY: {
+      RSYInstruction* rsyInstr = reinterpret_cast<RSYInstruction*>(instr);
+      int r1 = rsyInstr->R1Value();
+      int r3 = rsyInstr->R3Value();
+      int b2 = rsyInstr->B2Value();
+      int offset = rsyInstr->D2Value();
+
+      // Regs roll around if r3 is less than r1.
+      // Artifically increase r3 by 16 so we can calculate
+      // the number of regs stored properly.
+      if (r3 < r1)
+        r3 += 16;
+
+      int32_t b2_val = (b2 == 0) ? 0 : get_low_register<int32_t>(b2);
+
+      // Store each register in ascending order.
+      for (int i = 0; i < r3 - r1; i++) {
+        if (op == LMY) {
+          int32_t value = ReadW(b2_val + offset + 4*i, instr);
+          set_low_register<int32_t>((r1 + i) % 16, value);
+        } else {
+          int32_t value = get_low_register<int32_t>((r1 + i) % 16);
+          WriteW(b2_val + offset + 4*i, value, instr);
+        }
+      }
+      break;
+    }
+    case LT:
+    case LTG: {
+      RXYInstruction* rxyInstr = reinterpret_cast<RXYInstruction*>(instr);
+      int r1 = rxyInstr->R1Value();
+      int x2 = rxyInstr->X2Value();
+      int b2 = rxyInstr->B2Value();
+      int d2 = rxyInstr->D2Value();
+      intptr_t x2_val = get_register(x2);
+      intptr_t b2_val = get_register(b2);
+
+      if (op == LT) {
+        int32_t value = ReadW(x2_val + b2_val + d2, instr);
+        set_low_register<int32_t>(r1, value);
+        SetS390ConditionCode<int32_t>(value, 0);
+      } else {
+        UNIMPLEMENTED();
+      }
+      break;
+    }
+    case ML: { UNIMPLEMENTED(); break; }
+    case AY:
+    case SY:
+    case NY:
+    case OY:
+    case XY:
+    case CY: {  // @TODO(Alanli): set overflow
+      RXYInstruction* rxyInstr = reinterpret_cast<RXYInstruction*>(instr);
+      int r1 = rxyInstr->R1Value();
+      int x2 = rxyInstr->X2Value();
+      int b2 = rxyInstr->B2Value();
+      int d2 = rxyInstr->D2Value();
+      intptr_t x2_val = get_register(x2);
+      intptr_t b2_val = get_register(b2);
+      int32_t alu_out = get_low_register<int32_t>(r1);
+      int32_t mem_val = ReadW(b2_val + x2_val + d2, instr);
+      if (op == AY) {
+        alu_out += mem_val;
+      } else if (op == SY) {
+        alu_out -= mem_val;
+      } else if (op == NY) {
+        alu_out &= mem_val;
+      } else if (op == OY) {
+        alu_out |= mem_val;
+      } else if (op == XY) {
+        alu_out ^= mem_val;
+      } else if (op == CY) {
+        alu_out -= mem_val;
+      }
+      SetS390ConditionCode<int32_t>(alu_out, 0);
+      if (op != CY) {
+        set_low_register<int32_t>(r1, alu_out);
+      }
+      break;
+    }
+    case AG:
+    case SG:
+    case NG:
+    case OG:
+    case XG:
+    case CG: {
       UNIMPLEMENTED();
       break;
     }
