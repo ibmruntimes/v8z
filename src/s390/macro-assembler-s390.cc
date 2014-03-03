@@ -4017,6 +4017,16 @@ void MacroAssembler::Add(Register dst, Register src,
   Add(dst, opnd);
 }
 
+void MacroAssembler::Add(Register dst, Register src1,
+                        Register src2) {
+  if (!dst.is(src1) && !dst.is(src2)) {
+    LoadRR(dst, src1);
+  } else if (dst.is(src2)) {
+    src2 = src1;
+  }
+  AddRR(dst, src2);
+}
+
 void MacroAssembler::SubtractLogical(Register dst, const MemOperand& opnd) {
   ASSERT(is_int20(opnd.offset()));
 #ifdef V8_TARGET_ARCH_S390X
@@ -4098,7 +4108,7 @@ void MacroAssembler::AddLogical(Register dst, const Operand& opnd) {
   alfi(dst, opnd);
 }
 
-void MacroAssembler::AddLogical(Register dst, Register src) {
+void MacroAssembler::Add(Register dst, Register src) {
 #ifdef V8_TARGET_ARCH_S390X
   algr(dst, src);
 #else
