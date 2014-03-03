@@ -2962,6 +2962,49 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       UNIMPLEMENTED();
       break;
     }
+    case ALY:
+    case SLY:
+    case CLY: {  // @TODO(AlanLi): ALY and SLY needs to set condition code.
+      RXYInstruction* rxyInstr = reinterpret_cast<RXYInstruction*>(instr);
+      int r1 = rxyInstr->R1Value();
+      int x2 = rxyInstr->X2Value();
+      int b2 = rxyInstr->B2Value();
+      int d2 = rxyInstr->D2Value();
+      intptr_t x2_val = get_register(x2);
+      intptr_t b2_val = get_register(b2);
+      uint32_t alu_out = get_low_register<uint32_t>(r1);
+      uint32_t mem_val = ReadWU(b2_val + x2_val + d2, instr);
+
+      if (op == ALY) {
+        alu_out += mem_val;
+        set_low_register<uint32_t>(r1, alu_out);
+      } else if (op == SLY) {
+        alu_out += mem_val;
+        set_low_register<uint32_t>(r1, alu_out);
+      } else if (op == CLY) {
+        alu_out -= mem_val;
+        SetS390ConditionCode<uint32_t>(alu_out, 0);
+      }
+      break;
+    }
+    case LY:
+    case STY: {
+      RXYInstruction* rxyInstr = reinterpret_cast<RXYInstruction*>(instr);
+      int r1 = rxyInstr->R1Value();
+      int x2 = rxyInstr->X2Value();
+      int b2 = rxyInstr->B2Value();
+      int d2 = rxyInstr->D2Value();
+      intptr_t x2_val = get_register(x2);
+      intptr_t b2_val = get_register(b2);
+      if (op == LY) {
+        uint32_t mem_val = ReadWU(b2_val + x2_val + d2, instr);
+        set_low_register<uint32_t>(r1, mem_val);
+      } else if (op == STY) {
+        uint32_t value = get_low_register<uint32_t>(r1);
+        WriteW(b2_val + x2_val + d2, value, instr);
+      }
+      break;
+    }
     default:
       return false;
   }
