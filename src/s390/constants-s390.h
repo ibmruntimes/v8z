@@ -1651,6 +1651,26 @@ class RSInstruction : Instruction {
     inline int size() const { return 4; }
 };
 
+// RSY Instruction
+class RSYInstruction : Instruction {
+  public:
+    inline int R1Value() const {
+      return Bits<SixByteInstr, int>(39, 36);
+    }
+    inline int R3Value() const {
+      return Bits<SixByteInstr, int>(35, 32);
+    }
+    inline int B2Value() const {
+      return Bits<SixByteInstr, int>(31, 28);
+    }
+    inline int32_t D2Value() const {
+      int32_t value = Bits<SixByteInstr, int32_t>(27, 16);
+      value += Bits<SixByteInstr, int8_t>(15, 8) << 12;
+      return (int32_t)value;
+    }
+    inline int size() const { return 6; }
+};
+
 // RX Instruction
 class RXInstruction : Instruction {
   public:
