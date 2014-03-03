@@ -442,7 +442,7 @@ int Decoder::FormatImmediate(Instruction *instr, const char* format) {
     return 2;
   } else if (format[1] == '2') {  // immediate in 16-48
     RILInstruction* rilinstr = reinterpret_cast<RILInstruction*>(instr);
-    int16_t value = rilinstr->I2Value();
+    int32_t value = rilinstr->I2Value();
     out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
                                     "%d", value);
     return 2;
@@ -482,11 +482,11 @@ int Decoder::FormatImmediate(Instruction *instr, const char* format) {
     return 2;
   } else if (format[1] == '7') {  // unsigned immediate in 16-48
     RILInstruction* rilinstr = reinterpret_cast<RILInstruction*>(instr);
-    uint16_t value = rilinstr->I2UnsignedValue();
+    uint32_t value = rilinstr->I2UnsignedValue();
     out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
                                     "%d", value);
     return 2;
-  } else {
+  } else {  // ppc specific
     int32_t value = (instr->Bits(15, 0) << 16) >> 16;
     out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
         "%d", value);
