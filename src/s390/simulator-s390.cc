@@ -2857,7 +2857,12 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       break;
     }
     case BRCL: {
-      UNIMPLEMENTED();
+      RILInstruction* rilInstr = reinterpret_cast<RILInstruction*>(instr);
+      Condition m1 = (Condition)rilInstr->R1Value();
+      if (TestConditionCode((Condition)m1)) {
+        intptr_t offset = rilInstr->I2Value() * 2;
+        set_pc(get_pc() + offset);
+      }
       break;
     }
     case STMG: {
@@ -3280,14 +3285,6 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       int32_t alu_out = r1_val + mem_val;
       set_low_register<int32_t>(r1, alu_out);
       SetS390ConditionCode<int32_t>(alu_out, 0);
-      break;
-    }
-    case BRASL: {
-      UNIMPLEMENTED();
-      break;
-    }
-    case BRCL: {
-      UNIMPLEMENTED();
       break;
     }
     default:
