@@ -175,7 +175,7 @@ const int kRegister_r7_Code = 7;
 const int kRegister_r8_Code = 8;
 const int kRegister_r9_Code = 9;
 const int kRegister_r10_Code = 10;
-const int kRegister_r11_Code = 11;
+const int kRegister_fp_Code = 11;
 const int kRegister_r12_Code = 12;
 const int kRegister_r13_Code = 13;
 const int kRegister_r14_Code = 14;
@@ -196,7 +196,7 @@ const int kRegister_r27_Code = 27;
 const int kRegister_r28_Code = 28;
 const int kRegister_r29_Code = 29;
 const int kRegister_r30_Code = 30;
-const int kRegister_fp_Code = 31;
+const int kRegister_r31_Code = 31;
 
 const Register no_reg = { kRegister_no_reg_Code };
 
@@ -211,9 +211,12 @@ const Register r7  = { kRegister_r7_Code };
 const Register r8  = { kRegister_r8_Code };
 const Register r9  = { kRegister_r9_Code };
 const Register r10 = { kRegister_r10_Code };
-// Used as lithium codegen scratch register.
-const Register r11 = { kRegister_r11_Code };
-// @TODO: ip is PPC relic, rename to r12.
+// PPC: Used as lithium codegen scratch register. (Probably need to
+// pick another reg for this on S390).
+// @TODO: Remove r11 once all PPC references to it are fixed.
+const Register r11 = { kRegister_fp_Code };
+const Register fp  = { kRegister_fp_Code };
+// IP - Intra procedural register
 const Register ip  = { kRegister_r12_Code };
 // Used as roots register.
 const Register r13  = { kRegister_r13_Code };
@@ -238,7 +241,7 @@ const Register r27  = { kRegister_r27_Code };
 const Register r28  = { kRegister_r28_Code };
 const Register r29  = { kRegister_r29_Code };
 const Register r30  = { kRegister_r30_Code };
-const Register fp = { kRegister_fp_Code };
+const Register r31  = { kRegister_r31_Code };
 
 
 // Double word FP register.
