@@ -75,12 +75,12 @@ static void ProbeTable(Isolate* isolate,
 
   // Multiply by 3 because there are 3 fields per entry (name, code, map).
   __ ShiftLeftImm(offset_scratch, offset, Operand(1));
-  __ add(offset_scratch, offset, offset_scratch);
+  __ Add(offset_scratch, offset, offset_scratch);
 
   // Calculate the base address of the entry.
   __ mov(base_addr, Operand(key_offset));
   __ ShiftLeftImm(scratch2, offset_scratch, Operand(kPointerSizeLog2));
-  __ add(base_addr, base_addr, scratch2);
+  __ Add(base_addr, base_addr, scratch2);
 
   // Check that the key in the entry matches the name.
   __ LoadP(ip, MemOperand(base_addr, 0));
@@ -238,7 +238,7 @@ void StubCache::GenerateProbe(MacroAssembler* masm,
   // Get the map of the receiver and compute the hash.
   __ lwz(scratch, FieldMemOperand(name, String::kHashFieldOffset));
   __ LoadP(ip, FieldMemOperand(receiver, HeapObject::kMapOffset));
-  __ add(scratch, scratch, ip);
+  __ Add(scratch, scratch, ip);
 #if V8_TARGET_ARCH_S390X
   // Use only the low 32 bits of the map pointer.
   __ rldicl(scratch, scratch, 0, 32);
@@ -1632,7 +1632,7 @@ Handle<Code> CallStubCompiler::CompileArrayPushCall(
       // We may need a register containing the address end_elements below,
       // so write back the value in end_elements.
       __ SmiToPtrArrayOffset(end_elements, r3);
-      __ add(end_elements, elements, end_elements);
+      __ Add(end_elements, elements, end_elements);
       const int kEndElementsOffset =
           FixedArray::kHeaderSize - kHeapObjectTag - argc * kPointerSize;
       __ Add(end_elements, Operand(kEndElementsOffset));
@@ -1687,7 +1687,7 @@ Handle<Code> CallStubCompiler::CompileArrayPushCall(
       // We may need a register containing the address end_elements below,
       // so write back the value in end_elements.
       __ SmiToPtrArrayOffset(end_elements, r3);
-      __ add(end_elements, elements, end_elements);
+      __ Add(end_elements, elements, end_elements);
       __ Add(end_elements, Operand(kEndElementsOffset));
       __ StoreP(r7, MemOperand(end_elements));
 
@@ -1727,7 +1727,7 @@ Handle<Code> CallStubCompiler::CompileArrayPushCall(
       const int kAllocationDelta = 4;
       // Load top and check if it is the end of elements.
       __ SmiToPtrArrayOffset(end_elements, r3);
-      __ add(end_elements, elements, end_elements);
+      __ Add(end_elements, elements, end_elements);
       __ Add(end_elements, Operand(kEndElementsOffset));
       __ mov(r10, Operand(new_space_allocation_top));
       __ LoadP(r6, MemOperand(r10));
@@ -1829,7 +1829,7 @@ Handle<Code> CallStubCompiler::CompileArrayPopCall(
   // We can't address the last element in one operation. Compute the more
   // expensive shift first, and use an offset later on.
   __ SmiToPtrArrayOffset(r3, r7);
-  __ add(elements, elements, r3);
+  __ Add(elements, elements, r3);
   __ LoadP(r3, FieldMemOperand(elements, FixedArray::kHeaderSize));
   __ cmp(r3, r9);
   __ beq(&call_builtin);
@@ -3465,7 +3465,7 @@ Handle<Code> ConstructStubCompiler::CompileConstructStub(
   // Calculate the location of the first argument. The stack contains only the
   // argc arguments.
   __ ShiftLeftImm(r4, r3, Operand(kPointerSizeLog2));
-  __ add(r4, sp, r4);
+  __ Add(r4, sp, r4);
 
   // Fill all the in-object properties with undefined.
   // r3: argc
@@ -3523,7 +3523,7 @@ Handle<Code> ConstructStubCompiler::CompileConstructStub(
   // r4: argc
   // Remove caller arguments and receiver from the stack and return.
   __ ShiftLeftImm(r4, r4, Operand(kPointerSizeLog2));
-  __ add(sp, sp, r4);
+  __ Add(sp, sp, r4);
   __ Add(sp, Operand(kPointerSize));
   Counters* counters = masm()->isolate()->counters();
   __ IncrementCounter(counters->constructed_objects(), 1, r4, r5);
@@ -3901,7 +3901,7 @@ void KeyedStoreStubCompiler::GenerateStoreExternalArray(
       break;
     case EXTERNAL_DOUBLE_ELEMENTS:
       __ SmiToDoubleArrayOffset(r10, key);
-      // __ add(r6, r6, r10);
+      // __ Add(r6, r6, r10);
       // r6: effective address of the double element
       FloatingPointHelper::ConvertIntToDouble(
           masm, r8,  d0);
@@ -4094,7 +4094,7 @@ void KeyedLoadStubCompiler::GenerateLoadFastDoubleElement(
 
   // Load the upper word of the double in the fixed array and test for NaN.
   __ SmiToDoubleArrayOffset(indexed_double_offset, key_reg);
-  __ add(indexed_double_offset, elements_reg, indexed_double_offset);
+  __ Add(indexed_double_offset, elements_reg, indexed_double_offset);
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
   uint32_t upper_32_offset = FixedArray::kHeaderSize + sizeof(kHoleNanLower32);
 #else

@@ -1255,7 +1255,7 @@ enum CheckForInexactConversion {
 // and other constants.
 
 
-// add(sp, sp, 4) instruction (aka Pop())
+// Add(sp, sp, 4) instruction (aka Pop())
 extern const Instr kPopInstruction;
 
 // str(r, MemOperand(sp, 4, NegPreIndex), al) instruction (aka push(r))

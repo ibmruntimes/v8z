@@ -106,7 +106,7 @@ TEST(1) {
   __ b(&C);
 
   __ bind(&L);
-  __ add(r3, r3, r4);
+  __ ar(r3, r4);
   __ ahi(r4, Operand(-1 & 0xFFFF));
 
   __ bind(&C);
@@ -188,6 +188,7 @@ TEST(2) {
 
 
 
+#if 0
 TEST(3) {
   InitializeVM();
   v8::HandleScope scope;
@@ -272,7 +273,6 @@ TEST(3) {
   CHECK_EQ(1000/8, t.s);
 }
 
-#if 0
 TEST(4) {
   // Test the VFP floating point instructions.
   InitializeVM();

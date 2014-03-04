@@ -186,7 +186,7 @@ void RegExpMacroAssemblerPPC::AdvanceRegister(int reg, int by) {
   if (by != 0) {
     __ LoadP(r3, register_location(reg), r0);
     __ mov(r0, Operand(by));
-    __ add(r3, r3, r0);
+    __ Add(r3, r3, r0);
     __ StoreP(r3, register_location(reg), r0);
   }
 }
@@ -196,7 +196,7 @@ void RegExpMacroAssemblerPPC::Backtrack() {
   CheckPreemption();
   // Pop Code* offset from backtrack stack, add Code* and jump to location.
   Pop(r3);
-  __ add(r3, r3, code_pointer());
+  __ Add(r3, r3, code_pointer());
   __ mtctr(r3);
   __ bcr();
 }
@@ -229,7 +229,7 @@ void RegExpMacroAssemblerPPC::CheckAtStart(Label* on_at_start) {
   // If we did, are we still at the start of the input?
   __ LoadP(r4, MemOperand(frame_pointer(), kInputStart));
   __ mr(r0, current_input_offset());
-  __ add(r3, end_of_input_address(), r0);
+  __ Add(r3, end_of_input_address(), r0);
   __ cmp(r4, r3);
   BranchOrBacktrack(eq, on_at_start);
   __ bind(&not_at_start);
@@ -243,7 +243,7 @@ void RegExpMacroAssemblerPPC::CheckNotAtStart(Label* on_not_at_start) {
   BranchOrBacktrack(ne, on_not_at_start);
   // If we did, are we still at the start of the input?
   __ LoadP(r4, MemOperand(frame_pointer(), kInputStart));
-  __ add(r3, end_of_input_address(), current_input_offset());
+  __ Add(r3, end_of_input_address(), current_input_offset());
   __ cmp(r3, r4);
   BranchOrBacktrack(ne, on_not_at_start);
 }
@@ -270,7 +270,7 @@ void RegExpMacroAssemblerPPC::CheckCharacters(Vector<const uc16> str,
     CheckPosition(cp_offset + str.length() - 1, on_failure);
   }
 
-  __ add(r3, end_of_input_address(), current_input_offset());
+  __ Add(r3, end_of_input_address(), current_input_offset());
   if (cp_offset != 0) {
     int byte_offset = cp_offset * char_size();
     __ Add(r3, Operand(byte_offset));
@@ -331,7 +331,9 @@ void RegExpMacroAssemblerPPC::CheckNotBackReferenceIgnoreCase(
   __ beq(&fallthrough /*, cr0*/);
 
   // Check that there are enough characters left in the input.
-  __ add(r0, r4, current_input_offset(), LeaveOE, SetRC);
+  // TODO(john): the RC bit set below is the condition for
+  //              the BranchOrBacktrack function
+  __ Add(r0, r4, current_input_offset()/*, LeaveOE, SetRC*/);
 //  __ cmn(r1, Operand(current_input_offset()));
   BranchOrBacktrack(gt, on_no_match, cr0);
 
@@ -342,9 +344,9 @@ void RegExpMacroAssemblerPPC::CheckNotBackReferenceIgnoreCase(
 
     // r3 - offset of start of capture
     // r4 - length of capture
-    __ add(r3, r3, end_of_input_address());
-    __ add(r5, end_of_input_address(), current_input_offset());
-    __ add(r4, r3, r4);
+    __ Add(r3, r3, end_of_input_address());
+    __ Add(r5, end_of_input_address(), current_input_offset());
+    __ Add(r4, r3, r4);
 
     // r3 - Address of start of capture.
     // r4 - Address of end of capture
@@ -396,13 +398,13 @@ void RegExpMacroAssemblerPPC::CheckNotBackReferenceIgnoreCase(
     //   r6: Isolate* isolate
 
     // Address of start of capture.
-    __ add(r3, r3, end_of_input_address());
+    __ Add(r3, r3, end_of_input_address());
     // Length of capture.
     __ mr(r5, r4);
     // Save length in callee-save register for use on return.
     __ mr(r25, r4);
     // Address of current input position.
-    __ add(r4, current_input_offset(), end_of_input_address());
+    __ Add(r4, current_input_offset(), end_of_input_address());
     // Isolate.
     __ mov(r6, Operand(ExternalReference::isolate_address()));
 
@@ -417,7 +419,7 @@ void RegExpMacroAssemblerPPC::CheckNotBackReferenceIgnoreCase(
     __ cmpi(r3, Operand::Zero());
     BranchOrBacktrack(eq, on_no_match);
     // On success, increment position by length of capture.
-    __ add(current_input_offset(), current_input_offset(), r25);
+    __ Add(current_input_offset(), current_input_offset(), r25);
   }
 
   __ bind(&fallthrough);
@@ -438,13 +440,15 @@ void RegExpMacroAssemblerPPC::CheckNotBackReference(
   __ beq(&fallthrough /*, cr0*/);
 
   // Check that there are enough characters left in the input.
-  __ add(r0, r4, current_input_offset(), LeaveOE, SetRC);
+  // TODO(john): the RC bit set below is the condition
+  //              for the BranchOrBacktrack function
+  __ Add(r0, r4, current_input_offset()/*, LeaveOE, SetRC*/);
   BranchOrBacktrack(gt, on_no_match, cr0);
 
   // Compute pointers to match string and capture string
-  __ add(r3, r3, end_of_input_address());
-  __ add(r5, end_of_input_address(), current_input_offset());
-  __ add(r4, r4, r3);
+  __ Add(r3, r3, end_of_input_address());
+  __ Add(r5, end_of_input_address(), current_input_offset());
+  __ Add(r4, r4, r3);
 
   Label loop;
   __ bind(&loop);
@@ -840,7 +844,7 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
           __ ShiftRightImm(r4, r4, Operand(1));
         }
         // r4 is length of input in characters.
-        __ add(r4, r4, r5);
+        __ Add(r4, r4, r5);
         // r4 is length of string in characters.
 
         ASSERT_EQ(0, num_saved_registers_ % 2);
@@ -856,12 +860,12 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
           }
           if (mode_ == UC16) {
             __ ShiftRightArithImm(r5, r5, 1);
-            __ add(r5, r4, r5);
+            __ Add(r5, r4, r5);
             __ ShiftRightArithImm(r6, r6, 1);
-            __ add(r6, r4, r6);
+            __ Add(r6, r4, r6);
           } else {
-            __ add(r5, r4, r5);
-            __ add(r6, r4, r6);
+            __ Add(r5, r4, r5);
+            __ Add(r6, r4, r6);
           }
           __ st(r5, MemOperand(r3));
           __ Add(r3, Operand(kIntSize));
@@ -1097,7 +1101,7 @@ void RegExpMacroAssemblerPPC::ReadCurrentPositionFromRegister(int reg) {
 void RegExpMacroAssemblerPPC::ReadStackPointerFromRegister(int reg) {
   __ LoadP(backtrack_stackpointer(), register_location(reg), r0);
   __ LoadP(r3, MemOperand(frame_pointer(), kStackHighEnd));
-  __ add(backtrack_stackpointer(), backtrack_stackpointer(), r3);
+  __ Add(backtrack_stackpointer(), backtrack_stackpointer(), r3);
 }
 
 
@@ -1133,7 +1137,7 @@ void RegExpMacroAssemblerPPC::WriteCurrentPositionToRegister(int reg,
     __ StoreP(current_input_offset(), register_location(reg), r0);
   } else {
     __ mov(r0, Operand(cp_offset * char_size()));
-    __ add(r3, current_input_offset(), r0);
+    __ Add(r3, current_input_offset(), r0);
     __ StoreP(r3, register_location(reg), r0);
   }
 }
@@ -1322,7 +1326,7 @@ void RegExpMacroAssemblerPPC::SafeCall(Label* to, Condition cond,
 void RegExpMacroAssemblerPPC::SafeReturn() {
   __ pop(r0);
   __ mov(ip, Operand(masm_->CodeObject()));
-  __ add(r0, r0, ip);
+  __ Add(r0, r0, ip);
   __ mtlr(r0);
   __ blr();
 }
@@ -1408,7 +1412,7 @@ void RegExpMacroAssemblerPPC::LoadCurrentCharacterUnchecked(int cp_offset,
   // must only be used to load a single character at a time.
 
   ASSERT(characters == 1);
-  __ add(current_character(), end_of_input_address(), offset);
+  __ Add(current_character(), end_of_input_address(), offset);
   if (mode_ == ASCII) {
     __ lbz(current_character(), MemOperand(current_character()));
   } else {

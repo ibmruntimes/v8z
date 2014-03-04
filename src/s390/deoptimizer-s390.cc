@@ -1151,7 +1151,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   // Compute a pointer to the unwinding limit in register r5; that is
   // the first stack slot not part of the input frame.
   __ LoadP(r5, MemOperand(r4, FrameDescription::frame_size_offset()));
-  __ add(r5, r5, sp);
+  __ Add(r5, r5, sp);
 
   // Unwind the stack down to - but not including - the unwinding
   // limit and copy the contents of the activation frame to the input
@@ -1184,7 +1184,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   __ lwz(r4, MemOperand(r3, Deoptimizer::output_count_offset()));
   __ LoadP(r3, MemOperand(r3, Deoptimizer::output_offset()));  // r3 is output_.
   __ ShiftLeftImm(r4, r4, Operand(kPointerSizeLog2));
-  __ add(r4, r3, r4);
+  __ Add(r4, r3, r4);
   __ bind(&outer_push_loop);
   // Inner loop state: r5 = current FrameDescription*, r6 = loop index.
   __ LoadP(r5, MemOperand(r3, 0));  // output_[ix]
@@ -1192,7 +1192,7 @@ void Deoptimizer::EntryGenerator::Generate() {
 
   __ bind(&inner_push_loop);
   __ Add(r6, Operand(-sizeof(intptr_t)));
-  __ add(r9, r5, r6);
+  __ Add(r9, r5, r6);
   __ LoadP(r10, MemOperand(r9, FrameDescription::frame_content_offset()));
   __ push(r10);
   __ cmpi(r6, Operand::Zero());
