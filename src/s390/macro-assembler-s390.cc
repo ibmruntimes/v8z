@@ -1038,9 +1038,9 @@ void MacroAssembler::PushTryHandler(StackHandler::Kind kind,
   // Buy the full stack frame for 5 slots.
   lay(sp, MemOperand(sp,  -StackHandlerConstants::kSize));
 
-  // @TODO Can replace with MVC to save R0
-  LoadP(r0, MemOperand(r8));
-  StoreP(r0, MemOperand(sp, StackHandlerConstants::kNextOffset));
+  // Copy the old handler into the next handler slot.
+  mvc(MemOperand(sp, StackHandlerConstants::kNextOffset),
+      MemOperand(r8), kPointerSize);
   // Set this new handler as the current one.
   StoreP(sp, MemOperand(r8));
 
