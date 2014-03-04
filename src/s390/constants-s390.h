@@ -1435,7 +1435,7 @@ class Instruction {
   // Set the Instruction Bits to value
   template <typename T>
   static inline void SetInstructionBits(byte *instr, T value) {
-  #if __BYTE_ORDER == __LITTLE_ENDIAN
+#if __BYTE_ORDER == __LITTLE_ENDIAN
     // The instruction bits are stored in big endian format even on little
     // endian hosts, in order to decode instruction length and opcode.
     // The following code will reverse the bytes so that the stores later
@@ -1450,12 +1450,13 @@ class Instruction {
               ((value & 0x00FF0000) >>  8) | ((value & 0xFF000000) >> 24);
     } else if (sizeof(T) == 8) {
       // Six Byte Instruction
-      value = (static_cast<uint64_t>(value & 0xFF) << 40) |
-              (static_cast<uint64_t>((value >>  8) & 0xFF) << 32) |
-              (static_cast<uint64_t>((value >> 16) & 0xFF) << 24) |
-              (static_cast<uint64_t>((value >> 24) & 0xFF) << 16) |
-              (static_cast<uint64_t>((value >> 32) & 0xFF) << 8) |
-              (static_cast<uint64_t>((value >> 40) & 0xFF));
+      uint64_t orig_value = static_cast<uint64_t>(value);
+      value = (static_cast<uint64_t>(orig_value & 0xFF) << 40) |
+              (static_cast<uint64_t>((orig_value >>  8) & 0xFF) << 32) |
+              (static_cast<uint64_t>((orig_value >> 16) & 0xFF) << 24) |
+              (static_cast<uint64_t>((orig_value >> 24) & 0xFF) << 16) |
+              (static_cast<uint64_t>((orig_value >> 32) & 0xFF) << 8) |
+              (static_cast<uint64_t>((orig_value >> 40) & 0xFF));
     }
 #endif
     if (sizeof(T) <= 4) {

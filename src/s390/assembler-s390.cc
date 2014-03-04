@@ -460,7 +460,7 @@ void Assembler::target_at_put(int pos, int target_pos) {
     int16_t imm16 = target_pos - pos;
     instr &= (~0xffff);
     ASSERT(is_int16(imm16));
-    instr_at_put(pos, instr | (imm16 >> 1));
+    instr_at_put<FourByteInstr>(pos, instr | (imm16 >> 1));
     return;
   } else if (0xc0040000 == opcode) {   // BRCL
     int32_t imm32 = target_pos - pos;
