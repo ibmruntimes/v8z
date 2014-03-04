@@ -3041,6 +3041,18 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       SetS390ConditionCode<int32_t>(r1_val, mem_val);
       break;
     }
+    case ST: {
+      RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
+      int b2 = rxinst->B2Value();
+      int x2 = rxinst->X2Value();
+      int32_t  r1_val = get_low_register<int32_t>(rxinst->R1Value());
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+      intptr_t d2_val = rxinst->D2Value();
+      intptr_t addr = b2_val + x2_val + d2_val;
+      WriteW(addr, r1_val, instr);
+      break;
+    }
     case AH:
     case SH:
     case MH: {
