@@ -432,23 +432,17 @@ class MacroAssembler: public Assembler {
 
 
   void push(Register src) {
-#if V8_TARGET_ARCH_S390X
-    lay(sp, MemOperand(sp, -8));
-    stg(src, MemOperand(sp));
-#else
-    lay(sp, MemOperand(sp, -4));
-    st(src, MemOperand(sp));
-#endif
+    lay(sp, MemOperand(sp, -kPointerSize));
+    StorePX(src, MemOperand(sp));
   }
 
   void pop(Register dst) {
 #if V8_TARGET_ARCH_S390X
     lg(dst, MemOperand(sp));
-    la(sp, MemOperand(sp, 8));
 #else
     l(dst, MemOperand(sp));
-    la(sp, MemOperand(sp, 4));
 #endif
+    la(sp, MemOperand(sp, kPointerSize));
   }
 
   void pop() {
@@ -460,8 +454,9 @@ class MacroAssembler: public Assembler {
   // Push two registers.  Pushes leftmost register first (to highest address).
   void Push(Register src1, Register src2, Condition cond = al) {
     ASSERT(!src1.is(src2));
-    StorePU(src1, MemOperand(sp, -kPointerSize));
-    StorePU(src2, MemOperand(sp, -kPointerSize));
+    lay(sp, MemOperand(sp, -kPointerSize * 2));
+    StorePX(src1, MemOperand(sp, kPointerSize));
+    StorePX(src2, MemOperand(sp, 0));
   }
 
   // Push three registers.  Pushes leftmost register first (to highest address).
@@ -469,8 +464,10 @@ class MacroAssembler: public Assembler {
     ASSERT(!src1.is(src2));
     ASSERT(!src2.is(src3));
     ASSERT(!src1.is(src3));
-    StorePU(src1, MemOperand(sp, -kPointerSize));
-    Push(src2, src3, cond);
+    lay(sp, MemOperand(sp, -kPointerSize * 3));
+    StorePX(src1, MemOperand(sp, kPointerSize * 2));
+    StorePX(src2, MemOperand(sp, kPointerSize));
+    StorePX(src3, MemOperand(sp, 0));
   }
 
   // Push four registers.  Pushes leftmost register first (to highest address).
@@ -486,8 +483,11 @@ class MacroAssembler: public Assembler {
     ASSERT(!src2.is(src4));
     ASSERT(!src3.is(src4));
 
-    StorePU(src1, MemOperand(sp, -kPointerSize));
-    Push(src2, src3, src4, cond);
+    lay(sp, MemOperand(sp, -kPointerSize * 4));
+    StorePX(src1, MemOperand(sp, kPointerSize * 3));
+    StorePX(src2, MemOperand(sp, kPointerSize * 2));
+    StorePX(src3, MemOperand(sp, kPointerSize));
+    StorePX(src4, MemOperand(sp, 0));
   }
 
   // Pop two registers. Pops rightmost register first (from lower address).
