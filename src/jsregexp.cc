@@ -52,6 +52,8 @@
 #include "arm/regexp-macro-assembler-arm.h"
 #elif V8_TARGET_ARCH_PPC
 #include "ppc/regexp-macro-assembler-ppc.h"
+#elif V8_TARGET_ARCH_S390
+#include "s390/regexp-macro-assembler-s390.h"
 #elif V8_TARGET_ARCH_MIPS
 #include "mips/regexp-macro-assembler-mips.h"
 #else
@@ -6134,6 +6136,9 @@ RegExpEngine::CompilationResult RegExpEngine::Compile(
   RegExpMacroAssemblerARM macro_assembler(mode, (data->capture_count + 1) * 2,
                                           zone);
 #elif V8_TARGET_ARCH_PPC
+  RegExpMacroAssemblerPPC macro_assembler(mode, (data->capture_count + 1) * 2,
+                                          zone);
+#elif V8_TARGET_ARCH_S390
   RegExpMacroAssemblerPPC macro_assembler(mode, (data->capture_count + 1) * 2,
                                           zone);
 #elif V8_TARGET_ARCH_MIPS

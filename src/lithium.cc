@@ -41,6 +41,9 @@
 #elif V8_TARGET_ARCH_PPC
 #include "ppc/lithium-ppc.h"
 #include "ppc/lithium-codegen-ppc.h"
+#elif V8_TARGET_ARCH_S390
+#include "s390/lithium-s390.h"
+#include "s390/lithium-codegen-s390.h"
 #elif V8_TARGET_ARCH_MIPS
 #include "mips/lithium-mips.h"
 #include "mips/lithium-codegen-mips.h"

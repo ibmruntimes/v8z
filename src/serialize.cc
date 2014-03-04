@@ -697,7 +697,8 @@ void Deserializer::ReadObject(int space_number,
   bool is_codespace = (space_number == CODE_SPACE);
   ASSERT(HeapObject::FromAddress(address)->IsCode() == is_codespace);
 #endif
-#if defined(_AIX) || defined(V8_TARGET_ARCH_PPC64)
+#if defined(_AIX) || defined(V8_TARGET_ARCH_PPC64) || \
+    defined(V8_TARGET_ARCH_S390X)
   // If we're on a platform that uses function_descriptors
   // these jump tables make use of RelocInfo::INTERNAL_REFERENCE.
   // As the V8 serialization code doesn't handle that relocation type
@@ -958,7 +959,8 @@ void Deserializer::ReadChunk(Object** current,
       ALL_SPACES(kBackref, kPlain, kStartOfObject)
       ALL_SPACES(kBackrefWithSkip, kPlain, kStartOfObject)
 #if defined(V8_TARGET_ARCH_MIPS) || \
-    defined(V8_TARGET_ARCH_PPC) || defined(V8_TARGET_ARCH_PPC64)
+    defined(V8_TARGET_ARCH_PPC) || defined(V8_TARGET_ARCH_PPC64) || \
+    defined(V8_TARGET_ARCH_S390) || defined(V8_TARGET_ARCH_S390X)
       // Deserialize a new object from pointer found in code and write
       // a pointer to it to the current object. Required only for MIPS/PPC, and
       // omitted on the other architectures because it is fully unrolled and
@@ -1182,7 +1184,8 @@ int Serializer::RootIndex(HeapObject* heap_object, HowToCode from) {
     Object* root = heap->roots_array_start()[i];
     if (!root->IsSmi() && root == heap_object) {
 #if defined(V8_TARGET_ARCH_MIPS) || \
-    defined(V8_TARGET_ARCH_PPC) || defined(V8_TARGET_ARCH_PPC64)
+    defined(V8_TARGET_ARCH_PPC) || defined(V8_TARGET_ARCH_PPC64) || \
+    defined(V8_TARGET_ARCH_S390) || defined(V8_TARGET_ARCH_S390X)
       if (from == kFromCode) {
         // In order to avoid code bloat in the deserializer we don't
         // have support for the encoding that specifies a particular

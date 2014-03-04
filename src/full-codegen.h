@@ -127,6 +127,8 @@ class FullCodeGenerator: public AstVisitor {
   static const int kBackEdgeDistanceUnit = 142;
 #elif V8_TARGET_ARCH_PPC
   static const int kBackEdgeDistanceUnit = 142;
+#elif V8_TARGET_ARCH_S390
+  static const int kBackEdgeDistanceUnit = 142;
 #elif V8_TARGET_ARCH_MIPS
   static const int kBackEdgeDistanceUnit = 142;
 #else
@@ -336,6 +338,12 @@ class FullCodeGenerator: public AstVisitor {
              Label* if_false,
              Label* fall_through);
 #elif defined(V8_TARGET_ARCH_PPC) || defined(V8_TARGET_ARCH_PPC64)
+  void Split(Condition cc,
+             Label* if_true,
+             Label* if_false,
+             Label* fall_through,
+             CRegister cr = cr7);
+#elif defined(V8_TARGET_ARCH_S390) || defined(V8_TARGET_ARCH_S390X)
   void Split(Condition cc,
              Label* if_true,
              Label* if_false,

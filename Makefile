@@ -39,6 +39,11 @@ ANDROID_V8 ?= /data/local/v8
 
 # Special build flags. Use them like this: "make library=shared"
 
+# @TODO Bypass Install natives to run test-assembler
+# Remove later
+ifdef RUN_ASM
+  GYPFLAGS += -DRUN_ASM=1
+endif
 # library=shared || component=shared_library
 ifeq ($(library), shared)
   GYPFLAGS += -Dcomponent=shared_library
@@ -141,8 +146,8 @@ endif
 
 # Architectures and modes to be compiled. Consider these to be internal
 # variables, don't override them (use the targets instead).
-ARCHES = ia32 x64 arm ppc mipsel ppc64
-DEFAULT_ARCHES = ia32 x64 arm ppc ppc64
+ARCHES = ia32 x64 arm ppc mipsel ppc64 s390
+DEFAULT_ARCHES = ia32 x64 arm ppc ppc64 s390
 MODES = release debug
 ANDROID_ARCHES = android_ia32 android_arm
 

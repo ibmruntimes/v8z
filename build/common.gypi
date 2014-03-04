@@ -109,6 +109,10 @@
     # Interpreted regexp engine exists as platform-independent alternative
     # based where the regular expression is compiled to a bytecode.
     'v8_interpreted_regexp%': 0,
+
+    # Temporarily workaround to disable natives
+    # @TODO Remove me and conditional below later.
+    'RUN_ASM%': 0,
   },
   'target_defaults': {
     'conditions': [
@@ -141,6 +145,9 @@
           'NATIVE_SIMULATION',
           'USE_SIMULATOR',
         ],
+      }],
+      ['RUN_ASM==1', {
+        'defines': ['RUN_ASM',],
       }],
       ['v8_target_arch=="arm"', {
         'defines': [
@@ -195,6 +202,17 @@
           'V8_TARGET_ARCH_PPC64',
         ],
       }],  # v8_target_arch=="ppc64"
+      ['v8_target_arch=="s390"', {
+        'defines': [
+          'V8_TARGET_ARCH_S390',
+        ],
+      }],  # v8_target_arch=="s390"
+      ['v8_target_arch=="s390x"', {
+        'defines': [
+          'V8_TARGET_ARCH_S390',
+          'V8_TARGET_ARCH_S390X',
+        ],
+      }],  # v8_target_arch=="s390x"
       ['v8_target_arch=="ia32"', {
         'defines': [
           'V8_TARGET_ARCH_IA32',
@@ -314,13 +332,14 @@
       ['(OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="solaris" \
          or OS=="netbsd" or OS=="mac" or OS=="android") and \
         (v8_target_arch=="arm" or v8_target_arch=="ia32" or \
-         v8_target_arch=="mipsel" or v8_target_arch=="ppc")', {
+         v8_target_arch=="mipsel" or v8_target_arch=="ppc" or \
+         v8_target_arch=="s390")', {
         # Check whether the host compiler and target compiler support the
         # '-m32' option and set it if so.
         'target_conditions': [
           ['_toolset=="host"', {
             'variables': {
-              'm32flag': '<!((echo | $(echo ${CXX_host:-$(which g++)}) -m32 -E - > /dev/null 2>&1) && echo "-m32" || true)',
+              'm32flag': '<!(((echo | $(echo ${CXX_host:-$(which g++)}) -m32 -E - > /dev/null 2>&1) && echo "-m32") || ((echo | $(echo ${CXX_host:-$(which g++)}) -m31 -E - > /dev/null 2>&1) && echo "-m31") || true)',
             },
             'cflags': [ '<(m32flag)' ],
             'ldflags': [ '<(m32flag)' ],
@@ -330,7 +349,7 @@
           }],
           ['_toolset=="target"', {
             'variables': {
-              'm32flag': '<!((echo | $(echo ${CXX_target:-${CXX:-$(which g++)}}) -m32 -E - > /dev/null 2>&1) && echo "-m32" || true)',
+              'm32flag': '<!(((echo | $(echo ${CXX_target:-${CXX:-$(which g++)}}) -m32 -E - > /dev/null 2>&1) && echo "-m32") || ((echo | $(echo ${CXX_target:-${CXX:-$(which g++)}}) -m31 -E - > /dev/null 2>&1) && echo "-m31") || true)',
               'clang%': 0,
             },
             'conditions': [

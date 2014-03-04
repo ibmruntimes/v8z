@@ -98,6 +98,12 @@ namespace internal {
 #else
 #define V8_HOST_ARCH_32_BIT 1
 #endif
+#elif defined(__s390__)
+#define V8_HOST_ARCH_S390 1
+#define V8_HOST_ARCH_32_BIT 1
+#elif defined(__s390x__)
+#define V8_HOST_ARCH_S390 1
+#define V8_HOST_ARCH_64_BIT 1
 #else
 #error Host architecture was not detected as supported by v8
 #endif
@@ -107,7 +113,7 @@ namespace internal {
 // environment as presented by the compiler.
 #if !defined(V8_TARGET_ARCH_X64) && !defined(V8_TARGET_ARCH_IA32) && \
     !defined(V8_TARGET_ARCH_ARM) && !defined(V8_TARGET_ARCH_MIPS) && \
-    !defined(V8_TARGET_ARCH_PPC)
+    !defined(V8_TARGET_ARCH_PPC) && !defined(V8_TARGET_ARCH_S390)
 #if defined(_M_X64) || defined(__x86_64__)
 #define V8_TARGET_ARCH_X64 1
 #elif defined(_M_IX86) || defined(__i386__)
@@ -130,8 +136,8 @@ namespace internal {
 #endif
 #if (defined(V8_TARGET_ARCH_ARM) && \
     !(defined(V8_HOST_ARCH_IA32) || defined(V8_HOST_ARCH_ARM) || \
-      defined(V8_HOST_ARCH_PPC)))
-#error Target architecture arm is only supported on arm, ppc and ia32 host
+      defined(V8_HOST_ARCH_PPC) || defined(V8_HOST_ARCH_S390)))
+#error Target architecture arm is only supported on arm, ppc, s390 and ia32 host
 #endif
 #if (defined(V8_TARGET_ARCH_MIPS) && \
     !(defined(V8_HOST_ARCH_IA32) || defined(V8_HOST_ARCH_MIPS)))
@@ -146,6 +152,9 @@ namespace internal {
 #define USE_SIMULATOR 1
 #endif
 #if (defined(V8_TARGET_ARCH_PPC) && !defined(V8_HOST_ARCH_PPC))
+#define USE_SIMULATOR 1
+#endif
+#if (defined(V8_TARGET_ARCH_S390) && !defined(V8_HOST_ARCH_S390))
 #define USE_SIMULATOR 1
 #endif
 #if (defined(V8_TARGET_ARCH_MIPS) && !defined(V8_HOST_ARCH_MIPS))

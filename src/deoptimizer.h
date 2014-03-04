@@ -699,6 +699,8 @@ class SlotRef BASE_EMBEDDED {
       case INT32: {
 #if defined(V8_TARGET_ARCH_PPC64) && __BYTE_ORDER == __BIG_ENDIAN
         int value = Memory::int32_at(addr_ + kIntSize);
+#elif defined(V8_TARGET_ARCH_S390X)
+        int value = Memory::int32_at(addr_ + kIntSize);
 #else
         int value = Memory::int32_at(addr_);
 #endif
@@ -711,6 +713,8 @@ class SlotRef BASE_EMBEDDED {
 
       case UINT32: {
 #if defined(V8_TARGET_ARCH_PPC64) && __BYTE_ORDER == __BIG_ENDIAN
+        uint32_t value = Memory::uint32_at(addr_ + kIntSize);
+#elif defined(V8_TARGET_ARCH_S390X)
         uint32_t value = Memory::uint32_at(addr_ + kIntSize);
 #else
         uint32_t value = Memory::uint32_at(addr_);

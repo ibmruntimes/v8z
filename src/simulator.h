@@ -36,6 +36,8 @@
 #include "arm/simulator-arm.h"
 #elif V8_TARGET_ARCH_PPC
 #include "ppc/simulator-ppc.h"
+#elif V8_TARGET_ARCH_S390
+#include "s390/simulator-s390.h"
 #elif V8_TARGET_ARCH_MIPS
 #include "mips/simulator-mips.h"
 #else

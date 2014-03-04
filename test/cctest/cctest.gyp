@@ -124,6 +124,12 @@
             'test-disasm-ppc.cc'
           ],
         }],
+        ['v8_target_arch=="s390" or v8_target_arch=="s390"', {
+          'sources': [
+            'test-assembler-s390.cc',
+            'test-disasm-s390.cc'
+          ],
+        }],
         ['v8_target_arch=="mipsel"', {
           'sources': [
             'test-assembler-mips.cc',

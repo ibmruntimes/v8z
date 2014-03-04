@@ -834,8 +834,10 @@ inline bool is_intn(intptr_t x, int n)  {
 }
 
 inline bool is_int8(intptr_t x)  { return is_intn(x, 8); }
+inline bool is_int12(intptr_t x)  { return is_intn(x, 12); }
 inline bool is_int16(intptr_t x)  { return is_intn(x, 16); }
 inline bool is_int18(intptr_t x)  { return is_intn(x, 18); }
+inline bool is_int20(intptr_t x)  { return is_intn(x, 20); }
 inline bool is_int24(intptr_t x)  { return is_intn(x, 24); }
 inline bool is_int26(intptr_t x)  { return is_intn(x, 26); }
 
@@ -853,6 +855,7 @@ inline bool is_uint8(intptr_t x)  { return is_uintn(x, 8); }
 inline bool is_uint10(intptr_t x)  { return is_uintn(x, 10); }
 inline bool is_uint12(intptr_t x)  { return is_uintn(x, 12); }
 inline bool is_uint16(intptr_t x)  { return is_uintn(x, 16); }
+inline bool is_uint20(intptr_t x)  { return is_uintn(x, 20); }
 inline bool is_uint24(intptr_t x)  { return is_uintn(x, 24); }
 inline bool is_uint26(intptr_t x)  { return is_uintn(x, 26); }
 inline bool is_uint28(intptr_t x)  { return is_uintn(x, 28); }

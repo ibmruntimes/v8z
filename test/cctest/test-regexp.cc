@@ -54,6 +54,11 @@
 #include "ppc/macro-assembler-ppc.h"
 #include "ppc/regexp-macro-assembler-ppc.h"
 #endif
+#ifdef V8_TARGET_ARCH_S390
+#include "s390/assembler-s390.h"
+#include "s390/macro-assembler-s390.h"
+#include "s390/regexp-macro-assembler-s390.h"
+#endif
 #ifdef V8_TARGET_ARCH_MIPS
 #include "mips/assembler-mips.h"
 #include "mips/macro-assembler-mips.h"
@@ -708,6 +713,8 @@ typedef RegExpMacroAssemblerX64 ArchRegExpMacroAssembler;
 #elif V8_TARGET_ARCH_ARM
 typedef RegExpMacroAssemblerARM ArchRegExpMacroAssembler;
 #elif V8_TARGET_ARCH_PPC
+typedef RegExpMacroAssemblerPPC ArchRegExpMacroAssembler;
+#elif V8_TARGET_ARCH_S390
 typedef RegExpMacroAssemblerPPC ArchRegExpMacroAssembler;
 #elif V8_TARGET_ARCH_MIPS
 typedef RegExpMacroAssemblerMIPS ArchRegExpMacroAssembler;

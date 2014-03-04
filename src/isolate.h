@@ -97,6 +97,7 @@ class DebuggerAgent;
 #if defined(NATIVE_SIMULATION) || \
     !defined(__arm__) && defined(V8_TARGET_ARCH_ARM) || \
     !defined(__PPC__) && defined(V8_TARGET_ARCH_PPC) || \
+    /*!defined(__s390__) &&*/ defined(V8_TARGET_ARCH_S390) || \
     !defined(__mips__) && defined(V8_TARGET_ARCH_MIPS)
 class Redirection;
 class Simulator;
@@ -259,7 +260,7 @@ class ThreadLocalTop BASE_EMBEDDED {
 
 #ifdef USE_SIMULATOR
 #if defined(V8_TARGET_ARCH_ARM) || defined(V8_TARGET_ARCH_PPC) || \
-    defined(V8_TARGET_ARCH_MIPS)
+    defined(V8_TARGET_ARCH_MIPS)|| defined(V8_TARGET_ARCH_S390)
   Simulator* simulator_;
 #endif
 #endif  // USE_SIMULATOR
@@ -380,6 +381,7 @@ class Isolate {
 #if defined(NATIVE_SIMULATION) || \
     !defined(__arm__) && defined(V8_TARGET_ARCH_ARM) || \
     !defined(__PPC__) && defined(V8_TARGET_ARCH_PPC) || \
+    /*!defined(__s390__) &&*/ defined(V8_TARGET_ARCH_S390) || \
     !defined(__mips__) && defined(V8_TARGET_ARCH_MIPS)
           simulator_(NULL),
 #endif
@@ -395,6 +397,7 @@ class Isolate {
 #if defined(NATIVE_SIMULATION) || \
     !defined(__arm__) && defined(V8_TARGET_ARCH_ARM) || \
     !defined(__PPC__) && defined(V8_TARGET_ARCH_PPC) || \
+    /*!defined(__s390__) &&*/ defined(V8_TARGET_ARCH_S390) || \
     !defined(__mips__) && defined(V8_TARGET_ARCH_MIPS)
     Simulator* simulator() const { return simulator_; }
     void set_simulator(Simulator* simulator) {
@@ -415,6 +418,7 @@ class Isolate {
 #if defined(NATIVE_SIMULATION) || \
     !defined(__arm__) && defined(V8_TARGET_ARCH_ARM) || \
     !defined(__PPC__) && defined(V8_TARGET_ARCH_PPC) || \
+    /*!defined(__s390__) &&*/ defined(V8_TARGET_ARCH_S390) || \
     !defined(__mips__) && defined(V8_TARGET_ARCH_MIPS)
     Simulator* simulator_;
 #endif
@@ -981,6 +985,7 @@ class Isolate {
 #if defined(NATIVE_SIMULATION) || \
     defined(V8_TARGET_ARCH_ARM) && !defined(__arm__) || \
     defined(V8_TARGET_ARCH_PPC) && !defined(__PPC__) || \
+    defined(V8_TARGET_ARCH_S390) /*&& !defined(__s390__)*/ || \
     defined(V8_TARGET_ARCH_MIPS) && !defined(__mips__)
   bool simulator_initialized() { return simulator_initialized_; }
   void set_simulator_initialized(bool initialized) {
@@ -1263,6 +1268,7 @@ class Isolate {
 #if defined(NATIVE_SIMULATION) || \
     defined(V8_TARGET_ARCH_ARM) && !defined(__arm__) || \
     defined(V8_TARGET_ARCH_PPC) && !defined(__PPC__) || \
+    defined(V8_TARGET_ARCH_S390) /*&& !defined(__s390__)*/ || \
     defined(V8_TARGET_ARCH_MIPS) && !defined(__mips__)
   bool simulator_initialized_;
   HashMap* simulator_i_cache_;
