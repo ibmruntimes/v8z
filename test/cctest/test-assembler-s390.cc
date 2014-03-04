@@ -101,7 +101,7 @@ TEST(1) {
   __ function_descriptor();
 #endif
 
-  __ mr(r4, r3);
+  __ lgr(r4, r3);
   __ lhi(r3, Operand(0, RelocInfo::NONE));
   __ b(&C);
 
@@ -143,7 +143,7 @@ TEST(2) {
   __ function_descriptor();
 #endif
 
-  __ mr(r4, r3);
+  __ lgr(r4, r3);
   __ lhi(r3, Operand(1));
   __ b(&C);
 

@@ -148,11 +148,11 @@ static void GenerateDictionaryLoad(MacroAssembler* masm,
       StringDictionary::kElementsStartIndex * kPointerSize;
   const int kDetailsOffset = kElementsStartOffset + 2 * kPointerSize;
   __ LoadP(scratch1, FieldMemOperand(scratch2, kDetailsOffset));
-  __ mr(r0, scratch2);
+  __ LoadRR(r0, scratch2);
   __ LoadSmiLiteral(scratch2, Smi::FromInt(PropertyDetails::TypeField::kMask));
   __ and_(scratch2, scratch1, scratch2, SetRC);
   __ bne(miss /*, cr0*/);
-  __ mr(scratch2, r0);
+  __ LoadRR(scratch2, r0);
 
   // Get the value at the masked, scaled index and return.
   __ LoadP(result,
@@ -202,11 +202,11 @@ static void GenerateDictionaryStore(MacroAssembler* masm,
   int kTypeAndReadOnlyMask = PropertyDetails::TypeField::kMask |
     PropertyDetails::AttributesField::encode(READ_ONLY);
   __ LoadP(scratch1, FieldMemOperand(scratch2, kDetailsOffset));
-  __ mr(r0, scratch2);
+  __ LoadRR(r0, scratch2);
   __ LoadSmiLiteral(scratch2, Smi::FromInt(kTypeAndReadOnlyMask));
   __ and_(scratch2, scratch1, scratch2, SetRC);
   __ bne(miss /*, cr0*/);
-  __ mr(scratch2, r0);
+  __ LoadRR(scratch2, r0);
 
   // Store the value at the masked, scaled index and return.
   const int kValueOffset = kElementsStartOffset + kPointerSize;
@@ -214,7 +214,7 @@ static void GenerateDictionaryStore(MacroAssembler* masm,
   __ StoreP(value, MemOperand(scratch2));
 
   // Update the write barrier. Make sure not to clobber the value.
-  __ mr(scratch1, value);
+  __ LoadRR(scratch1, value);
   __ RecordWrite(
       elements, scratch2, scratch1, kLRHasNotBeenSaved, kDontSaveFPRegs);
 }
@@ -354,7 +354,7 @@ static void GenerateFastArrayLoad(MacroAssembler* masm,
   // In case the loaded value is the_hole we have to consult GetProperty
   // to ensure the prototype chain is searched.
   __ beq(out_of_range);
-  __ mr(result, scratch2);
+  __ LoadRR(result, scratch2);
 }
 
 
@@ -529,7 +529,7 @@ void CallICBase::GenerateMiss(MacroAssembler* masm,
     __ CallStub(&stub);
 
     // Move result to r4 and leave the internal frame.
-    __ mr(r4, r3);
+    __ LoadRR(r4, r3);
   }
 
   // Check if the receiver is a global object of some sort.
@@ -636,7 +636,7 @@ void KeyedCallIC::GenerateMegamorphic(MacroAssembler* masm, int argc) {
     __ CallRuntime(Runtime::kKeyedGetProperty, 2);
     __ pop(r5);  // restore the key
   }
-  __ mr(r4, r3);
+  __ LoadRR(r4, r3);
   __ b(&do_call);
 
   __ bind(&check_string);
@@ -868,7 +868,7 @@ void KeyedLoadIC::GenerateNonStrictArguments(MacroAssembler* masm) {
   __ LoadRoot(r6, Heap::kTheHoleValueRootIndex);
   __ cmp(r5, r6);
   __ beq(&slow);
-  __ mr(r3, r5);
+  __ LoadRR(r3, r5);
   __ Ret();
   __ bind(&slow);
   GenerateMiss(masm, false);
@@ -886,8 +886,8 @@ void KeyedStoreIC::GenerateNonStrictArguments(MacroAssembler* masm) {
   MemOperand mapped_location =
       GenerateMappedArgumentsLookup(masm, r5, r4, r6, r7, r8, &notin, &slow);
   __ StoreP(r3, mapped_location);
-  __ mr(r9, r6);  // r6 is modified by GenerateMappedArgumentsLookup
-  __ mr(r22, r3);
+  __ LoadRR(r9, r6);  // r6 is modified by GenerateMappedArgumentsLookup
+  __ LoadRR(r22, r3);
   __ RecordWrite(r6, r9, r22, kLRHasNotBeenSaved, kDontSaveFPRegs);
   __ Ret();
   __ bind(&notin);
@@ -895,8 +895,8 @@ void KeyedStoreIC::GenerateNonStrictArguments(MacroAssembler* masm) {
   MemOperand unmapped_location =
       GenerateUnmappedArgumentsLookup(masm, r4, r6, r7, &slow);
   __ StoreP(r3, unmapped_location);
-  __ mr(r9, r6);  // r6 is modified by GenerateUnmappedArgumentsLookup
-  __ mr(r22, r3);
+  __ LoadRR(r9, r6);  // r6 is modified by GenerateUnmappedArgumentsLookup
+  __ LoadRR(r22, r3);
   __ RecordWrite(r6, r9, r22, kLRHasNotBeenSaved, kDontSaveFPRegs);
   __ Ret();
   __ bind(&slow);
@@ -1054,10 +1054,10 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
       ExternalReference::keyed_lookup_cache_keys(isolate);
 
   __ mov(r7, Operand(cache_keys));
-  __ mr(r0, r5);
+  __ LoadRR(r0, r5);
   __ ShiftLeftImm(r5, r6, Operand(kPointerSizeLog2 + 1));
   __ Add(r7, r7, r5);
-  __ mr(r5, r0);
+  __ LoadRR(r5, r0);
 
   for (int i = 0; i < kEntriesPerBucket - 1; i++) {
     Label try_next_entry;
@@ -1270,7 +1270,7 @@ void KeyedStoreIC::GenerateTransitionElementsSmiToDouble(MacroAssembler* masm) {
   if (!FLAG_trace_elements_transitions) {
     Label fail;
     ElementsTransitionGenerator::GenerateSmiToDouble(masm, &fail);
-    __ mr(r3, r5);
+    __ LoadRR(r3, r5);
     __ Ret();
     __ bind(&fail);
   }
@@ -1291,7 +1291,7 @@ void KeyedStoreIC::GenerateTransitionElementsDoubleToObject(
   if (!FLAG_trace_elements_transitions) {
     Label fail;
     ElementsTransitionGenerator::GenerateDoubleToObject(masm, &fail);
-    __ mr(r3, r5);
+    __ LoadRR(r3, r5);
     __ Ret();
     __ bind(&fail);
   }
@@ -1382,7 +1382,7 @@ static void KeyedStoreGenerateGenericHelper(
   __ SmiToPtrArrayOffset(scratch_value, key);
   __ StorePUX(value, MemOperand(address, scratch_value));
   // Update write barrier for the elements array address.
-  __ mr(scratch_value, value);  // Preserve the value which is returned.
+  __ LoadRR(scratch_value, value);  // Preserve the value which is returned.
   __ RecordWrite(elements,
                  address,
                  scratch_value,

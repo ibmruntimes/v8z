@@ -1463,7 +1463,7 @@ class MacroAssembler: public Assembler {
 #else
     STATIC_ASSERT(kSmiTag == 0 && kSmiShift == 1);
     if (!dst.is(src)) {
-      mr(dst, src);
+      LoadRR(dst, src);
     }
 #endif
   }
@@ -1496,7 +1496,7 @@ class MacroAssembler: public Assembler {
     } else if (kSmiShift > elementSizeLog2) {
       ShiftRightArithImm(dst, src, kSmiShift - elementSizeLog2);
     } else if (!dst.is(src)) {
-      mr(dst, src);
+      LoadRR(dst, src);
     }
   }
 

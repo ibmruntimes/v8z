@@ -2416,7 +2416,7 @@ void LCodeGen::DoReturn(LReturn* instr) {
     __ CallRuntime(Runtime::kTraceExit, 1);
   }
   int32_t sp_delta = (GetParameterCount() + 1) * kPointerSize;
-  __ mr(sp, fp);
+  __ LoadRR(sp, fp);
   __ Pop(r0, fp);
   __ mtlr(r0);
   __ Add(sp, Operand(sp_delta));
@@ -3045,11 +3045,11 @@ void LCodeGen::DoArgumentsElements(LArgumentsElements* instr) {
     // Result is the frame pointer for the frame if not adapted and for the real
     // frame below the adaptor frame if adapted.
     __ beq(&adapted);
-    __ mr(result, fp);
+    __ LoadRR(result, fp);
     __ b(&done);
 
     __ bind(&adapted);
-    __ mr(result, scratch);
+    __ LoadRR(result, scratch);
     __ bind(&done);
   }
 }
@@ -3154,7 +3154,7 @@ void LCodeGen::DoApplyArguments(LApplyArguments* instr) {
   // Push the receiver and use the register to keep the original
   // number of arguments.
   __ push(receiver);
-  __ mr(receiver, length);
+  __ LoadRR(receiver, length);
   // The arguments are at a one pointer size offset from elements.
   __ Add(elements, Operand(1 * kPointerSize));
 
@@ -3211,7 +3211,7 @@ void LCodeGen::DoThisFunction(LThisFunction* instr) {
 
 void LCodeGen::DoContext(LContext* instr) {
   Register result = ToRegister(instr->result());
-  __ mr(result, cp);
+  __ LoadRR(result, cp);
 }
 
 
@@ -3350,7 +3350,7 @@ void LCodeGen::DoDeferredMathAbsTaggedHeapNumber(LUnaryMathOperation* instr) {
 
     CallRuntimeFromDeferred(Runtime::kAllocateHeapNumber, 0, instr);
     // Set the pointer to the new heap number in tmp.
-    if (!tmp1.is(r3)) __ mr(tmp1, r3);
+    if (!tmp1.is(r3)) __ LoadRR(tmp1, r3);
     // Restore input_reg after call to runtime.
     __ LoadFromSafepointRegisterSlot(input, input);
     __ lwz(exponent, FieldMemOperand(input, HeapNumber::kExponentOffset));
@@ -4219,7 +4219,7 @@ void LCodeGen::DoTransitionElementsKind(LTransitionElementsKind* instr) {
     Register fixed_object_reg = ToRegister(instr->temp());
     ASSERT(fixed_object_reg.is(r5));
     ASSERT(new_map_reg.is(r6));
-    __ mr(fixed_object_reg, object_reg);
+    __ LoadRR(fixed_object_reg, object_reg);
     CallCode(isolate()->builtins()->TransitionElementsSmiToDouble(),
              RelocInfo::CODE_TARGET, instr);
   } else if (IsFastDoubleElementsKind(from_kind) &&
@@ -4227,7 +4227,7 @@ void LCodeGen::DoTransitionElementsKind(LTransitionElementsKind* instr) {
     Register fixed_object_reg = ToRegister(instr->temp());
     ASSERT(fixed_object_reg.is(r5));
     ASSERT(new_map_reg.is(r6));
-    __ mr(fixed_object_reg, object_reg);
+    __ LoadRR(fixed_object_reg, object_reg);
     CallCode(isolate()->builtins()->TransitionElementsDoubleToObject(),
              RelocInfo::CODE_TARGET, instr);
   } else {
@@ -4666,7 +4666,7 @@ void LCodeGen::DoDeferredTaggedToI(LTaggedToI* instr) {
            FieldMemOperand(input_reg, HeapNumber::kValueOffset));
     if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
       // preserve heap number pointer in scratch2 for minus zero check below
-      __ mr(scratch2, input_reg);
+      __ LoadRR(scratch2, input_reg);
     }
     __ EmitVFPTruncate(kRoundToZero,
                        input_reg,
@@ -5298,7 +5298,7 @@ void LCodeGen::DoRegExpLiteral(LRegExpLiteral* instr) {
   __ mov(r7, Operand(instr->hydrogen()->flags()));
   __ Push(r10, r9, r8, r7);
   CallRuntime(Runtime::kMaterializeRegExpLiteral, 4, instr);
-  __ mr(r4, r3);
+  __ LoadRR(r4, r3);
 
   __ bind(&materialized);
   int size = JSRegExp::kSize + JSRegExp::kInObjectFieldCount * kPointerSize;

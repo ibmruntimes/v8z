@@ -438,7 +438,7 @@ void StubCompiler::GenerateLoadFunctionPrototype(MacroAssembler* masm,
                                                  Register scratch2,
                                                  Label* miss_label) {
   __ TryGetFunctionPrototype(receiver, scratch1, scratch2, miss_label);
-  __ mr(r3, scratch1);
+  __ LoadRR(r3, scratch1);
   __ Ret();
 }
 
@@ -558,7 +558,7 @@ void StubCompiler::GenerateStoreField(MacroAssembler* masm,
 
     // Update the write barrier for the array address.
     // Pass the now unused name_reg as a scratch register.
-    __ mr(name_reg, r3);
+    __ LoadRR(name_reg, r3);
     __ RecordWriteField(receiver_reg,
                         offset,
                         name_reg,
@@ -578,7 +578,7 @@ void StubCompiler::GenerateStoreField(MacroAssembler* masm,
 
     // Update the write barrier for the array address.
     // Ok to clobber receiver_reg and name_reg, since we return.
-    __ mr(name_reg, r3);
+    __ LoadRR(name_reg, r3);
     __ RecordWriteField(scratch1,
                         offset,
                         name_reg,
@@ -1234,7 +1234,7 @@ void StubCompiler::GenerateLoadCallback(Handle<JSObject> object,
   // Build AccessorInfo::args_ list on the stack and push property name below
   // the exit frame to make GC aware of them and store pointers to them.
   __ push(receiver);
-  __ mr(scratch2, sp);  // ip = AccessorInfo::args_
+  __ LoadRR(scratch2, sp);  // ip = AccessorInfo::args_
   if (heap()->InNewSpace(callback->data())) {
     __ Move(scratch3, callback);
     __ LoadP(scratch3, FieldMemOperand(scratch3, AccessorInfo::kDataOffset));
@@ -1275,8 +1275,8 @@ void StubCompiler::GenerateLoadCallback(Handle<JSObject> object,
   Register arg0 = (alloc_return_buf ? r4 : r3);
   Register arg1 = (alloc_return_buf ? r5 : r4);
 
-  __ mr(arg1, scratch2);  // Saved in case scratch2 == arg0.
-  __ mr(arg0, sp);  // arg0 = Handle<String>
+  __ LoadRR(arg1, scratch2);  // Saved in case scratch2 == arg0.
+  __ LoadRR(arg0, sp);  // arg0 = Handle<String>
 
   FrameScope frame_scope(masm(), StackFrame::MANUAL);
   __ EnterExitFrame(false, kApiStackSpace);
@@ -1661,7 +1661,7 @@ Handle<Code> CallStubCompiler::CompileArrayPushCall(
                                                r6,
                                                r10,
                                                &try_holey_map);
-        __ mr(r5, receiver);
+        __ LoadRR(r5, receiver);
         ElementsTransitionGenerator::
             GenerateMapChangeElementsTransition(masm());
         __ b(&fast_object);
@@ -1672,7 +1672,7 @@ Handle<Code> CallStubCompiler::CompileArrayPushCall(
                                                r6,
                                                r10,
                                                &call_builtin);
-        __ mr(r5, receiver);
+        __ LoadRR(r5, receiver);
         ElementsTransitionGenerator::
             GenerateMapChangeElementsTransition(masm());
         __ bind(&fast_object);
@@ -2188,7 +2188,7 @@ Handle<Code> CallStubCompiler::CompileMathFloorCall(
 
   // if resulting conversion is negative, invert for bit tests
   __ TestSignBit(r3, r0);
-  __ mr(r0, r3);
+  __ LoadRR(r0, r3);
   __ beq(&positive /*, cr0*/);
   __ neg(r0, r3);
   __ bind(&positive);
@@ -2533,7 +2533,7 @@ Handle<Code> CallStubCompiler::CompileCallInterceptor(Handle<JSObject> object,
                    &miss);
 
   // Move returned value, the function to call, to r4.
-  __ mr(r4, r3);
+  __ LoadRR(r4, r3);
   // Restore receiver.
   __ LoadP(r3, MemOperand(sp, argc * kPointerSize), r0);
 
@@ -3049,7 +3049,7 @@ Handle<Code> LoadStubCompiler::CompileLoadGlobal(
     __ beq(&miss);
   }
 
-  __ mr(r3, r7);
+  __ LoadRR(r3, r7);
   Counters* counters = masm()->isolate()->counters();
   __ IncrementCounter(counters->named_load_global_stub(), 1, r4, r6);
   __ Ret();
@@ -3451,7 +3451,7 @@ Handle<Code> ConstructStubCompiler::CompileConstructStub(
   // r7: JSObject (not tagged)
   // r10: undefined
   __ LoadRoot(r9, Heap::kEmptyFixedArrayRootIndex);
-  __ mr(r8, r7);
+  __ LoadRR(r8, r7);
   ASSERT_EQ(0 * kPointerSize, JSObject::kMapOffset);
   __ StoreP(r5, MemOperand(r8));
   __ Add(r8, Operand(kPointerSize));
@@ -3515,8 +3515,8 @@ Handle<Code> ConstructStubCompiler::CompileConstructStub(
   // r3: argc
   // r7: JSObject (not tagged)
   // Move argc to r4 and the JSObject to return to r3 and tag it.
-  __ mr(r4, r3);
-  __ mr(r3, r7);
+  __ LoadRR(r4, r3);
+  __ LoadRR(r3, r7);
   __ ori(r3, r3, Operand(kHeapObjectTag));
 
   // r3: JSObject
@@ -3622,7 +3622,7 @@ static void GenerateSmiKeyCheck(MacroAssembler* masm,
 #else
   __ SmiTagCheckOverflow(scratch1, scratch0, r0);
   __ BranchOnOverflow(fail);
-  __ mr(key, scratch1);
+  __ LoadRR(key, scratch1);
 #endif
   __ bind(&key_ok);
 }
@@ -3742,7 +3742,7 @@ void KeyedLoadStubCompiler::GenerateLoadExternalArray(
     __ LoadRoot(r9, Heap::kHeapNumberMapRootIndex);
     __ AllocateHeapNumber(r8, r6, r7, r9, &slow);
     // Now we can use r3 for the result as key is not needed any more.
-    __ mr(r3, r8);
+    __ LoadRR(r3, r8);
 
     FloatingPointHelper::ConvertIntToDouble(
       masm, value, d0);
@@ -3766,7 +3766,7 @@ void KeyedLoadStubCompiler::GenerateLoadExternalArray(
     // registers - also when jumping due to exhausted young space.
     __ LoadRoot(r9, Heap::kHeapNumberMapRootIndex);
     __ AllocateHeapNumber(r8, r6, r7, r9, &slow);
-    __ mr(r3, r8);
+    __ LoadRR(r3, r8);
 
     FloatingPointHelper::ConvertUnsignedIntToDouble(
        masm, value, d0);
@@ -3782,7 +3782,7 @@ void KeyedLoadStubCompiler::GenerateLoadExternalArray(
     __ LoadRoot(r9, Heap::kHeapNumberMapRootIndex);
     __ AllocateHeapNumber(r5, r6, r7, r9, &slow);
     __ stfd(d0, FieldMemOperand(r5, HeapNumber::kValueOffset));
-    __ mr(r3, r5);
+    __ LoadRR(r3, r5);
     __ Ret();
 
   } else if (elements_kind == EXTERNAL_DOUBLE_ELEMENTS) {
@@ -3792,7 +3792,7 @@ void KeyedLoadStubCompiler::GenerateLoadExternalArray(
     __ LoadRoot(r9, Heap::kHeapNumberMapRootIndex);
     __ AllocateHeapNumber(r5, r6, r7, r9, &slow);
     __ stfd(d0, FieldMemOperand(r5, HeapNumber::kValueOffset));
-    __ mr(r3, r5);
+    __ LoadRR(r3, r5);
     __ Ret();
 
   } else {
@@ -3947,7 +3947,7 @@ void KeyedStoreStubCompiler::GenerateStoreExternalArray(
         __ stfdx(d0, MemOperand(r6, r8));
       } else {
         // Hoisted load.
-        __ mr(r8, value);
+        __ LoadRR(r8, value);
         __ lfd(d0, FieldMemOperand(r8, HeapNumber::kValueOffset));
 
         __ EmitECMATruncate(r8, d0, d1, r10, r7, r9);
@@ -4048,7 +4048,7 @@ void KeyedLoadStubCompiler::GenerateLoadFastElement(MacroAssembler* masm) {
   __ LoadRoot(ip, Heap::kTheHoleValueRootIndex);
   __ cmp(r7, ip);
   __ beq(&miss_force_generic);
-  __ mr(r3, r7);
+  __ LoadRR(r3, r7);
   __ Ret();
 
   __ bind(&miss_force_generic);
@@ -4123,7 +4123,7 @@ void KeyedLoadStubCompiler::GenerateLoadFastDoubleElement(
   __ st(scratch, FieldMemOperand(heap_number_reg,
                                   HeapNumber::kMantissaOffset));
 
-  __ mr(r3, heap_number_reg);
+  __ LoadRR(r3, heap_number_reg);
   __ Ret();
 
   __ bind(&slow_allocate_heapnumber);
@@ -4209,7 +4209,7 @@ void KeyedStoreStubCompiler::GenerateStoreFastElement(
             Operand(FixedArray::kHeaderSize - kHeapObjectTag));
     __ SmiToPtrArrayOffset(scratch2, key_reg);
     __ StorePUX(value_reg, MemOperand(scratch, scratch2));
-    __ mr(receiver_reg, value_reg);
+    __ LoadRR(receiver_reg, value_reg);
     __ RecordWrite(elements_reg,  // Object.
                    scratch,       // Address.
                    receiver_reg,  // Value.

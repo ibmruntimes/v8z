@@ -228,7 +228,7 @@ void RegExpMacroAssemblerPPC::CheckAtStart(Label* on_at_start) {
 
   // If we did, are we still at the start of the input?
   __ LoadP(r4, MemOperand(frame_pointer(), kInputStart));
-  __ mr(r0, current_input_offset());
+  __ LoadRR(r0, current_input_offset());
   __ Add(r3, end_of_input_address(), r0);
   __ cmp(r4, r3);
   BranchOrBacktrack(eq, on_at_start);
@@ -400,9 +400,9 @@ void RegExpMacroAssemblerPPC::CheckNotBackReferenceIgnoreCase(
     // Address of start of capture.
     __ Add(r3, r3, end_of_input_address());
     // Length of capture.
-    __ mr(r5, r4);
+    __ LoadRR(r5, r4);
     // Save length in callee-save register for use on return.
-    __ mr(r25, r4);
+    __ LoadRR(r25, r4);
     // Address of current input position.
     __ Add(r4, current_input_offset(), end_of_input_address());
     // Isolate.
@@ -856,7 +856,7 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
           __ LoadP(r6, register_location(i + 1), r0);
           if (i == 0 && global_with_zero_length_check()) {
             // Keep capture start in r25 for the zero-length check later.
-            __ mr(r25, r5);
+            __ LoadRR(r25, r5);
           }
           if (mode_ == UC16) {
             __ ShiftRightArithImm(r5, r5, 1);
@@ -926,7 +926,7 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
 
     __ bind(&return_r3);
     // Skip sp past regexp registers and local variables..
-    __ mr(sp, frame_pointer());
+    __ LoadRR(sp, frame_pointer());
     // Restore registers r25..r31 and return (restoring lr to pc).
     __ MultiPop(registers_to_retain);
     __ pop(r0);
@@ -965,7 +965,7 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
       // Call GrowStack(backtrack_stackpointer(), &stack_base)
       static const int num_arguments = 3;
       __ PrepareCallCFunction(num_arguments, r3);
-      __ mr(r3, backtrack_stackpointer());
+      __ LoadRR(r3, backtrack_stackpointer());
       __ Add(r4, frame_pointer(), Operand(kStackHighEnd));
       __ mov(r5, Operand(ExternalReference::isolate_address()));
       ExternalReference grow_stack =
@@ -976,7 +976,7 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
       __ cmpi(r3, Operand::Zero());
       __ beq(&exit_with_exception);
       // Otherwise use return value as new stack pointer.
-      __ mr(backtrack_stackpointer(), r3);
+      __ LoadRR(backtrack_stackpointer(), r3);
       // Restore saved registers and continue.
       SafeReturn();
     }
@@ -1165,7 +1165,7 @@ void RegExpMacroAssemblerPPC::CallCheckStackGuardState(Register scratch) {
   static const int num_arguments = 3;
   __ PrepareCallCFunction(num_arguments, scratch);
   // RegExp code frame pointer.
-  __ mr(r5, frame_pointer());
+  __ LoadRR(r5, frame_pointer());
   // Code* of self.
   __ mov(r4, Operand(masm_->CodeObject()));
   // r3 becomes return address pointer.

@@ -170,7 +170,7 @@ void LGapResolver::BreakCycle(int index) {
   LOperand* source = moves_[index].source();
   saved_destination_ = moves_[index].destination();
   if (source->IsRegister()) {
-    __ mr(kSavedValueRegister, cgen_->ToRegister(source));
+    __ LoadRR(kSavedValueRegister, cgen_->ToRegister(source));
   } else if (source->IsStackSlot()) {
     __ LoadP(kSavedValueRegister, cgen_->ToMemOperand(source));
   } else if (source->IsDoubleRegister()) {
@@ -191,7 +191,7 @@ void LGapResolver::RestoreValue() {
 
   // Spilled value is in kSavedValueRegister or kSavedDoubleValueRegister.
   if (saved_destination_->IsRegister()) {
-    __ mr(cgen_->ToRegister(saved_destination_), kSavedValueRegister);
+    __ LoadRR(cgen_->ToRegister(saved_destination_), kSavedValueRegister);
   } else if (saved_destination_->IsStackSlot()) {
     __ StoreP(kSavedValueRegister, cgen_->ToMemOperand(saved_destination_));
   } else if (saved_destination_->IsDoubleRegister()) {
@@ -217,7 +217,7 @@ void LGapResolver::EmitMove(int index) {
   if (source->IsRegister()) {
     Register source_register = cgen_->ToRegister(source);
     if (destination->IsRegister()) {
-      __ mr(cgen_->ToRegister(destination), source_register);
+      __ LoadRR(cgen_->ToRegister(destination), source_register);
     } else {
       ASSERT(destination->IsStackSlot());
       __ StoreP(source_register, cgen_->ToMemOperand(destination));

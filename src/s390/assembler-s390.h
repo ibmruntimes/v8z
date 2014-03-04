@@ -1760,7 +1760,7 @@ SS2_FORM(zap);
   void cmpli(Register src1, const Operand& src2, CRegister cr = cr7);
   void lhi(Register dst, const Operand& imm);
   void lis(Register dst, const Operand& imm);
-  void mr(Register dst, Register src);
+  //  void LoadRR(Register dst, Register src);
 
   void lbz(Register dst, const MemOperand& src);
   void lbzx(Register dst, const MemOperand& src);

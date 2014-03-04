@@ -1215,7 +1215,7 @@ void Deoptimizer::EntryGenerator::Generate() {
 
   // Restore the registers from the last output frame.
   ASSERT(!(ip.bit() & restored_regs));
-  __ mr(ip, r5);
+  __ LoadRR(ip, r5);
   for (int i = kNumberOfRegisters - 1; i >= 0; i--) {
     int offset = (i * kPointerSize) + FrameDescription::registers_offset();
     if ((restored_regs & (1 << i)) != 0) {

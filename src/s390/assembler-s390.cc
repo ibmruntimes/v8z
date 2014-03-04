@@ -929,13 +929,6 @@ void  Assembler::lis(Register dst, const Operand& imm) {
   d_form(ADDIS, dst, r0, imm.imm_, true);
 }
 
-// Pseudo op - move register
-void Assembler::mr(Register dst, Register src) {
-  // LoadRR(dst, src);
-  // actually or(dst, src, src)
-  orx(dst, src, src);
-}
-
 void Assembler::lbz(Register dst, const MemOperand &src) {
   ASSERT(!src.baseRegister.is(r0));
   d_form(LBZ, dst, src.rb(), src.offset(), true);

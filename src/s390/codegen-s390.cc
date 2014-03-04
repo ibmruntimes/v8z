@@ -347,7 +347,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   __ st(r4, FieldMemOperand(r5, HeapNumber::kValueOffset));
 #endif
 #endif
-  __ mr(r3, r6);
+  __ LoadRR(r3, r6);
   __ StoreP(r5, MemOperand(r6));
   __ Add(r6, Operand(kPointerSize));
   __ RecordWrite(r9,
