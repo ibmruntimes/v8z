@@ -237,6 +237,11 @@ int Decoder::FormatRegister(Instruction* instr, const char* format) {
     int reg = rreinstr->R2Value();
     PrintRegister(reg);
     return 2;
+  } else if (format[1] == '7') {  // 'r6: register resides in bit 32-35
+    SSInstruction* ssinstr = reinterpret_cast<SSInstruction*>(instr);
+    int reg = ssinstr->B2Value();
+    PrintRegister(reg);
+    return 2;
   }
 
   UNREACHABLE();
@@ -420,6 +425,18 @@ int Decoder::FormatDisplacement(Instruction* instr, const char* format) {
   } else if (format[1] == '2') {  // displacement in 20-39
     RXYInstruction* rxyinstr = reinterpret_cast<RXYInstruction*>(instr);
     int32_t value = rxyinstr->D2Value();
+    out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
+                                    "%d", value);
+    return 2;
+  } else if (format[1] == '4') {  // SS displacement 2 36-47
+    SSInstruction* ssInstr = reinterpret_cast<SSInstruction*>(instr);
+    uint16_t value = ssInstr->D2Value();
+    out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
+                                    "%d", value);
+    return 2;
+  } else if (format[1] == '3') {  // SS displacement 1 20 - 32
+    SSInstruction* ssInstr = reinterpret_cast<SSInstruction*>(instr);
+    uint16_t value = ssInstr->D1Value();
     out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
                                     "%d", value);
     return 2;
@@ -1249,6 +1266,7 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
     case STY: Format(instr, "sty\t'r1,'d2('r2,'r3)"); break;
     case STG: Format(instr, "stg\t'r1,'d2('r2,'r3)"); break;
     case ICY: Format(instr, "icy\t'r1,'d2('r2,'r3)"); break;
+    case MVC: Format(instr, "mvc\t'd3('i3,'r3),'d4('r7)"); break;
     default:
       return false;
   }
