@@ -3578,7 +3578,7 @@ void Assembler::lmg(Register r1, Register r2, const MemOperand& src) {
 // Move charactor - mem to mem operation
 void Assembler::mvc(const MemOperand& opnd1, const MemOperand& opnd2,
                     Length length) {
-    ss_form(MVC, length, opnd1.getBaseRegister(),
+    ss_form(MVC, length-1, opnd1.getBaseRegister(),
          opnd1.getDisplacement(), opnd2.getBaseRegister(),
          opnd2.getDisplacement());
 }
