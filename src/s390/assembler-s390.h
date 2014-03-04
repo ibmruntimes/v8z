@@ -2022,9 +2022,15 @@ SS2_FORM(zap);
   uint64_t instr_at(int pos) {
     return Instruction::InstructionBits(buffer_ + pos);
   }
+  // @TODO This method is deprecated and should be removed.
   void instr_at_put(int pos, Instr instr) {
     *reinterpret_cast<Instr*>(buffer_ + pos) = instr;
   }
+  template<typename T>
+  void instr_at_put(int pos, T instr) {
+    Instruction::SetInstructionBits<T>(buffer_ + pos, instr);
+  }
+
   static Instr instr_at(byte* pc) { return *reinterpret_cast<Instr*>(pc); }
   static void instr_at_put(byte* pc, Instr instr) {
     *reinterpret_cast<Instr*>(pc) = instr;
