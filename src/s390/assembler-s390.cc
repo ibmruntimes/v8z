@@ -429,18 +429,18 @@ const int kEndOfChain = -4;
 
 
 int Assembler::target_at(int pos)  {
-  Instr instr = instr_at(pos);
+  SixByteInstr instr = instr_at(pos);
   // check which type of branch this is 16 or 26 bit offset
-  uint32_t opcode = (instr & 0xff0f0000);
+  Opcode opcode = Instruction::S390OpcodeValue(buffer_ + pos);
 
-  if (0xa7040000 == opcode) {  // BRC
+  if (BRC == opcode) {  // BRC
     int16_t imm16 = SIGN_EXT_IMM16((instr & kImm16Mask));
     imm16 &= ~(kLKMask);
     if (imm16 == 0)
       return kEndOfChain;
     return pos + imm16;
-  } else if (0xc0040000 == opcode) {  // BRCL
-    int32_t imm32 = instr_at(pos + 2);
+  } else if (BRCL == opcode) {  // BRCL
+    int32_t imm32 = instr & (~static_cast<uint64_t>(0xffffffff));
     imm32 &= ~(kLKMask);
     if (imm32 == 0)
       return kEndOfChain;
@@ -453,18 +453,19 @@ int Assembler::target_at(int pos)  {
 }
 
 void Assembler::target_at_put(int pos, int target_pos) {
-  Instr instr = instr_at(pos);
-  uint32_t opcode = (instr & 0xff0f0000);
+  SixByteInstr instr = instr_at(pos);
+  Opcode opcode = Instruction::S390OpcodeValue(buffer_ + pos);
 
-  if (0xa7040000 == opcode) {  // BRC
+  if (BRC == opcode) {  // BRC
     int16_t imm16 = target_pos - pos;
     instr &= (~0xffff);
     ASSERT(is_int16(imm16));
     instr_at_put<FourByteInstr>(pos, instr | (imm16 >> 1));
     return;
-  } else if (0xc0040000 == opcode) {   // BRCL
+  } else if (BRCL == opcode) {   // BRCL
     int32_t imm32 = target_pos - pos;
-    instr_at_put(pos + 2, (imm32 >> 1));
+    instr &= (~static_cast<uint64_t>(0xffffffff));
+    instr_at_put<SixByteInstr>(pos, instr | (imm32 >> 1));
     return;
   }
 
@@ -472,13 +473,12 @@ void Assembler::target_at_put(int pos, int target_pos) {
 }
 
 int Assembler::max_reach_from(int pos) {
-  Instr instr = instr_at(pos);
-  uint32_t opcode = instr & 0xff0f0000;
+  Opcode opcode = Instruction::S390OpcodeValue(buffer_ + pos);
 
   // check which type of branch this is 16 or 26 bit offset
-  if (0xa7040000 == opcode) {  // BRC
+  if (BRC == opcode) {  // BRC
     return 16;
-  } else if (0xc0040000 == opcode) {   // BRCL
+  } else if (BRCL == opcode) {   // BRCL
     return 32;
   }
 
