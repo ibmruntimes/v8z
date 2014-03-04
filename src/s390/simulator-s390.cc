@@ -2880,6 +2880,7 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       break;
     }
     default:
+      UNREACHABLE();
       return false;
       break;
   }
@@ -3094,6 +3095,7 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       break;
     }
     default:
+      UNREACHABLE();
       return false;
   }
   return true;
@@ -3324,6 +3326,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       break;
     }
     default:
+      UNREACHABLE();
       return false;
   }
   return true;
