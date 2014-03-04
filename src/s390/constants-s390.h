@@ -1462,9 +1462,10 @@ class Instruction {
     if (sizeof(T) <= 4) {
       *reinterpret_cast<T*>(instr) = value;
     } else {
-      *reinterpret_cast<uint32_t*>(instr) = static_cast<uint32_t>(value >> 16);
+      uint64_t orig_value = static_cast<uint64_t>(value);
+      *reinterpret_cast<uint32_t*>(instr) = static_cast<uint32_t>(value);
       *reinterpret_cast<uint16_t*>(instr + 4) =
-                                         static_cast<uint16_t>(value & 0xFFFF);
+                           static_cast<uint16_t>((orig_value >> 32) & 0xFFFF);
     }
   }
 
