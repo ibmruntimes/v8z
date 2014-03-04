@@ -654,10 +654,8 @@ class MacroAssembler: public Assembler {
 
   void AddSmiLiteral(Register dst, Register src, Smi *smi, Register scratch);
   void SubSmiLiteral(Register dst, Register src, Smi *smi, Register scratch);
-  void CmpSmiLiteral(Register src1, Smi *smi, Register scratch,
-                     CRegister cr = cr7);
-  void CmplSmiLiteral(Register src1, Smi *smi, Register scratch,
-                      CRegister cr = cr7);
+  void CmpSmiLiteral(Register src1, Smi *smi, Register scratch);
+  void CmplSmiLiteral(Register src1, Smi *smi, Register scratch);
   void AndSmiLiteral(Register dst, Register src, Smi *smi, Register scratch,
                      RCBit rc = LeaveRC);
 

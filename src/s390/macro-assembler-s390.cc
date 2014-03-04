@@ -4249,23 +4249,23 @@ void MacroAssembler::Xor(Register rb, Register rs, const Operand& rx,
   }
 }
 
-void MacroAssembler::CmpSmiLiteral(Register src1, Smi *smi, Register scratch,
-                                   CRegister cr) {
+void MacroAssembler::CmpSmiLiteral(Register src1, Smi *smi, Register scratch) {
 #if V8_TARGET_ARCH_S390X
   LoadSmiLiteral(scratch, smi);
-  cmp(src1, scratch, cr);
+  cg(src1, scratch);
 #else
-  Cmpi(src1, Operand(smi), scratch, cr);
+  // CFI takes 32-bit immediate.
+  cfi(src1, Operand(smi));
 #endif
 }
 
-void MacroAssembler::CmplSmiLiteral(Register src1, Smi *smi, Register scratch,
-                                   CRegister cr) {
+void MacroAssembler::CmplSmiLiteral(Register src1, Smi *smi, Register scratch) {
 #if V8_TARGET_ARCH_S390X
   LoadSmiLiteral(scratch, smi);
-  cmpl(src1, scratch, cr);
+  clg(src1, scratch);
 #else
-  Cmpli(src1, Operand(smi), scratch, cr);
+  // CLFI takes 32-bit immediate
+  clfi(src1, Operand(smi));
 #endif
 }
 
