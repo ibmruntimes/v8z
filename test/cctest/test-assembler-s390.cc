@@ -1208,6 +1208,7 @@ TEST(14) {
   __ iilf(r15, Operand(123456789));
   __ iihf(r15, Operand(-123456789));
   __ mvc(MemOperand(r0, 123), MemOperand(r4, 567), 89);
+  __ sll(r15, Operand(10));
 
   v8::internal::byte * bufPos = assm.buffer_pos();
   ::printf("buffer position = %p", bufPos);
