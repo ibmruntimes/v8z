@@ -215,8 +215,18 @@ int Decoder::FormatRegister(Instruction* instr, const char* format) {
   } else if (format[1] == '2') {  // 'r2: register resides in bit 12-15
     RRInstruction* rrinstr = reinterpret_cast<RRInstruction*>(instr);
     int reg = rrinstr->R2Value();
-    PrintRegister(reg);
-    return 2;
+    // indicating it is a r0 for displacement, in which case the offset
+    // should be 0.
+    if (format[2] == 'd') {
+      if (reg == 0)
+        Print("0");
+      else
+        PrintRegister(reg);
+      return 3;
+    } else {
+      PrintRegister(reg);
+      return 2;
+    }
   } else if (format[1] == '3') {  // 'r3: register resides in bit 16-19
     RSInstruction* rsinstr = reinterpret_cast<RSInstruction*>(instr);
     int reg = rsinstr->B2Value();
@@ -1178,30 +1188,30 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case SLGR: Format(instr, "slgr\t'r5,'r6"); break;
       case LLHR: Format(instr, "llhr\t'r5,'r6"); break;
       case LLGHR: Format(instr, "llghr\t'r5,'r6"); break;
-      case A: Format(instr, "a\t'r1,'d1('r2,'r3)"); break;
-      case S: Format(instr, "s\t'r1,'d1('r2,'r3)"); break;
-      case M: Format(instr, "m\t'r1,'d1('r2,'r3)"); break;
-      case D: Format(instr, "d\t'r1,'d1('r2,'r3)"); break;
-      case O: Format(instr, "o\t'r1,'d1('r2,'r3)"); break;
-      case L: Format(instr, "l\t'r1,'d1('r2,'r3)"); break;
-      case C: Format(instr, "c\t'r1,'d1('r2,'r3)"); break;
-      case AH: Format(instr, "ah\t'r1,'d1('r2,'r3)"); break;
-      case SH: Format(instr, "sh\t'r1,'d1('r2,'r3)"); break;
-      case MH: Format(instr, "mh\t'r1,'d1('r2,'r3)"); break;
-      case AHY: Format(instr, "ahy\t'r1,'d1('r2,'r3)"); break;
-      case SHY: Format(instr, "shy\t'r1,'d1('r2,'r3)"); break;
-      case LGH: Format(instr, "lgh\t'r1,'d1('r2,'r3)"); break;
-      case AL: Format(instr, "al\t'r1,'d1('r2,'r3)"); break;
-      case SL: Format(instr, "sl\t'r1,'d1('r2,'r3)"); break;
-      case LA: Format(instr, "la\t'r1,'d1('r2,'r3)"); break;
-      case LB: Format(instr, "lb\t'r1,'d1('r2,'r3)"); break;
-      case CH: Format(instr, "ch\t'r1,'d1('r2,'r3)"); break;
-      case CL: Format(instr, "cl\t'r1,'d1('r2,'r3)"); break;
-      case BC: Format(instr, "bc\t'm1,'d1('r2,'r3)"); break;
-      case BCT: Format(instr, "bct\t'r1,'d1('r2,'r3)"); break;
-      case ST: Format(instr, "st\t'r1,'d1('r2,'r3)"); break;
-      case STC: Format(instr, "stc\t'r1,'d1('r2,'r3)"); break;
-      case IC_z: Format(instr, "ic\t'r1,'d1('r2,'r3)"); break;
+      case A: Format(instr, "a\t'r1,'d1('r2d,'r3)"); break;
+      case S: Format(instr, "s\t'r1,'d1('r2d,'r3)"); break;
+      case M: Format(instr, "m\t'r1,'d1('r2d,'r3)"); break;
+      case D: Format(instr, "d\t'r1,'d1('r2d,'r3)"); break;
+      case O: Format(instr, "o\t'r1,'d1('r2d,'r3)"); break;
+      case L: Format(instr, "l\t'r1,'d1('r2d,'r3)"); break;
+      case C: Format(instr, "c\t'r1,'d1('r2d,'r3)"); break;
+      case AH: Format(instr, "ah\t'r1,'d1('r2d,'r3)"); break;
+      case SH: Format(instr, "sh\t'r1,'d1('r2d,'r3)"); break;
+      case MH: Format(instr, "mh\t'r1,'d1('r2d,'r3)"); break;
+      case AHY: Format(instr, "ahy\t'r1,'d1('r2d,'r3)"); break;
+      case SHY: Format(instr, "shy\t'r1,'d1('r2d,'r3)"); break;
+      case LGH: Format(instr, "lgh\t'r1,'d1('r2d,'r3)"); break;
+      case AL: Format(instr, "al\t'r1,'d1('r2d,'r3)"); break;
+      case SL: Format(instr, "sl\t'r1,'d1('r2d,'r3)"); break;
+      case LA: Format(instr, "la\t'r1,'d1('r2d,'r3)"); break;
+      case LB: Format(instr, "lb\t'r1,'d1('r2d,'r3)"); break;
+      case CH: Format(instr, "ch\t'r1,'d1('r2d,'r3)"); break;
+      case CL: Format(instr, "cl\t'r1,'d1('r2d,'r3)"); break;
+      case BC: Format(instr, "bc\t'm1,'d1('r2d,'r3)"); break;
+      case BCT: Format(instr, "bct\t'r1,'d1('r2d,'r3)"); break;
+      case ST: Format(instr, "st\t'r1,'d1('r2d,'r3)"); break;
+      case STC: Format(instr, "stc\t'r1,'d1('r2d,'r3)"); break;
+      case IC_z: Format(instr, "ic\t'r1,'d1('r2d,'r3)"); break;
     default:
       return false;
   }
@@ -1235,37 +1245,37 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
     case LMG: Format(instr, "lmg\t'r1,'r2,'d2('r3)"); break;
     case STMY: Format(instr, "stmy\t'r1,'r2,'d2('r3)"); break;
     case STMG: Format(instr, "stmg\t'r1,'r2,'d2('r3)"); break;
-    case LT: Format(instr, "lt\t'r1,'d2('r2,'r3)"); break;
-    case LTG: Format(instr, "ltg\t'r1,'d2('r2,'r3)"); break;
-    case ML: Format(instr, "ml\t'r1,'d2('r2,'r3)"); break;
-    case AY: Format(instr, "ay\t'r1,'d2('r2,'r3)"); break;
-    case SY: Format(instr, "sy\t'r1,'d2('r2,'r3)"); break;
-    case NY: Format(instr, "ny\t'r1,'d2('r2,'r3)"); break;
-    case OY: Format(instr, "oy\t'r1,'d2('r2,'r3)"); break;
-    case XY: Format(instr, "xy\t'r1,'d2('r2,'r3)"); break;
-    case CY: Format(instr, "cy\t'r1,'d2('r2,'r3)"); break;
-    case AG: Format(instr, "ag\t'r1,'d2('r2,'r3)"); break;
-    case SG: Format(instr, "sg\t'r1,'d2('r2,'r3)"); break;
-    case NG: Format(instr, "ng\t'r1,'d2('r2,'r3)"); break;
-    case OG: Format(instr, "og\t'r1,'d2('r2,'r3)"); break;
-    case XG: Format(instr, "xg\t'r1,'d2('r2,'r3)"); break;
-    case CG: Format(instr, "cg\t'r1,'d2('r2,'r3)"); break;
-    case LG: Format(instr, "lg\t'r1,'d2('r2,'r3)"); break;
-    case LY: Format(instr, "ly\t'r1,'d2('r2,'r3)"); break;
-    case ALY: Format(instr, "aly\t'r1,'d2('r2,'r3)"); break;
-    case ALG: Format(instr, "alg\t'r1,'d2('r2,'r3)"); break;
-    case SLY: Format(instr, "sly\t'r1,'d2('r2,'r3)"); break;
-    case LLH: Format(instr, "llh\t'r1,'d2('r2,'r3)"); break;
-    case LLGH: Format(instr, "llgh\t'r1,'d2('r2,'r3)"); break;
-    case LAY: Format(instr, "lay\t'r1,'d2('r2,'r3)"); break;
-    case LGB: Format(instr, "lgb\t'r1,'d2('r2,'r3)"); break;
-    case CHY: Format(instr, "chy\t'r1,'d2('r2,'r3)"); break;
-    case CLY: Format(instr, "cly\t'r1,'d2('r2,'r3)"); break;
-    case CLG: Format(instr, "clg\t'r1,'d2('r2,'r3)"); break;
-    case BCTG: Format(instr, "bctg\t'r1,'d2('r2,'r3)"); break;
-    case STY: Format(instr, "sty\t'r1,'d2('r2,'r3)"); break;
-    case STG: Format(instr, "stg\t'r1,'d2('r2,'r3)"); break;
-    case ICY: Format(instr, "icy\t'r1,'d2('r2,'r3)"); break;
+    case LT: Format(instr, "lt\t'r1,'d2('r2d,'r3)"); break;
+    case LTG: Format(instr, "ltg\t'r1,'d2('r2d,'r3)"); break;
+    case ML: Format(instr, "ml\t'r1,'d2('r2d,'r3)"); break;
+    case AY: Format(instr, "ay\t'r1,'d2('r2d,'r3)"); break;
+    case SY: Format(instr, "sy\t'r1,'d2('r2d,'r3)"); break;
+    case NY: Format(instr, "ny\t'r1,'d2('r2d,'r3)"); break;
+    case OY: Format(instr, "oy\t'r1,'d2('r2d,'r3)"); break;
+    case XY: Format(instr, "xy\t'r1,'d2('r2d,'r3)"); break;
+    case CY: Format(instr, "cy\t'r1,'d2('r2d,'r3)"); break;
+    case AG: Format(instr, "ag\t'r1,'d2('r2d,'r3)"); break;
+    case SG: Format(instr, "sg\t'r1,'d2('r2d,'r3)"); break;
+    case NG: Format(instr, "ng\t'r1,'d2('r2d,'r3)"); break;
+    case OG: Format(instr, "og\t'r1,'d2('r2d,'r3)"); break;
+    case XG: Format(instr, "xg\t'r1,'d2('r2d,'r3)"); break;
+    case CG: Format(instr, "cg\t'r1,'d2('r2d,'r3)"); break;
+    case LG: Format(instr, "lg\t'r1,'d2('r2d,'r3)"); break;
+    case LY: Format(instr, "ly\t'r1,'d2('r2d,'r3)"); break;
+    case ALY: Format(instr, "aly\t'r1,'d2('r2d,'r3)"); break;
+    case ALG: Format(instr, "alg\t'r1,'d2('r2d,'r3)"); break;
+    case SLY: Format(instr, "sly\t'r1,'d2('r2d,'r3)"); break;
+    case LLH: Format(instr, "llh\t'r1,'d2('r2d,'r3)"); break;
+    case LLGH: Format(instr, "llgh\t'r1,'d2('r2d,'r3)"); break;
+    case LAY: Format(instr, "lay\t'r1,'d2('r2d,'r3)"); break;
+    case LGB: Format(instr, "lgb\t'r1,'d2('r2d,'r3)"); break;
+    case CHY: Format(instr, "chy\t'r1,'d2('r2d,'r3)"); break;
+    case CLY: Format(instr, "cly\t'r1,'d2('r2d,'r3)"); break;
+    case CLG: Format(instr, "clg\t'r1,'d2('r2d,'r3)"); break;
+    case BCTG: Format(instr, "bctg\t'r1,'d2('r2d,'r3)"); break;
+    case STY: Format(instr, "sty\t'r1,'d2('r2d,'r3)"); break;
+    case STG: Format(instr, "stg\t'r1,'d2('r2d,'r3)"); break;
+    case ICY: Format(instr, "icy\t'r1,'d2('r2d,'r3)"); break;
     case MVC: Format(instr, "mvc\t'd3('i3,'r3),'d4('r7)"); break;
     default:
       return false;
