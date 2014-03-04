@@ -599,7 +599,7 @@ void MacroAssembler::EnterFrame(StackFrame::Type type) {
 void MacroAssembler::LeaveFrame(StackFrame::Type type) {
   // Drop the execution stack down to the frame pointer and restore
   // the caller frame pointer and return address.
-  mr(sp, fp);
+  LoadRR(sp, fp);
   LoadP(fp, MemOperand(sp));
   LoadP(r0, MemOperand(sp, kPointerSize));
   mtlr(r0);
@@ -636,7 +636,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   // replicate ARM frame - TODO make this more closely follow PPC ABI
   mflr(r0);
   Push(r0, fp);
-  mr(fp, sp);
+  LoadRR(fp, sp);
   // Reserve room for saved entry sp and code object.
   Sub(sp, Operand(2 * kPointerSize));
 
@@ -741,7 +741,7 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles,
 #endif
 
   // Tear down the exit frame, pop the arguments, and return.
-  mr(sp, fp);
+  LoadRR(sp, fp);
   pop(fp);
   pop(r0);
   mtlr(r0);
@@ -1107,7 +1107,7 @@ void MacroAssembler::Throw(Register value) {
 
   // The exception is expected in r3.
   if (!value.is(r3)) {
-    mr(r3, value);
+    LoadRR(r3, value);
   }
   // Drop the stack pointer to the top of the top handler.
   mov(r6, Operand(ExternalReference(Isolate::kHandlerAddress, isolate())));
@@ -1146,7 +1146,7 @@ void MacroAssembler::ThrowUncatchable(Register value) {
 
   // The exception is expected in r3.
   if (!value.is(r3)) {
-    mr(r3, value);
+    LoadRR(r3, value);
   }
   // Drop the stack pointer to the top of the top stack handler.
   mov(r6, Operand(ExternalReference(Isolate::kHandlerAddress, isolate())));
@@ -1226,7 +1226,7 @@ void MacroAssembler::CheckAccessGlobalProxy(Register holder_reg,
     // Cannot use ip as a temporary in this verification code. Due to the fact
     // that ip is clobbered as part of cmp with an object Operand.
     push(holder_reg);  // Temporarily save holder on the stack.
-    mr(holder_reg, ip);  // Move ip to its holding place.
+    LoadRR(holder_reg, ip);  // Move ip to its holding place.
     LoadRoot(ip, Heap::kNullValueRootIndex);
     cmp(holder_reg, ip);
     Check(ne, "JSGlobalProxy::context() should not be null.");
@@ -1281,7 +1281,7 @@ void MacroAssembler::GetNumberHash(Register t0, Register scratch) {
   srwi(scratch, t0, Operand(4));
   xor_(t0, t0, scratch);
   // hash = hash * 2057;
-  mr(r0, t0);
+  LoadRR(r0, t0);
   slwi(scratch, t0, Operand(3));
   Add(t0, t0, scratch);
   slwi(scratch, r0, Operand(11));
@@ -1332,7 +1332,7 @@ void MacroAssembler::LoadFromNumberDictionary(Label* miss,
   static const int kProbes = 4;
   for (int i = 0; i < kProbes; i++) {
     // Use t2 for index calculations and keep the hash intact in t0.
-    mr(t2, t0);
+    LoadRR(t2, t0);
     // Compute the masked index: (hash + i + i * i) & mask.
     if (i > 0) {
       Add(t2, t2, Operand(SeededNumberDictionary::GetProbeOffset(i)));
@@ -1905,13 +1905,13 @@ void MacroAssembler::AddAndCheckForOverflow(Register dst,
 
   // C = A+B; C overflows if A/B have same sign and C has diff sign than A
   if (dst.is(left)) {
-    mr(scratch, left);            // Preserve left.
+    LoadRR(scratch, left);            // Preserve left.
     Add(dst, left, right);        // Left is overwritten.
     xor_(scratch, dst, scratch);  // Original left.
     xor_(overflow_dst, dst, right);
     and_(overflow_dst, overflow_dst, scratch, SetRC);
   } else if (dst.is(right)) {
-    mr(scratch, right);           // Preserve right.
+    LoadRR(scratch, right);           // Preserve right.
     Add(dst, left, right);        // Right is overwritten.
     xor_(scratch, dst, scratch);  // Original right.
     xor_(overflow_dst, dst, left);
@@ -1937,13 +1937,13 @@ void MacroAssembler::SubAndCheckForOverflow(Register dst,
 
   // C = A-B; C overflows if A/B have diff signs and C has diff sign than A
   if (dst.is(left)) {
-    mr(scratch, left);            // Preserve left.
+    LoadRR(scratch, left);            // Preserve left.
     sub(dst, left, right);        // Left is overwritten.
     xor_(overflow_dst, dst, scratch);
     xor_(scratch, scratch, right);
     and_(overflow_dst, overflow_dst, scratch, SetRC);
   } else if (dst.is(right)) {
-    mr(scratch, right);           // Preserve right.
+    LoadRR(scratch, right);           // Preserve right.
     sub(dst, left, right);        // Right is overwritten.
     xor_(overflow_dst, dst, left);
     xor_(scratch, left, scratch);
@@ -2215,12 +2215,12 @@ void MacroAssembler::CallApiFunctionAndReturn(ExternalReference function,
   // HandleScope limit has changed. Delete allocated extensions.
   bind(&delete_allocated_handles);
   StoreP(r28, MemOperand(r26, kLimitOffset));
-  mr(r27, r3);
+  LoadRR(r27, r3);
   PrepareCallCFunction(1, r28);
   mov(r3, Operand(ExternalReference::isolate_address()));
   CallCFunction(
       ExternalReference::delete_handle_scope_extensions(isolate()), 1);
-  mr(r3, r27);
+  LoadRR(r3, r27);
   b(&leave_exit_frame);
 }
 
@@ -2434,7 +2434,7 @@ void MacroAssembler::EmitOutOfInt32RangeTruncate(Register result,
   cmpi(sign, Operand::Zero());
   result = sign;
   sign = no_reg;
-  mr(result, input_high);
+  LoadRR(result, input_high);
   beq(&done);
   neg(result, result);
 
@@ -2771,7 +2771,7 @@ void MacroAssembler::LoadContext(Register dst, int context_chain_length) {
     // Slot is in the current function context.  Move it into the
     // destination register in case we store into it (the write barrier
     // cannot be allowed to destroy the context in esi).
-    mr(dst, cp);
+    LoadRR(dst, cp);
   }
 }
 
@@ -2885,7 +2885,7 @@ void MacroAssembler::JumpIfNotPowerOfTwoOrZeroAndNeg(
 #if !V8_TARGET_ARCH_S390X
 void MacroAssembler::SmiTagCheckOverflow(Register reg, Register overflow) {
   ASSERT(!reg.is(overflow));
-  mr(overflow, reg);  // Save original value.
+  LoadRR(overflow, reg);  // Save original value.
   SmiTag(reg);
   xor_(overflow, overflow, reg, SetRC);  // Overflow if (value ^ 2 * value) < 0.
 }
@@ -3285,7 +3285,7 @@ void MacroAssembler::PrepareCallCFunction(int num_reg_arguments,
     // Make stack end at alignment and make room for stack arguments,
     // the original value of sp and, on native, the required slots to
     // make ABI work.
-    mr(scratch, sp);
+    LoadRR(scratch, sp);
 #if !defined(USE_SIMULATOR)
     Sub(sp, Operand((stack_passed_arguments +
                           kNumRequiredStackFrameSlots) * kPointerSize));
@@ -3805,7 +3805,7 @@ void MacroAssembler::ClampUint8(Register output_reg, Register input_reg) {
   cmpi(input_reg, Operand(satval));
   bgt(&overflow_label);
   if (!output_reg.is(input_reg)) {
-    mr(output_reg, input_reg);
+    LoadRR(output_reg, input_reg);
   }
   b(&done);
 
@@ -3895,7 +3895,7 @@ void MacroAssembler::CheckEnumCache(Register null_value, Label* call_runtime) {
   Register  empty_fixed_array_value = r9;
   LoadRoot(empty_fixed_array_value, Heap::kEmptyFixedArrayRootIndex);
   Label next, start;
-  mr(r5, r3);
+  LoadRR(r5, r3);
 
   // Check if the enum length field is properly initialized, indicating that
   // there is an enum cache.

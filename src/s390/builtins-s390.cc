@@ -349,7 +349,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
                        call_generic_code);
   __ IncrementCounter(counters->array_function_native(), 1, r6, r7);
   // Set up return value, remove receiver from stack and return.
-  __ mr(r3, r5);
+  __ LoadRR(r3, r5);
   __ Add(sp, Operand(kPointerSize));
   __ blr();
 
@@ -392,7 +392,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
                   call_generic_code);
   __ IncrementCounter(counters->array_function_native(), 1, r5, r7);
   // Set up return value, remove receiver and argument from stack and return.
-  __ mr(r3, r6);
+  __ LoadRR(r3, r6);
   __ Add(sp, Operand(2 * kPointerSize));
   __ blr();
 
@@ -427,7 +427,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
   // r8: elements_array_end (untagged)
   // sp[0]: last argument
   Label loop, entry;
-  __ mr(r10, sp);
+  __ LoadRR(r10, sp);
   __ b(&entry);
   __ bind(&loop);
   __ LoadP(r5, MemOperand(r10));
@@ -441,7 +441,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
   __ blt(&loop);
 
   __ bind(&finish);
-  __ mr(sp, r10);
+  __ LoadRR(sp, r10);
 
   // Remove caller arguments and receiver from the stack, setup return value and
   // return.
@@ -449,7 +449,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
   // r6: JSArray
   // sp[0]: receiver
   __ Add(sp, Operand(kPointerSize));
-  __ mr(r3, r6);
+  __ LoadRR(r3, r6);
   __ blr();
 
   __ bind(&has_non_smi_element);
@@ -685,7 +685,7 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
   STATIC_ASSERT(kNotStringTag != 0);
   __ andi(r0, r6, Operand(kIsNotStringMask));
   __ bne(&convert_argument /*, cr0*/);
-  __ mr(argument, r3);
+  __ LoadRR(argument, r3);
   __ IncrementCounter(counters->string_ctor_conversions(), 1, r6, r7);
   __ b(&argument_is_string);
 
@@ -699,7 +699,7 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
     __ InvokeBuiltin(Builtins::TO_STRING, CALL_FUNCTION);
   }
   __ pop(function);
-  __ mr(argument, r3);
+  __ LoadRR(argument, r3);
   __ b(&argument_is_string);
 
   // Load the empty string into r5, remove the receiver from the
@@ -853,7 +853,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // r6: object size
       // r7: JSObject (not tagged)
       __ LoadRoot(r9, Heap::kEmptyFixedArrayRootIndex);
-      __ mr(r8, r7);
+      __ LoadRR(r8, r7);
       ASSERT_EQ(0 * kPointerSize, JSObject::kMapOffset);
       __ StoreP(r5, MemOperand(r8));
       ASSERT_EQ(1 * kPointerSize, JSObject::kPropertiesOffset);
@@ -959,7 +959,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // r7: JSObject
       // r8: FixedArray (not tagged)
       __ LoadRoot(r9, Heap::kFixedArrayMapRootIndex);
-      __ mr(r5, r8);
+      __ LoadRR(r5, r8);
       ASSERT_EQ(0 * kPointerSize, JSObject::kMapOffset);
       __ StoreP(r9, MemOperand(r5));
       ASSERT_EQ(1 * kPointerSize, FixedArray::kLengthOffset);
@@ -1019,7 +1019,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     __ bind(&rt_call);
     __ push(r4);  // argument for Runtime_NewObject
     __ CallRuntime(Runtime::kNewObject, 1);
-    __ mr(r7, r3);
+    __ LoadRR(r7, r3);
 
     // Receiver for constructor call allocated.
     // r7: JSObject
@@ -1194,13 +1194,13 @@ static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
     // Initialize all JavaScript callee-saved registers, since they will be seen
     // by the garbage collector as part of handlers.
     __ LoadRoot(r7, Heap::kUndefinedValueRootIndex);
-    __ mr(r14, r7);
-    __ mr(r15, r7);
-    __ mr(r16, r7);
-    __ mr(r22, r7);  // hmmm, possibly should be reassigned to r17
+    __ LoadRR(r14, r7);
+    __ LoadRR(r15, r7);
+    __ LoadRR(r16, r7);
+    __ LoadRR(r22, r7);  // hmmm, possibly should be reassigned to r17
 
     // Invoke the code and pass argc as r3.
-    __ mr(r3, r6);
+    __ LoadRR(r3, r6);
     if (is_construct) {
       CallConstructStub stub(NO_CALL_FUNCTION_FLAGS);
       __ CallStub(&stub);
@@ -1460,7 +1460,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
 
       __ push(r5);
       __ InvokeBuiltin(Builtins::TO_OBJECT, CALL_FUNCTION);
-      __ mr(r5, r3);
+      __ LoadRR(r5, r3);
 
       __ pop(r3);
       __ SmiUntag(r3);
@@ -1781,7 +1781,7 @@ static void LeaveArgumentsAdaptorFrame(MacroAssembler* masm) {
   // Get the number of arguments passed (as a smi), tear down the frame and
   // then tear down the parameters.
   __ LoadP(r4, MemOperand(fp, -3 * kPointerSize));
-  __ mr(sp, fp);
+  __ LoadRR(sp, fp);
   __ LoadP(fp, MemOperand(sp));
   __ LoadP(r0, MemOperand(sp, kPointerSize));
   __ mtlr(r0);

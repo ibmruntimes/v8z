@@ -232,7 +232,7 @@ void FullCodeGenerator::Generate() {
       // Load this again, if it's used by the local context below.
       __ LoadP(r6, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
     } else {
-      __ mr(r6, r4);
+      __ LoadRR(r6, r4);
     }
     // Receiver is just before the parameters on the caller's stack.
     int num_parameters = info->scope()->num_parameters();
@@ -445,7 +445,7 @@ void FullCodeGenerator::EmitReturnSequence() {
       int32_t sp_delta = (info_->scope()->num_parameters() + 1) * kPointerSize;
       CodeGenerator::RecordPositions(masm_, function()->end_position() - 1);
       __ RecordJSReturn();
-      masm_->mr(sp, fp);
+      masm_->LoadRR(sp, fp);
       masm_->LoadP(fp, MemOperand(sp));
       masm_->LoadP(r0, MemOperand(sp, kPointerSize));
       masm_->mtlr(r0);
@@ -1233,14 +1233,14 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   __ push(r4);  // Enumerable.
   __ push(r6);  // Current entry.
   __ InvokeBuiltin(Builtins::FILTER_KEY, CALL_FUNCTION);
-  __ mr(r6, r3);
+  __ LoadRR(r6, r3);
   __ cmpi(r6, Operand::Zero());
   __ beq(loop_statement.continue_label());
 
   // Update the 'each' property or variable from the possibly filtered
   // entry in register r6.
   __ bind(&update_each);
-  __ mr(result_register(), r6);
+  __ LoadRR(result_register(), r6);
   // Perform the assignment as if via '='.
   { EffectContext context(this);
     EmitAssignment(stmt->each());
@@ -1557,7 +1557,7 @@ void FullCodeGenerator::VisitRegExpLiteral(RegExpLiteral* expr) {
   __ mov(r4, Operand(expr->flags()));
   __ Push(r7, r6, r5, r4);
   __ CallRuntime(Runtime::kMaterializeRegExpLiteral, 4);
-  __ mr(r8, r3);
+  __ LoadRR(r8, r3);
 
   __ bind(&materialized);
   int size = JSRegExp::kSize + JSRegExp::kInObjectFieldCount * kPointerSize;
@@ -2006,7 +2006,7 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
       __ TestSignBit(r0, r0);
       __ bne(&stub_call /*, cr0*/);
       __ bind(&add_no_overflow);
-      __ mr(right, scratch1);
+      __ LoadRR(right, scratch1);
       break;
     }
     case Token::SUB: {
@@ -2020,7 +2020,7 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
       __ TestSignBit(r0, r0);
       __ bne(&stub_call /*, cr0*/);
       __ bind(&sub_no_overflow);
-      __ mr(right, scratch1);
+      __ LoadRR(right, scratch1);
       break;
     }
     case Token::MUL: {
@@ -2049,7 +2049,7 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
 #if V8_TARGET_ARCH_S390X
       __ SmiTag(right, scratch1);
 #else
-      __ mr(right, scratch1);
+      __ LoadRR(right, scratch1);
 #endif
       __ b(&done);
       // We need -0 if we were multiplying a negative number with 0 to get 0.
@@ -2121,7 +2121,7 @@ void FullCodeGenerator::EmitAssignment(Expression* expr) {
     case NAMED_PROPERTY: {
       __ push(r3);  // Preserve value.
       VisitForAccumulatorValue(prop->obj());
-      __ mr(r4, r3);
+      __ LoadRR(r4, r3);
       __ pop(r3);  // Restore value.
       __ mov(r5, Operand(prop->key()->AsLiteral()->handle()));
       Handle<Code> ic = is_classic_mode()
@@ -2134,7 +2134,7 @@ void FullCodeGenerator::EmitAssignment(Expression* expr) {
       __ push(r3);  // Preserve value.
       VisitForStackValue(prop->obj());
       VisitForAccumulatorValue(prop->key());
-      __ mr(r4, r3);
+      __ LoadRR(r4, r3);
       __ pop(r5);
       __ pop(r3);  // Restore value.
       Handle<Code> ic = is_classic_mode()
@@ -2205,7 +2205,7 @@ void FullCodeGenerator::EmitVariableAssignment(Variable* var,
       __ StoreP(result_register(), location, r0);
       if (var->IsContextSlot()) {
         // RecordWrite may destroy all its register arguments.
-        __ mr(r6, result_register());
+        __ LoadRR(r6, result_register());
         int offset = Context::SlotOffset(var->index());
         __ RecordWriteContextSlot(
             r4, offset, r6, r5, kLRHasBeenSaved, kDontSaveFPRegs);
@@ -2226,7 +2226,7 @@ void FullCodeGenerator::EmitVariableAssignment(Variable* var,
       // Perform the assignment.
       __ StoreP(r3, location, r0);
       if (var->IsContextSlot()) {
-        __ mr(r6, r3);
+        __ LoadRR(r6, r3);
         int offset = Context::SlotOffset(var->index());
         __ RecordWriteContextSlot(
             r4, offset, r6, r5, kLRHasBeenSaved, kDontSaveFPRegs);
@@ -2758,7 +2758,7 @@ void FullCodeGenerator::EmitIsStringWrapperSafeForDefaultValueOf(
   // Calculate location of the first key name.
   __ Add(r7, Operand(DescriptorArray::kFirstOffset - kHeapObjectTag));
   // Calculate the end of the descriptor array.
-  __ mr(r5, r7);
+  __ LoadRR(r5, r7);
   __ SmiToPtrArrayOffset(ip, r6);
   __ Add(r5, r5, ip);
 
@@ -2932,7 +2932,7 @@ void FullCodeGenerator::EmitArguments(CallRuntime* expr) {
   // ArgumentsAccessStub expects the key in edx and the formal
   // parameter count in r3.
   VisitForAccumulatorValue(args->at(0));
-  __ mr(r4, r3);
+  __ LoadRR(r4, r3);
   __ LoadSmiLiteral(r3, Smi::FromInt(info_->scope()->num_parameters()));
   ArgumentsAccessStub stub(ArgumentsAccessStub::READ_ELEMENT);
   __ CallStub(&stub);
@@ -3057,7 +3057,7 @@ void FullCodeGenerator::EmitRandomHeapNumber(CallRuntime* expr) {
   __ bind(&slow_allocate_heapnumber);
   // Allocate a heap number.
   __ CallRuntime(Runtime::kNumberAlloc, 0);
-  __ mr(r7, r3);
+  __ LoadRR(r7, r3);
 
   __ bind(&heapnumber_allocated);
 
@@ -3066,7 +3066,7 @@ void FullCodeGenerator::EmitRandomHeapNumber(CallRuntime* expr) {
   __ PrepareCallCFunction(2, r3);
   __ LoadP(r4,
            ContextOperand(context_register(), Context::GLOBAL_OBJECT_INDEX));
-  __ mr(r3, r7);
+  __ LoadRR(r3, r7);
   __ LoadP(r4, FieldMemOperand(r4, GlobalObject::kNativeContextOffset));
   __ CallCFunction(
       ExternalReference::fill_heap_number_with_random_function(isolate()), 2);
@@ -3199,7 +3199,7 @@ void FullCodeGenerator::EmitSetValueOf(CallRuntime* expr) {
   __ StoreP(r3, FieldMemOperand(r4, JSValue::kValueOffset), r0);
   // Update the write barrier.  Save the value as it will be
   // overwritten by the write barrier code and is needed afterward.
-  __ mr(r5, r3);
+  __ LoadRR(r5, r3);
   __ RecordWriteField(
       r4, JSValue::kValueOffset, r5, r6, kLRHasBeenSaved, kDontSaveFPRegs);
 
@@ -3429,7 +3429,7 @@ void FullCodeGenerator::EmitCallFunction(CallRuntime* expr) {
   __ bne(&runtime);
 
   // InvokeFunction requires the function in r4. Move it in there.
-  __ mr(r4, result_register());
+  __ LoadRR(r4, result_register());
   ParameterCount count(arg_count);
   __ InvokeFunction(r4, count, CALL_FUNCTION,
                     NullCallWrapper(), CALL_AS_METHOD);
