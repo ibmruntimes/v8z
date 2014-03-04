@@ -1022,7 +1022,9 @@ void MacroAssembler::PushTryHandler(StackHandler::Kind kind,
   STATIC_ASSERT(StackHandlerConstants::kContextOffset == 3 * kPointerSize);
   STATIC_ASSERT(StackHandlerConstants::kFPOffset == 4 * kPointerSize);
 
-  // For the JSEntry handler, we must preserve r1-r7, r0,r8-r15 are available.
+  // For the JSEntry handler, we must preserve r2-r6,
+  //   r0,r1,r8-r10 are available.
+  //
   // We want the stack to look like
   // sp -> NextOffset
   //       CodeObject
@@ -1032,26 +1034,33 @@ void MacroAssembler::PushTryHandler(StackHandler::Kind kind,
 
   // Link the current handler as the next handler.
   mov(r8, Operand(ExternalReference(Isolate::kHandlerAddress, isolate())));
+
+  // Buy the full stack frame for 5 slots.
+  lay(sp, MemOperand(sp,  -StackHandlerConstants::kSize));
+
+  // @TODO Can replace with MVC to save R0
   LoadP(r0, MemOperand(r8));
-  StorePU(r0, MemOperand(sp, -StackHandlerConstants::kSize));
+  StoreP(r0, MemOperand(sp, StackHandlerConstants::kNextOffset));
   // Set this new handler as the current one.
   StoreP(sp, MemOperand(r8));
 
+  unsigned state =
+      StackHandler::IndexField::encode(handler_index) |
+      StackHandler::KindField::encode(kind);
+
   if (kind == StackHandler::JS_ENTRY) {
-    lhi(r8, Operand(0, RelocInfo::NONE));  // NULL frame pointer.
-    StoreP(r8, MemOperand(sp, StackHandlerConstants::kFPOffset));
-    LoadSmiLiteral(r8, Smi::FromInt(0));    // Indicates no context.
-    StoreP(r8, MemOperand(sp, StackHandlerConstants::kContextOffset));
+    // R8: state, R9: Context, R10: FP Offset
+    LoadIntLiteral(r8, state);
+    lhi(r9, Operand(0, RelocInfo::NONE));  // NULL frame pointer.
+    LoadSmiLiteral(r10, Smi::FromInt(0));    // Indicates no context.
+    StoreMultipleP(r8, r10, MemOperand(sp, StackHandlerConstants::kStateSlot));
   } else {
     // still not sure if fp is right
     StoreP(fp, MemOperand(sp, StackHandlerConstants::kFPOffset));
     StoreP(cp, MemOperand(sp, StackHandlerConstants::kContextOffset));
+    LoadIntLiteral(r8, state);
+    StoreP(r8, MemOperand(sp, StackHandlerConstants::kStateSlot));
   }
-  unsigned state =
-      StackHandler::IndexField::encode(handler_index) |
-      StackHandler::KindField::encode(kind);
-  LoadIntLiteral(r8, state);
-  StoreP(r8, MemOperand(sp, StackHandlerConstants::kStateSlot));
   mov(r8, Operand(CodeObject()));
   StoreP(r8, MemOperand(sp, StackHandlerConstants::kCodeOffset));
 }
@@ -1059,9 +1068,11 @@ void MacroAssembler::PushTryHandler(StackHandler::Kind kind,
 
 void MacroAssembler::PopTryHandler() {
   STATIC_ASSERT(StackHandlerConstants::kNextOffset == 0);
-  pop(r4);
+  // Pop the Next Handler into r4 and store it into Handler Address reference.
+  LoadP(r4, MemOperand(sp, StackHandlerConstants::kNextOffset));
   mov(ip, Operand(ExternalReference(Isolate::kHandlerAddress, isolate())));
-  Add(sp, Operand(StackHandlerConstants::kSize - kPointerSize));
+  // Restore previous stack frame.
+  lay(sp, MemOperand(sp, StackHandlerConstants::kSize));
   StoreP(r4, MemOperand(ip));
 }
 
