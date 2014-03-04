@@ -2876,7 +2876,12 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
     }
     case LBR: { UNIMPLEMENTED(); break; }
     case BASR: {
-      UNIMPLEMENTED();
+      RRInstruction * rrinst = reinterpret_cast<RRInstruction*>(instr);
+      int r1 = rrinst->R1Value();
+      int r2 = rrinst->R2Value();
+      intptr_t r2_val = get_register(r2);
+      set_register(r1, get_pc() + 2);
+      set_pc(r2_val);
       break;
     }
     default:
@@ -3118,7 +3123,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       set_register(r1, rx_val + rb_val + offset);
       break;
     }
-    case LLILF: {
+    case LLILF: {  // length is architecture dependent
       RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
       int r1 = rilInstr->R1Value();
       uint64_t imm = static_cast<uint64_t>(rilInstr->I2UnsignedValue());
