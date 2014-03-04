@@ -1693,16 +1693,16 @@ class RXInstruction : Instruction {
 class RXYInstruction : Instruction {
   public:
     inline int R1Value() const {
-      return Bits<SixByteInstr, int>(23, 20);
+      return Bits<SixByteInstr, int>(39, 36);
     }
     inline int X2Value() const {
-      return Bits<SixByteInstr, int>(19, 16);
+      return Bits<SixByteInstr, int>(35, 32);
     }
     inline int B2Value() const {
-      return Bits<SixByteInstr, int>(15, 12);
+      return Bits<SixByteInstr, int>(31, 28);
     }
     inline int32_t D2Value() const {
-      int32_t value = Bits<SixByteInstr, int32_t>(27, 16);
+      int32_t value = Bits<SixByteInstr, uint32_t>(27, 16);
       value += Bits<SixByteInstr, int8_t>(15, 8) << 12;
       return (int32_t)value;
     }
