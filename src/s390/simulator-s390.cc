@@ -2977,7 +2977,38 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
     }
     case SLL:
     case SRL: {
-      UNIMPLEMENTED();
+      RSInstruction* rsInstr = reinterpret_cast<RSInstruction*>(instr);
+      int r1 = rsInstr->R1Value();
+      int b2 = rsInstr->B2Value();
+      intptr_t d2 = rsInstr->B2Value();
+      // only takes rightmost 6bits
+      int shiftBits = (get_register(b2) + d2) & 0x3F;
+      uint32_t r1_val = get_low_register<uint32_t>(r1);
+      uint32_t alu_out;
+      if (op == SLL) {
+        alu_out = r1_val << shiftBits;
+      } else if (op == SRL) {
+        alu_out = r1_val >> shiftBits;
+      }
+      set_low_register<uint32_t>(r1, alu_out);
+      break;
+    }
+    case SLA:
+    case SRA: {
+      RSInstruction* rsInstr = reinterpret_cast<RSInstruction*>(instr);
+      int r1 = rsInstr->R1Value();
+      int b2 = rsInstr->B2Value();
+      intptr_t d2 = rsInstr->B2Value();
+      // only takes rightmost 6bits
+      int shiftBits = (get_register(b2) + d2) & 0x3F;
+      int32_t r1_val = get_low_register<int32_t>(r1);
+      int32_t alu_out;
+      if (op == SLL) {
+        alu_out = r1_val << shiftBits;
+      } else if (op == SRL) {
+        alu_out = r1_val >> shiftBits;
+      }
+      set_low_register<int32_t>(r1, alu_out);
       break;
     }
     case MLR: { UNIMPLEMENTED(); break; }
