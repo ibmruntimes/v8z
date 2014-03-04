@@ -1167,8 +1167,10 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case IILH: Format(instr, "iilh\t'r1,'i1"); break;
       case IILL: Format(instr, "iill\t'r1,'i1"); break;
       case STM: Format(instr, "stm\t'r1,'r2,'d1('r3)"); break;
-      case SLL: Format(instr, "sll\t'r1,'r2,'d1('r3)"); break;
-      case SRL: Format(instr, "srl\t'r1,'r2,'d1('r3)"); break;
+      case SLL: Format(instr, "sll\t'r1,'d1"); break;
+      case SRL: Format(instr, "srl\t'r1,'d1"); break;
+      case SLA: Format(instr, "sla\t'r1,'d1"); break;
+      case SRA: Format(instr, "sra\t'r1,'d1"); break;
       case SLAG: Format(instr, "slag\t'r1,'r2,'d1('r3)"); break;
       case SRAG: Format(instr, "srag\t'r1,'r2,'d1('r3)"); break;
       case LM: Format(instr, "lm\t'r1,'r2,'d1('r3)"); break;
