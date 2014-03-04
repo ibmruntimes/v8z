@@ -463,16 +463,10 @@ class MemOperand BASE_EMBEDDED {
   }
   Register getIndexRegister() const { return rx(); }
 
-  // length of the memory operand
-  void setLength(Length l) { l_ = l; }
-  Length getLength() const { return l_; }
-
-
  private:
   Register baseRegister;     // base
   int32_t offset_;  // offset
   Register indexRegister;     // index
-  Length l_;        // length of the memory operand
 
   friend class Assembler;
 };
@@ -926,19 +920,20 @@ void name(const Operand& i2, Register b1, Disp d1);\
 void name(const MemOperand& opnd, const Operand& i)
 
 #define SS1_FORM(name)\
-void name(Length r1, Register b1, Disp d1, \
-          Register b3, Disp d2);\
-void name(const MemOperand& opnd1, const MemOperand& opnd2)
+void name(Register b1, Disp d1, \
+          Register b3, Disp d2, Length length);\
+void name(const MemOperand& opnd1, const MemOperand& opnd2, Length length)
 
 #define SS2_FORM(name)\
-void name(const MemOperand& opnd1, const MemOperand& opnd2);\
-void name(Length l1, Length l2, Register b1, \
-          Disp d1, Register b2, Disp d2)
+void name(const MemOperand& opnd1, const MemOperand& opnd2, \
+          Length length1, Length length2);\
+void name(Register b1, \
+          Disp d1, Register b2, Disp d2, Length l1, Length l2)
 
 #define SS3_FORM(name)\
-void name(const MemOperand& opnd1, const MemOperand& opnd2);\
-void name(Length l1, const Operand& i3, Register b1, \
-          Disp d1, Register b2, Disp d2)
+void name(const MemOperand& opnd1, const MemOperand& opnd2, Length length);\
+void name(const Operand& i3, Register b1, \
+          Disp d1, Register b2, Disp d2, Length l1)
 
 #define SS4_FORM(name)\
 void name(const MemOperand& opnd1, const MemOperand& opnd2);\

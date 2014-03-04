@@ -2185,14 +2185,15 @@ void Assembler::rxf_form(Opcode op, Register r1, Register r3, Register b2, \
 //    +--------+----+----+----+-------------+----+------------+
 //    0        8    12   16   20            32   36          47
 #define SS1_FORM_EMIT(name, op)\
-void Assembler::name(Length l, Register b1, Disp d1, \
-                     Register b2, Disp d2) {\
+void Assembler::name(Register b1, Disp d1, \
+                     Register b2, Disp d2, Length l) {\
     ss_form(op, l, b1, d1, b2, d2);\
 }\
-void Assembler::name(const MemOperand& opnd1, const MemOperand& opnd2) {\
-    name(opnd1.getLength(), opnd1.getBaseRegister(), \
+void Assembler::name(const MemOperand& opnd1, const MemOperand& opnd2, \
+                     Length length) {\
+    name(opnd1.getBaseRegister(), \
          opnd1.getDisplacement(), opnd2.getBaseRegister(), \
-         opnd2.getDisplacement());\
+         opnd2.getDisplacement(), length);\
 }
 void Assembler::ss_form(Opcode op, Length l, Register b1, Disp d1,
                      Register b2, Disp d2) {
@@ -2215,15 +2216,16 @@ void Assembler::ss_form(Opcode op, Length l, Register b1, Disp d1,
 //    +--------+----+----+----+-------------+----+------------+
 //    0        8    12   16   20            32   36          47
 #define SS2_FORM_EMIT(name, op)\
-void Assembler::name(Length l1, Length l2, Register b1, \
+void Assembler::name(Register b1, \
                      Disp d1, Register b2, \
-                     Disp d2) {\
+                     Disp d2, Length l1, Length l2) {\
     ss_form(op, l1, l2, b1, d1, b2, d2);\
 }\
-void Assembler::name(const MemOperand& opnd1, const MemOperand& opnd2) {\
-    name(opnd1.getLength(), opnd2.getLength(), opnd1.getBaseRegister(), \
+void Assembler::name(const MemOperand& opnd1, const MemOperand& opnd2, \
+                     Length length1, Length length2) {\
+    name(opnd1.getBaseRegister(), \
          opnd1.getDisplacement(), opnd2.getBaseRegister(), \
-         opnd2.getDisplacement());\
+         opnd2.getDisplacement(), length1, length2);\
 }
 void Assembler::ss_form(Opcode op, Length l1, Length l2, Register b1,
                      Disp d1, Register b2, Disp d2) {
@@ -2248,12 +2250,13 @@ void Assembler::ss_form(Opcode op, Length l1, Length l2, Register b1,
 //    +--------+----+----+----+-------------+----+------------+
 //    0        8    12   16   20            32   36          47
 #define SS3_FORM_EMIT(name, op)\
-void Assembler::name(Length l1, const Operand& i3, Register b1, \
+void Assembler::name(const Operand& i3, Register b1, \
                      Disp d1, Register b2, \
-                     Disp d2) {\
+                     Disp d2, Length l1) {\
     ss_form(op, l1, i3, b1, d1, b2, d2);\
 }\
-void Assembler::name(const MemOperand& opnd1, const MemOperand& opnd2) {\
+void Assembler::name(const MemOperand& opnd1, const MemOperand& opnd2, \
+                     Length length) {\
     ASSERT(false);\
 }
 void Assembler::ss_form(Opcode op, Length l1, const Operand& i3, Register b1,
@@ -2813,7 +2816,6 @@ RRE_FORM_EMIT(msgfr, MSGFR)
 RRE_FORM_EMIT(msgr, MSGR)
 RRE_FORM_EMIT(msr, MSR)
 RXY_FORM_EMIT(msy, MSY)
-SS1_FORM_EMIT(mvc, MVC)
 SS4_FORM_EMIT(mvcp, MVCP)
 SSE_FORM_EMIT(mvcdk, MVCDK)
 SS1_FORM_EMIT(mvcin, MVCIN)
@@ -3571,6 +3573,14 @@ void Assembler::lmy(Register r1, Register r2, const MemOperand& src) {
 // 64-bit Load Multiple - long displacement (20-bits signed)
 void Assembler::lmg(Register r1, Register r2, const MemOperand& src) {
   rsy_form(LMG, r1, r2, src.rb(), src.offset());
+}
+
+// Move charactor - mem to mem operation
+void Assembler::mvc(const MemOperand& opnd1, const MemOperand& opnd2,
+                    Length length) {
+    ss_form(MVC, length, opnd1.getBaseRegister(),
+         opnd1.getDisplacement(), opnd2.getBaseRegister(),
+         opnd2.getDisplacement());
 }
 
 #ifdef V8_TARGET_ARCH_S390X

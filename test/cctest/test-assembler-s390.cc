@@ -1134,16 +1134,17 @@ TEST(13) {
   __ ar(r0, r0);                             // add 2 bytes to align
   __ madb(r15, r15, r15, r15, 0x123);        // RXF FORMAT
   __ ar(r0, r0);                             // add 2 bytes to align
-  __ clc(0x12, r15, 0x456, r15, 0x789);      // SS1 FORMAT
+  __ clc(r15, 0x456, r15, 0x789, 0x12);      // SS1 FORMAT
   __ ar(r0, r0);                             // add 2 bytes to align
 
   bufPos += 48;
   // OS::DebugBreak();
 
-  __ mvo(0x1, 0x2, r15, 0x345, r15, 0x678);  // SS2 FORMAT
+  // SS2 FORMAT
+  __ mvc(MemOperand(r15, 0x345), MemOperand(r15, 0x678), 0x01);
   __ ar(r0, r0);                             // add 2 bytes to align
-  __ srp(0x1, Operand(0x2), r15,             // SS3 FORMAT
-         0x345, r15, 0x678);
+  // SS3 FORMAT
+  __ srp(MemOperand(r15, 0x2), MemOperand(r15, 0x345), 0xF);
   __ ar(r0, r0);                             // add 2 bytes to align
   __ mvcp(r15, r15, r15, 0x123,              // SS4 FORMAT
           r15, 0x456);
@@ -1206,7 +1207,7 @@ TEST(14) {
   __ brcl(Condition(14), Operand(-123));
   __ iilf(r15, Operand(123456789));
   __ iihf(r15, Operand(-123456789));
-  __ mvc(123, r4, 567, r8, 9);
+  __ mvc(MemOperand(r0, 123), MemOperand(r4, 567), 89);
 
   v8::internal::byte * bufPos = assm.buffer_pos();
   ::printf("buffer position = %p", bufPos);
