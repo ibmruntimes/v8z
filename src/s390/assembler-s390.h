@@ -141,7 +141,7 @@ struct Register {
   bool is(Register reg) const { return code_ == reg.code_; }
   int code() const {
     ASSERT(is_valid());
-    return code_;
+    return code_ & 0xF;  // @TODO Remove unncessary & F once we trim to 16 regs
   }
 
   int bit() const {
