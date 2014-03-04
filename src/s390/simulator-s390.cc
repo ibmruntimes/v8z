@@ -2960,7 +2960,7 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       int32_t rb_val = (rb == 0) ? 0 : get_low_register<int32_t>(rb);
 
       // Store each register in ascending order.
-      for (int i = 0; i < r3 - r1; i++) {
+      for (int i = 0; i <= r3 - r1; i++) {
         int32_t value = get_low_register<int32_t>((r1 + i) % 16);
         WriteW(rb_val + offset + 4 * i, value, instr);
       }
