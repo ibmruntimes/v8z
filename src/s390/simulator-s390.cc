@@ -2985,9 +2985,11 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
     case N:
     case X: {
       RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
+      int b2 = rxinst->B2Value();
+      int x2 = rxinst->X2Value();
       int32_t  r1_val = get_low_register<int32_t>(rxinst->R1Value());
-      intptr_t b2_val = get_register(rxinst->B2Value());
-      intptr_t x2_val = get_register(rxinst->X2Value());
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
       intptr_t d2_val = rxinst->D2Value();
       int32_t mem_val = ReadW(b2_val + x2_val + d2_val, instr);
       int32_t alu_out = 0;
@@ -3008,9 +3010,11 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
     case LA:
     case LB: {
       RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
+      int b2 = rxinst->B2Value();
+      int x2 = rxinst->X2Value();
       int32_t  r1 = rxinst->R1Value();
-      intptr_t b2_val = get_register(rxinst->B2Value());
-      intptr_t x2_val = get_register(rxinst->X2Value());
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
       intptr_t d2_val = rxinst->D2Value();
       intptr_t addr = b2_val + x2_val + d2_val;
       int32_t mem_val = 0;
@@ -3026,9 +3030,11 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
     }
     case C: {
       RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
+      int b2 = rxinst->B2Value();
+      int x2 = rxinst->X2Value();
       int32_t  r1_val = get_low_register<int32_t>(rxinst->R1Value());
-      intptr_t b2_val = get_register(rxinst->B2Value());
-      intptr_t x2_val = get_register(rxinst->X2Value());
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
       intptr_t d2_val = rxinst->D2Value();
       intptr_t addr = b2_val + x2_val + d2_val;
       int32_t mem_val = ReadW(addr, instr);
@@ -3039,9 +3045,11 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
     case SH:
     case MH: {
       RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
+      int b2 = rxinst->B2Value();
+      int x2 = rxinst->X2Value();
       int32_t r1_val = get_low_register<int32_t>(rxinst->R1Value());
-      intptr_t b2_val = get_register(rxinst->B2Value());
-      intptr_t x2_val = get_register(rxinst->X2Value());
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
       intptr_t d2_val = rxinst->D2Value();
       intptr_t addr = b2_val + x2_val + d2_val;
       int16_t mem_val = ReadH(addr, instr);
@@ -3062,8 +3070,10 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
     case SHY: {
       RXYInstruction* rxyinst = reinterpret_cast<RXYInstruction*>(instr);
       int32_t r1_val = get_low_register<int32_t>(rxyinst->R1Value());
-      intptr_t b2_val = get_register(rxyinst->B2Value());
-      intptr_t x2_val = get_register(rxyinst->X2Value());
+      int b2 = rxyinst->B2Value();
+      int x2 = rxyinst->X2Value();
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
       intptr_t d2_val = rxyinst->D2Value();
       int16_t mem_val = ReadH(b2_val + d2_val + x2_val, instr);
       int32_t alu_out = r1_val + mem_val;
@@ -3226,8 +3236,8 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       int x2 = rxyInstr->X2Value();
       int b2 = rxyInstr->B2Value();
       int d2 = rxyInstr->D2Value();
-      intptr_t x2_val = get_register(x2);
-      intptr_t b2_val = get_register(b2);
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+      intptr_t b2_val = (x2 == 0) ? 0 : get_register(b2);
       int32_t alu_out = get_low_register<int32_t>(r1);
       int32_t mem_val = ReadW(b2_val + x2_val + d2, instr);
       if (op == AY) {
@@ -3266,8 +3276,8 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       int x2 = rxyInstr->X2Value();
       int b2 = rxyInstr->B2Value();
       int d2 = rxyInstr->D2Value();
-      intptr_t x2_val = get_register(x2);
-      intptr_t b2_val = get_register(b2);
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
       uint32_t alu_out = get_low_register<uint32_t>(r1);
       uint32_t mem_val = ReadWU(b2_val + x2_val + d2, instr);
 
@@ -3290,8 +3300,8 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       int x2 = rxyInstr->X2Value();
       int b2 = rxyInstr->B2Value();
       int d2 = rxyInstr->D2Value();
-      intptr_t x2_val = get_register(x2);
-      intptr_t b2_val = get_register(b2);
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
       if (op == LY) {
         uint32_t mem_val = ReadWU(b2_val + x2_val + d2, instr);
         set_low_register<uint32_t>(r1, mem_val);
