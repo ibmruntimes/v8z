@@ -3201,8 +3201,9 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       int x2 = rxyInstr->X2Value();
       int b2 = rxyInstr->B2Value();
       int d2 = rxyInstr->D2Value();
-      intptr_t x2_val = get_register(x2);
-      intptr_t b2_val = get_register(b2);
+
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
 
       if (op == LT) {
         int32_t value = ReadW(x2_val + b2_val + d2, instr);
