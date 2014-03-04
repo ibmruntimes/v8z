@@ -1726,6 +1726,25 @@ class RILInstruction : Instruction {
     inline int size() const { return 6; }
 };
 
+// SS Instruction
+class SSInstruction : Instruction {
+  public:
+    inline int B1Value() const {
+      return Bits<SixByteInstr, int>(31, 28);
+    }
+    inline int B2Value() const {
+      return Bits<SixByteInstr, int>(15, 12);
+    }
+    inline int D1Value() const {
+      return Bits<SixByteInstr, int>(27, 16);
+    }
+    inline int D2Value() const {
+      return Bits<SixByteInstr, int>(11, 0);
+    }
+    inline int Length() const {
+      return Bits<SixByteInstr, int>(39, 32);
+    }
+};
 
 // Helper functions for converting between register numbers and names.
 class Registers {

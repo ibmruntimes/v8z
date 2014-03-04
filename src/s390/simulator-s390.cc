@@ -3325,6 +3325,23 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       }
       break;
     }
+    case MVC: {
+      SSInstruction* ssInstr = reinterpret_cast<SSInstruction*>(instr);
+      int b1 = ssInstr->B1Value();
+      intptr_t d1 = ssInstr->D1Value();
+      int b2 = ssInstr->B2Value();
+      intptr_t d2 = ssInstr->D2Value();
+      int length = ssInstr->Length();
+      intptr_t b1_val = (b1 == 0) ? 0 : get_register(b1);
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      intptr_t src_addr = b1_val + d1;
+      intptr_t dst_addr = b2_val + d2;
+      // remember that the length is the actual length - 1
+      for (int i = 0; i < length + 1; ++i) {
+        WriteB(dst_addr, ReadB(src_addr));
+      }
+      break;
+    }
     default:
       UNREACHABLE();
       return false;
