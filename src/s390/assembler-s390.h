@@ -1561,7 +1561,6 @@ RRF1_FORM(shhhr);
 RRF1_FORM(shhlr);
 RXY_FORM(shy);
 RX_FORM(sl);
-RS1_FORM(sla);
 RSY1_FORM(slag);
 RSY1_FORM(slak);
 RXY_FORM(slb);
@@ -1580,7 +1579,6 @@ RRE_FORM(slgr);
 RRF1_FORM(slgrk);
 RRF1_FORM(slhhhr);
 RRF1_FORM(slhhlr);
-RS1_FORM(sll);
 RSY1_FORM(sllg);
 RSY1_FORM(sllk);
 RR_FORM(slr);
@@ -1595,7 +1593,6 @@ RXE_FORM(sqeb);
 RRE_FORM(sqebr);
 RRE_FORM(sqxbr);
 RR_FORM(sr);
-RS1_FORM(sra);
 RSY1_FORM(srag);
 RSY1_FORM(srak);
 RS1_FORM(srda);
@@ -1721,6 +1718,12 @@ SS2_FORM(zap);
   void stm(Register r1, Register r2, const MemOperand& src);
   void stmy(Register r1, Register r2, const MemOperand& src);
   void stmg(Register r1, Register r2, const MemOperand& src);
+
+  // Shift instruction
+  void sll(Register r1, const Operand& opnd);
+  void srl(Register r1, const Operand& opnd);
+  void sla(Register r1, const Operand& opnd);
+  void sra(Register r1, const Operand& opnd);
 // end of S390instructions
 
   // PowerPC
