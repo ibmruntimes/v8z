@@ -1071,7 +1071,7 @@ void LCodeGen::DoMathFloorOfDiv(LMathFloorOfDiv* instr) {
     __ mulhw(result, result, dividend);
 
     if (static_cast<int32_t>(multiplier) < 0) {
-      __ add(result, result, dividend);
+      __ Add(result, result, dividend);
     }
     if (divisor < 0) {
       __ neg(result, result);
@@ -1082,13 +1082,13 @@ void LCodeGen::DoMathFloorOfDiv(LMathFloorOfDiv* instr) {
       __ Add(scratch, Operand(1));
       __ srwi(scratch, scratch, Operand(2));
       __ Add(scratch, Operand(-1));
-      __ add(result, result, scratch);
+      __ Add(result, result, scratch);
     } else {
       // Add one to result if low word >= 0xC0000000
       __ srwi(scratch, ip, Operand(30));
       __ Add(scratch, Operand(1));
       __ srwi(scratch, scratch, Operand(2));
-      __ add(result, result, scratch);
+      __ Add(result, result, scratch);
     }
     __ ShiftRightArithImm(result, result, shift - 32);
 #endif
@@ -1150,7 +1150,7 @@ void LCodeGen::DoMulI(LMulI* instr) {
           } else if (IsPowerOf2(constant_abs - 1)) {
             int32_t shift = WhichPowerOf2(constant_abs - 1);
             __ ShiftLeftImm(scratch, left, Operand(shift));
-            __ add(result, scratch, left);
+            __ Add(result, scratch, left);
           } else if (IsPowerOf2(constant_abs + 1)) {
             int32_t shift = WhichPowerOf2(constant_abs + 1);
             __ ShiftLeftImm(scratch, left, Operand(shift));
@@ -1523,7 +1523,7 @@ void LCodeGen::DoAddI(LAddI* instr) {
 
   if (!can_overflow) {
     Register right_reg = EmitLoadRegister(right, ip);
-    __ add(ToRegister(result), ToRegister(left), right_reg);
+    __ Add(ToRegister(result), ToRegister(left), right_reg);
   } else {  // can_overflow.
     Register right_reg = EmitLoadRegister(right, ip);
     __ AddAndCheckForOverflow(ToRegister(result),
@@ -2778,7 +2778,7 @@ void LCodeGen::DoLoadKeyedFastElement(LLoadKeyedFastElement* instr) {
     } else {
       __ ShiftLeftImm(r0, key, Operand(kPointerSizeLog2));
     }
-    __ add(scratch, elements, r0);
+    __ Add(scratch, elements, r0);
     offset = FixedArray::OffsetOfElementAt(instr->additional_index());
   }
   __ LoadP(result, FieldMemOperand(store_base, offset));
@@ -2824,13 +2824,13 @@ void LCodeGen::DoLoadKeyedFastDoubleElement(
            ((constant_key + instr->additional_index()) << element_size_shift)));
   } else {
     __ IndexToArrayOffset(r0, key, element_size_shift, key_is_tagged);
-    __ add(elements, elements, r0);
+    __ Add(elements, elements, r0);
     address_offset = (FixedDoubleArray::kHeaderSize - kHeapObjectTag) +
                      (instr->additional_index() << element_size_shift);
 
     if (!is_int16((address_offset))) {
       __ mov(r0, Operand(address_offset));
-      __ add(elements, elements, r0);
+      __ Add(elements, elements, r0);
       address_offset = 0;
     }
   }
@@ -2843,7 +2843,7 @@ void LCodeGen::DoLoadKeyedFastDoubleElement(
                                    address_offset + sizeof(kHoleNanLower32)));
       } else {
         __ lhi(r0, Operand(address_offset));
-        __ add(scratch, elements, r0);
+        __ Add(scratch, elements, r0);
         __ lwz(scratch, MemOperand(scratch, sizeof(kHoleNanLower32)));
       }
     } else {
@@ -2936,7 +2936,7 @@ void LCodeGen::DoLoadKeyedSpecializedArrayElement(
              Operand(constant_key << element_size_shift));
     } else {
       __ IndexToArrayOffset(r0, key, element_size_shift, key_is_tagged);
-      __ add(scratch0(), external_pointer, r0);
+      __ Add(scratch0(), external_pointer, r0);
     }
     if (elements_kind == EXTERNAL_FLOAT_ELEMENTS) {
       __ lfs(result, MemOperand(scratch0(), additional_offset));
@@ -3651,7 +3651,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
   __ lhi(r7, Operand(18273));
   __ Mul(r6, r6, r7);
   __ srwi(r4, r4, Operand(16));
-  __ add(r4, r6, r4);
+  __ Add(r4, r6, r4);
   // Save state[0].
   __ st(r4, FieldMemOperand(r5, ByteArray::kHeaderSize));
 
@@ -3660,14 +3660,14 @@ void LCodeGen::DoRandom(LRandom* instr) {
   __ mov(r7, Operand(36969));
   __ Mul(r6, r6, r7);
   __ srwi(r3, r3, Operand(16));
-  __ add(r3, r6, r3);
+  __ Add(r3, r6, r3);
   // Save state[1].
   __ st(r3, FieldMemOperand(r5, ByteArray::kHeaderSize + kSeedSize));
 
   // Random bit pattern = (state[0] << 14) + (state[1] & 0x3FFFF)
   __ ExtractBitMask(r3, r3, 0x3FFFF);
   __ slwi(r0, r4, Operand(14));
-  __ add(r3, r3, r0);
+  __ Add(r3, r3, r0);
 
   __ bind(deferred->exit());
 
@@ -4012,7 +4012,7 @@ void LCodeGen::DoStoreKeyedFastElement(LStoreKeyedFastElement* instr) {
     } else {
       __ ShiftLeftImm(scratch, key, Operand(kPointerSizeLog2));
     }
-    __ add(scratch, elements, scratch);
+    __ Add(scratch, elements, scratch);
     offset = FixedArray::OffsetOfElementAt(instr->additional_index());
   }
   __ StoreP(value, FieldMemOperand(store_base, offset), r0);
@@ -4063,7 +4063,7 @@ void LCodeGen::DoStoreKeyedFastDoubleElement(
            FixedDoubleArray::kHeaderSize - kHeapObjectTag));
   } else {
     __ IndexToArrayOffset(scratch, key, element_size_shift, key_is_tagged);
-    __ add(scratch, elements, scratch);
+    __ Add(scratch, elements, scratch);
     __ Add(scratch,
             Operand(FixedDoubleArray::kHeaderSize - kHeapObjectTag));
   }
@@ -4124,7 +4124,7 @@ void LCodeGen::DoStoreKeyedSpecializedArrayElement(
              Operand(constant_key << element_size_shift));
     } else {
       __ IndexToArrayOffset(r0, key, element_size_shift, key_is_tagged);
-      __ add(scratch0(), external_pointer, r0);
+      __ Add(scratch0(), external_pointer, r0);
     }
     if (elements_kind == EXTERNAL_FLOAT_ELEMENTS) {
       __ frsp(double_scratch0(), value);
@@ -4321,7 +4321,7 @@ void LCodeGen::DoStringCharFromCode(LStringCharFromCode* instr) {
   __ bgt(deferred->entry());
   __ LoadRoot(result, Heap::kSingleCharacterStringCacheRootIndex);
   __ ShiftLeftImm(r0, char_code, Operand(kPointerSizeLog2));
-  __ add(result, result, r0);
+  __ Add(result, result, r0);
   __ LoadP(result, FieldMemOperand(result, FixedArray::kHeaderSize));
   __ LoadRoot(ip, Heap::kUndefinedValueRootIndex);
   __ cmp(result, ip);
@@ -5690,7 +5690,7 @@ void LCodeGen::DoLoadFieldByIndex(LLoadFieldByIndex* instr) {
   __ blt(&out_of_object);
 
   __ SmiToPtrArrayOffset(r0, index);
-  __ add(scratch, object, r0);
+  __ Add(scratch, object, r0);
   __ LoadP(result, FieldMemOperand(scratch, JSObject::kHeaderSize));
 
   __ b(&done);

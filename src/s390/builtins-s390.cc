@@ -235,7 +235,7 @@ static void AllocateJSArray(MacroAssembler* masm,
   __ lhi(elements_array_end,
          Operand((JSArray::kSize + FixedArray::kHeaderSize) / kPointerSize));
   __ SmiUntag(scratch1, array_size);
-  __ add(elements_array_end, elements_array_end, scratch1);
+  __ Add(elements_array_end, elements_array_end, scratch1);
   __ AllocateInNewSpace(
       elements_array_end,
       result,
@@ -291,7 +291,7 @@ static void AllocateJSArray(MacroAssembler* masm,
   // elements_array_storage: elements array element storage
   // array_size: smi-tagged size of elements array
   __ SmiToPtrArrayOffset(scratch1, array_size);
-  __ add(elements_array_end, elements_array_storage, scratch1);
+  __ Add(elements_array_end, elements_array_storage, scratch1);
 
   // Fill the allocated FixedArray with the hole value if requested.
   // result: JSObject (untagged)
@@ -616,7 +616,7 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
   // First args = sp[(argc - 1) * 4].
   __ Sub(r3, Operand(1));
   __ ShiftLeftImm(r3, r3, Operand(kPointerSizeLog2));
-  __ add(sp, sp, r3);
+  __ Add(sp, sp, r3);
   __ LoadP(r3, MemOperand(sp));
   // sp now point to args[0], drop args[0] + receiver.
   __ Drop(2);
@@ -870,7 +870,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // r8: First in-object property of JSObject (not tagged)
       uint32_t byte;
       __ ShiftLeftImm(r9, r6, Operand(kPointerSizeLog2));
-      __ add(r9, r7, r9);  // End of object.
+      __ Add(r9, r7, r9);  // End of object.
       ASSERT_EQ(3 * kPointerSize, JSObject::kHeaderSize);
       __ LoadRoot(r10, Heap::kUndefinedValueRootIndex);
       if (count_constructions) {
@@ -886,7 +886,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
                            ((byte + 1) * kBitsPerByte) - 1,
                            byte * kBitsPerByte);
         __ ShiftLeftImm(r3, r3, Operand(kPointerSizeLog2));
-        __ add(r3, r8, r3);
+        __ Add(r3, r8, r3);
         // r3: offset of first field after pre-allocated fields
         if (FLAG_debug_code) {
           __ cmp(r3, r9);
@@ -922,7 +922,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       __ ExtractBitRange(r9, r3,
                          ((byte + 1) * kBitsPerByte) - 1,
                          byte * kBitsPerByte);
-      __ add(r6, r6, r9);
+      __ Add(r6, r6, r9);
       STATIC_ASSERT(Map::kInObjectPropertiesByte < 4);
       byte = Map::kInObjectPropertiesByte;
 #if __BYTE_ORDER == __BIG_ENDIAN
@@ -974,7 +974,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // r7: JSObject
       // r8: FixedArray (not tagged)
       __ ShiftLeftImm(r9, r6, Operand(kPointerSizeLog2));
-      __ add(r9, r5, r9);  // End of object.
+      __ Add(r9, r5, r9);  // End of object.
       ASSERT_EQ(2 * kPointerSize, FixedArray::kHeaderSize);
       { Label loop, entry;
         if (count_constructions) {
@@ -1125,7 +1125,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
   }
 
   __ SmiToPtrArrayOffset(r4, r4);
-  __ add(sp, sp, r4);
+  __ Add(sp, sp, r4);
   __ Add(sp, Operand(kPointerSize));
   __ IncrementCounter(isolate->counters()->constructed_objects(), 1, r4, r5);
   __ blr();
@@ -1179,7 +1179,7 @@ static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
     // r7: argv, i.e. points to first arg
     Label loop, entry;
     __ ShiftLeftImm(r0, r6, Operand(kPointerSizeLog2));
-    __ add(r5, r7, r0);
+    __ Add(r5, r7, r0);
     // r5 points past last arg.
     __ b(&entry);
     __ bind(&loop);
@@ -1393,7 +1393,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
   // r3: actual number of arguments
   Label slow, non_function;
   __ ShiftLeftImm(r4, r3, Operand(kPointerSizeLog2));
-  __ add(r4, sp, r4);
+  __ Add(r4, sp, r4);
   __ LoadP(r4, MemOperand(r4));
   __ JumpIfSmi(r4, &non_function);
   __ CompareObjectType(r4, r5, r5, JS_FUNCTION_TYPE);
@@ -1432,7 +1432,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
 
     // Compute the receiver in non-strict mode.
     __ ShiftLeftImm(ip, r3, Operand(kPointerSizeLog2));
-    __ add(r5, sp, ip);
+    __ Add(r5, sp, ip);
     __ LoadP(r5, MemOperand(r5, -kPointerSize));
     // r3: actual number of arguments
     // r4: function
@@ -1470,7 +1470,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
 
     // Restore the function to r4, and the flag to r7.
     __ ShiftLeftImm(r7, r3, Operand(kPointerSizeLog2));
-    __ add(r7, sp, r7);
+    __ Add(r7, sp, r7);
     __ LoadP(r4, MemOperand(r7));
     __ lhi(r7, Operand(0, RelocInfo::NONE));
     __ b(&patch_receiver);
@@ -1487,7 +1487,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
 
     __ bind(&patch_receiver);
     __ ShiftLeftImm(ip, r3, Operand(kPointerSizeLog2));
-    __ add(r6, sp, ip);
+    __ Add(r6, sp, ip);
     __ StoreP(r5, MemOperand(r6, -kPointerSize));
 
     __ b(&shift_arguments);
@@ -1509,7 +1509,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
   // r4: function
   // r7: call type (0: JS function, 1: function proxy, 2: non-function)
   __ ShiftLeftImm(ip, r3, Operand(kPointerSizeLog2));
-  __ add(r5, sp, ip);
+  __ Add(r5, sp, ip);
   __ StoreP(r4, MemOperand(r5, -kPointerSize));
 
   // 4. Shift arguments and return address one slot down on the stack
@@ -1522,7 +1522,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
   { Label loop;
     // Calculate the copy start address (destination). Copy end address is sp.
     __ ShiftLeftImm(ip, r3, Operand(kPointerSizeLog2));
-    __ add(r5, sp, ip);
+    __ Add(r5, sp, ip);
 
     __ bind(&loop);
     __ LoadP(ip, MemOperand(r5, -kPointerSize));
@@ -1786,7 +1786,7 @@ static void LeaveArgumentsAdaptorFrame(MacroAssembler* masm) {
   __ LoadP(r0, MemOperand(sp, kPointerSize));
   __ mtlr(r0);
   __ SmiToPtrArrayOffset(r0, r4);
-  __ add(sp, sp, r0);
+  __ Add(sp, sp, r0);
   __ Add(sp, Operand(3 * kPointerSize));  // adjust for receiver + fp + lr
 }
 
@@ -1818,7 +1818,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     // r5: expected number of arguments
     // r6: code entry to call
     __ SmiToPtrArrayOffset(r3, r3);
-    __ add(r3, r3, fp);
+    __ Add(r3, r3, fp);
     // adjust for return address and receiver
     __ Add(r3, Operand(2 * kPointerSize));
     __ ShiftLeftImm(r5, r5, Operand(kPointerSizeLog2));
@@ -1851,7 +1851,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     // r5: expected number of arguments
     // r6: code entry to call
     __ SmiToPtrArrayOffset(r3, r3);
-    __ add(r3, r3, fp);
+    __ Add(r3, r3, fp);
 
     // Copy the arguments (including the receiver) to the new stack frame.
     // r3: copy start address

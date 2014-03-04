@@ -817,7 +817,7 @@ static MemOperand GenerateMappedArgumentsLookup(MacroAssembler* masm,
   __ LoadP(scratch1, FieldMemOperand(scratch1, FixedArray::kHeaderSize));
   __ SmiToPtrArrayOffset(scratch3, scratch2);
   __ Add(scratch3, Operand(Context::kHeaderSize - kHeapObjectTag));
-  __ add(scratch1, scratch1, scratch3);
+  __ Add(scratch1, scratch1, scratch3);
   return MemOperand(scratch1);
 }
 
@@ -844,7 +844,7 @@ static MemOperand GenerateUnmappedArgumentsLookup(MacroAssembler* masm,
   __ Add(scratch,
           scratch,
           Operand(FixedArray::kHeaderSize - kHeapObjectTag));
-  __ add(backing_store, backing_store, scratch);
+  __ Add(backing_store, backing_store, scratch);
   return MemOperand(backing_store);
 }
 
@@ -1056,7 +1056,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   __ mov(r7, Operand(cache_keys));
   __ mr(r0, r5);
   __ ShiftLeftImm(r5, r6, Operand(kPointerSizeLog2 + 1));
-  __ add(r7, r7, r5);
+  __ Add(r7, r7, r5);
   __ mr(r5, r0);
 
   for (int i = 0; i < kEntriesPerBucket - 1; i++) {
@@ -1110,7 +1110,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   // Load in-object property.
   __ bind(&load_in_object_property);
   __ lbz(r9, FieldMemOperand(r5, Map::kInstanceSizeOffset));
-  __ add(r9, r9, r8);  // Index from start of object.
+  __ Add(r9, r9, r8);  // Index from start of object.
   __ Sub(r4, Operand(kHeapObjectTag));  // Remove the heap tag.
   __ ShiftLeftImm(r3, r9, Operand(kPointerSizeLog2));
   __ LoadPX(r3, MemOperand(r3, r4));

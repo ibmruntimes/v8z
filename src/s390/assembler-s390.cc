@@ -815,11 +815,6 @@ void Assembler::subfic(Register dst, Register src, const Operand& imm) {
   d_form(SUBFIC, dst, src, imm.imm_, true);
 }
 
-void Assembler::add(Register dst, Register src1, Register src2,
-                    OEBit o, RCBit r) {
-  xo_form(EXT2 | ADDX, dst, src1, src2, o, r);
-}
-
 // Multiply low word
 void Assembler::mullw(Register dst, Register src1, Register src2,
                     OEBit o, RCBit r) {

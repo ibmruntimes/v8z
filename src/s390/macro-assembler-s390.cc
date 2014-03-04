@@ -748,7 +748,7 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles,
 
   if (argument_count.is_valid()) {
     ShiftLeftImm(argument_count, argument_count, Operand(kPointerSizeLog2));
-    add(sp, sp, argument_count);
+    Add(sp, sp, argument_count);
   }
 }
 
@@ -1074,11 +1074,11 @@ void MacroAssembler::JumpToHandlerEntry() {
   Add(r6, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   srwi(r5, r5, Operand(StackHandler::kKindWidth));  // Handler index.
   slwi(ip, r5, Operand(kPointerSizeLog2));
-  add(ip, r6, ip);
+  Add(ip, r6, ip);
   LoadP(r5, MemOperand(ip));  // Smi-tagged offset.
   Add(r4, Operand(Code::kHeaderSize - kHeapObjectTag));  // Code start.
   SmiUntag(ip, r5);
-  add(r0, r4, ip);
+  Add(r0, r4, ip);
   mtctr(r0);
   bcr();
 }
@@ -1259,22 +1259,22 @@ void MacroAssembler::GetNumberHash(Register t0, Register scratch) {
   // hash = ~hash + (hash << 15);
   notx(scratch, t0);
   slwi(t0, t0, Operand(15));
-  add(t0, scratch, t0);
+  Add(t0, scratch, t0);
   // hash = hash ^ (hash >> 12);
   srwi(scratch, t0, Operand(12));
   xor_(t0, t0, scratch);
   // hash = hash + (hash << 2);
   slwi(scratch, t0, Operand(2));
-  add(t0, t0, scratch);
+  Add(t0, t0, scratch);
   // hash = hash ^ (hash >> 4);
   srwi(scratch, t0, Operand(4));
   xor_(t0, t0, scratch);
   // hash = hash * 2057;
   mr(r0, t0);
   slwi(scratch, t0, Operand(3));
-  add(t0, t0, scratch);
+  Add(t0, t0, scratch);
   slwi(scratch, r0, Operand(11));
-  add(t0, t0, scratch);
+  Add(t0, t0, scratch);
   // hash = hash ^ (hash >> 16);
   srwi(scratch, t0, Operand(16));
   xor_(t0, t0, scratch);
@@ -1331,11 +1331,11 @@ void MacroAssembler::LoadFromNumberDictionary(Label* miss,
     // Scale the index by multiplying by the element size.
     ASSERT(SeededNumberDictionary::kEntrySize == 3);
     slwi(ip, t2, Operand(1));
-    add(t2, t2, ip);  // t2 = t2 * 3
+    Add(t2, t2, ip);  // t2 = t2 * 3
 
     // Check if the key is identical to the name.
     slwi(t2, t2, Operand(kPointerSizeLog2));
-    add(t2, elements, t2);
+    Add(t2, elements, t2);
     LoadP(ip,
           FieldMemOperand(t2, SeededNumberDictionary::kElementsStartOffset));
     cmp(key, ip);
@@ -1822,7 +1822,7 @@ void MacroAssembler::StoreNumberToDoubleElements(Register value_reg,
 
   bind(&have_double_value);
   SmiToDoubleArrayOffset(scratch1, key_reg);
-  add(scratch1, elements_reg, scratch1);
+  Add(scratch1, elements_reg, scratch1);
 #if V8_TARGET_ARCH_S390X
   Add(scratch1, Operand(-kHeapObjectTag));
   stg(double_reg, MemOperand(scratch1, FixedDoubleArray::kHeaderSize));
@@ -1867,7 +1867,7 @@ void MacroAssembler::StoreNumberToDoubleElements(Register value_reg,
   Add(scratch1, elements_reg,
        Operand(FixedDoubleArray::kHeaderSize - kHeapObjectTag));
   SmiToDoubleArrayOffset(scratch4, key_reg);
-  add(scratch1, scratch1, scratch4);
+  Add(scratch1, scratch1, scratch4);
   // scratch1 is now effective address of the double element
 
   Register untagged_value = elements_reg;
@@ -1895,18 +1895,18 @@ void MacroAssembler::AddAndCheckForOverflow(Register dst,
   // C = A+B; C overflows if A/B have same sign and C has diff sign than A
   if (dst.is(left)) {
     mr(scratch, left);            // Preserve left.
-    add(dst, left, right);        // Left is overwritten.
+    Add(dst, left, right);        // Left is overwritten.
     xor_(scratch, dst, scratch);  // Original left.
     xor_(overflow_dst, dst, right);
     and_(overflow_dst, overflow_dst, scratch, SetRC);
   } else if (dst.is(right)) {
     mr(scratch, right);           // Preserve right.
-    add(dst, left, right);        // Right is overwritten.
+    Add(dst, left, right);        // Right is overwritten.
     xor_(scratch, dst, scratch);  // Original right.
     xor_(overflow_dst, dst, left);
     and_(overflow_dst, overflow_dst, scratch, SetRC);
   } else {
-    add(dst, left, right);
+    Add(dst, left, right);
     xor_(overflow_dst, dst, left);
     xor_(scratch, dst, right);
     and_(overflow_dst, scratch, overflow_dst, SetRC);
@@ -3659,7 +3659,7 @@ void MacroAssembler::GetMarkBits(Register addr_reg,
                   kPageSizeBits - 1,
                   kLowBits);
   ShiftLeftImm(ip, ip, Operand(Bitmap::kBytesPerCellLog2));
-  add(bitmap_reg, bitmap_reg, ip);
+  Add(bitmap_reg, bitmap_reg, ip);
   lhi(ip, Operand(1));
   slw(mask_reg, ip, mask_reg);
 }
@@ -3774,7 +3774,7 @@ void MacroAssembler::EnsureNotWhite(
   mov(ip, Operand(~Page::kPageAlignmentMask));
   and_(bitmap_scratch, bitmap_scratch, ip);
   lwz(ip, MemOperand(bitmap_scratch, MemoryChunk::kLiveBytesOffset));
-  add(ip, ip, length);
+  Add(ip, ip, length);
   st(ip, MemOperand(bitmap_scratch, MemoryChunk::kLiveBytesOffset));
 
   bind(&done);
@@ -4262,7 +4262,7 @@ void MacroAssembler::AddSmiLiteral(Register dst, Register src, Smi *smi,
                                    Register scratch) {
 #if V8_TARGET_ARCH_S390X
   LoadSmiLiteral(scratch, smi);
-  add(dst, src, scratch);
+  Add(dst, src, scratch);
 #else
   Add(dst, src, Operand(reinterpret_cast<intptr_t>(smi)));
 #endif

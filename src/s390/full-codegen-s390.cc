@@ -1999,7 +1999,7 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
       Label add_no_overflow;
       // C = A+B; C overflows if A/B have same sign and C has diff sign than A
       __ xor_(r0, left, right);
-      __ add(scratch1, left, right);
+      __ Add(scratch1, left, right);
       __ TestSignBit(r0, r0);
       __ bne(&add_no_overflow /*, cr0*/);
       __ xor_(r0, right, scratch1);
@@ -2055,7 +2055,7 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
       // We need -0 if we were multiplying a negative number with 0 to get 0.
       // We know one of them was zero.
       __ bind(&mul_zero);
-      __ add(scratch2, right, left);
+      __ Add(scratch2, right, left);
       __ cmpi(scratch2, Operand::Zero());
       __ blt(&stub_call);
       __ LoadSmiLiteral(right, Smi::FromInt(0));
@@ -2760,7 +2760,7 @@ void FullCodeGenerator::EmitIsStringWrapperSafeForDefaultValueOf(
   // Calculate the end of the descriptor array.
   __ mr(r5, r7);
   __ SmiToPtrArrayOffset(ip, r6);
-  __ add(r5, r5, ip);
+  __ Add(r5, r5, ip);
 
   // Loop through all the keys in the descriptor array. If one of these is the
   // symbol valueOf the result is false.
@@ -3642,7 +3642,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   __ Add(element,
           elements, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ ShiftLeftImm(elements_end, array_length, Operand(kPointerSizeLog2));
-  __ add(elements_end, element, elements_end);
+  __ Add(elements_end, element, elements_end);
   // Loop condition: while (element < elements_end).
   // Live values in registers:
   //   elements: Fixed array of strings.
@@ -3741,7 +3741,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   // result_pos to the position of the result where to write the first
   // character.
   __ ShiftLeftImm(elements_end, array_length, Operand(kPointerSizeLog2));
-  __ add(elements_end, element, elements_end);
+  __ Add(elements_end, element, elements_end);
   result_pos = array_length;  // End of live range for array_length.
   array_length = no_reg;
   __ Add(result_pos,
@@ -4570,7 +4570,7 @@ void FullCodeGenerator::ExitFinallyBlock() {
   __ pop(result_register());
   __ SmiUntag(r4);
   __ mov(ip, Operand(masm_->CodeObject()));
-  __ add(ip, ip, r4);
+  __ Add(ip, ip, r4);
   __ mtctr(ip);
   __ bcr();
 }

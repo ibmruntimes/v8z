@@ -180,7 +180,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   __ Add(r6, r7, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ Add(r10, r9, Operand(FixedDoubleArray::kHeaderSize));
   __ SmiToDoubleArrayOffset(r9, r8);
-  __ add(r9, r10, r9);
+  __ Add(r9, r10, r9);
 #if V8_TARGET_ARCH_S390X
   __ mov(r7, Operand(kHoleNanInt64));
 #else
@@ -285,7 +285,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   // Allocate new FixedArray.
   __ lhi(r3, Operand(FixedDoubleArray::kHeaderSize));
   __ SmiToPtrArrayOffset(r0, r8);
-  __ add(r3, r3, r0);
+  __ Add(r3, r3, r0);
   __ AllocateInNewSpace(r3, r9, r10, r22, &gc_required, NO_ALLOCATION_FLAGS);
   // r9: destination FixedArray, not tagged as heap object
   // Set destination FixedDoubleArray's length and map.
@@ -298,7 +298,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   __ Add(r6, r9, Operand(FixedArray::kHeaderSize));
   __ Add(r9, Operand(kHeapObjectTag));
   __ SmiToPtrArrayOffset(r8, r8);
-  __ add(r8, r6, r8);
+  __ Add(r8, r6, r8);
   __ LoadRoot(r10, Heap::kTheHoleValueRootIndex);
   __ LoadRoot(r22, Heap::kHeapNumberMapRootIndex);
   // Using offsetted addresses in r7 to fully take advantage of post-indexing.
@@ -420,7 +420,7 @@ void StringCharLoadGenerator::Generate(MacroAssembler* masm,
   __ LoadP(result, FieldMemOperand(string, SlicedString::kOffsetOffset));
   __ LoadP(string, FieldMemOperand(string, SlicedString::kParentOffset));
   __ SmiUntag(ip, result);
-  __ add(index, index, ip);
+  __ Add(index, index, ip);
   __ b(&indirect_string_loaded);
 
   // Handle cons strings.
