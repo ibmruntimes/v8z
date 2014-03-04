@@ -1,7 +1,7 @@
 v8z
 =====
 
-Port of Google V8 javascript engine to IBM System Z - xLinux. Port based on v8ppc
+Port of Google V8 javascript engine to IBM System Z - zLinux. Port based on v8ppc
 
 
 Compile code:<br><code>
