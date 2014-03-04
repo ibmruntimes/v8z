@@ -219,9 +219,8 @@ int Decoder::FormatRegister(Instruction* instr, const char* format) {
     // should be 0.
     if (format[2] == 'd') {
       if (reg == 0)
-        Print("0");
-      else
-        PrintRegister(reg);
+        return 4;
+      PrintRegister(reg);
       return 3;
     } else {
       PrintRegister(reg);
