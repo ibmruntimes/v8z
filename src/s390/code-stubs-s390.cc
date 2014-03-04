@@ -3936,9 +3936,12 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
 
   // Branch and link to JSEntryTrampoline.
   // the address points to the start of the code object, skip the header
-  __ Add(r0, ip, Operand(Code::kHeaderSize - kHeapObjectTag));
+/*  __ Add(r0, ip, Operand(Code::kHeaderSize - kHeapObjectTag));
   __ mtlr(r0);
   __ bclr(BA, SetLK);  // make the call
+*/
+  __ Add(ip, Operand(Code::kHeaderSize - kHeapObjectTag));
+  __ basr(r14, ip);
 
   // Unlink this frame from the handler chain.
   __ PopTryHandler();
