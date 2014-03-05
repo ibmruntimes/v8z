@@ -4166,14 +4166,14 @@ void MacroAssembler::LoadDoubleLiteral(DwVfpRegister result,
   Add(sp, Operand(8));  // restore the stack ptr
 }
 
-void MacroAssembler::Cmpi(Register src1, const Operand& src2, Register scratch,
-                          CRegister cr) {
+void MacroAssembler::Cmpi(Register src1, const Operand& src2,
+                          Register scratch) {
   intptr_t value = src2.immediate();
   if (is_int16(value)) {
-    cmpi(src1, src2, cr);
+    cmpi(src1, src2);
   } else {
     mov(scratch, src2);
-    cmp(src1, scratch, cr);
+    cmp(src1, scratch);
   }
 }
 

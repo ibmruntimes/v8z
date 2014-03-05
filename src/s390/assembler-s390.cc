@@ -876,8 +876,9 @@ void Assembler::orx(Register dst, Register src1, Register src2, RCBit rc) {
   x_form(EXT2 | ORX, dst, src1, src2, rc);
 }
 
-void Assembler::cmpi(Register src1, const Operand& src2, CRegister cr) {
+void Assembler::cmpi(Register src1, const Operand& src2) {
   intptr_t imm16 = src2.imm_;
+  CRegister cr = cr7;
 #if V8_TARGET_ARCH_PPC64
   int L = 1;
 #else
@@ -902,12 +903,13 @@ void Assembler::cmpli(Register src1, const Operand& src2, CRegister cr) {
   emit(CMPLI | cr.code()*B23 | L*B21 | src1.code()*B16 | uimm16);
 }
 
-void Assembler::cmp(Register src1, Register src2, CRegister cr) {
+void Assembler::cmp(Register src1, Register src2) {
 #if V8_TARGET_ARCH_S390X
   int L = 1;
 #else
   int L = 0;
 #endif
+  CRegister cr = cr7;
   ASSERT(cr.code() >= 0 && cr.code() <= 7);
   emit(EXT2 | CMP | cr.code()*B23 | L*B21 | src1.code()*B16 |
        src2.code()*B11);

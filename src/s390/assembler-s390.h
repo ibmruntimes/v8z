@@ -1754,8 +1754,6 @@ SS2_FORM(zap);
   void xori(Register dst, Register src, const Operand& imm);
   void xoris(Register rb, Register rs, const Operand& imm);
   void xor_(Register dst, Register src1, Register src2, RCBit rc = LeaveRC);
-  void cmpi(Register src1, const Operand& src2, CRegister cr = cr7);
-  void cmpli(Register src1, const Operand& src2, CRegister cr = cr7);
   void lhi(Register dst, const Operand& imm);
   void lis(Register dst, const Operand& imm);
   //  void LoadRR(Register dst, Register src);
@@ -1835,8 +1833,10 @@ SS2_FORM(zap);
   void cntlzw_(Register dst, Register src, RCBit rc = LeaveRC);
   // end PowerPC
 
-  void cmp(Register src1, Register src2, CRegister cr = cr7);
+  void cmp(Register src1, Register src2);
   void cmpl(Register src1, Register src2, CRegister cr = cr7);
+  void cmpi(Register src1, const Operand& src2);
+  void cmpli(Register src1, const Operand& src2, CRegister cr = cr7);
 
   // Multiply instructions
 

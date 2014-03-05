@@ -1812,7 +1812,8 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
 #else
     ASSERT(Assembler::IsRlwinm(instr_at_patch));
 #endif
-    patcher.masm()->cmp(reg, reg, cr0);
+    // @TODO(JOHN): not sure if removing cr0 will cause a problem.
+    patcher.masm()->cmp(reg, reg/*, cr0*/);
   }
 
   ASSERT(Assembler::IsBranch(branch_instr));

@@ -644,8 +644,7 @@ class MacroAssembler: public Assembler {
 
 
 
-  void Cmpi(Register src1, const Operand& src2, Register scratch,
-            CRegister cr = cr7);
+  void Cmpi(Register src1, const Operand& src2, Register scratch);
   void Cmpli(Register src1, const Operand& src2, Register scratch,
              CRegister cr = cr7);
   void And(Register rb, Register rs, const Operand& rx, RCBit rc = LeaveRC);
@@ -1551,19 +1550,18 @@ class MacroAssembler: public Assembler {
 
 #if V8_TARGET_ARCH_S390X
   inline void TestIfInt32(Register value,
-                          Register scratch1, Register scratch2,
-                          CRegister cr = cr7) {
+                          Register scratch1, Register scratch2) {
     // High bits must be identical to fit into an 32-bit integer
     srawi(scratch1, value, 31);
     sradi(scratch2, value, 32);
-    cmp(scratch1, scratch2, cr);
+    cmp(scratch1, scratch2);
   }
 #else
   inline void TestIfInt32(Register hi_word, Register lo_word,
-                          Register scratch, CRegister cr = cr7) {
+                          Register scratch) {
     // High bits must be identical to fit into an 32-bit integer
     srawi(scratch, lo_word, 31);
-    cmp(scratch, hi_word, cr);
+    cmp(scratch, hi_word);
   }
 #endif
 

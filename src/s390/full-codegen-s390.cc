@@ -75,7 +75,7 @@ class JumpPatchSite BASE_EMBEDDED {
     ASSERT(!patch_site_.is_bound() && !info_emitted_);
     Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm_);
     __ bind(&patch_site_);
-    __ cmp(reg, reg, cr0);
+    __ cmp(reg, reg/*, cr0*/);
     __ beq(target /*, cr0*/);  // Always taken before patched.
   }
 
@@ -85,7 +85,7 @@ class JumpPatchSite BASE_EMBEDDED {
     Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm_);
     ASSERT(!patch_site_.is_bound() && !info_emitted_);
     __ bind(&patch_site_);
-    __ cmp(reg, reg, cr0);
+    __ cmp(reg, reg/*, cr0*/);
     __ bne(target /*, cr0*/);  // Never taken before patched.
   }
 
