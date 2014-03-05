@@ -188,7 +188,7 @@ bool AreAliased(Register reg1,
 #define AddRIHW            ahi
 
 // Load / Store
-#define LoadRR             lgr
+#define LoadRR             lr
 #define LoadImmP           lhi
 
 // Compare
