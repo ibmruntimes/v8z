@@ -3152,7 +3152,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       int rx = rxyInstr->X2Value();
       int offset = rxyInstr->D2Value();
       intptr_t rb_val = (rb == 0) ? 0 : get_register(rb);
-      intptr_t rx_val = (rb == 0) ? 0 : get_register(rx);
+      intptr_t rx_val = (rx == 0) ? 0 : get_register(rx);
       set_register(r1, rx_val + rb_val + offset);
       break;
     }
@@ -3289,7 +3289,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       int b2 = rxyInstr->B2Value();
       int d2 = rxyInstr->D2Value();
       intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
-      intptr_t b2_val = (x2 == 0) ? 0 : get_register(b2);
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
       int32_t alu_out = get_low_register<int32_t>(r1);
       int32_t mem_val = ReadW(b2_val + x2_val + d2, instr);
       if (op == AY) {
