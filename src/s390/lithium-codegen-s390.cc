@@ -4428,7 +4428,7 @@ void LCodeGen::DoNumberTagU(LNumberTagU* instr) {
   Register reg = ToRegister(input);
 
   DeferredNumberTagU* deferred = new(zone()) DeferredNumberTagU(this, instr);
-  __ Cmpli(reg, Operand(Smi::kMaxValue), r0);
+  __ Cmpli(reg, Operand(Smi::kMaxValue));
   __ bgt(deferred->entry());
   __ SmiTag(reg, reg);
   __ bind(deferred->exit());
