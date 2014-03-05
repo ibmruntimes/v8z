@@ -365,7 +365,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   __ Add(r6, Operand(kPointerSize));
 
   __ bind(&entry);
-  __ cmpl(r6, r8);
+  __ Cmpl(r6, r8);
   __ blt(&loop);
 
   __ Pop(r6, r5, r4, r3);

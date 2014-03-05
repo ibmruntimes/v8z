@@ -2998,7 +2998,7 @@ void LCodeGen::DoLoadKeyedSpecializedArrayElement(
         }
         if (!instr->hydrogen()->CheckFlag(HInstruction::kUint32)) {
           __ lis(r0, Operand(SIGN_EXT_IMM16(0x8000)));
-          __ cmpl(result, r0);
+          __ Cmpl(result, r0);
           DeoptimizeIf(ge, instr->environment());
         }
         break;
@@ -3979,9 +3979,9 @@ void LCodeGen::DoBoundsCheck(LBoundsCheck* instr) {
     } else {
       __ mov(ip, Operand(constant_index));
     }
-    __ cmpl(ip, ToRegister(instr->length()));
+    __ Cmpl(ip, ToRegister(instr->length()));
   } else {
-    __ cmpl(ToRegister(instr->index()), ToRegister(instr->length()));
+    __ Cmpl(ToRegister(instr->index()), ToRegister(instr->length()));
   }
   DeoptimizeIf(ge, instr->environment());
 }
@@ -5567,7 +5567,7 @@ void LCodeGen::DoStackCheck(LStackCheck* instr) {
     // Perform stack overflow check.
     Label done;
     __ LoadRoot(ip, Heap::kStackLimitRootIndex);
-    __ cmpl(sp, ip);
+    __ Cmpl(sp, ip);
     __ bge(&done);
     StackCheckStub stub;
     CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
@@ -5581,7 +5581,7 @@ void LCodeGen::DoStackCheck(LStackCheck* instr) {
     DeferredStackCheck* deferred_stack_check =
         new(zone()) DeferredStackCheck(this, instr);
     __ LoadRoot(ip, Heap::kStackLimitRootIndex);
-    __ cmpl(sp, ip);
+    __ Cmpl(sp, ip);
     __ blt(deferred_stack_check->entry());
     EnsureSpaceForLazyDeopt();
     __ bind(instr->done_label());

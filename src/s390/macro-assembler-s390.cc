@@ -1437,7 +1437,7 @@ void MacroAssembler::AllocateInNewSpace(int object_size,
   addc(scratch2, result, obj_size_reg);
   addze(r0, r0, LeaveOE, SetRC);
   beq(gc_required /*, cr0*/);
-  cmpl(scratch2, ip);
+  Cmpl(scratch2, ip);
   bgt(gc_required);
   StoreP(scratch2, MemOperand(topaddr));
 
@@ -1525,7 +1525,7 @@ void MacroAssembler::AllocateInNewSpace(Register object_size,
   }
   addze(r0, r0, LeaveOE, SetRC);
   beq(gc_required /*, cr0*/);
-  cmpl(scratch2, ip);
+  Cmpl(scratch2, ip);
   bgt(gc_required);
 
   // Update allocation top. result temporarily holds the new top.
@@ -3406,7 +3406,7 @@ void MacroAssembler::FlushICache(Register address, size_t size,
   ASSERT(size > 0 && size <= kCacheLineSize);
   Add(scratch, address, Operand(size - 1));
   ClearRightImm(scratch, scratch, Operand(kCacheLineSizeLog2));
-  cmpl(scratch, address);
+  Cmpl(scratch, address);
   ble(&done);
 
   dcbf(r0, scratch);

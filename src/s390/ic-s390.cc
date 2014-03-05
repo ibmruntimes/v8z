@@ -341,7 +341,7 @@ static void GenerateFastArrayLoad(MacroAssembler* masm,
   }
   // Check that the key (index) is within bounds.
   __ LoadP(scratch1, FieldMemOperand(elements, FixedArray::kLengthOffset));
-  __ cmpl(key, scratch1);
+  __ Cmpl(key, scratch1);
   __ bge(out_of_range);
   // Fast case: Do the load.
   __ Add(scratch1, elements,
@@ -796,7 +796,7 @@ static MemOperand GenerateMappedArgumentsLookup(MacroAssembler* masm,
   // to the unmapped lookup with the parameter map in scratch1.
   __ LoadP(scratch2, FieldMemOperand(scratch1, FixedArray::kLengthOffset));
   __ SubSmiLiteral(scratch2, scratch2, Smi::FromInt(2), r0);
-  __ cmpl(key, scratch2);
+  __ Cmpl(key, scratch2);
   __ bge(unmapped_case);
 
   // Load element index and check whether it is the hole.
@@ -838,7 +838,7 @@ static MemOperand GenerateUnmappedArgumentsLookup(MacroAssembler* masm,
   __ CheckMap(backing_store, scratch, fixed_array_map, slow_case,
               DONT_DO_SMI_CHECK);
   __ LoadP(scratch, FieldMemOperand(backing_store, FixedArray::kLengthOffset));
-  __ cmpl(key, scratch);
+  __ Cmpl(key, scratch);
   __ bge(slow_case);
   __ SmiToPtrArrayOffset(scratch, key);
   __ Add(scratch,
@@ -1507,7 +1507,7 @@ void KeyedStoreIC::GenerateGeneric(MacroAssembler* masm,
   __ LoadP(elements, FieldMemOperand(receiver, JSObject::kElementsOffset));
   // Check array bounds. Both the key and the length of FixedArray are smis.
   __ LoadP(ip, FieldMemOperand(elements, FixedArray::kLengthOffset));
-  __ cmpl(key, ip);
+  __ Cmpl(key, ip);
   __ blt(&fast_object);
 
   // Slow case, handle jump to runtime.
@@ -1527,7 +1527,7 @@ void KeyedStoreIC::GenerateGeneric(MacroAssembler* masm,
   // Check for room in the elements backing store.
   // Both the key and the length of FixedArray are smis.
   __ LoadP(ip, FieldMemOperand(elements, FixedArray::kLengthOffset));
-  __ cmpl(key, ip);
+  __ Cmpl(key, ip);
   __ bge(&slow);
   __ LoadP(elements_map, FieldMemOperand(elements, HeapObject::kMapOffset));
   __ mov(ip, Operand(masm->isolate()->factory()->fixed_array_map()));
@@ -1549,7 +1549,7 @@ void KeyedStoreIC::GenerateGeneric(MacroAssembler* masm,
 
   // Check the key against the length in the array.
   __ LoadP(ip, FieldMemOperand(receiver, JSArray::kLengthOffset));
-  __ cmpl(key, ip);
+  __ Cmpl(key, ip);
   __ bge(&extra);
 
   KeyedStoreGenerateGenericHelper(masm, &fast_object, &fast_double,
