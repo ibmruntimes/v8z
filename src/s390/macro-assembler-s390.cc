@@ -1742,7 +1742,7 @@ void MacroAssembler::CheckFastElements(Register map,
   STATIC_ASSERT(FAST_HOLEY_ELEMENTS == 3);
   lbz(scratch, FieldMemOperand(map, Map::kBitField2Offset));
   STATIC_ASSERT(Map::kMaximumBitField2FastHoleyElementValue < 0x8000);
-  cmpli(scratch, Operand(Map::kMaximumBitField2FastHoleyElementValue));
+  Cmpli(scratch, Operand(Map::kMaximumBitField2FastHoleyElementValue));
   bgt(fail);
 }
 
@@ -1755,9 +1755,9 @@ void MacroAssembler::CheckFastObjectElements(Register map,
   STATIC_ASSERT(FAST_ELEMENTS == 2);
   STATIC_ASSERT(FAST_HOLEY_ELEMENTS == 3);
   lbz(scratch, FieldMemOperand(map, Map::kBitField2Offset));
-  cmpli(scratch, Operand(Map::kMaximumBitField2FastHoleySmiElementValue));
+  Cmpli(scratch, Operand(Map::kMaximumBitField2FastHoleySmiElementValue));
   ble(fail);
-  cmpli(scratch, Operand(Map::kMaximumBitField2FastHoleyElementValue));
+  Cmpli(scratch, Operand(Map::kMaximumBitField2FastHoleyElementValue));
   bgt(fail);
 }
 
@@ -1768,7 +1768,7 @@ void MacroAssembler::CheckFastSmiElements(Register map,
   STATIC_ASSERT(FAST_SMI_ELEMENTS == 0);
   STATIC_ASSERT(FAST_HOLEY_SMI_ELEMENTS == 1);
   lbz(scratch, FieldMemOperand(map, Map::kBitField2Offset));
-  cmpli(scratch, Operand(Map::kMaximumBitField2FastHoleySmiElementValue));
+  Cmpli(scratch, Operand(Map::kMaximumBitField2FastHoleySmiElementValue));
   bgt(fail);
 }
 
@@ -2360,7 +2360,7 @@ void MacroAssembler::EmitOutOfInt32RangeTruncate(Register result,
   // by extracting exponent (mask: 0x7ff00000)
   STATIC_ASSERT(HeapNumber::kExponentMask == 0x7ff00000u);
   ExtractBitMask(scratch, input_high, HeapNumber::kExponentMask);
-  cmpli(scratch, Operand(0x7ff));
+  Cmpli(scratch, Operand(0x7ff));
   beq(&done);
 
   // Express exponent as delta to (number of mantissa bits + 31).

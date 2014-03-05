@@ -3148,7 +3148,7 @@ void LCodeGen::DoApplyArguments(LApplyArguments* instr) {
   // Copy the arguments to this function possibly from the
   // adaptor frame below it.
   const uint32_t kArgumentsLimit = 1 * KB;
-  __ cmpli(length, Operand(kArgumentsLimit));
+  __ Cmpli(length, Operand(kArgumentsLimit));
   DeoptimizeIf(gt, instr->environment());
 
   // Push the receiver and use the register to keep the original
@@ -4317,7 +4317,7 @@ void LCodeGen::DoStringCharFromCode(LStringCharFromCode* instr) {
   Register result = ToRegister(instr->result());
   ASSERT(!char_code.is(result));
 
-  __ cmpli(char_code, Operand(String::kMaxAsciiCharCode));
+  __ Cmpli(char_code, Operand(String::kMaxAsciiCharCode));
   __ bgt(deferred->entry());
   __ LoadRoot(result, Heap::kSingleCharacterStringCacheRootIndex);
   __ ShiftLeftImm(r0, char_code, Operand(kPointerSizeLog2));
@@ -4795,7 +4795,7 @@ void LCodeGen::DoCheckInstanceType(LCheckInstanceType* instr) {
     InstanceType last;
     instr->hydrogen()->GetCheckInterval(&first, &last);
 
-    __ cmpli(scratch, Operand(first));
+    __ Cmpli(scratch, Operand(first));
 
     // If there is only one type in the interval check for equality.
     if (first == last) {
@@ -4804,7 +4804,7 @@ void LCodeGen::DoCheckInstanceType(LCheckInstanceType* instr) {
       DeoptimizeIf(lt, instr->environment());
       // Omit check for the last type.
       if (last != LAST_TYPE) {
-        __ cmpli(scratch, Operand(last));
+        __ Cmpli(scratch, Operand(last));
         DeoptimizeIf(gt, instr->environment());
       }
     }

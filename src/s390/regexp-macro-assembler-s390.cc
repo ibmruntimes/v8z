@@ -367,7 +367,7 @@ void RegExpMacroAssemblerPPC::CheckNotBackReferenceIgnoreCase(
     __ CmpRR(r25, r6);
     __ bne(&fail);
     __ Sub(r6, Operand('a'));
-    __ cmpli(r6, Operand('z' - 'a'));  // Is r6 a lowercase letter?
+    __ Cmpli(r6, Operand('z' - 'a'));  // Is r6 a lowercase letter?
     __ bgt(&fail);
 
 
@@ -580,7 +580,7 @@ bool RegExpMacroAssemblerPPC::CheckSpecialCharacterClass(uc16 type,
       __ beq(&success);
       // Check range 0x09..0x0d
       __ Sub(r3, current_character(), Operand('\t'));
-      __ cmpli(r3, Operand('\r' - '\t'));
+      __ Cmpli(r3, Operand('\r' - '\t'));
       BranchOrBacktrack(gt, on_no_match);
       __ bind(&success);
       return true;
@@ -593,7 +593,7 @@ bool RegExpMacroAssemblerPPC::CheckSpecialCharacterClass(uc16 type,
       __ Cmpi(current_character(), Operand(' '));
       BranchOrBacktrack(eq, on_no_match);
       __ Sub(r3, current_character(), Operand('\t'));
-      __ cmpli(r3, Operand('\r' - '\t'));
+      __ Cmpli(r3, Operand('\r' - '\t'));
       BranchOrBacktrack(le, on_no_match);
       return true;
     }
@@ -601,13 +601,13 @@ bool RegExpMacroAssemblerPPC::CheckSpecialCharacterClass(uc16 type,
   case 'd':
     // Match ASCII digits ('0'..'9')
     __ Sub(r3, current_character(), Operand('0'));
-    __ cmpli(current_character(), Operand('9' - '0'));
+    __ Cmpli(current_character(), Operand('9' - '0'));
     BranchOrBacktrack(gt, on_no_match);
     return true;
   case 'D':
     // Match non ASCII-digits
     __ Sub(r3, current_character(), Operand('0'));
-    __ cmpli(r3, Operand('9' - '0'));
+    __ Cmpli(r3, Operand('9' - '0'));
     BranchOrBacktrack(le, on_no_match);
     return true;
   case '.': {
@@ -615,14 +615,14 @@ bool RegExpMacroAssemblerPPC::CheckSpecialCharacterClass(uc16 type,
     __ xori(r3, current_character(), Operand(0x01));
     // See if current character is '\n'^1 or '\r'^1, i.e., 0x0b or 0x0c
     __ Sub(r3, Operand(0x0b));
-    __ cmpli(r3, Operand(0x0c - 0x0b));
+    __ Cmpli(r3, Operand(0x0c - 0x0b));
     BranchOrBacktrack(le, on_no_match);
     if (mode_ == UC16) {
       // Compare original value to 0x2028 and 0x2029, using the already
       // computed (current_char ^ 0x01 - 0x0b). I.e., check for
       // 0x201d (0x2028 - 0x0b) or 0x201e.
       __ Sub(r3, Operand(0x2028 - 0x0b));
-      __ cmpli(r3, Operand(1));
+      __ Cmpli(r3, Operand(1));
       BranchOrBacktrack(le, on_no_match);
     }
     return true;
@@ -632,7 +632,7 @@ bool RegExpMacroAssemblerPPC::CheckSpecialCharacterClass(uc16 type,
     __ xori(r3, current_character(), Operand(0x01));
     // See if current character is '\n'^1 or '\r'^1, i.e., 0x0b or 0x0c
     __ Sub(r3, Operand(0x0b));
-    __ cmpli(r3, Operand(0x0c - 0x0b));
+    __ Cmpli(r3, Operand(0x0c - 0x0b));
     if (mode_ == ASCII) {
       BranchOrBacktrack(gt, on_no_match);
     } else {
@@ -642,7 +642,7 @@ bool RegExpMacroAssemblerPPC::CheckSpecialCharacterClass(uc16 type,
       // computed (current_char ^ 0x01 - 0x0b). I.e., check for
       // 0x201d (0x2028 - 0x0b) or 0x201e.
       __ Sub(r3, Operand(0x2028 - 0x0b));
-      __ cmpli(r3, Operand(1));
+      __ Cmpli(r3, Operand(1));
       BranchOrBacktrack(gt, on_no_match);
       __ bind(&done);
     }
@@ -657,7 +657,7 @@ bool RegExpMacroAssemblerPPC::CheckSpecialCharacterClass(uc16 type,
     ExternalReference map = ExternalReference::re_word_character_map();
     __ mov(r3, Operand(map));
     __ lbzx(r3, MemOperand(r3, current_character()));
-    __ cmpli(r3, Operand::Zero());
+    __ Cmpli(r3, Operand::Zero());
     BranchOrBacktrack(eq, on_no_match);
     return true;
   }
@@ -665,13 +665,13 @@ bool RegExpMacroAssemblerPPC::CheckSpecialCharacterClass(uc16 type,
     Label done;
     if (mode_ != ASCII) {
       // Table is 128 entries, so all ASCII characters can be tested.
-      __ cmpli(current_character(), Operand('z'));
+      __ Cmpli(current_character(), Operand('z'));
       __ bgt(&done);
     }
     ExternalReference map = ExternalReference::re_word_character_map();
     __ mov(r3, Operand(map));
     __ lbzx(r3, MemOperand(r3, current_character()));
-    __ cmpli(r3, Operand::Zero());
+    __ Cmpli(r3, Operand::Zero());
     BranchOrBacktrack(ne, on_no_match);
     if (mode_ != ASCII) {
       __ bind(&done);
