@@ -4175,7 +4175,11 @@ void MacroAssembler::Cmpi(Register src1, const Operand& src2) {
 }
 
 void MacroAssembler::Cmpli(Register src1, const Operand& src2) {
-  cgfi(src1, src2);
+#if V8_TARGET_ARCH_S390X
+  clgfi(src1, src2);
+#else
+  clfi(src1, src2);
+#endif
 }
 
 void MacroAssembler::And(Register rb, Register rs, const Operand& rx,
