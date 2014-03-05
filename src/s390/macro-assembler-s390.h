@@ -191,7 +191,7 @@ bool AreAliased(Register reg1,
 #define CmpPH              chi
 #define CmpLogicalPW       clfi
 #define CmpLogicalRR       clr
-#define CmpRR              cr
+#define CmpRR              cr_z
 
 #endif
 

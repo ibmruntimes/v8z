@@ -96,7 +96,8 @@ void MacroAssembler::Jump(Handle<Code> code, RelocInfo::Mode rmode,
 
 
 int MacroAssembler::CallSize(Register target, Condition cond) {
-  return 2 * kInstrSize;
+  // 2-byte BASR is used to dispatch.
+  return 2;
 }
 
 
@@ -111,8 +112,9 @@ void MacroAssembler::Call(Register target, Condition cond) {
   positions_recorder()->WriteRecordedPositions();
 
   // branch via link register and set LK bit for return point
-  mtlr(target);
-  bclr(BA, SetLK);
+  // mtlr(target);  // @TODO Cleanup old PPC code.
+  // bclr(BA, SetLK);
+  basr(r14, target);
 
   ASSERT_EQ(CallSize(target, cond), SizeOfCodeGeneratedSince(&start));
 }
@@ -121,9 +123,9 @@ void MacroAssembler::Call(Register target, Condition cond) {
 int MacroAssembler::CallSize(
     Address target, RelocInfo::Mode rmode, Condition cond) {
   int size;
-  int movSize;
 
 #if 0  // Account for variable length Assembler::mov sequence.
+  int movSize;
   intptr_t value = reinterpret_cast<intptr_t>(target);
   if (is_int16(value) || (((value >> 16) << 16) == value)) {
     movSize = 1;
@@ -131,22 +133,13 @@ int MacroAssembler::CallSize(
     movSize = 2;
   }
   size = (2 + movSize) * kInstrSize;
-#else
-
-#if V8_TARGET_ARCH_S390X
-  movSize = 5;
-#else
-  movSize = 2;
-#endif
-  size = (2 + movSize) * kInstrSize;
-
 #endif
 
   // S390 Assembler::move sequence are IILF / IIHF
 #if V8_TARGET_ARCH_S390X
-  size = 8 + 12;  // 8 comes from the 2 * kInstrSize from PPC code above
+  size = 2 + 12;  // IILF + IIHF + BASR
 #else
-  size = 8 + 6;
+  size = 2 + 6;   // IILF + BASR
 #endif
 
   return size;
@@ -156,9 +149,9 @@ int MacroAssembler::CallSize(
 int MacroAssembler::CallSizeNotPredictableCodeSize(
     Address target, RelocInfo::Mode rmode, Condition cond) {
   int size;
-  int movSize;
 
 #if 0  // Account for variable length Assembler::mov sequence.
+  int movSize;
   intptr_t value = reinterpret_cast<intptr_t>(target);
   if (is_int16(value) || (((value >> 16) << 16) == value)) {
     movSize = 1;
@@ -166,21 +159,13 @@ int MacroAssembler::CallSizeNotPredictableCodeSize(
     movSize = 2;
   }
   size = (2 + movSize) * kInstrSize;
-#else
-
-#if V8_TARGET_ARCH_S390X
-  movSize = 5;
-#else
-  movSize = 2;
-#endif
-  size = (2 + movSize) * kInstrSize;
 #endif
 
   // S390 Assembler::move sequence are IILF / IIHF
 #if V8_TARGET_ARCH_S390X
-  size = 8 + 12;  // 8 comes from the 2 * kInstrSize from PPC code above
+  size = 2 + 12;  // IILF + IIHF + BASR
 #else
-  size = 8 + 6;
+  size = 2 + 6;  // IILF + BASR
 #endif
 
   return size;
@@ -206,8 +191,7 @@ void MacroAssembler::Call(Address target,
   //
 
   mov(ip, Operand(reinterpret_cast<intptr_t>(target), rmode));
-  mtlr(ip);
-  bclr(BA, SetLK);
+  basr(r14, ip);
 
 #if V8_TARGET_ARCH_S390X
   ASSERT(kCallTargetAddressOffset == 7 * kInstrSize);
@@ -826,11 +810,11 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
     }
   } else {
     if (actual.is_immediate()) {
-      cmpi(expected.reg(), Operand(actual.immediate()));
+      CmpPH(expected.reg(), Operand(actual.immediate()));
       beq(&regular_invoke);
       mov(r3, Operand(actual.immediate()));
     } else {
-      cmp(expected.reg(), actual.reg());
+      CmpRR(expected.reg(), actual.reg());
       beq(&regular_invoke);
     }
   }
