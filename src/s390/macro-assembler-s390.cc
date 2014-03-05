@@ -4587,6 +4587,20 @@ void MacroAssembler::StoreByte(Register src, const MemOperand& mem,
   }
 }
 
+// Shift left for pointer types.
+void MacroAssembler::ShiftLeftImm(Register dst, Register src,
+                                  const Operand& val, RCBit) {
+#if V8_TARGET_ARCH_S390X
+  sllg(dst, src, val);
+#else
+  // 32-bit shift clobbers source.  Make a copy if necessary
+  if (!dst.is(src))
+    lr(dst, src);
+  sll(dst, val);
+#endif
+}
+
+
 #ifdef DEBUG
 bool AreAliased(Register reg1,
                 Register reg2,
