@@ -110,7 +110,6 @@ bool AreAliased(Register reg1,
 #define StorePX            stg
 #define StorePUX           stdux
 #define StoreMultipleP     stmg
-#define ShiftLeftImm       sldi
 #define ShiftRightImm      srdi
 #define ClearLeftImm       clrldi
 #define ClearRightImm      clrrdi
@@ -165,7 +164,6 @@ bool AreAliased(Register reg1,
 #define StorePX            st
 #define StorePUX           stwux
 #define StoreMultipleP     stm
-#define ShiftLeftImm       slwi
 #define ShiftRightImm      srwi
 #define ClearLeftImm       clrlwi
 #define ClearRightImm      clrrwi
@@ -305,6 +303,8 @@ class MacroAssembler: public Assembler {
   void AndLogical(Register dst, const Operand& opnd);
   void AndLogical(Register dst, Register src);
   void Branch(Condition c, const Operand& opnd);
+  void ShiftLeftImm(Register dst, Register src, const Operand& val,
+                    RCBit rc = LeaveRC);
 
 
   void mov(Register dst, const Operand& src);
