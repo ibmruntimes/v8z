@@ -889,6 +889,7 @@ void Assembler::cmpli(Register src1, const Operand& src2, CRegister cr) {
   emit(CMPLI | cr.code()*B23 | L*B21 | src1.code()*B16 | uimm16);
 }
 
+/*
 void Assembler::cmp(Register src1, Register src2) {
 #if V8_TARGET_ARCH_S390X
   int L = 1;
@@ -900,6 +901,7 @@ void Assembler::cmp(Register src1, Register src2) {
   emit(EXT2 | CMP | cr.code()*B23 | L*B21 | src1.code()*B16 |
        src2.code()*B11);
 }
+*/
 
 void Assembler::cmpl(Register src1, Register src2, CRegister cr) {
   #if V8_TARGET_ARCH_PPC64

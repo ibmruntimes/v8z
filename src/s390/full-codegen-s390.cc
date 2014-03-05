@@ -75,7 +75,7 @@ class JumpPatchSite BASE_EMBEDDED {
     ASSERT(!patch_site_.is_bound() && !info_emitted_);
     Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm_);
     __ bind(&patch_site_);
-    __ cmp(reg, reg/*, cr0*/);
+    __ CmpRR(reg, reg/*, cr0*/);
     __ beq(target /*, cr0*/);  // Always taken before patched.
   }
 
@@ -85,7 +85,7 @@ class JumpPatchSite BASE_EMBEDDED {
     Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm_);
     ASSERT(!patch_site_.is_bound() && !info_emitted_);
     __ bind(&patch_site_);
-    __ cmp(reg, reg/*, cr0*/);
+    __ CmpRR(reg, reg/*, cr0*/);
     __ bne(target /*, cr0*/);  // Never taken before patched.
   }
 
@@ -784,7 +784,7 @@ void FullCodeGenerator::PrepareForBailoutBeforeSplit(Expression* expr,
   PrepareForBailout(expr, TOS_REG);
   if (should_normalize) {
     __ LoadRoot(ip, Heap::kTrueValueRootIndex);
-    __ cmp(r3, ip);
+    __ CmpRR(r3, ip);
     Split(eq, if_true, if_false, NULL);
     __ bind(&skip);
   }
@@ -1038,7 +1038,7 @@ void FullCodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
       __ orx(r5, r4, r3);
       patch_site.EmitJumpIfNotSmi(r5, &slow_case);
 
-      __ cmp(r4, r3);
+      __ CmpRR(r4, r3);
       __ bne(&next_test);
       __ Drop(1);  // Switch value is no longer needed.
       __ b(clause->body_target());
@@ -1094,11 +1094,11 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   // ECMA-262 section 12.6.4.
   VisitForAccumulatorValue(stmt->enumerable());
   __ LoadRoot(ip, Heap::kUndefinedValueRootIndex);
-  __ cmp(r3, ip);
+  __ CmpRR(r3, ip);
   __ beq(&exit);
   Register null_value = r7;
   __ LoadRoot(null_value, Heap::kNullValueRootIndex);
-  __ cmp(r3, null_value);
+  __ CmpRR(r3, null_value);
   __ beq(&exit);
 
   PrepareForBailoutForId(stmt->PrepareId(), TOS_REG);
@@ -1143,7 +1143,7 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   Label fixed_array;
   __ LoadP(r5, FieldMemOperand(r3, HeapObject::kMapOffset));
   __ LoadRoot(ip, Heap::kMetaMapRootIndex);
-  __ cmp(r5, ip);
+  __ CmpRR(r5, ip);
   __ bne(&fixed_array);
 
   // We got a map in register r3. Get the enumeration cache from it.
@@ -1219,7 +1219,7 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   Label update_each;
   __ LoadP(r4, MemOperand(sp, 4 * kPointerSize));
   __ LoadP(r7, FieldMemOperand(r4, HeapObject::kMapOffset));
-  __ cmp(r7, r5);
+  __ CmpRR(r7, r5);
   __ beq(&update_each);
 
   // For proxies, no filtering is done.
@@ -1340,7 +1340,7 @@ void FullCodeGenerator::EmitLoadGlobalCheckExtensions(Variable* var,
     // Terminate at native context.
     __ LoadP(temp, FieldMemOperand(next, HeapObject::kMapOffset));
     __ LoadRoot(ip, Heap::kNativeContextMapRootIndex);
-    __ cmp(temp, ip);
+    __ CmpRR(temp, ip);
     __ beq(&fast);
     // Check that extension is NULL.
     __ LoadP(temp, ContextOperand(next, Context::EXTENSION_INDEX));
@@ -1547,7 +1547,7 @@ void FullCodeGenerator::VisitRegExpLiteral(RegExpLiteral* expr) {
       FixedArray::kHeaderSize + expr->literal_index() * kPointerSize;
   __ LoadP(r8, FieldMemOperand(r7, literal_offset), r0);
   __ LoadRoot(ip, Heap::kUndefinedValueRootIndex);
-  __ cmp(r8, ip);
+  __ CmpRR(r8, ip);
   __ bne(&materialized);
 
   // Create regexp literal using runtime function.
@@ -2648,7 +2648,7 @@ void FullCodeGenerator::EmitIsObject(CallRuntime* expr) {
 
   __ JumpIfSmi(r3, if_false);
   __ LoadRoot(ip, Heap::kNullValueRootIndex);
-  __ cmp(r3, ip);
+  __ CmpRR(r3, ip);
   __ beq(if_true);
   __ LoadP(r5, FieldMemOperand(r3, HeapObject::kMapOffset));
   // Undetectable objects behave like undefined when tested with typeof.
@@ -2737,7 +2737,7 @@ void FullCodeGenerator::EmitIsStringWrapperSafeForDefaultValueOf(
   __ LoadP(r5, FieldMemOperand(r3, JSObject::kPropertiesOffset));
   __ LoadP(r5, FieldMemOperand(r5, HeapObject::kMapOffset));
   __ LoadRoot(ip, Heap::kHashTableMapRootIndex);
-  __ cmp(r5, ip);
+  __ CmpRR(r5, ip);
   __ beq(if_false);
 
   // Look for valueOf symbol in the descriptor array, and indicate false if
@@ -2770,11 +2770,11 @@ void FullCodeGenerator::EmitIsStringWrapperSafeForDefaultValueOf(
   __ b(&entry);
   __ bind(&loop);
   __ LoadP(r6, MemOperand(r7, 0));
-  __ cmp(r6, ip);
+  __ CmpRR(r6, ip);
   __ beq(if_false);
   __ Add(r7, Operand(DescriptorArray::kDescriptorSize * kPointerSize));
   __ bind(&entry);
-  __ cmp(r7, r5);
+  __ CmpRR(r7, r5);
   __ bne(&loop);
 
   __ bind(&done);
@@ -2787,7 +2787,7 @@ void FullCodeGenerator::EmitIsStringWrapperSafeForDefaultValueOf(
   __ LoadP(r6, FieldMemOperand(r6, GlobalObject::kNativeContextOffset));
   __ LoadP(r6, ContextOperand(r6,
                               Context::STRING_FUNCTION_PROTOTYPE_MAP_INDEX));
-  __ cmp(r5, r6);
+  __ CmpRR(r5, r6);
   __ bne(if_false);
 
   // Set the bit in the map to indicate that it has been checked safe for
@@ -2917,7 +2917,7 @@ void FullCodeGenerator::EmitObjectEquals(CallRuntime* expr) {
                          &if_true, &if_false, &fall_through);
 
   __ pop(r4);
-  __ cmp(r3, r4);
+  __ CmpRR(r3, r4);
   PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
   Split(eq, if_true, if_false, fall_through);
 
@@ -3147,7 +3147,7 @@ void FullCodeGenerator::EmitDateField(CallRuntime* expr) {
       __ mov(scratch1, Operand(stamp));
       __ LoadP(scratch1, MemOperand(scratch1));
       __ LoadP(scratch0, FieldMemOperand(object, JSDate::kCacheStampOffset));
-      __ cmp(scratch1, scratch0);
+      __ CmpRR(scratch1, scratch0);
       __ bne(&runtime);
       __ LoadP(result, FieldMemOperand(object, JSDate::kValueOffset +
                                        kPointerSize * index->value()),
@@ -3492,7 +3492,7 @@ void FullCodeGenerator::EmitGetFromCache(CallRuntime* expr) {
   __ SmiToPtrArrayOffset(r5, r5);
   __ LoadPUX(r5, MemOperand(r6, r5));
   // r6 now points to the key of the pair.
-  __ cmp(key, r5);
+  __ CmpRR(key, r5);
   __ bne(&not_found);
 
   __ LoadP(r3, MemOperand(r6, kPointerSize));
@@ -3522,7 +3522,7 @@ void FullCodeGenerator::EmitIsRegExpEquivalent(CallRuntime* expr) {
   __ pop(left);
 
   Label done, fail, ok;
-  __ cmp(left, right);
+  __ CmpRR(left, right);
   __ beq(&ok);
   // Fail if either is a non-HeapObject.
   __ and_(tmp, left, right);
@@ -3532,11 +3532,11 @@ void FullCodeGenerator::EmitIsRegExpEquivalent(CallRuntime* expr) {
   __ Cmpi(tmp2, Operand(JS_REGEXP_TYPE));
   __ bne(&fail);
   __ LoadP(tmp2, FieldMemOperand(right, HeapObject::kMapOffset));
-  __ cmp(tmp, tmp2);
+  __ CmpRR(tmp, tmp2);
   __ bne(&fail);
   __ LoadP(tmp, FieldMemOperand(left, JSRegExp::kDataOffset));
   __ LoadP(tmp2, FieldMemOperand(right, JSRegExp::kDataOffset));
-  __ cmp(tmp, tmp2);
+  __ CmpRR(tmp, tmp2);
   __ beq(&ok);
   __ bind(&fail);
   __ LoadRoot(r3, Heap::kFalseValueRootIndex);
@@ -3668,7 +3668,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
                             scratch2, r0);
   __ BranchOnOverflow(&bailout);
 
-  __ cmp(element, elements_end);
+  __ CmpRR(element, elements_end);
   __ blt(&loop);
 
   // If array_length is 1, return elements[0], a string.
@@ -3769,7 +3769,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   __ Add(string,
           Operand(SeqAsciiString::kHeaderSize - kHeapObjectTag));
   __ CopyBytes(string, result_pos, string_length, scratch1);
-  __ cmp(element, elements_end);
+  __ CmpRR(element, elements_end);
   __ blt(&empty_separator_loop);  // End while (element < elements_end).
   ASSERT(result.is(r3));
   __ b(&done);
@@ -4261,7 +4261,7 @@ void FullCodeGenerator::EmitLiteralCompareTypeof(Expression* expr,
     __ JumpIfSmi(r3, if_true);
     __ LoadP(r3, FieldMemOperand(r3, HeapObject::kMapOffset));
     __ LoadRoot(ip, Heap::kHeapNumberMapRootIndex);
-    __ cmp(r3, ip);
+    __ CmpRR(r3, ip);
     Split(eq, if_true, if_false, fall_through);
   } else if (check->Equals(isolate()->heap()->string_symbol())) {
     __ JumpIfSmi(r3, if_false);
@@ -4345,7 +4345,7 @@ void FullCodeGenerator::VisitCompareOperation(CompareOperation* expr) {
       __ InvokeBuiltin(Builtins::IN, CALL_FUNCTION);
       PrepareForBailoutBeforeSplit(expr, false, NULL, NULL);
       __ LoadRoot(ip, Heap::kTrueValueRootIndex);
-      __ cmp(r3, ip);
+      __ CmpRR(r3, ip);
       Split(eq, if_true, if_false, fall_through);
       break;
 
@@ -4393,7 +4393,7 @@ void FullCodeGenerator::VisitCompareOperation(CompareOperation* expr) {
         Label slow_case;
         __ orx(r5, r3, r4);
         patch_site.EmitJumpIfNotSmi(r5, &slow_case);
-        __ cmp(r4, r3);
+        __ CmpRR(r4, r3);
         Split(cond, if_true, if_false, NULL);
         __ bind(&slow_case);
       }
@@ -4431,7 +4431,7 @@ void FullCodeGenerator::EmitLiteralCompareNil(CompareOperation* expr,
       Heap::kNullValueRootIndex :
       Heap::kUndefinedValueRootIndex;
   __ LoadRoot(r4, nil_value);
-  __ cmp(r3, r4);
+  __ CmpRR(r3, r4);
   if (expr->op() == Token::EQ_STRICT) {
     Split(eq, if_true, if_false, fall_through);
   } else {
@@ -4440,7 +4440,7 @@ void FullCodeGenerator::EmitLiteralCompareNil(CompareOperation* expr,
         Heap::kNullValueRootIndex;
     __ beq(if_true);
     __ LoadRoot(r4, other_nil_value);
-    __ cmp(r3, r4);
+    __ CmpRR(r3, r4);
     __ beq(if_true);
     __ JumpIfSmi(r3, if_false);
     // It can be an undetectable object.

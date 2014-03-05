@@ -1162,7 +1162,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   __ pop(r7);
   __ StoreP(r7, MemOperand(r6, 0));
   __ Add(r6, Operand(sizeof(intptr_t)));
-  __ cmp(r5, sp);
+  __ CmpRR(r5, sp);
   __ bne(&pop_loop);
 
   // Compute the output frame in the deoptimizer.
@@ -1199,7 +1199,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   __ bne(&inner_push_loop);  // test for gt?
 
   __ Add(r3, Operand(kPointerSize));
-  __ cmp(r3, r4);
+  __ CmpRR(r3, r4);
   __ blt(&outer_push_loop);
 
   // Push state, pc, and continuation from the last output frame.

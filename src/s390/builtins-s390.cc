@@ -195,7 +195,7 @@ static void AllocateEmptyJSArray(MacroAssembler* masm,
     __ StoreP(scratch3, MemOperand(scratch1));
     __ Add(scratch1, Operand(kPointerSize));
     __ bind(&entry);
-    __ cmp(scratch1, scratch2);
+    __ CmpRR(scratch1, scratch2);
     __ blt(&loop);
   }
 }
@@ -306,7 +306,7 @@ static void AllocateJSArray(MacroAssembler* masm,
     __ Add(elements_array_storage,
            Operand(kPointerSize));
     __ bind(&entry);
-    __ cmp(elements_array_storage, elements_array_end);
+    __ CmpRR(elements_array_storage, elements_array_end);
     __ blt(&loop);
   }
 
@@ -437,7 +437,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
   }
   __ StorePU(r5, MemOperand(r8, -kPointerSize));
   __ bind(&entry);
-  __ cmp(r7, r8);
+  __ CmpRR(r7, r8);
   __ blt(&loop);
 
   __ bind(&finish);
@@ -484,7 +484,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
   __ LoadP(r5, MemOperand(r10));
   __ Add(r10, Operand(kPointerSize));
   __ StorePU(r5, MemOperand(r8, -kPointerSize));
-  __ cmp(r7, r8);
+  __ CmpRR(r7, r8);
   __ blt(&loop2);
   __ b(&finish);
 }
@@ -605,7 +605,7 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
   Register function = r4;
   if (FLAG_debug_code) {
     __ LoadGlobalFunction(Context::STRING_FUNCTION_INDEX, r5);
-    __ cmp(function, r5);
+    __ CmpRR(function, r5);
     __ Assert(eq, "Unexpected String function");
   }
 
@@ -889,7 +889,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
         __ Add(r3, r8, r3);
         // r3: offset of first field after pre-allocated fields
         if (FLAG_debug_code) {
-          __ cmp(r3, r9);
+          __ CmpRR(r3, r9);
           __ Assert(le, "Unexpected number of pre-allocated property fields.");
         }
         __ InitializeFieldsWithFiller(r8, r3, r10);
@@ -981,7 +981,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
           __ LoadRoot(r10, Heap::kUndefinedValueRootIndex);
         } else if (FLAG_debug_code) {
           __ LoadRoot(r11, Heap::kUndefinedValueRootIndex);
-          __ cmp(r10, r11);
+          __ CmpRR(r10, r11);
           __ Assert(eq, "Undefined value not loaded.");
         }
         __ b(&entry);
@@ -989,7 +989,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
         __ StoreP(r10, MemOperand(r5));
         __ Add(r5, Operand(kPointerSize));
         __ bind(&entry);
-        __ cmp(r5, r9);
+        __ CmpRR(r5, r9);
         __ blt(&loop);
       }
 
@@ -1449,10 +1449,10 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
     __ JumpIfSmi(r5, &convert_to_object);
 
     __ LoadRoot(r6, Heap::kUndefinedValueRootIndex);
-    __ cmp(r5, r6);
+    __ CmpRR(r5, r6);
     __ beq(&use_global_receiver);
     __ LoadRoot(r6, Heap::kNullValueRootIndex);
-    __ cmp(r5, r6);
+    __ CmpRR(r5, r6);
     __ beq(&use_global_receiver);
 
     STATIC_ASSERT(LAST_SPEC_OBJECT_TYPE == LAST_TYPE);
@@ -1537,7 +1537,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
     __ LoadP(ip, MemOperand(r5, -kPointerSize));
     __ StoreP(ip, MemOperand(r5));
     __ Sub(r5, Operand(kPointerSize));
-    __ cmp(r5, sp);
+    __ CmpRR(r5, sp);
     __ bne(&loop);
     // Adjust the actual number of arguments and remove the top element
     // (which is a copy of the last argument).
@@ -1585,7 +1585,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
 #endif
   __ LoadP(r6, FieldMemOperand(r4, JSFunction::kCodeEntryOffset));
   __ SetCallKind(r8, CALL_AS_METHOD);
-  __ cmp(r5, r3);  // Check formal and actual parameter counts.
+  __ CmpRR(r5, r3);  // Check formal and actual parameter counts.
   Label skip;
   __ beq(&skip);
   __ Jump(masm->isolate()->builtins()->ArgumentsAdaptorTrampoline(),
@@ -1624,7 +1624,7 @@ void Builtins::Generate_FunctionApply(MacroAssembler* masm) {
     __ sub(r5, sp, r5);
     // Check if the arguments will overflow the stack.
     __ SmiToPtrArrayOffset(r0, r3);
-    __ cmp(r5, r0);
+    __ CmpRR(r5, r0);
     __ bgt(&okay);  // Signed comparison.
 
     // Out of stack space.
@@ -1680,10 +1680,10 @@ void Builtins::Generate_FunctionApply(MacroAssembler* masm) {
     // Compute the receiver in non-strict mode.
     __ JumpIfSmi(r3, &call_to_object);
     __ LoadRoot(r4, Heap::kNullValueRootIndex);
-    __ cmp(r3, r4);
+    __ CmpRR(r3, r4);
     __ beq(&use_global_receiver);
     __ LoadRoot(r4, Heap::kUndefinedValueRootIndex);
-    __ cmp(r3, r4);
+    __ CmpRR(r3, r4);
     __ beq(&use_global_receiver);
 
     // Check if the receiver is already a JavaScript object.
@@ -1739,7 +1739,7 @@ void Builtins::Generate_FunctionApply(MacroAssembler* masm) {
     // arguments object.
     __ bind(&entry);
     __ LoadP(r4, MemOperand(fp, kLimitOffset));
-    __ cmp(r3, r4);
+    __ CmpRR(r3, r4);
     __ bne(&loop);
 
     // Invoke the function.
@@ -1812,7 +1812,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
   Label invoke, dont_adapt_arguments;
 
   Label enough, too_few;
-  __ cmp(r3, r5);
+  __ CmpRR(r3, r5);
   __ blt(&too_few);
   __ Cmpi(r5, Operand(SharedFunctionInfo::kDontAdaptArgumentsSentinel));
   __ beq(&dont_adapt_arguments);
@@ -1843,7 +1843,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     __ bind(&copy);
     __ LoadP(ip, MemOperand(r3, 0));
     __ push(ip);
-    __ cmp(r3, r5);  // Compare before moving to next argument.
+    __ CmpRR(r3, r5);  // Compare before moving to next argument.
     __ Sub(r3, Operand(kPointerSize));
     __ bne(&copy);
 
@@ -1872,7 +1872,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     // Adjust load for return address and receiver.
     __ LoadP(ip, MemOperand(r3, 2 * kPointerSize));
     __ push(ip);
-    __ cmp(r3, fp);  // Compare before moving to next argument.
+    __ CmpRR(r3, fp);  // Compare before moving to next argument.
     __ Sub(r3, Operand(kPointerSize));
     __ bne(&copy);
 
@@ -1888,7 +1888,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     Label fill;
     __ bind(&fill);
     __ push(ip);
-    __ cmp(sp, r5);
+    __ CmpRR(sp, r5);
     __ bne(&fill);
   }
 

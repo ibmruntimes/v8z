@@ -250,7 +250,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   __ Add(r10, Operand(8));
 
   __ bind(&entry);
-  __ cmp(r10, r9);
+  __ CmpRR(r10, r9);
   __ blt(&loop);
 
   __ Pop(r0, r30);
