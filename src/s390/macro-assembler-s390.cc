@@ -4166,11 +4166,27 @@ void MacroAssembler::LoadDoubleLiteral(DwVfpRegister result,
   Add(sp, Operand(8));  // restore the stack ptr
 }
 
+void MacroAssembler::Cmp(Register src1, Register src2) {
+#if V8_TARGET_ARCH_S390X
+  cgr(src1, src2);
+#else
+  cr_z(src1, src2);
+#endif
+}
+
 void MacroAssembler::Cmpi(Register src1, const Operand& src2) {
 #if V8_TARGET_ARCH_S390X
   cgfi(src1, src2);
 #else
   cfi(src1, src2);
+#endif
+}
+
+void MacroAssembler::Cmpl(Register src1, Register src2) {
+#if V8_TARGET_ARCH_S390X
+  clgr(src1, src2);
+#else
+  clr(src1, src2);
 #endif
 }
 
