@@ -4167,23 +4167,15 @@ void MacroAssembler::LoadDoubleLiteral(DwVfpRegister result,
 }
 
 void MacroAssembler::Cmpi(Register src1, const Operand& src2) {
-  intptr_t value = src2.immediate();
 #if V8_TARGET_ARCH_S390X
-  cgfi(src1, Operand(value));
+  cgfi(src1, src2);
 #else
-  cfi(src1, Operand(value));
+  cfi(src1, src2);
 #endif
 }
 
-void MacroAssembler::Cmpli(Register src1, const Operand& src2, Register scratch,
-                           CRegister cr) {
-  intptr_t value = src2.immediate();
-  if (is_uint16(value)) {
-    cmpli(src1, src2, cr);
-  } else {
-    mov(scratch, src2);
-    cmpl(src1, scratch, cr);
-  }
+void MacroAssembler::Cmpli(Register src1, const Operand& src2) {
+  cgfi(src1, src2);
 }
 
 void MacroAssembler::And(Register rb, Register rs, const Operand& rx,
