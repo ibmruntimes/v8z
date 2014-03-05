@@ -228,23 +228,21 @@ void MacroAssembler::Call(Handle<Code> code,
 }
 
 
-void MacroAssembler::Ret(Condition cond) {
-  ASSERT(cond == al);
+void MacroAssembler::Ret() {
   b(r14);
 }
 
 
-void MacroAssembler::Drop(int count, Condition cond) {
-  ASSERT(cond == al);
+void MacroAssembler::Drop(int count) {
   if (count > 0) {
     Add(sp, Operand(count * kPointerSize));
   }
 }
 
 
-void MacroAssembler::Ret(int drop, Condition cond) {
-  Drop(drop, cond);
-  Ret(cond);
+void MacroAssembler::Ret(int drop) {
+  Drop(drop);
+  Ret();
 }
 
 void MacroAssembler::Call(Label* target) {
