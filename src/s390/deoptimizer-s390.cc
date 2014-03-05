@@ -1195,7 +1195,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   __ Add(r9, r5, r6);
   __ LoadP(r10, MemOperand(r9, FrameDescription::frame_content_offset()));
   __ push(r10);
-  __ cmpi(r6, Operand::Zero());
+  __ Cmpi(r6, Operand::Zero());
   __ bne(&inner_push_loop);  // test for gt?
 
   __ Add(r3, Operand(kPointerSize));

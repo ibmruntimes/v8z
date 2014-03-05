@@ -136,7 +136,7 @@ void FastNewClosureStub::Generate(MacroAssembler* masm) {
   if (FLAG_cache_optimized_code) {
     __ LoadP(r4,
              FieldMemOperand(r6, SharedFunctionInfo::kOptimizedCodeMapOffset));
-    __ cmpi(r4, Operand::Zero());
+    __ Cmpi(r4, Operand::Zero());
     __ bne(&check_optimized);
   }
   __ bind(&install_unoptimized);
@@ -309,7 +309,7 @@ void FastNewBlockContextStub::Generate(MacroAssembler* masm) {
   __ JumpIfNotSmi(r6, &after_sentinel);
   if (FLAG_debug_code) {
     const char* message = "Expected 0 as a Smi sentinel";
-    __ cmpi(r6, Operand::Zero());
+    __ Cmpi(r6, Operand::Zero());
     __ Assert(eq, message);
   }
   __ LoadP(r6, GlobalObjectOperand());
@@ -499,7 +499,7 @@ void FastCloneShallowObjectStub::Generate(MacroAssembler* masm) {
   int size = JSObject::kHeaderSize + length_ * kPointerSize;
   __ LoadP(r3, FieldMemOperand(r6, HeapObject::kMapOffset));
   __ lbz(r3, FieldMemOperand(r3, Map::kInstanceSizeOffset));
-  __ cmpi(r3, Operand(size >> kPointerSizeLog2));
+  __ Cmpi(r3, Operand(size >> kPointerSizeLog2));
   __ bne(&slow_case);
 
   // Allocate the JS object and copy header together with all in-object
@@ -850,7 +850,7 @@ void FloatingPointHelper::DoubleIs32BitInteger(MacroAssembler* masm,
 
   // Fast cases. Check for obvious non 32-bit integer values.
   // Negative exponent cannot yield 32-bit integers.
-  __ cmpi(scratch, Operand::Zero());
+  __ Cmpi(scratch, Operand::Zero());
   __ blt(not_int32);
   // Exponent greater than 31 cannot yield 32-bit integers.
   // Also, a positive value with an exponent equal to 31 is outside of the
@@ -860,7 +860,7 @@ void FloatingPointHelper::DoubleIs32BitInteger(MacroAssembler* masm,
   Register tmp = dst;
   __ ExtractSignBit32(tmp, src1);
   __ sub(tmp, scratch, tmp);
-  __ cmpi(tmp, Operand(30));
+  __ Cmpi(tmp, Operand(30));
   __ bgt(not_int32);
   // - Check whether bits [21:0] in the mantissa are not null.
   __ TestBitRange(src2, 21, 0, r0);
@@ -954,13 +954,13 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm,
       __ beq(&heap_number);
       // Comparing JS objects with <=, >= is complicated.
       if (cond != eq) {
-        __ cmpi(r7, Operand(FIRST_SPEC_OBJECT_TYPE));
+        __ Cmpi(r7, Operand(FIRST_SPEC_OBJECT_TYPE));
         __ bge(slow);
         // Normally here we fall through to return_equal, but undefined is
         // special: (undefined == undefined) == true, but
         // (undefined <= undefined) == false!  See ECMAScript 11.8.5.
         if (cond == le || cond == ge) {
-          __ cmpi(r7, Operand(ODDBALL_TYPE));
+          __ Cmpi(r7, Operand(ODDBALL_TYPE));
           __ bne(&return_equal);
           __ LoadRoot(r5, Heap::kUndefinedValueRootIndex);
           __ cmp(r3, r5);
@@ -1012,7 +1012,7 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm,
       // Or with all low-bits of mantissa.
       __ lwz(r6, FieldMemOperand(r3, HeapNumber::kMantissaOffset));
       __ orx(r3, r6, r5);
-      __ cmpi(r3, Operand::Zero());
+      __ Cmpi(r3, Operand::Zero());
       // For equal we already have the right value in r3:  Return zero (equal)
       // if all bits in mantissa are zero (it's an Infinity) and non-zero if
       // not (it's a NaN).  For <= and >= we need to load r0 with the failing
@@ -1132,14 +1132,14 @@ static void EmitStrictTwoHeapObjectCompare(MacroAssembler* masm,
 
     __ bind(&first_non_object);
     // Check for oddballs: true, false, null, undefined.
-    __ cmpi(r5, Operand(ODDBALL_TYPE));
+    __ Cmpi(r5, Operand(ODDBALL_TYPE));
     __ beq(&return_not_equal);
 
     __ CompareObjectType(lhs, r6, r6, FIRST_SPEC_OBJECT_TYPE);
     __ bge(&return_not_equal);
 
     // Check for oddballs: true, false, null, undefined.
-    __ cmpi(r6, Operand(ODDBALL_TYPE));
+    __ Cmpi(r6, Operand(ODDBALL_TYPE));
     __ beq(&return_not_equal);
 
     // Now that we have the types we might as well check for symbol-symbol.
@@ -1204,7 +1204,7 @@ static void EmitCheckForSymbolsOrObjects(MacroAssembler* masm,
   __ Ret();
 
   __ bind(&object_test);
-  __ cmpi(r5, Operand(FIRST_SPEC_OBJECT_TYPE));
+  __ Cmpi(r5, Operand(FIRST_SPEC_OBJECT_TYPE));
   __ blt(not_both_strings);
   __ CompareObjectType(lhs, r5, r6, FIRST_SPEC_OBJECT_TYPE);
   __ blt(not_both_strings);
@@ -2100,7 +2100,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       __ bne(&not_smi_result);
 #endif
       // Go slow on zero result to handle -0.
-      __ cmpi(scratch1, Operand::Zero());
+      __ Cmpi(scratch1, Operand::Zero());
       __ beq(&mul_zero);
 #if V8_TARGET_ARCH_S390X
       __ SmiTag(right, scratch1);
@@ -2112,7 +2112,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       // We need -0 if we were multiplying a negative number with 0 to get 0.
       // We know one of them was zero.
       __ Add(scratch2, right, left);
-      __ cmpi(scratch2, Operand::Zero());
+      __ Cmpi(scratch2, Operand::Zero());
       __ blt(&mul_neg_zero);
       __ LoadSmiLiteral(right, Smi::FromInt(0));
       __ Ret();  // Return smi 0 if the non-zero one was positive.
@@ -2143,7 +2143,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
 
       // If divisor (right) is negative, we must produce -0.
       __ bind(&check_neg_zero);
-      __ cmpi(right, Operand::Zero());
+      __ Cmpi(right, Operand::Zero());
       __ blt(&not_smi_result);
       __ LoadRR(right, scratch2);
       __ Ret();
@@ -2169,7 +2169,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
 
       // If dividend (left) is negative, we must produce -0.
       __ bind(&check_neg_zero);
-      __ cmpi(left, Operand::Zero());
+      __ Cmpi(left, Operand::Zero());
       __ blt(&not_smi_result);
       __ LoadSmiLiteral(right, Smi::FromInt(0));
       __ Ret();
@@ -2638,7 +2638,7 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
 #endif
         // Check for minus zero. Return heap number for minus zero.
         Label not_zero;
-        __ cmpi(scratch1, Operand::Zero());
+        __ Cmpi(scratch1, Operand::Zero());
         __ bne(&not_zero);
 
         __ Sub(sp, Operand(8));
@@ -3072,7 +3072,7 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
   __ LoadP(cache_entry, MemOperand(cache_entry, cache_array_index), r0);
   // r3 points to the cache for the type type_.
   // If NULL, the cache hasn't been initialized yet, so go through runtime.
-  __ cmpi(cache_entry, Operand(0, RelocInfo::NONE));
+  __ Cmpi(cache_entry, Operand(0, RelocInfo::NONE));
   __ beq(&invalid_cache);
 
 #ifdef DEBUG
@@ -3393,7 +3393,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
 
   // Get absolute value of exponent.
   Label positive_exponent;
-  __ cmpi(scratch, Operand::Zero());
+  __ Cmpi(scratch, Operand::Zero());
   __ bge(&positive_exponent);
   __ neg(scratch, scratch);
   __ bind(&positive_exponent);
@@ -3410,7 +3410,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
   __ b(&while_true);
   __ bind(&loop_end);
 
-  __ cmpi(exponent, Operand::Zero());
+  __ Cmpi(exponent, Operand::Zero());
   __ bge(&done);
 
   __ lhi(scratch2, Operand(1));
@@ -3670,7 +3670,7 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
 
   // Special handling of out of memory exceptions.
   Failure* out_of_memory = Failure::OutOfMemoryException();
-  __ cmpi(r3, Operand(reinterpret_cast<intptr_t>(out_of_memory)));
+  __ Cmpi(r3, Operand(reinterpret_cast<intptr_t>(out_of_memory)));
   __ beq(throw_out_of_memory_exception);
 
   // Retrieve the pending exception and clear the variable.
@@ -4118,7 +4118,7 @@ void InstanceofStub::Generate(MacroAssembler* masm) {
   __ bne(&slow);
 
   // Null is not instance of anything.
-  __ Cmpi(scratch, Operand(masm->isolate()->factory()->null_value()), r0);
+  __ Cmpi(scratch, Operand(masm->isolate()->factory()->null_value()));
   __ bne(&object_not_null);
   __ LoadSmiLiteral(r3, Smi::FromInt(1));
   __ Ret(HasArgsInRegisters() ? 0 : 2);
@@ -4149,7 +4149,7 @@ void InstanceofStub::Generate(MacroAssembler* masm) {
       __ InvokeBuiltin(Builtins::INSTANCE_OF, CALL_FUNCTION);
     }
     Label true_value, done;
-    __ cmpi(r3, Operand::Zero());
+    __ Cmpi(r3, Operand::Zero());
     __ beq(&true_value);
 
     __ LoadRoot(r3, Heap::kFalseValueRootIndex);
@@ -4332,7 +4332,7 @@ void ArgumentsAccessStub::GenerateNewNonStrictFast(MacroAssembler* masm) {
              Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
   __ LoadP(r7, FieldMemOperand(r7, GlobalObject::kNativeContextOffset));
   Label skip4, skip5;
-  __ cmpi(r4, Operand::Zero());
+  __ Cmpi(r4, Operand::Zero());
   __ bne(&skip4);
   __ LoadP(r7, MemOperand(r7, kNormalOffset));
   __ b(&skip5);
@@ -4503,7 +4503,7 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
   // of the arguments object and the elements array in words.
   Label add_arguments_object;
   __ bind(&try_allocate);
-  __ cmpi(r4, Operand(0, RelocInfo::NONE));
+  __ Cmpi(r4, Operand(0, RelocInfo::NONE));
   __ beq(&add_arguments_object);
   __ SmiUntag(r4);
   __ Add(r4, Operand(FixedArray::kHeaderSize / kPointerSize));
@@ -4538,7 +4538,7 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
 
   // If there are no actual arguments, we're done.
   Label done;
-  __ cmpi(r4, Operand(0, RelocInfo::NONE));
+  __ Cmpi(r4, Operand(0, RelocInfo::NONE));
   __ beq(&done);
 
   // Get the parameters pointer from the stack.
@@ -4566,7 +4566,7 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
   __ StoreP(r6, MemOperand(r7));
   __ Add(r7, Operand(kPointerSize));
   __ Sub(r4, Operand(1));
-  __ cmpi(r4, Operand(0, RelocInfo::NONE));
+  __ Cmpi(r4, Operand(0, RelocInfo::NONE));
   __ bne(&loop);
 
   // Return and remove the on-stack parameters.
@@ -4625,7 +4625,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
       ExternalReference::address_of_regexp_stack_memory_size(isolate);
   __ mov(r3, Operand(address_of_regexp_stack_memory_size));
   __ LoadP(r3, MemOperand(r3, 0));
-  __ cmpi(r3, Operand::Zero());
+  __ Cmpi(r3, Operand::Zero());
   __ beq(&runtime);
 
   // Check that the first argument is a JSRegExp object.
@@ -4743,7 +4743,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   STATIC_ASSERT(kIsNotStringMask > kExternalStringTag);
   STATIC_ASSERT(kShortExternalStringTag > kExternalStringTag);
   STATIC_ASSERT(kExternalStringTag < 0xffffu);
-  __ cmpi(r4, Operand(kExternalStringTag));
+  __ Cmpi(r4, Operand(kExternalStringTag));
   __ blt(&cons_string);
   __ beq(&external_string);
 
@@ -4903,14 +4903,14 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // Check the result.
   Label success;
 
-  __ cmpi(r3, Operand(1));
+  __ Cmpi(r3, Operand(1));
   // We expect exactly one result since we force the called regexp to behave
   // as non-global.
   __ beq(&success);
   Label failure;
-  __ cmpi(r3, Operand(NativeRegExpMacroAssembler::FAILURE));
+  __ Cmpi(r3, Operand(NativeRegExpMacroAssembler::FAILURE));
   __ beq(&failure);
-  __ cmpi(r3, Operand(NativeRegExpMacroAssembler::EXCEPTION));
+  __ Cmpi(r3, Operand(NativeRegExpMacroAssembler::EXCEPTION));
   // If not exception it can only be retry. Handle that in the runtime system.
   __ bne(&runtime);
   // Result must now be exception. If there is no pending exception already a
@@ -5109,13 +5109,13 @@ void RegExpConstructResultStub::Generate(MacroAssembler* masm) {
   // r6: Start of elements in FixedArray.
   // r8: Number of elements to fill.
   Label loop;
-  __ cmpi(r8, Operand::Zero());
+  __ Cmpi(r8, Operand::Zero());
   __ bind(&loop);
   __ ble(&done);  // Jump if r8 is negative or zero.
   __ Sub(r8, Operand(1));
   __ ShiftLeftImm(ip, r8, Operand(kPointerSizeLog2));
   __ StorePX(r5, MemOperand(ip, r6));
-  __ cmpi(r8, Operand::Zero());
+  __ Cmpi(r8, Operand::Zero());
   __ b(&loop);
 
   __ bind(&done);
@@ -5239,7 +5239,7 @@ void CallFunctionStub::Generate(MacroAssembler* masm) {
   }
   // Check for function proxy.
   STATIC_ASSERT(JS_FUNCTION_PROXY_TYPE < 0xffffu);
-  __ cmpi(r6, Operand(JS_FUNCTION_PROXY_TYPE));
+  __ Cmpi(r6, Operand(JS_FUNCTION_PROXY_TYPE));
   __ bne(&non_function);
   __ push(r4);  // put proxy as additional argument
   __ lhi(r3, Operand(argc_ + 1));
@@ -5293,7 +5293,7 @@ void CallConstructStub::Generate(MacroAssembler* masm) {
   Label do_call;
   __ bind(&slow);
   STATIC_ASSERT(JS_FUNCTION_PROXY_TYPE < 0xffffu);
-  __ cmpi(r6, Operand(JS_FUNCTION_PROXY_TYPE));
+  __ Cmpi(r6, Operand(JS_FUNCTION_PROXY_TYPE));
   __ bne(&non_function_call);
   __ GetBuiltinEntry(r6, Builtins::CALL_FUNCTION_PROXY_AS_CONSTRUCTOR);
   __ b(&do_call);
@@ -5451,7 +5451,7 @@ void StringCharCodeAtGenerator::GenerateSlow(
   __ LoadSmiLiteral(r0, Smi::FromInt(~String::kMaxAsciiCharCode));
   __ ori(r0, r0, Operand(kSmiTagMask));
   __ and_(r0, code_, r0);
-  __ cmpi(r0, Operand::Zero());
+  __ Cmpi(r0, Operand::Zero());
   __ bne(&slow_case_);
 
   __ LoadRoot(result_, Heap::kSingleCharacterStringCacheRootIndex);
@@ -5523,7 +5523,7 @@ void StringHelper::GenerateCopyCharacters(MacroAssembler* masm,
     __ Add(dest, Operand(2));
   }
   __ Sub(count, Operand(1));
-  __ cmpi(count, Operand::Zero());
+  __ Cmpi(count, Operand::Zero());
   __ bgt(&loop);
 }
 
@@ -5561,7 +5561,7 @@ void StringHelper::GenerateCopyCharactersLong(MacroAssembler* masm,
   if (!ascii) {  // for non-ascii, double the length
     __ Add(count, count, count);
   }
-  __ cmpi(count, Operand(0, RelocInfo::NONE));
+  __ Cmpi(count, Operand(0, RelocInfo::NONE));
   __ beq(&done);
 
   // Assume that you cannot read (or write) unaligned.
@@ -5889,7 +5889,7 @@ void SubStringStub::Generate(MacroAssembler* masm) {
     // r4: instance type of underlying subject string
     // r5: length
     // r6: adjusted start index (untagged)
-    __ cmpi(r5, Operand(SlicedString::kMinLength));
+    __ Cmpi(r5, Operand(SlicedString::kMinLength));
     // Short slice.  Copy instead of slicing.
     __ blt(&copy_routine);
     // Allocate new sliced string.  At this point we do not reload the instance
@@ -6013,7 +6013,7 @@ void StringCompareStub::GenerateFlatAsciiStringEquals(MacroAssembler* masm,
   Label compare_chars;
   __ bind(&check_zero_length);
   STATIC_ASSERT(kSmiTag == 0);
-  __ cmpi(length, Operand::Zero());
+  __ Cmpi(length, Operand::Zero());
   __ bne(&compare_chars);
   __ LoadSmiLiteral(r3, Smi::FromInt(EQUAL));
   __ Ret();
@@ -6047,7 +6047,7 @@ void StringCompareStub::GenerateCompareFlatAsciiStrings(MacroAssembler* masm,
   __ bind(&skip);
   Register min_length = scratch1;
   STATIC_ASSERT(kSmiTag == 0);
-  __ cmpi(min_length, Operand::Zero());
+  __ Cmpi(min_length, Operand::Zero());
   __ beq(&compare_lengths);
 
   // Compare loop.
@@ -6060,7 +6060,7 @@ void StringCompareStub::GenerateCompareFlatAsciiStrings(MacroAssembler* masm,
   ASSERT(Smi::FromInt(EQUAL) == static_cast<Smi*>(0));
   // Use length_delta as result if it's zero.
   __ LoadRR(r3, length_delta);
-  __ cmpi(r3, Operand::Zero());
+  __ Cmpi(r3, Operand::Zero());
   __ bind(&result_not_equal);
   // Conditionally update the result based either on length_delta or
   // the last comparion performed in the loop above.
@@ -6102,7 +6102,7 @@ void StringCompareStub::GenerateAsciiCharsCompareLoop(
   __ cmp(scratch1, r0);
   __ bne(chars_not_equal);
   __ Add(index, index, Operand(1));
-  __ cmpi(index, Operand::Zero());
+  __ Cmpi(index, Operand::Zero());
   __ bne(&loop);
 }
 
@@ -6235,7 +6235,7 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   __ Add(r9, r5, r6);
   // Use the symbol table when adding two one character strings, as it
   // helps later optimizations to return a symbol here.
-  __ cmpi(r9, Operand(2));
+  __ Cmpi(r9, Operand(2));
   __ bne(&longer_than_two);
 
   // Check that both strings are non-external ASCII strings.
@@ -6275,7 +6275,7 @@ void StringAddStub::Generate(MacroAssembler* masm) {
 
   __ bind(&longer_than_two);
   // Check if resulting string will be flat.
-  __ cmpi(r9, Operand(ConsString::kMinLength));
+  __ Cmpi(r9, Operand(ConsString::kMinLength));
   __ blt(&string_add_flat_result);
   // Handle exceptionally long strings in the runtime system.
   STATIC_ASSERT((String::kMaxLength & 0x80000000) == 0);
@@ -6324,7 +6324,7 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   __ xor_(r7, r7, r8);
   STATIC_ASSERT(kAsciiStringTag != 0 && kAsciiDataHintTag != 0);
   __ andi(r7, r7, Operand(kAsciiStringTag | kAsciiDataHintTag));
-  __ cmpi(r7, Operand(kAsciiStringTag | kAsciiDataHintTag));
+  __ Cmpi(r7, Operand(kAsciiStringTag | kAsciiDataHintTag));
   __ beq(&ascii_data);
 
   // Allocate a two byte cons string.
@@ -6476,7 +6476,7 @@ void StringAddStub::GenerateConvertArgument(MacroAssembler* masm,
   __ lbz(scratch2, FieldMemOperand(scratch1, Map::kBitField2Offset));
   __ andi(scratch2,
           scratch2, Operand(1 << Map::kStringWrapperSafeForDefaultValueOf));
-  __ cmpi(scratch2,
+  __ Cmpi(scratch2,
          Operand(1 << Map::kStringWrapperSafeForDefaultValueOf));
   __ bne(slow);
   __ LoadP(arg, FieldMemOperand(arg, JSValue::kValueOffset));
@@ -6725,9 +6725,9 @@ void ICCompareStub::GenerateKnownObjects(MacroAssembler* masm) {
   __ JumpIfSmi(r5, &miss);
   __ LoadP(r5, FieldMemOperand(r3, HeapObject::kMapOffset));
   __ LoadP(r6, FieldMemOperand(r4, HeapObject::kMapOffset));
-  __ Cmpi(r5, Operand(known_map_), r0);
+  __ Cmpi(r5, Operand(known_map_));
   __ bne(&miss);
-  __ Cmpi(r6, Operand(known_map_), r0);
+  __ Cmpi(r6, Operand(known_map_));
   __ bne(&miss);
 
   __ sub(r3, r3, r4);
@@ -6857,7 +6857,7 @@ void StringDictionaryLookupStub::GenerateNegativeLookup(MacroAssembler* masm,
       __ LoadRoot(tmp, Heap::kTheHoleValueRootIndex);
 
       // Stop if found the property.
-      __ Cmpi(entity_name, Operand(Handle<String>(name)), r0);
+      __ Cmpi(entity_name, Operand(Handle<String>(name)));
       __ beq(miss);
 
       Label the_hole;
@@ -6891,7 +6891,7 @@ void StringDictionaryLookupStub::GenerateNegativeLookup(MacroAssembler* masm,
   __ mov(r4, Operand(Handle<String>(name)));
   StringDictionaryLookupStub stub(NEGATIVE_LOOKUP);
   __ CallStub(&stub);
-  __ cmpi(r3, Operand::Zero());
+  __ Cmpi(r3, Operand::Zero());
 
   __ MultiPop(spill_mask);  // MultiPop does not touch condition flags
   __ mtlr(r0);
@@ -6974,7 +6974,7 @@ void StringDictionaryLookupStub::GeneratePositiveLookup(MacroAssembler* masm,
   }
   StringDictionaryLookupStub stub(POSITIVE_LOOKUP);
   __ CallStub(&stub);
-  __ cmpi(r3, Operand::Zero());
+  __ Cmpi(r3, Operand::Zero());
   __ LoadRR(scratch2, r5);
   __ MultiPop(spill_mask);
   __ mtlr(r0);
@@ -7305,7 +7305,7 @@ void RecordWriteStub::CheckNeedsToInformIncrementalMarker(
   __ StoreP(regs_.scratch1(),
             MemOperand(regs_.scratch0(),
                        MemoryChunk::kWriteBarrierCounterOffset));
-  __ cmpi(regs_.scratch1(), Operand::Zero());  // PPC, we could do better here
+  __ Cmpi(regs_.scratch1(), Operand::Zero());  // PPC, we could do better here
   __ blt(&need_incremental);
 
   // Let's look at the color of the object:  If it is not black we don't have

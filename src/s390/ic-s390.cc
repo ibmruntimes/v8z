@@ -55,11 +55,11 @@ static void GenerateGlobalInstanceTypeCheck(MacroAssembler* masm,
                                             Label* global_object) {
   // Register usage:
   //   type: holds the receiver instance type on entry.
-  __ cmpi(type, Operand(JS_GLOBAL_OBJECT_TYPE));
+  __ Cmpi(type, Operand(JS_GLOBAL_OBJECT_TYPE));
   __ beq(global_object);
-  __ cmpi(type, Operand(JS_BUILTINS_OBJECT_TYPE));
+  __ Cmpi(type, Operand(JS_BUILTINS_OBJECT_TYPE));
   __ beq(global_object);
-  __ cmpi(type, Operand(JS_GLOBAL_PROXY_TYPE));
+  __ Cmpi(type, Operand(JS_GLOBAL_PROXY_TYPE));
   __ beq(global_object);
 }
 
@@ -291,7 +291,7 @@ static void GenerateKeyedLoadReceiverCheck(MacroAssembler* masm,
   // objects work as intended.
   ASSERT(JS_OBJECT_TYPE > JS_VALUE_TYPE);
   __ lbz(scratch, FieldMemOperand(map, Map::kInstanceTypeOffset));
-  __ cmpi(scratch, Operand(JS_OBJECT_TYPE));
+  __ Cmpi(scratch, Operand(JS_OBJECT_TYPE));
   __ blt(slow);
 }
 
@@ -540,7 +540,7 @@ void CallICBase::GenerateMiss(MacroAssembler* masm,
     __ JumpIfSmi(r5, &invoke);
     __ CompareObjectType(r5, r6, r6, JS_GLOBAL_OBJECT_TYPE);
     __ beq(&global);
-    __ cmpi(r6, Operand(JS_BUILTINS_OBJECT_TYPE));
+    __ Cmpi(r6, Operand(JS_BUILTINS_OBJECT_TYPE));
     __ bne(&invoke);
 
     // Patch the receiver on the stack.
@@ -1100,7 +1100,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
     __ lwzx(r8, MemOperand(r8, r7));
     __ lbz(r9, FieldMemOperand(r5, Map::kInObjectPropertiesOffset));
     __ sub(r8, r8, r9);
-    __ cmpi(r8, Operand::Zero());
+    __ Cmpi(r8, Operand::Zero());
     __ bge(&property_array_property);
     if (i != 0) {
       __ b(&load_in_object_property);
@@ -1204,7 +1204,7 @@ void KeyedLoadIC::GenerateIndexedInterceptor(MacroAssembler* masm) {
   // are not enabled for this object.
   __ lbz(r6, FieldMemOperand(r5, Map::kBitFieldOffset));
   __ andi(r6, r6, Operand(kSlowCaseBitFieldMask));
-  __ cmpi(r6, Operand(1 << Map::kHasIndexedInterceptor));
+  __ Cmpi(r6, Operand(1 << Map::kHasIndexedInterceptor));
   __ bne(&slow);
 
   // Everything is fine, call runtime.
@@ -1497,10 +1497,10 @@ void KeyedStoreIC::GenerateGeneric(MacroAssembler* masm,
   __ bne(&slow /*, cr0*/);
   // Check if the object is a JS array or not.
   __ lbz(r7, FieldMemOperand(receiver_map, Map::kInstanceTypeOffset));
-  __ cmpi(r7, Operand(JS_ARRAY_TYPE));
+  __ Cmpi(r7, Operand(JS_ARRAY_TYPE));
   __ beq(&array);
   // Check that the object is some kind of JSObject.
-  __ cmpi(r7, Operand(FIRST_JS_OBJECT_TYPE));
+  __ Cmpi(r7, Operand(FIRST_JS_OBJECT_TYPE));
   __ blt(&slow);
 
   // Object case: Check key against length in the elements array.

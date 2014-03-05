@@ -95,7 +95,7 @@ class JumpPatchSite BASE_EMBEDDED {
       Register reg;
       // I believe this is using reg as the high bits of of the offset
       reg.set_code(delta_to_patch_site / kOff16Mask);
-      __ cmpi(reg, Operand(delta_to_patch_site % kOff16Mask));
+      __ Cmpi(reg, Operand(delta_to_patch_site % kOff16Mask));
 #ifdef DEBUG
       info_emitted_ = true;
 #endif
@@ -151,7 +151,7 @@ void FullCodeGenerator::Generate() {
   // function calls.
   if (!info->is_classic_mode() || info->is_native()) {
     Label ok;
-    __ cmpi(r8, Operand::Zero());
+    __ Cmpi(r8, Operand::Zero());
     __ beq(&ok);
     int receiver_offset = info->scope()->num_parameters() * kPointerSize;
     __ LoadRoot(r5, Heap::kUndefinedValueRootIndex);
@@ -323,7 +323,7 @@ void FullCodeGenerator::EmitProfilingCounterDecrement(int delta) {
   __ LoadP(r6, FieldMemOperand(r5, JSGlobalPropertyCell::kValueOffset));
   __ SubSmiLiteral(r6, r6, Smi::FromInt(delta), r0);
   __ StoreP(r6, FieldMemOperand(r5, JSGlobalPropertyCell::kValueOffset), r0);
-  __ cmpi(r6, Operand::Zero());
+  __ Cmpi(r6, Operand::Zero());
 }
 
 
@@ -693,7 +693,7 @@ void FullCodeGenerator::DoTest(Expression* condition,
                                Label* fall_through) {
   ToBooleanStub stub(result_register());
   __ CallStub(&stub);
-  __ cmpi(result_register(), Operand::Zero());
+  __ Cmpi(result_register(), Operand::Zero());
   Split(ne, if_true, if_false, fall_through);
 }
 
@@ -1051,7 +1051,7 @@ void FullCodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
     CallIC(ic, RelocInfo::CODE_TARGET, clause->CompareId());
     patch_site.EmitPatchInfo();
 
-    __ cmpi(r3, Operand::Zero());
+    __ Cmpi(r3, Operand::Zero());
     __ bne(&next_test);
     __ Drop(1);  // Switch value is no longer needed.
     __ b(clause->body_target());
@@ -1234,7 +1234,7 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   __ push(r6);  // Current entry.
   __ InvokeBuiltin(Builtins::FILTER_KEY, CALL_FUNCTION);
   __ LoadRR(r6, r3);
-  __ cmpi(r6, Operand::Zero());
+  __ Cmpi(r6, Operand::Zero());
   __ beq(loop_statement.continue_label());
 
   // Update the 'each' property or variable from the possibly filtered
@@ -1317,7 +1317,7 @@ void FullCodeGenerator::EmitLoadGlobalCheckExtensions(Variable* var,
       if (s->calls_non_strict_eval()) {
         // Check that extension is NULL.
         __ LoadP(temp, ContextOperand(current, Context::EXTENSION_INDEX));
-        __ cmpi(temp, Operand::Zero());
+        __ Cmpi(temp, Operand::Zero());
         __ bne(slow);
       }
       // Load next context in chain.
@@ -1344,7 +1344,7 @@ void FullCodeGenerator::EmitLoadGlobalCheckExtensions(Variable* var,
     __ beq(&fast);
     // Check that extension is NULL.
     __ LoadP(temp, ContextOperand(next, Context::EXTENSION_INDEX));
-    __ cmpi(temp, Operand::Zero());
+    __ Cmpi(temp, Operand::Zero());
     __ bne(slow);
     // Load next context in chain.
     __ LoadP(next, ContextOperand(next, Context::PREVIOUS_INDEX));
@@ -1374,7 +1374,7 @@ MemOperand FullCodeGenerator::ContextSlotOperandCheckExtensions(Variable* var,
       if (s->calls_non_strict_eval()) {
         // Check that extension is NULL.
         __ LoadP(temp, ContextOperand(context, Context::EXTENSION_INDEX));
-        __ cmpi(temp, Operand::Zero());
+        __ Cmpi(temp, Operand::Zero());
         __ bne(slow);
       }
       __ LoadP(next, ContextOperand(context, Context::PREVIOUS_INDEX));
@@ -1384,7 +1384,7 @@ MemOperand FullCodeGenerator::ContextSlotOperandCheckExtensions(Variable* var,
   }
   // Check that last extension is NULL.
   __ LoadP(temp, ContextOperand(context, Context::EXTENSION_INDEX));
-  __ cmpi(temp, Operand::Zero());
+  __ Cmpi(temp, Operand::Zero());
   __ bne(slow);
 
   // This function is used only for loads, not stores, so it's safe to
@@ -2044,7 +2044,7 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
       __ bne(&stub_call);
 #endif
       // Go slow on zero result to handle -0.
-      __ cmpi(scratch1, Operand::Zero());
+      __ Cmpi(scratch1, Operand::Zero());
       __ beq(&mul_zero);
 #if V8_TARGET_ARCH_S390X
       __ SmiTag(right, scratch1);
@@ -2056,7 +2056,7 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
       // We know one of them was zero.
       __ bind(&mul_zero);
       __ Add(scratch2, right, left);
-      __ cmpi(scratch2, Operand::Zero());
+      __ Cmpi(scratch2, Operand::Zero());
       __ blt(&stub_call);
       __ LoadSmiLiteral(right, Smi::FromInt(0));
       break;
@@ -2656,9 +2656,9 @@ void FullCodeGenerator::EmitIsObject(CallRuntime* expr) {
   __ andi(r0, r4, Operand(1 << Map::kIsUndetectable));
   __ bne(if_false /*, cr0*/);
   __ lbz(r4, FieldMemOperand(r5, Map::kInstanceTypeOffset));
-  __ cmpi(r4, Operand(FIRST_NONCALLABLE_SPEC_OBJECT_TYPE));
+  __ Cmpi(r4, Operand(FIRST_NONCALLABLE_SPEC_OBJECT_TYPE));
   __ blt(if_false);
-  __ cmpi(r4, Operand(LAST_NONCALLABLE_SPEC_OBJECT_TYPE));
+  __ Cmpi(r4, Operand(LAST_NONCALLABLE_SPEC_OBJECT_TYPE));
   PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
   Split(le, if_true, if_false, fall_through);
 
@@ -2747,7 +2747,7 @@ void FullCodeGenerator::EmitIsStringWrapperSafeForDefaultValueOf(
 
   // Skip loop if no descriptors are valid.
   __ NumberOfOwnDescriptors(r6, r4);
-  __ cmpi(r6, Operand::Zero());
+  __ Cmpi(r6, Operand::Zero());
   __ beq(&done);
 
   __ LoadInstanceDescriptors(r4, r7);
@@ -2983,7 +2983,7 @@ void FullCodeGenerator::EmitClassOf(CallRuntime* expr) {
                 FIRST_SPEC_OBJECT_TYPE + 1);
   __ beq(&function);
 
-  __ cmpi(r4, Operand(LAST_SPEC_OBJECT_TYPE));
+  __ Cmpi(r4, Operand(LAST_SPEC_OBJECT_TYPE));
   STATIC_ASSERT(LAST_NONCALLABLE_SPEC_OBJECT_TYPE ==
                 LAST_SPEC_OBJECT_TYPE - 1);
   __ beq(&function);
@@ -3529,7 +3529,7 @@ void FullCodeGenerator::EmitIsRegExpEquivalent(CallRuntime* expr) {
   __ JumpIfSmi(tmp, &fail);
   __ LoadP(tmp, FieldMemOperand(left, HeapObject::kMapOffset));
   __ lbz(tmp2, FieldMemOperand(tmp, Map::kInstanceTypeOffset));
-  __ cmpi(tmp2, Operand(JS_REGEXP_TYPE));
+  __ Cmpi(tmp2, Operand(JS_REGEXP_TYPE));
   __ bne(&fail);
   __ LoadP(tmp2, FieldMemOperand(right, HeapObject::kMapOffset));
   __ cmp(tmp, tmp2);
@@ -3564,7 +3564,7 @@ void FullCodeGenerator::EmitHasCachedArrayIndex(CallRuntime* expr) {
   // PPC - assume ip is free
   __ mov(ip, Operand(String::kContainsCachedArrayIndexMask));
   __ and_(r0, r3, ip);
-  __ cmpi(r0, Operand::Zero());
+  __ Cmpi(r0, Operand::Zero());
   PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
   Split(eq, if_true, if_false, fall_through);
 
@@ -3624,7 +3624,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   // If the array has length zero, return the empty string.
   __ LoadP(array_length, FieldMemOperand(array, JSArray::kLengthOffset));
   __ SmiUntag(array_length);
-  __ cmpi(array_length, Operand::Zero());
+  __ Cmpi(array_length, Operand::Zero());
   __ bne(&non_trivial_array);
   __ LoadRoot(r3, Heap::kEmptyStringRootIndex);
   __ b(&done);
@@ -3652,7 +3652,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   //   element: Current array element.
   //   elements_end: Array end.
   if (generate_debug_code_) {
-    __ cmpi(array_length, Operand::Zero());
+    __ Cmpi(array_length, Operand::Zero());
     __ Assert(gt, "No empty arrays here in EmitFastAsciiArrayJoin");
   }
   __ bind(&loop);
@@ -3672,7 +3672,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   __ blt(&loop);
 
   // If array_length is 1, return elements[0], a string.
-  __ cmpi(array_length, Operand(1));
+  __ Cmpi(array_length, Operand(1));
   __ bne(&not_size_one_array);
   __ LoadP(r3, FieldMemOperand(elements, FixedArray::kHeaderSize));
   __ b(&done);
@@ -3709,7 +3709,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   __ mulhw(ip, array_length, scratch1);
   // Check for smi overflow. No overflow if higher 33 bits of 64-bit result are
   // zero.
-  __ cmpi(ip, Operand::Zero());
+  __ Cmpi(ip, Operand::Zero());
   __ bne(&bailout);
   __ TestSignBit32(scratch2, r0);
   __ bne(&bailout /*, cr0*/);
@@ -4296,7 +4296,7 @@ void FullCodeGenerator::EmitLiteralCompareTypeof(Expression* expr,
     STATIC_ASSERT(NUM_OF_CALLABLE_SPEC_OBJECT_TYPES == 2);
     __ CompareObjectType(r3, r3, r4, JS_FUNCTION_TYPE);
     __ beq(if_true);
-    __ cmpi(r4, Operand(JS_FUNCTION_PROXY_TYPE));
+    __ Cmpi(r4, Operand(JS_FUNCTION_PROXY_TYPE));
     Split(eq, if_true, if_false, fall_through);
   } else if (check->Equals(isolate()->heap()->object_symbol())) {
     __ JumpIfSmi(r3, if_false);
@@ -4355,7 +4355,7 @@ void FullCodeGenerator::VisitCompareOperation(CompareOperation* expr) {
       __ CallStub(&stub);
       PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
       // The stub returns 0 for true.
-      __ cmpi(r3, Operand::Zero());
+      __ Cmpi(r3, Operand::Zero());
       Split(eq, if_true, if_false, fall_through);
       break;
     }
@@ -4404,7 +4404,7 @@ void FullCodeGenerator::VisitCompareOperation(CompareOperation* expr) {
       CallIC(ic, RelocInfo::CODE_TARGET, expr->CompareOperationFeedbackId());
       patch_site.EmitPatchInfo();
       PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
-      __ cmpi(r3, Operand::Zero());
+      __ Cmpi(r3, Operand::Zero());
       Split(cond, if_true, if_false, fall_through);
     }
   }
@@ -4447,7 +4447,7 @@ void FullCodeGenerator::EmitLiteralCompareNil(CompareOperation* expr,
     __ LoadP(r4, FieldMemOperand(r3, HeapObject::kMapOffset));
     __ lbz(r4, FieldMemOperand(r4, Map::kBitFieldOffset));
     __ andi(r4, r4, Operand(1 << Map::kIsUndetectable));
-    __ cmpi(r4, Operand(1 << Map::kIsUndetectable));
+    __ Cmpi(r4, Operand(1 << Map::kIsUndetectable));
     Split(eq, if_true, if_false, fall_through);
   }
   context()->Plug(if_true, if_false);

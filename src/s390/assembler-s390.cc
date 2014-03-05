@@ -876,20 +876,6 @@ void Assembler::orx(Register dst, Register src1, Register src2, RCBit rc) {
   x_form(EXT2 | ORX, dst, src1, src2, rc);
 }
 
-void Assembler::cmpi(Register src1, const Operand& src2) {
-  intptr_t imm16 = src2.imm_;
-  CRegister cr = cr7;
-#if V8_TARGET_ARCH_PPC64
-  int L = 1;
-#else
-  int L = 0;
-#endif
-  ASSERT(is_int16(imm16));
-  ASSERT(cr.code() >= 0 && cr.code() <= 7);
-  imm16 &= kImm16Mask;
-  emit(CMPI | cr.code()*B23 | L*B21 | src1.code()*B16 | imm16);
-}
-
 void Assembler::cmpli(Register src1, const Operand& src2, CRegister cr) {
   uintptr_t uimm16 = src2.imm_;
 #if V8_TARGET_ARCH_PPC64

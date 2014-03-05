@@ -1845,7 +1845,6 @@ SS2_FORM(zap);
 
   void cmp(Register src1, Register src2);
   void cmpl(Register src1, Register src2, CRegister cr = cr7);
-  void cmpi(Register src1, const Operand& src2);
   void cmpli(Register src1, const Operand& src2, CRegister cr = cr7);
 
   // Multiply instructions

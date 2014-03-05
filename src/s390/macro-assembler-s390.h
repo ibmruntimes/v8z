@@ -644,7 +644,7 @@ class MacroAssembler: public Assembler {
 
 
 
-  void Cmpi(Register src1, const Operand& src2, Register scratch);
+  void Cmpi(Register src1, const Operand& src2);
   void Cmpli(Register src1, const Operand& src2, Register scratch,
              CRegister cr = cr7);
   void And(Register rb, Register rs, const Operand& rx, RCBit rc = LeaveRC);
@@ -1415,7 +1415,7 @@ class MacroAssembler: public Assembler {
                                     Label* not_smi_label) {
     // High bits must be identical to fit into an Smi
     addis(scratch, value, Operand(0x40000000u >> 16));
-    cmpi(scratch, Operand::Zero());
+    Cmpi(scratch, Operand::Zero());
     blt(not_smi_label);
   }
 #endif
