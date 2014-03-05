@@ -1774,7 +1774,7 @@ void Builtins::Generate_FunctionApply(MacroAssembler* masm) {
 
 
 static void EnterArgumentsAdaptorFrame(MacroAssembler* masm) {
-  __ SmiTag(r3);
+  __ SmiTag(r2);
   // @TODO Make sure r7 is the correct register to use here for S390
   __ LoadSmiLiteral(r7, Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR));
   // Stack updated as such:
@@ -1796,18 +1796,17 @@ static void EnterArgumentsAdaptorFrame(MacroAssembler* masm) {
 
 static void LeaveArgumentsAdaptorFrame(MacroAssembler* masm) {
   // ----------- S t a t e -------------
-  //  -- r3 : result being passed through
+  //  -- r2 : result being passed through
   // -----------------------------------
   // Get the number of arguments passed (as a smi), tear down the frame and
   // then tear down the parameters.
-  __ LoadP(r4, MemOperand(fp, -3 * kPointerSize));
   __ LoadRR(sp, fp);
-  __ LoadP(fp, MemOperand(sp));
-  __ LoadP(r0, MemOperand(sp, kPointerSize));
-  __ mtlr(r0);
-  __ SmiToPtrArrayOffset(r0, r4);
-  __ Add(sp, sp, r0);
-  __ Add(sp, Operand(3 * kPointerSize));  // adjust for receiver + fp + lr
+  __ LoadP(r3, MemOperand(fp, -3 * kPointerSize));
+  __ SmiToPtrArrayOffset(r3, r3);
+  __ LoadP(fp, MemOperand(fp));
+  __ LoadP(r14, MemOperand(sp, kPointerSize));
+  // adjust SP with 3 ptrs for receiver + fp + lr
+  __ la(sp, MemOperand(r3, sp, 3 * kPointerSize));
 }
 
 
