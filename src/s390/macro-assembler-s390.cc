@@ -969,9 +969,9 @@ void MacroAssembler::IsInstanceJSObjectType(Register map,
                                             Register scratch,
                                             Label* fail) {
   lbz(scratch, FieldMemOperand(map, Map::kInstanceTypeOffset));
-  cmpi(scratch, Operand(FIRST_NONCALLABLE_SPEC_OBJECT_TYPE));
+  Cmpi(scratch, Operand(FIRST_NONCALLABLE_SPEC_OBJECT_TYPE));
   blt(fail);
-  cmpi(scratch, Operand(LAST_NONCALLABLE_SPEC_OBJECT_TYPE));
+  Cmpi(scratch, Operand(LAST_NONCALLABLE_SPEC_OBJECT_TYPE));
   bgt(fail);
 }
 
@@ -1113,7 +1113,7 @@ void MacroAssembler::Throw(Register value) {
   // If the handler is a JS frame, restore the context to the frame.
   // (kind == ENTRY) == (fp == 0) == (cp == 0), so we could test either fp
   // or cp.
-  cmpi(cp, Operand::Zero());
+  Cmpi(cp, Operand::Zero());
   beq(&skip);
   StoreP(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
   bind(&skip);
@@ -1178,7 +1178,7 @@ void MacroAssembler::CheckAccessGlobalProxy(Register holder_reg,
   LoadP(scratch, MemOperand(fp, StandardFrameConstants::kContextOffset));
   // In debug mode, make sure the lexical context is set.
 #ifdef DEBUG
-  cmpi(scratch, Operand(0, RelocInfo::NONE));
+  Cmpi(scratch, Operand(0, RelocInfo::NONE));
   Check(ne, "we should not have an empty lexical context");
 #endif
 
@@ -1721,7 +1721,7 @@ void MacroAssembler::CompareInstanceType(Register map,
                                          Register type_reg,
                                          InstanceType type) {
   lbz(type_reg, FieldMemOperand(map, Map::kInstanceTypeOffset));
-  cmpi(type_reg, Operand(type));
+  Cmpi(type_reg, Operand(type));
 }
 
 
@@ -1846,7 +1846,7 @@ void MacroAssembler::StoreNumberToDoubleElements(Register value_reg,
   beq(&have_double_value /*, cr0*/);
 #else
   lwz(mantissa_reg, FieldMemOperand(value_reg, HeapNumber::kMantissaOffset));
-  cmpi(mantissa_reg, Operand::Zero());
+  Cmpi(mantissa_reg, Operand::Zero());
   beq(&have_double_value);
 #endif
   bind(&is_nan);
@@ -2158,7 +2158,7 @@ void MacroAssembler::CallApiFunctionAndReturn(ExternalReference function,
 
   // If result is non-zero, dereference to get the result value
   // otherwise set it to undefined.
-  cmpi(r3, Operand::Zero());
+  Cmpi(r3, Operand::Zero());
   bne(&skip1);
   LoadRoot(r3, Heap::kUndefinedValueRootIndex);
   b(&skip2);
@@ -2370,7 +2370,7 @@ void MacroAssembler::EmitOutOfInt32RangeTruncate(Register result,
 
   // If the delta is strictly positive, all bits would be shifted away,
   // which means that we can return 0.
-  cmpi(scratch, Operand::Zero());
+  Cmpi(scratch, Operand::Zero());
   bgt(&done);
 
   const int kShiftBase = HeapNumber::kNonMantissaBitsInTopWord - 1;
@@ -2385,7 +2385,7 @@ void MacroAssembler::EmitOutOfInt32RangeTruncate(Register result,
 
   // Shifts >= 32 bits should result in zero.
   // slw extracts only the 6 most significant bits of the shift value.
-  cmpi(scratch, Operand(32));
+  Cmpi(scratch, Operand(32));
   blt(&high_shift_needed);
   lhi(input_high, Operand::Zero());
   subfic(scratch, scratch, Operand(32));
@@ -2418,7 +2418,7 @@ void MacroAssembler::EmitOutOfInt32RangeTruncate(Register result,
   orx(input_high, input_high, input_low);
 
   // Restore sign if necessary.
-  cmpi(sign, Operand::Zero());
+  Cmpi(sign, Operand::Zero());
   result = sign;
   sign = no_reg;
   LoadRR(result, input_high);
@@ -2850,7 +2850,7 @@ void MacroAssembler::JumpIfNotPowerOfTwoOrZero(
     Register scratch,
     Label* not_power_of_two_or_zero) {
   Sub(scratch, reg, Operand(1));
-  cmpi(scratch, Operand::Zero());
+  Cmpi(scratch, Operand::Zero());
   blt(not_power_of_two_or_zero);
   and_(r0, scratch, reg, SetRC);
   bne(not_power_of_two_or_zero /*, cr0*/);
@@ -2863,7 +2863,7 @@ void MacroAssembler::JumpIfNotPowerOfTwoOrZeroAndNeg(
     Label* zero_and_neg,
     Label* not_power_of_two) {
   Sub(scratch, reg, Operand(1));
-  cmpi(scratch, Operand::Zero());
+  Cmpi(scratch, Operand::Zero());
   blt(zero_and_neg);
   and_(r0, scratch, reg, SetRC);
   bne(not_power_of_two /*, cr0*/);
@@ -3100,7 +3100,7 @@ void MacroAssembler::CopyBytes(Register src,
 
   ASSERT(!scratch.is(r0));
 
-  cmpi(length, Operand::Zero());
+  Cmpi(length, Operand::Zero());
   beq(&done);
 
   // Check src alignment and length to see whether word_loop is possible
@@ -3130,7 +3130,7 @@ void MacroAssembler::CopyBytes(Register src,
   }
 
   ShiftRightImm(scratch, length, Operand(kPointerSizeLog2));
-  cmpi(scratch, Operand::Zero());
+  Cmpi(scratch, Operand::Zero());
   beq(&byte_loop);
 
   mtctr(scratch);
@@ -3185,7 +3185,7 @@ void MacroAssembler::CopyBytes(Register src,
   bdnz(&word_loop);
 
   // Copy the last bytes if any left.
-  cmpi(length, Operand::Zero());
+  Cmpi(length, Operand::Zero());
   beq(&done);
 
   bind(&byte_loop);
@@ -3226,9 +3226,9 @@ void MacroAssembler::JumpIfBothInstanceTypesAreNotSequentialAscii(
   int kFlatAsciiStringTag = ASCII_STRING_TYPE;
   andi(scratch1, first, Operand(kFlatAsciiStringMask));
   andi(scratch2, second, Operand(kFlatAsciiStringMask));
-  cmpi(scratch1, Operand(kFlatAsciiStringTag));
+  Cmpi(scratch1, Operand(kFlatAsciiStringTag));
   bne(failure);
-  cmpi(scratch2, Operand(kFlatAsciiStringTag));
+  Cmpi(scratch2, Operand(kFlatAsciiStringTag));
   bne(failure);
 }
 
@@ -3240,7 +3240,7 @@ void MacroAssembler::JumpIfInstanceTypeIsNotSequentialAscii(Register type,
       kIsNotStringMask | kStringEncodingMask | kStringRepresentationMask;
   int kFlatAsciiStringTag = ASCII_STRING_TYPE;
   andi(scratch, type, Operand(kFlatAsciiStringMask));
-  cmpi(scratch, Operand(kFlatAsciiStringTag));
+  Cmpi(scratch, Operand(kFlatAsciiStringTag));
   bne(failure);
 }
 
@@ -3425,7 +3425,7 @@ void MacroAssembler::PatchRelocatedValue(Register lis_location,
   // At this point scratch is a lis instruction.
   if (emit_debug_code()) {
     And(scratch, scratch, Operand(kOpcodeMask | (0x1f * B16)));
-    Cmpi(scratch, Operand(ADDIS), r0);
+    Cmpi(scratch, Operand(ADDIS));
     Check(eq, "The instruction to patch should be a lis.");
     lwz(scratch, MemOperand(lis_location));
   }
@@ -3444,7 +3444,7 @@ void MacroAssembler::PatchRelocatedValue(Register lis_location,
   // scratch is now ori.
   if (emit_debug_code()) {
     And(scratch, scratch, Operand(kOpcodeMask));
-    Cmpi(scratch, Operand(ORI), r0);
+    Cmpi(scratch, Operand(ORI));
     Check(eq, "The instruction should be an ori");
     lwz(scratch, MemOperand(lis_location, kInstrSize));
   }
@@ -3462,7 +3462,7 @@ void MacroAssembler::PatchRelocatedValue(Register lis_location,
     lwz(scratch, MemOperand(lis_location, 2*kInstrSize));
     // scratch is now sldi.
     And(scratch, scratch, Operand(kOpcodeMask|kExt5OpcodeMask));
-    Cmpi(scratch, Operand(EXT5|RLDICR), r0);
+    Cmpi(scratch, Operand(EXT5|RLDICR));
     Check(eq, "The instruction should be an sldi");
   }
 
@@ -3470,7 +3470,7 @@ void MacroAssembler::PatchRelocatedValue(Register lis_location,
   // scratch is now ori.
   if (emit_debug_code()) {
     And(scratch, scratch, Operand(kOpcodeMask));
-    Cmpi(scratch, Operand(ORIS), r0);
+    Cmpi(scratch, Operand(ORIS));
     Check(eq, "The instruction should be an oris");
     lwz(scratch, MemOperand(lis_location, 3*kInstrSize));
   }
@@ -3482,7 +3482,7 @@ void MacroAssembler::PatchRelocatedValue(Register lis_location,
   // scratch is now ori.
   if (emit_debug_code()) {
     And(scratch, scratch, Operand(kOpcodeMask));
-    Cmpi(scratch, Operand(ORI), r0);
+    Cmpi(scratch, Operand(ORI));
     Check(eq, "The instruction should be an ori");
     lwz(scratch, MemOperand(lis_location, 4*kInstrSize));
   }
@@ -3505,7 +3505,7 @@ void MacroAssembler::GetRelocatedValueLocation(Register lis_location,
   lwz(result, MemOperand(lis_location));
   if (emit_debug_code()) {
     And(result, result, Operand(kOpcodeMask | (0x1f * B16)));
-    Cmpi(result, Operand(ADDIS), r0);
+    Cmpi(result, Operand(ADDIS));
     Check(eq, "The instruction should be a lis.");
     lwz(result, MemOperand(lis_location));
   }
@@ -3516,7 +3516,7 @@ void MacroAssembler::GetRelocatedValueLocation(Register lis_location,
   lwz(scratch, MemOperand(lis_location, kInstrSize));
   if (emit_debug_code()) {
     And(scratch, scratch, Operand(kOpcodeMask));
-    Cmpi(scratch, Operand(ORI), r0);
+    Cmpi(scratch, Operand(ORI));
     Check(eq, "The instruction should be an ori");
     lwz(scratch, MemOperand(lis_location, kInstrSize));
   }
@@ -3528,7 +3528,7 @@ void MacroAssembler::GetRelocatedValueLocation(Register lis_location,
     lwz(scratch, MemOperand(lis_location, 2*kInstrSize));
     // scratch is now sldi.
     And(scratch, scratch, Operand(kOpcodeMask|kExt5OpcodeMask));
-    Cmpi(scratch, Operand(EXT5|RLDICR), r0);
+    Cmpi(scratch, Operand(EXT5|RLDICR));
     Check(eq, "The instruction should be an sldi");
   }
 
@@ -3536,7 +3536,7 @@ void MacroAssembler::GetRelocatedValueLocation(Register lis_location,
   // scratch is now ori.
   if (emit_debug_code()) {
     And(scratch, scratch, Operand(kOpcodeMask));
-    Cmpi(scratch, Operand(ORIS), r0);
+    Cmpi(scratch, Operand(ORIS));
     Check(eq, "The instruction should be an oris");
     lwz(scratch, MemOperand(lis_location, 3*kInstrSize));
   }
@@ -3547,7 +3547,7 @@ void MacroAssembler::GetRelocatedValueLocation(Register lis_location,
   // scratch is now ori.
   if (emit_debug_code()) {
     And(scratch, scratch, Operand(kOpcodeMask));
-    Cmpi(scratch, Operand(ORI), r0);
+    Cmpi(scratch, Operand(ORI));
     Check(eq, "The instruction should be an ori");
     lwz(scratch, MemOperand(lis_location, 4*kInstrSize));
   }
@@ -3786,10 +3786,10 @@ void MacroAssembler::ClampUint8(Register output_reg, Register input_reg) {
   Label done, negative_label, overflow_label;
   int satval = (1 << 8) - 1;
 
-  cmpi(input_reg, Operand::Zero());
+  Cmpi(input_reg, Operand::Zero());
   blt(&negative_label);
 
-  cmpi(input_reg, Operand(satval));
+  Cmpi(input_reg, Operand(satval));
   bgt(&overflow_label);
   if (!output_reg.is(input_reg)) {
     LoadRR(output_reg, input_reg);
@@ -4166,15 +4166,13 @@ void MacroAssembler::LoadDoubleLiteral(DwVfpRegister result,
   Add(sp, Operand(8));  // restore the stack ptr
 }
 
-void MacroAssembler::Cmpi(Register src1, const Operand& src2,
-                          Register scratch) {
+void MacroAssembler::Cmpi(Register src1, const Operand& src2) {
   intptr_t value = src2.immediate();
-  if (is_int16(value)) {
-    cmpi(src1, src2);
-  } else {
-    mov(scratch, src2);
-    cmp(src1, scratch);
-  }
+#if V8_TARGET_ARCH_S390X
+  cgfi(src1, Operand(value));
+#else
+  cfi(src1, Operand(value));
+#endif
 }
 
 void MacroAssembler::Cmpli(Register src1, const Operand& src2, Register scratch,

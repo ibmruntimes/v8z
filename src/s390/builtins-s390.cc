@@ -224,7 +224,7 @@ static void AllocateJSArray(MacroAssembler* masm,
                          elements_array_storage, fill_with_hole);
 
   if (FLAG_debug_code) {  // Assert that array size is not zero.
-    __ cmpi(array_size, Operand::Zero());
+    __ Cmpi(array_size, Operand::Zero());
     __ Assert(ne, "array size is unexpectedly 0");
   }
 
@@ -335,7 +335,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
       has_non_smi_element, finish, cant_transition_map, not_double;
 
   // Check for array construction with zero arguments or one.
-  __ cmpi(r3, Operand(0, RelocInfo::NONE));
+  __ Cmpi(r3, Operand(0, RelocInfo::NONE));
   __ bne(&argc_one_or_more);
 
   // Handle construction of an empty array.
@@ -356,11 +356,11 @@ static void ArrayNativeCode(MacroAssembler* masm,
   // Check for one argument. Bail out if argument is not smi or if it is
   // negative.
   __ bind(&argc_one_or_more);
-  __ cmpi(r3, Operand(1));
+  __ Cmpi(r3, Operand(1));
   __ bne(&argc_two_or_more);
   STATIC_ASSERT(kSmiTag == 0);
   __ LoadP(r5, MemOperand(sp));  // Get the argument from the stack.
-  __ cmpi(r5, Operand::Zero());
+  __ Cmpi(r5, Operand::Zero());
   __ bne(&not_empty_array);
   __ Drop(1);  // Adjust stack.
   __ lhi(r3, Operand::Zero());  // Treat this as a call with argc of zero.
@@ -611,7 +611,7 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
 
   // Load the first arguments in r3 and get rid of the rest.
   Label no_arguments;
-  __ cmpi(r3, Operand(0, RelocInfo::NONE));
+  __ Cmpi(r3, Operand(0, RelocInfo::NONE));
   __ beq(&no_arguments);
   // First args = sp[(argc - 1) * 4].
   __ Sub(r3, Operand(1));
@@ -654,10 +654,10 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
   __ LoadGlobalFunctionInitialMap(function, map, r7);
   if (FLAG_debug_code) {
     __ lbz(r7, FieldMemOperand(map, Map::kInstanceSizeOffset));
-    __ cmpi(r7, Operand(JSValue::kSize >> kPointerSizeLog2));
+    __ Cmpi(r7, Operand(JSValue::kSize >> kPointerSizeLog2));
     __ Assert(eq, "Unexpected string wrapper instance size");
     __ lbz(r7, FieldMemOperand(map, Map::kUnusedPropertyFieldsOffset));
-    __ cmpi(r7, Operand(0, RelocInfo::NONE));
+    __ Cmpi(r7, Operand(0, RelocInfo::NONE));
     __ Assert(eq, "Unexpected unused properties of string wrapper");
   }
   __ StoreP(map, FieldMemOperand(r3, HeapObject::kMapOffset), r0);
@@ -794,7 +794,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
           ExternalReference::debug_step_in_fp_address(isolate);
       __ mov(r5, Operand(debug_step_in_fp));
       __ LoadP(r5, MemOperand(r5));
-      __ cmpi(r5, Operand::Zero());
+      __ Cmpi(r5, Operand::Zero());
       __ bne(&rt_call);
 #endif
 
@@ -824,7 +824,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
         __ lbz(r7, constructor_count);
         __ Add(r7, Operand(-1));
         __ stb(r7, constructor_count);
-        __ cmpi(r7, Operand::Zero());
+        __ Cmpi(r7, Operand::Zero());
         __ bne(&allocate);
 
         __ push(r4);
@@ -932,7 +932,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
                          ((byte + 1) * kBitsPerByte) - 1,
                          byte * kBitsPerByte);
       __ sub(r6, r6, r9);  // roohack - sub order may be incorrect
-      __ cmpi(r6, Operand::Zero());
+      __ Cmpi(r6, Operand::Zero());
 
       // Done if no extra properties are to be allocated.
       __ beq(&allocated);
@@ -1051,7 +1051,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     // sp[2]: constructor function
     // sp[3]: number of arguments (smi-tagged)
     Label loop, no_args;
-    __ cmpi(r3, Operand::Zero());
+    __ Cmpi(r3, Operand::Zero());
     __ beq(&no_args);
     __ ShiftLeftImm(ip, r3, Operand(kPointerSizeLog2));
     __ mtctr(r3);
@@ -1310,14 +1310,14 @@ static void Generate_NotifyDeoptimizedHelper(MacroAssembler* masm,
   __ SmiUntag(r9);
   // Switch on the state.
   Label with_tos_register, unknown_state;
-  __ cmpi(r9, Operand(FullCodeGenerator::NO_REGISTERS));
+  __ Cmpi(r9, Operand(FullCodeGenerator::NO_REGISTERS));
   __ bne(&with_tos_register);
   __ Add(sp, Operand(1 * kPointerSize));  // Remove state.
   __ Ret();
 
   __ bind(&with_tos_register);
   __ LoadP(r3, MemOperand(sp, 1 * kPointerSize));
-  __ cmpi(r9, Operand(FullCodeGenerator::TOS_REG));
+  __ Cmpi(r9, Operand(FullCodeGenerator::TOS_REG));
   __ bne(&unknown_state);
   __ Add(sp, Operand(2 * kPointerSize));  // Remove state.
   __ Ret();
@@ -1389,7 +1389,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
   // 1. Make sure we have at least one argument.
   // r3: actual number of arguments
   { Label done;
-    __ cmpi(r3, Operand::Zero());
+    __ Cmpi(r3, Operand::Zero());
     __ bne(&done);
     __ LoadRoot(r5, Heap::kUndefinedValueRootIndex);
     __ push(r5);
@@ -1505,7 +1505,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
   // 3b. Check for function proxy.
   __ bind(&slow);
   __ lhi(r7, Operand(1, RelocInfo::NONE));  // indicate function proxy
-  __ cmpi(r5, Operand(JS_FUNCTION_PROXY_TYPE));
+  __ Cmpi(r5, Operand(JS_FUNCTION_PROXY_TYPE));
   __ beq(&shift_arguments);
   __ bind(&non_function);
   __ lhi(r7, Operand(2, RelocInfo::NONE));  // indicate non-function
@@ -1551,12 +1551,12 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
   // r4: function
   // r7: call type (0: JS function, 1: function proxy, 2: non-function)
   { Label function, non_proxy;
-    __ cmpi(r7, Operand::Zero());
+    __ Cmpi(r7, Operand::Zero());
     __ beq(&function);
     // Expected number of arguments is 0 for CALL_NON_FUNCTION.
     __ lhi(r5, Operand(0, RelocInfo::NONE));
     __ SetCallKind(r8, CALL_AS_METHOD);
-    __ cmpi(r7, Operand(1));
+    __ Cmpi(r7, Operand(1));
     __ bne(&non_proxy);
 
     __ push(r4);  // re-add proxy object as additional argument
@@ -1814,7 +1814,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
   Label enough, too_few;
   __ cmp(r3, r5);
   __ blt(&too_few);
-  __ cmpi(r5, Operand(SharedFunctionInfo::kDontAdaptArgumentsSentinel));
+  __ Cmpi(r5, Operand(SharedFunctionInfo::kDontAdaptArgumentsSentinel));
   __ beq(&dont_adapt_arguments);
 
   {  // Enough parameters: actual >= expected

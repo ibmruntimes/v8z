@@ -110,7 +110,7 @@ TEST(1) {
   __ ahi(r4, Operand(-1 & 0xFFFF));
 
   __ bind(&C);
-  __ cmpi(r4, Operand(0, RelocInfo::NONE));
+  __ cgfi(r4, Operand(0, RelocInfo::NONE));
   __ bne(&L);
   __ blr();
 
@@ -156,7 +156,7 @@ TEST(2) {
   __ ahi(r4, Operand(-1 & 0xFFFF));
 
   __ bind(&C);
-  __ cmpi(r4, Operand(0, RelocInfo::NONE));
+  __ cgfi(r4, Operand(0, RelocInfo::NONE));
   __ bne(&L);
   __ blr();
 
