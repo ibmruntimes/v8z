@@ -3814,15 +3814,13 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
 #if ABI_USES_FUNCTION_DESCRIPTORS
   __ function_descriptor();
 #endif
-
-  // @TODO: [OLDPPC code - Remove later] PPC LINUX ABI:
-  // preserve LR in pre-reserved slot in caller's frame
-  // __ mflr(r0);
-  // __ StoreP(r0, MemOperand(sp, kStackFrameLRSlot * kPointerSize));
-  // Save callee saved registers on the stack.
-  // __ MultiPush(kCalleeSaved);
-
   // zLinux ABI
+  //    Incoming parameters:
+  //          r2: code entry
+  //          r3: function
+  //          r4: receiver
+  //          r5: argc
+  //          r6: argv
   //    Requires us to save the callee-preserved registers r6-r13
   //    General convention is to also save r14 (return addr) and
   //    sp/r15 as well in a single STM/STMG
@@ -3844,7 +3842,8 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   //   Frame type
   Isolate* isolate = masm->isolate();
   __ lay(sp, MemOperand(sp, -5 * kPointerSize));
-  __ lhi(r10, Operand(-1));  // Push a bad frame pointer to fail if it is used.
+  // Push a bad frame pointer to fail if it is used.
+  __ LoadImmP(r10, Operand(-1));
   int marker = is_construct ? StackFrame::ENTRY_CONSTRUCT : StackFrame::ENTRY;
   __ LoadSmiLiteral(r9, Smi::FromInt(marker));
   __ LoadSmiLiteral(r8, Smi::FromInt(marker));
@@ -3859,11 +3858,6 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   __ lay(fp, MemOperand(sp, -EntryFrameConstants::kCallerFPOffset +
                             kPointerSize));
 
-  // r2: code entry
-  // r3: function
-  // r4: receiver
-  // r5: argc
-  // r6: argv
 
   // If this is the outermost JS call, set js_entry_sp value.
   Label non_outermost_js;
@@ -3877,6 +3871,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   __ b(&cont);
   __ bind(&non_outermost_js);
   __ LoadSmiLiteral(ip, Smi::FromInt(StackFrame::INNER_JSENTRY_FRAME));
+
   __ bind(&cont);
   __ StoreP(ip, MemOperand(sp));  // frame-type
 
@@ -3909,9 +3904,9 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   // saved values before returning a failure to C.
 
   // Clear any pending exceptions.
-  __ mov(r8, Operand(isolate->factory()->the_hole_value()));
   __ mov(ip, Operand(ExternalReference(Isolate::kPendingExceptionAddress,
                                        isolate)));
+  __ mov(r8, Operand(isolate->factory()->the_hole_value()));
   __ StoreP(r8, MemOperand(ip));
 
   // Invoke the function by calling through JS entry trampoline builtin.
@@ -3919,11 +3914,11 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   // this stub, because runtime stubs are not traversed when doing GC.
 
   // Expected registers by Builtins::JSEntryTrampoline
-  // r3: code entry
-  // r4: function
-  // r5: receiver
-  // r6: argc
-  // r7: argv
+  // r2: code entry
+  // r3: function
+  // r4: receiver
+  // r5: argc
+  // r6: argv
   if (is_construct) {
     ExternalReference construct_entry(Builtins::kJSConstructEntryTrampoline,
                                       isolate);
@@ -3936,17 +3931,13 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
 
   // Branch and link to JSEntryTrampoline.
   // the address points to the start of the code object, skip the header
-/*  __ Add(r0, ip, Operand(Code::kHeaderSize - kHeapObjectTag));
-  __ mtlr(r0);
-  __ bclr(BA, SetLK);  // make the call
-*/
   __ Add(ip, Operand(Code::kHeaderSize - kHeapObjectTag));
   __ basr(r14, ip);
 
   // Unlink this frame from the handler chain.
   __ PopTryHandler();
 
-  __ bind(&exit);  // r3 holds result
+  __ bind(&exit);  // r2 holds result
   // Check if the current stack frame is marked as the outermost JS frame.
   Label non_outermost_js_2;
   __ pop(r8);
@@ -3975,18 +3966,8 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   }
 #endif
 
-  // __ MultiPop(kCalleeSaved); // PPC
-
-  // __ LoadP(r0, MemOperand(sp, kStackFrameLRSlot * kPointerSize)); // PPC
-  // __ mtctr(r0); // PPC
-
-  // Reload callee-saved preserved regs and return address reg (r14)
-  // 31-bit ABI - R6-R15/sp register save area starts @ 24.
-  // 64-bit ABI - R6-R15/sp register save area starts @ 48.
-  // @TODO Fix up the stack offsets properly instead of 6 * kPointerSize.
+  // Reload callee-saved preserved regs, return address reg (r14) and sp
   __ LoadMultipleP(r6, sp, MemOperand(sp, 0));
-  // zLinux ABI
-  //    Reload the callee-preserved registers r6-r13, r14, and sp.
   __ lay(sp, MemOperand(sp, 10 * kPointerSize));
   __ b(r14);
 }
