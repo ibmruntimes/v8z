@@ -1150,61 +1150,70 @@ void Builtins::Generate_JSConstructStubApi(MacroAssembler* masm) {
 static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
                                              bool is_construct) {
   // Called from Generate_JS_Entry
-  // r3: code entry
-  // r4: function
-  // r5: receiver
-  // r6: argc
-  // r7: argv
-  // r0,r8-r9, cp may be clobbered
+  // r2: code entry
+  // r3: function
+  // r4: receiver
+  // r5: argc
+  // r6: argv
+  // r0,r7-r9, cp may be clobbered
 
   // Clear the context before we push it when entering the internal frame.
-  __ lhi(cp, Operand(0, RelocInfo::NONE));
+  __ LoadImmP(cp, Operand(0, RelocInfo::NONE));
 
   // Enter an internal frame.
   {
     FrameScope scope(masm, StackFrame::INTERNAL);
 
     // Set up the context from the function argument.
-    __ LoadP(cp, FieldMemOperand(r4, JSFunction::kContextOffset));
+    __ LoadP(cp, FieldMemOperand(r3, JSFunction::kContextOffset));
 
     __ InitializeRootRegister();
 
     // Push the function and the receiver onto the stack.
-    __ push(r4);
-    __ push(r5);
+    __ lay(sp, MemOperand(sp, -2 * kPointerSize));
+    __ stm(r3, r4, MemOperand(sp));
 
-    // Copy arguments to the stack in a loop.
-    // r4: function
-    // r6: argc
-    // r7: argv, i.e. points to first arg
-    Label loop, entry;
-    __ ShiftLeftImm(r0, r6, Operand(kPointerSizeLog2));
-    __ Add(r5, r7, r0);
-    // r5 points past last arg.
-    __ b(&entry);
-    __ bind(&loop);
-    __ LoadP(r8, MemOperand(r7));  // read next parameter
-    __ Add(r7, Operand(kPointerSize));
+    // Copy arguments to the stack in a loop from argv to sp.
+    // The arguments are actually placed in reverse order on sp
+    // compared to argv (i.e. arg1 is highest memory in sp).
+    // r3: function
+    // r5: argc
+    // r6: argv, i.e. points to first arg
+    // r7: scratch reg to hold scaled argc
+    // r8: scratch reg to hold arg handle
+    // r9: scratch reg to hold index into argv
+    Label argLoop, argExit;
+    __ ShiftLeftImm(r7, r5, Operand(kPointerSizeLog2));
+    __ SubRR(sp, r7);    // Buy the stack frame to fit args
+    __ LoadImmP(r9, Operand(0));  // Initialize argv index
+    __ bind(&argLoop);
+    __ CmpPH(r7, Operand(0));
+    __ beq(&argExit);
+    __ lay(r7, MemOperand(r7, -kPointerSize));
+    __ LoadP(r8, MemOperand(r9, r6));  // read next parameter
+    __ la(r9, MemOperand(r9, kPointerSize));  // r9++;
     __ LoadP(r0, MemOperand(r8));  // dereference handle
-    __ push(r0);  // push parameter
-    __ bind(&entry);
-    __ cmp(r7, r5);
-    __ bne(&loop);
+    __ StoreP(r0, MemOperand(r7, sp));  // push parameter
+    __ b(&argLoop);
+    __ bind(&argExit);
 
     // Initialize all JavaScript callee-saved registers, since they will be seen
     // by the garbage collector as part of handlers.
-    __ LoadRoot(r7, Heap::kUndefinedValueRootIndex);
-    __ LoadRR(r14, r7);
-    __ LoadRR(r15, r7);
-    __ LoadRR(r16, r7);
-    __ LoadRR(r22, r7);  // hmmm, possibly should be reassigned to r17
+    __ LoadRoot(r6, Heap::kUndefinedValueRootIndex);
+    __ LoadRR(r7, r6);
+    __ LoadRR(r8, r6);
+    __ LoadRR(r9, r6);
+    __ LoadRR(r10, r6);
 
-    // Invoke the code and pass argc as r3.
-    __ LoadRR(r3, r6);
+    // Invoke the code and pass argc as r2.
+    __ LoadRR(r2, r5);
     if (is_construct) {
       CallConstructStub stub(NO_CALL_FUNCTION_FLAGS);
       __ CallStub(&stub);
     } else {
+      // @TODO actual should be r2, function should be r3
+      // However, InvokeFunction and its helpers are called in many places so
+      // we'll trip over asserts until we fix them all.
       ParameterCount actual(r3);
       __ InvokeFunction(r4, actual, CALL_FUNCTION,
                         NullCallWrapper(), CALL_AS_METHOD);
@@ -1212,9 +1221,9 @@ static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
     // Exit the JS frame and remove the parameters (except function), and
     // return.
   }
-  __ blr();
+  __ b(r14);
 
-  // r3: result
+  // r2: result
 }
 
 
