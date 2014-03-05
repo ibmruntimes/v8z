@@ -4612,6 +4612,33 @@ void MacroAssembler::ShiftLeftImm(Register dst, Register src,
 #endif
 }
 
+// Shift right for pointer types.
+void MacroAssembler::ShiftRightImm(Register dst, Register src,
+                                  const Operand& val, RCBit) {
+#if V8_TARGET_ARCH_S390X
+  srlg(dst, src, val);
+#else
+  // 32-bit shift clobbers source.  Make a copy if necessary
+  if (!dst.is(src))
+    lr(dst, src);
+  srl(dst, val);
+#endif
+}
+
+// Shift right arithmetic for pointer types.
+void MacroAssembler::ShiftRightArithImm(Register dst, Register src,
+                                  const int val, RCBit) {
+#if V8_TARGET_ARCH_S390X
+  srag(dst, src, Operand(val));
+#else
+  // 32-bit shift clobbers source.  Make a copy if necessary
+  if (!dst.is(src))
+    lr(dst, src);
+  sra(dst, Operand(val));
+#endif
+}
+
+
 
 #ifdef DEBUG
 bool AreAliased(Register reg1,
