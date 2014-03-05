@@ -1004,7 +1004,7 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm,
       // Test that exponent bits are all set.
       STATIC_ASSERT(HeapNumber::kExponentMask == 0x7ff00000u);
       __ ExtractBitMask(r6, r5, HeapNumber::kExponentMask);
-      __ cmpli(r6, Operand(0x7ff));
+      __ Cmpli(r6, Operand(0x7ff));
       __ bne(&return_equal);
 
       // Shift out flag and all exponent bits, retaining only mantissa.
@@ -4661,7 +4661,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ Add(r5, Operand(2));
   // Check that the static offsets vector buffer is large enough.
   // STATIC_ASSERT(Isolate::kJSRegexpStaticOffsetsVectorSize < 0xffffu);
-  __ cmpli(r5, Operand(Isolate::kJSRegexpStaticOffsetsVectorSize));
+  __ Cmpli(r5, Operand(Isolate::kJSRegexpStaticOffsetsVectorSize));
   __ bgt(&runtime);
 
   // r5: Number of capture registers
@@ -5598,10 +5598,10 @@ void StringHelper::GenerateTwoCharacterSymbolTableProbe(MacroAssembler* masm,
   // different hash algorithm. Don't try to look for these in the symbol table.
   Label not_array_index;
   __ Sub(scratch, c1, Operand(static_cast<intptr_t>('0')));
-  __ cmpli(scratch, Operand(static_cast<intptr_t>('9' - '0')));
+  __ Cmpli(scratch, Operand(static_cast<intptr_t>('9' - '0')));
   __ bgt(&not_array_index);
   __ Sub(scratch, c2, Operand(static_cast<intptr_t>('0')));
-  __ cmpli(scratch, Operand(static_cast<intptr_t>('9' - '0')));
+  __ Cmpli(scratch, Operand(static_cast<intptr_t>('9' - '0')));
   __ bgt(&not_array_index);
 
   // If check failed combine both characters into single halfword.

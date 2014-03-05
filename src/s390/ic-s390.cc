@@ -427,7 +427,7 @@ void CallICBase::GenerateMonomorphicCacheProbe(MacroAssembler* masm,
 
   // Check for string.
   __ bind(&non_number);
-  __ cmpli(r6, Operand(FIRST_NONSTRING_TYPE));
+  __ Cmpli(r6, Operand(FIRST_NONSTRING_TYPE));
   __ bge(&non_string);
   StubCompiler::GenerateLoadGlobalFunctionPrototype(
       masm, Context::STRING_FUNCTION_INDEX, r4);

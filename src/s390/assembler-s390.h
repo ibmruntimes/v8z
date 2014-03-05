@@ -1843,8 +1843,6 @@ SS2_FORM(zap);
   void cntlzw_(Register dst, Register src, RCBit rc = LeaveRC);
   // end PowerPC
 
-  void cmpli(Register src1, const Operand& src2);
-
   // Multiply instructions
 
   // PowerPC
