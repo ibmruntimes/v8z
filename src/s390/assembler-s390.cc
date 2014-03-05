@@ -890,6 +890,7 @@ void Assembler::cmpli(Register src1, const Operand& src2) {
   emit(CMPLI | cr.code()*B23 | L*B21 | src1.code()*B16 | uimm16);
 }
 
+/*
 void Assembler::cmpl(Register src1, Register src2) {
   #if V8_TARGET_ARCH_PPC64
   int L = 1;
@@ -901,6 +902,7 @@ void Assembler::cmpl(Register src1, Register src2) {
   emit(EXT2 | CMPL | cr.code()*B23 | L*B21 | src1.code()*B16 |
        src2.code()*B11);
 }
+*/
 
 
 void  Assembler::lis(Register dst, const Operand& imm) {

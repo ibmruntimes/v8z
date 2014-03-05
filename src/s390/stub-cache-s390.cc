@@ -107,7 +107,7 @@ static void ProbeTable(Isolate* isolate,
   __ lhi(r0, Operand(Code::kFlagsNotUsedInLookup));
   __ andc(flags_reg, flags_reg, r0);
   __ mov(r0, Operand(flags));
-  __ cmpl(flags_reg, r0);
+  __ Cmpl(flags_reg, r0);
   __ bne(&miss);
 
 #ifdef DEBUG
@@ -1737,7 +1737,7 @@ Handle<Code> CallStubCompiler::CompileArrayPushCall(
       __ mov(r22, Operand(new_space_allocation_limit));
       __ LoadP(r22, MemOperand(r22));
       __ Add(r6, Operand(kAllocationDelta * kPointerSize));
-      __ cmpl(r6, r22);
+      __ Cmpl(r6, r22);
       __ bgt(&call_builtin);
 
       // We fit and could grow elements.
@@ -3652,7 +3652,7 @@ void KeyedLoadStubCompiler::GenerateLoadExternalArray(
 
   // Check that the index is in range.
   __ LoadP(ip, FieldMemOperand(r6, ExternalArray::kLengthOffset));
-  __ cmpl(key, ip);
+  __ Cmpl(key, ip);
   // Unsigned comparison catches both negative and too-large values.
   __ bge(&miss_force_generic);
 
@@ -3851,7 +3851,7 @@ void KeyedStoreStubCompiler::GenerateStoreExternalArray(
 
   // Check that the index is in range
   __ LoadP(ip, FieldMemOperand(r6, ExternalArray::kLengthOffset));
-  __ cmpl(key, ip);
+  __ Cmpl(key, ip);
   // Unsigned comparison catches both negative and too-large values.
   __ bge(&miss_force_generic);
 
@@ -4038,7 +4038,7 @@ void KeyedLoadStubCompiler::GenerateLoadFastElement(MacroAssembler* masm) {
 
   // Check that the key is within bounds.
   __ LoadP(r6, FieldMemOperand(r5, FixedArray::kLengthOffset));
-  __ cmpl(r3, r6);
+  __ Cmpl(r3, r6);
   __ bge(&miss_force_generic);
 
   // Load the result and make sure it's not the hole.
@@ -4089,7 +4089,7 @@ void KeyedLoadStubCompiler::GenerateLoadFastDoubleElement(
 
   // Check that the key is within bounds.
   __ LoadP(scratch, FieldMemOperand(elements_reg, FixedArray::kLengthOffset));
-  __ cmpl(key_reg, scratch);
+  __ Cmpl(key_reg, scratch);
   __ bge(&miss_force_generic);
 
   // Load the upper word of the double in the fixed array and test for NaN.
@@ -4181,7 +4181,7 @@ void KeyedStoreStubCompiler::GenerateStoreFastElement(
     __ LoadP(scratch, FieldMemOperand(elements_reg, FixedArray::kLengthOffset));
   }
   // Compare smis.
-  __ cmpl(key_reg, scratch);
+  __ Cmpl(key_reg, scratch);
   if (is_js_array && grow_mode == ALLOW_JSARRAY_GROWTH) {
     __ bge(&grow);
   } else {
@@ -4288,7 +4288,7 @@ void KeyedStoreStubCompiler::GenerateStoreFastElement(
                 DONT_DO_SMI_CHECK);
 
     __ LoadP(scratch, FieldMemOperand(elements_reg, FixedArray::kLengthOffset));
-    __ cmpl(length_reg, scratch);
+    __ Cmpl(length_reg, scratch);
     __ bge(&slow);
 
     // Grow the array and finish the store.
@@ -4348,7 +4348,7 @@ void KeyedStoreStubCompiler::GenerateStoreFastDoubleElement(
   }
   // Compare smis, unsigned compare catches both negative and out-of-bound
   // indexes.
-  __ cmpl(key_reg, scratch1);
+  __ Cmpl(key_reg, scratch1);
   if (grow_mode == ALLOW_JSARRAY_GROWTH) {
     __ bge(&grow);
   } else {
@@ -4437,7 +4437,7 @@ void KeyedStoreStubCompiler::GenerateStoreFastDoubleElement(
     // Make sure that the backing store can hold additional elements.
     __ LoadP(scratch1,
              FieldMemOperand(elements_reg, FixedDoubleArray::kLengthOffset));
-    __ cmpl(length_reg, scratch1);
+    __ Cmpl(length_reg, scratch1);
     __ bge(&slow);
 
     // Grow the array and finish the store.

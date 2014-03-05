@@ -289,7 +289,7 @@ void FullCodeGenerator::Generate() {
       PrepareForBailoutForId(BailoutId::Declarations(), NO_REGISTERS);
       Label ok;
       __ LoadRoot(ip, Heap::kStackLimitRootIndex);
-      __ cmpl(sp, ip);
+      __ Cmpl(sp, ip);
       // This is a FIXED_SEQUENCE and must match the other StackCheck code
       __ b(ge, &ok);
       StackCheckStub stub;
@@ -368,7 +368,7 @@ void FullCodeGenerator::EmitStackCheck(IterationStatement* stmt,
     __ CallStub(&stub);
   } else {
     __ LoadRoot(ip, Heap::kStackLimitRootIndex);
-    __ cmpl(sp, ip);
+    __ Cmpl(sp, ip);
     // This is a FIXED_SEQUENCE and must match the other StackCheck code
     __ b(ge, &ok);
     StackCheckStub stub;
@@ -1201,7 +1201,7 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   // Load the current count to r3, load the length to r4.
   __ LoadP(r3, MemOperand(sp, 0 * kPointerSize));
   __ LoadP(r4, MemOperand(sp, 1 * kPointerSize));
-  __ cmpl(r3, r4);  // Compare to the array length.
+  __ Cmpl(r3, r4);  // Compare to the array length.
   __ bge(loop_statement.break_label());
 
   // Get the current entry of the array into register r6.
@@ -3802,7 +3802,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   __ Add(string,
           Operand(SeqAsciiString::kHeaderSize - kHeapObjectTag));
   __ CopyBytes(string, result_pos, string_length, scratch1);
-  __ cmpl(element, elements_end);
+  __ Cmpl(element, elements_end);
   __ blt(&one_char_separator_loop);  // End while (element < elements_end).
   ASSERT(result.is(r3));
   __ b(&done);
@@ -3832,7 +3832,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   __ Add(string,
           Operand(SeqAsciiString::kHeaderSize - kHeapObjectTag));
   __ CopyBytes(string, result_pos, string_length, scratch1);
-  __ cmpl(element, elements_end);
+  __ Cmpl(element, elements_end);
   __ blt(&long_separator_loop);  // End while (element < elements_end).
   ASSERT(result.is(r3));
   __ b(&done);

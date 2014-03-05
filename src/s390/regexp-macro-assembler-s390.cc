@@ -1363,7 +1363,7 @@ void RegExpMacroAssemblerPPC::CheckPreemption() {
       ExternalReference::address_of_stack_limit(masm_->isolate());
   __ mov(r3, Operand(stack_limit));
   __ LoadP(r3, MemOperand(r3));
-  __ cmpl(sp, r3);
+  __ Cmpl(sp, r3);
   SafeCall(&check_preempt_label_, le);
 }
 
@@ -1373,7 +1373,7 @@ void RegExpMacroAssemblerPPC::CheckStackLimit() {
       ExternalReference::address_of_regexp_stack_limit(masm_->isolate());
   __ mov(r3, Operand(stack_limit));
   __ LoadP(r3, MemOperand(r3));
-  __ cmpl(backtrack_stackpointer(), r3);
+  __ Cmpl(backtrack_stackpointer(), r3);
   SafeCall(&stack_overflow_label_, le);
 }
 

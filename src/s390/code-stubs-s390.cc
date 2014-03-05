@@ -4191,7 +4191,7 @@ void ArgumentsAccessStub::GenerateReadElement(MacroAssembler* masm) {
   // Check index against formal parameters count limit passed in
   // through register r3. Use unsigned comparison to get negative
   // check for free.
-  __ cmpl(r4, r3);
+  __ Cmpl(r4, r3);
   __ bge(&slow);
 
   // Read the argument from the stack and return it.
@@ -4206,7 +4206,7 @@ void ArgumentsAccessStub::GenerateReadElement(MacroAssembler* masm) {
   // comparison to get negative check for free.
   __ bind(&adaptor);
   __ LoadP(r3, MemOperand(r5, ArgumentsAdaptorFrameConstants::kLengthOffset));
-  __ cmpl(r4, r3);
+  __ Cmpl(r4, r3);
   __ bge(&slow);
 
   // Read the argument from the adaptor frame and return it.
@@ -4682,7 +4682,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // string length. A negative value will be greater (unsigned comparison).
   __ LoadP(r3, MemOperand(sp, kPreviousIndexOffset));
   __ JumpIfNotSmi(r3, &runtime);
-  __ cmpl(r6, r3);
+  __ Cmpl(r6, r3);
   __ ble(&runtime);
 
   // r5: Number of capture registers
@@ -5374,7 +5374,7 @@ void StringCharCodeAtGenerator::GenerateFast(MacroAssembler* masm) {
 
   // Check for index out of range.
   __ LoadP(ip, FieldMemOperand(object_, String::kLengthOffset));
-  __ cmpl(ip, index_);
+  __ Cmpl(ip, index_);
   __ ble(index_out_of_range_);
 
   __ SmiUntag(index_);
@@ -5818,7 +5818,7 @@ void SubStringStub::Generate(MacroAssembler* masm) {
   // We want to bailout to runtime here if From is negative.
   __ blt(&runtime /*, cr0*/);  // From < 0.
 
-  __ cmpl(r6, r5);
+  __ Cmpl(r6, r5);
   __ bgt(&runtime);  // Fail if from > to.
   __ sub(r5, r5, r6);
 
@@ -5834,7 +5834,7 @@ void SubStringStub::Generate(MacroAssembler* masm) {
   // r5: result string length
   __ LoadP(r7, FieldMemOperand(r3, String::kLengthOffset));
   __ SmiUntag(r0, r7);
-  __ cmpl(r5, r0);
+  __ Cmpl(r5, r0);
   // Return original string.
   __ beq(&return_r3);
   // Longer than original string's length or negative: unsafe arguments.
@@ -6282,7 +6282,7 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   ASSERT(IsPowerOf2(String::kMaxLength + 1));
   // kMaxLength + 1 is representable as shifted literal, kMaxLength is not.
   __ mov(r10, Operand(String::kMaxLength + 1));
-  __ cmpl(r9, r10);
+  __ Cmpl(r9, r10);
   __ bge(&call_runtime);
 
   // If result is not supposed to be flat, allocate a cons string object.
