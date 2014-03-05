@@ -639,8 +639,10 @@ class MacroAssembler: public Assembler {
 
 
 
+  void Cmp(Register src1, Register src2);
   void Cmpi(Register src1, const Operand& src2);
   void Cmpli(Register src1, const Operand& src2);
+  void Cmpl(Register src1, Register src2);
   void And(Register rb, Register rs, const Operand& rx, RCBit rc = LeaveRC);
   void Or(Register rb, Register rs, const Operand& rx, RCBit rc = LeaveRC);
   void Xor(Register rb, Register rs, const Operand& rx, RCBit rc = LeaveRC);
