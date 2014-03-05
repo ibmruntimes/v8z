@@ -129,7 +129,7 @@ class CachePage {
 
 class Simulator {
  public:
-  friend class PPCDebugger;
+  friend class S390Debugger;
   enum Register {
     no_reg = -1,
     r0 = 0, r1, r2, r3, r4, r5, r6, r7,
