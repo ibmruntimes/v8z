@@ -3002,7 +3002,7 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       // only takes rightmost 6bits
       int shiftBits = (get_register(b2) + d2) & 0x3F;
       int32_t r1_val = get_low_register<int32_t>(r1);
-      int32_t alu_out;
+      int32_t alu_out = 0;
       if (op == SLL) {
         alu_out = r1_val << shiftBits;
       } else if (op == SRL) {
