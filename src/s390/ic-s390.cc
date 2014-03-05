@@ -101,7 +101,7 @@ static void GenerateStringDictionaryReceiverCheck(MacroAssembler* masm,
   __ LoadP(elements, FieldMemOperand(receiver, JSObject::kPropertiesOffset));
   __ LoadP(t1, FieldMemOperand(elements, HeapObject::kMapOffset));
   __ LoadRoot(ip, Heap::kHashTableMapRootIndex);
-  __ cmp(t1, ip);
+  __ CmpRR(t1, ip);
   __ bne(miss);
 }
 
@@ -334,7 +334,7 @@ static void GenerateFastArrayLoad(MacroAssembler* masm,
     // Check that the object is in fast mode and writable.
     __ LoadP(scratch1, FieldMemOperand(elements, HeapObject::kMapOffset));
     __ LoadRoot(ip, Heap::kFixedArrayMapRootIndex);
-    __ cmp(scratch1, ip);
+    __ CmpRR(scratch1, ip);
     __ bne(not_fast_array);
   } else {
     __ AssertFastElements(elements);
@@ -350,7 +350,7 @@ static void GenerateFastArrayLoad(MacroAssembler* masm,
   __ SmiToPtrArrayOffset(scratch2, key);
   __ LoadPX(scratch2, MemOperand(scratch2, scratch1));
   __ LoadRoot(ip, Heap::kTheHoleValueRootIndex);
-  __ cmp(scratch2, ip);
+  __ CmpRR(scratch2, ip);
   // In case the loaded value is the_hole we have to consult GetProperty
   // to ensure the prototype chain is searched.
   __ beq(out_of_range);
@@ -436,10 +436,10 @@ void CallICBase::GenerateMonomorphicCacheProbe(MacroAssembler* masm,
   // Check for boolean.
   __ bind(&non_string);
   __ LoadRoot(ip, Heap::kTrueValueRootIndex);
-  __ cmp(r4, ip);
+  __ CmpRR(r4, ip);
   __ beq(&boolean);
   __ LoadRoot(ip, Heap::kFalseValueRootIndex);
-  __ cmp(r4, ip);
+  __ CmpRR(r4, ip);
   __ bne(&miss);
   __ bind(&boolean);
   StubCompiler::GenerateLoadGlobalFunctionPrototype(
@@ -617,7 +617,7 @@ void KeyedCallIC::GenerateMegamorphic(MacroAssembler* masm, int argc) {
   // r7: elements
   // Check whether the elements is a number dictionary.
   __ LoadRoot(ip, Heap::kHashTableMapRootIndex);
-  __ cmp(r6, ip);
+  __ CmpRR(r6, ip);
   __ bne(&slow_load);
   __ SmiUntag(r3, r5);
   // r3: untagged index
@@ -652,7 +652,7 @@ void KeyedCallIC::GenerateMegamorphic(MacroAssembler* masm, int argc) {
   __ LoadP(r3, FieldMemOperand(r4, JSObject::kPropertiesOffset));
   __ LoadP(r6, FieldMemOperand(r3, HeapObject::kMapOffset));
   __ LoadRoot(ip, Heap::kHashTableMapRootIndex);
-  __ cmp(r6, ip);
+  __ CmpRR(r6, ip);
   __ bne(&lookup_monomorphic_cache);
 
   GenerateDictionaryLoad(masm, &slow_load, r3, r5, r4, r6, r7);
@@ -808,7 +808,7 @@ static MemOperand GenerateMappedArgumentsLookup(MacroAssembler* masm,
 
   __ LoadPX(scratch2, MemOperand(scratch1, scratch3));
   __ LoadRoot(scratch3, Heap::kTheHoleValueRootIndex);
-  __ cmp(scratch2, scratch3);
+  __ CmpRR(scratch2, scratch3);
   __ beq(unmapped_case);
 
   // Load value from context and return it. We can reuse scratch1 because
@@ -866,7 +866,7 @@ void KeyedLoadIC::GenerateNonStrictArguments(MacroAssembler* masm) {
       GenerateUnmappedArgumentsLookup(masm, r3, r5, r6, &slow);
   __ LoadP(r5, unmapped_location);
   __ LoadRoot(r6, Heap::kTheHoleValueRootIndex);
-  __ cmp(r5, r6);
+  __ CmpRR(r5, r6);
   __ beq(&slow);
   __ LoadRR(r3, r5);
   __ Ret();
@@ -923,7 +923,7 @@ void KeyedCallIC::GenerateNonStrictArguments(MacroAssembler* masm,
       GenerateUnmappedArgumentsLookup(masm, r5, r6, r7, &slow);
   __ LoadP(r4, unmapped_location);
   __ LoadRoot(r6, Heap::kTheHoleValueRootIndex);
-  __ cmp(r4, r6);
+  __ CmpRR(r4, r6);
   __ beq(&slow);
   GenerateFunctionTailCall(masm, argc, &slow, r3);
   __ bind(&slow);
@@ -1008,7 +1008,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   // r6: elements map
   // r7: elements
   __ LoadRoot(ip, Heap::kHashTableMapRootIndex);
-  __ cmp(r6, ip);
+  __ CmpRR(r6, ip);
   __ bne(&slow);
   __ SmiUntag(r5, r3);
   __ LoadFromNumberDictionary(&slow, r7, r3, r3, r5, r6, r8);
@@ -1031,7 +1031,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   __ LoadP(r6, FieldMemOperand(r4, JSObject::kPropertiesOffset));
   __ LoadP(r7, FieldMemOperand(r6, HeapObject::kMapOffset));
   __ LoadRoot(ip, Heap::kHashTableMapRootIndex);
-  __ cmp(r7, ip);
+  __ CmpRR(r7, ip);
   __ beq(&probe_dictionary);
 
   // Load the map of the receiver, compute the keyed lookup cache hash
@@ -1064,10 +1064,10 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
     // Load map and move r7 to next entry.
     __ LoadP(r8, MemOperand(r7));
     __ Add(r7, Operand(kPointerSize * 2));
-    __ cmp(r5, r8);
+    __ CmpRR(r5, r8);
     __ bne(&try_next_entry);
     __ LoadP(r8, MemOperand(r7, -kPointerSize));  // Load symbol
-    __ cmp(r3, r8);
+    __ CmpRR(r3, r8);
     __ beq(&hit_on_nth_entry[i]);
     __ bind(&try_next_entry);
   }
@@ -1075,10 +1075,10 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   // Last entry: Load map and move r7 to symbol.
   __ LoadP(r8, MemOperand(r7));
   __ Add(r7, Operand(kPointerSize));
-  __ cmp(r5, r8);
+  __ CmpRR(r5, r8);
   __ bne(&slow);
   __ LoadP(r8, MemOperand(r7));
-  __ cmp(r3, r8);
+  __ CmpRR(r3, r8);
   __ bne(&slow);
 
   // Get field offset.
@@ -1346,7 +1346,7 @@ static void KeyedStoreGenerateGenericHelper(
     __ LoadP(elements_map, FieldMemOperand(elements, HeapObject::kMapOffset));
     __ mov(scratch_value,
             Operand(masm->isolate()->factory()->fixed_array_map()));
-    __ cmp(elements_map, scratch_value);
+    __ CmpRR(elements_map, scratch_value);
     __ bne(fast_double);
   }
   // Smi stores don't require further checks.
@@ -1531,13 +1531,13 @@ void KeyedStoreIC::GenerateGeneric(MacroAssembler* masm,
   __ bge(&slow);
   __ LoadP(elements_map, FieldMemOperand(elements, HeapObject::kMapOffset));
   __ mov(ip, Operand(masm->isolate()->factory()->fixed_array_map()));
-  __ cmp(elements_map, ip);  // PPC - I think I can re-use ip here
+  __ CmpRR(elements_map, ip);  // PPC - I think I can re-use ip here
   __ bne(&check_if_double_array);
   __ b(&fast_object_grow);
 
   __ bind(&check_if_double_array);
   __ mov(ip, Operand(masm->isolate()->factory()->fixed_double_array_map()));
-  __ cmp(elements_map, ip);  // PPC - another ip re-use
+  __ CmpRR(elements_map, ip);  // PPC - another ip re-use
   __ bne(&slow);
   __ b(&fast_double_grow);
 
@@ -1813,7 +1813,7 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
     ASSERT(Assembler::IsRlwinm(instr_at_patch));
 #endif
     // @TODO(JOHN): not sure if removing cr0 will cause a problem.
-    patcher.masm()->cmp(reg, reg/*, cr0*/);
+    patcher.masm()->CmpRR(reg, reg/*, cr0*/);
   }
 
   ASSERT(Assembler::IsBranch(branch_instr));

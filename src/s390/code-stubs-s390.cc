@@ -63,7 +63,7 @@ static void EmitCheckForHeapNumber(MacroAssembler* masm, Register operand,
                                    Label* not_a_heap_number) {
   __ LoadP(scratch1, FieldMemOperand(operand, HeapObject::kMapOffset));
   __ LoadRoot(scratch2, Heap::kHeapNumberMapRootIndex);
-  __ cmp(scratch1, scratch2);
+  __ CmpRR(scratch1, scratch2);
   __ bne(not_a_heap_number);
 }
 
@@ -160,7 +160,7 @@ void FastNewClosureStub::Generate(MacroAssembler* masm) {
   // Speculatively move code object into r7
   __ LoadP(r7, FieldMemOperand(r4, FixedArray::kHeaderSize + kPointerSize));
   __ LoadP(r8, FieldMemOperand(r4, FixedArray::kHeaderSize));
-  __ cmp(r5, r8);
+  __ CmpRR(r5, r8);
   __ beq(&install_optimized);
 
   // Iterate through the rest of map backwards.  r7 holds an index as a Smi.
@@ -176,7 +176,7 @@ void FastNewClosureStub::Generate(MacroAssembler* masm) {
   __ Add(r8, r4, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ SmiToPtrArrayOffset(r9, r7);
   __ LoadPX(r8, MemOperand(r8, r9));
-  __ cmp(r5, r8);
+  __ CmpRR(r5, r8);
   __ bne(&loop);
   // Hit: fetch the optimized code.
   // TODO(penguin): potential to use x-form for this sequence
@@ -630,7 +630,7 @@ void FloatingPointHelper::ConvertNumberToInt32(MacroAssembler* masm,
 
   __ UntagAndJumpIfSmi(dst, object, &done);
   __ LoadP(scratch1, FieldMemOperand(object, HeapNumber::kMapOffset));
-  __ cmp(scratch1, heap_number_map);
+  __ CmpRR(scratch1, heap_number_map);
   __ bne(not_number);
   __ ConvertToInt32(object,
                     dst,
@@ -936,7 +936,7 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm,
                                           bool never_nan_nan) {
   Label not_identical;
   Label heap_number, return_equal;
-  __ cmp(r3, r4);
+  __ CmpRR(r3, r4);
   __ bne(&not_identical);
 
   // The two objects are identical.  If we know that one of them isn't NaN then
@@ -963,7 +963,7 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm,
           __ Cmpi(r7, Operand(ODDBALL_TYPE));
           __ bne(&return_equal);
           __ LoadRoot(r5, Heap::kUndefinedValueRootIndex);
-          __ cmp(r3, r5);
+          __ CmpRR(r3, r5);
           __ bne(&return_equal);
           if (cond == le) {
             // undefined <= undefined should fail.
@@ -1164,7 +1164,7 @@ static void EmitCheckForTwoHeapNumbers(MacroAssembler* masm,
   __ CompareObjectType(rhs, r6, r5, HEAP_NUMBER_TYPE);
   __ bne(not_heap_numbers);
   __ LoadP(r5, FieldMemOperand(lhs, HeapObject::kMapOffset));
-  __ cmp(r5, r6);
+  __ CmpRR(r5, r6);
   __ bne(slow);  // First was a heap number, second wasn't.  Go slow case.
 
   // Both are heap numbers.  Load them up then jump to the code we have
@@ -1293,7 +1293,7 @@ void NumberToStringStub::GenerateLookupNumberStringCache(MacroAssembler* masm,
   // Check if the entry is the smi we are looking for.
   Register probe = mask;
   __ LoadP(probe, FieldMemOperand(scratch, FixedArray::kHeaderSize));
-  __ cmp(object, probe);
+  __ CmpRR(object, probe);
   __ bne(not_found);
 
   // Get the result from the cache.
@@ -1592,7 +1592,7 @@ void ToBooleanStub::CheckOddball(MacroAssembler* masm,
     // If we see an expected oddball, return its ToBoolean value tos_.
     Label different_value;
     __ LoadRoot(ip, value);
-    __ cmp(tos_, ip);
+    __ CmpRR(tos_, ip);
     __ bne(&different_value);
     // The value of a root is never NULL, so we can avoid loading a non-null
     // value into tos_ when we want to return 'true'.
@@ -2130,7 +2130,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       __ beq(&not_smi_result /*, cr0*/);
       // Not Smi if remainder is non-zero.
       __ Mul(scratch2, scratch2, scratch1);
-      __ cmp(ip, scratch2);
+      __ CmpRR(ip, scratch2);
       __ bne(&not_smi_result);
       // If the result is 0, we need to check for the -0 case.
       __ SmiTag(scratch2, scratch1, SetRC);
@@ -3109,9 +3109,9 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
   __ lwz(r7, MemOperand(cache_entry, 0));
   __ lwz(r8, MemOperand(cache_entry, 4));
   __ LoadP(r9, MemOperand(cache_entry, 8));
-  __ cmp(r5, r7);
+  __ CmpRR(r5, r7);
   __ bne(&calculate);
-  __ cmp(r6, r8);
+  __ CmpRR(r6, r8);
   __ bne(&calculate);
   // Cache hit. Load result, cleanup and return.
   Counters* counters = masm->isolate()->counters();
@@ -3279,7 +3279,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
 
     __ UntagAndJumpIfSmi(scratch, base, &base_is_smi);
     __ LoadP(scratch, FieldMemOperand(base, JSObject::kMapOffset));
-    __ cmp(scratch, heapnumbermap);
+    __ CmpRR(scratch, heapnumbermap);
     __ bne(&call_runtime);
 
     __ lfd(double_base, FieldMemOperand(base, HeapNumber::kValueOffset));
@@ -3291,7 +3291,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
 
     __ UntagAndJumpIfSmi(scratch, exponent, &int_exponent);
     __ LoadP(scratch, FieldMemOperand(exponent, JSObject::kMapOffset));
-    __ cmp(scratch, heapnumbermap);
+    __ CmpRR(scratch, heapnumbermap);
     __ bne(&call_runtime);
 
     __ lfd(double_exponent,
@@ -3683,7 +3683,7 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
   // Special handling of termination exceptions which are uncatchable
   // by javascript code.
   __ mov(r6, Operand(isolate->factory()->termination_exception()));
-  __ cmp(r3, r6);
+  __ CmpRR(r3, r6);
   __ beq(throw_termination_exception);
 
   // Handle normal exception.
@@ -4067,9 +4067,9 @@ void InstanceofStub::Generate(MacroAssembler* masm) {
   // Loop through the prototype chain looking for the function prototype.
   __ LoadRoot(scratch3, Heap::kNullValueRootIndex);
   __ bind(&loop);
-  __ cmp(scratch, prototype);
+  __ CmpRR(scratch, prototype);
   __ beq(&is_instance);
-  __ cmp(scratch, scratch3);
+  __ CmpRR(scratch, scratch3);
   __ beq(&is_not_instance);
   __ LoadP(scratch, FieldMemOperand(scratch, HeapObject::kMapOffset));
   __ LoadP(scratch, FieldMemOperand(scratch, Map::kPrototypeOffset));
@@ -4287,7 +4287,7 @@ void ArgumentsAccessStub::GenerateNewNonStrictFast(MacroAssembler* masm) {
   // r5 = argument count (tagged)
   // Compute the mapped parameter count = min(r4, r5) in r4.
   Label skip;
-  __ cmp(r4, r5);
+  __ CmpRR(r4, r5);
   __ blt(&skip);
   __ LoadRR(r4, r5);
   __ bind(&skip);
@@ -4460,7 +4460,7 @@ void ArgumentsAccessStub::GenerateNewNonStrictFast(MacroAssembler* masm) {
   __ AddSmiLiteral(r22, r22, Smi::FromInt(1), r0);
 
   __ bind(&arguments_test);
-  __ cmp(r22, r5);
+  __ CmpRR(r22, r5);
   __ blt(&arguments_loop);
 
   // Return and remove the on-stack parameters.
@@ -4706,7 +4706,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
          FieldMemOperand(last_match_info_elements, FixedArray::kLengthOffset));
   __ Add(r5, Operand(RegExpImpl::kLastMatchOverhead));
   __ SmiUntag(r0, r3);
-  __ cmp(r5, r0);
+  __ CmpRR(r5, r0);
   __ bgt(&runtime);
 
   // Reset offset for possibly sliced string.
@@ -4921,7 +4921,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ mov(r5, Operand(ExternalReference(Isolate::kPendingExceptionAddress,
                                        isolate)));
   __ LoadP(r3, MemOperand(r5, 0));
-  __ cmp(r3, r4);
+  __ CmpRR(r3, r4);
   __ beq(&runtime);
 
   __ StoreP(r4, MemOperand(r5, 0));  // Clear pending exception.
@@ -5146,7 +5146,7 @@ static void GenerateRecordCallTarget(MacroAssembler* masm) {
 
   // A monomorphic cache hit or an already megamorphic state: invoke the
   // function without changing the state.
-  __ cmp(scratch, r4);
+  __ CmpRR(scratch, r4);
   __ beq(&done);
   __ CompareRoot(scratch, Heap::kUndefinedValueRootIndex);
   __ beq(&done);
@@ -5570,7 +5570,7 @@ void StringHelper::GenerateCopyCharactersLong(MacroAssembler* masm,
   Register limit = count;  // Read until src equals this.
   // Copy bytes from src to dst until dst hits limit.
   __ bind(&byte_loop);
-  __ cmp(dest, limit);
+  __ CmpRR(dest, limit);
   __ bge(&done);
   __ lbz(scratch1, MemOperand(src));
   __ Add(src, Operand(1));
@@ -5689,12 +5689,12 @@ void StringHelper::GenerateTwoCharacterSymbolTableProbe(MacroAssembler* masm,
     __ CompareObjectType(candidate, scratch, scratch, ODDBALL_TYPE);
     __ bne(&is_string);
 
-    __ cmp(undefined, candidate);
+    __ CmpRR(undefined, candidate);
     __ beq(not_found);
     // Must be the hole (deleted entry).
     if (FLAG_debug_code) {
       __ LoadRoot(ip, Heap::kTheHoleValueRootIndex);
-      __ cmp(ip, candidate);
+      __ CmpRR(ip, candidate);
       __ Assert(eq, "oddball in symbol table is not undefined or the hole");
     }
     __ b(&next_probe[i]);
@@ -5713,7 +5713,7 @@ void StringHelper::GenerateTwoCharacterSymbolTableProbe(MacroAssembler* masm,
 
     // Check if the two characters match.
     __ lhz(scratch, FieldMemOperand(candidate, SeqAsciiString::kHeaderSize));
-    __ cmp(chars, scratch);
+    __ CmpRR(chars, scratch);
     __ beq(&found_in_symbol_table);
     __ bind(&next_probe[i]);
   }
@@ -6003,7 +6003,7 @@ void StringCompareStub::GenerateFlatAsciiStringEquals(MacroAssembler* masm,
   Label strings_not_equal, check_zero_length;
   __ LoadP(length, FieldMemOperand(left, String::kLengthOffset));
   __ LoadP(scratch2, FieldMemOperand(right, String::kLengthOffset));
-  __ cmp(length, scratch2);
+  __ CmpRR(length, scratch2);
   __ beq(&check_zero_length);
   __ bind(&strings_not_equal);
   __ LoadSmiLiteral(r3, Smi::FromInt(NOT_EQUAL));
@@ -6099,7 +6099,7 @@ void StringCompareStub::GenerateAsciiCharsCompareLoop(
   __ bind(&loop);
   __ lbzx(scratch1, MemOperand(left, index));
   __ lbzx(r0, MemOperand(right, index));
-  __ cmp(scratch1, r0);
+  __ CmpRR(scratch1, r0);
   __ bne(chars_not_equal);
   __ Add(index, index, Operand(1));
   __ Cmpi(index, Operand::Zero());
@@ -6119,7 +6119,7 @@ void StringCompareStub::Generate(MacroAssembler* masm) {
   __ LoadP(r4, MemOperand(sp, kPointerSize));
 
   Label not_same;
-  __ cmp(r3, r4);
+  __ CmpRR(r3, r4);
   __ bne(&not_same);
   STATIC_ASSERT(EQUAL == 0);
   STATIC_ASSERT(kSmiTag == 0);
@@ -6601,7 +6601,7 @@ void ICCompareStub::GenerateSymbols(MacroAssembler* masm) {
   __ beq(&miss /*, cr0*/);
 
   // Symbols are compared by identity.
-  __ cmp(left, right);
+  __ CmpRR(left, right);
   __ bne(&not_equal);
   // Make sure r3 is non-zero. At this point input operands are
   // guaranteed to be non-zero.
@@ -6646,7 +6646,7 @@ void ICCompareStub::GenerateStrings(MacroAssembler* masm) {
   __ bne(&miss /*, cr0*/);
 
   // Fast check for identical strings.
-  __ cmp(left, right);
+  __ CmpRR(left, right);
   STATIC_ASSERT(EQUAL == 0);
   STATIC_ASSERT(kSmiTag == 0);
   __ bne(&not_identical);
@@ -6849,7 +6849,7 @@ void StringDictionaryLookupStub::GenerateNegativeLookup(MacroAssembler* masm,
 
     ASSERT(!tmp.is(entity_name));
     __ LoadRoot(tmp, Heap::kUndefinedValueRootIndex);
-    __ cmp(entity_name, tmp);
+    __ CmpRR(entity_name, tmp);
     __ beq(done);
 
     if (i != kInlinedProbes - 1) {
@@ -6861,7 +6861,7 @@ void StringDictionaryLookupStub::GenerateNegativeLookup(MacroAssembler* masm,
       __ beq(miss);
 
       Label the_hole;
-      __ cmp(entity_name, tmp);
+      __ CmpRR(entity_name, tmp);
       __ beq(&the_hole);
 
       // Check if the entry name is not a symbol.
@@ -6953,7 +6953,7 @@ void StringDictionaryLookupStub::GeneratePositiveLookup(MacroAssembler* masm,
     __ ShiftLeftImm(ip, scratch2, Operand(kPointerSizeLog2));
     __ Add(scratch2, elements, ip);
     __ LoadP(ip, FieldMemOperand(scratch2, kElementsStartOffset));
-    __ cmp(name, ip);
+    __ CmpRR(name, ip);
     __ beq(done);
   }
 
@@ -7044,11 +7044,11 @@ void StringDictionaryLookupStub::Generate(MacroAssembler* masm) {
     __ LoadP(entry_key, FieldMemOperand(index, kElementsStartOffset));
 
     // Having undefined at this place means the name is not contained.
-    __ cmp(entry_key, undefined);
+    __ CmpRR(entry_key, undefined);
     __ beq(&not_in_dictionary);
 
     // Stop if found the property.
-    __ cmp(entry_key, key);
+    __ CmpRR(entry_key, key);
     __ beq(&in_dictionary);
 
     if (i != kTotalProbes - 1 && mode_ == NEGATIVE_LOOKUP) {

@@ -84,13 +84,13 @@ static void ProbeTable(Isolate* isolate,
 
   // Check that the key in the entry matches the name.
   __ LoadP(ip, MemOperand(base_addr, 0));
-  __ cmp(name, ip);
+  __ CmpRR(name, ip);
   __ bne(&miss);
 
   // Check the map matches.
   __ LoadP(ip, MemOperand(base_addr, map_off_addr - key_off_addr));
   __ LoadP(scratch2, FieldMemOperand(receiver, HeapObject::kMapOffset));
-  __ cmp(ip, scratch2);
+  __ CmpRR(ip, scratch2);
   __ bne(&miss);
 
   // Get the code entry from the cache.
@@ -168,7 +168,7 @@ static void GenerateDictionaryNegativeLookup(MacroAssembler* masm,
   __ LoadP(map, FieldMemOperand(properties, HeapObject::kMapOffset));
   Register tmp = properties;
   __ LoadRoot(tmp, Heap::kHashTableMapRootIndex);
-  __ cmp(map, tmp);
+  __ CmpRR(map, tmp);
   __ bne(miss_label);
 
   // Restore the temporarily used register.
@@ -322,7 +322,7 @@ void StubCompiler::GenerateDirectLoadGlobalFunctionPrototype(
   __ LoadP(prototype,
            MemOperand(cp, Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
   __ Move(ip, isolate->global_object());
-  __ cmp(prototype, ip);
+  __ CmpRR(prototype, ip);
   __ bne(miss);
   // Get the global function with the given index.
   Handle<JSFunction> function(
@@ -962,7 +962,7 @@ class CallInterceptorCompiler BASE_EMBEDDED {
     }
     // If interceptor returns no-result sentinel, call the constant function.
     __ LoadRoot(scratch, Heap::kNoInterceptorResultSentinelRootIndex);
-    __ cmp(r3, scratch);
+    __ CmpRR(r3, scratch);
     __ bne(interceptor_succeeded);
   }
 
@@ -988,7 +988,7 @@ static void GenerateCheckPropertyCell(MacroAssembler* masm,
   __ LoadP(scratch,
            FieldMemOperand(scratch, JSGlobalPropertyCell::kValueOffset));
   __ LoadRoot(ip, Heap::kTheHoleValueRootIndex);
-  __ cmp(scratch, ip);
+  __ CmpRR(scratch, ip);
   __ bne(miss);
 }
 
@@ -1197,7 +1197,7 @@ void StubCompiler::GenerateDictionaryLoadCallback(Register receiver,
   const int kValueOffset = kElementsStartOffset + kPointerSize;
   __ LoadP(scratch2, FieldMemOperand(pointer, kValueOffset));
   __ mov(scratch3, Operand(callback));
-  __ cmp(scratch2, scratch3);
+  __ CmpRR(scratch2, scratch3);
   __ bne(miss);
 }
 
@@ -1373,7 +1373,7 @@ void StubCompiler::GenerateLoadInterceptor(Handle<JSObject> object,
       // the case, return immediately.
       Label interceptor_failed;
       __ LoadRoot(scratch1, Heap::kNoInterceptorResultSentinelRootIndex);
-      __ cmp(r3, scratch1);
+      __ CmpRR(r3, scratch1);
       __ beq(&interceptor_failed);
       frame_scope.GenerateLeaveFrame();
       __ Ret();
@@ -1501,10 +1501,10 @@ void CallStubCompiler::GenerateLoadFunctionFromCell(
     // Check the shared function info. Make sure it hasn't changed.
     __ Move(r6, Handle<SharedFunctionInfo>(function->shared()));
     __ LoadP(r7, FieldMemOperand(r4, JSFunction::kSharedFunctionInfoOffset));
-    __ cmp(r7, r6);
+    __ CmpRR(r7, r6);
   } else {
     __ mov(r6, Operand(function));
-    __ cmp(r4, r6);
+    __ CmpRR(r4, r6);
   }
   __ bne(miss);
 }
@@ -1617,7 +1617,7 @@ Handle<Code> CallStubCompiler::CompileArrayPushCall(
       __ LoadP(r7, FieldMemOperand(elements, FixedArray::kLengthOffset));
 
       // Check if we could survive without allocation.
-      __ cmp(r3, r7);
+      __ CmpRR(r3, r7);
       __ bgt(&attempt_to_grow_elements);
 
       // Check if value is a smi.
@@ -1731,7 +1731,7 @@ Handle<Code> CallStubCompiler::CompileArrayPushCall(
       __ Add(end_elements, Operand(kEndElementsOffset));
       __ mov(r10, Operand(new_space_allocation_top));
       __ LoadP(r6, MemOperand(r10));
-      __ cmp(end_elements, r6);
+      __ CmpRR(end_elements, r6);
       __ bne(&call_builtin);
 
       __ mov(r22, Operand(new_space_allocation_limit));
@@ -1831,7 +1831,7 @@ Handle<Code> CallStubCompiler::CompileArrayPopCall(
   __ SmiToPtrArrayOffset(r3, r7);
   __ Add(elements, elements, r3);
   __ LoadP(r3, FieldMemOperand(elements, FixedArray::kHeaderSize));
-  __ cmp(r3, r9);
+  __ CmpRR(r3, r9);
   __ beq(&call_builtin);
 
   // Set the array's length.
@@ -2475,10 +2475,10 @@ Handle<Code> CallStubCompiler::CompileCallConstant(Handle<Object> object,
         Label fast;
         // Check that the object is a boolean.
         __ LoadRoot(ip, Heap::kTrueValueRootIndex);
-        __ cmp(r4, ip);
+        __ CmpRR(r4, ip);
         __ beq(&fast);
         __ LoadRoot(ip, Heap::kFalseValueRootIndex);
-        __ cmp(r4, ip);
+        __ CmpRR(r4, ip);
         __ bne(&miss);
         __ bind(&fast);
         // Check that the maps starting from the prototype haven't changed.
@@ -2808,7 +2808,7 @@ Handle<Code> StoreStubCompiler::CompileStoreGlobal(
   // Check that the map of the global has not changed.
   __ LoadP(r6, FieldMemOperand(r4, HeapObject::kMapOffset));
   __ mov(r7, Operand(Handle<Map>(object->map())));
-  __ cmp(r6, r7);
+  __ CmpRR(r6, r7);
   __ bne(&miss);
 
   // Check that the value in the cell is not the hole. If it is, this
@@ -2818,7 +2818,7 @@ Handle<Code> StoreStubCompiler::CompileStoreGlobal(
   __ mov(r7, Operand(cell));
   __ LoadRoot(r8, Heap::kTheHoleValueRootIndex);
   __ LoadP(r9, FieldMemOperand(r7, JSGlobalPropertyCell::kValueOffset));
-  __ cmp(r8, r9);
+  __ CmpRR(r8, r9);
   __ beq(&miss);
 
   // Store the value in the cell.
@@ -3045,7 +3045,7 @@ Handle<Code> LoadStubCompiler::CompileLoadGlobal(
   // Check for deleted property if property can actually be deleted.
   if (!is_dont_delete) {
     __ LoadRoot(ip, Heap::kTheHoleValueRootIndex);
-    __ cmp(r7, ip);
+    __ CmpRR(r7, ip);
     __ beq(&miss);
   }
 
@@ -3125,7 +3125,7 @@ Handle<Code> KeyedLoadStubCompiler::CompileLoadConstant(
 
   // Check the key is the cached one.
   __ mov(r5, Operand(name));
-  __ cmp(r3, r5);
+  __ CmpRR(r3, r5);
   __ bne(&miss);
 
   GenerateLoadConstant(receiver, holder, r4, r5, r6, r7, value, name, &miss);
@@ -3271,7 +3271,7 @@ Handle<Code> KeyedLoadStubCompiler::CompileLoadPolymorphic(
   for (int current = 0; current < receiver_count; ++current) {
     Label no_match;
     __ mov(ip, Operand(receiver_maps->at(current)));
-    __ cmp(r5, ip);
+    __ CmpRR(r5, ip);
     __ bne(&no_match);
     __ Jump(handler_ics->at(current), RelocInfo::CODE_TARGET, al);
     __ bind(&no_match);
@@ -3369,7 +3369,7 @@ Handle<Code> KeyedStoreStubCompiler::CompileStorePolymorphic(
   __ LoadP(r6, FieldMemOperand(r5, HeapObject::kMapOffset));
   for (int i = 0; i < receiver_count; ++i) {
     __ mov(ip, Operand(receiver_maps->at(i)));
-    __ cmp(r6, ip);
+    __ CmpRR(r6, ip);
     if (transitioned_maps->at(i).is_null()) {
       Label skip;
       __ bne(&skip);
@@ -3412,7 +3412,7 @@ Handle<Code> ConstructStubCompiler::CompileConstructStub(
   // code for the function thereby hitting the break points.
   __ LoadP(r5, FieldMemOperand(r4, JSFunction::kSharedFunctionInfoOffset));
   __ LoadP(r5, FieldMemOperand(r5, SharedFunctionInfo::kDebugInfoOffset));
-  __ cmp(r5, r10);
+  __ CmpRR(r5, r10);
   __ bne(&generic_stub_call);
 #endif
 
@@ -4046,7 +4046,7 @@ void KeyedLoadStubCompiler::GenerateLoadFastElement(MacroAssembler* masm) {
   __ SmiToPtrArrayOffset(r7, r3);
   __ LoadPX(r7, MemOperand(r7, r6));
   __ LoadRoot(ip, Heap::kTheHoleValueRootIndex);
-  __ cmp(r7, ip);
+  __ CmpRR(r7, ip);
   __ beq(&miss_force_generic);
   __ LoadRR(r3, r7);
   __ Ret();

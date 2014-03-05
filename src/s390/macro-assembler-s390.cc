@@ -340,7 +340,7 @@ void MacroAssembler::InNewSpace(Register object,
   mov(r0, Operand(ExternalReference::new_space_mask(isolate())));
   and_(scratch, object, r0);
   mov(r0, Operand(ExternalReference::new_space_start(isolate())));
-  cmp(scratch, r0);
+  CmpRR(scratch, r0);
   b(cond, branch);
 }
 
@@ -412,7 +412,7 @@ void MacroAssembler::RecordWrite(Register object,
 
   if (emit_debug_code()) {
     LoadP(ip, MemOperand(address));
-    cmp(ip, value);
+    CmpRR(ip, value);
     Check(eq, "Wrong address or value passed to RecordWrite");
   }
 
@@ -1197,14 +1197,14 @@ void MacroAssembler::CheckAccessGlobalProxy(Register holder_reg,
     // Read the first word and compare to the native_context_map.
     LoadP(holder_reg, FieldMemOperand(scratch, HeapObject::kMapOffset));
     LoadRoot(ip, Heap::kNativeContextMapRootIndex);
-    cmp(holder_reg, ip);
+    CmpRR(holder_reg, ip);
     Check(eq, "JSGlobalObject::native_context should be a native context.");
     pop(holder_reg);  // Restore holder.
   }
 
   // Check if both contexts are the same.
   LoadP(ip, FieldMemOperand(holder_reg, JSGlobalProxy::kNativeContextOffset));
-  cmp(scratch, ip);
+  CmpRR(scratch, ip);
   beq(&same_contexts);
 
   // Check the context is a native context.
@@ -1215,12 +1215,12 @@ void MacroAssembler::CheckAccessGlobalProxy(Register holder_reg,
     push(holder_reg);  // Temporarily save holder on the stack.
     LoadRR(holder_reg, ip);  // Move ip to its holding place.
     LoadRoot(ip, Heap::kNullValueRootIndex);
-    cmp(holder_reg, ip);
+    CmpRR(holder_reg, ip);
     Check(ne, "JSGlobalProxy::context() should not be null.");
 
     LoadP(holder_reg, FieldMemOperand(holder_reg, HeapObject::kMapOffset));
     LoadRoot(ip, Heap::kNativeContextMapRootIndex);
-    cmp(holder_reg, ip);
+    CmpRR(holder_reg, ip);
     Check(eq, "JSGlobalObject::native_context should be a native context.");
     // Restore ip is not needed. ip is reloaded below.
     pop(holder_reg);  // Restore holder.
@@ -1236,7 +1236,7 @@ void MacroAssembler::CheckAccessGlobalProxy(Register holder_reg,
 
   LoadP(scratch, FieldMemOperand(scratch, token_offset));
   LoadP(ip, FieldMemOperand(ip, token_offset));
-  cmp(scratch, ip);
+  CmpRR(scratch, ip);
   bne(miss);
 
   bind(&same_contexts);
@@ -1336,7 +1336,7 @@ void MacroAssembler::LoadFromNumberDictionary(Label* miss,
     Add(t2, elements, t2);
     LoadP(ip,
           FieldMemOperand(t2, SeededNumberDictionary::kElementsStartOffset));
-    cmp(key, ip);
+    CmpRR(key, ip);
     if (i != kProbes - 1) {
       beq(&done);
     } else {
@@ -1424,7 +1424,7 @@ void MacroAssembler::AllocateInNewSpace(int object_size,
       // immediately below so this use of ip does not cause difference with
       // respect to register content between debug and release mode.
       LoadP(ip, MemOperand(topaddr));
-      cmp(result, ip);
+      CmpRR(result, ip);
       Check(eq, "Unexpected allocation top");
     }
     // Load allocation limit into ip. Result already contains allocation top.
@@ -1506,7 +1506,7 @@ void MacroAssembler::AllocateInNewSpace(Register object_size,
       // immediately below so this use of ip does not cause difference with
       // respect to register content between debug and release mode.
       LoadP(ip, MemOperand(topaddr));
-      cmp(result, ip);
+      CmpRR(result, ip);
       Check(eq, "Unexpected allocation top");
     }
     // Load allocation limit into ip. Result already contains allocation top.
@@ -1555,7 +1555,7 @@ void MacroAssembler::UndoAllocationInNewSpace(Register object,
   // Check that the object un-allocated is below the current top.
   mov(scratch, Operand(new_space_allocation_top));
   LoadP(scratch, MemOperand(scratch));
-  cmp(object, scratch);
+  CmpRR(object, scratch);
   Check(lt, "Undo allocation of non allocated memory");
 #endif
   // Write the address of the object to un-allocate as the current top.
@@ -1729,7 +1729,7 @@ void MacroAssembler::CompareRoot(Register obj,
                                  Heap::RootListIndex index) {
   ASSERT(!obj.is(ip));
   LoadRoot(ip, index);
-  cmp(obj, ip);
+  CmpRR(obj, ip);
 }
 
 
@@ -1806,11 +1806,11 @@ void MacroAssembler::StoreNumberToDoubleElements(Register value_reg,
   mov(scratch1, Operand(kLastNonNaNInt64));
   Add(scratch3, value_reg, Operand(-kHeapObjectTag));
   ld(double_reg, MemOperand(scratch3, HeapNumber::kValueOffset));
-  cmp(double_reg, scratch1);
+  CmpRR(double_reg, scratch1);
 #else
   mov(scratch1, Operand(kNaNOrInfinityLowerBoundUpper32));
   lwz(exponent_reg, FieldMemOperand(value_reg, HeapNumber::kExponentOffset));
-  cmp(exponent_reg, scratch1);
+  CmpRR(exponent_reg, scratch1);
 #endif
   bge(&maybe_nan);
 
@@ -1959,7 +1959,7 @@ void MacroAssembler::CompareMap(Register obj_map,
                                 Label* early_success,
                                 CompareMapMode mode) {
   mov(r0, Operand(map));
-  cmp(obj_map, r0);
+  CmpRR(obj_map, r0);
   if (mode == ALLOW_ELEMENT_TRANSITION_MAPS) {
     ElementsKind kind = map->elements_kind();
     if (IsFastElementsKind(kind)) {
@@ -1971,7 +1971,7 @@ void MacroAssembler::CompareMap(Register obj_map,
         if (!current_map) break;
         beq(early_success);
         mov(r0, Operand(Handle<Map>(current_map)));
-        cmp(obj_map, r0);
+        CmpRR(obj_map, r0);
       }
     }
   }
@@ -2005,7 +2005,7 @@ void MacroAssembler::CheckMap(Register obj,
   }
   LoadP(scratch, FieldMemOperand(obj, HeapObject::kMapOffset));
   LoadRoot(ip, index);
-  cmp(scratch, ip);
+  CmpRR(scratch, ip);
   bne(fail);
 }
 
@@ -2021,7 +2021,7 @@ void MacroAssembler::DispatchMap(Register obj,
   }
   LoadP(scratch, FieldMemOperand(obj, HeapObject::kMapOffset));
   mov(ip, Operand(map));
-  cmp(scratch, ip);
+  CmpRR(scratch, ip);
   bne(&fail);
   Jump(success, RelocInfo::CODE_TARGET, al);
   bind(&fail);
@@ -2069,7 +2069,7 @@ void MacroAssembler::TryGetFunctionPrototype(Register function,
   // simply miss the cache instead. This will allow us to allocate a
   // prototype object on-demand in the runtime system.
   LoadRoot(ip, Heap::kTheHoleValueRootIndex);
-  cmp(result, ip);
+  CmpRR(result, ip);
   beq(miss);
 
   // If the function does not have an initial map, we're done.
@@ -2171,13 +2171,13 @@ void MacroAssembler::CallApiFunctionAndReturn(ExternalReference function,
   StoreP(r27, MemOperand(r26, kNextOffset));
   if (emit_debug_code()) {
     lwz(r4, MemOperand(r26, kLevelOffset));
-    cmp(r4, r29);
+    CmpRR(r4, r29);
     Check(eq, "Unexpected level after return from api call");
   }
   Sub(r29, Operand(1));
   st(r29, MemOperand(r26, kLevelOffset));
   LoadP(ip, MemOperand(r26, kLimitOffset));
-  cmp(r28, ip);
+  CmpRR(r28, ip);
   bne(&delete_allocated_handles);
 
   // Check if the function scheduled an exception.
@@ -2185,7 +2185,7 @@ void MacroAssembler::CallApiFunctionAndReturn(ExternalReference function,
   LoadRoot(r27, Heap::kTheHoleValueRootIndex);
   mov(ip, Operand(ExternalReference::scheduled_exception_address(isolate())));
   LoadP(r28, MemOperand(ip));
-  cmp(r27, r28);
+  CmpRR(r27, r28);
   bne(&promote_scheduled_exception);
 
   // LeaveExitFrame expects unwind space to be in a register.
@@ -2675,7 +2675,7 @@ void MacroAssembler::AssertRegisterIsRoot(Register reg,
                                           Heap::RootListIndex index) {
   if (emit_debug_code()) {
     LoadRoot(ip, index);
-    cmp(reg, ip);
+    CmpRR(reg, ip);
     Check(eq, "Register did not match expected root");
   }
 }
@@ -2688,13 +2688,13 @@ void MacroAssembler::AssertFastElements(Register elements) {
     push(elements);
     LoadP(elements, FieldMemOperand(elements, HeapObject::kMapOffset));
     LoadRoot(ip, Heap::kFixedArrayMapRootIndex);
-    cmp(elements, ip);
+    CmpRR(elements, ip);
     beq(&ok);
     LoadRoot(ip, Heap::kFixedDoubleArrayMapRootIndex);
-    cmp(elements, ip);
+    CmpRR(elements, ip);
     beq(&ok);
     LoadRoot(ip, Heap::kFixedCOWArrayMapRootIndex);
-    cmp(elements, ip);
+    CmpRR(elements, ip);
     beq(&ok);
     Abort("JSObject with fast elements map has slow elements");
     bind(&ok);
@@ -2781,7 +2781,7 @@ void MacroAssembler::LoadTransitionedArrayMapConditional(
   size_t offset = expected_kind * kPointerSize +
       FixedArrayBase::kHeaderSize;
   LoadP(ip, FieldMemOperand(scratch, offset));
-  cmp(map_in_out, ip);
+  CmpRR(map_in_out, ip);
   bne(no_map_match);
 
   // Use the transitioned cached map.
@@ -2982,7 +2982,7 @@ void MacroAssembler::JumpIfNotHeapNumber(Register object,
                                          Label* on_not_heap_number) {
   LoadP(scratch, FieldMemOperand(object, HeapObject::kMapOffset));
   AssertRegisterIsRoot(heap_number_map, Heap::kHeapNumberMapRootIndex);
-  cmp(scratch, heap_number_map);
+  CmpRR(scratch, heap_number_map);
   bne(on_not_heap_number);
 }
 
@@ -3107,7 +3107,7 @@ void MacroAssembler::CopyBytes(Register src,
   andi(scratch, src, Operand(kPointerSize - 1));
   beq(&aligned /*, cr0*/);
   subfic(scratch, scratch, Operand(kPointerSize * 2));
-  cmp(length, scratch);
+  CmpRR(length, scratch);
   blt(&byte_loop);
 
   // Align src before copying in word size chunks.
@@ -3210,7 +3210,7 @@ void MacroAssembler::InitializeFieldsWithFiller(Register start_offset,
   StoreP(filler, MemOperand(start_offset), r0);
   Add(start_offset, Operand(kPointerSize));
   bind(&entry);
-  cmp(start_offset, end_offset);
+  CmpRR(start_offset, end_offset);
   blt(&loop);
 }
 
@@ -3907,11 +3907,11 @@ void MacroAssembler::CheckEnumCache(Register null_value, Label* call_runtime) {
   // Check that there are no elements. Register r5 contains the current JS
   // object we've reached through the prototype chain.
   LoadP(r5, FieldMemOperand(r5, JSObject::kElementsOffset));
-  cmp(r5, empty_fixed_array_value);
+  CmpRR(r5, empty_fixed_array_value);
   bne(call_runtime);
 
   LoadP(r5, FieldMemOperand(r4, Map::kPrototypeOffset));
-  cmp(r5, null_value);
+  CmpRR(r5, null_value);
   bne(&next);
 }
 

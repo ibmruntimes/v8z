@@ -230,7 +230,7 @@ void RegExpMacroAssemblerPPC::CheckAtStart(Label* on_at_start) {
   __ LoadP(r4, MemOperand(frame_pointer(), kInputStart));
   __ LoadRR(r0, current_input_offset());
   __ Add(r3, end_of_input_address(), r0);
-  __ cmp(r4, r3);
+  __ CmpRR(r4, r3);
   BranchOrBacktrack(eq, on_at_start);
   __ bind(&not_at_start);
 }
@@ -244,7 +244,7 @@ void RegExpMacroAssemblerPPC::CheckNotAtStart(Label* on_not_at_start) {
   // If we did, are we still at the start of the input?
   __ LoadP(r4, MemOperand(frame_pointer(), kInputStart));
   __ Add(r3, end_of_input_address(), current_input_offset());
-  __ cmp(r3, r4);
+  __ CmpRR(r3, r4);
   BranchOrBacktrack(ne, on_not_at_start);
 }
 
@@ -297,7 +297,7 @@ void RegExpMacroAssemblerPPC::CheckCharacters(Vector<const uc16> str,
           stored_high_byte = match_high_byte;
         }
         __ Add(r6, r5, Operand(match_char & 0xff));
-        __ cmp(r4, r6);
+        __ CmpRR(r4, r6);
       }
     }
     BranchOrBacktrack(ne, on_failure);
@@ -308,7 +308,7 @@ void RegExpMacroAssemblerPPC::CheckCharacters(Vector<const uc16> str,
 void RegExpMacroAssemblerPPC::CheckGreedyLoop(Label* on_equal) {
   Label backtrack_non_equal;
   __ LoadP(r3, MemOperand(backtrack_stackpointer(), 0));
-  __ cmp(current_input_offset(), r3);
+  __ CmpRR(current_input_offset(), r3);
   __ bne(&backtrack_non_equal);
   __ Add(backtrack_stackpointer(),
          backtrack_stackpointer(), Operand(kPointerSize));
@@ -358,13 +358,13 @@ void RegExpMacroAssemblerPPC::CheckNotBackReferenceIgnoreCase(
     __ Add(r3, Operand(char_size()));
     __ lbz(r25, MemOperand(r5));
     __ Add(r5, Operand(char_size()));
-    __ cmp(r25, r6);
+    __ CmpRR(r25, r6);
     __ beq(&loop_check);
 
     // Mismatch, try case-insensitive match (converting letters to lower-case).
     __ ori(r6, r6, Operand(0x20));  // Convert capture character to lower-case.
     __ ori(r25, r25, Operand(0x20));  // Also convert input character.
-    __ cmp(r25, r6);
+    __ CmpRR(r25, r6);
     __ bne(&fail);
     __ Sub(r6, Operand('a'));
     __ cmpli(r6, Operand('z' - 'a'));  // Is r6 a lowercase letter?
@@ -372,7 +372,7 @@ void RegExpMacroAssemblerPPC::CheckNotBackReferenceIgnoreCase(
 
 
     __ bind(&loop_check);
-    __ cmp(r3, r4);
+    __ CmpRR(r3, r4);
     __ blt(&loop);
     __ b(&success);
 
@@ -464,9 +464,9 @@ void RegExpMacroAssemblerPPC::CheckNotBackReference(
     __ lhz(r25, MemOperand(r5));
     __ Add(r5, Operand(char_size()));
   }
-  __ cmp(r6, r25);
+  __ CmpRR(r6, r25);
   BranchOrBacktrack(ne, on_no_match);
-  __ cmp(r3, r4);
+  __ CmpRR(r3, r4);
   __ blt(&loop);
 
   // Move current character position to position after match.
@@ -900,7 +900,7 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
         if (global_with_zero_length_check()) {
           // Special case for zero-length matches.
           // r25: capture start index
-          __ cmp(current_input_offset(), r25);
+          __ CmpRR(current_input_offset(), r25);
           // Not a zero-length match, restart.
           __ bne(&load_char_start_regexp);
           // Offset from the end is zero if we already reached the end.
@@ -1026,7 +1026,7 @@ void RegExpMacroAssemblerPPC::IfRegisterLT(int reg,
 void RegExpMacroAssemblerPPC::IfRegisterEqPos(int reg,
                                               Label* if_eq) {
   __ LoadP(r3, register_location(reg), r0);
-  __ cmp(r3, current_input_offset());
+  __ CmpRR(r3, current_input_offset());
   BranchOrBacktrack(eq, if_eq);
 }
 
