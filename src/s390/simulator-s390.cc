@@ -54,12 +54,12 @@ namespace internal {
 // Windows C Run-Time Library does not provide vsscanf.
 #define SScanF sscanf  // NOLINT
 
-// The PPCDebugger class is used by the simulator while debugging simulated
+// The S390Debugger class is used by the simulator while debugging simulated
 // PowerPC code.
-class PPCDebugger {
+class S390Debugger {
  public:
-  explicit PPCDebugger(Simulator* sim) : sim_(sim) { }
-  ~PPCDebugger();
+  explicit S390Debugger(Simulator* sim) : sim_(sim) { }
+  ~S390Debugger();
 
   void Stop(Instruction* instr);
   void Info(Instruction* instr);
@@ -88,7 +88,7 @@ class PPCDebugger {
 };
 
 
-PPCDebugger::~PPCDebugger() {
+S390Debugger::~S390Debugger() {
 }
 
 
@@ -105,7 +105,7 @@ static void InitializeCoverage() {
 }
 
 
-void PPCDebugger::Stop(Instruction* instr) {  // roohack need to fix for PPC
+void S390Debugger::Stop(Instruction* instr) {  // roohack need to fix for PPC
   // Get the stop code.
   uint32_t code = instr->SvcValue() & kStopCodeMask;
   // Retrieve the encoded address, which comes just after this stop.
@@ -137,7 +137,7 @@ static void InitializeCoverage() {
 }
 
 
-void PPCDebugger::Stop(Instruction* instr) {
+void S390Debugger::Stop(Instruction* instr) {
   // Get the stop code.
   // use of kStopCodeMask not right on PowerPC
   uint32_t code = instr->SvcValue() & kStopCodeMask;
@@ -160,7 +160,7 @@ void PPCDebugger::Stop(Instruction* instr) {
 #endif
 
 
-void PPCDebugger::Info(Instruction* instr) {
+void S390Debugger::Info(Instruction* instr) {
   // Retrieve the encoded address immediately following the Info breakpoint.
   char* msg = *reinterpret_cast<char**>(sim_->get_pc()
                                         + Instruction::kInstrSize);
@@ -169,21 +169,21 @@ void PPCDebugger::Info(Instruction* instr) {
 }
 
 
-intptr_t PPCDebugger::GetRegisterValue(int regnum) {
+intptr_t S390Debugger::GetRegisterValue(int regnum) {
   return sim_->get_register(regnum);
 }
 
 
-double PPCDebugger::GetRegisterPairDoubleValue(int regnum) {
+double S390Debugger::GetRegisterPairDoubleValue(int regnum) {
   return sim_->get_double_from_register_pair(regnum);
 }
 
 
-double PPCDebugger::GetFPDoubleRegisterValue(int regnum) {
+double S390Debugger::GetFPDoubleRegisterValue(int regnum) {
   return sim_->get_double_from_d_register(regnum);
 }
 
-bool PPCDebugger::GetValue(const char* desc, intptr_t* value) {
+bool S390Debugger::GetValue(const char* desc, intptr_t* value) {
   int regnum = Registers::Number(desc);
   if (regnum != kNoRegister) {
     *value = GetRegisterValue(regnum);
@@ -198,7 +198,7 @@ bool PPCDebugger::GetValue(const char* desc, intptr_t* value) {
   return false;
 }
 
-bool PPCDebugger::GetFPDoubleValue(const char* desc, double* value) {
+bool S390Debugger::GetFPDoubleValue(const char* desc, double* value) {
   int regnum = FPRegisters::Number(desc);
   if (regnum != kNoRegister) {
     *value = sim_->get_double_from_d_register(regnum);
@@ -208,7 +208,7 @@ bool PPCDebugger::GetFPDoubleValue(const char* desc, double* value) {
 }
 
 
-bool PPCDebugger::SetBreakpoint(Instruction* break_pc) {
+bool S390Debugger::SetBreakpoint(Instruction* break_pc) {
   // Check if a breakpoint can be set. If not return without any side-effects.
   if (sim_->break_pc_ != NULL) {
     return false;
@@ -223,7 +223,7 @@ bool PPCDebugger::SetBreakpoint(Instruction* break_pc) {
 }
 
 
-bool PPCDebugger::DeleteBreakpoint(Instruction* break_pc) {
+bool S390Debugger::DeleteBreakpoint(Instruction* break_pc) {
   if (sim_->break_pc_ != NULL) {
     sim_->break_pc_->SetInstructionBits(sim_->break_instr_);
   }
@@ -234,21 +234,21 @@ bool PPCDebugger::DeleteBreakpoint(Instruction* break_pc) {
 }
 
 
-void PPCDebugger::UndoBreakpoints() {
+void S390Debugger::UndoBreakpoints() {
   if (sim_->break_pc_ != NULL) {
     sim_->break_pc_->SetInstructionBits(sim_->break_instr_);
   }
 }
 
 
-void PPCDebugger::RedoBreakpoints() {
+void S390Debugger::RedoBreakpoints() {
   if (sim_->break_pc_ != NULL) {
     sim_->break_pc_->SetInstructionBits(kBreakpointInstr);
   }
 }
 
 
-void PPCDebugger::Debug() {
+void S390Debugger::Debug() {
   intptr_t last_pc = -1;
   bool done = false;
 
@@ -681,7 +681,7 @@ void PPCDebugger::Debug() {
         PrintF("    Stops are debug instructions inserted by\n");
         PrintF("    the Assembler::stop() function.\n");
         PrintF("    When hitting a stop, the Simulator will\n");
-        PrintF("    stop and and give control to the PPCDebugger.\n");
+        PrintF("    stop and and give control to the S390Debugger.\n");
         PrintF("    The first %d stop codes are watched:\n",
                Simulator::kNumOfWatchedStops);
         PrintF("    - They can be enabled / disabled: the Simulator\n");
@@ -1489,12 +1489,12 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       break;
     }
     case kBreakpoint: {
-      PPCDebugger dbg(this);
+      S390Debugger dbg(this);
       dbg.Debug();
       break;
     }
     case kInfo: {
-       PPCDebugger dbg(this);
+       S390Debugger dbg(this);
        dbg.Info(instr);
        break;
      }
@@ -1508,7 +1508,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
         // Stop if it is enabled, otherwise go on jumping over the stop
         // and the message address.
         if (isEnabledStop(code)) {
-          PPCDebugger dbg(this);
+          S390Debugger dbg(this);
           dbg.Stop(instr);
         } else {
           set_pc(get_pc() + Instruction::kInstrSize + kPointerSize);
@@ -3444,7 +3444,7 @@ void Simulator::Execute() {
       Instruction* instr = reinterpret_cast<Instruction*>(program_counter);
       icount_++;
       if (icount_ == ::v8::internal::FLAG_stop_sim_at) {
-        PPCDebugger dbg(this);
+        S390Debugger dbg(this);
         dbg.Debug();
       } else {
         InstructionDecode(instr);
