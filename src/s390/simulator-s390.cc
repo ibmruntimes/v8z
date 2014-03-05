@@ -3054,15 +3054,23 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
       intptr_t d2_val = rxinst->D2Value();
       intptr_t addr = b2_val + x2_val + d2_val;
-      int32_t mem_val = 0;
       if (op == L) {
-        mem_val = ReadW(addr, instr);
+        int32_t mem_val = ReadW(addr, instr);
+        set_low_register<int32_t>(r1, mem_val);
       } else if (op == LA) {
-        UNIMPLEMENTED();
+#if V8_TARGET_S390X
+        int64_t memv = ReadDW(addr, instr);
+        set_register(r1, memv);
+#else
+        int32_t memv = ReadW(addr, instr);
+        set_register(r1, memv);
+#endif
       } else if (op == LB) {
-        mem_val = ReadB(addr);
+        int32_t mem_val = ReadB(addr);
+        set_low_register<int32_t>(r1, mem_val);
+      } else {
+        ASSERT(false);
       }
-      set_low_register<int32_t>(r1, mem_val);
       break;
     }
     case C: {
