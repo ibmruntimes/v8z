@@ -3945,11 +3945,11 @@ void MacroAssembler::mov(Register dst, const Operand& src) {
 #endif
 }
 
-void MacroAssembler::Compare(Register dst, const MemOperand& opnd) {
+void MacroAssembler::Cmp(Register dst, const MemOperand& opnd) {
   // make sure offset is within 20 bit range
   ASSERT(is_int20(opnd.offset()));
 #if V8_TARGET_ARCH_S390X
-  cgy(dst, opnd); 
+  cgy(dst, opnd);
 #else
   if (is_uint12(opnd.offset()))
     c(dst, opnd);
@@ -3958,7 +3958,7 @@ void MacroAssembler::Compare(Register dst, const MemOperand& opnd) {
 #endif
 }
 
-void MacroAssembler::CompareLogical(Register dst, const MemOperand& opnd) {
+void MacroAssembler::Cmpl(Register dst, const MemOperand& opnd) {
   ASSERT(is_int20(opnd.offset()));
 #ifdef V8_TARGET_ARCH_S390X
   clg(dst, opnd);
@@ -3970,7 +3970,7 @@ void MacroAssembler::CompareLogical(Register dst, const MemOperand& opnd) {
 #endif
 }
 
-void MacroAssembler::AddLogical(Register dst, const MemOperand& opnd) {
+void MacroAssembler::Addl(Register dst, const MemOperand& opnd) {
   ASSERT(is_int20(opnd.offset()));
 #ifdef V8_TARGET_ARCH_S390X
   alg(dst, opnd);
@@ -4087,7 +4087,7 @@ void MacroAssembler::Load(Register dst, const MemOperand& opnd) {
   }
 }
 
-void MacroAssembler::Compare(Register dst, const Operand& opnd) {
+void MacroAssembler::Cmp(Register dst, const Operand& opnd) {
   intptr_t value = opnd.immediate();
   if (is_int16(value))
     chi(dst, opnd);
@@ -4095,19 +4095,19 @@ void MacroAssembler::Compare(Register dst, const Operand& opnd) {
     cfi(dst, opnd);
 }
 
-void MacroAssembler::CompareLogical(Register dst, const Operand& opnd) {
+void MacroAssembler::Cmpl(Register dst, const Operand& opnd) {
   UNIMPLEMENTED();
 }
 
-void MacroAssembler::CompareLogical(Register dst, Register src) {
-#ifdef V8_TARGET_S390X
+void MacroAssembler::Cmpl(Register dst, Register src) {
+#ifdef V8_TARGET_ARCH_S390X
   clgr(dst, src);
 #else
   clr(dst, src);
 #endif
 }
 
-void MacroAssembler::AddLogical(Register dst, const Operand& opnd) {
+void MacroAssembler::Addl(Register dst, const Operand& opnd) {
   alfi(dst, opnd);
 }
 
@@ -4184,14 +4184,6 @@ void MacroAssembler::Cmpi(Register src1, const Operand& src2) {
   cgfi(src1, src2);
 #else
   cfi(src1, src2);
-#endif
-}
-
-void MacroAssembler::Cmpl(Register src1, Register src2) {
-#if V8_TARGET_ARCH_S390X
-  clgr(src1, src2);
-#else
-  clr(src1, src2);
 #endif
 }
 
