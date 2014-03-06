@@ -1314,4 +1314,43 @@ TEST(16) {
   CHECK_EQ(3, static_cast<int>(res));
 }
 
+// Test JumpIfSmi
+TEST(17) {
+  InitializeVM();
+  v8::HandleScope scope;
+
+  MacroAssembler assm(Isolate::Current(), NULL, 0);
+
+#if defined(_AIX) || defined(V8_TARGET_ARCH_S390X)
+  __ function_descriptor();
+#endif
+
+  Label yes;
+
+  __ mov(r2, Operand(0x12345678));
+  __ JumpIfSmi(r2, &yes);
+  __ beq(&yes);
+  __ Load(r2, Operand(0));
+  __ b(r14);
+  __ bind(&yes);
+  __ Load(r2, Operand(1));
+  __ b(r14);
+
+  CodeDesc desc;
+  assm.GetCode(&desc);
+  Object* code = HEAP->CreateCode(
+      desc,
+      Code::ComputeFlags(Code::STUB),
+      Handle<Object>(HEAP->undefined_value()))->ToObjectChecked();
+  CHECK(code->IsCode());
+#ifdef DEBUG
+  // Code::cast(code)->Print();
+#endif
+  F2 f = FUNCTION_CAST<F2>(Code::cast(code)->entry());
+  intptr_t res =
+    reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(f, 3, 4, 3, 0, 0));
+  ::printf("f() = %" V8PRIdPTR "\n", res);
+  CHECK_EQ(1, static_cast<int>(res));
+}
+
 #undef __
