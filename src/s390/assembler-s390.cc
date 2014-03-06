@@ -1664,6 +1664,32 @@ void Assembler::ri_form(Opcode op, Condition m1, const Operand& i2) {
              (i2.imm_ & 0xFFFF));
 }
 
+// RIE-f format: <insn> R1,R2,I3,I4,I5
+//    +--------+----+----+------------------+--------+--------+
+//    | OpCode | R1 | R2 |   I3   |    I4   |   I5   | OpCode |
+//    +--------+----+----+------------------+--------+--------+
+//    0        8    12   16      24         32       40      47
+#define RIE_F_FORM_EMIT(name, op)\
+void Assembler::name(Register r1, Register r2, const Operand &i3,\
+                     const Operand& i4, const Operand& i5) {\
+  rie_f_form(op, r1, r2, i3, i4, i5);\
+}
+void Assembler::rie_f_form(Opcode op, Register r1, Register r2, const Operand &i3,
+                     const Operand& i4, const Operand& i5) {
+    ASSERT(is_uint16(op));
+    ASSERT(is_uint8(i3.imm_));
+    ASSERT(is_uint8(i4.imm_));
+    ASSERT(is_uint8(i5.imm_));
+    uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32       |
+                    (static_cast<uint64_t>(r1.code())) * B36         |
+                    (static_cast<uint64_t>(r2.code())) * B32         |
+                    (static_cast<uint64_t>(i3.imm_)) * B24           |
+                    (static_cast<uint64_t>(i4.imm_)) * B16           |
+                    (static_cast<uint64_t>(i5.imm_)) * B8            |
+                    (static_cast<uint64_t>(op & 0x00FF));
+    emit6bytes(code);
+}
+
 // RIE format: <insn> R1,R3,I2
 //    +--------+----+----+------------------+--------+--------+
 //    | OpCode | R1 | R3 |        I2        |////////| OpCode |
@@ -2824,8 +2850,8 @@ RRF1_FORM_EMIT(ppa, PPA)
 RRF1_FORM_EMIT(qadtr, QADTR)
 RRF1_FORM_EMIT(qaxtr, QAXTR)
 S_FORM_EMIT(rchp, RCHP)
-RIE_FORM_EMIT(risbg, RISBG)
-RIE_FORM_EMIT(risbgn, RISBGN)
+RIE_F_FORM_EMIT(risbg, RISBG)
+RIE_F_FORM_EMIT(risbgn, RISBGN)
 RIE_FORM_EMIT(risbhg, RISBHG)
 RIE_FORM_EMIT(risblg, RISBLG)
 RSY1_FORM_EMIT(rll, RLL)
@@ -3342,6 +3368,11 @@ void Assembler::sllg(Register r1, Register r3, const MemOperand& opnd) {
 // Shift Right Single Logical (32)
 void Assembler::srl(Register r1, const Operand& opnd) {
   rs_form(SRL, r1, r0, r0, opnd.immediate());
+}
+
+// Shift Right Single Logical (32)
+void Assembler::srlk(Register r1, Register r3, const Operand& opnd) {
+  rsy_form(SRLG, r1, r3, r0, opnd.immediate());
 }
 
 // Shift Right Single Logical (64)

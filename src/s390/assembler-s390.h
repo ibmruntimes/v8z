@@ -823,6 +823,10 @@ void name(Condition m, const Operand& i)
 #define RIE_FORM(name)\
 void name(Register r1, Register R3, const Operand& i)
 
+#define RIE_F_FORM(name)\
+void name(Register r1, Register r2, const Operand &i3,\
+                     const Operand& i4, const Operand& i5)
+
 #define RIL1_FORM(name)\
 void name(Register r1, const Operand& i2)
 
@@ -1516,8 +1520,8 @@ RRF1_FORM(ppa);
 RRF1_FORM(qadtr);
 RRF1_FORM(qaxtr);
 S_FORM(rchp);
-RIE_FORM(risbg);
-RIE_FORM(risbgn);
+RIE_F_FORM(risbg);
+RIE_F_FORM(risbgn);
 RIE_FORM(risbhg);
 RIE_FORM(risblg);
 RSY1_FORM(rll);
@@ -1712,6 +1716,7 @@ SS2_FORM(zap);
   // Shift instruction
   void sll(Register r1, const Operand& opnd);
   void srl(Register r1, const Operand& opnd);
+  void srlk(Register r1, Register r3, const Operand& opnd);
   void sla(Register r1, const Operand& opnd);
   void sra(Register r1, const Operand& opnd);
 // end of S390instructions
@@ -2171,6 +2176,8 @@ SS2_FORM(zap);
   inline void ri_form(Opcode op, Condition m1, const Operand& i2);
   inline void rie_form(Opcode op, Register r1, Register r3,
                      const Operand& i2);
+  inline void rie_f_form(Opcode op, Register r1, Register r2, const Operand &i3,
+                     const Operand& i4, const Operand& i5);
   inline void ril_form(Opcode op, Register r1, const Operand& i2);
   inline void ril_form(Opcode op, Condition m1, const Operand& i2);
   inline void rre_form(Opcode op, Register r1, Register r2);
