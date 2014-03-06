@@ -264,30 +264,36 @@ class MacroAssembler: public Assembler {
 
   // s390 Macro assemblers.
   // the size of the register operand is the size of architecture.
+  // Load 32bit
   void Load(Register dst, const MemOperand& opnd);
   void Load(Register dst, const Operand& opnd);
+  // compare 32bit
   void Cmp(Register dst, const MemOperand& opnd);
   void Cmp(Register dst, const Operand& opnd);
+  // compare 32bit logical
   void Cmpl(Register dst, const MemOperand& opnd);
   void Cmpl(Register dst, const Operand& opnd);
+  // add logical 32bit
   void Addl(Register dst, const MemOperand& opnd);
   void Addl(Register dst, const Operand& opnd);
+  // add 32bit
   void Add(Register dst, const MemOperand& opnd);
   void Add(Register dst, const Operand& opnd);
   void Add(Register dst, Register src, const Operand& opnd);
   void Add(Register dst, Register src);
   void Add(Register dst, Register src1, Register src2);
+  // subtract 32bit
   void Sub(Register dst, Register src1, const Operand& src2);
   void Sub(Register dst, const Operand& src);
+  void Sub(Register dst, const MemOperand& opnd);
+  // subtract logical 32bit
   void Subl(Register dst, const MemOperand& opnd);
   void Subl(Register dst, const Operand& opnd);
   void Subl(Register dst, Register src);
-  void Sub(Register dst, const MemOperand& opnd);
+
+  // and 32bit
   void And(Register dst, const MemOperand& opnd);
   void And(Register dst, const Operand& opnd);
-  void AndLogical(Register dst, const MemOperand& opnd);
-  void AndLogical(Register dst, const Operand& opnd);
-  void AndLogical(Register dst, Register src);
   void Branch(Condition c, const Operand& opnd);
   void ShiftLeftImm(Register dst, Register src, const Operand& val,
                     RCBit rc = LeaveRC);
@@ -295,6 +301,12 @@ class MacroAssembler: public Assembler {
                     RCBit rc = LeaveRC);
   void ShiftRightArithImm(Register dst, Register src, const int val,
                     RCBit rc = LeaveRC);
+
+  // pointers
+  void AddP(Register dst, const Operand& opnd);
+  void AddP(Register dst, const MemOperand& opnd);
+  void SubP(Register dst, const Operand& opnd);
+  void SubP(Register dst, const MemOperand& opnd);
 
 
   void mov(Register dst, const Operand& src);
