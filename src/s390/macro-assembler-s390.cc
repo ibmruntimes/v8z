@@ -4085,6 +4085,7 @@ void MacroAssembler::And(Register dst, const Operand& opnd) {
 #endif
 }
 
+// works the same as mov
 void MacroAssembler::Load(Register dst, const Operand& opnd) {
   intptr_t value = opnd.immediate();
   if (is_int16(value)) {
@@ -4119,7 +4120,7 @@ void MacroAssembler::Load(Register dst, const MemOperand& opnd) {
 // compare arithmetic
 void MacroAssembler::Cmp(Register dst, const Operand& opnd) {
 #if V8_TARGET_ARCH_S390X
-  cgf(dst, opnd);
+  cgfi(dst, opnd);
 #else
   intptr_t value = opnd.immediate();
   if (is_int16(value))
@@ -4222,20 +4223,14 @@ void MacroAssembler::Cmp(Register src1, Register src2) {
 #endif
 }
 
+// Cmp overloads it
 void MacroAssembler::Cmpi(Register src1, const Operand& src2) {
-#if V8_TARGET_ARCH_S390X
-  cgfi(src1, src2);
-#else
-  cfi(src1, src2);
-#endif
+  Cmp(src1, src2);
 }
 
+// Cmpl overloads it
 void MacroAssembler::Cmpli(Register src1, const Operand& src2) {
-#if V8_TARGET_ARCH_S390X
-  clgfi(src1, src2);
-#else
-  clfi(src1, src2);
-#endif
+  Cmpl(src1, src2);
 }
 
 void MacroAssembler::And(Register rb, Register rs, const Operand& rx,
