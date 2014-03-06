@@ -3237,8 +3237,35 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       }
       break;
     }
+    case LMG:
     case STMG: {
-      UNIMPLEMENTED();
+      // Store Multiple 64-bits.
+      RSYInstruction* rsyinstr = reinterpret_cast<RSYInstruction*>(instr);
+      int r1 = rsyinstr->R1Value();
+      int r3 = rsyinstr->R3Value();
+      int rb = rsyinstr->B2Value();
+      int offset = rsyinstr->D2Value();
+
+      // Regs roll around if r3 is less than r1.
+      // Artifically increase r3 by 16 so we can calculate
+      // the number of regs stored properly.
+      if (r3 < r1)
+        r3 += 16;
+
+      intptr_t rb_val = (rb == 0) ? 0 : get_register(rb);
+
+      // Store each register in ascending order.
+      for (int i = 0; i <= r3 - r1; i++) {
+        if (op == LMG) {
+          int64_t value =
+            *reinterpret_cast<int64_t*>(ReadDW(rb_val + offset + 4 * i));
+          set_register((r1 + i) % 16, value);
+        } else if (op == STMG) {
+          int64_t value = get_register((r1 + i) % 16);
+          WriteDW(rb_val + offset + 4 * i, value);
+        } else { ASSERT(false); }
+      }
+      break;
       break;
     }
     case SLLG:
@@ -3337,7 +3364,30 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
     case OG:
     case XG:
     case CG: {
-      UNIMPLEMENTED();
+      RXYInstruction* rxyInstr = reinterpret_cast<RXYInstruction*>(instr);
+      int r1 = rxyInstr->R1Value();
+      int x2 = rxyInstr->X2Value();
+      int b2 = rxyInstr->B2Value();
+      int d2 = rxyInstr->D2Value();
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      int64_t alu_out = get_register(r1);
+      int64_t mem_val =
+        *reinterpret_cast<int64_t*>(ReadDW(b2_val + x2_val + d2));
+
+      switch (op) {
+        case AG: alu_out += mem_val; break;
+        case SG: alu_out -= mem_val; break;
+        case NG: alu_out &= mem_val; break;
+        case OG: alu_out |= mem_val; break;
+        case XG: alu_out ^= mem_val; break;
+        case CG: SetS390ConditionCode<int64_t>(alu_out, mem_val); break;
+        default: ASSERT(false); break;
+      }
+
+      if (op != CG) {
+        set_register(r1, alu_out);
+      }
       break;
     }
     case ALY:
@@ -3425,13 +3475,13 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       intptr_t d2_val = rxyinst->D2Value();
       uint64_t alu_out = r1_val;
       if (op == ALG) {
-        uint64_t mem_val = 
+        uint64_t mem_val =
             *reinterpret_cast<uint64_t*>(ReadDW(b2_val + d2_val + x2_val));
-        alu_out += mem_val;  
+        alu_out += mem_val;
       } else if (op == SLG) {
-        uint64_t mem_val = 
+        uint64_t mem_val =
             *reinterpret_cast<uint64_t*>(ReadDW(b2_val + d2_val + x2_val));
-        alu_out -= mem_val;  
+        alu_out -= mem_val;
       } else if (op == AGF) {
         uint32_t mem_val = ReadW(b2_val + d2_val + x2_val, instr);
         alu_out += mem_val;
@@ -3440,7 +3490,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
         alu_out -= mem_val;
       } else { ASSERT(false); }
       set_register(r1, alu_out);
-      break; 
+      break;
     }
     case ALGFI:
     case SLGFI: {  // TODO(ALANLI): add carry
