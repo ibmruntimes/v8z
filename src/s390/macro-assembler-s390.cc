@@ -4100,6 +4100,10 @@ void MacroAssembler::AddP(Register dst, const MemOperand& opnd) {
 #endif
 }
 
+void MacroAssembler::AddP(Register dst, Register src) {
+  AddRR(dst, src);
+}
+
 void MacroAssembler::SubP(Register dst, const Operand& opnd) {
   Subl(dst, opnd);
 }

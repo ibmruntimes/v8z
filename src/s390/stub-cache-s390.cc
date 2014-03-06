@@ -1635,7 +1635,7 @@ Handle<Code> CallStubCompiler::CompileArrayPushCall(
       __ Add(end_elements, elements, end_elements);
       const int kEndElementsOffset =
           FixedArray::kHeaderSize - kHeapObjectTag - argc * kPointerSize;
-      __ Add(end_elements, Operand(kEndElementsOffset));
+      __ AddP(end_elements, Operand(kEndElementsOffset));
       __ StoreP(r7, MemOperand(end_elements));
 
       // Check for a smi.
@@ -1688,7 +1688,7 @@ Handle<Code> CallStubCompiler::CompileArrayPushCall(
       // so write back the value in end_elements.
       __ SmiToPtrArrayOffset(end_elements, r3);
       __ Add(end_elements, elements, end_elements);
-      __ Add(end_elements, Operand(kEndElementsOffset));
+      __ AddP(end_elements, Operand(kEndElementsOffset));
       __ StoreP(r7, MemOperand(end_elements));
 
       __ RecordWrite(elements,
@@ -1728,7 +1728,7 @@ Handle<Code> CallStubCompiler::CompileArrayPushCall(
       // Load top and check if it is the end of elements.
       __ SmiToPtrArrayOffset(end_elements, r3);
       __ Add(end_elements, elements, end_elements);
-      __ Add(end_elements, Operand(kEndElementsOffset));
+      __ AddP(end_elements, Operand(kEndElementsOffset));
       __ mov(r10, Operand(new_space_allocation_top));
       __ LoadP(r6, MemOperand(r10));
       __ CmpRR(end_elements, r6);
@@ -1736,7 +1736,7 @@ Handle<Code> CallStubCompiler::CompileArrayPushCall(
 
       __ mov(r22, Operand(new_space_allocation_limit));
       __ LoadP(r22, MemOperand(r22));
-      __ Add(r6, Operand(kAllocationDelta * kPointerSize));
+      __ AddP(r6, Operand(kAllocationDelta * kPointerSize));
       __ Cmpl(r6, r22);
       __ bgt(&call_builtin);
 
@@ -2184,7 +2184,7 @@ Handle<Code> CallStubCompiler::CompileMathFloorCall(
   __ lwz(r3, MemOperand(sp, 4));
 #endif
 #endif
-  __ Add(sp, Operand(8));
+  __ AddP(sp, Operand(8));
 
   // if resulting conversion is negative, invert for bit tests
   __ TestSignBit(r3, r0);
@@ -3454,13 +3454,13 @@ Handle<Code> ConstructStubCompiler::CompileConstructStub(
   __ LoadRR(r8, r7);
   ASSERT_EQ(0 * kPointerSize, JSObject::kMapOffset);
   __ StoreP(r5, MemOperand(r8));
-  __ Add(r8, Operand(kPointerSize));
+  __ AddP(r8, Operand(kPointerSize));
   ASSERT_EQ(1 * kPointerSize, JSObject::kPropertiesOffset);
   __ StoreP(r9, MemOperand(r8));
-  __ Add(r8, Operand(kPointerSize));
+  __ AddP(r8, Operand(kPointerSize));
   ASSERT_EQ(2 * kPointerSize, JSObject::kElementsOffset);
   __ StoreP(r9, MemOperand(r8));
-  __ Add(r8, Operand(kPointerSize));
+  __ AddP(r8, Operand(kPointerSize));
 
   // Calculate the location of the first argument. The stack contains only the
   // argc arguments.
@@ -3487,19 +3487,19 @@ Handle<Code> ConstructStubCompiler::CompileConstructStub(
       // Argument passed - find it on the stack.
       __ LoadP(r5, MemOperand(r4, (arg_number + 1) * -kPointerSize), r0);
       __ StoreP(r5, MemOperand(r8));
-      __ Add(r8, Operand(kPointerSize));
+      __ AddP(r8, Operand(kPointerSize));
       __ b(&next);
       __ bind(&not_passed);
       // Set the property to undefined.
       __ StoreP(r10, MemOperand(r8));
-      __ Add(r8, Operand(kPointerSize));
+      __ AddP(r8, Operand(kPointerSize));
       __ bind(&next);
     } else {
       // Set the property to the constant value.
       Handle<Object> constant(shared->GetThisPropertyAssignmentConstant(i));
       __ mov(r5, Operand(constant));
       __ StoreP(r5, MemOperand(r8));
-      __ Add(r8, Operand(kPointerSize));
+      __ AddP(r8, Operand(kPointerSize));
     }
   }
 
@@ -3509,7 +3509,7 @@ Handle<Code> ConstructStubCompiler::CompileConstructStub(
        i < function->initial_map()->inobject_properties();
        i++) {
       __ StoreP(r10, MemOperand(r8));
-      __ Add(r8, Operand(kPointerSize));
+      __ AddP(r8, Operand(kPointerSize));
   }
 
   // r3: argc
@@ -3523,8 +3523,8 @@ Handle<Code> ConstructStubCompiler::CompileConstructStub(
   // r4: argc
   // Remove caller arguments and receiver from the stack and return.
   __ ShiftLeftImm(r4, r4, Operand(kPointerSizeLog2));
-  __ Add(sp, sp, r4);
-  __ Add(sp, Operand(kPointerSize));
+  __ AddP(sp, r4);
+  __ AddP(sp, Operand(kPointerSize));
   Counters* counters = masm()->isolate()->counters();
   __ IncrementCounter(counters->constructed_objects(), 1, r4);
   __ IncrementCounter(counters->constructed_objects_stub(), 1, r4);

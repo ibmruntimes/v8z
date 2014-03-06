@@ -555,7 +555,7 @@ class RecordWriteStub: public CodeStub {
           DwVfpRegister reg = DwVfpRegister::from_code(i);
           masm->lfd(reg, MemOperand(sp, (i - 1) * kDoubleSize));
         }
-        masm->Add(sp, Operand(kDoubleSize * kNumRegs));
+        masm->AddP(sp, Operand(kDoubleSize * kNumRegs));
       }
       masm->MultiPop(kJSCallerSaved & ~scratch1_.bit());
       masm->pop(r0);
