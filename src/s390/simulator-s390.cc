@@ -3163,25 +3163,45 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       set_register(r1, imm);
       break;
     }
+    case NILF:
     case IILF: {
       RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
       int r1 = rilInstr->R1Value();
-      uint32_t imm = rilInstr->I2Value();
-      set_low_register<uint32_t>(r1, imm);
+      uint32_t imm = rilInstr->I2UnsignedValue();
+      uint32_t alu_out = r1;
+      if (op == NILF) {
+        alu_out &= imm;
+      } else if (op == IILF) {
+        alu_out = imm;
+      } else { ASSERT(false); }
+      set_low_register<uint32_t>(r1, alu_out);
       break;
     }
+    case NIHF:
     case IIHF: {
       RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
       int r1 = rilInstr->R1Value();
       uint32_t imm = rilInstr->I2Value();
-      set_high_register<uint32_t>(r1, imm);
+      uint32_t alu_out = get_high_register<uint32_t>(r1);
+      if (op == NIHF) {
+        alu_out &= imm;
+      } else if (op == IIHF) {
+        alu_out = imm;
+      } else { ASSERT(false); }
+      set_high_register<uint32_t>(r1, alu_out);
       break;
     }
-    case ALFI: {
+    case ALFI:
+    case SLFI: {
       RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
       int r1 = rilInstr->R1Value();
       uint32_t imm = rilInstr->I2UnsignedValue();
-      uint32_t alu_out = get_low_register<uint32_t>(r1) + imm;
+      uint32_t alu_out = get_low_register<uint32_t>(r1);
+      if (op == ALFI) {
+        alu_out += imm;
+      } else if (op == SLFI) {
+        alu_out -= imm;
+      }
       set_low_register<uint32_t>(r1, alu_out);
       break;
     }
@@ -3389,11 +3409,38 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       set_low_register<int32_t>(r1, alu_out);
       break;
     }
+    case AGF:
+    case SGF:
+    case ALG:
     case SLG: {
-      UNIMPLEMENTED();
-    }
-    case SGF: {
-      UNIMPLEMENTED();
+#ifndef V8_TARGET_ARCH_S390X
+      ASSERT(false);
+#endif
+      RXYInstruction* rxyinst = reinterpret_cast<RXYInstruction*>(instr);
+      uint64_t r1_val = get_register(rxyinst->R1Value());
+      int b2 = rxyinst->B2Value();
+      int x2 = rxyinst->X2Value();
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+      intptr_t d2_val = rxyinst->D2Value();
+      uint64_t alu_out = r1_val;
+      if (op == ALG) {
+        uint64_t mem_val = 
+            *reinterpret_cast<uint64_t*>(ReadDW(b2_val + d2_val + x2_val));
+        alu_out += mem_val;  
+      } else if (op == SLG) {
+        uint64_t mem_val = 
+            *reinterpret_cast<uint64_t*>(ReadDW(b2_val + d2_val + x2_val));
+        alu_out -= mem_val;  
+      } else if (op == AGF) {
+        uint32_t mem_val = ReadW(b2_val + d2_val + x2_val, instr);
+        alu_out += mem_val;
+      } else if (op == SGF) {
+        uint32_t mem_val = ReadW(b2_val + d2_val + x2_val, instr);
+        alu_out -= mem_val;
+      } else { ASSERT(false); }
+      set_register(r1, alu_out);
+      break; 
     }
     case ALGFI:
     case SLGFI: {  // TODO(ALANLI): add carry
@@ -3412,13 +3459,6 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
         alu_out = r1_val - i2;
       set_register(r1, (intptr_t)alu_out);
       break;
-    }
-    case NIHF:
-    case NILF: {
-      UNIMPLEMENTED();
-    }
-    case SLFI: {
-      UNIMPLEMENTED();
     }
     default:
       UNREACHABLE();
