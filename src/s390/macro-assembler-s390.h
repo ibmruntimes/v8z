@@ -118,7 +118,7 @@ bool AreAliased(Register reg1,
 #define Mul                mulld
 #define Div                divd
 
-// The length of the arithmetic operation is the length 
+// The length of the arithmetic operation is the length
 // of the register.
 
 // Length:
@@ -266,13 +266,12 @@ class MacroAssembler: public Assembler {
   // the size of the register operand is the size of architecture.
   void Load(Register dst, const MemOperand& opnd);
   void Load(Register dst, const Operand& opnd);
-  void Compare(Register dst, const MemOperand& opnd);
-  void Compare(Register dst, const Operand& opnd);
-  void CompareLogical(Register dst, const MemOperand& opnd);
-  void CompareLogical(Register dst, const Operand& opnd);
-  void CompareLogical(Register dst, Register src);
-  void AddLogical(Register dst, const MemOperand& opnd);
-  void AddLogical(Register dst, const Operand& opnd);
+  void Cmp(Register dst, const MemOperand& opnd);
+  void Cmp(Register dst, const Operand& opnd);
+  void Cmpl(Register dst, const MemOperand& opnd);
+  void Cmpl(Register dst, const Operand& opnd);
+  void Addl(Register dst, const MemOperand& opnd);
+  void Addl(Register dst, const Operand& opnd);
   void Add(Register dst, const MemOperand& opnd);
   void Add(Register dst, const Operand& opnd);
   void Add(Register dst, Register src, const Operand& opnd);
