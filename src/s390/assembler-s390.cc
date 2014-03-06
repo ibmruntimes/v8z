@@ -3406,7 +3406,7 @@ void Assembler::clgr(Register r1, Register r2) {
 
 // Compare Logical Register-Register (32)
 void Assembler::clr(Register r1, Register r2) {
-  rre_form(CLR, r1, r2);
+  rr_form(CLR, r1, r2);
 }
 
 // Compare Logical Register-Storage (32)
