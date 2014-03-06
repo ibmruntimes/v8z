@@ -2643,24 +2643,20 @@ void MacroAssembler::SetCounter(StatsCounter* counter, int value,
 
 void MacroAssembler::IncrementCounter(StatsCounter* counter, int value,
                                       Register scratch1, Register scratch2) {
-  ASSERT(value > 0);
+  ASSERT(value > 0 && is_int8(value));
   if (FLAG_native_code_counters && counter->Enabled()) {
-    mov(scratch2, Operand(ExternalReference(counter)));
-    lwz(scratch1, MemOperand(scratch2));
-    Add(scratch1, Operand(value));
-    st(scratch1, MemOperand(scratch2));
+    mov(scratch1, Operand(ExternalReference(counter)));
+    asi(MemOperand(scratch1), Operand(value));
   }
 }
 
 
 void MacroAssembler::DecrementCounter(StatsCounter* counter, int value,
                                       Register scratch1, Register scratch2) {
-  ASSERT(value > 0);
+  ASSERT(value > 0 && is_int8(value));
   if (FLAG_native_code_counters && counter->Enabled()) {
-    mov(scratch2, Operand(ExternalReference(counter)));
-    lwz(scratch1, MemOperand(scratch2));
-    Sub(scratch1, Operand(value));
-    st(scratch1, MemOperand(scratch2));
+    mov(scratch1, Operand(ExternalReference(counter)));
+    asi(MemOperand(scratch1), Operand(-value));
   }
 }
 
