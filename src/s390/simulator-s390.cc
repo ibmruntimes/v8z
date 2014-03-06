@@ -3380,8 +3380,14 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       }
       break;
     }
-    case AFI: {
-      UNIMPLEMENTED();
+    case AFI: {  // TODO(ALANLI): add overflow
+      RILInstruction* rilInstr = reinterpret_cast<RILInstruction*>(instr);
+      int r1 = rilInstr->R1Value();
+      int i2 = rilInstr->I2Value();
+      int32_t r1_val = get_low_register<int32_t>(r1);
+      int32_t alu_out = r1_val + i2;
+      set_low_register<int32_t>(r1, alu_out);
+      break;
     }
     case SLG: {
       UNIMPLEMENTED();
@@ -3392,15 +3398,15 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
     case SLGFI: {  // TODO(ALANLI): add carry
 #ifndef V8_TARGET_ARCH_S390X
     // should only be called on 64bit
-    ASSERT(false);
+      ASSERT(false);
 #endif
-    RILInstruction* rilInstr = reinterpret_cast<RILInstruction*>(instr);
-    int r1 = rilInstr->R1Value();
-    uint32_t i2 = rilInstr->I2UnsignedValue();
-    uint64_t r1_val = (uint64_t)(get_register(r1));
-    uint64_t alu_out = r1_val + i2;
-    set_register(r1, (intptr_t)alu_out);
-    break;
+      RILInstruction* rilInstr = reinterpret_cast<RILInstruction*>(instr);
+      int r1 = rilInstr->R1Value();
+      uint32_t i2 = rilInstr->I2UnsignedValue();
+      uint64_t r1_val = (uint64_t)(get_register(r1));
+      uint64_t alu_out = r1_val + i2;
+      set_register(r1, (intptr_t)alu_out);
+      break;
     }
     case NIHF:
     case NILF: {
