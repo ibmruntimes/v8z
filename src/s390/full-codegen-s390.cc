@@ -123,7 +123,7 @@ class JumpPatchSite BASE_EMBEDDED {
 //   o cp: our context
 //   o fp: our caller's frame pointer (aka r31)
 //   o sp: stack pointer
-//   o lr: return address  (bogus.. PPC has no lr reg)
+//   o lr: return address
 //
 // The function builds a JS frame.  Please see JavaScriptFrameConstants in
 // frames-ppc.h for its layout.
@@ -166,8 +166,7 @@ void FullCodeGenerator::Generate() {
 
   int locals_count = info->scope()->num_stack_slots();
 
-  __ mflr(r0);
-  __ Push(r0, fp, cp, r4);
+  __ Push(r14, fp, cp, r4);
 
   if (locals_count > 0) {
     // Load undefined value here, so the value is ready for the loop
