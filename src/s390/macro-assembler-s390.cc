@@ -621,8 +621,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   // since we were called from C code
 
   // replicate ARM frame - TODO make this more closely follow PPC ABI
-  mflr(r0);
-  Push(r0, fp);
+  Push(r14, fp);
   LoadRR(fp, sp);
   // Reserve room for saved entry sp and code object.
   Sub(sp, Operand(2 * kPointerSize));
