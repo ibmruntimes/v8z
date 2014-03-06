@@ -3970,18 +3970,6 @@ void MacroAssembler::Cmpl(Register dst, const MemOperand& opnd) {
 #endif
 }
 
-void MacroAssembler::Addl(Register dst, const MemOperand& opnd) {
-  ASSERT(is_int20(opnd.offset()));
-#if V8_TARGET_ARCH_S390X
-  alg(dst, opnd);
-#else
-  if (is_uint12(opnd.offset()))
-    al_z(dst, opnd);
-  else
-    aly(dst, opnd);
-#endif
-}
-
 void MacroAssembler::Sub(Register dst, Register src, const Operand& imm) {
   if (!dst.is(src)) lr(dst, src);
   afi(dst, Operand(-(imm.imm_)));
@@ -4028,6 +4016,19 @@ void MacroAssembler::Add(Register dst, Register src1,
     src2 = src1;
   }
   AddRR(dst, src2);
+}
+
+void MacroAssembler::Addl(Register dst, const MemOperand& opnd) {
+#if V8_TARGET_ARCH_S390X
+  alg(dst, opnd);
+#else
+  ASSERT(is_int20(opnd.offset()));
+  if (is_uint12(opnd.offset())) {
+    al_z(dst, opnd);
+  } else {
+    aly(dst, opnd);
+  }
+#endif
 }
 
 void MacroAssembler::Subl(Register dst, const MemOperand& opnd) {

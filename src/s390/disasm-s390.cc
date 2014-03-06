@@ -1281,6 +1281,7 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
     case MVC: Format(instr, "mvc\t'd3('i3,'r3),'d4('r7)"); break;
     case SLG: Format(instr, "slg\t'r1,'d2('r2d,'r3)"); break;
     case SGF: Format(instr, "sgf\t'r1,'d2('r2d,'r3)"); break;
+    case ALGFI: Format(instr, "algfi\t'r1,'i7"); break;
     case SLGFI: Format(instr, "slgfi\t'r1,'i7"); break;
     case SLFI: Format(instr, "slfi\t'r1,'i7"); break;
     case NIHF: Format(instr, "nihf\t'r1,'i7"); break;
