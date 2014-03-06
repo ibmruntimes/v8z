@@ -1211,11 +1211,8 @@ static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
       CallConstructStub stub(NO_CALL_FUNCTION_FLAGS);
       __ CallStub(&stub);
     } else {
-      // @TODO actual should be r2, function should be r3
-      // However, InvokeFunction and its helpers are called in many places so
-      // we'll trip over asserts until we fix them all.
-      ParameterCount actual(r3);
-      __ InvokeFunction(r4, actual, CALL_FUNCTION,
+      ParameterCount actual(r2);
+      __ InvokeFunction(r3, actual, CALL_FUNCTION,
                         NullCallWrapper(), CALL_AS_METHOD);
     }
     // Exit the JS frame and remove the parameters (except function), and
