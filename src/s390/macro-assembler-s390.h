@@ -118,14 +118,8 @@ bool AreAliased(Register reg1,
 #define Mul                mulld
 #define Div                divd
 
-// the macro comprises 3 parts: op, format, length
-// if the length is not defined then it is the length
-// of register.
-//
-// Formats:
-// P = Pointer, Op between mem/imm and Register
-// X = RX form
-// RR = Register to Register op
+// The length of the arithmetic operation is the length 
+// of the register.
 
 // Length:
 // H = halfword
@@ -269,10 +263,7 @@ class MacroAssembler: public Assembler {
   }
 
   // s390 Macro assemblers.
-  // For arithmetic operations, if not specified, they are
-  // referring to 32bit integer ops;
-  // for logical operations, if not specified, the size of the
-  // register operand is based on architecture (31bit or 64bit)
+  // the size of the register operand is the size of architecture.
   void Load(Register dst, const MemOperand& opnd);
   void Load(Register dst, const Operand& opnd);
   void Compare(Register dst, const MemOperand& opnd);
