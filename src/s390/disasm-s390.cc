@@ -1279,6 +1279,9 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
     case STG: Format(instr, "stg\t'r1,'d2('r2d,'r3)"); break;
     case ICY: Format(instr, "icy\t'r1,'d2('r2d,'r3)"); break;
     case MVC: Format(instr, "mvc\t'd3('i3,'r3),'d4('r7)"); break;
+    case SLGFI: Format(instr, "slgfi\t'r1,'i7"); break;
+    case NIHF: Format(instr, "nihf\t'r1,'i7"); break;
+    case NILF: Format(instr, "nilf\t'r1,'i7"); break;
     default:
       return false;
   }

@@ -279,10 +279,10 @@ class MacroAssembler: public Assembler {
   void Add(Register dst, Register src1, Register src2);
   void Sub(Register dst, Register src1, const Operand& src2);
   void Sub(Register dst, const Operand& src);
-  void SubtractLogical(Register dst, const MemOperand& opnd);
-  void SubtractLogical(Register dst, const Operand& opnd);
-  void SubtractLogical(Register dst, Register src);
-  void Subtract(Register dst, const MemOperand& opnd);
+  void Subl(Register dst, const MemOperand& opnd);
+  void Subl(Register dst, const Operand& opnd);
+  void Subl(Register dst, Register src);
+  void Sub(Register dst, const MemOperand& opnd);
   void And(Register dst, const MemOperand& opnd);
   void And(Register dst, const Operand& opnd);
   void AndLogical(Register dst, const MemOperand& opnd);
