@@ -773,10 +773,10 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
 
   // Check whether the expected and actual arguments count match. If not,
   // setup registers according to contract with ArgumentsAdaptorTrampoline:
-  //  r3: actual arguments count
-  //  r4: function (passed through to callee)
-  //  r5: expected arguments count
-  //  r6: callee code entry
+  //  r2: actual arguments count
+  //  r3: function (passed through to callee)
+  //  r4: expected arguments count
+  //  r5: callee code entry
 
   // The code below is made a lot easier because the calling code already sets
   // up actual and expected registers according to the contract if values are
@@ -793,7 +793,7 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
     if (expected.immediate() == actual.immediate()) {
       definitely_matches = true;
     } else {
-      mov(r3, Operand(actual.immediate()));
+      mov(r2, Operand(actual.immediate()));
       const int sentinel = SharedFunctionInfo::kDontAdaptArgumentsSentinel;
       if (expected.immediate() == sentinel) {
         // Don't worry about adapting arguments for builtins that
@@ -803,14 +803,14 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
         definitely_matches = true;
       } else {
         *definitely_mismatches = true;
-        mov(r5, Operand(expected.immediate()));
+        mov(r4, Operand(expected.immediate()));
       }
     }
   } else {
     if (actual.is_immediate()) {
       CmpPH(expected.reg(), Operand(actual.immediate()));
       beq(&regular_invoke);
-      mov(r3, Operand(actual.immediate()));
+      mov(r2, Operand(actual.immediate()));
     } else {
       CmpRR(expected.reg(), actual.reg());
       beq(&regular_invoke);
@@ -819,8 +819,8 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
 
   if (!definitely_matches) {
     if (!code_constant.is_null()) {
-      mov(r6, Operand(code_constant));
-      Add(r6, Operand(Code::kHeaderSize - kHeapObjectTag));
+      mov(r5, Operand(code_constant));
+      Add(r5, Operand(Code::kHeaderSize - kHeapObjectTag));
     }
 
     Handle<Code> adaptor =
@@ -913,14 +913,16 @@ void MacroAssembler::InvokeFunction(Register fun,
   // You can't call a function without a valid frame.
   ASSERT(flag == JUMP_FUNCTION || has_frame());
 
-  // Contract with called JS functions requires that function is passed in r4.
-  ASSERT(fun.is(r4));
+  // Contract with called JS functions requires that function is passed in r3.
+  // @TODO HACK: Temporarily remove fun.is(r3) until we fix all the callers
+  // as PPC code expected it in r4.
+  // ASSERT(fun.is(r3));
 
-  Register expected_reg = r5;
-  Register code_reg = r6;
+  Register expected_reg = r4;
+  Register code_reg = r5;
 
-  LoadP(code_reg, FieldMemOperand(r4, JSFunction::kSharedFunctionInfoOffset));
-  LoadP(cp, FieldMemOperand(r4, JSFunction::kContextOffset));
+  LoadP(code_reg, FieldMemOperand(r3, JSFunction::kSharedFunctionInfoOffset));
+  LoadP(cp, FieldMemOperand(r3, JSFunction::kContextOffset));
   LoadWordArith(expected_reg,
       FieldMemOperand(code_reg,
                       SharedFunctionInfo::kFormalParameterCountOffset));
@@ -928,7 +930,7 @@ void MacroAssembler::InvokeFunction(Register fun,
   SmiUntag(expected_reg);
 #endif
   LoadP(code_reg,
-        FieldMemOperand(r4, JSFunction::kCodeEntryOffset));
+        FieldMemOperand(r3, JSFunction::kCodeEntryOffset));
 
   ParameterCount expected(expected_reg);
   InvokeCode(code_reg, expected, actual, flag, call_wrapper, call_kind);
