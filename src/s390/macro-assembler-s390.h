@@ -1308,13 +1308,17 @@ class MacroAssembler: public Assembler {
                               int rangeStart, int rangeEnd,
                               RCBit rc = LeaveRC) {
     ASSERT(rangeStart >= rangeEnd && rangeStart < kBitsPerPointer);
-    int rotate = (rangeEnd == 0) ? 0 : kBitsPerPointer - rangeEnd;
     int width  = rangeStart - rangeEnd + 1;
+    ASSERT(width <= 32);
 #if V8_TARGET_ARCH_S390X
-    rldicl(dst, src, rotate, kBitsPerPointer - width, rc);
+    // rldicl(dst, src, rotate, kBitsPerPointer - width, rc);
+    srlg(dst, src,  Operand(rangeStart));
 #else
-    rlwinm(dst, src, rotate, kBitsPerPointer - width, kBitsPerPointer - 1, rc);
+    // rlwinm(dst, src, rotate, kBitsPerPointer - width, kBitsPerPointer - 1, rc);
+    srlk(dst, src,  Operand(rangeStart));
 #endif
+    uint32_t mask = 0xffffffff >> (kBitsPerPointer - width);
+    And(dst, Operand(mask));
   }
 
   inline void ExtractBit(Register dst, Register src, uint32_t bitNumber,
