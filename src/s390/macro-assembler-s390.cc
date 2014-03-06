@@ -4000,17 +4000,20 @@ void MacroAssembler::Add(Register dst, const MemOperand& opnd) {
 }
 
 void MacroAssembler::Add(Register dst, const Operand& opnd) {
-  intptr_t value = opnd.immediate();
-  if (is_int16(value))
+#ifdef V8_TARGET_ARCH_S390X
+  agfi(dst, opnd);
+#else
+  if (is_int16(opnd.immediate()))
     ahi(dst, opnd);
   else
     afi(dst, opnd);
+#endif
 }
 
 void MacroAssembler::Add(Register dst, Register src,
                         const Operand& opnd) {
   if (!dst.is(src)) {
-    Load(dst, opnd);
+    Load(dst, opnd);  // should be calling sign-ext load
   }
   Add(dst, opnd);
 }
