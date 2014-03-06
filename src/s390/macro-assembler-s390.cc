@@ -3945,15 +3945,17 @@ void MacroAssembler::mov(Register dst, const Operand& src) {
 #endif
 }
 
-// because there is a choice of generating RX or RXY format inside,
-// instead of putting them into macros, we make it functions.
 void MacroAssembler::Compare(Register dst, const MemOperand& opnd) {
   // make sure offset is within 20 bit range
   ASSERT(is_int20(opnd.offset()));
+#if V8_TARGET_ARCH_S390X
+  cgy(dst, opnd); 
+#else
   if (is_uint12(opnd.offset()))
     c(dst, opnd);
   else
     cy(dst, opnd);
+#endif
 }
 
 void MacroAssembler::CompareLogical(Register dst, const MemOperand& opnd) {
