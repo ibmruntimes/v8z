@@ -1669,13 +1669,13 @@ void Assembler::ri_form(Opcode op, Condition m1, const Operand& i2) {
 //    | OpCode | R1 | R2 |   I3   |    I4   |   I5   | OpCode |
 //    +--------+----+----+------------------+--------+--------+
 //    0        8    12   16      24         32       40      47
-#define RIE_F_FORM_EMIT(name, op)\
-void Assembler::name(Register r1, Register r2, const Operand &i3,\
+#define RIE_F_FORM_EMIT(name, op) \
+void Assembler::name(Register r1, Register r2, const Operand &i3, \
                      const Operand& i4, const Operand& i5) {\
   rie_f_form(op, r1, r2, i3, i4, i5);\
 }
-void Assembler::rie_f_form(Opcode op, Register r1, Register r2, const Operand &i3,
-                     const Operand& i4, const Operand& i5) {
+void Assembler::rie_f_form(Opcode op, Register r1, Register r2,
+         const Operand &i3, const Operand& i4, const Operand& i5) {
     ASSERT(is_uint16(op));
     ASSERT(is_uint8(i3.imm_));
     ASSERT(is_uint8(i4.imm_));

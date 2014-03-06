@@ -824,7 +824,7 @@ void name(Condition m, const Operand& i)
 void name(Register r1, Register R3, const Operand& i)
 
 #define RIE_F_FORM(name)\
-void name(Register r1, Register r2, const Operand &i3,\
+void name(Register r1, Register r2, const Operand &i3, \
                      const Operand& i4, const Operand& i5)
 
 #define RIL1_FORM(name)\

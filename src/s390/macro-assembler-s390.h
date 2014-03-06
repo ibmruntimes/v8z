@@ -1311,10 +1311,8 @@ class MacroAssembler: public Assembler {
     int width  = rangeStart - rangeEnd + 1;
     ASSERT(width <= 32);
 #if V8_TARGET_ARCH_S390X
-    // rldicl(dst, src, rotate, kBitsPerPointer - width, rc);
     srlg(dst, src,  Operand(rangeStart));
 #else
-    // rlwinm(dst, src, rotate, kBitsPerPointer - width, kBitsPerPointer - 1, rc);
     srlk(dst, src,  Operand(rangeStart));
 #endif
     uint32_t mask = 0xffffffff >> (kBitsPerPointer - width);
