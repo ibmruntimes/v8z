@@ -2529,8 +2529,8 @@ void MacroAssembler::CallRuntime(const Runtime::Function* f,
   // arguments passed in because it is constant. At some point we
   // should remove this need and make the runtime routine entry code
   // smarter.
-  mov(r3, Operand(num_arguments));
-  mov(r4, Operand(ExternalReference(f, isolate())));
+  mov(r2, Operand(num_arguments));
+  mov(r3, Operand(ExternalReference(f, isolate())));
 #if V8_TARGET_ARCH_S390X
   CEntryStub stub(f->result_size);
 #else
