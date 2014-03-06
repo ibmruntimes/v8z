@@ -3709,7 +3709,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
 
   // Compute the argv pointer in a callee-saved register.
   __ ShiftLeftImm(r9, r2, Operand(kPointerSizeLog2));
-  __ lay(r9, MemOperand(r9, sp, -kPointerSize);
+  __ lay(r9, MemOperand(r9, sp, -kPointerSize));
 
   // Enter the exit frame that transitions from JavaScript to C++.
   FrameScope scope(masm, StackFrame::MANUAL);
