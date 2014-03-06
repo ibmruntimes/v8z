@@ -3694,8 +3694,8 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
 
 void CEntryStub::Generate(MacroAssembler* masm) {
   // Called from JavaScript; parameters are on stack as if calling JS function
-  // r3: number of arguments including receiver
-  // r4: pointer to builtin function
+  // r2: number of arguments including receiver
+  // r3: pointer to builtin function
   // fp: frame pointer  (restored after C call)
   // sp: stack pointer  (restored as callee's sp after C call)
   // cp: current context  (C callee-saved)
@@ -3708,9 +3708,9 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // builtin once.
 
   // Compute the argv pointer in a callee-saved register.
-  __ ShiftLeftImm(r16, r3, Operand(kPointerSizeLog2));
-  __ Add(r16, r16, sp);
-  __ Sub(r16, Operand(kPointerSize));
+  __ ShiftLeftImm(r9, r2, Operand(kPointerSizeLog2));
+  __ Add(r9, r9, sp);
+  __ Sub(r9, Operand(kPointerSize));
 
   // Enter the exit frame that transitions from JavaScript to C++.
   FrameScope scope(masm, StackFrame::MANUAL);
@@ -3738,12 +3738,14 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   __ EnterExitFrame(save_doubles_, arg_stack_space);
 
   // Set up argc and the builtin function in callee-saved registers.
-  __ LoadRR(r14, r3);
-  __ LoadRR(r15, r4);
+  __ LoadRR(r7, r2);  // argc
+  __ LoadRR(r8, r3);  // builtin function
 
-  // r14: number of arguments (C callee-saved)
-  // r15: pointer to builtin function (C callee-saved)
-  // r16: pointer to first argument (C callee-saved)
+  // r7: number of arguments (C callee-saved)
+  // r8: pointer to builtin function (C callee-saved)
+  // r9: pointer to first argument (C callee-saved)
+
+  // @TODO Figure out the rest of this exception stuff for S390 registers
 
   Label throw_normal_exception;
   Label throw_termination_exception;
