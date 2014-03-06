@@ -3395,6 +3395,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
     case SGF: {
       UNIMPLEMENTED();
     }
+    case ALGFI:
     case SLGFI: {  // TODO(ALANLI): add carry
 #ifndef V8_TARGET_ARCH_S390X
     // should only be called on 64bit
@@ -3404,7 +3405,11 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       int r1 = rilInstr->R1Value();
       uint32_t i2 = rilInstr->I2UnsignedValue();
       uint64_t r1_val = (uint64_t)(get_register(r1));
-      uint64_t alu_out = r1_val + i2;
+      uint64_t alu_out;
+      if (op == ALGFI)
+        alu_out = r1_val + i2;
+      else
+        alu_out = r1_val - i2;
       set_register(r1, (intptr_t)alu_out);
       break;
     }
