@@ -507,9 +507,9 @@ void CallICBase::GenerateMiss(MacroAssembler* masm,
   Isolate* isolate = masm->isolate();
 
   if (id == IC::kCallIC_Miss) {
-    __ IncrementCounter(isolate->counters()->call_miss(), 1, r6, r7);
+    __ IncrementCounter(isolate->counters()->call_miss(), 1, r6);
   } else {
-    __ IncrementCounter(isolate->counters()->keyed_call_miss(), 1, r6, r7);
+    __ IncrementCounter(isolate->counters()->keyed_call_miss(), 1, r6);
   }
 
   // Get the receiver of the function from the stack.
@@ -603,7 +603,7 @@ void KeyedCallIC::GenerateMegamorphic(MacroAssembler* masm, int argc) {
   GenerateFastArrayLoad(
       masm, r4, r5, r7, r6, r3, r4, &check_number_dictionary, &slow_load);
   Counters* counters = masm->isolate()->counters();
-  __ IncrementCounter(counters->keyed_call_generic_smi_fast(), 1, r3, r6);
+  __ IncrementCounter(counters->keyed_call_generic_smi_fast(), 1, r3);
 
   __ bind(&do_call);
   // receiver in r4 is not used after this point.
@@ -622,13 +622,13 @@ void KeyedCallIC::GenerateMegamorphic(MacroAssembler* masm, int argc) {
   __ SmiUntag(r3, r5);
   // r3: untagged index
   __ LoadFromNumberDictionary(&slow_load, r7, r5, r4, r3, r6, r8);
-  __ IncrementCounter(counters->keyed_call_generic_smi_dict(), 1, r3, r6);
+  __ IncrementCounter(counters->keyed_call_generic_smi_dict(), 1, r3);
   __ b(&do_call);
 
   __ bind(&slow_load);
   // This branch is taken when calling KeyedCallIC_Miss is neither required
   // nor beneficial.
-  __ IncrementCounter(counters->keyed_call_generic_slow_load(), 1, r3, r6);
+  __ IncrementCounter(counters->keyed_call_generic_slow_load(), 1, r3);
   {
     FrameScope scope(masm, StackFrame::INTERNAL);
     __ push(r5);  // save the key
@@ -656,11 +656,11 @@ void KeyedCallIC::GenerateMegamorphic(MacroAssembler* masm, int argc) {
   __ bne(&lookup_monomorphic_cache);
 
   GenerateDictionaryLoad(masm, &slow_load, r3, r5, r4, r6, r7);
-  __ IncrementCounter(counters->keyed_call_generic_lookup_dict(), 1, r3, r6);
+  __ IncrementCounter(counters->keyed_call_generic_lookup_dict(), 1, r3);
   __ b(&do_call);
 
   __ bind(&lookup_monomorphic_cache);
-  __ IncrementCounter(counters->keyed_call_generic_lookup_cache(), 1, r3, r6);
+  __ IncrementCounter(counters->keyed_call_generic_lookup_cache(), 1, r3);
   GenerateMonomorphicCacheProbe(masm,
                                 argc,
                                 Code::KEYED_CALL_IC,
@@ -674,7 +674,7 @@ void KeyedCallIC::GenerateMegamorphic(MacroAssembler* masm, int argc) {
   // - the value loaded is not a function,
   // - there is hope that the runtime will create a monomorphic call stub
   //   that will get fetched next time.
-  __ IncrementCounter(counters->keyed_call_generic_slow(), 1, r3, r6);
+  __ IncrementCounter(counters->keyed_call_generic_slow(), 1, r3);
   GenerateMiss(masm, argc);
 
   __ bind(&index_string);
@@ -753,7 +753,7 @@ void LoadIC::GenerateMiss(MacroAssembler* masm) {
   // -----------------------------------
   Isolate* isolate = masm->isolate();
 
-  __ IncrementCounter(isolate->counters()->load_miss(), 1, r6, r7);
+  __ IncrementCounter(isolate->counters()->load_miss(), 1, r6);
 
   __ Push(r3, r5);
 
@@ -942,7 +942,7 @@ void KeyedLoadIC::GenerateMiss(MacroAssembler* masm, bool force_generic) {
   // -----------------------------------
   Isolate* isolate = masm->isolate();
 
-  __ IncrementCounter(isolate->counters()->keyed_load_miss(), 1, r6, r7);
+  __ IncrementCounter(isolate->counters()->keyed_load_miss(), 1, r6);
 
   __ Push(r4, r3);
 
@@ -996,7 +996,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
 
   GenerateFastArrayLoad(
       masm, receiver, key, r7, r6, r5, r3, NULL, &slow);
-  __ IncrementCounter(isolate->counters()->keyed_load_generic_smi(), 1, r5, r6);
+  __ IncrementCounter(isolate->counters()->keyed_load_generic_smi(), 1, r5);
   __ Ret();
 
   __ bind(&check_number_dictionary);
@@ -1017,7 +1017,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   // Slow case, key and receiver still in r3 and r4.
   __ bind(&slow);
   __ IncrementCounter(isolate->counters()->keyed_load_generic_slow(),
-                      1, r5, r6);
+                      1, r5);
   GenerateRuntimeGetProperty(masm);
 
   __ bind(&check_string);
@@ -1115,7 +1115,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   __ ShiftLeftImm(r3, r9, Operand(kPointerSizeLog2));
   __ LoadPX(r3, MemOperand(r3, r4));
   __ IncrementCounter(isolate->counters()->keyed_load_generic_lookup_cache(),
-                      1, r5, r6);
+                      1, r5);
   __ Ret();
 
   // Load property array property.
@@ -1125,7 +1125,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   __ ShiftLeftImm(r3, r8, Operand(kPointerSizeLog2));
   __ LoadPX(r3, MemOperand(r3, r4));
   __ IncrementCounter(isolate->counters()->keyed_load_generic_lookup_cache(),
-                      1, r5, r6);
+                      1, r5);
   __ Ret();
 
   // Do a quick inline probe of the receiver's dictionary, if it
@@ -1140,7 +1140,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   // Load the property to r3.
   GenerateDictionaryLoad(masm, &slow, r6, r3, r3, r5, r7);
   __ IncrementCounter(isolate->counters()->keyed_load_generic_symbol(),
-                      1, r5, r6);
+                      1, r5);
   __ Ret();
 
   __ bind(&index_string);
@@ -1670,11 +1670,11 @@ void StoreIC::GenerateNormal(MacroAssembler* masm) {
 
   GenerateDictionaryStore(masm, &miss, r6, r5, r3, r7, r8);
   Counters* counters = masm->isolate()->counters();
-  __ IncrementCounter(counters->store_normal_hit(), 1, r7, r8);
+  __ IncrementCounter(counters->store_normal_hit(), 1, r7);
   __ Ret();
 
   __ bind(&miss);
-  __ IncrementCounter(counters->store_normal_miss(), 1, r7, r8);
+  __ IncrementCounter(counters->store_normal_miss(), 1, r7);
   GenerateMiss(masm);
 }
 

@@ -2642,7 +2642,7 @@ void MacroAssembler::SetCounter(StatsCounter* counter, int value,
 
 
 void MacroAssembler::IncrementCounter(StatsCounter* counter, int value,
-                                      Register scratch1, Register scratch2) {
+                                      Register scratch1) {
   ASSERT(value > 0 && is_int8(value));
   if (FLAG_native_code_counters && counter->Enabled()) {
     mov(scratch1, Operand(ExternalReference(counter)));
@@ -2652,7 +2652,7 @@ void MacroAssembler::IncrementCounter(StatsCounter* counter, int value,
 
 
 void MacroAssembler::DecrementCounter(StatsCounter* counter, int value,
-                                      Register scratch1, Register scratch2) {
+                                      Register scratch1) {
   ASSERT(value > 0 && is_int8(value));
   if (FLAG_native_code_counters && counter->Enabled()) {
     mov(scratch1, Operand(ExternalReference(counter)));
