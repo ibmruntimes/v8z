@@ -1244,9 +1244,9 @@ class MacroAssembler: public Assembler {
   void SetCounter(StatsCounter* counter, int value,
                   Register scratch1, Register scratch2);
   void IncrementCounter(StatsCounter* counter, int value,
-                        Register scratch1, Register scratch2);
+                        Register scratch1);
   void DecrementCounter(StatsCounter* counter, int value,
-                        Register scratch1, Register scratch2);
+                        Register scratch1);
 
 
   // ---------------------------------------------------------------------------
