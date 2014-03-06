@@ -3960,7 +3960,7 @@ void MacroAssembler::Cmp(Register dst, const MemOperand& opnd) {
 
 void MacroAssembler::Cmpl(Register dst, const MemOperand& opnd) {
   ASSERT(is_int20(opnd.offset()));
-#ifdef V8_TARGET_ARCH_S390X
+#if V8_TARGET_ARCH_S390X
   clg(dst, opnd);
 #else
   if (is_uint12(opnd.offset()))
@@ -3972,7 +3972,7 @@ void MacroAssembler::Cmpl(Register dst, const MemOperand& opnd) {
 
 void MacroAssembler::Addl(Register dst, const MemOperand& opnd) {
   ASSERT(is_int20(opnd.offset()));
-#ifdef V8_TARGET_ARCH_S390X
+#if V8_TARGET_ARCH_S390X
   alg(dst, opnd);
 #else
   if (is_uint12(opnd.offset()))
@@ -4000,7 +4000,7 @@ void MacroAssembler::Add(Register dst, const MemOperand& opnd) {
 }
 
 void MacroAssembler::Add(Register dst, const Operand& opnd) {
-#ifdef V8_TARGET_ARCH_S390X
+#if V8_TARGET_ARCH_S390X
   agfi(dst, opnd);
 #else
   if (is_int16(opnd.immediate()))
@@ -4032,7 +4032,7 @@ void MacroAssembler::Add(Register dst, Register src1,
 
 void MacroAssembler::SubtractLogical(Register dst, const MemOperand& opnd) {
   ASSERT(is_int20(opnd.offset()));
-#ifdef V8_TARGET_ARCH_S390X
+#if V8_TARGET_ARCH_S390X
   slg(dst, opnd);
 #else
   if (is_uint12(opnd.offset()))
@@ -4072,31 +4072,55 @@ void MacroAssembler::And(Register dst, const Operand& opnd) {
 
 void MacroAssembler::Load(Register dst, const Operand& opnd) {
   intptr_t value = opnd.immediate();
-  if (is_int16(value))
-      lhi(dst, opnd);
-  else
-    UNIMPLEMENTED();
+  if (is_int16(value)) {
+#if V8_TARGET_ARCH_S390X
+    lghi(dst, opnd);  
+#else
+    lhi(dst, opnd);
+#endif
+  } else {
+#if V8_TARGET_ARCH_S390X
+    iilf(dst, opnd);
+    iihf(dst, Operand(0));
+#else
+    iilf(dst, opnd);
+#endif
+  }
 }
 
 void MacroAssembler::Load(Register dst, const MemOperand& opnd) {
   ASSERT(is_int20(opnd.offset()));
+#if V8_TARGET_ARCH_S390X
+  lgf(dst, opnd);  // 64<-32
+#else
   if (is_uint12(opnd.offset())) {
     l(dst, opnd);
   } else {
     ly(dst, opnd);
   }
+#endif
 }
 
+// compare arithmetic
 void MacroAssembler::Cmp(Register dst, const Operand& opnd) {
+#if V8_TARGET_ARCH_S390X
+  cgf(dst, opnd); 
+#else
   intptr_t value = opnd.immediate();
   if (is_int16(value))
     chi(dst, opnd);
   else
     cfi(dst, opnd);
+#endif
 }
 
+// compare logical 
 void MacroAssembler::Cmpl(Register dst, const Operand& opnd) {
-  UNIMPLEMENTED();
+#if V8_TARGET_ARCH_S390X
+  clgfi(dst, opnd);
+#else
+  clfi(dst, opnd);
+#endif
 }
 
 void MacroAssembler::Cmpl(Register dst, Register src) {
@@ -4108,7 +4132,11 @@ void MacroAssembler::Cmpl(Register dst, Register src) {
 }
 
 void MacroAssembler::Addl(Register dst, const Operand& opnd) {
+#ifdef V8_TARGET_ARCH_S390X
+  algfi(dst, opnd);
+#else
   alfi(dst, opnd);
+#endif
 }
 
 void MacroAssembler::Add(Register dst, Register src) {
