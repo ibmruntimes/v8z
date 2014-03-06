@@ -3947,10 +3947,10 @@ void MacroAssembler::mov(Register dst, const Operand& src) {
 
 void MacroAssembler::Cmp(Register dst, const MemOperand& opnd) {
   // make sure offset is within 20 bit range
-  ASSERT(is_int20(opnd.offset()));
 #if V8_TARGET_ARCH_S390X
-  cgy(dst, opnd);
+  cg(dst, opnd);
 #else
+  ASSERT(is_int20(opnd.offset()));
   if (is_uint12(opnd.offset()))
     c(dst, opnd);
   else
