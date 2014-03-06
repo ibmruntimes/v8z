@@ -1305,8 +1305,7 @@ class MacroAssembler: public Assembler {
   // Extract consecutive bits (defined by rangeStart - rangeEnd) from src
   // and place them into the least significant bits of dst.
   inline void ExtractBitRange(Register dst, Register src,
-                              int rangeStart, int rangeEnd,
-                              RCBit rc = LeaveRC) {
+                              int rangeStart, int rangeEnd) {
     ASSERT(rangeStart >= rangeEnd && rangeStart < kBitsPerPointer);
     int width  = rangeStart - rangeEnd + 1;
     ASSERT(width <= 32);
@@ -1319,9 +1318,8 @@ class MacroAssembler: public Assembler {
     And(dst, Operand(mask));
   }
 
-  inline void ExtractBit(Register dst, Register src, uint32_t bitNumber,
-                         RCBit rc = LeaveRC) {
-    ExtractBitRange(dst, src, bitNumber, bitNumber, rc);
+  inline void ExtractBit(Register dst, Register src, uint32_t bitNumber) {
+    ExtractBitRange(dst, src, bitNumber, bitNumber);
   }
 
   // Extract consecutive bits (defined by mask) from src and place them
@@ -1347,13 +1345,13 @@ class MacroAssembler: public Assembler {
     // 1-bits in mask must be contiguous
     ASSERT(bit == 0 || (mask & ((bit << 1) - 1)) == 0);
 
-    ExtractBitRange(dst, src, start, end, rc);
+    ExtractBitRange(dst, src, start, end);
   }
 
   // Test single bit in value.
   inline void TestBit(Register value, int bitNumber,
                       Register scratch = r0) {
-    ExtractBitRange(scratch, value, bitNumber, bitNumber, SetRC);
+    ExtractBitRange(scratch, value, bitNumber, bitNumber);
   }
 
   // Test consecutive bit range in value.  Range is defined by
@@ -1361,7 +1359,7 @@ class MacroAssembler: public Assembler {
   inline void TestBitRange(Register value,
                            int rangeStart, int rangeEnd,
                            Register scratch = r0) {
-    ExtractBitRange(scratch, value, rangeStart, rangeEnd, SetRC);
+    ExtractBitRange(scratch, value, rangeStart, rangeEnd);
   }
 
   // Test consecutive bit range in value.  Range is defined by mask.
@@ -1373,25 +1371,25 @@ class MacroAssembler: public Assembler {
   inline void ExtractSignBit(Register dst, Register src,
                              RCBit rc = LeaveRC) {
     const int bitNumber = kBitsPerPointer - 1;
-    ExtractBitRange(dst, src, bitNumber, bitNumber, rc);
+    ExtractBitRange(dst, src, bitNumber, bitNumber);
   }
 
   inline void ExtractSignBit32(Register dst, Register src,
                                RCBit rc = LeaveRC) {
     const int bitNumber = 31;
-    ExtractBitRange(dst, src, bitNumber, bitNumber, rc);
+    ExtractBitRange(dst, src, bitNumber, bitNumber);
   }
 
   inline void TestSignBit(Register value,
                           Register scratch = r0) {
     const int bitNumber = kBitsPerPointer - 1;
-    ExtractBitRange(scratch, value, bitNumber, bitNumber, SetRC);
+    ExtractBitRange(scratch, value, bitNumber, bitNumber);
   }
 
   inline void TestSignBit32(Register value,
                             Register scratch = r0) {
     const int bitNumber = 31;
-    ExtractBitRange(scratch, value, bitNumber, bitNumber, SetRC);
+    ExtractBitRange(scratch, value, bitNumber, bitNumber);
   }
 
 
