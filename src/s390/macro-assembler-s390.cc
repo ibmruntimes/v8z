@@ -4096,7 +4096,7 @@ void MacroAssembler::AddP(Register dst, const MemOperand& opnd) {
   if (is_uint12(opnd.offset()))
     al_z(dst, opnd);
   else
-    aly(dst, opnd);    
+    aly(dst, opnd);
 #endif
 }
 
@@ -4112,7 +4112,7 @@ void MacroAssembler::SubP(Register dst, const MemOperand& opnd) {
   if (is_uint12(opnd.offset()))
     sl(dst, opnd);
   else
-    sly(dst, opnd);    
+    sly(dst, opnd);
 #endif
 }
 
