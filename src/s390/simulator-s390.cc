@@ -3380,6 +3380,15 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       }
       break;
     }
+    case AFI: {
+      UNIMPLEMENTED();
+    }
+    case SLG: {
+      UNIMPLEMENTED();
+    }
+    case SGF: {
+      UNIMPLEMENTED();
+    }
     case SLGFI: {  // TODO(ALANLI): add carry
 #ifndef V8_TARGET_ARCH_S390X
     // should only be called on 64bit
@@ -3395,6 +3404,9 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
     }
     case NIHF:
     case NILF: {
+      UNIMPLEMENTED();
+    }
+    case SLFI: {
       UNIMPLEMENTED();
     }
     default:
