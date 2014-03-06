@@ -119,7 +119,7 @@ class JumpPatchSite BASE_EMBEDDED {
 // function.
 //
 // The live registers are:
-//   o r4: the JS function object being called (i.e., ourselves)
+//   o r3: the JS function object being called (i.e., ourselves)
 //   o cp: our context
 //   o fp: our caller's frame pointer (aka r31)
 //   o sp: stack pointer
@@ -166,7 +166,7 @@ void FullCodeGenerator::Generate() {
 
   int locals_count = info->scope()->num_stack_slots();
 
-  __ Push(r14, fp, cp, r4);
+  __ Push(r14, fp, cp, r3);
 
   if (locals_count > 0) {
     // Load undefined value here, so the value is ready for the loop
@@ -187,9 +187,9 @@ void FullCodeGenerator::Generate() {
   // Possibly allocate a local context.
   int heap_slots = info->scope()->num_heap_slots() - Context::MIN_CONTEXT_SLOTS;
   if (heap_slots > 0) {
-    // Argument to NewContext is the function, which is still in r4.
+    // Argument to NewContext is the function, which is still in r3.
     Comment cmnt(masm_, "[ Allocate context");
-    __ push(r4);
+    __ push(r3);
     if (FLAG_harmony_scoping && info->scope()->is_global_scope()) {
       __ Push(info->scope()->GetScopeInfo());
       __ CallRuntime(Runtime::kNewGlobalContext, 2);
@@ -200,7 +200,7 @@ void FullCodeGenerator::Generate() {
       __ CallRuntime(Runtime::kNewFunctionContext, 1);
     }
     function_in_register = false;
-    // Context is returned in both r3 and cp.  It replaces the context
+    // Context is returned in both r2 and cp.  It replaces the context
     // passed to us.  It's saved in the stack and kept live in cp.
     __ StoreP(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
     // Copy any necessary parameters into the context.
@@ -211,17 +211,20 @@ void FullCodeGenerator::Generate() {
         int parameter_offset = StandardFrameConstants::kCallerSPOffset +
             (num_parameters - 1 - i) * kPointerSize;
         // Load parameter from stack.
-        __ LoadP(r3, MemOperand(fp, parameter_offset), r0);
+        __ LoadP(r2, MemOperand(fp, parameter_offset), r0);
         // Store it in the context.
         MemOperand target = ContextOperand(cp, var->index());
-        __ StoreP(r3, target, r0);
+        __ StoreP(r2, target, r0);
 
         // Update the write barrier.
+        // @TODO Evaluate if r6 is a valid scratch reg on S390.
         __ RecordWriteContextSlot(
-            cp, target.offset(), r3, r6, kLRHasBeenSaved, kDontSaveFPRegs);
+            cp, target.offset(), r2, r6, kLRHasBeenSaved, kDontSaveFPRegs);
       }
     }
   }
+
+// @TODO ---- VERIFY THE REGS BELOW to see if they work on S390!!!
 
   Variable* arguments = scope()->arguments();
   if (arguments != NULL) {
@@ -231,13 +234,12 @@ void FullCodeGenerator::Generate() {
       // Load this again, if it's used by the local context below.
       __ LoadP(r6, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
     } else {
-      __ LoadRR(r6, r4);
+      __ LoadRR(r6, r3);
     }
     // Receiver is just before the parameters on the caller's stack.
     int num_parameters = info->scope()->num_parameters();
     int offset = num_parameters * kPointerSize;
-    __ Add(r5, fp,
-            Operand(StandardFrameConstants::kCallerSPOffset + offset));
+    __ la(r5, MemOperand(fp, StandardFrameConstants::kCallerSPOffset + offset));
     __ LoadSmiLiteral(r4, Smi::FromInt(num_parameters));
     __ Push(r6, r5, r4);
 
