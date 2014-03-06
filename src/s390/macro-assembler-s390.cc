@@ -4014,8 +4014,10 @@ void MacroAssembler::Add(Register dst, Register src,
                         const Operand& opnd) {
   if (!dst.is(src)) {
     Load(dst, opnd);  // should be calling sign-ext load
+    AddRR(dst, src);
+  } else {
+    Add(dst, opnd);
   }
-  Add(dst, opnd);
 }
 
 void MacroAssembler::Add(Register dst, Register src1,
