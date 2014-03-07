@@ -4680,7 +4680,25 @@ void MacroAssembler::ShiftRightArithImm(Register dst, Register src,
 #endif
 }
 
+// Clear right most # of bits
+void MacroAssembler::ClearRightImm(Register dst, Register src,
+                                  const Operand& val) {
+  int numBitsToClear = val.imm_ % kPointerSize;
+  uint64_t hexMask = ~((1L << numBitsToClear) - 1);
 
+  // S390 AND instr clobbers source.  Make a copy if necessary
+  if (!dst.is(src))
+    lr(dst, src);
+
+  if (numBitsToClear <= 16) {
+    nill(dst, Operand(static_cast<uint16_t>(hexMask)));
+  } else if (numBitsToClear <= 32) {
+    nilf(dst, Operand(static_cast<uint32_t>(hexMask)));
+  } else if (numBitsToClear <= 64) {
+    nilf(dst, Operand(0));
+    nihf(dst, Operand(hexMask >> 32));
+  }
+}
 
 #ifdef DEBUG
 bool AreAliased(Register reg1,

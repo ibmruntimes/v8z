@@ -111,7 +111,6 @@ bool AreAliased(Register reg1,
 #define StorePUX           stdux
 #define StoreMultipleP     stmg
 #define ClearLeftImm       clrldi
-#define ClearRightImm      clrrdi
 #define ShiftLeft          sld
 #define ShiftRight         srd
 #define ShiftRightArith    srad
@@ -157,7 +156,6 @@ bool AreAliased(Register reg1,
 #define StorePUX           stwux
 #define StoreMultipleP     stm
 #define ClearLeftImm       clrlwi
-#define ClearRightImm      clrrwi
 #define ShiftLeft          slw
 #define ShiftRight         srw
 #define ShiftRightArith    sraw
@@ -301,6 +299,7 @@ class MacroAssembler: public Assembler {
                     RCBit rc = LeaveRC);
   void ShiftRightArithImm(Register dst, Register src, const int val,
                     RCBit rc = LeaveRC);
+  void ClearRightImm(Register dst, Register src, const Operand& val);
 
   // pointers
   void AddP(Register dst, const Operand& opnd);
