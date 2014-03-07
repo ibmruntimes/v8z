@@ -2132,8 +2132,8 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       __ CmpRR(ip, scratch2);
       __ bne(&not_smi_result);
       // If the result is 0, we need to check for the -0 case.
-      __ SmiTag(scratch2, scratch1, SetRC);
-      __ beq(&check_neg_zero /*, cr0*/);
+      __ SmiTag(scratch2, scratch1/*, SetRC*/);  // already set in s390
+      __ beq(&check_neg_zero /*, cr0*/);  // should be save to do so
       // Check for Smi overflow
       __ xor_(scratch1, scratch2, scratch1, SetRC);
       __ blt(&not_smi_result /*, cr0*/);
