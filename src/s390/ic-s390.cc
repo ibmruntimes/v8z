@@ -1095,7 +1095,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
       __ AddP(r6, Operand(i));
     }
     __ ShiftLeftImm(r8, r6, Operand(2));
-    __ lwzx(r8, MemOperand(r8, r7));
+    __ LoadlW(r8, MemOperand(r8, r7));
     __ lbz(r9, FieldMemOperand(r5, Map::kInObjectPropertiesOffset));
     __ Sub(r8, r8, r9);
     __ Cmpi(r8, Operand::Zero());

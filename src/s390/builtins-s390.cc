@@ -1420,7 +1420,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
 
     // Do not transform the receiver for strict mode functions.
     __ LoadP(r5, FieldMemOperand(r4, JSFunction::kSharedFunctionInfoOffset));
-    __ LoadlW(r6, 
+    __ LoadlW(r6,
               FieldMemOperand(r5, SharedFunctionInfo::kCompilerHintsOffset));
     __ TestBit(r6,
 #if V8_TARGET_ARCH_S390X
@@ -1663,7 +1663,7 @@ void Builtins::Generate_FunctionApply(MacroAssembler* masm) {
     // Compute the receiver.
     // Do not transform the receiver for strict mode functions.
     Label call_to_object, use_global_receiver;
-    __ LoadlW(r5, 
+    __ LoadlW(r5,
               FieldMemOperand(r5, SharedFunctionInfo::kCompilerHintsOffset));
     __ TestBit(r5,
 #if V8_TARGET_ARCH_S390X

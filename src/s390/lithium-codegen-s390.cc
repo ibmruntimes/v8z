@@ -2986,21 +2986,10 @@ void LCodeGen::DoLoadKeyedSpecializedArrayElement(
         }
         break;
       case EXTERNAL_INT_ELEMENTS:
-        if (key_is_constant) {
-          __ LoadlW(result, mem_operand);
-        } else {
-          __ lwzx(result, mem_operand);
-        }
-#if V8_TARGET_ARCH_S390X
-        __ extsw(result, result);
-#endif
+        __ LoadlW(result, mem_operand);
         break;
       case EXTERNAL_UNSIGNED_INT_ELEMENTS:
-        if (key_is_constant) {
-          __ LoadlW(result, mem_operand);
-        } else {
-          __ lwzx(result, mem_operand);
-        }
+        __ LoadlW(result, mem_operand);
         if (!instr->hydrogen()->CheckFlag(HInstruction::kUint32)) {
           __ lis(r0, Operand(SIGN_EXT_IMM16(0x8000)));
           __ Cmpl(result, r0);
@@ -4686,7 +4675,7 @@ void LCodeGen::DoDeferredTaggedToI(LTaggedToI* instr) {
       __ Cmpi(input_reg, Operand::Zero());
       __ bne(&done);
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-      __ LoadlW(scratch1, 
+      __ LoadlW(scratch1,
                 FieldMemOperand(scratch2, HeapNumber::kValueOffset + 4));
 #else
       __ LoadlW(scratch1, FieldMemOperand(scratch2, HeapNumber::kValueOffset));
