@@ -926,11 +926,13 @@ void LCodeGen::DoModI(LModI* instr) {
     __ extsw(scratch, scratch);
 #endif
     __ Mul(scratch, divisor, scratch);
-    __ sub(result, dividend, scratch, LeaveOE, SetRC);
+    __ Sub(result, dividend, scratch/*, LeaveOE, SetRC*/);
+    // Might break the branch below.
 
     if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
       __ Cmpi(dividend, Operand::Zero());
       __ bge(&done);
+      // TODO(the following function might need the cr result from sub above.)
       DeoptimizeIf(eq, instr->environment(), cr0);
     }
   }
@@ -1154,7 +1156,7 @@ void LCodeGen::DoMulI(LMulI* instr) {
           } else if (IsPowerOf2(constant_abs + 1)) {
             int32_t shift = WhichPowerOf2(constant_abs + 1);
             __ ShiftLeftImm(scratch, left, Operand(shift));
-            __ sub(result, scratch, left);
+            __ Sub(result, scratch, left);
           }
 
           // Correct the sign of the result is the constant is negative.
@@ -1353,7 +1355,7 @@ void LCodeGen::DoSubI(LSubI* instr) {
   Register right_reg = EmitLoadRegister(right, ip);
 
   if (!can_overflow) {
-    __ sub(ToRegister(result), ToRegister(left), right_reg);
+    __ Sub(ToRegister(result), ToRegister(left), right_reg);
   } else {
     __ SubAndCheckForOverflow(ToRegister(result),
                               ToRegister(left),
@@ -2748,7 +2750,7 @@ void LCodeGen::DoAccessArgumentsAt(LAccessArgumentsAt* instr) {
 
   // There are two words between the frame pointer and the last argument.
   // Subtracting from length accounts for one of them add one more.
-  __ sub(length, length, index);
+  __ Sub(length, length, index);
   __ Add(length, Operand(1));
   __ ShiftLeftImm(r0, length, Operand(kPointerSizeLog2));
   __ LoadPX(result, MemOperand(arguments, r0));
@@ -5699,7 +5701,7 @@ void LCodeGen::DoLoadFieldByIndex(LLoadFieldByIndex* instr) {
   __ LoadP(result, FieldMemOperand(object, JSObject::kPropertiesOffset));
   // Index is equal to negated out of object property index plus 1.
   __ SmiToPtrArrayOffset(r0, index);
-  __ sub(scratch, result, r0);
+  __ Sub(scratch, result, r0);
   __ LoadP(result, FieldMemOperand(scratch,
                                    FixedArray::kHeaderSize - kPointerSize));
   __ bind(&done);

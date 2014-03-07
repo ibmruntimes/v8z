@@ -931,7 +931,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       __ ExtractBitRange(r9, r3,
                          ((byte + 1) * kBitsPerByte) - 1,
                          byte * kBitsPerByte);
-      __ sub(r6, r6, r9);  // roohack - sub order may be incorrect
+      __ Sub(r6, r6, r9);  // roohack - sub order may be incorrect
       __ Cmpi(r6, Operand::Zero());
 
       // Done if no extra properties are to be allocated.
@@ -1626,7 +1626,7 @@ void Builtins::Generate_FunctionApply(MacroAssembler* masm) {
     __ LoadRoot(r5, Heap::kRealStackLimitRootIndex);
     // Make r5 the space we have left. The stack might already be overflowed
     // here which will cause r5 to become negative.
-    __ sub(r5, sp, r5);
+    __ Sub(r5, sp, r5);
     // Check if the arguments will overflow the stack.
     __ SmiToPtrArrayOffset(r0, r3);
     __ CmpRR(r5, r0);
@@ -1846,7 +1846,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     // adjust for return address and receiver
     __ AddP(r3, Operand(2 * kPointerSize));
     __ ShiftLeftImm(r5, r5, Operand(kPointerSizeLog2));
-    __ sub(r5, r3, r5);
+    __ Sub(r5, r3, r5);
 
     // Copy the arguments (including the receiver) to the new stack frame.
     // r3: copy start address
@@ -1897,7 +1897,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     // r6: code entry to call
     __ LoadRoot(ip, Heap::kUndefinedValueRootIndex);
     __ ShiftLeftImm(r5, r5, Operand(kPointerSizeLog2));
-    __ sub(r5, fp, r5);
+    __ Sub(r5, fp, r5);
     __ Sub(r5, Operand(4 * kPointerSize));  // Adjust for frame.
 
     Label fill;

@@ -859,7 +859,7 @@ void FloatingPointHelper::DoubleIs32BitInteger(MacroAssembler* masm,
   // number cannot be represented as an int32.
   Register tmp = dst;
   __ ExtractSignBit32(tmp, src1);
-  __ sub(tmp, scratch, tmp);
+  __ Sub(tmp, scratch, tmp);
   __ Cmpi(tmp, Operand(30));
   __ bgt(not_int32);
   // - Check whether bits [21:0] in the mantissa are not null.
@@ -1338,7 +1338,7 @@ void CompareStub::Generate(MacroAssembler* masm) {
     __ JumpIfNotSmi(r5, &not_two_smis);
     __ SmiUntag(r4);
     __ SmiUntag(r3);
-    __ sub(r3, r4, r3);
+    __ Sub(r3, r4, r3);
     __ Ret();
     __ bind(&not_two_smis);
   } else if (FLAG_debug_code) {
@@ -2058,7 +2058,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       // C = A-B; C overflows if A/B have diff signs and C has diff sign than A
       __ xor_(r0, left, right);
       __ LoadRR(scratch1, right);
-      __ sub(right, left, right);  // Subtract optimistically.
+      __ Sub(right, left, right);  // Subtract optimistically.
       __ TestSignBit(r0, r0);
       __ beq(&sub_no_overflow /*, cr0*/);
       __ xor_(r0, right, left);
@@ -2156,7 +2156,8 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       // Check for zero on the right hand side.
       __ beq(&not_smi_result /*, cr0*/);
       __ Mul(scratch1, scratch2, scratch1);
-      __ sub(scratch1, ip, scratch1, LeaveOE, SetRC);
+      __ Sub(scratch1, ip, scratch1/*, LeaveOE, SetRC*/);
+      // Removing RC looks okay.
       // If the result is 0, we need to check for the -0 case.
       __ beq(&check_neg_zero /*, cr0*/);
 #if !V8_TARGET_ARCH_S390X
@@ -4049,7 +4050,7 @@ void InstanceofStub::Generate(MacroAssembler* masm) {
     // (See LCodeGen::DoDeferredLInstanceOfKnownGlobal)
     __ LoadFromSafepointRegisterSlot(scratch, r7);
     __ mflr(inline_site);
-    __ sub(inline_site, inline_site, scratch);
+    __ Sub(inline_site, inline_site, scratch);
     // Get the map location in scratch and patch it.
     __ GetRelocatedValueLocation(inline_site, scratch, scratch2);
     __ StoreP(map, FieldMemOperand(scratch, JSGlobalPropertyCell::kValueOffset),
@@ -4195,7 +4196,7 @@ void ArgumentsAccessStub::GenerateReadElement(MacroAssembler* masm) {
   __ bge(&slow);
 
   // Read the argument from the stack and return it.
-  __ sub(r6, r3, r4);
+  __ Sub(r6, r3, r4);
   __ SmiToPtrArrayOffset(r6, r6);
   __ Add(r6, fp, r6);
   __ LoadP(r3, MemOperand(r6, kDisplacement));
@@ -4210,7 +4211,7 @@ void ArgumentsAccessStub::GenerateReadElement(MacroAssembler* masm) {
   __ bge(&slow);
 
   // Read the argument from the adaptor frame and return it.
-  __ sub(r6, r3, r4);
+  __ Sub(r6, r3, r4);
   __ SmiToPtrArrayOffset(r6, r6);
   __ Add(r6, r5, r6);
   __ LoadP(r3, MemOperand(r6, kDisplacement));
@@ -4409,7 +4410,7 @@ void ArgumentsAccessStub::GenerateNewNonStrictFast(MacroAssembler* masm) {
   __ LoadRR(r9, r4);
   __ LoadP(r22, MemOperand(sp, 0 * kPointerSize));
   __ AddSmiLiteral(r22, r22, Smi::FromInt(Context::MIN_CONTEXT_SLOTS), r0);
-  __ sub(r22, r22, r4);
+  __ Sub(r22, r22, r4);
   __ LoadRoot(r10, Heap::kTheHoleValueRootIndex);
   __ SmiToPtrArrayOffset(r6, r9);
   __ Add(r6, r7, r6);
@@ -4448,7 +4449,7 @@ void ArgumentsAccessStub::GenerateNewNonStrictFast(MacroAssembler* masm) {
   __ LoadRR(r22, r4);
   __ LoadP(r7, MemOperand(sp, 1 * kPointerSize));
   __ SmiToPtrArrayOffset(r8, r22);
-  __ sub(r7, r7, r8);
+  __ Sub(r7, r7, r8);
   __ b(&arguments_test);
 
   __ bind(&arguments_loop);
@@ -5820,7 +5821,7 @@ void SubStringStub::Generate(MacroAssembler* masm) {
 
   __ Cmpl(r6, r5);
   __ bgt(&runtime);  // Fail if from > to.
-  __ sub(r5, r5, r6);
+  __ Sub(r5, r5, r6);
 
   // Make sure first argument is a string.
   __ LoadP(r3, MemOperand(sp, kStringOffset));
@@ -6040,7 +6041,8 @@ void StringCompareStub::GenerateCompareFlatAsciiStrings(MacroAssembler* masm,
   // Find minimum length and length difference.
   __ LoadP(scratch1, FieldMemOperand(left, String::kLengthOffset));
   __ LoadP(scratch2, FieldMemOperand(right, String::kLengthOffset));
-  __ sub(scratch3, scratch1, scratch2, LeaveOE, SetRC);
+  __ Sub(scratch3, scratch1, scratch2/*, LeaveOE, SetRC*/);
+  // Removing RC looks okay here.
   Register length_delta = scratch3;
   __ ble(&skip /*, cr0*/);
   __ LoadRR(scratch1, scratch2);
@@ -6495,12 +6497,12 @@ void ICCompareStub::GenerateSmis(MacroAssembler* masm) {
   if (GetCondition() == eq) {
     // For equality we do not care about the sign of the result.
     // __ sub(r3, r3, r4, SetCC);
-     __ sub(r3, r3, r4);
+     __ Sub(r3, r3, r4);
   } else {
     // Untag before subtracting to avoid handling overflow.
     __ SmiUntag(r4);
     __ SmiUntag(r3);
-    __ sub(r3, r4, r3);
+    __ Sub(r3, r4, r3);
   }
   __ Ret();
 
@@ -6711,7 +6713,7 @@ void ICCompareStub::GenerateObjects(MacroAssembler* masm) {
   __ bne(&miss);
 
   ASSERT(GetCondition() == eq);
-  __ sub(r3, r3, r4);
+  __ Sub(r3, r3, r4);
   __ Ret();
 
   __ bind(&miss);
@@ -6730,7 +6732,7 @@ void ICCompareStub::GenerateKnownObjects(MacroAssembler* masm) {
   __ Cmpi(r6, Operand(known_map_));
   __ bne(&miss);
 
-  __ sub(r3, r3, r4);
+  __ Sub(r3, r3, r4);
   __ Ret();
 
   __ bind(&miss);
