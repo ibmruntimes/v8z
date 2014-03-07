@@ -4432,9 +4432,9 @@ void MacroAssembler::StoreP(Register src, const MemOperand& mem,
 #if V8_TARGET_ARCH_S390X
     stg(src, mem);
 #else
-    // StoreWord will try to generate ST if offset fits, otherwise
+    // StoreW will try to generate ST if offset fits, otherwise
     // it'll generate STY.
-    StoreWord(src, mem, scratch, false);
+    StoreW(src, mem);
 #endif
   }
 }
@@ -4502,8 +4502,8 @@ void MacroAssembler::LoadlW(Register dst, const MemOperand& mem,
 
 // Variable length depending on whether offset fits into immediate field
 // MemOperand of RX or RXY format
-void MacroAssembler::StoreWord(Register src, const MemOperand& mem,
-                               Register scratch, bool updateForm) {
+void MacroAssembler::StoreW(Register src, const MemOperand& mem,
+                            Register scratch) {
   Register base = mem.rb();
   int offset = mem.offset();
 
@@ -4516,33 +4516,20 @@ void MacroAssembler::StoreWord(Register src, const MemOperand& mem,
   } else if (is_int20(offset)) {
     // RXY-format supports signed 20-bits offset.
     use_RXYform = true;
-  } else {
+  } else if (!scratch.is(no_reg)) {
     // Materialize offset into scratch register.
     LoadIntLiteral(scratch, offset);
+  } else {
+    // scratch is no_reg
+    ASSERT(false);
   }
 
-  if (!updateForm) {
-    if (use_RXform) {
-      st(src, mem);
-    } else if (use_RXYform) {
-      sty(src, mem);
-    } else {
-      st(src, MemOperand(base, scratch));
-    }
+  if (use_RXform) {
+    st(src, mem);
+  } else if (use_RXYform) {
+    sty(src, mem);
   } else {
-    // @TODO S390 doesn't have an instruction that updates.  Temporarily using
-    // LA to materialize the base address manually... but we should probably fix
-    // this at a higher level.
-    if (use_RXform) {
-      st(src, mem);
-      la(base, mem);
-    } else if (use_RXYform) {
-      sty(src, mem);
-      lay(base, mem);
-    } else {
-      st(src, MemOperand(base, scratch));
-      la(base, MemOperand(base, scratch));
-    }
+    st(src, MemOperand(base, scratch));
   }
 }
 

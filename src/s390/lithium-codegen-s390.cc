@@ -4164,7 +4164,7 @@ void LCodeGen::DoStoreKeyedSpecializedArrayElement(
       case EXTERNAL_INT_ELEMENTS:
       case EXTERNAL_UNSIGNED_INT_ELEMENTS:
         if (key_is_constant) {
-          __ StoreWord(value, mem_operand, r0);
+          __ StoreW(value, mem_operand, r0);
         } else {
           __ st(value, mem_operand);
         }
