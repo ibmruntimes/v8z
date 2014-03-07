@@ -150,7 +150,8 @@ bool LCodeGen::GeneratePrologue() {
 
   __ mflr(r0);
   __ Push(r0, fp, cp, r4);
-  __ Add(fp, sp, Operand(2 * kPointerSize));  // Adjust FP to point to saved FP
+  __ LoadRR(fp, sp);
+  __ AddP(fp, Operand(2 * kPointerSize));  // Adjust FP to point to saved FP
 
   // Reserve space for the stack slots needed by the code.
   int slots = GetStackSlotCount();
@@ -164,7 +165,7 @@ bool LCodeGen::GeneratePrologue() {
       __ push(r5);
       __ bdnz(&loop);
     } else {
-      __ Add(sp, Operand(-slots * kPointerSize));
+      __ AddP(sp, Operand(-slots * kPointerSize));
     }
   }
 
@@ -2421,7 +2422,7 @@ void LCodeGen::DoReturn(LReturn* instr) {
   __ LoadRR(sp, fp);
   __ Pop(r0, fp);
   __ mtlr(r0);
-  __ Add(sp, Operand(sp_delta));
+  __ AddP(sp, Operand(sp_delta));
   __ blr();
 }
 
@@ -2780,7 +2781,8 @@ void LCodeGen::DoLoadKeyedFastElement(LLoadKeyedFastElement* instr) {
     } else {
       __ ShiftLeftImm(r0, key, Operand(kPointerSizeLog2));
     }
-    __ Add(scratch, elements, r0);
+    __ LoadRR(scratch, elements);
+    __ AddP(scratch, r0);
     offset = FixedArray::OffsetOfElementAt(instr->additional_index());
   }
   __ LoadP(result, FieldMemOperand(store_base, offset));
@@ -2821,18 +2823,18 @@ void LCodeGen::DoLoadKeyedFastDoubleElement(
   }
 
   if (key_is_constant) {
-    __ Add(elements,
+    __ AddP(elements,
            Operand((FixedDoubleArray::kHeaderSize - kHeapObjectTag) +
            ((constant_key + instr->additional_index()) << element_size_shift)));
   } else {
     __ IndexToArrayOffset(r0, key, element_size_shift, key_is_tagged);
-    __ Add(elements, elements, r0);
+    __ AddP(elements, r0);
     address_offset = (FixedDoubleArray::kHeaderSize - kHeapObjectTag) +
                      (instr->additional_index() << element_size_shift);
 
     if (!is_int16((address_offset))) {
       __ mov(r0, Operand(address_offset));
-      __ Add(elements, elements, r0);
+      __ AddP(elements, r0);
       address_offset = 0;
     }
   }
@@ -2845,7 +2847,8 @@ void LCodeGen::DoLoadKeyedFastDoubleElement(
                                    address_offset + sizeof(kHoleNanLower32)));
       } else {
         __ lhi(r0, Operand(address_offset));
-        __ Add(scratch, elements, r0);
+        __ LoadRR(scratch, elements);
+        __ AddP(scratch, r0);
         __ lwz(scratch, MemOperand(scratch, sizeof(kHoleNanLower32)));
       }
     } else {
@@ -2933,12 +2936,12 @@ void LCodeGen::DoLoadKeyedSpecializedArrayElement(
   if (elements_kind == EXTERNAL_FLOAT_ELEMENTS ||
       elements_kind == EXTERNAL_DOUBLE_ELEMENTS) {
     DwVfpRegister result = ToDoubleRegister(instr->result());
+    __ LoadRR(scratch0(), external_pointer);
     if (key_is_constant) {
-      __ Add(scratch0(), external_pointer,
-             Operand(constant_key << element_size_shift));
+      __ Add(scratch0(), Operand(constant_key << element_size_shift));
     } else {
       __ IndexToArrayOffset(r0, key, element_size_shift, key_is_tagged);
-      __ Add(scratch0(), external_pointer, r0);
+      __ Add(scratch0(), r0);
     }
     if (elements_kind == EXTERNAL_FLOAT_ELEMENTS) {
       __ lfs(result, MemOperand(scratch0(), additional_offset));
@@ -3158,7 +3161,7 @@ void LCodeGen::DoApplyArguments(LApplyArguments* instr) {
   __ push(receiver);
   __ LoadRR(receiver, length);
   // The arguments are at a one pointer size offset from elements.
-  __ Add(elements, Operand(1 * kPointerSize));
+  __ AddP(elements, Operand(1 * kPointerSize));
 
   // Loop through the arguments pushing them onto the execution
   // stack.
@@ -3171,7 +3174,7 @@ void LCodeGen::DoApplyArguments(LApplyArguments* instr) {
   __ ShiftLeftImm(r0, length, Operand(kPointerSizeLog2));
   __ LoadPX(scratch, MemOperand(elements, r0));
   __ push(scratch);
-  __ Add(length, Operand(-1));
+  __ AddP(length, Operand(-1));
   __ bdnz(&loop);
 
   __ bind(&invoke);
@@ -3450,7 +3453,7 @@ void LCodeGen::DoMathFloor(LUnaryMathOperation* instr) {
 #else
     __ lwz(scratch, MemOperand(sp, 0));
 #endif
-    __ Add(sp, Operand(8));
+    __ AddP(sp, Operand(8));
     __ TestSignBit32(scratch, r0);
     DeoptimizeIf(ne, instr->environment(), cr0);
     __ bind(&done);
@@ -3473,7 +3476,7 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
 #else
   __ lwz(result, MemOperand(sp, 0));
 #endif
-  __ Add(sp, Operand(8));
+  __ AddP(sp, Operand(8));
   __ ExtractBitMask(scratch, result, HeapNumber::kExponentMask);
 
   // If the number is in ]-0.5, +0.5[, the result is +/- 0.
@@ -3508,7 +3511,7 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
 #else
   __ lwz(result, MemOperand(sp, 0));
 #endif
-  __ Add(sp, Operand(8));
+  __ AddP(sp, Operand(8));
   __ xor_(result, result, scratch, SetRC);
   if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
     DeoptimizeIf(lt, instr->environment(), cr0);
@@ -3539,7 +3542,7 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
 #else
     __ lwz(scratch, MemOperand(sp, 0));
 #endif
-    __ Add(sp, Operand(8));
+    __ AddP(sp, Operand(8));
     __ TestSignBit32(scratch, r0);
     DeoptimizeIf(ne, instr->environment(), cr0);
   }
@@ -3674,7 +3677,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
   __ bind(deferred->exit());
 
   // Allocate temp stack space to for double
-  __ Add(sp, Operand(-8));
+  __ AddP(sp, Operand(-8));
 
   // 0x41300000 is the top half of 1.0 x 2^20 as a double.
   __ lis(r4, Operand(0x4130));
@@ -3700,7 +3703,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
 #endif
   __ lfd(d8, MemOperand(sp, 0));
 
-  __ Add(sp, Operand(8));
+  __ AddP(sp, Operand(8));
 
   // Subtract and store the result in the heap number.
   __ fsub(d7, d7, d8);
@@ -4014,7 +4017,7 @@ void LCodeGen::DoStoreKeyedFastElement(LStoreKeyedFastElement* instr) {
     } else {
       __ ShiftLeftImm(scratch, key, Operand(kPointerSizeLog2));
     }
-    __ Add(scratch, elements, scratch);
+    __ AddP(scratch, elements);
     offset = FixedArray::OffsetOfElementAt(instr->additional_index());
   }
   __ StoreP(value, FieldMemOperand(store_base, offset), r0);
@@ -4024,7 +4027,8 @@ void LCodeGen::DoStoreKeyedFastElement(LStoreKeyedFastElement* instr) {
     SmiCheck check_needed =
         type.IsHeapObject() ? OMIT_SMI_CHECK : INLINE_SMI_CHECK;
     // Compute address of modified element and store it into key register.
-    __ Add(key, store_base, Operand(offset - kHeapObjectTag));
+    __ LoadRR(key, store_base);
+    __ AddP(key, Operand(offset - kHeapObjectTag));
     __ RecordWrite(elements,
                    key,
                    value,
@@ -4060,14 +4064,14 @@ void LCodeGen::DoStoreKeyedFastDoubleElement(
   bool key_is_tagged = instr->hydrogen()->key()->representation().IsTagged();
   int dst_offset = instr->additional_index() << element_size_shift;
   if (key_is_constant) {
-    __ Add(scratch, elements,
+    __ LoadRR(scratch, elements);
+    __ AddP(scratch,
            Operand((constant_key << element_size_shift) +
            FixedDoubleArray::kHeaderSize - kHeapObjectTag));
   } else {
     __ IndexToArrayOffset(scratch, key, element_size_shift, key_is_tagged);
-    __ Add(scratch, elements, scratch);
-    __ Add(scratch,
-            Operand(FixedDoubleArray::kHeaderSize - kHeapObjectTag));
+    __ AddP(scratch, elements);
+    __ AddP(scratch, Operand(FixedDoubleArray::kHeaderSize - kHeapObjectTag));
   }
 
   if (instr->NeedsCanonicalization()) {
@@ -4121,12 +4125,12 @@ void LCodeGen::DoStoreKeyedSpecializedArrayElement(
   if (elements_kind == EXTERNAL_FLOAT_ELEMENTS ||
       elements_kind == EXTERNAL_DOUBLE_ELEMENTS) {
     DwVfpRegister value(ToDoubleRegister(instr->value()));
+    __ LoadRR(scratch0(), external_pointer);
     if (key_is_constant) {
-      __ Add(scratch0(), external_pointer,
-             Operand(constant_key << element_size_shift));
+      __ AddP(scratch0(), Operand(constant_key << element_size_shift));
     } else {
       __ IndexToArrayOffset(r0, key, element_size_shift, key_is_tagged);
-      __ Add(scratch0(), external_pointer, r0);
+      __ AddP(scratch0(), r0);
     }
     if (elements_kind == EXTERNAL_FLOAT_ELEMENTS) {
       __ frsp(double_scratch0(), value);
@@ -4323,7 +4327,7 @@ void LCodeGen::DoStringCharFromCode(LStringCharFromCode* instr) {
   __ bgt(deferred->entry());
   __ LoadRoot(result, Heap::kSingleCharacterStringCacheRootIndex);
   __ ShiftLeftImm(r0, char_code, Operand(kPointerSizeLog2));
-  __ Add(result, result, r0);
+  __ AddP(result, r0);
   __ LoadP(result, FieldMemOperand(result, FixedArray::kHeaderSize));
   __ LoadRoot(ip, Heap::kUndefinedValueRootIndex);
   __ CmpRR(result, ip);
@@ -4598,7 +4602,7 @@ void LCodeGen::EmitNumberUntagD(Register input_reg,
     __ lwz(ip, MemOperand(sp, 4));
     __ lwz(scratch, MemOperand(sp, 0));
 #endif
-    __ Add(sp, Operand(8));
+    __ AddP(sp, Operand(8));
 
     __ Cmpi(ip, Operand::Zero());
     __ bne(&done);
@@ -5119,7 +5123,8 @@ void LCodeGen::EmitDeepCopy(Handle<JSObject> object,
   int header_size = object_size - inobject_properties * kPointerSize;
   for (int i = 0; i < header_size; i += kPointerSize) {
     if (has_elements && i == JSObject::kElementsOffset) {
-      __ Add(r5, result, Operand(elements_offset));
+      __ LoadRR(r5, result);
+      __ AddP(r5, Operand(elements_offset));
     } else {
       __ LoadP(r5, FieldMemOperand(source, i));
     }
@@ -5132,7 +5137,8 @@ void LCodeGen::EmitDeepCopy(Handle<JSObject> object,
     Handle<Object> value = Handle<Object>(object->InObjectPropertyAt(i));
     if (value->IsJSObject()) {
       Handle<JSObject> value_object = Handle<JSObject>::cast(value);
-      __ Add(r5, result, Operand(*offset));
+      __ LoadRR(r5, result);
+      __ AddP(r5, Operand(*offset));
       __ StoreP(r5, FieldMemOperand(result, total_offset), r0);
       __ LoadHeapObject(source, value_object);
       EmitDeepCopy(value_object, result, source, offset);
@@ -5183,7 +5189,8 @@ void LCodeGen::EmitDeepCopy(Handle<JSObject> object,
         Handle<Object> value(fast_elements->get(i));
         if (value->IsJSObject()) {
           Handle<JSObject> value_object = Handle<JSObject>::cast(value);
-          __ Add(r5, result, Operand(*offset));
+          __ LoadRR(r5, result);
+          __ AddP(r5, Operand(*offset));
           __ StoreP(r5, FieldMemOperand(result, total_offset), r0);
           __ LoadHeapObject(source, value_object);
           EmitDeepCopy(value_object, result, source, offset);
@@ -5692,7 +5699,8 @@ void LCodeGen::DoLoadFieldByIndex(LLoadFieldByIndex* instr) {
   __ blt(&out_of_object);
 
   __ SmiToPtrArrayOffset(r0, index);
-  __ Add(scratch, object, r0);
+  __ LoadRR(scratch, object);
+  __ AddP(scratch, r0);
   __ LoadP(result, FieldMemOperand(scratch, JSObject::kHeaderSize));
 
   __ b(&done);
