@@ -2121,7 +2121,7 @@ void LCodeGen::DoGetCachedArrayIndex(LGetCachedArrayIndex* instr) {
 
   __ AssertString(input);
 
-  __ lwz(result, FieldMemOperand(input, String::kHashFieldOffset));
+  __ LoadlW(result, FieldMemOperand(input, String::kHashFieldOffset));
   __ IndexFromHash(result, result);
 }
 
@@ -2134,7 +2134,7 @@ void LCodeGen::DoHasCachedArrayIndexAndBranch(
   int true_block = chunk_->LookupDestination(instr->true_block_id());
   int false_block = chunk_->LookupDestination(instr->false_block_id());
 
-  __ lwz(scratch,
+  __ LoadlW(scratch,
          FieldMemOperand(input, String::kHashFieldOffset));
   __ mov(r0, Operand(String::kContainsCachedArrayIndexMask));
   __ and_(r0, scratch, r0, SetRC);
@@ -2843,19 +2843,19 @@ void LCodeGen::DoLoadKeyedFastDoubleElement(
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
     if (address_offset) {
       if (is_int16(address_offset + sizeof(kHoleNanLower32))) {
-        __ lwz(scratch, MemOperand(elements,
+        __ LoadlW(scratch, MemOperand(elements,
                                    address_offset + sizeof(kHoleNanLower32)));
       } else {
         __ lhi(r0, Operand(address_offset));
         __ LoadRR(scratch, elements);
         __ AddP(scratch, r0);
-        __ lwz(scratch, MemOperand(scratch, sizeof(kHoleNanLower32)));
+        __ LoadlW(scratch, MemOperand(scratch, sizeof(kHoleNanLower32)));
       }
     } else {
-      __ lwz(scratch, MemOperand(elements, sizeof(kHoleNanLower32)));
+      __ LoadlW(scratch, MemOperand(elements, sizeof(kHoleNanLower32)));
     }
 #else
-    __ lwz(scratch, MemOperand(elements, address_offset));
+    __ LoadlW(scratch, MemOperand(elements, address_offset));
 #endif
     __ Cmpi(scratch, Operand(kHoleNanUpper32));
     DeoptimizeIf(eq, instr->environment());
@@ -3096,7 +3096,7 @@ void LCodeGen::DoWrapReceiver(LWrapReceiver* instr) {
   // functions.
   __ LoadP(scratch,
            FieldMemOperand(function, JSFunction::kSharedFunctionInfoOffset));
-  __ lwz(scratch,
+  __ LoadlW(scratch,
          FieldMemOperand(scratch, SharedFunctionInfo::kCompilerHintsOffset));
   __ TestBit(scratch,
 #if V8_TARGET_ARCH_S390X
@@ -3323,7 +3323,7 @@ void LCodeGen::DoDeferredMathAbsTaggedHeapNumber(LUnaryMathOperation* instr) {
   Label done;
   Register exponent = scratch0();
   scratch = no_reg;
-  __ lwz(exponent, FieldMemOperand(input, HeapNumber::kExponentOffset));
+  __ LoadlW(exponent, FieldMemOperand(input, HeapNumber::kExponentOffset));
   // Check the sign of the argument. If the argument is positive, just
   // return it.
   __ TestSignBit32(exponent, r0);
@@ -3358,7 +3358,7 @@ void LCodeGen::DoDeferredMathAbsTaggedHeapNumber(LUnaryMathOperation* instr) {
     if (!tmp1.is(r3)) __ LoadRR(tmp1, r3);
     // Restore input_reg after call to runtime.
     __ LoadFromSafepointRegisterSlot(input, input);
-    __ lwz(exponent, FieldMemOperand(input, HeapNumber::kExponentOffset));
+    __ LoadlW(exponent, FieldMemOperand(input, HeapNumber::kExponentOffset));
 
     __ bind(&allocated);
     // exponent: floating point exponent value.
@@ -3366,7 +3366,7 @@ void LCodeGen::DoDeferredMathAbsTaggedHeapNumber(LUnaryMathOperation* instr) {
     STATIC_ASSERT(HeapNumber::kSignMask == 0x80000000u);
     __ clrlwi(exponent, exponent, Operand(1));  // clear sign bit
     __ st(exponent, FieldMemOperand(tmp1, HeapNumber::kExponentOffset));
-    __ lwz(tmp2, FieldMemOperand(input, HeapNumber::kMantissaOffset));
+    __ LoadlW(tmp2, FieldMemOperand(input, HeapNumber::kMantissaOffset));
     __ st(tmp2, FieldMemOperand(tmp1, HeapNumber::kMantissaOffset));
 
     __ StoreToSafepointRegisterSlot(tmp1, result);
@@ -3449,9 +3449,9 @@ void LCodeGen::DoMathFloor(LUnaryMathOperation* instr) {
     __ Sub(sp, Operand(8));
     __ stfd(input, MemOperand(sp));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-    __ lwz(scratch, MemOperand(sp, 4));
+    __ LoadlW(scratch, MemOperand(sp, 4));
 #else
-    __ lwz(scratch, MemOperand(sp, 0));
+    __ LoadlW(scratch, MemOperand(sp, 0));
 #endif
     __ AddP(sp, Operand(8));
     __ TestSignBit32(scratch, r0);
@@ -3472,9 +3472,9 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
   __ Sub(sp, Operand(8));
   __ stfd(input, MemOperand(sp));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  __ lwz(result, MemOperand(sp, 4));
+  __ LoadlW(result, MemOperand(sp, 4));
 #else
-  __ lwz(result, MemOperand(sp, 0));
+  __ LoadlW(result, MemOperand(sp, 0));
 #endif
   __ AddP(sp, Operand(8));
   __ ExtractBitMask(scratch, result, HeapNumber::kExponentMask);
@@ -3507,9 +3507,9 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
   __ Sub(sp, Operand(8));
   __ stfd(double_scratch0(), MemOperand(sp, 0));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  __ lwz(result, MemOperand(sp, 4));
+  __ LoadlW(result, MemOperand(sp, 4));
 #else
-  __ lwz(result, MemOperand(sp, 0));
+  __ LoadlW(result, MemOperand(sp, 0));
 #endif
   __ AddP(sp, Operand(8));
   __ xor_(result, result, scratch, SetRC);
@@ -3538,9 +3538,9 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
     __ Sub(sp, Operand(8));
     __ stfd(input, MemOperand(sp));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-    __ lwz(scratch, MemOperand(sp, 4));
+    __ LoadlW(scratch, MemOperand(sp, 4));
 #else
-    __ lwz(scratch, MemOperand(sp, 0));
+    __ LoadlW(scratch, MemOperand(sp, 0));
 #endif
     __ AddP(sp, Operand(8));
     __ TestSignBit32(scratch, r0);
@@ -3643,11 +3643,11 @@ void LCodeGen::DoRandom(LRandom* instr) {
   // r5: FixedArray of the native context's random seeds
 
   // Load state[0].
-  __ lwz(r4, FieldMemOperand(r5, ByteArray::kHeaderSize));
+  __ LoadlW(r4, FieldMemOperand(r5, ByteArray::kHeaderSize));
   __ Cmpi(r4, Operand::Zero());
   __ beq(deferred->entry());
   // Load state[1].
-  __ lwz(r3, FieldMemOperand(r5, ByteArray::kHeaderSize + kSeedSize));
+  __ LoadlW(r3, FieldMemOperand(r5, ByteArray::kHeaderSize + kSeedSize));
   // r4: state[0].
   // r3: state[1].
 
@@ -4596,11 +4596,11 @@ void LCodeGen::EmitNumberUntagD(Register input_reg,
     __ Sub(sp, Operand(8));
     __ stfd(result_reg, MemOperand(sp));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-    __ lwz(ip, MemOperand(sp, 0));
-    __ lwz(scratch, MemOperand(sp, 4));
+    __ LoadlW(ip, MemOperand(sp, 0));
+    __ LoadlW(scratch, MemOperand(sp, 4));
 #else
-    __ lwz(ip, MemOperand(sp, 4));
-    __ lwz(scratch, MemOperand(sp, 0));
+    __ LoadlW(ip, MemOperand(sp, 4));
+    __ LoadlW(scratch, MemOperand(sp, 0));
 #endif
     __ AddP(sp, Operand(8));
 
@@ -4686,9 +4686,10 @@ void LCodeGen::DoDeferredTaggedToI(LTaggedToI* instr) {
       __ Cmpi(input_reg, Operand::Zero());
       __ bne(&done);
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-      __ lwz(scratch1, FieldMemOperand(scratch2, HeapNumber::kValueOffset + 4));
+      __ LoadlW(scratch1, 
+                FieldMemOperand(scratch2, HeapNumber::kValueOffset + 4));
 #else
-      __ lwz(scratch1, FieldMemOperand(scratch2, HeapNumber::kValueOffset));
+      __ LoadlW(scratch1, FieldMemOperand(scratch2, HeapNumber::kValueOffset));
 #endif
       __ TestSignBit32(scratch1, r0);
       DeoptimizeIf(ne, instr->environment(), cr0);

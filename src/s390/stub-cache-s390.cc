@@ -101,7 +101,7 @@ static void ProbeTable(Isolate* isolate,
   // Check that the flags match what we're looking for.
   Register flags_reg = base_addr;
   base_addr = no_reg;
-  __ lwz(flags_reg, FieldMemOperand(code, Code::kFlagsOffset));
+  __ LoadlW(flags_reg, FieldMemOperand(code, Code::kFlagsOffset));
 
   ASSERT(!r0.is(flags_reg));
   __ lhi(r0, Operand(Code::kFlagsNotUsedInLookup));
@@ -237,7 +237,7 @@ void StubCache::GenerateProbe(MacroAssembler* masm,
   __ JumpIfSmi(receiver, &miss);
 
   // Get the map of the receiver and compute the hash.
-  __ lwz(scratch, FieldMemOperand(name, String::kHashFieldOffset));
+  __ LoadlW(scratch, FieldMemOperand(name, String::kHashFieldOffset));
   __ LoadP(ip, FieldMemOperand(receiver, HeapObject::kMapOffset));
   __ AddP(scratch, ip);
 #if V8_TARGET_ARCH_S390X
@@ -2185,9 +2185,9 @@ Handle<Code> CallStubCompiler::CompileMathFloorCall(
   __ ld(r3, MemOperand(sp, 0));
 #else
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  __ lwz(r3, MemOperand(sp, 0));
+  __ LoadlW(r3, MemOperand(sp, 0));
 #else
-  __ lwz(r3, MemOperand(sp, 4));
+  __ LoadlW(r3, MemOperand(sp, 4));
 #endif
 #endif
   __ AddP(sp, Operand(8));
@@ -2211,7 +2211,7 @@ Handle<Code> CallStubCompiler::CompileMathFloorCall(
   __ bne(&drop_arg_return);
 
   __ LoadP(r4, MemOperand(sp, 0 * kPointerSize));
-  __ lwz(r4, FieldMemOperand(r4, HeapNumber::kExponentOffset));
+  __ LoadlW(r4, FieldMemOperand(r4, HeapNumber::kExponentOffset));
   __ TestSignBit32(r4, r0);
   __ beq(&drop_arg_return /*, cr0*/);
   // If our HeapNumber is negative it was -0, so load its address and return.
@@ -2299,7 +2299,7 @@ Handle<Code> CallStubCompiler::CompileMathAbsCall(
   // sign.
   __ bind(&not_smi);
   __ CheckMap(r3, r4, Heap::kHeapNumberMapRootIndex, &slow, DONT_DO_SMI_CHECK);
-  __ lwz(r4, FieldMemOperand(r3, HeapNumber::kExponentOffset));
+  __ LoadlW(r4, FieldMemOperand(r3, HeapNumber::kExponentOffset));
 
   // Check the sign of the argument. If the argument is positive,
   // just return it.
@@ -2314,7 +2314,7 @@ Handle<Code> CallStubCompiler::CompileMathAbsCall(
   __ bind(&negative_sign);
   STATIC_ASSERT(HeapNumber::kSignMask == 0x80000000u);
   __ xoris(r4, r4, Operand(HeapNumber::kSignMask >> 16));
-  __ lwz(r6, FieldMemOperand(r3, HeapNumber::kMantissaOffset));
+  __ LoadlW(r6, FieldMemOperand(r3, HeapNumber::kMantissaOffset));
   __ LoadRoot(r9, Heap::kHeapNumberMapRootIndex);
   __ AllocateHeapNumber(r3, r7, r8, r9, &slow);
   __ st(r4, FieldMemOperand(r3, HeapNumber::kExponentOffset));
@@ -3691,14 +3691,14 @@ void KeyedLoadStubCompiler::GenerateLoadExternalArray(
       break;
     case EXTERNAL_INT_ELEMENTS:
       __ SmiToIntArrayOffset(value, key);
-      __ lwzx(value, MemOperand(r6, value));
+      __ LoadlW(value, MemOperand(r6, value));
 #if V8_TARGET_ARCH_S390X
       __ extsw(value, value);
 #endif
       break;
     case EXTERNAL_UNSIGNED_INT_ELEMENTS:
       __ SmiToIntArrayOffset(value, key);
-      __ lwzx(value, MemOperand(r6, value));
+      __ LoadlW(value, MemOperand(r6, value));
       break;
     case EXTERNAL_FLOAT_ELEMENTS:
       __ SmiToFloatArrayOffset(value, key);
@@ -4107,7 +4107,7 @@ void KeyedLoadStubCompiler::GenerateLoadFastDoubleElement(
 #else
   uint32_t upper_32_offset = FixedArray::kHeaderSize;
 #endif
-  __ lwz(scratch, FieldMemOperand(indexed_double_offset, upper_32_offset));
+  __ LoadlW(scratch, FieldMemOperand(indexed_double_offset, upper_32_offset));
   __ Cmpi(scratch, Operand(kHoleNanUpper32));
   __ beq(&miss_force_generic);
 
@@ -4121,11 +4121,11 @@ void KeyedLoadStubCompiler::GenerateLoadFastDoubleElement(
   __ st(scratch, FieldMemOperand(heap_number_reg,
                                   HeapNumber::kExponentOffset));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  __ lwz(scratch, FieldMemOperand(indexed_double_offset,
-                                  FixedArray::kHeaderSize));
+  __ LoadlW(scratch, FieldMemOperand(indexed_double_offset,
+                                     FixedArray::kHeaderSize));
 #else
-  __ lwz(scratch, FieldMemOperand(indexed_double_offset,
-                                  FixedArray::kHeaderSize+4));
+  __ LoadlW(scratch, FieldMemOperand(indexed_double_offset,
+                                     FixedArray::kHeaderSize+4));
 #endif
   __ st(scratch, FieldMemOperand(heap_number_reg,
                                   HeapNumber::kMantissaOffset));

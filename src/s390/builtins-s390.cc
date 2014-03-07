@@ -874,7 +874,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       ASSERT_EQ(3 * kPointerSize, JSObject::kHeaderSize);
       __ LoadRoot(r10, Heap::kUndefinedValueRootIndex);
       if (count_constructions) {
-        __ lwz(r3, FieldMemOperand(r5, Map::kInstanceSizesOffset));
+        __ LoadlW(r3, FieldMemOperand(r5, Map::kInstanceSizesOffset));
         // Fetch Map::kPreAllocatedPropertyFieldsByte field from r3
         // and multiply by kPointerSizeLog2
         STATIC_ASSERT(Map::kPreAllocatedPropertyFieldsByte < 4);
@@ -912,7 +912,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       __ lbz(r6, FieldMemOperand(r5, Map::kUnusedPropertyFieldsOffset));
       // The field instance sizes contains both pre-allocated property fields
       // and in-object properties.
-      __ lwz(r3, FieldMemOperand(r5, Map::kInstanceSizesOffset));
+      __ LoadlW(r3, FieldMemOperand(r5, Map::kInstanceSizesOffset));
       // Fetch Map::kPreAllocatedPropertyFieldsByte field from r3
       STATIC_ASSERT(Map::kPreAllocatedPropertyFieldsByte < 4);
       byte = Map::kPreAllocatedPropertyFieldsByte;
@@ -1420,7 +1420,8 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
 
     // Do not transform the receiver for strict mode functions.
     __ LoadP(r5, FieldMemOperand(r4, JSFunction::kSharedFunctionInfoOffset));
-    __ lwz(r6, FieldMemOperand(r5, SharedFunctionInfo::kCompilerHintsOffset));
+    __ LoadlW(r6, 
+              FieldMemOperand(r5, SharedFunctionInfo::kCompilerHintsOffset));
     __ TestBit(r6,
 #if V8_TARGET_ARCH_S390X
                SharedFunctionInfo::kStrictModeFunction,
@@ -1662,7 +1663,8 @@ void Builtins::Generate_FunctionApply(MacroAssembler* masm) {
     // Compute the receiver.
     // Do not transform the receiver for strict mode functions.
     Label call_to_object, use_global_receiver;
-    __ lwz(r5, FieldMemOperand(r5, SharedFunctionInfo::kCompilerHintsOffset));
+    __ LoadlW(r5, 
+              FieldMemOperand(r5, SharedFunctionInfo::kCompilerHintsOffset));
     __ TestBit(r5,
 #if V8_TARGET_ARCH_S390X
                SharedFunctionInfo::kStrictModeFunction,

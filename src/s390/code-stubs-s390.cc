@@ -644,8 +644,8 @@ void FloatingPointHelper::ConvertNumberToInt32(MacroAssembler* masm,
   __ b(&done);
 
   __ bind(&not_in_int32_range);
-  __ lwz(scratch1, FieldMemOperand(object, HeapNumber::kExponentOffset));
-  __ lwz(scratch2, FieldMemOperand(object, HeapNumber::kMantissaOffset));
+  __ LoadlW(scratch1, FieldMemOperand(object, HeapNumber::kExponentOffset));
+  __ LoadlW(scratch2, FieldMemOperand(object, HeapNumber::kMantissaOffset));
 
   __ EmitOutOfInt32RangeTruncate(dst,
                                  scratch1,
@@ -1003,7 +1003,7 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm,
       // The representation of NaN values has all exponent bits (52..62) set,
       // and not all mantissa bits (0..51) clear.
       // Read top bits of double representation (second word of value).
-      __ lwz(r5, FieldMemOperand(r3, HeapNumber::kExponentOffset));
+      __ LoadlW(r5, FieldMemOperand(r3, HeapNumber::kExponentOffset));
       // Test that exponent bits are all set.
       STATIC_ASSERT(HeapNumber::kExponentMask == 0x7ff00000u);
       __ ExtractBitMask(r6, r5, HeapNumber::kExponentMask);
@@ -1013,7 +1013,7 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm,
       // Shift out flag and all exponent bits, retaining only mantissa.
       __ slwi(r5, r5, Operand(HeapNumber::kNonMantissaBitsInTopWord));
       // Or with all low-bits of mantissa.
-      __ lwz(r6, FieldMemOperand(r3, HeapNumber::kMantissaOffset));
+      __ LoadlW(r6, FieldMemOperand(r3, HeapNumber::kMantissaOffset));
       __ orx(r3, r6, r5);
       __ Cmpi(r3, Operand::Zero());
       // For equal we already have the right value in r3:  Return zero (equal)
@@ -1264,8 +1264,8 @@ void NumberToStringStub::GenerateLookupNumberStringCache(MacroAssembler* masm,
                 DONT_DO_SMI_CHECK);
 
     STATIC_ASSERT(8 == kDoubleSize);
-    __ lwz(scratch1, FieldMemOperand(object, HeapNumber::kExponentOffset));
-    __ lwz(scratch2, FieldMemOperand(object, HeapNumber::kMantissaOffset));
+    __ LoadlW(scratch1, FieldMemOperand(object, HeapNumber::kExponentOffset));
+    __ LoadlW(scratch2, FieldMemOperand(object, HeapNumber::kMantissaOffset));
     __ xor_(scratch1, scratch1, scratch2);
     __ and_(scratch1, scratch1, mask);
 
@@ -1810,7 +1810,7 @@ void UnaryOpStub::GenerateHeapNumberCodeSub(MacroAssembler* masm,
   EmitCheckForHeapNumber(masm, r3, r4, r9, slow);
   // r3 is a heap number.  Get a new heap number in r4.
   if (mode_ == UNARY_OVERWRITE) {
-    __ lwz(r5, FieldMemOperand(r3, HeapNumber::kExponentOffset));
+    __ LoadlW(r5, FieldMemOperand(r3, HeapNumber::kExponentOffset));
     __ xoris(r5, r5, Operand(HeapNumber::kSignMask >> 16));  // Flip sign.
     __ st(r5, FieldMemOperand(r3, HeapNumber::kExponentOffset));
   } else {
@@ -1828,8 +1828,8 @@ void UnaryOpStub::GenerateHeapNumberCodeSub(MacroAssembler* masm,
     }
 
     __ bind(&heapnumber_allocated);
-    __ lwz(r6, FieldMemOperand(r3, HeapNumber::kMantissaOffset));
-    __ lwz(r5, FieldMemOperand(r3, HeapNumber::kExponentOffset));
+    __ LoadlW(r6, FieldMemOperand(r3, HeapNumber::kMantissaOffset));
+    __ LoadlW(r5, FieldMemOperand(r3, HeapNumber::kExponentOffset));
     __ st(r6, FieldMemOperand(r4, HeapNumber::kMantissaOffset));
     __ mov(r0, Operand(HeapNumber::kSignMask));
     __ xor_(r5, r5, r0);
@@ -2652,9 +2652,9 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
         __ ld(scratch2, MemOperand(sp, 0));
 #else
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-        __ lwz(scratch2, MemOperand(sp, 4));
+        __ LoadlW(scratch2, MemOperand(sp, 4));
 #else
-        __ lwz(scratch2, MemOperand(sp, 0));
+        __ LoadlW(scratch2, MemOperand(sp, 0));
 #endif
 #endif
         __ AddP(sp, Operand(8));
@@ -3018,11 +3018,11 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
     __ Sub(sp, Operand(8));
     __ stfd(d6, MemOperand(sp, 0));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-    __ lwz(r5, MemOperand(sp));
-    __ lwz(r6, MemOperand(sp, 4));
+    __ LoadlW(r5, MemOperand(sp));
+    __ LoadlW(r6, MemOperand(sp, 4));
 #else
-    __ lwz(r5, MemOperand(sp, 4));
-    __ lwz(r6, MemOperand(sp));
+    __ LoadlW(r5, MemOperand(sp, 4));
+    __ LoadlW(r6, MemOperand(sp));
 #endif
     __ AddP(sp, Operand(8));
     __ b(&loaded);
@@ -3036,18 +3036,18 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
                 DONT_DO_SMI_CHECK);
     // Input is a HeapNumber. Load it to a double register and store the
     // low and high words into r5, r6.
-    __ lwz(r6, FieldMemOperand(r3, HeapNumber::kExponentOffset));
-    __ lwz(r5, FieldMemOperand(r3, HeapNumber::kMantissaOffset));
+    __ LoadlW(r6, FieldMemOperand(r3, HeapNumber::kExponentOffset));
+    __ LoadlW(r5, FieldMemOperand(r3, HeapNumber::kMantissaOffset));
   } else {
     // Input is untagged double in d2. Output goes to d2.
     __ Sub(sp, Operand(8));
     __ stfd(d2, MemOperand(sp, 0));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-    __ lwz(r5, MemOperand(sp, 4));
-    __ lwz(r6, MemOperand(sp));
+    __ LoadlW(r5, MemOperand(sp, 4));
+    __ LoadlW(r6, MemOperand(sp));
 #else
-    __ lwz(r5, MemOperand(sp));
-    __ lwz(r6, MemOperand(sp, 4));
+    __ LoadlW(r5, MemOperand(sp));
+    __ LoadlW(r6, MemOperand(sp, 4));
 #endif
     __ AddP(sp, Operand(8));
   }
@@ -3111,8 +3111,8 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
 #endif
   __ AddP(cache_entry, scratch0);
   // Check if cache matches: Double value is stored in uint32_t[2] array.
-  __ lwz(r7, MemOperand(cache_entry, 0));
-  __ lwz(r8, MemOperand(cache_entry, 4));
+  __ LoadlW(r7, MemOperand(cache_entry, 0));
+  __ LoadlW(r8, MemOperand(cache_entry, 4));
   __ LoadP(r9, MemOperand(cache_entry, 8));
   __ CmpRR(r5, r7);
   __ bne(&calculate);
@@ -3527,7 +3527,7 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
       ExternalReference::heap_always_allocate_scope_depth(isolate);
   if (always_allocate) {
     __ mov(r3, Operand(scope_depth));
-    __ lwz(r4, MemOperand(r3));
+    __ LoadlW(r4, MemOperand(r3));
     __ AddP(r4, Operand(1));
     __ st(r4, MemOperand(r3));
   }
@@ -3639,7 +3639,7 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
     // It's okay to clobber r5 and r6 here. Don't mess with r3 and r4
     // though (contain the result).
     __ mov(r5, Operand(scope_depth));
-    __ lwz(r6, MemOperand(r5));
+    __ LoadlW(r6, MemOperand(r5));
     __ Sub(r6, Operand(1));
     __ st(r6, MemOperand(r5));
   }
@@ -3842,7 +3842,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   // @TODO Figure out if we need to preserve any S390 FP regs
 
 //  int offset_to_argv = kPointerSize * 22; // matches (22*4) above
-//  __ lwz(r7, MemOperand(sp, offset_to_argv));
+//  __ LoadlW(r7, MemOperand(sp, offset_to_argv));
 
   // Push a frame with special values setup to mark it as an entry frame.
   //   Bad FP (-1)
@@ -6958,7 +6958,7 @@ void StringDictionaryLookupStub::GeneratePositiveLookup(MacroAssembler* masm,
   // cover ~93% of loads from dictionaries.
   for (int i = 0; i < kInlinedProbes; i++) {
     // Compute the masked index: (hash + i + i * i) & mask.
-    __ lwz(scratch2, FieldMemOperand(name, String::kHashFieldOffset));
+    __ LoadlW(scratch2, FieldMemOperand(name, String::kHashFieldOffset));
     if (i > 0) {
       // Add the probe offset (i + i * i) left shifted to avoid right shifting
       // the hash in a separate instruction. The value hash + i + i * i is right
@@ -7041,7 +7041,7 @@ void StringDictionaryLookupStub::Generate(MacroAssembler* masm) {
   __ SmiUntag(mask);
   __ Sub(mask, Operand(1));
 
-  __ lwz(hash, FieldMemOperand(key, String::kHashFieldOffset));
+  __ LoadlW(hash, FieldMemOperand(key, String::kHashFieldOffset));
 
   __ LoadRoot(undefined, Heap::kUndefinedValueRootIndex);
 

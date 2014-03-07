@@ -1185,7 +1185,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   Label outer_push_loop, inner_push_loop;
   // Outer loop state: r3 = current "FrameDescription** output_",
   // r4 = one past the last FrameDescription**.
-  __ lwz(r4, MemOperand(r3, Deoptimizer::output_count_offset()));
+  __ LoadlW(r4, MemOperand(r3, Deoptimizer::output_count_offset()));
   __ LoadP(r3, MemOperand(r3, Deoptimizer::output_offset()));  // r3 is output_.
   __ ShiftLeftImm(r4, r4, Operand(kPointerSizeLog2));
   __ AddP(r4, r3);
