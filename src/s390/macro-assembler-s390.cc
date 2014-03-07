@@ -314,7 +314,7 @@ void MacroAssembler::StoreRoot(Register source,
                                Heap::RootListIndex index,
                                Condition cond) {
   ASSERT(cond == al);
-  StoreP(source, MemOperand(kRootRegister, index << kPointerSizeLog2), r0);
+  StoreP(source, MemOperand(kRootRegister, index << kPointerSizeLog2));
 }
 
 
@@ -678,10 +678,10 @@ void MacroAssembler::InitializeNewString(Register string,
                                          Register scratch2) {
   SmiTag(scratch1, length);
   LoadRoot(scratch2, map_index);
-  StoreP(scratch1, FieldMemOperand(string, String::kLengthOffset), r0);
+  StoreP(scratch1, FieldMemOperand(string, String::kLengthOffset));
   lhi(scratch1, Operand(String::kEmptyHashField));
-  StoreP(scratch2, FieldMemOperand(string, HeapObject::kMapOffset), r0);
-  StoreP(scratch1, FieldMemOperand(string, String::kHashFieldSlot), r0);
+  StoreP(scratch2, FieldMemOperand(string, HeapObject::kMapOffset));
+  StoreP(scratch1, FieldMemOperand(string, String::kHashFieldSlot));
 }
 
 
@@ -3046,8 +3046,7 @@ void MacroAssembler::AllocateHeapNumber(Register result,
   // Store heap number map in the allocated object.
   AssertRegisterIsRoot(heap_number_map, Heap::kHeapNumberMapRootIndex);
   if (tagging_mode == TAG_RESULT) {
-    StoreP(heap_number_map, FieldMemOperand(result, HeapObject::kMapOffset),
-           r0);
+    StoreP(heap_number_map, FieldMemOperand(result, HeapObject::kMapOffset));
   } else {
     StoreP(heap_number_map, MemOperand(result, HeapObject::kMapOffset));
   }
@@ -3088,7 +3087,7 @@ void MacroAssembler::CopyFields(Register dst,
 
   for (int i = 0; i < field_count; i++) {
     LoadP(tmp, FieldMemOperand(src, i * kPointerSize), r0);
-    StoreP(tmp, FieldMemOperand(dst, i * kPointerSize), r0);
+    StoreP(tmp, FieldMemOperand(dst, i * kPointerSize));
   }
 }
 
@@ -3208,7 +3207,7 @@ void MacroAssembler::InitializeFieldsWithFiller(Register start_offset,
   Label loop, entry;
   b(&entry);
   bind(&loop);
-  StoreP(filler, MemOperand(start_offset), r0);
+  StoreP(filler, MemOperand(start_offset));
   AddP(start_offset, Operand(kPointerSize));
   bind(&entry);
   CmpRR(start_offset, end_offset);
@@ -4418,25 +4417,17 @@ void MacroAssembler::LoadP(Register dst, const MemOperand& mem,
 
 // Store a "pointer" sized value to the memory location
 void MacroAssembler::StoreP(Register src, const MemOperand& mem,
-                            Register scratch) {
-  int offset = mem.offset();
+                           Register scratch) {
+  ASSERT(is_int20(mem.offset()));
+  ASSERT(scratch.is(no_reg));
 
-  if (!scratch.is(no_reg) && !is_int20(offset)) {
-    LoadIntLiteral(scratch, offset);
 #if V8_TARGET_ARCH_S390X
-    stg(src, MemOperand(mem.rb(), scratch));
+  stg(src, mem);
 #else
-    st(src, MemOperand(mem.rb(), scratch));
+  // StoreW will try to generate ST if offset fits, otherwise
+  // it'll generate STY.
+  StoreW(src, mem);
 #endif
-  } else {
-#if V8_TARGET_ARCH_S390X
-    stg(src, mem);
-#else
-    // StoreW will try to generate ST if offset fits, otherwise
-    // it'll generate STY.
-    StoreW(src, mem);
-#endif
-  }
 }
 
 // Load 32-bits and sign extend if necessary.

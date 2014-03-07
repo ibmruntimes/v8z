@@ -87,7 +87,7 @@ void ElementsTransitionGenerator::GenerateMapChangeElementsTransition(
   //  -- r7    : scratch (elements)
   // -----------------------------------
   // Set transitioned map.
-  __ StoreP(r6, FieldMemOperand(r5, HeapObject::kMapOffset), r0);
+  __ StoreP(r6, FieldMemOperand(r5, HeapObject::kMapOffset));
   __ RecordWriteField(r5,
                       HeapObject::kMapOffset,
                       r6,
@@ -155,7 +155,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   // Update receiver's map.
   __ StoreP(r22, MemOperand(r9, HeapObject::kMapOffset));
 
-  __ StoreP(r6, FieldMemOperand(r5, HeapObject::kMapOffset), r0);
+  __ StoreP(r6, FieldMemOperand(r5, HeapObject::kMapOffset));
   __ RecordWriteField(r5,
                       HeapObject::kMapOffset,
                       r6,
@@ -167,7 +167,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   // Replace receiver's backing store with newly created FixedDoubleArray.
   __ LoadRR(r6, r9);
   __ AddP(r6, Operand(kHeapObjectTag));
-  __ StoreP(r6, FieldMemOperand(r5, JSObject::kElementsOffset), r0);
+  __ StoreP(r6, FieldMemOperand(r5, JSObject::kElementsOffset));
   __ RecordWriteField(r5,
                       JSObject::kElementsOffset,
                       r6,
@@ -198,7 +198,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   __ b(&entry);
 
   __ bind(&only_change_map);
-  __ StoreP(r6, FieldMemOperand(r5, HeapObject::kMapOffset), r0);
+  __ StoreP(r6, FieldMemOperand(r5, HeapObject::kMapOffset));
   __ RecordWriteField(r5,
                       HeapObject::kMapOffset,
                       r6,
@@ -373,7 +373,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
 
   __ Pop(r6, r5, r4, r3);
   // Replace receiver's backing store with newly created and filled FixedArray.
-  __ StoreP(r9, FieldMemOperand(r5, JSObject::kElementsOffset), r0);
+  __ StoreP(r9, FieldMemOperand(r5, JSObject::kElementsOffset));
   __ RecordWriteField(r5,
                       JSObject::kElementsOffset,
                       r9,
@@ -385,7 +385,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
 
   __ bind(&only_change_map);
   // Update receiver's map.
-  __ StoreP(r6, FieldMemOperand(r5, HeapObject::kMapOffset), r0);
+  __ StoreP(r6, FieldMemOperand(r5, HeapObject::kMapOffset));
   __ RecordWriteField(r5,
                       HeapObject::kMapOffset,
                       r6,

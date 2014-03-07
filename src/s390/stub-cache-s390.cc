@@ -529,8 +529,7 @@ void StubCompiler::GenerateStoreField(MacroAssembler* masm,
   if (!transition.is_null()) {
     // Update the map of the object.
     __ mov(scratch1, Operand(transition));
-    __ StoreP(scratch1, FieldMemOperand(receiver_reg, HeapObject::kMapOffset),
-              r0);
+    __ StoreP(scratch1, FieldMemOperand(receiver_reg, HeapObject::kMapOffset));
 
     // Update the write barrier for the map field and pass the now unused
     // name_reg as scratch register.
@@ -552,7 +551,7 @@ void StubCompiler::GenerateStoreField(MacroAssembler* masm,
   if (index < 0) {
     // Set the property straight into the object.
     int offset = object->map()->instance_size() + (index * kPointerSize);
-    __ StoreP(r3, FieldMemOperand(receiver_reg, offset), r0);
+    __ StoreP(r3, FieldMemOperand(receiver_reg, offset));
 
     // Skip updating write barrier if storing a smi.
     __ JumpIfSmi(r3, &exit);
@@ -572,7 +571,7 @@ void StubCompiler::GenerateStoreField(MacroAssembler* masm,
     // Get the properties array
     __ LoadP(scratch1,
              FieldMemOperand(receiver_reg, JSObject::kPropertiesOffset));
-    __ StoreP(r3, FieldMemOperand(scratch1, offset), r0);
+    __ StoreP(r3, FieldMemOperand(scratch1, offset));
 
     // Skip updating write barrier if storing a smi.
     __ JumpIfSmi(r3, &exit);
@@ -622,7 +621,7 @@ static void GenerateCallFunction(MacroAssembler* masm,
   // necessary.
   if (object->IsGlobalObject()) {
     __ LoadP(r6, FieldMemOperand(r3, GlobalObject::kGlobalReceiverOffset));
-    __ StoreP(r6, MemOperand(sp, arguments.immediate() * kPointerSize), r0);
+    __ StoreP(r6, MemOperand(sp, arguments.immediate() * kPointerSize));
   }
 
   // Invoke the function.
@@ -1632,7 +1631,7 @@ Handle<Code> CallStubCompiler::CompileArrayPushCall(
       __ JumpIfNotSmi(r7, &with_write_barrier);
 
       // Save new length.
-      __ StoreP(r3, FieldMemOperand(receiver, JSArray::kLengthOffset), r0);
+      __ StoreP(r3, FieldMemOperand(receiver, JSArray::kLengthOffset));
 
       // Store the value.
       // We may need a register containing the address end_elements below,
@@ -1687,7 +1686,7 @@ Handle<Code> CallStubCompiler::CompileArrayPushCall(
       }
 
       // Save new length.
-      __ StoreP(r3, FieldMemOperand(receiver, JSArray::kLengthOffset), r0);
+      __ StoreP(r3, FieldMemOperand(receiver, JSArray::kLengthOffset));
 
       // Store the value.
       // We may need a register containing the address end_elements below,
@@ -1754,13 +1753,13 @@ Handle<Code> CallStubCompiler::CompileArrayPushCall(
       // Fill the rest with holes.
       __ LoadRoot(r6, Heap::kTheHoleValueRootIndex);
       for (int i = 1; i < kAllocationDelta; i++) {
-        __ StoreP(r6, MemOperand(end_elements, i * kPointerSize), r0);
+        __ StoreP(r6, MemOperand(end_elements, i * kPointerSize));
       }
 
       // Update elements' and array's sizes.
-      __ StoreP(r3, FieldMemOperand(receiver, JSArray::kLengthOffset), r0);
+      __ StoreP(r3, FieldMemOperand(receiver, JSArray::kLengthOffset));
       __ AddSmiLiteral(r7, r7, Smi::FromInt(kAllocationDelta), r0);
-      __ StoreP(r7, FieldMemOperand(elements, FixedArray::kLengthOffset), r0);
+      __ StoreP(r7, FieldMemOperand(elements, FixedArray::kLengthOffset));
 
       // Elements are in new space, so write barrier is not required.
       __ Drop(argc + 1);
@@ -1841,10 +1840,10 @@ Handle<Code> CallStubCompiler::CompileArrayPopCall(
   __ beq(&call_builtin);
 
   // Set the array's length.
-  __ StoreP(r7, FieldMemOperand(receiver, JSArray::kLengthOffset), r0);
+  __ StoreP(r7, FieldMemOperand(receiver, JSArray::kLengthOffset));
 
   // Fill with the hole.
-  __ StoreP(r9, FieldMemOperand(elements, FixedArray::kHeaderSize), r0);
+  __ StoreP(r9, FieldMemOperand(elements, FixedArray::kHeaderSize));
   __ Drop(argc + 1);
   __ Ret();
 
@@ -2582,7 +2581,7 @@ Handle<Code> CallStubCompiler::CompileCallGlobal(
   // necessary.
   if (object->IsGlobalObject()) {
     __ LoadP(r6, FieldMemOperand(r3, GlobalObject::kGlobalReceiverOffset));
-    __ StoreP(r6, MemOperand(sp, argc * kPointerSize), r0);
+    __ StoreP(r6, MemOperand(sp, argc * kPointerSize));
   }
 
   // Set up the context (function already in r4).
@@ -2828,7 +2827,7 @@ Handle<Code> StoreStubCompiler::CompileStoreGlobal(
   __ beq(&miss);
 
   // Store the value in the cell.
-  __ StoreP(r3, FieldMemOperand(r7, JSGlobalPropertyCell::kValueOffset), r0);
+  __ StoreP(r3, FieldMemOperand(r7, JSGlobalPropertyCell::kValueOffset));
   // Cells are always rescanned, so no write barrier here.
 
   Counters* counters = masm()->isolate()->counters();
@@ -4256,32 +4255,31 @@ void KeyedStoreStubCompiler::GenerateStoreFastElement(
                           TAG_OBJECT);
 
     __ LoadRoot(scratch, Heap::kFixedArrayMapRootIndex);
-    __ StoreP(scratch, FieldMemOperand(elements_reg, JSObject::kMapOffset), r0);
+    __ StoreP(scratch, FieldMemOperand(elements_reg, JSObject::kMapOffset));
     __ LoadSmiLiteral(scratch,
                       Smi::FromInt(JSArray::kPreallocatedArrayElements));
-    __ StoreP(scratch, FieldMemOperand(elements_reg, FixedArray::kLengthOffset),
-              r0);
+    __ StoreP(scratch,
+              FieldMemOperand(elements_reg, FixedArray::kLengthOffset));
     __ LoadRoot(scratch, Heap::kTheHoleValueRootIndex);
     for (int i = 1; i < JSArray::kPreallocatedArrayElements; ++i) {
       __ StoreP(scratch,
-                FieldMemOperand(elements_reg, FixedArray::SizeFor(i)), r0);
+                FieldMemOperand(elements_reg, FixedArray::SizeFor(i)));
     }
 
     // Store the element at index zero.
-    __ StoreP(value_reg, FieldMemOperand(elements_reg, FixedArray::SizeFor(0)),
-              r0);
+    __ StoreP(value_reg, FieldMemOperand(elements_reg, FixedArray::SizeFor(0)));
 
     // Install the new backing store in the JSArray.
     __ StoreP(elements_reg,
-              FieldMemOperand(receiver_reg, JSObject::kElementsOffset), r0);
+              FieldMemOperand(receiver_reg, JSObject::kElementsOffset));
     __ RecordWriteField(receiver_reg, JSObject::kElementsOffset, elements_reg,
                         scratch, kLRHasNotBeenSaved, kDontSaveFPRegs,
                         EMIT_REMEMBERED_SET, OMIT_SMI_CHECK);
 
     // Increment the length of the array.
     __ LoadSmiLiteral(length_reg, Smi::FromInt(1));
-    __ StoreP(length_reg, FieldMemOperand(receiver_reg, JSArray::kLengthOffset),
-              r0);
+    __ StoreP(length_reg,
+              FieldMemOperand(receiver_reg, JSArray::kLengthOffset));
     __ Ret();
 
     __ bind(&check_capacity);
@@ -4298,8 +4296,8 @@ void KeyedStoreStubCompiler::GenerateStoreFastElement(
 
     // Grow the array and finish the store.
     __ AddSmiLiteral(length_reg, length_reg, Smi::FromInt(1), r0);
-    __ StoreP(length_reg, FieldMemOperand(receiver_reg, JSArray::kLengthOffset),
-              r0);
+    __ StoreP(length_reg,
+              FieldMemOperand(receiver_reg, JSArray::kLengthOffset));
     __ b(&finish_store);
 
     __ bind(&slow);
@@ -4415,25 +4413,23 @@ void KeyedStoreStubCompiler::GenerateStoreFastDoubleElement(
     // Initialize the new FixedDoubleArray. Leave elements unitialized for
     // efficiency, they are guaranteed to be initialized before use.
     __ LoadRoot(scratch1, Heap::kFixedDoubleArrayMapRootIndex);
-    __ StoreP(scratch1, FieldMemOperand(elements_reg, JSObject::kMapOffset),
-              r0);
+    __ StoreP(scratch1, FieldMemOperand(elements_reg, JSObject::kMapOffset));
     __ LoadSmiLiteral(scratch1,
                       Smi::FromInt(JSArray::kPreallocatedArrayElements));
     __ StoreP(scratch1,
-              FieldMemOperand(elements_reg, FixedDoubleArray::kLengthOffset),
-              r0);
+              FieldMemOperand(elements_reg, FixedDoubleArray::kLengthOffset));
 
     // Install the new backing store in the JSArray.
     __ StoreP(elements_reg,
-              FieldMemOperand(receiver_reg, JSObject::kElementsOffset), r0);
+              FieldMemOperand(receiver_reg, JSObject::kElementsOffset));
     __ RecordWriteField(receiver_reg, JSObject::kElementsOffset, elements_reg,
                         scratch1, kLRHasNotBeenSaved, kDontSaveFPRegs,
                         EMIT_REMEMBERED_SET, OMIT_SMI_CHECK);
 
     // Increment the length of the array.
     __ LoadSmiLiteral(length_reg, Smi::FromInt(1));
-    __ StoreP(length_reg, FieldMemOperand(receiver_reg, JSArray::kLengthOffset),
-              r0);
+    __ StoreP(length_reg,
+              FieldMemOperand(receiver_reg, JSArray::kLengthOffset));
     __ LoadP(elements_reg,
              FieldMemOperand(receiver_reg, JSObject::kElementsOffset));
     __ b(&finish_store);
@@ -4447,8 +4443,8 @@ void KeyedStoreStubCompiler::GenerateStoreFastDoubleElement(
 
     // Grow the array and finish the store.
     __ AddSmiLiteral(length_reg, length_reg, Smi::FromInt(1), r0);
-    __ StoreP(length_reg, FieldMemOperand(receiver_reg, JSArray::kLengthOffset),
-              r0);
+    __ StoreP(length_reg,
+              FieldMemOperand(receiver_reg, JSArray::kLengthOffset));
     __ b(&finish_store);
 
     __ bind(&slow);

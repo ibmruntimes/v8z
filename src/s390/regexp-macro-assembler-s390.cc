@@ -186,7 +186,7 @@ void RegExpMacroAssemblerPPC::AdvanceRegister(int reg, int by) {
     __ LoadP(r3, register_location(reg), r0);
     __ mov(r0, Operand(by));
     __ AddRR(r3, r0);
-    __ StoreP(r3, register_location(reg), r0);
+    __ StoreP(r3, register_location(reg));
   }
 }
 
@@ -832,7 +832,7 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
         __ bdnz(&init_loop);
       } else {
         for (int i = 0; i < num_saved_registers_; i++) {
-          __ StoreP(r3, register_location(i), r0);
+          __ StoreP(r3, register_location(i));
         }
       }
     }
@@ -1070,7 +1070,7 @@ void RegExpMacroAssemblerPPC::PopCurrentPosition() {
 
 void RegExpMacroAssemblerPPC::PopRegister(int register_index) {
   Pop(r3);
-  __ StoreP(r3, register_location(register_index), r0);
+  __ StoreP(r3, register_location(register_index));
 }
 
 
@@ -1134,7 +1134,7 @@ void RegExpMacroAssemblerPPC::SetCurrentPositionFromEnd(int by) {
 void RegExpMacroAssemblerPPC::SetRegister(int register_index, int to) {
   ASSERT(register_index >= num_saved_registers_);  // Reserved for positions!
   __ mov(r3, Operand(to));
-  __ StoreP(r3, register_location(register_index), r0);
+  __ StoreP(r3, register_location(register_index));
 }
 
 
@@ -1147,12 +1147,12 @@ bool RegExpMacroAssemblerPPC::Succeed() {
 void RegExpMacroAssemblerPPC::WriteCurrentPositionToRegister(int reg,
                                                              int cp_offset) {
   if (cp_offset == 0) {
-    __ StoreP(current_input_offset(), register_location(reg), r0);
+    __ StoreP(current_input_offset(), register_location(reg));
   } else {
     __ mov(r0, Operand(cp_offset * char_size()));
     __ LoadRR(r3, current_input_offset());
     __ AddP(r3, r0);
-    __ StoreP(r3, register_location(reg), r0);
+    __ StoreP(r3, register_location(reg));
   }
 }
 
@@ -1161,7 +1161,7 @@ void RegExpMacroAssemblerPPC::ClearRegisters(int reg_from, int reg_to) {
   ASSERT(reg_from <= reg_to);
   __ LoadP(r3, MemOperand(frame_pointer(), kInputStartMinusOne));
   for (int reg = reg_from; reg <= reg_to; reg++) {
-    __ StoreP(r3, register_location(reg), r0);
+    __ StoreP(r3, register_location(reg));
   }
 }
 
@@ -1169,7 +1169,7 @@ void RegExpMacroAssemblerPPC::ClearRegisters(int reg_from, int reg_to) {
 void RegExpMacroAssemblerPPC::WriteStackPointerToRegister(int reg) {
   __ LoadP(r4, MemOperand(frame_pointer(), kStackHighEnd));
   __ Sub(r3, backtrack_stackpointer(), r4);
-  __ StoreP(r3, register_location(reg), r0);
+  __ StoreP(r3, register_location(reg));
 }
 
 
