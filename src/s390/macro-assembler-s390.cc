@@ -3282,8 +3282,7 @@ void MacroAssembler::PrepareCallCFunction(int num_reg_arguments,
     Sub(sp, Operand((stack_passed_arguments + 1) * kPointerSize));
 #endif
     ASSERT(IsPowerOf2(frame_alignment));
-    lhi(r0, Operand(-frame_alignment));
-    and_(sp, sp, r0);
+    nill(sp, Operand(-frame_alignment));
 #if !defined(USE_SIMULATOR)
     // On the simulator we pass args on the stack
     StoreP(scratch, MemOperand(sp));
