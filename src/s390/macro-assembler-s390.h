@@ -439,7 +439,7 @@ class MacroAssembler: public Assembler {
 
   void push(Register src) {
     lay(sp, MemOperand(sp, -kPointerSize));
-    StorePX(src, MemOperand(sp));
+    StoreP(src, MemOperand(sp));
   }
 
   void pop(Register dst) {

@@ -196,7 +196,7 @@ bool LCodeGen::GeneratePrologue() {
         __ LoadP(r3, MemOperand(fp, parameter_offset));
         // Store it in the context.
         MemOperand target = ContextOperand(cp, var->index());
-        __ StoreP(r3, target, r0);
+        __ StoreP(r3, target);
         // Update the write barrier. This clobbers r6 and r3.
         __ RecordWriteContextSlot(
             cp, target.offset(), r3, r6, kLRHasBeenSaved, kSaveFPRegs);
@@ -2472,8 +2472,7 @@ void LCodeGen::DoStoreGlobalCell(LStoreGlobalCell* instr) {
   }
 
   // Store the value.
-  __ StoreP(value, FieldMemOperand(cell, JSGlobalPropertyCell::kValueOffset),
-            r0);
+  __ StoreP(value, FieldMemOperand(cell, JSGlobalPropertyCell::kValueOffset));
   // Cells are always rescanned, so no write barrier here.
 }
 
@@ -2528,7 +2527,7 @@ void LCodeGen::DoStoreContextSlot(LStoreContextSlot* instr) {
     }
   }
 
-  __ StoreP(value, target, r0);
+  __ StoreP(value, target);
   if (instr->hydrogen()->NeedsWriteBarrier()) {
     HType type = instr->hydrogen()->value()->type();
     SmiCheck check_needed =
@@ -3879,7 +3878,7 @@ void LCodeGen::DoStoreNamedField(LStoreNamedField* instr) {
 
   if (!instr->transition().is_null()) {
     __ mov(scratch, Operand(instr->transition()));
-    __ StoreP(scratch, FieldMemOperand(object, HeapObject::kMapOffset), r0);
+    __ StoreP(scratch, FieldMemOperand(object, HeapObject::kMapOffset));
     if (instr->hydrogen()->NeedsWriteBarrierForMap()) {
       Register temp = ToRegister(instr->temp());
       // Update the write barrier for the map field.
@@ -3899,7 +3898,7 @@ void LCodeGen::DoStoreNamedField(LStoreNamedField* instr) {
   SmiCheck check_needed =
       type.IsHeapObject() ? OMIT_SMI_CHECK : INLINE_SMI_CHECK;
   if (instr->is_in_object()) {
-    __ StoreP(value, FieldMemOperand(object, offset), r0);
+    __ StoreP(value, FieldMemOperand(object, offset));
     if (instr->hydrogen()->NeedsWriteBarrier()) {
       // Update the write barrier for the object for in-object properties.
       __ RecordWriteField(object,
@@ -3913,7 +3912,7 @@ void LCodeGen::DoStoreNamedField(LStoreNamedField* instr) {
     }
   } else {
     __ LoadP(scratch, FieldMemOperand(object, JSObject::kPropertiesOffset));
-    __ StoreP(value, FieldMemOperand(scratch, offset), r0);
+    __ StoreP(value, FieldMemOperand(scratch, offset));
     if (instr->hydrogen()->NeedsWriteBarrier()) {
       // Update the write barrier for the properties array.
       // object is used as a scratch register.
@@ -4009,7 +4008,7 @@ void LCodeGen::DoStoreKeyedFastElement(LStoreKeyedFastElement* instr) {
     __ AddP(scratch, elements);
     offset = FixedArray::OffsetOfElementAt(instr->additional_index());
   }
-  __ StoreP(value, FieldMemOperand(store_base, offset), r0);
+  __ StoreP(value, FieldMemOperand(store_base, offset));
 
   if (instr->hydrogen()->NeedsWriteBarrier()) {
     HType type = instr->hydrogen()->value()->type();
@@ -4204,8 +4203,7 @@ void LCodeGen::DoTransitionElementsKind(LTransitionElementsKind* instr) {
   __ mov(new_map_reg, Operand(to_map));
 
   if (IsSimpleMapChangeTransition(from_kind, to_kind)) {
-    __ StoreP(new_map_reg, FieldMemOperand(object_reg, HeapObject::kMapOffset),
-              r0);
+    __ StoreP(new_map_reg, FieldMemOperand(object_reg, HeapObject::kMapOffset));
     // Write barrier.
     __ RecordWriteField(object_reg, HeapObject::kMapOffset, new_map_reg,
                         scratch, kLRHasBeenSaved, kDontSaveFPRegs);
@@ -5002,15 +5000,15 @@ void LCodeGen::DoAllocateObject(LAllocateObject* instr) {
 
   // Initialize map and fields of the newly allocated object.
   ASSERT(initial_map->instance_type() == JS_OBJECT_TYPE);
-  __ StoreP(map, FieldMemOperand(result, JSObject::kMapOffset), r0);
+  __ StoreP(map, FieldMemOperand(result, JSObject::kMapOffset));
   __ LoadRoot(scratch, Heap::kEmptyFixedArrayRootIndex);
-  __ StoreP(scratch, FieldMemOperand(result, JSObject::kElementsOffset), r0);
-  __ StoreP(scratch, FieldMemOperand(result, JSObject::kPropertiesOffset), r0);
+  __ StoreP(scratch, FieldMemOperand(result, JSObject::kElementsOffset));
+  __ StoreP(scratch, FieldMemOperand(result, JSObject::kPropertiesOffset));
   if (initial_map->inobject_properties() != 0) {
     __ LoadRoot(scratch, Heap::kUndefinedValueRootIndex);
     for (int i = 0; i < initial_map->inobject_properties(); i++) {
       int property_offset = JSObject::kHeaderSize + i * kPointerSize;
-      __ StoreP(scratch, FieldMemOperand(result, property_offset), r0);
+      __ StoreP(scratch, FieldMemOperand(result, property_offset));
     }
   }
 }
@@ -5118,7 +5116,7 @@ void LCodeGen::EmitDeepCopy(Handle<JSObject> object,
     } else {
       __ LoadP(r5, FieldMemOperand(source, i));
     }
-    __ StoreP(r5, FieldMemOperand(result, object_offset + i), r0);
+    __ StoreP(r5, FieldMemOperand(result, object_offset + i));
   }
 
   // Copy in-object properties.
@@ -5129,15 +5127,15 @@ void LCodeGen::EmitDeepCopy(Handle<JSObject> object,
       Handle<JSObject> value_object = Handle<JSObject>::cast(value);
       __ LoadRR(r5, result);
       __ AddP(r5, Operand(*offset));
-      __ StoreP(r5, FieldMemOperand(result, total_offset), r0);
+      __ StoreP(r5, FieldMemOperand(result, total_offset));
       __ LoadHeapObject(source, value_object);
       EmitDeepCopy(value_object, result, source, offset);
     } else if (value->IsHeapObject()) {
       __ LoadHeapObject(r5, Handle<HeapObject>::cast(value));
-      __ StoreP(r5, FieldMemOperand(result, total_offset), r0);
+      __ StoreP(r5, FieldMemOperand(result, total_offset));
     } else {
       __ mov(r5, Operand(value));
-      __ StoreP(r5, FieldMemOperand(result, total_offset), r0);
+      __ StoreP(r5, FieldMemOperand(result, total_offset));
     }
   }
 
@@ -5146,7 +5144,7 @@ void LCodeGen::EmitDeepCopy(Handle<JSObject> object,
     __ LoadHeapObject(source, elements);
     for (int i = 0; i < FixedArray::kHeaderSize; i += kPointerSize) {
       __ LoadP(r5, FieldMemOperand(source, i));
-      __ StoreP(r5, FieldMemOperand(result, elements_offset + i), r0);
+      __ StoreP(r5, FieldMemOperand(result, elements_offset + i));
     }
 
     // Copy elements backing store content.
@@ -5181,15 +5179,15 @@ void LCodeGen::EmitDeepCopy(Handle<JSObject> object,
           Handle<JSObject> value_object = Handle<JSObject>::cast(value);
           __ LoadRR(r5, result);
           __ AddP(r5, Operand(*offset));
-          __ StoreP(r5, FieldMemOperand(result, total_offset), r0);
+          __ StoreP(r5, FieldMemOperand(result, total_offset));
           __ LoadHeapObject(source, value_object);
           EmitDeepCopy(value_object, result, source, offset);
         } else if (value->IsHeapObject()) {
           __ LoadHeapObject(r5, Handle<HeapObject>::cast(value));
-          __ StoreP(r5, FieldMemOperand(result, total_offset), r0);
+          __ StoreP(r5, FieldMemOperand(result, total_offset));
         } else {
           __ mov(r5, Operand(value));
-          __ StoreP(r5, FieldMemOperand(result, total_offset), r0);
+          __ StoreP(r5, FieldMemOperand(result, total_offset));
         }
       }
     } else {
@@ -5318,12 +5316,12 @@ void LCodeGen::DoRegExpLiteral(LRegExpLiteral* instr) {
   for (int i = 0; i < size - kPointerSize; i += 2 * kPointerSize) {
     __ LoadP(r6, FieldMemOperand(r4, i));
     __ LoadP(r5, FieldMemOperand(r4, i + kPointerSize));
-    __ StoreP(r6, FieldMemOperand(r3, i), r0);
-    __ StoreP(r5, FieldMemOperand(r3, i + kPointerSize), r0);
+    __ StoreP(r6, FieldMemOperand(r3, i));
+    __ StoreP(r5, FieldMemOperand(r3, i + kPointerSize));
   }
   if ((size % (2 * kPointerSize)) != 0) {
     __ LoadP(r6, FieldMemOperand(r4, size - kPointerSize));
-    __ StoreP(r6, FieldMemOperand(r3, size - kPointerSize), r0);
+    __ StoreP(r6, FieldMemOperand(r3, size - kPointerSize));
   }
 }
 

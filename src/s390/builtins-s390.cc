@@ -142,15 +142,15 @@ static void AllocateEmptyJSArray(MacroAssembler* masm,
   // result: JSObject
   // scratch1: initial map
   // scratch2: start of next object
-  __ StoreP(scratch1, FieldMemOperand(result, JSObject::kMapOffset), r0);
+  __ StoreP(scratch1, FieldMemOperand(result, JSObject::kMapOffset));
   __ LoadRoot(scratch1, Heap::kEmptyFixedArrayRootIndex);
-  __ StoreP(scratch1, FieldMemOperand(result, JSArray::kPropertiesOffset), r0);
+  __ StoreP(scratch1, FieldMemOperand(result, JSArray::kPropertiesOffset));
   // Field JSArray::kElementsOffset is initialized later.
   __ lhi(scratch3,  Operand(0, RelocInfo::NONE));
-  __ StoreP(scratch3, FieldMemOperand(result, JSArray::kLengthOffset), r0);
+  __ StoreP(scratch3, FieldMemOperand(result, JSArray::kLengthOffset));
 
   if (initial_capacity == 0) {
-    __ StoreP(scratch1, FieldMemOperand(result, JSArray::kElementsOffset), r0);
+    __ StoreP(scratch1, FieldMemOperand(result, JSArray::kElementsOffset));
     return;
   }
 
@@ -160,7 +160,7 @@ static void AllocateEmptyJSArray(MacroAssembler* masm,
   // scratch2: start of next object
   __ LoadRR(scratch1, result);
   __ AddP(scratch1, Operand(JSArray::kSize));
-  __ StoreP(scratch1, FieldMemOperand(result, JSArray::kElementsOffset), r0);
+  __ StoreP(scratch1, FieldMemOperand(result, JSArray::kElementsOffset));
 
   // Clear the heap tag on the elements array.
   __ Sub(scratch1, Operand(kHeapObjectTag));
@@ -469,7 +469,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
                                          r5,
                                          r22,
                                          &cant_transition_map);
-  __ StoreP(r5, FieldMemOperand(r6, HeapObject::kMapOffset), r0);
+  __ StoreP(r5, FieldMemOperand(r6, HeapObject::kMapOffset));
   __ RecordWriteField(r6,
                       HeapObject::kMapOffset,
                       r5,
@@ -660,13 +660,13 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
     __ Cmpi(r7, Operand(0, RelocInfo::NONE));
     __ Assert(eq, "Unexpected unused properties of string wrapper");
   }
-  __ StoreP(map, FieldMemOperand(r3, HeapObject::kMapOffset), r0);
+  __ StoreP(map, FieldMemOperand(r3, HeapObject::kMapOffset));
 
   __ LoadRoot(r6, Heap::kEmptyFixedArrayRootIndex);
-  __ StoreP(r6, FieldMemOperand(r3, JSObject::kPropertiesOffset), r0);
-  __ StoreP(r6, FieldMemOperand(r3, JSObject::kElementsOffset), r0);
+  __ StoreP(r6, FieldMemOperand(r3, JSObject::kPropertiesOffset));
+  __ StoreP(r6, FieldMemOperand(r3, JSObject::kElementsOffset));
 
-  __ StoreP(argument, FieldMemOperand(r3, JSValue::kValueOffset), r0);
+  __ StoreP(argument, FieldMemOperand(r3, JSValue::kValueOffset));
 
   // Ensure the object is fully initialized.
   STATIC_ASSERT(JSValue::kSize == 4 * kPointerSize);
@@ -1000,7 +1000,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // r7: JSObject
       // r8: FixedArray (not tagged)
       __ AddP(r8, Operand(kHeapObjectTag));  // Add the heap tag.
-      __ StoreP(r8, FieldMemOperand(r7, JSObject::kPropertiesOffset), r0);
+      __ StoreP(r8, FieldMemOperand(r7, JSObject::kPropertiesOffset));
 
       // Continue with JSObject being successfully allocated
       // r4: constructor function

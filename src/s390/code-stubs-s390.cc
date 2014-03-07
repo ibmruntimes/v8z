@@ -114,19 +114,18 @@ void FastNewClosureStub::Generate(MacroAssembler* masm) {
            MemOperand(cp, Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
   __ LoadP(r5, FieldMemOperand(r5, GlobalObject::kNativeContextOffset));
   __ LoadP(r8, MemOperand(r5, Context::SlotOffset(map_index)));
-  __ StoreP(r8, FieldMemOperand(r3, HeapObject::kMapOffset), r0);
+  __ StoreP(r8, FieldMemOperand(r3, HeapObject::kMapOffset));
 
   // Initialize the rest of the function. We don't have to update the
   // write barrier because the allocated object is in new space.
   __ LoadRoot(r4, Heap::kEmptyFixedArrayRootIndex);
   __ LoadRoot(r8, Heap::kTheHoleValueRootIndex);
-  __ StoreP(r4, FieldMemOperand(r3, JSObject::kPropertiesOffset), r0);
-  __ StoreP(r4, FieldMemOperand(r3, JSObject::kElementsOffset), r0);
-  __ StoreP(r8, FieldMemOperand(r3, JSFunction::kPrototypeOrInitialMapOffset),
-            r0);
-  __ StoreP(r6, FieldMemOperand(r3, JSFunction::kSharedFunctionInfoOffset), r0);
-  __ StoreP(cp, FieldMemOperand(r3, JSFunction::kContextOffset), r0);
-  __ StoreP(r4, FieldMemOperand(r3, JSFunction::kLiteralsOffset), r0);
+  __ StoreP(r4, FieldMemOperand(r3, JSObject::kPropertiesOffset));
+  __ StoreP(r4, FieldMemOperand(r3, JSObject::kElementsOffset));
+  __ StoreP(r8, FieldMemOperand(r3, JSFunction::kPrototypeOrInitialMapOffset));
+  __ StoreP(r6, FieldMemOperand(r3, JSFunction::kSharedFunctionInfoOffset));
+  __ StoreP(cp, FieldMemOperand(r3, JSFunction::kContextOffset));
+  __ StoreP(r4, FieldMemOperand(r3, JSFunction::kLiteralsOffset));
 
   // Initialize the code pointer in the function to be the one
   // found in the shared function info object.
@@ -141,10 +140,10 @@ void FastNewClosureStub::Generate(MacroAssembler* masm) {
   }
   __ bind(&install_unoptimized);
   __ LoadRoot(r7, Heap::kUndefinedValueRootIndex);
-  __ StoreP(r7, FieldMemOperand(r3, JSFunction::kNextFunctionLinkOffset), r0);
+  __ StoreP(r7, FieldMemOperand(r3, JSFunction::kNextFunctionLinkOffset));
   __ LoadP(r6, FieldMemOperand(r6, SharedFunctionInfo::kCodeOffset));
   __ AddP(r6, Operand(Code::kHeaderSize - kHeapObjectTag));
-  __ StoreP(r6, FieldMemOperand(r3, JSFunction::kCodeEntryOffset), r0);
+  __ StoreP(r6, FieldMemOperand(r3, JSFunction::kCodeEntryOffset));
 
   // Return result. The argument function info has been popped already.
   __ Ret();
@@ -195,15 +194,15 @@ void FastNewClosureStub::Generate(MacroAssembler* masm) {
   // unmangle them on marking or do nothing as the whole map is discarded on
   // major GC anyway.
   __ AddP(r7, Operand(Code::kHeaderSize - kHeapObjectTag));
-  __ StoreP(r7, FieldMemOperand(r3, JSFunction::kCodeEntryOffset), r0);
+  __ StoreP(r7, FieldMemOperand(r3, JSFunction::kCodeEntryOffset));
 
   // Now link a function into a list of optimized functions.
   __ LoadP(r7, ContextOperand(r5, Context::OPTIMIZED_FUNCTIONS_LIST));
 
-  __ StoreP(r7, FieldMemOperand(r3, JSFunction::kNextFunctionLinkOffset), r0);
+  __ StoreP(r7, FieldMemOperand(r3, JSFunction::kNextFunctionLinkOffset));
   // No need for write barrier as JSFunction (eax) is in the new space.
 
-  __ StoreP(r3, ContextOperand(r5, Context::OPTIMIZED_FUNCTIONS_LIST), r0);
+  __ StoreP(r3, ContextOperand(r5, Context::OPTIMIZED_FUNCTIONS_LIST));
   // Store JSFunction (eax) into edx before issuing write barrier as
   // it clobbers all the registers passed.
   __ LoadRR(r7, r3);
@@ -245,27 +244,23 @@ void FastNewContextStub::Generate(MacroAssembler* masm) {
   // Set up the object header.
   __ LoadRoot(r4, Heap::kFunctionContextMapRootIndex);
   __ LoadSmiLiteral(r5, Smi::FromInt(length));
-  __ StoreP(r5, FieldMemOperand(r3, FixedArray::kLengthOffset), r0);
-  __ StoreP(r4, FieldMemOperand(r3, HeapObject::kMapOffset), r0);
+  __ StoreP(r5, FieldMemOperand(r3, FixedArray::kLengthOffset));
+  __ StoreP(r4, FieldMemOperand(r3, HeapObject::kMapOffset));
 
   // Set up the fixed slots, copy the global object from the previous context.
   __ LoadP(r5,
            MemOperand(cp, Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
   __ LoadSmiLiteral(r4, Smi::FromInt(0));
-  __ StoreP(r6, MemOperand(r3, Context::SlotOffset(Context::CLOSURE_INDEX)),
-            r0);
-  __ StoreP(cp, MemOperand(r3, Context::SlotOffset(Context::PREVIOUS_INDEX)),
-            r0);
-  __ StoreP(r4, MemOperand(r3, Context::SlotOffset(Context::EXTENSION_INDEX)),
-            r0);
+  __ StoreP(r6, MemOperand(r3, Context::SlotOffset(Context::CLOSURE_INDEX)));
+  __ StoreP(cp, MemOperand(r3, Context::SlotOffset(Context::PREVIOUS_INDEX)));
+  __ StoreP(r4, MemOperand(r3, Context::SlotOffset(Context::EXTENSION_INDEX)));
   __ StoreP(r5,
-            MemOperand(r3, Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)),
-            r0);
+            MemOperand(r3, Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
 
   // Initialize the rest of the slots to undefined.
   __ LoadRoot(r4, Heap::kUndefinedValueRootIndex);
   for (int i = Context::MIN_CONTEXT_SLOTS; i < length; i++) {
-    __ StoreP(r4, MemOperand(r3, Context::SlotOffset(i)), r0);
+    __ StoreP(r4, MemOperand(r3, Context::SlotOffset(i)));
   }
 
   // Remove the on-stack argument and return.
@@ -299,9 +294,9 @@ void FastNewBlockContextStub::Generate(MacroAssembler* masm) {
 
   // Set up the object header.
   __ LoadRoot(r5, Heap::kBlockContextMapRootIndex);
-  __ StoreP(r5, FieldMemOperand(r3, HeapObject::kMapOffset), r0);
+  __ StoreP(r5, FieldMemOperand(r3, HeapObject::kMapOffset));
   __ LoadSmiLiteral(r5, Smi::FromInt(length));
-  __ StoreP(r5, FieldMemOperand(r3, FixedArray::kLengthOffset), r0);
+  __ StoreP(r5, FieldMemOperand(r3, FixedArray::kLengthOffset));
 
   // If this block context is nested in the native context we get a smi
   // sentinel instead of a function. The block context should get the
@@ -321,15 +316,15 @@ void FastNewBlockContextStub::Generate(MacroAssembler* masm) {
 
   // Set up the fixed slots, copy the global object from the previous context.
   __ LoadP(r5, ContextOperand(cp, Context::GLOBAL_OBJECT_INDEX));
-  __ StoreP(r6, ContextOperand(r3, Context::CLOSURE_INDEX), r0);
-  __ StoreP(cp, ContextOperand(r3, Context::PREVIOUS_INDEX), r0);
-  __ StoreP(r4, ContextOperand(r3, Context::EXTENSION_INDEX), r0);
-  __ StoreP(r5, ContextOperand(r3, Context::GLOBAL_OBJECT_INDEX), r0);
+  __ StoreP(r6, ContextOperand(r3, Context::CLOSURE_INDEX));
+  __ StoreP(cp, ContextOperand(r3, Context::PREVIOUS_INDEX));
+  __ StoreP(r4, ContextOperand(r3, Context::EXTENSION_INDEX));
+  __ StoreP(r5, ContextOperand(r3, Context::GLOBAL_OBJECT_INDEX));
 
   // Initialize the rest of the slots to the hole value.
   __ LoadRoot(r4, Heap::kTheHoleValueRootIndex);
   for (int i = 0; i < slots_; i++) {
-    __ StoreP(r4, ContextOperand(r3, i + Context::MIN_CONTEXT_SLOTS), r0);
+    __ StoreP(r4, ContextOperand(r3, i + Context::MIN_CONTEXT_SLOTS));
   }
 
   // Remove the on-stack argument and return.
@@ -375,7 +370,7 @@ static void GenerateFastCloneShallowArrayCommon(
   for (int i = 0; i < JSArray::kSize; i += kPointerSize) {
     if ((i != JSArray::kElementsOffset) || (length == 0)) {
       __ LoadP(r4, FieldMemOperand(r6, i));
-      __ StoreP(r4, FieldMemOperand(r3, i), r0);
+      __ StoreP(r4, FieldMemOperand(r3, i));
     }
   }
 
@@ -385,7 +380,7 @@ static void GenerateFastCloneShallowArrayCommon(
     __ LoadP(r6, FieldMemOperand(r6, JSArray::kElementsOffset));
     __ LoadRR(r5, r3);
     __ AddP(r5, Operand(JSArray::kSize));
-    __ StoreP(r5, FieldMemOperand(r3, JSArray::kElementsOffset), r0);
+    __ StoreP(r5, FieldMemOperand(r3, JSArray::kElementsOffset));
 
     // Copy the elements array.
     ASSERT((elements_size % kPointerSize) == 0);
@@ -510,7 +505,7 @@ void FastCloneShallowObjectStub::Generate(MacroAssembler* masm) {
   __ AllocateInNewSpace(size, r3, r4, r5, &slow_case, TAG_OBJECT);
   for (int i = 0; i < size; i += kPointerSize) {
     __ LoadP(r4, FieldMemOperand(r6, i));
-    __ StoreP(r4, FieldMemOperand(r3, i), r0);
+    __ StoreP(r4, FieldMemOperand(r3, i));
   }
 
   // Return and remove the on-stack parameters.
@@ -4062,8 +4057,8 @@ void InstanceofStub::Generate(MacroAssembler* masm) {
     __ Sub(inline_site, inline_site, scratch);
     // Get the map location in scratch and patch it.
     __ GetRelocatedValueLocation(inline_site, scratch, scratch2);
-    __ StoreP(map, FieldMemOperand(scratch, JSGlobalPropertyCell::kValueOffset),
-              r0);
+    __ StoreP(map,
+         FieldMemOperand(scratch, JSGlobalPropertyCell::kValueOffset));
   }
 
   // Register mapping: r6 is object map and r7 is function prototype.
@@ -4357,7 +4352,7 @@ void ArgumentsAccessStub::GenerateNewNonStrictFast(MacroAssembler* masm) {
   // Copy the JS object part.
   for (int i = 0; i < JSObject::kHeaderSize; i += kPointerSize) {
     __ LoadP(r6, FieldMemOperand(r7, i));
-    __ StoreP(r6, FieldMemOperand(r3, i), r0);
+    __ StoreP(r6, FieldMemOperand(r3, i));
   }
 
   // Set up the callee in-object property.
@@ -4365,20 +4360,20 @@ void ArgumentsAccessStub::GenerateNewNonStrictFast(MacroAssembler* masm) {
   __ LoadP(r6, MemOperand(sp, 2 * kPointerSize));
   const int kCalleeOffset = JSObject::kHeaderSize +
       Heap::kArgumentsCalleeIndex * kPointerSize;
-  __ StoreP(r6, FieldMemOperand(r3, kCalleeOffset), r0);
+  __ StoreP(r6, FieldMemOperand(r3, kCalleeOffset));
 
   // Use the length (smi tagged) and set that as an in-object property too.
   STATIC_ASSERT(Heap::kArgumentsLengthIndex == 0);
   const int kLengthOffset = JSObject::kHeaderSize +
       Heap::kArgumentsLengthIndex * kPointerSize;
-  __ StoreP(r5, FieldMemOperand(r3, kLengthOffset), r0);
+  __ StoreP(r5, FieldMemOperand(r3, kLengthOffset));
 
   // Set up the elements pointer in the allocated arguments object.
   // If we allocated a parameter map, r7 will point there, otherwise
   // it will point to the backing store.
   __ LoadRR(r7, r3);
   __ AddP(r7, Operand(Heap::kArgumentsObjectSize));
-  __ StoreP(r7, FieldMemOperand(r3, JSObject::kElementsOffset), r0);
+  __ StoreP(r7, FieldMemOperand(r3, JSObject::kElementsOffset));
 
   // r3 = address of new object (tagged)
   // r4 = mapped parameter count (tagged)
@@ -4395,18 +4390,16 @@ void ArgumentsAccessStub::GenerateNewNonStrictFast(MacroAssembler* masm) {
   __ bind(&skip6);
 
   __ LoadRoot(r9, Heap::kNonStrictArgumentsElementsMapRootIndex);
-  __ StoreP(r9, FieldMemOperand(r7, FixedArray::kMapOffset), r0);
+  __ StoreP(r9, FieldMemOperand(r7, FixedArray::kMapOffset));
   __ AddSmiLiteral(r9, r4, Smi::FromInt(2), r0);
-  __ StoreP(r9, FieldMemOperand(r7, FixedArray::kLengthOffset), r0);
+  __ StoreP(r9, FieldMemOperand(r7, FixedArray::kLengthOffset));
   __ StoreP(r20, FieldMemOperand(r7,
-                                 FixedArray::kHeaderSize + 0 * kPointerSize),
-            r0);
+                                 FixedArray::kHeaderSize + 0 * kPointerSize));
   __ SmiToPtrArrayOffset(r9, r4);
   __ AddP(r9, r7);
   __ AddP(r9, Operand(kParameterMapHeaderSize));
   __ StoreP(r9, FieldMemOperand(r7,
-                                FixedArray::kHeaderSize + 1 * kPointerSize),
-            r0);
+                                FixedArray::kHeaderSize + 1 * kPointerSize));
 
   // Copy the parameter slots and the holes in the arguments.
   // We need to fill in mapped_parameter_count slots. They index the context,
@@ -4452,8 +4445,8 @@ void ArgumentsAccessStub::GenerateNewNonStrictFast(MacroAssembler* masm) {
   // r8 = scratch
   // Copy arguments header and remaining slots (if there are any).
   __ LoadRoot(r8, Heap::kFixedArrayMapRootIndex);
-  __ StoreP(r8, FieldMemOperand(r6, FixedArray::kMapOffset), r0);
-  __ StoreP(r5, FieldMemOperand(r6, FixedArray::kLengthOffset), r0);
+  __ StoreP(r8, FieldMemOperand(r6, FixedArray::kMapOffset));
+  __ StoreP(r5, FieldMemOperand(r6, FixedArray::kLengthOffset));
 
   Label arguments_loop, arguments_test;
   __ LoadRR(r22, r4);
@@ -4467,7 +4460,7 @@ void ArgumentsAccessStub::GenerateNewNonStrictFast(MacroAssembler* masm) {
   __ LoadP(r9, MemOperand(r7, 0));
   __ SmiToPtrArrayOffset(r8, r22);
   __ AddP(r8, r6);
-  __ StoreP(r9, FieldMemOperand(r8, FixedArray::kHeaderSize), r0);
+  __ StoreP(r9, FieldMemOperand(r8, FixedArray::kHeaderSize));
   __ AddSmiLiteral(r22, r22, Smi::FromInt(1), r0);
 
   __ bind(&arguments_test);
@@ -4544,8 +4537,7 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
   STATIC_ASSERT(Heap::kArgumentsLengthIndex == 0);
   __ LoadP(r4, MemOperand(sp, 0 * kPointerSize));
   __ StoreP(r4, FieldMemOperand(r3, JSObject::kHeaderSize +
-                                Heap::kArgumentsLengthIndex * kPointerSize),
-            r0);
+                                Heap::kArgumentsLengthIndex * kPointerSize));
 
   // If there are no actual arguments, we're done.
   Label done;
@@ -4559,10 +4551,10 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
   // initialize the header in the elements fixed array.
   __ LoadRR(r7, r3);
   __ AddP(r7, Operand(Heap::kArgumentsObjectSizeStrict));
-  __ StoreP(r7, FieldMemOperand(r3, JSObject::kElementsOffset), r0);
+  __ StoreP(r7, FieldMemOperand(r3, JSObject::kElementsOffset));
   __ LoadRoot(r6, Heap::kFixedArrayMapRootIndex);
-  __ StoreP(r6, FieldMemOperand(r7, FixedArray::kMapOffset), r0);
-  __ StoreP(r4, FieldMemOperand(r7, FixedArray::kLengthOffset), r0);
+  __ StoreP(r6, FieldMemOperand(r7, FixedArray::kMapOffset));
+  __ StoreP(r4, FieldMemOperand(r7, FixedArray::kLengthOffset));
   // Untag the length for the loop.
   __ SmiUntag(r4);
 
@@ -4970,11 +4962,11 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // Store the capture count.
   __ SmiTag(r5, r4);
   __ StoreP(r5, FieldMemOperand(last_match_info_elements,
-                                RegExpImpl::kLastCaptureCountOffset), r0);
+                                RegExpImpl::kLastCaptureCountOffset));
   // Store last subject and last input.
   __ StoreP(subject,
             FieldMemOperand(last_match_info_elements,
-                            RegExpImpl::kLastSubjectOffset), r0);
+                            RegExpImpl::kLastSubjectOffset));
   __ LoadRR(r5, subject);
   __ RecordWriteField(last_match_info_elements,
                       RegExpImpl::kLastSubjectOffset,
@@ -4984,7 +4976,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
                       kDontSaveFPRegs);
   __ StoreP(subject,
             FieldMemOperand(last_match_info_elements,
-                            RegExpImpl::kLastInputOffset), r0);
+                            RegExpImpl::kLastInputOffset));
   __ RecordWriteField(last_match_info_elements,
                       RegExpImpl::kLastInputOffset,
                       subject,
@@ -5091,18 +5083,18 @@ void RegExpConstructResultStub::Generate(MacroAssembler* masm) {
   __ AddP(r6, Operand(JSRegExpResult::kSize));
   __ mov(r7, Operand(factory->empty_fixed_array()));
   __ LoadP(r5, FieldMemOperand(r5, GlobalObject::kNativeContextOffset));
-  __ StoreP(r6, FieldMemOperand(r3, JSObject::kElementsOffset), r0);
+  __ StoreP(r6, FieldMemOperand(r3, JSObject::kElementsOffset));
   __ LoadP(r5, ContextOperand(r5, Context::REGEXP_RESULT_MAP_INDEX));
-  __ StoreP(r7, FieldMemOperand(r3, JSObject::kPropertiesOffset), r0);
-  __ StoreP(r5, FieldMemOperand(r3, HeapObject::kMapOffset), r0);
+  __ StoreP(r7, FieldMemOperand(r3, JSObject::kPropertiesOffset));
+  __ StoreP(r5, FieldMemOperand(r3, HeapObject::kMapOffset));
 
   // Set input, index and length fields from arguments.
   __ LoadP(r4, MemOperand(sp, kPointerSize * 0));
   __ LoadP(r5, MemOperand(sp, kPointerSize * 1));
   __ LoadP(r9, MemOperand(sp, kPointerSize * 2));
-  __ StoreP(r4, FieldMemOperand(r3, JSRegExpResult::kInputOffset), r0);
-  __ StoreP(r5, FieldMemOperand(r3, JSRegExpResult::kIndexOffset), r0);
-  __ StoreP(r9, FieldMemOperand(r3, JSArray::kLengthOffset), r0);
+  __ StoreP(r4, FieldMemOperand(r3, JSRegExpResult::kInputOffset));
+  __ StoreP(r5, FieldMemOperand(r3, JSRegExpResult::kIndexOffset));
+  __ StoreP(r9, FieldMemOperand(r3, JSArray::kLengthOffset));
 
   // Fill out the elements FixedArray.
   // r3: JSArray, tagged.
@@ -5111,10 +5103,10 @@ void RegExpConstructResultStub::Generate(MacroAssembler* masm) {
 
   // Set map.
   __ mov(r5, Operand(factory->fixed_array_map()));
-  __ StoreP(r5, FieldMemOperand(r6, HeapObject::kMapOffset), r0);
+  __ StoreP(r5, FieldMemOperand(r6, HeapObject::kMapOffset));
   // Set FixedArray length.
   __ SmiTag(r9, r8);
-  __ StoreP(r9, FieldMemOperand(r6, FixedArray::kLengthOffset), r0);
+  __ StoreP(r9, FieldMemOperand(r6, FixedArray::kLengthOffset));
   // Fill contents of fixed-array with undefined.
   __ LoadRoot(r5, Heap::kUndefinedValueRootIndex);
   __ AddP(r6, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
@@ -5173,12 +5165,12 @@ static void GenerateRecordCallTarget(MacroAssembler* masm) {
   // MegamorphicSentinel is an immortal immovable object (undefined) so no
   // write-barrier is needed.
   __ LoadRoot(ip, Heap::kUndefinedValueRootIndex);
-  __ StoreP(ip, FieldMemOperand(r5, JSGlobalPropertyCell::kValueOffset), r0);
+  __ StoreP(ip, FieldMemOperand(r5, JSGlobalPropertyCell::kValueOffset));
   __ b(&done);
 
   // An uninitialized cache is patched with the function.
   __ bind(&initialize);
-  __ StoreP(r4, FieldMemOperand(r5, JSGlobalPropertyCell::kValueOffset), r0);
+  __ StoreP(r4, FieldMemOperand(r5, JSGlobalPropertyCell::kValueOffset));
   // No need for a write barrier here - cells are rescanned.
 
   __ bind(&done);
@@ -5205,7 +5197,7 @@ void CallFunctionStub::Generate(MacroAssembler* masm) {
     __ LoadP(r6,
              MemOperand(cp, Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
     __ LoadP(r6, FieldMemOperand(r6, GlobalObject::kGlobalReceiverOffset));
-    __ StoreP(r6, MemOperand(sp, argc_ * kPointerSize), r0);
+    __ StoreP(r6, MemOperand(sp, argc_ * kPointerSize));
     __ bind(&call);
   }
 
@@ -5250,7 +5242,7 @@ void CallFunctionStub::Generate(MacroAssembler* masm) {
     ASSERT_EQ(*TypeFeedbackCells::MegamorphicSentinel(masm->isolate()),
               masm->isolate()->heap()->undefined_value());
     __ LoadRoot(ip, Heap::kUndefinedValueRootIndex);
-    __ StoreP(ip, FieldMemOperand(r5, JSGlobalPropertyCell::kValueOffset), r0);
+    __ StoreP(ip, FieldMemOperand(r5, JSGlobalPropertyCell::kValueOffset));
   }
   // Check for function proxy.
   STATIC_ASSERT(JS_FUNCTION_PROXY_TYPE < 0xffffu);
@@ -5270,7 +5262,7 @@ void CallFunctionStub::Generate(MacroAssembler* masm) {
   // CALL_NON_FUNCTION expects the non-function callee as receiver (instead
   // of the original receiver from the call site).
   __ bind(&non_function);
-  __ StoreP(r4, MemOperand(sp, argc_ * kPointerSize), r0);
+  __ StoreP(r4, MemOperand(sp, argc_ * kPointerSize));
   __ lhi(r3, Operand(argc_));  // Set up the number of arguments.
   __ lhi(r5, Operand::Zero());
   __ GetBuiltinEntry(r6, Builtins::CALL_NON_FUNCTION);
@@ -5927,8 +5919,8 @@ void SubStringStub::Generate(MacroAssembler* masm) {
     __ AllocateTwoByteSlicedString(r3, r5, r9, r10, &runtime);
     __ bind(&set_slice_header);
     __ SmiTag(r6);
-    __ StoreP(r8, FieldMemOperand(r3, SlicedString::kParentOffset), r0);
-    __ StoreP(r6, FieldMemOperand(r3, SlicedString::kOffsetOffset), r0);
+    __ StoreP(r8, FieldMemOperand(r3, SlicedString::kParentOffset));
+    __ StoreP(r6, FieldMemOperand(r3, SlicedString::kOffsetOffset));
     __ b(&return_r3);
 
     __ bind(&copy_routine);
@@ -6328,8 +6320,8 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   __ AllocateAsciiConsString(r10, r9, r7, r8, &call_runtime);
   __ bind(&allocated);
   // Fill the fields of the cons string.
-  __ StoreP(r3, FieldMemOperand(r10, ConsString::kFirstOffset), r0);
-  __ StoreP(r4, FieldMemOperand(r10, ConsString::kSecondOffset), r0);
+  __ StoreP(r3, FieldMemOperand(r10, ConsString::kFirstOffset));
+  __ StoreP(r4, FieldMemOperand(r10, ConsString::kSecondOffset));
   __ LoadRR(r3, r10);
   __ IncrementCounter(counters->string_add_native(), 1, r5);
   __ AddP(sp, Operand(2 * kPointerSize));
@@ -7460,7 +7452,7 @@ void StoreArrayLiteralElementStub::Generate(MacroAssembler* masm) {
   __ LoadP(r8, FieldMemOperand(r4, JSObject::kElementsOffset));
   __ SmiToPtrArrayOffset(r9, r6);
   __ AddP(r9, r8);
-  __ StoreP(r3, FieldMemOperand(r9, FixedArray::kHeaderSize), r0);
+  __ StoreP(r3, FieldMemOperand(r9, FixedArray::kHeaderSize));
   __ Ret();
 
   // Array literal has ElementsKind of FAST_DOUBLE_ELEMENTS.

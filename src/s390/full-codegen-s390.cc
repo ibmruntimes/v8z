@@ -155,7 +155,7 @@ void FullCodeGenerator::Generate() {
     __ beq(&ok);
     int receiver_offset = info->scope()->num_parameters() * kPointerSize;
     __ LoadRoot(r5, Heap::kUndefinedValueRootIndex);
-    __ StoreP(r5, MemOperand(sp, receiver_offset), r0);
+    __ StoreP(r5, MemOperand(sp, receiver_offset));
     __ bind(&ok);
   }
 
@@ -215,7 +215,7 @@ void FullCodeGenerator::Generate() {
         __ LoadP(r2, MemOperand(fp, parameter_offset), r0);
         // Store it in the context.
         MemOperand target = ContextOperand(cp, var->index());
-        __ StoreP(r2, target, r0);
+        __ StoreP(r2, target);
 
         // Update the write barrier.
         // @TODO Evaluate if r6 is a valid scratch reg on S390.
@@ -324,7 +324,7 @@ void FullCodeGenerator::EmitProfilingCounterDecrement(int delta) {
   __ mov(r5, Operand(profiling_counter_));
   __ LoadP(r6, FieldMemOperand(r5, JSGlobalPropertyCell::kValueOffset));
   __ SubSmiLiteral(r6, r6, Smi::FromInt(delta), r0);
-  __ StoreP(r6, FieldMemOperand(r5, JSGlobalPropertyCell::kValueOffset), r0);
+  __ StoreP(r6, FieldMemOperand(r5, JSGlobalPropertyCell::kValueOffset));
   __ Cmpi(r6, Operand::Zero());
 }
 
@@ -341,7 +341,7 @@ void FullCodeGenerator::EmitProfilingCounterReset() {
   }
   __ mov(r5, Operand(profiling_counter_));
   __ LoadSmiLiteral(r6, Smi::FromInt(reset_value));
-  __ StoreP(r6, FieldMemOperand(r5, JSGlobalPropertyCell::kValueOffset), r0);
+  __ StoreP(r6, FieldMemOperand(r5, JSGlobalPropertyCell::kValueOffset));
 }
 
 
@@ -758,7 +758,7 @@ void FullCodeGenerator::SetVar(Variable* var,
   ASSERT(!scratch0.is(scratch1));
   ASSERT(!scratch1.is(src));
   MemOperand location = VarOperand(var, scratch0);
-  __ StoreP(src, location, r0);
+  __ StoreP(src, location);
 
   // Emit the write barrier code if the location is in the heap.
   if (var->IsContextSlot()) {
@@ -840,7 +840,7 @@ void FullCodeGenerator::VisitVariableDeclaration(
         Comment cmnt(masm_, "[ VariableDeclaration");
         EmitDebugCheckDeclarationContext(variable);
         __ LoadRoot(ip, Heap::kTheHoleValueRootIndex);
-        __ StoreP(ip, ContextOperand(cp, variable->index()), r0);
+        __ StoreP(ip, ContextOperand(cp, variable->index()));
         // No write barrier since the_hole_value is in old space.
         PrepareForBailoutForId(proxy->id(), NO_REGISTERS);
       }
@@ -900,7 +900,7 @@ void FullCodeGenerator::VisitFunctionDeclaration(
       EmitDebugCheckDeclarationContext(variable);
       VisitForAccumulatorValue(declaration->fun());
       __ StoreP(result_register(),
-                ContextOperand(cp, variable->index()), r0);
+                ContextOperand(cp, variable->index()));
       int offset = Context::SlotOffset(variable->index());
       // We know that we have written a function, which is not a smi.
       __ RecordWriteContextSlot(cp,
@@ -948,7 +948,7 @@ void FullCodeGenerator::VisitModuleDeclaration(ModuleDeclaration* declaration) {
       Comment cmnt(masm_, "[ ModuleDeclaration");
       EmitDebugCheckDeclarationContext(variable);
       __ mov(r4, Operand(instance));
-      __ StoreP(r4, ContextOperand(cp, variable->index()), r0);
+      __ StoreP(r4, ContextOperand(cp, variable->index()));
       Visit(declaration->module());
       break;
     }
@@ -1183,7 +1183,7 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   RecordTypeFeedbackCell(stmt->ForInFeedbackId(), cell);
   __ LoadHeapObject(r4, cell);
   __ LoadSmiLiteral(r5, Smi::FromInt(TypeFeedbackCells::kForInSlowCaseMarker));
-  __ StoreP(r5, FieldMemOperand(r4, JSGlobalPropertyCell::kValueOffset), r0);
+  __ StoreP(r5, FieldMemOperand(r4, JSGlobalPropertyCell::kValueOffset));
 
   __ LoadSmiLiteral(r4, Smi::FromInt(1));  // Smi indicates slow check
   __ LoadP(r5, MemOperand(sp, 0 * kPointerSize));  // Get enumerated object
@@ -1778,7 +1778,7 @@ void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
       int offset = FixedArray::kHeaderSize + (i * kPointerSize);
       __ LoadP(r8, MemOperand(sp));  // Copy of array literal.
       __ LoadP(r4, FieldMemOperand(r8, JSObject::kElementsOffset));
-      __ StoreP(result_register(), FieldMemOperand(r4, offset), r0);
+      __ StoreP(result_register(), FieldMemOperand(r4, offset));
       // Update the write barrier for the array store.
       __ RecordWriteField(r4, offset, result_register(), r5,
                           kLRHasBeenSaved, kDontSaveFPRegs,
@@ -2204,7 +2204,7 @@ void FullCodeGenerator::EmitVariableAssignment(Variable* var,
       __ CallRuntime(Runtime::kThrowReferenceError, 1);
       // Perform the assignment.
       __ bind(&assign);
-      __ StoreP(result_register(), location, r0);
+      __ StoreP(result_register(), location);
       if (var->IsContextSlot()) {
         // RecordWrite may destroy all its register arguments.
         __ LoadRR(r6, result_register());
@@ -2226,7 +2226,7 @@ void FullCodeGenerator::EmitVariableAssignment(Variable* var,
         __ Check(eq, "Let binding re-initialization.");
       }
       // Perform the assignment.
-      __ StoreP(r3, location, r0);
+      __ StoreP(r3, location);
       if (var->IsContextSlot()) {
         __ LoadRR(r6, r3);
         int offset = Context::SlotOffset(var->index());
@@ -2464,8 +2464,8 @@ void FullCodeGenerator::VisitCall(Call* expr) {
 
       // The runtime call returns a pair of values in r3 (function) and
       // r4 (receiver). Touch up the stack with the right values.
-      __ StoreP(r3, MemOperand(sp, (arg_count + 1) * kPointerSize), r0);
-      __ StoreP(r4, MemOperand(sp, arg_count * kPointerSize), r0);
+      __ StoreP(r3, MemOperand(sp, (arg_count + 1) * kPointerSize));
+      __ StoreP(r4, MemOperand(sp, arg_count * kPointerSize));
     }
 
     // Record source position for debugger.
@@ -3198,7 +3198,7 @@ void FullCodeGenerator::EmitSetValueOf(CallRuntime* expr) {
   __ bne(&done);
 
   // Store the value.
-  __ StoreP(r3, FieldMemOperand(r4, JSValue::kValueOffset), r0);
+  __ StoreP(r3, FieldMemOperand(r4, JSValue::kValueOffset));
   // Update the write barrier.  Save the value as it will be
   // overwritten by the write barrier code and is needed afterward.
   __ LoadRR(r5, r3);
@@ -4469,7 +4469,7 @@ Register FullCodeGenerator::context_register() {
 
 void FullCodeGenerator::StoreToFrameField(int frame_offset, Register value) {
   ASSERT_EQ(static_cast<int>(POINTER_SIZE_ALIGN(frame_offset)), frame_offset);
-  __ StoreP(value, MemOperand(fp, frame_offset), r0);
+  __ StoreP(value, MemOperand(fp, frame_offset));
 }
 
 

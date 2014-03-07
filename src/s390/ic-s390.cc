@@ -546,7 +546,7 @@ void CallICBase::GenerateMiss(MacroAssembler* masm,
     // Patch the receiver on the stack.
     __ bind(&global);
     __ LoadP(r5, FieldMemOperand(r5, GlobalObject::kGlobalReceiverOffset));
-    __ StoreP(r5, MemOperand(sp, argc * kPointerSize), r0);
+    __ StoreP(r5, MemOperand(sp, argc * kPointerSize));
     __ bind(&invoke);
   }
 
@@ -1354,8 +1354,7 @@ static void KeyedStoreGenerateGenericHelper(
   if (increment_length == kIncrementLength) {
     // Add 1 to receiver->length.
     __ AddSmiLiteral(scratch_value, key, Smi::FromInt(1), r0);
-    __ StoreP(scratch_value, FieldMemOperand(receiver, JSArray::kLengthOffset),
-              r0);
+    __ StoreP(scratch_value, FieldMemOperand(receiver, JSArray::kLengthOffset));
   }
   // It's irrelevant whether array is smi-only or not when writing a smi.
   __ LoadRR(address, elements);
@@ -1374,8 +1373,7 @@ static void KeyedStoreGenerateGenericHelper(
   if (increment_length == kIncrementLength) {
     // Add 1 to receiver->length.
     __ AddSmiLiteral(scratch_value, key, Smi::FromInt(1), r0);
-    __ StoreP(scratch_value, FieldMemOperand(receiver, JSArray::kLengthOffset),
-              r0);
+    __ StoreP(scratch_value, FieldMemOperand(receiver, JSArray::kLengthOffset));
   }
   __ LoadRR(address, elements);
   __ AddP(address, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
@@ -1412,8 +1410,7 @@ static void KeyedStoreGenerateGenericHelper(
   if (increment_length == kIncrementLength) {
     // Add 1 to receiver->length.
     __ AddSmiLiteral(scratch_value, key, Smi::FromInt(1), r0);
-    __ StoreP(scratch_value, FieldMemOperand(receiver, JSArray::kLengthOffset),
-              r0);
+    __ StoreP(scratch_value, FieldMemOperand(receiver, JSArray::kLengthOffset));
   }
   __ Ret();
 
