@@ -3043,6 +3043,22 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       set_low_register<int32_t>(r1, alu_out);
       break;
     }
+    case NILL:
+    case NILH: {
+      RIInstruction* riInst = reinterpret_cast<RIInstruction*>(instr);
+      int r1 = riInst->R1Value();
+      int i  = riInst->I2Value();
+      int32_t r1_val = get_low_register<int32_t>(r1);
+      if (NILL == op) {
+        i |= 0xFFFF0000;
+      } else if (NILH == op) {
+        i = (i << 16) | 0x0000FFFF;
+      } else {
+        UNIMPLEMENTED();
+      }
+      set_low_register<int32_t>(r1, r1_val & i);
+      break;
+    }
     case L:
     case LA:
     case LB: {
