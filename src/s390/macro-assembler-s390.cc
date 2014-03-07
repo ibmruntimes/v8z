@@ -4617,7 +4617,7 @@ void MacroAssembler::StoreByte(Register src, const MemOperand& mem,
 
 // Shift left for pointer types.
 void MacroAssembler::ShiftLeftImm(Register dst, Register src,
-                                  const Operand& val, RCBit) {
+                                  const Operand& val) {
 #if V8_TARGET_ARCH_S390X
   sllg(dst, src, val);
 #else

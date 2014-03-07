@@ -295,8 +295,7 @@ class MacroAssembler: public Assembler {
   void And(Register dst, const MemOperand& opnd);
   void And(Register dst, const Operand& opnd);
   void Branch(Condition c, const Operand& opnd);
-  void ShiftLeftImm(Register dst, Register src, const Operand& val,
-                    RCBit rc = LeaveRC);
+  void ShiftLeftImm(Register dst, Register src, const Operand& val);
   void ShiftRightImm(Register dst, Register src, const Operand& val,
                     RCBit rc = LeaveRC);
   void ShiftRightArithImm(Register dst, Register src, const int val,
@@ -1398,11 +1397,11 @@ class MacroAssembler: public Assembler {
   // Smi utilities
 
   // Shift left by 1
-  void SmiTag(Register reg, RCBit rc = LeaveRC) {
-    SmiTag(reg, reg, rc);
+  void SmiTag(Register reg) {
+    SmiTag(reg, reg);
   }
-  void SmiTag(Register dst, Register src, RCBit rc = LeaveRC) {
-    ShiftLeftImm(dst, src, Operand(kSmiShift), rc);
+  void SmiTag(Register dst, Register src) {
+    ShiftLeftImm(dst, src, Operand(kSmiShift));
   }
 
 #if !V8_TARGET_ARCH_S390X
