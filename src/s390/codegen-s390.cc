@@ -320,9 +320,9 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
 
   __ bind(&loop);
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  __ lwz(r4, MemOperand(r7, 4));
+  __ LoadlW(r4, MemOperand(r7, 4));
 #else
-  __ lwz(r4, MemOperand(r7));
+  __ LoadlW(r4, MemOperand(r7));
 #endif
   __ AddP(r7, Operand(8));
   // r4: current element's upper 32 bit
@@ -339,13 +339,13 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   __ stg(r3, MemOperand(r4, HeapNumber::kValueOffset));
 #else
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  __ lwz(r3, MemOperand(r7, -8));
-  __ lwz(r4, MemOperand(r7, -4));
+  __ LoadlW(r3, MemOperand(r7, -8));
+  __ LoadlW(r4, MemOperand(r7, -4));
   __ st(r3, FieldMemOperand(r5, HeapNumber::kValueOffset));
   __ st(r4, FieldMemOperand(r5, HeapNumber::kValueOffset+4));
 #else
-  __ lwz(r3, MemOperand(r7, -4));
-  __ lwz(r4, MemOperand(r7, -8));
+  __ LoadlW(r3, MemOperand(r7, -4));
+  __ LoadlW(r4, MemOperand(r7, -8));
   __ st(r3, FieldMemOperand(r5, HeapNumber::kValueOffset+4));
   __ st(r4, FieldMemOperand(r5, HeapNumber::kValueOffset));
 #endif

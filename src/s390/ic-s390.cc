@@ -373,7 +373,7 @@ static void GenerateKeyStringCheck(MacroAssembler* masm,
   __ bge(not_symbol);
 
   // Is the string an array index, with cached numeric value?
-  __ lwz(hash, FieldMemOperand(key, String::kHashFieldOffset));
+  __ LoadlW(hash, FieldMemOperand(key, String::kHashFieldOffset));
   __ mov(r8, Operand(String::kContainsCachedArrayIndexMask));
   __ and_(r0, hash, r8, SetRC);
   __ beq(index_string /*, cr0*/);
@@ -1036,7 +1036,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   // based on 32 bits of the map pointer and the string hash.
   __ LoadP(r5, FieldMemOperand(r4, HeapObject::kMapOffset));
   __ srawi(r6, r5, KeyedLookupCache::kMapHashShift);
-  __ lwz(r7, FieldMemOperand(r3, String::kHashFieldOffset));
+  __ LoadlW(r7, FieldMemOperand(r3, String::kHashFieldOffset));
   __ srawi(r7, r7, String::kHashShift);
   __ xor_(r6, r6, r7);
   int mask = KeyedLookupCache::kCapacityMask & KeyedLookupCache::kHashMask;

@@ -3563,7 +3563,7 @@ void FullCodeGenerator::EmitHasCachedArrayIndex(CallRuntime* expr) {
   context()->PrepareTest(&materialize_true, &materialize_false,
                          &if_true, &if_false, &fall_through);
 
-  __ lwz(r3, FieldMemOperand(r3, String::kHashFieldOffset));
+  __ LoadlW(r3, FieldMemOperand(r3, String::kHashFieldOffset));
   // PPC - assume ip is free
   __ mov(ip, Operand(String::kContainsCachedArrayIndexMask));
   __ and_(r0, r3, ip);
@@ -3582,7 +3582,7 @@ void FullCodeGenerator::EmitGetCachedArrayIndex(CallRuntime* expr) {
 
   __ AssertString(r3);
 
-  __ lwz(r3, FieldMemOperand(r3, String::kHashFieldOffset));
+  __ LoadlW(r3, FieldMemOperand(r3, String::kHashFieldOffset));
   __ IndexFromHash(r3, r3);
 
   context()->Plug(r3);

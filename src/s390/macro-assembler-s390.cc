@@ -1814,13 +1814,13 @@ void MacroAssembler::StoreNumberToDoubleElements(Register value_reg,
   CmpRR(double_reg, scratch1);
 #else
   mov(scratch1, Operand(kNaNOrInfinityLowerBoundUpper32));
-  lwz(exponent_reg, FieldMemOperand(value_reg, HeapNumber::kExponentOffset));
+  LoadlW(exponent_reg, FieldMemOperand(value_reg, HeapNumber::kExponentOffset));
   CmpRR(exponent_reg, scratch1);
 #endif
   bge(&maybe_nan);
 
 #if !V8_TARGET_ARCH_S390X
-  lwz(mantissa_reg, FieldMemOperand(value_reg, HeapNumber::kMantissaOffset));
+  LoadlW(mantissa_reg, FieldMemOperand(value_reg, HeapNumber::kMantissaOffset));
 #endif
 
   bind(&have_double_value);
@@ -1850,7 +1850,7 @@ void MacroAssembler::StoreNumberToDoubleElements(Register value_reg,
   clrldi(r0, double_reg, Operand(32), SetRC);
   beq(&have_double_value /*, cr0*/);
 #else
-  lwz(mantissa_reg, FieldMemOperand(value_reg, HeapNumber::kMantissaOffset));
+  LoadlW(mantissa_reg, FieldMemOperand(value_reg, HeapNumber::kMantissaOffset));
   Cmpi(mantissa_reg, Operand::Zero());
   beq(&have_double_value);
 #endif
@@ -2048,8 +2048,8 @@ void MacroAssembler::TryGetFunctionPrototype(Register function,
   if (miss_on_bound_function) {
     LoadP(scratch,
           FieldMemOperand(function, JSFunction::kSharedFunctionInfoOffset));
-    lwz(scratch,
-        FieldMemOperand(scratch, SharedFunctionInfo::kCompilerHintsOffset));
+    LoadlW(scratch,
+           FieldMemOperand(scratch, SharedFunctionInfo::kCompilerHintsOffset));
     TestBit(scratch,
 #if V8_TARGET_ARCH_S390X
             SharedFunctionInfo::kBoundFunction,
@@ -2133,7 +2133,7 @@ void MacroAssembler::CallApiFunctionAndReturn(ExternalReference function,
   mov(r26, Operand(next_address));
   LoadP(r27, MemOperand(r26, kNextOffset));
   LoadP(r28, MemOperand(r26, kLimitOffset));
-  lwz(r29, MemOperand(r26, kLevelOffset));
+  LoadlW(r29, MemOperand(r26, kLevelOffset));
   AddP(r29, Operand(1));
   st(r29, MemOperand(r26, kLevelOffset));
 
@@ -2176,7 +2176,7 @@ void MacroAssembler::CallApiFunctionAndReturn(ExternalReference function,
   // previous handle scope.
   StoreP(r27, MemOperand(r26, kNextOffset));
   if (emit_debug_code()) {
-    lwz(r4, MemOperand(r26, kLevelOffset));
+    LoadlW(r4, MemOperand(r26, kLevelOffset));
     CmpRR(r4, r29);
     Check(eq, "Unexpected level after return from api call");
   }
@@ -2284,11 +2284,11 @@ void MacroAssembler::ConvertToInt32(Register source,
   ld(dest, MemOperand(sp, 0));
 #else
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  lwz(scratch, MemOperand(sp, 4));
-  lwz(dest, MemOperand(sp, 0));
+  LoadlW(scratch, MemOperand(sp, 4));
+  LoadlW(dest, MemOperand(sp, 0));
 #else
-  lwz(scratch, MemOperand(sp, 0));
-  lwz(dest, MemOperand(sp, 4));
+  LoadlW(scratch, MemOperand(sp, 0));
+  LoadlW(dest, MemOperand(sp, 4));
 #endif
 #endif
   AddP(sp, Operand(kDoubleSize));
@@ -2325,11 +2325,11 @@ void MacroAssembler::EmitVFPTruncate(VFPRoundingMode rounding_mode,
   ld(result, MemOperand(sp, 0));
 #else
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  lwz(scratch, MemOperand(sp, 4));
-  lwz(result, MemOperand(sp, 0));
+  LoadlW(scratch, MemOperand(sp, 4));
+  LoadlW(result, MemOperand(sp, 0));
 #else
-  lwz(scratch, MemOperand(sp, 0));
-  lwz(result, MemOperand(sp, 4));
+  LoadlW(scratch, MemOperand(sp, 0));
+  LoadlW(result, MemOperand(sp, 4));
 #endif
 #endif
   AddP(sp, Operand(kDoubleSize));
@@ -2458,11 +2458,11 @@ void MacroAssembler::EmitECMATruncate(Register result,
   ld(result, MemOperand(sp, 0));
 #else
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  lwz(scratch, MemOperand(sp, 4));
-  lwz(result, MemOperand(sp));
+  LoadlW(scratch, MemOperand(sp, 4));
+  LoadlW(result, MemOperand(sp));
 #else
-  lwz(scratch, MemOperand(sp, 0));
-  lwz(result, MemOperand(sp, 4));
+  LoadlW(scratch, MemOperand(sp, 0));
+  LoadlW(result, MemOperand(sp, 4));
 #endif
 #endif
 
@@ -2478,11 +2478,11 @@ void MacroAssembler::EmitECMATruncate(Register result,
   // Load the double value and perform a manual truncation.
   stfd(double_input, MemOperand(sp));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  lwz(input_low, MemOperand(sp));
-  lwz(input_high, MemOperand(sp, 4));
+  LoadlW(input_low, MemOperand(sp));
+  LoadlW(input_high, MemOperand(sp, 4));
 #else
-  lwz(input_high, MemOperand(sp));
-  lwz(input_low, MemOperand(sp, 4));
+  LoadlW(input_high, MemOperand(sp));
+  LoadlW(input_low, MemOperand(sp, 4));
 #endif
   EmitOutOfInt32RangeTruncate(result,
                               input_high,
@@ -3422,13 +3422,13 @@ void MacroAssembler::FlushICache(Register address, size_t size,
 void MacroAssembler::PatchRelocatedValue(Register lis_location,
                                          Register scratch,
                                          Register new_value) {
-  lwz(scratch, MemOperand(lis_location));
+  LoadlW(scratch, MemOperand(lis_location));
   // At this point scratch is a lis instruction.
   if (emit_debug_code()) {
     And(scratch, scratch, Operand(kOpcodeMask | (0x1f * B16)));
     Cmpi(scratch, Operand(ADDIS));
     Check(eq, "The instruction to patch should be a lis.");
-    lwz(scratch, MemOperand(lis_location));
+    LoadlW(scratch, MemOperand(lis_location));
   }
 
   // insert new high word into lis instruction
@@ -3441,13 +3441,13 @@ void MacroAssembler::PatchRelocatedValue(Register lis_location,
 
   st(scratch, MemOperand(lis_location));
 
-  lwz(scratch, MemOperand(lis_location, kInstrSize));
+  LoadlW(scratch, MemOperand(lis_location, kInstrSize));
   // scratch is now ori.
   if (emit_debug_code()) {
     And(scratch, scratch, Operand(kOpcodeMask));
     Cmpi(scratch, Operand(ORI));
     Check(eq, "The instruction should be an ori");
-    lwz(scratch, MemOperand(lis_location, kInstrSize));
+    LoadlW(scratch, MemOperand(lis_location, kInstrSize));
   }
 
   // insert new low word into ori instruction
@@ -3460,32 +3460,32 @@ void MacroAssembler::PatchRelocatedValue(Register lis_location,
 
 #if V8_TARGET_ARCH_S390X
   if (emit_debug_code()) {
-    lwz(scratch, MemOperand(lis_location, 2*kInstrSize));
+    LoadlW(scratch, MemOperand(lis_location, 2*kInstrSize));
     // scratch is now sldi.
     And(scratch, scratch, Operand(kOpcodeMask|kExt5OpcodeMask));
     Cmpi(scratch, Operand(EXT5|RLDICR));
     Check(eq, "The instruction should be an sldi");
   }
 
-  lwz(scratch, MemOperand(lis_location, 3*kInstrSize));
+  LoadlW(scratch, MemOperand(lis_location, 3*kInstrSize));
   // scratch is now ori.
   if (emit_debug_code()) {
     And(scratch, scratch, Operand(kOpcodeMask));
     Cmpi(scratch, Operand(ORIS));
     Check(eq, "The instruction should be an oris");
-    lwz(scratch, MemOperand(lis_location, 3*kInstrSize));
+    LoadlW(scratch, MemOperand(lis_location, 3*kInstrSize));
   }
 
   rlwimi(scratch, new_value, 16, 16, 31);
   st(scratch, MemOperand(lis_location, 3*kInstrSize));
 
-  lwz(scratch, MemOperand(lis_location, 4*kInstrSize));
+  LoadlW(scratch, MemOperand(lis_location, 4*kInstrSize));
   // scratch is now ori.
   if (emit_debug_code()) {
     And(scratch, scratch, Operand(kOpcodeMask));
     Cmpi(scratch, Operand(ORI));
     Check(eq, "The instruction should be an ori");
-    lwz(scratch, MemOperand(lis_location, 4*kInstrSize));
+    LoadlW(scratch, MemOperand(lis_location, 4*kInstrSize));
   }
   rlwimi(scratch, new_value, 0, 16, 31);
   st(scratch, MemOperand(lis_location, 4*kInstrSize));
@@ -3503,54 +3503,54 @@ void MacroAssembler::PatchRelocatedValue(Register lis_location,
 void MacroAssembler::GetRelocatedValueLocation(Register lis_location,
                                                Register result,
                                                Register scratch) {
-  lwz(result, MemOperand(lis_location));
+  LoadlW(result, MemOperand(lis_location));
   if (emit_debug_code()) {
     And(result, result, Operand(kOpcodeMask | (0x1f * B16)));
     Cmpi(result, Operand(ADDIS));
     Check(eq, "The instruction should be a lis.");
-    lwz(result, MemOperand(lis_location));
+    LoadlW(result, MemOperand(lis_location));
   }
 
   // result now holds a lis instruction. Extract the immediate.
   slwi(result, result, Operand(16));
 
-  lwz(scratch, MemOperand(lis_location, kInstrSize));
+  LoadlW(scratch, MemOperand(lis_location, kInstrSize));
   if (emit_debug_code()) {
     And(scratch, scratch, Operand(kOpcodeMask));
     Cmpi(scratch, Operand(ORI));
     Check(eq, "The instruction should be an ori");
-    lwz(scratch, MemOperand(lis_location, kInstrSize));
+    LoadlW(scratch, MemOperand(lis_location, kInstrSize));
   }
   // Copy the low 16bits from ori instruction into result
   rlwimi(result, scratch, 0, 16, 31);
 
 #if V8_TARGET_ARCH_S390X
   if (emit_debug_code()) {
-    lwz(scratch, MemOperand(lis_location, 2*kInstrSize));
+    LoadlW(scratch, MemOperand(lis_location, 2*kInstrSize));
     // scratch is now sldi.
     And(scratch, scratch, Operand(kOpcodeMask|kExt5OpcodeMask));
     Cmpi(scratch, Operand(EXT5|RLDICR));
     Check(eq, "The instruction should be an sldi");
   }
 
-  lwz(scratch, MemOperand(lis_location, 3*kInstrSize));
+  LoadlW(scratch, MemOperand(lis_location, 3*kInstrSize));
   // scratch is now ori.
   if (emit_debug_code()) {
     And(scratch, scratch, Operand(kOpcodeMask));
     Cmpi(scratch, Operand(ORIS));
     Check(eq, "The instruction should be an oris");
-    lwz(scratch, MemOperand(lis_location, 3*kInstrSize));
+    LoadlW(scratch, MemOperand(lis_location, 3*kInstrSize));
   }
   sldi(result, result, Operand(16));
   rlwimi(result, scratch, 0, 16, 31);
 
-  lwz(scratch, MemOperand(lis_location, 4*kInstrSize));
+  LoadlW(scratch, MemOperand(lis_location, 4*kInstrSize));
   // scratch is now ori.
   if (emit_debug_code()) {
     And(scratch, scratch, Operand(kOpcodeMask));
     Cmpi(scratch, Operand(ORI));
     Check(eq, "The instruction should be an ori");
-    lwz(scratch, MemOperand(lis_location, 4*kInstrSize));
+    LoadlW(scratch, MemOperand(lis_location, 4*kInstrSize));
   }
   sldi(result, result, Operand(16));
   rlwimi(result, scratch, 0, 16, 31);
@@ -3599,7 +3599,7 @@ void MacroAssembler::HasColor(Register object,
   GetMarkBits(object, bitmap_scratch, mask_scratch);
 
   Label other_color, word_boundary;
-  lwz(ip, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
+  LoadlW(ip, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
   // Test the first bit
   and_(r0, ip, mask_scratch, SetRC);
   b(first_bit == 1 ? eq : ne, &other_color /*, cr0*/);
@@ -3613,7 +3613,7 @@ void MacroAssembler::HasColor(Register object,
   b(&other_color);
 
   bind(&word_boundary);
-  lwz(ip, MemOperand(bitmap_scratch,
+  LoadlW(ip, MemOperand(bitmap_scratch,
                      MemoryChunk::kHeaderSize + kIntSize));
   andi(r0, ip, Operand(1));
   b(second_bit == 1 ? ne : eq, has_color /*, cr0*/);
@@ -3683,7 +3683,7 @@ void MacroAssembler::EnsureNotWhite(
 
   // Since both black and grey have a 1 in the first position and white does
   // not have a 1 there we only need to check one bit.
-  lwz(load_scratch, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
+  LoadlW(load_scratch, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
   and_(r0, mask_scratch, load_scratch, SetRC);
   bne(&done /*, cr0*/);
 
@@ -3767,13 +3767,13 @@ void MacroAssembler::EnsureNotWhite(
   bind(&is_data_object);
   // Value is a data object, and it is white.  Mark it black.  Since we know
   // that the object is white we can make it black by flipping one bit.
-  lwz(ip, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
+  LoadlW(ip, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
   orx(ip, ip, mask_scratch);
   st(ip, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
 
   mov(ip, Operand(~Page::kPageAlignmentMask));
   and_(bitmap_scratch, bitmap_scratch, ip);
-  lwz(ip, MemOperand(bitmap_scratch, MemoryChunk::kLiveBytesOffset));
+  LoadlW(ip, MemOperand(bitmap_scratch, MemoryChunk::kLiveBytesOffset));
   AddP(ip, length);
   st(ip, MemOperand(bitmap_scratch, MemoryChunk::kLiveBytesOffset));
 
@@ -3850,9 +3850,9 @@ void MacroAssembler::ClampDoubleToUint8(Register result_reg,
   // reserve a slot on the stack
   stfdu(temp_double_reg, MemOperand(sp, -8));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  lwz(result_reg, MemOperand(sp));
+  LoadlW(result_reg, MemOperand(sp));
 #else
-  lwz(result_reg, MemOperand(sp, 4));
+  LoadlW(result_reg, MemOperand(sp, 4));
 #endif
   // restore the stack
   AddP(sp, Operand(8));

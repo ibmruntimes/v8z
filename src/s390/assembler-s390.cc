@@ -913,11 +913,6 @@ void Assembler::lhzux(Register rt, const MemOperand & src) {
   emit(EXT2 | LHZUX | rt.code()*B21 | rb.code()*B16 | rx.code()*B11 | LeaveRC);
 }
 
-void Assembler::lwz(Register dst, const MemOperand &src) {
-  ASSERT(src.rx().code() == 0);
-  d_form(LWZ, dst, src.rb(), src.offset(), true);
-}
-
 void Assembler::lwzu(Register dst, const MemOperand &src) {
   d_form(LWZU, dst, src.rb(), src.offset(), true);
 }
@@ -936,14 +931,10 @@ void Assembler::lwzux(Register rt, const MemOperand & src) {
 }
 
 void Assembler::lwa(Register dst, const MemOperand &src) {
-#if V8_TARGET_ARCH_S390X
   int offset = src.offset();
   ASSERT(!(offset & 3) && is_int16(offset));
   offset = kImm16Mask & offset;
   emit(LD_ppc | dst.code()*B21 | src.rb().code()*B16 | offset | 2);
-#else
-  lwz(dst, src);
-#endif
 }
 
 void Assembler::stb(Register dst, const MemOperand &src) {
