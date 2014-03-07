@@ -2370,7 +2370,7 @@ void MacroAssembler::EmitOutOfInt32RangeTruncate(Register result,
   beq(&done);
 
   // Express exponent as delta to (number of mantissa bits + 31).
-  AddP(scratch, Operand(-(HeapNumber::kExponentBias 
+  AddP(scratch, Operand(-(HeapNumber::kExponentBias
                                   + HeapNumber::kMantissaBits + 31)));
 
   // If the delta is strictly positive, all bits would be shifted away,
