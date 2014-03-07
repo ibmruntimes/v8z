@@ -610,6 +610,11 @@ class MacroAssembler: public Assembler {
                          double value,
                          Register scratch);
 
+  void LoadWord(Register dst,
+                const MemOperand& mem,
+                Register scratch,
+                bool updateForm = false);
+
   void LoadWordArith(Register dst,
                      const MemOperand& mem,
                      Register scratch = no_reg);
