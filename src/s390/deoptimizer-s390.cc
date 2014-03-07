@@ -1091,15 +1091,18 @@ void Deoptimizer::EntryGenerator::Generate() {
   if (type() == EAGER) {
     __ lhi(r6, Operand::Zero());
     // Correct one word for bailout id.
-    __ Add(r7, sp, Operand(kSavedRegistersAreaSize + (1 * kPointerSize)));
+    __ LoadRR(r7, sp);
+    __ AddP(r7, Operand(kSavedRegistersAreaSize + (1 * kPointerSize)));
   } else if (type() == OSR) {
     __ mflr(r6);
     // Correct one word for bailout id.
-    __ Add(r7, sp, Operand(kSavedRegistersAreaSize + (1 * kPointerSize)));
+    __ LoadRR(r7, sp);
+    __ AddP(r7, Operand(kSavedRegistersAreaSize + (1 * kPointerSize)));
   } else {
     __ mflr(r6);
     // Correct two words for bailout id and return address.
-    __ Add(r7, sp, Operand(kSavedRegistersAreaSize + (2 * kPointerSize)));
+    __ LoadRR(r7, sp);
+    __ AddP(r7, Operand(kSavedRegistersAreaSize + (2 * kPointerSize)));
   }
   __ Sub(r7, fp, r7);
 
@@ -1143,25 +1146,26 @@ void Deoptimizer::EntryGenerator::Generate() {
   // Remove the bailout id, eventually return address, and the saved registers
   // from the stack.
   if (type() == EAGER || type() == OSR) {
-    __ Add(sp, Operand(kSavedRegistersAreaSize + (1 * kPointerSize)));
+    __ AddP(sp, Operand(kSavedRegistersAreaSize + (1 * kPointerSize)));
   } else {
-    __ Add(sp, Operand(kSavedRegistersAreaSize + (2 * kPointerSize)));
+    __ AddP(sp, Operand(kSavedRegistersAreaSize + (2 * kPointerSize)));
   }
 
   // Compute a pointer to the unwinding limit in register r5; that is
   // the first stack slot not part of the input frame.
   __ LoadP(r5, MemOperand(r4, FrameDescription::frame_size_offset()));
-  __ Add(r5, r5, sp);
+  __ AddP(r5, sp);
 
   // Unwind the stack down to - but not including - the unwinding
   // limit and copy the contents of the activation frame to the input
   // frame description.
-  __ Add(r6,  r4, Operand(FrameDescription::frame_content_offset()));
+  __ LoadRR(r6, r4);
+  __ AddP(r6, Operand(FrameDescription::frame_content_offset()));
   Label pop_loop;
   __ bind(&pop_loop);
   __ pop(r7);
   __ StoreP(r7, MemOperand(r6, 0));
-  __ Add(r6, Operand(sizeof(intptr_t)));
+  __ AddP(r6, Operand(sizeof(intptr_t)));
   __ CmpRR(r5, sp);
   __ bne(&pop_loop);
 
@@ -1184,21 +1188,22 @@ void Deoptimizer::EntryGenerator::Generate() {
   __ lwz(r4, MemOperand(r3, Deoptimizer::output_count_offset()));
   __ LoadP(r3, MemOperand(r3, Deoptimizer::output_offset()));  // r3 is output_.
   __ ShiftLeftImm(r4, r4, Operand(kPointerSizeLog2));
-  __ Add(r4, r3, r4);
+  __ AddP(r4, r3);
   __ bind(&outer_push_loop);
   // Inner loop state: r5 = current FrameDescription*, r6 = loop index.
   __ LoadP(r5, MemOperand(r3, 0));  // output_[ix]
   __ LoadP(r6, MemOperand(r5, FrameDescription::frame_size_offset()));
 
   __ bind(&inner_push_loop);
-  __ Add(r6, Operand(-sizeof(intptr_t)));
-  __ Add(r9, r5, r6);
+  __ AddP(r6, Operand(-sizeof(intptr_t)));
+  __ LoadRR(r9, r5);
+  __ AddP(r9, r6);
   __ LoadP(r10, MemOperand(r9, FrameDescription::frame_content_offset()));
   __ push(r10);
   __ Cmpi(r6, Operand::Zero());
   __ bne(&inner_push_loop);  // test for gt?
 
-  __ Add(r3, Operand(kPointerSize));
+  __ AddP(r3, Operand(kPointerSize));
   __ CmpRR(r3, r4);
   __ blt(&outer_push_loop);
 
