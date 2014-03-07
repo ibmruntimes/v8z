@@ -75,12 +75,12 @@ static void ProbeTable(Isolate* isolate,
 
   // Multiply by 3 because there are 3 fields per entry (name, code, map).
   __ ShiftLeftImm(offset_scratch, offset, Operand(1));
-  __ Add(offset_scratch, offset, offset_scratch);
+  __ AddP(offset_scratch, offset);
 
   // Calculate the base address of the entry.
   __ mov(base_addr, Operand(key_offset));
   __ ShiftLeftImm(scratch2, offset_scratch, Operand(kPointerSizeLog2));
-  __ Add(base_addr, base_addr, scratch2);
+  __ AddP(base_addr, scratch2);
 
   // Check that the key in the entry matches the name.
   __ LoadP(ip, MemOperand(base_addr, 0));
@@ -119,7 +119,8 @@ static void ProbeTable(Isolate* isolate,
 #endif
 
   // Jump to the first instruction in the code stub.
-  __ Add(r0, code, Operand(Code::kHeaderSize - kHeapObjectTag));
+  __ LoadRR(r0, code);
+  __ AddP(r0, Operand(Code::kHeaderSize - kHeapObjectTag));
   __ mtctr(r0);
   __ bcr();
 
@@ -238,7 +239,7 @@ void StubCache::GenerateProbe(MacroAssembler* masm,
   // Get the map of the receiver and compute the hash.
   __ lwz(scratch, FieldMemOperand(name, String::kHashFieldOffset));
   __ LoadP(ip, FieldMemOperand(receiver, HeapObject::kMapOffset));
-  __ Add(scratch, scratch, ip);
+  __ AddP(scratch, ip);
 #if V8_TARGET_ARCH_S390X
   // Use only the low 32 bits of the map pointer.
   __ rldicl(scratch, scratch, 0, 32);
@@ -269,7 +270,7 @@ void StubCache::GenerateProbe(MacroAssembler* masm,
   __ ShiftRightImm(extra, name, Operand(kHeapObjectTagSize));
   __ sub(scratch, scratch, extra);
   uint32_t mask2 = kSecondaryTableSize - 1;
-  __ Add(scratch, Operand((flags >> kHeapObjectTagSize) & mask2));
+  __ AddP(scratch, Operand((flags >> kHeapObjectTagSize) & mask2));
   __ andi(scratch, scratch, Operand(mask2));
 
   // Probe the secondary table.
@@ -726,7 +727,8 @@ static void GenerateFastApiDirectCall(MacroAssembler* masm,
   __ StoreP(r10, MemOperand(sp, 3 * kPointerSize));
 
   // Prepare arguments.
-  __ Add(r5, sp, Operand(3 * kPointerSize));
+  __ LoadRR(r5, sp);
+  __ AddP(r5, Operand(3 * kPointerSize));
 
 #if !ABI_RETURNS_HANDLES_IN_REGS
   bool alloc_return_buf = true;
@@ -756,12 +758,14 @@ static void GenerateFastApiDirectCall(MacroAssembler* masm,
 
   // arg0 = v8::Arguments&
   // Arguments is after the return address.
-  __ Add(arg0, sp, Operand((kStackFrameExtraParamSlot +
+  __ LoadRR(arg0, sp);
+  __ AddP(arg0, Operand((kStackFrameExtraParamSlot +
            (alloc_return_buf ? 2 : 1)) * kPointerSize));
   // v8::Arguments::implicit_args_
   __ StoreP(r5, MemOperand(arg0, 0 * kPointerSize));
   // v8::Arguments::values_
-  __ Add(ip, r5, Operand(argc * kPointerSize));
+  __ LoadRR(ip, r5);
+  __ AddP(ip, Operand(argc * kPointerSize));
   __ StoreP(ip, MemOperand(arg0, 1 * kPointerSize));
   // v8::Arguments::length_ = argc
   __ lhi(ip, Operand(argc));
@@ -1284,14 +1288,16 @@ void StubCompiler::GenerateLoadCallback(Handle<JSObject> object,
 #if !ABI_PASSES_HANDLES_IN_REGS
   // pass 1st arg by reference
   __ StoreP(arg0, MemOperand(sp, kArg0Slot * kPointerSize));
-  __ Add(arg0, sp, Operand(kArg0Slot * kPointerSize));
+  __ LoadRR(arg0, sp);
+  __ AddP(arg0, Operand(kArg0Slot * kPointerSize));
 #endif
 
   // Create AccessorInfo instance on the stack above the exit frame with
   // ip (internal::Object** args_) as the data.
   __ StoreP(arg1, MemOperand(sp, kAccessorInfoSlot * kPointerSize));
   // arg1 = AccessorInfo&
-  __ Add(arg1, sp, Operand(kAccessorInfoSlot * kPointerSize));
+  __ LoadRR(arg1, sp);
+  __ AddP(arg1, Operand(kAccessorInfoSlot * kPointerSize));
 
   const int kStackUnwindSpace = 5;
   Address getter_address = v8::ToCData<Address>(callback->getter());
@@ -1632,7 +1638,7 @@ Handle<Code> CallStubCompiler::CompileArrayPushCall(
       // We may need a register containing the address end_elements below,
       // so write back the value in end_elements.
       __ SmiToPtrArrayOffset(end_elements, r3);
-      __ Add(end_elements, elements, end_elements);
+      __ AddP(end_elements, elements);
       const int kEndElementsOffset =
           FixedArray::kHeaderSize - kHeapObjectTag - argc * kPointerSize;
       __ AddP(end_elements, Operand(kEndElementsOffset));
@@ -1687,7 +1693,7 @@ Handle<Code> CallStubCompiler::CompileArrayPushCall(
       // We may need a register containing the address end_elements below,
       // so write back the value in end_elements.
       __ SmiToPtrArrayOffset(end_elements, r3);
-      __ Add(end_elements, elements, end_elements);
+      __ AddP(end_elements, elements);
       __ AddP(end_elements, Operand(kEndElementsOffset));
       __ StoreP(r7, MemOperand(end_elements));
 
@@ -1727,7 +1733,7 @@ Handle<Code> CallStubCompiler::CompileArrayPushCall(
       const int kAllocationDelta = 4;
       // Load top and check if it is the end of elements.
       __ SmiToPtrArrayOffset(end_elements, r3);
-      __ Add(end_elements, elements, end_elements);
+      __ AddP(end_elements, elements);
       __ AddP(end_elements, Operand(kEndElementsOffset));
       __ mov(r10, Operand(new_space_allocation_top));
       __ LoadP(r6, MemOperand(r10));
@@ -1829,7 +1835,7 @@ Handle<Code> CallStubCompiler::CompileArrayPopCall(
   // We can't address the last element in one operation. Compute the more
   // expensive shift first, and use an offset later on.
   __ SmiToPtrArrayOffset(r3, r7);
-  __ Add(elements, elements, r3);
+  __ AddP(elements, r3);
   __ LoadP(r3, FieldMemOperand(elements, FixedArray::kHeaderSize));
   __ CmpRR(r3, r9);
   __ beq(&call_builtin);
@@ -3465,7 +3471,7 @@ Handle<Code> ConstructStubCompiler::CompileConstructStub(
   // Calculate the location of the first argument. The stack contains only the
   // argc arguments.
   __ ShiftLeftImm(r4, r3, Operand(kPointerSizeLog2));
-  __ Add(r4, sp, r4);
+  __ AddP(r4, sp);
 
   // Fill all the in-object properties with undefined.
   // r3: argc
@@ -3901,7 +3907,7 @@ void KeyedStoreStubCompiler::GenerateStoreExternalArray(
       break;
     case EXTERNAL_DOUBLE_ELEMENTS:
       __ SmiToDoubleArrayOffset(r10, key);
-      // __ Add(r6, r6, r10);
+      // __ AddP(r6, r6, r10);
       // r6: effective address of the double element
       FloatingPointHelper::ConvertIntToDouble(
           masm, r8,  d0);
@@ -4042,7 +4048,8 @@ void KeyedLoadStubCompiler::GenerateLoadFastElement(MacroAssembler* masm) {
   __ bge(&miss_force_generic);
 
   // Load the result and make sure it's not the hole.
-  __ Add(r6, r5, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ LoadRR(r6, r5);
+  __ AddP(r6, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ SmiToPtrArrayOffset(r7, r3);
   __ LoadPX(r7, MemOperand(r7, r6));
   __ LoadRoot(ip, Heap::kTheHoleValueRootIndex);
@@ -4094,7 +4101,7 @@ void KeyedLoadStubCompiler::GenerateLoadFastDoubleElement(
 
   // Load the upper word of the double in the fixed array and test for NaN.
   __ SmiToDoubleArrayOffset(indexed_double_offset, key_reg);
-  __ Add(indexed_double_offset, elements_reg, indexed_double_offset);
+  __ AddP(indexed_double_offset, indexed_double_offset);
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
   uint32_t upper_32_offset = FixedArray::kHeaderSize + sizeof(kHoleNanLower32);
 #else
@@ -4197,16 +4204,14 @@ void KeyedStoreStubCompiler::GenerateStoreFastElement(
 
   __ bind(&finish_store);
   if (IsFastSmiElementsKind(elements_kind)) {
-    __ Add(scratch,
-            elements_reg,
-            Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+    __ LoadRR(scratch, elements_reg);
+    __ AddP(scratch, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
     __ SmiToPtrArrayOffset(scratch2, key_reg);
     __ StorePX(value_reg, MemOperand(scratch, scratch2));
   } else {
     ASSERT(IsFastObjectElementsKind(elements_kind));
-    __ Add(scratch,
-            elements_reg,
-            Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+    __ LoadRR(scratch, elements_reg);
+    __ AddP(scratch, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
     __ SmiToPtrArrayOffset(scratch2, key_reg);
     __ StorePUX(value_reg, MemOperand(scratch, scratch2));
     __ LoadRR(receiver_reg, value_reg);
