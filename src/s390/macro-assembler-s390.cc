@@ -3993,12 +3993,11 @@ void MacroAssembler::Sub(Register dst, Register src1, Register src2) {
 }
 
 void MacroAssembler::Sub(Register dst, Register src, const Operand& imm) {
-  if (!dst.is(src)) lr(dst, src);
-  afi(dst, Operand(-(imm.imm_)));
+  Add(dst, Operand(-(imm.imm_)));
 }
 
 void MacroAssembler::Sub(Register dst, const Operand& imm) {
-  afi(dst, Operand(-(imm.imm_)));
+  Add(dst, Operand(-(imm.imm_)));
 }
 
 void MacroAssembler::Add(Register dst, const MemOperand& opnd) {
