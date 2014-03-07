@@ -174,7 +174,8 @@ void FullCodeGenerator::Generate() {
     __ LoadRoot(ip, Heap::kUndefinedValueRootIndex);
   }
   // Adjust fp to point to caller's fp.
-  __ Add(fp, sp, Operand(2 * kPointerSize));
+  __ LoadRR(fp, sp);
+  __ AddP(fp, Operand(2 * kPointerSize));
 
   { Comment cmnt(masm_, "[ Allocate locals");
     for (int i = 0; i < locals_count; i++) {
@@ -450,7 +451,7 @@ void FullCodeGenerator::EmitReturnSequence() {
       masm_->LoadP(fp, MemOperand(sp));
       masm_->LoadP(r0, MemOperand(sp, kPointerSize));
       masm_->mtlr(r0);
-      masm_->Add(sp, Operand((uint32_t)(sp_delta + (2 * kPointerSize))));
+      masm_->AddP(sp, Operand((uint32_t)(sp_delta + (2 * kPointerSize))));
       masm_->blr();
 #if V8_TARGET_ARCH_S390X
       // With 64bit we need a couple of nop() instructions to ensure we have
@@ -1207,7 +1208,7 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
 
   // Get the current entry of the array into register r6.
   __ LoadP(r5, MemOperand(sp, 2 * kPointerSize));
-  __ Add(r5, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ AddP(r5, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ SmiToPtrArrayOffset(r6, r3);
   __ LoadPX(r6, MemOperand(r6, r5));
 
@@ -2757,11 +2758,11 @@ void FullCodeGenerator::EmitIsStringWrapperSafeForDefaultValueOf(
   __ mov(ip, Operand(DescriptorArray::kDescriptorSize));
   __ Mul(r6, r6, ip);
   // Calculate location of the first key name.
-  __ Add(r7, Operand(DescriptorArray::kFirstOffset - kHeapObjectTag));
+  __ AddP(r7, Operand(DescriptorArray::kFirstOffset - kHeapObjectTag));
   // Calculate the end of the descriptor array.
   __ LoadRR(r5, r7);
   __ SmiToPtrArrayOffset(ip, r6);
-  __ Add(r5, r5, ip);
+  __ AddP(r5, ip);
 
   // Loop through all the keys in the descriptor array. If one of these is the
   // symbol valueOf the result is false.
@@ -2773,7 +2774,7 @@ void FullCodeGenerator::EmitIsStringWrapperSafeForDefaultValueOf(
   __ LoadP(r6, MemOperand(r7, 0));
   __ CmpRR(r6, ip);
   __ beq(if_false);
-  __ Add(r7, Operand(DescriptorArray::kDescriptorSize * kPointerSize));
+  __ AddP(r7, Operand(DescriptorArray::kDescriptorSize * kPointerSize));
   __ bind(&entry);
   __ CmpRR(r7, r5);
   __ bne(&loop);
@@ -3488,7 +3489,8 @@ void FullCodeGenerator::EmitGetFromCache(CallRuntime* expr) {
   // tmp now holds finger offset as a smi.
   __ LoadP(r5, FieldMemOperand(cache, JSFunctionResultCache::kFingerOffset));
   // r5 now holds finger offset as a smi.
-  __ Add(r6, cache, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ LoadRR(r6, cache);
+  __ AddP(r6, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   // r6 now points to the start of fixed array elements.
   __ SmiToPtrArrayOffset(r5, r5);
   __ LoadPUX(r5, MemOperand(r6, r5));
@@ -3640,10 +3642,9 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   // Check that all array elements are sequential ASCII strings, and
   // accumulate the sum of their lengths, as a smi-encoded value.
   __ lhi(string_length, Operand::Zero());
-  __ Add(element,
-          elements, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ AddP(elements, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ ShiftLeftImm(elements_end, array_length, Operand(kPointerSizeLog2));
-  __ Add(elements_end, element, elements_end);
+  __ AddP(elements_end, element);
   // Loop condition: while (element < elements_end).
   // Live values in registers:
   //   elements: Fixed array of strings.
@@ -3658,7 +3659,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   }
   __ bind(&loop);
   __ LoadP(string, MemOperand(element));
-  __ Add(element, Operand(kPointerSize));
+  __ AddP(element, Operand(kPointerSize));
   __ JumpIfSmi(string, &bailout);
   __ LoadP(scratch1, FieldMemOperand(string, HeapObject::kMapOffset));
   __ lbz(scratch1, FieldMemOperand(scratch1, Map::kInstanceTypeOffset));
@@ -3723,8 +3724,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
 
   // Get first element in the array to free up the elements register to be used
   // for the result.
-  __ Add(element,
-          elements, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ AddP(elements, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   result = elements;  // End of live range for elements.
   elements = no_reg;
   // Live values in registers:
@@ -3742,12 +3742,11 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   // result_pos to the position of the result where to write the first
   // character.
   __ ShiftLeftImm(elements_end, array_length, Operand(kPointerSizeLog2));
-  __ Add(elements_end, element, elements_end);
+  __ AddP(elements_end, element);
   result_pos = array_length;  // End of live range for array_length.
   array_length = no_reg;
-  __ Add(result_pos,
-          result,
-          Operand(SeqAsciiString::kHeaderSize - kHeapObjectTag));
+  __ LoadRR(result_pos, result);
+  __ AddP(result_pos, Operand(SeqAsciiString::kHeaderSize - kHeapObjectTag));
 
   // Check the length of the separator.
   __ LoadP(scratch1, FieldMemOperand(separator, SeqAsciiString::kLengthOffset));
@@ -3764,11 +3763,10 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
 
   // Copy next array element to the result.
   __ LoadP(string, MemOperand(element));
-  __ Add(element, Operand(kPointerSize));
+  __ AddP(element, Operand(kPointerSize));
   __ LoadP(string_length, FieldMemOperand(string, String::kLengthOffset));
   __ SmiUntag(string_length);
-  __ Add(string,
-          Operand(SeqAsciiString::kHeaderSize - kHeapObjectTag));
+  __ AddP(string, Operand(SeqAsciiString::kHeaderSize - kHeapObjectTag));
   __ CopyBytes(string, result_pos, string_length, scratch1);
   __ CmpRR(element, elements_end);
   __ blt(&empty_separator_loop);  // End while (element < elements_end).
@@ -3792,15 +3790,15 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
 
   // Copy the separator character to the result.
   __ stb(separator, MemOperand(result_pos));
-  __ Add(result_pos, Operand(1));
+  __ AddP(result_pos, Operand(1));
 
   // Copy next array element to the result.
   __ bind(&one_char_separator_loop_entry);
   __ LoadP(string, MemOperand(element));
-  __ Add(element, Operand(kPointerSize));
+  __ AddP(element, Operand(kPointerSize));
   __ LoadP(string_length, FieldMemOperand(string, String::kLengthOffset));
   __ SmiUntag(string_length);
-  __ Add(string,
+  __ AddP(string,
           Operand(SeqAsciiString::kHeaderSize - kHeapObjectTag));
   __ CopyBytes(string, result_pos, string_length, scratch1);
   __ Cmpl(element, elements_end);
@@ -3820,18 +3818,16 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   // Copy the separator to the result.
   __ LoadP(string_length, FieldMemOperand(separator, String::kLengthOffset));
   __ SmiUntag(string_length);
-  __ Add(string,
-          separator,
-          Operand(SeqAsciiString::kHeaderSize - kHeapObjectTag));
+  __ LoadRR(string, separator);
+  __ AddP(string, Operand(SeqAsciiString::kHeaderSize - kHeapObjectTag));
   __ CopyBytes(string, result_pos, string_length, scratch1);
 
   __ bind(&long_separator);
   __ LoadP(string, MemOperand(element));
-  __ Add(element, Operand(kPointerSize));
+  __ AddP(element, Operand(kPointerSize));
   __ LoadP(string_length, FieldMemOperand(string, String::kLengthOffset));
   __ SmiUntag(string_length);
-  __ Add(string,
-          Operand(SeqAsciiString::kHeaderSize - kHeapObjectTag));
+  __ AddP(string, Operand(SeqAsciiString::kHeaderSize - kHeapObjectTag));
   __ CopyBytes(string, result_pos, string_length, scratch1);
   __ Cmpl(element, elements_end);
   __ blt(&long_separator_loop);  // End while (element < elements_end).
@@ -4571,7 +4567,7 @@ void FullCodeGenerator::ExitFinallyBlock() {
   __ pop(result_register());
   __ SmiUntag(r4);
   __ mov(ip, Operand(masm_->CodeObject()));
-  __ Add(ip, ip, r4);
+  __ AddP(ip, r4);
   __ mtctr(ip);
   __ bcr();
 }

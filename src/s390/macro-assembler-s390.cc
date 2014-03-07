@@ -4107,7 +4107,7 @@ void MacroAssembler::And(Register dst, const Operand& opnd) {
 }
 
 void MacroAssembler::AddP(Register dst, const Operand& opnd) {
-  Addl(dst, opnd);
+  Add(dst, opnd);
 }
 
 // the size of mem operand is treated as sizeof(intptr_t)
