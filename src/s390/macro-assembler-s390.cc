@@ -3993,7 +3993,7 @@ void MacroAssembler::Sub(Register dst, Register src1, Register src2) {
 }
 
 void MacroAssembler::Sub(Register dst, Register src, const Operand& imm) {
-  Add(dst, Operand(-(imm.imm_)));
+  Add(dst, src, Operand(-(imm.imm_)));
 }
 
 void MacroAssembler::Sub(Register dst, const Operand& imm) {
