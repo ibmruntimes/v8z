@@ -1086,7 +1086,7 @@ void RegExpMacroAssemblerPPC::PushBacktrack(Label* label) {
     __ emit(0);
     masm_->label_at_put(label, offset);
     __ bind(&after_constant);
-    __ LoadWord(r3, MemOperand(code_pointer(), cp_offset), r0);
+    __ LoadlW(r3, MemOperand(code_pointer(), cp_offset));
   }
   Push(r3);
   CheckStackLimit();
