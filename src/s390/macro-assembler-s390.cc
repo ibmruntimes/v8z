@@ -2143,7 +2143,8 @@ void MacroAssembler::CallApiFunctionAndReturn(ExternalReference function,
   // The return value is pointer-sized non-scalar value.
   // Space has already been allocated on the stack which will pass as an
   // implicity first argument.
-  AddP(r3, sp, Operand((kStackFrameExtraParamSlot + 1) * kPointerSize));
+  LoadRR(r3, sp);
+  AddP(r3, Operand((kStackFrameExtraParamSlot + 1) * kPointerSize));
 #endif
 
   // Native call returns to the DirectCEntry stub which redirects to the
