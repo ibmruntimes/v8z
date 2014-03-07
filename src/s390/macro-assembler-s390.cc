@@ -1931,18 +1931,18 @@ void MacroAssembler::SubAndCheckForOverflow(Register dst,
   // C = A-B; C overflows if A/B have diff signs and C has diff sign than A
   if (dst.is(left)) {
     LoadRR(scratch, left);            // Preserve left.
-    sub(dst, left, right);        // Left is overwritten.
+    Sub(dst, left, right);        // Left is overwritten.
     xor_(overflow_dst, dst, scratch);
     xor_(scratch, scratch, right);
     and_(overflow_dst, overflow_dst, scratch, SetRC);
   } else if (dst.is(right)) {
     LoadRR(scratch, right);           // Preserve right.
-    sub(dst, left, right);        // Right is overwritten.
+    Sub(dst, left, right);        // Right is overwritten.
     xor_(overflow_dst, dst, left);
     xor_(scratch, left, scratch);
     and_(overflow_dst, overflow_dst, scratch, SetRC);
   } else {
-    sub(dst, left, right);
+    Sub(dst, left, right);
     xor_(overflow_dst, dst, left);
     xor_(scratch, left, right);
     and_(overflow_dst, scratch, overflow_dst, SetRC);
@@ -3976,6 +3976,22 @@ void MacroAssembler::Cmpl(Register dst, const MemOperand& opnd) {
 #endif
 }
 
+void MacroAssembler::Sub(Register dst, Register src1, Register src2) {
+#if V8_TARGET_ARCH_S390X
+  if (!dst.is(src1) && !dst.is(src2))
+    lgr(dst, src1);
+  sgr(dst, src2);
+  if (dst.is(src2))
+    lngr(dst, dst);
+#else
+  if (!dst.is(src1) && !dst.is(src2))
+    lr(dst, src1);
+  sr(dst, src2);
+  if (dst.is(src2))
+    lnr(dst, dst);
+#endif
+}
+
 void MacroAssembler::Sub(Register dst, Register src, const Operand& imm) {
   if (!dst.is(src)) lr(dst, src);
   afi(dst, Operand(-(imm.imm_)));
@@ -4359,7 +4375,7 @@ void MacroAssembler::SubSmiLiteral(Register dst, Register src, Smi *smi,
                                    Register scratch) {
 #if V8_TARGET_ARCH_S390X
   LoadSmiLiteral(scratch, smi);
-  sub(dst, src, scratch);
+  Sub(dst, src, scratch);
 #else
   LoadRR(dst, src);
   AddP(dst, Operand(-(reinterpret_cast<intptr_t>(smi))));

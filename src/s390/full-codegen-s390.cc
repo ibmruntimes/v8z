@@ -2014,7 +2014,7 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
       Label sub_no_overflow;
       // C = A-B; C overflows if A/B have diff signs and C has diff sign than A
       __ xor_(r0, left, right);
-      __ sub(scratch1, left, right);
+      __ Sub(scratch1, left, right);
       __ TestSignBit(r0, r0);
       __ beq(&sub_no_overflow /*, cr0*/);
       __ xor_(r0, scratch1, left);
@@ -3695,7 +3695,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   // Add (separator length times array_length) - separator length to the
   // string_length to get the length of the result string.
   __ LoadP(scratch1, FieldMemOperand(separator, SeqAsciiString::kLengthOffset));
-  __ sub(string_length, string_length, scratch1);
+  __ Sub(string_length, string_length, scratch1);
 #if V8_TARGET_ARCH_S390X
   __ SmiUntag(scratch1, scratch1);
   __ Mul(scratch2, array_length, scratch1);
@@ -4514,7 +4514,7 @@ void FullCodeGenerator::EnterFinallyBlock() {
   // Cook return address in link register to stack (smi encoded Code* delta)
   __ mflr(r4);
   __ mov(ip, Operand(masm_->CodeObject()));
-  __ sub(r4, r4, ip);
+  __ Sub(r4, r4, ip);
   __ SmiTag(r4);
 
   // Store result register while executing finally block.

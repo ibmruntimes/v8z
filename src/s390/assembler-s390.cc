@@ -801,11 +801,6 @@ void Assembler::addze(Register dst, Register src1, OEBit o, RCBit r) {
   emit(EXT2 | ADDZEX | dst.code()*B21 | src1.code()*B16 | o | r);
 }
 
-void Assembler::sub(Register dst, Register src1, Register src2,
-                    OEBit o, RCBit r) {
-  xo_form(EXT2 | SUBFX, dst, src2, src1, o, r);
-}
-
 void Assembler::subfc(Register dst, Register src1, Register src2,
                     OEBit o, RCBit r) {
   xo_form(EXT2 | SUBFCX, dst, src2, src1, o, r);

@@ -268,7 +268,7 @@ void StubCache::GenerateProbe(MacroAssembler* masm,
 
   // Primary miss: Compute hash for secondary probe.
   __ ShiftRightImm(extra, name, Operand(kHeapObjectTagSize));
-  __ sub(scratch, scratch, extra);
+  __ Sub(scratch, scratch, extra);
   uint32_t mask2 = kSecondaryTableSize - 1;
   __ AddP(scratch, Operand((flags >> kHeapObjectTagSize) & mask2));
   __ andi(scratch, scratch, Operand(mask2));
@@ -2284,7 +2284,7 @@ Handle<Code> CallStubCompiler::CompileMathAbsCall(
   __ xor_(r4, r3, r0);
 
   // Add 1 or do nothing depending on the sign of the argument.
-  __ sub(r3, r4, r0, LeaveOE, SetRC);
+  __ Sub(r3, r4, r0/*, LeaveOE, SetRC*/);  // Removing RC looks okay here
 
   // If the result is still negative, go to the slow case.
   // This only happens for the most negative smi.

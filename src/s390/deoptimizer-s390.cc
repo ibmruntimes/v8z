@@ -1101,7 +1101,7 @@ void Deoptimizer::EntryGenerator::Generate() {
     // Correct two words for bailout id and return address.
     __ Add(r7, sp, Operand(kSavedRegistersAreaSize + (2 * kPointerSize)));
   }
-  __ sub(r7, fp, r7);
+  __ Sub(r7, fp, r7);
 
   // Allocate a new deoptimizer object.
   // Pass six arguments in r3 to r8.
