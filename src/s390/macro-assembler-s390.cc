@@ -925,8 +925,7 @@ void MacroAssembler::InvokeFunction(Register fun,
 
   LoadP(code_reg, FieldMemOperand(r3, JSFunction::kSharedFunctionInfoOffset));
   LoadP(cp, FieldMemOperand(r3, JSFunction::kContextOffset));
-  LoadWordArith(expected_reg,
-      FieldMemOperand(code_reg,
+  LoadW(expected_reg, FieldMemOperand(code_reg,
                       SharedFunctionInfo::kFormalParameterCountOffset));
 #if !defined(V8_TARGET_ARCH_S390X)
   SmiUntag(expected_reg);
@@ -4441,11 +4440,11 @@ void MacroAssembler::StoreP(Register src, const MemOperand& mem,
 }
 
 // Load 32-bits and sign extend if necessary.
-void MacroAssembler::LoadWordArith(Register dst, const MemOperand& mem,
-                                   Register scratch) {
+void MacroAssembler::LoadW(Register dst, const MemOperand& mem,
+                           Register scratch) {
   int offset = mem.offset();
 
-  if (!scratch.is(no_reg) && !is_int20(offset)) {
+  if ((scratch.is(no_reg)) && !is_int20(offset)) {
     LoadIntLiteral(scratch, offset);
 #if V8_TARGET_ARCH_S390X
     lgf(dst, MemOperand(mem.rb(), scratch));
@@ -4456,15 +4455,15 @@ void MacroAssembler::LoadWordArith(Register dst, const MemOperand& mem,
 #if V8_TARGET_ARCH_S390X
     lgf(dst, mem);
 #else
-    LoadWord(dst, mem, scratch, false);
+    l(dst, mem);
 #endif
   }
 }
 
 // Variable length depending on whether offset fits into immediate field
 // MemOperand of RX or RXY format
-void MacroAssembler::LoadWord(Register dst, const MemOperand& mem,
-                              Register scratch, bool updateForm) {
+void MacroAssembler::LoadlW(Register dst, const MemOperand& mem,
+                            Register scratch) {
   Register base = mem.rb();
   int offset = mem.offset();
 
@@ -4477,34 +4476,28 @@ void MacroAssembler::LoadWord(Register dst, const MemOperand& mem,
   } else if (is_int20(offset)) {
     // RXY-format supports signed 20-bits offset.
     use_RXYform = true;
-  } else {
+  } else if (scratch.is(no_reg)) {
     // Materialize offset into scratch register.
     LoadIntLiteral(scratch, offset);
+  } else {
+    ASSERT(false);
   }
 
-  if (!updateForm) {
-    if (use_RXform) {
-      l(dst, mem);
-    } else if (use_RXYform) {
-      ly(dst, mem);
-    } else {
-      ly(dst, MemOperand(base, scratch));
-    }
+#if V8_TARGET_ARCH_S390X
+  if (use_RXYform || use_RX_form) {
+    llgf(dst, mem);
   } else {
-    // @TODO S390 doesn't have an instruction that updates.  Temporarily using
-    // LA to materialize the base address manually... but we should probably fix
-    // this at a higher level.
-    if (use_RXform) {
-      l(dst, mem);
-      la(base, mem);
-    } else if (use_RXYform) {
-      ly(dst, mem);
-      lay(base, mem);
-    } else {
-      l(dst, MemOperand(base, scratch));
-      la(base, MemOperand(base, scratch));
-    }
+    llgf(dst, MemOperand(base, scratch));
   }
+#else
+  if (use_RXform) {
+    l(dst, mem);
+  } else if (use_RXYform) {
+    ly(dst, mem);
+  } else {
+    ly(dst, MemOperand(base, scratch));
+  }
+#endif
 }
 
 // Variable length depending on whether offset fits into immediate field

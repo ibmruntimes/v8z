@@ -265,6 +265,10 @@ class MacroAssembler: public Assembler {
   // Load 32bit
   void Load(Register dst, const MemOperand& opnd);
   void Load(Register dst, const Operand& opnd);
+  void LoadW(Register dst, const MemOperand& opnd,
+             Register scratch = no_reg);
+  void LoadlW(Register dst, const MemOperand& opnd,
+              Register scratch = no_reg);
   // compare 32bit
   void Cmp(Register dst, const MemOperand& opnd);
   void Cmp(Register dst, const Operand& opnd);
@@ -609,15 +613,6 @@ class MacroAssembler: public Assembler {
   void LoadDoubleLiteral(DwVfpRegister result,
                          double value,
                          Register scratch);
-
-  void LoadWord(Register dst,
-                const MemOperand& mem,
-                Register scratch,
-                bool updateForm = false);
-
-  void LoadWordArith(Register dst,
-                     const MemOperand& mem,
-                     Register scratch = no_reg);
 
   void StoreWord(Register src,
                  const MemOperand& mem,

@@ -2987,7 +2987,7 @@ void LCodeGen::DoLoadKeyedSpecializedArrayElement(
         break;
       case EXTERNAL_INT_ELEMENTS:
         if (key_is_constant) {
-          __ LoadWord(result, mem_operand, r0);
+          __ LoadlW(result, mem_operand);
         } else {
           __ lwzx(result, mem_operand);
         }
@@ -2997,7 +2997,7 @@ void LCodeGen::DoLoadKeyedSpecializedArrayElement(
         break;
       case EXTERNAL_UNSIGNED_INT_ELEMENTS:
         if (key_is_constant) {
-          __ LoadWord(result, mem_operand, r0);
+          __ LoadlW(result, mem_operand);
         } else {
           __ lwzx(result, mem_operand);
         }
