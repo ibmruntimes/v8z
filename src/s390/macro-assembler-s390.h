@@ -147,7 +147,7 @@ bool AreAliased(Register reg1,
 
 #else
 #define LoadPU             lwzu
-#define LoadPX             lwzx
+#define LoadPX             LoadlW 
 #define LoadPUX            lwzux
 #define LoadMultipleP      lm
 #define LoadAndTestP       lt_z

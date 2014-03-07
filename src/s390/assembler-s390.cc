@@ -917,13 +917,6 @@ void Assembler::lwzu(Register dst, const MemOperand &src) {
   d_form(LWZU, dst, src.rb(), src.offset(), true);
 }
 
-void Assembler::lwzx(Register rt, const MemOperand &src) {
-  Register rb = src.rb();
-  Register rx = src.rx();
-  ASSERT(!rb.is(r0));
-  emit(EXT2 | LWZX | rt.code()*B21 | rb.code()*B16 | rx.code()*B11 | LeaveRC);
-}
-
 void Assembler::lwzux(Register rt, const MemOperand & src) {
   Register rb = src.rb();
   Register rx = src.rx();
