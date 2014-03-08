@@ -724,10 +724,6 @@ void Assembler::xoris(Register rb, Register rs, const Operand& imm) {
   d_form(XORIS, rs, rb, imm.imm_, false);
 }
 
-void Assembler::xor_(Register dst, Register src1, Register src2, RCBit rc) {
-  x_form(EXT2 | XORX, dst, src1, src2, rc);
-}
-
 void Assembler::cntlzw_(Register rb, Register rs, RCBit rc) {
   x_form(EXT2 | CNTLZWX, rb, rs, r0, rc);
 }

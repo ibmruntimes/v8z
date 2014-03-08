@@ -2280,7 +2280,7 @@ Handle<Code> CallStubCompiler::CompileMathAbsCall(
   // Do bitwise not or do nothing depending on the sign of the
   // argument.
   __ ShiftRightArithImm(r0, r3, kBitsPerPointer - 1);
-  __ xor_(r4, r3, r0);
+  __ Xor(r4, r3, r0);
 
   // Add 1 or do nothing depending on the sign of the argument.
   __ Sub(r3, r4, r0/*, LeaveOE, SetRC*/);  // Removing RC looks okay here

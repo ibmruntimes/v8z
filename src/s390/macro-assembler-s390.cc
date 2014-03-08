@@ -1253,7 +1253,7 @@ void MacroAssembler::GetNumberHash(Register t0, Register scratch) {
   SmiUntag(scratch);
 
   // Xor original key with a seed.
-  xor_(t0, t0, scratch);
+  Xor(t0, t0, scratch);
 
   // Compute the hash code from the untagged key.  This must be kept in sync
   // with ComputeIntegerHash in utils.h.
@@ -1264,13 +1264,13 @@ void MacroAssembler::GetNumberHash(Register t0, Register scratch) {
   Add(t0, scratch, t0);
   // hash = hash ^ (hash >> 12);
   srwi(scratch, t0, Operand(12));
-  xor_(t0, t0, scratch);
+  Xor(t0, t0, scratch);
   // hash = hash + (hash << 2);
   slwi(scratch, t0, Operand(2));
   Add(t0, t0, scratch);
   // hash = hash ^ (hash >> 4);
   srwi(scratch, t0, Operand(4));
-  xor_(t0, t0, scratch);
+  Xor(t0, t0, scratch);
   // hash = hash * 2057;
   LoadRR(r0, t0);
   slwi(scratch, t0, Operand(3));
@@ -1279,7 +1279,7 @@ void MacroAssembler::GetNumberHash(Register t0, Register scratch) {
   Add(t0, t0, scratch);
   // hash = hash ^ (hash >> 16);
   srwi(scratch, t0, Operand(16));
-  xor_(t0, t0, scratch);
+  Xor(t0, t0, scratch);
 }
 
 
@@ -1899,21 +1899,21 @@ void MacroAssembler::AddAndCheckForOverflow(Register dst,
   if (dst.is(left)) {
     LoadRR(scratch, left);            // Preserve left.
     Add(dst, left, right);        // Left is overwritten.
-    xor_(scratch, dst, scratch);  // Original left.
-    xor_(overflow_dst, dst, right);
+    Xor(scratch, dst, scratch);  // Original left.
+    Xor(overflow_dst, dst, right);
     And(overflow_dst, overflow_dst, scratch/*, SetRC*/);
     // Should be okay to remove rc
   } else if (dst.is(right)) {
     LoadRR(scratch, right);           // Preserve right.
     Add(dst, left, right);        // Right is overwritten.
-    xor_(scratch, dst, scratch);  // Original right.
-    xor_(overflow_dst, dst, left);
+    Xor(scratch, dst, scratch);  // Original right.
+    Xor(overflow_dst, dst, left);
     And(overflow_dst, overflow_dst, scratch/*, SetRC*/);
     // Should be okay to remove rc
   } else {
     Add(dst, left, right);
-    xor_(overflow_dst, dst, left);
-    xor_(scratch, dst, right);
+    Xor(overflow_dst, dst, left);
+    Xor(scratch, dst, right);
     And(overflow_dst, scratch, overflow_dst/*, SetRC*/);
     // Should be okay to remove rc
   }
@@ -1934,21 +1934,21 @@ void MacroAssembler::SubAndCheckForOverflow(Register dst,
   if (dst.is(left)) {
     LoadRR(scratch, left);            // Preserve left.
     Sub(dst, left, right);        // Left is overwritten.
-    xor_(overflow_dst, dst, scratch);
-    xor_(scratch, scratch, right);
+    Xor(overflow_dst, dst, scratch);
+    Xor(scratch, scratch, right);
     And(overflow_dst, overflow_dst, scratch/*, SetRC*/);
     // Should be okay to remove rc
   } else if (dst.is(right)) {
     LoadRR(scratch, right);           // Preserve right.
     Sub(dst, left, right);        // Right is overwritten.
-    xor_(overflow_dst, dst, left);
-    xor_(scratch, left, scratch);
+    Xor(overflow_dst, dst, left);
+    Xor(scratch, left, scratch);
     And(overflow_dst, overflow_dst, scratch/*, SetRC*/);
     // Should be okay to remove rc
   } else {
     Sub(dst, left, right);
-    xor_(overflow_dst, dst, left);
-    xor_(scratch, left, right);
+    Xor(overflow_dst, dst, left);
+    Xor(scratch, left, right);
     And(overflow_dst, scratch, overflow_dst/*, SetRC*/);
     // Should be okay to remove rc
   }
@@ -2881,7 +2881,9 @@ void MacroAssembler::SmiTagCheckOverflow(Register reg, Register overflow) {
   ASSERT(!reg.is(overflow));
   LoadRR(overflow, reg);  // Save original value.
   SmiTag(reg);
-  xor_(overflow, overflow, reg, SetRC);  // Overflow if (value ^ 2 * value) < 0.
+  Xor(overflow, overflow, reg/*, SetRC*/);
+  // Overflow if (value ^ 2 * value) < 0.
+  // Safe to remove rc
 }
 
 
@@ -2896,7 +2898,8 @@ void MacroAssembler::SmiTagCheckOverflow(Register dst,
     ASSERT(!dst.is(overflow));
     ASSERT(!src.is(overflow));
     SmiTag(dst, src);
-    xor_(overflow, dst, src, SetRC);  // Overflow if (value ^ 2 * value) < 0.
+    Xor(overflow, dst, src/*, SetRC*/);  // Overflow if (value ^ 2 * value) < 0.
+    // safe to remove rc
   }
 }
 #endif
