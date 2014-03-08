@@ -4130,6 +4130,20 @@ void MacroAssembler::And(Register dst, Register src, const Operand& opnd) {
   And(dst, opnd);
 }
 
+void MacroAssembler::Xor(Register dst, Register src) {
+#if V8_TARGET_ARCH_S390X
+  xgr(dst, src);
+#else
+  xr(dst, src);
+#endif
+}
+
+void MacroAssembler::Xor(Register dst, Register src1, Register src2) {
+  if (!dst.is(src1) && !dst.is(src2)) LoadRR(dst, src1);
+  else if (dst.is(src2)) src2 = src1;
+  Xor(dst, src2);
+}
+
 void MacroAssembler::AddP(Register dst, const Operand& opnd) {
   Add(dst, opnd);
 }
