@@ -4081,6 +4081,20 @@ void MacroAssembler::Sub(Register dst, const MemOperand& opnd) {
 #endif
 }
 
+void MacroAssembler::And(Register dst, Register src1, Register src2) {
+  if (!dst.is(src1) && !dst.is(src2)) LoadRR(dst, src1);
+  else if (dst.is(src2)) src2 = src1;
+  And(dst, src2);
+}
+
+void MacroAssembler::And(Register dst, Register src) {
+#if V8_TARGET_ARCH_S390X
+  ngr(dst, src);
+#else
+  nr(dst, src);
+#endif
+}
+
 void MacroAssembler::And(Register dst, const MemOperand& opnd) {
 #if V8_TARGET_ARCH_S390X
   iihf(dst, Operand(0));  // higher reg set to 0
