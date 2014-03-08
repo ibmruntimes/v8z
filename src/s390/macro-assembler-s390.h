@@ -299,6 +299,7 @@ class MacroAssembler: public Assembler {
   void And(Register dst, const Operand& opnd);
   void And(Register dst, Register src);
   void And(Register dst, Register src1, Register src2);
+  void And(Register dst, Register src, const Operand& opnd);
   void Branch(Condition c, const Operand& opnd);
   void ShiftLeftImm(Register dst, Register src, const Operand& val);
   void ShiftRightImm(Register dst, Register src, const Operand& val,
@@ -645,7 +646,6 @@ class MacroAssembler: public Assembler {
   void Cmpi(Register src1, const Operand& src2);
   void Cmpli(Register src1, const Operand& src2);
   void Cmpl(Register src1, Register src2);
-  void And(Register rb, Register rs, const Operand& rx, RCBit rc = LeaveRC);
   void Or(Register rb, Register rs, const Operand& rx, RCBit rc = LeaveRC);
   void Xor(Register rb, Register rs, const Operand& rx, RCBit rc = LeaveRC);
 
