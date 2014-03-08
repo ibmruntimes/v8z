@@ -3509,7 +3509,8 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
   __ LoadlW(result, MemOperand(sp, 0));
 #endif
   __ AddP(sp, Operand(8));
-  __ xor_(result, result, scratch, SetRC);
+  __ Xor(result, result, scratch/*, SetRC*/);
+  // Safe to remove rc
   if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
     DeoptimizeIf(lt, instr->environment(), cr0);
   } else {
