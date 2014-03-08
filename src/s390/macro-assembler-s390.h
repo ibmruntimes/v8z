@@ -302,6 +302,8 @@ class MacroAssembler: public Assembler {
   void And(Register dst, Register src, const Operand& opnd);
   void Xor(Register dst, Register src);
   void Xor(Register dst, Register src1, Register src2);
+  void Xor(Register dst, const Operand& opnd);
+  void Xor(Register dst, Register src, const Operand& opnd);
   void Branch(Condition c, const Operand& opnd);
   void ShiftLeftImm(Register dst, Register src, const Operand& val);
   void ShiftRightImm(Register dst, Register src, const Operand& val,
@@ -649,7 +651,6 @@ class MacroAssembler: public Assembler {
   void Cmpli(Register src1, const Operand& src2);
   void Cmpl(Register src1, Register src2);
   void Or(Register rb, Register rs, const Operand& rx, RCBit rc = LeaveRC);
-  void Xor(Register rb, Register rs, const Operand& rx, RCBit rc = LeaveRC);
 
   void AddSmiLiteral(Register dst, Register src, Smi *smi, Register scratch);
   void SubSmiLiteral(Register dst, Register src, Smi *smi, Register scratch);

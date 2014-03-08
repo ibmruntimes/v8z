@@ -1244,13 +1244,21 @@ void LCodeGen::DoBitI(LBitI* instr) {
 
   switch (instr->op()) {
     case Token::BIT_AND:
-      __ And(result, left, right);
+      if (right.is_reg())
+        __ And(result, left, right.rm());
+      else
+        __ And(result, left, right);
       break;
     case Token::BIT_OR:
-      __ Or(result, left, right);
+      // if (right.is_reg()) __ Or(result, left, right.rm());
+      // else __ Or(result, left, right);
+      // TODO(john): need to fix here by adding Or(r,r,r)
       break;
     case Token::BIT_XOR:
-      __ Xor(result, left, right);
+      if (right.is_reg())
+        __ Xor(result, left, right.rm());
+      else
+        __ Xor(result, left, right);
       break;
     default:
       UNREACHABLE();
