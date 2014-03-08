@@ -4144,6 +4144,22 @@ void MacroAssembler::Xor(Register dst, Register src1, Register src2) {
   Xor(dst, src2);
 }
 
+void MacroAssembler::Xor(Register dst, const Operand& opnd) {
+  ASSERT(!opnd.is_reg());
+#if V8_TARGET_ARCH_S390X
+  xihf(dst, Operand(0));
+  xilf(dst, opnd);
+#else
+  xilf(dst, opnd);
+#endif
+}
+
+void MacroAssembler::Xor(Register dst, Register src, const Operand& opnd) {
+  ASSERT(!opnd.is_reg());
+  if (!dst.is(src)) LoadRR(dst, src);
+  And(dst, opnd);
+}
+
 void MacroAssembler::AddP(Register dst, const Operand& opnd) {
   Add(dst, opnd);
 }
@@ -4339,22 +4355,6 @@ void MacroAssembler::Or(Register rb, Register rs, const Operand& rx, RCBit rc) {
       ASSERT(!rs.is(r0));
       mov(r0, rx);
       orx(rb, rs, r0, rc);
-    }
-  }
-}
-
-void MacroAssembler::Xor(Register rb, Register rs, const Operand& rx,
-                         RCBit rc) {
-  if (rx.is_reg()) {
-    xor_(rb, rs, rx.rm(), rc);
-  } else {
-    if (is_uint16(rx.imm_) && rx.rmode_ == RelocInfo::NONE && rc == LeaveRC) {
-      xori(rb, rs, rx);
-    } else {
-      // mov handles the relocation.
-      ASSERT(!rs.is(r0));
-      mov(r0, rx);
-      xor_(rb, rs, r0, rc);
     }
   }
 }
