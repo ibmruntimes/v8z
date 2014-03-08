@@ -4392,14 +4392,9 @@ void MacroAssembler::SubSmiLiteral(Register dst, Register src, Smi *smi,
 #endif
 }
 
-void MacroAssembler::AndSmiLiteral(Register dst, Register src, Smi *smi,
-                                   Register scratch, RCBit rc) {
-#if V8_TARGET_ARCH_S390X
-  LoadSmiLiteral(scratch, smi);
-  and_(dst, src, scratch, rc);
-#else
-  And(dst, src, Operand(smi), rc);
-#endif
+void MacroAssembler::AndSmiLiteral(Register dst, Register src, Smi *smi) {
+  LoadSmiLiteral(dst, smi);
+  And(dst, src);
 }
 
 
