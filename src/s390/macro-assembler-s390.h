@@ -297,6 +297,8 @@ class MacroAssembler: public Assembler {
   // and 32bit
   void And(Register dst, const MemOperand& opnd);
   void And(Register dst, const Operand& opnd);
+  void And(Register dst, Register src);
+  void And(Register dst, Register src1, Register src2);
   void Branch(Condition c, const Operand& opnd);
   void ShiftLeftImm(Register dst, Register src, const Operand& val);
   void ShiftRightImm(Register dst, Register src, const Operand& val,
