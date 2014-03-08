@@ -2067,7 +2067,7 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
       __ orx(right, left, right);
       break;
     case Token::BIT_AND:
-      __ and_(right, left, right);
+      __ And(right, left, right);
       break;
     case Token::BIT_XOR:
       __ xor_(right, left, right);
@@ -3528,7 +3528,7 @@ void FullCodeGenerator::EmitIsRegExpEquivalent(CallRuntime* expr) {
   __ CmpRR(left, right);
   __ beq(&ok);
   // Fail if either is a non-HeapObject.
-  __ and_(tmp, left, right);
+  __ And(tmp, left, right);
   __ JumpIfSmi(tmp, &fail);
   __ LoadP(tmp, FieldMemOperand(left, HeapObject::kMapOffset));
   __ lbz(tmp2, FieldMemOperand(tmp, Map::kInstanceTypeOffset));
@@ -3566,7 +3566,7 @@ void FullCodeGenerator::EmitHasCachedArrayIndex(CallRuntime* expr) {
   __ LoadlW(r3, FieldMemOperand(r3, String::kHashFieldOffset));
   // PPC - assume ip is free
   __ mov(ip, Operand(String::kContainsCachedArrayIndexMask));
-  __ and_(r0, r3, ip);
+  __ And(r0, r3, ip);
   __ Cmpi(r0, Operand::Zero());
   PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
   Split(eq, if_true, if_false, fall_through);

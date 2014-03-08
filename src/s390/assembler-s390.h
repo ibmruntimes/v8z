@@ -1744,7 +1744,6 @@ SS2_FORM(zap);
   void addis(Register dst, Register src, const Operand& imm);
   void addic(Register dst, Register src, const Operand& imm);
 
-  void and_(Register dst, Register src1, Register src2, RCBit rc = LeaveRC);
   void andc(Register dst, Register src1, Register src2, RCBit rc = LeaveRC);
   void andi(Register rb, Register rs, const Operand& imm);
   void andis(Register rb, Register rs, const Operand& imm);

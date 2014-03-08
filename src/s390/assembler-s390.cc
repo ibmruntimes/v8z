@@ -732,11 +732,6 @@ void Assembler::cntlzw_(Register rb, Register rs, RCBit rc) {
   x_form(EXT2 | CNTLZWX, rb, rs, r0, rc);
 }
 
-void Assembler::and_(Register rb, Register rs, Register rx, RCBit rc) {
-  x_form(EXT2 | ANDX, rb, rs, rx, rc);
-}
-
-
 void Assembler::rlwinm(Register rb, Register rs,
                        int sh, int mb, int me, RCBit rc) {
   sh &= 0x1f;

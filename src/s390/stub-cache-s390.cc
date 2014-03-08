@@ -2079,7 +2079,7 @@ Handle<Code> CallStubCompiler::CompileStringFromCharCodeCall(
 
   // Convert the smi code to uint16.
   __ LoadSmiLiteral(r0, Smi::FromInt(0xffff));
-  __ and_(code, code, r0);
+  __ And(code, code, r0);
 
   StringCharFromCodeGenerator generator(code, r3);
   generator.GenerateFast(masm());

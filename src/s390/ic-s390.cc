@@ -150,7 +150,8 @@ static void GenerateDictionaryLoad(MacroAssembler* masm,
   __ LoadP(scratch1, FieldMemOperand(scratch2, kDetailsOffset));
   __ LoadRR(r0, scratch2);
   __ LoadSmiLiteral(scratch2, Smi::FromInt(PropertyDetails::TypeField::kMask));
-  __ and_(scratch2, scratch1, scratch2, SetRC);
+  __ And(scratch2, scratch1, scratch2/*, SetRC*/);
+  // Should be okay to remove RC
   __ bne(miss /*, cr0*/);
   __ LoadRR(scratch2, r0);
 
@@ -204,7 +205,7 @@ static void GenerateDictionaryStore(MacroAssembler* masm,
   __ LoadP(scratch1, FieldMemOperand(scratch2, kDetailsOffset));
   __ LoadRR(r0, scratch2);
   __ LoadSmiLiteral(scratch2, Smi::FromInt(kTypeAndReadOnlyMask));
-  __ and_(scratch2, scratch1, scratch2, SetRC);
+  __ And(scratch2, scratch1, scratch2/*, SetRC*/);  // Should be OK to remove RC
   __ bne(miss /*, cr0*/);
   __ LoadRR(scratch2, r0);
 
@@ -375,7 +376,7 @@ static void GenerateKeyStringCheck(MacroAssembler* masm,
   // Is the string an array index, with cached numeric value?
   __ LoadlW(hash, FieldMemOperand(key, String::kHashFieldOffset));
   __ mov(r8, Operand(String::kContainsCachedArrayIndexMask));
-  __ and_(r0, hash, r8, SetRC);
+  __ And(r0, hash, r8/*, SetRC*/);  // Should be OK to remove RC
   __ beq(index_string /*, cr0*/);
 
   // Is the string a symbol?
@@ -784,7 +785,7 @@ static MemOperand GenerateMappedArgumentsLookup(MacroAssembler* masm,
 
   // Check that the key is a positive smi.
   __ mov(scratch1, Operand(0x80000001));
-  __ and_(r0, key, scratch1, SetRC);
+  __ And(r0, key, scratch1/*, SetRC*/);  // Should be OK to remove RC
   __ bne(slow_case /*, cr0*/);
 
   // Load the elements into scratch1 and check its map.
@@ -1041,7 +1042,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   __ xor_(r6, r6, r7);
   int mask = KeyedLookupCache::kCapacityMask & KeyedLookupCache::kHashMask;
   __ mov(r7, Operand(mask));
-  __ and_(r6, r6, r7, LeaveRC);
+  __ And(r6, r6, r7);
 
   // Load the key (consisting of map and symbol) from the cache and
   // check for match.
