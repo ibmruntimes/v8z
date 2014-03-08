@@ -3424,7 +3424,7 @@ void MacroAssembler::PatchRelocatedValue(Register lis_location,
   LoadlW(scratch, MemOperand(lis_location));
   // At this point scratch is a lis instruction.
   if (emit_debug_code()) {
-    And(scratch, scratch, Operand(kOpcodeMask | (0x1f * B16)));
+    And(scratch, Operand(kOpcodeMask | (0x1f * B16)));
     Cmpi(scratch, Operand(ADDIS));
     Check(eq, "The instruction to patch should be a lis.");
     LoadlW(scratch, MemOperand(lis_location));
@@ -3443,7 +3443,7 @@ void MacroAssembler::PatchRelocatedValue(Register lis_location,
   LoadlW(scratch, MemOperand(lis_location, kInstrSize));
   // scratch is now ori.
   if (emit_debug_code()) {
-    And(scratch, scratch, Operand(kOpcodeMask));
+    And(scratch, Operand(kOpcodeMask));
     Cmpi(scratch, Operand(ORI));
     Check(eq, "The instruction should be an ori");
     LoadlW(scratch, MemOperand(lis_location, kInstrSize));
@@ -3461,7 +3461,7 @@ void MacroAssembler::PatchRelocatedValue(Register lis_location,
   if (emit_debug_code()) {
     LoadlW(scratch, MemOperand(lis_location, 2*kInstrSize));
     // scratch is now sldi.
-    And(scratch, scratch, Operand(kOpcodeMask|kExt5OpcodeMask));
+    And(scratch, Operand(kOpcodeMask|kExt5OpcodeMask));
     Cmpi(scratch, Operand(EXT5|RLDICR));
     Check(eq, "The instruction should be an sldi");
   }
@@ -3469,7 +3469,7 @@ void MacroAssembler::PatchRelocatedValue(Register lis_location,
   LoadlW(scratch, MemOperand(lis_location, 3*kInstrSize));
   // scratch is now ori.
   if (emit_debug_code()) {
-    And(scratch, scratch, Operand(kOpcodeMask));
+    And(scratch, Operand(kOpcodeMask));
     Cmpi(scratch, Operand(ORIS));
     Check(eq, "The instruction should be an oris");
     LoadlW(scratch, MemOperand(lis_location, 3*kInstrSize));
@@ -3481,7 +3481,7 @@ void MacroAssembler::PatchRelocatedValue(Register lis_location,
   LoadlW(scratch, MemOperand(lis_location, 4*kInstrSize));
   // scratch is now ori.
   if (emit_debug_code()) {
-    And(scratch, scratch, Operand(kOpcodeMask));
+    And(scratch, Operand(kOpcodeMask));
     Cmpi(scratch, Operand(ORI));
     Check(eq, "The instruction should be an ori");
     LoadlW(scratch, MemOperand(lis_location, 4*kInstrSize));
@@ -3504,7 +3504,7 @@ void MacroAssembler::GetRelocatedValueLocation(Register lis_location,
                                                Register scratch) {
   LoadlW(result, MemOperand(lis_location));
   if (emit_debug_code()) {
-    And(result, result, Operand(kOpcodeMask | (0x1f * B16)));
+    And(result, Operand(kOpcodeMask | (0x1f * B16)));
     Cmpi(result, Operand(ADDIS));
     Check(eq, "The instruction should be a lis.");
     LoadlW(result, MemOperand(lis_location));
@@ -3515,7 +3515,7 @@ void MacroAssembler::GetRelocatedValueLocation(Register lis_location,
 
   LoadlW(scratch, MemOperand(lis_location, kInstrSize));
   if (emit_debug_code()) {
-    And(scratch, scratch, Operand(kOpcodeMask));
+    And(scratch, Operand(kOpcodeMask));
     Cmpi(scratch, Operand(ORI));
     Check(eq, "The instruction should be an ori");
     LoadlW(scratch, MemOperand(lis_location, kInstrSize));
@@ -3527,7 +3527,7 @@ void MacroAssembler::GetRelocatedValueLocation(Register lis_location,
   if (emit_debug_code()) {
     LoadlW(scratch, MemOperand(lis_location, 2*kInstrSize));
     // scratch is now sldi.
-    And(scratch, scratch, Operand(kOpcodeMask|kExt5OpcodeMask));
+    And(scratch, Operand(kOpcodeMask|kExt5OpcodeMask));
     Cmpi(scratch, Operand(EXT5|RLDICR));
     Check(eq, "The instruction should be an sldi");
   }
@@ -3535,7 +3535,7 @@ void MacroAssembler::GetRelocatedValueLocation(Register lis_location,
   LoadlW(scratch, MemOperand(lis_location, 3*kInstrSize));
   // scratch is now ori.
   if (emit_debug_code()) {
-    And(scratch, scratch, Operand(kOpcodeMask));
+    And(scratch, Operand(kOpcodeMask));
     Cmpi(scratch, Operand(ORIS));
     Check(eq, "The instruction should be an oris");
     LoadlW(scratch, MemOperand(lis_location, 3*kInstrSize));
@@ -3546,7 +3546,7 @@ void MacroAssembler::GetRelocatedValueLocation(Register lis_location,
   LoadlW(scratch, MemOperand(lis_location, 4*kInstrSize));
   // scratch is now ori.
   if (emit_debug_code()) {
-    And(scratch, scratch, Operand(kOpcodeMask));
+    And(scratch, Operand(kOpcodeMask));
     Cmpi(scratch, Operand(ORI));
     Check(eq, "The instruction should be an ori");
     LoadlW(scratch, MemOperand(lis_location, 4*kInstrSize));
@@ -3567,7 +3567,8 @@ void MacroAssembler::CheckPageFlag(
   ClearRightImm(scratch, object, Operand(kPageSizeBits));
   LoadP(scratch, MemOperand(scratch, MemoryChunk::kFlagsOffset));
 
-  And(r0, scratch, Operand(mask), SetRC);
+  And(r0, scratch, Operand(mask)/*, SetRC*/);
+  // Should be okay to remove rc
 
   if (cc == ne) {
     bne(condition_met /*, cr0*/);
@@ -4117,6 +4118,11 @@ void MacroAssembler::And(Register dst, const Operand& opnd) {
 #endif
 }
 
+void MacroAssembler::And(Register dst, Register src, const Operand& opnd) {
+  if (!dst.is(src)) LoadRR(dst, src);
+  And(dst, opnd);
+}
+
 void MacroAssembler::AddP(Register dst, const Operand& opnd) {
   Add(dst, opnd);
 }
@@ -4299,23 +4305,6 @@ void MacroAssembler::Cmpi(Register src1, const Operand& src2) {
 // Cmpl overloads it
 void MacroAssembler::Cmpli(Register src1, const Operand& src2) {
   Cmpl(src1, src2);
-}
-
-void MacroAssembler::And(Register rb, Register rs, const Operand& rx,
-                         RCBit rc) {
-  if (rx.is_reg()) {
-    and_(rb, rs, rx.rm(), rc);
-  } else {
-    if (is_uint16(rx.imm_) && rx.rmode_ == RelocInfo::NONE
-        && rc == SetRC) {
-      andi(rb, rs, rx);
-    } else {
-      // mov handles the relocation.
-      ASSERT(!rs.is(r0));
-      mov(r0, rx);
-      and_(rb, rs, r0, rc);
-    }
-  }
 }
 
 void MacroAssembler::Or(Register rb, Register rs, const Operand& rx, RCBit rc) {
