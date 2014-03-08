@@ -498,9 +498,10 @@ void RegExpMacroAssemblerPPC::CheckCharacterAfterAnd(uint32_t c,
                                                      Label* on_equal) {
   __ mov(r0, Operand(mask));
   if (c == 0) {
-    __ and_(r3, current_character(), r0, SetRC);
+    __ And(r3, current_character(), r0/*, SetRC*/);
+    // Should be okay to remove rc
   } else {
-    __ and_(r3, current_character(), r0);
+    __ And(r3, current_character(), r0);
     // TODO(JOHN): dont know if removing cr0 causes a problem
     __ Cmpli(r3, Operand(c)/*, cr0*/);
   }
@@ -513,9 +514,10 @@ void RegExpMacroAssemblerPPC::CheckNotCharacterAfterAnd(unsigned c,
                                                         Label* on_not_equal) {
   __ mov(r0, Operand(mask));
   if (c == 0) {
-    __ and_(r3, current_character(), r0, SetRC);
+    __ And(r3, current_character(), r0/*, SetRC*/);
+    // Should be okay to remove rc
   } else {
-    __ and_(r3, current_character(), r0);
+    __ And(r3, current_character(), r0);
     // TODO(JOHN): dont know if removing cr0 causes a problem
     __ Cmpli(r3, Operand(c)/*, cr0*/);
   }
@@ -531,7 +533,7 @@ void RegExpMacroAssemblerPPC::CheckNotCharacterAfterMinusAnd(
   ASSERT(minus < String::kMaxUtf16CodeUnit);
   __ Sub(r3, current_character(), Operand(minus));
   __ mov(r0, Operand(mask));
-  __ and_(r3, r3, r0);
+  __ And(r3, r3, r0);
   __ Cmpli(r3, Operand(c));
   BranchOrBacktrack(ne, on_not_equal);
 }
