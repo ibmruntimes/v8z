@@ -482,7 +482,7 @@ void StringCharLoadGenerator::Generate(MacroAssembler* masm,
   __ b(&done);
   __ bind(&ascii);
   // Ascii string.
-  __ lbzx(result, MemOperand(string, index));
+  __ LoadlB(result, MemOperand(string, index));
   __ bind(&done);
 }
 

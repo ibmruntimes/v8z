@@ -572,7 +572,7 @@ void RegExpMacroAssemblerPPC::CheckBitInTable(
     __ LoadRR(r4, current_character());
     __ AddP(r4, Operand(ByteArray::kHeaderSize - kHeapObjectTag));
   }
-  __ lbzx(r3, MemOperand(r3, r4));
+  __ LoadlB(r3, MemOperand(r3, r4));
   __ Cmpi(r3, Operand::Zero());
   BranchOrBacktrack(ne, on_bit_set);
 }
@@ -668,7 +668,7 @@ bool RegExpMacroAssemblerPPC::CheckSpecialCharacterClass(uc16 type,
     }
     ExternalReference map = ExternalReference::re_word_character_map();
     __ mov(r3, Operand(map));
-    __ lbzx(r3, MemOperand(r3, current_character()));
+    __ LoadlB(r3, MemOperand(r3, current_character()));
     __ Cmpli(r3, Operand::Zero());
     BranchOrBacktrack(eq, on_no_match);
     return true;
@@ -682,7 +682,7 @@ bool RegExpMacroAssemblerPPC::CheckSpecialCharacterClass(uc16 type,
     }
     ExternalReference map = ExternalReference::re_word_character_map();
     __ mov(r3, Operand(map));
-    __ lbzx(r3, MemOperand(r3, current_character()));
+    __ LoadlB(r3, MemOperand(r3, current_character()));
     __ Cmpli(r3, Operand::Zero());
     BranchOrBacktrack(ne, on_no_match);
     if (mode_ != ASCII) {

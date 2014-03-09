@@ -6125,8 +6125,8 @@ void StringCompareStub::GenerateAsciiCharsCompareLoop(
   // Compare loop.
   Label loop;
   __ bind(&loop);
-  __ lbzx(scratch1, MemOperand(left, index));
-  __ lbzx(r0, MemOperand(right, index));
+  __ LoadlB(scratch1, MemOperand(left, index));
+  __ LoadlB(r0, MemOperand(right, index));
   __ CmpRR(scratch1, r0);
   __ bne(chars_not_equal);
   __ AddP(index, Operand(1));

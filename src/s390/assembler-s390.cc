@@ -865,13 +865,6 @@ void  Assembler::lis(Register dst, const Operand& imm) {
   d_form(ADDIS, dst, r0, imm.imm_, true);
 }
 
-void Assembler::lbzx(Register rt, const MemOperand &src) {
-  Register rb = src.rb();
-  Register rx = src.rx();
-  ASSERT(!rb.is(r0));
-  emit(EXT2 | LBZX | rt.code()*B21 | rb.code()*B16 | rx.code()*B11 | LeaveRC);
-}
-
 void Assembler::lbzux(Register rt, const MemOperand & src) {
   Register rb = src.rb();
   Register rx = src.rx();
