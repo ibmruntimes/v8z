@@ -640,11 +640,6 @@ class MacroAssembler: public Assembler {
                      Register scratch,
                      bool updateForm = false);
 
-  void LoadByte(Register dst,
-                const MemOperand& mem,
-                Register scratch,
-                bool updateForm = false);
-
   void StoreByte(Register src,
                  const MemOperand& mem,
                  Register scratch,
