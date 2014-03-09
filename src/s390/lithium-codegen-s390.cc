@@ -1250,9 +1250,10 @@ void LCodeGen::DoBitI(LBitI* instr) {
         __ And(result, left, right);
       break;
     case Token::BIT_OR:
-      // if (right.is_reg()) __ Or(result, left, right.rm());
-      // else __ Or(result, left, right);
-      // TODO(john): need to fix here by adding Or(r,r,r)
+      if (right.is_reg())
+        __ Or(result, left, right.rm());
+      else
+        __ Or(result, left, right);
       break;
     case Token::BIT_XOR:
       if (right.is_reg())
