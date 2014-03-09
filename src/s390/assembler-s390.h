@@ -791,6 +791,11 @@ class Assembler : public AssemblerBase {
     b(al, L);
   }
 
+  // Load address relative long.
+  void larl(Register r, Label *l) {
+    larl(r, Operand(branch_offset(l, false)));
+  }
+
   // Data-processing instructions
 
   // S390 instruction generation

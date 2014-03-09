@@ -134,6 +134,16 @@ const int kStackFrameLRSlot = 1;
 const int kStackFrameExtraParamSlot = 2;
 #endif
 
+// zLinux ABI requires caller frames to include sufficient space for
+// callee preserved register save area.
+#if defined(V8_TARGET_ARCH_S390X)
+const int kCalleeRegisterSaveAreaSize = 160;
+#elif defined(V8_TARGET_ARCH_S390)
+const int kCalleeRegisterSaveAreaSize = 96;
+#else
+const int kCalleeRegisterSaveAreaSize = 0;
+#endif
+
 // ----------------------------------------------------
 
 

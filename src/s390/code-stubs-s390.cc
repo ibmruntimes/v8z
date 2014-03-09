@@ -3506,7 +3506,11 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
                               Label* throw_out_of_memory_exception,
                               bool do_gc,
                               bool always_allocate) {
-  // r3: result parameter for PerformGC, if any
+  // r2: result parameter for PerformGC, if any
+  // r7: number of arguments (C callee-saved)
+  // r8: pointer to builtin function (C callee-saved)
+  // r9: pointer to first argument (C callee-saved)
+
   // r14: number of arguments including receiver  (C callee-saved)
   // r15: pointer to builtin function  (C callee-saved)
   // r16: pointer to the first argument (C callee-saved)
@@ -3523,10 +3527,11 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
   ExternalReference scope_depth =
       ExternalReference::heap_always_allocate_scope_depth(isolate);
   if (always_allocate) {
-    __ mov(r3, Operand(scope_depth));
-    __ LoadlW(r4, MemOperand(r3));
-    __ AddP(r4, Operand(1));
-    __ st(r4, MemOperand(r3));
+    __ mov(r2, Operand(scope_depth));
+    // @TODO Can exploit ASI here on z10 or newer.
+    __ LoadlW(r3, MemOperand(r2));
+    __ AddP(r3, Operand(1));
+    __ st(r3, MemOperand(r2));
   }
 
   // PPC LINUX ABI:
@@ -3539,76 +3544,81 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
 #if !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
   if (result_size_ < 2) {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    __ LoadRR(r3, r14);
+    __ LoadRR(r2, r7);
 #else
     // r3 = argc << 32 (for alignment), r4 = argv
-    __ ShiftLeftImm(r3, r14, Operand(32));
+    __ ShiftLeftImm(r2, r7, Operand(32));
 #endif
-    __ LoadRR(r4, r16);
-    isolate_reg = r5;
+    __ LoadRR(r3, r9);
+    isolate_reg = r4;
   } else {
     ASSERT_EQ(2, result_size_);
     // The return value is 16-byte non-scalar value.
     // Use frame storage reserved by calling function to pass return
     // buffer as implicit first argument.
-    __ LoadRR(r3, sp);
-    __ AddP(r3, Operand((kStackFrameExtraParamSlot + 1) * kPointerSize));
+    __ la(r2, MemOperand(sp, (kStackFrameExtraParamSlot + 1) * kPointerSize));
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    __ LoadRR(r4, r14);
+    __ LoadRR(r3, r7);
 #else
     // r4 = argc << 32 (for alignment), r5 = argv
-    __ ShiftLeftImm(r4, r14, Operand(32));
+    __ ShiftLeftImm(r3, r7, Operand(32));
 #endif
-    __ LoadRR(r5, r16);
-    isolate_reg = r6;
+    __ LoadRR(r4, r9);
+    isolate_reg = r5;
   }
 #else
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-  __ LoadRR(r3, r14);
+  __ LoadRR(r2, r7);
 #else
   // r3 = argc << 32 (for alignment), r4 = argv
-  __ ShiftLeftImm(r3, r14, Operand(32));
+  __ ShiftLeftImm(r2, r7, Operand(32));
 #endif
-  __ LoadRR(r4, r16);
-  isolate_reg = r5;
+  __ LoadRR(r3, r9);
+  isolate_reg = r4;
 #endif
 
-#elif defined(_AIX)  // 32-bit AIX
-  // r3 = argc, r4 = argv
-  __ LoadRR(r3, r14);
-  __ LoadRR(r4, r16);
-  isolate_reg = r5;
+#else
+  // zLinux 31-bit
+  // r2 = argc, r3 = argv
+  __ LoadRR(r2, r7);
+  __ LoadRR(r3, r9);
+  isolate_reg = r4;
+/* PPC code commented out.. left for reference in case we need to pass by
+ * reference
 #else  // 32-bit linux
   // Use frame storage reserved by calling function
   // PPC passes C++ objects by reference not value
   // This builds an object in the stack frame
-  __ LoadRR(r3, sp);
-  __ AddP(r3, Operand((kStackFrameExtraParamSlot + 1) * kPointerSize));
-  __ StoreP(r14, MemOperand(r3));
-  __ StoreP(r16, MemOperand(r3, kPointerSize));
-  isolate_reg = r4;
+  __ la(r2, MemOperand(sp, (kStackFrameExtraParamSlot + 1) * kPointerSize));
+  __ StoreP(r7, MemOperand(r2));
+  __ StoreP(r9, MemOperand(r2, kPointerSize));
+  isolate_reg = r3;
+*/
 #endif
 #else  // Simulated
   // Call C built-in using simulator.
   // r3 = argc, r4 = argv
+  // @TODO Make sure this is correct for S390
 #if defined(V8_TARGET_ARCH_S390X) && __BYTE_ORDER == __BIG_ENDIAN
-  __ ShiftLeftImm(r3, r14, Operand(32));
+  __ ShiftLeftImm(r2, r7, Operand(32));
 #else
-  __ LoadRR(r3, r14);
+  __ LoadRR(r2, r7);
 #endif
-  __ LoadRR(r4, r16);
-  isolate_reg = r5;
+  __ LoadRR(r3, r9);
+  isolate_reg = r4;
 #endif
 
   __ mov(isolate_reg, Operand(ExternalReference::isolate_address()));
 
 #if ABI_USES_FUNCTION_DESCRIPTORS && !defined(USE_SIMULATOR)
   // Native AIX/PPC64 Linux use a function descriptor.
-  __ LoadP(ToRegister(2), MemOperand(r15, kPointerSize));  // TOC
-  __ LoadP(ip, MemOperand(r15, 0));  // Instruction address
+  // @TODO Haven't touched this code for S390.. See if it's applicable.
+  // especially the ToRegister(2) part.
+  __ LoadP(ToRegister(2), MemOperand(r8, kPointerSize));  // TOC
+  __ LoadP(ip, MemOperand(r8, 0));  // Instruction address
   Register target = ip;
 #else
-  Register target = r15;
+  Register target = r8;
 #endif
 
   // To let the GC traverse the return address of the exit frames, we need to
@@ -3619,26 +3629,28 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
   // already at '+ 8' from the current instruction but return is after three
   // instructions so add another 4 to pc to get the return address.
   { Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm);
-    Label here;
-    __ b(&here /*, SetLK*/);
-    __ bind(&here);
-    __ mflr(r8);
-
-// Constant used below is dependent on size of Call() macro instructions
-    __ LoadRR(r0, r8);
-    __ AddP(r0, Operand(20));
-
+    Label return_label;
+    __ larl(r0, &return_label);  // Generate the return addr of call later.
     __ StoreP(r0, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize));
+
+    // zLinux ABI requires caller's frame to have sufficient space for callee
+    // preserved regsiter save area.
+    // @TODO Make sure this is in the right place and we need to guard it
+    // with appropriate #ifdefs
+    __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
     __ Call(target);
+    __ bind(&return_label);
+    __ lay(sp, MemOperand(sp, +kCalleeRegisterSaveAreaSize));
   }
 
   if (always_allocate) {
-    // It's okay to clobber r5 and r6 here. Don't mess with r3 and r4
+    // It's okay to clobber r4 and r5 here. Don't mess with r2 and r3
     // though (contain the result).
-    __ mov(r5, Operand(scope_depth));
-    __ LoadlW(r6, MemOperand(r5));
-    __ Sub(r6, Operand(1));
-    __ st(r6, MemOperand(r5));
+    __ mov(r4, Operand(scope_depth));
+    // @TODO Can exploit ASI here on z10 or newer.
+    __ LoadlW(r5, MemOperand(r4));
+    __ Sub(r5, Operand(1));
+    __ st(r5, MemOperand(r4));
   }
 
   // check for failure result
@@ -3648,8 +3660,8 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
   // If return value is on the stack, pop it to registers.
   if (result_size_ > 1) {
     ASSERT_EQ(2, result_size_);
-    __ LoadP(r4, MemOperand(r3, kPointerSize));
-    __ LoadP(r3, MemOperand(r3));
+    __ LoadP(r3, MemOperand(r2, kPointerSize));
+    __ LoadP(r2, MemOperand(r2));
   }
 #endif
   // Lower 2 bits of r5 are 0 iff r3 has failure tag.
