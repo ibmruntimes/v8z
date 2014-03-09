@@ -2965,7 +2965,7 @@ void LCodeGen::DoLoadKeyedSpecializedArrayElement(
     switch (elements_kind) {
       case EXTERNAL_BYTE_ELEMENTS:
         if (key_is_constant) {
-          __ LoadByte(result, mem_operand, r0);
+          __ LoadlB(result, mem_operand);
         } else {
           __ LoadlB(result, mem_operand);
         }
@@ -2974,7 +2974,7 @@ void LCodeGen::DoLoadKeyedSpecializedArrayElement(
       case EXTERNAL_PIXEL_ELEMENTS:
       case EXTERNAL_UNSIGNED_BYTE_ELEMENTS:
         if (key_is_constant) {
-          __ LoadByte(result, mem_operand, r0);
+          __ LoadlB(result, mem_operand);
         } else {
           __ LoadlB(result, mem_operand);
         }

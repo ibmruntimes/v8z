@@ -4656,39 +4656,6 @@ void MacroAssembler::StoreHalfWord(Register src, const MemOperand& mem,
 }
 
 // Variable length depending on whether offset fits into immediate field
-// MemOperand currently only supports d-form
-void MacroAssembler::LoadByte(Register dst, const MemOperand& mem,
-                              Register scratch, bool updateForm) {
-  Register base = mem.rb();
-  int offset = mem.offset();
-
-  bool use_dform = true;
-  if (!is_int16(offset)) {
-    use_dform = false;
-    LoadIntLiteral(scratch, offset);
-  }
-
-  if (!updateForm) {
-    if (use_dform) {
-      LoadlB(dst, mem);
-    } else {
-      LoadlB(dst, MemOperand(base, scratch));
-    }
-  } else {
-    // If updateForm is ever true, then lbzu will
-    // need to be implemented
-    assert(0);
-#if 0  // LoadByte w\ update not yet needed
-    if (use_dform) {
-      lbzu(dst, mem);
-    } else {
-      lbzux(dst, MemOperand(base, scratch));
-    }
-#endif
-  }
-}
-
-// Variable length depending on whether offset fits into immediate field
 // MemOperand current only supports d-form
 void MacroAssembler::StoreByte(Register src, const MemOperand& mem,
                                Register scratch, bool updateForm) {
