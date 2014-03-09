@@ -4133,6 +4133,36 @@ void MacroAssembler::And(Register dst, Register src, const Operand& opnd) {
   And(dst, opnd);
 }
 
+void MacroAssembler::Or(Register dst, Register src) {
+#if V8_TARGET_ARCH_S390X
+  ogr(dst, src);
+#else
+  or_z(dst, src);
+#endif
+}
+
+void MacroAssembler::Or(Register dst, Register src1, Register src2) {
+  if (!dst.is(src1) && !dst.is(src2)) LoadRR(dst, src1);
+  else if (dst.is(src2)) src2 = src1;
+  Or(dst, src2);
+}
+
+void MacroAssembler::Or(Register dst, const Operand& opnd) {
+  ASSERT(!opnd.is_reg());
+#if V8_TARGET_ARCH_S390X
+  oihf(dst, Operand(0));
+  oilf(dst, opnd);
+#else
+  oilf(dst, opnd);
+#endif
+}
+
+void MacroAssembler::Or(Register dst, Register src, const Operand& opnd) {
+  ASSERT(!opnd.is_reg());
+  if (!dst.is(src)) LoadRR(dst, src);
+  Or(dst, opnd);
+}
+
 void MacroAssembler::Xor(Register dst, Register src) {
 #if V8_TARGET_ARCH_S390X
   xgr(dst, src);
@@ -4345,21 +4375,6 @@ void MacroAssembler::Cmpi(Register src1, const Operand& src2) {
 // Cmpl overloads it
 void MacroAssembler::Cmpli(Register src1, const Operand& src2) {
   Cmpl(src1, src2);
-}
-
-void MacroAssembler::Or(Register rb, Register rs, const Operand& rx, RCBit rc) {
-  if (rx.is_reg()) {
-    orx(rb, rs, rx.rm(), rc);
-  } else {
-    if (is_uint16(rx.imm_) && rx.rmode_ == RelocInfo::NONE && rc == LeaveRC) {
-      ori(rb, rs, rx);
-    } else {
-      // mov handles the relocation.
-      ASSERT(!rs.is(r0));
-      mov(r0, rx);
-      orx(rb, rs, r0, rc);
-    }
-  }
 }
 
 void MacroAssembler::CmpSmiLiteral(Register src1, Smi *smi, Register scratch) {
