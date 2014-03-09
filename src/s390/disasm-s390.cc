@@ -1583,9 +1583,6 @@ int Decoder::InstructionDecode(byte* instr_ptr) {
         case 1:
           Format(instr, "ldu     'rt, 'd('ra)");
           break;
-        case 2:
-          Format(instr, "lwa     'rt, 'd('ra)");
-          break;
       }
       break;
     }
