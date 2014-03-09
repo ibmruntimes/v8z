@@ -433,13 +433,13 @@ int Assembler::target_at(int pos)  {
   // check which type of branch this is 16 or 26 bit offset
   Opcode opcode = Instruction::S390OpcodeValue(buffer_ + pos);
 
-  if (BRC == opcode) {  // BRC
+  if (BRC == opcode) {
     int16_t imm16 = SIGN_EXT_IMM16((instr & kImm16Mask));
     imm16 &= ~(kLKMask);
     if (imm16 == 0)
       return kEndOfChain;
     return pos + imm16;
-  } else if (BRCL == opcode) {  // BRCL
+  } else if (BRCL == opcode || LARL == opcode) {
     int32_t imm32 = instr & (~static_cast<uint64_t>(0xffffffff));
     imm32 &= ~(kLKMask);
     if (imm32 == 0)
@@ -456,13 +456,14 @@ void Assembler::target_at_put(int pos, int target_pos) {
   SixByteInstr instr = instr_at(pos);
   Opcode opcode = Instruction::S390OpcodeValue(buffer_ + pos);
 
-  if (BRC == opcode) {  // BRC
+  if (BRC == opcode) {
     int16_t imm16 = target_pos - pos;
     instr &= (~0xffff);
     ASSERT(is_int16(imm16));
     instr_at_put<FourByteInstr>(pos, instr | (imm16 >> 1));
     return;
-  } else if (BRCL == opcode) {   // BRCL
+  } else if (BRCL == opcode || LARL == opcode) {
+    // BRCL / LARL
     int32_t imm32 = target_pos - pos;
     instr &= (~static_cast<uint64_t>(0xffffffff));
     instr_at_put<SixByteInstr>(pos, instr | (imm32 >> 1));
@@ -475,11 +476,13 @@ void Assembler::target_at_put(int pos, int target_pos) {
 int Assembler::max_reach_from(int pos) {
   Opcode opcode = Instruction::S390OpcodeValue(buffer_ + pos);
 
-  // check which type of branch this is 16 or 26 bit offset
-  if (BRC == opcode) {  // BRC
+  // Check which type of instr.  In theory, we can return
+  // the values below + 1, given offset is # of halfwords
+  if (BRC == opcode) {
     return 16;
-  } else if (BRCL == opcode) {   // BRCL
-    return 32;
+  } else if (BRCL == opcode || LARL == opcode) {
+    return 31;  // Using 31 as workaround instead of 32 as
+                // is_intn(x,32) doesn't work on 32-bit platforms.
   }
 
   ASSERT(false);
