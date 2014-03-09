@@ -4093,9 +4093,11 @@ void MacroAssembler::Sub(Register dst, const MemOperand& opnd) {
 }
 
 void MacroAssembler::And(Register dst, Register src1, Register src2) {
-  if (!dst.is(src1) && !dst.is(src2)) LoadRR(dst, src1);
-  else if (dst.is(src2)) src2 = src1;
-  And(dst, src2);
+#if V8_TARGET_ARCH_S390X
+  ngrk(dst, src1, src2);
+#else
+  nrk(dst, src1, src2);
+#endif
 }
 
 void MacroAssembler::And(Register dst, Register src) {
@@ -4142,9 +4144,11 @@ void MacroAssembler::Or(Register dst, Register src) {
 }
 
 void MacroAssembler::Or(Register dst, Register src1, Register src2) {
-  if (!dst.is(src1) && !dst.is(src2)) LoadRR(dst, src1);
-  else if (dst.is(src2)) src2 = src1;
-  Or(dst, src2);
+#if V8_TARGET_ARCH_S390X
+  ogrk(dst, src1, src2);
+#else
+  ork(dst, src1, src2);
+#endif
 }
 
 void MacroAssembler::Or(Register dst, const Operand& opnd) {
