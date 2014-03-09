@@ -3296,7 +3296,7 @@ void MacroAssembler::PrepareCallCFunction(int num_reg_arguments,
 #else
     // On the simulator we pass args on the stack
     StoreP(scratch,
-           MemOperand(sp, stack_passed_arguments * kPointerSize), r0);
+           MemOperand(sp, stack_passed_arguments * kPointerSize));
 #endif
   } else {
     Sub(sp, Operand((stack_passed_arguments +
