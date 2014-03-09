@@ -4532,6 +4532,30 @@ void MacroAssembler::LoadlW(Register dst, const MemOperand& mem,
 #endif
 }
 
+void MacroAssembler::LoadB(Register dst, const MemOperand& mem) {
+#if V8_TARGET_ARCH_S390X
+  lgb(dst, mem);
+#else
+  lb(dst, mem);
+#endif
+}
+
+void MacroAssembler::LoadlB(Register dst, const MemOperand& mem) {
+  // TODO(AlanLi): it seems that we don't have a identical map of
+  // ppc instruction lbz/lbzx at the moment, so this temp solution
+  // is:
+  // 1. load halfword starting from the location
+  // 2. logical right shift 8 bits
+  // eventually we need to change the context to opt it out.
+#if V8_TARGET_ARCH_S390X
+  llgh(dst, mem);
+  srag(dst, Operand(8));
+#else
+  llh(dst, mem);
+  sra(dst, Operand(8));
+#endif
+}
+
 // Variable length depending on whether offset fits into immediate field
 // MemOperand of RX or RXY format
 void MacroAssembler::StoreW(Register src, const MemOperand& mem,

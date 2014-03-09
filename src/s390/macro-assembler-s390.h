@@ -269,6 +269,8 @@ class MacroAssembler: public Assembler {
              Register scratch = no_reg);
   void LoadlW(Register dst, const MemOperand& opnd,
               Register scratch = no_reg);
+  void LoadB(Register dst, const MemOperand& opnd);
+  void LoadlB(Register dst, const MemOperand& opnd);
   // compare 32bit
   void Cmp(Register dst, const MemOperand& opnd);
   void Cmp(Register dst, const Operand& opnd);
