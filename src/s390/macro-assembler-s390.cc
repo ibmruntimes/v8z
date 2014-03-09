@@ -4672,7 +4672,7 @@ void MacroAssembler::LoadByte(Register dst, const MemOperand& mem,
     if (use_dform) {
       LoadlB(dst, mem);
     } else {
-      lbzx(dst, MemOperand(base, scratch));
+      LoadlB(dst, MemOperand(base, scratch));
     }
   } else {
     // If updateForm is ever true, then lbzu will

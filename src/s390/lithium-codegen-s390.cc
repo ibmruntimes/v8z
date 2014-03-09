@@ -2967,7 +2967,7 @@ void LCodeGen::DoLoadKeyedSpecializedArrayElement(
         if (key_is_constant) {
           __ LoadByte(result, mem_operand, r0);
         } else {
-          __ lbzx(result, mem_operand);
+          __ LoadlB(result, mem_operand);
         }
         __ extsb(result, result);
         break;
@@ -2976,7 +2976,7 @@ void LCodeGen::DoLoadKeyedSpecializedArrayElement(
         if (key_is_constant) {
           __ LoadByte(result, mem_operand, r0);
         } else {
-          __ lbzx(result, mem_operand);
+          __ LoadlB(result, mem_operand);
         }
         break;
       case EXTERNAL_SHORT_ELEMENTS:

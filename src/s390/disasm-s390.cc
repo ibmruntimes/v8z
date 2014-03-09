@@ -955,10 +955,6 @@ void Decoder::DecodeExt2(Instruction* instr) {
       Format(instr, "lwzux   'rt, 'ra, 'rb");
       break;
     }
-    case LBZX: {
-      Format(instr, "lbzx    'rt, 'ra, 'rb");
-      break;
-    }
     case LBZUX: {
       Format(instr, "lbzux   'rt, 'ra, 'rb");
       break;
