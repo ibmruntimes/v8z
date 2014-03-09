@@ -282,7 +282,7 @@ void RegExpMacroAssemblerPPC::CheckCharacters(Vector<const uc16> str,
   int stored_high_byte = 0;
   for (int i = 0; i < str.length(); i++) {
     if (mode_ == ASCII) {
-      __ lbz(r4, MemOperand(r3));
+      __ LoadlB(r4, MemOperand(r3));
       __ AddP(r3, Operand(char_size()));
       ASSERT(str[i] <= String::kMaxAsciiCharCode);
       __ Cmpi(r4, Operand(str[i]));
@@ -360,9 +360,9 @@ void RegExpMacroAssemblerPPC::CheckNotBackReferenceIgnoreCase(
 
     Label loop;
     __ bind(&loop);
-    __ lbz(r6, MemOperand(r3));
+    __ LoadlB(r6, MemOperand(r3));
     __ AddP(r3, Operand(char_size()));
-    __ lbz(r25, MemOperand(r5));
+    __ LoadlB(r25, MemOperand(r5));
     __ AddP(r5, Operand(char_size()));
     __ CmpRR(r25, r6);
     __ beq(&loop_check);
@@ -464,9 +464,9 @@ void RegExpMacroAssemblerPPC::CheckNotBackReference(
   Label loop;
   __ bind(&loop);
   if (mode_ == ASCII) {
-    __ lbz(r6, MemOperand(r3));
+    __ LoadlB(r6, MemOperand(r3));
     __ AddP(r3, Operand(char_size()));
-    __ lbz(r25, MemOperand(r5));
+    __ LoadlB(r25, MemOperand(r5));
     __ AddP(r5, Operand(char_size()));
   } else {
     ASSERT(mode_ == UC16);
@@ -1431,7 +1431,7 @@ void RegExpMacroAssemblerPPC::LoadCurrentCharacterUnchecked(int cp_offset,
   __ LoadRR(current_character(), end_of_input_address());
   __ AddP(current_character(), offset);
   if (mode_ == ASCII) {
-    __ lbz(current_character(), MemOperand(current_character()));
+    __ LoadlB(current_character(), MemOperand(current_character()));
   } else {
     ASSERT(mode_ == UC16);
     __ lhz(current_character(), MemOperand(current_character()));

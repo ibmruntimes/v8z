@@ -865,11 +865,6 @@ void  Assembler::lis(Register dst, const Operand& imm) {
   d_form(ADDIS, dst, r0, imm.imm_, true);
 }
 
-void Assembler::lbz(Register dst, const MemOperand &src) {
-  ASSERT(!src.baseRegister.is(r0));
-  d_form(LBZ, dst, src.rb(), src.offset(), true);
-}
-
 void Assembler::lbzx(Register rt, const MemOperand &src) {
   Register rb = src.rb();
   Register rx = src.rx();

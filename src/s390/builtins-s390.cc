@@ -653,10 +653,10 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
   Register map = r6;
   __ LoadGlobalFunctionInitialMap(function, map, r7);
   if (FLAG_debug_code) {
-    __ lbz(r7, FieldMemOperand(map, Map::kInstanceSizeOffset));
+    __ LoadlB(r7, FieldMemOperand(map, Map::kInstanceSizeOffset));
     __ Cmpi(r7, Operand(JSValue::kSize >> kPointerSizeLog2));
     __ Assert(eq, "Unexpected string wrapper instance size");
-    __ lbz(r7, FieldMemOperand(map, Map::kUnusedPropertyFieldsOffset));
+    __ LoadlB(r7, FieldMemOperand(map, Map::kUnusedPropertyFieldsOffset));
     __ Cmpi(r7, Operand(0, RelocInfo::NONE));
     __ Assert(eq, "Unexpected unused properties of string wrapper");
   }
@@ -681,7 +681,7 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
 
   // Is it a String?
   __ LoadP(r5, FieldMemOperand(r3, HeapObject::kMapOffset));
-  __ lbz(r6, FieldMemOperand(r5, Map::kInstanceTypeOffset));
+  __ LoadlB(r6, FieldMemOperand(r5, Map::kInstanceTypeOffset));
   STATIC_ASSERT(kNotStringTag != 0);
   __ andi(r0, r6, Operand(kIsNotStringMask));
   __ bne(&convert_argument /*, cr0*/);
@@ -821,7 +821,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
                                      JSFunction::kSharedFunctionInfoOffset));
         MemOperand constructor_count =
             FieldMemOperand(r6, SharedFunctionInfo::kConstructionCountOffset);
-        __ lbz(r7, constructor_count);
+        __ LoadlB(r7, constructor_count);
         __ AddP(r7, Operand(-1));
         __ stb(r7, constructor_count);
         __ Cmpi(r7, Operand::Zero());
@@ -843,7 +843,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // Now allocate the JSObject on the heap.
       // r4: constructor function
       // r5: initial map
-      __ lbz(r6, FieldMemOperand(r5, Map::kInstanceSizeOffset));
+      __ LoadlB(r6, FieldMemOperand(r5, Map::kInstanceSizeOffset));
       __ AllocateInNewSpace(r6, r7, r8, r9, &rt_call, SIZE_IN_WORDS);
 
       // Allocated the JSObject, now initialize the fields. Map is set to
@@ -909,7 +909,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // r4: constructor function
       // r7: JSObject
       // r8: start of next object (not tagged)
-      __ lbz(r6, FieldMemOperand(r5, Map::kUnusedPropertyFieldsOffset));
+      __ LoadlB(r6, FieldMemOperand(r5, Map::kUnusedPropertyFieldsOffset));
       // The field instance sizes contains both pre-allocated property fields
       // and in-object properties.
       __ LoadlW(r3, FieldMemOperand(r5, Map::kInstanceSizesOffset));

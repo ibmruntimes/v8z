@@ -2654,10 +2654,10 @@ void FullCodeGenerator::EmitIsObject(CallRuntime* expr) {
   __ beq(if_true);
   __ LoadP(r5, FieldMemOperand(r3, HeapObject::kMapOffset));
   // Undetectable objects behave like undefined when tested with typeof.
-  __ lbz(r4, FieldMemOperand(r5, Map::kBitFieldOffset));
+  __ LoadlB(r4, FieldMemOperand(r5, Map::kBitFieldOffset));
   __ andi(r0, r4, Operand(1 << Map::kIsUndetectable));
   __ bne(if_false /*, cr0*/);
-  __ lbz(r4, FieldMemOperand(r5, Map::kInstanceTypeOffset));
+  __ LoadlB(r4, FieldMemOperand(r5, Map::kInstanceTypeOffset));
   __ Cmpi(r4, Operand(FIRST_NONCALLABLE_SPEC_OBJECT_TYPE));
   __ blt(if_false);
   __ Cmpi(r4, Operand(LAST_NONCALLABLE_SPEC_OBJECT_TYPE));
@@ -2705,7 +2705,7 @@ void FullCodeGenerator::EmitIsUndetectableObject(CallRuntime* expr) {
 
   __ JumpIfSmi(r3, if_false);
   __ LoadP(r4, FieldMemOperand(r3, HeapObject::kMapOffset));
-  __ lbz(r4, FieldMemOperand(r4, Map::kBitFieldOffset));
+  __ LoadlB(r4, FieldMemOperand(r4, Map::kBitFieldOffset));
   __ andi(r0, r4, Operand(1 << Map::kIsUndetectable));
   PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
   Split(ne, if_true, if_false, fall_through, cr0);
@@ -2731,7 +2731,7 @@ void FullCodeGenerator::EmitIsStringWrapperSafeForDefaultValueOf(
   __ AssertNotSmi(r3);
 
   __ LoadP(r4, FieldMemOperand(r3, HeapObject::kMapOffset));
-  __ lbz(ip, FieldMemOperand(r4, Map::kBitField2Offset));
+  __ LoadlB(ip, FieldMemOperand(r4, Map::kBitField2Offset));
   __ andi(r0, ip, Operand(1 << Map::kStringWrapperSafeForDefaultValueOf));
   __ bne(if_true /*, cr0*/);
 
@@ -2794,7 +2794,7 @@ void FullCodeGenerator::EmitIsStringWrapperSafeForDefaultValueOf(
 
   // Set the bit in the map to indicate that it has been checked safe for
   // default valueOf and set true result.
-  __ lbz(r5, FieldMemOperand(r4, Map::kBitField2Offset));
+  __ LoadlB(r5, FieldMemOperand(r4, Map::kBitField2Offset));
   __ ori(r5, r5, Operand(1 << Map::kStringWrapperSafeForDefaultValueOf));
   __ stb(r5, FieldMemOperand(r4, Map::kBitField2Offset));
   __ b(if_true);
@@ -3531,7 +3531,7 @@ void FullCodeGenerator::EmitIsRegExpEquivalent(CallRuntime* expr) {
   __ And(tmp, left, right);
   __ JumpIfSmi(tmp, &fail);
   __ LoadP(tmp, FieldMemOperand(left, HeapObject::kMapOffset));
-  __ lbz(tmp2, FieldMemOperand(tmp, Map::kInstanceTypeOffset));
+  __ LoadlB(tmp2, FieldMemOperand(tmp, Map::kInstanceTypeOffset));
   __ Cmpi(tmp2, Operand(JS_REGEXP_TYPE));
   __ bne(&fail);
   __ LoadP(tmp2, FieldMemOperand(right, HeapObject::kMapOffset));
@@ -3662,7 +3662,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   __ AddP(element, Operand(kPointerSize));
   __ JumpIfSmi(string, &bailout);
   __ LoadP(scratch1, FieldMemOperand(string, HeapObject::kMapOffset));
-  __ lbz(scratch1, FieldMemOperand(scratch1, Map::kInstanceTypeOffset));
+  __ LoadlB(scratch1, FieldMemOperand(scratch1, Map::kInstanceTypeOffset));
   __ JumpIfInstanceTypeIsNotSequentialAscii(scratch1, scratch2, &bailout);
   __ LoadP(scratch1, FieldMemOperand(string, SeqAsciiString::kLengthOffset));
 
@@ -3690,7 +3690,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   // Check that the separator is a flat ASCII string.
   __ JumpIfSmi(separator, &bailout);
   __ LoadP(scratch1, FieldMemOperand(separator, HeapObject::kMapOffset));
-  __ lbz(scratch1, FieldMemOperand(scratch1, Map::kInstanceTypeOffset));
+  __ LoadlB(scratch1, FieldMemOperand(scratch1, Map::kInstanceTypeOffset));
   __ JumpIfInstanceTypeIsNotSequentialAscii(scratch1, scratch2, &bailout);
 
   // Add (separator length times array_length) - separator length to the
@@ -3776,7 +3776,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   // One-character separator case
   __ bind(&one_char_separator);
   // Replace separator with its ASCII character value.
-  __ lbz(separator, FieldMemOperand(separator, SeqAsciiString::kHeaderSize));
+  __ LoadlB(separator, FieldMemOperand(separator, SeqAsciiString::kHeaderSize));
   // Jump into the loop after the code that copies the separator, so the first
   // element is not preceded by a separator
   __ b(&one_char_separator_loop_entry);
@@ -4265,7 +4265,7 @@ void FullCodeGenerator::EmitLiteralCompareTypeof(Expression* expr,
     // Check for undetectable objects => false.
     __ CompareObjectType(r3, r3, r4, FIRST_NONSTRING_TYPE);
     __ bge(if_false);
-    __ lbz(r4, FieldMemOperand(r3, Map::kBitFieldOffset));
+    __ LoadlB(r4, FieldMemOperand(r3, Map::kBitFieldOffset));
     STATIC_ASSERT((1 << Map::kIsUndetectable) < 0x8000);
     __ andi(r0, r4, Operand(1 << Map::kIsUndetectable));
     Split(eq, if_true, if_false, fall_through, cr0);
@@ -4284,7 +4284,7 @@ void FullCodeGenerator::EmitLiteralCompareTypeof(Expression* expr,
     __ JumpIfSmi(r3, if_false);
     // Check for undetectable objects => true.
     __ LoadP(r3, FieldMemOperand(r3, HeapObject::kMapOffset));
-    __ lbz(r4, FieldMemOperand(r3, Map::kBitFieldOffset));
+    __ LoadlB(r4, FieldMemOperand(r3, Map::kBitFieldOffset));
     __ andi(r0, r4, Operand(1 << Map::kIsUndetectable));
     Split(ne, if_true, if_false, fall_through, cr0);
 
@@ -4307,7 +4307,7 @@ void FullCodeGenerator::EmitLiteralCompareTypeof(Expression* expr,
     __ CompareInstanceType(r3, r4, LAST_NONCALLABLE_SPEC_OBJECT_TYPE);
     __ bgt(if_false);
     // Check for undetectable objects => false.
-    __ lbz(r4, FieldMemOperand(r3, Map::kBitFieldOffset));
+    __ LoadlB(r4, FieldMemOperand(r3, Map::kBitFieldOffset));
     __ andi(r0, r4, Operand(1 << Map::kIsUndetectable));
     Split(eq, if_true, if_false, fall_through, cr0);
   } else {
@@ -4442,7 +4442,7 @@ void FullCodeGenerator::EmitLiteralCompareNil(CompareOperation* expr,
     __ JumpIfSmi(r3, if_false);
     // It can be an undetectable object.
     __ LoadP(r4, FieldMemOperand(r3, HeapObject::kMapOffset));
-    __ lbz(r4, FieldMemOperand(r4, Map::kBitFieldOffset));
+    __ LoadlB(r4, FieldMemOperand(r4, Map::kBitFieldOffset));
     __ andi(r4, r4, Operand(1 << Map::kIsUndetectable));
     __ Cmpi(r4, Operand(1 << Map::kIsUndetectable));
     Split(eq, if_true, if_false, fall_through);

@@ -496,7 +496,7 @@ void FastCloneShallowObjectStub::Generate(MacroAssembler* masm) {
   // statically determine the instance size.
   int size = JSObject::kHeaderSize + length_ * kPointerSize;
   __ LoadP(r3, FieldMemOperand(r6, HeapObject::kMapOffset));
-  __ lbz(r3, FieldMemOperand(r3, Map::kInstanceSizeOffset));
+  __ LoadlB(r3, FieldMemOperand(r3, Map::kInstanceSizeOffset));
   __ Cmpi(r3, Operand(size >> kPointerSizeLog2));
   __ bne(&slow_case);
 
@@ -1211,8 +1211,8 @@ static void EmitCheckForSymbolsOrObjects(MacroAssembler* masm,
   // are not equal, since they are different objects and an object is not
   // equal to undefined.
   __ LoadP(r6, FieldMemOperand(rhs, HeapObject::kMapOffset));
-  __ lbz(r5, FieldMemOperand(r5, Map::kBitFieldOffset));
-  __ lbz(r6, FieldMemOperand(r6, Map::kBitFieldOffset));
+  __ LoadlB(r5, FieldMemOperand(r5, Map::kBitFieldOffset));
+  __ LoadlB(r6, FieldMemOperand(r6, Map::kBitFieldOffset));
   __ And(r3, r5, r6);
   __ andi(r3, r3, Operand(1 << Map::kIsUndetectable));
   __ xori(r3, r3, Operand(1 << Map::kIsUndetectable));
@@ -1520,7 +1520,7 @@ void ToBooleanStub::Generate(MacroAssembler* masm) {
 
     if (types_.CanBeUndetectable()) {
       Label not_undetectable;
-      __ lbz(ip, FieldMemOperand(map, Map::kBitFieldOffset));
+      __ LoadlB(ip, FieldMemOperand(map, Map::kBitFieldOffset));
       STATIC_ASSERT((1 << Map::kIsUndetectable) < 0x8000);
       __ andi(r0, ip, Operand(1 << Map::kIsUndetectable));
       __ beq(&not_undetectable /*, cr0*/);
@@ -4734,7 +4734,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // Check the representation and encoding of the subject string.
   Label seq_string;
   __ LoadP(r3, FieldMemOperand(subject, HeapObject::kMapOffset));
-  __ lbz(r3, FieldMemOperand(r3, Map::kInstanceTypeOffset));
+  __ LoadlB(r3, FieldMemOperand(r3, Map::kInstanceTypeOffset));
   // First check for flat string.  None of the following string type tests will
   // succeed if subject is not a string or a short external string.
   STATIC_ASSERT((kIsNotStringMask |
@@ -4786,7 +4786,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // Is first part of cons or parent of slice a flat string?
   __ bind(&check_encoding);
   __ LoadP(r3, FieldMemOperand(subject, HeapObject::kMapOffset));
-  __ lbz(r3, FieldMemOperand(r3, Map::kInstanceTypeOffset));
+  __ LoadlB(r3, FieldMemOperand(r3, Map::kInstanceTypeOffset));
   STATIC_ASSERT(kSeqStringTag == 0);
   STATIC_ASSERT(kStringRepresentationMask == 3);
   __ andi(r0, r3, Operand(kStringRepresentationMask));
@@ -5030,7 +5030,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // r3: scratch
   __ bind(&external_string);
   __ LoadP(r3, FieldMemOperand(subject, HeapObject::kMapOffset));
-  __ lbz(r3, FieldMemOperand(r3, Map::kInstanceTypeOffset));
+  __ LoadlB(r3, FieldMemOperand(r3, Map::kInstanceTypeOffset));
   if (FLAG_debug_code) {
     // Assert that we do not have a cons or slice (indirect strings) here.
     // Sequential strings have already been ruled out.
@@ -5385,7 +5385,7 @@ void StringCharCodeAtGenerator::GenerateFast(MacroAssembler* masm) {
 
   // Fetch the instance type of the receiver into result register.
   __ LoadP(result_, FieldMemOperand(object_, HeapObject::kMapOffset));
-  __ lbz(result_, FieldMemOperand(result_, Map::kInstanceTypeOffset));
+  __ LoadlB(result_, FieldMemOperand(result_, Map::kInstanceTypeOffset));
   // If the receiver is not a string trigger the non-string case.
   __ andi(r0, result_, Operand(kIsNotStringMask));
   __ bne(receiver_not_string_ /*, cr0*/);
@@ -5441,7 +5441,7 @@ void StringCharCodeAtGenerator::GenerateSlow(
   __ pop(object_);
   // Reload the instance type.
   __ LoadP(result_, FieldMemOperand(object_, HeapObject::kMapOffset));
-  __ lbz(result_, FieldMemOperand(result_, Map::kInstanceTypeOffset));
+  __ LoadlB(result_, FieldMemOperand(result_, Map::kInstanceTypeOffset));
   call_helper.AfterCall(masm);
   // If index is still not a smi, it must be out of range.
   __ JumpIfNotSmi(index_, index_out_of_range_);
@@ -5534,7 +5534,7 @@ void StringHelper::GenerateCopyCharacters(MacroAssembler* masm,
   // This loop just copies one character at a time, as it is only used for very
   // short strings.
   if (ascii) {
-    __ lbz(scratch, MemOperand(src));
+    __ LoadlB(scratch, MemOperand(src));
     __ stb(scratch, MemOperand(dest));
     __ AddP(src, Operand(1));
     __ AddP(dest, Operand(1));
@@ -5594,7 +5594,7 @@ void StringHelper::GenerateCopyCharactersLong(MacroAssembler* masm,
   __ bind(&byte_loop);
   __ CmpRR(dest, limit);
   __ bge(&done);
-  __ lbz(scratch1, MemOperand(src));
+  __ LoadlB(scratch1, MemOperand(src));
   __ AddP(src, Operand(1));
   __ stb(scratch1, MemOperand(dest));
   __ AddP(dest, Operand(1));
@@ -5888,7 +5888,7 @@ void SubStringStub::Generate(MacroAssembler* masm) {
   __ LoadP(r8, FieldMemOperand(r3, ConsString::kFirstOffset));
   // Update instance type.
   __ LoadP(r4, FieldMemOperand(r8, HeapObject::kMapOffset));
-  __ lbz(r4, FieldMemOperand(r4, Map::kInstanceTypeOffset));
+  __ LoadlB(r4, FieldMemOperand(r4, Map::kInstanceTypeOffset));
   __ b(&underlying_unpacked);
 
   __ bind(&sliced_string);
@@ -5899,7 +5899,7 @@ void SubStringStub::Generate(MacroAssembler* masm) {
   __ AddP(r6, r4);  // Add offset to index.
   // Update instance type.
   __ LoadP(r4, FieldMemOperand(r8, HeapObject::kMapOffset));
-  __ lbz(r4, FieldMemOperand(r4, Map::kInstanceTypeOffset));
+  __ LoadlB(r4, FieldMemOperand(r4, Map::kInstanceTypeOffset));
   __ b(&underlying_unpacked);
 
   __ bind(&seq_or_external_string);
@@ -6193,8 +6193,8 @@ void StringAddStub::Generate(MacroAssembler* masm) {
     // Load instance types.
     __ LoadP(r7, FieldMemOperand(r3, HeapObject::kMapOffset));
     __ LoadP(r8, FieldMemOperand(r4, HeapObject::kMapOffset));
-    __ lbz(r7, FieldMemOperand(r7, Map::kInstanceTypeOffset));
-    __ lbz(r8, FieldMemOperand(r8, Map::kInstanceTypeOffset));
+    __ LoadlB(r7, FieldMemOperand(r7, Map::kInstanceTypeOffset));
+    __ LoadlB(r8, FieldMemOperand(r8, Map::kInstanceTypeOffset));
     STATIC_ASSERT(kStringTag == 0);
     // If either is not a string, go to runtime.
     __ andi(r0, r7, Operand(kIsNotStringMask));
@@ -6271,15 +6271,15 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   if (flags_ != NO_STRING_ADD_FLAGS) {
     __ LoadP(r7, FieldMemOperand(r3, HeapObject::kMapOffset));
     __ LoadP(r8, FieldMemOperand(r4, HeapObject::kMapOffset));
-    __ lbz(r7, FieldMemOperand(r7, Map::kInstanceTypeOffset));
-    __ lbz(r8, FieldMemOperand(r8, Map::kInstanceTypeOffset));
+    __ LoadlB(r7, FieldMemOperand(r7, Map::kInstanceTypeOffset));
+    __ LoadlB(r8, FieldMemOperand(r8, Map::kInstanceTypeOffset));
   }
   __ JumpIfBothInstanceTypesAreNotSequentialAscii(r7, r8, r9, r10,
                                                   &call_runtime);
 
   // Get the two characters forming the sub string.
-  __ lbz(r5, FieldMemOperand(r3, SeqAsciiString::kHeaderSize));
-  __ lbz(r6, FieldMemOperand(r4, SeqAsciiString::kHeaderSize));
+  __ LoadlB(r5, FieldMemOperand(r3, SeqAsciiString::kHeaderSize));
+  __ LoadlB(r6, FieldMemOperand(r4, SeqAsciiString::kHeaderSize));
 
   // Try to lookup two character string in symbol table. If it is not found
   // just allocate a new one.
@@ -6319,8 +6319,8 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   if (flags_ != NO_STRING_ADD_FLAGS) {
     __ LoadP(r7, FieldMemOperand(r3, HeapObject::kMapOffset));
     __ LoadP(r8, FieldMemOperand(r4, HeapObject::kMapOffset));
-    __ lbz(r7, FieldMemOperand(r7, Map::kInstanceTypeOffset));
-    __ lbz(r8, FieldMemOperand(r8, Map::kInstanceTypeOffset));
+    __ LoadlB(r7, FieldMemOperand(r7, Map::kInstanceTypeOffset));
+    __ LoadlB(r8, FieldMemOperand(r8, Map::kInstanceTypeOffset));
   }
   Label non_ascii, allocated, ascii_data;
   STATIC_ASSERT(kTwoByteStringTag == 0);
@@ -6376,8 +6376,8 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   if (flags_ != NO_STRING_ADD_FLAGS) {
     __ LoadP(r7, FieldMemOperand(r3, HeapObject::kMapOffset));
     __ LoadP(r8, FieldMemOperand(r4, HeapObject::kMapOffset));
-    __ lbz(r7, FieldMemOperand(r7, Map::kInstanceTypeOffset));
-    __ lbz(r8, FieldMemOperand(r8, Map::kInstanceTypeOffset));
+    __ LoadlB(r7, FieldMemOperand(r7, Map::kInstanceTypeOffset));
+    __ LoadlB(r8, FieldMemOperand(r8, Map::kInstanceTypeOffset));
   }
 
   // Check whether both strings have same encoding
@@ -6506,7 +6506,7 @@ void StringAddStub::GenerateConvertArgument(MacroAssembler* masm,
   __ CompareObjectType(
       arg, scratch1, scratch2, JS_VALUE_TYPE);  // map -> scratch1.
   __ bne(slow);
-  __ lbz(scratch2, FieldMemOperand(scratch1, Map::kBitField2Offset));
+  __ LoadlB(scratch2, FieldMemOperand(scratch1, Map::kBitField2Offset));
   __ andi(scratch2,
           scratch2, Operand(1 << Map::kStringWrapperSafeForDefaultValueOf));
   __ Cmpi(scratch2,
@@ -6626,8 +6626,8 @@ void ICCompareStub::GenerateSymbols(MacroAssembler* masm) {
   // Check that both operands are symbols.
   __ LoadP(tmp1, FieldMemOperand(left, HeapObject::kMapOffset));
   __ LoadP(tmp2, FieldMemOperand(right, HeapObject::kMapOffset));
-  __ lbz(tmp1, FieldMemOperand(tmp1, Map::kInstanceTypeOffset));
-  __ lbz(tmp2, FieldMemOperand(tmp2, Map::kInstanceTypeOffset));
+  __ LoadlB(tmp1, FieldMemOperand(tmp1, Map::kInstanceTypeOffset));
+  __ LoadlB(tmp2, FieldMemOperand(tmp2, Map::kInstanceTypeOffset));
   STATIC_ASSERT(kSymbolTag != 0);
   __ And(tmp1, tmp1, tmp2);
   __ andi(r0, tmp1, Operand(kIsSymbolMask));
@@ -6671,8 +6671,8 @@ void ICCompareStub::GenerateStrings(MacroAssembler* masm) {
   // types loaded in tmp1 and tmp2.
   __ LoadP(tmp1, FieldMemOperand(left, HeapObject::kMapOffset));
   __ LoadP(tmp2, FieldMemOperand(right, HeapObject::kMapOffset));
-  __ lbz(tmp1, FieldMemOperand(tmp1, Map::kInstanceTypeOffset));
-  __ lbz(tmp2, FieldMemOperand(tmp2, Map::kInstanceTypeOffset));
+  __ LoadlB(tmp1, FieldMemOperand(tmp1, Map::kInstanceTypeOffset));
+  __ LoadlB(tmp2, FieldMemOperand(tmp2, Map::kInstanceTypeOffset));
   STATIC_ASSERT(kNotStringTag != 0);
   __ Or(tmp3, tmp1, tmp2);
   __ andi(r0, tmp3, Operand(kIsNotStringMask));
@@ -6903,7 +6903,7 @@ void StringDictionaryLookupStub::GenerateNegativeLookup(MacroAssembler* masm,
       // Check if the entry name is not a symbol.
       __ LoadP(entity_name, FieldMemOperand(entity_name,
                                             HeapObject::kMapOffset));
-      __ lbz(entity_name,
+      __ LoadlB(entity_name,
               FieldMemOperand(entity_name, Map::kInstanceTypeOffset));
       __ andi(r0, entity_name, Operand(kIsSymbolMask));
       __ beq(miss /*, cr0*/);
@@ -7093,7 +7093,7 @@ void StringDictionaryLookupStub::Generate(MacroAssembler* masm) {
     if (i != kTotalProbes - 1 && mode_ == NEGATIVE_LOOKUP) {
       // Check if the entry name is not a symbol.
       __ LoadP(entry_key, FieldMemOperand(entry_key, HeapObject::kMapOffset));
-      __ lbz(entry_key,
+      __ LoadlB(entry_key,
               FieldMemOperand(entry_key, Map::kInstanceTypeOffset));
       __ andi(r0, entry_key, Operand(kIsSymbolMask));
       __ beq(&maybe_in_dictionary /*, cr0*/);

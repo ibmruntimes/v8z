@@ -405,7 +405,7 @@ void StringCharLoadGenerator::Generate(MacroAssembler* masm,
                                        Label* call_runtime) {
   // Fetch the instance type of the receiver into result register.
   __ LoadP(result, FieldMemOperand(string, HeapObject::kMapOffset));
-  __ lbz(result, FieldMemOperand(result, Map::kInstanceTypeOffset));
+  __ LoadlB(result, FieldMemOperand(result, Map::kInstanceTypeOffset));
 
   // We need special handling for indirect strings.
   Label check_sequential;
@@ -440,7 +440,7 @@ void StringCharLoadGenerator::Generate(MacroAssembler* masm,
 
   __ bind(&indirect_string_loaded);
   __ LoadP(result, FieldMemOperand(string, HeapObject::kMapOffset));
-  __ lbz(result, FieldMemOperand(result, Map::kInstanceTypeOffset));
+  __ LoadlB(result, FieldMemOperand(result, Map::kInstanceTypeOffset));
 
   // Distinguish sequential and external strings. Only these two string
   // representations can reach here (slices and flat cons strings have been
