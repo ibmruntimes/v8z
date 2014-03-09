@@ -1775,7 +1775,6 @@ SS2_FORM(zap);
   void lhzux(Register dst, const MemOperand& src);
   void lwzu(Register dst, const MemOperand& src);
   void lwzux(Register dst, const MemOperand& src);
-  void lwa(Register dst, const MemOperand& src);
 
 
 

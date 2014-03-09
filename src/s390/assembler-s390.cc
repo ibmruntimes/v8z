@@ -910,13 +910,6 @@ void Assembler::lwzux(Register rt, const MemOperand & src) {
   emit(EXT2 | LWZUX | rt.code()*B21 | rb.code()*B16 | rx.code()*B11 | LeaveRC);
 }
 
-void Assembler::lwa(Register dst, const MemOperand &src) {
-  int offset = src.offset();
-  ASSERT(!(offset & 3) && is_int16(offset));
-  offset = kImm16Mask & offset;
-  emit(LD_ppc | dst.code()*B21 | src.rb().code()*B16 | offset | 2);
-}
-
 void Assembler::stb(Register dst, const MemOperand &src) {
     Register rx = src.rx();
     ASSERT(rx.code() == 0);
