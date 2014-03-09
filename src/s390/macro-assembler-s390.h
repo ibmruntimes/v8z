@@ -1024,7 +1024,7 @@ class MacroAssembler: public Assembler {
   Condition IsObjectStringType(Register obj,
                                Register type) {
     LoadP(type, FieldMemOperand(obj, HeapObject::kMapOffset));
-    lbz(type, FieldMemOperand(type, Map::kInstanceTypeOffset));
+    LoadlB(type, FieldMemOperand(type, Map::kInstanceTypeOffset));
     andi(r0, type, Operand(kIsNotStringMask));
     ASSERT_EQ(0, kStringTag);
     return eq;

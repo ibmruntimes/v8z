@@ -93,7 +93,7 @@ static void GenerateStringDictionaryReceiverCheck(MacroAssembler* masm,
   GenerateGlobalInstanceTypeCheck(masm, t1, miss);
 
   // Check that the global object does not require access checks.
-  __ lbz(t1, FieldMemOperand(t0, Map::kBitFieldOffset));
+  __ LoadlB(t1, FieldMemOperand(t0, Map::kBitFieldOffset));
   __ andi(r0, t1, Operand((1 << Map::kIsAccessCheckNeeded) |
                      (1 << Map::kHasNamedInterceptor)));
   __ bne(miss /*, cr0*/);
@@ -281,7 +281,7 @@ static void GenerateKeyedLoadReceiverCheck(MacroAssembler* masm,
   // Get the map of the receiver.
   __ LoadP(map, FieldMemOperand(receiver, HeapObject::kMapOffset));
   // Check bit field.
-  __ lbz(scratch, FieldMemOperand(map, Map::kBitFieldOffset));
+  __ LoadlB(scratch, FieldMemOperand(map, Map::kBitFieldOffset));
   ASSERT(((1 << Map::kIsAccessCheckNeeded) | (1 << interceptor_bit)) < 0x8000);
   __ andi(r0, scratch,
           Operand((1 << Map::kIsAccessCheckNeeded) | (1 << interceptor_bit)));
@@ -291,7 +291,7 @@ static void GenerateKeyedLoadReceiverCheck(MacroAssembler* masm,
   // we enter the runtime system to make sure that indexing into string
   // objects work as intended.
   ASSERT(JS_OBJECT_TYPE > JS_VALUE_TYPE);
-  __ lbz(scratch, FieldMemOperand(map, Map::kInstanceTypeOffset));
+  __ LoadlB(scratch, FieldMemOperand(map, Map::kInstanceTypeOffset));
   __ Cmpi(scratch, Operand(JS_OBJECT_TYPE));
   __ blt(slow);
 }
@@ -381,7 +381,7 @@ static void GenerateKeyStringCheck(MacroAssembler* masm,
 
   // Is the string a symbol?
   // map: key map
-  __ lbz(hash, FieldMemOperand(map, Map::kInstanceTypeOffset));
+  __ LoadlB(hash, FieldMemOperand(map, Map::kInstanceTypeOffset));
   STATIC_ASSERT(kSymbolTag != 0);
   __ andi(r0, hash, Operand(kIsSymbolMask));
   __ beq(not_symbol /*, cr0*/);
@@ -1097,7 +1097,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
     }
     __ ShiftLeftImm(r8, r6, Operand(2));
     __ LoadlW(r8, MemOperand(r8, r7));
-    __ lbz(r9, FieldMemOperand(r5, Map::kInObjectPropertiesOffset));
+    __ LoadlB(r9, FieldMemOperand(r5, Map::kInObjectPropertiesOffset));
     __ Sub(r8, r8, r9);
     __ Cmpi(r8, Operand::Zero());
     __ bge(&property_array_property);
@@ -1108,7 +1108,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
 
   // Load in-object property.
   __ bind(&load_in_object_property);
-  __ lbz(r9, FieldMemOperand(r5, Map::kInstanceSizeOffset));
+  __ LoadlB(r9, FieldMemOperand(r5, Map::kInstanceSizeOffset));
   __ AddP(r9, r8);  // Index from start of object.
   __ Sub(r4, Operand(kHeapObjectTag));  // Remove the heap tag.
   __ ShiftLeftImm(r3, r9, Operand(kPointerSizeLog2));
@@ -1134,7 +1134,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   // r3: key
   // r6: elements
   __ LoadP(r5, FieldMemOperand(r4, HeapObject::kMapOffset));
-  __ lbz(r5, FieldMemOperand(r5, Map::kInstanceTypeOffset));
+  __ LoadlB(r5, FieldMemOperand(r5, Map::kInstanceTypeOffset));
   GenerateGlobalInstanceTypeCheck(masm, r5, &slow);
   // Load the property to r3.
   GenerateDictionaryLoad(masm, &slow, r6, r3, r3, r5, r7);
@@ -1201,7 +1201,7 @@ void KeyedLoadIC::GenerateIndexedInterceptor(MacroAssembler* masm) {
 
   // Check that it has indexed interceptor and access checks
   // are not enabled for this object.
-  __ lbz(r6, FieldMemOperand(r5, Map::kBitFieldOffset));
+  __ LoadlB(r6, FieldMemOperand(r5, Map::kBitFieldOffset));
   __ andi(r6, r6, Operand(kSlowCaseBitFieldMask));
   __ Cmpi(r6, Operand(1 << Map::kHasIndexedInterceptor));
   __ bne(&slow);
@@ -1490,11 +1490,11 @@ void KeyedStoreIC::GenerateGeneric(MacroAssembler* masm,
   __ LoadP(receiver_map, FieldMemOperand(receiver, HeapObject::kMapOffset));
   // Check that the receiver does not require access checks.  We need
   // to do this because this generic stub does not perform map checks.
-  __ lbz(ip, FieldMemOperand(receiver_map, Map::kBitFieldOffset));
+  __ LoadlB(ip, FieldMemOperand(receiver_map, Map::kBitFieldOffset));
   __ andi(r0, ip, Operand(1 << Map::kIsAccessCheckNeeded));
   __ bne(&slow /*, cr0*/);
   // Check if the object is a JS array or not.
-  __ lbz(r7, FieldMemOperand(receiver_map, Map::kInstanceTypeOffset));
+  __ LoadlB(r7, FieldMemOperand(receiver_map, Map::kInstanceTypeOffset));
   __ Cmpi(r7, Operand(JS_ARRAY_TYPE));
   __ beq(&array);
   // Check that the object is some kind of JSObject.

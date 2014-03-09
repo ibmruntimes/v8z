@@ -971,7 +971,7 @@ void MacroAssembler::IsObjectJSObjectType(Register heap_object,
 void MacroAssembler::IsInstanceJSObjectType(Register map,
                                             Register scratch,
                                             Label* fail) {
-  lbz(scratch, FieldMemOperand(map, Map::kInstanceTypeOffset));
+  LoadlB(scratch, FieldMemOperand(map, Map::kInstanceTypeOffset));
   Cmpi(scratch, Operand(FIRST_NONCALLABLE_SPEC_OBJECT_TYPE));
   blt(fail);
   Cmpi(scratch, Operand(LAST_NONCALLABLE_SPEC_OBJECT_TYPE));
@@ -985,7 +985,7 @@ void MacroAssembler::IsObjectJSStringType(Register object,
   ASSERT(kNotStringTag != 0);
 
   LoadP(scratch, FieldMemOperand(object, HeapObject::kMapOffset));
-  lbz(scratch, FieldMemOperand(scratch, Map::kInstanceTypeOffset));
+  LoadlB(scratch, FieldMemOperand(scratch, Map::kInstanceTypeOffset));
   andi(r0, scratch, Operand(kIsNotStringMask));
   bne(fail /*, cr0*/);
 }
@@ -1724,7 +1724,7 @@ void MacroAssembler::CompareObjectType(Register object,
 void MacroAssembler::CompareInstanceType(Register map,
                                          Register type_reg,
                                          InstanceType type) {
-  lbz(type_reg, FieldMemOperand(map, Map::kInstanceTypeOffset));
+  LoadlB(type_reg, FieldMemOperand(map, Map::kInstanceTypeOffset));
   Cmpi(type_reg, Operand(type));
 }
 
@@ -1744,7 +1744,7 @@ void MacroAssembler::CheckFastElements(Register map,
   STATIC_ASSERT(FAST_HOLEY_SMI_ELEMENTS == 1);
   STATIC_ASSERT(FAST_ELEMENTS == 2);
   STATIC_ASSERT(FAST_HOLEY_ELEMENTS == 3);
-  lbz(scratch, FieldMemOperand(map, Map::kBitField2Offset));
+  LoadlB(scratch, FieldMemOperand(map, Map::kBitField2Offset));
   STATIC_ASSERT(Map::kMaximumBitField2FastHoleyElementValue < 0x8000);
   Cmpli(scratch, Operand(Map::kMaximumBitField2FastHoleyElementValue));
   bgt(fail);
@@ -1758,7 +1758,7 @@ void MacroAssembler::CheckFastObjectElements(Register map,
   STATIC_ASSERT(FAST_HOLEY_SMI_ELEMENTS == 1);
   STATIC_ASSERT(FAST_ELEMENTS == 2);
   STATIC_ASSERT(FAST_HOLEY_ELEMENTS == 3);
-  lbz(scratch, FieldMemOperand(map, Map::kBitField2Offset));
+  LoadlB(scratch, FieldMemOperand(map, Map::kBitField2Offset));
   Cmpli(scratch, Operand(Map::kMaximumBitField2FastHoleySmiElementValue));
   ble(fail);
   Cmpli(scratch, Operand(Map::kMaximumBitField2FastHoleyElementValue));
@@ -1771,7 +1771,7 @@ void MacroAssembler::CheckFastSmiElements(Register map,
                                           Label* fail) {
   STATIC_ASSERT(FAST_SMI_ELEMENTS == 0);
   STATIC_ASSERT(FAST_HOLEY_SMI_ELEMENTS == 1);
-  lbz(scratch, FieldMemOperand(map, Map::kBitField2Offset));
+  LoadlB(scratch, FieldMemOperand(map, Map::kBitField2Offset));
   Cmpli(scratch, Operand(Map::kMaximumBitField2FastHoleySmiElementValue));
   bgt(fail);
 }
@@ -2068,7 +2068,7 @@ void MacroAssembler::TryGetFunctionPrototype(Register function,
 
   // Make sure that the function has an instance prototype.
   Label non_instance;
-  lbz(scratch, FieldMemOperand(result, Map::kBitFieldOffset));
+  LoadlB(scratch, FieldMemOperand(result, Map::kBitFieldOffset));
   andi(r0, scratch, Operand(1 << Map::kHasNonInstancePrototype));
   bne(&non_instance /*, cr0*/);
 
@@ -3007,8 +3007,8 @@ void MacroAssembler::JumpIfNonSmisNotBothSequentialAsciiStrings(
   // Assume that they are non-smis.
   LoadP(scratch1, FieldMemOperand(first, HeapObject::kMapOffset));
   LoadP(scratch2, FieldMemOperand(second, HeapObject::kMapOffset));
-  lbz(scratch1, FieldMemOperand(scratch1, Map::kInstanceTypeOffset));
-  lbz(scratch2, FieldMemOperand(scratch2, Map::kInstanceTypeOffset));
+  LoadlB(scratch1, FieldMemOperand(scratch1, Map::kInstanceTypeOffset));
+  LoadlB(scratch2, FieldMemOperand(scratch2, Map::kInstanceTypeOffset));
 
   JumpIfBothInstanceTypesAreNotSequentialAscii(scratch1,
                                                scratch2,
@@ -3123,7 +3123,7 @@ void MacroAssembler::CopyBytes(Register src,
   Sub(scratch, Operand(kPointerSize));
   mtctr(scratch);
   bind(&align_loop);
-  lbz(scratch, MemOperand(src));
+  LoadlB(scratch, MemOperand(src));
   AddP(src, Operand(1));
   Sub(length, Operand(1));
   stb(scratch, MemOperand(dst));
@@ -3200,7 +3200,7 @@ void MacroAssembler::CopyBytes(Register src,
   bind(&byte_loop);
   mtctr(length);
   bind(&byte_loop_1);
-  lbz(scratch, MemOperand(src));
+  LoadlB(scratch, MemOperand(src));
   AddP(src, Operand(1));
   stb(scratch, MemOperand(dst));
   AddP(dst, Operand(1));
@@ -3644,7 +3644,7 @@ void MacroAssembler::JumpIfDataObject(Register value,
   ASSERT(kNotStringTag == 0x80 && kIsNotStringMask == 0x80);
   // If it's a string and it's not a cons string then it's an object containing
   // no GC pointers.
-  lbz(scratch, FieldMemOperand(scratch, Map::kInstanceTypeOffset));
+  LoadlB(scratch, FieldMemOperand(scratch, Map::kInstanceTypeOffset));
   STATIC_ASSERT((kIsIndirectStringMask | kIsNotStringMask) == 0x81);
   andi(scratch, scratch, Operand(kIsIndirectStringMask | kIsNotStringMask));
   bne(not_data_object /*, cr0*/);
@@ -3732,7 +3732,7 @@ void MacroAssembler::EnsureNotWhite(
   // If it's a string and it's not a cons string then it's an object containing
   // no GC pointers.
   Register instance_type = load_scratch;
-  lbz(instance_type, FieldMemOperand(map, Map::kInstanceTypeOffset));
+  LoadlB(instance_type, FieldMemOperand(map, Map::kInstanceTypeOffset));
   andi(r0, instance_type, Operand(kIsIndirectStringMask | kIsNotStringMask));
   bne(value_is_white_and_not_data /*, cr0*/);
   // It's a non-indirect (non-cons and non-slice) string.
@@ -4670,7 +4670,7 @@ void MacroAssembler::LoadByte(Register dst, const MemOperand& mem,
 
   if (!updateForm) {
     if (use_dform) {
-      lbz(dst, mem);
+      LoadlB(dst, mem);
     } else {
       lbzx(dst, MemOperand(base, scratch));
     }

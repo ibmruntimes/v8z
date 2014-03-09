@@ -153,12 +153,12 @@ static void GenerateDictionaryNegativeLookup(MacroAssembler* masm,
   // Bail out if the receiver has a named interceptor or requires access checks.
   Register map = scratch1;
   __ LoadP(map, FieldMemOperand(receiver, HeapObject::kMapOffset));
-  __ lbz(scratch0, FieldMemOperand(map, Map::kBitFieldOffset));
+  __ LoadlB(scratch0, FieldMemOperand(map, Map::kBitFieldOffset));
   __ andi(r0, scratch0, Operand(kInterceptorOrAccessCheckNeededMask));
   __ bne(miss_label /*, cr0*/);
 
   // Check that receiver is a JSObject.
-  __ lbz(scratch0, FieldMemOperand(map, Map::kInstanceTypeOffset));
+  __ LoadlB(scratch0, FieldMemOperand(map, Map::kInstanceTypeOffset));
   __ Cmpi(scratch0, Operand(FIRST_SPEC_OBJECT_TYPE));
   __ blt(miss_label);
 
@@ -389,7 +389,7 @@ static void GenerateStringCheck(MacroAssembler* masm,
 
   // Check that the object is a string.
   __ LoadP(scratch1, FieldMemOperand(receiver, HeapObject::kMapOffset));
-  __ lbz(scratch1, FieldMemOperand(scratch1, Map::kInstanceTypeOffset));
+  __ LoadlB(scratch1, FieldMemOperand(scratch1, Map::kInstanceTypeOffset));
   __ andi(scratch2, scratch1, Operand(kIsNotStringMask));
   // The cast is to resolve the overload for the argument of 0x0.
   __ Cmpi(scratch2, Operand(static_cast<intptr_t>(kStringTag)));
@@ -3444,7 +3444,7 @@ Handle<Code> ConstructStubCompiler::CompileConstructStub(
   // r4: constructor function
   // r5: initial map
   // r10: undefined
-  __ lbz(r6, FieldMemOperand(r5, Map::kInstanceSizeOffset));
+  __ LoadlB(r6, FieldMemOperand(r5, Map::kInstanceSizeOffset));
   __ AllocateInNewSpace(r6, r7, r8, r9, &generic_stub_call, SIZE_IN_WORDS);
 
   // Allocated the JSObject, now initialize the fields. Map is set to initial
