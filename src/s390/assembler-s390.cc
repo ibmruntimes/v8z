@@ -858,10 +858,6 @@ void Assembler::oris(Register dst, Register src, const Operand& imm) {
   d_form(ORIS, src, dst, imm.imm_, false);
 }
 
-void Assembler::orx(Register dst, Register src1, Register src2, RCBit rc) {
-  x_form(EXT2 | ORX, dst, src1, src2, rc);
-}
-
 void  Assembler::lis(Register dst, const Operand& imm) {
   d_form(ADDIS, dst, r0, imm.imm_, true);
 }

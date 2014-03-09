@@ -1751,7 +1751,6 @@ SS2_FORM(zap);
   void notx(Register dst, Register src, RCBit r = LeaveRC);
   void ori(Register dst, Register src, const Operand& imm);
   void oris(Register dst, Register src, const Operand& imm);
-  void orx(Register dst, Register src1, Register src2, RCBit rc = LeaveRC);
   void xori(Register dst, Register src, const Operand& imm);
   void xoris(Register rb, Register rs, const Operand& imm);
   void lhi(Register dst, const Operand& imm);
