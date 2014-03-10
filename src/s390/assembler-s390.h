@@ -39,7 +39,7 @@
 //
 
 // A light-weight S390 Assembler
-// Generates user mode instructions for the S390 architecture up
+// Generates user mode instructions for the S390 architecture
 
 #ifndef V8_S390_ASSEMBLER_S390_H_
 #define V8_S390_ASSEMBLER_S390_H_
@@ -229,7 +229,7 @@ const Register r16  = { kRegister_r16_Code };
 const Register r17  = { kRegister_r17_Code };
 const Register r18  = { kRegister_r18_Code };
 const Register r19  = { kRegister_r19_Code };
-// Used as context register.
+// Used as context register on PPC
 const Register r20  = { kRegister_r20_Code };
 const Register r21  = { kRegister_r21_Code };
 const Register r22  = { kRegister_r22_Code };
@@ -243,6 +243,41 @@ const Register r29  = { kRegister_r29_Code };
 const Register r30  = { kRegister_r30_Code };
 const Register r31  = { kRegister_r31_Code };
 
+// PPC register aliases to allow for safer find and replace
+// of registers in stubs.  To be removed once all mapping is
+// completed.
+const Register r0_p  = { kRegister_r0_Code };
+const Register r1_p  = { kRegister_r1_Code };
+const Register r2_p  = { kRegister_r2_Code };
+const Register r3_p  = { kRegister_r3_Code };
+const Register r4_p  = { kRegister_r4_Code };
+const Register r5_p  = { kRegister_r5_Code };
+const Register r6_p  = { kRegister_r6_Code };
+const Register r7_p  = { kRegister_r7_Code };
+const Register r8_p  = { kRegister_r8_Code };
+const Register r9_p  = { kRegister_r9_Code };
+const Register r10_p = { kRegister_r10_Code };
+const Register r11_p = { kRegister_fp_Code };
+const Register r13_p  = { kRegister_r13_Code };
+const Register r14_p  = { kRegister_r14_Code };
+const Register r15_p  = { kRegister_sp_Code };
+const Register r16_p  = { kRegister_r16_Code };
+const Register r17_p  = { kRegister_r17_Code };
+const Register r18_p  = { kRegister_r18_Code };
+const Register r19_p  = { kRegister_r19_Code };
+// Used as context register on PPC
+const Register r20_p  = { kRegister_r20_Code };
+const Register r21_p  = { kRegister_r21_Code };
+const Register r22_p  = { kRegister_r22_Code };
+const Register r23_p  = { kRegister_r23_Code };
+const Register r24_p  = { kRegister_r24_Code };
+const Register r25_p  = { kRegister_r25_Code };
+const Register r26_p  = { kRegister_r26_Code };
+const Register r27_p  = { kRegister_r27_Code };
+const Register r28_p  = { kRegister_r28_Code };
+const Register r29_p  = { kRegister_r29_Code };
+const Register r30_p  = { kRegister_r30_Code };
+const Register r31_p  = { kRegister_r31_Code };
 
 // Double word FP register.
 struct DwVfpRegister {
