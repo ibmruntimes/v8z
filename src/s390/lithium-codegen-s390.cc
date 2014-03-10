@@ -3367,9 +3367,9 @@ void LCodeGen::DoDeferredMathAbsTaggedHeapNumber(LUnaryMathOperation* instr) {
     // tmp1: allocated heap number.
     STATIC_ASSERT(HeapNumber::kSignMask == 0x80000000u);
     __ clrlwi(exponent, exponent, Operand(1));  // clear sign bit
-    __ st(exponent, FieldMemOperand(tmp1, HeapNumber::kExponentOffset));
+    __ StoreW(exponent, FieldMemOperand(tmp1, HeapNumber::kExponentOffset));
     __ LoadlW(tmp2, FieldMemOperand(input, HeapNumber::kMantissaOffset));
-    __ st(tmp2, FieldMemOperand(tmp1, HeapNumber::kMantissaOffset));
+    __ StoreW(tmp2, FieldMemOperand(tmp1, HeapNumber::kMantissaOffset));
 
     __ StoreToSafepointRegisterSlot(tmp1, result);
   }
@@ -3661,7 +3661,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
   __ srwi(r4, r4, Operand(16));
   __ Add(r4, r6, r4);
   // Save state[0].
-  __ st(r4, FieldMemOperand(r5, ByteArray::kHeaderSize));
+  __ StoreW(r4, FieldMemOperand(r5, ByteArray::kHeaderSize));
 
   // state[1] = 36969 * (state[1] & 0xFFFF) + (state[1] >> 16)
   __ andi(r6, r3, Operand(0xFFFF));
@@ -3670,7 +3670,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
   __ srwi(r3, r3, Operand(16));
   __ Add(r3, r6, r3);
   // Save state[1].
-  __ st(r3, FieldMemOperand(r5, ByteArray::kHeaderSize + kSeedSize));
+  __ StoreW(r3, FieldMemOperand(r5, ByteArray::kHeaderSize + kSeedSize));
 
   // Random bit pattern = (state[0] << 14) + (state[1] & 0x3FFFF)
   __ ExtractBitMask(r3, r3, 0x3FFFF);
@@ -3687,22 +3687,22 @@ void LCodeGen::DoRandom(LRandom* instr) {
 
   // Move 0x41300000xxxxxxxx (x = random bits) to VFP.
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  __ st(r3, MemOperand(sp, 0));
-  __ st(r4, MemOperand(sp, 4));
+  __ StoreW(r3, MemOperand(sp, 0));
+  __ StoreW(r4, MemOperand(sp, 4));
 #else
-  __ st(r4, MemOperand(sp, 0));
-  __ st(r3, MemOperand(sp, 4));
+  __ StoreW(r4, MemOperand(sp, 0));
+  __ StoreW(r3, MemOperand(sp, 4));
 #endif
   __ lfd(d7, MemOperand(sp, 0));
 
   // Move 0x4130000000000000 to VFP.
   __ lhi(r3, Operand::Zero());
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  __ st(r3, MemOperand(sp, 0));
-  __ st(r4, MemOperand(sp, 4));
+  __ StoreW(r3, MemOperand(sp, 0));
+  __ StoreW(r4, MemOperand(sp, 4));
 #else
-  __ st(r4, MemOperand(sp, 0));
-  __ st(r3, MemOperand(sp, 4));
+  __ StoreW(r4, MemOperand(sp, 0));
+  __ StoreW(r3, MemOperand(sp, 4));
 #endif
   __ lfd(d8, MemOperand(sp, 0));
 
@@ -4087,15 +4087,15 @@ void LCodeGen::DoStoreKeyedFastDoubleElement(
         FixedDoubleArray::canonical_not_the_hole_nan_as_double());
     __ mov(r0, Operand(static_cast<intptr_t>(nan_int64)));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-    __ st(r0, MemOperand(scratch, dst_offset));
+    __ StoreW(r0, MemOperand(scratch, dst_offset));
 #else
-    __ st(r0, MemOperand(scratch, dst_offset + 4));
+    __ StoreW(r0, MemOperand(scratch, dst_offset + 4));
 #endif
     __ mov(r0, Operand(static_cast<intptr_t>(nan_int64 >> 32)));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-    __ st(r0, MemOperand(scratch, dst_offset + 4));
+    __ StoreW(r0, MemOperand(scratch, dst_offset + 4));
 #else
-    __ st(r0, MemOperand(scratch, dst_offset));
+    __ StoreW(r0, MemOperand(scratch, dst_offset));
 #endif
     __ b(&done);
   }
@@ -4166,11 +4166,7 @@ void LCodeGen::DoStoreKeyedSpecializedArrayElement(
         break;
       case EXTERNAL_INT_ELEMENTS:
       case EXTERNAL_UNSIGNED_INT_ELEMENTS:
-        if (key_is_constant) {
-          __ StoreW(value, mem_operand, r0);
-        } else {
-          __ st(value, mem_operand);
-        }
+        __ StoreW(value, mem_operand);
         break;
       case EXTERNAL_FLOAT_ELEMENTS:
       case EXTERNAL_DOUBLE_ELEMENTS:
@@ -5175,14 +5171,14 @@ void LCodeGen::EmitDeepCopy(Handle<JSObject> object,
             elements_offset + FixedDoubleArray::OffsetOfElementAt(i);
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
         __ mov(r5, Operand(value_low));
-        __ st(r5, FieldMemOperand(result, total_offset));
+        __ StoreW(r5, FieldMemOperand(result, total_offset));
         __ mov(r5, Operand(value_high));
-        __ st(r5, FieldMemOperand(result, total_offset + 4));
+        __ StoreW(r5, FieldMemOperand(result, total_offset + 4));
 #else
         __ mov(r5, Operand(value_high));
-        __ st(r5, FieldMemOperand(result, total_offset));
+        __ StoreW(r5, FieldMemOperand(result, total_offset));
         __ mov(r5, Operand(value_low));
-        __ st(r5, FieldMemOperand(result, total_offset + 4));
+        __ StoreW(r5, FieldMemOperand(result, total_offset + 4));
 #endif
       }
     } else if (elements->IsFixedArray()) {
