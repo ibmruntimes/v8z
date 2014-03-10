@@ -2442,7 +2442,7 @@ void MacroAssembler::EmitOutOfInt32RangeTruncate(Register result,
   srw(input_low, input_low, scratch);
 
   bind(&shift_done);
-  Or(input_high, input_low);
+  OrP(input_high, input_low);
 
   // Restore sign if necessary.
   Cmpi(sign, Operand::Zero());
@@ -2935,7 +2935,7 @@ void MacroAssembler::JumpIfNotBothSmi(Register reg1,
   STATIC_ASSERT(kSmiTag == 0);
   ASSERT_EQ(1, static_cast<int>(kSmiTagMask));
   LoadRR(r0, reg2);
-  Or(r0, reg1/*, LeaveRC*/);  // should be okay to remove LeaveRC
+  OrP(r0, reg1/*, LeaveRC*/);  // should be okay to remove LeaveRC
   JumpIfNotSmi(r0, on_not_both_smi);
 }
 
@@ -3822,7 +3822,7 @@ void MacroAssembler::EnsureNotWhite(
   // Value is a data object, and it is white.  Mark it black.  Since we know
   // that the object is white we can make it black by flipping one bit.
   LoadlW(ip, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
-  Or(ip, mask_scratch);
+  OrP(ip, mask_scratch);
   StoreW(ip, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
 
   mov(ip, Operand(~Page::kPageAlignmentMask));
@@ -4185,7 +4185,7 @@ void MacroAssembler::And(Register dst, Register src, const Operand& opnd) {
 }
 #endif
 
-void MacroAssembler::Or(Register dst, Register src) {
+void MacroAssembler::OrP(Register dst, Register src) {
 #if V8_TARGET_ARCH_S390X
   ogr(dst, src);
 #else
@@ -4203,7 +4203,7 @@ void MacroAssembler::Or(Register dst, Register src1, Register src2) {
 }
 #endif
 
-void MacroAssembler::Or(Register dst, const Operand& opnd) {
+void MacroAssembler::OrP(Register dst, const Operand& opnd) {
   ASSERT(!opnd.is_reg());
 #if V8_TARGET_ARCH_S390X
   oihf(dst, Operand(0));
@@ -4217,7 +4217,7 @@ void MacroAssembler::Or(Register dst, const Operand& opnd) {
 void MacroAssembler::Or(Register dst, Register src, const Operand& opnd) {
   ASSERT(!opnd.is_reg());
   if (!dst.is(src)) LoadRR(dst, src);
-  Or(dst, opnd);
+  OrP(dst, opnd);
 }
 #endif
 
