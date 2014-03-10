@@ -4228,11 +4228,13 @@ void MacroAssembler::Xor(Register dst, const Operand& opnd) {
 #endif
 }
 
+#if 0
 void MacroAssembler::Xor(Register dst, Register src, const Operand& opnd) {
   ASSERT(!opnd.is_reg());
   if (!dst.is(src)) LoadRR(dst, src);
-  And(dst, opnd);
+  Xor(dst, opnd);
 }
+#endif
 
 void MacroAssembler::AddP(Register dst, const Operand& opnd) {
   Add(dst, opnd);
