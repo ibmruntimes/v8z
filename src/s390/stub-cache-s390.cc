@@ -142,8 +142,8 @@ static void GenerateDictionaryNegativeLookup(MacroAssembler* masm,
                                              Register scratch1) {
   ASSERT(name->IsSymbol());
   Counters* counters = masm->isolate()->counters();
-  __ IncrementCounter(counters->negative_lookups(), 1, scratch0);
-  __ IncrementCounter(counters->negative_lookups_miss(), 1, scratch0);
+  __ IncrementCounter(counters->negative_lookups(), 1, scratch0, scratch1);
+  __ IncrementCounter(counters->negative_lookups_miss(), 1, scratch0, scratch1);
 
   Label done;
 
@@ -184,7 +184,7 @@ static void GenerateDictionaryNegativeLookup(MacroAssembler* masm,
                                                      name,
                                                      scratch1);
   __ bind(&done);
-  __ DecrementCounter(counters->negative_lookups_miss(), 1, scratch0);
+  __ DecrementCounter(counters->negative_lookups_miss(), 1, scratch0, scratch1);
 }
 
 
@@ -231,7 +231,7 @@ void StubCache::GenerateProbe(MacroAssembler* masm,
 
   Counters* counters = masm->isolate()->counters();
   __ IncrementCounter(counters->megamorphic_stub_cache_probes(), 1,
-                      extra2);
+                      extra2, extra3);
 
   // Check that the receiver isn't a smi.
   __ JumpIfSmi(receiver, &miss);
@@ -289,7 +289,7 @@ void StubCache::GenerateProbe(MacroAssembler* masm,
   // entering the runtime system.
   __ bind(&miss);
   __ IncrementCounter(counters->megamorphic_stub_cache_misses(), 1,
-                      extra2);
+                      extra2, extra3);
 }
 
 
@@ -852,11 +852,11 @@ class CallInterceptorCompiler BASE_EMBEDDED {
     }
 
     __ IncrementCounter(counters->call_const_interceptor(), 1,
-                        scratch1);
+                        scratch1, scratch2);
 
     if (can_do_fast_api_call) {
       __ IncrementCounter(counters->call_const_interceptor_fast_api(), 1,
-                          scratch1);
+                          scratch1, scratch2);
       ReserveSpaceForFastApiCall(masm, scratch1);
     }
 
@@ -2365,8 +2365,8 @@ Handle<Code> CallStubCompiler::CompileFastApiCall(
   // Check that the receiver isn't a smi.
   __ JumpIfSmi(r4, &miss_before_stack_reserved);
 
-  __ IncrementCounter(counters->call_const(), 1, r3);
-  __ IncrementCounter(counters->call_const_fast_api(), 1, r3);
+  __ IncrementCounter(counters->call_const(), 1, r3, r6);
+  __ IncrementCounter(counters->call_const_fast_api(), 1, r3, r6);
 
   ReserveSpaceForFastApiCall(masm(), r3);
 
@@ -2422,7 +2422,7 @@ Handle<Code> CallStubCompiler::CompileCallConstant(Handle<Object> object,
   switch (check) {
     case RECEIVER_MAP_CHECK:
       __ IncrementCounter(masm()->isolate()->counters()->call_const(),
-                          1, r3);
+                          1, r3, r6);
 
       // Check that the maps haven't changed.
       CheckPrototypes(Handle<JSObject>::cast(object), r4, holder, r3, r6, r7,
@@ -2589,7 +2589,7 @@ Handle<Code> CallStubCompiler::CompileCallGlobal(
 
   // Jump to the cached code (tail call).
   Counters* counters = masm()->isolate()->counters();
-  __ IncrementCounter(counters->call_global_inline(), 1, r6);
+  __ IncrementCounter(counters->call_global_inline(), 1, r6, r7);
   ParameterCount expected(function->shared()->formal_parameter_count());
   CallKind call_kind = CallICBase::Contextual::decode(extra_state_)
       ? CALL_AS_FUNCTION
@@ -2603,7 +2603,7 @@ Handle<Code> CallStubCompiler::CompileCallGlobal(
 
   // Handle call cache miss.
   __ bind(&miss);
-  __ IncrementCounter(counters->call_global_inline_miss(), 1, r4);
+  __ IncrementCounter(counters->call_global_inline_miss(), 1, r4, r6);
   GenerateMissBranch();
 
   // Return the generated code.
@@ -2831,12 +2831,12 @@ Handle<Code> StoreStubCompiler::CompileStoreGlobal(
   // Cells are always rescanned, so no write barrier here.
 
   Counters* counters = masm()->isolate()->counters();
-  __ IncrementCounter(counters->named_store_global_inline(), 1, r7);
+  __ IncrementCounter(counters->named_store_global_inline(), 1, r7, r6);
   __ Ret();
 
   // Handle store cache miss.
   __ bind(&miss);
-  __ IncrementCounter(counters->named_store_global_inline_miss(), 1, r7);
+  __ IncrementCounter(counters->named_store_global_inline_miss(), 1, r7, r6);
   Handle<Code> ic = masm()->isolate()->builtins()->StoreIC_Miss();
   __ Jump(ic, RelocInfo::CODE_TARGET);
 
@@ -3056,11 +3056,11 @@ Handle<Code> LoadStubCompiler::CompileLoadGlobal(
 
   __ LoadRR(r3, r7);
   Counters* counters = masm()->isolate()->counters();
-  __ IncrementCounter(counters->named_load_global_stub(), 1, r4);
+  __ IncrementCounter(counters->named_load_global_stub(), 1, r4, r6);
   __ Ret();
 
   __ bind(&miss);
-  __ IncrementCounter(counters->named_load_global_stub_miss(), 1, r4);
+  __ IncrementCounter(counters->named_load_global_stub_miss(), 1, r4, r6);
   GenerateLoadMiss(masm(), Code::LOAD_IC);
 
   // Return the generated code.
@@ -3199,7 +3199,7 @@ Handle<Code> KeyedLoadStubCompiler::CompileLoadStringLength(
   Label miss;
 
   Counters* counters = masm()->isolate()->counters();
-  __ IncrementCounter(counters->keyed_load_string_length(), 1, r5);
+  __ IncrementCounter(counters->keyed_load_string_length(), 1, r5, r6);
 
   // Check the key is the cached one.
   __ Cmpi(r3, Operand(name));
@@ -3207,7 +3207,7 @@ Handle<Code> KeyedLoadStubCompiler::CompileLoadStringLength(
 
   GenerateLoadStringLength(masm(), r4, r5, r6, &miss, true);
   __ bind(&miss);
-  __ DecrementCounter(counters->keyed_load_string_length(), 1, r5);
+  __ DecrementCounter(counters->keyed_load_string_length(), 1, r5, r6);
 
   GenerateLoadMiss(masm(), Code::KEYED_LOAD_IC);
 
@@ -3225,7 +3225,7 @@ Handle<Code> KeyedLoadStubCompiler::CompileLoadFunctionPrototype(
   Label miss;
 
   Counters* counters = masm()->isolate()->counters();
-  __ IncrementCounter(counters->keyed_load_function_prototype(), 1, r5);
+  __ IncrementCounter(counters->keyed_load_function_prototype(), 1, r5, r6);
 
   // Check the name hasn't changed.
   __ Cmpi(r3, Operand(name));
@@ -3233,7 +3233,7 @@ Handle<Code> KeyedLoadStubCompiler::CompileLoadFunctionPrototype(
 
   GenerateLoadFunctionPrototype(masm(), r4, r5, r6, &miss);
   __ bind(&miss);
-  __ DecrementCounter(counters->keyed_load_function_prototype(), 1, r5);
+  __ DecrementCounter(counters->keyed_load_function_prototype(), 1, r5, r6);
   GenerateLoadMiss(masm(), Code::KEYED_LOAD_IC);
 
   return GetCode(Code::CALLBACKS, name);
@@ -3304,7 +3304,7 @@ Handle<Code> KeyedStoreStubCompiler::CompileStoreField(Handle<JSObject> object,
   Label miss;
 
   Counters* counters = masm()->isolate()->counters();
-  __ IncrementCounter(counters->keyed_store_field(), 1, r6);
+  __ IncrementCounter(counters->keyed_store_field(), 1, r6, r7);
 
   // Check that the name has not changed.
   __ Cmpi(r4, Operand(name));
@@ -3321,7 +3321,7 @@ Handle<Code> KeyedStoreStubCompiler::CompileStoreField(Handle<JSObject> object,
                      &miss);
   __ bind(&miss);
 
-  __ DecrementCounter(counters->keyed_store_field(), 1, r6);
+  __ DecrementCounter(counters->keyed_store_field(), 1, r6, r7);
   Handle<Code> ic = masm()->isolate()->builtins()->KeyedStoreIC_Miss();
   __ Jump(ic, RelocInfo::CODE_TARGET);
 
@@ -3531,8 +3531,8 @@ Handle<Code> ConstructStubCompiler::CompileConstructStub(
   __ AddP(sp, r4);
   __ AddP(sp, Operand(kPointerSize));
   Counters* counters = masm()->isolate()->counters();
-  __ IncrementCounter(counters->constructed_objects(), 1, r4);
-  __ IncrementCounter(counters->constructed_objects_stub(), 1, r4);
+  __ IncrementCounter(counters->constructed_objects(), 1, r4, r5);
+  __ IncrementCounter(counters->constructed_objects_stub(), 1, r4, r5);
   __ blr();
 
   // Jump to the generic stub in case the specialized code cannot handle the
@@ -3571,7 +3571,7 @@ void KeyedLoadStubCompiler::GenerateLoadDictionaryElement(
   __ bind(&slow);
   __ IncrementCounter(
       masm->isolate()->counters()->keyed_load_external_array_slow(),
-      1, r5);
+      1, r5, r6);
 
   // ---------- S t a t e --------------
   //  -- lr     : return address
@@ -3810,7 +3810,7 @@ void KeyedLoadStubCompiler::GenerateLoadExternalArray(
   __ bind(&slow);
   __ IncrementCounter(
       masm->isolate()->counters()->keyed_load_external_array_slow(),
-      1, r5);
+      1, r5, r6);
 
   // ---------- S t a t e --------------
   //  -- lr     : return address
@@ -3997,7 +3997,7 @@ void KeyedStoreStubCompiler::GenerateStoreExternalArray(
   __ bind(&slow);
   __ IncrementCounter(
       masm->isolate()->counters()->keyed_load_external_array_slow(),
-      1, r5);
+      1, r5, r6);
 
   // ---------- S t a t e --------------
   //  -- lr     : return address

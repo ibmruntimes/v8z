@@ -347,7 +347,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
                        r7,
                        r8,
                        call_generic_code);
-  __ IncrementCounter(counters->array_function_native(), 1, r6);
+  __ IncrementCounter(counters->array_function_native(), 1, r6, r7);
   // Set up return value, remove receiver from stack and return.
   __ LoadRR(r3, r5);
   __ AddP(sp, Operand(kPointerSize));
@@ -390,7 +390,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
                   r10,
                   true,
                   call_generic_code);
-  __ IncrementCounter(counters->array_function_native(), 1, r5);
+  __ IncrementCounter(counters->array_function_native(), 1, r5, r7);
   // Set up return value, remove receiver and argument from stack and return.
   __ LoadRR(r3, r6);
   __ AddP(sp, Operand(2 * kPointerSize));
@@ -415,7 +415,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
                   r10,
                   false,
                   call_generic_code);
-  __ IncrementCounter(counters->array_function_native(), 1, r5);
+  __ IncrementCounter(counters->array_function_native(), 1, r5, r9);
 
   // Fill arguments as array elements. Copy from the top of the stack (last
   // element) to the array backing store filling it backwards. Note:
@@ -600,7 +600,7 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
   //  -- sp[argc * 4]           : receiver
   // -----------------------------------
   Counters* counters = masm->isolate()->counters();
-  __ IncrementCounter(counters->string_ctor_calls(), 1, r5);
+  __ IncrementCounter(counters->string_ctor_calls(), 1, r5, r6);
 
   Register function = r4;
   if (FLAG_debug_code) {
@@ -632,7 +632,7 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
       r8,        // Scratch.
       false,     // Is it a Smi?
       &not_cached);
-  __ IncrementCounter(counters->string_ctor_cached_number(), 1, r6);
+  __ IncrementCounter(counters->string_ctor_cached_number(), 1, r6, r7);
   __ bind(&argument_is_string);
 
   // ----------- S t a t e -------------
@@ -686,13 +686,13 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
   __ andi(r0, r6, Operand(kIsNotStringMask));
   __ bne(&convert_argument /*, cr0*/);
   __ LoadRR(argument, r3);
-  __ IncrementCounter(counters->string_ctor_conversions(), 1, r6);
+  __ IncrementCounter(counters->string_ctor_conversions(), 1, r6, r7);
   __ b(&argument_is_string);
 
   // Invoke the conversion builtin and put the result into r5.
   __ bind(&convert_argument);
   __ push(function);  // Preserve the function.
-  __ IncrementCounter(counters->string_ctor_conversions(), 1, r6);
+  __ IncrementCounter(counters->string_ctor_conversions(), 1, r6, r7);
   {
     FrameScope scope(masm, StackFrame::INTERNAL);
     __ push(r3);
@@ -712,7 +712,7 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
   // At this point the argument is already a string. Call runtime to
   // create a string wrapper.
   __ bind(&gc_required);
-  __ IncrementCounter(counters->string_ctor_gc_required(), 1, r6);
+  __ IncrementCounter(counters->string_ctor_gc_required(), 1, r6, r7);
   {
     FrameScope scope(masm, StackFrame::INTERNAL);
     __ push(argument);
@@ -1129,7 +1129,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
   __ SmiToPtrArrayOffset(r4, r4);
   __ AddP(sp, r4);
   __ AddP(sp, Operand(kPointerSize));
-  __ IncrementCounter(isolate->counters()->constructed_objects(), 1, r4);
+  __ IncrementCounter(isolate->counters()->constructed_objects(), 1, r4, r5);
   __ blr();
 }
 
