@@ -134,7 +134,8 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   // Align the array conveniently for doubles.
   // Store a filler value in the unused memory.
   Label aligned, aligned_done;
-  __ andi(r0, r9, Operand(kDoubleAlignmentMask));
+  __ LoadRR(r0, r9);
+  __ And(r0, Operand(kDoubleAlignmentMask));
   __ mov(ip, Operand(masm->isolate()->factory()->one_pointer_filler_map()));
   __ beq(&aligned /*, cr0*/);
   // Store at the beginning of the allocated memory and update the base pointer.
@@ -409,7 +410,8 @@ void StringCharLoadGenerator::Generate(MacroAssembler* masm,
 
   // We need special handling for indirect strings.
   Label check_sequential;
-  __ andi(r0, result, Operand(kIsIndirectStringMask));
+  __ LoadRR(r0, result);
+  __ And(r0, Operand(kIsIndirectStringMask));
   __ beq(&check_sequential /*, cr0*/);
 
   // Dispatch on the indirect string shape: slice or cons.
@@ -449,7 +451,8 @@ void StringCharLoadGenerator::Generate(MacroAssembler* masm,
   Label external_string, check_encoding;
   __ bind(&check_sequential);
   STATIC_ASSERT(kSeqStringTag == 0);
-  __ andi(r0, result, Operand(kStringRepresentationMask));
+  __ LoadRR(r0, result);
+  __ And(r0, Operand(kStringRepresentationMask));
   __ bne(&external_string /*, cr0*/);
 
   // Prepare sequential strings
@@ -462,12 +465,14 @@ void StringCharLoadGenerator::Generate(MacroAssembler* masm,
   if (FLAG_debug_code) {
     // Assert that we do not have a cons or slice (indirect strings) here.
     // Sequential strings have already been ruled out.
-    __ andi(r0, result, Operand(kIsIndirectStringMask));
+    __ LoadRR(r0, result);
+    __ And(r0, Operand(kIsIndirectStringMask));
     __ Assert(eq, "external string expected, but not found", cr0);
   }
   // Rule out short external strings.
   STATIC_CHECK(kShortExternalStringTag != 0);
-  __ andi(r0, result, Operand(kShortExternalStringMask));
+  __ LoadRR(r0, result);
+  __ And(r0, Operand(kShortExternalStringMask));
   __ bne(call_runtime /*, cr0*/);
   __ LoadP(string,
            FieldMemOperand(string, ExternalString::kResourceDataOffset));
@@ -475,7 +480,8 @@ void StringCharLoadGenerator::Generate(MacroAssembler* masm,
   Label ascii, done;
   __ bind(&check_encoding);
   STATIC_ASSERT(kTwoByteStringTag == 0);
-  __ andi(r0, result, Operand(kStringEncodingMask));
+  __ LoadRR(r0, result);
+  __ And(r0, Operand(kStringEncodingMask));
   __ bne(&ascii /*, cr0*/);
   // Two-byte string.
   __ ShiftLeftImm(result, index, Operand(1));
