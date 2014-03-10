@@ -3456,7 +3456,7 @@ void LCodeGen::DoMathFloor(LUnaryMathOperation* instr) {
     __ bne(&done);
     // Move high word to scrach and test sign bit
     __ Sub(sp, Operand(8));
-    __ stfd(input, MemOperand(sp));
+    __ StoreF(input, MemOperand(sp));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
     __ LoadlW(scratch, MemOperand(sp, 4));
 #else
@@ -3479,7 +3479,7 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
 
   // Extract exponent bits.
   __ Sub(sp, Operand(8));
-  __ stfd(input, MemOperand(sp));
+  __ StoreF(input, MemOperand(sp));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
   __ LoadlW(result, MemOperand(sp, 4));
 #else
@@ -3514,7 +3514,7 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
   // Check sign of the result: if the sign changed, the input
   // value was in ]0.5, 0[ and the result should be -0.
   __ Sub(sp, Operand(8));
-  __ stfd(double_scratch0(), MemOperand(sp, 0));
+  __ StoreF(double_scratch0(), MemOperand(sp, 0));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
   __ LoadlW(result, MemOperand(sp, 4));
 #else
@@ -3546,7 +3546,7 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
     __ bind(&check_sign_on_zero);
     // Move high word to scrach and test sign bit
     __ Sub(sp, Operand(8));
-    __ stfd(input, MemOperand(sp));
+    __ StoreF(input, MemOperand(sp));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
     __ LoadlW(scratch, MemOperand(sp, 4));
 #else
@@ -4108,7 +4108,7 @@ void LCodeGen::DoStoreKeyedFastDoubleElement(
   }
 
   __ bind(&no_canonicalization);
-  __ stfd(value, MemOperand(scratch, dst_offset));
+  __ StoreF(value, MemOperand(scratch, dst_offset));
   __ bind(&done);
 }
 
@@ -4146,7 +4146,7 @@ void LCodeGen::DoStoreKeyedSpecializedArrayElement(
       __ frsp(double_scratch0(), value);
       __ stfs(double_scratch0(), MemOperand(scratch0(), additional_offset));
     } else {  // i.e. elements_kind == EXTERNAL_DOUBLE_ELEMENTS
-      __ stfd(value, MemOperand(scratch0(), additional_offset));
+      __ StoreF(value, MemOperand(scratch0(), additional_offset));
     }
   } else {
     Register value(ToRegister(instr->value()));
@@ -4492,7 +4492,7 @@ void LCodeGen::DoDeferredNumberTagI(LInstruction* instr,
   // Done. Put the value in dbl_scratch into the value of the allocated heap
   // number.
   __ bind(&done);
-  __ stfd(dbl_scratch, FieldMemOperand(dst, HeapNumber::kValueOffset));
+  __ StoreF(dbl_scratch, FieldMemOperand(dst, HeapNumber::kValueOffset));
   __ StoreToSafepointRegisterSlot(dst, dst);
 }
 
@@ -4522,7 +4522,7 @@ void LCodeGen::DoNumberTagD(LNumberTagD* instr) {
     __ b(deferred->entry());
   }
   __ bind(deferred->exit());
-  __ stfd(input_reg, FieldMemOperand(reg, HeapNumber::kValueOffset));
+  __ StoreF(input_reg, FieldMemOperand(reg, HeapNumber::kValueOffset));
 }
 
 
@@ -4599,7 +4599,7 @@ void LCodeGen::EmitNumberUntagD(Register input_reg,
   __ LoadF(result_reg, FieldMemOperand(input_reg, HeapNumber::kValueOffset));
   if (deoptimize_on_minus_zero) {
     __ Sub(sp, Operand(8));
-    __ stfd(result_reg, MemOperand(sp));
+    __ StoreF(result_reg, MemOperand(sp));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
     __ LoadlW(ip, MemOperand(sp, 0));
     __ LoadlW(scratch, MemOperand(sp, 4));

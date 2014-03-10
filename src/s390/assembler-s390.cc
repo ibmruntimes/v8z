@@ -1255,16 +1255,6 @@ void Assembler::lfsux(const DwVfpRegister frt, const MemOperand & src) {
   emit(EXT2 | LFSUX | frt.code()*B21 | rb.code()*B16 | rx.code()*B11 | LeaveRC);
 }
 
-void Assembler::stfd(const DwVfpRegister frs, const MemOperand &src) {
-  int offset = src.offset();
-  Register rb = src.rb();
-  ASSERT(is_int16(offset));
-  ASSERT(!rb.is(r0));
-  int imm16 = offset & kImm16Mask;
-  // could be x_form instruction with some casting magic
-  emit(STFD | frs.code()*B21 | rb.code()*B16 | imm16);
-}
-
 void Assembler::stfdu(const DwVfpRegister frs, const MemOperand &src) {
   int offset = src.offset();
   Register rb = src.rb();
@@ -1273,13 +1263,6 @@ void Assembler::stfdu(const DwVfpRegister frs, const MemOperand &src) {
   int imm16 = offset & kImm16Mask;
   // could be x_form instruction with some casting magic
   emit(STFDU | frs.code()*B21 | rb.code()*B16 | imm16);
-}
-
-void Assembler::stfdx(const DwVfpRegister frs, const MemOperand &src) {
-  Register rb = src.rb();
-  Register rx = src.rx();
-  ASSERT(!rb.is(r0));
-  emit(EXT2 | STFDX | frs.code()*B21 | rb.code()*B16 | rx.code()*B11 | LeaveRC);
 }
 
 void Assembler::stfdux(const DwVfpRegister frs, const MemOperand &src) {

@@ -920,7 +920,7 @@ void FloatingPointHelper::CallCCodeForDoubleOperation(
   __ pop(r8);
 
   // Store answer in the overwritable heap number. Double returned in d1
-  __ stfd(d1, FieldMemOperand(heap_number_result, HeapNumber::kValueOffset));
+  __ StoreF(d1, FieldMemOperand(heap_number_result, HeapNumber::kValueOffset));
 
   // Place heap_number_result in r3 and return to the pushed return address.
   __ LoadRR(r3, heap_number_result);
@@ -1642,7 +1642,7 @@ void StoreBufferOverflowStub::Generate(MacroAssembler* masm) {
     __ Sub(sp, Operand(kDoubleSize * kNumRegs));
     for (int i = 0; i < kNumRegs; i++) {
       DwVfpRegister reg = DwVfpRegister::from_code(i);
-      __ stfd(reg, MemOperand(sp, i * kDoubleSize));
+      __ StoreF(reg, MemOperand(sp, i * kDoubleSize));
     }
   }
   const int argument_count = 1;
@@ -1896,7 +1896,7 @@ void UnaryOpStub::GenerateHeapNumberCodeBitNot(
   // Convert the int32 in r4 to the heap number in r3.
   FloatingPointHelper::ConvertIntToDouble(
       masm, r4, d0);
-  __ stfd(d0, FieldMemOperand(r3, HeapNumber::kValueOffset));
+  __ StoreF(d0, FieldMemOperand(r3, HeapNumber::kValueOffset));
   __ Ret();
 
   __ bind(&impossible);
@@ -2311,7 +2311,7 @@ void BinaryOpStub::GenerateFPOperation(MacroAssembler* masm,
         default:
           UNREACHABLE();
       }
-      __ stfd(d1, FieldMemOperand(result, HeapNumber::kValueOffset));
+      __ StoreF(d1, FieldMemOperand(result, HeapNumber::kValueOffset));
       __ LoadRR(r3, result);
       __ Ret();
       break;
@@ -2425,7 +2425,7 @@ void BinaryOpStub::GenerateFPOperation(MacroAssembler* masm,
         FloatingPointHelper::ConvertIntToDouble(
           masm, r5, d0);
       }
-      __ stfd(d0, FieldMemOperand(r3, HeapNumber::kValueOffset));
+      __ StoreF(d0, FieldMemOperand(r3, HeapNumber::kValueOffset));
       __ Ret();
       break;
     }
@@ -2657,7 +2657,7 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
         __ bne(&not_zero);
 
         __ Sub(sp, Operand(8));
-        __ stfd(d1, MemOperand(sp, 0));
+        __ StoreF(d1, MemOperand(sp, 0));
 #if V8_TARGET_ARCH_S390X
         __ ld(scratch2, MemOperand(sp, 0));
 #else
@@ -2692,7 +2692,7 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
                                      scratch1,
                                      scratch2,
                                      &call_runtime);
-        __ stfd(d1, FieldMemOperand(heap_number_result,
+        __ StoreF(d1, FieldMemOperand(heap_number_result,
                                     HeapNumber::kValueOffset));
         __ LoadRR(r3, heap_number_result);
         __ Ret();
@@ -2807,7 +2807,7 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
       }
 
       // Store the result.
-      __ stfd(double_scratch0, FieldMemOperand(heap_number_result,
+      __ StoreF(double_scratch0, FieldMemOperand(heap_number_result,
                                                HeapNumber::kValueOffset));
       __ LoadRR(r3, heap_number_result);
       __ Ret();
@@ -3026,7 +3026,7 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
     // of the double into r5, r6.
     __ SmiToDoubleFPRegister(r3, d6, scratch0);
     __ Sub(sp, Operand(8));
-    __ stfd(d6, MemOperand(sp, 0));
+    __ StoreF(d6, MemOperand(sp, 0));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
     __ LoadlW(r5, MemOperand(sp));
     __ LoadlW(r6, MemOperand(sp, 4));
@@ -3051,7 +3051,7 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
   } else {
     // Input is untagged double in d2. Output goes to d2.
     __ Sub(sp, Operand(8));
-    __ stfd(d2, MemOperand(sp, 0));
+    __ StoreF(d2, MemOperand(sp, 0));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
     __ LoadlW(r5, MemOperand(sp, 4));
     __ LoadlW(r6, MemOperand(sp));
@@ -3168,7 +3168,7 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
     __ Pop(r6, r5, cache_entry);
     __ LoadRoot(r8, Heap::kHeapNumberMapRootIndex);
     __ AllocateHeapNumber(r9, scratch0, scratch1, r8, &no_update);
-    __ stfd(d2, FieldMemOperand(r9, HeapNumber::kValueOffset));
+    __ StoreF(d2, FieldMemOperand(r9, HeapNumber::kValueOffset));
     __ StoreW(r5, MemOperand(cache_entry, 0));
     __ StoreW(r6, MemOperand(cache_entry, 4));
     __ StoreP(r9, MemOperand(cache_entry, 8));
@@ -3179,7 +3179,7 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
     // cache.
     __ LoadRoot(r8, Heap::kHeapNumberMapRootIndex);
     __ AllocateHeapNumber(r3, scratch0, scratch1, r8, &skip_cache);
-    __ stfd(d2, FieldMemOperand(r3, HeapNumber::kValueOffset));
+    __ StoreF(d2, FieldMemOperand(r3, HeapNumber::kValueOffset));
     {
       FrameScope scope(masm, StackFrame::INTERNAL);
       __ push(r3);
@@ -3452,7 +3452,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
     __ bind(&done);
     __ AllocateHeapNumber(
         heapnumber, scratch, scratch2, heapnumbermap, &call_runtime);
-    __ stfd(double_result,
+    __ StoreF(double_result,
             FieldMemOperand(heapnumber, HeapNumber::kValueOffset));
     ASSERT(heapnumber.is(r3));
     __ IncrementCounter(counters->math_pow(), 1, scratch, scratch2);

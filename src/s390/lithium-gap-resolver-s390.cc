@@ -197,7 +197,7 @@ void LGapResolver::RestoreValue() {
   } else if (saved_destination_->IsDoubleRegister()) {
     __ fmr(cgen_->ToDoubleRegister(saved_destination_), kScratchDoubleReg);
   } else if (saved_destination_->IsDoubleStackSlot()) {
-    __ stfd(kScratchDoubleReg, cgen_->ToMemOperand(saved_destination_));
+    __ StoreF(kScratchDoubleReg, cgen_->ToMemOperand(saved_destination_));
   } else {
     UNREACHABLE();
   }
@@ -267,7 +267,7 @@ void LGapResolver::EmitMove(int index) {
       __ fmr(cgen_->ToDoubleRegister(destination), source_register);
     } else {
       ASSERT(destination->IsDoubleStackSlot());
-      __ stfd(source_register, cgen_->ToMemOperand(destination));
+      __ StoreF(source_register, cgen_->ToMemOperand(destination));
     }
 
   } else if (source->IsDoubleStackSlot()) {
@@ -295,7 +295,7 @@ void LGapResolver::EmitMove(int index) {
 #endif
       } else {
         __ LoadF(kScratchDoubleReg, source_operand);
-        __ stfd(kScratchDoubleReg, destination_operand);
+        __ StoreF(kScratchDoubleReg, destination_operand);
       }
     }
   } else {
