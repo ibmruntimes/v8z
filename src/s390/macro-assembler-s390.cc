@@ -2656,6 +2656,7 @@ void MacroAssembler::IncrementCounter(StatsCounter* counter, int value,
   ASSERT(value > 0 && is_int8(value));
   if (FLAG_native_code_counters && counter->Enabled()) {
     mov(scratch1, Operand(ExternalReference(counter)));
+    // @TODO(JOHN): can be optimized by asi()
     LoadW(scratch2, MemOperand(scratch1));
     AddP(scratch2, Operand(value));
     st(scratch2, MemOperand(scratch1));
@@ -2668,6 +2669,7 @@ void MacroAssembler::DecrementCounter(StatsCounter* counter, int value,
   ASSERT(value > 0 && is_int8(value));
   if (FLAG_native_code_counters && counter->Enabled()) {
     mov(scratch1, Operand(ExternalReference(counter)));
+    // @TODO(JOHN): can be optimized by asi()
     LoadW(scratch2, MemOperand(scratch1));
     AddP(scratch2, Operand(-value));
     st(scratch2, MemOperand(scratch1));
