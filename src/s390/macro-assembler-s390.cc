@@ -3586,7 +3586,8 @@ void MacroAssembler::CheckPageFlag(
   ClearRightImm(scratch, object, Operand(kPageSizeBits));
   LoadP(scratch, MemOperand(scratch, MemoryChunk::kFlagsOffset));
 
-  And(r0, scratch, Operand(mask)/*, SetRC*/);
+  LoadRR(r0, scratch);
+  And(r0, Operand(mask)/*, SetRC*/);
   // Should be okay to remove rc
 
   if (cc == ne) {
@@ -4146,10 +4147,12 @@ void MacroAssembler::And(Register dst, const Operand& opnd) {
 #endif
 }
 
+#if 0
 void MacroAssembler::And(Register dst, Register src, const Operand& opnd) {
   if (!dst.is(src)) LoadRR(dst, src);
   And(dst, opnd);
 }
+#endif
 
 void MacroAssembler::Or(Register dst, Register src) {
 #if V8_TARGET_ARCH_S390X
