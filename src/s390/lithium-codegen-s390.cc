@@ -903,7 +903,7 @@ void LCodeGen::DoModI(LModI* instr) {
     __ bge(&positive_dividend);
     __ neg(result, dividend);
     __ mov(scratch, Operand(divisor - 1));
-    __ And(result, scratch/*, SetRC*/);  // Should be okay to remove rc
+    __ AndP(result, scratch/*, SetRC*/);  // Should be okay to remove rc
     if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
       DeoptimizeIf(eq, instr->environment(), cr0);
     }
@@ -912,7 +912,7 @@ void LCodeGen::DoModI(LModI* instr) {
     __ bind(&positive_dividend);
     __ mov(scratch, Operand(divisor - 1));
     __ LoadRR(result, scratch);
-    __ And(result, dividend);
+    __ AndP(result, dividend);
   } else {
     Register divisor = ToRegister(instr->right());
 
@@ -1225,7 +1225,7 @@ void LCodeGen::DoBitI(LBitI* instr) {
       switch (instr->op()) {
         case Token::BIT_AND:
           __ LoadRR(result, left);
-          __ And(result,
+          __ AndP(result,
                   Operand(ToInteger32(LConstantOperand::cast(right_op))));
           break;
         case Token::BIT_OR:
@@ -1249,10 +1249,10 @@ void LCodeGen::DoBitI(LBitI* instr) {
     case Token::BIT_AND:
       if (right.is_reg()) {
         __ LoadRR(result, left);
-        __ And(result, right.rm());
+        __ AndP(result, right.rm());
       } else {
         __ LoadRR(result, left);
-        __ And(result, right);
+        __ AndP(result, right);
       }
       break;
     case Token::BIT_OR:
@@ -1290,7 +1290,7 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
   if (right_op->IsRegister()) {
     // Mask the right_op operand.
     __ LoadRR(scratch, ToRegister(right_op));
-    __ And(scratch, Operand(0x1F));
+    __ AndP(scratch, Operand(0x1F));
     switch (instr->op()) {
       case Token::SAR:
         __ sraw(result, left, scratch);
@@ -1726,7 +1726,7 @@ void LCodeGen::DoBranch(LBranch* instr) {
                    1 << (31 - Assembler::encode_crbit(cr7, CR_FU)));
     __ fcmpu(reg, kDoubleRegZero, cr7);
     __ mfcr(scratch);
-    __ And(scratch, Operand(crBits));
+    __ AndP(scratch, Operand(crBits));
     EmitBranch(true_block, false_block, eq, cr0);
   } else {
     ASSERT(r.IsTagged());
@@ -2159,7 +2159,7 @@ void LCodeGen::DoHasCachedArrayIndexAndBranch(
   __ LoadlW(scratch,
          FieldMemOperand(input, String::kHashFieldOffset));
   __ mov(r0, Operand(String::kContainsCachedArrayIndexMask));
-  __ And(r0, scratch/*, SetRC*/);
+  __ AndP(r0, scratch/*, SetRC*/);
   // TODO(JOHN): might be a problem removing rc
   EmitBranch(true_block, false_block, eq, cr0);
 }
@@ -3665,7 +3665,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
 
   // state[0] = 18273 * (state[0] & 0xFFFF) + (state[0] >> 16)
   __ LoadRR(r6, r4);
-  __ And(r6, Operand(0xFFFF));
+  __ AndP(r6, Operand(0xFFFF));
   __ lhi(r7, Operand(18273));
   __ Mul(r6, r6, r7);
   __ srwi(r4, r4, Operand(16));
@@ -3675,7 +3675,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
 
   // state[1] = 36969 * (state[1] & 0xFFFF) + (state[1] >> 16)
   __ LoadRR(r6, r4);
-  __ And(r6, Operand(0xFFFF));
+  __ AndP(r6, Operand(0xFFFF));
   __ mov(r7, Operand(36969));
   __ Mul(r6, r6, r7);
   __ srwi(r3, r3, Operand(16));
@@ -4557,7 +4557,7 @@ void LCodeGen::DoSmiUntag(LSmiUntag* instr) {
     STATIC_ASSERT(kHeapObjectTag == 1);
     // If the input is a HeapObject, value of scratch won't be zero.
     __ LoadRR(scratch, input);
-    __ And(scratch, Operand(kHeapObjectTag));
+    __ AndP(scratch, Operand(kHeapObjectTag));
     __ SmiUntag(result, input);
     DeoptimizeIf(ne, instr->environment(), cr0);
   } else {
@@ -4833,10 +4833,10 @@ void LCodeGen::DoCheckInstanceType(LCheckInstanceType* instr) {
     if (IsPowerOf2(mask)) {
       ASSERT(tag == 0 || IsPowerOf2(tag));
       __ LoadRR(r0, scratch);
-      __ And(r0, Operand(mask));
+      __ AndP(r0, Operand(mask));
       DeoptimizeIf(tag == 0 ? ne : eq, instr->environment(), cr0);
     } else {
-      __ And(scratch, Operand(mask));
+      __ AndP(scratch, Operand(mask));
       __ Cmpi(scratch, Operand(tag));
       DeoptimizeIf(ne, instr->environment());
     }

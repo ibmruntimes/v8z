@@ -95,7 +95,7 @@ static void GenerateStringDictionaryReceiverCheck(MacroAssembler* masm,
   // Check that the global object does not require access checks.
   __ LoadlB(t1, FieldMemOperand(t0, Map::kBitFieldOffset));
   __ LoadRR(r0, t1);
-  __ And(r0, Operand((1 << Map::kIsAccessCheckNeeded) |
+  __ AndP(r0, Operand((1 << Map::kIsAccessCheckNeeded) |
                      (1 << Map::kHasNamedInterceptor)));
   __ bne(miss /*, cr0*/);
 
@@ -151,7 +151,7 @@ static void GenerateDictionaryLoad(MacroAssembler* masm,
   __ LoadP(scratch1, FieldMemOperand(scratch2, kDetailsOffset));
   __ LoadRR(r0, scratch2);
   __ LoadSmiLiteral(scratch2, Smi::FromInt(PropertyDetails::TypeField::kMask));
-  __ And(scratch2, scratch1/*, SetRC*/);
+  __ AndP(scratch2, scratch1/*, SetRC*/);
   // Should be okay to remove RC
   __ bne(miss /*, cr0*/);
   __ LoadRR(scratch2, r0);
@@ -206,7 +206,7 @@ static void GenerateDictionaryStore(MacroAssembler* masm,
   __ LoadP(scratch1, FieldMemOperand(scratch2, kDetailsOffset));
   __ LoadRR(r0, scratch2);
   __ LoadSmiLiteral(scratch2, Smi::FromInt(kTypeAndReadOnlyMask));
-  __ And(scratch2, scratch1/*, SetRC*/);  // Should be OK to remove RC
+  __ AndP(scratch2, scratch1/*, SetRC*/);  // Should be OK to remove RC
   __ bne(miss /*, cr0*/);
   __ LoadRR(scratch2, r0);
 
@@ -285,7 +285,7 @@ static void GenerateKeyedLoadReceiverCheck(MacroAssembler* masm,
   __ LoadlB(scratch, FieldMemOperand(map, Map::kBitFieldOffset));
   ASSERT(((1 << Map::kIsAccessCheckNeeded) | (1 << interceptor_bit)) < 0x8000);
   __ LoadRR(r0, scratch);
-  __ And(r0,
+  __ AndP(r0,
           Operand((1 << Map::kIsAccessCheckNeeded) | (1 << interceptor_bit)));
   __ bne(slow /*, cr0*/);
   // Check that the object is some kind of JS object EXCEPT JS Value type.
@@ -379,7 +379,7 @@ static void GenerateKeyStringCheck(MacroAssembler* masm,
   __ LoadlW(hash, FieldMemOperand(key, String::kHashFieldOffset));
   __ mov(r8, Operand(String::kContainsCachedArrayIndexMask));
   __ LoadRR(r0, r8);
-  __ And(r0, hash/*, SetRC*/);  // Should be OK to remove RC
+  __ AndP(r0, hash/*, SetRC*/);  // Should be OK to remove RC
   __ beq(index_string /*, cr0*/);
 
   // Is the string a symbol?
@@ -387,7 +387,7 @@ static void GenerateKeyStringCheck(MacroAssembler* masm,
   __ LoadlB(hash, FieldMemOperand(map, Map::kInstanceTypeOffset));
   STATIC_ASSERT(kSymbolTag != 0);
   __ LoadRR(r0, hash);
-  __ And(r0, Operand(kIsSymbolMask));
+  __ AndP(r0, Operand(kIsSymbolMask));
   __ beq(not_symbol /*, cr0*/);
 }
 
@@ -790,7 +790,7 @@ static MemOperand GenerateMappedArgumentsLookup(MacroAssembler* masm,
   // Check that the key is a positive smi.
   __ mov(scratch1, Operand(0x80000001));
   __ LoadRR(r0, scratch1);
-  __ And(r0, key/*, SetRC*/);  // Should be OK to remove RC
+  __ AndP(r0, key/*, SetRC*/);  // Should be OK to remove RC
   __ bne(slow_case /*, cr0*/);
 
   // Load the elements into scratch1 and check its map.
@@ -1047,7 +1047,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   __ Xor(r6, r7);
   int mask = KeyedLookupCache::kCapacityMask & KeyedLookupCache::kHashMask;
   __ mov(r7, Operand(mask));
-  __ And(r6, r7);
+  __ AndP(r6, r7);
 
   // Load the key (consisting of map and symbol) from the cache and
   // check for match.
@@ -1207,7 +1207,7 @@ void KeyedLoadIC::GenerateIndexedInterceptor(MacroAssembler* masm) {
   // Check that it has indexed interceptor and access checks
   // are not enabled for this object.
   __ LoadlB(r6, FieldMemOperand(r5, Map::kBitFieldOffset));
-  __ And(r6, Operand(kSlowCaseBitFieldMask));
+  __ AndP(r6, Operand(kSlowCaseBitFieldMask));
   __ Cmpi(r6, Operand(1 << Map::kHasIndexedInterceptor));
   __ bne(&slow);
 
@@ -1497,7 +1497,7 @@ void KeyedStoreIC::GenerateGeneric(MacroAssembler* masm,
   // to do this because this generic stub does not perform map checks.
   __ LoadlB(ip, FieldMemOperand(receiver_map, Map::kBitFieldOffset));
   __ LoadRR(r0, ip);
-  __ And(r0, Operand(1 << Map::kIsAccessCheckNeeded));
+  __ AndP(r0, Operand(1 << Map::kIsAccessCheckNeeded));
   __ bne(&slow /*, cr0*/);
   // Check if the object is a JS array or not.
   __ LoadlB(r7, FieldMemOperand(receiver_map, Map::kInstanceTypeOffset));
