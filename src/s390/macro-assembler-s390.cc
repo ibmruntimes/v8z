@@ -714,7 +714,7 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles,
     AddP(r6, Operand(-offset));
     for (int i = 0; i < kNumRegs; i++) {
       DwVfpRegister reg = DwVfpRegister::from_code(i);
-      lfd(reg, MemOperand(r6, i * kDoubleSize));
+      LoadF(reg, MemOperand(r6, i * kDoubleSize));
     }
   }
 
@@ -2290,7 +2290,7 @@ void MacroAssembler::ConvertToInt32(Register source,
                                     DwVfpRegister double_scratch,
                                     Label *not_int32) {
   // Retrieve double from heap
-  lfd(double_scratch, FieldMemOperand(source, HeapNumber::kValueOffset));
+  LoadF(double_scratch, FieldMemOperand(source, HeapNumber::kValueOffset));
 
   // Convert
   fctidz(double_scratch, double_scratch);
@@ -4397,7 +4397,7 @@ void MacroAssembler::LoadDoubleLiteral(DwVfpRegister result,
   LoadIntLiteral(scratch, litVal.ival[1]);
   StoreW(scratch, MemOperand(sp, 4));
 #endif
-  lfd(result, MemOperand(sp, 0));
+  LoadF(result, MemOperand(sp, 0));
 
   AddP(sp, Operand(8));  // restore the stack ptr
 }

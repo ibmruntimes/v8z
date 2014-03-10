@@ -1205,16 +1205,6 @@ void Assembler::isync() {
 }
 
 // Floating point support
-
-void Assembler::lfd(const DwVfpRegister frt, const MemOperand &src) {
-  int offset = src.offset();
-  Register rb = src.rb();
-  ASSERT(is_int16(offset));
-  int imm16 = offset & kImm16Mask;
-  // could be x_form instruction with some casting magic
-  emit(LFD | frt.code()*B21 | rb.code()*B16 | imm16);
-}
-
 void Assembler::lfdu(const DwVfpRegister frt, const MemOperand &src) {
   int offset = src.offset();
   Register rb = src.rb();
