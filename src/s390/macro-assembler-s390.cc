@@ -372,7 +372,8 @@ void MacroAssembler::RecordWriteField(
   AddP(dst, Operand(offset - kHeapObjectTag));
   if (emit_debug_code()) {
     Label ok;
-    andi(r0, dst, Operand((1 << kPointerSizeLog2) - 1));
+    LoadRR(r0, dst);
+    And(r0, Operand((1 << kPointerSizeLog2) - 1));
     beq(&ok /*, cr0*/);
     stop("Unaligned cell in write barrier");
     bind(&ok);
@@ -986,7 +987,8 @@ void MacroAssembler::IsObjectJSStringType(Register object,
 
   LoadP(scratch, FieldMemOperand(object, HeapObject::kMapOffset));
   LoadlB(scratch, FieldMemOperand(scratch, Map::kInstanceTypeOffset));
-  andi(r0, scratch, Operand(kIsNotStringMask));
+  LoadRR(r0, scratch);
+  And(r0, Operand(kIsNotStringMask));
   bne(fail /*, cr0*/);
 }
 
@@ -1152,7 +1154,8 @@ void MacroAssembler::ThrowUncatchable(Register value) {
   bind(&check_kind);
   STATIC_ASSERT(StackHandler::JS_ENTRY == 0);
   LoadP(r5, MemOperand(sp, StackHandlerConstants::kStateSlot));
-  andi(r0, r5, Operand(StackHandler::KindField::kMask));
+  LoadRR(r0, r5);
+  And(r0, Operand(StackHandler::KindField::kMask));
   bne(&fetch_next /*, cr0*/);
 
   // Set the top handler address to next handler past the top ENTRY handler.
@@ -1535,7 +1538,8 @@ void MacroAssembler::AllocateInNewSpace(Register object_size,
 
   // Update allocation top. result temporarily holds the new top.
   if (emit_debug_code()) {
-    andi(r0, scratch2, Operand(kObjectAlignmentMask));
+    LoadRR(r0, scratch2);
+    And(r0, Operand(kObjectAlignmentMask));
     Check(eq, "Unaligned allocation in new space", cr0);
   }
   StoreP(scratch2, MemOperand(topaddr));
@@ -2080,7 +2084,8 @@ void MacroAssembler::TryGetFunctionPrototype(Register function,
   // Make sure that the function has an instance prototype.
   Label non_instance;
   LoadlB(scratch, FieldMemOperand(result, Map::kBitFieldOffset));
-  andi(r0, scratch, Operand(1 << Map::kHasNonInstancePrototype));
+  LoadRR(r0, scratch);
+  And(r0, Operand(1 << Map::kHasNonInstancePrototype));
   bne(&non_instance /*, cr0*/);
 
   // Get the prototype or initial map from the function.
@@ -2967,7 +2972,8 @@ void MacroAssembler::JumpIfEitherSmi(Register reg1,
 void MacroAssembler::AssertNotSmi(Register object) {
   if (emit_debug_code()) {
     STATIC_ASSERT(kSmiTag == 0);
-    andi(r0, object, Operand(kSmiTagMask));
+    LoadRR(r0, object);
+    And(r0, Operand(kSmiTagMask));
     Check(ne, "Operand is a smi", cr0);
   }
 }
@@ -2976,7 +2982,8 @@ void MacroAssembler::AssertNotSmi(Register object) {
 void MacroAssembler::AssertSmi(Register object) {
   if (emit_debug_code()) {
     STATIC_ASSERT(kSmiTag == 0);
-    andi(r0, object, Operand(kSmiTagMask));
+    LoadRR(r0, object);
+    And(r0, Operand(kSmiTagMask));
     Check(eq, "Operand is not smi", cr0);
   }
 }
@@ -2985,7 +2992,8 @@ void MacroAssembler::AssertSmi(Register object) {
 void MacroAssembler::AssertString(Register object) {
   if (emit_debug_code()) {
     STATIC_ASSERT(kSmiTag == 0);
-    andi(r0, object, Operand(kSmiTagMask));
+    LoadRR(r0, object);
+    And(r0, Operand(kSmiTagMask));
     Check(ne, "Operand is not a string", cr0);
     push(object);
     LoadP(object, FieldMemOperand(object, HeapObject::kMapOffset));
@@ -3135,7 +3143,8 @@ void MacroAssembler::CopyBytes(Register src,
   beq(&done);
 
   // Check src alignment and length to see whether word_loop is possible
-  andi(scratch, src, Operand(kPointerSize - 1));
+  LoadRR(scratch, src);
+  And(scratch, Operand(kPointerSize - 1));
   beq(&aligned /*, cr0*/);
   subfic(scratch, scratch, Operand(kPointerSize * 2));
   CmpRR(length, scratch);
@@ -3156,7 +3165,8 @@ void MacroAssembler::CopyBytes(Register src,
 
   // Copy bytes in word size chunks.
   if (emit_debug_code()) {
-    andi(r0, src, Operand(kPointerSize - 1));
+    LoadRR(r0, src);
+    And(r0, Operand(kPointerSize - 1));
     Assert(eq, "Expecting alignment for CopyBytes", cr0);
   }
 
@@ -3255,8 +3265,10 @@ void MacroAssembler::JumpIfBothInstanceTypesAreNotSequentialAscii(
   int kFlatAsciiStringMask =
       kIsNotStringMask | kStringEncodingMask | kStringRepresentationMask;
   int kFlatAsciiStringTag = ASCII_STRING_TYPE;
-  andi(scratch1, first, Operand(kFlatAsciiStringMask));
-  andi(scratch2, second, Operand(kFlatAsciiStringMask));
+  LoadRR(scratch1, first);
+  And(scratch1, Operand(kFlatAsciiStringMask));
+  LoadRR(scratch2, second);
+  And(scratch2, Operand(kFlatAsciiStringMask));
   Cmpi(scratch1, Operand(kFlatAsciiStringTag));
   bne(failure);
   Cmpi(scratch2, Operand(kFlatAsciiStringTag));
@@ -3270,7 +3282,8 @@ void MacroAssembler::JumpIfInstanceTypeIsNotSequentialAscii(Register type,
   int kFlatAsciiStringMask =
       kIsNotStringMask | kStringEncodingMask | kStringRepresentationMask;
   int kFlatAsciiStringTag = ASCII_STRING_TYPE;
-  andi(scratch, type, Operand(kFlatAsciiStringMask));
+  LoadRR(scratch, type);
+  And(scratch, Operand(kFlatAsciiStringMask));
   Cmpi(scratch, Operand(kFlatAsciiStringTag));
   bne(failure);
 }
@@ -3649,7 +3662,8 @@ void MacroAssembler::HasColor(Register object,
   bind(&word_boundary);
   LoadlW(ip, MemOperand(bitmap_scratch,
                      MemoryChunk::kHeaderSize + kIntSize));
-  andi(r0, ip, Operand(1));
+  LoadRR(r0, ip);
+  And(r0, Operand(1));
   b(second_bit == 1 ? ne : eq, has_color /*, cr0*/);
   bind(&other_color);
 }
@@ -3671,7 +3685,7 @@ void MacroAssembler::JumpIfDataObject(Register value,
   // no GC pointers.
   LoadlB(scratch, FieldMemOperand(scratch, Map::kInstanceTypeOffset));
   STATIC_ASSERT((kIsIndirectStringMask | kIsNotStringMask) == 0x81);
-  andi(scratch, scratch, Operand(kIsIndirectStringMask | kIsNotStringMask));
+  And(scratch, Operand(kIsIndirectStringMask | kIsNotStringMask));
   bne(not_data_object /*, cr0*/);
   bind(&is_data_object);
 }
@@ -3760,7 +3774,8 @@ void MacroAssembler::EnsureNotWhite(
   // no GC pointers.
   Register instance_type = load_scratch;
   LoadlB(instance_type, FieldMemOperand(map, Map::kInstanceTypeOffset));
-  andi(r0, instance_type, Operand(kIsIndirectStringMask | kIsNotStringMask));
+  LoadRR(r0, instance_type);
+  And(r0, Operand(kIsIndirectStringMask | kIsNotStringMask));
   bne(value_is_white_and_not_data /*, cr0*/);
   // It's a non-indirect (non-cons and non-slice) string.
   // If it's external, the length is just ExternalString::kSize.
@@ -3769,7 +3784,8 @@ void MacroAssembler::EnsureNotWhite(
   // set.
   ASSERT_EQ(0, kSeqStringTag & kExternalStringTag);
   ASSERT_EQ(0, kConsStringTag & kExternalStringTag);
-  andi(r0, instance_type, Operand(kExternalStringTag));
+  LoadRR(r0, instance_type);
+  And(r0, Operand(kExternalStringTag));
   beq(&is_string_object /*, cr0*/);
   lhi(length, Operand(ExternalString::kSize));
   b(&is_data_object);
@@ -3783,7 +3799,8 @@ void MacroAssembler::EnsureNotWhite(
   //   - (64-bit) we compute the offset in the 2-byte array
   ASSERT(kAsciiStringTag == 4 && kStringEncodingMask == 4);
   LoadP(ip, FieldMemOperand(value, String::kLengthOffset));
-  andi(r0, instance_type, Operand(kStringEncodingMask));
+  LoadRR(r0, instance_type);
+  And(r0, Operand(kStringEncodingMask));
   beq(&is_encoded /*, cr0*/);
   SmiUntag(ip);
 #if V8_TARGET_ARCH_S390X
@@ -4151,11 +4168,13 @@ void MacroAssembler::And(Register dst, const MemOperand& opnd) {
 }
 
 void MacroAssembler::And(Register dst, const Operand& opnd) {
+  // simulate ppc instruction andi
+  uint32_t value = opnd.imm_ & 0xFFFF;
 #if V8_TARGET_ARCH_S390X
   nihf(dst, Operand(0));
-  nilf(dst, opnd);
+  nilf(dst, Operand(value));
 #else
-  nilf(dst, opnd);
+  nilf(dst, Operand(value));
 #endif
 }
 

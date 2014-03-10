@@ -1028,7 +1028,8 @@ class MacroAssembler: public Assembler {
                                Register type) {
     LoadP(type, FieldMemOperand(obj, HeapObject::kMapOffset));
     LoadlB(type, FieldMemOperand(type, Map::kInstanceTypeOffset));
-    andi(r0, type, Operand(kIsNotStringMask));
+    LoadRR(r0, type);
+    And(r0, Operand(kIsNotStringMask));
     ASSERT_EQ(0, kStringTag);
     return eq;
   }

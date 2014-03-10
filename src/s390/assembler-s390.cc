@@ -830,10 +830,6 @@ void Assembler::addic(Register dst, Register src, const Operand& imm) {
   d_form(ADDIC, dst, src, imm.imm_, true);
 }
 
-void  Assembler::andi(Register rb, Register rs, const Operand& imm) {
-  d_form(ANDIx, rs, rb, imm.imm_, false);
-}
-
 void Assembler::andis(Register rb, Register rs, const Operand& imm) {
   d_form(ANDISx, rs, rb, imm.imm_, false);
 }

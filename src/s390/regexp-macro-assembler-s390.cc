@@ -570,7 +570,8 @@ void RegExpMacroAssemblerPPC::CheckBitInTable(
     Label* on_bit_set) {
   __ mov(r3, Operand(table));
   if (mode_ != ASCII || kTableMask != String::kMaxAsciiCharCode) {
-    __ andi(r4, current_character(), Operand(kTableSize - 1));
+    __ LoadRR(r4, current_character());
+    __ And(r4, Operand(kTableSize - 1));
     __ AddP(r4, Operand(ByteArray::kHeaderSize - kHeapObjectTag));
   } else {
     __ LoadRR(r4, current_character());
