@@ -1038,7 +1038,7 @@ void FullCodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
     if (inline_smi_code) {
       Label slow_case;
       __ LoadRR(r5, r3);
-      __ Or(r5, r4);
+      __ OrP(r5, r4);
       patch_site.EmitJumpIfNotSmi(r5, &slow_case);
 
       __ CmpRR(r4, r3);
@@ -1952,7 +1952,7 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
 
   // Perform combined smi check on both operands.
   __ LoadRR(scratch1, right);
-  __ Or(scratch1, left);
+  __ OrP(scratch1, left);
   STATIC_ASSERT(kSmiTag == 0);
   JumpPatchSite patch_site(masm_);
   patch_site.EmitJumpIfSmi(scratch1, &smi_case);
@@ -2070,7 +2070,7 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
       break;
     }
     case Token::BIT_OR:
-      __ Or(right, left);
+      __ OrP(right, left);
       break;
     case Token::BIT_AND:
       __ AndP(right, left);
@@ -4404,7 +4404,7 @@ void FullCodeGenerator::VisitCompareOperation(CompareOperation* expr) {
       if (inline_smi_code) {
         Label slow_case;
         __ LoadRR(r5, r4);
-        __ Or(r5, r3);
+        __ OrP(r5, r3);
         patch_site.EmitJumpIfNotSmi(r5, &slow_case);
         __ CmpRR(r4, r3);
         Split(cond, if_true, if_false, NULL);
