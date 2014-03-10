@@ -598,7 +598,7 @@ void FloatingPointHelper::LoadNumber(MacroAssembler* masm,
 
   // Handle loading a double from a heap number
   // Load the double from tagged HeapNumber to double register.
-  __ lfd(dst, FieldMemOperand(object, HeapNumber::kValueOffset));
+  __ LoadF(dst, FieldMemOperand(object, HeapNumber::kValueOffset));
   __ b(&done);
 
   // Handle loading a double from a smi.
@@ -673,7 +673,7 @@ void FloatingPointHelper::ConvertIntToDouble(MacroAssembler* masm,
 #endif
 
   // load into FPR
-  __ lfd(double_dst, MemOperand(sp, 0));
+  __ LoadF(double_dst, MemOperand(sp, 0));
 
   __ AddP(sp, Operand(8));  // restore stack
 
@@ -705,7 +705,7 @@ void FloatingPointHelper::ConvertUnsignedIntToDouble(MacroAssembler* masm,
 #endif
 
   // load into FPR
-  __ lfd(double_dst, MemOperand(sp, 0));
+  __ LoadF(double_dst, MemOperand(sp, 0));
 
   __ AddP(sp, Operand(8));  // restore stack
 
@@ -735,7 +735,7 @@ void FloatingPointHelper::ConvertIntToFloat(MacroAssembler* masm,
 #endif
 
   // load sign-extended src into FPR
-  __ lfd(dst, MemOperand(sp, 0));
+  __ LoadF(dst, MemOperand(sp, 0));
 
   __ AddP(sp, Operand(8));  // restore stack
 
@@ -771,7 +771,7 @@ void FloatingPointHelper::LoadNumberAsInt32Double(MacroAssembler* masm,
   __ JumpIfNotHeapNumber(object, heap_number_map, scratch1, not_int32);
 
   // Load the double value.
-  __ lfd(double_dst, FieldMemOperand(object, HeapNumber::kValueOffset));
+  __ LoadF(double_dst, FieldMemOperand(object, HeapNumber::kValueOffset));
 
   __ EmitVFPTruncate(kRoundToZero,
                      scratch1,
@@ -813,7 +813,7 @@ void FloatingPointHelper::LoadNumberAsInt32(MacroAssembler* masm,
   __ JumpIfNotHeapNumber(object, heap_number_map, scratch1, not_int32);
 
   // Load the double value.
-  __ lfd(double_scratch0, FieldMemOperand(object, HeapNumber::kValueOffset));
+  __ LoadF(double_scratch0, FieldMemOperand(object, HeapNumber::kValueOffset));
 
   __ EmitVFPTruncate(kRoundToZero,
                      dst,
@@ -1075,7 +1075,7 @@ static void EmitSmiNonsmiComparison(MacroAssembler* masm,
   // Convert lhs to a double in d7.
   __ SmiToDoubleFPRegister(lhs, d7, r10);
   // Load the double from rhs, tagged HeapNumber r3, to d6.
-  __ lfd(d6, FieldMemOperand(rhs, HeapNumber::kValueOffset));
+  __ LoadF(d6, FieldMemOperand(rhs, HeapNumber::kValueOffset));
 
   // We now have both loaded as doubles but we can skip the lhs nan check
   // since it's a smi.
@@ -1103,7 +1103,7 @@ static void EmitSmiNonsmiComparison(MacroAssembler* masm,
 
   // Rhs is a smi, lhs is a heap number.
   // Load the double from lhs, tagged HeapNumber r4, to d7.
-  __ lfd(d7, FieldMemOperand(lhs, HeapNumber::kValueOffset));
+  __ LoadF(d7, FieldMemOperand(lhs, HeapNumber::kValueOffset));
   // Convert rhs to a double in d6.
   __ SmiToDoubleFPRegister(rhs, d6, r10);
   // Fall through to both_loaded_as_doubles.
@@ -1170,8 +1170,8 @@ static void EmitCheckForTwoHeapNumbers(MacroAssembler* masm,
 
   // Both are heap numbers.  Load them up then jump to the code we have
   // for that.
-  __ lfd(d6, FieldMemOperand(rhs, HeapNumber::kValueOffset));
-  __ lfd(d7, FieldMemOperand(lhs, HeapNumber::kValueOffset));
+  __ LoadF(d6, FieldMemOperand(rhs, HeapNumber::kValueOffset));
+  __ LoadF(d7, FieldMemOperand(lhs, HeapNumber::kValueOffset));
 
   __ b(both_loaded_as_doubles);
 }
@@ -1277,8 +1277,8 @@ void NumberToStringStub::GenerateLookupNumberStringCache(MacroAssembler* masm,
     Register probe = mask;
     __ LoadP(probe, FieldMemOperand(scratch1, FixedArray::kHeaderSize));
     __ JumpIfSmi(probe, not_found);
-    __ lfd(d0, FieldMemOperand(object, HeapNumber::kValueOffset));
-    __ lfd(d1, FieldMemOperand(probe, HeapNumber::kValueOffset));
+    __ LoadF(d0, FieldMemOperand(object, HeapNumber::kValueOffset));
+    __ LoadF(d1, FieldMemOperand(probe, HeapNumber::kValueOffset));
     __ fcmpu(d0, d1);
     __ bne(not_found);  // The cache did not contain this value.
     __ b(&load_result_from_cache);
@@ -1564,13 +1564,13 @@ void ToBooleanStub::Generate(MacroAssembler* masm) {
     __ CompareRoot(map, Heap::kHeapNumberMapRootIndex);
     __ bne(&not_heap_number);
 
-    __ lfd(d1, FieldMemOperand(tos_, HeapNumber::kValueOffset));
+    __ LoadF(d1, FieldMemOperand(tos_, HeapNumber::kValueOffset));
     __ lhi(r0, Operand::Zero());
     __ push(r0);
 #if !V8_TARGET_ARCH_S390X
     __ push(r0);
 #endif
-    __ lfd(d2, MemOperand(sp, 0));
+    __ LoadF(d2, MemOperand(sp, 0));
     __ AddP(sp, Operand(8));
     __ fcmpu(d1, d2);
     // "tos_" is a register, and contains a non zero value by default.
@@ -1659,7 +1659,7 @@ void StoreBufferOverflowStub::Generate(MacroAssembler* masm) {
     const int kNumRegs = DwVfpRegister::kNumVolatileRegisters;
     for (int i = 0; i < kNumRegs; i++) {
       DwVfpRegister reg = DwVfpRegister::from_code(i);
-      __ lfd(reg, MemOperand(sp, i * kDoubleSize));
+      __ LoadF(reg, MemOperand(sp, i * kDoubleSize));
     }
     __ AddP(sp, Operand(kDoubleSize * kNumRegs));
   }
@@ -3134,7 +3134,7 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
     __ LoadRR(r3, r9);
   } else {
     // Load result into d2.
-    __ lfd(d2, FieldMemOperand(r9, HeapNumber::kValueOffset));
+    __ LoadF(d2, FieldMemOperand(r9, HeapNumber::kValueOffset));
   }
   __ Ret();
 
@@ -3180,7 +3180,7 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
       __ push(r3);
       __ CallRuntime(RuntimeFunction(), 1);
     }
-    __ lfd(d2, FieldMemOperand(r3, HeapNumber::kValueOffset));
+    __ LoadF(d2, FieldMemOperand(r3, HeapNumber::kValueOffset));
     __ Ret();
 
     __ bind(&skip_cache);
@@ -3293,7 +3293,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
     __ CmpRR(scratch, heapnumbermap);
     __ bne(&call_runtime);
 
-    __ lfd(double_base, FieldMemOperand(base, HeapNumber::kValueOffset));
+    __ LoadF(double_base, FieldMemOperand(base, HeapNumber::kValueOffset));
     __ b(&unpack_exponent);
 
     __ bind(&base_is_smi);
@@ -3305,13 +3305,13 @@ void MathPowStub::Generate(MacroAssembler* masm) {
     __ CmpRR(scratch, heapnumbermap);
     __ bne(&call_runtime);
 
-    __ lfd(double_exponent,
+    __ LoadF(double_exponent,
            FieldMemOperand(exponent, HeapNumber::kValueOffset));
   } else if (exponent_type_ == TAGGED) {
     // Base is already in double_base.
     __ UntagAndJumpIfSmi(scratch, exponent, &int_exponent);
 
-    __ lfd(double_exponent,
+    __ LoadF(double_exponent,
            FieldMemOperand(exponent, HeapNumber::kValueOffset));
   }
 
@@ -6575,8 +6575,8 @@ void ICCompareStub::GenerateHeapNumbers(MacroAssembler* masm) {
 
   // Load left and right operand
   // likely we can combine the constants to remove the sub
-  __ lfd(d0, FieldMemOperand(r4, HeapNumber::kValueOffset));
-  __ lfd(d1, FieldMemOperand(r3, HeapNumber::kValueOffset));
+  __ LoadF(d0, FieldMemOperand(r4, HeapNumber::kValueOffset));
+  __ LoadF(d1, FieldMemOperand(r3, HeapNumber::kValueOffset));
 
   // Compare operands
   __ fcmpu(d0, d1);

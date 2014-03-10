@@ -1139,7 +1139,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   for (int i = 0; i < DwVfpRegister::kNumAllocatableRegisters; ++i) {
     int dst_offset = i * kDoubleSize + double_regs_offset;
     int src_offset = i * kDoubleSize + kNumberOfRegisters * kPointerSize;
-    __ lfd(d0, MemOperand(sp, src_offset));
+    __ LoadF(d0, MemOperand(sp, src_offset));
     __ stfd(d0, MemOperand(r4, dst_offset));
   }
 

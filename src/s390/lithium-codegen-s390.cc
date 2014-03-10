@@ -1806,7 +1806,7 @@ void LCodeGen::DoBranch(LBranch* instr) {
         Label not_heap_number;
         __ CompareRoot(map, Heap::kHeapNumberMapRootIndex);
         __ bne(&not_heap_number);
-        __ lfd(dbl_scratch, FieldMemOperand(reg, HeapNumber::kValueOffset));
+        __ LoadF(dbl_scratch, FieldMemOperand(reg, HeapNumber::kValueOffset));
         __ fcmpu(dbl_scratch, kDoubleRegZero);
         __ bunordered(false_label);  // NaN -> false.
         __ beq(false_label);  // +0, -0 -> false.
@@ -2878,7 +2878,7 @@ void LCodeGen::DoLoadKeyedFastDoubleElement(
     DeoptimizeIf(eq, instr->environment());
   }
 
-  __ lfd(result, MemOperand(elements, address_offset));
+  __ LoadF(result, MemOperand(elements, address_offset));
 }
 
 
@@ -2963,7 +2963,7 @@ void LCodeGen::DoLoadKeyedSpecializedArrayElement(
     if (elements_kind == EXTERNAL_FLOAT_ELEMENTS) {
       __ lfs(result, MemOperand(scratch0(), additional_offset));
     } else  {  // i.e. elements_kind == EXTERNAL_DOUBLE_ELEMENTS
-      __ lfd(result, MemOperand(scratch0(), additional_offset));
+      __ LoadF(result, MemOperand(scratch0(), additional_offset));
     }
   } else {
     Register result = ToRegister(instr->result());
@@ -3697,7 +3697,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
   __ StoreW(r4, MemOperand(sp, 0));
   __ StoreW(r3, MemOperand(sp, 4));
 #endif
-  __ lfd(d7, MemOperand(sp, 0));
+  __ LoadF(d7, MemOperand(sp, 0));
 
   // Move 0x4130000000000000 to VFP.
   __ lhi(r3, Operand::Zero());
@@ -3708,7 +3708,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
   __ StoreW(r4, MemOperand(sp, 0));
   __ StoreW(r3, MemOperand(sp, 4));
 #endif
-  __ lfd(d8, MemOperand(sp, 0));
+  __ LoadF(d8, MemOperand(sp, 0));
 
   __ AddP(sp, Operand(8));
 
@@ -4587,13 +4587,13 @@ void LCodeGen::EmitNumberUntagD(Register input_reg,
 
     // Convert undefined to NaN.
     __ LoadRoot(ip, Heap::kNanValueRootIndex);
-    __ lfd(result_reg, FieldMemOperand(ip, HeapNumber::kValueOffset));
+    __ LoadF(result_reg, FieldMemOperand(ip, HeapNumber::kValueOffset));
     __ b(&done);
 
     __ bind(&heap_number);
   }
   // Heap number to double register conversion.
-  __ lfd(result_reg, FieldMemOperand(input_reg, HeapNumber::kValueOffset));
+  __ LoadF(result_reg, FieldMemOperand(input_reg, HeapNumber::kValueOffset));
   if (deoptimize_on_minus_zero) {
     __ Sub(sp, Operand(8));
     __ stfd(result_reg, MemOperand(sp));
@@ -4656,7 +4656,7 @@ void LCodeGen::DoDeferredTaggedToI(LTaggedToI* instr) {
     __ b(&done);
 
     __ bind(&heap_number);
-    __ lfd(double_scratch2,
+    __ LoadF(double_scratch2,
            FieldMemOperand(input_reg, HeapNumber::kValueOffset));
 
     __ EmitECMATruncate(input_reg,
@@ -4670,7 +4670,7 @@ void LCodeGen::DoDeferredTaggedToI(LTaggedToI* instr) {
     // Deoptimize if we don't have a heap number.
     DeoptimizeIf(ne, instr->environment());
 
-    __ lfd(double_scratch,
+    __ LoadF(double_scratch,
            FieldMemOperand(input_reg, HeapNumber::kValueOffset));
     if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
       // preserve heap number pointer in scratch2 for minus zero check below
@@ -4923,7 +4923,7 @@ void LCodeGen::DoClampTToUint8(LClampTToUint8* instr) {
 
   // Heap number
   __ bind(&heap_number);
-  __ lfd(double_scratch0(), FieldMemOperand(input_reg,
+  __ LoadF(double_scratch0(), FieldMemOperand(input_reg,
                                             HeapNumber::kValueOffset));
   __ ClampDoubleToUint8(result_reg, double_scratch0(), temp_reg1, temp_reg2);
   __ b(&done);
