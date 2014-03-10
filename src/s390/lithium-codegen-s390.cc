@@ -903,7 +903,7 @@ void LCodeGen::DoModI(LModI* instr) {
     __ bge(&positive_dividend);
     __ neg(result, dividend);
     __ mov(scratch, Operand(divisor - 1));
-    __ And(result, result, scratch/*, SetRC*/);  // Should be okay to remove rc
+    __ And(result, scratch/*, SetRC*/);  // Should be okay to remove rc
     if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
       DeoptimizeIf(eq, instr->environment(), cr0);
     }
@@ -911,7 +911,8 @@ void LCodeGen::DoModI(LModI* instr) {
     __ b(&done);
     __ bind(&positive_dividend);
     __ mov(scratch, Operand(divisor - 1));
-    __ And(result, dividend, scratch);
+    __ LoadRR(result, scratch);
+    __ And(result, dividend);
   } else {
     Register divisor = ToRegister(instr->right());
 
@@ -1244,10 +1245,12 @@ void LCodeGen::DoBitI(LBitI* instr) {
 
   switch (instr->op()) {
     case Token::BIT_AND:
-      if (right.is_reg())
-        __ And(result, left, right.rm());
-      else
+      if (right.is_reg()) {
+        __ LoadRR(result, left);
+        __ And(result, right.rm());
+      } else {
         __ And(result, left, right);
+      }
       break;
     case Token::BIT_OR:
       if (right.is_reg())
@@ -2146,7 +2149,7 @@ void LCodeGen::DoHasCachedArrayIndexAndBranch(
   __ LoadlW(scratch,
          FieldMemOperand(input, String::kHashFieldOffset));
   __ mov(r0, Operand(String::kContainsCachedArrayIndexMask));
-  __ And(r0, scratch, r0/*, SetRC*/);
+  __ And(r0, scratch/*, SetRC*/);
   // TODO(JOHN): might be a problem removing rc
   EmitBranch(true_block, false_block, eq, cr0);
 }

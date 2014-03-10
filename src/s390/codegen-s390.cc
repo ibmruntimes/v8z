@@ -415,7 +415,8 @@ void StringCharLoadGenerator::Generate(MacroAssembler* masm,
   // Dispatch on the indirect string shape: slice or cons.
   Label cons_string;
   __ mov(ip, Operand(kSlicedNotConsMask));
-  __ And(r0, result, ip/*, SetRC*/);  // Should be okay to remove RC
+  __ LoadRR(r0, result);
+  __ And(r0, ip/*, SetRC*/);  // Should be okay to remove RC
   __ beq(&cons_string /*, cr0*/);
 
   // Handle slices.

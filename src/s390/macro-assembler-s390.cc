@@ -338,7 +338,8 @@ void MacroAssembler::InNewSpace(Register object,
   // N.B. scratch may be same register as object
   ASSERT(cond == eq || cond == ne);
   mov(r0, Operand(ExternalReference::new_space_mask(isolate())));
-  And(scratch, object, r0);
+  LoadRR(scratch, r0);
+  And(scratch, object);
   mov(r0, Operand(ExternalReference::new_space_start(isolate())));
   CmpRR(scratch, r0);
   b(cond, branch);
@@ -482,7 +483,7 @@ void MacroAssembler::RememberedSetHelper(Register object,  // For debug tests.
   // Call stub on end of buffer.
   // Check for end of buffer.
   mov(r0, Operand(StoreBuffer::kStoreBufferOverflowBit));
-  And(r0, scratch, r0/*, SetRC*/);  // Should be okay to remove rc
+  And(r0, scratch/*, SetRC*/);  // Should be okay to remove rc
 
   if (and_then == kFallThroughAtEnd) {
     beq(&done /*, cr0*/);
@@ -1327,7 +1328,7 @@ void MacroAssembler::LoadFromNumberDictionary(Label* miss,
     if (i > 0) {
       AddP(t2, Operand(SeededNumberDictionary::GetProbeOffset(i)));
     }
-    And(t2, t2, t1);
+    And(t2, t1);
 
     // Scale the index by multiplying by the element size.
     ASSERT(SeededNumberDictionary::kEntrySize == 3);
@@ -1354,7 +1355,8 @@ void MacroAssembler::LoadFromNumberDictionary(Label* miss,
       SeededNumberDictionary::kElementsStartOffset + 2 * kPointerSize;
   LoadP(t1, FieldMemOperand(t2, kDetailsOffset));
   LoadSmiLiteral(ip, Smi::FromInt(PropertyDetails::TypeField::kMask));
-  And(r0, t1, ip/*, SetRC*/);  // Should be okay to remove rc
+  LoadRR(r0, ip);
+  And(r0, t1/*, SetRC*/);  // Should be okay to remove rc
   bne(miss /*, cr0*/);
 
   // Get the value at the masked, scaled index and return.
@@ -1552,7 +1554,7 @@ void MacroAssembler::UndoAllocationInNewSpace(Register object,
 
   // Make sure the object has no tag before resetting top.
   mov(r0, Operand(~kHeapObjectTagMask));
-  And(object, object, r0);
+  And(object, r0);
   // was.. and_(object, object, Operand(~kHeapObjectTagMask));
 #ifdef DEBUG
   // Check that the object un-allocated is below the current top.
@@ -1580,7 +1582,7 @@ void MacroAssembler::AllocateTwoByteString(Register result,
   AddP(scratch1,
        Operand(kObjectAlignmentMask + SeqTwoByteString::kHeaderSize));
   mov(r0, Operand(~kObjectAlignmentMask));
-  And(scratch1, scratch1, r0);
+  And(scratch1, r0);
 
   // Allocate two-byte string in new space.
   AllocateInNewSpace(scratch1,
@@ -1612,7 +1614,7 @@ void MacroAssembler::AllocateAsciiString(Register result,
   LoadRR(scratch1, length);
   AddP(scratch1, Operand(kObjectAlignmentMask + SeqAsciiString::kHeaderSize));
   lhi(r0, Operand(~kObjectAlignmentMask));
-  And(scratch1, scratch1, r0);
+  And(scratch1, r0);
 
   // Allocate ASCII string in new space.
   AllocateInNewSpace(scratch1,
@@ -1900,20 +1902,20 @@ void MacroAssembler::AddAndCheckForOverflow(Register dst,
     Add(dst, left, right);        // Left is overwritten.
     Xor(scratch, dst, scratch);  // Original left.
     Xor(overflow_dst, dst, right);
-    And(overflow_dst, overflow_dst, scratch/*, SetRC*/);
+    And(overflow_dst, scratch/*, SetRC*/);
     // Should be okay to remove rc
   } else if (dst.is(right)) {
     LoadRR(scratch, right);           // Preserve right.
     Add(dst, left, right);        // Right is overwritten.
     Xor(scratch, dst, scratch);  // Original right.
     Xor(overflow_dst, dst, left);
-    And(overflow_dst, overflow_dst, scratch/*, SetRC*/);
+    And(overflow_dst, scratch/*, SetRC*/);
     // Should be okay to remove rc
   } else {
     Add(dst, left, right);
     Xor(overflow_dst, dst, left);
     Xor(scratch, dst, right);
-    And(overflow_dst, scratch, overflow_dst/*, SetRC*/);
+    And(overflow_dst, scratch/*, SetRC*/);
     // Should be okay to remove rc
   }
 }
@@ -1935,20 +1937,20 @@ void MacroAssembler::SubAndCheckForOverflow(Register dst,
     Sub(dst, left, right);        // Left is overwritten.
     Xor(overflow_dst, dst, scratch);
     Xor(scratch, scratch, right);
-    And(overflow_dst, overflow_dst, scratch/*, SetRC*/);
+    And(overflow_dst, scratch/*, SetRC*/);
     // Should be okay to remove rc
   } else if (dst.is(right)) {
     LoadRR(scratch, right);           // Preserve right.
     Sub(dst, left, right);        // Right is overwritten.
     Xor(overflow_dst, dst, left);
     Xor(scratch, left, scratch);
-    And(overflow_dst, overflow_dst, scratch/*, SetRC*/);
+    And(overflow_dst, scratch/*, SetRC*/);
     // Should be okay to remove rc
   } else {
     Sub(dst, left, right);
     Xor(overflow_dst, dst, left);
     Xor(scratch, left, right);
-    And(overflow_dst, scratch, overflow_dst/*, SetRC*/);
+    And(overflow_dst, scratch/*, SetRC*/);
     // Should be okay to remove rc
   }
 }
@@ -2864,7 +2866,8 @@ void MacroAssembler::JumpIfNotPowerOfTwoOrZero(
   Sub(scratch, reg, Operand(1));
   Cmpi(scratch, Operand::Zero());
   blt(not_power_of_two_or_zero);
-  And(r0, scratch, reg/*, SetRC*/);  // Should be okay to remove rc
+  LoadRR(r0, reg);
+  And(r0, scratch/*, SetRC*/);  // Should be okay to remove rc
   bne(not_power_of_two_or_zero /*, cr0*/);
 }
 
@@ -2877,7 +2880,8 @@ void MacroAssembler::JumpIfNotPowerOfTwoOrZeroAndNeg(
   Sub(scratch, reg, Operand(1));
   Cmpi(scratch, Operand::Zero());
   blt(zero_and_neg);
-  And(r0, scratch, reg/*, SetRC*/);  // Should be okay to remove rc
+  LoadRR(r0, reg);
+  And(r0, scratch/*, SetRC*/);  // Should be okay to remove rc
   bne(not_power_of_two /*, cr0*/);
 }
 
@@ -3029,7 +3033,8 @@ void MacroAssembler::JumpIfNotBothSequentialAsciiStrings(Register first,
                                                          Label* failure) {
   // Check that neither is a smi.
   STATIC_ASSERT(kSmiTag == 0);
-  And(scratch1, first, second);
+  LoadRR(scratch1, first);
+  And(scratch1, second);
   JumpIfSmi(scratch1, failure);
   JumpIfNonSmisNotBothSequentialAsciiStrings(first,
                                              second,
@@ -3615,14 +3620,16 @@ void MacroAssembler::HasColor(Register object,
   Label other_color, word_boundary;
   LoadlW(ip, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
   // Test the first bit
-  And(r0, ip, mask_scratch/*, SetRC*/);  // Should be okay to remove rc
+  LoadRR(r0, ip);
+  And(r0, mask_scratch/*, SetRC*/);  // Should be okay to remove rc
   b(first_bit == 1 ? eq : ne, &other_color /*, cr0*/);
   // Shift left 1
   // May need to load the next cell
   slwi(mask_scratch, mask_scratch, Operand(1), SetRC);
   beq(&word_boundary /*, cr0*/);
   // Test the second bit
-  And(r0, ip, mask_scratch/*, SetRC*/);  // Should be okay to remove rc
+  LoadRR(r0, ip);
+  And(r0, mask_scratch/*, SetRC*/);  // Should be okay to remove rc
   b(second_bit == 1 ? ne : eq, has_color /*, cr0*/);
   b(&other_color);
 
@@ -3663,7 +3670,8 @@ void MacroAssembler::GetMarkBits(Register addr_reg,
   ASSERT(!AreAliased(addr_reg, bitmap_reg, mask_reg, no_reg));
   ASSERT((~Page::kPageAlignmentMask & 0xffff) == 0);
   lis(r0, Operand((~Page::kPageAlignmentMask >> 16)));
-  And(bitmap_reg, addr_reg, r0);
+  LoadRR(bitmap_reg, r0);
+  And(bitmap_reg, addr_reg);
   const int kLowBits = kPointerSizeLog2 + Bitmap::kBitsPerCellLog2;
   ExtractBitRange(mask_reg, addr_reg,
                   kLowBits - 1,
@@ -3698,7 +3706,8 @@ void MacroAssembler::EnsureNotWhite(
   // Since both black and grey have a 1 in the first position and white does
   // not have a 1 there we only need to check one bit.
   LoadlW(load_scratch, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
-  And(r0, mask_scratch, load_scratch/*, SetRC*/);
+  LoadRR(r0, load_scratch);
+  And(r0, mask_scratch/*, SetRC*/);
   // Should be okay to remove rc
   bne(&done /*, cr0*/);
 
@@ -3707,7 +3716,7 @@ void MacroAssembler::EnsureNotWhite(
     Label ok;
     // LSL may overflow, making the check conservative.
     slwi(r0, mask_scratch, Operand(1));
-    And(r0, load_scratch, r0/*, SetRC*/);  // Should be okay to remove rc
+    And(r0, load_scratch/*, SetRC*/);  // Should be okay to remove rc
     beq(&ok /*, cr0*/);
     stop("Impossible marking bit pattern");
     bind(&ok);
@@ -3777,7 +3786,7 @@ void MacroAssembler::EnsureNotWhite(
   LoadRR(length, ip);
   AddP(length, Operand(SeqString::kHeaderSize + kObjectAlignmentMask));
   lhi(r0, Operand(~kObjectAlignmentMask));
-  And(length, length, r0);
+  And(length, r0);
 
   bind(&is_data_object);
   // Value is a data object, and it is white.  Mark it black.  Since we know
@@ -3787,7 +3796,7 @@ void MacroAssembler::EnsureNotWhite(
   st(ip, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
 
   mov(ip, Operand(~Page::kPageAlignmentMask));
-  And(bitmap_scratch, bitmap_scratch, ip);
+  And(bitmap_scratch, ip);
   LoadlW(ip, MemOperand(bitmap_scratch, MemoryChunk::kLiveBytesOffset));
   AddP(ip, length);
   st(ip, MemOperand(bitmap_scratch, MemoryChunk::kLiveBytesOffset));
@@ -3891,7 +3900,7 @@ void MacroAssembler::EnumLength(Register dst, Register map) {
   STATIC_ASSERT(Map::EnumLengthBits::kShift == 0);
   LoadP(dst, FieldMemOperand(map, Map::kBitField3Offset));
   LoadSmiLiteral(r0, Smi::FromInt(Map::EnumLengthBits::kMask));
-  And(dst, dst, r0);
+  And(dst, r0);
 }
 
 
@@ -4097,6 +4106,7 @@ void MacroAssembler::Sub(Register dst, const MemOperand& opnd) {
 #endif
 }
 
+#if 0  // Not support on z9
 void MacroAssembler::And(Register dst, Register src1, Register src2) {
 #if V8_TARGET_ARCH_S390X
   ngrk(dst, src1, src2);
@@ -4104,6 +4114,7 @@ void MacroAssembler::And(Register dst, Register src1, Register src2) {
   nrk(dst, src1, src2);
 #endif
 }
+#endif
 
 void MacroAssembler::And(Register dst, Register src) {
 #if V8_TARGET_ARCH_S390X
