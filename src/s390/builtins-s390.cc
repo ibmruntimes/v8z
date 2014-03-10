@@ -511,7 +511,7 @@ void Builtins::Generate_InternalArrayCode(MacroAssembler* masm) {
         FieldMemOperand(r4_p, JSFunction::kPrototypeOrInitialMapOffset));
     STATIC_ASSERT(kSmiTagMask < 0x8000);
     __ LoadRR(r0_p, r5_p);
-    __ And(r0_p, Operand(kSmiTagMask));
+    __ AndP(r0_p, Operand(kSmiTagMask));
     __ Assert(ne, "Unexpected initial map for InternalArray function", cr0);
     __ CompareObjectType(r5_p, r6, r7_p, MAP_TYPE);
     __ Assert(eq, "Unexpected initial map for InternalArray function");
@@ -548,7 +548,7 @@ void Builtins::Generate_ArrayCode(MacroAssembler* masm) {
         FieldMemOperand(r4_p, JSFunction::kPrototypeOrInitialMapOffset));
     STATIC_ASSERT(kSmiTagMask < 0x8000);
     __ LoadRR(r0_p, r5_p);
-    __ And(r0_p, Operand(kSmiTagMask));
+    __ AndP(r0_p, Operand(kSmiTagMask));
     __ Assert(ne, "Unexpected initial map for Array function", cr0);
     __ CompareObjectType(r5_p, r6, r7_p, MAP_TYPE);
     __ Assert(eq, "Unexpected initial map for Array function");
@@ -583,7 +583,7 @@ void Builtins::Generate_ArrayConstructCode(MacroAssembler* masm) {
     __ LoadP(r5_p,
         FieldMemOperand(r4_p, JSFunction::kPrototypeOrInitialMapOffset));
     __ LoadRR(r0_p, r5_p);
-    __ And(r0_p, Operand(kSmiTagMask));
+    __ AndP(r0_p, Operand(kSmiTagMask));
     __ Assert(ne, "Unexpected initial map for Array function", cr0);
     __ CompareObjectType(r5_p, r6, r7_p, MAP_TYPE);
     __ Assert(eq, "Unexpected initial map for Array function");
@@ -694,7 +694,7 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
   __ LoadlB(r6, FieldMemOperand(r5_p, Map::kInstanceTypeOffset));
   STATIC_ASSERT(kNotStringTag != 0);
   __ LoadRR(r0_p, r6);
-  __ And(r0_p, Operand(kIsNotStringMask));
+  __ AndP(r0_p, Operand(kIsNotStringMask));
   __ bne(&convert_argument /*, cr0*/);
   __ LoadRR(argument, r3_p);
   __ IncrementCounter(counters->string_ctor_conversions(), 1, r6, r7_p);

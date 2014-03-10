@@ -339,7 +339,7 @@ void MacroAssembler::InNewSpace(Register object,
   ASSERT(cond == eq || cond == ne);
   mov(r0, Operand(ExternalReference::new_space_mask(isolate())));
   LoadRR(scratch, r0);
-  And(scratch, object);
+  AndP(scratch, object);
   mov(r0, Operand(ExternalReference::new_space_start(isolate())));
   CmpRR(scratch, r0);
   b(cond, branch);
@@ -373,7 +373,7 @@ void MacroAssembler::RecordWriteField(
   if (emit_debug_code()) {
     Label ok;
     LoadRR(r0, dst);
-    And(r0, Operand((1 << kPointerSizeLog2) - 1));
+    AndP(r0, Operand((1 << kPointerSizeLog2) - 1));
     beq(&ok /*, cr0*/);
     stop("Unaligned cell in write barrier");
     bind(&ok);
@@ -484,7 +484,7 @@ void MacroAssembler::RememberedSetHelper(Register object,  // For debug tests.
   // Call stub on end of buffer.
   // Check for end of buffer.
   mov(r0, Operand(StoreBuffer::kStoreBufferOverflowBit));
-  And(r0, scratch/*, SetRC*/);  // Should be okay to remove rc
+  AndP(r0, scratch/*, SetRC*/);  // Should be okay to remove rc
 
   if (and_then == kFallThroughAtEnd) {
     beq(&done /*, cr0*/);
@@ -988,7 +988,7 @@ void MacroAssembler::IsObjectJSStringType(Register object,
   LoadP(scratch, FieldMemOperand(object, HeapObject::kMapOffset));
   LoadlB(scratch, FieldMemOperand(scratch, Map::kInstanceTypeOffset));
   LoadRR(r0, scratch);
-  And(r0, Operand(kIsNotStringMask));
+  AndP(r0, Operand(kIsNotStringMask));
   bne(fail /*, cr0*/);
 }
 
@@ -1155,7 +1155,7 @@ void MacroAssembler::ThrowUncatchable(Register value) {
   STATIC_ASSERT(StackHandler::JS_ENTRY == 0);
   LoadP(r5, MemOperand(sp, StackHandlerConstants::kStateSlot));
   LoadRR(r0, r5);
-  And(r0, Operand(StackHandler::KindField::kMask));
+  AndP(r0, Operand(StackHandler::KindField::kMask));
   bne(&fetch_next /*, cr0*/);
 
   // Set the top handler address to next handler past the top ENTRY handler.
@@ -1331,7 +1331,7 @@ void MacroAssembler::LoadFromNumberDictionary(Label* miss,
     if (i > 0) {
       AddP(t2, Operand(SeededNumberDictionary::GetProbeOffset(i)));
     }
-    And(t2, t1);
+    AndP(t2, t1);
 
     // Scale the index by multiplying by the element size.
     ASSERT(SeededNumberDictionary::kEntrySize == 3);
@@ -1359,7 +1359,7 @@ void MacroAssembler::LoadFromNumberDictionary(Label* miss,
   LoadP(t1, FieldMemOperand(t2, kDetailsOffset));
   LoadSmiLiteral(ip, Smi::FromInt(PropertyDetails::TypeField::kMask));
   LoadRR(r0, ip);
-  And(r0, t1/*, SetRC*/);  // Should be okay to remove rc
+  AndP(r0, t1/*, SetRC*/);  // Should be okay to remove rc
   bne(miss /*, cr0*/);
 
   // Get the value at the masked, scaled index and return.
@@ -1539,7 +1539,7 @@ void MacroAssembler::AllocateInNewSpace(Register object_size,
   // Update allocation top. result temporarily holds the new top.
   if (emit_debug_code()) {
     LoadRR(r0, scratch2);
-    And(r0, Operand(kObjectAlignmentMask));
+    AndP(r0, Operand(kObjectAlignmentMask));
     Check(eq, "Unaligned allocation in new space", cr0);
   }
   StoreP(scratch2, MemOperand(topaddr));
@@ -1558,7 +1558,7 @@ void MacroAssembler::UndoAllocationInNewSpace(Register object,
 
   // Make sure the object has no tag before resetting top.
   mov(r0, Operand(~kHeapObjectTagMask));
-  And(object, r0);
+  AndP(object, r0);
   // was.. and_(object, object, Operand(~kHeapObjectTagMask));
 #ifdef DEBUG
   // Check that the object un-allocated is below the current top.
@@ -1586,7 +1586,7 @@ void MacroAssembler::AllocateTwoByteString(Register result,
   AddP(scratch1,
        Operand(kObjectAlignmentMask + SeqTwoByteString::kHeaderSize));
   mov(r0, Operand(~kObjectAlignmentMask));
-  And(scratch1, r0);
+  AndP(scratch1, r0);
 
   // Allocate two-byte string in new space.
   AllocateInNewSpace(scratch1,
@@ -1618,7 +1618,7 @@ void MacroAssembler::AllocateAsciiString(Register result,
   LoadRR(scratch1, length);
   AddP(scratch1, Operand(kObjectAlignmentMask + SeqAsciiString::kHeaderSize));
   lhi(r0, Operand(~kObjectAlignmentMask));
-  And(scratch1, r0);
+  AndP(scratch1, r0);
 
   // Allocate ASCII string in new space.
   AllocateInNewSpace(scratch1,
@@ -1909,7 +1909,7 @@ void MacroAssembler::AddAndCheckForOverflow(Register dst,
     Xor(scratch, dst);  // Original left.
     LoadRR(overflow_dst, dst);
     Xor(overflow_dst, right);
-    And(overflow_dst, scratch/*, SetRC*/);
+    AndP(overflow_dst, scratch/*, SetRC*/);
     // Should be okay to remove rc
   } else if (dst.is(right)) {
     LoadRR(scratch, right);           // Preserve right.
@@ -1917,7 +1917,7 @@ void MacroAssembler::AddAndCheckForOverflow(Register dst,
     Xor(scratch, dst);  // Original right.
     LoadRR(overflow_dst, dst);
     Xor(overflow_dst, left);
-    And(overflow_dst, scratch/*, SetRC*/);
+    AndP(overflow_dst, scratch/*, SetRC*/);
     // Should be okay to remove rc
   } else {
     Add(dst, left, right);
@@ -1925,7 +1925,7 @@ void MacroAssembler::AddAndCheckForOverflow(Register dst,
     Xor(overflow_dst, left);
     LoadRR(scratch, dst);
     Xor(scratch, right);
-    And(overflow_dst, scratch/*, SetRC*/);
+    AndP(overflow_dst, scratch/*, SetRC*/);
     // Should be okay to remove rc
   }
 }
@@ -1948,7 +1948,7 @@ void MacroAssembler::SubAndCheckForOverflow(Register dst,
     LoadRR(overflow_dst, dst);
     Xor(overflow_dst, scratch);
     Xor(scratch, right);
-    And(overflow_dst, scratch/*, SetRC*/);
+    AndP(overflow_dst, scratch/*, SetRC*/);
     // Should be okay to remove rc
   } else if (dst.is(right)) {
     LoadRR(scratch, right);           // Preserve right.
@@ -1956,7 +1956,7 @@ void MacroAssembler::SubAndCheckForOverflow(Register dst,
     LoadRR(overflow_dst, dst);
     Xor(overflow_dst, left);
     Xor(scratch, left);
-    And(overflow_dst, scratch/*, SetRC*/);
+    AndP(overflow_dst, scratch/*, SetRC*/);
     // Should be okay to remove rc
   } else {
     Sub(dst, left, right);
@@ -1964,7 +1964,7 @@ void MacroAssembler::SubAndCheckForOverflow(Register dst,
     Xor(overflow_dst, left);
     LoadRR(scratch, right);
     Xor(scratch, left);
-    And(overflow_dst, scratch/*, SetRC*/);
+    AndP(overflow_dst, scratch/*, SetRC*/);
     // Should be okay to remove rc
   }
 }
@@ -2085,7 +2085,7 @@ void MacroAssembler::TryGetFunctionPrototype(Register function,
   Label non_instance;
   LoadlB(scratch, FieldMemOperand(result, Map::kBitFieldOffset));
   LoadRR(r0, scratch);
-  And(r0, Operand(1 << Map::kHasNonInstancePrototype));
+  AndP(r0, Operand(1 << Map::kHasNonInstancePrototype));
   bne(&non_instance /*, cr0*/);
 
   // Get the prototype or initial map from the function.
@@ -2882,7 +2882,7 @@ void MacroAssembler::JumpIfNotPowerOfTwoOrZero(
   Cmpi(scratch, Operand::Zero());
   blt(not_power_of_two_or_zero);
   LoadRR(r0, reg);
-  And(r0, scratch/*, SetRC*/);  // Should be okay to remove rc
+  AndP(r0, scratch/*, SetRC*/);  // Should be okay to remove rc
   bne(not_power_of_two_or_zero /*, cr0*/);
 }
 
@@ -2896,7 +2896,7 @@ void MacroAssembler::JumpIfNotPowerOfTwoOrZeroAndNeg(
   Cmpi(scratch, Operand::Zero());
   blt(zero_and_neg);
   LoadRR(r0, reg);
-  And(r0, scratch/*, SetRC*/);  // Should be okay to remove rc
+  AndP(r0, scratch/*, SetRC*/);  // Should be okay to remove rc
   bne(not_power_of_two /*, cr0*/);
 }
 
@@ -2973,7 +2973,7 @@ void MacroAssembler::AssertNotSmi(Register object) {
   if (emit_debug_code()) {
     STATIC_ASSERT(kSmiTag == 0);
     LoadRR(r0, object);
-    And(r0, Operand(kSmiTagMask));
+    AndP(r0, Operand(kSmiTagMask));
     Check(ne, "Operand is a smi", cr0);
   }
 }
@@ -2983,7 +2983,7 @@ void MacroAssembler::AssertSmi(Register object) {
   if (emit_debug_code()) {
     STATIC_ASSERT(kSmiTag == 0);
     LoadRR(r0, object);
-    And(r0, Operand(kSmiTagMask));
+    AndP(r0, Operand(kSmiTagMask));
     Check(eq, "Operand is not smi", cr0);
   }
 }
@@ -2993,7 +2993,7 @@ void MacroAssembler::AssertString(Register object) {
   if (emit_debug_code()) {
     STATIC_ASSERT(kSmiTag == 0);
     LoadRR(r0, object);
-    And(r0, Operand(kSmiTagMask));
+    AndP(r0, Operand(kSmiTagMask));
     Check(ne, "Operand is not a string", cr0);
     push(object);
     LoadP(object, FieldMemOperand(object, HeapObject::kMapOffset));
@@ -3054,7 +3054,7 @@ void MacroAssembler::JumpIfNotBothSequentialAsciiStrings(Register first,
   // Check that neither is a smi.
   STATIC_ASSERT(kSmiTag == 0);
   LoadRR(scratch1, first);
-  And(scratch1, second);
+  AndP(scratch1, second);
   JumpIfSmi(scratch1, failure);
   JumpIfNonSmisNotBothSequentialAsciiStrings(first,
                                              second,
@@ -3144,7 +3144,7 @@ void MacroAssembler::CopyBytes(Register src,
 
   // Check src alignment and length to see whether word_loop is possible
   LoadRR(scratch, src);
-  And(scratch, Operand(kPointerSize - 1));
+  AndP(scratch, Operand(kPointerSize - 1));
   beq(&aligned /*, cr0*/);
   subfic(scratch, scratch, Operand(kPointerSize * 2));
   CmpRR(length, scratch);
@@ -3166,7 +3166,7 @@ void MacroAssembler::CopyBytes(Register src,
   // Copy bytes in word size chunks.
   if (emit_debug_code()) {
     LoadRR(r0, src);
-    And(r0, Operand(kPointerSize - 1));
+    AndP(r0, Operand(kPointerSize - 1));
     Assert(eq, "Expecting alignment for CopyBytes", cr0);
   }
 
@@ -3266,9 +3266,9 @@ void MacroAssembler::JumpIfBothInstanceTypesAreNotSequentialAscii(
       kIsNotStringMask | kStringEncodingMask | kStringRepresentationMask;
   int kFlatAsciiStringTag = ASCII_STRING_TYPE;
   LoadRR(scratch1, first);
-  And(scratch1, Operand(kFlatAsciiStringMask));
+  AndP(scratch1, Operand(kFlatAsciiStringMask));
   LoadRR(scratch2, second);
-  And(scratch2, Operand(kFlatAsciiStringMask));
+  AndP(scratch2, Operand(kFlatAsciiStringMask));
   Cmpi(scratch1, Operand(kFlatAsciiStringTag));
   bne(failure);
   Cmpi(scratch2, Operand(kFlatAsciiStringTag));
@@ -3283,7 +3283,7 @@ void MacroAssembler::JumpIfInstanceTypeIsNotSequentialAscii(Register type,
       kIsNotStringMask | kStringEncodingMask | kStringRepresentationMask;
   int kFlatAsciiStringTag = ASCII_STRING_TYPE;
   LoadRR(scratch, type);
-  And(scratch, Operand(kFlatAsciiStringMask));
+  AndP(scratch, Operand(kFlatAsciiStringMask));
   Cmpi(scratch, Operand(kFlatAsciiStringTag));
   bne(failure);
 }
@@ -3468,7 +3468,7 @@ void MacroAssembler::PatchRelocatedValue(Register lis_location,
   LoadlW(scratch, MemOperand(lis_location));
   // At this point scratch is a lis instruction.
   if (emit_debug_code()) {
-    And(scratch, Operand(kOpcodeMask | (0x1f * B16)));
+    AndP(scratch, Operand(kOpcodeMask | (0x1f * B16)));
     Cmpi(scratch, Operand(ADDIS));
     Check(eq, "The instruction to patch should be a lis.");
     LoadlW(scratch, MemOperand(lis_location));
@@ -3487,7 +3487,7 @@ void MacroAssembler::PatchRelocatedValue(Register lis_location,
   LoadlW(scratch, MemOperand(lis_location, kInstrSize));
   // scratch is now ori.
   if (emit_debug_code()) {
-    And(scratch, Operand(kOpcodeMask));
+    AndP(scratch, Operand(kOpcodeMask));
     Cmpi(scratch, Operand(ORI));
     Check(eq, "The instruction should be an ori");
     LoadlW(scratch, MemOperand(lis_location, kInstrSize));
@@ -3505,7 +3505,7 @@ void MacroAssembler::PatchRelocatedValue(Register lis_location,
   if (emit_debug_code()) {
     LoadlW(scratch, MemOperand(lis_location, 2*kInstrSize));
     // scratch is now sldi.
-    And(scratch, Operand(kOpcodeMask|kExt5OpcodeMask));
+    AndP(scratch, Operand(kOpcodeMask|kExt5OpcodeMask));
     Cmpi(scratch, Operand(EXT5|RLDICR));
     Check(eq, "The instruction should be an sldi");
   }
@@ -3513,7 +3513,7 @@ void MacroAssembler::PatchRelocatedValue(Register lis_location,
   LoadlW(scratch, MemOperand(lis_location, 3*kInstrSize));
   // scratch is now ori.
   if (emit_debug_code()) {
-    And(scratch, Operand(kOpcodeMask));
+    AndP(scratch, Operand(kOpcodeMask));
     Cmpi(scratch, Operand(ORIS));
     Check(eq, "The instruction should be an oris");
     LoadlW(scratch, MemOperand(lis_location, 3*kInstrSize));
@@ -3525,7 +3525,7 @@ void MacroAssembler::PatchRelocatedValue(Register lis_location,
   LoadlW(scratch, MemOperand(lis_location, 4*kInstrSize));
   // scratch is now ori.
   if (emit_debug_code()) {
-    And(scratch, Operand(kOpcodeMask));
+    AndP(scratch, Operand(kOpcodeMask));
     Cmpi(scratch, Operand(ORI));
     Check(eq, "The instruction should be an ori");
     LoadlW(scratch, MemOperand(lis_location, 4*kInstrSize));
@@ -3548,7 +3548,7 @@ void MacroAssembler::GetRelocatedValueLocation(Register lis_location,
                                                Register scratch) {
   LoadlW(result, MemOperand(lis_location));
   if (emit_debug_code()) {
-    And(result, Operand(kOpcodeMask | (0x1f * B16)));
+    AndP(result, Operand(kOpcodeMask | (0x1f * B16)));
     Cmpi(result, Operand(ADDIS));
     Check(eq, "The instruction should be a lis.");
     LoadlW(result, MemOperand(lis_location));
@@ -3559,7 +3559,7 @@ void MacroAssembler::GetRelocatedValueLocation(Register lis_location,
 
   LoadlW(scratch, MemOperand(lis_location, kInstrSize));
   if (emit_debug_code()) {
-    And(scratch, Operand(kOpcodeMask));
+    AndP(scratch, Operand(kOpcodeMask));
     Cmpi(scratch, Operand(ORI));
     Check(eq, "The instruction should be an ori");
     LoadlW(scratch, MemOperand(lis_location, kInstrSize));
@@ -3571,7 +3571,7 @@ void MacroAssembler::GetRelocatedValueLocation(Register lis_location,
   if (emit_debug_code()) {
     LoadlW(scratch, MemOperand(lis_location, 2*kInstrSize));
     // scratch is now sldi.
-    And(scratch, Operand(kOpcodeMask|kExt5OpcodeMask));
+    AndP(scratch, Operand(kOpcodeMask|kExt5OpcodeMask));
     Cmpi(scratch, Operand(EXT5|RLDICR));
     Check(eq, "The instruction should be an sldi");
   }
@@ -3579,7 +3579,7 @@ void MacroAssembler::GetRelocatedValueLocation(Register lis_location,
   LoadlW(scratch, MemOperand(lis_location, 3*kInstrSize));
   // scratch is now ori.
   if (emit_debug_code()) {
-    And(scratch, Operand(kOpcodeMask));
+    AndP(scratch, Operand(kOpcodeMask));
     Cmpi(scratch, Operand(ORIS));
     Check(eq, "The instruction should be an oris");
     LoadlW(scratch, MemOperand(lis_location, 3*kInstrSize));
@@ -3590,7 +3590,7 @@ void MacroAssembler::GetRelocatedValueLocation(Register lis_location,
   LoadlW(scratch, MemOperand(lis_location, 4*kInstrSize));
   // scratch is now ori.
   if (emit_debug_code()) {
-    And(scratch, Operand(kOpcodeMask));
+    AndP(scratch, Operand(kOpcodeMask));
     Cmpi(scratch, Operand(ORI));
     Check(eq, "The instruction should be an ori");
     LoadlW(scratch, MemOperand(lis_location, 4*kInstrSize));
@@ -3612,7 +3612,7 @@ void MacroAssembler::CheckPageFlag(
   LoadP(scratch, MemOperand(scratch, MemoryChunk::kFlagsOffset));
 
   LoadRR(r0, scratch);
-  And(r0, Operand(mask)/*, SetRC*/);
+  AndP(r0, Operand(mask)/*, SetRC*/);
   // Should be okay to remove rc
 
   if (cc == ne) {
@@ -3647,7 +3647,7 @@ void MacroAssembler::HasColor(Register object,
   LoadlW(ip, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
   // Test the first bit
   LoadRR(r0, ip);
-  And(r0, mask_scratch/*, SetRC*/);  // Should be okay to remove rc
+  AndP(r0, mask_scratch/*, SetRC*/);  // Should be okay to remove rc
   b(first_bit == 1 ? eq : ne, &other_color /*, cr0*/);
   // Shift left 1
   // May need to load the next cell
@@ -3655,7 +3655,7 @@ void MacroAssembler::HasColor(Register object,
   beq(&word_boundary /*, cr0*/);
   // Test the second bit
   LoadRR(r0, ip);
-  And(r0, mask_scratch/*, SetRC*/);  // Should be okay to remove rc
+  AndP(r0, mask_scratch/*, SetRC*/);  // Should be okay to remove rc
   b(second_bit == 1 ? ne : eq, has_color /*, cr0*/);
   b(&other_color);
 
@@ -3663,7 +3663,7 @@ void MacroAssembler::HasColor(Register object,
   LoadlW(ip, MemOperand(bitmap_scratch,
                      MemoryChunk::kHeaderSize + kIntSize));
   LoadRR(r0, ip);
-  And(r0, Operand(1));
+  AndP(r0, Operand(1));
   b(second_bit == 1 ? ne : eq, has_color /*, cr0*/);
   bind(&other_color);
 }
@@ -3685,7 +3685,7 @@ void MacroAssembler::JumpIfDataObject(Register value,
   // no GC pointers.
   LoadlB(scratch, FieldMemOperand(scratch, Map::kInstanceTypeOffset));
   STATIC_ASSERT((kIsIndirectStringMask | kIsNotStringMask) == 0x81);
-  And(scratch, Operand(kIsIndirectStringMask | kIsNotStringMask));
+  AndP(scratch, Operand(kIsIndirectStringMask | kIsNotStringMask));
   bne(not_data_object /*, cr0*/);
   bind(&is_data_object);
 }
@@ -3698,7 +3698,7 @@ void MacroAssembler::GetMarkBits(Register addr_reg,
   ASSERT((~Page::kPageAlignmentMask & 0xffff) == 0);
   lis(r0, Operand((~Page::kPageAlignmentMask >> 16)));
   LoadRR(bitmap_reg, r0);
-  And(bitmap_reg, addr_reg);
+  AndP(bitmap_reg, addr_reg);
   const int kLowBits = kPointerSizeLog2 + Bitmap::kBitsPerCellLog2;
   ExtractBitRange(mask_reg, addr_reg,
                   kLowBits - 1,
@@ -3734,7 +3734,7 @@ void MacroAssembler::EnsureNotWhite(
   // not have a 1 there we only need to check one bit.
   LoadlW(load_scratch, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
   LoadRR(r0, load_scratch);
-  And(r0, mask_scratch/*, SetRC*/);
+  AndP(r0, mask_scratch/*, SetRC*/);
   // Should be okay to remove rc
   bne(&done /*, cr0*/);
 
@@ -3743,7 +3743,7 @@ void MacroAssembler::EnsureNotWhite(
     Label ok;
     // LSL may overflow, making the check conservative.
     slwi(r0, mask_scratch, Operand(1));
-    And(r0, load_scratch/*, SetRC*/);  // Should be okay to remove rc
+    AndP(r0, load_scratch/*, SetRC*/);  // Should be okay to remove rc
     beq(&ok /*, cr0*/);
     stop("Impossible marking bit pattern");
     bind(&ok);
@@ -3775,7 +3775,7 @@ void MacroAssembler::EnsureNotWhite(
   Register instance_type = load_scratch;
   LoadlB(instance_type, FieldMemOperand(map, Map::kInstanceTypeOffset));
   LoadRR(r0, instance_type);
-  And(r0, Operand(kIsIndirectStringMask | kIsNotStringMask));
+  AndP(r0, Operand(kIsIndirectStringMask | kIsNotStringMask));
   bne(value_is_white_and_not_data /*, cr0*/);
   // It's a non-indirect (non-cons and non-slice) string.
   // If it's external, the length is just ExternalString::kSize.
@@ -3785,7 +3785,7 @@ void MacroAssembler::EnsureNotWhite(
   ASSERT_EQ(0, kSeqStringTag & kExternalStringTag);
   ASSERT_EQ(0, kConsStringTag & kExternalStringTag);
   LoadRR(r0, instance_type);
-  And(r0, Operand(kExternalStringTag));
+  AndP(r0, Operand(kExternalStringTag));
   beq(&is_string_object /*, cr0*/);
   lhi(length, Operand(ExternalString::kSize));
   b(&is_data_object);
@@ -3800,7 +3800,7 @@ void MacroAssembler::EnsureNotWhite(
   ASSERT(kAsciiStringTag == 4 && kStringEncodingMask == 4);
   LoadP(ip, FieldMemOperand(value, String::kLengthOffset));
   LoadRR(r0, instance_type);
-  And(r0, Operand(kStringEncodingMask));
+  AndP(r0, Operand(kStringEncodingMask));
   beq(&is_encoded /*, cr0*/);
   SmiUntag(ip);
 #if V8_TARGET_ARCH_S390X
@@ -3816,7 +3816,7 @@ void MacroAssembler::EnsureNotWhite(
   LoadRR(length, ip);
   AddP(length, Operand(SeqString::kHeaderSize + kObjectAlignmentMask));
   lhi(r0, Operand(~kObjectAlignmentMask));
-  And(length, r0);
+  AndP(length, r0);
 
   bind(&is_data_object);
   // Value is a data object, and it is white.  Mark it black.  Since we know
@@ -3826,7 +3826,7 @@ void MacroAssembler::EnsureNotWhite(
   StoreW(ip, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
 
   mov(ip, Operand(~Page::kPageAlignmentMask));
-  And(bitmap_scratch, ip);
+  AndP(bitmap_scratch, ip);
   LoadlW(ip, MemOperand(bitmap_scratch, MemoryChunk::kLiveBytesOffset));
   AddP(ip, length);
   StoreW(ip, MemOperand(bitmap_scratch, MemoryChunk::kLiveBytesOffset));
@@ -3930,7 +3930,7 @@ void MacroAssembler::EnumLength(Register dst, Register map) {
   STATIC_ASSERT(Map::EnumLengthBits::kShift == 0);
   LoadP(dst, FieldMemOperand(map, Map::kBitField3Offset));
   LoadSmiLiteral(r0, Smi::FromInt(Map::EnumLengthBits::kMask));
-  And(dst, r0);
+  AndP(dst, r0);
 }
 
 
@@ -4146,7 +4146,7 @@ void MacroAssembler::And(Register dst, Register src1, Register src2) {
 }
 #endif
 
-void MacroAssembler::And(Register dst, Register src) {
+void MacroAssembler::AndP(Register dst, Register src) {
 #if V8_TARGET_ARCH_S390X
   ngr(dst, src);
 #else
@@ -4154,7 +4154,7 @@ void MacroAssembler::And(Register dst, Register src) {
 #endif
 }
 
-void MacroAssembler::And(Register dst, const MemOperand& opnd) {
+void MacroAssembler::AndP(Register dst, const MemOperand& opnd) {
 #if V8_TARGET_ARCH_S390X
   iihf(dst, Operand(0));  // higher reg set to 0
   n(dst, opnd);
@@ -4167,7 +4167,7 @@ void MacroAssembler::And(Register dst, const MemOperand& opnd) {
 #endif
 }
 
-void MacroAssembler::And(Register dst, const Operand& opnd) {
+void MacroAssembler::AndP(Register dst, const Operand& opnd) {
   // simulate ppc instruction andi
   uint32_t value = opnd.imm_ & 0xFFFF;
 #if V8_TARGET_ARCH_S390X
@@ -4181,7 +4181,7 @@ void MacroAssembler::And(Register dst, const Operand& opnd) {
 #if 0
 void MacroAssembler::And(Register dst, Register src, const Operand& opnd) {
   if (!dst.is(src)) LoadRR(dst, src);
-  And(dst, opnd);
+  AndP(dst, opnd);
 }
 #endif
 
@@ -4484,7 +4484,7 @@ void MacroAssembler::SubSmiLiteral(Register dst, Register src, Smi *smi,
 
 void MacroAssembler::AndSmiLiteral(Register dst, Register src, Smi *smi) {
   LoadSmiLiteral(dst, smi);
-  And(dst, src);
+  AndP(dst, src);
 }
 
 

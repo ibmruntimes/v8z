@@ -303,20 +303,13 @@ class MacroAssembler: public Assembler {
   void Subl(Register dst, Register src);
 
   // and 32bit
-  void And(Register dst, const MemOperand& opnd);
-  void And(Register dst, const Operand& opnd);
-  void And(Register dst, Register src);
   // and(r,r,r) Not supported on z9
-  // void And(Register dst, Register src1, Register src2);
-  // void And(Register dst, Register src, const Operand& opnd);
-  void Or(Register dst, Register src);
+  // void AndP(Register dst, Register src1, Register src2);
+  // void AndP(Register dst, Register src, const Operand& opnd);
   // or(r,r,r) Not supported on z9
   // void Or(Register dst, Register src1, Register src2);
-  void Or(Register dst, const Operand& opnd);
   // void Or(Register dst, Register src, const Operand& opnd);
-  void Xor(Register dst, Register src);
   // void Xor(Register dst, Register src1, Register src2);
-  void Xor(Register dst, const Operand& opnd);
   // void Xor(Register dst, Register src, const Operand& opnd);
   void Branch(Condition c, const Operand& opnd);
   void ShiftLeftImm(Register dst, Register src, const Operand& val);
@@ -332,6 +325,14 @@ class MacroAssembler: public Assembler {
   void AddP(Register dst, Register src);
   void SubP(Register dst, const Operand& opnd);
   void SubP(Register dst, const MemOperand& opnd);
+
+  void AndP(Register dst, const MemOperand& opnd);
+  void AndP(Register dst, const Operand& opnd);
+  void AndP(Register dst, Register src);
+  void Or(Register dst, Register src);
+  void Or(Register dst, const Operand& opnd);
+  void Xor(Register dst, Register src);
+  void Xor(Register dst, const Operand& opnd);
 
 
   void mov(Register dst, const Operand& src);
@@ -1029,7 +1030,7 @@ class MacroAssembler: public Assembler {
     LoadP(type, FieldMemOperand(obj, HeapObject::kMapOffset));
     LoadlB(type, FieldMemOperand(type, Map::kInstanceTypeOffset));
     LoadRR(r0, type);
-    And(r0, Operand(kIsNotStringMask));
+    AndP(r0, Operand(kIsNotStringMask));
     ASSERT_EQ(0, kStringTag);
     return eq;
   }
@@ -1326,7 +1327,7 @@ class MacroAssembler: public Assembler {
     srlk(dst, src,  Operand(rangeStart));
 #endif
     uint32_t mask = 0xffffffff >> (kBitsPerPointer - width);
-    And(dst, Operand(mask));
+    AndP(dst, Operand(mask));
   }
 
   inline void ExtractBit(Register dst, Register src, uint32_t bitNumber) {

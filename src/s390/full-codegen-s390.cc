@@ -2073,7 +2073,7 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
       __ Or(right, left);
       break;
     case Token::BIT_AND:
-      __ And(right, left);
+      __ AndP(right, left);
       break;
     case Token::BIT_XOR:
       __ Xor(right, left);
@@ -2614,7 +2614,7 @@ void FullCodeGenerator::EmitIsSmi(CallRuntime* expr) {
 
   PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
   __ LoadRR(r0, r3);
-  __ And(r0, Operand(kSmiTagMask));
+  __ AndP(r0, Operand(kSmiTagMask));
   Split(eq, if_true, if_false, fall_through, cr0);
 
   context()->Plug(if_true, if_false);
@@ -2663,7 +2663,7 @@ void FullCodeGenerator::EmitIsObject(CallRuntime* expr) {
   // Undetectable objects behave like undefined when tested with typeof.
   __ LoadlB(r4, FieldMemOperand(r5, Map::kBitFieldOffset));
   __ LoadRR(r0, r4);
-  __ And(r0, Operand(1 << Map::kIsUndetectable));
+  __ AndP(r0, Operand(1 << Map::kIsUndetectable));
   __ bne(if_false /*, cr0*/);
   __ LoadlB(r4, FieldMemOperand(r5, Map::kInstanceTypeOffset));
   __ Cmpi(r4, Operand(FIRST_NONCALLABLE_SPEC_OBJECT_TYPE));
@@ -2715,7 +2715,7 @@ void FullCodeGenerator::EmitIsUndetectableObject(CallRuntime* expr) {
   __ LoadP(r4, FieldMemOperand(r3, HeapObject::kMapOffset));
   __ LoadlB(r4, FieldMemOperand(r4, Map::kBitFieldOffset));
   __ LoadRR(r0, r4);
-  __ And(r0, Operand(1 << Map::kIsUndetectable));
+  __ AndP(r0, Operand(1 << Map::kIsUndetectable));
   PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
   Split(ne, if_true, if_false, fall_through, cr0);
 
@@ -2742,7 +2742,7 @@ void FullCodeGenerator::EmitIsStringWrapperSafeForDefaultValueOf(
   __ LoadP(r4, FieldMemOperand(r3, HeapObject::kMapOffset));
   __ LoadlB(ip, FieldMemOperand(r4, Map::kBitField2Offset));
   __ LoadRR(r0, ip);
-  __ And(r0, Operand(1 << Map::kStringWrapperSafeForDefaultValueOf));
+  __ AndP(r0, Operand(1 << Map::kStringWrapperSafeForDefaultValueOf));
   __ bne(if_true /*, cr0*/);
 
   // Check for fast case object. Generate false result for slow case object.
@@ -3539,7 +3539,7 @@ void FullCodeGenerator::EmitIsRegExpEquivalent(CallRuntime* expr) {
   __ beq(&ok);
   // Fail if either is a non-HeapObject.
   __ LoadRR(tmp, left);
-  __ And(tmp, right);
+  __ AndP(tmp, right);
   __ JumpIfSmi(tmp, &fail);
   __ LoadP(tmp, FieldMemOperand(left, HeapObject::kMapOffset));
   __ LoadlB(tmp2, FieldMemOperand(tmp, Map::kInstanceTypeOffset));
@@ -3578,7 +3578,7 @@ void FullCodeGenerator::EmitHasCachedArrayIndex(CallRuntime* expr) {
   // PPC - assume ip is free
   __ mov(ip, Operand(String::kContainsCachedArrayIndexMask));
   __ LoadRR(r0, ip);
-  __ And(r0, r3);
+  __ AndP(r0, r3);
   __ Cmpi(r0, Operand::Zero());
   PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
   Split(eq, if_true, if_false, fall_through);
@@ -4280,7 +4280,7 @@ void FullCodeGenerator::EmitLiteralCompareTypeof(Expression* expr,
     __ LoadlB(r4, FieldMemOperand(r3, Map::kBitFieldOffset));
     STATIC_ASSERT((1 << Map::kIsUndetectable) < 0x8000);
     __ LoadRR(r0, r4);
-    __ And(r0, Operand(1 << Map::kIsUndetectable));
+    __ AndP(r0, Operand(1 << Map::kIsUndetectable));
     Split(eq, if_true, if_false, fall_through, cr0);
   } else if (check->Equals(isolate()->heap()->boolean_symbol())) {
     __ CompareRoot(r3, Heap::kTrueValueRootIndex);
@@ -4299,7 +4299,7 @@ void FullCodeGenerator::EmitLiteralCompareTypeof(Expression* expr,
     __ LoadP(r3, FieldMemOperand(r3, HeapObject::kMapOffset));
     __ LoadlB(r4, FieldMemOperand(r3, Map::kBitFieldOffset));
     __ LoadRR(r0, r4);
-    __ And(r0, Operand(1 << Map::kIsUndetectable));
+    __ AndP(r0, Operand(1 << Map::kIsUndetectable));
     Split(ne, if_true, if_false, fall_through, cr0);
 
   } else if (check->Equals(isolate()->heap()->function_symbol())) {
@@ -4323,7 +4323,7 @@ void FullCodeGenerator::EmitLiteralCompareTypeof(Expression* expr,
     // Check for undetectable objects => false.
     __ LoadlB(r4, FieldMemOperand(r3, Map::kBitFieldOffset));
     __ LoadRR(r0, r4);
-    __ And(r0, Operand(1 << Map::kIsUndetectable));
+    __ AndP(r0, Operand(1 << Map::kIsUndetectable));
     Split(eq, if_true, if_false, fall_through, cr0);
   } else {
     if (if_false != fall_through) __ b(if_false);
@@ -4459,7 +4459,7 @@ void FullCodeGenerator::EmitLiteralCompareNil(CompareOperation* expr,
     // It can be an undetectable object.
     __ LoadP(r4, FieldMemOperand(r3, HeapObject::kMapOffset));
     __ LoadlB(r4, FieldMemOperand(r4, Map::kBitFieldOffset));
-    __ And(r4, Operand(1 << Map::kIsUndetectable));
+    __ AndP(r4, Operand(1 << Map::kIsUndetectable));
     __ Cmpi(r4, Operand(1 << Map::kIsUndetectable));
     Split(eq, if_true, if_false, fall_through);
   }
