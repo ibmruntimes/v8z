@@ -628,7 +628,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   Sub(sp, Operand(2 * kPointerSize));
 
   if (emit_debug_code()) {
-    lhi(r8, Operand::Zero());
+    LoadImmP(r8, Operand::Zero());
     StoreP(r8, MemOperand(fp, ExitFrameConstants::kSPOffset));
   }
   mov(r8, Operand(CodeObject()));
@@ -718,7 +718,7 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles,
   }
 
   // Clear top frame.
-  lhi(r6, Operand(0, RelocInfo::NONE));
+  LoadImmP(r6, Operand(0, RelocInfo::NONE));
   mov(ip, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate())));
   StoreP(r6, MemOperand(ip));
 
@@ -732,8 +732,7 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles,
   // Tear down the exit frame, pop the arguments, and return.
   LoadRR(sp, fp);
   pop(fp);
-  pop(r0);
-  mtlr(r0);
+  pop(r14);
 
   if (argument_count.is_valid()) {
     ShiftLeftImm(argument_count, argument_count, Operand(kPointerSizeLog2));
