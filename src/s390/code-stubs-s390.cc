@@ -3665,19 +3665,19 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
   }
 #endif
   // Lower 2 bits of r5 are 0 iff r3 has failure tag.
-  __ LoadRR(r5, r3);
-  __ Add(r5, Operand(1));
+  __ LoadRR(r4, r2);
+  __ Add(r4, Operand(1));
   STATIC_ASSERT(kFailureTagMask < 0x8000);
-  __ andi(r0, r5, Operand(kFailureTagMask));
-  __ beq(&failure_returned /*, cr0*/);
+  __ nill(r4, Operand(kFailureTagMask));
+  __ beq(&failure_returned);  // Branch if and result is zero.
 
   // Exit C frame and return.
-  // r3:r4: result
+  // r2:r3: result
   // sp: stack pointer
   // fp: frame pointer
-  //  Callee-saved register r14 still holds argc.
-  __ LeaveExitFrame(save_doubles_, r14);
-  __ blr();
+  //  Callee-saved register r7 still holds argc.
+  __ LeaveExitFrame(save_doubles_, r7);
+  __ b(r14);
 
   // check if we should retry or throw exception
   Label retry;
