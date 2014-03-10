@@ -242,11 +242,11 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   __ stg(r7, MemOperand(r10, 0));
 #else
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  __ st(r7, MemOperand(r10, 0));
-  __ st(r8, MemOperand(r10, 4));
+  __ StoreW(r7, MemOperand(r10, 0));
+  __ StoreW(r8, MemOperand(r10, 4));
 #else
-  __ st(r8, MemOperand(r10, 0));
-  __ st(r7, MemOperand(r10, 4));
+  __ StoreW(r8, MemOperand(r10, 0));
+  __ StoreW(r7, MemOperand(r10, 4));
 #endif
 #endif
   __ AddP(r10, Operand(8));
@@ -341,13 +341,13 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
   __ LoadlW(r3, MemOperand(r7, -8));
   __ LoadlW(r4, MemOperand(r7, -4));
-  __ st(r3, FieldMemOperand(r5, HeapNumber::kValueOffset));
-  __ st(r4, FieldMemOperand(r5, HeapNumber::kValueOffset+4));
+  __ StoreW(r3, FieldMemOperand(r5, HeapNumber::kValueOffset));
+  __ StoreW(r4, FieldMemOperand(r5, HeapNumber::kValueOffset+4));
 #else
   __ LoadlW(r3, MemOperand(r7, -4));
   __ LoadlW(r4, MemOperand(r7, -8));
-  __ st(r3, FieldMemOperand(r5, HeapNumber::kValueOffset+4));
-  __ st(r4, FieldMemOperand(r5, HeapNumber::kValueOffset));
+  __ StoreW(r3, FieldMemOperand(r5, HeapNumber::kValueOffset+4));
+  __ StoreW(r4, FieldMemOperand(r5, HeapNumber::kValueOffset));
 #endif
 #endif
   __ LoadRR(r3, r6);
