@@ -94,8 +94,8 @@ static void GenerateStringDictionaryReceiverCheck(MacroAssembler* masm,
 
   // Check that the global object does not require access checks.
   __ LoadlB(t1, FieldMemOperand(t0, Map::kBitFieldOffset));
-  __ LoadRR(r0, t1);
-  __ AndP(r0, Operand((1 << Map::kIsAccessCheckNeeded) |
+  __ LoadRR(r0_p, t1);
+  __ AndP(r0_p, Operand((1 << Map::kIsAccessCheckNeeded) |
                      (1 << Map::kHasNamedInterceptor)));
   __ bne(miss /*, cr0*/);
 
@@ -149,12 +149,12 @@ static void GenerateDictionaryLoad(MacroAssembler* masm,
       StringDictionary::kElementsStartIndex * kPointerSize;
   const int kDetailsOffset = kElementsStartOffset + 2 * kPointerSize;
   __ LoadP(scratch1, FieldMemOperand(scratch2, kDetailsOffset));
-  __ LoadRR(r0, scratch2);
+  __ LoadRR(r0_p, scratch2);
   __ LoadSmiLiteral(scratch2, Smi::FromInt(PropertyDetails::TypeField::kMask));
   __ AndP(scratch2, scratch1/*, SetRC*/);
   // Should be okay to remove RC
   __ bne(miss /*, cr0*/);
-  __ LoadRR(scratch2, r0);
+  __ LoadRR(scratch2, r0_p);
 
   // Get the value at the masked, scaled index and return.
   __ LoadP(result,
@@ -204,11 +204,11 @@ static void GenerateDictionaryStore(MacroAssembler* masm,
   int kTypeAndReadOnlyMask = PropertyDetails::TypeField::kMask |
     PropertyDetails::AttributesField::encode(READ_ONLY);
   __ LoadP(scratch1, FieldMemOperand(scratch2, kDetailsOffset));
-  __ LoadRR(r0, scratch2);
+  __ LoadRR(r0_p, scratch2);
   __ LoadSmiLiteral(scratch2, Smi::FromInt(kTypeAndReadOnlyMask));
   __ AndP(scratch2, scratch1/*, SetRC*/);  // Should be OK to remove RC
   __ bne(miss /*, cr0*/);
-  __ LoadRR(scratch2, r0);
+  __ LoadRR(scratch2, r0_p);
 
   // Store the value at the masked, scaled index and return.
   const int kValueOffset = kElementsStartOffset + kPointerSize;
@@ -224,14 +224,14 @@ static void GenerateDictionaryStore(MacroAssembler* masm,
 
 void LoadIC::GenerateArrayLength(MacroAssembler* masm) {
   // ----------- S t a t e -------------
-  //  -- r5    : name
+  //  -- r5_p    : name
   //  -- lr    : return address
-  //  -- r3    : receiver
+  //  -- r3_p    : receiver
   //  -- sp[0] : receiver
   // -----------------------------------
   Label miss;
 
-  StubCompiler::GenerateLoadArrayLength(masm, r3, r6, &miss);
+  StubCompiler::GenerateLoadArrayLength(masm, r3_p, r6_p, &miss);
   __ bind(&miss);
   StubCompiler::GenerateLoadMiss(masm, Code::LOAD_IC);
 }
@@ -239,14 +239,14 @@ void LoadIC::GenerateArrayLength(MacroAssembler* masm) {
 
 void LoadIC::GenerateStringLength(MacroAssembler* masm, bool support_wrappers) {
   // ----------- S t a t e -------------
-  //  -- r5    : name
+  //  -- r5_p    : name
   //  -- lr    : return address
-  //  -- r3    : receiver
+  //  -- r3_p    : receiver
   //  -- sp[0] : receiver
   // -----------------------------------
   Label miss;
 
-  StubCompiler::GenerateLoadStringLength(masm, r3, r4, r6, &miss,
+  StubCompiler::GenerateLoadStringLength(masm, r3_p, r4_p, r6_p, &miss,
                                          support_wrappers);
   // Cache miss: Jump to runtime.
   __ bind(&miss);
@@ -256,14 +256,14 @@ void LoadIC::GenerateStringLength(MacroAssembler* masm, bool support_wrappers) {
 
 void LoadIC::GenerateFunctionPrototype(MacroAssembler* masm) {
   // ----------- S t a t e -------------
-  //  -- r5    : name
+  //  -- r5_p    : name
   //  -- lr    : return address
-  //  -- r3    : receiver
+  //  -- r3_p    : receiver
   //  -- sp[0] : receiver
   // -----------------------------------
   Label miss;
 
-  StubCompiler::GenerateLoadFunctionPrototype(masm, r3, r4, r6, &miss);
+  StubCompiler::GenerateLoadFunctionPrototype(masm, r3_p, r4_p, r6_p, &miss);
   __ bind(&miss);
   StubCompiler::GenerateLoadMiss(masm, Code::LOAD_IC);
 }
@@ -284,8 +284,8 @@ static void GenerateKeyedLoadReceiverCheck(MacroAssembler* masm,
   // Check bit field.
   __ LoadlB(scratch, FieldMemOperand(map, Map::kBitFieldOffset));
   ASSERT(((1 << Map::kIsAccessCheckNeeded) | (1 << interceptor_bit)) < 0x8000);
-  __ LoadRR(r0, scratch);
-  __ AndP(r0,
+  __ LoadRR(r0_p, scratch);
+  __ AndP(r0_p,
           Operand((1 << Map::kIsAccessCheckNeeded) | (1 << interceptor_bit)));
   __ bne(slow /*, cr0*/);
   // Check that the object is some kind of JS object EXCEPT JS Value type.
@@ -369,7 +369,7 @@ static void GenerateKeyStringCheck(MacroAssembler* masm,
                                    Register hash,
                                    Label* index_string,
                                    Label* not_symbol) {
-  // assumes that r8 is free for scratch use
+  // assumes that r8_p is free for scratch use
   // The key is not a smi.
   // Is it a string?
   __ CompareObjectType(key, map, hash, FIRST_NONSTRING_TYPE);
@@ -377,17 +377,17 @@ static void GenerateKeyStringCheck(MacroAssembler* masm,
 
   // Is the string an array index, with cached numeric value?
   __ LoadlW(hash, FieldMemOperand(key, String::kHashFieldOffset));
-  __ mov(r8, Operand(String::kContainsCachedArrayIndexMask));
-  __ LoadRR(r0, r8);
-  __ AndP(r0, hash/*, SetRC*/);  // Should be OK to remove RC
+  __ mov(r8_p, Operand(String::kContainsCachedArrayIndexMask));
+  __ LoadRR(r0_p, r8_p);
+  __ AndP(r0_p, hash/*, SetRC*/);  // Should be OK to remove RC
   __ beq(index_string /*, cr0*/);
 
   // Is the string a symbol?
   // map: key map
   __ LoadlB(hash, FieldMemOperand(map, Map::kInstanceTypeOffset));
   STATIC_ASSERT(kSymbolTag != 0);
-  __ LoadRR(r0, hash);
-  __ AndP(r0, Operand(kIsSymbolMask));
+  __ LoadRR(r0_p, hash);
+  __ AndP(r0_p, Operand(kIsSymbolMask));
   __ beq(not_symbol /*, cr0*/);
 }
 
@@ -402,8 +402,8 @@ void CallICBase::GenerateMonomorphicCacheProbe(MacroAssembler* masm,
                                                Code::Kind kind,
                                                Code::ExtraICState extra_state) {
   // ----------- S t a t e -------------
-  //  -- r4    : receiver
-  //  -- r5    : name
+  //  -- r4_p    : receiver
+  //  -- r5_p    : name
   // -----------------------------------
   Label number, non_number, non_string, boolean, probe, miss;
 
@@ -414,7 +414,7 @@ void CallICBase::GenerateMonomorphicCacheProbe(MacroAssembler* masm,
                                          Code::NORMAL,
                                          argc);
   Isolate::Current()->stub_cache()->GenerateProbe(
-      masm, flags, r4, r5, r6, r7, r8, r9);
+      masm, flags, r4_p, r5_p, r6_p, r7_p, r8_p, r9_p);
 
   // If the stub cache probing failed, the receiver might be a value.
   // For value objects, we use the map of the prototype objects for
@@ -422,38 +422,38 @@ void CallICBase::GenerateMonomorphicCacheProbe(MacroAssembler* masm,
   // to probe.
   //
   // Check for number.
-  __ JumpIfSmi(r4, &number);
-  __ CompareObjectType(r4, r6, r6, HEAP_NUMBER_TYPE);
+  __ JumpIfSmi(r4_p, &number);
+  __ CompareObjectType(r4_p, r6_p, r6_p, HEAP_NUMBER_TYPE);
   __ bne(&non_number);
   __ bind(&number);
   StubCompiler::GenerateLoadGlobalFunctionPrototype(
-      masm, Context::NUMBER_FUNCTION_INDEX, r4);
+      masm, Context::NUMBER_FUNCTION_INDEX, r4_p);
   __ b(&probe);
 
   // Check for string.
   __ bind(&non_number);
-  __ Cmpli(r6, Operand(FIRST_NONSTRING_TYPE));
+  __ Cmpli(r6_p, Operand(FIRST_NONSTRING_TYPE));
   __ bge(&non_string);
   StubCompiler::GenerateLoadGlobalFunctionPrototype(
-      masm, Context::STRING_FUNCTION_INDEX, r4);
+      masm, Context::STRING_FUNCTION_INDEX, r4_p);
   __ b(&probe);
 
   // Check for boolean.
   __ bind(&non_string);
   __ LoadRoot(ip, Heap::kTrueValueRootIndex);
-  __ CmpRR(r4, ip);
+  __ CmpRR(r4_p, ip);
   __ beq(&boolean);
   __ LoadRoot(ip, Heap::kFalseValueRootIndex);
-  __ CmpRR(r4, ip);
+  __ CmpRR(r4_p, ip);
   __ bne(&miss);
   __ bind(&boolean);
   StubCompiler::GenerateLoadGlobalFunctionPrototype(
-      masm, Context::BOOLEAN_FUNCTION_INDEX, r4);
+      masm, Context::BOOLEAN_FUNCTION_INDEX, r4_p);
 
   // Probe the stub cache for the value object.
   __ bind(&probe);
   Isolate::Current()->stub_cache()->GenerateProbe(
-      masm, flags, r4, r5, r6, r7, r8, r9);
+      masm, flags, r4_p, r5_p, r6_p, r7_p, r8_p, r9_p);
 
   __ bind(&miss);
 }
@@ -463,39 +463,39 @@ static void GenerateFunctionTailCall(MacroAssembler* masm,
                                      int argc,
                                      Label* miss,
                                      Register scratch) {
-  // r4: function
+  // r4_p: function
 
   // Check that the value isn't a smi.
-  __ JumpIfSmi(r4, miss);
+  __ JumpIfSmi(r4_p, miss);
 
   // Check that the value is a JSFunction.
-  __ CompareObjectType(r4, scratch, scratch, JS_FUNCTION_TYPE);
+  __ CompareObjectType(r4_p, scratch, scratch, JS_FUNCTION_TYPE);
   __ bne(miss);
 
   // Invoke the function.
   ParameterCount actual(argc);
-  __ InvokeFunction(r4, actual, JUMP_FUNCTION,
+  __ InvokeFunction(r4_p, actual, JUMP_FUNCTION,
                     NullCallWrapper(), CALL_AS_METHOD);
 }
 
 
 void CallICBase::GenerateNormal(MacroAssembler* masm, int argc) {
   // ----------- S t a t e -------------
-  //  -- r5    : name
+  //  -- r5_p    : name
   //  -- lr    : return address
   // -----------------------------------
   Label miss;
 
-  // Get the receiver of the function from the stack into r4.
-  __ LoadP(r4, MemOperand(sp, argc * kPointerSize), r0);
+  // Get the receiver of the function from the stack into r4_p.
+  __ LoadP(r4_p, MemOperand(sp, argc * kPointerSize), r0_p);
 
-  GenerateStringDictionaryReceiverCheck(masm, r4, r3, r6, r7, &miss);
+  GenerateStringDictionaryReceiverCheck(masm, r4_p, r3_p, r6_p, r7_p, &miss);
 
-  // r3: elements
-  // Search the dictionary - put result in register r4.
-  GenerateDictionaryLoad(masm, &miss, r3, r5, r4, r6, r7);
+  // r3_p: elements
+  // Search the dictionary - put result in register r4_p.
+  GenerateDictionaryLoad(masm, &miss, r3_p, r5_p, r4_p, r6_p, r7_p);
 
-  GenerateFunctionTailCall(masm, argc, &miss, r7);
+  GenerateFunctionTailCall(masm, argc, &miss, r7_p);
 
   __ bind(&miss);
 }
@@ -506,52 +506,52 @@ void CallICBase::GenerateMiss(MacroAssembler* masm,
                               IC::UtilityId id,
                               Code::ExtraICState extra_state) {
   // ----------- S t a t e -------------
-  //  -- r5    : name
+  //  -- r5_p    : name
   //  -- lr    : return address
   // -----------------------------------
   Isolate* isolate = masm->isolate();
 
   if (id == IC::kCallIC_Miss) {
-    __ IncrementCounter(isolate->counters()->call_miss(), 1, r6, r7);
+    __ IncrementCounter(isolate->counters()->call_miss(), 1, r6_p, r7_p);
   } else {
-    __ IncrementCounter(isolate->counters()->keyed_call_miss(), 1, r6, r7);
+    __ IncrementCounter(isolate->counters()->keyed_call_miss(), 1, r6_p, r7_p);
   }
 
   // Get the receiver of the function from the stack.
-  __ LoadP(r6, MemOperand(sp, argc * kPointerSize), r0);
+  __ LoadP(r6_p, MemOperand(sp, argc * kPointerSize), r0_p);
 
   {
     FrameScope scope(masm, StackFrame::INTERNAL);
 
     // Push the receiver and the name of the function.
-    __ Push(r6, r5);
+    __ Push(r6_p, r5_p);
 
     // Call the entry.
-    __ lhi(r3, Operand(2));
-    __ mov(r4, Operand(ExternalReference(IC_Utility(id), isolate)));
+    __ lhi(r3_p, Operand(2));
+    __ mov(r4_p, Operand(ExternalReference(IC_Utility(id), isolate)));
 
     CEntryStub stub(1);
     __ CallStub(&stub);
 
-    // Move result to r4 and leave the internal frame.
-    __ LoadRR(r4, r3);
+    // Move result to r4_p and leave the internal frame.
+    __ LoadRR(r4_p, r3_p);
   }
 
   // Check if the receiver is a global object of some sort.
   // This can happen only for regular CallIC but not KeyedCallIC.
   if (id == IC::kCallIC_Miss) {
     Label invoke, global;
-    __ LoadP(r5, MemOperand(sp, argc * kPointerSize), r0);  // receiver
-    __ JumpIfSmi(r5, &invoke);
-    __ CompareObjectType(r5, r6, r6, JS_GLOBAL_OBJECT_TYPE);
+    __ LoadP(r5_p, MemOperand(sp, argc * kPointerSize), r0_p);  // receiver
+    __ JumpIfSmi(r5_p, &invoke);
+    __ CompareObjectType(r5_p, r6_p, r6_p, JS_GLOBAL_OBJECT_TYPE);
     __ beq(&global);
-    __ Cmpi(r6, Operand(JS_BUILTINS_OBJECT_TYPE));
+    __ Cmpi(r6_p, Operand(JS_BUILTINS_OBJECT_TYPE));
     __ bne(&invoke);
 
     // Patch the receiver on the stack.
     __ bind(&global);
-    __ LoadP(r5, FieldMemOperand(r5, GlobalObject::kGlobalReceiverOffset));
-    __ StoreP(r5, MemOperand(sp, argc * kPointerSize));
+    __ LoadP(r5_p, FieldMemOperand(r5_p, GlobalObject::kGlobalReceiverOffset));
+    __ StoreP(r5_p, MemOperand(sp, argc * kPointerSize));
     __ bind(&invoke);
   }
 
@@ -560,7 +560,7 @@ void CallICBase::GenerateMiss(MacroAssembler* masm,
       ? CALL_AS_FUNCTION
       : CALL_AS_METHOD;
   ParameterCount actual(argc);
-  __ InvokeFunction(r4,
+  __ InvokeFunction(r4_p,
                     actual,
                     JUMP_FUNCTION,
                     NullCallWrapper(),
@@ -572,12 +572,12 @@ void CallIC::GenerateMegamorphic(MacroAssembler* masm,
                                  int argc,
                                  Code::ExtraICState extra_ic_state) {
   // ----------- S t a t e -------------
-  //  -- r5    : name
+  //  -- r5_p    : name
   //  -- lr    : return address
   // -----------------------------------
 
-  // Get the receiver of the function from the stack into r4.
-  __ LoadP(r4, MemOperand(sp, argc * kPointerSize), r0);
+  // Get the receiver of the function from the stack into r4_p.
+  __ LoadP(r4_p, MemOperand(sp, argc * kPointerSize), r0_p);
   GenerateMonomorphicCacheProbe(masm, argc, Code::CALL_IC, extra_ic_state);
   GenerateMiss(masm, argc, extra_ic_state);
 }
@@ -585,87 +585,91 @@ void CallIC::GenerateMegamorphic(MacroAssembler* masm,
 
 void KeyedCallIC::GenerateMegamorphic(MacroAssembler* masm, int argc) {
   // ----------- S t a t e -------------
-  //  -- r5    : name
+  //  -- r5_p    : name
   //  -- lr    : return address
   // -----------------------------------
 
-  // Get the receiver of the function from the stack into r4.
-  __ LoadP(r4, MemOperand(sp, argc * kPointerSize), r0);
+  // Get the receiver of the function from the stack into r4_p.
+  __ LoadP(r4_p, MemOperand(sp, argc * kPointerSize), r0_p);
 
   Label do_call, slow_call, slow_load, slow_reload_receiver;
   Label check_number_dictionary, check_string, lookup_monomorphic_cache;
   Label index_smi, index_string;
 
   // Check that the key is a smi.
-  __ JumpIfNotSmi(r5, &check_string);
+  __ JumpIfNotSmi(r5_p, &check_string);
   __ bind(&index_smi);
   // Now the key is known to be a smi. This place is also jumped to from below
   // where a numeric string is converted to a smi.
 
   GenerateKeyedLoadReceiverCheck(
-      masm, r4, r3, r6, Map::kHasIndexedInterceptor, &slow_call);
+      masm, r4_p, r3_p, r6_p, Map::kHasIndexedInterceptor, &slow_call);
 
   GenerateFastArrayLoad(
-      masm, r4, r5, r7, r6, r3, r4, &check_number_dictionary, &slow_load);
+      masm, r4_p, r5_p, r7_p, r6_p, r3_p, r4_p, &check_number_dictionary,
+      &slow_load);
   Counters* counters = masm->isolate()->counters();
-  __ IncrementCounter(counters->keyed_call_generic_smi_fast(), 1, r3, r6);
+  __ IncrementCounter(counters->keyed_call_generic_smi_fast(), 1, r3_p, r6_p);
 
   __ bind(&do_call);
-  // receiver in r4 is not used after this point.
-  // r5: key
-  // r4: function
-  GenerateFunctionTailCall(masm, argc, &slow_call, r3);
+  // receiver in r4_p is not used after this point.
+  // r5_p: key
+  // r4_p: function
+  GenerateFunctionTailCall(masm, argc, &slow_call, r3_p);
 
   __ bind(&check_number_dictionary);
-  // r5: key
-  // r6: elements map
-  // r7: elements
+  // r5_p: key
+  // r6_p: elements map
+  // r7_p: elements
   // Check whether the elements is a number dictionary.
   __ LoadRoot(ip, Heap::kHashTableMapRootIndex);
-  __ CmpRR(r6, ip);
+  __ CmpRR(r6_p, ip);
   __ bne(&slow_load);
-  __ SmiUntag(r3, r5);
-  // r3: untagged index
-  __ LoadFromNumberDictionary(&slow_load, r7, r5, r4, r3, r6, r8);
-  __ IncrementCounter(counters->keyed_call_generic_smi_dict(), 1, r3, r6);
+  __ SmiUntag(r3_p, r5_p);
+  // r3_p: untagged index
+  __ LoadFromNumberDictionary(&slow_load, r7_p, r5_p, r4_p, r3_p, r6_p, r8_p);
+  __ IncrementCounter(counters->keyed_call_generic_smi_dict(), 1, r3_p, r6_p);
   __ b(&do_call);
 
   __ bind(&slow_load);
   // This branch is taken when calling KeyedCallIC_Miss is neither required
   // nor beneficial.
-  __ IncrementCounter(counters->keyed_call_generic_slow_load(), 1, r3, r6);
+  __ IncrementCounter(counters->keyed_call_generic_slow_load(), 1, r3_p, r6_p);
   {
     FrameScope scope(masm, StackFrame::INTERNAL);
-    __ push(r5);  // save the key
-    __ Push(r4, r5);  // pass the receiver and the key
+    __ push(r5_p);  // save the key
+    __ Push(r4_p, r5_p);  // pass the receiver and the key
     __ CallRuntime(Runtime::kKeyedGetProperty, 2);
-    __ pop(r5);  // restore the key
+    __ pop(r5_p);  // restore the key
   }
-  __ LoadRR(r4, r3);
+  __ LoadRR(r4_p, r3_p);
   __ b(&do_call);
 
   __ bind(&check_string);
-  GenerateKeyStringCheck(masm, r5, r3, r6, &index_string, &slow_call);
+  GenerateKeyStringCheck(masm, r5_p, r3_p, r6_p, &index_string, &slow_call);
 
   // The key is known to be a symbol.
   // If the receiver is a regular JS object with slow properties then do
   // a quick inline probe of the receiver's dictionary.
   // Otherwise do the monomorphic cache probe.
   GenerateKeyedLoadReceiverCheck(
-      masm, r4, r3, r6, Map::kHasNamedInterceptor, &lookup_monomorphic_cache);
+      masm, r4_p, r3_p, r6_p, Map::kHasNamedInterceptor,
+      &lookup_monomorphic_cache);
 
-  __ LoadP(r3, FieldMemOperand(r4, JSObject::kPropertiesOffset));
-  __ LoadP(r6, FieldMemOperand(r3, HeapObject::kMapOffset));
+  __ LoadP(r3_p, FieldMemOperand(r4_p, JSObject::kPropertiesOffset));
+  __ LoadP(r6_p, FieldMemOperand(r3_p, HeapObject::kMapOffset));
   __ LoadRoot(ip, Heap::kHashTableMapRootIndex);
-  __ CmpRR(r6, ip);
+  __ CmpRR(r6_p, ip);
   __ bne(&lookup_monomorphic_cache);
 
-  GenerateDictionaryLoad(masm, &slow_load, r3, r5, r4, r6, r7);
-  __ IncrementCounter(counters->keyed_call_generic_lookup_dict(), 1, r3, r6);
+  GenerateDictionaryLoad(masm, &slow_load, r3_p, r5_p, r4_p, r6_p, r7_p);
+  __ IncrementCounter(counters->keyed_call_generic_lookup_dict(), 1, r3_p,
+                      r6_p);
   __ b(&do_call);
 
   __ bind(&lookup_monomorphic_cache);
-  __ IncrementCounter(counters->keyed_call_generic_lookup_cache(), 1, r3, r6);
+  __ IncrementCounter(counters->keyed_call_generic_lookup_cache(), 1, r3_p,
+                      r6_p);
   GenerateMonomorphicCacheProbe(masm,
                                 argc,
                                 Code::KEYED_CALL_IC,
@@ -679,11 +683,11 @@ void KeyedCallIC::GenerateMegamorphic(MacroAssembler* masm, int argc) {
   // - the value loaded is not a function,
   // - there is hope that the runtime will create a monomorphic call stub
   //   that will get fetched next time.
-  __ IncrementCounter(counters->keyed_call_generic_slow(), 1, r3, r6);
+  __ IncrementCounter(counters->keyed_call_generic_slow(), 1, r3_p, r6_p);
   GenerateMiss(masm, argc);
 
   __ bind(&index_string);
-  __ IndexFromHash(r6, r5);
+  __ IndexFromHash(r6_p, r5_p);
   // Now jump to the place where smi keys are handled.
   __ b(&index_smi);
 }
@@ -691,14 +695,14 @@ void KeyedCallIC::GenerateMegamorphic(MacroAssembler* masm, int argc) {
 
 void KeyedCallIC::GenerateNormal(MacroAssembler* masm, int argc) {
   // ----------- S t a t e -------------
-  //  -- r5    : name
+  //  -- r5_p    : name
   //  -- lr    : return address
   // -----------------------------------
 
   // Check if the name is a string.
   Label miss;
-  __ JumpIfSmi(r5, &miss);
-  __ IsObjectJSStringType(r5, r3, &miss);
+  __ JumpIfSmi(r5_p, &miss);
+  __ IsObjectJSStringType(r5_p, r3_p, &miss);
 
   CallICBase::GenerateNormal(masm, argc);
   __ bind(&miss);
@@ -711,9 +715,9 @@ Object* LoadIC_Miss(Arguments args);
 
 void LoadIC::GenerateMegamorphic(MacroAssembler* masm) {
   // ----------- S t a t e -------------
-  //  -- r5    : name
+  //  -- r5_p    : name
   //  -- lr    : return address
-  //  -- r3    : receiver
+  //  -- r3_p    : receiver
   //  -- sp[0] : receiver
   // -----------------------------------
 
@@ -721,7 +725,7 @@ void LoadIC::GenerateMegamorphic(MacroAssembler* masm) {
   Code::Flags flags =
       Code::ComputeFlags(Code::LOAD_IC, MONOMORPHIC);
   Isolate::Current()->stub_cache()->GenerateProbe(
-      masm, flags, r3, r5, r6, r7, r8, r9);
+      masm, flags, r3_p, r5_p, r6_p, r7_p, r8_p, r9_p);
 
   // Cache miss: Jump to runtime.
   GenerateMiss(masm);
@@ -730,17 +734,17 @@ void LoadIC::GenerateMegamorphic(MacroAssembler* masm) {
 
 void LoadIC::GenerateNormal(MacroAssembler* masm) {
   // ----------- S t a t e -------------
-  //  -- r5    : name
+  //  -- r5_p    : name
   //  -- lr    : return address
-  //  -- r3    : receiver
+  //  -- r3_p    : receiver
   //  -- sp[0] : receiver
   // -----------------------------------
   Label miss;
 
-  GenerateStringDictionaryReceiverCheck(masm, r3, r4, r6, r7, &miss);
+  GenerateStringDictionaryReceiverCheck(masm, r3_p, r4_p, r6_p, r7_p, &miss);
 
-  // r4: elements
-  GenerateDictionaryLoad(masm, &miss, r4, r5, r3, r6, r7);
+  // r4_p: elements
+  GenerateDictionaryLoad(masm, &miss, r4_p, r5_p, r3_p, r6_p, r7_p);
   __ Ret();
 
   // Cache miss: Jump to runtime.
@@ -751,16 +755,16 @@ void LoadIC::GenerateNormal(MacroAssembler* masm) {
 
 void LoadIC::GenerateMiss(MacroAssembler* masm) {
   // ----------- S t a t e -------------
-  //  -- r5    : name
+  //  -- r5_p    : name
   //  -- lr    : return address
-  //  -- r3    : receiver
+  //  -- r3_p    : receiver
   //  -- sp[0] : receiver
   // -----------------------------------
   Isolate* isolate = masm->isolate();
 
-  __ IncrementCounter(isolate->counters()->load_miss(), 1, r6, r7);
+  __ IncrementCounter(isolate->counters()->load_miss(), 1, r6_p, r7_p);
 
-  __ Push(r3, r5);
+  __ Push(r3_p, r5_p);
 
   // Perform tail call to the entry.
   ExternalReference ref =
@@ -789,8 +793,8 @@ static MemOperand GenerateMappedArgumentsLookup(MacroAssembler* masm,
 
   // Check that the key is a positive smi.
   __ mov(scratch1, Operand(0x80000001));
-  __ LoadRR(r0, scratch1);
-  __ AndP(r0, key/*, SetRC*/);  // Should be OK to remove RC
+  __ LoadRR(r0_p, scratch1);
+  __ AndP(r0_p, key/*, SetRC*/);  // Should be OK to remove RC
   __ bne(slow_case /*, cr0*/);
 
   // Load the elements into scratch1 and check its map.
@@ -801,7 +805,7 @@ static MemOperand GenerateMappedArgumentsLookup(MacroAssembler* masm,
   // Check if element is in the range of mapped arguments. If not, jump
   // to the unmapped lookup with the parameter map in scratch1.
   __ LoadP(scratch2, FieldMemOperand(scratch1, FixedArray::kLengthOffset));
-  __ SubSmiLiteral(scratch2, scratch2, Smi::FromInt(2), r0);
+  __ SubSmiLiteral(scratch2, scratch2, Smi::FromInt(2), r0_p);
   __ Cmpl(key, scratch2);
   __ bge(unmapped_case);
 
@@ -856,23 +860,24 @@ static MemOperand GenerateUnmappedArgumentsLookup(MacroAssembler* masm,
 void KeyedLoadIC::GenerateNonStrictArguments(MacroAssembler* masm) {
   // ---------- S t a t e --------------
   //  -- lr     : return address
-  //  -- r3     : key
-  //  -- r4     : receiver
+  //  -- r3_p     : key
+  //  -- r4_p     : receiver
   // -----------------------------------
   Label slow, notin;
   MemOperand mapped_location =
-      GenerateMappedArgumentsLookup(masm, r4, r3, r5, r6, r7, &notin, &slow);
-  __ LoadP(r3, mapped_location);
+      GenerateMappedArgumentsLookup(masm, r4_p, r3_p, r5_p, r6_p, r7_p, &notin,
+                                    &slow);
+  __ LoadP(r3_p, mapped_location);
   __ Ret();
   __ bind(&notin);
-  // The unmapped lookup expects that the parameter map is in r5.
+  // The unmapped lookup expects that the parameter map is in r5_p.
   MemOperand unmapped_location =
-      GenerateUnmappedArgumentsLookup(masm, r3, r5, r6, &slow);
-  __ LoadP(r5, unmapped_location);
-  __ LoadRoot(r6, Heap::kTheHoleValueRootIndex);
-  __ CmpRR(r5, r6);
+      GenerateUnmappedArgumentsLookup(masm, r3_p, r5_p, r6_p, &slow);
+  __ LoadP(r5_p, unmapped_location);
+  __ LoadRoot(r6_p, Heap::kTheHoleValueRootIndex);
+  __ CmpRR(r5_p, r6_p);
   __ beq(&slow);
-  __ LoadRR(r3, r5);
+  __ LoadRR(r3_p, r5_p);
   __ Ret();
   __ bind(&slow);
   GenerateMiss(masm, false);
@@ -881,27 +886,28 @@ void KeyedLoadIC::GenerateNonStrictArguments(MacroAssembler* masm) {
 
 void KeyedStoreIC::GenerateNonStrictArguments(MacroAssembler* masm) {
   // ---------- S t a t e --------------
-  //  -- r3     : value
-  //  -- r4     : key
-  //  -- r5     : receiver
+  //  -- r3_p     : value
+  //  -- r4_p     : key
+  //  -- r5_p     : receiver
   //  -- lr     : return address
   // -----------------------------------
   Label slow, notin;
   MemOperand mapped_location =
-      GenerateMappedArgumentsLookup(masm, r5, r4, r6, r7, r8, &notin, &slow);
-  __ StoreP(r3, mapped_location);
-  __ LoadRR(r9, r6);  // r6 is modified by GenerateMappedArgumentsLookup
-  __ LoadRR(r22, r3);
-  __ RecordWrite(r6, r9, r22, kLRHasNotBeenSaved, kDontSaveFPRegs);
+      GenerateMappedArgumentsLookup(masm, r5_p, r4_p, r6_p, r7_p, r8_p, &notin,
+                                    &slow);
+  __ StoreP(r3_p, mapped_location);
+  __ LoadRR(r9_p, r6_p);  // r6_p is modified by GenerateMappedArgumentsLookup
+  __ LoadRR(r22_p, r3_p);
+  __ RecordWrite(r6_p, r9_p, r22_p, kLRHasNotBeenSaved, kDontSaveFPRegs);
   __ Ret();
   __ bind(&notin);
-  // The unmapped lookup expects that the parameter map is in r6.
+  // The unmapped lookup expects that the parameter map is in r6_p.
   MemOperand unmapped_location =
-      GenerateUnmappedArgumentsLookup(masm, r4, r6, r7, &slow);
-  __ StoreP(r3, unmapped_location);
-  __ LoadRR(r9, r6);  // r6 is modified by GenerateUnmappedArgumentsLookup
-  __ LoadRR(r22, r3);
-  __ RecordWrite(r6, r9, r22, kLRHasNotBeenSaved, kDontSaveFPRegs);
+      GenerateUnmappedArgumentsLookup(masm, r4_p, r6_p, r7_p, &slow);
+  __ StoreP(r3_p, unmapped_location);
+  __ LoadRR(r9_p, r6_p);  // r6_p is modified by GenerateUnmappedArgumentsLookup
+  __ LoadRR(r22_p, r3_p);
+  __ RecordWrite(r6_p, r9_p, r22_p, kLRHasNotBeenSaved, kDontSaveFPRegs);
   __ Ret();
   __ bind(&slow);
   GenerateMiss(masm, false);
@@ -911,25 +917,26 @@ void KeyedStoreIC::GenerateNonStrictArguments(MacroAssembler* masm) {
 void KeyedCallIC::GenerateNonStrictArguments(MacroAssembler* masm,
                                              int argc) {
   // ----------- S t a t e -------------
-  //  -- r5    : name
+  //  -- r5_p    : name
   //  -- lr    : return address
   // -----------------------------------
   Label slow, notin;
   // Load receiver.
-  __ LoadP(r4, MemOperand(sp, argc * kPointerSize), r0);
+  __ LoadP(r4_p, MemOperand(sp, argc * kPointerSize), r0_p);
   MemOperand mapped_location =
-      GenerateMappedArgumentsLookup(masm, r4, r5, r6, r7, r8, &notin, &slow);
-  __ LoadP(r4, mapped_location);
-  GenerateFunctionTailCall(masm, argc, &slow, r6);
+      GenerateMappedArgumentsLookup(masm, r4_p, r5_p, r6_p, r7_p, r8_p, &notin,
+                                    &slow);
+  __ LoadP(r4_p, mapped_location);
+  GenerateFunctionTailCall(masm, argc, &slow, r6_p);
   __ bind(&notin);
-  // The unmapped lookup expects that the parameter map is in r6.
+  // The unmapped lookup expects that the parameter map is in r6_p.
   MemOperand unmapped_location =
-      GenerateUnmappedArgumentsLookup(masm, r5, r6, r7, &slow);
-  __ LoadP(r4, unmapped_location);
-  __ LoadRoot(r6, Heap::kTheHoleValueRootIndex);
-  __ CmpRR(r4, r6);
+      GenerateUnmappedArgumentsLookup(masm, r5_p, r6_p, r7_p, &slow);
+  __ LoadP(r4_p, unmapped_location);
+  __ LoadRoot(r6_p, Heap::kTheHoleValueRootIndex);
+  __ CmpRR(r4_p, r6_p);
   __ beq(&slow);
-  GenerateFunctionTailCall(masm, argc, &slow, r3);
+  GenerateFunctionTailCall(masm, argc, &slow, r3_p);
   __ bind(&slow);
   GenerateMiss(masm, argc);
 }
@@ -941,14 +948,14 @@ Object* KeyedLoadIC_Miss(Arguments args);
 void KeyedLoadIC::GenerateMiss(MacroAssembler* masm, bool force_generic) {
   // ---------- S t a t e --------------
   //  -- lr     : return address
-  //  -- r3     : key
-  //  -- r4     : receiver
+  //  -- r3_p     : key
+  //  -- r4_p     : receiver
   // -----------------------------------
   Isolate* isolate = masm->isolate();
 
-  __ IncrementCounter(isolate->counters()->keyed_load_miss(), 1, r6, r7);
+  __ IncrementCounter(isolate->counters()->keyed_load_miss(), 1, r6_p, r7_p);
 
-  __ Push(r4, r3);
+  __ Push(r4_p, r3_p);
 
   // Perform tail call to the entry.
   ExternalReference ref = force_generic
@@ -962,11 +969,11 @@ void KeyedLoadIC::GenerateMiss(MacroAssembler* masm, bool force_generic) {
 void KeyedLoadIC::GenerateRuntimeGetProperty(MacroAssembler* masm) {
   // ---------- S t a t e --------------
   //  -- lr     : return address
-  //  -- r3     : key
-  //  -- r4     : receiver
+  //  -- r3_p     : key
+  //  -- r4_p     : receiver
   // -----------------------------------
 
-  __ Push(r4, r3);
+  __ Push(r4_p, r3_p);
 
   __ TailCallRuntime(Runtime::kKeyedGetProperty, 2, 1);
 }
@@ -975,14 +982,14 @@ void KeyedLoadIC::GenerateRuntimeGetProperty(MacroAssembler* masm) {
 void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   // ---------- S t a t e --------------
   //  -- lr     : return address
-  //  -- r3     : key
-  //  -- r4     : receiver
+  //  -- r3_p     : key
+  //  -- r4_p     : receiver
   // -----------------------------------
   Label slow, check_string, index_smi, index_string, property_array_property;
   Label probe_dictionary, check_number_dictionary;
 
-  Register key = r3;
-  Register receiver = r4;
+  Register key = r3_p;
+  Register receiver = r4_p;
 
   Isolate* isolate = masm->isolate();
 
@@ -993,61 +1000,62 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   // where a numeric string is converted to a smi.
 
   GenerateKeyedLoadReceiverCheck(
-      masm, receiver, r5, r6, Map::kHasIndexedInterceptor, &slow);
+      masm, receiver, r5_p, r6_p, Map::kHasIndexedInterceptor, &slow);
 
   // Check the receiver's map to see if it has fast elements.
-  __ CheckFastElements(r5, r6, &check_number_dictionary);
+  __ CheckFastElements(r5_p, r6_p, &check_number_dictionary);
 
   GenerateFastArrayLoad(
-      masm, receiver, key, r7, r6, r5, r3, NULL, &slow);
-  __ IncrementCounter(isolate->counters()->keyed_load_generic_smi(), 1, r5, r6);
+      masm, receiver, key, r7_p, r6_p, r5_p, r3_p, NULL, &slow);
+  __ IncrementCounter(isolate->counters()->keyed_load_generic_smi(), 1, r5_p,
+                      r6_p);
   __ Ret();
 
   __ bind(&check_number_dictionary);
-  __ LoadP(r7, FieldMemOperand(receiver, JSObject::kElementsOffset));
-  __ LoadP(r6, FieldMemOperand(r7, JSObject::kMapOffset));
+  __ LoadP(r7_p, FieldMemOperand(receiver, JSObject::kElementsOffset));
+  __ LoadP(r6_p, FieldMemOperand(r7_p, JSObject::kMapOffset));
 
   // Check whether the elements is a number dictionary.
-  // r3: key
-  // r6: elements map
-  // r7: elements
+  // r3_p: key
+  // r6_p: elements map
+  // r7_p: elements
   __ LoadRoot(ip, Heap::kHashTableMapRootIndex);
-  __ CmpRR(r6, ip);
+  __ CmpRR(r6_p, ip);
   __ bne(&slow);
-  __ SmiUntag(r5, r3);
-  __ LoadFromNumberDictionary(&slow, r7, r3, r3, r5, r6, r8);
+  __ SmiUntag(r5_p, r3_p);
+  __ LoadFromNumberDictionary(&slow, r7_p, r3_p, r3_p, r5_p, r6_p, r8_p);
   __ Ret();
 
-  // Slow case, key and receiver still in r3 and r4.
+  // Slow case, key and receiver still in r3_p and r4_p.
   __ bind(&slow);
   __ IncrementCounter(isolate->counters()->keyed_load_generic_slow(),
-                      1, r5, r6);
+                      1, r5_p, r6_p);
   GenerateRuntimeGetProperty(masm);
 
   __ bind(&check_string);
-  GenerateKeyStringCheck(masm, key, r5, r6, &index_string, &slow);
+  GenerateKeyStringCheck(masm, key, r5_p, r6_p, &index_string, &slow);
 
   GenerateKeyedLoadReceiverCheck(
-      masm, receiver, r5, r6, Map::kHasNamedInterceptor, &slow);
+      masm, receiver, r5_p, r6_p, Map::kHasNamedInterceptor, &slow);
 
   // If the receiver is a fast-case object, check the keyed lookup
   // cache. Otherwise probe the dictionary.
-  __ LoadP(r6, FieldMemOperand(r4, JSObject::kPropertiesOffset));
-  __ LoadP(r7, FieldMemOperand(r6, HeapObject::kMapOffset));
+  __ LoadP(r6_p, FieldMemOperand(r4_p, JSObject::kPropertiesOffset));
+  __ LoadP(r7_p, FieldMemOperand(r6_p, HeapObject::kMapOffset));
   __ LoadRoot(ip, Heap::kHashTableMapRootIndex);
-  __ CmpRR(r7, ip);
+  __ CmpRR(r7_p, ip);
   __ beq(&probe_dictionary);
 
   // Load the map of the receiver, compute the keyed lookup cache hash
   // based on 32 bits of the map pointer and the string hash.
-  __ LoadP(r5, FieldMemOperand(r4, HeapObject::kMapOffset));
-  __ srawi(r6, r5, KeyedLookupCache::kMapHashShift);
-  __ LoadlW(r7, FieldMemOperand(r3, String::kHashFieldOffset));
-  __ srawi(r7, r7, String::kHashShift);
-  __ XorP(r6, r7);
+  __ LoadP(r5_p, FieldMemOperand(r4_p, HeapObject::kMapOffset));
+  __ srawi(r6_p, r5_p, KeyedLookupCache::kMapHashShift);
+  __ LoadlW(r7_p, FieldMemOperand(r3_p, String::kHashFieldOffset));
+  __ srawi(r7_p, r7_p, String::kHashShift);
+  __ XorP(r6_p, r7_p);
   int mask = KeyedLookupCache::kCapacityMask & KeyedLookupCache::kHashMask;
-  __ mov(r7, Operand(mask));
-  __ AndP(r6, r7);
+  __ mov(r7_p, Operand(mask));
+  __ AndP(r6_p, r7_p);
 
   // Load the key (consisting of map and symbol) from the cache and
   // check for match.
@@ -1057,54 +1065,54 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   ExternalReference cache_keys =
       ExternalReference::keyed_lookup_cache_keys(isolate);
 
-  __ mov(r7, Operand(cache_keys));
-  __ LoadRR(r0, r5);
-  __ ShiftLeftImm(r5, r6, Operand(kPointerSizeLog2 + 1));
-  __ AddP(r7, r5);
-  __ LoadRR(r5, r0);
+  __ mov(r7_p, Operand(cache_keys));
+  __ LoadRR(r0_p, r5_p);
+  __ ShiftLeftImm(r5_p, r6_p, Operand(kPointerSizeLog2 + 1));
+  __ AddP(r7_p, r5_p);
+  __ LoadRR(r5_p, r0_p);
 
   for (int i = 0; i < kEntriesPerBucket - 1; i++) {
     Label try_next_entry;
-    // Load map and move r7 to next entry.
-    __ LoadP(r8, MemOperand(r7));
-    __ AddP(r7, Operand(kPointerSize * 2));
-    __ CmpRR(r5, r8);
+    // Load map and move r7_p to next entry.
+    __ LoadP(r8_p, MemOperand(r7_p));
+    __ AddP(r7_p, Operand(kPointerSize * 2));
+    __ CmpRR(r5_p, r8_p);
     __ bne(&try_next_entry);
-    __ LoadP(r8, MemOperand(r7, -kPointerSize));  // Load symbol
-    __ CmpRR(r3, r8);
+    __ LoadP(r8_p, MemOperand(r7_p, -kPointerSize));  // Load symbol
+    __ CmpRR(r3_p, r8_p);
     __ beq(&hit_on_nth_entry[i]);
     __ bind(&try_next_entry);
   }
 
-  // Last entry: Load map and move r7 to symbol.
-  __ LoadP(r8, MemOperand(r7));
-  __ AddP(r7, Operand(kPointerSize));
-  __ CmpRR(r5, r8);
+  // Last entry: Load map and move r7_p to symbol.
+  __ LoadP(r8_p, MemOperand(r7_p));
+  __ AddP(r7_p, Operand(kPointerSize));
+  __ CmpRR(r5_p, r8_p);
   __ bne(&slow);
-  __ LoadP(r8, MemOperand(r7));
-  __ CmpRR(r3, r8);
+  __ LoadP(r8_p, MemOperand(r7_p));
+  __ CmpRR(r3_p, r8_p);
   __ bne(&slow);
 
   // Get field offset.
-  // r3     : key
-  // r4     : receiver
-  // r5     : receiver's map
-  // r6     : lookup cache index
+  // r3_p     : key
+  // r4_p     : receiver
+  // r5_p     : receiver's map
+  // r6_p     : lookup cache index
   ExternalReference cache_field_offsets =
       ExternalReference::keyed_lookup_cache_field_offsets(isolate);
 
   // Hit on nth entry.
   for (int i = kEntriesPerBucket - 1; i >= 0; i--) {
     __ bind(&hit_on_nth_entry[i]);
-    __ mov(r7, Operand(cache_field_offsets));
+    __ mov(r7_p, Operand(cache_field_offsets));
     if (i != 0) {
-      __ AddP(r6, Operand(i));
+      __ AddP(r6_p, Operand(i));
     }
-    __ ShiftLeftImm(r8, r6, Operand(2));
-    __ LoadlW(r8, MemOperand(r8, r7));
-    __ LoadlB(r9, FieldMemOperand(r5, Map::kInObjectPropertiesOffset));
-    __ Sub(r8, r8, r9);
-    __ Cmpi(r8, Operand::Zero());
+    __ ShiftLeftImm(r8_p, r6_p, Operand(2));
+    __ LoadlW(r8_p, MemOperand(r8_p, r7_p));
+    __ LoadlB(r9_p, FieldMemOperand(r5_p, Map::kInObjectPropertiesOffset));
+    __ Sub(r8_p, r8_p, r9_p);
+    __ Cmpi(r8_p, Operand::Zero());
     __ bge(&property_array_property);
     if (i != 0) {
       __ b(&load_in_object_property);
@@ -1113,42 +1121,42 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
 
   // Load in-object property.
   __ bind(&load_in_object_property);
-  __ LoadlB(r9, FieldMemOperand(r5, Map::kInstanceSizeOffset));
-  __ AddP(r9, r8);  // Index from start of object.
-  __ Sub(r4, Operand(kHeapObjectTag));  // Remove the heap tag.
-  __ ShiftLeftImm(r3, r9, Operand(kPointerSizeLog2));
-  __ LoadPX(r3, MemOperand(r3, r4));
+  __ LoadlB(r9_p, FieldMemOperand(r5_p, Map::kInstanceSizeOffset));
+  __ AddP(r9_p, r8_p);  // Index from start of object.
+  __ Sub(r4_p, Operand(kHeapObjectTag));  // Remove the heap tag.
+  __ ShiftLeftImm(r3_p, r9_p, Operand(kPointerSizeLog2));
+  __ LoadPX(r3_p, MemOperand(r3_p, r4_p));
   __ IncrementCounter(isolate->counters()->keyed_load_generic_lookup_cache(),
-                      1, r5, r6);
+                      1, r5_p, r6_p);
   __ Ret();
 
   // Load property array property.
   __ bind(&property_array_property);
-  __ LoadP(r4, FieldMemOperand(r4, JSObject::kPropertiesOffset));
-  __ AddP(r4, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
-  __ ShiftLeftImm(r3, r8, Operand(kPointerSizeLog2));
-  __ LoadPX(r3, MemOperand(r3, r4));
+  __ LoadP(r4_p, FieldMemOperand(r4_p, JSObject::kPropertiesOffset));
+  __ AddP(r4_p, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ ShiftLeftImm(r3_p, r8_p, Operand(kPointerSizeLog2));
+  __ LoadPX(r3_p, MemOperand(r3_p, r4_p));
   __ IncrementCounter(isolate->counters()->keyed_load_generic_lookup_cache(),
-                      1, r5, r6);
+                      1, r5_p, r6_p);
   __ Ret();
 
   // Do a quick inline probe of the receiver's dictionary, if it
   // exists.
   __ bind(&probe_dictionary);
-  // r4: receiver
-  // r3: key
-  // r6: elements
-  __ LoadP(r5, FieldMemOperand(r4, HeapObject::kMapOffset));
-  __ LoadlB(r5, FieldMemOperand(r5, Map::kInstanceTypeOffset));
-  GenerateGlobalInstanceTypeCheck(masm, r5, &slow);
-  // Load the property to r3.
-  GenerateDictionaryLoad(masm, &slow, r6, r3, r3, r5, r7);
+  // r4_p: receiver
+  // r3_p: key
+  // r6_p: elements
+  __ LoadP(r5_p, FieldMemOperand(r4_p, HeapObject::kMapOffset));
+  __ LoadlB(r5_p, FieldMemOperand(r5_p, Map::kInstanceTypeOffset));
+  GenerateGlobalInstanceTypeCheck(masm, r5_p, &slow);
+  // Load the property to r3_p.
+  GenerateDictionaryLoad(masm, &slow, r6_p, r3_p, r3_p, r5_p, r7_p);
   __ IncrementCounter(isolate->counters()->keyed_load_generic_symbol(),
-                      1, r5, r6);
+                      1, r5_p, r6_p);
   __ Ret();
 
   __ bind(&index_string);
-  __ IndexFromHash(r6, key);
+  __ IndexFromHash(r6_p, key);
   // Now jump to the place where smi keys are handled.
   __ b(&index_smi);
 }
@@ -1157,15 +1165,15 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
 void KeyedLoadIC::GenerateString(MacroAssembler* masm) {
   // ---------- S t a t e --------------
   //  -- lr     : return address
-  //  -- r3     : key (index)
-  //  -- r4     : receiver
+  //  -- r3_p     : key (index)
+  //  -- r4_p     : receiver
   // -----------------------------------
   Label miss;
 
-  Register receiver = r4;
-  Register index = r3;
-  Register scratch = r6;
-  Register result = r3;
+  Register receiver = r4_p;
+  Register index = r3_p;
+  Register scratch = r6_p;
+  Register result = r3_p;
 
   StringCharAtGenerator char_at_generator(receiver,
                                           index,
@@ -1189,30 +1197,30 @@ void KeyedLoadIC::GenerateString(MacroAssembler* masm) {
 void KeyedLoadIC::GenerateIndexedInterceptor(MacroAssembler* masm) {
   // ---------- S t a t e --------------
   //  -- lr     : return address
-  //  -- r3     : key
-  //  -- r4     : receiver
+  //  -- r3_p     : key
+  //  -- r4_p     : receiver
   // -----------------------------------
   Label slow;
 
   // Check that the receiver isn't a smi.
-  __ JumpIfSmi(r4, &slow);
+  __ JumpIfSmi(r4_p, &slow);
 
   // Check that the key is an array index, that is Uint32.
-  __ TestIfPositiveSmi(r3, r0);
+  __ TestIfPositiveSmi(r3_p, r0_p);
   __ bne(&slow /*, cr0*/);
 
   // Get the map of the receiver.
-  __ LoadP(r5, FieldMemOperand(r4, HeapObject::kMapOffset));
+  __ LoadP(r5_p, FieldMemOperand(r4_p, HeapObject::kMapOffset));
 
   // Check that it has indexed interceptor and access checks
   // are not enabled for this object.
-  __ LoadlB(r6, FieldMemOperand(r5, Map::kBitFieldOffset));
-  __ AndP(r6, Operand(kSlowCaseBitFieldMask));
-  __ Cmpi(r6, Operand(1 << Map::kHasIndexedInterceptor));
+  __ LoadlB(r6_p, FieldMemOperand(r5_p, Map::kBitFieldOffset));
+  __ AndP(r6_p, Operand(kSlowCaseBitFieldMask));
+  __ Cmpi(r6_p, Operand(1 << Map::kHasIndexedInterceptor));
   __ bne(&slow);
 
   // Everything is fine, call runtime.
-  __ Push(r4, r3);  // Receiver, key.
+  __ Push(r4_p, r3_p);  // Receiver, key.
 
   // Perform tail call to the entry.
   __ TailCallExternalReference(
@@ -1228,14 +1236,14 @@ void KeyedLoadIC::GenerateIndexedInterceptor(MacroAssembler* masm) {
 
 void KeyedStoreIC::GenerateMiss(MacroAssembler* masm, bool force_generic) {
   // ---------- S t a t e --------------
-  //  -- r3     : value
-  //  -- r4     : key
-  //  -- r5     : receiver
+  //  -- r3_p     : value
+  //  -- r4_p     : key
+  //  -- r5_p     : receiver
   //  -- lr     : return address
   // -----------------------------------
 
   // Push receiver, key and value for runtime call.
-  __ Push(r5, r4, r3);
+  __ Push(r5_p, r4_p, r3_p);
 
   ExternalReference ref = force_generic
       ? ExternalReference(IC_Utility(kKeyedStoreIC_MissForceGeneric),
@@ -1247,14 +1255,14 @@ void KeyedStoreIC::GenerateMiss(MacroAssembler* masm, bool force_generic) {
 
 void KeyedStoreIC::GenerateSlow(MacroAssembler* masm) {
   // ---------- S t a t e --------------
-  //  -- r3     : value
-  //  -- r4     : key
-  //  -- r5     : receiver
+  //  -- r3_p     : value
+  //  -- r4_p     : key
+  //  -- r5_p     : receiver
   //  -- lr     : return address
   // -----------------------------------
 
   // Push receiver, key and value for runtime call.
-  __ Push(r5, r4, r3);
+  __ Push(r5_p, r4_p, r3_p);
 
   // The slow case calls into the runtime to complete the store without causing
   // an IC miss that would otherwise cause a transition to the generic stub.
@@ -1266,20 +1274,20 @@ void KeyedStoreIC::GenerateSlow(MacroAssembler* masm) {
 
 void KeyedStoreIC::GenerateTransitionElementsSmiToDouble(MacroAssembler* masm) {
   // ---------- S t a t e --------------
-  //  -- r5     : receiver
-  //  -- r6     : target map
+  //  -- r5_p     : receiver
+  //  -- r6_p     : target map
   //  -- lr     : return address
   // -----------------------------------
-  // Must return the modified receiver in r0.
+  // Must return the modified receiver in r0_p.
   if (!FLAG_trace_elements_transitions) {
     Label fail;
     ElementsTransitionGenerator::GenerateSmiToDouble(masm, &fail);
-    __ LoadRR(r3, r5);
+    __ LoadRR(r3_p, r5_p);
     __ Ret();
     __ bind(&fail);
   }
 
-  __ push(r5);
+  __ push(r5_p);
   __ TailCallRuntime(Runtime::kTransitionElementsSmiToDouble, 1, 1);
 }
 
@@ -1287,20 +1295,20 @@ void KeyedStoreIC::GenerateTransitionElementsSmiToDouble(MacroAssembler* masm) {
 void KeyedStoreIC::GenerateTransitionElementsDoubleToObject(
     MacroAssembler* masm) {
   // ---------- S t a t e --------------
-  //  -- r5     : receiver
-  //  -- r6     : target map
+  //  -- r5_p     : receiver
+  //  -- r6_p     : target map
   //  -- lr     : return address
   // -----------------------------------
-  // Must return the modified receiver in r3.
+  // Must return the modified receiver in r3_p.
   if (!FLAG_trace_elements_transitions) {
     Label fail;
     ElementsTransitionGenerator::GenerateDoubleToObject(masm, &fail);
-    __ LoadRR(r3, r5);
+    __ LoadRR(r3_p, r5_p);
     __ Ret();
     __ bind(&fail);
   }
 
-  __ push(r5);
+  __ push(r5_p);
   __ TailCallRuntime(Runtime::kTransitionElementsDoubleToObject, 1, 1);
 }
 
@@ -1308,18 +1316,18 @@ void KeyedStoreIC::GenerateTransitionElementsDoubleToObject(
 void KeyedStoreIC::GenerateRuntimeSetProperty(MacroAssembler* masm,
                                               StrictModeFlag strict_mode) {
   // ---------- S t a t e --------------
-  //  -- r3     : value
-  //  -- r4     : key
-  //  -- r5     : receiver
+  //  -- r3_p     : value
+  //  -- r4_p     : key
+  //  -- r5_p     : receiver
   //  -- lr     : return address
   // -----------------------------------
 
   // Push receiver, key and value for runtime call.
-  __ Push(r5, r4, r3);
+  __ Push(r5_p, r4_p, r3_p);
 
-  __ LoadSmiLiteral(r4, Smi::FromInt(NONE));          // PropertyAttributes
-  __ LoadSmiLiteral(r3, Smi::FromInt(strict_mode));   // Strict mode.
-  __ Push(r4, r3);
+  __ LoadSmiLiteral(r4_p, Smi::FromInt(NONE));          // PropertyAttributes
+  __ LoadSmiLiteral(r3_p, Smi::FromInt(strict_mode));   // Strict mode.
+  __ Push(r4_p, r3_p);
 
   __ TailCallRuntime(Runtime::kSetProperty, 5, 1);
 }
@@ -1344,8 +1352,8 @@ static void KeyedStoreGenerateGenericHelper(
 
   // Fast case: Do the store, could be either Object or double.
   __ bind(fast_object);
-  Register scratch_value = r7;
-  Register address = r8;
+  Register scratch_value = r7_p;
+  Register address = r8_p;
   if (check_map == kCheckMap) {
     __ LoadP(elements_map, FieldMemOperand(elements, HeapObject::kMapOffset));
     __ mov(scratch_value,
@@ -1359,7 +1367,7 @@ static void KeyedStoreGenerateGenericHelper(
 
   if (increment_length == kIncrementLength) {
     // Add 1 to receiver->length.
-    __ AddSmiLiteral(scratch_value, key, Smi::FromInt(1), r0);
+    __ AddSmiLiteral(scratch_value, key, Smi::FromInt(1), r0_p);
     __ StoreP(scratch_value, FieldMemOperand(receiver, JSArray::kLengthOffset));
   }
   // It's irrelevant whether array is smi-only or not when writing a smi.
@@ -1378,7 +1386,7 @@ static void KeyedStoreGenerateGenericHelper(
   __ bind(&finish_object_store);
   if (increment_length == kIncrementLength) {
     // Add 1 to receiver->length.
-    __ AddSmiLiteral(scratch_value, key, Smi::FromInt(1), r0);
+    __ AddSmiLiteral(scratch_value, key, Smi::FromInt(1), r0_p);
     __ StoreP(scratch_value, FieldMemOperand(receiver, JSArray::kLengthOffset));
   }
   __ LoadRR(address, elements);
@@ -1408,22 +1416,22 @@ static void KeyedStoreGenerateGenericHelper(
                                  key,
                                  receiver,
                                  elements,  // Overwritten.
-                                 r6,        // Scratch regs...
-                                 r7,
-                                 r8,
-                                 r9,
+                                 r6_p,        // Scratch regs...
+                                 r7_p,
+                                 r8_p,
+                                 r9_p,
                                  &transition_double_elements);
   if (increment_length == kIncrementLength) {
     // Add 1 to receiver->length.
-    __ AddSmiLiteral(scratch_value, key, Smi::FromInt(1), r0);
+    __ AddSmiLiteral(scratch_value, key, Smi::FromInt(1), r0_p);
     __ StoreP(scratch_value, FieldMemOperand(receiver, JSArray::kLengthOffset));
   }
   __ Ret();
 
   __ bind(&transition_smi_elements);
   // Transition the array appropriately depending on the value type.
-  __ LoadP(r7, FieldMemOperand(value, HeapObject::kMapOffset));
-  __ CompareRoot(r7, Heap::kHeapNumberMapRootIndex);
+  __ LoadP(r7_p, FieldMemOperand(value, HeapObject::kMapOffset));
+  __ CompareRoot(r7_p, Heap::kHeapNumberMapRootIndex);
   __ bne(&non_double_value);
 
   // Value is a double. Transition FAST_SMI_ELEMENTS ->
@@ -1431,9 +1439,9 @@ static void KeyedStoreGenerateGenericHelper(
   __ LoadTransitionedArrayMapConditional(FAST_SMI_ELEMENTS,
                                          FAST_DOUBLE_ELEMENTS,
                                          receiver_map,
-                                         r7,
+                                         r7_p,
                                          slow);
-  ASSERT(receiver_map.is(r6));  // Transition code expects map in r6
+  ASSERT(receiver_map.is(r6_p));  // Transition code expects map in r6_p
   ElementsTransitionGenerator::GenerateSmiToDouble(masm, slow);
   __ LoadP(elements, FieldMemOperand(receiver, JSObject::kElementsOffset));
   __ b(&fast_double_without_map_check);
@@ -1443,9 +1451,9 @@ static void KeyedStoreGenerateGenericHelper(
   __ LoadTransitionedArrayMapConditional(FAST_SMI_ELEMENTS,
                                          FAST_ELEMENTS,
                                          receiver_map,
-                                         r7,
+                                         r7_p,
                                          slow);
-  ASSERT(receiver_map.is(r6));  // Transition code expects map in r6
+  ASSERT(receiver_map.is(r6_p));  // Transition code expects map in r6_p
   ElementsTransitionGenerator::GenerateMapChangeElementsTransition(masm);
   __ LoadP(elements, FieldMemOperand(receiver, JSObject::kElementsOffset));
   __ b(&finish_object_store);
@@ -1457,9 +1465,9 @@ static void KeyedStoreGenerateGenericHelper(
   __ LoadTransitionedArrayMapConditional(FAST_DOUBLE_ELEMENTS,
                                          FAST_ELEMENTS,
                                          receiver_map,
-                                         r7,
+                                         r7_p,
                                          slow);
-  ASSERT(receiver_map.is(r6));  // Transition code expects map in r6
+  ASSERT(receiver_map.is(r6_p));  // Transition code expects map in r6_p
   ElementsTransitionGenerator::GenerateDoubleToObject(masm, slow);
   __ LoadP(elements, FieldMemOperand(receiver, JSObject::kElementsOffset));
   __ b(&finish_object_store);
@@ -1469,9 +1477,9 @@ static void KeyedStoreGenerateGenericHelper(
 void KeyedStoreIC::GenerateGeneric(MacroAssembler* masm,
                                    StrictModeFlag strict_mode) {
   // ---------- S t a t e --------------
-  //  -- r3     : value
-  //  -- r4     : key
-  //  -- r5     : receiver
+  //  -- r3_p     : value
+  //  -- r4_p     : key
+  //  -- r5_p     : receiver
   //  -- lr     : return address
   // -----------------------------------
   Label slow, fast_object, fast_object_grow;
@@ -1479,13 +1487,13 @@ void KeyedStoreIC::GenerateGeneric(MacroAssembler* masm,
   Label array, extra, check_if_double_array;
 
   // Register usage.
-  Register value = r3;
-  Register key = r4;
-  Register receiver = r5;
-  Register receiver_map = r6;
-  Register elements_map = r9;
-  Register elements = r10;  // Elements array of the receiver.
-  // r7 and r8 are used as general scratch registers.
+  Register value = r3_p;
+  Register key = r4_p;
+  Register receiver = r5_p;
+  Register receiver_map = r6_p;
+  Register elements_map = r9_p;
+  Register elements = r10_p;  // Elements array of the receiver.
+  // r7_p and r8_p are used as general scratch registers.
 
   // Check that the key is a smi.
   __ JumpIfNotSmi(key, &slow);
@@ -1496,15 +1504,15 @@ void KeyedStoreIC::GenerateGeneric(MacroAssembler* masm,
   // Check that the receiver does not require access checks.  We need
   // to do this because this generic stub does not perform map checks.
   __ LoadlB(ip, FieldMemOperand(receiver_map, Map::kBitFieldOffset));
-  __ LoadRR(r0, ip);
-  __ AndP(r0, Operand(1 << Map::kIsAccessCheckNeeded));
+  __ LoadRR(r0_p, ip);
+  __ AndP(r0_p, Operand(1 << Map::kIsAccessCheckNeeded));
   __ bne(&slow /*, cr0*/);
   // Check if the object is a JS array or not.
-  __ LoadlB(r7, FieldMemOperand(receiver_map, Map::kInstanceTypeOffset));
-  __ Cmpi(r7, Operand(JS_ARRAY_TYPE));
+  __ LoadlB(r7_p, FieldMemOperand(receiver_map, Map::kInstanceTypeOffset));
+  __ Cmpi(r7_p, Operand(JS_ARRAY_TYPE));
   __ beq(&array);
   // Check that the object is some kind of JSObject.
-  __ Cmpi(r7, Operand(FIRST_JS_OBJECT_TYPE));
+  __ Cmpi(r7_p, Operand(FIRST_JS_OBJECT_TYPE));
   __ blt(&slow);
 
   // Object case: Check key against length in the elements array.
@@ -1517,9 +1525,9 @@ void KeyedStoreIC::GenerateGeneric(MacroAssembler* masm,
   // Slow case, handle jump to runtime.
   __ bind(&slow);
   // Entry registers are intact.
-  // r3: value.
-  // r4: key.
-  // r5: receiver.
+  // r3_p: value.
+  // r4_p: key.
+  // r5_p: receiver.
   GenerateRuntimeSetProperty(masm, strict_mode);
 
   // Extra capacity case: Check if there is extra capacity to
@@ -1570,9 +1578,9 @@ void KeyedStoreIC::GenerateGeneric(MacroAssembler* masm,
 void StoreIC::GenerateMegamorphic(MacroAssembler* masm,
                                   StrictModeFlag strict_mode) {
   // ----------- S t a t e -------------
-  //  -- r3    : value
-  //  -- r4    : receiver
-  //  -- r5    : name
+  //  -- r3_p    : value
+  //  -- r4_p    : receiver
+  //  -- r5_p    : name
   //  -- lr    : return address
   // -----------------------------------
 
@@ -1581,7 +1589,7 @@ void StoreIC::GenerateMegamorphic(MacroAssembler* masm,
       Code::ComputeFlags(Code::STORE_IC, MONOMORPHIC, strict_mode);
 
   Isolate::Current()->stub_cache()->GenerateProbe(
-      masm, flags, r4, r5, r6, r7, r8, r9);
+      masm, flags, r4_p, r5_p, r6_p, r7_p, r8_p, r9_p);
 
   // Cache miss: Jump to runtime.
   GenerateMiss(masm);
@@ -1590,13 +1598,13 @@ void StoreIC::GenerateMegamorphic(MacroAssembler* masm,
 
 void StoreIC::GenerateMiss(MacroAssembler* masm) {
   // ----------- S t a t e -------------
-  //  -- r3    : value
-  //  -- r4    : receiver
-  //  -- r5    : name
+  //  -- r3_p    : value
+  //  -- r4_p    : receiver
+  //  -- r5_p    : name
   //  -- lr    : return address
   // -----------------------------------
 
-  __ Push(r4, r5, r3);
+  __ Push(r4_p, r5_p, r3_p);
 
   // Perform tail call to the entry.
   ExternalReference ref =
@@ -1607,9 +1615,9 @@ void StoreIC::GenerateMiss(MacroAssembler* masm) {
 
 void StoreIC::GenerateArrayLength(MacroAssembler* masm) {
   // ----------- S t a t e -------------
-  //  -- r3    : value
-  //  -- r4    : receiver
-  //  -- r5    : name
+  //  -- r3_p    : value
+  //  -- r4_p    : receiver
+  //  -- r5_p    : name
   //  -- lr    : return address
   // -----------------------------------
   //
@@ -1620,9 +1628,9 @@ void StoreIC::GenerateArrayLength(MacroAssembler* masm) {
 
   Label miss;
 
-  Register receiver = r4;
-  Register value = r3;
-  Register scratch = r6;
+  Register receiver = r4_p;
+  Register value = r3_p;
+  Register scratch = r6_p;
 
   // Check that the receiver isn't a smi.
   __ JumpIfSmi(receiver, &miss);
@@ -1663,22 +1671,22 @@ void StoreIC::GenerateArrayLength(MacroAssembler* masm) {
 
 void StoreIC::GenerateNormal(MacroAssembler* masm) {
   // ----------- S t a t e -------------
-  //  -- r3    : value
-  //  -- r4    : receiver
-  //  -- r5    : name
+  //  -- r3_p    : value
+  //  -- r4_p    : receiver
+  //  -- r5_p    : name
   //  -- lr    : return address
   // -----------------------------------
   Label miss;
 
-  GenerateStringDictionaryReceiverCheck(masm, r4, r6, r7, r8, &miss);
+  GenerateStringDictionaryReceiverCheck(masm, r4_p, r6_p, r7_p, r8_p, &miss);
 
-  GenerateDictionaryStore(masm, &miss, r6, r5, r3, r7, r8);
+  GenerateDictionaryStore(masm, &miss, r6_p, r5_p, r3_p, r7_p, r8_p);
   Counters* counters = masm->isolate()->counters();
-  __ IncrementCounter(counters->store_normal_hit(), 1, r7, r8);
+  __ IncrementCounter(counters->store_normal_hit(), 1, r7_p, r8_p);
   __ Ret();
 
   __ bind(&miss);
-  __ IncrementCounter(counters->store_normal_miss(), 1, r7, r8);
+  __ IncrementCounter(counters->store_normal_miss(), 1, r7_p, r8_p);
   GenerateMiss(masm);
 }
 
@@ -1686,17 +1694,17 @@ void StoreIC::GenerateNormal(MacroAssembler* masm) {
 void StoreIC::GenerateGlobalProxy(MacroAssembler* masm,
                                   StrictModeFlag strict_mode) {
   // ----------- S t a t e -------------
-  //  -- r3    : value
-  //  -- r4    : receiver
-  //  -- r5    : name
+  //  -- r3_p    : value
+  //  -- r4_p    : receiver
+  //  -- r5_p    : name
   //  -- lr    : return address
   // -----------------------------------
 
-  __ Push(r4, r5, r3);
+  __ Push(r4_p, r5_p, r3_p);
 
-  __ LoadSmiLiteral(r4, Smi::FromInt(NONE));  // PropertyAttributes
-  __ LoadSmiLiteral(r3, Smi::FromInt(strict_mode));
-  __ Push(r4, r3);
+  __ LoadSmiLiteral(r4_p, Smi::FromInt(NONE));  // PropertyAttributes
+  __ LoadSmiLiteral(r3_p, Smi::FromInt(strict_mode));
+  __ Push(r4_p, r3_p);
 
   // Do tail-call to runtime routine.
   __ TailCallRuntime(Runtime::kSetProperty, 5, 1);
@@ -1732,7 +1740,7 @@ void CompareIC::UpdateCaches(Handle<Object> x, Handle<Object> y) {
   State previous_state = GetState();
   State state = TargetState(previous_state, false, x, y);
   if (state == GENERIC) {
-    CompareStub stub(GetCondition(), strict(), NO_COMPARE_FLAGS, r4, r3);
+    CompareStub stub(GetCondition(), strict(), NO_COMPARE_FLAGS, r4_p, r3_p);
     rewritten = stub.GetCode();
   } else {
     ICCompareStub stub(op_, state);
@@ -1777,7 +1785,7 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
   int delta = Assembler::GetCmpImmediateRawImmediate(instr);
   delta +=
       Assembler::GetCmpImmediateRegister(instr).code() * kOff16Mask;
-  // If the delta is 0 the instruction is cmp r0, #0 which also signals that
+  // If the delta is 0 the instruction is cmp r0_p, #0 which also signals that
   // nothing was inlined.
   if (delta == 0) {
     return;
@@ -1799,7 +1807,7 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
   // Enabling by changing from
   //   cmp cr0, rx, rx
   // to
-  //  rlwinm(r0, value, 0, 31, 31, SetRC);
+  //  rlwinm(r0_p, value, 0, 31, 31, SetRC);
   //  bc(label, BT/BF, 2)
   // and vice-versa to be disabled again.
   CodePatcher patcher(patch_address, 2);
@@ -1808,7 +1816,7 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
     ASSERT(Assembler::IsCmpRegister(instr_at_patch));
     ASSERT_EQ(Assembler::GetRA(instr_at_patch).code(),
               Assembler::GetRB(instr_at_patch).code());
-    patcher.masm()->TestIfSmi(reg, r0);
+    patcher.masm()->TestIfSmi(reg, r0_p);
   } else {
     ASSERT(check == DISABLE_INLINED_SMI_CHECK);
 #if V8_TARGET_ARCH_S390X
