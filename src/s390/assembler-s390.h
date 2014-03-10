@@ -1083,7 +1083,6 @@ RX_FORM(c);
 RX_FORM(cd);
 RRE_FORM(cdr);
 RXE_FORM(cdb);
-RRE_FORM(cdbr);
 RRE_FORM(cdfbr);
 RRF2_FORM(cdfbra);
 RRE_FORM(cdftr);
@@ -1755,12 +1754,13 @@ SS2_FORM(zap);
   void sla(Register r1, const Operand& opnd);
   void sra(Register r1, const Operand& opnd);
 
-  // floating point registers
+  // floating point instructions
   void ld(DoubleRegister r1, const MemOperand& opnd);
   void ldy(DoubleRegister r1, const MemOperand& opnd);
   void ldr(DoubleRegister r1, DoubleRegister r2);
   void std(DoubleRegister r1, const MemOperand& opnd);
   void stdy(DoubleRegister r1, const MemOperand& opnd);
+  void cdbr(DoubleRegister r1, DoubleRegister r2);
 
 // end of S390instructions
 
@@ -2180,7 +2180,7 @@ SS2_FORM(zap);
   inline void e_form(Opcode op);
   inline void ie_form(Opcode op, const Operand& i1, const Operand& i2);
   inline void rr_form(Opcode op, Register r1, Register r2);
-  inline void rr_double_form(Opcode op, DoubleRegister r1, DoubleRegister r2);
+  inline void rr_form(Opcode op, DoubleRegister r1, DoubleRegister r2);
   inline void rr_form(Opcode op, Condition m1, Register r2);
 
   inline void rr2_form(uint8_t op, Condition m1, Register r2);
@@ -2189,11 +2189,8 @@ SS2_FORM(zap);
                      Register x2,
                      Register b2,
                      Disp d2);
-  inline void rx_double_form(Opcode op,
-                             DoubleRegister r1,
-                             Register x2,
-                             Register b2,
-                             Disp d2);
+  inline void rx_form(Opcode op, DoubleRegister r1,
+                      Register x2, Register b2, Disp d2);
 
 
 // RI1 format: <insn> R1,I2
@@ -2215,8 +2212,10 @@ SS2_FORM(zap);
   inline void ril_form(Opcode op, Register r1, const Operand& i2);
   inline void ril_form(Opcode op, Condition m1, const Operand& i2);
   inline void rre_form(Opcode op, Register r1, Register r2);
-  inline void rrd_form(Opcode op, Register r1, Register r3, \
-                     Register r2);
+  inline void rre_form(Opcode op, DoubleRegister r1,
+                       DoubleRegister r2);
+  inline void rrd_form(Opcode op, Register r1, Register r3,
+                       Register r2);
 // RS format: <insn> R1,M3,D2(B2)
 //     +--------+----+----+----+-------------+
 //     | OpCode | R1 | M3 | B2 |     D2      |
@@ -2269,8 +2268,8 @@ SS2_FORM(zap);
                      Disp d2);
   inline void rxy_form(Opcode op, Register r1, Register x2, Register b2,
                      Disp d2);
-  inline void rxy_double_form(Opcode op, DoubleRegister r1, Register x2,
-                              Register b2, Disp d2);
+  inline void rxy_form(Opcode op, DoubleRegister r1, Register x2,
+                       Register b2, Disp d2);
   inline void rrs_form(Opcode op, Register r1, Register r2, Register b4,
                      Disp d4, Condition m3);
   inline void ris_form(Opcode op, Register r1, Condition m3, Register b4, \

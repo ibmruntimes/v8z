@@ -3164,6 +3164,15 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       SetS390ConditionCode<int32_t>(alu_out, 0);
       break;
     }
+    case CDBR: {
+      RREInstruction* rreInstr = reinterpret_cast<RREInstruction*>(instr);
+      int r1 = rreInstr->R1Value();
+      int r2 = rreInstr->R2Value();
+      double r1_val = get_double_from_d_register(r1);
+      double r2_val = get_double_from_d_register(r2);
+      SetS390ConditionCode<double>(r1_val, r2_val);
+      break;
+    }
     default:
       UNREACHABLE();
       return false;
