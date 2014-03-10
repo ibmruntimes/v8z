@@ -5667,7 +5667,7 @@ void StringHelper::GenerateTwoCharacterSymbolTableProbe(MacroAssembler* masm,
   __ Or(chars, c1);
 #else
   __ ShiftLeftImm(r0, c2, Operand(kBitsPerByte));
-  __ LoadRR(chars, c0);
+  __ LoadRR(chars, r0);
   __ Or(chars, c1);
 #endif
 
