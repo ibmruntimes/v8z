@@ -3172,6 +3172,13 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       set_register(r1, rx_val + rb_val + offset);
       break;
     }
+    case LARL: {
+      RILInstruction* rilInstr = reinterpret_cast<RILInstruction*>(instr);
+      int r1 = rilInstr->R1Value();
+      intptr_t offset = rilInstr->I2Value() * 2;
+      set_register(r1, get_pc() + offset);
+      break;
+    }
     case LLILF: {  // length is architecture dependent
       RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
       int r1 = rilInstr->R1Value();
