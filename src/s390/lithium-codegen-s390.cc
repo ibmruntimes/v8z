@@ -1264,10 +1264,13 @@ void LCodeGen::DoBitI(LBitI* instr) {
       }
       break;
     case Token::BIT_XOR:
-      if (right.is_reg())
-        __ Xor(result, left, right.rm());
-      else
-        __ Xor(result, left, right);
+      if (right.is_reg()) {
+        __ LoadRR(result, left);
+        __ Xor(result, right.rm());
+      } else {
+        __ LoadRR(result, left);
+        __ Xor(result, right);
+      }
       break;
     default:
       UNREACHABLE();
@@ -3518,7 +3521,7 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
   __ LoadlW(result, MemOperand(sp, 0));
 #endif
   __ AddP(sp, Operand(8));
-  __ Xor(result, result, scratch/*, SetRC*/);
+  __ Xor(result, scratch/*, SetRC*/);
   // Safe to remove rc
   if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
     DeoptimizeIf(lt, instr->environment(), cr0);

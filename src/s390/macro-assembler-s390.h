@@ -315,7 +315,7 @@ class MacroAssembler: public Assembler {
   void Or(Register dst, const Operand& opnd);
   // void Or(Register dst, Register src, const Operand& opnd);
   void Xor(Register dst, Register src);
-  void Xor(Register dst, Register src1, Register src2);
+  // void Xor(Register dst, Register src1, Register src2);
   void Xor(Register dst, const Operand& opnd);
   void Xor(Register dst, Register src, const Operand& opnd);
   void Branch(Condition c, const Operand& opnd);
