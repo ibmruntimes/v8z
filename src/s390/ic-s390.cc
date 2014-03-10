@@ -1044,7 +1044,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   __ srawi(r6, r5, KeyedLookupCache::kMapHashShift);
   __ LoadlW(r7, FieldMemOperand(r3, String::kHashFieldOffset));
   __ srawi(r7, r7, String::kHashShift);
-  __ Xor(r6, r7);
+  __ XorP(r6, r7);
   int mask = KeyedLookupCache::kCapacityMask & KeyedLookupCache::kHashMask;
   __ mov(r7, Operand(mask));
   __ AndP(r6, r7);
