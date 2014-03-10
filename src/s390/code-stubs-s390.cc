@@ -102,7 +102,7 @@ void FastNewClosureStub::Generate(MacroAssembler* masm) {
                         &gc,
                         TAG_OBJECT);
 
-  __ IncrementCounter(counters->fast_new_closure_total(), 1, r9);
+  __ IncrementCounter(counters->fast_new_closure_total(), 1, r9, r10);
 
   int map_index = (language_mode_ == CLASSIC_MODE)
       ? Context::FUNCTION_MAP_INDEX
@@ -150,7 +150,7 @@ void FastNewClosureStub::Generate(MacroAssembler* masm) {
 
   __ bind(&check_optimized);
 
-  __ IncrementCounter(counters->fast_new_closure_try_optimized(), 1, r9);
+  __ IncrementCounter(counters->fast_new_closure_try_optimized(), 1, r9, r10);
 
   // r5 holds native context, r4 points to fixed array of 3-element entries
   // (native context, optimized code, literals).
@@ -188,7 +188,7 @@ void FastNewClosureStub::Generate(MacroAssembler* masm) {
 
   __ bind(&install_optimized);
   __ IncrementCounter(counters->fast_new_closure_install_optimized(),
-                      1, r9);
+                      1, r9, r10);
 
   // TODO(fschneider): Idea: store proper code pointers in the map and either
   // unmangle them on marking or do nothing as the whole map is discarded on
@@ -1303,7 +1303,8 @@ void NumberToStringStub::GenerateLookupNumberStringCache(MacroAssembler* masm,
          FieldMemOperand(scratch, FixedArray::kHeaderSize + kPointerSize));
   __ IncrementCounter(isolate->counters()->number_to_string_native(),
                       1,
-                      scratch1);
+                      scratch1,
+                      scratch2);
 }
 
 
@@ -1442,7 +1443,7 @@ void CompareStub::Generate(MacroAssembler* masm) {
 
   __ JumpIfNonSmisNotBothSequentialAsciiStrings(lhs_, rhs_, r5, r6, &slow);
 
-  __ IncrementCounter(isolate->counters()->string_compare_native(), 1, r5);
+  __ IncrementCounter(isolate->counters()->string_compare_native(), 1, r5, r6);
   if (cc_ == eq) {
     StringCompareStub::GenerateFlatAsciiStringEquals(masm,
                                                      lhs_,
@@ -3118,7 +3119,7 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
   // Cache hit. Load result, cleanup and return.
   Counters* counters = masm->isolate()->counters();
   __ IncrementCounter(
-      counters->transcendental_cache_hit(), 1, scratch0);
+      counters->transcendental_cache_hit(), 1, scratch0, scratch1);
   if (tagged) {
     // Pop input value from stack and load result into r3.
     __ pop();
@@ -3131,7 +3132,7 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
 
   __ bind(&calculate);
   __ IncrementCounter(
-      counters->transcendental_cache_miss(), 1, scratch0);
+      counters->transcendental_cache_miss(), 1, scratch0, scratch1);
   if (tagged) {
     __ bind(&invalid_cache);
     ExternalReference runtime_function =
@@ -3441,7 +3442,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
     __ stfd(double_result,
             FieldMemOperand(heapnumber, HeapNumber::kValueOffset));
     ASSERT(heapnumber.is(r3));
-    __ IncrementCounter(counters->math_pow(), 1, scratch);
+    __ IncrementCounter(counters->math_pow(), 1, scratch, scratch2);
     __ Ret(2);
   } else {
     __ mflr(r0);
@@ -3459,7 +3460,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
     __ GetCFunctionDoubleResult(double_result);
 
     __ bind(&done);
-    __ IncrementCounter(counters->math_pow(), 1, scratch);
+    __ IncrementCounter(counters->math_pow(), 1, scratch, scratch2);
     __ Ret();
   }
 }
@@ -4828,7 +4829,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // subject: Subject string
   // regexp_data: RegExp data (FixedArray)
   // All checks done. Now push arguments for native regexp code.
-  __ IncrementCounter(isolate->counters()->regexp_entry_native(), 1, r3);
+  __ IncrementCounter(isolate->counters()->regexp_entry_native(), 1, r3, r5);
 
   // Isolates: note we add an additional parameter here (isolate pointer).
   const int kRegExpExecuteArguments = 10;
@@ -6009,7 +6010,7 @@ void SubStringStub::Generate(MacroAssembler* masm) {
 
   __ bind(&return_r3);
   Counters* counters = masm->isolate()->counters();
-  __ IncrementCounter(counters->sub_string_native(), 1, r6);
+  __ IncrementCounter(counters->sub_string_native(), 1, r6, r7);
   __ AddP(sp, Operand(3 * kPointerSize));
   __ Ret();
 
@@ -6152,7 +6153,7 @@ void StringCompareStub::Generate(MacroAssembler* masm) {
   STATIC_ASSERT(EQUAL == 0);
   STATIC_ASSERT(kSmiTag == 0);
   __ LoadSmiLiteral(r3, Smi::FromInt(EQUAL));
-  __ IncrementCounter(counters->string_compare_native(), 1, r4);
+  __ IncrementCounter(counters->string_compare_native(), 1, r4, r5);
   __ AddP(sp, Operand(2 * kPointerSize));
   __ Ret();
 
@@ -6162,7 +6163,7 @@ void StringCompareStub::Generate(MacroAssembler* masm) {
   __ JumpIfNotBothSequentialAsciiStrings(r4, r3, r5, r6, &runtime);
 
   // Compare flat ASCII strings natively. Remove arguments from stack first.
-  __ IncrementCounter(counters->string_compare_native(), 1, r5);
+  __ IncrementCounter(counters->string_compare_native(), 1, r5, r6);
   __ AddP(sp, Operand(2 * kPointerSize));
   GenerateCompareFlatAsciiStrings(masm, r4, r3, r5, r6, r7);
 
@@ -6240,7 +6241,7 @@ void StringAddStub::Generate(MacroAssembler* masm) {
     __ bne(&strings_not_empty);  // If either string was empty, return r3.
 
     __ bind(&return_second);
-    __ IncrementCounter(counters->string_add_native(), 1, r5);
+    __ IncrementCounter(counters->string_add_native(), 1, r5, r6);
     __ AddP(sp, Operand(2 * kPointerSize));
     __ Ret();
 
@@ -6286,7 +6287,7 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   Label make_two_character_string;
   StringHelper::GenerateTwoCharacterSymbolTableProbe(
       masm, r5, r6, r9, r10, r7, r8, r22, &make_two_character_string);
-  __ IncrementCounter(counters->string_add_native(), 1, r5);
+  __ IncrementCounter(counters->string_add_native(), 1, r5, r6);
   __ AddP(sp, Operand(2 * kPointerSize));
   __ Ret();
 
@@ -6298,7 +6299,7 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   __ lhi(r9, Operand(2));
   __ AllocateAsciiString(r3, r9, r7, r8, r22, &call_runtime);
   __ sth(r5, FieldMemOperand(r3, SeqAsciiString::kHeaderSize));
-  __ IncrementCounter(counters->string_add_native(), 1, r5);
+  __ IncrementCounter(counters->string_add_native(), 1, r5, r6);
   __ AddP(sp, Operand(2 * kPointerSize));
   __ Ret();
 
@@ -6337,7 +6338,7 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   __ StoreP(r3, FieldMemOperand(r10, ConsString::kFirstOffset));
   __ StoreP(r4, FieldMemOperand(r10, ConsString::kSecondOffset));
   __ LoadRR(r3, r10);
-  __ IncrementCounter(counters->string_add_native(), 1, r5);
+  __ IncrementCounter(counters->string_add_native(), 1, r5, r6);
   __ AddP(sp, Operand(2 * kPointerSize));
   __ Ret();
 
@@ -6438,7 +6439,7 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   StringHelper::GenerateCopyCharacters(masm, r9, r10, r5, r7, true);
   // r9: next character of result.
   StringHelper::GenerateCopyCharacters(masm, r9, r4, r6, r7, true);
-  __ IncrementCounter(counters->string_add_native(), 1, r5);
+  __ IncrementCounter(counters->string_add_native(), 1, r5, r6);
   __ AddP(sp, Operand(2 * kPointerSize));
   __ Ret();
 
@@ -6455,7 +6456,7 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   StringHelper::GenerateCopyCharacters(masm, r9, r10, r5, r7, false);
   // r9: next character of result.
   StringHelper::GenerateCopyCharacters(masm, r9, r4, r6, r7, false);
-  __ IncrementCounter(counters->string_add_native(), 1, r5);
+  __ IncrementCounter(counters->string_add_native(), 1, r5, r6);
   __ AddP(sp, Operand(2 * kPointerSize));
   __ Ret();
 

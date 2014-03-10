@@ -1740,7 +1740,7 @@ void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
         FastCloneShallowArrayStub::COPY_ON_WRITE_ELEMENTS, length);
     __ CallStub(&stub);
     __ IncrementCounter(
-        isolate()->counters()->cow_arrays_created_stub(), 1, r4);
+        isolate()->counters()->cow_arrays_created_stub(), 1, r4, r5);
   } else if (expr->depth() > 1) {
     __ CallRuntime(Runtime::kCreateArrayLiteral, 3);
   } else if (length > FastCloneShallowArrayStub::kMaximumClonedLength) {
