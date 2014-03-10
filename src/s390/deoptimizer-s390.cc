@@ -1067,7 +1067,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   for (int i = 0; i < DwVfpRegister::kNumAllocatableRegisters; ++i) {
     DwVfpRegister fpu_reg = DwVfpRegister::FromAllocationIndex(i);
     int offset = i * kDoubleSize;
-    __ stfd(fpu_reg, MemOperand(sp, offset));
+    __ StoreF(fpu_reg, MemOperand(sp, offset));
   }
 
   // Push saved_regs (needed to populate FrameDescription::registers_).
@@ -1140,7 +1140,7 @@ void Deoptimizer::EntryGenerator::Generate() {
     int dst_offset = i * kDoubleSize + double_regs_offset;
     int src_offset = i * kDoubleSize + kNumberOfRegisters * kPointerSize;
     __ LoadF(d0, MemOperand(sp, src_offset));
-    __ stfd(d0, MemOperand(r4, dst_offset));
+    __ StoreF(d0, MemOperand(r4, dst_offset));
   }
 
   // Remove the bailout id, eventually return address, and the saved registers

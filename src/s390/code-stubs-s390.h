@@ -541,7 +541,7 @@ class RecordWriteStub: public CodeStub {
         masm->Sub(sp, Operand(kDoubleSize * kNumRegs));
         for (int i = kNumRegs; i > 0; i--) {
           DwVfpRegister reg = DwVfpRegister::from_code(i);
-          masm->stfd(reg, MemOperand(sp, (i - 1) * kDoubleSize));
+          masm->StoreF(reg, MemOperand(sp, (i - 1) * kDoubleSize));
         }
       }
     }

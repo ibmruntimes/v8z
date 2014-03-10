@@ -776,10 +776,6 @@ void Decoder::DecodeExt2(Instruction* instr) {
       Format(instr, "stfsux   'rs, 'ra, 'rb");
       return;
     }
-    case STFDX: {
-      Format(instr, "stfdx    'rs, 'ra, 'rb");
-      return;
-    }
     case STFDUX: {
       Format(instr, "stfdux   'rs, 'ra, 'rb");
       return;
@@ -1540,10 +1536,6 @@ int Decoder::InstructionDecode(byte* instr_ptr) {
     }
     case STFSU: {
       Format(instr, "stfsu   'Dt, 'int16('ra)");
-      break;
-    }
-    case STFD: {
-      Format(instr, "stfd    'Dt, 'int16('ra)");
       break;
     }
     case STFDU: {

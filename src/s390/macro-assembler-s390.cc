@@ -647,7 +647,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
     Sub(sp, Operand(kNumRegs * kDoubleSize));
     for (int i = 0; i < kNumRegs; i++) {
       DwVfpRegister reg = DwVfpRegister::from_code(i);
-      stfd(reg, MemOperand(sp, i * kDoubleSize));
+      StoreF(reg, MemOperand(sp, i * kDoubleSize));
     }
     // Note that d0 will be accessible at
     //   fp - 2 * kPointerSize - kNumVolatileRegisters * kDoubleSize,
@@ -1881,7 +1881,7 @@ void MacroAssembler::StoreNumberToDoubleElements(Register value_reg,
   FloatingPointHelper::ConvertIntToDouble(this,
                                           untagged_value,
                                           d0);
-  stfd(d0, MemOperand(scratch1, 0));
+  StoreF(d0, MemOperand(scratch1, 0));
 
   bind(&done);
 }
@@ -2296,7 +2296,7 @@ void MacroAssembler::ConvertToInt32(Register source,
   fctidz(double_scratch, double_scratch);
 
   AddP(sp, Operand(-kDoubleSize));
-  stfd(double_scratch, MemOperand(sp, 0));
+  StoreF(double_scratch, MemOperand(sp, 0));
 #if V8_TARGET_ARCH_S390X
   ld(dest, MemOperand(sp, 0));
 #else
@@ -2337,7 +2337,7 @@ void MacroAssembler::EmitVFPTruncate(VFPRoundingMode rounding_mode,
   }
 
   AddP(sp, Operand(-kDoubleSize));
-  stfd(double_scratch, MemOperand(sp, 0));
+  StoreF(double_scratch, MemOperand(sp, 0));
 #if V8_TARGET_ARCH_S390X
   ld(result, MemOperand(sp, 0));
 #else
@@ -2493,7 +2493,7 @@ void MacroAssembler::EmitECMATruncate(Register result,
   beq(&done);
 
   // Load the double value and perform a manual truncation.
-  stfd(double_input, MemOperand(sp));
+  StoreF(double_input, MemOperand(sp));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
   LoadlW(input_low, MemOperand(sp));
   LoadlW(input_high, MemOperand(sp, 4));
@@ -3091,7 +3091,7 @@ void MacroAssembler::AllocateHeapNumberWithValue(Register result,
                                                  Register heap_number_map,
                                                  Label* gc_required) {
   AllocateHeapNumber(result, scratch1, scratch2, heap_number_map, gc_required);
-  stfd(value, FieldMemOperand(result, HeapNumber::kValueOffset));
+  StoreF(value, FieldMemOperand(result, HeapNumber::kValueOffset));
 }
 
 

@@ -3752,7 +3752,7 @@ void KeyedLoadStubCompiler::GenerateLoadExternalArray(
 
     FloatingPointHelper::ConvertIntToDouble(
       masm, value, d0);
-    __ stfd(d0, FieldMemOperand(r3, HeapNumber::kValueOffset));
+    __ StoreF(d0, FieldMemOperand(r3, HeapNumber::kValueOffset));
     __ Ret();
 #endif
   } else if (elements_kind == EXTERNAL_UNSIGNED_INT_ELEMENTS) {
@@ -3776,7 +3776,7 @@ void KeyedLoadStubCompiler::GenerateLoadExternalArray(
 
     FloatingPointHelper::ConvertUnsignedIntToDouble(
        masm, value, d0);
-    __ stfd(d0, FieldMemOperand(r3, HeapNumber::kValueOffset));
+    __ StoreF(d0, FieldMemOperand(r3, HeapNumber::kValueOffset));
     __ Ret();
 
   } else if (elements_kind == EXTERNAL_FLOAT_ELEMENTS) {
@@ -3787,7 +3787,7 @@ void KeyedLoadStubCompiler::GenerateLoadExternalArray(
     // exhausted young space.
     __ LoadRoot(r9, Heap::kHeapNumberMapRootIndex);
     __ AllocateHeapNumber(r5, r6, r7, r9, &slow);
-    __ stfd(d0, FieldMemOperand(r5, HeapNumber::kValueOffset));
+    __ StoreF(d0, FieldMemOperand(r5, HeapNumber::kValueOffset));
     __ LoadRR(r3, r5);
     __ Ret();
 
@@ -3797,7 +3797,7 @@ void KeyedLoadStubCompiler::GenerateLoadExternalArray(
     // exhausted young space.
     __ LoadRoot(r9, Heap::kHeapNumberMapRootIndex);
     __ AllocateHeapNumber(r5, r6, r7, r9, &slow);
-    __ stfd(d0, FieldMemOperand(r5, HeapNumber::kValueOffset));
+    __ StoreF(d0, FieldMemOperand(r5, HeapNumber::kValueOffset));
     __ LoadRR(r3, r5);
     __ Ret();
 
@@ -3911,7 +3911,7 @@ void KeyedStoreStubCompiler::GenerateStoreExternalArray(
       // r6: effective address of the double element
       FloatingPointHelper::ConvertIntToDouble(
           masm, r8,  d0);
-      __ stfdx(d0, MemOperand(r6, r10));
+      __ StoreF(d0, MemOperand(r6, r10));
       break;
     case FAST_ELEMENTS:
     case FAST_SMI_ELEMENTS:
@@ -3950,7 +3950,7 @@ void KeyedStoreStubCompiler::GenerateStoreExternalArray(
       } else if (elements_kind == EXTERNAL_DOUBLE_ELEMENTS) {
         __ LoadF(d0, FieldMemOperand(r3, HeapNumber::kValueOffset));
         __ SmiToDoubleArrayOffset(r8, key);
-        __ stfdx(d0, MemOperand(r6, r8));
+        __ StoreF(d0, MemOperand(r6, r8));
       } else {
         // Hoisted load.
         __ LoadRR(r8, value);

@@ -225,7 +225,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   // Normal smi, convert to double and store.
   FloatingPointHelper::ConvertIntToDouble(
     masm, r22, d0);
-  __ stfd(d0, MemOperand(r10, 0));
+  __ StoreF(d0, MemOperand(r10, 0));
   __ AddP(r10, Operand(8));
 
   __ b(&entry);
