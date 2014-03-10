@@ -1534,10 +1534,6 @@ int Decoder::InstructionDecode(byte* instr_ptr) {
       Format(instr, "lfsu    'Dt, 'int16('ra)");
       break;
     }
-    case LFD: {
-      Format(instr, "lfd     'Dt, 'int16('ra)");
-      break;
-    }
     case LFDU: {
       Format(instr, "lfdu    'Dt, 'int16('ra)");
       break;

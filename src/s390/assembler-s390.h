@@ -1923,7 +1923,6 @@ SS2_FORM(zap);
   void isync();
 
   // Support for floating point
-  void lfd(const DwVfpRegister frt, const MemOperand& src);
   void lfdu(const DwVfpRegister frt, const MemOperand& src);
   void lfdx(const DwVfpRegister frt, const MemOperand& src);
   void lfdux(const DwVfpRegister frt, const MemOperand& src);
