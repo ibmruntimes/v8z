@@ -875,7 +875,7 @@ void FloatingPointHelper::DoubleIs32BitInteger(MacroAssembler* masm,
   STATIC_ASSERT(HeapNumber::kNonMantissaBitsInTopWord == 12);
   __ ExtractBitRange(dst, src2, 31, HeapNumber::kMantissaBitsInTopWord);
   __ slwi(src1, src1, Operand(HeapNumber::kNonMantissaBitsInTopWord));
-  __ Or(dst, dst, src1);
+  __ Or(dst, src1);
 
   // Create the mask and test the lower bits (of the higher bits).
   __ subfic(scratch, scratch, Operand(32));
@@ -1011,7 +1011,8 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm,
       __ slwi(r5, r5, Operand(HeapNumber::kNonMantissaBitsInTopWord));
       // Or with all low-bits of mantissa.
       __ LoadlW(r6, FieldMemOperand(r3, HeapNumber::kMantissaOffset));
-      __ Or(r3, r6, r5);
+      __ LoadRR(r3, r5);
+      __ Or(r3, r6);
       __ Cmpi(r3, Operand::Zero());
       // For equal we already have the right value in r3:  Return zero (equal)
       // if all bits in mantissa are zero (it's an Infinity) and non-zero if
@@ -1338,7 +1339,8 @@ void CompareStub::Generate(MacroAssembler* masm) {
 
   if (include_smi_compare_) {
     Label not_two_smis, smi_done;
-    __ Or(r5, r4, r3);
+    __ LoadRR(r5, r3);
+    __ Or(r5, r4);
     __ JumpIfNotSmi(r5, &not_two_smis);
     __ SmiUntag(r4);
     __ SmiUntag(r3);
@@ -1346,7 +1348,8 @@ void CompareStub::Generate(MacroAssembler* masm) {
     __ Ret();
     __ bind(&not_two_smis);
   } else if (FLAG_debug_code) {
-    __ Or(r5, r4, r3);
+    __ LoadRR(r5, r3);
+    __ Or(r5, r4);
     STATIC_ASSERT(kSmiTagMask < 0x8000);
     __ andi(r0, r5, Operand(kSmiTagMask));
     __ Assert(ne, "CompareStub: unexpected smi operands.", cr0);
@@ -2182,7 +2185,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       break;
     }
     case Token::BIT_OR:
-      __ Or(right, left, right);
+      __ Or(right, left);
       __ Ret();
       break;
     case Token::BIT_AND:
@@ -2343,7 +2346,7 @@ void BinaryOpStub::GenerateFPOperation(MacroAssembler* masm,
       Label result_not_a_smi;
       switch (op_) {
         case Token::BIT_OR:
-          __ Or(r5, r6, r5);
+          __ Or(r5, r6);
           break;
         case Token::BIT_XOR:
           __ Xor(r5, r6, r5);
@@ -2444,7 +2447,8 @@ void BinaryOpStub::GenerateSmiCode(
   Register scratch1 = r10;
 
   // Perform combined smi check on both operands.
-  __ Or(scratch1, left, right);
+  __ LoadRR(scratch1, right);
+  __ Or(scratch1, left);
   STATIC_ASSERT(kSmiTag == 0);
   __ JumpIfNotSmi(scratch1, &not_smis);
 
@@ -2547,7 +2551,8 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
 
   // Smi-smi fast case.
   Label skip;
-  __ Or(scratch1, left, right);
+  __ LoadRR(scratch1, right);
+  __ Or(scratch1, left);
   __ JumpIfNotSmi(scratch1, &skip);
   GenerateSmiSmiOperation(masm);
   // Fall through if the result is not a smi.
@@ -2730,7 +2735,7 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
       // 5 least significant bits of the shift value should be used.
       switch (op_) {
         case Token::BIT_OR:
-          __ Or(r5, r6, r5);
+          __ Or(r5, r6);
           break;
         case Token::BIT_XOR:
           __ Xor(r5, r6, r5);
@@ -5635,10 +5640,10 @@ void StringHelper::GenerateTwoCharacterSymbolTableProbe(MacroAssembler* masm,
   // not_found branch expects this combination in c1 register
 #if __BYTE_ORDER == __BIG_ENDIAN
   __ ShiftLeftImm(c1, c1, Operand(kBitsPerByte));
-  __ Or(c1, c1, c2);
+  __ Or(c1, c2);
 #else
   __ ShiftLeftImm(r0, c2, Operand(kBitsPerByte));
-  __ Or(c1, c1, r0);
+  __ Or(c1, r0);
 #endif
   __ b(not_found);
 
@@ -5653,10 +5658,12 @@ void StringHelper::GenerateTwoCharacterSymbolTableProbe(MacroAssembler* masm,
   Register chars = c1;
 #if __BYTE_ORDER == __BIG_ENDIAN
   __ ShiftLeftImm(c1, c1, Operand(kBitsPerByte));
-  __ Or(chars, c1, c2);
+  __ LoadRR(chars, c2);
+  __ Or(chars, c1);
 #else
   __ ShiftLeftImm(r0, c2, Operand(kBitsPerByte));
-  __ Or(chars, c1, r0);
+  __ LoadRR(chars, c0);
+  __ Or(chars, c1);
 #endif
 
   // chars: two character string, char 1 in byte 0 and char 2 in byte 1.
@@ -6526,7 +6533,8 @@ void StringAddStub::GenerateConvertArgument(MacroAssembler* masm,
 void ICCompareStub::GenerateSmis(MacroAssembler* masm) {
   ASSERT(state_ == CompareIC::SMIS);
   Label miss;
-  __ Or(r5, r4, r3);
+  __ LoadRR(r5, r3);
+  __ Or(r5, r4);
   __ JumpIfNotSmi(r5, &miss);
 
   if (GetCondition() == eq) {
@@ -6679,7 +6687,8 @@ void ICCompareStub::GenerateStrings(MacroAssembler* masm) {
   __ LoadlB(tmp1, FieldMemOperand(tmp1, Map::kInstanceTypeOffset));
   __ LoadlB(tmp2, FieldMemOperand(tmp2, Map::kInstanceTypeOffset));
   STATIC_ASSERT(kNotStringTag != 0);
-  __ Or(tmp3, tmp1, tmp2);
+  __ LoadRR(tmp3, tmp2);
+  __ Or(tmp3, tmp1);
   __ andi(r0, tmp3, Operand(kIsNotStringMask));
   __ bne(&miss /*, cr0*/);
   // TODO(JOHN): might be a problem b/c cr0 is not set

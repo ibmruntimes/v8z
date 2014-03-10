@@ -300,11 +300,12 @@ class MacroAssembler: public Assembler {
   void And(Register dst, const MemOperand& opnd);
   void And(Register dst, const Operand& opnd);
   void And(Register dst, Register src);
-  // Not supported on z9
+  // and(r,r,r) Not supported on z9
   // void And(Register dst, Register src1, Register src2);
   // void And(Register dst, Register src, const Operand& opnd);
   void Or(Register dst, Register src);
-  void Or(Register dst, Register src1, Register src2);
+  // or(r,r,r) Not supported on z9
+  // void Or(Register dst, Register src1, Register src2);
   void Or(Register dst, const Operand& opnd);
   void Or(Register dst, Register src, const Operand& opnd);
   void Xor(Register dst, Register src);
