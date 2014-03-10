@@ -2411,7 +2411,6 @@ RSY1_FORM_EMIT(bxleg, BXLEG)
 RRE_FORM_EMIT(cdfbr, CDFBR)
 RRF2_FORM_EMIT(cdfbra, CDFBRA)
 RRE_FORM_EMIT(cdftr, CDFTR)
-RRE_FORM_EMIT(cdgbr, CDGBR)
 RRF2_FORM_EMIT(cdgbra, CDGBRA)
 RRE_FORM_EMIT(cdgtr, CDGTR)
 RRF2_FORM_EMIT(cdgtra, CDGTRA)
@@ -2448,7 +2447,6 @@ RRF2_FORM_EMIT(cfxbr, CFXBR)
 RRF2_FORM_EMIT(cfxbra, CFXBRA)
 RRF2_FORM_EMIT(cfxr, CFXR)
 RRF2_FORM_EMIT(cfxtr, CFXTR)
-RRF2_FORM_EMIT(cgdbr, CGDBR)
 RRF2_FORM_EMIT(cgdbra, CGDBRA)
 RRF2_FORM_EMIT(cgdr, CGDR)
 RRF2_FORM_EMIT(cgdtr, CGDTR)
@@ -3654,6 +3652,18 @@ void Assembler::ldr(DoubleRegister r1, DoubleRegister r2) {
 void Assembler::cdbr(DoubleRegister r1, DoubleRegister r2) {
   rre_form(CDBR, r1, r2);
 }
+
+// Convert to Fixed point (L)
+void Assembler::cgdbr(Register r1, DoubleRegister r2) {
+  rre_form(CGDBR, r1, Register::from_code(r2.code()));
+}
+
+// Convert from Fixed point (L)
+void Assembler::cdgbr(Register r1, DoubleRegister r2) {
+  rre_form(CDGBR, r1, Register::from_code(r2.code()));
+}
+
+
 // end of S390instructions
 
 

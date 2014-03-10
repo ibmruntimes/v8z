@@ -1125,7 +1125,6 @@ RRF2_FORM(cfxbra);
 RRF2_FORM(cfxr);
 RRF2_FORM(cfxtr);
 RXY_FORM(cg);
-RRF2_FORM(cgdbr);
 RRF2_FORM(cgdbra);
 RRF2_FORM(cgdr);
 RRF2_FORM(cgdtr);
@@ -1761,6 +1760,8 @@ SS2_FORM(zap);
   void std(DoubleRegister r1, const MemOperand& opnd);
   void stdy(DoubleRegister r1, const MemOperand& opnd);
   void cdbr(DoubleRegister r1, DoubleRegister r2);
+  void cgdbr(Register fixReg, DoubleRegister fltReg);
+  void cdgbr(Register fixReg, DoubleRegister fltReg);
 
 // end of S390instructions
 
