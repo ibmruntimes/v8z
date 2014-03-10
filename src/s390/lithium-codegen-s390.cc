@@ -1174,7 +1174,8 @@ void LCodeGen::DoMulI(LMulI* instr) {
   } else {
     Register right = EmitLoadRegister(right_op, ip);
     if (bailout_on_minus_zero) {
-      __ Or(ToRegister(instr->temp()), left, right);
+      __ LoadRR(ToRegister(instr->temp()), left);
+      __ Or(ToRegister(instr->temp()), right);
     }
 
     if (can_overflow) {
@@ -1254,10 +1255,13 @@ void LCodeGen::DoBitI(LBitI* instr) {
       }
       break;
     case Token::BIT_OR:
-      if (right.is_reg())
-        __ Or(result, left, right.rm());
-      else
-        __ Or(result, left, right);
+      if (right.is_reg()) {
+        __ LoadRR(result, left);
+        __ Or(result, right.rm());
+      } else {
+        __ LoadRR(result, left);
+        __ Or(result, right);
+      }
       break;
     case Token::BIT_XOR:
       if (right.is_reg())

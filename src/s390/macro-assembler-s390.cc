@@ -2429,7 +2429,7 @@ void MacroAssembler::EmitOutOfInt32RangeTruncate(Register result,
   srw(input_low, input_low, scratch);
 
   bind(&shift_done);
-  Or(input_high, input_high, input_low);
+  Or(input_high, input_low);
 
   // Restore sign if necessary.
   Cmpi(sign, Operand::Zero());
@@ -2920,7 +2920,8 @@ void MacroAssembler::JumpIfNotBothSmi(Register reg1,
                                       Label* on_not_both_smi) {
   STATIC_ASSERT(kSmiTag == 0);
   ASSERT_EQ(1, static_cast<int>(kSmiTagMask));
-  Or(r0, reg1, reg2/*, LeaveRC*/);  // should be okay to remove LeaveRC
+  LoadRR(r0, reg2);
+  Or(r0, reg1/*, LeaveRC*/);  // should be okay to remove LeaveRC
   JumpIfNotSmi(r0, on_not_both_smi);
 }
 
@@ -3795,7 +3796,7 @@ void MacroAssembler::EnsureNotWhite(
   // Value is a data object, and it is white.  Mark it black.  Since we know
   // that the object is white we can make it black by flipping one bit.
   LoadlW(ip, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
-  Or(ip, ip, mask_scratch);
+  Or(ip, mask_scratch);
   StoreW(ip, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
 
   mov(ip, Operand(~Page::kPageAlignmentMask));
@@ -4164,6 +4165,7 @@ void MacroAssembler::Or(Register dst, Register src) {
 #endif
 }
 
+#if 0  // Not support on z9
 void MacroAssembler::Or(Register dst, Register src1, Register src2) {
 #if V8_TARGET_ARCH_S390X
   ogrk(dst, src1, src2);
@@ -4171,6 +4173,7 @@ void MacroAssembler::Or(Register dst, Register src1, Register src2) {
   ork(dst, src1, src2);
 #endif
 }
+#endif
 
 void MacroAssembler::Or(Register dst, const Operand& opnd) {
   ASSERT(!opnd.is_reg());
