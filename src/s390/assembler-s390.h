@@ -1914,7 +1914,6 @@ SS2_FORM(zap);
 
   // Support for floating point
   void lfdu(const DwVfpRegister frt, const MemOperand& src);
-  void lfdx(const DwVfpRegister frt, const MemOperand& src);
   void lfdux(const DwVfpRegister frt, const MemOperand& src);
   void lfs(const DwVfpRegister frt, const MemOperand& src);
   void lfsu(const DwVfpRegister frt, const MemOperand& src);

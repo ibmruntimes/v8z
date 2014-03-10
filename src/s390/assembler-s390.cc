@@ -1214,13 +1214,6 @@ void Assembler::lfdu(const DwVfpRegister frt, const MemOperand &src) {
   emit(LFDU | frt.code()*B21 | rb.code()*B16 | imm16);
 }
 
-void Assembler::lfdx(const DwVfpRegister frt, const MemOperand &src) {
-  Register rb = src.rb();
-  Register rx = src.rx();
-  ASSERT(!rb.is(r0));
-  emit(EXT2 | LFDX | frt.code()*B21 | rb.code()*B16 | rx.code()*B11 | LeaveRC);
-}
-
 void Assembler::lfdux(const DwVfpRegister frt, const MemOperand & src) {
   Register rb = src.rb();
   Register rx = src.rx();
