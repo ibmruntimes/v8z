@@ -1253,7 +1253,7 @@ void MacroAssembler::GetNumberHash(Register t0, Register scratch) {
   SmiUntag(scratch);
 
   // Xor original key with a seed.
-  Xor(t0, t0, scratch);
+  Xor(t0, scratch);
 
   // Compute the hash code from the untagged key.  This must be kept in sync
   // with ComputeIntegerHash in utils.h.
@@ -1264,13 +1264,13 @@ void MacroAssembler::GetNumberHash(Register t0, Register scratch) {
   Add(t0, scratch, t0);
   // hash = hash ^ (hash >> 12);
   srwi(scratch, t0, Operand(12));
-  Xor(t0, t0, scratch);
+  Xor(t0, scratch);
   // hash = hash + (hash << 2);
   slwi(scratch, t0, Operand(2));
   Add(t0, t0, scratch);
   // hash = hash ^ (hash >> 4);
   srwi(scratch, t0, Operand(4));
-  Xor(t0, t0, scratch);
+  Xor(t0, scratch);
   // hash = hash * 2057;
   LoadRR(r0, t0);
   slwi(scratch, t0, Operand(3));
@@ -1279,7 +1279,7 @@ void MacroAssembler::GetNumberHash(Register t0, Register scratch) {
   Add(t0, t0, scratch);
   // hash = hash ^ (hash >> 16);
   srwi(scratch, t0, Operand(16));
-  Xor(t0, t0, scratch);
+  Xor(t0, scratch);
 }
 
 
@@ -1902,21 +1902,25 @@ void MacroAssembler::AddAndCheckForOverflow(Register dst,
   if (dst.is(left)) {
     LoadRR(scratch, left);            // Preserve left.
     Add(dst, left, right);        // Left is overwritten.
-    Xor(scratch, dst, scratch);  // Original left.
-    Xor(overflow_dst, dst, right);
+    Xor(scratch, dst);  // Original left.
+    LoadRR(overflow_dst, dst);
+    Xor(overflow_dst, right);
     And(overflow_dst, scratch/*, SetRC*/);
     // Should be okay to remove rc
   } else if (dst.is(right)) {
     LoadRR(scratch, right);           // Preserve right.
     Add(dst, left, right);        // Right is overwritten.
-    Xor(scratch, dst, scratch);  // Original right.
-    Xor(overflow_dst, dst, left);
+    Xor(scratch, dst);  // Original right.
+    LoadRR(overflow_dst, dst);
+    Xor(overflow_dst, left);
     And(overflow_dst, scratch/*, SetRC*/);
     // Should be okay to remove rc
   } else {
     Add(dst, left, right);
-    Xor(overflow_dst, dst, left);
-    Xor(scratch, dst, right);
+    LoadRR(overflow_dst, dst);
+    Xor(overflow_dst, left);
+    LoadRR(scratch, dst);
+    Xor(scratch, right);
     And(overflow_dst, scratch/*, SetRC*/);
     // Should be okay to remove rc
   }
@@ -1937,21 +1941,25 @@ void MacroAssembler::SubAndCheckForOverflow(Register dst,
   if (dst.is(left)) {
     LoadRR(scratch, left);            // Preserve left.
     Sub(dst, left, right);        // Left is overwritten.
-    Xor(overflow_dst, dst, scratch);
-    Xor(scratch, scratch, right);
+    LoadRR(overflow_dst, dst);
+    Xor(overflow_dst, scratch);
+    Xor(scratch, right);
     And(overflow_dst, scratch/*, SetRC*/);
     // Should be okay to remove rc
   } else if (dst.is(right)) {
     LoadRR(scratch, right);           // Preserve right.
     Sub(dst, left, right);        // Right is overwritten.
-    Xor(overflow_dst, dst, left);
-    Xor(scratch, left, scratch);
+    LoadRR(overflow_dst, dst);
+    Xor(overflow_dst, left);
+    Xor(scratch, left);
     And(overflow_dst, scratch/*, SetRC*/);
     // Should be okay to remove rc
   } else {
     Sub(dst, left, right);
-    Xor(overflow_dst, dst, left);
-    Xor(scratch, left, right);
+    LoadRR(overflow_dst, dst);
+    Xor(overflow_dst, left);
+    LoadRR(scratch, right);
+    Xor(scratch, left);
     And(overflow_dst, scratch/*, SetRC*/);
     // Should be okay to remove rc
   }
@@ -2892,7 +2900,7 @@ void MacroAssembler::SmiTagCheckOverflow(Register reg, Register overflow) {
   ASSERT(!reg.is(overflow));
   LoadRR(overflow, reg);  // Save original value.
   SmiTag(reg);
-  Xor(overflow, overflow, reg/*, SetRC*/);
+  Xor(overflow, reg/*, SetRC*/);
   // Overflow if (value ^ 2 * value) < 0.
   // Safe to remove rc
 }
@@ -2909,7 +2917,8 @@ void MacroAssembler::SmiTagCheckOverflow(Register dst,
     ASSERT(!dst.is(overflow));
     ASSERT(!src.is(overflow));
     SmiTag(dst, src);
-    Xor(overflow, dst, src/*, SetRC*/);  // Overflow if (value ^ 2 * value) < 0.
+    LoadRR(overflow, src);
+    Xor(overflow, dst/*, SetRC*/);  // Overflow if (value ^ 2 * value) < 0.
     // safe to remove rc
   }
 }
@@ -4201,11 +4210,13 @@ void MacroAssembler::Xor(Register dst, Register src) {
 #endif
 }
 
+#if 0
 void MacroAssembler::Xor(Register dst, Register src1, Register src2) {
   if (!dst.is(src1) && !dst.is(src2)) LoadRR(dst, src1);
   else if (dst.is(src2)) src2 = src1;
   Xor(dst, src2);
 }
+#endif
 
 void MacroAssembler::Xor(Register dst, const Operand& opnd) {
   ASSERT(!opnd.is_reg());
