@@ -764,10 +764,6 @@ void Decoder::DecodeExt2(Instruction* instr) {
       Format(instr, "lfsux   'rt, 'ra, 'rb");
       return;
     }
-    case LFDX: {
-      Format(instr, "lfdx    'rt, 'ra, 'rb");
-      return;
-    }
     case LFDUX: {
       Format(instr, "lfdux   'rt, 'ra, 'rb");
       return;
