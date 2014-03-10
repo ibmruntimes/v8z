@@ -2003,12 +2003,12 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
       Label add_no_overflow;
       // C = A+B; C overflows if A/B have same sign and C has diff sign than A
       __ LoadRR(r0, right);
-      __ Xor(r0, left);
+      __ XorP(r0, left);
       __ Add(scratch1, left, right);
       __ TestSignBit(r0, r0);
       __ bne(&add_no_overflow /*, cr0*/);
       __ LoadRR(r0, right);
-      __ Xor(r0, scratch1);
+      __ XorP(r0, scratch1);
       __ TestSignBit(r0, r0);
       __ bne(&stub_call /*, cr0*/);
       __ bind(&add_no_overflow);
@@ -2019,12 +2019,12 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
       Label sub_no_overflow;
       // C = A-B; C overflows if A/B have diff signs and C has diff sign than A
       __ LoadRR(r0, right);
-      __ Xor(r0, left);
+      __ XorP(r0, left);
       __ Sub(scratch1, left, right);
       __ TestSignBit(r0, r0);
       __ beq(&sub_no_overflow /*, cr0*/);
       __ LoadRR(r0, left);
-      __ Xor(r0, scratch1);
+      __ XorP(r0, scratch1);
       __ TestSignBit(r0, r0);
       __ bne(&stub_call /*, cr0*/);
       __ bind(&sub_no_overflow);
@@ -2076,7 +2076,7 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
       __ AndP(right, left);
       break;
     case Token::BIT_XOR:
-      __ Xor(right, left);
+      __ XorP(right, left);
       break;
     default:
       UNREACHABLE();

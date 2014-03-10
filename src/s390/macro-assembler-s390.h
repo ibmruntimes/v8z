@@ -309,8 +309,8 @@ class MacroAssembler: public Assembler {
   // or(r,r,r) Not supported on z9
   // void OrP(Register dst, Register src1, Register src2);
   // void OrP(Register dst, Register src, const Operand& opnd);
-  // void Xor(Register dst, Register src1, Register src2);
-  // void Xor(Register dst, Register src, const Operand& opnd);
+  // void XorP(Register dst, Register src1, Register src2);
+  // void XorP(Register dst, Register src, const Operand& opnd);
   void Branch(Condition c, const Operand& opnd);
   void ShiftLeftImm(Register dst, Register src, const Operand& val);
   void ShiftRightImm(Register dst, Register src, const Operand& val,
@@ -331,8 +331,8 @@ class MacroAssembler: public Assembler {
   void AndP(Register dst, Register src);
   void OrP(Register dst, Register src);
   void OrP(Register dst, const Operand& opnd);
-  void Xor(Register dst, Register src);
-  void Xor(Register dst, const Operand& opnd);
+  void XorP(Register dst, Register src);
+  void XorP(Register dst, const Operand& opnd);
 
 
   void mov(Register dst, const Operand& src);

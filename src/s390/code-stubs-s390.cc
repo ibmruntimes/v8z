@@ -1269,7 +1269,7 @@ void NumberToStringStub::GenerateLookupNumberStringCache(MacroAssembler* masm,
     STATIC_ASSERT(8 == kDoubleSize);
     __ LoadlW(scratch1, FieldMemOperand(object, HeapNumber::kExponentOffset));
     __ LoadlW(scratch2, FieldMemOperand(object, HeapNumber::kMantissaOffset));
-    __ Xor(scratch1, scratch2);
+    __ XorP(scratch1, scratch2);
     __ AndP(scratch1, mask);
 
     // Calculate address of entry in string cache: each entry consists
@@ -1842,7 +1842,7 @@ void UnaryOpStub::GenerateHeapNumberCodeSub(MacroAssembler* masm,
     __ LoadlW(r5, FieldMemOperand(r3, HeapNumber::kExponentOffset));
     __ StoreW(r6, FieldMemOperand(r4, HeapNumber::kMantissaOffset));
     __ mov(r0, Operand(HeapNumber::kSignMask));
-    __ Xor(r5, r0);
+    __ XorP(r5, r0);
     __ StoreW(r5, FieldMemOperand(r4, HeapNumber::kExponentOffset));
     __ LoadRR(r3, r4);
   }
@@ -2055,13 +2055,13 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       Label undo_add, add_no_overflow;
       // C = A+B; C overflows if A/B have same sign and C has diff sign than A
       __ LoadRR(r0, right);
-      __ Xor(r0, left);
+      __ XorP(r0, left);
       __ LoadRR(scratch1, right);
       __ Add(right, left, right);  // Add optimistically.
       __ TestSignBit(r0, r0);
       __ bne(&add_no_overflow /*, cr0*/);
       __ LoadRR(r0, right);
-      __ Xor(r0, scratch1);
+      __ XorP(r0, scratch1);
       __ TestSignBit(r0, r0);
       __ bne(&undo_add /*, cr0*/);
       __ bind(&add_no_overflow);
@@ -2074,13 +2074,13 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       Label undo_sub, sub_no_overflow;
       // C = A-B; C overflows if A/B have diff signs and C has diff sign than A
       __ LoadRR(r0, right);
-      __ Xor(r0, left);
+      __ XorP(r0, left);
       __ LoadRR(scratch1, right);
       __ Sub(right, left, right);  // Subtract optimistically.
       __ TestSignBit(r0, r0);
       __ beq(&sub_no_overflow /*, cr0*/);
       __ LoadRR(r0, right);
-      __ Xor(r0, left);
+      __ XorP(r0, left);
       __ TestSignBit(r0, r0);
       __ bne(&undo_sub /*, cr0*/);
       __ bind(&sub_no_overflow);
@@ -2154,7 +2154,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       __ SmiTag(scratch2, scratch1/*, SetRC*/);  // already set in s390
       __ beq(&check_neg_zero /*, cr0*/);  // should be save to do so
       // Check for Smi overflow
-      __ Xor(scratch1, scratch2/*, SetRC*/);  // Safe to remove rc
+      __ XorP(scratch1, scratch2/*, SetRC*/);  // Safe to remove rc
       __ blt(&not_smi_result /*, cr0*/);
       __ LoadRR(right, scratch2);
       __ Ret();
@@ -2203,7 +2203,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       __ Ret();
       break;
     case Token::BIT_XOR:
-      __ Xor(right, left);
+      __ XorP(right, left);
       __ Ret();
       break;
     case Token::SAR:
@@ -2359,7 +2359,7 @@ void BinaryOpStub::GenerateFPOperation(MacroAssembler* masm,
           __ OrP(r5, r6);
           break;
         case Token::BIT_XOR:
-          __ Xor(r5, r6);
+          __ XorP(r5, r6);
           break;
         case Token::BIT_AND:
           __ AndP(r5, r6);
@@ -2748,7 +2748,7 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
           __ OrP(r5, r6);
           break;
         case Token::BIT_XOR:
-          __ Xor(r5, r6);
+          __ XorP(r5, r6);
           break;
         case Token::BIT_AND:
           __ AndP(r5, r6);
@@ -3073,11 +3073,11 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
   // Compute hash (the shifts are arithmetic):
   //   h = (low ^ high); h ^= h >> 16; h ^= h >> 8; h = h & (cacheSize - 1);
   __ LoadRR(r4, r6);
-  __ Xor(r4, r5);
+  __ XorP(r4, r5);
   __ srawi(scratch0, r4, 16);
-  __ Xor(r4, scratch0);
+  __ XorP(r4, scratch0);
   __ srawi(scratch0, r4, 8);
-  __ Xor(r4, scratch0);
+  __ XorP(r4, scratch0);
   ASSERT(IsPowerOf2(TranscendentalCache::SubCache::kCacheSize));
   __ AndP(r4, Operand(TranscendentalCache::SubCache::kCacheSize - 1));
 
@@ -5798,7 +5798,7 @@ void StringHelper::GenerateHashInit(MacroAssembler* masm,
   __ AddP(hash, scratch);
   // hash ^= hash >> 6;
   __ srwi(scratch, hash, Operand(6));
-  __ Xor(hash, scratch);
+  __ XorP(hash, scratch);
 }
 
 
@@ -5813,7 +5813,7 @@ void StringHelper::GenerateHashAddCharacter(MacroAssembler* masm,
   __ AddP(hash, scratch);
   // hash ^= hash >> 6;
   __ srwi(scratch, hash, Operand(6));
-  __ Xor(hash, scratch);
+  __ XorP(hash, scratch);
 }
 
 
@@ -5825,7 +5825,7 @@ void StringHelper::GenerateHashGetHash(MacroAssembler* masm,
   __ AddP(hash, scratch);
   // hash ^= hash >> 11;
   __ srwi(scratch, hash, Operand(11));
-  __ Xor(hash, scratch);
+  __ XorP(hash, scratch);
   // hash += hash << 15;
   __ slwi(scratch, hash, Operand(15));
   __ AddP(hash, scratch);
@@ -6393,7 +6393,7 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   __ LoadRR(r0, r8);
   __ AndP(r0, Operand(kAsciiDataHintMask));
   __ bne(&ascii_data /*, cr0*/);
-  __ Xor(r7, r8);
+  __ XorP(r7, r8);
   STATIC_ASSERT(kAsciiStringTag != 0 && kAsciiDataHintTag != 0);
   __ AndP(r7, Operand(kAsciiStringTag | kAsciiDataHintTag));
   __ Cmpi(r7, Operand(kAsciiStringTag | kAsciiDataHintTag));
@@ -6425,7 +6425,7 @@ void StringAddStub::Generate(MacroAssembler* masm) {
 
   // Check whether both strings have same encoding
   __ LoadRR(r10, r8);
-  __ Xor(r10, r7);
+  __ XorP(r10, r7);
   __ LoadRR(r0, r10);
   __ AndP(r0, Operand(kStringEncodingMask));
   __ bne(&call_runtime /*, cr0*/);
