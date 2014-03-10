@@ -2153,7 +2153,7 @@ Handle<Code> CallStubCompiler::CompileMathFloorCall(
   __ CheckMap(r3, r4, Heap::kHeapNumberMapRootIndex, &slow, DONT_DO_SMI_CHECK);
 
   // Load the HeapNumber value.
-  __ lfd(d1, FieldMemOperand(r3, HeapNumber::kValueOffset));
+  __ LoadF(d1, FieldMemOperand(r3, HeapNumber::kValueOffset));
 
   // Round to integer minus
   if (CpuFeatures::IsSupported(FPU)) {
@@ -3614,7 +3614,7 @@ static void GenerateSmiKeyCheck(MacroAssembler* masm,
               Heap::kHeapNumberMapRootIndex,
               fail,
               DONT_DO_SMI_CHECK);
-  __ lfd(double_scratch0, FieldMemOperand(key, HeapNumber::kValueOffset));
+  __ LoadF(double_scratch0, FieldMemOperand(key, HeapNumber::kValueOffset));
   __ EmitVFPTruncate(kRoundToZero,
                      scratch0,
                      double_scratch0,
@@ -3705,7 +3705,7 @@ void KeyedLoadStubCompiler::GenerateLoadExternalArray(
       break;
     case EXTERNAL_DOUBLE_ELEMENTS:
       __ SmiToDoubleArrayOffset(value, key);
-      __ lfdx(d0, MemOperand(r6, value));
+      __ LoadF(d0, MemOperand(r6, value));
       break;
     case FAST_ELEMENTS:
     case FAST_SMI_ELEMENTS:
@@ -3942,18 +3942,18 @@ void KeyedStoreStubCompiler::GenerateStoreExternalArray(
       // reproducible behavior, convert these to zero.
 
       if (elements_kind == EXTERNAL_FLOAT_ELEMENTS) {
-        __ lfd(d0, FieldMemOperand(r3, HeapNumber::kValueOffset));
+        __ LoadF(d0, FieldMemOperand(r3, HeapNumber::kValueOffset));
         __ SmiToFloatArrayOffset(r8, key);
         __ frsp(d0, d0);
         __ stfsx(d0, MemOperand(r6, r8));
       } else if (elements_kind == EXTERNAL_DOUBLE_ELEMENTS) {
-        __ lfd(d0, FieldMemOperand(r3, HeapNumber::kValueOffset));
+        __ LoadF(d0, FieldMemOperand(r3, HeapNumber::kValueOffset));
         __ SmiToDoubleArrayOffset(r8, key);
         __ stfdx(d0, MemOperand(r6, r8));
       } else {
         // Hoisted load.
         __ LoadRR(r8, value);
-        __ lfd(d0, FieldMemOperand(r8, HeapNumber::kValueOffset));
+        __ LoadF(d0, FieldMemOperand(r8, HeapNumber::kValueOffset));
 
         __ EmitECMATruncate(r8, d0, d1, r10, r7, r9);
         switch (elements_kind) {

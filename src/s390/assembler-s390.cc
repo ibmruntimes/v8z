@@ -1535,6 +1535,15 @@ void Assembler::rr_form(Opcode op, Register r1, Register r2) {
     emit2bytes(op*B8 | r1.code()*B4 | r2.code());
 }
 
+void Assembler::rr_double_form(Opcode op,
+                               DoubleRegister r1,
+                               DoubleRegister r2) {
+    ASSERT(is_uint8(op));
+    // ASSERT(is_uint4(r1.code()));
+    // ASSERT(is_uint4(r2.code()));
+    emit2bytes(op*B8 | r1.code()*B4 | r2.code());
+}
+
 // RR2 format: <insn> M1,R2
 //    +--------+----+----+
 //    | OpCode | M1 | R2 |
@@ -1576,6 +1585,18 @@ void Assembler::rx_form(Opcode op,
     emit4bytes(op*B24 | r1.code()*B20 |
              x2.code()*B16 | b2.code()*B12 | d2);
 }
+
+void Assembler::rx_double_form(Opcode op,
+                               DoubleRegister r1,
+                               Register x2,
+                               Register b2,
+                               Disp d2) {
+  ASSERT(is_uint8(op));
+  ASSERT(is_uint12(d2));
+    emit4bytes(op*B24 | r1.code()*B20 |
+             x2.code()*B16 | b2.code()*B12 | d2);
+}
+
 
 // RI1 format: <insn> R1,I2
 //    +--------+----+----+------------------+
@@ -1932,6 +1953,22 @@ void Assembler::rxy_form(Opcode op, Register r1, Register x2, Register b2,
                     (static_cast<uint64_t>(op & 0x00FF));
     emit6bytes(code);
 }
+
+void Assembler::rxy_double_form(Opcode op, DoubleRegister r1,
+                                Register x2, Register b2,
+                                Disp d2) {
+    ASSERT(is_int20(d2));
+    ASSERT(is_uint16(op));
+    uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32  |
+                    (static_cast<uint64_t>(r1.code())) * B36     |
+                    (static_cast<uint64_t>(x2.code())) * B32     |
+                    (static_cast<uint64_t>(b2.code())) * B28     |
+                    (static_cast<uint64_t>(d2 & 0x0FFF)) * B16   |
+                    (static_cast<uint64_t>(d2 & 0x0FF000)) >> 4  |
+                    (static_cast<uint64_t>(op & 0x00FF));
+    emit6bytes(code);
+}
+
 
 // RRS format: <insn> R1,R2,M3,D4(B4)
 //    +--------+----+----+----+-------------+----+---+--------+
@@ -3619,28 +3656,28 @@ void Assembler::sdbr(Register r1, Register r2) {
 }
 
 // Store (L)
-void Assembler::std(Register r1, const MemOperand& opnd) {
-  rx_form(STD, r1, opnd.rx(), opnd.rb(), opnd.offset());
+void Assembler::std(DoubleRegister r1, const MemOperand& opnd) {
+  rx_double_form(STD, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 // Store (L)
-void Assembler::stdy(Register r1, const MemOperand& opnd) {
-  rxe_form(STDY, r1, opnd.rx(), opnd.rb(), opnd.offset());
+void Assembler::stdy(DoubleRegister r1, const MemOperand& opnd) {
+  rxy_double_form(STDY, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 // Load (L)
-void Assembler::ld(Register r1, const MemOperand& opnd) {
-  rx_form(LD, r1, opnd.rx(), opnd.rb(), opnd.offset());
+void Assembler::ld(DoubleRegister r1, const MemOperand& opnd) {
+  rx_double_form(LD, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 // Load (L)
-void Assembler::ldy(Register r1, const MemOperand& opnd) {
-  rx_form(LDY, r1, opnd.rx(), opnd.rb(), opnd.offset());
+void Assembler::ldy(DoubleRegister r1, const MemOperand& opnd) {
+  rx_double_form(LDY, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 // Load Register-Register (L)
-void Assembler::ldr(Register r1, Register r2) {
-  rr_form(LDR, r1, r2);
+void Assembler::ldr(DoubleRegister r1, DoubleRegister r2) {
+  rr_double_form(LDR, r1, r2);
 }
 
 // end of S390instructions

@@ -4582,6 +4582,25 @@ void MacroAssembler::LoadlB(Register dst, const MemOperand& mem) {
 #endif
 }
 
+void MacroAssembler::LoadF(DoubleRegister dst, const MemOperand& mem) {
+  // for 32bit and 64bit we all use 64bit floating point regs
+  if (is_uint12(mem.offset())) {
+    ld(dst, mem);
+  } else {
+    ldy(dst, mem);
+  }
+}
+
+void MacroAssembler::StoreF(DoubleRegister dst, const MemOperand& mem) {
+  // for 32bit and 64bit we all use 64bit floating point regs
+  if (is_uint12(mem.offset())) {
+    std(dst, mem);
+  } else {
+    stdy(dst, mem);
+  }
+}
+
+
 // Variable length depending on whether offset fits into immediate field
 // MemOperand of RX or RXY format
 void MacroAssembler::StoreW(Register src, const MemOperand& mem,
