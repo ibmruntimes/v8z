@@ -4185,11 +4185,13 @@ void MacroAssembler::Or(Register dst, const Operand& opnd) {
 #endif
 }
 
+#if 0
 void MacroAssembler::Or(Register dst, Register src, const Operand& opnd) {
   ASSERT(!opnd.is_reg());
   if (!dst.is(src)) LoadRR(dst, src);
   Or(dst, opnd);
 }
+#endif
 
 void MacroAssembler::Xor(Register dst, Register src) {
 #if V8_TARGET_ARCH_S390X
