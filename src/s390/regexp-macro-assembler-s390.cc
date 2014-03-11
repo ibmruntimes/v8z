@@ -147,7 +147,7 @@ RegExpMacroAssemblerPPC::RegExpMacroAssemblerPPC(
   // If the code gets too big or corrupted, an internal exception will be
   // raised, and we will exit right away.
   __ bind(&internal_failure_label_);
-  __ lhi(r3_p, Operand(FAILURE));
+  __ LoadImmP(r3_p, Operand(FAILURE));
   __ Ret();
   __ bind(&start_label_);  // And then continue from here.
 }
@@ -295,7 +295,7 @@ void RegExpMacroAssemblerPPC::CheckCharacters(Vector<const uc16> str,
         __ Cmpi(r4_p, Operand(str[i]));
       } else {
         if (match_high_byte != stored_high_byte) {
-          __ lhi(r5_p, Operand(match_high_byte));
+          __ LoadImmP(r5_p, Operand(match_high_byte));
           stored_high_byte = match_high_byte;
         }
         __ LoadRR(r6_p, r5_p);
@@ -708,7 +708,7 @@ bool RegExpMacroAssemblerPPC::CheckSpecialCharacterClass(uc16 type,
 
 
 void RegExpMacroAssemblerPPC::Fail() {
-  __ lhi(r3_p, Operand(FAILURE));
+  __ LoadImmP(r3_p, Operand(FAILURE));
   __ b(&exit_label_);
 }
 
@@ -757,7 +757,7 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
     // from generated code.
     __ LoadRR(frame_pointer(), sp);
     __ AddP(frame_pointer(), Operand(8 * kPointerSize));
-    __ lhi(r3_p, Operand::Zero());
+    __ LoadImmP(r3_p, Operand::Zero());
     __ push(r3_p);  // Make room for success counter and initialize it to 0.
     __ push(r3_p);  // Make room for "position-1" constant (value is irrelevant)
     // Check if we have space on the stack for registers.
@@ -777,7 +777,7 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
     __ bge(&stack_ok);
     // Exit with OutOfMemory exception. There is not enough space on the stack
     // for our working registers.
-    __ lhi(r3_p, Operand(EXCEPTION));
+    __ LoadImmP(r3_p, Operand(EXCEPTION));
     __ b(&return_r3);
 
     __ bind(&stack_limit_hit);
@@ -817,7 +817,7 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
     // Load newline if index is at start, previous character otherwise.
     __ Cmpi(r4_p, Operand::Zero());
     __ bne(&load_char_start_regexp);
-    __ lhi(current_character(), Operand('\n'));
+    __ LoadImmP(current_character(), Operand('\n'));
     __ b(&start_regexp);
 
     // Global regexp restarts matching here.
@@ -833,7 +833,7 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
         // One slot beyond address of register 0.
         __ LoadRR(r4_p, frame_pointer());
         __ AddP(r4_p, Operand(kRegisterZero + kPointerSize));
-        __ lhi(r5_p, Operand(num_saved_registers_));
+        __ LoadImmP(r5_p, Operand(num_saved_registers_));
         __ mtctr(r5_p);
         Label init_loop;
         __ bind(&init_loop);
@@ -935,7 +935,7 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
 
         __ b(&load_char_start_regexp);
       } else {
-        __ lhi(r3_p, Operand(SUCCESS));
+        __ LoadImmP(r3_p, Operand(SUCCESS));
       }
     }
 
@@ -1007,7 +1007,7 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
       // If any of the code above needed to exit with an exception.
       __ bind(&exit_with_exception);
       // Exit with Result EXCEPTION(-1) to signal thrown exception.
-      __ lhi(r3_p, Operand(EXCEPTION));
+      __ LoadImmP(r3_p, Operand(EXCEPTION));
       __ b(&return_r3);
     }
   }
