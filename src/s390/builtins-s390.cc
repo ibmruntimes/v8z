@@ -1176,6 +1176,7 @@ static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
 
   // Enter an internal frame.
   {
+    // FrameScope ends up calling MacroAssembler::EnterFrame here
     FrameScope scope(masm, StackFrame::INTERNAL);
 
     // Set up the context from the function argument.
@@ -1185,7 +1186,8 @@ static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
 
     // Push the function and the receiver onto the stack.
     __ lay(sp, MemOperand(sp, -2 * kPointerSize));
-    __ stm(r3, r4, MemOperand(sp));
+    __ StoreP(r3, MemOperand(sp, 1 * kPointerSize));
+    __ StoreP(r4, MemOperand(sp, 0 * kPointerSize));
 
     // Copy arguments to the stack in a loop from argv to sp.
     // The arguments are actually placed in reverse order on sp
@@ -1217,7 +1219,6 @@ static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
     __ LoadRR(r7, r6);
     __ LoadRR(r8, r6);
     __ LoadRR(r9, r6);
-    __ LoadRR(r10, r6);
 
     // Invoke the code and pass argc as r2.
     __ LoadRR(r2, r5);
