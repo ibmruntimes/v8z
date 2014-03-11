@@ -1294,32 +1294,6 @@ void Assembler::stfsux(const DwVfpRegister frs, const MemOperand &src) {
   emit(EXT2 | STFSUX | frs.code()*B21 | rb.code()*B16 | rx.code()*B11 |LeaveRC);
 }
 
-void Assembler::fsub(const DwVfpRegister frt,
-                     const DwVfpRegister fra,
-                     const DwVfpRegister frb,
-                     RCBit rc) {
-  a_form(EXT4 | FSUB, frt, fra, frb, rc);
-}
-
-void Assembler::fadd(const DwVfpRegister frt,
-                     const DwVfpRegister fra,
-                     const DwVfpRegister frb,
-                     RCBit rc) {
-  a_form(EXT4 | FADD, frt, fra, frb, rc);
-}
-void Assembler::fmul(const DwVfpRegister frt,
-                     const DwVfpRegister fra,
-                     const DwVfpRegister frc,
-                     RCBit rc) {
-  emit(EXT4 | FMUL | frt.code()*B21 | fra.code()*B16 | frc.code()*B6 | rc);
-}
-void Assembler::fdiv(const DwVfpRegister frt,
-                     const DwVfpRegister fra,
-                     const DwVfpRegister frb,
-                     RCBit rc) {
-  a_form(EXT4 | FDIV, frt, fra, frb, rc);
-}
-
 void Assembler::fcmpu(const DwVfpRegister fra,
                       const DwVfpRegister frb,
                       CRegister cr) {

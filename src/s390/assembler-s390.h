@@ -1933,14 +1933,6 @@ SS2_FORM(zap);
   void stfsx(const DwVfpRegister frs, const MemOperand& src);
   void stfsux(const DwVfpRegister frs, const MemOperand& src);
 
-  void fadd(const DwVfpRegister frt, const DwVfpRegister fra,
-            const DwVfpRegister frb, RCBit rc = LeaveRC);
-  void fsub(const DwVfpRegister frt, const DwVfpRegister fra,
-            const DwVfpRegister frb, RCBit rc = LeaveRC);
-  void fdiv(const DwVfpRegister frt, const DwVfpRegister fra,
-            const DwVfpRegister frb, RCBit rc = LeaveRC);
-  void fmul(const DwVfpRegister frt, const DwVfpRegister fra,
-            const DwVfpRegister frc, RCBit rc = LeaveRC);
   void fcmpu(const DwVfpRegister fra, const DwVfpRegister frb,
              CRegister cr = cr7);
   void fmr(const DwVfpRegister frt, const DwVfpRegister frb,

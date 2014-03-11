@@ -2301,16 +2301,16 @@ void BinaryOpStub::GenerateFPOperation(MacroAssembler* masm,
       //   d2: Right value
       switch (op_) {
         case Token::ADD:
-          __ fadd(d1, d1, d2);
+          __ adbr(d1, d2);
           break;
         case Token::SUB:
-          __ fsub(d1, d1, d2);
+          __ sdbr(d1, d2);
           break;
         case Token::MUL:
-          __ fmul(d1, d1, d2);
+          __ mdbr(d1, d2);
           break;
         case Token::DIV:
-          __ fdiv(d1, d1, d2);
+          __ ddbr(d1, d2);
           break;
         case Token::MOD:
           // Call the C function to handle the double operation.
@@ -2605,16 +2605,16 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
       Label return_heap_number;
       switch (op_) {
         case Token::ADD:
-          __ fadd(d1, d1, d2);
+          __ adbr(d1, d2);
           break;
         case Token::SUB:
-          __ fsub(d1, d1, d2);
+          __ sdbr(d1, d2);
           break;
         case Token::MUL:
-          __ fmul(d1, d1, d2);
+          __ mdbr(d1, d2);
           break;
         case Token::DIV:
-          __ fdiv(d1, d1, d2);
+          __ ddbr(d1, d2);
           break;
         case Token::MOD: {
           Label pop_and_call_runtime;
@@ -3365,7 +3365,8 @@ void MathPowStub::Generate(MacroAssembler* masm) {
       __ bind(&not_minus_inf1);
 
       // Add +0 to convert -0 to +0.
-      __ fadd(double_scratch, double_base, kDoubleRegZero);
+      __ ldr(double_scratch, double_base);
+      __ adbr(double_scratch, kDoubleRegZero);
       __ fsqrt(double_result, double_scratch);
       __ b(&done);
 
@@ -3384,10 +3385,11 @@ void MathPowStub::Generate(MacroAssembler* masm) {
       __ bind(&not_minus_inf2);
 
       // Add +0 to convert -0 to +0.
-      __ fadd(double_scratch, double_base, kDoubleRegZero);
+      __ ldr(double_scratch, double_base);
+      __ adbr(double_scratch, kDoubleRegZero);
       __ LoadDoubleLiteral(double_result, 1.0, scratch);
       __ fsqrt(double_scratch, double_scratch);
-      __ fdiv(double_result, double_result, double_scratch);
+      __ ddbr(double_result, double_scratch);
       __ b(&done);
     }
 
@@ -3433,20 +3435,23 @@ void MathPowStub::Generate(MacroAssembler* masm) {
   __ LoadRR(scratch2, scratch);
   __ AndP(scratch2, Operand(1));
   __ beq(&no_carry /*, cr0*/);
-  __ fmul(double_result, double_result, double_scratch);
+  __ mdbr(double_result, double_scratch);
   __ bind(&no_carry);
   __ ShiftRightArithImm(scratch, scratch, 1, SetRC);
   __ beq(&loop_end /*, cr0*/);
-  __ fmul(double_scratch, double_scratch, double_scratch);
+  __ mdbr(double_scratch, double_scratch);
   __ b(&while_true);
   __ bind(&loop_end);
 
   __ Cmpi(exponent, Operand::Zero());
   __ bge(&done);
 
+  // get 1/double_result:
+  __ ldr(double_scratch, double_result);
   __ lhi(scratch2, Operand(1));
-  FloatingPointHelper::ConvertIntToDouble(masm, scratch2, double_scratch);
-  __ fdiv(double_result, double_scratch, double_result);
+  FloatingPointHelper::ConvertIntToDouble(masm, scratch2, double_result);
+  __ ddbr(double_result, double_scratch);
+
   // Test whether result is zero.  Bail out to check for subnormal result.
   // Due to subnormals, x^-y == (1/x)^y does not hold in all cases.
   __ fcmpu(double_result, kDoubleRegZero);
