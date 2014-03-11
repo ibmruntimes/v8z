@@ -175,13 +175,13 @@ class RegExpMacroAssemblerPPC: public NativeRegExpMacroAssembler {
 
   // Register holding the current input position as negative offset from
   // the end of the string.
-  inline Register current_input_offset() { return r27; }
+  inline Register current_input_offset() { return r27_p; }
 
   // The register containing the current character after LoadCurrentCharacter.
-  inline Register current_character() { return r28; }
+  inline Register current_character() { return r28_p; }
 
   // Register holding address of the end of the input string.
-  inline Register end_of_input_address() { return r30; }
+  inline Register end_of_input_address() { return r30_p; }
 
   // Register holding the frame address. Local variables, parameters and
   // regexp registers are addressed relative to this.
@@ -189,10 +189,10 @@ class RegExpMacroAssemblerPPC: public NativeRegExpMacroAssembler {
 
   // The register containing the backtrack stack top. Provides a meaningful
   // name to the register.
-  inline Register backtrack_stackpointer() { return r29; }
+  inline Register backtrack_stackpointer() { return r29_p; }
 
   // Register holding pointer to the current code object.
-  inline Register code_pointer() { return r26; }
+  inline Register code_pointer() { return r26_p; }
 
   // Byte size of chars in the string to match (decided by the Mode argument)
   inline int char_size() { return static_cast<int>(mode_); }
