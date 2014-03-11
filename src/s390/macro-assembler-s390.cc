@@ -271,7 +271,7 @@ void MacroAssembler::Move(Register dst, Register src, Condition cond) {
 
 void MacroAssembler::Move(DoubleRegister dst, DoubleRegister src) {
   if (!dst.is(src)) {
-    fmr(dst, src);
+    ldr(dst, src);
   }
 }
 
@@ -744,7 +744,7 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles,
 }
 
 void MacroAssembler::GetCFunctionDoubleResult(const DoubleRegister dst) {
-  fmr(dst, d1);
+  ldr(dst, d1);
 }
 
 

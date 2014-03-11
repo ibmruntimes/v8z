@@ -1621,13 +1621,13 @@ void LCodeGen::DoMathMinMax(LMathMinMax* instr) {
 
     __ bind(&return_right);
     if (!right_reg.is(result_reg)) {
-      __ fmr(result_reg, right_reg);
+      __ ldr(result_reg, right_reg);
     }
     __ b(&done);
 
     __ bind(&return_left);
     if (!left_reg.is(result_reg)) {
-      __ fmr(result_reg, left_reg);
+      __ ldr(result_reg, left_reg);
     }
     __ bind(&done);
   }
