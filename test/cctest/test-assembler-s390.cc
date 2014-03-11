@@ -1135,7 +1135,7 @@ TEST(13) {
   __ ar(r0, r0);                             // add 2 bytes to align
   __ madb(r13, r13, r13, r13, 0x123);        // RXF FORMAT
   __ ar(r0, r0);                             // add 2 bytes to align
-  __ clc(MemOperand(r15, 0x456), MemOperand(r15, 0x789), 0x12);
+  __ clc(MemOperand(r13, 0x456), MemOperand(r13, 0x789), 0x12);
   __ ar(r0, r0);                             // add 2 bytes to align
 
   bufPos += 48;
