@@ -1605,11 +1605,13 @@ void LCodeGen::DoMathMinMax(LMathMinMax* instr) {
     if (operation == HMathMinMax::kMathMin) {
       // For min we want logical-or of sign bit: -(-L + -R)
       __ fneg(left_reg, left_reg);
-      __ fsub(result_reg, left_reg, right_reg);
+      __ ldr(result_reg, left_reg);
+      __ sdbr(result_reg, right_reg);
       __ fneg(result_reg, result_reg);
     } else {
       // For max we want logical-and of sign bit: (L + R)
-      __ fadd(result_reg, left_reg, right_reg);
+      __ ldr(result_reg, left_reg);
+      __ adbr(result_reg, right_reg);
     }
     __ b(&done);
 
@@ -1636,18 +1638,19 @@ void LCodeGen::DoArithmeticD(LArithmeticD* instr) {
   DoubleRegister left = ToDoubleRegister(instr->left());
   DoubleRegister right = ToDoubleRegister(instr->right());
   DoubleRegister result = ToDoubleRegister(instr->result());
+  __ ldr(result, left);
   switch (instr->op()) {
     case Token::ADD:
-      __ fadd(result, left, right);
+      __ adbr(result, right);
       break;
     case Token::SUB:
-      __ fsub(result, left, right);
+      __ sdbr(result, right);
       break;
     case Token::MUL:
-      __ fmul(result, left, right);
+      __ mdbr(result, right);
       break;
     case Token::DIV:
-      __ fdiv(result, left, right);
+      __ ddbr(result, right);
       break;
     case Token::MOD: {
       // Save r3_p-r6_p on the stack.
@@ -3511,7 +3514,7 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
   DeoptimizeIf(ge, instr->environment());
 
   __ LoadDoubleLiteral(double_scratch0(), 0.5, scratch);
-  __ fadd(double_scratch0(), input, double_scratch0());
+  __ adbr(double_scratch0(), input);
 
   // Save the original sign for later comparison.
   STATIC_ASSERT(HeapNumber::kSignMask == 0x80000000u);
@@ -3591,7 +3594,8 @@ void LCodeGen::DoMathPowHalf(LUnaryMathOperation* instr) {
 
   // Add +0 to convert -0 to +0.
   __ bind(&skip);
-  __ fadd(result, input, kDoubleRegZero);
+  __ ldr(result, input);
+  __ adbr(result, kDoubleRegZero);
   __ fsqrt(result, result);
   __ bind(&done);
 }
@@ -3724,7 +3728,8 @@ void LCodeGen::DoRandom(LRandom* instr) {
   __ AddP(sp, Operand(8));
 
   // Subtract and store the result in the heap number.
-  __ fsub(d7, d7, d8);
+  // __ fsub(d7, d7, d8);
+  __ sdbr(d7, d8);
 }
 
 
