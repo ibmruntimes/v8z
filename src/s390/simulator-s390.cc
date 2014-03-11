@@ -3168,15 +3168,6 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       SetS390ConditionCode<int32_t>(alu_out, 0);
       break;
     }
-    case CDBR: {
-      RREInstruction* rreInstr = reinterpret_cast<RREInstruction*>(instr);
-      int r1 = rreInstr->R1Value();
-      int r2 = rreInstr->R2Value();
-      double r1_val = get_double_from_d_register(r1);
-      double r2_val = get_double_from_d_register(r2);
-      SetS390ConditionCode<double>(r1_val, r2_val);
-      break;
-    }
     case LGFR: {
       RREInstruction* rreInstr = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rreInstr->R1Value();
@@ -3185,6 +3176,47 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       set_register(r1, r2_val);
       break;
     }
+    case ADBR:
+    case SDBR:
+    case MDBR:
+    case DDBR:
+    case CDBR: {
+      RREInstruction* rreInstr = reinterpret_cast<RREInstruction*>(instr);
+      int r1 = rreInstr->R1Value();
+      int r2 = rreInstr->R2Value();
+      double r1_val = get_double_from_d_register(r1);
+      double r2_val = get_double_from_d_register(r2);
+      switch (op) {
+        case ADBR:
+          r1_val += r2_val;
+          set_d_register_from_double(r1, r1_val);
+          SetS390ConditionCode<double>(r1_val, 0);
+          break;
+        case SDBR:
+          r1_val -= r2_val;
+          set_d_register_from_double(r1, r1_val);
+          SetS390ConditionCode<double>(r1_val, 0);
+          break;
+        case MDBR:
+          r1_val *= r2_val;
+          set_d_register_from_double(r1, r1_val);
+          SetS390ConditionCode<double>(r1_val, 0);
+          break;
+        case DDBR:
+          r1_val /= r2_val;
+          set_d_register_from_double(r1, r1_val);
+          SetS390ConditionCode<double>(r1_val, 0);
+          break;
+        case CDBR:
+          SetS390ConditionCode<double>(r1_val, r2_val);
+          break;
+        default:
+          UNREACHABLE();
+          break;
+      }
+      break;
+    }
+
     default:
       UNREACHABLE();
       return false;
@@ -3578,6 +3610,49 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       else
         alu_out = r1_val - i2;
       set_register(r1, (intptr_t)alu_out);
+      break;
+    }
+    case CDB:
+    case ADB:
+    case SDB:
+    case MDB:
+    case DDB: {
+      RXEInstruction* rxeInstr = reinterpret_cast<RXEInstruction*>(instr);
+      int b2 = rxeInstr->B2Value();
+      int x2 = rxeInstr->X2Value();
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+      intptr_t d2_val = rxeInstr->D2Value();
+      double r1_val = get_double_from_d_register(rxeInstr->R1Value());
+      double *dptr = reinterpret_cast<double*>(ReadDW(b2_val+x2_val+d2_val));
+      switch (op) {
+        case CDB:
+          SetS390ConditionCode<double>(r1_val, *dptr);
+          break;
+        case ADB:
+          r1_val += *dptr;
+          set_d_register_from_double(r1, r1_val);
+          SetS390ConditionCode<double>(r1_val, 0);
+          break;
+        case SDB:
+          r1_val -= *dptr;
+          set_d_register_from_double(r1, r1_val);
+          SetS390ConditionCode<double>(r1_val, 0);
+          break;
+        case MDB:
+          r1_val *= *dptr;
+          set_d_register_from_double(r1, r1_val);
+          SetS390ConditionCode<double>(r1_val, 0);
+          break;
+        case DDB:
+          r1_val /= *dptr;
+          set_d_register_from_double(r1, r1_val);
+          SetS390ConditionCode<double>(r1_val, 0);
+          break;
+       default:
+          UNREACHABLE();
+          break;
+      }
       break;
     }
     default:

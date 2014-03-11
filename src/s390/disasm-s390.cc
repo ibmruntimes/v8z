@@ -1117,7 +1117,7 @@ bool Decoder::DecodeTwoByte(Instruction* instr) {
       case SLR: Format(instr, "slr\t'r1,'r2"); break;
       case LBR: Format(instr, "lbr\t'r1,'r2"); break;
       case BASR: Format(instr, "basr\t'r1,'r2"); break;
-
+      case LDR: Format(instr, "ldr\t'r1,'r2"); break;
     default:
       return false;
   }
@@ -1197,6 +1197,14 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case ST: Format(instr, "st\t'r1,'d1('r2d,'r3)"); break;
       case STC: Format(instr, "stc\t'r1,'d1('r2d,'r3)"); break;
       case IC_z: Format(instr, "ic\t'r1,'d1('r2d,'r3)"); break;
+      case LD: Format(instr, "ld\t'r1,'d1('r2d,'r3)"); break;
+      case STD:Format(instr, "std\t'r1,'d1('r2d,'r3)"); break;
+      case CGDBR: Format(instr, "cgdbr\t'r5,'r6"); break;
+      case CDGBR: Format(instr, "cdgbr\t'r5,'r6"); break;
+      case ADBR: Format(instr, "adbr\t'r5,'r6"); break;
+      case SDBR: Format(instr, "sdbr\t'r5,'r6"); break;
+      case MDBR: Format(instr, "mdbr\t'r5,'r6"); break;
+      case DDBR: Format(instr, "ddbr\t'r5,'r6"); break;
     default:
       return false;
   }
@@ -1272,6 +1280,12 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
     case SLFI: Format(instr, "slfi\t'r1,'i7"); break;
     case NIHF: Format(instr, "nihf\t'r1,'i7"); break;
     case NILF: Format(instr, "nilf\t'r1,'i7"); break;
+    case LDY: Format(instr, "ldy\t'r1,'d2('r2d,'r3)"); break;
+    case STDY: Format(instr, "stdy\t'r1,'d2('r2d,'r3)"); break;
+    case ADB: Format(instr, "adb\t'r1,'d1('r2d, 'r3)"); break;
+    case SDB: Format(instr, "sdb\t'r1,'d1('r2d, 'r3)"); break;
+    case MDB: Format(instr, "mdb\t'r1,'d1('r2d, 'r3)"); break;
+    case DDB: Format(instr, "ddb\t'r1,'d1('r2d, 'r3)"); break;
     default:
       return false;
   }

@@ -1748,7 +1748,27 @@ class SSInstruction : Instruction {
       return Bits<SixByteInstr, int>(11, 0);
     }
     inline int Length() const {
-      return Bits<SixByteInstr, int>(39, 32);
+      return 6;
+    }
+};
+
+// RXE Instruction
+class RXEInstruction : Instruction {
+  public:
+    inline int R1Value() const {
+      return Bits<SixByteInstr, int>(39, 36);
+    }
+    inline int X2Value() const {
+      return Bits<SixByteInstr, int>(35, 32);
+    }
+    inline int B2Value() const {
+      return Bits<SixByteInstr, int>(31, 28);
+    }
+    inline int D2Value() const {
+      return Bits<SixByteInstr, int>(27, 16);
+    }
+    inline int Length() const {
+      return 6;
     }
 };
 
