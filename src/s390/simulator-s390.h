@@ -274,7 +274,7 @@ class Simulator {
   bool DecodeSixByte(Instruction* instr);
   bool S390InstructionDecode(Instruction *instr);
   template <typename T>
-  void SetS390ConditionCode(T lhs, T rhs, bool check_overflow = false) {
+  void SetS390ConditionCode(T lhs, T rhs) {
     if (lhs == rhs) {
       condition_reg_ = CC_EQ;
     } else if (lhs < rhs) {
@@ -283,6 +283,24 @@ class Simulator {
       condition_reg_ = CC_GT;
     }
   }
+
+  template <typename T>
+  void SetS390OverflowCode(T left, T right, T alu_out, bool addition) {
+    bool overflow;
+    if (addition) {
+               // operands have the same sign
+      overflow = ((left >= 0 && right >= 0) || (left < 0 && right < 0))
+               // and operands and result have different sign
+              && ((left < 0 && alu_out >= 0) || (left >= 0 && alu_out < 0));
+    } else {
+               // operands have different signs
+      overflow = ((left < 0 && right >= 0) || (left >= 0 && right < 0))
+               // and first operand and result have different signs
+               && ((left < 0 && alu_out >= 0) || (left >= 0 && alu_out < 0));
+    }
+    return overflow;
+  }
+
   bool TestConditionCode(Condition mask) {
     return (condition_reg_ & mask) != 0;
   }

@@ -3696,7 +3696,7 @@ void KeyedLoadStubCompiler::GenerateLoadExternalArray(
       __ SmiToIntArrayOffset(value, key);
       __ LoadlW(value, MemOperand(r6, value));
 #if V8_TARGET_ARCH_S390X
-      __ extsw(value, value);
+      __ lgfr(value, value);
 #endif
       break;
     case EXTERNAL_UNSIGNED_INT_ELEMENTS:

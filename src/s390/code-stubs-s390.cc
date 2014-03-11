@@ -664,7 +664,7 @@ void FloatingPointHelper::ConvertIntToDouble(MacroAssembler* masm,
 
   // sign-extend src to 64-bit and store it to temp double on the stack
 #if V8_TARGET_ARCH_S390X
-  __ extsw(r0_p, src);
+  __ lgfr(r0_p, src);
   __ stg(r0_p, MemOperand(sp, 0));
 #else
   __ srawi(r0_p, src, 31);
@@ -726,7 +726,7 @@ void FloatingPointHelper::ConvertIntToFloat(MacroAssembler* masm,
 
   // sign-extend src to 64-bit and store it to temp double on the stack
 #if V8_TARGET_ARCH_S390X
-  __ extsw(int_scratch, src);
+  __ lgfr(int_scratch, src);
   __ stg(int_scratch, MemOperand(sp, 0));
 #else
   __ srawi(int_scratch, src, 31);

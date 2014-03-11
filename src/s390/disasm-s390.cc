@@ -746,12 +746,6 @@ void Decoder::DecodeExt2(Instruction* instr) {
       Format(instr, "extsh'.  'ra, 'rs");
       return;
     }
-#if V8_TARGET_ARCH_S390X
-    case EXTSW: {
-      Format(instr, "extsw'.  'ra, 'rs");
-      return;
-    }
-#endif
     case EXTSB: {
       Format(instr, "extsb'.  'ra, 'rs");
       return;
