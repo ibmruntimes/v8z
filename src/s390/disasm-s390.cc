@@ -1207,6 +1207,7 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case SDBR: Format(instr, "sdbr\t'r5,'r6"); break;
       case MDBR: Format(instr, "mdbr\t'r5,'r6"); break;
       case DDBR: Format(instr, "ddbr\t'r5,'r6"); break;
+      case SQDBR: Format(instr, "sqdbr\t'r5,'r6"); break;
     default:
       return false;
   }
@@ -1288,6 +1289,7 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
     case SDB: Format(instr, "sdb\t'r1,'d1('r2d, 'r3)"); break;
     case MDB: Format(instr, "mdb\t'r1,'d1('r2d, 'r3)"); break;
     case DDB: Format(instr, "ddb\t'r1,'d1('r2d, 'r3)"); break;
+    case SQDB: Format(instr, "sqdb\t'r1,'d1('r2d, 'r3)"); break;
     default:
       return false;
   }

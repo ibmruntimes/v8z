@@ -2811,8 +2811,6 @@ RRF1_FORM_EMIT(slhhlr, SLHHLR)
 RXF_FORM_EMIT(slxt, SLXT)
 SS2_FORM_EMIT(sp_z, SP)
 RR_FORM_EMIT(spm, SPM)
-RXE_FORM_EMIT(sqdb, SQDB)
-RRE_FORM_EMIT(sqdbr, SQDBR)
 RXE_FORM_EMIT(sqeb, SQEB)
 RRE_FORM_EMIT(sqebr, SQEBR)
 RRE_FORM_EMIT(sqxbr, SQXBR)
@@ -3601,6 +3599,19 @@ void Assembler::sdb(DoubleRegister r1, const MemOperand& opnd) {
 // Subtract Register-Register (LB)
 void Assembler::sdbr(DoubleRegister r1, DoubleRegister r2) {
   rre_form(SDBR,
+           Register::from_code(r1.code()),
+           Register::from_code(r2.code()));
+}
+
+// Square Root (LB)
+void Assembler::sqdb(DoubleRegister r1, const MemOperand& opnd) {
+  rxe_form(SQDB, Register::from_code(r1.code()),
+           opnd.rx(), opnd.rb(), opnd.offset());
+}
+
+// Square Root Register-Register (LB)
+void Assembler::sqdbr(DoubleRegister r1, DoubleRegister r2) {
+  rre_form(SQDBR,
            Register::from_code(r1.code()),
            Register::from_code(r2.code()));
 }

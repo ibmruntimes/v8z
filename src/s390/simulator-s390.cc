@@ -3185,7 +3185,8 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
     case CDFBR:
     case CDGBR:
     case CFDBR:
-    case CGDBR: {
+    case CGDBR:
+    case SQDBR: {
       RREInstruction* rreInstr = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rreInstr->R1Value();
       int r2 = rreInstr->R2Value();
@@ -3218,13 +3219,14 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
           double r1_val = static_cast<double>(r2_val);
           set_d_register_from_double(r1, r1_val);
         } else if (op == CFDBR) {
-          double r2_val = get_double_from_d_register(r2);
           int32_t r1_val = static_cast<int32_t>(r2_val);
           set_low_register<int32_t>(r1, r1_val);
         } else if (op == CGDBR) {
-          double r2_val = get_double_from_d_register(r2);
           int64_t r1_val = static_cast<int64_t>(r2_val);
           set_register(r1, r1_val);
+        } else if (op == SQDBR) {
+          r1_val = sqrt(r2_val);
+          set_d_register_from_double(r1, r1_val);
         } else {
           UNREACHABLE();
         }
@@ -3629,7 +3631,8 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
     case ADB:
     case SDB:
     case MDB:
-    case DDB: {
+    case DDB:
+    case SQDB: {
       RXEInstruction* rxeInstr = reinterpret_cast<RXEInstruction*>(instr);
       int b2 = rxeInstr->B2Value();
       int x2 = rxeInstr->X2Value();
@@ -3662,6 +3665,9 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
           set_d_register_from_double(r1, r1_val);
           SetS390ConditionCode<double>(r1_val, 0);
           break;
+       case SQDB:
+          r1_val = sqrt(*dptr);
+          set_d_register_from_double(r1, r1_val);
        default:
           UNREACHABLE();
           break;
