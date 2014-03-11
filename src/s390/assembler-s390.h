@@ -1933,8 +1933,6 @@ SS2_FORM(zap);
 
   void fcmpu(const DwVfpRegister fra, const DwVfpRegister frb,
              CRegister cr = cr7);
-  void fmr(const DwVfpRegister frt, const DwVfpRegister frb,
-           RCBit rc = LeaveRC);
   void fctiwz(const DwVfpRegister frt, const DwVfpRegister frb);
   void fctiw(const DwVfpRegister frt, const DwVfpRegister frb);
   void frim(const DwVfpRegister frt, const DwVfpRegister frb);

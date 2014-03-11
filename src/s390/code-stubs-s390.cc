@@ -3232,7 +3232,7 @@ void TranscendentalCacheStub::GenerateCallCFunction(MacroAssembler* masm,
   __ mflr(r0_p);
   __ push(r0_p);
   __ PrepareCallCFunction(0, 1, scratch);
-  __ fmr(d1, d2);
+  __ ldr(d1, d2);
   AllowExternalCallThatCantCauseGC scope(masm);
   switch (type_) {
     case TranscendentalCache::SIN:
@@ -3380,7 +3380,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
       __ LoadDoubleLiteral(double_scratch, -V8_INFINITY, scratch);
       __ fcmpu(double_base, double_scratch);
       __ bne(&not_minus_inf2);
-      __ fmr(double_result, kDoubleRegZero);
+      __ ldr(double_result, kDoubleRegZero);
       __ b(&done);
       __ bind(&not_minus_inf2);
 
@@ -3419,7 +3419,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
     // Exponent has previously been stored into scratch as untagged integer.
     __ LoadRR(exponent, scratch);
   }
-  __ fmr(double_scratch, double_base);  // Back up base.
+  __ ldr(double_scratch, double_base);  // Back up base.
   __ LoadImmP(scratch2, Operand(1));
   FloatingPointHelper::ConvertIntToDouble(masm, scratch2, double_result);
 

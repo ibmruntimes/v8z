@@ -174,7 +174,7 @@ void LGapResolver::BreakCycle(int index) {
   } else if (source->IsStackSlot()) {
     __ LoadP(kSavedValueRegister, cgen_->ToMemOperand(source));
   } else if (source->IsDoubleRegister()) {
-    __ fmr(kScratchDoubleReg, cgen_->ToDoubleRegister(source));
+    __ ldr(kScratchDoubleReg, cgen_->ToDoubleRegister(source));
   } else if (source->IsDoubleStackSlot()) {
     __ LoadF(kScratchDoubleReg, cgen_->ToMemOperand(source));
   } else {
@@ -195,7 +195,7 @@ void LGapResolver::RestoreValue() {
   } else if (saved_destination_->IsStackSlot()) {
     __ StoreP(kSavedValueRegister, cgen_->ToMemOperand(saved_destination_));
   } else if (saved_destination_->IsDoubleRegister()) {
-    __ fmr(cgen_->ToDoubleRegister(saved_destination_), kScratchDoubleReg);
+    __ ldr(cgen_->ToDoubleRegister(saved_destination_), kScratchDoubleReg);
   } else if (saved_destination_->IsDoubleStackSlot()) {
     __ StoreF(kScratchDoubleReg, cgen_->ToMemOperand(saved_destination_));
   } else {
@@ -264,7 +264,7 @@ void LGapResolver::EmitMove(int index) {
   } else if (source->IsDoubleRegister()) {
     DoubleRegister source_register = cgen_->ToDoubleRegister(source);
     if (destination->IsDoubleRegister()) {
-      __ fmr(cgen_->ToDoubleRegister(destination), source_register);
+      __ ldr(cgen_->ToDoubleRegister(destination), source_register);
     } else {
       ASSERT(destination->IsDoubleStackSlot());
       __ StoreF(source_register, cgen_->ToMemOperand(destination));

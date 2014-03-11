@@ -1301,12 +1301,6 @@ void Assembler::fcmpu(const DwVfpRegister fra,
   emit(EXT4 | FCMPU | cr.code()*B23 | fra.code()*B16 | frb.code()*B11);
 }
 
-void Assembler::fmr(const DwVfpRegister frt,
-                    const DwVfpRegister frb,
-                    RCBit rc) {
-  emit(EXT4 | FMR | frt.code()*B21 | frb.code()*B11 | rc);
-}
-
 void Assembler::fctiwz(const DwVfpRegister frt,
                      const DwVfpRegister frb) {
   emit(EXT4 | FCTIWZ | frt.code()*B21 | frb.code()*B11);
