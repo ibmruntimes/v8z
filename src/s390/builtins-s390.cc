@@ -346,11 +346,11 @@ static void ArrayNativeCode(MacroAssembler* masm,
   AllocateEmptyJSArray(masm,
                        r4_p,
                        r5_p,
-                       r6,
+                       r6_p,
                        r7_p,
                        r8_p,
                        call_generic_code);
-  __ IncrementCounter(counters->array_function_native(), 1, r6, r7_p);
+  __ IncrementCounter(counters->array_function_native(), 1, r6_p, r7_p);
   // Set up return value, remove receiver from stack and return.
   __ LoadRR(r3_p, r5_p);
   __ AddP(sp, Operand(kPointerSize));
@@ -370,7 +370,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
   __ b(&empty_array);
 
   __ bind(&not_empty_array);
-  __ TestIfPositiveSmi(r5_p, r6);
+  __ TestIfPositiveSmi(r5_p, r6_p);
   __ bne(call_generic_code /*, cr0*/);
 
   // Handle construction of an empty array of a certain size. Bail out if size
@@ -387,7 +387,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
   AllocateJSArray(masm,
                   r4_p,
                   r5_p,
-                  r6,
+                  r6_p,
                   r7_p,
                   r8_p,
                   r9_p,
@@ -396,7 +396,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
                   call_generic_code);
   __ IncrementCounter(counters->array_function_native(), 1, r5_p, r7_p);
   // Set up return value, remove receiver and argument from stack and return.
-  __ LoadRR(r3_p, r6);
+  __ LoadRR(r3_p, r6_p);
   __ AddP(sp, Operand(2 * kPointerSize));
   __ blr();
 
@@ -412,7 +412,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
   AllocateJSArray(masm,
                   r4_p,
                   r5_p,
-                  r6,
+                  r6_p,
                   r7_p,
                   r8_p,
                   r9_p,
@@ -426,7 +426,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
   // elements_array_end points after the backing store therefore PreIndex is
   // used when filling the backing store.
   // r3_p: argc
-  // r6: JSArray
+  // r6_p: JSArray
   // r7_p: elements_array storage start (untagged)
   // r8_p: elements_array_end (untagged)
   // sp[0]: last argument
@@ -450,10 +450,10 @@ static void ArrayNativeCode(MacroAssembler* masm,
   // Remove caller arguments and receiver from the stack, setup return value and
   // return.
   // r3_p: argc
-  // r6: JSArray
+  // r6_p: JSArray
   // sp[0]: receiver
   __ AddP(sp, Operand(kPointerSize));
-  __ LoadRR(r3_p, r6);
+  __ LoadRR(r3_p, r6_p);
   __ blr();
 
   __ bind(&has_non_smi_element);
@@ -461,20 +461,20 @@ static void ArrayNativeCode(MacroAssembler* masm,
   __ CheckMap(r5_p, r22_p,
       Heap::kHeapNumberMapRootIndex, &not_double, DONT_DO_SMI_CHECK);
   __ bind(&cant_transition_map);
-  __ UndoAllocationInNewSpace(r6, r7_p);
+  __ UndoAllocationInNewSpace(r6_p, r7_p);
   __ b(call_generic_code);
 
   __ bind(&not_double);
   // Transition FAST_SMI_ELEMENTS to FAST_ELEMENTS.
-  // r6: JSArray
-  __ LoadP(r5_p, FieldMemOperand(r6, HeapObject::kMapOffset));
+  // r6_p: JSArray
+  __ LoadP(r5_p, FieldMemOperand(r6_p, HeapObject::kMapOffset));
   __ LoadTransitionedArrayMapConditional(FAST_SMI_ELEMENTS,
                                          FAST_ELEMENTS,
                                          r5_p,
                                          r22_p,
                                          &cant_transition_map);
-  __ StoreP(r5_p, FieldMemOperand(r6, HeapObject::kMapOffset));
-  __ RecordWriteField(r6,
+  __ StoreP(r5_p, FieldMemOperand(r6_p, HeapObject::kMapOffset));
+  __ RecordWriteField(r6_p,
                       HeapObject::kMapOffset,
                       r5_p,
                       r22_p,
@@ -513,7 +513,7 @@ void Builtins::Generate_InternalArrayCode(MacroAssembler* masm) {
     __ LoadRR(r0_p, r5_p);
     __ AndP(r0_p, Operand(kSmiTagMask));
     __ Assert(ne, "Unexpected initial map for InternalArray function", cr0);
-    __ CompareObjectType(r5_p, r6, r7_p, MAP_TYPE);
+    __ CompareObjectType(r5_p, r6_p, r7_p, MAP_TYPE);
     __ Assert(eq, "Unexpected initial map for InternalArray function");
   }
 
@@ -550,7 +550,7 @@ void Builtins::Generate_ArrayCode(MacroAssembler* masm) {
     __ LoadRR(r0_p, r5_p);
     __ AndP(r0_p, Operand(kSmiTagMask));
     __ Assert(ne, "Unexpected initial map for Array function", cr0);
-    __ CompareObjectType(r5_p, r6, r7_p, MAP_TYPE);
+    __ CompareObjectType(r5_p, r6_p, r7_p, MAP_TYPE);
     __ Assert(eq, "Unexpected initial map for Array function");
   }
 
@@ -585,7 +585,7 @@ void Builtins::Generate_ArrayConstructCode(MacroAssembler* masm) {
     __ LoadRR(r0_p, r5_p);
     __ AndP(r0_p, Operand(kSmiTagMask));
     __ Assert(ne, "Unexpected initial map for Array function", cr0);
-    __ CompareObjectType(r5_p, r6, r7_p, MAP_TYPE);
+    __ CompareObjectType(r5_p, r6_p, r7_p, MAP_TYPE);
     __ Assert(eq, "Unexpected initial map for Array function");
   }
 
@@ -610,7 +610,7 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
   //  -- sp[argc * 4]           : receiver
   // -----------------------------------
   Counters* counters = masm->isolate()->counters();
-  __ IncrementCounter(counters->string_ctor_calls(), 1, r5_p, r6);
+  __ IncrementCounter(counters->string_ctor_calls(), 1, r5_p, r6_p);
 
   Register function = r4_p;
   if (FLAG_debug_code) {
@@ -637,12 +637,12 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
       masm,
       r3_p,        // Input.
       argument,  // Result.
-      r6,        // Scratch.
+      r6_p,        // Scratch.
       r7_p,        // Scratch.
       r8_p,        // Scratch.
       false,     // Is it a Smi?
       &not_cached);
-  __ IncrementCounter(counters->string_ctor_cached_number(), 1, r6, r7_p);
+  __ IncrementCounter(counters->string_ctor_cached_number(), 1, r6_p, r7_p);
   __ bind(&argument_is_string);
 
   // ----------- S t a t e -------------
@@ -654,13 +654,13 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
   Label gc_required;
   __ AllocateInNewSpace(JSValue::kSize,
                         r3_p,  // Result.
-                        r6,  // Scratch.
+                        r6_p,  // Scratch.
                         r7_p,  // Scratch.
                         &gc_required,
                         TAG_OBJECT);
 
   // Initialising the String Object.
-  Register map = r6;
+  Register map = r6_p;
   __ LoadGlobalFunctionInitialMap(function, map, r7_p);
   if (FLAG_debug_code) {
     __ LoadlB(r7_p, FieldMemOperand(map, Map::kInstanceSizeOffset));
@@ -672,9 +672,9 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
   }
   __ StoreP(map, FieldMemOperand(r3_p, HeapObject::kMapOffset));
 
-  __ LoadRoot(r6, Heap::kEmptyFixedArrayRootIndex);
-  __ StoreP(r6, FieldMemOperand(r3_p, JSObject::kPropertiesOffset));
-  __ StoreP(r6, FieldMemOperand(r3_p, JSObject::kElementsOffset));
+  __ LoadRoot(r6_p, Heap::kEmptyFixedArrayRootIndex);
+  __ StoreP(r6_p, FieldMemOperand(r3_p, JSObject::kPropertiesOffset));
+  __ StoreP(r6_p, FieldMemOperand(r3_p, JSObject::kElementsOffset));
 
   __ StoreP(argument, FieldMemOperand(r3_p, JSValue::kValueOffset));
 
@@ -691,19 +691,19 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
 
   // Is it a String?
   __ LoadP(r5_p, FieldMemOperand(r3_p, HeapObject::kMapOffset));
-  __ LoadlB(r6, FieldMemOperand(r5_p, Map::kInstanceTypeOffset));
+  __ LoadlB(r6_p, FieldMemOperand(r5_p, Map::kInstanceTypeOffset));
   STATIC_ASSERT(kNotStringTag != 0);
-  __ LoadRR(r0_p, r6);
+  __ LoadRR(r0_p, r6_p);
   __ AndP(r0_p, Operand(kIsNotStringMask));
   __ bne(&convert_argument /*, cr0*/);
   __ LoadRR(argument, r3_p);
-  __ IncrementCounter(counters->string_ctor_conversions(), 1, r6, r7_p);
+  __ IncrementCounter(counters->string_ctor_conversions(), 1, r6_p, r7_p);
   __ b(&argument_is_string);
 
   // Invoke the conversion builtin and put the result into r5_p.
   __ bind(&convert_argument);
   __ push(function);  // Preserve the function.
-  __ IncrementCounter(counters->string_ctor_conversions(), 1, r6, r7_p);
+  __ IncrementCounter(counters->string_ctor_conversions(), 1, r6_p, r7_p);
   {
     FrameScope scope(masm, StackFrame::INTERNAL);
     __ push(r3_p);
@@ -723,7 +723,7 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
   // At this point the argument is already a string. Call runtime to
   // create a string wrapper.
   __ bind(&gc_required);
-  __ IncrementCounter(counters->string_ctor_gc_required(), 1, r6, r7_p);
+  __ IncrementCounter(counters->string_ctor_gc_required(), 1, r6_p, r7_p);
   {
     FrameScope scope(masm, StackFrame::INTERNAL);
     __ push(argument);
@@ -814,7 +814,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       __ LoadP(r5_p, FieldMemOperand(r4_p,
                                    JSFunction::kPrototypeOrInitialMapOffset));
       __ JumpIfSmi(r5_p, &rt_call);
-      __ CompareObjectType(r5_p, r6, r7_p, MAP_TYPE);
+      __ CompareObjectType(r5_p, r6_p, r7_p, MAP_TYPE);
       __ bne(&rt_call);
 
       // Check that the constructor is not constructing a JSFunction (see
@@ -822,16 +822,16 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // initial map's instance type would be JS_FUNCTION_TYPE.
       // r4_p: constructor function
       // r5_p: initial map
-      __ CompareInstanceType(r5_p, r6, JS_FUNCTION_TYPE);
+      __ CompareInstanceType(r5_p, r6_p, JS_FUNCTION_TYPE);
       __ beq(&rt_call);
 
       if (count_constructions) {
         Label allocate;
         // Decrease generous allocation count.
-        __ LoadP(r6, FieldMemOperand(r4_p,
+        __ LoadP(r6_p, FieldMemOperand(r4_p,
                                      JSFunction::kSharedFunctionInfoOffset));
         MemOperand constructor_count =
-            FieldMemOperand(r6, SharedFunctionInfo::kConstructionCountOffset);
+            FieldMemOperand(r6_p, SharedFunctionInfo::kConstructionCountOffset);
         __ LoadlB(r7_p, constructor_count);
         __ AddP(r7_p, Operand(-1));
         __ stb(r7_p, constructor_count);
@@ -854,14 +854,14 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // Now allocate the JSObject on the heap.
       // r4_p: constructor function
       // r5_p: initial map
-      __ LoadlB(r6, FieldMemOperand(r5_p, Map::kInstanceSizeOffset));
-      __ AllocateInNewSpace(r6, r7_p, r8_p, r9_p, &rt_call, SIZE_IN_WORDS);
+      __ LoadlB(r6_p, FieldMemOperand(r5_p, Map::kInstanceSizeOffset));
+      __ AllocateInNewSpace(r6_p, r7_p, r8_p, r9_p, &rt_call, SIZE_IN_WORDS);
 
       // Allocated the JSObject, now initialize the fields. Map is set to
       // initial map and properties and elements are set to empty fixed array.
       // r4_p: constructor function
       // r5_p: initial map
-      // r6: object size
+      // r6_p: object size
       // r7_p: JSObject (not tagged)
       __ LoadRoot(r9_p, Heap::kEmptyFixedArrayRootIndex);
       __ LoadRR(r8_p, r7_p);
@@ -876,11 +876,11 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // Fill all the in-object properties with the appropriate filler.
       // r4_p: constructor function
       // r5_p: initial map
-      // r6: object size (in words)
+      // r6_p: object size (in words)
       // r7_p: JSObject (not tagged)
       // r8_p: First in-object property of JSObject (not tagged)
       uint32_t byte;
-      __ ShiftLeftImm(r9_p, r6, Operand(kPointerSizeLog2));
+      __ ShiftLeftImm(r9_p, r6_p, Operand(kPointerSizeLog2));
       __ AddP(r9_p, r7_p);  // End of object.
       ASSERT_EQ(3 * kPointerSize, JSObject::kHeaderSize);
       __ LoadRoot(r10_p, Heap::kUndefinedValueRootIndex);
@@ -920,7 +920,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // r4_p: constructor function
       // r7_p: JSObject
       // r8_p: start of next object (not tagged)
-      __ LoadlB(r6, FieldMemOperand(r5_p, Map::kUnusedPropertyFieldsOffset));
+      __ LoadlB(r6_p, FieldMemOperand(r5_p, Map::kUnusedPropertyFieldsOffset));
       // The field instance sizes contains both pre-allocated property fields
       // and in-object properties.
       __ LoadlW(r3_p, FieldMemOperand(r5_p, Map::kInstanceSizesOffset));
@@ -933,7 +933,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       __ ExtractBitRange(r9_p, r3_p,
                          ((byte + 1) * kBitsPerByte) - 1,
                          byte * kBitsPerByte);
-      __ AddP(r6, r9_p);
+      __ AddP(r6_p, r9_p);
       STATIC_ASSERT(Map::kInObjectPropertiesByte < 4);
       byte = Map::kInObjectPropertiesByte;
 #if __BYTE_ORDER == __BIG_ENDIAN
@@ -942,8 +942,8 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       __ ExtractBitRange(r9_p, r3_p,
                          ((byte + 1) * kBitsPerByte) - 1,
                          byte * kBitsPerByte);
-      __ Sub(r6, r6, r9_p);  // roohack - sub order may be incorrect
-      __ Cmpi(r6, Operand::Zero());
+      __ Sub(r6_p, r6_p, r9_p);  // roohack - sub order may be incorrect
+      __ Cmpi(r6_p, Operand::Zero());
 
       // Done if no extra properties are to be allocated.
       __ beq(&allocated);
@@ -952,10 +952,10 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // Scale the number of elements by pointer size and add the header for
       // FixedArrays to the start of the next object calculation from above.
       // r4_p: constructor
-      // r6: number of elements in properties array
+      // r6_p: number of elements in properties array
       // r7_p: JSObject
       // r8_p: start of next object
-      __ LoadRR(r3_p, r6);
+      __ LoadRR(r3_p, r6_p);
       __ AddP(r3_p, Operand(FixedArray::kHeaderSize / kPointerSize));
       __ AllocateInNewSpace(
           r3_p,
@@ -967,7 +967,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
 
       // Initialize the FixedArray.
       // r4_p: constructor
-      // r6: number of elements in properties array
+      // r6_p: number of elements in properties array
       // r7_p: JSObject
       // r8_p: FixedArray (not tagged)
       __ LoadRoot(r9_p, Heap::kFixedArrayMapRootIndex);
@@ -975,17 +975,17 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       ASSERT_EQ(0 * kPointerSize, JSObject::kMapOffset);
       __ StoreP(r9_p, MemOperand(r5_p));
       ASSERT_EQ(1 * kPointerSize, FixedArray::kLengthOffset);
-      __ SmiTag(r3_p, r6);
+      __ SmiTag(r3_p, r6_p);
       __ StorePU(r3_p, MemOperand(r5_p, kPointerSize));
       __ AddP(r5_p, Operand(kPointerSize));
 
       // Initialize the fields to undefined.
       // r4_p: constructor function
       // r5_p: First element of FixedArray (not tagged)
-      // r6: number of elements in properties array
+      // r6_p: number of elements in properties array
       // r7_p: JSObject
       // r8_p: FixedArray (not tagged)
-      __ ShiftLeftImm(r9_p, r6, Operand(kPointerSizeLog2));
+      __ ShiftLeftImm(r9_p, r6_p, Operand(kPointerSizeLog2));
       __ AddP(r9_p, r5_p);  // End of object.
       ASSERT_EQ(2 * kPointerSize, FixedArray::kHeaderSize);
       { Label loop, entry;
@@ -1045,20 +1045,20 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     // sp[2]: constructor function
     // sp[3]: number of arguments (smi-tagged)
     __ LoadP(r4_p, MemOperand(sp, 2 * kPointerSize));
-    __ LoadP(r6, MemOperand(sp, 3 * kPointerSize));
+    __ LoadP(r6_p, MemOperand(sp, 3 * kPointerSize));
 
     // Set up pointer to last argument.
     __ LoadRR(r5_p, fp);
     __ AddP(r5_p, Operand(StandardFrameConstants::kCallerSPOffset));
 
     // Set up number of arguments for function call below
-    __ SmiUntag(r3_p, r6);
+    __ SmiUntag(r3_p, r6_p);
 
     // Copy arguments and receiver to the expression stack.
     // r3_p: number of arguments
     // r4_p: constructor function
     // r5_p: address of last argument (caller sp)
-    // r6: number of arguments (smi-tagged)
+    // r6_p: number of arguments (smi-tagged)
     // sp[0]: receiver
     // sp[1]: receiver
     // sp[2]: constructor function
@@ -1117,7 +1117,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
 
     // If the type of the result (stored in its map) is less than
     // FIRST_SPEC_OBJECT_TYPE, it is not an object in the ECMA sense.
-    __ CompareObjectType(r3_p, r6, r6, FIRST_SPEC_OBJECT_TYPE);
+    __ CompareObjectType(r3_p, r6_p, r6_p, FIRST_SPEC_OBJECT_TYPE);
     __ bge(&exit);
 
     // Throw away the result of the constructor invocation and use the
@@ -1434,9 +1434,9 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
     // Do not transform the receiver for strict mode functions.
     __ LoadP(r5_p,
              FieldMemOperand(r4_p, JSFunction::kSharedFunctionInfoOffset));
-    __ LoadlW(r6,
+    __ LoadlW(r6_p,
               FieldMemOperand(r5_p, SharedFunctionInfo::kCompilerHintsOffset));
-    __ TestBit(r6,
+    __ TestBit(r6_p,
 #if V8_TARGET_ARCH_S390X
                SharedFunctionInfo::kStrictModeFunction,
 #else
@@ -1445,8 +1445,8 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
                r0_p);
     __ bne(&shift_arguments /*, cr0*/);
 
-    // Do not transform the receiver for native (Compilerhints already in r6).
-    __ TestBit(r6,
+    // Do not transform the receiver for native (Compilerhints already in r6_p).
+    __ TestBit(r6_p,
 #if V8_TARGET_ARCH_S390X
                SharedFunctionInfo::kNative,
 #else
@@ -1465,15 +1465,15 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
     // r5_p: first argument
     __ JumpIfSmi(r5_p, &convert_to_object);
 
-    __ LoadRoot(r6, Heap::kUndefinedValueRootIndex);
-    __ CmpRR(r5_p, r6);
+    __ LoadRoot(r6_p, Heap::kUndefinedValueRootIndex);
+    __ CmpRR(r5_p, r6_p);
     __ beq(&use_global_receiver);
-    __ LoadRoot(r6, Heap::kNullValueRootIndex);
-    __ CmpRR(r5_p, r6);
+    __ LoadRoot(r6_p, Heap::kNullValueRootIndex);
+    __ CmpRR(r5_p, r6_p);
     __ beq(&use_global_receiver);
 
     STATIC_ASSERT(LAST_SPEC_OBJECT_TYPE == LAST_TYPE);
-    __ CompareObjectType(r5_p, r6, r6, FIRST_SPEC_OBJECT_TYPE);
+    __ CompareObjectType(r5_p, r6_p, r6_p, FIRST_SPEC_OBJECT_TYPE);
     __ bge(&shift_arguments);
 
     __ bind(&convert_to_object);
@@ -1513,9 +1513,9 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
 
     __ bind(&patch_receiver);
     __ ShiftLeftImm(ip, r3_p, Operand(kPointerSizeLog2));
-    __ LoadRR(r6, sp);
-    __ AddP(r6, ip);
-    __ StoreP(r5_p, MemOperand(r6, -kPointerSize));
+    __ LoadRR(r6_p, sp);
+    __ AddP(r6_p, ip);
+    __ StoreP(r5_p, MemOperand(r6_p, -kPointerSize));
 
     __ b(&shift_arguments);
   }
@@ -1581,12 +1581,12 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
 
     __ push(r4_p);  // re-add proxy object as additional argument
     __ AddP(r3_p, Operand(1));
-    __ GetBuiltinEntry(r6, Builtins::CALL_FUNCTION_PROXY);
+    __ GetBuiltinEntry(r6_p, Builtins::CALL_FUNCTION_PROXY);
     __ Jump(masm->isolate()->builtins()->ArgumentsAdaptorTrampoline(),
             RelocInfo::CODE_TARGET);
 
     __ bind(&non_proxy);
-    __ GetBuiltinEntry(r6, Builtins::CALL_NON_FUNCTION);
+    __ GetBuiltinEntry(r6_p, Builtins::CALL_NON_FUNCTION);
     __ Jump(masm->isolate()->builtins()->ArgumentsAdaptorTrampoline(),
             RelocInfo::CODE_TARGET);
     __ bind(&function);
@@ -1597,13 +1597,13 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
   //     (tail-call) to the code in register edx without checking arguments.
   // r3_p: actual number of arguments
   // r4_p: function
-  __ LoadP(r6, FieldMemOperand(r4_p, JSFunction::kSharedFunctionInfoOffset));
+  __ LoadP(r6_p, FieldMemOperand(r4_p, JSFunction::kSharedFunctionInfoOffset));
   __ LoadW(r5_p, FieldMemOperand(r9_p,
            SharedFunctionInfo::kFormalParameterCountOffset));
 #if !defined(V8_TARGET_ARCH_S390X)
   __ SmiUntag(r5_p);
 #endif
-  __ LoadP(r6, FieldMemOperand(r4_p, JSFunction::kCodeEntryOffset));
+  __ LoadP(r6_p, FieldMemOperand(r4_p, JSFunction::kCodeEntryOffset));
   __ SetCallKind(r8_p, CALL_AS_METHOD);
   __ CmpRR(r5_p, r3_p);  // Check formal and actual parameter counts.
   Label skip;
@@ -1613,7 +1613,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
 
   __ bind(&skip);
   ParameterCount expected(0);
-  __ InvokeCode(r6, expected, expected, JUMP_FUNCTION,
+  __ InvokeCode(r6_p, expected, expected, JUMP_FUNCTION,
                 NullCallWrapper(), CALL_AS_METHOD);
 }
 
@@ -1784,7 +1784,7 @@ void Builtins::Generate_FunctionApply(MacroAssembler* masm) {
     __ AddP(r3_p, Operand(1));
     __ lhi(r5_p, Operand(0, RelocInfo::NONE));
     __ SetCallKind(r8_p, CALL_AS_METHOD);
-    __ GetBuiltinEntry(r6, Builtins::CALL_FUNCTION_PROXY);
+    __ GetBuiltinEntry(r6_p, Builtins::CALL_FUNCTION_PROXY);
     __ Call(masm->isolate()->builtins()->ArgumentsAdaptorTrampoline(),
             RelocInfo::CODE_TARGET);
 
@@ -1836,7 +1836,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
   //  -- r3_p : actual number of arguments
   //  -- r4_p : function (passed through to callee)
   //  -- r5_p : expected number of arguments
-  //  -- r6 : code entry to call
+  //  -- r6_p : code entry to call
   //  -- r8_p : call kind information
   // -----------------------------------
 
@@ -1856,7 +1856,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     // r3_p: actual number of arguments as a smi
     // r4_p: function
     // r5_p: expected number of arguments
-    // r6: code entry to call
+    // r6_p: code entry to call
     __ SmiToPtrArrayOffset(r3_p, r3_p);
     __ AddP(r3_p, fp);
     // adjust for return address and receiver
@@ -1868,7 +1868,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     // r3_p: copy start address
     // r4_p: function
     // r5_p: copy end address
-    // r6: code entry to call
+    // r6_p: code entry to call
 
     Label copy;
     __ bind(&copy);
@@ -1889,7 +1889,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     // r3_p: actual number of arguments as a smi
     // r4_p: function
     // r5_p: expected number of arguments
-    // r6: code entry to call
+    // r6_p: code entry to call
     __ SmiToPtrArrayOffset(r3_p, r3_p);
     __ AddP(r3_p, fp);
 
@@ -1897,7 +1897,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     // r3_p: copy start address
     // r4_p: function
     // r5_p: expected number of arguments
-    // r6: code entry to call
+    // r6_p: code entry to call
     Label copy;
     __ bind(&copy);
     // Adjust load for return address and receiver.
@@ -1910,7 +1910,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     // Fill the remaining expected arguments with undefined.
     // r4_p: function
     // r5_p: expected number of arguments
-    // r6: code entry to call
+    // r6_p: code entry to call
     __ LoadRoot(ip, Heap::kUndefinedValueRootIndex);
     __ ShiftLeftImm(r5_p, r5_p, Operand(kPointerSizeLog2));
     __ Sub(r5_p, fp, r5_p);
@@ -1925,7 +1925,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
 
   // Call the entry point.
   __ bind(&invoke);
-  __ Call(r6);
+  __ Call(r6_p);
 
   // Store offset of return address for deoptimizer.
   masm->isolate()->heap()->SetArgumentsAdaptorDeoptPCOffset(masm->pc_offset());
@@ -1939,7 +1939,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
   // Dont adapt arguments.
   // -------------------------------------------
   __ bind(&dont_adapt_arguments);
-  __ Jump(r6);
+  __ Jump(r6_p);
 }
 
 
