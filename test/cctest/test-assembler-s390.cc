@@ -1099,7 +1099,7 @@ TEST(13) {
   __ ar(r0, r0);                             // add 2 bytes to align
   __ brcl(al, Operand(0xF123321F));          // RIL2 FORMAT
   __ ar(r0, r0);                             // add 2 bytes to align
-  __ adbr(r15, r15);                         // RRE FORMAT
+  __ adbr(d15, d15);                         // RRE FORMAT
   __ madbr(r15, r15, r15);                   // RRD FORMAT
   __ bxle(r15, r15, r15, 0xFFF);             // RS1 FORMAT
 
@@ -1114,7 +1114,7 @@ TEST(13) {
   __ ar(r0, r0);                             // add 2 bytes to align
   __ stoc(r15, al, r15, 0x12345);            // RSY2 FORMAT
   __ ar(r0, r0);                             // add 2 bytes to align
-  __ adb(r15, MemOperand(r15, r15, 0xFFF));              // RXE FORMAT
+  __ adb(d15, MemOperand(r15, r15, 0xFFF));              // RXE FORMAT
   __ ar(r0, r0);                             // add 2 bytes to align
   __ agf(r15, r15, r15, 0x12345);            // RXY FORMAT
   __ ar(r0, r0);                             // add 2 bytes to align
