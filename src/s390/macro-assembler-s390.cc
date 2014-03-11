@@ -2434,7 +2434,7 @@ void MacroAssembler::EmitOutOfInt32RangeTruncate(Register result,
   // Replace the shifted bits with bits from the lower mantissa word.
 
   bind(&neg_shift);
-  neg(scratch, scratch);
+  Negate(scratch, scratch);
   slw(input_low, input_low, scratch);
   b(&shift_done);
 
@@ -2450,7 +2450,7 @@ void MacroAssembler::EmitOutOfInt32RangeTruncate(Register result,
   sign = no_reg;
   LoadRR(result, input_high);
   beq(&done);
-  neg(result, result);
+  Negate(result, result);
 
   bind(&done);
 }

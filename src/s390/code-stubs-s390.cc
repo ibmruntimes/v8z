@@ -1770,7 +1770,7 @@ void UnaryOpStub::GenerateSmiCodeSub(MacroAssembler* masm,
   __ beq(slow /*, cr0*/);
 
   // Return '- value'.
-  __ neg(r3_p, r3_p);
+  __ Negate(r3_p, r3_p);
   __ Ret();
 }
 
@@ -3425,7 +3425,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
   Label positive_exponent;
   __ Cmpi(scratch, Operand::Zero());
   __ bge(&positive_exponent);
-  __ neg(scratch, scratch);
+  __ Negate(scratch, scratch);
   __ bind(&positive_exponent);
 
   Label while_true, no_carry, loop_end;

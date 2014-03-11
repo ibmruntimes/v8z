@@ -1832,8 +1832,6 @@ SS2_FORM(zap);
   void extsb(Register rs, Register rb, RCBit r = LeaveRC);
   void extsh(Register rs, Register rb, RCBit r = LeaveRC);
 
-  void neg(Register rt, Register rb, OEBit o = LeaveOE, RCBit c = LeaveRC);
-
 #if V8_TARGET_ARCH_S390X
   void ld(Register rd, const MemOperand &src);
   void ldx(Register rd, const MemOperand &src);

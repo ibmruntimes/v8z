@@ -960,10 +960,6 @@ void Assembler::extsh(Register rs, Register rb, RCBit rc) {
   emit(EXT2 | EXTSH | rb.code()*B21 | rs.code()*B16 | rc);
 }
 
-void Assembler::neg(Register rt, Register rb, OEBit o, RCBit r) {
-  emit(EXT2 | NEGX | rt.code()*B21 | rb.code()*B16 | o | r);
-}
-
 void Assembler::andc(Register dst, Register src1, Register src2, RCBit rc) {
   x_form(EXT2 | ANDCX, dst, src1, src2, rc);
 }
