@@ -2430,7 +2430,6 @@ RIL1_FORM_EMIT(cih, CIH)
 RIE_FORM_EMIT(cij, CIJ)
 RIE_FORM_EMIT(cit, CIT)
 RRE_FORM_EMIT(cksm, CKSM)
-SS1_FORM_EMIT(clc, CLC)
 RR_FORM_EMIT(clcl, CLCL)
 RS1_FORM_EMIT(clcle, CLCLE)
 RSY1_FORM_EMIT(clclu, CLCLU)
@@ -2884,7 +2883,6 @@ SS1_FORM_EMIT(unpka, UNPKA)
 SS1_FORM_EMIT(unpku, UNPKU)
 E_FORM_EMIT(upt, UPT)
 RX_FORM_EMIT(x, X)
-SS1_FORM_EMIT(xc, XC)
 RXY_FORM_EMIT(xg, XG)
 SI_FORM_EMIT(xi, XI)
 RIL1_FORM_EMIT(xihf, XIHF)
@@ -3466,6 +3464,23 @@ void Assembler::mvc(const MemOperand& opnd1, const MemOperand& opnd2,
          opnd1.getDisplacement(), opnd2.getBaseRegister(),
          opnd2.getDisplacement());
 }
+
+// Compare logical - mem to mem operation
+void Assembler::clc(const MemOperand& opnd1, const MemOperand& opnd2,
+                    Length length) {
+    ss_form(CLC, length-1, opnd1.getBaseRegister(),
+         opnd1.getDisplacement(), opnd2.getBaseRegister(),
+         opnd2.getDisplacement());
+}
+
+// Exclusive Or - mem to mem operation
+void Assembler::xc(const MemOperand& opnd1, const MemOperand& opnd2,
+                    Length length) {
+    ss_form(XC, length-1, opnd1.getBaseRegister(),
+         opnd1.getDisplacement(), opnd2.getBaseRegister(),
+         opnd2.getDisplacement());
+}
+
 
 #ifdef V8_TARGET_ARCH_S390X
 // Store Register (64)

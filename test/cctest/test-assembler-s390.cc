@@ -1093,22 +1093,22 @@ TEST(13) {
   __ ah(r13, MemOperand(r13, r13, 0xFF));                // RX FORMAT
   __ llihh(r13, Operand(0xFFFF));            // RI1 FORMAT
   __ brc(al, Operand(0xFFFF));               // RI2 FORMAT
-  __ ahik(r13, r13, Operand(0xFFFF));        // RIE FORMAT
+  // __ ahik(r15, r15, Operand(0xFFFF));        // RIE FORMAT
   __ ar(r0, r0);                             // add 2 bytes to align
   __ afi(r13, Operand(0xF123321F));          // RIL1 FORMAT
   __ ar(r0, r0);                             // add 2 bytes to align
   __ brcl(al, Operand(0xF123321F));          // RIL2 FORMAT
   __ ar(r0, r0);                             // add 2 bytes to align
   __ adbr(d15, d15);                         // RRE FORMAT
-  __ madbr(r13, r13, r13);                   // RRD FORMAT
-  __ bxle(r13, r13, r13, 0xFFF);             // RS1 FORMAT
+  // __ madbr(r15, r15, r15);                   // RRD FORMAT
+  // __ bxle(r15, r15, r15, 0xFFF);             // RS1 FORMAT
 
   v8::internal::byte * bufPos = assm.buffer_pos();
   // OS::DebugBreak();
 
-  __ stcm(r13, al, r13, 0xFFF);              // RS2 FORMAT
-  __ brxh(r13, r13, Operand(0xF12F));        // RSI FORMAT
-  __ cdzt(0xF, r13, 0xFFF);                  // RSL FORMAT
+  // __ stcm(r15, al, r15, 0xFFF);              // RS2 FORMAT
+  // __ brxh(r15, r15, Operand(0xF12F));        // RSI FORMAT
+  // __ cdzt(0xF, r15, 0xFFF);                  // RSL FORMAT
   __ ar(r0, r0);                             // add 2 bytes to align
   __ cdsg(r13, r13, r13, 0x12345);           // RSY1 FORMAT
   __ ar(r0, r0);                             // add 2 bytes to align
@@ -1135,7 +1135,7 @@ TEST(13) {
   __ ar(r0, r0);                             // add 2 bytes to align
   __ madb(r13, r13, r13, r13, 0x123);        // RXF FORMAT
   __ ar(r0, r0);                             // add 2 bytes to align
-  __ clc(r13, 0x456, r13, 0x789, 0x12);      // SS1 FORMAT
+  __ clc(MemOperand(r15, 0x456), MemOperand(r15, 0x789), 0x12);
   __ ar(r0, r0);                             // add 2 bytes to align
 
   bufPos += 48;
@@ -1145,7 +1145,8 @@ TEST(13) {
   __ mvc(MemOperand(r13, 0x345), MemOperand(r13, 0x678), 0x01);
   __ ar(r0, r0);                             // add 2 bytes to align
   // SS3 FORMAT
-  __ srp(MemOperand(r13, 0x2), MemOperand(r13, 0x345), 0xF);
+  /*
+  __ srp(MemOperand(r15, 0x2), MemOperand(r15, 0x345), 0xF);
   __ ar(r0, r0);                             // add 2 bytes to align
   __ mvcp(r13, r13, r13, 0x123,              // SS4 FORMAT
           r13, 0x456);
@@ -1155,6 +1156,7 @@ TEST(13) {
   __ ar(r0, r0);                             // add 2 bytes to align
   __ mvcdk(r13, 0x123, r13, 0x456);          // SSE FORMAT
   __ ar(r0, r0);                             // add 2 bytes to align
+  */
 
   bufPos += 56;
   ::printf("buffer position = %p", bufPos);
