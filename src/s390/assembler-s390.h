@@ -1759,9 +1759,20 @@ SS2_FORM(zap);
   void ldr(DoubleRegister r1, DoubleRegister r2);
   void std(DoubleRegister r1, const MemOperand& opnd);
   void stdy(DoubleRegister r1, const MemOperand& opnd);
-  void cdbr(DoubleRegister r1, DoubleRegister r2);
   void cgdbr(Register fixReg, DoubleRegister fltReg);
   void cdgbr(Register fixReg, DoubleRegister fltReg);
+
+  void cdb(DoubleRegister r1, const MemOperand& opnd);
+  void cdbr(DoubleRegister r1, DoubleRegister r2);
+  void adb(DoubleRegister r1, const MemOperand& opnd);
+  void adbr(DoubleRegister r1, DoubleRegister r2);
+  void sdb(DoubleRegister r1, const MemOperand& opnd);
+  void sdbr(DoubleRegister r1, DoubleRegister r2);
+  void mdb(DoubleRegister r1, const MemOperand& opnd);
+  void mdbr(DoubleRegister r1, DoubleRegister r2);
+  void ddb(DoubleRegister r1, const MemOperand& opnd);
+  void ddbr(DoubleRegister r1, DoubleRegister r2);
+
 
 // end of S390instructions
 

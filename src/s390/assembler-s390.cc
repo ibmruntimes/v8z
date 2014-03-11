@@ -3305,6 +3305,11 @@ void Assembler::llghr(Register r1, Register r2) {
   rre_form(LLGHR, r1, r2);
 }
 
+// Load 64<-32 sign extended
+void Assembler::lgfr(Register r1, Register r2) {
+  rre_form(LGFR, r1, r2);
+}
+
 // Shift Left Single Logical (32)
 void Assembler::sll(Register r1, const Operand& opnd) {
   rs_form(SLL, r1, r0, r0, opnd.immediate());
@@ -3566,61 +3571,70 @@ void Assembler::iill(Register r1, const Operand& opnd) {
 }
 
 // Floating point instructions
-// @TODO we should use floating point registers here.
-
 // Add Register-Storage (LB)
-void Assembler::adb(Register r1, const MemOperand& opnd) {
-  rxe_form(ADB, r1, opnd.rx(), opnd.rb(), opnd.offset());
+void Assembler::adb(DoubleRegister r1, const MemOperand& opnd) {
+  rxe_form(ADB, 
+           Register::from_code(r1.code()), 
+           opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 // Add Register-Register (LB)
-void Assembler::adbr(Register r1, Register r2) {
-  rre_form(ADBR, r1, r2);
+void Assembler::adbr(DoubleRegister r1, DoubleRegister r2) {
+  rre_form(ADBR, 
+           Register::from_code(r1.code()), 
+           Register::from_code(r2.code()));
 }
 
 // Compare Register-Storage (LB)
-void Assembler::cd(Register r1, const MemOperand& opnd) {
-  rx_form(CD, r1, opnd.rx(), opnd.rb(), opnd.offset());
+void Assembler::cdb(DoubleRegister r1, const MemOperand& opnd) {
+  rx_form(CD, Register::from_code(r1.code()), 
+          opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 // Compare Register-Register (LB)
-void Assembler::cdr(Register r1, Register r2) {
-  rr_form(CDR, r1, r2);
+void Assembler::cdbr(DoubleRegister r1, DoubleRegister r2) {
+  rre_form(CDR, 
+           Register::from_code(r1.code()), 
+           Register::from_code(r2.code()));
 }
 
 // Divide Register-Storage (LB)
-void Assembler::ddb(Register r1, const MemOperand& opnd) {
-  rxe_form(DDB, r1, opnd.rx(), opnd.rb(), opnd.offset());
+void Assembler::ddb(DoubleRegister r1, const MemOperand& opnd) {
+  rxe_form(DDB, Register::from_code(r1.code()), 
+           opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 // Divide Register-Register (LB)
-void Assembler::ddbr(Register r1, Register r2) {
-  rre_form(DDBR, r1, r2);
+void Assembler::ddbr(DoubleRegister r1, DoubleRegister r2) {
+  rre_form(DDBR,
+           Register::from_code(r1.code()),
+           Register::from_code(r2.code()));
 }
 
 // Multiply Register-Storage (LB)
-void Assembler::mdb(Register r1, const MemOperand& opnd) {
-  rxe_form(MDB, r1, opnd.rb(), opnd.rx(), opnd.offset());
+void Assembler::mdb(DoubleRegister r1, const MemOperand& opnd) {
+  rxe_form(MDB, Register::from_code(r1.code()), 
+           opnd.rb(), opnd.rx(), opnd.offset());
 }
 
 // Multiply Register-Register (LB)
-void Assembler::mdbr(Register r1, Register r2) {
-  rre_form(MDBR, r1, r2);
+void Assembler::mdbr(DoubleRegister r1, DoubleRegister r2) {
+  rre_form(MDBR, 
+           Register::from_code(r1.code()), 
+           Register::from_code(r2.code()));
 }
 
 // Subtract Register-Storage (LB)
-void Assembler::sdb(Register r1, const MemOperand& opnd) {
-  rxe_form(SDB, r1, opnd.rx(), opnd.rb(), opnd.offset());
+void Assembler::sdb(DoubleRegister r1, const MemOperand& opnd) {
+  rxe_form(SDB, Register::from_code(r1.code()), 
+           opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 // Subtract Register-Register (LB)
-void Assembler::sdbr(Register r1, Register r2) {
-  rre_form(SDBR, r1, r2);
-}
-
-// Load 64<-32 sign extended
-void Assembler::lgfr(Register r1, Register r2) {
-  rre_form(LGFR, r1, r2);
+void Assembler::sdbr(DoubleRegister r1, DoubleRegister r2) {
+  rre_form(SDBR, 
+           Register::from_code(r1.code()), 
+           Register::from_code(r2.code()));
 }
 
 // Store (L)
@@ -3646,11 +3660,6 @@ void Assembler::ldy(DoubleRegister r1, const MemOperand& opnd) {
 // Load Register-Register (L)
 void Assembler::ldr(DoubleRegister r1, DoubleRegister r2) {
   rr_form(LDR, r1, r2);
-}
-
-// Compare Register-Register (L)
-void Assembler::cdbr(DoubleRegister r1, DoubleRegister r2) {
-  rre_form(CDBR, r1, r2);
 }
 
 // Convert to Fixed point (L)
