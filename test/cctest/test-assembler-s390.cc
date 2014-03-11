@@ -1353,4 +1353,40 @@ TEST(17) {
   CHECK_EQ(1, static_cast<int>(res));
 }
 
+// Test fix<->floating point conversion.
+TEST(18) {
+  InitializeVM();
+  v8::HandleScope scope;
+
+  MacroAssembler assm(Isolate::Current(), NULL, 0);
+
+#if defined(_AIX) || defined(V8_TARGET_ARCH_S390X)
+  __ function_descriptor();
+#endif
+
+  Label yes;
+
+  __ mov(r3, Operand(0x1234));
+  __ cdfbr(d1, r3);
+  __ cfdbr(r2, d21);
+  __ b(r14);
+
+  CodeDesc desc;
+  assm.GetCode(&desc);
+  Object* code = HEAP->CreateCode(
+      desc,
+      Code::ComputeFlags(Code::STUB),
+      Handle<Object>(HEAP->undefined_value()))->ToObjectChecked();
+  CHECK(code->IsCode());
+#ifdef DEBUG
+  Code::cast(code)->Print();
+#endif
+  F2 f = FUNCTION_CAST<F2>(Code::cast(code)->entry());
+  intptr_t res =
+    reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(f, 3, 4, 3, 0, 0));
+  ::printf("f() = %" V8PRIdPTR "\n", res);
+  CHECK_EQ(0x1234, static_cast<int>(res));
+}
+
+
 #undef __
