@@ -2815,7 +2815,11 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       int32_t r2_val = get_low_register<int32_t>(r2);
       int32_t alu_out = 0;
       switch (op) {
-        case AR: alu_out = r1_val + r2_val; break;
+        case AR: 
+          alu_out = r1_val + r2_val; 
+          SetS390ConditionCode<int32_t>(alu_out, 0);
+          // SetS390OverflowCode<int32_t>(r1_val, r2_val);
+          break;
         case SR: alu_out = r1_val - r2_val; break;
         case MR: UNIMPLEMENTED(); break;  // reg pair
         case DR: UNIMPLEMENTED(); break;  // reg pair
@@ -3171,6 +3175,14 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       double r1_val = get_double_from_d_register(r1);
       double r2_val = get_double_from_d_register(r2);
       SetS390ConditionCode<double>(r1_val, r2_val);
+      break;
+    }
+    case LGFR: {
+      RREInstruction* rreInstr = reinterpret_cast<RREInstruction*>(instr);
+      int r1 = rreInstr->R1Value();
+      int r2 = rreInstr->R2Value();
+      int32_t r2_val = get_low_register<int32_t>(r2);
+      set_register(r1, r2_val);
       break;
     }
     default:

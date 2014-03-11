@@ -1065,10 +1065,6 @@ void Assembler::cntlzd_(Register rb, Register rs, RCBit rc) {
   x_form(EXT2 | CNTLZDX, rb, rs, r0, rc);
 }
 
-void Assembler::extsw(Register rs, Register rb, RCBit rc) {
-  emit(EXT2 | EXTSW | rb.code()*B21 | rs.code()*B16 | rc);
-}
-
 void Assembler::mulld(Register dst, Register src1, Register src2,
                       OEBit o, RCBit r) {
   xo_form(EXT2 | MULLD, dst, src1, src2, o, r);
@@ -2646,7 +2642,6 @@ RXY_FORM_EMIT(lgat, LGAT)
 RRE_FORM_EMIT(lgdr, LGDR)
 RXY_FORM_EMIT(lgf, LGF)
 RIL1_FORM_EMIT(lgfi, LGFI)
-RRE_FORM_EMIT(lgfr, LGFR)
 RIL1_FORM_EMIT(lgfrl, LGFRL)
 RIL1_FORM_EMIT(lghrl, LGHRL)
 RIL1_FORM_EMIT(lgrl, LGRL)
@@ -3621,6 +3616,11 @@ void Assembler::sdb(Register r1, const MemOperand& opnd) {
 // Subtract Register-Register (LB)
 void Assembler::sdbr(Register r1, Register r2) {
   rre_form(SDBR, r1, r2);
+}
+
+// Load 64<-32 sign extended
+void Assembler::lgfr(Register r1, Register r2) {
+  rre_form(LGFR, r1, r2);
 }
 
 // Store (L)

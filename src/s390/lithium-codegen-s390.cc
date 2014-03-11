@@ -925,7 +925,7 @@ void LCodeGen::DoModI(LModI* instr) {
     }
 
 #if V8_TARGET_ARCH_S390X
-    __ extsw(scratch, scratch);
+    __ lgfr(scratch, scratch);
 #endif
     __ Mul(scratch, divisor, scratch);
     __ Sub(result, dividend, scratch/*, LeaveOE, SetRC*/);
@@ -978,7 +978,7 @@ void LCodeGen::DoDivI(LDivI* instr) {
   }
 
 #if V8_TARGET_ARCH_S390X
-  __ extsw(result, result);
+  __ lgfr(result, result);
 #endif
 
   // Deoptimize on non-zero remainder
@@ -1054,7 +1054,7 @@ void LCodeGen::DoMathFloorOfDiv(LMathFloorOfDiv* instr) {
     ASSERT(multiplier > 0 &&
            multiplier < (static_cast<int64_t>(1) << 32));
 #if V8_TARGET_ARCH_S390X
-    __ extsw(scratch, dividend);
+    __ lgfr(scratch, dividend);
     if (divisor < 0 &&
         instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
       __ neg(scratch, scratch, LeaveOE, SetRC);
@@ -1295,14 +1295,14 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
       case Token::SAR:
         __ sraw(result, left, scratch);
 #if V8_TARGET_ARCH_S390X
-        __ extsw(result, result);
+        __ lgfr(result, result);
 #endif
         break;
       case Token::SHR:
         if (instr->can_deopt()) {
           __ srw(result, left, scratch, SetRC);
 #if V8_TARGET_ARCH_S390X
-          __ extsw(result, result, SetRC);
+          __ lgfr(result, result, SetRC);
 #endif
           DeoptimizeIf(lt, instr->environment(), cr0);
         } else {
@@ -1312,7 +1312,7 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
       case Token::SHL:
         __ slw(result, left, scratch);
 #if V8_TARGET_ARCH_S390X
-        __ extsw(result, result);
+        __ lgfr(result, result);
 #endif
         break;
       default:
@@ -1328,7 +1328,7 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
         if (shift_count != 0) {
           __ srawi(result, left, shift_count);
 #if V8_TARGET_ARCH_S390X
-          __ extsw(result, result);
+          __ lgfr(result, result);
 #endif
         } else {
           __ Move(result, left);
@@ -1349,7 +1349,7 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
         if (shift_count != 0) {
           __ slwi(result, left, Operand(shift_count));
 #if V8_TARGET_ARCH_S390X
-          __ extsw(result, result);
+          __ lgfr(result, result);
 #endif
         } else {
           __ Move(result, left);
@@ -1386,7 +1386,7 @@ void LCodeGen::DoSubI(LSubI* instr) {
                               scratch0(), r0_p);
     // Doptimize on overflow
 #if V8_TARGET_ARCH_S390X
-    __ extsw(scratch0(), scratch0(), SetRC);
+    __ lgfr(scratch0(), scratch0());
 #endif
     DeoptimizeIf(lt, instr->environment(), cr0);
   }
@@ -1556,7 +1556,7 @@ void LCodeGen::DoAddI(LAddI* instr) {
                               right_reg,
                               scratch0(), r0_p);
 #if V8_TARGET_ARCH_S390X
-    __ extsw(scratch0(), scratch0(), SetRC);
+    __ lgfr(scratch0(), scratch0());
 #endif
     // Doptimize on overflow
     DeoptimizeIf(lt, instr->environment(), cr0);
