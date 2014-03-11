@@ -4136,6 +4136,14 @@ void MacroAssembler::Sub(Register dst, const MemOperand& opnd) {
 #endif
 }
 
+void MacroAssembler::Negate(Register dst, Register src) {
+#if V8_TARGET_ARCH_S390X
+  lngr(dst, src);
+#else
+  lgr(dst, src);
+#endif
+}
+
 #if 0  // Not support on z9
 void MacroAssembler::And(Register dst, Register src1, Register src2) {
 #if V8_TARGET_ARCH_S390X

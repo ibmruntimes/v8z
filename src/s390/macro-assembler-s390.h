@@ -300,6 +300,9 @@ class MacroAssembler: public Assembler {
   void Subl(Register dst, const Operand& opnd);
   void Subl(Register dst, Register src);
 
+  // Negate 32 bit
+  void Negate(Register dst, Register src);
+
   // and 32bit
   // and(r,r,r) Not supported on z9
   // void AndP(Register dst, Register src1, Register src2);
