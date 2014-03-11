@@ -71,9 +71,10 @@ void MacroAssembler::Jump(intptr_t target, RelocInfo::Mode rmode,
   ASSERT(rmode == RelocInfo::CODE_TARGET ||
          rmode == RelocInfo::RUNTIME_ENTRY);
 
-  mov(r0, Operand(target, rmode));
-  mtctr(r0);
-  bcr();
+  // Using IP for now, but maybe we should be using scratch
+  // register?
+  mov(ip, Operand(target, rmode));
+  b(ip);
 
   bind(&skip);
   //  mov(pc, Operand(target, rmode), LeaveCC, cond);
