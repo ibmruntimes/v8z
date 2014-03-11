@@ -1070,7 +1070,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     __ mtctr(r3_p);
     __ bind(&loop);
     __ Sub(ip, Operand(kPointerSize));
-    __ LoadPX(r0_p, MemOperand(r5_p, ip));
+    __ LoadP(r0_p, MemOperand(r5_p, ip));
     __ push(r0_p);
     __ bdnz(&loop);
     __ bind(&no_args);

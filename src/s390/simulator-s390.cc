@@ -2815,8 +2815,8 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       int32_t r2_val = get_low_register<int32_t>(r2);
       int32_t alu_out = 0;
       switch (op) {
-        case AR: 
-          alu_out = r1_val + r2_val; 
+        case AR:
+          alu_out = r1_val + r2_val;
           SetS390ConditionCode<int32_t>(alu_out, 0);
           // SetS390OverflowCode<int32_t>(r1_val, r2_val);
           break;

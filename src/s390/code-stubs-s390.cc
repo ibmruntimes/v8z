@@ -178,7 +178,7 @@ void FastNewClosureStub::Generate(MacroAssembler* masm) {
   __ LoadRR(r8_p, r4_p);
   __ AddP(r8_p, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ SmiToPtrArrayOffset(r9_p, r7_p);
-  __ LoadPX(r8_p, MemOperand(r8_p, r9_p));
+  __ LoadP(r8_p, MemOperand(r8_p, r9_p));
   __ CmpRR(r5_p, r8_p);
   __ bne(&loop);
   // Hit: fetch the optimized code.
@@ -409,7 +409,7 @@ void FastCloneShallowArrayStub::Generate(MacroAssembler* masm) {
 
   __ LoadRR(r0_p, r3_p);
   __ SmiToPtrArrayOffset(r3_p, r3_p);
-  __ LoadPX(r6_p, MemOperand(r6_p, r3_p));
+  __ LoadP(r6_p, MemOperand(r6_p, r3_p));
   __ LoadRR(r3_p, r0_p);
 
   __ CompareRoot(r6_p, Heap::kUndefinedValueRootIndex);
@@ -491,7 +491,7 @@ void FastCloneShallowObjectStub::Generate(MacroAssembler* masm) {
   __ AddP(r6_p, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ LoadRR(r0_p, r3_p);
   __ SmiToPtrArrayOffset(r3_p, r3_p);
-  __ LoadPX(r6_p, MemOperand(r6_p, r3_p));
+  __ LoadP(r6_p, MemOperand(r6_p, r3_p));
   __ LoadRR(r3_p, r0_p);
 
   __ CompareRoot(r6_p, Heap::kUndefinedValueRootIndex);
@@ -5754,7 +5754,7 @@ void StringHelper::GenerateTwoCharacterSymbolTableProbe(MacroAssembler* masm,
     // Load the entry from the symble table.
     STATIC_ASSERT(SymbolTable::kEntrySize == 1);
     __ ShiftLeftImm(scratch, candidate, Operand(kPointerSizeLog2));
-    __ LoadPX(candidate, MemOperand(scratch, first_symbol_table_element));
+    __ LoadP(candidate, MemOperand(scratch, first_symbol_table_element));
 
     // If entry is undefined no string with this hash can be found.
     Label is_string;

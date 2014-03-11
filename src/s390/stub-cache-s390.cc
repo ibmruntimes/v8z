@@ -4054,7 +4054,7 @@ void KeyedLoadStubCompiler::GenerateLoadFastElement(MacroAssembler* masm) {
   __ LoadRR(r6, r5);
   __ AddP(r6, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ SmiToPtrArrayOffset(r7, r3);
-  __ LoadPX(r7, MemOperand(r7, r6));
+  __ LoadP(r7, MemOperand(r7, r6));
   __ LoadRoot(ip, Heap::kTheHoleValueRootIndex);
   __ CmpRR(r7, ip);
   __ beq(&miss_force_generic);
