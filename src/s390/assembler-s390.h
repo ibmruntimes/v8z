@@ -1623,8 +1623,6 @@ RXF_FORM(slxt);
 RXY_FORM(sly);
 SS2_FORM(sp_z);
 RR_FORM(spm);
-RXE_FORM(sqdb);
-RRE_FORM(sqdbr);
 RXE_FORM(sqeb);
 RRE_FORM(sqebr);
 RRE_FORM(sqxbr);
@@ -1781,6 +1779,9 @@ SS2_FORM(zap);
   void mdbr(DoubleRegister r1, DoubleRegister r2);
   void ddb(DoubleRegister r1, const MemOperand& opnd);
   void ddbr(DoubleRegister r1, DoubleRegister r2);
+
+  void sqdb(DoubleRegister r1, const MemOperand& opnd);
+  void sqdbr(DoubleRegister r1, DoubleRegister r2);
 
 
 // end of S390instructions
