@@ -181,7 +181,7 @@ class LCodeGen BASE_EMBEDDED {
   Scope* scope() const { return scope_; }
   HGraph* graph() const { return chunk_->graph(); }
 
-  Register scratch0() { return r11; }
+  Register scratch0() { return r11_p; }
   DwVfpRegister double_scratch0() { return kScratchDoubleReg; }
 
   int GetNextEmittedBlock(int block);

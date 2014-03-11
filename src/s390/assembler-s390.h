@@ -212,9 +212,8 @@ const Register r8  = { kRegister_r8_Code };
 const Register r9  = { kRegister_r9_Code };
 const Register r10 = { kRegister_r10_Code };
 // PPC: Used as lithium codegen scratch register. (Probably need to
-// pick another reg for this on S390).
-// @TODO: Remove r11 once all PPC references to it are fixed.
-const Register r11 = { kRegister_fp_Code };
+// pick another reg for this on S390) - Change it in
+// lithium-codegen-s390.h
 const Register fp  = { kRegister_fp_Code };
 // IP - Intra procedural register
 const Register ip  = { kRegister_r12_Code };
@@ -222,8 +221,6 @@ const Register ip  = { kRegister_r12_Code };
 const Register r13  = { kRegister_r13_Code };
 const Register r14  = { kRegister_r14_Code };
 const Register sp   = { kRegister_sp_Code };
-// @TODO: Left r15 in here to not break PPC.
-const Register r15  = { kRegister_sp_Code };
 
 const Register r16  = { kRegister_r16_Code };
 const Register r17  = { kRegister_r17_Code };
