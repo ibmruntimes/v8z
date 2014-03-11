@@ -577,7 +577,7 @@ void MacroAssembler::EnterFrame(StackFrame::Type type) {
   //    type
   //    CodeObject  <-- new sp
   lay(sp, MemOperand(sp, -5 * kPointerSize));
-  StoreP(sp, MemOperand(sp, 4 * kPointerSize));
+  StoreP(r14, MemOperand(sp, 4 * kPointerSize));
   StoreP(fp, MemOperand(sp, 3 * kPointerSize));
   StoreP(cp, MemOperand(sp, 2 * kPointerSize));
   LoadSmiLiteral(r0, Smi::FromInt(type));
