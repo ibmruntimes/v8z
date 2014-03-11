@@ -2806,7 +2806,6 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
     case NR:
     case XR:
     case LR:
-    case LDR:
       {
       RRInstruction* rrinst = reinterpret_cast<RRInstruction*>(instr);
       int r1 = rrinst->R1Value();
@@ -2827,15 +2826,17 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
         case NR: alu_out = r1_val & r2_val; break;
         case XR: alu_out = r1_val ^ r2_val; break;
         case LR: alu_out = r2_val; break;
-        case LDR: {
-          double r1_val = get_double_from_d_register(r1);
-          double r2_val = get_double_from_d_register(r1);
-          set_d_register_from_double(r1, r1_val + r2_val);
-          break;
-        }
         default: UNREACHABLE(); break;
       }
       set_low_register<int32_t>(r1, alu_out);
+      break;
+    }
+    case LDR: {
+      RRInstruction* rrinst = reinterpret_cast<RRInstruction*>(instr);
+      int r1 = rrinst->R1Value();
+      int r2 = rrinst->R2Value();
+      double r2_val = get_double_from_d_register(r2);
+      set_d_register_from_double(r1, r2_val);
       break;
     }
     case CR: {
