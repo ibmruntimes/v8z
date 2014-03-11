@@ -3573,34 +3573,34 @@ void Assembler::iill(Register r1, const Operand& opnd) {
 // Floating point instructions
 // Add Register-Storage (LB)
 void Assembler::adb(DoubleRegister r1, const MemOperand& opnd) {
-  rxe_form(ADB, 
-           Register::from_code(r1.code()), 
+  rxe_form(ADB,
+           Register::from_code(r1.code()),
            opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 // Add Register-Register (LB)
 void Assembler::adbr(DoubleRegister r1, DoubleRegister r2) {
-  rre_form(ADBR, 
-           Register::from_code(r1.code()), 
+  rre_form(ADBR,
+           Register::from_code(r1.code()),
            Register::from_code(r2.code()));
 }
 
 // Compare Register-Storage (LB)
 void Assembler::cdb(DoubleRegister r1, const MemOperand& opnd) {
-  rx_form(CD, Register::from_code(r1.code()), 
+  rx_form(CD, Register::from_code(r1.code()),
           opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 // Compare Register-Register (LB)
 void Assembler::cdbr(DoubleRegister r1, DoubleRegister r2) {
-  rre_form(CDR, 
-           Register::from_code(r1.code()), 
+  rre_form(CDR,
+           Register::from_code(r1.code()),
            Register::from_code(r2.code()));
 }
 
 // Divide Register-Storage (LB)
 void Assembler::ddb(DoubleRegister r1, const MemOperand& opnd) {
-  rxe_form(DDB, Register::from_code(r1.code()), 
+  rxe_form(DDB, Register::from_code(r1.code()),
            opnd.rx(), opnd.rb(), opnd.offset());
 }
 
@@ -3613,27 +3613,27 @@ void Assembler::ddbr(DoubleRegister r1, DoubleRegister r2) {
 
 // Multiply Register-Storage (LB)
 void Assembler::mdb(DoubleRegister r1, const MemOperand& opnd) {
-  rxe_form(MDB, Register::from_code(r1.code()), 
+  rxe_form(MDB, Register::from_code(r1.code()),
            opnd.rb(), opnd.rx(), opnd.offset());
 }
 
 // Multiply Register-Register (LB)
 void Assembler::mdbr(DoubleRegister r1, DoubleRegister r2) {
-  rre_form(MDBR, 
-           Register::from_code(r1.code()), 
+  rre_form(MDBR,
+           Register::from_code(r1.code()),
            Register::from_code(r2.code()));
 }
 
 // Subtract Register-Storage (LB)
 void Assembler::sdb(DoubleRegister r1, const MemOperand& opnd) {
-  rxe_form(SDB, Register::from_code(r1.code()), 
+  rxe_form(SDB, Register::from_code(r1.code()),
            opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 // Subtract Register-Register (LB)
 void Assembler::sdbr(DoubleRegister r1, DoubleRegister r2) {
-  rre_form(SDBR, 
-           Register::from_code(r1.code()), 
+  rre_form(SDBR,
+           Register::from_code(r1.code()),
            Register::from_code(r2.code()));
 }
 
