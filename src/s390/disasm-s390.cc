@@ -991,10 +991,6 @@ void Decoder::DecodeExt4(Instruction* instr) {
       Format(instr, "fadd'.   'Dt, 'Da, 'Db");
       return;
     }
-    case FSQRT: {
-      Format(instr, "fsqrt'.  'Dt, 'Db");
-      return;
-    }
     case FSEL: {
       Format(instr, "fsel'.   'Dt, 'Da, 'Dc, 'Db");
       return;

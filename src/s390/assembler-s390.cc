@@ -1372,12 +1372,6 @@ void Assembler::mtfsf(const DwVfpRegister frb, bool L,
   emit(EXT4 | MTFSF | frb.code()*B11 | W*B16 | FLM*B17 | L*B25 | rc);
 }
 
-void Assembler::fsqrt(const DwVfpRegister frt,
-                      const DwVfpRegister frb,
-                      RCBit rc) {
-  emit(EXT4 | FSQRT | frt.code()*B21 | frb.code()*B11 | rc);
-}
-
 void Assembler::fabs(const DwVfpRegister frt,
                      const DwVfpRegister frb,
                      RCBit rc) {
