@@ -1005,13 +1005,13 @@ void LCodeGen::DoMathFloorOfDiv(LMathFloorOfDiv* instr) {
       return;
 
     case -1: {
-      OEBit oe;
+      // OEBit oe;
       if (instr->hydrogen()->CheckFlag(HValue::kCanOverflow)) {
         __ lhi(r0_p, Operand::Zero());  // clear xer
         __ mtxer(r0_p);
-        oe = SetOE;
+        // oe = SetOE;
       } else {
-        oe = LeaveOE;
+        // oe = LeaveOE;
       }
       __ Negate(result, dividend/*, oe, SetRC*/);
       // TODO(john): might be a problem removing SetOE here.
