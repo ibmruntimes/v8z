@@ -2400,7 +2400,6 @@ RIE_FORM_EMIT(brxlg, BRXLG)
 RR_FORM_EMIT(bsm, BSM)
 RS1_FORM_EMIT(bxle, BXLE)
 RSY1_FORM_EMIT(bxleg, BXLEG)
-RRE_FORM_EMIT(cdfbr, CDFBR)
 RRF2_FORM_EMIT(cdfbra, CDFBRA)
 RRE_FORM_EMIT(cdftr, CDFTR)
 RRF2_FORM_EMIT(cdgbra, CDGBRA)
@@ -2428,7 +2427,6 @@ RRF2_FORM_EMIT(celfbr, CELFBR)
 RRF2_FORM_EMIT(celgbr, CELGBR)
 RRE_FORM_EMIT(cextr, CEXTR)
 S_FORM_EMIT(cfc, CFC)
-RRF2_FORM_EMIT(cfdbr, CFDBR)
 RRF2_FORM_EMIT(cfdbra, CFDBRA)
 RRF2_FORM_EMIT(cfdr, CFDR)
 RRF2_FORM_EMIT(cfdtr, CFDTR)
@@ -3658,16 +3656,25 @@ void Assembler::ldr(DoubleRegister r1, DoubleRegister r2) {
   rr_form(LDR, r1, r2);
 }
 
-// Convert to Fixed point (L)
+// Convert to Fixed point (64<-L)
 void Assembler::cgdbr(Register r1, DoubleRegister r2) {
   rre_form(CGDBR, r1, Register::from_code(r2.code()));
 }
 
-// Convert from Fixed point (L)
-void Assembler::cdgbr(Register r1, DoubleRegister r2) {
-  rre_form(CDGBR, r1, Register::from_code(r2.code()));
+// Convert to Fixed point (32<-L)
+void Assembler::cfdbr(Register r1, DoubleRegister r2) {
+  rre_form(CFDBR, r1, Register::from_code(r2.code()));
 }
 
+// Convert from Fixed point (L<-64)
+void Assembler::cdgbr(DoubleRegister r1, Register r2) {
+  rre_form(CDGBR, Register::from_code(r1.code()), r2);
+}
+
+// Convert from Fixed point (L<-32)
+void Assembler::cdfbr(DoubleRegister r1, Register r2) {
+  rre_form(CDFBR, Register::from_code(r1.code()), r2);
+}
 
 // end of S390instructions
 
