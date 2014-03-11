@@ -1089,7 +1089,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   // address for lazy deoptimization) and compute the fp-to-sp delta in
   // register r7.
   if (type() == EAGER) {
-    __ lhi(r6, Operand::Zero());
+    __ LoadImmP(r6, Operand::Zero());
     // Correct one word for bailout id.
     __ LoadRR(r7, sp);
     __ AddP(r7, Operand(kSavedRegistersAreaSize + (1 * kPointerSize)));
@@ -1110,7 +1110,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   // Pass six arguments in r3 to r8.
   __ PrepareCallCFunction(6, r8);
   __ LoadP(r3, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
-  __ lhi(r4, Operand(type()));  // bailout type,
+  __ LoadImmP(r4, Operand(type()));  // bailout type,
   // r5: bailout id already loaded.
   // r6: code address or 0 already loaded.
   // r7: Fp-to-sp delta.
@@ -1255,7 +1255,7 @@ void Deoptimizer::TableEntryGenerator::GeneratePrologue() {
       __ mflr(r0);
       __ push(r0);
     }
-    __ lhi(ip, Operand(i));
+    __ LoadImmP(ip, Operand(i));
     __ push(ip);
     __ b(&done);
     ASSERT(masm()->pc_offset() - start == table_entry_size_);

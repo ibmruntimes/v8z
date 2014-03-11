@@ -1007,7 +1007,7 @@ void LCodeGen::DoMathFloorOfDiv(LMathFloorOfDiv* instr) {
     case -1: {
       // OEBit oe;
       if (instr->hydrogen()->CheckFlag(HValue::kCanOverflow)) {
-        __ lhi(r0_p, Operand::Zero());  // clear xer
+        __ LoadImmP(r0_p, Operand::Zero());  // clear xer
         __ mtxer(r0_p);
         // oe = SetOE;
       } else {
@@ -1136,7 +1136,7 @@ void LCodeGen::DoMulI(LMulI* instr) {
           __ Cmpi(left, Operand::Zero());
           DeoptimizeIf(lt, instr->environment());
         }
-        __ lhi(result, Operand::Zero());
+        __ LoadImmP(result, Operand::Zero());
         break;
       case 1:
         __ Move(result, left);
@@ -2874,7 +2874,7 @@ void LCodeGen::DoLoadKeyedFastDoubleElement(
         __ LoadlW(scratch, MemOperand(elements,
                                    address_offset + sizeof(kHoleNanLower32)));
       } else {
-        __ lhi(r0_p, Operand(address_offset));
+        __ LoadImmP(r0_p, Operand(address_offset));
         __ LoadRR(scratch, elements);
         __ AddP(scratch, r0_p);
         __ LoadlW(scratch, MemOperand(scratch, sizeof(kHoleNanLower32)));
@@ -3400,7 +3400,7 @@ void LCodeGen::EmitIntegerMathAbs(LUnaryMathOperation* instr) {
   __ Cmpi(input, Operand::Zero());
   __ Move(result, input);
   __ bge(&done);
-  __ lhi(r0_p, Operand::Zero());  // clear xer
+  __ LoadImmP(r0_p, Operand::Zero());  // clear xer
   __ mtxer(r0_p);
   __ Negate(result, result/*, SetOE, SetRC*/);
   // TODO(john): might be a problem removing SetOE here.
@@ -3500,7 +3500,7 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
   // If the number is in ]-0.5, +0.5[, the result is +/- 0.
   __ Cmpi(scratch, Operand(HeapNumber::kExponentBias - 2));
   __ bgt(&skip1);
-  __ lhi(result, Operand::Zero());
+  __ LoadImmP(result, Operand::Zero());
   if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
     __ b(&check_sign_on_zero);
   } else {
@@ -3536,7 +3536,7 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
     DeoptimizeIf(lt, instr->environment(), cr0);
   } else {
     __ bge(&skip2);
-    __ lhi(result, Operand::Zero());
+    __ LoadImmP(result, Operand::Zero());
     __ b(&done);
     __ bind(&skip2);
   }
@@ -3674,7 +3674,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
   // state[0] = 18273 * (state[0] & 0xFFFF) + (state[0] >> 16)
   __ LoadRR(r6_p, r4_p);
   __ AndP(r6_p, Operand(0xFFFF));
-  __ lhi(r7_p, Operand(18273));
+  __ LoadImmP(r7_p, Operand(18273));
   __ Mul(r6_p, r6_p, r7_p);
   __ srwi(r4_p, r4_p, Operand(16));
   __ Add(r4_p, r6_p, r4_p);
@@ -3715,7 +3715,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
   __ LoadF(d7, MemOperand(sp, 0));
 
   // Move 0x4130000000000000 to VFP.
-  __ lhi(r3_p, Operand::Zero());
+  __ LoadImmP(r3_p, Operand::Zero());
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
   __ StoreW(r3_p, MemOperand(sp, 0));
   __ StoreW(r4_p, MemOperand(sp, 4));
@@ -4300,7 +4300,7 @@ void LCodeGen::DoDeferredStringCharCodeAt(LStringCharCodeAt* instr) {
   // TODO(3095996): Get rid of this. For now, we need to make the
   // result register contain a valid pointer because it is already
   // contained in the register pointer map.
-  __ lhi(result, Operand::Zero());
+  __ LoadImmP(result, Operand::Zero());
 
   PushSafepointRegistersScope scope(this, Safepoint::kWithRegisters);
   __ push(string);
@@ -4361,7 +4361,7 @@ void LCodeGen::DoDeferredStringCharFromCode(LStringCharFromCode* instr) {
   // TODO(3095996): Get rid of this. For now, we need to make the
   // result register contain a valid pointer because it is already
   // contained in the register pointer map.
-  __ lhi(result, Operand::Zero());
+  __ LoadImmP(result, Operand::Zero());
 
   PushSafepointRegistersScope scope(this, Safepoint::kWithRegisters);
   __ SmiTag(char_code);
@@ -4497,7 +4497,7 @@ void LCodeGen::DoDeferredNumberTagI(LInstruction* instr,
   // TODO(3095996): Put a valid pointer value in the stack slot where the result
   // register is stored, as this register is in the pointer map, but contains an
   // integer value.
-  __ lhi(ip, Operand::Zero());
+  __ LoadImmP(ip, Operand::Zero());
   __ StoreToSafepointRegisterSlot(ip, dst);
   CallRuntimeFromDeferred(Runtime::kAllocateHeapNumber, 0, instr);
   __ Move(dst, r3_p);
@@ -4544,7 +4544,7 @@ void LCodeGen::DoDeferredNumberTagD(LNumberTagD* instr) {
   // result register contain a valid pointer because it is already
   // contained in the register pointer map.
   Register reg = ToRegister(instr->result());
-  __ lhi(reg, Operand::Zero());
+  __ LoadImmP(reg, Operand::Zero());
 
   PushSafepointRegistersScope scope(this, Safepoint::kWithRegisters);
   CallRuntimeFromDeferred(Runtime::kAllocateHeapNumber, 0, instr);
@@ -4669,7 +4669,7 @@ void LCodeGen::DoDeferredTaggedToI(LTaggedToI* instr) {
     __ LoadRoot(ip, Heap::kUndefinedValueRootIndex);
     __ CmpRR(input_reg, ip);
     DeoptimizeIf(ne, instr->environment());
-    __ lhi(input_reg, Operand::Zero());
+    __ LoadImmP(input_reg, Operand::Zero());
     __ b(&done);
 
     __ bind(&heap_number);
@@ -4936,7 +4936,7 @@ void LCodeGen::DoClampTToUint8(LClampTToUint8* instr) {
   // conversions.
   __ Cmpi(input_reg, Operand(factory()->undefined_value()));
   DeoptimizeIf(ne, instr->environment());
-  __ lhi(result_reg, Operand::Zero());
+  __ LoadImmP(result_reg, Operand::Zero());
   __ b(&done);
 
   // Heap number
@@ -5056,7 +5056,7 @@ void LCodeGen::DoDeferredAllocateObject(LAllocateObject* instr) {
   // TODO(3095996): Get rid of this. For now, we need to make the
   // result register contain a valid pointer because it is already
   // contained in the register pointer map.
-  __ lhi(result, Operand::Zero());
+  __ LoadImmP(result, Operand::Zero());
 
   PushSafepointRegistersScope scope(this, Safepoint::kWithRegisters);
   __ LoadSmiLiteral(r3_p, Smi::FromInt(instance_size));

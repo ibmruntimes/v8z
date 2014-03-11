@@ -527,7 +527,7 @@ void CallICBase::GenerateMiss(MacroAssembler* masm,
     __ Push(r6_p, r5_p);
 
     // Call the entry.
-    __ lhi(r3_p, Operand(2));
+    __ LoadImmP(r3_p, Operand(2));
     __ mov(r4_p, Operand(ExternalReference(IC_Utility(id), isolate)));
 
     CEntryStub stub(1);
