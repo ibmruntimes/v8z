@@ -3180,43 +3180,55 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
     case SDBR:
     case MDBR:
     case DDBR:
-    case CDBR: {
+    case CDBR:
+    case CDFBR:
+    case CDGBR:
+    case CFDBR:
+    case CGDBR: {
       RREInstruction* rreInstr = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rreInstr->R1Value();
       int r2 = rreInstr->R2Value();
       double r1_val = get_double_from_d_register(r1);
       double r2_val = get_double_from_d_register(r2);
-      switch (op) {
-        case ADBR:
+        if (op == ADBR) {
           r1_val += r2_val;
           set_d_register_from_double(r1, r1_val);
           SetS390ConditionCode<double>(r1_val, 0);
-          break;
-        case SDBR:
+        } else if (op == SDBR) {
           r1_val -= r2_val;
           set_d_register_from_double(r1, r1_val);
           SetS390ConditionCode<double>(r1_val, 0);
-          break;
-        case MDBR:
+        } else if (op == MDBR) {
           r1_val *= r2_val;
           set_d_register_from_double(r1, r1_val);
           SetS390ConditionCode<double>(r1_val, 0);
-          break;
-        case DDBR:
+        } else if (op == DDBR) {
           r1_val /= r2_val;
           set_d_register_from_double(r1, r1_val);
           SetS390ConditionCode<double>(r1_val, 0);
-          break;
-        case CDBR:
+        } else if (op == CDBR) {
           SetS390ConditionCode<double>(r1_val, r2_val);
-          break;
-        default:
+        } else if (op == CDGBR) {
+          intptr_t r2_val = get_register(r2);
+          double r1_val = static_cast<double>(r2_val);
+          set_d_register_from_double(r1, r1_val);
+        } else if (op == CDFBR) {
+          int32_t r2_val = get_low_register<int32_t>(r2);
+          double r1_val = static_cast<double>(r2_val);
+          set_d_register_from_double(r1, r1_val);
+        } else if (op == CFDBR) {
+          double r2_val = get_double_from_d_register(r2);
+          int32_t r1_val = static_cast<int32_t>(r2_val);
+          set_low_register<int32_t>(r1, r1_val);
+        } else if (op == CGDBR) {
+          double r2_val = get_double_from_d_register(r2);
+          int64_t r1_val = static_cast<int64_t>(r2_val);
+          set_register(r1, r1_val);
+        } else {
           UNREACHABLE();
-          break;
+        }
       }
-      break;
-    }
-
+    break;
     default:
       UNREACHABLE();
       return false;
