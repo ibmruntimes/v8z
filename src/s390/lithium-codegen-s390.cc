@@ -2776,7 +2776,7 @@ void LCodeGen::DoAccessArgumentsAt(LAccessArgumentsAt* instr) {
   __ Sub(length, length, index);
   __ Add(length, Operand(1));
   __ ShiftLeftImm(r0_p, length, Operand(kPointerSizeLog2));
-  __ LoadPX(result, MemOperand(arguments, r0_p));
+  __ LoadP(result, MemOperand(arguments, r0_p));
 }
 
 
@@ -3183,7 +3183,7 @@ void LCodeGen::DoApplyArguments(LApplyArguments* instr) {
   __ mtctr(length);
   __ bind(&loop);
   __ ShiftLeftImm(r0_p, length, Operand(kPointerSizeLog2));
-  __ LoadPX(scratch, MemOperand(elements, r0_p));
+  __ LoadP(scratch, MemOperand(elements, r0_p));
   __ push(scratch);
   __ AddP(length, Operand(-1));
   __ bdnz(&loop);

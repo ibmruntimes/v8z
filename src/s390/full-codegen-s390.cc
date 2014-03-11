@@ -1214,7 +1214,7 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   __ LoadP(r5_p, MemOperand(sp, 2 * kPointerSize));
   __ AddP(r5_p, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ SmiToPtrArrayOffset(r6_p, r3_p);
-  __ LoadPX(r6_p, MemOperand(r6_p, r5_p));
+  __ LoadP(r6_p, MemOperand(r6_p, r5_p));
 
   // Get the expected map from the stack or a smi in the
   // permanent slow case into register r2_p.

@@ -351,7 +351,7 @@ static void GenerateFastArrayLoad(MacroAssembler* masm,
   __ AddP(scratch1, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   // The key is a smi.
   __ SmiToPtrArrayOffset(scratch2, key);
-  __ LoadPX(scratch2, MemOperand(scratch2, scratch1));
+  __ LoadP(scratch2, MemOperand(scratch2, scratch1));
   __ LoadRoot(ip, Heap::kTheHoleValueRootIndex);
   __ CmpRR(scratch2, ip);
   // In case the loaded value is the_hole we have to consult GetProperty
@@ -816,7 +816,7 @@ static MemOperand GenerateMappedArgumentsLookup(MacroAssembler* masm,
   __ SmiToPtrArrayOffset(scratch3, key);
   __ AddP(scratch3, Operand(kOffset));
 
-  __ LoadPX(scratch2, MemOperand(scratch1, scratch3));
+  __ LoadP(scratch2, MemOperand(scratch1, scratch3));
   __ LoadRoot(scratch3, Heap::kTheHoleValueRootIndex);
   __ CmpRR(scratch2, scratch3);
   __ beq(unmapped_case);
@@ -1125,7 +1125,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   __ AddP(r9_p, r8_p);  // Index from start of object.
   __ Sub(r4_p, Operand(kHeapObjectTag));  // Remove the heap tag.
   __ ShiftLeftImm(r3_p, r9_p, Operand(kPointerSizeLog2));
-  __ LoadPX(r3_p, MemOperand(r3_p, r4_p));
+  __ LoadP(r3_p, MemOperand(r3_p, r4_p));
   __ IncrementCounter(isolate->counters()->keyed_load_generic_lookup_cache(),
                       1, r5_p, r6_p);
   __ Ret();
@@ -1135,7 +1135,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   __ LoadP(r4_p, FieldMemOperand(r4_p, JSObject::kPropertiesOffset));
   __ AddP(r4_p, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ ShiftLeftImm(r3_p, r8_p, Operand(kPointerSizeLog2));
-  __ LoadPX(r3_p, MemOperand(r3_p, r4_p));
+  __ LoadP(r3_p, MemOperand(r3_p, r4_p));
   __ IncrementCounter(isolate->counters()->keyed_load_generic_lookup_cache(),
                       1, r5_p, r6_p);
   __ Ret();
