@@ -1353,12 +1353,6 @@ void Assembler::fsel(const DwVfpRegister frt, const DwVfpRegister fra,
        frc.code()*B6 | rc);
 }
 
-void Assembler::fneg(const DwVfpRegister frt,
-                     const DwVfpRegister frb,
-                     RCBit rc) {
-  emit(EXT4 | FNEG | frt.code()*B21 | frb.code()*B11 | rc);
-}
-
 void Assembler::mtfsfi(int bf, int immediate, RCBit rc) {
   emit(EXT4 | MTFSFI | bf*B23 | immediate*B12 | rc);
 }
@@ -2635,7 +2629,6 @@ RI1_FORM_EMIT(llilh, LLILH)
 RI1_FORM_EMIT(llill, LLILL)
 SS5_FORM_EMIT(lmd, LMD)
 RSY1_FORM_EMIT(lmh, LMH)
-RRE_FORM_EMIT(lndbr, LNDBR)
 RRE_FORM_EMIT(lndfr, LNDFR)
 RRE_FORM_EMIT(lnebr, LNEBR)
 RRE_FORM_EMIT(lngfr, LNGFR)
@@ -3606,6 +3599,13 @@ void Assembler::sqdb(DoubleRegister r1, const MemOperand& opnd) {
 // Square Root Register-Register (LB)
 void Assembler::sqdbr(DoubleRegister r1, DoubleRegister r2) {
   rre_form(SQDBR,
+           Register::from_code(r1.code()),
+           Register::from_code(r2.code()));
+}
+
+// Load negative  Register-Register (LB)
+void Assembler::lndbr(DoubleRegister r1, DoubleRegister r2) {
+  rre_form(LNDBR,
            Register::from_code(r1.code()),
            Register::from_code(r2.code()));
 }

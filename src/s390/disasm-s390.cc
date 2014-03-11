@@ -1054,10 +1054,6 @@ void Decoder::DecodeExt4(Instruction* instr) {
       Format(instr, "frim    'Dt, 'Db");
       break;
     }
-    case FNEG: {
-      Format(instr, "fneg'.   'Dt, 'Db");
-      break;
-    }
     default: {
       Unknown(instr);  // not used by V8
     }
@@ -1204,6 +1200,7 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case MDBR: Format(instr, "mdbr\t'r5,'r6"); break;
       case DDBR: Format(instr, "ddbr\t'r5,'r6"); break;
       case SQDBR: Format(instr, "sqdbr\t'r5,'r6"); break;
+      case LNDBR: Format(instr, "lndbr\t'r5,'r6"); break;
     default:
       return false;
   }

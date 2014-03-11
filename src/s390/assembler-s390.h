@@ -1395,7 +1395,6 @@ RI1_FORM(llilh);
 RI1_FORM(llill);
 SS5_FORM(lmd);
 RSY1_FORM(lmh);
-RRE_FORM(lndbr);
 RRE_FORM(lndfr);
 RRE_FORM(lnebr);
 RRE_FORM(lngfr);
@@ -1772,6 +1771,7 @@ SS2_FORM(zap);
 
   void sqdb(DoubleRegister r1, const MemOperand& opnd);
   void sqdbr(DoubleRegister r1, DoubleRegister r2);
+  void lndbr(DoubleRegister r1, DoubleRegister r2);
 
 
 // end of S390instructions
@@ -1951,8 +1951,6 @@ SS2_FORM(zap);
             RCBit rc = LeaveRC);
   void fsel(const DwVfpRegister frt, const DwVfpRegister fra,
             const DwVfpRegister frc, const DwVfpRegister frb,
-            RCBit rc = LeaveRC);
-  void fneg(const DwVfpRegister frt, const DwVfpRegister frb,
             RCBit rc = LeaveRC);
   void mtfsfi(int bf, int immediate, RCBit rc = LeaveRC);
   void mffs(const DwVfpRegister frt, RCBit rc = LeaveRC);

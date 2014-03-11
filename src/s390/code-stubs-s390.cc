@@ -3360,7 +3360,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
       __ LoadDoubleLiteral(double_scratch, -V8_INFINITY, scratch);
       __ fcmpu(double_base, double_scratch);
       __ bne(&not_minus_inf1);
-      __ fneg(double_result, double_scratch);
+      __ lndbr(double_result, double_scratch);
       __ b(&done);
       __ bind(&not_minus_inf1);
 
