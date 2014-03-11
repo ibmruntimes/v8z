@@ -1368,7 +1368,7 @@ TEST(18) {
 
   __ mov(r3, Operand(0x1234));
   __ cdfbr(d1, r3);
-  __ cfdbr(r2, d21);
+  __ cfdbr(r2, d1);
   __ b(r14);
 
   CodeDesc desc;
