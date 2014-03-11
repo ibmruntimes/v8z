@@ -3572,7 +3572,7 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
 void LCodeGen::DoMathSqrt(LUnaryMathOperation* instr) {
   DoubleRegister input = ToDoubleRegister(instr->value());
   DoubleRegister result = ToDoubleRegister(instr->result());
-  __ fsqrt(result, input);
+  __ sqdbr(result, input);
 }
 
 
@@ -3596,7 +3596,7 @@ void LCodeGen::DoMathPowHalf(LUnaryMathOperation* instr) {
   __ bind(&skip);
   __ ldr(result, input);
   __ adbr(result, kDoubleRegZero);
-  __ fsqrt(result, result);
+  __ sqdbr(result, result);
   __ bind(&done);
 }
 

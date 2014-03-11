@@ -3367,7 +3367,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
       // Add +0 to convert -0 to +0.
       __ ldr(double_scratch, double_base);
       __ adbr(double_scratch, kDoubleRegZero);
-      __ fsqrt(double_result, double_scratch);
+      __ sqdbr(double_result, double_scratch);
       __ b(&done);
 
       __ bind(&not_plus_half);
@@ -3388,7 +3388,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
       __ ldr(double_scratch, double_base);
       __ adbr(double_scratch, kDoubleRegZero);
       __ LoadDoubleLiteral(double_result, 1.0, scratch);
-      __ fsqrt(double_scratch, double_scratch);
+      __ sqdbr(double_scratch, double_scratch);
       __ ddbr(double_result, double_scratch);
       __ b(&done);
     }
