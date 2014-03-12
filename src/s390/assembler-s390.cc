@@ -759,10 +759,6 @@ void Assembler::clrlwi(Register dst, Register src, const Operand& val,
 }
 
 
-void Assembler::srawi(Register rb, Register rs, int sh, RCBit r) {
-  emit(EXT2 | SRAWIX | rs.code()*B21 | rb.code()*B16 | sh*B11 | r);
-}
-
 void Assembler::srw(Register dst, Register src1, Register src2, RCBit r) {
   x_form(EXT2 | SRWX, dst, src1, src2, r);
 }

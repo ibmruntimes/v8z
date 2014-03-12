@@ -3007,9 +3007,11 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
   //   h = (low ^ high); h ^= h >> 16; h ^= h >> 8; h = h & (cacheSize - 1);
   __ LoadRR(r4_p, r6_p);
   __ XorP(r4_p, r5_p);
-  __ srawi(scratch0, r4_p, 16);
+  __ LoadRR(scratch0, r4_p);
+  __ sra(scratch0, Operand(16));
   __ XorP(r4_p, scratch0);
-  __ srawi(scratch0, r4_p, 8);
+  __ LoadRR(scratch0, r4_p);
+  __ sra(scratch0, Operand(8));
   __ XorP(r4_p, scratch0);
   ASSERT(IsPowerOf2(TranscendentalCache::SubCache::kCacheSize));
   __ AndP(r4_p, Operand(TranscendentalCache::SubCache::kCacheSize - 1));

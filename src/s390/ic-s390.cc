@@ -1049,9 +1049,10 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   // Load the map of the receiver, compute the keyed lookup cache hash
   // based on 32 bits of the map pointer and the string hash.
   __ LoadP(r5_p, FieldMemOperand(r4_p, HeapObject::kMapOffset));
-  __ srawi(r6_p, r5_p, KeyedLookupCache::kMapHashShift);
+  __ LoadRR(r6_p, r5_p);
+  __ sra(r6_p, Operand(KeyedLookupCache::kMapHashShift));
   __ LoadlW(r7_p, FieldMemOperand(r3_p, String::kHashFieldOffset));
-  __ srawi(r7_p, r7_p, String::kHashShift);
+  __ sra(r7_p, Operand(String::kHashShift));
   __ XorP(r6_p, r7_p);
   int mask = KeyedLookupCache::kCapacityMask & KeyedLookupCache::kHashMask;
   __ mov(r7_p, Operand(mask));
