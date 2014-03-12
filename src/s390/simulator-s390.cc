@@ -2856,7 +2856,13 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       break;
     }
     case BCR: {
-      UNIMPLEMENTED();
+      RRInstruction* rrinst = reinterpret_cast<RRInstruction*>(instr);
+      int r1 = rrinst->R1Value();
+      int r2 = rrinst->R2Value();
+      if (TestConditionCode(Condition(r1))) {
+        intptr_t r2_val = get_register(r2);
+        set_pc(r2_val);
+      } 
       break;
     }
     case LTR: {

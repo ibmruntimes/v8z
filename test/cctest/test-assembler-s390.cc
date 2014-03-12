@@ -1370,6 +1370,8 @@ TEST(18) {
 
   __ mov(r3, Operand(0x1234));
   __ cdfbr(d1, r3);
+  __ ldr(d2, d1);
+  __ adbr(d1, d2);
   __ cfdbr(r2, d1);
   __ b(r14);
 
@@ -1387,7 +1389,7 @@ TEST(18) {
   intptr_t res =
     reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(f, 3, 4, 3, 0, 0));
   ::printf("f() = %" V8PRIdPTR "\n", res);
-  CHECK_EQ(0x1234, static_cast<int>(res));
+  CHECK_EQ(0x2468, static_cast<int>(res));
 }
 
 
