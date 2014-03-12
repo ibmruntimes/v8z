@@ -1372,7 +1372,7 @@ TEST(18) {
   __ cdfbr(d1, r3);
   __ ldr(d2, d1);
   __ adbr(d1, d2);
-  __ cfdbr(r2, d1);
+  __ cfdbr(Condition(0), r2, d1);
   __ b(r14);
 
   CodeDesc desc;

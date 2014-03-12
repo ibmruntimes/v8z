@@ -84,6 +84,7 @@ enum Condition {
   CC_GT      = 0x02,            // S390 condition code 0b0010
   CC_GE      = CC_EQ | CC_GT,   // S390 condition code 0b0010
   CC_OF      = 0x01,            // S390 condition code 0b0001
+  CC_NOF     = 0x0E,            // S390 condition code 0b1110
 
   mask0x0    =  0,         // no jumps
   mask0x1    =  1,
