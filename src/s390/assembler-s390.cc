@@ -747,11 +747,6 @@ void Assembler::rlwimi(Register rb, Register rs,
   emit(RLWIMIX | rs.code()*B21 | rb.code()*B16 | sh*B11 | mb*B6 | me << 1 | rc);
 }
 
-void Assembler::slwi(Register dst, Register src, const Operand& val,
-                     RCBit rc) {
-  ASSERT((32 > val.imm_)&&(val.imm_ >= 0));
-  rlwinm(dst, src, val.imm_, 0, 31-val.imm_, rc);
-}
 void Assembler::srwi(Register dst, Register src, const Operand& val,
                      RCBit rc) {
   ASSERT((32 > val.imm_)&&(val.imm_ >= 0));

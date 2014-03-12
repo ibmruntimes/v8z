@@ -805,7 +805,7 @@ void FloatingPointHelper::DoubleIs32BitInteger(MacroAssembler* masm,
   STATIC_ASSERT(HeapNumber::kMantissaBitsInTopWord == 20);
   STATIC_ASSERT(HeapNumber::kNonMantissaBitsInTopWord == 12);
   __ ExtractBitRange(dst, src2, 31, HeapNumber::kMantissaBitsInTopWord);
-  __ slwi(src1, src1, Operand(HeapNumber::kNonMantissaBitsInTopWord));
+  __ sla(src1, Operand(HeapNumber::kNonMantissaBitsInTopWord));
   __ OrP(dst, src1);
 
   // Create the mask and test the lower bits (of the higher bits).
@@ -939,7 +939,7 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm,
       __ bne(&return_equal);
 
       // Shift out flag and all exponent bits, retaining only mantissa.
-      __ slwi(r5_p, r5_p, Operand(HeapNumber::kNonMantissaBitsInTopWord));
+      __ sla(r5_p, Operand(HeapNumber::kNonMantissaBitsInTopWord));
       // Or with all low-bits of mantissa.
       __ LoadlW(r6_p, FieldMemOperand(r3_p, HeapNumber::kMantissaOffset));
       __ LoadRR(r3_p, r5_p);
@@ -1834,8 +1834,7 @@ void UnaryOpStub::GenerateHeapNumberCodeBitNot(
   }
 
   // Convert the int32 in r4_p to the heap number in r3_p.
-  FloatingPointHelper::ConvertIntToDouble(
-      masm, r4_p, d0);
+  FloatingPointHelper::ConvertIntToDouble(masm, r4_p, d0);
   __ StoreF(d0, FieldMemOperand(r3_p, HeapNumber::kValueOffset));
   __ Ret();
 
@@ -5742,7 +5741,8 @@ void StringHelper::GenerateHashInit(MacroAssembler* masm,
   __ LoadRR(hash, character);
   __ AddP(hash, scratch);
   // hash += hash << 10;
-  __ slwi(scratch, hash, Operand(10));
+  __ LoadRR(scratch, hash);
+  __ sla(scratch, Operand(10));
   __ AddP(hash, scratch);
   // hash ^= hash >> 6;
   __ srwi(scratch, hash, Operand(6));
@@ -5757,7 +5757,8 @@ void StringHelper::GenerateHashAddCharacter(MacroAssembler* masm,
   // hash += character;
   __ AddP(hash, character);
   // hash += hash << 10;
-  __ slwi(scratch, hash, Operand(10));
+  __ LoadRR(scratch, hash);
+  __ sla(scratch, Operand(10));
   __ AddP(hash, scratch);
   // hash ^= hash >> 6;
   __ srwi(scratch, hash, Operand(6));
@@ -5769,13 +5770,15 @@ void StringHelper::GenerateHashGetHash(MacroAssembler* masm,
                                        Register hash,
                                        Register scratch) {
   // hash += hash << 3;
-  __ slwi(scratch, hash, Operand(3));
+  __ LoadRR(scratch, hash);
+  __ sla(scratch, Operand(3));
   __ AddP(hash, scratch);
   // hash ^= hash >> 11;
   __ srwi(scratch, hash, Operand(11));
   __ XorP(hash, scratch);
   // hash += hash << 15;
-  __ slwi(scratch, hash, Operand(15));
+  __ LoadRR(scratch, hash);
+  __ sla(scratch, Operand(15));
   __ AddP(hash, scratch);
 
   __ mov(scratch, Operand(String::kHashBitMask));
