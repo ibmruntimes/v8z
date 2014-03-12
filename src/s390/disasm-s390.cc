@@ -394,7 +394,12 @@ int Decoder::FormatMask(Instruction* instr, const char* format) {
     value = reinterpret_cast<RRInstruction*>(instr)->R1Value();
     out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
         "0x%x", value);
-  return 2;
+    return 2;
+  } else if (format[1] == '2') {  // mask format in bit 16 - 19
+    value = reinterpret_cast<RXInstruction*>(instr)->B2Value();
+    out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
+        "0x%x", value);
+    return 2;
   }
 
   if (format[1] == 'e') {
@@ -1191,6 +1196,10 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case CDFBR: Format(instr, "cdfbr\t'r5,'r6"); break;
       case CGDBR: Format(instr, "cgdbr\t'r5,'r6"); break;
       case CDGBR: Format(instr, "cdgbr\t'r5,'r6"); break;
+      case CDLFBR: Format(instr, "cdlfbr\t'r5,'m2,'r6"); break;
+      case CDLGBR: Format(instr, "cdlgbr\t'r5,'m2,'r6"); break;
+      case CLFDBR: Format(instr, "clfdbr\t'r5,'m2,'r6"); break;
+      case CLGDBR: Format(instr, "clgdbr\t'r5,'m2,'r6"); break;
       case ADBR: Format(instr, "adbr\t'r5,'r6"); break;
       case SDBR: Format(instr, "sdbr\t'r5,'r6"); break;
       case MDBR: Format(instr, "mdbr\t'r5,'r6"); break;
