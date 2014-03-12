@@ -275,12 +275,10 @@ class Simulator {
   bool S390InstructionDecode(Instruction *instr);
   template <typename T>
   void SetS390ConditionCode(T lhs, T rhs) {
-    if (lhs == rhs) {
-      condition_reg_ = CC_EQ;
-    } else if (lhs < rhs) {
-      condition_reg_ = CC_LT;
-    } else {
-      condition_reg_ = CC_GT;
+    condition_reg_ = 0;
+    if (lhs == rhs) condition_reg_ |= CC_EQ;
+    if (lhs <  rhs) condition_reg_ |= CC_LT;
+    if (lhs >  rhs) condition_reg_ |= CC_GT;
     }
   }
 
