@@ -2965,7 +2965,8 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       UNIMPLEMENTED();
       break;
     }
-    case STM: {
+    case STM:
+    case LM: {
       // Store Multiple 32-bits.
       RSInstruction* rsinstr = reinterpret_cast<RSInstruction*>(instr);
       int r1 = rsinstr->R1Value();
@@ -2983,13 +2984,14 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
 
       // Store each register in ascending order.
       for (int i = 0; i <= r3 - r1; i++) {
-        int32_t value = get_low_register<int32_t>((r1 + i) % 16);
-        WriteW(rb_val + offset + 4 * i, value, instr);
+        if (op == STM) {
+          int32_t value = get_low_register<int32_t>((r1 + i) % 16);
+          WriteW(rb_val + offset + 4 * i, value, instr);
+        } else if (op == LM) {
+          int32_t value = ReadW(rb_val + offset + 4 * i, instr);
+          set_low_register<int32_t>((r1 + i) % 16, value);
+        }
       }
-      break;
-    }
-    case LM: {
-      UNIMPLEMENTED();
       break;
     }
     case SLL:
@@ -3460,13 +3462,16 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
 
       intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
       intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      intptr_t addr = x2_val + b2_val + d2;
 
       if (op == LT) {
-        int32_t value = ReadW(x2_val + b2_val + d2, instr);
+        int32_t value = ReadW(addr, instr);
         set_low_register<int32_t>(r1, value);
         SetS390ConditionCode<int32_t>(value, 0);
-      } else {
-        UNIMPLEMENTED();
+      } else if (op == LTG) {
+        int64_t value = *reinterpret_cast<int64_t*>(ReadDW(addr));
+        set_register(r1, value);
+        SetS390ConditionCode<int64_t>(value, 0);
       }
       break;
     }
