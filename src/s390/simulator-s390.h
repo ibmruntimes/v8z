@@ -279,7 +279,6 @@ class Simulator {
     if (lhs == rhs) condition_reg_ |= CC_EQ;
     if (lhs <  rhs) condition_reg_ |= CC_LT;
     if (lhs >  rhs) condition_reg_ |= CC_GT;
-    }
   }
 
   template <typename T>
