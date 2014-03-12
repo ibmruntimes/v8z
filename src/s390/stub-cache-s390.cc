@@ -3918,7 +3918,7 @@ void KeyedStoreStubCompiler::GenerateStoreExternalArray(
       // Perform int-to-float conversion and store to memory.
       __ SmiToFloatArrayOffset(r10_p, key);
       // r10_p: efective address of the float element
-      FloatingPointHelper::ConvertIntToFloat(masm, d0, r8_p, r9_p);
+      FloatingPointHelper::ConvertIntToFloat(masm, d0, r8_p);
       __ stfsx(d0, MemOperand(r6_p, r10_p));
       break;
     case EXTERNAL_DOUBLE_ELEMENTS:
