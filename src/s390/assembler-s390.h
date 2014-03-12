@@ -1749,6 +1749,7 @@ SS2_FORM(zap);
   void cdfbr(DoubleRegister fltReg, Register fixReg);
   void cgdbr(Register fixReg, DoubleRegister fltReg);
   void cdgbr(DoubleRegister fltReg, Register fixReg);
+  // double type conversion
   void cdlfbr(Condition m3, Condition m4,
               DoubleRegister fltReg, Register fixReg);
   void cdlgbr(Condition m3, Condition m4,
@@ -1757,6 +1758,8 @@ SS2_FORM(zap);
               Register fixReg, DoubleRegister fltReg);
   void clgdbr(Condition m3, Condition m4,
               Register fixReg, DoubleRegister fltReg);
+
+  // float type conversion
 
   void cdb(DoubleRegister r1, const MemOperand& opnd);
   void cdbr(DoubleRegister r1, DoubleRegister r2);
