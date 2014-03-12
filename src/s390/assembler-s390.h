@@ -1869,7 +1869,6 @@ SS2_FORM(zap);
               RCBit rc = LeaveRC);
   void rlwimi(Register rb, Register rs, int sh, int mb, int me,
               RCBit rc = LeaveRC);
-  void srwi(Register dst, Register src, const Operand& val, RCBit rc = LeaveRC);
   void clrrwi(Register dst, Register src, const Operand& val,
               RCBit rc = LeaveRC);
   void clrlwi(Register dst, Register src, const Operand& val,

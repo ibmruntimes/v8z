@@ -1085,16 +1085,18 @@ void LCodeGen::DoMathFloorOfDiv(LMathFloorOfDiv* instr) {
 
       // Subtract one from result if -(low word) < 0xC0000000
       __ Negate(ip, ip);
-      __ srwi(scratch, ip, Operand(30));
+      __ LoadRR(scratch, ip);
+      __ srl(scratch, Operand(30));
       __ Add(scratch, Operand(1));
-      __ srwi(scratch, scratch, Operand(2));
+      __ srl(scratch, Operand(2));
       __ Add(scratch, Operand(-1));
       __ Add(result, result, scratch);
     } else {
       // Add one to result if low word >= 0xC0000000
-      __ srwi(scratch, ip, Operand(30));
+      __ LoadRR(scratch, ip);
+      __ srl(scratch, Operand(30));
       __ Add(scratch, Operand(1));
-      __ srwi(scratch, scratch, Operand(2));
+      __ srl(scratch, Operand(2));
       __ Add(result, result, scratch);
     }
     __ ShiftRightArithImm(result, result, shift - 32);
@@ -1339,7 +1341,8 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
         break;
       case Token::SHR:
         if (shift_count != 0) {
-          __ srwi(result, left, Operand(shift_count));
+          __ LoadRR(result, left);
+          __ srl(result, Operand(shift_count));
         } else {
           if (instr->can_deopt()) {
             __ TestSignBit32(left, r0_p);
@@ -3677,7 +3680,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
   __ AndP(r6_p, Operand(0xFFFF));
   __ LoadImmP(r7_p, Operand(18273));
   __ Mul(r6_p, r6_p, r7_p);
-  __ srwi(r4_p, r4_p, Operand(16));
+  __ srl(r4_p, Operand(16));
   __ Add(r4_p, r6_p, r4_p);
   // Save state[0].
   __ StoreW(r4_p, FieldMemOperand(r5_p, ByteArray::kHeaderSize));
@@ -3687,7 +3690,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
   __ AndP(r6_p, Operand(0xFFFF));
   __ mov(r7_p, Operand(36969));
   __ Mul(r6_p, r6_p, r7_p);
-  __ srwi(r3_p, r3_p, Operand(16));
+  __ srl(r3_p, Operand(16));
   __ Add(r3_p, r6_p, r3_p);
   // Save state[1].
   __ StoreW(r3_p, FieldMemOperand(r5_p, ByteArray::kHeaderSize + kSeedSize));
