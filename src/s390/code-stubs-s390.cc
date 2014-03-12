@@ -5745,7 +5745,8 @@ void StringHelper::GenerateHashInit(MacroAssembler* masm,
   __ sla(scratch, Operand(10));
   __ AddP(hash, scratch);
   // hash ^= hash >> 6;
-  __ srwi(scratch, hash, Operand(6));
+  __ LoadRR(scratch, hash);
+  __ srl(scratch, Operand(6));
   __ XorP(hash, scratch);
 }
 
@@ -5761,7 +5762,8 @@ void StringHelper::GenerateHashAddCharacter(MacroAssembler* masm,
   __ sla(scratch, Operand(10));
   __ AddP(hash, scratch);
   // hash ^= hash >> 6;
-  __ srwi(scratch, hash, Operand(6));
+  __ LoadRR(scratch, hash);
+  __ srl(scratch, Operand(6));
   __ XorP(hash, scratch);
 }
 
@@ -5774,7 +5776,8 @@ void StringHelper::GenerateHashGetHash(MacroAssembler* masm,
   __ sla(scratch, Operand(3));
   __ AddP(hash, scratch);
   // hash ^= hash >> 11;
-  __ srwi(scratch, hash, Operand(11));
+  __ LoadRR(scratch, hash);
+  __ srl(scratch, Operand(11));
   __ XorP(hash, scratch);
   // hash += hash << 15;
   __ LoadRR(scratch, hash);
@@ -6972,7 +6975,7 @@ void StringDictionaryLookupStub::GeneratePositiveLookup(MacroAssembler* masm,
       __ AddP(scratch2, Operand(
                   StringDictionary::GetProbeOffset(i) << String::kHashShift));
     }
-    __ srwi(scratch2, scratch2, Operand(String::kHashShift));
+    __ srl(scratch2, Operand(String::kHashShift));
     __ AndP(scratch2, scratch1);
 
     // Scale the index by multiplying by the element size.
@@ -7064,7 +7067,8 @@ void StringDictionaryLookupStub::Generate(MacroAssembler* masm) {
     } else {
       __ LoadRR(index, hash);
     }
-    __ srwi(r0_p, index, Operand(String::kHashShift));
+    __ LoadRR(r0_p, index);
+    __ srl(r0_p, Operand(String::kHashShift));
     __ LoadRR(index, mask);
     __ AndP(index, r0_p);
 

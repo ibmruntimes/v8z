@@ -1076,7 +1076,7 @@ void MacroAssembler::JumpToHandlerEntry() {
   // r3 = exception, r4 = code object, r5 = state.
   LoadP(r6, FieldMemOperand(r4, Code::kHandlerTableOffset));  // Handler table.
   AddP(r6, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
-  srwi(r5, r5, Operand(StackHandler::kKindWidth));  // Handler index.
+  srl(r5, Operand(StackHandler::kKindWidth));  // Handler index.
   LoadRR(ip, r5);
   sla(ip, Operand(kPointerSizeLog2));
   AddP(ip, r6);
@@ -1268,14 +1268,16 @@ void MacroAssembler::GetNumberHash(Register t0, Register scratch) {
   sla(t0, Operand(15));
   Add(t0, scratch, t0);
   // hash = hash ^ (hash >> 12);
-  srwi(scratch, t0, Operand(12));
+  LoadRR(scratch, t0);
+  srl(scratch, Operand(12));
   XorP(t0, scratch);
   // hash = hash + (hash << 2);
   LoadRR(scratch, t0);
   sla(scratch, Operand(2));
   Add(t0, t0, scratch);
   // hash = hash ^ (hash >> 4);
-  srwi(scratch, t0, Operand(4));
+  LoadRR(scratch, t0);
+  srl(scratch, Operand(4));
   XorP(t0, scratch);
   // hash = hash * 2057;
   LoadRR(r0, t0);
@@ -1286,7 +1288,8 @@ void MacroAssembler::GetNumberHash(Register t0, Register scratch) {
   sla(scratch, Operand(11));
   Add(t0, t0, scratch);
   // hash = hash ^ (hash >> 16);
-  srwi(scratch, t0, Operand(16));
+  LoadRR(scratch, t0);
+  srl(scratch, Operand(16));
   XorP(t0, scratch);
 }
 
