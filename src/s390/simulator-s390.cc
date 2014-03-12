@@ -2920,21 +2920,19 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       int r1 = riinst->R1Value();
       int i  = riinst->I2Value();
       int32_t r1_val = get_low_register<int32_t>(r1);
-      int32_t alu_out;
-      if (op == AHI) {
-        alu_out = r1_val + i;
-      } else if (op == MHI) {
-        alu_out = r1_val * i;  // no overflow indication is given
+      switch (op) {
+        case AHI: r1_val += i; break;
+        case MHI: r1_val *= i; break;  // no overflow indication is given
+        default: break;
       }
-      set_low_register<int32_t>(r1, alu_out);
+      set_low_register<int32_t>(r1, r1_val);
       break;
     }
     case LHI: {
       RIInstruction* riinst = reinterpret_cast<RIInstruction*>(instr);
       int r1 = riinst->R1Value();
       int i  = riinst->I2Value();
-      int32_t r1_val = get_low_register<int32_t>(r1);
-      set_low_register<int32_t>(r1, r1_val);
+      set_low_register<int32_t>(r1, i);
       break;
     }
     case CHI: {
