@@ -3637,7 +3637,8 @@ static void GenerateSmiKeyCheck(MacroAssembler* masm,
                      scratch1,
                      double_scratch1,
                      kCheckForInexactConversion);
-  __ bne(fail);
+  // EmitVFPTruncate sets condition code 3 if it fails.
+  __ b(Condition(CC_OF), fail);
 #if V8_TARGET_ARCH_S390X
   __ SmiTag(key, scratch0);
 #else

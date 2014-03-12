@@ -2326,13 +2326,34 @@ void MacroAssembler::ConvertToInt32(Register source,
   bne(not_int32);
 }
 
-
 void MacroAssembler::EmitVFPTruncate(VFPRoundingMode rounding_mode,
                                      Register result,
                                      DwVfpRegister double_input,
                                      Register scratch,
                                      DwVfpRegister double_scratch,
                                      CheckForInexactConversion check_inexact) {
+  Condition m;
+  switch (rounding_mode) {
+    case kRoundToZero:
+      m = Condition(5);
+      break;
+    case kRoundToNearest:
+      // TODO(AlanLi): 1 or 3??
+      UNIMPLEMENTED();
+      break;
+    case kRoundToPlusInf:
+      m = Condition(6);
+      break;
+    case kRoundToMinusInf:
+      m = Condition(7);
+      break;
+  }
+  cgdbr(result, double_input);
+
+  // according to POPS Figure 19-18, condition code 3 is set if the integer
+  // overflows or underflows.
+
+  /*
   // Convert
   if (rounding_mode == kRoundToZero) {
     fctidz(double_scratch, double_input);
@@ -2374,6 +2395,7 @@ void MacroAssembler::EmitVFPTruncate(VFPRoundingMode rounding_mode,
     fcmpu(double_scratch, double_input);
     bind(&done);
   }
+  */
 }
 
 
