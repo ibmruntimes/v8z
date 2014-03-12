@@ -2862,7 +2862,7 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       if (TestConditionCode(Condition(r1))) {
         intptr_t r2_val = get_register(r2);
         set_pc(r2_val);
-      } 
+      }
       break;
     }
     case LTR: {
