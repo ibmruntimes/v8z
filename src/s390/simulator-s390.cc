@@ -2798,37 +2798,35 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
   switch (op) {
     // RR format instructions
     case SVC: { UNIMPLEMENTED(); return true; }
-    case AR:
-    case SR:
-    case MR:
-    case DR:
-    case OR:
-    case NR:
-    case XR:
-    case LR:
-      {
+    case AR: case SR: case MR: case DR:
+    case OR: case NR: case XR: {
       RRInstruction* rrinst = reinterpret_cast<RRInstruction*>(instr);
       int r1 = rrinst->R1Value();
       int r2 = rrinst->R2Value();
       int32_t r1_val = get_low_register<int32_t>(r1);
       int32_t r2_val = get_low_register<int32_t>(r2);
-      int32_t alu_out = 0;
       switch (op) {
-        case AR:
-          alu_out = r1_val + r2_val;
-          SetS390ConditionCode<int32_t>(alu_out, 0);
-          // SetS390OverflowCode<int32_t>(r1_val, r2_val);
-          break;
-        case SR: alu_out = r1_val - r2_val; break;
-        case MR: UNIMPLEMENTED(); break;  // reg pair
-        case DR: UNIMPLEMENTED(); break;  // reg pair
-        case OR: alu_out = r1_val | r2_val; break;
-        case NR: alu_out = r1_val & r2_val; break;
-        case XR: alu_out = r1_val ^ r2_val; break;
-        case LR: alu_out = r2_val; break;
+        case AR: r1_val += r2_val; break;
+        case SR: r1_val -= r2_val; break;
+        case OR: r1_val |= r2_val; break;
+        case NR: r1_val &= r2_val; break;
+        case XR: r1_val ^= r2_val; break;
+        case MR: case DR:
+          UNIMPLEMENTED();
+          break;  // reg pair
         default: UNREACHABLE(); break;
       }
-      set_low_register<int32_t>(r1, alu_out);
+      SetS390ConditionCode<int32_t>(r1_val, 0);
+      set_low_register<int32_t>(r1, r1_val);
+      // SetS390OverflowCode<int32_t>(r1_val, r2_val);
+      break;
+    }
+    case LR: {
+      RRInstruction* rrinst = reinterpret_cast<RRInstruction*>(instr);
+      int r1 = rrinst->R1Value();
+      int r2 = rrinst->R2Value();
+      set_low_register<int32_t>(r1,
+                                get_low_register<int32_t>(r2));
       break;
     }
     case LDR: {
@@ -2884,6 +2882,7 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
         alu_out = r1_val - r2_val;
       }
       set_low_register<uint32_t>(r1, alu_out);
+      SetS390ConditionCode<int32_t>(alu_out, 0);
       break;
     }
     case LBR: { UNIMPLEMENTED(); break; }
