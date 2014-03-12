@@ -3704,6 +3704,17 @@ void Assembler::cdlfbr(Condition m3, Condition m4,
             Register::from_code(r1.code()), r2);
 }
 
+// Convert from Fixed point (S<-32)
+void Assembler::cefbr(DoubleRegister r1, Register r2) {
+  rre_form(CDFBR, Register::from_code(r1.code()), r2);
+}
+
+// Convert to Fixed point (32<-S)
+void Assembler::cfebr(Register r1, DoubleRegister r2) {
+  rre_form(CFDBR, r1, Register::from_code(r2.code()));
+}
+
+
 // end of S390instructions
 
 

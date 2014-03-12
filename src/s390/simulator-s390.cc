@@ -3194,7 +3194,9 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
     case CFDBR:
     case CGDBR:
     case SQDBR:
-    case LNDBR: {
+    case LNDBR:
+    case CFEBR:
+    case CEFBR: {
       RREInstruction* rreInstr = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rreInstr->R1Value();
       int r2 = rreInstr->R2Value();
@@ -3238,6 +3240,10 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
         } else if (op == LNDBR) {
           r1_val = - r2_val;
           set_d_register_from_double(r1, r1_val);
+        } else if (op == CFEBR) {
+          UNIMPLEMENTED();
+        } else if (op == CEFBR) {
+          UNIMPLEMENTED();
         } else {
           UNREACHABLE();
         }
