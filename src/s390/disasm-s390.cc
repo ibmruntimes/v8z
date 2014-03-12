@@ -1192,10 +1192,12 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case IC_z: Format(instr, "ic\t'r1,'d1('r2d,'r3)"); break;
       case LD: Format(instr, "ld\t'r1,'d1('r2d,'r3)"); break;
       case STD:Format(instr, "std\t'r1,'d1('r2d,'r3)"); break;
-      case CFDBR: Format(instr, "cfdbr\t'r5,'r6"); break;
-      case CDFBR: Format(instr, "cdfbr\t'r5,'r6"); break;
-      case CGDBR: Format(instr, "cgdbr\t'r5,'r6"); break;
-      case CDGBR: Format(instr, "cdgbr\t'r5,'r6"); break;
+      case CFDBR: Format(instr, "cfdbr\t'r5,'m2,'r6"); break;
+      case CDFBR: Format(instr, "cdfbr\t'r5,'m2,'r6"); break;
+      case CFEBR: Format(instr, "cfebr\t'r5,'m2,'r6"); break;
+      case CEFBR: Format(instr, "cefbr\t'r5,'m2,'r6"); break;
+      case CGDBR: Format(instr, "cgdbr\t'r5,'m2,'r6"); break;
+      case CDGBR: Format(instr, "cdgbr\t'r5,'m2,'r6"); break;
       case CDLFBR: Format(instr, "cdlfbr\t'r5,'m2,'r6"); break;
       case CDLGBR: Format(instr, "cdlgbr\t'r5,'m2,'r6"); break;
       case CLFDBR: Format(instr, "clfdbr\t'r5,'m2,'r6"); break;

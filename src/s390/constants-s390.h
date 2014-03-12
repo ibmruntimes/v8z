@@ -1621,7 +1621,12 @@ class RREInstruction : Instruction {
   inline int R2Value() const {
     return Bits<FourByteInstr, int>(3, 0);
   }
-
+  inline int M3Value() const {
+    return Bits<FourByteInstr, int>(15, 12);
+  }
+  inline int M4Value() const {
+    return Bits<FourByteInstr, int>(19, 16);
+  }
   inline int size() const { return 4; }
 };
 
