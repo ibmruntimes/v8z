@@ -657,7 +657,7 @@ void FloatingPointHelper::ConvertNumberToInt32(MacroAssembler* masm,
 
 void FloatingPointHelper::ConvertIntToDouble(MacroAssembler* masm,
                                              Register src,
-                                             DwVfpRegister double_dst) {
+                                             DoubleRegister double_dst) {
   __ cdfbr(double_dst, src);
 }
 

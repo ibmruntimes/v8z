@@ -2293,37 +2293,14 @@ void MacroAssembler::ConvertToInt32(Register source,
                                     Register dest,
                                     Register scratch,
                                     Register scratch2,
-                                    DwVfpRegister double_scratch,
+                                    DoubleRegister double_scratch,
                                     Label *not_int32) {
   // Retrieve double from heap
   LoadF(double_scratch, FieldMemOperand(source, HeapNumber::kValueOffset));
-
-  // Convert
-  fctidz(double_scratch, double_scratch);
-
-  AddP(sp, Operand(-kDoubleSize));
-  StoreF(double_scratch, MemOperand(sp, 0));
-#if V8_TARGET_ARCH_S390X
-  ld(dest, MemOperand(sp, 0));
-#else
-#if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  LoadlW(scratch, MemOperand(sp, 4));
-  LoadlW(dest, MemOperand(sp, 0));
-#else
-  LoadlW(scratch, MemOperand(sp, 0));
-  LoadlW(dest, MemOperand(sp, 4));
-#endif
-#endif
-  AddP(sp, Operand(kDoubleSize));
-
-  // The result is not a 32-bit integer when the high 33 bits of the
-  // result are not identical.
-#if V8_TARGET_ARCH_S390X
-  TestIfInt32(dest, scratch, scratch2);
-#else
-  TestIfInt32(scratch, dest, scratch2);
-#endif
-  bne(not_int32);
+  // convert
+  cfdbr(Condition(5), dest, double_scratch);
+  // jump if overflows
+  b(Condition(OC_OF), not_int32);
 }
 
 void MacroAssembler::EmitVFPTruncate(VFPRoundingMode rounding_mode,
