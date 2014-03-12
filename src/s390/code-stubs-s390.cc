@@ -663,39 +663,15 @@ void FloatingPointHelper::ConvertIntToDouble(MacroAssembler* masm,
 
 
 void FloatingPointHelper::ConvertUnsignedIntToDouble(MacroAssembler* masm,
-                                                     Register src,
-                                                     DwVfpRegister double_dst) {
+                                                    Register src,
+                                                    DoubleRegister double_dst) {
   __ cdlfbr(Condition(5), Condition(5), double_dst, src);
 }
 
 void FloatingPointHelper::ConvertIntToFloat(MacroAssembler* masm,
-                                            const DwVfpRegister dst,
-                                            const Register src,
-                                            const Register int_scratch) {
-  __ Sub(sp, Operand(8));  // reserve one temporary double on the stack
-
-  // sign-extend src to 64-bit and store it to temp double on the stack
-#if V8_TARGET_ARCH_S390X
-  __ lgfr(int_scratch, src);
-  __ stg(int_scratch, MemOperand(sp, 0));
-#else
-  __ srawi(int_scratch, src, 31);
-#if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  __ StoreW(int_scratch, MemOperand(sp, 4));
-  __ StoreW(src, MemOperand(sp, 0));
-#else
-  __ StoreW(int_scratch, MemOperand(sp, 0));
-  __ StoreW(src, MemOperand(sp, 4));
-#endif
-#endif
-
-  // load sign-extended src into FPR
-  __ LoadF(dst, MemOperand(sp, 0));
-
-  __ AddP(sp, Operand(8));  // restore stack
-
-  __ fcfid(dst, dst);
-  __ frsp(dst, dst);
+                                            const DoubleRegister dst,
+                                            const Register src) {
+  __ cefbr(dst, src);
 }
 
 void FloatingPointHelper::LoadNumberAsInt32Double(MacroAssembler* masm,
