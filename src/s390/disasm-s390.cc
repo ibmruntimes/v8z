@@ -743,10 +743,6 @@ void Decoder::DecodeExt2(Instruction* instr) {
       return;
     }
 #endif
-    case SRAWIX: {
-      Format(instr, "srawi'.  'ra,'rs,'sh");
-      return;
-    }
     case EXTSH: {
       Format(instr, "extsh'.  'ra, 'rs");
       return;

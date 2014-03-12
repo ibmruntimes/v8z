@@ -1331,7 +1331,8 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
     switch (instr->op()) {
       case Token::SAR:
         if (shift_count != 0) {
-          __ srawi(result, left, shift_count);
+          __ LoadRR(result, left);
+          __ sra(result, Operand(shift_count));
 #if V8_TARGET_ARCH_S390X
           __ lgfr(result, result);
 #endif
