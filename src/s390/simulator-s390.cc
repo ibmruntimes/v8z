@@ -2915,8 +2915,7 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
 
   switch (op) {
     case AHI:  // @TODO (AlanLi): set condition code for overflow
-    case MHI:
-    case LHI: {
+    case MHI: {
       RIInstruction* riinst = reinterpret_cast<RIInstruction*>(instr);
       int r1 = riinst->R1Value();
       int i  = riinst->I2Value();
@@ -2926,10 +2925,16 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
         alu_out = r1_val + i;
       } else if (op == MHI) {
         alu_out = r1_val * i;  // no overflow indication is given
-      } else {  // LHI
-        alu_out = i;
       }
       set_low_register<int32_t>(r1, alu_out);
+      break;
+    }
+    case LHI: {
+      RIInstruction* riinst = reinterpret_cast<RIInstruction*>(instr);
+      int r1 = riinst->R1Value();
+      int i  = riinst->I2Value();
+      int32_t r1_val = get_low_register<int32_t>(r1);
+      set_low_register<int32_t>(r1, r1_val);
       break;
     }
     case CHI: {
