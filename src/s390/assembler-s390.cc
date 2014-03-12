@@ -3677,25 +3677,29 @@ void Assembler::cdfbr(DoubleRegister r1, Register r2) {
 
 // TODO(AlanLi): check condition code
 // Convert to Fixed Logical (64<-L)
-void Assembler::clgdbr(Register r1, DoubleRegister r2) {
+void Assembler::clgdbr(Condition m3, Condition m4,
+                       Register r1, DoubleRegister r2) {
   rrfe_form(CLGDBR, Condition(0), Condition(0),
             r1, Register::from_code(r2.code()));
 }
 
 // Convert to Fixed Logical (32<-L)
-void Assembler::clfdbr(Register r1, DoubleRegister r2) {
+void Assembler::clfdbr(Condition m3, Condition m4,
+                       Register r1, DoubleRegister r2) {
   rrfe_form(CLFDBR, Condition(0), Condition(0),
             r1, Register::from_code(r2.code()));
 }
 
 // Convert from Fixed Logical (L<-64)
-void Assembler::cdlgbr(DoubleRegister r1, Register r2) {
+void Assembler::cdlgbr(Condition m3, Condition m4,
+                       DoubleRegister r1, Register r2) {
   rrfe_form(CDLGBR, Condition(0), Condition(0),
             Register::from_code(r1.code()), r2);
 }
 
 // Convert from Fixed Logical (L<-32)
-void Assembler::cdlfbr(DoubleRegister r1, Register r2) {
+void Assembler::cdlfbr(Condition m3, Condition m4,
+                       DoubleRegister r1, Register r2) {
   rrfe_form(CDLFBR, Condition(0), Condition(0),
             Register::from_code(r1.code()), r2);
 }

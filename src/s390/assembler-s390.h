@@ -1749,10 +1749,14 @@ SS2_FORM(zap);
   void cdfbr(DoubleRegister fltReg, Register fixReg);
   void cgdbr(Register fixReg, DoubleRegister fltReg);
   void cdgbr(DoubleRegister fltReg, Register fixReg);
-  void cdlfbr(DoubleRegister fltReg, Register fixReg);
-  void cdlgbr(DoubleRegister fltReg, Register fixReg);
-  void clfdbr(Register fixReg, DoubleRegister fltReg);
-  void clgdbr(Register fixReg, DoubleRegister fltReg);
+  void cdlfbr(Condition m3, Condition m4,
+              DoubleRegister fltReg, Register fixReg);
+  void cdlgbr(Condition m3, Condition m4,
+              DoubleRegister fltReg, Register fixReg);
+  void clfdbr(Condition m3, Condition m4,
+              Register fixReg, DoubleRegister fltReg);
+  void clgdbr(Condition m3, Condition m4,
+              Register fixReg, DoubleRegister fltReg);
 
   void cdb(DoubleRegister r1, const MemOperand& opnd);
   void cdbr(DoubleRegister r1, DoubleRegister r2);

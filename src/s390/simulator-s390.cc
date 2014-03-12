@@ -3247,12 +3247,12 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       if (op == CDLFBR) {
         uint32_t r2_val = get_low_register<uint32_t>(r2);
         double r1_val = static_cast<double>(r2_val);
-        set_d_register_from_double(r1, r1_val); 
+        set_d_register_from_double(r1, r1_val);
         SetS390ConditionCode<double>(r1_val, 0);
       } else if (op == CDLGBR) {
         uint64_t r2_val = get_low_register<uint64_t>(r2);
         double r1_val = static_cast<double>(r2_val);
-        set_d_register_from_double(r1, r1_val); 
+        set_d_register_from_double(r1, r1_val);
         SetS390ConditionCode<double>(r1_val, 0);
       } else if (op == CLFDBR) {
         double r2_val = get_double_from_d_register(r2);
