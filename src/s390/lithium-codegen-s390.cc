@@ -1354,7 +1354,7 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
       case Token::SHL:
         if (shift_count != 0) {
           __ LoadRR(result, left);
-          __ sla(result, Operand(shift_count));
+          __ sll(result, Operand(shift_count));
 #if V8_TARGET_ARCH_S390X
           __ lgfr(result, result);
 #endif
@@ -3698,7 +3698,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
   // Random bit pattern = (state[0] << 14) + (state[1] & 0x3FFFF)
   __ ExtractBitMask(r3_p, r3_p, 0x3FFFF);
   __ LoadRR(r0_p, r4_p);
-  __ sla(r0_p, Operand(14));
+  __ sll(r0_p, Operand(14));
   __ Add(r3_p, r3_p, r0_p);
 
   __ bind(deferred->exit());

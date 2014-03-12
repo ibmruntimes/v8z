@@ -1078,7 +1078,7 @@ void MacroAssembler::JumpToHandlerEntry() {
   AddP(r6, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   srl(r5, Operand(StackHandler::kKindWidth));  // Handler index.
   LoadRR(ip, r5);
-  sla(ip, Operand(kPointerSizeLog2));
+  sll(ip, Operand(kPointerSizeLog2));
   AddP(ip, r6);
   LoadP(r5, MemOperand(ip));  // Smi-tagged offset.
   AddP(r4, Operand(Code::kHeaderSize - kHeapObjectTag));  // Code start.
@@ -1265,7 +1265,7 @@ void MacroAssembler::GetNumberHash(Register t0, Register scratch) {
   //
   // hash = ~hash + (hash << 15);
   notx(scratch, t0);
-  sla(t0, Operand(15));
+  sll(t0, Operand(15));
   Add(t0, scratch, t0);
   // hash = hash ^ (hash >> 12);
   LoadRR(scratch, t0);
@@ -1273,7 +1273,7 @@ void MacroAssembler::GetNumberHash(Register t0, Register scratch) {
   XorP(t0, scratch);
   // hash = hash + (hash << 2);
   LoadRR(scratch, t0);
-  sla(scratch, Operand(2));
+  sll(scratch, Operand(2));
   Add(t0, t0, scratch);
   // hash = hash ^ (hash >> 4);
   LoadRR(scratch, t0);
@@ -1282,10 +1282,10 @@ void MacroAssembler::GetNumberHash(Register t0, Register scratch) {
   // hash = hash * 2057;
   LoadRR(r0, t0);
   LoadRR(scratch, t0);
-  sla(scratch, Operand(3));
+  sll(scratch, Operand(3));
   Add(t0, t0, scratch);
   LoadRR(scratch, r0);
-  sla(scratch, Operand(11));
+  sll(scratch, Operand(11));
   Add(t0, t0, scratch);
   // hash = hash ^ (hash >> 16);
   LoadRR(scratch, t0);
@@ -1344,11 +1344,11 @@ void MacroAssembler::LoadFromNumberDictionary(Label* miss,
     // Scale the index by multiplying by the element size.
     ASSERT(SeededNumberDictionary::kEntrySize == 3);
     LoadRR(ip, t2);
-    sla(ip, Operand(1));
+    sll(ip, Operand(1));
     AddP(t2, ip);  // t2 = t2 * 3
 
     // Check if the key is identical to the name.
-    sla(t2, Operand(kPointerSizeLog2));
+    sll(t2, Operand(kPointerSizeLog2));
     AddP(elements, t2);
     LoadP(ip,
           FieldMemOperand(t2, SeededNumberDictionary::kElementsStartOffset));
@@ -1592,7 +1592,7 @@ void MacroAssembler::AllocateTwoByteString(Register result,
   // observing object alignment.
   ASSERT((SeqTwoByteString::kHeaderSize & kObjectAlignmentMask) == 0);
   LoadRR(scratch1, length);
-  sla(scratch1, Operand(1));  // Length in bytes, not chars.
+  sll(scratch1, Operand(1));  // Length in bytes, not chars.
   AddP(scratch1,
        Operand(kObjectAlignmentMask + SeqTwoByteString::kHeaderSize));
   mov(r0, Operand(~kObjectAlignmentMask));
@@ -3564,7 +3564,7 @@ void MacroAssembler::GetRelocatedValueLocation(Register lis_location,
   }
 
   // result now holds a lis instruction. Extract the immediate.
-  sla(result, Operand(16));
+  sll(result, Operand(16));
 
   LoadlW(scratch, MemOperand(lis_location, kInstrSize));
   if (emit_debug_code()) {
@@ -3660,7 +3660,7 @@ void MacroAssembler::HasColor(Register object,
   b(first_bit == 1 ? eq : ne, &other_color /*, cr0*/);
   // Shift left 1
   // May need to load the next cell
-  sla(mask_scratch, Operand(1)/*, SetRC*/);
+  sll(mask_scratch, Operand(1)/*, SetRC*/);
   beq(&word_boundary /*, cr0*/);
   // Test the second bit
   LoadRR(r0, ip);
@@ -3752,7 +3752,7 @@ void MacroAssembler::EnsureNotWhite(
     Label ok;
     // LSL may overflow, making the check conservative.
     LoadRR(r0, mask_scratch);
-    sla(r0, Operand(1));
+    sll(r0, Operand(1));
     AndP(r0, load_scratch/*, SetRC*/);  // Should be okay to remove rc
     beq(&ok /*, cr0*/);
     stop("Impossible marking bit pattern");
