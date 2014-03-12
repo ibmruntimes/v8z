@@ -78,10 +78,12 @@ enum Condition {
   nooverflow =  9,
   al         =  0xf,         // Always.
 
-  CC_EQ      = 0x08,       // S390 condition code 0b1000
-  CC_LT      = 0x04,       // S390 condition code 0b0100
-  CC_GT      = 0x02,       // S390 condition code 0b0010
-  CC_OF      = 0x01,       // S390 condition code 0b0001
+  CC_EQ      = 0x08,            // S390 condition code 0b1000
+  CC_LT      = 0x04,            // S390 condition code 0b0100
+  CC_LE      = CC_EQ | CC_LT,   // S390 condition code 0b0100
+  CC_GT      = 0x02,            // S390 condition code 0b0010
+  CC_GE      = CC_EQ | CC_GT,   // S390 condition code 0b0010
+  CC_OF      = 0x01,            // S390 condition code 0b0001
 
   mask0x0    =  0,         // no jumps
   mask0x1    =  1,
