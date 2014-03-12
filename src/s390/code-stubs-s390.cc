@@ -805,7 +805,7 @@ void FloatingPointHelper::DoubleIs32BitInteger(MacroAssembler* masm,
   STATIC_ASSERT(HeapNumber::kMantissaBitsInTopWord == 20);
   STATIC_ASSERT(HeapNumber::kNonMantissaBitsInTopWord == 12);
   __ ExtractBitRange(dst, src2, 31, HeapNumber::kMantissaBitsInTopWord);
-  __ sla(src1, Operand(HeapNumber::kNonMantissaBitsInTopWord));
+  __ sll(src1, Operand(HeapNumber::kNonMantissaBitsInTopWord));
   __ OrP(dst, src1);
 
   // Create the mask and test the lower bits (of the higher bits).
@@ -939,7 +939,7 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm,
       __ bne(&return_equal);
 
       // Shift out flag and all exponent bits, retaining only mantissa.
-      __ sla(r5_p, Operand(HeapNumber::kNonMantissaBitsInTopWord));
+      __ sll(r5_p, Operand(HeapNumber::kNonMantissaBitsInTopWord));
       // Or with all low-bits of mantissa.
       __ LoadlW(r6_p, FieldMemOperand(r3_p, HeapNumber::kMantissaOffset));
       __ LoadRR(r3_p, r5_p);
@@ -5742,7 +5742,7 @@ void StringHelper::GenerateHashInit(MacroAssembler* masm,
   __ AddP(hash, scratch);
   // hash += hash << 10;
   __ LoadRR(scratch, hash);
-  __ sla(scratch, Operand(10));
+  __ sll(scratch, Operand(10));
   __ AddP(hash, scratch);
   // hash ^= hash >> 6;
   __ LoadRR(scratch, hash);
@@ -5759,7 +5759,7 @@ void StringHelper::GenerateHashAddCharacter(MacroAssembler* masm,
   __ AddP(hash, character);
   // hash += hash << 10;
   __ LoadRR(scratch, hash);
-  __ sla(scratch, Operand(10));
+  __ sll(scratch, Operand(10));
   __ AddP(hash, scratch);
   // hash ^= hash >> 6;
   __ LoadRR(scratch, hash);
@@ -5773,7 +5773,7 @@ void StringHelper::GenerateHashGetHash(MacroAssembler* masm,
                                        Register scratch) {
   // hash += hash << 3;
   __ LoadRR(scratch, hash);
-  __ sla(scratch, Operand(3));
+  __ sll(scratch, Operand(3));
   __ AddP(hash, scratch);
   // hash ^= hash >> 11;
   __ LoadRR(scratch, hash);
@@ -5781,7 +5781,7 @@ void StringHelper::GenerateHashGetHash(MacroAssembler* masm,
   __ XorP(hash, scratch);
   // hash += hash << 15;
   __ LoadRR(scratch, hash);
-  __ sla(scratch, Operand(15));
+  __ sll(scratch, Operand(15));
   __ AddP(hash, scratch);
 
   __ mov(scratch, Operand(String::kHashBitMask));
