@@ -736,7 +736,7 @@ void FloatingPointHelper::LoadNumberAsInt32Double(MacroAssembler* masm,
                      kCheckForInexactConversion);
 
   // Jump to not_int32 if the operation did not succeed.
-  __ bne(not_int32);
+  __ b(Condition(CC_OF), not_int32);
 
   __ bind(&done);
 }
@@ -778,7 +778,7 @@ void FloatingPointHelper::LoadNumberAsInt32(MacroAssembler* masm,
                      kCheckForInexactConversion);
 
   // Jump to not_int32 if the operation did not succeed.
-  __ bne(not_int32);
+  __ b(Condition(CC_OF), not_int32);
 
   __ bind(&done);
 }
@@ -2608,7 +2608,7 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
         // result does not fit in a 32-bit integer.
         Label *not_int32 = ((result_type_ <= BinaryOpIC::INT32) ?
                             &transition : &return_heap_number);
-        __ bne(not_int32);
+        __ b(Condition(CC_OF), not_int32);
 
 #if !V8_TARGET_ARCH_S390X
         // Check if the result fits in a smi.
@@ -3292,7 +3292,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
                        scratch2,
                        double_scratch,
                        kCheckForInexactConversion);
-    __ beq(&int_exponent);
+    __ b(Condition(CC_EQ | CC_LT | CC_GT), &int_exponent);
 
     if (exponent_type_ == ON_STACK) {
       // Detect square root case.  Crankshaft detects constant +/-0.5 at
