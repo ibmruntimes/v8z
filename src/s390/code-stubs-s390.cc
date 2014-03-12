@@ -658,64 +658,14 @@ void FloatingPointHelper::ConvertNumberToInt32(MacroAssembler* masm,
 void FloatingPointHelper::ConvertIntToDouble(MacroAssembler* masm,
                                              Register src,
                                              DwVfpRegister double_dst) {
-  ASSERT(!src.is(r0_p));
-
-  __ Sub(sp, Operand(8));  // reserve one temporary double on the stack
-
-  // sign-extend src to 64-bit and store it to temp double on the stack
-#if V8_TARGET_ARCH_S390X
-  __ lgfr(r0_p, src);
-  __ stg(r0_p, MemOperand(sp, 0));
-#else
-  __ srawi(r0_p, src, 31);
-#if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  __ StoreW(r0_p, MemOperand(sp, 4));
-  __ StoreW(src, MemOperand(sp, 0));
-#else
-  __ StoreW(r0_p, MemOperand(sp, 0));
-  __ StoreW(src, MemOperand(sp, 4));
-#endif
-#endif
-
-  // load into FPR
-  __ LoadF(double_dst, MemOperand(sp, 0));
-
-  __ AddP(sp, Operand(8));  // restore stack
-
-  // convert to double
-  __ fcfid(double_dst, double_dst);
+  __ cdfbr(double_dst, src);
 }
 
 
 void FloatingPointHelper::ConvertUnsignedIntToDouble(MacroAssembler* masm,
                                                      Register src,
                                                      DwVfpRegister double_dst) {
-  ASSERT(!src.is(r0_p));
-
-  __ Sub(sp, Operand(8));  // reserve one temporary double on the stack
-
-  // zero-extend src to 64-bit and store it to temp double on the stack
-#if V8_TARGET_ARCH_S390X
-  __ clrldi(r0_p, src, Operand(32));
-  __ stg(r0_p, MemOperand(sp, 0));
-#else
-  __ LoadImmP(r0_p, Operand::Zero());
-#if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  __ StoreW(r0_p, MemOperand(sp, 4));
-  __ StoreW(src, MemOperand(sp, 0));
-#else
-  __ StoreW(r0_p, MemOperand(sp, 0));
-  __ StoreW(src, MemOperand(sp, 4));
-#endif
-#endif
-
-  // load into FPR
-  __ LoadF(double_dst, MemOperand(sp, 0));
-
-  __ AddP(sp, Operand(8));  // restore stack
-
-  // convert to double
-  __ fcfid(double_dst, double_dst);
+  __ cdlfbr(Condition(5), Condition(5), double_dst, src);
 }
 
 void FloatingPointHelper::ConvertIntToFloat(MacroAssembler* masm,
