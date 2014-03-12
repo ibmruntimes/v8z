@@ -2302,6 +2302,22 @@ void Assembler::rrf3_form(uint32_t code) {
     emit4bytes(code);
 }
 
+//  RRF-e format: <insn> R1,M3,R2,M4
+//    +------------------+----+----+----+----+
+//    |      OpCode      | M3 | M4 | R1 | R2 |
+//    +------------------+----+----+----+----+
+//    0                  16   20   24   28  31
+void Assembler::rrfe_form(Opcode op, 
+                          Condition m3,
+                          Condition m4, 
+                          Register r1,
+                          Register r2) {
+  uint32_t code = op << 16 | m3*B12 | m4*B8 | r1.code()*B4
+                | r2.code();
+  emit4bytes(code);
+}
+
+
 // end of S390 Instruction generation
 
 // start of S390 instruction
@@ -2361,9 +2377,7 @@ RRE_FORM_EMIT(cdftr, CDFTR)
 RRF2_FORM_EMIT(cdgbra, CDGBRA)
 RRE_FORM_EMIT(cdgtr, CDGTR)
 RRF2_FORM_EMIT(cdgtra, CDGTRA)
-RRF2_FORM_EMIT(cdlfbr, CDLFBR)
 RRF2_FORM_EMIT(cdlftr, CDLFTR)
-RRF2_FORM_EMIT(cdlgbr, CDLGBR)
 RRF2_FORM_EMIT(cdlgtr, CDLGTR)
 RS1_FORM_EMIT(cds, CDS)
 RSY1_FORM_EMIT(cdsg, CDSG)
@@ -2433,14 +2447,11 @@ RRE_FORM_EMIT(cksm, CKSM)
 RR_FORM_EMIT(clcl, CLCL)
 RS1_FORM_EMIT(clcle, CLCLE)
 RSY1_FORM_EMIT(clclu, CLCLU)
-RRF2_FORM_EMIT(clfdbr, CLFDBR)
-RRF2_FORM_EMIT(clfdtr, CLFDTR)
 RRF2_FORM_EMIT(clfebr, CLFEBR)
 SIL_FORM_EMIT(clfhsi, CLFHSI)
 RIE_FORM_EMIT(clfit, CLFIT)
 RRF2_FORM_EMIT(clfxbr, CLFXBR)
 RRF2_FORM_EMIT(clfxtr, CLFXTR)
-RRF2_FORM_EMIT(clgdbr, CLGDBR)
 RRF2_FORM_EMIT(clgdtr, CLGDTR)
 RRF2_FORM_EMIT(clgebr, CLGEBR)
 RXY_FORM_EMIT(clgf, CLGF)
@@ -3612,7 +3623,7 @@ void Assembler::sqdbr(DoubleRegister r1, DoubleRegister r2) {
            Register::from_code(r2.code()));
 }
 
-// Load negative  Register-Register (LB)
+// Load negative Register-Register (LB)
 void Assembler::lndbr(DoubleRegister r1, DoubleRegister r2) {
   rre_form(LNDBR,
            Register::from_code(r1.code()),
@@ -3662,6 +3673,31 @@ void Assembler::cdgbr(DoubleRegister r1, Register r2) {
 // Convert from Fixed point (L<-32)
 void Assembler::cdfbr(DoubleRegister r1, Register r2) {
   rre_form(CDFBR, Register::from_code(r1.code()), r2);
+}
+
+// TODO(AlanLi): check condition code
+// Convert to Fixed Logical (64<-L)
+void Assembler::clgdbr(Register r1, DoubleRegister r2) {
+  rrfe_form(CLGDBR, Condition(0), Condition(0),
+            r1, Register::from_code(r2.code()));
+}
+
+// Convert to Fixed Logical (32<-L)
+void Assembler::clfdbr(Register r1, DoubleRegister r2) {
+  rrfe_form(CLFDBR, Condition(0), Condition(0),
+            r1, Register::from_code(r2.code()));
+}
+
+// Convert from Fixed Logical (L<-64)
+void Assembler::cdlgbr(DoubleRegister r1, Register r2) {
+  rrfe_form(CDLGBR, Condition(0), Condition(0),
+            Register::from_code(r1.code()), r2);
+}
+
+// Convert from Fixed Logical (L<-32)
+void Assembler::cdlfbr(DoubleRegister r1, Register r2) {
+  rrfe_form(CDLFBR, Condition(0), Condition(0),
+            Register::from_code(r1.code()), r2);
 }
 
 // end of S390instructions
