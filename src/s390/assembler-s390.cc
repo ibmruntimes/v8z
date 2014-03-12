@@ -2307,9 +2307,9 @@ void Assembler::rrf3_form(uint32_t code) {
 //    |      OpCode      | M3 | M4 | R1 | R2 |
 //    +------------------+----+----+----+----+
 //    0                  16   20   24   28  31
-void Assembler::rrfe_form(Opcode op, 
+void Assembler::rrfe_form(Opcode op,
                           Condition m3,
-                          Condition m4, 
+                          Condition m4,
                           Register r1,
                           Register r2) {
   uint32_t code = op << 16 | m3*B12 | m4*B8 | r1.code()*B4
