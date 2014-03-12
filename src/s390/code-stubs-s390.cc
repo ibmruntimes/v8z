@@ -3292,7 +3292,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
                        scratch2,
                        double_scratch,
                        kCheckForInexactConversion);
-    __ b(Condition(CC_EQ | CC_LT | CC_GT), &int_exponent);
+    __ b(Condition(CC_NOF), &int_exponent);
 
     if (exponent_type_ == ON_STACK) {
       // Detect square root case.  Crankshaft detects constant +/-0.5 at

@@ -3656,13 +3656,13 @@ void Assembler::ldr(DoubleRegister r1, DoubleRegister r2) {
 }
 
 // Convert to Fixed point (64<-L)
-void Assembler::cgdbr(Register r1, DoubleRegister r2) {
-  rre_form(CGDBR, r1, Register::from_code(r2.code()));
+void Assembler::cgdbr(Condition m, Register r1, DoubleRegister r2) {
+  rrfe_form(CGDBR, m, Condition(0), r1, Register::from_code(r2.code()));
 }
 
 // Convert to Fixed point (32<-L)
-void Assembler::cfdbr(Register r1, DoubleRegister r2) {
-  rre_form(CFDBR, r1, Register::from_code(r2.code()));
+void Assembler::cfdbr(Condition m, Register r1, DoubleRegister r2) {
+  rrfe_form(CFDBR, m, Condition(0), r1, Register::from_code(r2.code()));
 }
 
 // Convert from Fixed point (L<-64)

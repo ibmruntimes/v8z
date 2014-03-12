@@ -1746,9 +1746,9 @@ SS2_FORM(zap);
   void std(DoubleRegister r1, const MemOperand& opnd);
   void stdy(DoubleRegister r1, const MemOperand& opnd);
   // double type conversion
-  void cfdbr(Register fixReg, DoubleRegister fltReg);
+  void cfdbr(Condition m, Register fixReg, DoubleRegister fltReg);
   void cdfbr(DoubleRegister fltReg, Register fixReg);
-  void cgdbr(Register fixReg, DoubleRegister fltReg);
+  void cgdbr(Condition m, Register fixReg, DoubleRegister fltReg);
   void cdgbr(DoubleRegister fltReg, Register fixReg);
   void cdlfbr(Condition m3, Condition m4,
               DoubleRegister fltReg, Register fixReg);

@@ -2348,7 +2348,7 @@ void MacroAssembler::EmitVFPTruncate(VFPRoundingMode rounding_mode,
       m = Condition(7);
       break;
   }
-  cgdbr(result, double_input);
+  cgdbr(m, result, double_input);
 
   // according to POPS Figure 19-18, condition code 3 is set if the integer
   // overflows or underflows.
