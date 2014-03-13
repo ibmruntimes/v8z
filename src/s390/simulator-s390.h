@@ -282,7 +282,7 @@ class Simulator {
   }
 
   void SetS390OverflowCode(bool isOF) {
-    is_overflow = isOF;
+    if (isOF) condition_reg_ = CC_OF;
   }
 
   bool TestConditionCode(Condition mask) {

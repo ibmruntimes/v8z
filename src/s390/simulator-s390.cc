@@ -2839,15 +2839,14 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       int r2 = rrinst->R2Value();
       int32_t r1_val = get_low_register<int32_t>(r1);
       int32_t r2_val = get_low_register<int32_t>(r2);
+      bool isOF = false;
       switch (op) {
         case AR:
-          SetS390OverflowCode(
-              CheckOverflowForIntAdd(r1_val, r2_val));
+          isOF = CheckOverflowForIntAdd(r1_val, r2_val);
           r1_val += r2_val;
           break;
         case SR:
-          SetS390OverflowCode(
-              CheckOverflowForIntSub(r1_val, r2_val));
+          isOF = CheckOverflowForIntSub(r1_val, r2_val);
           r1_val -= r2_val;
           break;
         case OR:
@@ -2865,6 +2864,7 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
         default: UNREACHABLE(); break;
       }
       SetS390ConditionCode<int32_t>(r1_val, 0);
+      SetS390OverflowCode(isOF);
       set_low_register<int32_t>(r1, r1_val);
       break;
     }
@@ -2929,15 +2929,17 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       uint32_t r1_val = get_low_register<uint32_t>(r1);
       uint32_t r2_val = get_low_register<uint32_t>(r2);
       uint32_t alu_out;
+      bool isOF = false;
       if (op == ALR) {
         alu_out = r1_val + r2_val;
-        SetS390OverflowCode(CheckOverflowForUIntAdd(r1_val, r2_val));
+        isOF = CheckOverflowForUIntAdd(r1_val, r2_val);
       } else if (op == SLR) {
         alu_out = r1_val - r2_val;
-        SetS390OverflowCode(CheckOverflowForUIntSub(r1_val, r2_val));
+        isOF = CheckOverflowForUIntSub(r1_val, r2_val);
       }
       set_low_register<uint32_t>(r1, alu_out);
       SetS390ConditionCode<uint32_t>(alu_out, 0);
+      SetS390OverflowCode(isOF);
       break;
     }
     case LBR: { UNIMPLEMENTED(); break; }
@@ -2969,19 +2971,21 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       int r1 = riinst->R1Value();
       int i  = riinst->I2Value();
       int32_t r1_val = get_low_register<int32_t>(r1);
+      bool isOF = false;
       switch (op) {
         case AHI:
-          SetS390OverflowCode(CheckOverflowForIntAdd(r1_val, i));
+          isOF = CheckOverflowForIntAdd(r1_val, i);
           r1_val += i;
           break;
         case MHI:
-          SetS390OverflowCode(CheckOverflowForMul(r1_val, i));
+          isOF = CheckOverflowForMul(r1_val, i);
           r1_val *= i;
           break;  // no overflow indication is given
         default: break;
       }
       set_low_register<int32_t>(r1, r1_val);
       SetS390ConditionCode<int32_t>(r1_val, 0);
+      SetS390OverflowCode(isOF);
       break;
     }
     case LHI: {
@@ -3082,15 +3086,17 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       int shiftBits = (get_register(b2) + d2) & 0x3F;
       int32_t r1_val = get_low_register<int32_t>(r1);
       int32_t alu_out = 0;
+      bool isOF = false;
       if (op == SLL) {
-        SetS390OverflowCode(CheckOverflowForShiftLeft(r1_val, shiftBits));
+        isOF = CheckOverflowForShiftLeft(r1_val, shiftBits);
         alu_out = r1_val << shiftBits;
       } else if (op == SRL) {
-        SetS390OverflowCode(CheckOverflowForShiftRight(r1_val, shiftBits));
+        isOF = CheckOverflowForShiftRight(r1_val, shiftBits);
         alu_out = r1_val >> shiftBits;
       }
       set_low_register<int32_t>(r1, alu_out);
       SetS390ConditionCode<int32_t>(alu_out, 0);
+      SetS390OverflowCode(isOF);
       break;
     }
     case MLR: { UNIMPLEMENTED(); break; }
@@ -3112,13 +3118,14 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       intptr_t d2_val = rxinst->D2Value();
       int32_t mem_val = ReadW(b2_val + x2_val + d2_val, instr);
       int32_t alu_out = 0;
+      bool isOF = false;
       switch (op) {
         case A:
-          SetS390OverflowCode(CheckOverflowForIntAdd(r1_val, mem_val));
+          isOF = CheckOverflowForIntAdd(r1_val, mem_val);
           alu_out = r1_val + mem_val;
           break;
         case S:
-          SetS390OverflowCode(CheckOverflowForIntSub(r1_val, mem_val));
+          isOF = CheckOverflowForIntSub(r1_val, mem_val);
           alu_out = r1_val - mem_val; break;
         case M: UNIMPLEMENTED(); break;  // needs register pair
         case D: UNIMPLEMENTED(); break;
@@ -3129,6 +3136,7 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       }
       set_low_register<int32_t>(r1, alu_out);
       SetS390ConditionCode<int32_t>(alu_out, 0);
+      SetS390OverflowCode(isOF);
       break;
     }
     case NILL:
@@ -3219,19 +3227,21 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       intptr_t addr = b2_val + x2_val + d2_val;
       int16_t mem_val = ReadH(addr, instr);
       int32_t alu_out;
+      bool isOF = false;
       if (op == AH) {
-        SetS390OverflowCode(CheckOverflowForIntAdd(r1_val, mem_val));
+        isOF = CheckOverflowForIntAdd(r1_val, mem_val);
         alu_out = r1_val + mem_val;
       } else if (op == SH) {
-        SetS390OverflowCode(CheckOverflowForIntSub(r1_val, mem_val));
+        isOF = CheckOverflowForIntSub(r1_val, mem_val);
         alu_out = r1_val - mem_val;
       } else if (op == MH) {
-        SetS390OverflowCode(CheckOverflowForMul(r1_val, mem_val));
         alu_out = r1_val * mem_val;
       }
       set_low_register<int32_t>(r1, alu_out);
-      if (op != MH)  // MH does not change op code
+      if (op != MH) {  // MH does not change op code
         SetS390ConditionCode<int32_t>(alu_out, 0);
+        SetS390OverflowCode(isOF);
+      }
       break;
     }
     case AHY:
@@ -3245,14 +3255,15 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       intptr_t d2_val = rxyinst->D2Value();
       int16_t mem_val = ReadH(b2_val + d2_val + x2_val, instr);
       int32_t alu_out;
+      bool isOF = false;
       switch (op) {
         case AHY:
           alu_out = r1_val + mem_val;
-          SetS390OverflowCode(CheckOverflowForIntAdd(r1_val, mem_val));
+          isOF = CheckOverflowForIntAdd(r1_val, mem_val);
           break;
         case SHY:
           alu_out = r1_val - mem_val;
-          SetS390OverflowCode(CheckOverflowForIntSub(r1_val, mem_val));
+          isOF = CheckOverflowForIntSub(r1_val, mem_val);
           break;
         default:
           UNREACHABLE();
@@ -3260,6 +3271,7 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       }
       set_low_register<int32_t>(r1, alu_out);
       SetS390ConditionCode<int32_t>(alu_out, 0);
+      SetS390OverflowCode(isOF);
       break;
     }
     case LGFR: {
