@@ -3895,7 +3895,7 @@ void MacroAssembler::ClampDoubleToUint8(Register result_reg,
   Label in_bounds;
 
   LoadDoubleLiteral(temp_double_reg, 0.0, result_reg);
-  fcmpu(input_reg, temp_double_reg);
+  cdbr(input_reg, temp_double_reg);
   bgt(&above_zero);
 
   // Double value is less than zero, NaN or Inf, return 0.
@@ -3905,7 +3905,7 @@ void MacroAssembler::ClampDoubleToUint8(Register result_reg,
   // Double value is >= 255, return 255.
   bind(&above_zero);
   LoadDoubleLiteral(temp_double_reg, 255.0, result_reg);
-  fcmpu(input_reg, temp_double_reg);
+  cdbr(input_reg, temp_double_reg);
   ble(&in_bounds);
   LoadIntLiteral(result_reg, 255);
   b(&done);

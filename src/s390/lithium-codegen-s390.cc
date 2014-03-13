@@ -1595,14 +1595,14 @@ void LCodeGen::DoMathMinMax(LMathMinMax* instr) {
     DoubleRegister right_reg = ToDoubleRegister(right);
     DoubleRegister result_reg = ToDoubleRegister(instr->result());
     Label check_nan_left, check_zero, return_left, return_right, done;
-    __ fcmpu(left_reg, right_reg);
+    __ cdbr(left_reg, right_reg);
     __ bunordered(&check_nan_left);
     __ beq(&check_zero);
     __ b(cond, &return_left);
     __ b(&return_right);
 
     __ bind(&check_zero);
-    __ fcmpu(left_reg, kDoubleRegZero);
+    __ cdbr(left_reg, kDoubleRegZero);
     __ bne(&return_left);  // left == right != 0.
 
     // At this point, both left and right are either 0 or -0.
@@ -1621,7 +1621,7 @@ void LCodeGen::DoMathMinMax(LMathMinMax* instr) {
     __ b(&done);
 
     __ bind(&check_nan_left);
-    __ fcmpu(left_reg, left_reg);
+    __ cdbr(left_reg, left_reg);
     __ bunordered(&return_left);  // left == NaN.
 
     __ bind(&return_right);
@@ -1735,7 +1735,7 @@ void LCodeGen::DoBranch(LBranch* instr) {
     // Test the double value. Zero and NaN are false.
     uint crBits = (1 << (31 - Assembler::encode_crbit(cr7, CR_EQ)) |
                    1 << (31 - Assembler::encode_crbit(cr7, CR_FU)));
-    __ fcmpu(reg, kDoubleRegZero, cr7);
+    __ cdbr(reg, kDoubleRegZero);
     __ mfcr(scratch);
     __ AndP(scratch, Operand(crBits));
     EmitBranch(true_block, false_block, eq, cr0);
@@ -1823,7 +1823,7 @@ void LCodeGen::DoBranch(LBranch* instr) {
         __ CompareRoot(map, Heap::kHeapNumberMapRootIndex);
         __ bne(&not_heap_number);
         __ LoadF(dbl_scratch, FieldMemOperand(reg, HeapNumber::kValueOffset));
-        __ fcmpu(dbl_scratch, kDoubleRegZero);
+        __ cdbr(dbl_scratch, kDoubleRegZero);
         __ bunordered(false_label);  // NaN -> false.
         __ beq(false_label);  // +0, -0 -> false.
         __ b(true_label);
@@ -1898,7 +1898,7 @@ void LCodeGen::DoCmpIDAndBranch(LCmpIDAndBranch* instr) {
     if (instr->is_double()) {
       // Compare left and right operands as doubles and load the
       // resulting flags into the normal status register.
-      __ fcmpu(ToDoubleRegister(left), ToDoubleRegister(right));
+      __ cdbr(ToDoubleRegister(left), ToDoubleRegister(right));
       // If a NaN is involved, i.e. the result is unordered,
       // jump to false block label.
       __ bunordered(chunk_->GetAssemblyLabel(false_block));
@@ -3592,7 +3592,7 @@ void LCodeGen::DoMathPowHalf(LUnaryMathOperation* instr) {
   Label skip, done;
 
   __ LoadDoubleLiteral(temp, -V8_INFINITY, scratch0());
-  __ fcmpu(input, temp);
+  __ cdbr(input, temp);
   __ bne(&skip);
   __ lndbr(result, temp);
   __ b(&done);
@@ -4105,7 +4105,7 @@ void LCodeGen::DoStoreKeyedFastDoubleElement(
 
   if (instr->NeedsCanonicalization()) {
     // Check for NaN. All NaNs must be canonicalized.
-    __ fcmpu(value, value);
+    __ cdbr(value, value);
     // Only load canonical NaN if the comparison above set unordered.
     __ bordered(&no_canonicalization);
 

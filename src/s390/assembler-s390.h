@@ -1919,8 +1919,6 @@ SS2_FORM(zap);
   void stfsx(const DwVfpRegister frs, const MemOperand& src);
   void stfsux(const DwVfpRegister frs, const MemOperand& src);
 
-  void fcmpu(const DwVfpRegister fra, const DwVfpRegister frb,
-             CRegister cr = cr7);
   void fctiwz(const DwVfpRegister frt, const DwVfpRegister frb);
   void fctiw(const DwVfpRegister frt, const DwVfpRegister frb);
   void frim(const DwVfpRegister frt, const DwVfpRegister frb);

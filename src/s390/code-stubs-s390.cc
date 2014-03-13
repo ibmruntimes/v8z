@@ -760,6 +760,8 @@ void FloatingPointHelper::LoadNumberAsInt32(MacroAssembler* masm,
 }
 
 
+// TODO(ALANLI): we could use double->int conversion and see
+// the condition code is CC_OF or not.
 void FloatingPointHelper::DoubleIs32BitInteger(MacroAssembler* masm,
                                                Register src1,
                                                Register src2,
@@ -1214,7 +1216,7 @@ void NumberToStringStub::GenerateLookupNumberStringCache(MacroAssembler* masm,
     __ JumpIfSmi(probe, not_found);
     __ LoadF(d0, FieldMemOperand(object, HeapNumber::kValueOffset));
     __ LoadF(d1, FieldMemOperand(probe, HeapNumber::kValueOffset));
-    __ fcmpu(d0, d1);
+    __ cdbr(d0, d1);
     __ bne(not_found);  // The cache did not contain this value.
     __ b(&load_result_from_cache);
   }
@@ -1322,7 +1324,7 @@ void CompareStub::Generate(MacroAssembler* masm) {
   Isolate* isolate = masm->isolate();
   __ bind(&lhs_not_nan);
   Label no_nan;
-  __ fcmpu(d7, d6);
+  __ cdbr(d7, d6);
 
   Label nan, equal, less_than;
   __ bunordered(&nan);
@@ -1512,7 +1514,7 @@ void ToBooleanStub::Generate(MacroAssembler* masm) {
 #endif
     __ LoadF(d2, MemOperand(sp, 0));
     __ AddP(sp, Operand(8));
-    __ fcmpu(d1, d2);
+    __ cdbr(d1, d2);
     // "tos_" is a register, and contains a non zero value by default.
     // Hence we only need to overwrite "tos_" with zero to return false for
     // FP_ZERO or FP_NAN cases. Otherwise, by default it returns true.
@@ -3279,13 +3281,13 @@ void MathPowStub::Generate(MacroAssembler* masm) {
 
       // Test for 0.5.
       __ LoadDoubleLiteral(double_scratch, 0.5, scratch);
-      __ fcmpu(double_exponent, double_scratch);
+      __ cdbr(double_exponent, double_scratch);
       __ bne(&not_plus_half);
 
       // Calculates square root of base.  Check for the special case of
       // Math.pow(-Infinity, 0.5) == Infinity (ECMA spec, 15.8.2.13).
       __ LoadDoubleLiteral(double_scratch, -V8_INFINITY, scratch);
-      __ fcmpu(double_base, double_scratch);
+      __ cdbr(double_base, double_scratch);
       __ bne(&not_minus_inf1);
       __ lndbr(double_result, double_scratch);
       __ b(&done);
@@ -3299,13 +3301,13 @@ void MathPowStub::Generate(MacroAssembler* masm) {
 
       __ bind(&not_plus_half);
       __ LoadDoubleLiteral(double_scratch, -0.5, scratch);
-      __ fcmpu(double_exponent, double_scratch);
+      __ cdbr(double_exponent, double_scratch);
       __ bne(&call_runtime);
 
       // Calculates square root of base.  Check for the special case of
       // Math.pow(-Infinity, -0.5) == 0 (ECMA spec, 15.8.2.13).
       __ LoadDoubleLiteral(double_scratch, -V8_INFINITY, scratch);
-      __ fcmpu(double_base, double_scratch);
+      __ cdbr(double_base, double_scratch);
       __ bne(&not_minus_inf2);
       __ ldr(double_result, kDoubleRegZero);
       __ b(&done);
@@ -3381,7 +3383,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
 
   // Test whether result is zero.  Bail out to check for subnormal result.
   // Due to subnormals, x^-y == (1/x)^y does not hold in all cases.
-  __ fcmpu(double_result, kDoubleRegZero);
+  __ cdbr(double_result, kDoubleRegZero);
   __ bne(&done);
   // double_exponent may not containe the exponent value if the input was a
   // smi.  We set it with exponent value before bailing out.
@@ -6559,7 +6561,7 @@ void ICCompareStub::GenerateHeapNumbers(MacroAssembler* masm) {
   __ LoadF(d1, FieldMemOperand(r3_p, HeapNumber::kValueOffset));
 
   // Compare operands
-  __ fcmpu(d0, d1);
+  __ cdbr(d0, d1);
 
   // Don't base result on status bits when a NaN is involved.
   __ bunordered(&unordered);
