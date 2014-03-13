@@ -147,8 +147,8 @@ Register ToRegister(int num) {
     r1,
     r2, r3, r4, r5, r6, r7, r8, r9, r10,
     fp, ip, r13, r14, sp,
-    r16, r17, r18, r19, r20, r21, r22, r23, r24,
-    r25, r26, r27, r28, r29, r30, r31
+    r16_p, r17_p, r18_p, r19_p, r20_p, r21_p, r22_p, r23_p, r24_p,
+    r25_p, r26_p, r27_p, r28_p, r29_p, r30_p, r31_p
   };
   return kRegisters[num];
 }
