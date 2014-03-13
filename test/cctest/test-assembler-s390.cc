@@ -1104,7 +1104,7 @@ TEST(13) {
   // __ bxle(r15, r15, r15, 0xFFF);             // RS1 FORMAT
 
   v8::internal::byte * bufPos = assm.buffer_pos();
-  // OS::DebugBreak();
+  OS::DebugBreak();
 
   // __ stcm(r15, al, r15, 0xFFF);              // RS2 FORMAT
   // __ brxh(r15, r15, Operand(0xF12F));        // RSI FORMAT

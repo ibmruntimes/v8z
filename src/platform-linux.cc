@@ -419,7 +419,7 @@ void OS::DebugBreak() {
   asm("twge 2,2");
 //  asm("nop");  // roohack - nothing for now;
 #elif defined(__s390__)
-  asm("trap2");
+  raise(SIGTRAP);
 #else
   asm("int $3");
 #endif
