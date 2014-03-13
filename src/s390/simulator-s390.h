@@ -281,21 +281,8 @@ class Simulator {
     if (lhs >  rhs) condition_reg_ |= CC_GT;
   }
 
-  template <typename T>
-  void SetS390OverflowCode(T left, T right, T alu_out, bool addition) {
-    bool overflow;
-    if (addition) {
-               // operands have the same sign
-      overflow = ((left >= 0 && right >= 0) || (left < 0 && right < 0))
-               // and operands and result have different sign
-              && ((left < 0 && alu_out >= 0) || (left >= 0 && alu_out < 0));
-    } else {
-               // operands have different signs
-      overflow = ((left < 0 && right >= 0) || (left >= 0 && right < 0))
-               // and first operand and result have different signs
-               && ((left < 0 && alu_out >= 0) || (left >= 0 && alu_out < 0));
-    }
-    return overflow;
+  void SetS390OverflowCode(bool isOF) {
+    is_overflow = isOF;
   }
 
   bool TestConditionCode(Condition mask) {
@@ -348,6 +335,7 @@ class Simulator {
   intptr_t registers_[kNumGPRs];  // PowerPC
   // condition register. In s390, the last 4 bits are used.
   int32_t condition_reg_;
+  int32_t is_overflow;    // S390
   int32_t fp_condition_reg_;  // PowerPC
   intptr_t special_reg_lr_;  // PowerPC
   intptr_t special_reg_pc_;  // PowerPC
