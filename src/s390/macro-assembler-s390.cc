@@ -439,8 +439,7 @@ void MacroAssembler::RecordWrite(Register object,
 
   // Record the actual write.
   if (lr_status == kLRHasNotBeenSaved) {
-    mflr(r0_p);
-    push(r0_p);
+    push(r14);
   }
   RecordWriteStub stub(object, value, address, remembered_set_action, fp_mode);
   CallStub(&stub);
@@ -493,8 +492,7 @@ void MacroAssembler::RememberedSetHelper(Register object,  // For debug tests.
     ASSERT(and_then == kReturnAtEnd);
     beq(&done /*, cr0*/);
   }
-  mflr(r0_p);
-  push(r0_p);
+  push(r14);
   StoreBufferOverflowStub store_buffer_overflow =
       StoreBufferOverflowStub(fp_mode);
   CallStub(&store_buffer_overflow);

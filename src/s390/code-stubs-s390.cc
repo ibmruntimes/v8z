@@ -838,8 +838,7 @@ void FloatingPointHelper::CallCCodeForDoubleOperation(
 
   // Push the current return address before the C call. Return will be
   // through pop() below.
-  __ mflr(r0_p);
-  __ push(r0_p);
+  __ push(r14);
   __ PrepareCallCFunction(0, 2, scratch);
 
   {
@@ -1577,7 +1576,7 @@ void StoreBufferOverflowStub::Generate(MacroAssembler* masm) {
   // We don't allow a GC during a store buffer overflow so there is no need to
   // store the registers in any particular way, but we do have to store and
   // restore them.
-  __ mflr(r0_p);
+  __ LoadRR(r0_p, r14);
   __ MultiPush(kJSCallerSaved | r0_p.bit());
   if (save_doubles_ == kSaveFPRegs) {
     const int kNumRegs = DwVfpRegister::kNumVolatileRegisters;
@@ -3158,8 +3157,7 @@ void TranscendentalCacheStub::GenerateCallCFunction(MacroAssembler* masm,
                                                     Register scratch) {
   Isolate* isolate = masm->isolate();
 
-  __ mflr(r0_p);
-  __ push(r0_p);
+  __ push(r14);
   __ PrepareCallCFunction(0, 1, scratch);
   __ ldr(d1, d2);
   AllowExternalCallThatCantCauseGC scope(masm);
@@ -3322,8 +3320,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
       __ b(&done);
     }
 
-    __ mflr(r0_p);
-    __ push(r0_p);
+    __ push(r14);
     {
       AllowExternalCallThatCantCauseGC scope(masm);
       __ PrepareCallCFunction(0, 2, scratch);
@@ -3407,8 +3404,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
     __ IncrementCounter(counters->math_pow(), 1, scratch, scratch2);
     __ Ret(2);
   } else {
-    __ mflr(r0_p);
-    __ push(r0_p);
+    __ push(r14);
     {
       AllowExternalCallThatCantCauseGC scope(masm);
       __ PrepareCallCFunction(0, 2, scratch);
@@ -4032,7 +4028,7 @@ void InstanceofStub::Generate(MacroAssembler* masm) {
     // The offset was stored in r7_p safepoint slot.
     // (See LCodeGen::DoDeferredLInstanceOfKnownGlobal)
     __ LoadFromSafepointRegisterSlot(scratch, r7_p);
-    __ mflr(inline_site);
+    __ LoadRR(inline_site, r14);
     __ Sub(inline_site, inline_site, scratch);
     // Get the map location in scratch and patch it.
     __ GetRelocatedValueLocation(inline_site, scratch, scratch2);
@@ -6783,8 +6779,7 @@ void ICCompareStub::GenerateMiss(MacroAssembler* masm) {
 
     FrameScope scope(masm, StackFrame::INTERNAL);
     __ Push(r4_p, r3_p);
-    __ mflr(r0_p);
-    __ push(r0_p);
+    __ push(r14);
     __ Push(r4_p, r3_p);
     __ LoadSmiLiteral(ip, Smi::FromInt(op_));
     __ push(ip);
@@ -6838,7 +6833,7 @@ void DirectCEntryStub::GenerateCall(MacroAssembler* masm,
   __ bind(&start);
   __ b(&here /*, SetLK*/);
   __ bind(&here);
-  __ mflr(ip);
+  __ LoadRR(ip, r14);  // replace mflr
   __ mtlr(r0_p);  // from above, so we know where to return
   __ AddP(ip, Operand(6 * Assembler::kInstrSize));
   __ StoreP(ip, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize));
@@ -6923,7 +6918,7 @@ void StringDictionaryLookupStub::GenerateNegativeLookup(MacroAssembler* masm,
       (r0_p.bit() | r9_p.bit() | r8_p.bit() | r7_p.bit() | r6_p.bit() |
        r5_p.bit() | r4_p.bit() | r3_p.bit());
 
-  __ mflr(r0_p);
+  __ LoadRR(r0_p, r14);
   __ MultiPush(spill_mask);
 
   __ LoadP(r3_p, FieldMemOperand(receiver, JSObject::kPropertiesOffset));
@@ -7002,7 +6997,7 @@ void StringDictionaryLookupStub::GeneratePositiveLookup(MacroAssembler* masm,
        r6_p.bit() | r5_p.bit() | r4_p.bit() | r3_p.bit()) &
       ~(scratch1.bit() | scratch2.bit());
 
-  __ mflr(r0_p);
+  __ LoadRR(r0_p, r14);
   __ MultiPush(spill_mask);
   if (name.is(r3_p)) {
     ASSERT(!elements.is(r4_p));
@@ -7492,8 +7487,7 @@ void StoreArrayLiteralElementStub::Generate(MacroAssembler* masm) {
 void ProfileEntryHookStub::MaybeCallEntryHook(MacroAssembler* masm) {
   if (entry_hook_ != NULL) {
     ProfileEntryHookStub stub;
-    __ mflr(r0_p);
-    __ push(r0_p);
+    __ push(r14);
     __ CallStub(&stub);
     __ pop(r0_p);
     __ mtlr(r0_p);
@@ -7507,7 +7501,8 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
       Assembler::kCallTargetAddressOffset + 2 * Assembler::kInstrSize;
 
   // Save live volatile registers.
-  __ Push(r14, r7, r4_p);
+  __ LoadRR(r3_p, r14);
+  __ Push(r3_p, r7, r4_p);
   const int32_t kNumSavedRegs = 3;
 
   // Compute the function's address for the first argument.

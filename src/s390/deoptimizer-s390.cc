@@ -1094,12 +1094,12 @@ void Deoptimizer::EntryGenerator::Generate() {
     __ LoadRR(r7_p, sp);
     __ AddP(r7_p, Operand(kSavedRegistersAreaSize + (1 * kPointerSize)));
   } else if (type() == OSR) {
-    __ mflr(r6_p);
+    __ LoadRR(r6_p, r14);
     // Correct one word for bailout id.
     __ LoadRR(r7_p, sp);
     __ AddP(r7_p, Operand(kSavedRegistersAreaSize + (1 * kPointerSize)));
   } else {
-    __ mflr(r6_p);
+    __ LoadRR(r6_p, r14);
     // Correct two words for bailout id and return address.
     __ LoadRR(r7_p, sp);
     __ AddP(r7_p, Operand(kSavedRegistersAreaSize + (2 * kPointerSize)));
@@ -1253,8 +1253,7 @@ void Deoptimizer::TableEntryGenerator::GeneratePrologue() {
       __ nop();
     } else {
       // Emulate ia32 like call by pushing return address to stack.
-      __ mflr(r0_p);
-      __ push(r0_p);
+      __ push(r14);
     }
     __ LoadImmP(ip, Operand(i));
     __ push(ip);

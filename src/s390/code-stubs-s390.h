@@ -532,8 +532,7 @@ class RecordWriteStub: public CodeStub {
     // saved registers that were not already preserved.  The scratch registers
     // will be restored by other means so we don't bother pushing them here.
     void SaveCallerSaveRegisters(MacroAssembler* masm, SaveFPRegsMode mode) {
-      masm->mflr(r0);
-      masm->push(r0);
+      masm->push(r14);
       masm->MultiPush(kJSCallerSaved & ~scratch1_.bit());
       if (mode == kSaveFPRegs) {
         // Save all volatile VFP registers except d0.
