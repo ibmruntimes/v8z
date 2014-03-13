@@ -72,10 +72,6 @@ enum Condition {
   lt         =  0x4,         // Less than.
   gt         =  0x2,         // Greater than.
   le         =  0xc,         // Less then or equal
-  unordered  =  6,         // Floating-point unordered
-  ordered    =  7,
-  overflow   =  8,         // Summary overflow
-  nooverflow =  9,
   al         =  0xf,         // Always.
 
   CC_EQ      = 0x08,            // S390 condition code 0b1000
@@ -85,6 +81,10 @@ enum Condition {
   CC_GE      = CC_EQ | CC_GT,   // S390 condition code 0b0010
   CC_OF      = 0x01,            // S390 condition code 0b0001
   CC_NOF     = 0x0E,            // S390 condition code 0b1110
+  unordered  = CC_OF,           // Floating-point unordered
+  ordered    = CC_NOF,          // floating-point ordered
+  overflow   = CC_OF,           // Summary overflow
+  nooverflow = CC_NOF,
 
   mask0x0    =  0,         // no jumps
   mask0x1    =  1,
