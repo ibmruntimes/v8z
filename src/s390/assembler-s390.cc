@@ -1280,13 +1280,6 @@ void Assembler::stfsux(const DwVfpRegister frs, const MemOperand &src) {
   emit(EXT2 | STFSUX | frs.code()*B21 | rb.code()*B16 | rx.code()*B11 |LeaveRC);
 }
 
-void Assembler::fcmpu(const DwVfpRegister fra,
-                      const DwVfpRegister frb,
-                      CRegister cr) {
-  ASSERT(cr.code() >= 0 && cr.code() <= 7);
-  emit(EXT4 | FCMPU | cr.code()*B23 | fra.code()*B16 | frb.code()*B11);
-}
-
 void Assembler::fctiwz(const DwVfpRegister frt,
                      const DwVfpRegister frb) {
   emit(EXT4 | FCTIWZ | frt.code()*B21 | frb.code()*B11);

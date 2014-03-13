@@ -1559,6 +1559,8 @@ class MacroAssembler: public Assembler {
   void AssertSmi(Register object);
 
 
+  // TODO(AlanLi): these two methods can be removed from s390, as
+  // s390 instructions provides with overflow checking.
 #if V8_TARGET_ARCH_S390X
   inline void TestIfInt32(Register value,
                           Register scratch1, Register scratch2) {
