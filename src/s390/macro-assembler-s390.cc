@@ -2318,7 +2318,7 @@ void MacroAssembler::EmitVFPTruncate(VFPRoundingMode rounding_mode,
                                      Register scratch,
                                      DwVfpRegister double_scratch,
                                      CheckForInexactConversion check_inexact) {
-  Condition m;
+  Condition m = Condition(0);
   switch (rounding_mode) {
     case kRoundToZero:
       m = Condition(5);
@@ -2332,6 +2332,9 @@ void MacroAssembler::EmitVFPTruncate(VFPRoundingMode rounding_mode,
       break;
     case kRoundToMinusInf:
       m = Condition(7);
+      break;
+    default:
+      UNIMPLEMENTED();
       break;
   }
   cgdbr(m, result, double_input);
