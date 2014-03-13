@@ -82,7 +82,7 @@ void ElementsTransitionGenerator::GenerateMapChangeElementsTransition(
   //  -- r3_p    : value
   //  -- r4_p    : key
   //  -- r5_p    : receiver
-  //  -- lr    : return address
+  //  -- r14     : return address
   //  -- r6_p    : target map, scratch for subsequent call
   //  -- r7_p    : scratch (elements)
   // -----------------------------------
@@ -117,26 +117,24 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   __ CompareRoot(r7_p, Heap::kEmptyFixedArrayRootIndex);
   __ beq(&only_change_map);
 
-  // Preserve lr and use r30_p as a temporary register.
-  __ mflr(r0_p);
-  __ Push(r0_p, r30_p);
+  // Preserve lr and use r14 as a temporary register.
+  __ push(r14);
 
   __ LoadP(r8_p, FieldMemOperand(r7_p, FixedArray::kLengthOffset));
   // r7_p: source FixedArray
   // r8_p: number of elements (smi-tagged)
 
   // Allocate new FixedDoubleArray.
-  __ SmiToDoubleArrayOffset(r30_p, r8_p);
-  __ AddP(r30_p, Operand(FixedDoubleArray::kHeaderSize + kPointerSize));
-  __ AllocateInNewSpace(r30_p, r9_p, r10_p, r22_p,
+  __ SmiToDoubleArrayOffset(r14, r8_p);
+  __ AddP(r14, Operand(FixedDoubleArray::kHeaderSize + kPointerSize));
+  __ AllocateInNewSpace(r14, r9_p, r10_p, r22_p,
                         &gc_required, NO_ALLOCATION_FLAGS);
   // r9_p: destination FixedDoubleArray, not tagged as heap object.
 
   // Align the array conveniently for doubles.
   // Store a filler value in the unused memory.
   Label aligned, aligned_done;
-  __ LoadRR(r0_p, r9_p);
-  __ AndP(r0_p, Operand(kDoubleAlignmentMask));
+  __ tmll(r9_p, Operand(kDoubleAlignmentMask));
   __ mov(ip, Operand(masm->isolate()->factory()->one_pointer_filler_map()));
   __ beq(&aligned /*, cr0*/);
   // Store at the beginning of the allocated memory and update the base pointer.
@@ -146,8 +144,8 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
 
   __ bind(&aligned);
   // Store the filler at the end of the allocated memory.
-  __ Sub(r30_p, Operand(kPointerSize));
-  __ StorePX(ip, MemOperand(r9_p, r30_p));
+  __ Sub(r14, Operand(kPointerSize));
+  __ StorePX(ip, MemOperand(r9_p, r14));
 
   __ bind(&aligned_done);
 
@@ -213,8 +211,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
 
   // Call into runtime if GC is required.
   __ bind(&gc_required);
-  __ Pop(r0_p, r30_p);
-  __ mtlr(r0_p);
+  __ pop(r14);
   __ b(fail);
 
   // Convert and copy elements.
@@ -257,8 +254,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   __ CmpRR(r10_p, r9_p);
   __ blt(&loop);
 
-  __ Pop(r0_p, r30_p);
-  __ mtlr(r0_p);
+  __ pop(r14);
   __ bind(&done);
 }
 
