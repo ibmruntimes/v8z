@@ -3254,7 +3254,7 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
       intptr_t d2_val = rxyinst->D2Value();
       int16_t mem_val = ReadH(b2_val + d2_val + x2_val, instr);
-      int32_t alu_out;
+      int32_t alu_out = 0;
       bool isOF = false;
       switch (op) {
         case AHY:
