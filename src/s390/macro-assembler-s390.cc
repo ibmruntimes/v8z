@@ -1015,8 +1015,8 @@ void MacroAssembler::PushTryHandler(StackHandler::Kind kind,
   STATIC_ASSERT(StackHandlerConstants::kContextOffset == 3 * kPointerSize);
   STATIC_ASSERT(StackHandlerConstants::kFPOffset == 4 * kPointerSize);
 
-  // For the JSEntry handler, we must preserve r2_p-r6_p,
-  //   r0_p,r1_p,r8_p-r10_p are available.
+  // For the JSEntry handler, we must preserve r2-r6,
+  //   r0,r1,r8-r9 are available.
   //
   // We want the stack to look like
   // sp -> NextOffset
