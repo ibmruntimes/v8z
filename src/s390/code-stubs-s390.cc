@@ -7507,8 +7507,7 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
       Assembler::kCallTargetAddressOffset + 2 * Assembler::kInstrSize;
 
   // Save live volatile registers.
-  __ mflr(r3_p);
-  __ Push(r3_p, r30_p, r4_p);
+  __ Push(r14, r7, r4_p);
   const int32_t kNumSavedRegs = 3;
 
   // Compute the function's address for the first argument.
@@ -7522,7 +7521,7 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
   // Align the stack if necessary.
   int frame_alignment = masm->ActivationFrameAlignment();
   if (frame_alignment > kPointerSize) {
-    __ LoadRR(r30_p, sp);
+    __ LoadRR(r7, sp);
     ASSERT(IsPowerOf2(frame_alignment));
     ASSERT(-frame_alignment == -8);
     __ ClearRightImm(sp, sp, Operand(3));
@@ -7561,11 +7560,10 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
 
   // Restore the stack pointer if needed.
   if (frame_alignment > kPointerSize) {
-    __ LoadRR(sp, r30_p);
+    __ LoadRR(sp, r7);
   }
 
-  __ Pop(r0_p, r30_p, r4_p);
-  __ mtlr(r0_p);
+  __ Pop(r14, r7, r4_p);
   __ Ret();
 }
 
