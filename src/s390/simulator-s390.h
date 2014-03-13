@@ -335,7 +335,6 @@ class Simulator {
   intptr_t registers_[kNumGPRs];  // PowerPC
   // condition register. In s390, the last 4 bits are used.
   int32_t condition_reg_;
-  int32_t is_overflow;    // S390
   int32_t fp_condition_reg_;  // PowerPC
   intptr_t special_reg_lr_;  // PowerPC
   intptr_t special_reg_pc_;  // PowerPC
