@@ -148,8 +148,7 @@ bool LCodeGen::GeneratePrologue() {
     __ bind(&ok);
   }
 
-  __ mflr(r0_p);
-  __ Push(r0_p, fp, cp, r4_p);
+  __ Push(r14, fp, cp, r4_p);
   __ LoadRR(fp, sp);
   __ AddP(fp, Operand(2 * kPointerSize));  // Adjust FP to point to saved FP
 

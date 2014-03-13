@@ -750,8 +750,7 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
     RegList registers_to_retain = kRegExpCalleeSaved;
     RegList argument_registers = r3_p.bit() | r4_p.bit() | r5_p.bit() |
       r6_p.bit() | r7_p.bit() | r8_p.bit() | r9_p.bit() | r10_p.bit();
-    __ mflr(r0_p);
-    __ push(r0_p);
+    __ push(r14);
     __ MultiPush(argument_registers | registers_to_retain);
     // Set frame pointer in space for it if this is not a direct call
     // from generated code.
@@ -1357,7 +1356,7 @@ void RegExpMacroAssemblerPPC::SafeReturn() {
 
 void RegExpMacroAssemblerPPC::SafeCallTarget(Label* name) {
   __ bind(name);
-  __ mflr(r0_p);
+  __ LoadRR(r0_p, r14);
   __ mov(ip, Operand(masm_->CodeObject()));
   __ Sub(r0_p, r0_p, ip);
   __ push(r0_p);
@@ -1456,8 +1455,7 @@ void RegExpCEntryStub::Generate(MacroAssembler* masm_) {
 
   __ LoadRR(r3_p, sp);
   __ AddP(r3_p, Operand(-stack_alignment));
-  __ mflr(r0_p);
-  __ StoreP(r0_p, MemOperand(r3_p, 0));
+  __ StoreP(r14, MemOperand(r3_p, 0));
 
   // PPC LINUX ABI:
   extra_stack_slots += kNumRequiredStackFrameSlots;

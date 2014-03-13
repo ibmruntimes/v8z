@@ -4528,7 +4528,7 @@ void FullCodeGenerator::EnterFinallyBlock() {
   // Store result register while executing finally block.
   __ push(result_register());
   // Cook return address in link register to stack (smi encoded Code* delta)
-  __ mflr(r4_p);
+  __ LoadRR(r4_p, r14);
   __ mov(ip, Operand(masm_->CodeObject()));
   __ Sub(r4_p, r4_p, ip);
   __ SmiTag(r4_p);

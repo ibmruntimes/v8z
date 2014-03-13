@@ -1874,7 +1874,6 @@ SS2_FORM(zap);
   // Special register access
   // PowerPC
   void crxor(int bt, int ba, int bb);
-  void mflr(Register dst);
   void mtlr(Register src);
   void mtctr(Register src);
   void mtxer(Register src);
