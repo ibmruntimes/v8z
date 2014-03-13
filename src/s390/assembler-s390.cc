@@ -3545,7 +3545,7 @@ void Assembler::cdb(DoubleRegister r1, const MemOperand& opnd) {
 
 // Compare Register-Register (LB)
 void Assembler::cdbr(DoubleRegister r1, DoubleRegister r2) {
-  rre_form(CDR,
+  rre_form(CDBR,
            Register::from_code(r1.code()),
            Register::from_code(r2.code()));
 }

@@ -1137,6 +1137,7 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case IIHL: Format(instr, "iihl\t'r1,'i1"); break;
       case IILH: Format(instr, "iilh\t'r1,'i1"); break;
       case IILL: Format(instr, "iill\t'r1,'i1"); break;
+      case TMLL: Format(instr, "tmll\t'r1,'i1"); break;
       case STM: Format(instr, "stm\t'r1,'r2,'d1('r3)"); break;
       case SLL: Format(instr, "sll\t'r1,'d1"); break;
       case SRL: Format(instr, "srl\t'r1,'d1"); break;
@@ -1202,6 +1203,7 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case SDBR: Format(instr, "sdbr\t'r5,'r6"); break;
       case MDBR: Format(instr, "mdbr\t'r5,'r6"); break;
       case DDBR: Format(instr, "ddbr\t'r5,'r6"); break;
+      case CDBR: Format(instr, "cdbr\t'r5,'r6"); break;
       case SQDBR: Format(instr, "sqdbr\t'r5,'r6"); break;
       case LNDBR: Format(instr, "lndbr\t'r5,'r6"); break;
     default:
