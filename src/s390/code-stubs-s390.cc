@@ -6816,25 +6816,23 @@ void DirectCEntryStub::GenerateCall(MacroAssembler* masm,
   __ LoadP(target, MemOperand(target, 0));  // Instruction address
 #endif
 
+  __ mov(r14, Operand(reinterpret_cast<intptr_t>(GetCode().location()),
+                     RelocInfo::CODE_TARGET));
+
   // Block the trampoline pool through the whole function to make sure the
   // number of generated instructions is constant.
   Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm);
 
   // Push return address (accessible to GC through exit frame pc).
-  Label start, here;
+  Label start/*, here*/;
+  Label return_addr;
   __ bind(&start);
-  __ b(&here /*, SetLK*/);
-  // TODO(JOHN): CODE IS BROKEN HERE!!!
-  __ bind(&here);
-  __ LoadRR(ip, r14);  // replace mflr
-  __ mov(r14, Operand(reinterpret_cast<intptr_t>(GetCode().location()),
-                     RelocInfo::CODE_TARGET));
-  __ AddP(ip, Operand(6 * Assembler::kInstrSize));
-  __ StoreP(ip, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize));
+  __ larl(r0, &return_addr);
+  __ StoreP(r0, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize));
   __ Jump(target);  // Call the C++ function.
-  ASSERT_EQ(Assembler::kInstrSize +
-            (6 * Assembler::kInstrSize),
-            masm->SizeOfCodeGeneratedSince(&start));
+  __ bind(&return_addr);
+
+  // TODO(JOHN): might need to allocate space accroding to ABI
 }
 
 
