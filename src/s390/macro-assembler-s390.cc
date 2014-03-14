@@ -2156,16 +2156,16 @@ void MacroAssembler::CallApiFunctionAndReturn(ExternalReference function,
       next_address);
 
   // Allocate HandleScope in callee-save registers.
-  // r26_p - next_address
-  // r27_p - next_address->kNextOffset
-  // r28_p - next_address->kLimitOffset
-  // r29_p - next_address->kLevelOffset
-  mov(r26_p, Operand(next_address));
-  LoadP(r27_p, MemOperand(r26_p, kNextOffset));
-  LoadP(r28_p, MemOperand(r26_p, kLimitOffset));
-  LoadlW(r29_p, MemOperand(r26_p, kLevelOffset));
-  AddP(r29_p, Operand(1));
-  StoreW(r29_p, MemOperand(r26_p, kLevelOffset));
+  // r9 - next_address
+  // r6 - next_address->kNextOffset
+  // r7 - next_address->kLimitOffset
+  // r8 - next_address->kLevelOffset
+  mov(r9, Operand(next_address));
+  LoadP(r6, MemOperand(r9, kNextOffset));
+  LoadP(r7, MemOperand(r9, kLimitOffset));
+  LoadlW(r8, MemOperand(r9, kLevelOffset));
+  AddP(r8, Operand(1));
+  StoreW(r8, MemOperand(r9, kLevelOffset));
 
 #if !ABI_RETURNS_HANDLES_IN_REGS
   // PPC LINUX ABI
@@ -2204,29 +2204,29 @@ void MacroAssembler::CallApiFunctionAndReturn(ExternalReference function,
 
   // No more valid handles (the result handle was the last one). Restore
   // previous handle scope.
-  StoreP(r27_p, MemOperand(r26_p, kNextOffset));
+  StoreP(r6, MemOperand(r9, kNextOffset));
   if (emit_debug_code()) {
-    LoadlW(r4_p, MemOperand(r26_p, kLevelOffset));
-    CmpRR(r4_p, r29_p);
+    LoadlW(r4_p, MemOperand(r9, kLevelOffset));
+    CmpRR(r4_p, r8);
     Check(eq, "Unexpected level after return from api call");
   }
-  Sub(r29_p, Operand(1));
-  StoreW(r29_p, MemOperand(r26_p, kLevelOffset));
-  LoadP(ip, MemOperand(r26_p, kLimitOffset));
-  CmpRR(r28_p, ip);
+  Sub(r8, Operand(1));
+  StoreW(r8, MemOperand(r9, kLevelOffset));
+  LoadP(ip, MemOperand(r9, kLimitOffset));
+  CmpRR(r7, ip);
   bne(&delete_allocated_handles);
 
   // Check if the function scheduled an exception.
   bind(&leave_exit_frame);
-  LoadRoot(r27_p, Heap::kTheHoleValueRootIndex);
+  LoadRoot(r6, Heap::kTheHoleValueRootIndex);
   mov(ip, Operand(ExternalReference::scheduled_exception_address(isolate())));
-  LoadP(r28_p, MemOperand(ip));
-  CmpRR(r27_p, r28_p);
+  LoadP(r7, MemOperand(ip));
+  CmpRR(r6, r7);
   bne(&promote_scheduled_exception);
 
   // LeaveExitFrame expects unwind space to be in a register.
-  mov(r27_p, Operand(stack_space));
-  LeaveExitFrame(false, r27_p);
+  mov(r6, Operand(stack_space));
+  LeaveExitFrame(false, r6);
   blr();
 
   bind(&promote_scheduled_exception);
@@ -2237,13 +2237,13 @@ void MacroAssembler::CallApiFunctionAndReturn(ExternalReference function,
 
   // HandleScope limit has changed. Delete allocated extensions.
   bind(&delete_allocated_handles);
-  StoreP(r28_p, MemOperand(r26_p, kLimitOffset));
-  LoadRR(r27_p, r3_p);
-  PrepareCallCFunction(1, r28_p);
+  StoreP(r7, MemOperand(r9, kLimitOffset));
+  LoadRR(r6, r3_p);
+  PrepareCallCFunction(1, r7);
   mov(r3_p, Operand(ExternalReference::isolate_address()));
   CallCFunction(
       ExternalReference::delete_handle_scope_extensions(isolate()), 1);
-  LoadRR(r3_p, r27_p);
+  LoadRR(r3_p, r6);
   b(&leave_exit_frame);
 }
 
