@@ -242,15 +242,10 @@ const Register r13_p  = { kRegister_r13_Code };
 const Register r14_p  = { kRegister_r14_Code };
 const Register r15_p  = { kRegister_sp_Code };
 const Register r16_p  = { kRegister_r16_Code };
-const Register r17_p  = { kRegister_r17_Code };
-const Register r18_p  = { kRegister_r18_Code };
-const Register r19_p  = { kRegister_r19_Code };
 // Used as context register on PPC
 const Register r20_p  = { kRegister_r20_Code };
 const Register r21_p  = { kRegister_r21_Code };
 const Register r22_p  = { kRegister_r22_Code };
-const Register r23_p  = { kRegister_r23_Code };
-const Register r24_p  = { kRegister_r24_Code };
 const Register r25_p  = { kRegister_r25_Code };
 const Register r26_p  = { kRegister_r26_Code };
 const Register r27_p  = { kRegister_r27_Code };
