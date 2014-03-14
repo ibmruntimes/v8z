@@ -1346,10 +1346,9 @@ void RegExpMacroAssemblerPPC::SafeCall(Label* to, Condition cond,
 
 
 void RegExpMacroAssemblerPPC::SafeReturn() {
-  __ pop(r0_p);
+  __ pop(r14);
   __ mov(ip, Operand(masm_->CodeObject()));
-  __ AddP(r0_p, ip);
-  __ mtlr(r0_p);
+  __ AddP(r14, ip);
   __ blr();
 }
 
@@ -1474,8 +1473,7 @@ void RegExpCEntryStub::Generate(MacroAssembler* masm_) {
 
   __ AddP(sp, Operand(extra_stack_slots * kPointerSize));
 
-  __ LoadP(r0_p, MemOperand(sp, -stack_alignment));
-  __ mtlr(r0_p);
+  __ LoadP(r14, MemOperand(sp, -stack_alignment));
   __ blr();
 }
 

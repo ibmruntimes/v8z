@@ -1365,7 +1365,7 @@ void Builtins::Generate_NotifyOSR(MacroAssembler* masm) {
     __ CallRuntime(Runtime::kNotifyOSR, 0);
   }
   __ MultiPop(saved_regs);
-  __ mtlr(r0_p);
+  __ LoadRR(r14, r0_p);
   __ Ret();
 }
 

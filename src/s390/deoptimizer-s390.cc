@@ -1232,8 +1232,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   __ InitializeRootRegister();
 
   __ pop(r10_p);  // get continuation, leave pc on stack
-  __ pop(r0_p);
-  __ mtlr(r0_p);
+  __ pop(r14);
   __ Jump(r10_p);
   __ stop("Unreachable.");
 }

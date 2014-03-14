@@ -444,8 +444,7 @@ void MacroAssembler::RecordWrite(Register object,
   RecordWriteStub stub(object, value, address, remembered_set_action, fp_mode);
   CallStub(&stub);
   if (lr_status == kLRHasNotBeenSaved) {
-    pop(r0_p);
-    mtlr(r0_p);
+    pop(r14);
   }
 
   bind(&done);
@@ -496,8 +495,7 @@ void MacroAssembler::RememberedSetHelper(Register object,  // For debug tests.
   StoreBufferOverflowStub store_buffer_overflow =
       StoreBufferOverflowStub(fp_mode);
   CallStub(&store_buffer_overflow);
-  pop(r0_p);
-  mtlr(r0_p);
+  pop(r14);
   bind(&done);
   if (and_then == kReturnAtEnd) {
     Ret();

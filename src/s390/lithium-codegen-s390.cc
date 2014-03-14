@@ -2453,8 +2453,7 @@ void LCodeGen::DoReturn(LReturn* instr) {
   }
   int32_t sp_delta = (GetParameterCount() + 1) * kPointerSize;
   __ LoadRR(sp, fp);
-  __ Pop(r0_p, fp);
-  __ mtlr(r0_p);
+  __ Pop(r14, fp);
   __ AddP(sp, Operand(sp_delta));
   __ blr();
 }

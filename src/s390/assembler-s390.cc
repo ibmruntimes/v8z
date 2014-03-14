@@ -1102,10 +1102,6 @@ void Assembler::crxor(int bt, int ba, int bb) {
   emit(EXT1 | CRXOR | bt*B21 | ba*B16 | bb*B11);
 }
 
-void Assembler::mtlr(Register src) {
-  emit(EXT2 | MTSPR | src.code()*B21 | 256 << 11);   // Ignore RC bit
-}
-
 void Assembler::mtctr(Register src) {
   emit(EXT2 | MTSPR | src.code()*B21 | 288 << 11);   // Ignore RC bit
 }
