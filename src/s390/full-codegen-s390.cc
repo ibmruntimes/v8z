@@ -451,10 +451,11 @@ void FullCodeGenerator::EmitReturnSequence() {
       __ RecordJSReturn();
       masm_->LoadRR(sp, fp);
       masm_->LoadP(fp, MemOperand(sp));
-      masm_->LoadP(r0_p, MemOperand(sp, kPointerSize));
-      masm_->mtlr(r0_p);
+      masm_->LoadP(r14, MemOperand(sp, kPointerSize));
       masm_->AddP(sp, Operand((uint32_t)(sp_delta + (2 * kPointerSize))));
       masm_->blr();
+      masm_->nop();
+      masm_->nop();
 #if V8_TARGET_ARCH_S390X
       // With 64bit we need a couple of nop() instructions to ensure we have
       // enough space to SetDebugBreakAtReturn()

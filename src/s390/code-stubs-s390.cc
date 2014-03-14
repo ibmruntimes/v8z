@@ -847,8 +847,7 @@ void FloatingPointHelper::CallCCodeForDoubleOperation(
         ExternalReference::double_fp_operation(op, masm->isolate()), 0, 2);
   }
   // load saved r8_p value, restore lr
-  __ pop(r0_p);
-  __ mtlr(r0_p);
+  __ pop(r14);
   __ pop(r8_p);
 
   // Store answer in the overwritable heap number. Double returned in d1
@@ -1605,7 +1604,7 @@ void StoreBufferOverflowStub::Generate(MacroAssembler* masm) {
     __ AddP(sp, Operand(kDoubleSize * kNumRegs));
   }
   __ MultiPop(kJSCallerSaved | r0_p.bit());
-  __ mtlr(r0_p);
+  __ LoadRR(r14, r0_p);
   __ Ret();
 }
 
@@ -3182,8 +3181,7 @@ void TranscendentalCacheStub::GenerateCallCFunction(MacroAssembler* masm,
       UNIMPLEMENTED();
       break;
   }
-  __ pop(r0_p);
-  __ mtlr(r0_p);
+  __ pop(r14);
 }
 
 
@@ -3329,8 +3327,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
           ExternalReference::power_double_double_function(masm->isolate()),
           0, 2);
     }
-    __ pop(r0_p);
-    __ mtlr(r0_p);
+    __ pop(r14);
     __ GetCFunctionDoubleResult(double_result);
     __ b(&done);
   }
@@ -3413,8 +3410,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
           ExternalReference::power_double_double_function(masm->isolate()),
           0, 2);
     }
-    __ pop(r0_p);
-    __ mtlr(r0_p);
+    __ pop(r14);
     __ GetCFunctionDoubleResult(double_result);
 
     __ bind(&done);
@@ -6788,8 +6784,7 @@ void ICCompareStub::GenerateMiss(MacroAssembler* masm) {
     __ LoadRR(r5_p, r3_p);
     __ AddP(r5_p, Operand(Code::kHeaderSize - kHeapObjectTag));
     // Restore registers.
-    __ pop(r0_p);
-    __ mtlr(r0_p);
+    __ pop(r14);
     __ pop(r3_p);
     __ pop(r4_p);
   }
@@ -6821,9 +6816,6 @@ void DirectCEntryStub::GenerateCall(MacroAssembler* masm,
   __ LoadP(target, MemOperand(target, 0));  // Instruction address
 #endif
 
-  __ mov(r0_p, Operand(reinterpret_cast<intptr_t>(GetCode().location()),
-                     RelocInfo::CODE_TARGET));
-
   // Block the trampoline pool through the whole function to make sure the
   // number of generated instructions is constant.
   Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm);
@@ -6832,9 +6824,11 @@ void DirectCEntryStub::GenerateCall(MacroAssembler* masm,
   Label start, here;
   __ bind(&start);
   __ b(&here /*, SetLK*/);
+  // TODO(JOHN): CODE IS BROKEN HERE!!!
   __ bind(&here);
   __ LoadRR(ip, r14);  // replace mflr
-  __ mtlr(r0_p);  // from above, so we know where to return
+  __ mov(r14, Operand(reinterpret_cast<intptr_t>(GetCode().location()),
+                     RelocInfo::CODE_TARGET));
   __ AddP(ip, Operand(6 * Assembler::kInstrSize));
   __ StoreP(ip, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize));
   __ Jump(target);  // Call the C++ function.
@@ -6928,7 +6922,7 @@ void StringDictionaryLookupStub::GenerateNegativeLookup(MacroAssembler* masm,
   __ Cmpi(r3_p, Operand::Zero());
 
   __ MultiPop(spill_mask);  // MultiPop does not touch condition flags
-  __ mtlr(r0_p);
+  __ LoadRR(r14, r0_p);
 
   __ beq(done);
   __ bne(miss);
@@ -7012,7 +7006,7 @@ void StringDictionaryLookupStub::GeneratePositiveLookup(MacroAssembler* masm,
   __ Cmpi(r3_p, Operand::Zero());
   __ LoadRR(scratch2, r5_p);
   __ MultiPop(spill_mask);
-  __ mtlr(r0_p);
+  __ LoadRR(r14, r0_p);
 
   __ bne(done);
   __ beq(miss);
@@ -7489,8 +7483,7 @@ void ProfileEntryHookStub::MaybeCallEntryHook(MacroAssembler* masm) {
     ProfileEntryHookStub stub;
     __ push(r14);
     __ CallStub(&stub);
-    __ pop(r0_p);
-    __ mtlr(r0_p);
+    __ pop(r14);
   }
 }
 

@@ -557,8 +557,7 @@ class RecordWriteStub: public CodeStub {
         masm->AddP(sp, Operand(kDoubleSize * kNumRegs));
       }
       masm->MultiPop(kJSCallerSaved & ~scratch1_.bit());
-      masm->pop(r0);
-      masm->mtlr(r0);
+      masm->pop(r14);
     }
 
     inline Register object() { return object_; }
