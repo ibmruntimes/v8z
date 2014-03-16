@@ -121,7 +121,7 @@ class JumpPatchSite BASE_EMBEDDED {
 // The live registers are:
 //   o r3: the JS function object being called (i.e., ourselves)
 //   o cp: our context
-//   o fp: our caller's frame pointer (aka r31)
+//   o fp: our caller's frame pointer
 //   o sp: stack pointer
 //   o lr: return address
 //
@@ -151,11 +151,11 @@ void FullCodeGenerator::Generate() {
   // function calls.
   if (!info->is_classic_mode() || info->is_native()) {
     Label ok;
-    __ Cmpi(r8, Operand::Zero());
+    __ Cmpi(r8_p, Operand::Zero());
     __ beq(&ok);
     int receiver_offset = info->scope()->num_parameters() * kPointerSize;
-    __ LoadRoot(r5, Heap::kUndefinedValueRootIndex);
-    __ StoreP(r5, MemOperand(sp, receiver_offset));
+    __ LoadRoot(r5_p, Heap::kUndefinedValueRootIndex);
+    __ StoreP(r5_p, MemOperand(sp, receiver_offset));
     __ bind(&ok);
   }
 
@@ -218,9 +218,8 @@ void FullCodeGenerator::Generate() {
         __ StoreP(r2, target);
 
         // Update the write barrier.
-        // @TODO Evaluate if r6 is a valid scratch reg on S390.
         __ RecordWriteContextSlot(
-            cp, target.offset(), r2, r6, kLRHasBeenSaved, kDontSaveFPRegs);
+            cp, target.offset(), r2, r6_p, kLRHasBeenSaved, kDontSaveFPRegs);
       }
     }
   }

@@ -627,17 +627,17 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   Sub(sp, Operand(2 * kPointerSize));
 
   if (emit_debug_code()) {
-    LoadImmP(r8_p, Operand::Zero());
-    StoreP(r8_p, MemOperand(fp, ExitFrameConstants::kSPOffset));
+    LoadImmP(r7, Operand::Zero());
+    StoreP(r7, MemOperand(fp, ExitFrameConstants::kSPOffset));
   }
-  mov(r8_p, Operand(CodeObject()));
-  StoreP(r8_p, MemOperand(fp, ExitFrameConstants::kCodeOffset));
+  mov(r7, Operand(CodeObject()));
+  StoreP(r7, MemOperand(fp, ExitFrameConstants::kCodeOffset));
 
   // Save the frame pointer and the context in top.
-  mov(r8_p, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate())));
-  StoreP(fp, MemOperand(r8_p));
-  mov(r8_p, Operand(ExternalReference(Isolate::kContextAddress, isolate())));
-  StoreP(cp, MemOperand(r8_p));
+  mov(r7, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate())));
+  StoreP(fp, MemOperand(r7));
+  mov(r7, Operand(ExternalReference(Isolate::kContextAddress, isolate())));
+  StoreP(cp, MemOperand(r7));
 
   // Optionally save all volatile double registers.
   if (save_doubles) {
@@ -664,9 +664,9 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
 
   // Set the exit frame sp value to point just before the return address
   // location.
-  LoadRR(r8_p, sp);
-  AddP(r8_p, Operand((kStackFrameExtraParamSlot + 1) * kPointerSize));
-  StoreP(r8_p, MemOperand(fp, ExitFrameConstants::kSPOffset));
+  LoadRR(r7, sp);
+  AddP(r7, Operand((kStackFrameExtraParamSlot + 1) * kPointerSize));
+  StoreP(r7, MemOperand(fp, ExitFrameConstants::kSPOffset));
 }
 
 
@@ -708,24 +708,24 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles,
     // Calculate the stack location of the saved doubles and restore them.
     const int kNumRegs = DwVfpRegister::kNumVolatileRegisters;
     const int offset = (2 * kPointerSize + kNumRegs * kDoubleSize);
-    LoadRR(r6_p, fp);
-    AddP(r6_p, Operand(-offset));
+    LoadRR(r5, fp);
+    AddP(r5, Operand(-offset));
     for (int i = 0; i < kNumRegs; i++) {
       DwVfpRegister reg = DwVfpRegister::from_code(i);
-      LoadF(reg, MemOperand(r6_p, i * kDoubleSize));
+      LoadF(reg, MemOperand(r5, i * kDoubleSize));
     }
   }
 
   // Clear top frame.
-  LoadImmP(r6_p, Operand(0, RelocInfo::NONE));
+  LoadImmP(r5, Operand(0, RelocInfo::NONE));
   mov(ip, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate())));
-  StoreP(r6_p, MemOperand(ip));
+  StoreP(r5, MemOperand(ip));
 
   // Restore current context from top and clear it in debug mode.
   mov(ip, Operand(ExternalReference(Isolate::kContextAddress, isolate())));
   LoadP(cp, MemOperand(ip));
 #ifdef DEBUG
-  StoreP(r6_p, MemOperand(ip));
+  StoreP(r5, MemOperand(ip));
 #endif
 
   // Tear down the exit frame, pop the arguments, and return.
@@ -749,7 +749,8 @@ void MacroAssembler::SetCallKind(Register dst, CallKind call_kind) {
   // at the call sites. However, the dst register has to be r8_p to
   // follow the calling convention which requires the call type to be
   // in r8_p.
-  ASSERT(dst.is(r8_p));
+  // @TODO Re-enable Assert here for S390
+//  ASSERT(dst.is(r7));
   if (call_kind == CALL_AS_FUNCTION) {
     LoadSmiLiteral(dst, Smi::FromInt(1));
   } else {
@@ -859,12 +860,12 @@ void MacroAssembler::InvokeCode(Register code,
   if (!definitely_mismatches) {
     if (flag == CALL_FUNCTION) {
       call_wrapper.BeforeCall(CallSize(code));
-      SetCallKind(r8_p, call_kind);
+      SetCallKind(r7, call_kind);
       Call(code);
       call_wrapper.AfterCall();
     } else {
       ASSERT(flag == JUMP_FUNCTION);
-      SetCallKind(r8_p, call_kind);
+      SetCallKind(r7, call_kind);
       Jump(code);
     }
 
