@@ -3462,19 +3462,15 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
                               bool do_gc,
                               bool always_allocate) {
   // r2: result parameter for PerformGC, if any
-  // r7: number of arguments (C callee-saved)
-  // r8: pointer to builtin function (C callee-saved)
-  // r9: pointer to first argument (C callee-saved)
-
-  // r14: number of arguments including receiver  (C callee-saved)
-  // r15: pointer to builtin function  (C callee-saved)
-  // r16: pointer to the first argument (C callee-saved)
+  // r6: number of arguments including receiver (C callee-saved)
+  // r7: pointer to builtin function (C callee-saved)
+  // r8: pointer to first argument (C callee-saved)
   Isolate* isolate = masm->isolate();
   Register isolate_reg = no_reg;
 
   if (do_gc) {
-    // Passing r3.
-    __ PrepareCallCFunction(1, 0, r4);
+    // Passing r2.
+    __ PrepareCallCFunction(1, 0, r3);
     __ CallCFunction(ExternalReference::perform_gc_function(isolate),
         1, 0);
   }
@@ -3499,12 +3495,12 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
 #if !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
   if (result_size_ < 2) {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    __ LoadRR(r2, r7);
+    __ LoadRR(r2, r6);
 #else
     // r3 = argc << 32 (for alignment), r4 = argv
-    __ ShiftLeftImm(r2, r7, Operand(32));
+    __ ShiftLeftImm(r2, r6, Operand(32));
 #endif
-    __ LoadRR(r3, r9);
+    __ LoadRR(r3, r8);
     isolate_reg = r4;
   } else {
     ASSERT_EQ(2, result_size_);
@@ -3513,30 +3509,30 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
     // buffer as implicit first argument.
     __ la(r2, MemOperand(sp, (kStackFrameExtraParamSlot + 1) * kPointerSize));
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    __ LoadRR(r3, r7);
+    __ LoadRR(r3, r6);
 #else
     // r4 = argc << 32 (for alignment), r5 = argv
-    __ ShiftLeftImm(r3, r7, Operand(32));
+    __ ShiftLeftImm(r3, r6, Operand(32));
 #endif
-    __ LoadRR(r4, r9);
+    __ LoadRR(r4, r8);
     isolate_reg = r5;
   }
 #else
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-  __ LoadRR(r2, r7);
+  __ LoadRR(r2, r6);
 #else
   // r3 = argc << 32 (for alignment), r4 = argv
-  __ ShiftLeftImm(r2, r7, Operand(32));
+  __ ShiftLeftImm(r2, r6, Operand(32));
 #endif
-  __ LoadRR(r3, r9);
+  __ LoadRR(r3, r8);
   isolate_reg = r4;
 #endif
 
 #else
   // zLinux 31-bit
   // r2 = argc, r3 = argv
-  __ LoadRR(r2, r7);
-  __ LoadRR(r3, r9);
+  __ LoadRR(r2, r6);
+  __ LoadRR(r3, r8);
   isolate_reg = r4;
 /* PPC code commented out.. left for reference in case we need to pass by
  * reference
@@ -3545,8 +3541,8 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
   // PPC passes C++ objects by reference not value
   // This builds an object in the stack frame
   __ la(r2, MemOperand(sp, (kStackFrameExtraParamSlot + 1) * kPointerSize));
-  __ StoreP(r7, MemOperand(r2));
-  __ StoreP(r9, MemOperand(r2, kPointerSize));
+  __ StoreP(r6, MemOperand(r2));
+  __ StoreP(r8, MemOperand(r2, kPointerSize));
   isolate_reg = r3;
 */
 #endif
@@ -3555,11 +3551,11 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
   // r3 = argc, r4 = argv
   // @TODO Make sure this is correct for S390
 #if defined(V8_TARGET_ARCH_S390X) && __BYTE_ORDER == __BIG_ENDIAN
-  __ ShiftLeftImm(r2, r7, Operand(32));
+  __ ShiftLeftImm(r2, r6, Operand(32));
 #else
-  __ LoadRR(r2, r7);
+  __ LoadRR(r2, r6);
 #endif
-  __ LoadRR(r3, r9);
+  __ LoadRR(r3, r8);
   isolate_reg = r4;
 #endif
 
@@ -3569,11 +3565,11 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
   // Native AIX/PPC64 Linux use a function descriptor.
   // @TODO Haven't touched this code for S390.. See if it's applicable.
   // especially the ToRegister(2) part.
-  __ LoadP(ToRegister(2), MemOperand(r8, kPointerSize));  // TOC
-  __ LoadP(ip, MemOperand(r8, 0));  // Instruction address
+  __ LoadP(ToRegister(2), MemOperand(r7, kPointerSize));  // TOC
+  __ LoadP(ip, MemOperand(r7, 0));  // Instruction address
   Register target = ip;
 #else
-  Register target = r8;
+  Register target = r7;
 #endif
 
   // To let the GC traverse the return address of the exit frames, we need to
@@ -3630,8 +3626,8 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
   // r2:r3: result
   // sp: stack pointer
   // fp: frame pointer
-  //  Callee-saved register r7 still holds argc.
-  __ LeaveExitFrame(save_doubles_, r7);
+  //  Callee-saved register r6 still holds argc.
+  __ LeaveExitFrame(save_doubles_, r6);
   __ b(r14);
 
   // check if we should retry or throw exception
@@ -3684,8 +3680,8 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // builtin once.
 
   // Compute the argv pointer in a callee-saved register.
-  __ ShiftLeftImm(r9, r2, Operand(kPointerSizeLog2));
-  __ lay(r9, MemOperand(r9, sp, -kPointerSize));
+  __ ShiftLeftImm(r8, r2, Operand(kPointerSizeLog2));
+  __ lay(r8, MemOperand(r8, sp, -kPointerSize));
 
   // Enter the exit frame that transitions from JavaScript to C++.
   FrameScope scope(masm, StackFrame::MANUAL);
@@ -3713,12 +3709,12 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   __ EnterExitFrame(save_doubles_, arg_stack_space);
 
   // Set up argc and the builtin function in callee-saved registers.
-  __ LoadRR(r7, r2);  // argc
-  __ LoadRR(r8, r3);  // builtin function
+  __ LoadRR(r6, r2);  // argc
+  __ LoadRR(r7, r3);  // builtin function
 
-  // r7: number of arguments (C callee-saved)
-  // r8: pointer to builtin function (C callee-saved)
-  // r9: pointer to first argument (C callee-saved)
+  // r6: number of arguments (C callee-saved)
+  // r7: pointer to builtin function (C callee-saved)
+  // r8: pointer to first argument (C callee-saved)
 
   // @TODO Figure out the rest of this exception stuff for S390 registers
 
@@ -3838,10 +3834,10 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   // If this is the outermost JS call, set js_entry_sp value.
   Label non_outermost_js;
   ExternalReference js_entry_sp(Isolate::kJSEntrySPAddress, isolate);
-  __ mov(r8, Operand(ExternalReference(js_entry_sp)));
-  __ LoadAndTestP(r9, MemOperand(r8));
+  __ mov(r7, Operand(ExternalReference(js_entry_sp)));
+  __ LoadAndTestP(r8, MemOperand(r7));
   __ bne(&non_outermost_js);
-  __ StoreP(fp, MemOperand(r8));
+  __ StoreP(fp, MemOperand(r7));
   __ LoadSmiLiteral(ip, Smi::FromInt(StackFrame::OUTERMOST_JSENTRY_FRAME));
   Label cont;
   __ b(&cont);
@@ -3864,7 +3860,6 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   __ mov(ip, Operand(ExternalReference(Isolate::kPendingExceptionAddress,
                                        isolate)));
 
-  // @TODO Verify that on S390 r2 is the correct register here. (PPC used r3)
   __ StoreP(r2, MemOperand(ip));
   __ mov(r2, Operand(reinterpret_cast<intptr_t>(Failure::Exception())));
   __ b(&exit);
@@ -3872,7 +3867,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   // Invoke: Link this frame into the handler chain.  There's only one
   // handler block in this code object, so its index is 0.
   __ bind(&invoke);
-  // Must preserve r0-r4, r5-r7 are available. (needs update for PPC)
+  // Must preserve r0-r4, r5-r7 are available. (@TODO needs update for S390)
   __ PushTryHandler(StackHandler::JS_ENTRY, 0);
   // If an exception not caught by another handler occurs, this handler
   // returns control to the code after the b(&invoke) above, which
@@ -3882,8 +3877,8 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   // Clear any pending exceptions.
   __ mov(ip, Operand(ExternalReference(Isolate::kPendingExceptionAddress,
                                        isolate)));
-  __ mov(r8, Operand(isolate->factory()->the_hole_value()));
-  __ StoreP(r8, MemOperand(ip));
+  __ mov(r7, Operand(isolate->factory()->the_hole_value()));
+  __ StoreP(r7, MemOperand(ip));
 
   // Invoke the function by calling through JS entry trampoline builtin.
   // Notice that we cannot store a reference to the trampoline code directly in
@@ -3916,19 +3911,19 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   __ bind(&exit);  // r2 holds result
   // Check if the current stack frame is marked as the outermost JS frame.
   Label non_outermost_js_2;
-  __ pop(r8);
-  __ CmpSmiLiteral(r8, Smi::FromInt(StackFrame::OUTERMOST_JSENTRY_FRAME), r0);
+  __ pop(r7);
+  __ CmpSmiLiteral(r7, Smi::FromInt(StackFrame::OUTERMOST_JSENTRY_FRAME), r0);
   __ bne(&non_outermost_js_2);
-  __ mov(r9, Operand::Zero());
-  __ mov(r8, Operand(ExternalReference(js_entry_sp)));
-  __ StoreP(r9, MemOperand(r8));
+  __ mov(r8, Operand::Zero());
+  __ mov(r7, Operand(ExternalReference(js_entry_sp)));
+  __ StoreP(r8, MemOperand(r7));
   __ bind(&non_outermost_js_2);
 
   // Restore the top frame descriptors from the stack.
-  __ pop(r6);
+  __ pop(r5);
   __ mov(ip,
          Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate)));
-  __ StoreP(r6, MemOperand(ip));
+  __ StoreP(r5, MemOperand(ip));
 
   // Reset the stack to the callee saved registers.
   __ AddP(sp, Operand(-EntryFrameConstants::kCallerFPOffset));
