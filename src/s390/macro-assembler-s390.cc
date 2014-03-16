@@ -1013,7 +1013,7 @@ void MacroAssembler::PushTryHandler(StackHandler::Kind kind,
   STATIC_ASSERT(StackHandlerConstants::kFPOffset == 4 * kPointerSize);
 
   // For the JSEntry handler, we must preserve r2-r6,
-  //   r0,r1,r8-r9 are available.
+  //   r0,r1,r7-r9 are available.
   //
   // We want the stack to look like
   // sp -> NextOffset
@@ -1023,37 +1023,37 @@ void MacroAssembler::PushTryHandler(StackHandler::Kind kind,
   //       frame pointer
 
   // Link the current handler as the next handler.
-  mov(r8_p, Operand(ExternalReference(Isolate::kHandlerAddress, isolate())));
+  mov(r7, Operand(ExternalReference(Isolate::kHandlerAddress, isolate())));
 
   // Buy the full stack frame for 5 slots.
   lay(sp, MemOperand(sp,  -StackHandlerConstants::kSize));
 
   // Copy the old handler into the next handler slot.
   mvc(MemOperand(sp, StackHandlerConstants::kNextOffset),
-      MemOperand(r8), kPointerSize);
+      MemOperand(r7), kPointerSize);
   // Set this new handler as the current one.
-  StoreP(sp, MemOperand(r8));
+  StoreP(sp, MemOperand(r7));
 
   unsigned state =
       StackHandler::IndexField::encode(handler_index) |
       StackHandler::KindField::encode(kind);
 
   if (kind == StackHandler::JS_ENTRY) {
-    // R8: state, R9: Context, R10: FP Offset
-    LoadIntLiteral(r8, state);
-    LoadImmP(r9, Operand(0, RelocInfo::NONE));  // NULL frame pointer.
+    // R7: state, R8: Context, R9: FP Offset
+    LoadIntLiteral(r7, state);
+    LoadImmP(r8, Operand(0, RelocInfo::NONE));  // NULL frame pointer.
     // @TODO Potential Bug here as r10 is roots register.
-    LoadSmiLiteral(r10, Smi::FromInt(0));    // Indicates no context.
-    StoreMultipleP(r8, r10, MemOperand(sp, StackHandlerConstants::kStateSlot));
+    LoadSmiLiteral(r8, Smi::FromInt(0));    // Indicates no context.
+    StoreMultipleP(r7, r9, MemOperand(sp, StackHandlerConstants::kStateSlot));
   } else {
     // still not sure if fp is right
     StoreP(fp, MemOperand(sp, StackHandlerConstants::kFPOffset));
     StoreP(cp, MemOperand(sp, StackHandlerConstants::kContextOffset));
-    LoadIntLiteral(r8_p, state);
-    StoreP(r8, MemOperand(sp, StackHandlerConstants::kStateSlot));
+    LoadIntLiteral(r7, state);
+    StoreP(r7, MemOperand(sp, StackHandlerConstants::kStateSlot));
   }
-  mov(r8, Operand(CodeObject()));
-  StoreP(r8, MemOperand(sp, StackHandlerConstants::kCodeOffset));
+  mov(r7, Operand(CodeObject()));
+  StoreP(r7, MemOperand(sp, StackHandlerConstants::kCodeOffset));
 }
 
 
