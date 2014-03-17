@@ -865,6 +865,7 @@ enum Opcode {
   TP      = 0xEBC0,  // Test Decimal
   TPI     = 0xB236,  // Test Pending Interruption
   TR      = 0xDC,    // Translate
+  TRAP4   = 0xB2FF,  // Trap (4)
   TRE     = 0xB2A5,  // Translate Extended
   TROO    = 0xB993,  // Translate One To One
   TROT    = 0xB992,  // Translate One To Two
@@ -1269,8 +1270,8 @@ extern const Instr kPushRegPattern;
 // register r is not encoded.
 extern const Instr kPopRegPattern;
 
-// use TWI to indicate redirection call for simulation mode
-const Instr rtCallRedirInstr = TWI;
+// use TRAP4 to indicate redirection call for simulation mode
+const Instr rtCallRedirInstr = TRAP4;
 
 // -----------------------------------------------------------------------------
 // Instruction abstraction.
