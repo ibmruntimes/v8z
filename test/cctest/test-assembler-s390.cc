@@ -113,7 +113,7 @@ TEST(1) {
   __ bind(&C);
   __ cgfi(r4, Operand(0, RelocInfo::NONE));
   __ bne(&L);
-  __ blr();
+  __ b(r14);
 
   CodeDesc desc;
   assm.GetCode(&desc);
@@ -159,7 +159,7 @@ TEST(2) {
   __ bind(&C);
   __ cgfi(r4, Operand(0, RelocInfo::NONE));
   __ bne(&L);
-  __ blr();
+  __ b(r14);
 
   // some relocated stuff here, not executed
   __ RecordComment("dead code, just testing relocations");

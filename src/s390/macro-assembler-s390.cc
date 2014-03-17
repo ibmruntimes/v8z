@@ -2228,7 +2228,7 @@ void MacroAssembler::CallApiFunctionAndReturn(ExternalReference function,
   // LeaveExitFrame expects unwind space to be in a register.
   mov(r6, Operand(stack_space));
   LeaveExitFrame(false, r6);
-  blr();
+  Ret();
 
   bind(&promote_scheduled_exception);
   TailCallExternalReference(

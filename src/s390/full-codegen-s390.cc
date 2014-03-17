@@ -452,7 +452,7 @@ void FullCodeGenerator::EmitReturnSequence() {
       masm_->LoadP(fp, MemOperand(sp));
       masm_->LoadP(r14, MemOperand(sp, kPointerSize));
       masm_->AddP(sp, Operand((uint32_t)(sp_delta + (2 * kPointerSize))));
-      masm_->blr();
+      masm_->Ret();
       masm_->nop();
       masm_->nop();
 #if V8_TARGET_ARCH_S390X

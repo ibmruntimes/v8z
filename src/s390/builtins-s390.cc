@@ -354,7 +354,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
   // Set up return value, remove receiver from stack and return.
   __ LoadRR(r3_p, r5_p);
   __ AddP(sp, Operand(kPointerSize));
-  __ blr();
+  __ Ret();
 
   // Check for one argument. Bail out if argument is not smi or if it is
   // negative.
@@ -398,7 +398,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
   // Set up return value, remove receiver and argument from stack and return.
   __ LoadRR(r3_p, r6_p);
   __ AddP(sp, Operand(2 * kPointerSize));
-  __ blr();
+  __ Ret();
 
   // Handle construction of an array from a list of arguments.
   __ bind(&argc_two_or_more);
@@ -454,7 +454,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
   // sp[0]: receiver
   __ AddP(sp, Operand(kPointerSize));
   __ LoadRR(r3_p, r6_p);
-  __ blr();
+  __ Ret();
 
   __ bind(&has_non_smi_element);
   // Double values are handled by the runtime.
@@ -1142,7 +1142,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
   __ AddP(sp, Operand(kPointerSize));
   __ IncrementCounter(isolate->counters()->constructed_objects(),
                       1, r4_p, r5_p);
-  __ blr();
+  __ Ret();
 }
 
 
@@ -1777,7 +1777,7 @@ void Builtins::Generate_FunctionApply(MacroAssembler* masm) {
 
     frame_scope.GenerateLeaveFrame();
     __ AddP(sp, Operand(3 * kPointerSize));
-    __ blr();
+    __ Ret();
 
     // Invoke the function proxy.
     __ bind(&call_proxy);
@@ -1792,7 +1792,7 @@ void Builtins::Generate_FunctionApply(MacroAssembler* masm) {
     // Tear down the internal frame and remove function, receiver and args.
   }
   __ AddP(sp, Operand(3 * kPointerSize));
-  __ blr();
+  __ Ret();
 }
 
 static void EnterArgumentsAdaptorFrame(MacroAssembler* masm) {
@@ -1933,7 +1933,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
 
   // Exit frame and return.
   LeaveArgumentsAdaptorFrame(masm);
-  __ blr();
+  __ Ret();
 
 
   // -------------------------------------------
