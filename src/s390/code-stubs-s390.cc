@@ -4302,7 +4302,7 @@ void ArgumentsAccessStub::GenerateNewNonStrictFast(MacroAssembler* masm) {
   const int kAliasedOffset =
       Context::SlotOffset(Context::ALIASED_ARGUMENTS_BOILERPLATE_INDEX);
 
-  __ LoadP(r7_p, MemOperand(r20_p,
+  __ LoadP(r7_p, MemOperand(cp,
              Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
   __ LoadP(r7_p, FieldMemOperand(r7_p, GlobalObject::kNativeContextOffset));
   Label skip4, skip5;
@@ -4362,7 +4362,7 @@ void ArgumentsAccessStub::GenerateNewNonStrictFast(MacroAssembler* masm) {
   __ StoreP(r9_p, FieldMemOperand(r7_p, FixedArray::kMapOffset));
   __ AddSmiLiteral(r9_p, r4_p, Smi::FromInt(2), r0_p);
   __ StoreP(r9_p, FieldMemOperand(r7_p, FixedArray::kLengthOffset));
-  __ StoreP(r20_p, FieldMemOperand(r7_p,
+  __ StoreP(cp, FieldMemOperand(r7_p,
                                  FixedArray::kHeaderSize + 0 * kPointerSize));
   __ SmiToPtrArrayOffset(r9_p, r4_p);
   __ AddP(r9_p, r7_p);

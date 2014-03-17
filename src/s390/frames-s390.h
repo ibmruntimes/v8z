@@ -68,9 +68,9 @@ const RegList kCalleeSaved =
   1 << 8 |   // r8 (argument passing in CEntryStub)
              //    (HandleScope logic in MacroAssembler)
   1 << 9 |   // r9 (HandleScope logic in MacroAssembler)
-  1 << 10 |  // r10
-  1 << 11 |  // fp in Javascript
-  1 << 13;   // cp in Javascript
+  1 << 10 |  // r10 (Roots register in Javascript)
+  1 << 11 |  // r11 (fp in Javascript)
+  1 << 13;   // r13 (cp in Javascript)
 
 /*
   Legacy PPC Linkage left here for reference.

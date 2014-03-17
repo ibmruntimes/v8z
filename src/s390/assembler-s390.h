@@ -218,7 +218,7 @@ const Register r10 = { kRegister_r10_Code };
 const Register fp  = { kRegister_fp_Code };
 // IP - Intra procedural register
 const Register ip  = { kRegister_r12_Code };
-// CP - Context Register (PPC was r20)
+// CP - Context Register
 const Register r13  = { kRegister_r13_Code };
 const Register r14  = { kRegister_r14_Code };
 const Register sp   = { kRegister_sp_Code };
@@ -238,8 +238,6 @@ const Register r8_p  = { kRegister_r8_Code };
 const Register r9_p  = { kRegister_r9_Code };
 const Register r10_p = { kRegister_r10_Code };
 const Register r11_p = { kRegister_fp_Code };
-// Used as context register on PPC
-const Register r20_p  = { kRegister_r20_Code };
 const Register r21_p  = { kRegister_r21_Code };
 const Register r22_p  = { kRegister_r22_Code };
 const Register r25_p  = { kRegister_r25_Code };
