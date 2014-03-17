@@ -91,7 +91,7 @@ void ElementsTransitionGenerator::GenerateMapChangeElementsTransition(
   __ RecordWriteField(r5_p,
                       HeapObject::kMapOffset,
                       r6_p,
-                      r22_p,
+                      r1,
                       kLRHasNotBeenSaved,
                       kDontSaveFPRegs,
                       EMIT_REMEMBERED_SET,
@@ -127,7 +127,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   // Allocate new FixedDoubleArray.
   __ SmiToDoubleArrayOffset(r14, r8_p);
   __ AddP(r14, Operand(FixedDoubleArray::kHeaderSize + kPointerSize));
-  __ AllocateInNewSpace(r14, r9_p, r10_p, r22_p,
+  __ AllocateInNewSpace(r14, r9_p, r10_p, r1,
                         &gc_required, NO_ALLOCATION_FLAGS);
   // r9_p: destination FixedDoubleArray, not tagged as heap object.
 
@@ -150,16 +150,16 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   __ bind(&aligned_done);
 
   // Set destination FixedDoubleArray's length and map.
-  __ LoadRoot(r22_p, Heap::kFixedDoubleArrayMapRootIndex);
+  __ LoadRoot(r1, Heap::kFixedDoubleArrayMapRootIndex);
   __ StoreP(r8_p, MemOperand(r9_p, FixedDoubleArray::kLengthOffset));
   // Update receiver's map.
-  __ StoreP(r22_p, MemOperand(r9_p, HeapObject::kMapOffset));
+  __ StoreP(r1, MemOperand(r9_p, HeapObject::kMapOffset));
 
   __ StoreP(r6_p, FieldMemOperand(r5_p, HeapObject::kMapOffset));
   __ RecordWriteField(r5_p,
                       HeapObject::kMapOffset,
                       r6_p,
-                      r22_p,
+                      r1,
                       kLRHasBeenSaved,
                       kDontSaveFPRegs,
                       OMIT_REMEMBERED_SET,
@@ -171,7 +171,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   __ RecordWriteField(r5_p,
                       JSObject::kElementsOffset,
                       r6_p,
-                      r22_p,
+                      r1,
                       kLRHasBeenSaved,
                       kDontSaveFPRegs,
                       EMIT_REMEMBERED_SET,
@@ -202,7 +202,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   __ RecordWriteField(r5_p,
                       HeapObject::kMapOffset,
                       r6_p,
-                      r22_p,
+                      r1,
                       kLRHasBeenSaved,
                       kDontSaveFPRegs,
                       OMIT_REMEMBERED_SET,
@@ -216,14 +216,14 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
 
   // Convert and copy elements.
   __ bind(&loop);
-  __ LoadP(r22_p, MemOperand(r6_p));
+  __ LoadP(r1, MemOperand(r6_p));
   __ AddP(r6_p, Operand(kPointerSize));
-  // r22_p: current element
-  __ UntagAndJumpIfNotSmi(r22_p, r22_p, &convert_hole);
+  // r1: current element
+  __ UntagAndJumpIfNotSmi(r1, r1, &convert_hole);
 
   // Normal smi, convert to double and store.
   FloatingPointHelper::ConvertIntToDouble(
-    masm, r22_p, d0);
+    masm, r1, d0);
   __ StoreF(d0, MemOperand(r10_p, 0));
   __ AddP(r10_p, Operand(8));
 
@@ -233,8 +233,8 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   __ bind(&convert_hole);
   if (FLAG_debug_code) {
     // Restore a "smi-untagged" heap object.
-    __ LoadP(r22_p, MemOperand(r6_p, -kPointerSize));
-    __ CompareRoot(r22_p, Heap::kTheHoleValueRootIndex);
+    __ LoadP(r1, MemOperand(r6_p, -kPointerSize));
+    __ CompareRoot(r1, Heap::kTheHoleValueRootIndex);
     __ Assert(eq, "object found in smi-only array");
   }
 #if V8_TARGET_ARCH_S390X
@@ -286,13 +286,13 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   __ LoadImmP(r3_p, Operand(FixedDoubleArray::kHeaderSize));
   __ SmiToPtrArrayOffset(r0_p, r8_p);
   __ AddP(r3_p, r0_p);
-  __ AllocateInNewSpace(r3_p, r9_p, r10_p, r22_p,
+  __ AllocateInNewSpace(r3_p, r9_p, r10_p, r1,
                        &gc_required, NO_ALLOCATION_FLAGS);
   // r9_p: destination FixedArray, not tagged as heap object
   // Set destination FixedDoubleArray's length and map.
-  __ LoadRoot(r22_p, Heap::kFixedArrayMapRootIndex);
+  __ LoadRoot(r1, Heap::kFixedArrayMapRootIndex);
   __ StoreP(r8_p, MemOperand(r9_p, FixedDoubleArray::kLengthOffset));
-  __ StoreP(r22_p, MemOperand(r9_p, HeapObject::kMapOffset));
+  __ StoreP(r1, MemOperand(r9_p, HeapObject::kMapOffset));
 
   // Prepare for conversion loop.
   __ AddP(r7_p, Operand(FixedDoubleArray::kHeaderSize - kHeapObjectTag));
@@ -302,14 +302,14 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   __ SmiToPtrArrayOffset(r8_p, r8_p);
   __ AddP(r8_p, r6_p);
   __ LoadRoot(r10_p, Heap::kTheHoleValueRootIndex);
-  __ LoadRoot(r22_p, Heap::kHeapNumberMapRootIndex);
+  __ LoadRoot(r1, Heap::kHeapNumberMapRootIndex);
   // Using offsetted addresses in r7_p to fully take advantage of post-indexing.
   // r6_p: begin of destination FixedArray element fields, not tagged
   // r7_p: begin of source FixedDoubleArray element fields, not tagged
   // r8_p: end of destination FixedArray, not tagged
   // r9_p: destination FixedArray
   // r10_p: the-hole pointer
-  // r22_p: heap number map
+  // r1: heap number map
   __ b(&entry);
 
   // Call into runtime if GC is required.
@@ -330,7 +330,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   __ beq(&convert_hole);
 
   // Non-hole double, copy value into a heap number.
-  __ AllocateHeapNumber(r5_p, r3_p, r4_p, r22_p, &gc_required);
+  __ AllocateHeapNumber(r5_p, r3_p, r4_p, r1, &gc_required);
   // r5_p: new heap number
 #if V8_TARGET_ARCH_S390X
   __ ld(r3_p, MemOperand(r7_p, -8));
@@ -376,7 +376,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   __ RecordWriteField(r5_p,
                       JSObject::kElementsOffset,
                       r9_p,
-                      r22_p,
+                      r1,
                       kLRHasNotBeenSaved,
                       kDontSaveFPRegs,
                       EMIT_REMEMBERED_SET,
@@ -388,7 +388,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   __ RecordWriteField(r5_p,
                       HeapObject::kMapOffset,
                       r6_p,
-                      r22_p,
+                      r1,
                       kLRHasNotBeenSaved,
                       kDontSaveFPRegs,
                       OMIT_REMEMBERED_SET,

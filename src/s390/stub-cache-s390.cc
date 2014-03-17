@@ -1744,10 +1744,10 @@ Handle<Code> CallStubCompiler::CompileArrayPushCall(
       __ CmpRR(end_elements, r6_p);
       __ bne(&call_builtin);
 
-      __ mov(r22_p, Operand(new_space_allocation_limit));
-      __ LoadP(r22_p, MemOperand(r22_p));
+      __ mov(r1, Operand(new_space_allocation_limit));
+      __ LoadP(r1, MemOperand(r1));
       __ AddP(r6_p, Operand(kAllocationDelta * kPointerSize));
-      __ Cmpl(r6_p, r22_p);
+      __ Cmpl(r6_p, r1);
       __ bgt(&call_builtin);
 
       // We fit and could grow elements.
