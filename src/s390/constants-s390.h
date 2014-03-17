@@ -68,7 +68,7 @@ enum Condition {
   kNoCondition = -1,
   eq         =  0x8,         // Equal.
   ne         =  0x7,         // Not equal.
-  ge         =  0xd,         // Greater or equal.
+  ge         =  0xa,         // Greater or equal.
   lt         =  0x4,         // Less than.
   gt         =  0x2,         // Greater than.
   le         =  0xc,         // Less then or equal
