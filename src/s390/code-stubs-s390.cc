@@ -855,7 +855,7 @@ void FloatingPointHelper::CallCCodeForDoubleOperation(
 
   // Place heap_number_result in r3_p and return to the pushed return address.
   __ LoadRR(r3_p, heap_number_result);
-  __ blr();
+  __ Ret();
 }
 
 // Handle the case where the lhs and rhs are the same object.
@@ -4170,7 +4170,7 @@ void ArgumentsAccessStub::GenerateReadElement(MacroAssembler* masm) {
   __ SmiToPtrArrayOffset(r6_p, r6_p);
   __ AddP(r6_p, fp);
   __ LoadP(r3_p, MemOperand(r6_p, kDisplacement));
-  __ blr();
+  __ Ret();
 
   // Arguments adaptor case: Check index against actual arguments
   // limit found in the arguments adaptor frame. Use unsigned
@@ -4186,7 +4186,7 @@ void ArgumentsAccessStub::GenerateReadElement(MacroAssembler* masm) {
   __ SmiToPtrArrayOffset(r6_p, r6_p);
   __ AddP(r6_p, r5_p);
   __ LoadP(r3_p, MemOperand(r6_p, kDisplacement));
-  __ blr();
+  __ Ret();
 
   // Slow-case: Handle non-smi or out-of-bounds access to arguments
   // by calling the runtime system.

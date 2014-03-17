@@ -693,11 +693,6 @@ void Assembler::bcctr(BOfield bo, LKBit lk) {
   emit(EXT1 | bo | BCCTRX | lk);
 }
 
-// Pseudo op - branch to link register
-void Assembler::blr() {
-  bclr(BA, LeaveLK);
-}
-
 // Pseudo op - branch to count register -- used for "jump"
 void Assembler::bcr() {
   bcctr(BA, LeaveLK);

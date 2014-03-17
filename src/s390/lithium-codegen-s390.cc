@@ -2455,7 +2455,7 @@ void LCodeGen::DoReturn(LReturn* instr) {
   __ LoadRR(sp, fp);
   __ Pop(r14, fp);
   __ AddP(sp, Operand(sp_delta));
-  __ blr();
+  __ Ret();
 }
 
 

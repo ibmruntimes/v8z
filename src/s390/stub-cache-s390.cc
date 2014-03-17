@@ -3549,7 +3549,7 @@ Handle<Code> ConstructStubCompiler::CompileConstructStub(
   Counters* counters = masm()->isolate()->counters();
   __ IncrementCounter(counters->constructed_objects(), 1, r4_p, r5_p);
   __ IncrementCounter(counters->constructed_objects_stub(), 1, r4_p, r5_p);
-  __ blr();
+  __ Ret();
 
   // Jump to the generic stub in case the specialized code cannot handle the
   // construction.

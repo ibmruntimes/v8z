@@ -790,7 +790,7 @@ class Assembler : public AssemblerBase {
 
   // Branch instructions
   void bclr(BOfield bo, LKBit lk);
-  void blr();
+  // void blr();
 
   void bcctr(BOfield bo, LKBit lk);
   void bcr();

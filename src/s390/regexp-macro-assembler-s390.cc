@@ -1349,7 +1349,7 @@ void RegExpMacroAssemblerPPC::SafeReturn() {
   __ pop(r14);
   __ mov(ip, Operand(masm_->CodeObject()));
   __ AddP(r14, ip);
-  __ blr();
+  __ Ret();
 }
 
 
@@ -1474,7 +1474,7 @@ void RegExpCEntryStub::Generate(MacroAssembler* masm_) {
   __ AddP(sp, Operand(extra_stack_slots * kPointerSize));
 
   __ LoadP(r14, MemOperand(sp, -stack_alignment));
-  __ blr();
+  __ Ret();
 }
 
 #undef __
