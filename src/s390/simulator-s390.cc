@@ -883,6 +883,7 @@ class Redirection {
  public:
   Redirection(void* external_function, ExternalReference::Type type)
       : external_function_(external_function),
+      // we use TRAP4 here (0xBF22)
 #if __BYTE_ORDER == __LITTLE_ENDIAN
       // quick and dirty way to hack the swi instrution
         swi_instruction_(0x1000FFB2),
@@ -1058,27 +1059,27 @@ intptr_t Simulator::get_pc() const {
 // For use in calls that take two double values which are currently
 // in d1 and d2
 void Simulator::GetFpArgs(double* x, double* y) {
-  *x = get_double_from_d_register(1);
+  *x = get_double_from_d_register(0);
   *y = get_double_from_d_register(2);
 }
 
 // For use in calls that take one double value (d1)
 void Simulator::GetFpArgs(double* x) {
-  *x = get_double_from_d_register(1);
+  *x = get_double_from_d_register(0);
 }
 
 
 // For use in calls that take one double value (d1) and one integer
 // value (r3).
 void Simulator::GetFpArgs(double* x, intptr_t* y) {
-  *x = get_double_from_d_register(1);
-  *y = registers_[3];
+  *x = get_double_from_d_register(0);
+  *y = registers_[2];
 }
 
 
 // The return value is in d1.
 void Simulator::SetFpResult(const double& result) {
-  set_d_register_from_double(1, result);
+  set_d_register_from_double(0, result);
 }
 
 
@@ -1274,12 +1275,13 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
           (get_register(sp)
            & (::v8::internal::FLAG_sim_stack_alignment - 1)) == 0;
       Redirection* redirection = Redirection::FromSwiInstruction(instr);
-      intptr_t arg0 = get_register(r3);
-      intptr_t arg1 = get_register(r4);
-      intptr_t arg2 = get_register(r5);
-      intptr_t arg3 = get_register(r6);
-      intptr_t arg4 = get_register(r7);
-      intptr_t arg5 = get_register(r8);
+      intptr_t arg0 = get_register(r2);
+      intptr_t arg1 = get_register(r3);
+      intptr_t arg2 = get_register(r4);
+      intptr_t arg3 = get_register(r5);
+      intptr_t arg4 = get_register(r6);
+      intptr_t* stack_pointer = reinterpret_cast<intptr_t*>(get_register(sp));
+      intptr_t arg5 = stack_pointer[0];
       bool fp_call =
          (redirection->type() == ExternalReference::BUILTIN_FP_FP_CALL) ||
          (redirection->type() == ExternalReference::BUILTIN_COMPARE_CALL) ||
@@ -1287,7 +1289,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
          (redirection->type() == ExternalReference::BUILTIN_FP_INT_CALL);
       // This is dodgy but it works because the C entry stubs are never moved.
       // See comment in codegen-arm.cc and bug 1242173.
-      intptr_t saved_lr = special_reg_lr_;
+      intptr_t saved_lr = get_register(r14);
       intptr_t external =
           reinterpret_cast<intptr_t>(redirection->external_function());
       if (fp_call) {
@@ -1352,11 +1354,11 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
                 PrintF("Returned %08x\n", lo_res);
             }
 #if __BYTE_ORDER == __BIG_ENDIAN
-            set_register(r3, hi_res);
-            set_register(r4, lo_res);
-#else
+            set_register(r2, hi_res);
             set_register(r3, lo_res);
-            set_register(r4, hi_res);
+#else
+            set_register(r2, lo_res);
+            set_register(r3, hi_res);
 #endif
             break;
           case ExternalReference::BUILTIN_FP_CALL:
@@ -1408,7 +1410,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
 #else
         *(reinterpret_cast<intptr_t*>(arg0)) = (intptr_t) *result;
 #endif
-        set_register(r3, arg0);
+        set_register(r2, arg0);
       } else if (redirection->type() == ExternalReference::DIRECT_GETTER_CALL) {
         // See callers of MacroAssembler::CallApiFunctionAndReturn for
         // explanation of register usage.
@@ -1444,7 +1446,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
 #else
         *(reinterpret_cast<intptr_t*>(arg0)) = (intptr_t) *result;
 #endif
-        set_register(r3, arg0);
+        set_register(r2, arg0);
       } else {
         // builtin call.
         ASSERT(redirection->type() == ExternalReference::BUILTIN_CALL);
@@ -1474,7 +1476,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
         if (::v8::internal::FLAG_trace_sim) {
           PrintF("Returned %08" V8PRIxPTR "\n", result);
         }
-        set_register(r3, result);
+        set_register(r2, result);
 #else
         int32_t lo_res = static_cast<int32_t>(result);
         int32_t hi_res = static_cast<int32_t>(result >> 32);
@@ -1482,11 +1484,11 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
           PrintF("Returned %08x\n", lo_res);
         }
 #if __BYTE_ORDER == __BIG_ENDIAN
-        set_register(r3, hi_res);
-        set_register(r4, lo_res);
-#else
+        set_register(r2, hi_res);
         set_register(r3, lo_res);
-        set_register(r4, hi_res);
+#else
+        set_register(r2, lo_res);
+        set_register(r3, hi_res);
 #endif
 #endif
       }
@@ -3384,6 +3386,7 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       }
   }
   case TRAP4: {
+    SoftwareInterrupt(instr);
     UNIMPLEMENTED();
     break;
   }

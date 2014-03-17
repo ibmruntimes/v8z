@@ -1568,7 +1568,7 @@ class Instruction {
 
   // Fields used in Software interrupt instructions
   inline SoftwareInterruptCodes SvcValue() const {
-    return static_cast<SoftwareInterruptCodes>(Bits(23, 0));
+    return static_cast<SoftwareInterruptCodes>(Bits<FourByteInstr, int>(15, 0));
   }
 
   // Instructions are read of out a code stream. The only way to get a
