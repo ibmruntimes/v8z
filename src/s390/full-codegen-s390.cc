@@ -3147,7 +3147,7 @@ void FullCodeGenerator::EmitDateField(CallRuntime* expr) {
   Label runtime, done, not_date_object;
   Register object = r3_p;
   Register result = r3_p;
-  Register scratch0 = r22_p;
+  Register scratch0 = r1;
   Register scratch1 = r4_p;
 
   __ JumpIfSmi(object, &not_date_object);
@@ -3627,7 +3627,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   Register element = r8_p;
   Register elements_end = r9_p;
   Register scratch1 = r10_p;
-  Register scratch2 = r22_p;
+  Register scratch2 = r1;
 
   // Separator operand is on the stack.
   __ pop(separator);

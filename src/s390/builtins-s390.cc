@@ -458,7 +458,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
 
   __ bind(&has_non_smi_element);
   // Double values are handled by the runtime.
-  __ CheckMap(r5_p, r22_p,
+  __ CheckMap(r5_p, r1,
       Heap::kHeapNumberMapRootIndex, &not_double, DONT_DO_SMI_CHECK);
   __ bind(&cant_transition_map);
   __ UndoAllocationInNewSpace(r6_p, r7_p);
@@ -471,13 +471,13 @@ static void ArrayNativeCode(MacroAssembler* masm,
   __ LoadTransitionedArrayMapConditional(FAST_SMI_ELEMENTS,
                                          FAST_ELEMENTS,
                                          r5_p,
-                                         r22_p,
+                                         r1,
                                          &cant_transition_map);
   __ StoreP(r5_p, FieldMemOperand(r6_p, HeapObject::kMapOffset));
   __ RecordWriteField(r6_p,
                       HeapObject::kMapOffset,
                       r5_p,
-                      r22_p,
+                      r1,
                       kLRHasNotBeenSaved,
                       kDontSaveFPRegs,
                       EMIT_REMEMBERED_SET,
