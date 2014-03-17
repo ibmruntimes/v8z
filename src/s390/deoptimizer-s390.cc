@@ -182,7 +182,7 @@ void Deoptimizer::PatchStackCheckCodeAt(Code* unoptimized_code,
 #endif
 
   // We patch the code to the following form:
-  // 60000000       ori     r0_p, r0_p, 0        ;; NOP
+  // 60000000       ori     r0, r0, 0        ;; NOP
   // 3d80NNNN       lis     r12_p, NNNN        ;; two part load
   // 618cNNNN       ori     r12_p, r12_p, NNNN   ;; of on stack replace address
   // 7d8803a6       mtlr    r12_p
@@ -1083,54 +1083,54 @@ void Deoptimizer::EntryGenerator::Generate() {
       (kNumberOfRegisters * kPointerSize) + kDoubleRegsSize;
 
   // Get the bailout id from the stack.
-  __ LoadP(r5_p, MemOperand(sp, kSavedRegistersAreaSize));
+  __ LoadP(r4, MemOperand(sp, kSavedRegistersAreaSize));
 
-  // Get the address of the location in the code object if possible(r6_p)(return
+  // Get the address of the location in the code object if possible(r5)(return
   // address for lazy deoptimization) and compute the fp-to-sp delta in
-  // register r7_p.
+  // register r6.
   if (type() == EAGER) {
-    __ LoadImmP(r6_p, Operand::Zero());
+    __ LoadImmP(r5, Operand::Zero());
     // Correct one word for bailout id.
-    __ LoadRR(r7_p, sp);
-    __ AddP(r7_p, Operand(kSavedRegistersAreaSize + (1 * kPointerSize)));
+    __ LoadRR(r6, sp);
+    __ AddP(r6, Operand(kSavedRegistersAreaSize + (1 * kPointerSize)));
   } else if (type() == OSR) {
-    __ LoadRR(r6_p, r14);
+    __ LoadRR(r5, r14);
     // Correct one word for bailout id.
-    __ LoadRR(r7_p, sp);
-    __ AddP(r7_p, Operand(kSavedRegistersAreaSize + (1 * kPointerSize)));
+    __ LoadRR(r6, sp);
+    __ AddP(r6, Operand(kSavedRegistersAreaSize + (1 * kPointerSize)));
   } else {
-    __ LoadRR(r6_p, r14);
+    __ LoadRR(r5, r14);
     // Correct two words for bailout id and return address.
-    __ LoadRR(r7_p, sp);
-    __ AddP(r7_p, Operand(kSavedRegistersAreaSize + (2 * kPointerSize)));
+    __ LoadRR(r6, sp);
+    __ AddP(r6, Operand(kSavedRegistersAreaSize + (2 * kPointerSize)));
   }
-  __ Sub(r7_p, fp, r7_p);
+  __ Sub(r6, fp, r6);
 
   // Allocate a new deoptimizer object.
-  // Pass six arguments in r3_p to r8_p.
-  __ PrepareCallCFunction(6, r8_p);
-  __ LoadP(r3_p, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
-  __ LoadImmP(r4_p, Operand(type()));  // bailout type,
-  // r5_p: bailout id already loaded.
-  // r6_p: code address or 0 already loaded.
-  // r7_p: Fp-to-sp delta.
-  __ mov(r8_p, Operand(ExternalReference::isolate_address()));
+  // Pass six arguments in r2 to r7.
+  __ PrepareCallCFunction(6, r7);
+  __ LoadP(r2, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
+  __ LoadImmP(r3, Operand(type()));  // bailout type,
+  // r4: bailout id already loaded.
+  // r5: code address or 0 already loaded.
+  // r6: Fp-to-sp delta.
+  __ mov(r7, Operand(ExternalReference::isolate_address()));
   // Call Deoptimizer::New().
   {
     AllowExternalCallThatCantCauseGC scope(masm());
     __ CallCFunction(ExternalReference::new_deoptimizer_function(isolate), 6);
   }
 
-  // Preserve "deoptimizer" object in register r3_p and get the input
-  // frame descriptor pointer to r4_p (deoptimizer->input_);
-  __ LoadP(r4_p, MemOperand(r3_p, Deoptimizer::input_offset()));
+  // Preserve "deoptimizer" object in register r2 and get the input
+  // frame descriptor pointer to r3 (deoptimizer->input_);
+  __ LoadP(r3, MemOperand(r2, Deoptimizer::input_offset()));
 
   // Copy core registers into FrameDescription::registers_[kNumRegisters].
   ASSERT(Register::kNumRegisters == kNumberOfRegisters);
   for (int i = 0; i < kNumberOfRegisters; i++) {
     int offset = (i * kPointerSize) + FrameDescription::registers_offset();
-    __ LoadP(r5_p, MemOperand(sp, i * kPointerSize));
-    __ StoreP(r5_p, MemOperand(r4_p, offset));
+    __ LoadP(r4, MemOperand(sp, i * kPointerSize));
+    __ StoreP(r4, MemOperand(r3, offset));
   }
 
   // Copy VFP registers to
@@ -1140,7 +1140,7 @@ void Deoptimizer::EntryGenerator::Generate() {
     int dst_offset = i * kDoubleSize + double_regs_offset;
     int src_offset = i * kDoubleSize + kNumberOfRegisters * kPointerSize;
     __ LoadF(d0, MemOperand(sp, src_offset));
-    __ StoreF(d0, MemOperand(r4_p, dst_offset));
+    __ StoreF(d0, MemOperand(r3, dst_offset));
   }
 
   // Remove the bailout id, eventually return address, and the saved registers
@@ -1151,77 +1151,77 @@ void Deoptimizer::EntryGenerator::Generate() {
     __ AddP(sp, Operand(kSavedRegistersAreaSize + (2 * kPointerSize)));
   }
 
-  // Compute a pointer to the unwinding limit in register r5_p; that is
+  // Compute a pointer to the unwinding limit in register r4; that is
   // the first stack slot not part of the input frame.
-  __ LoadP(r5_p, MemOperand(r4_p, FrameDescription::frame_size_offset()));
-  __ AddP(r5_p, sp);
+  __ LoadP(r4, MemOperand(r3, FrameDescription::frame_size_offset()));
+  __ AddP(r4, sp);
 
   // Unwind the stack down to - but not including - the unwinding
   // limit and copy the contents of the activation frame to the input
   // frame description.
-  __ LoadRR(r6_p, r4_p);
-  __ AddP(r6_p, Operand(FrameDescription::frame_content_offset()));
+  __ LoadRR(r5, r3);
+  __ AddP(r5, Operand(FrameDescription::frame_content_offset()));
   Label pop_loop;
   __ bind(&pop_loop);
-  __ pop(r7_p);
-  __ StoreP(r7_p, MemOperand(r6_p, 0));
-  __ AddP(r6_p, Operand(sizeof(intptr_t)));
-  __ CmpRR(r5_p, sp);
+  __ pop(r6);
+  __ StoreP(r6, MemOperand(r5, 0));
+  __ AddP(r5, Operand(sizeof(intptr_t)));
+  __ CmpRR(r4, sp);
   __ bne(&pop_loop);
 
   // Compute the output frame in the deoptimizer.
-  __ push(r3_p);  // Preserve deoptimizer object across call.
-  // r3_p: deoptimizer object; r4_p: scratch.
-  __ PrepareCallCFunction(1, r4_p);
+  __ push(r2);  // Preserve deoptimizer object across call.
+  // r2: deoptimizer object; r3: scratch.
+  __ PrepareCallCFunction(1, r3);
   // Call Deoptimizer::ComputeOutputFrames().
   {
     AllowExternalCallThatCantCauseGC scope(masm());
     __ CallCFunction(
         ExternalReference::compute_output_frames_function(isolate), 1);
   }
-  __ pop(r3_p);  // Restore deoptimizer object (class Deoptimizer).
+  __ pop(r2);  // Restore deoptimizer object (class Deoptimizer).
 
   // Replace the current (input) frame with the output frames.
   Label outer_push_loop, inner_push_loop;
-  // Outer loop state: r3_p = current "FrameDescription** output_",
-  // r4_p = one past the last FrameDescription**.
-  __ LoadlW(r4_p, MemOperand(r3_p, Deoptimizer::output_count_offset()));
-  __ LoadP(r3_p,
-           MemOperand(r3_p, Deoptimizer::output_offset()));  // r3_p is output_.
-  __ ShiftLeftImm(r4_p, r4_p, Operand(kPointerSizeLog2));
-  __ AddP(r4_p, r3_p);
+  // Outer loop state: r2 = current "FrameDescription** output_",
+  // r3 = one past the last FrameDescription**.
+  __ LoadlW(r3, MemOperand(r2, Deoptimizer::output_count_offset()));
+  __ LoadP(r2,
+           MemOperand(r2, Deoptimizer::output_offset()));  // r2 is output_.
+  __ ShiftLeftImm(r3, r3, Operand(kPointerSizeLog2));
+  __ AddP(r3, r2);
   __ bind(&outer_push_loop);
-  // Inner loop state: r5_p = current FrameDescription*, r6_p = loop index.
-  __ LoadP(r5_p, MemOperand(r3_p, 0));  // output_[ix]
-  __ LoadP(r6_p, MemOperand(r5_p, FrameDescription::frame_size_offset()));
+  // Inner loop state: r4 = current FrameDescription*, r5 = loop index.
+  __ LoadP(r4, MemOperand(r2, 0));  // output_[ix]
+  __ LoadP(r5, MemOperand(r4, FrameDescription::frame_size_offset()));
 
   __ bind(&inner_push_loop);
-  __ AddP(r6_p, Operand(-sizeof(intptr_t)));
-  __ LoadRR(r9_p, r5_p);
-  __ AddP(r9_p, r6_p);
-  __ LoadP(r10_p, MemOperand(r9_p, FrameDescription::frame_content_offset()));
-  __ push(r10_p);
-  __ Cmpi(r6_p, Operand::Zero());
+  __ AddP(r5, Operand(-sizeof(intptr_t)));
+  __ LoadRR(r8, r4);
+  __ AddP(r8, r5);
+  __ LoadP(r9, MemOperand(r8, FrameDescription::frame_content_offset()));
+  __ push(r9);
+  __ Cmpi(r5, Operand::Zero());
   __ bne(&inner_push_loop);  // test for gt?
 
-  __ AddP(r3_p, Operand(kPointerSize));
-  __ CmpRR(r3_p, r4_p);
+  __ AddP(r2, Operand(kPointerSize));
+  __ CmpRR(r2, r3);
   __ blt(&outer_push_loop);
 
   // Push state, pc, and continuation from the last output frame.
   if (type() != OSR) {
-    __ LoadP(r9_p, MemOperand(r5_p, FrameDescription::state_offset()));
-    __ push(r9_p);
+    __ LoadP(r8, MemOperand(r4, FrameDescription::state_offset()));
+    __ push(r8);
   }
 
-  __ LoadP(r9_p, MemOperand(r5_p, FrameDescription::pc_offset()));
-  __ push(r9_p);
-  __ LoadP(r9_p, MemOperand(r5_p, FrameDescription::continuation_offset()));
-  __ push(r9_p);
+  __ LoadP(r8, MemOperand(r4, FrameDescription::pc_offset()));
+  __ push(r8);
+  __ LoadP(r8, MemOperand(r4, FrameDescription::continuation_offset()));
+  __ push(r8);
 
   // Restore the registers from the last output frame.
   ASSERT(!(ip.bit() & restored_regs));
-  __ LoadRR(ip, r5_p);
+  __ LoadRR(ip, r4);
   for (int i = kNumberOfRegisters - 1; i >= 0; i--) {
     int offset = (i * kPointerSize) + FrameDescription::registers_offset();
     if ((restored_regs & (1 << i)) != 0) {
@@ -1231,9 +1231,9 @@ void Deoptimizer::EntryGenerator::Generate() {
 
   __ InitializeRootRegister();
 
-  __ pop(r10_p);  // get continuation, leave pc on stack
+  __ pop(r9);  // get continuation, leave pc on stack
   __ pop(r14);
-  __ Jump(r10_p);
+  __ Jump(r9);
   __ stop("Unreachable.");
 }
 
