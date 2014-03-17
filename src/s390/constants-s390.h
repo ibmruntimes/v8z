@@ -35,7 +35,7 @@ namespace v8 {
 namespace internal {
 
 // Number of registers
-const int kNumRegisters = 32;
+const int kNumRegisters = 16;
 
 // FP support.
 const int kNumFPDoubleRegisters = 32;

@@ -141,7 +141,7 @@ struct Register {
   bool is(Register reg) const { return code_ == reg.code_; }
   int code() const {
     ASSERT(is_valid());
-    return code_ & 0xF;  // @TODO Remove unncessary & F once we trim to 16 regs
+    return code_;
   }
 
   int bit() const {
@@ -180,23 +180,6 @@ const int kRegister_r12_Code = 12;
 const int kRegister_r13_Code = 13;
 const int kRegister_r14_Code = 14;
 const int kRegister_sp_Code = 15;
-
-const int kRegister_r16_Code = 16;
-const int kRegister_r17_Code = 17;
-const int kRegister_r18_Code = 18;
-const int kRegister_r19_Code = 19;
-const int kRegister_r20_Code = 20;
-const int kRegister_r21_Code = 21;
-const int kRegister_r22_Code = 22;
-const int kRegister_r23_Code = 23;
-const int kRegister_r24_Code = 24;
-const int kRegister_r25_Code = 25;
-const int kRegister_r26_Code = 26;
-const int kRegister_r27_Code = 27;
-const int kRegister_r28_Code = 28;
-const int kRegister_r29_Code = 29;
-const int kRegister_r30_Code = 30;
-const int kRegister_r31_Code = 31;
 
 const Register no_reg = { kRegister_no_reg_Code };
 
