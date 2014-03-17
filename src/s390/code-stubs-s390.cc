@@ -4686,7 +4686,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ bgt(&runtime);
 
   // Reset offset for possibly sliced string.
-  __ LoadImmP(r11_p, Operand::Zero());
+  __ LoadImmP(r13, Operand::Zero());
   // subject: Subject string
   // regexp_data: RegExp data (FixedArray)
   // Check the representation and encoding of the subject string.
@@ -4732,10 +4732,10 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ bne(&runtime /*, cr0*/);
 
   // String is sliced.
-  __ LoadP(r11_p, FieldMemOperand(subject, SlicedString::kOffsetOffset));
-  __ SmiUntag(r11_p);
+  __ LoadP(r13, FieldMemOperand(subject, SlicedString::kOffsetOffset));
+  __ SmiUntag(r13);
   __ LoadP(subject, FieldMemOperand(subject, SlicedString::kParentOffset));
-  // r11_p: offset of sliced string, smi-tagged.
+  // r13: offset of sliced string, smi-tagged.
   __ b(&check_encoding);
   // String is a cons string, check whether it is flat.
   __ bind(&cons_string);
@@ -4846,15 +4846,15 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // Argument 4, r6_p: End of string data
   // Argument 3, r5_p: Start of string data
   // Prepare start and end index of the input.
-  __ ShiftLeft(r11_p, r11_p, r6_p);
-  __ Add(r11_p, r1, r11_p);
+  __ ShiftLeft(r13, r13, r6_p);
+  __ Add(r13, r1, r13);
   __ ShiftLeft(r5_p, r4_p, r6_p);
-  __ Add(r5_p, r11_p, r5_p);
+  __ Add(r5_p, r13, r5_p);
 
   __ LoadP(r1, FieldMemOperand(subject, String::kLengthOffset));
   __ SmiUntag(r1);
   __ ShiftLeft(r6_p, r1, r6_p);
-  __ Add(r6_p, r11_p, r6_p);
+  __ Add(r6_p, r13, r6_p);
 
   // Argument 2 (r4_p): Previous index.
   // Already there

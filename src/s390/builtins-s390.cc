@@ -990,8 +990,8 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
         if (count_constructions) {
           __ LoadRoot(r10_p, Heap::kUndefinedValueRootIndex);
         } else if (FLAG_debug_code) {
-          __ LoadRoot(r11_p, Heap::kUndefinedValueRootIndex);
-          __ CmpRR(r10_p, r11_p);
+          __ LoadRoot(r13, Heap::kUndefinedValueRootIndex);
+          __ CmpRR(r10_p, r13);
           __ Assert(eq, "Undefined value not loaded.");
         }
         __ b(&entry);

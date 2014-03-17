@@ -220,7 +220,6 @@ const Register r7_p  = { kRegister_r7_Code };
 const Register r8_p  = { kRegister_r8_Code };
 const Register r9_p  = { kRegister_r9_Code };
 const Register r10_p = { kRegister_r10_Code };
-const Register r11_p = { kRegister_fp_Code };
 
 // Double word FP register.
 struct DwVfpRegister {
