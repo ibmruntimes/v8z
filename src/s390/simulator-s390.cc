@@ -883,7 +883,12 @@ class Redirection {
  public:
   Redirection(void* external_function, ExternalReference::Type type)
       : external_function_(external_function),
-        swi_instruction_(rtCallRedirInstr | kCallRtRedirected),
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+      // quick and dirty way to hack the swi instrution
+        swi_instruction_(0x1000FFB2),
+#else
+        swi_instruction_(0xB2FF0000 | kCallRtRedirected),
+#endif
         type_(type),
         next_(NULL) {
     Isolate* isolate = Isolate::Current();
@@ -3378,9 +3383,13 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
         SetS390ConditionCode<double>(r2_val, 0);
       }
   }
-    default:
-      UNREACHABLE();
-      return false;
+  case TRAP4: {
+    UNIMPLEMENTED();
+    break;
+  }
+  default:
+    UNREACHABLE();
+    return false;
   }
   return true;
 }
