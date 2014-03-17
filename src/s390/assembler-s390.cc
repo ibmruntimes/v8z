@@ -147,7 +147,7 @@ Register ToRegister(int num) {
     r1,
     r2, r3, r4, r5, r6, r7, r8, r9, r10,
     fp, ip, r13, r14, sp,
-    no_reg, no_reg, no_reg, no_reg, r20_p, r21_p, r22_p, no_reg, no_reg,
+    no_reg, no_reg, no_reg, no_reg, no_reg, r21_p, r22_p, no_reg, no_reg,
     r25_p, r26_p, r27_p, r28_p, r29_p, r30_p, r31_p
   };
   return kRegisters[num];
