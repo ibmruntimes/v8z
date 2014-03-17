@@ -239,13 +239,6 @@ const Register r9_p  = { kRegister_r9_Code };
 const Register r10_p = { kRegister_r10_Code };
 const Register r11_p = { kRegister_fp_Code };
 const Register r22_p  = { kRegister_r22_Code };
-const Register r25_p  = { kRegister_r25_Code };
-const Register r26_p  = { kRegister_r26_Code };
-const Register r27_p  = { kRegister_r27_Code };
-const Register r28_p  = { kRegister_r28_Code };
-const Register r29_p  = { kRegister_r29_Code };
-const Register r30_p  = { kRegister_r30_Code };
-const Register r31_p  = { kRegister_r31_Code };
 
 // Double word FP register.
 struct DwVfpRegister {

@@ -4581,10 +4581,10 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // this code is called using the normal C calling convention. When calling
   // directly from generated code the native RegExp code will not do a GC and
   // therefore the content of these registers are safe to use after the call.
-  Register subject = r26_p;
-  Register regexp_data = r27_p;
-  Register last_match_info_elements = r28_p;
-  Register code = r29_p;
+  Register subject = r6;
+  Register regexp_data = r7;
+  Register last_match_info_elements = r8;
+  Register code = r9;
 
   // Ensure register assigments are consistent with callee save masks
   ASSERT(subject.bit() & (kCalleeSaved & kRegExpCalleeSaved));
@@ -4800,6 +4800,9 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // Stack pointer now points to cell where return address is to be written.
   // Arguments are before that on the stack or in registers.
 
+  // @TODO Fix this code for S390!!!  We need to pass the arguments
+  // appropriately
+
   // Argument 10 (in stack parameter area): Pass current isolate address.
   __ mov(r3_p, Operand(ExternalReference::isolate_address()));
   __ StoreP(r3_p,
@@ -4935,7 +4938,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ AddP(r4_p, Operand(2));
 
   // r4_p: number of capture registers
-  // r26_p: subject string
+  // r6: subject string
   // Store the capture count.
   __ SmiTag(r5_p, r4_p);
   __ StoreP(r5_p, FieldMemOperand(last_match_info_elements,

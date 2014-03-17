@@ -126,7 +126,7 @@ class RegExpMacroAssemblerPPC: public NativeRegExpMacroAssembler {
   static const int kFramePointer = 0;
 
   // Above the frame pointer - Stored registers and stack passed parameters.
-  // Register 25..31.
+  // Register 6-11,13
   static const int kStoredRegisters = kFramePointer;
   // Return address (stored from link register, read into pc on return).
   static const int kReturnAddress = kStoredRegisters + 7 * kPointerSize;
@@ -175,13 +175,13 @@ class RegExpMacroAssemblerPPC: public NativeRegExpMacroAssembler {
 
   // Register holding the current input position as negative offset from
   // the end of the string.
-  inline Register current_input_offset() { return r27_p; }
+  inline Register current_input_offset() { return r8; }
 
   // The register containing the current character after LoadCurrentCharacter.
-  inline Register current_character() { return r28_p; }
+  inline Register current_character() { return r9; }
 
   // Register holding address of the end of the input string.
-  inline Register end_of_input_address() { return r30_p; }
+  inline Register end_of_input_address() { return r10; }
 
   // Register holding the frame address. Local variables, parameters and
   // regexp registers are addressed relative to this.
@@ -189,10 +189,10 @@ class RegExpMacroAssemblerPPC: public NativeRegExpMacroAssembler {
 
   // The register containing the backtrack stack top. Provides a meaningful
   // name to the register.
-  inline Register backtrack_stackpointer() { return r29_p; }
+  inline Register backtrack_stackpointer() { return r13; }
 
   // Register holding pointer to the current code object.
-  inline Register code_pointer() { return r26_p; }
+  inline Register code_pointer() { return r7; }
 
   // Byte size of chars in the string to match (decided by the Mode argument)
   inline int char_size() { return static_cast<int>(mode_); }
@@ -254,13 +254,13 @@ class RegExpMacroAssemblerPPC: public NativeRegExpMacroAssembler {
 
 // Set of non-volatile registers saved/restored by generated regexp code.
 const RegList kRegExpCalleeSaved =
-  1 <<  25 |
-  1 <<  26 |
-  1 <<  27 |
-  1 <<  28 |
-  1 <<  29 |
-  1 <<  30 |
-  1 <<  31;
+  1 <<  6 |
+  1 <<  7 |
+  1 <<  8 |
+  1 <<  9 |
+  1 <<  10 |
+  1 <<  11 |
+  1 <<  13;
 
 #endif  // V8_INTERPRETED_REGEXP
 
