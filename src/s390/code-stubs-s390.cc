@@ -2478,7 +2478,7 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
   Register left = r4_p;
   Register right = r3_p;
   Register scratch1 = r10_p;
-  Register scratch2 = r11_p;
+  Register scratch2 = r1;
   DwVfpRegister double_scratch0 = d0;
   DwVfpRegister double_scratch1 = d1;
 
