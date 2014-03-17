@@ -788,10 +788,19 @@ class Assembler : public AssemblerBase {
   void bcctr(BOfield bo, LKBit lk);
   void bcr();
 
+  void breakpoint(bool do_print) {
+    if (do_print) {
+      printf("DebugBreak is inserted to %p\n", pc_);
+    }
+    iilf(r1, Operand(reinterpret_cast<uint32_t>(&OS::DebugBreak)));
+    b(r1);
+  }
+
   // Decrement CTR; branch if CTR != 0
   void bdnz(Label* L, LKBit lk = LeaveLK) {
     // TODO(john): has to be replaced by native s390 instruction
-    b(al, L);
+    breakpoint(true);
+    // OS::DebugBreak();
   }
 
   // Load address relative long.
