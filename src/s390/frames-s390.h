@@ -42,17 +42,13 @@ const int kNumRegs = 32;
 
 // Caller-saved/arguments registers
 const RegList kJSCallerSaved =
-  1 << 3  |  // r3  a1
-  1 << 4  |  // r4  a2
-  1 << 5  |  // r5  a3
-  1 << 6  |  // r6  a4
-  1 << 7  |  // r7  a5
-  1 << 8  |  // r8  a6
-  1 << 9  |  // r9  a7
-  1 << 10 |  // r10 a8
-  1 << 11;
+  1 << 1  |  // r1
+  1 << 2  |  // r2  a1
+  1 << 3  |  // r3  a2
+  1 << 4  |  // r4  a3
+  1 << 5;    // r5  a4
 
-const int kNumJSCallerSaved = 9;
+const int kNumJSCallerSaved = 5;
 
 typedef Object* JSCallerSavedBuffer[kNumJSCallerSaved];
 
@@ -65,6 +61,19 @@ int JSCallerSavedCode(int n);
 // N.B.  Do not bother saving all non-volatiles -- only those that v8
 //       modifies without saving/restoring inline.
 const RegList kCalleeSaved =
+  1 << 6 |   // r6 (argument passing in CEntryStub)
+             //    (HandleScope logic in MacroAssembler)
+  1 << 7 |   // r7 (argument passing in CEntryStub)
+             //    (HandleScope logic in MacroAssembler)
+  1 << 8 |   // r8 (argument passing in CEntryStub)
+             //    (HandleScope logic in MacroAssembler)
+  1 << 9 |   // r9 (HandleScope logic in MacroAssembler)
+  1 << 10 |  // r10
+  1 << 11 |  // fp in Javascript
+  1 << 13;   // cp in Javascript
+
+/*
+  Legacy PPC Linkage left here for reference.
   1 <<  14 |  // r14 (argument passing in CEntryStub)
   1 <<  15 |  // r15 (argument passing in CEntryStub)
   1 <<  16 |  // r16 (argument passing in CEntryStub)
@@ -79,9 +88,10 @@ const RegList kCalleeSaved =
   1 <<  29 |  // r29 (HandleScope logic in MacroAssembler)
               // r30 used but saved/restored inline
   1 <<  31;   // r31 (fp in Javascript code)
+*/
 
 
-const int kNumCalleeSaved = 11;
+const int kNumCalleeSaved = 7;
 
 // Number of registers for which space is reserved in safepoints. Must be a
 // multiple of 8.

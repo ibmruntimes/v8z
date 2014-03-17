@@ -238,10 +238,6 @@ const Register r8_p  = { kRegister_r8_Code };
 const Register r9_p  = { kRegister_r9_Code };
 const Register r10_p = { kRegister_r10_Code };
 const Register r11_p = { kRegister_fp_Code };
-const Register r13_p  = { kRegister_r13_Code };
-const Register r14_p  = { kRegister_r14_Code };
-const Register r15_p  = { kRegister_sp_Code };
-const Register r16_p  = { kRegister_r16_Code };
 // Used as context register on PPC
 const Register r20_p  = { kRegister_r20_Code };
 const Register r21_p  = { kRegister_r21_Code };
