@@ -606,7 +606,7 @@ void MacroAssembler::LeaveFrame(StackFrame::Type type) {
 // Prior to calling EnterExitFrame, we've got a bunch of parameters
 // on the stack that we need to wrap a real frame around.. so first
 // we reserve a slot for LK and push the previous SP which is captured
-// in the fp register (r31_p)
+// in the fp register (r11)
 // Then - we buy a new frame
 
 void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {

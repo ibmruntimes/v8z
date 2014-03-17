@@ -46,19 +46,19 @@ namespace internal {
 #ifndef V8_INTERPRETED_REGEXP
 /*
  * This assembler uses the following register assignment convention
- * - r25_p: Temporarily stores the index of capture start after a matching pass
+ * - r6: Temporarily stores the index of capture start after a matching pass
  *        for a global regexp.
- * - r26_p: Pointer to current code object (Code*) including heap object tag.
- * - r27_p: Current position in input, as negative offset from end of string.
+ * - r7: Pointer to current code object (Code*) including heap object tag.
+ * - r8: Current position in input, as negative offset from end of string.
  *        Please notice that this is the byte offset, not the character offset!
- * - r28_p: Currently loaded character. Must be loaded using
+ * - r9: Currently loaded character. Must be loaded using
  *        LoadCurrentCharacter before using any of the dispatch methods.
- * - r29_p: Points to tip of backtrack stack
- * - r30_p: End of input (points to byte after last character in input).
- * - r31_p: Frame pointer. Used to access arguments, local variables and
+ * - r13: Points to tip of backtrack stack
+ * - r10: End of input (points to byte after last character in input).
+ * - r11: Frame pointer. Used to access arguments, local variables and
  *         RegExp registers.
  * - r12_p: IP register, used by assembler. Very volatile.
- * - r1_p/sp : Points to tip of C stack.
+ * - r15/sp : Points to tip of C stack.
  *
  * The remaining registers are free for computations.
  * Each call to a public method should retain this convention.
@@ -70,8 +70,8 @@ namespace internal {
  *  - fp[32]  backchain    (currently unused)
  *  --- sp when called ---
  *  - fp[28]  return address     (lr).
- *  - fp[24]  old frame pointer  (r31_p).
- *  - fp[0..20]  backup of registers r25_p..r30_p
+ *  - fp[24]  old frame pointer  (r11).
+ *  - fp[0..20]  backup of registers r6..r10
  *  --- frame pointer ----
  *  - fp[-4]  direct_call        (if 1, direct call from JavaScript code,
  *                                if 0, call through the runtime system).
@@ -363,16 +363,16 @@ void RegExpMacroAssemblerPPC::CheckNotBackReferenceIgnoreCase(
     __ bind(&loop);
     __ LoadlB(r6_p, MemOperand(r3_p));
     __ AddP(r3_p, Operand(char_size()));
-    __ LoadlB(r25_p, MemOperand(r5_p));
+    __ LoadlB(r6, MemOperand(r5_p));
     __ AddP(r5_p, Operand(char_size()));
-    __ CmpRR(r25_p, r6_p);
+    __ CmpRR(r6, r6_p);
     __ beq(&loop_check);
 
     // Mismatch, try case-insensitive match (converting letters to lower-case).
     __ ori(r6_p, r6_p, Operand(0x20));  // Convert capture character to
                                         // lower-case.
-    __ ori(r25_p, r25_p, Operand(0x20));  // Also convert input character.
-    __ CmpRR(r25_p, r6_p);
+    __ ori(r6, r6, Operand(0x20));  // Also convert input character.
+    __ CmpRR(r6, r6_p);
     __ bne(&fail);
     __ Sub(r6_p, Operand('a'));
     __ Cmpli(r6_p, Operand('z' - 'a'));  // Is r6_p a lowercase letter?
@@ -410,7 +410,7 @@ void RegExpMacroAssemblerPPC::CheckNotBackReferenceIgnoreCase(
     // Length of capture.
     __ LoadRR(r5_p, r4_p);
     // Save length in callee-save register for use on return.
-    __ LoadRR(r25_p, r4_p);
+    __ LoadRR(r6, r4_p);
     // Address of current input position.
     __ LoadRR(r4_p, current_input_offset());
     __ AddP(r4_p, end_of_input_address());
@@ -428,7 +428,7 @@ void RegExpMacroAssemblerPPC::CheckNotBackReferenceIgnoreCase(
     __ Cmpi(r3_p, Operand::Zero());
     BranchOrBacktrack(eq, on_no_match);
     // On success, increment position by length of capture.
-    __ AddP(current_input_offset(), r25_p);
+    __ AddP(current_input_offset(), r6);
   }
 
   __ bind(&fallthrough);
@@ -468,16 +468,16 @@ void RegExpMacroAssemblerPPC::CheckNotBackReference(
   if (mode_ == ASCII) {
     __ LoadlB(r6_p, MemOperand(r3_p));
     __ AddP(r3_p, Operand(char_size()));
-    __ LoadlB(r25_p, MemOperand(r5_p));
+    __ LoadlB(r6, MemOperand(r5_p));
     __ AddP(r5_p, Operand(char_size()));
   } else {
     ASSERT(mode_ == UC16);
     __ lhz(r6_p, MemOperand(r3_p));
     __ AddP(r3_p, Operand(char_size()));
-    __ lhz(r25_p, MemOperand(r5_p));
+    __ lhz(r6, MemOperand(r5_p));
     __ AddP(r5_p, Operand(char_size()));
   }
-  __ CmpRR(r6_p, r25_p);
+  __ CmpRR(r6_p, r6);
   BranchOrBacktrack(ne, on_no_match);
   __ CmpRR(r3_p, r4_p);
   __ blt(&loop);
@@ -733,7 +733,7 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
     FrameScope scope(masm_, StackFrame::MANUAL);
 
     // Ensure register assigments are consistent with callee save mask
-    ASSERT(r25_p.bit() & kRegExpCalleeSaved);
+    ASSERT(r6.bit() & kRegExpCalleeSaved);
     ASSERT(code_pointer().bit() & kRegExpCalleeSaved);
     ASSERT(current_input_offset().bit() & kRegExpCalleeSaved);
     ASSERT(current_character().bit() & kRegExpCalleeSaved);
@@ -748,8 +748,8 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
     // Store link register in existing stack-cell.
     // Order here should correspond to order of offset constants in header file.
     RegList registers_to_retain = kRegExpCalleeSaved;
-    RegList argument_registers = r3_p.bit() | r4_p.bit() | r5_p.bit() |
-      r6_p.bit() | r7_p.bit() | r8_p.bit() | r9_p.bit() | r10_p.bit();
+    RegList argument_registers = r2.bit() | r3.bit() | r4.bit() |
+      r5.bit() | r6.bit();
     __ push(r14);
     __ MultiPush(argument_registers | registers_to_retain);
     // Set frame pointer in space for it if this is not a direct call
@@ -877,8 +877,8 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
           __ LoadP(r5_p, register_location(i), r0_p);
           __ LoadP(r6_p, register_location(i + 1), r0_p);
           if (i == 0 && global_with_zero_length_check()) {
-            // Keep capture start in r25_p for the zero-length check later.
-            __ LoadRR(r25_p, r5_p);
+            // Keep capture start in r6 for the zero-length check later.
+            __ LoadRR(r6, r5_p);
           }
           if (mode_ == UC16) {
             __ ShiftRightArithImm(r5_p, r5_p, 1);
@@ -921,8 +921,8 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
 
         if (global_with_zero_length_check()) {
           // Special case for zero-length matches.
-          // r25_p: capture start index
-          __ CmpRR(current_input_offset(), r25_p);
+          // r6: capture start index
+          __ CmpRR(current_input_offset(), r6);
           // Not a zero-length match, restart.
           __ bne(&load_char_start_regexp);
           // Offset from the end is zero if we already reached the end.
@@ -947,7 +947,7 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
     __ bind(&return_r3);
     // Skip sp past regexp registers and local variables..
     __ LoadRR(sp, frame_pointer());
-    // Restore registers r25_p..r31_p and return (restoring lr to pc).
+    // Restore registers r6..r11 and return (restoring lr to pc).
     __ MultiPop(registers_to_retain);
     __ pop(r0_p);
     __ mtctr(r0_p);
@@ -1422,10 +1422,10 @@ void RegExpMacroAssemblerPPC::LoadCurrentCharacterUnchecked(int cp_offset,
                                                             int characters) {
   Register offset = current_input_offset();
   if (cp_offset != 0) {
-    // r25_p is not being used to store the capture start index at this point.
-    __ LoadRR(r25_p, current_input_offset());
-    __ AddP(r25_p, Operand(cp_offset * char_size()));
-    offset = r25_p;
+    // r6 is not being used to store the capture start index at this point.
+    __ LoadRR(r6, current_input_offset());
+    __ AddP(r6, Operand(cp_offset * char_size()));
+    offset = r6;
   }
   // The lwz, stw, lhz, sth instructions can do unaligned accesses, if the CPU
   // and the operating system running on the target allow it.
@@ -1462,11 +1462,11 @@ void RegExpCEntryStub::Generate(MacroAssembler* masm_) {
 
 #if ABI_USES_FUNCTION_DESCRIPTORS && !defined(USE_SIMULATOR)
   // Native AIX/PPC64 Linux use a function descriptor.
-  __ LoadP(ToRegister(2), MemOperand(r26_p, kPointerSize));  // TOC
-  __ LoadP(ip, MemOperand(r26_p, 0));  // Instruction address
+  __ LoadP(ToRegister(2), MemOperand(r7, kPointerSize));  // TOC
+  __ LoadP(ip, MemOperand(r7, 0));  // Instruction address
   Register target = ip;
 #else
-  Register target = r26_p;
+  Register target = r7;
 #endif
 
   __ Call(target);
