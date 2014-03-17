@@ -29,8 +29,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-// @TODO Rename PPC regs. This file uses: r0, r1, r3-r11, r22.
-
 #include "v8.h"
 
 #if defined(V8_TARGET_ARCH_S390)

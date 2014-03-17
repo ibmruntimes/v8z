@@ -7119,35 +7119,35 @@ struct AheadOfTimeWriteBarrierStubList {
 
 static const AheadOfTimeWriteBarrierStubList kAheadOfTime[] = {
   // Used in RegExpExecStub.
-  { REG(r28), REG(r26), REG(r10), EMIT_REMEMBERED_SET },
-  { REG(r28), REG(r5), REG(r10), EMIT_REMEMBERED_SET },
+  { REG(r8), REG(r6), REG(r9), EMIT_REMEMBERED_SET },
+  { REG(r8), REG(r4), REG(r9), EMIT_REMEMBERED_SET },
   // Used in CompileArrayPushCall.
   // Also used in StoreIC::GenerateNormal via GenerateDictionaryStore.
   // Also used in KeyedStoreIC::GenerateGeneric.
-  { REG(r6), REG(r7), REG(r8), EMIT_REMEMBERED_SET },
-  // Used in CompileStoreGlobal.
-  { REG(r7), REG(r4), REG(r5), OMIT_REMEMBERED_SET },
-  // Used in StoreStubCompiler::CompileStoreField via GenerateStoreField.
-  { REG(r4), REG(r5), REG(r6), EMIT_REMEMBERED_SET },
-  { REG(r6), REG(r5), REG(r4), EMIT_REMEMBERED_SET },
-  // Used in KeyedStoreStubCompiler::CompileStoreField via GenerateStoreField.
-  { REG(r5), REG(r4), REG(r6), EMIT_REMEMBERED_SET },
-  { REG(r6), REG(r4), REG(r5), EMIT_REMEMBERED_SET },
-  // KeyedStoreStubCompiler::GenerateStoreFastElement.
-  { REG(r6), REG(r5), REG(r7), EMIT_REMEMBERED_SET },
   { REG(r5), REG(r6), REG(r7), EMIT_REMEMBERED_SET },
+  // Used in CompileStoreGlobal.
+  { REG(r6), REG(r3), REG(r4), OMIT_REMEMBERED_SET },
+  // Used in StoreStubCompiler::CompileStoreField via GenerateStoreField.
+  { REG(r3), REG(r4), REG(r5), EMIT_REMEMBERED_SET },
+  { REG(r5), REG(r4), REG(r3), EMIT_REMEMBERED_SET },
+  // Used in KeyedStoreStubCompiler::CompileStoreField via GenerateStoreField.
+  { REG(r4), REG(r3), REG(r5), EMIT_REMEMBERED_SET },
+  { REG(r5), REG(r3), REG(r4), EMIT_REMEMBERED_SET },
+  // KeyedStoreStubCompiler::GenerateStoreFastElement.
+  { REG(r5), REG(r4), REG(r6), EMIT_REMEMBERED_SET },
+  { REG(r4), REG(r5), REG(r6), EMIT_REMEMBERED_SET },
   // ElementsTransitionGenerator::GenerateMapChangeElementTransition
   // and ElementsTransitionGenerator::GenerateSmiToDouble
   // and ElementsTransitionGenerator::GenerateDoubleToObject
-  { REG(r5), REG(r6), REG(r22), EMIT_REMEMBERED_SET },
-  { REG(r5), REG(r6), REG(r22), OMIT_REMEMBERED_SET },
+  { REG(r4), REG(r5), REG(r1), EMIT_REMEMBERED_SET },
+  { REG(r4), REG(r5), REG(r1), OMIT_REMEMBERED_SET },
   // ElementsTransitionGenerator::GenerateDoubleToObject
-  { REG(r9), REG(r5), REG(r3), EMIT_REMEMBERED_SET },
-  { REG(r5), REG(r9), REG(r22), EMIT_REMEMBERED_SET },
+  { REG(r8), REG(r4), REG(r2), EMIT_REMEMBERED_SET },
+  { REG(r4), REG(r8), REG(r1), EMIT_REMEMBERED_SET },
   // StoreArrayLiteralElementStub::Generate
-  { REG(r8), REG(r3), REG(r9), EMIT_REMEMBERED_SET },
+  { REG(r7), REG(r2), REG(r8), EMIT_REMEMBERED_SET },
   // FastNewClosureStub::Generate
-  { REG(r5), REG(r7), REG(r4), EMIT_REMEMBERED_SET },
+  { REG(r4), REG(r6), REG(r3), EMIT_REMEMBERED_SET },
   // Null termination.
   { REG(no_reg), REG(no_reg), REG(no_reg), EMIT_REMEMBERED_SET}
 };
