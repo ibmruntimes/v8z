@@ -1088,8 +1088,8 @@ void MacroAssembler::JumpToHandlerEntry() {
   SmiUntag(ip, r4);
   LoadRR(r0, r3);
   AddP(r0, ip);
-  mtctr(r0);
-  bcr();
+  LoadRR(r14, r0);
+  Ret();
 }
 
 
