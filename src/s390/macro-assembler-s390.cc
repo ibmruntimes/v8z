@@ -621,6 +621,11 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   // since we were called from C code
 
   // replicate ARM frame - TODO make this more closely follow PPC ABI
+
+  // @TODO This is a temporary workaround until we figure out where to
+  // appropriately cleanse the top nibble of 31-bit pointers.
+  CleanseP(r14);
+
   Push(r14, fp);
   LoadRR(fp, sp);
   // Reserve room for saved entry sp and code object.
