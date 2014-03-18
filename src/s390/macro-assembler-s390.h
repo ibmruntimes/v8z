@@ -475,7 +475,7 @@ class MacroAssembler: public Assembler {
   }
 
   void pop() {
-    ahi(sp, Operand(kPointerSize));
+    la(sp, MemOperand(sp, kPointerSize));
   }
   // Push a handle.
   void Push(Handle<Object> handle);
