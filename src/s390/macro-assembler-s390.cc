@@ -4045,21 +4045,15 @@ void MacroAssembler::Cmpl(Register dst, const MemOperand& opnd) {
 }
 
 void MacroAssembler::Sub(Register dst, Register src1, Register src2) {
-#if V8_TARGET_ARCH_S390X
   if (!dst.is(src1) && !dst.is(src2))
-    lgr(dst, src1);
-  sgr(dst, src2);
-  if (dst.is(src2))
-    lngr(dst, dst);
-#else
-  if (!dst.is(src1) && !dst.is(src2))
-    lr(dst, src1);
-  else if (dst.is(src2))
-    src2 = src1;
-  sr(dst, src2);
-  if (dst.is(src2))
-    lnr(dst, dst);
-#endif
+    LoadRR(dst, src1);
+  // In scenario where we have dst = src - dst, we need to swap and negate
+  if (!dst.is(src1) && dst.is(src2)) {
+    SubRR(dst, src1);  // dst = (dst - src)
+    LoadNegRR(dst, dst);  // dst = -dst
+  } else {
+    SubRR(dst, src2);
+  }
 }
 
 void MacroAssembler::Sub(Register dst, Register src, const Operand& imm) {
