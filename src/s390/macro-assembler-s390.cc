@@ -1043,7 +1043,7 @@ void MacroAssembler::PushTryHandler(StackHandler::Kind kind,
     LoadIntLiteral(r7, state);
     LoadImmP(r8, Operand(0, RelocInfo::NONE));  // NULL frame pointer.
     // @TODO Potential Bug here as r10 is roots register.
-    LoadSmiLiteral(r8, Smi::FromInt(0));    // Indicates no context.
+    LoadSmiLiteral(r9, Smi::FromInt(0));    // Indicates no context.
     StoreMultipleP(r7, r9, MemOperand(sp, StackHandlerConstants::kStateSlot));
   } else {
     // still not sure if fp is right
