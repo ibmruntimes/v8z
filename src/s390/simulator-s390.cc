@@ -3069,9 +3069,10 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       RSInstruction* rsInstr = reinterpret_cast<RSInstruction*>(instr);
       int r1 = rsInstr->R1Value();
       int b2 = rsInstr->B2Value();
-      intptr_t d2 = rsInstr->B2Value();
+      intptr_t d2 = rsInstr->D2Value();
       // only takes rightmost 6bits
-      int shiftBits = (get_register(b2) + d2) & 0x3F;
+      intptr_t b2_val = b2 == 0 ? 0 : get_register(b2);
+      int shiftBits = (b2_val + d2) & 0x3F;
       uint32_t r1_val = get_low_register<uint32_t>(r1);
       uint32_t alu_out;
       if (op == SLL) {
@@ -3088,9 +3089,10 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       RSInstruction* rsInstr = reinterpret_cast<RSInstruction*>(instr);
       int r1 = rsInstr->R1Value();
       int b2 = rsInstr->B2Value();
-      intptr_t d2 = rsInstr->B2Value();
+      intptr_t d2 = rsInstr->D2Value();
       // only takes rightmost 6bits
-      int shiftBits = (get_register(b2) + d2) & 0x3F;
+      intptr_t b2_val = b2 == 0 ? 0 : get_register(b2);
+      int shiftBits = (b2_val + d2) & 0x3F;
       int32_t r1_val = get_low_register<int32_t>(r1);
       int32_t alu_out = 0;
       bool isOF = false;
