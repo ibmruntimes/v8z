@@ -466,11 +466,7 @@ class MacroAssembler: public Assembler {
   }
 
   void pop(Register dst) {
-#if V8_TARGET_ARCH_S390X
-    lg(dst, MemOperand(sp));
-#else
-    l(dst, MemOperand(sp));
-#endif
+    LoadP(dst, MemOperand(sp));
     la(sp, MemOperand(sp, kPointerSize));
   }
 
@@ -677,6 +673,14 @@ class MacroAssembler: public Assembler {
   // These exist to provide portability between 32 and 64bit
   void LoadP(Register dst, const MemOperand& mem, Register scratch = no_reg);
   void StoreP(Register src, const MemOperand& mem, Register scratch = no_reg);
+
+  // Cleanse pointer address on 31bit by zero out top  bit.
+  // This is a NOP on 64-bit.
+  void CleanseP(Register src) {
+#if V8_TARGET_ARCH_S390
+    nilh(src, Operand(0x7FFF));
+#endif
+  }
 
   // ---------------------------------------------------------------------------
   // JavaScript invokes
