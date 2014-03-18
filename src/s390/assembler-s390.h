@@ -643,16 +643,14 @@ class Assembler : public AssemblerBase {
   // target and the return address.
 
   // Call sequence is a FIXED_SEQUENCE:
-  // lis     r8, 2148      @ call address hi
-  // ori     r8, r8, 5728  @ call address lo
-  // mtlr    r8
-  // blrl
+  // iihf    r8, 2148      @ call address hi  // <64-bit only>
+  // iilf    r8, 5728      @ call address lo
+  // basr    r14, r8
   //                      @ return address
-  // in 64bit mode, the addres load is a 5 instruction sequence
 #if V8_TARGET_ARCH_S390X
-  static const int kCallTargetAddressOffset = 7 * kInstrSize;
+  static const int kCallTargetAddressOffset = 14;
 #else
-  static const int kCallTargetAddressOffset = 4 * kInstrSize;
+  static const int kCallTargetAddressOffset = 8;
 #endif
 
   // Distance between start of patched return sequence and the emitted address

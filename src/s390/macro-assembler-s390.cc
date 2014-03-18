@@ -195,9 +195,9 @@ void MacroAssembler::Call(Address target,
   basr(r14, ip);
 
 #if V8_TARGET_ARCH_S390X
-  ASSERT(kCallTargetAddressOffset == 7 * kInstrSize);
+  ASSERT(kCallTargetAddressOffset == 14);
 #else
-  ASSERT(kCallTargetAddressOffset == 4 * kInstrSize);
+  ASSERT(kCallTargetAddressOffset == 8);
 #endif
   ASSERT_EQ(CallSize(target, rmode, cond), SizeOfCodeGeneratedSince(&start));
 }
