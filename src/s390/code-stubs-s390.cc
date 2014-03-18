@@ -6793,8 +6793,8 @@ void ICCompareStub::GenerateMiss(MacroAssembler* masm) {
 // This stub is paired with DirectCEntryStub::GenerateCall
 void DirectCEntryStub::Generate(MacroAssembler* masm) {
   // Retrieve return address
-  __ LoadP(r0, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize));
-  __ Jump(r0);
+  __ LoadP(ip, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize));
+  __ Jump(ip);
 }
 
 
