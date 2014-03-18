@@ -4054,6 +4054,8 @@ void MacroAssembler::Sub(Register dst, Register src1, Register src2) {
 #else
   if (!dst.is(src1) && !dst.is(src2))
     lr(dst, src1);
+  else if (dst.is(src2))
+    src2 = src1;
   sr(dst, src2);
   if (dst.is(src2))
     lnr(dst, dst);
