@@ -624,7 +624,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   Push(r14, fp);
   LoadRR(fp, sp);
   // Reserve room for saved entry sp and code object.
-  Sub(sp, Operand(2 * kPointerSize));
+  lay(sp, MemOperand(sp, -2 * kPointerSize));
 
   if (emit_debug_code()) {
     LoadImmP(r7, Operand::Zero());
@@ -664,8 +664,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
 
   // Set the exit frame sp value to point just before the return address
   // location.
-  LoadRR(r7, sp);
-  AddP(r7, Operand((kStackFrameExtraParamSlot + 1) * kPointerSize));
+  lay(r7, MemOperand(sp, (kStackFrameExtraParamSlot + 1) * kPointerSize));
   StoreP(r7, MemOperand(fp, ExitFrameConstants::kSPOffset));
 }
 
