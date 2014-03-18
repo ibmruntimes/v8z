@@ -3388,7 +3388,6 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
   }
   case TRAP4: {
     SoftwareInterrupt(instr);
-    UNIMPLEMENTED();
     break;
   }
   default:
