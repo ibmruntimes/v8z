@@ -4800,6 +4800,21 @@ void MacroAssembler::ShiftRightP(Register dst, Register val) {
 #endif
 }
 
+void MacroAssembler::ShiftRightArithP(Register dst, Register val) {
+#if V8_TARGET_ARCH_S390X
+  UNIMPLEMENTED();
+#else
+  sra(dst, val);
+#endif
+}
+
+void MacroAssembler::ShiftLeftArithP(Register dst, Register val) {
+#if V8_TARGET_ARCH_S390X
+  UNIMPLEMENTED();
+#else
+  sla(dst, val);
+#endif
+}
 
 void MacroAssembler::ShiftLeftP(Register dst, const Operand& val) {
   ShiftLeftImm(dst, dst, val);
