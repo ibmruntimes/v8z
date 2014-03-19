@@ -315,15 +315,10 @@ class MacroAssembler: public Assembler {
   // void XorP(Register dst, Register src1, Register src2);
   // void XorP(Register dst, Register src, const Operand& opnd);
   void Branch(Condition c, const Operand& opnd);
-  void ShiftLeftP(Register dst, const Operand& val);
-  void ShiftRightP(Register dst, const Operand& val);
-  void ShiftLeftArithP(Register dst, const Operand& val);
-  void ShiftRightArithP(Register dst, const Operand& val);
-
   void ShiftLeftImm(Register dst, Register src, const Operand& val);
   void ShiftRightImm(Register dst, Register src, const Operand& val,
                     RCBit rc = LeaveRC);
-  void ShiftRightArithImm(Register dst, Register src, const Operand& val,
+  void ShiftRightArithImm(Register dst, Register src, const int val,
                     RCBit rc = LeaveRC);
   void ClearRightImm(Register dst, Register src, const Operand& val);
 
@@ -1460,13 +1455,13 @@ class MacroAssembler: public Assembler {
   }
 
   void SmiUntag(Register dst, Register src, RCBit rc = LeaveRC) {
-    ShiftRightArithImm(dst, src, Operand(kSmiShift), rc);
+    ShiftRightArithImm(dst, src, kSmiShift, rc);
   }
 
   void SmiToPtrArrayOffset(Register dst, Register src) {
 #if V8_TARGET_ARCH_S390X
     STATIC_ASSERT(kSmiTag == 0 && kSmiShift > kPointerSizeLog2);
-    ShiftRightArithImm(dst, src, Operand(kSmiShift - kPointerSizeLog2));
+    ShiftRightArithImm(dst, src, kSmiShift - kPointerSizeLog2);
 #else
     STATIC_ASSERT(kSmiTag == 0 && kSmiShift < kPointerSizeLog2);
     ShiftLeftImm(dst, src, Operand(kPointerSizeLog2 - kSmiShift));
@@ -1480,7 +1475,7 @@ class MacroAssembler: public Assembler {
   void SmiToShortArrayOffset(Register dst, Register src) {
 #if V8_TARGET_ARCH_S390X
     STATIC_ASSERT(kSmiTag == 0 && kSmiShift > 1);
-    ShiftRightArithImm(dst, src, Operand(kSmiShift - 1));
+    ShiftRightArithImm(dst, src, kSmiShift - 1);
 #else
     STATIC_ASSERT(kSmiTag == 0 && kSmiShift == 1);
     if (!dst.is(src)) {
@@ -1492,7 +1487,7 @@ class MacroAssembler: public Assembler {
   void SmiToIntArrayOffset(Register dst, Register src) {
 #if V8_TARGET_ARCH_S390X
     STATIC_ASSERT(kSmiTag == 0 && kSmiShift > 2);
-    ShiftRightArithImm(dst, src, Operand(kSmiShift - 2));
+    ShiftRightArithImm(dst, src, kSmiShift - 2);
 #else
     STATIC_ASSERT(kSmiTag == 0 && kSmiShift < 2);
     ShiftLeftImm(dst, src, Operand(2 - kSmiShift));
@@ -1504,7 +1499,7 @@ class MacroAssembler: public Assembler {
   void SmiToDoubleArrayOffset(Register dst, Register src) {
 #if V8_TARGET_ARCH_S390X
     STATIC_ASSERT(kSmiTag == 0 && kSmiShift > kDoubleSizeLog2);
-    ShiftRightArithImm(dst, src, Operand(kSmiShift - kDoubleSizeLog2));
+    ShiftRightArithImm(dst, src, kSmiShift - kDoubleSizeLog2);
 #else
     STATIC_ASSERT(kSmiTag == 0 && kSmiShift < kDoubleSizeLog2);
     ShiftLeftImm(dst, src, Operand(kDoubleSizeLog2 - kSmiShift));
@@ -1515,7 +1510,7 @@ class MacroAssembler: public Assembler {
     if (kSmiShift < elementSizeLog2) {
       ShiftLeftImm(dst, src, Operand(elementSizeLog2 - kSmiShift));
     } else if (kSmiShift > elementSizeLog2) {
-      ShiftRightArithImm(dst, src, Operand(kSmiShift - elementSizeLog2));
+      ShiftRightArithImm(dst, src, kSmiShift - elementSizeLog2);
     } else if (!dst.is(src)) {
       LoadRR(dst, src);
     }
