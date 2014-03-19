@@ -1691,7 +1691,9 @@ SS2_FORM(zap);
   void srl(Register r1, Register opnd);
   void srlk(Register r1, Register r3, const Operand& opnd);
   void sla(Register r1, const Operand& opnd);
+  void sla(Register r1, Register opnd);
   void sra(Register r1, const Operand& opnd);
+  void sra(Register r1, Register opnd);
 
   // floating point instructions
   void ld(DoubleRegister r1, const MemOperand& opnd);
