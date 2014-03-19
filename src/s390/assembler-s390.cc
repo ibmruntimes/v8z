@@ -764,16 +764,6 @@ void Assembler::sraw(Register rb, Register rs, Register rx, RCBit r) {
   x_form(EXT2 | SRAW, rb, rs, rx, r);
 }
 
-void Assembler::addc(Register dst, Register src1, Register src2,
-                    OEBit o, RCBit r) {
-  xo_form(EXT2 | ADDCX, dst, src1, src2, o, r);
-}
-
-void Assembler::addze(Register dst, Register src1, OEBit o, RCBit r) {
-  // a special xo_form
-  emit(EXT2 | ADDZEX | dst.code()*B21 | src1.code()*B16 | o | r);
-}
-
 void Assembler::subfc(Register dst, Register src1, Register src2,
                     OEBit o, RCBit r) {
   xo_form(EXT2 | SUBFCX, dst, src2, src1, o, r);

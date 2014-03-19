@@ -1739,11 +1739,6 @@ SS2_FORM(zap);
   void subfc(Register dst, Register src1, Register src2,
            OEBit s = LeaveOE, RCBit r = LeaveRC);
 
-  void addc(Register dst, Register src1, Register src2,
-                    OEBit o = LeaveOE, RCBit r = LeaveRC);
-
-  void addze(Register dst, Register src1, OEBit o, RCBit r);
-
   void mullw(Register dst, Register src1, Register src2,
                OEBit o = LeaveOE, RCBit r = LeaveRC);
 
