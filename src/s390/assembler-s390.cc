@@ -433,13 +433,13 @@ int Assembler::target_at(int pos)  {
 
   if (BRC == opcode) {
     int16_t imm16 = SIGN_EXT_IMM16((instr & kImm16Mask));
-    imm16 &= ~(kLKMask);
+    imm16 <<= 1;   // BRC immediate is in # of halfwords
     if (imm16 == 0)
       return kEndOfChain;
     return pos + imm16;
   } else if (BRCL == opcode || LARL == opcode) {
     int32_t imm32 = instr & (~static_cast<uint64_t>(0xffffffff));
-    imm32 &= ~(kLKMask);
+    imm32 <<= 1;   // BRCL immediate is in # of halfwords
     if (imm32 == 0)
       return kEndOfChain;
     return pos + imm32;
@@ -3372,14 +3372,19 @@ void Assembler::brasl(Register r, const Operand& opnd) {
 
 // Branch relative on Condition (32)
 void Assembler::brc(Condition c, const Operand& opnd) {
-  Operand opd = opnd;
-  opd.setBits(16);
-  ri_form(BRC, c, opd);
+  // BRC actually encodes # of halfwords, so divide by 2.
+  int16_t numHalfwords = static_cast<int16_t>(opnd.immediate()) / 2;
+  Operand halfwordOp = Operand(numHalfwords);
+  halfwordOp.setBits(16);
+  ri_form(BRC, c, halfwordOp);
 }
 
 // Branch Relative on Condition (64)
 void Assembler::brcl(Condition c, const Operand& opnd) {
-  ril_form(BRCL, c, opnd);
+  // BRCL actually encodes # of halfwords, so divide by 2.
+  int32_t numHalfwords = static_cast<int32_t>(opnd.immediate()) / 2;
+  Operand halfwordOp = Operand(numHalfwords);
+  ril_form(BRCL, c, halfwordOp);
 }
 
 // Branch and Save
