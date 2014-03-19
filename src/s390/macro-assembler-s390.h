@@ -1331,7 +1331,9 @@ class MacroAssembler: public Assembler {
 #if V8_TARGET_ARCH_S390X
     srlg(dst, src,  Operand(rangeStart));
 #else
-    srlk(dst, src,  Operand(rangeStart));
+    if (!dst.is(src))
+      lr(dst, src);
+    srl(dst, Operand(rangeStart));
 #endif
     uint32_t mask = 0xffffffff >> (kBitsPerPointer - width);
     AndP(dst, Operand(mask));
