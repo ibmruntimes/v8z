@@ -1535,15 +1535,14 @@ void MacroAssembler::AllocateInNewSpace(Register object_size,
   // Calculate new top and bail out if new space is exhausted. Use result
   // to calculate the new top. Object size may be in words so a shift is
   // required to get the number of bytes.
-  LoadImmP(r0, Operand(-1));
   if ((flags & SIZE_IN_WORDS) != 0) {
     ShiftLeftImm(scratch2, object_size, Operand(kPointerSizeLog2));
-    addc(scratch2, result, scratch2);
+    AddP(scratch2, result);
   } else {
-    addc(scratch2, result, object_size);
+    LoadRR(scratch2, result);
+    AddP(scratch2, object_size);
   }
-  addze(r0, r0, LeaveOE, SetRC);
-  beq(gc_required /*, cr0*/);
+  b(Condition(CC_OF), gc_required);
   Cmpl(scratch2, ip);
   bgt(gc_required);
 
