@@ -4699,9 +4699,9 @@ void MacroAssembler::LoadHalfWord(Register dst, const MemOperand& mem,
 
   if (!updateForm) {
     if (use_dform) {
-      lhz(dst, mem);
+      LoadLogicalHalfWordP(dst, mem);
     } else {
-      lhzx(dst, MemOperand(base, scratch));
+      LoadLogicalHalfWordP(dst, MemOperand(base, scratch));
     }
   } else {
     // If updateForm is ever true, then lhzu will

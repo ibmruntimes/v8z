@@ -287,7 +287,7 @@ void RegExpMacroAssemblerPPC::CheckCharacters(Vector<const uc16> str,
       ASSERT(str[i] <= String::kMaxAsciiCharCode);
       __ Cmpi(r3, Operand(str[i]));
     } else {
-      __ lhz(r3, MemOperand(r2));
+      __ LoadLogicalHalfWordP(r3, MemOperand(r2));
       __ AddP(r2, Operand(char_size()));
       uc16 match_char = str[i];
       int match_high_byte = (match_char >> 8);
@@ -472,9 +472,9 @@ void RegExpMacroAssemblerPPC::CheckNotBackReference(
     __ AddP(r4, Operand(char_size()));
   } else {
     ASSERT(mode_ == UC16);
-    __ lhz(r5, MemOperand(r2));
+    __ LoadLogicalHalfWordP(r5, MemOperand(r2));
     __ AddP(r2, Operand(char_size()));
-    __ lhz(r6, MemOperand(r4));
+    __ LoadLogicalHalfWordP(r6, MemOperand(r4));
     __ AddP(r4, Operand(char_size()));
   }
   __ CmpRR(r5, r6);
@@ -1439,7 +1439,8 @@ void RegExpMacroAssemblerPPC::LoadCurrentCharacterUnchecked(int cp_offset,
     __ LoadlB(current_character(), MemOperand(current_character()));
   } else {
     ASSERT(mode_ == UC16);
-    __ lhz(current_character(), MemOperand(current_character()));
+    __ LoadLogicalHalfWordP(current_character(),
+                            MemOperand(current_character()));
   }
 }
 

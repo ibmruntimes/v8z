@@ -3005,7 +3005,7 @@ void LCodeGen::DoLoadKeyedSpecializedArrayElement(
         if (key_is_constant) {
           __ LoadHalfWord(result, mem_operand, r0);
         } else {
-          __ lhzx(result, mem_operand);
+          __ LoadLogicalHalfWordP(result, mem_operand);
         }
         __ extsh(result, result);
         break;
@@ -3013,7 +3013,7 @@ void LCodeGen::DoLoadKeyedSpecializedArrayElement(
         if (key_is_constant) {
           __ LoadHalfWord(result, mem_operand, r0);
         } else {
-          __ lhzx(result, mem_operand);
+          __ LoadLogicalHalfWordP(result, mem_operand);
         }
         break;
       case EXTERNAL_INT_ELEMENTS:
