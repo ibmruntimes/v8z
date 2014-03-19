@@ -1982,10 +1982,10 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
       __ b(&stub_call);
       __ GetLeastBitsFromSmi(scratch2, right, 5);
 #if V8_TARGET_ARCH_S390X
-      __ ShiftLeft(right, left, scratch2);
+      __ ShiftLeftP(right, left, scratch2);
 #else
       __ SmiUntag(scratch1, left);
-      __ ShiftLeft(scratch1, scratch1, scratch2);
+      __ ShiftLeftP(scratch1, scratch1, scratch2);
       // Check that the *signed* result fits in a smi
       __ JumpIfNotSmiCandidate(scratch1, scratch2, &stub_call);
       __ SmiTag(right, scratch1);
