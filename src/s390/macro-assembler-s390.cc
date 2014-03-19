@@ -4784,6 +4784,23 @@ void MacroAssembler::StoreByte(Register src, const MemOperand& mem,
 }
 
 // Shift for pointer size wrappers
+void MacroAssembler::ShiftLeftP(Register dst, Register val) {
+#if V8_TARGET_ARCH_S390X
+  UNIMPLEMENTED();
+#else
+  sll(dst, val);
+#endif
+}
+
+void MacroAssembler::ShiftRightP(Register dst, Register val) {
+#if V8_TARGET_ARCH_S390X
+  UNIMPLEMENTED();
+#else
+  srl(dst, val);
+#endif
+}
+
+
 void MacroAssembler::ShiftLeftP(Register dst, const Operand& val) {
   ShiftLeftImm(dst, dst, val);
 }
