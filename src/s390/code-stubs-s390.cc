@@ -813,8 +813,7 @@ void FloatingPointHelper::DoubleIs32BitInteger(MacroAssembler* masm,
   // Create the mask and test the lower bits (of the higher bits).
   __ subfic(scratch, scratch, Operand(32));
   __ LoadImmP(src2, Operand(1));
-  __ ShiftLeftP(src2, scratch);
-  __ LoadRR(src1, src2);
+  __ ShiftLeft(src1, src2, scratch);
   __ AddP(src1, Operand(-1));
   __ LoadRR(r0, dst);
   __ AndP(r0, src1/*, SetRC*/);
@@ -2164,7 +2163,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       // Remove tags from operands.
       __ SmiUntag(scratch1, left);
       __ GetLeastBitsFromSmi(scratch2, right, 5);
-      __ ShiftLeftP(scratch1, scratch2);
+      __ ShiftLeft(scratch1, scratch1, scratch2);
 #if !V8_TARGET_ARCH_S390X
       // Check that the signed result fits in a Smi.
       __ JumpIfNotSmiCandidate(scratch1, scratch2, &not_smi_result);
@@ -2325,9 +2324,7 @@ void BinaryOpStub::GenerateFPOperation(MacroAssembler* masm,
         case Token::SHL:
           // Use only the 5 least significant bits of the shift count.
           __ GetLeastBitsFromInt32(r4, r4, 5);
-          __ LoadRR(scratch1, r5);
-          __ ShiftLeftP(scratch1, r4);
-          __ LoadRR(r4, scratch1);
+          __ ShiftLeft(r4, r5, r4);
           break;
         default:
           UNREACHABLE();
@@ -2715,9 +2712,7 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
         }
         case Token::SHL:
           __ AndP(r4, Operand(0x1f));
-          __ LoadRR(scratch1, r5);
-          __ ShiftLeftP(scratch1, r4);
-          __ LoadRR(r4, r5);
+          __ ShiftLeft(r4, r5, r4);
           break;
         default:
           UNREACHABLE();
@@ -4851,16 +4846,14 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // Argument 4, r5: End of string data
   // Argument 3, r4: Start of string data
   // Prepare start and end index of the input.
-  __ ShiftLeftP(r13, r5);
+  __ ShiftLeft(r13, r13, r5);
   __ Add(r13, r1, r13);
-  __ LoadRR(r4, r3);
-  __ ShiftLeftP(r4, r5);
+  __ ShiftLeft(r4, r3, r5);
   __ Add(r4, r13, r4);
 
   __ LoadP(r1, FieldMemOperand(subject, String::kLengthOffset));
   __ SmiUntag(r1);
-  __ ShiftLeftP(r1, r5);
-  __ LoadRR(r5, r1);
+  __ ShiftLeft(r5, r1, r5);
   __ Add(r5, r13, r5);
 
   // Argument 2 (r3): Previous index.

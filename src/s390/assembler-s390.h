@@ -1686,8 +1686,6 @@ SS2_FORM(zap);
   // Shift instruction
   void sll(Register r1, const Operand& opnd);
   void srl(Register r1, const Operand& opnd);
-  void sll(Register r1, Register opnd);
-  void srl(Register r1, Register opnd);
   void srlk(Register r1, Register r3, const Operand& opnd);
   void sla(Register r1, const Operand& opnd);
   void sra(Register r1, const Operand& opnd);
