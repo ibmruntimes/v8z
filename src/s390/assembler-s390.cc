@@ -2533,7 +2533,6 @@ RRE_FORM_EMIT(lcgfr, LCGFR)
 RRE_FORM_EMIT(lcgr, LCGR)
 RR_FORM_EMIT(lcr, LCR)
 RRE_FORM_EMIT(lcxbr, LCXBR)
-RXE_FORM_EMIT(ldeb, LDEB)
 RRE_FORM_EMIT(ldebr, LDEBR)
 RRF2_FORM_EMIT(ldetr, LDETR)
 RRE_FORM_EMIT(ldgr, LDGR)
@@ -3686,6 +3685,12 @@ void Assembler::cefbr(DoubleRegister r1, Register r2) {
 // Convert to Fixed point (32<-S)
 void Assembler::cfebr(Register r1, DoubleRegister r2) {
   rre_form(CFDBR, r1, Register::from_code(r2.code()));
+}
+
+// Load (L <- S)
+void Assembler::ldeb(DoubleRegister d1, const MemOperand& opnd) {
+  rxe_form(LDEB, Register::from_code(d1.code()), opnd.rx(), opnd.rb(),
+           opnd.offset());
 }
 
 
