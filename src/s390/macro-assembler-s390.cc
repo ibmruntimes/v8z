@@ -1453,8 +1453,8 @@ void MacroAssembler::AllocateInNewSpace(int object_size,
 
   // Calculate new top and bail out if new space is exhausted. Use result
   // to calculate the new top.
-  LoadRR(scratch2, result);
-  AddP(scratch2, obj_size_reg);
+  ASSERT(obj_size_reg.is(scratch2));
+  AddP(scratch2, result);   // Add result + obj_size_reg (scratch2)
   b(Condition(CC_OF), gc_required);   // Detect overflow
   Cmpl(scratch2, ip);
   bgt(gc_required);
