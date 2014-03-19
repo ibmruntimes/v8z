@@ -1033,9 +1033,9 @@ void LCodeGen::DoMathFloorOfDiv(LMathFloorOfDiv* instr) {
       if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
         DeoptimizeIf(eq, instr->environment(), cr0);
       }
-      __ ShiftRightArithImm(result, result, Operand(power));
+      __ ShiftRightArithImm(result, result, power);
     } else {
-      __ ShiftRightArithImm(result, dividend, Operand(power));
+      __ ShiftRightArithImm(result, dividend, power);
     }
   } else {
     Register scratch = ToRegister(instr->temp());
@@ -1065,7 +1065,7 @@ void LCodeGen::DoMathFloorOfDiv(LMathFloorOfDiv* instr) {
     __ mov(result, Operand(multiplier));
     __ Mul(result, result, scratch);
     __ addis(result, result, Operand(0x4000));
-    __ ShiftRightArithImm(result, result, Operand(shift));
+    __ ShiftRightArithImm(result, result, shift);
 #else
     if (divisor < 0 &&
         instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
@@ -1098,7 +1098,7 @@ void LCodeGen::DoMathFloorOfDiv(LMathFloorOfDiv* instr) {
       __ srl(scratch, Operand(2));
       __ Add(result, result, scratch);
     }
-    __ ShiftRightArithImm(result, result, Operand(shift - 32));
+    __ ShiftRightArithImm(result, result, shift - 32);
 #endif
   }
 }

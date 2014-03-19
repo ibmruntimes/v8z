@@ -2286,7 +2286,7 @@ Handle<Code> CallStubCompiler::CompileMathAbsCall(
 
   // Do bitwise not or do nothing depending on the sign of the
   // argument.
-  __ ShiftRightArithImm(r0, r2, Operand(kBitsPerPointer - 1));
+  __ ShiftRightArithImm(r0, r2, kBitsPerPointer - 1);
   __ LoadRR(r3, r0);
   __ XorP(r3, r2);
 
