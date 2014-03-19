@@ -4796,6 +4796,30 @@ void MacroAssembler::ShiftLeftImm(Register dst, Register src,
 #endif
 }
 
+void MacroAssembler::ShiftLeftP(Register dst, Register src,
+                                Register val) {
+#if V8_TARGET_ARCH_S390X
+  sllg(dst, src, MemOperand(val));
+#else
+  ASSERT(!dst.is(val));
+  if (!dst.is(src))
+    lr(dst, src);
+  sll(dst, val);
+#endif
+}
+
+void MacroAssembler::ShiftRightP(Register dst, Register src,
+                                 Register val) {
+#if V8_TARGET_ARCH_S390X
+  srlg(dst, src, MemOperand(val));
+#else
+  ASSERT(!dst.is(val));
+  if (!dst.is(src))
+    lr(dst, src);
+  srl(dst, val);
+#endif
+}
+
 // Shift right for pointer types.
 void MacroAssembler::ShiftRightImm(Register dst, Register src,
                                   const Operand& val, RCBit) {
