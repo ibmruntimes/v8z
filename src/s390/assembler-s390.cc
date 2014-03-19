@@ -3224,6 +3224,9 @@ void Assembler::lgfr(Register r1, Register r2) {
 void Assembler::sll(Register r1, const Operand& opnd) {
   rs_form(SLL, r1, r0, r0, opnd.immediate());
 }
+void Assembler::sll(Register r1, Register opnd) {
+  rs_form(SLL, r1, r0, opnd, 0);
+}
 
 // Shift Left Single Logical (64)
 void Assembler::sllg(Register r1, Register r3, const MemOperand& opnd) {
@@ -3233,6 +3236,10 @@ void Assembler::sllg(Register r1, Register r3, const MemOperand& opnd) {
 // Shift Right Single Logical (32)
 void Assembler::srl(Register r1, const Operand& opnd) {
   rs_form(SRL, r1, r0, r0, opnd.immediate());
+}
+
+void Assembler::srl(Register r1, Register opnd) {
+  rs_form(SRL, r1, r0, opnd, 0);
 }
 
 // Shift Right Single Logical (32)
