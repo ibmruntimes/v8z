@@ -881,9 +881,9 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
             __ LoadRR(r6, r4);
           }
           if (mode_ == UC16) {
-            __ ShiftRightArithImm(r4, r4, 1);
+            __ ShiftRightArithImm(r4, r4, Operand(1));
             __ Add(r4, r3, r4);
-            __ ShiftRightArithImm(r5, r5, 1);
+            __ ShiftRightArithImm(r5, r5, Operand(1));
             __ Add(r5, r3, r5);
           } else {
             __ Add(r4, r3, r4);
