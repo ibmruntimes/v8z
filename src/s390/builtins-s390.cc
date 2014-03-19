@@ -437,7 +437,8 @@ static void ArrayNativeCode(MacroAssembler* masm,
   if (FLAG_smi_only_arrays) {
     __ JumpIfNotSmi(r4, &has_non_smi_element);
   }
-  __ StorePU(r4, MemOperand(r7, -kPointerSize));
+  __ StoreP(r4, MemOperand(r7, -kPointerSize));
+  __ lay(r7, MemOperand(r7, -kPointerSize));
   __ bind(&entry);
   __ CmpRR(r6, r7);
   __ blt(&loop);
@@ -485,7 +486,8 @@ static void ArrayNativeCode(MacroAssembler* masm,
   __ bind(&loop2);
   __ LoadP(r4, MemOperand(r9));
   __ AddP(r9, Operand(kPointerSize));
-  __ StorePU(r4, MemOperand(r7, -kPointerSize));
+  __ StoreP(r4, MemOperand(r7, -kPointerSize));
+  __ lay(r7, MemOperand(r7, -kPointerSize));
   __ CmpRR(r6, r7);
   __ blt(&loop2);
   __ b(&finish);
@@ -866,10 +868,10 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       ASSERT_EQ(0 * kPointerSize, JSObject::kMapOffset);
       __ StoreP(r4, MemOperand(r7));
       ASSERT_EQ(1 * kPointerSize, JSObject::kPropertiesOffset);
-      __ StorePU(r8, MemOperand(r7, kPointerSize));
+      __ StoreP(r8, MemOperand(r7, JSObject::kPropertiesOffset));
       ASSERT_EQ(2 * kPointerSize, JSObject::kElementsOffset);
-      __ StorePU(r8, MemOperand(r7, kPointerSize));
-      __ AddP(r7, Operand(kPointerSize));
+      __ StoreP(r8, MemOperand(r7, JSObject::kElementsOffset));
+      __ AddP(r7, Operand(3 * kPointerSize));
 
       // Fill all the in-object properties with the appropriate filler.
       // r3: constructor function
@@ -974,8 +976,8 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       __ StoreP(r8, MemOperand(r4));
       ASSERT_EQ(1 * kPointerSize, FixedArray::kLengthOffset);
       __ SmiTag(r2, r5);
-      __ StorePU(r2, MemOperand(r4, kPointerSize));
-      __ AddP(r4, Operand(kPointerSize));
+      __ StoreP(r2, MemOperand(r4, kPointerSize));
+      __ AddP(r4, Operand(2 * kPointerSize));
 
       // Initialize the fields to undefined.
       // r3: constructor function
