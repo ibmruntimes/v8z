@@ -3698,12 +3698,12 @@ void KeyedLoadStubCompiler::GenerateLoadExternalArray(
       break;
     case EXTERNAL_SHORT_ELEMENTS:
       __ SmiToShortArrayOffset(value, key);
-      __ lhzx(value, MemOperand(r5, value));
+      __ LoadLogicalHalfWordP(value, MemOperand(r5, value));
       __ extsh(value, value);
       break;
     case EXTERNAL_UNSIGNED_SHORT_ELEMENTS:
       __ SmiToShortArrayOffset(value, key);
-      __ lhzx(value, MemOperand(r5, value));
+      __ LoadLogicalHalfWordP(value, MemOperand(r5, value));
       break;
     case EXTERNAL_INT_ELEMENTS:
       __ SmiToIntArrayOffset(value, key);

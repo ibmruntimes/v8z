@@ -1766,8 +1766,6 @@ SS2_FORM(zap);
   //  void LoadRR(Register dst, Register src);
 
   void lbzux(Register dst, const MemOperand& src);
-  void lhz(Register dst, const MemOperand& src);
-  void lhzx(Register dst, const MemOperand& src);
   void lhzux(Register dst, const MemOperand& src);
   void lwzu(Register dst, const MemOperand& src);
   void lwzux(Register dst, const MemOperand& src);

@@ -837,18 +837,6 @@ void Assembler::lbzux(Register rt, const MemOperand & src) {
   emit(EXT2 | LBZUX | rt.code()*B21 | rb.code()*B16 | rx.code()*B11 | LeaveRC);
 }
 
-void Assembler::lhz(Register dst, const MemOperand &src) {
-  ASSERT(!src.baseRegister.is(r0));
-  d_form(LHZ, dst, src.rb(), src.offset(), true);
-}
-
-void Assembler::lhzx(Register rt, const MemOperand &src) {
-  Register rb = src.rb();
-  Register rx = src.rx();
-  ASSERT(!rb.is(r0));
-  emit(EXT2 | LHZX | rt.code()*B21 | rb.code()*B16 | rx.code()*B11 | LeaveRC);
-}
-
 void Assembler::lhzux(Register rt, const MemOperand & src) {
   Register rb = src.rb();
   Register rx = src.rx();

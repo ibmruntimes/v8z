@@ -5511,7 +5511,7 @@ void StringHelper::GenerateCopyCharacters(MacroAssembler* masm,
     __ AddP(src, Operand(1));
     __ AddP(dest, Operand(1));
   } else {
-    __ lhz(scratch, MemOperand(src));
+    __ LoadLogicalHalfWordP(scratch, MemOperand(src));
     __ sth(scratch, MemOperand(dest));
     __ AddP(src, Operand(2));
     __ AddP(dest, Operand(2));
@@ -5711,7 +5711,8 @@ void StringHelper::GenerateTwoCharacterSymbolTableProbe(MacroAssembler* masm,
     __ bne(&next_probe[i]);
 
     // Check if the two characters match.
-    __ lhz(scratch, FieldMemOperand(candidate, SeqAsciiString::kHeaderSize));
+    __ LoadLogicalHalfWordP(scratch, FieldMemOperand(candidate,
+                                                  SeqAsciiString::kHeaderSize));
     __ CmpRR(chars, scratch);
     __ beq(&found_in_symbol_table);
     __ bind(&next_probe[i]);
