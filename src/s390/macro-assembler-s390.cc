@@ -4783,6 +4783,20 @@ void MacroAssembler::StoreByte(Register src, const MemOperand& mem,
   }
 }
 
+// Shift for pointer size wrappers
+void MacroAssembler::ShiftLeftP(Register dst, const Operand& val) {
+  ShiftLeftImm(dst, dst, val);
+}
+
+void MacroAssembler::ShiftRightP(Register dst, const Operand& val) {
+  ShiftRightImm(dst, dst, val);
+}
+
+void MacroAssembler::ShiftRightArithP(Register dst, const Operand& val) {
+  ShiftRightArithImm(dst, dst, val);
+}
+
+
 // Shift left for pointer types.
 void MacroAssembler::ShiftLeftImm(Register dst, Register src,
                                   const Operand& val) {
@@ -4811,7 +4825,7 @@ void MacroAssembler::ShiftRightImm(Register dst, Register src,
 
 // Shift right arithmetic for pointer types.
 void MacroAssembler::ShiftRightArithImm(Register dst, Register src,
-                                  const int val, RCBit) {
+                                  const Operand& val, RCBit) {
 #if V8_TARGET_ARCH_S390X
   srag(dst, src, Operand(val));
 #else

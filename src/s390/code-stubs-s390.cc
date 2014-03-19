@@ -1178,7 +1178,7 @@ void NumberToStringStub::GenerateLookupNumberStringCache(MacroAssembler* masm,
   __ LoadP(mask, FieldMemOperand(number_string_cache,
                                  FixedArray::kLengthOffset));
   // Divide length by two (length is a smi).
-  __ ShiftRightArithImm(mask, mask, kSmiTagSize + kSmiShiftSize + 1);
+  __ ShiftRightArithImm(mask, mask, Operand(kSmiTagSize + kSmiShiftSize + 1));
   __ Sub(mask, Operand(1));  // Make mask.
 
   // Calculate the entry in the number string cache. The hash value in the
@@ -3360,7 +3360,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
   __ beq(&no_carry /*, cr0*/);
   __ mdbr(double_result, double_scratch);
   __ bind(&no_carry);
-  __ ShiftRightArithImm(scratch, scratch, 1, SetRC);
+  __ ShiftRightArithImm(scratch, scratch, Operand(1), SetRC);
   __ beq(&loop_end /*, cr0*/);
   __ mdbr(double_scratch, double_scratch);
   __ b(&while_true);
