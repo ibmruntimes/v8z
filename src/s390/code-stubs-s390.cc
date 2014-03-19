@@ -6318,6 +6318,23 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   __ beq(&non_ascii /*, cr0*/);
   __ LoadRR(r0, r7);
   __ AndP(r0, Operand(kStringEncodingMask));
+  __ beq(&non_ascii /*, cr0*/);
+
+  // Allocate an ASCII cons string.
+  __ bind(&ascii_data);
+  __ AllocateAsciiConsString(r9, r8, r6, r7, &call_runtime);
+  __ bind(&allocated);
+  // Fill the fields of the cons string.
+  __ StoreP(r2, FieldMemOperand(r10, ConsString::kFirstOffset));
+  __ StoreP(r3, FieldMemOperand(r10, ConsString::kSecondOffset));
+  __ LoadRR(r2, r9);
+  __ IncrementCounter(counters->string_add_native(), 1, r4, r5);
+  __ lay(sp, MemOperand(sp, 2 * kPointerSize));
+  __ Ret();
+
+  __ bind(&non_ascii);
+  // At least one of the strings is two-byte. Check whether it happens
+  // to contain only ASCII characters.
   // r6: first instance type.
   // r7: second instance type.
   __ LoadRR(r0, r6);
