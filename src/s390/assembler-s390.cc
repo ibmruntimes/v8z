@@ -3247,7 +3247,7 @@ void Assembler::srl(Register r1, const Operand& opnd) {
 
 // Shift Right Single Logical (32)
 void Assembler::srlk(Register r1, Register r3, const Operand& opnd) {
-  rsy_form(SRLG, r1, r3, r0, opnd.immediate());
+  rsy_form(SRLK, r1, r3, r0, opnd.immediate());
 }
 
 // Shift Right Single Logical (64)
