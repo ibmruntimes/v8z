@@ -2975,7 +2975,7 @@ void LCodeGen::DoLoadKeyedSpecializedArrayElement(
       __ Add(scratch0(), r0);
     }
     if (elements_kind == EXTERNAL_FLOAT_ELEMENTS) {
-      __ lfs(result, MemOperand(scratch0(), additional_offset));
+      __ ldeb(result, MemOperand(scratch0(), additional_offset));
     } else  {  // i.e. elements_kind == EXTERNAL_DOUBLE_ELEMENTS
       __ LoadF(result, MemOperand(scratch0(), additional_offset));
     }
