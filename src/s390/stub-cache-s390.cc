@@ -3718,7 +3718,7 @@ void KeyedLoadStubCompiler::GenerateLoadExternalArray(
       break;
     case EXTERNAL_FLOAT_ELEMENTS:
       __ SmiToFloatArrayOffset(value, key);
-      __ lfsx(d0, MemOperand(r5, value));
+      __ ldeb(d0, MemOperand(r5, value));
       break;
     case EXTERNAL_DOUBLE_ELEMENTS:
       __ SmiToDoubleArrayOffset(value, key);
