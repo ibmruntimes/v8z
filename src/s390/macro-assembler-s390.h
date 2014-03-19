@@ -110,6 +110,7 @@ bool AreAliased(Register reg1,
 #define StorePUX           stdux
 #define StoreMultipleP     stmg
 #define ClearLeftImm       clrldi
+#define ShiftRight         srd
 #define ShiftRightArith    srad
 #define Mul                mulld
 #define Div                divd
@@ -317,9 +318,7 @@ class MacroAssembler: public Assembler {
   void ShiftLeftP(Register dst, const Operand& val);
   void ShiftRightP(Register dst, const Operand& val);
   void ShiftLeftArithP(Register dst, const Operand& val);
-  void ShiftLeftArithP(Register dst, Register val);
   void ShiftRightArithP(Register dst, const Operand& val);
-  void ShiftRightArithP(Register dst, Register val);
 
   void ShiftLeftImm(Register dst, Register src, const Operand& val);
   void ShiftRightImm(Register dst, Register src, const Operand& val,

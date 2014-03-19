@@ -2143,9 +2143,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
     case Token::SAR:
       // Remove tags from right operand.
       __ GetLeastBitsFromSmi(scratch1, right, 5);
-      __ LoadRR(scratch2, left);
-      __ ShiftRightArithP(scratch2, scratch1);
-      __ LoadRR(right, scratch2);
+      __ ShiftRightArith(right, left, scratch1);
       // Smi tag result.
       __ ClearRightImm(right, right, Operand(kSmiTagSize + kSmiShiftSize));
       __ Ret();
