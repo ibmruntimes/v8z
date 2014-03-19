@@ -3434,7 +3434,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
       int r1 = rilInstr->R1Value();
       uint32_t imm = rilInstr->I2UnsignedValue();
-      uint32_t alu_out = r1;
+      uint32_t alu_out = get_low_register<uint32_t>(r1);
       if (op == NILF) {
         alu_out &= imm;
         SetS390ConditionCode<uint32_t>(alu_out, 0);
