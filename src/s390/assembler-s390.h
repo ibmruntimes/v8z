@@ -770,13 +770,6 @@ class Assembler : public AssemblerBase {
     basr(r14, r1);
   }
 
-  // Decrement CTR; branch if CTR != 0
-  void bdnz(Label* L, LKBit lk = LeaveLK) {
-    // TODO(john): has to be replaced by native s390 instruction
-    breakpoint(false);
-    // OS::DebugBreak();
-  }
-
   // Load address relative long.
   void larl(Register r, Label *l) {
     larl(r, Operand(branch_offset(l, false)));

@@ -833,11 +833,10 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
         __ LoadRR(r3, frame_pointer());
         __ AddP(r3, Operand(kRegisterZero + kPointerSize));
         __ LoadImmP(r4, Operand(num_saved_registers_));
-        __ mtctr(r4);
         Label init_loop;
         __ bind(&init_loop);
         __ StorePU(r2, MemOperand(r3, -kPointerSize));
-        __ bdnz(&init_loop);
+        __ BranchOnCount(r4, &init_loop);
       } else {
         for (int i = 0; i < num_saved_registers_; i++) {
           __ StoreP(r2, register_location(i));

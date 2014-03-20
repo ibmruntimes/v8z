@@ -3149,7 +3149,7 @@ void MacroAssembler::CopyBytes(Register src,
                                Register dst,
                                Register length,
                                Register scratch) {
-  Label align_loop, aligned, word_loop, byte_loop, byte_loop_1, done;
+  Label align_loop, aligned, word_loop, byte_loop, done;
 
   ASSERT(!scratch.is(r0));
 
@@ -3166,14 +3166,13 @@ void MacroAssembler::CopyBytes(Register src,
 
   // Align src before copying in word size chunks.
   Sub(scratch, Operand(kPointerSize));
-  mtctr(scratch);
   bind(&align_loop);
   LoadlB(scratch, MemOperand(src));
   AddP(src, Operand(1));
   Sub(length, Operand(1));
   stb(scratch, MemOperand(dst));
   AddP(dst, Operand(1));
-  bdnz(&align_loop);
+  BranchOnCount(scratch, &align_loop);
 
   bind(&aligned);
 
@@ -3188,7 +3187,6 @@ void MacroAssembler::CopyBytes(Register src,
   Cmpi(scratch, Operand::Zero());
   beq(&byte_loop);
 
-  mtctr(scratch);
   bind(&word_loop);
   LoadP(scratch, MemOperand(src));
   AddP(src, Operand(kPointerSize));
@@ -3237,20 +3235,18 @@ void MacroAssembler::CopyBytes(Register src,
 #endif
     AddP(dst, Operand(kPointerSize));
   }
-  bdnz(&word_loop);
+  BranchOnCount(scratch, &word_loop);
 
   // Copy the last bytes if any left.
   Cmpi(length, Operand::Zero());
   beq(&done);
 
   bind(&byte_loop);
-  mtctr(length);
-  bind(&byte_loop_1);
   LoadlB(scratch, MemOperand(src));
   AddP(src, Operand(1));
   stb(scratch, MemOperand(dst));
   AddP(dst, Operand(1));
-  bdnz(&byte_loop_1);
+  BranchOnCount(length, &byte_loop);
 
   bind(&done);
 }

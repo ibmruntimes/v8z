@@ -4981,14 +4981,13 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ AddP(r2, Operand(RegExpImpl::kFirstCaptureOffset - kHeapObjectTag -
                   kPointerSize));
   __ AddP(r4, Operand(-kIntSize));  // bias down for lwzu
-  __ mtctr(r3);
   __ bind(&next_capture);
   // Read the value from the static offsets vector buffer.
   __ lwzu(r5, MemOperand(r4, kIntSize));
   // Store the smi value in the last match info.
   __ SmiTag(r5);
   __ StorePU(r5, MemOperand(r2, kPointerSize));
-  __ bdnz(&next_capture);
+  __ BranchOnCount(r3, &next_capture);
 
   // Return last match info.
   __ LoadP(r2, MemOperand(sp, kLastMatchInfoOffset));

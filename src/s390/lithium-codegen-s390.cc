@@ -158,11 +158,10 @@ bool LCodeGen::GeneratePrologue() {
     if (FLAG_debug_code) {
       __ mov(r2, Operand(slots));
       __ mov(r4, Operand(kSlotsZapValue));
-      __ mtctr(r2);
       Label loop;
       __ bind(&loop);
       __ push(r4);
-      __ bdnz(&loop);
+      __ BranchOnCount(r2, &loop);
     } else {
       __ AddP(sp, Operand(-slots * kPointerSize));
     }
@@ -3189,13 +3188,12 @@ void LCodeGen::DoApplyArguments(LApplyArguments* instr) {
   // length is a small non-negative integer, due to the test above.
   __ Cmpi(length, Operand::Zero());
   __ beq(&invoke);
-  __ mtctr(length);
   __ bind(&loop);
   __ ShiftLeftImm(r0, length, Operand(kPointerSizeLog2));
   __ LoadP(scratch, MemOperand(elements, r0));
   __ push(scratch);
   __ AddP(length, Operand(-1));
-  __ bdnz(&loop);
+  __ BranchOnCount(length, &loop);
 
   __ bind(&invoke);
   ASSERT(instr->HasPointerMap());
