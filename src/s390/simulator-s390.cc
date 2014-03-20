@@ -2971,7 +2971,7 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       break;
     }
     case LBR: { UNIMPLEMENTED(); break; }
-    case LR: {
+    case LNR: {
       // Load Negative (32)
       RRInstruction* rrinst = reinterpret_cast<RRInstruction*>(instr);
       int r1 = rrinst->R1Value();
@@ -3867,7 +3867,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
       intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
       intptr_t d2_val = rxyinst->D2Value();
-      uint16_t mem_val = ReadBU(b2_val + d2_val + x2_val, instr);
+      uint16_t mem_val = ReadBU(b2_val + d2_val + x2_val);
       if (op == LLC) {
         set_low_register<uint32_t>(r1, static_cast<uint32_t>(mem_val));
       } else if (op == LLGC) {
