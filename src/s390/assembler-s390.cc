@@ -2551,10 +2551,8 @@ RXY_FORM_EMIT(lhh, LHH)
 RRE_FORM_EMIT(lhr, LHR)
 RIL1_FORM_EMIT(lhrl, LHRL)
 RXY_FORM_EMIT(lhy, LHY)
-RXY_FORM_EMIT(llc, LLC)
 RXY_FORM_EMIT(llch, LLCH)
 RRE_FORM_EMIT(llcr, LLCR)
-RXY_FORM_EMIT(llgc, LLGC)
 RRE_FORM_EMIT(llgcr, LLGCR)
 RXY_FORM_EMIT(llgf, LLGF)
 RXY_FORM_EMIT(llgfat, LLGFAT)
@@ -3160,6 +3158,16 @@ void Assembler::llh(Register r1, const MemOperand& opnd) {
 // Load Logical halfword Register-Storage (64)
 void Assembler::llgh(Register r1, const MemOperand& opnd) {
   rxy_form(LLH, r1, opnd.rx(), opnd.rb(), opnd.offset());
+}
+
+// Load Logical Character (32) - loads a byte and zero ext.
+void Assembler::llc(Register r1, const MemOperand& opnd) {
+  rxy_form(LLC, r1, opnd.rx(), opnd.rb(), opnd.offset());
+}
+
+// Load Logical Character (64) - loads a byte and zero ext.
+void Assembler::llgc(Register r1, const MemOperand& opnd) {
+  rxy_form(LLGC, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 // Load Address Register-Storage

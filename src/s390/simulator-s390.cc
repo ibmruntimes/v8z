@@ -3857,6 +3857,26 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       }
       break;
     }
+    case LLC:
+    case LLGC: {
+      // Load Logical Character - loads a byte and zeor extends.
+      RXYInstruction* rxyinst = reinterpret_cast<RXYInstruction*>(instr);
+      int r1 = rxyinst->R1Value();
+      int b2 = rxyinst->B2Value();
+      int x2 = rxyinst->X2Value();
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+      intptr_t d2_val = rxyinst->D2Value();
+      uint16_t mem_val = ReadBU(b2_val + d2_val + x2_val, instr);
+      if (op == LLC) {
+        set_low_register<uint32_t>(r1, static_cast<uint32_t>(mem_val));
+      } else if (op == LLGC) {
+        set_register(r1, static_cast<uint64_t>(mem_val));
+      } else {
+        UNREACHABLE();
+      }
+      break;
+    }
     case CDB:
     case ADB:
     case SDB:

@@ -1311,10 +1311,8 @@ RXY_FORM(lhh);
 RRE_FORM(lhr);
 RIL1_FORM(lhrl);
 RXY_FORM(lhy);
-RXY_FORM(llc);
 RXY_FORM(llch);
 RRE_FORM(llcr);
-RXY_FORM(llgc);
 RRE_FORM(llgcr);
 RXY_FORM(llgf);
 RXY_FORM(llgfat);
@@ -1673,6 +1671,10 @@ SS2_FORM(zap);
   // Load Instructions
   void lt_z(Register r1, const MemOperand& src);
   void ltg(Register r1, const MemOperand& src);
+
+  // Load Logical Byte instrs (aka. chars)
+  void llc(Register r1, const MemOperand& src);
+  void llgc(Register r1, const MemOperand& src);
 
   void lm(Register r1, Register r2, const MemOperand& src);
   void lmy(Register r1, Register r2, const MemOperand& src);
