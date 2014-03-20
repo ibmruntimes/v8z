@@ -4395,6 +4395,16 @@ void MacroAssembler::Branch(Condition c, const Operand& opnd) {
   else
     brcl(c, opnd);
 }
+
+// Branch On Count.  Decrement R1, and branch if R1 != 0.
+void MacroAssembler::BranchOnCount(Register r1, Label *l) {
+#if V8_TARGET_ARCH_S390X
+  branchOnCount64(r1, branch_offset(l, false));
+#else
+  branchOnCount32(r1, branch_offset(l, false));
+#endif
+}
+
 void MacroAssembler::LoadIntLiteral(Register dst, int value) {
   Load(dst, Operand(value));
 }

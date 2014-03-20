@@ -718,6 +718,8 @@ class Assembler : public AssemblerBase {
 
   // S390 Pseudo Branch Instruction
   void branchOnCond(Condition c, int branch_offset);  // jump on condition
+  void branchOnCount32(Register r1, int branch_offset);  // branch on count (32)
+  void branchOnCount64(Register r1, int branch_offset);  // branch on count (64)
 
   // Label version
   void b(Condition cond, Label* l) {
@@ -1028,8 +1030,6 @@ RI1_FORM(bras);
 RIL1_FORM(brasl);
 RI2_FORM(brc);
 RIL2_FORM(brcl);
-RI2_FORM(brct);
-RI2_FORM(brctg);
 RIL1_FORM(brcth);
 RSI_FORM(brxh);
 RIE_FORM(brxhg);
@@ -1744,6 +1744,9 @@ SS2_FORM(zap);
   void lndbr(DoubleRegister r1, DoubleRegister r2);
   void ldeb(DoubleRegister r1, const MemOperand& opnd);
 
+  // Branch Instructions
+  void brct(Register r1, const Operand& opnd);
+  void brctg(Register r1, const Operand& opnd);
 
 // end of S390instructions
 
