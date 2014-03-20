@@ -4386,7 +4386,7 @@ void MacroAssembler::Add(Register dst, Register src) {
 
 void MacroAssembler::Branch(Condition c, const Operand& opnd) {
   intptr_t value = opnd.immediate();
-  if (is_int12(value))
+  if (is_int16(value))
     brc(c, opnd);
   else
     brcl(c, opnd);
@@ -4394,11 +4394,18 @@ void MacroAssembler::Branch(Condition c, const Operand& opnd) {
 
 // Branch On Count.  Decrement R1, and branch if R1 != 0.
 void MacroAssembler::BranchOnCount(Register r1, Label *l) {
+  int32_t offset = branch_offset(l, false);
+  positions_recorder()->WriteRecordedPositions();
+  if (is_int16(offset)) {
 #if V8_TARGET_ARCH_S390X
-  branchOnCount64(r1, branch_offset(l, false));
+    brct(r1, Operand(offset));
 #else
-  branchOnCount32(r1, branch_offset(l, false));
+    brctg(r1, Operand(offset));
 #endif
+  } else {
+    AddP(r1, Operand(-1));
+    Branch(ne, Operand(offset));
+  }
 }
 
 void MacroAssembler::LoadIntLiteral(Register dst, int value) {

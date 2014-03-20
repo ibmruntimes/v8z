@@ -707,30 +707,22 @@ void Assembler::branchOnCond(Condition c, int branch_offset) {
   }
 }
 
-// Branch On Count - 32bit register
-void Assembler::branchOnCount32(Register r1, int branch_offset) {
-  positions_recorder()->WriteRecordedPositions();
-  int offset = branch_offset;
-  ASSERT(is_int16(offset));
-  brct(r1, Operand(offset & 0xFFFF));
-}
-
-// Branch On Count - 64bit register
-void Assembler::branchOnCount64(Register r1, int branch_offset) {
-  positions_recorder()->WriteRecordedPositions();
-  int offset = branch_offset;
-  ASSERT(is_int16(offset));
-  brctg(r1, Operand(offset & 0xFFFF));
-}
-
 // Branch On Count (32)
 void Assembler::brct(Register r1, const Operand& imm) {
-  ri_form(BRCT, r1, imm);
+  // BRCT actually encodes # of halfwords, so divide by 2.
+  int16_t numHalfwords = static_cast<int16_t>(imm.immediate()) / 2;
+  Operand halfwordOp = Operand(numHalfwords);
+  halfwordOp.setBits(16);
+  ri_form(BRCT, r1, halfwordOp);
 }
 
 // Branch On Count (32)
 void Assembler::brctg(Register r1, const Operand& imm) {
-  ri_form(BRCTG, r1, imm);
+  // BRCTG actually encodes # of halfwords, so divide by 2.
+  int16_t numHalfwords = static_cast<int16_t>(imm.immediate()) / 2;
+  Operand halfwordOp = Operand(numHalfwords);
+  halfwordOp.setBits(16);
+  ri_form(BRCTG, r1, halfwordOp);
 }
 
 // Indirect Conditional Branch via register

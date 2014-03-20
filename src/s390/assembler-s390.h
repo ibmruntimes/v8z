@@ -708,8 +708,6 @@ class Assembler : public AssemblerBase {
 
   // S390 Pseudo Branch Instruction
   void branchOnCond(Condition c, int branch_offset);  // jump on condition
-  void branchOnCount32(Register r1, int branch_offset);  // branch on count (32)
-  void branchOnCount64(Register r1, int branch_offset);  // branch on count (64)
 
   // Label version
   void b(Condition cond, Label* l) {
