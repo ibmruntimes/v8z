@@ -2971,6 +2971,15 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       break;
     }
     case LBR: { UNIMPLEMENTED(); break; }
+    case LR: {
+      // Load Negative (32)
+      RRInstruction* rrinst = reinterpret_cast<RRInstruction*>(instr);
+      int r1 = rrinst->R1Value();
+      int r2 = rrinst->R2Value();
+      set_low_register<int32_t>(r1,
+                                -get_low_register<int32_t>(r2));
+      break;
+    }
     case BASR: {
       RRInstruction * rrinst = reinterpret_cast<RRInstruction*>(instr);
       int r1 = rrinst->R1Value();
@@ -3407,14 +3416,22 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
         set_register(r1, r1_val);
         SetS390ConditionCode<double>(r2_val, 0);
       }
-  }
-  case TRAP4: {
-    SoftwareInterrupt(instr);
-    break;
-  }
-  default:
-    UNREACHABLE();
-    return false;
+    }
+    case LNGR: {
+      RREInstruction* rreinst = reinterpret_cast<RREInstruction*>(instr);
+      int r1 = rreinst->R1Value();
+      int r2 = rreinst->R2Value();
+      set_register(r1, -get_register(r2));
+      break;
+    }
+    case TRAP4: {
+      SoftwareInterrupt(instr);
+      break;
+    }
+    default: {
+      UNREACHABLE();
+      return false;
+    }
   }
   return true;
 }
