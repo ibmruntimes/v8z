@@ -1134,6 +1134,8 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case CGHI: Format(instr, "cghi\t'r1,'i1"); break;
       case BRAS: Format(instr, "bras\t'r1,'i1"); break;
       case BRC: Format(instr, "brc\t'm1,'i4"); break;
+      case BRCT: Format(instr, "brct\t'r1,'i4"); break;
+      case BRCTG: Format(instr, "brctg\t'r1,'i4"); break;
       case IIHH: Format(instr, "iihh\t'r1,'i1"); break;
       case IIHL: Format(instr, "iihl\t'r1,'i1"); break;
       case IILH: Format(instr, "iilh\t'r1,'i1"); break;

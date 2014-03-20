@@ -431,7 +431,7 @@ int Assembler::target_at(int pos)  {
   // check which type of branch this is 16 or 26 bit offset
   Opcode opcode = Instruction::S390OpcodeValue(buffer_ + pos);
 
-  if (BRC == opcode) {
+  if (BRC == opcode || BRCT == opcode || BRCTG == opcode) {
     int16_t imm16 = SIGN_EXT_IMM16((instr & kImm16Mask));
     imm16 <<= 1;   // BRC immediate is in # of halfwords
     if (imm16 == 0)
@@ -454,7 +454,7 @@ void Assembler::target_at_put(int pos, int target_pos) {
   SixByteInstr instr = instr_at(pos);
   Opcode opcode = Instruction::S390OpcodeValue(buffer_ + pos);
 
-  if (BRC == opcode) {
+  if (BRC == opcode || BRCT == opcode || BRCTG == opcode) {
     int16_t imm16 = target_pos - pos;
     instr &= (~0xffff);
     ASSERT(is_int16(imm16));
@@ -476,7 +476,7 @@ int Assembler::max_reach_from(int pos) {
 
   // Check which type of instr.  In theory, we can return
   // the values below + 1, given offset is # of halfwords
-  if (BRC == opcode) {
+  if (BRC == opcode || BRCT == opcode || BRCTG == opcode) {
     return 16;
   } else if (BRCL == opcode || LARL == opcode) {
     return 31;  // Using 31 as workaround instead of 32 as
@@ -705,6 +705,32 @@ void Assembler::branchOnCond(Condition c, int branch_offset) {
   } else {
     brcl(c, Operand(offset));          // long jump
   }
+}
+
+// Branch On Count - 32bit register
+void Assembler::branchOnCount32(Register r1, int branch_offset) {
+  positions_recorder()->WriteRecordedPositions();
+  int offset = branch_offset;
+  ASSERT(is_int16(offset));
+  brct(r1, Operand(offset & 0xFFFF));
+}
+
+// Branch On Count - 64bit register
+void Assembler::branchOnCount64(Register r1, int branch_offset) {
+  positions_recorder()->WriteRecordedPositions();
+  int offset = branch_offset;
+  ASSERT(is_int16(offset));
+  brctg(r1, Operand(offset & 0xFFFF));
+}
+
+// Branch On Count (32)
+void Assembler::brct(Register r1, const Operand& imm) {
+  ri_form(BRCT, r1, imm);
+}
+
+// Branch On Count (32)
+void Assembler::brctg(Register r1, const Operand& imm) {
+  ri_form(BRCTG, r1, imm);
 }
 
 // Indirect Conditional Branch via register
@@ -2304,8 +2330,6 @@ RR_FORM_EMIT(bassm, BASSM)
 RX_FORM_EMIT(bc, BC)
 RRE_FORM_EMIT(bctgr, BCTGR)
 RR_FORM_EMIT(bctr, BCTR)
-RI2_FORM_EMIT(brct, BRCT)
-RI2_FORM_EMIT(brctg, BRCTG)
 RIL1_FORM_EMIT(brcth, BRCTH)
 RSI_FORM_EMIT(brxh, BRXH)
 RIE_FORM_EMIT(brxhg, BRXHG)

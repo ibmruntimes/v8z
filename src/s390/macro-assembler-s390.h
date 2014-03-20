@@ -315,6 +315,7 @@ class MacroAssembler: public Assembler {
   // void XorP(Register dst, Register src1, Register src2);
   // void XorP(Register dst, Register src, const Operand& opnd);
   void Branch(Condition c, const Operand& opnd);
+  void BranchOnCount(Register r1, Label *l);
   void ShiftLeftP(Register dst, Register src, Register val);
   void ShiftRightP(Register dst, Register src, Register val);
   void ShiftLeftImm(Register dst, Register src, const Operand& val);
