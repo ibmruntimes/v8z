@@ -1134,10 +1134,9 @@ int16_t Simulator::ReadH(intptr_t addr, Instruction* instr) {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
   // @TODO: must check correctness here for little endian.
   UNIMPLEMENTED();
-#else
+#endif
   int16_t* ptr = reinterpret_cast<int16_t*>(addr);
   return *ptr;
-#endif
 }
 
 
