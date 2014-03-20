@@ -4044,7 +4044,7 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   // Put down marker for end of simulation. The simulator will stop simulation
   // when the PC reaches this value. By saving the "end simulation" value into
   // the LR the simulation stops when returning to this call point.
-  special_reg_lr_ = end_sim_pc;
+  registers_[14] = end_sim_pc;
 
   // Remember the values of non-volatile registers.
   intptr_t r6_val = get_register(r6);
