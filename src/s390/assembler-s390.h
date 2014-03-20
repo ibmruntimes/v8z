@@ -765,7 +765,7 @@ class Assembler : public AssemblerBase {
       printf("DebugBreak is inserted to %p\n", pc_);
     }
     iilf(r1, Operand(reinterpret_cast<uint32_t>(&OS::DebugBreak)));
-    b(r1);
+    basr(r14, r1);
   }
 
   // Decrement CTR; branch if CTR != 0
