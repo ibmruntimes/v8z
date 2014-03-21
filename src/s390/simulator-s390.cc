@@ -3058,6 +3058,34 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       }
       break;
     }
+    case BRCT:  {
+       // Branch On Count (32).
+       RIInstruction* riinst = reinterpret_cast<RIInstruction*>(instr);
+       int r1 = riinst->R1Value();
+       int32_t value = get_low_register<int32_t>(r1);
+       value--;
+       set_low_register<int32_t>(r1, value);
+       // Branch if value != 0
+       if (value != 0) {
+        intptr_t offset = riinst->I2Value() * 2;
+        set_pc(get_pc() + offset);
+      }
+      break;
+    }
+    case BRCTG: {
+       // Branch On Count (64).
+       RIInstruction* riinst = reinterpret_cast<RIInstruction*>(instr);
+       int r1 = riinst->R1Value();
+       int64_t value = get_register(r1);
+       value--;
+       set_register(r1, value);
+       // Branch if value != 0
+       if (value != 0) {
+        intptr_t offset = riinst->I2Value() * 2;
+        set_pc(get_pc() + offset);
+      }
+      break;
+    }
     case IIHH:
     case IIHL:
     case IILH:
