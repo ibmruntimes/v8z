@@ -1305,7 +1305,8 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
         if (instr->can_deopt()) {
           __ srw(result, left, scratch, SetRC);
 #if V8_TARGET_ARCH_S390X
-          __ lgfr(result, result, SetRC);
+          __ lgfr(result, result/*, SetRC*/);
+          // Should be okay to remove SetRC
 #endif
           DeoptimizeIf(lt, instr->environment(), cr0);
         } else {

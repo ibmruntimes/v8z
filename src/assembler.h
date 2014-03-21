@@ -840,6 +840,7 @@ inline bool is_int18(intptr_t x)  { return is_intn(x, 18); }
 inline bool is_int20(intptr_t x)  { return is_intn(x, 20); }
 inline bool is_int24(intptr_t x)  { return is_intn(x, 24); }
 inline bool is_int26(intptr_t x)  { return is_intn(x, 26); }
+inline bool is_int32(intptr_t x)  { return is_intn(x, 32); }
 
 
 inline bool is_uintn(intptr_t x, int n) {

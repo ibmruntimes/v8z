@@ -472,11 +472,10 @@ void Assembler::set_target_address_at(Address pc, Address target) {
                                             reinterpret_cast<const byte*>(pc));
   // IIHF for hi_32, IILF for lo_32
   if (IIHF == op1 && IILF == op2) {
-    uintptr_t itarget = reinterpret_cast<uintptr_t>(target);
     // IIHF
     instr_1 >>= 32;  // Zero out the lower 32-bits
     instr_1 <<= 32;
-    instr_1 |= reinterpret_cast<uint32_t>(target >> 32);
+    instr_1 |= reinterpret_cast<uint64_t>(target) >> 32;
 
     Instruction::SetInstructionBits<SixByteInstr>(
                                       reinterpret_cast<byte*>(pc), instr_1);
@@ -484,7 +483,7 @@ void Assembler::set_target_address_at(Address pc, Address target) {
     // IILF
     instr_2 >>= 32;
     instr_2 <<= 32;
-    instr_2 |= reinterpret_cast<uint32_t>(target);
+    instr_2 |= reinterpret_cast<uint64_t>(target) | 0xFFFFFFFF;
 
     Instruction::SetInstructionBits<SixByteInstr>(
                       reinterpret_cast<byte*>(pc + instr1_length), instr_2);

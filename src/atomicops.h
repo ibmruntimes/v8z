@@ -165,7 +165,8 @@ Atomic64 Release_Load(volatile const Atomic64* ptr);
 #include "atomicops_internals_arm_gcc.h"
 #elif defined(__GNUC__) && defined(V8_HOST_ARCH_PPC)
 #include "atomicops_internals_ppc_gcc.h"
-#elif defined(__GNUC__) && defined(V8_HOST_ARCH_S390)
+#elif defined(__GNUC__) && \
+  (defined(V8_HOST_ARCH_S390) || (defined(V8_HOST_ARCH_S390X)))
 #include "atomicops_internals_s390_gcc.h"
 #elif defined(__GNUC__) && defined(V8_HOST_ARCH_MIPS)
 #include "atomicops_internals_mips_gcc.h"

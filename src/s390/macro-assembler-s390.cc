@@ -4171,7 +4171,7 @@ void MacroAssembler::AndP(Register dst, Register src) {
 
 void MacroAssembler::AndP(Register dst, const MemOperand& opnd) {
 #if V8_TARGET_ARCH_S390X
-  iihf(dst, Operand(0));  // higher reg set to 0
+  iihf(dst, Operand(static_cast<intptr_t>(0)));  // higher reg set to 0
   n(dst, opnd);
 #else
   ASSERT(is_int20(opnd.offset()));
@@ -4186,7 +4186,7 @@ void MacroAssembler::AndP(Register dst, const Operand& opnd) {
   // simulate ppc instruction andi
   uint32_t value = opnd.imm_ & 0xFFFF;
 #if V8_TARGET_ARCH_S390X
-  nihf(dst, Operand(0));
+  nihf(dst, Operand(static_cast<intptr_t>(0)));
   nilf(dst, Operand(value));
 #else
   nilf(dst, Operand(value));
@@ -4221,7 +4221,7 @@ void MacroAssembler::Or(Register dst, Register src1, Register src2) {
 void MacroAssembler::OrP(Register dst, const Operand& opnd) {
   ASSERT(!opnd.is_reg());
 #if V8_TARGET_ARCH_S390X
-  oihf(dst, Operand(0));
+  oihf(dst, Operand(static_cast<intptr_t>(0)));
   oilf(dst, opnd);
 #else
   oilf(dst, opnd);
@@ -4255,7 +4255,7 @@ void MacroAssembler::Xor(Register dst, Register src1, Register src2) {
 void MacroAssembler::XorP(Register dst, const Operand& opnd) {
   ASSERT(!opnd.is_reg());
 #if V8_TARGET_ARCH_S390X
-  xihf(dst, Operand(0));
+  xihf(dst, Operand(static_cast<intptr_t>(0)));
   xilf(dst, opnd);
 #else
   xilf(dst, opnd);
@@ -4318,7 +4318,7 @@ void MacroAssembler::Load(Register dst, const Operand& opnd) {
   } else {
 #if V8_TARGET_ARCH_S390X
     iilf(dst, opnd);
-    iihf(dst, Operand(0));
+    iihf(dst, Operand(static_cast<intptr_t>(0)));
 #else
     iilf(dst, opnd);
 #endif
@@ -4474,7 +4474,7 @@ void MacroAssembler::Cmpli(Register src1, const Operand& src2) {
 void MacroAssembler::CmpSmiLiteral(Register src1, Smi *smi, Register scratch) {
 #if V8_TARGET_ARCH_S390X
   LoadSmiLiteral(scratch, smi);
-  cg(src1, scratch);
+  cg(src1, MemOperand(scratch));
 #else
   // CFI takes 32-bit immediate.
   cfi(src1, Operand(smi));
@@ -4484,7 +4484,8 @@ void MacroAssembler::CmpSmiLiteral(Register src1, Smi *smi, Register scratch) {
 void MacroAssembler::CmplSmiLiteral(Register src1, Smi *smi, Register scratch) {
 #if V8_TARGET_ARCH_S390X
   LoadSmiLiteral(scratch, smi);
-  clg(src1, scratch);
+  // TODO(JOHN): double check
+  clg(src1, MemOperand(scratch));
 #else
   // CLFI takes 32-bit immediate
   clfi(src1, Operand(smi));
@@ -4606,11 +4607,8 @@ void MacroAssembler::LoadlW(Register dst, const MemOperand& mem,
   }
 
 #if V8_TARGET_ARCH_S390X
-  if (use_RXYform || use_RX_form) {
-    llgf(dst, mem);
-  } else {
-    llgf(dst, MemOperand(base, scratch));
-  }
+  // TODO(JOHN): double check this
+  llgf(dst, mem);
 #else
   if (use_RXform) {
     l(dst, mem);
@@ -4793,7 +4791,7 @@ void MacroAssembler::StoreByte(Register src, const MemOperand& mem,
 void MacroAssembler::ShiftLeftImm(Register dst, Register src,
                                   const Operand& val) {
 #if V8_TARGET_ARCH_S390X
-  sllg(dst, src, val);
+  sllg(dst, src, MemOperand(r0, val.imm_));
 #else
   // 32-bit shift clobbers source.  Make a copy if necessary
   if (!dst.is(src))
@@ -4830,7 +4828,8 @@ void MacroAssembler::ShiftRightP(Register dst, Register src,
 void MacroAssembler::ShiftRightImm(Register dst, Register src,
                                   const Operand& val, RCBit) {
 #if V8_TARGET_ARCH_S390X
-  srlg(dst, src, val);
+  // TODO(JOHN): double check if this is correct
+  srlg(dst, src, MemOperand(r0, val.imm_));
 #else
   // 32-bit shift clobbers source.  Make a copy if necessary
   if (!dst.is(src))
@@ -4843,12 +4842,14 @@ void MacroAssembler::ShiftRightImm(Register dst, Register src,
 void MacroAssembler::ShiftRightArithImm(Register dst, Register src,
                                   const int val, RCBit) {
 #if V8_TARGET_ARCH_S390X
-  srag(dst, src, Operand(val));
+  // TODO(JOHN): double check if this is correct
+  srag(dst, src, MemOperand(r0, val));
 #else
   // 32-bit shift clobbers source.  Make a copy if necessary
   if (!dst.is(src))
     lr(dst, src);
-  sra(dst, Operand(val));
+  // TODO(JOHN): double check if this is correct
+  sra(dst, Operand(static_cast<intptr_t>(val)));
 #endif
 }
 
@@ -4867,7 +4868,7 @@ void MacroAssembler::ClearRightImm(Register dst, Register src,
   } else if (numBitsToClear <= 32) {
     nilf(dst, Operand(static_cast<uint32_t>(hexMask)));
   } else if (numBitsToClear <= 64) {
-    nilf(dst, Operand(0));
+    nilf(dst, Operand(static_cast<intptr_t>(0)));
     nihf(dst, Operand(hexMask >> 32));
   }
 }

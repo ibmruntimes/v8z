@@ -764,7 +764,16 @@ class Assembler : public AssemblerBase {
     if (do_print) {
       printf("DebugBreak is inserted to %p\n", pc_);
     }
+#if V8_TARGET_ARCH_S390X
+    int64_t value = reinterpret_cast<uint64_t>(&OS::DebugBreak);
+    int32_t hi_32 = static_cast<int64_t>(value) >> 32;
+    int32_t lo_32 = static_cast<int32_t>(value);
+
+    iihf(r1, Operand(hi_32));
+    iilf(r1, Operand(lo_32));
+#else
     iilf(r1, Operand(reinterpret_cast<uint32_t>(&OS::DebugBreak)));
+#endif
     basr(r14, r1);
   }
 

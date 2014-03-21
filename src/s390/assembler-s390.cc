@@ -3415,7 +3415,7 @@ void Assembler::st(Register src, const MemOperand &dst) {
   if (!is_uint12(offset)) {
     // @TODO Remove once things are clean....
     // Check limits... should check if STY is usable and replace at source.
-    PrintF("ST offset exceeded limits = %" V8PRIdPTR ", 0x%" V8PRIxPTR "\n",
+    PrintF("ST offset exceeded limits = %d, 0x%x\n",
            offset, offset);
   }
   rx_form(ST, src, dst.rx(), dst.rb(), dst.offset());
