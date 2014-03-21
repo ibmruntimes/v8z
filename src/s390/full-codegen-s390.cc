@@ -4588,8 +4588,7 @@ void FullCodeGenerator::ExitFinallyBlock() {
   __ SmiUntag(r3);
   __ mov(ip, Operand(masm_->CodeObject()));
   __ AddP(ip, r3);
-  __ mtctr(ip);
-  __ bcr();
+  __ b(ip);
 }
 
 

@@ -737,8 +737,7 @@ static void GenerateTailCallToSharedCode(MacroAssembler* masm) {
   __ LoadP(r4, FieldMemOperand(r3, JSFunction::kSharedFunctionInfoOffset));
   __ LoadP(r4, FieldMemOperand(r4, SharedFunctionInfo::kCodeOffset));
   __ AddP(r4, Operand(Code::kHeaderSize - kHeapObjectTag));
-  __ mtctr(r4);
-  __ bcr();
+  __ b(r4);
 }
 
 
