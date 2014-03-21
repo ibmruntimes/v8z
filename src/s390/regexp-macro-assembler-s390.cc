@@ -196,8 +196,7 @@ void RegExpMacroAssemblerPPC::Backtrack() {
   // Pop Code* offset from backtrack stack, add Code* and jump to location.
   Pop(r2);
   __ AddP(r2, code_pointer());
-  __ mtctr(r2);
-  __ bcr();
+  __ b(r2);
 }
 
 
@@ -948,9 +947,8 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
     __ LoadRR(sp, frame_pointer());
     // Restore registers r6..r11 and return (restoring lr to pc).
     __ MultiPop(registers_to_retain);
-    __ pop(r0);
-    __ mtctr(r0);
-    __ bcr();
+    __ pop(ip);
+    __ b(ip);
 
     // Backtrack code (branch target for conditional backtracks).
     if (backtrack_label_.is_linked()) {
