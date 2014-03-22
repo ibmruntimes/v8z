@@ -128,7 +128,7 @@ bool AreAliased(Register reg1,
 #define OrRR               ogr
 #define AndRR              ngr
 #define XorRR              xgr
-#define LoadNegRR          lngr
+#define LoadNegRR          lcgr
 
 // Pointer-Imm (both word and half word)
 #define AddPW              agfi
@@ -167,7 +167,7 @@ bool AreAliased(Register reg1,
 #define OrRR               or_z
 #define AndRR              nr
 #define XorRR              xr
-#define LoadNegRR          lnr
+#define LoadNegRR          lcr
 
 // Reg-Imm
 #define AddPI              a
@@ -293,6 +293,9 @@ class MacroAssembler: public Assembler {
   void Add(Register dst, Register src);
   void Add(Register dst, Register src1, Register src2);
   // subtract 32bit
+  void Sub(Register dst, Register src) {
+    sr(dst, src);
+  };
   void Sub(Register dst, Register src1, const Operand& src2);
   void Sub(Register dst, Register src1, Register src2);
   void Sub(Register dst, const Operand& src);
