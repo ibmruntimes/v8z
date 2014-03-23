@@ -1996,7 +1996,13 @@ SS2_FORM(zap);
     Instruction::SetInstructionBits<T>(buffer_ + pos, instr);
   }
 
+  // Decodes instruction at pos, and returns its length
+  int32_t instr_length_at(int pos) {
+    return Instruction::InstructionLength(buffer_ + pos);
+  }
+
   static Instr instr_at(byte* pc) { return Instruction::InstructionBits(pc); }
+
   static Condition GetCondition(Instr instr);
 
   static bool IsLis(Instr instr);
