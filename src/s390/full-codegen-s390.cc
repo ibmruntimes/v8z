@@ -75,8 +75,11 @@ class JumpPatchSite BASE_EMBEDDED {
     ASSERT(!patch_site_.is_bound() && !info_emitted_);
     Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm_);
     __ bind(&patch_site_);
-    __ CmpRR(reg, reg/*, cr0*/);
-    __ beq(target /*, cr0*/);  // Always taken before patched.
+    __ CmpRR(reg, reg);
+    // Emit the same code again to make bigger place for patching 
+    // (replaced by nill)
+    __ CmpRR(reg, reg);
+    __ beq(target);  // Always taken before patched.
   }
 
   // When initially emitting this ensure that a jump is never generated to skip
@@ -91,16 +94,14 @@ class JumpPatchSite BASE_EMBEDDED {
 
   void EmitPatchInfo() {
     if (patch_site_.is_bound()) {
-      int delta_to_patch_site = masm_->InstructionsGeneratedSince(&patch_site_);
-      Register reg;
-      // I believe this is using reg as the high bits of of the offset
-      reg.set_code(delta_to_patch_site / kOff16Mask);
-      __ Cmpi(reg, Operand(delta_to_patch_site % kOff16Mask));
+      int delta_to_patch_site = masm_->SizeOfCodeGeneratedSince(&patch_site_);
+      ASSERT(is_int16(delta_to_patch_site));
+      __ chi(r0, Operand(delta_to_patch_site));
 #ifdef DEBUG
       info_emitted_ = true;
 #endif
     } else {
-      __ nop();  // Signals no inlined code.
+      __ chi(r0, Operand(0));
     }
   }
 

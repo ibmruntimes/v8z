@@ -382,8 +382,8 @@ bool Assembler::Is32BitLoadIntoR12(Instr instr1, Instr instr2) {
 #endif
 
 bool Assembler::IsCmpRegister(Instr instr) {
-  return (((instr & kOpcodeMask) == EXT2) &&
-          ((instr & kExt2OpcodeMask) == CMP));
+  ASSERT(false);
+  return Instruction::S390OpcodeValue(reinterpret_cast<byte*>(&instr)) == CR;
 }
 
 bool Assembler::IsRlwinm(Instr instr) {
@@ -396,20 +396,6 @@ bool Assembler::IsRldicl(Instr instr) {
           ((instr & kExt5OpcodeMask) == RLDICL));
 }
 #endif
-
-bool Assembler::IsCmpImmediate(Instr instr) {
-  return ((instr & kOpcodeMask) == CMPI);
-}
-
-Register Assembler::GetCmpImmediateRegister(Instr instr) {
-  ASSERT(IsCmpImmediate(instr));
-  return GetRA(instr);
-}
-
-int Assembler::GetCmpImmediateRawImmediate(Instr instr) {
-  ASSERT(IsCmpImmediate(instr));
-  return instr & kOff16Mask;
-}
 
 // Labels refer to positions in the (to be) generated code.
 // There are bound, linked, and unused labels.

@@ -4897,10 +4897,9 @@ bool AreAliased(Register reg1,
 #endif
 
 
-CodePatcher::CodePatcher(byte* address, int instructions)
+CodePatcher::CodePatcher(byte* address, int size)
     : address_(address),
-      instructions_(instructions),
-      size_(instructions * Assembler::kInstrSize),
+      size_(size),
       masm_(NULL, address, size_ + Assembler::kGap) {
   // Create a new macro assembler pointing to the address of the code to patch.
   // The size is adjusted with kGap on order for the assembler to generate size

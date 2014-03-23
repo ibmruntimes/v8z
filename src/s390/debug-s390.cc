@@ -73,6 +73,7 @@ void BreakLocationIterator::SetDebugBreakAtReturn() {
   //   blrl
   //   bkpt
   //
+  // FIXME: 2ND ARG
   CodePatcher patcher(rinfo()->pc(), Assembler::kJSReturnSequenceInstructions);
 // printf("SetDebugBreakAtReturn: pc=%08x\n", (unsigned int)rinfo()->pc());
   patcher.masm()->mov(v8::internal::r14,
@@ -124,6 +125,7 @@ void BreakLocationIterator::SetDebugBreakAtSlot() {
   //
   // The 64bit sequence is +3 instructions longer for the load
   //
+  // FIXME: 2ND ARG
   CodePatcher patcher(rinfo()->pc(), Assembler::kDebugBreakSlotInstructions);
 // printf("SetDebugBreakAtSlot: pc=%08x\n", (unsigned int)rinfo()->pc());
   patcher.masm()->mov(v8::internal::r14,

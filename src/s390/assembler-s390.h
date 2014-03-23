@@ -1932,6 +1932,7 @@ SS2_FORM(zap);
   }
 
   // Check the number of instructions generated from label to here.
+  // TODO(JOHN): FIX IT
   int InstructionsGeneratedSince(Label* label) {
     return SizeOfCodeGeneratedSince(label) / kInstrSize;
   }
@@ -2020,13 +2021,10 @@ SS2_FORM(zap);
 #endif
 
   static bool IsCmpRegister(Instr instr);
-  static bool IsCmpImmediate(Instr instr);
   static bool IsRlwinm(Instr instr);
 #if V8_TARGET_ARCH_S390X
   static bool IsRldicl(Instr instr);
 #endif
-  static Register GetCmpImmediateRegister(Instr instr);
-  static int GetCmpImmediateRawImmediate(Instr instr);
   static bool IsNop(Instr instr, int type = NON_MARKING_NOP);
 
   // Postpone the generation of the trampoline pool for the specified number of
