@@ -1768,8 +1768,9 @@ void CompareIC::UpdateCaches(Handle<Object> x, Handle<Object> y) {
 }
 
 //
-// This code is paired with the JumpPatchSite class in full-codegen-ppc.cc
+// This code is paired with the JumpPatchSite class in full-codegen-s390.cc
 //
+// TODO(john): this function has to be reviewed.
 void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
   Address cmp_instruction_address =
       address + Assembler::kCallTargetAddressOffset;
@@ -1777,15 +1778,19 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
   // If the instruction following the call is not a cmp rx, #yyy, nothing
   // was inlined.
   Instr instr = Assembler::instr_at(cmp_instruction_address);
-  if (!Assembler::IsCmpImmediate(instr)) {
+  if (Instruction::S390OpcodeValue(cmp_instruction_address) != CHI) {
     return;
   }
 
+  if (Instruction::S390OpcodeValue(address) != CHI) {
+    return;
+  }
   // The delta to the start of the map check instruction and the
   // condition code uses at the patched jump.
-  int delta = Assembler::GetCmpImmediateRawImmediate(instr);
-  delta +=
-      Assembler::GetCmpImmediateRegister(instr).code() * kOff16Mask;
+  int delta = instr & 0x0000ffff;
+  // int delta = Assembler::GetCmpImmediateRawImmediate(instr);
+  // delta +=
+      // Assembler::GetCmpImmediateRegister(instr).code() * kOff16Mask;
   // If the delta is 0 the instruction is cmp r0, #0 which also signals that
   // nothing was inlined.
   if (delta == 0) {
@@ -1800,10 +1805,12 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
 #endif
 
   Address patch_address =
-      cmp_instruction_address - delta * Instruction::kInstrSize;
+      cmp_instruction_address - delta;
   Instr instr_at_patch = Assembler::instr_at(patch_address);
   Instr branch_instr =
-      Assembler::instr_at(patch_address + Instruction::kInstrSize);
+      Assembler::instr_at(patch_address + 4);
+      // 4 bytes in between is either 2 cr instrs or 1 nill instr.
+
   // This is patching a conditional "jump if not smi/jump if smi" site.
   // Enabling by changing from
   //   cmp cr0, rx, rx
@@ -1811,33 +1818,27 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
   //  rlwinm(r0, value, 0, 31, 31, SetRC);
   //  bc(label, BT/BF, 2)
   // and vice-versa to be disabled again.
-  CodePatcher patcher(patch_address, 2);
-  Register reg = Assembler::GetRA(instr_at_patch);
+  CodePatcher patcher(patch_address, 8);
+  Register reg;
+  reg.code_ = instr_at_patch & 0xf;
   if (check == ENABLE_INLINED_SMI_CHECK) {
-    ASSERT(Assembler::IsCmpRegister(instr_at_patch));
-    ASSERT_EQ(Assembler::GetRA(instr_at_patch).code(),
-              Assembler::GetRB(instr_at_patch).code());
-    patcher.masm()->TestIfSmi(reg, r0);
+    // ASSERT(Assembler::IsCmpRegister(instr_at_patch));
+    // ASSERT_EQ(Assembler::GetRA(instr_at_patch).code(),
+              // Assembler::GetRB(instr_at_patch).code());
+    patcher.masm()->nill(reg, Operand(1));
   } else {
     ASSERT(check == DISABLE_INLINED_SMI_CHECK);
-#if V8_TARGET_ARCH_S390X
-    ASSERT(Assembler::IsRldicl(instr_at_patch));
-#else
-    ASSERT(Assembler::IsRlwinm(instr_at_patch));
-#endif
-    // @TODO(JOHN): not sure if removing cr0 will cause a problem.
-    patcher.masm()->CmpRR(reg, reg/*, cr0*/);
+    patcher.masm()->CmpRR(reg, reg);
+    patcher.masm()->CmpRR(reg, reg);
+    // Emit the same code again to make bigger place for patching 
+    // (replaced by nill)
   }
 
-  ASSERT(Assembler::IsBranch(branch_instr));
-
+  // ASSERT(Assembler::IsBranch(branch_instr));
+  Condition cc = static_cast<Condition>((branch_instr & 0x00f00000) >> 20);
   // Invert the logic of the branch
-  if (Assembler::GetCondition(branch_instr) == eq) {
-    patcher.EmitCondition(ne);
-  } else {
-    ASSERT(Assembler::GetCondition(branch_instr) == ne);
-    patcher.EmitCondition(eq);
-  }
+  cc = (cc == ne) ? eq : ne;
+  patcher.masm()->brc(cc, Operand((branch_instr & 0xffff) << 1));
 }
 
 
