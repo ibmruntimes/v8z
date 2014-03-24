@@ -128,7 +128,7 @@ bool AreAliased(Register reg1,
 #define OrRR               ogr
 #define AndRR              ngr
 #define XorRR              xgr
-#define LoadNegRR          lcgr
+#define LoadComplementRR   lcgr
 
 // Pointer-Imm (both word and half word)
 #define AddPW              agfi
@@ -167,7 +167,7 @@ bool AreAliased(Register reg1,
 #define OrRR               or_z
 #define AndRR              nr
 #define XorRR              xr
-#define LoadNegRR          lcr
+#define LoadComplementRR   lcr
 
 // Reg-Imm
 #define AddPI              a
