@@ -463,22 +463,43 @@ class RecordWriteStub: public CodeStub {
   }
 
   static Mode GetMode(Code* stub) {
-    Instr first_instruction = Assembler::instr_at(stub->instruction_start() +
-                                                   Assembler::kInstrSize);
-    Instr second_instruction = Assembler::instr_at(stub->instruction_start() +
-                                                   (Assembler::kInstrSize*2));
+    int32_t first_instr_length = Instruction::InstructionLength(
+                                                     stub->instruction_start());
+    int32_t second_instr_length = Instruction::InstructionLength(
+                                stub->instruction_start() + first_instr_length);
 
-    if (BF == (first_instruction & kBOfieldMask)) {
-      return INCREMENTAL;
+    uint64_t first_instr = Assembler::instr_at(stub->instruction_start());
+    uint64_t second_instr = Assembler::instr_at(stub->instruction_start() +
+                                                first_instr_length);
+
+    ASSERT(first_instr_length == 4 || first_instr_length == 6);
+    ASSERT(second_instr_length == 4 || second_instr_length == 6);
+
+    // INCREMENTAL has NOP on first branch.
+    if (4 == first_instr_length) {
+      // BRC - Check for 0x0 mask condition.
+      if (0 == (first_instr & kFourByteBrCondMask)) {
+        return INCREMENTAL;
+      }
+    } else {
+      // BRCL - Check for 0x0 mask condition
+      if (0 == (first_instr & kSixByteBrCondMask)) {
+        return INCREMENTAL;
+      }
     }
 
-    // roohack ASSERT(Assembler::IsTstImmediate(first_instruction));
-
-    if (BF == (second_instruction & kBOfieldMask)) {
-      return INCREMENTAL_COMPACTION;
+    // INCREMENTAL_COMPACTION has NOP on second branch.
+    if (4 == second_instr_length) {
+      // BRC - Check for 0x0 mask condition.
+      if (0 == (second_instr & kFourByteBrCondMask)) {
+        return INCREMENTAL_COMPACTION;
+      }
+    } else {
+      // BRCL - Check for 0x0 mask condition
+      if (0 == (second_instr & kSixByteBrCondMask)) {
+        return INCREMENTAL_COMPACTION;
+      }
     }
-
-    // roohack ASSERT(Assembler::IsTstImmediate(second_instruction));
 
     return STORE_BUFFER_ONLY;
   }
@@ -489,8 +510,8 @@ class RecordWriteStub: public CodeStub {
                         stub->instruction_size());
 
     // Get instruction lengths of two branches
-    int32_t FirstInstrLen = masm.instr_length_at(0);
-    int32_t SecondInstrLen = masm.instr_length_at(FirstInstrLen);
+    int32_t first_instr_length = masm.instr_length_at(0);
+    int32_t second_instr_length = masm.instr_length_at(first_instr_length);
 
     switch (mode) {
       case STORE_BUFFER_ONLY:
@@ -498,7 +519,7 @@ class RecordWriteStub: public CodeStub {
                GetMode(stub) == INCREMENTAL_COMPACTION);
 
         PatchBranchCondMask(&masm, 0, CC_ALWAYS);
-        PatchBranchCondMask(&masm, FirstInstrLen, CC_ALWAYS);
+        PatchBranchCondMask(&masm, first_instr_length, CC_ALWAYS);
         break;
       case INCREMENTAL:
         ASSERT(GetMode(stub) == STORE_BUFFER_ONLY);
@@ -506,12 +527,12 @@ class RecordWriteStub: public CodeStub {
         break;
       case INCREMENTAL_COMPACTION:
         ASSERT(GetMode(stub) == STORE_BUFFER_ONLY);
-        PatchBranchCondMask(&masm, FirstInstrLen, CC_NOP);
+        PatchBranchCondMask(&masm, first_instr_length, CC_NOP);
         break;
     }
     ASSERT(GetMode(stub) == mode);
     CPU::FlushICache(stub->instruction_start(),
-                     FirstInstrLen + SecondInstrLen);
+                     first_instr_length + second_instr_length);
   }
 
  private:
