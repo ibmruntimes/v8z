@@ -2997,6 +2997,7 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       r2_val = ~r2_val;
       r2_val = r2_val+1;
       set_low_register<int32_t>(r1, r2_val);
+      SetS390ConditionCode<int32_t>(r2_val, 0);
       break;
     }
     default:
