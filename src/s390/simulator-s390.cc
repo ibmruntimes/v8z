@@ -3479,6 +3479,17 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       WriteH(mem_addr, r1_val, instr);
       break;
     }
+    case LCGR: {
+      RREInstruction * rreinst = reinterpret_cast<RREInstruction*>(instr);
+      int r1 = rreinst->R1Value();
+      int r2 = rreinst->R2Value();
+      int64_t r2_val = get_register(r2);
+      r2_val = ~r2_val;
+      r2_val = r2_val+1;
+      set_register(r1, r2_val);
+      SetS390ConditionCode<int64_t>(r2_val, 0);
+      break;
+    }
     default: {
       UNREACHABLE();
       return false;
