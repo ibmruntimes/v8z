@@ -1770,7 +1770,6 @@ void CompareIC::UpdateCaches(Handle<Object> x, Handle<Object> y) {
 //
 // This code is paired with the JumpPatchSite class in full-codegen-s390.cc
 //
-// TODO(john): this function has to be reviewed.
 void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
   Address cmp_instruction_address =
       address + Assembler::kCallTargetAddressOffset;
@@ -1829,8 +1828,8 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
   } else {
     ASSERT(check == DISABLE_INLINED_SMI_CHECK);
     patcher.masm()->CmpRR(reg, reg);
-    patcher.masm()->CmpRR(reg, reg);
-    // Emit the same code again to make bigger place for patching
+    patcher.masm()->nop();
+    // Emit the Nop to make bigger place for patching
     // (replaced by nill)
   }
 

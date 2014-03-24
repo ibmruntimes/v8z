@@ -1541,7 +1541,8 @@ class MacroAssembler: public Assembler {
   void UntagAndJumpIfNotSmi(Register dst, Register src, Label* non_smi_case);
 
   inline void TestIfSmi(Register value, Register scratch) {
-    TestBit(value, 0, scratch);  // tst(value, Operand(kSmiTagMask));
+    LoadRR(scratch, value);
+    nill(scratch, Operand(1));
   }
 
   inline void TestIfPositiveSmi(Register value, Register scratch) {
