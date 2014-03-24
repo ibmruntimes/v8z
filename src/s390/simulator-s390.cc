@@ -3467,6 +3467,18 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       SoftwareInterrupt(instr);
       break;
     }
+    case STH: {
+      RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
+      int b2 = rxinst->B2Value();
+      int x2 = rxinst->X2Value();
+      int16_t  r1_val = get_low_register<int32_t>(rxinst->R1Value());
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+      intptr_t d2_val = rxinst->D2Value();
+      intptr_t mem_addr = b2_val + x2_val + d2_val;
+      WriteH(mem_addr, r1_val, instr);
+      break;
+    }
     default: {
       UNREACHABLE();
       return false;
