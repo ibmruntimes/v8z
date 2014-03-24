@@ -318,7 +318,7 @@ void S390Debugger::Debug() {
 
         if (argc == 2 && last_pc != sim_->get_pc() &&
                             GetValue(arg1, &value)) {
-          for (int i = 1; i < value; i++) {
+          for (int i = 1; (!sim_->has_bad_pc()) &&  i < value; i++) {
             disasm::NameConverter converter;
             disasm::Disassembler dasm(converter);
             // use a reasonably large buffer
@@ -3999,6 +3999,7 @@ void Simulator::Execute() {
   // Get the PC to simulate. Cannot use the accessor here as we need the
   // raw PC value and not the one used as input to arithmetic instructions.
   intptr_t program_counter = get_pc();
+
 
   if (::v8::internal::FLAG_stop_sim_at == 0) {
     // Fast version of the dispatch loop without checking whether the simulator
