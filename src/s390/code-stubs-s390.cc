@@ -811,7 +811,8 @@ void FloatingPointHelper::DoubleIs32BitInteger(MacroAssembler* masm,
   __ OrP(dst, src1);
 
   // Create the mask and test the lower bits (of the higher bits).
-  __ subfic(scratch, scratch, Operand(32));
+  __ lcr(scratch, scratch);
+  __ AddP(scratch, Operand(32));
   __ LoadImmP(src2, Operand(1));
   __ ShiftLeftP(src1, src2, scratch);
   __ AddP(src1, Operand(-1));
@@ -6108,7 +6109,7 @@ void StringCompareStub::GenerateAsciiCharsCompareLoop(
   __ AddP(scratch1, Operand(SeqAsciiString::kHeaderSize - kHeapObjectTag));
   __ AddP(left, scratch1);
   __ AddP(right, scratch1);
-  __ subfic(length, length, Operand::Zero());
+  __ lcr(length, length);  // subfic(length, length, Operand::Zero());
   Register index = length;  // index = -length;
 
   // Compare loop.
