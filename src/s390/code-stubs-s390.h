@@ -444,14 +444,22 @@ class RecordWriteStub: public CodeStub {
   static void GenerateFixedRegStubsAheadOfTime();
   virtual bool SometimesSetsUpAFrame() { return false; }
 
-  static void PatchBranchIntoNop(MacroAssembler* masm, int pos) {
-    masm->instr_at_put(pos, (masm->instr_at(pos) & ~kBOfieldMask) | BT);
-    // roohack ASSERT(Assembler::IsTstImmediate(masm->instr_at(pos)));
-  }
+  // Patch an always taken branch into a NOP branch
+  static void PatchBranchCondMask(MacroAssembler* masm, int pos, Condition c) {
+    int32_t instrLen = masm->instr_length_at(pos);
+    ASSERT(instrLen == 4 || instrLen == 6);
 
-  static void PatchNopIntoBranch(MacroAssembler* masm, int pos) {
-    masm->instr_at_put(pos, (masm->instr_at(pos) & ~kBOfieldMask) | BF);
-    // roohack ASSERT(Assembler::IsBranch(masm->instr_at(pos)));
+    if (instrLen == 4) {
+      // BRC - Branch Mask @ Bits 23-20
+      FourByteInstr updatedMask = static_cast<FourByteInstr>(c) << 20;
+      masm->instr_at_put<FourByteInstr>(pos,
+                    (masm->instr_at(pos) & ~kFourByteBrCondMask) | updatedMask);
+    } else {
+      // BRCL - Branch Mask @ Bits 39-36
+      SixByteInstr updatedMask = static_cast<SixByteInstr>(c) << 36;
+      masm->instr_at_put<SixByteInstr>(pos,
+                     (masm->instr_at(pos) & ~kSixByteBrCondMask) | updatedMask);
+    }
   }
 
   static Mode GetMode(Code* stub) {
@@ -479,26 +487,31 @@ class RecordWriteStub: public CodeStub {
     MacroAssembler masm(NULL,
                         stub->instruction_start(),
                         stub->instruction_size());
+
+    // Get instruction lengths of two branches
+    int32_t FirstInstrLen = masm.instr_length_at(0);
+    int32_t SecondInstrLen = masm.instr_length_at(FirstInstrLen);
+
     switch (mode) {
       case STORE_BUFFER_ONLY:
         ASSERT(GetMode(stub) == INCREMENTAL ||
                GetMode(stub) == INCREMENTAL_COMPACTION);
 
-        PatchBranchIntoNop(&masm, Assembler::kInstrSize);
-        PatchBranchIntoNop(&masm, Assembler::kInstrSize*2);
+        PatchBranchCondMask(&masm, 0, CC_ALWAYS);
+        PatchBranchCondMask(&masm, FirstInstrLen, CC_ALWAYS);
         break;
       case INCREMENTAL:
         ASSERT(GetMode(stub) == STORE_BUFFER_ONLY);
-        PatchNopIntoBranch(&masm, Assembler::kInstrSize);
+        PatchBranchCondMask(&masm, 0, CC_NOP);
         break;
       case INCREMENTAL_COMPACTION:
         ASSERT(GetMode(stub) == STORE_BUFFER_ONLY);
-        PatchNopIntoBranch(&masm, Assembler::kInstrSize*2);
+        PatchBranchCondMask(&masm, FirstInstrLen, CC_NOP);
         break;
     }
     ASSERT(GetMode(stub) == mode);
-    CPU::FlushICache(stub->instruction_start()+Assembler::kInstrSize,
-                      2 * Assembler::kInstrSize);
+    CPU::FlushICache(stub->instruction_start(),
+                     FirstInstrLen + SecondInstrLen);
   }
 
  private:

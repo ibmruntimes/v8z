@@ -74,6 +74,7 @@ enum Condition {
   le         =  0xc,         // Less then or equal
   al         =  0xf,         // Always.
 
+  CC_NOP     = 0x0,             // S390 NOP
   CC_EQ      = 0x08,            // S390 condition code 0b1000
   CC_LT      = 0x04,            // S390 condition code 0b0100
   CC_LE      = CC_EQ | CC_LT,   // S390 condition code 0b0100
@@ -81,6 +82,7 @@ enum Condition {
   CC_GE      = CC_EQ | CC_GT,   // S390 condition code 0b0010
   CC_OF      = 0x01,            // S390 condition code 0b0001
   CC_NOF     = 0x0E,            // S390 condition code 0b1110
+  CC_ALWAYS  = 0x0F,            // S390 always taken branch
   unordered  = CC_OF,           // Floating-point unordered
   ordered    = CC_NOF,          // floating-point ordered
   overflow   = CC_OF,           // Summary overflow
@@ -1126,7 +1128,6 @@ enum {
   kOpcodeMask = 0x3f << 26,
   kExt2OpcodeMask = 0x1f << 1,
   kExt5OpcodeMask = 0x3 << 2,
-  kBOMask = 0x1f << 21,
   kBIMask = 0x1F << 16,
   kBDMask = 0x14 << 2,
   kAAMask = 0x01 << 1,
@@ -1140,6 +1141,8 @@ enum {
 #define B32 ((uint64_t)1<<32)
 #define B36 ((uint64_t)1<<36)
 #define B40 ((uint64_t)1<<40)
+const FourByteInstr kFourByteBrCondMask = 0xF << 20;
+const SixByteInstr  kSixByteBrCondMask = static_cast<SixByteInstr>(0xF) << 36;
 
 // the following is to differentiate different faked opcodes for
 // the BOGUS PPC instruction we invented (when bit 25 is 0) or to mark
