@@ -4043,7 +4043,7 @@ void MacroAssembler::Sub(Register dst, Register src1, Register src2) {
   // In scenario where we have dst = src - dst, we need to swap and negate
   if (!dst.is(src1) && dst.is(src2)) {
     SubRR(dst, src1);  // dst = (dst - src)
-    LoadNegRR(dst, dst);  // dst = -dst
+    LoadComplementRR(dst, dst);  // dst = -dst
   } else {
     SubRR(dst, src2);
   }
