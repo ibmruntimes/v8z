@@ -88,7 +88,10 @@ class JumpPatchSite BASE_EMBEDDED {
     Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm_);
     ASSERT(!patch_site_.is_bound() && !info_emitted_);
     __ bind(&patch_site_);
-    __ CmpRR(reg, reg/*, cr0*/);
+    __ CmpRR(reg, reg);
+    // Emit the same code again to make bigger place for patching 
+    // (replaced by nill)
+    __ CmpRR(reg, reg);
     __ bne(target /*, cr0*/);  // Never taken before patched.
   }
 
