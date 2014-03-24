@@ -7347,9 +7347,8 @@ void RecordWriteStub::CheckNeedsToInformIncrementalMarker(
   Label need_incremental_pop_scratch;
 
   ASSERT((~Page::kPageAlignmentMask & 0xffff) == 0);
-  __ lis(r0, Operand((~Page::kPageAlignmentMask >> 16)));
   __ LoadRR(regs_.scratch0(), regs_.object());
-  __ AndP(regs_.scratch0(), r0);
+  __ nilf(regs_.scratch0(), Operand(~Page::kPageAlignmentMask));
   __ LoadP(regs_.scratch1(),
          MemOperand(regs_.scratch0(),
                     MemoryChunk::kWriteBarrierCounterOffset));
