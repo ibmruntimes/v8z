@@ -3705,10 +3705,8 @@ void MacroAssembler::GetMarkBits(Register addr_reg,
                                  Register bitmap_reg,
                                  Register mask_reg) {
   ASSERT(!AreAliased(addr_reg, bitmap_reg, mask_reg, no_reg));
-  ASSERT((~Page::kPageAlignmentMask & 0xffff) == 0);
-  lis(r0, Operand((~Page::kPageAlignmentMask >> 16)));
-  LoadRR(bitmap_reg, r0);
-  AndP(bitmap_reg, addr_reg);
+  LoadRR(bitmap_reg, addr_reg);
+  nilf(bitmap_reg, Operand(~Page::kPageAlignmentMask));
   const int kLowBits = kPointerSizeLog2 + Bitmap::kBitsPerCellLog2;
   ExtractBitRange(mask_reg, addr_reg,
                   kLowBits - 1,
