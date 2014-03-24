@@ -1782,7 +1782,7 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
     return;
   }
 
-  if (Instruction::S390OpcodeValue(address) != CHI) {
+  if (Instruction::S390OpcodeValue(address + 6) != BASR) {
     return;
   }
   // The delta to the start of the map check instruction and the
