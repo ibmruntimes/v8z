@@ -1830,7 +1830,7 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
     ASSERT(check == DISABLE_INLINED_SMI_CHECK);
     patcher.masm()->CmpRR(reg, reg);
     patcher.masm()->CmpRR(reg, reg);
-    // Emit the same code again to make bigger place for patching 
+    // Emit the same code again to make bigger place for patching
     // (replaced by nill)
   }
 

@@ -88,7 +88,7 @@ void Deoptimizer::DeoptimizeFunction(JSFunction* function) {
     int call_size_in_words = call_size_in_bytes / Assembler::kInstrSize;
     ASSERT(call_size_in_bytes % Assembler::kInstrSize == 0);
     ASSERT(call_size_in_bytes <= patch_size());
-    CodePatcher patcher(call_address, call_size_in_words); // FIXME: 2ND ARG
+    CodePatcher patcher(call_address, call_size_in_words);  // FIXME: 2ND ARG
     patcher.masm()->Call(deopt_entry, RelocInfo::NONE);
     ASSERT(prev_call_address == NULL ||
            call_address >= prev_call_address + patch_size());
@@ -189,7 +189,7 @@ void Deoptimizer::PatchStackCheckCodeAt(Code* unoptimized_code,
   // 4e800021       blrl
 
 #if V8_TARGET_ARCH_S390X
-  CodePatcher patcher(pc_after - 8 * kInstrSize, 6); // FIXME: 2ND ARG
+  CodePatcher patcher(pc_after - 8 * kInstrSize, 6);  // FIXME: 2ND ARG
 
   // Assemble the 64 bit value from the five part load and verify
   // that it is the stack guard code
@@ -203,7 +203,7 @@ void Deoptimizer::PatchStackCheckCodeAt(Code* unoptimized_code,
   stack_check_address |=
     (Memory::uint32_at(pc_after - 3 * kInstrSize) & 0xFFFF);
 #else
-  CodePatcher patcher(pc_after - 5 * kInstrSize, 3); // FIXME: 2ND ARG
+  CodePatcher patcher(pc_after - 5 * kInstrSize, 3);  // FIXME: 2ND ARG
 
   // Assemble the 32 bit value from the two part load and verify
   // that it is the stack guard code
@@ -257,7 +257,7 @@ void Deoptimizer::RevertStackCheckCodeAt(Code* unoptimized_code,
 
 #if V8_TARGET_ARCH_S390X
   // Replace NOP with conditional jump.
-  CodePatcher patcher(pc_after - 8 * kInstrSize, 6); // FIXME: 2ND ARG
+  CodePatcher patcher(pc_after - 8 * kInstrSize, 6);  // FIXME: 2ND ARG
   if (FLAG_count_based_interrupts) {
       // TODO(john): remove link bit and BF bit
       patcher.masm()->branchOnCond(ge, +68);  // , BF,
@@ -273,7 +273,7 @@ void Deoptimizer::RevertStackCheckCodeAt(Code* unoptimized_code,
   }
 #else
   // Replace NOP with conditional jump.
-  CodePatcher patcher(pc_after - 5 * kInstrSize, 3); // FIXME: 2ND ARG
+  CodePatcher patcher(pc_after - 5 * kInstrSize, 3);  // FIXME: 2ND ARG
   if (FLAG_count_based_interrupts) {
       // TODO(john): remove link bit and BF bit
       patcher.masm()->branchOnCond(ge, +36);  // BF,
