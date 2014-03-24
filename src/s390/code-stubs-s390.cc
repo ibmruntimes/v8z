@@ -7231,7 +7231,6 @@ bool CodeStub::CanUseFPRegisters() {
 void RecordWriteStub::Generate(MacroAssembler* masm) {
   Label skip_to_incremental_noncompacting;
   Label skip_to_incremental_compacting;
-  const int crBit = Assembler::encode_crbit(cr2, CR_LT);
 
   // The first two branch instructions are generated with labels so as to
   // get the offset fixed up correctly by the bind(Label*) call.  We patch
@@ -7240,9 +7239,8 @@ void RecordWriteStub::Generate(MacroAssembler* masm) {
   // See RecordWriteStub::Patch for details.
 
   // Clear the bit, branch on True for NOP action initially
-  __ crxor(crBit, crBit, crBit);
-  __ blt(&skip_to_incremental_noncompacting /*, cr2*/);
-  __ blt(&skip_to_incremental_compacting /*, cr2*/);
+  __ b(CC_ALWAYS, &skip_to_incremental_noncompacting);
+  __ b(CC_ALWAYS, &skip_to_incremental_compacting);
 
   if (remembered_set_action_ == EMIT_REMEMBERED_SET) {
     __ RememberedSetHelper(object_,
