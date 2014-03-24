@@ -2976,8 +2976,9 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       RRInstruction* rrinst = reinterpret_cast<RRInstruction*>(instr);
       int r1 = rrinst->R1Value();
       int r2 = rrinst->R2Value();
-      set_low_register<int32_t>(r1,
-                                -get_low_register<int32_t>(r2));
+      int32_t r2_val = get_low_register<int32_t>(r2);
+      r2_val = r2_val < 0 ? -r2_val : r2_val;
+      set_low_register<int32_t>(r1, -r2_val);
       break;
     }
     case BASR: {
@@ -3460,7 +3461,9 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       RREInstruction* rreinst = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rreinst->R1Value();
       int r2 = rreinst->R2Value();
-      set_register(r1, -get_register(r2));
+      int64_t r2_val = get_register(r2);
+      r2_val = r2_val < 0 ? -r2_val : r2_val;
+      set_register(r1, -r2_val);
       break;
     }
     case TRAP4: {
