@@ -2989,6 +2989,16 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       set_pc(r2_val);
       break;
     }
+    case LCR: {
+      RRInstruction * rrinst = reinterpret_cast<RRInstruction*>(instr);
+      int r1 = rrinst->R1Value();
+      int r2 = rrinst->R2Value();
+      int32_t r2_val = get_low_register<int32_t>(r2);
+      r2_val = ~r2_val;
+      r2_val = r2_val+1;
+      set_low_register<int32_t>(r1, r2_val);
+      break;
+    }
     default:
       UNREACHABLE();
       return false;
