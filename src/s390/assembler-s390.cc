@@ -859,7 +859,7 @@ void Assembler::lwzux(Register rt, const MemOperand & src) {
 }
 
 void Assembler::stb(Register dst, const MemOperand &src) {
-  // ASSERT(!src.rb_.is(r0));
+  ASSERT(!src.rb().is(r0));
   d_form(STB, dst, src.rb(), src.offset(), true);
 }
 
