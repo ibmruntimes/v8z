@@ -1335,12 +1335,12 @@ class MacroAssembler: public Assembler {
     int width  = rangeStart - rangeEnd + 1;
     ASSERT(width <= 32);
 #if V8_TARGET_ARCH_S390X
-    ASSERT(is_int32(rangeStart));
-    srlg(dst, src,  MemOperand(r0, rangeStart));
+    ASSERT(is_int32(rangeEnd));
+    srlg(dst, src,  MemOperand(r0, rangeEnd));
 #else
     if (!dst.is(src))
       lr(dst, src);
-    srl(dst, Operand(rangeStart));
+    srl(dst, Operand(rangeEnd));
 #endif
     uint32_t mask = 0xffffffff >> (kBitsPerPointer - width);
     AndP(dst, Operand(mask));

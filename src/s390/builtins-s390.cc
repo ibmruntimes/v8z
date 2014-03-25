@@ -833,7 +833,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
             FieldMemOperand(r5, SharedFunctionInfo::kConstructionCountOffset);
         __ LoadlB(r6, constructor_count);
         __ AddP(r6, Operand(-1));
-        __ stb(r6, constructor_count);
+        __ stb(r6, constructor_count);  // FIXME: stb is ppc instr
         __ Cmpi(r6, Operand::Zero());
         __ bne(&allocate);
 
