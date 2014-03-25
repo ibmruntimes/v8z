@@ -1318,7 +1318,7 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
         }
         break;
       case Token::SHL:
-        __ slw(result, left, scratch);
+        __ ShiftLeftP(result, left, scratch);
 #if V8_TARGET_ARCH_S390X
         __ lgfr(result, result);
 #endif
