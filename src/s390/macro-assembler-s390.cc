@@ -2422,38 +2422,39 @@ void MacroAssembler::EmitOutOfInt32RangeTruncate(Register result,
   STATIC_ASSERT(HeapNumber::kSignMask == 0x80000000u);
   Register sign = result;
   result = no_reg;
-  ExtractSignBit32(sign, input_high);
+  lr(sign, input_high);
+  nilf(sign, Operand(HeapNumber::kSignMask));
 
   // Shifts >= 32 bits should result in zero.
-  // slw extracts only the 6 most significant bits of the shift value.
+  // Result will comprise of only shifted input_low bits
   Cmpi(scratch, Operand(32));
   blt(&high_shift_needed);
-  LoadImmP(input_high, Operand::Zero());
-  subfic(scratch, scratch, Operand(32));
+  LoadImmP(input_high, Operand::Zero());  // Zero out high for or'ing later
+  Negate(scratch, scratch);       // scratch = 32 - scratch
+  AddPImm(scratch, Operand(32));
   b(&neg_shift);
 
   // Set the implicit 1 before the mantissa part in input_high.
   bind(&high_shift_needed);
-  STATIC_ASSERT(HeapNumber::kMantissaBitsInTopWord >= 16);
-  oris(input_high,
-       input_high,
-       Operand(1 << ((HeapNumber::kMantissaBitsInTopWord) - 16)));
+  oilf(input_high, Operand(1 << HeapNumber::kMantissaBitsInTopWord));
+
   // Shift the mantissa bits to the correct position.
   // We don't need to clear non-mantissa bits as they will be shifted away.
   // If they weren't, it would mean that the answer is in the 32bit range.
-  slw(input_high, input_high, scratch);
-  subfic(scratch, scratch, Operand(32));
+  sll(input_high, scratch);
+  Negate(scratch, scratch);       // scratch = 32 - scratch
+  AddPImm(scratch, Operand(32));
   b(&pos_shift);
 
   // Replace the shifted bits with bits from the lower mantissa word.
 
   bind(&neg_shift);
   Negate(scratch, scratch);
-  slw(input_low, input_low, scratch);
+  sll(input_low, scratch);
   b(&shift_done);
 
   bind(&pos_shift);
-  srw(input_low, input_low, scratch);
+  srl(input_low, scratch);
 
   bind(&shift_done);
   OrP(input_high, input_low);
