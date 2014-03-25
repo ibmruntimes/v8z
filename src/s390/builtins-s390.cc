@@ -1806,6 +1806,10 @@ static void EnterArgumentsAdaptorFrame(MacroAssembler* masm) {
   //                 Function
   //                 ArgC as SMI                <--- New SP
   __ lay(sp, MemOperand(sp, -5 * kPointerSize));
+
+  // @TODO This is a temporary workaround until we figure out where to
+  // appropriately cleanse the top nibble of 31-bit pointers.
+  __ CleanseP(r14);
   __ StoreP(r14, MemOperand(sp, 4 * kPointerSize));
   __ StoreP(fp, MemOperand(sp, 3 * kPointerSize));
   __ StoreP(r7, MemOperand(sp, 2 * kPointerSize));

@@ -148,6 +148,10 @@ bool LCodeGen::GeneratePrologue() {
     __ bind(&ok);
   }
 
+  // @TODO This is a temporary workaround until we figure out where to
+  // appropriately cleanse the top nibble of 31-bit pointers.
+  __ CleanseP(r14);
+
   __ Push(r14, fp, cp, r3);
   __ LoadRR(fp, sp);
   __ AddP(fp, Operand(2 * kPointerSize));  // Adjust FP to point to saved FP
