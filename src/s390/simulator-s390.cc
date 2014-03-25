@@ -1311,6 +1311,11 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       // This is dodgy but it works because the C entry stubs are never moved.
       // See comment in codegen-arm.cc and bug 1242173.
       intptr_t saved_lr = get_register(r14);
+#ifndef V8_TARGET_ARCH_S390X
+      // On zLinux-31, the saved_lr might be tagged with a high bit of 1.
+      // Cleanse it before proceeding with simulation.
+      saved_lr &= 0x7FFFFFFF;
+#endif
       intptr_t external =
           reinterpret_cast<intptr_t>(redirection->external_function());
       if (fp_call) {
@@ -2936,6 +2941,13 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       int r2 = rrinst->R2Value();
       if (TestConditionCode(Condition(r1))) {
         intptr_t r2_val = get_register(r2);
+#ifndef V8_TARGET_ARCH_S390X
+        // On 31-bit, the top most bit may be 0 or 1, but is ignored by the
+        // hardware.  Cleanse the top bit before jumping to it, unless it's one
+        // of the special PCs
+        if (r2_val != bad_lr && r2_val != end_sim_pc)
+          r2_val &= 0x7FFFFFFF;
+#endif
         set_pc(r2_val);
       }
       break;
@@ -2986,7 +2998,16 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       int r1 = rrinst->R1Value();
       int r2 = rrinst->R2Value();
       intptr_t r2_val = get_register(r2);
-      set_register(r1, get_pc() + 2);
+      intptr_t link_addr = get_pc() + 2;
+#ifndef V8_TARGET_ARCH_S390X
+      // On 31-bit, the top most bit may be 0 or 1, which can cause issues
+      // for stackwalker.  The top bit should either be cleanse before being
+      // pushed onto the stack, or during stack walking when dereferenced.
+      // For simulator, we'll take the worst case scenario and always tag
+      // the high bit, to flush out more problems.
+      link_addr |= 0x80000000;
+#endif
+      set_register(r1, link_addr);
       set_pc(r2_val);
       break;
     }
