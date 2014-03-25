@@ -760,10 +760,6 @@ void Assembler::srw(Register dst, Register src1, Register src2, RCBit r) {
   x_form(EXT2 | SRWX, dst, src1, src2, r);
 }
 
-void Assembler::slw(Register dst, Register src1, Register src2, RCBit r) {
-  x_form(EXT2 | SLWX, dst, src1, src2, r);
-}
-
 void Assembler::sraw(Register rb, Register rs, Register rx, RCBit r) {
   x_form(EXT2 | SRAW, rb, rs, rx, r);
 }

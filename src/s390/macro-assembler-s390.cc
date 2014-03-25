@@ -3717,8 +3717,10 @@ void MacroAssembler::GetMarkBits(Register addr_reg,
                   kLowBits);
   ShiftLeftImm(ip, ip, Operand(Bitmap::kBytesPerCellLog2));
   AddP(bitmap_reg, ip);
-  LoadImmP(ip, Operand(1));
-  slw(mask_reg, ip, mask_reg);
+  LoadRR(ip, mask_reg);   // Have to do some funky reg shuffling as
+                          // 31-bit shift left clobbers on s390.
+  LoadImmP(mask_reg, Operand(1));
+  ShiftLeftP(mask_reg, mask_reg, ip);
 }
 
 

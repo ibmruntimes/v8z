@@ -1826,7 +1826,6 @@ SS2_FORM(zap);
   void clrlwi(Register dst, Register src, const Operand& val,
               RCBit rc = LeaveRC);
   void srw(Register dst, Register src1, Register src2, RCBit r = LeaveRC);
-  void slw(Register dst, Register src1, Register src2, RCBit r = LeaveRC);
   void sraw(Register dst, Register src1, Register src2, RCBit r = LeaveRC);
 
   void cntlzw_(Register dst, Register src, RCBit rc = LeaveRC);
