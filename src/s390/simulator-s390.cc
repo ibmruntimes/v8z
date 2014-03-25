@@ -4070,7 +4070,7 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   va_start(parameters, argument_count);
   // Set up arguments
 
-  // First eight arguments passed in registers r2-r6.
+  // First 5 arguments passed in registers r2-r6.
   int reg_arg_count   = (argument_count > 5) ? 5 : argument_count;
   int stack_arg_count = argument_count - reg_arg_count;
   for (int i = 0; i < reg_arg_count; i++) {
@@ -4125,7 +4125,9 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   // Set up the non-volatile registers with a known value. To be able to check
   // that they are preserved properly across JS execution.
   intptr_t callee_saved_value = icount_;
-  set_register(r6, callee_saved_value);
+  if (reg_arg_count < 5) {
+    set_register(r6, callee_saved_value);
+  }
   set_register(r7, callee_saved_value);
   set_register(r8, callee_saved_value);
   set_register(r9, callee_saved_value);
@@ -4138,7 +4140,7 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   Execute();
 
   // Check that the non-volatile registers have been preserved.
-  CHECK_EQ(callee_saved_value, get_register(r6));
+  // CHECK_EQ(callee_saved_value, get_register(r6));
   CHECK_EQ(callee_saved_value, get_register(r7));
   CHECK_EQ(callee_saved_value, get_register(r8));
   CHECK_EQ(callee_saved_value, get_register(r9));
@@ -4148,7 +4150,9 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   CHECK_EQ(callee_saved_value, get_register(r13));
 
   // Restore non-volatile registers with the original value.
-  set_register(r6, r6_val);
+  if (reg_arg_count < 5) {
+    set_register(r6, r6_val);
+  }
   set_register(r7, r7_val);
   set_register(r8, r8_val);
   set_register(r9, r9_val);
