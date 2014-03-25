@@ -170,6 +170,10 @@ void FullCodeGenerator::Generate() {
 
   int locals_count = info->scope()->num_stack_slots();
 
+  // @TODO This is a temporary workaround until we figure out where to
+  // appropriately cleanse the top nibble of 31-bit pointers.
+  __ CleanseP(r14);
+
   __ Push(r14, fp, cp, r3);
 
   if (locals_count > 0) {
