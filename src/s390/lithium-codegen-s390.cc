@@ -1089,15 +1089,15 @@ void LCodeGen::DoMathFloorOfDiv(LMathFloorOfDiv* instr) {
       __ Negate(ip, ip);
       __ LoadRR(scratch, ip);
       __ srl(scratch, Operand(30));
-      __ Add(scratch, Operand(1));
+      __ AddPImm(scratch, Operand(1));
       __ srl(scratch, Operand(2));
-      __ Add(scratch, Operand(-1));
+      __ AddPImm(scratch, Operand(-1));
       __ Add(result, result, scratch);
     } else {
       // Add one to result if low word >= 0xC0000000
       __ LoadRR(scratch, ip);
       __ srl(scratch, Operand(30));
-      __ Add(scratch, Operand(1));
+      __ AddPImm(scratch, Operand(1));
       __ srl(scratch, Operand(2));
       __ Add(result, result, scratch);
     }
@@ -2787,7 +2787,7 @@ void LCodeGen::DoAccessArgumentsAt(LAccessArgumentsAt* instr) {
   // There are two words between the frame pointer and the last argument.
   // Subtracting from length accounts for one of them add one more.
   __ Sub(length, length, index);
-  __ Add(length, Operand(1));
+  __ AddPImm(length, Operand(1));
   __ ShiftLeftImm(r0, length, Operand(kPointerSizeLog2));
   __ LoadP(result, MemOperand(arguments, r0));
 }
@@ -2973,7 +2973,7 @@ void LCodeGen::DoLoadKeyedSpecializedArrayElement(
     DwVfpRegister result = ToDoubleRegister(instr->result());
     __ LoadRR(scratch0(), external_pointer);
     if (key_is_constant) {
-      __ Add(scratch0(), Operand(constant_key << element_size_shift));
+      __ AddPImm(scratch0(), Operand(constant_key << element_size_shift));
     } else {
       __ IndexToArrayOffset(r0, key, element_size_shift, key_is_tagged);
       __ Add(scratch0(), r0);

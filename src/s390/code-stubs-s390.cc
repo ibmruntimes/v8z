@@ -3620,7 +3620,7 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
 #endif
   // Lower 2 bits of r5 are 0 iff r3 has failure tag.
   __ LoadRR(r4, r2);
-  __ Add(r4, Operand(1));
+  __ AddPImm(r4, Operand(1));
   STATIC_ASSERT(kFailureTagMask < 0x8000);
   __ nill(r4, Operand(kFailureTagMask));
   __ beq(&failure_returned);  // Branch if and result is zero.

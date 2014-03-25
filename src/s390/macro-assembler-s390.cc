@@ -4054,7 +4054,7 @@ void MacroAssembler::Sub(Register dst, Register src, const Operand& imm) {
 }
 
 void MacroAssembler::Sub(Register dst, const Operand& imm) {
-  Add(dst, Operand(-(imm.imm_)));
+  AddPImm(dst, Operand(-(imm.imm_)));
 }
 
 void MacroAssembler::Add(Register dst, const MemOperand& opnd) {
@@ -4065,9 +4065,12 @@ void MacroAssembler::Add(Register dst, const MemOperand& opnd) {
     ay(dst, opnd);
 }
 
-void MacroAssembler::Add(Register dst, const Operand& opnd) {
+void MacroAssembler::AddPImm(Register dst, const Operand& opnd) {
 #if V8_TARGET_ARCH_S390X
-  agfi(dst, opnd);
+  if (is_int16(opnd.immediate()))
+    aghi(dst, opnd);
+  else
+    agfi(dst, opnd);
 #else
   if (is_int16(opnd.immediate()))
     ahi(dst, opnd);
@@ -4082,7 +4085,7 @@ void MacroAssembler::Add(Register dst, Register src,
     Load(dst, opnd);  // should be calling sign-ext load
     AddRR(dst, src);
   } else {
-    Add(dst, opnd);
+    AddPImm(dst, opnd);
   }
 }
 
@@ -4269,7 +4272,7 @@ void MacroAssembler::Xor(Register dst, Register src, const Operand& opnd) {
 #endif
 
 void MacroAssembler::AddP(Register dst, const Operand& opnd) {
-  Add(dst, opnd);
+  AddPImm(dst, opnd);
 }
 
 // the size of mem operand is treated as sizeof(intptr_t)
