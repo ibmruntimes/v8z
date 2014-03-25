@@ -1071,6 +1071,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     __ LoadP(r0, MemOperand(r4, ip));
     __ push(r0);
     __ BranchOnCount(r2, &loop);
+    __ SmiUntag(r2, r5);
     __ bind(&no_args);
 
     // Call the function.
