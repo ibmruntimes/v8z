@@ -4168,9 +4168,10 @@ void MacroAssembler::And(Register dst, Register src1, Register src2) {
 void MacroAssembler::AndP(Register dst, Register src) {
 #if V8_TARGET_ARCH_S390X
   ngr(dst, src);
+  ltgr(dst, dst);  // inorder to set the condition code properly
 #else
   nr(dst, src);
-  afi(dst, Operand(0));  // inorder to set the condition code properly
+  ltr(dst, dst);  // inorder to set the condition code properly
 #endif
 }
 
