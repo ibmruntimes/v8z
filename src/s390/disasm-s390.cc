@@ -492,7 +492,9 @@ int Decoder::FormatImmediate(Instruction *instr, const char* format) {
       out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_, "*");
 
     out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
-                                    "%d", value);
+                                    "%d -> %s", value,
+                                    converter_.NameOfAddress(
+                                       reinterpret_cast<byte*>(instr) + value));
     return 2;
   } else if (format[1] == '5') {  // immediate in 16-31, but outputs as offset
     RILInstruction* rilinstr = reinterpret_cast<RILInstruction*>(instr);
@@ -503,7 +505,9 @@ int Decoder::FormatImmediate(Instruction *instr, const char* format) {
       out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_, "*");
 
     out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
-                                    "%d", value);
+                                    "%d -> %s", value,
+                                    converter_.NameOfAddress(
+                                       reinterpret_cast<byte*>(instr) + value));
     return 2;
   } else if (format[1] == '6') {  // unsigned immediate in 16-31
     RIInstruction* riinstr = reinterpret_cast<RIInstruction*>(instr);
