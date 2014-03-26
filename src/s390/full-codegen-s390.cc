@@ -77,7 +77,8 @@ class JumpPatchSite BASE_EMBEDDED {
     __ bind(&patch_site_);
     __ CmpRR(reg, reg);
     // Emit the Nop to make bigger place for patching
-    // (replaced by nill)
+    // (replaced by lr + nill)
+    __ nop();
     __ nop();
     __ beq(target);  // Always taken before patched.
   }
@@ -90,7 +91,8 @@ class JumpPatchSite BASE_EMBEDDED {
     __ bind(&patch_site_);
     __ CmpRR(reg, reg);
     // Emit the Nop to make bigger place for patching
-    // (replaced by nill)
+    // (replaced by lr + nill)
+    __ nop();
     __ nop();
     __ bne(target /*, cr0*/);  // Never taken before patched.
   }

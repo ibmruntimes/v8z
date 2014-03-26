@@ -1807,8 +1807,8 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
       cmp_instruction_address - delta;
   Instr instr_at_patch = Assembler::instr_at(patch_address);
   Instr branch_instr =
-      Assembler::instr_at(patch_address + 4);
-      // 4 bytes in between is either 2 cr instrs or 1 nill instr.
+      Assembler::instr_at(patch_address + 6);
+      // 4 bytes in between is either cr + 2 * nop or lr + nill instr.
 
   // This is patching a conditional "jump if not smi/jump if smi" site.
   // Enabling by changing from
@@ -1817,25 +1817,27 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
   //  rlwinm(r0, value, 0, 31, 31, SetRC);
   //  bc(label, BT/BF, 2)
   // and vice-versa to be disabled again.
-  CodePatcher patcher(patch_address, 8);
+  CodePatcher patcher(patch_address, 10);
   Register reg;
   reg.code_ = instr_at_patch & 0xf;
   if (check == ENABLE_INLINED_SMI_CHECK) {
     // ASSERT(Assembler::IsCmpRegister(instr_at_patch));
     // ASSERT_EQ(Assembler::GetRA(instr_at_patch).code(),
               // Assembler::GetRB(instr_at_patch).code());
-    patcher.masm()->nill(reg, Operand(1));
+    patcher.masm()->TestIfSmi(reg, r0);
   } else {
     ASSERT(check == DISABLE_INLINED_SMI_CHECK);
     patcher.masm()->CmpRR(reg, reg);
     patcher.masm()->nop();
+    patcher.masm()->nop();
     // Emit the Nop to make bigger place for patching
-    // (replaced by nill)
+    // (replaced by lr + nill)
   }
 
   // ASSERT(Assembler::IsBranch(branch_instr));
   Condition cc = static_cast<Condition>((branch_instr & 0x00f00000) >> 20);
   // Invert the logic of the branch
+  ASSERT((cc == ne) || (cc == eq));
   cc = (cc == ne) ? eq : ne;
   patcher.masm()->brc(cc, Operand((branch_instr & 0xffff) << 1));
 }
