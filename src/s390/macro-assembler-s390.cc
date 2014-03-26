@@ -4170,7 +4170,7 @@ void MacroAssembler::AndP(Register dst, Register src) {
   ngr(dst, src);
 #else
   nr(dst, src);
-  afi(dst, Operand(0)); // inorder to set the condition code properly
+  afi(dst, Operand(0));  // inorder to set the condition code properly
 #endif
 }
 
