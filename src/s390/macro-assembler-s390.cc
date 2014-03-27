@@ -2278,15 +2278,9 @@ void MacroAssembler::IndexFromHash(Register hash, Register index) {
   STATIC_ASSERT(String::kHashShift == 2);
   STATIC_ASSERT(String::kArrayIndexValueBits == 24);
   // index = SmiTag((hash >> 2) & 0x00FFFFFF);
-#if V8_TARGET_ARCH_S390X
+  // @TODO Use RISBG Here
   ExtractBitRange(index, hash, 25, 2);
   SmiTag(index);
-#else
-  STATIC_ASSERT(kSmiShift == 1);
-  // 32-bit can do this in one instruction:
-  //    index = (hash & 0x03FFFFFC) >> 1;
-  rlwinm(index, hash, 31, 7, 30);
-#endif
 }
 
 void MacroAssembler::SmiToDoubleFPRegister(Register smi,
@@ -2536,20 +2530,18 @@ void MacroAssembler::EmitECMATruncate(Register result,
 void MacroAssembler::GetLeastBitsFromSmi(Register dst,
                                          Register src,
                                          int num_least_bits) {
-#if V8_TARGET_ARCH_S390X
-  rldicl(dst, src, kBitsPerPointer - kSmiShift,
-         kBitsPerPointer - num_least_bits);
-#else
-  rlwinm(dst, src, kBitsPerPointer - kSmiShift,
-         kBitsPerPointer - num_least_bits, 31);
-#endif
+  // @TODO Can replace by single RISBG
+  SmiUntag(dst, src);
+  AndP(dst, Operand((1 << num_least_bits) - 1));
 }
 
 
 void MacroAssembler::GetLeastBitsFromInt32(Register dst,
                                            Register src,
                                            int num_least_bits) {
-  rlwinm(dst, src, 0, 32 - num_least_bits, 31);
+  if (!dst.is(src))
+    LoadRR(dst, src);
+  AndP(dst, Operand((1 << num_least_bits) - 1));
 }
 
 

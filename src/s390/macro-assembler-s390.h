@@ -1532,18 +1532,16 @@ class MacroAssembler: public Assembler {
   void UntagAndJumpIfNotSmi(Register dst, Register src, Label* non_smi_case);
 
   inline void TestIfSmi(Register value, Register scratch) {
-    LoadRR(scratch, value);
+    if (!scratch.is(value))
+      LoadRR(scratch, value);
     nill(scratch, Operand(1));
   }
 
   inline void TestIfPositiveSmi(Register value, Register scratch) {
     STATIC_ASSERT((kSmiTagMask | kSmiSignMask) ==
                   (intptr_t)(1UL << (kBitsPerPointer - 1) | 1));
-#if V8_TARGET_ARCH_S390X
-    rldicl(scratch, value, 1, kBitsPerPointer - 2, SetRC);
-#else
-    rlwinm(scratch, value, 1, kBitsPerPointer - 2, kBitsPerPointer - 1, SetRC);
-#endif
+    LoadRR(scratch, value);
+    AndP(scratch, Operand(kIntptrSignBit | kSmiTagMask));
   }
 
   // Jump the register contains a smi.
