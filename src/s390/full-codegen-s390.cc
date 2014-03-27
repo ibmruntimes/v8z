@@ -1985,7 +1985,7 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
     case Token::SAR:
       __ b(&stub_call);
       __ GetLeastBitsFromSmi(scratch1, right, 5);
-      __ ShiftRightArith(right, left, scratch1);
+      __ ShiftRightArithP(right, left, scratch1);
       __ ClearRightImm(right, right, Operand(kSmiTagSize + kSmiShiftSize));
       break;
     case Token::SHL: {

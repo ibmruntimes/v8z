@@ -1693,6 +1693,7 @@ SS2_FORM(zap);
   void srlk(Register r1, Register r3, const Operand& opnd);
   void sla(Register r1, const Operand& opnd);
   void sra(Register r1, const Operand& opnd);
+  void sra(Register r1, Register opnd);
 
   // floating point instructions
   void ld(DoubleRegister r1, const MemOperand& opnd);
@@ -1820,7 +1821,6 @@ SS2_FORM(zap);
   void rlwimi(Register rb, Register rs, int sh, int mb, int me,
               RCBit rc = LeaveRC);
   void srw(Register dst, Register src1, Register src2, RCBit r = LeaveRC);
-  void sraw(Register dst, Register src1, Register src2, RCBit r = LeaveRC);
 
   void cntlzw_(Register dst, Register src, RCBit rc = LeaveRC);
   // end PowerPC

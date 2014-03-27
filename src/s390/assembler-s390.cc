@@ -740,10 +740,6 @@ void Assembler::srw(Register dst, Register src1, Register src2, RCBit r) {
   x_form(EXT2 | SRWX, dst, src1, src2, r);
 }
 
-void Assembler::sraw(Register rb, Register rs, Register rx, RCBit r) {
-  x_form(EXT2 | SRAW, rb, rs, rx, r);
-}
-
 void Assembler::subfc(Register dst, Register src1, Register src2,
                     OEBit o, RCBit r) {
   xo_form(EXT2 | SUBFCX, dst, src2, src1, o, r);
@@ -3208,6 +3204,7 @@ void Assembler::srl(Register r1, const Operand& opnd) {
   rs_form(SRL, r1, r0, r0, opnd.immediate());
 }
 
+// Shift Right Single Logical (32)
 void Assembler::srl(Register r1, Register opnd) {
   rs_form(SRL, r1, r0, opnd, 0);
 }
@@ -3236,6 +3233,11 @@ void Assembler::slag(Register r1, Register r3, const MemOperand& opnd) {
 // Shift Right Single (32)
 void Assembler::sra(Register r1, const Operand& opnd) {
   rs_form(SRA, r1, r0, r0, opnd.immediate());
+}
+
+// Shift Right Single (32)
+void Assembler::sra(Register r1, Register opnd) {
+  rs_form(SRA, r1, r0, opnd, 0);
 }
 
 // Shift Right Signle (64)

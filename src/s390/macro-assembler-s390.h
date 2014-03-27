@@ -111,7 +111,6 @@ bool AreAliased(Register reg1,
 #define StoreMultipleP     stmg
 #define ClearLeftImm       clrldi
 #define ShiftRight         srd
-#define ShiftRightArith    srad
 #define Mul                mulld
 #define Div                divd
 
@@ -152,7 +151,6 @@ bool AreAliased(Register reg1,
 #define StoreMultipleP     stm
 #define ClearLeftImm       clrlwi
 #define ShiftRight         srw
-#define ShiftRightArith    sraw
 #define Mul                mullw
 #define Div                divw
 
@@ -311,6 +309,8 @@ class MacroAssembler: public Assembler {
   void BranchOnCount(Register r1, Label *l);
   void ShiftLeftP(Register dst, Register src, Register val);
   void ShiftRightP(Register dst, Register src, Register val);
+  void ShiftRightArithP(Register dst, Register src, Register shift);
+
   void ShiftLeftImm(Register dst, Register src, const Operand& val);
   void ShiftRightImm(Register dst, Register src, const Operand& val,
                     RCBit rc = LeaveRC);
