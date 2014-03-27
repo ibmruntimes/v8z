@@ -3386,8 +3386,9 @@ void LCodeGen::DoDeferredMathAbsTaggedHeapNumber(LUnaryMathOperation* instr) {
     __ bind(&allocated);
     // exponent: floating point exponent value.
     // tmp1: allocated heap number.
-    STATIC_ASSERT(HeapNumber::kSignMask == 0x80000000u);
-    __ clrlwi(exponent, exponent, Operand(1));  // clear sign bit
+
+    // Clear the sign bit.
+    __ nilf(exponent, Operand(~HeapNumber::kSignMask));
     __ StoreW(exponent, FieldMemOperand(tmp1, HeapNumber::kExponentOffset));
     __ LoadlW(tmp2, FieldMemOperand(input, HeapNumber::kMantissaOffset));
     __ StoreW(tmp2, FieldMemOperand(tmp1, HeapNumber::kMantissaOffset));
@@ -3523,8 +3524,9 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
   __ adbr(double_scratch0(), input);
 
   // Save the original sign for later comparison.
-  STATIC_ASSERT(HeapNumber::kSignMask == 0x80000000u);
-  __ clrrwi(scratch, result, Operand(31));
+  // @TODO RISBG Opportunity here
+  __ LoadRR(scratch, result);
+  __ nilf(scratch, Operand(HeapNumber::kSignMask));
 
   // Check sign of the result: if the sign changed, the input
   // value was in ]0.5, 0[ and the result should be -0.

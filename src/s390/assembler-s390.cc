@@ -728,14 +728,6 @@ void Assembler::cntlzw_(Register rb, Register rs, RCBit rc) {
   x_form(EXT2 | CNTLZWX, rb, rs, r0, rc);
 }
 
-void Assembler::rlwinm(Register rb, Register rs,
-                       int sh, int mb, int me, RCBit rc) {
-  sh &= 0x1f;
-  mb &= 0x1f;
-  me &= 0x1f;
-  emit(RLWINMX | rs.code()*B21 | rb.code()*B16 | sh*B11 | mb*B6 | me << 1 | rc);
-}
-
 void Assembler::rlwimi(Register rb, Register rs,
                        int sh, int mb, int me, RCBit rc) {
   sh &= 0x1f;
@@ -743,18 +735,6 @@ void Assembler::rlwimi(Register rb, Register rs,
   me &= 0x1f;
   emit(RLWIMIX | rs.code()*B21 | rb.code()*B16 | sh*B11 | mb*B6 | me << 1 | rc);
 }
-
-void Assembler::clrrwi(Register dst, Register src, const Operand& val,
-                       RCBit rc) {
-  ASSERT((32 > val.imm_)&&(val.imm_ >= 0));
-  rlwinm(dst, src, 0, 0, 31-val.imm_, rc);
-}
-void Assembler::clrlwi(Register dst, Register src, const Operand& val,
-                       RCBit rc) {
-  ASSERT((32 > val.imm_)&&(val.imm_ >= 0));
-  rlwinm(dst, src, 0, val.imm_, 31, rc);
-}
-
 
 void Assembler::srw(Register dst, Register src1, Register src2, RCBit r) {
   x_form(EXT2 | SRWX, dst, src1, src2, r);
