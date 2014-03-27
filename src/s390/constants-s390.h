@@ -109,22 +109,30 @@ enum Condition {
 
 inline Condition NegateCondition(Condition cond) {
   ASSERT(cond != al);
-  return static_cast<Condition>(cond ^ ne);
+  switch (cond) {
+  case eq: return ne;
+  case ne: return eq;
+  case ge: return lt;
+  case gt: return le;
+  case le: return gt;
+  case lt: return ge;
+  case CC_OF: return CC_NOF;
+  default:
+    ASSERT(false);
+  }
+  return al;
 }
 
 
 // Corresponds to transposing the operands of a comparison.
 inline Condition ReverseCondition(Condition cond) {
   switch (cond) {
-    case lt:
-      return gt;
-    case gt:
-      return lt;
-    case ge:
-      return le;
-    case le:
-      return ge;
+    case lt: return gt;
+    case gt: return lt;
+    case ge: return le;
+    case le: return ge;
     default:
+      ASSERT(false);
       return cond;
   };
 }
