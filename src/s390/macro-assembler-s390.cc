@@ -2919,6 +2919,7 @@ void MacroAssembler::SmiTagCheckOverflow(Register reg, Register overflow) {
   LoadRR(overflow, reg);  // Save original value.
   SmiTag(reg);
   XorP(overflow, reg/*, SetRC*/);
+  ltr(overflow, overflow);
   // Overflow if (value ^ 2 * value) < 0.
   // Safe to remove rc
 }
@@ -2937,6 +2938,7 @@ void MacroAssembler::SmiTagCheckOverflow(Register dst,
     SmiTag(dst, src);
     LoadRR(overflow, src);
     XorP(overflow, dst/*, SetRC*/);  // Overflow if (value ^ 2 * value) < 0.
+    ltr(overflow, overflow);
     // safe to remove rc
   }
 }
