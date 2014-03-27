@@ -1922,6 +1922,7 @@ void MacroAssembler::AddAndCheckForOverflow(Register dst,
     LoadRR(overflow_dst, dst);
     XorP(overflow_dst, right);
     AndP(overflow_dst, scratch/*, SetRC*/);
+    ltr(overflow_dst, overflow_dst);
     // Should be okay to remove rc
   } else if (dst.is(right)) {
     LoadRR(scratch, right);           // Preserve right.
@@ -1930,6 +1931,7 @@ void MacroAssembler::AddAndCheckForOverflow(Register dst,
     LoadRR(overflow_dst, dst);
     XorP(overflow_dst, left);
     AndP(overflow_dst, scratch/*, SetRC*/);
+    ltr(overflow_dst, overflow_dst);
     // Should be okay to remove rc
   } else {
     Add(dst, left, right);
@@ -1938,6 +1940,7 @@ void MacroAssembler::AddAndCheckForOverflow(Register dst,
     LoadRR(scratch, dst);
     XorP(scratch, right);
     AndP(overflow_dst, scratch/*, SetRC*/);
+    ltr(overflow_dst, overflow_dst);
     // Should be okay to remove rc
   }
 }
@@ -1961,6 +1964,7 @@ void MacroAssembler::SubAndCheckForOverflow(Register dst,
     XorP(overflow_dst, scratch);
     XorP(scratch, right);
     AndP(overflow_dst, scratch/*, SetRC*/);
+    ltr(overflow_dst, overflow_dst);
     // Should be okay to remove rc
   } else if (dst.is(right)) {
     LoadRR(scratch, right);           // Preserve right.
@@ -1969,6 +1973,7 @@ void MacroAssembler::SubAndCheckForOverflow(Register dst,
     XorP(overflow_dst, left);
     XorP(scratch, left);
     AndP(overflow_dst, scratch/*, SetRC*/);
+    ltr(overflow_dst, overflow_dst);
     // Should be okay to remove rc
   } else {
     Sub(dst, left, right);
@@ -1977,6 +1982,7 @@ void MacroAssembler::SubAndCheckForOverflow(Register dst,
     LoadRR(scratch, right);
     XorP(scratch, left);
     AndP(overflow_dst, scratch/*, SetRC*/);
+    ltr(overflow_dst, overflow_dst);
     // Should be okay to remove rc
   }
 }
@@ -4160,10 +4166,8 @@ void MacroAssembler::And(Register dst, Register src1, Register src2) {
 void MacroAssembler::AndP(Register dst, Register src) {
 #if V8_TARGET_ARCH_S390X
   ngr(dst, src);
-  ltgr(dst, dst);  // inorder to set the condition code properly
 #else
   nr(dst, src);
-  ltr(dst, dst);  // inorder to set the condition code properly
 #endif
 }
 
