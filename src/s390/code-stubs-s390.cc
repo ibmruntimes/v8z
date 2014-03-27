@@ -2089,6 +2089,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       __ beq(&check_neg_zero /*, cr0*/);  // should be save to do so
       // Check for Smi overflow
       __ XorP(scratch1, scratch2/*, SetRC*/);  // Safe to remove rc
+      __ ltr(scratch1, scratch1);
       __ blt(&not_smi_result /*, cr0*/);
       __ LoadRR(right, scratch2);
       __ Ret();
