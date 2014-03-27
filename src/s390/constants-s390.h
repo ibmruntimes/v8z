@@ -1768,8 +1768,9 @@ class SSInstruction : Instruction {
       return Bits<SixByteInstr, int>(11, 0);
     }
     inline int Length() const {
-      return 6;
+      return Bits<SixByteInstr, int>(39, 32);
     }
+    inline int size() const { return 6; }
 };
 
 // RXE Instruction
