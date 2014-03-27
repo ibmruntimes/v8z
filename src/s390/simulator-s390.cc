@@ -3854,7 +3854,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       intptr_t dst_addr = b2_val + d2;
       // remember that the length is the actual length - 1
       for (int i = 0; i < length + 1; ++i) {
-        WriteB(dst_addr, ReadB(src_addr));
+        WriteB(dst_addr++, ReadB(src_addr++));
       }
       break;
     }
@@ -4088,6 +4088,9 @@ void Simulator::Execute() {
 
 intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   // Remember the values of non-volatile registers.
+  intptr_t r3_val = get_register(r3);
+  intptr_t r4_val = get_register(r4);
+  intptr_t r5_val = get_register(r5);
   intptr_t r6_val = get_register(r6);
   intptr_t r7_val = get_register(r7);
   intptr_t r8_val = get_register(r8);
@@ -4174,6 +4177,9 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   CHECK_EQ(callee_saved_value, get_register(r13));
 
   // Restore non-volatile registers with the original value.
+  set_register(r3, r3_val);
+  set_register(r4, r4_val);
+  set_register(r5, r5_val);
   set_register(r6, r6_val);
   set_register(r7, r7_val);
   set_register(r8, r8_val);
