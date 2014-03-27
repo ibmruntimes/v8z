@@ -2154,7 +2154,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       // because then the 0s get shifted into bit 30 instead of bit 31.
       __ SmiUntag(scratch1, left);
       __ GetLeastBitsFromSmi(scratch2, right, 5);
-      __ srw(scratch1, scratch1, scratch2);
+      __ srl(scratch1, scratch2);
       // Unsigned shift is not allowed to produce a negative number.
       __ JumpIfNotUnsignedSmiCandidate(scratch1, r0, &not_smi_result);
       // Smi tag result.
