@@ -1819,7 +1819,6 @@ SS2_FORM(zap);
 
   void rlwimi(Register rb, Register rs, int sh, int mb, int me,
               RCBit rc = LeaveRC);
-  void srw(Register dst, Register src1, Register src2, RCBit r = LeaveRC);
 
   void cntlzw_(Register dst, Register src, RCBit rc = LeaveRC);
   // end PowerPC
