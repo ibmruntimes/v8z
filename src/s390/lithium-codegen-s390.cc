@@ -1308,14 +1308,17 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
         break;
       case Token::SHR:
         if (instr->can_deopt()) {
-          __ srw(result, left, scratch, SetRC);
+          __ LoadRR(result, left);
+          __ srl(result, scratch);
+          __ ltr(result, result);  // Set the <,==,> condition
 #if V8_TARGET_ARCH_S390X
           __ lgfr(result, result/*, SetRC*/);
           // Should be okay to remove SetRC
 #endif
           DeoptimizeIf(lt, instr->environment(), cr0);
         } else {
-          __ srw(result, left, scratch);
+          __ LoadRR(result, left);
+          __ srl(result, scratch);
         }
         break;
       case Token::SHL:
