@@ -4087,6 +4087,16 @@ void Simulator::Execute() {
 
 
 intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
+  // Remember the values of non-volatile registers.
+  intptr_t r6_val = get_register(r6);
+  intptr_t r7_val = get_register(r7);
+  intptr_t r8_val = get_register(r8);
+  intptr_t r9_val = get_register(r9);
+  intptr_t r10_val = get_register(r10);
+  intptr_t r11_val = get_register(r11);
+  intptr_t r12_val = get_register(r12);
+  intptr_t r13_val = get_register(r13);
+
   va_list parameters;
   va_start(parameters, argument_count);
   // Set up arguments
@@ -4133,15 +4143,6 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   // the LR the simulation stops when returning to this call point.
   registers_[14] = end_sim_pc;
 
-  // Remember the values of non-volatile registers.
-  intptr_t r6_val = get_register(r6);
-  intptr_t r7_val = get_register(r7);
-  intptr_t r8_val = get_register(r8);
-  intptr_t r9_val = get_register(r9);
-  intptr_t r10_val = get_register(r10);
-  intptr_t r11_val = get_register(r11);
-  intptr_t r12_val = get_register(r12);
-  intptr_t r13_val = get_register(r13);
 
   // Set up the non-volatile registers with a known value. To be able to check
   // that they are preserved properly across JS execution.
@@ -4161,7 +4162,9 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   Execute();
 
   // Check that the non-volatile registers have been preserved.
-  // CHECK_EQ(callee_saved_value, get_register(r6));
+  if (reg_arg_count < 5) {
+    CHECK_EQ(callee_saved_value, get_register(r6));
+  }
   CHECK_EQ(callee_saved_value, get_register(r7));
   CHECK_EQ(callee_saved_value, get_register(r8));
   CHECK_EQ(callee_saved_value, get_register(r9));
@@ -4171,9 +4174,7 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   CHECK_EQ(callee_saved_value, get_register(r13));
 
   // Restore non-volatile registers with the original value.
-  if (reg_arg_count < 5) {
-    set_register(r6, r6_val);
-  }
+  set_register(r6, r6_val);
   set_register(r7, r7_val);
   set_register(r8, r8_val);
   set_register(r9, r9_val);
