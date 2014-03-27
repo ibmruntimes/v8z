@@ -4828,6 +4828,19 @@ void MacroAssembler::ShiftRightP(Register dst, Register src,
 #endif
 }
 
+void MacroAssembler::ShiftRightArithP(Register dst, Register src,
+                                 Register val) {
+#if V8_TARGET_ARCH_S390X
+  srag(dst, src, MemOperand(val));
+#else
+  ASSERT(!dst.is(val));
+  if (!dst.is(src))
+    lr(dst, src);
+  sra(dst, val);
+#endif
+}
+
+
 // Shift right for pointer types.
 void MacroAssembler::ShiftRightImm(Register dst, Register src,
                                   const Operand& val, RCBit) {

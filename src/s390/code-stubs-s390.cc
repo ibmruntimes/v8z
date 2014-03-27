@@ -2144,7 +2144,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
     case Token::SAR:
       // Remove tags from right operand.
       __ GetLeastBitsFromSmi(scratch1, right, 5);
-      __ ShiftRightArith(right, left, scratch1);
+      __ ShiftRightArithP(right, left, scratch1);
       // Smi tag result.
       __ ClearRightImm(right, right, Operand(kSmiTagSize + kSmiShiftSize));
       __ Ret();
@@ -2302,7 +2302,9 @@ void BinaryOpStub::GenerateFPOperation(MacroAssembler* masm,
         case Token::SAR:
           // Use only the 5 least significant bits of the shift count.
           __ GetLeastBitsFromInt32(r4, r4, 5);
-          __ sraw(r4, r5, r4);
+          __ LoadRR(scratch1, r4);  // Reg shuffling as sra clobbers
+          __ LoadRR(r4, r5);
+          __ sra(r4, scratch1);
           break;
         case Token::SHR:
         {
@@ -2314,11 +2316,16 @@ void BinaryOpStub::GenerateFPOperation(MacroAssembler* masm,
           // hit this case.
 #if V8_TARGET_ARCH_S390X
           const Condition cond = ne;
-          __ srw(r4, r5, r4);
+          __ LoadRR(scratch1, r4);  // Reg shuffling as srl clobbers
+          __ LoadRR(r4, r5);
+          __ srl(r4, scratch1);
           __ TestSignBit32(r4, r0);
 #else
           const Condition cond = lt;
-          __ srw(r4, r5, r4, SetRC);
+          __ LoadRR(scratch1, r4);  // Reg shuffling as srl clobbers
+          __ LoadRR(r4, r5);
+          __ srl(r4, scratch1);
+          __ ltr(r4, r4);           // Set the <,eq,> conditions
 #endif
           __ b(cond, &result_not_a_smi /*, cr0*/);
           break;
@@ -2691,7 +2698,9 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
           break;
         case Token::SAR:
           __ GetLeastBitsFromInt32(r4, r4, 5);
-          __ sraw(r4, r5, r4);
+          __ LoadRR(scratch1, r4);  // Reg shuffling as sra clobbers
+          __ LoadRR(r4, r5);
+          __ sra(r4, scratch1);
           break;
         case Token::SHR:
         {
@@ -2702,11 +2711,16 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
           // to return a heap number if we can.
 #if V8_TARGET_ARCH_S390X
           const Condition cond = ne;
-          __ srw(r4, r5, r4);
+          __ LoadRR(scratch1, r4);  // Reg shuffling as srl clobbers
+          __ LoadRR(r4, r5);
+          __ srl(r4, scratch1);
           __ TestSignBit32(r4, r0);
 #else
           const Condition cond = lt;
-          __ srw(r4, r5, r4, SetRC);
+          __ LoadRR(scratch1, r4);  // Reg shuffling as srl clobbers
+          __ LoadRR(r4, r5);
+          __ srl(r4, scratch1);
+          __ ltr(r4, r4);           // Set the <,eq,> conditions
 #endif
           __ b(cond, ((result_type_ <= BinaryOpIC::INT32)
                       ? &transition
