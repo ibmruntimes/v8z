@@ -3492,6 +3492,35 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       SetS390ConditionCode<int64_t>(r2_val, 0);
       break;
     }
+    case MSR:
+    case MSGR: {  // they do not set overflow code
+      RREInstruction * rreinst = reinterpret_cast<RREInstruction*>(instr);
+      int r1 = rreinst->R1Value();
+      int r2 = rreinst->R2Value();
+      if (op == MSR) {
+        int32_t r1_val = get_low_register<int32_t>(r1);
+        int32_t r2_val = get_low_register<int32_t>(r2);
+        set_low_register<int32_t>(r1, r1_val * r2_val);
+      } else if (op == MSGR) {
+        intptr_t r1_val = get_register(r1);
+        intptr_t r2_val = get_register(r2);
+        set_register(r1, r1_val * r2_val);
+      } else {
+        UNREACHABLE();
+      }   
+    }
+    case MS: {
+      RXInstruction * rxinst = reinterpret_cast<RXInstruction*>(instr);
+      int r1 = rxinst->R1Value();
+      int b2 = rxinst->B2Value();
+      int x2 = rxinst->X2Value();
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      intptr_t d2_val = rxinst->D2Value();
+      int32_t mem_val = ReadW(b2_val + x2_val + d2_val, instr);
+      int32_t r1_val = get_low_register<int32_t>(r1);
+      set_low_register<int32_t>(r1, r1_val * mem_val);
+    }
     default: {
       UNREACHABLE();
       return false;
@@ -3987,6 +4016,28 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
           break;
       }
       break;
+    }
+    case MSY:
+    case MSG: {
+      RXYInstruction* rxyinst = reinterpret_cast<RXYInstruction*>(instr);
+      int r1 = rxyinst->R1Value();
+      int b2 = rxyinst->B2Value();
+      int x2 = rxyinst->X2Value();
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+      intptr_t d2_val = rxyinst->D2Value();
+      if (op == MSY) {
+        int32_t mem_val = ReadW(b2_val + d2_val + x2_val, instr);
+        int32_t r1_val = get_low_register<int32_t>(r1);
+        set_low_register<int32_t>(r1, mem_val * r1_val);
+      } else if (op == MSG) {
+        int64_t mem_val = 
+          *reinterpret_cast<int64_t*>(ReadDW(b2_val + d2_val + x2_val));
+        int64_t r1_val = get_register(r1);
+        set_register(r1, mem_val * r1_val);
+      } else {
+        UNREACHABLE();
+      }
     }
     default:
       UNREACHABLE();
