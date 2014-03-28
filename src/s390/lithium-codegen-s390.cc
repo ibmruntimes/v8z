@@ -929,7 +929,7 @@ void LCodeGen::DoModI(LModI* instr) {
 #if V8_TARGET_ARCH_S390X
     __ lgfr(scratch, scratch);
 #endif
-    __ Mul(scratch, divisor, scratch);
+    __ MulP(scratch, divisor);
     __ Sub(result, dividend, scratch/*, LeaveOE, SetRC*/);
     // Might break the branch below.
 
@@ -984,7 +984,8 @@ void LCodeGen::DoDivI(LDivI* instr) {
 #endif
 
   // Deoptimize on non-zero remainder
-  __ Mul(scratch, right, result);
+  __ Move(right, scratch);
+  __ MulP(scratch, result);
   __ CmpRR(left, scratch);
   DeoptimizeIf(ne, instr->environment());
 }
@@ -1066,7 +1067,7 @@ void LCodeGen::DoMathFloorOfDiv(LMathFloorOfDiv* instr) {
       DeoptimizeIf(eq, instr->environment(), cr0);
     }
     __ mov(result, Operand(multiplier));
-    __ Mul(result, result, scratch);
+    __ MulP(result, scratch);
     __ addis(result, result, Operand(0x4000));
     __ ShiftRightArithImm(result, result, shift);
 #else
@@ -1174,7 +1175,8 @@ void LCodeGen::DoMulI(LMulI* instr) {
         } else {
           // Generate standard code.
           __ mov(ip, Operand(constant));
-          __ Mul(result, left, ip);
+          __ Move(result, left);
+          __ MulP(result, Operand(constant));
         }
     }
 
@@ -3688,7 +3690,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
   __ LoadRR(r5, r3);
   __ AndP(r5, Operand(0xFFFF));
   __ LoadImmP(r6, Operand(18273));
-  __ Mul(r5, r5, r6);
+  __ MulP(r5, r6);
   __ srl(r3, Operand(16));
   __ Add(r3, r5, r3);
   // Save state[0].
@@ -3698,7 +3700,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
   __ LoadRR(r5, r3);
   __ AndP(r5, Operand(0xFFFF));
   __ mov(r6, Operand(36969));
-  __ Mul(r5, r5, r6);
+  __ MulP(r5, r6);
   __ srl(r2, Operand(16));
   __ Add(r2, r5, r2);
   // Save state[1].

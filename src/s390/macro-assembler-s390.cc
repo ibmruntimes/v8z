@@ -4065,6 +4065,45 @@ void MacroAssembler::AddPImm(Register dst, const Operand& opnd) {
 #endif
 }
 
+void MacroAssembler::Mul(Register dst, Register src1, Register src2) {
+  Move(dst, src1);
+  MulP(dst, src2);
+}
+
+void MacroAssembler::MulP(Register dst, const Operand& opnd) {
+#if V8_TARGET_ARCH_S390X
+  msfi(dst, opnd);
+#else
+  msgfi(dst, opnd);
+#endif
+}
+
+void MacroAssembler::MulP(Register dst, Register src) {
+#if V8_TARGET_ARCH_S390X
+  msr(dst, src);
+#else
+  msgr(dst, src);
+#endif
+}
+
+void MacroAssembler::MulP(Register dst, const MemOperand& opnd) {
+#if V8_TARGET_ARCH_S390X
+  if (is_uint16(opnd.offset())) {
+    ms(dst, opnd);
+  } else if (is_int20(opnd.offset())) {
+    msy(dst, opnd);
+  } else {
+    UNIMPLEMENTED();
+  }
+#else
+  if (is_int20(opnd.offset())) {
+    msg(dst, opnd);
+  } else {
+    UNIMPLEMENTED();
+  }
+#endif
+}
+
 void MacroAssembler::Add(Register dst, Register src,
                         const Operand& opnd) {
   if (!dst.is(src)) {
