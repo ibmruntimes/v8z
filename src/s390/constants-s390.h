@@ -1788,7 +1788,7 @@ class RXEInstruction : Instruction {
     inline int D2Value() const {
       return Bits<SixByteInstr, int>(27, 16);
     }
-    inline int Length() const {
+    inline int size() const {
       return 6;
     }
 };
