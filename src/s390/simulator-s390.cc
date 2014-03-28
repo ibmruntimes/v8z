@@ -3507,7 +3507,7 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
         set_register(r1, r1_val * r2_val);
       } else {
         UNREACHABLE();
-      }   
+      }
     }
     case MS: {
       RXInstruction * rxinst = reinterpret_cast<RXInstruction*>(instr);
@@ -4031,7 +4031,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
         int32_t r1_val = get_low_register<int32_t>(r1);
         set_low_register<int32_t>(r1, mem_val * r1_val);
       } else if (op == MSG) {
-        int64_t mem_val = 
+        int64_t mem_val =
           *reinterpret_cast<int64_t*>(ReadDW(b2_val + d2_val + x2_val));
         int64_t r1_val = get_register(r1);
         set_register(r1, mem_val * r1_val);

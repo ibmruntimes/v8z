@@ -720,10 +720,6 @@ void Assembler::xori(Register dst, Register src, const Operand& imm) {
   d_form(XORI, src, dst, imm.imm_, false);
 }
 
-void Assembler::xoris(Register rb, Register rs, const Operand& imm) {
-  d_form(XORIS, rs, rb, imm.imm_, false);
-}
-
 void Assembler::cntlzw_(Register rb, Register rs, RCBit rc) {
   x_form(EXT2 | CNTLZWX, rb, rs, r0, rc);
 }
@@ -777,10 +773,6 @@ void Assembler::andis(Register rb, Register rs, const Operand& imm) {
 
 void Assembler::nor(Register dst, Register src1, Register src2, RCBit r) {
   x_form(EXT2 | NORX, dst, src1, src2, r);
-}
-
-void Assembler::notx(Register dst, Register src, RCBit r) {
-  x_form(EXT2 | NORX, dst, src, src, r);
 }
 
 void Assembler::ori(Register rb, Register rs, const Operand& imm) {
