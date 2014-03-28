@@ -3850,8 +3850,8 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       int length = ssInstr->Length();
       intptr_t b1_val = (b1 == 0) ? 0 : get_register(b1);
       intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
-      intptr_t src_addr = b1_val + d1;
-      intptr_t dst_addr = b2_val + d2;
+      intptr_t src_addr = b2_val + d2;
+      intptr_t dst_addr = b1_val + d1;
       // remember that the length is the actual length - 1
       for (int i = 0; i < length + 1; ++i) {
         WriteB(dst_addr++, ReadB(src_addr++));
