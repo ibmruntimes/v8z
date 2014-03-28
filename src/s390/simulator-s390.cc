@@ -360,11 +360,8 @@ void S390Debugger::Debug() {
                 PrintF("\n");
               }
             }
-            PrintF("  pc: %08" V8PRIxPTR "  lr: %08" V8PRIxPTR "  "
-                   "ctr: %08" V8PRIxPTR "  xer: %08x  cr: %08x\n",
-                   sim_->special_reg_pc_, sim_->special_reg_lr_,
-                   sim_->special_reg_ctr_, sim_->special_reg_xer_,
-                   sim_->condition_reg_);
+            PrintF("  pc: %08" V8PRIxPTR "  cr: %08x\n",
+                   sim_->special_reg_pc_, sim_->condition_reg_);
           } else if (strcmp(arg1, "alld") == 0) {
             for (int i = 0; i < kNumRegisters; i++) {
               value = GetRegisterValue(i);
@@ -379,11 +376,8 @@ void S390Debugger::Debug() {
                 PrintF("\n");
               }
             }
-            PrintF("   pc: %08" V8PRIxPTR "  lr: %08" V8PRIxPTR "  "
-                   "ctr: %08" V8PRIxPTR "  xer: %08x  cr: %08x\n",
-                   sim_->special_reg_pc_, sim_->special_reg_lr_,
-                   sim_->special_reg_ctr_, sim_->special_reg_xer_,
-                   sim_->condition_reg_);
+            PrintF("   pc: %08" V8PRIxPTR "  cr: %08x\n",
+                   sim_->special_reg_pc_, sim_->condition_reg_);
           } else if (strcmp(arg1, "allf") == 0) {
             for (int i = 0; i < kNumFPDoubleRegisters; i++) {
               dvalue = GetFPDoubleRegisterValue(i);
@@ -567,14 +561,6 @@ void S390Debugger::Debug() {
         }
       } else if (strcmp(cmd, "cr") == 0) {
         PrintF("Condition reg: %08x\n", sim_->condition_reg_);
-      } else if (strcmp(cmd, "lr") == 0) {
-        PrintF("Link reg: %08" V8PRIxPTR "\n", sim_->special_reg_lr_);
-      } else if (strcmp(cmd, "ctr") == 0) {
-        PrintF("Ctr reg: %08" V8PRIxPTR "\n", sim_->special_reg_ctr_);
-      } else if (strcmp(cmd, "xer") == 0) {
-        PrintF("XER: %08x\n", sim_->special_reg_xer_);
-      } else if (strcmp(cmd, "fpscr") == 0) {
-        PrintF("FPSCR: %08x\n", sim_->fp_condition_reg_);
       } else if (strcmp(cmd, "stop") == 0) {
         intptr_t value;
         intptr_t stop_pc = sim_->get_pc() -
@@ -651,14 +637,6 @@ void S390Debugger::Debug() {
         PrintF("  print an object from a register (alias 'po')\n");
         PrintF("cr\n");
         PrintF("  print condition register\n");
-        PrintF("lr\n");
-        PrintF("  print link register\n");
-        PrintF("ctr\n");
-        PrintF("  print ctr register\n");
-        PrintF("xer\n");
-        PrintF("  print XER\n");
-        PrintF("fpscr\n");
-        PrintF("  print FPSCR\n");
         PrintF("stack [<num words>]\n");
         PrintF("  dump stack content, default dump 10 words)\n");
         PrintF("mem <address> [<num words>]\n");

@@ -38,7 +38,7 @@ namespace internal {
 const int kNumRegisters = 16;
 
 // FP support.
-const int kNumFPDoubleRegisters = 32;
+const int kNumFPDoubleRegisters = 16;
 const int kNumFPRegisters = kNumFPDoubleRegisters;
 
 const int kNoRegister = -1;
