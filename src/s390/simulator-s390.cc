@@ -389,9 +389,9 @@ void S390Debugger::Debug() {
                      static_cast<uint32_t>(as_words & 0xffffffff));
             }
           } else if (arg1[0] == 'r' &&
-                      (arg1[1] >= '0' && arg1[1] <= '9' &&
+                      (arg1[1] >= '0' && arg1[1] <= '2' &&
                         (arg1[2] == '\0' ||
-                          (arg1[2] >= '0' && arg1[2] <= '9'
+                          (arg1[2] >= '0' && arg1[2] <= '5'
                             && arg1[3] == '\0')))) {
               int regnum = strtoul(&arg1[1], 0, 10);
               if (regnum != kNoRegister) {
