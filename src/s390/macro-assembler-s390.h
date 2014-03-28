@@ -110,7 +110,6 @@ bool AreAliased(Register reg1,
 #define StorePUX           stdux
 #define StoreMultipleP     stmg
 #define ClearLeftImm       clrldi
-#define Mul                mulld
 #define Div                divd
 
 // The length of the arithmetic operation is the length
@@ -149,7 +148,6 @@ bool AreAliased(Register reg1,
 #define StorePUX           stwux
 #define StoreMultipleP     stm
 #define ClearLeftImm       clrlwi
-#define Mul                mullw
 #define Div                divw
 
 // arithmetics and bitwise
@@ -323,6 +321,11 @@ class MacroAssembler: public Assembler {
   void SubP(Register dst, const Operand& opnd);
   void SubP(Register dst, const MemOperand& opnd);
   void AddPImm(Register dst, const Operand& opnd);
+
+  void MulP(Register dst, const Operand& opnd);
+  void MulP(Register dst, Register src);
+  void MulP(Register dst, const MemOperand& opnd);
+  void Mul(Register dst, Register src1, Register src2);
 
   void AndP(Register dst, const MemOperand& opnd);
   void AndP(Register dst, const Operand& opnd);
