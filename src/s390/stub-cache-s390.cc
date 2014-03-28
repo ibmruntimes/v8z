@@ -2320,7 +2320,7 @@ Handle<Code> CallStubCompiler::CompileMathAbsCall(
   // number.
   __ bind(&negative_sign);
   STATIC_ASSERT(HeapNumber::kSignMask == 0x80000000u);
-  __ xoris(r3, r3, Operand(HeapNumber::kSignMask >> 16));
+  __ xilf(r3, Operand(HeapNumber::kSignMask));
   __ LoadlW(r5, FieldMemOperand(r2, HeapNumber::kMantissaOffset));
   __ LoadRoot(r8, Heap::kHeapNumberMapRootIndex);
   __ AllocateHeapNumber(r2, r6, r7, r8, &slow);

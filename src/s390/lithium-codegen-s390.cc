@@ -4493,7 +4493,7 @@ void LCodeGen::DoDeferredNumberTagI(LInstruction* instr,
     // the value in there. If that fails, call the runtime system.
     if (dst.is(src)) {
       __ SmiUntag(src, dst);
-      __ xoris(src, src, Operand(HeapNumber::kSignMask >> 16));
+      __ xilf(src, Operand(HeapNumber::kSignMask));
     }
     FloatingPointHelper::ConvertIntToDouble(masm(), src, dbl_scratch);
   } else {
