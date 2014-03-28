@@ -3472,84 +3472,67 @@ void MacroAssembler::FlushICache(Register address, size_t size,
   bind(&done);
 }
 
-// This code assumes a FIXED_SEQUENCE for lis/ori
-void MacroAssembler::PatchRelocatedValue(Register lis_location,
+// This code assumes a FIXED_SEQUENCE for iilf on 31-bit
+// and iihf/iilf on 64-bit
+void MacroAssembler::PatchRelocatedValue(Register patch_location,
                                          Register scratch,
                                          Register new_value) {
-  LoadlW(scratch, MemOperand(lis_location));
-  // At this point scratch is a lis instruction.
+  int32_t offset = 0;
+
+#if V8_TARGET_ARCH_S390X
+  // On 64-bit, we expect a IIHF instruction here.
   if (emit_debug_code()) {
-    AndP(scratch, Operand(kOpcodeMask | (0x1f * B16)));
-    Cmpi(scratch, Operand(ADDIS));
-    Check(eq, "The instruction to patch should be a lis.");
-    LoadlW(scratch, MemOperand(lis_location));
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    // Instructions are stored in Big Endian format
+    lrvh(scratch, MemOperand(patch_location));
+#else
+    llh(scratch, MemOperand(patch_location));
+#endif
+    nilf(scratch, Operand(0xFF0F));
+    // IIHF Opcode with extra zero in 3rd nibble
+    Cmpi(scratch, Operand(0xC008));
+    Check(eq, "The instruction to patch should be a iihf.");
+  }
+
+  srlg(scratch, new_value, Operand(32));
+  // insert new high word into lis instruction
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+  // Instructions are stored in Big Endian format
+  strv(scratch, MemOperand(patch_location, 2));
+#else
+  st(scratch, MemOperand(patch_location, 2));
+#endif
+  offset += 6;
+#endif  // V8_TARGET_ARCH_S390X
+
+
+  // At this point scratch is a iilf instruction.
+  if (emit_debug_code()) {
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    // Instructions are stored in Big Endian format
+    lrvh(scratch, MemOperand(patch_location, offset));
+#else
+    llh(scratch, MemOperand(patch_location, offset));
+#endif
+    nilf(scratch, Operand(0xFF0F));
+    // IILF Opcode with extra zero in 3rd nibble
+    Cmpi(scratch, Operand(0xC009));
+    Check(eq, "The instruction to patch should be a iilf.");
   }
 
   // insert new high word into lis instruction
-#if V8_TARGET_ARCH_S390X
-  srdi(ip, new_value, Operand(32));
-  rlwimi(scratch, ip, 16, 16, 31);
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+  // Instructions are stored in Big Endian format
+  strv(new_value, MemOperand(patch_location, 2 + offset));
 #else
-  rlwimi(scratch, new_value, 16, 16, 31);
-#endif
-
-  StoreW(scratch, MemOperand(lis_location));
-
-  LoadlW(scratch, MemOperand(lis_location, kInstrSize));
-  // scratch is now ori.
-  if (emit_debug_code()) {
-    AndP(scratch, Operand(kOpcodeMask));
-    Cmpi(scratch, Operand(ORI));
-    Check(eq, "The instruction should be an ori");
-    LoadlW(scratch, MemOperand(lis_location, kInstrSize));
-  }
-
-  // insert new low word into ori instruction
-#if V8_TARGET_ARCH_S390X
-  rlwimi(scratch, ip, 0, 16, 31);
-#else
-  rlwimi(scratch, new_value, 0, 16, 31);
-#endif
-  StoreW(scratch, MemOperand(lis_location, kInstrSize));
-
-#if V8_TARGET_ARCH_S390X
-  if (emit_debug_code()) {
-    LoadlW(scratch, MemOperand(lis_location, 2*kInstrSize));
-    // scratch is now sldi.
-    AndP(scratch, Operand(kOpcodeMask|kExt5OpcodeMask));
-    Cmpi(scratch, Operand(EXT5|RLDICR));
-    Check(eq, "The instruction should be an sldi");
-  }
-
-  LoadlW(scratch, MemOperand(lis_location, 3*kInstrSize));
-  // scratch is now ori.
-  if (emit_debug_code()) {
-    AndP(scratch, Operand(kOpcodeMask));
-    Cmpi(scratch, Operand(ORIS));
-    Check(eq, "The instruction should be an oris");
-    LoadlW(scratch, MemOperand(lis_location, 3*kInstrSize));
-  }
-
-  rlwimi(scratch, new_value, 16, 16, 31);
-  StoreW(scratch, MemOperand(lis_location, 3*kInstrSize));
-
-  LoadlW(scratch, MemOperand(lis_location, 4*kInstrSize));
-  // scratch is now ori.
-  if (emit_debug_code()) {
-    AndP(scratch, Operand(kOpcodeMask));
-    Cmpi(scratch, Operand(ORI));
-    Check(eq, "The instruction should be an ori");
-    LoadlW(scratch, MemOperand(lis_location, 4*kInstrSize));
-  }
-  rlwimi(scratch, new_value, 0, 16, 31);
-  StoreW(scratch, MemOperand(lis_location, 4*kInstrSize));
+  st(new_value, MemOperand(patch_location, 2 + offset));
 #endif
 
   // Update the I-cache so the new lis and addic can be executed.
 #if V8_TARGET_ARCH_S390X
-  FlushICache(lis_location, 5 * kInstrSize, scratch);
+  FlushICache(patch_location, 12, scratch);
 #else
-  FlushICache(lis_location, 2 * kInstrSize, scratch);
+  FlushICache(patch_location, 6, scratch);
 #endif
 }
 
