@@ -1268,7 +1268,8 @@ void MacroAssembler::GetNumberHash(Register t0, Register scratch) {
   // with ComputeIntegerHash in utils.h.
   //
   // hash = ~hash + (hash << 15);
-  notx(scratch, t0);
+  LoadRR(scratch, t0);
+  NotP(scratch);
   sll(t0, Operand(15));
   Add(t0, scratch, t0);
   // hash = hash ^ (hash >> 12);
@@ -4309,6 +4310,16 @@ void MacroAssembler::SubP(Register dst, const MemOperand& opnd) {
     sl(dst, opnd);
   else
     sly(dst, opnd);
+#endif
+}
+
+
+void MacroAssembler::NotP(Register dst) {
+#if V8_TARGET_ARCH_S390X
+  xihf(dst, Operand(0xFFFFFFFF));
+  xilf(dst, Operand(0xFFFFFFFF));
+#else
+  XorP(dst, Operand(0xFFFFFFFF));
 #endif
 }
 
