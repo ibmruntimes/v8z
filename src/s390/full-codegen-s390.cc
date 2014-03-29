@@ -2819,7 +2819,7 @@ void FullCodeGenerator::EmitIsStringWrapperSafeForDefaultValueOf(
   // default valueOf and set true result.
   __ LoadlB(r4, FieldMemOperand(r3, Map::kBitField2Offset));
   __ ori(r4, r4, Operand(1 << Map::kStringWrapperSafeForDefaultValueOf));
-  __ stb(r4, FieldMemOperand(r3, Map::kBitField2Offset));
+  __ stc(r4, FieldMemOperand(r3, Map::kBitField2Offset));
   __ b(if_true);
 
   PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
@@ -3815,7 +3815,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   //   separator: Single separator ASCII char (in lower byte).
 
   // Copy the separator character to the result.
-  __ stb(separator, MemOperand(result_pos));
+  __ stc(separator, MemOperand(result_pos));
   __ AddP(result_pos, Operand(1));
 
   // Copy next array element to the result.

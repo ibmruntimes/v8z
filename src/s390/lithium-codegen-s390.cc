@@ -4186,11 +4186,7 @@ void LCodeGen::DoStoreKeyedSpecializedArrayElement(
       case EXTERNAL_PIXEL_ELEMENTS:
       case EXTERNAL_BYTE_ELEMENTS:
       case EXTERNAL_UNSIGNED_BYTE_ELEMENTS:
-        if (key_is_constant) {
-          __ StoreByte(value, mem_operand, r0);
-        } else {
-          __ stbx(value, mem_operand);
-        }
+        __ stc(value, mem_operand);
         break;
       case EXTERNAL_SHORT_ELEMENTS:
       case EXTERNAL_UNSIGNED_SHORT_ELEMENTS:

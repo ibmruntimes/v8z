@@ -648,10 +648,7 @@ class MacroAssembler: public Assembler {
 
   void StoreByte(Register src,
                  const MemOperand& mem,
-                 Register scratch,
-                 bool updateForm = false);
-
-
+                 Register scratch);
 
   void Cmp(Register src1, Register src2);
   void Cmpi(Register src1, const Operand& src2);
