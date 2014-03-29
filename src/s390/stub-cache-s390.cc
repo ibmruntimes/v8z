@@ -3897,12 +3897,12 @@ void KeyedStoreStubCompiler::GenerateStoreExternalArray(
       // Clamp the value to [0..255].
       __ ClampUint8(r7, r7);
       __ SmiToByteArrayOffset(r9, key);
-      __ stbx(r7, MemOperand(r5, r9));
+      __ stc(r7, MemOperand(r5, r9));
       break;
     case EXTERNAL_BYTE_ELEMENTS:
     case EXTERNAL_UNSIGNED_BYTE_ELEMENTS:
       __ SmiToByteArrayOffset(r9, key);
-      __ stbx(r7, MemOperand(r5, r9));
+      __ stc(r7, MemOperand(r5, r9));
       break;
     case EXTERNAL_SHORT_ELEMENTS:
     case EXTERNAL_UNSIGNED_SHORT_ELEMENTS:
@@ -3978,7 +3978,7 @@ void KeyedStoreStubCompiler::GenerateStoreExternalArray(
           case EXTERNAL_BYTE_ELEMENTS:
           case EXTERNAL_UNSIGNED_BYTE_ELEMENTS:
             __ SmiToByteArrayOffset(r9, key);
-            __ stbx(r7, MemOperand(r5, r9));
+            __ stc(r7, MemOperand(r5, r9));
             break;
           case EXTERNAL_SHORT_ELEMENTS:
           case EXTERNAL_UNSIGNED_SHORT_ELEMENTS:

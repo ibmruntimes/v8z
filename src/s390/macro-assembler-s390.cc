@@ -3171,7 +3171,7 @@ void MacroAssembler::CopyBytes(Register src,
   LoadlB(scratch, MemOperand(src));
   AddP(src, Operand(1));
   Sub(length, Operand(1));
-  stb(scratch, MemOperand(dst));
+  stc(scratch, MemOperand(dst));
   AddP(dst, Operand(1));
   BranchOnCount(scratch, &align_loop);
 
@@ -3198,41 +3198,41 @@ void MacroAssembler::CopyBytes(Register src,
     AddP(dst, Operand(kPointerSize));
   } else {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    stb(scratch, MemOperand(dst, 0));
+    stc(scratch, MemOperand(dst, 0));
     ShiftRightImm(scratch, scratch, Operand(8));
-    stb(scratch, MemOperand(dst, 1));
+    stc(scratch, MemOperand(dst, 1));
     ShiftRightImm(scratch, scratch, Operand(8));
-    stb(scratch, MemOperand(dst, 2));
+    stc(scratch, MemOperand(dst, 2));
     ShiftRightImm(scratch, scratch, Operand(8));
-    stb(scratch, MemOperand(dst, 3));
+    stc(scratch, MemOperand(dst, 3));
 #if V8_TARGET_ARCH_S390X
     ShiftRightImm(scratch, scratch, Operand(8));
-    stb(scratch, MemOperand(dst, 4));
+    stc(scratch, MemOperand(dst, 4));
     ShiftRightImm(scratch, scratch, Operand(8));
-    stb(scratch, MemOperand(dst, 5));
+    stc(scratch, MemOperand(dst, 5));
     ShiftRightImm(scratch, scratch, Operand(8));
-    stb(scratch, MemOperand(dst, 6));
+    stc(scratch, MemOperand(dst, 6));
     ShiftRightImm(scratch, scratch, Operand(8));
-    stb(scratch, MemOperand(dst, 7));
+    stc(scratch, MemOperand(dst, 7));
 #endif
 #else
 #if V8_TARGET_ARCH_S390X
-    stb(scratch, MemOperand(dst, 7));
+    stc(scratch, MemOperand(dst, 7));
     ShiftRightImm(scratch, scratch, Operand(8));
-    stb(scratch, MemOperand(dst, 6));
+    stc(scratch, MemOperand(dst, 6));
     ShiftRightImm(scratch, scratch, Operand(8));
-    stb(scratch, MemOperand(dst, 5));
+    stc(scratch, MemOperand(dst, 5));
     ShiftRightImm(scratch, scratch, Operand(8));
-    stb(scratch, MemOperand(dst, 4));
+    stc(scratch, MemOperand(dst, 4));
     ShiftRightImm(scratch, scratch, Operand(8));
 #endif
-    stb(scratch, MemOperand(dst, 3));
+    stc(scratch, MemOperand(dst, 3));
     ShiftRightImm(scratch, scratch, Operand(8));
-    stb(scratch, MemOperand(dst, 2));
+    stc(scratch, MemOperand(dst, 2));
     ShiftRightImm(scratch, scratch, Operand(8));
-    stb(scratch, MemOperand(dst, 1));
+    stc(scratch, MemOperand(dst, 1));
     ShiftRightImm(scratch, scratch, Operand(8));
-    stb(scratch, MemOperand(dst, 0));
+    stc(scratch, MemOperand(dst, 0));
 #endif
     AddP(dst, Operand(kPointerSize));
   }
@@ -3245,7 +3245,7 @@ void MacroAssembler::CopyBytes(Register src,
   bind(&byte_loop);
   LoadlB(scratch, MemOperand(src));
   AddP(src, Operand(1));
-  stb(scratch, MemOperand(dst));
+  stc(scratch, MemOperand(dst));
   AddP(dst, Operand(1));
   BranchOnCount(length, &byte_loop);
 
@@ -4783,33 +4783,17 @@ void MacroAssembler::StoreHalfWord(Register src, const MemOperand& mem,
 // Variable length depending on whether offset fits into immediate field
 // MemOperand current only supports d-form
 void MacroAssembler::StoreByte(Register src, const MemOperand& mem,
-                               Register scratch, bool updateForm) {
+                               Register scratch) {
   Register base = mem.rb();
   int offset = mem.offset();
 
-  bool use_dform = true;
-  if (!is_int16(offset)) {
-    use_dform = false;
-    LoadIntLiteral(scratch, offset);
-  }
-
-  if (!updateForm) {
-    if (use_dform) {
-      stb(src, mem);
-    } else {
-      stbx(src, MemOperand(base, scratch));
-    }
+  if (is_uint12(offset)) {
+    stc(src, mem);
+  } else if (is_int20(offset)) {
+    stcy(src, mem);
   } else {
-    // If updateForm is ever true, then stbu will
-    // need to be implemented
-    assert(0);
-#if 0  // StoreByte w\ update not yet needed
-    if (use_dform) {
-      stbu(src, mem);
-    } else {
-      stbux(src, MemOperand(base, scratch));
-    }
-#endif
+    LoadIntLiteral(scratch, offset);
+    stc(src, MemOperand(base, scratch));
   }
 }
 

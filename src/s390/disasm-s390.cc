@@ -928,14 +928,6 @@ void Decoder::DecodeExt2(Instruction* instr) {
       Format(instr, "stwux   'rs, 'ra, 'rb");
       break;
     }
-    case STBX: {
-      Format(instr, "stbx    'rs, 'ra, 'rb");
-      break;
-    }
-    case STBUX: {
-      Format(instr, "stbux   'rs, 'ra, 'rb");
-      break;
-    }
     case STHX: {
       Format(instr, "sthx    'rs, 'ra, 'rb");
       break;
@@ -1510,14 +1502,6 @@ int Decoder::InstructionDecode(byte* instr_ptr) {
     }
     case STWU: {
       Format(instr, "stwu    'rs, 'int16('ra)");
-      break;
-    }
-    case STB: {
-      Format(instr, "stb     'rs, 'int16('ra)");
-      break;
-    }
-    case STBU: {
-      Format(instr, "stbu    'rs, 'int16('ra)");
       break;
     }
     case LHZ: {

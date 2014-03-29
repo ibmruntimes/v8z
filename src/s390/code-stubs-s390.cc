@@ -5522,7 +5522,7 @@ void StringHelper::GenerateCopyCharacters(MacroAssembler* masm,
   // short strings.
   if (ascii) {
     __ LoadlB(scratch, MemOperand(src));
-    __ stb(scratch, MemOperand(dest));
+    __ stc(scratch, MemOperand(dest));
     __ AddP(src, Operand(1));
     __ AddP(dest, Operand(1));
   } else {
@@ -5584,7 +5584,7 @@ void StringHelper::GenerateCopyCharactersLong(MacroAssembler* masm,
   __ bge(&done);
   __ LoadlB(scratch1, MemOperand(src));
   __ AddP(src, Operand(1));
-  __ stb(scratch1, MemOperand(dest));
+  __ stc(scratch1, MemOperand(dest));
   __ AddP(dest, Operand(1));
   __ b(&byte_loop);
 

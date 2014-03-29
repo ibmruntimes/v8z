@@ -826,24 +826,6 @@ void Assembler::lwzux(Register rt, const MemOperand & src) {
   emit(EXT2 | LWZUX | rt.code()*B21 | rb.code()*B16 | rx.code()*B11 | LeaveRC);
 }
 
-void Assembler::stb(Register dst, const MemOperand &src) {
-  ASSERT(!src.rb().is(r0));
-  d_form(STB, dst, src.rb(), src.offset(), true);
-}
-
-void Assembler::stbx(Register rs, const MemOperand &src) {
-  Register rb = src.rb();
-  Register rx = src.rx();
-  ASSERT(!rb.is(r0));
-  emit(EXT2 | STBX | rs.code()*B21 | rb.code()*B16 | rx.code()*B11 | LeaveRC);
-}
-
-void Assembler::stbux(Register rs, const MemOperand &src) {
-  Register rb = src.rb();
-  Register rx = src.rx();
-  emit(EXT2 | STBUX | rs.code()*B21 | rb.code()*B16 | rx.code()*B11 | LeaveRC);
-}
-
 void Assembler::sthx(Register rs, const MemOperand &src) {
   Register rb = src.rb();
   Register rx = src.rx();
