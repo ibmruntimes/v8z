@@ -615,8 +615,7 @@ class MacroAssembler: public Assembler {
   void InitializeRootRegister() {
     ExternalReference roots_array_start =
         ExternalReference::roots_array_start(isolate());
-    mov(kRootRegister, Operand(roots_array_start));
-  }
+    mov(kRootRegister, Operand(roots_array_start)); }
 
   // ----------------------------------------------------------------
   // new PPC macro-assembler interfaces that are slightly higher level
@@ -641,14 +640,8 @@ class MacroAssembler: public Assembler {
                     Register scratch,
                     bool updateForm = false);
 
-  void StoreHalfWord(Register src,
-                     const MemOperand& mem,
-                     Register scratch,
-                     bool updateForm = false);
-
-  void StoreByte(Register src,
-                 const MemOperand& mem,
-                 Register scratch);
+  void StoreHalfWord(Register src, const MemOperand& mem, Register scratch);
+  void StoreByte(Register src, const MemOperand& mem, Register scratch);
 
   void Cmp(Register src1, Register src2);
   void Cmpi(Register src1, const Operand& src2);

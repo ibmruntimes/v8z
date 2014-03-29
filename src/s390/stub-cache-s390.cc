@@ -3907,7 +3907,7 @@ void KeyedStoreStubCompiler::GenerateStoreExternalArray(
     case EXTERNAL_SHORT_ELEMENTS:
     case EXTERNAL_UNSIGNED_SHORT_ELEMENTS:
       __ SmiToShortArrayOffset(r9, key);
-      __ sthx(r7, MemOperand(r5, r9));
+      __ sth(r7, MemOperand(r5, r9));
       break;
     case EXTERNAL_INT_ELEMENTS:
     case EXTERNAL_UNSIGNED_INT_ELEMENTS:
@@ -3983,7 +3983,7 @@ void KeyedStoreStubCompiler::GenerateStoreExternalArray(
           case EXTERNAL_SHORT_ELEMENTS:
           case EXTERNAL_UNSIGNED_SHORT_ELEMENTS:
             __ SmiToShortArrayOffset(r9, key);
-            __ sthx(r7, MemOperand(r5, r9));
+            __ sth(r7, MemOperand(r5, r9));
             break;
           case EXTERNAL_INT_ELEMENTS:
           case EXTERNAL_UNSIGNED_INT_ELEMENTS:

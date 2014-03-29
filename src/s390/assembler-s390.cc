@@ -826,19 +826,6 @@ void Assembler::lwzux(Register rt, const MemOperand & src) {
   emit(EXT2 | LWZUX | rt.code()*B21 | rb.code()*B16 | rx.code()*B11 | LeaveRC);
 }
 
-void Assembler::sthx(Register rs, const MemOperand &src) {
-  Register rb = src.rb();
-  Register rx = src.rx();
-  emit(EXT2 | STHX | rs.code()*B21 | rb.code()*B16 | rx.code()*B11 | LeaveRC);
-}
-
-void Assembler::sthux(Register rs, const MemOperand &src) {
-  Register rb = src.rb();
-  Register rx = src.rx();
-  emit(EXT2 | STHUX | rs.code()*B21 | rb.code()*B16 | rx.code()*B11 | LeaveRC);
-}
-
-
 void Assembler::stwu(Register dst, const MemOperand &src) {
   d_form(STWU, dst, src.rb(), src.offset(), true);
 }
@@ -2712,17 +2699,14 @@ RSY2_FORM_EMIT(stcmh, STCMH)
 RSY2_FORM_EMIT(stcmy, STCMY)
 S_FORM_EMIT(stcps, STCPS)
 S_FORM_EMIT(stcrw, STCRW)
-RXY_FORM_EMIT(stcy, STCY)
 RX_FORM_EMIT(ste, STE)
 RXY_FORM_EMIT(stey, STEY)
 RXY_FORM_EMIT(stfh, STFH)
 S_FORM_EMIT(stfle, STFLE)
 S_FORM_EMIT(stfpc, STFPC)
 RIL1_FORM_EMIT(stgrl, STGRL)
-RX_FORM_EMIT(sth, STH)
 RXY_FORM_EMIT(sthh, STHH)
 RIL1_FORM_EMIT(sthrl, STHRL)
-RXY_FORM_EMIT(sthy, STHY)
 RSY1_FORM_EMIT(stmh, STMH)
 RSY2_FORM_EMIT(stoc, STOC)
 RSY2_FORM_EMIT(stocg, STOCG)
@@ -3350,26 +3334,34 @@ void Assembler::bctg(Register r, const MemOperand& opnd) {
   rxy_form(BCTG, r, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
-// Store Register (32)
+// Store (32)
 void Assembler::st(Register src, const MemOperand &dst) {
-  int offset = dst.offset();
-  if (!is_uint12(offset)) {
-    // @TODO Remove once things are clean....
-    // Check limits... should check if STY is usable and replace at source.
-    PrintF("ST offset exceeded limits = %d, 0x%x\n",
-           offset, offset);
-  }
   rx_form(ST, src, dst.rx(), dst.rb(), dst.offset());
 }
 
-// Store Character (32)
+// Store (32)
+void Assembler::sty(Register src, const MemOperand& dst) {
+  rxy_form(STY, src, dst.rx(), dst.rb(), dst.offset());
+}
+
+// Store Halfword
+void Assembler::sth(Register src, const MemOperand &dst) {
+  rx_form(STH, src, dst.rx(), dst.rb(), dst.offset());
+}
+
+// Store Halfword
+void Assembler::sthy(Register src, const MemOperand &dst) {
+  rxy_form(STHY, src, dst.rx(), dst.rb(), dst.offset());
+}
+
+// Store Character
 void Assembler::stc(Register src, const MemOperand &dst) {
   rx_form(STC, src, dst.rx(), dst.rb(), dst.offset());
 }
 
-// Store Register (32)
-void Assembler::sty(Register src, const MemOperand& dst) {
-  rxy_form(STY, src, dst.rx(), dst.rb(), dst.offset());
+// Store Character
+void Assembler::stcy(Register src, const MemOperand &dst) {
+  rxy_form(STCY, src, dst.rx(), dst.rb(), dst.offset());
 }
 
 // 32-bit Load Multiple - short displacement (12-bits unsigned)

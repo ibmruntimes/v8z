@@ -4190,11 +4190,7 @@ void LCodeGen::DoStoreKeyedSpecializedArrayElement(
         break;
       case EXTERNAL_SHORT_ELEMENTS:
       case EXTERNAL_UNSIGNED_SHORT_ELEMENTS:
-        if (key_is_constant) {
-          __ StoreHalfWord(value, mem_operand, r0);
-        } else {
-          __ sthx(value, mem_operand);
-        }
+          __ sth(value, mem_operand);
         break;
       case EXTERNAL_INT_ELEMENTS:
       case EXTERNAL_UNSIGNED_INT_ELEMENTS:
