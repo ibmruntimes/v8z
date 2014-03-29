@@ -4750,33 +4750,17 @@ void MacroAssembler::LoadHalfWord(Register dst, const MemOperand& mem,
 // Variable length depending on whether offset fits into immediate field
 // MemOperand current only supports d-form
 void MacroAssembler::StoreHalfWord(Register src, const MemOperand& mem,
-                                   Register scratch, bool updateForm) {
+                                   Register scratch) {
   Register base = mem.rb();
   int offset = mem.offset();
 
-  bool use_dform = true;
-  if (!is_int16(offset)) {
-    use_dform = false;
-    LoadIntLiteral(scratch, offset);
-  }
-
-  if (!updateForm) {
-    if (use_dform) {
-      sth(src, mem);
-    } else {
-      sthx(src, MemOperand(base, scratch));
-    }
+  if (is_uint12(offset)) {
+    sth(src, mem);
+  } else if (is_int20(offset)) {
+    sthy(src, mem);
   } else {
-    // If updateForm is ever true, then sthu will
-    // need to be implemented
-    assert(0);
-#if 0  // StoreHalfWord w\ update not yet needed
-    if (use_dform) {
-      sthu(src, mem);
-    } else {
-      sthux(src, MemOperand(base, scratch));
-    }
-#endif
+    LoadIntLiteral(scratch, offset);
+    sth(src, MemOperand(base, scratch));
   }
 }
 
