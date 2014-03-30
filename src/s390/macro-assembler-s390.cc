@@ -3495,7 +3495,7 @@ void MacroAssembler::PatchRelocatedValue(Register patch_location,
   }
 
   srlg(scratch, new_value, Operand(32));
-  // insert new high word into lis instruction
+  // insert new high word into iihf instruction
 #if __BYTE_ORDER == __LITTLE_ENDIAN
   // Instructions are stored in Big Endian format
   strv(scratch, MemOperand(patch_location, 2));
@@ -3520,7 +3520,7 @@ void MacroAssembler::PatchRelocatedValue(Register patch_location,
     Check(eq, "The instruction to patch should be a iilf.");
   }
 
-  // insert new high word into lis instruction
+  // insert low word into iilf instruction
 #if __BYTE_ORDER == __LITTLE_ENDIAN
   // Instructions are stored in Big Endian format
   strv(new_value, MemOperand(patch_location, 2 + offset));
@@ -3536,61 +3536,61 @@ void MacroAssembler::PatchRelocatedValue(Register patch_location,
 #endif
 }
 
-// This code assumes a FIXED_SEQUENCE for lis/ori
-void MacroAssembler::GetRelocatedValueLocation(Register lis_location,
+// This code assumes a FIXED_SEQUENCE for iilf on 31-bit
+// and iihf/iilf on 64-bit
+void MacroAssembler::GetRelocatedValueLocation(Register patch_location,
                                                Register result,
                                                Register scratch) {
-  LoadlW(result, MemOperand(lis_location));
-  if (emit_debug_code()) {
-    AndP(result, Operand(kOpcodeMask | (0x1f * B16)));
-    Cmpi(result, Operand(ADDIS));
-    Check(eq, "The instruction should be a lis.");
-    LoadlW(result, MemOperand(lis_location));
-  }
-
-  // result now holds a lis instruction. Extract the immediate.
-  sll(result, Operand(16));
-
-  LoadlW(scratch, MemOperand(lis_location, kInstrSize));
-  if (emit_debug_code()) {
-    AndP(scratch, Operand(kOpcodeMask));
-    Cmpi(scratch, Operand(ORI));
-    Check(eq, "The instruction should be an ori");
-    LoadlW(scratch, MemOperand(lis_location, kInstrSize));
-  }
-  // Copy the low 16bits from ori instruction into result
-  rlwimi(result, scratch, 0, 16, 31);
+  int32_t offset = 0;
 
 #if V8_TARGET_ARCH_S390X
+  // On 64-bit, we expect a IIHF instruction here.
   if (emit_debug_code()) {
-    LoadlW(scratch, MemOperand(lis_location, 2*kInstrSize));
-    // scratch is now sldi.
-    AndP(scratch, Operand(kOpcodeMask|kExt5OpcodeMask));
-    Cmpi(scratch, Operand(EXT5|RLDICR));
-    Check(eq, "The instruction should be an sldi");
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    // Instructions are stored in Big Endian format
+    lrvh(scratch, MemOperand(patch_location));
+#else
+    llh(scratch, MemOperand(patch_location));
+#endif
+    nilf(scratch, Operand(0xFF0F));
+    // IIHF Opcode with extra zero in 3rd nibble
+    Cmpi(scratch, Operand(0xC008));
+    Check(eq, "The instruction to patch should be a iihf.");
   }
 
-  LoadlW(scratch, MemOperand(lis_location, 3*kInstrSize));
-  // scratch is now ori.
-  if (emit_debug_code()) {
-    AndP(scratch, Operand(kOpcodeMask));
-    Cmpi(scratch, Operand(ORIS));
-    Check(eq, "The instruction should be an oris");
-    LoadlW(scratch, MemOperand(lis_location, 3*kInstrSize));
-  }
-  sldi(result, result, Operand(16));
-  rlwimi(result, scratch, 0, 16, 31);
+  // load high word from iihf instruction
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+  // Instructions are stored in Big Endian format
+  lrv(result, MemOperand(patch_location, 2));
+#else
+  l(result, MemOperand(patch_location, 2));
+#endif
+  sllg(result, result, Operand(32));
 
-  LoadlW(scratch, MemOperand(lis_location, 4*kInstrSize));
-  // scratch is now ori.
+  offset += 6;
+#endif  // V8_TARGET_ARCH_S390X
+
+
+  // At this point scratch is a iilf instruction.
   if (emit_debug_code()) {
-    AndP(scratch, Operand(kOpcodeMask));
-    Cmpi(scratch, Operand(ORI));
-    Check(eq, "The instruction should be an ori");
-    LoadlW(scratch, MemOperand(lis_location, 4*kInstrSize));
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    // Instructions are stored in Big Endian format
+    lrvh(scratch, MemOperand(patch_location, offset));
+#else
+    llh(scratch, MemOperand(patch_location, offset));
+#endif
+    nilf(scratch, Operand(0xFF0F));
+    // IILF Opcode with extra zero in 3rd nibble
+    Cmpi(scratch, Operand(0xC009));
+    Check(eq, "The instruction to patch should be a iilf.");
   }
-  sldi(result, result, Operand(16));
-  rlwimi(result, scratch, 0, 16, 31);
+
+  // load low word from iilf instruction
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+  // Instructions are stored in Big Endian format
+  lrv(result, MemOperand(patch_location, 2 + offset));
+#else
+  l(result, MemOperand(patch_location, 2 + offset));
 #endif
 }
 
