@@ -270,6 +270,7 @@ class Simulator {
   bool DecodeTwoByte(Instruction* instr);
   bool DecodeFourByte(Instruction* instr);
   bool DecodeSixByte(Instruction* instr);
+  bool DecodeSixByteArithInstruction(Instruction *instr);
   bool S390InstructionDecode(Instruction *instr);
   template <typename T>
   void SetS390ConditionCode(T lhs, T rhs) {
