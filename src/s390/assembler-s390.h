@@ -1678,6 +1678,12 @@ SS2_FORM(zap);
   void stm(Register r1, Register r2, const MemOperand& src);
   void stmy(Register r1, Register r2, const MemOperand& src);
   void stmg(Register r1, Register r2, const MemOperand& src);
+  void st(Register dst, const MemOperand& src);
+  void sty(Register dst, const MemOperand& src);
+  void sth(Register dst, const MemOperand& src);
+  void sthy(Register dst, const MemOperand& src);
+  void stc(Register dst, const MemOperand& src);
+  void stcy(Register dst, const MemOperand& src);
 
   // Shift instruction
   void sll(Register r1, const Operand& opnd);
@@ -1770,12 +1776,6 @@ SS2_FORM(zap);
   void lwzu(Register dst, const MemOperand& src);
   void lwzux(Register dst, const MemOperand& src);
 
-  void st(Register dst, const MemOperand& src);
-  void sty(Register dst, const MemOperand& src);
-  void sth(Register dst, const MemOperand& src);
-  void sthy(Register dst, const MemOperand& src);
-  void stc(Register dst, const MemOperand& src);
-  void stcy(Register dst, const MemOperand& src);
   void stwu(Register dst, const MemOperand& src);
   void stwux(Register rs, const MemOperand& src);
 
