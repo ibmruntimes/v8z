@@ -4671,6 +4671,15 @@ void MacroAssembler::StoreF(DoubleRegister dst, const MemOperand& mem) {
   }
 }
 
+void MacroAssembler::StoreShortF(DoubleRegister dst, const MemOperand& mem) {
+  // for 32bit and 64bit we all use 64bit floating point regs
+  if (is_uint12(mem.offset())) {
+    ste(dst, mem);
+  } else {
+    stey(dst, mem);
+  }
+}
+
 
 // Variable length depending on whether offset fits into immediate field
 // MemOperand of RX or RXY format

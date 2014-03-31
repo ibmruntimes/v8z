@@ -4173,8 +4173,9 @@ void LCodeGen::DoStoreKeyedSpecializedArrayElement(
       __ AddP(scratch0(), r0);
     }
     if (elements_kind == EXTERNAL_FLOAT_ELEMENTS) {
-      __ frsp(double_scratch0(), value);
-      __ stfs(double_scratch0(), MemOperand(scratch0(), additional_offset));
+      __ ledbr(double_scratch0(), value);
+      __ StoreShortF(double_scratch0(),
+                     MemOperand(scratch0(), additional_offset));
     } else {  // i.e. elements_kind == EXTERNAL_DOUBLE_ELEMENTS
       __ StoreF(value, MemOperand(scratch0(), additional_offset));
     }

@@ -1280,7 +1280,6 @@ RRE_FORM(ldxbr);
 RRF2_FORM(ldxbra);
 RRF2_FORM(ldxtr);
 RX_FORM(le_z);
-RRE_FORM(ledbr);
 RRF2_FORM(ledbra);
 RRF2_FORM(ledtr);
 RR_FORM(ler);
@@ -1701,6 +1700,10 @@ SS2_FORM(zap);
   void ldr(DoubleRegister r1, DoubleRegister r2);
   void std(DoubleRegister r1, const MemOperand& opnd);
   void stdy(DoubleRegister r1, const MemOperand& opnd);
+  void ste(DoubleRegister r1, const MemOperand& opnd);
+  void stey(DoubleRegister r1, const MemOperand& opnd);
+
+  void ledbr(DoubleRegister r1, DoubleRegister r2);
   // double type conversion
   void cfdbr(Condition m, Register fixReg, DoubleRegister fltReg);
   void cdfbr(DoubleRegister fltReg, Register fixReg);
@@ -1861,16 +1864,10 @@ SS2_FORM(zap);
   void lfsux(const DwVfpRegister frt, const MemOperand& src);
   void stfdu(const DwVfpRegister frs, const MemOperand& src);
   void stfdux(const DwVfpRegister frs, const MemOperand& src);
-  void stfs(const DwVfpRegister frs, const MemOperand& src);
-  void stfsu(const DwVfpRegister frs, const MemOperand& src);
-  void stfsx(const DwVfpRegister frs, const MemOperand& src);
-  void stfsux(const DwVfpRegister frs, const MemOperand& src);
 
   void fctiwz(const DwVfpRegister frt, const DwVfpRegister frb);
   void fctiw(const DwVfpRegister frt, const DwVfpRegister frb);
   void frim(const DwVfpRegister frt, const DwVfpRegister frb);
-  void frsp(const DwVfpRegister frt, const DwVfpRegister frb,
-            RCBit rc = LeaveRC);
   void fcfid(const DwVfpRegister frt, const DwVfpRegister frb,
             RCBit rc = LeaveRC);
   void fctid(const DwVfpRegister frt, const DwVfpRegister frb,

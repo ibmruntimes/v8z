@@ -1133,40 +1133,6 @@ void Assembler::stfdux(const DwVfpRegister frs, const MemOperand &src) {
   emit(EXT2 | STFDUX | frs.code()*B21 | rb.code()*B16 | rx.code()*B11 |LeaveRC);
 }
 
-void Assembler::stfs(const DwVfpRegister frs, const MemOperand &src) {
-  int offset = src.offset();
-  Register rb = src.rb();
-  ASSERT(is_int16(offset));
-  ASSERT(!rb.is(r0));
-  int imm16 = offset & kImm16Mask;
-  // could be x_form instruction with some casting magic
-  emit(STFS | frs.code()*B21 | rb.code()*B16 | imm16);
-}
-
-void Assembler::stfsu(const DwVfpRegister frs, const MemOperand &src) {
-  int offset = src.offset();
-  Register rb = src.rb();
-  ASSERT(is_int16(offset));
-  ASSERT(!rb.is(r0));
-  int imm16 = offset & kImm16Mask;
-  // could be x_form instruction with some casting magic
-  emit(STFSU | frs.code()*B21 | rb.code()*B16 | imm16);
-}
-
-void Assembler::stfsx(const DwVfpRegister frs, const MemOperand &src) {
-  Register rb = src.rb();
-  Register rx = src.rx();
-  ASSERT(!rb.is(r0));
-  emit(EXT2 | STFSX | frs.code()*B21 | rb.code()*B16 | rx.code()*B11 |LeaveRC);
-}
-
-void Assembler::stfsux(const DwVfpRegister frs, const MemOperand &src) {
-  Register rb = src.rb();
-  Register rx = src.rx();
-  ASSERT(!rb.is(r0));
-  emit(EXT2 | STFSUX | frs.code()*B21 | rb.code()*B16 | rx.code()*B11 |LeaveRC);
-}
-
 void Assembler::fctiwz(const DwVfpRegister frt,
                      const DwVfpRegister frb) {
   emit(EXT4 | FCTIWZ | frt.code()*B21 | frb.code()*B11);
@@ -1180,12 +1146,6 @@ void Assembler::fctiw(const DwVfpRegister frt,
 void Assembler::frim(const DwVfpRegister frt,
                      const DwVfpRegister frb) {
   emit(EXT4 | FRIM | frt.code()*B21 | frb.code()*B11);
-}
-
-void Assembler::frsp(const DwVfpRegister frt,
-                     const DwVfpRegister frb,
-                     RCBit rc) {
-  emit(EXT4 | FRSP | frt.code()*B21 | frb.code()*B11 | rc);
 }
 
 void Assembler::fcfid(const DwVfpRegister frt,
@@ -2450,7 +2410,6 @@ RRE_FORM_EMIT(ldxbr, LDXBR)
 RRF2_FORM_EMIT(ldxbra, LDXBRA)
 RRF2_FORM_EMIT(ldxtr, LDXTR)
 RX_FORM_EMIT(le_z, LE)
-RRE_FORM_EMIT(ledbr, LEDBR)
 RRF2_FORM_EMIT(ledbra, LEDBRA)
 RRF2_FORM_EMIT(ledtr, LEDTR)
 RR_FORM_EMIT(ler, LER)
@@ -2687,8 +2646,6 @@ RSY2_FORM_EMIT(stcmh, STCMH)
 RSY2_FORM_EMIT(stcmy, STCMY)
 S_FORM_EMIT(stcps, STCPS)
 S_FORM_EMIT(stcrw, STCRW)
-RX_FORM_EMIT(ste, STE)
-RXY_FORM_EMIT(stey, STEY)
 RXY_FORM_EMIT(stfh, STFH)
 S_FORM_EMIT(stfle, STFLE)
 S_FORM_EMIT(stfpc, STFPC)
@@ -3520,6 +3477,13 @@ void Assembler::sqdbr(DoubleRegister r1, DoubleRegister r2) {
            Register::from_code(r2.code()));
 }
 
+// Load S <- L
+void Assembler::ledbr(DoubleRegister r1, DoubleRegister r2) {
+  rre_form(LEDBR,
+           Register::from_code(r1.code()),
+           Register::from_code(r2.code()));
+}
+
 // Load negative Register-Register (LB)
 void Assembler::lndbr(DoubleRegister r1, DoubleRegister r2) {
   rre_form(LNDBR,
@@ -3536,6 +3500,17 @@ void Assembler::std(DoubleRegister r1, const MemOperand& opnd) {
 void Assembler::stdy(DoubleRegister r1, const MemOperand& opnd) {
   rxy_form(STDY, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
+
+// Store (S)
+void Assembler::ste(DoubleRegister r1, const MemOperand& opnd) {
+  rx_form(STE, r1, opnd.rx(), opnd.rb(), opnd.offset());
+}
+
+// Store (S)
+void Assembler::stey(DoubleRegister r1, const MemOperand& opnd) {
+  rxy_form(STEY, r1, opnd.rx(), opnd.rb(), opnd.offset());
+}
+
 
 // Load (L)
 void Assembler::ld(DoubleRegister r1, const MemOperand& opnd) {

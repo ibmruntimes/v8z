@@ -261,6 +261,7 @@ class MacroAssembler: public Assembler {
 
   // Store
   void StoreF(DoubleRegister dst, const MemOperand& opnd);
+  void StoreShortF(DoubleRegister dst, const MemOperand& opnd);
 
   // compare 32bit
   void Cmp(Register dst, const MemOperand& opnd);
