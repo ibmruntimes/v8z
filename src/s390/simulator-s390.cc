@@ -3842,6 +3842,26 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       }
       break;
     }
+    case XIHF:
+    case XILF: {
+      RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
+      int r1 = rilInstr->R1Value();
+      uint32_t imm = rilInstr->I2UnsignedValue();
+      uint32_t alu_out;
+      if (op == XILF) {
+        alu_out = get_low_register<uint32_t>(r1);
+        alu_out = alu_out ^ imm;
+        set_low_register<uint32_t>(r1, alu_out);
+      } else if (op == XIHF) {
+        alu_out = get_high_register<uint32_t>(r1);
+        alu_out = alu_out ^ imm;
+        set_high_register<uint32_t>(r1, alu_out);
+      } else {
+        UNREACHABLE();
+      }
+      SetS390ConditionCode<uint32_t>(alu_out, 0);
+      break;
+    }
     default:
       return DecodeSixByteArithInstruction(instr);
   }
