@@ -630,7 +630,8 @@ bool RegExpMacroAssemblerPPC::CheckSpecialCharacterClass(uc16 type,
     return true;
   case '.': {
     // Match non-newlines (not 0x0a('\n'), 0x0d('\r'), 0x2028 and 0x2029)
-    __ xori(r2, current_character(), Operand(0x01));
+    __ LoadRR(r2, current_character());
+    __ XorPImm(r2, Operand(0x01));
     // See if current character is '\n'^1 or '\r'^1, i.e., 0x0b or 0x0c
     __ Sub(r2, Operand(0x0b));
     __ Cmpli(r2, Operand(0x0c - 0x0b));
@@ -647,7 +648,8 @@ bool RegExpMacroAssemblerPPC::CheckSpecialCharacterClass(uc16 type,
   }
   case 'n': {
     // Match newlines (0x0a('\n'), 0x0d('\r'), 0x2028 and 0x2029)
-    __ xori(r2, current_character(), Operand(0x01));
+    __ LoadRR(r2, current_character());
+    __ XorPImm(r2, Operand(0x01));
     // See if current character is '\n'^1 or '\r'^1, i.e., 0x0b or 0x0c
     __ Sub(r2, Operand(0x0b));
     __ Cmpli(r2, Operand(0x0c - 0x0b));

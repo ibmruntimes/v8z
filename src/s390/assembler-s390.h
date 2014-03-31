@@ -1764,7 +1764,6 @@ SS2_FORM(zap);
   void nor(Register dst, Register src1, Register src2, RCBit r = LeaveRC);
   void ori(Register dst, Register src, const Operand& imm);
   void oris(Register dst, Register src, const Operand& imm);
-  void xori(Register dst, Register src, const Operand& imm);
   void lhi(Register dst, const Operand& imm);
   void lis(Register dst, const Operand& imm);
   //  void LoadRR(Register dst, Register src);

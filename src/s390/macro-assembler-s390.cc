@@ -4259,7 +4259,7 @@ void MacroAssembler::Xor(Register dst, Register src1, Register src2) {
 }
 #endif
 
-void MacroAssembler::XorP(Register dst, const Operand& opnd) {
+void MacroAssembler::XorPImm(Register dst, const Operand& opnd) {
   ASSERT(!opnd.is_reg());
 #if V8_TARGET_ARCH_S390X
   xihf(dst, Operand(static_cast<intptr_t>(0)));
@@ -4319,7 +4319,7 @@ void MacroAssembler::NotP(Register dst) {
   xihf(dst, Operand(0xFFFFFFFF));
   xilf(dst, Operand(0xFFFFFFFF));
 #else
-  XorP(dst, Operand(0xFFFFFFFF));
+  XorPImm(dst, Operand(0xFFFFFFFF));
 #endif
 }
 
