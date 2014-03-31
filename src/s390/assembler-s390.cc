@@ -755,10 +755,6 @@ void Assembler::divw(Register dst, Register src1, Register src2,
   xo_form(EXT2 | DIVW, dst, src1, src2, o, r);
 }
 
-void  Assembler::addis(Register dst, Register src, const Operand& imm) {
-  d_form(ADDIS, dst, src, imm.imm_, true);
-}
-
 void Assembler::addic(Register dst, Register src, const Operand& imm) {
   d_form(ADDIC, dst, src, imm.imm_, true);
 }

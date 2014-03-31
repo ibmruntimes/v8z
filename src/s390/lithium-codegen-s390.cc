@@ -1068,7 +1068,7 @@ void LCodeGen::DoMathFloorOfDiv(LMathFloorOfDiv* instr) {
     }
     __ mov(result, Operand(multiplier));
     __ MulP(result, scratch);
-    __ addis(result, result, Operand(0x4000));
+    __ AddPImm(result, Operand(0x4000 << 16));
     __ ShiftRightArithImm(result, result, shift);
 #else
     if (divisor < 0 &&
@@ -3414,8 +3414,13 @@ void LCodeGen::EmitIntegerMathAbs(LUnaryMathOperation* instr) {
   __ Cmpi(input, Operand::Zero());
   __ Move(result, input);
   __ bge(&done);
+  // TODO(Alan): on s390 we don't use xer register, instead,
+  // condition code is used to represent overflow bits, and,
+  // CC is not sticky, xer register is sticky.
+  /*
   __ LoadImmP(r0, Operand::Zero());  // clear xer
   __ mtxer(r0);
+  */
   __ Negate(result, result/*, SetOE, SetRC*/);
   // TODO(john): might be a problem removing SetOE here.
   // Deoptimize on overflow.
