@@ -56,30 +56,12 @@ void CPU::FlushICache(void* buffer, size_t size) {
   }
 
 #if defined (USE_SIMULATOR)
-  // Not generating PPC instructions for C-code. This means that we are
-  // building an PPC emulator based target.  We should notify the simulator
+  // Not generating S390 instructions for C-code. This means that we are
+  // building an S390 emulator based target.  We should notify the simulator
   // that the Icache was flushed.
   // None of this code ends up in the snapshot so there are no issues
   // around whether or not to generate the code when building snapshots.
   Simulator::FlushICache(Isolate::Current()->simulator_i_cache(), buffer, size);
-#else
-
-  /*
-  intptr_t mask = kCacheLineSize - 1;
-  byte *start = reinterpret_cast<byte *>(
-                 reinterpret_cast<intptr_t>(buffer) & ~mask);
-  byte *end = static_cast<byte *>(buffer) + size;
-  for (byte *pointer = start; pointer < end; pointer += kCacheLineSize) {
-    __asm__(
-      "dcbf 0, %0  \n"  \
-      "sync        \n"  \
-      "icbi 0, %0  \n"  \
-      "isync       \n"
-      :
-      : "r" (pointer));
-  }
-  */
-
 #endif  // USE_SIMULATOR
 }
 
