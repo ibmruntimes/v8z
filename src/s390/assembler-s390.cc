@@ -831,10 +831,6 @@ void Assembler::extsh(Register rs, Register rb, RCBit rc) {
   emit(EXT2 | EXTSH | rb.code()*B21 | rs.code()*B16 | rc);
 }
 
-void Assembler::andc(Register dst, Register src1, Register src2, RCBit rc) {
-  x_form(EXT2 | ANDCX, dst, src1, src2, rc);
-}
-
 #if V8_TARGET_ARCH_S390X
 // 64bit specific instructions
 void Assembler::ld(Register rd, const MemOperand &src) {

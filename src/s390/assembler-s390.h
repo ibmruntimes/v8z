@@ -1761,7 +1761,6 @@ SS2_FORM(zap);
 
   void addic(Register dst, Register src, const Operand& imm);
 
-  void andc(Register dst, Register src1, Register src2, RCBit rc = LeaveRC);
   void andis(Register rb, Register rs, const Operand& imm);
   void nor(Register dst, Register src1, Register src2, RCBit r = LeaveRC);
   void ori(Register dst, Register src, const Operand& imm);
