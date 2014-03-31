@@ -250,7 +250,7 @@ void StubCache::GenerateProbe(MacroAssembler* masm,
   __ ShiftRightImm(scratch, scratch, Operand(kHeapObjectTagSize));
   // Mask down the eor argument to the minimum to keep the immediate
   // encodable.
-  __ xori(scratch, scratch, Operand((flags >> kHeapObjectTagSize) & mask));
+  __ XorPImm(scratch, Operand((flags >> kHeapObjectTagSize) & mask));
   // Prefer and_ to ubfx here because ubfx takes 2 cycles.
   __ AndP(scratch, Operand(mask));
 

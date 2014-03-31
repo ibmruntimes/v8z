@@ -333,7 +333,7 @@ class MacroAssembler: public Assembler {
   void OrP(Register dst, Register src);
   void OrP(Register dst, const Operand& opnd);
   void XorP(Register dst, Register src);
-  void XorP(Register dst, const Operand& opnd);
+  void XorPImm(Register dst, const Operand& opnd);
 
   void NotP(Register dst);
 

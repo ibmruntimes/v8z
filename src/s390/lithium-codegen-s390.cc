@@ -1242,7 +1242,8 @@ void LCodeGen::DoBitI(LBitI* instr) {
                  Operand(ToInteger32(LConstantOperand::cast(right_op))));
           break;
         case Token::BIT_XOR:
-          __ xori(result, left,
+          __ LoadRR(result, left);
+          __ XorPImm(result,
                   Operand(ToInteger32(LConstantOperand::cast(right_op))));
           break;
         default:
@@ -1279,7 +1280,7 @@ void LCodeGen::DoBitI(LBitI* instr) {
         __ XorP(result, right.rm());
       } else {
         __ LoadRR(result, left);
-        __ XorP(result, right);
+        __ XorPImm(result, right);
       }
       break;
     default:

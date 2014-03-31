@@ -716,10 +716,6 @@ void Assembler::bcr(Condition m, Register target) {
   rr_form(BCR, m, target);
 }
 
-void Assembler::xori(Register dst, Register src, const Operand& imm) {
-  d_form(XORI, src, dst, imm.imm_, false);
-}
-
 void Assembler::cntlzw_(Register rb, Register rs, RCBit rc) {
   x_form(EXT2 | CNTLZWX, rb, rs, r0, rc);
 }

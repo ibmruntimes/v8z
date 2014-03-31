@@ -1154,7 +1154,7 @@ static void EmitCheckForSymbolsOrObjects(MacroAssembler* masm,
   __ LoadRR(r2, r5);
   __ AndP(r2, r4);
   __ AndP(r2, Operand(1 << Map::kIsUndetectable));
-  __ xori(r2, r2, Operand(1 << Map::kIsUndetectable));
+  __ XorPImm(r2, Operand(1 << Map::kIsUndetectable));
   __ Ret();
 }
 
@@ -4854,7 +4854,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // two byte).
   __ LoadRR(r1, subject);
   __ AddP(r1, Operand(SeqString::kHeaderSize - kHeapObjectTag));
-  __ xori(r5, r5, Operand(1));
+  __ XorPImm(r5, Operand(1));
   // Load the length from the original subject string from the previous stack
   // frame. Therefore we have to use fp, which points exactly to two pointer
   // sizes below the previous sp. (Because creating a new stack frame pushes
