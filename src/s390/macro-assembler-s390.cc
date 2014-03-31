@@ -3448,28 +3448,8 @@ void MacroAssembler::CallCFunctionHelper(Register function,
 
 void MacroAssembler::FlushICache(Register address, size_t size,
                                  Register scratch) {
-  Label done;
-
-  dcbf(r0, address);
-  sync();
-  icbi(r0, address);
-  isync();
-
-  // This code handles ranges which cross a single cacheline boundary.
-  // scratch is last cacheline which intersects range.
-  ASSERT(size > 0 && size <= kCacheLineSize);
-  LoadRR(scratch, address);
-  AddP(scratch, Operand(size - 1));
-  ClearRightImm(scratch, scratch, Operand(kCacheLineSizeLog2));
-  Cmpl(scratch, address);
-  ble(&done);
-
-  dcbf(r0, scratch);
-  sync();
-  icbi(r0, scratch);
-  isync();
-
-  bind(&done);
+  // S390 memory model does not require us to flush icache
+  return;
 }
 
 // This code assumes a FIXED_SEQUENCE for iilf on 31-bit
