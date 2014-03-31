@@ -1238,6 +1238,8 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
     case BRCL: Format(instr, "brcl\t'm1,'i5"); break;
     case IIHF: Format(instr, "iihf\t'r1,'i7"); break;
     case IILF: Format(instr, "iilf\t'r1,'i7"); break;
+    case XIHF: Format(instr, "xihf\t'r1,'i7"); break;
+    case XILF: Format(instr, "xilf\t'r1,'i7"); break;
     case SLLG: Format(instr, "sllg\t'r1,'r2,'d2('r3)"); break;
     case SRLG: Format(instr, "srlg\t'r1,'r2,'d2('r3)"); break;
     case SLAG: Format(instr, "slag\t'r1,'r2,'d2('r3)"); break;
