@@ -1759,7 +1759,6 @@ SS2_FORM(zap);
   void divw(Register dst, Register src1, Register src2,
             OEBit o = LeaveOE, RCBit r = LeaveRC);
 
-  void addis(Register dst, Register src, const Operand& imm);
   void addic(Register dst, Register src, const Operand& imm);
 
   void andc(Register dst, Register src1, Register src2, RCBit rc = LeaveRC);

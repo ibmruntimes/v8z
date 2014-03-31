@@ -1420,7 +1420,8 @@ class MacroAssembler: public Assembler {
   inline void JumpIfNotSmiCandidate(Register value, Register scratch,
                                     Label* not_smi_label) {
     // High bits must be identical to fit into an Smi
-    addis(scratch, value, Operand(0x40000000u >> 16));
+    LoadRR(scratch, value);
+    AddPImm(scratch, Operand(0x40000000u));
     Cmpi(scratch, Operand::Zero());
     blt(not_smi_label);
   }
