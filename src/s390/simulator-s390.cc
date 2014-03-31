@@ -66,8 +66,13 @@ class S390Debugger {
   void Debug();
 
  private:
-  static const Instr kBreakpointInstr = (TWI | 0x1f * B21);
-  static const Instr kNopInstr = (ORI);  // ori, 0,0,0
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+  static const Instr kBreakpointInstr = (0x0000FFB2);  // TRAP4 0000
+  static const Instr kNopInstr = (0x00160016);  // OR r0, r0 x2
+#else
+  static const Instr kBreakpointInstr = (0xB2FF0000);  // TRAP4 0000
+  static const Instr kNopInstr = (0x16001600);  // OR r0, r0 x2
+#endif
 
   Simulator* sim_;
 
