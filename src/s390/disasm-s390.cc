@@ -940,10 +940,6 @@ void Decoder::DecodeExt2(Instruction* instr) {
       Format(instr, "lbzux   'rt, 'ra, 'rb");
       break;
     }
-    case LHZX: {
-      Format(instr, "lhzx    'rt, 'ra, 'rb");
-      break;
-    }
     case LHZUX: {
       Format(instr, "lhzux   'rt, 'ra, 'rb");
       break;
@@ -1187,6 +1183,7 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case STC: Format(instr, "stc\t'r1,'d1('r2d,'r3)"); break;
       case IC_z: Format(instr, "ic\t'r1,'d1('r2d,'r3)"); break;
       case LD: Format(instr, "ld\t'r1,'d1('r2d,'r3)"); break;
+      case STE:Format(instr, "ste\t'r1,'d1('r2d,'r3)"); break;
       case STD:Format(instr, "std\t'r1,'d1('r2d,'r3)"); break;
       case CFDBR: Format(instr, "cfdbr\t'r5,'m2,'r6"); break;
       case CDFBR: Format(instr, "cdfbr\t'r5,'m2,'r6"); break;
@@ -1292,6 +1289,7 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
     case NIHF: Format(instr, "nihf\t'r1,'i7"); break;
     case NILF: Format(instr, "nilf\t'r1,'i7"); break;
     case LDY: Format(instr, "ldy\t'r1,'d2('r2d,'r3)"); break;
+    case STEY: Format(instr, "stey\t'r1,'d2('r2d,'r3)"); break;
     case STDY: Format(instr, "stdy\t'r1,'d2('r2d,'r3)"); break;
     case ADB: Format(instr, "adb\t'r1,'d1('r2d, 'r3)"); break;
     case SDB: Format(instr, "sdb\t'r1,'d1('r2d, 'r3)"); break;
@@ -1496,10 +1494,6 @@ int Decoder::InstructionDecode(byte* instr_ptr) {
     }
     case STWU: {
       Format(instr, "stwu    'rs, 'int16('ra)");
-      break;
-    }
-    case LHZ: {
-      Format(instr, "lhz     'rt, 'int16('ra)");
       break;
     }
     case LHZU: {

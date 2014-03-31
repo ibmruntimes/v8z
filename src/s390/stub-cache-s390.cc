@@ -3919,7 +3919,7 @@ void KeyedStoreStubCompiler::GenerateStoreExternalArray(
       __ SmiToFloatArrayOffset(r9, key);
       // r9: efective address of the float element
       FloatingPointHelper::ConvertIntToFloat(masm, d0, r7);
-      __ stfsx(d0, MemOperand(r5, r9));
+      __ ste(d0, MemOperand(r5, r9));
       break;
     case EXTERNAL_DOUBLE_ELEMENTS:
       __ SmiToDoubleArrayOffset(r9, key);
@@ -3962,8 +3962,8 @@ void KeyedStoreStubCompiler::GenerateStoreExternalArray(
       if (elements_kind == EXTERNAL_FLOAT_ELEMENTS) {
         __ LoadF(d0, FieldMemOperand(r2, HeapNumber::kValueOffset));
         __ SmiToFloatArrayOffset(r7, key);
-        __ frsp(d0, d0);
-        __ stfsx(d0, MemOperand(r5, r7));
+        __ ledbr(d0, d0);
+        __ StoreShortF(d0, MemOperand(r5, r7));
       } else if (elements_kind == EXTERNAL_DOUBLE_ELEMENTS) {
         __ LoadF(d0, FieldMemOperand(r2, HeapNumber::kValueOffset));
         __ SmiToDoubleArrayOffset(r7, key);
