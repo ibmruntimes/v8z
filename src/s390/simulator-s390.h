@@ -272,12 +272,30 @@ class Simulator {
   bool DecodeSixByte(Instruction* instr);
   bool DecodeSixByteArithInstruction(Instruction *instr);
   bool S390InstructionDecode(Instruction *instr);
+
   template <typename T>
   void SetS390ConditionCode(T lhs, T rhs) {
     condition_reg_ = 0;
-    if (lhs == rhs) condition_reg_ |= CC_EQ;
-    if (lhs <  rhs) condition_reg_ |= CC_LT;
-    if (lhs >  rhs) condition_reg_ |= CC_GT;
+    if (lhs == rhs)
+      condition_reg_ |= CC_EQ;
+    if (lhs <  rhs)
+      condition_reg_ |= CC_LT;
+    if (lhs >  rhs)
+      condition_reg_ |= CC_GT;
+  }
+
+  // Set the condition code for bitwise operations
+  // CC0 is set if value == 0.
+  // CC1 is set if value != 0.
+  // CC2/CC3 are not set.
+  template <typename T>
+  void SetS390BitWiseConditionCode(T value) {
+    condition_reg_ = 0;
+
+    if (value == 0)
+      condition_reg_ |= CC_EQ;
+    else
+      condition_reg_ |= CC_LT;
   }
 
   void SetS390OverflowCode(bool isOF) {

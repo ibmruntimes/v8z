@@ -2847,9 +2847,17 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
 
   switch (op) {
     // RR format instructions
-    case SVC: { UNIMPLEMENTED(); return true; }
-    case AR: case SR: case MR: case DR:
-    case OR: case NR: case XR: {
+    case SVC: {
+      UNIMPLEMENTED();
+      return true;
+    }
+    case AR:
+    case SR:
+    case MR:
+    case DR:
+    case OR:
+    case NR:
+    case XR: {
       RRInstruction* rrinst = reinterpret_cast<RRInstruction*>(instr);
       int r1 = rrinst->R1Value();
       int r2 = rrinst->R2Value();
@@ -2860,27 +2868,33 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
         case AR:
           isOF = CheckOverflowForIntAdd(r1_val, r2_val);
           r1_val += r2_val;
+          SetS390ConditionCode<int32_t>(r1_val, 0);
+          SetS390OverflowCode(isOF);
           break;
         case SR:
           isOF = CheckOverflowForIntSub(r1_val, r2_val);
           r1_val -= r2_val;
+          SetS390ConditionCode<int32_t>(r1_val, 0);
+          SetS390OverflowCode(isOF);
           break;
         case OR:
           r1_val |= r2_val;
+          SetS390BitWiseConditionCode<uint32_t>(r1_val);
           break;
         case NR:
           r1_val &= r2_val;
+          SetS390BitWiseConditionCode<uint32_t>(r1_val);
           break;
         case XR:
           r1_val ^= r2_val;
+          SetS390BitWiseConditionCode<uint32_t>(r1_val);
           break;
-        case MR: case DR:
+        case MR:
+        case DR:
           UNIMPLEMENTED();
           break;  // reg pair
         default: UNREACHABLE(); break;
       }
-      SetS390ConditionCode<int32_t>(r1_val, 0);
-      SetS390OverflowCode(isOF);
       set_low_register<int32_t>(r1, r1_val);
       break;
     }
@@ -3074,27 +3088,17 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       }
       break;
     }
-    case BRCT:  {
-       // Branch On Count (32).
-       RIInstruction* riinst = reinterpret_cast<RIInstruction*>(instr);
-       int r1 = riinst->R1Value();
-       int32_t value = get_low_register<int32_t>(r1);
-       value--;
-       set_low_register<int32_t>(r1, value);
-       // Branch if value != 0
-       if (value != 0) {
-        intptr_t offset = riinst->I2Value() * 2;
-        set_pc(get_pc() + offset);
-      }
-      break;
-    }
+    case BRCT:
     case BRCTG: {
-       // Branch On Count (64).
+       // Branch On Count (32/64).
        RIInstruction* riinst = reinterpret_cast<RIInstruction*>(instr);
        int r1 = riinst->R1Value();
-       int64_t value = get_register(r1);
-       value--;
-       set_register(r1, value);
+       int64_t value = (op == BRCT)?get_low_register<int32_t>(r1):
+                                    get_register(r1);
+       if (BRCT == op)
+         set_low_register<int32_t>(r1, value--);
+       else
+         set_register(r1, value--);
        // Branch if value != 0
        if (value != 0) {
         intptr_t offset = riinst->I2Value() * 2;
@@ -3102,10 +3106,7 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       }
       break;
     }
-    case IIHH:
-    case IIHL:
-    case IILH:
-    case IILL: {
+    case IIHH: case IIHL: case IILH: case IILL: {
       UNIMPLEMENTED();
       break;
     }
@@ -3185,13 +3186,9 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
     case MLR: { UNIMPLEMENTED(); break; }
     case LLHR: { UNIMPLEMENTED(); break; }
     case LLGHR: { UNIMPLEMENTED(); break; }
-    case A:
-    case S:
-    case M:
-    case D:
-    case O:
-    case N:
-    case X: {
+    case A: case S: case M: case D:
+    case O: case N: case X: {
+      // 32-bit Reg-Mem instructions
       RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
       int b2 = rxinst->B2Value();
       int x2 = rxinst->X2Value();
@@ -3206,20 +3203,36 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
         case A:
           isOF = CheckOverflowForIntAdd(r1_val, mem_val);
           alu_out = r1_val + mem_val;
+          SetS390ConditionCode<int32_t>(alu_out, 0);
+          SetS390OverflowCode(isOF);
           break;
         case S:
           isOF = CheckOverflowForIntSub(r1_val, mem_val);
-          alu_out = r1_val - mem_val; break;
-        case M: UNIMPLEMENTED(); break;  // needs register pair
-        case D: UNIMPLEMENTED(); break;
-        case O: alu_out = r1_val | mem_val; break;
-        case N: alu_out = r1_val & mem_val; break;
-        case X: alu_out = r1_val ^ mem_val; break;
-        default: UNREACHABLE(); break;
+          alu_out = r1_val - mem_val;
+          SetS390ConditionCode<int32_t>(alu_out, 0);
+          SetS390OverflowCode(isOF);
+          break;
+        case M:
+        case D:
+          UNIMPLEMENTED();
+          break;
+        case O:
+          alu_out = r1_val | mem_val;
+          SetS390BitWiseConditionCode<uint32_t>(alu_out);
+          break;
+        case N:
+          alu_out = r1_val & mem_val;
+          SetS390BitWiseConditionCode<uint32_t>(alu_out);
+          break;
+        case X:
+          alu_out = r1_val ^ mem_val;
+          SetS390BitWiseConditionCode<uint32_t>(alu_out);
+          break;
+        default:
+          UNREACHABLE();
+          break;
       }
       set_low_register<int32_t>(r1, alu_out);
-      SetS390ConditionCode<int32_t>(alu_out, 0);
-      SetS390OverflowCode(isOF);
       break;
     }
     case NILL:
@@ -3236,7 +3249,7 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
         UNIMPLEMENTED();
       }
       set_low_register<int32_t>(r1, r1_val & i);
-      SetS390ConditionCode<int32_t>(r1_val & i, 0);
+      SetS390BitWiseConditionCode<uint32_t>(r1_val & i);
       break;
     }
     case L:
@@ -3573,7 +3586,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       uint32_t alu_out = get_low_register<uint32_t>(r1);
       if (op == NILF) {
         alu_out &= imm;
-        SetS390ConditionCode<uint32_t>(alu_out, 0);
+        SetS390BitWiseConditionCode<uint32_t>(alu_out);
       } else if (op == IILF) {
         alu_out = imm;
       } else { ASSERT(false); }
@@ -3588,7 +3601,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       uint32_t alu_out = get_high_register<uint32_t>(r1);
       if (op == NIHF) {
         alu_out &= imm;
-        SetS390ConditionCode<uint32_t>(alu_out, 0);
+        SetS390BitWiseConditionCode<uint32_t>(alu_out);
       } else if (op == IIHF) {
         alu_out = imm;
       } else { ASSERT(false); }
@@ -3864,7 +3877,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       } else {
         UNREACHABLE();
       }
-      SetS390ConditionCode<uint32_t>(alu_out, 0);
+      SetS390BitWiseConditionCode<uint32_t>(alu_out);
       break;
     }
     default:
@@ -3910,18 +3923,22 @@ bool Simulator::DecodeSixByteArithInstruction(Instruction *instr) {
       int32_t mem_val = ReadW(b2_val + x2_val + d2, instr);
       if (op == AY) {
         alu_out += mem_val;
+        SetS390ConditionCode<int32_t>(alu_out, 0);
       } else if (op == SY) {
         alu_out -= mem_val;
+        SetS390ConditionCode<int32_t>(alu_out, 0);
       } else if (op == NY) {
         alu_out &= mem_val;
+        SetS390BitWiseConditionCode<uint32_t>(alu_out);
       } else if (op == OY) {
         alu_out |= mem_val;
+        SetS390BitWiseConditionCode<uint32_t>(alu_out);
       } else if (op == XY) {
         alu_out ^= mem_val;
+        SetS390BitWiseConditionCode<uint32_t>(alu_out);
       } else if (op == CY) {
-        alu_out -= mem_val;
+        SetS390ConditionCode<int32_t>(alu_out, mem_val);
       }
-      SetS390ConditionCode<int32_t>(alu_out, 0);
       if (op != CY) {
         set_low_register<int32_t>(r1, alu_out);
       }
@@ -3945,17 +3962,42 @@ bool Simulator::DecodeSixByteArithInstruction(Instruction *instr) {
         *reinterpret_cast<int64_t*>(ReadDW(b2_val + x2_val + d2));
 
       switch (op) {
-        case AG: alu_out += mem_val; break;
-        case SG: alu_out -= mem_val; break;
-        case NG: alu_out &= mem_val; break;
-        case OG: alu_out |= mem_val; break;
-        case XG: alu_out ^= mem_val; break;
-        case CG: SetS390ConditionCode<int64_t>(alu_out, mem_val); break;
-        default: ASSERT(false); break;
+        case AG: {
+          alu_out += mem_val;
+          SetS390ConditionCode<int32_t>(alu_out, 0);
+          break;
+        }
+        case SG: {
+          alu_out -= mem_val;
+          SetS390ConditionCode<int32_t>(alu_out, 0);
+          break;
+        }
+        case NG: {
+          alu_out &= mem_val;
+          SetS390BitWiseConditionCode<uint32_t>(alu_out);
+          break;
+        }
+        case OG: {
+          alu_out |= mem_val;
+          SetS390BitWiseConditionCode<uint32_t>(alu_out);
+          break;
+        }
+        case XG: {
+          alu_out ^= mem_val;
+          SetS390BitWiseConditionCode<uint32_t>(alu_out);
+          break;
+        }
+        case CG: {
+          SetS390ConditionCode<int64_t>(alu_out, mem_val);
+          break;
+        }
+        default: {
+          ASSERT(false);
+          break;
+        }
       }
 
       if (op != CG) {
-        SetS390ConditionCode<int32_t>(alu_out, 0);
         set_register(r1, alu_out);
       }
       break;
