@@ -1393,7 +1393,8 @@ static void KeyedStoreGenerateGenericHelper(
   __ LoadRR(address, elements);
   __ AddP(address, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ SmiToPtrArrayOffset(scratch_value, key);
-  __ StorePUX(value, MemOperand(address, scratch_value));
+  __ StoreP(value, MemOperand(address, scratch_value));
+  __ la(address, MemOperand(address, scratch_value));
   // Update write barrier for the elements array address.
   __ LoadRR(scratch_value, value);  // Preserve the value which is returned.
   __ RecordWrite(elements,
