@@ -368,9 +368,8 @@ void RegExpMacroAssemblerPPC::CheckNotBackReferenceIgnoreCase(
     __ beq(&loop_check);
 
     // Mismatch, try case-insensitive match (converting letters to lower-case).
-    __ ori(r5, r5, Operand(0x20));  // Convert capture character to
-                                        // lower-case.
-    __ ori(r6, r6, Operand(0x20));  // Also convert input character.
+    __ OrPImm(r5, Operand(0x20));  // Convert capture character to lower-case.
+    __ OrPImm(r6, Operand(0x20));  // Also convert input character.
     __ CmpRR(r6, r5);
     __ bne(&fail);
     __ Sub(r5, Operand('a'));

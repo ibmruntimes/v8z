@@ -4225,7 +4225,7 @@ void MacroAssembler::Or(Register dst, Register src1, Register src2) {
 }
 #endif
 
-void MacroAssembler::OrP(Register dst, const Operand& opnd) {
+void MacroAssembler::OrPImm(Register dst, const Operand& opnd) {
   ASSERT(!opnd.is_reg());
 #if V8_TARGET_ARCH_S390X
   oihf(dst, Operand(static_cast<intptr_t>(0)));

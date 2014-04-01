@@ -767,17 +767,6 @@ void Assembler::nor(Register dst, Register src1, Register src2, RCBit r) {
   x_form(EXT2 | NORX, dst, src1, src2, r);
 }
 
-void Assembler::ori(Register rb, Register rs, const Operand& imm) {
-  // TODO(AlanLi): we keep the d_form because it is
-  // part of the address materilzation (lis, ori). pattern matcher
-  // will need to identify its d_form.
-  // if (rb.code() != rs.code()) {
-  //   AddRR(rb, rs);
-  // }
-  // oill(rb, imm);
-  d_form(ORI, rs, rb, imm.imm_, false);
-}
-
 void Assembler::oris(Register dst, Register src, const Operand& imm) {
   d_form(ORIS, src, dst, imm.imm_, false);
 }
@@ -1181,7 +1170,8 @@ void Assembler::nop(int type) {
       lr(r0, r0);
       break;
     case DEBUG_BREAK_NOP:
-      ori(r3, r3, Operand::Zero());
+      // @TODO Need to come up with a better NOP break
+      oill(r3, Operand::Zero());
       break;
     default:
       UNIMPLEMENTED();

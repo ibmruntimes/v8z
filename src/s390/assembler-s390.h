@@ -1763,7 +1763,6 @@ SS2_FORM(zap);
 
   void andis(Register rb, Register rs, const Operand& imm);
   void nor(Register dst, Register src1, Register src2, RCBit r = LeaveRC);
-  void ori(Register dst, Register src, const Operand& imm);
   void oris(Register dst, Register src, const Operand& imm);
   void lhi(Register dst, const Operand& imm);
   void lis(Register dst, const Operand& imm);

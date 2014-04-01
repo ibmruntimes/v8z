@@ -5459,7 +5459,7 @@ void StringCharCodeAtGenerator::GenerateSlow(
   // Fast case of Heap::LookupSingleCharacterStringFromCode.
   ASSERT(IsPowerOf2(String::kMaxAsciiCharCode + 1));
   __ LoadSmiLiteral(r0, Smi::FromInt(~String::kMaxAsciiCharCode));
-  __ ori(r0, r0, Operand(kSmiTagMask));
+  __ OrPImm(r0, Operand(kSmiTagMask));
   __ AndP(r0, code_);
   __ Cmpi(r0, Operand::Zero());
   __ bne(&slow_case_);

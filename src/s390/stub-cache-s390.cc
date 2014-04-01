@@ -3538,7 +3538,7 @@ Handle<Code> ConstructStubCompiler::CompileConstructStub(
   // Move argc to r3 and the JSObject to return to r2 and tag it.
   __ LoadRR(r3, r2);
   __ LoadRR(r2, r6);
-  __ ori(r2, r2, Operand(kHeapObjectTag));
+  __ OrPImm(r2, Operand(kHeapObjectTag));
 
   // r2: JSObject
   // r3: argc
