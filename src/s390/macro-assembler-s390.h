@@ -101,8 +101,6 @@ bool AreAliased(Register reg1,
 
 // These exist to provide portability between 32 and 64bit
 #if V8_TARGET_ARCH_S390X
-#define LoadPU             ldu
-#define LoadPUX            ldux
 #define LoadMultipleP      lmg
 #define LoadAndTestP       ltg
 #define StorePX            stg
@@ -137,8 +135,6 @@ bool AreAliased(Register reg1,
 #define CmpRR              cgr
 
 #else
-#define LoadPU             lwzu
-#define LoadPUX            lwzux
 #define LoadMultipleP      lm
 #define LoadAndTestP       lt_z
 #define StorePX            st
