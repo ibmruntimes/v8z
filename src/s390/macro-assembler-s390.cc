@@ -4863,7 +4863,9 @@ void MacroAssembler::ShiftRightArithImm(Register dst, Register src,
 // Clear right most # of bits
 void MacroAssembler::ClearRightImm(Register dst, Register src,
                                   const Operand& val) {
-  int numBitsToClear = val.imm_ % kPointerSize;
+  // FIXME: Before I fix here, it was "val.imm_ % kPointerSize"
+  // but I don't know whether the author wants to use 31 or 32.
+  int numBitsToClear = val.imm_ % (kPointerSize * 8);
   uint64_t hexMask = ~((1L << numBitsToClear) - 1);
 
   // S390 AND instr clobbers source.  Make a copy if necessary

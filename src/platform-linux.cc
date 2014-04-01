@@ -649,6 +649,8 @@ VirtualMemory::VirtualMemory(size_t size, size_t alignment)
 
   address_ = static_cast<void*>(aligned_base);
   size_ = aligned_size;
+  // printf("VM setup at %p with size %d\n", address_, (int)size_);
+  // fflush(stdout);
 }
 
 
