@@ -785,16 +785,6 @@ void Assembler::lhzux(Register rt, const MemOperand & src) {
   emit(EXT2 | LHZUX | rt.code()*B21 | rb.code()*B16 | rx.code()*B11 | LeaveRC);
 }
 
-void Assembler::lwzu(Register dst, const MemOperand &src) {
-  d_form(LWZU, dst, src.rb(), src.offset(), true);
-}
-
-void Assembler::lwzux(Register rt, const MemOperand & src) {
-  Register rb = src.rb();
-  Register rx = src.rx();
-  emit(EXT2 | LWZUX | rt.code()*B21 | rb.code()*B16 | rx.code()*B11 | LeaveRC);
-}
-
 // 32-bit Store Multiple - short displacement (12-bits unsigned)
 void Assembler::stm(Register r1, Register r2, const MemOperand& src) {
   rs_form(STM, r1, r2, src.rb(), src.offset());
@@ -964,10 +954,6 @@ void Assembler::function_descriptor() {
 // end PowerPC
 
 // Special register instructions
-void Assembler::crxor(int bt, int ba, int bb) {
-  emit(EXT1 | CRXOR | bt*B21 | ba*B16 | bb*B11);
-}
-
 void Assembler::mtxer(Register src) {
   emit(EXT2 | MTSPR | src.code()*B21 | 32 << 11);
 }

@@ -187,7 +187,8 @@ void FastNewClosureStub::Generate(MacroAssembler* masm) {
   __ AddP(r7, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ SmiToPtrArrayOffset(r8, r6);
   __ AddP(r7, r8);
-  __ LoadPU(r6, MemOperand(r7, kPointerSize));
+  __ LoadP(r6, MemOperand(r7, kPointerSize));
+  __ lay(r7, MemOperand(r7, kPointerSize));
 
   __ bind(&install_optimized);
   __ IncrementCounter(counters->fast_new_closure_install_optimized(),
@@ -4554,7 +4555,8 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
   __ bind(&loop);
   // Pre-decrement r4 with kPointerSize on each iteration.
   // Pre-decrement in order to skip receiver.
-  __ LoadPU(r5, MemOperand(r4, -kPointerSize));
+  __ LoadP(r5, MemOperand(r4, -kPointerSize));
+  __ lay(r4, MemOperand(r4, -kPointerSize));
   // Post-increment r6 with kPointerSize on each iteration.
   __ StoreP(r5, MemOperand(r6));
   __ AddP(r6, Operand(kPointerSize));
@@ -4999,7 +5001,8 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ AddP(r4, Operand(-kIntSize));  // bias down for lwzu
   __ bind(&next_capture);
   // Read the value from the static offsets vector buffer.
-  __ lwzu(r5, MemOperand(r4, kIntSize));
+  __ ly(r5, MemOperand(r4, kIntSize));
+  __ lay(r4, MemOperand(r4, kIntSize));
   // Store the smi value in the last match info.
   __ SmiTag(r5);
   __ StoreP(r5, MemOperand(r2, kPointerSize));

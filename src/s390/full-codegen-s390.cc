@@ -3517,7 +3517,9 @@ void FullCodeGenerator::EmitGetFromCache(CallRuntime* expr) {
   __ AddP(r5, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   // r5 now points to the start of fixed array elements.
   __ SmiToPtrArrayOffset(r4, r4);
-  __ LoadPUX(r4, MemOperand(r5, r4));
+  __ LoadP(r4, MemOperand(r5, r4));
+  __ lay(r4, MemOperand(r5, r4));
+
   // r5 now points to the key of the pair.
   __ CmpRR(key, r4);
   __ bne(&not_found);

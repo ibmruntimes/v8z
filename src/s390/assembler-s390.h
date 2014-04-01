@@ -1779,8 +1779,6 @@ SS2_FORM(zap);
 
   void lbzux(Register dst, const MemOperand& src);
   void lhzux(Register dst, const MemOperand& src);
-  void lwzu(Register dst, const MemOperand& src);
-  void lwzux(Register dst, const MemOperand& src);
 
   void extsb(Register rs, Register rb, RCBit r = LeaveRC);
   void extsh(Register rs, Register rb, RCBit r = LeaveRC);
@@ -1829,7 +1827,6 @@ SS2_FORM(zap);
 
   // Special register access
   // PowerPC
-  void crxor(int bt, int ba, int bb);
   void mtxer(Register src);
   void mcrfs(int bf, int bfa);
   void mfcr(Register dst);
