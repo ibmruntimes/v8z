@@ -271,6 +271,7 @@ class Simulator {
   bool DecodeFourByte(Instruction* instr);
   bool DecodeSixByte(Instruction* instr);
   bool DecodeSixByteArithInstruction(Instruction *instr);
+  bool DecodeFourByteFloatingPoint(Instruction* instr);
   bool S390InstructionDecode(Instruction *instr);
 
   template <typename T>
