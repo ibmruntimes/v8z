@@ -105,7 +105,6 @@ bool AreAliased(Register reg1,
 #define LoadAndTestP       ltg
 #define StorePX            stg
 #define StoreMultipleP     stmg
-#define ClearLeftImm       clrldi
 #define Div                divd
 
 // The length of the arithmetic operation is the length
@@ -139,7 +138,6 @@ bool AreAliased(Register reg1,
 #define LoadAndTestP       lt_z
 #define StorePX            st
 #define StoreMultipleP     stm
-#define ClearLeftImm       clrlwi
 #define Div                divw
 
 // arithmetics and bitwise

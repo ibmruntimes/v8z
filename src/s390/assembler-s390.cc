@@ -847,39 +847,6 @@ void Assembler::stdux(Register rs, const MemOperand &src) {
   emit(EXT2 | STDUX | rs.code()*B21 | rb.code()*B16 | rx.code()*B11);
 }
 
-void Assembler::rldic(Register rb, Register rs, int sh, int mb, RCBit r) {
-  md_form(EXT5 | RLDIC, rb, rs, sh, mb, r);
-}
-
-void Assembler::rldicl(Register rb, Register rs, int sh, int mb, RCBit r) {
-  md_form(EXT5 | RLDICL, rb, rs, sh, mb, r);
-}
-
-void Assembler::rldicr(Register rb, Register rs, int sh, int me, RCBit r) {
-  md_form(EXT5 | RLDICR, rb, rs, sh, me, r);
-}
-
-void Assembler::sldi(Register dst, Register src, const Operand& val,
-                     RCBit rc) {
-  ASSERT((64 > val.imm_)&&(val.imm_ >= 0));
-  rldicr(dst, src, val.imm_, 63-val.imm_, rc);
-}
-void Assembler::srdi(Register dst, Register src, const Operand& val,
-                     RCBit rc) {
-  ASSERT((64 > val.imm_)&&(val.imm_ >= 0));
-  rldicl(dst, src, 64-val.imm_, val.imm_, rc);
-}
-void Assembler::clrrdi(Register dst, Register src, const Operand& val,
-                       RCBit rc) {
-  ASSERT((64 > val.imm_)&&(val.imm_ >= 0));
-  rldicr(dst, src, 0, 63-val.imm_, rc);
-}
-void Assembler::clrldi(Register dst, Register src, const Operand& val,
-                       RCBit rc) {
-  ASSERT((64 > val.imm_)&&(val.imm_ >= 0));
-  rldicl(dst, src, 0, val.imm_, rc);
-}
-
 void Assembler::sradi(Register rb, Register rs, int sh, RCBit r) {
   int sh0_4 = sh & 0x1f;
   int sh5   = (sh >> 5) & 0x1;
@@ -1067,30 +1034,6 @@ void Assembler::lfsux(const DoubleRegister frt, const MemOperand & src) {
   Register rx = src.rx();
   ASSERT(!rb.is(r0));
   emit(EXT2 | LFSUX | frt.code()*B21 | rb.code()*B16 | rx.code()*B11 | LeaveRC);
-}
-
-void Assembler::stfdu(const DoubleRegister frs, const MemOperand &src) {
-  int offset = src.offset();
-  Register rb = src.rb();
-  ASSERT(is_int16(offset));
-  ASSERT(!rb.is(r0));
-  int imm16 = offset & kImm16Mask;
-  // could be x_form instruction with some casting magic
-  emit(STFDU | frs.code()*B21 | rb.code()*B16 | imm16);
-}
-
-void Assembler::stfdux(const DoubleRegister frs, const MemOperand &src) {
-  Register rb = src.rb();
-  Register rx = src.rx();
-  ASSERT(!rb.is(r0));
-  emit(EXT2 | STFDUX | frs.code()*B21 | rb.code()*B16 | rx.code()*B11 |LeaveRC);
-}
-
-
-void Assembler::fcfid(const DoubleRegister frt,
-                      const DoubleRegister frb,
-                      RCBit rc) {
-  emit(EXT4 | FCFID | frt.code()*B21 | frb.code()*B11 | rc);
 }
 
 void Assembler::fsel(const DoubleRegister frt, const DoubleRegister fra,
