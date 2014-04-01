@@ -1536,6 +1536,7 @@ void LCodeGen::DoDateField(LDateField* instr) {
 void LCodeGen::DoBitNotI(LBitNotI* instr) {
   Register input = ToRegister(instr->value());
   Register result = ToRegister(instr->result());
+  __ LoadRR(result, input);
   __ NotP(result);
 }
 
