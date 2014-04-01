@@ -51,7 +51,7 @@ namespace v8 {
 namespace internal {
 
 
-int DwVfpRegister::ToAllocationIndex(DwVfpRegister reg) {
+int DoubleRegister::ToAllocationIndex(DoubleRegister reg) {
   int index = reg.code() - 1;  // d0 is skipped
   ASSERT(index < kNumAllocatableRegisters);
   ASSERT(!reg.is(kDoubleRegZero));
