@@ -3578,14 +3578,18 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       set_register(r1, imm);
       break;
     }
+    case OILF:
     case NILF:
     case IILF: {
       RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
       int r1 = rilInstr->R1Value();
       uint32_t imm = rilInstr->I2UnsignedValue();
       uint32_t alu_out = get_low_register<uint32_t>(r1);
-      if (op == NILF) {
+      if (NILF == op) {
         alu_out &= imm;
+        SetS390BitWiseConditionCode<uint32_t>(alu_out);
+      } else if (OILF == op) {
+        alu_out |= imm;
         SetS390BitWiseConditionCode<uint32_t>(alu_out);
       } else if (op == IILF) {
         alu_out = imm;
@@ -3593,6 +3597,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       set_low_register<uint32_t>(r1, alu_out);
       break;
     }
+    case OIHF:
     case NIHF:
     case IIHF: {
       RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
@@ -3601,6 +3606,9 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       uint32_t alu_out = get_high_register<uint32_t>(r1);
       if (op == NIHF) {
         alu_out &= imm;
+        SetS390BitWiseConditionCode<uint32_t>(alu_out);
+      } else if (op == OIHF) {
+        alu_out |= imm;
         SetS390BitWiseConditionCode<uint32_t>(alu_out);
       } else if (op == IIHF) {
         alu_out = imm;
