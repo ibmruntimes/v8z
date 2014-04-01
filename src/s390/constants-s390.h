@@ -77,9 +77,9 @@ enum Condition {
   CC_NOP     = 0x0,             // S390 NOP
   CC_EQ      = 0x08,            // S390 condition code 0b1000
   CC_LT      = 0x04,            // S390 condition code 0b0100
-  CC_LE      = CC_EQ | CC_LT,   // S390 condition code 0b0100
+  CC_LE      = CC_EQ | CC_LT,   // S390 condition code 0b1100
   CC_GT      = 0x02,            // S390 condition code 0b0010
-  CC_GE      = CC_EQ | CC_GT,   // S390 condition code 0b0010
+  CC_GE      = CC_EQ | CC_GT,   // S390 condition code 0b1010
   CC_OF      = 0x01,            // S390 condition code 0b0001
   CC_NOF     = 0x0E,            // S390 condition code 0b1110
   CC_ALWAYS  = 0x0F,            // S390 always taken branch
