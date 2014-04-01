@@ -1127,12 +1127,6 @@ void Assembler::mtfsf(const DoubleRegister frb, bool L,
   emit(EXT4 | MTFSF | frb.code()*B11 | W*B16 | FLM*B17 | L*B25 | rc);
 }
 
-void Assembler::fabs(const DoubleRegister frt,
-                     const DoubleRegister frb,
-                     RCBit rc) {
-  emit(EXT4 | FABS | frt.code()*B21 | frb.code()*B11 | rc);
-}
-
 // Pseudo instructions.
 void Assembler::nop(int type) {
   switch (type) {
@@ -2406,7 +2400,6 @@ RSY1_FORM_EMIT(locg, LOCG)
 RRF2_FORM_EMIT(locgr, LOCGR)
 RRF2_FORM_EMIT(locr, LOCR)
 SSF_FORM_EMIT(lpd, LPD)
-RRE_FORM_EMIT(lpdbr, LPDBR)
 RRE_FORM_EMIT(lpdfr, LPDFR)
 SSF_FORM_EMIT(lpdg, LPDG)
 RRE_FORM_EMIT(lpebr, LPEBR)
@@ -3429,6 +3422,13 @@ void Assembler::ledbr(DoubleRegister r1, DoubleRegister r2) {
 // Load negative Register-Register (LB)
 void Assembler::lndbr(DoubleRegister r1, DoubleRegister r2) {
   rre_form(LNDBR,
+           Register::from_code(r1.code()),
+           Register::from_code(r2.code()));
+}
+
+// Load Positive Register-Register (LB)
+void Assembler::lpdbr(DoubleRegister r1, DoubleRegister r2) {
+  rre_form(LPDBR,
            Register::from_code(r1.code()),
            Register::from_code(r2.code()));
 }

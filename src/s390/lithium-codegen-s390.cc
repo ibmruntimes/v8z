@@ -3449,7 +3449,7 @@ void LCodeGen::DoMathAbs(LUnaryMathOperation* instr) {
   if (r.IsDouble()) {
     DoubleRegister input = ToDoubleRegister(instr->value());
     DoubleRegister result = ToDoubleRegister(instr->result());
-    __ fabs(result, input);
+    __ lpdbr(result, input);
   } else if (r.IsInteger32()) {
     EmitIntegerMathAbs(instr);
   } else {

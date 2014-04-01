@@ -1346,7 +1346,6 @@ RSY1_FORM(locg);
 RRF2_FORM(locgr);
 RRF2_FORM(locr);
 SSF_FORM(lpd);
-RRE_FORM(lpdbr);
 RRE_FORM(lpdfr);
 SSF_FORM(lpdg);
 RRE_FORM(lpebr);
@@ -1704,6 +1703,7 @@ SS2_FORM(zap);
   void stey(DoubleRegister r1, const MemOperand& opnd);
 
   void ledbr(DoubleRegister r1, DoubleRegister r2);
+  void lpdbr(DoubleRegister r1,  DoubleRegister r2);
   // double type conversion
   void cfdbr(Condition m, Register fixReg, DoubleRegister fltReg);
   void cdfbr(DoubleRegister fltReg, Register fixReg);
@@ -1867,8 +1867,6 @@ SS2_FORM(zap);
   void mffs(const DoubleRegister frt, RCBit rc = LeaveRC);
   void mtfsf(const DoubleRegister frb, bool L = 1, int FLM = 0, bool W = 0,
              RCBit rc = LeaveRC);
-  void fabs(const DoubleRegister frt, const DoubleRegister frb,
-            RCBit rc = LeaveRC);
 
   // Pseudo instructions
 

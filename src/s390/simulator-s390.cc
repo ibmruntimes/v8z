@@ -3465,7 +3465,8 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
     case CGDBR:
     case SQDBR:
     case CFEBR:
-    case CEFBR: {
+    case CEFBR:
+    case LPDBR: {
       RREInstruction* rreInstr = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rreInstr->R1Value();
       int r2 = rreInstr->R2Value();
@@ -3510,6 +3511,16 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
           UNIMPLEMENTED();
         } else if (op == CEFBR) {
           UNIMPLEMENTED();
+        } else if (op == LPDBR) {
+          r1_val = fabs(r2_val);
+          set_d_register_from_double(r1, r1_val);
+          if (r2_val != r2_val) {  // input is NaN
+            condition_reg_ = CC_OF;
+          } else if (r2_val == 0) {
+            condition_reg_ = CC_EQ;
+          } else {
+            condition_reg_ = CC_GT;
+          }
         } else {
           UNREACHABLE();
         }
