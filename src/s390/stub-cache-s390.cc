@@ -2163,40 +2163,11 @@ Handle<Code> CallStubCompiler::CompileMathFloorCall(
   __ LoadF(d1, FieldMemOperand(r2, HeapNumber::kValueOffset));
 
   // Round to integer minus
-  if (CpuFeatures::IsSupported(FPU)) {
-    // The frim instruction is only supported on POWER5
-    // and higher
-    __ frim(d1, d1);
 #if V8_TARGET_ARCH_S390X
-    __ fctidz(d1, d1);
+  __ cgdbr(ROUND_TOWARD_MINUS_INFINITE, r2, d1);
 #else
-    __ fctiwz(d1, d1);
+  __ cfdbr(ROUND_TOWARD_MINUS_INFINITE, r2, d1);
 #endif
-  } else {
-    // This sequence is more portable (avoids frim)
-    // This should be evaluated to determine if frim provides any
-    // perf benefit or if we can simply use the compatible sequence
-    // always
-    __ SetRoundingMode(kRoundToMinusInf);
-#if V8_TARGET_ARCH_S390X
-    __ fctid(d1, d1);
-#else
-    __ fctiw(d1, d1);
-#endif
-    __ ResetRoundingMode();
-  }
-  // Convert the argument to an integer.
-  __ stfdu(d1, MemOperand(sp, -8));
-#if V8_TARGET_ARCH_S390X
-  __ ld(r2, MemOperand(sp, 0));
-#else
-#if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  __ LoadlW(r2, MemOperand(sp, 0));
-#else
-  __ LoadlW(r2, MemOperand(sp, 4));
-#endif
-#endif
-  __ AddP(sp, Operand(8));
 
   // if resulting conversion is negative, invert for bit tests
   __ TestSignBit(r2, r0);

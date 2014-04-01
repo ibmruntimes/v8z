@@ -2488,32 +2488,13 @@ void MacroAssembler::EmitECMATruncate(Register result,
 
   Label done;
 
-  fctidz(double_scratch, double_input);
+  cfdbr(ROUND_TOWARD_0, result, double_input);
+  // if condition code 3 is not set, this can be fit into
+  // an Int32
+  b(Condition(0xc), &done);
 
-  // reserve a slot on the stack
-  stfdu(double_scratch, MemOperand(sp, -8));
-#if V8_TARGET_ARCH_S390X
-  ld(result, MemOperand(sp, 0));
-#else
-#if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  LoadlW(scratch, MemOperand(sp, 4));
-  LoadlW(result, MemOperand(sp));
-#else
-  LoadlW(scratch, MemOperand(sp, 0));
-  LoadlW(result, MemOperand(sp, 4));
-#endif
-#endif
-
-  // The result is a 32-bit integer when the high 33 bits of the
-  // result are identical.
-#if V8_TARGET_ARCH_S390X
-  TestIfInt32(result, scratch, r0);
-#else
-  TestIfInt32(scratch, result, r0);
-#endif
-  beq(&done);
-
-  // Load the double value and perform a manual truncation.
+  // otherwise, do the manual truncation.
+  UNIMPLEMENTED();
   StoreF(double_input, MemOperand(sp));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
   LoadlW(input_low, MemOperand(sp));
@@ -3875,17 +3856,7 @@ void MacroAssembler::ClampDoubleToUint8(Register result_reg,
   bind(&in_bounds);
 
   // round to nearest (default rounding mode)
-  fctiw(temp_double_reg, input_reg);
-
-  // reserve a slot on the stack
-  stfdu(temp_double_reg, MemOperand(sp, -8));
-#if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  LoadlW(result_reg, MemOperand(sp));
-#else
-  LoadlW(result_reg, MemOperand(sp, 4));
-#endif
-  // restore the stack
-  AddP(sp, Operand(8));
+  cfdbr(ROUND_TO_NEAREST_WITH_TIES_TO_EVEN, result_reg, input_reg);
 
   bind(&done);
 }

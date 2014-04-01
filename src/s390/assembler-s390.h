@@ -1858,14 +1858,7 @@ SS2_FORM(zap);
   void stfdu(const DoubleRegister frs, const MemOperand& src);
   void stfdux(const DoubleRegister frs, const MemOperand& src);
 
-  void fctiwz(const DoubleRegister frt, const DoubleRegister frb);
-  void fctiw(const DoubleRegister frt, const DoubleRegister frb);
-  void frim(const DoubleRegister frt, const DoubleRegister frb);
   void fcfid(const DoubleRegister frt, const DoubleRegister frb,
-            RCBit rc = LeaveRC);
-  void fctid(const DoubleRegister frt, const DoubleRegister frb,
-            RCBit rc = LeaveRC);
-  void fctidz(const DoubleRegister frt, const DoubleRegister frb,
             RCBit rc = LeaveRC);
   void fsel(const DoubleRegister frt, const DoubleRegister fra,
             const DoubleRegister frc, const DoubleRegister frb,
