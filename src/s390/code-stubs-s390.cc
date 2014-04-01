@@ -585,7 +585,7 @@ void FloatingPointHelper::LoadOperands(
 // also needs a scratch double register instead of d3
 void FloatingPointHelper::LoadNumber(MacroAssembler* masm,
                                      Register object,
-                                     DwVfpRegister dst,
+                                     DoubleRegister dst,
                                      Register heap_number_map,
                                      Register scratch1,
                                      Register scratch2,
@@ -623,7 +623,7 @@ void FloatingPointHelper::ConvertNumberToInt32(MacroAssembler* masm,
                                                Register scratch1,
                                                Register scratch2,
                                                Register scratch3,
-                                               DwVfpRegister double_scratch,
+                                               DoubleRegister double_scratch,
                                                Label* not_number) {
   __ AssertRootValue(heap_number_map,
                      Heap::kHeapNumberMapRootIndex,
@@ -676,8 +676,8 @@ void FloatingPointHelper::ConvertIntToFloat(MacroAssembler* masm,
 
 void FloatingPointHelper::LoadNumberAsInt32Double(MacroAssembler* masm,
                                                   Register object,
-                                                  DwVfpRegister double_dst,
-                                                  DwVfpRegister double_scratch,
+                                                  DoubleRegister double_dst,
+                                                  DoubleRegister double_scratch,
                                                   Register heap_number_map,
                                                   Register scratch1,
                                                   Register scratch2,
@@ -725,8 +725,8 @@ void FloatingPointHelper::LoadNumberAsInt32(MacroAssembler* masm,
                                             Register scratch1,
                                             Register scratch2,
                                             Register scratch3,
-                                            DwVfpRegister double_scratch0,
-                                            DwVfpRegister double_scratch1,
+                                            DoubleRegister double_scratch0,
+                                            DoubleRegister double_scratch1,
                                             Label* not_int32) {
   ASSERT(!dst.is(object));
   ASSERT(!scratch1.is(object) && !scratch2.is(object) && !scratch3.is(object));
@@ -1579,10 +1579,10 @@ void StoreBufferOverflowStub::Generate(MacroAssembler* masm) {
   __ LoadRR(r0, r14);
   __ MultiPush(kJSCallerSaved | r0.bit());
   if (save_doubles_ == kSaveFPRegs) {
-    const int kNumRegs = DwVfpRegister::kNumVolatileRegisters;
+    const int kNumRegs = DoubleRegister::kNumVolatileRegisters;
     __ Sub(sp, Operand(kDoubleSize * kNumRegs));
     for (int i = 0; i < kNumRegs; i++) {
-      DwVfpRegister reg = DwVfpRegister::from_code(i);
+      DoubleRegister reg = DoubleRegister::from_code(i);
       __ StoreF(reg, MemOperand(sp, i * kDoubleSize));
     }
   }
@@ -1597,9 +1597,9 @@ void StoreBufferOverflowStub::Generate(MacroAssembler* masm) {
       ExternalReference::store_buffer_overflow_function(masm->isolate()),
       argument_count);
   if (save_doubles_ == kSaveFPRegs) {
-    const int kNumRegs = DwVfpRegister::kNumVolatileRegisters;
+    const int kNumRegs = DoubleRegister::kNumVolatileRegisters;
     for (int i = 0; i < kNumRegs; i++) {
-      DwVfpRegister reg = DwVfpRegister::from_code(i);
+      DoubleRegister reg = DoubleRegister::from_code(i);
       __ LoadF(reg, MemOperand(sp, i * kDoubleSize));
     }
     __ AddP(sp, Operand(kDoubleSize * kNumRegs));
@@ -2489,8 +2489,8 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
   Register right = r2;
   Register scratch1 = r9;
   Register scratch2 = r1;
-  DwVfpRegister double_scratch0 = d0;
-  DwVfpRegister double_scratch1 = d1;
+  DoubleRegister double_scratch0 = d0;
+  DoubleRegister double_scratch1 = d1;
 
   Register heap_number_result = no_reg;
   Register heap_number_map = r8;

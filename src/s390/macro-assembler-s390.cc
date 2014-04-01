@@ -560,7 +560,7 @@ MemOperand MacroAssembler::SafepointRegisterSlot(Register reg) {
 
 MemOperand MacroAssembler::SafepointRegistersAndDoublesSlot(Register reg) {
   // General purpose registers are pushed last on the stack.
-  int doubles_size = DwVfpRegister::kNumAllocatableRegisters * kDoubleSize;
+  int doubles_size = DoubleRegister::kNumAllocatableRegisters * kDoubleSize;
   int register_offset = SafepointRegisterStackIndex(reg.code()) * kPointerSize;
   return MemOperand(sp, doubles_size + register_offset);
 }
@@ -647,10 +647,10 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
 
   // Optionally save all volatile double registers.
   if (save_doubles) {
-    const int kNumRegs = DwVfpRegister::kNumVolatileRegisters;
+    const int kNumRegs = DoubleRegister::kNumVolatileRegisters;
     Sub(sp, Operand(kNumRegs * kDoubleSize));
     for (int i = 0; i < kNumRegs; i++) {
-      DwVfpRegister reg = DwVfpRegister::from_code(i);
+      DoubleRegister reg = DoubleRegister::from_code(i);
       StoreF(reg, MemOperand(sp, i * kDoubleSize));
     }
     // Note that d0 will be accessible at
@@ -711,12 +711,12 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles,
   // Optionally restore all double registers.
   if (save_doubles) {
     // Calculate the stack location of the saved doubles and restore them.
-    const int kNumRegs = DwVfpRegister::kNumVolatileRegisters;
+    const int kNumRegs = DoubleRegister::kNumVolatileRegisters;
     const int offset = (2 * kPointerSize + kNumRegs * kDoubleSize);
     LoadRR(r5, fp);
     AddP(r5, Operand(-offset));
     for (int i = 0; i < kNumRegs; i++) {
-      DwVfpRegister reg = DwVfpRegister::from_code(i);
+      DoubleRegister reg = DoubleRegister::from_code(i);
       LoadF(reg, MemOperand(r5, i * kDoubleSize));
     }
   }
@@ -2291,7 +2291,7 @@ void MacroAssembler::IndexFromHash(Register hash, Register index) {
 }
 
 void MacroAssembler::SmiToDoubleFPRegister(Register smi,
-                                            DwVfpRegister value,
+                                            DoubleRegister value,
                                             Register scratch1) {
   SmiUntag(scratch1, smi);
   FloatingPointHelper::ConvertIntToDouble(this, scratch1, value);
@@ -2317,9 +2317,9 @@ void MacroAssembler::ConvertToInt32(Register source,
 
 void MacroAssembler::EmitVFPTruncate(VFPRoundingMode rounding_mode,
                                      Register result,
-                                     DwVfpRegister double_input,
+                                     DoubleRegister double_input,
                                      Register scratch,
-                                     DwVfpRegister double_scratch,
+                                     DoubleRegister double_scratch,
                                      CheckForInexactConversion check_inexact) {
   Condition m = Condition(0);
   switch (rounding_mode) {
@@ -2473,8 +2473,8 @@ void MacroAssembler::EmitOutOfInt32RangeTruncate(Register result,
 
 
 void MacroAssembler::EmitECMATruncate(Register result,
-                                      DwVfpRegister double_input,
-                                      DwVfpRegister double_scratch,
+                                      DoubleRegister double_input,
+                                      DoubleRegister double_scratch,
                                       Register scratch,
                                       Register input_high,
                                       Register input_low) {
@@ -3109,7 +3109,7 @@ void MacroAssembler::AllocateHeapNumber(Register result,
 
 
 void MacroAssembler::AllocateHeapNumberWithValue(Register result,
-                                                 DwVfpRegister value,
+                                                 DoubleRegister value,
                                                  Register scratch1,
                                                  Register scratch2,
                                                  Register heap_number_map,
@@ -4440,7 +4440,7 @@ void MacroAssembler::LoadSmiLiteral(Register dst, Smi *smi) {
 #endif
 }
 
-void MacroAssembler::LoadDoubleLiteral(DwVfpRegister result,
+void MacroAssembler::LoadDoubleLiteral(DoubleRegister result,
                                        double value,
                                        Register scratch) {
   AddP(sp, Operand(-8));  // reserve 1 temp double on the stack

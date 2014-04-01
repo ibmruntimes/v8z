@@ -222,14 +222,14 @@ const Register r9_p  = { kRegister_r9_Code };
 const Register r10_p = { kRegister_r10_Code };
 
 // Double word FP register.
-struct DwVfpRegister {
+struct DoubleRegister {
   static const int kNumRegisters = 32;
   static const int kNumVolatileRegisters = 14;     // d0-d13
   static const int kNumAllocatableRegisters = 12;  // d1-d12
 
-  inline static int ToAllocationIndex(DwVfpRegister reg);
+  inline static int ToAllocationIndex(DoubleRegister reg);
 
-  static DwVfpRegister FromAllocationIndex(int index) {
+  static DoubleRegister FromAllocationIndex(int index) {
     ASSERT(index >= 0 && index < kNumAllocatableRegisters);
     return from_code(index + 1);  // d0 is skipped
   }
@@ -253,14 +253,14 @@ struct DwVfpRegister {
     return names[index];
   }
 
-  static DwVfpRegister from_code(int code) {
-    DwVfpRegister r = { code };
+  static DoubleRegister from_code(int code) {
+    DoubleRegister r = { code };
     return r;
   }
 
   // Supporting d0 to d15, can be later extended to d31.
   bool is_valid() const { return 0 <= code_ && code_ < kNumRegisters; }
-  bool is(DwVfpRegister reg) const { return code_ == reg.code_; }
+  bool is(DoubleRegister reg) const { return code_ == reg.code_; }
 
   int code() const {
     ASSERT(is_valid());
@@ -280,44 +280,44 @@ struct DwVfpRegister {
 };
 
 
-typedef DwVfpRegister DoubleRegister;
+typedef DoubleRegister DoubleRegister;
 
-const DwVfpRegister no_dreg = { -1 };
-const DwVfpRegister d0  = {  0 };
-const DwVfpRegister d1  = {  1 };
-const DwVfpRegister d2  = {  2 };
-const DwVfpRegister d3  = {  3 };
-const DwVfpRegister d4  = {  4 };
-const DwVfpRegister d5  = {  5 };
-const DwVfpRegister d6  = {  6 };
-const DwVfpRegister d7  = {  7 };
-const DwVfpRegister d8  = {  8 };
-const DwVfpRegister d9  = {  9 };
-const DwVfpRegister d10 = { 10 };
-const DwVfpRegister d11 = { 11 };
-const DwVfpRegister d12 = { 12 };
-const DwVfpRegister d13 = { 13 };
-const DwVfpRegister d14 = { 14 };
-const DwVfpRegister d15 = { 15 };
-const DwVfpRegister d16 = { 16 };
-const DwVfpRegister d17 = { 17 };
-const DwVfpRegister d18 = { 18 };
-const DwVfpRegister d19 = { 19 };
-const DwVfpRegister d20 = { 20 };
-const DwVfpRegister d21 = { 21 };
-const DwVfpRegister d22 = { 22 };
-const DwVfpRegister d23 = { 23 };
-const DwVfpRegister d24 = { 24 };
-const DwVfpRegister d25 = { 25 };
-const DwVfpRegister d26 = { 26 };
-const DwVfpRegister d27 = { 27 };
-const DwVfpRegister d28 = { 28 };
-const DwVfpRegister d29 = { 29 };
-const DwVfpRegister d30 = { 30 };
-const DwVfpRegister d31 = { 31 };
+const DoubleRegister no_dreg = { -1 };
+const DoubleRegister d0  = {  0 };
+const DoubleRegister d1  = {  1 };
+const DoubleRegister d2  = {  2 };
+const DoubleRegister d3  = {  3 };
+const DoubleRegister d4  = {  4 };
+const DoubleRegister d5  = {  5 };
+const DoubleRegister d6  = {  6 };
+const DoubleRegister d7  = {  7 };
+const DoubleRegister d8  = {  8 };
+const DoubleRegister d9  = {  9 };
+const DoubleRegister d10 = { 10 };
+const DoubleRegister d11 = { 11 };
+const DoubleRegister d12 = { 12 };
+const DoubleRegister d13 = { 13 };
+const DoubleRegister d14 = { 14 };
+const DoubleRegister d15 = { 15 };
+const DoubleRegister d16 = { 16 };
+const DoubleRegister d17 = { 17 };
+const DoubleRegister d18 = { 18 };
+const DoubleRegister d19 = { 19 };
+const DoubleRegister d20 = { 20 };
+const DoubleRegister d21 = { 21 };
+const DoubleRegister d22 = { 22 };
+const DoubleRegister d23 = { 23 };
+const DoubleRegister d24 = { 24 };
+const DoubleRegister d25 = { 25 };
+const DoubleRegister d26 = { 26 };
+const DoubleRegister d27 = { 27 };
+const DoubleRegister d28 = { 28 };
+const DoubleRegister d29 = { 29 };
+const DoubleRegister d30 = { 30 };
+const DoubleRegister d31 = { 31 };
 
 // Aliases for double registers.  Defined using #define instead of
-// "static const DwVfpRegister&" because Clang complains otherwise when a
+// "static const DoubleRegister&" because Clang complains otherwise when a
 // compilation unit that includes this header doesn't use the variables.
 #define kFirstCalleeSavedDoubleReg d14
 #define kLastCalleeSavedDoubleReg d31
@@ -1850,32 +1850,32 @@ SS2_FORM(zap);
   void isync();
 
   // Support for floating point
-  void lfdu(const DwVfpRegister frt, const MemOperand& src);
-  void lfdux(const DwVfpRegister frt, const MemOperand& src);
-  void lfs(const DwVfpRegister frt, const MemOperand& src);
-  void lfsu(const DwVfpRegister frt, const MemOperand& src);
-  void lfsx(const DwVfpRegister frt, const MemOperand& src);
-  void lfsux(const DwVfpRegister frt, const MemOperand& src);
-  void stfdu(const DwVfpRegister frs, const MemOperand& src);
-  void stfdux(const DwVfpRegister frs, const MemOperand& src);
+  void lfdu(const DoubleRegister frt, const MemOperand& src);
+  void lfdux(const DoubleRegister frt, const MemOperand& src);
+  void lfs(const DoubleRegister frt, const MemOperand& src);
+  void lfsu(const DoubleRegister frt, const MemOperand& src);
+  void lfsx(const DoubleRegister frt, const MemOperand& src);
+  void lfsux(const DoubleRegister frt, const MemOperand& src);
+  void stfdu(const DoubleRegister frs, const MemOperand& src);
+  void stfdux(const DoubleRegister frs, const MemOperand& src);
 
-  void fctiwz(const DwVfpRegister frt, const DwVfpRegister frb);
-  void fctiw(const DwVfpRegister frt, const DwVfpRegister frb);
-  void frim(const DwVfpRegister frt, const DwVfpRegister frb);
-  void fcfid(const DwVfpRegister frt, const DwVfpRegister frb,
+  void fctiwz(const DoubleRegister frt, const DoubleRegister frb);
+  void fctiw(const DoubleRegister frt, const DoubleRegister frb);
+  void frim(const DoubleRegister frt, const DoubleRegister frb);
+  void fcfid(const DoubleRegister frt, const DoubleRegister frb,
             RCBit rc = LeaveRC);
-  void fctid(const DwVfpRegister frt, const DwVfpRegister frb,
+  void fctid(const DoubleRegister frt, const DoubleRegister frb,
             RCBit rc = LeaveRC);
-  void fctidz(const DwVfpRegister frt, const DwVfpRegister frb,
+  void fctidz(const DoubleRegister frt, const DoubleRegister frb,
             RCBit rc = LeaveRC);
-  void fsel(const DwVfpRegister frt, const DwVfpRegister fra,
-            const DwVfpRegister frc, const DwVfpRegister frb,
+  void fsel(const DoubleRegister frt, const DoubleRegister fra,
+            const DoubleRegister frc, const DoubleRegister frb,
             RCBit rc = LeaveRC);
   void mtfsfi(int bf, int immediate, RCBit rc = LeaveRC);
-  void mffs(const DwVfpRegister frt, RCBit rc = LeaveRC);
-  void mtfsf(const DwVfpRegister frb, bool L = 1, int FLM = 0, bool W = 0,
+  void mffs(const DoubleRegister frt, RCBit rc = LeaveRC);
+  void mtfsf(const DoubleRegister frb, bool L = 1, int FLM = 0, bool W = 0,
              RCBit rc = LeaveRC);
-  void fabs(const DwVfpRegister frt, const DwVfpRegister frb,
+  void fabs(const DoubleRegister frt, const DoubleRegister frb,
             RCBit rc = LeaveRC);
 
   // Pseudo instructions
@@ -2224,8 +2224,8 @@ SS2_FORM(zap);
   inline void CheckTrampolinePoolQuick();
 
   // Instruction generation
-  void a_form(Instr instr, DwVfpRegister frt, DwVfpRegister fra,
-              DwVfpRegister frb, RCBit r);
+  void a_form(Instr instr, DoubleRegister frt, DoubleRegister fra,
+              DoubleRegister frb, RCBit r);
   void d_form(Instr instr, Register rt, Register rb, const intptr_t val,
               bool signed_disp);
   void x_form(Instr instr, Register rb, Register rs, Register rx, RCBit r);
