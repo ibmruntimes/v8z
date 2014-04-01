@@ -1867,8 +1867,12 @@ void MacroAssembler::StoreNumberToDoubleElements(Register value_reg,
   // it's an Infinity, and the non-NaN code path applies.
   bgt(&is_nan);
 #if V8_TARGET_ARCH_S390X
-  clrldi(r0, double_reg, Operand(32), SetRC);
-  beq(&have_double_value /*, cr0*/);
+  LoadRR(r0, double_reg);
+  nihf(r0, Operand(0));
+  Cmpi(r0, Operand::Zero());
+  beq(&have_double_value);
+  // clrldi(r0, double_reg, Operand(32), SetRC);
+  // beq(&have_double_value /*, cr0*/);
 #else
   LoadlW(mantissa_reg, FieldMemOperand(value_reg, HeapNumber::kMantissaOffset));
   Cmpi(mantissa_reg, Operand::Zero());

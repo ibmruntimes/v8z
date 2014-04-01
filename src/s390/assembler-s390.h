@@ -1781,15 +1781,6 @@ SS2_FORM(zap);
   void stg(Register rs, const MemOperand &src);
   void stdu(Register rs, const MemOperand &src);
   void stdux(Register rs, const MemOperand &src);
-  void rldic(Register dst, Register src, int sh, int mb, RCBit r = LeaveRC);
-  void rldicl(Register dst, Register src, int sh, int mb, RCBit r = LeaveRC);
-  void rldicr(Register dst, Register src, int sh, int me, RCBit r = LeaveRC);
-  void sldi(Register dst, Register src, const Operand& val, RCBit rc = LeaveRC);
-  void srdi(Register dst, Register src, const Operand& val, RCBit rc = LeaveRC);
-  void clrrdi(Register dst, Register src, const Operand& val,
-              RCBit rc = LeaveRC);
-  void clrldi(Register dst, Register src, const Operand& val,
-              RCBit rc = LeaveRC);
   void sradi(Register rb, Register rs, int sh, RCBit r = LeaveRC);
   void srd(Register dst, Register src1, Register src2, RCBit r = LeaveRC);
   void sld(Register dst, Register src1, Register src2, RCBit r = LeaveRC);
@@ -1852,11 +1843,6 @@ SS2_FORM(zap);
   void lfsu(const DoubleRegister frt, const MemOperand& src);
   void lfsx(const DoubleRegister frt, const MemOperand& src);
   void lfsux(const DoubleRegister frt, const MemOperand& src);
-  void stfdu(const DoubleRegister frs, const MemOperand& src);
-  void stfdux(const DoubleRegister frs, const MemOperand& src);
-
-  void fcfid(const DoubleRegister frt, const DoubleRegister frb,
-            RCBit rc = LeaveRC);
   void fsel(const DoubleRegister frt, const DoubleRegister fra,
             const DoubleRegister frc, const DoubleRegister frb,
             RCBit rc = LeaveRC);
