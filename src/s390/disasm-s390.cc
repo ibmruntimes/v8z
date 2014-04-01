@@ -1488,14 +1488,6 @@ int Decoder::InstructionDecode(byte* instr_ptr) {
       Format(instr, "lbzu    'rt, 'int16('ra)");
       break;
     }
-    case STW: {
-      Format(instr, "stw     'rs, 'int16('ra)");
-      break;
-    }
-    case STWU: {
-      Format(instr, "stwu    'rs, 'int16('ra)");
-      break;
-    }
     case LHZU: {
       Format(instr, "lhzu    'rt, 'int16('ra)");
       break;

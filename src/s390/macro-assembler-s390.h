@@ -105,9 +105,7 @@ bool AreAliased(Register reg1,
 #define LoadPUX            ldux
 #define LoadMultipleP      lmg
 #define LoadAndTestP       ltg
-#define StorePU            stdu
 #define StorePX            stg
-#define StorePUX           stdux
 #define StoreMultipleP     stmg
 #define ClearLeftImm       clrldi
 #define Div                divd
@@ -143,9 +141,7 @@ bool AreAliased(Register reg1,
 #define LoadPUX            lwzux
 #define LoadMultipleP      lm
 #define LoadAndTestP       lt_z
-#define StorePU            stwu
 #define StorePX            st
-#define StorePUX           stwux
 #define StoreMultipleP     stm
 #define ClearLeftImm       clrlwi
 #define Div                divw

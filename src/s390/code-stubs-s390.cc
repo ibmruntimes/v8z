@@ -5002,7 +5002,8 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ lwzu(r5, MemOperand(r4, kIntSize));
   // Store the smi value in the last match info.
   __ SmiTag(r5);
-  __ StorePU(r5, MemOperand(r2, kPointerSize));
+  __ StoreP(r5, MemOperand(r2, kPointerSize));
+  __ lay(r2, MemOperand(r2, kPointerSize));
   __ BranchOnCount(r3, &next_capture);
 
   // Return last match info.
@@ -7478,13 +7479,9 @@ void StoreArrayLiteralElementStub::Generate(MacroAssembler* masm) {
   __ LoadP(r7, FieldMemOperand(r3, JSObject::kElementsOffset));
   __ SmiToPtrArrayOffset(r8, r5);
   __ AddP(r8, r7);
-#if V8_TARGET_ARCH_S390X
-  // add due to offset alignment requirements of StorePU
-  __ AddP(r8, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
-  __ StoreP(r2, MemOperand(r8));
-#else
-  __ StorePU(r2, MemOperand(r8, FixedArray::kHeaderSize - kHeapObjectTag));
-#endif
+  __ StoreP(r2, MemOperand(r8, FixedArray::kHeaderSize - kHeapObjectTag));
+  __ lay(r8, MemOperand(r8, FixedArray::kHeaderSize - kHeapObjectTag));
+
   // Update the write barrier for the array store.
   __ RecordWrite(r7, r8, r2, kLRHasNotBeenSaved, kDontSaveFPRegs,
                  EMIT_REMEMBERED_SET, OMIT_SMI_CHECK);

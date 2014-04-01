@@ -814,16 +814,6 @@ void Assembler::lwzux(Register rt, const MemOperand & src) {
   emit(EXT2 | LWZUX | rt.code()*B21 | rb.code()*B16 | rx.code()*B11 | LeaveRC);
 }
 
-void Assembler::stwu(Register dst, const MemOperand &src) {
-  d_form(STWU, dst, src.rb(), src.offset(), true);
-}
-
-void Assembler::stwux(Register rs, const MemOperand &src) {
-  Register rb = src.rb();
-  Register rx = src.rx();
-  emit(EXT2 | STWUX | rs.code()*B21 | rb.code()*B16 | rx.code()*B11 | LeaveRC);
-}
-
 // 32-bit Store Multiple - short displacement (12-bits unsigned)
 void Assembler::stm(Register r1, Register r2, const MemOperand& src) {
   rs_form(STM, r1, r2, src.rb(), src.offset());

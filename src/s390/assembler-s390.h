@@ -1776,9 +1776,6 @@ SS2_FORM(zap);
   void lwzu(Register dst, const MemOperand& src);
   void lwzux(Register dst, const MemOperand& src);
 
-  void stwu(Register dst, const MemOperand& src);
-  void stwux(Register rs, const MemOperand& src);
-
   void extsb(Register rs, Register rb, RCBit r = LeaveRC);
   void extsh(Register rs, Register rb, RCBit r = LeaveRC);
 

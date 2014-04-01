@@ -4230,7 +4230,8 @@ void KeyedStoreStubCompiler::GenerateStoreFastElement(
     __ LoadRR(scratch, elements_reg);
     __ AddP(scratch, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
     __ SmiToPtrArrayOffset(scratch2, key_reg);
-    __ StorePUX(value_reg, MemOperand(scratch, scratch2));
+    __ StoreP(value_reg, MemOperand(scratch, scratch2));
+    __ la(scratch, MemOperand(scratch, scratch2));
     __ LoadRR(receiver_reg, value_reg);
     __ RecordWrite(elements_reg,  // Object.
                    scratch,       // Address.

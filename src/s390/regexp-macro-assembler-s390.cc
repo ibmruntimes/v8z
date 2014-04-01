@@ -836,7 +836,8 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
         __ LoadImmP(r4, Operand(num_saved_registers_));
         Label init_loop;
         __ bind(&init_loop);
-        __ StorePU(r2, MemOperand(r3, -kPointerSize));
+        __ StoreP(r2, MemOperand(r3, -kPointerSize));
+        __ lay(r3, MemOperand(r3, -kPointerSize));
         __ BranchOnCount(r4, &init_loop);
       } else {
         for (int i = 0; i < num_saved_registers_; i++) {
@@ -1363,7 +1364,9 @@ void RegExpMacroAssemblerPPC::SafeCallTarget(Label* name) {
 
 void RegExpMacroAssemblerPPC::Push(Register source) {
   ASSERT(!source.is(backtrack_stackpointer()));
-  __ StorePU(source, MemOperand(backtrack_stackpointer(), -kPointerSize));
+  __ StoreP(source, MemOperand(backtrack_stackpointer(), -kPointerSize));
+  __ lay(backtrack_stackpointer(),
+         MemOperand(backtrack_stackpointer(), -kPointerSize));
 }
 
 
