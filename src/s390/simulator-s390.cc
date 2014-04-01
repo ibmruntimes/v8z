@@ -3378,102 +3378,6 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       set_register(r1, r2_val);
       break;
     }
-    case ADBR:
-    case SDBR:
-    case MDBR:
-    case DDBR:
-    case CDBR:
-    case CDFBR:
-    case CDGBR:
-    case CFDBR:
-    case CGDBR:
-    case SQDBR:
-    case LNDBR:
-    case CFEBR:
-    case CEFBR: {
-      RREInstruction* rreInstr = reinterpret_cast<RREInstruction*>(instr);
-      int r1 = rreInstr->R1Value();
-      int r2 = rreInstr->R2Value();
-      double r1_val = get_double_from_d_register(r1);
-      double r2_val = get_double_from_d_register(r2);
-        if (op == ADBR) {
-          r1_val += r2_val;
-          set_d_register_from_double(r1, r1_val);
-          SetS390ConditionCode<double>(r1_val, 0);
-        } else if (op == SDBR) {
-          r1_val -= r2_val;
-          set_d_register_from_double(r1, r1_val);
-          SetS390ConditionCode<double>(r1_val, 0);
-        } else if (op == MDBR) {
-          r1_val *= r2_val;
-          set_d_register_from_double(r1, r1_val);
-          SetS390ConditionCode<double>(r1_val, 0);
-        } else if (op == DDBR) {
-          r1_val /= r2_val;
-          set_d_register_from_double(r1, r1_val);
-          SetS390ConditionCode<double>(r1_val, 0);
-        } else if (op == CDBR) {
-          SetS390ConditionCode<double>(r1_val, r2_val);
-        } else if (op == CDGBR) {
-          intptr_t r2_val = get_register(r2);
-          double r1_val = static_cast<double>(r2_val);
-          set_d_register_from_double(r1, r1_val);
-        } else if (op == CDFBR) {
-          int32_t r2_val = get_low_register<int32_t>(r2);
-          double r1_val = static_cast<double>(r2_val);
-          set_d_register_from_double(r1, r1_val);
-        } else if (op == CFDBR) {
-          int32_t r1_val = static_cast<int32_t>(r2_val);
-          set_low_register<int32_t>(r1, r1_val);
-        } else if (op == CGDBR) {
-          int64_t r1_val = static_cast<int64_t>(r2_val);
-          set_register(r1, r1_val);
-        } else if (op == SQDBR) {
-          r1_val = sqrt(r2_val);
-          set_d_register_from_double(r1, r1_val);
-        } else if (op == LNDBR) {
-          r1_val = - r2_val;
-          set_d_register_from_double(r1, r1_val);
-        } else if (op == CFEBR) {
-          UNIMPLEMENTED();
-        } else if (op == CEFBR) {
-          UNIMPLEMENTED();
-        } else {
-          UNREACHABLE();
-        }
-        break;
-    }
-    case CDLFBR:
-    case CDLGBR:
-    case CLFDBR:
-    case CLGDBR: {
-      // TODO(AlanLi): create different behavior for different masks.
-      // need to instantiate RRFInstruciton actually.
-      RREInstruction *rreInstr = reinterpret_cast<RREInstruction*>(instr);
-      int r1 = rreInstr->R1Value();
-      int r2 = rreInstr->R2Value();
-      if (op == CDLFBR) {
-        uint32_t r2_val = get_low_register<uint32_t>(r2);
-        double r1_val = static_cast<double>(r2_val);
-        set_d_register_from_double(r1, r1_val);
-        SetS390ConditionCode<double>(r1_val, 0);
-      } else if (op == CDLGBR) {
-        uint64_t r2_val = get_low_register<uint64_t>(r2);
-        double r1_val = static_cast<double>(r2_val);
-        set_d_register_from_double(r1, r1_val);
-        SetS390ConditionCode<double>(r1_val, 0);
-      } else if (op == CLFDBR) {
-        double r2_val = get_double_from_d_register(r2);
-        uint32_t r1_val = static_cast<uint32_t>(r1);
-        set_low_register<uint32_t>(r1, r1_val);
-        SetS390ConditionCode<double>(r2_val, 0);
-      } else if (op == CLGDBR) {
-        double r2_val = get_double_from_d_register(r2);
-        uint64_t r1_val = static_cast<uint64_t>(r1);
-        set_register(r1, r1_val);
-        SetS390ConditionCode<double>(r2_val, 0);
-      }
-    }
     case LNGR: {
       RREInstruction* rreinst = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rreinst->R1Value();
@@ -3538,6 +3442,108 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       int32_t mem_val = ReadW(b2_val + x2_val + d2_val, instr);
       int32_t r1_val = get_low_register<int32_t>(r1);
       set_low_register<int32_t>(r1, r1_val * mem_val);
+    }
+    default: {
+      return DecodeFourByteFloatingPoint(instr);
+    }
+  }
+  return true;
+}
+
+bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
+  Opcode op = instr->S390OpcodeValue();
+
+  switch (op) {
+    case ADBR:
+    case SDBR:
+    case MDBR:
+    case DDBR:
+    case CDBR:
+    case CDFBR:
+    case CDGBR:
+    case CFDBR:
+    case CGDBR:
+    case SQDBR:
+    case CFEBR:
+    case CEFBR: {
+      RREInstruction* rreInstr = reinterpret_cast<RREInstruction*>(instr);
+      int r1 = rreInstr->R1Value();
+      int r2 = rreInstr->R2Value();
+      double r1_val = get_double_from_d_register(r1);
+      double r2_val = get_double_from_d_register(r2);
+        if (op == ADBR) {
+          r1_val += r2_val;
+          set_d_register_from_double(r1, r1_val);
+          SetS390ConditionCode<double>(r1_val, 0);
+        } else if (op == SDBR) {
+          r1_val -= r2_val;
+          set_d_register_from_double(r1, r1_val);
+          SetS390ConditionCode<double>(r1_val, 0);
+        } else if (op == MDBR) {
+          r1_val *= r2_val;
+          set_d_register_from_double(r1, r1_val);
+          SetS390ConditionCode<double>(r1_val, 0);
+        } else if (op == DDBR) {
+          r1_val /= r2_val;
+          set_d_register_from_double(r1, r1_val);
+          SetS390ConditionCode<double>(r1_val, 0);
+        } else if (op == CDBR) {
+          SetS390ConditionCode<double>(r1_val, r2_val);
+        } else if (op == CDGBR) {
+          intptr_t r2_val = get_register(r2);
+          double r1_val = static_cast<double>(r2_val);
+          set_d_register_from_double(r1, r1_val);
+        } else if (op == CDFBR) {
+          int32_t r2_val = get_low_register<int32_t>(r2);
+          double r1_val = static_cast<double>(r2_val);
+          set_d_register_from_double(r1, r1_val);
+        } else if (op == CFDBR) {
+          int32_t r1_val = static_cast<int32_t>(r2_val);
+          set_low_register<int32_t>(r1, r1_val);
+        } else if (op == CGDBR) {
+          int64_t r1_val = static_cast<int64_t>(r2_val);
+          set_register(r1, r1_val);
+        } else if (op == SQDBR) {
+          r1_val = sqrt(r2_val);
+          set_d_register_from_double(r1, r1_val);
+        } else if (op == CFEBR) {
+          UNIMPLEMENTED();
+        } else if (op == CEFBR) {
+          UNIMPLEMENTED();
+        } else {
+          UNREACHABLE();
+        }
+        break;
+    }
+    case CDLFBR:
+    case CDLGBR:
+    case CLFDBR:
+    case CLGDBR: {
+      // TODO(AlanLi): create different behavior for different masks.
+      // need to instantiate RRFInstruciton actually.
+      RREInstruction *rreInstr = reinterpret_cast<RREInstruction*>(instr);
+      int r1 = rreInstr->R1Value();
+      int r2 = rreInstr->R2Value();
+      if (op == CDLFBR) {
+        uint32_t r2_val = get_low_register<uint32_t>(r2);
+        double r1_val = static_cast<double>(r2_val);
+        set_d_register_from_double(r1, r1_val);
+      } else if (op == CDLGBR) {
+        uint64_t r2_val = get_low_register<uint64_t>(r2);
+        double r1_val = static_cast<double>(r2_val);
+        set_d_register_from_double(r1, r1_val);
+      } else if (op == CLFDBR) {
+        double r2_val = get_double_from_d_register(r2);
+        uint32_t r1_val = static_cast<uint32_t>(r1);
+        set_low_register<uint32_t>(r1, r1_val);
+        SetS390ConditionCode<double>(r2_val, 0);
+      } else if (op == CLGDBR) {
+        double r2_val = get_double_from_d_register(r2);
+        uint64_t r1_val = static_cast<uint64_t>(r1);
+        set_register(r1, r1_val);
+        SetS390ConditionCode<double>(r2_val, 0);
+      }
+      break;
     }
     default: {
       UNREACHABLE();
