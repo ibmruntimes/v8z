@@ -1100,37 +1100,11 @@ void Assembler::stfdux(const DoubleRegister frs, const MemOperand &src) {
   emit(EXT2 | STFDUX | frs.code()*B21 | rb.code()*B16 | rx.code()*B11 |LeaveRC);
 }
 
-void Assembler::fctiwz(const DoubleRegister frt,
-                     const DoubleRegister frb) {
-  emit(EXT4 | FCTIWZ | frt.code()*B21 | frb.code()*B11);
-}
-
-void Assembler::fctiw(const DoubleRegister frt,
-                     const DoubleRegister frb) {
-  emit(EXT4 | FCTIW | frt.code()*B21 | frb.code()*B11);
-}
-
-void Assembler::frim(const DoubleRegister frt,
-                     const DoubleRegister frb) {
-  emit(EXT4 | FRIM | frt.code()*B21 | frb.code()*B11);
-}
 
 void Assembler::fcfid(const DoubleRegister frt,
                       const DoubleRegister frb,
                       RCBit rc) {
   emit(EXT4 | FCFID | frt.code()*B21 | frb.code()*B11 | rc);
-}
-
-void Assembler::fctid(const DoubleRegister frt,
-                      const DoubleRegister frb,
-                      RCBit rc) {
-  emit(EXT4 | FCTID | frt.code()*B21 | frb.code()*B11 | rc);
-}
-
-void Assembler::fctidz(const DoubleRegister frt,
-                      const DoubleRegister frb,
-                      RCBit rc) {
-  emit(EXT4 | FCTIDZ | frt.code()*B21 | frb.code()*B11 | rc);
 }
 
 void Assembler::fsel(const DoubleRegister frt, const DoubleRegister fra,

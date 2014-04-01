@@ -103,7 +103,16 @@ enum Condition {
   mask0xC    = 12,
   mask0xD    = 13,
   mask0xE    = 14,
-  mask0xF    = 15
+  mask0xF    = 15,
+
+  // Rounding modes for floating poing facility
+  CURRENT_ROUNDING_MODE = 0,
+  ROUND_TO_NEAREST_WITH_TIES_AWAY_FROM_0 = 1,
+  ROUND_TO_PREPARE_FOR_SHORTER_PRECISION = 3,
+  ROUND_TO_NEAREST_WITH_TIES_TO_EVEN = 4,
+  ROUND_TOWARD_0 = 5,
+  ROUND_TOWARD_PLUS_INFINITE = 6,
+  ROUND_TOWARD_MINUS_INFINITE = 7
 };
 
 
