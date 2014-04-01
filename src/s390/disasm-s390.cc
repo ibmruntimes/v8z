@@ -1448,14 +1448,6 @@ int Decoder::InstructionDecode(byte* instr_ptr) {
       UnknownFormat(instr, "rlwnmx");
       break;
     }
-    case ORI: {
-      Format(instr, "ori     'ra, 'rs, 'uint16");
-      break;
-    }
-    case ORIS: {
-      Format(instr, "oris    'ra, 'rs, 'uint16");
-      break;
-    }
     case XORI: {
       Format(instr, "xori    'ra, 'rs, 'uint16");
       break;
