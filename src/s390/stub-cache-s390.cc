@@ -2283,7 +2283,8 @@ Handle<Code> CallStubCompiler::CompileMathAbsCall(
   // Check the sign of the argument. If the argument is positive,
   // just return it.
   Label negative_sign;
-  __ andis(r0, r3, Operand(HeapNumber::kSignMask >> 16));
+  __ LoadRR(r0, r3);
+  __ nilh(r0, Operand(HeapNumber::kSignMask >> 16));  // replace andis
   __ bne(&negative_sign /*, cr0*/);
   __ Drop(argc + 1);
   __ Ret();
