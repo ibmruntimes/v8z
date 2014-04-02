@@ -3385,6 +3385,11 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       int64_t r2_val = get_register(r2);
       r2_val = r2_val < 0 ? -r2_val : r2_val;
       set_register(r1, -r2_val);
+      if (get_register(r2) == 0) {
+        condition_reg_ = CC_EQ;
+      } else {  // less than zero
+        condition_reg_ = CC_LT;
+      }
       break;
     }
     case TRAP4: {
@@ -3412,6 +3417,10 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       r2_val = r2_val+1;
       set_register(r1, r2_val);
       SetS390ConditionCode<int64_t>(r2_val, 0);
+      // if the input is INT_MIN, loading its compliment would be overflowing
+      if (r2_val == -2147483647 - 1) {  // bypass gcc complain
+        SetS390OverflowCode(true);
+      }
       break;
     }
     case MSR:
