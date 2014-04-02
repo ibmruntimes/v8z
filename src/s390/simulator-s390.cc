@@ -3396,6 +3396,19 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       SoftwareInterrupt(instr);
       break;
     }
+    case STC: {
+      // Store Character/Byte
+      RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
+      int b2 = rxinst->B2Value();
+      int x2 = rxinst->X2Value();
+      uint8_t  r1_val = get_low_register<int32_t>(rxinst->R1Value());
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+      intptr_t d2_val = rxinst->D2Value();
+      intptr_t mem_addr = b2_val + x2_val + d2_val;
+      WriteB(mem_addr, r1_val);
+      break;
+    }
     case STH: {
       RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
       int b2 = rxinst->B2Value();
@@ -3765,6 +3778,8 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
     }
     case LY:
     case STY:
+    case STCY:
+    case STHY:
     case LDY:
     case STDY: {
       RXYInstruction* rxyInstr = reinterpret_cast<RXYInstruction*>(instr);
@@ -3788,6 +3803,12 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
         double frs_val = get_double_from_d_register(r1);
         int64_t *p = reinterpret_cast<int64_t *>(&frs_val);
         WriteDW(addr, *p);
+      } else if (op == STCY) {
+        uint8_t value = get_low_register<uint32_t>(r1);
+        WriteB(addr, value);
+      } else if (op == STHY) {
+        uint16_t value = get_low_register<uint32_t>(r1);
+        WriteH(addr, value, instr);
       }
       break;
     }
