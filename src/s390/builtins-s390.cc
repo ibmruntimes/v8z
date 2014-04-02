@@ -1797,8 +1797,9 @@ void Builtins::Generate_FunctionApply(MacroAssembler* masm) {
 
 static void EnterArgumentsAdaptorFrame(MacroAssembler* masm) {
   __ SmiTag(r2);
-  // @TODO Make sure r7 is the correct register to use here for S390
-  __ LoadSmiLiteral(r7, Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR));
+  // @TODO Make sure r6 is the correct register to use here for S390
+  // We can't use r7 here because r7 is call kind info.
+  __ LoadSmiLiteral(r6, Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR));
   // Stack updated as such:
   //    old SP --->
   //                 R14 Return Addr
@@ -1813,7 +1814,7 @@ static void EnterArgumentsAdaptorFrame(MacroAssembler* masm) {
   __ CleanseP(r14);
   __ StoreP(r14, MemOperand(sp, 4 * kPointerSize));
   __ StoreP(fp, MemOperand(sp, 3 * kPointerSize));
-  __ StoreP(r7, MemOperand(sp, 2 * kPointerSize));
+  __ StoreP(r6, MemOperand(sp, 2 * kPointerSize));
   __ StoreP(r3, MemOperand(sp, 1 * kPointerSize));
   __ StoreP(r2, MemOperand(sp, 0 * kPointerSize));
   __ la(fp, MemOperand(sp, 3 * kPointerSize));
