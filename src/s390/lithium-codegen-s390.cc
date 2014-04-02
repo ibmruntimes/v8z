@@ -3004,7 +3004,8 @@ void LCodeGen::DoLoadKeyedSpecializedArrayElement(
         } else {
           __ LoadlB(result, mem_operand);
         }
-        __ extsb(result, result);
+        // __ extsb(result, result);
+        __ lbr(result, result);
         break;
       case EXTERNAL_PIXEL_ELEMENTS:
       case EXTERNAL_UNSIGNED_BYTE_ELEMENTS:
