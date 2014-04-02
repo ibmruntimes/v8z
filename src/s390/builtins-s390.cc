@@ -1879,8 +1879,8 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     __ bind(&copy);
     __ LoadP(ip, MemOperand(r2, 0));
     __ push(ip);
-    __ Sub(r2, Operand(kPointerSize));
     __ CmpRR(r2, r4);  // Compare before moving to next argument.
+    __ lay(r2, MemOperand(r2, -kPointerSize));
     __ bne(&copy);
 
     __ b(&invoke);
@@ -1908,8 +1908,8 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     // Adjust load for return address and receiver.
     __ LoadP(ip, MemOperand(r2, 2 * kPointerSize));
     __ push(ip);
-    __ Sub(r2, Operand(kPointerSize));
     __ CmpRR(r2, fp);  // Compare before moving to next argument.
+    __ lay(r2, MemOperand(r2, -kPointerSize));
     __ bne(&copy);
 
     // Fill the remaining expected arguments with undefined.
