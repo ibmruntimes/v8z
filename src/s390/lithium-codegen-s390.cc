@@ -3021,7 +3021,8 @@ void LCodeGen::DoLoadKeyedSpecializedArrayElement(
         } else {
           __ LoadLogicalHalfWordP(result, mem_operand);
         }
-        __ extsh(result, result);
+        // __ extsh(result, result);
+        __ lhr(result, result);
         break;
       case EXTERNAL_UNSIGNED_SHORT_ELEMENTS:
         if (key_is_constant) {
