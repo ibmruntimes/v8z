@@ -167,7 +167,7 @@ static void Generate_DebugBreakCallHelper(MacroAssembler* masm,
         if ((non_object_regs & (1 << r)) != 0) {
           if (FLAG_debug_code) {
             __ LoadRR(r0, reg);
-            __ andis(r0, reg, Operand(0xc000));
+            __ nilh(r0, Operand(0xc000));  // replace andis
             __ Assert(eq, "Unable to encode value as smi", cr0);
           }
           __ SmiTag(reg);

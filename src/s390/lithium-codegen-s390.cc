@@ -3035,7 +3035,8 @@ void LCodeGen::DoLoadKeyedSpecializedArrayElement(
       case EXTERNAL_UNSIGNED_INT_ELEMENTS:
         __ LoadlW(result, mem_operand);
         if (!instr->hydrogen()->CheckFlag(HInstruction::kUint32)) {
-          __ lis(r0, Operand(SIGN_EXT_IMM16(0x8000)));
+          // __ lis(r0, Operand(SIGN_EXT_IMM16(0x8000)));
+          __ iilf(r0, Operand(0x80000000));
           __ Cmpl(result, r0);
           DeoptimizeIf(ge, instr->environment());
         }
@@ -3726,7 +3727,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
   __ AddP(sp, Operand(-8));
 
   // 0x41300000 is the top half of 1.0 x 2^20 as a double.
-  __ lis(r3, Operand(0x4130));
+  __ iilf(r3, Operand(0x41300000));
 
   // Move 0x41300000xxxxxxxx (x = random bits) to VFP.
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
