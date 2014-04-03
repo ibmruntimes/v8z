@@ -3018,6 +3018,9 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       r2_val = r2_val+1;
       set_low_register<int32_t>(r1, r2_val);
       SetS390ConditionCode<int32_t>(r2_val, 0);
+      if (r2_val == -2147483647 - 1) {  // bypass gcc complain
+        SetS390OverflowCode(true);
+      }
       break;
     }
     default:
@@ -3420,6 +3423,7 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       WriteH(mem_addr, r1_val, instr);
       break;
     }
+#if V8_TARGET_ARCH_S390X
     case LCGR: {
       RREInstruction * rreinst = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rreinst->R1Value();
@@ -3430,11 +3434,12 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       set_register(r1, r2_val);
       SetS390ConditionCode<int64_t>(r2_val, 0);
       // if the input is INT_MIN, loading its compliment would be overflowing
-      if (r2_val == -2147483647 - 1) {  // bypass gcc complain
+      if (r2_val < 0 && (r2_val + 1) > 0) {
         SetS390OverflowCode(true);
       }
       break;
     }
+#endif
     case MSR:
     case MSGR: {  // they do not set overflow code
       RREInstruction * rreinst = reinterpret_cast<RREInstruction*>(instr);
