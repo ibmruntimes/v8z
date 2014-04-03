@@ -2986,8 +2986,10 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       int r1 = rrinst->R1Value();
       int r2 = rrinst->R2Value();
       int32_t r2_val = get_low_register<int32_t>(r2);
-      r2_val = r2_val < 0 ? -r2_val : r2_val;
+      r2_val = (r2_val >= 0)? -r2_val : r2_val;  // If pos, then negate it.
       set_low_register<int32_t>(r1, -r2_val);
+      condition_reg_ = (r2_val == 0)?CC_EQ:CC_LT;  // CC0 - result is zero
+                                                   // CC1 - result is negative
       break;
     }
     case BASR: {
@@ -3379,17 +3381,15 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       break;
     }
     case LNGR: {
+      // Load Negative (64)
       RREInstruction* rreinst = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rreinst->R1Value();
       int r2 = rreinst->R2Value();
       int64_t r2_val = get_register(r2);
-      r2_val = r2_val < 0 ? -r2_val : r2_val;
-      set_register(r1, -r2_val);
-      if (get_register(r2) == 0) {
-        condition_reg_ = CC_EQ;
-      } else {  // less than zero
-        condition_reg_ = CC_LT;
-      }
+      r2_val = (r2_val >= 0)? -r2_val : r2_val;  // If pos, then negate it.
+      set_register(r1, r2_val);
+      condition_reg_ = (r2_val == 0)?CC_EQ:CC_LT;  // CC0 - result is zero
+                                                   // CC1 - result is negative
       break;
     }
     case TRAP4: {
