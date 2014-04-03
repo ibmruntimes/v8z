@@ -6348,8 +6348,8 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   __ AllocateAsciiConsString(r9, r8, r6, r7, &call_runtime);
   __ bind(&allocated);
   // Fill the fields of the cons string.
-  __ StoreP(r2, FieldMemOperand(r10, ConsString::kFirstOffset));
-  __ StoreP(r3, FieldMemOperand(r10, ConsString::kSecondOffset));
+  __ StoreP(r2, FieldMemOperand(r9, ConsString::kFirstOffset));
+  __ StoreP(r3, FieldMemOperand(r9, ConsString::kSecondOffset));
   __ LoadRR(r2, r9);
   __ IncrementCounter(counters->string_add_native(), 1, r4, r5);
   __ lay(sp, MemOperand(sp, 2 * kPointerSize));
