@@ -1101,47 +1101,26 @@ void Simulator::WriteW(intptr_t addr, int32_t value, Instruction* instr) {
 
 
 uint16_t Simulator::ReadHU(intptr_t addr, Instruction* instr) {
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-  // need to switch each byte
-  uint8_t* highptr = reinterpret_cast<uint8_t*>(addr);
-  uint8_t* lowptr = highptr+1;
-  return ((*highptr) << 8) + *lowptr;
-#else
   uint16_t* ptr = reinterpret_cast<uint16_t*>(addr);
   return *ptr;
-#endif
 }
 
 
 int16_t Simulator::ReadH(intptr_t addr, Instruction* instr) {
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-  // @TODO: must check correctness here for little endian.
-  UNIMPLEMENTED();
-#endif
   int16_t* ptr = reinterpret_cast<int16_t*>(addr);
   return *ptr;
 }
 
 
 void Simulator::WriteH(intptr_t addr, uint16_t value, Instruction* instr) {
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-  uint8_t* newaddr = reinterpret_cast<byte*>(addr) + 2;
-  uint16_t* ptr = reinterpret_cast<uint16_t*>(newaddr);
-#else
   uint16_t* ptr = reinterpret_cast<uint16_t*>(addr);
-#endif
   *ptr = value;
   return;
 }
 
 
 void Simulator::WriteH(intptr_t addr, int16_t value, Instruction* instr) {
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-  uint8_t* newaddr = reinterpret_cast<byte*>(addr) + 2;
-  int16_t* ptr = reinterpret_cast<int16_t*>(newaddr);
-#else
   int16_t* ptr = reinterpret_cast<int16_t*>(addr);
-#endif
   *ptr = value;
   return;
 }
