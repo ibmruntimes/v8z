@@ -5640,8 +5640,7 @@ void StringHelper::GenerateTwoCharacterSymbolTableProbe(MacroAssembler* masm,
   Register chars = c1;
 #if __BYTE_ORDER == __BIG_ENDIAN
   __ ShiftLeftImm(c1, c1, Operand(kBitsPerByte));
-  __ LoadRR(chars, c2);
-  __ OrP(chars, c1);
+  __ OrP(chars, c2);
 #else
   __ ShiftLeftImm(r0, c2, Operand(kBitsPerByte));
   __ OrP(chars, r0);
