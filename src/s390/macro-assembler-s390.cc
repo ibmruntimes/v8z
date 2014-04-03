@@ -4390,9 +4390,9 @@ void MacroAssembler::BranchOnCount(Register r1, Label *l) {
   positions_recorder()->WriteRecordedPositions();
   if (is_int16(offset)) {
 #if V8_TARGET_ARCH_S390X
-    brct(r1, Operand(offset));
-#else
     brctg(r1, Operand(offset));
+#else
+    brct(r1, Operand(offset));
 #endif
   } else {
     AddP(r1, Operand(-1));
