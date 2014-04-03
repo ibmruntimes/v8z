@@ -1228,8 +1228,7 @@ void NumberToStringStub::GenerateLookupNumberStringCache(MacroAssembler* masm,
   // Calculate address of entry in string cache: each entry consists
   // of two pointer sized fields.
   __ ShiftLeftImm(scratch, scratch, Operand(kPointerSizeLog2 + 1));
-  __ LoadRR(scratch, number_string_cache);
-  __ AddP(scratch, scratch);
+  __ AddP(scratch, number_string_cache);
 
   // Check if the entry is the smi we are looking for.
   Register probe = mask;
