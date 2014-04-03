@@ -3098,9 +3098,9 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
        int64_t value = (op == BRCT)?get_low_register<int32_t>(r1):
                                     get_register(r1);
        if (BRCT == op)
-         set_low_register<int32_t>(r1, value--);
+         set_low_register<int32_t>(r1, --value);
        else
-         set_register(r1, value--);
+         set_register(r1, --value);
        // Branch if value != 0
        if (value != 0) {
         intptr_t offset = riinst->I2Value() * 2;
