@@ -1959,11 +1959,11 @@ SS2_FORM(zap);
   static Register GetRA(Instr instr);
   static Register GetRB(Instr instr);
 #if V8_TARGET_ARCH_S390X
-  static bool Is64BitLoadIntoR12(Instr instr1, Instr instr2,
-                                 Instr instr3, Instr instr4, Instr instr5);
+  static bool Is64BitLoadIntoIP(SixByteInstr instr1, SixByteInstr instr2);
 #else
-  static bool Is32BitLoadIntoR12(Instr instr1, Instr instr2);
+  static bool Is32BitLoadIntoIP(SixByteInstr instr);
 #endif
+
 
   static bool IsCmpRegister(Instr instr);
   static bool IsRlwinm(Instr instr);
