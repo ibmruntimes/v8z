@@ -4541,6 +4541,7 @@ void FullCodeGenerator::EnterFinallyBlock() {
   __ push(result_register());
   // Cook return address in link register to stack (smi encoded Code* delta)
   __ LoadRR(r3, r14);
+  __ nilf(r3, Operand(0x7fffffff));
   __ mov(ip, Operand(masm_->CodeObject()));
   __ Sub(r3, r3, ip);
   __ SmiTag(r3);
@@ -4584,7 +4585,7 @@ void FullCodeGenerator::ExitFinallyBlock() {
   ExternalReference has_pending_message =
       ExternalReference::address_of_has_pending_message(isolate());
   __ mov(ip, Operand(has_pending_message));
-  __ StoreP(r3, MemOperand(ip));
+  __ StoreByte(r3, MemOperand(ip), r0);
 
   __ pop(r3);
   ExternalReference pending_message_obj =
@@ -4600,6 +4601,7 @@ void FullCodeGenerator::ExitFinallyBlock() {
   __ SmiUntag(r3);
   __ mov(ip, Operand(masm_->CodeObject()));
   __ AddP(ip, r3);
+  __ oilf(ip, Operand(0x80000000));
   __ b(ip);
 }
 
