@@ -4626,7 +4626,7 @@ FullCodeGenerator::NestedStatement* FullCodeGenerator::TryFinally::Exit(
     __ StoreP(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
   }
   __ PopTryHandler();
-  __ b(finally_entry_ /*, SetLK*/);
+  __ b(r14, finally_entry_ /*, SetLK*/);
 
   *stack_depth = 0;
   *context_length = 0;
