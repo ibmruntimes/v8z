@@ -4541,7 +4541,7 @@ void FullCodeGenerator::EnterFinallyBlock() {
   __ push(result_register());
   // Cook return address in link register to stack (smi encoded Code* delta)
   __ LoadRR(r3, r14);
-  __ nilf(r3, Operand(0x7fffffff));
+  __ CleanseP(r3);
   __ mov(ip, Operand(masm_->CodeObject()));
   __ Sub(r3, r3, ip);
   __ SmiTag(r3);
@@ -4601,7 +4601,6 @@ void FullCodeGenerator::ExitFinallyBlock() {
   __ SmiUntag(r3);
   __ mov(ip, Operand(masm_->CodeObject()));
   __ AddP(ip, r3);
-  __ oilf(ip, Operand(0x80000000));
   __ b(ip);
 }
 
