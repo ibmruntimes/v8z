@@ -713,6 +713,9 @@ class Assembler : public AssemblerBase {
   void b(Condition cond, Label* l) {
     branchOnCond(cond, branch_offset(l, false));
   }
+  void b(Register r, Label* l) {
+    brasl(r, Operand(branch_offset(l, false)));
+  }
 
   void beq(Label * l) { b(eq, l); }
   void bne(Label * l) { b(ne, l); }
