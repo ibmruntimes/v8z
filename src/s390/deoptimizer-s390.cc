@@ -122,11 +122,11 @@ void Deoptimizer::DeoptimizeFunction(JSFunction* function) {
 
 
 #if V8_TARGET_ARCH_S390X
-static const int32_t kBranchBeforeStackCheck = 0x409c0020;
-static const int32_t kBranchBeforeInterrupt =  0x409c0044;
+static const int32_t kBranchBeforeStackCheck = 0xa7a40009;
+static const int32_t kBranchBeforeInterrupt =  0xa7a40015;
 #else
-static const int32_t kBranchBeforeStackCheck = 0x409c0014;
-static const int32_t kBranchBeforeInterrupt =  0x409c0024;
+static const int32_t kBranchBeforeStackCheck = 0xa7a40006;
+static const int32_t kBranchBeforeInterrupt =  0xa7a4001e;
 #endif
 
 
@@ -136,50 +136,45 @@ void Deoptimizer::PatchStackCheckCodeAt(Code* unoptimized_code,
                                         Code* check_code,
                                         Code* replacement_code) {
   const int kInstrSize = Assembler::kInstrSize;
-  // There are two 'Stack check' sequences from full-codegen-ppc.cc
+  // There are two 'Stack check' sequences from full-codegen-s390.cc
   // both have similar code - and FLAG_count_based_interrupts will
   // control which we expect to find
   //
   // The call of the stack guard check has the following form:
-  // 409c0014       bge +40 -> 876  (0x25535c4c)  ;; (ok)
-  // 3d802553       lis     r12_p, 9555        ;; two part load
-  // 618c5000       ori     r12_p, r12_p, 20480  ;; of stack guard address
-  // 7d8803a6       mtlr    r12_p
-  // 4e800021       blrl
+  // a7a4XXXX       bge +18/+12 -> 876
+  // c0c8XXXXXXXX   iihf    r12, xxxxxxxx ;; (64-bit) load upper 32-bits
+  // c0c9XXXXXXXX   iilf    r12, xxxxxxxx
+  // 0dec           basr    r14, r12
   //    <-- pc_after
-  //
-  // 64bit will have an expanded mov() [lis/ori] sequence
 
-  // Check we have a branch & link through r12_p (ip)
-  ASSERT(Memory::int32_at(pc_after - 2 * kInstrSize) == 0x7d8803a6);
-  ASSERT(Memory::int32_at(pc_after - kInstrSize) == 0x4e800021);
+  // Check we have a branch and save through r12
+  ASSERT(Assembler::instr_at(pc_after - 2) == 0x0dec);
 
 #if V8_TARGET_ARCH_S390X
-  ASSERT(Assembler::Is64BitLoadIntoR12(
-      Assembler::instr_at(pc_after - 7 * kInstrSize),
-      Assembler::instr_at(pc_after - 6 * kInstrSize),
-      Assembler::instr_at(pc_after - 5 * kInstrSize),
-      Assembler::instr_at(pc_after - 4 * kInstrSize),
-      Assembler::instr_at(pc_after - 3 * kInstrSize)));
+  ASSERT(Assembler::Is64BitLoadIntoIP(
+      Assembler::instr_at(pc_after - 14),
+      Assembler::instr_at(pc_after - 8)));
   if (FLAG_count_based_interrupts) {
     ASSERT_EQ(kBranchBeforeInterrupt,
-              Memory::int32_at(pc_after - 8 * kInstrSize));
+              Assembler::instr_at(pc_after - 18));
   } else {
     ASSERT_EQ(kBranchBeforeStackCheck,
-              Memory::int32_at(pc_after - 8 * kInstrSize));
+              Assembler::instr_at(pc_after - 18));
   }
 #else
-  ASSERT(Assembler::Is32BitLoadIntoR12(
-      Assembler::instr_at(pc_after - 4 * kInstrSize),
-      Assembler::instr_at(pc_after - 3 * kInstrSize)));
+  ASSERT(Assembler::Is32BitLoadIntoIP(
+      Assembler::instr_at(pc_after - 8)));
   if (FLAG_count_based_interrupts) {
     ASSERT_EQ(kBranchBeforeInterrupt,
-              Memory::int32_at(pc_after - 5 * kInstrSize));
+              Assembler::instr_at(pc_after - 12));
   } else {
     ASSERT_EQ(kBranchBeforeStackCheck,
-              Memory::int32_at(pc_after - 5 * kInstrSize));
+              Assembler::instr_at(pc_after - 12));
   }
 #endif
+
+
+  // @TODO Continue to fix this PPC code into 390.
 
   // We patch the code to the following form:
   // 60000000       ori     r0, r0, 0        ;; NOP
@@ -238,22 +233,20 @@ void Deoptimizer::RevertStackCheckCodeAt(Code* unoptimized_code,
                                          Code* replacement_code) {
   const int kInstrSize = Assembler::kInstrSize;
 
-  // Check we have a branch & link through r12_p (ip)
-  ASSERT(Memory::int32_at(pc_after - 2 * kInstrSize) == 0x7d8803a6);
-  ASSERT(Memory::int32_at(pc_after - kInstrSize) == 0x4e800021);
+  // Check we have a branch & link through r12 (ip)
+  //   BASR R14, R12
+  ASSERT(Assembler::instr_at(pc_after - 2) == 0x0dec);
 
 #if V8_TARGET_ARCH_S390X
-  ASSERT(Assembler::Is64BitLoadIntoR12(
-      Assembler::instr_at(pc_after - 7 * kInstrSize),
-      Assembler::instr_at(pc_after - 6 * kInstrSize),
-      Assembler::instr_at(pc_after - 5 * kInstrSize),
-      Assembler::instr_at(pc_after - 4 * kInstrSize),
-      Assembler::instr_at(pc_after - 3 * kInstrSize)));
+  ASSERT(Assembler::Is64BitLoadIntoIP(
+      Assembler::instr_at(pc_after - 14),
+      Assembler::instr_at(pc_after - 8)));
 #else
-  ASSERT(Assembler::Is32BitLoadIntoR12(
-      Assembler::instr_at(pc_after - 4 * kInstrSize),
-      Assembler::instr_at(pc_after - 3 * kInstrSize)));
+  ASSERT(Assembler::Is32BitLoadIntoIP(
+      Assembler::instr_at(pc_after - 8)));
 #endif
+
+  // @TODO Continue to fix this PPC code into 390.
 
 #if V8_TARGET_ARCH_S390X
   // Replace NOP with conditional jump.
