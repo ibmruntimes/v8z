@@ -413,7 +413,7 @@ int Assembler::target_at(int pos)  {
     if (imm16 == 0)
       return kEndOfChain;
     return pos + imm16;
-  } else if (BRCL == opcode || LARL == opcode) {
+  } else if (BRCL == opcode || LARL == opcode || BRASL == opcode) {
     int32_t imm32 = instr & (~static_cast<uint64_t>(0xffffffff));
     imm32 <<= 1;   // BRCL immediate is in # of halfwords
     if (imm32 == 0)
@@ -436,7 +436,7 @@ void Assembler::target_at_put(int pos, int target_pos) {
     ASSERT(is_int16(imm16));
     instr_at_put<FourByteInstr>(pos, instr | (imm16 >> 1));
     return;
-  } else if (BRCL == opcode || LARL == opcode) {
+  } else if (BRCL == opcode || LARL == opcode || BRASL == opcode) {
     // BRCL / LARL
     int32_t imm32 = target_pos - pos;
     instr &= (~static_cast<uint64_t>(0xffffffff));
@@ -454,7 +454,7 @@ int Assembler::max_reach_from(int pos) {
   // the values below + 1, given offset is # of halfwords
   if (BRC == opcode || BRCT == opcode || BRCTG == opcode) {
     return 16;
-  } else if (BRCL == opcode || LARL == opcode) {
+  } else if (BRCL == opcode || LARL == opcode || BRASL == opcode) {
     return 31;  // Using 31 as workaround instead of 32 as
                 // is_intn(x,32) doesn't work on 32-bit platforms.
   }

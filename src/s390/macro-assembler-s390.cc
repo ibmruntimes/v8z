@@ -247,7 +247,7 @@ void MacroAssembler::Ret(int drop) {
 }
 
 void MacroAssembler::Call(Label* target) {
-  b(target /*, SetLK*/);
+  b(r14, target /*, SetLK*/);
 }
 
 

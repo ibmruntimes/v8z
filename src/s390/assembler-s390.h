@@ -714,7 +714,8 @@ class Assembler : public AssemblerBase {
     branchOnCond(cond, branch_offset(l, false));
   }
   void b(Register r, Label* l) {
-    intptr_t halfwords = branch_offset(l, false) / 2;
+    positions_recorder()->WriteRecordedPositions();
+    int32_t halfwords = branch_offset(l, false) / 2;
     brasl(r, Operand(halfwords));
   }
 
