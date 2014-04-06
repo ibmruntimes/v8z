@@ -1354,7 +1354,7 @@ void MacroAssembler::LoadFromNumberDictionary(Label* miss,
 
     // Check if the key is identical to the name.
     sll(t2, Operand(kPointerSizeLog2));
-    AddP(elements, t2);
+    AddP(t2, elements);
     LoadP(ip,
           FieldMemOperand(t2, SeededNumberDictionary::kElementsStartOffset));
     CmpRR(key, ip);
