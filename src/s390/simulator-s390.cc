@@ -3226,14 +3226,17 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       int i  = riInst->I2Value();
       int32_t r1_val = get_low_register<int32_t>(r1);
       if (NILL == op) {
+        // CC is set based on the 16 bits that are AND'd
+        SetS390BitWiseConditionCode<uint16_t>(r1_val & i);
         i |= 0xFFFF0000;
       } else if (NILH == op) {
+        // CC is set based on the 16 bits that are AND'd
+        SetS390BitWiseConditionCode<uint16_t>((r1_val >> 16) & i);
         i = (i << 16) | 0x0000FFFF;
       } else {
         UNIMPLEMENTED();
       }
       set_low_register<int32_t>(r1, r1_val & i);
-      SetS390BitWiseConditionCode<uint32_t>(r1_val & i);
       break;
     }
     case L:
