@@ -2946,7 +2946,7 @@ void MacroAssembler::UntagAndJumpIfSmi(
   STATIC_ASSERT(kSmiTag == 0);
   STATIC_ASSERT(kSmiTagSize == 1);
   // this won't work if src == dst
-  ASSERT(src.code() != dst.code()); 
+  ASSERT(src.code() != dst.code());
   SmiUntag(dst, src);
   TestBit(src, 0, r0);
   beq(smi_case);
@@ -2958,7 +2958,7 @@ void MacroAssembler::UntagAndJumpIfNotSmi(
   STATIC_ASSERT(kSmiTag == 0);
   STATIC_ASSERT(kSmiTagSize == 1);
   // this won't work if src == dst
-  ASSERT(src.code() != dst.code()); 
+  ASSERT(src.code() != dst.code());
   SmiUntag(dst, src);
   TestBit(src, 0, r0);
   bne(non_smi_case);
