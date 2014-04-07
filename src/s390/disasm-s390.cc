@@ -1172,7 +1172,7 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case IC_z: Format(instr, "ic\t'r1,'d1('r2d,'r3)"); break;
       case LD: Format(instr, "ld\t'r1,'d1('r2d,'r3)"); break;
       case STE:Format(instr, "ste\t'r1,'d1('r2d,'r3)"); break;
-//      case STD:Format(instr, "std\t'r1,'d1('r2d,'r3)"); break;
+      case STD:Format(instr, "std\t'r1,'d1('r2d,'r3)"); break;
       case CFDBR: Format(instr, "cfdbr\t'r5,'m2,'r6"); break;
       case CDFBR: Format(instr, "cdfbr\t'r5,'m2,'r6"); break;
       case CFEBR: Format(instr, "cfebr\t'r5,'m2,'r6"); break;
