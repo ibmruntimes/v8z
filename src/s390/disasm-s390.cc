@@ -753,14 +753,6 @@ void Decoder::DecodeExt2(Instruction* instr) {
       return;
     }
 #endif
-    case EXTSH: {
-      Format(instr, "extsh'.  'ra, 'rs");
-      return;
-    }
-    case EXTSB: {
-      Format(instr, "extsb'.  'ra, 'rs");
-      return;
-    }
     case LFSX: {
       Format(instr, "lfsx    'rt, 'ra, 'rb");
       return;

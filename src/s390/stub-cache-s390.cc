@@ -3662,7 +3662,6 @@ void KeyedLoadStubCompiler::GenerateLoadExternalArray(
     case EXTERNAL_BYTE_ELEMENTS:
       __ SmiToByteArrayOffset(value, key);
       __ LoadlB(value, MemOperand(r5, value));
-      // __ extsb(value, value);
       __ lbr(value, value);
       break;
     case EXTERNAL_PIXEL_ELEMENTS:
@@ -3673,7 +3672,6 @@ void KeyedLoadStubCompiler::GenerateLoadExternalArray(
     case EXTERNAL_SHORT_ELEMENTS:
       __ SmiToShortArrayOffset(value, key);
       __ LoadLogicalHalfWordP(value, MemOperand(r5, value));
-      // __ extsh(value, value);
       __ lhr(value, value);
       break;
     case EXTERNAL_UNSIGNED_SHORT_ELEMENTS:

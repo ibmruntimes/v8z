@@ -1775,9 +1775,6 @@ SS2_FORM(zap);
   void lbzux(Register dst, const MemOperand& src);
   void lhzux(Register dst, const MemOperand& src);
 
-  void extsb(Register rs, Register rb, RCBit r = LeaveRC);
-  void extsh(Register rs, Register rb, RCBit r = LeaveRC);
-
 #if V8_TARGET_ARCH_S390X
   void ld(Register rd, const MemOperand &src);
   void ldx(Register rd, const MemOperand &src);

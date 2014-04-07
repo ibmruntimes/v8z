@@ -3004,7 +3004,6 @@ void LCodeGen::DoLoadKeyedSpecializedArrayElement(
         } else {
           __ LoadlB(result, mem_operand);
         }
-        // __ extsb(result, result);
         __ lbr(result, result);
         break;
       case EXTERNAL_PIXEL_ELEMENTS:
@@ -3021,7 +3020,6 @@ void LCodeGen::DoLoadKeyedSpecializedArrayElement(
         } else {
           __ LoadLogicalHalfWordP(result, mem_operand);
         }
-        // __ extsh(result, result);
         __ lhr(result, result);
         break;
       case EXTERNAL_UNSIGNED_SHORT_ELEMENTS:

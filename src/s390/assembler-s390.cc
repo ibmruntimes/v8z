@@ -788,14 +788,6 @@ void Assembler::stmg(Register r1, Register r2, const MemOperand& src) {
   rsy_form(STMG, r1, r2, src.rb(), src.offset());
 }
 
-void Assembler::extsb(Register rs, Register rb, RCBit rc) {
-  emit(EXT2 | EXTSB | rb.code()*B21 | rs.code()*B16 | rc);
-}
-
-void Assembler::extsh(Register rs, Register rb, RCBit rc) {
-  emit(EXT2 | EXTSH | rb.code()*B21 | rs.code()*B16 | rc);
-}
-
 #if V8_TARGET_ARCH_S390X
 // 64bit specific instructions
 void Assembler::ld(Register rd, const MemOperand &src) {
