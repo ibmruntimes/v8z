@@ -2311,10 +2311,88 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
           double r1_val = static_cast<double>(r2_val);
           set_d_register_from_double(r1, r1_val);
         } else if (op == CFDBR) {
-          int32_t r1_val = static_cast<int32_t>(r2_val);
+          int mask_val = rreInstr->M3Value();
+          int32_t r1_val;
+          switch (mask_val) {
+            case CURRENT_ROUNDING_MODE:
+            case ROUND_TO_NEAREST_WITH_TIES_AWAY_FROM_0:
+            case ROUND_TO_PREPARE_FOR_SHORTER_PRECISION: {
+              UNIMPLEMENTED();
+              break;
+            }
+            case ROUND_TO_NEAREST_WITH_TIES_TO_EVEN: {
+              double ceil_val = ceil(r2_val);
+              double floor_val = floor(r2_val);
+              if (abs(r2_val - floor_val) > abs(r2_val - ceil_val)) {
+                r1_val = static_cast<int32_t>(ceil_val);
+              } else if (abs(r2_val - floor_val) < abs(r2_val - ceil_val)) {
+                r1_val = static_cast<int32_t>(floor_val);
+              } else {  // check which one is even:
+                int32_t c_v = static_cast<int32_t>(ceil_val);
+                int32_t f_v = static_cast<int32_t>(floor_val);
+                if (f_v % 2 == 0)
+                  r1_val = f_v;
+                else
+                  r1_val = c_v;
+              }
+              break;
+            }
+            case ROUND_TOWARD_0: {
+              r1_val = static_cast<int32_t>(r2_val);
+              break;
+            }
+            case ROUND_TOWARD_PLUS_INFINITE: {
+              r1_val = static_cast<int32_t>(ceil(r2_val));
+              break;
+            }
+            case ROUND_TOWARD_MINUS_INFINITE: {
+              r1_val = static_cast<int32_t>(floor(r2_val));
+              break;
+            }
+            default: UNREACHABLE();
+          }
           set_low_register<int32_t>(r1, r1_val);
         } else if (op == CGDBR) {
-          int64_t r1_val = static_cast<int64_t>(r2_val);
+          int mask_val = rreInstr->M3Value();
+          int64_t r1_val;
+          switch (mask_val) {
+            case CURRENT_ROUNDING_MODE:
+            case ROUND_TO_NEAREST_WITH_TIES_AWAY_FROM_0:
+            case ROUND_TO_PREPARE_FOR_SHORTER_PRECISION: {
+              UNIMPLEMENTED();
+              break;
+            }
+            case ROUND_TO_NEAREST_WITH_TIES_TO_EVEN: {
+              double ceil_val = ceil(r2_val);
+              double floor_val = floor(r2_val);
+              if (abs(r2_val - floor_val) > abs(r2_val - ceil_val)) {
+                r1_val = static_cast<int64_t>(ceil_val);
+              } else if (abs(r2_val - floor_val) < abs(r2_val - ceil_val)) {
+                r1_val = static_cast<int64_t>(floor_val);
+              } else {  // check which one is even:
+                int64_t c_v = static_cast<int64_t>(ceil_val);
+                int64_t f_v = static_cast<int64_t>(floor_val);
+                if (f_v % 2 == 0)
+                  r1_val = f_v;
+                else
+                  r1_val = c_v;
+              }
+              break;
+            }
+            case ROUND_TOWARD_0: {
+              r1_val = static_cast<int64_t>(r2_val);
+              break;
+            }
+            case ROUND_TOWARD_PLUS_INFINITE: {
+              r1_val = static_cast<int64_t>(ceil(r2_val));
+              break;
+            }
+            case ROUND_TOWARD_MINUS_INFINITE: {
+              r1_val = static_cast<int64_t>(floor(r2_val));
+              break;
+            }
+            default: UNREACHABLE();
+          }
           set_register(r1, r1_val);
         } else if (op == SQDBR) {
           r1_val = sqrt(r2_val);
