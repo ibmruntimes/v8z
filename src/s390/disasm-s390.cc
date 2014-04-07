@@ -928,10 +928,6 @@ void Decoder::DecodeExt2(Instruction* instr) {
       Format(instr, "lwzux   'rt, 'ra, 'rb");
       break;
     }
-    case LBZUX: {
-      Format(instr, "lbzux   'rt, 'ra, 'rb");
-      break;
-    }
     case LHZUX: {
       Format(instr, "lhzux   'rt, 'ra, 'rb");
       break;

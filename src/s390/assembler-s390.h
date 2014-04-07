@@ -1772,7 +1772,6 @@ SS2_FORM(zap);
   void lis(Register dst, const Operand& imm);
   //  void LoadRR(Register dst, Register src);
 
-  void lbzux(Register dst, const MemOperand& src);
   void lhzux(Register dst, const MemOperand& src);
 
 #if V8_TARGET_ARCH_S390X
