@@ -2498,7 +2498,6 @@ void MacroAssembler::EmitECMATruncate(Register result,
   b(Condition(0xc), &done);
 
   // otherwise, do the manual truncation.
-  UNIMPLEMENTED();
   StoreF(double_input, MemOperand(sp));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
   LoadlW(input_low, MemOperand(sp));
