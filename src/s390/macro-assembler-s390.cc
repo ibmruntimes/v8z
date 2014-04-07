@@ -4133,7 +4133,7 @@ void MacroAssembler::Negate(Register dst, Register src) {
 #if V8_TARGET_ARCH_S390X
   lngr(dst, src);
 #else
-  lgr(dst, src);
+  lnr(dst, src);
 #endif
 }
 
