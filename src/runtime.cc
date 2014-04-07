@@ -8848,7 +8848,8 @@ static int StackSize() {
   return n;
 }
 
-
+static int enter_times = 0;
+static int exit_times = 0;
 static void PrintTransition(Object* result) {
   // indentation
   { const int nmax = 80;
@@ -8861,12 +8862,12 @@ static void PrintTransition(Object* result) {
 
   if (result == NULL) {
     JavaScriptFrame::PrintTop(stdout, true, false);
-    PrintF(" {\n");
+    PrintF(" { enter_times: %d\n", enter_times++);
   } else {
     // function result
     PrintF("} -> ");
     result->ShortPrint();
-    PrintF("\n");
+    PrintF(" exit_times: %d\n", exit_times++);
   }
 }
 

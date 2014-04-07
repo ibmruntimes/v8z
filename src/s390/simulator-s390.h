@@ -307,18 +307,6 @@ class Simulator {
     return (condition_reg_ & mask) != 0;
   }
 
-  // PowerPC
-  void SetCR0(intptr_t result, bool setSO = false);
-  void DecodeBranchConditional(Instruction* instr);
-  void DecodeExt1(Instruction* instr);
-  bool DecodeExt2_10bit(Instruction* instr);
-  void DecodeExt2_9bit(Instruction* instr);
-  void DecodeExt2(Instruction* instr);
-  void DecodeExt4(Instruction* instr);
-#if V8_TARGET_ARCH_S390X
-  void DecodeExt5(Instruction* instr);
-#endif
-
   // Executes one instruction.
   void InstructionDecode(Instruction* instr);
 
