@@ -2312,7 +2312,7 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
           set_d_register_from_double(r1, r1_val);
         } else if (op == CFDBR) {
           int mask_val = rreInstr->M3Value();
-          int32_t r1_val;
+          int32_t r1_val = 0;
           switch (mask_val) {
             case CURRENT_ROUNDING_MODE:
             case ROUND_TO_NEAREST_WITH_TIES_AWAY_FROM_0:
@@ -2354,7 +2354,7 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
           set_low_register<int32_t>(r1, r1_val);
         } else if (op == CGDBR) {
           int mask_val = rreInstr->M3Value();
-          int64_t r1_val;
+          int64_t r1_val = 0;
           switch (mask_val) {
             case CURRENT_ROUNDING_MODE:
             case ROUND_TO_NEAREST_WITH_TIES_AWAY_FROM_0:
