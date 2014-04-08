@@ -3950,7 +3950,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
 #ifdef DEBUG
   if (FLAG_debug_code) {
     Label here;
-    __ b(&here /*, SetLK*/);
+    __ b(r14, &here /*, SetLK*/);
     __ bind(&here);
   }
 #endif
