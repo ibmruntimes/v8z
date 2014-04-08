@@ -2468,7 +2468,6 @@ RR_FORM_EMIT(spm, SPM)
 RXE_FORM_EMIT(sqeb, SQEB)
 RRE_FORM_EMIT(sqebr, SQEBR)
 RRE_FORM_EMIT(sqxbr, SQXBR)
-RS1_FORM_EMIT(srda, SRDA)
 RS1_FORM_EMIT(srdl, SRDL)
 RXF_FORM_EMIT(srdt, SRDT)
 RRF1_FORM_EMIT(srk, SRK)
@@ -2993,6 +2992,11 @@ void Assembler::sra(Register r1, Register opnd) {
 // Shift Right Signle (64)
 void Assembler::srag(Register r1, Register r3, const MemOperand& opnd) {
   rsy_form(SRAG, r1, r3, opnd.rb(), opnd.offset());
+}
+
+// Shift Right Double
+void Assembler::srda(Register r1, const Operand& opnd) {
+  rs_form(SRDA, r1, r0, r0, opnd.immediate());
 }
 
 // Compare Halfword Immediate (32)

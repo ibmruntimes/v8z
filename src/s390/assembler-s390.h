@@ -1555,7 +1555,6 @@ RRE_FORM(sqxbr);
 RR_FORM(sr);
 RSY1_FORM(srag);
 RSY1_FORM(srak);
-RS1_FORM(srda);
 RS1_FORM(srdl);
 RXF_FORM(srdt);
 RRF1_FORM(srk);
@@ -1690,6 +1689,7 @@ SS2_FORM(zap);
   void sra(Register r1, Register opnd);
   void srlk(Register r1, Register r3, const Operand& opnd);
   void sla(Register r1, const Operand& opnd);
+  void srda(Register r1, const Operand& opnd);
 
   // floating point instructions
   void ld(DoubleRegister r1, const MemOperand& opnd);
