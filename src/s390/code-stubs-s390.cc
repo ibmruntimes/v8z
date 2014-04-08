@@ -2032,6 +2032,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       // Do multiplication
       // scratch1 = product (untagged)
       // scratch2 = sign-extended higher 32 bits of product.
+      // FIXME: 
       __ Mul(scratch1, r0, ip);
       // Check for overflowing the smi range - no overflow if higher 33 bits of
       // the result are identical.
@@ -2044,11 +2045,13 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       // Do multiplication
       // scratch1 = lower 32 bits of product.
       // scratch2 = higher 32 bits of product.
-      __ mullw(scratch1, left, ip);
-      __ mulhw(scratch2, left, ip);
+      __ LoadRR(scratch2, right);  // r1 = right
+      __ mr_z(r0, left);  // r0:r1 = r1 * r3
+      // __ mullw(scratch1, left, ip);
+      // __ mulhw(scratch2, left, ip);
       // Check for overflowing the smi range - no overflow if higher 33 bits of
       // the result are identical.
-      __ TestIfInt32(scratch2, scratch1, ip);
+      __ TestIfInt32(r0, scratch2, ip);
       __ bne(&not_smi_result);
 #endif
       // Go slow on zero result to handle -0.
