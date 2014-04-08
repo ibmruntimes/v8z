@@ -2906,7 +2906,7 @@ void Assembler::lb(Register r1, const MemOperand& opnd) {
 
 // Load Byte Register-Register (32)
 void Assembler::lbr(Register r1, Register r2) {
-  rr_form(LBR, r1, r2);
+  rre_form(LBR, r1, r2);
 }
 
 // Load Byte Register-Storage (64)
