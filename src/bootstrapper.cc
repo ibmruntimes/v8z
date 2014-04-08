@@ -2362,6 +2362,7 @@ Genesis::Genesis(Isolate* isolate,
     InstallJSFunctionResultCaches();
     InitializeNormalizedMapCaches();
 
+    if (!InstallNatives()) return;
     MakeFunctionInstancePrototypeWritable();
 
     if (!ConfigureGlobalObjects(global_template)) return;
