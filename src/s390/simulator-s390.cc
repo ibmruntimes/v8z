@@ -1671,10 +1671,27 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
           r1_val ^= r2_val;
           SetS390BitWiseConditionCode<uint32_t>(r1_val);
           break;
-        case MR:
-        case DR:
-          UNIMPLEMENTED();
+        case MR: {
+          ASSERT(r1 % 2 == 0);
+          int64_t product = static_cast<int64_t>(r1_val)
+                          * static_cast<int64_t>(r2_val);
+          int32_t high_bits = product >> 32;
+          int32_t low_bits  = product & 0x00000000FFFFFFFF;
+          set_low_register<int32_t>(r1, high_bits);
+          set_low_register<int32_t>(r1+1, low_bits);
+          break;
+        }
+        case DR: {
+          ASSERT(r1 % 2 == 0);
+          // construct a 64bit operand:
+          int64_t dividend = static_cast<int64_t>(r1_val) << 32;
+          dividend += get_low_register<int32_t>(r1 + 1);
+          int32_t remainder = dividend % r2_val;
+          int32_t quotient = dividend / r2_val;
+          set_low_register<int32_t>(r1, remainder);
+          set_low_register<int32_t>(r1+1, quotient);
           break;  // reg pair
+        }
         default: UNREACHABLE(); break;
       }
       set_low_register<int32_t>(r1, r1_val);
@@ -2258,7 +2275,7 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
     case SRDA: {
       RSInstruction* rsInstr = reinterpret_cast<RSInstruction*>(instr);
       int r1 = rsInstr->R1Value();
-      ASSERT(r1.code() % 2 == 0);  // must be a reg pair
+      ASSERT(r1 % 2 == 0);  // must be a reg pair
       int b2 = rsInstr->B2Value();
       intptr_t d2 = rsInstr->D2Value();
       // only takes rightmost 6bits
@@ -2269,7 +2286,7 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       int64_t r1_val = opnd1 + opnd2;
       int64_t alu_out = r1_val >> shiftBits;
       set_low_register<int32_t>(r1, alu_out >> 32);
-      set_low_register<int32_t>(r2, alu_out & 0x00000000FFFFFFFF);
+      set_low_register<int32_t>(r1 + 1, alu_out & 0x00000000FFFFFFFF);
       SetS390ConditionCode<int32_t>(alu_out, 0);
       break;
     }

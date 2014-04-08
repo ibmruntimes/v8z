@@ -318,6 +318,8 @@ class MacroAssembler: public Assembler {
   void MulP(Register dst, const MemOperand& opnd);
   void Mul(Register dst, Register src1, Register src2);
 
+  void DivP(Register dividend, Register divider);
+
   void AndP(Register dst, const MemOperand& opnd);
   void AndP(Register dst, const Operand& opnd);
   void AndP(Register dst, Register src);

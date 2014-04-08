@@ -4029,6 +4029,13 @@ void MacroAssembler::Mul(Register dst, Register src1, Register src2) {
   MulP(dst, src2);
 }
 
+void MacroAssembler::DivP(Register dividend, Register divider) {
+  // have to make sure the src and dst are reg pairs
+  ASSERT(dividend.code() % 2 == 0);
+  // let 64bit and 32bit uses the same instruction
+  dr(dividend, divider);
+}
+
 void MacroAssembler::MulP(Register dst, const Operand& opnd) {
 #if V8_TARGET_ARCH_S390X
   msfi(dst, opnd);
