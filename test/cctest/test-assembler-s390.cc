@@ -144,20 +144,18 @@ TEST(2) {
   __ function_descriptor();
 #endif
 
-  __ lgr(r4, r3);
-  __ lhi(r3, Operand(1));
+  __ lgr(r3, r2);
+  __ lhi(r2, Operand(1));
   __ b(&C);
 
   __ bind(&L);
-#if defined(V8_TARGET_ARCH_S390X)
-  __ mulld(r3, r4, r3);
-#else
-  __ mullw(r3, r4, r3);
-#endif
-  __ ahi(r4, Operand(-1 & 0xFFFF));
+  __ lr(r5, r2);   // Set up muliplicant in R4:R5
+  __ mr_z(r4, r3);   // this is actually R4:R5 = R5 * R2
+  __ lr(r2, r5);
+  __ ahi(r3, Operand(-1 & 0xFFFF));
 
   __ bind(&C);
-  __ cgfi(r4, Operand(0, RelocInfo::NONE));
+  __ cfi(r3, Operand(0, RelocInfo::NONE));
   __ bne(&L);
   __ b(r14);
 
