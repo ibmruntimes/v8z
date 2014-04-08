@@ -1823,6 +1823,10 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       }
       break;
     }
+    case BKPT: {
+      SoftwareInterrupt(instr);
+      break;
+    }
     default:
       UNREACHABLE();
       return false;
