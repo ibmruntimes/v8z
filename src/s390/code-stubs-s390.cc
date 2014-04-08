@@ -2074,51 +2074,66 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       break;
     }
     case Token::DIV: {
+      // we need to have a register pair to do the dividing: (r0, r1)
+      __ Push(r9, r0);
+
       Label check_neg_zero;
-      __ SmiUntag(ip, left);
-      __ SmiUntag(scratch2, right, SetRC);
-      __ Div(scratch1, ip, scratch2);
+      __ SmiUntag(r0, left);
+      // extend the 64bit operand into a register pair
+      __ srda(r0, Operand(32));  // right shift 32bit
+      __ SmiUntag(r9, right);
       // Check for zero on the right hand side.
-      __ beq(&not_smi_result /*, cr0*/);
+      __ beq(&not_smi_result);
+
+      __ DivP(r0, r9);  // remainder in r0, quo in 1
+
       // Not Smi if remainder is non-zero.
-      __ Mul(scratch2, scratch2, scratch1);
-      __ CmpRR(ip, scratch2);
+      __ Cmpi(r0, Operand::Zero());
       __ bne(&not_smi_result);
       // If the result is 0, we need to check for the -0 case.
-      __ SmiTag(scratch2, scratch1/*, SetRC*/);  // already set in s390
-      __ beq(&check_neg_zero /*, cr0*/);  // should be save to do so
+      __ SmiTag(r0, r1);
+      __ beq(&check_neg_zero);
       // Check for Smi overflow
-      __ XorP(scratch1, scratch2/*, SetRC*/);  // Safe to remove rc
-      __ ltr(scratch1, scratch1);
-      __ blt(&not_smi_result /*, cr0*/);
-      __ LoadRR(right, scratch2);
+      __ XorP(r1, r0);
+      __ ltr(r1, r1);
+      __ blt(&not_smi_result);
+      __ LoadRR(right, r0);
+      __ Pop(r9, r0);
       __ Ret();
 
       // If divisor (right) is negative, we must produce -0.
       __ bind(&check_neg_zero);
       __ Cmpi(right, Operand::Zero());
       __ blt(&not_smi_result);
-      __ LoadRR(right, scratch2);
+      __ LoadRR(right, r0);
+      __ Pop(r9, r0);
       __ Ret();
       break;
     }
     case Token::MOD: {
+      // we need to have a register pair to do the dividing: (r0, r1)
+      __ Push(r9, r0);
+
       Label check_neg_zero;
-      __ SmiUntag(ip, left);
-      __ SmiUntag(scratch2, right, SetRC);
-      __ Div(scratch1, ip, scratch2);
+      __ SmiUntag(r0, left);
+      // extend the 64bit operand into a register pair
+      __ srda(r0, Operand(32));  // right shift 32bit
+      __ SmiUntag(r9, right);
       // Check for zero on the right hand side.
-      __ beq(&not_smi_result /*, cr0*/);
-      __ Mul(scratch1, scratch2, scratch1);
-      __ Sub(scratch1, ip, scratch1/*, LeaveOE, SetRC*/);
-      // Removing RC looks okay.
-      // If the result is 0, we need to check for the -0 case.
-      __ beq(&check_neg_zero /*, cr0*/);
+      __ beq(&not_smi_result);
+
+      // do the dividing, remainder in r0
+      __ DivP(r0, r9);
+
+      // if the result is zero, need to check -0 case
+      __ Cmpi(r0, Operand::Zero());
+      __ beq(&check_neg_zero);
+
+      __ SmiTag(right, r0);
 #if !V8_TARGET_ARCH_S390X
       // Check that the signed result fits in a Smi.
       __ JumpIfNotSmiCandidate(scratch1, scratch2, &not_smi_result);
 #endif
-      __ SmiTag(right, scratch1);
       __ Ret();
 
       // If dividend (left) is negative, we must produce -0.
