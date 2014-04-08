@@ -102,16 +102,16 @@ TEST(1) {
   __ function_descriptor();
 #endif
 
-  __ lgr(r4, r3);
-  __ lhi(r3, Operand(0, RelocInfo::NONE));
+  __ lr(r3, r2);
+  __ lhi(r2, Operand(0, RelocInfo::NONE));
   __ b(&C);
 
   __ bind(&L);
-  __ ar(r3, r4);
-  __ ahi(r4, Operand(-1 & 0xFFFF));
+  __ ar(r2, r3);
+  __ ahi(r3, Operand(-1 & 0xFFFF));
 
   __ bind(&C);
-  __ cgfi(r4, Operand(0, RelocInfo::NONE));
+  __ cfi(r3, Operand(0, RelocInfo::NONE));
   __ bne(&L);
   __ b(r14);
 
