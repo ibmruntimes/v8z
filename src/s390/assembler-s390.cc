@@ -2996,6 +2996,7 @@ void Assembler::srag(Register r1, Register r3, const MemOperand& opnd) {
 
 // Shift Right Double
 void Assembler::srda(Register r1, const Operand& opnd) {
+  ASSERT(r1.code() % 2 == 0);
   rs_form(SRDA, r1, r0, r0, opnd.immediate());
 }
 
