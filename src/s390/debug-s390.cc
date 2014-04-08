@@ -46,40 +46,38 @@ bool BreakLocationIterator::IsDebugBreakAtReturn() {
 
 void BreakLocationIterator::SetDebugBreakAtReturn() {
   // Patch the code changing the return from JS function sequence from
-  //
-  //   mr sp, fp
-  //   lwz fp, 0(sp)
-  //   lwz r0, 4(sp)
-  //   mtlr r0
-  //   addi sp, sp, <delta>
-  //   blr
+  // 31-bit:
+  //   lr sp, fp             2-bytes
+  //   l fp, 0(sp)           4-bytes
+  //   l r14, 4(sp)          4-bytes
+  //   la sp, <delta>(sp)    4-bytes
+  //   br r14                2-bytes
   //
   // to a call to the debug break return code.
   // this uses a FIXED_SEQUENCE to load a 32bit constant
   //
-  //   lis r0, <address hi>
-  //   ori r0, r0, <address lo>
-  //   mtlr r0
-  //   blrl
-  //   bkpt
+  //   iilf r14, <address>   6-bytes
+  //   basr r14, r14A        2-bytes
+  //   bkpt (0x0001)         2-bytes
   //
-  // The 64bit sequence is a bit longer
-  //   lis r0, <address bits 63-48>
-  //   ori r0, r0, <address bits 47-32>
-  //   sldi r0, r0, 32
-  //   oris r0, r0, <address bits 31-16>
-  //   ori  r0, r0, <address bits 15-0>
-  //   mtlr r0
-  //   blrl
-  //   bkpt
+  // The 64bit sequence is a bit longer:
+  //   lgr sp, fp            4-bytes
+  //   lg  fp, 0(sp)         6-bytes
+  //   lg  r14, 8(sp)        6-bytes
+  //   la  sp, <delta>(sp)   4-bytes
+  //   br  r14               2-bytes
   //
-  // FIXME: 2ND ARG
-  CodePatcher patcher(rinfo()->pc(), Assembler::kJSReturnSequenceInstructions);
+  // Will be patched with:
+  //   iihf r14, <high 32-bits address>    6-bytes
+  //   iilf r14, <lower 32-bits address>   6-bytes
+  //   basr r14, r14         2-bytes
+  //   bkpt (0x0001)         2-bytes
+  CodePatcher patcher(rinfo()->pc(), Assembler::kJSReturnSequenceLength);
 // printf("SetDebugBreakAtReturn: pc=%08x\n", (unsigned int)rinfo()->pc());
   patcher.masm()->mov(v8::internal::r14,
     Operand(reinterpret_cast<intptr_t>(
       Isolate::Current()->debug()->debug_break_return()->entry())));
-  patcher.masm()->bclr(BA, SetLK);
+  patcher.masm()->basr(v8::internal::r14, v8::internal::r14);
   patcher.masm()->bkpt(0);
 }
 
@@ -87,7 +85,7 @@ void BreakLocationIterator::SetDebugBreakAtReturn() {
 // Restore the JS frame exit code.
 void BreakLocationIterator::ClearDebugBreakAtReturn() {
   rinfo()->PatchCode(original_rinfo()->pc(),
-                     Assembler::kJSReturnSequenceInstructions);
+                     Assembler::kJSReturnSequenceLength);
 }
 
 
@@ -110,35 +108,34 @@ void BreakLocationIterator::SetDebugBreakAtSlot() {
   ASSERT(IsDebugBreakSlot());
   // Patch the code changing the debug break slot code from
   //
-  //   ori r3, r3, 0
-  //   ori r3, r3, 0
-  //   ori r3, r3, 0
-  //   ori r3, r3, 0
-  //   ori r3, r3, 0
+  //   oill r3, 0
+  //   oill r3, 0
+  //   oill r3, 0   64-bit only
+  //   lr r0, r0    64-bit only
   //
   // to a call to the debug break code, using a FIXED_SEQUENCE.
   //
-  //   lis r0, <address hi>
-  //   ori r0, r0, <address lo>
-  //   mtlr r0
-  //   blrl
+  //   iilf r14, <address>   6-bytes
+  //   basr r14, r14A        2-bytes
   //
-  // The 64bit sequence is +3 instructions longer for the load
+  // The 64bit sequence has an extra iihf.
   //
-  // FIXME: 2ND ARG
-  CodePatcher patcher(rinfo()->pc(), Assembler::kDebugBreakSlotInstructions);
+  //   iihf r14, <high 32-bits address>    6-bytes
+  //   iilf r14, <lower 32-bits address>   6-bytes
+  //   basr r14, r14         2-bytes
+  CodePatcher patcher(rinfo()->pc(), Assembler::kDebugBreakSlotLength);
 // printf("SetDebugBreakAtSlot: pc=%08x\n", (unsigned int)rinfo()->pc());
   patcher.masm()->mov(v8::internal::r14,
             Operand(reinterpret_cast<intptr_t>(
                    Isolate::Current()->debug()->debug_break_slot()->entry())));
-  patcher.masm()->bclr(BA, SetLK);
+  patcher.masm()->basr(v8::internal::r14, v8::internal::r14);
 }
 
 
 void BreakLocationIterator::ClearDebugBreakAtSlot() {
   ASSERT(IsDebugBreakSlot());
   rinfo()->PatchCode(original_rinfo()->pc(),
-                     Assembler::kDebugBreakSlotInstructions);
+                     Assembler::kDebugBreakSlotLength);
 }
 
 const bool Debug::FramePaddingLayout::kIsSupported = false;
@@ -326,11 +323,14 @@ void Debug::GenerateSlot(MacroAssembler* masm) {
   Label check_codesize;
   __ bind(&check_codesize);
   __ RecordDebugBreakSlot();
-  for (int i = 0; i < Assembler::kDebugBreakSlotInstructions; i++) {
+  for (int i = 0; i < Assembler::kDebugBreakSlotLength / 4; i++) {
     __ nop(MacroAssembler::DEBUG_BREAK_NOP);
   }
-  ASSERT_EQ(Assembler::kDebugBreakSlotInstructions,
-            masm->InstructionsGeneratedSince(&check_codesize));
+  if (Assembler::kDebugBreakSlotLength % 4 != 0) {
+    __ nop();   // Generate a 2-byte NOP
+  }
+  ASSERT_EQ(Assembler::kDebugBreakSlotLength,
+            masm->SizeOfCodeGeneratedSince(&check_codesize));
 }
 
 

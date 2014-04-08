@@ -675,29 +675,22 @@ class Assembler : public AssemblerBase {
   // register.
   static const int kPcLoadDelta = 0;  // Todo: remove
 
-#if V8_TARGET_ARCH_S390X
-  static const int kPatchDebugBreakSlotReturnOffset = 7 * kInstrSize;
-#else
-  static const int kPatchDebugBreakSlotReturnOffset = 4 * kInstrSize;
-#endif
-
   // This is the length of the BreakLocationIterator::SetDebugBreakAtReturn()
-  // code patch FIXED_SEQUENCE
+  // code patch FIXED_SEQUENCE in bytes!
 #if V8_TARGET_ARCH_S390X
-  static const int kJSReturnSequenceInstructions = 8;
+  static const int kJSReturnSequenceLength = 16;
 #else
-  static const int kJSReturnSequenceInstructions = 5;
+  static const int kJSReturnSequenceLength = 10;
 #endif
 
   // This is the length of the code sequence from SetDebugBreakAtSlot()
-  // FIXED_SEQUENCE
+  // FIXED_SEQUENCE in bytes!
 #if V8_TARGET_ARCH_S390X
-  static const int kDebugBreakSlotInstructions = 7;
+  static const int kDebugBreakSlotLength = 14;
 #else
-  static const int kDebugBreakSlotInstructions = 4;
+  static const int kDebugBreakSlotLength = 8;
 #endif
-  static const int kDebugBreakSlotLength =
-      kDebugBreakSlotInstructions * kInstrSize;
+  static const int kPatchDebugBreakSlotReturnOffset = kDebugBreakSlotLength;
 
   static inline int encode_crbit(const CRegister& cr, enum CRBit crbit) {
     return ((cr.code() * CRWIDTH) + crbit);
@@ -1935,7 +1928,7 @@ SS2_FORM(zap);
   PositionsRecorder* positions_recorder() { return &positions_recorder_; }
 
   // Read/patch instructions
-  uint64_t instr_at(int pos) {
+  SixByteInstr instr_at(int pos) {
     return Instruction::InstructionBits(buffer_ + pos);
   }
   template<typename T>
@@ -1948,7 +1941,9 @@ SS2_FORM(zap);
     return Instruction::InstructionLength(buffer_ + pos);
   }
 
-  static Instr instr_at(byte* pc) { return Instruction::InstructionBits(pc); }
+  static SixByteInstr instr_at(byte* pc) {
+    return Instruction::InstructionBits(pc);
+  }
 
   static Condition GetCondition(Instr instr);
 
@@ -1971,7 +1966,7 @@ SS2_FORM(zap);
 #if V8_TARGET_ARCH_S390X
   static bool IsRldicl(Instr instr);
 #endif
-  static bool IsNop(Instr instr, int type = NON_MARKING_NOP);
+  static bool IsNop(SixByteInstr instr, int type = NON_MARKING_NOP);
 
   // Postpone the generation of the trampoline pool for the specified number of
   // instructions.

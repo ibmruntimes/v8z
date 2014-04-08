@@ -167,16 +167,19 @@ bool RelocInfo::IsCodedSpecially() {
 }
 
 
-void RelocInfo::PatchCode(byte* instructions, int instruction_count) {
+void RelocInfo::PatchCode(byte* instructions, int num_bytes) {
   // Patch the code at the current address with the supplied instructions.
-  Instr* pc = reinterpret_cast<Instr*>(pc_);
-  Instr* instr = reinterpret_cast<Instr*>(instructions);
-  for (int i = 0; i < instruction_count; i++) {
-    *(pc + i) = *(instr + i);
+  byte* pc = reinterpret_cast<byte*>(pc_);
+  byte *instr = instructions;
+
+  // We patch byte to byte as instructions have to be stored in big endian
+  // regardless of host's endianness
+  for (int i = 0; i < num_bytes; i++) {
+    *(pc) = *(instr);
   }
 
   // Indicate that code has changed.
-  CPU::FlushICache(pc_, instruction_count * Assembler::kInstrSize);
+  CPU::FlushICache(pc_, num_bytes);
 }
 
 
@@ -926,7 +929,8 @@ void Assembler::stop(const char* msg, Condition cond, int32_t code,
 }
 
 void Assembler::bkpt(uint32_t imm16) {
-  emit(0x7d821008);
+  emit2bytes(0x0001);
+  // emit(0x7d821008);
 }
 
 
@@ -3442,13 +3446,12 @@ void Assembler::ldeb(DoubleRegister d1, const MemOperand& opnd) {
 // end of S390instructions
 
 
-bool Assembler::IsNop(Instr instr, int type) {
+bool Assembler::IsNop(SixByteInstr instr, int type) {
   ASSERT((0 == type) || (DEBUG_BREAK_NOP == type));
-  int reg = 0;
   if (DEBUG_BREAK_NOP == type) {
-    reg = 3;
+    return (instr == 0xa53b0000);   // oill r3, 0
   }
-  return instr == (ORI | reg*B21 | reg*B16);
+  return (instr == 0x1800);   // lr r0,r0
 }
 
 // Debugging.

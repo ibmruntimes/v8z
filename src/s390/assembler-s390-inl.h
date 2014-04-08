@@ -235,30 +235,34 @@ bool RelocInfo::IsPatchedReturnSequence() {
   // BreakLocationIterator::SetDebugBreakAtReturn()
   // FIXED_SEQUENCE
 
-  Instr instr0 = Assembler::instr_at(pc_);
-  Instr instr1 = Assembler::instr_at(pc_ + 1 * Assembler::kInstrSize);
+  bool patched_return = true;
 #if V8_TARGET_ARCH_S390X
-  Instr instr3 = Assembler::instr_at(pc_ + (3 * Assembler::kInstrSize));
-  Instr instr4 = Assembler::instr_at(pc_ + (4 * Assembler::kInstrSize));
-  Instr binstr = Assembler::instr_at(pc_ + (7 * Assembler::kInstrSize));
+  Opcode instr0 = Instruction::S390OpcodeValue(
+                                      reinterpret_cast<const byte*>(pc_));
+  Opcode instr1 = Instruction::S390OpcodeValue(
+                                      reinterpret_cast<const byte*>(pc_+6));
+  Opcode basr = Instruction::S390OpcodeValue(
+                                      reinterpret_cast<const byte*>(pc_ + 12));
+  Opcode bkpt = Instruction::S390OpcodeValue(
+                                      reinterpret_cast<const byte*>(pc_ + 14));
+  patched_return = (IIHF == instr0);
 #else
-  Instr binstr = Assembler::instr_at(pc_ + 4 * Assembler::kInstrSize);
+  Opcode instr1 = Instruction::S390OpcodeValue(
+                                      reinterpret_cast<const byte*>(pc_));
+  Opcode basr = Instruction::S390OpcodeValue(
+                                      reinterpret_cast<const byte*>(pc_ + 6));
+  Opcode bkpt = Instruction::S390OpcodeValue(
+                                      reinterpret_cast<const byte*>(pc_ + 8));
 #endif
-  bool patched_return = ((instr0 & kOpcodeMask) == ADDIS &&
-                         (instr1 & kOpcodeMask) == ORI &&
-#if V8_TARGET_ARCH_S390X
-                         (instr3 & kOpcodeMask) == ORIS &&
-                         (instr4 & kOpcodeMask) == ORI &&
-#endif
-                         (binstr == 0x7d821008));   // twge r2, r2
+  patched_return = patched_return &&
+                   (IILF == instr1) && (BASR == basr) && (BKPT == bkpt);
 
-// printf("IsPatchedReturnSequence: %d\n", patched_return);
   return patched_return;
 }
 
 
 bool RelocInfo::IsPatchedDebugBreakSlotSequence() {
-  Instr current_instr = Assembler::instr_at(pc_);
+  SixByteInstr current_instr = Assembler::instr_at(pc_);
   return !Assembler::IsNop(current_instr, Assembler::DEBUG_BREAK_NOP);
 }
 

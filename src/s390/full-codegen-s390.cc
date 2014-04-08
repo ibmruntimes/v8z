@@ -461,23 +461,15 @@ void FullCodeGenerator::EmitReturnSequence() {
       masm_->LoadRR(sp, fp);
       masm_->LoadP(fp, MemOperand(sp));
       masm_->LoadP(r14, MemOperand(sp, kPointerSize));
-      masm_->AddP(sp, Operand((uint32_t)(sp_delta + (2 * kPointerSize))));
+      masm_->la(sp, MemOperand(sp, (uint32_t)(sp_delta + (2 * kPointerSize))));
       masm_->Ret();
-      masm_->nop();
-      masm_->nop();
-#if V8_TARGET_ARCH_S390X
-      // With 64bit we need a couple of nop() instructions to ensure we have
-      // enough space to SetDebugBreakAtReturn()
-      masm_->nop();
-      masm_->nop();
-#endif
     }
 
 #ifdef DEBUG
     // Check that the size of the code used for returning is large enough
     // for the debugger's requirements.
-    ASSERT(Assembler::kJSReturnSequenceInstructions <=
-           masm_->InstructionsGeneratedSince(&check_exit_codesize));
+    ASSERT(Assembler::kJSReturnSequenceLength <=
+           masm_->SizeOfCodeGeneratedSince(&check_exit_codesize));
 #endif
   }
 }
