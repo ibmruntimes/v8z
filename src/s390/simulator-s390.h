@@ -382,6 +382,7 @@ class Simulator {
     char* desc;
   };
   StopCountAndDesc watched_stops[kNumOfWatchedStops];
+  void DebugStart();
 };
 
 

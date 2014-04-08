@@ -173,6 +173,8 @@ class Simulator {
   // Executes PPC instructions until the PC reaches end_sim_pc.
   void Execute();
 
+  void DebugStart();
+
   // Call on program start.
   static void Initialize(Isolate* isolate);
 

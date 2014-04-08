@@ -3281,6 +3281,11 @@ void Simulator::InstructionDecode(Instruction* instr) {
 }
 
 
+void Simulator::DebugStart() {
+  PPCDebugger dbg(this);
+  dbg.Debug();
+}
+
 void Simulator::Execute() {
   // Get the PC to simulate. Cannot use the accessor here as we need the
   // raw PC value and not the one used as input to arithmetic instructions.
