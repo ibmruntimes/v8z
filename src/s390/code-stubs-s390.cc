@@ -2032,7 +2032,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       // Do multiplication
       // scratch1 = product (untagged)
       // scratch2 = sign-extended higher 32 bits of product.
-      // FIXME: 
+      // FIXME:
       __ Mul(scratch1, r0, ip);
       // Check for overflowing the smi range - no overflow if higher 33 bits of
       // the result are identical.
