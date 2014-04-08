@@ -1599,7 +1599,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
   // r2: actual number of arguments
   // r3: function
   __ LoadP(r5, FieldMemOperand(r3, JSFunction::kSharedFunctionInfoOffset));
-  __ LoadW(r4, FieldMemOperand(r8,
+  __ LoadW(r4, FieldMemOperand(r5,
            SharedFunctionInfo::kFormalParameterCountOffset));
 #if !defined(V8_TARGET_ARCH_S390X)
   __ SmiUntag(r4);
