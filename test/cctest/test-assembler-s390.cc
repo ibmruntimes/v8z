@@ -1311,7 +1311,7 @@ TEST(16) {
   intptr_t res =
     reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(f, 3, 4, 3, 0, 0));
   ::printf("f() = %" V8PRIdPTR "\n", res);
-  CHECK_EQ(3, static_cast<int>(res));
+  CHECK_EQ(2, static_cast<int>(res));
 }
 
 // Test JumpIfSmi
