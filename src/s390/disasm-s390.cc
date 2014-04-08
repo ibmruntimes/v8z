@@ -1087,6 +1087,7 @@ bool Decoder::DecodeTwoByte(Instruction* instr) {
       case LCR: Format(instr, "lcr\t'r1,'r2"); break;
       case BASR: Format(instr, "basr\t'r1,'r2"); break;
       case LDR: Format(instr, "ldr\t'r1,'r2"); break;
+      case BKPT: Format(instr, "bkpt"); break;
     default:
       return false;
   }
