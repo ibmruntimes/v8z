@@ -2041,11 +2041,10 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
 #else
       // Remove tag from one of the operands. This way the multiplication result
       // will be a smi if it fits the smi range.
-      __ SmiUntag(ip, right);
+      __ SmiUntag(scratch2, right);  // r1 = right
       // Do multiplication
       // scratch1 = lower 32 bits of product.
       // scratch2 = higher 32 bits of product.
-      __ LoadRR(scratch2, right);  // r1 = right
       __ mr_z(r0, left);  // r0:r1 = r1 * r3
       // __ mullw(scratch1, left, ip);
       // __ mulhw(scratch2, left, ip);
