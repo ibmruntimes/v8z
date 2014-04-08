@@ -914,6 +914,7 @@ enum Opcode {
   XSCH    = 0xB276,  // Cancel Subchannel
   XY      = 0xE357,  // Exclusive Or (32)
   ZAP     = 0xF8,    // Zero And Add
+  BKPT    = 0x0001,  // GDB Software Breakpoint
 
 // PPC Opcodes (to be removed later)
   TWI     =  3 << 26,  // Trap Word Immediate
@@ -1520,7 +1521,8 @@ class Instruction {
 
      // 2-byte opcodes
      //   E, IE, RRD, RRE, RRF, SIL, S, SSE Formats
-     if ((0x01 == firstByte) ||
+     if ((0x00 == firstByte) ||    // Software breakpoint 0x0001
+         (0x01 == firstByte) ||
          (0xB2 == firstByte) ||
          (0xB3 == firstByte) ||
          (0xB9 == firstByte) ||
