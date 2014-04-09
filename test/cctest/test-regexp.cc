@@ -715,7 +715,7 @@ typedef RegExpMacroAssemblerARM ArchRegExpMacroAssembler;
 #elif V8_TARGET_ARCH_PPC
 typedef RegExpMacroAssemblerPPC ArchRegExpMacroAssembler;
 #elif V8_TARGET_ARCH_S390
-typedef RegExpMacroAssemblerPPC ArchRegExpMacroAssembler;
+typedef RegExpMacroAssemblerS390 ArchRegExpMacroAssembler;
 #elif V8_TARGET_ARCH_MIPS
 typedef RegExpMacroAssemblerMIPS ArchRegExpMacroAssembler;
 #endif

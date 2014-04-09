@@ -2253,7 +2253,7 @@ SS2_FORM(zap);
   Trampoline trampoline_;
   bool internal_trampoline_exception_;
 
-  friend class RegExpMacroAssemblerPPC;
+  friend class RegExpMacroAssemblerS390;
   friend class RelocInfo;
   friend class CodePatcher;
   friend class BlockTrampolinePoolScope;
