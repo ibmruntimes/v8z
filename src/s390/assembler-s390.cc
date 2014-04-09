@@ -764,13 +764,6 @@ void  Assembler::lis(Register dst, const Operand& imm) {
   d_form(ADDIS, dst, r0, imm.imm_, true);
 }
 
-void Assembler::lhzux(Register rt, const MemOperand & src) {
-  Register rb = src.rb();
-  Register rx = src.rx();
-  ASSERT(!rb.is(r0));
-  emit(EXT2 | LHZUX | rt.code()*B21 | rb.code()*B16 | rx.code()*B11 | LeaveRC);
-}
-
 // 32-bit Store Multiple - short displacement (12-bits unsigned)
 void Assembler::stm(Register r1, Register r2, const MemOperand& src) {
   rs_form(STM, r1, r2, src.rb(), src.offset());

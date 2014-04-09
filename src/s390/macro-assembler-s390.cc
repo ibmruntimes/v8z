@@ -4711,16 +4711,7 @@ void MacroAssembler::LoadHalfWord(Register dst, const MemOperand& mem,
       LoadLogicalHalfWordP(dst, MemOperand(base, scratch));
     }
   } else {
-    // If updateForm is ever true, then lhzu will
-    // need to be implemented
     assert(0);
-#if 0  // LoadHalfWord w\ update not yet needed
-    if (use_dform) {
-      lhzu(dst, mem);
-    } else {
-      lhzux(dst, MemOperand(base, scratch));
-    }
-#endif
   }
 }
 

@@ -928,10 +928,6 @@ void Decoder::DecodeExt2(Instruction* instr) {
       Format(instr, "lwzux   'rt, 'ra, 'rb");
       break;
     }
-    case LHZUX: {
-      Format(instr, "lhzux   'rt, 'ra, 'rb");
-      break;
-    }
 #if V8_TARGET_ARCH_S390X
     case LDX: {
       Format(instr, "ldx     'rt, 'ra, 'rb");
@@ -1471,10 +1467,6 @@ int Decoder::InstructionDecode(byte* instr_ptr) {
     }
     case LBZU: {
       Format(instr, "lbzu    'rt, 'int16('ra)");
-      break;
-    }
-    case LHZU: {
-      Format(instr, "lhzu    'rt, 'int16('ra)");
       break;
     }
     case LHA: {
