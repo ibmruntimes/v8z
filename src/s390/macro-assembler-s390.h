@@ -1550,16 +1550,16 @@ class MacroAssembler: public Assembler {
   void AssertSmi(Register object);
 
 
-  // TODO(AlanLi): these two methods can be removed from s390, as
-  // s390 instructions provides with overflow checking.
+  // Checks to see if 64-bit value fits in SMI range, i.e the upper 33-bits are
+  // the same.
 #if V8_TARGET_ARCH_S390X
   inline void TestIfInt32(Register value,
                           Register scratch1, Register scratch2) {
     // High bits must be identical to fit into an 32-bit integer
     LoadRR(scratch1, value);
     sra(scratch1, Operand(31));
-    sradi(scratch2, value, 32);
-    CmpRR(scratch1, scratch2);
+    srag(scratch2, value, MemOperand(32));
+    cr(scratch1, scratch2);  // force 32-bit comparison
   }
 #else
   inline void TestIfInt32(Register hi_word, Register lo_word,

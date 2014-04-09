@@ -2042,27 +2042,27 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
       // Remove tag from both operands.
       __ SmiUntag(ip, right);
       __ SmiUntag(r0, left);
-      __ Mul(scratch1, r0, ip);
-      // Check for overflowing the smi range - no overflow if higher 33 bits of
-      // the result are identical.
-      __ TestIfInt32(scratch1, scratch2, ip);
-      __ bne(&stub_call);
-#else
-      __ SmiUntag(ip, right);
-      __ mullw(scratch1, left, ip);
-      __ mulhw(scratch2, left, ip);
+      __ Mul(scratch2, r0, ip);
       // Check for overflowing the smi range - no overflow if higher 33 bits of
       // the result are identical.
       __ TestIfInt32(scratch2, scratch1, ip);
       __ bne(&stub_call);
+#else
+      __ SmiUntag(ip, right);
+      __ LoadRR(scratch2, left);    // load into low order of reg pair
+      __ mr_z(scratch1, ip);        // R4:R5 = R5 * ip
+      // Check for overflowing the smi range - no overflow if higher 33 bits of
+      // the result are identical.
+      __ TestIfInt32(scratch1, scratch2, ip);
+      __ bne(&stub_call);
 #endif
       // Go slow on zero result to handle -0.
-      __ Cmpi(scratch1, Operand::Zero());
+      __ Cmpi(scratch2, Operand::Zero());
       __ beq(&mul_zero);
 #if V8_TARGET_ARCH_S390X
-      __ SmiTag(right, scratch1);
+      __ SmiTag(right, scratch2);
 #else
-      __ LoadRR(right, scratch1);
+      __ LoadRR(right, scratch2);
 #endif
       __ b(&done);
       // We need -0 if we were multiplying a negative number with 0 to get 0.
