@@ -3384,7 +3384,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
   Label positive_exponent;
   __ Cmpi(scratch, Operand::Zero());
   __ bge(&positive_exponent);
-  __ Negate(scratch, scratch);
+  __ LoadComplementRR(scratch, scratch);
   __ bind(&positive_exponent);
 
   Label while_true, no_carry, loop_end;
