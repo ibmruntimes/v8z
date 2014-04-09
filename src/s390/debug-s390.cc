@@ -176,8 +176,8 @@ static void Generate_DebugBreakCallHelper(MacroAssembler* masm,
 #ifdef DEBUG
     __ RecordComment("// Calling from debug break to runtime - come in - over");
 #endif
-    __ mov(r3, Operand(0, RelocInfo::NONE));  // no arguments
-    __ mov(r4, Operand(ExternalReference::debug_break(masm->isolate())));
+    __ mov(r2, Operand(0, RelocInfo::NONE));  // no arguments
+    __ mov(r3, Operand(ExternalReference::debug_break(masm->isolate())));
 
     CEntryStub ceb(1);
     __ CallStub(&ceb);
@@ -215,104 +215,104 @@ static void Generate_DebugBreakCallHelper(MacroAssembler* masm,
 void Debug::GenerateLoadICDebugBreak(MacroAssembler* masm) {
   // Calling convention for IC load (from ic-ppc.cc).
   // ----------- S t a t e -------------
-  //  -- r5    : name
+  //  -- r4    : name
   //  -- lr    : return address
-  //  -- r3    : receiver
+  //  -- r2    : receiver
   //  -- [sp]  : receiver
   // -----------------------------------
-  // Registers r3 and r5 contain objects that need to be pushed on the
+  // Registers r2 and r4 contain objects that need to be pushed on the
   // expression stack of the fake JS frame.
-  Generate_DebugBreakCallHelper(masm, r3.bit() | r5.bit(), 0);
+  Generate_DebugBreakCallHelper(masm, r2.bit() | r4.bit(), 0);
 }
 
 
 void Debug::GenerateStoreICDebugBreak(MacroAssembler* masm) {
   // Calling convention for IC store (from ic-ppc.cc).
   // ----------- S t a t e -------------
-  //  -- r3    : value
-  //  -- r4    : receiver
-  //  -- r5    : name
+  //  -- r2    : value
+  //  -- r3    : receiver
+  //  -- r4    : name
   //  -- lr    : return address
   // -----------------------------------
-  // Registers r3, r4, and r5 contain objects that need to be pushed on the
+  // Registers r2, r3, and r4 contain objects that need to be pushed on the
   // expression stack of the fake JS frame.
-  Generate_DebugBreakCallHelper(masm, r3.bit() | r4.bit() | r5.bit(), 0);
+  Generate_DebugBreakCallHelper(masm, r2.bit() | r3.bit() | r4.bit(), 0);
 }
 
 
 void Debug::GenerateKeyedLoadICDebugBreak(MacroAssembler* masm) {
   // ---------- S t a t e --------------
   //  -- lr     : return address
-  //  -- r3     : key
-  //  -- r4     : receiver
-  Generate_DebugBreakCallHelper(masm, r3.bit() | r4.bit(), 0);
+  //  -- r2     : key
+  //  -- r3     : receiver
+  Generate_DebugBreakCallHelper(masm, r2.bit() | r3.bit(), 0);
 }
 
 
 void Debug::GenerateKeyedStoreICDebugBreak(MacroAssembler* masm) {
   // ---------- S t a t e --------------
-  //  -- r3     : value
-  //  -- r4     : key
-  //  -- r5     : receiver
+  //  -- r2     : value
+  //  -- r3     : key
+  //  -- r4     : receiver
   //  -- lr     : return address
-  Generate_DebugBreakCallHelper(masm, r3.bit() | r4.bit() | r5.bit(), 0);
+  Generate_DebugBreakCallHelper(masm, r2.bit() | r3.bit() | r4.bit(), 0);
 }
 
 
 void Debug::GenerateCallICDebugBreak(MacroAssembler* masm) {
   // Calling convention for IC call (from ic-ppc.cc)
   // ----------- S t a t e -------------
-  //  -- r5     : name
+  //  -- r4     : name
   // -----------------------------------
-  Generate_DebugBreakCallHelper(masm, r5.bit(), 0);
+  Generate_DebugBreakCallHelper(masm, r4.bit(), 0);
 }
 
 
 void Debug::GenerateReturnDebugBreak(MacroAssembler* masm) {
-  // In places other than IC call sites it is expected that r3 is TOS which
+  // In places other than IC call sites it is expected that r2 is TOS which
   // is an object - this is not generally the case so this should be used with
   // care.
-  Generate_DebugBreakCallHelper(masm, r3.bit(), 0);
+  Generate_DebugBreakCallHelper(masm, r2.bit(), 0);
 }
 
 
 void Debug::GenerateCallFunctionStubDebugBreak(MacroAssembler* masm) {
   // Register state for CallFunctionStub (from code-stubs-ppc.cc).
   // ----------- S t a t e -------------
-  //  -- r4 : function
+  //  -- r3 : function
   // -----------------------------------
-  Generate_DebugBreakCallHelper(masm, r4.bit(), 0);
+  Generate_DebugBreakCallHelper(masm, r3.bit(), 0);
 }
 
 
 void Debug::GenerateCallFunctionStubRecordDebugBreak(MacroAssembler* masm) {
   // Register state for CallFunctionStub (from code-stubs-ppc.cc).
   // ----------- S t a t e -------------
-  //  -- r4 : function
-  //  -- r5 : cache cell for call target
+  //  -- r3 : function
+  //  -- r4 : cache cell for call target
   // -----------------------------------
-  Generate_DebugBreakCallHelper(masm, r4.bit() | r5.bit(), 0);
+  Generate_DebugBreakCallHelper(masm, r3.bit() | r4.bit(), 0);
 }
 
 
 void Debug::GenerateCallConstructStubDebugBreak(MacroAssembler* masm) {
   // Calling convention for CallConstructStub (from code-stubs-ppc.cc)
   // ----------- S t a t e -------------
-  //  -- r3     : number of arguments (not smi)
-  //  -- r4     : constructor function
+  //  -- r2     : number of arguments (not smi)
+  //  -- r3     : constructor function
   // -----------------------------------
-  Generate_DebugBreakCallHelper(masm, r4.bit(), r3.bit());
+  Generate_DebugBreakCallHelper(masm, r3.bit(), r2.bit());
 }
 
 
 void Debug::GenerateCallConstructStubRecordDebugBreak(MacroAssembler* masm) {
   // Calling convention for CallConstructStub (from code-stubs-ppc.cc)
   // ----------- S t a t e -------------
-  //  -- r3     : number of arguments (not smi)
-  //  -- r4     : constructor function
-  //  -- r5     : cache cell for call target
+  //  -- r2     : number of arguments (not smi)
+  //  -- r3     : constructor function
+  //  -- r4     : cache cell for call target
   // -----------------------------------
-  Generate_DebugBreakCallHelper(masm, r4.bit() | r5.bit(), r3.bit());
+  Generate_DebugBreakCallHelper(masm, r3.bit() | r4.bit(), r2.bit());
 }
 
 
