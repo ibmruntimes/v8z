@@ -4584,8 +4584,8 @@ void MacroAssembler::LoadlW(Register dst, const MemOperand& mem,
   Register base = mem.rb();
   int offset = mem.offset();
 
-  bool use_RXform = is_uint16(offset);
-  bool use_RXYform = !use_RXform && is_int20(offset);
+  bool use_RXform = false;
+  bool use_RXYform = false;
 
   if (is_uint12(offset)) {
     // RX-format supports unsigned 12-bits offset.
@@ -4665,8 +4665,8 @@ void MacroAssembler::StoreW(Register src, const MemOperand& mem,
   Register base = mem.rb();
   int offset = mem.offset();
 
-  bool use_RXform = is_uint16(offset);
-  bool use_RXYform = !use_RXform && is_int20(offset);
+  bool use_RXform = false;
+  bool use_RXYform = false;
 
   if (is_uint12(offset)) {
     // RX-format supports unsigned 12-bits offset.
