@@ -131,6 +131,20 @@ void generate(MacroAssembler* masm, i::Vector<const char> string) {
   StringHelper::GenerateHashGetHash(masm, r3, r0);
   __ pop(kRootRegister);
   __ blr();
+#elif V8_TARGET_ARCH_S390
+  __ push(kRootRegister);
+  __ InitializeRootRegister();
+
+  __ lhi(r3, Operand::Zero());
+  __ lhi(ip, Operand(string.at(0)));
+  StringHelper::GenerateHashInit(masm, r2, ip, r0);
+  for (int i = 1; i < string.length(); i++) {
+    __ lhi(ip, Operand(string.at(i)));
+    StringHelper::GenerateHashAddCharacter(masm, r2, ip, r0);
+  }
+  StringHelper::GenerateHashGetHash(masm, r2, r0);
+  __ pop(kRootRegister);
+  __ Ret();
 #endif
 }
 
