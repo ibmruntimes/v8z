@@ -176,6 +176,13 @@ void generate(MacroAssembler* masm, uint32_t key) {
   __ GetNumberHash(r3, ip);
   __ pop(kRootRegister);
   __ blr();
+#elif V8_TARGET_ARCH_S390
+  __ push(kRootRegister);
+  __ InitializeRootRegister();
+  __ lhi(r2, Operand(key));
+  __ GetNumberHash(r2, ip);
+  __ pop(kRootRegister);
+  __ Ret();
 #endif
 }
 
