@@ -2043,6 +2043,25 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       set_low_register<int32_t>(r1, alu_out);
       break;
     }
+    case OILL:
+    case OIHL: {
+      RIInstruction* riInst = reinterpret_cast<RIInstruction*>(instr);
+      int r1 = riInst->R1Value();
+      int i  = riInst->I2Value();
+      int32_t r1_val = get_low_register<int32_t>(r1);
+      if (OILL == op) {
+        // CC is set based on the 16 bits that are AND'd
+        SetS390BitWiseConditionCode<uint16_t>(r1_val | i);
+      } else if (OILH == op) {
+        // CC is set based on the 16 bits that are AND'd
+        SetS390BitWiseConditionCode<uint16_t>((r1_val >> 16) | i);
+        i = i << 16;
+      } else {
+        UNIMPLEMENTED();
+      }
+      set_low_register<int32_t>(r1, r1_val | i);
+      break;
+    }
     case NILL:
     case NILH: {
       RIInstruction* riInst = reinterpret_cast<RIInstruction*>(instr);
