@@ -2340,7 +2340,11 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
           set_d_register_from_double(r1, r1_val);
           SetS390ConditionCode<double>(r1_val, 0);
         } else if (op == CDBR) {
+          if (isNaN(r1_val) || isNaN(r2_val)) {
+            condition_reg_ = CC_OF;
+          } else {
           SetS390ConditionCode<double>(r1_val, r2_val);
+          }
         } else if (op == CDGBR) {
           intptr_t r2_val = get_register(r2);
           double r1_val = static_cast<double>(r2_val);

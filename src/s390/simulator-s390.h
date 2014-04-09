@@ -277,12 +277,20 @@ class Simulator {
   template <typename T>
   void SetS390ConditionCode(T lhs, T rhs) {
     condition_reg_ = 0;
-    if (lhs == rhs)
+    if (lhs == rhs) {
       condition_reg_ |= CC_EQ;
-    if (lhs <  rhs)
+    } else if (lhs <  rhs) {
       condition_reg_ |= CC_LT;
-    if (lhs >  rhs)
+    } else if (lhs >  rhs) {
       condition_reg_ |= CC_GT;
+    }
+
+    // this is for floating point comparision
+    ASSERT(condition_reg_ != 0);
+  }
+
+  bool isNaN(double value) {
+    return (value != value);
   }
 
   // Set the condition code for bitwise operations
