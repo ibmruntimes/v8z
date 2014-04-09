@@ -1315,7 +1315,8 @@ class MacroAssembler: public Assembler {
 #else
     if (!dst.is(src))
       lr(dst, src);
-    srl(dst, Operand(rangeEnd));
+    if (rangeEnd > 0)              // Don't need to shift if rangeEnd is zero.
+      srl(dst, Operand(rangeEnd));
 #endif
     uint32_t mask = 0xffffffff >> (kBitsPerPointer - width);
     AndP(dst, Operand(mask));
