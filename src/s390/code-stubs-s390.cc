@@ -1208,8 +1208,7 @@ void NumberToStringStub::GenerateLookupNumberStringCache(MacroAssembler* masm,
     // Calculate address of entry in string cache: each entry consists
     // of two pointer sized fields.
     __ ShiftLeftImm(scratch1, scratch1, Operand(kPointerSizeLog2 + 1));
-    __ LoadRR(scratch1, number_string_cache);
-    __ AddP(scratch1, scratch1);
+    __ AddP(scratch1, number_string_cache);
 
     Register probe = mask;
     __ LoadP(probe, FieldMemOperand(scratch1, FixedArray::kHeaderSize));
