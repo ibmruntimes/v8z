@@ -1696,7 +1696,7 @@ void UnaryOpStub::GenerateSmiCodeSub(MacroAssembler* masm,
   __ beq(slow /*, cr0*/);
 
   // Return '- value'.
-  __ Negate(r2, r2);
+  __ LoadComplementRR(r2, r2);
   __ Ret();
 }
 

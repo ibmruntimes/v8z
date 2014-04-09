@@ -2173,7 +2173,7 @@ Handle<Code> CallStubCompiler::CompileMathFloorCall(
   __ TestSignBit(r2, r0);
   __ LoadRR(r0, r2);
   __ beq(&positive /*, cr0*/);
-  __ Negate(r0, r2);
+  __ LoadComplementRR(r0, r2);
   __ bind(&positive);
 
   // if any of the high bits are set, fail to generic

@@ -903,13 +903,13 @@ void LCodeGen::DoModI(LModI* instr) {
     Label positive_dividend;
     __ Cmpi(dividend, Operand::Zero());
     __ bge(&positive_dividend);
-    __ Negate(result, dividend);
+    __ LoadComplementRR(result, dividend);
     __ mov(scratch, Operand(divisor - 1));
     __ AndP(result, scratch/*, SetRC*/);  // Should be okay to remove rc
     if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
       DeoptimizeIf(eq, instr->environment(), cr0);
     }
-    __ Negate(result, result);
+    __ LoadComplementRR(result, result);
     __ b(&done);
     __ bind(&positive_dividend);
     __ mov(scratch, Operand(divisor - 1));
@@ -1016,7 +1016,7 @@ void LCodeGen::DoMathFloorOfDiv(LMathFloorOfDiv* instr) {
       } else {
         // oe = LeaveOE;
       }
-      __ Negate(result, dividend/*, oe, SetRC*/);
+      __ LoadComplementRR(result, dividend/*, oe, SetRC*/);
       // TODO(john): might be a problem removing SetOE here.
       if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
         DeoptimizeIf(eq, instr->environment(), cr0);
@@ -1032,7 +1032,7 @@ void LCodeGen::DoMathFloorOfDiv(LMathFloorOfDiv* instr) {
   if (IsPowerOf2(divisor_abs)) {
     int32_t power = WhichPowerOf2(divisor_abs);
     if (divisor < 0) {
-      __ Negate(result, dividend/*, LeaveOE, SetRC*/);
+      __ LoadComplementRR(result, dividend/*, LeaveOE, SetRC*/);
       // okay to remove LeaveOE and SetRC
       if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
         DeoptimizeIf(eq, instr->environment(), cr0);
@@ -1062,7 +1062,7 @@ void LCodeGen::DoMathFloorOfDiv(LMathFloorOfDiv* instr) {
     __ lgfr(scratch, dividend);
     if (divisor < 0 &&
         instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
-      __ Negate(scratch, scratch/*, LeaveOE, SetRC*/);
+      __ LoadComplementRR(scratch, scratch/*, LeaveOE, SetRC*/);
       // okay to remove LeaveOE and SetRC
       DeoptimizeIf(eq, instr->environment(), cr0);
     }
@@ -1084,10 +1084,10 @@ void LCodeGen::DoMathFloorOfDiv(LMathFloorOfDiv* instr) {
       __ Add(result, result, dividend);
     }
     if (divisor < 0) {
-      __ Negate(result, result);
+      __ LoadComplementRR(result, result);
 
       // Subtract one from result if -(low word) < 0xC0000000
-      __ Negate(ip, ip);
+      __ LoadComplementRR(ip, ip);
       __ LoadRR(scratch, ip);
       __ srl(scratch, Operand(30));
       __ AddPImm(scratch, Operand(1));
@@ -1132,7 +1132,7 @@ void LCodeGen::DoMulI(LMulI* instr) {
 
     switch (constant) {
       case -1:
-        __ Negate(result, left);
+        __ LoadComplementRR(result, left);
         break;
       case 0:
         if (bailout_on_minus_zero) {
@@ -1170,7 +1170,7 @@ void LCodeGen::DoMulI(LMulI* instr) {
           }
 
           // Correct the sign of the result is the constant is negative.
-          if (constant < 0)  __ Negate(result, result);
+          if (constant < 0)  __ LoadComplementRR(result, result);
 
         } else {
           // Generate standard code.
@@ -3424,7 +3424,7 @@ void LCodeGen::EmitIntegerMathAbs(LUnaryMathOperation* instr) {
   __ LoadImmP(r0, Operand::Zero());  // clear xer
   __ mtxer(r0);
   */
-  __ Negate(result, result/*, SetOE, SetRC*/);
+  __ LoadComplementRR(result, result/*, SetOE, SetRC*/);
   // TODO(john): might be a problem removing SetOE here.
   // Deoptimize on overflow.
   DeoptimizeIf(overflow, instr->environment(), cr0);

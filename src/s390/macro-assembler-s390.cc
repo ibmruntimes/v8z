@@ -2435,7 +2435,7 @@ void MacroAssembler::EmitOutOfInt32RangeTruncate(Register result,
   Cmpi(scratch, Operand(32));
   blt(&high_shift_needed);
   LoadImmP(input_high, Operand::Zero());  // Zero out high for or'ing later
-  Negate(scratch, scratch);       // scratch = 32 - scratch
+  LoadComplementRR(scratch, scratch);       // scratch = 32 - scratch
   AddPImm(scratch, Operand(32));
   b(&neg_shift);
 
@@ -2447,14 +2447,14 @@ void MacroAssembler::EmitOutOfInt32RangeTruncate(Register result,
   // We don't need to clear non-mantissa bits as they will be shifted away.
   // If they weren't, it would mean that the answer is in the 32bit range.
   sll(input_high, scratch);
-  Negate(scratch, scratch);       // scratch = 32 - scratch
+  LoadComplementRR(scratch, scratch);       // scratch = 32 - scratch
   AddPImm(scratch, Operand(32));
   b(&pos_shift);
 
   // Replace the shifted bits with bits from the lower mantissa word.
 
   bind(&neg_shift);
-  Negate(scratch, scratch);
+  LoadComplementRR(scratch, scratch);
   sll(input_low, scratch);
   b(&shift_done);
 
@@ -2470,7 +2470,7 @@ void MacroAssembler::EmitOutOfInt32RangeTruncate(Register result,
   sign = no_reg;
   LoadRR(result, input_high);
   beq(&done);
-  Negate(result, result);
+  LoadComplementRR(result, result);
 
   bind(&done);
 }
@@ -4132,14 +4132,6 @@ void MacroAssembler::Sub(Register dst, const MemOperand& opnd) {
     s(dst, opnd);
   else
     sy(dst, opnd);
-#endif
-}
-
-void MacroAssembler::Negate(Register dst, Register src) {
-#if V8_TARGET_ARCH_S390X
-  lngr(dst, src);
-#else
-  lnr(dst, src);
 #endif
 }
 
