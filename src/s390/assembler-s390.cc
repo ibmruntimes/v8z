@@ -175,7 +175,7 @@ void RelocInfo::PatchCode(byte* instructions, int num_bytes) {
   // We patch byte to byte as instructions have to be stored in big endian
   // regardless of host's endianness
   for (int i = 0; i < num_bytes; i++) {
-    *(pc) = *(instr);
+    *(pc++) = *(instr++);
   }
 
   // Indicate that code has changed.
