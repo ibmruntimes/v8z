@@ -2262,7 +2262,7 @@ Handle<Code> CallStubCompiler::CompileMathAbsCall(
   __ XorP(r3, r2);
 
   // Add 1 or do nothing depending on the sign of the argument.
-  __ Sub(r2, r3, r0/*, LeaveOE, SetRC*/);  // Removing RC looks okay here
+  __ Sub(r2, r3, r0);
 
   // If the result is still negative, go to the slow case.
   // This only happens for the most negative smi.

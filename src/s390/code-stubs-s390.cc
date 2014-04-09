@@ -6568,11 +6568,9 @@ void ICCompareStub::GenerateSmis(MacroAssembler* masm) {
      __ Sub(r2, r2, r3);
   } else {
     // Untag before subtracting to avoid handling overflow.
+    __ SmiUntag(r2);
+    __ SmiUntag(r3);
     __ Sub(r2, r3, r2);
-    __ b(CC_NOF, &done);
-    // Correct sign of result in case of overflow.
-    __ iilf(r0, Operand(-1));
-    __ xr(r2, r0);  // not the result
     __ bind(&done);
   }
   __ Ret();
