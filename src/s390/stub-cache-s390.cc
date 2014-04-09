@@ -4091,7 +4091,7 @@ void KeyedLoadStubCompiler::GenerateLoadFastDoubleElement(
 
   // Load the upper word of the double in the fixed array and test for NaN.
   __ SmiToDoubleArrayOffset(indexed_double_offset, key_reg);
-  __ AddP(indexed_double_offset, indexed_double_offset);
+  __ AddP(indexed_double_offset, elements_reg);
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
   uint32_t upper_32_offset = FixedArray::kHeaderSize + sizeof(kHoleNanLower32);
 #else
