@@ -121,6 +121,7 @@ bool AreAliased(Register reg1,
 #define AndRR              ngr
 #define XorRR              xgr
 #define LoadComplementRR   lcgr
+#define LoadNegativeRR     lngr
 
 // Load / Store
 #define LoadRR             lgr
@@ -148,6 +149,7 @@ bool AreAliased(Register reg1,
 #define AndRR              nr
 #define XorRR              xr
 #define LoadComplementRR   lcr
+#define LoadNegativeRR     lnr
 
 // Load / Store
 #define LoadRR             lr
@@ -279,9 +281,6 @@ class MacroAssembler: public Assembler {
   void Subl(Register dst, const MemOperand& opnd);
   void Subl(Register dst, const Operand& opnd);
   void Subl(Register dst, Register src);
-
-  // Negate 32 bit
-  void Negate(Register dst, Register src);
 
   // and 32bit
   // and(r,r,r) Not supported on z9
