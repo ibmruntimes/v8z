@@ -2075,8 +2075,6 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       break;
     }
     case Token::DIV: {
-      // we need to have a register pair to do the dividing: (r0, r1)
-
       Label check_neg_zero;
       __ SmiUntag(r0, left);
       // extend the 64bit operand into a register pair
@@ -2109,8 +2107,6 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       break;
     }
     case Token::MOD: {
-      // we need to have a register pair to do the dividing: (r0, r1)
-
       Label check_neg_zero;
       __ SmiUntag(r0, left);
       // extend the 64bit operand into a register pair
