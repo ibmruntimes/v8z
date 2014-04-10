@@ -1825,7 +1825,9 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       break;
     }
     case BKPT: {
-      SoftwareInterrupt(instr);
+      set_pc(get_pc() + 2);
+      S390Debugger dbg(this);
+      dbg.Debug();
       break;
     }
     default:
