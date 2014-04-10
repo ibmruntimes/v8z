@@ -285,8 +285,11 @@ class Simulator {
       condition_reg_ |= CC_GT;
     }
 
-    // this is for floating point comparision
-    ASSERT(condition_reg_ != 0);
+    // We get down here only for floating point
+    // comparisons and the values are unordered
+    // i.e. NaN
+    if (condition_reg_ == 0)
+      condition_reg_ = unordered;
   }
 
   bool isNaN(double value) {
