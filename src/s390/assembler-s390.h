@@ -1777,8 +1777,6 @@ SS2_FORM(zap);
   void sld(Register dst, Register src1, Register src2, RCBit r = LeaveRC);
   void srad(Register dst, Register src1, Register src2, RCBit r = LeaveRC);
   void cntlzd_(Register dst, Register src, RCBit rc = LeaveRC);
-  void mulld(Register dst, Register src1, Register src2,
-             OEBit o = LeaveOE, RCBit r = LeaveRC);
   void divd(Register dst, Register src1, Register src2,
             OEBit o = LeaveOE, RCBit r = LeaveRC);
 #endif
