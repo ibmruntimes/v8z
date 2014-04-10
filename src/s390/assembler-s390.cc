@@ -841,11 +841,6 @@ void Assembler::cntlzd_(Register rb, Register rs, RCBit rc) {
   x_form(EXT2 | CNTLZDX, rb, rs, r0, rc);
 }
 
-void Assembler::mulld(Register dst, Register src1, Register src2,
-                      OEBit o, RCBit r) {
-  xo_form(EXT2 | MULLD, dst, src1, src2, o, r);
-}
-
 void Assembler::divd(Register dst, Register src1, Register src2,
                      OEBit o, RCBit r) {
   xo_form(EXT2 | DIVD, dst, src1, src2, o, r);
