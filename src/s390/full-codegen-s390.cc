@@ -3728,11 +3728,11 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   __ SmiTag(scratch2, scratch2);
 #else
   // array_length is not smi but the other values are, so the result is a smi
-  __ mullw(scratch2, array_length, scratch1);
-  __ mulhw(ip, array_length, scratch1);
+  __ LoadRR(scratch2, array_length);           // scratch2 = r1
+  __ mr_z(r0, scratch1);  // r0:r1 = r1 * scratch1
   // Check for smi overflow. No overflow if higher 33 bits of 64-bit result are
   // zero.
-  __ Cmpi(ip, Operand::Zero());
+  __ Cmpi(r0, Operand::Zero());
   __ bne(&bailout);
   __ TestSignBit32(scratch2, r0);
   __ bne(&bailout /*, cr0*/);
