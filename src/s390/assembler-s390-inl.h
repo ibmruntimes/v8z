@@ -38,8 +38,8 @@
 // Copyright IBM Corp. 2012, 2013. All rights reserved.
 //
 
-#ifndef V8_PPC_ASSEMBLER_PPC_INL_H_
-#define V8_PPC_ASSEMBLER_PPC_INL_H_
+#ifndef V8_S390_ASSEMBLER_S390_INL_H_
+#define V8_S390_ASSEMBLER_S390_INL_H_
 
 #include "s390/assembler-s390.h"
 
@@ -513,4 +513,4 @@ void Assembler::set_target_address_at(Address pc, Address target) {
 
 } }  // namespace v8::internal
 
-#endif  // V8_PPC_ASSEMBLER_PPC_INL_H_
+#endif  // V8_S390_ASSEMBLER_S390_INL_H_
