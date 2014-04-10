@@ -2110,7 +2110,6 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
     }
     case Token::MOD: {
       // we need to have a register pair to do the dividing: (r0, r1)
-      __ Push(r9, r0);
 
       Label check_neg_zero;
       __ SmiUntag(r0, left);
