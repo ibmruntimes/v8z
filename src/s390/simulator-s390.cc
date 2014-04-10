@@ -2139,7 +2139,7 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       if (op == ST) {
         WriteW(addr, r1_val, instr);
       } else if (op == STD) {
-        double frs_val = get_double_from_d_register(r1);
+        double frs_val = get_double_from_d_register(rxinst->R1Value());
         int64_t *p = reinterpret_cast<int64_t *>(&frs_val);
         WriteDW(addr, *p);
       }
