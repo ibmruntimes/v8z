@@ -1673,6 +1673,7 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
           break;
         case MR: {
           ASSERT(r1 % 2 == 0);
+          r1_val = get_low_register<int32_t>(r1 + 1);
           int64_t product = static_cast<int64_t>(r1_val)
                           * static_cast<int64_t>(r2_val);
           int32_t high_bits = product >> 32;
