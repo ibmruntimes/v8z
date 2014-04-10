@@ -2512,9 +2512,6 @@ void MacroAssembler::EmitECMATruncate(Register result,
                               scratch);
 
   bind(&done);
-
-  // restore the stack
-  AddP(sp, Operand(8));
 }
 
 
