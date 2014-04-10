@@ -2076,7 +2076,6 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
     }
     case Token::DIV: {
       // we need to have a register pair to do the dividing: (r0, r1)
-      __ Push(r9, r0);
 
       Label check_neg_zero;
       __ SmiUntag(r0, left);
@@ -2099,7 +2098,6 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       __ ltr(r1, r1);
       __ blt(&not_smi_result);
       __ LoadRR(right, r0);
-      __ Pop(r9, r0);
       __ Ret();
 
       // If divisor (right) is negative, we must produce -0.
@@ -2107,7 +2105,6 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       __ Cmpi(right, Operand::Zero());
       __ blt(&not_smi_result);
       __ LoadRR(right, r0);
-      __ Pop(r9, r0);
       __ Ret();
       break;
     }
