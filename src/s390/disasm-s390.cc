@@ -261,7 +261,7 @@ int Decoder::FormatRegister(Instruction* instr, const char* format) {
 int Decoder::FormatFloatingRegister(Instruction* instr, const char* format) {
   ASSERT(format[0] == 'f');
 
-  // reuse 1, 5 and 6 because it is coresponding 
+  // reuse 1, 5 and 6 because it is coresponding
   if (format[1] == '1') {  // 'r1: register resides in bit 8-11
     RRInstruction* rrinstr = reinterpret_cast<RRInstruction*>(instr);
     int reg = rrinstr->R1Value();
