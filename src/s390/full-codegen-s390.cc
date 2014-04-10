@@ -184,8 +184,7 @@ void FullCodeGenerator::Generate() {
     __ LoadRoot(ip, Heap::kUndefinedValueRootIndex);
   }
   // Adjust fp to point to caller's fp.
-  __ LoadRR(fp, sp);
-  __ AddP(fp, Operand(2 * kPointerSize));
+  __ la(fp, MemOperand(sp, 2 * kPointerSize));
 
   { Comment cmnt(masm_, "[ Allocate locals");
     for (int i = 0; i < locals_count; i++) {
