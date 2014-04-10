@@ -1677,6 +1677,7 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
           int64_t product = static_cast<int64_t>(r1_val)
                           * static_cast<int64_t>(r2_val);
           int32_t high_bits = product >> 32;
+          r1_val = high_bits;
           int32_t low_bits  = product & 0x00000000FFFFFFFF;
           set_low_register<int32_t>(r1, high_bits);
           set_low_register<int32_t>(r1+1, low_bits);
@@ -1689,6 +1690,7 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
           dividend += get_low_register<int32_t>(r1 + 1);
           int32_t remainder = dividend % r2_val;
           int32_t quotient = dividend / r2_val;
+          r1_val = remainder;
           set_low_register<int32_t>(r1, remainder);
           set_low_register<int32_t>(r1+1, quotient);
           break;  // reg pair
