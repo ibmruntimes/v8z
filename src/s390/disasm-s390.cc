@@ -105,6 +105,7 @@ class Decoder {
 
   // Handle formatting of instructions and their options.
   int FormatRegister(Instruction* instr, const char* option);
+  int FormatFloatingRegister(Instruction* instr, const char* option);
   int FormatMask(Instruction* instr, const char* option);
   int FormatDisplacement(Instruction* instr, const char* option);
   int FormatImmediate(Instruction* instr, const char* option);
@@ -257,6 +258,29 @@ int Decoder::FormatRegister(Instruction* instr, const char* format) {
   return -1;
 }
 
+int Decoder::FormatFloatingRegister(Instruction* instr, const char* format) {
+  ASSERT(format[0] == 'f');
+
+  // reuse 1, 5 and 6 because it is coresponding 
+  if (format[1] == '1') {  // 'r1: register resides in bit 8-11
+    RRInstruction* rrinstr = reinterpret_cast<RRInstruction*>(instr);
+    int reg = rrinstr->R1Value();
+    PrintDRegister(reg);
+    return 2;
+  } else if (format[1] == '5') {  // 'r5: register resides in bit 24-28
+    RREInstruction* rreinstr = reinterpret_cast<RREInstruction*>(instr);
+    int reg = rreinstr->R1Value();
+    PrintDRegister(reg);
+    return 2;
+  } else if (format[1] == '6') {  // 'r6: register resides in bit 29-32
+    RREInstruction* rreinstr = reinterpret_cast<RREInstruction*>(instr);
+    int reg = rreinstr->R2Value();
+    PrintDRegister(reg);
+    return 2;
+  }
+  UNREACHABLE();
+  return -1;
+}
 
 // Handle all FP register based formatting in this function to reduce the
 // complexity of FormatOption.
@@ -305,6 +329,9 @@ int Decoder::FormatOption(Instruction* instr, const char* format) {
     }
     case 'r': {
       return FormatRegister(instr, format);
+    }
+    case 'f': {
+      return FormatFloatingRegister(instr, format);
     }
     case 'D': {
       return FormatFPRegister(instr, format);
@@ -1165,30 +1192,29 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case LD: Format(instr, "ld\t'r1,'d1('r2d,'r3)"); break;
       case STE:Format(instr, "ste\t'r1,'d1('r2d,'r3)"); break;
       case STD:Format(instr, "std\t'r1,'d1('r2d,'r3)"); break;
-      case CFDBR: Format(instr, "cfdbr\t'r5,'m2,'r6"); break;
-      case CDFBR: Format(instr, "cdfbr\t'r5,'m2,'r6"); break;
-      case CFEBR: Format(instr, "cfebr\t'r5,'m2,'r6"); break;
-      case CEFBR: Format(instr, "cefbr\t'r5,'m2,'r6"); break;
-      case CGDBR: Format(instr, "cgdbr\t'r5,'m2,'r6"); break;
-      case CDGBR: Format(instr, "cdgbr\t'r5,'m2,'r6"); break;
-      case CDLFBR: Format(instr, "cdlfbr\t'r5,'m2,'r6"); break;
-      case CDLGBR: Format(instr, "cdlgbr\t'r5,'m2,'r6"); break;
-      case CLFDBR: Format(instr, "clfdbr\t'r5,'m2,'r6"); break;
-      case CLGDBR: Format(instr, "clgdbr\t'r5,'m2,'r6"); break;
-      case ADBR: Format(instr, "adbr\t'r5,'r6"); break;
-      case SDBR: Format(instr, "sdbr\t'r5,'r6"); break;
-      case MDBR: Format(instr, "mdbr\t'r5,'r6"); break;
-      case DDBR: Format(instr, "ddbr\t'r5,'r6"); break;
-      case CDBR: Format(instr, "cdbr\t'r5,'r6"); break;
-      case SQDBR: Format(instr, "sqdbr\t'r5,'r6"); break;
-      case LNDBR: Format(instr, "lndbr\t'r5,'r6"); break;
+      case CFDBR: Format(instr, "cfdbr\t'r5,'m2,'f6"); break;
+      case CDFBR: Format(instr, "cdfbr\t'f5,'m2,'r6"); break;
+      case CFEBR: Format(instr, "cfebr\t'r5,'m2,'f6"); break;
+      case CEFBR: Format(instr, "cefbr\t'f5,'m2,'r6"); break;
+      case CGDBR: Format(instr, "cgdbr\t'r5,'m2,'f6"); break;
+      case CDGBR: Format(instr, "cdgbr\t'f5,'m2,'r6"); break;
+      case CDLFBR: Format(instr, "cdlfbr\t'f5,'m2,'r6"); break;
+      case CDLGBR: Format(instr, "cdlgbr\t'f5,'m2,'r6"); break;
+      case CLFDBR: Format(instr, "clfdbr\t'r5,'m2,'f6"); break;
+      case CLGDBR: Format(instr, "clgdbr\t'r5,'m2,'f6"); break;
+      case ADBR: Format(instr, "adbr\t'f5,'f6"); break;
+      case SDBR: Format(instr, "sdbr\t'f5,'f6"); break;
+      case MDBR: Format(instr, "mdbr\t'f5,'f6"); break;
+      case DDBR: Format(instr, "ddbr\t'f5,'f6"); break;
+      case CDBR: Format(instr, "cdbr\t'f5,'f6"); break;
+      case SQDBR: Format(instr, "sqdbr\t'f5,'f6"); break;
+      case LNDBR: Format(instr, "lndbr\t'f5,'f6"); break;
       case STH:   Format(instr, "sth\t'r1,'d1('r2d,'r3)"); break;
-      case SRDA: Format(instr, "srda\t'r1,'d1"); break;
+      case SRDA: Format(instr, "srda\t'f1,'d1"); break;
       // TRAP4 is used in calling to native function. it will not be generated
       // in native code.
       case TRAP4: {
         Format(instr, "trap4"); break;
-        // PrintSoftwareInterrupt(kCallRtRedirected);
       }
     default:
       return false;

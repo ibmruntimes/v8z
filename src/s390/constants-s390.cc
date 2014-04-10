@@ -70,8 +70,8 @@ const char* Registers::Name(int reg) {
 
 // Power
 const char* FPRegisters::names_[kNumFPRegisters] = {
-    "d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7",
-    "d8", "d9", "d10", "d11", "d12", "d13", "d14", "d15"
+    "f0", "f1", "f2", "f3", "f4", "f5", "f6", "f7",
+    "f8", "f9", "f10", "f11", "f12", "f13", "f14", "f15"
 };
 const char* FPRegisters::Name(int reg) {
   ASSERT((0 <= reg) && (reg < kNumFPRegisters));

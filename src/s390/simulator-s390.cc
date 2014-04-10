@@ -2374,6 +2374,7 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
           double r1_val = static_cast<double>(r2_val);
           set_d_register_from_double(r1, r1_val);
         } else if (op == CDFBR) {
+          // TODO(ALANLI): actually we need to set rounding mode
           int32_t r2_val = get_low_register<int32_t>(r2);
           double r1_val = static_cast<double>(r2_val);
           set_d_register_from_double(r1, r1_val);
