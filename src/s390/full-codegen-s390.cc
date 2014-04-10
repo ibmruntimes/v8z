@@ -106,7 +106,7 @@ class JumpPatchSite BASE_EMBEDDED {
       info_emitted_ = true;
 #endif
     } else {
-      __ chi(r0, Operand(0));
+      __ nop();
     }
   }
 
