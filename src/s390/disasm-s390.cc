@@ -267,6 +267,11 @@ int Decoder::FormatFloatingRegister(Instruction* instr, const char* format) {
     int reg = rrinstr->R1Value();
     PrintDRegister(reg);
     return 2;
+  } else if (format[1] == '2') {  // 'f2: register resides in bit 12-15
+    RRInstruction* rrinstr = reinterpret_cast<RRInstruction*>(instr);
+    int reg = rrinstr->R2Value();
+    PrintDRegister(reg);
+    return 2;
   } else if (format[1] == '5') {  // 'r5: register resides in bit 24-28
     RREInstruction* rreinstr = reinterpret_cast<RREInstruction*>(instr);
     int reg = rreinstr->R1Value();
@@ -1103,7 +1108,7 @@ bool Decoder::DecodeTwoByte(Instruction* instr) {
       case LNR: Format(instr, "lnr\t'r1,'r2"); break;
       case LCR: Format(instr, "lcr\t'r1,'r2"); break;
       case BASR: Format(instr, "basr\t'r1,'r2"); break;
-      case LDR: Format(instr, "ldr\t'r1,'r2"); break;
+      case LDR: Format(instr, "ldr\t'f1,'f2"); break;
       case BKPT: Format(instr, "bkpt"); break;
     default:
       return false;
