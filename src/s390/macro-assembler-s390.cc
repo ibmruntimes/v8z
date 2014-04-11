@@ -1868,7 +1868,7 @@ void MacroAssembler::StoreNumberToDoubleElements(Register value_reg,
   bgt(&is_nan);
 #if V8_TARGET_ARCH_S390X
   LoadRR(r0, double_reg);
-  nihf(r0, Operand(0));
+  nihf(r0, Operand::Zero());
   Cmpi(r0, Operand::Zero());
   beq(&have_double_value);
   // clrldi(r0, double_reg, Operand(32), SetRC);

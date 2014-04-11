@@ -1558,8 +1558,8 @@ class MacroAssembler: public Assembler {
     // High bits must be identical to fit into an 32-bit integer
     LoadRR(scratch1, value);
     sra(scratch1, Operand(31));
-    srag(scratch2, value, MemOperand(32));
-    cr(scratch1, scratch2);  // force 32-bit comparison
+    srag(scratch2, value, MemOperand(r0, 32));
+    cr_z(scratch1, scratch2);  // force 32-bit comparison
   }
 #else
   inline void TestIfInt32(Register hi_word, Register lo_word,

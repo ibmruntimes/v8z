@@ -243,7 +243,7 @@ void StubCache::GenerateProbe(MacroAssembler* masm,
   __ AddP(scratch, ip);
 #if V8_TARGET_ARCH_S390X
   // Use only the low 32 bits of the map pointer.
-  __ nihf(scratch, Operand(0));
+  __ nihf(scratch, Operand::Zero());
 #endif
   uint32_t mask = kPrimaryTableSize - 1;
   // We shift out the last two bits because they are not part of the hash and
