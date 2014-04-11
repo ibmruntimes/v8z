@@ -95,9 +95,7 @@ Address RelocInfo::target_address_address() {
   // deserializer to deserialize the instructions as raw bytes and put them in
   // place, ready to be patched with the target.
 
-  return reinterpret_cast<Address>(
-    pc_ + (Assembler::kInstructionsForPtrConstant *
-           Assembler::kInstrSize));
+  return reinterpret_cast<Address>( pc_ + Assembler::kBytesForPtrConstant);
 }
 
 
@@ -454,9 +452,7 @@ Address Assembler::target_address_at(Address pc) {
 // There is a FIXED_SEQUENCE assumption here
 void Assembler::deserialization_set_special_target_at(
     Address instruction_payload, Address target) {
-  set_target_address_at(
-      instruction_payload - kInstructionsForPtrConstant * kInstrSize,
-      target);
+  set_target_address_at(instruction_payload - kBytesForPtrConstant, target);
 }
 
 // This code assumes the FIXED_SEQUENCE of lis/ori
