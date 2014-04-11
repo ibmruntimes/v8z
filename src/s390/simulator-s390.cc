@@ -1988,7 +1988,6 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
         isOF = CheckOverflowForShiftLeft(r1_val, shiftBits);
         alu_out = r1_val << shiftBits;
       } else if (op == SRA) {
-        isOF = CheckOverflowForShiftRight(r1_val, shiftBits);
         alu_out = r1_val >> shiftBits;
       }
       set_low_register<int32_t>(r1, alu_out);
