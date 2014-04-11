@@ -3201,11 +3201,8 @@ void Assembler::xc(const MemOperand& opnd1, const MemOperand& opnd2,
 
 #ifdef V8_TARGET_ARCH_S390X
 // Store Register (64)
-void Assembler::stg(Register rs, const MemOperand &src) {
-  int offset = src.offset();
-  ASSERT(is_int20(offset));
-  // RXY_from(STG, rs, src.rb(), src.rx(), src.offset());
-  emit(STD_ppc | rs.code()*B21 | src.rb().code()*B16 | offset);
+void Assembler::stg(Register src, const MemOperand &dst) {
+  rxy_form(STG, src, dst.rx(), dst.rb(), dst.offset());
 }
 #endif
 
