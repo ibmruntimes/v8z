@@ -632,11 +632,11 @@ class Assembler : public AssemblerBase {
   // a target is resolved and written.
   static const int kSpecialTargetSize = 0;
 
-  // Number of consecutive instructions used to store pointer sized constant.
+  // Number of bytes for instructions used to store pointer sized constant.
 #if V8_TARGET_ARCH_S390X
-  static const int kInstructionsForPtrConstant = 5;
+  static const int kBytesForPtrConstant = 12;  // iihf + iilf
 #else
-  static const int kInstructionsForPtrConstant = 2;
+  static const int kBytesForPtrConstant = 6;   // iilf
 #endif
 
   // Distance between the instruction referring to the address of the call
