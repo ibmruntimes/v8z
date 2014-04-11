@@ -2936,6 +2936,10 @@ void Assembler::sllg(Register r1, Register r3, const MemOperand& opnd) {
   rsy_form(SLLG, r1, r3, opnd.rb(), opnd.offset());
 }
 
+void Assembler::sllg(Register r1, Register r3, const Operand& opnd) {
+  rsy_form(SLLG, r1, r3, r0, opnd.immediate());
+}
+
 // Shift Right Single Logical (32)
 void Assembler::srl(Register r1, const Operand& opnd) {
   rs_form(SRL, r1, r0, r0, opnd.immediate());
@@ -2957,14 +2961,22 @@ void Assembler::srlg(Register r1, Register r3, const MemOperand& opnd) {
   rsy_form(SRLG, r1, r3, opnd.rb(), opnd.offset());
 }
 
+void Assembler::srlg(Register r1, Register r3, const Operand& opnd) {
+  rsy_form(SRLG, r1, r3, r0, opnd.immediate());
+}
+
 // Shift Left Single (32)
 void Assembler::sla(Register r1, const Operand& opnd) {
   rs_form(SLA, r1, r0, r0, opnd.immediate());
 }
 
-// Shift Left Signle (64)
+// Shift Left Single (64)
 void Assembler::slag(Register r1, Register r3, const MemOperand& opnd) {
   rsy_form(SLAG, r1, r3, opnd.rb(), opnd.offset());
+}
+
+void Assembler::slag(Register r1, Register r3, const Operand& opnd) {
+  rsy_form(SLAG, r1, r3, r0, opnd.immediate());
 }
 
 // Shift Right Single (32)
@@ -2977,9 +2989,13 @@ void Assembler::sra(Register r1, Register opnd) {
   rs_form(SRA, r1, r0, opnd, 0);
 }
 
-// Shift Right Signle (64)
+// Shift Right Single (64)
 void Assembler::srag(Register r1, Register r3, const MemOperand& opnd) {
   rsy_form(SRAG, r1, r3, opnd.rb(), opnd.offset());
+}
+
+void Assembler::srag(Register r1, Register r3, const Operand& opnd) {
+  rsy_form(SRAG, r1, r3, r0, opnd.immediate());
 }
 
 // Shift Right Double

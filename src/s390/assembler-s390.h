@@ -1523,7 +1523,6 @@ RRF1_FORM(shhhr);
 RRF1_FORM(shhlr);
 RXY_FORM(shy);
 RX_FORM(sl);
-RSY1_FORM(slag);
 RSY1_FORM(slak);
 RXY_FORM(slb);
 RXY_FORM(slbg);
@@ -1541,7 +1540,6 @@ RRE_FORM(slgr);
 RRF1_FORM(slgrk);
 RRF1_FORM(slhhhr);
 RRF1_FORM(slhhlr);
-RSY1_FORM(sllg);
 RSY1_FORM(sllk);
 RR_FORM(slr);
 RRF1_FORM(slrk);
@@ -1553,12 +1551,10 @@ RXE_FORM(sqeb);
 RRE_FORM(sqebr);
 RRE_FORM(sqxbr);
 RR_FORM(sr);
-RSY1_FORM(srag);
 RSY1_FORM(srak);
 RS1_FORM(srdl);
 RXF_FORM(srdt);
 RRF1_FORM(srk);
-RSY1_FORM(srlg);
 RSY1_FORM(srlk);
 S_FORM(srnm);
 S_FORM(srnmb);
@@ -1680,7 +1676,7 @@ SS2_FORM(zap);
   void stc(Register dst, const MemOperand& src);
   void stcy(Register dst, const MemOperand& src);
 
-  // Shift instruction
+  // Shift Instruction (32)
   void sll(Register r1, const Operand& opnd);
   void srl(Register r1, const Operand& opnd);
   void sra(Register r1, const Operand& opnd);
@@ -1690,6 +1686,16 @@ SS2_FORM(zap);
   void srlk(Register r1, Register r3, const Operand& opnd);
   void sla(Register r1, const Operand& opnd);
   void srda(Register r1, const Operand& opnd);
+
+  // Shift Instructions (64)
+  void sllg(Register r1, Register r3, const Operand& opnd);
+  void sllg(Register r1, Register r3, const MemOperand& opnd);
+  void srlg(Register r1, Register r3, const Operand& opnd);
+  void srlg(Register r1, Register r3, const MemOperand& opnd);
+  void srag(Register r1, Register r3, const Operand& opnd);
+  void srag(Register r1, Register r3, const MemOperand& opnd);
+  void slag(Register r1, Register r3, const Operand& opnd);
+  void slag(Register r1, Register r3, const MemOperand& opnd);
 
   // floating point instructions
   void ld(DoubleRegister r1, const MemOperand& opnd);
