@@ -2604,6 +2604,15 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       SetS390ConditionCode<int32_t>(get_low_register<int32_t>(r1), imm);
       break;
     }
+    case CGFI: {
+      // Compare 64-bit Immediate.
+      RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
+      int r1 = rilInstr->R1Value();
+      int64_t imm = static_cast<int64_t>(rilInstr->I2Value());
+      SetS390ConditionCode<int32_t>(get_register(r1), imm);
+      break;
+    }
+
     case BRASL: {  // save the next instruction address
       RILInstruction* rilInstr = reinterpret_cast<RILInstruction*>(instr);
       int r1 = rilInstr->R1Value();

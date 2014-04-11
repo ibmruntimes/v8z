@@ -1243,6 +1243,7 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
     case CLGFI: Format(instr, "clgfi\t'r1,'i7"); break;
     case CLFI: Format(instr, "clfi\t'r1,'i7"); break;
     case CFI: Format(instr, "cfi\t'r1,'i2"); break;
+    case CGFI: Format(instr, "cgfi\t'r1,'i2"); break;
     case BRASL: Format(instr, "brasl\t'r1,'i2"); break;
     case BRCL: Format(instr, "brcl\t'm1,'i5"); break;
     case IIHF: Format(instr, "iihf\t'r1,'i7"); break;
