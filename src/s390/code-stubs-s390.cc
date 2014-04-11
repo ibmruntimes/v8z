@@ -3617,7 +3617,7 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
     __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
     __ Call(target);
     __ bind(&return_label);
-    __ lay(sp, MemOperand(sp, +kCalleeRegisterSaveAreaSize));
+    __ la(sp, MemOperand(sp, +kCalleeRegisterSaveAreaSize));
   }
 
   if (always_allocate) {
