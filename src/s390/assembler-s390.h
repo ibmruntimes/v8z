@@ -420,7 +420,7 @@ class MemOperand BASE_EMBEDDED {
   explicit MemOperand(Register rx, Disp offset = 0);
   explicit MemOperand(Register rx, Register rb, Disp offset = 0);
 
-  uint32_t offset() const {
+  int32_t offset() const {
     return offset_;
   }
   uint32_t getDisplacement() const { return offset(); }
