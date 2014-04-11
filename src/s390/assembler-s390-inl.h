@@ -430,7 +430,7 @@ Address Assembler::target_address_at(Address pc) {
   Opcode op2 = Instruction::S390OpcodeValue(
                         reinterpret_cast<const byte*>(pc + instr1_length));
   SixByteInstr instr_2 = Instruction::InstructionBits(
-                                        reinterpret_cast<const byte*>(pc));
+                        reinterpret_cast<const byte*>(pc + instr1_length));
   // IIHF for hi_32, IILF for lo_32
   if (IIHF == op1 && IILF == op2) {
      return reinterpret_cast<Address>(((instr_1 & 0xFFFFFFFF) << 32) |
