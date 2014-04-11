@@ -3081,7 +3081,7 @@ void Assembler::cr_z(Register r1, Register r2) {
 
 // Compare Register-Register (64)
 void Assembler::cgr(Register r1, Register r2) {
-  rr_form(CGR, r1, r2);
+  rre_form(CGR, r1, r2);
 }
 
 // Compare Immediate (64)
