@@ -2347,12 +2347,24 @@ void MacroAssembler::EmitVFPTruncate(VFPRoundingMode rounding_mode,
   cfdbr(m, result, double_input);
   // The result is a 32-bit integer when the high 33 bits of the
   // result are identical.
-  Push(r0, r1, result);
+  Push(r0, r1);
+  push(result);
   LoadRR(r0, result);
   srda(r0, Operand(32));
   TestIfInt32(r0, r1, result);
-  Pop(r0, r1, result);
+  pop(result);
+  Pop(r0, r1);
 
+
+  if (check_inexact == kCheckForInexactConversion) {
+    Label done;
+    bne(&done);
+
+    // convert back and compare
+    cdfbr(double_scratch, result);
+    cdbr(double_scratch, double_input);
+    bind(&done);
+  }
   // according to POPS Figure 19-18, condition code 3 is set if the integer
   // overflows or underflows.
 
@@ -2388,16 +2400,6 @@ void MacroAssembler::EmitVFPTruncate(VFPRoundingMode rounding_mode,
 #else
   TestIfInt32(scratch, result, r0);
 #endif
-
-  if (check_inexact == kCheckForInexactConversion) {
-    Label done;
-    bne(&done);
-
-    // convert back and compare
-    fcfid(double_scratch, double_scratch);
-    fcmpu(double_scratch, double_input);
-    bind(&done);
-  }
   */
 }
 
