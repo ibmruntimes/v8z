@@ -2552,6 +2552,14 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       set_register(r1, imm);
       break;
     }
+    case LLIHF: {  // length is architecture dependent
+      // Load Logical Immediate into high word
+      RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
+      int r1 = rilInstr->R1Value();
+      uint64_t imm = static_cast<uint64_t>(rilInstr->I2UnsignedValue());
+      set_register(r1, imm << 32);
+      break;
+    }
     case OILF:
     case NILF:
     case IILF: {
