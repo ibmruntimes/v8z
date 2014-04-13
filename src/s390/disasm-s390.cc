@@ -1238,6 +1238,7 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
   Opcode opcode = instr->S390OpcodeValue();
   switch (opcode) {
     case LLILF: Format(instr, "llilf\t'r1,'i7"); break;
+    case LLIHF: Format(instr, "llihf\t'r1,'i7"); break;
     case AFI: Format(instr, "afi\t'r1,'i7"); break;
     case ALFI: Format(instr, "alfi\t'r1,'i7"); break;
     case CLGFI: Format(instr, "clgfi\t'r1,'i7"); break;
