@@ -1945,10 +1945,6 @@ SS2_FORM(zap);
 
   static Condition GetCondition(Instr instr);
 
-  static bool IsLis(Instr instr);
-  static bool IsAddic(Instr instr);
-  static bool IsOri(Instr instr);
-
   static bool IsBranch(Instr instr);
   static Register GetRA(Instr instr);
   static Register GetRB(Instr instr);

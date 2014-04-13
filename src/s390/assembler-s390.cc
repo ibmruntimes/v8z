@@ -328,20 +328,6 @@ Condition Assembler::GetCondition(Instr instr) {
 }
 
 // PowerPC
-
-bool Assembler::IsLis(Instr instr) {
-  return (instr & kOpcodeMask) == ADDIS;
-}
-
-bool Assembler::IsAddic(Instr instr) {
-  return (instr & kOpcodeMask) == ADDIC;
-}
-
-bool Assembler::IsOri(Instr instr) {
-  return (instr & kOpcodeMask) == ORI;
-}
-
-
 bool Assembler::IsBranch(Instr instr) {
   return ((instr & kOpcodeMask) == BCX);
 }
