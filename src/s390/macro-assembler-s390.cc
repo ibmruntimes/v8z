@@ -4480,7 +4480,7 @@ void MacroAssembler::Cmpli(Register src1, const Operand& src2) {
 void MacroAssembler::CmpSmiLiteral(Register src1, Smi *smi, Register scratch) {
 #if V8_TARGET_ARCH_S390X
   LoadSmiLiteral(scratch, smi);
-  cg(src1, MemOperand(scratch));
+  cgr(src1, scratch);
 #else
   // CFI takes 32-bit immediate.
   cfi(src1, Operand(smi));
@@ -4490,8 +4490,7 @@ void MacroAssembler::CmpSmiLiteral(Register src1, Smi *smi, Register scratch) {
 void MacroAssembler::CmplSmiLiteral(Register src1, Smi *smi, Register scratch) {
 #if V8_TARGET_ARCH_S390X
   LoadSmiLiteral(scratch, smi);
-  // TODO(JOHN): double check
-  clg(src1, MemOperand(scratch));
+  clgr(src1, scratch);
 #else
   // CLFI takes 32-bit immediate
   clfi(src1, Operand(smi));
