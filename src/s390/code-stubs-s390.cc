@@ -3516,7 +3516,7 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
   // to change to support nativesim=true builds
 #if defined(V8_HOST_ARCH_S39064) || defined(V8_HOST_ARCH_S390)
   // Call C built-in on native hardware.
-#if defined(V8_TARGET_ARCH_S390X)
+#if 0
 
 #if !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
   if (result_size_ < 2) {
@@ -3555,22 +3555,24 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
 #endif
 
 #else
+
+#if defined(V8_TARGET_ARCH_S390X)
+  // zLinux 64-bit
+  // Use frame storage reserved by calling function
+  // as ABI passes C++ objects by reference not value
+  // This builds an object in the stack frame
+  __ la(r2, MemOperand(sp, (kStackFrameExtraParamSlot + 1) * kPointerSize));
+  __ st(r6, MemOperand(r2));
+  __ StoreP(r8, MemOperand(r2, kPointerSize));
+  isolate_reg = r3;
+#else
   // zLinux 31-bit
   // r2 = argc, r3 = argv
   __ LoadRR(r2, r6);
   __ LoadRR(r3, r8);
   isolate_reg = r4;
-/* PPC code commented out.. left for reference in case we need to pass by
- * reference
-#else  // 32-bit linux
-  // Use frame storage reserved by calling function
-  // PPC passes C++ objects by reference not value
-  // This builds an object in the stack frame
-  __ la(r2, MemOperand(sp, (kStackFrameExtraParamSlot + 1) * kPointerSize));
-  __ StoreP(r6, MemOperand(r2));
-  __ StoreP(r8, MemOperand(r2, kPointerSize));
-  isolate_reg = r3;
-*/
+#endif
+
 #endif
 #else  // Simulated
   // Call C built-in using simulator.
