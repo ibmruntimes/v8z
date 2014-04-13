@@ -53,10 +53,7 @@
 #include "constants-s390.h"
 #include "serialize.h"
 
-#define ABI_USES_FUNCTION_DESCRIPTORS \
-  (V8_HOST_ARCH_S390 && \
-     (defined(_AIX) || \
-       (defined(V8_TARGET_ARCH_S390X) && (__BYTE_ORDER != __LITTLE_ENDIAN))))
+#define ABI_USES_FUNCTION_DESCRIPTORS 0
 
 #define ABI_PASSES_HANDLES_IN_REGS \
   (!V8_HOST_ARCH_S390 || defined(_AIX) || defined(V8_TARGET_ARCH_S390X))
