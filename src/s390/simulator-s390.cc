@@ -1969,7 +1969,6 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
         alu_out = r1_val >> shiftBits;
       }
       set_low_register<uint32_t>(r1, alu_out);
-      SetS390ConditionCode<uint32_t>(alu_out, 0);
       break;
     }
     case SLA:
@@ -2673,9 +2672,9 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
     case SLLG:
     case SRLG: {
       // For SLLG/SRLG, the 64-bit third operand is shifted the number
-      // of bits specified by the second-operand address, and the result is 
+      // of bits specified by the second-operand address, and the result is
       // placed at the first-operand location. Except for when the R1 and R3
-      // fields designate the same register, the third operand remains 
+      // fields designate the same register, the third operand remains
       // unchanged in general register R3.
       RSYInstruction* rsyInstr = reinterpret_cast<RSYInstruction*>(instr);
       int r1 = rsyInstr->R1Value();
