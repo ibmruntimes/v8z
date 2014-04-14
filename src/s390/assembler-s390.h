@@ -1082,7 +1082,6 @@ SIL_FORM(cghsi);
 RIS_FORM(cgib);
 RIE_FORM(cgij);
 RIE_FORM(cgit);
-RRE_FORM(cgr);
 RRS_FORM(cgrb);
 RIE_FORM(cgrj);
 RIL1_FORM(cgrl);
@@ -1122,8 +1121,6 @@ RRF2_FORM(clgdtr);
 RRF2_FORM(clgebr);
 RXY_FORM(clgf);
 RIL1_FORM(clgfi);
-RRE_FORM(clgr);
-RR_FORM(clr);
 RXY_FORM(cly);
 RR_FORM(cr_z);
 SSF_FORM(csst);
@@ -1693,6 +1690,12 @@ SS2_FORM(zap);
   void srag(Register r1, Register r3, const MemOperand& opnd);
   void slag(Register r1, Register r3, const Operand& opnd);
   void slag(Register r1, Register r3, const MemOperand& opnd);
+
+  // Compare Instructions
+  void cr(Register r1, Register r2);
+  void cgr(Register r1, Register r2);
+  void clr(Register r1, Register r2);
+  void clgr(Register r1, Register r2);
 
   // floating point instructions
   void ld(DoubleRegister r1, const MemOperand& opnd);
