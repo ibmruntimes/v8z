@@ -1713,8 +1713,7 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       RRInstruction* rrinst = reinterpret_cast<RRInstruction*>(instr);
       int r1 = rrinst->R1Value();
       int r2 = rrinst->R2Value();
-      set_low_register(r1,
-                                get_low_register<int32_t>(r2));
+      set_low_register(r1, get_low_register<int32_t>(r2));
       break;
     }
     case LDR: {
@@ -1854,6 +1853,14 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
   Opcode op = instr->S390OpcodeValue();
 
   switch (op) {
+    case LGR: {
+      // Load Register (64)
+      RREInstruction* rrinst = reinterpret_cast<RREInstruction*>(instr);
+      int r1 = rrinst->R1Value();
+      int r2 = rrinst->R2Value();
+      set_register(r1, get_register(r2));
+      break;
+    }
     case LHI: {
       RIInstruction* riinst = reinterpret_cast<RIInstruction*>(instr);
       int r1 = riinst->R1Value();
