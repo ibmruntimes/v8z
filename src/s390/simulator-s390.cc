@@ -1869,6 +1869,29 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       SetS390OverflowCode(isOF);
       break;
     }
+    case AGHI:
+    case MGHI: {
+      RIInstruction* riinst = reinterpret_cast<RIInstruction*>(instr);
+      int r1 = riinst->R1Value();
+      int64_t i  = static_cast<int64_t>(riinst->I2Value());
+      int64_t r1_val = get_register(r1);
+      bool isOF = false;
+      switch (op) {
+        case AGHI:
+          isOF = CheckOverflowForIntAdd(r1_val, i);
+          r1_val += i;
+          break;
+        case MGHI:
+          isOF = CheckOverflowForMul(r1_val, i);
+          r1_val *= i;
+          break;  // no overflow indication is given
+        default: break;
+      }
+      set_register(r1, r1_val);
+      SetS390ConditionCode<int32_t>(r1_val, 0);
+      SetS390OverflowCode(isOF);
+      break;
+    }
     case LHI: {
       RIInstruction* riinst = reinterpret_cast<RIInstruction*>(instr);
       int r1 = riinst->R1Value();
