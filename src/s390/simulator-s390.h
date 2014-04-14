@@ -154,8 +154,8 @@ class Simulator {
   intptr_t get_register(int reg) const;
   template<typename T> T get_low_register(int reg) const;
   template<typename T> T get_high_register(int reg) const;
-  template<typename T> void set_low_register(int reg, T value);
-  template<typename T> void set_high_register(int reg, T value);
+  void set_low_register(int reg, uint32_t value);
+  void set_high_register(int reg, uint32_t value);
 
   double get_double_from_register_pair(int reg);
   void set_d_register_from_double(int dreg, const double dbl) {
@@ -263,8 +263,8 @@ class Simulator {
   inline void WriteW(intptr_t addr, uint32_t value, Instruction* instr);
   inline void WriteW(intptr_t addr, int32_t value, Instruction* instr);
 
-  intptr_t* ReadDW(intptr_t addr);
-  void WriteDW(intptr_t addr, int64_t value);
+  inline int64_t ReadDW(intptr_t addr);
+  inline void WriteDW(intptr_t addr, int64_t value);
 
   // S390
   bool DecodeTwoByte(Instruction* instr);
