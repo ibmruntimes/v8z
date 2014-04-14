@@ -269,9 +269,10 @@ class Simulator {
   // S390
   bool DecodeTwoByte(Instruction* instr);
   bool DecodeFourByte(Instruction* instr);
-  bool DecodeSixByte(Instruction* instr);
-  bool DecodeSixByteArithInstruction(Instruction *instr);
+  bool DecodeFourByteArithmetic(Instruction *instr);
   bool DecodeFourByteFloatingPoint(Instruction* instr);
+  bool DecodeSixByte(Instruction* instr);
+  bool DecodeSixByteArithmetic(Instruction *instr);
   bool S390InstructionDecode(Instruction *instr);
 
   template <typename T>

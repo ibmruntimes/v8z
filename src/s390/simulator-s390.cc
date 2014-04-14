@@ -1846,52 +1846,6 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
   Opcode op = instr->S390OpcodeValue();
 
   switch (op) {
-    case AHI:
-    case MHI: {
-      RIInstruction* riinst = reinterpret_cast<RIInstruction*>(instr);
-      int r1 = riinst->R1Value();
-      int i  = riinst->I2Value();
-      int32_t r1_val = get_low_register<int32_t>(r1);
-      bool isOF = false;
-      switch (op) {
-        case AHI:
-          isOF = CheckOverflowForIntAdd(r1_val, i);
-          r1_val += i;
-          break;
-        case MHI:
-          isOF = CheckOverflowForMul(r1_val, i);
-          r1_val *= i;
-          break;  // no overflow indication is given
-        default: break;
-      }
-      set_low_register(r1, r1_val);
-      SetS390ConditionCode<int32_t>(r1_val, 0);
-      SetS390OverflowCode(isOF);
-      break;
-    }
-    case AGHI:
-    case MGHI: {
-      RIInstruction* riinst = reinterpret_cast<RIInstruction*>(instr);
-      int r1 = riinst->R1Value();
-      int64_t i  = static_cast<int64_t>(riinst->I2Value());
-      int64_t r1_val = get_register(r1);
-      bool isOF = false;
-      switch (op) {
-        case AGHI:
-          isOF = CheckOverflowForIntAdd(r1_val, i);
-          r1_val += i;
-          break;
-        case MGHI:
-          isOF = CheckOverflowForMul(r1_val, i);
-          r1_val *= i;
-          break;  // no overflow indication is given
-        default: break;
-      }
-      set_register(r1, r1_val);
-      SetS390ConditionCode<int32_t>(r1_val, 0);
-      SetS390OverflowCode(isOF);
-      break;
-    }
     case LHI: {
       RIInstruction* riinst = reinterpret_cast<RIInstruction*>(instr);
       int r1 = riinst->R1Value();
@@ -1912,6 +1866,14 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       int16_t i = riinst->I2Value();
       int32_t r1_val = get_low_register<int32_t>(r1);
       SetS390ConditionCode<int32_t>(r1_val, i);
+      break;
+    }
+    case CGHI: {
+      RIInstruction* riinst = reinterpret_cast<RIInstruction*>(instr);
+      int r1 = riinst->R1Value();
+      int64_t i = static_cast<int64_t>(riinst->I2Value());
+      int64_t r1_val = get_register(r1);
+      SetS390ConditionCode<int64_t>(r1_val, i);
       break;
     }
     case BRAS: {
@@ -2025,11 +1987,262 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       SetS390OverflowCode(isOF);
       break;
     }
-    case MLR: { UNIMPLEMENTED(); break; }
     case LLHR: { UNIMPLEMENTED(); break; }
     case LLGHR: { UNIMPLEMENTED(); break; }
-    case A: case S: case M: case D:
-    case O: case N: case X: {
+    case L:
+    case LA:
+    case LB:
+    case LD: {
+      RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
+      int b2 = rxinst->B2Value();
+      int x2 = rxinst->X2Value();
+      int32_t  r1 = rxinst->R1Value();
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+      intptr_t d2_val = rxinst->D2Value();
+      intptr_t addr = b2_val + x2_val + d2_val;
+      if (op == L) {
+        int32_t mem_val = ReadW(addr, instr);
+        set_low_register(r1, mem_val);
+      } else if (op == LA) {
+        set_register(r1, addr);
+      } else if (op == LB) {
+        int32_t mem_val = ReadB(addr);
+        set_low_register(r1, mem_val);
+      } else if (op == LD) {
+        double dbl_val = static_cast<double>(ReadDW(addr));
+        set_d_register_from_double(r1, dbl_val);
+      }
+      break;
+    }
+    case C: {
+      RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
+      int b2 = rxinst->B2Value();
+      int x2 = rxinst->X2Value();
+      int32_t  r1_val = get_low_register<int32_t>(rxinst->R1Value());
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+      intptr_t d2_val = rxinst->D2Value();
+      intptr_t addr = b2_val + x2_val + d2_val;
+      int32_t mem_val = ReadW(addr, instr);
+      SetS390ConditionCode<int32_t>(r1_val, mem_val);
+      break;
+    }
+    case ST:
+    case STD: {
+      RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
+      int b2 = rxinst->B2Value();
+      int x2 = rxinst->X2Value();
+      int32_t  r1_val = get_low_register<int32_t>(rxinst->R1Value());
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+      intptr_t d2_val = rxinst->D2Value();
+      intptr_t addr = b2_val + x2_val + d2_val;
+      if (op == ST) {
+        WriteW(addr, r1_val, instr);
+      } else if (op == STD) {
+        double frs_val = get_double_from_d_register(rxinst->R1Value());
+        int64_t *p = reinterpret_cast<int64_t *>(&frs_val);
+        WriteDW(addr, *p);
+      }
+      break;
+    }
+    case LGFR: {
+      RREInstruction* rreInstr = reinterpret_cast<RREInstruction*>(instr);
+      int r1 = rreInstr->R1Value();
+      int r2 = rreInstr->R2Value();
+      int32_t r2_val = get_low_register<int32_t>(r2);
+      set_register(r1, r2_val);
+      break;
+    }
+    case LNGR: {
+      // Load Negative (64)
+      RREInstruction* rreinst = reinterpret_cast<RREInstruction*>(instr);
+      int r1 = rreinst->R1Value();
+      int r2 = rreinst->R2Value();
+      int64_t r2_val = get_register(r2);
+      r2_val = (r2_val >= 0)? -r2_val : r2_val;  // If pos, then negate it.
+      set_register(r1, r2_val);
+      condition_reg_ = (r2_val == 0)?CC_EQ:CC_LT;  // CC0 - result is zero
+                                                   // CC1 - result is negative
+      break;
+    }
+    case TRAP4: {
+      SoftwareInterrupt(instr);
+      break;
+    }
+    case STC: {
+      // Store Character/Byte
+      RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
+      int b2 = rxinst->B2Value();
+      int x2 = rxinst->X2Value();
+      uint8_t  r1_val = get_low_register<int32_t>(rxinst->R1Value());
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+      intptr_t d2_val = rxinst->D2Value();
+      intptr_t mem_addr = b2_val + x2_val + d2_val;
+      WriteB(mem_addr, r1_val);
+      break;
+    }
+    case STH: {
+      RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
+      int b2 = rxinst->B2Value();
+      int x2 = rxinst->X2Value();
+      int16_t  r1_val = get_low_register<int32_t>(rxinst->R1Value());
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+      intptr_t d2_val = rxinst->D2Value();
+      intptr_t mem_addr = b2_val + x2_val + d2_val;
+      WriteH(mem_addr, r1_val, instr);
+      break;
+    }
+#if V8_TARGET_ARCH_S390X
+    case LCGR: {
+      RREInstruction * rreinst = reinterpret_cast<RREInstruction*>(instr);
+      int r1 = rreinst->R1Value();
+      int r2 = rreinst->R2Value();
+      int64_t r2_val = get_register(r2);
+      r2_val = ~r2_val;
+      r2_val = r2_val+1;
+      set_register(r1, r2_val);
+      SetS390ConditionCode<int64_t>(r2_val, 0);
+      // if the input is INT_MIN, loading its compliment would be overflowing
+      if (r2_val < 0 && (r2_val + 1) > 0) {
+        SetS390OverflowCode(true);
+      }
+      break;
+    }
+#endif
+    case SRDA: {
+      RSInstruction* rsInstr = reinterpret_cast<RSInstruction*>(instr);
+      int r1 = rsInstr->R1Value();
+      ASSERT(r1 % 2 == 0);  // must be a reg pair
+      int b2 = rsInstr->B2Value();
+      intptr_t d2 = rsInstr->D2Value();
+      // only takes rightmost 6bits
+      intptr_t b2_val = b2 == 0 ? 0 : get_register(b2);
+      int shiftBits = (b2_val + d2) & 0x3F;
+      int64_t opnd1 = static_cast<int64_t>(get_low_register<int32_t>(r1)) <<32;
+      int64_t opnd2 = static_cast<int64_t>(get_low_register<int32_t>(r1+1));
+      int64_t r1_val = opnd1 + opnd2;
+      int64_t alu_out = r1_val >> shiftBits;
+      set_low_register(r1, alu_out >> 32);
+      set_low_register(r1 + 1, alu_out & 0x00000000FFFFFFFF);
+      SetS390ConditionCode<int32_t>(alu_out, 0);
+      break;
+    }
+    default: {
+      return DecodeFourByteArithmetic(instr);
+    }
+  }
+  return true;
+}
+
+/**
+ * Decodes and simulates four byte arithmetic instructions
+ */
+bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
+  Opcode op = instr->S390OpcodeValue();
+
+  switch (op) {
+    case AGR:
+    case SGR:
+    case OGR:
+    case NGR:
+    case XGR: {
+      RRInstruction* rrinst = reinterpret_cast<RRInstruction*>(instr);
+      int r1 = rrinst->R1Value();
+      int r2 = rrinst->R2Value();
+      int64_t r1_val = get_register(r1);
+      int64_t r2_val = get_register(r2);
+      bool isOF = false;
+      switch (op) {
+        case AGR:
+          isOF = CheckOverflowForIntAdd(r1_val, r2_val);
+          r1_val += r2_val;
+          SetS390ConditionCode<int64_t>(r1_val, 0);
+          SetS390OverflowCode(isOF);
+          break;
+        case SGR:
+          isOF = CheckOverflowForIntSub(r1_val, r2_val);
+          r1_val -= r2_val;
+          SetS390ConditionCode<int64_t>(r1_val, 0);
+          SetS390OverflowCode(isOF);
+          break;
+        case OGR:
+          r1_val |= r2_val;
+          SetS390BitWiseConditionCode<uint64_t>(r1_val);
+          break;
+        case NGR:
+          r1_val &= r2_val;
+          SetS390BitWiseConditionCode<uint64_t>(r1_val);
+          break;
+        case XGR:
+          r1_val ^= r2_val;
+          SetS390BitWiseConditionCode<uint64_t>(r1_val);
+          break;
+        default: UNREACHABLE(); break;
+      }
+      set_register(r1, r1_val);
+      break;
+    }
+    case AHI:
+    case MHI: {
+      RIInstruction* riinst = reinterpret_cast<RIInstruction*>(instr);
+      int r1 = riinst->R1Value();
+      int i  = riinst->I2Value();
+      int32_t r1_val = get_low_register<int32_t>(r1);
+      bool isOF = false;
+      switch (op) {
+        case AHI:
+          isOF = CheckOverflowForIntAdd(r1_val, i);
+          r1_val += i;
+          break;
+        case MHI:
+          isOF = CheckOverflowForMul(r1_val, i);
+          r1_val *= i;
+          break;  // no overflow indication is given
+        default: break;
+      }
+      set_low_register(r1, r1_val);
+      SetS390ConditionCode<int32_t>(r1_val, 0);
+      SetS390OverflowCode(isOF);
+      break;
+    }
+    case AGHI:
+    case MGHI: {
+      RIInstruction* riinst = reinterpret_cast<RIInstruction*>(instr);
+      int r1 = riinst->R1Value();
+      int64_t i  = static_cast<int64_t>(riinst->I2Value());
+      int64_t r1_val = get_register(r1);
+      bool isOF = false;
+      switch (op) {
+        case AGHI:
+          isOF = CheckOverflowForIntAdd(r1_val, i);
+          r1_val += i;
+          break;
+        case MGHI:
+          isOF = CheckOverflowForMul(r1_val, i);
+          r1_val *= i;
+          break;  // no overflow indication is given
+        default: break;
+      }
+      set_register(r1, r1_val);
+      SetS390ConditionCode<int32_t>(r1_val, 0);
+      SetS390OverflowCode(isOF);
+      break;
+    }
+    case MLR: {
+      UNIMPLEMENTED();
+      break;
+    }
+    case A:
+    case S:
+    case M:
+    case D:
+    case O:
+    case N:
+    case X: {
       // 32-bit Reg-Mem instructions
       RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
       int b2 = rxinst->B2Value();
@@ -2116,64 +2329,6 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       set_low_register(r1, r1_val & i);
       break;
     }
-    case L:
-    case LA:
-    case LB:
-    case LD: {
-      RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
-      int b2 = rxinst->B2Value();
-      int x2 = rxinst->X2Value();
-      int32_t  r1 = rxinst->R1Value();
-      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
-      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
-      intptr_t d2_val = rxinst->D2Value();
-      intptr_t addr = b2_val + x2_val + d2_val;
-      if (op == L) {
-        int32_t mem_val = ReadW(addr, instr);
-        set_low_register(r1, mem_val);
-      } else if (op == LA) {
-        set_register(r1, addr);
-      } else if (op == LB) {
-        int32_t mem_val = ReadB(addr);
-        set_low_register(r1, mem_val);
-      } else if (op == LD) {
-        double dbl_val = static_cast<double>(ReadDW(addr));
-        set_d_register_from_double(r1, dbl_val);
-      }
-      break;
-    }
-    case C: {
-      RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
-      int b2 = rxinst->B2Value();
-      int x2 = rxinst->X2Value();
-      int32_t  r1_val = get_low_register<int32_t>(rxinst->R1Value());
-      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
-      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
-      intptr_t d2_val = rxinst->D2Value();
-      intptr_t addr = b2_val + x2_val + d2_val;
-      int32_t mem_val = ReadW(addr, instr);
-      SetS390ConditionCode<int32_t>(r1_val, mem_val);
-      break;
-    }
-    case ST:
-    case STD: {
-      RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
-      int b2 = rxinst->B2Value();
-      int x2 = rxinst->X2Value();
-      int32_t  r1_val = get_low_register<int32_t>(rxinst->R1Value());
-      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
-      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
-      intptr_t d2_val = rxinst->D2Value();
-      intptr_t addr = b2_val + x2_val + d2_val;
-      if (op == ST) {
-        WriteW(addr, r1_val, instr);
-      } else if (op == STD) {
-        double frs_val = get_double_from_d_register(rxinst->R1Value());
-        int64_t *p = reinterpret_cast<int64_t *>(&frs_val);
-        WriteDW(addr, *p);
-      }
-      break;
-    }
     case AH:
     case SH:
     case MH: {
@@ -2234,72 +2389,6 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       SetS390OverflowCode(isOF);
       break;
     }
-    case LGFR: {
-      RREInstruction* rreInstr = reinterpret_cast<RREInstruction*>(instr);
-      int r1 = rreInstr->R1Value();
-      int r2 = rreInstr->R2Value();
-      int32_t r2_val = get_low_register<int32_t>(r2);
-      set_register(r1, r2_val);
-      break;
-    }
-    case LNGR: {
-      // Load Negative (64)
-      RREInstruction* rreinst = reinterpret_cast<RREInstruction*>(instr);
-      int r1 = rreinst->R1Value();
-      int r2 = rreinst->R2Value();
-      int64_t r2_val = get_register(r2);
-      r2_val = (r2_val >= 0)? -r2_val : r2_val;  // If pos, then negate it.
-      set_register(r1, r2_val);
-      condition_reg_ = (r2_val == 0)?CC_EQ:CC_LT;  // CC0 - result is zero
-                                                   // CC1 - result is negative
-      break;
-    }
-    case TRAP4: {
-      SoftwareInterrupt(instr);
-      break;
-    }
-    case STC: {
-      // Store Character/Byte
-      RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
-      int b2 = rxinst->B2Value();
-      int x2 = rxinst->X2Value();
-      uint8_t  r1_val = get_low_register<int32_t>(rxinst->R1Value());
-      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
-      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
-      intptr_t d2_val = rxinst->D2Value();
-      intptr_t mem_addr = b2_val + x2_val + d2_val;
-      WriteB(mem_addr, r1_val);
-      break;
-    }
-    case STH: {
-      RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
-      int b2 = rxinst->B2Value();
-      int x2 = rxinst->X2Value();
-      int16_t  r1_val = get_low_register<int32_t>(rxinst->R1Value());
-      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
-      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
-      intptr_t d2_val = rxinst->D2Value();
-      intptr_t mem_addr = b2_val + x2_val + d2_val;
-      WriteH(mem_addr, r1_val, instr);
-      break;
-    }
-#if V8_TARGET_ARCH_S390X
-    case LCGR: {
-      RREInstruction * rreinst = reinterpret_cast<RREInstruction*>(instr);
-      int r1 = rreinst->R1Value();
-      int r2 = rreinst->R2Value();
-      int64_t r2_val = get_register(r2);
-      r2_val = ~r2_val;
-      r2_val = r2_val+1;
-      set_register(r1, r2_val);
-      SetS390ConditionCode<int64_t>(r2_val, 0);
-      // if the input is INT_MIN, loading its compliment would be overflowing
-      if (r2_val < 0 && (r2_val + 1) > 0) {
-        SetS390OverflowCode(true);
-      }
-      break;
-    }
-#endif
     case MSR:
     case MSGR: {  // they do not set overflow code
       RREInstruction * rreinst = reinterpret_cast<RREInstruction*>(instr);
@@ -2329,24 +2418,6 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       int32_t r1_val = get_low_register<int32_t>(r1);
       set_low_register(r1, r1_val * mem_val);
     }
-    case SRDA: {
-      RSInstruction* rsInstr = reinterpret_cast<RSInstruction*>(instr);
-      int r1 = rsInstr->R1Value();
-      ASSERT(r1 % 2 == 0);  // must be a reg pair
-      int b2 = rsInstr->B2Value();
-      intptr_t d2 = rsInstr->D2Value();
-      // only takes rightmost 6bits
-      intptr_t b2_val = b2 == 0 ? 0 : get_register(b2);
-      int shiftBits = (b2_val + d2) & 0x3F;
-      int64_t opnd1 = static_cast<int64_t>(get_low_register<int32_t>(r1)) <<32;
-      int64_t opnd2 = static_cast<int64_t>(get_low_register<int32_t>(r1+1));
-      int64_t r1_val = opnd1 + opnd2;
-      int64_t alu_out = r1_val >> shiftBits;
-      set_low_register(r1, alu_out >> 32);
-      set_low_register(r1 + 1, alu_out & 0x00000000FFFFFFFF);
-      SetS390ConditionCode<int32_t>(alu_out, 0);
-      break;
-    }
     default: {
       return DecodeFourByteFloatingPoint(instr);
     }
@@ -2354,6 +2425,9 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
   return true;
 }
 
+/**
+ * Decodes and simulates four byte floating point instructions
+ */
 bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
   Opcode op = instr->S390OpcodeValue();
 
@@ -2974,12 +3048,15 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       break;
     }
     default:
-      return DecodeSixByteArithInstruction(instr);
+      return DecodeSixByteArithmetic(instr);
   }
   return true;
 }
 
-bool Simulator::DecodeSixByteArithInstruction(Instruction *instr) {
+/**
+ * Decodes and simulates six byte arithmetic instructions
+ */
+bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
   Opcode op = instr->S390OpcodeValue();
 
   switch (op) {
