@@ -2367,36 +2367,6 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
       }
       break;
     }
-    case AHY:
-    case SHY: {
-      RXYInstruction* rxyinst = reinterpret_cast<RXYInstruction*>(instr);
-      int32_t r1_val = get_low_register<int32_t>(rxyinst->R1Value());
-      int b2 = rxyinst->B2Value();
-      int x2 = rxyinst->X2Value();
-      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
-      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
-      intptr_t d2_val = rxyinst->D2Value();
-      int16_t mem_val = ReadH(b2_val + d2_val + x2_val, instr);
-      int32_t alu_out = 0;
-      bool isOF = false;
-      switch (op) {
-        case AHY:
-          alu_out = r1_val + mem_val;
-          isOF = CheckOverflowForIntAdd(r1_val, mem_val);
-          break;
-        case SHY:
-          alu_out = r1_val - mem_val;
-          isOF = CheckOverflowForIntSub(r1_val, mem_val);
-          break;
-        default:
-          UNREACHABLE();
-          break;
-      }
-      set_low_register(r1, alu_out);
-      SetS390ConditionCode<int32_t>(alu_out, 0);
-      SetS390OverflowCode(isOF);
-      break;
-    }
     case MSR:
     case MSGR: {  // they do not set overflow code
       RREInstruction * rreinst = reinterpret_cast<RREInstruction*>(instr);
@@ -3120,6 +3090,36 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
       if (op != CY) {
         set_low_register(r1, alu_out);
       }
+      break;
+    }
+    case AHY:
+    case SHY: {
+      RXYInstruction* rxyinst = reinterpret_cast<RXYInstruction*>(instr);
+      int32_t r1_val = get_low_register<int32_t>(rxyinst->R1Value());
+      int b2 = rxyinst->B2Value();
+      int x2 = rxyinst->X2Value();
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+      intptr_t d2_val = rxyinst->D2Value();
+      int16_t mem_val = ReadH(b2_val + d2_val + x2_val, instr);
+      int32_t alu_out = 0;
+      bool isOF = false;
+      switch (op) {
+        case AHY:
+          alu_out = r1_val + mem_val;
+          isOF = CheckOverflowForIntAdd(r1_val, mem_val);
+          break;
+        case SHY:
+          alu_out = r1_val - mem_val;
+          isOF = CheckOverflowForIntSub(r1_val, mem_val);
+          break;
+        default:
+          UNREACHABLE();
+          break;
+      }
+      set_low_register(r1, alu_out);
+      SetS390ConditionCode<int32_t>(alu_out, 0);
+      SetS390OverflowCode(isOF);
       break;
     }
     case AG:
