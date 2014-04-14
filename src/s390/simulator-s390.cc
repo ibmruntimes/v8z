@@ -1163,6 +1163,14 @@ void Simulator::WriteDW(intptr_t addr, int64_t value) {
   return;
 }
 
+/**
+ * Reads a double value from memory at given address.
+ */
+double Simulator::ReadDouble(intptr_t addr) {
+  double* ptr = reinterpret_cast<double *>(addr);
+  return *ptr;
+}
+
 
 // Returns the limit of the stack area to enable checking for stack overflows.
 uintptr_t Simulator::StackLimit() const {
@@ -2010,7 +2018,7 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
         int32_t mem_val = ReadB(addr);
         set_low_register(r1, mem_val);
       } else if (op == LD) {
-        double dbl_val = static_cast<double>(ReadDW(addr));
+        double dbl_val = ReadDouble(addr);
         set_d_register_from_double(r1, dbl_val);
       }
       break;
@@ -2902,7 +2910,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
         int64_t mem_val = ReadDW(addr);
         set_register(r1, mem_val);
       } else if (op == LDY) {
-        double dbl_val = static_cast<double>(ReadDW(addr));
+        double dbl_val = ReadDouble(addr);
         set_d_register_from_double(r1, dbl_val);
       } else if (op == STY) {
         uint32_t value = get_low_register<uint32_t>(r1);
@@ -2992,7 +3000,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
       intptr_t d2_val = rxeInstr->D2Value();
       double r1_val = get_double_from_d_register(rxeInstr->R1Value());
-      double dbl_val = static_cast<double>(ReadDW(b2_val + x2_val + d2_val));
+      double dbl_val = ReadDouble(b2_val + x2_val + d2_val);
 
       switch (op) {
         case CDB:
