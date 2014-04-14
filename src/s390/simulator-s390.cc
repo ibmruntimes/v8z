@@ -2671,7 +2671,36 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       break;
     }
     case SLLG:
-    case SRLG:
+    case SRLG: {
+      // For SLLG/SRLG, the 64-bit third operand is shifted the number
+      // of bits specified by the second-operand address, and the result is 
+      // placed at the first-operand location. Except for when the R1 and R3
+      // fields designate the same register, the third operand remains 
+      // unchanged in general register R3.
+      RSYInstruction* rsyInstr = reinterpret_cast<RSYInstruction*>(instr);
+      int r1 = rsyInstr->R1Value();
+      int r3 = rsyInstr->R3Value();
+      if (r1 == r3) {
+        // bailout if r1 designate the same register as r3
+        break;
+      }
+      int b2 = rsyInstr->B2Value();
+      intptr_t d2 = rsyInstr->D2Value();
+      // only takes rightmost 6bits
+      intptr_t b2_val = b2 == 0 ? 0 : get_register(b2);
+      int shiftBits = (b2_val + d2) & 0x3F;
+      intptr_t r3_val = get_register(r3);
+      intptr_t alu_out;
+      if (op == SLLG) {
+        alu_out = r3_val << shiftBits;
+      } else if (op == SRLG) {
+        alu_out = r3_val >> shiftBits;
+      } else {
+        UNREACHABLE();
+      }
+      set_register(r1, alu_out);
+      break;
+    }
     case SLAG:
     case SRAG: {
       UNIMPLEMENTED();
