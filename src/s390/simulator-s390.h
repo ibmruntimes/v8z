@@ -264,6 +264,7 @@ class Simulator {
   inline void WriteW(intptr_t addr, int32_t value, Instruction* instr);
 
   inline int64_t ReadDW(intptr_t addr);
+  inline double ReadDouble(intptr_t addr);
   inline void WriteDW(intptr_t addr, int64_t value);
 
   // S390
