@@ -978,8 +978,8 @@ T Simulator::get_high_register(int reg) const {
   if (reg >= kNumGPRs) return 0;
   // End stupid code.
 #ifdef V8_TARGET_ARCH_S390X
-  ASSERT(sizeof(intptr_t) >= 8)
-  return reinterpret_cast<T>(&registers_[reg]);
+  ASSERT(sizeof(intptr_t) >= 8);
+  return static_cast<T>(registers_[reg] >> 32);
 #else
   ASSERT(false);  // forbid 31bit to use high word
   return -1;
