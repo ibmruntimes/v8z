@@ -1276,6 +1276,7 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
     case XG: Format(instr, "xg\t'r1,'d2('r2d,'r3)"); break;
     case CG: Format(instr, "cg\t'r1,'d2('r2d,'r3)"); break;
     case LG: Format(instr, "lg\t'r1,'d2('r2d,'r3)"); break;
+    case LGF: Format(instr, "lgf\t'r1,'d2('r2d,'r3)"); break;
     case LLGF: Format(instr, "llgf\t'r1,'d2('r2d,'r3)"); break;
     case LY: Format(instr, "ly\t'r1,'d2('r2d,'r3)"); break;
     case ALY: Format(instr, "aly\t'r1,'d2('r2d,'r3)"); break;
