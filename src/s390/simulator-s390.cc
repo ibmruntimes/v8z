@@ -2618,6 +2618,41 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
       }
       break;
     }
+    case TMLL: {
+      RIInstruction* riinst = reinterpret_cast<RIInstruction*>(instr);
+      int r1 = riinst->R1Value();
+      int i  = riinst->I2Value() & 0x0000FFFF;
+      if (i == 0) {
+        condition_reg_ = 0x0;
+        break;
+      }
+      uint32_t r1_val = get_low_register<uint32_t>(r1);
+      r1_val = r1_val & 0x0000FFFF;  // uses only the last 16bits
+
+      bool mask_is_zero = true;
+      for (int j = 15; j > 0; --j) {
+        if (i & (1 << j)) {
+          if (r1_val & (1 << j)) {
+            // first bit is one
+            condition_reg_ = CC_GT;
+          } else {
+            // first bit is zero
+            condition_reg_ = CC_LT;
+          }
+          mask_is_zero = false;
+          break;
+        }
+      }
+
+      if (mask_is_zero) {
+        condition_reg_ = CC_EQ;
+      } else {
+        if ((r1_val & i) == 0) {
+          condition_reg_ = CC_EQ;
+        }
+      }
+      break;
+    }
     default: {
       UNREACHABLE();
       return false;
