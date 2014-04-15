@@ -2700,7 +2700,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       } else if (op == IIHF) {
         alu_out = imm;
       } else { ASSERT(false); }
-      set_low_register(r1, alu_out);
+      set_high_register(r1, alu_out);
       break;
     }
     case CLFI: {
