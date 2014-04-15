@@ -990,7 +990,7 @@ void Simulator::set_low_register(int reg, uint32_t value) {
 #ifdef V8_TARGET_ARCH_S390X
   uint64_t shifted_val = static_cast<uint64_t>(value);
   uint64_t orig_val = static_cast<uint64_t>(registers_[reg]);
-  uint64_t result = (orig_val << 32) | shifted_val;
+  uint64_t result = (orig_val >> 32 << 32) | shifted_val;
   registers_[reg] = result;
 #else
   uint32_t* reg_addr = reinterpret_cast<uint32_t*>(&registers_[reg]);
