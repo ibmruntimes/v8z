@@ -3311,7 +3311,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
       __ LoadDoubleLiteral(double_scratch, -V8_INFINITY, scratch);
       __ cdbr(double_base, double_scratch);
       __ bne(&not_minus_inf1);
-      __ lndbr(double_result, double_scratch);
+      __ lcdbr(double_result, double_scratch);
       __ b(&done);
       __ bind(&not_minus_inf1);
 

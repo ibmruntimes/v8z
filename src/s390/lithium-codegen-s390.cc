@@ -1621,10 +1621,10 @@ void LCodeGen::DoMathMinMax(LMathMinMax* instr) {
     // N.B. The following works because +0 + -0 == +0
     if (operation == HMathMinMax::kMathMin) {
       // For min we want logical-or of sign bit: -(-L + -R)
-      __ lndbr(left_reg, left_reg);
+      __ lcdbr(left_reg, left_reg);
       __ ldr(result_reg, left_reg);
       __ sdbr(result_reg, right_reg);
-      __ lndbr(result_reg, result_reg);
+      __ lcdbr(result_reg, result_reg);
     } else {
       // For max we want logical-and of sign bit: (L + R)
       __ ldr(result_reg, left_reg);
@@ -3613,7 +3613,7 @@ void LCodeGen::DoMathPowHalf(LUnaryMathOperation* instr) {
   __ LoadDoubleLiteral(temp, -V8_INFINITY, scratch0());
   __ cdbr(input, temp);
   __ bne(&skip);
-  __ lndbr(result, temp);
+  __ lcdbr(result, temp);
   __ b(&done);
 
   // Add +0 to convert -0 to +0.
