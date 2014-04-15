@@ -2053,7 +2053,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       __ bne(&not_smi_result);
 #endif
       // Go slow on zero result to handle -0.
-      __ Cmpi(scratch1, Operand::Zero());
+      __ Cmpi(r1, Operand::Zero());
       __ beq(&mul_zero);
 #if V8_TARGET_ARCH_S390X
       __ SmiTag(right, scratch1);
