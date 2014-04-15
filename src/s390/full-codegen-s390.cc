@@ -243,7 +243,7 @@ void FullCodeGenerator::Generate() {
       // Load this again, if it's used by the local context below.
       __ LoadP(r5, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
     } else {
-      __ LoadRR(r5, r2);
+      __ LoadRR(r5, r3);
     }
     // Receiver is just before the parameters on the caller's stack.
     int num_parameters = info->scope()->num_parameters();
