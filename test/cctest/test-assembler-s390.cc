@@ -63,7 +63,7 @@ TEST(0) {
 
   Assembler assm(Isolate::Current(), NULL, 0);
 
-#if defined(_AIX) || defined(V8_TARGET_ARCH_S390X)
+#if defined(_AIX)
   __ function_descriptor();
 #endif
 
@@ -98,7 +98,7 @@ TEST(1) {
   Assembler assm(Isolate::Current(), NULL, 0);
   Label L, C;
 
-#if defined(_AIX) || defined(V8_TARGET_ARCH_S390X)
+#if defined(_AIX)
   __ function_descriptor();
 #endif
 
@@ -140,7 +140,7 @@ TEST(2) {
   Assembler assm(Isolate::Current(), NULL, 0);
   Label L, C;
 
-#if defined(_AIX) || defined(V8_TARGET_ARCH_S390X)
+#if defined(_AIX)
   __ function_descriptor();
 #endif
 
@@ -1077,7 +1077,8 @@ TEST(12) {
 }
 #endif  // roohack
 
-// Testing for instruction format
+#if 0
+// This test was used to test instruction formatting, but cannot run
 TEST(13) {
   InitializeVM();
   v8::HandleScope scope;
@@ -1173,6 +1174,7 @@ TEST(13) {
 
   ::exit(0);
 }
+#endif
 
 
 TEST(14) {
