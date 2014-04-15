@@ -565,7 +565,7 @@ void FloatingPointHelper::LoadSmis(MacroAssembler* masm,
                                    Register scratch1,
                                    Register scratch2) {
   __ SmiToDoubleFPRegister(r2, d2, scratch1);
-  __ SmiToDoubleFPRegister(r3, d1, scratch1);
+  __ SmiToDoubleFPRegister(r3, d0, scratch1);
 }
 
 // needs cleanup for extra parameters that are unused
@@ -578,8 +578,8 @@ void FloatingPointHelper::LoadOperands(
   // Load right operand (r2) to d2
   LoadNumber(masm, r2, d2, heap_number_map, scratch1, scratch2, slow);
 
-  // Load left operand (r3) to d1
-  LoadNumber(masm, r3, d1, heap_number_map, scratch1, scratch2, slow);
+  // Load left operand (r3) to d0
+  LoadNumber(masm, r3, d0, heap_number_map, scratch1, scratch2, slow);
 }
 
 // needs cleanup for extra parameters that are unused
@@ -829,8 +829,8 @@ void FloatingPointHelper::CallCCodeForDoubleOperation(
     Token::Value op,
     Register heap_number_result,
     Register scratch) {
-  // d1 - first arg, d2 - second arg
-  // d1 return value
+  // d0 - first arg, d2 - second arg
+  // d0 return value
 
   // Assert that heap_number_result is callee-saved.
   // PowerPC doesn't preserve r7.. need to handle this specially
@@ -853,7 +853,7 @@ void FloatingPointHelper::CallCCodeForDoubleOperation(
   __ pop(r7);
 
   // Store answer in the overwritable heap number. Double returned in d1
-  __ StoreF(d1, FieldMemOperand(heap_number_result, HeapNumber::kValueOffset));
+  __ StoreF(d0, FieldMemOperand(heap_number_result, HeapNumber::kValueOffset));
 
   // Place heap_number_result in r2 and return to the pushed return address.
   __ LoadRR(r2, heap_number_result);
@@ -2213,7 +2213,7 @@ void BinaryOpStub::GenerateFPOperation(MacroAssembler* masm,
     case Token::MUL:
     case Token::DIV:
     case Token::MOD: {
-      // Load left and right operands into d1 and d2
+      // Load left and right operands into d0 and d2
       // Allocate new heap number for result.
       Register result = r7;
       GenerateHeapResultAllocation(
@@ -2232,20 +2232,20 @@ void BinaryOpStub::GenerateFPOperation(MacroAssembler* masm,
 
       // Calculate the result.
       // Using FP registers:
-      //   d1: Left value
+      //   d0: Left value
       //   d2: Right value
       switch (op_) {
         case Token::ADD:
-          __ adbr(d1, d2);
+          __ adbr(d0, d2);
           break;
         case Token::SUB:
-          __ sdbr(d1, d2);
+          __ sdbr(d0, d2);
           break;
         case Token::MUL:
-          __ mdbr(d1, d2);
+          __ mdbr(d0, d2);
           break;
         case Token::DIV:
-          __ ddbr(d1, d2);
+          __ ddbr(d0, d2);
           break;
         case Token::MOD:
           // Call the C function to handle the double operation.
@@ -2260,7 +2260,7 @@ void BinaryOpStub::GenerateFPOperation(MacroAssembler* masm,
         default:
           UNREACHABLE();
       }
-      __ StoreF(d1, FieldMemOperand(result, HeapNumber::kValueOffset));
+      __ StoreF(d0, FieldMemOperand(result, HeapNumber::kValueOffset));
       __ LoadRR(r2, result);
       __ Ret();
       break;
@@ -2538,7 +2538,7 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
                                                    &transition);
       FloatingPointHelper::LoadNumberAsInt32Double(masm,
                                                    left,
-                                                   d1,
+                                                   d0,
                                                    d8,
                                                    heap_number_map,
                                                    scratch1,
@@ -2548,16 +2548,16 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
       Label return_heap_number;
       switch (op_) {
         case Token::ADD:
-          __ adbr(d1, d2);
+          __ adbr(d0, d2);
           break;
         case Token::SUB:
-          __ sdbr(d1, d2);
+          __ sdbr(d0, d2);
           break;
         case Token::MUL:
-          __ mdbr(d1, d2);
+          __ mdbr(d0, d2);
           break;
         case Token::DIV:
-          __ ddbr(d1, d2);
+          __ ddbr(d0, d2);
           break;
         case Token::MOD: {
           Label pop_and_call_runtime;
@@ -2594,7 +2594,7 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
 
         __ EmitVFPTruncate(kRoundToZero,
                            scratch1,
-                           d1,
+                           d0,
                            scratch2,
                            d8);
 
@@ -2614,7 +2614,7 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
         __ bne(&not_zero);
 
         __ Sub(sp, Operand(8));
-        __ StoreF(d1, MemOperand(sp, 0));
+        __ StoreF(d0, MemOperand(sp, 0));
 #if V8_TARGET_ARCH_S390X
         __ ld(scratch2, MemOperand(sp, 0));
 #else
@@ -2649,7 +2649,7 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
                                      scratch1,
                                      scratch2,
                                      &call_runtime);
-        __ StoreF(d1, FieldMemOperand(heap_number_result,
+        __ StoreF(d0, FieldMemOperand(heap_number_result,
                                     HeapNumber::kValueOffset));
         __ LoadRR(r2, heap_number_result);
         __ Ret();
