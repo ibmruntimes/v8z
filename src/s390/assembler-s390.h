@@ -1258,7 +1258,6 @@ RXY_FORM(lay);
 RXY_FORM(lb);
 RXY_FORM(lbh);
 RRE_FORM(lbr);
-RRE_FORM(lcdbr);
 RRE_FORM(lcdfr);
 RRE_FORM(lcebr);
 RRE_FORM(lcgfr);
@@ -1739,7 +1738,7 @@ SS2_FORM(zap);
 
   void sqdb(DoubleRegister r1, const MemOperand& opnd);
   void sqdbr(DoubleRegister r1, DoubleRegister r2);
-  void lndbr(DoubleRegister r1, DoubleRegister r2);
+  void lcdbr(DoubleRegister r1, DoubleRegister r2);
   void ldeb(DoubleRegister r1, const MemOperand& opnd);
 
   // Branch Instructions

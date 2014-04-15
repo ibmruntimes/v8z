@@ -2214,7 +2214,6 @@ RXY_FORM_EMIT(lat, LAT)
 RSY1_FORM_EMIT(lax, LAX)
 RSY1_FORM_EMIT(laxg, LAXG)
 RXY_FORM_EMIT(lbh, LBH)
-RRE_FORM_EMIT(lcdbr, LCDBR)
 RRE_FORM_EMIT(lcdfr, LCDFR)
 RRE_FORM_EMIT(lcebr, LCEBR)
 RRE_FORM_EMIT(lcgfr, LCGFR)
@@ -3319,9 +3318,9 @@ void Assembler::ledbr(DoubleRegister r1, DoubleRegister r2) {
            Register::from_code(r2.code()));
 }
 
-// Load negative Register-Register (LB)
-void Assembler::lndbr(DoubleRegister r1, DoubleRegister r2) {
-  rre_form(LNDBR,
+// Load Complement Register-Register (LB)
+void Assembler::lcdbr(DoubleRegister r1, DoubleRegister r2) {
+  rre_form(LCDBR,
            Register::from_code(r1.code()),
            Register::from_code(r2.code()));
 }

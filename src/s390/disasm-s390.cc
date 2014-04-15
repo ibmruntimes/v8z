@@ -1214,7 +1214,7 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case DDBR: Format(instr, "ddbr\t'f5,'f6"); break;
       case CDBR: Format(instr, "cdbr\t'f5,'f6"); break;
       case SQDBR: Format(instr, "sqdbr\t'f5,'f6"); break;
-      case LNDBR: Format(instr, "lndbr\t'f5,'f6"); break;
+      case LCDBR: Format(instr, "lcdbr\t'f5,'f6"); break;
       case STH:   Format(instr, "sth\t'r1,'d1('r2d,'r3)"); break;
       case SRDA: Format(instr, "srda\t'r1,'d1"); break;
       // TRAP4 is used in calling to native function. it will not be generated
