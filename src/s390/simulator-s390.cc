@@ -195,9 +195,17 @@ bool S390Debugger::GetValue(const char* desc, intptr_t* value) {
     return true;
   } else {
     if (strncmp(desc, "0x", 2) == 0) {
+#ifdef V8_TARGET_ARCH_S390X
+      return SScanF(desc + 2, "%lx", reinterpret_cast<uint64_t*>(value)) == 1;
+#else
       return SScanF(desc + 2, "%x", reinterpret_cast<uint32_t*>(value)) == 1;
+#endif
     } else {
+#ifdef V8_TARGET_ARCH_S390X
+      return SScanF(desc, "%lu", reinterpret_cast<uint64_t*>(value)) == 1;
+#else
       return SScanF(desc, "%u", reinterpret_cast<uint32_t*>(value)) == 1;
+#endif
     }
   }
   return false;
