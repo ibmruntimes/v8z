@@ -2824,7 +2824,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
           set_register((r1 + i) % 16, value);
         } else if (op == STMG) {
           int64_t value = get_register((r1 + i) % 16);
-          WriteDW(rb_val + offset + 4 * i, value);
+          WriteDW(rb_val + offset + 8 * i, value);
         } else { ASSERT(false); }
       }
       break;
