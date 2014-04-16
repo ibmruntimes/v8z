@@ -369,13 +369,6 @@ bool Assembler::IsRlwinm(Instr instr) {
   return ((instr & kOpcodeMask) == RLWINMX);
 }
 
-#if V8_TARGET_ARCH_S390X
-bool Assembler::IsRldicl(Instr instr) {
-  return (((instr & kOpcodeMask) == EXT5) &&
-          ((instr & kExt5OpcodeMask) == RLDICL));
-}
-#endif
-
 // Labels refer to positions in the (to be) generated code.
 // There are bound, linked, and unused labels.
 //
