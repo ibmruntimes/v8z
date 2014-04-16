@@ -4423,7 +4423,7 @@ void MacroAssembler::LoadSmiLiteral(Register dst, Smi *smi) {
 #if V8_TARGET_ARCH_S390X
   ASSERT((value & 0xffffffff) == 0);
   // The smi value is loaded in upper 32-bits.  Lower 32-bit are zeros.
-  llihf(dst, Operand(value));
+  llihf(dst, Operand(value >> 32));
 #else
   llilf(dst, Operand(value));
 #endif
