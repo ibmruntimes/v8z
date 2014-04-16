@@ -490,12 +490,16 @@ void S390Debugger::Debug() {
           PrintF("  0x%08" V8PRIxPTR ":  0x%08" V8PRIxPTR " %10" V8PRIdPTR,
                  reinterpret_cast<intptr_t>(cur), *cur, *cur);
           HeapObject* obj = reinterpret_cast<HeapObject*>(*cur);
-          int value = *cur;
+          intptr_t value = *cur;
           Heap* current_heap = v8::internal::Isolate::Current()->heap();
           if (current_heap->Contains(obj) || ((value & 1) == 0)) {
             PrintF(" (");
             if ((value & 1) == 0) {
-              PrintF("smi %d", value / 2);
+#ifdef V8_TARGET_ARCH_S390X
+              PrintF("smi %d", (int32_t)(value >> 32));
+#else
+              PrintF("smi %d", (int32_t)(value / 2));
+#endif
             } else {
               obj->ShortPrint();
             }
