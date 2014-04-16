@@ -2193,9 +2193,9 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
     case OGR:
     case NGR:
     case XGR: {
-      RRInstruction* rrinst = reinterpret_cast<RRInstruction*>(instr);
-      int r1 = rrinst->R1Value();
-      int r2 = rrinst->R2Value();
+      RREInstruction* rreinst = reinterpret_cast<RREInstruction*>(instr);
+      int r1 = rreinst->R1Value();
+      int r2 = rreinst->R2Value();
       int64_t r1_val = get_register(r1);
       int64_t r2_val = get_register(r2);
       bool isOF = false;
@@ -2824,7 +2824,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       // Store each register in ascending order.
       for (int i = 0; i <= r3 - r1; i++) {
         if (op == LMG) {
-          int64_t value = ReadDW(rb_val + offset + 4 * i);
+          int64_t value = ReadDW(rb_val + offset + 8 * i);
           set_register((r1 + i) % 16, value);
         } else if (op == STMG) {
           int64_t value = get_register((r1 + i) % 16);
@@ -2844,10 +2844,6 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       RSYInstruction* rsyInstr = reinterpret_cast<RSYInstruction*>(instr);
       int r1 = rsyInstr->R1Value();
       int r3 = rsyInstr->R3Value();
-      if (r1 == r3) {
-        // bailout if r1 designate the same register as r3
-        break;
-      }
       int b2 = rsyInstr->B2Value();
       intptr_t d2 = rsyInstr->D2Value();
       // only takes rightmost 6 bits
