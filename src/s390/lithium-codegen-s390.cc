@@ -3478,7 +3478,7 @@ void LCodeGen::DoMathFloor(LUnaryMathOperation* instr) {
                      input,
                      scratch,
                      double_scratch0());
-  DeoptimizeIf(Condition(CC_OF), instr->environment());
+  DeoptimizeIf(ne, instr->environment());
 
   if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
     // Test for -0.
@@ -3570,7 +3570,7 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
                      double_scratch0(),
                      scratch,
                      double_scratch1);
-  DeoptimizeIf(Condition(CC_OF), instr->environment());
+  DeoptimizeIf(ne, instr->environment());
 
   if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
     // Test for -0.
@@ -4717,7 +4717,7 @@ void LCodeGen::DoDeferredTaggedToI(LTaggedToI* instr) {
                        scratch1,
                        double_scratch2,
                        kCheckForInexactConversion);
-    DeoptimizeIf(Condition(CC_OF), instr->environment());
+    DeoptimizeIf(ne, instr->environment());
 
     if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
       __ Cmpi(input_reg, Operand::Zero());
@@ -4807,7 +4807,7 @@ void LCodeGen::DoDoubleToI(LDoubleToI* instr) {
 
     // Deoptimize if we had a vfp invalid exception,
     // including inexact operation.
-    DeoptimizeIf(Condition(CC_OF), instr->environment());
+    DeoptimizeIf(ne, instr->environment());
   }
     __ bind(&done);
 }
