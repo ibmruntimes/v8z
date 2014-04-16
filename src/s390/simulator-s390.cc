@@ -2866,19 +2866,20 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
     case SRAG: {
       RSYInstruction* rsyInstr = reinterpret_cast<RSYInstruction*>(instr);
       int r1 = rsyInstr->R1Value();
+      int r3 = rsyInstr->R3Value();
       int b2 = rsyInstr->B2Value();
       intptr_t d2 = rsyInstr->D2Value();
-      // only takes rightmost 6bits
-      intptr_t b2_val = b2 == 0 ? 0 : get_register(b2);
+      // only takes rightmost 6 bits
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
       int shiftBits = (b2_val + d2) & 0x3F;
-      intptr_t r1_val = get_register(r1);
+      intptr_t r3_val = get_register(r3);
       intptr_t alu_out = 0;
       bool isOF = false;
       if (op == SLAG) {
         isOF = CheckOverflowForShiftLeft(r1_val, shiftBits);
-        alu_out = r1_val << shiftBits;
+        alu_out = r3_val << shiftBits;
       } else if (op == SRAG) {
-        alu_out = r1_val >> shiftBits;
+        alu_out = r3_val >> shiftBits;
       }
       set_register(r1, alu_out);
       SetS390ConditionCode<intptr_t>(alu_out, 0);
