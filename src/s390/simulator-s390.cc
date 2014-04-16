@@ -2876,7 +2876,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       intptr_t alu_out = 0;
       bool isOF = false;
       if (op == SLAG) {
-        isOF = CheckOverflowForShiftLeft(r1_val, shiftBits);
+        isOF = CheckOverflowForShiftLeft(r3_val, shiftBits);
         alu_out = r3_val << shiftBits;
       } else if (op == SRAG) {
         alu_out = r3_val >> shiftBits;
