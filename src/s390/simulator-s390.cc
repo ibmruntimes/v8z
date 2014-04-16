@@ -2846,8 +2846,8 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       }
       int b2 = rsyInstr->B2Value();
       intptr_t d2 = rsyInstr->D2Value();
-      // only takes rightmost 6bits
-      intptr_t b2_val = b2 == 0 ? 0 : get_register(b2);
+      // only takes rightmost 6 bits
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
       int shiftBits = (b2_val + d2) & 0x3F;
       // unsigned
       uintptr_t r3_val = get_register(r3);

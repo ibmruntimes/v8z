@@ -660,7 +660,7 @@ class MacroAssembler: public Assembler {
   // Cleanse pointer address on 31bit by zero out top  bit.
   // This is a NOP on 64-bit.
   void CleanseP(Register src) {
-#if V8_TARGET_ARCH_S390
+#ifndef V8_TARGET_ARCH_S390X
     nilh(src, Operand(0x7FFF));
 #endif
   }
