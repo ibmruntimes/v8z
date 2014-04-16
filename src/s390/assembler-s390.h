@@ -1959,9 +1959,6 @@ SS2_FORM(zap);
 
   static bool IsCmpRegister(Instr instr);
   static bool IsRlwinm(Instr instr);
-#if V8_TARGET_ARCH_S390X
-  static bool IsRldicl(Instr instr);
-#endif
   static bool IsNop(SixByteInstr instr, int type = NON_MARKING_NOP);
 
   // Postpone the generation of the trampoline pool for the specified number of
