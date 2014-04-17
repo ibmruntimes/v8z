@@ -1317,8 +1317,7 @@ class MacroAssembler: public Assembler {
       srl(dst, Operand(rangeEnd));
 #endif
     int width  = rangeStart - rangeEnd + 1;
-    ASSERT(width <= 32);
-    uint32_t mask = 0xffffffff >> (kBitsPerPointer - width);
+    uint32_t mask = (1 << width) - 1;
     AndPImm(dst, Operand(mask));
   }
 
