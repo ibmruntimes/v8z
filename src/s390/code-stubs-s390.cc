@@ -3721,17 +3721,20 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // The #if immediately below was !USE_SIMULATOR, but needed
   // to change to support nativesim=true builds
 #if defined(V8_HOST_ARCH_S39064) || defined(V8_HOST_ARCH_S390)
+
+/*
 #if defined(V8_TARGET_ARCH_S390X) && !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
   // Pass buffer for return value on stack if necessary
   if (result_size_ > 1) {
     ASSERT_EQ(2, result_size_);
     arg_stack_space += 2;
   }
-#elif !defined(_AIX)
-  // 32-bit linux
-  // Pass C++ objects by reference not value
+*/
+#if defined(V8_TARGET_ARCH_S390X)
+  // 64-bit linux pass C++ objects by reference not value
   arg_stack_space += 2;
 #endif
+
 #endif
 
   __ EnterExitFrame(save_doubles_, arg_stack_space);
