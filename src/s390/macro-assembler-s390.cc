@@ -661,7 +661,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   // Allocate and align the frame preparing for calling the runtime
   // function.
   stack_space += kNumRequiredStackFrameSlots;
-  Sub(sp, Operand(stack_space * kPointerSize));
+  lay(sp, MemOperand(sp, -stack_space * kPointerSize));
   const int frame_alignment = MacroAssembler::ActivationFrameAlignment();
   if (frame_alignment > 0) {
     ASSERT(frame_alignment == 8);

@@ -119,21 +119,6 @@ const int kNumSafepointSavedRegisters = kNumJSCallerSaved + kNumCalleeSaved;
 const int kNumRequiredStackFrameSlots = 12;
 const int kStackFrameLRSlot = 2;
 const int kStackFrameExtraParamSlot = 12;
-#elif defined(_AIX) || defined(V8_TARGET_ARCH_S390X)
-// [0] back chain
-// [1] condition register save area
-// [2] link register save area
-// [3] reserved for compiler
-// [4] reserved by binder
-// [5] TOC save area
-// [6] Parameter1 save area
-// ...
-// [13] Parameter8 save area
-// [14] Parameter9 slot (if necessary)
-// ...
-const int kNumRequiredStackFrameSlots = 14;
-const int kStackFrameLRSlot = 2;
-const int kStackFrameExtraParamSlot = 14;
 #else
 // [0] back chain
 // [1] link register save area
