@@ -95,7 +95,7 @@ static void GenerateStringDictionaryReceiverCheck(MacroAssembler* masm,
   // Check that the global object does not require access checks.
   __ LoadlB(t1, FieldMemOperand(t0, Map::kBitFieldOffset));
   __ LoadRR(r0, t1);
-  __ AndP(r0, Operand((1 << Map::kIsAccessCheckNeeded) |
+  __ AndPImm(r0, Operand((1 << Map::kIsAccessCheckNeeded) |
                      (1 << Map::kHasNamedInterceptor)));
   __ bne(miss /*, cr0*/);
 
@@ -285,7 +285,7 @@ static void GenerateKeyedLoadReceiverCheck(MacroAssembler* masm,
   __ LoadlB(scratch, FieldMemOperand(map, Map::kBitFieldOffset));
   ASSERT(((1 << Map::kIsAccessCheckNeeded) | (1 << interceptor_bit)) < 0x8000);
   __ LoadRR(r0, scratch);
-  __ AndP(r0,
+  __ AndPImm(r0,
           Operand((1 << Map::kIsAccessCheckNeeded) | (1 << interceptor_bit)));
   __ bne(slow /*, cr0*/);
   // Check that the object is some kind of JS object EXCEPT JS Value type.
@@ -387,7 +387,7 @@ static void GenerateKeyStringCheck(MacroAssembler* masm,
   __ LoadlB(hash, FieldMemOperand(map, Map::kInstanceTypeOffset));
   STATIC_ASSERT(kSymbolTag != 0);
   __ LoadRR(r0, hash);
-  __ AndP(r0, Operand(kIsSymbolMask));
+  __ AndPImm(r0, Operand(kIsSymbolMask));
   __ beq(not_symbol /*, cr0*/);
 }
 
@@ -1216,7 +1216,7 @@ void KeyedLoadIC::GenerateIndexedInterceptor(MacroAssembler* masm) {
   // Check that it has indexed interceptor and access checks
   // are not enabled for this object.
   __ LoadlB(r5, FieldMemOperand(r4, Map::kBitFieldOffset));
-  __ AndP(r5, Operand(kSlowCaseBitFieldMask));
+  __ AndPImm(r5, Operand(kSlowCaseBitFieldMask));
   __ Cmpi(r5, Operand(1 << Map::kHasIndexedInterceptor));
   __ bne(&slow);
 
@@ -1507,7 +1507,7 @@ void KeyedStoreIC::GenerateGeneric(MacroAssembler* masm,
   // to do this because this generic stub does not perform map checks.
   __ LoadlB(ip, FieldMemOperand(receiver_map, Map::kBitFieldOffset));
   __ LoadRR(r0, ip);
-  __ AndP(r0, Operand(1 << Map::kIsAccessCheckNeeded));
+  __ AndPImm(r0, Operand(1 << Map::kIsAccessCheckNeeded));
   __ bne(&slow /*, cr0*/);
   // Check if the object is a JS array or not.
   __ LoadlB(r6, FieldMemOperand(receiver_map, Map::kInstanceTypeOffset));
