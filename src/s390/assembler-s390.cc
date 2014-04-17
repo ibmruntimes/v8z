@@ -396,7 +396,8 @@ int Assembler::target_at(int pos)  {
       return kEndOfChain;
     return pos + imm16;
   } else if (BRCL == opcode || LARL == opcode || BRASL == opcode) {
-    int32_t imm32 = instr & (~static_cast<uint64_t>(0xffffffff));
+    int32_t imm32 = static_cast<int32_t>(
+        instr & (static_cast<uint64_t>(0xffffffff)));
     imm32 <<= 1;   // BRCL immediate is in # of halfwords
     if (imm32 == 0)
       return kEndOfChain;
