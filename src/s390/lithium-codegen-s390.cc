@@ -1234,7 +1234,7 @@ void LCodeGen::DoBitI(LBitI* instr) {
       switch (instr->op()) {
         case Token::BIT_AND:
           __ LoadRR(result, left);
-          __ AndP(result,
+          __ AndPImm(result,
                   Operand(ToInteger32(LConstantOperand::cast(right_op))));
           break;
         case Token::BIT_OR:
@@ -1263,7 +1263,7 @@ void LCodeGen::DoBitI(LBitI* instr) {
         __ AndP(result, right.rm());
       } else {
         __ LoadRR(result, left);
-        __ AndP(result, right);
+        __ AndPImm(result, right);
       }
       break;
     case Token::BIT_OR:
@@ -1301,7 +1301,7 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
   if (right_op->IsRegister()) {
     // Mask the right_op operand.
     __ LoadRR(scratch, ToRegister(right_op));
-    __ AndP(scratch, Operand(0x1F));
+    __ AndPImm(scratch, Operand(0x1F));
     switch (instr->op()) {
       case Token::SAR:
         __ LoadRR(result, left);
@@ -1749,7 +1749,7 @@ void LCodeGen::DoBranch(LBranch* instr) {
                    1 << (31 - Assembler::encode_crbit(cr7, CR_FU)));
     __ cdbr(reg, kDoubleRegZero);
     __ mfcr(scratch);
-    __ AndP(scratch, Operand(crBits));
+    __ AndPImm(scratch, Operand(crBits));
     EmitBranch(true_block, false_block, eq, cr0);
   } else {
     ASSERT(r.IsTagged());
@@ -3697,7 +3697,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
 
   // state[0] = 18273 * (state[0] & 0xFFFF) + (state[0] >> 16)
   __ LoadRR(r5, r3);
-  __ AndP(r5, Operand(0xFFFF));
+  __ AndPImm(r5, Operand(0xFFFF));
   __ LoadImmP(r6, Operand(18273));
   __ MulP(r5, r6);
   __ srl(r3, Operand(16));
@@ -3707,7 +3707,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
 
   // state[1] = 36969 * (state[1] & 0xFFFF) + (state[1] >> 16)
   __ LoadRR(r5, r3);
-  __ AndP(r5, Operand(0xFFFF));
+  __ AndPImm(r5, Operand(0xFFFF));
   __ mov(r6, Operand(36969));
   __ MulP(r5, r6);
   __ srl(r2, Operand(16));
@@ -4584,7 +4584,7 @@ void LCodeGen::DoSmiUntag(LSmiUntag* instr) {
     STATIC_ASSERT(kHeapObjectTag == 1);
     // If the input is a HeapObject, value of scratch won't be zero.
     __ LoadRR(scratch, input);
-    __ AndP(scratch, Operand(kHeapObjectTag));
+    __ AndPImm(scratch, Operand(kHeapObjectTag));
     __ SmiUntag(result, input);
     DeoptimizeIf(ne, instr->environment(), cr0);
   } else {
@@ -4860,10 +4860,10 @@ void LCodeGen::DoCheckInstanceType(LCheckInstanceType* instr) {
     if (IsPowerOf2(mask)) {
       ASSERT(tag == 0 || IsPowerOf2(tag));
       __ LoadRR(r0, scratch);
-      __ AndP(r0, Operand(mask));
+      __ AndPImm(r0, Operand(mask));
       DeoptimizeIf(tag == 0 ? ne : eq, instr->environment(), cr0);
     } else {
-      __ AndP(scratch, Operand(mask));
+      __ AndPImm(scratch, Operand(mask));
       __ Cmpi(scratch, Operand(tag));
       DeoptimizeIf(ne, instr->environment());
     }

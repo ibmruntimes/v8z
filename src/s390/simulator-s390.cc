@@ -2764,6 +2764,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       break;
     }
     case CLFI: {
+      // Compare Logical with Immediate (32)
       RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
       int r1 = rilInstr->R1Value();
       uint32_t imm = rilInstr->I2UnsignedValue();
@@ -2777,8 +2778,16 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       SetS390ConditionCode<int32_t>(get_low_register<int32_t>(r1), imm);
       break;
     }
+    case CLGFI: {
+      // Compare Logical with Immediate (64)
+      RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
+      int r1 = rilInstr->R1Value();
+      uint64_t imm = static_cast<uint64_t>(rilInstr->I2UnsignedValue());
+      SetS390ConditionCode<uint64_t>(get_register(r1), imm);
+      break;
+    }
     case CGFI: {
-      // Compare 64-bit Immediate.
+      // Compare with Immediate (64)
       RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
       int r1 = rilInstr->R1Value();
       int64_t imm = static_cast<int64_t>(rilInstr->I2Value());
