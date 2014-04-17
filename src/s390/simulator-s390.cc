@@ -195,17 +195,11 @@ bool S390Debugger::GetValue(const char* desc, intptr_t* value) {
     return true;
   } else {
     if (strncmp(desc, "0x", 2) == 0) {
-#ifdef V8_TARGET_ARCH_S390X
-      return SScanF(desc + 2, "%lx", reinterpret_cast<uint64_t*>(value)) == 1;
-#else
-      return SScanF(desc + 2, "%x", reinterpret_cast<uint32_t*>(value)) == 1;
-#endif
+      return SScanF(desc + 2, "%" V8PRIxPTR,
+          reinterpret_cast<uintptr_t*>(value)) == 1;
     } else {
-#ifdef V8_TARGET_ARCH_S390X
-      return SScanF(desc, "%lu", reinterpret_cast<uint64_t*>(value)) == 1;
-#else
-      return SScanF(desc, "%u", reinterpret_cast<uint32_t*>(value)) == 1;
-#endif
+      return SScanF(desc, "%" V8PRIuPTR,
+          reinterpret_cast<uintptr_t*>(value)) == 1;
     }
   }
   return false;
@@ -495,11 +489,7 @@ void S390Debugger::Debug() {
           if (current_heap->Contains(obj) || ((value & 1) == 0)) {
             PrintF(" (");
             if ((value & 1) == 0) {
-#ifdef V8_TARGET_ARCH_S390X
-              PrintF("smi %d", (int32_t)(value >> 32));
-#else
-              PrintF("smi %d", (int32_t)(value / 2));
-#endif
+              PrintF("smi %d", PlatformSmiTagging::SmiToInt(obj));
             } else {
               obj->ShortPrint();
             }
