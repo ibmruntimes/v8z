@@ -4183,7 +4183,7 @@ void MacroAssembler::AndPImm(Register dst, const Operand& opnd) {
   intptr_t value = opnd.imm_;
   if (value >> 32 != -1)
     nihf(dst, Operand(value >> 32));
-  nilf(dst, Operand(value & 0xFFFFFFFF)); 
+  nilf(dst, Operand(value & 0xFFFFFFFF));
 #else
   nilf(dst, opnd);
 #endif
