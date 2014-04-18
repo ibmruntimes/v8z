@@ -3223,7 +3223,7 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
       intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
       intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
       int64_t alu_out = get_register(r1);
-      int64_t mem_val =ReadDW(b2_val + x2_val + d2);
+      int64_t mem_val = ReadDW(b2_val + x2_val + d2);
 
       switch (op) {
         case AG: {
