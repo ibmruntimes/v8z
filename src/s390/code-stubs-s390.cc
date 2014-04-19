@@ -4899,8 +4899,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ AddP(code, Operand(Code::kHeaderSize - kHeapObjectTag));
 
 
-#if defined(USE_SIMULATOR) && \
-  (defined(_AIX) || defined(V8_TARGET_ARCH_S390X))
+#if defined(USE_SIMULATOR) && defined(_AIX)
   // Even Simulated AIX/PPC64 Linux uses a function descriptor for the
   // RegExp routine.  Extract the instruction address here since
   // DirectCEntryStub::GenerateCall will not do it for calls out to
@@ -6858,8 +6857,7 @@ void DirectCEntryStub::GenerateCall(MacroAssembler* masm,
 
 void DirectCEntryStub::GenerateCall(MacroAssembler* masm,
                                     Register target) {
-#if !defined(USE_SIMULATOR) && \
-  (defined(_AIX) || defined(V8_TARGET_ARCH_S390X))
+#if !defined(USE_SIMULATOR) && (defined(_AIX))
   // Native AIX/PPC64 Linux use a function descriptor.
   __ LoadP(ToRegister(2), MemOperand(target, kPointerSize));  // TOC
   __ LoadP(target, MemOperand(target, 0));  // Instruction address
