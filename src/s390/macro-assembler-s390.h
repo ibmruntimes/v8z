@@ -1307,12 +1307,14 @@ class MacroAssembler: public Assembler {
   inline void ExtractBitRange(Register dst, Register src,
                               int rangeStart, int rangeEnd) {
     ASSERT(rangeStart >= rangeEnd && rangeStart < kBitsPerPointer);
-    if (!dst.is(src))
-      lr(dst, src);
 #if V8_TARGET_ARCH_S390X
     if (rangeEnd > 0)              // Don't need to shift if rangeEnd is zero.
       srlg(dst, src,  MemOperand(r0, rangeEnd));
+    else if (!dst.is(src))         // If we didn't shift, we might need to copy
+      lr(dst, src);                // src to dst
 #else
+    if (!dst.is(src))
+      lr(dst, src);
     if (rangeEnd > 0)              // Don't need to shift if rangeEnd is zero.
       srl(dst, Operand(rangeEnd));
 #endif
