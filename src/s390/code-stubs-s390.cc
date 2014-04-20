@@ -3558,20 +3558,41 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
 
 #if defined(V8_TARGET_ARCH_S390X)
   // zLinux 64-bit
-  // Use frame storage reserved by calling function
-  // as ABI passes C++ objects by reference not value
-  // This builds an object in the stack frame
+  // Use frame storage reserved by calling function as ABI passes C++ objects
+  // larger than 8 bytes by reference.  On 64-bit, Arguments is 16-bytes, so
+  // we need to build the object on the stack.
+#if ABI_RETURNS_OBJECT_PAIRS_IN_REGS
   __ la(r2, MemOperand(sp, (kStackFrameExtraParamSlot + 1) * kPointerSize));
   __ st(r6, MemOperand(r2));
   __ StoreP(r8, MemOperand(r2, kPointerSize));
   isolate_reg = r3;
-#else
+#else  // ABI_RETURNS_OBJECT_PAIRS_IN_REGS
+  // This is the default path for zLinux 64 native.
+  if (result_size_ < 2) {
+    __ la(r2, MemOperand(sp, (kStackFrameExtraParamSlot + 1) * kPointerSize));
+    __ st(r6, MemOperand(r2));
+    __ StoreP(r8, MemOperand(r2, kPointerSize));
+    isolate_reg = r3;
+  } else {
+    // The result of the call is 16-byte non-scalar value (i.e.
+    // ObjectPair), we need to use frame storage reserved by calling function to
+    // pass return buffer as an implicit first argument.
+    ASSERT_EQ(2, result_size_);
+    __ la(r2, MemOperand(sp, (kStackFrameExtraParamSlot + 1) * kPointerSize));
+    __ la(r3, MemOperand(sp, (kStackFrameExtraParamSlot + 3) * kPointerSize));
+    __ st(r6, MemOperand(r3));
+    __ StoreP(r8, MemOperand(r3, kPointerSize));
+    isolate_reg = r4;
+  }
+#endif  // ABI_RETURNS_OBJECT_PAIRS_IN_REGS
+
+#else   // V8_TARGET_ARCH_S390X
   // zLinux 31-bit
   // r2 = argc, r3 = argv
   __ LoadRR(r2, r6);
   __ LoadRR(r3, r8);
   isolate_reg = r4;
-#endif
+#endif  // V8_TARGET_ARCH_S390X
 
 #endif
 #else  // Simulated
@@ -3722,16 +3743,15 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // to change to support nativesim=true builds
 #if defined(V8_HOST_ARCH_S39064) || defined(V8_HOST_ARCH_S390)
 
-/*
 #if defined(V8_TARGET_ARCH_S390X) && !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
   // Pass buffer for return value on stack if necessary
   if (result_size_ > 1) {
     ASSERT_EQ(2, result_size_);
     arg_stack_space += 2;
   }
-*/
+#endif
 #if defined(V8_TARGET_ARCH_S390X)
-  // 64-bit linux pass C++ objects by reference not value
+  // 64-bit linux pass Argument object by reference not value
   arg_stack_space += 2;
 #endif
 
