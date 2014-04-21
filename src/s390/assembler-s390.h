@@ -697,11 +697,11 @@ class Assembler : public AssemblerBase {
   // Code generation
 
   // S390 Pseudo Branch Instruction
-  void branchOnCond(Condition c, int branch_offset);  // jump on condition
+  void branchOnCond(Condition c, int branch_offset, bool is_bound = false);  // jump on condition
 
   // Label version
   void b(Condition cond, Label* l) {
-    branchOnCond(cond, branch_offset(l, false));
+    branchOnCond(cond, branch_offset(l, false), l->is_bound());
   }
   void b(Register r, Label* l) {
     positions_recorder()->WriteRecordedPositions();

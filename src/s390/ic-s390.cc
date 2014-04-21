@@ -1804,10 +1804,11 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
   }
 #endif
 
-  Address patch_address =
-      cmp_instruction_address - delta;
+  Address patch_address = cmp_instruction_address - delta;
+  Address branch_address = patch_address + 6;
+
   Instr instr_at_patch = Assembler::instr_at(patch_address);
-  Instr branch_instr =
+  SixByteInstr  branch_instr =
       Assembler::instr_at(patch_address + 6);
       // 4 bytes in between is either cr + 2 * nop or lr + nill instr.
 
@@ -1818,7 +1819,15 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
   //  rlwinm(r0, value, 0, 31, 31, SetRC);
   //  bc(label, BT/BF, 2)
   // and vice-versa to be disabled again.
-  CodePatcher patcher(patch_address, 10);
+  size_t patch_size = 0;
+  if (Instruction::S390OpcodeValue(branch_address) == BRC) {
+    patch_size = 10;
+  } else if (Instruction::S390OpcodeValue(branch_address) == BRCL) {
+    patch_size = 12;
+  } else {
+    ASSERT(false);
+  }
+  CodePatcher patcher(patch_address, patch_size);
   Register reg;
   reg.code_ = instr_at_patch & 0xf;
   if (check == ENABLE_INLINED_SMI_CHECK) {
@@ -1836,11 +1845,22 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
   }
 
   // ASSERT(Assembler::IsBranch(branch_instr));
-  Condition cc = static_cast<Condition>((branch_instr & 0x00f00000) >> 20);
+  Condition cc = al;
+  if (Instruction::S390OpcodeValue(branch_address) == BRC) {
+    cc = static_cast<Condition>((branch_instr & 0x00f00000) >> 20);
+    ASSERT((cc == ne) || (cc == eq));
+    cc = (cc == ne) ? eq : ne;
+    patcher.masm()->brc(cc, Operand((branch_instr & 0xffff) << 1));
+  } else if (Instruction::S390OpcodeValue(branch_address) == BRCL) {
+    cc = static_cast<Condition>(
+        (branch_instr & (static_cast<uint64_t>(0x00f0) << 32)) >> 36);
+    ASSERT((cc == ne) || (cc == eq));
+    cc = (cc == ne) ? eq : ne;
+    patcher.masm()->brcl(cc, Operand((branch_instr & 0xffffffff) << 1));
+  } else {
+    ASSERT(false);
+  }
   // Invert the logic of the branch
-  ASSERT((cc == ne) || (cc == eq));
-  cc = (cc == ne) ? eq : ne;
-  patcher.masm()->brc(cc, Operand((branch_instr & 0xffff) << 1));
 }
 
 

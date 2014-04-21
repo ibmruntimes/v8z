@@ -656,10 +656,10 @@ void Assembler::bcr() {
 }
 
 // Pseudo op - branch on condition
-void Assembler::branchOnCond(Condition c, int branch_offset) {
+void Assembler::branchOnCond(Condition c, int branch_offset, bool is_bound) {
   positions_recorder()->WriteRecordedPositions();
   int offset = branch_offset;
-  if (is_int16(offset)) {
+  if (is_bound && is_int16(offset)) {
     brc(c, Operand(offset & 0xFFFF));  // short jump
   } else {
     brcl(c, Operand(offset));          // long jump
@@ -2540,6 +2540,7 @@ void Assembler::sr(Register r1, Register r2) {
 
 // Multiply Register (64<32)
 void Assembler::mr_z(Register r1, Register r2) {
+  ASSERT(r1.code() % 2 == 0);
   rr_form(MR, r1, r2);
 }
 

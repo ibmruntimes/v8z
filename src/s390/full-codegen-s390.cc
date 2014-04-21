@@ -107,6 +107,7 @@ class JumpPatchSite BASE_EMBEDDED {
 #endif
     } else {
       __ nop();
+      __ nop();
     }
   }
 
