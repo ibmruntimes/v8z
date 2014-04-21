@@ -3635,8 +3635,6 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
 
     // zLinux ABI requires caller's frame to have sufficient space for callee
     // preserved regsiter save area.
-    // @TODO Make sure this is in the right place and we need to guard it
-    // with appropriate #ifdefs
     __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
     __ Call(target);
     __ bind(&return_label);
@@ -6862,6 +6860,9 @@ void ICCompareStub::GenerateMiss(MacroAssembler* masm) {
 
 // This stub is paired with DirectCEntryStub::GenerateCall
 void DirectCEntryStub::Generate(MacroAssembler* masm) {
+  // zLinux ABI requires caller's frame to have sufficient space for callee
+  // preserved regsiter save area.
+  __ la(sp, MemOperand(sp, kCalleeRegisterSaveAreaSize));
   // Retrieve return address
   __ LoadP(ip, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize));
   __ Jump(ip);
@@ -6896,10 +6897,13 @@ void DirectCEntryStub::GenerateCall(MacroAssembler* masm,
   __ bind(&start);
   __ larl(r0, &return_addr);
   __ StoreP(r0, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize));
+
+  // zLinux ABI requires caller's frame to have sufficient space for callee
+  // preserved regsiter save area.
+  __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
+
   __ Jump(target);  // Call the C++ function.
   __ bind(&return_addr);
-
-  // TODO(JOHN): might need to allocate space accroding to ABI
 }
 
 
