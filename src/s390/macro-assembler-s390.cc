@@ -4568,7 +4568,7 @@ void MacroAssembler::LoadW(Register dst, const MemOperand& mem,
                            Register scratch) {
   int offset = mem.offset();
 
-  if ((scratch.is(no_reg)) && !is_int20(offset)) {
+  if (!scratch.is(no_reg) && !is_int20(offset)) {
     LoadIntLiteral(scratch, offset);
 #if V8_TARGET_ARCH_S390X
     lgf(dst, MemOperand(mem.rb(), scratch));
@@ -4591,26 +4591,32 @@ void MacroAssembler::LoadlW(Register dst, const MemOperand& mem,
   Register base = mem.rb();
   int offset = mem.offset();
 
+#if V8_TARGET_ARCH_S390X
+  if (is_int20(offset)) {
+    llgf(dst, mem);
+  } else if (!scratch.is(no_reg)) {
+    // Materialize offset into scratch register.
+    LoadIntLiteral(scratch, offset);
+    llgf(dst, MemOperand(base, scratch));
+  } else {
+    ASSERT(false);
+  }
+#else
   bool use_RXform = false;
   bool use_RXYform = false;
-
   if (is_uint12(offset)) {
     // RX-format supports unsigned 12-bits offset.
     use_RXform = true;
   } else if (is_int20(offset)) {
     // RXY-format supports signed 20-bits offset.
     use_RXYform = true;
-  } else if (scratch.is(no_reg)) {
+  } else if (!scratch.is(no_reg)) {
     // Materialize offset into scratch register.
     LoadIntLiteral(scratch, offset);
   } else {
     ASSERT(false);
   }
 
-#if V8_TARGET_ARCH_S390X
-  // TODO(JOHN): double check this
-  llgf(dst, mem);
-#else
   if (use_RXform) {
     l(dst, mem);
   } else if (use_RXYform) {
