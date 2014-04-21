@@ -397,14 +397,15 @@ void Assembler::emit6bytes(uint64_t x) {
         (static_cast<uint64_t>((x >> 24) & 0xFF) << 16) |
         (static_cast<uint64_t>((x >> 32) & 0xFF) << 8) |
         (static_cast<uint64_t>((x >> 40) & 0xFF));
+    x |= (*reinterpret_cast<uint64_t*>(pc_) >> 48) << 48;
 #else
     // We need to pad two bytes of zeros in order to get the 6-bytes
     // stored from low address.
     x = x << 16;
+    x |= *reinterpret_cast<uint64_t*>(pc_) & 0xFFFF;
 #endif
     // It is safe to store 8-bytes, as CheckBuffer() guarantees we have kGap
     // space left over.
-    x |= *reinterpret_cast<uint64_t*>(pc_) & 0xFFFF;
     *reinterpret_cast<uint64_t*>(pc_) = x;
     pc_ += 6;
 }
