@@ -2428,13 +2428,30 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
       int r2 = rrinst->R2Value();
 #ifdef V8_TARGET_ARCH_S390X
       int64_t r2_val = get_low_register<int64_t>(r2);
-      r2_val <<= 58;
-      r2_val >>= 58;
+      r2_val <<= 56;
+      r2_val >>= 56;
       set_register(r1, r2_val);
 #else
       int32_t r2_val = get_low_register<int32_t>(r2);
       r2_val <<= 24;
       r2_val >>= 24;
+      set_low_register(r1, r2_val);
+#endif
+      break;
+    }
+    case LHR: {
+      RREInstruction* rrinst = reinterpret_cast<RREInstruction*>(instr);
+      int r1 = rrinst->R1Value();
+      int r2 = rrinst->R2Value();
+#ifdef V8_TARGET_ARCH_S390X
+      int64_t r2_val = get_low_register<int64_t>(r2);
+      r2_val <<= 48;
+      r2_val >>= 48;
+      set_register(r1, r2_val);
+#else
+      int32_t r2_val = get_low_register<int32_t>(r2);
+      r2_val <<= 16;
+      r2_val >>= 16;
       set_low_register(r1, r2_val);
 #endif
       break;
