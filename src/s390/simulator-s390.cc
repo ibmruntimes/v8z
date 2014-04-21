@@ -1791,7 +1791,6 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       SetS390OverflowCode(isOF);
       break;
     }
-    case LBR: { UNIMPLEMENTED(); break; }
     case LNR: {
       // Load Negative (32)
       RRInstruction* rrinst = reinterpret_cast<RRInstruction*>(instr);
@@ -2408,6 +2407,7 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
       } else {
         UNREACHABLE();
       }
+      break;
     }
     case MS: {
       RXInstruction * rxinst = reinterpret_cast<RXInstruction*>(instr);
@@ -2420,6 +2420,24 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
       int32_t mem_val = ReadW(b2_val + x2_val + d2_val, instr);
       int32_t r1_val = get_low_register<int32_t>(r1);
       set_low_register(r1, r1_val * mem_val);
+      break;
+    }
+    case LBR: {
+      RRInstruction* rrinst = reinterpret_cast<RRInstruction*>(instr);
+      int r1 = rrinst->R1Value();
+      int r2 = rrinst->R2Value();
+#ifdef V8_TARGET_ARCH_S390X
+      int64_t r2_val = get_low_register<int64_t>(r2);
+      r2_val <<= 58;
+      r2_val >>= 58;
+      set_register(r1, r2_val);
+#else
+      int32_t r2_val = get_low_register<int32_t>(r2);
+      r2_val <<= 24;
+      r2_val >>= 24;
+      set_low_register(r1, r2_val);
+#endif
+      break;
     }
     default: {
       return DecodeFourByteFloatingPoint(instr);
@@ -3446,6 +3464,8 @@ void Simulator::DebugStart() {
   dbg.Debug();
 }
 
+int start_count = -1;
+
 void Simulator::Execute() {
   // Get the PC to simulate. Cannot use the accessor here as we need the
   // raw PC value and not the one used as input to arithmetic instructions.
@@ -3457,6 +3477,11 @@ void Simulator::Execute() {
     // should be stopping at a particular executed instruction.
     while (program_counter != end_sim_pc) {
       Instruction* instr = reinterpret_cast<Instruction*>(program_counter);
+      if (start_count == 0) {
+        DebugStart();
+      } else {
+        start_count--;
+      }
       icount_++;
       InstructionDecode(instr);
       program_counter = get_pc();
