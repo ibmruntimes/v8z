@@ -404,6 +404,7 @@ void Assembler::emit6bytes(uint64_t x) {
 #endif
     // It is safe to store 8-bytes, as CheckBuffer() guarantees we have kGap
     // space left over.
+    x != *reinterpret_cast<uint64_t*>(pc_) & 0xFFFF;
     *reinterpret_cast<uint64_t*>(pc_) = x;
     pc_ += 6;
 }
