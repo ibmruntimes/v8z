@@ -339,8 +339,11 @@ void MacroAssembler::InNewSpace(Register object,
   // N.B. scratch may be same register as object
   ASSERT(cond == eq || cond == ne);
   mov(r0, Operand(ExternalReference::new_space_mask(isolate())));
-  LoadRR(scratch, r0);
-  AndP(scratch, object);
+
+  // If they are the same reg, we simply have to copy.
+  if (!scratch.is(object))
+    LoadRR(scratch, object);
+  AndP(scratch, r0);
   mov(r0, Operand(ExternalReference::new_space_start(isolate())));
   CmpRR(scratch, r0);
   b(cond, branch);
