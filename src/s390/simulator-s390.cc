@@ -2423,7 +2423,7 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
       break;
     }
     case LBR: {
-      RRInstruction* rrinst = reinterpret_cast<RRInstruction*>(instr);
+      RREInstruction* rrinst = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rrinst->R1Value();
       int r2 = rrinst->R2Value();
 #ifdef V8_TARGET_ARCH_S390X
