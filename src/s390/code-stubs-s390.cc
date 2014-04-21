@@ -7551,11 +7551,18 @@ void ProfileEntryHookStub::MaybeCallEntryHook(MacroAssembler* masm) {
 
 
 void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
-  // The entry hook is a "push lr" instruction, followed by a call.
+  // The entry hook is a "push lr" instruction (LAY+ST/STG), followed by a call.
+
+#if V8_TARGET_ARCH_S390X
   const int32_t kReturnAddressDistanceFromFunctionStart =
-      Assembler::kCallTargetAddressOffset + 2 * Assembler::kInstrSize;
+      Assembler::kCallTargetAddressOffset + 12;  // LAY + STG
+#else
+  const int32_t kReturnAddressDistanceFromFunctionStart =
+      Assembler::kCallTargetAddressOffset + 10;  // LAY + ST
+#endif
 
   // Save live volatile registers.
+  __ CleanseP(r14);
   __ LoadRR(r2, r14);
   __ Push(r2, r7, r3);
   const int32_t kNumSavedRegs = 3;
@@ -7565,8 +7572,7 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
 
   // The caller's return address is above the saved temporaries.
   // Grab that for the second argument to the hook.
-  __ LoadRR(r3, sp);
-  __ AddP(r3, Operand(kNumSavedRegs * kPointerSize));
+  __ lay(r3, MemOperand(sp, kNumSavedRegs * kPointerSize));
 
   // Align the stack if necessary.
   int frame_alignment = masm->ActivationFrameAlignment();
@@ -7587,8 +7593,10 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
   __ LoadP(ip, MemOperand(ip, 0));
 #endif
 
-  // PPC LINUX ABI:
-  __ AddP(sp, Operand(-kNumRequiredStackFrameSlots * kPointerSize));
+  // zLinux ABI requires caller's frame to have sufficient space for callee
+  // preserved regsiter save area.
+  __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize -
+                       kNumRequiredStackFrameSlots * kPointerSize));
 #else
   // Under the simulator we need to indirect the entry hook through a
   // trampoline function at a known address.
@@ -7605,7 +7613,10 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
 // The exception is when built with nativesim=true, then we need
 // Real PPC calling support plus simulation
 #if defined(V8_HOST_ARCH_S39064) || defined(V8_HOST_ARCH_S390)
-  __ AddP(sp, Operand(kNumRequiredStackFrameSlots * kPointerSize));
+  // zLinux ABI requires caller's frame to have sufficient space for callee
+  // preserved regsiter save area.
+  __ la(sp, MemOperand(sp, kCalleeRegisterSaveAreaSize +
+                       kNumRequiredStackFrameSlots * kPointerSize));
 #endif
 
   // Restore the stack pointer if needed.
