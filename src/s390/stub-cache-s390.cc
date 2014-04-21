@@ -729,8 +729,7 @@ static void GenerateFastApiDirectCall(MacroAssembler* masm,
   __ StoreP(r9, MemOperand(sp, 3 * kPointerSize));
 
   // Prepare arguments.
-  __ LoadRR(r4, sp);
-  __ AddP(r4, Operand(3 * kPointerSize));
+  __ la(r4, MemOperand(sp, 3 * kPointerSize));
 
 #if !ABI_RETURNS_HANDLES_IN_REGS
   bool alloc_return_buf = true;
@@ -760,9 +759,8 @@ static void GenerateFastApiDirectCall(MacroAssembler* masm,
 
   // arg0 = v8::Arguments&
   // Arguments is after the return address.
-  __ LoadRR(arg0, sp);
-  __ AddP(arg0, Operand((kStackFrameExtraParamSlot +
-           (alloc_return_buf ? 2 : 1)) * kPointerSize));
+  __ la(arg0, MemOperand(sp, (kStackFrameExtraParamSlot +
+                             (alloc_return_buf ? 2 : 1)) * kPointerSize));
   // v8::Arguments::implicit_args_
   __ StoreP(r4, MemOperand(arg0, 0 * kPointerSize));
   // v8::Arguments::values_
@@ -1290,16 +1288,14 @@ void StubCompiler::GenerateLoadCallback(Handle<JSObject> object,
 #if !ABI_PASSES_HANDLES_IN_REGS
   // pass 1st arg by reference
   __ StoreP(arg0, MemOperand(sp, kArg0Slot * kPointerSize));
-  __ LoadRR(arg0, sp);
-  __ AddP(arg0, Operand(kArg0Slot * kPointerSize));
+  __ la(arg0, MemOperand(sp, kArg0Slot * kPointerSize));
 #endif
 
   // Create AccessorInfo instance on the stack above the exit frame with
   // ip (internal::Object** args_) as the data.
   __ StoreP(arg1, MemOperand(sp, kAccessorInfoSlot * kPointerSize));
   // arg1 = AccessorInfo&
-  __ LoadRR(arg1, sp);
-  __ AddP(arg1, Operand(kAccessorInfoSlot * kPointerSize));
+  __ la(arg1, MemOperand(sp, kAccessorInfoSlot * kPointerSize));
 
   const int kStackUnwindSpace = 5;
   Address getter_address = v8::ToCData<Address>(callback->getter());
