@@ -697,7 +697,7 @@ class Assembler : public AssemblerBase {
   // Code generation
 
   // S390 Pseudo Branch Instruction
-  void branchOnCond(Condition c, int branch_offset, 
+  void branchOnCond(Condition c, int branch_offset,
       bool is_bound = false);  // jump on condition
 
   // Label version
