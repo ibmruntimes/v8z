@@ -180,6 +180,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   // Prepare for conversion loop.
   __ LoadRR(r5, r6);
   __ AddP(r5, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ LoadRR(r9, r8);
   __ AddP(r9, Operand(FixedDoubleArray::kHeaderSize));
   __ SmiToDoubleArrayOffset(r8, r7);
   __ AddP(r8, r9);
