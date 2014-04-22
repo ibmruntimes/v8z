@@ -608,7 +608,10 @@ class RecordWriteStub: public CodeStub {
     Register GetRegThatIsNotOneOf(Register r1,
                                   Register r2,
                                   Register r3) {
-      for (int i = 0; i < Register::kNumAllocatableRegisters; i++) {
+      // The following loop starts at 1 (instead of 0, like other platforms), as
+      // r0 is used as a implicit scratch register in the RecordWriteStub code,
+      // and r0 cannot be used in memory references.
+      for (int i = 1; i < Register::kNumAllocatableRegisters; i++) {
         Register candidate = Register::FromAllocationIndex(i);
         if (candidate.is(r1)) continue;
         if (candidate.is(r2)) continue;
