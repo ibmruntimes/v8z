@@ -461,7 +461,7 @@ void FullCodeGenerator::EmitReturnSequence() {
       masm_->LoadRR(sp, fp);
       masm_->LoadP(fp, MemOperand(sp));
       masm_->LoadP(r14, MemOperand(sp, kPointerSize));
-      masm_->lay(sp, 
+      masm_->lay(sp,
                  MemOperand(sp, (uint32_t)(sp_delta + (2 * kPointerSize))));
       masm_->Ret();
     }
