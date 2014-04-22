@@ -1450,17 +1450,12 @@ void RegExpCEntryStub::Generate(MacroAssembler* masm_) {
   int stack_alignment = OS::ActivationFrameAlignment();
   if (stack_alignment < kPointerSize) stack_alignment = kPointerSize;
 
-  // Stack is already aligned for call, so decrement by alignment
-  // to make room for storing the return address.
-  int extra_stack_slots = stack_alignment >> kPointerSizeLog2;
-
   __ LoadRR(r2, sp);
   __ AddP(r2, Operand(-stack_alignment));
   __ StoreP(r14, MemOperand(r2, 0));
 
-  // PPC LINUX ABI:
-  extra_stack_slots += kNumRequiredStackFrameSlots;
-  __ AddP(sp, Operand(-extra_stack_slots * kPointerSize));
+  // zLINUX ABI:
+  lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
 
 #if ABI_USES_FUNCTION_DESCRIPTORS && !defined(USE_SIMULATOR)
   // Native AIX/PPC64 Linux use a function descriptor.
@@ -1473,7 +1468,7 @@ void RegExpCEntryStub::Generate(MacroAssembler* masm_) {
 
   __ Call(target);
 
-  __ AddP(sp, Operand(extra_stack_slots * kPointerSize));
+  la(sp, MemOperand(sp, +kCalleeRegisterSaveAreaSize));
 
   __ LoadP(r14, MemOperand(sp, -stack_alignment));
   __ Ret();
