@@ -1096,7 +1096,6 @@ bool Decoder::DecodeTwoByte(Instruction* instr) {
       case NR: Format(instr, "nr\t'r1,'r2"); break;
       case XR: Format(instr, "xr\t'r1,'r2"); break;
       case LR: Format(instr, "lr\t'r1,'r2"); break;
-      case LLHR: Format(instr, "llhr\t'r1,'r2"); break;
       case CR: Format(instr, "cr\t'r1,'r2"); break;
       case CLR: Format(instr, "clr\t'r1,'r2"); break;
       case BCR: Format(instr, "bcr\t'm1,'r2"); break;
