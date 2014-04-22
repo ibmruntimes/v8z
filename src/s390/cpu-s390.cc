@@ -45,7 +45,6 @@ void CPU::SetUp() {
 }
 
 bool CPU::SupportsCrankshaft() {
-  // @TODO Disabling this temporarily until we are bootstrapped
   return true;
 }
 
