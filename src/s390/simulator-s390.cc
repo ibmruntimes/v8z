@@ -2529,6 +2529,16 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
         } else if (op == CFDBR) {
           int mask_val = rreInstr->M3Value();
           int32_t r1_val = 0;
+
+          if (r2_val == 0.0)
+            condition_reg_ = 0;
+          else if (r2_val < 0.0)
+            condition_reg_ = 1;
+          else if (r2_val > 0.0)
+            condition_reg_ = 2;
+          else
+            condition_reg_ = 3;
+
           switch (mask_val) {
             case CURRENT_ROUNDING_MODE:
             case ROUND_TO_NEAREST_WITH_TIES_AWAY_FROM_0:
@@ -2571,6 +2581,16 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
         } else if (op == CGDBR) {
           int mask_val = rreInstr->M3Value();
           int64_t r1_val = 0;
+
+          if (r2_val == 0.0)
+            condition_reg_ = 0;
+          else if (r2_val < 0.0)
+            condition_reg_ = 1;
+          else if (r2_val > 0.0)
+            condition_reg_ = 2;
+          else
+            condition_reg_ = 3;
+
           switch (mask_val) {
             case CURRENT_ROUNDING_MODE:
             case ROUND_TO_NEAREST_WITH_TIES_AWAY_FROM_0:
