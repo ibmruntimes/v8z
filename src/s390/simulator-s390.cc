@@ -2100,6 +2100,12 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       break;
     }
     case TRAP4: {
+      // whack the space of the caller allocated stack
+      intptr_t sp_addr = get_register(sp);
+      for (int i = 0; i < kCalleeRegisterSaveAreaSize / kPointerSize; ++i) {
+        *(reinterpret_cast<int32_t*>(sp_addr)) = 0xdeadbabe;
+        sp_addr += kPointerSize;
+      }
       SoftwareInterrupt(instr);
       break;
     }
