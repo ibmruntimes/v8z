@@ -3495,8 +3495,6 @@ void Simulator::DebugStart() {
   dbg.Debug();
 }
 
-uint64_t start_count = 0;
-
 void Simulator::Execute() {
   // Get the PC to simulate. Cannot use the accessor here as we need the
   // raw PC value and not the one used as input to arithmetic instructions.
@@ -3508,10 +3506,6 @@ void Simulator::Execute() {
     // should be stopping at a particular executed instruction.
     while (program_counter != end_sim_pc) {
       Instruction* instr = reinterpret_cast<Instruction*>(program_counter);
-      start_count--;
-      if (start_count == 0) {
-        DebugStart();
-      }
       icount_++;
       InstructionDecode(instr);
       program_counter = get_pc();
