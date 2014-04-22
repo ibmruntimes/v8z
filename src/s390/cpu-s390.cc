@@ -46,7 +46,7 @@ void CPU::SetUp() {
 
 bool CPU::SupportsCrankshaft() {
   // @TODO Disabling this temporarily until we are bootstrapped
-  return false;
+  return true;
 }
 
 void CPU::FlushICache(void* buffer, size_t size) {
