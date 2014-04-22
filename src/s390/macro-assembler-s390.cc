@@ -2507,7 +2507,7 @@ void MacroAssembler::EmitECMATruncate(Register result,
   // if condition code 3 is not set, this can be fit into
   // an Int32
   // branch either cc == 0, 1 or 2
-  b(Condition(0x3), &done);
+  b(Condition(0x7), &done);
 
   // otherwise, do the manual truncation.
   StoreF(double_input, MemOperand(sp));
