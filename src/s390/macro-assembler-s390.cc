@@ -2318,7 +2318,7 @@ void MacroAssembler::ConvertToInt32(Register source,
   // convert
   cfdbr(Condition(5), dest, double_scratch);
   // jump if overflows
-  b(Condition(CC_OF), not_int32);
+  b(Condition(0x1), not_int32);
 }
 
 void MacroAssembler::EmitVFPTruncate(VFPRoundingMode rounding_mode,
@@ -2507,7 +2507,7 @@ void MacroAssembler::EmitECMATruncate(Register result,
   // if condition code 3 is not set, this can be fit into
   // an Int32
   // branch either cc == 0, 1 or 2
-  b(Condition(0x7), &done);
+  b(Condition(0xe), &done);
 
   // otherwise, do the manual truncation.
   StoreF(double_input, MemOperand(sp));
