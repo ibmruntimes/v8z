@@ -2517,13 +2517,13 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
           int32_t r1_val = 0;
 
           if (r2_val == 0.0)
-            condition_reg_ = 0;
-          else if (r2_val < 0.0)
             condition_reg_ = 1;
-          else if (r2_val > 0.0)
+          else if (r2_val < 0.0)
             condition_reg_ = 2;
+          else if (r2_val > 0.0)
+            condition_reg_ = 4;
           else
-            condition_reg_ = 3;
+            condition_reg_ = 8;
 
           switch (mask_val) {
             case CURRENT_ROUNDING_MODE:
@@ -2569,13 +2569,13 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
           int64_t r1_val = 0;
 
           if (r2_val == 0.0)
-            condition_reg_ = 0;
-          else if (r2_val < 0.0)
             condition_reg_ = 1;
-          else if (r2_val > 0.0)
+          else if (r2_val < 0.0)
             condition_reg_ = 2;
+          else if (r2_val > 0.0)
+            condition_reg_ = 4;
           else
-            condition_reg_ = 3;
+            condition_reg_ = 8;
 
           switch (mask_val) {
             case CURRENT_ROUNDING_MODE:
