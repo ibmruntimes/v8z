@@ -2907,6 +2907,7 @@ void Assembler::sll(Register r1, const Operand& opnd) {
 }
 
 void Assembler::sll(Register r1, Register opnd) {
+  ASSERT(!opnd.is(r0));
   rs_form(SLL, r1, r0, opnd, 0);
 }
 
@@ -2927,6 +2928,7 @@ void Assembler::srl(Register r1, const Operand& opnd) {
 
 // Shift Right Single Logical (32)
 void Assembler::srl(Register r1, Register opnd) {
+  ASSERT(!opnd.is(r0));
   rs_form(SRL, r1, r0, opnd, 0);
 }
 
@@ -2966,6 +2968,7 @@ void Assembler::sra(Register r1, const Operand& opnd) {
 
 // Shift Right Single (32)
 void Assembler::sra(Register r1, Register opnd) {
+  ASSERT(!opnd.is(r0));
   rs_form(SRA, r1, r0, opnd, 0);
 }
 
