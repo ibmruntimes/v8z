@@ -4766,7 +4766,7 @@ void MacroAssembler::StoreByte(Register src, const MemOperand& mem,
 void MacroAssembler::ShiftLeftImm(Register dst, Register src,
                                   const Operand& val) {
 #if V8_TARGET_ARCH_S390X
-  sllg(dst, src, MemOperand(r0, val.imm_));
+  sllg(dst, src, val);
 #else
   // 32-bit shift clobbers source.  Make a copy if necessary
   if (!dst.is(src))
@@ -4778,7 +4778,7 @@ void MacroAssembler::ShiftLeftImm(Register dst, Register src,
 void MacroAssembler::ShiftLeftP(Register dst, Register src,
                                 Register val) {
 #if V8_TARGET_ARCH_S390X
-  sllg(dst, src, MemOperand(val));
+  sllg(dst, src, val);
 #else
   ASSERT(!dst.is(val));
   if (!dst.is(src))
@@ -4790,7 +4790,7 @@ void MacroAssembler::ShiftLeftP(Register dst, Register src,
 void MacroAssembler::ShiftRightP(Register dst, Register src,
                                  Register val) {
 #if V8_TARGET_ARCH_S390X
-  srlg(dst, src, MemOperand(val));
+  srlg(dst, src, val);
 #else
   ASSERT(!dst.is(val));
   if (!dst.is(src))
@@ -4802,7 +4802,7 @@ void MacroAssembler::ShiftRightP(Register dst, Register src,
 void MacroAssembler::ShiftRightArithP(Register dst, Register src,
                                  Register val) {
 #if V8_TARGET_ARCH_S390X
-  srag(dst, src, MemOperand(val));
+  srag(dst, src, val);
 #else
   ASSERT(!dst.is(val));
   if (!dst.is(src))
@@ -4816,8 +4816,7 @@ void MacroAssembler::ShiftRightArithP(Register dst, Register src,
 void MacroAssembler::ShiftRightImm(Register dst, Register src,
                                   const Operand& val, RCBit) {
 #if V8_TARGET_ARCH_S390X
-  // TODO(JOHN): double check if this is correct
-  srlg(dst, src, MemOperand(r0, val.imm_));
+  srlg(dst, src, val);
 #else
   // 32-bit shift clobbers source.  Make a copy if necessary
   if (!dst.is(src))
@@ -4830,22 +4829,18 @@ void MacroAssembler::ShiftRightImm(Register dst, Register src,
 void MacroAssembler::ShiftRightArithImm(Register dst, Register src,
                                   const int val, RCBit) {
 #if V8_TARGET_ARCH_S390X
-  // TODO(JOHN): double check if this is correct
-  srag(dst, src, MemOperand(r0, val));
+  srag(dst, src, Operand(val));
 #else
   // 32-bit shift clobbers source.  Make a copy if necessary
   if (!dst.is(src))
     lr(dst, src);
-  // TODO(JOHN): double check if this is correct
-  sra(dst, Operand(static_cast<intptr_t>(val)));
+  sra(dst, Operand(val));
 #endif
 }
 
 // Clear right most # of bits
 void MacroAssembler::ClearRightImm(Register dst, Register src,
                                   const Operand& val) {
-  // FIXME: Before I fix here, it was "val.imm_ % kPointerSize"
-  // but I don't know whether the author wants to use 31 or 32.
   int numBitsToClear = val.imm_ % (kPointerSize * 8);
   uint64_t hexMask = ~((1L << numBitsToClear) - 1);
 

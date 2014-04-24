@@ -1683,13 +1683,13 @@ SS2_FORM(zap);
 
   // Shift Instructions (64)
   void sllg(Register r1, Register r3, const Operand& opnd);
-  void sllg(Register r1, Register r3, const MemOperand& opnd);
+  void sllg(Register r1, Register r3, const Register opnd);
   void srlg(Register r1, Register r3, const Operand& opnd);
-  void srlg(Register r1, Register r3, const MemOperand& opnd);
+  void srlg(Register r1, Register r3, const Register opnd);
   void srag(Register r1, Register r3, const Operand& opnd);
-  void srag(Register r1, Register r3, const MemOperand& opnd);
+  void srag(Register r1, Register r3, const Register opnd);
   void slag(Register r1, Register r3, const Operand& opnd);
-  void slag(Register r1, Register r3, const MemOperand& opnd);
+  void slag(Register r1, Register r3, const Register opnd);
 
   // Compare Instructions
   void cr(Register r1, Register r2);
