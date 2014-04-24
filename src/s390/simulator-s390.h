@@ -162,8 +162,16 @@ class Simulator {
     ASSERT(dreg >= 0 && dreg < kNumFPRs);
     fp_register[dreg] = dbl;
   }
+  void set_d_register_from_float(int dreg, const float f) {
+    ASSERT(dreg >= 0 && dreg < kNumFPRs);
+    *reinterpret_cast<float*>(&fp_register[dreg]) = f;
+  }
   double get_double_from_d_register(int dreg) {
     return fp_register[dreg];
+  }
+
+  double get_float_from_d_register(int dreg) {
+    return *reinterpret_cast<float*>(&fp_register[dreg]);
   }
 
   // Special case of set_register and get_register to access the raw PC value.
