@@ -1782,7 +1782,8 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
     return;
   }
 
-  if (Instruction::S390OpcodeValue(address + 6) != BASR) {
+  Address basrAddr = address + Assembler::kCallTargetAddressOffset - 2;
+  if (Instruction::S390OpcodeValue(basrAddr) != BASR) {
     return;
   }
   // The delta to the start of the map check instruction and the
@@ -1804,13 +1805,28 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
   }
 #endif
 
+  // Expected sequence to enable by changing the following
+  //   CR/CGR  Rx, Rx    // 2 / 4 bytes
+  //   LR  R0, R0        // 2 bytes
+  //   LR  R0, R0        // 2 bytes
+  //   BRC/BRCL          // 4 / 6 bytes
+  // into
+  //   LR/LGR  Rx, R0    // 2 / 4 bytes
+  //   NILL    Rx, XXX   // 4 bytes
+  //   BRC/BRCL          // 4 / 6 bytes
+  // And vice versa to disable.
+
+  // The following constant is the size of the CR/CGR + LR + LR
+#if V8_TARGET_ARCH_S390X
+  const int kPatchAreaSizeNoBranch = 8;
+#else
+  const int kPatchAreaSizeNoBranch = 6;
+#endif
   Address patch_address = cmp_instruction_address - delta;
-  Address branch_address = patch_address + 6;
+  Address branch_address = patch_address + kPatchAreaSizeNoBranch;
 
   Instr instr_at_patch = Assembler::instr_at(patch_address);
-  SixByteInstr  branch_instr =
-      Assembler::instr_at(patch_address + 6);
-      // 4 bytes in between is either cr + 2 * nop or lr + nill instr.
+  SixByteInstr  branch_instr = Assembler::instr_at(branch_address);
 
   // This is patching a conditional "jump if not smi/jump if smi" site.
   // Enabling by changing from
@@ -1821,9 +1837,9 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
   // and vice-versa to be disabled again.
   size_t patch_size = 0;
   if (Instruction::S390OpcodeValue(branch_address) == BRC) {
-    patch_size = 10;
+    patch_size = kPatchAreaSizeNoBranch + 4;
   } else if (Instruction::S390OpcodeValue(branch_address) == BRCL) {
-    patch_size = 12;
+    patch_size = kPatchAreaSizeNoBranch + 6;
   } else {
     ASSERT(false);
   }
@@ -1836,15 +1852,14 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
               // Assembler::GetRB(instr_at_patch).code());
     patcher.masm()->TestIfSmi(reg, r0);
   } else {
+    // Emit the Nop to make bigger place for patching
+    // (replaced by lr + nill)
     ASSERT(check == DISABLE_INLINED_SMI_CHECK);
     patcher.masm()->CmpRR(reg, reg);
     patcher.masm()->nop();
     patcher.masm()->nop();
-    // Emit the Nop to make bigger place for patching
-    // (replaced by lr + nill)
   }
 
-  // ASSERT(Assembler::IsBranch(branch_instr));
   Condition cc = al;
   if (Instruction::S390OpcodeValue(branch_address) == BRC) {
     cc = static_cast<Condition>((branch_instr & 0x00f00000) >> 20);
