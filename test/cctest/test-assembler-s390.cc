@@ -1200,7 +1200,7 @@ TEST(14) {
   __ ahi(r13, Operand(123));
   __ aghi(r13, Operand(123));
   __ stm(r1, r2, MemOperand(r3, r0, 123));
-  __ slag(r1, r2, MemOperand(r0, r3, 123));
+  __ slag(r1, r2, Operand(123));
   __ lay(r1, MemOperand(r2, r3, -123));
   __ a(r13, MemOperand(r1, r2, 123));
   __ ay(r13, MemOperand(r1, r2, 123));
