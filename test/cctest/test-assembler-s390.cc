@@ -1238,7 +1238,7 @@ TEST(15) {
 
   Assembler assm(Isolate::Current(), NULL, 0);
 
-#if defined(_AIX) || defined(V8_TARGET_ARCH_S390X)
+#if defined(_AIX)
   __ function_descriptor();
 #endif
 
@@ -1289,7 +1289,7 @@ TEST(16) {
 
   MacroAssembler assm(Isolate::Current(), NULL, 0);
 
-#if defined(_AIX) || defined(V8_TARGET_ARCH_S390X)
+#if defined(_AIX)
   __ function_descriptor();
 #endif
 
@@ -1323,7 +1323,7 @@ TEST(17) {
 
   MacroAssembler assm(Isolate::Current(), NULL, 0);
 
-#if defined(_AIX) || defined(V8_TARGET_ARCH_S390X)
+#if defined(_AIX)
   __ function_descriptor();
 #endif
 
@@ -1362,7 +1362,7 @@ TEST(18) {
 
   MacroAssembler assm(Isolate::Current(), NULL, 0);
 
-#if defined(_AIX) || defined(V8_TARGET_ARCH_S390X)
+#if defined(_AIX)
   __ function_descriptor();
 #endif
 
