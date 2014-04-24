@@ -1309,7 +1309,7 @@ class MacroAssembler: public Assembler {
     ASSERT(rangeStart >= rangeEnd && rangeStart < kBitsPerPointer);
 #if V8_TARGET_ARCH_S390X
     if (rangeEnd > 0)              // Don't need to shift if rangeEnd is zero.
-      srlg(dst, src,  MemOperand(r0, rangeEnd));
+      srlg(dst, src,  Operand(rangeEnd));
     else if (!dst.is(src))         // If we didn't shift, we might need to copy
       lr(dst, src);                // src to dst
 #else
@@ -1559,7 +1559,7 @@ class MacroAssembler: public Assembler {
     // High bits must be identical to fit into an 32-bit integer
     LoadRR(scratch1, value);
     sra(scratch1, Operand(31));
-    srag(scratch2, value, MemOperand(r0, 32));
+    srag(scratch2, value, Operand(32));
     cr_z(scratch1, scratch2);  // force 32-bit comparison
   }
 #else
