@@ -79,6 +79,7 @@ class S390Debugger {
   intptr_t GetRegisterValue(int regnum);
   double GetRegisterPairDoubleValue(int regnum);
   double GetFPDoubleRegisterValue(int regnum);
+  float GetFPFloatRegisterValue(int regnum);
   bool GetValue(const char* desc, intptr_t* value);
   bool GetFPDoubleValue(const char* desc, double* value);
 
@@ -186,6 +187,10 @@ double S390Debugger::GetRegisterPairDoubleValue(int regnum) {
 
 double S390Debugger::GetFPDoubleRegisterValue(int regnum) {
   return sim_->get_double_from_d_register(regnum);
+}
+
+float S390Debugger::GetFPFloatRegisterValue(int regnum) {
+  return sim_->get_float_from_d_register(regnum);
 }
 
 bool S390Debugger::GetValue(const char* desc, intptr_t* value) {
@@ -386,6 +391,15 @@ void S390Debugger::Debug() {
             PrintF("   pc: %08" V8PRIxPTR "  cr: %08x\n",
                    sim_->special_reg_pc_, sim_->condition_reg_);
           } else if (strcmp(arg1, "allf") == 0) {
+            for (int i = 0; i < kNumFPDoubleRegisters; i++) {
+              float fvalue = GetFPFloatRegisterValue(i);
+              uint32_t as_words = BitCast<uint32_t>(fvalue);
+              PrintF("%3s: %f 0x%08x\n",
+                     FPRegisters::Name(i),
+                     fvalue,
+                     as_words);
+            }
+          } else if (strcmp(arg1, "alld") == 0) {
             for (int i = 0; i < kNumFPDoubleRegisters; i++) {
               dvalue = GetFPDoubleRegisterValue(i);
               uint64_t as_words = BitCast<uint64_t>(dvalue);
@@ -2061,6 +2075,7 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       break;
     }
     case ST:
+    case STE:
     case STD: {
       RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
       int b2 = rxinst->B2Value();
@@ -2076,6 +2091,10 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
         double frs_val = get_double_from_d_register(rxinst->R1Value());
         int64_t *p = reinterpret_cast<int64_t *>(&frs_val);
         WriteDW(addr, *p);
+      } else if (op == STE) {
+        float frs_val = get_float_from_d_register(rxinst->R1Value());
+        int32_t *p = reinterpret_cast<int32_t *>(&frs_val);
+        WriteW(addr, *p, instr);
       }
       break;
     }
@@ -2432,20 +2451,34 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
       RREInstruction* rrinst = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rrinst->R1Value();
       int r2 = rrinst->R2Value();
+#ifdef V8_TARGET_ARCH_S390X
+      int64_t r2_val = get_low_register<int64_t>(r2);
+      r2_val <<= 56;
+      r2_val >>= 56;
+      set_register(r1, r2_val);
+#else
       int32_t r2_val = get_low_register<int32_t>(r2);
       r2_val <<= 24;
       r2_val >>= 24;
       set_low_register(r1, r2_val);
+#endif
       break;
     }
     case LHR: {
       RREInstruction* rrinst = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rrinst->R1Value();
       int r2 = rrinst->R2Value();
+#ifdef V8_TARGET_ARCH_S390X
+      int64_t r2_val = get_low_register<int64_t>(r2);
+      r2_val <<= 48;
+      r2_val >>= 48;
+      set_register(r1, r2_val);
+#else
       int32_t r2_val = get_low_register<int32_t>(r2);
       r2_val <<= 16;
       r2_val >>= 16;
       set_low_register(r1, r2_val);
+#endif
       break;
     }
     default: {
@@ -2512,18 +2545,22 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
           int32_t r2_val = get_low_register<int32_t>(r2);
           double r1_val = static_cast<double>(r2_val);
           set_d_register_from_double(r1, r1_val);
+        } else if (op == CEFBR) {
+          int32_t r2_val = get_low_register<int32_t>(r2);
+          float r1_val = static_cast<float>(r2_val);
+          set_d_register_from_float(r1, r1_val);
         } else if (op == CFDBR) {
           int mask_val = rreInstr->M3Value();
           int32_t r1_val = 0;
 
           if (r2_val == 0.0)
-            condition_reg_ = 1;
-          else if (r2_val < 0.0)
-            condition_reg_ = 2;
-          else if (r2_val > 0.0)
-            condition_reg_ = 4;
-          else
             condition_reg_ = 8;
+          else if (r2_val < 0.0)
+            condition_reg_ = 4;
+          else if (r2_val > 0.0)
+            condition_reg_ = 2;
+          else
+            condition_reg_ = 1;
 
           switch (mask_val) {
             case CURRENT_ROUNDING_MODE:
@@ -2569,13 +2606,13 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
           int64_t r1_val = 0;
 
           if (r2_val == 0.0)
-            condition_reg_ = 1;
-          else if (r2_val < 0.0)
-            condition_reg_ = 2;
-          else if (r2_val > 0.0)
-            condition_reg_ = 4;
-          else
             condition_reg_ = 8;
+          else if (r2_val < 0.0)
+            condition_reg_ = 4;
+          else if (r2_val > 0.0)
+            condition_reg_ = 2;
+          else
+            condition_reg_ = 1;
 
           switch (mask_val) {
             case CURRENT_ROUNDING_MODE:
@@ -2620,8 +2657,6 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
           r1_val = sqrt(r2_val);
           set_d_register_from_double(r1, r1_val);
         } else if (op == CFEBR) {
-          UNIMPLEMENTED();
-        } else if (op == CEFBR) {
           UNIMPLEMENTED();
         } else if (op == LCDBR) {
           r1_val = -r2_val;
@@ -2715,6 +2750,14 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
       }
       break;
     }
+    case LEDBR: {
+      RREInstruction* rreinst = reinterpret_cast<RREInstruction*>(instr);
+      int r1 = rreinst->R1Value();
+      int r2 = rreinst->R2Value();
+      double r2_val = get_double_from_d_register(r2);
+      set_d_register_from_float(r1, static_cast<float>(r2_val));
+      break;
+    }
     default: {
       UNREACHABLE();
       return false;
@@ -2730,16 +2773,16 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
   switch (op) {
     case LDEB: {
       // Load Address
-      RXYInstruction *rxyInstr = reinterpret_cast<RXYInstruction*>(instr);
-      int r1 = rxyInstr->R1Value();
-      int rb = rxyInstr->B2Value();
-      int rx = rxyInstr->X2Value();
-      int offset = rxyInstr->D2Value();
+      RXEInstruction *rxeInstr = reinterpret_cast<RXEInstruction*>(instr);
+      int r1 = rxeInstr->R1Value();
+      int rb = rxeInstr->B2Value();
+      int rx = rxeInstr->X2Value();
+      int offset = rxeInstr->D2Value();
       intptr_t rb_val = (rb == 0) ? 0 : get_register(rb);
       intptr_t rx_val = (rx == 0) ? 0 : get_register(rx);
       double ret = static_cast<double>(
           *reinterpret_cast<float*>(rx_val + rb_val + offset));
-      set_register(r1, ret);
+      set_d_register_from_double(r1, ret);
       break;
     }
     case LAY: {
