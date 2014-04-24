@@ -2510,6 +2510,9 @@ void MacroAssembler::EmitECMATruncate(Register result,
   b(Condition(0xe), &done);
 
   // otherwise, do the manual truncation.
+
+  // Allocate 8 bytes on stack as temp for conversion via memory
+  lay(sp, MemOperand(sp, -8));
   StoreF(double_input, MemOperand(sp));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
   LoadlW(input_low, MemOperand(sp));
@@ -2518,6 +2521,9 @@ void MacroAssembler::EmitECMATruncate(Register result,
   LoadlW(input_high, MemOperand(sp));
   LoadlW(input_low, MemOperand(sp, 4));
 #endif
+  // Return the stack space
+  la(sp, MemOperand(sp, 8));
+
   EmitOutOfInt32RangeTruncate(result,
                               input_high,
                               input_low,
