@@ -2638,7 +2638,7 @@ void MacroAssembler::InvokeBuiltin(Builtins::JavaScript id,
 
   GetBuiltinEntry(r4, id);
   if (flag == CALL_FUNCTION) {
-    call_wrapper.BeforeCall(CallSize(r2_p));
+    call_wrapper.BeforeCall(CallSize(r1));
     SetCallKind(r7, CALL_AS_METHOD);
     Call(r4);
     call_wrapper.AfterCall();

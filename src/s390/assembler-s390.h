@@ -91,39 +91,31 @@ namespace internal {
 // Core register
 struct Register {
   static const int kNumRegisters = 16;
-  static const int kNumAllocatableRegisters = 12;  // TODO(Alan): check
-  static const int kSizeInBytes = 4;  // TODO(Alan): check
+  static const int kNumAllocatableRegisters = 8;  // r2-r9
+  static const int kSizeInBytes = 4;
 
   static int ToAllocationIndex(Register reg) {
-    int index = reg.code();
+    int index = reg.code() - 2;  // r0-r1 are skipped
     ASSERT(index < kNumAllocatableRegisters);
     return index;
   }
 
   static Register FromAllocationIndex(int index) {
     ASSERT(index >= 0 && index < kNumAllocatableRegisters);
-    return from_code(index);  // r0-r2 are skipped
+    return from_code(index + 2);  // r0-r1 are skipped
   }
 
   static const char* AllocationIndexToString(int index) {
     ASSERT(index >= 0 && index < kNumAllocatableRegisters);
     const char* const names[] = {
-        "gpr0",
-        "gpr1",
-        "gpr2",
-        "gpr3",
-        "gpr4",
-        "gpr5",
-        "gpr6",
-        "gpr7",
-        "gpr8",
-        "gpr9",
-        "gpr10",
-        "gpr11",
-        "gpr12",
-        "gpr13",
-        "gpr14",
-        "gpr15"
+        "r2",
+        "r3",
+        "r4",
+        "r5",
+        "r6",
+        "r7",
+        "r8",
+        "r9"
     };
     return names[index];
   }
@@ -181,6 +173,7 @@ const int kRegister_sp_Code = 15;
 const Register no_reg = { kRegister_no_reg_Code };
 
 const Register r0  = { kRegister_r0_Code };
+// Lithium scratch register - defined in lithium-codegen-s390.h
 const Register r1  = { kRegister_r1_Code };
 const Register r2  = { kRegister_r2_Code };
 const Register r3  = { kRegister_r3_Code };
@@ -192,9 +185,6 @@ const Register r8  = { kRegister_r8_Code };
 const Register r9  = { kRegister_r9_Code };
 // Used as roots register.
 const Register r10 = { kRegister_r10_Code };
-// PPC: Used as lithium codegen scratch register. (Probably need to
-// pick another reg for this on S390) - Change it in
-// lithium-codegen-s390.h
 const Register fp  = { kRegister_fp_Code };
 // IP - Intra procedural register
 const Register ip  = { kRegister_r12_Code };
@@ -202,21 +192,6 @@ const Register ip  = { kRegister_r12_Code };
 const Register r13  = { kRegister_r13_Code };
 const Register r14  = { kRegister_r14_Code };
 const Register sp   = { kRegister_sp_Code };
-
-// PPC register aliases to allow for safer find and replace
-// of registers in stubs.  To be removed once all mapping is
-// completed.
-const Register r0_p  = { kRegister_r0_Code };
-const Register r1_p  = { kRegister_r1_Code };
-const Register r2_p  = { kRegister_r2_Code };
-const Register r3_p  = { kRegister_r3_Code };
-const Register r4_p  = { kRegister_r4_Code };
-const Register r5_p  = { kRegister_r5_Code };
-const Register r6_p  = { kRegister_r6_Code };
-const Register r7_p  = { kRegister_r7_Code };
-const Register r8_p  = { kRegister_r8_Code };
-const Register r9_p  = { kRegister_r9_Code };
-const Register r10_p = { kRegister_r10_Code };
 
 // Double word FP register.
 struct DoubleRegister {
