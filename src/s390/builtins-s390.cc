@@ -351,7 +351,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
   __ IncrementCounter(counters->array_function_native(), 1, r5, r6);
   // Set up return value, remove receiver from stack and return.
   __ LoadRR(r2, r4);
-  __ AddP(sp, Operand(kPointerSize));
+  __ la(sp, MemOperand(sp, kPointerSize));
   __ Ret();
 
   // Check for one argument. Bail out if argument is not smi or if it is
@@ -395,7 +395,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
   __ IncrementCounter(counters->array_function_native(), 1, r4, r6);
   // Set up return value, remove receiver and argument from stack and return.
   __ LoadRR(r2, r5);
-  __ AddP(sp, Operand(2 * kPointerSize));
+  __ la(sp, MemOperand(sp, 2 * kPointerSize));
   __ Ret();
 
   // Handle construction of an array from a list of arguments.
@@ -451,7 +451,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
   // r2: argc
   // r5: JSArray
   // sp[0]: receiver
-  __ AddP(sp, Operand(kPointerSize));
+  __ la(sp, MemOperand(sp, kPointerSize));
   __ LoadRR(r2, r5);
   __ Ret();
 
@@ -1137,8 +1137,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
   }
 
   __ SmiToPtrArrayOffset(r3, r3);
-  __ AddP(sp, r3);
-  __ AddP(sp, Operand(kPointerSize));
+  __ la(sp, MemOperand(sp, r3, kPointerSize));
   __ IncrementCounter(isolate->counters()->constructed_objects(),
                       1, r3, r4);
   __ Ret();
@@ -1326,14 +1325,14 @@ static void Generate_NotifyDeoptimizedHelper(MacroAssembler* masm,
   Label with_tos_register, unknown_state;
   __ Cmpi(r8, Operand(FullCodeGenerator::NO_REGISTERS));
   __ bne(&with_tos_register);
-  __ AddP(sp, Operand(1 * kPointerSize));  // Remove state.
+  __ la(sp, MemOperand(sp, 1 * kPointerSize));  // Remove state.
   __ Ret();
 
   __ bind(&with_tos_register);
   __ LoadP(r2, MemOperand(sp, 1 * kPointerSize));
   __ Cmpi(r8, Operand(FullCodeGenerator::TOS_REG));
   __ bne(&unknown_state);
-  __ AddP(sp, Operand(2 * kPointerSize));  // Remove state.
+  __ la(sp, MemOperand(sp, 2 * kPointerSize));  // Remove state.
   __ Ret();
 
   __ bind(&unknown_state);
@@ -1776,7 +1775,7 @@ void Builtins::Generate_FunctionApply(MacroAssembler* masm) {
                       NullCallWrapper(), CALL_AS_METHOD);
 
     frame_scope.GenerateLeaveFrame();
-    __ AddP(sp, Operand(3 * kPointerSize));
+    __ la(sp, MemOperand(sp, 3 * kPointerSize));
     __ Ret();
 
     // Invoke the function proxy.
@@ -1791,14 +1790,12 @@ void Builtins::Generate_FunctionApply(MacroAssembler* masm) {
 
     // Tear down the internal frame and remove function, receiver and args.
   }
-  __ AddP(sp, Operand(3 * kPointerSize));
+  __ la(sp, MemOperand(sp, 3 * kPointerSize));
   __ Ret();
 }
 
 static void EnterArgumentsAdaptorFrame(MacroAssembler* masm) {
   __ SmiTag(r2);
-  // @TODO Make sure r6 is the correct register to use here for S390
-  // We can't use r7 here because r7 is call kind info.
   __ LoadSmiLiteral(r6, Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR));
   // Stack updated as such:
   //    old SP --->
@@ -1809,9 +1806,9 @@ static void EnterArgumentsAdaptorFrame(MacroAssembler* masm) {
   //                 ArgC as SMI                <--- New SP
   __ lay(sp, MemOperand(sp, -5 * kPointerSize));
 
-  // @TODO This is a temporary workaround until we figure out where to
-  // appropriately cleanse the top nibble of 31-bit pointers.
+  // Cleanse the top nibble of 31-bit pointers.
   __ CleanseP(r14);
+
   __ StoreP(r14, MemOperand(sp, 4 * kPointerSize));
   __ StoreP(fp, MemOperand(sp, 3 * kPointerSize));
   __ StoreP(r6, MemOperand(sp, 2 * kPointerSize));

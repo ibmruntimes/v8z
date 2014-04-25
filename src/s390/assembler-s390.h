@@ -90,7 +90,7 @@ namespace internal {
 
 // Core register
 struct Register {
-  static const int kNumRegisters = 32;  // TODO(Alan): for now
+  static const int kNumRegisters = 16;
   static const int kNumAllocatableRegisters = 12;  // TODO(Alan): check
   static const int kSizeInBytes = 4;  // TODO(Alan): check
 
@@ -220,7 +220,7 @@ const Register r10_p = { kRegister_r10_Code };
 
 // Double word FP register.
 struct DoubleRegister {
-  static const int kNumRegisters = 32;
+  static const int kNumRegisters = 16;
   static const int kNumVolatileRegisters = 14;     // d0-d13
   static const int kNumAllocatableRegisters = 12;  // d1-d12
 
