@@ -3835,6 +3835,27 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
 #if ABI_USES_FUNCTION_DESCRIPTORS
   __ function_descriptor();
 #endif
+
+  // saving floating point registers
+#if defined(V8_HOST_ARCH_S39064)
+  // 64bit ABI requires f8 to f15 be saved
+  __ lay(sp, MemOperand(sp, -8 * kDoubleSize));
+  __ std(d8, MemOperand(sp));
+  __ std(d9, MemOperand(sp, 1 * kDoubleSize));
+  __ std(d10, MemOperand(sp, 2 * kDoubleSize));
+  __ std(d11, MemOperand(sp, 3 * kDoubleSize));
+  __ std(d12, MemOperand(sp, 4 * kDoubleSize));
+  __ std(d13, MemOperand(sp, 5 * kDoubleSize));
+  __ std(d14, MemOperand(sp, 6 * kDoubleSize));
+  __ std(d15, MemOperand(sp, 7 * kDoubleSize));
+#else
+  // 31bit ABI requires you to store f4 and f6:
+  // http://refspecs.linuxbase.org/ELF/zSeries/lzsabi0_s390.html#AEN417
+  __ lay(sp, MemOperand(sp, -2 * kDoubleSize));
+  __ std(d4, MemOperand(sp));
+  __ std(d6, MemOperand(sp, kDoubleSize));
+#endif
+
   // zLinux ABI
   //    Incoming parameters:
   //          r2: code entry
@@ -3848,9 +3869,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   __ lay(sp, MemOperand(sp, -10 * kPointerSize));
   __ StoreMultipleP(r6, sp, MemOperand(sp, 0));
 
-  // Floating point regs FPR0 - FRP13 are volatile
-  // FPR14-FPR31 are non-volatile, but sub-calls will save them for us
-  // @TODO Figure out if we need to preserve any S390 FP regs
+
 
 //  int offset_to_argv = kPointerSize * 22; // matches (22*4) above
 //  __ LoadlW(r7, MemOperand(sp, offset_to_argv));
@@ -3988,7 +4007,28 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
 
   // Reload callee-saved preserved regs, return address reg (r14) and sp
   __ LoadMultipleP(r6, sp, MemOperand(sp, 0));
-  __ lay(sp, MemOperand(sp, 10 * kPointerSize));
+  __ la(sp, MemOperand(sp, 10 * kPointerSize));
+
+  // saving floating point registers
+#if defined(V8_HOST_ARCH_S39064)
+  // 64bit ABI requires f8 to f15 be saved
+  __ ld(d8, MemOperand(sp));
+  __ ld(d9, MemOperand(sp, 1 * kDoubleSize));
+  __ ld(d10, MemOperand(sp, 2 * kDoubleSize));
+  __ ld(d11, MemOperand(sp, 3 * kDoubleSize));
+  __ ld(d12, MemOperand(sp, 4 * kDoubleSize));
+  __ ld(d13, MemOperand(sp, 5 * kDoubleSize));
+  __ ld(d14, MemOperand(sp, 6 * kDoubleSize));
+  __ ld(d15, MemOperand(sp, 7 * kDoubleSize));
+  __ la(sp, MemOperand(sp, 8 * kDoubleSize));
+#else
+  // 31bit ABI requires you to store f4 and f6:
+  // http://refspecs.linuxbase.org/ELF/zSeries/lzsabi0_s390.html#AEN417
+  __ ld(d4, MemOperand(sp));
+  __ ld(d6, MemOperand(sp, kDoubleSize));
+  __ la(sp, MemOperand(sp, 2 * kDoubleSize));
+#endif
+
   __ b(r14);
 }
 
