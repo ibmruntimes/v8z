@@ -38,7 +38,7 @@
 namespace v8 {
 namespace internal {
 
-const int Deoptimizer::table_entry_size_ = 20;
+const int Deoptimizer::table_entry_size_ = 24;
 
 
 int Deoptimizer::patch_size() {
@@ -1224,8 +1224,7 @@ void Deoptimizer::TableEntryGenerator::GeneratePrologue() {
     __ LoadImmP(ip, Operand(i));
     __ push(ip);
     __ b(&done);
-// @TODO joranhack temporarily disable until I figure out what's going on
-//    ASSERT(masm()->pc_offset() - start == table_entry_size_);
+    ASSERT(masm()->pc_offset() - start == table_entry_size_);
   }
   __ bind(&done);
 }
