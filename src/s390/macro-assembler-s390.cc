@@ -3158,6 +3158,11 @@ void MacroAssembler::CopyBytes(Register src,
   Cmpi(length, Operand::Zero());
   beq(&done);
 
+  // FIXME: in the word_loop, scratch reg is used as a count reg but it's
+  //        get changed in the loop.
+  // TODO(JOHN): Disable word_loop by now, may be optimized in the future
+  b(&byte_loop);
+
   // Check src alignment and length to see whether word_loop is possible
   LoadRR(scratch, src);
   AndPImm(scratch, Operand(kPointerSize - 1));
