@@ -63,21 +63,18 @@ void MacroAssembler::Jump(Register target, Condition cond) {
 
 
 void MacroAssembler::Jump(intptr_t target, RelocInfo::Mode rmode,
-                          Condition cond, CRegister cr) {
+                          Condition cond, CRegister) {
   Label skip;
 
-  if (cond != al) b(NegateCondition(cond), &skip /*, cr*/);
+  if (cond != al)
+    b(NegateCondition(cond), &skip);
 
-  ASSERT(rmode == RelocInfo::CODE_TARGET ||
-         rmode == RelocInfo::RUNTIME_ENTRY);
+  ASSERT(rmode == RelocInfo::CODE_TARGET || rmode == RelocInfo::RUNTIME_ENTRY);
 
-  // Using IP for now, but maybe we should be using scratch
-  // register?
   mov(ip, Operand(target, rmode));
   b(ip);
 
   bind(&skip);
-  //  mov(pc, Operand(target, rmode), LeaveCC, cond);
 }
 
 
