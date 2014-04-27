@@ -1019,32 +1019,25 @@ void Deoptimizer::EntryGenerator::Generate() {
 
   Isolate* isolate = masm()->isolate();
 
-  // Unlike on ARM we don't save all the registers, just the useful ones.
-  // For the rest, there are gaps on the stack, so the offsets remain the same.
+  // Save all the registers onto the stack
   const int kNumberOfRegisters = Register::kNumRegisters;
 
   RegList restored_regs = kJSCallerSaved | kCalleeSaved;
-  RegList saved_regs = restored_regs | sp.bit();
 
   const int kDoubleRegsSize =
       kDoubleSize * DoubleRegister::kNumAllocatableRegisters;
 
   // Save all FPU registers before messing with them.
-  __ Sub(sp, Operand(kDoubleRegsSize));
+  __ lay(sp, MemOperand(sp, -kDoubleRegsSize));
   for (int i = 0; i < DoubleRegister::kNumAllocatableRegisters; ++i) {
     DoubleRegister fpu_reg = DoubleRegister::FromAllocationIndex(i);
     int offset = i * kDoubleSize;
     __ StoreF(fpu_reg, MemOperand(sp, offset));
   }
 
-  // Push saved_regs (needed to populate FrameDescription::registers_).
-  // Leave gaps for other registers.
-  __ Sub(sp, Operand(kNumberOfRegisters * kPointerSize));
-  for (int16_t i = kNumberOfRegisters - 1; i >= 0; i--) {
-    if ((saved_regs & (1 << i)) != 0) {
-      __ StoreP(ToRegister(i), MemOperand(sp, kPointerSize * i));
-    }
-  }
+  // Push all GPRs onto the stack
+  __ lay(sp, MemOperand(sp, -kNumberOfRegisters * kPointerSize));
+  __ StoreMultipleP(r0, sp, MemOperand(sp));   // Save all 16 registers
 
   const int kSavedRegistersAreaSize =
       (kNumberOfRegisters * kPointerSize) + kDoubleRegsSize;
@@ -1052,24 +1045,24 @@ void Deoptimizer::EntryGenerator::Generate() {
   // Get the bailout id from the stack.
   __ LoadP(r4, MemOperand(sp, kSavedRegistersAreaSize));
 
+  // Cleanse the Return address for 31-bit
+  __ CleanseP(r14);
+
   // Get the address of the location in the code object if possible(r5)(return
   // address for lazy deoptimization) and compute the fp-to-sp delta in
   // register r6.
   if (type() == EAGER) {
     __ LoadImmP(r5, Operand::Zero());
     // Correct one word for bailout id.
-    __ LoadRR(r6, sp);
-    __ AddP(r6, Operand(kSavedRegistersAreaSize + (1 * kPointerSize)));
+    __ la(r6, MemOperand(sp, kSavedRegistersAreaSize + (1 * kPointerSize)));
   } else if (type() == OSR) {
     __ LoadRR(r5, r14);
     // Correct one word for bailout id.
-    __ LoadRR(r6, sp);
-    __ AddP(r6, Operand(kSavedRegistersAreaSize + (1 * kPointerSize)));
+    __ la(r6, MemOperand(sp, kSavedRegistersAreaSize + (1 * kPointerSize)));
   } else {
     __ LoadRR(r5, r14);
     // Correct two words for bailout id and return address.
-    __ LoadRR(r6, sp);
-    __ AddP(r6, Operand(kSavedRegistersAreaSize + (2 * kPointerSize)));
+    __ AddP(r6, Operand(kSavedRegistersAreaSize + (1 * kPointerSize)));
   }
   __ Sub(r6, fp, r6);
 
@@ -1081,7 +1074,10 @@ void Deoptimizer::EntryGenerator::Generate() {
   // r4: bailout id already loaded.
   // r5: code address or 0 already loaded.
   // r6: Fp-to-sp delta.
+  // Parm6: isolate is passed on the stack.
   __ mov(r7, Operand(ExternalReference::isolate_address()));
+  __ StoreP(r7, MemOperand(sp));
+
   // Call Deoptimizer::New().
   {
     AllowExternalCallThatCantCauseGC scope(masm());
@@ -1094,11 +1090,15 @@ void Deoptimizer::EntryGenerator::Generate() {
 
   // Copy core registers into FrameDescription::registers_[kNumRegisters].
   ASSERT(Register::kNumRegisters == kNumberOfRegisters);
+  __ mvc(MemOperand(r3, FrameDescription::registers_offset()), MemOperand(sp),
+         kNumberOfRegisters * kPointerSize);
+  /*
   for (int i = 0; i < kNumberOfRegisters; i++) {
     int offset = (i * kPointerSize) + FrameDescription::registers_offset();
     __ LoadP(r4, MemOperand(sp, i * kPointerSize));
     __ StoreP(r4, MemOperand(r3, offset));
   }
+  */
 
   // Copy VFP registers to
   // double_registers_[DoubleRegister::kNumAllocatableRegisters]
@@ -1113,9 +1113,9 @@ void Deoptimizer::EntryGenerator::Generate() {
   // Remove the bailout id, eventually return address, and the saved registers
   // from the stack.
   if (type() == EAGER || type() == OSR) {
-    __ AddP(sp, Operand(kSavedRegistersAreaSize + (1 * kPointerSize)));
+    __ la(sp, MemOperand(sp, kSavedRegistersAreaSize + (1 * kPointerSize)));
   } else {
-    __ AddP(sp, Operand(kSavedRegistersAreaSize + (2 * kPointerSize)));
+    __ la(sp, MemOperand(sp, kSavedRegistersAreaSize + (2 * kPointerSize)));
   }
 
   // Compute a pointer to the unwinding limit in register r4; that is
@@ -1126,8 +1126,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   // Unwind the stack down to - but not including - the unwinding
   // limit and copy the contents of the activation frame to the input
   // frame description.
-  __ LoadRR(r5, r3);
-  __ AddP(r5, Operand(FrameDescription::frame_content_offset()));
+  __ la(r5, MemOperand(r3, FrameDescription::frame_content_offset()));
   Label pop_loop;
   __ bind(&pop_loop);
   __ pop(r6);
