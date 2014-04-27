@@ -3305,7 +3305,7 @@ void MacroAssembler::JumpIfInstanceTypeIsNotSequentialAscii(Register type,
   bne(failure);
 }
 
-static const int kRegisterPassedArguments = 8;
+static const int kRegisterPassedArguments = 5;
 
 
 int MacroAssembler::CalculateStackPassedWords(int num_reg_arguments,
@@ -3315,7 +3315,7 @@ int MacroAssembler::CalculateStackPassedWords(int num_reg_arguments,
       stack_passed_words +=
           2 * (num_double_arguments - DoubleRegister::kNumRegisters);
   }
-  // Up to four simple arguments are passed in registers r0..r2.
+  // Up to five simple arguments are passed in registers r2..r6
   if (num_reg_arguments > kRegisterPassedArguments) {
     stack_passed_words += num_reg_arguments - kRegisterPassedArguments;
   }
@@ -3342,14 +3342,9 @@ void MacroAssembler::PrepareCallCFunction(int num_reg_arguments,
 #endif
     ASSERT(IsPowerOf2(frame_alignment));
     nill(sp, Operand(-frame_alignment));
-#if !defined(USE_SIMULATOR)
-    // On the simulator we pass args on the stack
-    StoreP(scratch, MemOperand(sp));
-#else
-    // On the simulator we pass args on the stack
-    StoreP(scratch,
-           MemOperand(sp, stack_passed_arguments * kPointerSize));
-#endif
+
+    // Save the original stack pointer (pre-alignment) onto the stack
+    StoreP(scratch, MemOperand(sp, stack_passed_arguments * kPointerSize));
   } else {
     Sub(sp, Operand((stack_passed_arguments +
                           kNumRequiredStackFrameSlots) * kPointerSize));
@@ -3444,13 +3439,8 @@ void MacroAssembler::CallCFunctionHelper(Register function,
   int stack_passed_arguments = CalculateStackPassedWords(
       num_reg_arguments, num_double_arguments);
   if (ActivationFrameAlignment() > kPointerSize) {
-#if !defined(USE_SIMULATOR)
-    // On real hardware we follow the ABI
-    LoadP(sp, MemOperand(sp));
-#else
-    // On the simulator we pass args on the stack
+    // Load the original stack pointer (pre-alignment) from the stack
     LoadP(sp, MemOperand(sp, stack_passed_arguments * kPointerSize), r0);
-#endif
   } else {
     AddP(sp, Operand((stack_passed_arguments +
                           kNumRequiredStackFrameSlots) * kPointerSize));

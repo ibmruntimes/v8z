@@ -1289,7 +1289,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       intptr_t arg3 = get_register(r5);
       intptr_t arg4 = get_register(r6);
       intptr_t* stack_pointer = reinterpret_cast<intptr_t*>(get_register(sp));
-      intptr_t arg5 = stack_pointer[0];
+      intptr_t arg5 = stack_pointer[kCalleeRegisterSaveAreaSize / kPointerSize];
       bool fp_call =
          (redirection->type() == ExternalReference::BUILTIN_FP_FP_CALL) ||
          (redirection->type() == ExternalReference::BUILTIN_COMPARE_CALL) ||
