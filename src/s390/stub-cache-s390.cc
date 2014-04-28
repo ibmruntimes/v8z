@@ -105,8 +105,8 @@ static void ProbeTable(Isolate* isolate,
 
   ASSERT(!r0.is(flags_reg));
   __ LoadImmP(r0, Operand(Code::kFlagsNotUsedInLookup));
-  __ LoadRR(flags_reg, r0);
-  __ NotP(flags_reg);
+  __ NotP(r0);
+  __ AndP(flags_reg, r0);
   __ mov(r0, Operand(flags));
   __ Cmpl(flags_reg, r0);
   __ bne(&miss);
