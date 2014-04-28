@@ -3588,34 +3588,33 @@ static void GenerateSmiKeyCheck(MacroAssembler* masm,
                                 DoubleRegister double_scratch0,
                                 DoubleRegister double_scratch1,
                                 Label* fail) {
-//   Label key_ok;
-  //  Check for smi or a smi inside a heap number.  We convert the heap
-  //  number and check if the conversion is exact and fits into the smi
-  //  range.
-  __ JumpIfNotSmi(key, fail);
-//   __ JumpIfSmi(key, &key_ok);
-//   __ CheckMap(key,
-//               scratch0,
-//               Heap::kHeapNumberMapRootIndex,
-//               fail,
-//               DONT_DO_SMI_CHECK);
-//   __ LoadF(double_scratch0, FieldMemOperand(key, HeapNumber::kValueOffset));
-//   __ EmitVFPTruncate(kRoundToZero,
-//                      scratch0,
-//                      double_scratch0,
-//                      scratch1,
-//                      double_scratch1,
-//                      kCheckForInexactConversion);
-//   // EmitVFPTruncate sets condition code 3 if it fails.
-//   __ b(Condition(CC_OF), fail);
-// #if V8_TARGET_ARCH_S390X
-//   __ SmiTag(key, scratch0);
-// #else
-//   __ SmiTagCheckOverflow(scratch1, scratch0, r0);
-//   __ BranchOnOverflow(fail);
-//   __ LoadRR(key, scratch1);
-// #endif
-//   __ bind(&key_ok);
+  Label key_ok;
+  // Check for smi or a smi inside a heap number.  We convert the heap
+  // number and check if the conversion is exact and fits into the smi
+  // range.
+  __ JumpIfSmi(key, &key_ok);
+  __ CheckMap(key,
+              scratch0,
+              Heap::kHeapNumberMapRootIndex,
+              fail,
+              DONT_DO_SMI_CHECK);
+  __ LoadF(double_scratch0, FieldMemOperand(key, HeapNumber::kValueOffset));
+  __ EmitVFPTruncate(kRoundToZero,
+                     scratch0,
+                     double_scratch0,
+                     scratch1,
+                     double_scratch1,
+                     kCheckForInexactConversion);
+  // EmitVFPTruncate sets condition code 3 if it fails.
+  __ b(Condition(0x01), fail);
+#if V8_TARGET_ARCH_S390X
+  __ SmiTag(key, scratch0);
+#else
+  __ SmiTagCheckOverflow(scratch1, scratch0, r0);
+  __ BranchOnOverflow(fail);
+  __ LoadRR(key, scratch1);
+#endif
+  __ bind(&key_ok);
 }
 
 
