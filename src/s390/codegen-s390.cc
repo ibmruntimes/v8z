@@ -220,9 +220,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   __ LoadP(r1, MemOperand(r5));
   __ AddP(r5, Operand(kPointerSize));
   // r1: current element
-  __ TestIfSmi(r1, r0);
-  __ beq(&convert_hole);
-  __ SmiUntag(r1, r1);
+  __ UntagAndJumpIfNotSmi(r1, r1, &convert_hole);
 
   // Normal smi, convert to double and store.
   FloatingPointHelper::ConvertIntToDouble(
