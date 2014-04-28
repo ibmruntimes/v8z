@@ -1459,7 +1459,8 @@ void StubCompiler::GenerateLoadInterceptor(Handle<JSObject> object,
 
 void CallStubCompiler::GenerateNameCheck(Handle<String> name, Label* miss) {
   if (kind_ == Code::KEYED_CALL_IC) {
-    __ Cmpi(r4, Operand(name));
+    __ mov(r0, Operand(name));
+    __ Cmp(r4, r0);
     __ bne(miss);
   }
 }
@@ -3060,7 +3061,8 @@ Handle<Code> KeyedLoadStubCompiler::CompileLoadField(Handle<String> name,
   Label miss;
 
   // Check the key is the cached one.
-  __ Cmpi(r2, Operand(name));
+  __ mov(r0, Operand(name));
+  __ Cmp(r2, r0);
   __ bne(&miss);
 
   GenerateLoadField(receiver, holder, r3, r4, r5, r6, index,
@@ -3085,7 +3087,8 @@ Handle<Code> KeyedLoadStubCompiler::CompileLoadCallback(
   Label miss;
 
   // Check the key is the cached one.
-  __ Cmpi(r2, Operand(name));
+  __ mov(r0, Operand(name));
+  __ Cmp(r2, r0);
   __ bne(&miss);
 
   GenerateLoadCallback(receiver, holder, r3, r2, r4, r5, r6, r7,
@@ -3136,7 +3139,8 @@ Handle<Code> KeyedLoadStubCompiler::CompileLoadInterceptor(
   Label miss;
 
   // Check the key is the cached one.
-  __ Cmpi(r2, Operand(name));
+  __ mov(r0, Operand(name));
+  __ Cmp(r2, r0);
   __ bne(&miss);
 
   LookupResult lookup(isolate());
@@ -3160,7 +3164,8 @@ Handle<Code> KeyedLoadStubCompiler::CompileLoadArrayLength(
   Label miss;
 
   // Check the key is the cached one.
-  __ Cmpi(r2, Operand(name));
+  __ mov(r0, Operand(name));
+  __ Cmp(r2, r0);
   __ bne(&miss);
 
   GenerateLoadArrayLength(masm(), r3, r4, &miss);
@@ -3184,7 +3189,8 @@ Handle<Code> KeyedLoadStubCompiler::CompileLoadStringLength(
   __ IncrementCounter(counters->keyed_load_string_length(), 1, r4, r5);
 
   // Check the key is the cached one.
-  __ Cmpi(r2, Operand(name));
+  __ mov(r0, Operand(name));
+  __ Cmp(r2, r0);
   __ bne(&miss);
 
   GenerateLoadStringLength(masm(), r3, r4, r5, &miss, true);
@@ -3210,7 +3216,8 @@ Handle<Code> KeyedLoadStubCompiler::CompileLoadFunctionPrototype(
   __ IncrementCounter(counters->keyed_load_function_prototype(), 1, r4, r5);
 
   // Check the name hasn't changed.
-  __ Cmpi(r2, Operand(name));
+  __ mov(r0, Operand(name));
+  __ Cmp(r2, r0);
   __ bne(&miss);
 
   GenerateLoadFunctionPrototype(masm(), r3, r4, r5, &miss);
@@ -3289,7 +3296,8 @@ Handle<Code> KeyedStoreStubCompiler::CompileStoreField(Handle<JSObject> object,
   __ IncrementCounter(counters->keyed_store_field(), 1, r5, r6);
 
   // Check that the name has not changed.
-  __ Cmpi(r3, Operand(name));
+  __ mov(r0, Operand(name));
+  __ Cmp(r3, r0);
   __ bne(&miss);
 
   // r5 is used as scratch register. r3 and r4 keep their values if a jump
