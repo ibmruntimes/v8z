@@ -7112,11 +7112,12 @@ void StringDictionaryLookupStub::GeneratePositiveLookup(MacroAssembler* masm,
   }
   StringDictionaryLookupStub stub(POSITIVE_LOOKUP);
   __ CallStub(&stub);
-  __ Cmpi(r2, Operand::Zero());
+  __ LoadRR(scratch1, r2);
   __ LoadRR(scratch2, r4);
   __ MultiPop(spill_mask);
   __ LoadRR(r14, r0);
 
+  __ Cmpi(scratch1, Operand::Zero());
   __ bne(done);
   __ beq(miss);
 }
