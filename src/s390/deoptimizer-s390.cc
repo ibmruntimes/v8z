@@ -43,11 +43,11 @@ const int Deoptimizer::table_entry_size_ = 24;
 
 int Deoptimizer::patch_size() {
 #if V8_TARGET_ARCH_S390X
-  const int kCallInstructionSizeInWords = 7;
+  const int kCallInstructionSize = 16;
 #else
-  const int kCallInstructionSizeInWords = 4;
+  const int kCallInstructionSize = 10;
 #endif
-  return kCallInstructionSizeInWords * Assembler::kInstrSize;
+  return kCallInstructionSize;
 }
 
 
@@ -171,16 +171,6 @@ void Deoptimizer::PatchStackCheckCodeAt(Code* unoptimized_code,
               Assembler::instr_at(pc_after - 12));
   }
 #endif
-
-
-  // @TODO Continue to fix this PPC code into 390.
-
-  // We patch the code to the following form:
-  // 60000000       ori     r0, r0, 0        ;; NOP
-  // 3d80NNNN       lis     r12_p, NNNN        ;; two part load
-  // 618cNNNN       ori     r12_p, r12_p, NNNN   ;; of on stack replace address
-  // 7d8803a6       mtlr    r12_p
-  // 4e800021       blrl
 
 #if V8_TARGET_ARCH_S390X
   CodePatcher patcher(pc_after - 18, 16);  // 16 bytes - BRC + IIHF + IILF
