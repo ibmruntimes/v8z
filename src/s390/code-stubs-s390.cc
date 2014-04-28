@@ -4178,7 +4178,8 @@ void InstanceofStub::Generate(MacroAssembler* masm) {
   __ bne(&slow);
 
   // Null is not instance of anything.
-  __ Cmpi(scratch, Operand(masm->isolate()->factory()->null_value()));
+  __ mov(r0, Operand(masm->isolate()->factory()->null_value()));
+  __ Cmp(scratch, r0);
   __ bne(&object_not_null);
   __ LoadSmiLiteral(r2, Smi::FromInt(1));
   __ Ret(HasArgsInRegisters() ? 0 : 2);
