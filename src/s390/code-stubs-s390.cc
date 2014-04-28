@@ -6995,7 +6995,8 @@ void StringDictionaryLookupStub::GenerateNegativeLookup(MacroAssembler* masm,
       __ LoadRoot(tmp, Heap::kTheHoleValueRootIndex);
 
       // Stop if found the property.
-      __ Cmpi(entity_name, Operand(Handle<String>(name)));
+      __ mov(r0, Operand(Handle<String>(name)));
+      __ Cmp(entity_name, r0);
       __ beq(miss);
 
       Label the_hole;
