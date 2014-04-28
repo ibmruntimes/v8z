@@ -6859,9 +6859,11 @@ void ICCompareStub::GenerateKnownObjects(MacroAssembler* masm) {
   __ JumpIfSmi(r4, &miss);
   __ LoadP(r4, FieldMemOperand(r2, HeapObject::kMapOffset));
   __ LoadP(r5, FieldMemOperand(r3, HeapObject::kMapOffset));
-  __ Cmpi(r4, Operand(known_map_));
+  __ mov(r0, Operand(known_map_));
+  __ Cmp(r4, r0);
   __ bne(&miss);
-  __ Cmpi(r5, Operand(known_map_));
+  __ mov(r0, Operand(known_map_));
+  __ Cmp(r5, r0);
   __ bne(&miss);
 
   __ Sub(r2, r2, r3);
