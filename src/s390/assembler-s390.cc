@@ -3575,11 +3575,6 @@ void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
 }
 
 
-void Assembler::BlockTrampolinePoolFor(int instructions) {
-  BlockTrampolinePoolBefore(pc_offset() + instructions * kInstrSize);
-}
-
-
 void Assembler::CheckTrampolinePool() {
   // Some small sequences of instructions must not be broken up by the
   // insertion of a trampoline pool; such sequences are protected by setting

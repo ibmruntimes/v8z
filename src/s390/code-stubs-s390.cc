@@ -4108,6 +4108,7 @@ void InstanceofStub::Generate(MacroAssembler* masm) {
     // The offset was stored in r6 safepoint slot.
     // (See LCodeGen::DoDeferredLInstanceOfKnownGlobal)
     __ LoadFromSafepointRegisterSlot(scratch, r6);
+    __ CleanseP(r14);
     __ LoadRR(inline_site, r14);
     __ Sub(inline_site, inline_site, scratch);
     // Get the map location in scratch and patch it.

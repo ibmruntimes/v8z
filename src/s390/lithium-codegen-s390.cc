@@ -2409,23 +2409,23 @@ void LCodeGen::DoDeferredInstanceOfKnownGlobal(LInstanceOfKnownGlobal* instr,
   ASSERT(temp.is(r6));
   __ LoadHeapObject(InstanceofStub::right(), instr->function());
 #if V8_TARGET_ARCH_S390X
-  static const int kAdditionalDelta = 13;
+  static const int kAdditionalDelta = 26;
 #else
-  static const int kAdditionalDelta = 7;
+  static const int kAdditionalDelta = 18;
 #endif
-  int delta = masm_->InstructionsGeneratedSince(map_check) + kAdditionalDelta;
+  int delta = masm_->SizeOfCodeGeneratedSince(map_check) + kAdditionalDelta;
   Label before_push_delta;
   __ bind(&before_push_delta);
   {
     Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm_);
-    __ mov(temp, Operand(delta * Instruction::kInstrSize));
+    __ mov(temp, Operand(delta));
     __ StoreToSafepointRegisterSlot(temp, temp);
   }
   CallCodeGeneric(stub.GetCode(),
                   RelocInfo::CODE_TARGET,
                   instr,
                   RECORD_SAFEPOINT_WITH_REGISTERS_AND_NO_ARGUMENTS);
-  ASSERT(delta == masm_->InstructionsGeneratedSince(map_check));
+  ASSERT(delta == masm_->SizeOfCodeGeneratedSince(map_check));
   LEnvironment* env = instr->GetDeferredLazyDeoptimizationEnvironment();
   safepoints_.RecordLazyDeoptimizationIndex(env->deoptimization_index());
   // Put the result value into the result register slot and
@@ -4882,7 +4882,8 @@ void LCodeGen::DoCheckFunction(LCheckFunction* instr) {
     __ LoadP(ip, FieldMemOperand(ip, JSGlobalPropertyCell::kValueOffset));
     __ CmpRR(reg, ip);
   } else {
-    __ Cmpi(reg, Operand(target));
+    __ mov(ip, Operand(target));
+    __ CmpRR(reg, ip);
   }
   DeoptimizeIf(ne, instr->environment());
 }

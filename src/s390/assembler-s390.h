@@ -1846,12 +1846,6 @@ SS2_FORM(zap);
     return pc_offset() - label->pos();
   }
 
-  // Check the number of instructions generated from label to here.
-  // TODO(JOHN): FIX IT
-  int InstructionsGeneratedSince(Label* label) {
-    return SizeOfCodeGeneratedSince(label) / kInstrSize;
-  }
-
   // Class for scoping postponing the trampoline pool generation.
   class BlockTrampolinePoolScope {
    public:
@@ -1939,7 +1933,6 @@ SS2_FORM(zap);
 
   // Postpone the generation of the trampoline pool for the specified number of
   // instructions.
-  void BlockTrampolinePoolFor(int instructions);
   void CheckTrampolinePool();
 
  public:
