@@ -38,7 +38,11 @@
 namespace v8 {
 namespace internal {
 
+#if V8_TARGET_ARCH_S390X
+const int Deoptimizer::table_entry_size_ = 26;
+#else
 const int Deoptimizer::table_entry_size_ = 24;
+#endif
 
 
 int Deoptimizer::patch_size() {
@@ -85,10 +89,9 @@ void Deoptimizer::DeoptimizeFunction(JSFunction* function) {
     int call_size_in_bytes =
         MacroAssembler::CallSizeNotPredictableCodeSize(deopt_entry,
                                                        RelocInfo::NONE);
-    int call_size_in_words = call_size_in_bytes / Assembler::kInstrSize;
     ASSERT(call_size_in_bytes % Assembler::kInstrSize == 0);
     ASSERT(call_size_in_bytes <= patch_size());
-    CodePatcher patcher(call_address, call_size_in_words);  // FIXME: 2ND ARG
+    CodePatcher patcher(call_address, call_size_in_bytes);  // FIXME: 2ND ARG
     patcher.masm()->Call(deopt_entry, RelocInfo::NONE);
     ASSERT(prev_call_address == NULL ||
            call_address >= prev_call_address + patch_size());
@@ -1204,15 +1207,22 @@ void Deoptimizer::TableEntryGenerator::GeneratePrologue() {
     int start = masm()->pc_offset();
     USE(start);
     if (type() == EAGER) {
+      __ lay(sp, MemOperand(sp, -kPointerSize));
       __ nop();
       __ nop();
+#if V8_TARGET_ARCH_S390X
+      __ nop();    // Should probably make it a 6-byte NOP
+#endif
     } else {
+      __ lay(sp, MemOperand(sp, -2 * kPointerSize));
       // Emulate ia32 like call by pushing return address to stack.
-      __ push(r14);
+      __ StoreP(r14, MemOperand(sp, kPointerSize));
     }
     __ LoadImmP(ip, Operand(i));
-    __ push(ip);
+    __ StoreP(ip, MemOperand(sp));
     __ b(&done);
+    int end = masm()->pc_offset();
+    USE(end);
     ASSERT(masm()->pc_offset() - start == table_entry_size_);
   }
   __ bind(&done);
