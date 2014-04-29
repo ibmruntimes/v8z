@@ -3362,7 +3362,7 @@ void Assembler::ld(DoubleRegister r1, const MemOperand& opnd) {
 
 // Load (L)
 void Assembler::ldy(DoubleRegister r1, const MemOperand& opnd) {
-  rx_form(LDY, r1, opnd.rx(), opnd.rb(), opnd.offset());
+  rxy_form(LDY, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 // Load Register-Register (L)
