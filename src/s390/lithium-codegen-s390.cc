@@ -2250,7 +2250,8 @@ void LCodeGen::EmitClassOfTest(Label* is_true,
   // classes and it doesn't have to because you can't access it with natives
   // syntax.  Since both sides are symbols it is sufficient to use an identity
   // comparison.
-  __ Cmpi(temp, Operand(class_name));
+  __ mov(temp2, Operand(class_name));
+  __ CmpRR(temp, temp2);
   // End with the answer in flags.
 }
 

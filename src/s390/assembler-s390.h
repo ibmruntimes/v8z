@@ -676,9 +676,10 @@ class Assembler : public AssemblerBase {
       bool is_bound = false);  // jump on condition
 
   // Label version
-  void b(Condition cond, Label* l) {
-    branchOnCond(cond, branch_offset(l, false), l->is_bound());
+  void b(Condition cond, Label* l, bool forceBRC = false) {
+    branchOnCond(cond, branch_offset(l, false), l->is_bound() || forceBRC);
   }
+
   void b(Register r, Label* l) {
     positions_recorder()->WriteRecordedPositions();
     int32_t halfwords = branch_offset(l, false) / 2;

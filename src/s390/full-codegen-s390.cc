@@ -303,7 +303,7 @@ void FullCodeGenerator::Generate() {
       __ LoadRoot(ip, Heap::kStackLimitRootIndex);
       __ Cmpl(sp, ip);
       // This is a FIXED_SEQUENCE and must match the other StackCheck code
-      __ b(ge, &ok);
+      __ b(ge, &ok, true);   // Force BRC as this is a FIXED_SEQUENCE
       StackCheckStub stub;
       __ CallStub(&stub);
       __ bind(&ok);
@@ -375,14 +375,14 @@ void FullCodeGenerator::EmitStackCheck(IterationStatement* stmt,
                    Max(1, distance / kBackEdgeDistanceUnit));
     }
     EmitProfilingCounterDecrement(weight);
-    __ b(ge, &ok);
+    __ b(ge, &ok, true);   // Force BRC as this is a FIXED_SEQUENCE
     InterruptStub stub;
     __ CallStub(&stub);
   } else {
     __ LoadRoot(ip, Heap::kStackLimitRootIndex);
     __ Cmpl(sp, ip);
     // This is a FIXED_SEQUENCE and must match the other StackCheck code
-    __ b(ge, &ok);
+    __ b(ge, &ok, true);   // Force BRC as this is a FIXED_SEQUENCE
     StackCheckStub stub;
     __ CallStub(&stub);
   }

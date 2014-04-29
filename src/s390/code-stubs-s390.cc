@@ -4059,9 +4059,9 @@ void InstanceofStub::Generate(MacroAssembler* masm) {
   Register scratch3 = no_reg;
 
 #if V8_TARGET_ARCH_S390X
-  const int32_t kDeltaToLoadBoolResult = 9 * Assembler::kInstrSize;
+  const int32_t kDeltaToLoadBoolResult = 28;  // IIHF + IILF + LG + CR + BRCL
 #else
-  const int32_t kDeltaToLoadBoolResult = 5 * Assembler::kInstrSize;
+  const int32_t kDeltaToLoadBoolResult = 18;  // IILF + L + CR + BRCL
 #endif
 
   Label slow, loop, is_instance, is_not_instance, not_js_object;
