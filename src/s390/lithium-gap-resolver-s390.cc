@@ -36,7 +36,7 @@
 namespace v8 {
 namespace internal {
 
-static const Register kSavedValueRegister = { 11 };
+static const Register kSavedValueRegister = { 1 };
 
 LGapResolver::LGapResolver(LCodeGen* owner)
     : cgen_(owner), moves_(32, owner->zone()), root_index_(0), in_cycle_(false),
