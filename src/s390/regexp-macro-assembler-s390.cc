@@ -571,8 +571,8 @@ void RegExpMacroAssemblerS390::CheckBitInTable(
   __ mov(r2, Operand(table));
   if (mode_ != ASCII || kTableMask != String::kMaxAsciiCharCode) {
     __ LoadRR(r3, current_character());
-    __ AndP(r3, Operand(kTableSize - 1));
-    __ AddP(r3, Operand(ByteArray::kHeaderSize - kHeapObjectTag));
+    __ AndPImm(r3, Operand(kTableSize - 1));
+    __ AddPImm(r3, Operand(ByteArray::kHeaderSize - kHeapObjectTag));
   } else {
     __ LoadRR(r3, current_character());
     __ AddP(r3, Operand(ByteArray::kHeaderSize - kHeapObjectTag));
@@ -1455,7 +1455,7 @@ void RegExpCEntryStub::Generate(MacroAssembler* masm_) {
   __ StoreP(r14, MemOperand(r2, 0));
 
   // zLINUX ABI:
-  lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
+  __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
 
 #if ABI_USES_FUNCTION_DESCRIPTORS && !defined(USE_SIMULATOR)
   // Native AIX/PPC64 Linux use a function descriptor.
@@ -1468,7 +1468,7 @@ void RegExpCEntryStub::Generate(MacroAssembler* masm_) {
 
   __ Call(target);
 
-  la(sp, MemOperand(sp, +kCalleeRegisterSaveAreaSize));
+  __ la(sp, MemOperand(sp, +kCalleeRegisterSaveAreaSize));
 
   __ LoadP(r14, MemOperand(sp, -stack_alignment));
   __ Ret();

@@ -1075,7 +1075,7 @@ ExternalReference ExternalReference::re_check_stack_guard_state(
 #elif V8_TARGET_ARCH_PPC
   function = FUNCTION_ADDR(RegExpMacroAssemblerPPC::CheckStackGuardState);
 #elif V8_TARGET_ARCH_S390
-  function = FUNCTION_ADDR(RegExpMacroAssemblerPPC::CheckStackGuardState);
+  function = FUNCTION_ADDR(RegExpMacroAssemblerS390::CheckStackGuardState);
 #elif V8_TARGET_ARCH_MIPS
   function = FUNCTION_ADDR(RegExpMacroAssemblerMIPS::CheckStackGuardState);
 #else
