@@ -1095,12 +1095,17 @@ void Deoptimizer::EntryGenerator::Generate() {
   // Copy VFP registers to
   // double_registers_[DoubleRegister::kNumAllocatableRegisters]
   int double_regs_offset = FrameDescription::double_registers_offset();
+  __ mvc(MemOperand(r3, double_regs_offset),
+         MemOperand(sp, kNumberOfRegisters * kPointerSize),
+         DoubleRegister::kNumAllocatableRegisters * kDoubleSize);
+/*
   for (int i = 0; i < DoubleRegister::kNumAllocatableRegisters; ++i) {
     int dst_offset = i * kDoubleSize + double_regs_offset;
     int src_offset = i * kDoubleSize + kNumberOfRegisters * kPointerSize;
     __ LoadF(d0, MemOperand(sp, src_offset));
     __ StoreF(d0, MemOperand(r3, dst_offset));
   }
+*/
 
   // Remove the bailout id, eventually return address, and the saved registers
   // from the stack.
