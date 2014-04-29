@@ -3150,35 +3150,109 @@ void MacroAssembler::CopyBytes(Register src,
                                Register dst,
                                Register length,
                                Register scratch) {
-  Label big_loop, left_bytes, done, fake_call;
+  Label align_loop, aligned, word_loop, byte_loop, done;
 
   ASSERT(!scratch.is(r0));
 
-  // big loop moves 255 bytes at a time
-  bind(&big_loop);
-  Cmpi(length, Operand(0x100));
-  blt(&left_bytes);
-
-  mvc(MemOperand(dst), MemOperand(src), 0xff);
-
-  AddP(src, Operand(0x100));
-  AddP(dst, Operand(0x100));
-  SubP(length, Operand(0x100));
-  b(&big_loop);
-
-  bind(&left_bytes);
-  Cmpi(length, Operand(0x0));
+  Cmpi(length, Operand::Zero());
   beq(&done);
 
-  b(scratch, &fake_call);  // use brasl to Save mvc addr to scratch
-  mvc(MemOperand(dst), MemOperand(src), 1);
-  bind(&fake_call);
-  SubP(length, Operand(-1));
-  ex(length, MemOperand(scratch));  // execute mvc instr above
-  AddP(src, length);
-  AddP(dst, length);
-  AddP(src, Operand(0x1));
-  AddP(dst, Operand(0x1));
+  // FIXME: in the word_loop, scratch reg is used as a count reg but it's
+  //        get changed in the loop.
+  // TODO(JOHN): Disable word_loop by now, may be optimized in the future
+  b(&byte_loop);
+
+  // Check src alignment and length to see whether word_loop is possible
+  LoadRR(scratch, src);
+  AndPImm(scratch, Operand(kPointerSize - 1));
+  beq(&aligned /*, cr0*/);
+  subfic(scratch, scratch, Operand(kPointerSize * 2));
+  CmpRR(length, scratch);
+  blt(&byte_loop);
+
+  // Align src before copying in word size chunks.
+  Sub(scratch, Operand(kPointerSize));
+  bind(&align_loop);
+  LoadlB(scratch, MemOperand(src));
+  AddP(src, Operand(1));
+  Sub(length, Operand(1));
+  stc(scratch, MemOperand(dst));
+  AddP(dst, Operand(1));
+  BranchOnCount(scratch, &align_loop);
+
+  bind(&aligned);
+
+  // Copy bytes in word size chunks.
+  if (emit_debug_code()) {
+    LoadRR(r0, src);
+    AndPImm(r0, Operand(kPointerSize - 1));
+    Assert(eq, "Expecting alignment for CopyBytes", cr0);
+  }
+
+  ShiftRightImm(scratch, length, Operand(kPointerSizeLog2));
+  Cmpi(scratch, Operand::Zero());
+  beq(&byte_loop);
+
+  bind(&word_loop);
+  LoadP(scratch, MemOperand(src));
+  AddP(src, Operand(kPointerSize));
+  Sub(length, Operand(kPointerSize));
+  if (CpuFeatures::IsSupported(UNALIGNED_ACCESSES)) {
+    // currently false for PPC - but possible future opt
+    StoreP(scratch, MemOperand(dst));
+    AddP(dst, Operand(kPointerSize));
+  } else {
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    stc(scratch, MemOperand(dst, 0));
+    ShiftRightImm(scratch, scratch, Operand(8));
+    stc(scratch, MemOperand(dst, 1));
+    ShiftRightImm(scratch, scratch, Operand(8));
+    stc(scratch, MemOperand(dst, 2));
+    ShiftRightImm(scratch, scratch, Operand(8));
+    stc(scratch, MemOperand(dst, 3));
+#if V8_TARGET_ARCH_S390X
+    ShiftRightImm(scratch, scratch, Operand(8));
+    stc(scratch, MemOperand(dst, 4));
+    ShiftRightImm(scratch, scratch, Operand(8));
+    stc(scratch, MemOperand(dst, 5));
+    ShiftRightImm(scratch, scratch, Operand(8));
+    stc(scratch, MemOperand(dst, 6));
+    ShiftRightImm(scratch, scratch, Operand(8));
+    stc(scratch, MemOperand(dst, 7));
+#endif
+#else
+#if V8_TARGET_ARCH_S390X
+    stc(scratch, MemOperand(dst, 7));
+    ShiftRightImm(scratch, scratch, Operand(8));
+    stc(scratch, MemOperand(dst, 6));
+    ShiftRightImm(scratch, scratch, Operand(8));
+    stc(scratch, MemOperand(dst, 5));
+    ShiftRightImm(scratch, scratch, Operand(8));
+    stc(scratch, MemOperand(dst, 4));
+    ShiftRightImm(scratch, scratch, Operand(8));
+#endif
+    stc(scratch, MemOperand(dst, 3));
+    ShiftRightImm(scratch, scratch, Operand(8));
+    stc(scratch, MemOperand(dst, 2));
+    ShiftRightImm(scratch, scratch, Operand(8));
+    stc(scratch, MemOperand(dst, 1));
+    ShiftRightImm(scratch, scratch, Operand(8));
+    stc(scratch, MemOperand(dst, 0));
+#endif
+    AddP(dst, Operand(kPointerSize));
+  }
+  BranchOnCount(scratch, &word_loop);
+
+  // Copy the last bytes if any left.
+  Cmpi(length, Operand::Zero());
+  beq(&done);
+
+  bind(&byte_loop);
+  LoadlB(scratch, MemOperand(src));
+  AddP(src, Operand(1));
+  stc(scratch, MemOperand(dst));
+  AddP(dst, Operand(1));
+  BranchOnCount(length, &byte_loop);
 
   bind(&done);
 }
