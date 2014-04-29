@@ -2286,7 +2286,9 @@ void LCodeGen::DoCmpMapAndBranch(LCmpMapAndBranch* instr) {
   int false_block = instr->false_block_id();
 
   __ LoadP(temp, FieldMemOperand(reg, HeapObject::kMapOffset));
-  __ Cmpi(temp, Operand(instr->map()));
+  // @TODO Revert once Cmpi relocation is fixed
+  __ mov(r0, Operand(instr->map()));
+  __ CmpRR(temp, r0);
   EmitBranch(true_block, false_block, eq);
 }
 
