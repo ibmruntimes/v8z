@@ -3154,31 +3154,31 @@ void MacroAssembler::CopyBytes(Register src,
 
   ASSERT(!scratch.is(r0));
 
-  // big loop moves 255 bytes at a time
+  // big loop moves 256 bytes at a time
   bind(&big_loop);
-  Cmpi(length, Operand(0x100));
+  Cmpi(length, Operand(static_cast<intptr_t>(0x100)));
   blt(&left_bytes);
 
-  mvc(MemOperand(dst), MemOperand(src), 0xff);
+  mvc(MemOperand(dst), MemOperand(src), 0x100);
 
-  AddP(src, Operand(0x100));
-  AddP(dst, Operand(0x100));
-  SubP(length, Operand(0x100));
+  AddP(src, Operand(static_cast<intptr_t>(0x100)));
+  AddP(dst, Operand(static_cast<intptr_t>(0x100)));
+  SubP(length, Operand(static_cast<intptr_t>(0x100)));
   b(&big_loop);
 
   bind(&left_bytes);
-  Cmpi(length, Operand(0x0));
+  Cmpi(length, Operand::Zero());
   beq(&done);
 
   b(scratch, &fake_call);  // use brasl to Save mvc addr to scratch
   mvc(MemOperand(dst), MemOperand(src), 1);
   bind(&fake_call);
-  SubP(length, Operand(-1));
+  SubP(length, Operand(static_cast<intptr_t>(-1)));
   ex(length, MemOperand(scratch));  // execute mvc instr above
   AddP(src, length);
   AddP(dst, length);
-  AddP(src, Operand(0x1));
-  AddP(dst, Operand(0x1));
+  AddP(src, Operand(static_cast<intptr_t>(0x1)));
+  AddP(dst, Operand(static_cast<intptr_t>(0x1)));
 
   bind(&done);
 }
