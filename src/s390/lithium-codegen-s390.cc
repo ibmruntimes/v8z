@@ -3205,10 +3205,9 @@ void LCodeGen::DoApplyArguments(LApplyArguments* instr) {
   __ Cmpi(length, Operand::Zero());
   __ beq(&invoke);
   __ bind(&loop);
-  __ ShiftLeftImm(r0, length, Operand(kPointerSizeLog2));
-  __ LoadP(scratch, MemOperand(elements, r0));
+  __ ShiftLeftImm(r1, length, Operand(kPointerSizeLog2));
+  __ LoadP(scratch, MemOperand(elements, r1));
   __ push(scratch);
-  __ AddP(length, Operand(-1));
   __ BranchOnCount(length, &loop);
 
   __ bind(&invoke);
