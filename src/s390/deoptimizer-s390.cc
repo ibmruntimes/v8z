@@ -129,7 +129,7 @@ static const int32_t kBranchBeforeStackCheck = 0xa7a40009;
 static const int32_t kBranchBeforeInterrupt =  0xa7a40015;
 #else
 static const int32_t kBranchBeforeStackCheck = 0xa7a40006;
-static const int32_t kBranchBeforeInterrupt =  0xa7a4001e;
+static const int32_t kBranchBeforeInterrupt =  0xa7a4000e;
 #endif
 
 
@@ -248,8 +248,7 @@ void Deoptimizer::RevertStackCheckCodeAt(Code* unoptimized_code,
   // Replace NOP with conditional jump.
   CodePatcher patcher(pc_after - 12, 10);  // 10 bytes - LR + LR + IILF
   if (FLAG_count_based_interrupts) {
-    ASSERT(false);  // @TODO +36 offset is definitely wrong!
-    patcher.masm()->brc(ge, Operand(36));          // Insert BRC
+    patcher.masm()->brc(ge, Operand(28));          // Insert BRC
     ASSERT_EQ(kBranchBeforeInterrupt, Assembler::instr_at(pc_after - 12));
   } else {
     patcher.masm()->brc(ge, Operand(12));
