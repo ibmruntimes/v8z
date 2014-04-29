@@ -2762,12 +2762,12 @@ void Assembler::alg(Register r1, const MemOperand& opnd) {
 
 // Add Logical Register-Register (32)
 void Assembler::alr(Register r1, Register r2) {
-  rr_form(ALR, r1, r1);
+  rr_form(ALR, r1, r2);
 }
 
 // Add Logical Register-Register (64)
 void Assembler::algr(Register r1, Register r2) {
-  rre_form(ALGR, r1, r1);
+  rre_form(ALGR, r1, r2);
 }
 
 // Add Logical Immediate (32)
