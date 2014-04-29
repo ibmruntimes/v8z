@@ -754,6 +754,8 @@ class Assembler : public AssemblerBase {
     larl(r, Operand(branch_offset(l, false)));
   }
 
+  void mvc(const MemOperand& opnd1, const MemOperand& opnd2, uint32_t length);
+
   // Data-processing instructions
 
   // S390 instruction generation
@@ -1387,7 +1389,6 @@ RRE_FORM(msgfr);
 RRE_FORM(msgr);
 RRE_FORM(msr);
 RXY_FORM(msy);
-SS1_FORM(mvc);
 SS1_FORM(mvcin);
 SS4_FORM(mvck);
 RR_FORM(mvcl);
