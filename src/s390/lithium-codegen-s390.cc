@@ -1008,16 +1008,8 @@ void LCodeGen::DoMathFloorOfDiv(LMathFloorOfDiv* instr) {
       return;
 
     case -1: {
-      // OEBit oe;
-      if (instr->hydrogen()->CheckFlag(HValue::kCanOverflow)) {
-        __ LoadImmP(r0, Operand::Zero());  // clear xer
-        __ mtxer(r0);
-        // oe = SetOE;
-      } else {
-        // oe = LeaveOE;
-      }
       __ LoadComplementRR(result, dividend/*, oe, SetRC*/);
-      // TODO(john): might be a problem removing SetOE here.
+
       if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
         DeoptimizeIf(eq, instr->environment(), cr0);
       }
@@ -1077,8 +1069,12 @@ void LCodeGen::DoMathFloorOfDiv(LMathFloorOfDiv* instr) {
       DeoptimizeIf(eq, instr->environment());
     }
     __ mov(result, Operand(multiplier));
-    __ mullw(ip, result, dividend);
-    __ mulhw(result, result, dividend);
+    // r0:r1 = results * dividend   - r0/r1 are scratch regs
+    __ LoadRR(r1, result);
+    __ mr_z(r0, dividend);
+    // Move results back to result:ip
+    __ LoadRR(result, r0);
+    __ LoadRR(ip, r1);
 
     if (static_cast<int32_t>(multiplier) < 0) {
       __ Add(result, result, dividend);
