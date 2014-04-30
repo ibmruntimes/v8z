@@ -331,7 +331,7 @@ class Simulator {
   }
 
   // Executes one instruction.
-  void InstructionDecode(Instruction* instr);
+  void InstructionDecode(Instruction* instr, bool auto_incr_pc = true);
 
   // ICache.
   static void CheckICache(v8::internal::HashMap* i_cache, Instruction* instr);

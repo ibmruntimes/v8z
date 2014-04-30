@@ -1868,6 +1868,30 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
   Opcode op = instr->S390OpcodeValue();
 
   switch (op) {
+    case EX: {
+      RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
+      int r1 = rxinst->R1Value();
+      int b2 = rxinst->B2Value();
+      int x2 = rxinst->X2Value();
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+      intptr_t d2_val = rxinst->D2Value();
+      int32_t  r1_val = get_low_register<int32_t>(r1);
+
+      SixByteInstr the_instr = Instruction::InstructionBits(
+          reinterpret_cast<const byte*>(b2_val + x2_val + d2_val));
+      int length = Instruction::InstructionLength(
+          reinterpret_cast<const byte*>(b2_val + x2_val + d2_val));
+
+      char new_instr_buf[8];
+      char *addr = reinterpret_cast<char *>(&new_instr_buf[0]);
+      the_instr |= static_cast<SixByteInstr>(r1_val & 0xff)
+                                        << (8 * length - 16);
+      Instruction::SetInstructionBits<SixByteInstr>(
+          reinterpret_cast<byte*>(addr), static_cast<SixByteInstr>(the_instr));
+      InstructionDecode(reinterpret_cast<Instruction*>(addr), false);
+      break;
+    }
     case LGR: {
       // Load Register (64)
       RREInstruction* rreinst = reinterpret_cast<RREInstruction*>(instr);
@@ -3510,7 +3534,7 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
 }
 
 // Executes the current instruction.
-void Simulator::InstructionDecode(Instruction* instr) {
+void Simulator::InstructionDecode(Instruction* instr, bool auto_incr_pc) {
   if (v8::internal::FLAG_check_icache) {
     CheckICache(isolate_->simulator_i_cache(), instr);
   }
@@ -3537,7 +3561,7 @@ void Simulator::InstructionDecode(Instruction* instr) {
     processed = DecodeSixByte(instr);
 
   if (processed) {
-    if (!pc_modified_) {
+    if (!pc_modified_ && auto_incr_pc) {
       set_pc(reinterpret_cast<intptr_t>(instr) + instrLength);
     }
     return;
