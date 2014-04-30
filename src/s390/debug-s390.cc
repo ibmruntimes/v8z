@@ -342,12 +342,12 @@ void Debug::GenerateSlotDebugBreak(MacroAssembler* masm) {
 
 
 void Debug::GeneratePlainReturnLiveEdit(MacroAssembler* masm) {
-  masm->Abort("LiveEdit frame dropping is not supported on ppc");
+  masm->Abort("LiveEdit frame dropping is not supported on s390");
 }
 
 
 void Debug::GenerateFrameDropperLiveEdit(MacroAssembler* masm) {
-  masm->Abort("LiveEdit frame dropping is not supported on ppc");
+  masm->Abort("LiveEdit frame dropping is not supported on s390");
 }
 
 const bool Debug::kFrameDropperSupported = false;
