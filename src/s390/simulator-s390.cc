@@ -2909,7 +2909,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
       int r1 = rilInstr->R1Value();
       int64_t imm = static_cast<int64_t>(rilInstr->I2Value());
-      SetS390ConditionCode<int32_t>(get_register(r1), imm);
+      SetS390ConditionCode<int64_t>(get_register(r1), imm);
       break;
     }
 
