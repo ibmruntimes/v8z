@@ -2348,13 +2348,25 @@ void MacroAssembler::EmitVFPTruncate(VFPRoundingMode rounding_mode,
   // Jump to done if overflows to preserve CC
   b(Condition(0x1), &done);
 
+  // Save registers values used by TestIfInt32
+  if (r1.is(result)) {
+    Push(r0, r1);
+  } else {
+    Push(r0, r1, result);
+  }
+
   // The result is a 32-bit integer when the high 33 bits of the
   // result are identical.
-  Push(r0, r1, result);
   LoadRR(r0, result);
   srda(r0, Operand(32));
   TestIfInt32(r0, r1, result);
-  Pop(r0, r1, result);
+
+  // Restore reg values.
+  if (r1.is(result)) {
+    Pop(r0, r1);
+  } else {
+    Pop(r0, r1, result);
+  }
 
   if (check_inexact == kCheckForInexactConversion) {
     bne(&done);
