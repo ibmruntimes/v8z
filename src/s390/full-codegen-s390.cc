@@ -2042,8 +2042,8 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
 #if V8_TARGET_ARCH_S390X
       // Remove tag from both operands.
       __ SmiUntag(ip, right);
-      __ SmiUntag(r0, left);
-      __ Mul(scratch2, r0, ip);
+      __ SmiUntag(scratch2, left);
+      __ mr_z(scratch1, ip);
       // Check for overflowing the smi range - no overflow if higher 33 bits of
       // the result are identical.
       __ TestIfInt32(scratch2, scratch1, ip);
@@ -3721,10 +3721,11 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   __ Sub(string_length, string_length, scratch1);
 #if V8_TARGET_ARCH_S390X
   __ SmiUntag(scratch1, scratch1);
-  __ Mul(scratch2, array_length, scratch1);
+  __ LoadRR(scratch2, array_length);
+  __ mr_z(r0, scratch1);  // r0:r1 = r1 * scratch1
   // Check for smi overflow. No overflow if higher 33 bits of 64-bit result are
   // zero.
-  __ ShiftRightImm(ip, scratch2, Operand(31), SetRC);
+  __ TestIfInt32(scratch2, scratch1, ip);
   __ bne(&bailout /*, cr0*/);
   __ SmiTag(scratch2, scratch2);
 #else
@@ -3733,6 +3734,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   __ mr_z(r0, scratch1);  // r0:r1 = r1 * scratch1
   // Check for smi overflow. No overflow if higher 33 bits of 64-bit result are
   // zero.
+  // TODO(john): use TestIfInt32
   __ Cmpi(r0, Operand::Zero());
   __ bne(&bailout);
   __ TestSignBit32(scratch2, r0);
