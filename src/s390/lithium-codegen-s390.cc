@@ -918,29 +918,30 @@ void LCodeGen::DoModI(LModI* instr) {
   } else {
     Register divisor = ToRegister(instr->right());
 
-    __ divw(scratch, dividend, divisor);
-
     // Check for x % 0.
     if (instr->hydrogen()->CheckFlag(HValue::kCanBeDivByZero)) {
         __ Cmpi(divisor, Operand::Zero());
         DeoptimizeIf(eq, instr->environment());
     }
 
-#if V8_TARGET_ARCH_S390X
-    __ lgfr(scratch, scratch);
-#endif
-    __ MulP(scratch, divisor);
-    __ Sub(result, dividend, scratch/*, LeaveOE, SetRC*/);
-    // Might break the branch below.
+    ASSERT(scratch.is(r1));
+    __ LoadRR(scratch, dividend);
+    __ dr(r0, divisor);     // R0:R1 = R1 / divisor - R0 remainder
 
+#if V8_TARGET_ARCH_S390X
+    __ lgfr(scratch, r0);
+#else
+    __ lr(scratch, r0);
+#endif
+
+    // Might break the branch below.
     if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
       __ Cmpi(dividend, Operand::Zero());
       __ bge(&done);
-      // TODO(the following function might need the cr result from sub above.)
+      __ Cmpi(scratch, Operand::Zero());
       DeoptimizeIf(eq, instr->environment(), cr0);
     }
   }
-
   __ bind(&done);
 }
 
@@ -950,8 +951,6 @@ void LCodeGen::DoDivI(LDivI* instr) {
   const Register right = ToRegister(instr->right());
   const Register scratch = scratch0();
   const Register result = ToRegister(instr->result());
-
-  __ divw(result, left, right);
 
   // Check for x / 0.
   if (instr->hydrogen()->CheckFlag(HValue::kCanBeDivByZero)) {
@@ -979,14 +978,18 @@ void LCodeGen::DoDivI(LDivI* instr) {
     __ bind(&left_not_min_int);
   }
 
+  ASSERT(scratch.is(r1));
+  ASSERT(!scratch.is(right));   // Following sequence implicitly kills scratch
+  __ LoadRR(scratch, left);
+  __ dr(r0, right);     // R0:R1 = R1 / divisor - R0 remainder - R1 quotient
 #if V8_TARGET_ARCH_S390X
-  __ lgfr(result, result);
+  __ lgfr(result, scratch);
+#else
+  __ lr(result, scratch);
 #endif
 
   // Deoptimize on non-zero remainder
-  __ Move(right, scratch);
-  __ MulP(scratch, result);
-  __ CmpRR(left, scratch);
+  __ chi(r0, Operand::Zero());    // Force 32-bit compare
   DeoptimizeIf(ne, instr->environment());
 }
 
