@@ -2026,15 +2026,17 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       Label mul_zero, mul_neg_zero;
 #if V8_TARGET_ARCH_S390X
       // Remove tag from both operands.
-      __ SmiUntag(scratch2, right);  // r1 = right
+      __ SmiUntag(r1, right);  // r1 = right
       __ SmiUntag(r0, left);         // r0 = r3
       // Do multiplication
-      __ mr_z(r0, left);  // r0:r1 = r1 * r3
+      __ mr_z(r0, r1);  // r0:r1 = r1 * r3
 
       // Check for overflowing the smi range - no overflow if higher 33 bits of
       // the result are identical.
-      __ SmiTag(r1, r1);
-      __ TestIfInt32(r0, scratch2, ip);
+      __ LoadRR(ip, r1);
+      __ sra(ip, Operand(31));
+      __ CmpRR(ip, r0);
+      // TODO(JOHN): The above 3 instr expended from 31-bit TestIfInt32
       __ bne(&not_smi_result);
 #else
       // Remove tag from one of the operands. This way the multiplication result
