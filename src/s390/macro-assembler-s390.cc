@@ -1828,7 +1828,7 @@ void MacroAssembler::StoreNumberToDoubleElements(Register value_reg,
   mov(scratch1, Operand(kLastNonNaNInt64));
   LoadRR(scratch3, value_reg);
   AddP(scratch3, Operand(-kHeapObjectTag));
-  ld(double_reg, MemOperand(scratch3, HeapNumber::kValueOffset));
+  lg(double_reg, MemOperand(scratch3, HeapNumber::kValueOffset));
   CmpRR(double_reg, scratch1);
 #else
   mov(scratch1, Operand(kNaNOrInfinityLowerBoundUpper32));

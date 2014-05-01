@@ -281,7 +281,7 @@ void LGapResolver::EmitMove(int index) {
         // kSavedDoubleValueRegister was used to break the cycle,
         // but kSavedValueRegister is free.
 #if V8_TARGET_ARCH_S390X
-        __ ld(kSavedValueRegister, source_operand);
+        __ lg(kSavedValueRegister, source_operand);
         __ stg(kSavedValueRegister, destination_operand);
 #else
         MemOperand source_high_operand =

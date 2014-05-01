@@ -2613,7 +2613,7 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
         __ Sub(sp, Operand(8));
         __ StoreF(d0, MemOperand(sp, 0));
 #if V8_TARGET_ARCH_S390X
-        __ ld(scratch2, MemOperand(sp, 0));
+        __ lg(scratch2, MemOperand(sp, 0));
 #else
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
         __ LoadlW(scratch2, MemOperand(sp, 4));
