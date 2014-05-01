@@ -1656,19 +1656,42 @@ void LCodeGen::DoArithmeticD(LArithmeticD* instr) {
   DoubleRegister left = ToDoubleRegister(instr->left());
   DoubleRegister right = ToDoubleRegister(instr->right());
   DoubleRegister result = ToDoubleRegister(instr->result());
-  __ ldr(result, left);
   switch (instr->op()) {
     case Token::ADD:
-      __ adbr(result, right);
+      if (result.is(right)) {   // Ensure we don't clobber right
+        __ adbr(result, left);
+      } else {
+        __ ldr(result, left);
+        __ adbr(result, right);
+      }
       break;
     case Token::SUB:
-      __ sdbr(result, right);
+      if (result.is(right)) {  // right = left - right
+        __ ldr(double_scratch0(), right);
+        __ ldr(result, left);
+        __ sdbr(result, double_scratch0());
+      } else {
+        __ ldr(result, left);
+        __ sdbr(result, right);
+      }
       break;
     case Token::MUL:
-      __ mdbr(result, right);
+      if (result.is(right)) {  // Ensure we don't clobber right
+        __ mdbr(result, left);
+      } else {
+        __ ldr(result, left);
+        __ mdbr(result, right);
+      }
       break;
     case Token::DIV:
-      __ ddbr(result, right);
+      if (result.is(right)) {  // right = left / right
+        __ ldr(double_scratch0(), right);
+        __ ldr(result, left);
+        __ ddbr(result, double_scratch0());
+      } else {
+        __ ldr(result, left);
+        __ ddbr(result, right);
+      }
       break;
     case Token::MOD: {
       // Save r2-r5 on the stack.
