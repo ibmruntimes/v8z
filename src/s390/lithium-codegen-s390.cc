@@ -1664,7 +1664,8 @@ void LCodeGen::DoArithmeticD(LArithmeticD* instr) {
       if (result.is(right)) {   // Ensure we don't clobber right
         __ adbr(result, left);
       } else {
-        __ ldr(result, left);
+        if (!result.is(left))
+          __ ldr(result, left);
         __ adbr(result, right);
       }
       break;
@@ -1674,7 +1675,8 @@ void LCodeGen::DoArithmeticD(LArithmeticD* instr) {
         __ ldr(result, left);
         __ sdbr(result, double_scratch0());
       } else {
-        __ ldr(result, left);
+        if (!result.is(left))
+          __ ldr(result, left);
         __ sdbr(result, right);
       }
       break;
@@ -1682,7 +1684,8 @@ void LCodeGen::DoArithmeticD(LArithmeticD* instr) {
       if (result.is(right)) {  // Ensure we don't clobber right
         __ mdbr(result, left);
       } else {
-        __ ldr(result, left);
+        if (!result.is(left))
+          __ ldr(result, left);
         __ mdbr(result, right);
       }
       break;
@@ -1692,7 +1695,8 @@ void LCodeGen::DoArithmeticD(LArithmeticD* instr) {
         __ ldr(result, left);
         __ ddbr(result, double_scratch0());
       } else {
-        __ ldr(result, left);
+        if (!result.is(left))
+          __ ldr(result, left);
         __ ddbr(result, right);
       }
       break;

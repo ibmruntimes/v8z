@@ -745,7 +745,7 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles,
 }
 
 void MacroAssembler::GetCFunctionDoubleResult(const DoubleRegister dst) {
-  ldr(dst, d1);
+  ldr(dst, d0);
 }
 
 
@@ -3304,18 +3304,18 @@ void MacroAssembler::PrepareCallCFunction(int num_reg_arguments,
 
 
 void MacroAssembler::SetCallCDoubleArguments(DoubleRegister dreg) {
-  Move(d1, dreg);
+  Move(d0, dreg);
 }
 
 
 void MacroAssembler::SetCallCDoubleArguments(DoubleRegister dreg1,
                                              DoubleRegister dreg2) {
-  if (dreg2.is(d1)) {
+  if (dreg2.is(d0)) {
     ASSERT(!dreg1.is(d2));
     Move(d2, dreg2);
-    Move(d1, dreg1);
+    Move(d0, dreg1);
   } else {
-    Move(d1, dreg1);
+    Move(d0, dreg1);
     Move(d2, dreg2);
   }
 }
@@ -3323,7 +3323,7 @@ void MacroAssembler::SetCallCDoubleArguments(DoubleRegister dreg1,
 
 void MacroAssembler::SetCallCDoubleArguments(DoubleRegister dreg,
                                              Register reg) {
-  Move(d1, dreg);
+  Move(d0, dreg);
   Move(r2, reg);
 }
 
