@@ -759,13 +759,6 @@ void Assembler::stmg(Register r1, Register r2, const MemOperand& src) {
 
 #if V8_TARGET_ARCH_S390X
 // 64bit specific instructions
-void Assembler::ld(Register rd, const MemOperand &src) {
-  int offset = src.offset();
-  ASSERT(!(offset & 3) && is_int16(offset));
-  offset = kImm16Mask & offset;
-  emit(LD_ppc | rd.code()*B21 | src.rb().code()*B16 | offset);
-}
-
 void Assembler::ldx(Register rd, const MemOperand &src) {
   Register rb = src.rb();
   Register rx = src.rx();

@@ -334,7 +334,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   __ AllocateHeapNumber(r4, r2, r3, r1, &gc_required);
   // r4: new heap number
 #if V8_TARGET_ARCH_S390X
-  __ ld(r2, MemOperand(r6, -8));
+  __ lg(r2, MemOperand(r6, -8));
   __ Add(r3, r4, Operand(-1));  // subtract tag for std
   __ stg(r2, MemOperand(r3, HeapNumber::kValueOffset));
 #else
