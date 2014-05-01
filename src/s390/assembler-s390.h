@@ -1748,19 +1748,7 @@ SS2_FORM(zap);
   void lis(Register dst, const Operand& imm);
 
 #if V8_TARGET_ARCH_S390X
-  void ldx(Register rd, const MemOperand &src);
-  void ldu(Register rd, const MemOperand &src);
-  void ldux(Register rd, const MemOperand &src);
   void stg(Register rs, const MemOperand &src);
-  void stdu(Register rs, const MemOperand &src);
-  void stdux(Register rs, const MemOperand &src);
-  void sradi(Register rb, Register rs, int sh, RCBit r = LeaveRC);
-  void srd(Register dst, Register src1, Register src2, RCBit r = LeaveRC);
-  void sld(Register dst, Register src1, Register src2, RCBit r = LeaveRC);
-  void srad(Register dst, Register src1, Register src2, RCBit r = LeaveRC);
-  void cntlzd_(Register dst, Register src, RCBit rc = LeaveRC);
-  void divd(Register dst, Register src1, Register src2,
-            OEBit o = LeaveOE, RCBit r = LeaveRC);
 #endif
 
   void rlwimi(Register rb, Register rs, int sh, int mb, int me,
