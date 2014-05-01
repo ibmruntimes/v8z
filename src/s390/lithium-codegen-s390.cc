@@ -2662,7 +2662,10 @@ void LCodeGen::EmitLoadFieldOrConstantFunction(Register result,
     while (*current != heap->null_value()) {
       __ LoadHeapObject(result, current);
       __ LoadP(result, FieldMemOperand(result, HeapObject::kMapOffset));
-      __ Cmpi(result, Operand(Handle<Map>(current->map())));
+      // @TODO Revert to Cmpi once we fix relocations on those instructions
+      // __ Cmpi(result, Operand(Handle<Map>(current->map())));
+      __ mov(scratch0(), Operand(Handle<Map>(current->map())));
+      __ CmpRR(result, scratch0());
       DeoptimizeIf(ne, env);
       current =
           Handle<HeapObject>(HeapObject::cast(current->map()->prototype()));

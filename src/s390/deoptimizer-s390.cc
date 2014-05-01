@@ -1054,7 +1054,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   } else {
     __ LoadRR(r5, r14);
     // Correct two words for bailout id and return address.
-    __ AddP(r6, Operand(kSavedRegistersAreaSize + (1 * kPointerSize)));
+    __ la(r6, MemOperand(sp, kSavedRegistersAreaSize + (2 * kPointerSize)));
   }
   __ Sub(r6, fp, r6);
 
