@@ -140,6 +140,8 @@ inline Condition ReverseCondition(Condition cond) {
     case gt: return lt;
     case ge: return le;
     case le: return ge;
+    case eq: return eq;
+    case ne: return ne;
     default:
       ASSERT(false);
       return cond;
