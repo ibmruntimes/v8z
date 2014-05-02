@@ -4285,7 +4285,10 @@ void LCodeGen::DoTransitionElementsKind(LTransitionElementsKind* instr) {
 
   Label not_applicable;
   __ LoadP(scratch, FieldMemOperand(object_reg, HeapObject::kMapOffset));
-  __ Cmpi(scratch, Operand(from_map));
+  // @TODO Revert to Cmpi once we fix its relocation
+  //  __ Cmpi(scratch, Operand(from_map));
+  __ mov(r0, Operand(from_map));
+  __ CmpRR(scratch, r0);
   __ bne(&not_applicable);
   __ mov(new_map_reg, Operand(to_map));
 
