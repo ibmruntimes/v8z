@@ -925,7 +925,8 @@ void LCodeGen::DoModI(LModI* instr) {
     }
 
     ASSERT(scratch.is(r1));
-    __ LoadRR(scratch, dividend);
+    __ LoadRR(r0, dividend);
+    __ srda(r0, Operand(32));
     __ dr(r0, divisor);     // R0:R1 = R1 / divisor - R0 remainder
 
 #if V8_TARGET_ARCH_S390X
@@ -980,7 +981,8 @@ void LCodeGen::DoDivI(LDivI* instr) {
 
   ASSERT(scratch.is(r1));
   ASSERT(!scratch.is(right));   // Following sequence implicitly kills scratch
-  __ LoadRR(scratch, left);
+  __ LoadRR(r0, left);
+  __ srda(r0, Operand(32));
   __ dr(r0, right);     // R0:R1 = R1 / divisor - R0 remainder - R1 quotient
 #if V8_TARGET_ARCH_S390X
   __ lgfr(result, scratch);
