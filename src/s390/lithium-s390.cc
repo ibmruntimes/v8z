@@ -2016,8 +2016,8 @@ LInstruction* LChunkBuilder::DoTransitionElementsKind(
     return DefineSameAsFirst(result);
   } else {
     LOperand* object = UseFixed(instr->object(), r2);
-    LOperand* fixed_object_reg = FixedTemp(r5);
-    LOperand* new_map_reg = FixedTemp(r6);
+    LOperand* fixed_object_reg = FixedTemp(r4);
+    LOperand* new_map_reg = FixedTemp(r5);
     LTransitionElementsKind* result =
         new(zone()) LTransitionElementsKind(object,
                                             new_map_reg,

@@ -277,7 +277,7 @@ void MacroAssembler::MultiPush(RegList regs) {
   int16_t num_to_push = NumberOfBitsSet(regs);
   int16_t stack_offset = num_to_push * kPointerSize;
 
-  Sub(sp, Operand(stack_offset));
+  lay(sp, MemOperand(sp, -stack_offset));
   for (int16_t i = kNumRegisters - 1; i >= 0; i--) {
     if ((regs & (1 << i)) != 0) {
       stack_offset -= kPointerSize;
@@ -295,7 +295,7 @@ void MacroAssembler::MultiPop(RegList regs) {
       stack_offset += kPointerSize;
     }
   }
-  AddP(sp, Operand(stack_offset));
+  la(sp, MemOperand(sp, stack_offset));
 }
 
 
