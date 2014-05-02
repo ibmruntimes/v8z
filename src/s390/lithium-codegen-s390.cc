@@ -3737,18 +3737,18 @@ void LCodeGen::DoRandom(LRandom* instr) {
   // state[0] = 18273 * (state[0] & 0xFFFF) + (state[0] >> 16)
   __ LoadRR(r5, r3);
   __ AndPImm(r5, Operand(0xFFFF));
-  __ LoadImmP(r6, Operand(18273));
-  __ MulP(r5, r6);
+//  __ LoadImmP(r6, Operand(18273));
+  __ MulP(r5, Operand(18273));
   __ srl(r3, Operand(16));
   __ Add(r3, r5, r3);
   // Save state[0].
   __ StoreW(r3, FieldMemOperand(r4, ByteArray::kHeaderSize));
 
   // state[1] = 36969 * (state[1] & 0xFFFF) + (state[1] >> 16)
-  __ LoadRR(r5, r3);
+  __ LoadRR(r5, r2);
   __ AndPImm(r5, Operand(0xFFFF));
-  __ mov(r6, Operand(36969));
-  __ MulP(r5, r6);
+//  __ mov(r6, Operand(36969));
+  __ MulP(r5, Operand(36969));
   __ srl(r2, Operand(16));
   __ Add(r2, r5, r2);
   // Save state[1].
@@ -3763,7 +3763,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
   __ bind(deferred->exit());
 
   // Allocate temp stack space to for double
-  __ AddP(sp, Operand(-8));
+  __ lay(sp, MemOperand(sp, -8));
 
   // 0x41300000 is the top half of 1.0 x 2^20 as a double.
   __ iilf(r3, Operand(0x41300000));
@@ -3789,10 +3789,9 @@ void LCodeGen::DoRandom(LRandom* instr) {
 #endif
   __ LoadF(d8, MemOperand(sp, 0));
 
-  __ AddP(sp, Operand(8));
+  __ la(sp, MemOperand(sp, 8));
 
   // Subtract and store the result in the heap number.
-  // __ fsub(d7, d7, d8);
   __ sdbr(d7, d8);
 }
 

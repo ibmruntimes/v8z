@@ -3996,17 +3996,17 @@ void MacroAssembler::DivP(Register dividend, Register divider) {
 
 void MacroAssembler::MulP(Register dst, const Operand& opnd) {
 #if V8_TARGET_ARCH_S390X
-  msfi(dst, opnd);
-#else
   msgfi(dst, opnd);
+#else
+  msfi(dst, opnd);
 #endif
 }
 
 void MacroAssembler::MulP(Register dst, Register src) {
 #if V8_TARGET_ARCH_S390X
-  msr(dst, src);
-#else
   msgr(dst, src);
+#else
+  msr(dst, src);
 #endif
 }
 
