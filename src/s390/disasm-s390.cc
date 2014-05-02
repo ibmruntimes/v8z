@@ -1366,10 +1366,6 @@ int Decoder::InstructionDecode(byte* instr_ptr) {
       UnknownFormat(instr, "mulli");
       break;
     }
-    case SUBFIC: {
-      Format(instr, "subfic  'rt, 'ra, 'int16");
-      break;
-    }
     case CMPLI: {
       Format(instr, "cmpli   'ra, 'uint16");
       break;
