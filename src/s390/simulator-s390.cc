@@ -1903,6 +1903,16 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       set_register(r1, get_register(r2));
       break;
     }
+    case LTGR: {
+      // Load Register (64)
+      RREInstruction* rreinst = reinterpret_cast<RREInstruction*>(instr);
+      int r1 = rreinst->R1Value();
+      int r2 = rreinst->R2Value();
+      int64_t r2_val = get_register(r2);
+      SetS390ConditionCode<int64_t>(r2_val, 0);
+      set_register(r1, get_register(r2));
+      break;
+    }
     case CGR: {
       // Compare (64)
       RREInstruction* rreinst = reinterpret_cast<RREInstruction*>(instr);
