@@ -1493,13 +1493,16 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
 #else
         int32_t lo_res = static_cast<int32_t>(result);
         int32_t hi_res = static_cast<int32_t>(result >> 32);
-        if (::v8::internal::FLAG_trace_sim) {
-          PrintF("Returned %08x\n", lo_res);
-        }
 #if __BYTE_ORDER == __BIG_ENDIAN
+        if (::v8::internal::FLAG_trace_sim) {
+          PrintF("Returned %08x\n", hi_res);
+        }
         set_register(r2, hi_res);
         set_register(r3, lo_res);
 #else
+        if (::v8::internal::FLAG_trace_sim) {
+          PrintF("Returned %08x\n", lo_res);
+        }
         set_register(r2, lo_res);
         set_register(r3, hi_res);
 #endif
