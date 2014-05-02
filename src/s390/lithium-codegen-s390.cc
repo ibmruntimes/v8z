@@ -1240,17 +1240,20 @@ void LCodeGen::DoBitI(LBitI* instr) {
         is_uint16(ToInteger32(LConstantOperand::cast(right_op)))) {
       switch (instr->op()) {
         case Token::BIT_AND:
-          __ LoadRR(result, left);
+          if (!result.is(left))
+            __ LoadRR(result, left);
           __ AndPImm(result,
                   Operand(ToInteger32(LConstantOperand::cast(right_op))));
           break;
         case Token::BIT_OR:
-          __ LoadRR(result, left);
-          __ OrPImm(left,
+          if (!result.is(left))
+            __ LoadRR(result, left);
+          __ OrPImm(result,
                  Operand(ToInteger32(LConstantOperand::cast(right_op))));
           break;
         case Token::BIT_XOR:
-          __ LoadRR(result, left);
+          if (!result.is(left))
+            __ LoadRR(result, left);
           __ XorPImm(result,
                   Operand(ToInteger32(LConstantOperand::cast(right_op))));
           break;
@@ -1273,7 +1276,8 @@ void LCodeGen::DoBitI(LBitI* instr) {
           __ AndP(result, right.rm());
         }
       } else {
-        __ LoadRR(result, left);
+        if (!result.is(left))
+          __ LoadRR(result, left);
         __ AndPImm(result, right);
       }
       break;
@@ -1282,7 +1286,8 @@ void LCodeGen::DoBitI(LBitI* instr) {
         if (right.rm().is(result)) {
           __ OrP(result, left);
         } else {
-        __ LoadRR(result, left);
+        if (!result.is(left))
+          __ LoadRR(result, left);
         __ OrP(result, right.rm());
         }
       } else {
@@ -1299,7 +1304,8 @@ void LCodeGen::DoBitI(LBitI* instr) {
           __ XorP(result, right.rm());
         }
       } else {
-        __ LoadRR(result, left);
+        if (!result.is(left))
+          __ LoadRR(result, left);
         __ XorPImm(result, right);
       }
       break;
