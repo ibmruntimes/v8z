@@ -2837,8 +2837,8 @@ void LCodeGen::DoAccessArgumentsAt(LAccessArgumentsAt* instr) {
   // Subtracting from length accounts for one of them add one more.
   __ Sub(length, length, index);
   __ AddPImm(length, Operand(1));
-  __ ShiftLeftImm(r0, length, Operand(kPointerSizeLog2));
-  __ LoadP(result, MemOperand(arguments, r0));
+  __ ShiftLeftImm(scratch0(), length, Operand(kPointerSizeLog2));
+  __ LoadP(result, MemOperand(arguments, scratch0()));
 }
 
 
