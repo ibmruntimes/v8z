@@ -1726,7 +1726,6 @@ SS2_FORM(zap);
 // end of S390instructions
 
   // PowerPC
-  void subfic(Register dst, Register src, const Operand& imm);
 
   void subfc(Register dst, Register src1, Register src2,
            OEBit s = LeaveOE, RCBit r = LeaveRC);

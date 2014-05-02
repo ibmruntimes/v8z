@@ -94,9 +94,9 @@ static void GenerateStringDictionaryReceiverCheck(MacroAssembler* masm,
 
   // Check that the global object does not require access checks.
   __ LoadlB(t1, FieldMemOperand(t0, Map::kBitFieldOffset));
-  __ LoadRR(r0, t1);
-  __ AndPImm(r0, Operand((1 << Map::kIsAccessCheckNeeded) |
+  __ mov(r0, Operand((1 << Map::kIsAccessCheckNeeded) |
                      (1 << Map::kHasNamedInterceptor)));
+  __ AndP(r0, t1);
   __ bne(miss /*, cr0*/);
 
   __ LoadP(elements, FieldMemOperand(receiver, JSObject::kPropertiesOffset));
@@ -284,9 +284,9 @@ static void GenerateKeyedLoadReceiverCheck(MacroAssembler* masm,
   // Check bit field.
   __ LoadlB(scratch, FieldMemOperand(map, Map::kBitFieldOffset));
   ASSERT(((1 << Map::kIsAccessCheckNeeded) | (1 << interceptor_bit)) < 0x8000);
-  __ LoadRR(r0, scratch);
-  __ AndPImm(r0,
+  __ mov(r0,
           Operand((1 << Map::kIsAccessCheckNeeded) | (1 << interceptor_bit)));
+  __ AndP(r0, scratch);
   __ bne(slow /*, cr0*/);
   // Check that the object is some kind of JS object EXCEPT JS Value type.
   // In the case that the object is a value-wrapper object,
@@ -386,8 +386,8 @@ static void GenerateKeyStringCheck(MacroAssembler* masm,
   // map: key map
   __ LoadlB(hash, FieldMemOperand(map, Map::kInstanceTypeOffset));
   STATIC_ASSERT(kSymbolTag != 0);
-  __ LoadRR(r0, hash);
-  __ AndPImm(r0, Operand(kIsSymbolMask));
+  __ mov(r0, Operand(kIsSymbolMask));
+  __ AndP(r0, hash);
   __ beq(not_symbol /*, cr0*/);
 }
 
@@ -1216,7 +1216,7 @@ void KeyedLoadIC::GenerateIndexedInterceptor(MacroAssembler* masm) {
   // Check that it has indexed interceptor and access checks
   // are not enabled for this object.
   __ LoadlB(r5, FieldMemOperand(r4, Map::kBitFieldOffset));
-  __ AndPImm(r5, Operand(kSlowCaseBitFieldMask));
+  __ AndPI(r5, Operand(kSlowCaseBitFieldMask));
   __ Cmpi(r5, Operand(1 << Map::kHasIndexedInterceptor));
   __ bne(&slow);
 
@@ -1506,8 +1506,8 @@ void KeyedStoreIC::GenerateGeneric(MacroAssembler* masm,
   // Check that the receiver does not require access checks.  We need
   // to do this because this generic stub does not perform map checks.
   __ LoadlB(ip, FieldMemOperand(receiver_map, Map::kBitFieldOffset));
-  __ LoadRR(r0, ip);
-  __ AndPImm(r0, Operand(1 << Map::kIsAccessCheckNeeded));
+  __ mov(r0, Operand(1 << Map::kIsAccessCheckNeeded));
+  __ AndP(r0, ip);
   __ bne(&slow /*, cr0*/);
   // Check if the object is a JS array or not.
   __ LoadlB(r6, FieldMemOperand(receiver_map, Map::kInstanceTypeOffset));

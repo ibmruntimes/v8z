@@ -510,8 +510,8 @@ void Builtins::Generate_InternalArrayCode(MacroAssembler* masm) {
     __ LoadP(r4,
         FieldMemOperand(r3, JSFunction::kPrototypeOrInitialMapOffset));
     STATIC_ASSERT(kSmiTagMask < 0x8000);
-    __ LoadRR(r0, r4);
-    __ AndPImm(r0, Operand(kSmiTagMask));
+    __ mov(r0, Operand(kSmiTagMask));
+    __ AndP(r0, r4);
     __ Assert(ne, "Unexpected initial map for InternalArray function", cr0);
     __ CompareObjectType(r4, r5, r6, MAP_TYPE);
     __ Assert(eq, "Unexpected initial map for InternalArray function");
@@ -547,8 +547,8 @@ void Builtins::Generate_ArrayCode(MacroAssembler* masm) {
     __ LoadP(r4,
         FieldMemOperand(r3, JSFunction::kPrototypeOrInitialMapOffset));
     STATIC_ASSERT(kSmiTagMask < 0x8000);
-    __ LoadRR(r0, r4);
-    __ AndPImm(r0, Operand(kSmiTagMask));
+    __ mov(r0, Operand(kSmiTagMask));
+    __ AndP(r0, r4);
     __ Assert(ne, "Unexpected initial map for Array function", cr0);
     __ CompareObjectType(r4, r5, r6, MAP_TYPE);
     __ Assert(eq, "Unexpected initial map for Array function");
@@ -582,8 +582,8 @@ void Builtins::Generate_ArrayConstructCode(MacroAssembler* masm) {
     // Initial map for the builtin Array function should be a map.
     __ LoadP(r4,
         FieldMemOperand(r3, JSFunction::kPrototypeOrInitialMapOffset));
-    __ LoadRR(r0, r4);
-    __ AndPImm(r0, Operand(kSmiTagMask));
+    __ mov(r0, Operand(kSmiTagMask));
+    __ AndP(r0, r4);
     __ Assert(ne, "Unexpected initial map for Array function", cr0);
     __ CompareObjectType(r4, r5, r6, MAP_TYPE);
     __ Assert(eq, "Unexpected initial map for Array function");
@@ -693,8 +693,8 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
   __ LoadP(r4, FieldMemOperand(r2, HeapObject::kMapOffset));
   __ LoadlB(r5, FieldMemOperand(r4, Map::kInstanceTypeOffset));
   STATIC_ASSERT(kNotStringTag != 0);
-  __ LoadRR(r0, r5);
-  __ AndPImm(r0, Operand(kIsNotStringMask));
+  __ mov(r0, Operand(kIsNotStringMask));
+  __ AndP(r0, r5);
   __ bne(&convert_argument /*, cr0*/);
   __ LoadRR(argument, r2);
   __ IncrementCounter(counters->string_ctor_conversions(), 1, r5, r6);

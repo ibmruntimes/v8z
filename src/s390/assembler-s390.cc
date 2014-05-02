@@ -706,10 +706,6 @@ void Assembler::subfc(Register dst, Register src1, Register src2,
   xo_form(EXT2 | SUBFCX, dst, src2, src1, o, r);
 }
 
-void Assembler::subfic(Register dst, Register src, const Operand& imm) {
-  d_form(SUBFIC, dst, src, imm.imm_, true);
-}
-
 // Multiply low word
 void Assembler::mullw(Register dst, Register src1, Register src2,
                     OEBit o, RCBit r) {
