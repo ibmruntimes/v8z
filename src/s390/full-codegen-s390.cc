@@ -2046,9 +2046,9 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
       __ mr_z(scratch1, ip);
       // Check for overflowing the smi range - no overflow if higher 33 bits of
       // the result are identical.
-      __ LoadRR(ip, scratch2);
+      __ lr(ip, scratch2);  // 32 bit load
       __ sra(ip, Operand(31));
-      __ CmpRR(ip, scratch1);
+      __ cr_z(ip, scratch1);  // 32 bit compare
       // TODO(JOHN): The above 3 instr expended from 31-bit TestIfInt32
       // __ TestIfInt32(scratch2, scratch1, ip);
       __ bne(&stub_call);
@@ -3729,9 +3729,9 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   __ mr_z(r0, scratch1);  // r0:r1 = r1 * scratch1
   // Check for smi overflow. No overflow if higher 33 bits of 64-bit result are
   // zero.
-  __ LoadRR(ip, r1);
+  __ lr(ip, r1);
   __ sra(ip, Operand(31));
-  __ CmpRR(ip, r0);
+  __ cr_z(ip, r0);
   // TODO(JOHN): The above 3 instr expended from 31-bit TestIfInt32
   // __ TestIfInt32(scratch2, scratch1, ip);
   __ bne(&bailout /*, cr0*/);
