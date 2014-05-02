@@ -320,6 +320,7 @@ class MacroAssembler: public Assembler {
   void DivP(Register dividend, Register divider);
 
   void AndP(Register dst, const MemOperand& opnd);
+  void AndPI(Register dst, const Operand& opnd);
   void AndPImm(Register dst, const Operand& opnd);
   void AndP(Register dst, Register src);
   void OrP(Register dst, Register src);
@@ -1017,8 +1018,8 @@ class MacroAssembler: public Assembler {
                                Register type) {
     LoadP(type, FieldMemOperand(obj, HeapObject::kMapOffset));
     LoadlB(type, FieldMemOperand(type, Map::kInstanceTypeOffset));
-    LoadRR(r0, type);
-    AndPImm(r0, Operand(kIsNotStringMask));
+    mov(r0, Operand(kIsNotStringMask));
+    AndP(r0, type);
     ASSERT_EQ(0, kStringTag);
     return eq;
   }
@@ -1311,16 +1312,21 @@ class MacroAssembler: public Assembler {
     if (rangeEnd > 0)              // Don't need to shift if rangeEnd is zero.
       srlg(dst, src,  Operand(rangeEnd));
     else if (!dst.is(src))         // If we didn't shift, we might need to copy
-      lr(dst, src);                // src to dst
+      LoadRR(dst, src);                // src to dst
+    int width  = rangeStart - rangeEnd + 1;
+    uint64_t mask = (static_cast<uint64_t>(1) << width) - 1;
+    nihf(dst, Operand(mask >> 32));
+    nilf(dst, Operand(mask & 0xFFFFFFFF));
+    ltgr(dst, dst);
 #else
     if (!dst.is(src))
       lr(dst, src);
     if (rangeEnd > 0)              // Don't need to shift if rangeEnd is zero.
       srl(dst, Operand(rangeEnd));
-#endif
     int width  = rangeStart - rangeEnd + 1;
     uint32_t mask = (1 << width) - 1;
     AndPImm(dst, Operand(mask));
+#endif
   }
 
   inline void ExtractBit(Register dst, Register src, uint32_t bitNumber) {
@@ -1527,8 +1533,8 @@ class MacroAssembler: public Assembler {
   inline void TestIfPositiveSmi(Register value, Register scratch) {
     STATIC_ASSERT((kSmiTagMask | kSmiSignMask) ==
                   (intptr_t)(1UL << (kBitsPerPointer - 1) | 1));
-    LoadRR(scratch, value);
-    AndPImm(scratch, Operand(kIntptrSignBit | kSmiTagMask));
+    mov(scratch, Operand(kIntptrSignBit | kSmiTagMask));
+    AndP(scratch, value);
   }
 
   // Jump the register contains a smi.

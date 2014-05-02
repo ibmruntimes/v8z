@@ -154,8 +154,8 @@ static void GenerateDictionaryNegativeLookup(MacroAssembler* masm,
   Register map = scratch1;
   __ LoadP(map, FieldMemOperand(receiver, HeapObject::kMapOffset));
   __ LoadlB(scratch0, FieldMemOperand(map, Map::kBitFieldOffset));
-  __ LoadRR(r0, scratch0);
-  __ AndPImm(r0, Operand(kInterceptorOrAccessCheckNeededMask));
+  __ mov(r0, Operand(kInterceptorOrAccessCheckNeededMask));
+  __ AndP(r0, scratch0);
   __ bne(miss_label /*, cr0*/);
 
   // Check that receiver is a JSObject.
@@ -253,7 +253,7 @@ void StubCache::GenerateProbe(MacroAssembler* masm,
   // encodable.
   __ XorPImm(scratch, Operand((flags >> kHeapObjectTagSize) & mask));
   // Prefer and_ to ubfx here because ubfx takes 2 cycles.
-  __ AndPImm(scratch, Operand(mask));
+  __ AndPI(scratch, Operand(mask));
 
   // Probe the primary table.
   ProbeTable(isolate,
@@ -272,7 +272,7 @@ void StubCache::GenerateProbe(MacroAssembler* masm,
   __ Sub(scratch, scratch, extra);
   uint32_t mask2 = kSecondaryTableSize - 1;
   __ AddP(scratch, Operand((flags >> kHeapObjectTagSize) & mask2));
-  __ AndPImm(scratch, Operand(mask2));
+  __ AndPI(scratch, Operand(mask2));
 
   // Probe the secondary table.
   ProbeTable(isolate,
@@ -391,8 +391,8 @@ static void GenerateStringCheck(MacroAssembler* masm,
   // Check that the object is a string.
   __ LoadP(scratch1, FieldMemOperand(receiver, HeapObject::kMapOffset));
   __ LoadlB(scratch1, FieldMemOperand(scratch1, Map::kInstanceTypeOffset));
-  __ LoadRR(scratch2, scratch1);
-  __ AndPImm(scratch2, Operand(kIsNotStringMask));
+  __ mov(scratch2, Operand(kIsNotStringMask));
+  __ AndP(scratch2, scratch1);
   // The cast is to resolve the overload for the argument of 0x0.
   __ Cmpi(scratch2, Operand(static_cast<intptr_t>(kStringTag)));
   __ bne(non_string_object);
@@ -2146,8 +2146,8 @@ Handle<Code> CallStubCompiler::CompileMathFloorCall(
 
   // If the argument is a smi, just return.
   STATIC_ASSERT(kSmiTag == 0);
-  __ LoadRR(r0, r2);
-  __ AndPImm(r0, Operand(kSmiTagMask));
+  __ mov(r0, Operand(kSmiTagMask));
+  __ AndP(r0, r2);
   __ bne(&not_smi /*, cr0*/);
   __ Drop(argc + 1);
   __ Ret();

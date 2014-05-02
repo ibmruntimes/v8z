@@ -2623,8 +2623,8 @@ void FullCodeGenerator::EmitIsSmi(CallRuntime* expr) {
                          &if_true, &if_false, &fall_through);
 
   PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
-  __ LoadRR(r0, r2);
-  __ AndPImm(r0, Operand(kSmiTagMask));
+  __ mov(r0, Operand(kSmiTagMask));
+  __ AndP(r0, r2);
   Split(eq, if_true, if_false, fall_through, cr0);
 
   context()->Plug(if_true, if_false);
@@ -2672,8 +2672,8 @@ void FullCodeGenerator::EmitIsObject(CallRuntime* expr) {
   __ LoadP(r4, FieldMemOperand(r2, HeapObject::kMapOffset));
   // Undetectable objects behave like undefined when tested with typeof.
   __ LoadlB(r3, FieldMemOperand(r4, Map::kBitFieldOffset));
-  __ LoadRR(r0, r3);
-  __ AndPImm(r0, Operand(1 << Map::kIsUndetectable));
+  __ mov(r0, Operand(1 << Map::kIsUndetectable));
+  __ AndP(r0, r3);
   __ bne(if_false /*, cr0*/);
   __ LoadlB(r3, FieldMemOperand(r4, Map::kInstanceTypeOffset));
   __ Cmpi(r3, Operand(FIRST_NONCALLABLE_SPEC_OBJECT_TYPE));
@@ -2724,8 +2724,8 @@ void FullCodeGenerator::EmitIsUndetectableObject(CallRuntime* expr) {
   __ JumpIfSmi(r2, if_false);
   __ LoadP(r3, FieldMemOperand(r2, HeapObject::kMapOffset));
   __ LoadlB(r3, FieldMemOperand(r3, Map::kBitFieldOffset));
-  __ LoadRR(r0, r3);
-  __ AndPImm(r0, Operand(1 << Map::kIsUndetectable));
+  __ mov(r0, Operand(1 << Map::kIsUndetectable));
+  __ AndP(r0, r3);
   PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
   Split(ne, if_true, if_false, fall_through, cr0);
 
@@ -2751,8 +2751,8 @@ void FullCodeGenerator::EmitIsStringWrapperSafeForDefaultValueOf(
 
   __ LoadP(r3, FieldMemOperand(r2, HeapObject::kMapOffset));
   __ LoadlB(ip, FieldMemOperand(r3, Map::kBitField2Offset));
-  __ LoadRR(r0, ip);
-  __ AndPImm(r0, Operand(1 << Map::kStringWrapperSafeForDefaultValueOf));
+  __ mov(r0, Operand(1 << Map::kStringWrapperSafeForDefaultValueOf));
+  __ AndP(r0, ip);
   __ bne(if_true /*, cr0*/);
 
   // Check for fast case object. Generate false result for slow case object.
@@ -4300,8 +4300,8 @@ void FullCodeGenerator::EmitLiteralCompareTypeof(Expression* expr,
     __ bge(if_false);
     __ LoadlB(r3, FieldMemOperand(r2, Map::kBitFieldOffset));
     STATIC_ASSERT((1 << Map::kIsUndetectable) < 0x8000);
-    __ LoadRR(r0, r3);
-    __ AndPImm(r0, Operand(1 << Map::kIsUndetectable));
+    __ mov(r0, Operand(1 << Map::kIsUndetectable));
+    __ AndP(r0, r3);
     Split(eq, if_true, if_false, fall_through, cr0);
   } else if (check->Equals(isolate()->heap()->boolean_symbol())) {
     __ CompareRoot(r2, Heap::kTrueValueRootIndex);
@@ -4319,8 +4319,8 @@ void FullCodeGenerator::EmitLiteralCompareTypeof(Expression* expr,
     // Check for undetectable objects => true.
     __ LoadP(r2, FieldMemOperand(r2, HeapObject::kMapOffset));
     __ LoadlB(r3, FieldMemOperand(r2, Map::kBitFieldOffset));
-    __ LoadRR(r0, r3);
-    __ AndPImm(r0, Operand(1 << Map::kIsUndetectable));
+    __ mov(r0, Operand(1 << Map::kIsUndetectable));
+    __ AndP(r0, r3);
     Split(ne, if_true, if_false, fall_through, cr0);
 
   } else if (check->Equals(isolate()->heap()->function_symbol())) {
@@ -4343,8 +4343,8 @@ void FullCodeGenerator::EmitLiteralCompareTypeof(Expression* expr,
     __ bgt(if_false);
     // Check for undetectable objects => false.
     __ LoadlB(r3, FieldMemOperand(r2, Map::kBitFieldOffset));
-    __ LoadRR(r0, r3);
-    __ AndPImm(r0, Operand(1 << Map::kIsUndetectable));
+    __ mov(r0, Operand(1 << Map::kIsUndetectable));
+    __ AndP(r0, r3);
     Split(eq, if_true, if_false, fall_through, cr0);
   } else {
     if (if_false != fall_through) __ b(if_false);
@@ -4480,7 +4480,7 @@ void FullCodeGenerator::EmitLiteralCompareNil(CompareOperation* expr,
     // It can be an undetectable object.
     __ LoadP(r3, FieldMemOperand(r2, HeapObject::kMapOffset));
     __ LoadlB(r3, FieldMemOperand(r3, Map::kBitFieldOffset));
-    __ AndPImm(r3, Operand(1 << Map::kIsUndetectable));
+    __ AndPI(r3, Operand(1 << Map::kIsUndetectable));
     __ Cmpi(r3, Operand(1 << Map::kIsUndetectable));
     Split(eq, if_true, if_false, fall_through);
   }
