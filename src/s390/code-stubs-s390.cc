@@ -2033,9 +2033,9 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
 
       // Check for overflowing the smi range - no overflow if higher 33 bits of
       // the result are identical.
-      __ LoadRR(ip, r1);
+      __ lr(ip, r1);
       __ sra(ip, Operand(31));
-      __ CmpRR(ip, r0);
+      __ cr_z(ip, r0);
       // TODO(JOHN): The above 3 instr expended from 31-bit TestIfInt32
       __ bne(&not_smi_result);
 #else
