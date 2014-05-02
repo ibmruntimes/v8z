@@ -930,16 +930,16 @@ void LCodeGen::DoModI(LModI* instr) {
     __ dr(r0, divisor);     // R0:R1 = R1 / divisor - R0 remainder
 
 #if V8_TARGET_ARCH_S390X
-    __ lgfr(scratch, r0);
+    __ lgfr(result, r0);
 #else
-    __ lr(scratch, r0);
+    __ lr(result, r0);
 #endif
 
     // Might break the branch below.
     if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
       __ Cmpi(dividend, Operand::Zero());
       __ bge(&done);
-      __ Cmpi(scratch, Operand::Zero());
+      __ Cmpi(result, Operand::Zero());
       DeoptimizeIf(eq, instr->environment(), cr0);
     }
   }
