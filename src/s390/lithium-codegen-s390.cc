@@ -1266,8 +1266,12 @@ void LCodeGen::DoBitI(LBitI* instr) {
   switch (instr->op()) {
     case Token::BIT_AND:
       if (right.is_reg()) {
-        __ LoadRR(result, left);
-        __ AndP(result, right.rm());
+        if (right.rm().is(result)) {
+          __ OrP(result, left);
+        } else {
+          __ LoadRR(result, left);
+          __ AndP(result, right.rm());
+        }
       } else {
         __ LoadRR(result, left);
         __ AndPImm(result, right);
@@ -1275,8 +1279,12 @@ void LCodeGen::DoBitI(LBitI* instr) {
       break;
     case Token::BIT_OR:
       if (right.is_reg()) {
+        if (right.rm().is(result)) {
+          __ OrP(result, left);
+        } else {
         __ LoadRR(result, left);
         __ OrP(result, right.rm());
+        }
       } else {
         __ LoadRR(result, left);
         __ OrPImm(result, right);
@@ -1284,8 +1292,12 @@ void LCodeGen::DoBitI(LBitI* instr) {
       break;
     case Token::BIT_XOR:
       if (right.is_reg()) {
-        __ LoadRR(result, left);
-        __ XorP(result, right.rm());
+        if (right.rm().is(result)) {
+          __ XorP(result, left);
+        } else {
+          __ LoadRR(result, left);
+          __ XorP(result, right.rm());
+        }
       } else {
         __ LoadRR(result, left);
         __ XorPImm(result, right);
@@ -3584,14 +3596,14 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
 
   // Check sign of the result: if the sign changed, the input
   // value was in ]0.5, 0[ and the result should be -0.
-  __ Sub(sp, Operand(8));
+  __ lay(sp, MemOperand(sp, -8));
   __ StoreF(double_scratch0(), MemOperand(sp, 0));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
   __ LoadlW(result, MemOperand(sp, 4));
 #else
   __ LoadlW(result, MemOperand(sp, 0));
 #endif
-  __ AddP(sp, Operand(8));
+  __ la(sp, MemOperand(sp, 8));
   __ XorP(result, scratch/*, SetRC*/);
   __ ltr(result, result);
   // Safe to remove rc
