@@ -3653,7 +3653,7 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
   // check for failure result
   Label failure_returned;
   STATIC_ASSERT(((kFailureTag + 1) & kFailureTagMask) == 0);
-#if defined(V8_TARGET_ARCH_PPC64) && !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
+#if defined(V8_TARGET_ARCH_S390X) && !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
   // If return value is on the stack, pop it to registers.
   if (result_size_ > 1) {
     ASSERT_EQ(2, result_size_);
