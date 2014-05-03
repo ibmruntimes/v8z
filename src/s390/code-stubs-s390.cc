@@ -2026,10 +2026,10 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       Label mul_zero, mul_neg_zero;
 #if V8_TARGET_ARCH_S390X
       // Remove tag from both operands.
-      __ SmiUntag(r1, right);  // r1 = right
-      __ SmiUntag(r0, left);         // r0 = r3
+      __ SmiUntag(r1, left);         // r1 = r3
+      __ SmiUntag(right, right);
       // Do multiplication
-      __ mr_z(r0, r1);  // r0:r1 = r1 * r3
+      __ mr_z(r0, right);  // r0:r1 = r1 * right
 
       // Check for overflowing the smi range - no overflow if higher 33 bits of
       // the result are identical.
