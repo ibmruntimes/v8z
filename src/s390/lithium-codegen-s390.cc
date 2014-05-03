@@ -1201,9 +1201,6 @@ void LCodeGen::DoMulI(LMulI* instr) {
       __ LoadRR(result, scratch);
       __ LoadRR(scratch, r0);
       __ TestIfInt32(scratch, result, r0);
-      // __ mulhw(scratch, left, right);
-      // __ mullw(result, left, right);
-      // __ TestIfInt32(scratch, result, r0);
       DeoptimizeIf(ne, instr->environment());
 #endif
     } else {

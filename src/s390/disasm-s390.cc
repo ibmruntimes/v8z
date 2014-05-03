@@ -876,16 +876,8 @@ void Decoder::DecodeExt2(Instruction* instr) {
       Format(instr, "subf'.   'rt, 'ra, 'rb");
       break;
     }
-    case MULHWX: {
-      Format(instr, "mulhw'o'.  'rt, 'ra, 'rb");
-      break;
-    }
     case ADDZEX: {
       Format(instr, "addze'.   'rt, 'ra");
-      break;
-    }
-    case MULLW: {
-      Format(instr, "mullw'o'.  'rt, 'ra, 'rb");
       break;
     }
     case DIVW: {
