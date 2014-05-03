@@ -2027,9 +2027,9 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
 #if V8_TARGET_ARCH_S390X
       // Remove tag from both operands.
       __ SmiUntag(r1, left);         // r1 = r3
-      __ SmiUntag(right, right);
+      __ SmiUntag(ip, right);
       // Do multiplication
-      __ mr_z(r0, right);  // r0:r1 = r1 * right
+      __ mr_z(r0, ip);  // r0:r1 = r1 * ip
 
       // Check for overflowing the smi range - no overflow if higher 33 bits of
       // the result are identical.
