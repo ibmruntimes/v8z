@@ -706,18 +706,6 @@ void Assembler::subfc(Register dst, Register src1, Register src2,
   xo_form(EXT2 | SUBFCX, dst, src2, src1, o, r);
 }
 
-// Multiply low word
-void Assembler::mullw(Register dst, Register src1, Register src2,
-                    OEBit o, RCBit r) {
-  xo_form(EXT2 | MULLW, dst, src1, src2, o, r);
-}
-
-// Multiply hi word
-void Assembler::mulhw(Register dst, Register src1, Register src2,
-                    OEBit o, RCBit r) {
-  xo_form(EXT2 | MULHWX, dst, src1, src2, o, r);
-}
-
 // Divide word
 void Assembler::divw(Register dst, Register src1, Register src2,
                      OEBit o, RCBit r) {
