@@ -2062,7 +2062,7 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
       __ bne(&stub_call);
 #endif
       // Go slow on zero result to handle -0.
-      __ Cmpi(scratch2, Operand::Zero());
+      __ chi(scratch2, Operand::Zero());
       __ beq(&mul_zero);
 #if V8_TARGET_ARCH_S390X
       __ SmiTag(right, scratch2);
