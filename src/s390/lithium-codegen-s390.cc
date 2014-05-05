@@ -1770,11 +1770,11 @@ void LCodeGen::EmitBranch(int left_block, int right_block, Condition cond,
   if (right_block == left_block) {
     EmitGoto(left_block);
   } else if (left_block == next_block) {
-    __ b(NegateCondition(cond), chunk_->GetAssemblyLabel(right_block) /*, cr*/);
+    __ b(NegateCondition(cond), chunk_->GetAssemblyLabel(right_block));
   } else if (right_block == next_block) {
-    __ b(cond, chunk_->GetAssemblyLabel(left_block) /*, cr*/);
+    __ b(cond, chunk_->GetAssemblyLabel(left_block));
   } else {
-    __ b(cond, chunk_->GetAssemblyLabel(left_block) /*, cr*/);
+    __ b(cond, chunk_->GetAssemblyLabel(left_block));
     __ b(chunk_->GetAssemblyLabel(right_block));
   }
 }
@@ -1791,15 +1791,11 @@ void LCodeGen::DoBranch(LBranch* instr) {
     EmitBranch(true_block, false_block, ne);
   } else if (r.IsDouble()) {
     DoubleRegister reg = ToDoubleRegister(instr->value());
-    Register scratch = scratch0();
+    __ cdbr(reg, kDoubleRegZero);
 
     // Test the double value. Zero and NaN are false.
-    uint crBits = (1 << (31 - Assembler::encode_crbit(cr7, CR_EQ)) |
-                   1 << (31 - Assembler::encode_crbit(cr7, CR_FU)));
-    __ cdbr(reg, kDoubleRegZero);
-    __ mfcr(scratch);
-    __ AndPImm(scratch, Operand(crBits));
-    EmitBranch(true_block, false_block, eq, cr0);
+    Condition lt_gt = static_cast<Condition>(lt | gt);
+    EmitBranch(true_block, false_block, lt_gt);
   } else {
     ASSERT(r.IsTagged());
     Register reg = ToRegister(instr->value());
