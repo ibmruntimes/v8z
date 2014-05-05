@@ -2118,7 +2118,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       __ DivP(r0, r9);
 
       // if the result is zero, need to check -0 case
-      __ Cmpi(r0, Operand::Zero());
+      __ chi(r0, Operand::Zero());  // have to use 32-bit comparision
       __ beq(&check_neg_zero);
 
       __ SmiTag(right, r0);
