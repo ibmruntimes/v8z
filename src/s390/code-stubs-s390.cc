@@ -3014,7 +3014,7 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
     __ LoadlW(r4, FieldMemOperand(r2, HeapNumber::kMantissaOffset));
   } else {
     // Input is untagged double in d2. Output goes to d2.
-    __ Sub(sp, Operand(8));
+    __ lay(sp, MemOperand(sp, -8));
     __ StoreF(d2, MemOperand(sp, 0));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
     __ LoadlW(r4, MemOperand(sp, 4));
@@ -3023,9 +3023,9 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
     __ LoadlW(r4, MemOperand(sp));
     __ LoadlW(r5, MemOperand(sp, 4));
 #endif
-    __ AddP(sp, Operand(8));
+    __ la(sp, MemOperand(sp, 8));
   }
-    __ bind(&loaded);
+  __ bind(&loaded);
   // r4 = low 32 bits of double value
   // r5 = high 32 bits of double value
   // Compute hash (the shifts are arithmetic):
@@ -3051,10 +3051,9 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
   // cache_entry points to cache array.
   int cache_array_index
       = type_ * sizeof(isolate->transcendental_cache()->caches_[0]);
-  __ LoadP(cache_entry, MemOperand(cache_entry, cache_array_index), r0);
   // r2 points to the cache for the type type_.
   // If NULL, the cache hasn't been initialized yet, so go through runtime.
-  __ Cmpi(cache_entry, Operand(0, RelocInfo::NONE));
+  __ LoadAndTestP(cache_entry, MemOperand(cache_entry, cache_array_index));
   __ beq(&invalid_cache);
 
 #ifdef DEBUG
