@@ -2055,7 +2055,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       __ chi(r1, Operand::Zero());
       __ beq(&mul_zero);
 #if V8_TARGET_ARCH_S390X
-      __ SmiTag(right, scratch1);
+      __ SmiTag(right, scratch2);
 #else
       __ LoadRR(right, scratch2);
 #endif
