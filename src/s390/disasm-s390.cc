@@ -1304,9 +1304,9 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
     case OILF: Format(instr, "oilf\t'r1,'i7"); break;
     case MSFI: Format(instr, "msfi\t'r1,'i7"); break;
     case MSGFI: Format(instr, "msgfi\t'r1,'i7"); break;
-    case LDY: Format(instr, "ldy\t'r1,'d2('r2d,'r3)"); break;
-    case STEY: Format(instr, "stey\t'r1,'d2('r2d,'r3)"); break;
-    case STDY: Format(instr, "stdy\t'r1,'d2('r2d,'r3)"); break;
+    case LDY: Format(instr, "ldy\t'f1,'d2('r2d,'r3)"); break;
+    case STEY: Format(instr, "stey\t'f1,'d2('r2d,'r3)"); break;
+    case STDY: Format(instr, "stdy\t'f1,'d2('r2d,'r3)"); break;
     case ADB: Format(instr, "adb\t'r1,'d1('r2d, 'r3)"); break;
     case SDB: Format(instr, "sdb\t'r1,'d1('r2d, 'r3)"); break;
     case MDB: Format(instr, "mdb\t'r1,'d1('r2d, 'r3)"); break;
