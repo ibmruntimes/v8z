@@ -5000,7 +5000,10 @@ void LCodeGen::DoClampTToUint8(LClampTToUint8* instr) {
 
   // Check for heap number
   __ LoadP(scratch, FieldMemOperand(input_reg, HeapObject::kMapOffset));
-  __ Cmpi(scratch, Operand(factory()->heap_number_map()));
+  // @TODO Replace with Cmpi again once we fix relocations on Cmpi
+  //  __ Cmpi(scratch, Operand(factory()->heap_number_map()));
+  __ mov(r0, Operand(factory()->heap_number_map()));
+  __ CmpRR(scratch, r0);
   __ beq(&heap_number);
 
   // Check for undefined. Undefined is converted to zero for clamping
