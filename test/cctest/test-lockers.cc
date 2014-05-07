@@ -204,7 +204,8 @@ static void StartJoinAndDeleteThreads(const i::List<JoinableThread*>& threads) {
 
 // Run many threads all locking on the same isolate
 TEST(IsolateLockingStress) {
-#if defined(V8_TARGET_ARCH_MIPS) || defined(V8_TARGET_ARCH_PPC)
+#if defined(V8_TARGET_ARCH_MIPS) || defined(V8_TARGET_ARCH_PPC) \
+  || defined(V8_TARGET_ARCH_S390)
   const int kNThreads = 50;
 #else
   const int kNThreads = 100;
@@ -280,7 +281,8 @@ class IsolateNestedLockingThread : public JoinableThread {
 
 // Run  many threads with nested locks
 TEST(IsolateNestedLocking) {
-#if defined(V8_TARGET_ARCH_MIPS) || defined(V8_TARGET_ARCH_PPC)
+#if defined(V8_TARGET_ARCH_MIPS) || defined(V8_TARGET_ARCH_PPC) \
+  || defined(V8_TARGET_ARCH_S390)
   const int kNThreads = 50;
 #else
   const int kNThreads = 100;
@@ -321,7 +323,7 @@ class SeparateIsolatesLocksNonexclusiveThread : public JoinableThread {
 // Run parallel threads that lock and access different isolates in parallel
 TEST(SeparateIsolatesLocksNonexclusive) {
 #if defined(V8_TARGET_ARCH_ARM) || defined(V8_TARGET_ARCH_MIPS) \
-  || defined(V8_TARGET_ARCH_PPC)
+  || defined(V8_TARGET_ARCH_PPC) || defined(V8_TARGET_ARCH_S390)
   const int kNThreads = 50;
 #else
   const int kNThreads = 100;
@@ -396,7 +398,7 @@ class LockerUnlockerThread : public JoinableThread {
 // Use unlocker inside of a Locker, multiple threads.
 TEST(LockerUnlocker) {
 #if defined(V8_TARGET_ARCH_ARM) || defined(V8_TARGET_ARCH_MIPS) \
-  || defined(V8_TARGET_ARCH_PPC)
+  || defined(V8_TARGET_ARCH_PPC) || defined(V8_TARGET_ARCH_S390)
   const int kNThreads = 50;
 #else
   const int kNThreads = 100;
@@ -450,7 +452,7 @@ class LockTwiceAndUnlockThread : public JoinableThread {
 // Use Unlocker inside two Lockers.
 TEST(LockTwiceAndUnlock) {
 #if defined(V8_TARGET_ARCH_ARM) || defined(V8_TARGET_ARCH_MIPS) \
-  || defined(V8_TARGET_ARCH_PPC)
+  || defined(V8_TARGET_ARCH_PPC) || defined(V8_TARGET_ARCH_S390)
   const int kNThreads = 50;
 #else
   const int kNThreads = 100;
@@ -571,7 +573,8 @@ class LockUnlockLockThread : public JoinableThread {
 
 // Locker inside an Unlocker inside a Locker.
 TEST(LockUnlockLockMultithreaded) {
-#if defined(V8_TARGET_ARCH_MIPS) || defined(V8_TARGET_ARCH_PPC)
+#if defined(V8_TARGET_ARCH_MIPS) || defined(V8_TARGET_ARCH_PPC) \
+  || defined(V8_TARGET_ARCH_S390)
   const int kNThreads = 50;
 #else
   const int kNThreads = 100;
@@ -622,7 +625,8 @@ class LockUnlockLockDefaultIsolateThread : public JoinableThread {
 
 // Locker inside an Unlocker inside a Locker for default isolate.
 TEST(LockUnlockLockDefaultIsolateMultithreaded) {
-#if defined(V8_TARGET_ARCH_MIPS) || defined(V8_TARGET_ARCH_PPC)
+#if defined(V8_TARGET_ARCH_MIPS) || defined(V8_TARGET_ARCH_PPC) \
+  || defined(V8_TARGET_ARCH_S390)
   const int kNThreads = 50;
 #else
   const int kNThreads = 100;
@@ -695,7 +699,7 @@ class IsolateGenesisThread : public JoinableThread {
 // http://code.google.com/p/v8/issues/detail?id=1821
 TEST(ExtensionsRegistration) {
 #if defined(V8_TARGET_ARCH_ARM) || defined(V8_TARGET_ARCH_MIPS) \
-  || defined(V8_TARGET_ARCH_PPC)
+  || defined(V8_TARGET_ARCH_PPC) || defined(V8_TARGET_ARCH_S390)
   const int kNThreads = 10;
 #else
   const int kNThreads = 40;
