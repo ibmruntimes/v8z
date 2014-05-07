@@ -912,9 +912,9 @@ void LCodeGen::DoModI(LModI* instr) {
     __ LoadComplementRR(result, result);
     __ b(&done);
     __ bind(&positive_dividend);
-    __ mov(scratch, Operand(divisor - 1));
-    __ LoadRR(result, scratch);
-    __ AndP(result, dividend);
+    if (!dividend.is(result))
+      __ LoadRR(result, dividend);
+    __ AndPI(result, Operand(divisor - 1));
   } else {
     Register divisor = ToRegister(instr->right());
 
