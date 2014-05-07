@@ -2989,7 +2989,7 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
     // Input is a smi. Convert to double and load the low and high words
     // of the double into r4, r5.
     __ SmiToDoubleFPRegister(r2, d6, scratch0);
-    __ Sub(sp, Operand(8));
+    __ lay(sp, MemOperand(sp, -8));
     __ StoreF(d6, MemOperand(sp, 0));
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
     __ LoadlW(r4, MemOperand(sp));
@@ -2998,7 +2998,7 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
     __ LoadlW(r4, MemOperand(sp, 4));
     __ LoadlW(r5, MemOperand(sp));
 #endif
-    __ AddP(sp, Operand(8));
+    __ la(sp, MemOperand(sp, +8));
     __ b(&loaded);
 
     __ bind(&input_not_smi);
@@ -3182,7 +3182,7 @@ void TranscendentalCacheStub::GenerateCallCFunction(MacroAssembler* masm,
 
   __ push(r14);
   __ PrepareCallCFunction(0, 1, scratch);
-  __ ldr(d1, d2);
+  __ ldr(d0, d2);
   AllowExternalCallThatCantCauseGC scope(masm);
   switch (type_) {
     case TranscendentalCache::SIN:
