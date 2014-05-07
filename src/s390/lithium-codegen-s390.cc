@@ -1267,7 +1267,7 @@ void LCodeGen::DoBitI(LBitI* instr) {
     case Token::BIT_AND:
       if (right.is_reg()) {
         if (right.rm().is(result)) {
-          __ OrP(result, left);
+          __ AndP(result, left);
         } else {
           __ LoadRR(result, left);
           __ AndP(result, right.rm());
