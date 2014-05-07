@@ -163,7 +163,7 @@ DEFINE_bool(unbox_double_arrays, true, "automatically unbox arrays of doubles")
 DEFINE_bool(string_slices, true, "use string slices")
 
 // Flags for Crankshaft.
-#ifndef V8_TARGET_S390X
+#ifndef V8_TARGET_ARCH_S390X
 DEFINE_bool(crankshaft, true, "use crankshaft")
 #else
 // @TODO Disabling this temporarily until we are clean without crankshaft
