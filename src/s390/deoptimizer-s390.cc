@@ -39,7 +39,7 @@ namespace v8 {
 namespace internal {
 
 #if V8_TARGET_ARCH_S390X
-const int Deoptimizer::table_entry_size_ = 26;
+const int Deoptimizer::table_entry_size_ = 28;
 #else
 const int Deoptimizer::table_entry_size_ = 24;
 #endif
@@ -89,7 +89,6 @@ void Deoptimizer::DeoptimizeFunction(JSFunction* function) {
     int call_size_in_bytes =
         MacroAssembler::CallSizeNotPredictableCodeSize(deopt_entry,
                                                        RelocInfo::NONE);
-    ASSERT(call_size_in_bytes % Assembler::kInstrSize == 0);
     ASSERT(call_size_in_bytes <= patch_size());
     CodePatcher patcher(call_address, call_size_in_bytes);  // FIXME: 2ND ARG
     patcher.masm()->Call(deopt_entry, RelocInfo::NONE);
