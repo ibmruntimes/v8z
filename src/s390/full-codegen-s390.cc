@@ -76,10 +76,11 @@ class JumpPatchSite BASE_EMBEDDED {
     Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm_);
     __ bind(&patch_site_);
     __ CmpRR(reg, reg);
-    // Emit the Nop to make bigger place for patching
-    // (replaced by lr + nill)
+    // Emit the Nop to make bigger place for patching on 31-bit
+    // as the TestIfSmi sequence uses 4-byte TMLL
+#ifndef V8_TARGET_ARCH_S390X
     __ nop();
-    __ nop();
+#endif
     __ beq(target);  // Always taken before patched.
   }
 
@@ -90,11 +91,12 @@ class JumpPatchSite BASE_EMBEDDED {
     ASSERT(!patch_site_.is_bound() && !info_emitted_);
     __ bind(&patch_site_);
     __ CmpRR(reg, reg);
-    // Emit the Nop to make bigger place for patching
-    // (replaced by lr + nill)
+    // Emit the Nop to make bigger place for patching on 31-bit
+    // as the TestIfSmi sequence uses 4-byte TMLL
+#ifndef V8_TARGET_ARCH_S390X
     __ nop();
-    __ nop();
-    __ bne(target /*, cr0*/);  // Never taken before patched.
+#endif
+    __ bne(target);  // Never taken before patched.
   }
 
   void EmitPatchInfo() {

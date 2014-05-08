@@ -1527,7 +1527,7 @@ void LCodeGen::DoDateField(LDateField* instr) {
   ASSERT(!scratch.is(scratch0()));
   ASSERT(!scratch.is(object));
 
-  __ TestIfSmi(object, r0);
+  __ TestIfSmi(object);
   DeoptimizeIf(eq, instr->environment(), cr0);
   __ CompareObjectType(object, scratch, scratch, JS_DATE_TYPE);
   DeoptimizeIf(ne, instr->environment());
@@ -1839,7 +1839,7 @@ void LCodeGen::DoBranch(LBranch* instr) {
         __ JumpIfSmi(reg, true_label);
       } else if (expected.NeedsMap()) {
         // If we need a map later and have a Smi -> deopt.
-        __ TestIfSmi(reg, r0);
+        __ TestIfSmi(reg);
         DeoptimizeIf(eq, instr->environment(), cr0);
       }
 
@@ -2113,7 +2113,7 @@ void LCodeGen::DoIsSmiAndBranch(LIsSmiAndBranch* instr) {
   int false_block = chunk_->LookupDestination(instr->false_block_id());
 
   Register input_reg = EmitLoadRegister(instr->value(), ip);
-  __ TestIfSmi(input_reg, r0);
+  __ TestIfSmi(input_reg);
   EmitBranch(true_block, false_block, eq, cr0);
 }
 
@@ -2885,7 +2885,7 @@ void LCodeGen::DoLoadKeyedFastElement(LLoadKeyedFastElement* instr) {
   // Check for the hole value.
   if (instr->hydrogen()->RequiresHoleCheck()) {
     if (IsFastSmiElementsKind(instr->hydrogen()->elements_kind())) {
-      __ TestIfSmi(result, r0);
+      __ TestIfSmi(result);
       DeoptimizeIf(ne, instr->environment(), cr0);
     } else {
       __ LoadRoot(scratch, Heap::kTheHoleValueRootIndex);
@@ -3211,7 +3211,7 @@ void LCodeGen::DoWrapReceiver(LWrapReceiver* instr) {
   __ beq(&global_object);
 
   // Deoptimize if the receiver is not a JS object.
-  __ TestIfSmi(receiver, r0);
+  __ TestIfSmi(receiver);
   DeoptimizeIf(eq, instr->environment(), cr0);
   __ CompareObjectType(receiver, scratch, scratch, FIRST_SPEC_OBJECT_TYPE);
   DeoptimizeIf(lt, instr->environment());
@@ -4056,10 +4056,10 @@ void LCodeGen::DeoptIfTaggedButNotSmi(LEnvironment* environment,
                                       LOperand* operand) {
   if (value->representation().IsTagged() && !value->type().IsSmi()) {
     if (operand->IsRegister()) {
-      __ TestIfSmi(ToRegister(operand), r0);
+      __ TestIfSmi(ToRegister(operand));
     } else {
       __ mov(ip, ToOperand(operand));
-      __ TestIfSmi(ip, r0);
+      __ TestIfSmi(ip);
     }
     DeoptimizeIf(ne, environment, cr0);
   }
@@ -4867,14 +4867,14 @@ void LCodeGen::DoDoubleToI(LDoubleToI* instr) {
 
 void LCodeGen::DoCheckSmi(LCheckSmi* instr) {
   LOperand* input = instr->value();
-  __ TestIfSmi(ToRegister(input), r0);
+  __ TestIfSmi(ToRegister(input));
   DeoptimizeIf(ne, instr->environment(), cr0);
 }
 
 
 void LCodeGen::DoCheckNonSmi(LCheckNonSmi* instr) {
   LOperand* input = instr->value();
-  __ TestIfSmi(ToRegister(input), r0);
+  __ TestIfSmi(ToRegister(input));
   DeoptimizeIf(eq, instr->environment(), cr0);
 }
 
@@ -5728,7 +5728,7 @@ void LCodeGen::DoForInPrepareMap(LForInPrepareMap* instr) {
   __ CmpRR(r2, null_value);
   DeoptimizeIf(eq, instr->environment());
 
-  __ TestIfSmi(r2, r0);
+  __ TestIfSmi(r2);
   DeoptimizeIf(eq, instr->environment(), cr0);
 
   STATIC_ASSERT(FIRST_JS_PROXY_TYPE == FIRST_SPEC_OBJECT_TYPE);

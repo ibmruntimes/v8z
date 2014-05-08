@@ -1807,21 +1807,15 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
 
   // Expected sequence to enable by changing the following
   //   CR/CGR  Rx, Rx    // 2 / 4 bytes
-  //   LR  R0, R0        // 2 bytes
-  //   LR  R0, R0        // 2 bytes
+  //   LR  R0, R0        // 2 bytes   // 31-bit only!
   //   BRC/BRCL          // 4 / 6 bytes
   // into
-  //   LR/LGR  Rx, R0    // 2 / 4 bytes
-  //   NILL    Rx, XXX   // 4 bytes
+  //   TMLL    Rx, XXX   // 4 bytes
   //   BRC/BRCL          // 4 / 6 bytes
   // And vice versa to disable.
 
   // The following constant is the size of the CR/CGR + LR + LR
-#if V8_TARGET_ARCH_S390X
-  const int kPatchAreaSizeNoBranch = 8;
-#else
-  const int kPatchAreaSizeNoBranch = 6;
-#endif
+  const int kPatchAreaSizeNoBranch = 4;
   Address patch_address = cmp_instruction_address - delta;
   Address branch_address = patch_address + kPatchAreaSizeNoBranch;
 
@@ -1850,14 +1844,15 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
     // ASSERT(Assembler::IsCmpRegister(instr_at_patch));
     // ASSERT_EQ(Assembler::GetRA(instr_at_patch).code(),
               // Assembler::GetRB(instr_at_patch).code());
-    patcher.masm()->TestIfSmi(reg, r0);
+    patcher.masm()->TestIfSmi(reg);
   } else {
     // Emit the Nop to make bigger place for patching
     // (replaced by lr + nill)
     ASSERT(check == DISABLE_INLINED_SMI_CHECK);
     patcher.masm()->CmpRR(reg, reg);
+#ifndef V8_TARGET_ARCH_S390X
     patcher.masm()->nop();
-    patcher.masm()->nop();
+#endif
   }
 
   Condition cc = al;
