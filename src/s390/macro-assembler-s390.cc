@@ -3785,14 +3785,6 @@ void MacroAssembler::ClampUint8(Register output_reg, Register input_reg) {
   bind(&done);
 }
 
-void MacroAssembler::SetRoundingMode(VFPRoundingMode RN) {
-  mtfsfi(7, RN);
-}
-
-void MacroAssembler::ResetRoundingMode() {
-  mtfsfi(7, kRoundToNearest);  // reset (default is kRoundToNearest)
-}
-
 void MacroAssembler::ClampDoubleToUint8(Register result_reg,
                                         DoubleRegister input_reg,
                                         DoubleRegister temp_double_reg,
