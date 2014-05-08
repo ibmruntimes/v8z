@@ -1524,10 +1524,8 @@ class MacroAssembler: public Assembler {
   // Souce and destination can be the same register.
   void UntagAndJumpIfNotSmi(Register dst, Register src, Label* non_smi_case);
 
-  inline void TestIfSmi(Register value, Register scratch) {
-    if (!scratch.is(value))
-      LoadRR(scratch, value);
-    nill(scratch, Operand(1));
+  inline void TestIfSmi(Register value) {
+    tmll(value, Operand(1));
   }
 
   inline void TestIfPositiveSmi(Register value, Register scratch) {
@@ -1539,12 +1537,12 @@ class MacroAssembler: public Assembler {
 
   // Jump the register contains a smi.
   inline void JumpIfSmi(Register value, Label* smi_label) {
-    TestIfSmi(value, r0);
+    TestIfSmi(value);
     beq(smi_label /*, cr0*/);  // branch if SMI
   }
   // Jump if either of the registers contain a non-smi.
   inline void JumpIfNotSmi(Register value, Label* not_smi_label) {
-    TestIfSmi(value, r0);
+    TestIfSmi(value);
     bne(not_smi_label /*, cr0*/);
   }
   // Jump if either of the registers contain a non-smi.
@@ -1555,7 +1553,6 @@ class MacroAssembler: public Assembler {
   // Abort execution if argument is a smi, enabled via --debug-code.
   void AssertNotSmi(Register object);
   void AssertSmi(Register object);
-
 
   // Checks to see if 64-bit value fits in SMI range, i.e the upper 33-bits are
   // the same.
