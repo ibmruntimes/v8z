@@ -74,6 +74,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 // End
+//
+// Flags: --stack-size=1200
 
 var res = new Array();
 res[0] = /(a)b|/i;
