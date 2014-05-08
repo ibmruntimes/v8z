@@ -5008,7 +5008,10 @@ void LCodeGen::DoClampTToUint8(LClampTToUint8* instr) {
 
   // Check for undefined. Undefined is converted to zero for clamping
   // conversions.
-  __ Cmpi(input_reg, Operand(factory()->undefined_value()));
+  // @TODO Replace with Cmp again once we fix relocations on Cmpi
+  //  __ Cmpi(input_reg, Operand(factory()->undefined_value()));
+  __ mov(r0, Operand(factory()->undefined_value()));
+  __ CmpRR(input_reg, r0);
   DeoptimizeIf(ne, instr->environment());
   __ LoadImmP(result_reg, Operand::Zero());
   __ b(&done);
