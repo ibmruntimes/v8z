@@ -2762,7 +2762,7 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
       r1_val = r1_val & 0x0000FFFF;  // uses only the last 16bits
 
       bool mask_is_zero = true;
-      for (int j = 15; j > 0; --j) {
+      for (int j = 15; j >= 0; --j) {
         if (i & (1 << j)) {
           if (r1_val & (1 << j)) {
             // first bit is one
