@@ -2262,9 +2262,12 @@ Handle<Code> CallStubCompiler::CompileMathAbsCall(
   __ Sub(r2, r3, r0);
 
   // If the result is still negative, go to the slow case.
+  // Subtract instructions on S390 sets condition code
+  //   LT - Result less than zero; no overflow
+  //   OF - Overflow.
   // This only happens for the most negative smi.
   Label slow;
-  __ blt(&slow /*, cr0*/);
+  __ b(Condition(lt | CC_OF), &slow);
 
   // Smi case done.
   __ Drop(argc + 1);
