@@ -479,12 +479,12 @@ class RecordWriteStub: public CodeStub {
     if (4 == first_instr_length) {
       // BRC - Check for 0x0 mask condition.
       if (0 == (first_instr & kFourByteBrCondMask)) {
-        return INCREMENTAL;
+        return INCREMENTAL_COMPACTION;
       }
     } else {
       // BRCL - Check for 0x0 mask condition
       if (0 == (first_instr & kSixByteBrCondMask)) {
-        return INCREMENTAL;
+        return INCREMENTAL_COMPACTION;
       }
     }
 
@@ -492,12 +492,12 @@ class RecordWriteStub: public CodeStub {
     if (4 == second_instr_length) {
       // BRC - Check for 0x0 mask condition.
       if (0 == (second_instr & kFourByteBrCondMask)) {
-        return INCREMENTAL_COMPACTION;
+        return INCREMENTAL;
       }
     } else {
       // BRCL - Check for 0x0 mask condition
       if (0 == (second_instr & kSixByteBrCondMask)) {
-        return INCREMENTAL_COMPACTION;
+        return INCREMENTAL;
       }
     }
 
@@ -523,11 +523,11 @@ class RecordWriteStub: public CodeStub {
         break;
       case INCREMENTAL:
         ASSERT(GetMode(stub) == STORE_BUFFER_ONLY);
-        PatchBranchCondMask(&masm, 0, CC_NOP);
+        PatchBranchCondMask(&masm, first_instr_length, CC_NOP);
         break;
       case INCREMENTAL_COMPACTION:
         ASSERT(GetMode(stub) == STORE_BUFFER_ONLY);
-        PatchBranchCondMask(&masm, first_instr_length, CC_NOP);
+        PatchBranchCondMask(&masm, 0, CC_NOP);
         break;
     }
     ASSERT(GetMode(stub) == mode);
