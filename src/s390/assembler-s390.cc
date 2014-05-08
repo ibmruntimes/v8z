@@ -509,67 +509,6 @@ bool Assembler::is_near(Label* L, Condition cond) {
   return is_intn(offset, maxReach);
 }
 
-void Assembler::a_form(Instr instr,
-                       DoubleRegister frt,
-                       DoubleRegister fra,
-                       DoubleRegister frb,
-                       RCBit r) {
-  emit(instr | frt.code()*B21 | fra.code()*B16 | frb.code()*B11 | r);
-}
-
-void Assembler::d_form(Instr instr,
-                        Register rt,
-                        Register rb,
-                        const intptr_t val,
-                        bool signed_disp) {
-  if (signed_disp) {
-    if (!is_int16(val)) {
-      PrintF("val = %" V8PRIdPTR ", 0x%" V8PRIxPTR "\n", val, val);
-    }
-    ASSERT(is_int16(val));
-  } else {
-    if (!is_uint16(val)) {
-      PrintF("val = %" V8PRIdPTR ", 0x%" V8PRIxPTR
-             ", is_unsigned_imm16(val)=%d, kImm16Mask=0x%x\n",
-             val, val, is_uint16(val), kImm16Mask);
-    }
-    ASSERT(is_uint16(val));
-  }
-  emit(instr | rt.code()*B21 | rb.code()*B16 | (kImm16Mask & val));
-}
-
-void Assembler::x_form(Instr instr,
-                         Register rb,
-                         Register rs,
-                         Register rx,
-                         RCBit r) {
-  emit(instr | rs.code()*B21 | rb.code()*B16 | rx.code()*B11 | r);
-}
-
-void Assembler::xo_form(Instr instr,
-                         Register rt,
-                         Register rb,
-                         Register rx,
-                         OEBit o,
-                         RCBit r) {
-  emit(instr | rt.code()*B21 | rb.code()*B16 | rx.code()*B11 | o | r);
-}
-
-void Assembler::md_form(Instr instr,
-                        Register rb,
-                        Register rs,
-                        int shift,
-                        int maskbit,
-                        RCBit r) {
-  int sh0_4 = shift & 0x1f;
-  int sh5   = (shift >> 5) & 0x1;
-  int m0_4  = maskbit & 0x1f;
-  int m5    = (maskbit >> 5) & 0x1;
-
-  emit(instr | rs.code()*B21 | rb.code()*B16 |
-       sh0_4*B11 | m0_4*B6 | m5*B5 | sh5*B1 | r);
-}
-
 // Returns the next free trampoline entry.
 int32_t Assembler::get_trampoline_entry() {
   int32_t trampoline_entry = kInvalidSlotPos;
@@ -636,25 +575,6 @@ void Assembler::label_at_put(Label* L, int at_offset) {
   }
 }
 
-
-// Branch instructions.
-
-// PowerPC
-void Assembler::bclr(BOfield bo, LKBit lk) {
-  positions_recorder()->WriteRecordedPositions();
-  emit(EXT1 | bo | BCLRX | lk);
-}
-
-void Assembler::bcctr(BOfield bo, LKBit lk) {
-  positions_recorder()->WriteRecordedPositions();
-  emit(EXT1 | bo | BCCTRX | lk);
-}
-
-// Pseudo op - branch to count register -- used for "jump"
-void Assembler::bcr() {
-  bcctr(BA, LeaveLK);
-}
-
 // Pseudo op - branch on condition
 void Assembler::branchOnCond(Condition c, int branch_offset, bool is_bound) {
   positions_recorder()->WriteRecordedPositions();
@@ -689,45 +609,6 @@ void Assembler::bcr(Condition m, Register target) {
   rr_form(BCR, m, target);
 }
 
-void Assembler::cntlzw_(Register rb, Register rs, RCBit rc) {
-  x_form(EXT2 | CNTLZWX, rb, rs, r0, rc);
-}
-
-void Assembler::rlwimi(Register rb, Register rs,
-                       int sh, int mb, int me, RCBit rc) {
-  sh &= 0x1f;
-  mb &= 0x1f;
-  me &= 0x1f;
-  emit(RLWIMIX | rs.code()*B21 | rb.code()*B16 | sh*B11 | mb*B6 | me << 1 | rc);
-}
-
-void Assembler::subfc(Register dst, Register src1, Register src2,
-                    OEBit o, RCBit r) {
-  xo_form(EXT2 | SUBFCX, dst, src2, src1, o, r);
-}
-
-// Divide word
-void Assembler::divw(Register dst, Register src1, Register src2,
-                     OEBit o, RCBit r) {
-  xo_form(EXT2 | DIVW, dst, src1, src2, o, r);
-}
-
-void Assembler::addic(Register dst, Register src, const Operand& imm) {
-  d_form(ADDIC, dst, src, imm.imm_, true);
-}
-
-void Assembler::andis(Register rb, Register rs, const Operand& imm) {
-  d_form(ANDISx, rs, rb, imm.imm_, false);
-}
-
-void Assembler::nor(Register dst, Register src1, Register src2, RCBit r) {
-  x_form(EXT2 | NORX, dst, src1, src2, r);
-}
-
-void  Assembler::lis(Register dst, const Operand& imm) {
-  d_form(ADDIS, dst, r0, imm.imm_, true);
-}
-
 // 32-bit Store Multiple - short displacement (12-bits unsigned)
 void Assembler::stm(Register r1, Register r2, const MemOperand& src) {
   rs_form(STM, r1, r2, src.rb(), src.offset());
@@ -740,59 +621,6 @@ void Assembler::stmy(Register r1, Register r2, const MemOperand& src) {
 void Assembler::stmg(Register r1, Register r2, const MemOperand& src) {
   rsy_form(STMG, r1, r2, src.rb(), src.offset());
 }
-
-void Assembler::fake_asm(enum FAKE_OPCODE_T fopcode) {
-  ASSERT(fopcode < fLastFaker);
-  emit(FAKE_OPCODE | FAKER_SUBOPCODE | fopcode);
-}
-
-void Assembler::marker_asm(int mcode) {
-  if (::v8::internal::FLAG_trace_sim_stubs) {
-    ASSERT(mcode < F_NEXT_AVAILABLE_STUB_MARKER);
-    emit(FAKE_OPCODE | MARKER_SUBOPCODE | mcode);
-  }
-}
-
-// Function descriptor for AIX.
-// Code address skips the function descriptor "header".
-// TOC and static chain are ignored and set to 0.
-void Assembler::function_descriptor() {
-  RecordRelocInfo(RelocInfo::INTERNAL_REFERENCE);
-#if V8_TARGET_ARCH_S390X
-  uint64_t value = reinterpret_cast<uint64_t>(pc_) + 3 * kPointerSize;
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-  emit(static_cast<uint32_t>(value & 0xFFFFFFFF));
-  emit(static_cast<uint32_t>(value >> 32));
-#else
-  emit(static_cast<uint32_t>(value >> 32));
-  emit(static_cast<uint32_t>(value & 0xFFFFFFFF));
-#endif
-  emit(static_cast<Instr>(0));
-  emit(static_cast<Instr>(0));
-  emit(static_cast<Instr>(0));
-  emit(static_cast<Instr>(0));
-#else
-  emit(reinterpret_cast<Instr>(pc_) + 3 * kPointerSize);
-  emit(static_cast<Instr>(0));
-  emit(static_cast<Instr>(0));
-#endif
-}
-// end PowerPC
-
-// Special register instructions
-void Assembler::mtxer(Register src) {
-  emit(EXT2 | MTSPR | src.code()*B21 | 32 << 11);
-}
-
-void Assembler::mcrfs(int bf, int bfa) {
-  emit(EXT4 | MCRFS | bf*B23 | bfa*B18);
-}
-
-void Assembler::mfcr(Register dst) {
-  emit(EXT2 | MFCR | dst.code()*B21);
-}
-
-// end PowerPC
 
 // Exception-generating instructions and debugging support.
 // Stops with a non-negative code less than kNumOfWatchedStops support
@@ -812,108 +640,6 @@ void Assembler::stop(const char* msg, Condition cond, int32_t code,
 void Assembler::bkpt(uint32_t imm16) {
   emit2bytes(0x0001);
   // emit(0x7d821008);
-}
-
-
-void Assembler::info(const char* msg, Condition cond, int32_t code,
-                     CRegister cr) {
-  if (::v8::internal::FLAG_trace_sim_stubs) {
-    emit(0x7d9ff808);
-#if V8_TARGET_ARCH_S390X
-    uint64_t value = reinterpret_cast<uint64_t>(msg);
-    emit(static_cast<uint32_t>(value >> 32));
-    emit(static_cast<uint32_t>(value & 0xFFFFFFFF));
-#else
-    emit(reinterpret_cast<Instr>(msg));
-#endif
-  }
-}
-
-void Assembler::dcbf(Register rb, Register rx) {
-    emit(EXT2 | DCBF | rb.code()*B16 | rx.code()*B11);
-}
-
-void Assembler::sync() {
-    emit(EXT2 | SYNC);
-}
-
-void Assembler::icbi(Register rb, Register rx) {
-    emit(EXT2 | ICBI | rb.code()*B16 | rx.code()*B11);
-}
-
-void Assembler::isync() {
-    emit(EXT1 | ISYNC);
-}
-
-// Floating point support
-void Assembler::lfdu(const DoubleRegister frt, const MemOperand &src) {
-  int offset = src.offset();
-  Register rb = src.rb();
-  ASSERT(is_int16(offset));
-  int imm16 = offset & kImm16Mask;
-  // could be x_form instruction with some casting magic
-  emit(LFDU | frt.code()*B21 | rb.code()*B16 | imm16);
-}
-
-void Assembler::lfdux(const DoubleRegister frt, const MemOperand & src) {
-  Register rb = src.rb();
-  Register rx = src.rx();
-  ASSERT(!rb.is(r0));
-  emit(EXT2 | LFDUX | frt.code()*B21 | rb.code()*B16 | rx.code()*B11 | LeaveRC);
-}
-
-void Assembler::lfs(const DoubleRegister frt, const MemOperand &src) {
-  int offset = src.offset();
-  Register rb = src.rb();
-  ASSERT(is_int16(offset));
-  ASSERT(!rb.is(r0));
-  int imm16 = offset & kImm16Mask;
-  // could be x_form instruction with some casting magic
-  emit(LFS | frt.code()*B21 | rb.code()*B16 | imm16);
-}
-
-void Assembler::lfsu(const DoubleRegister frt, const MemOperand &src) {
-  int offset = src.offset();
-  Register rb = src.rb();
-  ASSERT(is_int16(offset));
-  ASSERT(!rb.is(r0));
-  int imm16 = offset & kImm16Mask;
-  // could be x_form instruction with some casting magic
-  emit(LFSU | frt.code()*B21 | rb.code()*B16 | imm16);
-}
-
-void Assembler::lfsx(const DoubleRegister frt, const MemOperand &src) {
-  Register rb = src.rb();
-  Register rx = src.rx();
-  ASSERT(!rb.is(r0));
-  emit(EXT2 | LFSX | frt.code()*B21 | rb.code()*B16 | rx.code()*B11 | LeaveRC);
-}
-
-void Assembler::lfsux(const DoubleRegister frt, const MemOperand & src) {
-  Register rb = src.rb();
-  Register rx = src.rx();
-  ASSERT(!rb.is(r0));
-  emit(EXT2 | LFSUX | frt.code()*B21 | rb.code()*B16 | rx.code()*B11 | LeaveRC);
-}
-
-void Assembler::fsel(const DoubleRegister frt, const DoubleRegister fra,
-                     const DoubleRegister frc, const DoubleRegister frb,
-                     RCBit rc) {
-  emit(EXT4 | FSEL | frt.code()*B21 | fra.code()*B16 | frb.code()*B11 |
-       frc.code()*B6 | rc);
-}
-
-void Assembler::mtfsfi(int bf, int immediate, RCBit rc) {
-  emit(EXT4 | MTFSFI | bf*B23 | immediate*B12 | rc);
-}
-
-void Assembler::mffs(const DoubleRegister frt, RCBit rc) {
-  emit(EXT4 | MFFS | frt.code()*B21 | rc);
-}
-
-void Assembler::mtfsf(const DoubleRegister frb, bool L,
-                      int FLM, bool W, RCBit rc) {
-  emit(EXT4 | MTFSF | frb.code()*B11 | W*B16 | FLM*B17 | L*B25 | rc);
 }
 
 // Pseudo instructions.
