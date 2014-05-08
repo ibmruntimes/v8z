@@ -4806,7 +4806,7 @@ void MacroAssembler::ClearRightImm(Register dst, Register src,
 
   // S390 AND instr clobbers source.  Make a copy if necessary
   if (!dst.is(src))
-    lr(dst, src);
+    LoadRR(dst, src);
 
   if (numBitsToClear <= 16) {
     nill(dst, Operand(static_cast<uint16_t>(hexMask)));
