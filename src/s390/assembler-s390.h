@@ -725,13 +725,6 @@ class Assembler : public AssemblerBase {
   // Aligns code to something that's optimal for a jump target for the platform.
   void CodeTargetAlign();
 
-  // Branch instructions
-  void bclr(BOfield bo, LKBit lk);
-  // void blr();
-
-  void bcctr(BOfield bo, LKBit lk);
-  void bcr();
-
   void breakpoint(bool do_print) {
     if (do_print) {
       printf("DebugBreak is inserted to %p\n", pc_);
