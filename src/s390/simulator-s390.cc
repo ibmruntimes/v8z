@@ -2753,34 +2753,56 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
     case TMLL: {
       RIInstruction* riinst = reinterpret_cast<RIInstruction*>(instr);
       int r1 = riinst->R1Value();
-      int i  = riinst->I2Value() & 0x0000FFFF;
-      if (i == 0) {
+      int mask = riinst->I2Value() & 0x0000FFFF;
+      if (mask == 0) {
         condition_reg_ = 0x0;
         break;
       }
       uint32_t r1_val = get_low_register<uint32_t>(r1);
       r1_val = r1_val & 0x0000FFFF;  // uses only the last 16bits
 
-      bool mask_is_zero = true;
-      for (int j = 15; j >= 0; --j) {
-        if (i & (1 << j)) {
-          if (r1_val & (1 << j)) {
-            // first bit is one
-            condition_reg_ = CC_GT;
-          } else {
-            // first bit is zero
-            condition_reg_ = CC_LT;
+      // Test if all selected bits are Zero
+      bool allSelectedBitsAreZeros = true;
+      for (int i = 0; i < 15; i++) {
+        if (mask & (1 << i)) {
+          if (r1_val & (1 << i)) {
+            allSelectedBitsAreZeros = false;
+            break;
           }
-          mask_is_zero = false;
-          break;
         }
       }
+      if (allSelectedBitsAreZeros) {
+        condition_reg_ = 0x8;
+        break;  // Done!
+      }
 
-      if (mask_is_zero) {
-        condition_reg_ = CC_EQ;
-      } else {
-        if ((r1_val & i) == 0) {
-          condition_reg_ = CC_EQ;
+      // Test if all selected bits are one
+      bool allSelectedBitsAreOnes = true;
+      for (int i = 0; i < 15; i++) {
+        if (mask & (1 << i)) {
+          if (!(r1_val & (1 << i))) {
+            allSelectedBitsAreOnes = false;
+            break;
+          }
+        }
+      }
+      if (allSelectedBitsAreOnes) {
+        condition_reg_ = 0x1;
+        break;  // Done!
+      }
+
+      // Now we know selected bits mixed zeros and ones
+      // Test if the leftmost bit is zero or one
+      for (int i = 14; i >= 0; i--) {
+        if (mask & (1 << i)) {
+          if (r1_val & (1 << i)) {
+            // leftmost bit is one
+            condition_reg_ = 0x2;
+          } else {
+            // leftmost bit is zero
+            condition_reg_ = 0x4;
+          }
+          break;  // Done!
         }
       }
       break;
