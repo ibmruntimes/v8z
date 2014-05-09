@@ -2076,8 +2076,9 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
     case Token::DIV: {
       Label check_neg_zero;
       __ SmiUntag(r0, left);
+      __ lr(r1, r0);  // use lr to copy the smi from r0 to r1
       // extend the 64bit operand into a register pair
-      __ srda(r0, Operand(32));  // right shift 32bit
+      __ sra(r0, Operand(32));  // right shift 32bit
       __ SmiUntag(r9, right);
       // Check for zero on the right hand side.
       __ beq(&not_smi_result);
