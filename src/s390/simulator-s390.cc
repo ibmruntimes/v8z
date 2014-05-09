@@ -44,7 +44,7 @@
 
 #if defined(USE_SIMULATOR)
 
-// Only build the simulator if not compiling for real PPC hardware.
+// Only build the simulator if not compiling for real s390 hardware.
 namespace v8 {
 namespace internal {
 
