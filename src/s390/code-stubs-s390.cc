@@ -2085,7 +2085,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       __ DivP(r0, r9);  // remainder in r0, quo in 1
 
       // Not Smi if remainder is non-zero.
-      __ Cmpi(r0, Operand::Zero());
+      __ chi(r0, Operand::Zero());
       __ bne(&not_smi_result);
       // If the result is 0, we need to check for the -0 case.
       __ SmiTag(r0, r1);
