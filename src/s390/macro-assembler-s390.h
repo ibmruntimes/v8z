@@ -139,7 +139,6 @@ bool AreAliased(Register reg1,
 #define LoadAndTestP       lt_z
 #define StorePX            st
 #define StoreMultipleP     stm
-#define Div                divw
 
 // arithmetics and bitwise
 // Reg2Reg
