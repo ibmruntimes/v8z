@@ -1927,7 +1927,7 @@ void MacroAssembler::AddAndCheckForOverflow(Register dst,
     LoadRR(overflow_dst, dst);
     XorP(overflow_dst, right);
     AndP(overflow_dst, scratch/*, SetRC*/);
-    ltr(overflow_dst, overflow_dst);
+    LoadAndTestRR(overflow_dst, overflow_dst);
     // Should be okay to remove rc
   } else if (dst.is(right)) {
     LoadRR(scratch, right);           // Preserve right.
@@ -1936,7 +1936,7 @@ void MacroAssembler::AddAndCheckForOverflow(Register dst,
     LoadRR(overflow_dst, dst);
     XorP(overflow_dst, left);
     AndP(overflow_dst, scratch/*, SetRC*/);
-    ltr(overflow_dst, overflow_dst);
+    LoadAndTestRR(overflow_dst, overflow_dst);
     // Should be okay to remove rc
   } else {
     Add(dst, left, right);
@@ -1945,7 +1945,7 @@ void MacroAssembler::AddAndCheckForOverflow(Register dst,
     LoadRR(scratch, dst);
     XorP(scratch, right);
     AndP(overflow_dst, scratch/*, SetRC*/);
-    ltr(overflow_dst, overflow_dst);
+    LoadAndTestRR(overflow_dst, overflow_dst);
     // Should be okay to remove rc
   }
 }
@@ -1969,7 +1969,7 @@ void MacroAssembler::SubAndCheckForOverflow(Register dst,
     XorP(overflow_dst, scratch);
     XorP(scratch, right);
     AndP(overflow_dst, scratch/*, SetRC*/);
-    ltr(overflow_dst, overflow_dst);
+    LoadAndTestRR(overflow_dst, overflow_dst);
     // Should be okay to remove rc
   } else if (dst.is(right)) {
     LoadRR(scratch, right);           // Preserve right.
@@ -1978,7 +1978,7 @@ void MacroAssembler::SubAndCheckForOverflow(Register dst,
     XorP(overflow_dst, left);
     XorP(scratch, left);
     AndP(overflow_dst, scratch/*, SetRC*/);
-    ltr(overflow_dst, overflow_dst);
+    LoadAndTestRR(overflow_dst, overflow_dst);
     // Should be okay to remove rc
   } else {
     Sub(dst, left, right);
@@ -1987,7 +1987,7 @@ void MacroAssembler::SubAndCheckForOverflow(Register dst,
     LoadRR(scratch, right);
     XorP(scratch, left);
     AndP(overflow_dst, scratch/*, SetRC*/);
-    ltr(overflow_dst, overflow_dst);
+    LoadAndTestRR(overflow_dst, overflow_dst);
     // Should be okay to remove rc
   }
 }
@@ -2928,7 +2928,7 @@ void MacroAssembler::SmiTagCheckOverflow(Register reg, Register overflow) {
   LoadRR(overflow, reg);  // Save original value.
   SmiTag(reg);
   XorP(overflow, reg/*, SetRC*/);
-  ltr(overflow, overflow);
+  LoadAndTestRR(overflow, overflow);
   // Overflow if (value ^ 2 * value) < 0.
   // Safe to remove rc
 }
@@ -2947,7 +2947,7 @@ void MacroAssembler::SmiTagCheckOverflow(Register dst,
     SmiTag(dst, src);
     LoadRR(overflow, src);
     XorP(overflow, dst/*, SetRC*/);  // Overflow if (value ^ 2 * value) < 0.
-    ltr(overflow, overflow);
+    LoadAndTestRR(overflow, overflow);
     // safe to remove rc
   }
 }
@@ -2982,7 +2982,7 @@ void MacroAssembler::UntagAndJumpIfNotSmi(
   STATIC_ASSERT(kSmiTagSize == 1);
   TestBit(src, 0, r0);
   SmiUntag(dst, src);
-  ltr(r0, r0);
+  LoadAndTestRR(r0, r0);
   bne(non_smi_case);
 }
 

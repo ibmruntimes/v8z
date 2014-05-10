@@ -2092,7 +2092,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       __ beq(&check_neg_zero);
       // Check for Smi overflow
       __ XorP(r1, r0);
-      __ ltr(r1, r1);
+      __ LoadAndTestRR(r1, r1);
       __ blt(&not_smi_result);
       __ LoadRR(right, r0);
       __ Ret();
