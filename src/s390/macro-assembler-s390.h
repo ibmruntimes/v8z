@@ -125,6 +125,7 @@ bool AreAliased(Register reg1,
 
 // Load / Store
 #define LoadRR             lgr
+#define LoadAndTestRR      ltgr
 #define LoadImmP           lghi
 #define LoadLogicalHalfWordP llgh
 
@@ -152,6 +153,7 @@ bool AreAliased(Register reg1,
 
 // Load / Store
 #define LoadRR             lr
+#define LoadAndTestRR      ltr
 #define LoadImmP           lhi
 #define LoadLogicalHalfWordP  llh
 
