@@ -2076,8 +2076,8 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
     case Token::DIV: {
       Label check_neg_zero;
       __ SmiUntag(r0, left);
-      __ lr(r1, r0);  // use lr to copy the smi from r0 to r1
-      __ sra(r0, Operand(32));  // right shift 32bit
+      __ LoadRR(r1, r0);
+      __ ShiftRightArithImm(r0, r0, 31);  // right shift 32bit
       __ SmiUntag(r9, right);
       // Check for zero on the right hand side.
       __ beq(&not_smi_result);
@@ -2085,7 +2085,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       __ DivP(r0, r9);  // remainder in r0, quo in 1
 
       // Not Smi if remainder is non-zero.
-      __ chi(r0, Operand::Zero());
+      __ Cmpi(r0, Operand::Zero());
       __ bne(&not_smi_result);
       // If the result is 0, we need to check for the -0 case.
       __ SmiTag(r0, r1);
@@ -2108,8 +2108,8 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
     case Token::MOD: {
       Label check_neg_zero;
       __ SmiUntag(r0, left);
-      __ lr(r1, r0);  // use lr to copy the smi from r0 to r1
-      __ sra(r0, Operand(32));  // right shift 32bit
+      __ LoadRR(r1, r0);
+      __ ShiftRightArithImm(r0, r0, 31);  // right shift 32bit
       __ SmiUntag(r9, right);
       // Check for zero on the right hand side.
       __ beq(&not_smi_result);
@@ -2118,7 +2118,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       __ DivP(r0, r9);
 
       // if the result is zero, need to check -0 case
-      __ chi(r0, Operand::Zero());  // have to use 32-bit comparision
+      __ Cmpi(r0, Operand::Zero());  // have to use 32-bit comparision
       __ beq(&check_neg_zero);
 
       __ SmiTag(right, r0);
