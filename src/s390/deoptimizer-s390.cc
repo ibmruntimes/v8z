@@ -229,14 +229,11 @@ void Deoptimizer::RevertStackCheckCodeAt(Code* unoptimized_code,
       Assembler::instr_at(pc_after - 8)));
 #endif
 
-  // @TODO Continue to fix this PPC code into 390.
-
 #if V8_TARGET_ARCH_S390X
   // Replace NOP with conditional jump.
   CodePatcher patcher(pc_after - 18, 16);  // 16 bytes - LR + LR + IIHF + IILF
   if (FLAG_count_based_interrupts) {
-    ASSERT(false);  // @TODO +64 offset is definitely wrong!
-    patcher.masm()->brc(ge, Operand(64));          // Insert BRC
+    patcher.masm()->brc(ge, Operand(42));          // Insert BRC
     ASSERT_EQ(kBranchBeforeInterrupt, Assembler::instr_at(pc_after - 18));
   } else {
     patcher.masm()->brc(ge, Operand(18));  //  , BF,
