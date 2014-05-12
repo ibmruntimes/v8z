@@ -1336,7 +1336,7 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
         if (instr->can_deopt()) {
           __ LoadRR(result, left);
           __ srl(result, scratch);
-          __ ltr(result, result);  // Set the <,==,> condition
+          __ LoadAndTestRR(result, result);  // Set the <,==,> condition
 #if V8_TARGET_ARCH_S390X
           __ lgfr(result, result/*, SetRC*/);
           // Should be okay to remove SetRC
@@ -3604,7 +3604,7 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
 #endif
   __ la(sp, MemOperand(sp, 8));
   __ XorP(result, scratch/*, SetRC*/);
-  __ ltr(result, result);
+  __ LoadAndTestRR(result, result);
   // Safe to remove rc
   if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
     DeoptimizeIf(lt, instr->environment(), cr0);
