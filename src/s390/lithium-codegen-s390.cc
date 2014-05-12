@@ -2457,7 +2457,7 @@ void LCodeGen::DoDeferredInstanceOfKnownGlobal(LInstanceOfKnownGlobal* instr,
   ASSERT(temp.is(r6));
   __ LoadHeapObject(InstanceofStub::right(), instr->function());
 #if V8_TARGET_ARCH_S390X
-  static const int kAdditionalDelta = 26;
+  static const int kAdditionalDelta = 32;
 #else
   static const int kAdditionalDelta = 18;
 #endif
