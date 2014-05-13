@@ -626,7 +626,7 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
   // First args = sp[(argc - 1) * 4].
   __ Sub(r2, Operand(1));
   __ ShiftLeftImm(r2, r2, Operand(kPointerSizeLog2));
-  __ AddP(sp, r2);
+  __ la(sp, MemOperand(sp,r2));
   __ LoadP(r2, MemOperand(sp));
   // sp now point to args[0], drop args[0] + receiver.
   __ Drop(2);
