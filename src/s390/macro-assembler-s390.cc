@@ -233,7 +233,7 @@ void MacroAssembler::Ret() {
 
 void MacroAssembler::Drop(int count) {
   if (count > 0) {
-    AddP(sp, Operand(count * kPointerSize));
+    la(sp, MemOperand(sp,count * kPointerSize));
   }
 }
 
@@ -520,7 +520,7 @@ void MacroAssembler::PopSafepointRegisters() {
   const int num_unsaved = kNumSafepointRegisters - kNumSafepointSavedRegisters;
   MultiPop(kSafepointSavedRegisters);
   if (num_unsaved > 0) {
-    AddP(sp, Operand(num_unsaved * kPointerSize));
+    la(sp, MemOperand(sp,num_unsaved * kPointerSize));
   }
 }
 
@@ -740,7 +740,7 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles,
 
   if (argument_count.is_valid()) {
     ShiftLeftImm(argument_count, argument_count, Operand(kPointerSizeLog2));
-    AddP(sp, argument_count);
+    la(sp, MemOperand(sp,argument_count));
   }
 }
 
@@ -2270,7 +2270,7 @@ bool MacroAssembler::AllowThisStubCall(CodeStub* stub) {
 
 void MacroAssembler::IllegalOperation(int num_arguments) {
   if (num_arguments > 0) {
-    AddP(sp, Operand(num_arguments * kPointerSize));
+    la(sp,MemOperand(sp,num_arguments * kPointerSize));
   }
   LoadRoot(r0, Heap::kUndefinedValueRootIndex);
 }
@@ -3387,7 +3387,7 @@ void MacroAssembler::CallCFunctionHelper(Register function,
     // Load the original stack pointer (pre-alignment) from the stack
     LoadP(sp, MemOperand(sp, stack_passed_arguments * kPointerSize), r0);
   } else {
-    AddP(sp, Operand((stack_passed_arguments +
+    la(sp, MemOperand(sp,(stack_passed_arguments +
                           kNumRequiredStackFrameSlots) * kPointerSize));
   }
 }
@@ -4383,7 +4383,7 @@ void MacroAssembler::LoadSmiLiteral(Register dst, Smi *smi) {
 void MacroAssembler::LoadDoubleLiteral(DoubleRegister result,
                                        double value,
                                        Register scratch) {
-  AddP(sp, Operand(-8));  // reserve 1 temp double on the stack
+  lay(sp, MemOperand(sp,-8));  // reserve 1 temp double on the stack
 
   // avoid gcc strict aliasing error using union cast
   union {
@@ -4407,7 +4407,7 @@ void MacroAssembler::LoadDoubleLiteral(DoubleRegister result,
 #endif
   LoadF(result, MemOperand(sp, 0));
 
-  AddP(sp, Operand(8));  // restore the stack ptr
+  la(sp, MemOperand(sp,8));  // restore the stack ptr
 }
 
 void MacroAssembler::Cmp(Register src1, Register src2) {
