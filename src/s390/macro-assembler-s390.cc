@@ -2355,11 +2355,17 @@ void MacroAssembler::EmitVFPTruncate(VFPRoundingMode rounding_mode,
     Push(r0, r1, result);
   }
 
+#if V8_TARGET_ARCH_S390X
+  // The result is a 32-bit integer when the high 33 bits of the
+  // result are identical.
+  TestIfInt32(result, r0, r1);
+#else
   // The result is a 32-bit integer when the high 33 bits of the
   // result are identical.
   LoadRR(r0, result);
   srda(r0, Operand(32));
   TestIfInt32(r0, r1, result);
+#endif
 
   // Restore reg values.
   if (r1.is(result)) {
