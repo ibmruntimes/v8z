@@ -588,7 +588,7 @@ class RecordWriteStub: public CodeStub {
           DoubleRegister reg = DoubleRegister::from_code(i);
           masm->LoadF(reg, MemOperand(sp, (i - 1) * kDoubleSize));
         }
-        masm->la(sp, MemOperand(sp,(kDoubleSize * kNumRegs)));
+        masm->la(sp, MemOperand(sp, (kDoubleSize * kNumRegs)));
       }
       masm->MultiPop(kJSCallerSaved & ~scratch1_.bit());
       masm->pop(r14);

@@ -335,7 +335,7 @@ void FastNewBlockContextStub::Generate(MacroAssembler* masm) {
 
   // Remove the on-stack argument and return.
   __ LoadRR(cp, r2);
-  __ la(sp, MemOperand(sp,(2 * kPointerSize)));
+  __ la(sp, MemOperand(sp, (2 * kPointerSize)));
   __ Ret();
 
   // Need to collect. Call into runtime system.
@@ -426,7 +426,7 @@ void FastCloneShallowArrayStub::Generate(MacroAssembler* masm) {
     GenerateFastCloneShallowArrayCommon(masm, 0,
                                         COPY_ON_WRITE_ELEMENTS, &slow_case);
     // Return and remove the on-stack parameters.
-    __ la(sp, MemOperand(sp,(3 * kPointerSize)));
+    __ la(sp, MemOperand(sp, (3 * kPointerSize)));
     __ Ret();
 
     __ bind(&check_fast_elements);
@@ -435,7 +435,7 @@ void FastCloneShallowArrayStub::Generate(MacroAssembler* masm) {
     GenerateFastCloneShallowArrayCommon(masm, length_,
                                         CLONE_ELEMENTS, &slow_case);
     // Return and remove the on-stack parameters.
-    __ la(sp, MemOperand(sp,(3 * kPointerSize)));
+    __ la(sp, MemOperand(sp, (3 * kPointerSize)));
     __ Ret();
 
     __ bind(&double_elements);
@@ -468,7 +468,7 @@ void FastCloneShallowArrayStub::Generate(MacroAssembler* masm) {
   GenerateFastCloneShallowArrayCommon(masm, length_, mode, &slow_case);
 
   // Return and remove the on-stack parameters.
-  __ la(sp, MemOperand(sp,(3 * kPointerSize)));
+  __ la(sp, MemOperand(sp, (3 * kPointerSize)));
   __ Ret();
 
   __ bind(&slow_case);
@@ -515,7 +515,7 @@ void FastCloneShallowObjectStub::Generate(MacroAssembler* masm) {
   }
 
   // Return and remove the on-stack parameters.
-  __ la(sp, MemOperand(sp,(4 * kPointerSize)));
+  __ la(sp, MemOperand(sp, (4 * kPointerSize)));
   __ Ret();
 
   __ bind(&slow_case);
@@ -1254,7 +1254,7 @@ void NumberToStringStub::Generate(MacroAssembler* masm) {
   // Generate code to lookup number in the number string cache.
   GenerateLookupNumberStringCache(masm, r3, r2, r4, r5, r6, false,
                                   &runtime);
-  __ la(sp, MemOperand(sp,(1 * kPointerSize)));
+  __ la(sp, MemOperand(sp, (1 * kPointerSize)));
   __ Ret();
 
   __ bind(&runtime);
@@ -1511,7 +1511,7 @@ void ToBooleanStub::Generate(MacroAssembler* masm) {
     __ push(r0);
 #endif
     __ LoadF(d2, MemOperand(sp, 0));
-    __ la(sp, MemOperand(sp,8));
+    __ la(sp, MemOperand(sp, 8));
     __ cdbr(d1, d2);
     // "tos_" is a register, and contains a non zero value by default.
     // Hence we only need to overwrite "tos_" with zero to return false for
@@ -1601,7 +1601,7 @@ void StoreBufferOverflowStub::Generate(MacroAssembler* masm) {
       DoubleRegister reg = DoubleRegister::from_code(i);
       __ LoadF(reg, MemOperand(sp, i * kDoubleSize));
     }
-    __ la(sp, MemOperand(sp,(kDoubleSize * kNumRegs)));
+    __ la(sp, MemOperand(sp, (kDoubleSize * kNumRegs)));
   }
   __ MultiPop(kJSCallerSaved | r0.bit());
   __ LoadRR(r14, r0);
@@ -2623,7 +2623,7 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
         __ LoadlW(scratch2, MemOperand(sp, 0));
 #endif
 #endif
-        __ la(sp, MemOperand(sp,8));
+        __ la(sp, MemOperand(sp, 8));
 
         __ TestSignBit(scratch2, r0);
         __ bne(&return_heap_number /*, cr0*/);
@@ -3992,7 +3992,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   __ StoreP(r5, MemOperand(ip));
 
   // Reset the stack to the callee saved registers.
-  __ lay(sp, MemOperand(sp,-EntryFrameConstants::kCallerFPOffset));
+  __ lay(sp, MemOperand(sp, -EntryFrameConstants::kCallerFPOffset));
 
   // Restore callee-saved registers and return.
 #ifdef DEBUG
@@ -4527,7 +4527,7 @@ void ArgumentsAccessStub::GenerateNewNonStrictFast(MacroAssembler* masm) {
   __ blt(&arguments_loop);
 
   // Return and remove the on-stack parameters.
-  __ la(sp, MemOperand(sp,(3 * kPointerSize)));
+  __ la(sp, MemOperand(sp, (3 * kPointerSize)));
   __ Ret();
 
   // Do the runtime call to allocate the arguments object.
@@ -4636,7 +4636,7 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
 
   // Return and remove the on-stack parameters.
   __ bind(&done);
-  __ la(sp, MemOperand(sp,(3 * kPointerSize)));
+  __ la(sp, MemOperand(sp, (3 * kPointerSize)));
   __ Ret();
 
   // Do the runtime call to allocate the arguments object.
@@ -5016,7 +5016,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ bind(&failure);
   // For failure and exception return null.
   __ mov(r2, Operand(masm->isolate()->factory()->null_value()));
-  __ la(sp, MemOperand(sp,(4 * kPointerSize)));
+  __ la(sp, MemOperand(sp, (4 * kPointerSize)));
   __ Ret();
 
   // Process the result from the native regexp code.
@@ -5080,7 +5080,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
 
   // Return last match info.
   __ LoadP(r2, MemOperand(sp, kLastMatchInfoOffset));
-  __ la(sp, MemOperand(sp,(4 * kPointerSize)));
+  __ la(sp, MemOperand(sp, (4 * kPointerSize)));
   __ Ret();
 
   // External string.  Short external strings have already been ruled out.
@@ -5198,7 +5198,7 @@ void RegExpConstructResultStub::Generate(MacroAssembler* masm) {
   __ b(&loop);
 
   __ bind(&done);
-  __ la(sp, MemOperand(sp,(3 * kPointerSize)));
+  __ la(sp, MemOperand(sp, (3 * kPointerSize)));
   __ Ret();
 
   __ bind(&slowcase);
@@ -6086,7 +6086,7 @@ void SubStringStub::Generate(MacroAssembler* masm) {
   __ bind(&return_r3);
   Counters* counters = masm->isolate()->counters();
   __ IncrementCounter(counters->sub_string_native(), 1, r5, r6);
-  __ la(sp, MemOperand(sp,(3 * kPointerSize)));
+  __ la(sp, MemOperand(sp, (3 * kPointerSize)));
   __ Ret();
 
   // Just jump to runtime to create the sub string.
@@ -6229,7 +6229,7 @@ void StringCompareStub::Generate(MacroAssembler* masm) {
   STATIC_ASSERT(kSmiTag == 0);
   __ LoadSmiLiteral(r2, Smi::FromInt(EQUAL));
   __ IncrementCounter(counters->string_compare_native(), 1, r3, r4);
-  __ la(sp, MemOperand(sp,(2 * kPointerSize)));
+  __ la(sp, MemOperand(sp, (2 * kPointerSize)));
   __ Ret();
 
   __ bind(&not_same);
@@ -6239,7 +6239,7 @@ void StringCompareStub::Generate(MacroAssembler* masm) {
 
   // Compare flat ASCII strings natively. Remove arguments from stack first.
   __ IncrementCounter(counters->string_compare_native(), 1, r4, r5);
-  __ la(sp, MemOperand(sp,(2 * kPointerSize)));
+  __ la(sp, MemOperand(sp, (2 * kPointerSize)));
   GenerateCompareFlatAsciiStrings(masm, r3, r2, r4, r5, r6);
 
   // Call the runtime; it returns -1 (less), 0 (equal), or 1 (greater)
@@ -6319,7 +6319,7 @@ void StringAddStub::Generate(MacroAssembler* masm) {
 
     __ bind(&return_second);
     __ IncrementCounter(counters->string_add_native(), 1, r4, r5);
-    __ la(sp, MemOperand(sp,(2 * kPointerSize)));
+    __ la(sp, MemOperand(sp, (2 * kPointerSize)));
     __ Ret();
 
     __ bind(&strings_not_empty);
@@ -6366,7 +6366,7 @@ void StringAddStub::Generate(MacroAssembler* masm) {
       masm, r4, r5, r8, r9, r6, r7, r1,
       &make_two_character_string);
   __ IncrementCounter(counters->string_add_native(), 1, r4, r5);
-  __ la(sp, MemOperand(sp,(2 * kPointerSize)));
+  __ la(sp, MemOperand(sp, (2 * kPointerSize)));
   __ Ret();
 
   __ bind(&make_two_character_string);
@@ -6378,7 +6378,7 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   __ AllocateAsciiString(r2, r8, r6, r7, r1, &call_runtime);
   __ sth(r4, FieldMemOperand(r2, SeqAsciiString::kHeaderSize));
   __ IncrementCounter(counters->string_add_native(), 1, r4, r5);
-  __ la(sp, MemOperand(sp,(2 * kPointerSize)));
+  __ la(sp, MemOperand(sp, (2 * kPointerSize)));
   __ Ret();
 
   __ bind(&longer_than_two);
@@ -6529,7 +6529,7 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   // r8: next character of result.
   StringHelper::GenerateCopyCharacters(masm, r8, r3, r5, r6, true);
   __ IncrementCounter(counters->string_add_native(), 1, r4, r5);
-  __ la(sp, MemOperand(sp,(2 * kPointerSize)));
+  __ la(sp, MemOperand(sp, (2 * kPointerSize)));
   __ Ret();
 
   __ bind(&non_ascii_string_add_flat_result);
@@ -6546,7 +6546,7 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   // r8: next character of result.
   StringHelper::GenerateCopyCharacters(masm, r8, r3, r5, r6, false);
   __ IncrementCounter(counters->string_add_native(), 1, r4, r5);
-  __ la(sp, MemOperand(sp,(2 * kPointerSize)));
+  __ la(sp, MemOperand(sp, (2 * kPointerSize)));
   __ Ret();
 
   // Just jump to runtime to add the two strings.

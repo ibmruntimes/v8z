@@ -3523,8 +3523,8 @@ Handle<Code> ConstructStubCompiler::CompileConstructStub(
   // r3: argc
   // Remove caller arguments and receiver from the stack and return.
   __ ShiftLeftImm(r3, r3, Operand(kPointerSizeLog2));
-  __ la(sp, MemOperand(sp,r3));
-  __ la(sp, MemOperand(sp,kPointerSize));
+  __ la(sp, MemOperand(sp, r3));
+  __ la(sp, MemOperand(sp, kPointerSize));
   Counters* counters = masm()->isolate()->counters();
   __ IncrementCounter(counters->constructed_objects(), 1, r3, r4);
   __ IncrementCounter(counters->constructed_objects_stub(), 1, r3, r4);
