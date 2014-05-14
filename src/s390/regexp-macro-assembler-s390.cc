@@ -788,7 +788,7 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     __ bind(&stack_ok);
 
     // Allocate space on stack for registers.
-    __ lay(sp, MemOperand(sp,(-num_registers_ * kPointerSize)));
+    __ lay(sp, MemOperand(sp, (-num_registers_ * kPointerSize)));
     // Load string end.
     __ LoadP(end_of_input_address(), MemOperand(frame_pointer(), kInputEnd));
     // Load input start.
@@ -1410,7 +1410,7 @@ void RegExpMacroAssemblerS390::CallCFunctionUsingStub(
   if (OS::ActivationFrameAlignment() > kPointerSize) {
     __ LoadP(sp, MemOperand(sp, 0));
   } else {
-    __ la(sp, MemOperand(sp,(kNumRequiredStackFrameSlots * kPointerSize)));
+    __ la(sp, MemOperand(sp, (kNumRequiredStackFrameSlots * kPointerSize)));
   }
   __ mov(code_pointer(), Operand(masm_->CodeObject()));
 }

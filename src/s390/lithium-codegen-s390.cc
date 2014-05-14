@@ -167,7 +167,7 @@ bool LCodeGen::GeneratePrologue() {
       __ push(r4);
       __ BranchOnCount(r2, &loop);
     } else {
-      __ lay(sp, MemOperand(sp,(-slots * kPointerSize)));
+      __ lay(sp, MemOperand(sp, (-slots * kPointerSize)));
     }
   }
 
@@ -2515,7 +2515,7 @@ void LCodeGen::DoReturn(LReturn* instr) {
   int32_t sp_delta = (GetParameterCount() + 1) * kPointerSize;
   __ LoadRR(sp, fp);
   __ Pop(r14, fp);
-  __ la(sp, MemOperand(sp,sp_delta));
+  __ la(sp, MemOperand(sp, sp_delta));
   __ Ret();
 }
 
@@ -3543,7 +3543,7 @@ void LCodeGen::DoMathFloor(LUnaryMathOperation* instr) {
 #else
     __ LoadlW(scratch, MemOperand(sp, 0));
 #endif
-    __ la(sp, MemOperand(sp,8));
+    __ la(sp, MemOperand(sp, 8));
     __ TestSignBit32(scratch, r0);
     DeoptimizeIf(ne, instr->environment(), cr0);
     __ bind(&done);
@@ -3566,7 +3566,7 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
 #else
   __ LoadlW(result, MemOperand(sp, 0));
 #endif
-  __ la(sp, MemOperand(sp,8));
+  __ la(sp, MemOperand(sp, 8));
   __ ExtractBitMask(scratch, result, HeapNumber::kExponentMask);
 
   // If the number is in ]-0.5, +0.5[, the result is +/- 0.
@@ -3635,7 +3635,7 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
 #else
     __ LoadlW(scratch, MemOperand(sp, 0));
 #endif
-    __ la(sp, MemOperand(sp,8));
+    __ la(sp, MemOperand(sp, 8));
     __ TestSignBit32(scratch, r0);
     DeoptimizeIf(ne, instr->environment(), cr0);
   }
@@ -4691,7 +4691,7 @@ void LCodeGen::EmitNumberUntagD(Register input_reg,
     __ LoadlW(ip, MemOperand(sp, 4));
     __ LoadlW(scratch, MemOperand(sp, 0));
 #endif
-    __ la(sp, MemOperand(sp,8));
+    __ la(sp, MemOperand(sp, 8));
 
     __ Cmpi(ip, Operand::Zero());
     __ bne(&done);
