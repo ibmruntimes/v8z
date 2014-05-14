@@ -2456,7 +2456,7 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
     case DSGR:{
       RREInstruction * rreinst = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rreinst->R1Value();
-      int r2 = rreinst->R2Value();i
+      int r2 = rreinst->R2Value();
       if(op == DSR) {
         int32_t r1_val = get_low_register<int32_t>(r1);
         int32_t r2_val = get_low_register<int32_t>(r2);
