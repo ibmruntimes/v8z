@@ -4245,11 +4245,11 @@ void LCodeGen::DoStoreKeyedSpecializedArrayElement(
       case EXTERNAL_PIXEL_ELEMENTS:
       case EXTERNAL_BYTE_ELEMENTS:
       case EXTERNAL_UNSIGNED_BYTE_ELEMENTS:
-        __ StoreByte(value, mem_operand);
+        __ StoreByte(value, mem_operand, r0);
         break;
       case EXTERNAL_SHORT_ELEMENTS:
       case EXTERNAL_UNSIGNED_SHORT_ELEMENTS:
-          __ StoreHalfWord(value, mem_operand);
+          __ StoreHalfWord(value, mem_operand, r0);
         break;
       case EXTERNAL_INT_ELEMENTS:
       case EXTERNAL_UNSIGNED_INT_ELEMENTS:
