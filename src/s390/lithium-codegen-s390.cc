@@ -1191,7 +1191,9 @@ void LCodeGen::DoMulI(LMulI* instr) {
     if (can_overflow) {
       // scratch:result = left * right.
 #if V8_TARGET_ARCH_S390X
-      __ Mul(result, left, right);
+      if (!result.is(left))
+        __ LoadRR(result, left);
+      __ msgr(result, right);
       __ TestIfInt32(result, scratch, r0);
       DeoptimizeIf(ne, instr->environment());
 #else
@@ -4915,8 +4917,8 @@ void LCodeGen::DoCheckInstanceType(LCheckInstanceType* instr) {
 
     if (IsPowerOf2(mask)) {
       ASSERT(tag == 0 || IsPowerOf2(tag));
-      __ LoadRR(r0, scratch);
-      __ AndPImm(r0, Operand(mask));
+      __ mov(r0, Operand(mask));
+      __ AndP(scratch, r0);
       DeoptimizeIf(tag == 0 ? ne : eq, instr->environment(), cr0);
     } else {
       __ AndPImm(scratch, Operand(mask));
