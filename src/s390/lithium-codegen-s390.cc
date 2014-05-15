@@ -1241,7 +1241,7 @@ void LCodeGen::DoBitI(LBitI* instr) {
         case Token::BIT_AND:
           if (!result.is(left))
             __ LoadRR(result, left);
-          __ AndPImm(result,
+          __ AndPI(result,
                   Operand(ToInteger32(LConstantOperand::cast(right_op))));
           break;
         case Token::BIT_OR:
@@ -1277,7 +1277,7 @@ void LCodeGen::DoBitI(LBitI* instr) {
       } else {
         if (!result.is(left))
           __ LoadRR(result, left);
-        __ AndPImm(result, right);
+        __ AndPI(result, right);
       }
       break;
     case Token::BIT_OR:
@@ -1325,7 +1325,7 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
   if (right_op->IsRegister()) {
     // Mask the right_op operand.
     __ LoadRR(scratch, ToRegister(right_op));
-    __ AndPImm(scratch, Operand(0x1F));
+    __ AndPI(scratch, Operand(0x1F));
     switch (instr->op()) {
       case Token::SAR:
         __ LoadRR(result, left);
@@ -3753,7 +3753,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
 
   // state[0] = 18273 * (state[0] & 0xFFFF) + (state[0] >> 16)
   __ LoadRR(r5, r3);
-  __ AndPImm(r5, Operand(0xFFFF));
+  __ AndPI(r5, Operand(0xFFFF));
 //  __ LoadImmP(r6, Operand(18273));
   __ MulP(r5, Operand(18273));
   __ srl(r3, Operand(16));
@@ -3763,7 +3763,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
 
   // state[1] = 36969 * (state[1] & 0xFFFF) + (state[1] >> 16)
   __ LoadRR(r5, r2);
-  __ AndPImm(r5, Operand(0xFFFF));
+  __ AndPI(r5, Operand(0xFFFF));
 //  __ mov(r6, Operand(36969));
   __ MulP(r5, Operand(36969));
   __ srl(r2, Operand(16));
@@ -4640,11 +4640,9 @@ void LCodeGen::DoSmiUntag(LSmiUntag* instr) {
   Register result = ToRegister(instr->result());
   if (instr->needs_check()) {
     STATIC_ASSERT(kHeapObjectTag == 1);
-    // If the input is a HeapObject, value of scratch won't be zero.
-    __ LoadRR(scratch, input);
-    __ AndPImm(scratch, Operand(kHeapObjectTag));
-    __ SmiUntag(result, input);
+    __ tmll(input, Operand(kHeapObjectTag));
     DeoptimizeIf(ne, instr->environment(), cr0);
+    __ SmiUntag(result, input);
   } else {
     __ SmiUntag(result, input);
   }
@@ -4921,7 +4919,7 @@ void LCodeGen::DoCheckInstanceType(LCheckInstanceType* instr) {
       __ AndP(scratch, r0);
       DeoptimizeIf(tag == 0 ? ne : eq, instr->environment(), cr0);
     } else {
-      __ AndPImm(scratch, Operand(mask));
+      __ AndPI(scratch, Operand(mask));
       __ Cmpi(scratch, Operand(tag));
       DeoptimizeIf(ne, instr->environment());
     }
