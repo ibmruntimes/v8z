@@ -4701,6 +4701,7 @@ void MacroAssembler::StoreHalfWord(Register src, const MemOperand& mem,
   } else if (is_int20(offset)) {
     sthy(src, mem);
   } else {
+    ASSERT(!scratch.is(no_reg));
     LoadIntLiteral(scratch, offset);
     sth(src, MemOperand(base, scratch));
   }
@@ -4718,6 +4719,7 @@ void MacroAssembler::StoreByte(Register src, const MemOperand& mem,
   } else if (is_int20(offset)) {
     stcy(src, mem);
   } else {
+    ASSERT(!scratch.is(no_reg));
     LoadIntLiteral(scratch, offset);
     stc(src, MemOperand(base, scratch));
   }
