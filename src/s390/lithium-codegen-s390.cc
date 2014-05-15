@@ -1636,6 +1636,7 @@ void LCodeGen::DoMathMinMax(LMathMinMax* instr) {
     __ b(&return_right);
 
     __ bind(&check_zero);
+    __ lzdr(kDoubleRegZero);
     __ cdbr(left_reg, kDoubleRegZero);
     __ bne(&return_left);  // left == right != 0.
 
@@ -1791,6 +1792,7 @@ void LCodeGen::DoBranch(LBranch* instr) {
     EmitBranch(true_block, false_block, ne);
   } else if (r.IsDouble()) {
     DoubleRegister reg = ToDoubleRegister(instr->value());
+    __ lzdr(kDoubleRegZero);
     __ cdbr(reg, kDoubleRegZero);
 
     // Test the double value. Zero and NaN are false.
@@ -1880,6 +1882,7 @@ void LCodeGen::DoBranch(LBranch* instr) {
         __ CompareRoot(map, Heap::kHeapNumberMapRootIndex);
         __ bne(&not_heap_number);
         __ LoadF(dbl_scratch, FieldMemOperand(reg, HeapNumber::kValueOffset));
+        __ lzdr(kDoubleRegZero);
         __ cdbr(dbl_scratch, kDoubleRegZero);
         __ bunordered(false_label);  // NaN -> false.
         __ beq(false_label);  // +0, -0 -> false.
@@ -3669,6 +3672,7 @@ void LCodeGen::DoMathPowHalf(LUnaryMathOperation* instr) {
   // Add +0 to convert -0 to +0.
   __ bind(&skip);
   __ ldr(result, input);
+  __ lzdr(kDoubleRegZero);
   __ adbr(result, kDoubleRegZero);
   __ sqdbr(result, result);
   __ bind(&done);

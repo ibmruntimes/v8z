@@ -1941,7 +1941,6 @@ RRF2_FORM_EMIT(lxdtr, LXDTR)
 RXE_FORM_EMIT(lxeb, LXEB)
 RRE_FORM_EMIT(lxebr, LXEBR)
 RRE_FORM_EMIT(lxr, LXR)
-RRE_FORM_EMIT(lzdr, LZDR)
 RRE_FORM_EMIT(lzer, LZER)
 RRE_FORM_EMIT(lzxr, LZXR)
 RXF_FORM_EMIT(madb, MADB)
@@ -2873,6 +2872,13 @@ void Assembler::iill(Register r1, const Operand& opnd) {
 }
 
 // Floating point instructions
+//
+// Load zero Register (64)
+void Assembler::lzdr(DoubleRegister r1) {
+  rre_form(LZDR, Register::from_code(r1.code()),
+      Register::from_code(0));
+}
+
 // Add Register-Storage (LB)
 void Assembler::adb(DoubleRegister r1, const MemOperand& opnd) {
   rxe_form(ADB,
