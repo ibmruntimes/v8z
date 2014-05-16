@@ -150,7 +150,6 @@ struct Register {
 typedef struct Register Register;
 
 
-// PPC specific
 // These constants are used in several locations, including static initializers
 const int kRegister_no_reg_Code = -1;
 const int kRegister_r0_Code = 0;
@@ -271,28 +270,10 @@ const DoubleRegister d12 = { 12 };
 const DoubleRegister d13 = { 13 };
 const DoubleRegister d14 = { 14 };
 const DoubleRegister d15 = { 15 };
-const DoubleRegister d16 = { 16 };
-const DoubleRegister d17 = { 17 };
-const DoubleRegister d18 = { 18 };
-const DoubleRegister d19 = { 19 };
-const DoubleRegister d20 = { 20 };
-const DoubleRegister d21 = { 21 };
-const DoubleRegister d22 = { 22 };
-const DoubleRegister d23 = { 23 };
-const DoubleRegister d24 = { 24 };
-const DoubleRegister d25 = { 25 };
-const DoubleRegister d26 = { 26 };
-const DoubleRegister d27 = { 27 };
-const DoubleRegister d28 = { 28 };
-const DoubleRegister d29 = { 29 };
-const DoubleRegister d30 = { 30 };
-const DoubleRegister d31 = { 31 };
 
 // Aliases for double registers.  Defined using #define instead of
 // "static const DoubleRegister&" because Clang complains otherwise when a
 // compilation unit that includes this header doesn't use the variables.
-#define kFirstCalleeSavedDoubleReg d14
-#define kLastCalleeSavedDoubleReg d31
 #define kDoubleRegZero d14
 #define kScratchDoubleReg d13
 
