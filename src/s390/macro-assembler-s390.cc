@@ -2762,7 +2762,7 @@ void MacroAssembler::AssertFastElements(Register elements) {
 
 void MacroAssembler::Check(Condition cond, const char* msg, CRegister cr) {
   Label L;
-  b(cond, &L /*, cr*/);
+  b(cond, &L);
   Abort(msg);
   // will not return here
   bind(&L);
@@ -3423,7 +3423,7 @@ void MacroAssembler::PatchRelocatedValue(Register patch_location,
 #endif
     nilf(scratch, Operand(0xFF0F));
     // IIHF Opcode with extra zero in 3rd nibble
-    Cmpi(scratch, Operand(0xC008));
+    cfi(scratch, Operand(0xC008));
     Check(eq, "The instruction to patch should be a iihf.");
   }
 
@@ -3449,7 +3449,7 @@ void MacroAssembler::PatchRelocatedValue(Register patch_location,
 #endif
     nilf(scratch, Operand(0xFF0F));
     // IILF Opcode with extra zero in 3rd nibble
-    Cmpi(scratch, Operand(0xC009));
+    cfi(scratch, Operand(0xC009));
     Check(eq, "The instruction to patch should be a iilf.");
   }
 
@@ -3487,7 +3487,7 @@ void MacroAssembler::GetRelocatedValueLocation(Register patch_location,
 #endif
     nilf(scratch, Operand(0xFF0F));
     // IIHF Opcode with extra zero in 3rd nibble
-    Cmpi(scratch, Operand(0xC008));
+    cfi(scratch, Operand(0xC008));
     Check(eq, "The instruction to patch should be a iihf.");
   }
 
@@ -3514,7 +3514,7 @@ void MacroAssembler::GetRelocatedValueLocation(Register patch_location,
 #endif
     nilf(scratch, Operand(0xFF0F));
     // IILF Opcode with extra zero in 3rd nibble
-    Cmpi(scratch, Operand(0xC009));
+    cfi(scratch, Operand(0xC009));
     Check(eq, "The instruction to patch should be a iilf.");
   }
 
