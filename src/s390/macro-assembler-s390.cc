@@ -4512,16 +4512,23 @@ void MacroAssembler::LoadP(Register dst, const MemOperand& mem,
 // Store a "pointer" sized value to the memory location
 void MacroAssembler::StoreP(Register src, const MemOperand& mem,
                            Register scratch) {
-  ASSERT(is_int20(mem.offset()));
-  ASSERT(scratch.is(no_reg));
-
+  if (!is_int20(mem.offset())) {
+    ASSERT(!scratch.is(no_reg));
+    LoadIntLiteral(scratch, mem.offset());
 #if V8_TARGET_ARCH_S390X
-  stg(src, mem);
+    stg(src, MemOperand(mem.rb(), scratch));
 #else
-  // StoreW will try to generate ST if offset fits, otherwise
-  // it'll generate STY.
-  StoreW(src, mem);
+    st(src, MemOperand(mem.rb(), scratch));
 #endif
+  } else {
+#if V8_TARGET_ARCH_S390X
+    stg(src, mem);
+#else
+    // StoreW will try to generate ST if offset fits, otherwise
+    // it'll generate STY.
+    StoreW(src, mem);
+#endif
+  }
 }
 
 // Load 32-bits and sign extend if necessary.
@@ -4529,7 +4536,8 @@ void MacroAssembler::LoadW(Register dst, const MemOperand& mem,
                            Register scratch) {
   int offset = mem.offset();
 
-  if (!scratch.is(no_reg) && !is_int20(offset)) {
+  if (!is_int20(offset)) {
+    ASSERT(!scratch.is(no_reg));
     LoadIntLiteral(scratch, offset);
 #if V8_TARGET_ARCH_S390X
     lgf(dst, MemOperand(mem.rb(), scratch));
@@ -4540,7 +4548,11 @@ void MacroAssembler::LoadW(Register dst, const MemOperand& mem,
 #if V8_TARGET_ARCH_S390X
     lgf(dst, mem);
 #else
-    l(dst, mem);
+    if (is_uint12(offset)) {
+      l(dst, mem);
+    } else {
+      ly(dst, mem);
+    }
 #endif
   }
 }
@@ -4665,27 +4677,31 @@ void MacroAssembler::StoreW(Register src, const MemOperand& mem,
   }
 }
 
-// Variable length depending on whether offset fits into immediate field
-// MemOperand currently only supports d-form
-void MacroAssembler::LoadHalfWord(Register dst, const MemOperand& mem,
-                                  Register scratch, bool updateForm) {
+// Loads 16-bits half-word value from memory and sign extends to pointer
+// sized register
+void MacroAssembler::LoadHalfWordP(Register dst, const MemOperand& mem,
+                                  Register scratch) {
   Register base = mem.rb();
   int offset = mem.offset();
 
-  bool use_dform = true;
-  if (!is_int16(offset)) {
-    use_dform = false;
+  if (!is_int20(offset)) {
+    ASSERT(!scratch.is(no_reg));
     LoadIntLiteral(scratch, offset);
-  }
-
-  if (!updateForm) {
-    if (use_dform) {
-      LoadLogicalHalfWordP(dst, mem);
-    } else {
-      LoadLogicalHalfWordP(dst, MemOperand(base, scratch));
-    }
+#if V8_TARGET_ARCH_S390X
+    lgh(dst, MemOperand(base, scratch));
+#else
+    lh(dst, MemOperand(base, scratch));
+#endif
   } else {
-    assert(0);
+#if V8_TARGET_ARCH_S390X
+    lgh(dst, mem);
+#else
+    if (is_uint12(offset)) {
+      lh(dst, mem);
+    } else {
+      lhy(dst, mem);
+    }
+#endif
   }
 }
 

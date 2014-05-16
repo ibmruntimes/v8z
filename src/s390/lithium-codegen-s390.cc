@@ -3072,15 +3072,14 @@ void LCodeGen::DoLoadKeyedSpecializedArrayElement(
         break;
       case EXTERNAL_SHORT_ELEMENTS:
         if (key_is_constant) {
-          __ LoadHalfWord(result, mem_operand, r0);
+          __ LoadHalfWordP(result, mem_operand, r0);
         } else {
-          __ LoadLogicalHalfWordP(result, mem_operand);
+          __ LoadHalfWordP(result, mem_operand);
         }
-        __ lhr(result, result);
         break;
       case EXTERNAL_UNSIGNED_SHORT_ELEMENTS:
         if (key_is_constant) {
-          __ LoadHalfWord(result, mem_operand, r0);
+          __ LoadLogicalHalfWordP(result, mem_operand);
         } else {
           __ LoadLogicalHalfWordP(result, mem_operand);
         }
@@ -3091,7 +3090,6 @@ void LCodeGen::DoLoadKeyedSpecializedArrayElement(
       case EXTERNAL_UNSIGNED_INT_ELEMENTS:
         __ LoadlW(result, mem_operand);
         if (!instr->hydrogen()->CheckFlag(HInstruction::kUint32)) {
-          // __ lis(r0, Operand(SIGN_EXT_IMM16(0x8000)));
           __ iilf(r0, Operand(0x80000000));
           __ Cmpl(result, r0);
           DeoptimizeIf(ge, instr->environment());
@@ -4123,7 +4121,7 @@ void LCodeGen::DoStoreKeyedFastElement(LStoreKeyedFastElement* instr) {
     __ AddP(scratch, elements);
     offset = FixedArray::OffsetOfElementAt(instr->additional_index());
   }
-  __ StoreP(value, FieldMemOperand(store_base, offset));
+  __ StoreP(value, FieldMemOperand(store_base, offset), ip);
 
   if (instr->hydrogen()->NeedsWriteBarrier()) {
     HType type = instr->hydrogen()->value()->type();
