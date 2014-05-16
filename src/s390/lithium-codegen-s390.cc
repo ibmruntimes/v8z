@@ -2520,7 +2520,7 @@ void LCodeGen::DoReturn(LReturn* instr) {
   int32_t sp_delta = (GetParameterCount() + 1) * kPointerSize;
   __ LoadRR(sp, fp);
   __ Pop(r14, fp);
-  __ la(sp, MemOperand(sp, sp_delta));
+  __ lay(sp, MemOperand(sp, sp_delta));  // Use LAY as sp_delta can exceed 4k
   __ Ret();
 }
 
