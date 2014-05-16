@@ -630,10 +630,8 @@ class MacroAssembler: public Assembler {
   void StoreW(Register src, const MemOperand& mem,
                  Register scratch = no_reg);
 
-  void LoadHalfWord(Register dst,
-                    const MemOperand& mem,
-                    Register scratch,
-                    bool updateForm = false);
+  void LoadHalfWordP(Register dst, const MemOperand& mem,
+                    Register scratch = no_reg);
 
   void StoreHalfWord(Register src, const MemOperand& mem, Register scratch);
   void StoreByte(Register src, const MemOperand& mem, Register scratch);

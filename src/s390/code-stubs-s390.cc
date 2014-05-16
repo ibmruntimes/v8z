@@ -7657,7 +7657,7 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
 
 // For the most part this is true only when USE_SIMULATOR is true
 // The exception is when built with nativesim=true, then we need
-// Real PPC calling support plus simulation
+// Real S390 calling support plus simulation
 #if defined(V8_HOST_ARCH_S39064) || defined(V8_HOST_ARCH_S390)
   // zLinux ABI requires caller's frame to have sufficient space for callee
   // preserved regsiter save area.
