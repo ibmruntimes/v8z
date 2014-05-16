@@ -2319,7 +2319,7 @@ void Assembler::lgr(Register r1, Register r2) {
 
 // Load Halfword Register-Storage (64)
 void Assembler::lgh(Register r1, const MemOperand& opnd) {
-  rx_form(LGH, r1, opnd.rx(), opnd.rb(), opnd.offset());
+  rxy_form(LGH, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 // Load halfword Register-Register (64)
