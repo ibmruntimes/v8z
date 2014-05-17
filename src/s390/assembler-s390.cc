@@ -135,7 +135,7 @@ void CpuFeatures::Probe() {
   }
 #else
   // Fallback: assume frim is supported -- will implement processor
-  // detection for other PPC platforms in is_processor() if required
+  // detection for other S390 platforms in is_processor() if required
   supported_ |= (1u << FPU);
 #endif
 }
@@ -143,10 +143,7 @@ void CpuFeatures::Probe() {
 Register ToRegister(int num) {
   ASSERT(num >= 0 && num < kNumRegisters);
   const Register kRegisters[] = {
-    r0,
-    r1,
-    r2, r3, r4, r5, r6, r7, r8, r9, r10,
-    fp, ip, r13, r14, sp
+    r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, fp, ip, r13, r14, sp
   };
   return kRegisters[num];
 }
@@ -160,7 +157,7 @@ const int RelocInfo::kApplyMask = 1 << RelocInfo::INTERNAL_REFERENCE;
 
 bool RelocInfo::IsCodedSpecially() {
   // The deserializer needs to know whether a pointer is specially
-  // coded.  Being specially coded on PPC means that it is a lis/ori
+  // coded.  Being specially coded on S390 means that it is an iihf/iilf
   // instruction sequence, and that is always the case inside code
   // objects.
   return true;
