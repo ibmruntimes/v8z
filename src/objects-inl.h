@@ -4364,7 +4364,13 @@ void JSFunction::set_code(Code* value) {
       value);
 }
 
-
+#ifdef V8_HOST_ARCH_S390
+// On GCC 4.4.6 on s390, the compiler with string aliasing reorders the
+// this->code() (from IsOptimized()) and set_code(code).  Using
+// --fno-string-aliasing causes other issues, so using this as a temp
+// workaround until we find something better
+#pragma GCC optimize("O0")
+#endif
 void JSFunction::ReplaceCode(Code* code) {
   bool was_optimized = IsOptimized();
   bool is_optimized = code->kind() == Code::OPTIMIZED_FUNCTION;
@@ -4380,6 +4386,9 @@ void JSFunction::ReplaceCode(Code* code) {
     context()->native_context()->RemoveOptimizedFunction(this);
   }
 }
+#ifdef V8_HOST_ARCH_S390
+#pragma GCC reset_options
+#endif
 
 
 Context* JSFunction::context() {
