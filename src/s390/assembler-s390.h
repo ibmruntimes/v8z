@@ -1495,7 +1495,6 @@ RXE_FORM(sqeb);
 RRE_FORM(sqebr);
 RRE_FORM(sqxbr);
 RR_FORM(sr);
-RSY1_FORM(srak);
 RS1_FORM(srdl);
 RXF_FORM(srdt);
 RRF1_FORM(srk);
