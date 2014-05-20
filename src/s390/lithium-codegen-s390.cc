@@ -1338,10 +1338,10 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
         if (instr->can_deopt()) {
           __ LoadRR(result, left);
           __ srl(result, scratch);
-          __ LoadAndTestRR(result, result);  // Set the <,==,> condition
 #if V8_TARGET_ARCH_S390X
-          __ lgfr(result, result/*, SetRC*/);
-          // Should be okay to remove SetRC
+          __ ltgfr(result, result/*, SetRC*/);
+#else
+          __ ltr(result, result);  // Set the <,==,> condition
 #endif
           DeoptimizeIf(lt, instr->environment(), cr0);
         } else {
@@ -1429,7 +1429,7 @@ void LCodeGen::DoSubI(LSubI* instr) {
                               scratch0(), r0);
     // Doptimize on overflow
 #if V8_TARGET_ARCH_S390X
-    __ lgfr(scratch0(), scratch0());
+    __ ltgfr(scratch0(), scratch0());
 #endif
     DeoptimizeIf(lt, instr->environment(), cr0);
   }
@@ -1600,7 +1600,7 @@ void LCodeGen::DoAddI(LAddI* instr) {
                               right_reg,
                               scratch0(), r0);
 #if V8_TARGET_ARCH_S390X
-    __ lgfr(scratch0(), scratch0());
+    __ ltgfr(scratch0(), scratch0());
 #endif
     // Doptimize on overflow
     DeoptimizeIf(lt, instr->environment(), cr0);

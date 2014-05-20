@@ -2133,12 +2133,19 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       }
       break;
     }
+    case LTGFR:
     case LGFR: {
+      // Load and Test Register (64 <- 32)  (Sign Extends 32-bit val)
+      // Load Register (64 <- 32)  (Sign Extends 32-bit val)
       RREInstruction* rreInstr = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rreInstr->R1Value();
       int r2 = rreInstr->R2Value();
       int32_t r2_val = get_low_register<int32_t>(r2);
-      set_register(r1, r2_val);
+      int64_t result = static_cast<int64_t>(r2_val);
+      set_register(r1, result);
+
+      if (LTGFR == op)
+        SetS390ConditionCode<int64_t>(result, 0);
       break;
     }
     case LNGR: {
