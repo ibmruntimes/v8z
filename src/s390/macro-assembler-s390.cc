@@ -4173,7 +4173,11 @@ void MacroAssembler::Or(Register dst, Register src1, Register src2) {
 void MacroAssembler::OrPImm(Register dst, const Operand& opnd) {
   ASSERT(!opnd.is_reg());
 #if V8_TARGET_ARCH_S390X
-  oihf(dst, Operand(static_cast<intptr_t>(0)));
+  intptr_t value = opnd.imm_;
+  if (value >> 32 != 0) {
+    // this may not work b/c condition code won't be set correctly
+    oihf(dst, Operand(value >> 32));
+  }
   oilf(dst, opnd);
 #else
   oilf(dst, opnd);
@@ -4207,7 +4211,7 @@ void MacroAssembler::Xor(Register dst, Register src1, Register src2) {
 void MacroAssembler::XorPImm(Register dst, const Operand& opnd) {
   ASSERT(!opnd.is_reg());
 #if V8_TARGET_ARCH_S390X
-  xihf(dst, Operand(static_cast<intptr_t>(0)));
+  xihf(dst, Operand(opnd.imm_ >> 32));
   xilf(dst, opnd);
 #else
   xilf(dst, opnd);
