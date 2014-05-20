@@ -693,6 +693,8 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case LEDBR: Format(instr, "ledbr\t'f5,'f6"); break;
       case LTGR: Format(instr, "ltgr\t'r5,'r6"); break;
       case LGR: Format(instr, "lgr\t'r5,'r6"); break;
+      case LGFR: Format(instr, "lgfr\t'r5,'r6"); break;
+      case LTGFR: Format(instr, "ltgfr\t'r5,'r6"); break;
       case LCGR: Format(instr, "lcgr\t'r5,'r6"); break;
       case MSR: Format(instr, "msr\t'r5,'r6"); break;
       case LGBR: Format(instr, "lgbr\t'r5,'r6"); break;
