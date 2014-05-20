@@ -4369,7 +4369,7 @@ void JSFunction::set_code(Code* value) {
 // this->code() (from IsOptimized()) and set_code(code).  Using
 // --fno-string-aliasing causes other issues, so using this as a temp
 // workaround until we find something better
-#pragma GCC optimize("O0")
+__attribute__((optimize("O0")))
 #endif
 void JSFunction::ReplaceCode(Code* code) {
   bool was_optimized = IsOptimized();
@@ -4386,9 +4386,6 @@ void JSFunction::ReplaceCode(Code* code) {
     context()->native_context()->RemoveOptimizedFunction(this);
   }
 }
-#ifdef V8_HOST_ARCH_S390
-#pragma GCC reset_options
-#endif
 
 
 Context* JSFunction::context() {
