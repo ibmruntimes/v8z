@@ -4364,11 +4364,14 @@ void JSFunction::set_code(Code* value) {
       value);
 }
 
-#ifdef V8_HOST_ARCH_S390
+#if defined(V8_HOST_ARCH_S390) && defined(V8_TARGET_ARCH_S390X)
 // On GCC 4.4.6 on s390, the compiler with string aliasing reorders the
 // this->code() (from IsOptimized()) and set_code(code).  Using
 // --fno-string-aliasing causes other issues, so using this as a temp
 // workaround until we find something better
+// Have to add TARGET_ARCH_S390X as well, as PPC simulation on S390
+// is broken due to assembler not recognizing SRAK instructions generated
+// by GCC.  Again, need to find better workaround.
 __attribute__((optimize("O0")))
 #endif
 void JSFunction::ReplaceCode(Code* code) {
