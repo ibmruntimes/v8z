@@ -4633,7 +4633,6 @@ void LCodeGen::DoSmiTag(LSmiTag* instr) {
 
 
 void LCodeGen::DoSmiUntag(LSmiUntag* instr) {
-  Register scratch = scratch0();
   Register input = ToRegister(instr->value());
   Register result = ToRegister(instr->result());
   if (instr->needs_check()) {
