@@ -399,6 +399,14 @@ int Assembler::target_at(int pos)  {
     if (imm32 == 0)
       return kEndOfChain;
     return pos + imm32;
+  } else if ((instr & ~kImm16Mask) == 0) {
+    // Emitted label constant, not part of a branch (regexp PushBacktrack).
+     if (instr == 0) {
+       return kEndOfChain;
+     } else {
+       int32_t imm16 = SIGN_EXT_IMM16(instr);
+       return (imm16 + pos);
+     }
   }
 
   // Unknown condition
@@ -422,12 +430,19 @@ void Assembler::target_at_put(int pos, int target_pos) {
     instr &= (~static_cast<uint64_t>(0xffffffff));
     instr_at_put<SixByteInstr>(pos, instr | (imm32 >> 1));
     return;
+  } else if ((instr & ~kImm16Mask) == 0) {
+    ASSERT(target_pos == kEndOfChain || target_pos >= 0);
+    // Emitted label constant, not part of a branch.
+    // Make label relative to Code* of generated Code object.
+    instr_at_put<FourByteInstr>(pos, target_pos + (Code::kHeaderSize - kHeapObjectTag));
+    return;
   }
 
   ASSERT(false);
 }
 
 int Assembler::max_reach_from(int pos) {
+  SixByteInstr instr = instr_at(pos);
   Opcode opcode = Instruction::S390OpcodeValue(buffer_ + pos);
 
   // Check which type of instr.  In theory, we can return
@@ -437,6 +452,9 @@ int Assembler::max_reach_from(int pos) {
   } else if (BRCL == opcode || LARL == opcode || BRASL == opcode) {
     return 31;  // Using 31 as workaround instead of 32 as
                 // is_intn(x,32) doesn't work on 32-bit platforms.
+  } else if ((instr & ~kImm16Mask) == 0) {
+    // Emitted label constant, not part of a branch (regexp PushBacktrack).
+    return 16;
   }
 
   ASSERT(false);
