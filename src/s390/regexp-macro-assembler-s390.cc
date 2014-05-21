@@ -64,32 +64,23 @@ namespace internal {
  * Each call to a public method should retain this convention.
  *
  * The stack will have the following structure:
- *  - fp[44]  Isolate* isolate   (address of the current isolate)
- *  - fp[40]  secondary link/return address used by native call.
- *  - fp[36]  lr save area (currently unused)
- *  - fp[32]  backchain    (currently unused)
- *  --- sp when called ---
- *  - fp[28]  return address     (lr).
- *  - fp[24]  old frame pointer  (r11).
- *  - fp[0..20]  backup of registers r6..r10
- *  --- frame pointer ----
- *  - fp[-4]  direct_call        (if 1, direct call from JavaScript code,
+ *  - fp[112] Isolate* isolate   (address of the current isolate)
+ *  - fp[108] secondary link/return address used by native call.
+ *  - fp[104] direct_call        (if 1, direct call from JavaScript code,
  *                                if 0, call through the runtime system).
- *  - fp[-8]  stack_area_base    (high end of the memory area to use as
+ *  - fp[100] stack_area_base    (high end of the memory area to use as
  *                                backtracking stack).
- *  - fp[-12] capture array size (may fit multiple sets of matches)
- *  - fp[-16] int* capture_array (int[num_saved_registers_], for output).
- *  - fp[-20] end of input       (address of end of string).
- *  - fp[-24] start of input     (address of first character in string).
- *  - fp[-28] start index        (character index of start).
- *  - fp[-32] void* input_string (location of a handle containing the string).
- *  - fp[-36] success counter    (only for global regexps to count matches).
- *  - fp[-40] Offset of location before start of input (effectively character
+ *  - fp[96]  capture array size (may fit multiple sets of matches)
+ *  - fp[0..96] zLinux ABI register saving area
+ *  --- sp when called ---
+ *  --- frame pointer ----
+ *  - fp[-4]  success counter    (only for global regexps to count matches).
+ *  - fp[-8]  Offset of location before start of input (effectively character
  *            position -1). Used to initialize capture registers to a
  *            non-position.
- *  - fp[-44] At start (if 1, we are starting at the start of the
- *    string, otherwise 0)
- *  - fp[-48] register 0         (Only positions must be stored in the first
+ *  - fp[-12] At start (if 1, we are starting at the start of the
+ *            string, otherwise 0)
+ *  - fp[-16] register 0         (Only positions must be stored in the first
  *  -         register 1          num_saved_registers_ registers)
  *  -         ...
  *  -         register num_registers-1
