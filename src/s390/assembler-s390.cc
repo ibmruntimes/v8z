@@ -434,7 +434,8 @@ void Assembler::target_at_put(int pos, int target_pos) {
     ASSERT(target_pos == kEndOfChain || target_pos >= 0);
     // Emitted label constant, not part of a branch.
     // Make label relative to Code* of generated Code object.
-    instr_at_put<FourByteInstr>(pos, target_pos + (Code::kHeaderSize - kHeapObjectTag));
+    instr_at_put<FourByteInstr>(
+      pos, target_pos + (Code::kHeaderSize - kHeapObjectTag));
     return;
   }
 
