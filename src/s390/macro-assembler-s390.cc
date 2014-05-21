@@ -109,9 +109,7 @@ void MacroAssembler::Call(Register target, Condition cond) {
   // address is loaded.
   positions_recorder()->WriteRecordedPositions();
 
-  // branch via link register and set LK bit for return point
-  // mtlr(target);  // @TODO Cleanup old PPC code.
-  // bclr(BA, SetLK);
+  // Branch to target via indirect branch
   basr(r14, target);
 
   ASSERT_EQ(CallSize(target, cond), SizeOfCodeGeneratedSince(&start));
@@ -120,52 +118,26 @@ void MacroAssembler::Call(Register target, Condition cond) {
 
 int MacroAssembler::CallSize(
     Address target, RelocInfo::Mode rmode, Condition cond) {
-  int size;
-
-#if 0  // Account for variable length Assembler::mov sequence.
-  int movSize;
-  intptr_t value = reinterpret_cast<intptr_t>(target);
-  if (is_int16(value) || (((value >> 16) << 16) == value)) {
-    movSize = 1;
-  } else {
-    movSize = 2;
-  }
-  size = (2 + movSize) * kInstrSize;
-#endif
-
   // S390 Assembler::move sequence are IILF / IIHF
+  int size;
 #if V8_TARGET_ARCH_S390X
   size = 2 + 12;  // IILF + IIHF + BASR
 #else
   size = 2 + 6;   // IILF + BASR
 #endif
-
   return size;
 }
 
 
 int MacroAssembler::CallSizeNotPredictableCodeSize(
     Address target, RelocInfo::Mode rmode, Condition cond) {
-  int size;
-
-#if 0  // Account for variable length Assembler::mov sequence.
-  int movSize;
-  intptr_t value = reinterpret_cast<intptr_t>(target);
-  if (is_int16(value) || (((value >> 16) << 16) == value)) {
-    movSize = 1;
-  } else {
-    movSize = 2;
-  }
-  size = (2 + movSize) * kInstrSize;
-#endif
-
   // S390 Assembler::move sequence are IILF / IIHF
+  int size;
 #if V8_TARGET_ARCH_S390X
   size = 2 + 12;  // IILF + IIHF + BASR
 #else
   size = 2 + 6;  // IILF + BASR
 #endif
-
   return size;
 }
 
@@ -181,12 +153,6 @@ void MacroAssembler::Call(Address target,
   // Statement positions are expected to be recorded when the target
   // address is loaded.
   positions_recorder()->WriteRecordedPositions();
-
-  // This can likely be optimized to make use of bc() with 24bit relative
-  //
-  // RecordRelocInfo(x.rmode_, x.imm_);
-  // bc( BA, .... offset, LKset);
-  //
 
   mov(ip, Operand(reinterpret_cast<intptr_t>(target), rmode));
   basr(r14, ip);
@@ -693,8 +659,8 @@ int MacroAssembler::ActivationFrameAlignment() {
 #if !defined(USE_SIMULATOR)
   // Running on the real platform. Use the alignment as mandated by the local
   // environment.
-  // Note: This will break if we ever start generating snapshots on one PPC
-  // platform for another PPC platform with a different alignment.
+  // Note: This will break if we ever start generating snapshots on one S390
+  // platform for another S390 platform with a different alignment.
   return OS::ActivationFrameAlignment();
 #else  // Simulated
   // If we are using the simulator then we should always align to the expected
@@ -919,10 +885,8 @@ void MacroAssembler::InvokeFunction(Register fun,
   // You can't call a function without a valid frame.
   ASSERT(flag == JUMP_FUNCTION || has_frame());
 
-  // Contract with called JS functions requires that function is passed in r2.
-  // @TODO HACK: Temporarily remove fun.is(r2) until we fix all the callers
-  // as PPC code expected it in r3.
-  // ASSERT(fun.is(r3));
+  // Contract with called JS functions requires that function is passed in r3.
+  ASSERT(fun.is(r3));
 
   Register expected_reg = r4;
   Register code_reg = r5;
@@ -1072,7 +1036,7 @@ void MacroAssembler::PopTryHandler() {
   StoreP(r3, MemOperand(ip));
 }
 
-// PPC - make use of ip as a temporary register
+// Make use of ip as a temporary register
 void MacroAssembler::JumpToHandlerEntry() {
   // Compute the handler entry address and jump to it.  The handler table is
   // a fixed array of (smi-tagged) code offsets.
