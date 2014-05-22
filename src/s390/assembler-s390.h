@@ -1908,7 +1908,6 @@ void lhi(Register dst, const Operand& imm);
   // Code emission
   inline void CheckBuffer();
   void GrowBuffer();
-  inline void emit(Instr x);
 
   // S390 emitting helpers
   inline void emit2bytes(uint16_t x);

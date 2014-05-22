@@ -4849,28 +4849,6 @@ CodePatcher::~CodePatcher() {
   ASSERT(masm_.reloc_info_writer.pos() == address_ + size_ + Assembler::kGap);
 }
 
-
-void CodePatcher::Emit(Instr instr) {
-  masm()->emit(instr);
-}
-
-
-void CodePatcher::EmitCondition(Condition cond) {
-  Instr instr = Assembler::instr_at(masm_.pc_);
-  switch (cond) {
-    case eq:
-      instr = (instr & ~kCondMask) | BT;
-      break;
-    case ne:
-      instr = (instr & ~kCondMask) | BF;
-      break;
-    default:
-      UNIMPLEMENTED();
-  }
-  masm_.emit(instr);
-}
-
-
 } }  // namespace v8::internal
 
 #endif  // V8_TARGET_ARCH_S390

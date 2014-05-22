@@ -350,14 +350,6 @@ void Assembler::CheckTrampolinePoolQuick() {
   }
 }
 
-void Assembler::emit(Instr x) {
-  UNREACHABLE();
-  CheckBuffer();
-  *reinterpret_cast<Instr*>(pc_) = x;
-  pc_ += kInstrSize;
-  CheckTrampolinePoolQuick();
-}
-
 // S390 specific emitting helpers
 void Assembler::emit2bytes(uint16_t x) {
     CheckBuffer();

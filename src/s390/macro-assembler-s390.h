@@ -1742,13 +1742,6 @@ class CodePatcher {
   // Macro assembler to emit code.
   MacroAssembler* masm() { return &masm_; }
 
-  // Emit an instruction directly.
-  void Emit(Instr instr);
-
-  // Emit the condition part of an instruction leaving the rest of the current
-  // instruction unchanged.
-  void EmitCondition(Condition cond);
-
  private:
   byte* address_;  // The address of the code being patched.
   int size_;  // Number of bytes of the expected patch size.
