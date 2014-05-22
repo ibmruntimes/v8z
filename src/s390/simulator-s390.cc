@@ -3688,24 +3688,26 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   int reg_arg_count   = (argument_count > 5) ? 5 : argument_count;
   int stack_arg_count = argument_count - reg_arg_count;
   for (int i = 0; i < reg_arg_count; i++) {
-      set_register(i + 2, va_arg(parameters, intptr_t));
+      intptr_t value = va_arg(parameters, intptr_t);
+      set_register(i + 2, value);
   }
 
   // Remaining arguments passed on stack.
   intptr_t original_stack = get_register(sp);
   // Compute position of stack on entry to generated code.
   intptr_t entry_stack = (original_stack -
-                          (kNumRequiredStackFrameSlots + stack_arg_count) *
-                          sizeof(intptr_t));
+                          (kCalleeRegisterSaveAreaSize +
+                           stack_arg_count * sizeof(intptr_t)));
   if (OS::ActivationFrameAlignment() != 0) {
     entry_stack &= -OS::ActivationFrameAlignment();
   }
   // Store remaining arguments on stack, from low to high memory.
   // +2 is a hack for the LR slot + old SP on PPC
-  intptr_t* stack_argument = reinterpret_cast<intptr_t*>(entry_stack) +
-    kStackFrameExtraParamSlot;
+  intptr_t* stack_argument = reinterpret_cast<intptr_t*>(entry_stack +
+    kCalleeRegisterSaveAreaSize);
   for (int i = 0; i < stack_arg_count; i++) {
-    stack_argument[i] = va_arg(parameters, intptr_t);
+    intptr_t value = va_arg(parameters, intptr_t);
+    stack_argument[i] = value;
   }
   va_end(parameters);
   set_register(sp, entry_stack);
