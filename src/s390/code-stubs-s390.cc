@@ -4885,39 +4885,57 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
                        r4);
 
   // Isolates: note we add an additional parameter here (isolate pointer).
-  const int kRegExpExecuteArguments = 10;
-  const int kParameterRegisters = 8;
-  __ EnterExitFrame(false, kRegExpExecuteArguments - kParameterRegisters);
+  // const int kRegExpExecuteArguments = 10;
+  // const int kParameterRegisters = 5;
+  // __ EnterExitFrame(false, kRegExpExecuteArguments - kParameterRegisters);
+  __ CleanseP(r14);
+
+  __ Push(r14, fp);
+  __ LoadRR(fp, sp);
 
   // Stack pointer now points to cell where return address is to be written.
   // Arguments are before that on the stack or in registers.
 
   // @TODO Fix this code for S390!!!  We need to pass the arguments
   // appropriately
+  __ lay(sp, MemOperand(sp, -(96 + 5 * 4)));
 
   // Argument 10 (in stack parameter area): Pass current isolate address.
   __ mov(r2, Operand(ExternalReference::isolate_address()));
-  __ StoreP(r2,
-            MemOperand(sp, (kStackFrameExtraParamSlot + 1) * kPointerSize));
+  __ StoreP(r2, MemOperand(sp, 96 + 4 * kPointerSize));
 
   // Argument 9 is a dummy that reserves the space used for
   // the return address added by the ExitFrame in native calls.
+  __ mov(r2, Operand::Zero());
+  __ StoreP(r2, MemOperand(sp, 96 + 3 * kPointerSize));
 
-  // Argument 8 (r9): Indicate that this is a direct call from JavaScript.
-  __ LoadImmP(r9, Operand(1));
+  // Argument 8: Indicate that this is a direct call from JavaScript.
+  __ mov(r2, Operand(1));
+  __ StoreP(r2, MemOperand(sp, 96 + 2 * kPointerSize));
 
-  // Argument 7 (r8): Start (high end) of backtracking stack memory area.
+  // Argument 7: Start (high end) of backtracking stack memory area.
   __ mov(r2, Operand(address_of_regexp_stack_memory_address));
   __ LoadP(r2, MemOperand(r2, 0));
-  __ mov(r4, Operand(address_of_regexp_stack_memory_size));
-  __ LoadP(r4, MemOperand(r4, 0));
-  __ LoadRR(r8, r2);
-  __ AddP(r8, r4);
+  __ mov(r1, Operand(address_of_regexp_stack_memory_size));
+  __ LoadP(r1, MemOperand(r1, 0));
+  __ AddP(r2, r1);
+  __ StoreP(r2, MemOperand(sp, 96 + 1 * kPointerSize));
 
   // Argument 6 (r7): Set the number of capture registers to zero to force
   // global egexps to behave as non-global.  This does not affect non-global
   // regexps.
-  __ LoadImmP(r7, Operand::Zero());
+  __ mov(r2, Operand::Zero());
+  __ StoreP(r2, MemOperand(sp, 96 + 0 * kPointerSize));
+
+  // Argument 1 (r2): Subject string.
+  // Load the length from the original subject string from the previous stack
+  // frame. Therefore we have to use fp, which points exactly to two pointer
+  // sizes below the previous sp. (Because creating a new stack frame pushes
+  // the previous fp onto the stack and moves up sp by 2 * kPointerSize.)
+  __ LoadP(r2, MemOperand(fp, kSubjectOffset + 2 * kPointerSize));
+
+  // Argument 2 (r3): Previous index.
+  // Already there
 
   // Argument 5 (r6): static offsets vector buffer.
   __ mov(r6,
@@ -4926,16 +4944,10 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // For arguments 4 (r5) and 3 (r4) get string length, calculate start of
   // string data and calculate the shift of the index (0 for ASCII and 1 for
   // two byte).
-  __ LoadRR(r1, subject);
   __ AddP(r1, Operand(SeqString::kHeaderSize - kHeapObjectTag));
   __ XorPImm(r5, Operand(1));
-  // Load the length from the original subject string from the previous stack
-  // frame. Therefore we have to use fp, which points exactly to two pointer
-  // sizes below the previous sp. (Because creating a new stack frame pushes
-  // the previous fp onto the stack and moves up sp by 2 * kPointerSize.)
-  __ LoadP(subject, MemOperand(fp, kSubjectOffset + 2 * kPointerSize));
   // If slice offset is not 0, load the length from the original sliced string.
-  // Argument 4, r5: End of string data
+  //
   // Argument 3, r4: Start of string data
   // Prepare start and end index of the input.
   __ ShiftLeftP(r13, r13, r5);
@@ -4943,17 +4955,13 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ ShiftLeftP(r4, r3, r5);
   __ Add(r4, r13, r4);
 
-  __ LoadP(r1, FieldMemOperand(subject, String::kLengthOffset));
+  // Argument 4, r5: End of string data
+  __ LoadP(r1, FieldMemOperand(r2, String::kLengthOffset));
   __ SmiUntag(r1);
   __ ShiftLeftP(r0, r1, r5);
   __ LoadRR(r5, r0);
   __ Add(r5, r13, r5);
 
-  // Argument 2 (r3): Previous index.
-  // Already there
-
-  // Argument 1 (r2): Subject string.
-  __ LoadRR(r2, subject);
 
   // Locate the code entry and call it.
   __ AddP(code, Operand(Code::kHeaderSize - kHeapObjectTag));
@@ -4968,10 +4976,14 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ LoadP(code, MemOperand(code, 0));  // Instruction address
 #endif
 
-  DirectCEntryStub stub;
-  stub.GenerateCall(masm, code);
+  // DirectCEntryStub stub;
+  // stub.GenerateCall(masm, code);
+  __ basr(r14, code);
 
-  __ LeaveExitFrame(false, no_reg);
+  // __ LeaveExitFrame(false, no_reg);
+  __ LoadRR(sp, fp);
+  __ pop(fp);
+  __ pop(r14);
 
   // r2: result
   // subject: subject string (callee saved)
