@@ -753,7 +753,7 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     //    sp/r15 as well in a single STM/STMG
     __ StoreMultipleP(r2, sp, MemOperand(sp, 8));
     // BackChain
-    __ StoreP(frame_pointer(), MemOperand(frame_pointer()));
+    __ StoreP(frame_pointer(), MemOperand(sp));
 
 
     // Actually emit code to start a new stack frame.
