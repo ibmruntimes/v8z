@@ -2459,12 +2459,16 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
       break;
     }
 
+<<<<<<< HEAD
 /*
     case DSR:
+=======
+>>>>>>> Test dsgr in test-asm-s390, simulator fails/native passes
     case DSGR: {
       RREInstruction * rreinst = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rreinst->R1Value();
       int r2 = rreinst->R2Value();
+<<<<<<< HEAD
       if (op == DSR) {
         int32_t r1_val = get_low_register<int32_t>(r1);
         int32_t r2_val = get_low_register<int32_t>(r2);
@@ -2477,6 +2481,15 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
       } else {
         UNREACHABLE();
       }
+=======
+
+      ASSERT(r1 % 2 == 0);
+
+      int64_t dividend = get_register(r1+1);
+      int64_t divisor = get_register(r2);
+      set_register(r1, dividend % divisor);
+      set_register(r1+1, dividend / divisor);
+>>>>>>> Test dsgr in test-asm-s390, simulator fails/native passes
       break;
     }
 */
