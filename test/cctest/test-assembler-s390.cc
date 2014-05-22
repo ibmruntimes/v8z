@@ -1392,5 +1392,39 @@ TEST(18) {
   CHECK_EQ(0x2468, static_cast<int>(res));
 }
 
+/* Test DSGR */
+/*TEST(19) {
+  InitializeVM();
+  v8::HandleScope scope;
+
+  MacroAssembler assm(Isolate::Current(), NULL, 0);
+
+#if defined(_AIX)
+  __ function_descriptor();
+#endif
+
+  __ mov(r3, Operand(0x0002));
+  __ mov(r4, Operand(0x0002));
+  __ dsgr(r2, r4);
+  __ b(r14);
+
+  CodeDesc desc;
+  assm.GetCode(&desc);
+  Object* code = HEAP->CreateCode(
+      desc,
+      Code::ComputeFlags(Code::STUB),
+      Handle<Object>(HEAP->undefined_value()))->ToObjectChecked();
+  CHECK(code->IsCode());
+#ifdef DEBUG
+  Code::cast(code)->Print();
+#endif
+  F1 f = FUNCTION_CAST<F1>(Code::cast(code)->entry());
+  intptr_t res =
+    reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(f, 100, 0, 0, 0, 0));
+  ::printf("f() = %" V8PRIdPTR  "\n", res);
+  CHECK_EQ(0, static_cast<int>(res));
+}*/
+
+
 
 #undef __
