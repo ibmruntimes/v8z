@@ -2470,7 +2470,7 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
       int64_t divisor = get_register(r2);
       set_register(r1, dividend % divisor);
       set_register(r1+1, dividend / divisor);
-      
+
       break;
     }
 
