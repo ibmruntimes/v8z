@@ -4944,6 +4944,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // For arguments 4 (r5) and 3 (r4) get string length, calculate start of
   // string data and calculate the shift of the index (0 for ASCII and 1 for
   // two byte).
+  __ LoadRR(r1, r2);
   __ AddP(r1, Operand(SeqString::kHeaderSize - kHeapObjectTag));
   __ XorPImm(r5, Operand(1));
   // If slice offset is not 0, load the length from the original sliced string.
