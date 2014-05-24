@@ -822,7 +822,7 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     // Load string end.
     __ LoadRR(end_of_input_address(), r5);
     // Find negative length (offset of start relative to end).
-    __ Sub(current_input_offset(), r2, end_of_input_address());
+    __ Sub(current_input_offset(), r4, end_of_input_address());
     // Load input start.
     __ LoadRR(r1, r4);
 
