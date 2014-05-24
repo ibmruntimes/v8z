@@ -755,6 +755,10 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     // BackChain
     __ StoreP(frame_pointer(), MemOperand(sp));
 
+    // Load stack parameters from caller stack frame
+    __ LoadW(r7, MemOperand(fp, 0 * kPointerSize));   // capture array size
+    __ LoadW(r8, MemOperand(fp, 1 * kPointerSize));  // stack area base
+    __ LoadW(r9, MemOperand(fp, 2 * kPointerSize));  // direct call
 
     // Actually emit code to start a new stack frame.
     // Push arguments
@@ -768,9 +772,6 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     __ LoadRR(frame_pointer(), sp);
     // FIXME: Broken in 64-bit
     __ lay(sp, MemOperand(sp, -10 * kPointerSize));
-    __ LoadW(r7, MemOperand(fp, 96));   // capture array size
-    __ LoadW(r8, MemOperand(fp, 100));  // stack area base
-    __ LoadW(r9, MemOperand(fp, 104));  // direct call
     __ mov(r1, Operand::Zero());        // success counter
     __ mov(r0, Operand::Zero());        // offset of location
     __ StoreMultipleP(r0, r9, MemOperand(sp, 0));
