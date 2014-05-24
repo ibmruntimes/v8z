@@ -3670,7 +3670,7 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   intptr_t r8_val = get_register(r8);
   intptr_t r9_val = get_register(r9);
   intptr_t r10_val = get_register(r10);
-  intptr_t r11_val = get_register(r11);
+  // r11 is fp
   intptr_t r12_val = get_register(r12);
   intptr_t r13_val = get_register(r13);
 
@@ -3688,10 +3688,14 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
 
   // Remaining arguments passed on stack.
   intptr_t original_stack = get_register(sp);
+  intptr_t original_frame = get_register(fp);
+
   // Compute position of stack on entry to generated code.
   intptr_t entry_stack = (original_stack -
                           (kCalleeRegisterSaveAreaSize +
                            stack_arg_count * sizeof(intptr_t)));
+  intptr_t entry_frame = entry_stack + kCalleeRegisterSaveAreaSize;
+
   if (OS::ActivationFrameAlignment() != 0) {
     entry_stack &= -OS::ActivationFrameAlignment();
   }
@@ -3705,6 +3709,7 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   }
   va_end(parameters);
   set_register(sp, entry_stack);
+  set_register(fp, entry_frame);
 
   // Prepare to execute the code at entry
 #if ABI_USES_FUNCTION_DESCRIPTORS
@@ -3733,7 +3738,7 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   set_register(r8, callee_saved_value);
   set_register(r9, callee_saved_value);
   set_register(r10, callee_saved_value);
-  set_register(r11, callee_saved_value);
+  // r11 is fp
   set_register(r12, callee_saved_value);
   set_register(r13, callee_saved_value);
 
@@ -3748,7 +3753,7 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   CHECK_EQ(callee_saved_value, get_register(r8));
   CHECK_EQ(callee_saved_value, get_register(r9));
   CHECK_EQ(callee_saved_value, get_register(r10));
-  CHECK_EQ(callee_saved_value, get_register(r11));
+  // r11 is fp
   CHECK_EQ(callee_saved_value, get_register(r12));
   CHECK_EQ(callee_saved_value, get_register(r13));
 
@@ -3758,13 +3763,15 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   set_register(r8, r8_val);
   set_register(r9, r9_val);
   set_register(r10, r10_val);
-  set_register(r11, r11_val);
+  // r11 is fp
   set_register(r12, r12_val);
   set_register(r13, r13_val);
 
   // Pop stack passed arguments.
   CHECK_EQ(entry_stack, get_register(sp));
+  CHECK_EQ(entry_frame, get_register(fp));
   set_register(sp, original_stack);
+  set_register(fp, original_frame);
 
   // Return value register
   intptr_t result = get_register(r2);
