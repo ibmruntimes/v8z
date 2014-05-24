@@ -763,9 +763,10 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     //    sp/r15 as well in a single STM/STMG
     __ StoreMultipleP(r2, sp, MemOperand(sp, 8));
     // BackChain
-    __ StoreP(frame_pointer(), MemOperand(sp));
+    // __ StoreP(frame_pointer(), MemOperand(sp));
 
     // Load stack parameters from caller stack frame
+    __ lay(fp, MemOperand(sp, 96));
     __ LoadW(r7, MemOperand(fp, 0 * kPointerSize));   // capture array size
     __ LoadW(r8, MemOperand(fp, 1 * kPointerSize));  // stack area base
     __ LoadW(r9, MemOperand(fp, 2 * kPointerSize));  // direct call
