@@ -4886,19 +4886,19 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
 
   // Isolates: note we add an additional parameter here (isolate pointer).
   // const int kRegExpExecuteArguments = 10;
-  // const int kParameterRegisters = 5;
+  const int kParameterRegisters = 5;
   // __ EnterExitFrame(false, kRegExpExecuteArguments - kParameterRegisters);
   __ CleanseP(r14);
 
   __ Push(r14, fp);
-  __ LoadRR(fp, sp);
+  // __ LoadRR(fp, sp);
 
   // Stack pointer now points to cell where return address is to be written.
   // Arguments are before that on the stack or in registers.
 
   // @TODO Fix this code for S390!!!  We need to pass the arguments
   // appropriately
-  __ lay(sp, MemOperand(sp, -(96 + 5 * 4)));
+  __ lay(sp, MemOperand(sp, -(96 + kParameterRegisters * kPointerSize)));
 
   // Argument 10 (in stack parameter area): Pass current isolate address.
   __ mov(r2, Operand(ExternalReference::isolate_address()));
@@ -4921,7 +4921,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ AddP(r2, r1);
   __ StoreP(r2, MemOperand(sp, 96 + 1 * kPointerSize));
 
-  // Argument 6 (r7): Set the number of capture registers to zero to force
+  // Argument 6: Set the number of capture registers to zero to force
   // global egexps to behave as non-global.  This does not affect non-global
   // regexps.
   __ mov(r2, Operand::Zero());
@@ -4979,10 +4979,11 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
 
   // DirectCEntryStub stub;
   // stub.GenerateCall(masm, code);
+  __ la(fp, MemOperand(sp, 96));
   __ basr(r14, code);
 
   // __ LeaveExitFrame(false, no_reg);
-  __ LoadRR(sp, fp);
+  __ la(sp, MemOperand(fp, kParameterRegisters * kPointerSize));
   __ pop(fp);
   __ pop(r14);
 
