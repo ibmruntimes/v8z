@@ -74,13 +74,23 @@ namespace internal {
  *  - fp[0..96] zLinux ABI register saving area
  *  --- sp when called ---
  *  --- frame pointer ----
- *  - fp[-4]  success counter    (only for global regexps to count matches).
- *  - fp[-8]  Offset of location before start of input (effectively character
+ *  - fp[-4]  direct_call        (if 1, direct call from JavaScript code,
+ *                                if 0, call through the runtime system).
+ *  - fp[-8]  stack_area_base    (high end of the memory area to use as
+ *                                backtracking stack).
+ *  - fp[-12] capture array size (may fit multiple sets of matches)
+ *  - fp[-16] int* capture_array (int[num_saved_registers_], for output).
+ *  - fp[-20] end of input       (address of end of string).
+ *  - fp[-24] start of input     (address of first character in string).
+ *  - fp[-28] start index        (character index of start).
+ *  - fp[-32] void* input_string (location of a handle containing the string).
+ *  - fp[-36] success counter    (only for global regexps to count matches).
+ *  - fp[-40] Offset of location before start of input (effectively character
  *            position -1). Used to initialize capture registers to a
  *            non-position.
- *  - fp[-12] At start (if 1, we are starting at the start of the
- *            string, otherwise 0)
- *  - fp[-16] register 0         (Only positions must be stored in the first
+ *  - fp[-44] At start (if 1, we are starting at the start of the
+ *    string, otherwise 0)
+ *  - fp[-48] register 0         (Only positions must be stored in the first
  *  -         register 1          num_saved_registers_ registers)
  *  -         ...
  *  -         register num_registers-1
@@ -811,26 +821,26 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     __ lay(sp, MemOperand(sp, (-num_registers_ * kPointerSize)));
     // Load string end.
     __ LoadRR(end_of_input_address(), r5);
-    // Load input start.
-    __ LoadRR(r2, r4);
     // Find negative length (offset of start relative to end).
     __ Sub(current_input_offset(), r2, end_of_input_address());
+    // Load input start.
+    __ LoadRR(r1, r4);
 
     // r3 is already start index
     // __ LoadP(r3, MemOperand(frame_pointer(), kStartIndex));
 
-    // Set r2 to address of char before start of the input string
+    // Set r1 to address of char before start of the input string
     // (effectively string position -1).
-    __ Sub(r2, current_input_offset(), Operand(char_size()));
+    __ Sub(r1, current_input_offset(), Operand(char_size()));
     if (mode_ == UC16) {
       __ ShiftLeftImm(r0, r3, Operand(1));
-      __ Sub(r2, r2, r0);
+      __ Sub(r1, r1, r0);
     } else {
-      __ Sub(r2, r2, r3);
+      __ Sub(r1, r1, r3);
     }
     // Store this value in a local variable, for use when clearing
     // position registers.
-    __ StoreP(r2, MemOperand(frame_pointer(), kInputStartMinusOne));
+    __ StoreP(r1, MemOperand(frame_pointer(), kInputStartMinusOne));
 
     // Initialize code pointer register
     __ mov(code_pointer(), Operand(masm_->CodeObject()));
@@ -860,12 +870,12 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
         __ LoadImmP(r4, Operand(num_saved_registers_));
         Label init_loop;
         __ bind(&init_loop);
-        __ StoreP(r2, MemOperand(r3, -kPointerSize));
+        __ StoreP(r1, MemOperand(r3, -kPointerSize));
         __ lay(r3, MemOperand(r3, -kPointerSize));
         __ BranchOnCount(r4, &init_loop);
       } else {
         for (int i = 0; i < num_saved_registers_; i++) {
-          __ StoreP(r2, register_location(i));
+          __ StoreP(r1, register_location(i));
         }
       }
     }
