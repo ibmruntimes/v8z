@@ -1405,16 +1405,17 @@ void RegExpMacroAssemblerS390::SafeCallTarget(Label* name) {
 
 void RegExpMacroAssemblerS390::Push(Register source) {
   ASSERT(!source.is(backtrack_stackpointer()));
-  __ StoreP(source, MemOperand(backtrack_stackpointer(), -kPointerSize));
   __ lay(backtrack_stackpointer(),
          MemOperand(backtrack_stackpointer(), -kPointerSize));
+  __ StoreP(source, MemOperand(backtrack_stackpointer()));
 }
 
 
 void RegExpMacroAssemblerS390::Pop(Register target) {
   ASSERT(!target.is(backtrack_stackpointer()));
   __ LoadP(target, MemOperand(backtrack_stackpointer()));
-  __ AddP(backtrack_stackpointer(), Operand(kPointerSize));
+  __ la(backtrack_stackpointer(),
+      MemOperand(backtrack_stackpointer(), kPointerSize));
 }
 
 
