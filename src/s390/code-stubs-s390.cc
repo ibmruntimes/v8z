@@ -4891,7 +4891,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ CleanseP(r14);
 
   __ Push(r14, fp);
-  // __ LoadRR(fp, sp);
+  __ LoadRR(fp, sp);
 
   // Stack pointer now points to cell where return address is to be written.
   // Arguments are before that on the stack or in registers.
