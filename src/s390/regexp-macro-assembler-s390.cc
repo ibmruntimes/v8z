@@ -861,8 +861,11 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
       // Fill saved registers with initial value = start offset - 1
       if (num_saved_registers_ > 8) {
         // One slot beyond address of register 0.
-        // FIXME: should double check
-        ASSERT(false);
+        __ lay(r3, MemOperand(frame_pointer(), kRegisterZero + kPointerSize));
+        __ lay(r4, MemOperand(r3, -num_saved_registers_ * kPointerSize));
+        __ InitializeFieldsWithFiller(r4, r3, r1);
+
+        /*
         __ LoadRR(r3, frame_pointer());
         __ AddP(r3, Operand(kRegisterZero + kPointerSize));
         __ LoadImmP(r4, Operand(num_saved_registers_));
@@ -871,6 +874,7 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
         __ StoreP(r1, MemOperand(r3, -kPointerSize));
         __ lay(r3, MemOperand(r3, -kPointerSize));
         __ BranchOnCount(r4, &init_loop);
+        */
       } else {
         for (int i = 0; i < num_saved_registers_; i++) {
           __ StoreP(r1, register_location(i));
