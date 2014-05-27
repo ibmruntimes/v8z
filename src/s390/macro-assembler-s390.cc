@@ -3197,6 +3197,18 @@ void MacroAssembler::JumpIfBothInstanceTypesAreNotSequentialAscii(
   int kFlatAsciiStringMask =
       kIsNotStringMask | kStringEncodingMask | kStringRepresentationMask;
   int kFlatAsciiStringTag = ASCII_STRING_TYPE;
+  if (!scratch1.is(first)) LoadRR(scratch1, first);
+  if (!scratch2.is(second)) LoadRR(scratch2, second);
+  nilf(scratch1, Operand(kFlatAsciiStringMask));
+  Cmpi(scratch1, Operand(kFlatAsciiStringTag));
+  bne(failure);
+  nilf(scratch2, Operand(kFlatAsciiStringMask));
+  Cmpi(scratch2, Operand(kFlatAsciiStringTag));
+  bne(failure);
+
+  /*
+  Cmpi(scratch1, Operand(kFlatAsciiStringTag));
+  nilf(scratch2, Operand(kFlatAsciiStringMask));
   mov(scratch1, Operand(kFlatAsciiStringMask));
   AndP(scratch1, first);
   mov(scratch2, Operand(kFlatAsciiStringMask));
@@ -3205,6 +3217,7 @@ void MacroAssembler::JumpIfBothInstanceTypesAreNotSequentialAscii(
   bne(failure);
   Cmpi(scratch2, Operand(kFlatAsciiStringTag));
   bne(failure);
+  */
 }
 
 
@@ -3214,10 +3227,17 @@ void MacroAssembler::JumpIfInstanceTypeIsNotSequentialAscii(Register type,
   int kFlatAsciiStringMask =
       kIsNotStringMask | kStringEncodingMask | kStringRepresentationMask;
   int kFlatAsciiStringTag = ASCII_STRING_TYPE;
+
+  if (!scratch.is(type)) LoadRR(scratch, type);
+  nilf(scratch, Operand(kFlatAsciiStringMask));
+  Cmpi(scratch, Operand(kFlatAsciiStringTag));
+  bne(failure);
+  /*
   mov(scratch, Operand(kFlatAsciiStringMask));
   AndP(scratch, type);
   Cmpi(scratch, Operand(kFlatAsciiStringTag));
   bne(failure);
+  */
 }
 
 static const int kRegisterPassedArguments = 5;
@@ -4446,8 +4466,15 @@ void MacroAssembler::SubSmiLiteral(Register dst, Register src, Smi *smi,
 }
 
 void MacroAssembler::AndSmiLiteral(Register dst, Register src, Smi *smi) {
-  LoadSmiLiteral(dst, smi);
-  AndP(dst, src);
+  if (!dst.is(src))
+    LoadRR(dst, src);
+#if V8_TARGET_ARCH_S390X
+  ASSERT((reinterpret_cast<intptr_t>(smi) & 0xffffffff) == 0);
+  int value = static_cast<int>(reinterpret_cast<intptr_t>(smi) >> 32);
+  nihf(dst, Operand(value));
+#else
+  nilf(dst, Operand(reinterpret_cast<int>(smi)));
+#endif
 }
 
 
