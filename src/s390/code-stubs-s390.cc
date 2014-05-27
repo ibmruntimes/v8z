@@ -4678,6 +4678,12 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   Register last_match_info_elements = r8;
   Register code = r9;
 
+  __ CleanseP(r14);
+
+  __ lay(sp, MemOperand(sp, -13 * kPointerSize));
+  __ StoreMultipleP(r3, sp, MemOperand(sp, 0));
+  __ la(fp, MemOperand(sp, 13 * kPointerSize));
+
   // Ensure register assigments are consistent with callee save masks
   ASSERT(subject.bit() & (kCalleeSaved & kRegExpCalleeSaved));
   ASSERT(regexp_data.bit() & (kCalleeSaved & kRegExpCalleeSaved));
@@ -4696,7 +4702,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ beq(&runtime);
 
   // Check that the first argument is a JSRegExp object.
-  __ LoadP(r2, MemOperand(sp, kJSRegExpOffset));
+  __ LoadP(r2, MemOperand(fp, kJSRegExpOffset));
   STATIC_ASSERT(kSmiTag == 0);
   __ JumpIfSmi(r2, &runtime);
   __ CompareObjectType(r2, r3, r3, JS_REGEXP_TYPE);
@@ -4735,7 +4741,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // r4: Number of capture registers
   // regexp_data: RegExp data (FixedArray)
   // Check that the second argument is a string.
-  __ LoadP(subject, MemOperand(sp, kSubjectOffset));
+  __ LoadP(subject, MemOperand(fp, kSubjectOffset));
   __ JumpIfSmi(subject, &runtime);
   Condition is_string = masm->IsObjectStringType(subject, r2);
   __ b(NegateCondition(is_string), &runtime /*, cr0*/);
@@ -4748,7 +4754,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // regexp_data: RegExp data (FixedArray)
   // Check that the third argument is a positive smi less than the subject
   // string length. A negative value will be greater (unsigned comparison).
-  __ LoadP(r2, MemOperand(sp, kPreviousIndexOffset));
+  __ LoadP(r2, MemOperand(fp, kPreviousIndexOffset));
   __ JumpIfNotSmi(r2, &runtime);
   __ Cmpl(r5, r2);
   __ ble(&runtime);
@@ -4757,7 +4763,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // subject: Subject string
   // regexp_data: RegExp data (FixedArray)
   // Check that the fourth object is a JSArray object.
-  __ LoadP(r2, MemOperand(sp, kLastMatchInfoOffset));
+  __ LoadP(r2, MemOperand(fp, kLastMatchInfoOffset));
   __ JumpIfSmi(r2, &runtime);
   __ CompareObjectType(r2, r3, r3, JS_ARRAY_TYPE);
   __ bne(&runtime);
@@ -4872,7 +4878,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // regexp_data: RegExp data (FixedArray)
   // Load used arguments before starting to push arguments for call to native
   // RegExp code to avoid handling changing stack height.
-  __ LoadP(r3, MemOperand(sp, kPreviousIndexOffset));
+  __ LoadP(r3, MemOperand(fp, kPreviousIndexOffset));
   __ SmiUntag(r3);
 
   // r3: previous index
@@ -4888,10 +4894,12 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // const int kRegExpExecuteArguments = 10;
   const int kParameterRegisters = 5;
   // __ EnterExitFrame(false, kRegExpExecuteArguments - kParameterRegisters);
-  __ CleanseP(r14);
 
-  __ Push(r14, fp);
-  __ LoadRR(fp, sp);
+  // Save the frame pointer and the context in top.
+  __ mov(r1, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate)));
+  __ StoreP(fp, MemOperand(r1));
+  __ mov(r1, Operand(ExternalReference(Isolate::kContextAddress, isolate)));
+  __ StoreP(cp, MemOperand(r1));
 
   // Stack pointer now points to cell where return address is to be written.
   // Arguments are before that on the stack or in registers.
@@ -4932,7 +4940,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // frame. Therefore we have to use fp, which points exactly to two pointer
   // sizes below the previous sp. (Because creating a new stack frame pushes
   // the previous fp onto the stack and moves up sp by 2 * kPointerSize.)
-  __ LoadP(r2, MemOperand(fp, kSubjectOffset + 2 * kPointerSize));
+  __ LoadP(r2, MemOperand(fp, kSubjectOffset));
 
   // Argument 2 (r3): Previous index.
   // Already there
@@ -4983,9 +4991,20 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ basr(r14, code);
 
   // __ LeaveExitFrame(false, no_reg);
+  // Clear top frame.
+  __ LoadImmP(r5, Operand(0, RelocInfo::NONE));
+  __ mov(ip, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate)));
+  __ StoreP(r5, MemOperand(ip));
+
+  // Restore current context from top and clear it in debug mode.
+  __ mov(ip, Operand(ExternalReference(Isolate::kContextAddress, isolate)));
+  __ LoadP(cp, MemOperand(ip));
+#ifdef DEBUG
+  __ StoreP(r5, MemOperand(ip));
+#endif
+
   __ la(sp, MemOperand(fp, kParameterRegisters * kPointerSize));
-  __ pop(fp);
-  __ pop(r14);
+  __ la(fp, MemOperand(sp, 13 * kPointerSize));
 
   // r2: result
   // subject: subject string (callee saved)
@@ -5032,6 +5051,8 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ bind(&failure);
   // For failure and exception return null.
   __ mov(r2, Operand(masm->isolate()->factory()->null_value()));
+  __ LoadMultipleP(r3, sp, MemOperand(sp, 0));
+  __ la(sp, MemOperand(sp, 13 * kPointerSize));
   __ la(sp, MemOperand(sp, (4 * kPointerSize)));
   __ Ret();
 
@@ -5095,7 +5116,9 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ BranchOnCount(r3, &next_capture);
 
   // Return last match info.
-  __ LoadP(r2, MemOperand(sp, kLastMatchInfoOffset));
+  __ LoadP(r2, MemOperand(fp, kLastMatchInfoOffset));
+  __ LoadMultipleP(r3, sp, MemOperand(sp, 0));
+  __ la(sp, MemOperand(sp, 13 * kPointerSize));
   __ la(sp, MemOperand(sp, (4 * kPointerSize)));
   __ Ret();
 
@@ -5123,6 +5146,10 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
 
   // Do the runtime call to execute the regexp.
   __ bind(&runtime);
+
+  __ LoadMultipleP(r3, sp, MemOperand(sp, 0));
+  __ la(sp, MemOperand(sp, 13 * kPointerSize));
+
   __ TailCallRuntime(Runtime::kRegExpExec, 4, 1);
 #endif  // V8_INTERPRETED_REGEXP
 }
