@@ -791,9 +791,6 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     Label stack_limit_hit;
     Label stack_ok;
 
-    // FIXME: temporary remove stack limit check
-    __ b(&stack_ok);
-
     ExternalReference stack_limit =
       ExternalReference::address_of_stack_limit(masm_->isolate());
     __ mov(r2, Operand(stack_limit));
