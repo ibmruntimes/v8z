@@ -701,6 +701,7 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case LGHR: Format(instr, "lghr\t'r5,'r6"); break;
       case MSGR: Format(instr, "msgr\t'r5,'r6"); break;
       case DSGR: Format(instr, "dsgr\t'r5,'r6"); break;
+      case LZDR: Format(instr, "lzdr\t'r5,'r6"); break;
       case MLR: Format(instr, "mlr\t'r5,'r6"); break;
       case MLGR: Format(instr, "mlgr\t'r5,'r6"); break;
       case ALGR: Format(instr, "algr\t'r5,'r6"); break;

@@ -1911,6 +1911,14 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       set_register(r1, get_register(r2));
       break;
     }
+    case LZDR: {
+      RREInstruction * rreinst = reinterpret_cast<RREInstruction*>(instr);
+      int r1 = rreinst->R1Value();
+      set_d_register_from_double(r1, 0.0);
+      double dbl_val = get_register(r1);
+      (void)dbl_val;
+      break;
+    }
     case CGR: {
       // Compare (64)
       RREInstruction* rreinst = reinterpret_cast<RREInstruction*>(instr);
@@ -2458,7 +2466,6 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
       }
       break;
     }
-
     case DSGR: {
       RREInstruction * rreinst = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rreinst->R1Value();
@@ -2473,7 +2480,6 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
 
       break;
     }
-
     case MSR:
     case MSGR: {  // they do not set overflow code
       RREInstruction * rreinst = reinterpret_cast<RREInstruction*>(instr);
@@ -2622,9 +2628,24 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
 
           switch (mask_val) {
             case CURRENT_ROUNDING_MODE:
-            case ROUND_TO_NEAREST_WITH_TIES_AWAY_FROM_0:
             case ROUND_TO_PREPARE_FOR_SHORTER_PRECISION: {
-              UNIMPLEMENTED();
+              r1_val = static_cast<int32_t>(r2_val);
+              break;
+            }    
+            case ROUND_TO_NEAREST_WITH_TIES_AWAY_FROM_0: {
+              double ceil_val = ceil(r2_val);
+              double floor_val = floor(r2_val);
+              if (abs(r2_val - floor_val) > abs(r2_val - ceil_val)) {
+                r1_val = static_cast<int32_t>(ceil_val);
+              } else if (abs(r2_val - floor_val) < abs(r2_val - ceil_val)) {
+                r1_val = static_cast<int32_t>(floor_val);
+              } else {  // round away from zero:
+                if (r2_val > 0.0) {
+                  r1_val = static_cast<int32_t>(ceil_val);
+                } else {
+                  r1_val = static_cast<int32_t>(floor_val);
+                }
+              }
               break;
             }
             case ROUND_TO_NEAREST_WITH_TIES_TO_EVEN: {
