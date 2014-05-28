@@ -344,6 +344,10 @@ class Simulator {
   }
 
   bool TestConditionCode(Condition mask) {
+    // Check for unconditional branch
+    if (mask == 0xf)
+      return true;
+
     return (condition_reg_ & mask) != 0;
   }
 
