@@ -5007,7 +5007,9 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ la(fp, MemOperand(sp, 13 * kPointerSize));
 
   // r2: result
-  // subject: subject string (callee saved)
+  // subject: subject string -- needed to reload
+  __ LoadP(subject, MemOperand(fp, kSubjectOffset));
+
   // regexp_data: RegExp data (callee saved)
   // last_match_info_elements: Last match info elements (callee saved)
 
