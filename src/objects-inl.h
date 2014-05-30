@@ -4372,7 +4372,11 @@ void JSFunction::set_code(Code* value) {
 // Have to add TARGET_ARCH_S390X as well, as PPC simulation on S390
 // is broken due to assembler not recognizing SRAK instructions generated
 // by GCC.  Again, need to find better workaround.
+
+// attribute optimize is only supported on 4.4 or newer
+#if (__GNUC__ >= 4 && __GNUC_MINOR__ >= 4)
 __attribute__((optimize("O0")))
+#endif
 #endif
 void JSFunction::ReplaceCode(Code* code) {
   bool was_optimized = IsOptimized();
