@@ -1129,7 +1129,7 @@ void RegExpMacroAssemblerS390::PushBacktrack(Label* label) {
   } else {
     Label after_constant;
     __ b(&after_constant);
-    int offset = masm_->pc_offset();
+    int offset = masm_->pc_offset() + 2;
     int cp_offset = offset + Code::kHeaderSize - kHeapObjectTag;
     // need to allocate 4 bytes of memeory space for constant storage
     // The reason to allocate 2 more bytes in the front is to make sure
