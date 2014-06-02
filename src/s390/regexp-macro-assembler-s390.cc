@@ -1132,8 +1132,9 @@ void RegExpMacroAssemblerS390::PushBacktrack(Label* label) {
     int offset = masm_->pc_offset();
     int cp_offset = offset + Code::kHeaderSize - kHeapObjectTag;
     // need to allocate 4 bytes of memeory space for constant storage
-    __ nop();
-    __ nop();
+    // The reason to allocate 2 more bytes in the front is to make sure
+    // the disassembler working correcly in little endian architure
+    __ cfi(r0, Operand(0));
     masm_->label_at_put(label, offset);
     __ bind(&after_constant);
     __ LoadlW(r2, MemOperand(code_pointer(), cp_offset));
@@ -1383,7 +1384,7 @@ void RegExpMacroAssemblerS390::BranchOrBacktrack(Condition condition,
 
 void RegExpMacroAssemblerS390::SafeCall(Label* to, Condition cond,
                                        CRegister cr) {
-  __ b(cond, to /*, cr*/ /*, SetLK*/);
+  __ b(r14, to /*, cr*/ /*, SetLK*/);
 }
 
 
@@ -1397,6 +1398,7 @@ void RegExpMacroAssemblerS390::SafeReturn() {
 
 void RegExpMacroAssemblerS390::SafeCallTarget(Label* name) {
   __ bind(name);
+  __ CleanseP(r14);
   __ LoadRR(r0, r14);
   __ mov(ip, Operand(masm_->CodeObject()));
   __ Sub(r0, r0, ip);
