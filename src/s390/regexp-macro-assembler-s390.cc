@@ -1384,7 +1384,10 @@ void RegExpMacroAssemblerS390::BranchOrBacktrack(Condition condition,
 
 void RegExpMacroAssemblerS390::SafeCall(Label* to, Condition cond,
                                        CRegister cr) {
+  Label skip;
+  __ b(NegateCondition(cond), &skip);
   __ b(r14, to /*, cr*/ /*, SetLK*/);
+  __ bind(&skip);
 }
 
 
