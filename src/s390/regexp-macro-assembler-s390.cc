@@ -316,6 +316,7 @@ void RegExpMacroAssemblerS390::CheckGreedyLoop(Label* on_equal) {
   __ AddP(backtrack_stackpointer(), Operand(kPointerSize));
 
   __ bind(&backtrack_non_equal);
+  __ CmpRR(current_input_offset(), r2);
   BranchOrBacktrack(eq, on_equal);
 }
 
