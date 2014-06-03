@@ -1128,17 +1128,11 @@ void RegExpMacroAssemblerS390::PushBacktrack(Label* label) {
     int target = label->pos();
     __ mov(r2, Operand(target + Code::kHeaderSize - kHeapObjectTag));
   } else {
-    Label after_constant;
-    __ b(&after_constant);
     int offset = masm_->pc_offset() + 2;
-    int cp_offset = offset + Code::kHeaderSize - kHeapObjectTag;
+    __ iilf(r2, Operand(0));
     // need to allocate 4 bytes of memeory space for constant storage
-    // The reason to allocate 2 more bytes in the front is to make sure
-    // the disassembler working correcly in little endian architure
-    __ cfi(r0, Operand(0));
+    // emit the constant value to iilf operand
     masm_->label_at_put(label, offset);
-    __ bind(&after_constant);
-    __ LoadlW(r2, MemOperand(code_pointer(), cp_offset));
   }
   Push(r2);
   CheckStackLimit();
