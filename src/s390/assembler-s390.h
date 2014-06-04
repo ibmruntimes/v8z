@@ -560,6 +560,7 @@ class Assembler : public AssemblerBase {
   // Puts a labels target address at the given position.
   // The high 8 bits are set to zero.
   void label_at_put(Label* L, int at_offset);
+  void load_label_offset(Register r1, Label* L);
 
   // Read/Modify the code target address in the branch/call instruction at pc.
   INLINE(static Address target_address_at(Address pc));
