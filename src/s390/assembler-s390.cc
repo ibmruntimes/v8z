@@ -392,7 +392,8 @@ int Assembler::target_at(int pos)  {
     if (imm16 == 0)
       return kEndOfChain;
     return pos + imm16;
-  } else if (BRCL == opcode || LARL == opcode || BRASL == opcode) {
+  } else if (IILF == opcode || BRCL == opcode
+      || LARL == opcode || BRASL == opcode) {
     int32_t imm32 = static_cast<int32_t>(
         instr & (static_cast<uint64_t>(0xffffffff)));
     imm32 <<= 1;   // BRCL immediate is in # of halfwords
@@ -430,6 +431,12 @@ void Assembler::target_at_put(int pos, int target_pos) {
     instr &= (~static_cast<uint64_t>(0xffffffff));
     instr_at_put<SixByteInstr>(pos, instr | (imm32 >> 1));
     return;
+  } else if (IILF == opcode) {
+    ASSERT(target_pos == kEndOfChain || target_pos >= 0);
+    int32_t imm32 = target_pos + (Code::kHeaderSize - kHeapObjectTag);
+    instr &= (~static_cast<uint64_t>(0xffffffff));
+    instr_at_put<SixByteInstr>(pos, instr | imm32);
+    return;
   } else if ((instr & ~kImm16Mask) == 0) {
     ASSERT(target_pos == kEndOfChain || target_pos >= 0);
     // Emitted label constant, not part of a branch.
@@ -449,7 +456,8 @@ int Assembler::max_reach_from(int pos) {
   // the values below + 1, given offset is # of halfwords
   if (BRC == opcode || BRCT == opcode || BRCTG == opcode) {
     return 16;
-  } else if (BRCL == opcode || LARL == opcode || BRASL == opcode) {
+  } else if (IILF == opcode || BRCL == opcode
+      || LARL == opcode || BRASL == opcode) {
     return 31;  // Using 31 as workaround instead of 32 as
                 // is_intn(x,32) doesn't work on 32-bit platforms.
   } else if ((instr & ~kImm16Mask) == 0) {
@@ -562,6 +570,35 @@ int Assembler::branch_offset(Label* L, bool jump_elimination_allowed) {
   return target_pos - pc_offset();
 }
 
+
+void Assembler::load_label_offset(Register r1, Label* L) {
+  int target_pos;
+  int constant;
+  if (L->is_bound()) {
+    target_pos = L->pos();
+    constant = target_pos + (Code::kHeaderSize - kHeapObjectTag);
+  } else {
+    if (L->is_linked()) {
+      target_pos = L->pos();  // L's link
+    } else {
+      // was: target_pos = kEndOfChain;
+      // However, using branch to self to mark the first reference
+      // should avoid most instances of branch offset overflow.  See
+      // target_at() for where this is converted back to kEndOfChain.
+      target_pos = pc_offset();
+      if (!trampoline_emitted_) {
+        unbound_labels_count_++;
+        next_buffer_check_ -= kTrampolineSlotsSize;
+      }
+    }
+    L->link_to(pc_offset());
+
+    constant = target_pos - pc_offset();
+    // ASSERT(is_int31(constant));
+    // instr_at_put(at_offset, constant);
+  }
+  iilf(r1, Operand(constant));
+}
 
 void Assembler::label_at_put(Label* L, int at_offset) {
   int target_pos;
