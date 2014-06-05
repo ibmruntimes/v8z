@@ -1128,11 +1128,6 @@ void RegExpMacroAssemblerS390::PushBacktrack(Label* label) {
     int target = label->pos();
     __ mov(r2, Operand(target + Code::kHeaderSize - kHeapObjectTag));
   } else {
-    // int offset = masm_->pc_offset() + 2;
-    // __ iilf(r2, Operand(0));
-    // need to allocate 4 bytes of memeory space for constant storage
-    // emit the constant value to iilf operand
-    // masm_->label_at_put(label, offset);
     masm_->load_label_offset(r2, label);
   }
   Push(r2);

@@ -400,14 +400,6 @@ int Assembler::target_at(int pos)  {
     if (imm32 == 0)
       return kEndOfChain;
     return pos + imm32;
-  } else if ((instr & ~kImm16Mask) == 0) {
-    // Emitted label constant, not part of a branch (regexp PushBacktrack).
-     if (instr == 0) {
-       return kEndOfChain;
-     } else {
-       int32_t imm16 = SIGN_EXT_IMM16(instr);
-       return (imm16 + pos);
-     }
   }
 
   // Unknown condition
@@ -433,23 +425,17 @@ void Assembler::target_at_put(int pos, int target_pos) {
     return;
   } else if (IILF == opcode) {
     ASSERT(target_pos == kEndOfChain || target_pos >= 0);
+    // Emitted label constant, not part of a branch.
+    // Make label relative to Code* of generated Code object.
     int32_t imm32 = target_pos + (Code::kHeaderSize - kHeapObjectTag);
     instr &= (~static_cast<uint64_t>(0xffffffff));
     instr_at_put<SixByteInstr>(pos, instr | imm32);
     return;
-  } else if ((instr & ~kImm16Mask) == 0) {
-    ASSERT(target_pos == kEndOfChain || target_pos >= 0);
-    // Emitted label constant, not part of a branch.
-    // Make label relative to Code* of generated Code object.
-    instr_at_put(pos, target_pos + (Code::kHeaderSize - kHeapObjectTag));
-    return;
   }
-
   ASSERT(false);
 }
 
 int Assembler::max_reach_from(int pos) {
-  SixByteInstr instr = instr_at(pos);
   Opcode opcode = Instruction::S390OpcodeValue(buffer_ + pos);
 
   // Check which type of instr.  In theory, we can return
@@ -460,11 +446,9 @@ int Assembler::max_reach_from(int pos) {
       || LARL == opcode || BRASL == opcode) {
     return 31;  // Using 31 as workaround instead of 32 as
                 // is_intn(x,32) doesn't work on 32-bit platforms.
-  } else if ((instr & ~kImm16Mask) == 0) {
-    // Emitted label constant, not part of a branch (regexp PushBacktrack).
-    return 16;
+                // iilf: Emitted label constant, not part of
+                //        a branch (regexp PushBacktrack).
   }
-
   ASSERT(false);
   return 16;
 }
@@ -598,33 +582,6 @@ void Assembler::load_label_offset(Register r1, Label* L) {
     // instr_at_put(at_offset, constant);
   }
   iilf(r1, Operand(constant));
-}
-
-void Assembler::label_at_put(Label* L, int at_offset) {
-  int target_pos;
-  if (L->is_bound()) {
-    target_pos = L->pos();
-    instr_at_put(at_offset, target_pos + (Code::kHeaderSize - kHeapObjectTag));
-  } else {
-    if (L->is_linked()) {
-      target_pos = L->pos();  // L's link
-    } else {
-      // was: target_pos = kEndOfChain;
-      // However, using branch to self to mark the first reference
-      // should avoid most instances of branch offset overflow.  See
-      // target_at() for where this is converted back to kEndOfChain.
-      target_pos = at_offset;
-      if (!trampoline_emitted_) {
-        unbound_labels_count_++;
-        next_buffer_check_ -= kTrampolineSlotsSize;
-      }
-    }
-    L->link_to(at_offset);
-
-    Instr constant = target_pos - at_offset;
-    ASSERT(is_int16(constant));
-    instr_at_put(at_offset, constant);
-  }
 }
 
 // Pseudo op - branch on condition
