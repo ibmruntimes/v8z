@@ -4697,8 +4697,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   ExternalReference address_of_regexp_stack_memory_size =
       ExternalReference::address_of_regexp_stack_memory_size(isolate);
   __ mov(r2, Operand(address_of_regexp_stack_memory_size));
-  __ LoadP(r2, MemOperand(r2, 0));
-  __ Cmpi(r2, Operand::Zero());
+  __ LoadAndTestP(r2, MemOperand(r2));
   __ beq(&runtime);
 
   // Check that the first argument is a JSRegExp object.
@@ -4712,8 +4711,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ LoadP(regexp_data, FieldMemOperand(r2, JSRegExp::kDataOffset));
   if (FLAG_debug_code) {
     STATIC_ASSERT(kSmiTagMask == 1);
-    __ mov(r0, Operand(kSmiTagMask));
-    __ AndP(r0, regexp_data);
+    __ tmll(regexp_data, Operand(kSmiTagMask));
     __ Check(ne, "Unexpected type for RegExp data, FixedArray expected", cr0);
     __ CompareObjectType(regexp_data, r2, r2, FIXED_ARRAY_TYPE);
     __ Check(eq, "Unexpected type for RegExp data, FixedArray expected");
@@ -4847,8 +4845,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ LoadlB(r2, FieldMemOperand(r2, Map::kInstanceTypeOffset));
   STATIC_ASSERT(kSeqStringTag == 0);
   STATIC_ASSERT(kStringRepresentationMask == 3);
-  __ mov(r0, Operand(kStringRepresentationMask));
-  __ AndP(r0, r2);
+  __ tmll(r2, Operand(kStringRepresentationMask));
   __ bne(&external_string /*, cr0*/);
 
   __ bind(&seq_string);
@@ -5134,8 +5131,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
     // Assert that we do not have a cons or slice (indirect strings) here.
     // Sequential strings have already been ruled out.
     STATIC_ASSERT(kIsIndirectStringMask == 1);
-    __ mov(r0, Operand(kIsIndirectStringMask));
-    __ AndP(r0, r2);
+    __ tmll(r2, Operand(kIsIndirectStringMask));
     __ Assert(eq, "external string expected, but not found", cr0);
   }
   __ LoadP(subject,
