@@ -4903,20 +4903,24 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
 
   // @TODO Fix this code for S390!!!  We need to pass the arguments
   // appropriately
-  __ lay(sp, MemOperand(sp, -(96 + kParameterRegisters * kPointerSize)));
+  __ lay(sp, MemOperand(sp,
+        -(kCalleeRegisterSaveAreaSize + kParameterRegisters * kPointerSize)));
 
   // Argument 10 (in stack parameter area): Pass current isolate address.
   __ mov(r2, Operand(ExternalReference::isolate_address()));
-  __ StoreP(r2, MemOperand(sp, 96 + 4 * kPointerSize));
+  __ StoreP(r2, MemOperand(sp,
+        kCalleeRegisterSaveAreaSize + 4 * kPointerSize));
 
   // Argument 9 is a dummy that reserves the space used for
   // the return address added by the ExitFrame in native calls.
   __ mov(r2, Operand::Zero());
-  __ StoreP(r2, MemOperand(sp, 96 + 3 * kPointerSize));
+  __ StoreP(r2, MemOperand(sp,
+        kCalleeRegisterSaveAreaSize + 3 * kPointerSize));
 
   // Argument 8: Indicate that this is a direct call from JavaScript.
   __ mov(r2, Operand(1));
-  __ StoreP(r2, MemOperand(sp, 96 + 2 * kPointerSize));
+  __ StoreP(r2, MemOperand(sp,
+        kCalleeRegisterSaveAreaSize + 2 * kPointerSize));
 
   // Argument 7: Start (high end) of backtracking stack memory area.
   __ mov(r2, Operand(address_of_regexp_stack_memory_address));
@@ -4924,13 +4928,15 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ mov(r1, Operand(address_of_regexp_stack_memory_size));
   __ LoadP(r1, MemOperand(r1, 0));
   __ AddP(r2, r1);
-  __ StoreP(r2, MemOperand(sp, 96 + 1 * kPointerSize));
+  __ StoreP(r2, MemOperand(sp,
+        kCalleeRegisterSaveAreaSize + 1 * kPointerSize));
 
   // Argument 6: Set the number of capture registers to zero to force
   // global egexps to behave as non-global.  This does not affect non-global
   // regexps.
   __ mov(r2, Operand::Zero());
-  __ StoreP(r2, MemOperand(sp, 96 + 0 * kPointerSize));
+  __ StoreP(r2, MemOperand(sp,
+        kCalleeRegisterSaveAreaSize + 0 * kPointerSize));
 
   // Argument 1 (r2): Subject string.
   // Load the length from the original subject string from the previous stack
@@ -4985,7 +4991,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
 
   // DirectCEntryStub stub;
   // stub.GenerateCall(masm, code);
-  __ la(fp, MemOperand(sp, 96));
+  __ la(fp, MemOperand(sp, kCalleeRegisterSaveAreaSize));
   __ basr(r14, code);
 
   // __ LeaveExitFrame(false, no_reg);
