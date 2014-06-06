@@ -747,10 +747,10 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
 #endif
     // 31bit ABI requires you to store f4 and f6:
     // http://refspecs.linuxbase.org/ELF/zSeries/lzsabi0_s390.html#AEN417
-    __ std(d6, MemOperand(sp, 96 - kDoubleSize));
-    __ std(d4, MemOperand(sp, 96 - 2 * kDoubleSize));
-    __ std(d2, MemOperand(sp, 96 - 3 * kDoubleSize));
-    __ std(d0, MemOperand(sp, 96 - 4 * kDoubleSize));
+    __ std(d6, MemOperand(sp, kCalleeRegisterSaveAreaSize - kDoubleSize));
+    __ std(d4, MemOperand(sp, kCalleeRegisterSaveAreaSize - 2 * kDoubleSize));
+    __ std(d2, MemOperand(sp, kCalleeRegisterSaveAreaSize - 3 * kDoubleSize));
+    __ std(d0, MemOperand(sp, kCalleeRegisterSaveAreaSize - 4 * kDoubleSize));
 
     // zLinux ABI
     //    Incoming parameters:
@@ -767,7 +767,7 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     // __ StoreP(frame_pointer(), MemOperand(sp));
 
     // Load stack parameters from caller stack frame
-    __ lay(fp, MemOperand(sp, 96));
+    __ lay(fp, MemOperand(sp, kCalleeRegisterSaveAreaSize));
     __ LoadW(r7, MemOperand(fp, 0 * kPointerSize));   // capture array size
     __ LoadW(r8, MemOperand(fp, 1 * kPointerSize));  // stack area base
     __ LoadW(r9, MemOperand(fp, 2 * kPointerSize));  // direct call
@@ -986,12 +986,12 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     // Skip sp past regexp registers and local variables..
     __ LoadRR(sp, frame_pointer());
     // Restore registers r6..r15.
-    __ LoadMultipleP(r6, sp, MemOperand(sp, 24));
+    __ LoadMultipleP(r6, sp, MemOperand(sp, 6 * kPointerSize));
 
-    __ ld(d0, MemOperand(sp, 96 - 4 * kDoubleSize));
-    __ ld(d2, MemOperand(sp, 96 - 3 * kDoubleSize));
-    __ ld(d4, MemOperand(sp, 96 - 2 * kDoubleSize));
-    __ ld(d6, MemOperand(sp, 96 - 1 * kDoubleSize));
+    __ ld(d0, MemOperand(sp, kCalleeRegisterSaveAreaSize - 4 * kDoubleSize));
+    __ ld(d2, MemOperand(sp, kCalleeRegisterSaveAreaSize - 3 * kDoubleSize));
+    __ ld(d4, MemOperand(sp, kCalleeRegisterSaveAreaSize - 2 * kDoubleSize));
+    __ ld(d6, MemOperand(sp, kCalleeRegisterSaveAreaSize - 1 * kDoubleSize));
     __ b(r14);
 
     // Backtrack code (branch target for conditional backtracks).
