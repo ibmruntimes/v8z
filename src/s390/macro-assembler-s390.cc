@@ -720,8 +720,7 @@ void MacroAssembler::SetCallKind(Register dst, CallKind call_kind) {
   // at the call sites. However, the dst register has to be r7 to
   // follow the calling convention which requires the call type to be
   // in r7.
-  // @TODO Re-enable Assert here for S390
-//  ASSERT(dst.is(r7));
+  ASSERT(dst.is(r7));
   if (call_kind == CALL_AS_FUNCTION) {
     LoadSmiLiteral(dst, Smi::FromInt(1));
   } else {

@@ -2232,8 +2232,7 @@ void LCodeGen::DoHasCachedArrayIndexAndBranch(
   __ LoadlW(scratch,
          FieldMemOperand(input, String::kHashFieldOffset));
   __ mov(r0, Operand(String::kContainsCachedArrayIndexMask));
-  __ AndP(r0, scratch/*, SetRC*/);
-  // TODO(JOHN): might be a problem removing rc
+  __ AndP(r0, scratch);
   EmitBranch(true_block, false_block, eq, cr0);
 }
 
