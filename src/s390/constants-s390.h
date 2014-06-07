@@ -145,7 +145,7 @@ inline Condition ReverseCondition(Condition cond) {
     default:
       ASSERT(false);
       return cond;
-  };
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -916,195 +916,7 @@ enum Opcode {
   XSCH    = 0xB276,  // Cancel Subchannel
   XY      = 0xE357,  // Exclusive Or (32)
   ZAP     = 0xF8,    // Zero And Add
-  BKPT    = 0x0001,  // GDB Software Breakpoint
-
-// PPC Opcodes (to be removed later)
-  TWI     =  3 << 26,  // Trap Word Immediate
-  MULLI   =  7 << 26,  // Multiply Low Immediate
-  SUBFIC  =  8 << 26,  // Subtract from Immediate Carrying
-  CMPLI   = 10 << 26,  // Compare Logical Immediate
-  CMPI    = 11 << 26,  // Compare Immediate
-  ADDIC   = 12 << 26,  // Add Immediate Carrying
-  ADDICx  = 13 << 26,  // Add Immediate Carrying and Record
-  ADDI    = 14 << 26,  // Add Immediate
-  ADDIS   = 15 << 26,  // Add Immediate Shifted
-  BCX     = 16 << 26,  // Branch Conditional
-  SC      = 17 << 26,  // System Call
-  BX      = 18 << 26,  // Branch
-  EXT1    = 19 << 26,  // Extended code set 1
-  RLWIMIX = 20 << 26,  // Rotate Left Word Immediate then Mask Insert
-  RLWINMX = 21 << 26,  // Rotate Left Word Immediate then AND with Mask
-  RLWNMX  = 23 << 26,  // Rotate Left then AND with Mask
-  ORI     = 24 << 26,  // OR Immediate
-  ORIS    = 25 << 26,  // OR Immediate Shifted
-  XORI    = 26 << 26,  // XOR Immediate
-  XORIS   = 27 << 26,  // XOR Immediate Shifted
-  ANDIx   = 28 << 26,  // AND Immediate
-  ANDISx  = 29 << 26,  // AND Immediate Shifted
-  EXT5    = 30 << 26,  // Extended code set 5 - 64bit only
-  EXT2    = 31 << 26,  // Extended code set 2
-  LWZ     = 32 << 26,  // Load Word and Zero
-  LWZU    = 33 << 26,  // Load Word with Zero Update
-  LBZ     = 34 << 26,  // Load Byte and Zero
-  LBZU    = 35 << 26,  // Load Byte and Zero with Update
-  STW     = 36 << 26,  // Store
-  STWU    = 37 << 26,  // Store Word with Update
-  STB     = 38 << 26,  // Store Byte
-  STBU    = 39 << 26,  // Store Byte with Update
-  LHZ     = 40 << 26,  // Load Half and Zero
-  LHZU    = 41 << 26,  // Load Half and Zero with Update
-  LHA     = 42 << 26,  // Load Half Algebraic
-  LHAU    = 43 << 26,  // Load Half Algebraic with Update
-  STH_ppc = 44 << 26,  // Store Half
-  STHU    = 45 << 26,  // Store Half with Update
-  LMW     = 46 << 26,  // Load Multiple Word
-  STMW    = 47 << 26,  // Store Multiple Word
-  LFS     = 48 << 26,  // Load Floating-Point Single
-  LFSU    = 49 << 26,  // Load Floating-Point Single with Update
-  LFD     = 50 << 26,  // Load Floating-Point Double
-  LFDU    = 51 << 26,  // Load Floating-Point Double with Update
-  STFS    = 52 << 26,  // Store Floating-Point Single
-  STFSU   = 53 << 26,  // Store Floating-Point Single with Update
-  STFD    = 54 << 26,  // Store Floating-Point Double
-  STFDU   = 55 << 26,  // Store Floating-Point Double with Update
-  LD_ppc  = 58 << 26,  // Load Double Word
-  EXT3    = 59 << 26,  // Extended code set 3
-  STD_ppc = 62 << 26,  // Store Double Word (optionally with Update)
-  EXT4    = 63 << 26   // Extended code set 4
-};
-
-// Bits 10-1
-enum OpcodeExt1 {
-  MCRF   = 0 << 1,    // Move Condition Register Field
-  BCLRX  = 16 << 1,   // Branch Conditional Link Register
-  CRNOR  = 33 << 1,   // Condition Register NOR)
-  RFI    = 50 << 1,   // Return from Interrupt
-  CRANDC = 129 << 1,  // Condition Register AND with Complement
-  ISYNC  = 150 << 1,  // Instruction Synchronize
-  CRXOR  = 193 << 1,  // Condition Register XOR
-  CRNAND = 225 << 1,  // Condition Register NAND
-  CRAND  = 257 << 1,  // Condition Register AND
-  CREQV  = 289 << 1,  // Condition Register Equivalent
-  CRORC  = 417 << 1,  // Condition Register OR with Complement
-  CROR   = 449 << 1,  // Condition Register OR
-  BCCTRX = 528 << 1   // Branch Conditional to Count Register
-};
-
-// Bits 9-1 or 10-1
-enum OpcodeExt2 {
-  CMP = 0 << 1,
-  TW = 4 << 1,
-  SUBFCX = 8 << 1,
-  ADDCX = 10 << 1,
-  MULHWUX = 11 << 1,
-  MFCR = 19 << 1,
-  LWARX = 20 << 1,
-  LDX = 21 << 1,
-  LWZX = 23 << 1,    // load word zero w/ x-form
-  SLWX = 24 << 1,
-  CNTLZWX = 26 << 1,
-  SLDX = 27 << 1,
-  ANDX = 28 << 1,
-  CMPL = 32 << 1,
-  SUBFX = 40 << 1,
-  LDUX = 53 << 1,
-  DCBST = 54 << 1,
-  LWZUX = 55 << 1,   // load word zero w/ update x-form
-  CNTLZDX = 58 << 1,
-  ANDCX = 60 << 1,
-  DCBF = 86 << 1,
-  LBZX = 87 << 1,    // load byte zero w/ x-form
-  NEGX = 104 << 1,
-  LBZUX = 119 << 1,  // load byte zero w/ update x-form
-  NORX = 124 << 1,
-  SUBFEX = 136 << 1,
-  ADDEX = 138 << 1,
-  STDX = 149 << 1,
-  STWX = 151 << 1,    // store word w/ x-form
-  STDUX = 181 << 1,
-  STWUX = 183 << 1,   // store word w/ update x-form
-/*
-  MTCRF
-  MTMSR
-  STWCXx
-  SUBFZEX
-*/
-  ADDZEX = 202 << 1,  // Add to Zero Extended
-/*
-  MTSR
-*/
-  STBX = 215 << 1,    // store byte w/ x-form
-  MULLD  = 233 << 1,  // Multiply Low Double Word
-  STBUX = 247 << 1,   // store byte w/ update x-form
-  ADDX = 266 << 1,    // Add
-  LHZX = 279 << 1,    // load half-word zero w/ x-form
-  LHZUX = 311 << 1,   // load half-word zero w/ update x-form
-  LHAX =343 << 1,     // load half-word algebraic w/ x-form
-  LHAUX = 375 << 1,   // load half-word algebraic w/ update x-form
-  XORX = 316 << 1,    // Exclusive OR
-  MFSPR = 339 <<1,    // Move from Special-Purpose-Register
-  STHX = 407 << 1,    // store half-word w/ x-form
-  STHUX = 439 << 1,   // store half-word w/ update x-form
-  ORX = 444 << 1,     // Or
-  MTSPR = 467 <<1,    // Move to Special-Purpose-Register
-  DIVD  = 489 << 1,   // Divide Double Word
-  DIVW  = 491 << 1,   // Divide Word
-
-  // Below represent bits 10-1  (any value >= 512)
-  LFSX = 535 << 1,    // load float-single w/ x-form
-  SRWX = 536 << 1,    // Shift Right Word
-  SRDX = 539 << 1,    // Shift Right Double Word
-  LFSUX = 567 << 1,   // load float-single w/ update x-form
-  SYNC = 598 << 1,    // Synchronize
-  LFDX = 599 << 1,    // load float-double w/ x-form
-  LFDUX = 631 << 1,   // load float-double w/ update X-form
-  STFSX = 663 << 1,   // store float-single w/ x-form
-  STFSUX = 695 << 1,  // store float-single w/ update x-form
-  STFDX = 727 << 1,   // store float-double w/ x-form
-  STFDUX = 759 << 1,  // store float-double w/ update x-form
-  SRAW = 792 << 1,    // Shift Right Algebraic Word
-  SRAD = 794 << 1,    // Shift Right Algebraic Double Word
-  SRAWIX = 824 << 1,  // Shift Right Algebraic Word Immediate
-  SRADIX = 413 << 2,  // Shift Right Algebraic Double Word Immediate
-  EXTSH = 922 << 1,   // Extend Sign Halfword
-  EXTSB = 954 << 1,   // Extend Sign Byte
-  ICBI = 982 << 1,    // Instruction Cache Block Invalidate
-  EXTSW = 986 << 1    // Extend Sign Word
-};
-
-// Some use Bits 10-1 and other only 5-1 for the opcode
-enum OpcodeExt4 {
-  // Bits 5-1
-  FDIV   = 18 << 1,   // Floating Divide
-  FSUB   = 20 << 1,   // Floating Subtract
-  FADD   = 21 << 1,   // Floating Add
-  FSQRT  = 22 << 1,   // Floating Square Root
-  FSEL   = 23 << 1,   // Floating Select
-  FMUL   = 25 << 1,   // Floating Multiply
-
-  // Bits 10-1
-  FCMPU  =   0 << 1,  // Floating Compare Unordered
-  FRSP   =  12 << 1,  // Floating-Point Rounding
-  FCTIW  =  14 << 1,  // Floating Convert to Integer Word X-form
-  FCTIWZ =  15 << 1,  // Floating Convert to Integer Word with Round to Zero
-  FNEG   =  40 << 1,  // Floating Negate
-  MCRFS  =  64 << 1,  // Move to Condition Register from FPSCR
-  FMR    =  72 << 1,  // Floating Move Register
-  MTFSFI = 134 << 1,  // Move to FPSCR Field Immediate
-  FABS   = 264 << 1,  // Floating Absolute Value
-  FRIM   = 488 << 1,  // Floating Round to Integer Minus
-  MFFS   = 583 << 1,  // move from FPSCR x-form
-  MTFSF  = 711 << 1,  // move to FPSCR fields XFL-form
-  FCFID  = 846 << 1,  // Floating convert from integer doubleword
-  FCTID  = 814 << 1,  // Floating convert from integer doubleword
-  FCTIDZ = 815 << 1   // Floating convert from integer doubleword
-};
-
-// Bits 4-2
-enum OpcodeExt5 {
-  RLDICL = 0 << 2,    // Rotate Left Double Word Immediate then Clear Left
-  RLDICR = 1 << 2,    // Rotate Left Double Word Immediate then Clear Right
-  RLDIC  = 2 << 2     // Rotate Left Double Word Immediate then Clear
+  BKPT    = 0x0001  // GDB Software Breakpoint
 };
 
 // Instruction encoding bits and masks.
@@ -1610,17 +1422,17 @@ class Instruction {
 // I Instruction -- suspect this will not be used,
 // but implement for completeness
 class IInstruction : Instruction {
-  public:
-    inline int IValue() const {
+ public:
+  inline int IValue() const {
     return Bits(16+7, 16);
-    }
+  }
 
-    inline int size() const { return 2; }
+  inline int size() const { return 2; }
 };
 
 // RR Instruction
 class RRInstruction : Instruction {
-  public:
+ public:
   inline int R1Value() const {
     // the high and low parameters of Bits is the number of bits from
     // rightmost place
@@ -1638,7 +1450,7 @@ class RRInstruction : Instruction {
 
 // RRE Instruction
 class RREInstruction : Instruction {
-  public:
+ public:
   inline int R1Value() const {
     return Bits<FourByteInstr, int>(7, 4);
   }
@@ -1656,152 +1468,152 @@ class RREInstruction : Instruction {
 
 // RI Instruction
 class RIInstruction : Instruction {
-  public:
-    inline int R1Value() const {
-      return Bits<FourByteInstr, int>(23, 20);
-    }
-    inline int16_t I2Value() const {
-      return Bits<FourByteInstr, int16_t>(15, 0);
-    }
-    inline uint16_t I2UnsignedValue() const {
-      return Bits<FourByteInstr, uint16_t>(15, 0);
-    }
-    inline Condition M1Value() const {
-      return static_cast<Condition>(Bits<FourByteInstr, int>(23, 20));
-    }
-    inline int size() const { return 4; }
+ public:
+  inline int R1Value() const {
+    return Bits<FourByteInstr, int>(23, 20);
+  }
+  inline int16_t I2Value() const {
+    return Bits<FourByteInstr, int16_t>(15, 0);
+  }
+  inline uint16_t I2UnsignedValue() const {
+    return Bits<FourByteInstr, uint16_t>(15, 0);
+  }
+  inline Condition M1Value() const {
+    return static_cast<Condition>(Bits<FourByteInstr, int>(23, 20));
+  }
+  inline int size() const { return 4; }
 };
 
 // RS Instruction
 class RSInstruction : Instruction {
-  public:
-    inline int R1Value() const {
-      return Bits<FourByteInstr, int>(23, 20);
-    }
-    inline int R3Value() const {
-      return Bits<FourByteInstr, int>(19, 16);
-    }
-    inline int B2Value() const {
-      return Bits<FourByteInstr, int>(15, 12);
-    }
-    inline unsigned int D2Value() const {
-      return Bits<FourByteInstr, unsigned int>(11, 0);
-    }
-    inline int size() const { return 4; }
+ public:
+  inline int R1Value() const {
+    return Bits<FourByteInstr, int>(23, 20);
+  }
+  inline int R3Value() const {
+    return Bits<FourByteInstr, int>(19, 16);
+  }
+  inline int B2Value() const {
+    return Bits<FourByteInstr, int>(15, 12);
+  }
+  inline unsigned int D2Value() const {
+    return Bits<FourByteInstr, unsigned int>(11, 0);
+  }
+  inline int size() const { return 4; }
 };
 
 // RSY Instruction
 class RSYInstruction : Instruction {
-  public:
-    inline int R1Value() const {
-      return Bits<SixByteInstr, int>(39, 36);
-    }
-    inline int R3Value() const {
-      return Bits<SixByteInstr, int>(35, 32);
-    }
-    inline int B2Value() const {
-      return Bits<SixByteInstr, int>(31, 28);
-    }
-    inline int32_t D2Value() const {
-      int32_t value = Bits<SixByteInstr, int32_t>(27, 16);
-      value += Bits<SixByteInstr, int8_t>(15, 8) << 12;
-      return (int32_t)value;
-    }
-    inline int size() const { return 6; }
+ public:
+  inline int R1Value() const {
+    return Bits<SixByteInstr, int>(39, 36);
+  }
+  inline int R3Value() const {
+    return Bits<SixByteInstr, int>(35, 32);
+  }
+  inline int B2Value() const {
+    return Bits<SixByteInstr, int>(31, 28);
+  }
+  inline int32_t D2Value() const {
+    int32_t value = Bits<SixByteInstr, int32_t>(27, 16);
+    value += Bits<SixByteInstr, int8_t>(15, 8) << 12;
+    return value;
+  }
+  inline int size() const { return 6; }
 };
 
 // RX Instruction
 class RXInstruction : Instruction {
-  public:
-    inline int R1Value() const {
-      return Bits<FourByteInstr, int>(23, 20);
-    }
-    inline int X2Value() const {
-      return Bits<FourByteInstr, int>(19, 16);
-    }
-    inline int B2Value() const {
-      return Bits<FourByteInstr, int>(15, 12);
-    }
-    inline uint32_t D2Value() const {
-      return Bits<FourByteInstr, uint32_t>(11, 0);
-    }
-    inline int size() const { return 4; }
+ public:
+  inline int R1Value() const {
+    return Bits<FourByteInstr, int>(23, 20);
+  }
+  inline int X2Value() const {
+    return Bits<FourByteInstr, int>(19, 16);
+  }
+  inline int B2Value() const {
+    return Bits<FourByteInstr, int>(15, 12);
+  }
+  inline uint32_t D2Value() const {
+    return Bits<FourByteInstr, uint32_t>(11, 0);
+  }
+  inline int size() const { return 4; }
 };
 
 // RXY Instruction
 class RXYInstruction : Instruction {
-  public:
-    inline int R1Value() const {
-      return Bits<SixByteInstr, int>(39, 36);
-    }
-    inline int X2Value() const {
-      return Bits<SixByteInstr, int>(35, 32);
-    }
-    inline int B2Value() const {
-      return Bits<SixByteInstr, int>(31, 28);
-    }
-    inline int32_t D2Value() const {
-      int32_t value = Bits<SixByteInstr, uint32_t>(27, 16);
-      value += Bits<SixByteInstr, int8_t>(15, 8) << 12;
-      return (int32_t)value;
-    }
-    inline int size() const { return 6; }
+ public:
+  inline int R1Value() const {
+    return Bits<SixByteInstr, int>(39, 36);
+  }
+  inline int X2Value() const {
+    return Bits<SixByteInstr, int>(35, 32);
+  }
+  inline int B2Value() const {
+    return Bits<SixByteInstr, int>(31, 28);
+  }
+  inline int32_t D2Value() const {
+    int32_t value = Bits<SixByteInstr, uint32_t>(27, 16);
+    value += Bits<SixByteInstr, int8_t>(15, 8) << 12;
+    return value;
+  }
+  inline int size() const { return 6; }
 };
 
 // RIL Instruction
 class RILInstruction : Instruction {
-  public:
-    inline int R1Value() const {
-      return Bits<SixByteInstr, int>(39, 36);
-    }
-    inline int32_t I2Value() const {
-      return Bits<SixByteInstr, int32_t>(31, 0);
-    }
-    inline uint32_t I2UnsignedValue() const {
-      return Bits<SixByteInstr, uint32_t>(31, 0);
-    }
-    inline int size() const { return 6; }
+ public:
+  inline int R1Value() const {
+    return Bits<SixByteInstr, int>(39, 36);
+  }
+  inline int32_t I2Value() const {
+    return Bits<SixByteInstr, int32_t>(31, 0);
+  }
+  inline uint32_t I2UnsignedValue() const {
+    return Bits<SixByteInstr, uint32_t>(31, 0);
+  }
+  inline int size() const { return 6; }
 };
 
 // SS Instruction
 class SSInstruction : Instruction {
-  public:
-    inline int B1Value() const {
-      return Bits<SixByteInstr, int>(31, 28);
-    }
-    inline int B2Value() const {
-      return Bits<SixByteInstr, int>(15, 12);
-    }
-    inline int D1Value() const {
-      return Bits<SixByteInstr, int>(27, 16);
-    }
-    inline int D2Value() const {
-      return Bits<SixByteInstr, int>(11, 0);
-    }
-    inline int Length() const {
-      return Bits<SixByteInstr, int>(39, 32);
-    }
-    inline int size() const { return 6; }
+ public:
+  inline int B1Value() const {
+    return Bits<SixByteInstr, int>(31, 28);
+  }
+  inline int B2Value() const {
+    return Bits<SixByteInstr, int>(15, 12);
+  }
+  inline int D1Value() const {
+    return Bits<SixByteInstr, int>(27, 16);
+  }
+  inline int D2Value() const {
+    return Bits<SixByteInstr, int>(11, 0);
+  }
+  inline int Length() const {
+    return Bits<SixByteInstr, int>(39, 32);
+  }
+  inline int size() const { return 6; }
 };
 
 // RXE Instruction
 class RXEInstruction : Instruction {
-  public:
-    inline int R1Value() const {
-      return Bits<SixByteInstr, int>(39, 36);
-    }
-    inline int X2Value() const {
-      return Bits<SixByteInstr, int>(35, 32);
-    }
-    inline int B2Value() const {
-      return Bits<SixByteInstr, int>(31, 28);
-    }
-    inline int D2Value() const {
-      return Bits<SixByteInstr, int>(27, 16);
-    }
-    inline int size() const {
-      return 6;
-    }
+ public:
+  inline int R1Value() const {
+    return Bits<SixByteInstr, int>(39, 36);
+  }
+  inline int X2Value() const {
+    return Bits<SixByteInstr, int>(35, 32);
+  }
+  inline int B2Value() const {
+    return Bits<SixByteInstr, int>(31, 28);
+  }
+  inline int D2Value() const {
+    return Bits<SixByteInstr, int>(27, 16);
+  }
+  inline int size() const {
+    return 6;
+  }
 };
 
 // Helper functions for converting between register numbers and names.
