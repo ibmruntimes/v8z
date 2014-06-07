@@ -678,6 +678,7 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case M: Format(instr, "m\t'r1,'d1('r2d,'r3)"); break;
       case D: Format(instr, "d\t'r1,'d1('r2d,'r3)"); break;
       case O: Format(instr, "o\t'r1,'d1('r2d,'r3)"); break;
+      case N: Format(instr, "n\t'r1,'d1('r2d,'r3)"); break;
       case L: Format(instr, "l\t'r1,'d1('r2d,'r3)"); break;
       case C: Format(instr, "c\t'r1,'d1('r2d,'r3)"); break;
       case AH: Format(instr, "ah\t'r1,'d1('r2d,'r3)"); break;
