@@ -868,34 +868,16 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
 // Disassemble the instruction at *instr_ptr into the output buffer.
 int Decoder::InstructionDecode(byte* instr_ptr) {
   Instruction* instr = Instruction::At(instr_ptr);
-
-  // Try to decode as S390 instruction first.
-  bool processed = true;
-  int orig_out_buffer_pos_ = out_buffer_pos_;
   int instrLength = instr->InstructionLength();
 
-  if (instrLength == 2)
-    processed = DecodeTwoByte(instr);
-  else if (instrLength == 4)
-    processed = DecodeFourByte(instr);
-  else if (instrLength == 6)
-    processed = DecodeSixByte(instr);
+  if (2 == instrLength)
+    DecodeTwoByte(instr);
+  else if (4 == instrLength)
+    DecodeFourByte(instr);
+  else
+    DecodeSixByte(instr);
 
-  // @TODO Remove eventually.
-  // if we cannot process as S390, treat it as PPC instr
-  if (processed)
-    return instrLength;
-
-
-  // S390 will try to print the bits.  If ppc instruction
-  // we'll reset it back to the original position.
-  out_buffer_pos_ = orig_out_buffer_pos_;
-  // Print raw instruction bytes.
-  out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
-                                  "%08x       ",
-                                  instr->InstructionBits());
-
-  return Instruction::kInstrSize;
+  return instrLength;
 }
 
 
