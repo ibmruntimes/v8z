@@ -29,12 +29,12 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-// Declares a Simulator for PPC instructions if we are not generating a native
-// PPC binary. This Simulator allows us to run and debug PPC code generation on
-// regular desktop machines.
+// Declares a Simulator for S390 instructions if we are not generating a native
+// S390 binary. This Simulator allows us to run and debug S390 code generation
+// on regular desktop machines.
 // V8 calls into generated code by "calling" the CALL_GENERATED_CODE macro,
 // which will start execution in the Simulator or forwards to the real entry
-// on a PPC HW platform.
+// on a S390 hardware platform.
 
 #ifndef V8_S390_SIMULATOR_S390_H_
 #define V8_S390_SIMULATOR_S390_H_
@@ -200,7 +200,7 @@ class Simulator {
   // Accessor to the internal simulator stack area.
   uintptr_t StackLimit() const;
 
-  // Executes PPC instructions until the PC reaches end_sim_pc.
+  // Executes S390 instructions until the PC reaches end_sim_pc.
   void Execute();
 
   // Call on program start.
