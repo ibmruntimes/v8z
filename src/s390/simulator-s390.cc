@@ -1792,14 +1792,16 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       int r2 = rrinst->R2Value();
       uint32_t r1_val = get_low_register<uint32_t>(r1);
       uint32_t r2_val = get_low_register<uint32_t>(r2);
-      uint32_t alu_out;
+      uint32_t alu_out = 0;
       bool isOF = false;
-      if (op == ALR) {
+      if (ALR == op) {
         alu_out = r1_val + r2_val;
         isOF = CheckOverflowForUIntAdd(r1_val, r2_val);
-      } else if (op == SLR) {
+      } else if (SLR == op) {
         alu_out = r1_val - r2_val;
         isOF = CheckOverflowForUIntSub(r1_val, r2_val);
+      } else {
+        UNREACHABLE();
       }
       set_low_register(r1, alu_out);
       SetS390ConditionCode<uint32_t>(alu_out, 0);
@@ -2044,11 +2046,13 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       intptr_t b2_val = b2 == 0 ? 0 : get_register(b2);
       int shiftBits = (b2_val + d2) & 0x3F;
       uint32_t r1_val = get_low_register<uint32_t>(r1);
-      uint32_t alu_out;
-      if (op == SLL) {
+      uint32_t alu_out = 0;
+      if (SLL == op) {
         alu_out = r1_val << shiftBits;
-      } else if (op == SRL) {
+      } else if (SRL == op) {
         alu_out = r1_val >> shiftBits;
+      } else {
+        UNREACHABLE();
       }
       set_low_register(r1, alu_out);
       break;
@@ -2448,19 +2452,21 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
       intptr_t d2_val = rxinst->D2Value();
       intptr_t addr = b2_val + x2_val + d2_val;
       int16_t mem_val = ReadH(addr, instr);
-      int32_t alu_out;
+      int32_t alu_out = 0;
       bool isOF = false;
-      if (op == AH) {
+      if (AH == op) {
         isOF = CheckOverflowForIntAdd(r1_val, mem_val);
         alu_out = r1_val + mem_val;
-      } else if (op == SH) {
+      } else if (SH == op) {
         isOF = CheckOverflowForIntSub(r1_val, mem_val);
         alu_out = r1_val - mem_val;
-      } else if (op == MH) {
+      } else if (MH == op) {
         alu_out = r1_val * mem_val;
+      } else {
+        UNREACHABLE();
       }
       set_low_register(r1, alu_out);
-      if (op != MH) {  // MH does not change op code
+      if (MH != op) {  // MH does not change condition code
         SetS390ConditionCode<int32_t>(alu_out, 0);
         SetS390OverflowCode(isOF);
       }
