@@ -378,24 +378,6 @@ int Decoder::FormatOption(Instruction* instr, const char* format) {
                                         reinterpret_cast<byte*>(instr) + off));
         return 8;
       }
-     case 's': {
-       ASSERT(format[1] == 'h');
-       int32_t value = 0;
-       int32_t opcode = instr->OpcodeValue() << 26;
-       int32_t sh = instr->Bits(15, 11);
-       if (opcode == EXT5 ||
-           (opcode == EXT2 &&
-            instr->Bits(10, 2) << 2 == SRADIX)) {
-         // SH Bits 1 and 15-11 (split field)
-         value = (sh | (instr->Bit(1) << 5));
-       } else {
-         // SH Bits 15-11
-         value = (sh << 26) >> 26;
-       }
-       out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
-                                     "%d", value);
-       return 2;
-     }
      case 'm': {
        return FormatMask(instr, format);
      }
@@ -428,25 +410,6 @@ int Decoder::FormatMask(Instruction* instr, const char* format) {
     return 2;
   }
 
-  if (format[1] == 'e') {
-    if (instr->OpcodeValue() << 26 != EXT5) {
-      // ME Bits 10-6
-      value = (instr->Bits(10, 6) << 26) >> 26;
-    } else {
-      // ME Bits 5 and 10-6 (split field)
-      value = (instr->Bits(10, 6) | (instr->Bit(5) << 5));
-    }
-  } else if (format[1] == 'b') {
-    if (instr->OpcodeValue() << 26 != EXT5) {
-      // MB Bits 5-1
-      value = (instr->Bits(5, 1) << 26) >> 26;
-    } else {
-      // MB Bits 5 and 10-6 (split field)
-      value = (instr->Bits(10, 6) | (instr->Bit(5) << 5));
-    }
-  } else {
-    UNREACHABLE();  // bad format
-  }
   out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
       "%d", value);
   return 2;

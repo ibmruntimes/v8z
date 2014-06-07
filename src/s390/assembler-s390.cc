@@ -324,13 +324,6 @@ Condition Assembler::GetCondition(Instr instr) {
   return al;
 }
 
-// PowerPC
-bool Assembler::IsBranch(Instr instr) {
-  return ((instr & kOpcodeMask) == BCX);
-}
-
-// end PowerPC
-
 Register Assembler::GetRA(Instr instr) {
   Register reg;
   reg.code_ = Instruction::RAValue(instr);
@@ -358,12 +351,9 @@ bool Assembler::Is32BitLoadIntoIP(SixByteInstr instr) {
 #endif
 
 bool Assembler::IsCmpRegister(Instr instr) {
+  // @TODO Re-enable this properly
   ASSERT(false);
   return Instruction::S390OpcodeValue(reinterpret_cast<byte*>(&instr)) == CR;
-}
-
-bool Assembler::IsRlwinm(Instr instr) {
-  return ((instr & kOpcodeMask) == RLWINMX);
 }
 
 // Labels refer to positions in the (to be) generated code.
@@ -376,10 +366,8 @@ bool Assembler::IsRlwinm(Instr instr) {
 // to be generated; pos() is the position of the last
 // instruction using the label.
 
-
 // The link chain is terminated by a negative code position (must be aligned)
 const int kEndOfChain = -4;
-
 
 int Assembler::target_at(int pos)  {
   SixByteInstr instr = instr_at(pos);
