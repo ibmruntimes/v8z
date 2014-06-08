@@ -1571,8 +1571,12 @@ void Assembler::ssf_form(Opcode op, Register r3, Register b1, Disp d1,
 void Assembler::name(Register r1, Register r2, Register r3) {\
     rrf1_form(op << 16 | r3.code()*B12 | r1.code()*B4 | r2.code());\
 }
+void Assembler::rrf1_form(Opcode op, Register r1, Register r2, Register r3) {
+  uint32_t code = op << 16 | r3.code()*B12 | r1.code()*B4 | r2.code();
+  emit4bytes(code);
+}
 void Assembler::rrf1_form(uint32_t code) {
-    emit4bytes(code);
+  emit4bytes(code);
 }
 
 //  RRF2 format: <insn> R1,R2,M3
@@ -1651,7 +1655,6 @@ SIY_FORM_EMIT(alsi, ALSI)
 RIL1_FORM_EMIT(alsih, ALSIH)
 RIL1_FORM_EMIT(alsihn, ALSIHN)
 SS2_FORM_EMIT(ap, AP)
-RRF1_FORM_EMIT(ark, ARK)
 SIY_FORM_EMIT(asi, ASI)
 RRE_FORM_EMIT(axbr, AXBR)
 RRF1_FORM_EMIT(axtr, AXTR)
@@ -2026,7 +2029,6 @@ RIL1_FORM_EMIT(nilf, NILF)
 RI1_FORM_EMIT(nilh, NILH)
 RI1_FORM_EMIT(nill, NILL)
 SIY_FORM_EMIT(niy, NIY)
-RRF1_FORM_EMIT(nrk, NRK)
 RXY_FORM_EMIT(ntstg, NTSTG)
 SS1_FORM_EMIT(oc, OC)
 SI_FORM_EMIT(oi, OI)
@@ -2037,7 +2039,6 @@ RIL1_FORM_EMIT(oilf, OILF)
 RI1_FORM_EMIT(oilh, OILH)
 RI1_FORM_EMIT(oill, OILL)
 SIY_FORM_EMIT(oiy, OIY)
-RRF1_FORM_EMIT(ork, ORK)
 SS2_FORM_EMIT(pack, PACK)
 RRE_FORM_EMIT(pcc, PCC)
 RXY_FORM_EMIT(pfd, PFD)
@@ -2088,7 +2089,6 @@ RIL1_FORM_EMIT(slfi, SLFI)
 RXY_FORM_EMIT(slgf, SLGF)
 RIL1_FORM_EMIT(slgfi, SLGFI)
 RRE_FORM_EMIT(slgfr, SLGFR)
-RRF1_FORM_EMIT(slgrk, SLGRK)
 RRF1_FORM_EMIT(slhhhr, SLHHHR)
 RRF1_FORM_EMIT(slhhlr, SLHHLR)
 RXF_FORM_EMIT(slxt, SLXT)
@@ -2099,7 +2099,6 @@ RRE_FORM_EMIT(sqebr, SQEBR)
 RRE_FORM_EMIT(sqxbr, SQXBR)
 RS1_FORM_EMIT(srdl, SRDL)
 RXF_FORM_EMIT(srdt, SRDT)
-RRF1_FORM_EMIT(srk, SRK)
 S_FORM_EMIT(srnm, SRNM)
 S_FORM_EMIT(srnmb, SRNMB)
 S_FORM_EMIT(srnmt, SRNMT)
@@ -2185,7 +2184,6 @@ SI_FORM_EMIT(xi, XI)
 RIL1_FORM_EMIT(xihf, XIHF)
 RIL1_FORM_EMIT(xilf, XILF)
 SIY_FORM_EMIT(xiy, XIY)
-RRF1_FORM_EMIT(xrk, XRK)
 S_FORM_EMIT(xsch, XSCH)
 SS2_FORM_EMIT(zap, ZAP)
 
@@ -2195,9 +2193,19 @@ void Assembler::ar(Register r1, Register r2) {
   rr_form(AR, r1, r2);
 }
 
+// Add Register-Register-Register (32)
+void Assembler::ark(Register r1, Register r2, Register r3) {
+  rrf1_form(ARK, r1, r2, r3);
+}
+
 // Subtract Register (32)
 void Assembler::sr(Register r1, Register r2) {
   rr_form(SR, r1, r2);
+}
+
+// Subtract Register-Register-Register (32)
+void Assembler::srk(Register r1, Register r2, Register r3) {
+  rrf1_form(SRK, r1, r2, r3);
 }
 
 // Multiply Register (64<32)
@@ -2217,23 +2225,43 @@ void Assembler::dr(Register r1, Register r2) {
 }
 
 // And Register (32)
-void Assembler::or_z(Register r1, Register r2) {
-  rr_form(OR, r1, r2);
-}
-
-// And Register (32)
 void Assembler::nr(Register r1, Register r2) {
   rr_form(NR, r1, r2);
 }
 
-// XOR Register (32)
+// And Register-Register-Register (32)
+void Assembler::nrk(Register r1, Register r2, Register r3) {
+  rrf1_form(NRK, r1, r2, r3);
+}
+
+// Or Register (32)
+void Assembler::or_z(Register r1, Register r2) {
+  rr_form(OR, r1, r2);
+}
+
+// Or Register-Register-Register (32)
+void Assembler::ork(Register r1, Register r2, Register r3) {
+  rrf1_form(ORK, r1, r2, r3);
+}
+
+// Xor Register (32)
 void Assembler::xr(Register r1, Register r2) {
   rr_form(XR, r1, r2);
 }
 
-// XOR Register (32)
+// Xor Register-Register-Register (32)
+void Assembler::xrk(Register r1, Register r2, Register r3) {
+  rrf1_form(XRK, r1, r2, r3);
+}
+
+// Add Register (64)
 void Assembler::agr(Register r1, Register r2) {
   rre_form(AGR, r1, r2);
+}
+
+// Add Register-Register-Register (64)
+void Assembler::agrk(Register r1, Register r2, Register r3) {
+  rrf1_form(AGRK, r1, r2, r3);
 }
 
 // Subtract Register (64)
@@ -2241,14 +2269,14 @@ void Assembler::sgr(Register r1, Register r2) {
   rre_form(SGR, r1, r2);
 }
 
+// Subtract Register-Register-Register (64)
+void Assembler::sgrk(Register r1, Register r2, Register r3) {
+  rrf1_form(SGRK, r1, r2, r3);
+}
+
 // Multiply Register (128<64)
 void Assembler::mlgr(Register r1, Register r2) {
   rre_form(MLGR, r1, r2);
-}
-
-// Or Register (64)
-void Assembler::ogr(Register r1, Register r2) {
-  rre_form(OGR, r1, r2);
 }
 
 // And Register (64)
@@ -2256,9 +2284,29 @@ void Assembler::ngr(Register r1, Register r2) {
   rre_form(NGR, r1, r2);
 }
 
+// And Register-Register-Register (64)
+void Assembler::ngrk(Register r1, Register r2, Register r3) {
+  rrf1_form(NGRK, r1, r2, r3);
+}
+
+// Or Register (64)
+void Assembler::ogr(Register r1, Register r2) {
+  rre_form(OGR, r1, r2);
+}
+
+// Or Register-Register-Register (64)
+void Assembler::ogrk(Register r1, Register r2, Register r3) {
+  rrf1_form(OGRK, r1, r2, r3);
+}
+
 // Xor Register (64)
 void Assembler::xgr(Register r1, Register r2) {
   rre_form(XGR, r1, r2);
+}
+
+// Xor Register-Register-Register (64)
+void Assembler::xgrk(Register r1, Register r2, Register r3) {
+  rrf1_form(XGRK, r1, r2, r3);
 }
 
 // Add Register-Storage (32)
@@ -2427,9 +2475,19 @@ void Assembler::alr(Register r1, Register r2) {
   rr_form(ALR, r1, r2);
 }
 
+// Add Logical Register-Register-Register (32)
+void Assembler::alrk(Register r1, Register r2, Register r3) {
+  rrf1_form(ALRK, r1, r2, r3);
+}
+
 // Add Logical Register-Register (64)
 void Assembler::algr(Register r1, Register r2) {
   rre_form(ALGR, r1, r2);
+}
+
+// Add Logical Register-Register-Register (64)
+void Assembler::algrk(Register r1, Register r2, Register r3) {
+  rrf1_form(ALGRK, r1, r2, r3);
 }
 
 // Add Logical Immediate (32)
@@ -2457,9 +2515,19 @@ void Assembler::slr(Register r1, Register r2) {
   rr_form(SLR, r1, r2);
 }
 
+// Subtract Logical Register-Register-Register (32)
+void Assembler::slrk(Register r1, Register r2, Register r3) {
+  rrf1_form(SLRK, r1, r2, r3);
+}
+
 // Subtract Logical Register-Register (64)
 void Assembler::slgr(Register r1, Register r2) {
   rre_form(SLGR, r1, r2);
+}
+
+// Subtract Logical Register-Register-Register (64)
+void Assembler::slgrk(Register r1, Register r2, Register r3) {
+  rrf1_form(SLGRK, r1, r2, r3);
 }
 
 // Multiply Halfword Immediate (32)

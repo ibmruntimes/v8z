@@ -123,6 +123,15 @@ bool AreAliased(Register reg1,
 #define LoadComplementRR   lcgr
 #define LoadNegativeRR     lngr
 
+// Distinct Operands
+#define AddP_RRR           agrk
+#define AddLogicalP_RRR    algrk
+#define SubP_RRR           sgrk
+#define SubLogicalP_RRR    slgrk
+#define AndP_RRR           ngrk
+#define OrP_RRR            ogrk
+#define XorP_RRR           xgrk
+
 // Load / Store
 #define LoadRR             lgr
 #define LoadAndTestRR      ltgr
@@ -150,6 +159,15 @@ bool AreAliased(Register reg1,
 #define XorRR              xr
 #define LoadComplementRR   lcr
 #define LoadNegativeRR     lnr
+
+// Distinct Operands
+#define AddP_RRR           ark
+#define AddLogicalP_RRR    alrk
+#define SubP_RRR           srk
+#define SubLogicalP_RRR    slrk
+#define AndP_RRR           nrk
+#define OrP_RRR            ork
+#define XorP_RRR           xrk
 
 // Load / Store
 #define LoadRR             lr
