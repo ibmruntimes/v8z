@@ -62,9 +62,9 @@ static unsigned CpuFeaturesImpliedByCompiler() {
 
 #if !defined(_AIX)
 // This function uses types in elf.h
-static bool is_processor(const char* p) {
+static bool supportsSTFLE() {
   static bool read_tried = false;
-  static char *auxv_cpu_type = NULL;
+  static uint32_t auxv_hwcap = 0;
 
   if (!read_tried) {
     // Open the AUXV (auxilliary vector) psuedo-file
@@ -88,9 +88,10 @@ static bool is_processor(const char* p) {
              auxv_element+sizeof(auxv_element) <= buffer+bytes_read &&
              auxv_element->a_type != AT_NULL;
              auxv_element++) {
-          if (auxv_element->a_type == AT_PLATFORM) {
-            /* Note: Both auxv_cpu_type and buffer are static */
-            auxv_cpu_type = reinterpret_cast<char*>(auxv_element->a_un.a_val);
+          // We are looking for HWCAP entry in AUXV to search for STFLE support
+          if (auxv_element->a_type == AT_HWCAP) {
+            /* Note: Both auxv_hwcap and buffer are static */
+            auxv_hwcap = auxv_element->a_un.a_val;
             goto done_reading;
           }
         }
@@ -100,10 +101,15 @@ static bool is_processor(const char* p) {
     }
   }
 
-  if (auxv_cpu_type == NULL) {
+  // Did not find result
+  if (0 == auxv_hwcap) {
     return false;
   }
-  return (strcmp(auxv_cpu_type, p) == 0);
+
+  // HWCAP_S390_STFLE is defined to be 4 in include/asm/elf.h.  Currently
+  // hardcoded in case that include file does not exist.
+  const uint32_t HWCAP_S390_STFLE = 4;
+  return (auxv_hwcap & HWCAP_S390_STFLE);
 }
 #endif
 
@@ -125,19 +131,38 @@ void CpuFeatures::Probe() {
     return;
   }
 
-  // Detect whether frim instruction is supported (POWER5+)
-  // For now we will just check for processors we know do not
-  // support it
-#if !defined(_AIX)
-  if (!is_processor("ppc970") /* G5 */ && !is_processor("ppc7450") /* G4 */) {
-    // Assume support
-    supported_ |= (1u << FPU);
+  static bool performSTFLE = supportsSTFLE();
+
+  // The base architecture is z9, which should include STFLE support.
+  ASSERT(performSTFLE);
+
+  // Need to define host, as we are generating inlined S390 assembly to test
+  // for facilities.
+#if defined(V8_HOST_ARCH_S390)
+  if (performSTFLE) {
+     // STFLE D(B) requires:
+     //    GPR0 to specify # of double words to update minus 1.
+     //      i.e. GPR0 = 0 for 1 doubleword
+     //    D(B) to specify to memory location to store the facilities bits
+     // The facilities we are checking for are:
+     //   Bit 45 - Distinct Operands for instructions like ARK, SRK, etc.
+     // As such, we require only 1 double word
+     int64_t facilities[1];
+     facilities[0] = 0;
+     // LHI sets up GPR0
+     // STFLE is specified as .insn, as opcode is not recognized.
+     // We register the instructions kill r0 (LHI) and the CC (STFLE).
+     asm volatile("lhi   0,0\n"
+                  ".insn s,0xb2b00000,%0\n"
+                  : "=Q" (facilities) : : "cc", "r0");
+
+     // Test for Distinct Operands Facility - Bit 45
+     if (facilities[0] & (1lu << (63 - 45))) {
+        supported_ |= (1u << DISTINCT_OPS);
+     }
   }
-#else
-  // Fallback: assume frim is supported -- will implement processor
-  // detection for other S390 platforms in is_processor() if required
-  supported_ |= (1u << FPU);
 #endif
+  supported_ |= (1u << FPU);
 }
 
 Register ToRegister(int num) {
@@ -1537,12 +1562,12 @@ void Assembler::ssf_form(Opcode op, Register r3, Register b1, Disp d1,
 
 //  RRF1 format: <insn> R1,R2,R3
 //    +------------------+----+----+----+----+
-//    |      OpCode      | R1 |    | R3 | R2 |
+//    |      OpCode      | R3 |    | R1 | R2 |
 //    +------------------+----+----+----+----+
 //    0                  16   20   24   28  31
 #define RRF1_FORM_EMIT(name, op)\
-void Assembler::name(Register r1, Register r3, Register r2) {\
-    rrf1_form(op << 16 | r1.code()*B12 | r3.code()*B4 | r2.code());\
+void Assembler::name(Register r1, Register r2, Register r3) {\
+    rrf1_form(op << 16 | r3.code()*B12 | r1.code()*B4 | r2.code());\
 }
 void Assembler::rrf1_form(uint32_t code) {
     emit4bytes(code);
