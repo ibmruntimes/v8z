@@ -2010,13 +2010,11 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
     case Token::ADD: {
       Label add_no_overflow;
       // C = A+B; C overflows if A/B have same sign and C has diff sign than A
-      __ LoadRR(r0, right);
-      __ XorP(r0, left);
+      __ XorP(r0, left, right);
       __ Add(scratch1, left, right);
       __ TestSignBit(r0, r0);
       __ bne(&add_no_overflow /*, cr0*/);
-      __ LoadRR(r0, right);
-      __ XorP(r0, scratch1);
+      __ XorP(r0, right, scratch1);
       __ TestSignBit(r0, r0);
       __ bne(&stub_call /*, cr0*/);
       __ bind(&add_no_overflow);
@@ -2026,13 +2024,11 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
     case Token::SUB: {
       Label sub_no_overflow;
       // C = A-B; C overflows if A/B have diff signs and C has diff sign than A
-      __ LoadRR(r0, right);
-      __ XorP(r0, left);
+      __ XorP(r0, left, right);
       __ Sub(scratch1, left, right);
       __ TestSignBit(r0, r0);
       __ beq(&sub_no_overflow /*, cr0*/);
-      __ LoadRR(r0, left);
-      __ XorP(r0, scratch1);
+      __ XorP(r0, left, scratch1);
       __ TestSignBit(r0, r0);
       __ bne(&stub_call /*, cr0*/);
       __ bind(&sub_no_overflow);

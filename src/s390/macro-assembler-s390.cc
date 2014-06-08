@@ -303,10 +303,7 @@ void MacroAssembler::InNewSpace(Register object,
   ASSERT(cond == eq || cond == ne);
   mov(r0, Operand(ExternalReference::new_space_mask(isolate())));
 
-  // If they are the same reg, we simply have to copy.
-  if (!scratch.is(object))
-    LoadRR(scratch, object);
-  AndP(scratch, r0);
+  AndP(scratch, object, r0);
   mov(r0, Operand(ExternalReference::new_space_start(isolate())));
   CmpRR(scratch, r0);
   b(cond, branch);
@@ -1885,28 +1882,24 @@ void MacroAssembler::AddAndCheckForOverflow(Register dst,
   // C = A+B; C overflows if A/B have same sign and C has diff sign than A
   if (dst.is(left)) {
     LoadRR(scratch, left);            // Preserve left.
-    Add(dst, left, right);        // Left is overwritten.
-    XorP(scratch, dst);  // Original left.
-    LoadRR(overflow_dst, dst);
-    XorP(overflow_dst, right);
+    Add(dst, left, right);            // Left is overwritten.
+    XorP(scratch, dst);               // Original left.
+    XorP(overflow_dst, dst, right);
     AndP(overflow_dst, scratch/*, SetRC*/);
     LoadAndTestRR(overflow_dst, overflow_dst);
     // Should be okay to remove rc
   } else if (dst.is(right)) {
     LoadRR(scratch, right);           // Preserve right.
-    Add(dst, left, right);        // Right is overwritten.
-    XorP(scratch, dst);  // Original right.
-    LoadRR(overflow_dst, dst);
-    XorP(overflow_dst, left);
+    Add(dst, left, right);            // Right is overwritten.
+    XorP(scratch, dst);               // Original right.
+    XorP(overflow_dst, dst, left);
     AndP(overflow_dst, scratch/*, SetRC*/);
     LoadAndTestRR(overflow_dst, overflow_dst);
     // Should be okay to remove rc
   } else {
     Add(dst, left, right);
-    LoadRR(overflow_dst, dst);
-    XorP(overflow_dst, left);
-    LoadRR(scratch, dst);
-    XorP(scratch, right);
+    XorP(overflow_dst, dst, left);
+    XorP(scratch, dst, right);
     AndP(overflow_dst, scratch/*, SetRC*/);
     LoadAndTestRR(overflow_dst, overflow_dst);
     // Should be okay to remove rc
@@ -1928,8 +1921,7 @@ void MacroAssembler::SubAndCheckForOverflow(Register dst,
   if (dst.is(left)) {
     LoadRR(scratch, left);            // Preserve left.
     Sub(dst, left, right);        // Left is overwritten.
-    LoadRR(overflow_dst, dst);
-    XorP(overflow_dst, scratch);
+    XorP(overflow_dst, dst, scratch);
     XorP(scratch, right);
     AndP(overflow_dst, scratch/*, SetRC*/);
     LoadAndTestRR(overflow_dst, overflow_dst);
@@ -1937,18 +1929,15 @@ void MacroAssembler::SubAndCheckForOverflow(Register dst,
   } else if (dst.is(right)) {
     LoadRR(scratch, right);           // Preserve right.
     Sub(dst, left, right);        // Right is overwritten.
-    LoadRR(overflow_dst, dst);
-    XorP(overflow_dst, left);
+    XorP(overflow_dst, dst, left);
     XorP(scratch, left);
     AndP(overflow_dst, scratch/*, SetRC*/);
     LoadAndTestRR(overflow_dst, overflow_dst);
     // Should be okay to remove rc
   } else {
     Sub(dst, left, right);
-    LoadRR(overflow_dst, dst);
-    XorP(overflow_dst, left);
-    LoadRR(scratch, right);
-    XorP(scratch, left);
+    XorP(overflow_dst, dst, left);
+    XorP(scratch, left, right);
     AndP(overflow_dst, scratch/*, SetRC*/);
     LoadAndTestRR(overflow_dst, overflow_dst);
     // Should be okay to remove rc
@@ -2872,8 +2861,7 @@ void MacroAssembler::JumpIfNotPowerOfTwoOrZero(
   Sub(scratch, reg, Operand(1));
   Cmpi(scratch, Operand::Zero());
   blt(not_power_of_two_or_zero);
-  LoadRR(r0, reg);
-  AndP(r0, scratch/*, SetRC*/);  // Should be okay to remove rc
+  AndP(r0, reg, scratch/*, SetRC*/);  // Should be okay to remove rc
   bne(not_power_of_two_or_zero /*, cr0*/);
 }
 
@@ -2886,8 +2874,7 @@ void MacroAssembler::JumpIfNotPowerOfTwoOrZeroAndNeg(
   Sub(scratch, reg, Operand(1));
   Cmpi(scratch, Operand::Zero());
   blt(zero_and_neg);
-  LoadRR(r0, reg);
-  AndP(r0, scratch/*, SetRC*/);  // Should be okay to remove rc
+  AndP(r0, reg, scratch/*, SetRC*/);  // Should be okay to remove rc
   bne(not_power_of_two /*, cr0*/);
 }
 
@@ -2914,8 +2901,7 @@ void MacroAssembler::SmiTagCheckOverflow(Register dst,
     ASSERT(!dst.is(overflow));
     ASSERT(!src.is(overflow));
     SmiTag(dst, src);
-    LoadRR(overflow, src);
-    XorP(overflow, dst/*, SetRC*/);  // Overflow if (value ^ 2 * value) < 0.
+    XorP(overflow, src, dst);  // Overflow if (value ^ 2 * value) < 0.
     LoadAndTestRR(overflow, overflow);
     // safe to remove rc
   }
@@ -3049,8 +3035,7 @@ void MacroAssembler::JumpIfNotBothSequentialAsciiStrings(Register first,
                                                          Label* failure) {
   // Check that neither is a smi.
   STATIC_ASSERT(kSmiTag == 0);
-  LoadRR(scratch1, first);
-  AndP(scratch1, second);
+  AndP(scratch1, first, second);
   JumpIfSmi(scratch1, failure);
   JumpIfNonSmisNotBothSequentialAsciiStrings(first,
                                              second,
@@ -4022,10 +4007,16 @@ void MacroAssembler::Add(Register dst, Register src,
   }
 }
 
-void MacroAssembler::Add(Register dst, Register src1,
-                        Register src2) {
+void MacroAssembler::Add(Register dst, Register src1, Register src2) {
   if (!dst.is(src1) && !dst.is(src2)) {
-    LoadRR(dst, src1);
+    // We prefer to generate AR/AGR, over the non clobbering ARK/AGRK
+    // as AR is a smaller instruction
+    if (CpuFeatures::IsSupported(DISTINCT_OPS)) {
+      AddP_RRR(dst, src1, src2);
+      return;
+    } else {
+      LoadRR(dst, src1);
+    }
   } else if (dst.is(src2)) {
     src2 = src1;
   }
@@ -4077,15 +4068,23 @@ void MacroAssembler::Sub(Register dst, const MemOperand& opnd) {
 #endif
 }
 
-#if 0  // Not support on z9
-void MacroAssembler::And(Register dst, Register src1, Register src2) {
-#if V8_TARGET_ARCH_S390X
-  ngrk(dst, src1, src2);
-#else
-  nrk(dst, src1, src2);
-#endif
+// Non-clobbering AND pointer size - dst = src1 ^ src1
+void MacroAssembler::AndP(Register dst, Register src1, Register src2) {
+  if (!dst.is(src1) && !dst.is(src2)) {
+    // We prefer to generate XR/XGR, over the non clobbering XRK/XRK
+    // as XR is a smaller instruction
+    if (CpuFeatures::IsSupported(DISTINCT_OPS)) {
+      AndP_RRR(dst, src1, src2);
+      return;
+    } else {
+      LoadRR(dst, src1);
+    }
+  } else if (dst.is(src2)) {
+    src2 = src1;
+  }
+  AndRR(dst, src2);
 }
-#endif
+
 
 void MacroAssembler::AndP(Register dst, Register src) {
 #if V8_TARGET_ARCH_S390X
@@ -4143,15 +4142,22 @@ void MacroAssembler::OrP(Register dst, Register src) {
 #endif
 }
 
-#if 0  // Not support on z9
-void MacroAssembler::Or(Register dst, Register src1, Register src2) {
-#if V8_TARGET_ARCH_S390X
-  ogrk(dst, src1, src2);
-#else
-  ork(dst, src1, src2);
-#endif
+// Non-clobbering OR pointer size - dst = src1 ^ src1
+void MacroAssembler::OrP(Register dst, Register src1, Register src2) {
+  if (!dst.is(src1) && !dst.is(src2)) {
+    // We prefer to generate XR/XGR, over the non clobbering XRK/XRK
+    // as XR is a smaller instruction
+    if (CpuFeatures::IsSupported(DISTINCT_OPS)) {
+      OrP_RRR(dst, src1, src2);
+      return;
+    } else {
+      LoadRR(dst, src1);
+    }
+  } else if (dst.is(src2)) {
+    src2 = src1;
+  }
+  OrRR(dst, src2);
 }
-#endif
 
 void MacroAssembler::OrPImm(Register dst, const Operand& opnd) {
   ASSERT(!opnd.is_reg());
@@ -4183,13 +4189,22 @@ void MacroAssembler::XorP(Register dst, Register src) {
 #endif
 }
 
-#if 0
-void MacroAssembler::Xor(Register dst, Register src1, Register src2) {
-  if (!dst.is(src1) && !dst.is(src2)) LoadRR(dst, src1);
-  else if (dst.is(src2)) src2 = src1;
-  XorP(dst, src2);
+// Non-clobbering XOR pointer size - dst = src1 ^ src1
+void MacroAssembler::XorP(Register dst, Register src1, Register src2) {
+  if (!dst.is(src1) && !dst.is(src2)) {
+    // We prefer to generate XR/XGR, over the non clobbering XRK/XRK
+    // as XR is a smaller instruction
+    if (CpuFeatures::IsSupported(DISTINCT_OPS)) {
+      XorP_RRR(dst, src1, src2);
+      return;
+    } else {
+      LoadRR(dst, src1);
+    }
+  } else if (dst.is(src2)) {
+    src2 = src1;
+  }
+  XorRR(dst, src2);
 }
-#endif
 
 void MacroAssembler::XorPImm(Register dst, const Operand& opnd) {
   ASSERT(!opnd.is_reg());

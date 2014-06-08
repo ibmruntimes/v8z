@@ -1987,14 +1987,12 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
     case Token::ADD: {
       Label undo_add, add_no_overflow;
       // C = A+B; C overflows if A/B have same sign and C has diff sign than A
-      __ LoadRR(r0, right);
-      __ XorP(r0, left);
+      __ XorP(r0, left, right);
       __ LoadRR(scratch1, right);
       __ Add(right, left, right);  // Add optimistically.
       __ TestSignBit(r0, r0);
       __ bne(&add_no_overflow /*, cr0*/);
-      __ LoadRR(r0, right);
-      __ XorP(r0, scratch1);
+      __ XorP(r0, right, scratch1);
       __ TestSignBit(r0, r0);
       __ bne(&undo_add /*, cr0*/);
       __ bind(&add_no_overflow);
@@ -2006,14 +2004,12 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
     case Token::SUB: {
       Label undo_sub, sub_no_overflow;
       // C = A-B; C overflows if A/B have diff signs and C has diff sign than A
-      __ LoadRR(r0, right);
-      __ XorP(r0, left);
+      __ XorP(r0, left, right);
       __ LoadRR(scratch1, right);
       __ Sub(right, left, right);  // Subtract optimistically.
       __ TestSignBit(r0, r0);
       __ beq(&sub_no_overflow /*, cr0*/);
-      __ LoadRR(r0, right);
-      __ XorP(r0, left);
+      __ XorP(r0, left, right);
       __ TestSignBit(r0, r0);
       __ bne(&undo_sub /*, cr0*/);
       __ bind(&sub_no_overflow);
@@ -3030,8 +3026,7 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
   // r5 = high 32 bits of double value
   // Compute hash (the shifts are arithmetic):
   //   h = (low ^ high); h ^= h >> 16; h ^= h >> 8; h = h & (cacheSize - 1);
-  __ LoadRR(r3, r5);
-  __ XorP(r3, r4);
+  __ XorP(r3, r4, r5);
   __ LoadRR(scratch0, r3);
   __ sra(scratch0, Operand(16));
   __ XorP(r3, scratch0);
@@ -6512,8 +6507,7 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   }
 
   // Check whether both strings have same encoding
-  __ LoadRR(r9, r7);
-  __ XorP(r9, r6);
+  __ XorP(r9, r6, r7);
   __ mov(r0, Operand(kStringEncodingMask));
   __ AndP(r0, r9);
   __ bne(&call_runtime /*, cr0*/);
