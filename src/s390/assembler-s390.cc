@@ -132,7 +132,6 @@ void CpuFeatures::Probe() {
   }
 
   static bool performSTFLE = supportsSTFLE();
-
   // The base architecture is z9, which should include STFLE support.
   ASSERT(performSTFLE);
 
@@ -161,6 +160,8 @@ void CpuFeatures::Probe() {
         supported_ |= (1u << DISTINCT_OPS);
      }
   }
+#else
+  USE(performSTFLE);  // To avoid assert
 #endif
   supported_ |= (1u << FPU);
 }
