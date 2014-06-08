@@ -1268,12 +1268,7 @@ void LCodeGen::DoBitI(LBitI* instr) {
   switch (instr->op()) {
     case Token::BIT_AND:
       if (right.is_reg()) {
-        if (right.rm().is(result)) {
-          __ AndP(result, left);
-        } else {
-          __ LoadRR(result, left);
-          __ AndP(result, right.rm());
-        }
+        __ AndP(result, left, right.rm());
       } else {
         if (!result.is(left))
           __ LoadRR(result, left);
@@ -1282,13 +1277,7 @@ void LCodeGen::DoBitI(LBitI* instr) {
       break;
     case Token::BIT_OR:
       if (right.is_reg()) {
-        if (right.rm().is(result)) {
-          __ OrP(result, left);
-        } else {
-        if (!result.is(left))
-          __ LoadRR(result, left);
-        __ OrP(result, right.rm());
-        }
+        __ OrP(result, left, right.rm());
       } else {
         __ LoadRR(result, left);
         __ OrPImm(result, right);
@@ -1296,12 +1285,7 @@ void LCodeGen::DoBitI(LBitI* instr) {
       break;
     case Token::BIT_XOR:
       if (right.is_reg()) {
-        if (right.rm().is(result)) {
-          __ XorP(result, left);
-        } else {
-          __ LoadRR(result, left);
-          __ XorP(result, right.rm());
-        }
+        __ XorP(result, left, right.rm());
       } else {
         if (!result.is(left))
           __ LoadRR(result, left);

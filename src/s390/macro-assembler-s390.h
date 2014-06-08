@@ -303,12 +303,12 @@ class MacroAssembler: public Assembler {
 
   // and 32bit
   // and(r,r,r) Not supported on z9
-  // void AndP(Register dst, Register src1, Register src2);
+  void AndP(Register dst, Register src1, Register src2);
   // void AndP(Register dst, Register src, const Operand& opnd);
   // or(r,r,r) Not supported on z9
-  // void OrP(Register dst, Register src1, Register src2);
+  void OrP(Register dst, Register src1, Register src2);
   // void OrP(Register dst, Register src, const Operand& opnd);
-  // void XorP(Register dst, Register src1, Register src2);
+  void XorP(Register dst, Register src1, Register src2);
   // void XorP(Register dst, Register src, const Operand& opnd);
   void Branch(Condition c, const Operand& opnd);
   void BranchOnCount(Register r1, Label *l);
