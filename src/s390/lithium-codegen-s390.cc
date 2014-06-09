@@ -1065,7 +1065,7 @@ void LCodeGen::DoMathFloorOfDiv(LMathFloorOfDiv* instr) {
     }
     __ mov(result, Operand(multiplier));
     __ MulP(result, scratch);
-    __ AddPImm(result, Operand(0x4000 << 16));
+    __ AddP(result, Operand(0x4000 << 16));
     __ ShiftRightArithImm(result, result, shift);
 #else
     if (divisor < 0 &&
@@ -1082,7 +1082,7 @@ void LCodeGen::DoMathFloorOfDiv(LMathFloorOfDiv* instr) {
     __ LoadRR(ip, r1);
 
     if (static_cast<int32_t>(multiplier) < 0) {
-      __ Add(result, result, dividend);
+      __ AddP(result, result, dividend);
     }
     if (divisor < 0) {
       __ LoadComplementRR(result, result);
@@ -1091,17 +1091,17 @@ void LCodeGen::DoMathFloorOfDiv(LMathFloorOfDiv* instr) {
       __ LoadComplementRR(ip, ip);
       __ LoadRR(scratch, ip);
       __ srl(scratch, Operand(30));
-      __ AddPImm(scratch, Operand(1));
+      __ AddP(scratch, Operand(1));
       __ srl(scratch, Operand(2));
-      __ AddPImm(scratch, Operand(-1));
-      __ Add(result, result, scratch);
+      __ AddP(scratch, Operand(-1));
+      __ AddP(result, result, scratch);
     } else {
       // Add one to result if low word >= 0xC0000000
       __ LoadRR(scratch, ip);
       __ srl(scratch, Operand(30));
-      __ AddPImm(scratch, Operand(1));
+      __ AddP(scratch, Operand(1));
       __ srl(scratch, Operand(2));
-      __ Add(result, result, scratch);
+      __ AddP(result, result, scratch);
     }
     __ ShiftRightArithImm(result, result, shift - 32);
 #endif
@@ -1163,7 +1163,7 @@ void LCodeGen::DoMulI(LMulI* instr) {
           } else if (IsPowerOf2(constant_abs - 1)) {
             int32_t shift = WhichPowerOf2(constant_abs - 1);
             __ ShiftLeftImm(scratch, left, Operand(shift));
-            __ Add(result, scratch, left);
+            __ AddP(result, scratch, left);
           } else if (IsPowerOf2(constant_abs + 1)) {
             int32_t shift = WhichPowerOf2(constant_abs + 1);
             __ ShiftLeftImm(scratch, left, Operand(shift));
@@ -1564,30 +1564,52 @@ void LCodeGen::DoAddI(LAddI* instr) {
   LOperand* left = instr->left();
   LOperand* right = instr->right();
   LOperand* result = instr->result();
-  bool can_overflow = instr->hydrogen()->CheckFlag(HValue::kCanOverflow);
 
-  if (!can_overflow && right->IsConstantOperand()) {
-    if (is_int16(ToInteger32(LConstantOperand::cast(right)))) {
+#if V8_TARGET_ARCH_S390X
+//  bool isInteger = !(instr->hydrogen()->representation().IsSmi() ||
+//                     instr->hydrogen()->representation().IsExternal());
+  bool isInteger = instr->hydrogen()->CheckFlag(HValue::kCanOverflow);
+#else
+  bool isInteger = true;
+#endif
+
+  if (right->IsConstantOperand()) {
+    if (isInteger)
       __ Add(ToRegister(result), ToRegister(left),
-              Operand(ToInteger32(LConstantOperand::cast(right))));
-      return;
+           Operand(ToInteger32(LConstantOperand::cast(right))));
+    else
+      __ AddP(ToRegister(result), ToRegister(left),
+           Operand(ToInteger32(LConstantOperand::cast(right))));
+  } else if (right->IsRegister()) {
+    if (isInteger)
+      __ Add(ToRegister(result), ToRegister(left), ToRegister(right));
+    else
+      __ AddP_ExtendSrc(ToRegister(result), ToRegister(left),
+                        ToRegister(right));
+  } else {
+    if (!left->Equals(instr->result()))
+      __ LoadRR(ToRegister(result), ToRegister(left));
+
+#if V8_TARGET_ARCH_S390X
+    MemOperand rightMem = ToMemOperand(right);
+    MemOperand mem = MemOperand(rightMem.rb(), rightMem.rx(),
+                                rightMem.offset() + 4);
+#else
+    MemOperand mem = ToMemOperand(right);
+#endif
+    if (isInteger) {
+      __ Add(ToRegister(result), mem);
+    } else {
+      __ AddP_ExtendSrc(ToRegister(result), mem);
     }
   }
 
-  if (!can_overflow) {
-    Register right_reg = EmitLoadRegister(right, ip);
-    __ Add(ToRegister(result), ToRegister(left), right_reg);
-  } else {  // can_overflow.
-    Register right_reg = EmitLoadRegister(right, ip);
-    __ AddAndCheckForOverflow(ToRegister(result),
-                              ToRegister(left),
-                              right_reg,
-                              scratch0(), r0);
 #if V8_TARGET_ARCH_S390X
-    __ ltgfr(scratch0(), scratch0());
+  __ lgfr(ToRegister(result), ToRegister(result));
 #endif
-    // Doptimize on overflow
-    DeoptimizeIf(lt, instr->environment(), cr0);
+  // Doptimize on overflow
+  if (instr->hydrogen()->CheckFlag(HValue::kCanOverflow)) {
+    DeoptimizeIf(overflow, instr->environment(), cr0);
   }
 }
 
@@ -2835,7 +2857,7 @@ void LCodeGen::DoAccessArgumentsAt(LAccessArgumentsAt* instr) {
   // There are two words between the frame pointer and the last argument.
   // Subtracting from length accounts for one of them add one more.
   __ Sub(length, length, index);
-  __ AddPImm(length, Operand(1));
+  __ AddP(length, Operand(1));
   __ ShiftLeftImm(scratch0(), length, Operand(kPointerSizeLog2));
   __ LoadP(result, MemOperand(arguments, scratch0()));
 }
@@ -2985,7 +3007,7 @@ MemOperand LCodeGen::PrepareKeyedOperand(Register key,
 #endif
     }
 
-    __ Add(scratch, key, Operand(additional_index));
+    __ AddP(scratch, key, Operand(additional_index));
     key = scratch;
   }
 
@@ -3021,10 +3043,10 @@ void LCodeGen::DoLoadKeyedSpecializedArrayElement(
     DoubleRegister result = ToDoubleRegister(instr->result());
     __ LoadRR(scratch0(), external_pointer);
     if (key_is_constant) {
-      __ AddPImm(scratch0(), Operand(constant_key << element_size_shift));
+      __ AddP(scratch0(), Operand(constant_key << element_size_shift));
     } else {
       __ IndexToArrayOffset(r0, key, element_size_shift, key_is_tagged);
-      __ Add(scratch0(), r0);
+      __ AddP(scratch0(), r0);
     }
     if (elements_kind == EXTERNAL_FLOAT_ELEMENTS) {
       __ ldeb(result, MemOperand(scratch0(), additional_offset));
@@ -3738,7 +3760,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
 //  __ LoadImmP(r6, Operand(18273));
   __ MulP(r5, Operand(18273));
   __ srl(r3, Operand(16));
-  __ Add(r3, r5, r3);
+  __ AddP(r3, r5, r3);
   // Save state[0].
   __ StoreW(r3, FieldMemOperand(r4, ByteArray::kHeaderSize));
 
@@ -3748,7 +3770,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
 //  __ mov(r6, Operand(36969));
   __ MulP(r5, Operand(36969));
   __ srl(r2, Operand(16));
-  __ Add(r2, r5, r2);
+  __ AddP(r2, r5, r2);
   // Save state[1].
   __ StoreW(r2, FieldMemOperand(r4, ByteArray::kHeaderSize + kSeedSize));
 
@@ -3756,7 +3778,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
   __ ExtractBitMask(r2, r2, 0x3FFFF);
   __ LoadRR(r0, r3);
   __ sll(r0, Operand(14));
-  __ Add(r2, r2, r0);
+  __ AddP(r2, r2, r0);
 
   __ bind(deferred->exit());
 

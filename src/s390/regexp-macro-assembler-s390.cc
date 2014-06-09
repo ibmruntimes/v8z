@@ -574,7 +574,7 @@ void RegExpMacroAssemblerS390::CheckBitInTable(
   if (mode_ != ASCII || kTableMask != String::kMaxAsciiCharCode) {
     __ mov(r3, Operand(kTableSize - 1));
     __ AndP(r3, current_character());
-    __ AddPImm(r3, Operand(ByteArray::kHeaderSize - kHeapObjectTag));
+    __ AddP(r3, Operand(ByteArray::kHeaderSize - kHeapObjectTag));
   } else {
     __ LoadRR(r3, current_character());
     __ AddP(r3, Operand(ByteArray::kHeaderSize - kHeapObjectTag));
@@ -920,12 +920,12 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
           }
           if (mode_ == UC16) {
             __ ShiftRightArithImm(r4, r4, 1);
-            __ Add(r4, r3, r4);
+            __ AddP(r4, r3, r4);
             __ ShiftRightArithImm(r5, r5, 1);
-            __ Add(r5, r3, r5);
+            __ AddP(r5, r3, r5);
           } else {
-            __ Add(r4, r3, r4);
-            __ Add(r5, r3, r5);
+            __ AddP(r4, r3, r4);
+            __ AddP(r5, r3, r5);
           }
           __ StoreW(r4, MemOperand(r2));
           __ AddP(r2, Operand(kIntSize));
