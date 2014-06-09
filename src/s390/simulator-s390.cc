@@ -3336,6 +3336,37 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
   Opcode op = instr->S390OpcodeValue();
 
   switch (op) {
+    case LRV:
+    case LRVH:
+    case STRV:
+    case STRVH: {
+      RXYInstruction* rxyInstr = reinterpret_cast<RXYInstruction*>(instr);
+      int r1 = rxyInstr->R1Value();
+      int x2 = rxyInstr->X2Value();
+      int b2 = rxyInstr->B2Value();
+      int d2 = rxyInstr->D2Value();
+      int32_t r1_val = get_low_register<int32_t>(r1);
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      intptr_t mem_addr = b2_val + x2_val + d2;
+
+      if (op == LRVH) {
+        int16_t mem_val = ReadH(mem_addr, instr);
+        int32_t result = ByteReverse(mem_val) & 0x0000ffff;
+        result |= r1_val & 0xffff0000;
+        set_low_register(r1, result);
+      } else if (op == LRV) {
+          int32_t mem_val = ReadW(mem_addr, instr);
+          set_low_register(r1, ByteReverse(mem_val));
+      } else if (op == STRVH) {
+          int16_t result = static_cast<int16_t>(r1_val >> 16);
+          WriteH(mem_addr, ByteReverse(result), instr);
+      } else if (op == STRV) {
+          WriteW(mem_addr, ByteReverse(r1_val), instr);
+      }
+
+      break;
+    }
     case ALFI:
     case SLFI: {
       RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
@@ -3614,6 +3645,18 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
       return false;
   }
   return true;
+}
+
+int16_t Simulator:: ByteReverse(int16_t hword) {
+  return (hword << 8) | ((hword >> 8) & 0x00ff);
+}
+
+int32_t Simulator:: ByteReverse(int32_t word) {
+  int32_t result = word << 24;
+  result |= (word << 8) & 0x00ff0000;
+  result |= (word >> 8) & 0x0000ff00;
+  result |= (word >> 24) & 0x00000ff;
+  return result;
 }
 
 // Executes the current instruction.
