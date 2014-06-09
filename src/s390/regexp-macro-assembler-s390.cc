@@ -762,7 +762,7 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     //    Requires us to save the callee-preserved registers r6-r13
     //    General convention is to also save r14 (return addr) and
     //    sp/r15 as well in a single STM/STMG
-    __ StoreMultipleP(r2, sp, MemOperand(sp, 8));
+    __ StoreMultipleP(r2, sp, MemOperand(sp, 2 * kPointerSize));
     // BackChain
     // __ StoreP(frame_pointer(), MemOperand(sp));
 
