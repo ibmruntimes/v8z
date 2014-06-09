@@ -273,6 +273,10 @@ class Simulator {
   inline void IncreaseStopCounter(uint32_t bkpt_code);
   void PrintStopInfo(uint32_t code);
 
+  // Byte Reverse
+  inline int16_t ByteReverse(int16_t hword);
+  inline int32_t ByteReverse(int32_t word);
+
   // Read and write memory.
   inline uint8_t ReadBU(intptr_t addr);
   inline int8_t ReadB(intptr_t addr);
