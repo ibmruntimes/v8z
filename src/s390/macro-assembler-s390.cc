@@ -1231,7 +1231,7 @@ void MacroAssembler::GetNumberHash(Register t0, Register scratch) {
   LoadRR(scratch, t0);
   NotP(scratch);
   sll(t0, Operand(15));
-  Add(t0, scratch, t0);
+  AddP(t0, scratch, t0);
   // hash = hash ^ (hash >> 12);
   LoadRR(scratch, t0);
   srl(scratch, Operand(12));
@@ -1239,7 +1239,7 @@ void MacroAssembler::GetNumberHash(Register t0, Register scratch) {
   // hash = hash + (hash << 2);
   LoadRR(scratch, t0);
   sll(scratch, Operand(2));
-  Add(t0, t0, scratch);
+  AddP(t0, t0, scratch);
   // hash = hash ^ (hash >> 4);
   LoadRR(scratch, t0);
   srl(scratch, Operand(4));
@@ -1248,10 +1248,10 @@ void MacroAssembler::GetNumberHash(Register t0, Register scratch) {
   LoadRR(r0, t0);
   LoadRR(scratch, t0);
   sll(scratch, Operand(3));
-  Add(t0, t0, scratch);
+  AddP(t0, t0, scratch);
   LoadRR(scratch, r0);
   sll(scratch, Operand(11));
-  Add(t0, t0, scratch);
+  AddP(t0, t0, scratch);
   // hash = hash ^ (hash >> 16);
   LoadRR(scratch, t0);
   srl(scratch, Operand(16));
@@ -1882,7 +1882,7 @@ void MacroAssembler::AddAndCheckForOverflow(Register dst,
   // C = A+B; C overflows if A/B have same sign and C has diff sign than A
   if (dst.is(left)) {
     LoadRR(scratch, left);            // Preserve left.
-    Add(dst, left, right);            // Left is overwritten.
+    AddP(dst, left, right);            // Left is overwritten.
     XorP(scratch, dst);               // Original left.
     XorP(overflow_dst, dst, right);
     AndP(overflow_dst, scratch/*, SetRC*/);
@@ -1890,14 +1890,14 @@ void MacroAssembler::AddAndCheckForOverflow(Register dst,
     // Should be okay to remove rc
   } else if (dst.is(right)) {
     LoadRR(scratch, right);           // Preserve right.
-    Add(dst, left, right);            // Right is overwritten.
+    AddP(dst, left, right);            // Right is overwritten.
     XorP(scratch, dst);               // Original right.
     XorP(overflow_dst, dst, left);
     AndP(overflow_dst, scratch/*, SetRC*/);
     LoadAndTestRR(overflow_dst, overflow_dst);
     // Should be okay to remove rc
   } else {
-    Add(dst, left, right);
+    AddP(dst, left, right);
     XorP(overflow_dst, dst, left);
     XorP(scratch, dst, right);
     AndP(overflow_dst, scratch/*, SetRC*/);
@@ -2414,7 +2414,7 @@ void MacroAssembler::EmitOutOfInt32RangeTruncate(Register result,
   blt(&high_shift_needed);
   LoadImmP(input_high, Operand::Zero());  // Zero out high for or'ing later
   LoadComplementRR(scratch, scratch);       // scratch = 32 - scratch
-  AddPImm(scratch, Operand(32));
+  AddP(scratch, Operand(32));
   b(&neg_shift);
 
   // Set the implicit 1 before the mantissa part in input_high.
@@ -2426,7 +2426,7 @@ void MacroAssembler::EmitOutOfInt32RangeTruncate(Register result,
   // If they weren't, it would mean that the answer is in the 32bit range.
   sll(input_high, scratch);
   LoadComplementRR(scratch, scratch);       // scratch = 32 - scratch
-  AddPImm(scratch, Operand(32));
+  AddP(scratch, Operand(32));
   b(&pos_shift);
 
   // Replace the shifted bits with bits from the lower mantissa word.
@@ -3919,33 +3919,11 @@ void MacroAssembler::Sub(Register dst, Register src1, Register src2) {
 }
 
 void MacroAssembler::Sub(Register dst, Register src, const Operand& imm) {
-  Add(dst, src, Operand(-(imm.imm_)));
+  AddP(dst, src, Operand(-(imm.imm_)));
 }
 
 void MacroAssembler::Sub(Register dst, const Operand& imm) {
-  AddPImm(dst, Operand(-(imm.imm_)));
-}
-
-void MacroAssembler::Add(Register dst, const MemOperand& opnd) {
-  ASSERT(is_int20(opnd.offset()));
-  if (is_uint12(opnd.offset()))
-    a(dst, opnd);
-  else
-    ay(dst, opnd);
-}
-
-void MacroAssembler::AddPImm(Register dst, const Operand& opnd) {
-#if V8_TARGET_ARCH_S390X
-  if (is_int16(opnd.immediate()))
-    aghi(dst, opnd);
-  else
-    agfi(dst, opnd);
-#else
-  if (is_int16(opnd.immediate()))
-    ahi(dst, opnd);
-  else
-    afi(dst, opnd);
-#endif
+  AddP(dst, Operand(-(imm.imm_)));
 }
 
 void MacroAssembler::Mul(Register dst, Register src1, Register src2) {
@@ -3997,17 +3975,88 @@ void MacroAssembler::MulP(Register dst, const MemOperand& opnd) {
 #endif
 }
 
-void MacroAssembler::Add(Register dst, Register src,
-                        const Operand& opnd) {
+// Add 32-bit (Register dst = Register dst + Immediate opnd)
+void MacroAssembler::Add(Register dst, const Operand& opnd) {
+  if (is_int16(opnd.immediate()))
+    ahi(dst, opnd);
+  else
+    afi(dst, opnd);
+}
+
+// Add Pointer Size (Register dst = Register dst + Immediate opnd)
+void MacroAssembler::AddP(Register dst, const Operand& opnd) {
+#if V8_TARGET_ARCH_S390X
+  if (is_int16(opnd.immediate()))
+    aghi(dst, opnd);
+  else
+    agfi(dst, opnd);
+#else
+  if (is_int16(opnd.immediate()))
+    ahi(dst, opnd);
+  else
+    afi(dst, opnd);
+#endif
+}
+
+// Add 32-bit (Register dst = Register src + Immediate opnd)
+void MacroAssembler::Add(Register dst, Register src, const Operand& opnd) {
   if (!dst.is(src)) {
     Load(dst, opnd);  // should be calling sign-ext load
-    AddRR(dst, src);
+    ar(dst, src);
   } else {
-    AddPImm(dst, opnd);
+    AddP(dst, opnd);
   }
 }
 
+// Add Pointer Size (Register dst = Register src + Immediate opnd)
+void MacroAssembler::AddP(Register dst, Register src, const Operand& opnd) {
+  if (!dst.is(src)) {
+    LoadRR(dst, src);
+  }
+  AddP(dst, opnd);
+}
+
+// Add 32-bit (Register dst = Register dst + Register src)
+void MacroAssembler::Add(Register dst, Register src) {
+  ar(dst, src);
+}
+
+// Add Pointer Size (Register dst = Register dst + Register src)
+void MacroAssembler::AddP(Register dst, Register src) {
+  AddRR(dst, src);
+}
+
+// Add Pointer Size with src extension
+//     (Register dst(ptr) = Register dst (ptr) + Register src (32 | 32->64))
+// src is treated as a 32-bit signed integer, which is sign extended to
+// 64-bit if necessary.
+void MacroAssembler::AddP_ExtendSrc(Register dst, Register src) {
+#if V8_TARGET_ARCH_S390X
+  agfr(dst, src);
+#else
+  ar(dst, src);
+#endif
+}
+
+// Add 32-bit (Register dst = Register src1 + Register src2)
 void MacroAssembler::Add(Register dst, Register src1, Register src2) {
+  if (!dst.is(src1) && !dst.is(src2)) {
+    // We prefer to generate AR/AGR, over the non clobbering ARK/AGRK
+    // as AR is a smaller instruction
+    if (CpuFeatures::IsSupported(DISTINCT_OPS)) {
+      ark(dst, src1, src2);
+      return;
+    } else {
+      lr(dst, src1);
+    }
+  } else if (dst.is(src2)) {
+    src2 = src1;
+  }
+  ar(dst, src2);
+}
+
+// Add Pointer Size (Register dst = Register src1 + Register src2)
+void MacroAssembler::AddP(Register dst, Register src1, Register src2) {
   if (!dst.is(src1) && !dst.is(src2)) {
     // We prefer to generate AR/AGR, over the non clobbering ARK/AGRK
     // as AR is a smaller instruction
@@ -4023,16 +4072,57 @@ void MacroAssembler::Add(Register dst, Register src1, Register src2) {
   AddRR(dst, src2);
 }
 
-void MacroAssembler::Addl(Register dst, const MemOperand& opnd) {
+// Add Pointer Size with src extension
+//      (Register dst (ptr) = Register dst (ptr) + Register src1 (ptr) +
+//                            Register src2 (32 | 32->64))
+// src is treated as a 32-bit signed integer, which is sign extended to
+// 64-bit if necessary.
+void MacroAssembler::AddP_ExtendSrc(Register dst, Register src1,
+                                    Register src2) {
 #if V8_TARGET_ARCH_S390X
-  algf(dst, opnd);
-#else
-  ASSERT(is_int20(opnd.offset()));
-  if (is_uint12(opnd.offset())) {
-    al_z(dst, opnd);
+  if (dst.is(src2)) {
+    // The source we need to sign extend is the same as result.
+    lgfr(dst, src2);
+    agr(dst, src1);
   } else {
-    aly(dst, opnd);
+    if (!dst.is(src1))
+      LoadRR(dst, src1);
+    agfr(dst, src2);
   }
+#else
+  AddP(dst, src1, src2);
+#endif
+}
+
+// Add 32-bit (Register-Memory)
+void MacroAssembler::Add(Register dst, const MemOperand& opnd) {
+  ASSERT(is_int20(opnd.offset()));
+  if (is_uint12(opnd.offset()))
+    a(dst, opnd);
+  else
+    ay(dst, opnd);
+}
+
+// Add Pointer Size (Register-Memory)
+void MacroAssembler::AddP(Register dst, const MemOperand& opnd) {
+#if V8_TARGET_ARCH_S390X
+  ASSERT(is_int20(opnd.offset()));
+  ag(dst, opnd);
+#else
+  Add(dst, opnd);
+#endif
+}
+
+// Add Pointer Size with src extension
+//      (Register dst (ptr) = Register dst (ptr) + Mem opnd (32 | 32->64))
+// src is treated as a 32-bit signed integer, which is sign extended to
+// 64-bit if necessary.
+void MacroAssembler::AddP_ExtendSrc(Register dst, const MemOperand& opnd) {
+#if V8_TARGET_ARCH_S390X
+  ASSERT(is_int20(opnd.offset()));
+  agf(dst, opnd);
+#else
+  Add(dst, opnd);
 #endif
 }
 
@@ -4224,24 +4314,23 @@ void MacroAssembler::Xor(Register dst, Register src, const Operand& opnd) {
 }
 #endif
 
-void MacroAssembler::AddP(Register dst, const Operand& opnd) {
-  AddPImm(dst, opnd);
-}
-
-// the size of mem operand is treated as sizeof(intptr_t)
-void MacroAssembler::AddP(Register dst, const MemOperand& opnd) {
-#if V8_TARGET_ARCH_S390X
-  alg(dst, opnd);
-#else
+// Add Logical 32-bit (Register-Memory)
+void MacroAssembler::AddLogical(Register dst, const MemOperand& opnd) {
+  ASSERT(is_int20(opnd.offset()));
   if (is_uint12(opnd.offset()))
     al_z(dst, opnd);
   else
     aly(dst, opnd);
-#endif
 }
 
-void MacroAssembler::AddP(Register dst, Register src) {
-  AddRR(dst, src);
+// Add Logical Pointer Size (Register-Memory)
+void MacroAssembler::AddLogicalP(Register dst, const MemOperand& opnd) {
+#if V8_TARGET_ARCH_S390X
+  ASSERT(is_int20(opnd.offset()));
+  alg(dst, opnd);
+#else
+  AddLogical(dst, opnd);
+#endif
 }
 
 void MacroAssembler::SubP(Register dst, const Operand& opnd) {
@@ -4338,14 +4427,6 @@ void MacroAssembler::Addl(Register dst, const Operand& opnd) {
   algfi(dst, opnd);
 #else
   alfi(dst, opnd);
-#endif
-}
-
-void MacroAssembler::Add(Register dst, Register src) {
-#ifdef V8_TARGET_ARCH_S390X
-  algr(dst, src);
-#else
-  alr(dst, src);
 #endif
 }
 

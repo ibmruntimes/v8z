@@ -1989,7 +1989,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       // C = A+B; C overflows if A/B have same sign and C has diff sign than A
       __ XorP(r0, left, right);
       __ LoadRR(scratch1, right);
-      __ Add(right, left, right);  // Add optimistically.
+      __ AddP(right, left, right);  // Add optimistically.
       __ TestSignBit(r0, r0);
       __ bne(&add_no_overflow /*, cr0*/);
       __ XorP(r0, right, scratch1);
@@ -2059,7 +2059,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       __ bind(&mul_zero);
       // We need -0 if we were multiplying a negative number with 0 to get 0.
       // We know one of them was zero.
-      __ Add(scratch2, right, left);
+      __ AddP(scratch2, right, left);
       __ Cmpi(scratch2, Operand::Zero());
       __ blt(&mul_neg_zero);
       __ LoadSmiLiteral(right, Smi::FromInt(0));
@@ -3658,8 +3658,7 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
   }
 #endif
   // Lower 2 bits of r5 are 0 iff r3 has failure tag.
-  __ LoadRR(r4, r2);
-  __ AddPImm(r4, Operand(1));
+  __ AddP(r4, r2, Operand(1));
   STATIC_ASSERT(kFailureTagMask < 0x8000);
   __ nill(r4, Operand(kFailureTagMask));
   __ beq(&failure_returned);  // Branch if and result is zero.
@@ -4959,16 +4958,16 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // Argument 3, r4: Start of string data
   // Prepare start and end index of the input.
   __ ShiftLeftP(r13, r13, r5);
-  __ Add(r13, r1, r13);
+  __ AddP(r13, r1, r13);
   __ ShiftLeftP(r4, r3, r5);
-  __ Add(r4, r13, r4);
+  __ AddP(r4, r13, r4);
 
   // Argument 4, r5: End of string data
   __ LoadP(r1, FieldMemOperand(r2, String::kLengthOffset));
   __ SmiUntag(r1);
   __ ShiftLeftP(r0, r1, r5);
   __ LoadRR(r5, r0);
-  __ Add(r5, r13, r5);
+  __ AddP(r5, r13, r5);
 
 
   // Locate the code entry and call it.

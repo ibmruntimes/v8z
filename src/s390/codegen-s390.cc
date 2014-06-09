@@ -335,7 +335,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   // r4: new heap number
 #if V8_TARGET_ARCH_S390X
   __ lg(r2, MemOperand(r6, -8));
-  __ Add(r3, r4, Operand(-1));  // subtract tag for std
+  __ AddP(r3, r4, Operand(-1));  // subtract tag for std
   __ stg(r2, MemOperand(r3, HeapNumber::kValueOffset));
 #else
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN

@@ -281,13 +281,8 @@ class MacroAssembler: public Assembler {
   void Cmpl(Register dst, const MemOperand& opnd);
   void Cmpl(Register dst, const Operand& opnd);
   // add logical 32bit
-  void Addl(Register dst, const MemOperand& opnd);
   void Addl(Register dst, const Operand& opnd);
   // add 32bit
-  void Add(Register dst, const MemOperand& opnd);
-  void Add(Register dst, Register src, const Operand& opnd);
-  void Add(Register dst, Register src);
-  void Add(Register dst, Register src1, Register src2);
   // subtract 32bit
   void Sub(Register dst, Register src) {
     sr(dst, src);
@@ -323,13 +318,31 @@ class MacroAssembler: public Assembler {
                     RCBit rc = LeaveRC);
   void ClearRightImm(Register dst, Register src, const Operand& val);
 
-  // pointers
+  // Add (Register - Immediate)
+  void Add(Register dst, const Operand& opnd);
   void AddP(Register dst, const Operand& opnd);
-  void AddP(Register dst, const MemOperand& opnd);
+  void Add(Register dst, Register src, const Operand& opnd);
+  void AddP(Register dst, Register src, const Operand& opnd);
+
+  // Add (Register - Register)
+  void Add(Register dst, Register src);
   void AddP(Register dst, Register src);
+  void AddP_ExtendSrc(Register dst, Register src);
+  void Add(Register dst, Register src1, Register src2);
+  void AddP(Register dst, Register src1, Register src2);
+  void AddP_ExtendSrc(Register dst, Register src1, Register src2);
+
+  // Add (Register - Mem)
+  void Add(Register dst, const MemOperand& opnd);
+  void AddP(Register dst, const MemOperand& opnd);
+  void AddP_ExtendSrc(Register dst, const MemOperand& opnd);
+
+  // Add Logical (Register - Mem)
+  void AddLogical(Register dst, const MemOperand& opnd);
+  void AddLogicalP(Register dst, const MemOperand& opnd);
+
   void SubP(Register dst, const Operand& opnd);
   void SubP(Register dst, const MemOperand& opnd);
-  void AddPImm(Register dst, const Operand& opnd);
 
   void MulP(Register dst, const Operand& opnd);
   void MulP(Register dst, Register src);
@@ -1440,8 +1453,7 @@ class MacroAssembler: public Assembler {
   inline void JumpIfNotSmiCandidate(Register value, Register scratch,
                                     Label* not_smi_label) {
     // High bits must be identical to fit into an Smi
-    LoadRR(scratch, value);
-    AddPImm(scratch, Operand(0x40000000u));
+    AddP(scratch, value, Operand(0x40000000u));
     Cmpi(scratch, Operand::Zero());
     blt(not_smi_label);
   }

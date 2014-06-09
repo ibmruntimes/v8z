@@ -2011,7 +2011,7 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
       Label add_no_overflow;
       // C = A+B; C overflows if A/B have same sign and C has diff sign than A
       __ XorP(r0, left, right);
-      __ Add(scratch1, left, right);
+      __ AddP(scratch1, left, right);
       __ TestSignBit(r0, r0);
       __ bne(&add_no_overflow /*, cr0*/);
       __ XorP(r0, right, scratch1);
@@ -2071,7 +2071,7 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
       // We need -0 if we were multiplying a negative number with 0 to get 0.
       // We know one of them was zero.
       __ bind(&mul_zero);
-      __ Add(scratch2, right, left);
+      __ AddP(scratch2, right, left);
       __ Cmpi(scratch2, Operand::Zero());
       __ blt(&stub_call);
       __ LoadSmiLiteral(right, Smi::FromInt(0));

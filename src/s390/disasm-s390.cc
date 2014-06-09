@@ -644,6 +644,7 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case SLA: Format(instr, "sla\t'r1,'d1('r3)"); break;
       case SRA: Format(instr, "sra\t'r1,'d1('r3)"); break;
       case AGR: Format(instr, "agr\t'r5,'r6"); break;
+      case AGFR: Format(instr, "agfr\t'r5,'r6"); break;
       case ARK: Format(instr, "ark\t'r5,'r6,'r3"); break;
       case AGRK: Format(instr, "agrk\t'r5,'r6,'r3"); break;
       case SGR: Format(instr, "sgr\t'r5,'r6"); break;
@@ -787,6 +788,7 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
     case XY: Format(instr, "xy\t'r1,'d2('r2d,'r3)"); break;
     case CY: Format(instr, "cy\t'r1,'d2('r2d,'r3)"); break;
     case AG: Format(instr, "ag\t'r1,'d2('r2d,'r3)"); break;
+    case AGF: Format(instr, "agf\t'r1,'d2('r2d,'r3)"); break;
     case SG: Format(instr, "sg\t'r1,'d2('r2d,'r3)"); break;
     case NG: Format(instr, "ng\t'r1,'d2('r2d,'r3)"); break;
     case OG: Format(instr, "og\t'r1,'d2('r2d,'r3)"); break;
@@ -799,7 +801,6 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
     case ALY: Format(instr, "aly\t'r1,'d2('r2d,'r3)"); break;
     case ALG: Format(instr, "alg\t'r1,'d2('r2d,'r3)"); break;
     case SLG: Format(instr, "slg\t'r1,'d2('r2d,'r3)"); break;
-    case AGF: Format(instr, "agf\t'r1,'d2('r2d,'r3)"); break;
     case SGF: Format(instr, "sgf\t'r1,'d2('r2d,'r3)"); break;
     case SLY: Format(instr, "sly\t'r1,'d2('r2d,'r3)"); break;
     case LLH: Format(instr, "llh\t'r1,'d2('r2d,'r3)"); break;
