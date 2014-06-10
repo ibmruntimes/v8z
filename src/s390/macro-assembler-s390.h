@@ -343,6 +343,7 @@ class MacroAssembler: public Assembler {
   void AddLogical(Register dst, const MemOperand& opnd);
   void AddLogicalP(Register dst, const MemOperand& opnd);
 
+  void SubP(Register dst, Register src1, Register src2);
   void SubP(Register dst, const Operand& opnd);
   void SubP(Register dst, const MemOperand& opnd);
 

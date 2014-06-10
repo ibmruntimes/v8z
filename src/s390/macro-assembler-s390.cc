@@ -4339,6 +4339,20 @@ void MacroAssembler::AddLogicalP(Register dst, const MemOperand& opnd) {
 #endif
 }
 
+void MacroAssembler::SubP(Register dst, Register src1, Register src2) {
+  if (!dst.is(src1) && !dst.is(src2)) {
+    LoadRR(dst, src1);
+    SubRR(dst, src2);
+  } else if (dst.is(src1)) {
+    SubRR(dst, src2);
+  } else if (dst.is(src2)) {
+    SubRR(dst, src1);
+    LoadComplementRR(dst, dst);
+  } else {
+    ASSERT(false);
+  }
+}
+
 void MacroAssembler::SubP(Register dst, const Operand& opnd) {
   Subl(dst, opnd);
 }
