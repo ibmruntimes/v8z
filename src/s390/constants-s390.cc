@@ -1,6 +1,6 @@
 // Copyright 2009 the V8 project authors. All rights reserved.
 //
-// Copyright IBM Corp. 2012, 2014. All rights reserved.
+// Copyright IBM Corp. 2012-2014. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are

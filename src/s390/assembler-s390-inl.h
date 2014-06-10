@@ -35,7 +35,7 @@
 // Copyright 2012 the V8 project authors. All rights reserved.
 
 //
-// Copyright IBM Corp. 2012, 2014. All rights reserved.
+// Copyright IBM Corp. 2012-2014. All rights reserved.
 //
 
 #ifndef V8_S390_ASSEMBLER_S390_INL_H_
