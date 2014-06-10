@@ -2869,14 +2869,13 @@ void LCodeGen::DoLoadKeyedFastElement(LLoadKeyedFastElement* instr) {
   Register elements = ToRegister(instr->elements());
   Register result = ToRegister(instr->result());
   Register scratch = scratch0();
-  Register store_base = scratch;
   int offset = 0;
 
   if (instr->key()->IsConstantOperand()) {
     LConstantOperand* const_operand = LConstantOperand::cast(instr->key());
     offset = FixedArray::OffsetOfElementAt(ToInteger32(const_operand) +
                                            instr->additional_index());
-    store_base = elements;
+    __ LoadP(result, FieldMemOperand(elements, offset));
   } else {
     Register key = EmitLoadRegister(instr->key(), scratch0());
     // Even though the HLoadKeyedFastElement instruction forces the input
@@ -2884,14 +2883,13 @@ void LCodeGen::DoLoadKeyedFastElement(LLoadKeyedFastElement* instr) {
     // during bound check elimination with the index argument to the bounds
     // check, which can be tagged, so that case must be handled here, too.
     if (instr->hydrogen()->key()->representation().IsTagged()) {
-      __ SmiToPtrArrayOffset(r0, key);
+      __ SmiToPtrArrayOffset(scratch, key);
     } else {
-      __ ShiftLeftImm(r0, key, Operand(kPointerSizeLog2));
+      __ ShiftLeftImm(scratch, key, Operand(kPointerSizeLog2));
     }
-    __ AddP(scratch, elements, r0);
     offset = FixedArray::OffsetOfElementAt(instr->additional_index());
+    __ LoadP(result, FieldMemOperand(scratch, elements, offset));
   }
-  __ LoadP(result, FieldMemOperand(store_base, offset));
 
   // Check for the hole value.
   if (instr->hydrogen()->RequiresHoleCheck()) {

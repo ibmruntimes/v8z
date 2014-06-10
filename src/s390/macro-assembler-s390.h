@@ -46,6 +46,10 @@ inline MemOperand FieldMemOperand(Register object, int offset) {
   return MemOperand(object, offset - kHeapObjectTag);
 }
 
+// Generate a MemOperand for loading a field from an object.
+inline MemOperand FieldMemOperand(Register object, Register index, int offset) {
+  return MemOperand(object, index, offset - kHeapObjectTag);
+}
 
 
 // Give alias names to registers
