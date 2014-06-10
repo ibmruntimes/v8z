@@ -4390,8 +4390,7 @@ void MacroAssembler::Load(Register dst, const Operand& opnd) {
 #endif
   } else {
 #if V8_TARGET_ARCH_S390X
-    iilf(dst, opnd);
-    iihf(dst, Operand(static_cast<intptr_t>(0)));
+    llilf(dst, opnd);
 #else
     iilf(dst, opnd);
 #endif
