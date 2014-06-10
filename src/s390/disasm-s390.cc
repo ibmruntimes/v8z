@@ -620,9 +620,7 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
   Opcode opcode = instr->S390OpcodeValue();
   switch (opcode) {
       case AHI: Format(instr, "ahi\t'r1,'i1"); break;
-      case AHIK: Format(instr, "ahik\t'r1,'r2,'i1"); break;
       case AGHI: Format(instr, "aghi\t'r1,'i1"); break;
-      case AGHIK: Format(instr, "aghik\t'r1,'r2,'i1"); break;
       case LHI: Format(instr, "lhi\t'r1,'i1"); break;
       case LGHI: Format(instr, "lghi\t'r1,'i1"); break;
       case MHI: Format(instr, "mhi\t'r1,'i1"); break;
@@ -762,6 +760,8 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
     case LLIHF: Format(instr, "llihf\t'r1,'i7"); break;
     case AFI: Format(instr, "afi\t'r1,'i7"); break;
     case ALFI: Format(instr, "alfi\t'r1,'i7"); break;
+    case AHIK: Format(instr, "ahik\t'r1,'r2,'i1"); break;
+    case AGHIK: Format(instr, "aghik\t'r1,'r2,'i1"); break;
     case CLGFI: Format(instr, "clgfi\t'r1,'i7"); break;
     case CLFI: Format(instr, "clfi\t'r1,'i7"); break;
     case CFI: Format(instr, "cfi\t'r1,'i2"); break;
