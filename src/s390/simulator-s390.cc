@@ -1937,6 +1937,22 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       SetS390ConditionCode<uint64_t>(r1_val, r2_val);
       break;
     }
+    case LH: {
+      // Load Halfword
+      RXInstruction * rxinst = reinterpret_cast<RXInstruction*>(instr);
+      int r1 = rxinst->R1Value();
+      int x2 = rxinst->X2Value();
+      int b2 = rxinst->B2Value();
+
+      intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      intptr_t d2_val = rxinst->D2Value();
+      intptr_t mem_addr = x2_val + b2_val + d2_val;
+
+      int32_t result = static_cast<int32_t>(ReadH(mem_addr, instr));
+      set_low_register(r1, result);
+      break;
+    }
     case LHI: {
       RIInstruction* riinst = reinterpret_cast<RIInstruction*>(instr);
       int r1 = riinst->R1Value();
