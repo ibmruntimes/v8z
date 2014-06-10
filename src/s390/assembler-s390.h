@@ -913,14 +913,12 @@ RXY_FORM(agf);
 RIL1_FORM(agfi);
 RRE_FORM(agfr);
 RI1_FORM(aghi);
-RIE_FORM(aghik);
 RRE_FORM(agr);
 SIY_FORM(agsi);
 RX_FORM(ah);
 RRF1_FORM(ahhhr);
 RRF1_FORM(ahhlr);
 RI1_FORM(ahi);
-RIE_FORM(ahik);
 RXY_FORM(ahy);
 RIL1_FORM(aih);
 RX_FORM(al_z);
@@ -1634,8 +1632,10 @@ SS2_FORM(zap);
   void clgr(Register r1, Register r2);
 
   // Arithmetic Instructions
+  void ahik(Register r1, Register r3, const Operand& opnd);
   void ark(Register r1, Register r2, Register r3);
   void alrk(Register r1, Register r2, Register r3);
+  void aghik(Register r1, Register r3, const Operand& opnd);
   void agrk(Register r1, Register r2, Register r3);
   void algrk(Register r1, Register r2, Register r3);
   void srk(Register r1, Register r2, Register r3);

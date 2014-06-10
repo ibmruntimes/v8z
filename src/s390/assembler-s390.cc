@@ -884,11 +884,11 @@ void Assembler::name(Register r1, Register r3, \
 void Assembler::rie_form(Opcode op, Register r1, Register r3,
                      const Operand& i2) {
     ASSERT(is_uint16(op));
-    ASSERT(is_uint16(i2.imm_));
+    ASSERT(is_int16(i2.imm_));
     uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32       |
                     (static_cast<uint64_t>(r1.code())) * B36         |
                     (static_cast<uint64_t>(r3.code())) * B32         |
-                    (static_cast<uint64_t>(i2.imm_)) * B16           |
+                    (static_cast<uint64_t>(i2.imm_ & 0xFFFF)) * B16  |
                     (static_cast<uint64_t>(op & 0x00FF));
     emit6bytes(code);
 }
@@ -1636,7 +1636,6 @@ RRE_FORM_EMIT(agfr, AGFR)
 SIY_FORM_EMIT(agsi, AGSI)
 RRF1_FORM_EMIT(ahhhr, AHHHR)
 RRF1_FORM_EMIT(ahhlr, AHHLR)
-RIE_FORM_EMIT(ahik, AHIK)
 RIL1_FORM_EMIT(aih, AIH)
 RXY_FORM_EMIT(alc, ALC)
 RXY_FORM_EMIT(alcg, ALCG)
@@ -2449,9 +2448,19 @@ void Assembler::ahi(Register r1, const Operand& i2) {
   ri_form(AHI, r1, i2);
 }
 
+// Add Halfword Immediate (32)
+void Assembler::ahik(Register r1, Register r3, const Operand& i2) {
+  rie_form(AHIK, r1, r3, i2);
+}
+
 // Add Halfword Immediate (64)
 void Assembler::aghi(Register r1, const Operand& i2) {
   ri_form(AGHI, r1, i2);
+}
+
+// Add Halfword Immediate (64)
+void Assembler::aghik(Register r1, Register r3, const Operand& i2) {
+  rie_form(AGHIK, r1, r3, i2);
 }
 
 // Add Logical Register-Storage (32)
