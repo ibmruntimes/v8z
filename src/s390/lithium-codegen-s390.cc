@@ -1566,22 +1566,23 @@ void LCodeGen::DoAddI(LAddI* instr) {
   LOperand* result = instr->result();
 
 #if V8_TARGET_ARCH_S390X
-//  bool isInteger = !(instr->hydrogen()->representation().IsSmi() ||
-//                     instr->hydrogen()->representation().IsExternal());
-  bool isInteger = instr->hydrogen()->CheckFlag(HValue::kCanOverflow);
+  // The overflow detection needs to be tested on the lower 32-bits.
+  // As a result, on 64-bit, we need to force 32-bit arithmetic operations
+  // to set the CC overflow bit properly.  The result is then sign-extended.
+  bool checkOverflow = instr->hydrogen()->CheckFlag(HValue::kCanOverflow);
 #else
-  bool isInteger = true;
+  bool checkOverflow = true;
 #endif
 
   if (right->IsConstantOperand()) {
-    if (isInteger)
+    if (checkOverflow)
       __ Add(ToRegister(result), ToRegister(left),
            Operand(ToInteger32(LConstantOperand::cast(right))));
     else
       __ AddP(ToRegister(result), ToRegister(left),
            Operand(ToInteger32(LConstantOperand::cast(right))));
   } else if (right->IsRegister()) {
-    if (isInteger)
+    if (checkOverflow)
       __ Add(ToRegister(result), ToRegister(left), ToRegister(right));
     else
       __ AddP_ExtendSrc(ToRegister(result), ToRegister(left),
@@ -1590,14 +1591,15 @@ void LCodeGen::DoAddI(LAddI* instr) {
     if (!left->Equals(instr->result()))
       __ LoadRR(ToRegister(result), ToRegister(left));
 
-#if V8_TARGET_ARCH_S390X
+#if V8_TARGET_ARCH_S390X &&  __BYTE_ORDER == __BIG_ENDIAN
+    // We want to read the lower 32-bits directly from memory
     MemOperand rightMem = ToMemOperand(right);
     MemOperand mem = MemOperand(rightMem.rb(), rightMem.rx(),
                                 rightMem.offset() + 4);
 #else
     MemOperand mem = ToMemOperand(right);
 #endif
-    if (isInteger) {
+    if (checkOverflow) {
       __ Add(ToRegister(result), mem);
     } else {
       __ AddP_ExtendSrc(ToRegister(result), mem);
