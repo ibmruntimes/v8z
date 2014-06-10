@@ -332,8 +332,7 @@ void MacroAssembler::RecordWriteField(
   // of the object, so so offset must be a multiple of kPointerSize.
   ASSERT(IsAligned(offset, kPointerSize));
 
-  LoadRR(dst, object);
-  AddP(dst, Operand(offset - kHeapObjectTag));
+  AddP(dst, object, Operand(offset - kHeapObjectTag));
   if (emit_debug_code()) {
     Label ok;
     mov(r0, Operand((1 << kPointerSizeLog2) - 1));
@@ -676,8 +675,7 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles,
     // Calculate the stack location of the saved doubles and restore them.
     const int kNumRegs = DoubleRegister::kNumVolatileRegisters;
     const int offset = (2 * kPointerSize + kNumRegs * kDoubleSize);
-    LoadRR(r5, fp);
-    AddP(r5, Operand(-offset));
+    lay(r5, MemOperand(fp, -offset));
     for (int i = 0; i < kNumRegs; i++) {
       DoubleRegister reg = DoubleRegister::from_code(i);
       LoadF(reg, MemOperand(r5, i * kDoubleSize));
@@ -1047,8 +1045,7 @@ void MacroAssembler::JumpToHandlerEntry() {
   LoadP(r4, MemOperand(ip));  // Smi-tagged offset.
   AddP(r3, Operand(Code::kHeaderSize - kHeapObjectTag));  // Code start.
   SmiUntag(ip, r4);
-  LoadRR(r0, r3);
-  AddP(r0, ip);
+  AddP(r0, r3, ip);
   LoadRR(r14, r0);
   Ret();
 }
@@ -1501,8 +1498,7 @@ void MacroAssembler::AllocateInNewSpace(Register object_size,
     ShiftLeftImm(scratch2, object_size, Operand(kPointerSizeLog2));
     AddP(scratch2, result);
   } else {
-    LoadRR(scratch2, result);
-    AddP(scratch2, object_size);
+    AddP(scratch2, result, object_size);
   }
   b(Condition(CC_OF), gc_required);
   Cmpl(scratch2, ip);
@@ -1588,8 +1584,8 @@ void MacroAssembler::AllocateAsciiString(Register result,
   // observing object alignment.
   ASSERT((SeqAsciiString::kHeaderSize & kObjectAlignmentMask) == 0);
   ASSERT(kCharSize == 1);
-  LoadRR(scratch1, length);
-  AddP(scratch1, Operand(kObjectAlignmentMask + SeqAsciiString::kHeaderSize));
+  AddP(scratch1, length,
+                 Operand(kObjectAlignmentMask + SeqAsciiString::kHeaderSize));
   LoadImmP(r0, Operand(~kObjectAlignmentMask));
   AndP(scratch1, r0);
 
@@ -1786,8 +1782,7 @@ void MacroAssembler::StoreNumberToDoubleElements(Register value_reg,
   // in the exponent.
 #if V8_TARGET_ARCH_S390X
   mov(scratch1, Operand(kLastNonNaNInt64));
-  LoadRR(scratch3, value_reg);
-  AddP(scratch3, Operand(-kHeapObjectTag));
+  AddP(scratch3, value_reg, Operand(-kHeapObjectTag));
   lg(double_reg, MemOperand(scratch3, HeapNumber::kValueOffset));
   CmpRR(double_reg, scratch1);
 #else
@@ -1851,8 +1846,8 @@ void MacroAssembler::StoreNumberToDoubleElements(Register value_reg,
   b(&have_double_value);
 
   bind(&smi_value);
-  LoadRR(scratch1, elements_reg);
-  AddP(scratch1, Operand(FixedDoubleArray::kHeaderSize - kHeapObjectTag));
+  AddP(scratch1, elements_reg,
+                 Operand(FixedDoubleArray::kHeaderSize - kHeapObjectTag));
   SmiToDoubleArrayOffset(scratch4, key_reg);
   AddP(scratch1, scratch4);
   // scratch1 is now effective address of the double element
@@ -3709,8 +3704,7 @@ void MacroAssembler::EnsureNotWhite(
 #else
   ASSERT(kSmiShift == 1);
 #endif
-  LoadRR(length, ip);
-  AddP(length, Operand(SeqString::kHeaderSize + kObjectAlignmentMask));
+  AddP(length, ip, Operand(SeqString::kHeaderSize + kObjectAlignmentMask));
   LoadImmP(r0, Operand(~kObjectAlignmentMask));
   AndP(length, r0);
 
@@ -4560,11 +4554,9 @@ void MacroAssembler::AddSmiLiteral(Register dst, Register src, Smi *smi,
                                    Register scratch) {
 #if V8_TARGET_ARCH_S390X
   LoadSmiLiteral(scratch, smi);
-  LoadRR(dst, src);
-  AddP(dst, scratch);
+  AddP(dst, src, scratch);
 #else
-  LoadRR(dst, src);
-  AddP(dst, Operand(reinterpret_cast<intptr_t>(smi)));
+  AddP(dst, src, Operand(reinterpret_cast<intptr_t>(smi)));
 #endif
 }
 
@@ -4574,8 +4566,7 @@ void MacroAssembler::SubSmiLiteral(Register dst, Register src, Smi *smi,
   LoadSmiLiteral(scratch, smi);
   Sub(dst, src, scratch);
 #else
-  LoadRR(dst, src);
-  AddP(dst, Operand(-(reinterpret_cast<intptr_t>(smi))));
+  AddP(dst, src, Operand(-(reinterpret_cast<intptr_t>(smi))));
 #endif
 }
 

@@ -120,8 +120,7 @@ static void ProbeTable(Isolate* isolate,
 #endif
 
   // Jump to the first instruction in the code stub.
-  __ LoadRR(ip, code);
-  __ AddP(ip, Operand(Code::kHeaderSize - kHeapObjectTag));
+  __ AddP(ip, code, Operand(Code::kHeaderSize - kHeapObjectTag));
   __ b(ip);
 
   // Miss: fall through.
@@ -764,8 +763,7 @@ static void GenerateFastApiDirectCall(MacroAssembler* masm,
   // v8::Arguments::implicit_args_
   __ StoreP(r4, MemOperand(arg0, 0 * kPointerSize));
   // v8::Arguments::values_
-  __ LoadRR(ip, r4);
-  __ AddP(ip, Operand(argc * kPointerSize));
+  __ AddP(ip, r4, Operand(argc * kPointerSize));
   __ StoreP(ip, MemOperand(arg0, 1 * kPointerSize));
   // v8::Arguments::length_ = argc
   __ LoadImmP(ip, Operand(argc));
@@ -3904,8 +3902,7 @@ void KeyedStoreStubCompiler::GenerateStoreExternalArray(
       __ SmiToDoubleArrayOffset(r9, key);
       // __ AddP(r5, r5, r9);
       // r5: effective address of the double element
-      FloatingPointHelper::ConvertIntToDouble(
-          masm, r7,  d0);
+      FloatingPointHelper::ConvertIntToDouble(masm, r7,  d0);
       __ StoreF(d0, MemOperand(r5, r9));
       break;
     case FAST_ELEMENTS:
@@ -4044,8 +4041,7 @@ void KeyedLoadStubCompiler::GenerateLoadFastElement(MacroAssembler* masm) {
   __ bge(&miss_force_generic);
 
   // Load the result and make sure it's not the hole.
-  __ LoadRR(r5, r4);
-  __ AddP(r5, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ AddP(r5, r4, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ SmiToPtrArrayOffset(r6, r2);
   __ LoadP(r6, MemOperand(r6, r5));
   __ LoadRoot(ip, Heap::kTheHoleValueRootIndex);
@@ -4200,14 +4196,14 @@ void KeyedStoreStubCompiler::GenerateStoreFastElement(
 
   __ bind(&finish_store);
   if (IsFastSmiElementsKind(elements_kind)) {
-    __ LoadRR(scratch, elements_reg);
-    __ AddP(scratch, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+    __ AddP(scratch, elements_reg,
+               Operand(FixedArray::kHeaderSize - kHeapObjectTag));
     __ SmiToPtrArrayOffset(scratch2, key_reg);
     __ StorePX(value_reg, MemOperand(scratch, scratch2));
   } else {
     ASSERT(IsFastObjectElementsKind(elements_kind));
-    __ LoadRR(scratch, elements_reg);
-    __ AddP(scratch, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+    __ AddP(scratch, elements_reg,
+            Operand(FixedArray::kHeaderSize - kHeapObjectTag));
     __ SmiToPtrArrayOffset(scratch2, key_reg);
     __ StoreP(value_reg, MemOperand(scratch, scratch2));
     __ la(scratch, MemOperand(scratch, scratch2));

@@ -165,8 +165,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
                       OMIT_REMEMBERED_SET,
                       OMIT_SMI_CHECK);
   // Replace receiver's backing store with newly created FixedDoubleArray.
-  __ LoadRR(r5, r8);
-  __ AddP(r5, Operand(kHeapObjectTag));
+  __ AddP(r5, r8, Operand(kHeapObjectTag));
   __ StoreP(r5, FieldMemOperand(r4, JSObject::kElementsOffset));
   __ RecordWriteField(r4,
                       JSObject::kElementsOffset,
@@ -178,10 +177,8 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
                       OMIT_SMI_CHECK);
 
   // Prepare for conversion loop.
-  __ LoadRR(r5, r6);
-  __ AddP(r5, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
-  __ LoadRR(r9, r8);
-  __ AddP(r9, Operand(FixedDoubleArray::kHeaderSize));
+  __ AddP(r5, r6, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ AddP(r9, r8, Operand(FixedDoubleArray::kHeaderSize));
   __ SmiToDoubleArrayOffset(r8, r7);
   __ AddP(r8, r9);
 #if V8_TARGET_ARCH_S390X
@@ -297,8 +294,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
 
   // Prepare for conversion loop.
   __ AddP(r6, Operand(FixedDoubleArray::kHeaderSize - kHeapObjectTag));
-  __ LoadRR(r5, r8);
-  __ AddP(r5, Operand(FixedArray::kHeaderSize));
+  __ AddP(r5, r8, Operand(FixedArray::kHeaderSize));
   __ AddP(r8, Operand(kHeapObjectTag));
   __ SmiToPtrArrayOffset(r7, r7);
   __ AddP(r7, r5);

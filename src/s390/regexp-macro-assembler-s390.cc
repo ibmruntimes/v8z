@@ -227,9 +227,7 @@ void RegExpMacroAssemblerS390::CheckAtStart(Label* on_at_start) {
 
   // If we did, are we still at the start of the input?
   __ LoadP(r3, MemOperand(frame_pointer(), kInputStart));
-  __ LoadRR(r0, current_input_offset());
-  __ LoadRR(r2, end_of_input_address());
-  __ AddP(r2, r0);
+  __ AddP(r2, current_input_offset(), end_of_input_address());
   __ CmpRR(r3, r2);
   BranchOrBacktrack(eq, on_at_start);
   __ bind(&not_at_start);
@@ -243,8 +241,7 @@ void RegExpMacroAssemblerS390::CheckNotAtStart(Label* on_not_at_start) {
   BranchOrBacktrack(ne, on_not_at_start);
   // If we did, are we still at the start of the input?
   __ LoadP(r3, MemOperand(frame_pointer(), kInputStart));
-  __ LoadRR(r2, end_of_input_address());
-  __ AddP(r2, current_input_offset());
+  __ AddP(r2, current_input_offset(), end_of_input_address());
   __ CmpRR(r2, r3);
   BranchOrBacktrack(ne, on_not_at_start);
 }
@@ -271,8 +268,7 @@ void RegExpMacroAssemblerS390::CheckCharacters(Vector<const uc16> str,
     CheckPosition(cp_offset + str.length() - 1, on_failure);
   }
 
-  __ LoadRR(r2, end_of_input_address());
-  __ AddP(r2, current_input_offset());
+  __ AddP(r2, current_input_offset(), end_of_input_address());
   if (cp_offset != 0) {
     int byte_offset = cp_offset * char_size();
     __ AddP(r2, Operand(byte_offset));
@@ -298,8 +294,7 @@ void RegExpMacroAssemblerS390::CheckCharacters(Vector<const uc16> str,
           __ LoadImmP(r4, Operand(match_high_byte));
           stored_high_byte = match_high_byte;
         }
-        __ LoadRR(r5, r4);
-        __ AddP(r5, Operand(match_char & 0xff));
+        __ AddP(r5, r4, Operand(match_char & 0xff));
         __ CmpRR(r3, r5);
       }
     }
@@ -339,8 +334,7 @@ void RegExpMacroAssemblerS390::CheckNotBackReferenceIgnoreCase(
   // TODO(john): the RC bit set below is the condition for
   //              the BranchOrBacktrack function
   // __ Add(r0, r3, current_input_offset()/*, LeaveOE, SetRC*/);
-  __ LoadRR(r0, r3);
-  __ AddP(r0, current_input_offset());
+  __ AddP(r0, r3, current_input_offset());
 //  __ cmn(r1_p, Operand(current_input_offset()));
   BranchOrBacktrack(gt, on_no_match, cr0);
 
@@ -352,8 +346,7 @@ void RegExpMacroAssemblerS390::CheckNotBackReferenceIgnoreCase(
     // r2 - offset of start of capture
     // r3 - length of capture
     __ AddP(r2, end_of_input_address());
-    __ LoadRR(r4, end_of_input_address());
-    __ AddP(r4, current_input_offset());
+    __ AddP(r4, current_input_offset(), end_of_input_address());
     __ AddP(r3, r2);
 
     // r2 - Address of start of capture.
@@ -412,8 +405,7 @@ void RegExpMacroAssemblerS390::CheckNotBackReferenceIgnoreCase(
     // Save length in callee-save register for use on return.
     __ LoadRR(r6, r3);
     // Address of current input position.
-    __ LoadRR(r3, current_input_offset());
-    __ AddP(r3, end_of_input_address());
+    __ AddP(r3, current_input_offset(), end_of_input_address());
     // Isolate.
     __ mov(r5, Operand(ExternalReference::isolate_address()));
 
@@ -453,14 +445,12 @@ void RegExpMacroAssemblerS390::CheckNotBackReference(
   // TODO(john): the RC bit set below is the condition
   //              for the BranchOrBacktrack function
   // __ Add(r0, r3, current_input_offset()/*, LeaveOE, SetRC*/);
-  __ LoadRR(r0, r3);
-  __ AddP(r0, current_input_offset());
+  __ AddP(r0, r3, current_input_offset());
   BranchOrBacktrack(gt, on_no_match, cr0);
 
   // Compute pointers to match string and capture string
   __ AddP(r2, end_of_input_address());
-  __ LoadRR(r4, end_of_input_address());
-  __ AddP(r4, current_input_offset());
+  __ AddP(r4, current_input_offset(), end_of_input_address());
   __ AddP(r3, r2);
 
   Label loop;
@@ -576,8 +566,8 @@ void RegExpMacroAssemblerS390::CheckBitInTable(
     __ AndP(r3, current_character());
     __ AddP(r3, Operand(ByteArray::kHeaderSize - kHeapObjectTag));
   } else {
-    __ LoadRR(r3, current_character());
-    __ AddP(r3, Operand(ByteArray::kHeaderSize - kHeapObjectTag));
+    __ AddP(r3, current_character(),
+                Operand(ByteArray::kHeaderSize - kHeapObjectTag));
   }
   __ LoadlB(r2, MemOperand(r2, r3));
   __ Cmpi(r2, Operand::Zero());
@@ -867,8 +857,7 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
         __ InitializeFieldsWithFiller(r4, r3, r1);
 
         /*
-        __ LoadRR(r3, frame_pointer());
-        __ AddP(r3, Operand(kRegisterZero + kPointerSize));
+        __ AddP(r3, frame_pointer(), Operand(kRegisterZero + kPointerSize));
         __ LoadImmP(r4, Operand(num_saved_registers_));
         Label init_loop;
         __ bind(&init_loop);
@@ -1027,8 +1016,7 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
       static const int num_arguments = 3;
       __ PrepareCallCFunction(num_arguments, r2);
       __ LoadRR(r2, backtrack_stackpointer());
-      __ LoadRR(r3, frame_pointer());
-      __ AddP(r3, Operand(kStackHighEnd));
+      __ AddP(r3, frame_pointer(), Operand(kStackHighEnd));
       __ mov(r4, Operand(ExternalReference::isolate_address()));
       ExternalReference grow_stack =
         ExternalReference::re_grow_stack(masm_->isolate());
@@ -1192,8 +1180,7 @@ void RegExpMacroAssemblerS390::WriteCurrentPositionToRegister(int reg,
     __ StoreP(current_input_offset(), register_location(reg));
   } else {
     __ mov(r0, Operand(cp_offset * char_size()));
-    __ LoadRR(r2, current_input_offset());
-    __ AddP(r2, r0);
+    __ AddP(r2, current_input_offset(), r0);
     __ StoreP(r2, register_location(reg));
   }
 }
@@ -1464,8 +1451,7 @@ void RegExpMacroAssemblerS390::LoadCurrentCharacterUnchecked(int cp_offset,
   Register offset = current_input_offset();
   if (cp_offset != 0) {
     // r6 is not being used to store the capture start index at this point.
-    __ LoadRR(r6, current_input_offset());
-    __ AddP(r6, Operand(cp_offset * char_size()));
+    __ AddP(r6, current_input_offset(), Operand(cp_offset * char_size()));
     offset = r6;
   }
   // The lwz, stw, lhz, sth instructions can do unaligned accesses, if the CPU
@@ -1474,8 +1460,7 @@ void RegExpMacroAssemblerS390::LoadCurrentCharacterUnchecked(int cp_offset,
   // must only be used to load a single character at a time.
 
   ASSERT(characters == 1);
-  __ LoadRR(current_character(), end_of_input_address());
-  __ AddP(current_character(), offset);
+  __ AddP(current_character(), end_of_input_address(), offset);
   if (mode_ == ASCII) {
     __ LoadlB(current_character(), MemOperand(current_character()));
   } else {
@@ -1490,8 +1475,7 @@ void RegExpCEntryStub::Generate(MacroAssembler* masm_) {
   int stack_alignment = OS::ActivationFrameAlignment();
   if (stack_alignment < kPointerSize) stack_alignment = kPointerSize;
 
-  __ LoadRR(r2, sp);
-  __ AddP(r2, Operand(-stack_alignment));
+  __ AddP(r2, sp, Operand(-stack_alignment));
   __ StoreP(r14, MemOperand(r2, 0));
 
   // zLINUX ABI:

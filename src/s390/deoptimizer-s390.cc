@@ -1156,8 +1156,7 @@ void Deoptimizer::EntryGenerator::Generate() {
 
   __ bind(&inner_push_loop);
   __ AddP(r5, Operand(-sizeof(intptr_t)));
-  __ LoadRR(r8, r4);
-  __ AddP(r8, r5);
+  __ AddP(r8, r4, r5);
   __ LoadP(r9, MemOperand(r8, FrameDescription::frame_content_offset()));
   __ push(r9);
   __ Cmpi(r5, Operand::Zero());

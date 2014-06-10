@@ -153,8 +153,8 @@ bool LCodeGen::GeneratePrologue() {
   __ CleanseP(r14);
 
   __ Push(r14, fp, cp, r3);
-  __ LoadRR(fp, sp);
-  __ AddP(fp, Operand(2 * kPointerSize));  // Adjust FP to point to saved FP
+  // Adjust FP to point to saved FP
+  __ la(fp, MemOperand(sp, 2 * kPointerSize));
 
   // Reserve space for the stack slots needed by the code.
   int slots = GetStackSlotCount();
@@ -2888,8 +2888,7 @@ void LCodeGen::DoLoadKeyedFastElement(LLoadKeyedFastElement* instr) {
     } else {
       __ ShiftLeftImm(r0, key, Operand(kPointerSizeLog2));
     }
-    __ LoadRR(scratch, elements);
-    __ AddP(scratch, r0);
+    __ AddP(scratch, elements, r0);
     offset = FixedArray::OffsetOfElementAt(instr->additional_index());
   }
   __ LoadP(result, FieldMemOperand(store_base, offset));
@@ -2954,8 +2953,7 @@ void LCodeGen::DoLoadKeyedFastDoubleElement(
                                    address_offset + sizeof(kHoleNanLower32)));
       } else {
         __ LoadImmP(r0, Operand(address_offset));
-        __ LoadRR(scratch, elements);
-        __ AddP(scratch, r0);
+        __ AddP(scratch, elements, r0);
         __ LoadlW(scratch, MemOperand(scratch, sizeof(kHoleNanLower32)));
       }
     } else {
@@ -4135,8 +4133,7 @@ void LCodeGen::DoStoreKeyedFastElement(LStoreKeyedFastElement* instr) {
     SmiCheck check_needed =
         type.IsHeapObject() ? OMIT_SMI_CHECK : INLINE_SMI_CHECK;
     // Compute address of modified element and store it into key register.
-    __ LoadRR(key, store_base);
-    __ AddP(key, Operand(offset - kHeapObjectTag));
+    __ AddP(key, store_base, Operand(offset - kHeapObjectTag));
     __ RecordWrite(elements,
                    key,
                    value,
@@ -4172,8 +4169,7 @@ void LCodeGen::DoStoreKeyedFastDoubleElement(
   bool key_is_tagged = instr->hydrogen()->key()->representation().IsTagged();
   int dst_offset = instr->additional_index() << element_size_shift;
   if (key_is_constant) {
-    __ LoadRR(scratch, elements);
-    __ AddP(scratch,
+    __ AddP(scratch, elements,
            Operand((constant_key << element_size_shift) +
            FixedDoubleArray::kHeaderSize - kHeapObjectTag));
   } else {
@@ -5229,8 +5225,7 @@ void LCodeGen::EmitDeepCopy(Handle<JSObject> object,
   int header_size = object_size - inobject_properties * kPointerSize;
   for (int i = 0; i < header_size; i += kPointerSize) {
     if (has_elements && i == JSObject::kElementsOffset) {
-      __ LoadRR(r4, result);
-      __ AddP(r4, Operand(elements_offset));
+      __ AddP(r4, result, Operand(elements_offset));
     } else {
       __ LoadP(r4, FieldMemOperand(source, i));
     }
@@ -5243,8 +5238,7 @@ void LCodeGen::EmitDeepCopy(Handle<JSObject> object,
     Handle<Object> value = Handle<Object>(object->InObjectPropertyAt(i));
     if (value->IsJSObject()) {
       Handle<JSObject> value_object = Handle<JSObject>::cast(value);
-      __ LoadRR(r4, result);
-      __ AddP(r4, Operand(*offset));
+      __ AddP(r4, result, Operand(*offset));
       __ StoreP(r4, FieldMemOperand(result, total_offset));
       __ LoadHeapObject(source, value_object);
       EmitDeepCopy(value_object, result, source, offset);
@@ -5295,8 +5289,7 @@ void LCodeGen::EmitDeepCopy(Handle<JSObject> object,
         Handle<Object> value(fast_elements->get(i));
         if (value->IsJSObject()) {
           Handle<JSObject> value_object = Handle<JSObject>::cast(value);
-          __ LoadRR(r4, result);
-          __ AddP(r4, Operand(*offset));
+          __ AddP(r4, result, Operand(*offset));
           __ StoreP(r4, FieldMemOperand(result, total_offset));
           __ LoadHeapObject(source, value_object);
           EmitDeepCopy(value_object, result, source, offset);
@@ -5805,8 +5798,7 @@ void LCodeGen::DoLoadFieldByIndex(LLoadFieldByIndex* instr) {
   __ blt(&out_of_object);
 
   __ SmiToPtrArrayOffset(r0, index);
-  __ LoadRR(scratch, object);
-  __ AddP(scratch, r0);
+  __ AddP(scratch, object, r0);
   __ LoadP(result, FieldMemOperand(scratch, JSObject::kHeaderSize));
 
   __ b(&done);

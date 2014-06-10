@@ -159,8 +159,7 @@ static void AllocateEmptyJSArray(MacroAssembler* masm,
   // of the JSArray.
   // result: JSObject
   // scratch2: start of next object
-  __ LoadRR(scratch1, result);
-  __ AddP(scratch1, Operand(JSArray::kSize));
+  __ AddP(scratch1, result, Operand(JSArray::kSize));
   __ StoreP(scratch1, FieldMemOperand(result, JSArray::kElementsOffset));
 
   // Clear the heap tag on the elements array.
@@ -191,8 +190,7 @@ static void AllocateEmptyJSArray(MacroAssembler* masm,
     }
   } else {
     Label loop, entry;
-    __ LoadRR(scratch2, scratch1);
-    __ AddP(scratch2, Operand(initial_capacity * kPointerSize));
+    __ AddP(scratch2, scratch1, Operand(initial_capacity * kPointerSize));
     __ b(&entry);
     __ bind(&loop);
     __ StoreP(scratch3, MemOperand(scratch1));
@@ -263,8 +261,8 @@ static void AllocateJSArray(MacroAssembler* masm,
   // of the JSArray.
   // result: JSObject (untagged)
   // array_size: size of array (smi)
-  __ LoadRR(elements_array_storage, result);
-  __ AddP(elements_array_storage, Operand(JSArray::kSize + kHeapObjectTag));
+  __ AddP(elements_array_storage, result,
+          Operand(JSArray::kSize + kHeapObjectTag));
   __ StoreP(elements_array_storage,
             MemOperand(result, JSArray::kElementsOffset));
 
@@ -292,8 +290,7 @@ static void AllocateJSArray(MacroAssembler* masm,
   // elements_array_storage: elements array element storage
   // array_size: smi-tagged size of elements array
   __ SmiToPtrArrayOffset(scratch1, array_size);
-  __ LoadRR(elements_array_end, elements_array_storage);
-  __ AddP(elements_array_end, scratch1);
+  __ AddP(elements_array_end, elements_array_storage, scratch1);
 
   // Fill the allocated FixedArray with the hole value if requested.
   // result: JSObject (untagged)
@@ -954,8 +951,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // r5: number of elements in properties array
       // r6: JSObject
       // r7: start of next object
-      __ LoadRR(r2, r5);
-      __ AddP(r2, Operand(FixedArray::kHeaderSize / kPointerSize));
+      __ AddP(r2, r5, Operand(FixedArray::kHeaderSize / kPointerSize));
       __ AllocateInNewSpace(
           r2,
           r7,
@@ -1047,8 +1043,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     __ LoadP(r5, MemOperand(sp, 3 * kPointerSize));
 
     // Set up pointer to last argument.
-    __ LoadRR(r4, fp);
-    __ AddP(r4, Operand(StandardFrameConstants::kCallerSPOffset));
+    __ la(r4, MemOperand(fp, StandardFrameConstants::kCallerSPOffset));
 
     // Set up number of arguments for function call below
     __ SmiUntag(r2, r5);
@@ -1262,8 +1257,7 @@ void Builtins::Generate_LazyCompile(MacroAssembler* masm) {
     __ push(r3);
     __ CallRuntime(Runtime::kLazyCompile, 1);
     // Calculate the entry point.
-    __ LoadRR(r4, r2);
-    __ AddP(r4, Operand(Code::kHeaderSize - kHeapObjectTag));
+    __ AddP(r4, r2, Operand(Code::kHeaderSize - kHeapObjectTag));
 
     // Restore call kind information.
     __ pop(r7);
@@ -1292,8 +1286,7 @@ void Builtins::Generate_LazyRecompile(MacroAssembler* masm) {
     __ push(r3);
     __ CallRuntime(Runtime::kLazyRecompile, 1);
     // Calculate the entry point.
-    __ LoadRR(r4, r2);
-    __ AddP(r4, Operand(Code::kHeaderSize - kHeapObjectTag));
+    __ AddP(r4, r2, Operand(Code::kHeaderSize - kHeapObjectTag));
 
     // Restore call kind information.
     __ pop(r7);
@@ -1457,8 +1450,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
 
     // Compute the receiver in non-strict mode.
     __ ShiftLeftImm(ip, r2, Operand(kPointerSizeLog2));
-    __ LoadRR(r4, sp);
-    __ AddP(r4, ip);
+    __ AddP(r4, sp, ip);
     __ LoadP(r4, MemOperand(r4, -kPointerSize));
     // r2: actual number of arguments
     // r3: function
@@ -1513,8 +1505,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
 
     __ bind(&patch_receiver);
     __ ShiftLeftImm(ip, r2, Operand(kPointerSizeLog2));
-    __ LoadRR(r5, sp);
-    __ AddP(r5, ip);
+    __ AddP(r5, sp, ip);
     __ StoreP(r4, MemOperand(r5, -kPointerSize));
 
     __ b(&shift_arguments);
@@ -1536,8 +1527,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
   // r3: function
   // r6: call type (0: JS function, 1: function proxy, 2: non-function)
   __ ShiftLeftImm(ip, r2, Operand(kPointerSizeLog2));
-  __ LoadRR(r4, sp);
-  __ AddP(r4, ip);
+  __ AddP(r4, sp, ip);
   __ StoreP(r3, MemOperand(r4, -kPointerSize));
 
   // 4. Shift arguments and return address one slot down on the stack
@@ -1550,8 +1540,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
   { Label loop;
     // Calculate the copy start address (destination). Copy end address is sp.
     __ ShiftLeftImm(ip, r2, Operand(kPointerSizeLog2));
-    __ LoadRR(r4, sp);
-    __ AddP(r4, ip);
+    __ AddP(r4, sp, ip);
 
     __ bind(&loop);
     __ LoadP(ip, MemOperand(r4, -kPointerSize));

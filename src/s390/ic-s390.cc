@@ -347,8 +347,8 @@ static void GenerateFastArrayLoad(MacroAssembler* masm,
   __ Cmpl(key, scratch1);
   __ bge(out_of_range);
   // Fast case: Do the load.
-  __ LoadRR(scratch1, elements);
-  __ AddP(scratch1, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ AddP(scratch1, elements,
+                    Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   // The key is a smi.
   __ SmiToPtrArrayOffset(scratch2, key);
   __ LoadP(scratch2, MemOperand(scratch2, scratch1));
@@ -1372,8 +1372,7 @@ static void KeyedStoreGenerateGenericHelper(
     __ StoreP(scratch_value, FieldMemOperand(receiver, JSArray::kLengthOffset));
   }
   // It's irrelevant whether array is smi-only or not when writing a smi.
-  __ LoadRR(address, elements);
-  __ AddP(address, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ AddP(address, elements, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ SmiToPtrArrayOffset(scratch_value, key);
   __ StorePX(value, MemOperand(address, scratch_value));
   __ Ret();
@@ -1390,8 +1389,7 @@ static void KeyedStoreGenerateGenericHelper(
     __ AddSmiLiteral(scratch_value, key, Smi::FromInt(1), r0);
     __ StoreP(scratch_value, FieldMemOperand(receiver, JSArray::kLengthOffset));
   }
-  __ LoadRR(address, elements);
-  __ AddP(address, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ AddP(address, elements, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ SmiToPtrArrayOffset(scratch_value, key);
   __ StoreP(value, MemOperand(address, scratch_value));
   __ la(address, MemOperand(address, scratch_value));
