@@ -768,9 +768,9 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
 
     // Load stack parameters from caller stack frame
     __ lay(fp, MemOperand(sp, kCalleeRegisterSaveAreaSize));
-    __ LoadW(r7, MemOperand(fp, 0 * kPointerSize));   // capture array size
-    __ LoadW(r8, MemOperand(fp, 1 * kPointerSize));  // stack area base
-    __ LoadW(r9, MemOperand(fp, 2 * kPointerSize));  // direct call
+    __ LoadP(r7, MemOperand(fp, 0 * kPointerSize));   // capture array size
+    __ LoadP(r8, MemOperand(fp, 1 * kPointerSize));  // stack area base
+    __ LoadP(r9, MemOperand(fp, 2 * kPointerSize));  // direct call
 
     // Actually emit code to start a new stack frame.
     // Push arguments
