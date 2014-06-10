@@ -4001,16 +4001,22 @@ void MacroAssembler::AddP(Register dst, const Operand& opnd) {
 // Add 32-bit (Register dst = Register src + Immediate opnd)
 void MacroAssembler::Add(Register dst, Register src, const Operand& opnd) {
   if (!dst.is(src)) {
-    Load(dst, opnd);  // should be calling sign-ext load
-    ar(dst, src);
-  } else {
-    AddP(dst, opnd);
+    if (CpuFeatures::IsSupported(DISTINCT_OPS) && is_int16(opnd.immediate())) {
+      ahik(dst, src, opnd);
+      return;
+    }
+    lr(dst, src);
   }
+  Add(dst, opnd);
 }
 
 // Add Pointer Size (Register dst = Register src + Immediate opnd)
 void MacroAssembler::AddP(Register dst, Register src, const Operand& opnd) {
   if (!dst.is(src)) {
+    if (CpuFeatures::IsSupported(DISTINCT_OPS) && is_int16(opnd.immediate())) {
+      AddPImm_RRI(dst, src, opnd);
+      return;
+    }
     LoadRR(dst, src);
   }
   AddP(dst, opnd);

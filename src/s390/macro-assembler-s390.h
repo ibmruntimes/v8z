@@ -125,6 +125,7 @@ bool AreAliased(Register reg1,
 
 // Distinct Operands
 #define AddP_RRR           agrk
+#define AddPImm_RRI        aghik
 #define AddLogicalP_RRR    algrk
 #define SubP_RRR           sgrk
 #define SubLogicalP_RRR    slgrk
@@ -162,6 +163,7 @@ bool AreAliased(Register reg1,
 
 // Distinct Operands
 #define AddP_RRR           ark
+#define AddPImm_RRI        ahik
 #define AddLogicalP_RRR    alrk
 #define SubP_RRR           srk
 #define SubLogicalP_RRR    slrk
