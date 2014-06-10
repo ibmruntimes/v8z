@@ -406,7 +406,7 @@ int Assembler::target_at(int pos)  {
     if (imm16 == 0)
       return kEndOfChain;
     return pos + imm16;
-  } else if (IILF == opcode || BRCL == opcode
+  } else if (LLILF == opcode || BRCL == opcode
       || LARL == opcode || BRASL == opcode) {
     int32_t imm32 = static_cast<int32_t>(
         instr & (static_cast<uint64_t>(0xffffffff)));
@@ -437,7 +437,7 @@ void Assembler::target_at_put(int pos, int target_pos) {
     instr &= (~static_cast<uint64_t>(0xffffffff));
     instr_at_put<SixByteInstr>(pos, instr | (imm32 >> 1));
     return;
-  } else if (IILF == opcode) {
+  } else if (LLILF == opcode) {
     ASSERT(target_pos == kEndOfChain || target_pos >= 0);
     // Emitted label constant, not part of a branch.
     // Make label relative to Code* of generated Code object.
@@ -456,11 +456,11 @@ int Assembler::max_reach_from(int pos) {
   // the values below + 1, given offset is # of halfwords
   if (BRC == opcode || BRCT == opcode || BRCTG == opcode) {
     return 16;
-  } else if (IILF == opcode || BRCL == opcode
+  } else if (LLILF == opcode || BRCL == opcode
       || LARL == opcode || BRASL == opcode) {
     return 31;  // Using 31 as workaround instead of 32 as
                 // is_intn(x,32) doesn't work on 32-bit platforms.
-                // iilf: Emitted label constant, not part of
+                // llilf: Emitted label constant, not part of
                 //        a branch (regexp PushBacktrack).
   }
   ASSERT(false);
@@ -595,7 +595,7 @@ void Assembler::load_label_offset(Register r1, Label* L) {
     // ASSERT(is_int31(constant));
     // instr_at_put(at_offset, constant);
   }
-  iilf(r1, Operand(constant));
+  llilf(r1, Operand(constant));
 }
 
 // Pseudo op - branch on condition
