@@ -5674,7 +5674,7 @@ void LCodeGen::DoStackCheck(LStackCheck* instr) {
     Label done;
     __ LoadRoot(ip, Heap::kStackLimitRootIndex);
     __ Cmpl(sp, ip);
-    __ bge(&done);
+    __ b(ge, &done, true);
     StackCheckStub stub;
     CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
     EnsureSpaceForLazyDeopt();
