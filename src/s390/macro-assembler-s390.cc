@@ -1946,16 +1946,16 @@ void MacroAssembler::CompareMap(Register obj,
                                 Label* early_success,
                                 CompareMapMode mode) {
   LoadP(scratch, FieldMemOperand(obj, HeapObject::kMapOffset));
-  CompareMap(scratch, map, early_success, mode);
+  CompareMap(obj, map, early_success, mode);
 }
 
 
-void MacroAssembler::CompareMap(Register obj_map,
+void MacroAssembler::CompareMap(Register obj,
                                 Handle<Map> map,
                                 Label* early_success,
                                 CompareMapMode mode) {
   mov(r0, Operand(map));
-  CmpRR(obj_map, r0);
+  CmpP(r0, FieldMemOperand(obj, HeapObject::kMapOffset));
   if (mode == ALLOW_ELEMENT_TRANSITION_MAPS) {
     ElementsKind kind = map->elements_kind();
     if (IsFastElementsKind(kind)) {
@@ -1967,7 +1967,7 @@ void MacroAssembler::CompareMap(Register obj_map,
         if (!current_map) break;
         beq(early_success);
         mov(r0, Operand(Handle<Map>(current_map)));
-        CmpRR(obj_map, r0);
+        CmpP(r0, FieldMemOperand(obj, HeapObject::kMapOffset));
       }
     }
   }
