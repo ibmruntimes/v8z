@@ -2711,7 +2711,6 @@ void LCodeGen::EmitLoadFieldOrConstantFunction(Register result,
 void LCodeGen::DoLoadNamedFieldPolymorphic(LLoadNamedFieldPolymorphic* instr) {
   Register object = ToRegister(instr->object());
   Register result = ToRegister(instr->result());
-  Register object_map = scratch0();
 
   int map_count = instr->hydrogen()->types()->length();
   bool need_generic = instr->hydrogen()->need_generic();
@@ -2722,13 +2721,12 @@ void LCodeGen::DoLoadNamedFieldPolymorphic(LLoadNamedFieldPolymorphic* instr) {
   }
   Handle<String> name = instr->hydrogen()->name();
   Label done;
-  __ LoadP(object_map, FieldMemOperand(object, HeapObject::kMapOffset));
   for (int i = 0; i < map_count; ++i) {
     bool last = (i == map_count - 1);
     Handle<Map> map = instr->hydrogen()->types()->at(i);
     Label check_passed;
     __ CompareMap(
-        object_map, map, &check_passed, ALLOW_ELEMENT_TRANSITION_MAPS);
+        object, map, &check_passed, ALLOW_ELEMENT_TRANSITION_MAPS);
     if (last && !need_generic) {
       DeoptimizeIf(ne, instr->environment());
       __ bind(&check_passed);
@@ -4949,7 +4947,7 @@ void LCodeGen::DoCheckMapCommon(Register reg,
                                 CompareMapMode mode,
                                 LEnvironment* env) {
   Label success;
-  __ CompareMap(reg, scratch, map, &success, mode);
+  __ CompareMap(reg, map, &success, mode);
   DeoptimizeIf(ne, env);
   __ bind(&success);
 }
@@ -4965,7 +4963,7 @@ void LCodeGen::DoCheckMaps(LCheckMaps* instr) {
   SmallMapList* map_set = instr->hydrogen()->map_set();
   for (int i = 0; i < map_set->length() - 1; i++) {
     Handle<Map> map = map_set->at(i);
-    __ CompareMap(reg, scratch, map, &success, REQUIRE_EXACT_MAP);
+    __ CompareMap(reg, map, &success, REQUIRE_EXACT_MAP);
     __ beq(&success);
   }
   Handle<Map> map = map_set->last();
