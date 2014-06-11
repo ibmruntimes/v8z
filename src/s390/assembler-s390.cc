@@ -136,8 +136,9 @@ void CpuFeatures::Probe() {
   ASSERT(performSTFLE);
 
   // Need to define host, as we are generating inlined S390 assembly to test
-  // for facilities.
-#if defined(V8_HOST_ARCH_S390)
+  // for facilities.  Disabling detection when running native sim, as we
+  // currently do not have support for the distinct operands instructions
+#if defined(V8_HOST_ARCH_S390) && !defined(USE_SIMULATOR)
   if (performSTFLE) {
      // STFLE D(B) requires:
      //    GPR0 to specify # of double words to update minus 1.
