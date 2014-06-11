@@ -908,9 +908,9 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
             __ LoadRR(r6, r4);
           }
           if (mode_ == UC16) {
-            __ ShiftRightArithP(r4, r4, 1);
+            __ ShiftRightArithP(r4, r4, Operand(1));
             __ AddP(r4, r3, r4);
-            __ ShiftRightArithP(r5, r5, 1);
+            __ ShiftRightArithP(r5, r5, Operand(1));
             __ AddP(r5, r3, r5);
           } else {
             __ AddP(r4, r3, r4);

@@ -1613,8 +1613,7 @@ class MacroAssembler: public Assembler {
   inline void TestIfInt32(Register value,
                           Register scratch1, Register scratch2) {
     // High bits must be identical to fit into an 32-bit integer
-    LoadRR(scratch1, value);
-    sra(scratch1, Operand(31));
+    ShiftRightArith(scratch1, value, Operand(31));
     srag(scratch2, value, Operand(32));
     cr_z(scratch1, scratch2);  // force 32-bit comparison
   }
@@ -1622,8 +1621,7 @@ class MacroAssembler: public Assembler {
   inline void TestIfInt32(Register hi_word, Register lo_word,
                           Register scratch) {
     // High bits must be identical to fit into an 32-bit integer
-    LoadRR(scratch, lo_word);
-    sra(scratch, Operand(31));
+    ShiftRightArith(scratch, lo_word, Operand(31));
     CmpRR(scratch, hi_word);
   }
 #endif

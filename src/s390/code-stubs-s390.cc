@@ -2317,14 +2317,12 @@ void BinaryOpStub::GenerateFPOperation(MacroAssembler* masm,
 #if V8_TARGET_ARCH_S390X
           const Condition cond = ne;
           __ LoadRR(scratch1, r4);  // Reg shuffling as srl clobbers
-          __ LoadRR(r4, r5);
-          __ srl(r4, scratch1);
+          __ ShiftRight(r4, r5, scratch1);
           __ TestSignBit32(r4, r0);
 #else
           const Condition cond = lt;
           __ LoadRR(scratch1, r4);  // Reg shuffling as srl clobbers
-          __ LoadRR(r4, r5);
-          __ srl(r4, scratch1);
+          __ ShiftRight(r4, r5, scratch1);
           __ ltr(r4, r4);           // Set the <,eq,> conditions
 #endif
           __ b(cond, &result_not_a_smi /*, cr0*/);
@@ -2712,14 +2710,12 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
 #if V8_TARGET_ARCH_S390X
           const Condition cond = ne;
           __ LoadRR(scratch1, r4);  // Reg shuffling as srl clobbers
-          __ LoadRR(r4, r5);
-          __ srl(r4, scratch1);
+          __ ShiftRight(r4, r5, scratch1);
           __ TestSignBit32(r4, r0);
 #else
           const Condition cond = lt;
           __ LoadRR(scratch1, r4);  // Reg shuffling as srl clobbers
-          __ LoadRR(r4, r5);
-          __ srl(r4, scratch1);
+          __ ShiftRight(r4, r5, scratch1);
           __ ltr(r4, r4);           // Set the <,eq,> conditions
 #endif
           __ b(cond, ((result_type_ <= BinaryOpIC::INT32)
@@ -5854,12 +5850,10 @@ void StringHelper::GenerateHashInit(MacroAssembler* masm,
   __ SmiUntag(scratch, hash);
   __ AddP(hash, character, scratch);
   // hash += hash << 10;
-  __ LoadRR(scratch, hash);
-  __ sll(scratch, Operand(10));
+  __ ShiftLeft(scratch, hash, Operand(10));
   __ AddP(hash, scratch);
   // hash ^= hash >> 6;
-  __ LoadRR(scratch, hash);
-  __ srl(scratch, Operand(6));
+  __ ShiftRight(scratch, hash, Operand(6));
   __ XorP(hash, scratch);
 }
 
@@ -5871,12 +5865,10 @@ void StringHelper::GenerateHashAddCharacter(MacroAssembler* masm,
   // hash += character;
   __ AddP(hash, character);
   // hash += hash << 10;
-  __ LoadRR(scratch, hash);
-  __ sll(scratch, Operand(10));
+  __ ShiftLeft(scratch, hash, Operand(10));
   __ AddP(hash, scratch);
   // hash ^= hash >> 6;
-  __ LoadRR(scratch, hash);
-  __ srl(scratch, Operand(6));
+  __ ShiftRight(scratch, hash, Operand(6));
   __ XorP(hash, scratch);
 }
 
@@ -5889,12 +5881,10 @@ void StringHelper::GenerateHashGetHash(MacroAssembler* masm,
   __ sll(scratch, Operand(3));
   __ AddP(hash, scratch);
   // hash ^= hash >> 11;
-  __ LoadRR(scratch, hash);
-  __ srl(scratch, Operand(11));
+  __ ShiftRight(scratch, hash, Operand(11));
   __ XorP(hash, scratch);
   // hash += hash << 15;
-  __ LoadRR(scratch, hash);
-  __ sll(scratch, Operand(15));
+  __ ShiftLeft(scratch, hash, Operand(15));
   __ AddP(hash, scratch);
 
   __ mov(scratch, Operand(String::kHashBitMask));
@@ -7191,8 +7181,7 @@ void StringDictionaryLookupStub::Generate(MacroAssembler* masm) {
     } else {
       __ LoadRR(index, hash);
     }
-    __ LoadRR(r0, index);
-    __ srl(r0, Operand(String::kHashShift));
+    __ ShiftRight(r0, index, Operand(String::kHashShift));
     __ LoadRR(index, mask);
     __ AndP(index, r0);
 
