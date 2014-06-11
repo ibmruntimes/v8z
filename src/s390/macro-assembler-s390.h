@@ -280,8 +280,12 @@ class MacroAssembler: public Assembler {
   void StoreF(DoubleRegister dst, const MemOperand& opnd);
   void StoreShortF(DoubleRegister dst, const MemOperand& opnd);
 
-  // compare 32bit
+  // Compare (Register - Memory)
   void Cmp(Register dst, const MemOperand& opnd);
+  void CmpP(Register dst, const MemOperand& opnd);
+  void CmpLogical(Register dst, const MemOperand& opnd);
+  void CmpLogicalP(Register dst, const MemOperand& opnd);
+
   void Cmp(Register dst, const Operand& opnd);
   // compare 32bit logical
   void Cmpl(Register dst, const MemOperand& opnd);
