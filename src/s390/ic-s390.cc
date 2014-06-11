@@ -1068,7 +1068,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
 
   __ mov(r6, Operand(cache_keys));
   __ LoadRR(r0, r4);
-  __ ShiftLeftImm(r4, r5, Operand(kPointerSizeLog2 + 1));
+  __ ShiftLeftP(r4, r5, Operand(kPointerSizeLog2 + 1));
   __ AddP(r6, r4);
   __ LoadRR(r4, r0);
 
@@ -1109,7 +1109,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
     if (i != 0) {
       __ AddP(r5, Operand(i));
     }
-    __ ShiftLeftImm(r7, r5, Operand(2));
+    __ ShiftLeftP(r7, r5, Operand(2));
     __ LoadlW(r7, MemOperand(r7, r6));
     __ LoadlB(r8, FieldMemOperand(r4, Map::kInObjectPropertiesOffset));
     __ Sub(r7, r7, r8);
@@ -1125,7 +1125,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   __ LoadlB(r8, FieldMemOperand(r4, Map::kInstanceSizeOffset));
   __ AddP(r8, r7);  // Index from start of object.
   __ Sub(r3, Operand(kHeapObjectTag));  // Remove the heap tag.
-  __ ShiftLeftImm(r2, r8, Operand(kPointerSizeLog2));
+  __ ShiftLeftP(r2, r8, Operand(kPointerSizeLog2));
   __ LoadP(r2, MemOperand(r2, r3));
   __ IncrementCounter(isolate->counters()->keyed_load_generic_lookup_cache(),
                       1, r4, r5);
@@ -1135,7 +1135,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   __ bind(&property_array_property);
   __ LoadP(r3, FieldMemOperand(r3, JSObject::kPropertiesOffset));
   __ AddP(r3, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
-  __ ShiftLeftImm(r2, r7, Operand(kPointerSizeLog2));
+  __ ShiftLeftP(r2, r7, Operand(kPointerSizeLog2));
   __ LoadP(r2, MemOperand(r2, r3));
   __ IncrementCounter(isolate->counters()->keyed_load_generic_lookup_cache(),
                       1, r4, r5);

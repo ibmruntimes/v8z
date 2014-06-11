@@ -1177,7 +1177,7 @@ void NumberToStringStub::GenerateLookupNumberStringCache(MacroAssembler* masm,
   __ LoadP(mask, FieldMemOperand(number_string_cache,
                                  FixedArray::kLengthOffset));
   // Divide length by two (length is a smi).
-  __ ShiftRightArithImm(mask, mask, kSmiTagSize + kSmiShiftSize + 1);
+  __ ShiftRightArithP(mask, mask, Operand(kSmiTagSize + kSmiShiftSize + 1));
   __ Sub(mask, Operand(1));  // Make mask.
 
   // Calculate the entry in the number string cache. The hash value in the
@@ -1204,7 +1204,7 @@ void NumberToStringStub::GenerateLookupNumberStringCache(MacroAssembler* masm,
 
     // Calculate address of entry in string cache: each entry consists
     // of two pointer sized fields.
-    __ ShiftLeftImm(scratch1, scratch1, Operand(kPointerSizeLog2 + 1));
+    __ ShiftLeftP(scratch1, scratch1, Operand(kPointerSizeLog2 + 1));
     __ AddP(scratch1, number_string_cache);
 
     Register probe = mask;
@@ -1223,7 +1223,7 @@ void NumberToStringStub::GenerateLookupNumberStringCache(MacroAssembler* masm,
   __ AndP(scratch, mask);
   // Calculate address of entry in string cache: each entry consists
   // of two pointer sized fields.
-  __ ShiftLeftImm(scratch, scratch, Operand(kPointerSizeLog2 + 1));
+  __ ShiftLeftP(scratch, scratch, Operand(kPointerSizeLog2 + 1));
   __ AddP(scratch, number_string_cache);
 
   // Check if the entry is the smi we are looking for.
@@ -2070,7 +2070,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       Label check_neg_zero;
       __ SmiUntag(r0, left);
       __ LoadRR(r1, r0);
-      __ ShiftRightArithImm(r0, r0, 31);  // right shift 32bit
+      __ ShiftRightArithP(r0, r0, Operand(31));  // right shift 32bit
       __ SmiUntag(r9, right);
       // Check for zero on the right hand side.
       __ beq(&not_smi_result);
@@ -2102,7 +2102,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       Label check_neg_zero;
       __ SmiUntag(r0, left);
       __ LoadRR(r1, r0);
-      __ ShiftRightArithImm(r0, r0, 31);  // right shift 32bit
+      __ ShiftRightArithP(r0, r0, Operand(31));  // right shift 32bit
       __ SmiUntag(r9, right);
       // Check for zero on the right hand side.
       __ beq(&not_smi_result);
@@ -3070,12 +3070,12 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
 
 #if V8_TARGET_ARCH_S390X
   // Find the address of the r3'th entry in the cache, i.e., &r2[r3*16].
-  __ ShiftLeftImm(scratch0, r3, Operand(4));
+  __ ShiftLeftP(scratch0, r3, Operand(4));
 #else
   // Find the address of the r3'th entry in the cache, i.e., &r2[r3*12].
-  __ ShiftLeftImm(scratch0, r3, Operand(1));
+  __ ShiftLeftP(scratch0, r3, Operand(1));
   __ AddP(r3, scratch0);
-  __ ShiftLeftImm(scratch0, r3, Operand(2));
+  __ ShiftLeftP(scratch0, r3, Operand(2));
 #endif
   __ AddP(cache_entry, scratch0);
   // Check if cache matches: Double value is stored in uint32_t[2] array.
@@ -3378,7 +3378,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
   __ beq(&no_carry /*, cr0*/);
   __ mdbr(double_result, double_scratch);
   __ bind(&no_carry);
-  __ ShiftRightArithImm(scratch, scratch, 1, SetRC);
+  __ ShiftRightArithP(scratch, scratch, Operand(1));
   __ beq(&loop_end /*, cr0*/);
   __ mdbr(double_scratch, double_scratch);
   __ b(&while_true);
@@ -3516,7 +3516,7 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
     __ LoadRR(r2, r6);
 #else
     // r3 = argc << 32 (for alignment), r4 = argv
-    __ ShiftLeftImm(r2, r6, Operand(32));
+    __ ShiftLeftP(r2, r6, Operand(32));
 #endif
     __ LoadRR(r3, r8);
     isolate_reg = r4;
@@ -3530,7 +3530,7 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
     __ LoadRR(r3, r6);
 #else
     // r4 = argc << 32 (for alignment), r5 = argv
-    __ ShiftLeftImm(r3, r6, Operand(32));
+    __ ShiftLeftP(r3, r6, Operand(32));
 #endif
     __ LoadRR(r4, r8);
     isolate_reg = r5;
@@ -3540,7 +3540,7 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
   __ LoadRR(r2, r6);
 #else
   // r3 = argc << 32 (for alignment), r4 = argv
-  __ ShiftLeftImm(r2, r6, Operand(32));
+  __ ShiftLeftP(r2, r6, Operand(32));
 #endif
   __ LoadRR(r3, r8);
   isolate_reg = r4;
@@ -3592,7 +3592,7 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
   // r3 = argc, r4 = argv
   // @TODO Make sure this is correct for S390
 #if defined(V8_TARGET_ARCH_S390X) && __BYTE_ORDER == __BIG_ENDIAN
-  __ ShiftLeftImm(r2, r6, Operand(32));
+  __ ShiftLeftP(r2, r6, Operand(32));
 #else
   __ LoadRR(r2, r6);
 #endif
@@ -3718,7 +3718,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // builtin once.
 
   // Compute the argv pointer in a callee-saved register.
-  __ ShiftLeftImm(r8, r2, Operand(kPointerSizeLog2));
+  __ ShiftLeftP(r8, r2, Operand(kPointerSizeLog2));
   __ lay(r8, MemOperand(r8, sp, -kPointerSize));
 
   // Enter the exit frame that transitions from JavaScript to C++.
@@ -5225,7 +5225,7 @@ void RegExpConstructResultStub::Generate(MacroAssembler* masm) {
   __ bind(&loop);
   __ ble(&done);  // Jump if r7 is negative or zero.
   __ Sub(r7, Operand(1));
-  __ ShiftLeftImm(ip, r7, Operand(kPointerSizeLog2));
+  __ ShiftLeftP(ip, r7, Operand(kPointerSizeLog2));
   __ StorePX(r4, MemOperand(ip, r5));
   __ Cmpi(r7, Operand::Zero());
   __ b(&loop);
@@ -5723,10 +5723,10 @@ void StringHelper::GenerateTwoCharacterSymbolTableProbe(MacroAssembler* masm,
   // This is required by the contract of the method: code at the
   // not_found branch expects this combination in c1 register
 #if __BYTE_ORDER == __BIG_ENDIAN
-  __ ShiftLeftImm(c1, c1, Operand(kBitsPerByte));
+  __ ShiftLeftP(c1, c1, Operand(kBitsPerByte));
   __ OrP(c1, c2);
 #else
-  __ ShiftLeftImm(r0, c2, Operand(kBitsPerByte));
+  __ ShiftLeftP(r0, c2, Operand(kBitsPerByte));
   __ OrP(c1, r0);
 #endif
   __ b(not_found);
@@ -5741,10 +5741,10 @@ void StringHelper::GenerateTwoCharacterSymbolTableProbe(MacroAssembler* masm,
   // Collect the two characters in a register.
   Register chars = c1;
 #if __BYTE_ORDER == __BIG_ENDIAN
-  __ ShiftLeftImm(c1, c1, Operand(kBitsPerByte));
+  __ ShiftLeftP(c1, c1, Operand(kBitsPerByte));
   __ OrP(chars, c2);
 #else
-  __ ShiftLeftImm(r0, c2, Operand(kBitsPerByte));
+  __ ShiftLeftP(r0, c2, Operand(kBitsPerByte));
   __ OrP(chars, r0);
 #endif
 
@@ -5796,7 +5796,7 @@ void StringHelper::GenerateTwoCharacterSymbolTableProbe(MacroAssembler* masm,
 
     // Load the entry from the symble table.
     STATIC_ASSERT(SymbolTable::kEntrySize == 1);
-    __ ShiftLeftImm(scratch, candidate, Operand(kPointerSizeLog2));
+    __ ShiftLeftP(scratch, candidate, Operand(kPointerSizeLog2));
     __ LoadP(candidate, MemOperand(scratch, first_symbol_table_element));
 
     // If entry is undefined no string with this hash can be found.
@@ -6096,7 +6096,7 @@ void SubStringStub::Generate(MacroAssembler* masm) {
   __ AllocateTwoByteString(r2, r4, r6, r8, r9, &runtime);
 
   // Locate first character of substring to copy.
-  __ ShiftLeftImm(r3, r5, Operand(1));
+  __ ShiftLeftP(r3, r5, Operand(1));
   __ AddP(r7, r3);
   // Locate first character of result.
   __ AddP(r3, r2, Operand(SeqTwoByteString::kHeaderSize - kHeapObjectTag));
@@ -6995,7 +6995,7 @@ void StringDictionaryLookupStub::GenerateNegativeLookup(MacroAssembler* masm,
 
     // Scale the index by multiplying by the entry size.
     ASSERT(StringDictionary::kEntrySize == 3);
-    __ ShiftLeftImm(ip, index, Operand(1));
+    __ ShiftLeftP(ip, index, Operand(1));
     __ AddP(index, ip);  // index *= 3.
 
     Register entity_name = scratch0;
@@ -7106,11 +7106,11 @@ void StringDictionaryLookupStub::GeneratePositiveLookup(MacroAssembler* masm,
     // Scale the index by multiplying by the element size.
     ASSERT(StringDictionary::kEntrySize == 3);
     // scratch2 = scratch2 * 3.
-    __ ShiftLeftImm(ip, scratch2, Operand(1));
+    __ ShiftLeftP(ip, scratch2, Operand(1));
     __ AddP(scratch2, ip);
 
     // Check if the key is identical to the name.
-    __ ShiftLeftImm(ip, scratch2, Operand(kPointerSizeLog2));
+    __ ShiftLeftP(ip, scratch2, Operand(kPointerSizeLog2));
     __ AddP(scratch2, elements, ip);
     __ LoadP(ip, FieldMemOperand(scratch2, kElementsStartOffset));
     __ CmpRR(name, ip);
@@ -7198,11 +7198,11 @@ void StringDictionaryLookupStub::Generate(MacroAssembler* masm) {
 
     // Scale the index by multiplying by the entry size.
     ASSERT(StringDictionary::kEntrySize == 3);
-    __ ShiftLeftImm(scratch, index, Operand(1));
+    __ ShiftLeftP(scratch, index, Operand(1));
     __ AddP(index, scratch);  // index *= 3.
 
     ASSERT_EQ(kSmiTagSize, 1);
-    __ ShiftLeftImm(scratch, index, Operand(kPointerSizeLog2));
+    __ ShiftLeftP(scratch, index, Operand(kPointerSizeLog2));
     __ AddP(index, dictionary, scratch);
     __ LoadP(entry_key, FieldMemOperand(index, kElementsStartOffset));
 

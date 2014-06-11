@@ -74,12 +74,12 @@ static void ProbeTable(Isolate* isolate,
   scratch = no_reg;
 
   // Multiply by 3 because there are 3 fields per entry (name, code, map).
-  __ ShiftLeftImm(offset_scratch, offset, Operand(1));
+  __ ShiftLeftP(offset_scratch, offset, Operand(1));
   __ AddP(offset_scratch, offset);
 
   // Calculate the base address of the entry.
   __ mov(base_addr, Operand(key_offset));
-  __ ShiftLeftImm(scratch2, offset_scratch, Operand(kPointerSizeLog2));
+  __ ShiftLeftP(scratch2, offset_scratch, Operand(kPointerSizeLog2));
   __ AddP(base_addr, scratch2);
 
   // Check that the key in the entry matches the name.
@@ -247,7 +247,7 @@ void StubCache::GenerateProbe(MacroAssembler* masm,
   uint32_t mask = kPrimaryTableSize - 1;
   // We shift out the last two bits because they are not part of the hash and
   // they are always 01 for maps.
-  __ ShiftRightImm(scratch, scratch, Operand(kHeapObjectTagSize));
+  __ ShiftRightP(scratch, scratch, Operand(kHeapObjectTagSize));
   // Mask down the eor argument to the minimum to keep the immediate
   // encodable.
   __ XorPImm(scratch, Operand((flags >> kHeapObjectTagSize) & mask));
@@ -267,7 +267,7 @@ void StubCache::GenerateProbe(MacroAssembler* masm,
              extra3);
 
   // Primary miss: Compute hash for secondary probe.
-  __ ShiftRightImm(extra, name, Operand(kHeapObjectTagSize));
+  __ ShiftRightP(extra, name, Operand(kHeapObjectTagSize));
   __ Sub(scratch, scratch, extra);
   uint32_t mask2 = kSecondaryTableSize - 1;
   __ AddP(scratch, Operand((flags >> kHeapObjectTagSize) & mask2));
@@ -2252,9 +2252,8 @@ Handle<Code> CallStubCompiler::CompileMathAbsCall(
 
   // Do bitwise not or do nothing depending on the sign of the
   // argument.
-  __ ShiftRightArithImm(r0, r2, kBitsPerPointer - 1);
-  __ LoadRR(r3, r0);
-  __ XorP(r3, r2);
+  __ ShiftRightArithP(r0, r2, Operand(kBitsPerPointer - 1));
+  __ XorP(r3, r0, r2);
 
   // Add 1 or do nothing depending on the sign of the argument.
   __ Sub(r2, r3, r0);
@@ -3462,7 +3461,7 @@ Handle<Code> ConstructStubCompiler::CompileConstructStub(
 
   // Calculate the location of the first argument. The stack contains only the
   // argc arguments.
-  __ ShiftLeftImm(r3, r2, Operand(kPointerSizeLog2));
+  __ ShiftLeftP(r3, r2, Operand(kPointerSizeLog2));
   __ AddP(r3, sp);
 
   // Fill all the in-object properties with undefined.
@@ -3520,7 +3519,7 @@ Handle<Code> ConstructStubCompiler::CompileConstructStub(
   // r2: JSObject
   // r3: argc
   // Remove caller arguments and receiver from the stack and return.
-  __ ShiftLeftImm(r3, r3, Operand(kPointerSizeLog2));
+  __ ShiftLeftP(r3, r3, Operand(kPointerSizeLog2));
   __ la(sp, MemOperand(sp, r3));
   __ la(sp, MemOperand(sp, kPointerSize));
   Counters* counters = masm()->isolate()->counters();

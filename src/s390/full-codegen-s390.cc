@@ -3665,7 +3665,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   // accumulate the sum of their lengths, as a smi-encoded value.
   __ LoadImmP(string_length, Operand::Zero());
   __ AddP(element, elements, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
-  __ ShiftLeftImm(elements_end, array_length, Operand(kPointerSizeLog2));
+  __ ShiftLeftP(elements_end, array_length, Operand(kPointerSizeLog2));
   __ AddP(elements_end, element);
   // Loop condition: while (element < elements_end).
   // Live values in registers:
@@ -3769,7 +3769,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   // Prepare for looping. Set up elements_end to end of the array. Set
   // result_pos to the position of the result where to write the first
   // character.
-  __ ShiftLeftImm(elements_end, array_length, Operand(kPointerSizeLog2));
+  __ ShiftLeftP(elements_end, array_length, Operand(kPointerSizeLog2));
   __ AddP(elements_end, element);
   result_pos = array_length;  // End of live range for array_length.
   array_length = no_reg;
