@@ -700,7 +700,7 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles,
   pop(r14);
 
   if (argument_count.is_valid()) {
-    ShiftLeftImm(argument_count, argument_count, Operand(kPointerSizeLog2));
+    ShiftLeftP(argument_count, argument_count, Operand(kPointerSizeLog2));
     la(sp, MemOperand(sp, argument_count));
   }
 }
@@ -1495,7 +1495,7 @@ void MacroAssembler::AllocateInNewSpace(Register object_size,
   // to calculate the new top. Object size may be in words so a shift is
   // required to get the number of bytes.
   if ((flags & SIZE_IN_WORDS) != 0) {
-    ShiftLeftImm(scratch2, object_size, Operand(kPointerSizeLog2));
+    ShiftLeftP(scratch2, object_size, Operand(kPointerSizeLog2));
     AddP(scratch2, result);
   } else {
     AddP(scratch2, result, object_size);
@@ -3594,7 +3594,7 @@ void MacroAssembler::GetMarkBits(Register addr_reg,
   ExtractBitRange(ip, addr_reg,
                   kPageSizeBits - 1,
                   kLowBits);
-  ShiftLeftImm(ip, ip, Operand(Bitmap::kBytesPerCellLog2));
+  ShiftLeftP(ip, ip, Operand(Bitmap::kBytesPerCellLog2));
   AddP(bitmap_reg, ip);
   LoadRR(ip, mask_reg);   // Have to do some funky reg shuffling as
                           // 31-bit shift left clobbers on s390.
@@ -4871,80 +4871,108 @@ void MacroAssembler::StoreByte(Register src, const MemOperand& mem,
   }
 }
 
-// Shift left for pointer types.
-void MacroAssembler::ShiftLeftImm(Register dst, Register src,
-                                  const Operand& val) {
-#if V8_TARGET_ARCH_S390X
-  sllg(dst, src, val);
-#else
-  // 32-bit shift clobbers source.  Make a copy if necessary
-  if (!dst.is(src))
+// Shift left logical for 32-bit integer types.
+void MacroAssembler::ShiftLeft(Register dst, Register src,
+                               const Operand& val) {
+  if (dst.is(src)) {
+    sll(dst, val);
+  } else if (CpuFeatures::IsSupported(DISTINCT_OPS)) {
+    sllk(dst, src, val);
+  } else {
     lr(dst, src);
-  sll(dst, val);
-#endif
+    sll(dst, val);
+  }
 }
 
-void MacroAssembler::ShiftLeftP(Register dst, Register src,
+// Shift left logical for 32-bit integer types.
+void MacroAssembler::ShiftLeft(Register dst, Register src,
+                               Register val) {
+  if (dst.is(src)) {
+    sll(dst, val);
+  } else if (CpuFeatures::IsSupported(DISTINCT_OPS)) {
+    sllk(dst, src, val);
+  } else {
+    lr(dst, src);
+    sll(dst, val);
+  }
+}
+
+// Shift right logical for 32-bit integer types.
+void MacroAssembler::ShiftRight(Register dst, Register src,
+                                const Operand& val) {
+  if (dst.is(src)) {
+    srl(dst, val);
+  } else if (CpuFeatures::IsSupported(DISTINCT_OPS)) {
+    srlk(dst, src, val);
+  } else {
+    lr(dst, src);
+    srl(dst, val);
+  }
+}
+
+// Shift right logical for 32-bit integer types.
+void MacroAssembler::ShiftRight(Register dst, Register src,
                                 Register val) {
-#if V8_TARGET_ARCH_S390X
-  sllg(dst, src, val);
-#else
-  ASSERT(!dst.is(val));
-  if (!dst.is(src))
+  if (dst.is(src)) {
+    srl(dst, val);
+  } else if (CpuFeatures::IsSupported(DISTINCT_OPS)) {
+    srlk(dst, src, val);
+  } else {
     lr(dst, src);
-  sll(dst, val);
-#endif
+    srl(dst, val);
+  }
 }
 
-void MacroAssembler::ShiftRightP(Register dst, Register src,
-                                 Register val) {
-#if V8_TARGET_ARCH_S390X
-  srlg(dst, src, val);
-#else
-  ASSERT(!dst.is(val));
-  if (!dst.is(src))
+// Shift left arithmetic for 32-bit integer types.
+void MacroAssembler::ShiftLeftArith(Register dst, Register src,
+                                    const Operand& val) {
+  if (dst.is(src)) {
+    sla(dst, val);
+  } else if (CpuFeatures::IsSupported(DISTINCT_OPS)) {
+    slak(dst, src, val);
+  } else {
     lr(dst, src);
-  srl(dst, val);
-#endif
+    sla(dst, val);
+  }
 }
 
-void MacroAssembler::ShiftRightArithP(Register dst, Register src,
-                                 Register val) {
-#if V8_TARGET_ARCH_S390X
-  srag(dst, src, val);
-#else
-  ASSERT(!dst.is(val));
-  if (!dst.is(src))
+// Shift left arithmetic for 32-bit integer types.
+void MacroAssembler::ShiftLeftArith(Register dst, Register src,
+                                    Register val) {
+  if (dst.is(src)) {
+    sla(dst, val);
+  } else if (CpuFeatures::IsSupported(DISTINCT_OPS)) {
+    slak(dst, src, val);
+  } else {
     lr(dst, src);
-  sra(dst, val);
-#endif
+    sla(dst, val);
+  }
 }
 
-
-// Shift right for pointer types.
-void MacroAssembler::ShiftRightImm(Register dst, Register src,
-                                  const Operand& val, RCBit) {
-#if V8_TARGET_ARCH_S390X
-  srlg(dst, src, val);
-#else
-  // 32-bit shift clobbers source.  Make a copy if necessary
-  if (!dst.is(src))
+// Shift right arithmetic for 32-bit integer types.
+void MacroAssembler::ShiftRightArith(Register dst, Register src,
+                                     const Operand& val) {
+  if (dst.is(src)) {
+    sra(dst, val);
+  } else if (CpuFeatures::IsSupported(DISTINCT_OPS)) {
+    srak(dst, src, val);
+  } else {
     lr(dst, src);
-  srl(dst, val);
-#endif
+    sra(dst, val);
+  }
 }
 
-// Shift right arithmetic for pointer types.
-void MacroAssembler::ShiftRightArithImm(Register dst, Register src,
-                                  const int val, RCBit) {
-#if V8_TARGET_ARCH_S390X
-  srag(dst, src, Operand(val));
-#else
-  // 32-bit shift clobbers source.  Make a copy if necessary
-  if (!dst.is(src))
+// Shift right arithmetic for 32-bit integer types.
+void MacroAssembler::ShiftRightArith(Register dst, Register src,
+                                     Register val) {
+  if (dst.is(src)) {
+    sra(dst, val);
+  } else if (CpuFeatures::IsSupported(DISTINCT_OPS)) {
+    srak(dst, src, val);
+  } else {
     lr(dst, src);
-  sra(dst, Operand(val));
-#endif
+    sra(dst, val);
+  }
 }
 
 // Clear right most # of bits

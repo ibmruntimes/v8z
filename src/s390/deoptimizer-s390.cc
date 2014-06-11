@@ -1147,7 +1147,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   __ LoadlW(r3, MemOperand(r2, Deoptimizer::output_count_offset()));
   __ LoadP(r2,
            MemOperand(r2, Deoptimizer::output_offset()));  // r2 is output_.
-  __ ShiftLeftImm(r3, r3, Operand(kPointerSizeLog2));
+  __ ShiftLeftP(r3, r3, Operand(kPointerSizeLog2));
   __ AddP(r3, r2);
   __ bind(&outer_push_loop);
   // Inner loop state: r4 = current FrameDescription*, r5 = loop index.

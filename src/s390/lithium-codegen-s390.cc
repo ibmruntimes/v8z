@@ -1034,9 +1034,9 @@ void LCodeGen::DoMathFloorOfDiv(LMathFloorOfDiv* instr) {
       if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
         DeoptimizeIf(eq, instr->environment(), cr0);
       }
-      __ ShiftRightArithImm(result, result, power);
+      __ ShiftRightArithP(result, result, Operand(power));
     } else {
-      __ ShiftRightArithImm(result, dividend, power);
+      __ ShiftRightArithP(result, dividend, Operand(power));
     }
   } else {
     Register scratch = ToRegister(instr->temp());
@@ -1066,7 +1066,7 @@ void LCodeGen::DoMathFloorOfDiv(LMathFloorOfDiv* instr) {
     __ mov(result, Operand(multiplier));
     __ MulP(result, scratch);
     __ AddP(result, Operand(0x4000 << 16));
-    __ ShiftRightArithImm(result, result, shift);
+    __ ShiftRightArithP(result, result, Operand(shift));
 #else
     if (divisor < 0 &&
         instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
@@ -1089,21 +1089,19 @@ void LCodeGen::DoMathFloorOfDiv(LMathFloorOfDiv* instr) {
 
       // Subtract one from result if -(low word) < 0xC0000000
       __ LoadComplementRR(ip, ip);
-      __ LoadRR(scratch, ip);
-      __ srl(scratch, Operand(30));
+      __ ShiftRight(scratch, ip, Operand(30));
       __ AddP(scratch, Operand(1));
       __ srl(scratch, Operand(2));
       __ AddP(scratch, Operand(-1));
       __ AddP(result, result, scratch);
     } else {
       // Add one to result if low word >= 0xC0000000
-      __ LoadRR(scratch, ip);
-      __ srl(scratch, Operand(30));
+      __ ShiftRight(scratch, ip, Operand(30));
       __ AddP(scratch, Operand(1));
       __ srl(scratch, Operand(2));
       __ AddP(result, result, scratch);
     }
-    __ ShiftRightArithImm(result, result, shift - 32);
+    __ ShiftRightArithP(result, result, Operand(shift - 32));
 #endif
   }
 }
@@ -1159,14 +1157,14 @@ void LCodeGen::DoMulI(LMulI* instr) {
             IsPowerOf2(constant_abs + 1)) {
           if (IsPowerOf2(constant_abs)) {
             int32_t shift = WhichPowerOf2(constant_abs);
-            __ ShiftLeftImm(result, left, Operand(shift));
+            __ ShiftLeftP(result, left, Operand(shift));
           } else if (IsPowerOf2(constant_abs - 1)) {
             int32_t shift = WhichPowerOf2(constant_abs - 1);
-            __ ShiftLeftImm(scratch, left, Operand(shift));
+            __ ShiftLeftP(scratch, left, Operand(shift));
             __ AddP(result, scratch, left);
           } else if (IsPowerOf2(constant_abs + 1)) {
             int32_t shift = WhichPowerOf2(constant_abs + 1);
-            __ ShiftLeftImm(scratch, left, Operand(shift));
+            __ ShiftLeftP(scratch, left, Operand(shift));
             __ Sub(result, scratch, left);
           }
 
@@ -1312,29 +1310,26 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
     __ AndPI(scratch, Operand(0x1F));
     switch (instr->op()) {
       case Token::SAR:
-        __ LoadRR(result, left);
-        __ sra(result, scratch);
+        __ ShiftRightArith(result, left, scratch);
 #if V8_TARGET_ARCH_S390X
         __ lgfr(result, result);
 #endif
         break;
       case Token::SHR:
         if (instr->can_deopt()) {
-          __ LoadRR(result, left);
-          __ srl(result, scratch);
+          __ ShiftRight(result, left, scratch);
 #if V8_TARGET_ARCH_S390X
           __ ltgfr(result, result/*, SetRC*/);
 #else
-          __ ltr(result, result);  // Set the <,==,> condition
+//          __ ltr(result, result);  // Set the <,==,> condition
 #endif
           DeoptimizeIf(lt, instr->environment(), cr0);
         } else {
-          __ LoadRR(result, left);
-          __ srl(result, scratch);
+          __ ShiftRight(result, left, scratch);
         }
         break;
       case Token::SHL:
-        __ ShiftLeftP(result, left, scratch);
+        __ ShiftLeft(result, left, scratch);
 #if V8_TARGET_ARCH_S390X
         __ lgfr(result, result);
 #endif
@@ -1350,8 +1345,7 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
     switch (instr->op()) {
       case Token::SAR:
         if (shift_count != 0) {
-          __ LoadRR(result, left);
-          __ sra(result, Operand(shift_count));
+          __ ShiftRightArith(result, left, Operand(shift_count));
 #if V8_TARGET_ARCH_S390X
           __ lgfr(result, result);
 #endif
@@ -1361,8 +1355,7 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
         break;
       case Token::SHR:
         if (shift_count != 0) {
-          __ LoadRR(result, left);
-          __ srl(result, Operand(shift_count));
+          __ ShiftRight(result, left, Operand(shift_count));
         } else {
           if (instr->can_deopt()) {
             __ TestSignBit32(left, r0);
@@ -1373,8 +1366,7 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
         break;
       case Token::SHL:
         if (shift_count != 0) {
-          __ LoadRR(result, left);
-          __ sll(result, Operand(shift_count));
+          __ ShiftLeft(result, left, Operand(shift_count));
 #if V8_TARGET_ARCH_S390X
           __ lgfr(result, result);
 #endif
@@ -2858,7 +2850,7 @@ void LCodeGen::DoAccessArgumentsAt(LAccessArgumentsAt* instr) {
   // Subtracting from length accounts for one of them add one more.
   __ Sub(length, length, index);
   __ AddP(length, Operand(1));
-  __ ShiftLeftImm(scratch0(), length, Operand(kPointerSizeLog2));
+  __ ShiftLeftP(scratch0(), length, Operand(kPointerSizeLog2));
   __ LoadP(result, MemOperand(arguments, scratch0()));
 }
 
@@ -2883,7 +2875,7 @@ void LCodeGen::DoLoadKeyedFastElement(LLoadKeyedFastElement* instr) {
     if (instr->hydrogen()->key()->representation().IsTagged()) {
       __ SmiToPtrArrayOffset(scratch, key);
     } else {
-      __ ShiftLeftImm(scratch, key, Operand(kPointerSizeLog2));
+      __ ShiftLeftP(scratch, key, Operand(kPointerSizeLog2));
     }
     offset = FixedArray::OffsetOfElementAt(instr->additional_index());
     __ LoadP(result, FieldMemOperand(scratch, elements, offset));
@@ -3259,7 +3251,7 @@ void LCodeGen::DoApplyArguments(LApplyArguments* instr) {
   __ Cmpi(length, Operand::Zero());
   __ beq(&invoke);
   __ bind(&loop);
-  __ ShiftLeftImm(r1, length, Operand(kPointerSizeLog2));
+  __ ShiftLeftP(r1, length, Operand(kPointerSizeLog2));
   __ LoadP(scratch, MemOperand(elements, r1));
   __ push(scratch);
   __ BranchOnCount(length, &loop);
@@ -3772,8 +3764,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
 
   // Random bit pattern = (state[0] << 14) + (state[1] & 0x3FFFF)
   __ ExtractBitMask(r2, r2, 0x3FFFF);
-  __ LoadRR(r0, r3);
-  __ sll(r0, Operand(14));
+  __ ShiftLeft(r0, r3, Operand(14));
   __ AddP(r2, r2, r0);
 
   __ bind(deferred->exit());
@@ -4119,7 +4110,7 @@ void LCodeGen::DoStoreKeyedFastElement(LStoreKeyedFastElement* instr) {
     if (instr->hydrogen()->key()->representation().IsTagged()) {
       __ SmiToPtrArrayOffset(scratch, key);
     } else {
-      __ ShiftLeftImm(scratch, key, Operand(kPointerSizeLog2));
+      __ ShiftLeftP(scratch, key, Operand(kPointerSizeLog2));
     }
     offset = FixedArray::OffsetOfElementAt(instr->additional_index());
     __ StoreP(value, FieldMemOperand(scratch, elements, offset), ip);
@@ -4421,7 +4412,7 @@ void LCodeGen::DoStringCharFromCode(LStringCharFromCode* instr) {
   __ Cmpli(char_code, Operand(String::kMaxAsciiCharCode));
   __ bgt(deferred->entry());
   __ LoadRoot(result, Heap::kSingleCharacterStringCacheRootIndex);
-  __ ShiftLeftImm(r0, char_code, Operand(kPointerSizeLog2));
+  __ ShiftLeftP(r0, char_code, Operand(kPointerSizeLog2));
   __ AddP(result, r0);
   __ LoadP(result, FieldMemOperand(result, FixedArray::kHeaderSize));
   __ LoadRoot(ip, Heap::kUndefinedValueRootIndex);

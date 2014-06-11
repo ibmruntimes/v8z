@@ -822,7 +822,7 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     // (effectively string position -1).
     __ Sub(r1, current_input_offset(), Operand(char_size()));
     if (mode_ == UC16) {
-      __ ShiftLeftImm(r0, r3, Operand(1));
+      __ ShiftLeftP(r0, r3, Operand(1));
       __ Sub(r1, r1, r0);
     } else {
       __ Sub(r1, r1, r3);
@@ -890,7 +890,7 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
         __ Sub(r3, end_of_input_address(), r3);
         // r3 is length of input in bytes.
         if (mode_ == UC16) {
-          __ ShiftRightImm(r3, r3, Operand(1));
+          __ ShiftRightP(r3, r3, Operand(1));
         }
         // r3 is length of input in characters.
         __ AddP(r3, r4);
@@ -908,9 +908,9 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
             __ LoadRR(r6, r4);
           }
           if (mode_ == UC16) {
-            __ ShiftRightArithImm(r4, r4, 1);
+            __ ShiftRightArithP(r4, r4, 1);
             __ AddP(r4, r3, r4);
-            __ ShiftRightArithImm(r5, r5, 1);
+            __ ShiftRightArithP(r5, r5, 1);
             __ AddP(r5, r3, r5);
           } else {
             __ AddP(r4, r3, r4);
