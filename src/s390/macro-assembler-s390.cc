@@ -3875,18 +3875,48 @@ void MacroAssembler::mov(Register dst, const Operand& src) {
 #endif
 }
 
+// Compare 32-bit Register vs Memory
 void MacroAssembler::Cmp(Register dst, const MemOperand& opnd) {
   // make sure offset is within 20 bit range
-#if V8_TARGET_ARCH_S390X
-  cg(dst, opnd);
-#else
   ASSERT(is_int20(opnd.offset()));
   if (is_uint12(opnd.offset()))
     c(dst, opnd);
   else
     cy(dst, opnd);
+}
+
+// Compare Pointer Size Register vs Memory
+void MacroAssembler::CmpP(Register dst, const MemOperand& opnd) {
+  // make sure offset is within 20 bit range
+  ASSERT(is_int20(opnd.offset()));
+#if V8_TARGET_ARCH_S390X
+  cg(dst, opnd);
+#else
+  Cmp(dst, opnd);
 #endif
 }
+
+// Compare Logical 32-bit Register vs Memory
+void MacroAssembler::CmpLogical(Register dst, const MemOperand& opnd) {
+  // make sure offset is within 20 bit range
+  ASSERT(is_int20(opnd.offset()));
+  if (is_uint12(opnd.offset()))
+    cl(dst, opnd);
+  else
+    cly(dst, opnd);
+}
+
+// Compare Logical 32-bit Register vs Memory
+void MacroAssembler::CmpLogicalP(Register dst, const MemOperand& opnd) {
+  // make sure offset is within 20 bit range
+  ASSERT(is_int20(opnd.offset()));
+#if V8_TARGET_ARCH_S390X
+  clg(dst, opnd);
+#else
+  CmpLogical(dst, opnd);
+#endif
+}
+
 
 void MacroAssembler::Cmpl(Register dst, const MemOperand& opnd) {
   ASSERT(is_int20(opnd.offset()));
