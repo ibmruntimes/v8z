@@ -4099,7 +4099,6 @@ void LCodeGen::DoStoreKeyedFastElement(LStoreKeyedFastElement* instr) {
   Register elements = ToRegister(instr->object());
   Register key = instr->key()->IsRegister() ? ToRegister(instr->key()) : no_reg;
   Register scratch = scratch0();
-  Register store_base = scratch;
   int offset = 0;
 
   // Do the store.
@@ -4108,7 +4107,10 @@ void LCodeGen::DoStoreKeyedFastElement(LStoreKeyedFastElement* instr) {
     LConstantOperand* const_operand = LConstantOperand::cast(instr->key());
     offset = FixedArray::OffsetOfElementAt(ToInteger32(const_operand) +
                                            instr->additional_index());
-    store_base = elements;
+    __ StoreP(value, FieldMemOperand(elements, offset), ip);
+    // Need to formulate the address of the modified element.
+    if (instr->hydrogen()->NeedsWriteBarrier())
+      __ lay(key, FieldMemOperand(elements, offset));
   } else {
     // Even though the HLoadKeyedFastElement instruction forces the input
     // representation for the key to be an integer, the input gets replaced
@@ -4119,17 +4121,19 @@ void LCodeGen::DoStoreKeyedFastElement(LStoreKeyedFastElement* instr) {
     } else {
       __ ShiftLeftImm(scratch, key, Operand(kPointerSizeLog2));
     }
-    __ AddP(scratch, elements);
     offset = FixedArray::OffsetOfElementAt(instr->additional_index());
+    __ StoreP(value, FieldMemOperand(scratch, elements, offset), ip);
+
+    // Need to formulate the address of the modified element.
+    if (instr->hydrogen()->NeedsWriteBarrier())
+      __ lay(key, FieldMemOperand(scratch, elements, offset));
   }
-  __ StoreP(value, FieldMemOperand(store_base, offset), ip);
 
   if (instr->hydrogen()->NeedsWriteBarrier()) {
     HType type = instr->hydrogen()->value()->type();
     SmiCheck check_needed =
         type.IsHeapObject() ? OMIT_SMI_CHECK : INLINE_SMI_CHECK;
     // Compute address of modified element and store it into key register.
-    __ AddP(key, store_base, Operand(offset - kHeapObjectTag));
     __ RecordWrite(elements,
                    key,
                    value,
