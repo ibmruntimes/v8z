@@ -772,9 +772,13 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
     case IILF: Format(instr, "iilf\t'r1,'i7"); break;
     case XIHF: Format(instr, "xihf\t'r1,'i7"); break;
     case XILF: Format(instr, "xilf\t'r1,'i7"); break;
+    case SLLK: Format(instr, "sllk\t'r1,'r2,'d2('r3)"); break;
     case SLLG: Format(instr, "sllg\t'r1,'r2,'d2('r3)"); break;
+    case SRLK: Format(instr, "srlk\t'r1,'r2,'d2('r3)"); break;
     case SRLG: Format(instr, "srlg\t'r1,'r2,'d2('r3)"); break;
+    case SLAK: Format(instr, "slak\t'r1,'r2,'d2('r3)"); break;
     case SLAG: Format(instr, "slag\t'r1,'r2,'d2('r3)"); break;
+    case SRAK: Format(instr, "srak\t'r1,'r2,'d2('r3)"); break;
     case SRAG: Format(instr, "srag\t'r1,'r2,'d2('r3)"); break;
     case LMY: Format(instr, "lmy\t'r1,'r2,'d2('r3)"); break;
     case LMG: Format(instr, "lmg\t'r1,'r2,'d2('r3)"); break;
