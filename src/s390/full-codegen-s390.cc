@@ -302,8 +302,7 @@ void FullCodeGenerator::Generate() {
     { Comment cmnt(masm_, "[ Stack check");
       PrepareForBailoutForId(BailoutId::Declarations(), NO_REGISTERS);
       Label ok;
-      __ LoadRoot(ip, Heap::kStackLimitRootIndex);
-      __ Cmpl(sp, ip);
+      __ CmpLogicalP(sp, RootMemOperand(Heap::kStackLimitRootIndex));
       // This is a FIXED_SEQUENCE and must match the other StackCheck code
       __ b(ge, &ok, true);   // Force BRC as this is a FIXED_SEQUENCE
       StackCheckStub stub;
@@ -381,8 +380,7 @@ void FullCodeGenerator::EmitStackCheck(IterationStatement* stmt,
     InterruptStub stub;
     __ CallStub(&stub);
   } else {
-    __ LoadRoot(ip, Heap::kStackLimitRootIndex);
-    __ Cmpl(sp, ip);
+    __ CmpLogicalP(sp, RootMemOperand(Heap::kStackLimitRootIndex));
     // This is a FIXED_SEQUENCE and must match the other StackCheck code
     __ b(ge, &ok, true);   // Force BRC as this is a FIXED_SEQUENCE
     StackCheckStub stub;
@@ -792,8 +790,7 @@ void FullCodeGenerator::PrepareForBailoutBeforeSplit(Expression* expr,
   if (should_normalize) __ b(&skip);
   PrepareForBailout(expr, TOS_REG);
   if (should_normalize) {
-    __ LoadRoot(ip, Heap::kTrueValueRootIndex);
-    __ CmpRR(r2, ip);
+    __ CompareRoot(r2, Heap::kTrueValueRootIndex);
     Split(eq, if_true, if_false, NULL);
     __ bind(&skip);
   }
@@ -1103,8 +1100,7 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   // ignore null and undefined in contrast to the specification; see
   // ECMA-262 section 12.6.4.
   VisitForAccumulatorValue(stmt->enumerable());
-  __ LoadRoot(ip, Heap::kUndefinedValueRootIndex);
-  __ CmpRR(r2, ip);
+  __ CompareRoot(r2, Heap::kUndefinedValueRootIndex);
   __ beq(&exit);
   Register null_value = r6;
   __ LoadRoot(null_value, Heap::kNullValueRootIndex);
@@ -1152,8 +1148,7 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   // to do a slow check.
   Label fixed_array;
   __ LoadP(r4, FieldMemOperand(r2, HeapObject::kMapOffset));
-  __ LoadRoot(ip, Heap::kMetaMapRootIndex);
-  __ CmpRR(r4, ip);
+  __ CompareRoot(r4, Heap::kMetaMapRootIndex);
   __ bne(&fixed_array);
 
   // We got a map in register r2. Get the enumeration cache from it.
@@ -1350,8 +1345,7 @@ void FullCodeGenerator::EmitLoadGlobalCheckExtensions(Variable* var,
     __ bind(&loop);
     // Terminate at native context.
     __ LoadP(temp, FieldMemOperand(next, HeapObject::kMapOffset));
-    __ LoadRoot(ip, Heap::kNativeContextMapRootIndex);
-    __ CmpRR(temp, ip);
+    __ CompareRoot(temp, Heap::kNativeContextMapRootIndex);
     __ beq(&fast);
     // Check that extension is NULL.
     __ LoadP(temp, ContextOperand(next, Context::EXTENSION_INDEX));
@@ -1557,8 +1551,7 @@ void FullCodeGenerator::VisitRegExpLiteral(RegExpLiteral* expr) {
   int literal_offset =
       FixedArray::kHeaderSize + expr->literal_index() * kPointerSize;
   __ LoadP(r7, FieldMemOperand(r6, literal_offset), r0);
-  __ LoadRoot(ip, Heap::kUndefinedValueRootIndex);
-  __ CmpRR(r7, ip);
+  __ CompareRoot(r7, Heap::kUndefinedValueRootIndex);
   __ bne(&materialized);
 
   // Create regexp literal using runtime function.
@@ -2664,8 +2657,7 @@ void FullCodeGenerator::EmitIsObject(CallRuntime* expr) {
                          &if_true, &if_false, &fall_through);
 
   __ JumpIfSmi(r2, if_false);
-  __ LoadRoot(ip, Heap::kNullValueRootIndex);
-  __ CmpRR(r2, ip);
+  __ CompareRoot(r2, Heap::kNullValueRootIndex);
   __ beq(if_true);
   __ LoadP(r4, FieldMemOperand(r2, HeapObject::kMapOffset));
   // Undetectable objects behave like undefined when tested with typeof.
@@ -2756,8 +2748,7 @@ void FullCodeGenerator::EmitIsStringWrapperSafeForDefaultValueOf(
   // Check for fast case object. Generate false result for slow case object.
   __ LoadP(r4, FieldMemOperand(r2, JSObject::kPropertiesOffset));
   __ LoadP(r4, FieldMemOperand(r4, HeapObject::kMapOffset));
-  __ LoadRoot(ip, Heap::kHashTableMapRootIndex);
-  __ CmpRR(r4, ip);
+  __ CompareRoot(r4, Heap::kHashTableMapRootIndex);
   __ beq(if_false);
 
   // Look for valueOf symbol in the descriptor array, and indicate false if
@@ -4285,8 +4276,7 @@ void FullCodeGenerator::EmitLiteralCompareTypeof(Expression* expr,
   if (check->Equals(isolate()->heap()->number_symbol())) {
     __ JumpIfSmi(r2, if_true);
     __ LoadP(r2, FieldMemOperand(r2, HeapObject::kMapOffset));
-    __ LoadRoot(ip, Heap::kHeapNumberMapRootIndex);
-    __ CmpRR(r2, ip);
+    __ CompareRoot(r2, Heap::kHeapNumberMapRootIndex);
     Split(eq, if_true, if_false, fall_through);
   } else if (check->Equals(isolate()->heap()->string_symbol())) {
     __ JumpIfSmi(r2, if_false);
@@ -4372,8 +4362,7 @@ void FullCodeGenerator::VisitCompareOperation(CompareOperation* expr) {
       VisitForStackValue(expr->right());
       __ InvokeBuiltin(Builtins::IN, CALL_FUNCTION);
       PrepareForBailoutBeforeSplit(expr, false, NULL, NULL);
-      __ LoadRoot(ip, Heap::kTrueValueRootIndex);
-      __ CmpRR(r2, ip);
+      __ CompareRoot(r2, Heap::kTrueValueRootIndex);
       Split(eq, if_true, if_false, fall_through);
       break;
 
@@ -4459,8 +4448,7 @@ void FullCodeGenerator::EmitLiteralCompareNil(CompareOperation* expr,
   Heap::RootListIndex nil_value = nil == kNullValue ?
       Heap::kNullValueRootIndex :
       Heap::kUndefinedValueRootIndex;
-  __ LoadRoot(r3, nil_value);
-  __ CmpRR(r2, r3);
+  __ CompareRoot(r2, nil_value);
   if (expr->op() == Token::EQ_STRICT) {
     Split(eq, if_true, if_false, fall_through);
   } else {
@@ -4468,8 +4456,7 @@ void FullCodeGenerator::EmitLiteralCompareNil(CompareOperation* expr,
         Heap::kUndefinedValueRootIndex :
         Heap::kNullValueRootIndex;
     __ beq(if_true);
-    __ LoadRoot(r3, other_nil_value);
-    __ CmpRR(r2, r3);
+    __ CompareRoot(r2, other_nil_value);
     __ beq(if_true);
     __ JumpIfSmi(r2, if_false);
     // It can be an undetectable object.
