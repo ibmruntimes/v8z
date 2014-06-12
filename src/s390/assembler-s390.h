@@ -1423,8 +1423,6 @@ RRF1_FORM(ppa);
 RRF1_FORM(qadtr);
 RRF1_FORM(qaxtr);
 S_FORM(rchp);
-RIE_F_FORM(risbg);
-RIE_F_FORM(risbgn);
 RIE_FORM(risbhg);
 RIE_FORM(risblg);
 RSY1_FORM(rll);
@@ -1630,6 +1628,14 @@ SS2_FORM(zap);
   void srag(Register r1, Register r3, const Register opnd);
   void slag(Register r1, Register r3, const Operand& opnd);
   void slag(Register r1, Register r3, const Register opnd);
+
+  // Rotate and Insert Selected Bits
+  void risbg(Register dst, Register src, const Operand& startBit,
+             const Operand& endBit, const Operand& shiftAmt,
+             bool zeroBits = true);
+  void risbgn(Register dst, Register src, const Operand& startBit,
+              const Operand& endBit, const Operand& shiftAmt,
+              bool zeroBits = true);
 
   // Compare Instructions
   void cr(Register r1, Register r2);

@@ -160,6 +160,10 @@ void CpuFeatures::Probe() {
      if (facilities[0] & (1lu << (63 - 45))) {
         supported_ |= (1u << DISTINCT_OPS);
      }
+     // Test for General Instruction Extension Facility - Bit 34
+     if (facilities[0] & (1lu << (63 - 34))) {
+        supported_ |= (1u << GENERAL_INSTR_EXT);
+     }
   }
 #else
   USE(performSTFLE);  // To avoid assert
@@ -851,11 +855,6 @@ void Assembler::ri_form(Opcode op, Condition m1, const Operand& i2) {
 //    | OpCode | R1 | R2 |   I3   |    I4   |   I5   | OpCode |
 //    +--------+----+----+------------------+--------+--------+
 //    0        8    12   16      24         32       40      47
-#define RIE_F_FORM_EMIT(name, op) \
-void Assembler::name(Register r1, Register r2, const Operand &i3, \
-                     const Operand& i4, const Operand& i5) {\
-  rie_f_form(op, r1, r2, i3, i4, i5);\
-}
 void Assembler::rie_f_form(Opcode op, Register r1, Register r2,
          const Operand &i3, const Operand& i4, const Operand& i5) {
     ASSERT(is_uint16(op));
@@ -2051,8 +2050,6 @@ RRF1_FORM_EMIT(ppa, PPA)
 RRF1_FORM_EMIT(qadtr, QADTR)
 RRF1_FORM_EMIT(qaxtr, QAXTR)
 S_FORM_EMIT(rchp, RCHP)
-RIE_F_FORM_EMIT(risbg, RISBG)
-RIE_F_FORM_EMIT(risbgn, RISBGN)
 RIE_FORM_EMIT(risbhg, RISBHG)
 RIE_FORM_EMIT(risblg, RISBLG)
 RSY1_FORM_EMIT(rll, RLL)
@@ -2775,6 +2772,30 @@ void Assembler::srag(Register r1, Register r3, const Operand& opnd) {
 void Assembler::srda(Register r1, const Operand& opnd) {
   ASSERT(r1.code() % 2 == 0);
   rs_form(SRDA, r1, r0, r0, opnd.immediate());
+}
+
+// Rotate-And-Insert-Selected-Bits
+void Assembler::risbg(Register dst, Register src, const Operand& startBit,
+                      const Operand& endBit, const Operand& shiftAmt,
+                      bool zeroBits) {
+  // High tag the top bit of I4/EndBit to zero out any unselected bits
+  if (zeroBits)
+    rie_f_form(RISBG, dst, src, startBit, Operand(endBit.imm_ | 0x80),
+               shiftAmt);
+  else
+    rie_f_form(RISBG, dst, src, startBit, endBit, shiftAmt);
+}
+
+// Rotate-And-Insert-Selected-Bits
+void Assembler::risbgn(Register dst, Register src, const Operand& startBit,
+                       const Operand& endBit, const Operand& shiftAmt,
+                       bool zeroBits) {
+  // High tag the top bit of I4/EndBit to zero out any unselected bits
+  if (zeroBits)
+    rie_f_form(RISBGN, dst, src, startBit, Operand(endBit.imm_ | 0x80),
+               shiftAmt);
+  else
+    rie_f_form(RISBGN, dst, src, startBit, endBit, shiftAmt);
 }
 
 // Compare Halfword Immediate (32)
