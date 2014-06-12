@@ -51,10 +51,14 @@ inline MemOperand FieldMemOperand(Register object, Register index, int offset) {
   return MemOperand(object, index, offset - kHeapObjectTag);
 }
 
-
 // Give alias names to registers
 const Register cp = { 13 };  // JavaScript context pointer
 const Register kRootRegister = { 10 };  // Roots array pointer.
+
+// Generate a MemOperand for loading a field off Root register
+inline MemOperand RootMemOperand(Heap::RootListIndex index) {
+  return MemOperand(kRootRegister, index << kPointerSizeLog2);
+}
 
 // Flags used for the AllocateInNewSpace functions.
 enum AllocationFlags {
