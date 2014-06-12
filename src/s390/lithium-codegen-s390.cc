@@ -3189,7 +3189,6 @@ void LCodeGen::DoWrapReceiver(LWrapReceiver* instr) {
   // Normal function. Replace undefined or null with global receiver.
   __ CompareRoot(receiver, Heap::kNullValueRootIndex);
   __ beq(&global_object);
-  __ LoadRoot(scratch, Heap::kUndefinedValueRootIndex);  // JORAN
   __ CompareRoot(receiver, Heap::kUndefinedValueRootIndex);
   __ beq(&global_object);
 
@@ -5031,7 +5030,6 @@ void LCodeGen::DoCheckPrototypeMaps(LCheckPrototypeMaps* instr) {
   DoCheckMapCommon(temp1, temp2,
                    Handle<Map>(current_prototype->map()),
                    ALLOW_ELEMENT_TRANSITION_MAPS, instr->environment());
-  DeoptimizeIf(ne, instr->environment());
 }
 
 
