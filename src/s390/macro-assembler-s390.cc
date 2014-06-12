@@ -1166,7 +1166,7 @@ void MacroAssembler::CheckAccessGlobalProxy(Register holder_reg,
     push(holder_reg);  // Temporarily save holder on the stack.
     // Read the first word and compare to the native_context_map.
     LoadP(holder_reg, FieldMemOperand(scratch, HeapObject::kMapOffset));
-    CmpP(holder_reg, RootMemOperand(Heap::kNativeContextMapRootIndex));
+    CompareRoot(holder_reg, Heap::kNativeContextMapRootIndex);
     Check(eq, "JSGlobalObject::native_context should be a native context.");
     pop(holder_reg);  // Restore holder.
   }
@@ -1183,11 +1183,11 @@ void MacroAssembler::CheckAccessGlobalProxy(Register holder_reg,
     // that ip is clobbered as part of cmp with an object Operand.
     push(holder_reg);  // Temporarily save holder on the stack.
     LoadRR(holder_reg, ip);  // Move ip to its holding place.
-    CmpP(holder_reg, RootMemOperand(Heap::kNullValueRootIndex));
+    CompareRoot(holder_reg, Heap::kNullValueRootIndex);
     Check(ne, "JSGlobalProxy::context() should not be null.");
 
     LoadP(holder_reg, FieldMemOperand(holder_reg, HeapObject::kMapOffset));
-    CmpP(holder_reg, RootMemOperand(Heap::kNativeContextMapRootIndex));
+    CompareRoot(holder_reg, Heap::kNativeContextMapRootIndex);
     Check(eq, "JSGlobalObject::native_context should be a native context.");
     // Restore ip is not needed. ip is reloaded below.
     pop(holder_reg);  // Restore holder.
@@ -1696,7 +1696,6 @@ void MacroAssembler::CompareInstanceType(Register map,
 
 void MacroAssembler::CompareRoot(Register obj,
                                  Heap::RootListIndex index) {
-  ASSERT(!obj.is(ip));
   CmpP(obj, RootMemOperand(index));
 }
 
@@ -1990,7 +1989,7 @@ void MacroAssembler::CheckMap(Register obj,
     JumpIfSmi(obj, fail);
   }
   LoadP(scratch, FieldMemOperand(obj, HeapObject::kMapOffset));
-  CmpP(scratch, RootMemOperand(index));
+  CompareRoot(scratch, index);
   bne(fail);
 }
 
@@ -2054,7 +2053,7 @@ void MacroAssembler::TryGetFunctionPrototype(Register function,
   // If the prototype or initial map is the hole, don't return it and
   // simply miss the cache instead. This will allow us to allocate a
   // prototype object on-demand in the runtime system.
-  CmpP(result, RootMemOperand(Heap::kTheHoleValueRootIndex));
+  CompareRoot(result, Heap::kTheHoleValueRootIndex);
   beq(miss);
 
   // If the function does not have an initial map, we're done.
@@ -2666,7 +2665,7 @@ void MacroAssembler::Assert(Condition cond, const char* msg, CRegister cr) {
 void MacroAssembler::AssertRegisterIsRoot(Register reg,
                                           Heap::RootListIndex index) {
   if (emit_debug_code()) {
-    CmpP(reg, RootMemOperand(index));
+    CompareRoot(reg, index);
     Check(eq, "Register did not match expected root");
   }
 }
@@ -2678,11 +2677,11 @@ void MacroAssembler::AssertFastElements(Register elements) {
     Label ok;
     push(elements);
     LoadP(elements, FieldMemOperand(elements, HeapObject::kMapOffset));
-    CmpP(elements, RootMemOperand(Heap::kFixedArrayMapRootIndex));
+    CompareRoot(elements, Heap::kFixedArrayMapRootIndex);
     b(eq, &ok, true);
-    CmpP(elements, RootMemOperand(Heap::kFixedDoubleArrayMapRootIndex));
+    CompareRoot(elements, Heap::kFixedDoubleArrayMapRootIndex);
     b(eq, &ok, true);
-    CmpP(elements, RootMemOperand(Heap::kFixedCOWArrayMapRootIndex));
+    CompareRoot(elements, Heap::kFixedCOWArrayMapRootIndex);
     b(eq, &ok, true);
     Abort("JSObject with fast elements map has slow elements");
     bind(&ok);
