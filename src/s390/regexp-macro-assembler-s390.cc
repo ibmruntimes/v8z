@@ -786,9 +786,9 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
       ExternalReference::address_of_stack_limit(masm_->isolate());
     __ mov(r2, Operand(stack_limit));
     __ LoadP(r2, MemOperand(r2));
-    __ SubP(r2, r2, sp/*, LeaveOE, SetRC*/);  // Removing RC looks okay here
+    __ SubP(r2, sp, r2/*, LeaveOE, SetRC*/);  // Removing RC looks okay here
     // Handle it if the stack pointer is already below the stack limit.
-    __ bge(&stack_limit_hit /*, cr0*/);
+    __ ble(&stack_limit_hit /*, cr0*/);
     // Check if there is room for the variable number of registers above
     // the stack limit.
     __ Cmpli(r2, Operand(num_registers_ * kPointerSize));
