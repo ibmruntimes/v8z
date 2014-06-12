@@ -302,7 +302,8 @@ static void AllocateJSArray(MacroAssembler* masm,
     __ b(&entry);
     __ bind(&loop);
     __ StoreP(scratch1, MemOperand(elements_array_storage));
-    __ AddP(elements_array_storage, Operand(kPointerSize));
+    __ la(elements_array_storage, MemOperand(elements_array_storage,
+                                             kPointerSize));
     __ bind(&entry);
     __ CmpRR(elements_array_storage, elements_array_end);
     __ blt(&loop);
@@ -860,14 +861,13 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // r5: object size
       // r6: JSObject (not tagged)
       __ LoadRoot(r8, Heap::kEmptyFixedArrayRootIndex);
-      __ LoadRR(r7, r6);
       ASSERT_EQ(0 * kPointerSize, JSObject::kMapOffset);
-      __ StoreP(r4, MemOperand(r7));
+      __ StoreP(r4, MemOperand(r6));
       ASSERT_EQ(1 * kPointerSize, JSObject::kPropertiesOffset);
-      __ StoreP(r8, MemOperand(r7, JSObject::kPropertiesOffset));
+      __ StoreP(r8, MemOperand(r6, JSObject::kPropertiesOffset));
       ASSERT_EQ(2 * kPointerSize, JSObject::kElementsOffset);
-      __ StoreP(r8, MemOperand(r7, JSObject::kElementsOffset));
-      __ AddP(r7, Operand(3 * kPointerSize));
+      __ StoreP(r8, MemOperand(r6, JSObject::kElementsOffset));
+      __ la(r7, MemOperand(r6, 3 * kPointerSize));
 
       // Fill all the in-object properties with the appropriate filler.
       // r3: constructor function
@@ -987,8 +987,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
         if (count_constructions) {
           __ LoadRoot(r9, Heap::kUndefinedValueRootIndex);
         } else if (FLAG_debug_code) {
-          __ LoadRoot(r13, Heap::kUndefinedValueRootIndex);
-          __ CmpRR(r9, r13);
+          __ CompareRoot(r9, Heap::kUndefinedValueRootIndex);
           __ Assert(eq, "Undefined value not loaded.");
         }
         __ b(&entry);
@@ -1457,12 +1456,10 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
     // r4: first argument
     __ JumpIfSmi(r4, &convert_to_object);
 
-    __ LoadRoot(r5, Heap::kUndefinedValueRootIndex);
-    __ CmpRR(r4, r5);
-    __ beq(&use_global_receiver);
-    __ LoadRoot(r5, Heap::kNullValueRootIndex);
-    __ CmpRR(r4, r5);
-    __ beq(&use_global_receiver);
+    __ CompareRoot(r4, Heap::kUndefinedValueRootIndex);
+    __ b(eq, &use_global_receiver, true);
+    __ CompareRoot(r4, Heap::kNullValueRootIndex);
+    __ b(eq, &use_global_receiver, true);
 
     STATIC_ASSERT(LAST_SPEC_OBJECT_TYPE == LAST_TYPE);
     __ CompareObjectType(r4, r5, r5, FIRST_SPEC_OBJECT_TYPE);
@@ -1690,8 +1687,7 @@ void Builtins::Generate_FunctionApply(MacroAssembler* masm) {
 
     // Compute the receiver in non-strict mode.
     __ JumpIfSmi(r2, &call_to_object);
-    __ LoadRoot(r3, Heap::kNullValueRootIndex);
-    __ CmpRR(r2, r3);
+    __ CompareRoot(r2, Heap::kNullValueRootIndex);
     __ beq(&use_global_receiver);
     __ LoadRoot(r3, Heap::kUndefinedValueRootIndex);
     __ CmpRR(r2, r3);
