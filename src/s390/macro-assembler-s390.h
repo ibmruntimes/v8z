@@ -1366,22 +1366,17 @@ class MacroAssembler: public Assembler {
   inline void ExtractBitRange(Register dst, Register src,
                               int rangeStart, int rangeEnd) {
     ASSERT(rangeStart >= rangeEnd && rangeStart < kBitsPerPointer);
-#if V8_TARGET_ARCH_S390X
     if (rangeEnd > 0)              // Don't need to shift if rangeEnd is zero.
-      srlg(dst, src,  Operand(rangeEnd));
+      ShiftRightP(dst, src, Operand(rangeEnd));
     else if (!dst.is(src))         // If we didn't shift, we might need to copy
-      LoadRR(dst, src);                // src to dst
+      LoadRR(dst, src);
     int width  = rangeStart - rangeEnd + 1;
+#if V8_TARGET_ARCH_S390X
     uint64_t mask = (static_cast<uint64_t>(1) << width) - 1;
     nihf(dst, Operand(mask >> 32));
     nilf(dst, Operand(mask & 0xFFFFFFFF));
     ltgr(dst, dst);
 #else
-    if (!dst.is(src))
-      lr(dst, src);
-    if (rangeEnd > 0)              // Don't need to shift if rangeEnd is zero.
-      srl(dst, Operand(rangeEnd));
-    int width  = rangeStart - rangeEnd + 1;
     uint32_t mask = (1 << width) - 1;
     AndPI(dst, Operand(mask));
 #endif
