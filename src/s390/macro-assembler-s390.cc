@@ -1166,8 +1166,7 @@ void MacroAssembler::CheckAccessGlobalProxy(Register holder_reg,
     push(holder_reg);  // Temporarily save holder on the stack.
     // Read the first word and compare to the native_context_map.
     LoadP(holder_reg, FieldMemOperand(scratch, HeapObject::kMapOffset));
-    LoadRoot(ip, Heap::kNativeContextMapRootIndex);
-    CmpRR(holder_reg, ip);
+    CmpP(holder_reg, RootMemOperand(Heap::kNativeContextMapRootIndex));
     Check(eq, "JSGlobalObject::native_context should be a native context.");
     pop(holder_reg);  // Restore holder.
   }
@@ -1184,13 +1183,11 @@ void MacroAssembler::CheckAccessGlobalProxy(Register holder_reg,
     // that ip is clobbered as part of cmp with an object Operand.
     push(holder_reg);  // Temporarily save holder on the stack.
     LoadRR(holder_reg, ip);  // Move ip to its holding place.
-    LoadRoot(ip, Heap::kNullValueRootIndex);
-    CmpRR(holder_reg, ip);
+    CmpP(holder_reg, RootMemOperand(Heap::kNullValueRootIndex));
     Check(ne, "JSGlobalProxy::context() should not be null.");
 
     LoadP(holder_reg, FieldMemOperand(holder_reg, HeapObject::kMapOffset));
-    LoadRoot(ip, Heap::kNativeContextMapRootIndex);
-    CmpRR(holder_reg, ip);
+    CmpP(holder_reg, RootMemOperand(Heap::kNativeContextMapRootIndex));
     Check(eq, "JSGlobalObject::native_context should be a native context.");
     // Restore ip is not needed. ip is reloaded below.
     pop(holder_reg);  // Restore holder.
@@ -1230,28 +1227,22 @@ void MacroAssembler::GetNumberHash(Register t0, Register scratch) {
   sll(t0, Operand(15));
   AddP(t0, scratch, t0);
   // hash = hash ^ (hash >> 12);
-  LoadRR(scratch, t0);
-  srl(scratch, Operand(12));
+  ShiftRight(scratch, t0, Operand(12));
   XorP(t0, scratch);
   // hash = hash + (hash << 2);
-  LoadRR(scratch, t0);
-  sll(scratch, Operand(2));
+  ShiftLeft(scratch, t0, Operand(2));
   AddP(t0, t0, scratch);
   // hash = hash ^ (hash >> 4);
-  LoadRR(scratch, t0);
-  srl(scratch, Operand(4));
+  ShiftRight(scratch, t0, Operand(4));
   XorP(t0, scratch);
   // hash = hash * 2057;
   LoadRR(r0, t0);
-  LoadRR(scratch, t0);
-  sll(scratch, Operand(3));
+  ShiftLeft(scratch, t0, Operand(3));
   AddP(t0, t0, scratch);
-  LoadRR(scratch, r0);
-  sll(scratch, Operand(11));
+  ShiftLeft(scratch, r0, Operand(11));
   AddP(t0, t0, scratch);
   // hash = hash ^ (hash >> 16);
-  LoadRR(scratch, t0);
-  srl(scratch, Operand(16));
+  ShiftRight(scratch, t0, Operand(16));
   XorP(t0, scratch);
 }
 
@@ -1706,8 +1697,7 @@ void MacroAssembler::CompareInstanceType(Register map,
 void MacroAssembler::CompareRoot(Register obj,
                                  Heap::RootListIndex index) {
   ASSERT(!obj.is(ip));
-  LoadRoot(ip, index);
-  CmpRR(obj, ip);
+  CmpP(obj, RootMemOperand(index));
 }
 
 
@@ -2000,8 +1990,7 @@ void MacroAssembler::CheckMap(Register obj,
     JumpIfSmi(obj, fail);
   }
   LoadP(scratch, FieldMemOperand(obj, HeapObject::kMapOffset));
-  LoadRoot(ip, index);
-  CmpRR(scratch, ip);
+  CmpP(scratch, RootMemOperand(index));
   bne(fail);
 }
 
@@ -2065,8 +2054,7 @@ void MacroAssembler::TryGetFunctionPrototype(Register function,
   // If the prototype or initial map is the hole, don't return it and
   // simply miss the cache instead. This will allow us to allocate a
   // prototype object on-demand in the runtime system.
-  LoadRoot(ip, Heap::kTheHoleValueRootIndex);
-  CmpRR(result, ip);
+  CmpP(result, RootMemOperand(Heap::kTheHoleValueRootIndex));
   beq(miss);
 
   // If the function does not have an initial map, we're done.
@@ -2678,8 +2666,7 @@ void MacroAssembler::Assert(Condition cond, const char* msg, CRegister cr) {
 void MacroAssembler::AssertRegisterIsRoot(Register reg,
                                           Heap::RootListIndex index) {
   if (emit_debug_code()) {
-    LoadRoot(ip, index);
-    CmpRR(reg, ip);
+    CmpP(reg, RootMemOperand(index));
     Check(eq, "Register did not match expected root");
   }
 }
@@ -2691,15 +2678,12 @@ void MacroAssembler::AssertFastElements(Register elements) {
     Label ok;
     push(elements);
     LoadP(elements, FieldMemOperand(elements, HeapObject::kMapOffset));
-    LoadRoot(ip, Heap::kFixedArrayMapRootIndex);
-    CmpRR(elements, ip);
-    beq(&ok);
-    LoadRoot(ip, Heap::kFixedDoubleArrayMapRootIndex);
-    CmpRR(elements, ip);
-    beq(&ok);
-    LoadRoot(ip, Heap::kFixedCOWArrayMapRootIndex);
-    CmpRR(elements, ip);
-    beq(&ok);
+    CmpP(elements, RootMemOperand(Heap::kFixedArrayMapRootIndex));
+    b(eq, &ok, true);
+    CmpP(elements, RootMemOperand(Heap::kFixedDoubleArrayMapRootIndex));
+    b(eq, &ok, true);
+    CmpP(elements, RootMemOperand(Heap::kFixedCOWArrayMapRootIndex));
+    b(eq, &ok, true);
     Abort("JSObject with fast elements map has slow elements");
     bind(&ok);
     pop(elements);

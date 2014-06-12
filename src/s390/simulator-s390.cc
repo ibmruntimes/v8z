@@ -2120,7 +2120,8 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       }
       break;
     }
-    case C: {
+    case C:
+    case CL: {
       RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
       int b2 = rxinst->B2Value();
       int x2 = rxinst->X2Value();
@@ -2130,7 +2131,10 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       intptr_t d2_val = rxinst->D2Value();
       intptr_t addr = b2_val + x2_val + d2_val;
       int32_t mem_val = ReadW(addr, instr);
-      SetS390ConditionCode<int32_t>(r1_val, mem_val);
+      if (C == op)
+        SetS390ConditionCode<int32_t>(r1_val, mem_val);
+      else if (CL == op)
+        SetS390ConditionCode<uint32_t>(r1_val, mem_val);
       break;
     }
     case ST:
@@ -3471,7 +3475,8 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
     case NG:
     case OG:
     case XG:
-    case CG: {
+    case CG:
+    case CLG: {
       RXYInstruction* rxyInstr = reinterpret_cast<RXYInstruction*>(instr);
       int r1 = rxyInstr->R1Value();
       int x2 = rxyInstr->X2Value();
@@ -3510,6 +3515,10 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
         }
         case CG: {
           SetS390ConditionCode<int64_t>(alu_out, mem_val);
+          break;
+        }
+        case CLG: {
+          SetS390ConditionCode<uint64_t>(alu_out, mem_val);
           break;
         }
         default: {
