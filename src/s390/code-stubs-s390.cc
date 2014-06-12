@@ -892,8 +892,7 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm,
         if (cond == le || cond == ge) {
           __ Cmpi(r6, Operand(ODDBALL_TYPE));
           __ bne(&return_equal);
-          __ LoadRoot(r4, Heap::kUndefinedValueRootIndex);
-          __ CmpRR(r2, r4);
+          __ CompareRoot(r2, Heap::kUndefinedValueRootIndex);
           __ bne(&return_equal);
           if (cond == le) {
             // undefined <= undefined should fail.
@@ -1536,9 +1535,8 @@ void ToBooleanStub::CheckOddball(MacroAssembler* masm,
   if (types_.Contains(type)) {
     // If we see an expected oddball, return its ToBoolean value tos_.
     Label different_value;
-    __ LoadRoot(ip, value);
-    __ CmpRR(tos_, ip);
-    __ bne(&different_value);
+    __ CompareRoot(tos_, value);
+    __ b(ne, &different_value, true);
     // The value of a root is never NULL, so we can avoid loading a non-null
     // value into tos_ when we want to return 'true'.
     if (!result) {
@@ -5804,8 +5802,7 @@ void StringHelper::GenerateTwoCharacterSymbolTableProbe(MacroAssembler* masm,
     __ beq(not_found);
     // Must be the hole (deleted entry).
     if (FLAG_debug_code) {
-      __ LoadRoot(ip, Heap::kTheHoleValueRootIndex);
-      __ CmpRR(ip, candidate);
+      __ CompareRoot(candidate, Heap::kTheHoleValueRootIndex);
       __ Assert(eq, "oddball in symbol table is not undefined or the hole");
     }
     __ b(&next_probe[i]);
@@ -6996,8 +6993,7 @@ void StringDictionaryLookupStub::GenerateNegativeLookup(MacroAssembler* masm,
     __ LoadP(entity_name, FieldMemOperand(tmp, kElementsStartOffset));
 
     ASSERT(!tmp.is(entity_name));
-    __ LoadRoot(tmp, Heap::kUndefinedValueRootIndex);
-    __ CmpRR(entity_name, tmp);
+    __ CompareRoot(entity_name, Heap::kUndefinedValueRootIndex);
     __ beq(done);
 
     if (i != kInlinedProbes - 1) {
