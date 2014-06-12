@@ -168,8 +168,7 @@ static void GenerateDictionaryNegativeLookup(MacroAssembler* masm,
   // Check that the properties array is a dictionary.
   __ LoadP(map, FieldMemOperand(properties, HeapObject::kMapOffset));
   Register tmp = properties;
-  __ LoadRoot(tmp, Heap::kHashTableMapRootIndex);
-  __ CmpRR(map, tmp);
+  __ CompareRoot(map, Heap::kHashTableMapRootIndex);
   __ bne(miss_label);
 
   // Restore the temporarily used register.
@@ -963,8 +962,7 @@ class CallInterceptorCompiler BASE_EMBEDDED {
       __ pop(receiver);  // Restore the holder.
     }
     // If interceptor returns no-result sentinel, call the constant function.
-    __ LoadRoot(scratch, Heap::kNoInterceptorResultSentinelRootIndex);
-    __ CmpRR(r2, scratch);
+    __ CompareRoot(r2, Heap::kNoInterceptorResultSentinelRootIndex);
     __ bne(interceptor_succeeded);
   }
 
@@ -989,8 +987,7 @@ static void GenerateCheckPropertyCell(MacroAssembler* masm,
   __ mov(scratch, Operand(cell));
   __ LoadP(scratch,
            FieldMemOperand(scratch, JSGlobalPropertyCell::kValueOffset));
-  __ LoadRoot(ip, Heap::kTheHoleValueRootIndex);
-  __ CmpRR(scratch, ip);
+  __ CompareRoot(scratch, Heap::kTheHoleValueRootIndex);
   __ bne(miss);
 }
 
@@ -1374,8 +1371,7 @@ void StubCompiler::GenerateLoadInterceptor(Handle<JSObject> object,
       // Check if interceptor provided a value for property.  If it's
       // the case, return immediately.
       Label interceptor_failed;
-      __ LoadRoot(scratch1, Heap::kNoInterceptorResultSentinelRootIndex);
-      __ CmpRR(r2, scratch1);
+      __ CompareRoot(r2, Heap::kNoInterceptorResultSentinelRootIndex);
       __ beq(&interceptor_failed);
       frame_scope.GenerateLeaveFrame();
       __ Ret();
@@ -2458,11 +2454,9 @@ Handle<Code> CallStubCompiler::CompileCallConstant(Handle<Object> object,
       if (function->IsBuiltin() || !function->shared()->is_classic_mode()) {
         Label fast;
         // Check that the object is a boolean.
-        __ LoadRoot(ip, Heap::kTrueValueRootIndex);
-        __ CmpRR(r3, ip);
-        __ beq(&fast);
-        __ LoadRoot(ip, Heap::kFalseValueRootIndex);
-        __ CmpRR(r3, ip);
+        __ CompareRoot(r3, Heap::kTrueValueRootIndex);
+        __ b(eq, &fast, true);
+        __ CompareRoot(r3, Heap::kFalseValueRootIndex);
         __ bne(&miss);
         __ bind(&fast);
         // Check that the maps starting from the prototype haven't changed.
@@ -2800,9 +2794,8 @@ Handle<Code> StoreStubCompiler::CompileStoreGlobal(
   // to update the property details in the property dictionary of the
   // global object. We bail out to the runtime system to do that.
   __ mov(r6, Operand(cell));
-  __ LoadRoot(r7, Heap::kTheHoleValueRootIndex);
   __ LoadP(r8, FieldMemOperand(r6, JSGlobalPropertyCell::kValueOffset));
-  __ CmpRR(r7, r8);
+  __ CompareRoot(r8, Heap::kTheHoleValueRootIndex);
   __ beq(&miss);
 
   // Store the value in the cell.
@@ -3030,8 +3023,7 @@ Handle<Code> LoadStubCompiler::CompileLoadGlobal(
 
   // Check for deleted property if property can actually be deleted.
   if (!is_dont_delete) {
-    __ LoadRoot(ip, Heap::kTheHoleValueRootIndex);
-    __ CmpRR(r6, ip);
+    __ CompareRoot(r6, Heap::kTheHoleValueRootIndex);
     __ beq(&miss);
   }
 
@@ -3448,16 +3440,13 @@ Handle<Code> ConstructStubCompiler::CompileConstructStub(
   // r6: JSObject (not tagged)
   // r9: undefined
   __ LoadRoot(r8, Heap::kEmptyFixedArrayRootIndex);
-  __ LoadRR(r7, r6);
   ASSERT_EQ(0 * kPointerSize, JSObject::kMapOffset);
-  __ StoreP(r4, MemOperand(r7));
-  __ AddP(r7, Operand(kPointerSize));
+  __ StoreP(r4, MemOperand(r6));
   ASSERT_EQ(1 * kPointerSize, JSObject::kPropertiesOffset);
-  __ StoreP(r8, MemOperand(r7));
-  __ AddP(r7, Operand(kPointerSize));
+  __ StoreP(r8, MemOperand(r6, kPointerSize));
   ASSERT_EQ(2 * kPointerSize, JSObject::kElementsOffset);
-  __ StoreP(r8, MemOperand(r7));
-  __ AddP(r7, Operand(kPointerSize));
+  __ StoreP(r8, MemOperand(r6, 2 * kPointerSize));
+  __ la(r7, MemOperand(r6, 3 * kPointerSize));
 
   // Calculate the location of the first argument. The stack contains only the
   // argc arguments.
@@ -4043,9 +4032,8 @@ void KeyedLoadStubCompiler::GenerateLoadFastElement(MacroAssembler* masm) {
   __ AddP(r5, r4, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ SmiToPtrArrayOffset(r6, r2);
   __ LoadP(r6, MemOperand(r6, r5));
-  __ LoadRoot(ip, Heap::kTheHoleValueRootIndex);
-  __ CmpRR(r6, ip);
-  __ beq(&miss_force_generic);
+  __ CompareRoot(r6, Heap::kTheHoleValueRootIndex);
+  __ b(eq, &miss_force_generic, true);
   __ LoadRR(r2, r6);
   __ Ret();
 
