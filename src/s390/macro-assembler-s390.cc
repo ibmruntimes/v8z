@@ -4223,20 +4223,6 @@ void MacroAssembler::AndPI(Register dst, const Operand& opnd) {
 #endif
 }
 
-void MacroAssembler::AndPImm(Register dst, const Operand& opnd) {
-#if V8_TARGET_ARCH_S390X
-  intptr_t value = opnd.imm_;
-  if (value >> 32 != -1) {
-    ASSERT(false);
-    // this may not work b/c condition code won't be set correctly
-    nihf(dst, Operand(value >> 32));
-  }
-  nilf(dst, Operand(value & 0xFFFFFFFF));
-#else
-  nilf(dst, opnd);
-#endif
-}
-
 void MacroAssembler::OrP(Register dst, Register src) {
 #if V8_TARGET_ARCH_S390X
   ogr(dst, src);

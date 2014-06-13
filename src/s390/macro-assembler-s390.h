@@ -381,7 +381,6 @@ class MacroAssembler: public Assembler {
 
   void AndP(Register dst, const MemOperand& opnd);
   void AndPI(Register dst, const Operand& opnd);
-  void AndPImm(Register dst, const Operand& opnd);
   void AndP(Register dst, Register src);
   void OrP(Register dst, Register src);
   void OrPImm(Register dst, const Operand& opnd);
