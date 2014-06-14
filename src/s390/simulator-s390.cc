@@ -3336,7 +3336,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       } else if (op == XIHF) {
         alu_out = get_high_register<uint32_t>(r1);
         alu_out = alu_out ^ imm;
-        set_low_register(r1, alu_out);
+        set_high_register(r1, alu_out);
       } else {
         UNREACHABLE();
       }
