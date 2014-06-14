@@ -167,7 +167,6 @@ static void GenerateDictionaryNegativeLookup(MacroAssembler* masm,
   __ LoadP(properties, FieldMemOperand(receiver, JSObject::kPropertiesOffset));
   // Check that the properties array is a dictionary.
   __ LoadP(map, FieldMemOperand(properties, HeapObject::kMapOffset));
-  Register tmp = properties;
   __ CompareRoot(map, Heap::kHashTableMapRootIndex);
   __ bne(miss_label);
 
