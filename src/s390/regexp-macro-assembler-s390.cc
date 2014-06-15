@@ -1212,6 +1212,7 @@ void RegExpMacroAssemblerS390::CallCheckStackGuardState(Register scratch) {
   // Code* of self.
   __ mov(r3, Operand(masm_->CodeObject()));
   // r2 becomes return address pointer.
+  __ lay(r2, MemOperand(sp, -kCalleeRegisterSaveAreaSize + 14 * kPointerSize));
   ExternalReference stack_guard_check =
       ExternalReference::re_check_stack_guard_state(masm_->isolate());
   CallCFunctionUsingStub(stack_guard_check, num_arguments);
@@ -1431,7 +1432,10 @@ void RegExpMacroAssemblerS390::CallCFunctionUsingStub(
   ASSERT(num_arguments <= 8);
   __ mov(code_pointer(), Operand(function));
   RegExpCEntryStub stub;
-  __ CallStub(&stub);
+  __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
+  // __ CallStub(&stub);
+  __ Call(code_pointer());
+  __ la(sp, MemOperand(sp, kCalleeRegisterSaveAreaSize));
   if (OS::ActivationFrameAlignment() > kPointerSize) {
     __ LoadP(sp, MemOperand(sp, 0));
   } else {
