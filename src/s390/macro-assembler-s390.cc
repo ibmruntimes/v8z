@@ -4223,6 +4223,30 @@ void MacroAssembler::AndPI(Register dst, const Operand& opnd) {
 #endif
 }
 
+// And 32-bit
+void MacroAssembler::And(Register dst, Register src, const Operand& opnd) {
+  if (!dst.is(src))
+    lr(dst, src);
+  nilf(dst, opnd);
+}
+
+// And Pointer Size
+void MacroAssembler::AndP(Register dst, Register src, const Operand& opnd) {
+  if (!dst.is(src))
+    LoadRR(dst, src);
+#if V8_TARGET_ARCH_S390X
+  intptr_t value = opnd.imm_;
+  if (value >> 32 != -1) {
+    // this may not work b/c condition code won't be set correctly
+    nihf(dst, Operand(value >> 32));
+  }
+  nilf(dst, Operand(value & 0xFFFFFFFF));
+#else
+  nilf(dst, opnd);
+#endif
+}
+
+
 void MacroAssembler::OrP(Register dst, Register src) {
 #if V8_TARGET_ARCH_S390X
   ogr(dst, src);
