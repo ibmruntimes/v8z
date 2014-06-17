@@ -504,23 +504,36 @@ int Decoder::FormatImmediate(Instruction *instr, const char* format) {
     out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
                                     "%d", value);
     return 2;
-  } else if (format[1] == '7') {  // unsigned immediate in 16-48
+  } else if (format[1] == '7') {  // unsigned immediate in 16-47
     RILInstruction* rilinstr = reinterpret_cast<RILInstruction*>(instr);
     uint32_t value = rilinstr->I2UnsignedValue();
     out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
                                     "%d", value);
     return 2;
-  } else if (format[1] == '8') {  // unsigned immediate in 8-16
+  } else if (format[1] == '8') {  // unsigned immediate in 8-15
     SSInstruction* ssinstr = reinterpret_cast<SSInstruction*>(instr);
     uint8_t value = ssinstr->Length();
     out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
                                     "%d", value);
     return 2;
-  } else {  // ppc specific
-    int32_t value = (instr->Bits(15, 0) << 16) >> 16;
+  } else if (format[1] == '9') {  // unsigned immediate in 16-23
+    RIEInstruction* rie_instr = reinterpret_cast<RIEInstruction*>(instr);
+    uint8_t value = rie_instr->I3Value();
     out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
-        "%d", value);
-    return 5;
+                                    "%d", value);
+    return 2;
+  }  else if (format[1] == 'a') {  // unsigned immediate in 24-31
+    RIEInstruction* rie_instr = reinterpret_cast<RIEInstruction*>(instr);
+    uint8_t value = rie_instr->I4Value();
+    out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
+                                    "%d", value);
+    return 2;
+  } else if (format[1] == 'b') {   // unsigned immediate in 32-39
+    RIEInstruction* rie_instr = reinterpret_cast<RIEInstruction*>(instr);
+    uint8_t value = rie_instr->I5Value();
+    out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
+                                    "%d", value);
+    return 2;
   }
 
   UNREACHABLE();
@@ -780,6 +793,8 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
     case SLAG: Format(instr, "slag\t'r1,'r2,'d2('r3)"); break;
     case SRAK: Format(instr, "srak\t'r1,'r2,'d2('r3)"); break;
     case SRAG: Format(instr, "srag\t'r1,'r2,'d2('r3)"); break;
+    case RISBG: Format(instr, "risbg\t'r1,'r2,'i9,'ia,'ib"); break;
+    case RISBGN: Format(instr, "risbgn\t'r1,'r2,'i9,'ia,'ib"); break;
     case LMY: Format(instr, "lmy\t'r1,'r2,'d2('r3)"); break;
     case LMG: Format(instr, "lmg\t'r1,'r2,'d2('r3)"); break;
     case STMY: Format(instr, "stmy\t'r1,'r2,'d2('r3)"); break;
