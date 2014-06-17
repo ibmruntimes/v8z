@@ -4875,12 +4875,6 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   const int kParameterRegisters = 5;
   // __ EnterExitFrame(false, kRegExpExecuteArguments - kParameterRegisters);
 
-  // Save the frame pointer and the context in top.
-  __ mov(r1, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate)));
-  __ StoreP(fp, MemOperand(r1));
-  __ mov(r1, Operand(ExternalReference(Isolate::kContextAddress, isolate)));
-  __ StoreP(cp, MemOperand(r1));
-
   // Stack pointer now points to cell where return address is to be written.
   // Arguments are before that on the stack or in registers.
 
