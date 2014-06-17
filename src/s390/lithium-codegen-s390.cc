@@ -1236,9 +1236,7 @@ void LCodeGen::DoBitI(LBitI* instr) {
         is_uint16(ToInteger32(LConstantOperand::cast(right_op)))) {
       switch (instr->op()) {
         case Token::BIT_AND:
-          if (!result.is(left))
-            __ LoadRR(result, left);
-          __ AndPI(result,
+          __ AndP(result, left,
                   Operand(ToInteger32(LConstantOperand::cast(right_op))));
           break;
         case Token::BIT_OR:

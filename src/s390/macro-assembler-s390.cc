@@ -4232,10 +4232,23 @@ void MacroAssembler::And(Register dst, Register src, const Operand& opnd) {
 
 // And Pointer Size
 void MacroAssembler::AndP(Register dst, Register src, const Operand& opnd) {
+  // Try to exploit RISBG first
+  intptr_t value = opnd.imm_;
+  if (CpuFeatures::IsSupported(GENERAL_INSTR_EXT)) {
+    // Simple case, we have consecutive 1 bits to the LSB.
+    if (IsPowerOf2(value + 1)) {
+      int startBit = 32 + CompilerIntrinsics::CountLeadingZeros(opnd.imm_);
+      int endBit = 63;
+      // Start: startBit, End: endBit, Shift = 0, true = zero unselected bits.
+      risbg(dst, src, Operand(startBit), Operand(endBit), Operand::Zero(),
+            true);
+      return;
+    }
+  }
+
   if (!dst.is(src))
     LoadRR(dst, src);
 #if V8_TARGET_ARCH_S390X
-  intptr_t value = opnd.imm_;
   if (value >> 32 != -1) {
     // this may not work b/c condition code won't be set correctly
     nihf(dst, Operand(value >> 32));

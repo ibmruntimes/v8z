@@ -1616,6 +1616,29 @@ class RXEInstruction : Instruction {
   }
 };
 
+// RIE Instruction
+class RIEInstruction : Instruction {
+ public:
+  inline int R1Value() const {
+    return Bits<SixByteInstr, int>(39, 36);
+  }
+  inline int R2Value() const {
+    return Bits<SixByteInstr, int>(35, 32);
+  }
+  inline int I3Value() const {
+    return Bits<SixByteInstr, uint32_t>(31, 24);
+  }
+  inline int I4Value() const {
+    return Bits<SixByteInstr, uint32_t>(23, 16);
+  }
+  inline int I5Value() const {
+    return Bits<SixByteInstr, uint32_t>(15, 8);
+  }
+  inline int size() const {
+    return 6;
+  }
+};
+
 // Helper functions for converting between register numbers and names.
 class Registers {
  public:
