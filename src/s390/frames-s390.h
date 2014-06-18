@@ -124,9 +124,10 @@ const int kStackFrameExtraParamSlot = 12;
 // [1] link register save area
 // [2] Parameter9 slot (if necessary)
 // ...
-const int kNumRequiredStackFrameSlots = 2;
-const int kStackFrameLRSlot = 1;
-const int kStackFrameExtraParamSlot = 2;
+const int kNumRequiredStackFrameSlots = 24;
+const int kStackFrameRASlot = 14;
+const int kStackFrameSPSlot = 15;
+const int kStackFrameExtraParamSlot = 24;
 #endif
 
 // zLinux ABI requires caller frames to include sufficient space for
