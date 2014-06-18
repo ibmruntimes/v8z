@@ -3240,17 +3240,14 @@ void MacroAssembler::PrepareCallCFunction(int num_reg_arguments,
     // the original value of sp and, on native, the required slots to
     // make ABI work.
     LoadRR(scratch, sp);
-#if !defined(USE_SIMULATOR)
-    Sub(sp, Operand((stack_passed_arguments +
+    Sub(sp, Operand((1 + stack_passed_arguments +
                           kNumRequiredStackFrameSlots) * kPointerSize));
-#else
-    Sub(sp, Operand((stack_passed_arguments + 1) * kPointerSize));
-#endif
     ASSERT(IsPowerOf2(frame_alignment));
     nill(sp, Operand(-frame_alignment));
 
     // Save the original stack pointer (pre-alignment) onto the stack
-    StoreP(scratch, MemOperand(sp, stack_passed_arguments * kPointerSize));
+    StoreP(scratch, MemOperand(sp, (stack_passed_arguments +
+                        kNumRequiredStackFrameSlots) * kPointerSize));
   } else {
     Sub(sp, Operand((stack_passed_arguments +
                           kNumRequiredStackFrameSlots) * kPointerSize));
@@ -3338,15 +3335,16 @@ void MacroAssembler::CallCFunctionHelper(Register function,
   // preserved regsiter save area.
   // @TODO Make sure this is in the right place and we need to guard it
   // with appropriate #ifdefs
-  lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
+  // lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
   Call(function);
-  la(sp, MemOperand(sp, +kCalleeRegisterSaveAreaSize));
+  // la(sp, MemOperand(sp, +kCalleeRegisterSaveAreaSize));
 
   int stack_passed_arguments = CalculateStackPassedWords(
       num_reg_arguments, num_double_arguments);
   if (ActivationFrameAlignment() > kPointerSize) {
     // Load the original stack pointer (pre-alignment) from the stack
-    LoadP(sp, MemOperand(sp, stack_passed_arguments * kPointerSize), r0);
+    LoadP(sp, MemOperand(sp, (stack_passed_arguments +
+                    kNumRequiredStackFrameSlots) * kPointerSize), r0);
   } else {
     la(sp, MemOperand(sp, (stack_passed_arguments +
                           kNumRequiredStackFrameSlots) * kPointerSize));

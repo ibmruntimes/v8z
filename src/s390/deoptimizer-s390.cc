@@ -1064,7 +1064,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   // r6: Fp-to-sp delta.
   // Parm6: isolate is passed on the stack.
   __ mov(r7, Operand(ExternalReference::isolate_address()));
-  __ StoreP(r7, MemOperand(sp));
+  __ StoreP(r7, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize));
 
   // Call Deoptimizer::New().
   {
