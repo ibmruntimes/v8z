@@ -3490,9 +3490,7 @@ void MacroAssembler::CheckPageFlag(
   ASSERT(cc == ne || cc == eq);
   ClearRightImm(scratch, object, Operand(kPageSizeBits));
   LoadP(scratch, MemOperand(scratch, MemoryChunk::kFlagsOffset));
-
-  mov(r0, Operand(mask));
-  AndP(r0, scratch);
+  AndP(r0, scratch, Operand(mask));
   // Should be okay to remove rc
 
   if (cc == ne) {

@@ -1367,20 +1367,30 @@ class MacroAssembler: public Assembler {
   inline void ExtractBitRange(Register dst, Register src,
                               int rangeStart, int rangeEnd) {
     ASSERT(rangeStart >= rangeEnd && rangeStart < kBitsPerPointer);
-    if (rangeEnd > 0)              // Don't need to shift if rangeEnd is zero.
-      ShiftRightP(dst, src, Operand(rangeEnd));
-    else if (!dst.is(src))         // If we didn't shift, we might need to copy
-      LoadRR(dst, src);
-    int width  = rangeStart - rangeEnd + 1;
+
+    // Try to use RISBG if possible.
+    if (CpuFeatures::IsSupported(GENERAL_INSTR_EXT)) {
+      int shiftAmount = (64 - rangeEnd) % 64;  // Convert to shift left.
+      int endBit = 63;                     // End is always LSB after shifting.
+      int startBit = 63 - rangeStart + rangeEnd;
+      risbg(dst, src, Operand(startBit), Operand(endBit), Operand(shiftAmount),
+            true);
+    } else {
+      if (rangeEnd > 0)             // Don't need to shift if rangeEnd is zero.
+        ShiftRightP(dst, src, Operand(rangeEnd));
+      else if (!dst.is(src))        // If we didn't shift, we might need to copy
+        LoadRR(dst, src);
+      int width  = rangeStart - rangeEnd + 1;
 #if V8_TARGET_ARCH_S390X
-    uint64_t mask = (static_cast<uint64_t>(1) << width) - 1;
-    nihf(dst, Operand(mask >> 32));
-    nilf(dst, Operand(mask & 0xFFFFFFFF));
-    ltgr(dst, dst);
+      uint64_t mask = (static_cast<uint64_t>(1) << width) - 1;
+      nihf(dst, Operand(mask >> 32));
+      nilf(dst, Operand(mask & 0xFFFFFFFF));
+      ltgr(dst, dst);
 #else
-    uint32_t mask = (1 << width) - 1;
-    AndPI(dst, Operand(mask));
+      uint32_t mask = (1 << width) - 1;
+      AndPI(dst, Operand(mask));
 #endif
+    }
   }
 
   inline void ExtractBit(Register dst, Register src, uint32_t bitNumber) {
