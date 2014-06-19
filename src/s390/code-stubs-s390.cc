@@ -1148,8 +1148,7 @@ static void EmitCheckForSymbolsOrObjects(MacroAssembler* masm,
   __ LoadP(r5, FieldMemOperand(rhs, HeapObject::kMapOffset));
   __ LoadlB(r4, FieldMemOperand(r4, Map::kBitFieldOffset));
   __ LoadlB(r5, FieldMemOperand(r5, Map::kBitFieldOffset));
-  __ LoadRR(r2, r5);
-  __ AndP(r2, r4);
+  __ AndP(r2, r5, r4);
   __ AndPI(r2, Operand(1 << Map::kIsUndetectable));
   __ XorPImm(r2, Operand(1 << Map::kIsUndetectable));
   __ Ret();
@@ -2695,8 +2694,7 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
         case Token::SAR:
           __ GetLeastBitsFromInt32(r4, r4, 5);
           __ LoadRR(scratch1, r4);  // Reg shuffling as sra clobbers
-          __ LoadRR(r4, r5);
-          __ sra(r4, scratch1);
+          __ ShiftRightArith(r4, r5, scratch1);
           break;
         case Token::SHR:
         {
@@ -2722,8 +2720,7 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
           break;
         }
         case Token::SHL:
-          __ AndPI(r4, Operand(0x1f));
-          __ LoadRR(scratch1, r4);
+          __ AndP(scratch1, r4, Operand(0x1f));
           __ ShiftLeftP(r4, r5, scratch1);
           break;
         default:
