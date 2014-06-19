@@ -6901,11 +6901,8 @@ void ICCompareStub::GenerateMiss(MacroAssembler* masm) {
 
 // This stub is paired with DirectCEntryStub::GenerateCall
 void DirectCEntryStub::Generate(MacroAssembler* masm) {
-  // zLinux ABI requires caller's frame to have sufficient space for callee
-  // preserved regsiter save area.
-  __ la(sp, MemOperand(sp, kCalleeRegisterSaveAreaSize));
   // Retrieve return address
-  __ LoadP(ip, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize));
+  __ LoadP(ip, MemOperand(sp, kStackFrameRASlot * kPointerSize));
   __ Jump(ip);
 }
 
@@ -6937,11 +6934,7 @@ void DirectCEntryStub::GenerateCall(MacroAssembler* masm,
   Label return_addr;
   __ bind(&start);
   __ larl(r0, &return_addr);
-  __ StoreP(r0, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize));
-
-  // zLinux ABI requires caller's frame to have sufficient space for callee
-  // preserved regsiter save area.
-  __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
+  __ StoreP(r0, MemOperand(sp, kStackFrameRASlot * kPointerSize));
 
   __ Jump(target);  // Call the C++ function.
   __ bind(&return_addr);
