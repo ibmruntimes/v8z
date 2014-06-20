@@ -609,16 +609,27 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
 
   // Optionally save all volatile double registers.
   if (save_doubles) {
-    ASSERT(false);
     const int kNumRegs = DoubleRegister::kNumVolatileRegisters;
-    Sub(sp, Operand(kNumRegs * kDoubleSize));
-    for (int i = 0; i < kNumRegs; i++) {
-      DoubleRegister reg = DoubleRegister::from_code(i);
-      StoreF(reg, MemOperand(sp, i * kDoubleSize));
+    lay(sp, MemOperand(sp, -kNumRegs * kDoubleSize));
+#define StoreFloatingPointRegisterToStack(reg, offset) \
+    StoreF(DoubleRegister::from_code(reg), \
+      MemOperand(sp, (offset) * kDoubleSize));
+#ifdef V8_TARGET_ARCH_S390X
+    for (int i = 0; i < 7; i++) {
+      StoreFloatingPointRegisterToStack(i, i);
     }
-    // Note that d0 will be accessible at
-    //   fp - 2 * kPointerSize - kNumVolatileRegisters * kDoubleSize,
-    // since the sp slot and code slot were pushed after the fp.
+#else
+    StoreFloatingPointRegisterToStack(0, 0);
+    StoreFloatingPointRegisterToStack(1, 1);
+    StoreFloatingPointRegisterToStack(2, 2);
+    StoreFloatingPointRegisterToStack(3, 3);
+    StoreFloatingPointRegisterToStack(5, 4);
+    int offset = 5;
+    for (int i = 7; i < DoubleRegister::kNumRegisters; i++, offset++) {
+      StoreFloatingPointRegisterToStack(i, offset);
+    }
+#endif
+#undef StoreFloatingPointRegisterToStack
   }
 
   // Allocate and align the frame preparing for calling the runtime
@@ -675,12 +686,26 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles,
   if (save_doubles) {
     // Calculate the stack location of the saved doubles and restore them.
     const int kNumRegs = DoubleRegister::kNumVolatileRegisters;
-    const int offset = (2 * kPointerSize + kNumRegs * kDoubleSize);
-    lay(r5, MemOperand(fp, -offset));
-    for (int i = 0; i < kNumRegs; i++) {
-      DoubleRegister reg = DoubleRegister::from_code(i);
-      LoadF(reg, MemOperand(r5, i * kDoubleSize));
+    lay(sp, MemOperand(fp, -(2 * kPointerSize + kNumRegs * kDoubleSize)));
+#define LoadFloatingPointRegisterToStack(reg, offset) \
+    LoadF(DoubleRegister::from_code(reg), \
+      MemOperand(sp, (offset) * kDoubleSize));
+#ifdef V8_TARGET_ARCH_S390X
+    for (int i = 0; i < 7; i++) {
+      LoadFloatingPointRegisterToStack(i, i);
     }
+#else
+    LoadFloatingPointRegisterToStack(0, 0);
+    LoadFloatingPointRegisterToStack(1, 1);
+    LoadFloatingPointRegisterToStack(2, 2);
+    LoadFloatingPointRegisterToStack(3, 3);
+    LoadFloatingPointRegisterToStack(5, 4);
+    int offset = 5;
+    for (int i = 7; i < DoubleRegister::kNumRegisters; i++, offset++) {
+      LoadFloatingPointRegisterToStack(i, offset);
+    }
+#endif
+#undef LoadFloatingPointRegisterToStack
   }
 
   // Clear top frame.

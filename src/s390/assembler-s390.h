@@ -195,7 +195,11 @@ const Register sp   = { kRegister_sp_Code };
 // Double word FP register.
 struct DoubleRegister {
   static const int kNumRegisters = 16;
-  static const int kNumVolatileRegisters = 14;     // d0-d13
+#ifdef V8_TARGET_ARCH_S390X
+  static const int kNumVolatileRegisters = 8;     // d0-d7
+#else
+  static const int kNumVolatileRegisters = 14;     // d0-d15 except d4 and d6
+#endif
   static const int kNumAllocatableRegisters = 12;  // d1-d12
 
   inline static int ToAllocationIndex(DoubleRegister reg);
@@ -206,8 +210,9 @@ struct DoubleRegister {
   }
 
   static const char* AllocationIndexToString(int index) {
-    ASSERT(index >= 0 && index < kNumAllocatableRegisters);
+    ASSERT(index >= 0 && index < kNumRegisters);
     const char* const names[] = {
+      "f0",
       "f1",
       "f2",
       "f3",
@@ -220,6 +225,9 @@ struct DoubleRegister {
       "f10",
       "f11",
       "f12",
+      "f13",
+      "f14",
+      "f15"
     };
     return names[index];
   }
