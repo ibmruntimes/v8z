@@ -4833,33 +4833,28 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
                        r4);
 
   // Isolates: note we add an additional parameter here (isolate pointer).
-  // const int kRegExpExecuteArguments = 10;
+  const int kRegExpExecuteArguments = 10;
   const int kParameterRegisters = 5;
-  // __ EnterExitFrame(false, kRegExpExecuteArguments - kParameterRegisters);
+  __ EnterExitFrame(false, kRegExpExecuteArguments - kParameterRegisters);
 
   // Stack pointer now points to cell where return address is to be written.
   // Arguments are before that on the stack or in registers.
 
-  // @TODO Fix this code for S390!!!  We need to pass the arguments
-  // appropriately
-  __ lay(sp, MemOperand(sp,
-        -(kCalleeRegisterSaveAreaSize + kParameterRegisters * kPointerSize)));
-
   // Argument 10 (in stack parameter area): Pass current isolate address.
   __ mov(r2, Operand(ExternalReference::isolate_address()));
   __ StoreP(r2, MemOperand(sp,
-        kCalleeRegisterSaveAreaSize + 4 * kPointerSize));
+       kStackFrameExtraParamSlot + 4 * kPointerSize));
 
   // Argument 9 is a dummy that reserves the space used for
   // the return address added by the ExitFrame in native calls.
   __ mov(r2, Operand::Zero());
   __ StoreP(r2, MemOperand(sp,
-        kCalleeRegisterSaveAreaSize + 3 * kPointerSize));
+        kStackFrameExtraParamSlot + 3 * kPointerSize));
 
   // Argument 8: Indicate that this is a direct call from JavaScript.
   __ mov(r2, Operand(1));
   __ StoreP(r2, MemOperand(sp,
-        kCalleeRegisterSaveAreaSize + 2 * kPointerSize));
+        kStackFrameExtraParamSlot + 2 * kPointerSize));
 
   // Argument 7: Start (high end) of backtracking stack memory area.
   __ mov(r2, Operand(address_of_regexp_stack_memory_address));
@@ -4868,14 +4863,14 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ LoadP(r1, MemOperand(r1, 0));
   __ AddP(r2, r1);
   __ StoreP(r2, MemOperand(sp,
-        kCalleeRegisterSaveAreaSize + 1 * kPointerSize));
+        kStackFrameExtraParamSlot + 1 * kPointerSize));
 
   // Argument 6: Set the number of capture registers to zero to force
   // global egexps to behave as non-global.  This does not affect non-global
   // regexps.
   __ mov(r2, Operand::Zero());
   __ StoreP(r2, MemOperand(sp,
-        kCalleeRegisterSaveAreaSize + 0 * kPointerSize));
+        kStackFrameExtraParamSlot + 0 * kPointerSize));
 
   // Argument 1 (r2): Subject string.
   // Load the length from the original subject string from the previous stack
@@ -4926,25 +4921,10 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ LoadP(code, MemOperand(code, 0));  // Instruction address
 #endif
 
-  // DirectCEntryStub stub;
-  // stub.GenerateCall(masm, code);
-  __ la(fp, MemOperand(sp, kCalleeRegisterSaveAreaSize));
-  __ basr(r14, code);
+  DirectCEntryStub stub;
+  stub.GenerateCall(masm, code);
+  __ LeaveExitFrame(false, no_reg);
 
-  // __ LeaveExitFrame(false, no_reg);
-  // Clear top frame.
-  __ LoadImmP(r5, Operand(0, RelocInfo::NONE));
-  __ mov(ip, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate)));
-  __ StoreP(r5, MemOperand(ip));
-
-  // Restore current context from top and clear it in debug mode.
-  __ mov(ip, Operand(ExternalReference(Isolate::kContextAddress, isolate)));
-  __ LoadP(cp, MemOperand(ip));
-#ifdef DEBUG
-  __ StoreP(r5, MemOperand(ip));
-#endif
-
-  __ la(sp, MemOperand(fp, kParameterRegisters * kPointerSize));
   __ la(fp, MemOperand(sp, 13 * kPointerSize));
 
   // r2: result

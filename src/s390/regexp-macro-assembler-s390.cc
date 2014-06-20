@@ -737,10 +737,14 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
 #endif
     // 31bit ABI requires you to store f4 and f6:
     // http://refspecs.linuxbase.org/ELF/zSeries/lzsabi0_s390.html#AEN417
-    __ std(d6, MemOperand(sp, kCalleeRegisterSaveAreaSize - kDoubleSize));
-    __ std(d4, MemOperand(sp, kCalleeRegisterSaveAreaSize - 2 * kDoubleSize));
-    __ std(d2, MemOperand(sp, kCalleeRegisterSaveAreaSize - 3 * kDoubleSize));
-    __ std(d0, MemOperand(sp, kCalleeRegisterSaveAreaSize - 4 * kDoubleSize));
+    __ std(d6, MemOperand(sp,
+          kStackFrameExtraParamSlot * kPointerSize - kDoubleSize));
+    __ std(d4, MemOperand(sp,
+          kStackFrameExtraParamSlot * kPointerSize - 2 * kDoubleSize));
+    __ std(d2, MemOperand(sp,
+          kStackFrameExtraParamSlot * kPointerSize - 3 * kDoubleSize));
+    __ std(d0, MemOperand(sp,
+          kStackFrameExtraParamSlot * kPointerSize - 4 * kDoubleSize));
 
     // zLinux ABI
     //    Incoming parameters:
@@ -757,13 +761,13 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     // __ StoreP(frame_pointer(), MemOperand(sp));
 
     // Load stack parameters from caller stack frame
-    // __ lay(fp, MemOperand(sp, kCalleeRegisterSaveAreaSize));
-    __ LoadP(r7, MemOperand(sp,
-      kCalleeRegisterSaveAreaSize + 0 * kPointerSize));   // capture array size
-    __ LoadP(r8, MemOperand(sp,
-      kCalleeRegisterSaveAreaSize + 1 * kPointerSize));  // stack area base
-    __ LoadP(r9, MemOperand(sp,
-      kCalleeRegisterSaveAreaSize + 2 * kPointerSize));  // direct call
+    // __ lay(fp, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize));
+    __ LoadP(r7, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize +
+            0 * kPointerSize));   // capture array size
+    __ LoadP(r8, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize +
+            1 * kPointerSize));  // stack area base
+    __ LoadP(r9, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize +
+            2 * kPointerSize));  // direct call
 
     // Actually emit code to start a new stack frame.
     // Push arguments
@@ -775,7 +779,6 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     // Set frame pointer in space for it if this is not a direct call
     // from generated code.
     __ LoadRR(frame_pointer(), sp);
-    // FIXME: Broken in 64-bit
     __ lay(sp, MemOperand(sp, -10 * kPointerSize));
     __ mov(r1, Operand::Zero());        // success counter
     __ mov(r0, Operand::Zero());        // offset of location
