@@ -3499,45 +3499,6 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
   // to change to support nativesim=true builds
 #if defined(V8_HOST_ARCH_S39064) || defined(V8_HOST_ARCH_S390)
   // Call C built-in on native hardware.
-#if 0
-
-#if !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
-  if (result_size_ < 2) {
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-    __ LoadRR(r2, r6);
-#else
-    // r3 = argc << 32 (for alignment), r4 = argv
-    __ ShiftLeftP(r2, r6, Operand(32));
-#endif
-    __ LoadRR(r3, r8);
-    isolate_reg = r4;
-  } else {
-    ASSERT_EQ(2, result_size_);
-    // The return value is 16-byte non-scalar value.
-    // Use frame storage reserved by calling function to pass return
-    // buffer as implicit first argument.
-    __ la(r2, MemOperand(sp, (kStackFrameExtraParamSlot + 1) * kPointerSize));
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-    __ LoadRR(r3, r6);
-#else
-    // r4 = argc << 32 (for alignment), r5 = argv
-    __ ShiftLeftP(r3, r6, Operand(32));
-#endif
-    __ LoadRR(r4, r8);
-    isolate_reg = r5;
-  }
-#else
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-  __ LoadRR(r2, r6);
-#else
-  // r3 = argc << 32 (for alignment), r4 = argv
-  __ ShiftLeftP(r2, r6, Operand(32));
-#endif
-  __ LoadRR(r3, r8);
-  isolate_reg = r4;
-#endif
-
-#else
 
 #if defined(V8_TARGET_ARCH_S390X)
   // zLinux 64-bit
@@ -3577,7 +3538,6 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
   isolate_reg = r4;
 #endif  // V8_TARGET_ARCH_S390X
 
-#endif
 #else  // Simulated
   // Call C built-in using simulator.
   // r3 = argc, r4 = argv
