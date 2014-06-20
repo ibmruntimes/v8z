@@ -3613,13 +3613,14 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
   // instructions so add another 4 to pc to get the return address.
   { Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm);
     Label return_label;
-    __ larl(r0, &return_label);  // Generate the return addr of call later.
-    __ StoreP(r0, MemOperand(sp, kStackFrameRASlot * kPointerSize));
+    __ larl(r14, &return_label);  // Generate the return addr of call later.
+    __ StoreP(r14, MemOperand(sp, kStackFrameRASlot * kPointerSize));
 
     // zLinux ABI requires caller's frame to have sufficient space for callee
     // preserved regsiter save area.
     // __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
-    __ Call(target);
+    __ positions_recorder()->WriteRecordedPositions();
+    __ b(target);
     __ bind(&return_label);
     // __ la(sp, MemOperand(sp, +kCalleeRegisterSaveAreaSize));
   }
@@ -3953,7 +3954,11 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   // Branch and link to JSEntryTrampoline.
   // the address points to the start of the code object, skip the header
   __ AddP(ip, Operand(Code::kHeaderSize - kHeapObjectTag));
-  __ basr(r14, ip);
+  Label return_addr;
+  // __ basr(r14, ip);
+  __ larl(r14, &return_addr);
+  __ b(ip);
+  __ bind(&return_addr);
 
   // Unlink this frame from the handler chain.
   __ PopTryHandler();
@@ -6933,10 +6938,10 @@ void DirectCEntryStub::GenerateCall(MacroAssembler* masm,
   Label start/*, here*/;
   Label return_addr;
   __ bind(&start);
-  __ larl(r0, &return_addr);
-  __ StoreP(r0, MemOperand(sp, kStackFrameRASlot * kPointerSize));
+  __ larl(r14, &return_addr);
+  __ StoreP(r14, MemOperand(sp, kStackFrameRASlot * kPointerSize));
 
-  __ Jump(target);  // Call the C++ function.
+  __ b(target);  // Call the C++ function.
   __ bind(&return_addr);
 }
 
