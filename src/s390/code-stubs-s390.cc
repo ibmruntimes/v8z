@@ -3614,14 +3614,14 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
   { Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm);
     Label return_label;
     __ larl(r0, &return_label);  // Generate the return addr of call later.
-    __ StoreP(r0, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize));
+    __ StoreP(r0, MemOperand(sp, kStackFrameRASlot * kPointerSize));
 
     // zLinux ABI requires caller's frame to have sufficient space for callee
     // preserved regsiter save area.
-    __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
+    // __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
     __ Call(target);
     __ bind(&return_label);
-    __ la(sp, MemOperand(sp, +kCalleeRegisterSaveAreaSize));
+    // __ la(sp, MemOperand(sp, +kCalleeRegisterSaveAreaSize));
   }
 
   if (always_allocate) {

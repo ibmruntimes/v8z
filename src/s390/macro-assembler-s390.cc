@@ -609,6 +609,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
 
   // Optionally save all volatile double registers.
   if (save_doubles) {
+    ASSERT(false);
     const int kNumRegs = DoubleRegister::kNumVolatileRegisters;
     Sub(sp, Operand(kNumRegs * kDoubleSize));
     for (int i = 0; i < kNumRegs; i++) {
@@ -632,7 +633,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
 
   // Set the exit frame sp value to point just before the return address
   // location.
-  lay(r7, MemOperand(sp, (kStackFrameExtraParamSlot + 1) * kPointerSize));
+  lay(r7, MemOperand(sp, kStackFrameSPSlot * kPointerSize));
   StoreP(r7, MemOperand(fp, ExitFrameConstants::kSPOffset));
 }
 
