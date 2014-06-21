@@ -595,17 +595,17 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   lay(sp, MemOperand(sp, -2 * kPointerSize));
 
   if (emit_debug_code()) {
-    LoadImmP(r7, Operand::Zero());
-    StoreP(r7, MemOperand(fp, ExitFrameConstants::kSPOffset));
+    LoadImmP(r1, Operand::Zero());
+    StoreP(r1, MemOperand(fp, ExitFrameConstants::kSPOffset));
   }
-  mov(r7, Operand(CodeObject()));
-  StoreP(r7, MemOperand(fp, ExitFrameConstants::kCodeOffset));
+  mov(r1, Operand(CodeObject()));
+  StoreP(r1, MemOperand(fp, ExitFrameConstants::kCodeOffset));
 
   // Save the frame pointer and the context in top.
-  mov(r7, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate())));
-  StoreP(fp, MemOperand(r7));
-  mov(r7, Operand(ExternalReference(Isolate::kContextAddress, isolate())));
-  StoreP(cp, MemOperand(r7));
+  mov(r1, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate())));
+  StoreP(fp, MemOperand(r1));
+  mov(r1, Operand(ExternalReference(Isolate::kContextAddress, isolate())));
+  StoreP(cp, MemOperand(r1));
 
   // Optionally save all volatile double registers.
   if (save_doubles) {
@@ -644,8 +644,8 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
 
   // Set the exit frame sp value to point just before the return address
   // location.
-  lay(r7, MemOperand(sp, kStackFrameSPSlot * kPointerSize));
-  StoreP(r7, MemOperand(fp, ExitFrameConstants::kSPOffset));
+  lay(r1, MemOperand(sp, kStackFrameSPSlot * kPointerSize));
+  StoreP(r1, MemOperand(fp, ExitFrameConstants::kSPOffset));
 }
 
 
@@ -709,15 +709,15 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles,
   }
 
   // Clear top frame.
-  LoadImmP(r5, Operand(0, RelocInfo::NONE));
+  LoadImmP(r0, Operand(0, RelocInfo::NONE));
   mov(ip, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate())));
-  StoreP(r5, MemOperand(ip));
+  StoreP(r0, MemOperand(ip));
 
   // Restore current context from top and clear it in debug mode.
   mov(ip, Operand(ExternalReference(Isolate::kContextAddress, isolate())));
   LoadP(cp, MemOperand(ip));
 #ifdef DEBUG
-  StoreP(r5, MemOperand(ip));
+  StoreP(r0, MemOperand(ip));
 #endif
 
   // Tear down the exit frame, pop the arguments, and return.
