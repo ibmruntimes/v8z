@@ -4874,10 +4874,11 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
 
   // Argument 1 (r2): Subject string.
   // Load the length from the original subject string from the previous stack
-  // frame. Therefore we have to use fp, which points exactly to two pointer
+  // frame. Therefore we have to use fp, which points exactly to 15 pointer
   // sizes below the previous sp. (Because creating a new stack frame pushes
-  // the previous fp onto the stack and moves up sp by 2 * kPointerSize.)
-  __ LoadP(r2, MemOperand(fp, kSubjectOffset + (2 + 13) * kPointerSize));
+  // the previous fp onto the stack and moves up sp by 2 * kPointerSize and
+  // 13 registers saved on the stack previously)
+  __ LoadP(r2, MemOperand(fp, kSubjectOffset + 15 * kPointerSize));
 
   // Argument 2 (r3): Previous index.
   // Already there
