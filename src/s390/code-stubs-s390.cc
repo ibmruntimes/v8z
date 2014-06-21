@@ -4843,18 +4843,18 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // Argument 10 (in stack parameter area): Pass current isolate address.
   __ mov(r2, Operand(ExternalReference::isolate_address()));
   __ StoreP(r2, MemOperand(sp,
-       kStackFrameExtraParamSlot + 4 * kPointerSize));
+       kStackFrameExtraParamSlot * kPointerSize + 4 * kPointerSize));
 
   // Argument 9 is a dummy that reserves the space used for
   // the return address added by the ExitFrame in native calls.
   __ mov(r2, Operand::Zero());
   __ StoreP(r2, MemOperand(sp,
-        kStackFrameExtraParamSlot + 3 * kPointerSize));
+        kStackFrameExtraParamSlot * kPointerSize + 3 * kPointerSize));
 
   // Argument 8: Indicate that this is a direct call from JavaScript.
   __ mov(r2, Operand(1));
   __ StoreP(r2, MemOperand(sp,
-        kStackFrameExtraParamSlot + 2 * kPointerSize));
+        kStackFrameExtraParamSlot * kPointerSize + 2 * kPointerSize));
 
   // Argument 7: Start (high end) of backtracking stack memory area.
   __ mov(r2, Operand(address_of_regexp_stack_memory_address));
@@ -4863,21 +4863,21 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ LoadP(r1, MemOperand(r1, 0));
   __ AddP(r2, r1);
   __ StoreP(r2, MemOperand(sp,
-        kStackFrameExtraParamSlot + 1 * kPointerSize));
+        kStackFrameExtraParamSlot * kPointerSize + 1 * kPointerSize));
 
   // Argument 6: Set the number of capture registers to zero to force
   // global egexps to behave as non-global.  This does not affect non-global
   // regexps.
   __ mov(r2, Operand::Zero());
   __ StoreP(r2, MemOperand(sp,
-        kStackFrameExtraParamSlot + 0 * kPointerSize));
+        kStackFrameExtraParamSlot * kPointerSize + 0 * kPointerSize));
 
   // Argument 1 (r2): Subject string.
   // Load the length from the original subject string from the previous stack
   // frame. Therefore we have to use fp, which points exactly to two pointer
   // sizes below the previous sp. (Because creating a new stack frame pushes
   // the previous fp onto the stack and moves up sp by 2 * kPointerSize.)
-  __ LoadP(r2, MemOperand(fp, kSubjectOffset));
+  __ LoadP(r2, MemOperand(fp, kSubjectOffset + (2 + 13) * kPointerSize));
 
   // Argument 2 (r3): Previous index.
   // Already there
