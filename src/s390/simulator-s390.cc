@@ -3387,6 +3387,31 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
 
       break;
     }
+    case AHIK:
+    case AGHIK: {
+      // Non-clobbering Add Halfword Immediate
+      RIEInstruction* rieInst = reinterpret_cast<RIEInstruction*>(instr);
+      int r1 = rieInst->R1Value();
+      int r2 = rieInst->R2Value();
+      bool isOF = false;
+      if (AHIK == op) {
+        // 32-bit Add
+        int32_t r2_val = get_low_register<int32_t>(r2);
+        int32_t imm = rieInst->I3Value();
+        isOF = CheckOverflowForIntAdd(r2_val, imm);
+        set_low_register(r1, r2_val + imm);
+        SetS390ConditionCode<int32_t>(r2_val + imm, 0);
+      } else if (AGHIK == op) {
+        // 64-bit Add
+        int64_t r2_val = get_register(r2);
+        int64_t imm = static_cast<int64_t>(rieInst->I3Value());
+        isOF = CheckOverflowForIntAdd(r2_val, imm);
+        set_register(r1, r2_val + imm);
+        SetS390ConditionCode<int64_t>(r2_val + imm, 0);
+      }
+      SetS390OverflowCode(isOF);
+      break;
+    }
     case ALFI:
     case SLFI: {
       RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
