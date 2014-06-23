@@ -4023,8 +4023,7 @@ void KeyedLoadStubCompiler::GenerateLoadFastElement(MacroAssembler* masm) {
   __ AssertFastElements(r4);
 
   // Check that the key is within bounds.
-  __ LoadP(r5, FieldMemOperand(r4, FixedArray::kLengthOffset));
-  __ Cmpl(r2, r5);
+  __ CmpLogicalP(r2, FieldMemOperand(r4, FixedArray::kLengthOffset));
   __ bge(&miss_force_generic);
 
   // Load the result and make sure it's not the hole.
@@ -4073,8 +4072,8 @@ void KeyedLoadStubCompiler::GenerateLoadFastDoubleElement(
            FieldMemOperand(receiver_reg, JSObject::kElementsOffset));
 
   // Check that the key is within bounds.
-  __ LoadP(scratch, FieldMemOperand(elements_reg, FixedArray::kLengthOffset));
-  __ Cmpl(key_reg, scratch);
+  __ CmpLogicalP(key_reg,
+                 FieldMemOperand(elements_reg, FixedArray::kLengthOffset));
   __ bge(&miss_force_generic);
 
   // Load the upper word of the double in the fixed array and test for NaN.
@@ -4161,12 +4160,13 @@ void KeyedStoreStubCompiler::GenerateStoreFastElement(
   __ LoadP(elements_reg,
            FieldMemOperand(receiver_reg, JSObject::kElementsOffset));
   if (is_js_array) {
-    __ LoadP(scratch, FieldMemOperand(receiver_reg, JSArray::kLengthOffset));
+    __ CmpLogicalP(key_reg,
+                   FieldMemOperand(receiver_reg, JSArray::kLengthOffset));
   } else {
-    __ LoadP(scratch, FieldMemOperand(elements_reg, FixedArray::kLengthOffset));
+    __ CmpLogicalP(key_reg,
+                   FieldMemOperand(elements_reg, FixedArray::kLengthOffset));
   }
   // Compare smis.
-  __ Cmpl(key_reg, scratch);
   if (is_js_array && grow_mode == ALLOW_JSARRAY_GROWTH) {
     __ bge(&grow);
   } else {
@@ -4270,8 +4270,8 @@ void KeyedStoreStubCompiler::GenerateStoreFastElement(
                 &miss_force_generic,
                 DONT_DO_SMI_CHECK);
 
-    __ LoadP(scratch, FieldMemOperand(elements_reg, FixedArray::kLengthOffset));
-    __ Cmpl(length_reg, scratch);
+    __ CmpLogicalP(length_reg,
+                   FieldMemOperand(elements_reg, FixedArray::kLengthOffset));
     __ bge(&slow);
 
     // Grow the array and finish the store.
@@ -4322,16 +4322,15 @@ void KeyedStoreStubCompiler::GenerateStoreFastDoubleElement(
   __ LoadP(elements_reg,
            FieldMemOperand(receiver_reg, JSObject::kElementsOffset));
 
-  // Check that the key is within bounds.
+  // Check that the key is within bounds.  Compare smis, unsigned compare
+  // catches both negative and out-of-bound indexes.
   if (is_js_array) {
-    __ LoadP(scratch1, FieldMemOperand(receiver_reg, JSArray::kLengthOffset));
+    __ CmpLogicalP(key_reg,
+                   FieldMemOperand(receiver_reg, JSArray::kLengthOffset));
   } else {
-    __ LoadP(scratch1,
-             FieldMemOperand(elements_reg, FixedArray::kLengthOffset));
+    __ CmpLogicalP(key_reg,
+                   FieldMemOperand(elements_reg, FixedArray::kLengthOffset));
   }
-  // Compare smis, unsigned compare catches both negative and out-of-bound
-  // indexes.
-  __ Cmpl(key_reg, scratch1);
   if (grow_mode == ALLOW_JSARRAY_GROWTH) {
     __ bge(&grow);
   } else {
@@ -4416,9 +4415,8 @@ void KeyedStoreStubCompiler::GenerateStoreFastDoubleElement(
 
     __ bind(&check_capacity);
     // Make sure that the backing store can hold additional elements.
-    __ LoadP(scratch1,
-             FieldMemOperand(elements_reg, FixedDoubleArray::kLengthOffset));
-    __ Cmpl(length_reg, scratch1);
+    __ CmpLogicalP(length_reg,
+                FieldMemOperand(elements_reg, FixedDoubleArray::kLengthOffset));
     __ bge(&slow);
 
     // Grow the array and finish the store.
