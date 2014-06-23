@@ -2194,7 +2194,7 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       intptr_t sp_addr = get_register(sp);
       for (int i = 0; i < kCalleeRegisterSaveAreaSize / kPointerSize; ++i) {
         // we dont want to whack the RA (r14)
-        if (i != 14) (reinterpret_cast<uint32_t*>(sp_addr))[i] = 0xdeadbabe;
+        if (i != 14) (reinterpret_cast<intptr_t*>(sp_addr))[i] = 0xdeadbabe;
       }
       SoftwareInterrupt(instr);
       break;
