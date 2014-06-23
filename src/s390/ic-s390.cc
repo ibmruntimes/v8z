@@ -101,8 +101,7 @@ static void GenerateStringDictionaryReceiverCheck(MacroAssembler* masm,
 
   __ LoadP(elements, FieldMemOperand(receiver, JSObject::kPropertiesOffset));
   __ LoadP(t1, FieldMemOperand(elements, HeapObject::kMapOffset));
-  __ LoadRoot(ip, Heap::kHashTableMapRootIndex);
-  __ CmpRR(t1, ip);
+  __ CompareRoot(t1, Heap::kHashTableMapRootIndex);
   __ bne(miss);
 }
 
@@ -336,8 +335,7 @@ static void GenerateFastArrayLoad(MacroAssembler* masm,
   if (not_fast_array != NULL) {
     // Check that the object is in fast mode and writable.
     __ LoadP(scratch1, FieldMemOperand(elements, HeapObject::kMapOffset));
-    __ LoadRoot(ip, Heap::kFixedArrayMapRootIndex);
-    __ CmpRR(scratch1, ip);
+    __ CompareRoot(scratch1, Heap::kFixedArrayMapRootIndex);
     __ bne(not_fast_array);
   } else {
     __ AssertFastElements(elements);
@@ -352,8 +350,7 @@ static void GenerateFastArrayLoad(MacroAssembler* masm,
   // The key is a smi.
   __ SmiToPtrArrayOffset(scratch2, key);
   __ LoadP(scratch2, MemOperand(scratch2, scratch1));
-  __ LoadRoot(ip, Heap::kTheHoleValueRootIndex);
-  __ CmpRR(scratch2, ip);
+  __ CompareRoot(scratch2, Heap::kTheHoleValueRootIndex);
   // In case the loaded value is the_hole we have to consult GetProperty
   // to ensure the prototype chain is searched.
   __ beq(out_of_range);
@@ -440,11 +437,9 @@ void CallICBase::GenerateMonomorphicCacheProbe(MacroAssembler* masm,
 
   // Check for boolean.
   __ bind(&non_string);
-  __ LoadRoot(ip, Heap::kTrueValueRootIndex);
-  __ CmpRR(r3, ip);
+  __ CompareRoot(r3, Heap::kTrueValueRootIndex);
   __ beq(&boolean);
-  __ LoadRoot(ip, Heap::kFalseValueRootIndex);
-  __ CmpRR(r3, ip);
+  __ CompareRoot(r3, Heap::kFalseValueRootIndex);
   __ bne(&miss);
   __ bind(&boolean);
   StubCompiler::GenerateLoadGlobalFunctionPrototype(
@@ -622,8 +617,7 @@ void KeyedCallIC::GenerateMegamorphic(MacroAssembler* masm, int argc) {
   // r5: elements map
   // r6: elements
   // Check whether the elements is a number dictionary.
-  __ LoadRoot(ip, Heap::kHashTableMapRootIndex);
-  __ CmpRR(r5, ip);
+  __ CompareRoot(r5, Heap::kHashTableMapRootIndex);
   __ bne(&slow_load);
   __ SmiUntag(r2, r4);
   // r2: untagged index
@@ -658,8 +652,7 @@ void KeyedCallIC::GenerateMegamorphic(MacroAssembler* masm, int argc) {
 
   __ LoadP(r2, FieldMemOperand(r3, JSObject::kPropertiesOffset));
   __ LoadP(r5, FieldMemOperand(r2, HeapObject::kMapOffset));
-  __ LoadRoot(ip, Heap::kHashTableMapRootIndex);
-  __ CmpRR(r5, ip);
+  __ CompareRoot(r5, Heap::kHashTableMapRootIndex);
   __ bne(&lookup_monomorphic_cache);
 
   GenerateDictionaryLoad(masm, &slow_load, r2, r4, r3, r5, r6);
@@ -817,8 +810,7 @@ static MemOperand GenerateMappedArgumentsLookup(MacroAssembler* masm,
   __ AddP(scratch3, Operand(kOffset));
 
   __ LoadP(scratch2, MemOperand(scratch1, scratch3));
-  __ LoadRoot(scratch3, Heap::kTheHoleValueRootIndex);
-  __ CmpRR(scratch2, scratch3);
+  __ CompareRoot(scratch2, Heap::kTheHoleValueRootIndex);
   __ beq(unmapped_case);
 
   // Load value from context and return it. We can reuse scratch1 because
@@ -874,8 +866,7 @@ void KeyedLoadIC::GenerateNonStrictArguments(MacroAssembler* masm) {
   MemOperand unmapped_location =
       GenerateUnmappedArgumentsLookup(masm, r2, r4, r5, &slow);
   __ LoadP(r4, unmapped_location);
-  __ LoadRoot(r5, Heap::kTheHoleValueRootIndex);
-  __ CmpRR(r4, r5);
+  __ CompareRoot(r4, Heap::kTheHoleValueRootIndex);
   __ beq(&slow);
   __ LoadRR(r2, r4);
   __ Ret();
@@ -933,8 +924,7 @@ void KeyedCallIC::GenerateNonStrictArguments(MacroAssembler* masm,
   MemOperand unmapped_location =
       GenerateUnmappedArgumentsLookup(masm, r4, r5, r6, &slow);
   __ LoadP(r3, unmapped_location);
-  __ LoadRoot(r5, Heap::kTheHoleValueRootIndex);
-  __ CmpRR(r3, r5);
+  __ CompareRoot(r3, Heap::kTheHoleValueRootIndex);
   __ beq(&slow);
   GenerateFunctionTailCall(masm, argc, &slow, r2);
   __ bind(&slow);
@@ -1019,8 +1009,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   // r2: key
   // r5: elements map
   // r6: elements
-  __ LoadRoot(ip, Heap::kHashTableMapRootIndex);
-  __ CmpRR(r5, ip);
+  __ CompareRoot(r5, Heap::kHashTableMapRootIndex);
   __ bne(&slow);
   __ SmiUntag(r4, r2);
   __ LoadFromNumberDictionary(&slow, r6, r2, r2, r4, r5, r7);
@@ -1042,8 +1031,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   // cache. Otherwise probe the dictionary.
   __ LoadP(r5, FieldMemOperand(r3, JSObject::kPropertiesOffset));
   __ LoadP(r6, FieldMemOperand(r5, HeapObject::kMapOffset));
-  __ LoadRoot(ip, Heap::kHashTableMapRootIndex);
-  __ CmpRR(r6, ip);
+  __ CompareRoot(r6, Heap::kHashTableMapRootIndex);
   __ beq(&probe_dictionary);
 
   // Load the map of the receiver, compute the keyed lookup cache hash
@@ -1068,7 +1056,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
 
   __ mov(r6, Operand(cache_keys));
   __ LoadRR(r0, r4);
-  __ ShiftLeftImm(r4, r5, Operand(kPointerSizeLog2 + 1));
+  __ ShiftLeftP(r4, r5, Operand(kPointerSizeLog2 + 1));
   __ AddP(r6, r4);
   __ LoadRR(r4, r0);
 
@@ -1109,7 +1097,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
     if (i != 0) {
       __ AddP(r5, Operand(i));
     }
-    __ ShiftLeftImm(r7, r5, Operand(2));
+    __ ShiftLeftP(r7, r5, Operand(2));
     __ LoadlW(r7, MemOperand(r7, r6));
     __ LoadlB(r8, FieldMemOperand(r4, Map::kInObjectPropertiesOffset));
     __ Sub(r7, r7, r8);
@@ -1125,7 +1113,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   __ LoadlB(r8, FieldMemOperand(r4, Map::kInstanceSizeOffset));
   __ AddP(r8, r7);  // Index from start of object.
   __ Sub(r3, Operand(kHeapObjectTag));  // Remove the heap tag.
-  __ ShiftLeftImm(r2, r8, Operand(kPointerSizeLog2));
+  __ ShiftLeftP(r2, r8, Operand(kPointerSizeLog2));
   __ LoadP(r2, MemOperand(r2, r3));
   __ IncrementCounter(isolate->counters()->keyed_load_generic_lookup_cache(),
                       1, r4, r5);
@@ -1135,7 +1123,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   __ bind(&property_array_property);
   __ LoadP(r3, FieldMemOperand(r3, JSObject::kPropertiesOffset));
   __ AddP(r3, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
-  __ ShiftLeftImm(r2, r7, Operand(kPointerSizeLog2));
+  __ ShiftLeftP(r2, r7, Operand(kPointerSizeLog2));
   __ LoadP(r2, MemOperand(r2, r3));
   __ IncrementCounter(isolate->counters()->keyed_load_generic_lookup_cache(),
                       1, r4, r5);

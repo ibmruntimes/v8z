@@ -302,7 +302,8 @@ static void AllocateJSArray(MacroAssembler* masm,
     __ b(&entry);
     __ bind(&loop);
     __ StoreP(scratch1, MemOperand(elements_array_storage));
-    __ AddP(elements_array_storage, Operand(kPointerSize));
+    __ la(elements_array_storage, MemOperand(elements_array_storage,
+                                             kPointerSize));
     __ bind(&entry);
     __ CmpRR(elements_array_storage, elements_array_end);
     __ blt(&loop);
@@ -622,7 +623,7 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
   __ beq(&no_arguments);
   // First args = sp[(argc - 1) * 4].
   __ Sub(r2, Operand(1));
-  __ ShiftLeftImm(r2, r2, Operand(kPointerSizeLog2));
+  __ ShiftLeftP(r2, r2, Operand(kPointerSizeLog2));
   __ la(sp, MemOperand(sp, r2));
   __ LoadP(r2, MemOperand(sp));
   // sp now point to args[0], drop args[0] + receiver.
@@ -860,14 +861,13 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // r5: object size
       // r6: JSObject (not tagged)
       __ LoadRoot(r8, Heap::kEmptyFixedArrayRootIndex);
-      __ LoadRR(r7, r6);
       ASSERT_EQ(0 * kPointerSize, JSObject::kMapOffset);
-      __ StoreP(r4, MemOperand(r7));
+      __ StoreP(r4, MemOperand(r6));
       ASSERT_EQ(1 * kPointerSize, JSObject::kPropertiesOffset);
-      __ StoreP(r8, MemOperand(r7, JSObject::kPropertiesOffset));
+      __ StoreP(r8, MemOperand(r6, JSObject::kPropertiesOffset));
       ASSERT_EQ(2 * kPointerSize, JSObject::kElementsOffset);
-      __ StoreP(r8, MemOperand(r7, JSObject::kElementsOffset));
-      __ AddP(r7, Operand(3 * kPointerSize));
+      __ StoreP(r8, MemOperand(r6, JSObject::kElementsOffset));
+      __ la(r7, MemOperand(r6, 3 * kPointerSize));
 
       // Fill all the in-object properties with the appropriate filler.
       // r3: constructor function
@@ -876,7 +876,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // r6: JSObject (not tagged)
       // r7: First in-object property of JSObject (not tagged)
       uint32_t byte;
-      __ ShiftLeftImm(r8, r5, Operand(kPointerSizeLog2));
+      __ ShiftLeftP(r8, r5, Operand(kPointerSizeLog2));
       __ AddP(r8, r6);  // End of object.
       ASSERT_EQ(3 * kPointerSize, JSObject::kHeaderSize);
       __ LoadRoot(r9, Heap::kUndefinedValueRootIndex);
@@ -892,7 +892,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
         __ ExtractBitRange(r2, r2,
                            ((byte + 1) * kBitsPerByte) - 1,
                            byte * kBitsPerByte);
-        __ ShiftLeftImm(r2, r2, Operand(kPointerSizeLog2));
+        __ ShiftLeftP(r2, r2, Operand(kPointerSizeLog2));
         __ AddP(r2, r7);
         // r2: offset of first field after pre-allocated fields
         if (FLAG_debug_code) {
@@ -980,15 +980,14 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // r5: number of elements in properties array
       // r6: JSObject
       // r7: FixedArray (not tagged)
-      __ ShiftLeftImm(r8, r5, Operand(kPointerSizeLog2));
+      __ ShiftLeftP(r8, r5, Operand(kPointerSizeLog2));
       __ AddP(r8, r4);  // End of object.
       ASSERT_EQ(2 * kPointerSize, FixedArray::kHeaderSize);
       { Label loop, entry;
         if (count_constructions) {
           __ LoadRoot(r9, Heap::kUndefinedValueRootIndex);
         } else if (FLAG_debug_code) {
-          __ LoadRoot(r13, Heap::kUndefinedValueRootIndex);
-          __ CmpRR(r9, r13);
+          __ CompareRoot(r9, Heap::kUndefinedValueRootIndex);
           __ Assert(eq, "Undefined value not loaded.");
         }
         __ b(&entry);
@@ -1060,7 +1059,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     Label loop, no_args;
     __ Cmpi(r2, Operand::Zero());
     __ beq(&no_args);
-    __ ShiftLeftImm(ip, r2, Operand(kPointerSizeLog2));
+    __ ShiftLeftP(ip, r2, Operand(kPointerSizeLog2));
     __ bind(&loop);
     __ Sub(ip, Operand(kPointerSize));
     __ LoadP(r0, MemOperand(r4, ip));
@@ -1193,7 +1192,7 @@ static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
     // r9: scratch reg to hold index into argv
     Label argLoop, argExit;
     intptr_t zero = 0;
-    __ ShiftLeftImm(r7, r5, Operand(kPointerSizeLog2));
+    __ ShiftLeftP(r7, r5, Operand(kPointerSizeLog2));
     __ SubRR(sp, r7);    // Buy the stack frame to fit args
     __ LoadImmP(r9, Operand(zero));  // Initialize argv index
     __ bind(&argLoop);
@@ -1407,7 +1406,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
   //    if it is a function.
   // r2: actual number of arguments
   Label slow, non_function;
-  __ ShiftLeftImm(r3, r2, Operand(kPointerSizeLog2));
+  __ ShiftLeftP(r3, r2, Operand(kPointerSizeLog2));
   __ AddP(r3, sp);
   __ LoadP(r3, MemOperand(r3));
   __ JumpIfSmi(r3, &non_function);
@@ -1449,7 +1448,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
     __ bne(&shift_arguments /*, cr0*/);
 
     // Compute the receiver in non-strict mode.
-    __ ShiftLeftImm(ip, r2, Operand(kPointerSizeLog2));
+    __ ShiftLeftP(ip, r2, Operand(kPointerSizeLog2));
     __ AddP(r4, sp, ip);
     __ LoadP(r4, MemOperand(r4, -kPointerSize));
     // r2: actual number of arguments
@@ -1457,12 +1456,10 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
     // r4: first argument
     __ JumpIfSmi(r4, &convert_to_object);
 
-    __ LoadRoot(r5, Heap::kUndefinedValueRootIndex);
-    __ CmpRR(r4, r5);
-    __ beq(&use_global_receiver);
-    __ LoadRoot(r5, Heap::kNullValueRootIndex);
-    __ CmpRR(r4, r5);
-    __ beq(&use_global_receiver);
+    __ CompareRoot(r4, Heap::kUndefinedValueRootIndex);
+    __ b(eq, &use_global_receiver, true);
+    __ CompareRoot(r4, Heap::kNullValueRootIndex);
+    __ b(eq, &use_global_receiver, true);
 
     STATIC_ASSERT(LAST_SPEC_OBJECT_TYPE == LAST_TYPE);
     __ CompareObjectType(r4, r5, r5, FIRST_SPEC_OBJECT_TYPE);
@@ -1487,7 +1484,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
     }
 
     // Restore the function to r3, and the flag to r6.
-    __ ShiftLeftImm(r6, r2, Operand(kPointerSizeLog2));
+    __ ShiftLeftP(r6, r2, Operand(kPointerSizeLog2));
     __ AddP(r6, sp);
     __ LoadP(r3, MemOperand(r6));
     __ LoadImmP(r6, Operand(0, RelocInfo::NONE));
@@ -1504,7 +1501,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
     __ LoadP(r4, FieldMemOperand(r4, GlobalObject::kGlobalReceiverOffset));
 
     __ bind(&patch_receiver);
-    __ ShiftLeftImm(ip, r2, Operand(kPointerSizeLog2));
+    __ ShiftLeftP(ip, r2, Operand(kPointerSizeLog2));
     __ AddP(r5, sp, ip);
     __ StoreP(r4, MemOperand(r5, -kPointerSize));
 
@@ -1526,7 +1523,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
   // r2: actual number of arguments
   // r3: function
   // r6: call type (0: JS function, 1: function proxy, 2: non-function)
-  __ ShiftLeftImm(ip, r2, Operand(kPointerSizeLog2));
+  __ ShiftLeftP(ip, r2, Operand(kPointerSizeLog2));
   __ AddP(r4, sp, ip);
   __ StoreP(r3, MemOperand(r4, -kPointerSize));
 
@@ -1539,7 +1536,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
   __ bind(&shift_arguments);
   { Label loop;
     // Calculate the copy start address (destination). Copy end address is sp.
-    __ ShiftLeftImm(ip, r2, Operand(kPointerSizeLog2));
+    __ ShiftLeftP(ip, r2, Operand(kPointerSizeLog2));
     __ AddP(r4, sp, ip);
 
     __ bind(&loop);
@@ -1690,8 +1687,7 @@ void Builtins::Generate_FunctionApply(MacroAssembler* masm) {
 
     // Compute the receiver in non-strict mode.
     __ JumpIfSmi(r2, &call_to_object);
-    __ LoadRoot(r3, Heap::kNullValueRootIndex);
-    __ CmpRR(r2, r3);
+    __ CompareRoot(r2, Heap::kNullValueRootIndex);
     __ beq(&use_global_receiver);
     __ LoadRoot(r3, Heap::kUndefinedValueRootIndex);
     __ CmpRR(r2, r3);
@@ -1853,7 +1849,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     __ AddP(r2, fp);
     // adjust for return address and receiver
     __ AddP(r2, Operand(2 * kPointerSize));
-    __ ShiftLeftImm(r4, r4, Operand(kPointerSizeLog2));
+    __ ShiftLeftP(r4, r4, Operand(kPointerSizeLog2));
     __ Sub(r4, r2, r4);
 
     // Copy the arguments (including the receiver) to the new stack frame.
@@ -1904,7 +1900,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     // r4: expected number of arguments
     // r5: code entry to call
     __ LoadRoot(ip, Heap::kUndefinedValueRootIndex);
-    __ ShiftLeftImm(r4, r4, Operand(kPointerSizeLog2));
+    __ ShiftLeftP(r4, r4, Operand(kPointerSizeLog2));
     __ Sub(r4, fp, r4);
     __ Sub(r4, Operand(4 * kPointerSize));  // Adjust for frame.
 

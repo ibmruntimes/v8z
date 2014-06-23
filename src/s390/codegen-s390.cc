@@ -479,7 +479,7 @@ void StringCharLoadGenerator::Generate(MacroAssembler* masm,
   __ AndP(r0, result);
   __ bne(&ascii /*, cr0*/);
   // Two-byte string.
-  __ ShiftLeftImm(result, index, Operand(1));
+  __ ShiftLeftP(result, index, Operand(1));
   __ LoadLogicalHalfWordP(result, MemOperand(string, result));
   __ b(&done);
   __ bind(&ascii);

@@ -737,10 +737,14 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
 #endif
     // 31bit ABI requires you to store f4 and f6:
     // http://refspecs.linuxbase.org/ELF/zSeries/lzsabi0_s390.html#AEN417
-    __ std(d6, MemOperand(sp, kCalleeRegisterSaveAreaSize - kDoubleSize));
-    __ std(d4, MemOperand(sp, kCalleeRegisterSaveAreaSize - 2 * kDoubleSize));
-    __ std(d2, MemOperand(sp, kCalleeRegisterSaveAreaSize - 3 * kDoubleSize));
-    __ std(d0, MemOperand(sp, kCalleeRegisterSaveAreaSize - 4 * kDoubleSize));
+    __ std(d6, MemOperand(sp,
+          kStackFrameExtraParamSlot * kPointerSize - kDoubleSize));
+    __ std(d4, MemOperand(sp,
+          kStackFrameExtraParamSlot * kPointerSize - 2 * kDoubleSize));
+    __ std(d2, MemOperand(sp,
+          kStackFrameExtraParamSlot * kPointerSize - 3 * kDoubleSize));
+    __ std(d0, MemOperand(sp,
+          kStackFrameExtraParamSlot * kPointerSize - 4 * kDoubleSize));
 
     // zLinux ABI
     //    Incoming parameters:
@@ -757,10 +761,13 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     // __ StoreP(frame_pointer(), MemOperand(sp));
 
     // Load stack parameters from caller stack frame
-    __ lay(fp, MemOperand(sp, kCalleeRegisterSaveAreaSize));
-    __ LoadP(r7, MemOperand(fp, 0 * kPointerSize));   // capture array size
-    __ LoadP(r8, MemOperand(fp, 1 * kPointerSize));  // stack area base
-    __ LoadP(r9, MemOperand(fp, 2 * kPointerSize));  // direct call
+    // __ lay(fp, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize));
+    __ LoadP(r7, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize +
+            0 * kPointerSize));   // capture array size
+    __ LoadP(r8, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize +
+            1 * kPointerSize));  // stack area base
+    __ LoadP(r9, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize +
+            2 * kPointerSize));  // direct call
 
     // Actually emit code to start a new stack frame.
     // Push arguments
@@ -772,7 +779,6 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     // Set frame pointer in space for it if this is not a direct call
     // from generated code.
     __ LoadRR(frame_pointer(), sp);
-    // FIXME: Broken in 64-bit
     __ lay(sp, MemOperand(sp, -10 * kPointerSize));
     __ mov(r1, Operand::Zero());        // success counter
     __ mov(r0, Operand::Zero());        // offset of location
@@ -786,9 +792,9 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
       ExternalReference::address_of_stack_limit(masm_->isolate());
     __ mov(r2, Operand(stack_limit));
     __ LoadP(r2, MemOperand(r2));
-    __ SubP(r2, r2, sp/*, LeaveOE, SetRC*/);  // Removing RC looks okay here
+    __ SubP(r2, sp, r2/*, LeaveOE, SetRC*/);  // Removing RC looks okay here
     // Handle it if the stack pointer is already below the stack limit.
-    __ bge(&stack_limit_hit /*, cr0*/);
+    __ ble(&stack_limit_hit /*, cr0*/);
     // Check if there is room for the variable number of registers above
     // the stack limit.
     __ Cmpli(r2, Operand(num_registers_ * kPointerSize));
@@ -822,7 +828,7 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     // (effectively string position -1).
     __ Sub(r1, current_input_offset(), Operand(char_size()));
     if (mode_ == UC16) {
-      __ ShiftLeftImm(r0, r3, Operand(1));
+      __ ShiftLeftP(r0, r3, Operand(1));
       __ Sub(r1, r1, r0);
     } else {
       __ Sub(r1, r1, r3);
@@ -890,7 +896,7 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
         __ Sub(r3, end_of_input_address(), r3);
         // r3 is length of input in bytes.
         if (mode_ == UC16) {
-          __ ShiftRightImm(r3, r3, Operand(1));
+          __ ShiftRightP(r3, r3, Operand(1));
         }
         // r3 is length of input in characters.
         __ AddP(r3, r4);
@@ -908,9 +914,9 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
             __ LoadRR(r6, r4);
           }
           if (mode_ == UC16) {
-            __ ShiftRightArithImm(r4, r4, 1);
+            __ ShiftRightArithP(r4, r4, Operand(1));
             __ AddP(r4, r3, r4);
-            __ ShiftRightArithImm(r5, r5, 1);
+            __ ShiftRightArithP(r5, r5, Operand(1));
             __ AddP(r5, r3, r5);
           } else {
             __ AddP(r4, r3, r4);
@@ -1212,6 +1218,7 @@ void RegExpMacroAssemblerS390::CallCheckStackGuardState(Register scratch) {
   // Code* of self.
   __ mov(r3, Operand(masm_->CodeObject()));
   // r2 becomes return address pointer.
+  __ lay(r2, MemOperand(sp, -kCalleeRegisterSaveAreaSize + 14 * kPointerSize));
   ExternalReference stack_guard_check =
       ExternalReference::re_check_stack_guard_state(masm_->isolate());
   CallCFunctionUsingStub(stack_guard_check, num_arguments);
@@ -1431,7 +1438,10 @@ void RegExpMacroAssemblerS390::CallCFunctionUsingStub(
   ASSERT(num_arguments <= 8);
   __ mov(code_pointer(), Operand(function));
   RegExpCEntryStub stub;
-  __ CallStub(&stub);
+  __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
+  // __ CallStub(&stub);
+  __ Call(code_pointer());
+  __ la(sp, MemOperand(sp, kCalleeRegisterSaveAreaSize));
   if (OS::ActivationFrameAlignment() > kPointerSize) {
     __ LoadP(sp, MemOperand(sp, 0));
   } else {

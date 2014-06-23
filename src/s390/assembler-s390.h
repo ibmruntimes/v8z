@@ -195,7 +195,11 @@ const Register sp   = { kRegister_sp_Code };
 // Double word FP register.
 struct DoubleRegister {
   static const int kNumRegisters = 16;
-  static const int kNumVolatileRegisters = 14;     // d0-d13
+#ifdef V8_TARGET_ARCH_S390X
+  static const int kNumVolatileRegisters = 8;     // d0-d7
+#else
+  static const int kNumVolatileRegisters = 14;     // d0-d15 except d4 and d6
+#endif
   static const int kNumAllocatableRegisters = 12;  // d1-d12
 
   inline static int ToAllocationIndex(DoubleRegister reg);
@@ -206,8 +210,9 @@ struct DoubleRegister {
   }
 
   static const char* AllocationIndexToString(int index) {
-    ASSERT(index >= 0 && index < kNumAllocatableRegisters);
+    ASSERT(index >= 0 && index < kNumRegisters);
     const char* const names[] = {
+      "f0",
       "f1",
       "f2",
       "f3",
@@ -220,6 +225,9 @@ struct DoubleRegister {
       "f10",
       "f11",
       "f12",
+      "f13",
+      "f14",
+      "f15"
     };
     return names[index];
   }
@@ -1423,8 +1431,6 @@ RRF1_FORM(ppa);
 RRF1_FORM(qadtr);
 RRF1_FORM(qaxtr);
 S_FORM(rchp);
-RIE_F_FORM(risbg);
-RIE_F_FORM(risbgn);
 RIE_FORM(risbhg);
 RIE_FORM(risblg);
 RSY1_FORM(rll);
@@ -1457,7 +1463,6 @@ RRF1_FORM(shhhr);
 RRF1_FORM(shhlr);
 RXY_FORM(shy);
 RX_FORM(sl);
-RSY1_FORM(slak);
 RXY_FORM(slb);
 RXY_FORM(slbg);
 RRE_FORM(slbgr);
@@ -1473,7 +1478,6 @@ RRE_FORM(slgfr);
 RRE_FORM(slgr);
 RRF1_FORM(slhhhr);
 RRF1_FORM(slhhlr);
-RSY1_FORM(sllk);
 RR_FORM(slr);
 RXF_FORM(slxt);
 RXY_FORM(sly);
@@ -1485,7 +1489,6 @@ RRE_FORM(sqxbr);
 RR_FORM(sr);
 RS1_FORM(srdl);
 RXF_FORM(srdt);
-RSY1_FORM(srlk);
 S_FORM(srnm);
 S_FORM(srnmb);
 S_FORM(srnmt);
@@ -1605,14 +1608,23 @@ SS2_FORM(zap);
   void stcy(Register dst, const MemOperand& src);
 
   // Shift Instruction (32)
-  void sll(Register r1, const Operand& opnd);
-  void srl(Register r1, const Operand& opnd);
-  void sra(Register r1, const Operand& opnd);
   void sll(Register r1, Register opnd);
+  void sll(Register r1, const Operand& opnd);
+  void sllk(Register r1, Register r3, Register opnd);
+  void sllk(Register r1, Register r3, const Operand& opnd);
   void srl(Register r1, Register opnd);
-  void sra(Register r1, Register opnd);
+  void srl(Register r1, const Operand& opnd);
+  void srlk(Register r1, Register r3, Register opnd);
   void srlk(Register r1, Register r3, const Operand& opnd);
+  void sra(Register r1, Register opnd);
+  void sra(Register r1, const Operand& opnd);
+  void srak(Register r1, Register r3, Register opnd);
+  void srak(Register r1, Register r3, const Operand& opnd);
+  void sla(Register r1, Register opnd);
   void sla(Register r1, const Operand& opnd);
+  void slak(Register r1, Register r3, Register opnd);
+  void slak(Register r1, Register r3, const Operand& opnd);
+
   void srda(Register r1, const Operand& opnd);
 
   // Shift Instructions (64)
@@ -1624,6 +1636,14 @@ SS2_FORM(zap);
   void srag(Register r1, Register r3, const Register opnd);
   void slag(Register r1, Register r3, const Operand& opnd);
   void slag(Register r1, Register r3, const Register opnd);
+
+  // Rotate and Insert Selected Bits
+  void risbg(Register dst, Register src, const Operand& startBit,
+             const Operand& endBit, const Operand& shiftAmt,
+             bool zeroBits = true);
+  void risbgn(Register dst, Register src, const Operand& startBit,
+              const Operand& endBit, const Operand& shiftAmt,
+              bool zeroBits = true);
 
   // Compare Instructions
   void cr(Register r1, Register r2);
@@ -1650,6 +1670,7 @@ SS2_FORM(zap);
   void ogrk(Register r1, Register r2, Register r3);
   void xrk(Register r1, Register r2, Register r3);
   void xgrk(Register r1, Register r2, Register r3);
+
 
 
   // floating point instructions

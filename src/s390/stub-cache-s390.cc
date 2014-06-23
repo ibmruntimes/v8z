@@ -74,12 +74,12 @@ static void ProbeTable(Isolate* isolate,
   scratch = no_reg;
 
   // Multiply by 3 because there are 3 fields per entry (name, code, map).
-  __ ShiftLeftImm(offset_scratch, offset, Operand(1));
+  __ ShiftLeftP(offset_scratch, offset, Operand(1));
   __ AddP(offset_scratch, offset);
 
   // Calculate the base address of the entry.
   __ mov(base_addr, Operand(key_offset));
-  __ ShiftLeftImm(scratch2, offset_scratch, Operand(kPointerSizeLog2));
+  __ ShiftLeftP(scratch2, offset_scratch, Operand(kPointerSizeLog2));
   __ AddP(base_addr, scratch2);
 
   // Check that the key in the entry matches the name.
@@ -167,9 +167,7 @@ static void GenerateDictionaryNegativeLookup(MacroAssembler* masm,
   __ LoadP(properties, FieldMemOperand(receiver, JSObject::kPropertiesOffset));
   // Check that the properties array is a dictionary.
   __ LoadP(map, FieldMemOperand(properties, HeapObject::kMapOffset));
-  Register tmp = properties;
-  __ LoadRoot(tmp, Heap::kHashTableMapRootIndex);
-  __ CmpRR(map, tmp);
+  __ CompareRoot(map, Heap::kHashTableMapRootIndex);
   __ bne(miss_label);
 
   // Restore the temporarily used register.
@@ -247,7 +245,7 @@ void StubCache::GenerateProbe(MacroAssembler* masm,
   uint32_t mask = kPrimaryTableSize - 1;
   // We shift out the last two bits because they are not part of the hash and
   // they are always 01 for maps.
-  __ ShiftRightImm(scratch, scratch, Operand(kHeapObjectTagSize));
+  __ ShiftRightP(scratch, scratch, Operand(kHeapObjectTagSize));
   // Mask down the eor argument to the minimum to keep the immediate
   // encodable.
   __ XorPImm(scratch, Operand((flags >> kHeapObjectTagSize) & mask));
@@ -267,7 +265,7 @@ void StubCache::GenerateProbe(MacroAssembler* masm,
              extra3);
 
   // Primary miss: Compute hash for secondary probe.
-  __ ShiftRightImm(extra, name, Operand(kHeapObjectTagSize));
+  __ ShiftRightP(extra, name, Operand(kHeapObjectTagSize));
   __ Sub(scratch, scratch, extra);
   uint32_t mask2 = kSecondaryTableSize - 1;
   __ AddP(scratch, Operand((flags >> kHeapObjectTagSize) & mask2));
@@ -963,8 +961,7 @@ class CallInterceptorCompiler BASE_EMBEDDED {
       __ pop(receiver);  // Restore the holder.
     }
     // If interceptor returns no-result sentinel, call the constant function.
-    __ LoadRoot(scratch, Heap::kNoInterceptorResultSentinelRootIndex);
-    __ CmpRR(r2, scratch);
+    __ CompareRoot(r2, Heap::kNoInterceptorResultSentinelRootIndex);
     __ bne(interceptor_succeeded);
   }
 
@@ -989,8 +986,7 @@ static void GenerateCheckPropertyCell(MacroAssembler* masm,
   __ mov(scratch, Operand(cell));
   __ LoadP(scratch,
            FieldMemOperand(scratch, JSGlobalPropertyCell::kValueOffset));
-  __ LoadRoot(ip, Heap::kTheHoleValueRootIndex);
-  __ CmpRR(scratch, ip);
+  __ CompareRoot(scratch, Heap::kTheHoleValueRootIndex);
   __ bne(miss);
 }
 
@@ -1374,8 +1370,7 @@ void StubCompiler::GenerateLoadInterceptor(Handle<JSObject> object,
       // Check if interceptor provided a value for property.  If it's
       // the case, return immediately.
       Label interceptor_failed;
-      __ LoadRoot(scratch1, Heap::kNoInterceptorResultSentinelRootIndex);
-      __ CmpRR(r2, scratch1);
+      __ CompareRoot(r2, Heap::kNoInterceptorResultSentinelRootIndex);
       __ beq(&interceptor_failed);
       frame_scope.GenerateLeaveFrame();
       __ Ret();
@@ -2252,9 +2247,8 @@ Handle<Code> CallStubCompiler::CompileMathAbsCall(
 
   // Do bitwise not or do nothing depending on the sign of the
   // argument.
-  __ ShiftRightArithImm(r0, r2, kBitsPerPointer - 1);
-  __ LoadRR(r3, r0);
-  __ XorP(r3, r2);
+  __ ShiftRightArithP(r0, r2, Operand(kBitsPerPointer - 1));
+  __ XorP(r3, r0, r2);
 
   // Add 1 or do nothing depending on the sign of the argument.
   __ Sub(r2, r3, r0);
@@ -2459,11 +2453,9 @@ Handle<Code> CallStubCompiler::CompileCallConstant(Handle<Object> object,
       if (function->IsBuiltin() || !function->shared()->is_classic_mode()) {
         Label fast;
         // Check that the object is a boolean.
-        __ LoadRoot(ip, Heap::kTrueValueRootIndex);
-        __ CmpRR(r3, ip);
-        __ beq(&fast);
-        __ LoadRoot(ip, Heap::kFalseValueRootIndex);
-        __ CmpRR(r3, ip);
+        __ CompareRoot(r3, Heap::kTrueValueRootIndex);
+        __ b(eq, &fast, true);
+        __ CompareRoot(r3, Heap::kFalseValueRootIndex);
         __ bne(&miss);
         __ bind(&fast);
         // Check that the maps starting from the prototype haven't changed.
@@ -2801,9 +2793,8 @@ Handle<Code> StoreStubCompiler::CompileStoreGlobal(
   // to update the property details in the property dictionary of the
   // global object. We bail out to the runtime system to do that.
   __ mov(r6, Operand(cell));
-  __ LoadRoot(r7, Heap::kTheHoleValueRootIndex);
   __ LoadP(r8, FieldMemOperand(r6, JSGlobalPropertyCell::kValueOffset));
-  __ CmpRR(r7, r8);
+  __ CompareRoot(r8, Heap::kTheHoleValueRootIndex);
   __ beq(&miss);
 
   // Store the value in the cell.
@@ -3031,8 +3022,7 @@ Handle<Code> LoadStubCompiler::CompileLoadGlobal(
 
   // Check for deleted property if property can actually be deleted.
   if (!is_dont_delete) {
-    __ LoadRoot(ip, Heap::kTheHoleValueRootIndex);
-    __ CmpRR(r6, ip);
+    __ CompareRoot(r6, Heap::kTheHoleValueRootIndex);
     __ beq(&miss);
   }
 
@@ -3449,20 +3439,17 @@ Handle<Code> ConstructStubCompiler::CompileConstructStub(
   // r6: JSObject (not tagged)
   // r9: undefined
   __ LoadRoot(r8, Heap::kEmptyFixedArrayRootIndex);
-  __ LoadRR(r7, r6);
   ASSERT_EQ(0 * kPointerSize, JSObject::kMapOffset);
-  __ StoreP(r4, MemOperand(r7));
-  __ AddP(r7, Operand(kPointerSize));
+  __ StoreP(r4, MemOperand(r6));
   ASSERT_EQ(1 * kPointerSize, JSObject::kPropertiesOffset);
-  __ StoreP(r8, MemOperand(r7));
-  __ AddP(r7, Operand(kPointerSize));
+  __ StoreP(r8, MemOperand(r6, kPointerSize));
   ASSERT_EQ(2 * kPointerSize, JSObject::kElementsOffset);
-  __ StoreP(r8, MemOperand(r7));
-  __ AddP(r7, Operand(kPointerSize));
+  __ StoreP(r8, MemOperand(r6, 2 * kPointerSize));
+  __ la(r7, MemOperand(r6, 3 * kPointerSize));
 
   // Calculate the location of the first argument. The stack contains only the
   // argc arguments.
-  __ ShiftLeftImm(r3, r2, Operand(kPointerSizeLog2));
+  __ ShiftLeftP(r3, r2, Operand(kPointerSizeLog2));
   __ AddP(r3, sp);
 
   // Fill all the in-object properties with undefined.
@@ -3520,7 +3507,7 @@ Handle<Code> ConstructStubCompiler::CompileConstructStub(
   // r2: JSObject
   // r3: argc
   // Remove caller arguments and receiver from the stack and return.
-  __ ShiftLeftImm(r3, r3, Operand(kPointerSizeLog2));
+  __ ShiftLeftP(r3, r3, Operand(kPointerSizeLog2));
   __ la(sp, MemOperand(sp, r3));
   __ la(sp, MemOperand(sp, kPointerSize));
   Counters* counters = masm()->isolate()->counters();
@@ -4036,17 +4023,15 @@ void KeyedLoadStubCompiler::GenerateLoadFastElement(MacroAssembler* masm) {
   __ AssertFastElements(r4);
 
   // Check that the key is within bounds.
-  __ LoadP(r5, FieldMemOperand(r4, FixedArray::kLengthOffset));
-  __ Cmpl(r2, r5);
+  __ CmpLogicalP(r2, FieldMemOperand(r4, FixedArray::kLengthOffset));
   __ bge(&miss_force_generic);
 
   // Load the result and make sure it's not the hole.
   __ AddP(r5, r4, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ SmiToPtrArrayOffset(r6, r2);
   __ LoadP(r6, MemOperand(r6, r5));
-  __ LoadRoot(ip, Heap::kTheHoleValueRootIndex);
-  __ CmpRR(r6, ip);
-  __ beq(&miss_force_generic);
+  __ CompareRoot(r6, Heap::kTheHoleValueRootIndex);
+  __ b(eq, &miss_force_generic, true);
   __ LoadRR(r2, r6);
   __ Ret();
 
@@ -4087,8 +4072,8 @@ void KeyedLoadStubCompiler::GenerateLoadFastDoubleElement(
            FieldMemOperand(receiver_reg, JSObject::kElementsOffset));
 
   // Check that the key is within bounds.
-  __ LoadP(scratch, FieldMemOperand(elements_reg, FixedArray::kLengthOffset));
-  __ Cmpl(key_reg, scratch);
+  __ CmpLogicalP(key_reg,
+                 FieldMemOperand(elements_reg, FixedArray::kLengthOffset));
   __ bge(&miss_force_generic);
 
   // Load the upper word of the double in the fixed array and test for NaN.
@@ -4175,12 +4160,13 @@ void KeyedStoreStubCompiler::GenerateStoreFastElement(
   __ LoadP(elements_reg,
            FieldMemOperand(receiver_reg, JSObject::kElementsOffset));
   if (is_js_array) {
-    __ LoadP(scratch, FieldMemOperand(receiver_reg, JSArray::kLengthOffset));
+    __ CmpLogicalP(key_reg,
+                   FieldMemOperand(receiver_reg, JSArray::kLengthOffset));
   } else {
-    __ LoadP(scratch, FieldMemOperand(elements_reg, FixedArray::kLengthOffset));
+    __ CmpLogicalP(key_reg,
+                   FieldMemOperand(elements_reg, FixedArray::kLengthOffset));
   }
   // Compare smis.
-  __ Cmpl(key_reg, scratch);
   if (is_js_array && grow_mode == ALLOW_JSARRAY_GROWTH) {
     __ bge(&grow);
   } else {
@@ -4284,8 +4270,8 @@ void KeyedStoreStubCompiler::GenerateStoreFastElement(
                 &miss_force_generic,
                 DONT_DO_SMI_CHECK);
 
-    __ LoadP(scratch, FieldMemOperand(elements_reg, FixedArray::kLengthOffset));
-    __ Cmpl(length_reg, scratch);
+    __ CmpLogicalP(length_reg,
+                   FieldMemOperand(elements_reg, FixedArray::kLengthOffset));
     __ bge(&slow);
 
     // Grow the array and finish the store.
@@ -4336,16 +4322,15 @@ void KeyedStoreStubCompiler::GenerateStoreFastDoubleElement(
   __ LoadP(elements_reg,
            FieldMemOperand(receiver_reg, JSObject::kElementsOffset));
 
-  // Check that the key is within bounds.
+  // Check that the key is within bounds.  Compare smis, unsigned compare
+  // catches both negative and out-of-bound indexes.
   if (is_js_array) {
-    __ LoadP(scratch1, FieldMemOperand(receiver_reg, JSArray::kLengthOffset));
+    __ CmpLogicalP(key_reg,
+                   FieldMemOperand(receiver_reg, JSArray::kLengthOffset));
   } else {
-    __ LoadP(scratch1,
-             FieldMemOperand(elements_reg, FixedArray::kLengthOffset));
+    __ CmpLogicalP(key_reg,
+                   FieldMemOperand(elements_reg, FixedArray::kLengthOffset));
   }
-  // Compare smis, unsigned compare catches both negative and out-of-bound
-  // indexes.
-  __ Cmpl(key_reg, scratch1);
   if (grow_mode == ALLOW_JSARRAY_GROWTH) {
     __ bge(&grow);
   } else {
@@ -4430,9 +4415,8 @@ void KeyedStoreStubCompiler::GenerateStoreFastDoubleElement(
 
     __ bind(&check_capacity);
     // Make sure that the backing store can hold additional elements.
-    __ LoadP(scratch1,
-             FieldMemOperand(elements_reg, FixedDoubleArray::kLengthOffset));
-    __ Cmpl(length_reg, scratch1);
+    __ CmpLogicalP(length_reg,
+                FieldMemOperand(elements_reg, FixedDoubleArray::kLengthOffset));
     __ bge(&slow);
 
     // Grow the array and finish the store.

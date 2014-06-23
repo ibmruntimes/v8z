@@ -1466,6 +1466,21 @@ class RREInstruction : Instruction {
   inline int size() const { return 4; }
 };
 
+// RRF Instruction
+class RRFInstruction : Instruction {
+ public:
+  inline int R1Value() const {
+    return Bits<FourByteInstr, int>(7, 4);
+  }
+  inline int R2Value() const {
+    return Bits<FourByteInstr, int>(3, 0);
+  }
+  inline int R3Value() const {
+    return Bits<FourByteInstr, int>(15, 12);
+  }
+  inline int size() const { return 4; }
+};
+
 // RI Instruction
 class RIInstruction : Instruction {
  public:
@@ -1610,6 +1625,32 @@ class RXEInstruction : Instruction {
   }
   inline int D2Value() const {
     return Bits<SixByteInstr, int>(27, 16);
+  }
+  inline int size() const {
+    return 6;
+  }
+};
+
+// RIE Instruction
+class RIEInstruction : Instruction {
+ public:
+  inline int R1Value() const {
+    return Bits<SixByteInstr, int>(39, 36);
+  }
+  inline int R2Value() const {
+    return Bits<SixByteInstr, int>(35, 32);
+  }
+  inline int I3Value() const {
+    return Bits<SixByteInstr, uint32_t>(31, 24);
+  }
+  inline int I4Value() const {
+    return Bits<SixByteInstr, uint32_t>(23, 16);
+  }
+  inline int I5Value() const {
+    return Bits<SixByteInstr, uint32_t>(15, 8);
+  }
+  inline int I6Value() const {
+    return Bits<SixByteInstr, int32_t>(31, 16);
   }
   inline int size() const {
     return 6;

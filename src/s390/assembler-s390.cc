@@ -136,8 +136,9 @@ void CpuFeatures::Probe() {
   ASSERT(performSTFLE);
 
   // Need to define host, as we are generating inlined S390 assembly to test
-  // for facilities.
-#if defined(V8_HOST_ARCH_S390)
+  // for facilities.  Disabling detection when running native sim, as we
+  // currently do not have support for the distinct operands instructions
+#if defined(V8_HOST_ARCH_S390) && !defined(USE_SIMULATOR)
   if (performSTFLE) {
      // STFLE D(B) requires:
      //    GPR0 to specify # of double words to update minus 1.
@@ -159,8 +160,14 @@ void CpuFeatures::Probe() {
      if (facilities[0] & (1lu << (63 - 45))) {
         supported_ |= (1u << DISTINCT_OPS);
      }
+     // Test for General Instruction Extension Facility - Bit 34
+     if (facilities[0] & (1lu << (63 - 34))) {
+        supported_ |= (1u << GENERAL_INSTR_EXT);
+     }
   }
 #else
+  // All distinct ops instructions can be simulated
+  supported_ |= (1u << DISTINCT_OPS);
   USE(performSTFLE);  // To avoid assert
 #endif
   supported_ |= (1u << FPU);
@@ -850,11 +857,6 @@ void Assembler::ri_form(Opcode op, Condition m1, const Operand& i2) {
 //    | OpCode | R1 | R2 |   I3   |    I4   |   I5   | OpCode |
 //    +--------+----+----+------------------+--------+--------+
 //    0        8    12   16      24         32       40      47
-#define RIE_F_FORM_EMIT(name, op) \
-void Assembler::name(Register r1, Register r2, const Operand &i3, \
-                     const Operand& i4, const Operand& i5) {\
-  rie_f_form(op, r1, r2, i3, i4, i5);\
-}
 void Assembler::rie_f_form(Opcode op, Register r1, Register r2,
          const Operand &i3, const Operand& i4, const Operand& i5) {
     ASSERT(is_uint16(op));
@@ -2050,8 +2052,6 @@ RRF1_FORM_EMIT(ppa, PPA)
 RRF1_FORM_EMIT(qadtr, QADTR)
 RRF1_FORM_EMIT(qaxtr, QAXTR)
 S_FORM_EMIT(rchp, RCHP)
-RIE_F_FORM_EMIT(risbg, RISBG)
-RIE_F_FORM_EMIT(risbgn, RISBGN)
 RIE_FORM_EMIT(risbhg, RISBHG)
 RIE_FORM_EMIT(risblg, RISBLG)
 RSY1_FORM_EMIT(rll, RLL)
@@ -2640,15 +2640,26 @@ void Assembler::lgfr(Register r1, Register r2) {
 }
 
 // Shift Left Single Logical (32)
-void Assembler::sll(Register r1, const Operand& opnd) {
-  rs_form(SLL, r1, r0, r0, opnd.immediate());
-}
-
 void Assembler::sll(Register r1, Register opnd) {
   ASSERT(!opnd.is(r0));
   rs_form(SLL, r1, r0, opnd, 0);
 }
 
+// Shift Left Single Logical (32)
+void Assembler::sll(Register r1, const Operand& opnd) {
+  rs_form(SLL, r1, r0, r0, opnd.immediate());
+}
+
+// Shift Left Single Logical (32)
+void Assembler::sllk(Register r1, Register r3, Register opnd) {
+  ASSERT(!opnd.is(r0));
+  rsy_form(SLLK, r1, r3, opnd, 0);
+}
+
+// Shift Left Single Logical (32)
+void Assembler::sllk(Register r1, Register r3, const Operand& opnd) {
+  rsy_form(SLLK, r1, r3, r0, opnd.immediate());
+}
 
 // Shift Left Single Logical (64)
 void Assembler::sllg(Register r1, Register r3, Register opnd) {
@@ -2656,13 +2667,9 @@ void Assembler::sllg(Register r1, Register r3, Register opnd) {
   rsy_form(SLLG, r1, r3, opnd, 0);
 }
 
+// Shift Left Single Logical (64)
 void Assembler::sllg(Register r1, Register r3, const Operand& opnd) {
   rsy_form(SLLG, r1, r3, r0, opnd.immediate());
-}
-
-// Shift Right Single Logical (32)
-void Assembler::srl(Register r1, const Operand& opnd) {
-  rs_form(SRL, r1, r0, r0, opnd.immediate());
 }
 
 // Shift Right Single Logical (32)
@@ -2671,6 +2678,16 @@ void Assembler::srl(Register r1, Register opnd) {
   rs_form(SRL, r1, r0, opnd, 0);
 }
 
+// Shift Right Single Logical (32)
+void Assembler::srl(Register r1, const Operand& opnd) {
+  rs_form(SRL, r1, r0, r0, opnd.immediate());
+}
+
+// Shift Right Single Logical (32)
+void Assembler::srlk(Register r1, Register r3, Register opnd) {
+  ASSERT(!opnd.is(r0));
+  rsy_form(SRLK, r1, r3, opnd, 0);
+}
 
 // Shift Right Single Logical (32)
 void Assembler::srlk(Register r1, Register r3, const Operand& opnd) {
@@ -2683,13 +2700,31 @@ void Assembler::srlg(Register r1, Register r3, Register opnd) {
   rsy_form(SRLG, r1, r3, opnd, 0);
 }
 
+// Shift Right Single Logical (64)
 void Assembler::srlg(Register r1, Register r3, const Operand& opnd) {
   rsy_form(SRLG, r1, r3, r0, opnd.immediate());
 }
 
 // Shift Left Single (32)
+void Assembler::sla(Register r1, Register opnd) {
+  ASSERT(!opnd.is(r0));
+  rs_form(SLA, r1, r0, opnd, 0);
+}
+
+// Shift Left Single (32)
 void Assembler::sla(Register r1, const Operand& opnd) {
   rs_form(SLA, r1, r0, r0, opnd.immediate());
+}
+
+// Shift Left Single (32)
+void Assembler::slak(Register r1, Register r3, Register opnd) {
+  ASSERT(!opnd.is(r0));
+  rsy_form(SLAK, r1, r3, opnd, 0);
+}
+
+// Shift Left Single (32)
+void Assembler::slak(Register r1, Register r3, const Operand& opnd) {
+  rsy_form(SLAK, r1, r3, r0, opnd.immediate());
 }
 
 // Shift Left Single (64)
@@ -2698,8 +2733,15 @@ void Assembler::slag(Register r1, Register r3, Register opnd) {
   rsy_form(SLAG, r1, r3, opnd, 0);
 }
 
+// Shift Left Single (64)
 void Assembler::slag(Register r1, Register r3, const Operand& opnd) {
   rsy_form(SLAG, r1, r3, r0, opnd.immediate());
+}
+
+// Shift Right Single (32)
+void Assembler::sra(Register r1, Register opnd) {
+  ASSERT(!opnd.is(r0));
+  rs_form(SRA, r1, r0, opnd, 0);
 }
 
 // Shift Right Single (32)
@@ -2708,9 +2750,14 @@ void Assembler::sra(Register r1, const Operand& opnd) {
 }
 
 // Shift Right Single (32)
-void Assembler::sra(Register r1, Register opnd) {
+void Assembler::srak(Register r1, Register r3, Register opnd) {
   ASSERT(!opnd.is(r0));
-  rs_form(SRA, r1, r0, opnd, 0);
+  rsy_form(SRAK, r1, r3, opnd, 0);
+}
+
+// Shift Right Single (32)
+void Assembler::srak(Register r1, Register r3, const Operand& opnd) {
+  rsy_form(SRAK, r1, r3, r0, opnd.immediate());
 }
 
 // Shift Right Single (64)
@@ -2727,6 +2774,30 @@ void Assembler::srag(Register r1, Register r3, const Operand& opnd) {
 void Assembler::srda(Register r1, const Operand& opnd) {
   ASSERT(r1.code() % 2 == 0);
   rs_form(SRDA, r1, r0, r0, opnd.immediate());
+}
+
+// Rotate-And-Insert-Selected-Bits
+void Assembler::risbg(Register dst, Register src, const Operand& startBit,
+                      const Operand& endBit, const Operand& shiftAmt,
+                      bool zeroBits) {
+  // High tag the top bit of I4/EndBit to zero out any unselected bits
+  if (zeroBits)
+    rie_f_form(RISBG, dst, src, startBit, Operand(endBit.imm_ | 0x80),
+               shiftAmt);
+  else
+    rie_f_form(RISBG, dst, src, startBit, endBit, shiftAmt);
+}
+
+// Rotate-And-Insert-Selected-Bits
+void Assembler::risbgn(Register dst, Register src, const Operand& startBit,
+                       const Operand& endBit, const Operand& shiftAmt,
+                       bool zeroBits) {
+  // High tag the top bit of I4/EndBit to zero out any unselected bits
+  if (zeroBits)
+    rie_f_form(RISBGN, dst, src, startBit, Operand(endBit.imm_ | 0x80),
+               shiftAmt);
+  else
+    rie_f_form(RISBGN, dst, src, startBit, endBit, shiftAmt);
 }
 
 // Compare Halfword Immediate (32)

@@ -437,7 +437,8 @@ enum CpuFeature { SSE4_1 = 32 + 19,  // x86
                   MOVW_MOVT_IMMEDIATE_LOADS = 6,  // ARM
                   SAHF = 0,    // x86
                   FPU = 1,     // MIPS
-                  DISTINCT_OPS = 2};     // S390
+                  DISTINCT_OPS = 2,        // S390
+                  GENERAL_INSTR_EXT = 3};  // S390
 
 
 // Used to specify if a macro instruction must perform a smi check on tagged
