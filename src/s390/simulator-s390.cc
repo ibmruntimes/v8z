@@ -31,8 +31,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <cstdarg>
+#include <climits>
 #include "v8.h"
-
 #if defined(V8_TARGET_ARCH_S390)
 
 #include "disasm.h"
@@ -1164,12 +1164,10 @@ void Simulator::WriteB(intptr_t addr, int8_t value) {
   *ptr = value;
 }
 
-
 int64_t Simulator::ReadDW(intptr_t addr) {
   int64_t* ptr = reinterpret_cast<int64_t*>(addr);
   return *ptr;
 }
-
 
 void Simulator::WriteDW(intptr_t addr, int64_t value) {
   int64_t* ptr = reinterpret_cast<int64_t*>(addr);
@@ -1869,7 +1867,6 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
 // Decode routine for four-byte instructions
 bool Simulator::DecodeFourByte(Instruction* instr) {
   Opcode op = instr->S390OpcodeValue();
-
   switch (op) {
     case EX: {
       RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
@@ -2689,6 +2686,9 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
             }
             case ROUND_TOWARD_0: {
               r1_val = static_cast<int32_t>(r2_val);
+              if (r2_val > INT_MAX) {
+                condition_reg_ = 1;
+              }
               break;
             }
             case ROUND_TOWARD_PLUS_INFINITE: {
@@ -3715,6 +3715,7 @@ void Simulator::DebugStart() {
   S390Debugger dbg(this);
   dbg.Debug();
 }
+
 
 void Simulator::Execute() {
   // Get the PC to simulate. Cannot use the accessor here as we need the
