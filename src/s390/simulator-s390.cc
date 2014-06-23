@@ -2193,8 +2193,8 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       // whack the space of the caller allocated stack
       intptr_t sp_addr = get_register(sp);
       for (int i = 0; i < kCalleeRegisterSaveAreaSize / kPointerSize; ++i) {
-        *(reinterpret_cast<int32_t*>(sp_addr)) = 0xdeadbabe;
-        sp_addr += kPointerSize;
+        // we dont want to whack the RA (r14)
+        if (i != 14) (reinterpret_cast<uint32_t*>(sp_addr))[i] = 0xdeadbabe;
       }
       SoftwareInterrupt(instr);
       break;
