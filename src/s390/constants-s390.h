@@ -1649,6 +1649,9 @@ class RIEInstruction : Instruction {
   inline int I5Value() const {
     return Bits<SixByteInstr, uint32_t>(15, 8);
   }
+  inline int I6Value() const {
+    return Bits<SixByteInstr, int32_t>(31, 16);
+  }
   inline int size() const {
     return 6;
   }

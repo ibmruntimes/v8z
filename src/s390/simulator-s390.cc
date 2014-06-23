@@ -3014,6 +3014,9 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
 bool Simulator::DecodeSixByte(Instruction* instr) {
   Opcode op = instr->S390OpcodeValue();
 
+  // Pre-cast instruction to various types
+  RSYInstruction* rsyInstr = reinterpret_cast<RSYInstruction*>(instr);
+
   switch (op) {
     case LDEB: {
       // Load Address
@@ -3181,6 +3184,33 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       break;
       break;
     }
+    case SLLK:
+    case SRLK: {
+      // For SLLK/SRLL, the 32-bit third operand is shifted the number
+      // of bits specified by the second-operand address, and the result is
+      // placed at the first-operand location. Except for when the R1 and R3
+      // fields designate the same register, the third operand remains
+      // unchanged in general register R3.
+      int r1 = rsyInstr->R1Value();
+      int r3 = rsyInstr->R3Value();
+      int b2 = rsyInstr->B2Value();
+      intptr_t d2 = rsyInstr->D2Value();
+      // only takes rightmost 6 bits
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      int shiftBits = (b2_val + d2) & 0x3F;
+      // unsigned
+      uint32_t r3_val = get_low_register<uint32_t>(r3);
+      uint32_t alu_out = 0;
+      if (SLLK == op) {
+        alu_out = r3_val << shiftBits;
+      } else if (SRLK == op) {
+        alu_out = r3_val >> shiftBits;
+      } else {
+        UNREACHABLE();
+      }
+      set_low_register(r1, alu_out);
+      break;
+    }
     case SLLG:
     case SRLG: {
       // For SLLG/SRLG, the 64-bit third operand is shifted the number
@@ -3188,7 +3218,6 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       // placed at the first-operand location. Except for when the R1 and R3
       // fields designate the same register, the third operand remains
       // unchanged in general register R3.
-      RSYInstruction* rsyInstr = reinterpret_cast<RSYInstruction*>(instr);
       int r1 = rsyInstr->R1Value();
       int r3 = rsyInstr->R3Value();
       int b2 = rsyInstr->B2Value();
@@ -3209,9 +3238,33 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       set_register(r1, alu_out);
       break;
     }
+    case SLAK:
+    case SRAK: {
+      // 32-bit non-clobbering shift-left/right arithmetic
+      int r1 = rsyInstr->R1Value();
+      int r3 = rsyInstr->R3Value();
+      int b2 = rsyInstr->B2Value();
+      intptr_t d2 = rsyInstr->D2Value();
+      // only takes rightmost 6 bits
+      intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      int shiftBits = (b2_val + d2) & 0x3F;
+      int32_t r3_val = get_low_register<int32_t>(r3);
+      int32_t alu_out = 0;
+      bool isOF = false;
+      if (op == SLAK) {
+        isOF = CheckOverflowForShiftLeft(r3_val, shiftBits);
+        alu_out = r3_val << shiftBits;
+      } else if (op == SRAK) {
+        alu_out = r3_val >> shiftBits;
+      }
+      set_low_register(r1, alu_out);
+      SetS390ConditionCode<int32_t>(alu_out, 0);
+      SetS390OverflowCode(isOF);
+      break;
+    }
     case SLAG:
     case SRAG: {
-      RSYInstruction* rsyInstr = reinterpret_cast<RSYInstruction*>(instr);
+      // 64-bit non-clobbering shift-left/right arithmetic
       int r1 = rsyInstr->R1Value();
       int r3 = rsyInstr->R3Value();
       int b2 = rsyInstr->B2Value();
@@ -3235,7 +3288,6 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
     }
     case LMY:
     case STMY: {
-      RSYInstruction* rsyInstr = reinterpret_cast<RSYInstruction*>(instr);
       int r1 = rsyInstr->R1Value();
       int r3 = rsyInstr->R3Value();
       int b2 = rsyInstr->B2Value();
@@ -3514,14 +3566,14 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
       if (AHIK == op) {
         // 32-bit Add
         int32_t r2_val = get_low_register<int32_t>(r2);
-        int32_t imm = rieInst->I3Value();
+        int32_t imm = rieInst->I6Value();
         isOF = CheckOverflowForIntAdd(r2_val, imm);
         set_low_register(r1, r2_val + imm);
         SetS390ConditionCode<int32_t>(r2_val + imm, 0);
       } else if (AGHIK == op) {
         // 64-bit Add
         int64_t r2_val = get_register(r2);
-        int64_t imm = static_cast<int64_t>(rieInst->I3Value());
+        int64_t imm = static_cast<int64_t>(rieInst->I6Value());
         isOF = CheckOverflowForIntAdd(r2_val, imm);
         set_register(r1, r2_val + imm);
         SetS390ConditionCode<int64_t>(r2_val + imm, 0);
