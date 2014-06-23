@@ -2275,6 +2275,9 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
 bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
   Opcode op = instr->S390OpcodeValue();
 
+  // Pre-cast instruction to various types
+  RRFInstruction *rrfInst = reinterpret_cast<RRFInstruction*>(instr);
+
   switch (op) {
     case AGR:
     case SGR:
@@ -2315,6 +2318,120 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
         default: UNREACHABLE(); break;
       }
       set_register(r1, r1_val);
+      break;
+    }
+    case ARK:
+    case SRK:
+    case NRK:
+    case ORK:
+    case XRK: {
+      // 32-bit Non-clobbering arithmetics / bitwise ops
+      int r1 = rrfInst->R1Value();
+      int r2 = rrfInst->R2Value();
+      int r3 = rrfInst->R3Value();
+      int32_t r2_val = get_low_register<int32_t>(r2);
+      int32_t r3_val = get_low_register<int32_t>(r3);
+      if (ARK == op) {
+        bool isOF = CheckOverflowForIntAdd(r2_val, r3_val);
+        SetS390ConditionCode<int32_t>(r2_val + r3_val, 0);
+        SetS390OverflowCode(isOF);
+        set_low_register(r1, r2_val + r3_val);
+      } else if (SRK == op) {
+        bool isOF = CheckOverflowForIntSub(r2_val, r3_val);
+        SetS390ConditionCode<int32_t>(r2_val - r3_val, 0);
+        SetS390OverflowCode(isOF);
+        set_low_register(r1, r2_val - r3_val);
+      } else {
+        // Assume bitwise operation here
+        uint32_t bitwise_result = 0;
+        if (NRK == op) {
+          bitwise_result = r2_val & r3_val;
+        } else if (ORK == op) {
+          bitwise_result = r2_val | r3_val;
+        } else if (XRK == op) {
+          bitwise_result = r2_val ^ r3_val;
+        }
+        SetS390BitWiseConditionCode<uint32_t>(bitwise_result);
+        set_low_register(r1, bitwise_result);
+      }
+      break;
+    }
+    case ALRK:
+    case SLRK: {
+      // 32-bit Non-clobbering unsigned arithmetics
+      int r1 = rrfInst->R1Value();
+      int r2 = rrfInst->R2Value();
+      int r3 = rrfInst->R3Value();
+      uint32_t r2_val = get_low_register<uint32_t>(r2);
+      uint32_t r3_val = get_low_register<uint32_t>(r3);
+      if (ALRK == op) {
+        bool isOF = CheckOverflowForUIntAdd(r2_val, r3_val);
+        SetS390ConditionCode<uint32_t>(r2_val + r3_val, 0);
+        SetS390OverflowCode(isOF);
+        set_low_register(r1, r2_val + r3_val);
+      } else if (SLRK == op) {
+        bool isOF = CheckOverflowForUIntSub(r2_val, r3_val);
+        SetS390ConditionCode<uint32_t>(r2_val - r3_val, 0);
+        SetS390OverflowCode(isOF);
+        set_low_register(r1, r2_val - r3_val);
+      }
+      break;
+    }
+    case AGRK:
+    case SGRK:
+    case NGRK:
+    case OGRK:
+    case XGRK: {
+      // 64-bit Non-clobbering arithmetics / bitwise ops.
+      int r1 = rrfInst->R1Value();
+      int r2 = rrfInst->R2Value();
+      int r3 = rrfInst->R3Value();
+      int64_t r2_val = get_register(r2);
+      int64_t r3_val = get_register(r3);
+      if (AGRK == op) {
+        bool isOF = CheckOverflowForIntAdd(r2_val, r3_val);
+        SetS390ConditionCode<int64_t>(r2_val + r3_val, 0);
+        SetS390OverflowCode(isOF);
+        set_register(r1, r2_val + r3_val);
+      } else if (SGRK == op) {
+        bool isOF = CheckOverflowForIntSub(r2_val, r3_val);
+        SetS390ConditionCode<int64_t>(r2_val - r3_val, 0);
+        SetS390OverflowCode(isOF);
+        set_register(r1, r2_val - r3_val);
+      } else {
+        // Assume bitwise operation here
+        uint64_t bitwise_result = 0;
+        if (NGRK == op) {
+          bitwise_result = r2_val & r3_val;
+        } else if (OGRK == op) {
+          bitwise_result = r2_val | r3_val;
+        } else if (XGRK == op) {
+          bitwise_result = r2_val ^ r3_val;
+        }
+        SetS390BitWiseConditionCode<uint64_t>(bitwise_result);
+        set_register(r1, bitwise_result);
+      }
+      break;
+    }
+    case ALGRK:
+    case SLGRK: {
+      // 64-bit Non-clobbering unsigned arithmetics
+      int r1 = rrfInst->R1Value();
+      int r2 = rrfInst->R2Value();
+      int r3 = rrfInst->R3Value();
+      uint64_t r2_val = get_register(r2);
+      uint64_t r3_val = get_register(r3);
+      if (ALGRK == op) {
+        bool isOF = CheckOverflowForUIntAdd(r2_val, r3_val);
+        SetS390ConditionCode<uint64_t>(r2_val + r3_val, 0);
+        SetS390OverflowCode(isOF);
+        set_register(r1, r2_val + r3_val);
+      } else if (SLGRK == op) {
+        bool isOF = CheckOverflowForUIntSub(r2_val, r3_val);
+        SetS390ConditionCode<uint64_t>(r2_val - r3_val, 0);
+        SetS390OverflowCode(isOF);
+        set_register(r1, r2_val - r3_val);
+      }
       break;
     }
     case AHI:
