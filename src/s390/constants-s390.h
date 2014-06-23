@@ -1466,6 +1466,21 @@ class RREInstruction : Instruction {
   inline int size() const { return 4; }
 };
 
+// RRF Instruction
+class RRFInstruction : Instruction {
+ public:
+  inline int R1Value() const {
+    return Bits<FourByteInstr, int>(7, 4);
+  }
+  inline int R2Value() const {
+    return Bits<FourByteInstr, int>(3, 0);
+  }
+  inline int R3Value() const {
+    return Bits<FourByteInstr, int>(15, 12);
+  }
+  inline int size() const { return 4; }
+};
+
 // RI Instruction
 class RIInstruction : Instruction {
  public:
