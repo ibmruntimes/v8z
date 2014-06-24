@@ -1415,8 +1415,7 @@ void RegExpMacroAssemblerS390::CheckPreemption() {
   ExternalReference stack_limit =
       ExternalReference::address_of_stack_limit(masm_->isolate());
   __ mov(r2, Operand(stack_limit));
-  __ LoadP(r2, MemOperand(r2));
-  __ Cmpl(sp, r2);
+  __ CmpLogicalP(sp, MemOperand(r2));
   SafeCall(&check_preempt_label_, le);
 }
 
@@ -1425,8 +1424,7 @@ void RegExpMacroAssemblerS390::CheckStackLimit() {
   ExternalReference stack_limit =
       ExternalReference::address_of_regexp_stack_limit(masm_->isolate());
   __ mov(r2, Operand(stack_limit));
-  __ LoadP(r2, MemOperand(r2));
-  __ Cmpl(backtrack_stackpointer(), r2);
+  __ CmpLogicalP(backtrack_stackpointer(), MemOperand(r2));
   SafeCall(&stack_overflow_label_, le);
 }
 
