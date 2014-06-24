@@ -2806,10 +2806,14 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
               break;
             }
             case ROUND_TOWARD_0: {
-              r1_val = static_cast<int32_t>(r2_val);
-              if (r2_val > INT_MAX) {
+              // check for overflow, cast r2_val to 64bit integer
+              // then check value within the range of INT_MIN and INT_MAX
+              // and set condition code accordingly
+              int64_t temp = static_cast<int64_t>(r2_val);
+              if (temp < INT_MIN || temp > INT_MAX) {
                 condition_reg_ = 1;
               }
+              r1_val = static_cast<int32_t>(r2_val);
               break;
             }
             case ROUND_TOWARD_PLUS_INFINITE: {
