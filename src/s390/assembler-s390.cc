@@ -167,7 +167,7 @@ void CpuFeatures::Probe() {
   }
 #else
   // All distinct ops instructions can be simulated
-  supported_ |= (1u << DISTINCT_OPS);
+  // supported_ |= (1u << DISTINCT_OPS);
   USE(performSTFLE);  // To avoid assert
 #endif
   supported_ |= (1u << FPU);
