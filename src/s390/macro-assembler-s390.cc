@@ -377,8 +377,7 @@ void MacroAssembler::RecordWrite(Register object,
   ASSERT(!address.is(cp) && !value.is(cp));
 
   if (emit_debug_code()) {
-    LoadP(ip, MemOperand(address));
-    CmpRR(ip, value);
+    CmpP(value, MemOperand(address));
     Check(eq, "Wrong address or value passed to RecordWrite");
   }
 
@@ -3520,10 +3519,10 @@ void MacroAssembler::CheckPageFlag(
   // Should be okay to remove rc
 
   if (cc == ne) {
-    bne(condition_met /*, cr0*/);
+    b(ne, condition_met, true);
   }
   if (cc == eq) {
-    beq(condition_met /*, cr0*/);
+    b(eq, condition_met, true);
   }
 }
 
@@ -4266,13 +4265,30 @@ void MacroAssembler::AndP(Register dst, Register src, const Operand& opnd) {
   // Try to exploit RISBG first
   intptr_t value = opnd.imm_;
   if (CpuFeatures::IsSupported(GENERAL_INSTR_EXT)) {
-    // Simple case, we have consecutive 1 bits to the LSB.
-    if (IsPowerOf2(value + 1)) {
-      int startBit = 32 + CompilerIntrinsics::CountLeadingZeros(opnd.imm_);
-      int endBit = 63;
+    intptr_t shifted_value = value;
+    int trailing_zeros = 0;
+
+    // We start checking how many trailing zeros are left at the end.
+    while ((0 != shifted_value) && (0 == (shifted_value & 1))) {
+       trailing_zeros++;
+       shifted_value >>= 1;
+    }
+
+    // If temp (value with right-most set of zeros shifted out) is 1 less
+    // than power of 2, we have consecutive bits of 1.
+    if (IsPowerOf2(shifted_value + 1)) {
+      int startBit = 32 + CompilerIntrinsics::CountLeadingZeros(shifted_value) -
+                     trailing_zeros;
+      int endBit = 63 - trailing_zeros;
       // Start: startBit, End: endBit, Shift = 0, true = zero unselected bits.
       risbg(dst, src, Operand(startBit), Operand(endBit), Operand::Zero(),
             true);
+      return;
+    } else if (-1 == shifted_value) {
+    // A Special case in which all top bits up to MSB are 1's.  In this case,
+    // we can set startBit to be 0.
+      int endBit = 63 - trailing_zeros;
+      risbg(dst, src, Operand::Zero(), Operand(endBit), Operand::Zero(), true);
       return;
     }
   }
@@ -5020,6 +5036,14 @@ void MacroAssembler::ShiftRightArith(Register dst, Register src,
 void MacroAssembler::ClearRightImm(Register dst, Register src,
                                   const Operand& val) {
   int numBitsToClear = val.imm_ % (kPointerSize * 8);
+
+  // Try to use RISBG if possible
+  if (CpuFeatures::IsSupported(GENERAL_INSTR_EXT)) {
+    int endBit = 63 - numBitsToClear;
+    risbg(dst, src, Operand::Zero(), Operand(endBit), Operand::Zero(), true);
+    return;
+  }
+
   uint64_t hexMask = ~((1L << numBitsToClear) - 1);
 
   // S390 AND instr clobbers source.  Make a copy if necessary
