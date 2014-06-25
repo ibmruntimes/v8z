@@ -1436,12 +1436,17 @@ void RegExpMacroAssemblerS390::CallCFunctionUsingStub(
   ASSERT(num_arguments <= 8);
   __ mov(code_pointer(), Operand(function));
   RegExpCEntryStub stub;
-  __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
+  // __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
+  Label ret;
+  __ larl(r14, &ret);
+  __ StoreP(r14, MemOperand(sp, kStackFrameRASlot * kPointerSize));
+  __ b(code_pointer());
+  __ bind(&ret);
   // __ CallStub(&stub);
-  __ Call(code_pointer());
-  __ la(sp, MemOperand(sp, kCalleeRegisterSaveAreaSize));
+  // __ Call(code_pointer());
+  // __ la(sp, MemOperand(sp, kCalleeRegisterSaveAreaSize));
   if (OS::ActivationFrameAlignment() > kPointerSize) {
-    __ LoadP(sp, MemOperand(sp, 0));
+    __ LoadP(sp, MemOperand(sp, (kNumRequiredStackFrameSlots * kPointerSize)));
   } else {
     __ la(sp, MemOperand(sp, (kNumRequiredStackFrameSlots * kPointerSize)));
   }
