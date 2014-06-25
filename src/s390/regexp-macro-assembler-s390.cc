@@ -1218,7 +1218,7 @@ void RegExpMacroAssemblerS390::CallCheckStackGuardState(Register scratch) {
   // Code* of self.
   __ mov(r3, Operand(masm_->CodeObject()));
   // r2 becomes return address pointer.
-  __ lay(r2, MemOperand(sp, -kCalleeRegisterSaveAreaSize + 14 * kPointerSize));
+  __ lay(r2, MemOperand(sp, kStackFrameRASlot * kPointerSize));
   ExternalReference stack_guard_check =
       ExternalReference::re_check_stack_guard_state(masm_->isolate());
   CallCFunctionUsingStub(stack_guard_check, num_arguments);
