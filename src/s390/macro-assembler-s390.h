@@ -1504,11 +1504,11 @@ class MacroAssembler: public Assembler {
     bne(not_smi_label /*, cr0*/);
   }
 
-  void SmiUntag(Register reg, RCBit rc = LeaveRC) {
-    SmiUntag(reg, reg, rc);
+  void SmiUntag(Register reg) {
+    SmiUntag(reg, reg);
   }
 
-  void SmiUntag(Register dst, Register src, RCBit rc = LeaveRC) {
+  void SmiUntag(Register dst, Register src) {
     ShiftRightArithP(dst, src, Operand(kSmiShift));
   }
 
