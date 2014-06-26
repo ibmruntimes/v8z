@@ -1247,7 +1247,7 @@ int RegExpMacroAssemblerS390::CheckStackGuardState(Address* return_address,
 
   // If this is a direct call from JavaScript retry the RegExp forcing the call
   // through the runtime system. Currently the direct call cannot handle a GC.
-  if (frame_entry<int>(re_frame, kDirectCall) == 1) {
+  if (frame_entry<intptr_t>(re_frame, kDirectCall) == 1) {
     return RETRY;
   }
 
