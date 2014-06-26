@@ -2471,18 +2471,21 @@ void MacroAssembler::EmitECMATruncate(Register result,
 void MacroAssembler::GetLeastBitsFromSmi(Register dst,
                                          Register src,
                                          int num_least_bits) {
-  // @TODO Can replace by single RISBG
-  SmiUntag(dst, src);
-  AndPI(dst, Operand((1 << num_least_bits) - 1));
+  if (CpuFeatures::IsSupported(GENERAL_INSTR_EXT)) {
+    // We rotate by kSmiShift amount, and extract the num_least_bits
+    risbg(dst, src, Operand(64 - num_least_bits), Operand(63),
+                    Operand(64 - kSmiShift), true);
+  } else {
+    SmiUntag(dst, src);
+    AndPI(dst, Operand((1 << num_least_bits) - 1));
+  }
 }
 
 
 void MacroAssembler::GetLeastBitsFromInt32(Register dst,
                                            Register src,
                                            int num_least_bits) {
-  if (!dst.is(src))
-    LoadRR(dst, src);
-  AndPI(dst, Operand((1 << num_least_bits) - 1));
+  AndP(dst, src, Operand((1 << num_least_bits) - 1));
 }
 
 

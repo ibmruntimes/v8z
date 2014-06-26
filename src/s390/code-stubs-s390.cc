@@ -5859,7 +5859,7 @@ void SubStringStub::Generate(MacroAssembler* masm) {
   __ JumpIfNotSmi(r4, &runtime);
   __ JumpIfNotSmi(r5, &runtime);
   __ SmiUntag(r4);
-  __ SmiUntag(r5, SetRC);
+  __ SmiUntag(r5);
   // Both r4 and r5 are untagged integers.
 
   // We want to bailout to runtime here if From is negative.
