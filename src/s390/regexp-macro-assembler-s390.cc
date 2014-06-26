@@ -1228,7 +1228,12 @@ void RegExpMacroAssemblerS390::CallCheckStackGuardState(Register scratch) {
 // Helper function for reading a value out of a stack frame.
 template <typename T>
 static T& frame_entry(Address re_frame, int frame_offset) {
-  return reinterpret_cast<T&>(Memory::int32_at(re_frame + frame_offset));
+  ASSERT(sizeof(T) == kPointerSize);
+#ifdef V8_TARGET_ARCH_S390X
+  return reinterpret_cast<T&>(Memory::uint64_at(re_frame + frame_offset));
+#else
+  return reinterpret_cast<T&>(Memory::uint32_at(re_frame + frame_offset));
+#endif
 }
 
 
