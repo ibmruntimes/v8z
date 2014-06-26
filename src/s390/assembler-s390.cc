@@ -1882,7 +1882,6 @@ RR_FORM_EMIT(lcr, LCR)
 RRE_FORM_EMIT(lcxbr, LCXBR)
 RRE_FORM_EMIT(ldebr, LDEBR)
 RRF2_FORM_EMIT(ldetr, LDETR)
-RRE_FORM_EMIT(ldgr, LDGR)
 RRE_FORM_EMIT(ldxbr, LDXBR)
 RRF2_FORM_EMIT(ldxbra, LDXBRA)
 RRF2_FORM_EMIT(ldxtr, LDXTR)
@@ -1898,7 +1897,6 @@ RXY_FORM_EMIT(lfh, LFH)
 RXY_FORM_EMIT(lfhat, LFHAT)
 S_FORM_EMIT(lfpc, LFPC)
 RXY_FORM_EMIT(lgat, LGAT)
-RRE_FORM_EMIT(lgdr, LGDR)
 RXY_FORM_EMIT(lgf, LGF)
 RIL1_FORM_EMIT(lgfi, LGFI)
 RIL1_FORM_EMIT(lgfrl, LGFRL)
@@ -3041,6 +3039,19 @@ void Assembler::iilh(Register r1, const Operand& opnd) {
 void Assembler::iill(Register r1, const Operand& opnd) {
   ri_form(IILL, r1, opnd);
 }
+
+// GPR <-> FPR Instructions
+
+// Load GR from FPR (64 <- L)
+void Assembler::lgdr(Register r1, DoubleRegister f2) {
+  rre_form(LGDR, r1, Register::from_code(f2.code()));
+}
+
+// Load FPR from FR (L <- 64)
+void Assembler::ldgr(DoubleRegister f1, Register r2) {
+  rre_form(LDGR, Register::from_code(f1.code()), r2);
+}
+
 
 // Floating point instructions
 //

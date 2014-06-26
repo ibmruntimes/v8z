@@ -1867,6 +1867,10 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
 // Decode routine for four-byte instructions
 bool Simulator::DecodeFourByte(Instruction* instr) {
   Opcode op = instr->S390OpcodeValue();
+
+  // Pre-cast instruction to various types
+  RREInstruction* rreInst = reinterpret_cast<RREInstruction*>(instr);
+
   switch (op) {
     case EX: {
       RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
@@ -1894,25 +1898,33 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
     }
     case LGR: {
       // Load Register (64)
-      RREInstruction* rreinst = reinterpret_cast<RREInstruction*>(instr);
-      int r1 = rreinst->R1Value();
-      int r2 = rreinst->R2Value();
+      int r1 = rreInst->R1Value();
+      int r2 = rreInst->R2Value();
       set_register(r1, get_register(r2));
+      break;
+    }
+    case LGDR: {
+      // Load GPR from FPR (64 <- L)
+      union LongDoubleUnion {
+        int64_t longValue;
+        double doubleValue;
+      };
+      LongDoubleUnion conversion;
+      conversion.doubleValue = get_double_from_d_register(rreInst->R2Value());
+      set_register(rreInst->R1Value(), conversion.longValue);
       break;
     }
     case LTGR: {
       // Load Register (64)
-      RREInstruction* rreinst = reinterpret_cast<RREInstruction*>(instr);
-      int r1 = rreinst->R1Value();
-      int r2 = rreinst->R2Value();
+      int r1 = rreInst->R1Value();
+      int r2 = rreInst->R2Value();
       int64_t r2_val = get_register(r2);
       SetS390ConditionCode<int64_t>(r2_val, 0);
       set_register(r1, get_register(r2));
       break;
     }
     case LZDR: {
-      RREInstruction * rreinst = reinterpret_cast<RREInstruction*>(instr);
-      int r1 = rreinst->R1Value();
+      int r1 = rreInst->R1Value();
       set_d_register_from_double(r1, 0.0);
       double dbl_val = get_register(r1);
       (void)dbl_val;
@@ -1920,17 +1932,15 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
     }
     case CGR: {
       // Compare (64)
-      RREInstruction* rreinst = reinterpret_cast<RREInstruction*>(instr);
-      int64_t r1_val = get_register(rreinst->R1Value());
-      int64_t r2_val = get_register(rreinst->R2Value());
+      int64_t r1_val = get_register(rreInst->R1Value());
+      int64_t r2_val = get_register(rreInst->R2Value());
       SetS390ConditionCode<int64_t>(r1_val, r2_val);
       break;
     }
     case CLGR: {
       // Compare Logical (64)
-      RREInstruction* rreinst = reinterpret_cast<RREInstruction*>(instr);
-      uint64_t r1_val = static_cast<uint64_t>(get_register(rreinst->R1Value()));
-      uint64_t r2_val = static_cast<uint64_t>(get_register(rreinst->R2Value()));
+      uint64_t r1_val = static_cast<uint64_t>(get_register(rreInst->R1Value()));
+      uint64_t r2_val = static_cast<uint64_t>(get_register(rreInst->R2Value()));
       SetS390ConditionCode<uint64_t>(r1_val, r2_val);
       break;
     }
@@ -2179,9 +2189,8 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
     }
     case LNGR: {
       // Load Negative (64)
-      RREInstruction* rreinst = reinterpret_cast<RREInstruction*>(instr);
-      int r1 = rreinst->R1Value();
-      int r2 = rreinst->R2Value();
+      int r1 = rreInst->R1Value();
+      int r2 = rreInst->R2Value();
       int64_t r2_val = get_register(r2);
       r2_val = (r2_val >= 0)? -r2_val : r2_val;  // If pos, then negate it.
       set_register(r1, r2_val);
@@ -2226,9 +2235,8 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
     }
 #if V8_TARGET_ARCH_S390X
     case LCGR: {
-      RREInstruction * rreinst = reinterpret_cast<RREInstruction*>(instr);
-      int r1 = rreinst->R1Value();
-      int r2 = rreinst->R2Value();
+      int r1 = rreInst->R1Value();
+      int r2 = rreInst->R2Value();
       int64_t r2_val = get_register(r2);
       r2_val = ~r2_val;
       r2_val = r2_val+1;
@@ -2281,9 +2289,9 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
     case OGR:
     case NGR:
     case XGR: {
-      RREInstruction* rreinst = reinterpret_cast<RREInstruction*>(instr);
-      int r1 = rreinst->R1Value();
-      int r2 = rreinst->R2Value();
+      RREInstruction* rreInst = reinterpret_cast<RREInstruction*>(instr);
+      int r1 = rreInst->R1Value();
+      int r2 = rreInst->R2Value();
       int64_t r1_val = get_register(r1);
       int64_t r2_val = get_register(r2);
       bool isOF = false;
@@ -2607,9 +2615,9 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
       break;
     }
     case DSGR: {
-      RREInstruction * rreinst = reinterpret_cast<RREInstruction*>(instr);
-      int r1 = rreinst->R1Value();
-      int r2 = rreinst->R2Value();
+      RREInstruction * rreInst = reinterpret_cast<RREInstruction*>(instr);
+      int r1 = rreInst->R1Value();
+      int r2 = rreInst->R2Value();
 
       ASSERT(r1 % 2 == 0);
 
@@ -2622,9 +2630,9 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
     }
     case MSR:
     case MSGR: {  // they do not set overflow code
-      RREInstruction * rreinst = reinterpret_cast<RREInstruction*>(instr);
-      int r1 = rreinst->R1Value();
-      int r2 = rreinst->R2Value();
+      RREInstruction * rreInst = reinterpret_cast<RREInstruction*>(instr);
+      int r1 = rreInst->R1Value();
+      int r2 = rreInst->R2Value();
       if (op == MSR) {
         int32_t r1_val = get_low_register<int32_t>(r1);
         int32_t r2_val = get_low_register<int32_t>(r2);
@@ -2999,9 +3007,9 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
       break;
     }
     case LEDBR: {
-      RREInstruction* rreinst = reinterpret_cast<RREInstruction*>(instr);
-      int r1 = rreinst->R1Value();
-      int r2 = rreinst->R2Value();
+      RREInstruction* rreInst = reinterpret_cast<RREInstruction*>(instr);
+      int r1 = rreInst->R1Value();
+      int r2 = rreInst->R2Value();
       double r2_val = get_double_from_d_register(r2);
       set_d_register_from_float(r1, static_cast<float>(r2_val));
       break;

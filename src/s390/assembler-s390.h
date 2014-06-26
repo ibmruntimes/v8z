@@ -1222,7 +1222,6 @@ RR_FORM(lcr);
 RRE_FORM(lcxbr);
 RRE_FORM(ldebr);
 RRF2_FORM(ldetr);
-RRE_FORM(ldgr);
 RRE_FORM(ldxbr);
 RRF2_FORM(ldxbra);
 RRF2_FORM(ldxtr);
@@ -1241,7 +1240,6 @@ RXY_FORM(lg);
 RXY_FORM(lgat);
 RXY_FORM(lgb);
 RRE_FORM(lgbr);
-RRE_FORM(lgdr);
 RXY_FORM(lgf);
 RIL1_FORM(lgfi);
 RRE_FORM(lgfr);
@@ -1672,6 +1670,9 @@ SS2_FORM(zap);
   void xgrk(Register r1, Register r2, Register r3);
 
 
+  // GPR <-> FPR conversions
+  void lgdr(Register r1, DoubleRegister f2);
+  void ldgr(DoubleRegister f1, Register r2);
 
   // floating point instructions
   void ld(DoubleRegister r1, const MemOperand& opnd);
