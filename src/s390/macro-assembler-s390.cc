@@ -2343,40 +2343,6 @@ void MacroAssembler::EmitVFPTruncate(VFPRoundingMode rounding_mode,
 
   // according to POPS Figure 19-18, condition code 3 is set if the integer
   // overflows or underflows.
-
-  /*
-  // Convert
-  if (rounding_mode == kRoundToZero) {
-    fctidz(double_scratch, double_input);
-  } else {
-    SetRoundingMode(rounding_mode);
-    fctid(double_scratch, double_input);
-    ResetRoundingMode();
-  }
-
-  AddP(sp, Operand(-kDoubleSize));
-  StoreF(double_scratch, MemOperand(sp, 0));
-#if V8_TARGET_ARCH_S390X
-  ld(result, MemOperand(sp, 0));
-#else
-#if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  LoadlW(scratch, MemOperand(sp, 4));
-  LoadlW(result, MemOperand(sp, 0));
-#else
-  LoadlW(scratch, MemOperand(sp, 0));
-  LoadlW(result, MemOperand(sp, 4));
-#endif
-#endif
-  AddP(sp, Operand(kDoubleSize));
-
-  // The result is a 32-bit integer when the high 33 bits of the
-  // result are identical.
-#if V8_TARGET_ARCH_S390X
-  TestIfInt32(result, scratch, r0);
-#else
-  TestIfInt32(scratch, result, r0);
-#endif
-  */
 }
 
 
@@ -2485,18 +2451,13 @@ void MacroAssembler::EmitECMATruncate(Register result,
 
   // otherwise, do the manual truncation.
 
-  // Allocate 8 bytes on stack as temp for conversion via memory
-  lay(sp, MemOperand(sp, -8));
-  StoreF(double_input, MemOperand(sp));
-#if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  LoadlW(input_low, MemOperand(sp));
-  LoadlW(input_high, MemOperand(sp, 4));
-#else
-  LoadlW(input_high, MemOperand(sp));
-  LoadlW(input_low, MemOperand(sp, 4));
-#endif
-  // Return the stack space
-  la(sp, MemOperand(sp, 8));
+  // Load the FPR bits into a GPR
+  lgdr(input_high, double_input);
+
+  // Need to massage the 64-bit reg into high and low regs
+  // @TODO Implement EmitOutOfInt32RangeTruncate to use a 64-bit reg!
+  lr(input_low, input_high);
+  srlg(input_high, input_high, Operand(32));
 
   EmitOutOfInt32RangeTruncate(result,
                               input_high,
