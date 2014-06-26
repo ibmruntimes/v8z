@@ -1708,10 +1708,15 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
           break;
         }
         case DR: {
+          // reg-reg pair should be even-odd pair, assert r1 is an even register
           ASSERT(r1 % 2 == 0);
-          // construct a 64bit operand:
+          // leftmost 32 bits of the dividend are in r1
+          // rightmost 32 bits of the dividend are in r1+1
+          // get the signed value from r1
           int64_t dividend = static_cast<int64_t>(r1_val) << 32;
-          dividend += get_low_register<int32_t>(r1 + 1);
+          // get unsigned value from r1+1
+          // avoid addition with sign-extended r1+1 value
+          dividend += get_low_register<uint32_t>(r1 + 1);
           int32_t remainder = dividend % r2_val;
           int32_t quotient = dividend / r2_val;
           r1_val = remainder;
