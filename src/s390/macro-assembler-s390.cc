@@ -3226,7 +3226,7 @@ void MacroAssembler::PrepareCallCFunction(int num_reg_arguments,
     // the original value of sp and, on native, the required slots to
     // make ABI work.
     LoadRR(scratch, sp);
-    Sub(sp, Operand((1 + stack_passed_arguments +
+    lay(sp, MemOperand(sp, -(1 + stack_passed_arguments +
                           kNumRequiredStackFrameSlots) * kPointerSize));
     ASSERT(IsPowerOf2(frame_alignment));
     nill(sp, Operand(-frame_alignment));
@@ -3235,7 +3235,7 @@ void MacroAssembler::PrepareCallCFunction(int num_reg_arguments,
     StoreP(scratch, MemOperand(sp, (stack_passed_arguments +
                         kNumRequiredStackFrameSlots) * kPointerSize));
   } else {
-    Sub(sp, Operand((stack_passed_arguments +
+    lay(sp, MemOperand(sp, -(stack_passed_arguments +
                           kNumRequiredStackFrameSlots) * kPointerSize));
   }
 }
