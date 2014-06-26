@@ -3568,9 +3568,7 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
   __ adbr(double_scratch0(), input);
 
   // Save the original sign for later comparison.
-  // @TODO RISBG Opportunity here
-  __ LoadRR(scratch, result);
-  __ nilf(scratch, Operand(HeapNumber::kSignMask));
+  __ AndP(scratch, result, Operand(HeapNumber::kSignMask));
 
   // Check sign of the result: if the sign changed, the input
   // value was in ]0.5, 0[ and the result should be -0.
