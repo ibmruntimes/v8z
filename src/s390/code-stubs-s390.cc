@@ -2082,9 +2082,13 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
     }
     case Token::MOD: {
       Label check_neg_zero;
-      __ SmiUntag(r0, left);
-      __ LoadRR(r1, r0);
-      __ ShiftRightArithP(r0, r0, Operand(31));  // right shift 32bit
+      __ SmiUntag(r1, left);
+#if !V8_TARGET_ARCH_S390X
+      // DivP generates the DR instruction on 31-bit
+      // DR treats the dividend as a 64-bit value comprised of R0:R1
+      // Hence, we need to sign-extend the untagged 'left' value into R0
+      __ ShiftRightArithImm(r0, r1, 31);
+#endif
       __ SmiUntag(r9, right);
       // Check for zero on the right hand side.
       __ beq(&not_smi_result);
