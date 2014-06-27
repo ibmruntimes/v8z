@@ -3514,15 +3514,10 @@ void LCodeGen::DoMathFloor(LUnaryMathOperation* instr) {
     Label done;
     __ Cmpi(result, Operand::Zero());
     __ bne(&done);
+
     // Move high word to scrach and test sign bit
-    __ Sub(sp, Operand(8));
-    __ StoreF(input, MemOperand(sp));
-#if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-    __ LoadlW(scratch, MemOperand(sp, 4));
-#else
-    __ LoadlW(scratch, MemOperand(sp, 0));
-#endif
-    __ la(sp, MemOperand(sp, 8));
+    __ lgdr(scratch, input);
+    __ srlg(scratch, scratch, Operand(32));
     __ TestSignBit32(scratch, r0);
     DeoptimizeIf(ne, instr->environment(), cr0);
     __ bind(&done);
@@ -3538,14 +3533,8 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
   Label done, check_sign_on_zero, skip1, skip2;
 
   // Extract exponent bits.
-  __ Sub(sp, Operand(8));
-  __ StoreF(input, MemOperand(sp));
-#if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  __ LoadlW(result, MemOperand(sp, 4));
-#else
-  __ LoadlW(result, MemOperand(sp, 0));
-#endif
-  __ la(sp, MemOperand(sp, 8));
+  __ lgdr(result, input);
+  __ srlg(result, result, Operand(32));
   __ ExtractBitMask(scratch, result, HeapNumber::kExponentMask);
 
   // If the number is in ]-0.5, +0.5[, the result is +/- 0.
@@ -3572,15 +3561,10 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
 
   // Check sign of the result: if the sign changed, the input
   // value was in ]0.5, 0[ and the result should be -0.
-  __ lay(sp, MemOperand(sp, -8));
-  __ StoreF(double_scratch0(), MemOperand(sp, 0));
-#if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-  __ LoadlW(result, MemOperand(sp, 4));
-#else
-  __ LoadlW(result, MemOperand(sp, 0));
-#endif
-  __ la(sp, MemOperand(sp, 8));
-  __ XorP(result, scratch/*, SetRC*/);
+  __ lgdr(result, double_scratch0());
+  __ srlg(result, result, Operand(32));
+
+  __ XorP(result, scratch);
   __ LoadAndTestRR(result, result);
   // Safe to remove rc
   if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
@@ -3605,14 +3589,9 @@ void LCodeGen::DoMathRound(LUnaryMathOperation* instr) {
     __ bne(&done);
     __ bind(&check_sign_on_zero);
     // Move high word to scrach and test sign bit
-    __ Sub(sp, Operand(8));
-    __ StoreF(input, MemOperand(sp));
-#if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-    __ LoadlW(scratch, MemOperand(sp, 4));
-#else
-    __ LoadlW(scratch, MemOperand(sp, 0));
-#endif
-    __ la(sp, MemOperand(sp, 8));
+    __ lgdr(scratch, input);
+    __ srlg(scratch, scratch, Operand(32));
+
     __ TestSignBit32(scratch, r0);
     DeoptimizeIf(ne, instr->environment(), cr0);
   }
@@ -4654,16 +4633,8 @@ void LCodeGen::EmitNumberUntagD(Register input_reg,
   // Heap number to double register conversion.
   __ LoadF(result_reg, FieldMemOperand(input_reg, HeapNumber::kValueOffset));
   if (deoptimize_on_minus_zero) {
-    __ Sub(sp, Operand(8));
-    __ StoreF(result_reg, MemOperand(sp));
-#if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-    __ LoadlW(ip, MemOperand(sp, 0));
-    __ LoadlW(scratch, MemOperand(sp, 4));
-#else
-    __ LoadlW(ip, MemOperand(sp, 4));
-    __ LoadlW(scratch, MemOperand(sp, 0));
-#endif
-    __ la(sp, MemOperand(sp, 8));
+    __ lgdr(scratch, result_reg);
+    __ srlg(ip, scratch, Operand(32));
 
     __ Cmpi(ip, Operand::Zero());
     __ bne(&done);
