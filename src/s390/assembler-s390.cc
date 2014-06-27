@@ -2579,7 +2579,7 @@ void Assembler::llh(Register r1, const MemOperand& opnd) {
 
 // Load Logical halfword Register-Storage (64)
 void Assembler::llgh(Register r1, const MemOperand& opnd) {
-  rxy_form(LLH, r1, opnd.rx(), opnd.rb(), opnd.offset());
+  rxy_form(LLGH, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 // Load Logical Character (32) - loads a byte and zero ext.
