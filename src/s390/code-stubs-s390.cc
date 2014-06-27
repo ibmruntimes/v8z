@@ -1979,34 +1979,24 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
   Label not_smi_result;
   switch (op_) {
     case Token::ADD: {
-      Label undo_add, add_no_overflow;
-      // C = A+B; C overflows if A/B have same sign and C has diff sign than A
-      __ XorP(r0, left, right);
+      Label undo_add;
       __ LoadRR(scratch1, right);
-      __ AddP(right, left, right);  // Add optimistically.
-      __ TestSignBit(r0, r0);
-      __ bne(&add_no_overflow /*, cr0*/);
-      __ XorP(r0, right, scratch1);
-      __ TestSignBit(r0, r0);
-      __ bne(&undo_add /*, cr0*/);
-      __ bind(&add_no_overflow);
+      __ AddP(right, left, right);
+      __ b(overflow, &undo_add, true);
       __ Ret();
       __ bind(&undo_add);
       __ LoadRR(right, scratch1);  // Revert optimistic add.
       break;
     }
     case Token::SUB: {
-      Label undo_sub, sub_no_overflow;
-      // C = A-B; C overflows if A/B have diff signs and C has diff sign than A
-      __ XorP(r0, left, right);
+      Label undo_sub;
       __ LoadRR(scratch1, right);
-      __ Sub(right, left, right);  // Subtract optimistically.
-      __ TestSignBit(r0, r0);
-      __ beq(&sub_no_overflow /*, cr0*/);
-      __ XorP(r0, left, right);
-      __ TestSignBit(r0, r0);
-      __ bne(&undo_sub /*, cr0*/);
-      __ bind(&sub_no_overflow);
+
+      // Cannot use right instead of scratch1 for 2nd operand of subtract
+      // as SubP, when it cannot use SRK, will switch to SR/LCR sequence
+      // which may not set underflow properly.
+      __ Sub(right, left, scratch1);
+      __ b(overflow, &undo_sub, true);
       __ Ret();
       __ bind(&undo_sub);
       __ LoadRR(right, scratch1);  // Revert optimistic subtract.
