@@ -4165,7 +4165,7 @@ void MacroAssembler::Sub(Register dst, const MemOperand& opnd) {
 #endif
 }
 
-// Non-clobbering AND pointer size - dst = src1 ^ src1
+// Non-clobbering AND pointer size - dst = src1 & src1
 void MacroAssembler::AndP(Register dst, Register src1, Register src2) {
   if (!dst.is(src1) && !dst.is(src2)) {
     // We prefer to generate XR/XGR, over the non clobbering XRK/XRK

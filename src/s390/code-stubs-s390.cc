@@ -814,8 +814,7 @@ void FloatingPointHelper::DoubleIs32BitInteger(MacroAssembler* masm,
   __ LoadImmP(src2, Operand(1));
   __ ShiftLeftP(src1, src2, scratch);
   __ AddP(src1, Operand(-1));
-  __ LoadRR(r0, dst);
-  __ AndP(r0, src1/*, SetRC*/);
+  __ AndP(r0, src1, dst/*, SetRC*/);
   // Removing RC should be okay
   __ bne(not_int32 /*, cr0*/);
 }
@@ -940,8 +939,7 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm,
       __ sll(r4, Operand(HeapNumber::kNonMantissaBitsInTopWord));
       // Or with all low-bits of mantissa.
       __ LoadlW(r5, FieldMemOperand(r2, HeapNumber::kMantissaOffset));
-      __ LoadRR(r2, r4);
-      __ OrP(r2, r5);
+      __ OrP(r2, r5, r4);
       __ Cmpi(r2, Operand::Zero());
       // For equal we already have the right value in r2:  Return zero (equal)
       // if all bits in mantissa are zero (it's an Infinity) and non-zero if
@@ -1270,8 +1268,7 @@ void CompareStub::Generate(MacroAssembler* masm) {
 
   if (include_smi_compare_) {
     Label not_two_smis, smi_done;
-    __ LoadRR(r4, r2);
-    __ OrP(r4, r3);
+    __ OrP(r4, r3, r2);
     __ JumpIfNotSmi(r4, &not_two_smis);
     __ SmiUntag(r3);
     __ SmiUntag(r2);
@@ -1279,8 +1276,7 @@ void CompareStub::Generate(MacroAssembler* masm) {
     __ Ret();
     __ bind(&not_two_smis);
   } else if (FLAG_debug_code) {
-    __ LoadRR(r4, r2);
-    __ OrP(r4, r3);
+    __ OrP(r4, r3, r2);
     STATIC_ASSERT(kSmiTagMask < 0x8000);
     __ mov(r0, Operand(kSmiTagMask));
     __ AndP(r0, r4);
@@ -1299,8 +1295,7 @@ void CompareStub::Generate(MacroAssembler* masm) {
   // be strictly equal if the other is a HeapNumber.
   STATIC_ASSERT(kSmiTag == 0);
   ASSERT_EQ(0, Smi::FromInt(0));
-  __ LoadRR(r4, rhs_);
-  __ AndP(r4, lhs_);
+  __ AndP(r4, lhs_, rhs_);
   __ JumpIfNotSmi(r4, &not_smis);
   // One operand is a smi.  EmitSmiNonsmiComparison generates code that can:
   // 1) Return the answer.
@@ -2385,8 +2380,7 @@ void BinaryOpStub::GenerateSmiCode(
   Register scratch1 = r9;
 
   // Perform combined smi check on both operands.
-  __ LoadRR(scratch1, right);
-  __ OrP(scratch1, left);
+  __ OrP(scratch1, left, right);
   STATIC_ASSERT(kSmiTag == 0);
   __ JumpIfNotSmi(scratch1, &not_smis);
 
@@ -2489,8 +2483,7 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
 
   // Smi-smi fast case.
   Label skip;
-  __ LoadRR(scratch1, right);
-  __ OrP(scratch1, left);
+  __ OrP(scratch1, left, right);
   __ JumpIfNotSmi(scratch1, &skip);
   GenerateSmiSmiOperation(masm);
   // Fall through if the result is not a smi.
@@ -3005,11 +2998,9 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
   // Compute hash (the shifts are arithmetic):
   //   h = (low ^ high); h ^= h >> 16; h ^= h >> 8; h = h & (cacheSize - 1);
   __ XorP(r3, r4, r5);
-  __ LoadRR(scratch0, r3);
-  __ sra(scratch0, Operand(16));
+  __ ShiftRightArith(scratch0, r3, Operand(16));
   __ XorP(r3, scratch0);
-  __ LoadRR(scratch0, r3);
-  __ sra(scratch0, Operand(8));
+  __ ShiftRightArith(scratch0, r3, Operand(8));
   __ XorP(r3, scratch0);
   ASSERT(IsPowerOf2(TranscendentalCache::SubCache::kCacheSize));
   __ AndPI(r3, Operand(TranscendentalCache::SubCache::kCacheSize - 1));
@@ -5801,8 +5792,7 @@ void StringHelper::GenerateHashGetHash(MacroAssembler* masm,
                                        Register hash,
                                        Register scratch) {
   // hash += hash << 3;
-  __ LoadRR(scratch, hash);
-  __ sll(scratch, Operand(3));
+  __ ShiftLeft(scratch, hash, Operand(3));
   __ AddP(hash, scratch);
   // hash ^= hash >> 11;
   __ ShiftRight(scratch, hash, Operand(11));
@@ -6105,7 +6095,7 @@ void StringCompareStub::GenerateCompareFlatAsciiStrings(MacroAssembler* masm,
   ASSERT(Smi::FromInt(EQUAL) == static_cast<Smi*>(0));
   // Use length_delta as result if it's zero.
   __ LoadRR(r2, length_delta);
-  __ Cmpi(r2, Operand::Zero());
+  __ Cmpi(length_delta, Operand::Zero());
   __ bind(&result_not_equal);
   // Conditionally update the result based either on length_delta or
   // the last comparion performed in the loop above.
@@ -6548,8 +6538,7 @@ void StringAddStub::GenerateConvertArgument(MacroAssembler* masm,
 void ICCompareStub::GenerateSmis(MacroAssembler* masm) {
   ASSERT(state_ == CompareIC::SMIS);
   Label miss, done;
-  __ LoadRR(r4, r2);
-  __ OrP(r4, r3);
+  __ OrP(r4, r3, r2);
   __ JumpIfNotSmi(r4, &miss);
 
   if (GetCondition() == eq) {
@@ -6577,8 +6566,7 @@ void ICCompareStub::GenerateHeapNumbers(MacroAssembler* masm) {
   Label miss;
   Label equal, less_than;
 
-  __ LoadRR(r4, r2);
-  __ AndP(r4, r3);
+  __ AndP(r4, r3, r2);
   __ JumpIfSmi(r4, &generic_stub);
 
   __ CompareObjectType(r2, r4, r4, HEAP_NUMBER_TYPE);
@@ -6704,8 +6692,7 @@ void ICCompareStub::GenerateStrings(MacroAssembler* masm) {
   __ LoadlB(tmp1, FieldMemOperand(tmp1, Map::kInstanceTypeOffset));
   __ LoadlB(tmp2, FieldMemOperand(tmp2, Map::kInstanceTypeOffset));
   STATIC_ASSERT(kNotStringTag != 0);
-  __ LoadRR(tmp3, tmp2);
-  __ OrP(tmp3, tmp1);
+  __ OrP(tmp3, tmp1, tmp2);
   __ mov(r0, Operand(kIsNotStringMask));
   __ AndP(r0, tmp3);
   __ bne(&miss /*, cr0*/);
@@ -6727,10 +6714,8 @@ void ICCompareStub::GenerateStrings(MacroAssembler* masm) {
   if (equality) {
     ASSERT(GetCondition() == eq);
     STATIC_ASSERT(kSymbolTag != 0);
-    __ LoadRR(tmp3, tmp1);
-    __ AndP(tmp3, tmp2);
-    __ mov(r0, Operand(kIsSymbolMask));
-    __ AndP(r0, tmp3);
+    __ AndP(tmp3, tmp2, tmp1);
+    __ AndP(r0, tmp3, Operand(kIsSymbolMask));
     __ beq(&is_symbol /*, cr0*/);
     // Make sure r2 is non-zero. At this point input operands are
     // guaranteed to be non-zero.
@@ -6770,8 +6755,7 @@ void ICCompareStub::GenerateStrings(MacroAssembler* masm) {
 void ICCompareStub::GenerateObjects(MacroAssembler* masm) {
   ASSERT(state_ == CompareIC::OBJECTS);
   Label miss;
-  __ LoadRR(r4, r2);
-  __ AndP(r4, r3);
+  __ AndP(r4, r3, r2);
   __ JumpIfSmi(r4, &miss);
 
   __ CompareObjectType(r2, r4, r4, JS_OBJECT_TYPE);
@@ -6790,8 +6774,7 @@ void ICCompareStub::GenerateObjects(MacroAssembler* masm) {
 
 void ICCompareStub::GenerateKnownObjects(MacroAssembler* masm) {
   Label miss;
-  __ LoadRR(r4, r2);
-  __ AndP(r4, r3);
+  __ AndP(r4, r3, r2);
   __ JumpIfSmi(r4, &miss);
   __ LoadP(r4, FieldMemOperand(r2, HeapObject::kMapOffset));
   __ LoadP(r5, FieldMemOperand(r3, HeapObject::kMapOffset));
@@ -7098,8 +7081,7 @@ void StringDictionaryLookupStub::Generate(MacroAssembler* masm) {
       __ LoadRR(index, hash);
     }
     __ ShiftRight(r0, index, Operand(String::kHashShift));
-    __ LoadRR(index, mask);
-    __ AndP(index, r0);
+    __ AndP(index, r0, mask);
 
     // Scale the index by multiplying by the entry size.
     ASSERT(StringDictionary::kEntrySize == 3);
@@ -7363,8 +7345,7 @@ void RecordWriteStub::CheckNeedsToInformIncrementalMarker(
   Label need_incremental_pop_scratch;
 
   ASSERT((~Page::kPageAlignmentMask & 0xffff) == 0);
-  __ LoadRR(regs_.scratch0(), regs_.object());
-  __ nilf(regs_.scratch0(), Operand(~Page::kPageAlignmentMask));
+  __ AndP(regs_.scratch0(), regs_.object(), Operand(~Page::kPageAlignmentMask));
   __ LoadP(regs_.scratch1(),
          MemOperand(regs_.scratch0(),
                     MemoryChunk::kWriteBarrierCounterOffset));
