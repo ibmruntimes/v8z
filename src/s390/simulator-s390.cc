@@ -2287,6 +2287,7 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
 
   // Pre-cast instruction to various types
   RRFInstruction *rrfInst = reinterpret_cast<RRFInstruction*>(instr);
+  RREInstruction* rreInst = reinterpret_cast<RREInstruction*>(instr);
 
   switch (op) {
     case AGR:
@@ -2294,7 +2295,6 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
     case OGR:
     case NGR:
     case XGR: {
-      RREInstruction* rreInst = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rreInst->R1Value();
       int r2 = rreInst->R2Value();
       int64_t r1_val = get_register(r1);
@@ -2327,6 +2327,19 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
           break;
         default: UNREACHABLE(); break;
       }
+      set_register(r1, r1_val);
+      break;
+    }
+    case AGFR: {
+      // Add Register (64 <- 32)  (Sign Extends 32-bit val)
+      int r1 = rreInst->R1Value();
+      int r2 = rreInst->R2Value();
+      int64_t r1_val = get_register(r1);
+      int64_t r2_val = static_cast<int64_t>(get_low_register<int32_t>(r2));
+      bool isOF = CheckOverflowForIntAdd(r1_val, r2_val);
+      r1_val += r2_val;
+      SetS390ConditionCode<int64_t>(r1_val, 0);
+      SetS390OverflowCode(isOF);
       set_register(r1, r1_val);
       break;
     }
