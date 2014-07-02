@@ -938,7 +938,7 @@ void LCodeGen::DoModI(LModI* instr) {
     // Might break the branch below.
     if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
       __ Cmpi(dividend, Operand::Zero());
-      __ bge(&done);
+      __ b(ge, &done, true);
       __ Cmpi(result, Operand::Zero());
       DeoptimizeIf(eq, instr->environment(), cr0);
     }
@@ -963,7 +963,7 @@ void LCodeGen::DoDivI(LDivI* instr) {
   if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
     Label left_not_zero;
     __ Cmpi(left, Operand::Zero());
-    __ bne(&left_not_zero);
+    __ b(ne, &left_not_zero, true);
     __ Cmpi(right, Operand::Zero());
     DeoptimizeIf(lt, instr->environment());
     __ bind(&left_not_zero);
@@ -973,7 +973,7 @@ void LCodeGen::DoDivI(LDivI* instr) {
   if (instr->hydrogen()->CheckFlag(HValue::kCanOverflow)) {
     Label left_not_min_int;
     __ Cmpi(left, Operand(kMinInt));
-    __ bne(&left_not_min_int);
+    __ b(ne, &left_not_min_int, true);
     __ Cmpi(right, Operand(-1));
     DeoptimizeIf(eq, instr->environment());
     __ bind(&left_not_min_int);
