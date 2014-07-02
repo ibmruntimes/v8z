@@ -1457,9 +1457,9 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
     __ JumpIfSmi(r4, &convert_to_object);
 
     __ CompareRoot(r4, Heap::kUndefinedValueRootIndex);
-    __ b(eq, &use_global_receiver, true);
+    __ beq(&use_global_receiver, Label::kNear);
     __ CompareRoot(r4, Heap::kNullValueRootIndex);
-    __ b(eq, &use_global_receiver, true);
+    __ beq(&use_global_receiver, Label::kNear);
 
     STATIC_ASSERT(LAST_SPEC_OBJECT_TYPE == LAST_TYPE);
     __ CompareObjectType(r4, r5, r5, FIRST_SPEC_OBJECT_TYPE);

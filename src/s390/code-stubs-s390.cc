@@ -1530,7 +1530,7 @@ void ToBooleanStub::CheckOddball(MacroAssembler* masm,
     // If we see an expected oddball, return its ToBoolean value tos_.
     Label different_value;
     __ CompareRoot(tos_, value);
-    __ b(ne, &different_value, true);
+    __ bne(&different_value, Label::kNear);
     // The value of a root is never NULL, so we can avoid loading a non-null
     // value into tos_ when we want to return 'true'.
     if (!result) {
@@ -1977,7 +1977,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       Label undo_add;
       __ LoadRR(scratch1, right);
       __ AddP(right, left, right);
-      __ b(overflow, &undo_add, true);
+      __ b(overflow, &undo_add, Label::kNear);
       __ Ret();
       __ bind(&undo_add);
       __ LoadRR(right, scratch1);  // Revert optimistic add.
@@ -1991,7 +1991,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       // as SubP, when it cannot use SRK, will switch to SR/LCR sequence
       // which may not set underflow properly.
       __ Sub(right, left, scratch1);
-      __ b(overflow, &undo_sub, true);
+      __ b(overflow, &undo_sub, Label::kNear);
       __ Ret();
       __ bind(&undo_sub);
       __ LoadRR(right, scratch1);  // Revert optimistic subtract.

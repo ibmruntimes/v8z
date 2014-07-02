@@ -2667,11 +2667,11 @@ void MacroAssembler::AssertFastElements(Register elements) {
     push(elements);
     LoadP(elements, FieldMemOperand(elements, HeapObject::kMapOffset));
     CompareRoot(elements, Heap::kFixedArrayMapRootIndex);
-    b(eq, &ok, true);
+    beq(&ok, Label::kNear);
     CompareRoot(elements, Heap::kFixedDoubleArrayMapRootIndex);
-    b(eq, &ok, true);
+    beq(&ok, Label::kNear);
     CompareRoot(elements, Heap::kFixedCOWArrayMapRootIndex);
-    b(eq, &ok, true);
+    beq(&ok, Label::kNear);
     Abort("JSObject with fast elements map has slow elements");
     bind(&ok);
     pop(elements);
@@ -3483,10 +3483,10 @@ void MacroAssembler::CheckPageFlag(
   // Should be okay to remove rc
 
   if (cc == ne) {
-    b(ne, condition_met, true);
+    bne(condition_met, Label::kNear);
   }
   if (cc == eq) {
-    b(eq, condition_met, true);
+    beq(condition_met, Label::kNear);
   }
 }
 

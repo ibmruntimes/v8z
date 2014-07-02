@@ -661,36 +661,38 @@ class Assembler : public AssemblerBase {
   // ---------------------------------------------------------------------------
   // Code generation
 
-  // S390 Pseudo Branch Instruction
-  void branchOnCond(Condition c, int branch_offset,
-      bool is_bound = false);  // jump on condition
-
-  // Label version
-  void b(Condition cond, Label* l, bool forceBRC = false) {
-    branchOnCond(cond, branch_offset(l, false), l->is_bound() || forceBRC);
-  }
-
+  // Helper for unconditional branch to Label with update to save register
   void b(Register r, Label* l) {
     positions_recorder()->WriteRecordedPositions();
     int32_t halfwords = branch_offset(l, false) / 2;
     brasl(r, Operand(halfwords));
   }
 
-  void beq(Label * l) { b(eq, l); }
-  void bne(Label * l) { b(ne, l); }
-  void blt(Label * l) { b(lt, l); }
-  void ble(Label * l) { b(le, l); }
-  void bgt(Label * l) { b(gt, l); }
-  void bge(Label * l) { b(ge, l); }
-  void b(Label * l)   { b(al, l); }
-  void jmp(Label * l) { b(al, l); }
-  void bunordered(Label* L) { b(unordered, L); }
-  void bordered(Label* L)   { b(ordered, L);   }
+  // Conditional Branch Instruction - Generates either BRC / BRCL
+  void branchOnCond(Condition c, int branch_offset, bool is_bound = false);
 
-  // Register version
-  void b(Condition cond, Register r) {
-    bcr(cond, r);
+  // Helpers for conditional branch to Label
+  void b(Condition cond, Label* l, Label::Distance dist = Label::kFar) {
+    branchOnCond(cond, branch_offset(l, false),
+                 l->is_bound() || (dist == Label::kNear));
   }
+
+  // Helpers for conditional branch to Label
+  void beq(Label * l, Label::Distance dist = Label::kFar) { b(eq, l, dist); }
+  void bne(Label * l, Label::Distance dist = Label::kFar) { b(ne, l, dist); }
+  void blt(Label * l, Label::Distance dist = Label::kFar) { b(lt, l, dist); }
+  void ble(Label * l, Label::Distance dist = Label::kFar) { b(le, l, dist); }
+  void bgt(Label * l, Label::Distance dist = Label::kFar) { b(gt, l, dist); }
+  void bge(Label * l, Label::Distance dist = Label::kFar) { b(ge, l, dist); }
+  void b(Label * l, Label::Distance dist = Label::kFar)   { b(al, l, dist); }
+  void jmp(Label * l, Label::Distance dist = Label::kFar) { b(al, l, dist); }
+  void bunordered(Label* l, Label::Distance dist = Label::kFar) {
+                                                     b(unordered, l, dist); }
+  void bordered(Label* l, Label::Distance dist = Label::kFar) {
+                                                       b(ordered, l, dist); }
+
+  // Helpers for conditional indirect branch off register
+  void b(Condition cond, Register r) { bcr(cond, r); }
   void beq(Register r) { b(eq, r); }
   void bne(Register r) { b(ne, r); }
   void blt(Register r) { b(lt, r); }

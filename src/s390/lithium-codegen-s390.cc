@@ -938,7 +938,7 @@ void LCodeGen::DoModI(LModI* instr) {
     // Might break the branch below.
     if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
       __ Cmpi(dividend, Operand::Zero());
-      __ b(ge, &done, true);
+      __ bge(&done, Label::kNear);
       __ Cmpi(result, Operand::Zero());
       DeoptimizeIf(eq, instr->environment(), cr0);
     }
@@ -963,7 +963,7 @@ void LCodeGen::DoDivI(LDivI* instr) {
   if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
     Label left_not_zero;
     __ Cmpi(left, Operand::Zero());
-    __ b(ne, &left_not_zero, true);
+    __ bne(&left_not_zero, Label::kNear);
     __ Cmpi(right, Operand::Zero());
     DeoptimizeIf(lt, instr->environment());
     __ bind(&left_not_zero);
@@ -973,7 +973,7 @@ void LCodeGen::DoDivI(LDivI* instr) {
   if (instr->hydrogen()->CheckFlag(HValue::kCanOverflow)) {
     Label left_not_min_int;
     __ Cmpi(left, Operand(kMinInt));
-    __ b(ne, &left_not_min_int, true);
+    __ bne(&left_not_min_int, Label::kNear);
     __ Cmpi(right, Operand(-1));
     DeoptimizeIf(eq, instr->environment());
     __ bind(&left_not_min_int);
@@ -5609,7 +5609,7 @@ void LCodeGen::DoStackCheck(LStackCheck* instr) {
     // Perform stack overflow check.
     Label done;
     __ CmpLogicalP(sp, RootMemOperand(Heap::kStackLimitRootIndex));
-    __ b(ge, &done, true);
+    __ bge(&done, Label::kNear);
     StackCheckStub stub;
     CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
     EnsureSpaceForLazyDeopt();
