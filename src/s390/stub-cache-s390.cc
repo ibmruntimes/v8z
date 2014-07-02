@@ -2454,7 +2454,7 @@ Handle<Code> CallStubCompiler::CompileCallConstant(Handle<Object> object,
         Label fast;
         // Check that the object is a boolean.
         __ CompareRoot(r3, Heap::kTrueValueRootIndex);
-        __ b(eq, &fast, true);
+        __ beq(&fast, Label::kNear);
         __ CompareRoot(r3, Heap::kFalseValueRootIndex);
         __ bne(&miss);
         __ bind(&fast);
@@ -4031,7 +4031,7 @@ void KeyedLoadStubCompiler::GenerateLoadFastElement(MacroAssembler* masm) {
   __ SmiToPtrArrayOffset(r6, r2);
   __ LoadP(r6, MemOperand(r6, r5));
   __ CompareRoot(r6, Heap::kTheHoleValueRootIndex);
-  __ b(eq, &miss_force_generic, true);
+  __ beq(&miss_force_generic, Label::kNear);
   __ LoadRR(r2, r6);
   __ Ret();
 
