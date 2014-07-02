@@ -2087,7 +2087,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       // DivP generates the DR instruction on 31-bit
       // DR treats the dividend as a 64-bit value comprised of R0:R1
       // Hence, we need to sign-extend the untagged 'left' value into R0
-      __ ShiftRightArithImm(r0, r1, 31);
+      __ ShiftRightArithP(r0, r1, Operand(31));
 #endif
       __ SmiUntag(r9, right);
       // Check for zero on the right hand side.
