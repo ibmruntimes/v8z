@@ -1596,7 +1596,8 @@ void LCodeGen::DoAddI(LAddI* instr) {
   }
 
 #if V8_TARGET_ARCH_S390X
-  __ lgfr(ToRegister(result), ToRegister(result));
+  if (checkOverflow)
+    __ lgfr(ToRegister(result), ToRegister(result));
 #endif
   // Doptimize on overflow
   if (instr->hydrogen()->CheckFlag(HValue::kCanOverflow)) {
