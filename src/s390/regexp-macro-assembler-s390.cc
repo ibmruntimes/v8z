@@ -184,10 +184,14 @@ void RegExpMacroAssemblerS390::AdvanceRegister(int reg, int by) {
   ASSERT(reg >= 0);
   ASSERT(reg < num_registers_);
   if (by != 0) {
-    __ LoadP(r2, register_location(reg), r0);
-    __ mov(r0, Operand(by));
-    __ AddRR(r2, r0);
-    __ StoreP(r2, register_location(reg));
+    if (CpuFeatures::IsSupported(GENERAL_INSTR_EXT) && is_int8(by)) {
+      __ AddMI(register_location(reg), Operand(by & 0xff));
+    } else {
+      __ LoadP(r2, register_location(reg), r0);
+      __ mov(r0, Operand(by));
+      __ AddRR(r2, r0);
+      __ StoreP(r2, register_location(reg));
+    }
   }
 }
 
