@@ -115,7 +115,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   // to the backing store.
   __ LoadP(r6, FieldMemOperand(r4, JSObject::kElementsOffset));
   __ CompareRoot(r6, Heap::kEmptyFixedArrayRootIndex);
-  __ beq(&only_change_map);
+  __ beq(&only_change_map, Label::kNear);
 
   // Preserve lr and use r14 as a temporary register.
   __ push(r14);
@@ -136,11 +136,11 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   Label aligned, aligned_done;
   __ tmll(r8, Operand(kDoubleAlignmentMask));
   __ mov(ip, Operand(masm->isolate()->factory()->one_pointer_filler_map()));
-  __ beq(&aligned /*, cr0*/);
+  __ beq(&aligned, Label::kNear);
   // Store at the beginning of the allocated memory and update the base pointer.
   __ StoreP(ip, MemOperand(r8));
-  __ AddP(r8, Operand(kPointerSize));
-  __ b(&aligned_done);
+  __ la(r8, MemOperand(r8, kPointerSize));
+  __ b(&aligned_done, Label::kNear);
 
   __ bind(&aligned);
   // Store the filler at the end of the allocated memory.
@@ -193,7 +193,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   // r8: end of destination FixedDoubleArray, not tagged
   // r9: begin of FixedDoubleArray element fields, not tagged
 
-  __ b(&entry);
+  __ b(&entry, Label::kNear);
 
   __ bind(&only_change_map);
   __ StoreP(r5, FieldMemOperand(r4, HeapObject::kMapOffset));
@@ -205,7 +205,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
                       kDontSaveFPRegs,
                       OMIT_REMEMBERED_SET,
                       OMIT_SMI_CHECK);
-  __ b(&done);
+  __ b(&done, Label::kNear);
 
   // Call into runtime if GC is required.
   __ bind(&gc_required);
@@ -223,9 +223,9 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   FloatingPointHelper::ConvertIntToDouble(
     masm, r1, d0);
   __ StoreF(d0, MemOperand(r9, 0));
-  __ AddP(r9, Operand(8));
+  __ la(r9, MemOperand(r9, 8));
 
-  __ b(&entry);
+  __ b(&entry, Label::kNear);
 
   // Hole found, store the-hole NaN.
   __ bind(&convert_hole);
