@@ -475,16 +475,19 @@ class RecordWriteStub: public CodeStub {
     ASSERT(first_instr_length == 4 || first_instr_length == 6);
     ASSERT(second_instr_length == 4 || second_instr_length == 6);
 
+    bool isINCREMENTAL = false;
+    bool isINCREMENTAL_COMPACTION = false;
+
     // INCREMENTAL has NOP on first branch.
     if (4 == first_instr_length) {
       // BRC - Check for 0x0 mask condition.
       if (0 == (first_instr & kFourByteBrCondMask)) {
-        return INCREMENTAL_COMPACTION;
+        isINCREMENTAL_COMPACTION = true;
       }
     } else {
       // BRCL - Check for 0x0 mask condition
       if (0 == (first_instr & kSixByteBrCondMask)) {
-        return INCREMENTAL_COMPACTION;
+        isINCREMENTAL_COMPACTION = true;
       }
     }
 
@@ -492,15 +495,20 @@ class RecordWriteStub: public CodeStub {
     if (4 == second_instr_length) {
       // BRC - Check for 0x0 mask condition.
       if (0 == (second_instr & kFourByteBrCondMask)) {
-        return INCREMENTAL;
+        isINCREMENTAL = true;
       }
     } else {
       // BRCL - Check for 0x0 mask condition
       if (0 == (second_instr & kSixByteBrCondMask)) {
-        return INCREMENTAL;
+        isINCREMENTAL = true;
       }
     }
 
+    if (isINCREMENTAL && isINCREMENTAL_COMPACTION) return STORE_BUFFER_ONLY;
+    else if (isINCREMENTAL) return INCREMENTAL;
+    else if (isINCREMENTAL_COMPACTION) return INCREMENTAL_COMPACTION;
+
+    ASSERT(false);
     return STORE_BUFFER_ONLY;
   }
 
@@ -518,16 +526,16 @@ class RecordWriteStub: public CodeStub {
         ASSERT(GetMode(stub) == INCREMENTAL ||
                GetMode(stub) == INCREMENTAL_COMPACTION);
 
-        PatchBranchCondMask(&masm, 0, CC_ALWAYS);
-        PatchBranchCondMask(&masm, first_instr_length, CC_ALWAYS);
+        PatchBranchCondMask(&masm, 0, CC_NOP);
+        PatchBranchCondMask(&masm, first_instr_length, CC_NOP);
         break;
       case INCREMENTAL:
         ASSERT(GetMode(stub) == STORE_BUFFER_ONLY);
-        PatchBranchCondMask(&masm, first_instr_length, CC_NOP);
+        PatchBranchCondMask(&masm, 0, CC_ALWAYS);
         break;
       case INCREMENTAL_COMPACTION:
         ASSERT(GetMode(stub) == STORE_BUFFER_ONLY);
-        PatchBranchCondMask(&masm, 0, CC_NOP);
+        PatchBranchCondMask(&masm, first_instr_length, CC_ALWAYS);
         break;
     }
     ASSERT(GetMode(stub) == mode);

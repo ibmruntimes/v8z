@@ -7241,8 +7241,8 @@ void RecordWriteStub::Generate(MacroAssembler* masm) {
   // See RecordWriteStub::Patch for details.
 
   // Clear the bit, branch on True for NOP action initially
-  __ b(CC_ALWAYS, &skip_to_incremental_noncompacting);
-  __ b(CC_ALWAYS, &skip_to_incremental_compacting);
+  __ b(CC_NOP, &skip_to_incremental_noncompacting);
+  __ b(CC_NOP, &skip_to_incremental_compacting);
 
   if (remembered_set_action_ == EMIT_REMEMBERED_SET) {
     __ RememberedSetHelper(object_,
