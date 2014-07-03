@@ -108,7 +108,6 @@
 
     # Interpreted regexp engine exists as platform-independent alternative
     # based where the regular expression is compiled to a bytecode.
-    # @TODO Temporarily disable until we are bootstrapped on S390
     'v8_interpreted_regexp%': 0,
   },
   'target_defaults': {
