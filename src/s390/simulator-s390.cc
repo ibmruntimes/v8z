@@ -2791,6 +2791,13 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
           else
             condition_reg_ = 1;
 
+          // check for overflow, cast r2_val to 64bit integer
+          // then check value within the range of INT_MIN and INT_MAX
+          // and set condition code accordingly
+          int64_t temp = static_cast<int64_t>(r2_val);
+          if (temp < INT_MIN || temp > INT_MAX) {
+            condition_reg_ = 1;
+          }
           switch (mask_val) {
             case CURRENT_ROUNDING_MODE:
             case ROUND_TO_PREPARE_FOR_SHORTER_PRECISION: {
@@ -2831,13 +2838,6 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
               break;
             }
             case ROUND_TOWARD_0: {
-              // check for overflow, cast r2_val to 64bit integer
-              // then check value within the range of INT_MIN and INT_MAX
-              // and set condition code accordingly
-              int64_t temp = static_cast<int64_t>(r2_val);
-              if (temp < INT_MIN || temp > INT_MAX) {
-                condition_reg_ = 1;
-              }
               r1_val = static_cast<int32_t>(r2_val);
               break;
             }
