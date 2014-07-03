@@ -733,16 +733,6 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     ASSERT(frame_pointer().bit() & kRegExpCalleeSaved);
 
 #endif
-    // 31bit ABI requires you to store f4 and f6:
-    // http://refspecs.linuxbase.org/ELF/zSeries/lzsabi0_s390.html#AEN417
-    __ std(d6, MemOperand(sp,
-          kStackFrameExtraParamSlot * kPointerSize - kDoubleSize));
-    __ std(d4, MemOperand(sp,
-          kStackFrameExtraParamSlot * kPointerSize - 2 * kDoubleSize));
-    __ std(d2, MemOperand(sp,
-          kStackFrameExtraParamSlot * kPointerSize - 3 * kDoubleSize));
-    __ std(d0, MemOperand(sp,
-          kStackFrameExtraParamSlot * kPointerSize - 4 * kDoubleSize));
 
     // zLinux ABI
     //    Incoming parameters:
@@ -754,7 +744,7 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     //    Requires us to save the callee-preserved registers r6-r13
     //    General convention is to also save r14 (return addr) and
     //    sp/r15 as well in a single STM/STMG
-    __ StoreMultipleP(r2, sp, MemOperand(sp, 2 * kPointerSize));
+    __ StoreMultipleP(r6, sp, MemOperand(sp, 6 * kPointerSize));
     // BackChain
     // __ StoreP(frame_pointer(), MemOperand(sp));
 
@@ -981,10 +971,6 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     // Restore registers r6..r15.
     __ LoadMultipleP(r6, sp, MemOperand(sp, 6 * kPointerSize));
 
-    __ ld(d0, MemOperand(sp, kCalleeRegisterSaveAreaSize - 4 * kDoubleSize));
-    __ ld(d2, MemOperand(sp, kCalleeRegisterSaveAreaSize - 3 * kDoubleSize));
-    __ ld(d4, MemOperand(sp, kCalleeRegisterSaveAreaSize - 2 * kDoubleSize));
-    __ ld(d6, MemOperand(sp, kCalleeRegisterSaveAreaSize - 1 * kDoubleSize));
     __ b(r14);
 
     // Backtrack code (branch target for conditional backtracks).
