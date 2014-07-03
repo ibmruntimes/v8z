@@ -462,6 +462,16 @@ class RecordWriteStub: public CodeStub {
     }
   }
 
+  static bool isBranchNop(SixByteInstr instr, int instrLength) {
+    if ((4 == instrLength && 0 == (instr & kFourByteBrCondMask)) ||
+        // BRC - Check for 0x0 mask condition.
+        (6 == instrLength && 0 == (instr & kSixByteBrCondMask)))  {
+        // BRCL - Check for 0x0 mask condition
+      return true;
+    }
+    return false;
+  }
+
   static Mode GetMode(Code* stub) {
     int32_t first_instr_length = Instruction::InstructionLength(
                                                      stub->instruction_start());
@@ -475,38 +485,16 @@ class RecordWriteStub: public CodeStub {
     ASSERT(first_instr_length == 4 || first_instr_length == 6);
     ASSERT(second_instr_length == 4 || second_instr_length == 6);
 
-    bool isINCREMENTAL = false;
-    bool isINCREMENTAL_COMPACTION = false;
+    bool isFirstInstrNOP= isBranchNop(first_instr, first_instr_length);
+    bool isSecondInstrNOP = isBranchNop(second_instr, second_instr_length);
 
-    // INCREMENTAL has NOP on first branch.
-    if (4 == first_instr_length) {
-      // BRC - Check for 0x0 mask condition.
-      if (0 == (first_instr & kFourByteBrCondMask)) {
-        isINCREMENTAL_COMPACTION = true;
-      }
-    } else {
-      // BRCL - Check for 0x0 mask condition
-      if (0 == (first_instr & kSixByteBrCondMask)) {
-        isINCREMENTAL_COMPACTION = true;
-      }
-    }
-
+    // STORE_BUFFER_ONLY has NOP on both branches
+    if (isSecondInstrNOP && isFirstInstrNOP) return STORE_BUFFER_ONLY;
     // INCREMENTAL_COMPACTION has NOP on second branch.
-    if (4 == second_instr_length) {
-      // BRC - Check for 0x0 mask condition.
-      if (0 == (second_instr & kFourByteBrCondMask)) {
-        isINCREMENTAL = true;
-      }
-    } else {
-      // BRCL - Check for 0x0 mask condition
-      if (0 == (second_instr & kSixByteBrCondMask)) {
-        isINCREMENTAL = true;
-      }
-    }
-
-    if (isINCREMENTAL && isINCREMENTAL_COMPACTION) return STORE_BUFFER_ONLY;
-    else if (isINCREMENTAL) return INCREMENTAL;
-    else if (isINCREMENTAL_COMPACTION) return INCREMENTAL_COMPACTION;
+    else if (isFirstInstrNOP && !isSecondInstrNOP)
+      return INCREMENTAL_COMPACTION;
+    // INCREMENTAL has NOP on first branch.
+    else if (!isFirstInstrNOP && isSecondInstrNOP) return INCREMENTAL;
 
     ASSERT(false);
     return STORE_BUFFER_ONLY;
