@@ -123,6 +123,7 @@ bool AreAliased(Register reg1,
 // W = word
 
 // arithmetics and bitwise
+#define AddMI              agsi
 #define AddRR              agr
 #define SubRR              sgr
 #define AndRR              ngr
@@ -166,6 +167,7 @@ bool AreAliased(Register reg1,
 
 // arithmetics and bitwise
 // Reg2Reg
+#define AddMI              asi
 #define AddRR              ar
 #define SubRR              sr
 #define AndRR              nr
