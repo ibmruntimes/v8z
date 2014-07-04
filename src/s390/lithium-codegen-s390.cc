@@ -1467,10 +1467,10 @@ void LCodeGen::DoValueOf(LValueOf* instr) {
 
   // If the object is not a value type, return the object.
   __ CompareObjectType(input, map, map, JS_VALUE_TYPE);
-  __ bne(&is_smi_or_object);
+  __ bne(&is_smi_or_object, Label::kNear);
 
   __ LoadP(result, FieldMemOperand(input, JSValue::kValueOffset));
-  __ b(&done);
+  __ b(&done, Label::kNear);
 
   __ bind(&is_smi_or_object);
   __ Move(result, input);
@@ -1504,10 +1504,10 @@ void LCodeGen::DoDateField(LDateField* instr) {
       __ LoadP(scratch, MemOperand(scratch));
       __ LoadP(scratch0(), FieldMemOperand(object, JSDate::kCacheStampOffset));
       __ CmpRR(scratch, scratch0());
-      __ bne(&runtime);
+      __ bne(&runtime, Label::kNear);
       __ LoadP(result, FieldMemOperand(object, JSDate::kValueOffset +
                                        kPointerSize * index->value()));
-      __ b(&done);
+      __ b(&done, Label::kNear);
     }
     __ bind(&runtime);
     __ PrepareCallCFunction(2, scratch);
@@ -1520,9 +1520,8 @@ void LCodeGen::DoDateField(LDateField* instr) {
 
 void LCodeGen::DoBitNotI(LBitNotI* instr) {
   Register input = ToRegister(instr->value());
-  Register result = ToRegister(instr->result());
-  __ LoadRR(result, input);
-  __ NotP(result);
+  ASSERT(instr->value()->Equals(instr->result()));
+  __ NotP(input);
 }
 
 
@@ -3004,12 +3003,12 @@ void LCodeGen::DoLoadKeyedSpecializedArrayElement(
   if (elements_kind == EXTERNAL_FLOAT_ELEMENTS ||
       elements_kind == EXTERNAL_DOUBLE_ELEMENTS) {
     DoubleRegister result = ToDoubleRegister(instr->result());
-    __ LoadRR(scratch0(), external_pointer);
     if (key_is_constant) {
-      __ AddP(scratch0(), Operand(constant_key << element_size_shift));
+      __ AddP(scratch0(), external_pointer,
+              Operand(constant_key << element_size_shift));
     } else {
       __ IndexToArrayOffset(r0, key, element_size_shift, key_is_tagged);
-      __ AddP(scratch0(), r0);
+      __ AddP(scratch0(), external_pointer, r0);
     }
     if (elements_kind == EXTERNAL_FLOAT_ELEMENTS) {
       __ ldeb(result, MemOperand(scratch0(), additional_offset));

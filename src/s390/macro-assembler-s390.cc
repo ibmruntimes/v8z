@@ -4658,31 +4658,14 @@ void MacroAssembler::LoadSmiLiteral(Register dst, Smi *smi) {
 void MacroAssembler::LoadDoubleLiteral(DoubleRegister result,
                                        double value,
                                        Register scratch) {
-  lay(sp, MemOperand(sp, -8));  // reserve 1 temp double on the stack
+  uint64_t int_val = BitCast<uint64_t, double>(value);
+  uint32_t hi_32 = int_val >> 32;
+  uint32_t lo_32 = static_cast<uint32_t>(int_val);
 
-  // avoid gcc strict aliasing error using union cast
-  union {
-    double dval;
-#if V8_TARGET_ARCH_S390X
-    intptr_t ival;
-#else
-    intptr_t ival[2];
-#endif
-  } litVal;
-
-  litVal.dval = value;
-#if V8_TARGET_ARCH_S390X
-  mov(scratch, Operand(litVal.ival));
-  stg(scratch, MemOperand(sp));
-#else
-  LoadIntLiteral(scratch, litVal.ival[0]);
-  StoreW(scratch, MemOperand(sp, 0));
-  LoadIntLiteral(scratch, litVal.ival[1]);
-  StoreW(scratch, MemOperand(sp, 4));
-#endif
-  LoadF(result, MemOperand(sp, 0));
-
-  la(sp, MemOperand(sp, 8));  // restore the stack ptr
+  // Load the 64-bit value into a GPR, then transfer it to FPR via LDGR
+  iihf(scratch, Operand(hi_32));
+  iilf(scratch, Operand(lo_32));
+  ldgr(result, scratch);
 }
 
 void MacroAssembler::Cmp(Register src1, Register src2) {

@@ -1152,7 +1152,7 @@ LInstruction* LChunkBuilder::DoBitNot(HBitNot* instr) {
   ASSERT(instr->representation().IsInteger32());
   if (instr->HasNoUses()) return NULL;
   LOperand* value = UseRegisterAtStart(instr->value());
-  return DefineAsRegister(new(zone()) LBitNotI(value));
+  return DefineSameAsFirst(new(zone()) LBitNotI(value));
 }
 
 
