@@ -954,14 +954,14 @@ Simulator* Simulator::current(Isolate* isolate) {
 
 
 // Sets the register in the architecture state.
-void Simulator::set_register(int reg, intptr_t value) {
+void Simulator::set_register(int reg, uint64_t value) {
   ASSERT((reg >= 0) && (reg < kNumGPRs));
   registers_[reg] = value;
 }
 
 
 // Get the register from the architecture state.
-intptr_t Simulator::get_register(int reg) const {
+uint64_t Simulator::get_register(int reg) const {
   ASSERT((reg >= 0) && (reg < kNumGPRs));
   // Stupid code added to avoid bug in GCC.
   // See: http://gcc.gnu.org/bugzilla/show_bug.cgi?id=43949
@@ -977,11 +977,7 @@ T Simulator::get_low_register(int reg) const {
   // See: http://gcc.gnu.org/bugzilla/show_bug.cgi?id=43949
   if (reg >= kNumGPRs) return 0;
   // End stupid code.
-#ifdef V8_TARGET_ARCH_S390X
   return static_cast<T>(registers_[reg] & 0xFFFFFFFF);
-#else
-  return static_cast<T>(registers_[reg]);
-#endif
 }
 
 template<typename T>
@@ -991,36 +987,21 @@ T Simulator::get_high_register(int reg) const {
   // See: http://gcc.gnu.org/bugzilla/show_bug.cgi?id=43949
   if (reg >= kNumGPRs) return 0;
   // End stupid code.
-#ifdef V8_TARGET_ARCH_S390X
-  ASSERT(sizeof(intptr_t) >= 8);
   return static_cast<T>(registers_[reg] >> 32);
-#else
-  ASSERT(false);  // forbid 31bit to use high word
-  return -1;
-#endif
 }
 
 void Simulator::set_low_register(int reg, uint32_t value) {
-#ifdef V8_TARGET_ARCH_S390X
   uint64_t shifted_val = static_cast<uint64_t>(value);
   uint64_t orig_val = static_cast<uint64_t>(registers_[reg]);
   uint64_t result = (orig_val >> 32 << 32) | shifted_val;
   registers_[reg] = result;
-#else
-  uint32_t* reg_addr = reinterpret_cast<uint32_t*>(&registers_[reg]);
-  *reg_addr = value;
-#endif
 }
 
 void Simulator::set_high_register(int reg, uint32_t value) {
-#ifdef V8_TARGET_ARCH_S390X
   uint64_t shifted_val = static_cast<uint64_t>(value) << 32;
   uint64_t orig_val = static_cast<uint64_t>(registers_[reg]);
   uint64_t result = (orig_val & 0xFFFFFFFF) | shifted_val;
   registers_[reg] = result;
-#else
-  ASSERT(false);  // forbid 31bit to use high word
-#endif
 }
 
 double Simulator::get_double_from_register_pair(int reg) {
@@ -1330,7 +1311,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
           }
           if (!stack_aligned) {
             PrintF(" with unaligned stack %08" V8PRIxPTR
-                   "\n", get_register(sp));
+                   "\n", static_cast<intptr_t>(get_register(sp)));
           }
           PrintF("\n");
         }
@@ -1400,7 +1381,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
               FUNCTION_ADDR(target), arg0);
           if (!stack_aligned) {
             PrintF(" with unaligned stack %08" V8PRIxPTR
-                   "\n", get_register(sp));
+                   "\n", static_cast<intptr_t>(get_register(sp)));
           }
           PrintF("\n");
         }
@@ -1431,7 +1412,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
               FUNCTION_ADDR(target), arg0, arg1);
           if (!stack_aligned) {
             PrintF(" with unaligned stack %08" V8PRIxPTR
-                   "\n", get_register(sp));
+                   "\n", static_cast<intptr_t>(get_register(sp)));
           }
           PrintF("\n");
         }
@@ -1475,7 +1456,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
               arg5);
           if (!stack_aligned) {
             PrintF(" with unaligned stack %08" V8PRIxPTR
-                   "\n", get_register(sp));
+                   "\n", static_cast<intptr_t>(get_register(sp)));
           }
           PrintF("\n");
         }

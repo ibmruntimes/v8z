@@ -167,8 +167,8 @@ class Simulator {
   static Simulator* current(v8::internal::Isolate* isolate);
 
   // Accessors for register state.
-  void set_register(int reg, intptr_t value);
-  intptr_t get_register(int reg) const;
+  void set_register(int reg, uint64_t value);
+  uint64_t get_register(int reg) const;
   template<typename T> T get_low_register(int reg) const;
   template<typename T> T get_high_register(int reg) const;
   void set_low_register(int reg, uint32_t value);
@@ -383,10 +383,9 @@ class Simulator {
       void SetFPRegister(int reg_index, const InputType& value);
 
   // Architecture state.
-  // Saturating instructions require a Q flag to indicate saturation.
-  // There is currently no way to read the CPSR directly, and thus read the Q
-  // flag, so this is left unimplemented.
-  intptr_t registers_[kNumGPRs];  // PowerPC
+  // On z9 and higher, and supported Linux on System z platforms, all registers
+  // are 64-bit, even in 31-bit mode.
+  uint64_t registers_[kNumGPRs];
   // condition register. In s390, the last 4 bits are used.
   int32_t condition_reg_;
   int32_t fp_condition_reg_;  // PowerPC
