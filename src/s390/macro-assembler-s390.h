@@ -125,8 +125,8 @@ bool AreAliased(Register reg1,
 // arithmetics and bitwise
 #define AddRR              agr
 #define SubRR              sgr
-#define OrRR               ogr
 #define AndRR              ngr
+#define OrRR               ogr
 #define XorRR              xgr
 #define LoadComplementRR   lcgr
 #define LoadNegativeRR     lngr
@@ -168,8 +168,8 @@ bool AreAliased(Register reg1,
 // Reg2Reg
 #define AddRR              ar
 #define SubRR              sr
-#define OrRR               or_z
 #define AndRR              nr
+#define OrRR               or_z
 #define XorRR              xr
 #define LoadComplementRR   lcr
 #define LoadNegativeRR     lnr
@@ -322,13 +322,6 @@ class MacroAssembler: public Assembler {
   void Subl(Register dst, Register src);
 
   // and 32bit
-  // and(r,r,r) Not supported on z9
-  void AndP(Register dst, Register src1, Register src2);
-  // void AndP(Register dst, Register src, const Operand& opnd);
-  // or(r,r,r) Not supported on z9
-  void OrP(Register dst, Register src1, Register src2);
-  // void OrP(Register dst, Register src, const Operand& opnd);
-  void XorP(Register dst, Register src1, Register src2);
   // void XorP(Register dst, Register src, const Operand& opnd);
   void Branch(Condition c, const Operand& opnd);
   void BranchOnCount(Register r1, Label *l);
@@ -379,15 +372,38 @@ class MacroAssembler: public Assembler {
 
   void DivP(Register dividend, Register divider);
 
+  // Bitwise operations
+  void And(Register dst, Register src);
+  void AndP(Register dst, Register src);
+  void And(Register dst, Register src1, Register src2);
+  void AndP(Register dst, Register src1, Register src2);
+  void And(Register dst, const MemOperand& opnd);
   void AndP(Register dst, const MemOperand& opnd);
-  void AndPI(Register dst, const Operand& opnd);
+  void And(Register dst, const Operand& opnd);
+  void AndP(Register dst, const Operand& opnd);
   void And(Register dst, Register src, const Operand& opnd);
   void AndP(Register dst, Register src, const Operand& opnd);
-  void AndP(Register dst, Register src);
+  void Or(Register dst, Register src);
   void OrP(Register dst, Register src);
-  void OrPImm(Register dst, const Operand& opnd);
+  void Or(Register dst, Register src1, Register src2);
+  void OrP(Register dst, Register src1, Register src2);
+  void Or(Register dst, const MemOperand& opnd);
+  void OrP(Register dst, const MemOperand& opnd);
+  void Or(Register dst, const Operand& opnd);
+  void OrP(Register dst, const Operand& opnd);
+  void Or(Register dst, Register src, const Operand& opnd);
+  void OrP(Register dst, Register src, const Operand& opnd);
+  void Xor(Register dst, Register src);
   void XorP(Register dst, Register src);
-  void XorPImm(Register dst, const Operand& opnd);
+  void Xor(Register dst, Register src1, Register src2);
+  void XorP(Register dst, Register src1, Register src2);
+  void Xor(Register dst, const MemOperand& opnd);
+  void XorP(Register dst, const MemOperand& opnd);
+  void Xor(Register dst, const Operand& opnd);
+  void XorP(Register dst, const Operand& opnd);
+  void Xor(Register dst, Register src, const Operand& opnd);
+  void XorP(Register dst, Register src, const Operand& opnd);
+
 
   void NotP(Register dst);
 
@@ -1388,7 +1404,7 @@ class MacroAssembler: public Assembler {
       ltgr(dst, dst);
 #else
       uint32_t mask = (1 << width) - 1;
-      AndPI(dst, Operand(mask));
+      AndP(dst, Operand(mask));
 #endif
     }
   }

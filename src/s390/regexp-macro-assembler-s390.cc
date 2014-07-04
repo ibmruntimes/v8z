@@ -363,8 +363,8 @@ void RegExpMacroAssemblerS390::CheckNotBackReferenceIgnoreCase(
     __ beq(&loop_check);
 
     // Mismatch, try case-insensitive match (converting letters to lower-case).
-    __ OrPImm(r5, Operand(0x20));  // Convert capture character to lower-case.
-    __ OrPImm(r6, Operand(0x20));  // Also convert input character.
+    __ OrP(r5, Operand(0x20));  // Convert capture character to lower-case.
+    __ OrP(r6, Operand(0x20));  // Also convert input character.
     __ CmpRR(r6, r5);
     __ bne(&fail);
     __ Sub(r5, Operand('a'));
@@ -621,8 +621,7 @@ bool RegExpMacroAssemblerS390::CheckSpecialCharacterClass(uc16 type,
     return true;
   case '.': {
     // Match non-newlines (not 0x0a('\n'), 0x0d('\r'), 0x2028 and 0x2029)
-    __ LoadRR(r2, current_character());
-    __ XorPImm(r2, Operand(0x01));
+    __ XorP(r2, current_character(), Operand(0x01));
     // See if current character is '\n'^1 or '\r'^1, i.e., 0x0b or 0x0c
     __ Sub(r2, Operand(0x0b));
     __ Cmpli(r2, Operand(0x0c - 0x0b));
@@ -639,8 +638,7 @@ bool RegExpMacroAssemblerS390::CheckSpecialCharacterClass(uc16 type,
   }
   case 'n': {
     // Match newlines (0x0a('\n'), 0x0d('\r'), 0x2028 and 0x2029)
-    __ LoadRR(r2, current_character());
-    __ XorPImm(r2, Operand(0x01));
+    __ XorP(r2, current_character(), Operand(0x01));
     // See if current character is '\n'^1 or '\r'^1, i.e., 0x0b or 0x0c
     __ Sub(r2, Operand(0x0b));
     __ Cmpli(r2, Operand(0x0c - 0x0b));

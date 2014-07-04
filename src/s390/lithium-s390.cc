@@ -1310,8 +1310,10 @@ LInstruction* LChunkBuilder::DoMul(HMul* instr) {
         instr->CheckFlag(HValue::kBailoutOnMinusZero)) {
       AssignEnvironment(mul);
     }
-    return DefineAsRegister(mul);
-
+    if (instr->CheckFlag(HValue::kCanOverflow))
+      return DefineAsRegister(mul);
+    else
+      return DefineSameAsFirst(mul);
   } else if (instr->representation().IsDouble()) {
     return DoArithmeticD(Token::MUL, instr);
 
