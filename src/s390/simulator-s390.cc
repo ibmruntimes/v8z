@@ -3030,6 +3030,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
 
   // Pre-cast instruction to various types
   RSYInstruction* rsyInstr = reinterpret_cast<RSYInstruction*>(instr);
+  RIEInstruction* rieInstr = reinterpret_cast<RIEInstruction*>(instr);
 
   switch (op) {
     case LDEB: {
@@ -3524,6 +3525,46 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
         UNREACHABLE();
       }
       SetS390BitWiseConditionCode<uint32_t>(alu_out);
+      break;
+    }
+    case RISBG: {
+      // Rotate then insert selected bits
+      int r1 = rieInstr->R1Value();
+      int r2 = rieInstr->R2Value();
+      // Starting Bit Position is Bits 2-7 of I3 field
+      uint32_t start_bit = rieInstr->I3Value() & 0x3F;
+      // Ending Bit Position is Bits 2-7 of I4 field
+      uint32_t end_bit = rieInstr->I4Value() & 0x3F;
+      // Shift Amount is Bits 2-7 of I5 field
+      uint32_t shift_amount = rieInstr->I5Value() & 0x3F;
+      // Zero out Remaining (unslected) bits if Bit 0 of I4 is 1.
+      bool zero_remaining = (0 != (rieInstr->I4Value() & 0x80));
+
+      uint64_t src_val = get_register(r2);
+
+      // Rotate Left by Shift Amount first
+      uint64_t rotated_val = (src_val << shift_amount) |
+                             (src_val >> (64 - shift_amount));
+      int32_t width = end_bit - start_bit + 1;
+
+      uint64_t selection_mask = 0;
+      if (width < 64) {
+        selection_mask = (static_cast<uint64_t>(1) << width) - 1;
+      } else {
+        selection_mask = static_cast<uint64_t>(static_cast<int64_t>(-1));
+      }
+      selection_mask = selection_mask << (63 - end_bit);
+
+      uint64_t selected_val = rotated_val & selection_mask;
+
+      if (!zero_remaining) {
+        // Merged the unselected bits from the original value
+        selected_val = (src_val & ~selection_mask) | selected_val;
+      }
+
+      // Condition code is set by treating result as 64-bit signed int
+      SetS390ConditionCode<int64_t>(selected_val, 0);
+      set_register(r1, selected_val);
       break;
     }
     default:
