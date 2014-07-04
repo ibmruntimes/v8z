@@ -1292,8 +1292,7 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
   Register scratch = scratch0();
   if (right_op->IsRegister()) {
     // Mask the right_op operand.
-    __ LoadRR(scratch, ToRegister(right_op));
-    __ AndP(scratch, Operand(0x1F));
+    __ AndP(scratch, ToRegister(right_op), Operand(0x1F));
     switch (instr->op()) {
       case Token::SAR:
         __ ShiftRightArith(result, left, scratch);

@@ -4464,6 +4464,7 @@ void MacroAssembler::Xor(Register dst, const Operand& opnd) {
 // XOR Pointer Size - dst = dst & imm
 void MacroAssembler::XorP(Register dst, const Operand& opnd) {
 #if V8_TARGET_ARCH_S390X
+  intptr_t value = opnd.imm_;
   xihf(dst, Operand(value >> 32));
   xilf(dst, Operand(value & 0xFFFFFFFF));
 #else
