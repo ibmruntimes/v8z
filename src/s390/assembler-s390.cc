@@ -168,6 +168,8 @@ void CpuFeatures::Probe() {
 #else
   // All distinct ops instructions can be simulated
   supported_ |= (1u << DISTINCT_OPS);
+  // RISBG can be simulated
+  supported_ |= (1u << GENERAL_INSTR_EXT);
   USE(performSTFLE);  // To avoid assert
 #endif
   supported_ |= (1u << FPU);
