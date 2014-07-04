@@ -1182,8 +1182,7 @@ void LCodeGen::DoMulI(LMulI* instr) {
   } else {
     Register right = EmitLoadRegister(right_op, ip);
     if (bailout_on_minus_zero) {
-      __ LoadRR(ToRegister(instr->temp()), left);
-      __ OrP(ToRegister(instr->temp()), right);
+      __ OrP(ToRegister(instr->temp()), left, right);
     }
 
     if (can_overflow) {
@@ -1210,7 +1209,7 @@ void LCodeGen::DoMulI(LMulI* instr) {
       // Bail out if the result is supposed to be negative zero.
       Label done;
       __ Cmpi(result, Operand::Zero());
-      __ bne(&done);
+      __ bne(&done, Label::kNear);
       __ Cmpi(ToRegister(instr->temp()), Operand::Zero());
       DeoptimizeIf(lt, instr->environment());
       __ bind(&done);
