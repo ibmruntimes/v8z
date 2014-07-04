@@ -1147,8 +1147,8 @@ static void EmitCheckForSymbolsOrObjects(MacroAssembler* masm,
   __ LoadlB(r4, FieldMemOperand(r4, Map::kBitFieldOffset));
   __ LoadlB(r5, FieldMemOperand(r5, Map::kBitFieldOffset));
   __ AndP(r2, r5, r4);
-  __ AndPI(r2, Operand(1 << Map::kIsUndetectable));
-  __ XorPImm(r2, Operand(1 << Map::kIsUndetectable));
+  __ AndP(r2, Operand(1 << Map::kIsUndetectable));
+  __ XorP(r2, Operand(1 << Map::kIsUndetectable));
   __ Ret();
 }
 
@@ -3007,7 +3007,7 @@ void TranscendentalCacheStub::Generate(MacroAssembler* masm) {
   __ ShiftRightArith(scratch0, r3, Operand(8));
   __ XorP(r3, scratch0);
   ASSERT(IsPowerOf2(TranscendentalCache::SubCache::kCacheSize));
-  __ AndPI(r3, Operand(TranscendentalCache::SubCache::kCacheSize - 1));
+  __ AndP(r3, Operand(TranscendentalCache::SubCache::kCacheSize - 1));
 
   // r4 = low 32 bits of double value.
   // r5 = high 32 bits of double value.
@@ -4877,7 +4877,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // For arguments 4 (r5) and 3 (r4) get string length, calculate start of
   // string data and calculate the shift of the index (0 for ASCII and 1 for
   // two byte).
-  __ XorPImm(r5, Operand(1));
+  __ XorP(r5, Operand(1));
   // If slice offset is not 0, load the length from the original sliced string.
   //
   // Argument 3, r4: Start of string data
@@ -5479,7 +5479,7 @@ void StringCharCodeAtGenerator::GenerateSlow(
   // Fast case of Heap::LookupSingleCharacterStringFromCode.
   ASSERT(IsPowerOf2(String::kMaxAsciiCharCode + 1));
   __ LoadSmiLiteral(r0, Smi::FromInt(~String::kMaxAsciiCharCode));
-  __ OrPImm(r0, Operand(kSmiTagMask));
+  __ OrP(r0, Operand(kSmiTagMask));
   __ AndP(r0, code_);
   __ Cmpi(r0, Operand::Zero());
   __ bne(&slow_case_);
@@ -6369,7 +6369,7 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   __ bne(&ascii_data /*, cr0*/);
   __ XorP(r6, r7);
   STATIC_ASSERT(kAsciiStringTag != 0 && kAsciiDataHintTag != 0);
-  __ AndPI(r6, Operand(kAsciiStringTag | kAsciiDataHintTag));
+  __ AndP(r6, Operand(kAsciiStringTag | kAsciiDataHintTag));
   __ Cmpi(r6, Operand(kAsciiStringTag | kAsciiDataHintTag));
   __ beq(&ascii_data);
 
@@ -6527,7 +6527,7 @@ void StringAddStub::GenerateConvertArgument(MacroAssembler* masm,
       arg, scratch1, scratch2, JS_VALUE_TYPE);  // map -> scratch1.
   __ bne(slow);
   __ LoadlB(scratch2, FieldMemOperand(scratch1, Map::kBitField2Offset));
-  __ AndPI(scratch2,
+  __ AndP(scratch2,
           Operand(1 << Map::kStringWrapperSafeForDefaultValueOf));
   __ Cmpi(scratch2,
          Operand(1 << Map::kStringWrapperSafeForDefaultValueOf));

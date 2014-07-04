@@ -248,9 +248,9 @@ void StubCache::GenerateProbe(MacroAssembler* masm,
   __ ShiftRightP(scratch, scratch, Operand(kHeapObjectTagSize));
   // Mask down the eor argument to the minimum to keep the immediate
   // encodable.
-  __ XorPImm(scratch, Operand((flags >> kHeapObjectTagSize) & mask));
+  __ XorP(scratch, Operand((flags >> kHeapObjectTagSize) & mask));
   // Prefer and_ to ubfx here because ubfx takes 2 cycles.
-  __ AndPI(scratch, Operand(mask));
+  __ AndP(scratch, Operand(mask));
 
   // Probe the primary table.
   ProbeTable(isolate,
@@ -269,7 +269,7 @@ void StubCache::GenerateProbe(MacroAssembler* masm,
   __ Sub(scratch, scratch, extra);
   uint32_t mask2 = kSecondaryTableSize - 1;
   __ AddP(scratch, Operand((flags >> kHeapObjectTagSize) & mask2));
-  __ AndPI(scratch, Operand(mask2));
+  __ AndP(scratch, Operand(mask2));
 
   // Probe the secondary table.
   ProbeTable(isolate,
@@ -3501,8 +3501,7 @@ Handle<Code> ConstructStubCompiler::CompileConstructStub(
   // r6: JSObject (not tagged)
   // Move argc to r3 and the JSObject to return to r2 and tag it.
   __ LoadRR(r3, r2);
-  __ LoadRR(r2, r6);
-  __ OrPImm(r2, Operand(kHeapObjectTag));
+  __ OrP(r2, r6, Operand(kHeapObjectTag));
 
   // r2: JSObject
   // r3: argc

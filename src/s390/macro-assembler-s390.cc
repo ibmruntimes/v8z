@@ -2477,7 +2477,7 @@ void MacroAssembler::GetLeastBitsFromSmi(Register dst,
                     Operand(64 - kSmiShift), true);
   } else {
     SmiUntag(dst, src);
-    AndPI(dst, Operand((1 << num_least_bits) - 1));
+    AndP(dst, Operand((1 << num_least_bits) - 1));
   }
 }
 
@@ -4165,6 +4165,38 @@ void MacroAssembler::Sub(Register dst, const MemOperand& opnd) {
 #endif
 }
 
+//----------------------------------------------------------------------------//
+//  Bitwise Operations
+//----------------------------------------------------------------------------//
+
+
+// AND 32-bit - dst = dst & src
+void MacroAssembler::And(Register dst, Register src) {
+  nr(dst, src);
+}
+
+// AND Pointer Size - dst = dst & src
+void MacroAssembler::AndP(Register dst, Register src) {
+  AndRR(dst, src);
+}
+
+// Non-clobbering AND 32-bit - dst = src1 & src1
+void MacroAssembler::And(Register dst, Register src1, Register src2) {
+  if (!dst.is(src1) && !dst.is(src2)) {
+    // We prefer to generate XR/XGR, over the non clobbering XRK/XRK
+    // as XR is a smaller instruction
+    if (CpuFeatures::IsSupported(DISTINCT_OPS)) {
+      nrk(dst, src1, src2);
+      return;
+    } else {
+      lr(dst, src1);
+    }
+  } else if (dst.is(src2)) {
+    src2 = src1;
+  }
+  And(dst, src2);
+}
+
 // Non-clobbering AND pointer size - dst = src1 & src1
 void MacroAssembler::AndP(Register dst, Register src1, Register src2) {
   if (!dst.is(src1) && !dst.is(src2)) {
@@ -4179,32 +4211,35 @@ void MacroAssembler::AndP(Register dst, Register src1, Register src2) {
   } else if (dst.is(src2)) {
     src2 = src1;
   }
-  AndRR(dst, src2);
+  AndP(dst, src2);
 }
 
-
-void MacroAssembler::AndP(Register dst, Register src) {
-#if V8_TARGET_ARCH_S390X
-  ngr(dst, src);
-#else
-  nr(dst, src);
-#endif
-}
-
-void MacroAssembler::AndP(Register dst, const MemOperand& opnd) {
-#if V8_TARGET_ARCH_S390X
-  iihf(dst, Operand(static_cast<intptr_t>(0)));  // higher reg set to 0
-  n(dst, opnd);
-#else
+// AND 32-bit (Reg - Mem)
+void MacroAssembler::And(Register dst, const MemOperand& opnd) {
   ASSERT(is_int20(opnd.offset()));
   if (is_uint12(opnd.offset()))
     n(dst, opnd);
   else
     ny(dst, opnd);
+}
+
+// AND Pointer Size (Reg - Mem)
+void MacroAssembler::AndP(Register dst, const MemOperand& opnd) {
+  ASSERT(is_int20(opnd.offset()));
+#if V8_TARGET_ARCH_S390X
+  ng(dst, opnd);
+#else
+  And(dst, opnd);
 #endif
 }
 
-void MacroAssembler::AndPI(Register dst, const Operand& opnd) {
+// AND 32-bit - dst = dst & imm
+void MacroAssembler::And(Register dst, const Operand& opnd) {
+  nilf(dst, opnd);
+}
+
+// AND Pointer Size - dst = dst & imm
+void MacroAssembler::AndP(Register dst, const Operand& opnd) {
 #if V8_TARGET_ARCH_S390X
   intptr_t value = opnd.imm_;
   if (value >> 32 != -1) {
@@ -4213,18 +4248,18 @@ void MacroAssembler::AndPI(Register dst, const Operand& opnd) {
   }
   nilf(dst, Operand(value & 0xFFFFFFFF));
 #else
-  nilf(dst, opnd);
+  And(dst, opnd);
 #endif
 }
 
-// And 32-bit
+// AND 32-bit - dst = src & imm
 void MacroAssembler::And(Register dst, Register src, const Operand& opnd) {
   if (!dst.is(src))
     lr(dst, src);
   nilf(dst, opnd);
 }
 
-// And Pointer Size
+// AND Pointer Size - dst = src & imm
 void MacroAssembler::AndP(Register dst, Register src, const Operand& opnd) {
   // Try to exploit RISBG first
   intptr_t value = opnd.imm_;
@@ -4259,27 +4294,37 @@ void MacroAssembler::AndP(Register dst, Register src, const Operand& opnd) {
 
   if (!dst.is(src))
     LoadRR(dst, src);
-#if V8_TARGET_ARCH_S390X
-  if (value >> 32 != -1) {
-    // this may not work b/c condition code won't be set correctly
-    nihf(dst, Operand(value >> 32));
-  }
-  nilf(dst, Operand(value & 0xFFFFFFFF));
-#else
-  nilf(dst, opnd);
-#endif
+  AndP(dst, opnd);
 }
 
-
-void MacroAssembler::OrP(Register dst, Register src) {
-#if V8_TARGET_ARCH_S390X
-  ogr(dst, src);
-#else
+// OR 32-bit - dst = dst & src
+void MacroAssembler::Or(Register dst, Register src) {
   or_z(dst, src);
-#endif
 }
 
-// Non-clobbering OR pointer size - dst = src1 ^ src1
+// OR Pointer Size - dst = dst & src
+void MacroAssembler::OrP(Register dst, Register src) {
+  OrRR(dst, src);
+}
+
+// Non-clobbering OR 32-bit - dst = src1 & src1
+void MacroAssembler::Or(Register dst, Register src1, Register src2) {
+  if (!dst.is(src1) && !dst.is(src2)) {
+    // We prefer to generate XR/XGR, over the non clobbering XRK/XRK
+    // as XR is a smaller instruction
+    if (CpuFeatures::IsSupported(DISTINCT_OPS)) {
+      ork(dst, src1, src2);
+      return;
+    } else {
+      lr(dst, src1);
+    }
+  } else if (dst.is(src2)) {
+    src2 = src1;
+  }
+  Or(dst, src2);
+}
+
+// Non-clobbering OR pointer size - dst = src1 & src1
 void MacroAssembler::OrP(Register dst, Register src1, Register src2) {
   if (!dst.is(src1) && !dst.is(src2)) {
     // We prefer to generate XR/XGR, over the non clobbering XRK/XRK
@@ -4293,40 +4338,89 @@ void MacroAssembler::OrP(Register dst, Register src1, Register src2) {
   } else if (dst.is(src2)) {
     src2 = src1;
   }
-  OrRR(dst, src2);
+  OrP(dst, src2);
 }
 
-void MacroAssembler::OrPImm(Register dst, const Operand& opnd) {
-  ASSERT(!opnd.is_reg());
+// OR 32-bit (Reg - Mem)
+void MacroAssembler::Or(Register dst, const MemOperand& opnd) {
+  ASSERT(is_int20(opnd.offset()));
+  if (is_uint12(opnd.offset()))
+    o(dst, opnd);
+  else
+    oy(dst, opnd);
+}
+
+// OR Pointer Size (Reg - Mem)
+void MacroAssembler::OrP(Register dst, const MemOperand& opnd) {
+  ASSERT(is_int20(opnd.offset()));
+#if V8_TARGET_ARCH_S390X
+  og(dst, opnd);
+#else
+  Or(dst, opnd);
+#endif
+}
+
+// OR 32-bit - dst = dst & imm
+void MacroAssembler::Or(Register dst, const Operand& opnd) {
+  oilf(dst, opnd);
+}
+
+// OR Pointer Size - dst = dst & imm
+void MacroAssembler::OrP(Register dst, const Operand& opnd) {
 #if V8_TARGET_ARCH_S390X
   intptr_t value = opnd.imm_;
   if (value >> 32 != 0) {
     // this may not work b/c condition code won't be set correctly
     oihf(dst, Operand(value >> 32));
   }
-  oilf(dst, opnd);
+  oilf(dst, Operand(value & 0xFFFFFFFF));
 #else
-  oilf(dst, opnd);
+  Or(dst, opnd);
 #endif
 }
 
-#if 0
+// OR 32-bit - dst = src & imm
 void MacroAssembler::Or(Register dst, Register src, const Operand& opnd) {
-  ASSERT(!opnd.is_reg());
-  if (!dst.is(src)) LoadRR(dst, src);
+  if (!dst.is(src))
+    lr(dst, src);
+  oilf(dst, opnd);
+}
+
+// OR Pointer Size - dst = src & imm
+void MacroAssembler::OrP(Register dst, Register src, const Operand& opnd) {
+  if (!dst.is(src))
+    LoadRR(dst, src);
   OrP(dst, opnd);
 }
-#endif
 
-void MacroAssembler::XorP(Register dst, Register src) {
-#if V8_TARGET_ARCH_S390X
-  xgr(dst, src);
-#else
+// XOR 32-bit - dst = dst & src
+void MacroAssembler::Xor(Register dst, Register src) {
   xr(dst, src);
-#endif
 }
 
-// Non-clobbering XOR pointer size - dst = src1 ^ src1
+// XOR Pointer Size - dst = dst & src
+void MacroAssembler::XorP(Register dst, Register src) {
+  XorRR(dst, src);
+}
+
+// Non-clobbering XOR 32-bit - dst = src1 & src1
+void MacroAssembler::Xor(Register dst, Register src1, Register src2) {
+  if (!dst.is(src1) && !dst.is(src2)) {
+    // We prefer to generate XR/XGR, over the non clobbering XRK/XRK
+    // as XR is a smaller instruction
+    if (CpuFeatures::IsSupported(DISTINCT_OPS)) {
+      xrk(dst, src1, src2);
+      return;
+    } else {
+      lr(dst, src1);
+    }
+  } else if (dst.is(src2)) {
+    src2 = src1;
+  }
+  Xor(dst, src2);
+}
+
+// Non-clobbering XOR pointer size - dst = src1 & src1
 void MacroAssembler::XorP(Register dst, Register src1, Register src2) {
   if (!dst.is(src1) && !dst.is(src2)) {
     // We prefer to generate XR/XGR, over the non clobbering XRK/XRK
@@ -4340,26 +4434,57 @@ void MacroAssembler::XorP(Register dst, Register src1, Register src2) {
   } else if (dst.is(src2)) {
     src2 = src1;
   }
-  XorRR(dst, src2);
+  XorP(dst, src2);
 }
 
-void MacroAssembler::XorPImm(Register dst, const Operand& opnd) {
-  ASSERT(!opnd.is_reg());
+// XOR 32-bit (Reg - Mem)
+void MacroAssembler::Xor(Register dst, const MemOperand& opnd) {
+  ASSERT(is_int20(opnd.offset()));
+  if (is_uint12(opnd.offset()))
+    x(dst, opnd);
+  else
+    xy(dst, opnd);
+}
+
+// XOR Pointer Size (Reg - Mem)
+void MacroAssembler::XorP(Register dst, const MemOperand& opnd) {
+  ASSERT(is_int20(opnd.offset()));
 #if V8_TARGET_ARCH_S390X
-  xihf(dst, Operand(opnd.imm_ >> 32));
-  xilf(dst, opnd);
+  xg(dst, opnd);
 #else
-  xilf(dst, opnd);
+  Xor(dst, opnd);
 #endif
 }
 
-#if 0
+// XOR 32-bit - dst = dst & imm
+void MacroAssembler::Xor(Register dst, const Operand& opnd) {
+  xilf(dst, opnd);
+}
+
+// XOR Pointer Size - dst = dst & imm
+void MacroAssembler::XorP(Register dst, const Operand& opnd) {
+#if V8_TARGET_ARCH_S390X
+  xihf(dst, Operand(value >> 32));
+  xilf(dst, Operand(value & 0xFFFFFFFF));
+#else
+  Xor(dst, opnd);
+#endif
+}
+
+// XOR 32-bit - dst = src & imm
 void MacroAssembler::Xor(Register dst, Register src, const Operand& opnd) {
-  ASSERT(!opnd.is_reg());
-  if (!dst.is(src)) LoadRR(dst, src);
+  if (!dst.is(src))
+    lr(dst, src);
+  xilf(dst, opnd);
+}
+
+// XOR Pointer Size - dst = src & imm
+void MacroAssembler::XorP(Register dst, Register src, const Operand& opnd) {
+  if (!dst.is(src))
+    LoadRR(dst, src);
   XorP(dst, opnd);
 }
-#endif
+
 
 // Add Logical 32-bit (Register-Memory)
 void MacroAssembler::AddLogical(Register dst, const MemOperand& opnd) {
@@ -4416,7 +4541,7 @@ void MacroAssembler::NotP(Register dst) {
   xihf(dst, Operand(0xFFFFFFFF));
   xilf(dst, Operand(0xFFFFFFFF));
 #else
-  XorPImm(dst, Operand(0xFFFFFFFF));
+  XorP(dst, Operand(0xFFFFFFFF));
 #endif
 }
 

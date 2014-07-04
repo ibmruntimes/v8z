@@ -914,7 +914,7 @@ void LCodeGen::DoModI(LModI* instr) {
     __ bind(&positive_dividend);
     if (!dividend.is(result))
       __ LoadRR(result, dividend);
-    __ AndPI(result, Operand(divisor - 1));
+    __ AndP(result, Operand(divisor - 1));
   } else {
     Register divisor = ToRegister(instr->right());
 
@@ -1225,71 +1225,60 @@ void LCodeGen::DoBitI(LBitI* instr) {
   ASSERT(left_op->IsRegister());
   Register left = ToRegister(left_op);
   Register result = ToRegister(instr->result());
-  Operand right(no_reg);
 
-  if (right_op->IsStackSlot() || right_op->IsArgument()) {
-    right = Operand(EmitLoadRegister(right_op, ip));
-  } else {
-    ASSERT(right_op->IsRegister() || right_op->IsConstantOperand());
-
-    if (right_op->IsConstantOperand() &&
-        is_uint16(ToInteger32(LConstantOperand::cast(right_op)))) {
-      switch (instr->op()) {
-        case Token::BIT_AND:
-          __ AndP(result, left,
-                  Operand(ToInteger32(LConstantOperand::cast(right_op))));
-          break;
-        case Token::BIT_OR:
-          if (!result.is(left))
-            __ LoadRR(result, left);
-          __ OrPImm(result,
-                 Operand(ToInteger32(LConstantOperand::cast(right_op))));
-          break;
-        case Token::BIT_XOR:
-          if (!result.is(left))
-            __ LoadRR(result, left);
-          __ XorPImm(result,
-                  Operand(ToInteger32(LConstantOperand::cast(right_op))));
-          break;
-        default:
-          UNREACHABLE();
-          break;
-      }
-      return;
+  if (right_op->IsConstantOperand()) {
+    switch (instr->op()) {
+      case Token::BIT_AND:
+        __ AndP(result, left,
+            Operand(ToInteger32(LConstantOperand::cast(right_op))));
+        break;
+      case Token::BIT_OR:
+        __ OrP(result, left,
+            Operand(ToInteger32(LConstantOperand::cast(right_op))));
+        break;
+      case Token::BIT_XOR:
+        __ XorP(result, left,
+            Operand(ToInteger32(LConstantOperand::cast(right_op))));
+        break;
+      default:
+        UNREACHABLE();
+        break;
     }
-    right = ToOperand(right_op);
-  }
+  } else if (right_op->IsStackSlot() || right_op->IsArgument()) {
+    // Reg-Mem instruction clobbers, so copy src to dst first.
+    if (!left.is(result))
+      __ LoadRR(result, left);
+    switch (instr->op()) {
+      case Token::BIT_AND:
+        __ AndP(result, ToMemOperand(right_op));
+        break;
+      case Token::BIT_OR:
+        __ OrP(result, ToMemOperand(right_op));
+        break;
+      case Token::BIT_XOR:
+        __ XorP(result, ToMemOperand(right_op));
+        break;
+      default:
+        UNREACHABLE();
+        break;
+    }
+  } else {
+    ASSERT(right_op->IsRegister());
 
-  switch (instr->op()) {
-    case Token::BIT_AND:
-      if (right.is_reg()) {
-        __ AndP(result, left, right.rm());
-      } else {
-        if (!result.is(left))
-          __ LoadRR(result, left);
-        __ AndPI(result, right);
-      }
-      break;
-    case Token::BIT_OR:
-      if (right.is_reg()) {
-        __ OrP(result, left, right.rm());
-      } else {
-        __ LoadRR(result, left);
-        __ OrPImm(result, right);
-      }
-      break;
-    case Token::BIT_XOR:
-      if (right.is_reg()) {
-        __ XorP(result, left, right.rm());
-      } else {
-        if (!result.is(left))
-          __ LoadRR(result, left);
-        __ XorPImm(result, right);
-      }
-      break;
-    default:
-      UNREACHABLE();
-      break;
+    switch (instr->op()) {
+      case Token::BIT_AND:
+        __ AndP(result, left, ToRegister(right_op));
+        break;
+      case Token::BIT_OR:
+        __ OrP(result, left, ToRegister(right_op));
+        break;
+      case Token::BIT_XOR:
+        __ XorP(result, left, ToRegister(right_op));
+        break;
+      default:
+        UNREACHABLE();
+        break;
+    }
   }
 }
 
@@ -1304,7 +1293,7 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
   if (right_op->IsRegister()) {
     // Mask the right_op operand.
     __ LoadRR(scratch, ToRegister(right_op));
-    __ AndPI(scratch, Operand(0x1F));
+    __ AndP(scratch, Operand(0x1F));
     switch (instr->op()) {
       case Token::SAR:
         __ ShiftRightArith(result, left, scratch);
@@ -3704,7 +3693,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
 
   // state[0] = 18273 * (state[0] & 0xFFFF) + (state[0] >> 16)
   __ LoadRR(r5, r3);
-  __ AndPI(r5, Operand(0xFFFF));
+  __ AndP(r5, Operand(0xFFFF));
 //  __ LoadImmP(r6, Operand(18273));
   __ MulP(r5, Operand(18273));
   __ srl(r3, Operand(16));
@@ -3714,7 +3703,7 @@ void LCodeGen::DoRandom(LRandom* instr) {
 
   // state[1] = 36969 * (state[1] & 0xFFFF) + (state[1] >> 16)
   __ LoadRR(r5, r2);
-  __ AndPI(r5, Operand(0xFFFF));
+  __ AndP(r5, Operand(0xFFFF));
 //  __ mov(r6, Operand(36969));
   __ MulP(r5, Operand(36969));
   __ srl(r2, Operand(16));
@@ -4857,7 +4846,7 @@ void LCodeGen::DoCheckInstanceType(LCheckInstanceType* instr) {
       __ AndP(scratch, r0);
       DeoptimizeIf(tag == 0 ? ne : eq, instr->environment(), cr0);
     } else {
-      __ AndPI(scratch, Operand(mask));
+      __ AndP(scratch, Operand(mask));
       __ Cmpi(scratch, Operand(tag));
       DeoptimizeIf(ne, instr->environment());
     }

@@ -2804,7 +2804,7 @@ void FullCodeGenerator::EmitIsStringWrapperSafeForDefaultValueOf(
   // Set the bit in the map to indicate that it has been checked safe for
   // default valueOf and set true result.
   __ LoadlB(r4, FieldMemOperand(r3, Map::kBitField2Offset));
-  __ OrPImm(r4, Operand(1 << Map::kStringWrapperSafeForDefaultValueOf));
+  __ OrP(r4, Operand(1 << Map::kStringWrapperSafeForDefaultValueOf));
   __ stc(r4, FieldMemOperand(r3, Map::kBitField2Offset));
   __ b(if_true);
 
@@ -4462,7 +4462,7 @@ void FullCodeGenerator::EmitLiteralCompareNil(CompareOperation* expr,
     // It can be an undetectable object.
     __ LoadP(r3, FieldMemOperand(r2, HeapObject::kMapOffset));
     __ LoadlB(r3, FieldMemOperand(r3, Map::kBitFieldOffset));
-    __ AndPI(r3, Operand(1 << Map::kIsUndetectable));
+    __ AndP(r3, Operand(1 << Map::kIsUndetectable));
     __ Cmpi(r3, Operand(1 << Map::kIsUndetectable));
     Split(eq, if_true, if_false, fall_through);
   }
