@@ -1908,15 +1908,18 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       set_register(r1, get_register(r2));
       break;
     }
+    case LDGR: {
+      // Load FPR from GPR (L <- 64)
+      uint64_t int_val = get_register(rreInst->R2Value());
+      double double_val = BitCast<double, uint64_t>(int_val);
+      set_d_register_from_double(rreInst->R1Value(), double_val);
+      break;
+    }
     case LGDR: {
       // Load GPR from FPR (64 <- L)
-      union LongDoubleUnion {
-        int64_t longValue;
-        double doubleValue;
-      };
-      LongDoubleUnion conversion;
-      conversion.doubleValue = get_double_from_d_register(rreInst->R2Value());
-      set_register(rreInst->R1Value(), conversion.longValue);
+      double double_val = get_double_from_d_register(rreInst->R2Value());
+      uint64_t int_val = BitCast<uint64_t, double>(double_val);
+      set_register(rreInst->R1Value(), int_val);
       break;
     }
     case LTGR: {
