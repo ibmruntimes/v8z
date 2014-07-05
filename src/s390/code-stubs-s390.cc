@@ -1456,11 +1456,10 @@ void ToBooleanStub::Generate(MacroAssembler* masm) {
 
     if (types_.CanBeUndetectable()) {
       Label not_undetectable;
-      __ LoadlB(ip, FieldMemOperand(map, Map::kBitFieldOffset));
+      __ tm(FieldMemOperand(map, Map::kBitFieldOffset),
+            Operand(1 << Map::kIsUndetectable));
       STATIC_ASSERT((1 << Map::kIsUndetectable) < 0x8000);
-      __ mov(r0, Operand(1 << Map::kIsUndetectable));
-      __ AndP(r0, ip);
-      __ beq(&not_undetectable /*, cr0*/);
+      __ beq(&not_undetectable, Label::kNear);
       // Undetectable -> false.
       __ LoadImmP(tos_, Operand(0, RelocInfo::NONE));
       __ Ret();

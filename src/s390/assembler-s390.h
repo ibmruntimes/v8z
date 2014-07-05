@@ -1555,14 +1555,12 @@ RXE_FORM(tdgxt);
 S_FORM(tend);
 RRE_FORM(thder);
 RRE_FORM(thdr);
-SI_FORM(tm);
 RI1_FORM(tmh);
 RI1_FORM(tmhh);
 RI1_FORM(tmhl);
 RI1_FORM(tml);
 RI1_FORM(tmlh);
 RI1_FORM(tmll);
-SIY_FORM(tmy);
 RSL_FORM(tp);
 S_FORM(tpi);
 SS1_FORM(tr);
@@ -1618,8 +1616,16 @@ SS2_FORM(zap);
   void stcy(Register dst, const MemOperand& src);
 
   // Compare Instructions
+  void cr(Register r1, Register r2);
+  void cgr(Register r1, Register r2);
+  void clr(Register r1, Register r2);
+  void clgr(Register r1, Register r2);
   void cli(const MemOperand& mem, const Operand& imm);
   void cliy(const MemOperand& mem, const Operand& imm);
+
+  // Test Under Mask Instructions
+  void tm(const MemOperand& mem, const Operand& imm);
+  void tmy(const MemOperand& mem, const Operand& imm);
 
   // Shift Instruction (32)
   void sll(Register r1, Register opnd);
@@ -1658,12 +1664,6 @@ SS2_FORM(zap);
   void risbgn(Register dst, Register src, const Operand& startBit,
               const Operand& endBit, const Operand& shiftAmt,
               bool zeroBits = true);
-
-  // Compare Instructions
-  void cr(Register r1, Register r2);
-  void cgr(Register r1, Register r2);
-  void clr(Register r1, Register r2);
-  void clgr(Register r1, Register r2);
 
   // Arithmetic Instructions
   void ahik(Register r1, Register r3, const Operand& opnd);
