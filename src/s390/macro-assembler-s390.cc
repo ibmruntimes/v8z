@@ -3907,6 +3907,15 @@ void MacroAssembler::Cmpl(Register dst, const MemOperand& opnd) {
 #endif
 }
 
+// Compare Logical Byte (Mem - Imm)
+void MacroAssembler::CmpLogicalByte(const MemOperand& mem, const Operand& imm) {
+  ASSERT(is_uint8(imm.immediate()));
+  if (is_uint12(mem.offset()))
+    cli(mem, imm);
+  else
+    cliy(mem, imm);
+}
+
 void MacroAssembler::Sub(Register dst, Register src1, Register src2) {
   if (!dst.is(src1) && !dst.is(src2))
     LoadRR(dst, src1);

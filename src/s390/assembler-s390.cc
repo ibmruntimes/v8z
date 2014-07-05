@@ -2885,6 +2885,16 @@ void Assembler::cfi(Register r, const Operand& opnd) {
   ril_form(CFI, r, opnd);
 }
 
+// Compare Immediate (Mem - Imm) (8)
+void Assembler::cli(const MemOperand& opnd, const Operand& imm) {
+  si_form(CLI, imm, opnd.rb(), opnd.offset());
+}
+
+// Compare Immediate (Mem - Imm) (8)
+void Assembler::cliy(const MemOperand& opnd, const Operand& imm) {
+  siy_form(CLIY, imm, opnd.rb(), opnd.offset());
+}
+
 // Branch Relative and save (32)
 void Assembler::bras(Register r, const Operand& opnd) {
   ri_form(BRAS, r, opnd);

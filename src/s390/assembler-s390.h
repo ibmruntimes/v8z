@@ -1607,6 +1607,10 @@ SS2_FORM(zap);
   void stc(Register dst, const MemOperand& src);
   void stcy(Register dst, const MemOperand& src);
 
+  // Compare Instructions
+  void cli(const MemOperand& mem, const Operand& imm);
+  void cliy(const MemOperand& mem, const Operand& imm);
+
   // Shift Instruction (32)
   void sll(Register r1, Register opnd);
   void sll(Register r1, const Operand& opnd);

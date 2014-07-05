@@ -354,6 +354,8 @@ enum Opcode {
   CLGF    = 0xE331,  // Compare Logical (64<-32)
   CLGFI   = 0xC2E,   // Compare Logical Immediate (64<-32)
   CLGR    = 0xB921,  // Compare Logical (64)
+  CLI     = 0x95,    // Compare Logical Immediate (8)
+  CLIY    = 0xEB55,  // Compare Logical Immediate (8)
   CLR     = 0x15,    // Compare Logical (32)
   CLY     = 0xE355,  // Compare Logical (32)
   CD      = 0x69,    // Compare (LH)
@@ -1586,6 +1588,38 @@ class RILInstruction : Instruction {
   }
   inline uint32_t I2UnsignedValue() const {
     return Bits<SixByteInstr, uint32_t>(31, 0);
+  }
+  inline int size() const { return 6; }
+};
+
+// SI Instruction
+class SIInstruction : Instruction {
+ public:
+  inline int B1Value() const {
+    return Bits<FourByteInstr, int>(15, 12);
+  }
+  inline uint32_t D1Value() const {
+    return Bits<FourByteInstr, uint32_t>(11, 0);
+  }
+  inline uint8_t I2Value() const {
+    return Bits<FourByteInstr, uint8_t>(23, 16);
+  }
+  inline int size() const { return 4; }
+};
+
+// SIY Instruction
+class SIYInstruction : Instruction {
+ public:
+  inline int B1Value() const {
+    return Bits<SixByteInstr, int>(31, 28);
+  }
+  inline int32_t D1Value() const {
+    int32_t value = Bits<SixByteInstr, uint32_t>(27, 16);
+    value += Bits<SixByteInstr, int8_t>(15, 8) << 12;
+    return value;
+  }
+  inline uint8_t I2Value() const {
+    return Bits<SixByteInstr, uint8_t>(39, 32);
   }
   inline int size() const { return 6; }
 };

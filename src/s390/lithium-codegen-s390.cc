@@ -2310,10 +2310,9 @@ void LCodeGen::DoCmpMapAndBranch(LCmpMapAndBranch* instr) {
   int true_block = instr->true_block_id();
   int false_block = instr->false_block_id();
 
-  __ LoadP(temp, FieldMemOperand(reg, HeapObject::kMapOffset));
   // @TODO Revert once Cmpi relocation is fixed
-  __ mov(r0, Operand(instr->map()));
-  __ CmpRR(temp, r0);
+  __ mov(temp, Operand(instr->map()));
+  __ CmpP(temp, FieldMemOperand(reg, HeapObject::kMapOffset));
   EmitBranch(true_block, false_block, eq);
 }
 
@@ -4812,14 +4811,14 @@ void LCodeGen::DoCheckInstanceType(LCheckInstanceType* instr) {
   Register scratch = scratch0();
 
   __ LoadP(scratch, FieldMemOperand(input, HeapObject::kMapOffset));
-  __ LoadlB(scratch, FieldMemOperand(scratch, Map::kInstanceTypeOffset));
 
   if (instr->hydrogen()->is_interval_check()) {
     InstanceType first;
     InstanceType last;
     instr->hydrogen()->GetCheckInterval(&first, &last);
 
-    __ Cmpli(scratch, Operand(first));
+    __ CmpLogicalByte(FieldMemOperand(scratch, Map::kInstanceTypeOffset),
+                      Operand(first));
 
     // If there is only one type in the interval check for equality.
     if (first == last) {
@@ -4828,7 +4827,8 @@ void LCodeGen::DoCheckInstanceType(LCheckInstanceType* instr) {
       DeoptimizeIf(lt, instr->environment());
       // Omit check for the last type.
       if (last != LAST_TYPE) {
-        __ Cmpli(scratch, Operand(last));
+        __ CmpLogicalByte(FieldMemOperand(scratch, Map::kInstanceTypeOffset),
+                          Operand(last));
         DeoptimizeIf(gt, instr->environment());
       }
     }
@@ -4837,10 +4837,11 @@ void LCodeGen::DoCheckInstanceType(LCheckInstanceType* instr) {
     uint8_t tag;
     instr->hydrogen()->GetCheckMaskAndTag(&mask, &tag);
 
+    __ LoadlB(scratch, FieldMemOperand(scratch, Map::kInstanceTypeOffset));
+
     if (IsPowerOf2(mask)) {
       ASSERT(tag == 0 || IsPowerOf2(tag));
-      __ mov(r0, Operand(mask));
-      __ AndP(scratch, r0);
+      __ AndP(scratch, Operand(mask));
       DeoptimizeIf(tag == 0 ? ne : eq, instr->environment(), cr0);
     } else {
       __ AndP(scratch, Operand(mask));

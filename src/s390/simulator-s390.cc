@@ -1856,6 +1856,7 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
 
   // Pre-cast instruction to various types
   RREInstruction* rreInst = reinterpret_cast<RREInstruction*>(instr);
+  SIInstruction* siInstr = reinterpret_cast<SIInstruction*>(instr);
 
   switch (op) {
     case EX: {
@@ -2135,6 +2136,17 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
         SetS390ConditionCode<int32_t>(r1_val, mem_val);
       else if (CL == op)
         SetS390ConditionCode<uint32_t>(r1_val, mem_val);
+      break;
+    }
+    case CLI: {
+      // Compare Immediate (Mem - Imm) (8)
+      int b1 = siInstr->B1Value();
+      intptr_t b1_val = (b1 == 0) ? 0 : get_register(b1);
+      intptr_t d1_val = siInstr->D1Value();
+      intptr_t addr = b1_val + d1_val;
+      uint8_t mem_val = ReadB(addr);
+      uint8_t imm_val = siInstr->I2Value();
+      SetS390ConditionCode<uint8_t>(mem_val, imm_val);
       break;
     }
     case ST:
@@ -3031,8 +3043,20 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
   // Pre-cast instruction to various types
   RSYInstruction* rsyInstr = reinterpret_cast<RSYInstruction*>(instr);
   RIEInstruction* rieInstr = reinterpret_cast<RIEInstruction*>(instr);
+  SIYInstruction* siyInstr = reinterpret_cast<SIYInstruction*>(instr);
 
   switch (op) {
+    case CLIY: {
+      // Compare Immediate (Mem - Imm) (8)
+      int b1 = siyInstr->B1Value();
+      intptr_t b1_val = (b1 == 0) ? 0 : get_register(b1);
+      intptr_t d1_val = siyInstr->D1Value();
+      intptr_t addr = b1_val + d1_val;
+      uint8_t mem_val = ReadB(addr);
+      uint8_t imm_val = siyInstr->I2Value();
+      SetS390ConditionCode<uint8_t>(mem_val, imm_val);
+      break;
+    }
     case LDEB: {
       // Load Address
       RXEInstruction *rxeInstr = reinterpret_cast<RXEInstruction*>(instr);

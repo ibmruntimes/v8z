@@ -722,6 +722,7 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case LB: Format(instr, "lb\t'r1,'d1('r2d,'r3)"); break;
       case CH: Format(instr, "ch\t'r1,'d1('r2d,'r3)"); break;
       case CL: Format(instr, "cl\t'r1,'d1('r2d,'r3)"); break;
+      case CLI: Format(instr, "cli\t'd1('r3),'i8"); break;
       case BC: Format(instr, "bc\t'm1,'d1('r2d,'r3)"); break;
       case BCT: Format(instr, "bct\t'r1,'d1('r2d,'r3)"); break;
       case ST: Format(instr, "st\t'r1,'d1('r2d,'r3)"); break;
@@ -836,6 +837,7 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
     case LGB: Format(instr, "lgb\t'r1,'d2('r2d,'r3)"); break;
     case CHY: Format(instr, "chy\t'r1,'d2('r2d,'r3)"); break;
     case CLY: Format(instr, "cly\t'r1,'d2('r2d,'r3)"); break;
+    case CLIY: Format(instr, "cliy\t'd2('r3),'i8"); break;
     case CLG: Format(instr, "clg\t'r1,'d2('r2d,'r3)"); break;
     case BCTG: Format(instr, "bctg\t'r1,'d2('r2d,'r3)"); break;
     case STY: Format(instr, "sty\t'r1,'d2('r2d,'r3)"); break;
