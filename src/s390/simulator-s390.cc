@@ -2149,6 +2149,27 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       SetS390ConditionCode<uint8_t>(mem_val, imm_val);
       break;
     }
+    case TM: {
+      // Test Under Mask (Mem - Imm) (8)
+      int b1 = siInstr->B1Value();
+      intptr_t b1_val = (b1 == 0) ? 0 : get_register(b1);
+      intptr_t d1_val = siInstr->D1Value();
+      intptr_t addr = b1_val + d1_val;
+      uint8_t mem_val = ReadB(addr);
+      uint8_t imm_val = siInstr->I2Value();
+      uint8_t selected_bits = mem_val & imm_val;
+      // CC0: Selected bits are zero
+      // CC1: Selected bits mixed zeros and ones
+      // CC3: Selected bits all ones
+      if (0 == selected_bits) {
+        condition_reg_ = CC_EQ;  // CC0
+      } else if (selected_bits == imm_val) {
+        condition_reg_ = 0x1;    // CC3
+      } else {
+        condition_reg_ = 0x4;    // CC1
+      }
+      break;
+    }
     case ST:
     case STE:
     case STD: {
@@ -3041,9 +3062,13 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
   Opcode op = instr->S390OpcodeValue();
 
   // Pre-cast instruction to various types
-  RSYInstruction* rsyInstr = reinterpret_cast<RSYInstruction*>(instr);
   RIEInstruction* rieInstr = reinterpret_cast<RIEInstruction*>(instr);
+  RILInstruction* rilInstr = reinterpret_cast<RILInstruction*>(instr);
+  RSYInstruction* rsyInstr = reinterpret_cast<RSYInstruction*>(instr);
+  RXEInstruction* rxeInstr = reinterpret_cast<RXEInstruction*>(instr);
+  RXYInstruction* rxyInstr = reinterpret_cast<RXYInstruction*>(instr);
   SIYInstruction* siyInstr = reinterpret_cast<SIYInstruction*>(instr);
+  SSInstruction* ssInstr = reinterpret_cast<SSInstruction*>(instr);
 
   switch (op) {
     case CLIY: {
@@ -3057,9 +3082,29 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       SetS390ConditionCode<uint8_t>(mem_val, imm_val);
       break;
     }
+    case TMY: {
+      // Test Under Mask (Mem - Imm) (8)
+      int b1 = siyInstr->B1Value();
+      intptr_t b1_val = (b1 == 0) ? 0 : get_register(b1);
+      intptr_t d1_val = siyInstr->D1Value();
+      intptr_t addr = b1_val + d1_val;
+      uint8_t mem_val = ReadB(addr);
+      uint8_t imm_val = siyInstr->I2Value();
+      uint8_t selected_bits = mem_val & imm_val;
+      // CC0: Selected bits are zero
+      // CC1: Selected bits mixed zeros and ones
+      // CC3: Selected bits all ones
+      if (0 == selected_bits) {
+        condition_reg_ = CC_EQ;  // CC0
+      } else if (selected_bits == imm_val) {
+        condition_reg_ = 0x1;    // CC3
+      } else {
+        condition_reg_ = 0x4;    // CC1
+      }
+      break;
+    }
     case LDEB: {
-      // Load Address
-      RXEInstruction *rxeInstr = reinterpret_cast<RXEInstruction*>(instr);
+      // Load Float
       int r1 = rxeInstr->R1Value();
       int rb = rxeInstr->B2Value();
       int rx = rxeInstr->X2Value();
@@ -3073,7 +3118,6 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
     }
     case LAY: {
       // Load Address
-      RXYInstruction *rxyInstr = reinterpret_cast<RXYInstruction*>(instr);
       int r1 = rxyInstr->R1Value();
       int rb = rxyInstr->B2Value();
       int rx = rxyInstr->X2Value();
@@ -3084,22 +3128,21 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       break;
     }
     case LARL: {
-      RILInstruction* rilInstr = reinterpret_cast<RILInstruction*>(instr);
+      // Load Addresss Relative Long
       int r1 = rilInstr->R1Value();
       intptr_t offset = rilInstr->I2Value() * 2;
       set_register(r1, get_pc() + offset);
       break;
     }
-    case LLILF: {  // length is architecture dependent
-      RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
+    case LLILF: {
+      // Load Logical into lower 32-bits (zero extend upper 32-bits)
       int r1 = rilInstr->R1Value();
       uint64_t imm = static_cast<uint64_t>(rilInstr->I2UnsignedValue());
       set_register(r1, imm);
       break;
     }
-    case LLIHF: {  // length is architecture dependent
+    case LLIHF: {
       // Load Logical Immediate into high word
-      RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
       int r1 = rilInstr->R1Value();
       uint64_t imm = static_cast<uint64_t>(rilInstr->I2UnsignedValue());
       set_register(r1, imm << 32);
@@ -3108,7 +3151,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
     case OILF:
     case NILF:
     case IILF: {
-      RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
+      // Bitwise Op on lower 32-bits
       int r1 = rilInstr->R1Value();
       uint32_t imm = rilInstr->I2UnsignedValue();
       uint32_t alu_out = get_low_register<uint32_t>(r1);
@@ -3127,7 +3170,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
     case OIHF:
     case NIHF:
     case IIHF: {
-      RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
+      // Bitwise Op on upper 32-bits
       int r1 = rilInstr->R1Value();
       uint32_t imm = rilInstr->I2Value();
       uint32_t alu_out = get_high_register<uint32_t>(r1);
@@ -3145,14 +3188,13 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
     }
     case CLFI: {
       // Compare Logical with Immediate (32)
-      RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
       int r1 = rilInstr->R1Value();
       uint32_t imm = rilInstr->I2UnsignedValue();
       SetS390ConditionCode<uint32_t>(get_low_register<uint32_t>(r1), imm);
       break;
     }
     case CFI: {
-      RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
+      // Compare with Immediate (32)
       int r1 = rilInstr->R1Value();
       int32_t imm = rilInstr->I2Value();
       SetS390ConditionCode<int32_t>(get_low_register<int32_t>(r1), imm);
@@ -3160,7 +3202,6 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
     }
     case CLGFI: {
       // Compare Logical with Immediate (64)
-      RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
       int r1 = rilInstr->R1Value();
       uint64_t imm = static_cast<uint64_t>(rilInstr->I2UnsignedValue());
       SetS390ConditionCode<uint64_t>(get_register(r1), imm);
@@ -3168,15 +3209,13 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
     }
     case CGFI: {
       // Compare with Immediate (64)
-      RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
       int r1 = rilInstr->R1Value();
       int64_t imm = static_cast<int64_t>(rilInstr->I2Value());
       SetS390ConditionCode<int64_t>(get_register(r1), imm);
       break;
     }
-
-    case BRASL: {  // save the next instruction address
-      RILInstruction* rilInstr = reinterpret_cast<RILInstruction*>(instr);
+    case BRASL: {
+      // Branch and Save Relative Long
       int r1 = rilInstr->R1Value();
       intptr_t d2 = rilInstr->I2Value();
       intptr_t pc = get_pc();
@@ -3185,7 +3224,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       break;
     }
     case BRCL: {
-      RILInstruction* rilInstr = reinterpret_cast<RILInstruction*>(instr);
+      // Branch on Condition Relative Long
       Condition m1 = (Condition)rilInstr->R1Value();
       if (TestConditionCode((Condition)m1)) {
         intptr_t offset = rilInstr->I2Value() * 2;
@@ -3196,11 +3235,10 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
     case LMG:
     case STMG: {
       // Store Multiple 64-bits.
-      RSYInstruction* rsyinstr = reinterpret_cast<RSYInstruction*>(instr);
-      int r1 = rsyinstr->R1Value();
-      int r3 = rsyinstr->R3Value();
-      int rb = rsyinstr->B2Value();
-      int offset = rsyinstr->D2Value();
+      int r1 = rsyInstr->R1Value();
+      int r3 = rsyInstr->R3Value();
+      int rb = rsyInstr->B2Value();
+      int offset = rsyInstr->D2Value();
 
       // Regs roll around if r3 is less than r1.
       // Artifically increase r3 by 16 so we can calculate
@@ -3220,7 +3258,6 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
           WriteDW(rb_val + offset + 8 * i, value);
         } else { ASSERT(false); }
       }
-      break;
       break;
     }
     case SLLK:
@@ -3327,6 +3364,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
     }
     case LMY:
     case STMY: {
+      // Load/Store Multiple (32)
       int r1 = rsyInstr->R1Value();
       int r3 = rsyInstr->R3Value();
       int b2 = rsyInstr->B2Value();
@@ -3354,7 +3392,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
     }
     case LT:
     case LTG: {
-      RXYInstruction* rxyInstr = reinterpret_cast<RXYInstruction*>(instr);
+      // Load and Test (32/64)
       int r1 = rxyInstr->R1Value();
       int x2 = rxyInstr->X2Value();
       int b2 = rxyInstr->B2Value();
@@ -3385,7 +3423,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
     case STHY:
     case LDY:
     case STDY: {
-      RXYInstruction* rxyInstr = reinterpret_cast<RXYInstruction*>(instr);
+      // Miscellaneous Loads and Stores
       int r1 = rxyInstr->R1Value();
       int x2 = rxyInstr->X2Value();
       int b2 = rxyInstr->B2Value();
@@ -3428,7 +3466,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       break;
     }
     case MVC: {
-      SSInstruction* ssInstr = reinterpret_cast<SSInstruction*>(instr);
+      // Move Character
       int b1 = ssInstr->B1Value();
       intptr_t d1 = ssInstr->D1Value();
       int b2 = ssInstr->B2Value();
@@ -3446,13 +3484,13 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
     }
     case LLH:
     case LLGH: {
-      RXYInstruction* rxyinst = reinterpret_cast<RXYInstruction*>(instr);
-      int r1 = rxyinst->R1Value();
-      int b2 = rxyinst->B2Value();
-      int x2 = rxyinst->X2Value();
+      // Load Logical Halfworld
+      int r1 = rxyInstr->R1Value();
+      int b2 = rxyInstr->B2Value();
+      int x2 = rxyInstr->X2Value();
       intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
       intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
-      intptr_t d2_val = rxyinst->D2Value();
+      intptr_t d2_val = rxyInstr->D2Value();
       uint16_t mem_val = ReadHU(b2_val + d2_val + x2_val, instr);
       if (op == LLH) {
         set_low_register(r1, mem_val);
@@ -3465,14 +3503,13 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
     }
     case LLC:
     case LLGC: {
-      // Load Logical Character - loads a byte and zeor extends.
-      RXYInstruction* rxyinst = reinterpret_cast<RXYInstruction*>(instr);
-      int r1 = rxyinst->R1Value();
-      int b2 = rxyinst->B2Value();
-      int x2 = rxyinst->X2Value();
+      // Load Logical Character - loads a byte and zero extends.
+      int r1 = rxyInstr->R1Value();
+      int b2 = rxyInstr->B2Value();
+      int x2 = rxyInstr->X2Value();
       intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
       intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
-      intptr_t d2_val = rxyinst->D2Value();
+      intptr_t d2_val = rxyInstr->D2Value();
       uint16_t mem_val = ReadBU(b2_val + d2_val + x2_val);
       if (op == LLC) {
         set_low_register(r1, static_cast<uint32_t>(mem_val));
@@ -3483,6 +3520,78 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       }
       break;
     }
+    case XIHF:
+    case XILF: {
+      int r1 = rilInstr->R1Value();
+      uint32_t imm = rilInstr->I2UnsignedValue();
+      uint32_t alu_out = 0;
+      if (op == XILF) {
+        alu_out = get_low_register<uint32_t>(r1);
+        alu_out = alu_out ^ imm;
+        set_low_register(r1, alu_out);
+      } else if (op == XIHF) {
+        alu_out = get_high_register<uint32_t>(r1);
+        alu_out = alu_out ^ imm;
+        set_high_register(r1, alu_out);
+      } else {
+        UNREACHABLE();
+      }
+      SetS390BitWiseConditionCode<uint32_t>(alu_out);
+      break;
+    }
+    case RISBG: {
+      // Rotate then insert selected bits
+      int r1 = rieInstr->R1Value();
+      int r2 = rieInstr->R2Value();
+      // Starting Bit Position is Bits 2-7 of I3 field
+      uint32_t start_bit = rieInstr->I3Value() & 0x3F;
+      // Ending Bit Position is Bits 2-7 of I4 field
+      uint32_t end_bit = rieInstr->I4Value() & 0x3F;
+      // Shift Amount is Bits 2-7 of I5 field
+      uint32_t shift_amount = rieInstr->I5Value() & 0x3F;
+      // Zero out Remaining (unslected) bits if Bit 0 of I4 is 1.
+      bool zero_remaining = (0 != (rieInstr->I4Value() & 0x80));
+
+      uint64_t src_val = get_register(r2);
+
+      // Rotate Left by Shift Amount first
+      uint64_t rotated_val = (src_val << shift_amount) |
+        (src_val >> (64 - shift_amount));
+      int32_t width = end_bit - start_bit + 1;
+
+      uint64_t selection_mask = 0;
+      if (width < 64) {
+        selection_mask = (static_cast<uint64_t>(1) << width) - 1;
+      } else {
+        selection_mask = static_cast<uint64_t>(static_cast<int64_t>(-1));
+      }
+      selection_mask = selection_mask << (63 - end_bit);
+
+      uint64_t selected_val = rotated_val & selection_mask;
+
+      if (!zero_remaining) {
+        // Merged the unselected bits from the original value
+        selected_val = (src_val & ~selection_mask) | selected_val;
+      }
+
+      // Condition code is set by treating result as 64-bit signed int
+      SetS390ConditionCode<int64_t>(selected_val, 0);
+      set_register(r1, selected_val);
+      break;
+    }
+    default:
+      return DecodeSixByteArithmetic(instr);
+  }
+  return true;
+}
+
+/**
+ * Decodes and simulates six byte arithmetic instructions
+ */
+bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
+  Opcode op = instr->S390OpcodeValue();
+
+  switch (op) {
     case CDB:
     case ADB:
     case SDB:
@@ -3522,88 +3631,15 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
           set_d_register_from_double(r1, r1_val);
           SetS390ConditionCode<double>(r1_val, 0);
           break;
-       case SQDB:
+        case SQDB:
           r1_val = sqrt(dbl_val);
           set_d_register_from_double(r1, r1_val);
-       default:
+        default:
           UNREACHABLE();
           break;
       }
       break;
     }
-    case XIHF:
-    case XILF: {
-      RILInstruction *rilInstr = reinterpret_cast<RILInstruction*>(instr);
-      int r1 = rilInstr->R1Value();
-      uint32_t imm = rilInstr->I2UnsignedValue();
-      uint32_t alu_out = 0;
-      if (op == XILF) {
-        alu_out = get_low_register<uint32_t>(r1);
-        alu_out = alu_out ^ imm;
-        set_low_register(r1, alu_out);
-      } else if (op == XIHF) {
-        alu_out = get_high_register<uint32_t>(r1);
-        alu_out = alu_out ^ imm;
-        set_high_register(r1, alu_out);
-      } else {
-        UNREACHABLE();
-      }
-      SetS390BitWiseConditionCode<uint32_t>(alu_out);
-      break;
-    }
-    case RISBG: {
-      // Rotate then insert selected bits
-      int r1 = rieInstr->R1Value();
-      int r2 = rieInstr->R2Value();
-      // Starting Bit Position is Bits 2-7 of I3 field
-      uint32_t start_bit = rieInstr->I3Value() & 0x3F;
-      // Ending Bit Position is Bits 2-7 of I4 field
-      uint32_t end_bit = rieInstr->I4Value() & 0x3F;
-      // Shift Amount is Bits 2-7 of I5 field
-      uint32_t shift_amount = rieInstr->I5Value() & 0x3F;
-      // Zero out Remaining (unslected) bits if Bit 0 of I4 is 1.
-      bool zero_remaining = (0 != (rieInstr->I4Value() & 0x80));
-
-      uint64_t src_val = get_register(r2);
-
-      // Rotate Left by Shift Amount first
-      uint64_t rotated_val = (src_val << shift_amount) |
-                             (src_val >> (64 - shift_amount));
-      int32_t width = end_bit - start_bit + 1;
-
-      uint64_t selection_mask = 0;
-      if (width < 64) {
-        selection_mask = (static_cast<uint64_t>(1) << width) - 1;
-      } else {
-        selection_mask = static_cast<uint64_t>(static_cast<int64_t>(-1));
-      }
-      selection_mask = selection_mask << (63 - end_bit);
-
-      uint64_t selected_val = rotated_val & selection_mask;
-
-      if (!zero_remaining) {
-        // Merged the unselected bits from the original value
-        selected_val = (src_val & ~selection_mask) | selected_val;
-      }
-
-      // Condition code is set by treating result as 64-bit signed int
-      SetS390ConditionCode<int64_t>(selected_val, 0);
-      set_register(r1, selected_val);
-      break;
-    }
-    default:
-      return DecodeSixByteArithmetic(instr);
-  }
-  return true;
-}
-
-/**
- * Decodes and simulates six byte arithmetic instructions
- */
-bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
-  Opcode op = instr->S390OpcodeValue();
-
-  switch (op) {
     case LRV:
     case LRVH:
     case STRV:
@@ -3716,13 +3752,13 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
     }
     case AHY:
     case SHY: {
-      RXYInstruction* rxyinst = reinterpret_cast<RXYInstruction*>(instr);
-      int32_t r1_val = get_low_register<int32_t>(rxyinst->R1Value());
-      int b2 = rxyinst->B2Value();
-      int x2 = rxyinst->X2Value();
+      RXYInstruction* rxyInstr = reinterpret_cast<RXYInstruction*>(instr);
+      int32_t r1_val = get_low_register<int32_t>(rxyInstr->R1Value());
+      int b2 = rxyInstr->B2Value();
+      int x2 = rxyInstr->X2Value();
       intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
       intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
-      intptr_t d2_val = rxyinst->D2Value();
+      intptr_t d2_val = rxyInstr->D2Value();
       int16_t mem_val = ReadH(b2_val + d2_val + x2_val, instr);
       int32_t alu_out = 0;
       bool isOF = false;
@@ -3849,13 +3885,13 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
 #ifndef V8_TARGET_ARCH_S390X
       ASSERT(false);
 #endif
-      RXYInstruction* rxyinst = reinterpret_cast<RXYInstruction*>(instr);
-      uint64_t r1_val = get_register(rxyinst->R1Value());
-      int b2 = rxyinst->B2Value();
-      int x2 = rxyinst->X2Value();
+      RXYInstruction* rxyInstr = reinterpret_cast<RXYInstruction*>(instr);
+      uint64_t r1_val = get_register(rxyInstr->R1Value());
+      int b2 = rxyInstr->B2Value();
+      int x2 = rxyInstr->X2Value();
       intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
       intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
-      intptr_t d2_val = rxyinst->D2Value();
+      intptr_t d2_val = rxyInstr->D2Value();
       uint64_t alu_out = r1_val;
       if (op == ALG) {
         uint64_t mem_val =
@@ -3900,13 +3936,13 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
     }
     case MSY:
     case MSG: {
-      RXYInstruction* rxyinst = reinterpret_cast<RXYInstruction*>(instr);
-      int r1 = rxyinst->R1Value();
-      int b2 = rxyinst->B2Value();
-      int x2 = rxyinst->X2Value();
+      RXYInstruction* rxyInstr = reinterpret_cast<RXYInstruction*>(instr);
+      int r1 = rxyInstr->R1Value();
+      int b2 = rxyInstr->B2Value();
+      int x2 = rxyInstr->X2Value();
       intptr_t b2_val = (b2 == 0) ? 0 : get_register(b2);
       intptr_t x2_val = (x2 == 0) ? 0 : get_register(x2);
-      intptr_t d2_val = rxyinst->D2Value();
+      intptr_t d2_val = rxyInstr->D2Value();
       if (op == MSY) {
         int32_t mem_val = ReadW(b2_val + d2_val + x2_val, instr);
         int32_t r1_val = get_low_register<int32_t>(r1);

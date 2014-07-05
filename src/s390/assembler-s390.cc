@@ -2150,14 +2150,12 @@ RXE_FORM_EMIT(tdgxt, TDGXT)
 S_FORM_EMIT(tend, TEND)
 RRE_FORM_EMIT(thder, THDER)
 RRE_FORM_EMIT(thdr, THDR)
-SI_FORM_EMIT(tm, TM)
 RI1_FORM_EMIT(tmh, TMH)
 RI1_FORM_EMIT(tmhh, TMHH)
 RI1_FORM_EMIT(tmhl, TMHL)
 RI1_FORM_EMIT(tml, TML)
 RI1_FORM_EMIT(tmlh, TMLH)
 RI1_FORM_EMIT(tmll, TMLL)
-SIY_FORM_EMIT(tmy, TMY)
 RSL_FORM_EMIT(tp, TP)
 S_FORM_EMIT(tpi, TPI)
 SS1_FORM_EMIT(tr, TR)
@@ -2893,6 +2891,16 @@ void Assembler::cli(const MemOperand& opnd, const Operand& imm) {
 // Compare Immediate (Mem - Imm) (8)
 void Assembler::cliy(const MemOperand& opnd, const Operand& imm) {
   siy_form(CLIY, imm, opnd.rb(), opnd.offset());
+}
+
+// Test Under Mask (Mem - Imm) (8)
+void Assembler::tm(const MemOperand& opnd, const Operand& imm) {
+  si_form(TM, imm, opnd.rb(), opnd.offset());
+}
+
+// Test Under Mask (Mem - Imm) (8)
+void Assembler::tmy(const MemOperand& opnd, const Operand& imm) {
+  siy_form(TMY, imm, opnd.rb(), opnd.offset());
 }
 
 // Branch Relative and save (32)

@@ -1837,8 +1837,8 @@ void LCodeGen::DoBranch(LBranch* instr) {
 
         if (expected.CanBeUndetectable()) {
           // Undetectable -> false.
-          __ LoadlB(ip, FieldMemOperand(map, Map::kBitFieldOffset));
-          __ TestBit(ip, Map::kIsUndetectable, r0);
+          __ tm(FieldMemOperand(map, Map::kBitFieldOffset),
+                Operand(1 << Map::kIsUndetectable));
           __ bne(false_label /*, cr0*/);
         }
       }
@@ -2020,8 +2020,8 @@ void LCodeGen::DoIsNilAndBranch(LIsNilAndBranch* instr) {
     // Check for undetectable objects by looking in the bit field in
     // the map. The object has already been smi checked.
     __ LoadP(scratch, FieldMemOperand(reg, HeapObject::kMapOffset));
-    __ LoadlB(scratch, FieldMemOperand(scratch, Map::kBitFieldOffset));
-    __ TestBit(scratch, Map::kIsUndetectable, r0);
+    __ tm(FieldMemOperand(scratch, Map::kBitFieldOffset),
+          Operand(1 << Map::kIsUndetectable));
     EmitBranch(true_block, false_block, ne, cr0);
   }
 }
@@ -2040,8 +2040,8 @@ Condition LCodeGen::EmitIsObject(Register input,
   // Load map.
   __ LoadP(temp1, FieldMemOperand(input, HeapObject::kMapOffset));
   // Undetectable objects behave like undefined.
-  __ LoadlB(temp2, FieldMemOperand(temp1, Map::kBitFieldOffset));
-  __ TestBit(temp2, Map::kIsUndetectable, r0);
+  __ tm(FieldMemOperand(temp1, Map::kBitFieldOffset),
+        Operand(1 << Map::kIsUndetectable));
   __ bne(is_not_object /*, cr0*/);
 
   // Load instance type and check that it is in object type range.
@@ -2113,8 +2113,8 @@ void LCodeGen::DoIsUndetectableAndBranch(LIsUndetectableAndBranch* instr) {
 
   __ JumpIfSmi(input, chunk_->GetAssemblyLabel(false_block));
   __ LoadP(temp, FieldMemOperand(input, HeapObject::kMapOffset));
-  __ LoadlB(temp, FieldMemOperand(temp, Map::kBitFieldOffset));
-  __ TestBit(temp, Map::kIsUndetectable, r0);
+  __ tm(FieldMemOperand(temp, Map::kBitFieldOffset),
+        Operand(1 << Map::kIsUndetectable));
   EmitBranch(true_block, false_block, ne, cr0);
 }
 
@@ -5442,9 +5442,8 @@ Condition LCodeGen::EmitTypeofIs(Label* true_label,
     __ JumpIfSmi(input, false_label);
     // Check for undetectable objects => true.
     __ LoadP(input, FieldMemOperand(input, HeapObject::kMapOffset));
-    __ LoadlB(ip, FieldMemOperand(input, Map::kBitFieldOffset));
-    __ ExtractBit(r0, ip, Map::kIsUndetectable);
-    __ Cmpi(r0, Operand::Zero());
+    __ tm(FieldMemOperand(input, Map::kBitFieldOffset),
+         Operand(1 << Map::kIsUndetectable));
     final_branch_condition = ne;
 
   } else if (type_name->Equals(heap()->function_symbol())) {
@@ -5467,9 +5466,8 @@ Condition LCodeGen::EmitTypeofIs(Label* true_label,
     __ CompareInstanceType(input, scratch, LAST_NONCALLABLE_SPEC_OBJECT_TYPE);
     __ bgt(false_label);
     // Check for undetectable objects => false.
-    __ LoadlB(ip, FieldMemOperand(input, Map::kBitFieldOffset));
-    __ ExtractBit(r0, ip, Map::kIsUndetectable);
-    __ Cmpi(r0, Operand::Zero());
+    __ tm(FieldMemOperand(input, Map::kBitFieldOffset),
+          Operand(1 << Map::kIsUndetectable));
     final_branch_condition = eq;
 
   } else {
