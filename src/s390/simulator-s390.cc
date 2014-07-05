@@ -1808,8 +1808,9 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       RRInstruction * rrinst = reinterpret_cast<RRInstruction*>(instr);
       int r1 = rrinst->R1Value();
       int r2 = rrinst->R2Value();
-      intptr_t r2_val = get_register(r2);
       intptr_t link_addr = get_pc() + 2;
+      // If R2 is zero, the BASR does not branch.
+      intptr_t r2_val = (r2 == 0)?link_addr:get_register(r2);
 #ifndef V8_TARGET_ARCH_S390X
       // On 31-bit, the top most bit may be 0 or 1, which can cause issues
       // for stackwalker.  The top bit should either be cleanse before being
