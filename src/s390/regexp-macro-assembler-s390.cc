@@ -230,9 +230,8 @@ void RegExpMacroAssemblerS390::CheckAtStart(Label* on_at_start) {
   BranchOrBacktrack(ne, &not_at_start);
 
   // If we did, are we still at the start of the input?
-  __ LoadP(r3, MemOperand(frame_pointer(), kInputStart));
   __ AddP(r2, current_input_offset(), end_of_input_address());
-  __ CmpRR(r3, r2);
+  __ CmpP(r2, MemOperand(frame_pointer(), kInputStart));
   BranchOrBacktrack(eq, on_at_start);
   __ bind(&not_at_start);
 }
@@ -244,9 +243,8 @@ void RegExpMacroAssemblerS390::CheckNotAtStart(Label* on_not_at_start) {
   __ Cmpi(r2, Operand::Zero());
   BranchOrBacktrack(ne, on_not_at_start);
   // If we did, are we still at the start of the input?
-  __ LoadP(r3, MemOperand(frame_pointer(), kInputStart));
   __ AddP(r2, current_input_offset(), end_of_input_address());
-  __ CmpRR(r2, r3);
+  __ CmpP(r2, MemOperand(frame_pointer(), kInputStart));
   BranchOrBacktrack(ne, on_not_at_start);
 }
 
@@ -340,7 +338,7 @@ void RegExpMacroAssemblerS390::CheckNotBackReferenceIgnoreCase(
   // __ Add(r0, r3, current_input_offset()/*, LeaveOE, SetRC*/);
   __ AddP(r0, r3, current_input_offset());
 //  __ cmn(r1_p, Operand(current_input_offset()));
-  BranchOrBacktrack(gt, on_no_match, cr0);
+  BranchOrBacktrack(gt, on_no_match);
 
   if (mode_ == ASCII) {
     Label success;
@@ -360,9 +358,11 @@ void RegExpMacroAssemblerS390::CheckNotBackReferenceIgnoreCase(
     Label loop;
     __ bind(&loop);
     __ LoadlB(r5, MemOperand(r2));
-    __ AddP(r2, Operand(char_size()));
+    __ la(r2, MemOperand(r2, char_size()));
+
     __ LoadlB(r6, MemOperand(r4));
-    __ AddP(r4, Operand(char_size()));
+    __ la(r4, MemOperand(r4, char_size()));
+
     __ CmpRR(r6, r5);
     __ beq(&loop_check);
 
@@ -440,15 +440,11 @@ void RegExpMacroAssemblerS390::CheckNotBackReference(
   // Find length of back-referenced capture.
   __ LoadP(r2, register_location(start_reg), r0);
   __ LoadP(r3, register_location(start_reg + 1), r0);
-  // Removing RC looks Okay here.
-  __ Sub(r3, r3, r2/*, LeaveOE, SetRC*/);  // Length to check.
+  __ Sub(r3, r3, r2);  // Length to check.
   // Succeed on empty capture (including no capture).
   __ beq(&fallthrough /*, cr0*/);
 
   // Check that there are enough characters left in the input.
-  // TODO(john): the RC bit set below is the condition
-  //              for the BranchOrBacktrack function
-  // __ Add(r0, r3, current_input_offset()/*, LeaveOE, SetRC*/);
   __ AddP(r0, r3, current_input_offset());
   BranchOrBacktrack(gt, on_no_match, cr0);
 
