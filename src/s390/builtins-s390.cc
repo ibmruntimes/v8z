@@ -1197,7 +1197,7 @@ static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
     __ LoadImmP(r9, Operand(zero));  // Initialize argv index
     __ bind(&argLoop);
     __ CmpPH(r7, Operand(zero));
-    __ beq(&argExit);
+    __ beq(&argExit, Label::kNear);
     __ lay(r7, MemOperand(r7, -kPointerSize));
     __ LoadP(r8, MemOperand(r9, r6));  // read next parameter
     __ la(r9, MemOperand(r9, kPointerSize));  // r9++;
