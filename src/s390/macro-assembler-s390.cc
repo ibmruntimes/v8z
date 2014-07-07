@@ -3478,8 +3478,35 @@ void MacroAssembler::CheckPageFlag(
     Label* condition_met) {
   ASSERT(cc == ne || cc == eq);
   ClearRightImm(scratch, object, Operand(kPageSizeBits));
-  LoadP(scratch, MemOperand(scratch, MemoryChunk::kFlagsOffset));
-  AndP(r0, scratch, Operand(mask));
+
+  if (IsPowerOf2(mask)) {
+    // If it's a power of two, we can use Test-Under-Mask Memory-Imm form
+    // which allows testing of a single byte in memory.
+    int32_t byte_offset = 4;
+    uint32_t shifted_mask = mask;
+    // Determine the byte offset to be tested
+    if (mask <= 0x80) {
+      byte_offset = kPointerSize - 1;
+    } else if (mask < 0x8000) {
+      byte_offset = kPointerSize - 2;
+      shifted_mask = mask >> 8;
+    } else if (mask < 0x800000) {
+      byte_offset = kPointerSize - 3;
+      shifted_mask = mask >> 16;
+    } else {
+      byte_offset = kPointerSize - 4;
+      shifted_mask = mask >> 24;
+    }
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    // Reverse the byte_offset if emulating on little endian platform
+    byte_offset = kPointerSize - byte_offset;
+#endif
+    tm(MemOperand(scratch, MemoryChunk::kFlagsOffset + byte_offset),
+       Operand(shifted_mask));
+  } else {
+    LoadP(scratch, MemOperand(scratch, MemoryChunk::kFlagsOffset));
+    AndP(r0, scratch, Operand(mask));
+  }
   // Should be okay to remove rc
 
   if (cc == ne) {
