@@ -3831,11 +3831,11 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   ExternalReference js_entry_sp(Isolate::kJSEntrySPAddress, isolate);
   __ mov(r7, Operand(ExternalReference(js_entry_sp)));
   __ LoadAndTestP(r8, MemOperand(r7));
-  __ bne(&non_outermost_js);
+  __ bne(&non_outermost_js, Label::kNear);
   __ StoreP(fp, MemOperand(r7));
   __ LoadSmiLiteral(ip, Smi::FromInt(StackFrame::OUTERMOST_JSENTRY_FRAME));
   Label cont;
-  __ b(&cont);
+  __ b(&cont, Label::kNear);
   __ bind(&non_outermost_js);
   __ LoadSmiLiteral(ip, Smi::FromInt(StackFrame::INNER_JSENTRY_FRAME));
 
@@ -3844,7 +3844,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
 
   // Jump to a faked try block that does the invoke, with a faked catch
   // block that sets the pending exception.
-  __ b(&invoke);
+  __ b(&invoke, Label::kNear);
 
   __ bind(&handler_entry);
   handler_offset_ = handler_entry.pos();
@@ -3857,7 +3857,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
 
   __ StoreP(r2, MemOperand(ip));
   __ mov(r2, Operand(reinterpret_cast<intptr_t>(Failure::Exception())));
-  __ b(&exit);
+  __ b(&exit, Label::kNear);
 
   // Invoke: Link this frame into the handler chain.  There's only one
   // handler block in this code object, so its index is 0.

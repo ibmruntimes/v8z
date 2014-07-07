@@ -2031,7 +2031,6 @@ Condition LCodeGen::EmitIsObject(Register input,
                                  Register temp1,
                                  Label* is_not_object,
                                  Label* is_object) {
-  Register temp2 = scratch0();
   __ JumpIfSmi(input, is_not_object);
 
   __ CompareRoot(input, Heap::kNullValueRootIndex);
@@ -2045,10 +2044,11 @@ Condition LCodeGen::EmitIsObject(Register input,
   __ bne(is_not_object /*, cr0*/);
 
   // Load instance type and check that it is in object type range.
-  __ LoadlB(temp2, FieldMemOperand(temp1, Map::kInstanceTypeOffset));
-  __ Cmpi(temp2, Operand(FIRST_NONCALLABLE_SPEC_OBJECT_TYPE));
+  __ CmpLogicalByte(FieldMemOperand(temp1, Map::kInstanceTypeOffset),
+                    Operand(FIRST_NONCALLABLE_SPEC_OBJECT_TYPE));
   __ blt(is_not_object);
-  __ Cmpi(temp2, Operand(LAST_NONCALLABLE_SPEC_OBJECT_TYPE));
+  __ CmpLogicalByte(FieldMemOperand(temp1, Map::kInstanceTypeOffset),
+                    Operand(LAST_NONCALLABLE_SPEC_OBJECT_TYPE));
   return le;
 }
 
