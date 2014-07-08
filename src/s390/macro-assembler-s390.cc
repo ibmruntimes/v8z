@@ -3499,7 +3499,7 @@ void MacroAssembler::CheckPageFlag(
     }
 #if __BYTE_ORDER == __LITTLE_ENDIAN
     // Reverse the byte_offset if emulating on little endian platform
-    byte_offset = kPointerSize - byte_offset;
+    byte_offset = kPointerSize - byte_offset - 1;
 #endif
     tm(MemOperand(scratch, MemoryChunk::kFlagsOffset + byte_offset),
        Operand(shifted_mask));
