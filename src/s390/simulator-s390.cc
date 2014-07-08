@@ -2855,7 +2855,7 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
               // and set condition code accordingly
               int64_t temp = static_cast<int64_t>(r2_val);
               if (temp < INT_MIN || temp > INT_MAX) {
-                condition_reg_ = 1;
+                condition_reg_ = CC_OF;
               }
               r1_val = static_cast<int32_t>(r2_val);
               break;
@@ -2868,9 +2868,9 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
               // check for overflow, cast r2_val to 64bit integer
               // then check value within the range of INT_MIN and INT_MAX
               // and set condition code accordingly
-              int64_t temp = static_cast<int64_t>(r2_val);
+              int64_t temp = static_cast<int64_t>(floor(r2_val));
               if (temp < INT_MIN || temp > INT_MAX) {
-                condition_reg_ = 1;
+                condition_reg_ = CC_OF;
               }
               r1_val = static_cast<int32_t>(floor(r2_val));
               break;
