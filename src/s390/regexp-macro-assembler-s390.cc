@@ -185,7 +185,7 @@ void RegExpMacroAssemblerS390::AdvanceRegister(int reg, int by) {
   ASSERT(reg < num_registers_);
   if (by != 0) {
     if (CpuFeatures::IsSupported(GENERAL_INSTR_EXT) && is_int8(by)) {
-      __ AddMI(register_location(reg), Operand(by & 0xff));
+      __ AddMI(register_location(reg), Operand(by));
     } else {
       __ LoadP(r2, register_location(reg), r0);
       __ mov(r0, Operand(by));

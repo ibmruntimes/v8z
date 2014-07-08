@@ -1637,7 +1637,6 @@ RIL1_FORM_EMIT(afi, AFI)
 RXY_FORM_EMIT(agf, AGF)
 RIL1_FORM_EMIT(agfi, AGFI)
 RRE_FORM_EMIT(agfr, AGFR)
-SIY_FORM_EMIT(agsi, AGSI)
 RRF1_FORM_EMIT(ahhhr, AHHHR)
 RRF1_FORM_EMIT(ahhlr, AHHLR)
 RIL1_FORM_EMIT(aih, AIH)
@@ -1657,7 +1656,6 @@ SIY_FORM_EMIT(alsi, ALSI)
 RIL1_FORM_EMIT(alsih, ALSIH)
 RIL1_FORM_EMIT(alsihn, ALSIHN)
 SS2_FORM_EMIT(ap, AP)
-SIY_FORM_EMIT(asi, ASI)
 RRE_FORM_EMIT(axbr, AXBR)
 RRF1_FORM_EMIT(axtr, AXTR)
 RRF1_FORM_EMIT(axtra, AXTRA)
@@ -2192,6 +2190,22 @@ void Assembler::ar(Register r1, Register r2) {
 // Add Register-Register-Register (32)
 void Assembler::ark(Register r1, Register r2, Register r3) {
   rrf1_form(ARK, r1, r2, r3);
+}
+
+// Add Storage-Imm (32)
+void Assembler::asi(const MemOperand& opnd, const Operand& imm) {
+  ASSERT(is_int8(imm.imm_));
+  ASSERT(is_int20(opnd.offset()));
+  siy_form(ASI, Operand(0xff & imm.imm_),
+            opnd.rb(), 0xfffff & opnd.offset());
+}
+
+// Add Storage-Imm (64)
+void Assembler::agsi(const MemOperand& opnd, const Operand& imm) {
+  ASSERT(is_int8(imm.imm_));
+  ASSERT(is_int20(opnd.offset()));
+  siy_form(AGSI, Operand(0xff & imm.imm_),
+            opnd.rb(), 0xfffff & opnd.offset());
 }
 
 // Subtract Register (32)
