@@ -1514,25 +1514,14 @@ bool RegExpMacroAssemblerS390::CanReadUnaligned() {
 
 void RegExpMacroAssemblerS390::LoadCurrentCharacterUnchecked(int cp_offset,
                                                             int characters) {
-  Register offset = current_input_offset();
-  if (cp_offset != 0) {
-    // r6 is not being used to store the capture start index at this point.
-    __ AddP(r6, current_input_offset(), Operand(cp_offset * char_size()));
-    offset = r6;
-  }
-  // The lwz, stw, lhz, sth instructions can do unaligned accesses, if the CPU
-  // and the operating system running on the target allow it.
-  // We assume we don't want to do unaligned loads on PPC, so this function
-  // must only be used to load a single character at a time.
-
   ASSERT(characters == 1);
-  __ AddP(current_character(), end_of_input_address(), offset);
   if (mode_ == ASCII) {
-    __ LoadlB(current_character(), MemOperand(current_character()));
+    __ LoadlB(current_character(), MemOperand(end_of_input_address(),
+                        current_input_offset(), cp_offset * char_size()));
   } else {
     ASSERT(mode_ == UC16);
-    __ LoadLogicalHalfWordP(current_character(),
-                            MemOperand(current_character()));
+    __ LoadLogicalHalfWordP(current_character(), MemOperand(
+      end_of_input_address(), current_input_offset(), cp_offset * char_size()));
   }
 }
 
