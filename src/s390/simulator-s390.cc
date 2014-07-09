@@ -1606,7 +1606,7 @@ void Simulator::PrintStopInfo(uint32_t code) {
 
 // Method for checking overflow on signed subtraction:
 #define CheckOverflowForIntSub(src1, src2) \
-  CheckOverflowForIntAdd((src1), -(src2))
+  (((src1 - src2) < src1) != (src2 > 0))
 
 // Method for checking overflow on unsigned addtion
 #define CheckOverflowForUIntAdd(src1, src2) \
