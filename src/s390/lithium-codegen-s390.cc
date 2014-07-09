@@ -3055,7 +3055,7 @@ void LCodeGen::DoLoadKeyedSpecializedArrayElement(
         __ LoadlW(result, mem_operand);
         if (!instr->hydrogen()->CheckFlag(HInstruction::kUint32)) {
           __ iilf(r0, Operand(0x80000000));
-          __ Cmpl(result, r0);
+          __ CmpLogical(result, r0);
           DeoptimizeIf(ge, instr->environment());
         }
         break;
@@ -3203,7 +3203,7 @@ void LCodeGen::DoApplyArguments(LApplyArguments* instr) {
   // Copy the arguments to this function possibly from the
   // adaptor frame below it.
   const uint32_t kArgumentsLimit = 1 * KB;
-  __ Cmpli(length, Operand(kArgumentsLimit));
+  __ CmpLogicali(length, Operand(kArgumentsLimit));
   DeoptimizeIf(gt, instr->environment());
 
   // Push the receiver and use the register to keep the original
@@ -4021,9 +4021,9 @@ void LCodeGen::DoBoundsCheck(LBoundsCheck* instr) {
     } else {
       __ mov(ip, Operand(constant_index));
     }
-    __ Cmpl(ip, ToRegister(instr->length()));
+    __ CmpLogical(ip, ToRegister(instr->length()));
   } else {
-    __ Cmpl(ToRegister(instr->index()), ToRegister(instr->length()));
+    __ CmpLogical(ToRegister(instr->index()), ToRegister(instr->length()));
   }
   DeoptimizeIf(ge, instr->environment());
 }
@@ -4353,7 +4353,7 @@ void LCodeGen::DoStringCharFromCode(LStringCharFromCode* instr) {
   Register result = ToRegister(instr->result());
   ASSERT(!char_code.is(result));
 
-  __ Cmpli(char_code, Operand(String::kMaxAsciiCharCode));
+  __ CmpLogicali(char_code, Operand(String::kMaxAsciiCharCode));
   __ bgt(deferred->entry());
   __ LoadRoot(result, Heap::kSingleCharacterStringCacheRootIndex);
   __ ShiftLeftP(r0, char_code, Operand(kPointerSizeLog2));
@@ -4463,7 +4463,7 @@ void LCodeGen::DoNumberTagU(LNumberTagU* instr) {
   Register reg = ToRegister(input);
 
   DeferredNumberTagU* deferred = new(zone()) DeferredNumberTagU(this, instr);
-  __ Cmpli(reg, Operand(Smi::kMaxValue));
+  __ CmpLogicali(reg, Operand(Smi::kMaxValue));
   __ bgt(deferred->entry());
   __ SmiTag(reg, reg);
   __ bind(deferred->exit());

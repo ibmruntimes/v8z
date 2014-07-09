@@ -305,8 +305,7 @@ class MacroAssembler: public Assembler {
 
   void Cmp(Register dst, const Operand& opnd);
   // compare 32bit logical
-  void Cmpl(Register dst, const MemOperand& opnd);
-  void Cmpl(Register dst, const Operand& opnd);
+  void CmpLogical(Register dst, const Operand& opnd);
   // add logical 32bit
   void Addl(Register dst, const Operand& opnd);
   // add 32bit
@@ -716,14 +715,14 @@ class MacroAssembler: public Assembler {
 
   void Cmp(Register src1, Register src2);
   void Cmpi(Register src1, const Operand& src2);
-  void Cmpli(Register src1, const Operand& src2);
-  void Cmpl(Register src1, Register src2);
+  void CmpLogicali(Register src1, const Operand& src2);
+  void CmpLogical(Register src1, Register src2);
   void CmpLogicalByte(const MemOperand& mem, const Operand& imm);
 
   void AddSmiLiteral(Register dst, Register src, Smi *smi, Register scratch);
   void SubSmiLiteral(Register dst, Register src, Smi *smi, Register scratch);
   void CmpSmiLiteral(Register src1, Smi *smi, Register scratch);
-  void CmplSmiLiteral(Register src1, Smi *smi, Register scratch);
+  void CmpLogicalSmiLiteral(Register src1, Smi *smi, Register scratch);
   void AndSmiLiteral(Register dst, Register src, Smi *smi);
 
   // Set new rounding mode RN to FPSCR

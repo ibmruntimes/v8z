@@ -1431,7 +1431,7 @@ void MacroAssembler::AllocateInNewSpace(int object_size,
   ASSERT(obj_size_reg.is(scratch2));
   AddP(scratch2, result);   // Add result + obj_size_reg (scratch2)
   b(Condition(CC_OF), gc_required);   // Detect overflow
-  Cmpl(scratch2, ip);
+  CmpLogical(scratch2, ip);
   bgt(gc_required);
   StoreP(scratch2, MemOperand(topaddr));
 
@@ -1517,7 +1517,7 @@ void MacroAssembler::AllocateInNewSpace(Register object_size,
     AddP(scratch2, result, object_size);
   }
   b(Condition(CC_OF), gc_required);
-  Cmpl(scratch2, ip);
+  CmpLogical(scratch2, ip);
   bgt(gc_required);
 
   // Update allocation top. result temporarily holds the new top.
@@ -1734,7 +1734,7 @@ void MacroAssembler::CheckFastElements(Register map,
   STATIC_ASSERT(FAST_HOLEY_ELEMENTS == 3);
   LoadlB(scratch, FieldMemOperand(map, Map::kBitField2Offset));
   STATIC_ASSERT(Map::kMaximumBitField2FastHoleyElementValue < 0x8000);
-  Cmpli(scratch, Operand(Map::kMaximumBitField2FastHoleyElementValue));
+  CmpLogicali(scratch, Operand(Map::kMaximumBitField2FastHoleyElementValue));
   bgt(fail);
 }
 
@@ -1747,9 +1747,9 @@ void MacroAssembler::CheckFastObjectElements(Register map,
   STATIC_ASSERT(FAST_ELEMENTS == 2);
   STATIC_ASSERT(FAST_HOLEY_ELEMENTS == 3);
   LoadlB(scratch, FieldMemOperand(map, Map::kBitField2Offset));
-  Cmpli(scratch, Operand(Map::kMaximumBitField2FastHoleySmiElementValue));
+  CmpLogicali(scratch, Operand(Map::kMaximumBitField2FastHoleySmiElementValue));
   ble(fail);
-  Cmpli(scratch, Operand(Map::kMaximumBitField2FastHoleyElementValue));
+  CmpLogicali(scratch, Operand(Map::kMaximumBitField2FastHoleyElementValue));
   bgt(fail);
 }
 
@@ -1760,7 +1760,7 @@ void MacroAssembler::CheckFastSmiElements(Register map,
   STATIC_ASSERT(FAST_SMI_ELEMENTS == 0);
   STATIC_ASSERT(FAST_HOLEY_SMI_ELEMENTS == 1);
   LoadlB(scratch, FieldMemOperand(map, Map::kBitField2Offset));
-  Cmpli(scratch, Operand(Map::kMaximumBitField2FastHoleySmiElementValue));
+  CmpLogicali(scratch, Operand(Map::kMaximumBitField2FastHoleySmiElementValue));
   bgt(fail);
 }
 
@@ -2358,7 +2358,7 @@ void MacroAssembler::EmitOutOfInt32RangeTruncate(Register result,
   // by extracting exponent (mask: 0x7ff00000)
   STATIC_ASSERT(HeapNumber::kExponentMask == 0x7ff00000u);
   ExtractBitMask(scratch, input_high, HeapNumber::kExponentMask);
-  Cmpli(scratch, Operand(0x7ff));
+  CmpLogicali(scratch, Operand(0x7ff));
   beq(&done);
 
   // Express exponent as delta to (number of mantissa bits + 31).
@@ -3921,19 +3921,6 @@ void MacroAssembler::CmpLogicalP(Register dst, const MemOperand& opnd) {
 #endif
 }
 
-
-void MacroAssembler::Cmpl(Register dst, const MemOperand& opnd) {
-  ASSERT(is_int20(opnd.offset()));
-#if V8_TARGET_ARCH_S390X
-  clg(dst, opnd);
-#else
-  if (is_uint12(opnd.offset()))
-    cl(dst, opnd);
-  else
-    cly(dst, opnd);
-#endif
-}
-
 // Compare Logical Byte (Mem - Imm)
 void MacroAssembler::CmpLogicalByte(const MemOperand& mem, const Operand& imm) {
   ASSERT(is_uint8(imm.immediate()));
@@ -4628,7 +4615,7 @@ void MacroAssembler::Cmp(Register dst, const Operand& opnd) {
 }
 
 // compare logical
-void MacroAssembler::Cmpl(Register dst, const Operand& opnd) {
+void MacroAssembler::CmpLogical(Register dst, const Operand& opnd) {
 #if V8_TARGET_ARCH_S390X
   clgfi(dst, opnd);
 #else
@@ -4636,7 +4623,7 @@ void MacroAssembler::Cmpl(Register dst, const Operand& opnd) {
 #endif
 }
 
-void MacroAssembler::Cmpl(Register dst, Register src) {
+void MacroAssembler::CmpLogical(Register dst, Register src) {
 #ifdef V8_TARGET_ARCH_S390X
   clgr(dst, src);
 #else
@@ -4717,9 +4704,9 @@ void MacroAssembler::Cmpi(Register src1, const Operand& src2) {
   Cmp(src1, src2);
 }
 
-// Cmpl overloads it
-void MacroAssembler::Cmpli(Register src1, const Operand& src2) {
-  Cmpl(src1, src2);
+// CmpLogical overloads it
+void MacroAssembler::CmpLogicali(Register src1, const Operand& src2) {
+  CmpLogical(src1, src2);
 }
 
 void MacroAssembler::CmpSmiLiteral(Register src1, Smi *smi, Register scratch) {
@@ -4732,7 +4719,8 @@ void MacroAssembler::CmpSmiLiteral(Register src1, Smi *smi, Register scratch) {
 #endif
 }
 
-void MacroAssembler::CmplSmiLiteral(Register src1, Smi *smi, Register scratch) {
+void MacroAssembler::CmpLogicalSmiLiteral(Register src1, Smi *smi,
+                                          Register scratch) {
 #if V8_TARGET_ARCH_S390X
   LoadSmiLiteral(scratch, smi);
   clgr(src1, scratch);

@@ -108,7 +108,7 @@ static void ProbeTable(Isolate* isolate,
   __ NotP(r0);
   __ AndP(flags_reg, r0);
   __ mov(r0, Operand(flags));
-  __ Cmpl(flags_reg, r0);
+  __ CmpLogical(flags_reg, r0);
   __ bne(&miss);
 
 #ifdef DEBUG
@@ -1737,7 +1737,7 @@ Handle<Code> CallStubCompiler::CompileArrayPushCall(
       __ mov(r1, Operand(new_space_allocation_limit));
       __ LoadP(r1, MemOperand(r1));
       __ AddP(r5, Operand(kAllocationDelta * kPointerSize));
-      __ Cmpl(r5, r1);
+      __ CmpLogical(r5, r1);
       __ bgt(&call_builtin);
 
       // We fit and could grow elements.
@@ -3637,7 +3637,7 @@ void KeyedLoadStubCompiler::GenerateLoadExternalArray(
 
   // Check that the index is in range.
   __ LoadP(ip, FieldMemOperand(r5, ExternalArray::kLengthOffset));
-  __ Cmpl(key, ip);
+  __ CmpLogical(key, ip);
   // Unsigned comparison catches both negative and too-large values.
   __ bge(&miss_force_generic);
 
@@ -3836,7 +3836,7 @@ void KeyedStoreStubCompiler::GenerateStoreExternalArray(
 
   // Check that the index is in range
   __ LoadP(ip, FieldMemOperand(r5, ExternalArray::kLengthOffset));
-  __ Cmpl(key, ip);
+  __ CmpLogical(key, ip);
   // Unsigned comparison catches both negative and too-large values.
   __ bge(&miss_force_generic);
 
