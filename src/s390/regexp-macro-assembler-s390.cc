@@ -398,22 +398,22 @@ void RegExpMacroAssemblerS390::CheckNotBackReferenceIgnoreCase(
     int start_reg,
     Label* on_no_match) {
   Label fallthrough;
-  __ LoadP(r2, register_location(start_reg), r0);  // Index of start of
+  __ LoadP(r2, register_location(start_reg));  // Index of start of
                                                        // capture
-  __ LoadP(r3, register_location(start_reg + 1), r0);  // Index of end
-  // Removing RC looks Okay here.
-  __ Sub(r3, r3, r2/*, LeaveOE, SetRC*/);  // Length of capture.
+  __ LoadP(r3, register_location(start_reg + 1));  // Index of end
+  __ SubP(r3, r3, r2);  // Length of capture.
+
+  // The length of a capture should not be negative. This can only happen
+  // if the end of the capture is unrecorded, or at a point earlier than
+  // the start of the capture.
+  BranchOrBacktrack(lt, on_no_match);
 
   // If length is zero, either the capture is empty or it is not participating.
   // In either case succeed immediately.
-  __ beq(&fallthrough /*, cr0*/);
+  __ beq(&fallthrough);
 
   // Check that there are enough characters left in the input.
-  // TODO(john): the RC bit set below is the condition for
-  //              the BranchOrBacktrack function
-  // __ Add(r0, r3, current_input_offset()/*, LeaveOE, SetRC*/);
   __ AddP(r0, r3, current_input_offset());
-//  __ cmn(r1_p, Operand(current_input_offset()));
   BranchOrBacktrack(gt, on_no_match);
 
   if (mode_ == ASCII) {
@@ -425,26 +425,24 @@ void RegExpMacroAssemblerS390::CheckNotBackReferenceIgnoreCase(
     // r3 - length of capture
     __ AddP(r2, end_of_input_address());
     __ AddP(r4, current_input_offset(), end_of_input_address());
-    __ AddP(r3, r2);
+    // __ AddP(r3, r2);
+    __ mov(r1, Operand::Zero());
 
+    // r1 - Loop index
     // r2 - Address of start of capture.
-    // r3 - Address of end of capture
     // r4 - Address of current input position.
 
     Label loop;
     __ bind(&loop);
-    __ LoadlB(r5, MemOperand(r2));
-    __ la(r2, MemOperand(r2, char_size()));
-
-    __ LoadlB(r6, MemOperand(r4));
-    __ la(r4, MemOperand(r4, char_size()));
+    __ LoadlB(r5, MemOperand(r2, r1));
+    __ LoadlB(r6, MemOperand(r4, r1));
 
     __ CmpRR(r6, r5);
     __ beq(&loop_check);
 
     // Mismatch, try case-insensitive match (converting letters to lower-case).
-    __ OrP(r5, Operand(0x20));  // Convert capture character to lower-case.
-    __ OrP(r6, Operand(0x20));  // Also convert input character.
+    __ Or(r5, Operand(0x20));  // Convert capture character to lower-case.
+    __ Or(r6, Operand(0x20));  // Also convert input character.
     __ CmpRR(r6, r5);
     __ bne(&fail);
     __ Sub(r5, Operand('a'));
@@ -453,7 +451,8 @@ void RegExpMacroAssemblerS390::CheckNotBackReferenceIgnoreCase(
 
 
     __ bind(&loop_check);
-    __ CmpRR(r2, r3);
+    __ la(r1, MemOperand(r1, char_size()));
+    __ CmpRR(r1, r3);
     __ blt(&loop);
     __ b(&success);
 
@@ -462,7 +461,8 @@ void RegExpMacroAssemblerS390::CheckNotBackReferenceIgnoreCase(
 
     __ bind(&success);
     // Compute new value of character position after the matched part.
-    __ Sub(current_input_offset(), r4, end_of_input_address());
+    __ SubP(current_input_offset(), r4, end_of_input_address());
+    __ AddP(current_input_offset(), r1);
   } else {
     ASSERT(mode_ == UC16);
     int argument_count = 4;
