@@ -514,9 +514,15 @@ void RegExpMacroAssemblerS390::CheckNotBackReference(
   Label success;
 
   // Find length of back-referenced capture.
-  __ LoadP(r2, register_location(start_reg), r0);
-  __ LoadP(r3, register_location(start_reg + 1), r0);
-  __ Sub(r3, r3, r2);  // Length to check.
+  __ LoadP(r2, register_location(start_reg));
+  __ LoadP(r3, register_location(start_reg + 1));
+  __ SubP(r3, r3, r2);  // Length to check.
+
+  // The length of a capture should not be negative. This can only happen
+  // if the end of the capture is unrecorded, or at a point earlier than
+  // the start of the capture.
+  BranchOrBacktrack(lt, on_no_match);
+
   // Succeed on empty capture (including no capture).
   __ beq(&fallthrough /*, cr0*/);
 
@@ -525,31 +531,30 @@ void RegExpMacroAssemblerS390::CheckNotBackReference(
   BranchOrBacktrack(gt, on_no_match, cr0);
 
   // Compute pointers to match string and capture string
-  __ AddP(r2, end_of_input_address());
-  __ AddP(r4, current_input_offset(), end_of_input_address());
-  __ AddP(r3, r2);
+  __ la(r2, MemOperand(r2, end_of_input_address()));
+  __ la(r4, MemOperand(current_input_offset(), end_of_input_address()));
+  __ mov(r1, Operand::Zero());
+  // __ AddP(r3, r2);
 
   Label loop;
   __ bind(&loop);
   if (mode_ == ASCII) {
-    __ LoadlB(r5, MemOperand(r2));
-    __ AddP(r2, Operand(char_size()));
-    __ LoadlB(r6, MemOperand(r4));
-    __ AddP(r4, Operand(char_size()));
+    __ LoadlB(r5, MemOperand(r2, r1));
+    __ LoadlB(r6, MemOperand(r4, r1));
   } else {
     ASSERT(mode_ == UC16);
-    __ LoadLogicalHalfWordP(r5, MemOperand(r2));
-    __ AddP(r2, Operand(char_size()));
-    __ LoadLogicalHalfWordP(r6, MemOperand(r4));
-    __ AddP(r4, Operand(char_size()));
+    __ LoadLogicalHalfWordP(r5, MemOperand(r2, r1));
+    __ LoadLogicalHalfWordP(r6, MemOperand(r4, r1));
   }
+  __ la(r1, MemOperand(r1, char_size()));
   __ CmpRR(r5, r6);
   BranchOrBacktrack(ne, on_no_match);
-  __ CmpRR(r2, r3);
+  __ CmpRR(r1, r3);
   __ blt(&loop);
 
   // Move current character position to position after match.
   __ Sub(current_input_offset(), r4, end_of_input_address());
+  __ AddP(current_input_offset(), r1);
   __ bind(&fallthrough);
 }
 
