@@ -902,19 +902,18 @@ void LCodeGen::DoModI(LModI* instr) {
 
     Label positive_dividend;
     __ Cmpi(dividend, Operand::Zero());
-    __ bge(&positive_dividend);
+    __ bge(&positive_dividend, Label::kNear);
     __ LoadComplementRR(result, dividend);
-    __ mov(scratch, Operand(divisor - 1));
-    __ AndP(result, scratch/*, SetRC*/);  // Should be okay to remove rc
-    if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
-      DeoptimizeIf(eq, instr->environment(), cr0);
-    }
-    __ LoadComplementRR(result, result);
-    __ b(&done);
-    __ bind(&positive_dividend);
-    if (!dividend.is(result))
-      __ LoadRR(result, dividend);
     __ AndP(result, Operand(divisor - 1));
+    __ LoadComplementRR(result, result);
+    if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
+      __ bne(&done, Label::kNear);
+      DeoptimizeIf(al, instr->environment());
+    } else {
+      __ b(&done, Label::kNear);
+    }
+    __ bind(&positive_dividend);
+    __ AndP(result, dividend, Operand(divisor - 1));
   } else {
     Register divisor = ToRegister(instr->right());
 
