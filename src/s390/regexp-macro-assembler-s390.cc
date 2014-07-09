@@ -1229,8 +1229,7 @@ void RegExpMacroAssemblerS390::WriteCurrentPositionToRegister(int reg,
   if (cp_offset == 0) {
     __ StoreP(current_input_offset(), register_location(reg));
   } else {
-    __ mov(r0, Operand(cp_offset * char_size()));
-    __ AddP(r2, current_input_offset(), r0);
+    __ AddP(r2, current_input_offset(), Operand(cp_offset * char_size()));
     __ StoreP(r2, register_location(reg));
   }
 }
