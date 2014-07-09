@@ -596,10 +596,11 @@ void RegExpMacroAssemblerS390::CheckNotCharacterAfterMinusAnd(
     uc16 mask,
     Label* on_not_equal) {
   ASSERT(minus < String::kMaxUtf16CodeUnit);
-  __ Sub(r2, current_character(), Operand(minus));
-  __ mov(r0, Operand(mask));
-  __ AndP(r2, r0);
-  __ Cmpli(r2, Operand(c));
+  __ lay(r2, MemOperand(current_character(), -minus));
+  __ And(r2, Operand(mask));
+  if (c != 0) {
+    __ Cmpli(r2, Operand(c));
+  }
   BranchOrBacktrack(ne, on_not_equal);
 }
 
