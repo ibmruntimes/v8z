@@ -581,18 +581,12 @@ void RegExpMacroAssemblerS390::CheckCharacterAfterAnd(uint32_t c,
 void RegExpMacroAssemblerS390::CheckNotCharacterAfterAnd(unsigned c,
                                                         unsigned mask,
                                                         Label* on_not_equal) {
-  __ mov(r0, Operand(mask));
-  if (c == 0) {
-    __ LoadRR(r2, r0);
-    __ AndP(r2, current_character()/*, SetRC*/);
-    // Should be okay to remove rc
-  } else {
-    __ LoadRR(r2, r0);
-    __ AndP(r2, current_character());
-    // TODO(JOHN): dont know if removing cr0 causes a problem
-    __ Cmpli(r2, Operand(c)/*, cr0*/);
+  __ mov(r2, Operand(mask));
+  __ AndP(r2, current_character());
+  if (c != 0) {
+    __ Cmpli(r2, Operand(c));
   }
-  BranchOrBacktrack(ne, on_not_equal, cr0);
+  BranchOrBacktrack(ne, on_not_equal);
 }
 
 
