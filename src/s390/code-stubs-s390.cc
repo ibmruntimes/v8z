@@ -932,7 +932,7 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm,
       // Test that exponent bits are all set.
       STATIC_ASSERT(HeapNumber::kExponentMask == 0x7ff00000u);
       __ ExtractBitMask(r5, r4, HeapNumber::kExponentMask);
-      __ Cmpli(r5, Operand(0x7ff));
+      __ CmpLogicali(r5, Operand(0x7ff));
       __ bne(&return_equal);
 
       // Shift out flag and all exponent bits, retaining only mantissa.
@@ -4184,7 +4184,7 @@ void ArgumentsAccessStub::GenerateReadElement(MacroAssembler* masm) {
   // Check index against formal parameters count limit passed in
   // through register r2. Use unsigned comparison to get negative
   // check for free.
-  __ Cmpl(r3, r2);
+  __ CmpLogical(r3, r2);
   __ bge(&slow);
 
   // Read the argument from the stack and return it.
@@ -4200,7 +4200,7 @@ void ArgumentsAccessStub::GenerateReadElement(MacroAssembler* masm) {
   __ bind(&adaptor);
   __ LoadP(r2,
            MemOperand(r4, ArgumentsAdaptorFrameConstants::kLengthOffset));
-  __ Cmpl(r3, r2);
+  __ CmpLogical(r3, r2);
   __ bge(&slow);
 
   // Read the argument from the adaptor frame and return it.
@@ -4662,7 +4662,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ AddP(r4, Operand(2));
   // Check that the static offsets vector buffer is large enough.
   // STATIC_ASSERT(Isolate::kJSRegexpStaticOffsetsVectorSize < 0xffffu);
-  __ Cmpli(r4, Operand(Isolate::kJSRegexpStaticOffsetsVectorSize));
+  __ CmpLogicali(r4, Operand(Isolate::kJSRegexpStaticOffsetsVectorSize));
   __ bgt(&runtime);
 
   // r4: Number of capture registers
@@ -4683,7 +4683,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // string length. A negative value will be greater (unsigned comparison).
   __ LoadP(r2, MemOperand(fp, kPreviousIndexOffset));
   __ JumpIfNotSmi(r2, &runtime);
-  __ Cmpl(r5, r2);
+  __ CmpLogical(r5, r2);
   __ ble(&runtime);
 
   // r4: Number of capture registers
@@ -5070,7 +5070,7 @@ void RegExpConstructResultStub::Generate(MacroAssembler* masm) {
 
   __ LoadP(r3, MemOperand(sp, kPointerSize * 2));
   __ JumpIfNotSmi(r3, &slowcase);
-  __ CmplSmiLiteral(r3, Smi::FromInt(kMaxInlineLength), r0);
+  __ CmpLogicalSmiLiteral(r3, Smi::FromInt(kMaxInlineLength), r0);
   __ bgt(&slowcase);
   // Allocate RegExpResult followed by FixedArray with size in ebx.
   // JSArray:   [Map][empty properties][Elements][Length-smi][index][input]
@@ -5403,7 +5403,7 @@ void StringCharCodeAtGenerator::GenerateFast(MacroAssembler* masm) {
 
   // Check for index out of range.
   __ LoadP(ip, FieldMemOperand(object_, String::kLengthOffset));
-  __ Cmpl(ip, index_);
+  __ CmpLogical(ip, index_);
   __ ble(index_out_of_range_);
 
   __ SmiUntag(index_);
@@ -5628,10 +5628,10 @@ void StringHelper::GenerateTwoCharacterSymbolTableProbe(MacroAssembler* masm,
   // different hash algorithm. Don't try to look for these in the symbol table.
   Label not_array_index;
   __ Sub(scratch, c1, Operand(static_cast<intptr_t>('0')));
-  __ Cmpli(scratch, Operand(static_cast<intptr_t>('9' - '0')));
+  __ CmpLogicali(scratch, Operand(static_cast<intptr_t>('9' - '0')));
   __ bgt(&not_array_index);
   __ Sub(scratch, c2, Operand(static_cast<intptr_t>('0')));
-  __ Cmpli(scratch, Operand(static_cast<intptr_t>('9' - '0')));
+  __ CmpLogicali(scratch, Operand(static_cast<intptr_t>('9' - '0')));
   __ bgt(&not_array_index);
 
   // If check failed combine both characters into single halfword.
@@ -5848,7 +5848,7 @@ void SubStringStub::Generate(MacroAssembler* masm) {
   // We want to bailout to runtime here if From is negative.
   __ blt(&runtime /*, cr0*/);  // From < 0.
 
-  __ Cmpl(r5, r4);
+  __ CmpLogical(r5, r4);
   __ bgt(&runtime);  // Fail if from > to.
   __ Sub(r4, r4, r5);
 
@@ -5864,7 +5864,7 @@ void SubStringStub::Generate(MacroAssembler* masm) {
   // r4: result string length
   __ LoadP(r6, FieldMemOperand(r2, String::kLengthOffset));
   __ SmiUntag(r0, r6);
-  __ Cmpl(r4, r0);
+  __ CmpLogical(r4, r0);
   // Return original string.
   __ beq(&return_r3);
   // Longer than original string's length or negative: unsafe arguments.
@@ -6323,7 +6323,7 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   ASSERT(IsPowerOf2(String::kMaxLength + 1));
   // kMaxLength + 1 is representable as shifted literal, kMaxLength is not.
   __ mov(r9, Operand(String::kMaxLength + 1));
-  __ Cmpl(r8, r9);
+  __ CmpLogical(r8, r9);
   __ bge(&call_runtime);
 
   // If result is not supposed to be flat, allocate a cons string object.

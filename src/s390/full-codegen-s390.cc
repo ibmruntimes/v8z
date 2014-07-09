@@ -1207,7 +1207,7 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   // Load the current count to r2, load the length to r3.
   __ LoadP(r2, MemOperand(sp, 0 * kPointerSize));
   __ LoadP(r3, MemOperand(sp, 1 * kPointerSize));
-  __ Cmpl(r2, r3);  // Compare to the array length.
+  __ CmpLogical(r2, r3);  // Compare to the array length.
   __ bge(loop_statement.break_label());
 
   // Get the current entry of the array into register r5.
@@ -3818,7 +3818,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   __ AddP(string,
           Operand(SeqAsciiString::kHeaderSize - kHeapObjectTag));
   __ CopyBytes(string, result_pos, string_length, scratch1);
-  __ Cmpl(element, elements_end);
+  __ CmpLogical(element, elements_end);
   __ blt(&one_char_separator_loop);  // End while (element < elements_end).
   ASSERT(result.is(r2));
   __ b(&done);
@@ -3846,7 +3846,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   __ SmiUntag(string_length);
   __ AddP(string, Operand(SeqAsciiString::kHeaderSize - kHeapObjectTag));
   __ CopyBytes(string, result_pos, string_length, scratch1);
-  __ Cmpl(element, elements_end);
+  __ CmpLogical(element, elements_end);
   __ blt(&long_separator_loop);  // End while (element < elements_end).
   ASSERT(result.is(r2));
   __ b(&done);

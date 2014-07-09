@@ -307,7 +307,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   // r8: destination FixedArray
   // r9: the-hole pointer
   // r1: heap number map
-  __ b(&entry);
+  __ b(&entry, Label::kNear);
 
   // Call into runtime if GC is required.
   __ bind(&gc_required);
@@ -356,7 +356,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
                  kDontSaveFPRegs,
                  EMIT_REMEMBERED_SET,
                  OMIT_SMI_CHECK);
-  __ b(&entry);
+  __ b(&entry, Label::kNear);
 
   // Replace the-hole NaN with the-hole pointer.
   __ bind(&convert_hole);
@@ -364,7 +364,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   __ AddP(r5, Operand(kPointerSize));
 
   __ bind(&entry);
-  __ Cmpl(r5, r7);
+  __ CmpLogical(r5, r7);
   __ blt(&loop);
 
   __ Pop(r5, r4, r3, r2);
