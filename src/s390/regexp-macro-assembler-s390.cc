@@ -256,6 +256,82 @@ void RegExpMacroAssemblerS390::CheckCharacterLT(uc16 limit, Label* on_less) {
 
 
 void RegExpMacroAssemblerS390::CheckCharacters(Vector<const uc16> str,
+                                               int cp_offset,
+                                               Label* on_failure,
+                                               bool check_end_of_string) {
+#ifdef DEBUG
+  // If input is ASCII, don't even bother calling here if the string to
+  // match contains a non-ASCII character.
+  if (mode_ == ASCII) {
+    ASSERT(String::IsAscii(str.start(), str.length()));
+  }
+#endif
+  int byte_length = str.length() * char_size();
+  int byte_offset = cp_offset * char_size();
+  if (check_end_of_string) {
+    // Check that there are at least str.length() characters left in the input.
+    __ Cmpi(current_input_offset(), Operand(-(byte_offset + byte_length)));
+    BranchOrBacktrack(gt, on_failure);
+  }
+
+  if (on_failure == NULL) {
+    // Instead of inlining a backtrack, (re)use the global backtrack target.
+    on_failure = &backtrack_label_;
+  }
+
+  // Do one character test first to minimize loading for the case that
+  // we don't match at all (loading more than one character introduces that
+  // chance of reading unaligned and reading across cache boundaries).
+  // If the first character matches, expect a larger chance of matching the
+  // string, and start loading more characters at a time.
+  if (mode_ == ASCII) {
+    __ LoadlB(r0, MemOperand(end_of_input_address(),
+                  current_input_offset(), byte_offset));
+    __ Cmpi(r0, Operand(static_cast<int8_t>(str[0])));
+    // __ cmpb(Operand(esi, edi, times_1, byte_offset),
+            // static_cast<int8_t>(str[0]));
+  } else {
+    // Don't use 16-bit immediate. The size changing prefix throws off
+    // pre-decoding.
+    __ LoadLogicalHalfWordP(r0, MemOperand(end_of_input_address(),
+                  current_input_offset(), byte_offset));
+    __ Cmpi(r0, Operand(static_cast<int32_t>(str[0])));
+  }
+  BranchOrBacktrack(ne, on_failure);
+
+  __ la(r2, MemOperand(end_of_input_address(), current_input_offset()));
+  for (int i = 1, n = str.length(); i < n;) {
+    if (mode_ == ASCII) {
+      if (i <= n - 4) {
+        __ LoadlW(r0, MemOperand(r2, byte_offset + i));
+        __ Cmpli(r0, Operand(*reinterpret_cast<const int*>(&str[i])));
+        i += 4;
+      } else {
+        __ LoadlB(r0, MemOperand(r2, byte_offset + i));
+        __ Cmpli(r0, Operand(static_cast<int8_t>(str[i])));
+        i += 1;
+      }
+    } else {
+      ASSERT(mode_ == UC16);
+      if (i <= n - 2) {
+        __ LoadlW(r0, MemOperand(r2, byte_offset + i * sizeof(uc16)));
+        __ Cmpli(r0, Operand(*reinterpret_cast<const int*>(&str[i])));
+        i += 2;
+      } else {
+        ASSERT(i == n - 2);
+        __ LoadLogicalHalfWordP(r0,
+              MemOperand(r2, byte_offset + i * sizeof(uc16)));
+        __ Cmpli(r0, Operand(static_cast<int32_t>(str[i])));
+        i += 1;
+      }
+    }
+    BranchOrBacktrack(ne, on_failure);
+  }
+}
+
+
+/*
+void RegExpMacroAssemblerS390::CheckCharacters(Vector<const uc16> str,
                                               int cp_offset,
                                               Label* on_failure,
                                               bool check_end_of_string) {
@@ -303,6 +379,7 @@ void RegExpMacroAssemblerS390::CheckCharacters(Vector<const uc16> str,
     BranchOrBacktrack(ne, on_failure);
   }
 }
+*/
 
 
 void RegExpMacroAssemblerS390::CheckGreedyLoop(Label* on_equal) {
