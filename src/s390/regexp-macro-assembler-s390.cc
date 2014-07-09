@@ -384,14 +384,13 @@ void RegExpMacroAssemblerS390::CheckCharacters(Vector<const uc16> str,
 
 void RegExpMacroAssemblerS390::CheckGreedyLoop(Label* on_equal) {
   Label backtrack_non_equal;
-  __ LoadP(r2, MemOperand(backtrack_stackpointer(), 0));
-  __ CmpRR(current_input_offset(), r2);
+  __ CmpP(current_input_offset(), MemOperand(backtrack_stackpointer(), 0));
   __ bne(&backtrack_non_equal);
   __ AddP(backtrack_stackpointer(), Operand(kPointerSize));
 
+  // __ CmpRR(current_input_offset(), r2);
+  BranchOrBacktrack(al, on_equal);
   __ bind(&backtrack_non_equal);
-  __ CmpRR(current_input_offset(), r2);
-  BranchOrBacktrack(eq, on_equal);
 }
 
 
