@@ -629,15 +629,14 @@ void RegExpMacroAssemblerS390::CheckBitInTable(
     Handle<ByteArray> table,
     Label* on_bit_set) {
   __ mov(r2, Operand(table));
+  Register index = current_character();
   if (mode_ != ASCII || kTableMask != String::kMaxAsciiCharCode) {
     __ mov(r3, Operand(kTableSize - 1));
     __ AndP(r3, current_character());
-    __ AddP(r3, Operand(ByteArray::kHeaderSize - kHeapObjectTag));
-  } else {
-    __ AddP(r3, current_character(),
-                Operand(ByteArray::kHeaderSize - kHeapObjectTag));
+    index = r3;
   }
-  __ LoadlB(r2, MemOperand(r2, r3));
+  __ LoadlB(r2, MemOperand(r2, index,
+                (ByteArray::kHeaderSize - kHeapObjectTag)));
   __ Cmpi(r2, Operand::Zero());
   BranchOrBacktrack(ne, on_bit_set);
 }
