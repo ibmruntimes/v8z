@@ -1246,7 +1246,7 @@ void RegExpMacroAssemblerS390::ClearRegisters(int reg_from, int reg_to) {
 
 void RegExpMacroAssemblerS390::WriteStackPointerToRegister(int reg) {
   __ LoadP(r3, MemOperand(frame_pointer(), kStackHighEnd));
-  __ Sub(r2, backtrack_stackpointer(), r3);
+  __ SubP(r2, backtrack_stackpointer(), r3);
   __ StoreP(r2, register_location(reg));
 }
 
