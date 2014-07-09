@@ -771,7 +771,7 @@ void RegExpMacroAssemblerS390::Fail() {
 
 
 Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
-  Label return_r3;
+  Label return_r2;
 
   if (masm_->has_exception()) {
     // If the code gets corrupted due to long regular expressions and lack of
@@ -790,7 +790,6 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     FrameScope scope(masm_, StackFrame::MANUAL);
 
     // Ensure register assigments are consistent with callee save mask
-#if 0
     ASSERT(r6.bit() & kRegExpCalleeSaved);
     ASSERT(code_pointer().bit() & kRegExpCalleeSaved);
     ASSERT(current_input_offset().bit() & kRegExpCalleeSaved);
@@ -798,8 +797,6 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     ASSERT(backtrack_stackpointer().bit() & kRegExpCalleeSaved);
     ASSERT(end_of_input_address().bit() & kRegExpCalleeSaved);
     ASSERT(frame_pointer().bit() & kRegExpCalleeSaved);
-
-#endif
 
     // zLinux ABI
     //    Incoming parameters:
@@ -812,17 +809,13 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     //    General convention is to also save r14 (return addr) and
     //    sp/r15 as well in a single STM/STMG
     __ StoreMultipleP(r6, sp, MemOperand(sp, 6 * kPointerSize));
-    // BackChain
-    // __ StoreP(frame_pointer(), MemOperand(sp));
 
     // Load stack parameters from caller stack frame
-    // __ lay(fp, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize));
-    __ LoadP(r7, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize +
-            0 * kPointerSize));   // capture array size
-    __ LoadP(r8, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize +
-            1 * kPointerSize));  // stack area base
-    __ LoadP(r9, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize +
-            2 * kPointerSize));  // direct call
+    __ LoadMultipleP(r7, r9, MemOperand(sp,
+          kStackFrameExtraParamSlot * kPointerSize));
+    // r7 = capture array size
+    // r8 = stack area base
+    // r9 = direct call
 
     // Actually emit code to start a new stack frame.
     // Push arguments
@@ -836,7 +829,7 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     __ LoadRR(frame_pointer(), sp);
     __ lay(sp, MemOperand(sp, -10 * kPointerSize));
     __ mov(r1, Operand::Zero());        // success counter
-    __ mov(r0, Operand::Zero());        // offset of location
+    __ LoadRR(r0, r1);        // offset of location
     __ StoreMultipleP(r0, r9, MemOperand(sp, 0));
 
     // Check if we have space on the stack for registers.
@@ -847,23 +840,23 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
       ExternalReference::address_of_stack_limit(masm_->isolate());
     __ mov(r2, Operand(stack_limit));
     __ LoadP(r2, MemOperand(r2));
-    __ SubP(r2, sp, r2/*, LeaveOE, SetRC*/);  // Removing RC looks okay here
+    __ SubP(r2, sp, r2);
     // Handle it if the stack pointer is already below the stack limit.
-    __ ble(&stack_limit_hit /*, cr0*/);
+    __ ble(&stack_limit_hit);
     // Check if there is room for the variable number of registers above
     // the stack limit.
     __ Cmpli(r2, Operand(num_registers_ * kPointerSize));
     __ bge(&stack_ok);
     // Exit with OutOfMemory exception. There is not enough space on the stack
     // for our working registers.
-    __ LoadImmP(r2, Operand(EXCEPTION));
-    __ b(&return_r3);
+    __ mov(r2, Operand(EXCEPTION));
+    __ b(&return_r2);
 
     __ bind(&stack_limit_hit);
     CallCheckStackGuardState(r2);
     __ Cmpi(r2, Operand::Zero());
     // If returned value is non-zero, we exit with the returned value as result.
-    __ bne(&return_r3);
+    __ bne(&return_r2);
 
     __ bind(&stack_ok);
 
@@ -899,7 +892,7 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     // Load newline if index is at start, previous character otherwise.
     __ Cmpi(r3, Operand::Zero());
     __ bne(&load_char_start_regexp);
-    __ LoadImmP(current_character(), Operand('\n'));
+    __ mov(current_character(), Operand('\n'));
     __ b(&start_regexp);
 
     // Global regexp restarts matching here.
@@ -970,17 +963,17 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
           }
           if (mode_ == UC16) {
             __ ShiftRightArithP(r4, r4, Operand(1));
-            __ AddP(r4, r3, r4);
+            __ AddP(r4, r3);
             __ ShiftRightArithP(r5, r5, Operand(1));
-            __ AddP(r5, r3, r5);
+            __ AddP(r5, r3);
           } else {
-            __ AddP(r4, r3, r4);
-            __ AddP(r5, r3, r5);
+            __ AddP(r4, r3);
+            __ AddP(r5, r3);
           }
           __ StoreW(r4, MemOperand(r2));
-          __ AddP(r2, Operand(kIntSize));
-          __ StoreW(r5, MemOperand(r2));
-          __ AddP(r2, Operand(kIntSize));
+          __ la(r2, MemOperand(r2, 2 * kIntSize));
+          __ StoreW(r5, MemOperand(r2, -kIntSize));
+          // __ la(r2, MemOperand(r2, kIntSize));
         }
       }
 
@@ -997,7 +990,7 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
         __ Sub(r3, Operand(num_saved_registers_));
         // Check whether we have enough room for another set of capture results.
         __ Cmpi(r3, Operand(num_saved_registers_));
-        __ blt(&return_r3);
+        __ blt(&return_r2);
 
         __ StoreP(r3, MemOperand(frame_pointer(), kNumOutputRegisters));
         // Advance the location for output.
@@ -1032,7 +1025,7 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
       __ LoadP(r2, MemOperand(frame_pointer(), kSuccessfulCaptures));
     }
 
-    __ bind(&return_r3);
+    __ bind(&return_r2);
     // Skip sp past regexp registers and local variables..
     __ LoadRR(sp, frame_pointer());
     // Restore registers r6..r15.
@@ -1056,7 +1049,7 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
       __ Cmpi(r2, Operand::Zero());
       // If returning non-zero, we should end execution with the given
       // result as return value.
-      __ bne(&return_r3);
+      __ bne(&return_r2);
 
       // String might have moved: Reload end of string from frame.
       __ LoadP(end_of_input_address(), MemOperand(frame_pointer(), kInputEnd));
@@ -1093,7 +1086,7 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
       __ bind(&exit_with_exception);
       // Exit with Result EXCEPTION(-1) to signal thrown exception.
       __ LoadImmP(r2, Operand(EXCEPTION));
-      __ b(&return_r3);
+      __ b(&return_r2);
     }
   }
 
