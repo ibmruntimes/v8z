@@ -1415,30 +1415,25 @@ void RegExpMacroAssemblerS390::BranchOrBacktrack(Condition condition,
 }
 
 
-void RegExpMacroAssemblerS390::SafeCall(Label* to, Condition cond,
-                                       CRegister cr) {
-  Label skip;
-  __ b(NegateCondition(cond), &skip);
-  __ b(r14, to /*, cr*/ /*, SetLK*/);
-  __ bind(&skip);
+void RegExpMacroAssemblerS390::SafeCall(Label* to) {
+  Label return_to;
+  __ larl(r14, &return_to);
+  // __ SubP(r14, r14, Operand(masm_->CodeObject()));
+  __ push(r14);
+  __ b(to);
+  __ bind(&return_to);
 }
 
 
 void RegExpMacroAssemblerS390::SafeReturn() {
   __ pop(r14);
-  __ mov(ip, Operand(masm_->CodeObject()));
-  __ AddP(r14, ip);
+  // __ AddP(r14, Operand(masm_->CodeObject()));
   __ Ret();
 }
 
 
 void RegExpMacroAssemblerS390::SafeCallTarget(Label* name) {
   __ bind(name);
-  __ CleanseP(r14);
-  __ LoadRR(r0, r14);
-  __ mov(ip, Operand(masm_->CodeObject()));
-  __ Sub(r0, r0, ip);
-  __ push(r0);
 }
 
 
@@ -1460,20 +1455,30 @@ void RegExpMacroAssemblerS390::Pop(Register target) {
 
 void RegExpMacroAssemblerS390::CheckPreemption() {
   // Check for preemption.
+  Label no_preempt;
   ExternalReference stack_limit =
       ExternalReference::address_of_stack_limit(masm_->isolate());
   __ mov(r2, Operand(stack_limit));
   __ CmpLogicalP(sp, MemOperand(r2));
-  SafeCall(&check_preempt_label_, le);
+  __ bgt(&no_preempt);
+
+  SafeCall(&check_preempt_label_);
+
+  __ bind(&no_preempt);
 }
 
 
 void RegExpMacroAssemblerS390::CheckStackLimit() {
+  Label no_stack_overflow;
   ExternalReference stack_limit =
       ExternalReference::address_of_regexp_stack_limit(masm_->isolate());
   __ mov(r2, Operand(stack_limit));
   __ CmpLogicalP(backtrack_stackpointer(), MemOperand(r2));
-  SafeCall(&stack_overflow_label_, le);
+  __ bgt(&no_stack_overflow);
+
+  SafeCall(&stack_overflow_label_);
+
+  __ bind(&no_stack_overflow);
 }
 
 
