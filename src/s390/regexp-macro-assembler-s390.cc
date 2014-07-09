@@ -609,8 +609,7 @@ void RegExpMacroAssemblerS390::CheckCharacterInRange(
     uc16 from,
     uc16 to,
     Label* on_in_range) {
-  __ mov(r0, Operand(from));
-  __ Sub(r2, current_character(), r0);
+  __ lay(r2, MemOperand(current_character(), -from));
   __ Cmpli(r2, Operand(to - from));
   BranchOrBacktrack(le, on_in_range);  // Unsigned lower-or-same condition.
 }
@@ -620,8 +619,7 @@ void RegExpMacroAssemblerS390::CheckCharacterNotInRange(
     uc16 from,
     uc16 to,
     Label* on_not_in_range) {
-  __ mov(r0, Operand(from));
-  __ Sub(r2, current_character(), r0);
+  __ lay(r2, MemOperand(current_character(), -from));
   __ Cmpli(r2, Operand(to - from));
   BranchOrBacktrack(gt, on_not_in_range);  // Unsigned higher condition.
 }
