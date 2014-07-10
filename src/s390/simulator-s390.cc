@@ -3896,8 +3896,10 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
       intptr_t addr = b1_val + d1_val;
 
       int32_t mem_val = ReadW(addr, instr);
+      int isOF = CheckOverflowForIntAdd(mem_val, i2);
       int32_t alu_out = mem_val + i2;
       SetS390ConditionCode<int32_t>(alu_out, 0);
+      SetS390OverflowCode(isOF);
       WriteW(addr, alu_out, instr);
       break;
     }
@@ -3911,8 +3913,10 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
       intptr_t addr = b1_val + d1_val;
 
       int64_t mem_val = ReadDW(addr);
+      int isOF = CheckOverflowForIntAdd(mem_val, i2);
       int64_t alu_out = mem_val + i2;
       SetS390ConditionCode<uint64_t>(alu_out, 0);
+      SetS390OverflowCode(isOF);
       WriteDW(addr, alu_out);
       break;
     }
