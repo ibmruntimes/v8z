@@ -4602,15 +4602,25 @@ void MacroAssembler::Load(Register dst, const MemOperand& opnd) {
 
 // compare arithmetic
 void MacroAssembler::Cmp(Register dst, const Operand& opnd) {
-  ASSERT(opnd.rmode_ == RelocInfo::NONE);
 #if V8_TARGET_ARCH_S390X
-  cgfi(dst, opnd);
+  if (opnd.rmode_ == RelocInfo::NONE) {
+    cgfi(dst, opnd);
+  } else {
+    mov(r0, opnd);   // Need to generate 64-bit relocation
+    Cmp(dst, r0);
+  }
 #else
-  intptr_t value = opnd.immediate();
-  if (is_int16(value))
-    chi(dst, opnd);
-  else
+  if (opnd.rmode_ == RelocInfo::NONE) {
+    intptr_t value = opnd.immediate();
+    if (is_int16(value))
+      chi(dst, opnd);
+    else
+      cfi(dst, opnd);
+  } else {
+    // Need to generate relocation record here
+    RecordRelocInfo(opnd.rmode_, opnd.imm_);
     cfi(dst, opnd);
+  }
 #endif
 }
 
