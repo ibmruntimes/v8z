@@ -4422,8 +4422,8 @@ void LCodeGen::DoNumberTagI(LNumberTagI* instr) {
 #if V8_TARGET_ARCH_S390X
   __ SmiTag(dst, src);
 #else
-  __ SmiTagCheckOverflow(dst, src, r0);
-  __ BranchOnOverflow(deferred->entry());
+  __ Add(dst, src, src);
+  __ b(overflow, deferred->entry());
 #endif
   __ bind(deferred->exit());
 }
