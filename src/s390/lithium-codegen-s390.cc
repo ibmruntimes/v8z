@@ -2885,43 +2885,40 @@ void LCodeGen::DoLoadKeyedFastDoubleElement(
 
   if (key_is_constant) {
     __ AddP(elements,
-           Operand((FixedDoubleArray::kHeaderSize - kHeapObjectTag) +
-           ((constant_key + instr->additional_index()) << element_size_shift)));
+        Operand((FixedDoubleArray::kHeaderSize - kHeapObjectTag) +
+          ((constant_key + instr->additional_index()) << element_size_shift)));
   } else {
-    __ IndexToArrayOffset(r0, key, element_size_shift, key_is_tagged);
-    __ AddP(elements, r0);
+    __ IndexToArrayOffset(scratch, key, element_size_shift, key_is_tagged);
     address_offset = (FixedDoubleArray::kHeaderSize - kHeapObjectTag) +
-                     (instr->additional_index() << element_size_shift);
+      (instr->additional_index() << element_size_shift);
 
-    if (!is_int16((address_offset))) {
-      __ mov(r0, Operand(address_offset));
-      __ AddP(elements, r0);
+    // Memory references support up to 20-bits signed displacement in RXY form
+    // Include sizeof(kHoleNanLower32) in check, so we are guaranteed not to
+    // overflow displacement later.
+    if (!is_int20((address_offset + sizeof(kHoleNanLower32)))) {
+      __ AddP(elements, Operand(address_offset));
       address_offset = 0;
     }
   }
 
   if (instr->hydrogen()->RequiresHoleCheck()) {
+    intptr_t upper32_offset = address_offset;
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-    if (address_offset) {
-      if (is_int16(address_offset + sizeof(kHoleNanLower32))) {
-        __ LoadlW(scratch, MemOperand(elements,
-                                   address_offset + sizeof(kHoleNanLower32)));
-      } else {
-        __ LoadImmP(r0, Operand(address_offset));
-        __ AddP(scratch, elements, r0);
-        __ LoadlW(scratch, MemOperand(scratch, sizeof(kHoleNanLower32)));
-      }
-    } else {
-      __ LoadlW(scratch, MemOperand(elements, sizeof(kHoleNanLower32)));
-    }
-#else
-    __ LoadlW(scratch, MemOperand(elements, address_offset));
+    upper32_offset += sizeof(kHoleNanLower32);
 #endif
-    __ Cmpi(scratch, Operand(kHoleNanUpper32));
+    if (key_is_constant) {
+      __ LoadlW(r0, MemOperand(elements, upper32_offset));
+    } else {
+      __ LoadlW(r0, MemOperand(elements, scratch, upper32_offset));
+    }
+    __ Cmpi(r0, Operand(kHoleNanUpper32));
     DeoptimizeIf(eq, instr->environment());
   }
 
-  __ LoadF(result, MemOperand(elements, address_offset));
+  if (!key_is_constant)
+    __ LoadF(result, MemOperand(elements, scratch, address_offset));
+  else
+    __ LoadF(result, MemOperand(elements, address_offset));
 }
 
 
