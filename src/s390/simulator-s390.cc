@@ -3886,6 +3886,32 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
       SetS390ConditionCode<int32_t>(alu_out, 0);
       break;
     }
+    case ASI: {
+      SIYInstruction *silInstr = reinterpret_cast<SIYInstruction*>(instr);
+      int i2 = silInstr->I2Value();
+      int b1 = silInstr->B1Value();
+      intptr_t b1_val = (b1 == 0) ? 0 : get_register(b1);
+
+      int d1_val = silInstr->D1Value();
+      intptr_t addr = b1_val + d1_val;
+
+      int32_t mem_val = ReadW(addr, instr);
+      WriteW(addr, mem_val + i2, instr);
+      break;
+    }
+    case AGSI: {
+      SIYInstruction *silInstr = reinterpret_cast<SIYInstruction*>(instr);
+      int i2 = silInstr->I2Value();
+      int b1 = silInstr->B1Value();
+      intptr_t b1_val = (b1 == 0) ? 0 : get_register(b1);
+
+      int d1_val = silInstr->D1Value();
+      intptr_t addr = b1_val + d1_val;
+
+      int64_t mem_val = ReadDW(addr);
+      WriteDW(addr, mem_val + i2);
+      break;
+    }
     case AGF:
     case SGF:
     case ALG:
