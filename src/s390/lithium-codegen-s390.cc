@@ -2909,14 +2909,14 @@ void LCodeGen::DoLoadKeyedFastDoubleElement(
     if (key_is_constant) {
       __ LoadlW(r0, MemOperand(elements, upper32_offset));
     } else {
-      __ LoadlW(r0, MemOperand(elements, scratch, upper32_offset));
+      __ LoadlW(r0, MemOperand(scratch, elements, upper32_offset));
     }
     __ Cmpi(r0, Operand(kHoleNanUpper32));
     DeoptimizeIf(eq, instr->environment());
   }
 
   if (!key_is_constant)
-    __ LoadF(result, MemOperand(elements, scratch, address_offset));
+    __ LoadF(result, MemOperand(scratch, elements, address_offset));
   else
     __ LoadF(result, MemOperand(elements, address_offset));
 }
@@ -4088,42 +4088,59 @@ void LCodeGen::DoStoreKeyedFastDoubleElement(
   }
   int element_size_shift = ElementsKindToShiftSize(FAST_DOUBLE_ELEMENTS);
   bool key_is_tagged = instr->hydrogen()->key()->representation().IsTagged();
-  int dst_offset = instr->additional_index() << element_size_shift;
+  bool use_scratch = false;
+  intptr_t address_offset = 0;
   if (key_is_constant) {
-    __ AddP(scratch, elements,
-           Operand((constant_key << element_size_shift) +
-           FixedDoubleArray::kHeaderSize - kHeapObjectTag));
+    address_offset = (FixedDoubleArray::kHeaderSize - kHeapObjectTag) +
+          ((constant_key + instr->additional_index()) << element_size_shift);
+
+    // Memory references support up to 20-bits signed displacement in RXY form
+    if (!is_int20((address_offset))) {
+      __ mov(scratch, Operand(address_offset));
+      address_offset = 0;
+      use_scratch = true;
+    }
   } else {
+    use_scratch = true;
     __ IndexToArrayOffset(scratch, key, element_size_shift, key_is_tagged);
-    __ AddP(scratch, elements);
-    __ AddP(scratch, Operand(FixedDoubleArray::kHeaderSize - kHeapObjectTag));
+    address_offset = (FixedDoubleArray::kHeaderSize - kHeapObjectTag) +
+      (instr->additional_index() << element_size_shift);
+
+    // Memory references support up to 20-bits signed displacement in RXY form
+    if (!is_int20((address_offset))) {
+      __ AddP(scratch, Operand(address_offset));
+      address_offset = 0;
+    }
   }
+
 
   if (instr->NeedsCanonicalization()) {
     // Check for NaN. All NaNs must be canonicalized.
     __ cdbr(value, value);
     // Only load canonical NaN if the comparison above set unordered.
-    __ bordered(&no_canonicalization);
+    __ bordered(&no_canonicalization, Label::kNear);
 
     uint64_t nan_int64 = BitCast<uint64_t>(
         FixedDoubleArray::canonical_not_the_hole_nan_as_double());
-    __ mov(r0, Operand(static_cast<intptr_t>(nan_int64)));
-#if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-    __ StoreW(r0, MemOperand(scratch, dst_offset));
-#else
-    __ StoreW(r0, MemOperand(scratch, dst_offset + 4));
-#endif
-    __ mov(r0, Operand(static_cast<intptr_t>(nan_int64 >> 32)));
-#if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
-    __ StoreW(r0, MemOperand(scratch, dst_offset + 4));
-#else
-    __ StoreW(r0, MemOperand(scratch, dst_offset));
-#endif
-    __ b(&done);
+
+    // Materialize the NAN value into 64-bit register, and store it out
+    // to memory
+    __ iihf(r0, Operand(static_cast<uint32_t>(nan_int64 >> 32)));
+    __ iilf(r0, Operand(static_cast<uint32_t>(nan_int64)));
+    if (!use_scratch) {
+      __ stg(r0, MemOperand(elements, address_offset));
+    } else {
+      __ stg(r0, MemOperand(scratch, elements, address_offset));
+    }
+    __ b(&done, Label::kNear);
   }
 
   __ bind(&no_canonicalization);
-  __ StoreF(value, MemOperand(scratch, dst_offset));
+  if (!use_scratch) {
+    __ StoreF(value, MemOperand(elements, address_offset));
+  } else {
+    __ StoreF(value, MemOperand(scratch, elements, address_offset));
+  }
   __ bind(&done);
 }
 

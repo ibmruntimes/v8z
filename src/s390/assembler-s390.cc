@@ -3027,12 +3027,10 @@ void Assembler::xc(const MemOperand& opnd1, const MemOperand& opnd2,
 }
 
 
-#ifdef V8_TARGET_ARCH_S390X
 // Store Register (64)
 void Assembler::stg(Register src, const MemOperand &dst) {
   rxy_form(STG, src, dst.rx(), dst.rb(), dst.offset());
 }
-#endif
 
 // Insert Character
 void Assembler::ic_z(Register r1, const MemOperand& opnd) {

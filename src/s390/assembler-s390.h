@@ -1733,9 +1733,7 @@ SS2_FORM(zap);
 // end of S390instructions
 void lhi(Register dst, const Operand& imm);
 
-#if V8_TARGET_ARCH_S390X
   void stg(Register rs, const MemOperand &src);
-#endif
 
   // Exception-generating instructions and debugging support
   void stop(const char* msg,
