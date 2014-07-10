@@ -2309,7 +2309,6 @@ void LCodeGen::DoCmpMapAndBranch(LCmpMapAndBranch* instr) {
   int true_block = instr->true_block_id();
   int false_block = instr->false_block_id();
 
-  // @TODO Revert once Cmpi relocation is fixed
   __ mov(temp, Operand(instr->map()));
   __ CmpP(temp, FieldMemOperand(reg, HeapObject::kMapOffset));
   EmitBranch(true_block, false_block, eq);
@@ -2662,10 +2661,7 @@ void LCodeGen::EmitLoadFieldOrConstantFunction(Register result,
     while (*current != heap->null_value()) {
       __ LoadHeapObject(result, current);
       __ LoadP(result, FieldMemOperand(result, HeapObject::kMapOffset));
-      // @TODO Revert to Cmpi once we fix relocations on those instructions
-      // __ Cmpi(result, Operand(Handle<Map>(current->map())));
-      __ mov(scratch0(), Operand(Handle<Map>(current->map())));
-      __ CmpRR(result, scratch0());
+      __ Cmpi(result, Operand(Handle<Map>(current->map())));
       DeoptimizeIf(ne, env);
       current =
           Handle<HeapObject>(HeapObject::cast(current->map()->prototype()));
@@ -3430,14 +3426,7 @@ void LCodeGen::EmitIntegerMathAbs(LUnaryMathOperation* instr) {
   Label done;
   __ Cmpi(input, Operand::Zero());
   __ Move(result, input);
-  __ bge(&done);
-  // TODO(Alan): on s390 we don't use xer register, instead,
-  // condition code is used to represent overflow bits, and,
-  // CC is not sticky, xer register is sticky.
-  /*
-  __ LoadImmP(r0, Operand::Zero());  // clear xer
-  __ mtxer(r0);
-  */
+  __ bge(&done, Label::kNear);
   __ LoadComplementRR(result, result/*, SetOE, SetRC*/);
   // TODO(john): might be a problem removing SetOE here.
   // Deoptimize on overflow.
@@ -4238,10 +4227,7 @@ void LCodeGen::DoTransitionElementsKind(LTransitionElementsKind* instr) {
 
   Label not_applicable;
   __ LoadP(scratch, FieldMemOperand(object_reg, HeapObject::kMapOffset));
-  // @TODO Revert to Cmpi once we fix its relocation
-  //  __ Cmpi(scratch, Operand(from_map));
-  __ mov(r0, Operand(from_map));
-  __ CmpRR(scratch, r0);
+  __ Cmpi(scratch, Operand(from_map));
   __ bne(&not_applicable);
   __ mov(new_map_reg, Operand(to_map));
 
@@ -4622,7 +4608,7 @@ void LCodeGen::EmitNumberUntagD(Register input_reg,
     __ srlg(ip, scratch, Operand(32));
 
     __ Cmpi(ip, Operand::Zero());
-    __ bne(&done);
+    __ bne(&done, Label::kNear);
     __ Cmpi(scratch, Operand(HeapNumber::kSignMask));
     DeoptimizeIf(eq, env);
   }
@@ -4928,28 +4914,22 @@ void LCodeGen::DoClampTToUint8(LClampTToUint8* instr) {
 
   // Check for heap number
   __ LoadP(scratch, FieldMemOperand(input_reg, HeapObject::kMapOffset));
-  // @TODO Replace with Cmpi again once we fix relocations on Cmpi
-  //  __ Cmpi(scratch, Operand(factory()->heap_number_map()));
-  __ mov(r0, Operand(factory()->heap_number_map()));
-  __ CmpRR(scratch, r0);
-  __ beq(&heap_number);
+  __ Cmpi(scratch, Operand(factory()->heap_number_map()));
+  __ beq(&heap_number, Label::kNear);
 
   // Check for undefined. Undefined is converted to zero for clamping
   // conversions.
-  // @TODO Replace with Cmp again once we fix relocations on Cmpi
-  //  __ Cmpi(input_reg, Operand(factory()->undefined_value()));
-  __ mov(r0, Operand(factory()->undefined_value()));
-  __ CmpRR(input_reg, r0);
+  __ Cmpi(input_reg, Operand(factory()->undefined_value()));
   DeoptimizeIf(ne, instr->environment());
   __ LoadImmP(result_reg, Operand::Zero());
-  __ b(&done);
+  __ b(&done, Label::kNear);
 
   // Heap number
   __ bind(&heap_number);
   __ LoadF(double_scratch0(), FieldMemOperand(input_reg,
                                             HeapNumber::kValueOffset));
   __ ClampDoubleToUint8(result_reg, double_scratch0(), temp_reg1, temp_reg2);
-  __ b(&done);
+  __ b(&done, Label::kNear);
 
   // smi
   __ bind(&is_smi);
