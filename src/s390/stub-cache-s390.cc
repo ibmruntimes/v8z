@@ -3605,8 +3605,8 @@ static void GenerateSmiKeyCheck(MacroAssembler* masm,
 #if V8_TARGET_ARCH_S390X
   __ SmiTag(key, scratch0);
 #else
-  __ SmiTagCheckOverflow(scratch1, scratch0, r0);
-  __ BranchOnOverflow(fail);
+  __ Add(scratch1, scratch0, scratch0);
+  __ b(overflow, fail);
   __ LoadRR(key, scratch1);
 #endif
   __ bind(&key_ok);

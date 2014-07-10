@@ -1498,10 +1498,6 @@ class MacroAssembler: public Assembler {
   }
 
 #if !V8_TARGET_ARCH_S390X
-  // Test for overflow < 0: use BranchOnOverflow() or BranchOnNoOverflow().
-  void SmiTagCheckOverflow(Register reg, Register overflow);
-  void SmiTagCheckOverflow(Register dst, Register src, Register overflow);
-
   inline void JumpIfNotSmiCandidate(Register value, Register scratch,
                                     Label* not_smi_label) {
     // High bits must be identical to fit into an Smi
