@@ -3896,7 +3896,9 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
       intptr_t addr = b1_val + d1_val;
 
       int32_t mem_val = ReadW(addr, instr);
-      WriteW(addr, mem_val + i2, instr);
+      int32_t alu_out = mem_val + i2;
+      SetS390ConditionCode<int32_t>(alu_out, 0);
+      WriteW(addr, alu_out, instr);
       break;
     }
     case AGSI: {
@@ -3909,7 +3911,9 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
       intptr_t addr = b1_val + d1_val;
 
       int64_t mem_val = ReadDW(addr);
-      WriteDW(addr, mem_val + i2);
+      int64_t alu_out = mem_val + i2;
+      SetS390ConditionCode<uint64_t>(alu_out, 0);
+      WriteDW(addr, alu_out);
       break;
     }
     case AGF:
