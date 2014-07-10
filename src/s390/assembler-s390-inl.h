@@ -431,12 +431,12 @@ Address Assembler::target_address_at(Address pc) {
   }
 #else
   // IILF loads 32-bits
-  if (IILF == op1) {
+  if (IILF == op1 || CFI == op1) {
      return reinterpret_cast<Address>((instr_1 & 0xFFFFFFFF));
   }
 #endif
 
-  PPCPORT_UNIMPLEMENTED();
+  UNIMPLEMENTED();
   return (Address)0;
 }
 
@@ -487,7 +487,7 @@ void Assembler::set_target_address_at(Address pc, Address target) {
   }
 #else
   // IILF loads 32-bits
-  if (IILF == op1) {
+  if (IILF == op1 || CFI == op1) {
     instr_1 >>= 32;  // Zero out the lower 32-bits
     instr_1 <<= 32;
     instr_1 |= reinterpret_cast<uint32_t>(target);
