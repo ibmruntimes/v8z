@@ -2239,7 +2239,6 @@ void MacroAssembler::IndexFromHash(Register hash, Register index) {
   STATIC_ASSERT(String::kHashShift == 2);
   STATIC_ASSERT(String::kArrayIndexValueBits == 24);
   // index = SmiTag((hash >> 2) & 0x00FFFFFF);
-  // @TODO Use RISBG Here
   ExtractBitRange(index, hash, 25, 2);
   SmiTag(index);
 }
