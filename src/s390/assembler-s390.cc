@@ -1077,7 +1077,7 @@ void Assembler::rsy_form(Opcode op,
                         Register r3,
                         Register b2,
                         const Disp d2) {
-    ASSERT(is_uint20(d2));
+    ASSERT(is_int20(d2));
     ASSERT(is_uint16(op));
     uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32  |
                     (static_cast<uint64_t>(r1.code())) * B36     |

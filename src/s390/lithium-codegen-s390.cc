@@ -1369,28 +1369,56 @@ void LCodeGen::DoSubI(LSubI* instr) {
   LOperand* left = instr->left();
   LOperand* right = instr->right();
   LOperand* result = instr->result();
-  bool can_overflow = instr->hydrogen()->CheckFlag(HValue::kCanOverflow);
-  if (!can_overflow && right->IsConstantOperand()) {
-    if (is_int16(ToInteger32(LConstantOperand::cast(right)))) {
+
+
+#if V8_TARGET_ARCH_S390X
+  // The overflow detection needs to be tested on the lower 32-bits.
+  // As a result, on 64-bit, we need to force 32-bit arithmetic operations
+  // to set the CC overflow bit properly.  The result is then sign-extended.
+  bool checkOverflow = instr->hydrogen()->CheckFlag(HValue::kCanOverflow);
+#else
+  bool checkOverflow = true;
+#endif
+
+  if (right->IsConstantOperand()) {
+    if (checkOverflow)
+      __ Sub(ToRegister(result), ToRegister(left),
+           Operand(ToInteger32(LConstantOperand::cast(right))));
+    else
       __ SubP(ToRegister(result), ToRegister(left),
-              Operand(ToInteger32(LConstantOperand::cast(right))));
-      return;
+           Operand(ToInteger32(LConstantOperand::cast(right))));
+  } else if (right->IsRegister()) {
+    if (checkOverflow)
+      __ Sub(ToRegister(result), ToRegister(left), ToRegister(right));
+    else
+      __ SubP_ExtendSrc(ToRegister(result), ToRegister(left),
+                        ToRegister(right));
+  } else {
+    if (!left->Equals(instr->result()))
+      __ LoadRR(ToRegister(result), ToRegister(left));
+
+#if V8_TARGET_ARCH_S390X &&  __BYTE_ORDER == __BIG_ENDIAN
+    // We want to read the lower 32-bits directly from memory
+    MemOperand rightMem = ToMemOperand(right);
+    MemOperand mem = MemOperand(rightMem.rb(), rightMem.rx(),
+                                rightMem.offset() + 4);
+#else
+    MemOperand mem = ToMemOperand(right);
+#endif
+    if (checkOverflow) {
+      __ Sub(ToRegister(result), mem);
+    } else {
+      __ SubP_ExtendSrc(ToRegister(result), mem);
     }
   }
-  Register right_reg = EmitLoadRegister(right, ip);
 
-  if (!can_overflow) {
-    __ Sub(ToRegister(result), ToRegister(left), right_reg);
-  } else {
-    __ SubAndCheckForOverflow(ToRegister(result),
-                              ToRegister(left),
-                              right_reg,
-                              scratch0(), r0);
-    // Doptimize on overflow
 #if V8_TARGET_ARCH_S390X
-    __ ltgfr(scratch0(), scratch0());
+  if (checkOverflow)
+    __ lgfr(ToRegister(result), ToRegister(result));
 #endif
-    DeoptimizeIf(lt, instr->environment(), cr0);
+  // Doptimize on overflow
+  if (instr->hydrogen()->CheckFlag(HValue::kCanOverflow)) {
+    DeoptimizeIf(overflow, instr->environment(), cr0);
   }
 }
 
