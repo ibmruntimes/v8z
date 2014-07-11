@@ -273,8 +273,72 @@ class MacroAssembler: public Assembler {
     }
   }
 
-  // s390 Macro assemblers.
-  // the size of the register operand is the size of architecture.
+  //--------------------------------------------------------------------------
+  // S390 Macro Assemblers for Instructions
+  //--------------------------------------------------------------------------
+
+  // Arithmetic Operations
+
+  // Add (Register - Immediate)
+  void Add(Register dst, const Operand& imm);
+  void AddP(Register dst, const Operand& imm);
+  void Add(Register dst, Register src, const Operand& imm);
+  void AddP(Register dst, Register src, const Operand& imm);
+
+  // Add (Register - Register)
+  void Add(Register dst, Register src);
+  void AddP(Register dst, Register src);
+  void AddP_ExtendSrc(Register dst, Register src);
+  void Add(Register dst, Register src1, Register src2);
+  void AddP(Register dst, Register src1, Register src2);
+  void AddP_ExtendSrc(Register dst, Register src1, Register src2);
+
+  // Add (Register - Mem)
+  void Add(Register dst, const MemOperand& opnd);
+  void AddP(Register dst, const MemOperand& opnd);
+  void AddP_ExtendSrc(Register dst, const MemOperand& opnd);
+
+  // Add Logical (Register - Immediate)
+  void AddLogical(Register dst, const Operand& imm);
+  void AddLogicalP(Register dst, const Operand& imm);
+
+  // Add Logical (Register - Mem)
+  void AddLogical(Register dst, const MemOperand& opnd);
+  void AddLogicalP(Register dst, const MemOperand& opnd);
+
+  // Subtract (Register - Immediate)
+  void Sub(Register dst, const Operand& imm);
+  void SubP(Register dst, const Operand& imm);
+  void Sub(Register dst, Register src, const Operand& imm);
+  void SubP(Register dst, Register src, const Operand& imm);
+
+  // Subtract (Register - Register)
+  void Sub(Register dst, Register src);
+  void SubP(Register dst, Register src);
+  void SubP_ExtendSrc(Register dst, Register src);
+  void Sub(Register dst, Register src1, Register src2);
+  void SubP(Register dst, Register src1, Register src2);
+  void SubP_ExtendSrc(Register dst, Register src1, Register src2);
+
+  // Subtract (Register - Mem)
+  void Sub(Register dst, const MemOperand& opnd);
+  void SubP(Register dst, const MemOperand& opnd);
+  void SubP_ExtendSrc(Register dst, const MemOperand& opnd);
+
+  // Subtract Logical (Register - Mem)
+  void SubLogical(Register dst, const MemOperand& opnd);
+  void SubLogicalP(Register dst, const MemOperand& opnd);
+  void SubLogicalP_ExtendSrc(Register dst, const MemOperand& opnd);
+
+  // Multiply
+  void MulP(Register dst, const Operand& opnd);
+  void MulP(Register dst, Register src);
+  void MulP(Register dst, const MemOperand& opnd);
+  void Mul(Register dst, Register src1, Register src2);
+
+  // Divide
+  void DivP(Register dividend, Register divider);
+
   // Load 32bit
   void Load(Register dst, const MemOperand& opnd);
   void Load(Register dst, const Operand& opnd);
@@ -310,22 +374,6 @@ class MacroAssembler: public Assembler {
   // Compare Logical Byte (CLI/CLIY)
   void CmpLogicalByte(const MemOperand& mem, const Operand& imm);
 
-  // add logical 32bit
-  void Addl(Register dst, const Operand& opnd);
-  // add 32bit
-  // subtract 32bit
-  void Sub(Register dst, Register src) {
-    sr(dst, src);
-  }
-  void Sub(Register dst, Register src1, const Operand& src2);
-  void Sub(Register dst, Register src1, Register src2);
-  void Sub(Register dst, const Operand& src);
-  void Sub(Register dst, const MemOperand& opnd);
-  // subtract logical 32bit
-  void Subl(Register dst, const MemOperand& opnd);
-  void Subl(Register dst, const Operand& opnd);
-  void Subl(Register dst, Register src);
-
   // and 32bit
   // void XorP(Register dst, Register src, const Operand& opnd);
   void Branch(Condition c, const Operand& opnd);
@@ -342,40 +390,6 @@ class MacroAssembler: public Assembler {
   void ShiftRightArith(Register dst, Register src, const Operand& val);
 
   void ClearRightImm(Register dst, Register src, const Operand& val);
-
-  // Add (Register - Immediate)
-  void Add(Register dst, const Operand& opnd);
-  void AddP(Register dst, const Operand& opnd);
-  void Add(Register dst, Register src, const Operand& opnd);
-  void AddP(Register dst, Register src, const Operand& opnd);
-
-  // Add (Register - Register)
-  void Add(Register dst, Register src);
-  void AddP(Register dst, Register src);
-  void AddP_ExtendSrc(Register dst, Register src);
-  void Add(Register dst, Register src1, Register src2);
-  void AddP(Register dst, Register src1, Register src2);
-  void AddP_ExtendSrc(Register dst, Register src1, Register src2);
-
-  // Add (Register - Mem)
-  void Add(Register dst, const MemOperand& opnd);
-  void AddP(Register dst, const MemOperand& opnd);
-  void AddP_ExtendSrc(Register dst, const MemOperand& opnd);
-
-  // Add Logical (Register - Mem)
-  void AddLogical(Register dst, const MemOperand& opnd);
-  void AddLogicalP(Register dst, const MemOperand& opnd);
-
-  void SubP(Register dst, Register src1, Register src2);
-  void SubP(Register dst, const Operand& opnd);
-  void SubP(Register dst, const MemOperand& opnd);
-
-  void MulP(Register dst, const Operand& opnd);
-  void MulP(Register dst, Register src);
-  void MulP(Register dst, const MemOperand& opnd);
-  void Mul(Register dst, Register src1, Register src2);
-
-  void DivP(Register dividend, Register divider);
 
   // Bitwise operations
   void And(Register dst, Register src);

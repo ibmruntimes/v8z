@@ -1164,7 +1164,7 @@ void LCodeGen::DoMulI(LMulI* instr) {
           } else if (IsPowerOf2(constant_abs + 1)) {
             int32_t shift = WhichPowerOf2(constant_abs + 1);
             __ ShiftLeftP(scratch, left, Operand(shift));
-            __ Sub(result, scratch, left);
+            __ SubP(result, scratch, left);
           }
 
           // Correct the sign of the result is the constant is negative.
@@ -1372,7 +1372,7 @@ void LCodeGen::DoSubI(LSubI* instr) {
   bool can_overflow = instr->hydrogen()->CheckFlag(HValue::kCanOverflow);
   if (!can_overflow && right->IsConstantOperand()) {
     if (is_int16(ToInteger32(LConstantOperand::cast(right)))) {
-      __ Sub(ToRegister(result), ToRegister(left),
+      __ SubP(ToRegister(result), ToRegister(left),
               Operand(ToInteger32(LConstantOperand::cast(right))));
       return;
     }
@@ -2250,7 +2250,7 @@ void LCodeGen::EmitClassOfTest(Label* is_true,
     // actual type and do a signed compare with the width of the type range.
     __ LoadP(temp, FieldMemOperand(input, HeapObject::kMapOffset));
     __ LoadlB(temp2, FieldMemOperand(temp, Map::kInstanceTypeOffset));
-    __ Sub(temp2, Operand(FIRST_NONCALLABLE_SPEC_OBJECT_TYPE));
+    __ SubP(temp2, Operand(FIRST_NONCALLABLE_SPEC_OBJECT_TYPE));
     __ CmpP(temp2, Operand(LAST_NONCALLABLE_SPEC_OBJECT_TYPE -
                           FIRST_NONCALLABLE_SPEC_OBJECT_TYPE));
     __ bgt(is_false);
@@ -2816,7 +2816,7 @@ void LCodeGen::DoAccessArgumentsAt(LAccessArgumentsAt* instr) {
 
   // There are two words between the frame pointer and the last argument.
   // Subtracting from length accounts for one of them add one more.
-  __ Sub(length, length, index);
+  __ SubP(length, index);
   __ AddP(length, Operand(1));
   __ ShiftLeftP(scratch0(), length, Operand(kPointerSizeLog2));
   __ LoadP(result, MemOperand(arguments, scratch0()));
@@ -3094,7 +3094,7 @@ void LCodeGen::DoArgumentsElements(LArgumentsElements* instr) {
   Register result = ToRegister(instr->result());
 
   if (instr->hydrogen()->from_inlined()) {
-    __ Sub(result, sp, Operand(2 * kPointerSize));
+    __ lay(result, MemOperand(sp, -2 * kPointerSize));
   } else {
     // Check if the calling frame is an arguments adaptor frame.
     Label done, adapted;
@@ -5727,7 +5727,7 @@ void LCodeGen::DoLoadFieldByIndex(LLoadFieldByIndex* instr) {
   __ LoadP(result, FieldMemOperand(object, JSObject::kPropertiesOffset));
   // Index is equal to negated out of object property index plus 1.
   __ SmiToPtrArrayOffset(r0, index);
-  __ Sub(scratch, result, r0);
+  __ SubP(scratch, result, r0);
   __ LoadP(result, FieldMemOperand(scratch,
                                    FixedArray::kHeaderSize - kPointerSize));
   __ bind(&done);

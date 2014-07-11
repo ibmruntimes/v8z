@@ -163,7 +163,7 @@ static void AllocateEmptyJSArray(MacroAssembler* masm,
   __ StoreP(scratch1, FieldMemOperand(result, JSArray::kElementsOffset));
 
   // Clear the heap tag on the elements array.
-  __ Sub(scratch1, Operand(kHeapObjectTag));
+  __ SubP(scratch1, Operand(kHeapObjectTag));
 
   // Initialize the FixedArray and fill it with holes. FixedArray length is
   // stored as a smi.
@@ -268,7 +268,7 @@ static void AllocateJSArray(MacroAssembler* masm,
 
   // Clear the heap tag on the elements array.
   STATIC_ASSERT(kSmiTag == 0);
-  __ Sub(elements_array_storage,
+  __ SubP(elements_array_storage,
          elements_array_storage,
          Operand(kHeapObjectTag));
   // Initialize the fixed array and fill it with holes. FixedArray length is
@@ -480,7 +480,7 @@ static void ArrayNativeCode(MacroAssembler* masm,
                       EMIT_REMEMBERED_SET,
                       OMIT_SMI_CHECK);
   Label loop2;
-  __ Sub(r9, Operand(kPointerSize));
+  __ SubP(r9, Operand(kPointerSize));
   __ bind(&loop2);
   __ LoadP(r4, MemOperand(r9));
   __ AddP(r9, Operand(kPointerSize));
@@ -622,7 +622,7 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
   __ CmpP(r2, Operand(0, RelocInfo::NONE));
   __ beq(&no_arguments);
   // First args = sp[(argc - 1) * 4].
-  __ Sub(r2, Operand(1));
+  __ SubP(r2, Operand(1));
   __ ShiftLeftP(r2, r2, Operand(kPointerSizeLog2));
   __ la(sp, MemOperand(sp, r2));
   __ LoadP(r2, MemOperand(sp));
@@ -938,7 +938,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       __ ExtractBitRange(r8, r2,
                          ((byte + 1) * kBitsPerByte) - 1,
                          byte * kBitsPerByte);
-      __ Sub(r5, r5, r8);  // roohack - sub order may be incorrect
+      __ SubP(r5, r5, r8);  // roohack - sub order may be incorrect
       __ CmpP(r5, Operand::Zero());
 
       // Done if no extra properties are to be allocated.
@@ -1061,7 +1061,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     __ beq(&no_args);
     __ ShiftLeftP(ip, r2, Operand(kPointerSizeLog2));
     __ bind(&loop);
-    __ Sub(ip, Operand(kPointerSize));
+    __ SubP(ip, Operand(kPointerSize));
     __ LoadP(r0, MemOperand(r4, ip));
     __ push(r0);
     __ BranchOnCount(r2, &loop);
@@ -1545,12 +1545,12 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
     __ bind(&loop);
     __ LoadP(ip, MemOperand(r4, -kPointerSize));
     __ StoreP(ip, MemOperand(r4));
-    __ Sub(r4, Operand(kPointerSize));
+    __ SubP(r4, Operand(kPointerSize));
     __ CmpP(r4, sp);
     __ bne(&loop);
     // Adjust the actual number of arguments and remove the top element
     // (which is a copy of the last argument).
-    __ Sub(r2, Operand(1));
+    __ SubP(r2, Operand(1));
     __ pop();
   }
 
@@ -1630,7 +1630,7 @@ void Builtins::Generate_FunctionApply(MacroAssembler* masm) {
     __ LoadRoot(r4, Heap::kRealStackLimitRootIndex);
     // Make r4 the space we have left. The stack might already be overflowed
     // here which will cause r4 to become negative.
-    __ Sub(r4, sp, r4);
+    __ SubP(r4, sp, r4);
     // Check if the arguments will overflow the stack.
     __ SmiToPtrArrayOffset(r0, r2);
     __ CmpP(r4, r0);
@@ -1853,7 +1853,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     // adjust for return address and receiver
     __ AddP(r2, Operand(2 * kPointerSize));
     __ ShiftLeftP(r4, r4, Operand(kPointerSizeLog2));
-    __ Sub(r4, r2, r4);
+    __ SubP(r4, r2, r4);
 
     // Copy the arguments (including the receiver) to the new stack frame.
     // r2: copy start address
@@ -1904,8 +1904,8 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     // r5: code entry to call
     __ LoadRoot(ip, Heap::kUndefinedValueRootIndex);
     __ ShiftLeftP(r4, r4, Operand(kPointerSizeLog2));
-    __ Sub(r4, fp, r4);
-    __ Sub(r4, Operand(4 * kPointerSize));  // Adjust for frame.
+    __ SubP(r4, fp, r4);
+    __ SubP(r4, Operand(4 * kPointerSize));  // Adjust for frame.
 
     Label fill;
     __ bind(&fill);

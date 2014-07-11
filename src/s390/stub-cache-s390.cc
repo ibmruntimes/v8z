@@ -266,7 +266,7 @@ void StubCache::GenerateProbe(MacroAssembler* masm,
 
   // Primary miss: Compute hash for secondary probe.
   __ ShiftRightP(extra, name, Operand(kHeapObjectTagSize));
-  __ Sub(scratch, scratch, extra);
+  __ SubP(scratch, extra);
   uint32_t mask2 = kSecondaryTableSize - 1;
   __ AddP(scratch, Operand((flags >> kHeapObjectTagSize) & mask2));
   __ AndP(scratch, Operand(mask2));
@@ -2250,7 +2250,7 @@ Handle<Code> CallStubCompiler::CompileMathAbsCall(
   __ XorP(r3, r0, r2);
 
   // Add 1 or do nothing depending on the sign of the argument.
-  __ Sub(r2, r3, r0);
+  __ SubP(r2, r3, r0);
 
   // If the result is still negative, go to the slow case.
   // Subtract instructions on S390 sets condition code
