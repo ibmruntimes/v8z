@@ -3851,7 +3851,7 @@ void MacroAssembler::mov(Register dst, const Operand& src) {
 
 void MacroAssembler::Sub(Register dst, Register src1, Register src2) {
   if (CpuFeatures::IsSupported(DISTINCT_OPS) && !dst.is(src1)) {
-    srk(dst, src1, src2);
+    SubP_RRR(dst, src1, src2);
     return;
   }
   if (!dst.is(src1) && !dst.is(src2))
