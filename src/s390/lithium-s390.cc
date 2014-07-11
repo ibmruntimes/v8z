@@ -1957,7 +1957,7 @@ LInstruction* LChunkBuilder::DoStoreKeyedFastDoubleElement(
          instr->key()->representation().IsTagged());
 
   LOperand* elements = UseRegisterAtStart(instr->elements());
-  LOperand* val = UseTempRegister(instr->value());
+  LOperand* val = UseRegisterAtStart(instr->value());
   LOperand* key = UseRegisterOrConstantAtStart(instr->key());
 
   return new(zone()) LStoreKeyedFastDoubleElement(elements, key, val);
