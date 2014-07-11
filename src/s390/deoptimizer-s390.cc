@@ -1052,7 +1052,7 @@ void Deoptimizer::EntryGenerator::Generate() {
     // Correct two words for bailout id and return address.
     __ la(r6, MemOperand(sp, kSavedRegistersAreaSize + (2 * kPointerSize)));
   }
-  __ Sub(r6, fp, r6);
+  __ SubP(r6, fp, r6);
 
   // Allocate a new deoptimizer object.
   // Pass six arguments in r2 to r7.

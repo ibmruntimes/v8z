@@ -471,7 +471,7 @@ void MacroAssembler::PushSafepointRegisters() {
   const int num_unsaved = kNumSafepointRegisters - kNumSafepointSavedRegisters;
   ASSERT(num_unsaved >= 0);
   if (num_unsaved > 0) {
-    Sub(sp, Operand(num_unsaved * kPointerSize));
+    lay(sp, MemOperand(sp, -(num_unsaved * kPointerSize)));
   }
   MultiPush(kSafepointSavedRegisters);
 }
@@ -1306,7 +1306,7 @@ void MacroAssembler::LoadFromNumberDictionary(Label* miss,
   // Compute the capacity mask.
   LoadP(t1, FieldMemOperand(elements, SeededNumberDictionary::kCapacityOffset));
   SmiUntag(t1);
-  Sub(t1, Operand(1));
+  SubP(t1, Operand(1));
 
   // Generate an unrolled loop that performs a few probes before giving up.
   static const int kProbes = 4;
@@ -1929,7 +1929,7 @@ void MacroAssembler::SubAndCheckForOverflow(Register dst,
   // C = A-B; C overflows if A/B have diff signs and C has diff sign than A
   if (dst.is(left)) {
     LoadRR(scratch, left);            // Preserve left.
-    Sub(dst, left, right);        // Left is overwritten.
+    SubP(dst, left, right);           // Left is overwritten.
     XorP(overflow_dst, dst, scratch);
     XorP(scratch, right);
     AndP(overflow_dst, scratch/*, SetRC*/);
@@ -1937,14 +1937,14 @@ void MacroAssembler::SubAndCheckForOverflow(Register dst,
     // Should be okay to remove rc
   } else if (dst.is(right)) {
     LoadRR(scratch, right);           // Preserve right.
-    Sub(dst, left, right);        // Right is overwritten.
+    SubP(dst, left, right);           // Right is overwritten.
     XorP(overflow_dst, dst, left);
     XorP(scratch, left);
     AndP(overflow_dst, scratch/*, SetRC*/);
     LoadAndTestRR(overflow_dst, overflow_dst);
     // Should be okay to remove rc
   } else {
-    Sub(dst, left, right);
+    SubP(dst, left, right);
     XorP(overflow_dst, dst, left);
     XorP(scratch, left, right);
     AndP(overflow_dst, scratch/*, SetRC*/);
@@ -2168,9 +2168,9 @@ void MacroAssembler::CallApiFunctionAndReturn(ExternalReference function,
   // If result is non-zero, dereference to get the result value
   // otherwise set it to undefined.
   CmpP(r2, Operand::Zero());
-  bne(&skip1);
+  bne(&skip1, Label::kNear);
   LoadRoot(r2, Heap::kUndefinedValueRootIndex);
-  b(&skip2);
+  b(&skip2, Label::kNear);
   bind(&skip1);
   LoadP(r2, MemOperand(r2));
   bind(&skip2);
@@ -2183,7 +2183,7 @@ void MacroAssembler::CallApiFunctionAndReturn(ExternalReference function,
     CmpP(r3, r8);
     Check(eq, "Unexpected level after return from api call");
   }
-  Sub(r8, Operand(1));
+  SubP(r8, Operand(1));
   StoreW(r8, MemOperand(r9, kLevelOffset));
   LoadP(ip, MemOperand(r9, kLimitOffset));
   CmpP(r7, ip);
@@ -2825,7 +2825,7 @@ void MacroAssembler::JumpIfNotPowerOfTwoOrZero(
     Register reg,
     Register scratch,
     Label* not_power_of_two_or_zero) {
-  Sub(scratch, reg, Operand(1));
+  SubP(scratch, reg, Operand(1));
   CmpP(scratch, Operand::Zero());
   blt(not_power_of_two_or_zero);
   AndP(r0, reg, scratch/*, SetRC*/);  // Should be okay to remove rc
@@ -2838,7 +2838,7 @@ void MacroAssembler::JumpIfNotPowerOfTwoOrZeroAndNeg(
     Register scratch,
     Label* zero_and_neg,
     Label* not_power_of_two) {
-  Sub(scratch, reg, Operand(1));
+  SubP(scratch, reg, Operand(1));
   CmpP(scratch, Operand::Zero());
   blt(zero_and_neg);
   AndP(r0, reg, scratch/*, SetRC*/);  // Should be okay to remove rc
@@ -3827,7 +3827,7 @@ void MacroAssembler::CheckEnumCache(Register null_value, Label* call_runtime) {
 // This should really move to be in macro-assembler as it
 // is really a pseudo instruction
 // Some usages of this intend for a FIXED_SEQUENCE to be used
-// Todo - break this dependency so we can optimize mov() in general
+// @TODO - break this dependency so we can optimize mov() in general
 // and only use the generic version when we require a fixed sequence
 void MacroAssembler::mov(Register dst, const Operand& src) {
   BlockTrampolinePoolScope block_trampoline_pool(this);
@@ -3847,30 +3847,6 @@ void MacroAssembler::mov(Register dst, const Operand& src) {
   int value = src.immediate();
   iilf(dst, Operand(value));
 #endif
-}
-
-void MacroAssembler::Sub(Register dst, Register src1, Register src2) {
-  if (CpuFeatures::IsSupported(DISTINCT_OPS) && !dst.is(src1)) {
-    SubP_RRR(dst, src1, src2);
-    return;
-  }
-  if (!dst.is(src1) && !dst.is(src2))
-    LoadRR(dst, src1);
-  // In scenario where we have dst = src - dst, we need to swap and negate
-  if (!dst.is(src1) && dst.is(src2)) {
-    SubRR(dst, src1);  // dst = (dst - src)
-    LoadComplementRR(dst, dst);  // dst = -dst
-  } else {
-    SubRR(dst, src2);
-  }
-}
-
-void MacroAssembler::Sub(Register dst, Register src, const Operand& imm) {
-  AddP(dst, src, Operand(-(imm.imm_)));
-}
-
-void MacroAssembler::Sub(Register dst, const Operand& imm) {
-  AddP(dst, Operand(-(imm.imm_)));
 }
 
 void MacroAssembler::Mul(Register dst, Register src1, Register src2) {
@@ -3922,6 +3898,10 @@ void MacroAssembler::MulP(Register dst, const MemOperand& opnd) {
 #endif
 }
 
+//----------------------------------------------------------------------------
+//  Add Instructions
+//----------------------------------------------------------------------------
+
 // Add 32-bit (Register dst = Register dst + Immediate opnd)
 void MacroAssembler::Add(Register dst, const Operand& opnd) {
   if (is_int16(opnd.immediate()))
@@ -3938,10 +3918,7 @@ void MacroAssembler::AddP(Register dst, const Operand& opnd) {
   else
     agfi(dst, opnd);
 #else
-  if (is_int16(opnd.immediate()))
-    ahi(dst, opnd);
-  else
-    afi(dst, opnd);
+  Add(dst, opnd);
 #endif
 }
 
@@ -4079,42 +4056,219 @@ void MacroAssembler::AddP_ExtendSrc(Register dst, const MemOperand& opnd) {
 #endif
 }
 
-void MacroAssembler::Subl(Register dst, const MemOperand& opnd) {
+//----------------------------------------------------------------------------
+//  Add Logical Instructions
+//----------------------------------------------------------------------------
+
+// Add Logical 32-bit (Register dst = Register dst + Immediate opnd)
+void MacroAssembler::AddLogical(Register dst, const Operand& imm) {
+  alfi(dst, imm);
+}
+
+// Add Logical Pointer Size (Register dst = Register dst + Immediate opnd)
+void MacroAssembler::AddLogicalP(Register dst, const Operand& imm) {
+#ifdef V8_TARGET_ARCH_S390X
+  algfi(dst, imm);
+#else
+  AddLogical(dst, imm);
+#endif
+}
+
+// Add Logical 32-bit (Register-Memory)
+void MacroAssembler::AddLogical(Register dst, const MemOperand& opnd) {
   ASSERT(is_int20(opnd.offset()));
-#if V8_TARGET_ARCH_S390X
-  slgf(dst, opnd);
-#else
   if (is_uint12(opnd.offset()))
-    sl(dst, opnd);
+    al_z(dst, opnd);
   else
-    sly(dst, opnd);
-#endif
+    aly(dst, opnd);
 }
 
-void MacroAssembler::Subl(Register dst, const Operand& opnd) {
-#ifdef V8_TARGET_ARCH_S390X
-  slgfi(dst, opnd);
+// Add Logical Pointer Size (Register-Memory)
+void MacroAssembler::AddLogicalP(Register dst, const MemOperand& opnd) {
+#if V8_TARGET_ARCH_S390X
+  ASSERT(is_int20(opnd.offset()));
+  alg(dst, opnd);
 #else
-  slfi(dst, opnd);
+  AddLogical(dst, opnd);
 #endif
 }
 
+//----------------------------------------------------------------------------
+//  Subtract Instructions
+//----------------------------------------------------------------------------
+
+// Subtract 32-bit (Register dst = Register dst - Immediate opnd)
+void MacroAssembler::Sub(Register dst, const Operand& imm) {
+  Add(dst, Operand(-(imm.imm_)));
+}
+
+// Subtract Pointer Size (Register dst = Register dst - Immediate opnd)
+void MacroAssembler::SubP(Register dst, const Operand& imm) {
+  AddP(dst, Operand(-(imm.imm_)));
+}
+
+// Subtract 32-bit (Register dst = Register src - Immediate opnd)
+void MacroAssembler::Sub(Register dst, Register src, const Operand& imm) {
+  Add(dst, src, Operand(-(imm.imm_)));
+}
+
+// Subtract Pointer Sized (Register dst = Register src - Immediate opnd)
+void MacroAssembler::SubP(Register dst, Register src, const Operand& imm) {
+  AddP(dst, src, Operand(-(imm.imm_)));
+}
+
+// Subtract 32-bit (Register dst = Register dst - Register src)
+void MacroAssembler::Sub(Register dst, Register src) {
+  sr(dst, src);
+}
+
+// Subtract Pointer Size (Register dst = Register dst - Register src)
+void MacroAssembler::SubP(Register dst, Register src) {
+  SubRR(dst, src);
+}
+
+// Subtract Pointer Size with src extension
+//     (Register dst(ptr) = Register dst (ptr) - Register src (32 | 32->64))
+// src is treated as a 32-bit signed integer, which is sign extended to
+// 64-bit if necessary.
+void MacroAssembler::SubP_ExtendSrc(Register dst, Register src) {
+#if V8_TARGET_ARCH_S390X
+  sgfr(dst, src);
+#else
+  sr(dst, src);
+#endif
+}
+
+// Subtract 32-bit (Register = Register - Register)
+void MacroAssembler::Sub(Register dst, Register src1, Register src2) {
+  // Use non-clobbering version if possible
+  if (CpuFeatures::IsSupported(DISTINCT_OPS) && !dst.is(src1)) {
+    srk(dst, src1, src2);
+    return;
+  }
+  if (!dst.is(src1) && !dst.is(src2))
+    lr(dst, src1);
+  // In scenario where we have dst = src - dst, we need to swap and negate
+  if (!dst.is(src1) && dst.is(src2)) {
+    sr(dst, src1);  // dst = (dst - src)
+    lcr(dst, dst);  // dst = -dst
+  } else {
+    sr(dst, src2);
+  }
+}
+
+// Subtract Pointer Sized (Register = Register - Register)
+void MacroAssembler::SubP(Register dst, Register src1, Register src2) {
+  // Use non-clobbering version if possible
+  if (CpuFeatures::IsSupported(DISTINCT_OPS) && !dst.is(src1)) {
+    SubP_RRR(dst, src1, src2);
+    return;
+  }
+  if (!dst.is(src1) && !dst.is(src2))
+    LoadRR(dst, src1);
+  // In scenario where we have dst = src - dst, we need to swap and negate
+  if (!dst.is(src1) && dst.is(src2)) {
+    SubP(dst, src1);  // dst = (dst - src)
+    LoadComplementRR(dst, dst);  // dst = -dst
+  } else {
+    SubP(dst, src2);
+  }
+}
+
+// Subtract Pointer Size with src extension
+//     (Register dst(ptr) = Register dst (ptr) - Register src (32 | 32->64))
+// src is treated as a 32-bit signed integer, which is sign extended to
+// 64-bit if necessary.
+void MacroAssembler::SubP_ExtendSrc(Register dst, Register src1,
+                                    Register src2) {
+#if V8_TARGET_ARCH_S390X
+  if (!dst.is(src1) && !dst.is(src2))
+    LoadRR(dst, src1);
+
+  // In scenario where we have dst = src - dst, we need to swap and negate
+  if (!dst.is(src1) && dst.is(src2)) {
+    lgfr(dst, dst);  // Sign extend this operand first.
+    SubP(dst, src1);  // dst = (dst - src)
+    LoadComplementRR(dst, dst);  // dst = -dst
+  } else {
+    sgfr(dst, src2);
+  }
+#else
+  SubP(dst, src1, src2);
+#endif
+}
+
+// Subtract 32-bit (Register-Memory)
 void MacroAssembler::Sub(Register dst, const MemOperand& opnd) {
-#ifdef V8_TARGET_ARCH_S390X
-  sgf(dst, opnd);
-#else
   ASSERT(is_int20(opnd.offset()));
   if (is_uint12(opnd.offset()))
     s(dst, opnd);
   else
     sy(dst, opnd);
+}
+
+// Subtract Pointer Sized (Register - Memory)
+void MacroAssembler::SubP(Register dst, const MemOperand& opnd) {
+#if V8_TARGET_ARCH_S390X
+  sg(dst, opnd);
+#else
+  Sub(dst, opnd);
 #endif
 }
 
-//----------------------------------------------------------------------------//
-//  Bitwise Operations
-//----------------------------------------------------------------------------//
+// Subtract Pointer Size with src extension
+//      (Register dst (ptr) = Register dst (ptr) - Mem opnd (32 | 32->64))
+// src is treated as a 32-bit signed integer, which is sign extended to
+// 64-bit if necessary.
+void MacroAssembler::SubP_ExtendSrc(Register dst, const MemOperand& opnd) {
+#if V8_TARGET_ARCH_S390X
+  ASSERT(is_int20(opnd.offset()));
+  sgf(dst, opnd);
+#else
+  Sub(dst, opnd);
+#endif
+}
 
+//----------------------------------------------------------------------------
+//  Subtract Logical Instructions
+//----------------------------------------------------------------------------
+
+// Subtract Logical 32-bit (Register - Memory)
+void MacroAssembler::SubLogical(Register dst, const MemOperand& opnd) {
+  ASSERT(is_int20(opnd.offset()));
+  if (is_uint12(opnd.offset()))
+    sl(dst, opnd);
+  else
+    sly(dst, opnd);
+}
+
+// Subtract Logical Pointer Sized (Register - Memory)
+void MacroAssembler::SubLogicalP(Register dst, const MemOperand& opnd) {
+  ASSERT(is_int20(opnd.offset()));
+#if V8_TARGET_ARCH_S390X
+  slgf(dst, opnd);
+#else
+  SubLogical(dst, opnd);
+#endif
+}
+
+// Subtract Logical Pointer Size with src extension
+//      (Register dst (ptr) = Register dst (ptr) - Mem opnd (32 | 32->64))
+// src is treated as a 32-bit signed integer, which is sign extended to
+// 64-bit if necessary.
+void MacroAssembler::SubLogicalP_ExtendSrc(Register dst,
+                                           const MemOperand& opnd) {
+#if V8_TARGET_ARCH_S390X
+  ASSERT(is_int20(opnd.offset()));
+  slgf(dst, opnd);
+#else
+  SubLogical(dst, opnd);
+#endif
+}
+
+//----------------------------------------------------------------------------
+//  Bitwise Operations
+//----------------------------------------------------------------------------
 
 // AND 32-bit - dst = dst & src
 void MacroAssembler::And(Register dst, Register src) {
@@ -4432,65 +4586,6 @@ void MacroAssembler::XorP(Register dst, Register src, const Operand& opnd) {
   XorP(dst, opnd);
 }
 
-
-// Add Logical 32-bit (Register-Memory)
-void MacroAssembler::AddLogical(Register dst, const MemOperand& opnd) {
-  ASSERT(is_int20(opnd.offset()));
-  if (is_uint12(opnd.offset()))
-    al_z(dst, opnd);
-  else
-    aly(dst, opnd);
-}
-
-// Add Logical Pointer Size (Register-Memory)
-void MacroAssembler::AddLogicalP(Register dst, const MemOperand& opnd) {
-#if V8_TARGET_ARCH_S390X
-  ASSERT(is_int20(opnd.offset()));
-  alg(dst, opnd);
-#else
-  AddLogical(dst, opnd);
-#endif
-}
-
-void MacroAssembler::SubP(Register dst, Register src1, Register src2) {
-  if (!dst.is(src1) && !dst.is(src2)) {
-    if (CpuFeatures::IsSupported(DISTINCT_OPS)) {
-      SubP_RRR(dst, src1, src2);
-      return;
-    }
-    LoadRR(dst, src1);
-    SubRR(dst, src2);
-  } else if (dst.is(src1)) {
-    SubRR(dst, src2);
-  } else if (dst.is(src2)) {
-    if (CpuFeatures::IsSupported(DISTINCT_OPS)) {
-      SubP_RRR(dst, src1, src2);
-      return;
-    }
-    SubRR(dst, src1);
-    LoadComplementRR(dst, dst);
-  } else {
-    ASSERT(false);
-  }
-}
-
-void MacroAssembler::SubP(Register dst, const Operand& opnd) {
-  Subl(dst, opnd);
-}
-
-// the size of mem operand is treated as sizeof(intptr_t)
-void MacroAssembler::SubP(Register dst, const MemOperand& opnd) {
-#if V8_TARGET_ARCH_S390X
-  slg(dst, opnd);
-#else
-  if (is_uint12(opnd.offset()))
-    sl(dst, opnd);
-  else
-    sly(dst, opnd);
-#endif
-}
-
-
 void MacroAssembler::NotP(Register dst) {
 #if V8_TARGET_ARCH_S390X
   xihf(dst, Operand(0xFFFFFFFF));
@@ -4548,7 +4643,6 @@ void MacroAssembler::CmpP(Register src1, Register src2) {
   Cmp(src1, src2);
 #endif
 }
-
 
 // Compare 32-bit Register vs Immediate
 // This helper will set up proper relocation entries if required.
@@ -4666,13 +4760,6 @@ void MacroAssembler::CmpLogicalByte(const MemOperand& mem, const Operand& imm) {
 }
 
 
-void MacroAssembler::Addl(Register dst, const Operand& opnd) {
-#ifdef V8_TARGET_ARCH_S390X
-  algfi(dst, opnd);
-#else
-  alfi(dst, opnd);
-#endif
-}
 
 void MacroAssembler::Branch(Condition c, const Operand& opnd) {
   intptr_t value = opnd.immediate();
@@ -4761,7 +4848,7 @@ void MacroAssembler::SubSmiLiteral(Register dst, Register src, Smi *smi,
                                    Register scratch) {
 #if V8_TARGET_ARCH_S390X
   LoadSmiLiteral(scratch, smi);
-  Sub(dst, src, scratch);
+  SubP(dst, src, scratch);
 #else
   AddP(dst, src, Operand(-(reinterpret_cast<intptr_t>(smi))));
 #endif

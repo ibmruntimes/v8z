@@ -788,7 +788,7 @@ void FloatingPointHelper::DoubleIs32BitInteger(MacroAssembler* masm,
   // number cannot be represented as an int32.
   Register tmp = dst;
   __ ExtractSignBit32(tmp, src1);
-  __ Sub(tmp, scratch, tmp);
+  __ SubP(tmp, scratch, tmp);
   __ CmpP(tmp, Operand(30));
   __ bgt(not_int32);
   // - Check whether bits [21:0] in the mantissa are not null.
@@ -1173,7 +1173,7 @@ void NumberToStringStub::GenerateLookupNumberStringCache(MacroAssembler* masm,
                                  FixedArray::kLengthOffset));
   // Divide length by two (length is a smi).
   __ ShiftRightArithP(mask, mask, Operand(kSmiTagSize + kSmiShiftSize + 1));
-  __ Sub(mask, Operand(1));  // Make mask.
+  __ SubP(mask, Operand(1));  // Make mask.
 
   // Calculate the entry in the number string cache. The hash value in the
   // number string cache for smis is just the smi value, and the hash for
@@ -1271,7 +1271,7 @@ void CompareStub::Generate(MacroAssembler* masm) {
     __ JumpIfNotSmi(r4, &not_two_smis);
     __ SmiUntag(r3);
     __ SmiUntag(r2);
-    __ Sub(r2, r3, r2);
+    __ SubP(r2, r3, r2);
     __ Ret();
     __ bind(&not_two_smis);
   } else if (FLAG_debug_code) {
@@ -1566,7 +1566,7 @@ void StoreBufferOverflowStub::Generate(MacroAssembler* masm) {
   __ MultiPush(kJSCallerSaved | r0.bit());
   if (save_doubles_ == kSaveFPRegs) {
     const int kNumRegs = DoubleRegister::kNumVolatileRegisters;
-    __ Sub(sp, Operand(kDoubleSize * kNumRegs));
+    __ SubP(sp, Operand(kDoubleSize * kNumRegs));
     for (int i = 0; i < kNumRegs; i++) {
       DoubleRegister reg = DoubleRegister::from_code(i);
       __ StoreF(reg, MemOperand(sp, i * kDoubleSize));
@@ -1988,7 +1988,7 @@ void BinaryOpStub::GenerateSmiSmiOperation(MacroAssembler* masm) {
       // Cannot use right instead of scratch1 for 2nd operand of subtract
       // as SubP, when it cannot use SRK, will switch to SR/LCR sequence
       // which may not set underflow properly.
-      __ Sub(right, left, scratch1);
+      __ SubP(right, left, scratch1);
       __ b(overflow, &undo_sub, Label::kNear);
       __ Ret();
       __ bind(&undo_sub);
@@ -2585,7 +2585,7 @@ void BinaryOpStub::GenerateInt32Stub(MacroAssembler* masm) {
         __ CmpP(scratch1, Operand::Zero());
         __ bne(&not_zero);
 
-        __ Sub(sp, Operand(8));
+        __ SubP(sp, Operand(8));
         __ StoreF(d0, MemOperand(sp, 0));
 #if V8_TARGET_ARCH_S390X
         __ lg(scratch2, MemOperand(sp, 0));
@@ -3574,7 +3574,7 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
     __ mov(r4, Operand(scope_depth));
     // @TODO Can exploit ASI here on z10 or newer.
     __ LoadlW(r5, MemOperand(r4));
-    __ Sub(r5, Operand(1));
+    __ SubP(r5, Operand(1));
     __ StoreW(r5, MemOperand(r4));
   }
 
@@ -4040,7 +4040,7 @@ void InstanceofStub::Generate(MacroAssembler* masm) {
     __ LoadFromSafepointRegisterSlot(scratch, r6);
     __ CleanseP(r14);
     __ LoadRR(inline_site, r14);
-    __ Sub(inline_site, inline_site, scratch);
+    __ SubP(inline_site, inline_site, scratch);
     // Get the map location in scratch and patch it.
     __ GetRelocatedValueLocation(inline_site, scratch, scratch2);
     __ StoreP(map,
@@ -4187,7 +4187,7 @@ void ArgumentsAccessStub::GenerateReadElement(MacroAssembler* masm) {
   __ bge(&slow);
 
   // Read the argument from the stack and return it.
-  __ Sub(r5, r2, r3);
+  __ SubP(r5, r2, r3);
   __ SmiToPtrArrayOffset(r5, r5);
   __ AddP(r5, fp);
   __ LoadP(r2, MemOperand(r5, kDisplacement));
@@ -4203,7 +4203,7 @@ void ArgumentsAccessStub::GenerateReadElement(MacroAssembler* masm) {
   __ bge(&slow);
 
   // Read the argument from the adaptor frame and return it.
-  __ Sub(r5, r2, r3);
+  __ SubP(r5, r2, r3);
   __ SmiToPtrArrayOffset(r5, r5);
   __ AddP(r5, r4);
   __ LoadP(r2, MemOperand(r5, kDisplacement));
@@ -4403,7 +4403,7 @@ void ArgumentsAccessStub::GenerateNewNonStrictFast(MacroAssembler* masm) {
   __ LoadP(r1, MemOperand(sp, 0 * kPointerSize));
   __ AddSmiLiteral(r1, r1,
                    Smi::FromInt(Context::MIN_CONTEXT_SLOTS), r0);
-  __ Sub(r1, r1, r3);
+  __ SubP(r1, r1, r3);
   __ LoadRoot(r9, Heap::kTheHoleValueRootIndex);
   __ SmiToPtrArrayOffset(r5, r8);
   __ AddP(r5, r6);
@@ -4422,7 +4422,7 @@ void ArgumentsAccessStub::GenerateNewNonStrictFast(MacroAssembler* masm) {
   __ SmiToPtrArrayOffset(r7, r8);
   __ AddP(r7, Operand(kParameterMapHeaderSize - kHeapObjectTag));
   __ StorePX(r1, MemOperand(r7, r6));
-  __ Sub(r7, Operand(kParameterMapHeaderSize - FixedArray::kHeaderSize));
+  __ SubP(r7, Operand(kParameterMapHeaderSize - FixedArray::kHeaderSize));
   __ StorePX(r9, MemOperand(r7, r5));
   __ AddSmiLiteral(r1, r1, Smi::FromInt(1), r0);
   __ bind(&parameters_test);
@@ -4442,11 +4442,11 @@ void ArgumentsAccessStub::GenerateNewNonStrictFast(MacroAssembler* masm) {
   __ LoadRR(r1, r3);
   __ LoadP(r6, MemOperand(sp, 1 * kPointerSize));
   __ SmiToPtrArrayOffset(r7, r1);
-  __ Sub(r6, r6, r7);
+  __ SubP(r6, r6, r7);
   __ b(&arguments_test);
 
   __ bind(&arguments_loop);
-  __ Sub(r6, Operand(kPointerSize));
+  __ SubP(r6, Operand(kPointerSize));
   __ LoadP(r8, MemOperand(r6, 0));
   __ SmiToPtrArrayOffset(r7, r1);
   __ AddP(r7, r5);
@@ -4560,7 +4560,7 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
   // Post-increment r6 with kPointerSize on each iteration.
   __ StoreP(r5, MemOperand(r6));
   __ AddP(r6, Operand(kPointerSize));
-  __ Sub(r3, Operand(1));
+  __ SubP(r3, Operand(1));
   __ CmpP(r3, Operand(0, RelocInfo::NONE));
   __ bne(&loop);
 
@@ -5045,7 +5045,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
          FieldMemOperand(subject, ExternalString::kResourceDataOffset));
   // Move the pointer so that offset-wise, it looks like a sequential string.
   STATIC_ASSERT(SeqTwoByteString::kHeaderSize == SeqAsciiString::kHeaderSize);
-  __ Sub(subject,
+  __ SubP(subject,
          subject,
          Operand(SeqTwoByteString::kHeaderSize - kHeapObjectTag));
   __ b(&seq_string);
@@ -5138,7 +5138,7 @@ void RegExpConstructResultStub::Generate(MacroAssembler* masm) {
   __ CmpP(r7, Operand::Zero());
   __ bind(&loop);
   __ ble(&done);  // Jump if r7 is negative or zero.
-  __ Sub(r7, Operand(1));
+  __ SubP(r7, Operand(1));
   __ ShiftLeftP(ip, r7, Operand(kPointerSizeLog2));
   __ StorePX(r4, MemOperand(ip, r5));
   __ CmpP(r7, Operand::Zero());
@@ -5550,7 +5550,7 @@ void StringHelper::GenerateCopyCharacters(MacroAssembler* masm,
     __ AddP(src, Operand(2));
     __ AddP(dest, Operand(2));
   }
-  __ Sub(count, Operand(1));
+  __ SubP(count, Operand(1));
   __ CmpP(count, Operand::Zero());
   __ bgt(&loop);
 }
@@ -5626,10 +5626,10 @@ void StringHelper::GenerateTwoCharacterSymbolTableProbe(MacroAssembler* masm,
   // Make sure that both characters are not digits as such strings has a
   // different hash algorithm. Don't try to look for these in the symbol table.
   Label not_array_index;
-  __ Sub(scratch, c1, Operand(static_cast<intptr_t>('0')));
+  __ SubP(scratch, c1, Operand(static_cast<intptr_t>('0')));
   __ CmpLogicalP(scratch, Operand(static_cast<intptr_t>('9' - '0')));
   __ bgt(&not_array_index);
-  __ Sub(scratch, c2, Operand(static_cast<intptr_t>('0')));
+  __ SubP(scratch, c2, Operand(static_cast<intptr_t>('0')));
   __ CmpLogicalP(scratch, Operand(static_cast<intptr_t>('9' - '0')));
   __ bgt(&not_array_index);
 
@@ -5677,7 +5677,7 @@ void StringHelper::GenerateTwoCharacterSymbolTableProbe(MacroAssembler* masm,
   Register mask = scratch2;
   __ LoadP(mask, FieldMemOperand(symbol_table, SymbolTable::kCapacityOffset));
   __ SmiUntag(mask);
-  __ Sub(mask, Operand(1));
+  __ SubP(mask, Operand(1));
 
   // Calculate untagged address of the first element of the symbol table.
   Register first_symbol_table_element = symbol_table;
@@ -5849,7 +5849,7 @@ void SubStringStub::Generate(MacroAssembler* masm) {
 
   __ CmpLogicalP(r5, r4);
   __ bgt(&runtime);  // Fail if from > to.
-  __ Sub(r4, r4, r5);
+  __ SubP(r4, r4, r5);
 
   // Make sure first argument is a string.
   __ LoadP(r2, MemOperand(sp, kStringOffset));
@@ -6076,7 +6076,7 @@ void StringCompareStub::GenerateCompareFlatAsciiStrings(MacroAssembler* masm,
   // Find minimum length and length difference.
   __ LoadP(scratch1, FieldMemOperand(left, String::kLengthOffset));
   __ LoadP(scratch2, FieldMemOperand(right, String::kLengthOffset));
-  __ Sub(scratch3, scratch1, scratch2/*, LeaveOE, SetRC*/);
+  __ SubP(scratch3, scratch1, scratch2/*, LeaveOE, SetRC*/);
   // Removing RC looks okay here.
   Register length_delta = scratch3;
   __ ble(&skip /*, cr0*/);
@@ -6535,12 +6535,12 @@ void ICCompareStub::GenerateSmis(MacroAssembler* masm) {
   if (GetCondition() == eq) {
     // For equality we do not care about the sign of the result.
     // __ sub(r2, r2, r3, SetCC);
-     __ Sub(r2, r2, r3);
+     __ SubP(r2, r2, r3);
   } else {
     // Untag before subtracting to avoid handling overflow.
     __ SmiUntag(r2);
     __ SmiUntag(r3);
-    __ Sub(r2, r3, r2);
+    __ SubP(r2, r3, r2);
     __ bind(&done);
   }
   __ Ret();
@@ -6753,7 +6753,7 @@ void ICCompareStub::GenerateObjects(MacroAssembler* masm) {
   __ bne(&miss);
 
   ASSERT(GetCondition() == eq);
-  __ Sub(r2, r2, r3);
+  __ SubP(r2, r2, r3);
   __ Ret();
 
   __ bind(&miss);
@@ -6774,7 +6774,7 @@ void ICCompareStub::GenerateKnownObjects(MacroAssembler* masm) {
   __ CmpP(r5, r0);
   __ bne(&miss);
 
-  __ Sub(r2, r2, r3);
+  __ SubP(r2, r2, r3);
   __ Ret();
 
   __ bind(&miss);
@@ -6867,7 +6867,7 @@ void StringDictionaryLookupStub::GenerateNegativeLookup(MacroAssembler* masm,
     Register index = scratch0;
     // Capacity is smi 2^n.
     __ LoadP(index, FieldMemOperand(properties, kCapacityOffset));
-    __ Sub(index, Operand(1));
+    __ SubP(index, Operand(1));
     __ LoadSmiLiteral(ip, Smi::FromInt(name->Hash() +
                                        StringDictionary::GetProbeOffset(i)));
     __ AndP(index, ip);
@@ -6959,7 +6959,7 @@ void StringDictionaryLookupStub::GeneratePositiveLookup(MacroAssembler* masm,
   // Compute the capacity mask.
   __ LoadP(scratch1, FieldMemOperand(elements, kCapacityOffset));
   __ SmiUntag(scratch1);  // convert smi to int
-  __ Sub(scratch1, Operand(1));
+  __ SubP(scratch1, Operand(1));
 
   // Generate an unrolled loop that performs a few probes before
   // giving up. Measurements done on Gmail indicate that 2 probes
@@ -7047,7 +7047,7 @@ void StringDictionaryLookupStub::Generate(MacroAssembler* masm) {
 
   __ LoadP(mask, FieldMemOperand(dictionary, kCapacityOffset));
   __ SmiUntag(mask);
-  __ Sub(mask, Operand(1));
+  __ SubP(mask, Operand(1));
 
   __ LoadlW(hash, FieldMemOperand(key, String::kHashFieldOffset));
 
@@ -7335,7 +7335,7 @@ void RecordWriteStub::CheckNeedsToInformIncrementalMarker(
   __ LoadP(regs_.scratch1(),
          MemOperand(regs_.scratch0(),
                     MemoryChunk::kWriteBarrierCounterOffset));
-  __ Sub(regs_.scratch1(), regs_.scratch1(), Operand(1));
+  __ SubP(regs_.scratch1(), regs_.scratch1(), Operand(1));
   __ StoreP(regs_.scratch1(),
             MemOperand(regs_.scratch0(),
                        MemoryChunk::kWriteBarrierCounterOffset));
@@ -7501,7 +7501,7 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
   const int32_t kNumSavedRegs = 3;
 
   // Compute the function's address for the first argument.
-  __ Sub(r2, Operand(kReturnAddressDistanceFromFunctionStart));
+  __ SubP(r2, Operand(kReturnAddressDistanceFromFunctionStart));
 
   // The caller's return address is above the saved temporaries.
   // Grab that for the second argument to the hook.

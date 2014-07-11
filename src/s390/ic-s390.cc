@@ -1100,7 +1100,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
     __ ShiftLeftP(r7, r5, Operand(2));
     __ LoadlW(r7, MemOperand(r7, r6));
     __ LoadlB(r8, FieldMemOperand(r4, Map::kInObjectPropertiesOffset));
-    __ Sub(r7, r7, r8);
+    __ SubP(r7, r7, r8);
     __ CmpP(r7, Operand::Zero());
     __ bge(&property_array_property);
     if (i != 0) {
@@ -1112,7 +1112,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   __ bind(&load_in_object_property);
   __ LoadlB(r8, FieldMemOperand(r4, Map::kInstanceSizeOffset));
   __ AddP(r8, r7);  // Index from start of object.
-  __ Sub(r3, Operand(kHeapObjectTag));  // Remove the heap tag.
+  __ SubP(r3, Operand(kHeapObjectTag));  // Remove the heap tag.
   __ ShiftLeftP(r2, r8, Operand(kPointerSizeLog2));
   __ LoadP(r2, MemOperand(r2, r3));
   __ IncrementCounter(isolate->counters()->keyed_load_generic_lookup_cache(),
