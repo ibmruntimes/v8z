@@ -1075,8 +1075,7 @@ static void EmitStrictTwoHeapObjectCompare(MacroAssembler* masm,
     STATIC_ASSERT(LAST_TYPE < kNotStringTag + kIsSymbolMask);
     STATIC_ASSERT(kSymbolTag != 0);
     __ AndP(r4, r5);
-    __ mov(r0, Operand(kIsSymbolMask));
-    __ AndP(r0, r4);
+    __ AndP(r0, r4, Operand(kIsSymbolMask));
     __ bne(&return_not_equal /*, cr0*/);
 }
 
@@ -6207,11 +6206,9 @@ void StringAddStub::Generate(MacroAssembler* masm) {
     __ LoadlB(r7, FieldMemOperand(r7, Map::kInstanceTypeOffset));
     STATIC_ASSERT(kStringTag == 0);
     // If either is not a string, go to runtime.
-    __ mov(r0, Operand(kIsNotStringMask));
-    __ AndP(r0, r6);
+    __ AndP(r0, r6, Operand(kIsNotStringMask));
     __ bne(&call_runtime /*, cr0*/);
-    __ mov(r0, Operand(kIsNotStringMask));
-    __ AndP(r0, r7);
+    __ AndP(r0, r7, Operand(kIsNotStringMask));
     __ bne(&call_runtime /*, cr0*/);
   } else {
     // Here at least one of the arguments is definitely a string.
@@ -6337,11 +6334,9 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   }
   Label non_ascii, allocated, ascii_data;
   STATIC_ASSERT(kTwoByteStringTag == 0);
-  __ mov(r0, Operand(kStringEncodingMask));
-  __ AndP(r0, r6);
+  __ AndP(r0, r6, Operand(kStringEncodingMask));
   __ beq(&non_ascii /*, cr0*/);
-  __ mov(r0, Operand(kStringEncodingMask));
-  __ AndP(r0, r7);
+  __ AndP(r0, r7, Operand(kStringEncodingMask));
   __ beq(&non_ascii /*, cr0*/);
 
   // Allocate an ASCII cons string.
@@ -6361,11 +6356,9 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   // to contain only ASCII characters.
   // r6: first instance type.
   // r7: second instance type.
-  __ mov(r0, Operand(kAsciiDataHintMask));
-  __ AndP(r0, r6);
+  __ AndP(r0, r6, Operand(kAsciiDataHintMask));
   __ bne(&ascii_data /*, cr0*/);
-  __ mov(r0, Operand(kAsciiDataHintMask));
-  __ AndP(r0, r7);
+  __ AndP(r0, r7, Operand(kAsciiDataHintMask));
   __ bne(&ascii_data /*, cr0*/);
   __ XorP(r6, r7);
   STATIC_ASSERT(kAsciiStringTag != 0 && kAsciiDataHintTag != 0);
@@ -6399,14 +6392,12 @@ void StringAddStub::Generate(MacroAssembler* masm) {
 
   // Check whether both strings have same encoding
   __ XorP(r9, r6, r7);
-  __ mov(r0, Operand(kStringEncodingMask));
-  __ AndP(r0, r9);
+  __ AndP(r0, r9, Operand(kStringEncodingMask));
   __ bne(&call_runtime /*, cr0*/);
   // TODO(JOHN): might be a problem here b/c addi didn't set RC
 
   STATIC_ASSERT(kSeqStringTag == 0);
-  __ mov(r0, Operand(kStringRepresentationMask));
-  __ AndP(r0, r6);
+  __ AndP(r0, r6, Operand(kStringRepresentationMask));
   __ bne(&external_string1 /*, cr0*/);
   STATIC_ASSERT(SeqAsciiString::kHeaderSize == SeqTwoByteString::kHeaderSize);
   __ AddP(r9, r2, Operand(SeqAsciiString::kHeaderSize - kHeapObjectTag));
@@ -6414,15 +6405,13 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   // External string: rule out short external string and load string resource.
   STATIC_ASSERT(kShortExternalStringTag != 0);
   __ bind(&external_string1);
-  __ mov(r0, Operand(kShortExternalStringMask));
-  __ AndP(r0, r6);
+  __ AndP(r0, r6, Operand(kShortExternalStringMask));
   __ bne(&call_runtime /*, cr0*/);
   __ LoadP(r9, FieldMemOperand(r2, ExternalString::kResourceDataOffset));
   __ bind(&first_prepared);
 
   STATIC_ASSERT(kSeqStringTag == 0);
-  __ mov(r0, Operand(kStringRepresentationMask));
-  __ AndP(r0, r7);
+  __ AndP(r0, r7, Operand(kStringRepresentationMask));
   __ bne(&external_string2 /*, cr0*/);
   STATIC_ASSERT(SeqAsciiString::kHeaderSize == SeqTwoByteString::kHeaderSize);
   __ AddP(r3, Operand(SeqAsciiString::kHeaderSize - kHeapObjectTag));
@@ -6430,8 +6419,7 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   // External string: rule out short external string and load string resource.
   STATIC_ASSERT(kShortExternalStringTag != 0);
   __ bind(&external_string2);
-  __ mov(r0, Operand(kShortExternalStringMask));
-  __ AndP(r0, r7);
+  __ AndP(r0, r7, Operand(kShortExternalStringMask));
   __ bne(&call_runtime /*, cr0*/);
   __ LoadP(r3, FieldMemOperand(r3, ExternalString::kResourceDataOffset));
   __ bind(&second_prepared);
@@ -6444,8 +6432,7 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   // r8: sum of lengths.
   // Both strings have the same encoding.
   STATIC_ASSERT(kTwoByteStringTag == 0);
-  __ mov(r0, Operand(kStringEncodingMask));
-  __ AndP(r0, r7);
+  __ AndP(r0, r7, Operand(kStringEncodingMask));
   __ beq(&non_ascii_string_add_flat_result /*, cr0*/);
 
   __ AllocateAsciiString(r2, r8, r6, r7, r1, &call_runtime);
@@ -6651,8 +6638,7 @@ void ICCompareStub::GenerateSymbols(MacroAssembler* masm) {
   __ LoadlB(tmp2, FieldMemOperand(tmp2, Map::kInstanceTypeOffset));
   STATIC_ASSERT(kSymbolTag != 0);
   __ AndP(tmp1, tmp2);
-  __ mov(r0, Operand(kIsSymbolMask));
-  __ AndP(r0, tmp1);
+  __ AndP(r0, tmp1, Operand(kIsSymbolMask));
   __ beq(&miss /*, cr0*/);
 
   // Symbols are compared by identity.
@@ -6697,8 +6683,7 @@ void ICCompareStub::GenerateStrings(MacroAssembler* masm) {
   __ LoadlB(tmp2, FieldMemOperand(tmp2, Map::kInstanceTypeOffset));
   STATIC_ASSERT(kNotStringTag != 0);
   __ OrP(tmp3, tmp1, tmp2);
-  __ mov(r0, Operand(kIsNotStringMask));
-  __ AndP(r0, tmp3);
+  __ AndP(r0, tmp3, Operand(kIsNotStringMask));
   __ bne(&miss /*, cr0*/);
   // TODO(JOHN): might be a problem b/c cr0 is not set
 
@@ -6921,8 +6906,7 @@ void StringDictionaryLookupStub::GenerateNegativeLookup(MacroAssembler* masm,
                                             HeapObject::kMapOffset));
       __ LoadlB(entity_name,
               FieldMemOperand(entity_name, Map::kInstanceTypeOffset));
-      __ mov(r0, Operand(kIsSymbolMask));
-      __ AndP(r0, entity_name);
+      __ AndP(r0, entity_name, Operand(kIsSymbolMask));
       __ beq(miss /*, cr0*/);
 
       __ bind(&the_hole);
@@ -7110,8 +7094,7 @@ void StringDictionaryLookupStub::Generate(MacroAssembler* masm) {
       __ LoadP(entry_key, FieldMemOperand(entry_key, HeapObject::kMapOffset));
       __ LoadlB(entry_key,
               FieldMemOperand(entry_key, Map::kInstanceTypeOffset));
-      __ mov(r0, Operand(kIsSymbolMask));
-      __ AndP(r0, entry_key);
+      __ AndP(r0, entry_key, Operand(kIsSymbolMask));
       __ beq(&maybe_in_dictionary /*, cr0*/);
     }
   }
