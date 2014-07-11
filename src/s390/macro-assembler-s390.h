@@ -152,7 +152,6 @@ bool AreAliased(Register reg1,
 #define CmpPH              cghi
 #define CmpLogicalPW       clgfi
 #define CmpLogicalRR       clgr
-#define CmpRR              cgr
 
 // Shifts
 #define ShiftLeftP         sllg
@@ -196,7 +195,6 @@ bool AreAliased(Register reg1,
 #define CmpPH              chi
 #define CmpLogicalPW       clfi
 #define CmpLogicalRR       clr
-#define CmpRR              cr_z
 
 // Shifts
 #define ShiftLeftP         ShiftLeft
@@ -297,15 +295,25 @@ class MacroAssembler: public Assembler {
   void StoreF(DoubleRegister dst, const MemOperand& opnd);
   void StoreShortF(DoubleRegister dst, const MemOperand& opnd);
 
-  // Compare (Register - Memory)
+  // Compare
+  void Cmp(Register src1, Register src2);
+  void CmpP(Register src1, Register src2);
+  void Cmp(Register dst, const Operand& opnd);
+  void CmpP(Register dst, const Operand& opnd);
   void Cmp(Register dst, const MemOperand& opnd);
   void CmpP(Register dst, const MemOperand& opnd);
+
+  // Compare Logical
+  void CmpLogical(Register src1, Register src2);
+  void CmpLogicalP(Register src1, Register src2);
+  void CmpLogical(Register src1, const Operand& opnd);
+  void CmpLogicalP(Register src1, const Operand& opnd);
   void CmpLogical(Register dst, const MemOperand& opnd);
   void CmpLogicalP(Register dst, const MemOperand& opnd);
 
-  void Cmp(Register dst, const Operand& opnd);
-  // compare 32bit logical
-  void CmpLogical(Register dst, const Operand& opnd);
+  // Compare Logical Byte (CLI/CLIY)
+  void CmpLogicalByte(const MemOperand& mem, const Operand& imm);
+
   // add logical 32bit
   void Addl(Register dst, const Operand& opnd);
   // add 32bit
@@ -712,12 +720,6 @@ class MacroAssembler: public Assembler {
 
   void StoreHalfWord(Register src, const MemOperand& mem, Register scratch);
   void StoreByte(Register src, const MemOperand& mem, Register scratch);
-
-  void Cmp(Register src1, Register src2);
-  void Cmpi(Register src1, const Operand& src2);
-  void CmpLogicali(Register src1, const Operand& src2);
-  void CmpLogical(Register src1, Register src2);
-  void CmpLogicalByte(const MemOperand& mem, const Operand& imm);
 
   void AddSmiLiteral(Register dst, Register src, Smi *smi, Register scratch);
   void SubSmiLiteral(Register dst, Register src, Smi *smi, Register scratch);
@@ -1502,7 +1504,7 @@ class MacroAssembler: public Assembler {
                                     Label* not_smi_label) {
     // High bits must be identical to fit into an Smi
     AddP(scratch, value, Operand(0x40000000u));
-    Cmpi(scratch, Operand::Zero());
+    CmpP(scratch, Operand::Zero());
     blt(not_smi_label);
   }
 #endif
@@ -1646,7 +1648,7 @@ class MacroAssembler: public Assembler {
                           Register scratch) {
     // High bits must be identical to fit into an 32-bit integer
     ShiftRightArith(scratch, lo_word, Operand(31));
-    CmpRR(scratch, hi_word);
+    CmpP(scratch, hi_word);
   }
 #endif
 

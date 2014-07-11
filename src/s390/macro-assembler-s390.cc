@@ -305,7 +305,7 @@ void MacroAssembler::InNewSpace(Register object,
 
   AndP(scratch, object, r0);
   mov(r0, Operand(ExternalReference::new_space_start(isolate())));
-  CmpRR(scratch, r0);
+  CmpP(scratch, r0);
   b(cond, branch);
 }
 
@@ -803,7 +803,7 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
       beq(&regular_invoke);
       mov(r2, Operand(actual.immediate()));
     } else {
-      CmpRR(expected.reg(), actual.reg());
+      CmpP(expected.reg(), actual.reg());
       beq(&regular_invoke);
     }
   }
@@ -959,9 +959,9 @@ void MacroAssembler::IsInstanceJSObjectType(Register map,
                                             Register scratch,
                                             Label* fail) {
   LoadlB(scratch, FieldMemOperand(map, Map::kInstanceTypeOffset));
-  Cmpi(scratch, Operand(FIRST_NONCALLABLE_SPEC_OBJECT_TYPE));
+  CmpP(scratch, Operand(FIRST_NONCALLABLE_SPEC_OBJECT_TYPE));
   blt(fail);
-  Cmpi(scratch, Operand(LAST_NONCALLABLE_SPEC_OBJECT_TYPE));
+  CmpP(scratch, Operand(LAST_NONCALLABLE_SPEC_OBJECT_TYPE));
   bgt(fail);
 }
 
@@ -1107,7 +1107,7 @@ void MacroAssembler::Throw(Register value) {
   // If the handler is a JS frame, restore the context to the frame.
   // (kind == ENTRY) == (fp == 0) == (cp == 0), so we could test either fp
   // or cp.
-  Cmpi(cp, Operand::Zero());
+  CmpP(cp, Operand::Zero());
   beq(&skip);
   StoreP(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
   bind(&skip);
@@ -1173,7 +1173,7 @@ void MacroAssembler::CheckAccessGlobalProxy(Register holder_reg,
   LoadP(scratch, MemOperand(fp, StandardFrameConstants::kContextOffset));
   // In debug mode, make sure the lexical context is set.
 #ifdef DEBUG
-  Cmpi(scratch, Operand(0, RelocInfo::NONE));
+  CmpP(scratch, Operand(0, RelocInfo::NONE));
   Check(ne, "we should not have an empty lexical context");
 #endif
 
@@ -1198,7 +1198,7 @@ void MacroAssembler::CheckAccessGlobalProxy(Register holder_reg,
 
   // Check if both contexts are the same.
   LoadP(ip, FieldMemOperand(holder_reg, JSGlobalProxy::kNativeContextOffset));
-  CmpRR(scratch, ip);
+  CmpP(scratch, ip);
   beq(&same_contexts);
 
   // Check the context is a native context.
@@ -1228,7 +1228,7 @@ void MacroAssembler::CheckAccessGlobalProxy(Register holder_reg,
 
   LoadP(scratch, FieldMemOperand(scratch, token_offset));
   LoadP(ip, FieldMemOperand(ip, token_offset));
-  CmpRR(scratch, ip);
+  CmpP(scratch, ip);
   bne(miss);
 
   bind(&same_contexts);
@@ -1330,7 +1330,7 @@ void MacroAssembler::LoadFromNumberDictionary(Label* miss,
     AddP(t2, elements);
     LoadP(ip,
           FieldMemOperand(t2, SeededNumberDictionary::kElementsStartOffset));
-    CmpRR(key, ip);
+    CmpP(key, ip);
     if (i != kProbes - 1) {
       beq(&done);
     } else {
@@ -1419,7 +1419,7 @@ void MacroAssembler::AllocateInNewSpace(int object_size,
       // immediately below so this use of ip does not cause difference with
       // respect to register content between debug and release mode.
       LoadP(ip, MemOperand(topaddr));
-      CmpRR(result, ip);
+      CmpP(result, ip);
       Check(eq, "Unexpected allocation top");
     }
     // Load allocation limit into ip. Result already contains allocation top.
@@ -1431,7 +1431,7 @@ void MacroAssembler::AllocateInNewSpace(int object_size,
   ASSERT(obj_size_reg.is(scratch2));
   AddP(scratch2, result);   // Add result + obj_size_reg (scratch2)
   b(Condition(CC_OF), gc_required);   // Detect overflow
-  CmpLogical(scratch2, ip);
+  CmpLogicalP(scratch2, ip);
   bgt(gc_required);
   StoreP(scratch2, MemOperand(topaddr));
 
@@ -1500,7 +1500,7 @@ void MacroAssembler::AllocateInNewSpace(Register object_size,
       // immediately below so this use of ip does not cause difference with
       // respect to register content between debug and release mode.
       LoadP(ip, MemOperand(topaddr));
-      CmpRR(result, ip);
+      CmpP(result, ip);
       Check(eq, "Unexpected allocation top");
     }
     // Load allocation limit into ip. Result already contains allocation top.
@@ -1517,7 +1517,7 @@ void MacroAssembler::AllocateInNewSpace(Register object_size,
     AddP(scratch2, result, object_size);
   }
   b(Condition(CC_OF), gc_required);
-  CmpLogical(scratch2, ip);
+  CmpLogicalP(scratch2, ip);
   bgt(gc_required);
 
   // Update allocation top. result temporarily holds the new top.
@@ -1548,7 +1548,7 @@ void MacroAssembler::UndoAllocationInNewSpace(Register object,
   // Check that the object un-allocated is below the current top.
   mov(scratch, Operand(new_space_allocation_top));
   LoadP(scratch, MemOperand(scratch));
-  CmpRR(object, scratch);
+  CmpP(object, scratch);
   Check(lt, "Undo allocation of non allocated memory");
 #endif
   // Write the address of the object to un-allocate as the current top.
@@ -1715,7 +1715,7 @@ void MacroAssembler::CompareInstanceType(Register map,
                                          Register type_reg,
                                          InstanceType type) {
   LoadlB(type_reg, FieldMemOperand(map, Map::kInstanceTypeOffset));
-  Cmpi(type_reg, Operand(type));
+  CmpP(type_reg, Operand(type));
 }
 
 
@@ -1734,7 +1734,7 @@ void MacroAssembler::CheckFastElements(Register map,
   STATIC_ASSERT(FAST_HOLEY_ELEMENTS == 3);
   LoadlB(scratch, FieldMemOperand(map, Map::kBitField2Offset));
   STATIC_ASSERT(Map::kMaximumBitField2FastHoleyElementValue < 0x8000);
-  CmpLogicali(scratch, Operand(Map::kMaximumBitField2FastHoleyElementValue));
+  CmpLogicalP(scratch, Operand(Map::kMaximumBitField2FastHoleyElementValue));
   bgt(fail);
 }
 
@@ -1747,9 +1747,9 @@ void MacroAssembler::CheckFastObjectElements(Register map,
   STATIC_ASSERT(FAST_ELEMENTS == 2);
   STATIC_ASSERT(FAST_HOLEY_ELEMENTS == 3);
   LoadlB(scratch, FieldMemOperand(map, Map::kBitField2Offset));
-  CmpLogicali(scratch, Operand(Map::kMaximumBitField2FastHoleySmiElementValue));
+  CmpLogicalP(scratch, Operand(Map::kMaximumBitField2FastHoleySmiElementValue));
   ble(fail);
-  CmpLogicali(scratch, Operand(Map::kMaximumBitField2FastHoleyElementValue));
+  CmpLogicalP(scratch, Operand(Map::kMaximumBitField2FastHoleyElementValue));
   bgt(fail);
 }
 
@@ -1760,7 +1760,7 @@ void MacroAssembler::CheckFastSmiElements(Register map,
   STATIC_ASSERT(FAST_SMI_ELEMENTS == 0);
   STATIC_ASSERT(FAST_HOLEY_SMI_ELEMENTS == 1);
   LoadlB(scratch, FieldMemOperand(map, Map::kBitField2Offset));
-  CmpLogicali(scratch, Operand(Map::kMaximumBitField2FastHoleySmiElementValue));
+  CmpLogicalP(scratch, Operand(Map::kMaximumBitField2FastHoleySmiElementValue));
   bgt(fail);
 }
 
@@ -1798,11 +1798,11 @@ void MacroAssembler::StoreNumberToDoubleElements(Register value_reg,
   mov(scratch1, Operand(kLastNonNaNInt64));
   AddP(scratch3, value_reg, Operand(-kHeapObjectTag));
   lg(double_reg, MemOperand(scratch3, HeapNumber::kValueOffset));
-  CmpRR(double_reg, scratch1);
+  CmpP(double_reg, scratch1);
 #else
   mov(scratch1, Operand(kNaNOrInfinityLowerBoundUpper32));
   LoadlW(exponent_reg, FieldMemOperand(value_reg, HeapNumber::kExponentOffset));
-  CmpRR(exponent_reg, scratch1);
+  CmpP(exponent_reg, scratch1);
 #endif
   bge(&maybe_nan);
 
@@ -1838,13 +1838,13 @@ void MacroAssembler::StoreNumberToDoubleElements(Register value_reg,
 #if V8_TARGET_ARCH_S390X
   LoadRR(r0, double_reg);
   nihf(r0, Operand::Zero());
-  Cmpi(r0, Operand::Zero());
+  CmpP(r0, Operand::Zero());
   beq(&have_double_value);
   // clrldi(r0, double_reg, Operand(32), SetRC);
   // beq(&have_double_value /*, cr0*/);
 #else
   LoadlW(mantissa_reg, FieldMemOperand(value_reg, HeapNumber::kMantissaOffset));
-  Cmpi(mantissa_reg, Operand::Zero());
+  CmpP(mantissa_reg, Operand::Zero());
   beq(&have_double_value);
 #endif
   bind(&is_nan);
@@ -2030,7 +2030,7 @@ void MacroAssembler::DispatchMap(Register obj,
   }
   LoadP(scratch, FieldMemOperand(obj, HeapObject::kMapOffset));
   mov(ip, Operand(map));
-  CmpRR(scratch, ip);
+  CmpP(scratch, ip);
   bne(&fail);
   Jump(success, RelocInfo::CODE_TARGET, al);
   bind(&fail);
@@ -2167,7 +2167,7 @@ void MacroAssembler::CallApiFunctionAndReturn(ExternalReference function,
 
   // If result is non-zero, dereference to get the result value
   // otherwise set it to undefined.
-  Cmpi(r2, Operand::Zero());
+  CmpP(r2, Operand::Zero());
   bne(&skip1);
   LoadRoot(r2, Heap::kUndefinedValueRootIndex);
   b(&skip2);
@@ -2180,13 +2180,13 @@ void MacroAssembler::CallApiFunctionAndReturn(ExternalReference function,
   StoreP(r6, MemOperand(r9, kNextOffset));
   if (emit_debug_code()) {
     LoadlW(r3, MemOperand(r9, kLevelOffset));
-    CmpRR(r3, r8);
+    CmpP(r3, r8);
     Check(eq, "Unexpected level after return from api call");
   }
   Sub(r8, Operand(1));
   StoreW(r8, MemOperand(r9, kLevelOffset));
   LoadP(ip, MemOperand(r9, kLimitOffset));
-  CmpRR(r7, ip);
+  CmpP(r7, ip);
   bne(&delete_allocated_handles);
 
   // Check if the function scheduled an exception.
@@ -2194,7 +2194,7 @@ void MacroAssembler::CallApiFunctionAndReturn(ExternalReference function,
   LoadRoot(r6, Heap::kTheHoleValueRootIndex);
   mov(ip, Operand(ExternalReference::scheduled_exception_address(isolate())));
   LoadP(r7, MemOperand(ip));
-  CmpRR(r6, r7);
+  CmpP(r6, r7);
   bne(&promote_scheduled_exception);
 
   // LeaveExitFrame expects unwind space to be in a register.
@@ -2358,7 +2358,7 @@ void MacroAssembler::EmitOutOfInt32RangeTruncate(Register result,
   // by extracting exponent (mask: 0x7ff00000)
   STATIC_ASSERT(HeapNumber::kExponentMask == 0x7ff00000u);
   ExtractBitMask(scratch, input_high, HeapNumber::kExponentMask);
-  CmpLogicali(scratch, Operand(0x7ff));
+  CmpLogicalP(scratch, Operand(0x7ff));
   beq(&done);
 
   // Express exponent as delta to (number of mantissa bits + 31).
@@ -2367,7 +2367,7 @@ void MacroAssembler::EmitOutOfInt32RangeTruncate(Register result,
 
   // If the delta is strictly positive, all bits would be shifted away,
   // which means that we can return 0.
-  Cmpi(scratch, Operand::Zero());
+  CmpP(scratch, Operand::Zero());
   bgt(&done);
 
   const int kShiftBase = HeapNumber::kNonMantissaBitsInTopWord - 1;
@@ -2383,7 +2383,7 @@ void MacroAssembler::EmitOutOfInt32RangeTruncate(Register result,
 
   // Shifts >= 32 bits should result in zero.
   // Result will comprise of only shifted input_low bits
-  Cmpi(scratch, Operand(32));
+  CmpP(scratch, Operand(32));
   blt(&high_shift_needed);
   LoadImmP(input_high, Operand::Zero());  // Zero out high for or'ing later
   LoadComplementRR(scratch, scratch);       // scratch = 32 - scratch
@@ -2416,7 +2416,7 @@ void MacroAssembler::EmitOutOfInt32RangeTruncate(Register result,
   OrP(input_high, input_low);
 
   // Restore sign if necessary.
-  Cmpi(sign, Operand::Zero());
+  CmpP(sign, Operand::Zero());
   result = sign;
   sign = no_reg;
   LoadRR(result, input_high);
@@ -2757,7 +2757,7 @@ void MacroAssembler::LoadTransitionedArrayMapConditional(
   size_t offset = expected_kind * kPointerSize +
       FixedArrayBase::kHeaderSize;
   LoadP(ip, FieldMemOperand(scratch, offset));
-  CmpRR(map_in_out, ip);
+  CmpP(map_in_out, ip);
   bne(no_map_match);
 
   // Use the transitioned cached map.
@@ -2826,7 +2826,7 @@ void MacroAssembler::JumpIfNotPowerOfTwoOrZero(
     Register scratch,
     Label* not_power_of_two_or_zero) {
   Sub(scratch, reg, Operand(1));
-  Cmpi(scratch, Operand::Zero());
+  CmpP(scratch, Operand::Zero());
   blt(not_power_of_two_or_zero);
   AndP(r0, reg, scratch/*, SetRC*/);  // Should be okay to remove rc
   bne(not_power_of_two_or_zero /*, cr0*/);
@@ -2839,7 +2839,7 @@ void MacroAssembler::JumpIfNotPowerOfTwoOrZeroAndNeg(
     Label* zero_and_neg,
     Label* not_power_of_two) {
   Sub(scratch, reg, Operand(1));
-  Cmpi(scratch, Operand::Zero());
+  CmpP(scratch, Operand::Zero());
   blt(zero_and_neg);
   AndP(r0, reg, scratch/*, SetRC*/);  // Should be okay to remove rc
   bne(not_power_of_two /*, cr0*/);
@@ -2949,7 +2949,7 @@ void MacroAssembler::JumpIfNotHeapNumber(Register object,
                                          Label* on_not_heap_number) {
   LoadP(scratch, FieldMemOperand(object, HeapObject::kMapOffset));
   AssertRegisterIsRoot(heap_number_map, Heap::kHeapNumberMapRootIndex);
-  CmpRR(scratch, heap_number_map);
+  CmpP(scratch, heap_number_map);
   bne(on_not_heap_number);
 }
 
@@ -3068,7 +3068,7 @@ void MacroAssembler::CopyBytes(Register src,
 
   // big loop moves 256 bytes at a time
   bind(&big_loop);
-  Cmpi(length, Operand(static_cast<intptr_t>(0x100)));
+  CmpP(length, Operand(static_cast<intptr_t>(0x100)));
   blt(&left_bytes);
 
   mvc(MemOperand(dst), MemOperand(src), 0x100);
@@ -3079,7 +3079,7 @@ void MacroAssembler::CopyBytes(Register src,
   b(&big_loop);
 
   bind(&left_bytes);
-  Cmpi(length, Operand::Zero());
+  CmpP(length, Operand::Zero());
   beq(&done);
 
   // TODO(JOHN): The full optimized version with unknown problem.
@@ -3113,7 +3113,7 @@ void MacroAssembler::InitializeFieldsWithFiller(Register start_offset,
   StoreP(filler, MemOperand(start_offset));
   AddP(start_offset, Operand(kPointerSize));
   bind(&entry);
-  CmpRR(start_offset, end_offset);
+  CmpP(start_offset, end_offset);
   blt(&loop);
 }
 
@@ -3130,22 +3130,22 @@ void MacroAssembler::JumpIfBothInstanceTypesAreNotSequentialAscii(
   if (!scratch1.is(first)) LoadRR(scratch1, first);
   if (!scratch2.is(second)) LoadRR(scratch2, second);
   nilf(scratch1, Operand(kFlatAsciiStringMask));
-  Cmpi(scratch1, Operand(kFlatAsciiStringTag));
+  CmpP(scratch1, Operand(kFlatAsciiStringTag));
   bne(failure);
   nilf(scratch2, Operand(kFlatAsciiStringMask));
-  Cmpi(scratch2, Operand(kFlatAsciiStringTag));
+  CmpP(scratch2, Operand(kFlatAsciiStringTag));
   bne(failure);
 
   /*
-  Cmpi(scratch1, Operand(kFlatAsciiStringTag));
+  CmpP(scratch1, Operand(kFlatAsciiStringTag));
   nilf(scratch2, Operand(kFlatAsciiStringMask));
   mov(scratch1, Operand(kFlatAsciiStringMask));
   AndP(scratch1, first);
   mov(scratch2, Operand(kFlatAsciiStringMask));
   AndP(scratch2, second);
-  Cmpi(scratch1, Operand(kFlatAsciiStringTag));
+  CmpP(scratch1, Operand(kFlatAsciiStringTag));
   bne(failure);
-  Cmpi(scratch2, Operand(kFlatAsciiStringTag));
+  CmpP(scratch2, Operand(kFlatAsciiStringTag));
   bne(failure);
   */
 }
@@ -3160,12 +3160,12 @@ void MacroAssembler::JumpIfInstanceTypeIsNotSequentialAscii(Register type,
 
   if (!scratch.is(type)) LoadRR(scratch, type);
   nilf(scratch, Operand(kFlatAsciiStringMask));
-  Cmpi(scratch, Operand(kFlatAsciiStringTag));
+  CmpP(scratch, Operand(kFlatAsciiStringTag));
   bne(failure);
   /*
   mov(scratch, Operand(kFlatAsciiStringMask));
   AndP(scratch, type);
-  Cmpi(scratch, Operand(kFlatAsciiStringTag));
+  CmpP(scratch, Operand(kFlatAsciiStringTag));
   bne(failure);
   */
 }
@@ -3706,10 +3706,10 @@ void MacroAssembler::ClampUint8(Register output_reg, Register input_reg) {
   Label done, negative_label, overflow_label;
   int satval = (1 << 8) - 1;
 
-  Cmpi(input_reg, Operand::Zero());
+  CmpP(input_reg, Operand::Zero());
   blt(&negative_label);
 
-  Cmpi(input_reg, Operand(satval));
+  CmpP(input_reg, Operand(satval));
   bgt(&overflow_label);
   if (!output_reg.is(input_reg)) {
     LoadRR(output_reg, input_reg);
@@ -3809,11 +3809,11 @@ void MacroAssembler::CheckEnumCache(Register null_value, Label* call_runtime) {
   // Check that there are no elements. Register r4 contains the current JS
   // object we've reached through the prototype chain.
   LoadP(r4, FieldMemOperand(r4, JSObject::kElementsOffset));
-  CmpRR(r4, empty_fixed_array_value);
+  CmpP(r4, empty_fixed_array_value);
   bne(call_runtime);
 
   LoadP(r4, FieldMemOperand(r3, Map::kPrototypeOffset));
-  CmpRR(r4, null_value);
+  CmpP(r4, null_value);
   bne(&next);
 }
 
@@ -3847,57 +3847,6 @@ void MacroAssembler::mov(Register dst, const Operand& src) {
   int value = src.immediate();
   iilf(dst, Operand(value));
 #endif
-}
-
-// Compare 32-bit Register vs Memory
-void MacroAssembler::Cmp(Register dst, const MemOperand& opnd) {
-  // make sure offset is within 20 bit range
-  ASSERT(is_int20(opnd.offset()));
-  if (is_uint12(opnd.offset()))
-    c(dst, opnd);
-  else
-    cy(dst, opnd);
-}
-
-// Compare Pointer Size Register vs Memory
-void MacroAssembler::CmpP(Register dst, const MemOperand& opnd) {
-  // make sure offset is within 20 bit range
-  ASSERT(is_int20(opnd.offset()));
-#if V8_TARGET_ARCH_S390X
-  cg(dst, opnd);
-#else
-  Cmp(dst, opnd);
-#endif
-}
-
-// Compare Logical 32-bit Register vs Memory
-void MacroAssembler::CmpLogical(Register dst, const MemOperand& opnd) {
-  // make sure offset is within 20 bit range
-  ASSERT(is_int20(opnd.offset()));
-  if (is_uint12(opnd.offset()))
-    cl(dst, opnd);
-  else
-    cly(dst, opnd);
-}
-
-// Compare Logical 32-bit Register vs Memory
-void MacroAssembler::CmpLogicalP(Register dst, const MemOperand& opnd) {
-  // make sure offset is within 20 bit range
-  ASSERT(is_int20(opnd.offset()));
-#if V8_TARGET_ARCH_S390X
-  clg(dst, opnd);
-#else
-  CmpLogical(dst, opnd);
-#endif
-}
-
-// Compare Logical Byte (Mem - Imm)
-void MacroAssembler::CmpLogicalByte(const MemOperand& mem, const Operand& imm) {
-  ASSERT(is_uint8(imm.immediate()));
-  if (is_uint12(mem.offset()))
-    cli(mem, imm);
-  else
-    cliy(mem, imm);
 }
 
 void MacroAssembler::Sub(Register dst, Register src1, Register src2) {
@@ -4582,16 +4531,28 @@ void MacroAssembler::Load(Register dst, const MemOperand& opnd) {
 #endif
 }
 
-// compare arithmetic
-void MacroAssembler::Cmp(Register dst, const Operand& opnd) {
+//-----------------------------------------------------------------------------
+//  Compare Helpers
+//-----------------------------------------------------------------------------
+
+// Compare 32-bit Register vs Register
+void MacroAssembler::Cmp(Register src1, Register src2) {
+  cr_z(src1, src2);
+}
+
+// Compare Pointer Sized Register vs Register
+void MacroAssembler::CmpP(Register src1, Register src2) {
 #if V8_TARGET_ARCH_S390X
-  if (opnd.rmode_ == RelocInfo::NONE) {
-    cgfi(dst, opnd);
-  } else {
-    mov(r0, opnd);   // Need to generate 64-bit relocation
-    Cmp(dst, r0);
-  }
+  cgr(src1, src2);
 #else
+  Cmp(src1, src2);
+#endif
+}
+
+
+// Compare 32-bit Register vs Immediate
+// This helper will set up proper relocation entries if required.
+void MacroAssembler::Cmp(Register dst, const Operand& opnd) {
   if (opnd.rmode_ == RelocInfo::NONE) {
     intptr_t value = opnd.immediate();
     if (is_int16(value))
@@ -4603,25 +4564,107 @@ void MacroAssembler::Cmp(Register dst, const Operand& opnd) {
     RecordRelocInfo(opnd.rmode_, opnd.imm_);
     cfi(dst, opnd);
   }
-#endif
 }
 
-// compare logical
-void MacroAssembler::CmpLogical(Register dst, const Operand& opnd) {
+// Compare Pointer Sized  Register vs Immediate
+// This helper will set up proper relocation entries if required.
+void MacroAssembler::CmpP(Register dst, const Operand& opnd) {
 #if V8_TARGET_ARCH_S390X
-  clgfi(dst, opnd);
+  if (opnd.rmode_ == RelocInfo::NONE) {
+    cgfi(dst, opnd);
+  } else {
+    mov(r0, opnd);   // Need to generate 64-bit relocation
+    Cmp(dst, r0);
+  }
 #else
-  clfi(dst, opnd);
+  Cmp(dst, opnd);
 #endif
 }
 
+// Compare 32-bit Register vs Memory
+void MacroAssembler::Cmp(Register dst, const MemOperand& opnd) {
+  // make sure offset is within 20 bit range
+  ASSERT(is_int20(opnd.offset()));
+  if (is_uint12(opnd.offset()))
+    c(dst, opnd);
+  else
+    cy(dst, opnd);
+}
+
+// Compare Pointer Size Register vs Memory
+void MacroAssembler::CmpP(Register dst, const MemOperand& opnd) {
+  // make sure offset is within 20 bit range
+  ASSERT(is_int20(opnd.offset()));
+#if V8_TARGET_ARCH_S390X
+  cg(dst, opnd);
+#else
+  Cmp(dst, opnd);
+#endif
+}
+
+//-----------------------------------------------------------------------------
+// Compare Logical Helpers
+//-----------------------------------------------------------------------------
+
+// Compare Logical 32-bit Register vs Register
 void MacroAssembler::CmpLogical(Register dst, Register src) {
+  clr(dst, src);
+}
+
+// Compare Logical Pointer Sized Register vs Register
+void MacroAssembler::CmpLogicalP(Register dst, Register src) {
 #ifdef V8_TARGET_ARCH_S390X
   clgr(dst, src);
 #else
-  clr(dst, src);
+  CmpLogical(dst, src);
 #endif
 }
+
+// Compare Logical 32-bit Register vs Immediate
+void MacroAssembler::CmpLogical(Register dst, const Operand& opnd) {
+  clfi(dst, opnd);
+}
+
+// Compare Logical Pointer Sized Register vs Immediate
+void MacroAssembler::CmpLogicalP(Register dst, const Operand& opnd) {
+#if V8_TARGET_ARCH_S390X
+  ASSERT(static_cast<uint32_t>(opnd.immediate() >> 32) == 0);
+  clgfi(dst, opnd);
+#else
+  CmpLogical(dst, opnd);
+#endif
+}
+
+// Compare Logical 32-bit Register vs Memory
+void MacroAssembler::CmpLogical(Register dst, const MemOperand& opnd) {
+  // make sure offset is within 20 bit range
+  ASSERT(is_int20(opnd.offset()));
+  if (is_uint12(opnd.offset()))
+    cl(dst, opnd);
+  else
+    cly(dst, opnd);
+}
+
+// Compare Logical Pointer Sized Register vs Memory
+void MacroAssembler::CmpLogicalP(Register dst, const MemOperand& opnd) {
+  // make sure offset is within 20 bit range
+  ASSERT(is_int20(opnd.offset()));
+#if V8_TARGET_ARCH_S390X
+  clg(dst, opnd);
+#else
+  CmpLogical(dst, opnd);
+#endif
+}
+
+// Compare Logical Byte (Mem - Imm)
+void MacroAssembler::CmpLogicalByte(const MemOperand& mem, const Operand& imm) {
+  ASSERT(is_uint8(imm.immediate()));
+  if (is_uint12(mem.offset()))
+    cli(mem, imm);
+  else
+    cliy(mem, imm);
+}
+
 
 void MacroAssembler::Addl(Register dst, const Operand& opnd) {
 #ifdef V8_TARGET_ARCH_S390X
@@ -4681,24 +4724,6 @@ void MacroAssembler::LoadDoubleLiteral(DoubleRegister result,
   iihf(scratch, Operand(hi_32));
   iilf(scratch, Operand(lo_32));
   ldgr(result, scratch);
-}
-
-void MacroAssembler::Cmp(Register src1, Register src2) {
-#if V8_TARGET_ARCH_S390X
-  cgr(src1, src2);
-#else
-  cr_z(src1, src2);
-#endif
-}
-
-// Cmp overloads it
-void MacroAssembler::Cmpi(Register src1, const Operand& src2) {
-  Cmp(src1, src2);
-}
-
-// CmpLogical overloads it
-void MacroAssembler::CmpLogicali(Register src1, const Operand& src2) {
-  CmpLogical(src1, src2);
 }
 
 void MacroAssembler::CmpSmiLiteral(Register src1, Smi *smi, Register scratch) {

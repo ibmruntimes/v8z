@@ -84,13 +84,13 @@ static void ProbeTable(Isolate* isolate,
 
   // Check that the key in the entry matches the name.
   __ LoadP(ip, MemOperand(base_addr, 0));
-  __ CmpRR(name, ip);
+  __ CmpP(name, ip);
   __ bne(&miss);
 
   // Check the map matches.
   __ LoadP(ip, MemOperand(base_addr, map_off_addr - key_off_addr));
   __ LoadP(scratch2, FieldMemOperand(receiver, HeapObject::kMapOffset));
-  __ CmpRR(ip, scratch2);
+  __ CmpP(ip, scratch2);
   __ bne(&miss);
 
   // Get the code entry from the cache.
@@ -108,7 +108,7 @@ static void ProbeTable(Isolate* isolate,
   __ NotP(r0);
   __ AndP(flags_reg, r0);
   __ mov(r0, Operand(flags));
-  __ CmpLogical(flags_reg, r0);
+  __ CmpLogicalP(flags_reg, r0);
   __ bne(&miss);
 
 #ifdef DEBUG
@@ -159,7 +159,7 @@ static void GenerateDictionaryNegativeLookup(MacroAssembler* masm,
 
   // Check that receiver is a JSObject.
   __ LoadlB(scratch0, FieldMemOperand(map, Map::kInstanceTypeOffset));
-  __ Cmpi(scratch0, Operand(FIRST_SPEC_OBJECT_TYPE));
+  __ CmpP(scratch0, Operand(FIRST_SPEC_OBJECT_TYPE));
   __ blt(miss_label);
 
   // Load properties array.
@@ -321,7 +321,7 @@ void StubCompiler::GenerateDirectLoadGlobalFunctionPrototype(
   __ LoadP(prototype,
            MemOperand(cp, Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
   __ Move(ip, isolate->global_object());
-  __ CmpRR(prototype, ip);
+  __ CmpP(prototype, ip);
   __ bne(miss);
   // Get the global function with the given index.
   Handle<JSFunction> function(
@@ -391,7 +391,7 @@ static void GenerateStringCheck(MacroAssembler* masm,
   __ mov(scratch2, Operand(kIsNotStringMask));
   __ AndP(scratch2, scratch1);
   // The cast is to resolve the overload for the argument of 0x0.
-  __ Cmpi(scratch2, Operand(static_cast<intptr_t>(kStringTag)));
+  __ CmpP(scratch2, Operand(static_cast<intptr_t>(kStringTag)));
   __ bne(non_string_object);
 }
 
@@ -420,7 +420,7 @@ void StubCompiler::GenerateLoadStringLength(MacroAssembler* masm,
   if (support_wrappers) {
     // Check if the object is a JSValue wrapper.
     __ bind(&check_wrapper);
-    __ Cmpi(scratch1, Operand(JS_VALUE_TYPE));
+    __ CmpP(scratch1, Operand(JS_VALUE_TYPE));
     __ bne(miss);
 
     // Unwrap the value and check if the wrapped value is a string.
@@ -1195,7 +1195,7 @@ void StubCompiler::GenerateDictionaryLoadCallback(Register receiver,
   const int kValueOffset = kElementsStartOffset + kPointerSize;
   __ LoadP(scratch2, FieldMemOperand(pointer, kValueOffset));
   __ mov(scratch3, Operand(callback));
-  __ CmpRR(scratch2, scratch3);
+  __ CmpP(scratch2, scratch3);
   __ bne(miss);
 }
 
@@ -1452,8 +1452,7 @@ void StubCompiler::GenerateLoadInterceptor(Handle<JSObject> object,
 
 void CallStubCompiler::GenerateNameCheck(Handle<String> name, Label* miss) {
   if (kind_ == Code::KEYED_CALL_IC) {
-    __ mov(r0, Operand(name));
-    __ Cmp(r4, r0);
+    __ CmpP(r4, Operand(name));
     __ bne(miss);
   }
 }
@@ -1500,10 +1499,10 @@ void CallStubCompiler::GenerateLoadFunctionFromCell(
     __ Move(r5, Handle<SharedFunctionInfo>(function->shared()));
     __ LoadP(r6,
              FieldMemOperand(r3, JSFunction::kSharedFunctionInfoOffset));
-    __ CmpRR(r6, r5);
+    __ CmpP(r6, r5);
   } else {
     __ mov(r5, Operand(function));
-    __ CmpRR(r3, r5);
+    __ CmpP(r3, r5);
   }
   __ bne(miss);
 }
@@ -1617,7 +1616,7 @@ Handle<Code> CallStubCompiler::CompileArrayPushCall(
       __ LoadP(r6, FieldMemOperand(elements, FixedArray::kLengthOffset));
 
       // Check if we could survive without allocation.
-      __ CmpRR(r2, r6);
+      __ CmpP(r2, r6);
       __ bgt(&attempt_to_grow_elements);
 
       // Check if value is a smi.
@@ -1731,13 +1730,13 @@ Handle<Code> CallStubCompiler::CompileArrayPushCall(
       __ AddP(end_elements, Operand(kEndElementsOffset));
       __ mov(r9, Operand(new_space_allocation_top));
       __ LoadP(r5, MemOperand(r9));
-      __ CmpRR(end_elements, r5);
+      __ CmpP(end_elements, r5);
       __ bne(&call_builtin);
 
       __ mov(r1, Operand(new_space_allocation_limit));
       __ LoadP(r1, MemOperand(r1));
       __ AddP(r5, Operand(kAllocationDelta * kPointerSize));
-      __ CmpLogical(r5, r1);
+      __ CmpLogicalP(r5, r1);
       __ bgt(&call_builtin);
 
       // We fit and could grow elements.
@@ -1821,7 +1820,7 @@ Handle<Code> CallStubCompiler::CompileArrayPopCall(
   // Get the array's length into r6 and calculate new length.
   __ LoadP(r6, FieldMemOperand(receiver, JSArray::kLengthOffset));
   __ SubSmiLiteral(r6, r6, Smi::FromInt(1), r0);
-  __ Cmpi(r6, Operand::Zero());
+  __ CmpP(r6, Operand::Zero());
   __ blt(&return_undefined);
 
   // Get the last element.
@@ -1831,7 +1830,7 @@ Handle<Code> CallStubCompiler::CompileArrayPopCall(
   __ SmiToPtrArrayOffset(r2, r6);
   __ AddP(elements, r2);
   __ LoadP(r2, FieldMemOperand(elements, FixedArray::kHeaderSize));
-  __ CmpRR(r2, r8);
+  __ CmpP(r2, r8);
   __ beq(&call_builtin);
 
   // Set the array's length.
@@ -2174,7 +2173,7 @@ Handle<Code> CallStubCompiler::CompileMathFloorCall(
   __ SmiTag(r2);
 
   // Check for -0
-  __ Cmpi(r2, Operand::Zero());
+  __ CmpP(r2, Operand::Zero());
   __ bne(&drop_arg_return);
 
   __ LoadP(r3, MemOperand(sp, 0 * kPointerSize));
@@ -2785,7 +2784,7 @@ Handle<Code> StoreStubCompiler::CompileStoreGlobal(
   // Check that the map of the global has not changed.
   __ LoadP(r5, FieldMemOperand(r3, HeapObject::kMapOffset));
   __ mov(r6, Operand(Handle<Map>(object->map())));
-  __ CmpRR(r5, r6);
+  __ CmpP(r5, r6);
   __ bne(&miss);
 
   // Check that the value in the cell is not the hole. If it is, this
@@ -3052,9 +3051,8 @@ Handle<Code> KeyedLoadStubCompiler::CompileLoadField(Handle<String> name,
   Label miss;
 
   // Check the key is the cached one.
-  __ mov(r0, Operand(name));
-  __ Cmp(r2, r0);
-  __ bne(&miss);
+  __ CmpP(r2, Operand(name));
+  __ bne(&miss, Label::kNear);
 
   GenerateLoadField(receiver, holder, r3, r4, r5, r6, index,
                     name, &miss);
@@ -3078,9 +3076,8 @@ Handle<Code> KeyedLoadStubCompiler::CompileLoadCallback(
   Label miss;
 
   // Check the key is the cached one.
-  __ mov(r0, Operand(name));
-  __ Cmp(r2, r0);
-  __ bne(&miss);
+  __ CmpP(r2, Operand(name));
+  __ bne(&miss, Label::kNear);
 
   GenerateLoadCallback(receiver, holder, r3, r2, r4, r5, r6, r7,
                        callback, name, &miss);
@@ -3105,7 +3102,7 @@ Handle<Code> KeyedLoadStubCompiler::CompileLoadConstant(
 
   // Check the key is the cached one.
   __ mov(r4, Operand(name));
-  __ CmpRR(r2, r4);
+  __ CmpP(r2, r4);
   __ bne(&miss);
 
   GenerateLoadConstant(receiver, holder, r3, r4, r5, r6, value, name,
@@ -3130,9 +3127,8 @@ Handle<Code> KeyedLoadStubCompiler::CompileLoadInterceptor(
   Label miss;
 
   // Check the key is the cached one.
-  __ mov(r0, Operand(name));
-  __ Cmp(r2, r0);
-  __ bne(&miss);
+  __ CmpP(r2, Operand(name));
+  __ bne(&miss, Label::kNear);
 
   LookupResult lookup(isolate());
   LookupPostInterceptor(holder, name, &lookup);
@@ -3155,9 +3151,8 @@ Handle<Code> KeyedLoadStubCompiler::CompileLoadArrayLength(
   Label miss;
 
   // Check the key is the cached one.
-  __ mov(r0, Operand(name));
-  __ Cmp(r2, r0);
-  __ bne(&miss);
+  __ CmpP(r2, Operand(name));
+  __ bne(&miss, Label::kNear);
 
   GenerateLoadArrayLength(masm(), r3, r4, &miss);
   __ bind(&miss);
@@ -3180,9 +3175,8 @@ Handle<Code> KeyedLoadStubCompiler::CompileLoadStringLength(
   __ IncrementCounter(counters->keyed_load_string_length(), 1, r4, r5);
 
   // Check the key is the cached one.
-  __ mov(r0, Operand(name));
-  __ Cmp(r2, r0);
-  __ bne(&miss);
+  __ CmpP(r2, Operand(name));
+  __ bne(&miss, Label::kNear);
 
   GenerateLoadStringLength(masm(), r3, r4, r5, &miss, true);
   __ bind(&miss);
@@ -3207,9 +3201,8 @@ Handle<Code> KeyedLoadStubCompiler::CompileLoadFunctionPrototype(
   __ IncrementCounter(counters->keyed_load_function_prototype(), 1, r4, r5);
 
   // Check the name hasn't changed.
-  __ mov(r0, Operand(name));
-  __ Cmp(r2, r0);
-  __ bne(&miss);
+  __ CmpP(r2, Operand(name));
+  __ bne(&miss, Label::kNear);
 
   GenerateLoadFunctionPrototype(masm(), r3, r4, r5, &miss);
   __ bind(&miss);
@@ -3256,7 +3249,7 @@ Handle<Code> KeyedLoadStubCompiler::CompileLoadPolymorphic(
   for (int current = 0; current < receiver_count; ++current) {
     Label no_match;
     __ mov(ip, Operand(receiver_maps->at(current)));
-    __ CmpRR(r4, ip);
+    __ CmpP(r4, ip);
     __ bne(&no_match);
     __ Jump(handler_ics->at(current), RelocInfo::CODE_TARGET, al);
     __ bind(&no_match);
@@ -3287,9 +3280,8 @@ Handle<Code> KeyedStoreStubCompiler::CompileStoreField(Handle<JSObject> object,
   __ IncrementCounter(counters->keyed_store_field(), 1, r5, r6);
 
   // Check that the name has not changed.
-  __ mov(r0, Operand(name));
-  __ Cmp(r3, r0);
-  __ bne(&miss);
+  __ CmpP(r3, Operand(name));
+  __ bne(&miss, Label::kNear);
 
   // r5 is used as scratch register. r3 and r4 keep their values if a jump
   // to the miss label is generated.
@@ -3355,7 +3347,7 @@ Handle<Code> KeyedStoreStubCompiler::CompileStorePolymorphic(
   __ LoadP(r5, FieldMemOperand(r4, HeapObject::kMapOffset));
   for (int i = 0; i < receiver_count; ++i) {
     __ mov(ip, Operand(receiver_maps->at(i)));
-    __ CmpRR(r5, ip);
+    __ CmpP(r5, ip);
     if (transitioned_maps->at(i).is_null()) {
       Label skip;
       __ bne(&skip);
@@ -3398,7 +3390,7 @@ Handle<Code> ConstructStubCompiler::CompileConstructStub(
   // code for the function thereby hitting the break points.
   __ LoadP(r4, FieldMemOperand(r3, JSFunction::kSharedFunctionInfoOffset));
   __ LoadP(r4, FieldMemOperand(r4, SharedFunctionInfo::kDebugInfoOffset));
-  __ CmpRR(r4, r9);
+  __ CmpP(r4, r9);
   __ bne(&generic_stub_call);
 #endif
 
@@ -3467,7 +3459,7 @@ Handle<Code> ConstructStubCompiler::CompileConstructStub(
       Label not_passed, next;
       // Check if the argument assigned to the property is actually passed.
       int arg_number = shared->GetThisPropertyAssignmentArgument(i);
-      __ Cmpi(r2, Operand(arg_number));
+      __ CmpP(r2, Operand(arg_number));
       __ ble(&not_passed);
       // Argument passed - find it on the stack.
       __ LoadP(r4, MemOperand(r3, (arg_number + 1) * -kPointerSize), r0);
@@ -3637,7 +3629,7 @@ void KeyedLoadStubCompiler::GenerateLoadExternalArray(
 
   // Check that the index is in range.
   __ LoadP(ip, FieldMemOperand(r5, ExternalArray::kLengthOffset));
-  __ CmpLogical(key, ip);
+  __ CmpLogicalP(key, ip);
   // Unsigned comparison catches both negative and too-large values.
   __ bge(&miss_force_generic);
 
@@ -3836,7 +3828,7 @@ void KeyedStoreStubCompiler::GenerateStoreExternalArray(
 
   // Check that the index is in range
   __ LoadP(ip, FieldMemOperand(r5, ExternalArray::kLengthOffset));
-  __ CmpLogical(key, ip);
+  __ CmpLogicalP(key, ip);
   // Unsigned comparison catches both negative and too-large values.
   __ bge(&miss_force_generic);
 
@@ -4084,7 +4076,7 @@ void KeyedLoadStubCompiler::GenerateLoadFastDoubleElement(
   uint32_t upper_32_offset = FixedArray::kHeaderSize;
 #endif
   __ LoadlW(scratch, FieldMemOperand(indexed_double_offset, upper_32_offset));
-  __ Cmpi(scratch, Operand(kHoleNanUpper32));
+  __ CmpP(scratch, Operand(kHoleNanUpper32));
   __ beq(&miss_force_generic);
 
   // Non-NaN. Allocate a new heap number and copy the double value into it.

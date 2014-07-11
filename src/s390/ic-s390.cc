@@ -55,11 +55,11 @@ static void GenerateGlobalInstanceTypeCheck(MacroAssembler* masm,
                                             Label* global_object) {
   // Register usage:
   //   type: holds the receiver instance type on entry.
-  __ Cmpi(type, Operand(JS_GLOBAL_OBJECT_TYPE));
+  __ CmpP(type, Operand(JS_GLOBAL_OBJECT_TYPE));
   __ beq(global_object);
-  __ Cmpi(type, Operand(JS_BUILTINS_OBJECT_TYPE));
+  __ CmpP(type, Operand(JS_BUILTINS_OBJECT_TYPE));
   __ beq(global_object);
-  __ Cmpi(type, Operand(JS_GLOBAL_PROXY_TYPE));
+  __ CmpP(type, Operand(JS_GLOBAL_PROXY_TYPE));
   __ beq(global_object);
 }
 
@@ -293,7 +293,7 @@ static void GenerateKeyedLoadReceiverCheck(MacroAssembler* masm,
   // objects work as intended.
   ASSERT(JS_OBJECT_TYPE > JS_VALUE_TYPE);
   __ LoadlB(scratch, FieldMemOperand(map, Map::kInstanceTypeOffset));
-  __ Cmpi(scratch, Operand(JS_OBJECT_TYPE));
+  __ CmpP(scratch, Operand(JS_OBJECT_TYPE));
   __ blt(slow);
 }
 
@@ -342,7 +342,7 @@ static void GenerateFastArrayLoad(MacroAssembler* masm,
   }
   // Check that the key (index) is within bounds.
   __ LoadP(scratch1, FieldMemOperand(elements, FixedArray::kLengthOffset));
-  __ CmpLogical(key, scratch1);
+  __ CmpLogicalP(key, scratch1);
   __ bge(out_of_range);
   // Fast case: Do the load.
   __ AddP(scratch1, elements,
@@ -429,7 +429,7 @@ void CallICBase::GenerateMonomorphicCacheProbe(MacroAssembler* masm,
 
   // Check for string.
   __ bind(&non_number);
-  __ CmpLogicali(r5, Operand(FIRST_NONSTRING_TYPE));
+  __ CmpLogicalP(r5, Operand(FIRST_NONSTRING_TYPE));
   __ bge(&non_string);
   StubCompiler::GenerateLoadGlobalFunctionPrototype(
       masm, Context::STRING_FUNCTION_INDEX, r3);
@@ -540,7 +540,7 @@ void CallICBase::GenerateMiss(MacroAssembler* masm,
     __ JumpIfSmi(r4, &invoke);
     __ CompareObjectType(r4, r5, r5, JS_GLOBAL_OBJECT_TYPE);
     __ beq(&global);
-    __ Cmpi(r5, Operand(JS_BUILTINS_OBJECT_TYPE));
+    __ CmpP(r5, Operand(JS_BUILTINS_OBJECT_TYPE));
     __ bne(&invoke);
 
     // Patch the receiver on the stack.
@@ -799,7 +799,7 @@ static MemOperand GenerateMappedArgumentsLookup(MacroAssembler* masm,
   // to the unmapped lookup with the parameter map in scratch1.
   __ LoadP(scratch2, FieldMemOperand(scratch1, FixedArray::kLengthOffset));
   __ SubSmiLiteral(scratch2, scratch2, Smi::FromInt(2), r0);
-  __ CmpLogical(key, scratch2);
+  __ CmpLogicalP(key, scratch2);
   __ bge(unmapped_case);
 
   // Load element index and check whether it is the hole.
@@ -840,7 +840,7 @@ static MemOperand GenerateUnmappedArgumentsLookup(MacroAssembler* masm,
   __ CheckMap(backing_store, scratch, fixed_array_map, slow_case,
               DONT_DO_SMI_CHECK);
   __ LoadP(scratch, FieldMemOperand(backing_store, FixedArray::kLengthOffset));
-  __ CmpLogical(key, scratch);
+  __ CmpLogicalP(key, scratch);
   __ bge(slow_case);
   __ SmiToPtrArrayOffset(scratch, key);
   __ AddP(scratch, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
@@ -1065,10 +1065,10 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
     // Load map and move r6 to next entry.
     __ LoadP(r7, MemOperand(r6));
     __ AddP(r6, Operand(kPointerSize * 2));
-    __ CmpRR(r4, r7);
+    __ CmpP(r4, r7);
     __ bne(&try_next_entry);
     __ LoadP(r7, MemOperand(r6, -kPointerSize));  // Load symbol
-    __ CmpRR(r2, r7);
+    __ CmpP(r2, r7);
     __ beq(&hit_on_nth_entry[i]);
     __ bind(&try_next_entry);
   }
@@ -1076,10 +1076,10 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   // Last entry: Load map and move r6 to symbol.
   __ LoadP(r7, MemOperand(r6));
   __ AddP(r6, Operand(kPointerSize));
-  __ CmpRR(r4, r7);
+  __ CmpP(r4, r7);
   __ bne(&slow);
   __ LoadP(r7, MemOperand(r6));
-  __ CmpRR(r2, r7);
+  __ CmpP(r2, r7);
   __ bne(&slow);
 
   // Get field offset.
@@ -1101,7 +1101,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
     __ LoadlW(r7, MemOperand(r7, r6));
     __ LoadlB(r8, FieldMemOperand(r4, Map::kInObjectPropertiesOffset));
     __ Sub(r7, r7, r8);
-    __ Cmpi(r7, Operand::Zero());
+    __ CmpP(r7, Operand::Zero());
     __ bge(&property_array_property);
     if (i != 0) {
       __ b(&load_in_object_property);
@@ -1205,7 +1205,7 @@ void KeyedLoadIC::GenerateIndexedInterceptor(MacroAssembler* masm) {
   // are not enabled for this object.
   __ LoadlB(r5, FieldMemOperand(r4, Map::kBitFieldOffset));
   __ AndP(r5, Operand(kSlowCaseBitFieldMask));
-  __ Cmpi(r5, Operand(1 << Map::kHasIndexedInterceptor));
+  __ CmpP(r5, Operand(1 << Map::kHasIndexedInterceptor));
   __ bne(&slow);
 
   // Everything is fine, call runtime.
@@ -1347,7 +1347,7 @@ static void KeyedStoreGenerateGenericHelper(
     __ LoadP(elements_map, FieldMemOperand(elements, HeapObject::kMapOffset));
     __ mov(scratch_value,
             Operand(masm->isolate()->factory()->fixed_array_map()));
-    __ CmpRR(elements_map, scratch_value);
+    __ CmpP(elements_map, scratch_value);
     __ bne(fast_double);
   }
   // Smi stores don't require further checks.
@@ -1497,17 +1497,17 @@ void KeyedStoreIC::GenerateGeneric(MacroAssembler* masm,
   __ bne(&slow /*, cr0*/);
   // Check if the object is a JS array or not.
   __ LoadlB(r6, FieldMemOperand(receiver_map, Map::kInstanceTypeOffset));
-  __ Cmpi(r6, Operand(JS_ARRAY_TYPE));
+  __ CmpP(r6, Operand(JS_ARRAY_TYPE));
   __ beq(&array);
   // Check that the object is some kind of JSObject.
-  __ Cmpi(r6, Operand(FIRST_JS_OBJECT_TYPE));
+  __ CmpP(r6, Operand(FIRST_JS_OBJECT_TYPE));
   __ blt(&slow);
 
   // Object case: Check key against length in the elements array.
   __ LoadP(elements, FieldMemOperand(receiver, JSObject::kElementsOffset));
   // Check array bounds. Both the key and the length of FixedArray are smis.
   __ LoadP(ip, FieldMemOperand(elements, FixedArray::kLengthOffset));
-  __ CmpLogical(key, ip);
+  __ CmpLogicalP(key, ip);
   __ blt(&fast_object);
 
   // Slow case, handle jump to runtime.
@@ -1527,17 +1527,17 @@ void KeyedStoreIC::GenerateGeneric(MacroAssembler* masm,
   // Check for room in the elements backing store.
   // Both the key and the length of FixedArray are smis.
   __ LoadP(ip, FieldMemOperand(elements, FixedArray::kLengthOffset));
-  __ CmpLogical(key, ip);
+  __ CmpLogicalP(key, ip);
   __ bge(&slow);
   __ LoadP(elements_map, FieldMemOperand(elements, HeapObject::kMapOffset));
   __ mov(ip, Operand(masm->isolate()->factory()->fixed_array_map()));
-  __ CmpRR(elements_map, ip);  // PPC - I think I can re-use ip here
+  __ CmpP(elements_map, ip);  // PPC - I think I can re-use ip here
   __ bne(&check_if_double_array);
   __ b(&fast_object_grow);
 
   __ bind(&check_if_double_array);
   __ mov(ip, Operand(masm->isolate()->factory()->fixed_double_array_map()));
-  __ CmpRR(elements_map, ip);  // PPC - another ip re-use
+  __ CmpP(elements_map, ip);  // PPC - another ip re-use
   __ bne(&slow);
   __ b(&fast_double_grow);
 
@@ -1549,7 +1549,7 @@ void KeyedStoreIC::GenerateGeneric(MacroAssembler* masm,
 
   // Check the key against the length in the array.
   __ LoadP(ip, FieldMemOperand(receiver, JSArray::kLengthOffset));
-  __ CmpLogical(key, ip);
+  __ CmpLogicalP(key, ip);
   __ bge(&extra);
 
   KeyedStoreGenerateGenericHelper(masm, &fast_object, &fast_double,
@@ -1835,7 +1835,7 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
     // Emit the Nop to make bigger place for patching
     // (replaced by lr + nill)
     ASSERT(check == DISABLE_INLINED_SMI_CHECK);
-    patcher.masm()->CmpRR(reg, reg);
+    patcher.masm()->CmpP(reg, reg);
 #ifndef V8_TARGET_ARCH_S390X
     patcher.masm()->nop();
 #endif
