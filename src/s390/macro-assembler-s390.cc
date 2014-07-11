@@ -196,13 +196,11 @@ void MacroAssembler::Ret() {
   b(r14);
 }
 
-
 void MacroAssembler::Drop(int count) {
   if (count > 0) {
     la(sp, MemOperand(sp, count * kPointerSize));
   }
 }
-
 
 void MacroAssembler::Ret(int drop) {
   Drop(drop);
@@ -210,20 +208,17 @@ void MacroAssembler::Ret(int drop) {
 }
 
 void MacroAssembler::Call(Label* target) {
-  b(r14, target /*, SetLK*/);
+  b(r14, target);
 }
-
 
 void MacroAssembler::Push(Handle<Object> handle) {
   mov(ip, Operand(handle));
   push(ip);
 }
 
-
 void MacroAssembler::Move(Register dst, Handle<Object> value) {
   mov(dst, Operand(value));
 }
-
 
 void MacroAssembler::Move(Register dst, Register src, Condition cond) {
   if (!dst.is(src)) {
@@ -231,13 +226,11 @@ void MacroAssembler::Move(Register dst, Register src, Condition cond) {
   }
 }
 
-
 void MacroAssembler::Move(DoubleRegister dst, DoubleRegister src) {
   if (!dst.is(src)) {
     ldr(dst, src);
   }
 }
-
 
 void MacroAssembler::MultiPush(RegList regs) {
   int16_t num_to_push = NumberOfBitsSet(regs);
@@ -335,9 +328,8 @@ void MacroAssembler::RecordWriteField(
   AddP(dst, object, Operand(offset - kHeapObjectTag));
   if (emit_debug_code()) {
     Label ok;
-    mov(r0, Operand((1 << kPointerSizeLog2) - 1));
-    AndP(r0, dst);
-    beq(&ok /*, cr0*/);
+    AndP(r0, dst, Operand((1 << kPointerSizeLog2) - 1));
+    beq(&ok, Label::kNear);
     stop("Unaligned cell in write barrier");
     bind(&ok);
   }
@@ -3510,25 +3502,22 @@ void MacroAssembler::HasColor(Register object,
   Label other_color, word_boundary;
   LoadlW(ip, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
   // Test the first bit
-  LoadRR(r0, ip);
-  AndP(r0, mask_scratch/*, SetRC*/);  // Should be okay to remove rc
-  b(first_bit == 1 ? eq : ne, &other_color /*, cr0*/);
+  AndP(r0, ip, mask_scratch/*, SetRC*/);  // Should be okay to remove rc
+  b(first_bit == 1 ? eq : ne, &other_color, Label::kNear);
   // Shift left 1
   // May need to load the next cell
   sll(mask_scratch, Operand(1)/*, SetRC*/);
   beq(&word_boundary /*, cr0*/);
   // Test the second bit
-  LoadRR(r0, ip);
-  AndP(r0, mask_scratch/*, SetRC*/);  // Should be okay to remove rc
-  b(second_bit == 1 ? ne : eq, has_color /*, cr0*/);
-  b(&other_color);
+  AndP(r0, ip, mask_scratch/*, SetRC*/);  // Should be okay to remove rc
+  b(second_bit == 1 ? ne : eq, has_color);
+  b(&other_color, Label::kNear);
 
   bind(&word_boundary);
   LoadlW(ip, MemOperand(bitmap_scratch,
                      MemoryChunk::kHeaderSize + kIntSize));
-  mov(r0, Operand(1));
-  AndP(r0, ip);
-  b(second_bit == 1 ? ne : eq, has_color /*, cr0*/);
+  AndP(r0, ip, Operand(1));
+  b(second_bit == 1 ? ne : eq, has_color);
   bind(&other_color);
 }
 
