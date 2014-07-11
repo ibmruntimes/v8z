@@ -4619,7 +4619,7 @@ void MacroAssembler::Load(Register dst, const MemOperand& opnd) {
 //-----------------------------------------------------------------------------
 
 // Compare 32-bit Register vs Register
-void MacroAssembler::Cmp(Register src1, Register src2) {
+void MacroAssembler::Cmp32(Register src1, Register src2) {
   cr_z(src1, src2);
 }
 
@@ -4628,13 +4628,13 @@ void MacroAssembler::CmpP(Register src1, Register src2) {
 #if V8_TARGET_ARCH_S390X
   cgr(src1, src2);
 #else
-  Cmp(src1, src2);
+  Cmp32(src1, src2);
 #endif
 }
 
 // Compare 32-bit Register vs Immediate
 // This helper will set up proper relocation entries if required.
-void MacroAssembler::Cmp(Register dst, const Operand& opnd) {
+void MacroAssembler::Cmp32(Register dst, const Operand& opnd) {
   if (opnd.rmode_ == RelocInfo::NONE) {
     intptr_t value = opnd.immediate();
     if (is_int16(value))
@@ -4656,15 +4656,15 @@ void MacroAssembler::CmpP(Register dst, const Operand& opnd) {
     cgfi(dst, opnd);
   } else {
     mov(r0, opnd);   // Need to generate 64-bit relocation
-    Cmp(dst, r0);
+    Cmp32(dst, r0);
   }
 #else
-  Cmp(dst, opnd);
+  Cmp32(dst, opnd);
 #endif
 }
 
 // Compare 32-bit Register vs Memory
-void MacroAssembler::Cmp(Register dst, const MemOperand& opnd) {
+void MacroAssembler::Cmp32(Register dst, const MemOperand& opnd) {
   // make sure offset is within 20 bit range
   ASSERT(is_int20(opnd.offset()));
   if (is_uint12(opnd.offset()))
@@ -4680,7 +4680,7 @@ void MacroAssembler::CmpP(Register dst, const MemOperand& opnd) {
 #if V8_TARGET_ARCH_S390X
   cg(dst, opnd);
 #else
-  Cmp(dst, opnd);
+  Cmp32(dst, opnd);
 #endif
 }
 
@@ -4689,7 +4689,7 @@ void MacroAssembler::CmpP(Register dst, const MemOperand& opnd) {
 //-----------------------------------------------------------------------------
 
 // Compare Logical 32-bit Register vs Register
-void MacroAssembler::CmpLogical(Register dst, Register src) {
+void MacroAssembler::CmpLogical32(Register dst, Register src) {
   clr(dst, src);
 }
 
@@ -4698,12 +4698,12 @@ void MacroAssembler::CmpLogicalP(Register dst, Register src) {
 #ifdef V8_TARGET_ARCH_S390X
   clgr(dst, src);
 #else
-  CmpLogical(dst, src);
+  CmpLogical32(dst, src);
 #endif
 }
 
 // Compare Logical 32-bit Register vs Immediate
-void MacroAssembler::CmpLogical(Register dst, const Operand& opnd) {
+void MacroAssembler::CmpLogical32(Register dst, const Operand& opnd) {
   clfi(dst, opnd);
 }
 
@@ -4713,12 +4713,12 @@ void MacroAssembler::CmpLogicalP(Register dst, const Operand& opnd) {
   ASSERT(static_cast<uint32_t>(opnd.immediate() >> 32) == 0);
   clgfi(dst, opnd);
 #else
-  CmpLogical(dst, opnd);
+  CmpLogical32(dst, opnd);
 #endif
 }
 
 // Compare Logical 32-bit Register vs Memory
-void MacroAssembler::CmpLogical(Register dst, const MemOperand& opnd) {
+void MacroAssembler::CmpLogical32(Register dst, const MemOperand& opnd) {
   // make sure offset is within 20 bit range
   ASSERT(is_int20(opnd.offset()));
   if (is_uint12(opnd.offset()))
@@ -4734,7 +4734,7 @@ void MacroAssembler::CmpLogicalP(Register dst, const MemOperand& opnd) {
 #if V8_TARGET_ARCH_S390X
   clg(dst, opnd);
 #else
-  CmpLogical(dst, opnd);
+  CmpLogical32(dst, opnd);
 #endif
 }
 
