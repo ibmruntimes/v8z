@@ -3901,6 +3901,10 @@ void MacroAssembler::CmpLogicalByte(const MemOperand& mem, const Operand& imm) {
 }
 
 void MacroAssembler::Sub(Register dst, Register src1, Register src2) {
+  if (CpuFeatures::IsSupported(DISTINCT_OPS) && !dst.is(src1)) {
+    SubP_RRR(dst, src1, src2);
+    return;
+  }
   if (!dst.is(src1) && !dst.is(src2))
     LoadRR(dst, src1);
   // In scenario where we have dst = src - dst, we need to swap and negate
@@ -4501,11 +4505,19 @@ void MacroAssembler::AddLogicalP(Register dst, const MemOperand& opnd) {
 
 void MacroAssembler::SubP(Register dst, Register src1, Register src2) {
   if (!dst.is(src1) && !dst.is(src2)) {
+    if (CpuFeatures::IsSupported(DISTINCT_OPS)) {
+      SubP_RRR(dst, src1, src2);
+      return;
+    }
     LoadRR(dst, src1);
     SubRR(dst, src2);
   } else if (dst.is(src1)) {
     SubRR(dst, src2);
   } else if (dst.is(src2)) {
+    if (CpuFeatures::IsSupported(DISTINCT_OPS)) {
+      SubP_RRR(dst, src1, src2);
+      return;
+    }
     SubRR(dst, src1);
     LoadComplementRR(dst, dst);
   } else {
