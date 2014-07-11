@@ -1248,20 +1248,23 @@ void Builtins::Generate_LazyCompile(MacroAssembler* masm) {
     FrameScope scope(masm, StackFrame::INTERNAL);
 
     // Preserve the function.
-    __ push(r3);
+    __ lay(sp, MemOperand(sp, -3 * kPointerSize));
+    __ StoreP(r3, MemOperand(sp, 2 * kPointerSize));
+
     // Push call kind information.
-    __ push(r7);
+    __ StoreP(r7, MemOperand(sp, 1 * kPointerSize));
 
     // Push the function on the stack as the argument to the runtime function.
-    __ push(r3);
+    __ StoreP(r3, MemOperand(sp, 0 * kPointerSize));
     __ CallRuntime(Runtime::kLazyCompile, 1);
     // Calculate the entry point.
     __ AddP(r4, r2, Operand(Code::kHeaderSize - kHeapObjectTag));
 
     // Restore call kind information.
-    __ pop(r7);
+    __ LoadP(r7, MemOperand(sp, 0));
     // Restore saved function.
-    __ pop(r3);
+    __ LoadP(r3, MemOperand(sp, kPointerSize));
+    __ la(sp, MemOperand(sp, 2 * kPointerSize));
 
     // Tear down internal frame.
   }
