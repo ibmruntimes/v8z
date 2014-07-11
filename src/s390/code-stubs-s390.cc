@@ -6235,23 +6235,24 @@ void StringAddStub::Generate(MacroAssembler* masm) {
   // r6: first string instance type (if flags_ == NO_STRING_ADD_FLAGS)
   // r7: second string instance type (if flags_ == NO_STRING_ADD_FLAGS)
   {
-    Label first_not_empty, return_second, strings_not_empty;
+    Label return_r2_string, strings_not_empty;
     // Check if either of the strings are empty. In that case return the other.
-    __ LoadP(r4, FieldMemOperand(r2, String::kLengthOffset));
-    __ LoadP(r5, FieldMemOperand(r3, String::kLengthOffset));
     STATIC_ASSERT(kSmiTag == 0);
-    // Test if first string is empty.
-    __ CmpSmiLiteral(r4, Smi::FromInt(0), r0);
-    __ bne(&first_not_empty);
-    __ LoadRR(r2, r3);  // If first is empty, return second.
-    __ b(&return_second);
-    STATIC_ASSERT(kSmiTag == 0);
-    __ bind(&first_not_empty);
-     // Else test if second string is empty.
-    __ CmpSmiLiteral(r5, Smi::FromInt(0), r0);
-    __ bne(&strings_not_empty);  // If either string was empty, return r2.
 
-    __ bind(&return_second);
+    // Test second string first, as if is empty, we can jump to return
+    // as r2 already has the first string.
+    __ LoadAndTestP(r5, FieldMemOperand(r3, String::kLengthOffset));
+    __ beq(&return_r2_string, Label::kNear);
+
+    // Else test First String
+    __ LoadAndTestP(r4, FieldMemOperand(r2, String::kLengthOffset));
+    __ bne(&strings_not_empty, Label::kNear);
+
+    // If first is empty, return second.
+    __ LoadRR(r2, r3);
+
+    // Return the string in r2
+    __ bind(&return_r2_string);
     __ IncrementCounter(counters->string_add_native(), 1, r4, r5);
     __ la(sp, MemOperand(sp, (2 * kPointerSize)));
     __ Ret();
