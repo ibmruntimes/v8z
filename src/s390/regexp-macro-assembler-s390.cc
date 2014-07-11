@@ -935,42 +935,64 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
       __ bind(&success_label_);
       if (num_saved_registers_ > 0) {
         // copy captures to output
-        __ LoadP(r3, MemOperand(frame_pointer(), kInputStart));
+        __ LoadP(r0, MemOperand(frame_pointer(), kInputStart));
         __ LoadP(r2, MemOperand(frame_pointer(), kRegisterOutput));
         __ LoadP(r4, MemOperand(frame_pointer(), kStartIndex));
-        __ Sub(r3, end_of_input_address(), r3);
-        // r3 is length of input in bytes.
+        __ Sub(r0, end_of_input_address(), r0);
+        // r0 is length of input in bytes.
         if (mode_ == UC16) {
-          __ ShiftRightP(r3, r3, Operand(1));
+          __ ShiftRightP(r0, r0, Operand(1));
         }
-        // r3 is length of input in characters.
-        __ AddP(r3, r4);
-        // r3 is length of string in characters.
+        // r0 is length of input in characters.
+        __ AddP(r0, r4);
+        // r0 is length of string in characters.
 
         ASSERT_EQ(0, num_saved_registers_ % 2);
         // Always an even number of capture registers. This allows us to
         // unroll the loop once to add an operation between a load of a register
         // and the following use of that register.
-        for (int i = 0; i < num_saved_registers_; i += 2) {
-          __ LoadP(r4, register_location(i), r0);
-          __ LoadP(r5, register_location(i + 1), r0);
-          if (i == 0 && global_with_zero_length_check()) {
-            // Keep capture start in r6 for the zero-length check later.
-            __ LoadRR(r6, r4);
-          }
-          if (mode_ == UC16) {
-            __ ShiftRightArithP(r4, r4, Operand(1));
-            __ AddP(r4, r3);
-            __ ShiftRightArithP(r5, r5, Operand(1));
-            __ AddP(r5, r3);
+        __ la(r2, MemOperand(r2, num_saved_registers_ * kIntSize));
+        for (int i = 0; i < num_saved_registers_;) {
+          if (false && i < num_saved_registers_ - 4) {
+            // TODO(john): Can be optimized by SIMD instructions
+            __ LoadMultipleP(r3, r6, register_location(i + 3));
+            if (mode_ == UC16) {
+              __ ShiftRightArithP(r3, r3, Operand(1));
+              __ ShiftRightArithP(r4, r4, Operand(1));
+              __ ShiftRightArithP(r5, r5, Operand(1));
+              __ ShiftRightArithP(r6, r6, Operand(1));
+            }
+            __ AddP(r3, r0);
+            __ AddP(r4, r0);
+            __ AddP(r5, r0);
+            __ AddP(r6, r0);
+            __ StoreW(r3, MemOperand(r2,
+                    -(num_saved_registers_ - i - 3) * kIntSize));
+            __ StoreW(r4, MemOperand(r2,
+                    -(num_saved_registers_ - i - 2) * kIntSize));
+            __ StoreW(r5, MemOperand(r2,
+                    -(num_saved_registers_ - i - 1) * kIntSize));
+            __ StoreW(r6, MemOperand(r2,
+                    -(num_saved_registers_ - i) * kIntSize));
+            i += 4;
           } else {
-            __ AddP(r4, r3);
-            __ AddP(r5, r3);
+            __ LoadMultipleP(r3, r4, register_location(i + 1));
+            if (mode_ == UC16) {
+              __ ShiftRightArithP(r3, r3, Operand(1));
+              __ ShiftRightArithP(r4, r4, Operand(1));
+            }
+            __ AddP(r3, r0);
+            __ AddP(r4, r0);
+            __ StoreW(r3, MemOperand(r2,
+                  -(num_saved_registers_ - i - 1) * kIntSize));
+            __ StoreW(r4, MemOperand(r2,
+                  -(num_saved_registers_ - i) * kIntSize));
+            i += 2;
           }
-          __ StoreW(r4, MemOperand(r2));
-          __ la(r2, MemOperand(r2, 2 * kIntSize));
-          __ StoreW(r5, MemOperand(r2, -kIntSize));
-          // __ la(r2, MemOperand(r2, kIntSize));
+        }
+        if (global_with_zero_length_check()) {
+          // Keep capture start in r6 for the zero-length check later.
+          __ LoadP(r6, register_location(0));
         }
       }
 
