@@ -1382,14 +1382,14 @@ void LCodeGen::DoSubI(LSubI* instr) {
 
   if (right->IsConstantOperand()) {
     if (checkOverflow)
-      __ Sub(ToRegister(result), ToRegister(left),
+      __ Sub32(ToRegister(result), ToRegister(left),
            Operand(ToInteger32(LConstantOperand::cast(right))));
     else
       __ SubP(ToRegister(result), ToRegister(left),
            Operand(ToInteger32(LConstantOperand::cast(right))));
   } else if (right->IsRegister()) {
     if (checkOverflow)
-      __ Sub(ToRegister(result), ToRegister(left), ToRegister(right));
+      __ Sub32(ToRegister(result), ToRegister(left), ToRegister(right));
     else
       __ SubP_ExtendSrc(ToRegister(result), ToRegister(left),
                         ToRegister(right));
@@ -1406,7 +1406,7 @@ void LCodeGen::DoSubI(LSubI* instr) {
     MemOperand mem = ToMemOperand(right);
 #endif
     if (checkOverflow) {
-      __ Sub(ToRegister(result), mem);
+      __ Sub32(ToRegister(result), mem);
     } else {
       __ SubP_ExtendSrc(ToRegister(result), mem);
     }
@@ -1578,14 +1578,14 @@ void LCodeGen::DoAddI(LAddI* instr) {
 
   if (right->IsConstantOperand()) {
     if (checkOverflow)
-      __ Add(ToRegister(result), ToRegister(left),
+      __ Add32(ToRegister(result), ToRegister(left),
            Operand(ToInteger32(LConstantOperand::cast(right))));
     else
       __ AddP(ToRegister(result), ToRegister(left),
            Operand(ToInteger32(LConstantOperand::cast(right))));
   } else if (right->IsRegister()) {
     if (checkOverflow)
-      __ Add(ToRegister(result), ToRegister(left), ToRegister(right));
+      __ Add32(ToRegister(result), ToRegister(left), ToRegister(right));
     else
       __ AddP_ExtendSrc(ToRegister(result), ToRegister(left),
                         ToRegister(right));
@@ -1602,7 +1602,7 @@ void LCodeGen::DoAddI(LAddI* instr) {
     MemOperand mem = ToMemOperand(right);
 #endif
     if (checkOverflow) {
-      __ Add(ToRegister(result), mem);
+      __ Add32(ToRegister(result), mem);
     } else {
       __ AddP_ExtendSrc(ToRegister(result), mem);
     }
@@ -4475,7 +4475,8 @@ void LCodeGen::DoNumberTagI(LNumberTagI* instr) {
 #if V8_TARGET_ARCH_S390X
   __ SmiTag(dst, src);
 #else
-  __ Add(dst, src, src);
+  // Add src to itself to defect SMI overflow.
+  __ Add32(dst, src, src);
   __ b(overflow, deferred->entry());
 #endif
   __ bind(deferred->exit());
