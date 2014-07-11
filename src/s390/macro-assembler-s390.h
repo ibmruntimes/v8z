@@ -339,6 +339,26 @@ class MacroAssembler: public Assembler {
   // Divide
   void DivP(Register dividend, Register divider);
 
+  // Compare
+  void Cmp32(Register src1, Register src2);
+  void CmpP(Register src1, Register src2);
+  void Cmp32(Register dst, const Operand& opnd);
+  void CmpP(Register dst, const Operand& opnd);
+  void Cmp32(Register dst, const MemOperand& opnd);
+  void CmpP(Register dst, const MemOperand& opnd);
+
+  // Compare Logical
+  void CmpLogical32(Register src1, Register src2);
+  void CmpLogicalP(Register src1, Register src2);
+  void CmpLogical32(Register src1, const Operand& opnd);
+  void CmpLogicalP(Register src1, const Operand& opnd);
+  void CmpLogical32(Register dst, const MemOperand& opnd);
+  void CmpLogicalP(Register dst, const MemOperand& opnd);
+
+  // Compare Logical Byte (CLI/CLIY)
+  void CmpLogicalByte(const MemOperand& mem, const Operand& imm);
+
+  // and 32bit
   // Load 32bit
   void Load(Register dst, const MemOperand& opnd);
   void Load(Register dst, const Operand& opnd);
@@ -355,26 +375,6 @@ class MacroAssembler: public Assembler {
   void StoreF(DoubleRegister dst, const MemOperand& opnd);
   void StoreShortF(DoubleRegister dst, const MemOperand& opnd);
 
-  // Compare
-  void Cmp(Register src1, Register src2);
-  void CmpP(Register src1, Register src2);
-  void Cmp(Register dst, const Operand& opnd);
-  void CmpP(Register dst, const Operand& opnd);
-  void Cmp(Register dst, const MemOperand& opnd);
-  void CmpP(Register dst, const MemOperand& opnd);
-
-  // Compare Logical
-  void CmpLogical(Register src1, Register src2);
-  void CmpLogicalP(Register src1, Register src2);
-  void CmpLogical(Register src1, const Operand& opnd);
-  void CmpLogicalP(Register src1, const Operand& opnd);
-  void CmpLogical(Register dst, const MemOperand& opnd);
-  void CmpLogicalP(Register dst, const MemOperand& opnd);
-
-  // Compare Logical Byte (CLI/CLIY)
-  void CmpLogicalByte(const MemOperand& mem, const Operand& imm);
-
-  // and 32bit
   // void XorP(Register dst, Register src, const Operand& opnd);
   void Branch(Condition c, const Operand& opnd);
   void BranchOnCount(Register r1, Label *l);
