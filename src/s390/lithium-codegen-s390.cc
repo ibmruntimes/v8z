@@ -2873,7 +2873,7 @@ void LCodeGen::DoLoadKeyedFastDoubleElement(
   int element_size_shift = ElementsKindToShiftSize(FAST_DOUBLE_ELEMENTS);
   bool key_is_tagged = instr->hydrogen()->key()->representation().IsTagged();
   int constant_key = 0;
-  int address_offset = 0;
+  intptr_t address_offset = 0;
   if (key_is_constant) {
     constant_key = ToInteger32(LConstantOperand::cast(instr->key()));
     if (constant_key & 0xF0000000) {
@@ -2883,11 +2883,21 @@ void LCodeGen::DoLoadKeyedFastDoubleElement(
     key = ToRegister(instr->key());
   }
 
+  bool use_scratch = false;
   if (key_is_constant) {
-    __ AddP(elements,
-        Operand((FixedDoubleArray::kHeaderSize - kHeapObjectTag) +
-          ((constant_key + instr->additional_index()) << element_size_shift)));
+    address_offset = (FixedDoubleArray::kHeaderSize - kHeapObjectTag) +
+          ((constant_key + instr->additional_index()) << element_size_shift);
+
+    // Memory references support up to 20-bits signed displacement in RXY form
+    // Include sizeof(kHoleNanLower32) in check, so we are guaranteed not to
+    // overflow displacement later.
+    if (!is_int20((address_offset + sizeof(kHoleNanLower32)))) {
+      use_scratch = true;
+      __ mov(scratch, Operand(address_offset));
+      address_offset = 0;
+    }
   } else {
+    use_scratch = true;
     __ IndexToArrayOffset(scratch, key, element_size_shift, key_is_tagged);
     address_offset = (FixedDoubleArray::kHeaderSize - kHeapObjectTag) +
       (instr->additional_index() << element_size_shift);
@@ -2896,7 +2906,7 @@ void LCodeGen::DoLoadKeyedFastDoubleElement(
     // Include sizeof(kHoleNanLower32) in check, so we are guaranteed not to
     // overflow displacement later.
     if (!is_int20((address_offset + sizeof(kHoleNanLower32)))) {
-      __ AddP(elements, Operand(address_offset));
+      __ AddP(scratch, Operand(address_offset));
       address_offset = 0;
     }
   }
@@ -2906,7 +2916,7 @@ void LCodeGen::DoLoadKeyedFastDoubleElement(
 #if __FLOAT_WORD_ORDER == __LITTLE_ENDIAN
     upper32_offset += sizeof(kHoleNanLower32);
 #endif
-    if (key_is_constant) {
+    if (!use_scratch) {
       __ LoadlW(r0, MemOperand(elements, upper32_offset));
     } else {
       __ LoadlW(r0, MemOperand(scratch, elements, upper32_offset));
@@ -2915,10 +2925,11 @@ void LCodeGen::DoLoadKeyedFastDoubleElement(
     DeoptimizeIf(eq, instr->environment());
   }
 
-  if (!key_is_constant)
-    __ LoadF(result, MemOperand(scratch, elements, address_offset));
-  else
+  if (!use_scratch) {
     __ LoadF(result, MemOperand(elements, address_offset));
+  } else {
+    __ LoadF(result, MemOperand(scratch, elements, address_offset));
+  }
 }
 
 
