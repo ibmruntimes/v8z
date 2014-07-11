@@ -567,7 +567,7 @@ class RecordWriteStub: public CodeStub {
       if (mode == kSaveFPRegs) {
         // Save all volatile VFP registers except d0.
         const int kNumRegs = DoubleRegister::kNumVolatileRegisters - 1;
-        masm->Sub(sp, Operand(kDoubleSize * kNumRegs));
+        masm->lay(sp, MemOperand(sp, -(kDoubleSize * kNumRegs)));
         for (int i = kNumRegs; i > 0; i--) {
           DoubleRegister reg = DoubleRegister::from_code(i);
           masm->StoreF(reg, MemOperand(sp, (i - 1) * kDoubleSize));

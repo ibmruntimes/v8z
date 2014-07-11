@@ -280,21 +280,21 @@ class MacroAssembler: public Assembler {
   // Arithmetic Operations
 
   // Add (Register - Immediate)
-  void Add(Register dst, const Operand& imm);
+  void Add32(Register dst, const Operand& imm);
   void AddP(Register dst, const Operand& imm);
-  void Add(Register dst, Register src, const Operand& imm);
+  void Add32(Register dst, Register src, const Operand& imm);
   void AddP(Register dst, Register src, const Operand& imm);
 
   // Add (Register - Register)
-  void Add(Register dst, Register src);
+  void Add32(Register dst, Register src);
   void AddP(Register dst, Register src);
   void AddP_ExtendSrc(Register dst, Register src);
-  void Add(Register dst, Register src1, Register src2);
+  void Add32(Register dst, Register src1, Register src2);
   void AddP(Register dst, Register src1, Register src2);
   void AddP_ExtendSrc(Register dst, Register src1, Register src2);
 
   // Add (Register - Mem)
-  void Add(Register dst, const MemOperand& opnd);
+  void Add32(Register dst, const MemOperand& opnd);
   void AddP(Register dst, const MemOperand& opnd);
   void AddP_ExtendSrc(Register dst, const MemOperand& opnd);
 
@@ -307,21 +307,21 @@ class MacroAssembler: public Assembler {
   void AddLogicalP(Register dst, const MemOperand& opnd);
 
   // Subtract (Register - Immediate)
-  void Sub(Register dst, const Operand& imm);
+  void Sub32(Register dst, const Operand& imm);
   void SubP(Register dst, const Operand& imm);
-  void Sub(Register dst, Register src, const Operand& imm);
+  void Sub32(Register dst, Register src, const Operand& imm);
   void SubP(Register dst, Register src, const Operand& imm);
 
   // Subtract (Register - Register)
-  void Sub(Register dst, Register src);
+  void Sub32(Register dst, Register src);
   void SubP(Register dst, Register src);
   void SubP_ExtendSrc(Register dst, Register src);
-  void Sub(Register dst, Register src1, Register src2);
+  void Sub32(Register dst, Register src1, Register src2);
   void SubP(Register dst, Register src1, Register src2);
   void SubP_ExtendSrc(Register dst, Register src1, Register src2);
 
   // Subtract (Register - Mem)
-  void Sub(Register dst, const MemOperand& opnd);
+  void Sub32(Register dst, const MemOperand& opnd);
   void SubP(Register dst, const MemOperand& opnd);
   void SubP_ExtendSrc(Register dst, const MemOperand& opnd);
 

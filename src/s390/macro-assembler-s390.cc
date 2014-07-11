@@ -3891,7 +3891,7 @@ void MacroAssembler::MulP(Register dst, const MemOperand& opnd) {
 //----------------------------------------------------------------------------
 
 // Add 32-bit (Register dst = Register dst + Immediate opnd)
-void MacroAssembler::Add(Register dst, const Operand& opnd) {
+void MacroAssembler::Add32(Register dst, const Operand& opnd) {
   if (is_int16(opnd.immediate()))
     ahi(dst, opnd);
   else
@@ -3906,12 +3906,12 @@ void MacroAssembler::AddP(Register dst, const Operand& opnd) {
   else
     agfi(dst, opnd);
 #else
-  Add(dst, opnd);
+  Add32(dst, opnd);
 #endif
 }
 
 // Add 32-bit (Register dst = Register src + Immediate opnd)
-void MacroAssembler::Add(Register dst, Register src, const Operand& opnd) {
+void MacroAssembler::Add32(Register dst, Register src, const Operand& opnd) {
   if (!dst.is(src)) {
     if (CpuFeatures::IsSupported(DISTINCT_OPS) && is_int16(opnd.immediate())) {
       ahik(dst, src, opnd);
@@ -3919,7 +3919,7 @@ void MacroAssembler::Add(Register dst, Register src, const Operand& opnd) {
     }
     lr(dst, src);
   }
-  Add(dst, opnd);
+  Add32(dst, opnd);
 }
 
 // Add Pointer Size (Register dst = Register src + Immediate opnd)
@@ -3935,7 +3935,7 @@ void MacroAssembler::AddP(Register dst, Register src, const Operand& opnd) {
 }
 
 // Add 32-bit (Register dst = Register dst + Register src)
-void MacroAssembler::Add(Register dst, Register src) {
+void MacroAssembler::Add32(Register dst, Register src) {
   ar(dst, src);
 }
 
@@ -3957,7 +3957,7 @@ void MacroAssembler::AddP_ExtendSrc(Register dst, Register src) {
 }
 
 // Add 32-bit (Register dst = Register src1 + Register src2)
-void MacroAssembler::Add(Register dst, Register src1, Register src2) {
+void MacroAssembler::Add32(Register dst, Register src1, Register src2) {
   if (!dst.is(src1) && !dst.is(src2)) {
     // We prefer to generate AR/AGR, over the non clobbering ARK/AGRK
     // as AR is a smaller instruction
@@ -4013,7 +4013,7 @@ void MacroAssembler::AddP_ExtendSrc(Register dst, Register src1,
 }
 
 // Add 32-bit (Register-Memory)
-void MacroAssembler::Add(Register dst, const MemOperand& opnd) {
+void MacroAssembler::Add32(Register dst, const MemOperand& opnd) {
   ASSERT(is_int20(opnd.offset()));
   if (is_uint12(opnd.offset()))
     a(dst, opnd);
@@ -4027,7 +4027,7 @@ void MacroAssembler::AddP(Register dst, const MemOperand& opnd) {
   ASSERT(is_int20(opnd.offset()));
   ag(dst, opnd);
 #else
-  Add(dst, opnd);
+  Add32(dst, opnd);
 #endif
 }
 
@@ -4040,7 +4040,7 @@ void MacroAssembler::AddP_ExtendSrc(Register dst, const MemOperand& opnd) {
   ASSERT(is_int20(opnd.offset()));
   agf(dst, opnd);
 #else
-  Add(dst, opnd);
+  Add32(dst, opnd);
 #endif
 }
 
@@ -4086,8 +4086,8 @@ void MacroAssembler::AddLogicalP(Register dst, const MemOperand& opnd) {
 //----------------------------------------------------------------------------
 
 // Subtract 32-bit (Register dst = Register dst - Immediate opnd)
-void MacroAssembler::Sub(Register dst, const Operand& imm) {
-  Add(dst, Operand(-(imm.imm_)));
+void MacroAssembler::Sub32(Register dst, const Operand& imm) {
+  Add32(dst, Operand(-(imm.imm_)));
 }
 
 // Subtract Pointer Size (Register dst = Register dst - Immediate opnd)
@@ -4096,8 +4096,8 @@ void MacroAssembler::SubP(Register dst, const Operand& imm) {
 }
 
 // Subtract 32-bit (Register dst = Register src - Immediate opnd)
-void MacroAssembler::Sub(Register dst, Register src, const Operand& imm) {
-  Add(dst, src, Operand(-(imm.imm_)));
+void MacroAssembler::Sub32(Register dst, Register src, const Operand& imm) {
+  Add32(dst, src, Operand(-(imm.imm_)));
 }
 
 // Subtract Pointer Sized (Register dst = Register src - Immediate opnd)
@@ -4106,7 +4106,7 @@ void MacroAssembler::SubP(Register dst, Register src, const Operand& imm) {
 }
 
 // Subtract 32-bit (Register dst = Register dst - Register src)
-void MacroAssembler::Sub(Register dst, Register src) {
+void MacroAssembler::Sub32(Register dst, Register src) {
   sr(dst, src);
 }
 
@@ -4128,7 +4128,7 @@ void MacroAssembler::SubP_ExtendSrc(Register dst, Register src) {
 }
 
 // Subtract 32-bit (Register = Register - Register)
-void MacroAssembler::Sub(Register dst, Register src1, Register src2) {
+void MacroAssembler::Sub32(Register dst, Register src1, Register src2) {
   // Use non-clobbering version if possible
   if (CpuFeatures::IsSupported(DISTINCT_OPS) && !dst.is(src1)) {
     srk(dst, src1, src2);
@@ -4187,7 +4187,7 @@ void MacroAssembler::SubP_ExtendSrc(Register dst, Register src1,
 }
 
 // Subtract 32-bit (Register-Memory)
-void MacroAssembler::Sub(Register dst, const MemOperand& opnd) {
+void MacroAssembler::Sub32(Register dst, const MemOperand& opnd) {
   ASSERT(is_int20(opnd.offset()));
   if (is_uint12(opnd.offset()))
     s(dst, opnd);
@@ -4200,7 +4200,7 @@ void MacroAssembler::SubP(Register dst, const MemOperand& opnd) {
 #if V8_TARGET_ARCH_S390X
   sg(dst, opnd);
 #else
-  Sub(dst, opnd);
+  Sub32(dst, opnd);
 #endif
 }
 
@@ -4213,7 +4213,7 @@ void MacroAssembler::SubP_ExtendSrc(Register dst, const MemOperand& opnd) {
   ASSERT(is_int20(opnd.offset()));
   sgf(dst, opnd);
 #else
-  Sub(dst, opnd);
+  Sub32(dst, opnd);
 #endif
 }
 
