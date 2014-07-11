@@ -109,10 +109,8 @@ bool AreAliased(Register reg1,
 
 // These exist to provide portability between 32 and 64bit
 #if V8_TARGET_ARCH_S390X
-#define LoadMultipleP      lmg
 #define LoadAndTestP       ltg
 #define StorePX            stg
-#define StoreMultipleP     stmg
 #define Div                divd
 
 // The length of the arithmetic operation is the length
@@ -159,10 +157,8 @@ bool AreAliased(Register reg1,
 #define ShiftLeftArithP    slag
 #define ShiftRightArithP   srag
 #else
-#define LoadMultipleP      lm
 #define LoadAndTestP       lt_z
 #define StorePX            st
-#define StoreMultipleP     stm
 
 // arithmetics and bitwise
 // Reg2Reg
@@ -736,6 +732,10 @@ class MacroAssembler: public Assembler {
   // These exist to provide portability between 32 and 64bit
   void LoadP(Register dst, const MemOperand& mem, Register scratch = no_reg);
   void StoreP(Register src, const MemOperand& mem, Register scratch = no_reg);
+  void LoadMultipleP(Register dst1, Register dst2, const MemOperand& mem);
+  void StoreMultipleP(Register dst1, Register dst2, const MemOperand& mem);
+  void LoadMultipleW(Register dst1, Register dst2, const MemOperand& mem);
+  void StoreMultipleW(Register dst1, Register dst2, const MemOperand& mem);
 
   // Cleanse pointer address on 31bit by zero out top  bit.
   // This is a NOP on 64-bit.

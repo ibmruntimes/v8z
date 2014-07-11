@@ -4828,6 +4828,56 @@ void MacroAssembler::StoreP(Register src, const MemOperand& mem,
   }
 }
 
+void MacroAssembler::LoadMultipleP(Register dst1, Register dst2,
+    const MemOperand& mem) {
+#if V8_TARGET_ARCH_S390X
+  ASSERT(is_int20(mem.offset()));
+  lmg(dst1, dst2, mem);
+#else
+  if (is_uint12(mem.offset())) {
+    lm(dst1, dst2, mem);
+  } else {
+    ASSERT(is_int20(mem.offset()));
+    lmy(dst1, dst2, mem);
+  }
+#endif
+}
+
+void MacroAssembler::StoreMultipleP(Register src1, Register src2,
+    const MemOperand& mem) {
+#if V8_TARGET_ARCH_S390X
+  ASSERT(is_int20(mem.offset()));
+  stmg(src1, src2, mem);
+#else
+  if (is_uint12(mem.offset())) {
+    stm(src1, src2, mem);
+  } else {
+    ASSERT(is_int20(mem.offset()));
+    stmy(src1, src2, mem);
+  }
+#endif
+}
+
+void MacroAssembler::LoadMultipleW(Register dst1, Register dst2,
+    const MemOperand& mem) {
+  if (is_uint12(mem.offset())) {
+    lm(dst1, dst2, mem);
+  } else {
+    ASSERT(is_int20(mem.offset()));
+    lmy(dst1, dst2, mem);
+  }
+}
+
+void MacroAssembler::StoreMultipleW(Register src1, Register src2,
+    const MemOperand& mem) {
+  if (is_uint12(mem.offset())) {
+    stm(src1, src2, mem);
+  } else {
+    ASSERT(is_int20(mem.offset()));
+    stmy(src1, src2, mem);
+  }
+}
+
 // Load 32-bits and sign extend if necessary.
 void MacroAssembler::LoadW(Register dst, const MemOperand& mem,
                            Register scratch) {
