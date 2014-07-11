@@ -249,7 +249,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   __ AddP(r9, Operand(8));
 
   __ bind(&entry);
-  __ CmpRR(r9, r8);
+  __ CmpP(r9, r8);
   __ blt(&loop);
 
   __ pop(r14);
@@ -323,7 +323,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   __ AddP(r6, Operand(8));
   // r3: current element's upper 32 bit
   // r6: address of next element's upper 32 bit
-  __ Cmpi(r3, Operand(kHoleNanUpper32));
+  __ CmpP(r3, Operand(kHoleNanUpper32));
   __ beq(&convert_hole);
 
   // Non-hole double, copy value into a heap number.
@@ -364,7 +364,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   __ AddP(r5, Operand(kPointerSize));
 
   __ bind(&entry);
-  __ CmpLogical(r5, r7);
+  __ CmpLogicalP(r5, r7);
   __ blt(&loop);
 
   __ Pop(r5, r4, r3, r2);
