@@ -1888,7 +1888,7 @@ LInstruction* LChunkBuilder::DoLoadKeyedFastDoubleElement(
   ASSERT(instr->representation().IsDouble());
   ASSERT(instr->key()->representation().IsInteger32() ||
          instr->key()->representation().IsTagged());
-  LOperand* elements = UseTempRegister(instr->elements());
+  LOperand* elements = UseRegisterAtStart(instr->elements());
   LOperand* key = UseRegisterOrConstantAtStart(instr->key());
   LLoadKeyedFastDoubleElement* result =
       new(zone()) LLoadKeyedFastDoubleElement(elements, key);
