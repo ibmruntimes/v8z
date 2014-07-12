@@ -653,7 +653,7 @@ void LCodeGen::DeoptimizeIf(Condition cond, LEnvironment* environment,
     return;
   }
 
-  ASSERT(FLAG_deopt_every_n_times < 2);  // Other values not supported on PPC.
+  ASSERT(FLAG_deopt_every_n_times < 2);  // Other values not supported on S390.
 
   if (FLAG_deopt_every_n_times == 1 &&
       info_->shared_info()->opt_count() == id) {
