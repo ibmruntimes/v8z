@@ -3599,6 +3599,9 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
 bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
   Opcode op = instr->S390OpcodeValue();
 
+  // Pre-cast instruction to various types
+  SIYInstruction *silInstr = reinterpret_cast<SIYInstruction*>(instr);
+
   switch (op) {
     case CDB:
     case ADB:
@@ -3876,18 +3879,20 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
       }
       break;
     }
-    case AFI: {  // TODO(ALANLI): add overflow
+    case AFI: {
+      // 32-bit Add (Register + 32-bit Immediate)
       RILInstruction* rilInstr = reinterpret_cast<RILInstruction*>(instr);
       int r1 = rilInstr->R1Value();
       int i2 = rilInstr->I2Value();
       int32_t r1_val = get_low_register<int32_t>(r1);
+      int isOF = CheckOverflowForIntAdd(r1_val, i2);
       int32_t alu_out = r1_val + i2;
       set_low_register(r1, alu_out);
       SetS390ConditionCode<int32_t>(alu_out, 0);
+      SetS390OverflowCode(isOF);
       break;
     }
     case ASI: {
-      SIYInstruction *silInstr = reinterpret_cast<SIYInstruction*>(instr);
       int i2 = silInstr->I2Value();
       int b1 = silInstr->B1Value();
       intptr_t b1_val = (b1 == 0) ? 0 : get_register(b1);
@@ -3904,7 +3909,6 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
       break;
     }
     case AGSI: {
-      SIYInstruction *silInstr = reinterpret_cast<SIYInstruction*>(instr);
       int i2 = silInstr->I2Value();
       int b1 = silInstr->B1Value();
       intptr_t b1_val = (b1 == 0) ? 0 : get_register(b1);
