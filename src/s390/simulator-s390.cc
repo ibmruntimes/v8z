@@ -98,7 +98,7 @@ S390Debugger::~S390Debugger() {
 }
 
 
-
+int count_sty = 0;
 #ifdef GENERATED_CODE_COVERAGE
 static FILE* coverage_log = NULL;
 
@@ -3387,7 +3387,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       int32_t b2_val = (b2 == 0) ? 0 : get_low_register<int32_t>(b2);
 
       // Store each register in ascending order.
-      for (int i = 0; i < r3 - r1; i++) {
+      for (int i = 0; i <= r3 - r1; i++) {
         if (op == LMY) {
           int32_t value = ReadW(b2_val + offset + 4*i, instr);
           set_low_register((r1 + i) % 16, value);
@@ -3455,6 +3455,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
         double dbl_val = ReadDouble(addr);
         set_d_register_from_double(r1, dbl_val);
       } else if (op == STY) {
+        count_sty++;
         uint32_t value = get_low_register<uint32_t>(r1);
         WriteW(addr, value, instr);
       } else if (op == STG) {
