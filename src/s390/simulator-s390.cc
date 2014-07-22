@@ -93,8 +93,6 @@ class S390Debugger {
   void RedoBreakpoints();
 };
 
-int countSTY = 0;
-
 S390Debugger::~S390Debugger() {
 }
 
@@ -3484,7 +3482,6 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
         double dbl_val = ReadDouble(addr);
         set_d_register_from_double(r1, dbl_val);
       } else if (op == STY) {
-        countSTY++;
         uint32_t value = get_low_register<uint32_t>(r1);
         WriteW(addr, value, instr);
       } else if (op == STG) {
