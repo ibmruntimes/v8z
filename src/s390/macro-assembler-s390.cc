@@ -4363,7 +4363,9 @@ void MacroAssembler::AndP(Register dst, Register src, const Operand& opnd) {
 
     // If temp (value with right-most set of zeros shifted out) is 1 less
     // than power of 2, we have consecutive bits of 1.
-    if (IsPowerOf2(shifted_value + 1)) {
+    // Special case: If shift_value is zero, we cannot use RISBG, as it requires
+    //               selection of at least 1 bit.
+    if ((0 != shifted_value) && IsPowerOf2(shifted_value + 1)) {
       int startBit = 32 + CompilerIntrinsics::CountLeadingZeros(shifted_value) -
                      trailing_zeros;
       int endBit = 63 - trailing_zeros;
@@ -4380,8 +4382,9 @@ void MacroAssembler::AndP(Register dst, Register src, const Operand& opnd) {
     }
   }
 
-  if (!dst.is(src))
-    LoadRR(dst, src);
+  // If we are &'ing zero, we can just whack the dst register and skip copy
+  if (!dst.is(src) && (0 != value))
+     LoadRR(dst, src);
   AndP(dst, opnd);
 }
 
