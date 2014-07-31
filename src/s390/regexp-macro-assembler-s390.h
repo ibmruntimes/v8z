@@ -207,7 +207,7 @@ class RegExpMacroAssemblerS390: public NativeRegExpMacroAssembler {
 
   // Call and return internally in the generated code in a way that
   // is GC-safe (i.e., doesn't leave absolute code addresses on the stack)
-  inline void SafeCall(Label* to);
+  inline void SafeCall(Label* to, Condition cond = al, CRegister cr = cr7);
   inline void SafeReturn();
   inline void SafeCallTarget(Label* name);
 
