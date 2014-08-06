@@ -7539,6 +7539,8 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
   __ mov(ip, Operand(ExternalReference(&dispatcher,
                                        ExternalReference::BUILTIN_CALL,
                                        masm->isolate())));
+  __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize -
+                       kNumRequiredStackFrameSlots * kPointerSize));
 #endif
   __ Call(ip);
 
@@ -7553,10 +7555,11 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
 #endif
 
   // Restore the stack pointer if needed.
+  __ la(sp, MemOperand(sp, kCalleeRegisterSaveAreaSize +
+                       kNumRequiredStackFrameSlots * kPointerSize));
   if (frame_alignment > kPointerSize) {
     __ LoadRR(sp, r7);
   }
-
   __ Pop(r14, r7, r3);
   __ Ret();
 }
