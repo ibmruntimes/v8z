@@ -7519,17 +7519,6 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
 #if !defined(USE_SIMULATOR)
   __ mov(ip, Operand(reinterpret_cast<intptr_t>(&entry_hook_)));
   __ LoadP(ip, MemOperand(ip));
-
-#if (defined(_AIX))
-  // Function descriptor
-  __ LoadP(ToRegister(2), MemOperand(ip, kPointerSize));
-  __ LoadP(ip, MemOperand(ip, 0));
-#endif
-
-  // zLinux ABI requires caller's frame to have sufficient space for callee
-  // preserved regsiter save area.
-  __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize -
-                       kNumRequiredStackFrameSlots * kPointerSize));
 #else
   // Under the simulator we need to indirect the entry hook through a
   // trampoline function at a known address.
@@ -7539,24 +7528,20 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
   __ mov(ip, Operand(ExternalReference(&dispatcher,
                                        ExternalReference::BUILTIN_CALL,
                                        masm->isolate())));
+#endif
+  // zLinux ABI requires caller's frame to have sufficient space for callee
+  // preserved register save area.  Simulator also follows the same convention
+  // as it will whack the callee register save area.
   __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize -
                        kNumRequiredStackFrameSlots * kPointerSize));
-#endif
+
   __ Call(ip);
 
-// For the most part this is true only when USE_SIMULATOR is true
-// The exception is when built with nativesim=true, then we need
-// Real S390 calling support plus simulation
-#if defined(V8_HOST_ARCH_S39064) || defined(V8_HOST_ARCH_S390)
   // zLinux ABI requires caller's frame to have sufficient space for callee
   // preserved regsiter save area.
   __ la(sp, MemOperand(sp, kCalleeRegisterSaveAreaSize +
                        kNumRequiredStackFrameSlots * kPointerSize));
-#endif
 
-  // Restore the stack pointer if needed.
-  __ la(sp, MemOperand(sp, kCalleeRegisterSaveAreaSize +
-                       kNumRequiredStackFrameSlots * kPointerSize));
   if (frame_alignment > kPointerSize) {
     __ LoadRR(sp, r7);
   }
