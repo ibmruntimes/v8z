@@ -435,14 +435,13 @@ void MacroAssembler::RememberedSetHelper(Register object,  // For debug tests.
   StoreP(scratch, MemOperand(ip));
   // Call stub on end of buffer.
   // Check for end of buffer.
-  mov(r0, Operand(StoreBuffer::kStoreBufferOverflowBit));
-  AndP(r0, scratch/*, SetRC*/);  // Should be okay to remove rc
+  AndP(r0, scratch, Operand(StoreBuffer::kStoreBufferOverflowBit));
 
   if (and_then == kFallThroughAtEnd) {
-    beq(&done /*, cr0*/);
+    beq(&done, Label::kNear);
   } else {
     ASSERT(and_then == kReturnAtEnd);
-    beq(&done /*, cr0*/);
+    beq(&done, Label::kNear);
   }
   push(r14);
   StoreBufferOverflowStub store_buffer_overflow =
