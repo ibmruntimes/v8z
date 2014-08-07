@@ -63,10 +63,6 @@ TEST(0) {
 
   Assembler assm(Isolate::Current(), NULL, 0);
 
-#if defined(_AIX)
-  __ function_descriptor();
-#endif
-
   __ lhi(r1, Operand(3));    // test 4-byte instr
   __ llilf(r2, Operand(4));  // test 6-byte instr
   __ lgr(r2, r2);            // test 2-byte opcode
@@ -97,10 +93,6 @@ TEST(1) {
 
   Assembler assm(Isolate::Current(), NULL, 0);
   Label L, C;
-
-#if defined(_AIX)
-  __ function_descriptor();
-#endif
 
   __ lr(r3, r2);
   __ lhi(r2, Operand(0, RelocInfo::NONE));
@@ -139,10 +131,6 @@ TEST(2) {
 
   Assembler assm(Isolate::Current(), NULL, 0);
   Label L, C;
-
-#if defined(_AIX)
-  __ function_descriptor();
-#endif
 
   __ lgr(r3, r2);
   __ lhi(r2, Operand(1));
@@ -1238,10 +1226,6 @@ TEST(15) {
 
   Assembler assm(Isolate::Current(), NULL, 0);
 
-#if defined(_AIX)
-  __ function_descriptor();
-#endif
-
   Label L2, L3, L4;
 
   __ chi(r2, Operand(10));
@@ -1289,11 +1273,6 @@ TEST(16) {
 
   MacroAssembler assm(Isolate::Current(), NULL, 0);
 
-#if defined(_AIX)
-  __ function_descriptor();
-#endif
-
-
   __ mov(r2, Operand(0x12345678));
   __ ExtractBitRange(r3, r2, 3, 2);
   __ lgfr(r2, r3);
@@ -1322,10 +1301,6 @@ TEST(17) {
   v8::HandleScope scope;
 
   MacroAssembler assm(Isolate::Current(), NULL, 0);
-
-#if defined(_AIX)
-  __ function_descriptor();
-#endif
 
   Label yes;
 
@@ -1362,10 +1337,6 @@ TEST(18) {
 
   MacroAssembler assm(Isolate::Current(), NULL, 0);
 
-#if defined(_AIX)
-  __ function_descriptor();
-#endif
-
   Label yes;
 
   __ mov(r3, Operand(0x1234));
@@ -1399,12 +1370,8 @@ TEST(19) {
 
   MacroAssembler assm(Isolate::Current(), NULL, 0);
 
-#if defined(_AIX)
-  __ function_descriptor();
-#endif
-
-  __ mov(r3, Operand(0x0002));
-  __ mov(r4, Operand(0x0002));
+  __ llilf(r3, Operand(0x0002));
+  __ llilf(r4, Operand(0x0002));
   __ dsgr(r2, r4);
   __ b(r14);
 
@@ -1432,9 +1399,6 @@ TEST(20) {
 
   Assembler assm(Isolate::Current(), NULL, 0);
 
-#if defined(_AIX)
-  __ function_descriptor();
-#endif
   __ lzdr(d4);
   __ b(r14);
 
