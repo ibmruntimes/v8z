@@ -4576,12 +4576,18 @@ void MacroAssembler::XorP(Register dst, Register src, const Operand& opnd) {
   XorP(dst, opnd);
 }
 
+// NOT 32-bit
+void MacroAssembler::Not32(Register dst) {
+  XorP(dst, Operand(0xFFFFFFFF));
+}
+
+// NOT Pointer Size
 void MacroAssembler::NotP(Register dst) {
 #if V8_TARGET_ARCH_S390X
   xihf(dst, Operand(0xFFFFFFFF));
   xilf(dst, Operand(0xFFFFFFFF));
 #else
-  XorP(dst, Operand(0xFFFFFFFF));
+  Not32(dst);
 #endif
 }
 

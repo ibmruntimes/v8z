@@ -423,7 +423,7 @@ class MacroAssembler: public Assembler {
   void Xor(Register dst, Register src, const Operand& opnd);
   void XorP(Register dst, Register src, const Operand& opnd);
 
-
+  void Not32(Register dst);
   void NotP(Register dst);
 
   void mov(Register dst, const Operand& src);
