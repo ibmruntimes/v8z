@@ -1605,6 +1605,11 @@ class MacroAssembler: public Assembler {
     if (isSmi) {
       SmiToArrayOffset(dst, src, elementSizeLog2);
     } else {
+#if V8_TARGET_ARCH_S390X
+      // Sign extend src because it could be a 32-bit value and the
+      // address computation happens in 64-bits
+      lgfr(src, src);
+#endif
       ShiftLeftP(dst, src, Operand(elementSizeLog2));
     }
   }
