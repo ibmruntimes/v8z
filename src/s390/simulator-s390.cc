@@ -878,7 +878,7 @@ class Redirection {
  public:
   Redirection(void* external_function, ExternalReference::Type type)
       : external_function_(external_function),
-      // we use TRAP4 here (0xBF22)
+      // we use TRAP4 here (0xB2FF)
 #if __BYTE_ORDER == __LITTLE_ENDIAN
       // quick and dirty way to hack the swi instrution
         swi_instruction_(0x1000FFB2),
@@ -1273,7 +1273,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       // This is dodgy but it works because the C entry stubs are never moved.
       // See comment in codegen-arm.cc and bug 1242173.
       int64_t saved_lr = get_register(r14);
-#ifndef V8_TARGET_ARCH_S390X
+#ifdef V8_HOST_ARCH_S390
       // On zLinux-31, the saved_lr might be tagged with a high bit of 1.
       // Cleanse it before proceeding with simulation.
       saved_lr &= 0x7FFFFFFF;
@@ -1747,7 +1747,7 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       int r2 = rrinst->R2Value();
       if (TestConditionCode(Condition(r1))) {
         intptr_t r2_val = get_register(r2);
-#ifndef V8_TARGET_ARCH_S390X
+#ifdef V8_HOST_ARCH_S390
         // On 31-bit, the top most bit may be 0 or 1, but is ignored by the
         // hardware.  Cleanse the top bit before jumping to it, unless it's one
         // of the special PCs
@@ -1809,7 +1809,7 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       intptr_t link_addr = get_pc() + 2;
       // If R2 is zero, the BASR does not branch.
       int64_t r2_val = (r2 == 0)?link_addr:get_register(r2);
-#ifndef V8_TARGET_ARCH_S390X
+#ifdef V8_HOST_ARCH_S390
       // On 31-bit, the top most bit may be 0 or 1, which can cause issues
       // for stackwalker.  The top bit should either be cleanse before being
       // pushed onto the stack, or during stack walking when dereferenced.
