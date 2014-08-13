@@ -1749,9 +1749,10 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       if (TestConditionCode(Condition(r1))) {
         intptr_t r2_val = get_register(r2);
 #if (defined(V8_HOST_ARCH_S390) && defined(V8_TARGET_ARCH_S390))
-        // For 31-bit simulator on 31-bit s390 host, the top most bit may be 0 or 1
-        // but is ignored by the hardware.  Cleanse the top bit before jumping to it,
-        // unless it's one of the special PCs
+        // For 31-bit simulator on 31-bit s390 host,
+        // the top most bit may be 0 or 1 but is ignored by the hardware.
+        // Cleanse the top bit before jumping to it,
+        // unless it's one of the special PCs`
         if (r2_val != bad_lr && r2_val != end_sim_pc)
           r2_val &= 0x7FFFFFFF;
 #endif
