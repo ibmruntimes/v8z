@@ -751,10 +751,11 @@ class MacroAssembler: public Assembler {
   void LoadMultipleW(Register dst1, Register dst2, const MemOperand& mem);
   void StoreMultipleW(Register dst1, Register dst2, const MemOperand& mem);
 
-  // Cleanse pointer address on 31bit by zero out top  bit.
+  // Cleanse pointer address on 31bit by zeroing out top bit.
+  // Generate only when running s390 build on s390 host architecture
   // This is a NOP on 64-bit.
   void CleanseP(Register src) {
-#ifndef V8_TARGET_ARCH_S390X
+#if (defined(V8_HOST_ARCH_S390) && defined(V8_TARGET_ARCH_S390))
     nilh(src, Operand(0x7FFF));
 #endif
   }
