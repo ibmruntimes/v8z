@@ -74,7 +74,7 @@ void CPU::FlushICache(void* buffer, size_t size) {
       "sync        \n"  \
       "icbi 0, %0  \n"  \
       "isync       \n"
-      : 
+      :
       : "r" (pointer));
   }
   */
