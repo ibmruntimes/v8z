@@ -583,27 +583,32 @@ MemOperand MacroAssembler::SafepointRegistersAndDoublesSlot(Register reg) {
   return MemOperand(sp, doubles_size + register_offset);
 }
 
+// Used by FrameScope constructor to enter frame.
 void MacroAssembler::EnterFrame(StackFrame::Type type) {
-  mflr(r0);
-  push(r0);
-  push(fp);
-  push(cp);
+  // We create a stack frame with:
+  //    Return Addr <-- old sp
+  //    Old FP      <-- new fp
+  //    CP
+  //    type
+  //    CodeObject  <-- new sp
+  lay(sp, MemOperand(sp, -5 * kPointerSize));
+  StoreP(sp, MemOperand(sp, 4 * kPointerSize));
+  StoreP(fp, MemOperand(sp, 3 * kPointerSize));
+  StoreP(cp, MemOperand(sp, 2 * kPointerSize));
   LoadSmiLiteral(r0, Smi::FromInt(type));
-  push(r0);
+  StoreP(r0, MemOperand(sp, 1 * kPointerSize));
   mov(r0, Operand(CodeObject()));
-  push(r0);
-  Add(fp, sp, Operand(3 * kPointerSize));  // Adjust FP to point to saved FP
+  StoreP(r0, MemOperand(sp, 0 * kPointerSize));
+  la(fp, MemOperand(sp, 3 * kPointerSize));  // Adjust FP to point to saved FP
 }
-
 
 void MacroAssembler::LeaveFrame(StackFrame::Type type) {
   // Drop the execution stack down to the frame pointer and restore
   // the caller frame pointer and return address.
   LoadRR(sp, fp);
   LoadP(fp, MemOperand(sp));
-  LoadP(r0, MemOperand(sp, kPointerSize));
-  mtlr(r0);
-  Add(sp, Operand(2*kPointerSize));
+  LoadP(r14, MemOperand(sp, kPointerSize));
+  la(sp, MemOperand(sp, 2 * kPointerSize));
 }
 
 // ExitFrame layout (probably wrongish.. needs updating)
