@@ -66,7 +66,7 @@ void CPU::FlushICache(void* buffer, size_t size) {
 
 
 void CPU::DebugBreak() {
-  UNIMPLEMENTED();  // Unimplemented on PowerPC
+  UNIMPLEMENTED();  // Unimplemented on S390
 }
 
 } }  // namespace v8::internal
