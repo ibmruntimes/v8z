@@ -1,29 +1,6 @@
 // Copyright 2012 the V8 project authors. All rights reserved.
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-//       copyright notice, this list of conditions and the following
-//       disclaimer in the documentation and/or other materials provided
-//       with the distribution.
-//     * Neither the name of Google Inc. nor the names of its
-//       contributors may be used to endorse or promote products derived
-//       from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 #include "v8.h"
 #include "lithium.h"
@@ -44,6 +21,9 @@
 #elif V8_TARGET_ARCH_MIPS
 #include "mips/lithium-mips.h"
 #include "mips/lithium-codegen-mips.h"
+#elif V8_TARGET_ARCH_ARM64
+#include "arm64/lithium-arm64.h"
+#include "arm64/lithium-codegen-arm64.h"
 #else
 #error "Unknown architecture."
 #endif
@@ -61,24 +41,27 @@ void LOperand::PrintTo(StringStream* stream) {
     case UNALLOCATED:
       unalloc = LUnallocated::cast(this);
       stream->Add("v%d", unalloc->virtual_register());
-      switch (unalloc->policy()) {
+      if (unalloc->basic_policy() == LUnallocated::FIXED_SLOT) {
+        stream->Add("(=%dS)", unalloc->fixed_slot_index());
+        break;
+      }
+      switch (unalloc->extended_policy()) {
         case LUnallocated::NONE:
           break;
         case LUnallocated::FIXED_REGISTER: {
+          int reg_index = unalloc->fixed_register_index();
           const char* register_name =
-              Register::AllocationIndexToString(unalloc->fixed_index());
+              Register::AllocationIndexToString(reg_index);
           stream->Add("(=%s)", register_name);
           break;
         }
         case LUnallocated::FIXED_DOUBLE_REGISTER: {
+          int reg_index = unalloc->fixed_register_index();
           const char* double_register_name =
-              DoubleRegister::AllocationIndexToString(unalloc->fixed_index());
+              DoubleRegister::AllocationIndexToString(reg_index);
           stream->Add("(=%s)", double_register_name);
           break;
         }
-        case LUnallocated::FIXED_SLOT:
-          stream->Add("(=%dS)", unalloc->fixed_index());
-          break;
         case LUnallocated::MUST_HAVE_REGISTER:
           stream->Add("(R)");
           break;
@@ -108,39 +91,40 @@ void LOperand::PrintTo(StringStream* stream) {
     case DOUBLE_REGISTER:
       stream->Add("[%s|R]", DoubleRegister::AllocationIndexToString(index()));
       break;
-    case ARGUMENT:
-      stream->Add("[arg:%d]", index());
-      break;
   }
 }
 
-#define DEFINE_OPERAND_CACHE(name, type)                      \
-  L##name* L##name::cache = NULL;                             \
-                                                              \
-  void L##name::SetUpCache() {                                \
-    if (cache) return;                                        \
-    cache = new L##name[kNumCachedOperands];                  \
-    for (int i = 0; i < kNumCachedOperands; i++) {            \
-      cache[i].ConvertTo(type, i);                            \
-    }                                                         \
-  }                                                           \
-                                                              \
-  void L##name::TearDownCache() {                             \
-    delete[] cache;                                           \
-  }
 
-LITHIUM_OPERAND_LIST(DEFINE_OPERAND_CACHE)
-#undef DEFINE_OPERAND_CACHE
+template<LOperand::Kind kOperandKind, int kNumCachedOperands>
+LSubKindOperand<kOperandKind, kNumCachedOperands>*
+LSubKindOperand<kOperandKind, kNumCachedOperands>::cache = NULL;
+
+
+template<LOperand::Kind kOperandKind, int kNumCachedOperands>
+void LSubKindOperand<kOperandKind, kNumCachedOperands>::SetUpCache() {
+  if (cache) return;
+  cache = new LSubKindOperand[kNumCachedOperands];
+  for (int i = 0; i < kNumCachedOperands; i++) {
+    cache[i].ConvertTo(kOperandKind, i);
+  }
+}
+
+
+template<LOperand::Kind kOperandKind, int kNumCachedOperands>
+void LSubKindOperand<kOperandKind, kNumCachedOperands>::TearDownCache() {
+  delete[] cache;
+}
+
 
 void LOperand::SetUpCaches() {
-#define LITHIUM_OPERAND_SETUP(name, type) L##name::SetUpCache();
+#define LITHIUM_OPERAND_SETUP(name, type, number) L##name::SetUpCache();
   LITHIUM_OPERAND_LIST(LITHIUM_OPERAND_SETUP)
 #undef LITHIUM_OPERAND_SETUP
 }
 
 
 void LOperand::TearDownCaches() {
-#define LITHIUM_OPERAND_TEARDOWN(name, type) L##name::TearDownCache();
+#define LITHIUM_OPERAND_TEARDOWN(name, type, number) L##name::TearDownCache();
   LITHIUM_OPERAND_LIST(LITHIUM_OPERAND_TEARDOWN)
 #undef LITHIUM_OPERAND_TEARDOWN
 }
@@ -177,8 +161,11 @@ void LParallelMove::PrintDataTo(StringStream* stream) const {
 
 void LEnvironment::PrintTo(StringStream* stream) {
   stream->Add("[id=%d|", ast_id().ToInt());
-  stream->Add("[parameters=%d|", parameter_count());
-  stream->Add("[arguments_stack_height=%d|", arguments_stack_height());
+  if (deoptimization_index() != Safepoint::kNoDeoptimizationIndex) {
+    stream->Add("deopt_id=%d|", deoptimization_index());
+  }
+  stream->Add("parameters=%d|", parameter_count());
+  stream->Add("arguments_stack_height=%d|", arguments_stack_height());
   for (int i = 0; i < values_.length(); ++i) {
     if (i != 0) stream->Add(";");
     if (values_[i] == NULL) {
@@ -226,37 +213,31 @@ void LPointerMap::PrintTo(StringStream* stream) {
     if (i != 0) stream->Add(";");
     pointer_operands_[i]->PrintTo(stream);
   }
-  stream->Add("} @%d", position());
+  stream->Add("}");
 }
 
 
-int ElementsKindToShiftSize(ElementsKind elements_kind) {
-  switch (elements_kind) {
-    case EXTERNAL_BYTE_ELEMENTS:
-    case EXTERNAL_PIXEL_ELEMENTS:
-    case EXTERNAL_UNSIGNED_BYTE_ELEMENTS:
-      return 0;
-    case EXTERNAL_SHORT_ELEMENTS:
-    case EXTERNAL_UNSIGNED_SHORT_ELEMENTS:
-      return 1;
-    case EXTERNAL_INT_ELEMENTS:
-    case EXTERNAL_UNSIGNED_INT_ELEMENTS:
-    case EXTERNAL_FLOAT_ELEMENTS:
-      return 2;
-    case EXTERNAL_DOUBLE_ELEMENTS:
-    case FAST_DOUBLE_ELEMENTS:
-    case FAST_HOLEY_DOUBLE_ELEMENTS:
-      return 3;
-    case FAST_SMI_ELEMENTS:
-    case FAST_ELEMENTS:
-    case FAST_HOLEY_SMI_ELEMENTS:
-    case FAST_HOLEY_ELEMENTS:
-    case DICTIONARY_ELEMENTS:
-    case NON_STRICT_ARGUMENTS_ELEMENTS:
-      return kPointerSizeLog2;
+int StackSlotOffset(int index) {
+  if (index >= 0) {
+    // Local or spill slot. Skip the frame pointer, function, and
+    // context in the fixed part of the frame.
+    return -(index + 1) * kPointerSize -
+        StandardFrameConstants::kFixedFrameSizeFromFp;
+  } else {
+    // Incoming parameter. Skip the return address.
+    return -(index + 1) * kPointerSize + kFPOnStackSize + kPCOnStackSize;
   }
-  UNREACHABLE();
-  return 0;
+}
+
+
+LChunk::LChunk(CompilationInfo* info, HGraph* graph)
+    : spill_slot_count_(0),
+      info_(info),
+      graph_(graph),
+      instructions_(32, graph->zone()),
+      pointer_maps_(8, graph->zone()),
+      inlined_closures_(1, graph->zone()),
+      deprecation_dependencies_(MapLess(), MapAllocator(graph->zone())) {
 }
 
 
@@ -281,8 +262,9 @@ Label* LChunk::GetAssemblyLabel(int block_id) const {
   return label->label();
 }
 
+
 void LChunk::MarkEmptyBlocks() {
-  HPhase phase("L_Mark empty blocks", this);
+  LPhase phase("L_Mark empty blocks", this);
   for (int i = 0; i < graph()->blocks()->length(); ++i) {
     HBasicBlock* block = graph()->blocks()->at(i);
     int first = block->first_instruction_index();
@@ -307,7 +289,6 @@ void LChunk::MarkEmptyBlocks() {
             can_eliminate = false;
           }
         }
-
         if (can_eliminate) {
           label->set_replacement(GetLabel(goto_instr->block_id()));
         }
@@ -319,6 +300,7 @@ void LChunk::MarkEmptyBlocks() {
 
 void LChunk::AddInstruction(LInstruction* instr, HBasicBlock* block) {
   LInstructionGap* gap = new(graph_->zone()) LInstructionGap(block);
+  gap->set_hydrogen_value(instr->hydrogen_value());
   int index = -1;
   if (instr->IsControl()) {
     instructions_.Add(gap, zone());
@@ -346,7 +328,8 @@ int LChunk::GetParameterStackSlot(int index) const {
   // shift all parameter indexes down by the number of parameters, and
   // make sure they end up negative so they are distinguishable from
   // spill slots.
-  int result = index - info()->scope()->num_parameters() - 1;
+  int result = index - info()->num_parameters() - 1;
+
   ASSERT(result < 0);
   return result;
 }
@@ -393,14 +376,27 @@ Representation LChunk::LookupLiteralRepresentation(
 }
 
 
-LChunk* LChunk::NewChunk(HGraph* graph) {
-  NoHandleAllocation no_handles;
-  AssertNoAllocation no_gc;
+void LChunk::CommitDependencies(Handle<Code> code) const {
+  for (MapSet::const_iterator it = deprecation_dependencies_.begin(),
+       iend = deprecation_dependencies_.end(); it != iend; ++it) {
+    Handle<Map> map = *it;
+    ASSERT(!map->is_deprecated());
+    ASSERT(map->CanBeDeprecated());
+    Map::AddDependentCode(map, DependentCode::kTransitionGroup, code);
+  }
 
+  info_->CommitDependencies(code);
+}
+
+
+LChunk* LChunk::NewChunk(HGraph* graph) {
+  DisallowHandleAllocation no_handles;
+  DisallowHeapAllocation no_gc;
+  graph->DisallowAddingNewValues();
   int values = graph->GetMaximumValueID();
   CompilationInfo* info = graph->info();
   if (values > LUnallocated::kMaxVirtualRegisters) {
-    info->set_bailout_reason("not enough virtual registers for values");
+    info->set_bailout_reason(kNotEnoughVirtualRegistersForValues);
     return NULL;
   }
   LAllocator allocator(values, graph);
@@ -409,9 +405,12 @@ LChunk* LChunk::NewChunk(HGraph* graph) {
   if (chunk == NULL) return NULL;
 
   if (!allocator.Allocate(chunk)) {
-    info->set_bailout_reason("not enough virtual registers (regalloc)");
+    info->set_bailout_reason(kNotEnoughVirtualRegistersRegalloc);
     return NULL;
   }
+
+  chunk->set_allocated_double_registers(
+      allocator.assigned_double_registers());
 
   return chunk;
 }
@@ -419,23 +418,196 @@ LChunk* LChunk::NewChunk(HGraph* graph) {
 
 Handle<Code> LChunk::Codegen() {
   MacroAssembler assembler(info()->isolate(), NULL, 0);
+  LOG_CODE_EVENT(info()->isolate(),
+                 CodeStartLinePosInfoRecordEvent(
+                     assembler.positions_recorder()));
   LCodeGen generator(this, &assembler, info());
 
   MarkEmptyBlocks();
 
   if (generator.GenerateCode()) {
-    if (FLAG_trace_codegen) {
-      PrintF("Crankshaft Compiler - ");
-    }
-    CodeGenerator::MakeCodePrologue(info());
-    Code::Flags flags = Code::ComputeFlags(Code::OPTIMIZED_FUNCTION);
+    generator.CheckEnvironmentUsage();
+    CodeGenerator::MakeCodePrologue(info(), "optimized");
+    Code::Flags flags = info()->flags();
     Handle<Code> code =
         CodeGenerator::MakeCodeEpilogue(&assembler, flags, info());
     generator.FinishCode(code);
+    CommitDependencies(code);
+    code->set_is_crankshafted(true);
+    void* jit_handler_data =
+        assembler.positions_recorder()->DetachJITHandlerData();
+    LOG_CODE_EVENT(info()->isolate(),
+                   CodeEndLinePosInfoRecordEvent(*code, jit_handler_data));
+
     CodeGenerator::PrintCode(code, info());
     return code;
   }
+  assembler.AbortedCodeGeneration();
   return Handle<Code>::null();
+}
+
+
+void LChunk::set_allocated_double_registers(BitVector* allocated_registers) {
+  allocated_double_registers_ = allocated_registers;
+  BitVector* doubles = allocated_double_registers();
+  BitVector::Iterator iterator(doubles);
+  while (!iterator.Done()) {
+    if (info()->saves_caller_doubles()) {
+      if (kDoubleSize == kPointerSize * 2) {
+        spill_slot_count_ += 2;
+      } else {
+        spill_slot_count_++;
+      }
+    }
+    iterator.Advance();
+  }
+}
+
+
+LEnvironment* LChunkBuilderBase::CreateEnvironment(
+    HEnvironment* hydrogen_env,
+    int* argument_index_accumulator,
+    ZoneList<HValue*>* objects_to_materialize) {
+  if (hydrogen_env == NULL) return NULL;
+
+  LEnvironment* outer = CreateEnvironment(hydrogen_env->outer(),
+                                          argument_index_accumulator,
+                                          objects_to_materialize);
+  BailoutId ast_id = hydrogen_env->ast_id();
+  ASSERT(!ast_id.IsNone() ||
+         hydrogen_env->frame_type() != JS_FUNCTION);
+  int value_count = hydrogen_env->length() - hydrogen_env->specials_count();
+  LEnvironment* result =
+      new(zone()) LEnvironment(hydrogen_env->closure(),
+                               hydrogen_env->frame_type(),
+                               ast_id,
+                               hydrogen_env->parameter_count(),
+                               argument_count_,
+                               value_count,
+                               outer,
+                               hydrogen_env->entry(),
+                               zone());
+  int argument_index = *argument_index_accumulator;
+
+  // Store the environment description into the environment
+  // (with holes for nested objects)
+  for (int i = 0; i < hydrogen_env->length(); ++i) {
+    if (hydrogen_env->is_special_index(i)) continue;
+
+    LOperand* op;
+    HValue* value = hydrogen_env->values()->at(i);
+    CHECK(!value->IsPushArgument());  // Do not deopt outgoing arguments
+    if (value->IsArgumentsObject() || value->IsCapturedObject()) {
+      op = LEnvironment::materialization_marker();
+    } else {
+      op = UseAny(value);
+    }
+    result->AddValue(op,
+                     value->representation(),
+                     value->CheckFlag(HInstruction::kUint32));
+  }
+
+  // Recursively store the nested objects into the environment
+  for (int i = 0; i < hydrogen_env->length(); ++i) {
+    if (hydrogen_env->is_special_index(i)) continue;
+
+    HValue* value = hydrogen_env->values()->at(i);
+    if (value->IsArgumentsObject() || value->IsCapturedObject()) {
+      AddObjectToMaterialize(value, objects_to_materialize, result);
+    }
+  }
+
+  if (hydrogen_env->frame_type() == JS_FUNCTION) {
+    *argument_index_accumulator = argument_index;
+  }
+
+  return result;
+}
+
+
+// Add an object to the supplied environment and object materialization list.
+//
+// Notes:
+//
+// We are building three lists here:
+//
+// 1. In the result->object_mapping_ list (added to by the
+//    LEnvironment::Add*Object methods), we store the lengths (number
+//    of fields) of the captured objects in depth-first traversal order, or
+//    in case of duplicated objects, we store the index to the duplicate object
+//    (with a tag to differentiate between captured and duplicated objects).
+//
+// 2. The object fields are stored in the result->values_ list
+//    (added to by the LEnvironment.AddValue method) sequentially as lists
+//    of fields with holes for nested objects (the holes will be expanded
+//    later by LCodegen::AddToTranslation according to the
+//    LEnvironment.object_mapping_ list).
+//
+// 3. The auxiliary objects_to_materialize array stores the hydrogen values
+//    in the same order as result->object_mapping_ list. This is used
+//    to detect duplicate values and calculate the corresponding object index.
+void LChunkBuilderBase::AddObjectToMaterialize(HValue* value,
+    ZoneList<HValue*>* objects_to_materialize, LEnvironment* result) {
+  int object_index = objects_to_materialize->length();
+  // Store the hydrogen value into the de-duplication array
+  objects_to_materialize->Add(value, zone());
+  // Find out whether we are storing a duplicated value
+  int previously_materialized_object = -1;
+  for (int prev = 0; prev < object_index; ++prev) {
+    if (objects_to_materialize->at(prev) == value) {
+      previously_materialized_object = prev;
+      break;
+    }
+  }
+  // Store the captured object length (or duplicated object index)
+  // into the environment. For duplicated objects, we stop here.
+  int length = value->OperandCount();
+  bool is_arguments = value->IsArgumentsObject();
+  if (previously_materialized_object >= 0) {
+    result->AddDuplicateObject(previously_materialized_object);
+    return;
+  } else {
+    result->AddNewObject(is_arguments ? length - 1 : length, is_arguments);
+  }
+  // Store the captured object's fields into the environment
+  for (int i = is_arguments ? 1 : 0; i < length; ++i) {
+    LOperand* op;
+    HValue* arg_value = value->OperandAt(i);
+    if (arg_value->IsArgumentsObject() || arg_value->IsCapturedObject()) {
+      // Insert a hole for nested objects
+      op = LEnvironment::materialization_marker();
+    } else {
+      ASSERT(!arg_value->IsPushArgument());
+      // For ordinary values, tell the register allocator we need the value
+      // to be alive here
+      op = UseAny(arg_value);
+    }
+    result->AddValue(op,
+                     arg_value->representation(),
+                     arg_value->CheckFlag(HInstruction::kUint32));
+  }
+  // Recursively store all the nested captured objects into the environment
+  for (int i = is_arguments ? 1 : 0; i < length; ++i) {
+    HValue* arg_value = value->OperandAt(i);
+    if (arg_value->IsArgumentsObject() || arg_value->IsCapturedObject()) {
+      AddObjectToMaterialize(arg_value, objects_to_materialize, result);
+    }
+  }
+}
+
+
+LInstruction* LChunkBuilder::CheckElideControlInstruction(
+    HControlInstruction* instr) {
+  HBasicBlock* successor;
+  if (!instr->KnownSuccessorBlock(&successor)) return NULL;
+  return new(zone()) LGoto(successor);
+}
+
+
+LPhase::~LPhase() {
+  if (ShouldProduceTraceOutput()) {
+    isolate()->GetHTracer()->TraceLithium(name(), chunk_);
+  }
 }
 
 

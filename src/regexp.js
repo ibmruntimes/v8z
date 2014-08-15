@@ -1,34 +1,15 @@
 // Copyright 2012 the V8 project authors. All rights reserved.
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-//       copyright notice, this list of conditions and the following
-//       disclaimer in the documentation and/or other materials provided
-//       with the distribution.
-//     * Neither the name of Google Inc. nor the names of its
-//       contributors may be used to endorse or promote products derived
-//       from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
-// Expect $Object = global.Object;
-// Expect $Array = global.Array;
+// This file relies on the fact that the following declaration has been made
+// in runtime.js:
+// var $Object = global.Object;
+// var $Array = global.Array;
 
 var $RegExp = global.RegExp;
+
+// -------------------------------------------------------------------
 
 // A recursive descent parser for Patterns according to the grammar of
 // ECMA-262 15.10.1, with deviations noted below.
@@ -132,21 +113,13 @@ function BuildResultFromMatchInfo(lastMatchInfo, s) {
   var start = lastMatchInfo[CAPTURE0];
   var end = lastMatchInfo[CAPTURE1];
   var result = %_RegExpConstructResult(numResults, start, s);
-  if (start + 1 == end) {
-    result[0] = %_StringCharAt(s, start);
-  } else {
-    result[0] = %_SubString(s, start, end);
-  }
+  result[0] = %_SubString(s, start, end);
   var j = REGEXP_FIRST_CAPTURE + 2;
   for (var i = 1; i < numResults; i++) {
     start = lastMatchInfo[j++];
     if (start != -1) {
       end = lastMatchInfo[j];
-      if (start + 1 == end) {
-        result[i] = %_StringCharAt(s, start);
-      } else {
-        result[i] = %_SubString(s, start, end);
-      }
+      result[i] = %_SubString(s, start, end);
     }
     j++;
   }
@@ -161,6 +134,7 @@ function RegExpExecNoTests(regexp, string, start) {
     lastMatchInfoOverride = null;
     return BuildResultFromMatchInfo(matchInfo, string);
   }
+  regexp.lastIndex = 0;
   return null;
 }
 
@@ -192,8 +166,8 @@ function RegExpExec(string) {
   // matchIndices is either null or the lastMatchInfo array.
   var matchIndices = %_RegExpExec(this, string, i, lastMatchInfo);
 
-  if (matchIndices === null) {
-    if (global) this.lastIndex = 0;
+  if (IS_NULL(matchIndices)) {
+    this.lastIndex = 0;
     return null;
   }
 
@@ -235,7 +209,7 @@ function RegExpTest(string) {
     %_Log('regexp', 'regexp-exec,%0r,%1S,%2i', [this, string, lastIndex]);
     // matchIndices is either null or the lastMatchInfo array.
     var matchIndices = %_RegExpExec(this, string, i, lastMatchInfo);
-    if (matchIndices === null) {
+    if (IS_NULL(matchIndices)) {
       this.lastIndex = 0;
       return false;
     }
@@ -256,7 +230,10 @@ function RegExpTest(string) {
     %_Log('regexp', 'regexp-exec,%0r,%1S,%2i', [regexp, string, lastIndex]);
     // matchIndices is either null or the lastMatchInfo array.
     var matchIndices = %_RegExpExec(regexp, string, 0, lastMatchInfo);
-    if (matchIndices === null) return false;
+    if (IS_NULL(matchIndices)) {
+      this.lastIndex = 0;
+      return false;
+    }
     lastMatchInfoOverride = null;
     return true;
   }
@@ -266,7 +243,7 @@ function TrimRegExp(regexp) {
   if (!%_ObjectEquals(regexp_key, regexp)) {
     regexp_key = regexp;
     regexp_val =
-      new $RegExp(SubString(regexp.source, 2, regexp.source.length),
+      new $RegExp(%_SubString(regexp.source, 2, regexp.source.length),
                   (regexp.ignoreCase ? regexp.multiline ? "im" : "i"
                                      : regexp.multiline ? "m" : ""));
   }
@@ -296,9 +273,9 @@ function RegExpGetLastMatch() {
     return OVERRIDE_MATCH(lastMatchInfoOverride);
   }
   var regExpSubject = LAST_SUBJECT(lastMatchInfo);
-  return SubString(regExpSubject,
-                   lastMatchInfo[CAPTURE0],
-                   lastMatchInfo[CAPTURE1]);
+  return %_SubString(regExpSubject,
+                     lastMatchInfo[CAPTURE0],
+                     lastMatchInfo[CAPTURE1]);
 }
 
 
@@ -317,7 +294,7 @@ function RegExpGetLastParen() {
   var start = lastMatchInfo[CAPTURE(length - 2)];
   var end = lastMatchInfo[CAPTURE(length - 1)];
   if (start != -1 && end != -1) {
-    return SubString(regExpSubject, start, end);
+    return %_SubString(regExpSubject, start, end);
   }
   return "";
 }
@@ -334,7 +311,7 @@ function RegExpGetLeftContext() {
     start_index = OVERRIDE_POS(override);
     subject = OVERRIDE_SUBJECT(override);
   }
-  return SubString(subject, 0, start_index);
+  return %_SubString(subject, 0, start_index);
 }
 
 
@@ -350,7 +327,7 @@ function RegExpGetRightContext() {
     var match = OVERRIDE_MATCH(override);
     start_index = OVERRIDE_POS(override) + match.length;
   }
-  return SubString(subject, start_index, subject.length);
+  return %_SubString(subject, start_index, subject.length);
 }
 
 
@@ -370,7 +347,7 @@ function RegExpMakeCaptureGetter(n) {
     var matchStart = lastMatchInfo[CAPTURE(index)];
     var matchEnd = lastMatchInfo[CAPTURE(index + 1)];
     if (matchStart == -1 || matchEnd == -1) return '';
-    return SubString(LAST_SUBJECT(lastMatchInfo), matchStart, matchEnd);
+    return %_SubString(LAST_SUBJECT(lastMatchInfo), matchStart, matchEnd);
   };
 }
 
@@ -381,10 +358,10 @@ function RegExpMakeCaptureGetter(n) {
 // pairs for the match and all the captured substrings), the invariant is
 // that there are at least two capture indeces.  The array also contains
 // the subject string for the last successful match.
-var lastMatchInfo = new InternalArray(
+var lastMatchInfo = new InternalPackedArray(
     2,                 // REGEXP_NUMBER_OF_CAPTURES
     "",                // Last subject.
-    void 0,            // Last input - settable with RegExpSetInput.
+    UNDEFINED,         // Last input - settable with RegExpSetInput.
     0,                 // REGEXP_FIRST_CAPTURE + 0
     0                  // REGEXP_FIRST_CAPTURE + 1
 );

@@ -2,36 +2,14 @@
 //
 // Copyright IBM Corp. 2012, 2013. All rights reserved.
 //
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-//       copyright notice, this list of conditions and the following
-//       disclaimer in the documentation and/or other materials provided
-//       with the distribution.
-//     * Neither the name of Google Inc. nor the names of its
-//       contributors may be used to endorse or promote products derived
-//       from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 #include "v8.h"
 
-#if defined(V8_TARGET_ARCH_PPC)
+#if V8_TARGET_ARCH_PPC
 
+#include "cpu-profiler.h"
 #include "unicode.h"
 #include "log.h"
 #include "code-stubs.h"
@@ -126,7 +104,7 @@ RegExpMacroAssemblerPPC::RegExpMacroAssemblerPPC(
     int registers_to_save,
     Zone* zone)
     : NativeRegExpMacroAssembler(zone),
-      masm_(new MacroAssembler(Isolate::Current(), NULL, kRegExpCodeSize)),
+      masm_(new MacroAssembler(zone->isolate(), NULL, kRegExpCodeSize)),
       mode_(mode),
       num_registers_(registers_to_save),
       num_saved_registers_(registers_to_save),
@@ -139,7 +117,7 @@ RegExpMacroAssemblerPPC::RegExpMacroAssemblerPPC(
   ASSERT_EQ(0, registers_to_save % 2);
 
   // Called from C
-#if defined(_AIX) || defined(V8_TARGET_ARCH_PPC64)
+#if ABI_USES_FUNCTION_DESCRIPTORS
   __ function_descriptor();
 #endif
 
@@ -198,7 +176,7 @@ void RegExpMacroAssemblerPPC::Backtrack() {
   Pop(r3);
   __ add(r3, r3, code_pointer());
   __ mtctr(r3);
-  __ bcr();
+  __ bctr();
 }
 
 
@@ -252,56 +230,6 @@ void RegExpMacroAssemblerPPC::CheckNotAtStart(Label* on_not_at_start) {
 void RegExpMacroAssemblerPPC::CheckCharacterLT(uc16 limit, Label* on_less) {
   __ Cmpli(current_character(), Operand(limit), r0);
   BranchOrBacktrack(lt, on_less);
-}
-
-
-void RegExpMacroAssemblerPPC::CheckCharacters(Vector<const uc16> str,
-                                              int cp_offset,
-                                              Label* on_failure,
-                                              bool check_end_of_string) {
-  if (on_failure == NULL) {
-    // Instead of inlining a backtrack for each test, (re)use the global
-    // backtrack target.
-    on_failure = &backtrack_label_;
-  }
-
-  if (check_end_of_string) {
-    // Is last character of required match inside string.
-    CheckPosition(cp_offset + str.length() - 1, on_failure);
-  }
-
-  __ add(r3, end_of_input_address(), current_input_offset());
-  if (cp_offset != 0) {
-    int byte_offset = cp_offset * char_size();
-    __ addi(r3, r3, Operand(byte_offset));
-  }
-
-  // r3 : Address of characters to match against str.
-  int stored_high_byte = 0;
-  for (int i = 0; i < str.length(); i++) {
-    if (mode_ == ASCII) {
-      __ lbz(r4, MemOperand(r3));
-      __ addi(r3, r3, Operand(char_size()));
-      ASSERT(str[i] <= String::kMaxAsciiCharCode);
-      __ cmpi(r4, Operand(str[i]));
-    } else {
-      __ lhz(r4, MemOperand(r3));
-      __ addi(r3, r3, Operand(char_size()));
-      uc16 match_char = str[i];
-      int match_high_byte = (match_char >> 8);
-      if (match_high_byte == 0) {
-        __ cmpi(r4, Operand(str[i]));
-      } else {
-        if (match_high_byte != stored_high_byte) {
-          __ li(r5, Operand(match_high_byte));
-          stored_high_byte = match_high_byte;
-        }
-        __ addi(r6, r5, Operand(match_char & 0xff));
-        __ cmp(r4, r6);
-      }
-    }
-    BranchOrBacktrack(ne, on_failure);
-  }
 }
 
 
@@ -366,8 +294,13 @@ void RegExpMacroAssemblerPPC::CheckNotBackReferenceIgnoreCase(
     __ bne(&fail);
     __ subi(r6, r6, Operand('a'));
     __ cmpli(r6, Operand('z' - 'a'));  // Is r6 a lowercase letter?
-    __ bgt(&fail);
-
+    __ ble(&loop_check);  // In range 'a'-'z'.
+    // Latin-1: Check for values in range [224,254] but not 247.
+    __ subi(r6, r6, Operand(224 - 'a'));
+    __ cmpli(r6, Operand(254 - 224));
+    __ bgt(&fail);  // Weren't Latin-1 letters.
+    __ cmpi(r6, Operand(247 - 224));  // Check for 247.
+    __ beq(&fail);
 
     __ bind(&loop_check);
     __ cmp(r3, r4);
@@ -404,12 +337,12 @@ void RegExpMacroAssemblerPPC::CheckNotBackReferenceIgnoreCase(
     // Address of current input position.
     __ add(r4, current_input_offset(), end_of_input_address());
     // Isolate.
-    __ mov(r6, Operand(ExternalReference::isolate_address()));
+    __ mov(r6, Operand(ExternalReference::isolate_address(isolate())));
 
     {
       AllowExternalCallThatCantCauseGC scope(masm_);
       ExternalReference function =
-          ExternalReference::re_case_insensitive_compare_uc16(masm_->isolate());
+          ExternalReference::re_case_insensitive_compare_uc16(isolate());
       __ CallCFunction(function, argument_count);
     }
 
@@ -546,7 +479,7 @@ void RegExpMacroAssemblerPPC::CheckBitInTable(
     Handle<ByteArray> table,
     Label* on_bit_set) {
   __ mov(r3, Operand(table));
-  if (mode_ != ASCII || kTableMask != String::kMaxAsciiCharCode) {
+  if (mode_ != ASCII || kTableMask != String::kMaxOneByteCharCode) {
     __ andi(r4, current_character(), Operand(kTableSize - 1));
     __ addi(r4, r4, Operand(ByteArray::kHeaderSize - kHeapObjectTag));
   } else {
@@ -568,34 +501,28 @@ bool RegExpMacroAssemblerPPC::CheckSpecialCharacterClass(uc16 type,
   case 's':
     // Match space-characters
     if (mode_ == ASCII) {
-      // ASCII space characters are '\t'..'\r' and ' '.
+      // One byte space characters are '\t'..'\r', ' ' and \u00a0.
       Label success;
       __ cmpi(current_character(), Operand(' '));
       __ beq(&success);
       // Check range 0x09..0x0d
       __ subi(r3, current_character(), Operand('\t'));
       __ cmpli(r3, Operand('\r' - '\t'));
-      BranchOrBacktrack(gt, on_no_match);
+      __ ble(&success);
+      // \u00a0 (NBSP).
+      __ cmpi(r3, Operand(0x00a0 - '\t'));
+      BranchOrBacktrack(ne, on_no_match);
       __ bind(&success);
       return true;
     }
     return false;
   case 'S':
-    // Match non-space characters.
-    if (mode_ == ASCII) {
-      // ASCII space characters are '\t'..'\r' and ' '.
-      __ cmpi(current_character(), Operand(' '));
-      BranchOrBacktrack(eq, on_no_match);
-      __ subi(r3, current_character(), Operand('\t'));
-      __ cmpli(r3, Operand('\r' - '\t'));
-      BranchOrBacktrack(le, on_no_match);
-      return true;
-    }
+    // The emitted code for generic character classes is good enough.
     return false;
   case 'd':
     // Match ASCII digits ('0'..'9')
     __ subi(r3, current_character(), Operand('0'));
-    __ cmpli(current_character(), Operand('9' - '0'));
+    __ cmpli(r3, Operand('9' - '0'));
     BranchOrBacktrack(gt, on_no_match);
     return true;
   case 'D':
@@ -739,7 +666,7 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
     Label stack_ok;
 
     ExternalReference stack_limit =
-      ExternalReference::address_of_stack_limit(masm_->isolate());
+      ExternalReference::address_of_stack_limit(isolate());
     __ mov(r3, Operand(stack_limit));
     __ LoadP(r3, MemOperand(r3));
     __ sub(r3, sp, r3, LeaveOE, SetRC);
@@ -927,7 +854,7 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
     __ MultiPop(registers_to_retain);
     __ pop(r0);
     __ mtctr(r0);
-    __ bcr();
+    __ bctr();
 
     // Backtrack code (branch target for conditional backtracks).
     if (backtrack_label_.is_linked()) {
@@ -963,9 +890,9 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
       __ PrepareCallCFunction(num_arguments, r3);
       __ mr(r3, backtrack_stackpointer());
       __ addi(r4, frame_pointer(), Operand(kStackHighEnd));
-      __ mov(r5, Operand(ExternalReference::isolate_address()));
+      __ mov(r5, Operand(ExternalReference::isolate_address(isolate())));
       ExternalReference grow_stack =
-        ExternalReference::re_grow_stack(masm_->isolate());
+        ExternalReference::re_grow_stack(isolate());
       __ CallCFunction(grow_stack, num_arguments);
       // If return NULL, we have failed to grow the stack, and
       // must exit with a stack-overflow exception.
@@ -988,10 +915,9 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
 
   CodeDesc code_desc;
   masm_->GetCode(&code_desc);
-  Handle<Code> code = FACTORY->NewCode(code_desc,
-                                       Code::ComputeFlags(Code::REGEXP),
-                                       masm_->CodeObject());
-  PROFILE(Isolate::Current(), RegExpCodeCreateEvent(*code, *source));
+  Handle<Code> code = isolate()->factory()->NewCode(
+      code_desc, Code::ComputeFlags(Code::REGEXP), masm_->CodeObject());
+  PROFILE(masm_->isolate(), RegExpCodeCreateEvent(*code, *source));
   return Handle<HeapObject>::cast(code);
 }
 
@@ -1058,19 +984,7 @@ void RegExpMacroAssemblerPPC::PopRegister(int register_index) {
 
 
 void RegExpMacroAssemblerPPC::PushBacktrack(Label* label) {
-  if (label->is_bound()) {
-    int target = label->pos();
-    __ mov(r3, Operand(target + Code::kHeaderSize - kHeapObjectTag));
-  } else {
-    Label after_constant;
-    __ b(&after_constant);
-    int offset = masm_->pc_offset();
-    int cp_offset = offset + Code::kHeaderSize - kHeapObjectTag;
-    __ emit(0);
-    masm_->label_at_put(label, offset);
-    __ bind(&after_constant);
-    __ LoadWord(r3, MemOperand(code_pointer(), cp_offset), r0);
-  }
+  __ mov_label_offset(r3, label);
   Push(r3);
   CheckStackLimit();
 }
@@ -1158,16 +1072,52 @@ void RegExpMacroAssemblerPPC::WriteStackPointerToRegister(int reg) {
 // Private methods:
 
 void RegExpMacroAssemblerPPC::CallCheckStackGuardState(Register scratch) {
-  static const int num_arguments = 3;
-  __ PrepareCallCFunction(num_arguments, scratch);
+  int frame_alignment = masm_->ActivationFrameAlignment();
+  int stack_space = kNumRequiredStackFrameSlots;
+  int stack_passed_arguments = 1;  // space for return address pointer
+
+  // The following stack manipulation logic is similar to
+  // PrepareCallCFunction.  However, we need an extra slot on the
+  // stack to house the return address parameter.
+  if (frame_alignment > kPointerSize) {
+    // Make stack end at alignment and make room for stack arguments
+    // -- preserving original value of sp.
+    __ mr(scratch, sp);
+    __ addi(sp, sp, Operand(-(stack_passed_arguments + 1) * kPointerSize));
+    ASSERT(IsPowerOf2(frame_alignment));
+    __ ClearRightImm(sp, sp, Operand(WhichPowerOf2(frame_alignment)));
+    __ StoreP(scratch, MemOperand(sp, stack_passed_arguments * kPointerSize));
+  } else {
+    // Make room for stack arguments
+    stack_space += stack_passed_arguments;
+  }
+
+  // Allocate frame with required slots to make ABI work.
+  __ li(r0, Operand::Zero());
+  __ StorePU(r0, MemOperand(sp, -stack_space * kPointerSize));
+
   // RegExp code frame pointer.
   __ mr(r5, frame_pointer());
   // Code* of self.
   __ mov(r4, Operand(masm_->CodeObject()));
-  // r3 becomes return address pointer.
+  // r3 will point to the return address, placed by DirectCEntry.
+  __ addi(r3, sp, Operand(kStackFrameExtraParamSlot * kPointerSize));
+
   ExternalReference stack_guard_check =
-      ExternalReference::re_check_stack_guard_state(masm_->isolate());
-  CallCFunctionUsingStub(stack_guard_check, num_arguments);
+      ExternalReference::re_check_stack_guard_state(isolate());
+  __ mov(ip, Operand(stack_guard_check));
+  DirectCEntryStub stub(isolate());
+  stub.GenerateCall(masm_, ip);
+
+  // Restore the stack pointer
+  stack_space = kNumRequiredStackFrameSlots + stack_passed_arguments;
+  if (frame_alignment > kPointerSize) {
+    __ LoadP(sp, MemOperand(sp, stack_space * kPointerSize));
+  } else {
+    __ addi(sp, sp, Operand(stack_space * kPointerSize));
+  }
+
+  __ mov(code_pointer(), Operand(masm_->CodeObject()));
 }
 
 
@@ -1182,7 +1132,6 @@ int RegExpMacroAssemblerPPC::CheckStackGuardState(Address* return_address,
                                                   Code* re_code,
                                                   Address re_frame) {
   Isolate* isolate = frame_entry<Isolate*>(re_frame, kIsolate);
-  ASSERT(isolate == Isolate::Current());
   if (isolate->stack_guard()->IsStackOverflow()) {
     isolate->StackOverflow();
     return EXCEPTION;
@@ -1204,16 +1153,16 @@ int RegExpMacroAssemblerPPC::CheckStackGuardState(Address* return_address,
   Handle<String> subject(frame_entry<String*>(re_frame, kInputString));
 
   // Current string.
-  bool is_ascii = subject->IsAsciiRepresentationUnderneath();
+  bool is_ascii = subject->IsOneByteRepresentationUnderneath();
 
   ASSERT(re_code->instruction_start() <= *return_address);
   ASSERT(*return_address <=
       re_code->instruction_start() + re_code->instruction_size());
 
-  MaybeObject* result = Execution::HandleStackGuardInterrupt(isolate);
+  Object* result = Execution::HandleStackGuardInterrupt(isolate);
 
   if (*code_handle != re_code) {  // Return address no longer valid
-    int delta = code_handle->address() - re_code->address();
+    intptr_t delta = code_handle->address() - re_code->address();
     // Overwrite the return address on the stack.
     *return_address += delta;
   }
@@ -1235,7 +1184,7 @@ int RegExpMacroAssemblerPPC::CheckStackGuardState(Address* return_address,
   }
 
   // String might have changed.
-  if (subject_tmp->IsAsciiRepresentation() != is_ascii) {
+  if (subject_tmp->IsOneByteRepresentation() != is_ascii) {
     // If we changed between an ASCII and an UC16 string, the specialized
     // code cannot be used, and we need to restart regexp matching from
     // scratch (including, potentially, compiling a new version of the code).
@@ -1354,7 +1303,7 @@ void RegExpMacroAssemblerPPC::Pop(Register target) {
 void RegExpMacroAssemblerPPC::CheckPreemption() {
   // Check for preemption.
   ExternalReference stack_limit =
-      ExternalReference::address_of_stack_limit(masm_->isolate());
+      ExternalReference::address_of_stack_limit(isolate());
   __ mov(r3, Operand(stack_limit));
   __ LoadP(r3, MemOperand(r3));
   __ cmpl(sp, r3);
@@ -1364,28 +1313,11 @@ void RegExpMacroAssemblerPPC::CheckPreemption() {
 
 void RegExpMacroAssemblerPPC::CheckStackLimit() {
   ExternalReference stack_limit =
-      ExternalReference::address_of_regexp_stack_limit(masm_->isolate());
+      ExternalReference::address_of_regexp_stack_limit(isolate());
   __ mov(r3, Operand(stack_limit));
   __ LoadP(r3, MemOperand(r3));
   __ cmpl(backtrack_stackpointer(), r3);
   SafeCall(&stack_overflow_label_, le);
-}
-
-
-void RegExpMacroAssemblerPPC::CallCFunctionUsingStub(
-    ExternalReference function,
-    int num_arguments) {
-  // Must pass all arguments in registers. The stub pushes on the stack.
-  ASSERT(num_arguments <= 8);
-  __ mov(code_pointer(), Operand(function));
-  RegExpCEntryStub stub;
-  __ CallStub(&stub);
-  if (OS::ActivationFrameAlignment() > kPointerSize) {
-    __ LoadP(sp, MemOperand(sp, 0));
-  } else {
-    __ addi(sp, sp, Operand(kNumRequiredStackFrameSlots * kPointerSize));
-  }
-  __ mov(code_pointer(), Operand(masm_->CodeObject()));
 }
 
 
@@ -1417,41 +1349,6 @@ void RegExpMacroAssemblerPPC::LoadCurrentCharacterUnchecked(int cp_offset,
   }
 }
 
-
-void RegExpCEntryStub::Generate(MacroAssembler* masm_) {
-  int stack_alignment = OS::ActivationFrameAlignment();
-  if (stack_alignment < kPointerSize) stack_alignment = kPointerSize;
-
-  // Stack is already aligned for call, so decrement by alignment
-  // to make room for storing the return address.
-  int extra_stack_slots = stack_alignment >> kPointerSizeLog2;
-
-  __ addi(r3, sp, Operand(-stack_alignment));
-  __ mflr(r0);
-  __ StoreP(r0, MemOperand(r3, 0));
-
-  // PPC LINUX ABI:
-  extra_stack_slots += kNumRequiredStackFrameSlots;
-  __ addi(sp, sp, Operand(-extra_stack_slots * kPointerSize));
-
-#if !defined(USE_SIMULATOR) && \
-  (defined(_AIX) || defined(V8_TARGET_ARCH_PPC64))
-  // Native AIX/PPC64 Linux use a function descriptor.
-  __ LoadP(ToRegister(2), MemOperand(r26, kPointerSize));  // TOC
-  __ LoadP(ip, MemOperand(r26, 0));  // Instruction address
-  Register target = ip;
-#else
-  Register target = r26;
-#endif
-
-  __ Call(target);
-
-  __ addi(sp, sp, Operand(extra_stack_slots * kPointerSize));
-
-  __ LoadP(r0, MemOperand(sp, -stack_alignment));
-  __ mtlr(r0);
-  __ blr();
-}
 
 #undef __
 

@@ -25,8 +25,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifdef ENABLE_DEBUGGER_SUPPORT
-
 #include <stdlib.h>
 
 #include "v8.h"
@@ -76,19 +74,20 @@ class DiffChunkStruct : public ZoneObject {
 
 class ListDiffOutputWriter : public Comparator::Output {
  public:
-  explicit ListDiffOutputWriter(DiffChunkStruct** next_chunk_pointer)
-      : next_chunk_pointer_(next_chunk_pointer) {
+  explicit ListDiffOutputWriter(DiffChunkStruct** next_chunk_pointer,
+                                Zone* zone)
+      : next_chunk_pointer_(next_chunk_pointer), zone_(zone) {
     (*next_chunk_pointer_) = NULL;
   }
   void AddChunk(int pos1, int pos2, int len1, int len2) {
-    current_chunk_ = new(Isolate::Current()->runtime_zone()) DiffChunkStruct(
-        pos1, pos2, len1, len2);
+    current_chunk_ = new(zone_) DiffChunkStruct(pos1, pos2, len1, len2);
     (*next_chunk_pointer_) = current_chunk_;
     next_chunk_pointer_ = &current_chunk_->next;
   }
  private:
   DiffChunkStruct** next_chunk_pointer_;
   DiffChunkStruct* current_chunk_;
+  Zone* zone_;
 };
 
 
@@ -96,10 +95,10 @@ void CompareStringsOneWay(const char* s1, const char* s2,
                           int expected_diff_parameter = -1) {
   StringCompareInput input(s1, s2);
 
-  ZoneScope zone_scope(Isolate::Current()->runtime_zone(), DELETE_ON_EXIT);
+  Zone zone(CcTest::i_isolate());
 
   DiffChunkStruct* first_chunk;
-  ListDiffOutputWriter writer(&first_chunk);
+  ListDiffOutputWriter writer(&first_chunk, &zone);
 
   Comparator::CalculateDifference(&input, &writer);
 
@@ -176,5 +175,3 @@ TEST(LiveEditDiffer) {
   CompareStrings("abbabababababaaabbabababababbabbbbbbbababa",
                  "bbbbabababbbabababbbabababababbabbababa");
 }
-
-#endif  // ENABLE_DEBUGGER_SUPPORT

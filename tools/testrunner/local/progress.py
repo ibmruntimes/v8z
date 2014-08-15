@@ -57,7 +57,7 @@ class ProgressIndicator(object):
   def AboutToRun(self, test):
     pass
 
-  def HasRun(self, test):
+  def HasRun(self, test, has_unexpected_output):
     pass
 
   def PrintFailureHeader(self, test):
@@ -89,6 +89,7 @@ class SimpleProgressIndicator(ProgressIndicator):
         print failed.output.stdout.strip()
       print "Command: %s" % EscapeCommand(self.runner.GetCommand(failed))
       if failed.output.HasCrashed():
+        print "exit code: %d" % failed.output.exit_code
         print "--- CRASHED ---"
       if failed.output.HasTimedOut():
         print "--- TIMEOUT ---"
@@ -111,8 +112,8 @@ class VerboseProgressIndicator(SimpleProgressIndicator):
     print 'Starting %s...' % test.GetLabel()
     sys.stdout.flush()
 
-  def HasRun(self, test):
-    if test.suite.HasUnexpectedOutput(test):
+  def HasRun(self, test, has_unexpected_output):
+    if has_unexpected_output:
       if test.output.HasCrashed():
         outcome = 'CRASH'
       else:
@@ -124,11 +125,11 @@ class VerboseProgressIndicator(SimpleProgressIndicator):
 
 class DotsProgressIndicator(SimpleProgressIndicator):
 
-  def HasRun(self, test):
+  def HasRun(self, test, has_unexpected_output):
     total = self.runner.succeeded + len(self.runner.failed)
     if (total > 1) and (total % 50 == 1):
       sys.stdout.write('\n')
-    if test.suite.HasUnexpectedOutput(test):
+    if has_unexpected_output:
       if test.output.HasCrashed():
         sys.stdout.write('C')
         sys.stdout.flush()
@@ -159,8 +160,8 @@ class CompactProgressIndicator(ProgressIndicator):
   def AboutToRun(self, test):
     self.PrintProgress(test.GetLabel())
 
-  def HasRun(self, test):
-    if test.suite.HasUnexpectedOutput(test):
+  def HasRun(self, test, has_unexpected_output):
+    if has_unexpected_output:
       self.ClearLine(self.last_status_length)
       self.PrintFailureHeader(test)
       stdout = test.output.stdout.strip()
@@ -255,10 +256,10 @@ class JUnitTestProgressIndicator(ProgressIndicator):
   def AboutToRun(self, test):
     self.progress_indicator.AboutToRun(test)
 
-  def HasRun(self, test):
-    self.progress_indicator.HasRun(test)
+  def HasRun(self, test, has_unexpected_output):
+    self.progress_indicator.HasRun(test, has_unexpected_output)
     fail_text = ""
-    if test.suite.HasUnexpectedOutput(test):
+    if has_unexpected_output:
       stdout = test.output.stdout.strip()
       if len(stdout):
         fail_text += "stdout:\n%s\n" % stdout

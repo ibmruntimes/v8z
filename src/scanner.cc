@@ -1,36 +1,19 @@
 // Copyright 2011 the V8 project authors. All rights reserved.
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-//       copyright notice, this list of conditions and the following
-//       disclaimer in the documentation and/or other materials provided
-//       with the distribution.
-//     * Neither the name of Google Inc. nor the names of its
-//       contributors may be used to endorse or promote products derived
-//       from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 // Features shared by parsing and pre-parsing scanners.
+
+#include <cmath>
 
 #include "scanner.h"
 
 #include "../include/v8stdint.h"
 #include "char-predicates-inl.h"
+#include "conversions-inl.h"
+#include "list-inl.h"
+#include "v8.h"
+#include "parser.h"
 
 namespace v8 {
 namespace internal {
@@ -42,7 +25,8 @@ Scanner::Scanner(UnicodeCache* unicode_cache)
     : unicode_cache_(unicode_cache),
       octal_pos_(Location::invalid()),
       harmony_scoping_(false),
-      harmony_modules_(false) { }
+      harmony_modules_(false),
+      harmony_numeric_literals_(false) { }
 
 
 void Scanner::Initialize(Utf16CharacterStream* source) {
@@ -241,7 +225,8 @@ Token::Value Scanner::Next() {
 }
 
 
-static inline bool IsByteOrderMark(uc32 c) {
+// TODO(yangguo): check whether this is actually necessary.
+static inline bool IsLittleEndianByteOrderMark(uc32 c) {
   // The Unicode value U+FFFE is guaranteed never to be assigned as a
   // Unicode character; this implies that in a Unicode context the
   // 0xFF, 0xFE byte pattern can only be interpreted as the U+FEFF
@@ -249,7 +234,7 @@ static inline bool IsByteOrderMark(uc32 c) {
   // not be a U+FFFE character expressed in big-endian byte
   // order). Nevertheless, we check for it to be compatible with
   // Spidermonkey.
-  return c == 0xFEFF || c == 0xFFFE;
+  return c == 0xFFFE;
 }
 
 
@@ -257,14 +242,14 @@ bool Scanner::SkipWhiteSpace() {
   int start_position = source_pos();
 
   while (true) {
-    // We treat byte-order marks (BOMs) as whitespace for better
-    // compatibility with Spidermonkey and other JavaScript engines.
-    while (unicode_cache_->IsWhiteSpace(c0_) || IsByteOrderMark(c0_)) {
-      // IsWhiteSpace() includes line terminators!
+    while (true) {
+      // Advance as long as character is a WhiteSpace or LineTerminator.
+      // Remember if the latter is the case.
       if (unicode_cache_->IsLineTerminator(c0_)) {
-        // Ignore line terminators, but remember them. This is necessary
-        // for automatic semicolon insertion.
         has_line_terminator_before_next_ = true;
+      } else if (!unicode_cache_->IsWhiteSpace(c0_) &&
+                 !IsLittleEndianByteOrderMark(c0_)) {
+        break;
       }
       Advance();
     }
@@ -719,7 +704,7 @@ void Scanner::ScanDecimalDigits() {
 Token::Value Scanner::ScanNumber(bool seen_period) {
   ASSERT(IsDecimalDigit(c0_));  // the first digit of the number or the fraction
 
-  enum { DECIMAL, HEX, OCTAL } kind = DECIMAL;
+  enum { DECIMAL, HEX, OCTAL, IMPLICIT_OCTAL, BINARY } kind = DECIMAL;
 
   LiteralScope literal(this);
   if (seen_period) {
@@ -733,7 +718,8 @@ Token::Value Scanner::ScanNumber(bool seen_period) {
       int start_pos = source_pos();  // For reporting octal positions.
       AddLiteralCharAdvance();
 
-      // either 0, 0exxx, 0Exxx, 0.xxx, an octal number, or a hex number
+      // either 0, 0exxx, 0Exxx, 0.xxx, a hex number, a binary number or
+      // an octal number.
       if (c0_ == 'x' || c0_ == 'X') {
         // hex number
         kind = HEX;
@@ -745,9 +731,29 @@ Token::Value Scanner::ScanNumber(bool seen_period) {
         while (IsHexDigit(c0_)) {
           AddLiteralCharAdvance();
         }
+      } else if (harmony_numeric_literals_ && (c0_ == 'o' || c0_ == 'O')) {
+        kind = OCTAL;
+        AddLiteralCharAdvance();
+        if (!IsOctalDigit(c0_)) {
+          // we must have at least one octal digit after 'o'/'O'
+          return Token::ILLEGAL;
+        }
+        while (IsOctalDigit(c0_)) {
+          AddLiteralCharAdvance();
+        }
+      } else if (harmony_numeric_literals_ && (c0_ == 'b' || c0_ == 'B')) {
+        kind = BINARY;
+        AddLiteralCharAdvance();
+        if (!IsBinaryDigit(c0_)) {
+          // we must have at least one binary digit after 'b'/'B'
+          return Token::ILLEGAL;
+        }
+        while (IsBinaryDigit(c0_)) {
+          AddLiteralCharAdvance();
+        }
       } else if ('0' <= c0_ && c0_ <= '7') {
         // (possible) octal number
-        kind = OCTAL;
+        kind = IMPLICIT_OCTAL;
         while (true) {
           if (c0_ == '8' || c0_ == '9') {
             kind = DECIMAL;
@@ -776,7 +782,7 @@ Token::Value Scanner::ScanNumber(bool seen_period) {
   // scan exponent, if any
   if (c0_ == 'e' || c0_ == 'E') {
     ASSERT(kind != HEX);  // 'e'/'E' must be scanned as part of the hex number
-    if (kind == OCTAL) return Token::ILLEGAL;  // no exponent for octals allowed
+    if (kind != DECIMAL) return Token::ILLEGAL;
     // scan exponent
     AddLiteralCharAdvance();
     if (c0_ == '+' || c0_ == '-')
@@ -877,10 +883,10 @@ uc32 Scanner::ScanIdentifierUnicodeEscape() {
   KEYWORD("while", Token::WHILE)                                    \
   KEYWORD("with", Token::WITH)                                      \
   KEYWORD_GROUP('y')                                                \
-  KEYWORD("yield", Token::FUTURE_STRICT_RESERVED_WORD)
+  KEYWORD("yield", Token::YIELD)
 
 
-static Token::Value KeywordOrIdentifierToken(const char* input,
+static Token::Value KeywordOrIdentifierToken(const uint8_t* input,
                                              int input_length,
                                              bool harmony_scoping,
                                              bool harmony_modules) {
@@ -955,8 +961,8 @@ Token::Value Scanner::ScanIdentifierOrKeyword() {
 
   literal.Complete();
 
-  if (next_.literal_chars->is_ascii()) {
-    Vector<const char> chars = next_.literal_chars->ascii_literal();
+  if (next_.literal_chars->is_one_byte()) {
+    Vector<const uint8_t> chars = next_.literal_chars->one_byte_literal();
     return KeywordOrIdentifierToken(chars.start(),
                                     chars.length(),
                                     harmony_scoping_,
@@ -1084,6 +1090,200 @@ bool Scanner::ScanRegExpFlags() {
 
   next_.location.end_pos = source_pos() - 1;
   return true;
+}
+
+
+Handle<String> Scanner::AllocateNextLiteralString(Isolate* isolate,
+                                                  PretenureFlag tenured) {
+  if (is_next_literal_one_byte()) {
+    return isolate->factory()->NewStringFromOneByte(
+        next_literal_one_byte_string(), tenured).ToHandleChecked();
+  } else {
+    return isolate->factory()->NewStringFromTwoByte(
+        next_literal_two_byte_string(), tenured).ToHandleChecked();
+  }
+}
+
+
+Handle<String> Scanner::AllocateInternalizedString(Isolate* isolate) {
+  if (is_literal_one_byte()) {
+    return isolate->factory()->InternalizeOneByteString(
+        literal_one_byte_string());
+  } else {
+    return isolate->factory()->InternalizeTwoByteString(
+        literal_two_byte_string());
+  }
+}
+
+
+double Scanner::DoubleValue() {
+  ASSERT(is_literal_one_byte());
+  return StringToDouble(
+      unicode_cache_,
+      literal_one_byte_string(),
+      ALLOW_HEX | ALLOW_OCTAL | ALLOW_IMPLICIT_OCTAL | ALLOW_BINARY);
+}
+
+
+int Scanner::FindNumber(DuplicateFinder* finder, int value) {
+  return finder->AddNumber(literal_one_byte_string(), value);
+}
+
+
+int Scanner::FindSymbol(DuplicateFinder* finder, int value) {
+  if (is_literal_one_byte()) {
+    return finder->AddOneByteSymbol(literal_one_byte_string(), value);
+  }
+  return finder->AddTwoByteSymbol(literal_two_byte_string(), value);
+}
+
+
+void Scanner::LogSymbol(ParserRecorder* log, int position) {
+  if (is_literal_one_byte()) {
+    log->LogOneByteSymbol(position, literal_one_byte_string());
+  } else {
+    log->LogTwoByteSymbol(position, literal_two_byte_string());
+  }
+}
+
+
+int DuplicateFinder::AddOneByteSymbol(Vector<const uint8_t> key, int value) {
+  return AddSymbol(key, true, value);
+}
+
+
+int DuplicateFinder::AddTwoByteSymbol(Vector<const uint16_t> key, int value) {
+  return AddSymbol(Vector<const uint8_t>::cast(key), false, value);
+}
+
+
+int DuplicateFinder::AddSymbol(Vector<const uint8_t> key,
+                               bool is_one_byte,
+                               int value) {
+  uint32_t hash = Hash(key, is_one_byte);
+  byte* encoding = BackupKey(key, is_one_byte);
+  HashMap::Entry* entry = map_.Lookup(encoding, hash, true);
+  int old_value = static_cast<int>(reinterpret_cast<intptr_t>(entry->value));
+  entry->value =
+    reinterpret_cast<void*>(static_cast<intptr_t>(value | old_value));
+  return old_value;
+}
+
+
+int DuplicateFinder::AddNumber(Vector<const uint8_t> key, int value) {
+  ASSERT(key.length() > 0);
+  // Quick check for already being in canonical form.
+  if (IsNumberCanonical(key)) {
+    return AddOneByteSymbol(key, value);
+  }
+
+  int flags = ALLOW_HEX | ALLOW_OCTAL | ALLOW_IMPLICIT_OCTAL | ALLOW_BINARY;
+  double double_value = StringToDouble(
+      unicode_constants_, key, flags, 0.0);
+  int length;
+  const char* string;
+  if (!std::isfinite(double_value)) {
+    string = "Infinity";
+    length = 8;  // strlen("Infinity");
+  } else {
+    string = DoubleToCString(double_value,
+                             Vector<char>(number_buffer_, kBufferSize));
+    length = StrLength(string);
+  }
+  return AddSymbol(Vector<const byte>(reinterpret_cast<const byte*>(string),
+                                      length), true, value);
+}
+
+
+bool DuplicateFinder::IsNumberCanonical(Vector<const uint8_t> number) {
+  // Test for a safe approximation of number literals that are already
+  // in canonical form: max 15 digits, no leading zeroes, except an
+  // integer part that is a single zero, and no trailing zeros below
+  // the decimal point.
+  int pos = 0;
+  int length = number.length();
+  if (number.length() > 15) return false;
+  if (number[pos] == '0') {
+    pos++;
+  } else {
+    while (pos < length &&
+           static_cast<unsigned>(number[pos] - '0') <= ('9' - '0')) pos++;
+  }
+  if (length == pos) return true;
+  if (number[pos] != '.') return false;
+  pos++;
+  bool invalid_last_digit = true;
+  while (pos < length) {
+    uint8_t digit = number[pos] - '0';
+    if (digit > '9' - '0') return false;
+    invalid_last_digit = (digit == 0);
+    pos++;
+  }
+  return !invalid_last_digit;
+}
+
+
+uint32_t DuplicateFinder::Hash(Vector<const uint8_t> key, bool is_one_byte) {
+  // Primitive hash function, almost identical to the one used
+  // for strings (except that it's seeded by the length and ASCII-ness).
+  int length = key.length();
+  uint32_t hash = (length << 1) | (is_one_byte ? 1 : 0) ;
+  for (int i = 0; i < length; i++) {
+    uint32_t c = key[i];
+    hash = (hash + c) * 1025;
+    hash ^= (hash >> 6);
+  }
+  return hash;
+}
+
+
+bool DuplicateFinder::Match(void* first, void* second) {
+  // Decode lengths.
+  // Length + ASCII-bit is encoded as base 128, most significant heptet first,
+  // with a 8th bit being non-zero while there are more heptets.
+  // The value encodes the number of bytes following, and whether the original
+  // was ASCII.
+  byte* s1 = reinterpret_cast<byte*>(first);
+  byte* s2 = reinterpret_cast<byte*>(second);
+  uint32_t length_one_byte_field = 0;
+  byte c1;
+  do {
+    c1 = *s1;
+    if (c1 != *s2) return false;
+    length_one_byte_field = (length_one_byte_field << 7) | (c1 & 0x7f);
+    s1++;
+    s2++;
+  } while ((c1 & 0x80) != 0);
+  int length = static_cast<int>(length_one_byte_field >> 1);
+  return memcmp(s1, s2, length) == 0;
+}
+
+
+byte* DuplicateFinder::BackupKey(Vector<const uint8_t> bytes,
+                                 bool is_one_byte) {
+  uint32_t one_byte_length = (bytes.length() << 1) | (is_one_byte ? 1 : 0);
+  backing_store_.StartSequence();
+  // Emit one_byte_length as base-128 encoded number, with the 7th bit set
+  // on the byte of every heptet except the last, least significant, one.
+  if (one_byte_length >= (1 << 7)) {
+    if (one_byte_length >= (1 << 14)) {
+      if (one_byte_length >= (1 << 21)) {
+        if (one_byte_length >= (1 << 28)) {
+          backing_store_.Add(
+              static_cast<uint8_t>((one_byte_length >> 28) | 0x80));
+        }
+        backing_store_.Add(
+            static_cast<uint8_t>((one_byte_length >> 21) | 0x80u));
+      }
+      backing_store_.Add(
+          static_cast<uint8_t>((one_byte_length >> 14) | 0x80u));
+    }
+    backing_store_.Add(static_cast<uint8_t>((one_byte_length >> 7) | 0x80u));
+  }
+  backing_store_.Add(static_cast<uint8_t>(one_byte_length & 0x7f));
+
+  backing_store_.AddBlock(bytes);
+  return backing_store_.EndSequence().start();
 }
 
 } }  // namespace v8::internal

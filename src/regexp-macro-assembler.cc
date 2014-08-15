@@ -1,29 +1,6 @@
 // Copyright 2012 the V8 project authors. All rights reserved.
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-//       copyright notice, this list of conditions and the following
-//       disclaimer in the documentation and/or other materials provided
-//       with the distribution.
-//     * Neither the name of Google Inc. nor the names of its
-//       contributors may be used to endorse or promote products derived
-//       from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 #include "v8.h"
 #include "ast.h"
@@ -77,14 +54,14 @@ const byte* NativeRegExpMacroAssembler::StringCharacterPosition(
   ASSERT(subject->IsExternalString() || subject->IsSeqString());
   ASSERT(start_index >= 0);
   ASSERT(start_index <= subject->length());
-  if (subject->IsAsciiRepresentation()) {
+  if (subject->IsOneByteRepresentation()) {
     const byte* address;
     if (StringShape(subject).IsExternal()) {
-      const char* data = ExternalAsciiString::cast(subject)->GetChars();
+      const uint8_t* data = ExternalAsciiString::cast(subject)->GetChars();
       address = reinterpret_cast<const byte*>(data);
     } else {
-      ASSERT(subject->IsSeqAsciiString());
-      char* data = SeqAsciiString::cast(subject)->GetChars();
+      ASSERT(subject->IsSeqOneByteString());
+      const uint8_t* data = SeqOneByteString::cast(subject)->GetChars();
       address = reinterpret_cast<const byte*>(data);
     }
     return address + start_index;
@@ -113,8 +90,8 @@ NativeRegExpMacroAssembler::Result NativeRegExpMacroAssembler::Match(
   ASSERT(previous_index <= subject->length());
 
   // No allocations before calling the regexp, but we can't use
-  // AssertNoAllocation, since regexps might be preempted, and another thread
-  // might do allocation anyway.
+  // DisallowHeapAllocation, since regexps might be preempted, and another
+  // thread might do allocation anyway.
 
   String* subject_ptr = *subject;
   // Character offsets into string.
@@ -133,7 +110,7 @@ NativeRegExpMacroAssembler::Result NativeRegExpMacroAssembler::Match(
     slice_offset = slice->offset();
   }
   // Ensure that an underlying string has the same ASCII-ness.
-  bool is_ascii = subject_ptr->IsAsciiRepresentation();
+  bool is_ascii = subject_ptr->IsOneByteRepresentation();
   ASSERT(subject_ptr->IsExternalString() || subject_ptr->IsSeqString());
   // String is now either Sequential or External
   int char_size_shift = is_ascii ? 0 : 1;
@@ -163,7 +140,6 @@ NativeRegExpMacroAssembler::Result NativeRegExpMacroAssembler::Execute(
     int* output,
     int output_size,
     Isolate* isolate) {
-  ASSERT(isolate == Isolate::Current());
   // Ensure that the minimum stack has been allocated.
   RegExpStackScope stack_scope(isolate);
   Address stack_base = stack_scope.stack()->stack_base();
@@ -210,6 +186,26 @@ const byte NativeRegExpMacroAssembler::word_character_map[] = {
     0xffu, 0xffu, 0xffu, 0xffu, 0xffu, 0xffu, 0xffu, 0xffu,  // 'h' - 'o'
     0xffu, 0xffu, 0xffu, 0xffu, 0xffu, 0xffu, 0xffu, 0xffu,  // 'p' - 'w'
     0xffu, 0xffu, 0xffu, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,  // 'x' - 'z'
+    // Latin-1 range
+    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
+    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
+    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
+    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
+
+    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
+    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
+    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
+    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
+
+    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
+    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
+    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
+    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
+
+    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
+    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
+    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
+    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
 };
 
 
@@ -218,7 +214,6 @@ int NativeRegExpMacroAssembler::CaseInsensitiveCompareUC16(
     Address byte_offset2,
     size_t byte_length,
     Isolate* isolate) {
-  ASSERT(isolate == Isolate::Current());
   unibrow::Mapping<unibrow::Ecma262Canonicalize>* canonicalize =
       isolate->regexp_macro_assembler_canonicalize();
   // This function is not allowed to cause a garbage collection.
@@ -251,7 +246,6 @@ int NativeRegExpMacroAssembler::CaseInsensitiveCompareUC16(
 Address NativeRegExpMacroAssembler::GrowStack(Address stack_pointer,
                                               Address* stack_base,
                                               Isolate* isolate) {
-  ASSERT(isolate == Isolate::Current());
   RegExpStack* regexp_stack = isolate->regexp_stack();
   size_t size = regexp_stack->stack_capacity();
   Address old_stack_base = regexp_stack->stack_base();

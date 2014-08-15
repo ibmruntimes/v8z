@@ -1,29 +1,6 @@
 // Copyright 2011 the V8 project authors. All rights reserved.
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-//       copyright notice, this list of conditions and the following
-//       disclaimer in the documentation and/or other materials provided
-//       with the distribution.
-//     * Neither the name of Google Inc. nor the names of its
-//       contributors may be used to endorse or promote products derived
-//       from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 #include "v8.h"
 
@@ -45,6 +22,7 @@ BufferedUtf16CharacterStream::BufferedUtf16CharacterStream()
   buffer_cursor_ = buffer_;
   buffer_end_ = buffer_;
 }
+
 
 BufferedUtf16CharacterStream::~BufferedUtf16CharacterStream() { }
 
@@ -113,6 +91,7 @@ unsigned BufferedUtf16CharacterStream::SlowSeekForward(unsigned delta) {
   return BufferSeekForward(delta);
 }
 
+
 // ----------------------------------------------------------------------------
 // GenericStringUtf16CharacterStream
 
@@ -124,8 +103,6 @@ GenericStringUtf16CharacterStream::GenericStringUtf16CharacterStream(
     : string_(data),
       length_(end_position) {
   ASSERT(end_position >= start_position);
-  buffer_cursor_ = buffer_;
-  buffer_end_ = buffer_;
   pos_ = start_position;
 }
 
@@ -211,11 +188,11 @@ unsigned Utf8ToUtf16CharacterStream::FillBuffer(unsigned char_position,
 
 
 static const byte kUtf8MultiByteMask = 0xC0;
-static const byte kUtf8MultiByteCharStart = 0xC0;
 static const byte kUtf8MultiByteCharFollower = 0x80;
 
 
 #ifdef DEBUG
+static const byte kUtf8MultiByteCharStart = 0xC0;
 static bool IsUtf8MultiCharacterStart(byte first_byte) {
   return (first_byte & kUtf8MultiByteMask) == kUtf8MultiByteCharStart;
 }

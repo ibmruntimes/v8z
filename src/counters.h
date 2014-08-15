@@ -1,29 +1,6 @@
 // Copyright 2012 the V8 project authors. All rights reserved.
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-//       copyright notice, this list of conditions and the following
-//       disclaimer in the documentation and/or other materials provided
-//       with the distribution.
-//     * Neither the name of Google Inc. nor the names of its
-//       contributors may be used to endorse or promote products derived
-//       from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 #ifndef V8_COUNTERS_H_
 #define V8_COUNTERS_H_
@@ -113,14 +90,11 @@ class StatsTable {
 // The row has a 32bit value for each process/thread in the table and also
 // a name (stored in the table metadata).  Since the storage location can be
 // thread-specific, this class cannot be shared across threads.
-//
-// This class is designed to be POD initialized.  It will be registered with
-// the counter system on first use.  For example:
-//   StatsCounter c = { "c:myctr", NULL, false };
-struct StatsCounter {
-  const char* name_;
-  int* ptr_;
-  bool lookup_done_;
+class StatsCounter {
+ public:
+  StatsCounter() { }
+  explicit StatsCounter(Isolate* isolate, const char* name)
+      : isolate_(isolate), name_(name), ptr_(NULL), lookup_done_(false) { }
 
   // Sets the counter to a specific value.
   void Set(int value) {
@@ -177,39 +151,30 @@ struct StatsCounter {
 
  private:
   int* FindLocationInStatsTable() const;
-};
 
-// StatsCounterTimer t = { { L"t:foo", NULL, false }, 0, 0 };
-struct StatsCounterTimer {
-  StatsCounter counter_;
-
-  int64_t start_time_;
-  int64_t stop_time_;
-
-  // Start the timer.
-  void Start();
-
-  // Stop the timer and record the results.
-  void Stop();
-
-  // Returns true if the timer is running.
-  bool Running() {
-    return counter_.Enabled() && start_time_ != 0 && stop_time_ == 0;
-  }
+  Isolate* isolate_;
+  const char* name_;
+  int* ptr_;
+  bool lookup_done_;
 };
 
 // A Histogram represents a dynamically created histogram in the StatsTable.
-//
-// This class is designed to be POD initialized.  It will be registered with
-// the histogram system on first use.  For example:
-//   Histogram h = { "myhist", 0, 10000, 50, NULL, false };
-struct Histogram {
-  const char* name_;
-  int min_;
-  int max_;
-  int num_buckets_;
-  void* histogram_;
-  bool lookup_done_;
+// It will be registered with the histogram system on first use.
+class Histogram {
+ public:
+  Histogram() { }
+  Histogram(const char* name,
+            int min,
+            int max,
+            int num_buckets,
+            Isolate* isolate)
+      : name_(name),
+        min_(min),
+        max_(max),
+        num_buckets_(num_buckets),
+        histogram_(NULL),
+        lookup_done_(false),
+        isolate_(isolate) { }
 
   // Add a single sample to this histogram.
   void AddSample(int sample);
@@ -234,17 +199,31 @@ struct Histogram {
     return histogram_;
   }
 
+  const char* name() { return name_; }
+  Isolate* isolate() const { return isolate_; }
+
  private:
   void* CreateHistogram() const;
+
+  const char* name_;
+  int min_;
+  int max_;
+  int num_buckets_;
+  void* histogram_;
+  bool lookup_done_;
+  Isolate* isolate_;
 };
 
-// A HistogramTimer allows distributions of results to be created
-// HistogramTimer t = { {L"foo", 0, 10000, 50, NULL, false}, 0, 0 };
-struct HistogramTimer {
-  Histogram histogram_;
-
-  int64_t start_time_;
-  int64_t stop_time_;
+// A HistogramTimer allows distributions of results to be created.
+class HistogramTimer : public Histogram {
+ public:
+  HistogramTimer() { }
+  HistogramTimer(const char* name,
+                 int min,
+                 int max,
+                 int num_buckets,
+                 Isolate* isolate)
+      : Histogram(name, min, max, num_buckets, isolate) {}
 
   // Start the timer.
   void Start();
@@ -254,26 +233,54 @@ struct HistogramTimer {
 
   // Returns true if the timer is running.
   bool Running() {
-    return histogram_.Enabled() && (start_time_ != 0) && (stop_time_ == 0);
+    return Enabled() && timer_.IsStarted();
   }
 
-  void Reset() {
-    histogram_.Reset();
-  }
+  // TODO(bmeurer): Remove this when HistogramTimerScope is fixed.
+#ifdef DEBUG
+  ElapsedTimer* timer() { return &timer_; }
+#endif
+
+ private:
+  ElapsedTimer timer_;
 };
 
 // Helper class for scoping a HistogramTimer.
+// TODO(bmeurer): The ifdeffery is an ugly hack around the fact that the
+// Parser is currently reentrant (when it throws an error, we call back
+// into JavaScript and all bets are off), but ElapsedTimer is not
+// reentry-safe. Fix this properly and remove |allow_nesting|.
 class HistogramTimerScope BASE_EMBEDDED {
  public:
-  explicit HistogramTimerScope(HistogramTimer* timer) :
-  timer_(timer) {
+  explicit HistogramTimerScope(HistogramTimer* timer,
+                               bool allow_nesting = false)
+#ifdef DEBUG
+      : timer_(timer),
+        skipped_timer_start_(false) {
+    if (timer_->timer()->IsStarted() && allow_nesting) {
+      skipped_timer_start_ = true;
+    } else {
+      timer_->Start();
+    }
+#else
+      : timer_(timer) {
     timer_->Start();
+#endif
   }
   ~HistogramTimerScope() {
+#ifdef DEBUG
+    if (!skipped_timer_start_) {
+      timer_->Stop();
+    }
+#else
     timer_->Stop();
+#endif
   }
  private:
   HistogramTimer* timer_;
+#ifdef DEBUG
+  bool skipped_timer_start_;
+#endif
 };
 
 

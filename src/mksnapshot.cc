@@ -1,29 +1,6 @@
 // Copyright 2006-2008 the V8 project authors. All rights reserved.
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-//       copyright notice, this list of conditions and the following
-//       disclaimer in the documentation and/or other materials provided
-//       with the distribution.
-//     * Neither the name of Google Inc. nor the names of its
-//       contributors may be used to endorse or promote products derived
-//       from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 #include <errno.h>
 #include <stdio.h>
@@ -41,50 +18,13 @@
 #include "serialize.h"
 #include "list.h"
 
+#if V8_TARGET_ARCH_ARM
+#include "arm/assembler-arm-inl.h"
+#elif V8_TARGET_ARCH_PPC
+#include "ppc/assembler-ppc-inl.h"
+#endif
+
 using namespace v8;
-
-static const unsigned int kMaxCounters = 256;
-
-// A single counter in a counter collection.
-class Counter {
- public:
-  static const int kMaxNameSize = 64;
-  int32_t* Bind(const char* name) {
-    int i;
-    for (i = 0; i < kMaxNameSize - 1 && name[i]; i++) {
-      name_[i] = name[i];
-    }
-    name_[i] = '\0';
-    return &counter_;
-  }
- private:
-  int32_t counter_;
-  uint8_t name_[kMaxNameSize];
-};
-
-
-// A set of counters and associated information.  An instance of this
-// class is stored directly in the memory-mapped counters file if
-// the --save-counters options is used
-class CounterCollection {
- public:
-  CounterCollection() {
-    magic_number_ = 0xDEADFACE;
-    max_counters_ = kMaxCounters;
-    max_name_size_ = Counter::kMaxNameSize;
-    counters_in_use_ = 0;
-  }
-  Counter* GetNextCounter() {
-    if (counters_in_use_ == kMaxCounters) return NULL;
-    return &counters_[counters_in_use_++];
-  }
- private:
-  uint32_t magic_number_;
-  uint32_t max_counters_;
-  uint32_t max_name_size_;
-  uint32_t counters_in_use_;
-  Counter counters_[kMaxCounters];
-};
 
 
 class Compressor {
@@ -95,143 +35,173 @@ class Compressor {
 };
 
 
-class PartialSnapshotSink : public i::SnapshotByteSink {
+class ListSnapshotSink : public i::SnapshotByteSink {
  public:
-  PartialSnapshotSink() : data_(), raw_size_(-1) { }
-  virtual ~PartialSnapshotSink() { data_.Free(); }
-  virtual void Put(int byte, const char* description) {
-    data_.Add(byte);
-  }
-  virtual int Position() { return data_.length(); }
-  void Print(FILE* fp) {
-    int length = Position();
-    for (int j = 0; j < length; j++) {
-      if ((j & 0x1f) == 0x1f) {
-        fprintf(fp, "\n");
-      }
-      if (j != 0) {
-        fprintf(fp, ",");
-      }
-      fprintf(fp, "%u", static_cast<unsigned char>(at(j)));
-    }
-  }
-  char at(int i) { return data_[i]; }
-  bool Compress(Compressor* compressor) {
-    ASSERT_EQ(-1, raw_size_);
-    raw_size_ = data_.length();
-    if (!compressor->Compress(data_.ToVector())) return false;
-    data_.Clear();
-    data_.AddAll(*compressor->output());
-    return true;
-  }
-  int raw_size() { return raw_size_; }
-
+  explicit ListSnapshotSink(i::List<char>* data) : data_(data) { }
+  virtual ~ListSnapshotSink() {}
+  virtual void Put(int byte, const char* description) { data_->Add(byte); }
+  virtual int Position() { return data_->length(); }
  private:
-  i::List<char> data_;
-  int raw_size_;
+  i::List<char>* data_;
 };
 
 
-class CppByteSink : public PartialSnapshotSink {
+class SnapshotWriter {
  public:
-  explicit CppByteSink(const char* snapshot_file) {
-    fp_ = i::OS::FOpen(snapshot_file, "wb");
-    if (fp_ == NULL) {
-      i::PrintF("Unable to write to snapshot file \"%s\"\n", snapshot_file);
-      exit(1);
-    }
+  explicit SnapshotWriter(const char* snapshot_file)
+      : fp_(GetFileDescriptorOrDie(snapshot_file))
+      , raw_file_(NULL)
+      , raw_context_file_(NULL)
+      , compressor_(NULL)
+      , omit_(false) {
+  }
+
+  ~SnapshotWriter() {
+    fclose(fp_);
+    if (raw_file_) fclose(raw_file_);
+    if (raw_context_file_) fclose(raw_context_file_);
+  }
+
+  void SetCompressor(Compressor* compressor) {
+    compressor_ = compressor;
+  }
+
+  void SetOmit(bool omit) {
+    omit_ = omit;
+  }
+
+  void SetRawFiles(const char* raw_file, const char* raw_context_file) {
+    raw_file_ = GetFileDescriptorOrDie(raw_file);
+    raw_context_file_ = GetFileDescriptorOrDie(raw_context_file);
+  }
+
+  void WriteSnapshot(const i::List<char>& snapshot_data,
+                     const i::Serializer& serializer,
+                     const i::List<char>& context_snapshot_data,
+                     const i::Serializer& context_serializer) const {
+    WriteFilePrefix();
+    WriteData("", snapshot_data, raw_file_);
+    WriteData("context_", context_snapshot_data, raw_context_file_);
+    WriteMeta("context_", context_serializer);
+    WriteMeta("", serializer);
+    WriteFileSuffix();
+  }
+
+ private:
+  void WriteFilePrefix() const {
     fprintf(fp_, "// Autogenerated snapshot file. Do not edit.\n\n");
     fprintf(fp_, "#include \"v8.h\"\n");
     fprintf(fp_, "#include \"platform.h\"\n\n");
     fprintf(fp_, "#include \"snapshot.h\"\n\n");
-    fprintf(fp_, "namespace v8 {\nnamespace internal {\n\n");
-    fprintf(fp_, "const byte Snapshot::data_[] = {");
+    fprintf(fp_, "namespace v8 {\n");
+    fprintf(fp_, "namespace internal {\n\n");
   }
 
-  virtual ~CppByteSink() {
-    fprintf(fp_, "const int Snapshot::size_ = %d;\n", Position());
-#ifdef COMPRESS_STARTUP_DATA_BZ2
-    fprintf(fp_, "const byte* Snapshot::raw_data_ = NULL;\n");
-    fprintf(fp_,
-            "const int Snapshot::raw_size_ = %d;\n\n",
-            raw_size());
-#else
-    fprintf(fp_,
-            "const byte* Snapshot::raw_data_ = Snapshot::data_;\n");
-    fprintf(fp_,
-            "const int Snapshot::raw_size_ = Snapshot::size_;\n\n");
-#endif
-    fprintf(fp_, "} }  // namespace v8::internal\n");
-    fclose(fp_);
+  void WriteFileSuffix() const {
+    fprintf(fp_, "}  // namespace internal\n");
+    fprintf(fp_, "}  // namespace v8\n");
   }
 
-  void WriteSpaceUsed(
-      const char* prefix,
-      int new_space_used,
-      int pointer_space_used,
-      int data_space_used,
-      int code_space_used,
-      int map_space_used,
-      int cell_space_used) {
-    fprintf(fp_,
-            "const int Snapshot::%snew_space_used_ = %d;\n",
-            prefix,
-            new_space_used);
-    fprintf(fp_,
-            "const int Snapshot::%spointer_space_used_ = %d;\n",
-            prefix,
-            pointer_space_used);
-    fprintf(fp_,
-            "const int Snapshot::%sdata_space_used_ = %d;\n",
-            prefix,
-            data_space_used);
-    fprintf(fp_,
-            "const int Snapshot::%scode_space_used_ = %d;\n",
-            prefix,
-            code_space_used);
-    fprintf(fp_,
-            "const int Snapshot::%smap_space_used_ = %d;\n",
-            prefix,
-            map_space_used);
-    fprintf(fp_,
-            "const int Snapshot::%scell_space_used_ = %d;\n",
-            prefix,
-            cell_space_used);
+  void WriteData(const char* prefix,
+                 const i::List<char>& source_data,
+                 FILE* raw_file) const {
+    const i::List <char>* data_to_be_written = NULL;
+    i::List<char> compressed_data;
+    if (!compressor_) {
+      data_to_be_written = &source_data;
+    } else if (compressor_->Compress(source_data.ToVector())) {
+      compressed_data.AddAll(*compressor_->output());
+      data_to_be_written = &compressed_data;
+    } else {
+      i::PrintF("Compression failed. Aborting.\n");
+      exit(1);
+    }
+
+    ASSERT(data_to_be_written);
+    MaybeWriteRawFile(data_to_be_written, raw_file);
+    WriteData(prefix, source_data, data_to_be_written);
   }
 
-  void WritePartialSnapshot() {
-    int length = partial_sink_.Position();
-    fprintf(fp_, "};\n\n");
-    fprintf(fp_, "const int Snapshot::context_size_ = %d;\n",  length);
-#ifdef COMPRESS_STARTUP_DATA_BZ2
-    fprintf(fp_,
-            "const int Snapshot::context_raw_size_ = %d;\n",
-            partial_sink_.raw_size());
-#else
-    fprintf(fp_,
-            "const int Snapshot::context_raw_size_ = "
-            "Snapshot::context_size_;\n");
-#endif
-    fprintf(fp_, "const byte Snapshot::context_data_[] = {\n");
-    partial_sink_.Print(fp_);
-    fprintf(fp_, "};\n\n");
-#ifdef COMPRESS_STARTUP_DATA_BZ2
-    fprintf(fp_, "const byte* Snapshot::context_raw_data_ = NULL;\n");
-#else
-    fprintf(fp_, "const byte* Snapshot::context_raw_data_ ="
-            " Snapshot::context_data_;\n");
-#endif
+  void MaybeWriteRawFile(const i::List<char>* data, FILE* raw_file) const {
+    if (!data || !raw_file)
+      return;
+
+    // Sanity check, whether i::List iterators truly return pointers to an
+    // internal array.
+    ASSERT(data->end() - data->begin() == data->length());
+
+    size_t written = fwrite(data->begin(), 1, data->length(), raw_file);
+    if (written != (size_t)data->length()) {
+      i::PrintF("Writing raw file failed.. Aborting.\n");
+      exit(1);
+    }
   }
 
-  void WriteSnapshot() {
-    Print(fp_);
+  void WriteData(const char* prefix,
+                 const i::List<char>& source_data,
+                 const i::List<char>* data_to_be_written) const {
+    fprintf(fp_, "const byte Snapshot::%sdata_[] = {\n", prefix);
+    if (!omit_)
+      WriteSnapshotData(data_to_be_written);
+    fprintf(fp_, "};\n");
+    fprintf(fp_, "const int Snapshot::%ssize_ = %d;\n", prefix,
+            data_to_be_written->length());
+
+    if (data_to_be_written == &source_data && !omit_) {
+      fprintf(fp_, "const byte* Snapshot::%sraw_data_ = Snapshot::%sdata_;\n",
+              prefix, prefix);
+      fprintf(fp_, "const int Snapshot::%sraw_size_ = Snapshot::%ssize_;\n",
+              prefix, prefix);
+    } else {
+      fprintf(fp_, "const byte* Snapshot::%sraw_data_ = NULL;\n", prefix);
+      fprintf(fp_, "const int Snapshot::%sraw_size_ = %d;\n",
+              prefix, source_data.length());
+    }
+    fprintf(fp_, "\n");
   }
 
-  PartialSnapshotSink* partial_sink() { return &partial_sink_; }
+  void WriteMeta(const char* prefix, const i::Serializer& ser) const {
+    WriteSizeVar(ser, prefix, "new", i::NEW_SPACE);
+    WriteSizeVar(ser, prefix, "pointer", i::OLD_POINTER_SPACE);
+    WriteSizeVar(ser, prefix, "data", i::OLD_DATA_SPACE);
+    WriteSizeVar(ser, prefix, "code", i::CODE_SPACE);
+    WriteSizeVar(ser, prefix, "map", i::MAP_SPACE);
+    WriteSizeVar(ser, prefix, "cell", i::CELL_SPACE);
+    WriteSizeVar(ser, prefix, "property_cell", i::PROPERTY_CELL_SPACE);
+    fprintf(fp_, "\n");
+  }
 
- private:
+  void WriteSizeVar(const i::Serializer& ser, const char* prefix,
+                    const char* name, int space) const {
+    fprintf(fp_, "const int Snapshot::%s%s_space_used_ = %d;\n",
+            prefix, name, ser.CurrentAllocationAddress(space));
+  }
+
+  void WriteSnapshotData(const i::List<char>* data) const {
+    for (int i = 0; i < data->length(); i++) {
+      if ((i & 0x1f) == 0x1f)
+        fprintf(fp_, "\n");
+      if (i > 0)
+        fprintf(fp_, ",");
+      fprintf(fp_, "%u", static_cast<unsigned char>(data->at(i)));
+    }
+    fprintf(fp_, "\n");
+  }
+
+  FILE* GetFileDescriptorOrDie(const char* filename) {
+    FILE* fp = i::OS::FOpen(filename, "wb");
+    if (fp == NULL) {
+      i::PrintF("Unable to open file \"%s\" for writing.\n", filename);
+      exit(1);
+    }
+    return fp;
+  }
+
   FILE* fp_;
-  PartialSnapshotSink partial_sink_;
+  FILE* raw_file_;
+  FILE* raw_context_file_;
+  Compressor* compressor_;
+  bool omit_;
 };
 
 
@@ -291,13 +261,28 @@ class BZip2Decompressor : public StartupDataDecompressor {
 #endif
 
 
+void DumpException(Handle<Message> message) {
+  String::Utf8Value message_string(message->Get());
+  String::Utf8Value message_line(message->GetSourceLine());
+  fprintf(stderr, "%s at line %d\n", *message_string, message->GetLineNumber());
+  fprintf(stderr, "%s\n", *message_line);
+  for (int i = 0; i <= message->GetEndColumn(); ++i) {
+    fprintf(stderr, "%c", i < message->GetStartColumn() ? ' ' : '^');
+  }
+  fprintf(stderr, "\n");
+}
+
+
 int main(int argc, char** argv) {
+  V8::InitializeICU();
+  i::Isolate::SetCrashIfDefaultIsolateInitialized();
+
   // By default, log code create information in the snapshot.
   i::FLAG_log_code = true;
 
   // Print the usage if an error occurs when parsing the command line
   // flags or if the help flag is set.
-  int result = i::FlagList::SetFlagsFromCommandLine(&argc, argv, true);
+  int result = i::FlagList::SetFlagsFromCommandLine(&argc, argv, true, true);
   if (result > 0 || argc != 2 || i::FLAG_help) {
     ::printf("Usage: %s [flag] ... outfile\n", argv[0]);
     i::FlagList::PrintHelp();
@@ -311,18 +296,28 @@ int main(int argc, char** argv) {
     exit(1);
   }
 #endif
-  i::Serializer::Enable();
-  Persistent<Context> context = v8::Context::New();
+  i::FLAG_logfile_per_isolate = false;
+
+  Isolate* isolate = v8::Isolate::New();
+  isolate->Enter();
+  i::Isolate* internal_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  i::Serializer::RequestEnable(internal_isolate);
+  Persistent<Context> context;
+  {
+    HandleScope handle_scope(isolate);
+    context.Reset(isolate, Context::New(isolate));
+  }
+
   if (context.IsEmpty()) {
     fprintf(stderr,
             "\nException thrown while compiling natives - see above.\n\n");
     exit(1);
   }
   if (i::FLAG_extra_code != NULL) {
-    context->Enter();
     // Capture 100 frames if anything happens.
     V8::SetCaptureStackTraceForUncaughtExceptions(true, 100);
-    HandleScope scope;
+    HandleScope scope(isolate);
+    v8::Context::Scope cscope(v8::Local<v8::Context>::New(isolate, context));
     const char* name = i::FLAG_extra_code;
     FILE* file = i::OS::FOpen(name, "rb");
     if (file == NULL) {
@@ -345,82 +340,61 @@ int main(int argc, char** argv) {
       i += read;
     }
     fclose(file);
-    Local<String> source = String::New(chars);
+    Local<String> source = String::NewFromUtf8(isolate, chars);
     TryCatch try_catch;
     Local<Script> script = Script::Compile(source);
     if (try_catch.HasCaught()) {
-      fprintf(stderr, "Failure compiling '%s' (see above)\n", name);
+      fprintf(stderr, "Failure compiling '%s'\n", name);
+      DumpException(try_catch.Message());
       exit(1);
     }
     script->Run();
     if (try_catch.HasCaught()) {
       fprintf(stderr, "Failure running '%s'\n", name);
-      Local<Message> message = try_catch.Message();
-      Local<String> message_string = message->Get();
-      Local<String> message_line = message->GetSourceLine();
-      int len = 2 + message_string->Utf8Length() + message_line->Utf8Length();
-      char* buf = new char(len);
-      message_string->WriteUtf8(buf);
-      fprintf(stderr, "%s at line %d\n", buf, message->GetLineNumber());
-      message_line->WriteUtf8(buf);
-      fprintf(stderr, "%s\n", buf);
-      int from = message->GetStartColumn();
-      int to = message->GetEndColumn();
-      int i;
-      for (i = 0; i < from; i++) fprintf(stderr, " ");
-      for ( ; i <= to; i++) fprintf(stderr, "^");
-      fprintf(stderr, "\n");
+      DumpException(try_catch.Message());
       exit(1);
     }
-    context->Exit();
   }
   // Make sure all builtin scripts are cached.
-  { HandleScope scope;
+  { HandleScope scope(isolate);
     for (int i = 0; i < i::Natives::GetBuiltinsCount(); i++) {
-      i::Isolate::Current()->bootstrapper()->NativesSourceLookup(i);
+      internal_isolate->bootstrapper()->NativesSourceLookup(i);
     }
   }
   // If we don't do this then we end up with a stray root pointing at the
   // context even after we have disposed of the context.
-  HEAP->CollectAllGarbage(i::Heap::kNoGCFlags, "mksnapshot");
-  i::Object* raw_context = *(v8::Utils::OpenHandle(*context));
-  context.Dispose();
-  CppByteSink sink(argv[1]);
+  internal_isolate->heap()->CollectAllGarbage(
+      i::Heap::kNoGCFlags, "mksnapshot");
+  i::Object* raw_context = *v8::Utils::OpenPersistent(context);
+  context.Reset();
+
   // This results in a somewhat smaller snapshot, probably because it gets rid
   // of some things that are cached between garbage collections.
-  i::StartupSerializer ser(&sink);
+  i::List<char> snapshot_data;
+  ListSnapshotSink snapshot_sink(&snapshot_data);
+  i::StartupSerializer ser(internal_isolate, &snapshot_sink);
   ser.SerializeStrongReferences();
 
-  i::PartialSerializer partial_ser(&ser, sink.partial_sink());
-  partial_ser.Serialize(&raw_context);
-
+  i::List<char> context_data;
+  ListSnapshotSink contex_sink(&context_data);
+  i::PartialSerializer context_ser(internal_isolate, &ser, &contex_sink);
+  context_ser.Serialize(&raw_context);
   ser.SerializeWeakReferences();
 
+  {
+    SnapshotWriter writer(argv[1]);
+    writer.SetOmit(i::FLAG_omit);
+    if (i::FLAG_raw_file && i::FLAG_raw_context_file)
+      writer.SetRawFiles(i::FLAG_raw_file, i::FLAG_raw_context_file);
 #ifdef COMPRESS_STARTUP_DATA_BZ2
-  BZip2Compressor compressor;
-  if (!sink.Compress(&compressor))
-    return 1;
-  if (!sink.partial_sink()->Compress(&compressor))
-    return 1;
+    BZip2Compressor bzip2;
+    writer.SetCompressor(&bzip2);
 #endif
-  sink.WriteSnapshot();
-  sink.WritePartialSnapshot();
+    writer.WriteSnapshot(snapshot_data, ser, context_data, context_ser);
+  }
 
-  sink.WriteSpaceUsed(
-      "context_",
-      partial_ser.CurrentAllocationAddress(i::NEW_SPACE),
-      partial_ser.CurrentAllocationAddress(i::OLD_POINTER_SPACE),
-      partial_ser.CurrentAllocationAddress(i::OLD_DATA_SPACE),
-      partial_ser.CurrentAllocationAddress(i::CODE_SPACE),
-      partial_ser.CurrentAllocationAddress(i::MAP_SPACE),
-      partial_ser.CurrentAllocationAddress(i::CELL_SPACE));
-  sink.WriteSpaceUsed(
-      "",
-      ser.CurrentAllocationAddress(i::NEW_SPACE),
-      ser.CurrentAllocationAddress(i::OLD_POINTER_SPACE),
-      ser.CurrentAllocationAddress(i::OLD_DATA_SPACE),
-      ser.CurrentAllocationAddress(i::CODE_SPACE),
-      ser.CurrentAllocationAddress(i::MAP_SPACE),
-      ser.CurrentAllocationAddress(i::CELL_SPACE));
+  isolate->Exit();
+  isolate->Dispose();
+  V8::Dispose();
   return 0;
 }

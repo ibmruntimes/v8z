@@ -1,29 +1,6 @@
 // Copyright 2012 the V8 project authors. All rights reserved.
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-//       copyright notice, this list of conditions and the following
-//       disclaimer in the documentation and/or other materials provided
-//       with the distribution.
-//     * Neither the name of Google Inc. nor the names of its
-//       contributors may be used to endorse or promote products derived
-//       from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 #ifndef V8_TOKEN_H_
 #define V8_TOKEN_H_
@@ -73,7 +50,7 @@ namespace internal {
   T(INIT_VAR, "=init_var", 2)  /* AST-use only. */                      \
   T(INIT_LET, "=init_let", 2)  /* AST-use only. */                      \
   T(INIT_CONST, "=init_const", 2)  /* AST-use only. */                  \
-  T(INIT_CONST_HARMONY, "=init_const_harmony", 2)  /* AST-use only. */  \
+  T(INIT_CONST_LEGACY, "=init_const_legacy", 2)  /* AST-use only. */    \
   T(ASSIGN, "=", 2)                                                     \
   T(ASSIGN_BIT_OR, "|=", 2)                                             \
   T(ASSIGN_BIT_XOR, "^=", 2)                                            \
@@ -99,6 +76,7 @@ namespace internal {
   T(SHL, "<<", 11)                                                      \
   T(SAR, ">>", 11)                                                      \
   T(SHR, ">>>", 11)                                                     \
+  T(ROR, "rotate right", 11)   /* only used by Crankshaft */            \
   T(ADD, "+", 12)                                                       \
   T(SUB, "-", 12)                                                       \
   T(MUL, "*", 13)                                                       \
@@ -173,6 +151,7 @@ namespace internal {
   K(EXPORT, "export", 0)                                                \
   K(IMPORT, "import", 0)                                                \
   K(LET, "let", 0)                                                      \
+  K(YIELD, "yield", 0)                                                  \
                                                                         \
   /* Illegal token - not able to scan. */                               \
   T(ILLEGAL, "ILLEGAL", 0)                                              \
@@ -211,6 +190,10 @@ class Token {
     return COMMA <= op && op <= MOD;
   }
 
+  static bool IsTruncatingBinaryOp(Value op) {
+    return BIT_OR <= op && op <= ROR;
+  }
+
   static bool IsCompareOp(Value op) {
     return EQ <= op && op <= IN;
   }
@@ -223,32 +206,45 @@ class Token {
     return op == EQ || op == EQ_STRICT;
   }
 
+  static bool IsInequalityOp(Value op) {
+    return op == NE || op == NE_STRICT;
+  }
+
+  static bool IsArithmeticCompareOp(Value op) {
+    return IsOrderedRelationalCompareOp(op) ||
+        IsEqualityOp(op) || IsInequalityOp(op);
+  }
+
   static Value NegateCompareOp(Value op) {
-    ASSERT(IsCompareOp(op));
+    ASSERT(IsArithmeticCompareOp(op));
     switch (op) {
       case EQ: return NE;
       case NE: return EQ;
       case EQ_STRICT: return NE_STRICT;
+      case NE_STRICT: return EQ_STRICT;
       case LT: return GTE;
       case GT: return LTE;
       case LTE: return GT;
       case GTE: return LT;
       default:
+        UNREACHABLE();
         return op;
     }
   }
 
-  static Value InvertCompareOp(Value op) {
-    ASSERT(IsCompareOp(op));
+  static Value ReverseCompareOp(Value op) {
+    ASSERT(IsArithmeticCompareOp(op));
     switch (op) {
-      case EQ: return NE;
-      case NE: return EQ;
-      case EQ_STRICT: return NE_STRICT;
+      case EQ: return EQ;
+      case NE: return NE;
+      case EQ_STRICT: return EQ_STRICT;
+      case NE_STRICT: return NE_STRICT;
       case LT: return GT;
       case GT: return LT;
       case LTE: return GTE;
       case GTE: return LTE;
       default:
+        UNREACHABLE();
         return op;
     }
   }

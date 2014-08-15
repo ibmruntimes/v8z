@@ -1,29 +1,6 @@
 // Copyright 2010 the V8 project authors. All rights reserved.
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-//       copyright notice, this list of conditions and the following
-//       disclaimer in the documentation and/or other materials provided
-//       with the distribution.
-//     * Neither the name of Google Inc. nor the names of its
-//       contributors may be used to endorse or promote products derived
-//       from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 // The routines exported by this module are subtle.  If you use them, even if
 // you get the code right, it will depend on careful reasoning about atomicity
@@ -51,16 +28,24 @@
 #include "../include/v8.h"
 #include "globals.h"
 
+#if defined(_WIN32) && defined(V8_HOST_ARCH_64_BIT)
+// windows.h #defines this (only on x64). This causes problems because the
+// public API also uses MemoryBarrier at the public name for this fence. So, on
+// X64, undef it, and call its documented
+// (http://msdn.microsoft.com/en-us/library/windows/desktop/ms684208.aspx)
+// implementation directly.
+#undef MemoryBarrier
+#endif
+
 namespace v8 {
 namespace internal {
 
+typedef char Atomic8;
 typedef int32_t Atomic32;
 #ifdef V8_HOST_ARCH_64_BIT
 // We need to be able to go between Atomic64 and AtomicWord implicitly.  This
 // means Atomic64 and AtomicWord should be the same type on 64-bit.
-#if defined(__APPLE__)
-// MacOS is an exception to the implicit conversion rule above,
-// because it uses long for intptr_t.
+#if defined(__ILP32__)
 typedef int64_t Atomic64;
 #else
 typedef intptr_t Atomic64;
@@ -69,8 +54,7 @@ typedef intptr_t Atomic64;
 
 // Use AtomicWord for a machine-sized pointer.  It will use the Atomic32 or
 // Atomic64 routines below, depending on your architecture.
-#if !defined(V8_HOST_ARCH_64_BIT) && \
-  ((defined(__OpenBSD__) && defined(__i386__)) || defined(_AIX))
+#if V8_OS_AIX && V8_HOST_ARCH_32_BIT
 typedef Atomic32 AtomicWord;
 #else
 typedef intptr_t AtomicWord;
@@ -118,10 +102,12 @@ Atomic32 Release_CompareAndSwap(volatile Atomic32* ptr,
                                 Atomic32 new_value);
 
 void MemoryBarrier();
+void NoBarrier_Store(volatile Atomic8* ptr, Atomic8 value);
 void NoBarrier_Store(volatile Atomic32* ptr, Atomic32 value);
 void Acquire_Store(volatile Atomic32* ptr, Atomic32 value);
 void Release_Store(volatile Atomic32* ptr, Atomic32 value);
 
+Atomic8 NoBarrier_Load(volatile const Atomic8* ptr);
 Atomic32 NoBarrier_Load(volatile const Atomic32* ptr);
 Atomic32 Acquire_Load(volatile const Atomic32* ptr);
 Atomic32 Release_Load(volatile const Atomic32* ptr);
@@ -152,23 +138,30 @@ Atomic64 Release_Load(volatile const Atomic64* ptr);
 } }  // namespace v8::internal
 
 // Include our platform specific implementation.
-#if defined(_MSC_VER) && \
-  (defined(V8_HOST_ARCH_IA32) || defined(V8_HOST_ARCH_X64))
+#if defined(THREAD_SANITIZER)
+#include "atomicops_internals_tsan.h"
+#elif defined(_MSC_VER) && (V8_HOST_ARCH_IA32 || V8_HOST_ARCH_X64)
 #include "atomicops_internals_x86_msvc.h"
-#elif defined(__APPLE__) && \
-  (defined(V8_HOST_ARCH_IA32) || defined(V8_HOST_ARCH_X64))
-#include "atomicops_internals_x86_macosx.h"
-#elif defined(__GNUC__) && \
-  (defined(V8_HOST_ARCH_IA32) || defined(V8_HOST_ARCH_X64))
-#include "atomicops_internals_x86_gcc.h"
-#elif defined(__GNUC__) && defined(V8_HOST_ARCH_ARM)
+#elif defined(__APPLE__)
+#include "atomicops_internals_mac.h"
+#elif defined(__GNUC__) && V8_HOST_ARCH_ARM64
+#include "atomicops_internals_arm64_gcc.h"
+#elif defined(__GNUC__) && V8_HOST_ARCH_ARM
 #include "atomicops_internals_arm_gcc.h"
-#elif defined(__GNUC__) && defined(V8_HOST_ARCH_PPC)
+#elif defined(__GNUC__) && V8_HOST_ARCH_PPC
 #include "atomicops_internals_ppc_gcc.h"
-#elif defined(__GNUC__) && defined(V8_HOST_ARCH_MIPS)
+#elif defined(__GNUC__) && (V8_HOST_ARCH_IA32 || V8_HOST_ARCH_X64)
+#include "atomicops_internals_x86_gcc.h"
+#elif defined(__GNUC__) && V8_HOST_ARCH_MIPS
 #include "atomicops_internals_mips_gcc.h"
 #else
 #error "Atomic operations are not supported on your platform"
+#endif
+
+// On some platforms we need additional declarations to make
+// AtomicWord compatible with our other Atomic* types.
+#if defined(__APPLE__) || defined(__OpenBSD__)
+#include "atomicops_internals_atomicword_compat.h"
 #endif
 
 #endif  // V8_ATOMICOPS_H_

@@ -25,16 +25,18 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// Flags: --harmony-collections --expose-gc
+// Flags: --harmony-collections --harmony-weak-collections
+// Flags: --expose-gc --allow-natives-syntax
 
 
-// Test valid getter and setter calls on Sets.
+// Test valid getter and setter calls on Sets and WeakSets
 function TestValidSetCalls(m) {
   assertDoesNotThrow(function () { m.add(new Object) });
   assertDoesNotThrow(function () { m.has(new Object) });
   assertDoesNotThrow(function () { m.delete(new Object) });
 }
 TestValidSetCalls(new Set);
+TestValidSetCalls(new WeakSet);
 
 
 // Test valid getter and setter calls on Maps and WeakMaps
@@ -62,7 +64,7 @@ function TestInvalidCalls(m) {
 TestInvalidCalls(new WeakMap);
 
 
-// Test expected behavior for Sets
+// Test expected behavior for Sets and WeakSets
 function TestSet(set, key) {
   assertFalse(set.has(key));
   assertSame(undefined, set.add(key));
@@ -85,6 +87,7 @@ function TestSetBehavior(set) {
   }
 }
 TestSetBehavior(new Set);
+TestSet(new WeakSet, new Object);
 
 
 // Test expected mapping behavior for Maps and WeakMaps
@@ -185,6 +188,7 @@ function TestEnumerable(func) {
 TestEnumerable(Set);
 TestEnumerable(Map);
 TestEnumerable(WeakMap);
+TestEnumerable(WeakSet);
 
 
 // Test arbitrary properties on Maps and WeakMaps
@@ -204,9 +208,10 @@ TestArbitrary(new WeakMap);
 
 
 // Test direct constructor call
-assertTrue(Set() instanceof Set);
-assertTrue(Map() instanceof Map);
-assertTrue(WeakMap() instanceof WeakMap);
+assertThrows(function() { Set(); }, TypeError);
+assertThrows(function() { Map(); }, TypeError);
+assertThrows(function() { WeakMap(); }, TypeError);
+assertThrows(function() { WeakSet(); }, TypeError);
 
 
 // Test whether NaN values as keys are treated correctly.
@@ -234,6 +239,7 @@ assertTrue(s instanceof Set);
 assertTrue(Set.prototype.add instanceof Function)
 assertTrue(Set.prototype.has instanceof Function)
 assertTrue(Set.prototype.delete instanceof Function)
+assertTrue(Set.prototype.clear instanceof Function)
 
 
 // Test some common JavaScript idioms for Maps
@@ -243,6 +249,7 @@ assertTrue(Map.prototype.set instanceof Function)
 assertTrue(Map.prototype.get instanceof Function)
 assertTrue(Map.prototype.has instanceof Function)
 assertTrue(Map.prototype.delete instanceof Function)
+assertTrue(Map.prototype.clear instanceof Function)
 
 
 // Test some common JavaScript idioms for WeakMaps
@@ -252,6 +259,77 @@ assertTrue(WeakMap.prototype.set instanceof Function)
 assertTrue(WeakMap.prototype.get instanceof Function)
 assertTrue(WeakMap.prototype.has instanceof Function)
 assertTrue(WeakMap.prototype.delete instanceof Function)
+assertTrue(WeakMap.prototype.clear instanceof Function)
+
+
+// Test some common JavaScript idioms for WeakSets
+var s = new WeakSet;
+assertTrue(s instanceof WeakSet);
+assertTrue(WeakSet.prototype.add instanceof Function)
+assertTrue(WeakSet.prototype.has instanceof Function)
+assertTrue(WeakSet.prototype.delete instanceof Function)
+assertTrue(WeakSet.prototype.clear instanceof Function)
+
+
+// Test class of instance and prototype.
+assertEquals("Set", %_ClassOf(new Set))
+assertEquals("Object", %_ClassOf(Set.prototype))
+assertEquals("Map", %_ClassOf(new Map))
+assertEquals("Object", %_ClassOf(Map.prototype))
+assertEquals("WeakMap", %_ClassOf(new WeakMap))
+assertEquals("Object", %_ClassOf(WeakMap.prototype))
+assertEquals("WeakSet", %_ClassOf(new WeakSet))
+assertEquals("Object", %_ClassOf(WeakMap.prototype))
+
+
+// Test name of constructor.
+assertEquals("Set", Set.name);
+assertEquals("Map", Map.name);
+assertEquals("WeakMap", WeakMap.name);
+assertEquals("WeakSet", WeakSet.name);
+
+
+// Test prototype property of Set, Map, WeakMap and WeakSet.
+function TestPrototype(C) {
+  assertTrue(C.prototype instanceof Object);
+  assertEquals({
+    value: {},
+    writable: true,  // TODO(2793): This should be non-writable.
+    enumerable: false,
+    configurable: false
+  }, Object.getOwnPropertyDescriptor(C, "prototype"));
+}
+TestPrototype(Set);
+TestPrototype(Map);
+TestPrototype(WeakMap);
+TestPrototype(WeakSet);
+
+
+// Test constructor property of the Set, Map, WeakMap and WeakSet prototype.
+function TestConstructor(C) {
+  assertFalse(C === Object.prototype.constructor);
+  assertSame(C, C.prototype.constructor);
+  assertSame(C, (new C).__proto__.constructor);
+}
+TestConstructor(Set);
+TestConstructor(Map);
+TestConstructor(WeakMap);
+TestConstructor(WeakSet);
+
+
+// Test the Set, Map, WeakMap and WeakSet global properties themselves.
+function TestDescriptor(global, C) {
+  assertEquals({
+    value: C,
+    writable: true,
+    enumerable: false,
+    configurable: true
+  }, Object.getOwnPropertyDescriptor(global, C.name));
+}
+TestDescriptor(this, Set);
+TestDescriptor(this, Map);
+TestDescriptor(this, WeakMap);
+TestDescriptor(this, WeakSet);
 
 
 // Regression test for WeakMap prototype.
@@ -283,15 +361,19 @@ var alwaysBogus = [ undefined, null, true, "x", 23, {} ];
 var bogusReceiversTestSet = [
   { proto: Set.prototype,
     funcs: [ 'add', 'has', 'delete' ],
-    receivers: alwaysBogus.concat([ new Map, new WeakMap ]),
+    receivers: alwaysBogus.concat([ new Map, new WeakMap, new WeakSet ]),
   },
   { proto: Map.prototype,
     funcs: [ 'get', 'set', 'has', 'delete' ],
-    receivers: alwaysBogus.concat([ new Set, new WeakMap ]),
+    receivers: alwaysBogus.concat([ new Set, new WeakMap, new WeakSet ]),
   },
   { proto: WeakMap.prototype,
     funcs: [ 'get', 'set', 'has', 'delete' ],
-    receivers: alwaysBogus.concat([ new Set, new Map ]),
+    receivers: alwaysBogus.concat([ new Set, new Map, new WeakSet ]),
+  },
+  { proto: WeakSet.prototype,
+    funcs: [ 'add', 'has', 'delete' ],
+    receivers: alwaysBogus.concat([ new Set, new Map, new WeakMap ]),
   },
 ];
 function TestBogusReceivers(testSet) {
@@ -314,3 +396,458 @@ TestBogusReceivers(bogusReceiversTestSet);
 // There is a proposed stress-test available at the es-discuss mailing list
 // which cannot be reasonably automated.  Check it out by hand if you like:
 // https://mail.mozilla.org/pipermail/es-discuss/2011-May/014096.html
+
+
+// Set and Map size getters
+var setSizeDescriptor = Object.getOwnPropertyDescriptor(Set.prototype, 'size');
+assertEquals(undefined, setSizeDescriptor.value);
+assertEquals(undefined, setSizeDescriptor.set);
+assertTrue(setSizeDescriptor.get instanceof Function);
+assertEquals(undefined, setSizeDescriptor.get.prototype);
+assertFalse(setSizeDescriptor.enumerable);
+assertTrue(setSizeDescriptor.configurable);
+
+var s = new Set();
+assertFalse(s.hasOwnProperty('size'));
+for (var i = 0; i < 10; i++) {
+  assertEquals(i, s.size);
+  s.add(i);
+}
+for (var i = 9; i >= 0; i--) {
+  s.delete(i);
+  assertEquals(i, s.size);
+}
+
+
+var mapSizeDescriptor = Object.getOwnPropertyDescriptor(Map.prototype, 'size');
+assertEquals(undefined, mapSizeDescriptor.value);
+assertEquals(undefined, mapSizeDescriptor.set);
+assertTrue(mapSizeDescriptor.get instanceof Function);
+assertEquals(undefined, mapSizeDescriptor.get.prototype);
+assertFalse(mapSizeDescriptor.enumerable);
+assertTrue(mapSizeDescriptor.configurable);
+
+var m = new Map();
+assertFalse(m.hasOwnProperty('size'));
+for (var i = 0; i < 10; i++) {
+  assertEquals(i, m.size);
+  m.set(i, i);
+}
+for (var i = 9; i >= 0; i--) {
+  m.delete(i);
+  assertEquals(i, m.size);
+}
+
+
+// Test Set clear
+(function() {
+  var s = new Set();
+  s.add(42);
+  assertTrue(s.has(42));
+  assertEquals(1, s.size);
+  s.clear();
+  assertFalse(s.has(42));
+  assertEquals(0, s.size);
+})();
+
+
+// Test Map clear
+(function() {
+  var m = new Map();
+  m.set(42, true);
+  assertTrue(m.has(42));
+  assertEquals(1, m.size);
+  m.clear();
+  assertFalse(m.has(42));
+  assertEquals(0, m.size);
+})();
+
+
+// Test WeakMap clear
+(function() {
+  var k = new Object();
+  var w = new WeakMap();
+  w.set(k, 23);
+  assertTrue(w.has(k));
+  assertEquals(23, w.get(k));
+  w.clear();
+  assertFalse(w.has(k));
+  assertEquals(undefined, w.get(k));
+})();
+
+
+// Test WeakSet clear
+(function() {
+  var k = new Object();
+  var w = new WeakSet();
+  w.add(k);
+  assertTrue(w.has(k));
+  w.clear();
+  assertFalse(w.has(k));
+})();
+
+
+(function TestMinusZeroSet() {
+  var m = new Set();
+  m.add(0);
+  m.add(-0);
+  assertEquals(1, m.size);
+  assertTrue(m.has(0));
+  assertTrue(m.has(-0));
+})();
+
+
+(function TestMinusZeroMap() {
+  var m = new Map();
+  m.set(0, 'plus');
+  m.set(-0, 'minus');
+  assertEquals(1, m.size);
+  assertTrue(m.has(0));
+  assertTrue(m.has(-0));
+  assertEquals('minus', m.get(0));
+  assertEquals('minus', m.get(-0));
+})();
+
+
+(function TestSetForEachInvalidTypes() {
+  assertThrows(function() {
+    Set.prototype.set.forEach.call({});
+  }, TypeError);
+
+  var set = new Set();
+  assertThrows(function() {
+    set.forEach({});
+  }, TypeError);
+})();
+
+
+(function TestSetForEach() {
+  var set = new Set();
+  set.add('a');
+  set.add('b');
+  set.add('c');
+
+  var buffer = '';
+  var receiver = {};
+  set.forEach(function(v, k, s) {
+    assertSame(v, k);
+    assertSame(set, s);
+    assertSame(this, receiver);
+    buffer += v;
+    if (v === 'a') {
+      set.delete('b');
+      set.add('d');
+      set.add('e');
+      set.add('f');
+    } else if (v === 'c') {
+      set.add('b');
+      set.delete('e');
+    }
+  }, receiver);
+
+  assertEquals('acdfb', buffer);
+})();
+
+
+(function TestSetForEachAddAtEnd() {
+  var set = new Set();
+  set.add('a');
+  set.add('b');
+
+  var buffer = '';
+  set.forEach(function(v) {
+    buffer += v;
+    if (v === 'b') {
+      set.add('c');
+    }
+  });
+
+  assertEquals('abc', buffer);
+})();
+
+
+(function TestSetForEachDeleteNext() {
+  var set = new Set();
+  set.add('a');
+  set.add('b');
+  set.add('c');
+
+  var buffer = '';
+  set.forEach(function(v) {
+    buffer += v;
+    if (v === 'b') {
+      set.delete('c');
+    }
+  });
+
+  assertEquals('ab', buffer);
+})();
+
+
+(function TestSetForEachDeleteVisitedAndAddAgain() {
+  var set = new Set();
+  set.add('a');
+  set.add('b');
+  set.add('c');
+
+  var buffer = '';
+  set.forEach(function(v) {
+    buffer += v;
+    if (v === 'b') {
+      set.delete('a');
+    } else if (v === 'c') {
+      set.add('a');
+    }
+  });
+
+  assertEquals('abca', buffer);
+})();
+
+
+(function TestSetForEachClear() {
+  var set = new Set();
+  set.add('a');
+  set.add('b');
+  set.add('c');
+
+  var buffer = '';
+  set.forEach(function(v) {
+    buffer += v;
+    if (v === 'a') {
+      set.clear();
+      set.add('d');
+      set.add('e');
+    }
+  });
+
+  assertEquals('ade', buffer);
+})();
+
+
+(function TestSetForEachNested() {
+  var set = new Set();
+  set.add('a');
+  set.add('b');
+  set.add('c');
+
+  var buffer = '';
+  set.forEach(function(v) {
+    buffer += v;
+    set.forEach(function(v) {
+      buffer += v;
+      if (v === 'a') {
+        set.delete('b');
+      }
+    });
+  });
+
+  assertEquals('aaccac', buffer);
+})();
+
+
+(function TestSetForEachEarlyExit() {
+  var set = new Set();
+  set.add('a');
+  set.add('b');
+  set.add('c');
+
+  var buffer = '';
+  var ex = {};
+  try {
+    set.forEach(function(v) {
+      buffer += v;
+      throw ex;
+    });
+  } catch (e) {
+    assertEquals(ex, e);
+  }
+  assertEquals('a', buffer);
+})();
+
+
+(function TestSetForEachGC() {
+  var set = new Set();
+  for (var i = 0; i < 100; i++) {
+    set.add(i);
+  }
+
+  var accumulated = 0;
+  set.forEach(function(v) {
+    accumulated += v;
+    if (v % 10 === 0) {
+      gc();
+    }
+  });
+  assertEquals(4950, accumulated);
+})();
+
+(function TestMapForEachInvalidTypes() {
+  assertThrows(function() {
+    Map.prototype.map.forEach.call({});
+  }, TypeError);
+
+  var map = new Map();
+  assertThrows(function() {
+    map.forEach({});
+  }, TypeError);
+})();
+
+
+(function TestMapForEach() {
+  var map = new Map();
+  map.set(0, 'a');
+  map.set(1, 'b');
+  map.set(2, 'c');
+
+  var buffer = [];
+  var receiver = {};
+  map.forEach(function(v, k, m) {
+    assertEquals(map, m);
+    assertEquals(this, receiver);
+    buffer.push(k, v);
+    if (k === 0) {
+      map.delete(1);
+      map.set(3, 'd');
+      map.set(4, 'e');
+      map.set(5, 'f');
+    } else if (k === 2) {
+      map.set(1, 'B');
+      map.delete(4);
+    }
+  }, receiver);
+
+  assertArrayEquals([0, 'a', 2, 'c', 3, 'd', 5, 'f', 1, 'B'], buffer);
+})();
+
+
+(function TestMapForEachAddAtEnd() {
+  var map = new Map();
+  map.set(0, 'a');
+  map.set(1, 'b');
+
+  var buffer = [];
+  map.forEach(function(v, k) {
+    buffer.push(k, v);
+    if (k === 1) {
+      map.set(2, 'c');
+    }
+  });
+
+  assertArrayEquals([0, 'a', 1, 'b', 2, 'c'], buffer);
+})();
+
+
+(function TestMapForEachDeleteNext() {
+  var map = new Map();
+  map.set(0, 'a');
+  map.set(1, 'b');
+  map.set(2, 'c');
+
+  var buffer = [];
+  map.forEach(function(v, k) {
+    buffer.push(k, v);
+    if (k === 1) {
+      map.delete(2);
+    }
+  });
+
+  assertArrayEquals([0, 'a', 1, 'b'], buffer);
+})();
+
+
+(function TestSetForEachDeleteVisitedAndAddAgain() {
+  var map = new Map();
+  map.set(0, 'a');
+  map.set(1, 'b');
+  map.set(2, 'c');
+
+  var buffer = [];
+  map.forEach(function(v, k) {
+    buffer.push(k, v);
+    if (k === 1) {
+      map.delete(0);
+    } else if (k === 2) {
+      map.set(0, 'a');
+    }
+  });
+
+  assertArrayEquals([0, 'a', 1, 'b', 2, 'c', 0, 'a'], buffer);
+})();
+
+
+(function TestMapForEachClear() {
+  var map = new Map();
+  map.set(0, 'a');
+  map.set(1, 'b');
+  map.set(2, 'c');
+
+  var buffer = [];
+  map.forEach(function(v, k) {
+    buffer.push(k, v);
+    if (k === 0) {
+      map.clear();
+      map.set(3, 'd');
+      map.set(4, 'e');
+    }
+  });
+
+  assertArrayEquals([0, 'a', 3, 'd', 4, 'e'], buffer);
+})();
+
+
+(function TestMapForEachNested() {
+  var map = new Map();
+  map.set(0, 'a');
+  map.set(1, 'b');
+  map.set(2, 'c');
+
+  var buffer = [];
+  map.forEach(function(v, k) {
+    buffer.push(k, v);
+    map.forEach(function(v, k) {
+      buffer.push(k, v);
+      if (k === 0) {
+        map.delete(1);
+      }
+    });
+  });
+
+  assertArrayEquals([0, 'a', 0, 'a', 2, 'c', 2, 'c', 0, 'a', 2, 'c'], buffer);
+})();
+
+
+(function TestMapForEachEarlyExit() {
+  var map = new Map();
+  map.set(0, 'a');
+  map.set(1, 'b');
+  map.set(2, 'c');
+
+  var buffer = [];
+  var ex = {};
+  try {
+    map.forEach(function(v, k) {
+      buffer.push(k, v);
+      throw ex;
+    });
+  } catch (e) {
+    assertEquals(ex, e);
+  }
+  assertArrayEquals([0, 'a'], buffer);
+})();
+
+
+(function TestMapForEachGC() {
+  var map = new Map();
+  for (var i = 0; i < 100; i++) {
+    map.set(i, i);
+  }
+
+  var accumulated = 0;
+  map.forEach(function(v) {
+    accumulated += v;
+    if (v % 10 === 0) {
+      gc();
+    }
+  });
+  assertEquals(4950, accumulated);
+})();

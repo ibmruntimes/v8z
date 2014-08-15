@@ -1,29 +1,6 @@
 // Copyright 2011 the V8 project authors. All rights reserved.
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-//       copyright notice, this list of conditions and the following
-//       disclaimer in the documentation and/or other materials provided
-//       with the distribution.
-//     * Neither the name of Google Inc. nor the names of its
-//       contributors may be used to endorse or promote products derived
-//       from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 #ifndef V8_VARIABLES_H_
 #define V8_VARIABLES_H_
@@ -77,7 +54,7 @@ class Variable: public ZoneObject {
   Variable(Scope* scope,
            Handle<String> name,
            VariableMode mode,
-           bool is_valid_lhs,
+           bool is_valid_ref,
            Kind kind,
            InitializationFlag initialization_flag,
            Interface* interface = Interface::NewValue());
@@ -85,7 +62,7 @@ class Variable: public ZoneObject {
   // Printing support
   static const char* Mode2String(VariableMode mode);
 
-  bool IsValidLeftHandSide() { return is_valid_LHS_; }
+  bool IsValidReference() { return is_valid_ref_; }
 
   // The source code for an eval() call may refer to a variable that is
   // in an outer scope about which we don't know anything (it may not
@@ -130,8 +107,8 @@ class Variable: public ZoneObject {
   bool is_arguments() const { return kind_ == ARGUMENTS; }
 
   // True if the variable is named eval and not known to be shadowed.
-  bool is_possibly_eval() const {
-    return IsVariable(FACTORY->eval_symbol());
+  bool is_possibly_eval(Isolate* isolate) const {
+    return IsVariable(isolate->factory()->eval_string());
   }
 
   Variable* local_if_not_shadowed() const {
@@ -168,12 +145,12 @@ class Variable: public ZoneObject {
 
   // If this field is set, this variable references the stored locally bound
   // variable, but it might be shadowed by variable bindings introduced by
-  // non-strict 'eval' calls between the reference scope (inclusive) and the
+  // sloppy 'eval' calls between the reference scope (inclusive) and the
   // binding scope (exclusive).
   Variable* local_if_not_shadowed_;
 
-  // Valid as a LHS? (const and this are not valid LHS, for example)
-  bool is_valid_LHS_;
+  // Valid as a reference? (const and this are not valid, for example)
+  bool is_valid_ref_;
 
   // Usage info.
   bool force_context_allocation_;  // set by variable resolver

@@ -1,29 +1,6 @@
 // Copyright 2008 the V8 project authors. All rights reserved.
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-//       copyright notice, this list of conditions and the following
-//       disclaimer in the documentation and/or other materials provided
-//       with the distribution.
-//     * Neither the name of Google Inc. nor the names of its
-//       contributors may be used to endorse or promote products derived
-//       from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 #ifndef V8_D8_DEBUG_H_
 #define V8_D8_DEBUG_H_
@@ -31,19 +8,17 @@
 
 #include "d8.h"
 #include "debug.h"
+#include "platform/socket.h"
 
 
 namespace v8 {
 
 
-void HandleDebugEvent(DebugEvent event,
-                      Handle<Object> exec_state,
-                      Handle<Object> event_data,
-                      Handle<Value> data);
+void HandleDebugEvent(const Debug::EventDetails& event_details);
 
 // Start the remove debugger connecting to a V8 debugger agent on the specified
 // port.
-void RunRemoteDebugger(int port);
+void RunRemoteDebugger(Isolate* isolate, int port);
 
 // Forward declerations.
 class RemoteDebuggerEvent;
@@ -53,10 +28,10 @@ class ReceiverThread;
 // Remote debugging class.
 class RemoteDebugger {
  public:
-  explicit RemoteDebugger(int port)
-      : port_(port),
-        event_access_(i::OS::CreateMutex()),
-        event_available_(i::OS::CreateSemaphore(0)),
+  explicit RemoteDebugger(Isolate* isolate, int port)
+      : isolate_(isolate),
+        port_(port),
+        event_available_(0),
         head_(NULL), tail_(NULL) {}
   void Run();
 
@@ -79,14 +54,15 @@ class RemoteDebugger {
   // Get connection to agent in debugged V8.
   i::Socket* conn() { return conn_; }
 
+  Isolate* isolate_;
   int port_;  // Port used to connect to debugger V8.
   i::Socket* conn_;  // Connection to debugger agent in debugged V8.
 
   // Linked list of events from debugged V8 and from keyboard input. Access to
   // the list is guarded by a mutex and a semaphore signals new items in the
   // list.
-  i::Mutex* event_access_;
-  i::Semaphore* event_available_;
+  i::Mutex event_access_;
+  i::Semaphore event_available_;
   RemoteDebuggerEvent* head_;
   RemoteDebuggerEvent* tail_;
 
@@ -137,7 +113,7 @@ class RemoteDebuggerEvent {
   static const int kDisconnect = 3;
 
   int type() { return type_; }
-  char* data() { return *data_; }
+  char* data() { return data_.get(); }
 
  private:
   void set_next(RemoteDebuggerEvent* event) { next_ = event; }

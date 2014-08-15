@@ -1,29 +1,6 @@
 // Copyright 2012 the V8 project authors. All rights reserved.
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-//       copyright notice, this list of conditions and the following
-//       disclaimer in the documentation and/or other materials provided
-//       with the distribution.
-//     * Neither the name of Google Inc. nor the names of its
-//       contributors may be used to endorse or promote products derived
-//       from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 #include "v8.h"
 
@@ -43,7 +20,9 @@ class Processor: public AstVisitor {
         result_assigned_(false),
         is_set_(false),
         in_try_(false),
-        factory_(isolate(), zone) { }
+        factory_(zone) {
+    InitializeAstVisitor(zone);
+  }
 
   virtual ~Processor() { }
 
@@ -86,6 +65,8 @@ class Processor: public AstVisitor {
 #undef DEF_VISIT
 
   void VisitIterationStatement(IterationStatement* stmt);
+
+  DEFINE_AST_VISITOR_SUBCLASS_MEMBERS();
 };
 
 
@@ -106,6 +87,13 @@ void Processor::VisitBlock(Block* node) {
   // returns 'undefined'. To obtain the same behavior with v8, we need
   // to prevent rewriting in that case.
   if (!node->is_initializer_block()) Process(node->statements());
+}
+
+
+void Processor::VisitModuleStatement(ModuleStatement* node) {
+  bool set_after_body = is_set_;
+  Visit(node->body());
+  is_set_ = is_set_ && set_after_body;
 }
 
 
@@ -153,6 +141,11 @@ void Processor::VisitForStatement(ForStatement* node) {
 
 
 void Processor::VisitForInStatement(ForInStatement* node) {
+  VisitIterationStatement(node);
+}
+
+
+void Processor::VisitForOfStatement(ForOfStatement* node) {
   VisitIterationStatement(node);
 }
 
@@ -242,7 +235,7 @@ bool Rewriter::Rewrite(CompilationInfo* info) {
   ZoneList<Statement*>* body = function->body();
   if (!body->is_empty()) {
     Variable* result = scope->NewTemporary(
-        info->isolate()->factory()->result_symbol());
+        info->isolate()->factory()->dot_result_string());
     Processor processor(result, info->zone());
     processor.Process(body);
     if (processor.HasStackOverflow()) return false;
@@ -255,13 +248,12 @@ bool Rewriter::Rewrite(CompilationInfo* info) {
       //   eval('with ({x:1}) x = 1');
       // the end position of the function generated for executing the eval code
       // coincides with the end of the with scope which is the position of '1'.
-      int position = function->end_position();
+      int pos = function->end_position();
       VariableProxy* result_proxy = processor.factory()->NewVariableProxy(
-          result->name(), false, Interface::NewValue(), position);
+          result->name(), false, result->interface(), pos);
       result_proxy->BindTo(result);
       Statement* result_statement =
-          processor.factory()->NewReturnStatement(result_proxy);
-      result_statement->set_statement_pos(position);
+          processor.factory()->NewReturnStatement(result_proxy, pos);
       body->Add(result_statement, info->zone());
     }
   }

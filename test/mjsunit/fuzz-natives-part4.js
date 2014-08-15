@@ -140,32 +140,12 @@ var knownProblems = {
   "DisableAccessChecks": true,
   "EnableAccessChecks": true,
 
-  // These functions should not be callable as runtime functions.
-  "NewFunctionContext": true,
-  "NewArgumentsFast": true,
-  "NewStrictArgumentsFast": true,
-  "PushWithContext": true,
-  "PushCatchContext": true,
-  "PushBlockContext": true,
-  "LazyCompile": true,
-  "LazyRecompile": true,
-  "ParallelRecompile": true,
-  "NotifyDeoptimized": true,
-  "NotifyOSR": true,
-  "CreateObjectLiteralBoilerplate": true,
-  "CloneLiteralBoilerplate": true,
-  "CloneShallowLiteralBoilerplate": true,
-  "CreateArrayLiteralBoilerplate": true,
+  // IS_VAR is special.
   "IS_VAR": true,
-  "ResolvePossiblyDirectEval": true,
-  "Log": true,
-  "DeclareGlobals": true,
-
-  "PromoteScheduledException": true,
-  "DeleteHandleScopeExtensions": true,
 
   // Vararg with minimum number > 0.
   "Call": true,
+  "SetAllocationTimeout": true,
 
   // Requires integer arguments to be non-negative.
   "Apply": true,
@@ -195,12 +175,26 @@ var knownProblems = {
 
   // Only applicable to strings.
   "_HasCachedArrayIndex": true,
-  "_GetCachedArrayIndex": true
+  "_GetCachedArrayIndex": true,
+  "_OneByteSeqStringSetChar": true,
+  "_TwoByteSeqStringSetChar": true,
+
+  // Only applicable to TypedArrays.
+  "_TypedArrayInitialize": true,
+
+  // Only applicable to generators.
+  "_GeneratorNext": true,
+  "_GeneratorThrow": true,
+
+  // Only applicable to DataViews.
+  "_DataViewInitialize": true,
 };
 
 var currentlyUncallable = {
   // We need to find a way to test this without breaking the system.
-  "SystemBreak": true
+  "SystemBreak": true,
+  // Inserts an int3/stop instruction when run with --always-opt.
+  "_DebugBreakInOptimizedCode": true
 };
 
 function testNatives() {

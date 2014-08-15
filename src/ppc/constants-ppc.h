@@ -2,31 +2,8 @@
 //
 // Copyright IBM Corp. 2012, 2013. All rights reserved.
 //
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-//       copyright notice, this list of conditions and the following
-//       disclaimer in the documentation and/or other materials provided
-//       with the distribution.
-//     * Neither the name of Google Inc. nor the names of its
-//       contributors may be used to endorse or promote products derived
-//       from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 #ifndef V8_PPC_CONSTANTS_PPC_H_
 #define V8_PPC_CONSTANTS_PPC_H_
@@ -43,14 +20,11 @@ const int kNumFPRegisters = kNumFPDoubleRegisters;
 
 const int kNoRegister = -1;
 
-// For FlushICache
-// This constant will be different for other versions of PowerPC
-// It must be a power of 2
-const unsigned int kCacheLineSizeLog2 = 7;
-const unsigned int kCacheLineSize = (1 << kCacheLineSizeLog2);
-
-// sign-extend the least significant 16-bit of value <imm>
+// sign-extend the least significant 16-bits of value <imm>
 #define SIGN_EXT_IMM16(imm) ((static_cast<int>(imm) << 16) >> 16)
+
+// sign-extend the least significant 26-bits of value <imm>
+#define SIGN_EXT_IMM26(imm) ((static_cast<int>(imm) << 6) >> 6)
 
 // -----------------------------------------------------------------------------
 // Conditions.
@@ -129,7 +103,7 @@ enum Opcode {
   EXT1    = 19 << 26,  // Extended code set 1
   RLWIMIX = 20 << 26,  // Rotate Left Word Immediate then Mask Insert
   RLWINMX = 21 << 26,  // Rotate Left Word Immediate then AND with Mask
-  RLWNMX  = 23 << 26,  // Rotate Left then AND with Mask
+  RLWNMX  = 23 << 26,  // Rotate Left Word then AND with Mask
   ORI     = 24 << 26,  // OR Immediate
   ORIS    = 25 << 26,  // OR Immediate Shifted
   XORI    = 26 << 26,  // XOR Immediate
@@ -278,6 +252,8 @@ enum OpcodeExt4 {
   FSQRT  = 22 << 1,   // Floating Square Root
   FSEL   = 23 << 1,   // Floating Select
   FMUL   = 25 << 1,   // Floating Multiply
+  FMSUB  = 28 << 1,   // Floating Multiply-Subtract
+  FMADD  = 29 << 1,   // Floating Multiply-Add
 
   // Bits 10-1
   FCMPU  =   0 << 1,  // Floating Compare Unordered
@@ -297,11 +273,15 @@ enum OpcodeExt4 {
   FCTIDZ = 815 << 1   // Floating convert from integer doubleword
 };
 
-// Bits 4-2
 enum OpcodeExt5 {
-  RLDICL = 0 << 2,    // Rotate Left Double Word Immediate then Clear Left
-  RLDICR = 1 << 2,    // Rotate Left Double Word Immediate then Clear Right
-  RLDIC  = 2 << 2     // Rotate Left Double Word Immediate then Clear
+  // Bits 4-2
+  RLDICL = 0 << 1,    // Rotate Left Double Word Immediate then Clear Left
+  RLDICR = 2 << 1,    // Rotate Left Double Word Immediate then Clear Right
+  RLDIC  = 4 << 1,    // Rotate Left Double Word Immediate then Clear
+  RLDIMI = 6 << 1,    // Rotate Left Double Word Immediate then Mask Insert
+  // Bits 4-1
+  RLDCL  = 8 << 1,    // Rotate Left Double Word then Clear Left
+  RLDCR  = 9 << 1     // Rotate Left Double Word then Clear Right
 };
 
 // Instruction encoding bits and masks.
@@ -341,6 +321,7 @@ enum {
   kImm26Mask  = (1 << 26) - 1,
   kBOfieldMask = 0x1f << 21,
   kOpcodeMask = 0x3f << 26,
+  kExt1OpcodeMask = 0x3ff << 1,
   kExt2OpcodeMask = 0x1f << 1,
   kExt5OpcodeMask = 0x3 << 2,
   kBOMask = 0x1f << 21,
@@ -367,6 +348,7 @@ enum {
 
 enum FAKE_OPCODE_T {
   fBKPT = 14,
+
   fLastFaker  // can't be more than 128 (2^^7)
 };
 #define FAKE_OPCODE_HIGH_BIT 7  // fake opcode has to fall into bit 0~7
@@ -405,7 +387,7 @@ enum BOfield {  // Bits 25-21
   BA     = 20 << 21   // Branch always
 };
 
-#ifdef _AIX
+#if V8_OS_AIX
 #undef CR_LT
 #undef CR_GT
 #undef CR_EQ
@@ -444,7 +426,7 @@ const uint32_t kMaxStopCode = kStopCode - 1;
 const int32_t  kDefaultStopCode = -1;
 
 // FP rounding modes.
-enum VFPRoundingMode {
+enum FPRoundingMode {
   RN = 0,   // Round to Nearest.
   RZ = 1,   // Round towards zero.
   RP = 2,   // Round towards Plus Infinity.
@@ -457,7 +439,7 @@ enum VFPRoundingMode {
   kRoundToMinusInf = RM
 };
 
-const uint32_t kVFPRoundingModeMask = 3;
+const uint32_t kFPRoundingModeMask = 3;
 
 enum CheckForInexactConversion {
   kCheckForInexactConversion,
@@ -561,7 +543,6 @@ class Instruction {
     return instr & (((2 << (hi - lo)) - 1) << lo);
   }
 
-  // PowerPC
   inline int RSValue() const { return Bits(25, 21); }
   inline int RTValue() const { return Bits(25, 21); }
   inline int RAValue() const { return Bits(20, 16); }
@@ -570,10 +551,9 @@ class Instruction {
   DECLARE_STATIC_ACCESSOR(RBValue);
   inline int RCValue() const { return Bits(10, 6); }
   DECLARE_STATIC_ACCESSOR(RCValue);
-  // end PowerPC
 
   inline int OpcodeValue() const {
-    return static_cast<Opcode>(Bits(31, 26));  // PowerPC
+    return static_cast<Opcode>(Bits(31, 26));
   }
   inline Opcode OpcodeField() const {
     return static_cast<Opcode>(BitField(24, 21));

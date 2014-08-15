@@ -1,33 +1,10 @@
 // Copyright 2012 the V8 project authors. All rights reserved.
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-//       copyright notice, this list of conditions and the following
-//       disclaimer in the documentation and/or other materials provided
-//       with the distribution.
-//     * Neither the name of Google Inc. nor the names of its
-//       contributors may be used to endorse or promote products derived
-//       from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 #include "v8.h"
 
-#if defined(V8_TARGET_ARCH_IA32)
+#if V8_TARGET_ARCH_IA32
 
 #include "codegen.h"
 #include "debug.h"
@@ -35,8 +12,6 @@
 
 namespace v8 {
 namespace internal {
-
-#ifdef ENABLE_DEBUGGER_SUPPORT
 
 bool BreakLocationIterator::IsDebugBreakAtReturn() {
   return Debug::IsDebugBreakAtReturn(rinfo());
@@ -49,8 +24,8 @@ bool BreakLocationIterator::IsDebugBreakAtReturn() {
 void BreakLocationIterator::SetDebugBreakAtReturn() {
   ASSERT(Assembler::kJSReturnSequenceLength >=
          Assembler::kCallInstructionLength);
-  Isolate* isolate = Isolate::Current();
-  rinfo()->PatchCodeWithCall(isolate->debug()->debug_break_return()->entry(),
+  rinfo()->PatchCodeWithCall(
+      debug_info_->GetIsolate()->debug()->debug_break_return()->entry(),
       Assembler::kJSReturnSequenceLength - Assembler::kCallInstructionLength);
 }
 
@@ -79,7 +54,7 @@ bool BreakLocationIterator::IsDebugBreakAtSlot() {
 
 void BreakLocationIterator::SetDebugBreakAtSlot() {
   ASSERT(IsDebugBreakSlot());
-  Isolate* isolate = Isolate::Current();
+  Isolate* isolate = debug_info_->GetIsolate();
   rinfo()->PatchCodeWithCall(
       isolate->debug()->debug_break_slot()->entry(),
       Assembler::kDebugBreakSlotLength - Assembler::kCallInstructionLength);
@@ -90,6 +65,7 @@ void BreakLocationIterator::ClearDebugBreakAtSlot() {
   ASSERT(IsDebugBreakSlot());
   rinfo()->PatchCode(original_rinfo()->pc(), Assembler::kDebugBreakSlotLength);
 }
+
 
 // All debug break stubs support padding for LiveEdit.
 const bool Debug::FramePaddingLayout::kIsSupported = true;
@@ -127,7 +103,7 @@ static void Generate_DebugBreakCallHelper(MacroAssembler* masm,
       if ((non_object_regs & (1 << r)) != 0) {
         if (FLAG_debug_code) {
           __ test(reg, Immediate(0xc0000000));
-          __ Assert(zero, "Unable to encode value as smi");
+          __ Assert(zero, kUnableToEncodeValueAsSmi);
         }
         __ SmiTag(reg);
         __ push(reg);
@@ -137,10 +113,10 @@ static void Generate_DebugBreakCallHelper(MacroAssembler* masm,
 #ifdef DEBUG
     __ RecordComment("// Calling from debug break to runtime - come in - over");
 #endif
-    __ Set(eax, Immediate(0));  // No arguments.
+    __ Move(eax, Immediate(0));  // No arguments.
     __ mov(ebx, Immediate(ExternalReference::debug_break(masm->isolate())));
 
-    CEntryStub ceb(1);
+    CEntryStub ceb(masm->isolate(), 1);
     __ CallStub(&ceb);
 
     // Automatically find register that could be used after register restore.
@@ -153,7 +129,7 @@ static void Generate_DebugBreakCallHelper(MacroAssembler* masm,
       int r = JSCallerSavedCode(i);
       Register reg = { r };
       if (FLAG_debug_code) {
-        __ Set(reg, Immediate(kDebugZapValue));
+        __ Move(reg, Immediate(kDebugZapValue));
       }
       bool taken = reg.code() == esi.code();
       if ((object_regs & (1 << r)) != 0) {
@@ -193,6 +169,17 @@ static void Generate_DebugBreakCallHelper(MacroAssembler* masm,
   ExternalReference after_break_target =
       ExternalReference(Debug_Address::AfterBreakTarget(), masm->isolate());
   __ jmp(Operand::StaticVariable(after_break_target));
+}
+
+
+void Debug::GenerateCallICStubDebugBreak(MacroAssembler* masm) {
+  // Register state for CallICStub
+  // ----------- S t a t e -------------
+  //  -- edx    : type feedback slot (smi)
+  //  -- edi    : function
+  // -----------------------------------
+  Generate_DebugBreakCallHelper(masm, edx.bit() | edi.bit(),
+                                0, false);
 }
 
 
@@ -240,12 +227,12 @@ void Debug::GenerateKeyedStoreICDebugBreak(MacroAssembler* masm) {
 }
 
 
-void Debug::GenerateCallICDebugBreak(MacroAssembler* masm) {
-  // Register state for keyed IC call call (from ic-ia32.cc)
+void Debug::GenerateCompareNilICDebugBreak(MacroAssembler* masm) {
+  // Register state for CompareNil IC
   // ----------- S t a t e -------------
-  //  -- ecx: name
+  //  -- eax    : value
   // -----------------------------------
-  Generate_DebugBreakCallHelper(masm, ecx.bit(), 0, false);
+  Generate_DebugBreakCallHelper(masm, eax.bit(), 0, false);
 }
 
 
@@ -264,16 +251,6 @@ void Debug::GenerateCallFunctionStubDebugBreak(MacroAssembler* masm) {
   //  -- edi: function
   // -----------------------------------
   Generate_DebugBreakCallHelper(masm, edi.bit(), 0, false);
-}
-
-
-void Debug::GenerateCallFunctionStubRecordDebugBreak(MacroAssembler* masm) {
-  // Register state for CallFunctionStub (from code-stubs-ia32.cc).
-  // ----------- S t a t e -------------
-  //  -- ebx: cache cell for call target
-  //  -- edi: function
-  // -----------------------------------
-  Generate_DebugBreakCallHelper(masm, ebx.bit() | edi.bit(), 0, false);
 }
 
 
@@ -296,11 +273,13 @@ void Debug::GenerateCallConstructStubRecordDebugBreak(MacroAssembler* masm) {
   // above IC call.
   // ----------- S t a t e -------------
   //  -- eax: number of arguments (not smi)
-  //  -- ebx: cache cell for call target
+  //  -- ebx: feedback array
+  //  -- edx: feedback slot (smi)
   //  -- edi: constructor function
   // -----------------------------------
   // The number of arguments in eax is not smi encoded.
-  Generate_DebugBreakCallHelper(masm, ebx.bit() | edi.bit(), eax.bit(), false);
+  Generate_DebugBreakCallHelper(masm, ebx.bit() | edx.bit() | edi.bit(),
+                                eax.bit(), false);
 }
 
 
@@ -354,8 +333,6 @@ void Debug::GenerateFrameDropperLiveEdit(MacroAssembler* masm) {
 const bool Debug::kFrameDropperSupported = true;
 
 #undef __
-
-#endif  // ENABLE_DEBUGGER_SUPPORT
 
 } }  // namespace v8::internal
 

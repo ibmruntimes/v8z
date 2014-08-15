@@ -1,29 +1,6 @@
 // Copyright 2012 the V8 project authors. All rights reserved.
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-//       copyright notice, this list of conditions and the following
-//       disclaimer in the documentation and/or other materials provided
-//       with the distribution.
-//     * Neither the name of Google Inc. nor the names of its
-//       contributors may be used to endorse or promote products derived
-//       from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 #ifndef V8_INCREMENTAL_MARKING_INL_H_
 #define V8_INCREMENTAL_MARKING_INL_H_
@@ -37,16 +14,27 @@ namespace internal {
 bool IncrementalMarking::BaseRecordWrite(HeapObject* obj,
                                          Object** slot,
                                          Object* value) {
-  MarkBit value_bit = Marking::MarkBitFrom(HeapObject::cast(value));
+  HeapObject* value_heap_obj = HeapObject::cast(value);
+  MarkBit value_bit = Marking::MarkBitFrom(value_heap_obj);
   if (Marking::IsWhite(value_bit)) {
     MarkBit obj_bit = Marking::MarkBitFrom(obj);
     if (Marking::IsBlack(obj_bit)) {
-      BlackToGreyAndUnshift(obj, obj_bit);
-      RestartIfNotMarking();
+      MemoryChunk* chunk = MemoryChunk::FromAddress(obj->address());
+      if (chunk->IsFlagSet(MemoryChunk::HAS_PROGRESS_BAR)) {
+        if (chunk->IsLeftOfProgressBar(slot)) {
+          WhiteToGreyAndPush(value_heap_obj, value_bit);
+          RestartIfNotMarking();
+        } else {
+          return false;
+        }
+      } else {
+        BlackToGreyAndUnshift(obj, obj_bit);
+        RestartIfNotMarking();
+        return false;
+      }
+    } else {
+      return false;
     }
-
-    // Object is either grey or white.  It will be scanned if survives.
-    return false;
   }
   if (!is_compacting_) return false;
   MarkBit obj_bit = Marking::MarkBitFrom(obj);
@@ -57,7 +45,7 @@ bool IncrementalMarking::BaseRecordWrite(HeapObject* obj,
 void IncrementalMarking::RecordWrite(HeapObject* obj,
                                      Object** slot,
                                      Object* value) {
-  if (IsMarking() && value->NonFailureIsHeapObject()) {
+  if (IsMarking() && value->IsHeapObject()) {
     RecordWriteSlow(obj, slot, value);
   }
 }
@@ -73,7 +61,7 @@ void IncrementalMarking::RecordWriteOfCodeEntry(JSFunction* host,
 void IncrementalMarking::RecordWriteIntoCode(HeapObject* obj,
                                              RelocInfo* rinfo,
                                              Object* value) {
-  if (IsMarking() && value->NonFailureIsHeapObject()) {
+  if (IsMarking() && value->IsHeapObject()) {
     RecordWriteIntoCodeSlow(obj, rinfo, value);
   }
 }
@@ -83,6 +71,10 @@ void IncrementalMarking::RecordWrites(HeapObject* obj) {
   if (IsMarking()) {
     MarkBit obj_bit = Marking::MarkBitFrom(obj);
     if (Marking::IsBlack(obj_bit)) {
+      MemoryChunk* chunk = MemoryChunk::FromAddress(obj->address());
+      if (chunk->IsFlagSet(MemoryChunk::HAS_PROGRESS_BAR)) {
+        chunk->set_progress_bar(0);
+      }
       BlackToGreyAndUnshift(obj, obj_bit);
       RestartIfNotMarking();
     }

@@ -2,31 +2,8 @@
 //
 // Copyright IBM Corp. 2012, 2013. All rights reserved.
 //
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-//       copyright notice, this list of conditions and the following
-//       disclaimer in the documentation and/or other materials provided
-//       with the distribution.
-//     * Neither the name of Google Inc. nor the names of its
-//       contributors may be used to endorse or promote products derived
-//       from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 // A Disassembler object is used to disassemble a block of code instruction by
 // instruction. The default implementation of the NameConverter object can be
@@ -53,13 +30,10 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
-#ifndef WIN32
-#include <stdint.h>
-#endif
 
 #include "v8.h"
 
-#if defined(V8_TARGET_ARCH_PPC)
+#if V8_TARGET_ARCH_PPC
 
 #include "constants-ppc.h"
 #include "disasm.h"
@@ -111,7 +85,6 @@ class Decoder {
   void UnknownFormat(Instruction* instr, const char* opcname);
   void MarkerFormat(Instruction* instr, const char* opcname, int id);
 
-  // PowerPC decoding
   void DecodeExt1(Instruction* instr);
   void DecodeExt2(Instruction* instr);
   void DecodeExt4(Instruction* instr);
@@ -146,15 +119,18 @@ void Decoder::Print(const char* str) {
   out_buffer_[out_buffer_pos_] = 0;
 }
 
+
 // Print the register name according to the active name converter.
 void Decoder::PrintRegister(int reg) {
   Print(converter_.NameOfCPURegister(reg));
 }
 
+
 // Print the double FP register name according to the active name converter.
 void Decoder::PrintDRegister(int reg) {
   Print(FPRegisters::Name(reg));
 }
+
 
 // Print SoftwareInterrupt codes. Factoring this out reduces the complexity of
 // the FormatOption method.
@@ -180,6 +156,7 @@ void Decoder::PrintSoftwareInterrupt(SoftwareInterruptCodes svc) {
       return;
   }
 }
+
 
 // Handle all register based formatting in this function to reduce the
 // complexity of FormatOption.
@@ -228,6 +205,7 @@ int Decoder::FormatFPRegister(Instruction* instr, const char* format) {
 
   return retval;
 }
+
 
 // FormatOption takes a formatting string and interprets it based on
 // the current instructions. The format string points to the first
@@ -397,6 +375,7 @@ void Decoder::Unknown(Instruction* instr) {
   Format(instr, "unknown");
 }
 
+
 // For currently unimplemented decodings the disassembler calls
 // UnknownFormat(instr) which will just print opcode name of the
 // instruction bits.
@@ -406,13 +385,14 @@ void Decoder::UnknownFormat(Instruction* instr, const char* name) {
   Format(instr, buffer);
 }
 
+
 void Decoder::MarkerFormat(Instruction* instr, const char* name, int id) {
   char buffer[100];
   snprintf(buffer, sizeof(buffer), "%s %d", name, id);
   Format(instr, buffer);
 }
 
-// PowerPC
+
 void Decoder::DecodeExt1(Instruction* instr) {
   switch (instr->Bits(10, 1) << 1) {
     case MCRF: {
@@ -558,6 +538,7 @@ void Decoder::DecodeExt1(Instruction* instr) {
   }
 }
 
+
 void Decoder::DecodeExt2(Instruction* instr) {
   // Some encodings are 10-1 bits, handle those first
   switch (instr->Bits(10, 1) << 1) {
@@ -643,7 +624,15 @@ void Decoder::DecodeExt2(Instruction* instr) {
   // ?? are all of these xo_form?
   switch (instr->Bits(9, 1) << 1) {
     case CMP: {
-      Format(instr, "cmp     'ra, 'rb");
+#if V8_TARGET_ARCH_PPC64
+      if (instr->Bit(21)) {
+#endif
+        Format(instr, "cmp     'ra, 'rb");
+#if V8_TARGET_ARCH_PPC64
+      } else {
+        Format(instr, "cmpw    'ra, 'rb");
+      }
+#endif
       break;
     }
     case SLWX: {
@@ -683,7 +672,15 @@ void Decoder::DecodeExt2(Instruction* instr) {
       break;
     }
     case CMPL: {
-      Format(instr, "cmpl    'ra, 'rb");
+#if V8_TARGET_ARCH_PPC64
+      if (instr->Bit(21)) {
+#endif
+        Format(instr, "cmpl    'ra, 'rb");
+#if V8_TARGET_ARCH_PPC64
+      } else {
+        Format(instr, "cmplw   'ra, 'rb");
+      }
+#endif
       break;
     }
     case NEGX: {
@@ -838,6 +835,7 @@ void Decoder::DecodeExt2(Instruction* instr) {
   }
 }
 
+
 void Decoder::DecodeExt4(Instruction* instr) {
   switch (instr->Bits(5, 1) << 1) {
     case FDIV: {
@@ -862,6 +860,14 @@ void Decoder::DecodeExt4(Instruction* instr) {
     }
     case FMUL: {
       Format(instr, "fmul'.   'Dt, 'Da, 'Dc");
+      return;
+    }
+    case FMSUB: {
+      Format(instr, "fmsub'.  'Dt, 'Da, 'Dc, 'Db");
+      return;
+    }
+    case FMADD: {
+      Format(instr, "fmadd'.  'Dt, 'Da, 'Dc, 'Db");
       return;
     }
   }
@@ -929,24 +935,33 @@ void Decoder::DecodeExt4(Instruction* instr) {
   }
 }
 
+
 void Decoder::DecodeExt5(Instruction* instr) {
   switch (instr->Bits(4, 2) << 2) {
     case RLDICL: {
       Format(instr, "rldicl'. 'ra, 'rs, 'sh, 'mb");
-      break;
+      return;
     }
     case RLDICR: {
       Format(instr, "rldicr'. 'ra, 'rs, 'sh, 'me");
-      break;
+      return;
     }
     case RLDIC: {
       Format(instr, "rldic'.  'ra, 'rs, 'sh, 'mb");
-      break;
+      return;
     }
-    default: {
-      Unknown(instr);  // not used by V8
+    case RLDIMI: {
+      Format(instr, "rldimi'. 'ra, 'rs, 'sh, 'mb");
+      return;
     }
   }
+  switch (instr->Bits(4, 1) << 1) {
+    case RLDCL: {
+      Format(instr, "rldcl'.  'ra, 'rs, 'sb, 'mb");
+      return;
+    }
+  }
+  Unknown(instr);  // not used by V8
 }
 
 #undef VERIFIY
@@ -973,11 +988,27 @@ int Decoder::InstructionDecode(byte* instr_ptr) {
       break;
     }
     case CMPLI: {
-      Format(instr, "cmpli   'ra, 'uint16");
+#if V8_TARGET_ARCH_PPC64
+      if (instr->Bit(21)) {
+#endif
+        Format(instr, "cmpli   'ra, 'uint16");
+#if V8_TARGET_ARCH_PPC64
+      } else {
+        Format(instr, "cmplwi  'ra, 'uint16");
+      }
+#endif
       break;
     }
     case CMPI: {
-      Format(instr, "cmpi    'ra, 'int16");
+#if V8_TARGET_ARCH_PPC64
+      if (instr->Bit(21)) {
+#endif
+        Format(instr, "cmpi    'ra, 'int16");
+#if V8_TARGET_ARCH_PPC64
+      } else {
+        Format(instr, "cmpwi   'ra, 'int16");
+      }
+#endif
       break;
     }
     case ADDIC: {
@@ -1070,7 +1101,7 @@ int Decoder::InstructionDecode(byte* instr_ptr) {
       break;
     }
     case RLWNMX: {
-      UnknownFormat(instr, "rlwnmx");
+      Format(instr, "rlwnm'.  'ra, 'rs, 'rb, 'me, 'mb");
       break;
     }
     case ORI: {
@@ -1324,8 +1355,9 @@ void Disassembler::Disassemble(FILE* f, byte* begin, byte* end) {
     buffer[0] = '\0';
     byte* prev_pc = pc;
     pc += d.InstructionDecode(buffer, pc);
-    fprintf(f, "%p    %08x      %s\n",
-            prev_pc, *reinterpret_cast<int32_t*>(prev_pc), buffer.start());
+    v8::internal::PrintF(
+        f, "%p    %08x      %s\n",
+        prev_pc, *reinterpret_cast<int32_t*>(prev_pc), buffer.start());
   }
 }
 

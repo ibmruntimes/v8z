@@ -1,36 +1,17 @@
 // Copyright 2012 the V8 project authors. All rights reserved.
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-//       copyright notice, this list of conditions and the following
-//       disclaimer in the documentation and/or other materials provided
-//       with the distribution.
-//     * Neither the name of Google Inc. nor the names of its
-//       contributors may be used to endorse or promote products derived
-//       from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
-// Platform specific code for POSIX goes here. This is not a platform on its
-// own but contains the parts which are the same across POSIX platforms Linux,
-// Mac OS, FreeBSD and OpenBSD.
+// Platform-specific code for POSIX goes here. This is not a platform on its
+// own, but contains the parts which are the same across the POSIX platforms
+// Linux, MacOS, FreeBSD, OpenBSD, NetBSD and QNX.
 
-#include "platform-posix.h"
-
+#include <dlfcn.h>
+#include <pthread.h>
+#if defined(__DragonFly__) || defined(__FreeBSD__) || defined(__OpenBSD__)
+#include <pthread_np.h>  // for pthread_set_name_np
+#endif
+#include <sched.h>  // for sched_yield
 #include <unistd.h>
 #include <errno.h>
 #include <time.h>
@@ -41,6 +22,13 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#if defined(__linux__)
+#include <sys/prctl.h>  // for prctl
+#endif
+#if defined(__APPLE__) || defined(__DragonFly__) || defined(__FreeBSD__) || \
+    defined(__NetBSD__) || defined(__OpenBSD__)
+#include <sys/sysctl.h>  // for sysctl
+#endif
 
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -60,10 +48,26 @@
 #include "v8.h"
 
 #include "codegen.h"
+#include "isolate-inl.h"
 #include "platform.h"
 
 namespace v8 {
 namespace internal {
+
+// 0 is never a valid thread id.
+static const pthread_t kNoThread = (pthread_t) 0;
+
+
+uint64_t OS::CpuFeaturesImpliedByPlatform() {
+#if V8_OS_MACOSX
+  // Mac OS X requires all these to install so we can assume they are present.
+  // These constants are defined by the CPUid instructions.
+  const uint64_t one = 1;
+  return (one << SSE2) | (one << CMOV);
+#else
+  return 0;  // Nothing special about the other systems.
+#endif
+}
 
 
 // Maximum size of the virtual memory.  0 means there is no artificial
@@ -73,7 +77,90 @@ intptr_t OS::MaxVirtualMemory() {
   struct rlimit limit;
   int result = getrlimit(RLIMIT_DATA, &limit);
   if (result != 0) return 0;
+#if V8_OS_NACL
+  // The NaCl compiler doesn't like resource.h constants.
+  if (static_cast<int>(limit.rlim_cur) == -1) return 0;
+#else
+  if (limit.rlim_cur == RLIM_INFINITY) return 0;
+#endif
   return limit.rlim_cur;
+}
+
+
+uint64_t OS::TotalPhysicalMemory() {
+#if V8_OS_MACOSX
+  int mib[2];
+  mib[0] = CTL_HW;
+  mib[1] = HW_MEMSIZE;
+  int64_t size = 0;
+  size_t len = sizeof(size);
+  if (sysctl(mib, 2, &size, &len, NULL, 0) != 0) {
+    UNREACHABLE();
+    return 0;
+  }
+  return static_cast<uint64_t>(size);
+#elif V8_OS_FREEBSD
+  int pages, page_size;
+  size_t size = sizeof(pages);
+  sysctlbyname("vm.stats.vm.v_page_count", &pages, &size, NULL, 0);
+  sysctlbyname("vm.stats.vm.v_page_size", &page_size, &size, NULL, 0);
+  if (pages == -1 || page_size == -1) {
+    UNREACHABLE();
+    return 0;
+  }
+  return static_cast<uint64_t>(pages) * page_size;
+#elif V8_OS_CYGWIN
+  MEMORYSTATUS memory_info;
+  memory_info.dwLength = sizeof(memory_info);
+  if (!GlobalMemoryStatus(&memory_info)) {
+    UNREACHABLE();
+    return 0;
+  }
+  return static_cast<uint64_t>(memory_info.dwTotalPhys);
+#elif V8_OS_QNX
+  struct stat stat_buf;
+  if (stat("/proc", &stat_buf) != 0) {
+    UNREACHABLE();
+    return 0;
+  }
+  return static_cast<uint64_t>(stat_buf.st_size);
+#elif V8_OS_AIX
+  intptr_t realMem = sysconf(_SC_AIX_REALMEM);
+  if (realMem == -1) {
+    UNREACHABLE();
+    return 0;
+  }
+  // convert Kb to bytes.
+  return static_cast<uint64_t>(realMem) * 1024;
+#else
+  intptr_t pages = sysconf(_SC_PHYS_PAGES);
+  intptr_t page_size = sysconf(_SC_PAGESIZE);
+  if (pages == -1 || page_size == -1) {
+    UNREACHABLE();
+    return 0;
+  }
+  return static_cast<uint64_t>(pages) * page_size;
+#endif
+}
+
+
+int OS::ActivationFrameAlignment() {
+#if V8_TARGET_ARCH_ARM
+  // On EABI ARM targets this is required for fp correctness in the
+  // runtime system.
+  return 8;
+#elif V8_TARGET_ARCH_MIPS
+  return 8;
+#elif V8_TARGET_ARCH_PPC
+  return 16;
+#else
+  // Otherwise we just assume 16 byte alignment, i.e.:
+  // - With gcc 4.4 the tree vectorization optimizer can generate code
+  //   that requires 16 byte alignment such as movdqa on x86.
+  // - Mac OS X and Solaris (64-bit) activation frames must be 16 byte-aligned;
+  //   see "Mac OS X ABI Function Call Guide"
+  return 16;
+#endif
 }
 
 
@@ -83,47 +170,102 @@ intptr_t OS::CommitPageSize() {
 }
 
 
-#ifndef __CYGWIN__
+void OS::Free(void* address, const size_t size) {
+  // TODO(1240712): munmap has a return value which is ignored here.
+  int result = munmap(address, size);
+  USE(result);
+  ASSERT(result == 0);
+}
+
+
 // Get rid of writable permission on code allocations.
 void OS::ProtectCode(void* address, const size_t size) {
+#if V8_OS_CYGWIN
+  DWORD old_protect;
+  VirtualProtect(address, size, PAGE_EXECUTE_READ, &old_protect);
+#elif V8_OS_NACL
+  // The Native Client port of V8 uses an interpreter, so
+  // code pages don't need PROT_EXEC.
+  mprotect(address, size, PROT_READ);
+#else
   mprotect(address, size, PROT_READ | PROT_EXEC);
+#endif
 }
 
 
 // Create guard pages.
 void OS::Guard(void* address, const size_t size) {
+#if V8_OS_CYGWIN
+  DWORD oldprotect;
+  VirtualProtect(address, size, PAGE_NOACCESS, &oldprotect);
+#else
   mprotect(address, size, PROT_NONE);
+#endif
 }
-#endif  // __CYGWIN__
 
 
 void* OS::GetRandomMmapAddr() {
+#if V8_OS_NACL
+  // TODO(bradchen): restore randomization once Native Client gets
+  // smarter about using mmap address hints.
+  // See http://code.google.com/p/nativeclient/issues/3341
+  return NULL;
+#endif
+#if defined(ADDRESS_SANITIZER) || defined(MEMORY_SANITIZER) || \
+    defined(THREAD_SANITIZER)
+  // Dynamic tools do not support custom mmap addresses.
+  return NULL;
+#endif
   Isolate* isolate = Isolate::UncheckedCurrent();
   // Note that the current isolate isn't set up in a call path via
   // CpuFeatures::Probe. We don't care about randomization in this case because
   // the code page is immediately freed.
   if (isolate != NULL) {
-#ifdef V8_TARGET_ARCH_X64
-    uint64_t rnd1 = V8::RandomPrivate(isolate);
-    uint64_t rnd2 = V8::RandomPrivate(isolate);
-    uint64_t raw_addr = (rnd1 << 32) ^ rnd2;
+    uintptr_t raw_addr;
+    isolate->random_number_generator()->NextBytes(&raw_addr, sizeof(raw_addr));
+#if V8_TARGET_ARCH_X64
     // Currently available CPUs have 48 bits of virtual addressing.  Truncate
     // the hint address to 46 bits to give the kernel a fighting chance of
     // fulfilling our placement request.
     raw_addr &= V8_UINT64_C(0x3ffffffff000);
+#elif V8_TARGET_ARCH_PPC64
+# if V8_OS_AIX
+    // AIX: 64 bits of virtual addressing, but we limit address range
+    // to avoid losing precision if address is stored as a double.
+    raw_addr &= V8_UINT64_C(0x3ffffffff000);
+    // Use extra address space to isolate the mmap regions from the heap.
+    raw_addr += V8_UINT64_C(0x400000000000);
+# elif V8_TARGET_ARCH_PPC_BE
+    // Big-endian Linux: 44 bits of virtual addressing.
+    raw_addr &= V8_UINT64_C(0x03fffffff000);
+# else
+    // Little-endian Linux: 48 bits of virtual addressing.
+    raw_addr &= V8_UINT64_C(0x3ffffffff000);
+# endif
 #else
-    uint32_t raw_addr = V8::RandomPrivate(isolate);
+    raw_addr &= 0x3ffff000;
+
+# ifdef __sun
+    // For our Solaris/illumos mmap hint, we pick a random address in the bottom
+    // half of the top half of the address space (that is, the third quarter).
+    // Because we do not MAP_FIXED, this will be treated only as a hint -- the
+    // system will not fail to mmap() because something else happens to already
+    // be mapped at our random address. We deliberately set the hint high enough
+    // to get well above the system's break (that is, the heap); Solaris and
+    // illumos will try the hint and if that fails allocate as if there were
+    // no hint at all. The high hint prevents the break from getting hemmed in
+    // at low values, ceding half of the address space to the system heap.
+    raw_addr += 0x80000000;
+# elif V8_OS_AIX
+    // The range 0x30000000 - 0xD0000000 is available on AIX;
+    // choose the upper range.
+    raw_addr += 0x90000000;
+# else
     // The range 0x20000000 - 0x60000000 is relatively unpopulated across a
     // variety of ASLR modes (PAE kernel, NX compat mode, etc) and on macos
     // 10.6 and 10.7.
-    // The range 0x30000000 - 0xD0000000 is available on AIX;
-    // choose the upper range.
-    raw_addr &= 0x3ffff000;
-#ifdef _AIX
-    raw_addr += 0x90000000;
-#else
     raw_addr += 0x20000000;
-#endif
+# endif
 #endif
     return reinterpret_cast<void*>(raw_addr);
   }
@@ -131,20 +273,64 @@ void* OS::GetRandomMmapAddr() {
 }
 
 
+size_t OS::AllocateAlignment() {
+  return static_cast<size_t>(sysconf(_SC_PAGESIZE));
+}
+
+
+void OS::Sleep(int milliseconds) {
+  useconds_t ms = static_cast<useconds_t>(milliseconds);
+  usleep(1000 * ms);
+}
+
+
+void OS::Abort() {
+  if (FLAG_hard_abort) {
+    V8_IMMEDIATE_CRASH();
+  }
+  // Redirect to std abort to signal abnormal program termination.
+  abort();
+}
+
+
+void OS::DebugBreak() {
+#if V8_HOST_ARCH_ARM
+  asm("bkpt 0");
+#elif V8_HOST_ARCH_ARM64
+  asm("brk 0");
+#elif V8_HOST_ARCH_MIPS
+  asm("break");
+#elif V8_HOST_ARCH_PPC
+  asm("twge 2,2");
+  //  asm("nop");  // roohack - nothing for now;
+#elif V8_HOST_ARCH_IA32
+#if defined(__native_client__)
+  asm("hlt");
+#else
+  asm("int $3");
+#endif  // __native_client__
+#elif V8_HOST_ARCH_X64
+  asm("int $3");
+#else
+#error Unsupported host architecture.
+#endif
+}
+
+
 // ----------------------------------------------------------------------------
 // Math functions
 
 double modulo(double x, double y) {
-#if defined(_AIX)
+#if V8_OS_AIX
   // AIX raises an underflow exception for (Number.MIN_VALUE % Number.MAX_VALUE)
   double result;
   int exception;
   feclearexcept(FE_ALL_EXCEPT);
-  result = fmod(x, y);
+  result = std::fmod(x, y);
   exception = fetestexcept(FE_UNDERFLOW);
   return (exception ? x : result);
 #else
-  return fmod(x, y);
+  return std::fmod(x, y);
 #endif
 }
 
@@ -158,16 +344,20 @@ double fast_##name(double x) {                           \
   return (*fast_##name##_function)(x);                   \
 }
 
-UNARY_MATH_FUNCTION(sin, CreateTranscendentalFunction(TranscendentalCache::SIN))
-UNARY_MATH_FUNCTION(cos, CreateTranscendentalFunction(TranscendentalCache::COS))
-UNARY_MATH_FUNCTION(tan, CreateTranscendentalFunction(TranscendentalCache::TAN))
-UNARY_MATH_FUNCTION(log, CreateTranscendentalFunction(TranscendentalCache::LOG))
+UNARY_MATH_FUNCTION(exp, CreateExpFunction())
 UNARY_MATH_FUNCTION(sqrt, CreateSqrtFunction())
 
-#undef MATH_FUNCTION
+#undef UNARY_MATH_FUNCTION
 
 
-#ifdef _AIX
+void lazily_initialize_fast_exp() {
+  if (fast_exp_function == NULL) {
+    init_fast_exp_function();
+  }
+}
+
+
+#if V8_OS_AIX
 #undef NAN
 #define NAN (__builtin_nanf(""))
 #endif
@@ -198,25 +388,31 @@ int OS::GetUserTime(uint32_t* secs,  uint32_t* usecs) {
 
 
 double OS::TimeCurrentMillis() {
-  struct timeval tv;
-  if (gettimeofday(&tv, NULL) < 0) return 0.0;
-  return (static_cast<double>(tv.tv_sec) * 1000) +
-         (static_cast<double>(tv.tv_usec) / 1000);
+  return Time::Now().ToJsTime();
 }
 
 
-int64_t OS::Ticks() {
-  // gettimeofday has microsecond resolution.
-  struct timeval tv;
-  if (gettimeofday(&tv, NULL) < 0)
-    return 0;
-  return (static_cast<int64_t>(tv.tv_sec) * 1000000) + tv.tv_usec;
+class TimezoneCache {};
+
+
+TimezoneCache* OS::CreateTimezoneCache() {
+  return NULL;
 }
 
 
-double OS::DaylightSavingsOffset(double time) {
-  if (isnan(time)) return nan_value();
-  time_t tv = static_cast<time_t>(floor(time/msPerSecond));
+void OS::DisposeTimezoneCache(TimezoneCache* cache) {
+  ASSERT(cache == NULL);
+}
+
+
+void OS::ClearTimezoneCache(TimezoneCache* cache) {
+  ASSERT(cache == NULL);
+}
+
+
+double OS::DaylightSavingsOffset(double time, TimezoneCache*) {
+  if (std::isnan(time)) return nan_value();
+  time_t tv = static_cast<time_t>(std::floor(time/msPerSecond));
   struct tm* t = localtime(&tv);
   if (NULL == t) return nan_value();
   return t->tm_isdst > 0 ? 3600 * msPerSecond : 0;
@@ -332,33 +528,73 @@ int OS::VSNPrintF(Vector<char> str,
 }
 
 
-#if defined(V8_TARGET_ARCH_IA32)
-static OS::MemCopyFunction memcopy_function = NULL;
-// Defined in codegen-ia32.cc.
-OS::MemCopyFunction CreateMemCopyFunction();
+#if V8_TARGET_ARCH_IA32
+static void MemMoveWrapper(void* dest, const void* src, size_t size) {
+  memmove(dest, src, size);
+}
 
-// Copy memory area to disjoint memory area.
-void OS::MemCopy(void* dest, const void* src, size_t size) {
+
+// Initialize to library version so we can call this at any time during startup.
+static OS::MemMoveFunction memmove_function = &MemMoveWrapper;
+
+// Defined in codegen-ia32.cc.
+OS::MemMoveFunction CreateMemMoveFunction();
+
+// Copy memory area. No restrictions.
+void OS::MemMove(void* dest, const void* src, size_t size) {
+  if (size == 0) return;
   // Note: here we rely on dependent reads being ordered. This is true
   // on all architectures we currently support.
-  (*memcopy_function)(dest, src, size);
-#ifdef DEBUG
-  CHECK_EQ(0, memcmp(dest, src, size));
-#endif
+  (*memmove_function)(dest, src, size);
 }
-#endif  // V8_TARGET_ARCH_IA32
+
+#elif defined(V8_HOST_ARCH_ARM)
+void OS::MemCopyUint16Uint8Wrapper(uint16_t* dest,
+                                   const uint8_t* src,
+                                   size_t chars) {
+  uint16_t *limit = dest + chars;
+  while (dest < limit) {
+    *dest++ = static_cast<uint16_t>(*src++);
+  }
+}
 
 
-void POSIXPostSetUp() {
-#if defined(V8_TARGET_ARCH_IA32)
-  memcopy_function = CreateMemCopyFunction();
+OS::MemCopyUint8Function OS::memcopy_uint8_function = &OS::MemCopyUint8Wrapper;
+OS::MemCopyUint16Uint8Function OS::memcopy_uint16_uint8_function =
+    &OS::MemCopyUint16Uint8Wrapper;
+// Defined in codegen-arm.cc.
+OS::MemCopyUint8Function CreateMemCopyUint8Function(
+    OS::MemCopyUint8Function stub);
+OS::MemCopyUint16Uint8Function CreateMemCopyUint16Uint8Function(
+    OS::MemCopyUint16Uint8Function stub);
+
+#elif defined(V8_HOST_ARCH_MIPS)
+OS::MemCopyUint8Function OS::memcopy_uint8_function = &OS::MemCopyUint8Wrapper;
+// Defined in codegen-mips.cc.
+OS::MemCopyUint8Function CreateMemCopyUint8Function(
+    OS::MemCopyUint8Function stub);
 #endif
-  init_fast_sin_function();
-  init_fast_cos_function();
-  init_fast_tan_function();
-  init_fast_log_function();
+
+
+void OS::PostSetUp() {
+#if V8_TARGET_ARCH_IA32
+  OS::MemMoveFunction generated_memmove = CreateMemMoveFunction();
+  if (generated_memmove != NULL) {
+    memmove_function = generated_memmove;
+  }
+#elif defined(V8_HOST_ARCH_ARM)
+  OS::memcopy_uint8_function =
+      CreateMemCopyUint8Function(&OS::MemCopyUint8Wrapper);
+  OS::memcopy_uint16_uint8_function =
+      CreateMemCopyUint16Uint8Function(&OS::MemCopyUint16Uint8Wrapper);
+#elif defined(V8_HOST_ARCH_MIPS)
+  OS::memcopy_uint8_function =
+      CreateMemCopyUint8Function(&OS::MemCopyUint8Wrapper);
+#endif
+  // fast_exp is initialized lazily.
   init_fast_sqrt_function();
 }
+
 
 // ----------------------------------------------------------------------------
 // POSIX string support.
@@ -375,200 +611,248 @@ void OS::StrNCpy(Vector<char> dest, const char* src, size_t n) {
 
 
 // ----------------------------------------------------------------------------
-// POSIX socket support.
+// POSIX thread support.
 //
 
-class POSIXSocket : public Socket {
+class Thread::PlatformData : public Malloced {
  public:
-  explicit POSIXSocket() {
-    // Create the socket.
-    socket_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (IsValid()) {
-      // Allow rapid reuse.
-      static const int kOn = 1;
-      int ret = setsockopt(socket_, SOL_SOCKET, SO_REUSEADDR,
-                           &kOn, sizeof(kOn));
-      ASSERT(ret == 0);
-      USE(ret);
-    }
-  }
-  explicit POSIXSocket(int socket): socket_(socket) { }
-  virtual ~POSIXSocket() { Shutdown(); }
-
-  // Server initialization.
-  bool Bind(const int port);
-  bool Listen(int backlog) const;
-  Socket* Accept() const;
-
-  // Client initialization.
-  bool Connect(const char* host, const char* port);
-
-  // Shutdown socket for both read and write.
-  bool Shutdown();
-
-  // Data Transimission
-  int Send(const char* data, int len) const;
-  int Receive(char* data, int len) const;
-
-  bool SetReuseAddress(bool reuse_address);
-
-  bool IsValid() const { return socket_ != -1; }
-
- private:
-  int socket_;
+  PlatformData() : thread_(kNoThread) {}
+  pthread_t thread_;  // Thread handle for pthread.
+  // Synchronizes thread creation
+  Mutex thread_creation_mutex_;
 };
 
-
-bool POSIXSocket::Bind(const int port) {
-  if (!IsValid())  {
-    return false;
+Thread::Thread(const Options& options)
+    : data_(new PlatformData),
+      stack_size_(options.stack_size()),
+      start_semaphore_(NULL) {
+  if (stack_size_ > 0 && stack_size_ < PTHREAD_STACK_MIN) {
+    stack_size_ = PTHREAD_STACK_MIN;
   }
-
-  sockaddr_in addr;
-  memset(&addr, 0, sizeof(addr));
-  addr.sin_family = AF_INET;
-  addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-  addr.sin_port = htons(port);
-  int status = bind(socket_,
-                    BitCast<struct sockaddr *>(&addr),
-                    sizeof(addr));
-  return status == 0;
+  set_name(options.name());
 }
 
 
-bool POSIXSocket::Listen(int backlog) const {
-  if (!IsValid()) {
-    return false;
-  }
-
-  int status = listen(socket_, backlog);
-  return status == 0;
+Thread::~Thread() {
+  delete data_;
 }
 
 
-Socket* POSIXSocket::Accept() const {
-  if (!IsValid()) {
-    return NULL;
+static void SetThreadName(const char* name) {
+#if V8_OS_DRAGONFLYBSD || V8_OS_FREEBSD || V8_OS_OPENBSD
+  pthread_set_name_np(pthread_self(), name);
+#elif V8_OS_NETBSD
+  STATIC_ASSERT(Thread::kMaxThreadNameLength <= PTHREAD_MAX_NAMELEN_NP);
+  pthread_setname_np(pthread_self(), "%s", name);
+#elif V8_OS_MACOSX
+  // pthread_setname_np is only available in 10.6 or later, so test
+  // for it at runtime.
+  int (*dynamic_pthread_setname_np)(const char*);
+  *reinterpret_cast<void**>(&dynamic_pthread_setname_np) =
+    dlsym(RTLD_DEFAULT, "pthread_setname_np");
+  if (dynamic_pthread_setname_np == NULL)
+    return;
+
+  // Mac OS X does not expose the length limit of the name, so hardcode it.
+  static const int kMaxNameLength = 63;
+  STATIC_ASSERT(Thread::kMaxThreadNameLength <= kMaxNameLength);
+  dynamic_pthread_setname_np(name);
+#elif defined(PR_SET_NAME)
+  prctl(PR_SET_NAME,
+        reinterpret_cast<unsigned long>(name),  // NOLINT
+        0, 0, 0);
+#endif
+}
+
+
+static void* ThreadEntry(void* arg) {
+  Thread* thread = reinterpret_cast<Thread*>(arg);
+  // We take the lock here to make sure that pthread_create finished first since
+  // we don't know which thread will run first (the original thread or the new
+  // one).
+  { LockGuard<Mutex> lock_guard(&thread->data()->thread_creation_mutex_); }
+  SetThreadName(thread->name());
+  ASSERT(thread->data()->thread_ != kNoThread);
+  thread->NotifyStartedAndRun();
+  return NULL;
+}
+
+
+void Thread::set_name(const char* name) {
+  strncpy(name_, name, sizeof(name_));
+  name_[sizeof(name_) - 1] = '\0';
+}
+
+
+void Thread::Start() {
+  int result;
+  pthread_attr_t attr;
+  memset(&attr, 0, sizeof(attr));
+  result = pthread_attr_init(&attr);
+  ASSERT_EQ(0, result);
+  // Native client uses default stack size.
+#if !V8_OS_NACL
+  size_t stack_size = stack_size_;
+#if V8_OS_AIX
+  if (stack_size == 0) {
+    // Default on AIX is 96KB -- bump up to 2MB
+    stack_size = 2 * MB;
   }
+#endif
+  if (stack_size > 0) {
+    result = pthread_attr_setstacksize(&attr, stack_size);
+    ASSERT_EQ(0, result);
+  }
+#endif
+  {
+    LockGuard<Mutex> lock_guard(&data_->thread_creation_mutex_);
+    result = pthread_create(&data_->thread_, &attr, ThreadEntry, this);
+  }
+  ASSERT_EQ(0, result);
+  result = pthread_attr_destroy(&attr);
+  ASSERT_EQ(0, result);
+  ASSERT(data_->thread_ != kNoThread);
+  USE(result);
+}
 
-  int socket;
-  do {
-    socket = accept(socket_, NULL, NULL);
-  } while (socket == -1 && errno == EINTR);
 
-  if (socket == -1) {
-    return NULL;
+void Thread::Join() {
+  pthread_join(data_->thread_, NULL);
+}
+
+
+void Thread::YieldCPU() {
+#if V8_TARGET_ARCH_PPC && !V8_OS_AIX
+  i::OS::Sleep(0);
+#else
+  int result = sched_yield();
+  ASSERT_EQ(0, result);
+  USE(result);
+#endif
+}
+
+
+static Thread::LocalStorageKey PthreadKeyToLocalKey(pthread_key_t pthread_key) {
+#if V8_OS_CYGWIN
+  // We need to cast pthread_key_t to Thread::LocalStorageKey in two steps
+  // because pthread_key_t is a pointer type on Cygwin. This will probably not
+  // work on 64-bit platforms, but Cygwin doesn't support 64-bit anyway.
+  STATIC_ASSERT(sizeof(Thread::LocalStorageKey) == sizeof(pthread_key_t));
+  intptr_t ptr_key = reinterpret_cast<intptr_t>(pthread_key);
+  return static_cast<Thread::LocalStorageKey>(ptr_key);
+#else
+  return static_cast<Thread::LocalStorageKey>(pthread_key);
+#endif
+}
+
+
+static pthread_key_t LocalKeyToPthreadKey(Thread::LocalStorageKey local_key) {
+#if V8_OS_CYGWIN
+  STATIC_ASSERT(sizeof(Thread::LocalStorageKey) == sizeof(pthread_key_t));
+  intptr_t ptr_key = static_cast<intptr_t>(local_key);
+  return reinterpret_cast<pthread_key_t>(ptr_key);
+#else
+  return static_cast<pthread_key_t>(local_key);
+#endif
+}
+
+
+#ifdef V8_FAST_TLS_SUPPORTED
+
+static Atomic32 tls_base_offset_initialized = 0;
+intptr_t kMacTlsBaseOffset = 0;
+
+// It's safe to do the initialization more that once, but it has to be
+// done at least once.
+static void InitializeTlsBaseOffset() {
+  const size_t kBufferSize = 128;
+  char buffer[kBufferSize];
+  size_t buffer_size = kBufferSize;
+  int ctl_name[] = { CTL_KERN , KERN_OSRELEASE };
+  if (sysctl(ctl_name, 2, buffer, &buffer_size, NULL, 0) != 0) {
+    V8_Fatal(__FILE__, __LINE__, "V8 failed to get kernel version");
+  }
+  // The buffer now contains a string of the form XX.YY.ZZ, where
+  // XX is the major kernel version component.
+  // Make sure the buffer is 0-terminated.
+  buffer[kBufferSize - 1] = '\0';
+  char* period_pos = strchr(buffer, '.');
+  *period_pos = '\0';
+  int kernel_version_major =
+      static_cast<int>(strtol(buffer, NULL, 10));  // NOLINT
+  // The constants below are taken from pthreads.s from the XNU kernel
+  // sources archive at www.opensource.apple.com.
+  if (kernel_version_major < 11) {
+    // 8.x.x (Tiger), 9.x.x (Leopard), 10.x.x (Snow Leopard) have the
+    // same offsets.
+#if V8_HOST_ARCH_IA32
+    kMacTlsBaseOffset = 0x48;
+#else
+    kMacTlsBaseOffset = 0x60;
+#endif
   } else {
-    return new POSIXSocket(socket);
-  }
-}
-
-
-bool POSIXSocket::Connect(const char* host, const char* port) {
-  if (!IsValid()) {
-    return false;
+    // 11.x.x (Lion) changed the offset.
+    kMacTlsBaseOffset = 0;
   }
 
-  // Lookup host and port.
-  struct addrinfo *result = NULL;
-  struct addrinfo hints;
-  memset(&hints, 0, sizeof(addrinfo));
-  hints.ai_family = AF_INET;
-  hints.ai_socktype = SOCK_STREAM;
-  hints.ai_protocol = IPPROTO_TCP;
-  int status = getaddrinfo(host, port, &hints, &result);
-  if (status != 0) {
-    return false;
+  Release_Store(&tls_base_offset_initialized, 1);
+}
+
+
+static void CheckFastTls(Thread::LocalStorageKey key) {
+  void* expected = reinterpret_cast<void*>(0x1234CAFE);
+  Thread::SetThreadLocal(key, expected);
+  void* actual = Thread::GetExistingThreadLocal(key);
+  if (expected != actual) {
+    V8_Fatal(__FILE__, __LINE__,
+             "V8 failed to initialize fast TLS on current kernel");
   }
-
-  // Connect.
-  do {
-    status = connect(socket_, result->ai_addr, result->ai_addrlen);
-  } while (status == -1 && errno == EINTR);
-  freeaddrinfo(result);
-  return status == 0;
+  Thread::SetThreadLocal(key, NULL);
 }
 
+#endif  // V8_FAST_TLS_SUPPORTED
 
-bool POSIXSocket::Shutdown() {
-  if (IsValid()) {
-    // Shutdown socket for both read and write.
-    int status = shutdown(socket_, SHUT_RDWR);
-    close(socket_);
-    socket_ = -1;
-    return status == 0;
+
+Thread::LocalStorageKey Thread::CreateThreadLocalKey() {
+#ifdef V8_FAST_TLS_SUPPORTED
+  bool check_fast_tls = false;
+  if (tls_base_offset_initialized == 0) {
+    check_fast_tls = true;
+    InitializeTlsBaseOffset();
   }
-  return true;
+#endif
+  pthread_key_t key;
+  int result = pthread_key_create(&key, NULL);
+  ASSERT_EQ(0, result);
+  USE(result);
+  LocalStorageKey local_key = PthreadKeyToLocalKey(key);
+#ifdef V8_FAST_TLS_SUPPORTED
+  // If we just initialized fast TLS support, make sure it works.
+  if (check_fast_tls) CheckFastTls(local_key);
+#endif
+  return local_key;
 }
 
 
-int POSIXSocket::Send(const char* data, int len) const {
-  if (len <= 0) return 0;
-  int written = 0;
-  while (written < len) {
-    int status = send(socket_, data + written, len - written, 0);
-    if (status == 0) {
-      break;
-    } else if (status > 0) {
-      written += status;
-    } else if (errno != EINTR) {
-      return 0;
-    }
-  }
-  return written;
+void Thread::DeleteThreadLocalKey(LocalStorageKey key) {
+  pthread_key_t pthread_key = LocalKeyToPthreadKey(key);
+  int result = pthread_key_delete(pthread_key);
+  ASSERT_EQ(0, result);
+  USE(result);
 }
 
 
-int POSIXSocket::Receive(char* data, int len) const {
-  if (len <= 0) return 0;
-  int status;
-  do {
-    status = recv(socket_, data, len, 0);
-  } while (status == -1 && errno == EINTR);
-  return (status < 0) ? 0 : status;
+void* Thread::GetThreadLocal(LocalStorageKey key) {
+  pthread_key_t pthread_key = LocalKeyToPthreadKey(key);
+  return pthread_getspecific(pthread_key);
 }
 
 
-bool POSIXSocket::SetReuseAddress(bool reuse_address) {
-  int on = reuse_address ? 1 : 0;
-  int status = setsockopt(socket_, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
-  return status == 0;
-}
-
-
-bool Socket::SetUp() {
-  // Nothing to do on POSIX.
-  return true;
-}
-
-
-int Socket::LastError() {
-  return errno;
-}
-
-
-uint16_t Socket::HToN(uint16_t value) {
-  return htons(value);
-}
-
-
-uint16_t Socket::NToH(uint16_t value) {
-  return ntohs(value);
-}
-
-
-uint32_t Socket::HToN(uint32_t value) {
-  return htonl(value);
-}
-
-
-uint32_t Socket::NToH(uint32_t value) {
-  return ntohl(value);
-}
-
-
-Socket* OS::CreateSocket() {
-  return new POSIXSocket();
+void Thread::SetThreadLocal(LocalStorageKey key, void* value) {
+  pthread_key_t pthread_key = LocalKeyToPthreadKey(key);
+  int result = pthread_setspecific(pthread_key, value);
+  ASSERT_EQ(0, result);
+  USE(result);
 }
 
 

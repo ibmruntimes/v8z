@@ -1,29 +1,6 @@
 // Copyright 2012 the V8 project authors. All rights reserved.
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-//       copyright notice, this list of conditions and the following
-//       disclaimer in the documentation and/or other materials provided
-//       with the distribution.
-//     * Neither the name of Google Inc. nor the names of its
-//       contributors may be used to endorse or promote products derived
-//       from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 #ifndef V8_INTERFACE_H_
 #define V8_INTERFACE_H_
@@ -108,16 +85,16 @@ class Interface : public ZoneObject {
     if (*ok) Chase()->flags_ |= MODULE;
   }
 
-  // Set associated instance object.
-  void MakeSingleton(Handle<JSModule> instance, bool* ok) {
-    *ok = IsModule() && Chase()->instance_.is_null();
-    if (*ok) Chase()->instance_ = instance;
-  }
-
   // Do not allow any further refinements, directly or through unification.
   void Freeze(bool* ok) {
     *ok = IsValue() || IsModule();
     if (*ok) Chase()->flags_ |= FROZEN;
+  }
+
+  // Assign an index.
+  void Allocate(int index) {
+    ASSERT(IsModule() && IsFrozen() && Chase()->index_ == -1);
+    Chase()->index_ = index;
   }
 
   // ---------------------------------------------------------------------------
@@ -138,7 +115,23 @@ class Interface : public ZoneObject {
   // Check whether this is closed (i.e. fully determined).
   bool IsFrozen() { return Chase()->flags_ & FROZEN; }
 
-  Handle<JSModule> Instance() { return Chase()->instance_; }
+  bool IsUnified(Interface* that) {
+    return Chase() == that->Chase()
+        || (this->IsValue() == that->IsValue() &&
+            this->IsConst() == that->IsConst());
+  }
+
+  int Length() {
+    ASSERT(IsModule() && IsFrozen());
+    ZoneHashMap* exports = Chase()->exports_;
+    return exports ? exports->occupancy() : 0;
+  }
+
+  // The context slot in the hosting global context pointing to this module.
+  int Index() {
+    ASSERT(IsModule() && IsFrozen());
+    return Chase()->index_;
+  }
 
   // Look up an exported name. Returns NULL if not (yet) defined.
   Interface* Lookup(Handle<String> name, Zone* zone);
@@ -194,12 +187,13 @@ class Interface : public ZoneObject {
   int flags_;
   Interface* forward_;     // Unification link
   ZoneHashMap* exports_;   // Module exports and their types (allocated lazily)
-  Handle<JSModule> instance_;
+  int index_;
 
   explicit Interface(int flags)
     : flags_(flags),
       forward_(NULL),
-      exports_(NULL) {
+      exports_(NULL),
+      index_(-1) {
 #ifdef DEBUG
     if (FLAG_print_interface_details)
       PrintF("# Creating %p\n", static_cast<void*>(this));
