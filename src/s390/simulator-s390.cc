@@ -4083,6 +4083,9 @@ void Simulator::InstructionDecode(Instruction* instr, bool auto_incr_pc) {
     dasm.InstructionDecode(buffer, reinterpret_cast<byte*>(instr));
     PrintF("%05d  %08" V8PRIxPTR "  %s\n", icount_,
            reinterpret_cast<intptr_t>(instr), buffer.start());
+    // Flush stdout to prevent incomplete file output during abnormal exits.
+    // This is caused by the output being buffered before being written to file.
+    fflush(stdout);
   }
 
   // Try to simulate as S390 Instruction first.
