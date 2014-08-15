@@ -128,7 +128,7 @@ bool AreAliased(Register reg1,
 #define OrRR               ogr
 #define AndRR              ngr
 #define XorRR              xgr
-#define LoadNegRR          lgnr
+#define LoadNegRR          lngr
 
 // Pointer-Imm (both word and half word)
 #define AddPW              agfi
@@ -1332,7 +1332,8 @@ class MacroAssembler: public Assembler {
     int width  = rangeStart - rangeEnd + 1;
     ASSERT(width <= 32);
 #if V8_TARGET_ARCH_S390X
-    srlg(dst, src,  Operand(rangeStart));
+    ASSERT(is_int32(rangeStart));
+    srlg(dst, src,  MemOperand(r0, rangeStart));
 #else
     if (!dst.is(src))
       lr(dst, src);

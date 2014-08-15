@@ -1197,11 +1197,12 @@ static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
     // r8: scratch reg to hold arg handle
     // r9: scratch reg to hold index into argv
     Label argLoop, argExit;
+    intptr_t zero = 0;
     __ ShiftLeftImm(r7, r5, Operand(kPointerSizeLog2));
     __ SubRR(sp, r7);    // Buy the stack frame to fit args
-    __ LoadImmP(r9, Operand(0));  // Initialize argv index
+    __ LoadImmP(r9, Operand(zero));  // Initialize argv index
     __ bind(&argLoop);
-    __ CmpPH(r7, Operand(0));
+    __ CmpPH(r7, Operand(zero));
     __ beq(&argExit);
     __ lay(r7, MemOperand(r7, -kPointerSize));
     __ LoadP(r8, MemOperand(r9, r6));  // read next parameter
