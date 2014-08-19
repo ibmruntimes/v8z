@@ -102,6 +102,8 @@ def DefaultArch():
     return 'ia32'
   elif machine == 'amd64':
     return 'ia32'
+  elif id == 's390x':
+    return 's390'
   elif id == 'ppc64':
     return 'ppc'
   else:

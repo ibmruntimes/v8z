@@ -273,6 +273,18 @@
           'V8_TARGET_ARCH_ARM64',
         ],
       }],
+      ['v8_target_arch=="s390" or v8_target_arch=="s390x"', {
+        'defines': [
+          'V8_TARGET_ARCH_S390',
+        ],
+        'conditions': [
+          ['v8_target_arch=="s390x"', {
+            'defines': [
+              'V8_TARGET_ARCH_S390X',
+            ],
+          }],
+          ],
+      }],  # s390
       ['v8_target_arch=="ppc" or v8_target_arch=="ppc64"', {
         'defines': [
           'V8_TARGET_ARCH_PPC',
@@ -453,13 +465,20 @@
       ['(OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="solaris" \
          or OS=="netbsd" or OS=="mac" or OS=="android" or OS=="qnx") and \
         (v8_target_arch=="arm" or v8_target_arch=="ia32" or \
-         v8_target_arch=="mips" or v8_target_arch=="mipsel" or v8_target_arch=="ppc")', {
+         v8_target_arch=="mips" or v8_target_arch=="mipsel" or v8_target_arch=="ppc" or \
+         v8_target_arch=="s390")', {
         # Check whether the host compiler and target compiler support the
         # '-m32' option and set it if so.
         'target_conditions': [
           ['_toolset=="host"', {
             'variables': {
-              'm32flag': '<!(($(echo ${CXX_host:-$(which g++)}) -m32 -E - > /dev/null 2>&1 < /dev/null) && echo "-m32" || true)',
+              'conditions': [
+                [ 'v8_target_arch=="s390"', {
+                  'm32flag': '<!(($(echo ${CXX_host:-$(which g++)}) -m31 -E - > /dev/null 2>&1 < /dev/null) && echo "-m31" || true)',
+                }, {
+                  'm32flag': '<!(($(echo ${CXX_host:-$(which g++)}) -m32 -E - > /dev/null 2>&1 < /dev/null) && echo "-m32" || true)',
+                }]
+              ]
             },
             'cflags': [ '<(m32flag)' ],
             'ldflags': [ '<(m32flag)' ],
@@ -469,7 +488,13 @@
           }],
           ['_toolset=="target"', {
             'variables': {
-              'm32flag': '<!(($(echo ${CXX_target:-<(CXX)}) -m32 -E - > /dev/null 2>&1 < /dev/null) && echo "-m32" || true)',
+              'conditions': [
+                [ 'v8_target_arch=="s390"', {
+                  'm32flag': '<!(($(echo ${CXX_target:-<(CXX)}) -m31 -E - > /dev/null 2>&1 < /dev/null) && echo "-m31" || true)',
+                }, {
+                  'm32flag': '<!(($(echo ${CXX_target:-<(CXX)}) -m32 -E - > /dev/null 2>&1 < /dev/null) && echo "-m32" || true)',
+                }]
+              ],
               'clang%': 0,
             },
             'conditions': [

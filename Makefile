@@ -238,8 +238,8 @@ GYPFLAGS += -Dv8_host_byteorder=$(shell python -c "import sys; print sys.byteord
 
 # Architectures and modes to be compiled. Consider these to be internal
 # variables, don't override them (use the targets instead).
-ARCHES = ia32 x64 arm arm64 mips mipsel ppc ppc64
-DEFAULT_ARCHES = ia32 x64 arm ppc ppc64
+ARCHES = ia32 x64 arm arm64 mips mipsel ppc ppc64 s390 s390x
+DEFAULT_ARCHES = ia32 x64 arm ppc ppc64 s390 s390x
 MODES = release debug optdebug
 DEFAULT_MODES = release debug
 ANDROID_ARCHES = android_ia32 android_arm android_arm64 android_mipsel

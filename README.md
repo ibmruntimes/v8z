@@ -1,11 +1,20 @@
-v8ppc
+v8z
 =====
 
-Port of Google V8 javascript engine to PowerPC - PowerLinux and AIX.
+Port of Google V8 javascript engine to Linux on IBM System Z.
 
-Platform | Build Status | Test Status
----------|--------------|-------------
-PowerLinux 32-bit | [![Build Status](http://v8ppc.osuosl.org:8080/buildStatus/icon?job=Build-PowerPC-V8)](http://v8ppc.osuosl.org:8080/job/Build-PowerPC-V8/) | [![Build Status](http://v8ppc.osuosl.org:8080/buildStatus/icon?job=Test-PowerPC-V8)](http://v8ppc.osuosl.org:8080/job/Test-PowerPC-V8/)
-PowerLinux 64-bit | [![Build Status](http://v8ppc.osuosl.org:8080/buildStatus/icon?job=Build-PowerPC64-V8)](http://v8ppc.osuosl.org:8080/job/Build-PowerPC64-V8/) | [![Build Status](http://v8ppc.osuosl.org:8080/buildStatus/icon?job=Test-PowerPC64-V8)](http://v8ppc.osuosl.org:8080/job/Test-PowerPC64-V8/)
-AIX 32-bit | [![Build Status](http://v8ppc.osuosl.org:8080/buildStatus/icon?job=Build-AIX-V8)](http://v8ppc.osuosl.org:8080/job/Build-AIX-V8/) | [![Build Status](http://v8ppc.osuosl.org:8080/buildStatus/icon?job=Test-AIX-V8)](http://v8ppc.osuosl.org:8080/job/Test-AIX-V8/)
-AIX 64-bit | [![Build Status](http://v8ppc.osuosl.org:8080/buildStatus/icon?job=Build-AIX64-V8)](http://v8ppc.osuosl.org:8080/job/Build-AIX64-V8/) | [![Build Status](http://v8ppc.osuosl.org:8080/buildStatus/icon?job=Test-AIX64-V8)](http://v8ppc.osuosl.org:8080/job/Test-AIX64-V8/)
+Compile code:
+31-bit:
+<code>
+make dependencies; make s390
+</code>
+64-bit:
+<code>
+make dependencies; make s390x
+</code>
+
+Test code:
+<code>
+tools/run-tests.py -j 12 --progress=dots --no-presubmit --arch-and-mode=s390.debug --junitout v8tests-junit.xml
+tools/run-tests.py -j 12 --progress=dots --no-presubmit --arch-and-mode=s390x.debug --junitout v8tests-junit.xml
+</code>
