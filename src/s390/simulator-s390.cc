@@ -1273,7 +1273,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       // This is dodgy but it works because the C entry stubs are never moved.
       // See comment in codegen-arm.cc and bug 1242173.
       int64_t saved_lr = get_register(r14);
-#if (defined(V8_HOST_ARCH_S390) && defined(V8_TARGET_ARCH_S390))
+#if (defined(V8_HOST_ARCH_S390) && !defined(V8_TARGET_ARCH_S390X))
       // For 31-bit simulator on 31-bit s390 host,
       // the saved_lr might be tagged with a high bit of 1.
       // Cleanse it before proceeding with simulation.
@@ -1748,7 +1748,7 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       int r2 = rrinst->R2Value();
       if (TestConditionCode(Condition(r1))) {
         intptr_t r2_val = get_register(r2);
-#if (defined(V8_HOST_ARCH_S390) && defined(V8_TARGET_ARCH_S390))
+#if (defined(V8_HOST_ARCH_S390) && !defined(V8_TARGET_ARCH_S390X))
         // For 31-bit simulator on 31-bit s390 host,
         // the top most bit may be 0 or 1 but is ignored by the hardware.
         // Cleanse the top bit before jumping to it,
@@ -1811,7 +1811,7 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       intptr_t link_addr = get_pc() + 2;
       // If R2 is zero, the BASR does not branch.
       int64_t r2_val = (r2 == 0)?link_addr:get_register(r2);
-#if (defined(V8_HOST_ARCH_S390) && defined(V8_TARGET_ARCH_S390))
+#if (defined(V8_HOST_ARCH_S390) && !defined(V8_TARGET_ARCH_S390X))
       // For 31-bit simulator on s390 host, the top most bit may be 0 or 1,
       // which can cause issues for stackwalker.
       // The top bit should either be cleanse before being
