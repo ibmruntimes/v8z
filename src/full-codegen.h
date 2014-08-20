@@ -111,6 +111,14 @@ class FullCodeGenerator: public AstVisitor {
 // TODO(all): Copied ARM value. Check this is sensible for ARM64.
   static const int kCodeSizeMultiplier = 149;
   static const int kBootCodeSizeMultiplier = 110;
+#elif V8_TARGET_ARCH_S390X
+// TODO(all): Copied ARM value. Check this is sensible for S390X.
+  static const int kCodeSizeMultiplier = 142;
+  static const int kBootCodeSizeMultiplier = 175;
+#elif V8_TARGET_ARCH_S390
+// TODO(all): Copied ARM value. Check this is sensible for S390.
+  static const int kCodeSizeMultiplier = 142;
+  static const int kBootCodeSizeMultiplier = 130;
 #elif V8_TARGET_ARCH_PPC64
 // TODO(all): Copied ARM value. Check this is sensible for PPC64.
   static const int kCodeSizeMultiplier = 142;
@@ -327,6 +335,12 @@ class FullCodeGenerator: public AstVisitor {
              Label* if_true,
              Label* if_false,
              Label* fall_through);
+#elif V8_TARGET_ARCH_S390
+  void Split(Condition cc,
+             Label* if_true,
+             Label* if_false,
+             Label* fall_through,
+             CRegister cr = cr7);
 #elif V8_TARGET_ARCH_PPC
   void Split(Condition cc,
              Label* if_true,

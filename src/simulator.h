@@ -13,6 +13,8 @@
 #include "arm64/simulator-arm64.h"
 #elif V8_TARGET_ARCH_ARM
 #include "arm/simulator-arm.h"
+#elif V8_TARGET_ARCH_S390
+#include "s390/simulator-s390.h"
 #elif V8_TARGET_ARCH_PPC
 #include "ppc/simulator-ppc.h"
 #elif V8_TARGET_ARCH_MIPS

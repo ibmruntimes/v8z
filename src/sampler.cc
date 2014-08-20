@@ -256,6 +256,12 @@ class SimulatorHelper {
         Simulator::sp));
     state->fp = reinterpret_cast<Address>(simulator_->get_register(
         Simulator::fp));
+#elif V8_TARGET_ARCH_S390
+    state->pc = reinterpret_cast<Address>(simulator_->get_pc());
+    state->sp = reinterpret_cast<Address>(simulator_->get_register(
+        Simulator::sp));
+    state->fp = reinterpret_cast<Address>(simulator_->get_register(
+        Simulator::fp));
 #elif V8_TARGET_ARCH_PPC
     state->pc = reinterpret_cast<Address>(simulator_->get_pc());
     state->sp = reinterpret_cast<Address>(simulator_->get_register(
@@ -403,6 +409,10 @@ void SignalHandler::HandleProfilerSignal(int signal, siginfo_t* info,
   state.pc = reinterpret_cast<Address>(mcontext.pc);
   state.sp = reinterpret_cast<Address>(mcontext.gregs[29]);
   state.fp = reinterpret_cast<Address>(mcontext.gregs[30]);
+#elif V8_HOST_ARCH_S390
+  state.pc = reinterpret_cast<Address>(ucontext->uc_mcontext.psw.addr);
+  state.sp = reinterpret_cast<Address>(ucontext->uc_mcontext.gregs[15]);
+  state.fp = reinterpret_cast<Address>(ucontext->uc_mcontext.gregs[11]);
 #elif V8_HOST_ARCH_PPC
   state.pc = reinterpret_cast<Address>(ucontext->uc_mcontext.regs->nip);
   state.sp = reinterpret_cast<Address>(ucontext->uc_mcontext.regs->gpr[PT_R1]);

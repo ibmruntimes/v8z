@@ -20,6 +20,8 @@
 
 #if V8_TARGET_ARCH_ARM
 #include "arm/assembler-arm-inl.h"
+#elif V8_TARGET_ARCH_S390
+#include "s390/assembler-s390-inl.h"
 #elif V8_TARGET_ARCH_PPC
 #include "ppc/assembler-ppc-inl.h"
 #endif

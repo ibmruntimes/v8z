@@ -79,6 +79,7 @@ class DebuggerAgent;
 #if defined(NATIVE_SIMULATION) || \
     !defined(__arm__) && V8_TARGET_ARCH_ARM || \
     !defined(__aarch64__) && V8_TARGET_ARCH_ARM64 || \
+    !defined(__S390__) && V8_TARGET_ARCH_S390 || \
     !defined(__PPC__) && V8_TARGET_ARCH_PPC || \
     !defined(__mips__) && V8_TARGET_ARCH_MIPS
 class Redirection;
@@ -290,6 +291,7 @@ class ThreadLocalTop BASE_EMBEDDED {
 #if defined(NATIVE_SIMULATION) || \
     V8_TARGET_ARCH_ARM && !defined(__arm__) || \
     V8_TARGET_ARCH_ARM64 && !defined(__aarch64__) || \
+    V8_TARGET_ARCH_S390 && !defined(__S390__) || \
     V8_TARGET_ARCH_PPC && !defined(__PPC__) || \
     V8_TARGET_ARCH_MIPS && !defined(__mips__)
 
@@ -390,6 +392,7 @@ class Isolate {
 #if defined(NATIVE_SIMULATION) || \
     !defined(__arm__) && V8_TARGET_ARCH_ARM || \
     !defined(__aarch64__) && V8_TARGET_ARCH_ARM64 || \
+    !defined(__S390__) && V8_TARGET_ARCH_S390 || \
     !defined(__PPC__) && V8_TARGET_ARCH_PPC || \
     !defined(__mips__) && V8_TARGET_ARCH_MIPS
           simulator_(NULL),
@@ -406,6 +409,7 @@ class Isolate {
 #if defined(NATIVE_SIMULATION) || \
     !defined(__arm__) && V8_TARGET_ARCH_ARM || \
     !defined(__aarch64__) && V8_TARGET_ARCH_ARM64 || \
+    !defined(__S390__) && V8_TARGET_ARCH_S390 || \
     !defined(__PPC__) && V8_TARGET_ARCH_PPC || \
     !defined(__mips__) && V8_TARGET_ARCH_MIPS
     FIELD_ACCESSOR(Simulator*, simulator)
@@ -424,6 +428,7 @@ class Isolate {
 #if defined(NATIVE_SIMULATION) || \
     !defined(__arm__) && V8_TARGET_ARCH_ARM || \
     !defined(__aarch64__) && V8_TARGET_ARCH_ARM64 || \
+    !defined(__S390__) && V8_TARGET_ARCH_S390 || \
     !defined(__PPC__) && V8_TARGET_ARCH_PPC || \
     !defined(__mips__) && V8_TARGET_ARCH_MIPS
     Simulator* simulator_;

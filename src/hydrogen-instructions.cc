@@ -17,6 +17,8 @@
 #include "arm64/lithium-arm64.h"
 #elif V8_TARGET_ARCH_ARM
 #include "arm/lithium-arm.h"
+#elif V8_TARGET_ARCH_S390
+#include "s390/lithium-s390.h"
 #elif V8_TARGET_ARCH_PPC
 #include "ppc/lithium-ppc.h"
 #elif V8_TARGET_ARCH_MIPS

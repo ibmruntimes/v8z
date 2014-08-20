@@ -14,6 +14,9 @@
 #if V8_TARGET_ARCH_ARM
 #include "arm/assembler-arm-inl.h"
 #endif
+#if V8_TARGET_ARCH_S390
+#include "s390/assembler-s390-inl.h"
+#endif
 #if V8_TARGET_ARCH_PPC
 #include "ppc/assembler-ppc-inl.h"
 #endif
@@ -528,7 +531,7 @@ void FlagList::ResetAllFlags() {
 
 // static
 void FlagList::PrintHelp() {
-#if V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_PPC
+#if V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_PPC || V8_TARGET_ARCH_S390
   CpuFeatures::PrintTarget();
   CpuFeatures::Probe(serializer_enabled_);
   CpuFeatures::PrintFeatures();

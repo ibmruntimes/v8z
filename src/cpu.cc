@@ -465,6 +465,7 @@ CPU::CPU() : stepping_(0),
   delete[] cpu_model;
 
 #elif V8_HOST_ARCH_PPC
+#elif V8_HOST_ARCH_S390
 
   // Missing implementation.
 

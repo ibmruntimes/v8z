@@ -65,6 +65,13 @@ namespace internal {
 #elif defined(__MIPSEB__) || defined(__MIPSEL__)
 #define V8_HOST_ARCH_MIPS 1
 #define V8_HOST_ARCH_32_BIT 1
+#elif defined(__S390__) || defined(_ARCH_S390)
+#define V8_HOST_ARCH_S390 1
+#if defined(__S390X__) || defined(_ARCH_S390X)
+#define V8_HOST_ARCH_64_BIT 1
+#else
+#define V8_HOST_ARCH_32_BIT 1
+#endif
 #elif defined(__PPC__) || defined(_ARCH_PPC)
 #define V8_HOST_ARCH_PPC 1
 #if defined(__PPC64__) || defined(_ARCH_PPC64)
@@ -91,7 +98,7 @@ namespace internal {
 // environment as presented by the compiler.
 #if !V8_TARGET_ARCH_X64 && !V8_TARGET_ARCH_IA32 && \
     !V8_TARGET_ARCH_ARM && !V8_TARGET_ARCH_ARM64 && !V8_TARGET_ARCH_MIPS && \
-    !V8_TARGET_ARCH_PPC
+    !V8_TARGET_ARCH_PPC && !V8_TARGET_ARCH_S390
 #if defined(_M_X64) || defined(__x86_64__)
 #define V8_TARGET_ARCH_X64 1
 #elif defined(_M_IX86) || defined(__i386__)
@@ -134,6 +141,9 @@ namespace internal {
 #if (V8_TARGET_ARCH_ARM && !V8_HOST_ARCH_ARM)
 #define USE_SIMULATOR 1
 #endif
+#if (V8_TARGET_ARCH_S390 && !V8_HOST_ARCH_S390)
+#define USE_SIMULATOR 1
+#endif
 #if (V8_TARGET_ARCH_PPC && !V8_HOST_ARCH_PPC)
 #define USE_SIMULATOR 1
 #endif
@@ -157,6 +167,8 @@ namespace internal {
 #else
 #define V8_TARGET_LITTLE_ENDIAN 1
 #endif
+#elif V8_TARGET_ARCH_S390
+#define V8_TARGET_BIG_ENDIAN 1
 #elif V8_TARGET_ARCH_PPC_LE
 #define V8_TARGET_LITTLE_ENDIAN 1
 #elif V8_TARGET_ARCH_PPC_BE

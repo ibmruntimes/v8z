@@ -30,6 +30,10 @@
 #include "utils.h"
 #include "v8threads.h"
 #include "vm-state-inl.h"
+#if V8_TARGET_ARCH_S390 && !V8_INTERPRETED_REGEXP
+#include "regexp-macro-assembler.h"
+#include "s390/regexp-macro-assembler-s390.h"
+#endif
 #if V8_TARGET_ARCH_PPC && !V8_INTERPRETED_REGEXP
 #include "regexp-macro-assembler.h"
 #include "ppc/regexp-macro-assembler-ppc.h"

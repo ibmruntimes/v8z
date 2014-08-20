@@ -101,6 +101,17 @@ namespace internal {
 #define CODE_STUB_LIST_ARM64(V)
 #endif
 
+// List of code stubs only used on S390 platforms.
+#ifdef V8_TARGET_ARCH_S390
+#define CODE_STUB_LIST_S390(V)  \
+  V(GetProperty)               \
+  V(SetProperty)               \
+  V(InvokeBuiltin)             \
+  V(DirectCEntry)
+#else
+#define CODE_STUB_LIST_S390(V)
+#endif
+
 // List of code stubs only used on PPC platforms.
 #ifdef V8_TARGET_ARCH_PPC
 #define CODE_STUB_LIST_PPC(V)  \
@@ -128,6 +139,7 @@ namespace internal {
   CODE_STUB_LIST_ALL_PLATFORMS(V)    \
   CODE_STUB_LIST_ARM(V)              \
   CODE_STUB_LIST_ARM64(V)           \
+  CODE_STUB_LIST_S390(V)              \
   CODE_STUB_LIST_PPC(V)              \
   CODE_STUB_LIST_MIPS(V)
 
@@ -454,6 +466,8 @@ class RuntimeCallHelper {
 #include "arm64/code-stubs-arm64.h"
 #elif V8_TARGET_ARCH_ARM
 #include "arm/code-stubs-arm.h"
+#elif V8_TARGET_ARCH_S390
+#include "s390/code-stubs-s390.h"
 #elif V8_TARGET_ARCH_PPC
 #include "ppc/code-stubs-ppc.h"
 #elif V8_TARGET_ARCH_MIPS

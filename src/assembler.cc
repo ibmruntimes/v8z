@@ -64,6 +64,8 @@
 #include "arm64/assembler-arm64-inl.h"
 #elif V8_TARGET_ARCH_ARM
 #include "arm/assembler-arm-inl.h"
+#elif V8_TARGET_ARCH_S390
+#include "s390/assembler-s390-inl.h"
 #elif V8_TARGET_ARCH_PPC
 #include "ppc/assembler-ppc-inl.h"
 #elif V8_TARGET_ARCH_MIPS
@@ -82,6 +84,8 @@
 #include "arm64/regexp-macro-assembler-arm64.h"
 #elif V8_TARGET_ARCH_ARM
 #include "arm/regexp-macro-assembler-arm.h"
+#elif V8_TARGET_ARCH_S390
+#include "s390/regexp-macro-assembler-s390.h"
 #elif V8_TARGET_ARCH_PPC
 #include "ppc/regexp-macro-assembler-ppc.h"
 #elif V8_TARGET_ARCH_MIPS
@@ -1371,6 +1375,8 @@ ExternalReference ExternalReference::re_check_stack_guard_state(
   function = FUNCTION_ADDR(RegExpMacroAssemblerARM64::CheckStackGuardState);
 #elif V8_TARGET_ARCH_ARM
   function = FUNCTION_ADDR(RegExpMacroAssemblerARM::CheckStackGuardState);
+#elif V8_TARGET_ARCH_S390
+  function = FUNCTION_ADDR(RegExpMacroAssemblerS390::CheckStackGuardState);
 #elif V8_TARGET_ARCH_PPC
   function = FUNCTION_ADDR(RegExpMacroAssemblerPPC::CheckStackGuardState);
 #elif V8_TARGET_ARCH_MIPS

@@ -151,6 +151,8 @@ int OS::ActivationFrameAlignment() {
   return 8;
 #elif V8_TARGET_ARCH_MIPS
   return 8;
+#elif V8_TARGET_ARCH_S390
+  return 8;
 #elif V8_TARGET_ARCH_PPC
   return 16;
 #else
@@ -205,6 +207,10 @@ void OS::Guard(void* address, const size_t size) {
 
 
 void* OS::GetRandomMmapAddr() {
+#if V8_TARGET_ARCH_S390
+  // disable on s390 for now.
+  return NULL;
+#endif
 #if V8_OS_NACL
   // TODO(bradchen): restore randomization once Native Client gets
   // smarter about using mmap address hints.
@@ -228,6 +234,12 @@ void* OS::GetRandomMmapAddr() {
     // the hint address to 46 bits to give the kernel a fighting chance of
     // fulfilling our placement request.
     raw_addr &= V8_UINT64_C(0x3ffffffff000);
+#elif V8_TARGET_ARCH_S390X
+    // 42 bits of virtual addressing.
+    raw_addr &= V8_UINT64_C(0x00fffffff000);
+#elif V8_TARGET_ARCH_S390
+    // 31 bits of virtual addressing.
+    raw_addr &= 0x1ffff000;
 #elif V8_TARGET_ARCH_PPC64
 # if V8_OS_AIX
     // AIX: 64 bits of virtual addressing, but we limit address range
@@ -300,6 +312,8 @@ void OS::DebugBreak() {
   asm("brk 0");
 #elif V8_HOST_ARCH_MIPS
   asm("break");
+#elif V8_HOST_ARCH_S390
+  raise(SIGTRAP);
 #elif V8_HOST_ARCH_PPC
   asm("twge 2,2");
   //  asm("nop");  // roohack - nothing for now;

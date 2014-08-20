@@ -2360,6 +2360,9 @@ void Debug::SetAfterBreakTarget(JavaScriptFrame* frame) {
 #if V8_TARGET_ARCH_PPC
   // PPC has variable length call sequence
   Address addr = Assembler::target_address_from_return_address(frame->pc());
+#elif V8_TARGET_ARCH_S390
+  // S390 has variable length call sequence
+  Address addr = Assembler::target_address_from_return_address(frame->pc());
 #else
   Address addr = frame->pc() - Assembler::kPatchDebugBreakSlotReturnOffset;
 #endif
@@ -2455,6 +2458,9 @@ bool Debug::IsBreakAtReturn(JavaScriptFrame* frame) {
   // Find the call address in the running code.
 #if V8_TARGET_ARCH_PPC
   // PPC has variable length call sequence
+  Address addr = Assembler::target_address_from_return_address(frame->pc());
+#elif V8_TARGET_ARCH_S390
+  // S390 has variable length call sequence
   Address addr = Assembler::target_address_from_return_address(frame->pc());
 #else
   Address addr = frame->pc() - Assembler::kPatchDebugBreakSlotReturnOffset;
