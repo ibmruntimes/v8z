@@ -238,7 +238,7 @@ Operand::Operand(Handle<Object> handle) {
   } else {
     // no relocation needed
     imm_ =  reinterpret_cast<intptr_t>(obj);
-    rmode_ = RelocInfo::NONE;
+    rmode_ = kRelocInfo_NONEPTR;
   }
 }
 
@@ -3408,7 +3408,7 @@ void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
            || RelocInfo::IsComment(rmode)
            || RelocInfo::IsPosition(rmode));
   }
-  if (rinfo.rmode() != RelocInfo::NONE) {
+  if (rinfo.rmode() != kRelocInfo_NONEPTR) {
     // Don't record external references unless the heap will be serialized.
     if (rmode == RelocInfo::EXTERNAL_REFERENCE) {
 #ifdef DEBUG

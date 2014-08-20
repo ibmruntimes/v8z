@@ -700,7 +700,7 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles,
   }
 
   // Clear top frame.
-  LoadImmP(r0, Operand(0, RelocInfo::NONE));
+  LoadImmP(r0, Operand(0, kRelocInfo_NONEPTR));
   mov(ip, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate())));
   StoreP(r0, MemOperand(ip));
 
@@ -973,7 +973,7 @@ void MacroAssembler::IsObjectJSStringType(Register object,
 
 #ifdef ENABLE_DEBUGGER_SUPPORT
 void MacroAssembler::DebugBreak() {
-  LoadImmP(r2, Operand(0, RelocInfo::NONE));
+  LoadImmP(r2, Operand(0, kRelocInfo_NONEPTR));
   mov(r3, Operand(ExternalReference(Runtime::kDebugBreak, isolate())));
   CEntryStub ces(1);
   ASSERT(AllowThisStubCall(&ces));
@@ -1021,7 +1021,7 @@ void MacroAssembler::PushTryHandler(StackHandler::Kind kind,
   if (kind == StackHandler::JS_ENTRY) {
     // R7: state, R8: Context, R9: FP Offset
     LoadIntLiteral(r7, state);
-    LoadImmP(r8, Operand(0, RelocInfo::NONE));  // NULL frame pointer.
+    LoadImmP(r8, Operand(0, kRelocInfo_NONEPTR));  // NULL frame pointer.
     // @TODO Potential Bug here as r10 is roots register.
     LoadSmiLiteral(r9, Smi::FromInt(0));    // Indicates no context.
     StoreMultipleP(r7, r9, MemOperand(sp, StackHandlerConstants::kStateSlot));
@@ -1165,7 +1165,7 @@ void MacroAssembler::CheckAccessGlobalProxy(Register holder_reg,
   LoadP(scratch, MemOperand(fp, StandardFrameConstants::kContextOffset));
   // In debug mode, make sure the lexical context is set.
 #ifdef DEBUG
-  CmpP(scratch, Operand(0, RelocInfo::NONE));
+  CmpP(scratch, Operand(0, kRelocInfo_NONEPTR));
   Check(ne, "we should not have an empty lexical context");
 #endif
 
@@ -3819,7 +3819,7 @@ void MacroAssembler::CheckEnumCache(Register null_value, Label* call_runtime) {
 // and only use the generic version when we require a fixed sequence
 void MacroAssembler::mov(Register dst, const Operand& src) {
   BlockTrampolinePoolScope block_trampoline_pool(this);
-  if (src.rmode_ != RelocInfo::NONE) {
+  if (src.rmode_ != kRelocInfo_NONEPTR) {
     // some form of relocation needed
     RecordRelocInfo(src.rmode_, src.imm_);
   }
@@ -4638,7 +4638,7 @@ void MacroAssembler::CmpP(Register src1, Register src2) {
 // Compare 32-bit Register vs Immediate
 // This helper will set up proper relocation entries if required.
 void MacroAssembler::Cmp32(Register dst, const Operand& opnd) {
-  if (opnd.rmode_ == RelocInfo::NONE) {
+  if (opnd.rmode_ == kRelocInfo_NONEPTR) {
     intptr_t value = opnd.immediate();
     if (is_int16(value))
       chi(dst, opnd);
@@ -4655,7 +4655,7 @@ void MacroAssembler::Cmp32(Register dst, const Operand& opnd) {
 // This helper will set up proper relocation entries if required.
 void MacroAssembler::CmpP(Register dst, const Operand& opnd) {
 #if V8_TARGET_ARCH_S390X
-  if (opnd.rmode_ == RelocInfo::NONE) {
+  if (opnd.rmode_ == kRelocInfo_NONEPTR) {
     cgfi(dst, opnd);
   } else {
     mov(r0, opnd);   // Need to generate 64-bit relocation

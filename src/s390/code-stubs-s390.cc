@@ -1460,7 +1460,7 @@ void ToBooleanStub::Generate(MacroAssembler* masm) {
       STATIC_ASSERT((1 << Map::kIsUndetectable) < 0x8000);
       __ beq(&not_undetectable, Label::kNear);
       // Undetectable -> false.
-      __ LoadImmP(tos_, Operand(0, RelocInfo::NONE));
+      __ LoadImmP(tos_, Operand(0, kRelocInfo_NONEPTR));
       __ Ret();
       __ bind(&not_undetectable);
     }
@@ -1532,7 +1532,7 @@ void ToBooleanStub::CheckOddball(MacroAssembler* masm,
     // The value of a root is never NULL, so we can avoid loading a non-null
     // value into tos_ when we want to return 'true'.
     if (!result) {
-      __ LoadImmP(tos_, Operand(0, RelocInfo::NONE));
+      __ LoadImmP(tos_, Operand(0, kRelocInfo_NONEPTR));
     }
     // Intel has some logic here not present on ARM
     // unclear if it's needed or not
@@ -3728,7 +3728,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   Isolate* isolate = masm->isolate();
   ExternalReference external_caught(Isolate::kExternalCaughtExceptionAddress,
                                     isolate);
-  __ LoadImmP(r2, Operand(false, RelocInfo::NONE));
+  __ LoadImmP(r2, Operand(false, kRelocInfo_NONEPTR));
   __ mov(r4, Operand(external_caught));
   __ StoreP(r2, MemOperand(r4));
 
@@ -4498,7 +4498,7 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
   // of the arguments object and the elements array in words.
   Label add_arguments_object;
   __ bind(&try_allocate);
-  __ CmpP(r3, Operand(0, RelocInfo::NONE));
+  __ CmpP(r3, Operand(0, kRelocInfo_NONEPTR));
   __ beq(&add_arguments_object);
   __ SmiUntag(r3);
   __ AddP(r3, Operand(FixedArray::kHeaderSize / kPointerSize));
@@ -4532,7 +4532,7 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
 
   // If there are no actual arguments, we're done.
   Label done;
-  __ CmpP(r3, Operand(0, RelocInfo::NONE));
+  __ CmpP(r3, Operand(0, kRelocInfo_NONEPTR));
   __ beq(&done);
 
   // Get the parameters pointer from the stack.
@@ -4561,7 +4561,7 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
   __ StoreP(r5, MemOperand(r6));
   __ AddP(r6, Operand(kPointerSize));
   __ SubP(r3, Operand(1));
-  __ CmpP(r3, Operand(0, RelocInfo::NONE));
+  __ CmpP(r3, Operand(0, kRelocInfo_NONEPTR));
   __ bne(&loop);
 
   // Return and remove the on-stack parameters.
@@ -5590,7 +5590,7 @@ void StringHelper::GenerateCopyCharactersLong(MacroAssembler* masm,
   if (!ascii) {  // for non-ascii, double the length
     __ AddP(count, count);
   }
-  __ CmpP(count, Operand(0, RelocInfo::NONE));
+  __ CmpP(count, Operand(0, kRelocInfo_NONEPTR));
   __ beq(&done);
 
   // Assume that you cannot read (or write) unaligned.

@@ -327,6 +327,12 @@ const CRegister cr15 = { 15 };
 // -----------------------------------------------------------------------------
 // Machine instruction Operands
 
+#if V8_TARGET_ARCH_S390X
+const RelocInfo::Mode kRelocInfo_NONEPTR = RelocInfo::NONE64;
+#else
+const RelocInfo::Mode kRelocInfo_NONEPTR = RelocInfo::NONE32;
+#endif
+
 // Class Operand represents a shifter operand in data processing instructions
 // defining immediate numbers and masks
 typedef uint8_t Length;
@@ -345,7 +351,7 @@ class Operand BASE_EMBEDDED {
  public:
   // immediate
   INLINE(explicit Operand(intptr_t immediate,
-         RelocInfo::Mode rmode = RelocInfo::NONE));
+         RelocInfo::Mode rmode = kRelocInfo_NONEPTR));
   INLINE(static Operand Zero()) {
     return Operand(static_cast<intptr_t>(0));
   }

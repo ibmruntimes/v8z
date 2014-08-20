@@ -176,7 +176,7 @@ static void Generate_DebugBreakCallHelper(MacroAssembler* masm,
 #ifdef DEBUG
     __ RecordComment("// Calling from debug break to runtime - come in - over");
 #endif
-    __ mov(r2, Operand(0, RelocInfo::NONE));  // no arguments
+    __ mov(r2, Operand(0, kRelocInfo_NONEPTR));  // no arguments
     __ mov(r3, Operand(ExternalReference::debug_break(masm->isolate())));
 
     CEntryStub ceb(1);
