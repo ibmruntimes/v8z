@@ -129,6 +129,22 @@ void generate(MacroAssembler* masm, i::Vector<const uint8_t> string) {
   __ pop(kRootRegister);
   __ jr(ra);
   __ nop();
+#elif V8_TARGET_ARCH_S390
+  __ push(kRootRegister);
+  __ push(ip);
+  __ InitializeRootRegister();
+
+  __ lhi(r2, Operand::Zero());
+  __ lhi(ip, Operand(string.at(0)));
+  StringHelper::GenerateHashInit(masm, r2, ip, r0);
+  for (int i = 1; i < string.length(); i++) {
+    __ lhi(ip, Operand(string.at(i)));
+    StringHelper::GenerateHashAddCharacter(masm, r2, ip, r0);
+  }
+  StringHelper::GenerateHashGetHash(masm, r2, r0);
+  __ pop(ip);
+  __ pop(kRootRegister);
+  __ Ret();
 #elif V8_TARGET_ARCH_PPC
 #if ABI_USES_FUNCTION_DESCRIPTORS
   __ function_descriptor();
@@ -196,6 +212,15 @@ void generate(MacroAssembler* masm, uint32_t key) {
   __ pop(kRootRegister);
   __ jr(ra);
   __ nop();
+#elif V8_TARGET_ARCH_S390
+  __ push(kRootRegister);
+  __ push(ip);
+  __ InitializeRootRegister();
+  __ lhi(r2, Operand(key));
+  __ GetNumberHash(r2, ip);
+  __ pop(ip);
+  __ pop(kRootRegister);
+  __ Ret();
 #elif V8_TARGET_ARCH_PPC
 #if ABI_USES_FUNCTION_DESCRIPTORS
   __ function_descriptor();

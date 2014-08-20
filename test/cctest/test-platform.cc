@@ -65,6 +65,18 @@ using namespace ::v8::internal;
   do { \
     ASM("sw $sp, %0" : "=g" (sp_addr)); \
   } while (0)
+#elif defined(__S390X__) || defined(_ARCH_S390X)
+#define GET_STACK_POINTER() \
+  static intptr_t sp_addr = 0; \
+  do { \
+    ASM("stg sp, %0" : "=g" (sp_addr)); \
+  } while (0)
+#elif defined(__S390__) || defined(_ARCH_S390)
+#define GET_STACK_POINTER() \
+  static intptr_t sp_addr = 0; \
+  do { \
+    ASM("st sp, %0" : "=g" (sp_addr)); \
+  } while (0)
 #elif defined(__PPC64__) || defined(_ARCH_PPC64)
 #define GET_STACK_POINTER() \
   static intptr_t sp_addr = 0; \
