@@ -92,7 +92,20 @@ namespace internal {
 struct Register {
   static const int kNumRegisters = 16;
   static const int kNumAllocatableRegisters = 8;  // r2-r9
-  static const int kSizeInBytes = 4;
+  static const int kMaxNumAllocatableRegisters = 9;  // r3-r10 and cp
+  static const int kSizeInBytes = kPointerSize;
+  static const int kCpRegister = 18;  // cp is r18
+
+#if V8_TARGET_LITTLE_ENDIAN
+  static const int kMantissaOffset = 0;
+  static const int kExponentOffset = 4;
+#else
+  static const int kMantissaOffset = 4;
+  static const int kExponentOffset = 0;
+#endif
+
+  inline static int NumAllocatableRegisters();
+ 
 
   static int ToAllocationIndex(Register reg) {
     int index = reg.code() - 2;  // r0-r1 are skipped
@@ -171,6 +184,10 @@ const int kRegister_sp_Code = 15;
 
 const Register no_reg = { kRegister_no_reg_Code };
 
+// Give alias names to registers
+const Register cp = { kRegister_r13_Code };  // JavaScript context pointer
+const Register kRootRegister = { kRegister_r10_Code };  // Roots array pointer.
+
 const Register r0  = { kRegister_r0_Code };
 // Lithium scratch register - defined in lithium-codegen-s390.h
 const Register r1  = { kRegister_r1_Code };
@@ -194,14 +211,19 @@ const Register sp   = { kRegister_sp_Code };
 
 // Double word FP register.
 struct DoubleRegister {
+  static const int kMaxNumRegisters = 16;
   static const int kNumRegisters = 16;
 #ifdef V8_TARGET_ARCH_S390X
   static const int kNumVolatileRegisters = 8;     // d0-d7
 #else
   static const int kNumVolatileRegisters = 14;     // d0-d15 except d4 and d6
 #endif
+  // TODO(JOHN): may not be true
+  static const int kMaxNumAllocatableRegisters = 12;  // d1-d12
   static const int kNumAllocatableRegisters = 12;  // d1-d12
 
+  inline static int NumRegisters();
+  inline static int NumAllocatableRegisters();
   inline static int ToAllocationIndex(DoubleRegister reg);
 
   static DoubleRegister FromAllocationIndex(int index) {
@@ -396,8 +418,10 @@ class MemOperand BASE_EMBEDDED {
  public:
   explicit MemOperand(Register rx, Disp offset = 0);
   explicit MemOperand(Register rx, Register rb, Disp offset = 0);
+  explicit MemOperand(Register rx, Register rb);
 
   int32_t offset() const {
+    ASSERT(indexRegister.is(no_reg));
     return offset_;
   }
   uint32_t getDisplacement() const { return offset(); }
@@ -431,7 +455,13 @@ class CpuFeatures : public AllStatic {
  public:
   // Detect features of the target CPU. Set safe defaults if the serializer
   // is enabled (snapshots must be portable).
-  static void Probe();
+  static void Probe(bool serializer_enabled);
+
+  // Display target use when compiling.
+  static void PrintTarget();
+
+  // Display features.
+  static void PrintFeatures();
 
   // Check whether a feature is supported by the target CPU.
   static bool IsSupported(CpuFeature f) {
@@ -439,7 +469,8 @@ class CpuFeatures : public AllStatic {
     return (supported_ & (1u << f)) != 0;
   }
 
-#ifdef DEBUG
+#if 0
+  // TODO: isolate->enabled_cpu_features not defined.
   // Check whether a feature is currently enabled.
   static bool IsEnabled(CpuFeature f) {
     ASSERT(initialized_);
@@ -456,7 +487,7 @@ class CpuFeatures : public AllStatic {
 
   // Enable a specified feature within a scope.
   class Scope BASE_EMBEDDED {
-#ifdef DEBUG
+#if 0
 
    public:
     explicit Scope(CpuFeature f) {
@@ -508,21 +539,94 @@ class CpuFeatures : public AllStatic {
       // It's only safe to temporarily force support of CPU features
       // when there's only a single isolate, which is guaranteed when
       // the serializer is enabled.
-      return Serializer::enabled();
+      // return Serializer::enabled();
+      // TODO: no matching function
+      return false;
     }
 
     const unsigned old_supported_;
   };
 
+  static bool IsFoundByRuntimeProbingOnly(CpuFeature f) {
+    ASSERT(initialized_);
+    return Check(f, found_by_runtime_probing_only_);
+  }
+
+  static bool IsSafeForSnapshot(Isolate* isolate, CpuFeature f) {
+    return Check(f, cross_compile_) ||
+           (IsSupported(f) &&
+            (!Serializer::enabled(isolate) || !IsFoundByRuntimeProbingOnly(f)));
+  }
+
+  static unsigned cache_line_size_log2() { return cache_line_size_log2_; }
+  static unsigned cache_line_size() { return (1 << cache_line_size_log2_); }
+
+  static bool VerifyCrossCompiling() {
+    return cross_compile_ == 0;
+  }
+
+  static bool VerifyCrossCompiling(CpuFeature f) {
+    unsigned mask = flag2set(f);
+    return cross_compile_ == 0 ||
+           (cross_compile_ & mask) == mask;
+  }
+
+  static bool SupportsCrankshaft() { return true; }
  private:
+  static bool Check(CpuFeature f, unsigned set) {
+    return (set & flag2set(f)) != 0;
+  }
+
+  static unsigned flag2set(CpuFeature f) {
+    return 1u << f;
+  }
+
 #ifdef DEBUG
   static bool initialized_;
 #endif
   static unsigned supported_;
   static unsigned found_by_runtime_probing_;
+  static unsigned found_by_runtime_probing_only_;
+  static unsigned cache_line_size_log2_;
 
+  static unsigned cross_compile_;
+
+  friend class ExternalReference;
+  friend class PlatformFeatureScope;
   DISALLOW_COPY_AND_ASSIGN(CpuFeatures);
 };
+
+
+#if V8_OOL_CONSTANT_POOL
+// Class used to build a constant pool.
+class ConstantPoolBuilder BASE_EMBEDDED {
+ public:
+  explicit ConstantPoolBuilder();
+  void AddEntry(Assembler* assm, const RelocInfo& rinfo);
+  void Relocate(intptr_t pc_delta);
+  bool IsEmpty();
+  Handle<ConstantPoolArray> New(Isolate* isolate);
+  void Populate(Assembler* assm, ConstantPoolArray* constant_pool);
+
+  inline int count_of_64bit() const { return count_of_64bit_; }
+  inline int count_of_code_ptr() const { return count_of_code_ptr_; }
+  inline int count_of_heap_ptr() const { return count_of_heap_ptr_; }
+  inline int count_of_32bit() const { return count_of_32bit_; }
+
+ private:
+  bool Is64BitEntry(RelocInfo::Mode rmode);
+  bool Is32BitEntry(RelocInfo::Mode rmode);
+  bool IsCodePtrEntry(RelocInfo::Mode rmode);
+  bool IsHeapPtrEntry(RelocInfo::Mode rmode);
+
+  std::vector<RelocInfo> entries_;
+  std::vector<int> merged_indexes_;
+  int count_of_64bit_;
+  int count_of_code_ptr_;
+  int count_of_heap_ptr_;
+  int count_of_32bit_;
+};
+#endif
 
 
 class Assembler : public AssemblerBase {
@@ -541,15 +645,7 @@ class Assembler : public AssemblerBase {
   // is too small, a fatal error occurs. No deallocation of the buffer is done
   // upon destruction of the assembler.
   Assembler(Isolate* isolate, void* buffer, int buffer_size);
-  ~Assembler();
-
-  // Overrides the default provided by FLAG_debug_code.
-  void set_emit_debug_code(bool value) { emit_debug_code_ = value; }
-
-  // Avoids using instructions that vary in size in unpredictable ways between
-  // the snapshot and the running VM.  This is needed by the full compiler so
-  // that it can recompile code with debug support and fix the PC.
-  void set_predictable_code_size(bool value) { predictable_code_size_ = value; }
+  virtual ~Assembler() { }
 
   // GetCode emits any pending (non-emitted) code and fills the descriptor
   // desc. GetCode() is idempotent; it returns the same result if no other
@@ -586,18 +682,47 @@ class Assembler : public AssemblerBase {
   void label_at_put(Label* L, int at_offset);
   void load_label_offset(Register r1, Label* L);
 
+#if V8_OOL_CONSTANT_POOL
+  INLINE(static bool IsConstantPoolLoadStart(Address pc));
+  INLINE(static bool IsConstantPoolLoadEnd(Address pc));
+  INLINE(static int GetConstantPoolOffset(Address pc));
+  INLINE(static void SetConstantPoolOffset(Address pc, int offset));
+
+  // Return the address in the constant pool of the code target address used by
+  // the branch/call instruction at pc, or the object in a mov.
+  INLINE(static Address target_constant_pool_address_at(
+           Address pc, ConstantPoolArray* constant_pool));
+#endif
+
   // Read/Modify the code target address in the branch/call instruction at pc.
-  INLINE(static Address target_address_at(Address pc));
-  INLINE(static void set_target_address_at(Address pc, Address target));
+  INLINE(static Address target_address_at(Address pc,
+                                          ConstantPoolArray* constant_pool));
+  INLINE(static void set_target_address_at(Address pc,
+                                           ConstantPoolArray* constant_pool,
+                                           Address target));
+  INLINE(static Address target_address_at(Address pc, Code* code)) {
+    ConstantPoolArray* constant_pool = code ? code->constant_pool() : NULL;
+    return target_address_at(pc, constant_pool);
+  }
+  INLINE(static void set_target_address_at(Address pc,
+                                           Code* code,
+                                           Address target)) {
+    ConstantPoolArray* constant_pool = code ? code->constant_pool() : NULL;
+    set_target_address_at(pc, constant_pool, target);
+  }
 
   // Return the code target address at a call site from the return address
   // of that call in the instruction stream.
   inline static Address target_address_from_return_address(Address pc);
 
+  // Given the address of the beginning of a call, return the address
+  // in the instruction stream that the call will return to.
+  INLINE(static Address return_address_from_call_start(Address pc));
+
   // This sets the branch destination.
   // This is for calls and branches within generated code.
   inline static void deserialization_set_special_target_at(
-      Address instruction_payload, Address target);
+      Address instruction_payload, Code* code, Address target);
 
   // Size of an instruction.
   static const int kInstrSize = sizeof(Instr);
@@ -634,8 +759,7 @@ class Assembler : public AssemblerBase {
   // Distance between start of patched return sequence and the emitted address
   // to jump to.
   // Patched return sequence is a FIXED_SEQUENCE:
-  //   lis r0, <address hi>
-  //   ori r0, r0, <address lo>
+  //   mov r0, <address>
   //   mtlr r0
   //   blrl
   static const int kPatchReturnSequenceAddressOffset =  0 * kInstrSize;
@@ -643,15 +767,10 @@ class Assembler : public AssemblerBase {
   // Distance between start of patched debug break slot and the emitted address
   // to jump to.
   // Patched debug break slot code is a FIXED_SEQUENCE:
-  //   lis r0, <address hi>
-  //   ori r0, r0, <address lo>
+  //   mov r0, <address>
   //   mtlr r0
   //   blrl
   static const int kPatchDebugBreakSlotAddressOffset =  0 * kInstrSize;
-
-  // Difference between address of current opcode and value read from pc
-  // register.
-  static const int kPcLoadDelta = 0;  // Todo: remove
 
   // This is the length of the BreakLocationIterator::SetDebugBreakAtReturn()
   // code patch FIXED_SEQUENCE in bytes!
@@ -737,7 +856,7 @@ class Assembler : public AssemblerBase {
     if (do_print) {
       printf("DebugBreak is inserted to %p\n", pc_);
     }
-#if V8_TARGET_ARCH_S390X
+#if V8_HOST_ARCH_64_BIT
     int64_t value = reinterpret_cast<uint64_t>(&OS::DebugBreak);
     int32_t hi_32 = static_cast<int64_t>(value) >> 32;
     int32_t lo_32 = static_cast<int32_t>(value);
@@ -1651,7 +1770,10 @@ SS2_FORM(zap);
   void slak(Register r1, Register r3, Register opnd);
   void slak(Register r1, Register r3, const Operand& opnd);
 
-  void srda(Register r1, const Operand& opnd);
+  // Data-processing instructions
+
+  void sub(Register dst, Register src1, Register src2,
+           OEBit s = LeaveOE, RCBit r = LeaveRC);
 
   // Shift Instructions (64)
   void sllg(Register r1, Register r3, const Operand& opnd);
@@ -1870,6 +1992,12 @@ void lhi(Register dst, const Operand& imm);
   // Postpone the generation of the trampoline pool for the specified number of
   // instructions.
   void CheckTrampolinePool();
+
+  // Allocate a constant pool of the correct size for the generated code.
+  Handle<ConstantPoolArray> NewConstantPool(Isolate* isolate);
+
+  // Generate the constant pool for the generated code.
+  void PopulateConstantPool(ConstantPoolArray* constant_pool);
 
  public:
   byte* buffer_pos() const { return buffer_; }
