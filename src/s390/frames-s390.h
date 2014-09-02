@@ -2,31 +2,8 @@
 //
 // Copyright IBM Corp. 2012-2014. All rights reserved.
 //
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-//       copyright notice, this list of conditions and the following
-//       disclaimer in the documentation and/or other materials provided
-//       with the distribution.
-//     * Neither the name of Google Inc. nor the names of its
-//       contributors may be used to endorse or promote products derived
-//       from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 #ifndef V8_S390_FRAMES_S390_H_
 #define V8_S390_FRAMES_S390_H_
@@ -61,6 +38,7 @@ int JSCallerSavedCode(int n);
 // N.B.  Do not bother saving all non-volatiles -- only those that v8
 //       modifies without saving/restoring inline.
 const RegList kCalleeSaved =
+  
   1 << 6 |   // r6 (argument passing in CEntryStub)
              //    (HandleScope logic in MacroAssembler)
   1 << 7 |   // r7 (argument passing in CEntryStub)
@@ -74,19 +52,15 @@ const RegList kCalleeSaved =
 
 /*
   Legacy PPC Linkage left here for reference.
-  1 <<  14 |  // r14 (argument passing in CEntryStub)
-  1 <<  15 |  // r15 (argument passing in CEntryStub)
-  1 <<  16 |  // r16 (argument passing in CEntryStub)
-              // r17-r19 unused
-  1 <<  20 |  // r20 (cp in Javascript code)
-  1 <<  21 |  // r21 (roots array in Javascript code)
-  1 <<  22 |  // r22 (r9 hack in Javascript code)
-              // r23-r25 unused
-  1 <<  26 |  // r26 (HandleScope logic in MacroAssembler)
-  1 <<  27 |  // r27 (HandleScope logic in MacroAssembler)
-  1 <<  28 |  // r28 (HandleScope logic in MacroAssembler)
-  1 <<  29 |  // r29 (HandleScope logic in MacroAssembler)
-              // r30 used but saved/restored inline
+  1 <<  14 |  // r14 (general use)
+  1 <<  15 |  // r15 (general use)
+  1 <<  16 |  // r16 (general use)
+  1 <<  17 |  // r17 (general use)
+  1 <<  18 |  // r18 (general use / cp in Javascript code)
+  1 <<  19 |  // r19 (roots array in Javascript code)
+#if V8_OOL_CONSTANT_POOL
+  1 <<  20 |  // r20 (constant pool array in Javascript code)
+#endif
   1 <<  31;   // r31 (fp in Javascript code)
 */
 
@@ -106,6 +80,7 @@ const int kNumSafepointSavedRegisters = kNumJSCallerSaved + kNumCalleeSaved;
 
 // The following constants describe the stack frame linkage area as
 // defined by the ABI.
+
 #if defined(V8_TARGET_ARCH_S390X)
 // [0] Back Chain
 // [1] Reserved for compiler use
@@ -151,31 +126,22 @@ const int kCalleeRegisterSaveAreaSize = 0;
 // ----------------------------------------------------
 
 
-class StackHandlerConstants : public AllStatic {
- public:
-  static const int kNextOffset     = 0 * kPointerSize;
-  static const int kCodeOffset     = 1 * kPointerSize;
-#if defined(V8_TARGET_ARCH_S390X) && (__BYTE_ORDER == __BIG_ENDIAN)
-  static const int kStateOffset    = 2 * kPointerSize + kIntSize;
-#else
-  static const int kStateOffset    = 2 * kPointerSize;
-#endif
-  static const int kStateSlot      = 2 * kPointerSize;
-  static const int kContextOffset  = 3 * kPointerSize;
-  static const int kFPOffset       = 4 * kPointerSize;
-
-  static const int kSize = kFPOffset + kPointerSize;
-};
-
-
 class EntryFrameConstants : public AllStatic {
  public:
-  static const int kCallerFPOffset      = -3 * kPointerSize;
+  static const int kCallerFPOffset =
+      -(StandardFrameConstants::kFixedFrameSizeFromFp + kPointerSize);
 };
 
 
 class ExitFrameConstants : public AllStatic {
  public:
+#if V8_OOL_CONSTANT_POOL
+  static const int kFrameSize = 3 * kPointerSize;
+  static const int kConstantPoolOffset = -3 * kPointerSize;
+#else
+  static const int kFrameSize = 2 * kPointerSize;
+  static const int kConstantPoolOffset = 0;  // Not used.
+#endif
   static const int kCodeOffset = -2 * kPointerSize;
   static const int kSPOffset = -1 * kPointerSize;
 
@@ -187,20 +153,6 @@ class ExitFrameConstants : public AllStatic {
   // FP-relative displacement of the caller's SP.  It points just
   // below the saved PC.
   static const int kCallerSPDisplacement = 2 * kPointerSize;
-};
-
-
-class StandardFrameConstants : public AllStatic {
- public:
-  // Fixed part of the frame consists of return address, caller fp,
-  // context and function.
-  static const int kFixedFrameSize    =  4 * kPointerSize;
-  static const int kExpressionsOffset = -3 * kPointerSize;
-  static const int kMarkerOffset      = -2 * kPointerSize;
-  static const int kContextOffset     = -1 * kPointerSize;
-  static const int kCallerFPOffset    =  0 * kPointerSize;
-  static const int kCallerPCOffset    =  1 * kPointerSize;
-  static const int kCallerSPOffset    =  2 * kPointerSize;
 };
 
 
@@ -219,14 +171,30 @@ class JavaScriptFrameConstants : public AllStatic {
 
 class ArgumentsAdaptorFrameConstants : public AllStatic {
  public:
+  // FP-relative.
   static const int kLengthOffset = StandardFrameConstants::kExpressionsOffset;
+
   static const int kFrameSize =
       StandardFrameConstants::kFixedFrameSize + kPointerSize;
 };
 
 
+class ConstructFrameConstants : public AllStatic {
+ public:
+  // FP-relative.
+  static const int kImplicitReceiverOffset = -6 * kPointerSize;
+  static const int kConstructorOffset      = -5 * kPointerSize;
+  static const int kLengthOffset           = -4 * kPointerSize;
+  static const int kCodeOffset = StandardFrameConstants::kExpressionsOffset;
+
+  static const int kFrameSize =
+      StandardFrameConstants::kFixedFrameSize + 4 * kPointerSize;
+};
+
+
 class InternalFrameConstants : public AllStatic {
  public:
+  // FP-relative.
   static const int kCodeOffset = StandardFrameConstants::kExpressionsOffset;
 };
 
@@ -234,6 +202,11 @@ class InternalFrameConstants : public AllStatic {
 inline Object* JavaScriptFrame::function_slot_object() const {
   const int offset = JavaScriptFrameConstants::kFunctionOffset;
   return Memory::Object_at(fp() + offset);
+}
+
+
+inline void StackHandler::SetFp(Address slot, Address fp) {
+  Memory::Address_at(slot) = fp;
 }
 
 
