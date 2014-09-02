@@ -2,31 +2,8 @@
 //
 // Copyright IBM Corp. 2012-2014. All rights reserved.
 //
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-//       copyright notice, this list of conditions and the following
-//       disclaimer in the documentation and/or other materials provided
-//       with the distribution.
-//     * Neither the name of Google Inc. nor the names of its
-//       contributors may be used to endorse or promote products derived
-//       from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 #ifndef V8_S390_CONSTANTS_S390_H_
 #define V8_S390_CONSTANTS_S390_H_
@@ -43,14 +20,11 @@ const int kNumFPRegisters = kNumFPDoubleRegisters;
 
 const int kNoRegister = -1;
 
-// For FlushICache
-// This constant will be different for other versions of PowerPC
-// It must be a power of 2
-const unsigned int kCacheLineSizeLog2 = 7;
-const unsigned int kCacheLineSize = (1 << kCacheLineSizeLog2);
-
-// sign-extend the least significant 16-bit of value <imm>
+// sign-extend the least significant 16-bits of value <imm>
 #define SIGN_EXT_IMM16(imm) ((static_cast<int>(imm) << 16) >> 16)
+
+// sign-extend the least significant 26-bits of value <imm>
+#define SIGN_EXT_IMM26(imm) ((static_cast<int>(imm) << 6) >> 6)
 
 // -----------------------------------------------------------------------------
 // Conditions.
@@ -1068,7 +1042,7 @@ const uint32_t kMaxStopCode = kStopCode - 1;
 const int32_t  kDefaultStopCode = -1;
 
 // FP rounding modes.
-enum VFPRoundingMode {
+enum FPRoundingMode {
   RN = 0,   // Round to Nearest.
   RZ = 1,   // Round towards zero.
   RP = 2,   // Round towards Plus Infinity.
@@ -1081,7 +1055,7 @@ enum VFPRoundingMode {
   kRoundToMinusInf = RM
 };
 
-const uint32_t kVFPRoundingModeMask = 3;
+const uint32_t kFPRoundingModeMask = 3;
 
 enum CheckForInexactConversion {
   kCheckForInexactConversion,
