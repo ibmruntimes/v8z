@@ -65,13 +65,6 @@ namespace internal {
 #elif defined(__MIPSEB__) || defined(__MIPSEL__)
 #define V8_HOST_ARCH_MIPS 1
 #define V8_HOST_ARCH_32_BIT 1
-#elif defined(__S390__) || defined(_ARCH_S390)
-#define V8_HOST_ARCH_S390 1
-#if defined(__S390X__) || defined(_ARCH_S390X)
-#define V8_HOST_ARCH_64_BIT 1
-#else
-#define V8_HOST_ARCH_32_BIT 1
-#endif
 #elif defined(__PPC__) || defined(_ARCH_PPC)
 #define V8_HOST_ARCH_PPC 1
 #if defined(__PPC64__) || defined(_ARCH_PPC64)
@@ -79,6 +72,12 @@ namespace internal {
 #else
 #define V8_HOST_ARCH_32_BIT 1
 #endif
+#elif defined(__s390x__)
+#define V8_HOST_ARCH_S390 1
+#define V8_HOST_ARCH_64_BIT 1
+#elif defined(__s390__)
+#define V8_HOST_ARCH_S390 1
+#define V8_HOST_ARCH_32_BIT 1
 #else
 #error "Host architecture was not detected as supported by v8"
 #endif
