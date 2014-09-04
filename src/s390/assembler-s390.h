@@ -43,12 +43,14 @@
 
 #ifndef V8_S390_ASSEMBLER_S390_H_
 #define V8_S390_ASSEMBLER_S390_H_
+
+#if defined(V8_HOST_ARCH_S390)
+#include <elf.h>   // Used for STFLE detection on s390
+#endif
+
 #include <stdio.h>
-#if !defined(_AIX)
-#include <elf.h>
 #include <fcntl.h>
 #include <unistd.h>
-#endif
 #include "assembler.h"
 #include "constants-s390.h"
 #include "serialize.h"
