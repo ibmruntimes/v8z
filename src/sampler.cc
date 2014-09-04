@@ -374,7 +374,7 @@ void SignalHandler::HandleProfilerSignal(int signal, siginfo_t* info,
 #else
   // Extracting the sample from the context is extremely machine dependent.
   ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
-#if !(V8_OS_OPENBSD || (V8_OS_LINUX && V8_HOST_ARCH_PPC))
+#if !(V8_OS_OPENBSD || (V8_OS_LINUX && (V8_HOST_ARCH_PPC || V8_HOST_ARCH_S390)))
   mcontext_t& mcontext = ucontext->uc_mcontext;
 #endif
 #if V8_OS_LINUX
