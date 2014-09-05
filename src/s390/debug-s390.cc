@@ -2,35 +2,12 @@
 //
 // Copyright IBM Corp. 2012-2014. All rights reserved.
 //
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-//       copyright notice, this list of conditions and the following
-//       disclaimer in the documentation and/or other materials provided
-//       with the distribution.
-//     * Neither the name of Google Inc. nor the names of its
-//       contributors may be used to endorse or promote products derived
-//       from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 #include "v8.h"
 
-#if defined(V8_TARGET_ARCH_S390)
+#if V8_TARGET_ARCH_S390
 
 #include "codegen.h"
 #include "debug.h"
@@ -38,11 +15,9 @@
 namespace v8 {
 namespace internal {
 
-#ifdef ENABLE_DEBUGGER_SUPPORT
 bool BreakLocationIterator::IsDebugBreakAtReturn() {
   return Debug::IsDebugBreakAtReturn(rinfo());
 }
-
 
 void BreakLocationIterator::SetDebugBreakAtReturn() {
   // Patch the code changing the return from JS function sequence from
@@ -73,10 +48,10 @@ void BreakLocationIterator::SetDebugBreakAtReturn() {
   //   basr r14, r14         2-bytes
   //   bkpt (0x0001)         2-bytes
   CodePatcher patcher(rinfo()->pc(), Assembler::kJSReturnSequenceLength);
+  Assembler::BlockTrampolinePoolScope block_trampoline_pool(patcher.masm());
 // printf("SetDebugBreakAtReturn: pc=%08x\n", (unsigned int)rinfo()->pc());
-  patcher.masm()->mov(v8::internal::r14,
-    Operand(reinterpret_cast<intptr_t>(
-      Isolate::Current()->debug()->debug_break_return()->entry())));
+  patcher.masm()->mov(v8::internal::r14, Operand(reinterpret_cast<intptr_t>(
+      debug_info_->GetIsolate()->debug()->debug_break_return()->entry())));
   patcher.masm()->basr(v8::internal::r14, v8::internal::r14);
   patcher.masm()->bkpt(0);
 }
@@ -117,7 +92,7 @@ void BreakLocationIterator::SetDebugBreakAtSlot() {
   //
   //   iilf r14, <address>   6-bytes
   //   basr r14, r14A        2-bytes
-  //
+  //   
   // The 64bit sequence has an extra iihf.
   //
   //   iihf r14, <high 32-bits address>    6-bytes
@@ -125,9 +100,9 @@ void BreakLocationIterator::SetDebugBreakAtSlot() {
   //   basr r14, r14         2-bytes
   CodePatcher patcher(rinfo()->pc(), Assembler::kDebugBreakSlotLength);
 // printf("SetDebugBreakAtSlot: pc=%08x\n", (unsigned int)rinfo()->pc());
-  patcher.masm()->mov(v8::internal::r14,
-            Operand(reinterpret_cast<intptr_t>(
-                   Isolate::Current()->debug()->debug_break_slot()->entry())));
+  Assembler::BlockTrampolinePoolScope block_trampoline_pool(patcher.masm());
+  patcher.masm()->mov(v8::internal::r14, Operand(reinterpret_cast<intptr_t>(
+      debug_info_->GetIsolate()->debug()->debug_break_slot()->entry())));
   patcher.masm()->basr(v8::internal::r14, v8::internal::r14);
 }
 
@@ -148,9 +123,8 @@ static void Generate_DebugBreakCallHelper(MacroAssembler* masm,
                                           RegList object_regs,
                                           RegList non_object_regs) {
   {
-    FrameScope scope(masm, StackFrame::INTERNAL);
+    FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
 
-// printf("Generate_DebugBreakCallHelper\n");
     // Store the registers containing live values on the expression stack to
     // make sure that these are correctly updated during GC. Non object values
     // are stored as a smi causing it to be untouched by GC.
@@ -163,9 +137,8 @@ static void Generate_DebugBreakCallHelper(MacroAssembler* masm,
         Register reg = { r };
         if ((non_object_regs & (1 << r)) != 0) {
           if (FLAG_debug_code) {
-            __ LoadRR(r0, reg);
-            __ nilh(r0, Operand(0xc000));  // replace andis
-            __ Assert(eq, "Unable to encode value as smi", cr0);
+            __ TestUnsignedSmiCandidate(reg, r0);
+            __ Assert(eq, kUnableToEncodeValueAsSmi, cr0);
           }
           __ SmiTag(reg);
         }
@@ -176,10 +149,10 @@ static void Generate_DebugBreakCallHelper(MacroAssembler* masm,
 #ifdef DEBUG
     __ RecordComment("// Calling from debug break to runtime - come in - over");
 #endif
-    __ mov(r2, Operand(0, kRelocInfo_NONEPTR));  // no arguments
+    __ mov(r2, Operand::Zero());  // no arguments
     __ mov(r3, Operand(ExternalReference::debug_break(masm->isolate())));
 
-    CEntryStub ceb(1);
+    CEntryStub ceb(masm->isolate(), 1);
     __ CallStub(&ceb);
 
     // Restore the register values from the expression stack.
@@ -209,6 +182,16 @@ static void Generate_DebugBreakCallHelper(MacroAssembler* masm,
   __ mov(ip, Operand(after_break_target));
   __ LoadP(ip, MemOperand(ip));
   __ Jump(ip);
+}
+
+
+void Debug::GenerateCallICStubDebugBreak(MacroAssembler* masm) {
+  // Register state for CallICStub
+  // ----------- S t a t e -------------
+  //  -- r4 : function
+  //  -- r6 : slot in feedback array (smi)
+  // -----------------------------------
+  Generate_DebugBreakCallHelper(masm, r4.bit() | r6.bit(), 0);
 }
 
 
@@ -259,12 +242,12 @@ void Debug::GenerateKeyedStoreICDebugBreak(MacroAssembler* masm) {
 }
 
 
-void Debug::GenerateCallICDebugBreak(MacroAssembler* masm) {
-  // Calling convention for IC call (from ic-ppc.cc)
+void Debug::GenerateCompareNilICDebugBreak(MacroAssembler* masm) {
+  // Register state for CompareNil IC
   // ----------- S t a t e -------------
-  //  -- r4     : name
+  //  -- r2    : value
   // -----------------------------------
-  Generate_DebugBreakCallHelper(masm, r4.bit(), 0);
+  Generate_DebugBreakCallHelper(masm, r2.bit(), 0);
 }
 
 
@@ -284,17 +267,6 @@ void Debug::GenerateCallFunctionStubDebugBreak(MacroAssembler* masm) {
   Generate_DebugBreakCallHelper(masm, r3.bit(), 0);
 }
 
-
-void Debug::GenerateCallFunctionStubRecordDebugBreak(MacroAssembler* masm) {
-  // Register state for CallFunctionStub (from code-stubs-ppc.cc).
-  // ----------- S t a t e -------------
-  //  -- r3 : function
-  //  -- r4 : cache cell for call target
-  // -----------------------------------
-  Generate_DebugBreakCallHelper(masm, r3.bit() | r4.bit(), 0);
-}
-
-
 void Debug::GenerateCallConstructStubDebugBreak(MacroAssembler* masm) {
   // Calling convention for CallConstructStub (from code-stubs-ppc.cc)
   // ----------- S t a t e -------------
@@ -310,9 +282,10 @@ void Debug::GenerateCallConstructStubRecordDebugBreak(MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- r2     : number of arguments (not smi)
   //  -- r3     : constructor function
-  //  -- r4     : cache cell for call target
+  //  -- r4     : feedback array
+  //  -- r5     : feedback slot (smi)
   // -----------------------------------
-  Generate_DebugBreakCallHelper(masm, r3.bit() | r4.bit(), r2.bit());
+  Generate_DebugBreakCallHelper(masm, r3.bit() | r4.bit() | r5.bit(), r2.bit());
 }
 
 
@@ -342,21 +315,17 @@ void Debug::GenerateSlotDebugBreak(MacroAssembler* masm) {
 
 
 void Debug::GeneratePlainReturnLiveEdit(MacroAssembler* masm) {
-  masm->Abort("LiveEdit frame dropping is not supported on s390");
+  masm->Abort(kLiveEditFrameDroppingIsNotSupportedOnPpc);
 }
 
 
 void Debug::GenerateFrameDropperLiveEdit(MacroAssembler* masm) {
-  masm->Abort("LiveEdit frame dropping is not supported on s390");
+  masm->Abort(kLiveEditFrameDroppingIsNotSupportedOnPpc);
 }
 
 const bool Debug::kFrameDropperSupported = false;
 
 #undef __
-
-
-
-#endif  // ENABLE_DEBUGGER_SUPPORT
 
 } }  // namespace v8::internal
 
