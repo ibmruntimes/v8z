@@ -422,7 +422,6 @@ class MemOperand BASE_EMBEDDED {
  public:
   explicit MemOperand(Register rx, Disp offset = 0);
   explicit MemOperand(Register rx, Register rb, Disp offset = 0);
-  explicit MemOperand(Register rx, Register rb);
 
   int32_t offset() const {
     ASSERT(indexRegister.is(no_reg));
