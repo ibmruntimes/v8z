@@ -137,8 +137,6 @@ void CpuFeatures::Probe() {
   }
 
   static bool performSTFLE = supportsSTFLE();
-  // The base architecture is z9, which should include STFLE support.
-  ASSERT(performSTFLE);
 
   // Need to define host, as we are generating inlined S390 assembly to test
   // for facilities.
