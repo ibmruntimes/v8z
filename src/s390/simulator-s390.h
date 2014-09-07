@@ -2,31 +2,8 @@
 //
 // Copyright IBM Corp. 2012-2014. All rights reserved.
 //
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-//       copyright notice, this list of conditions and the following
-//       disclaimer in the documentation and/or other materials provided
-//       with the distribution.
-//     * Neither the name of Google Inc. nor the names of its
-//       contributors may be used to endorse or promote products derived
-//       from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 
 // Declares a Simulator for S390 instructions if we are not generating a native
@@ -177,25 +154,31 @@ class Simulator {
   double get_double_from_register_pair(int reg);
   void set_d_register_from_double(int dreg, const double dbl) {
     ASSERT(dreg >= 0 && dreg < kNumFPRs);
-    fp_register[dreg] = dbl;
+    fp_registers_[dreg] = dbl;
   }
+
+  double get_double_from_d_register(int dreg) {
+    return fp_registers_[dreg];
+  }
+
   void set_d_register_from_float(int dreg, const float f) {
     ASSERT(dreg >= 0 && dreg < kNumFPRs);
-    float* f_addr = reinterpret_cast<float*>(&fp_register[dreg]);
+    float* f_addr = reinterpret_cast<float*>(&fp_registers_[dreg]);
     *f_addr = f;
-  }
-  double get_double_from_d_register(int dreg) {
-    return fp_register[dreg];
   }
 
   double get_float_from_d_register(int dreg) {
-    float* f_addr = reinterpret_cast<float*>(&fp_register[dreg]);
+    float* f_addr = reinterpret_cast<float*>(&fp_registers_[dreg]);
     return *f_addr;
   }
 
   // Special case of set_register and get_register to access the raw PC value.
   void set_pc(intptr_t value);
   intptr_t get_pc() const;
+
+  Address get_sp() {
+    return reinterpret_cast<Address>(static_cast<intptr_t>(get_register(sp)));
+  }
 
   // Accessor to the internal simulator stack area.
   uintptr_t StackLimit() const;
@@ -210,6 +193,10 @@ class Simulator {
   // generated RegExp code with 7 parameters. This is a convenience function,
   // which sets up the simulator state and grabs the result on return.
   intptr_t Call(byte* entry, int argument_count, ...);
+  // Alternative: call a 2-argument double function.
+  void CallFP(byte* entry, double d0, double d1);
+  int32_t CallFPReturnsInt(byte* entry, double d0, double d1);
+  double CallFPReturnsDouble(byte* entry, double d0, double d1);
 
   // Push an address onto the JS stack.
   uintptr_t PushAddress(uintptr_t address);
@@ -299,6 +286,7 @@ class Simulator {
   inline void WriteDW(intptr_t addr, int64_t value);
 
   // S390
+  void Trace(Instruction* instr);
   bool DecodeTwoByte(Instruction* instr);
   bool DecodeFourByte(Instruction* instr);
   bool DecodeFourByteArithmetic(Instruction *instr);
@@ -369,18 +357,12 @@ class Simulator {
       void* external_function,
       v8::internal::ExternalReference::Type type);
 
-  // For use in calls that take double value arguments.
-  void GetFpArgs(double* x, double* y);
-  void GetFpArgs(double* x);
-  void GetFpArgs(double* x, intptr_t* y);
+  // Handle arguments and return value for runtime FP functions.
+  void GetFpArgs(double* x, double* y, intptr_t* z);
   void SetFpResult(const double& result);
   void TrashCallerSaveRegisters();
 
-  template<class ReturnType, int register_size>
-      ReturnType GetFromFPRegister(int reg_index);
-
-  template<class InputType, int register_size>
-      void SetFPRegister(int reg_index, const InputType& value);
+  void CallInternal(byte* entry);
 
   // Architecture state.
   // On z9 and higher, and supported Linux on System z platforms, all registers
@@ -394,7 +376,7 @@ class Simulator {
   intptr_t special_reg_ctr_;  // PowerPC
   int32_t special_reg_xer_;  // PowerPC
 
-  double fp_register[kNumFPRs];
+  double fp_registers_[kNumFPRs];
 
   // Simulator support.
   char* stack_;
@@ -421,14 +403,14 @@ class Simulator {
   static const uint32_t kStopDisabledBit = 1 << 31;
 
   // A stop is enabled, meaning the simulator will stop when meeting the
-  // instruction, if bit 31 of watched_stops[code].count is unset.
-  // The value watched_stops[code].count & ~(1 << 31) indicates how many times
+  // instruction, if bit 31 of watched_stops_[code].count is unset.
+  // The value watched_stops_[code].count & ~(1 << 31) indicates how many times
   // the breakpoint was hit or gone through.
   struct StopCountAndDesc {
     uint32_t count;
     char* desc;
   };
-  StopCountAndDesc watched_stops[kNumOfWatchedStops];
+  StopCountAndDesc watched_stops_[kNumOfWatchedStops];
   void DebugStart();
 };
 
