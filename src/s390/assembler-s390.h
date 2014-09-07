@@ -1786,6 +1786,7 @@ SS2_FORM(zap);
   void srlg(Register r1, Register r3, const Register opnd);
   void srag(Register r1, Register r3, const Operand& opnd);
   void srag(Register r1, Register r3, const Register opnd);
+  void srda(Register r1, const Operand& opnd);
   void slag(Register r1, Register r3, const Operand& opnd);
   void slag(Register r1, Register r3, const Register opnd);
 
@@ -2024,6 +2025,7 @@ void lhi(Register dst, const Operand& imm);
 
   // Record reloc info for current pc_
   void RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data = 0);
+  void RecordRelocInfo(const RelocInfo& rinfo);
 
   // Block the emission of the trampoline pool before pc_offset.
   void BlockTrampolinePoolBefore(int pc_offset) {
