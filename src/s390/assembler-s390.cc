@@ -60,9 +60,9 @@ static unsigned CpuFeaturesImpliedByCompiler() {
   return answer;
 }
 
-#if !defined(_AIX)
 // This function uses types in elf.h
 static bool supportsSTFLE() {
+#if V8_HOST_ARCH_S390
   static bool read_tried = false;
   static uint32_t auxv_hwcap = 0;
 
@@ -110,8 +110,11 @@ static bool supportsSTFLE() {
   // hardcoded in case that include file does not exist.
   const uint32_t HWCAP_S390_STFLE = 4;
   return (auxv_hwcap & HWCAP_S390_STFLE);
-}
+#else
+  // STFLE is not available on non-s390 hosts
+  return false;
 #endif
+}
 
 void CpuFeatures::Probe() {
   unsigned standard_features = static_cast<unsigned>(
@@ -132,13 +135,10 @@ void CpuFeatures::Probe() {
   }
 
   static bool performSTFLE = supportsSTFLE();
-  // The base architecture is z9, which should include STFLE support.
-  ASSERT(performSTFLE);
 
   // Need to define host, as we are generating inlined S390 assembly to test
-  // for facilities.  Disabling detection when running native sim, as we
-  // currently do not have support for the distinct operands instructions
-#if defined(V8_HOST_ARCH_S390) && !defined(USE_SIMULATOR)
+  // for facilities.
+#if V8_HOST_ARCH_S390
   if (performSTFLE) {
      // STFLE D(B) requires:
      //    GPR0 to specify # of double words to update minus 1.

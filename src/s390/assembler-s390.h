@@ -44,11 +44,15 @@
 #ifndef V8_S390_ASSEMBLER_S390_H_
 #define V8_S390_ASSEMBLER_S390_H_
 #include <stdio.h>
-#if !defined(_AIX)
+
+#if V8_HOST_ARCH_S390
+// elf.h include is required for auxv check for STFLE facility used
+// for hardware detection, which is sensible only on s390 hosts.
 #include <elf.h>
+#endif
+
 #include <fcntl.h>
 #include <unistd.h>
-#endif
 #include "assembler.h"
 #include "constants-s390.h"
 #include "serialize.h"
