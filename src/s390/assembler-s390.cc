@@ -40,9 +40,10 @@
 
 #include "v8.h"
 
-#if defined(V8_TARGET_ARCH_S390)
+#if V8_TARGET_ARCH_S390
 
 #include "s390/assembler-s390-inl.h"
+#include "macro-assembler.h"
 #include "serialize.h"
 
 namespace v8 {
@@ -52,7 +53,16 @@ namespace internal {
 bool CpuFeatures::initialized_ = false;
 #endif
 unsigned CpuFeatures::supported_ = 0;
-unsigned CpuFeatures::found_by_runtime_probing_ = 0;
+unsigned CpuFeatures::found_by_runtime_probing_only_ = 0;
+unsigned CpuFeatures::cross_compile_ = 0;
+unsigned CpuFeatures::cache_line_size_log2_ = 7;  // 128
+
+
+ExternalReference ExternalReference::cpu_features() {
+  ASSERT(CpuFeatures::initialized_);
+  return ExternalReference(&CpuFeatures::supported_);
+}
+
 
 // Get the CPU features enabled by the build.
 static unsigned CpuFeaturesImpliedByCompiler() {
@@ -116,7 +126,7 @@ static bool supportsSTFLE() {
 #endif
 }
 
-void CpuFeatures::Probe() {
+void CpuFeatures::Probe(bool serializer_enabled) {
   unsigned standard_features = static_cast<unsigned>(
       OS::CpuFeaturesImpliedByPlatform()) | CpuFeaturesImpliedByCompiler();
   ASSERT(supported_ == 0 || supported_ == standard_features);
@@ -129,7 +139,7 @@ void CpuFeatures::Probe() {
   // snapshot.
   supported_ |= standard_features;
 
-  if (Serializer::enabled()) {
+  if (serializer_enabled) {
     // No probing for features if we might serialize (generate snapshot).
     return;
   }
@@ -174,6 +184,25 @@ void CpuFeatures::Probe() {
 #endif
   supported_ |= (1u << FPU);
 }
+
+
+void CpuFeatures::PrintTarget() {
+  const char* s390_arch = NULL;
+
+#if V8_TARGET_ARCH_S390X
+  s390_arch = "s390x";
+#else
+  s390_arch = "s390";
+#endif
+
+  printf("target %s\n", s390_arch);
+}
+
+
+void CpuFeatures::PrintFeatures() {
+  printf("FPU=%d\n", CpuFeatures::IsSupported(FPU));
+}
+
 
 Register ToRegister(int num) {
   ASSERT(num >= 0 && num < kNumRegisters);
@@ -228,19 +257,21 @@ void RelocInfo::PatchCodeWithCall(Address target, int guard_bytes) {
 // See assembler-s390-inl.h for inlined constructors
 
 Operand::Operand(Handle<Object> handle) {
+  AllowDeferredHandleDereference using_raw_address;
   rm_ = no_reg;
   // Verify all Objects referred by code are NOT in new space.
   Object* obj = *handle;
-  ASSERT(!HEAP->InNewSpace(obj));
   if (obj->IsHeapObject()) {
+    ASSERT(!HeapObject::cast(obj)->GetHeap()->InNewSpace(obj));
     imm_ = reinterpret_cast<intptr_t>(handle.location());
     rmode_ = RelocInfo::EMBEDDED_OBJECT;
   } else {
     // no relocation needed
-    imm_ =  reinterpret_cast<intptr_t>(obj);
+    imm_   = reinterpret_cast<intptr_t>(obj);
     rmode_ = kRelocInfo_NONEPTR;
   }
 }
+
 
 MemOperand::MemOperand(Register rn, int32_t offset) {
   baseRegister = rn;
@@ -254,6 +285,7 @@ MemOperand::MemOperand(Register rx, Register rb, int32_t offset) {
   offset_ = offset;
 }
 
+
 // -----------------------------------------------------------------------------
 // Specific instructions, constants, and masks.
 
@@ -261,67 +293,33 @@ MemOperand::MemOperand(Register rx, Register rb, int32_t offset) {
 static const int kMinimalBufferSize = 4*KB;
 
 
-Assembler::Assembler(Isolate* arg_isolate, void* buffer, int buffer_size)
-    : AssemblerBase(arg_isolate),
+Assembler::Assembler(Isolate* isolate, void* buffer, int buffer_size)
+    : AssemblerBase(isolate, buffer, buffer_size),
       recorded_ast_id_(TypeFeedbackId::None()),
-      positions_recorder_(this),
-      emit_debug_code_(FLAG_debug_code),
-      predictable_code_size_(false) {
-  if (buffer == NULL) {
-    // Do our own buffer management.
-    if (buffer_size <= kMinimalBufferSize) {
-      buffer_size = kMinimalBufferSize;
-
-      if (isolate()->assembler_spare_buffer() != NULL) {
-        buffer = isolate()->assembler_spare_buffer();
-        isolate()->set_assembler_spare_buffer(NULL);
-      }
-    }
-    if (buffer == NULL) {
-      buffer_ = NewArray<byte>(buffer_size);
-    } else {
-      buffer_ = static_cast<byte*>(buffer);
-    }
-    buffer_size_ = buffer_size;
-    own_buffer_ = true;
-
-  } else {
-    // Use externally provided buffer instead.
-    ASSERT(buffer_size > 0);
-    buffer_ = static_cast<byte*>(buffer);
-    buffer_size_ = buffer_size;
-    own_buffer_ = false;
-  }
-
-  // Set up buffer pointers.
-  ASSERT(buffer_ != NULL);
-  pc_ = buffer_;
-  reloc_info_writer.Reposition(buffer_ + buffer_size, pc_);
+#if V8_OOL_CONSTANT_POOL
+      constant_pool_builder_(),
+#endif
+      positions_recorder_(this) {
+  reloc_info_writer.Reposition(buffer_ + buffer_size_, pc_);
 
   no_trampoline_pool_before_ = 0;
   trampoline_pool_blocked_nesting_ = 0;
   // We leave space (kMaxBlockTrampolineSectionSize)
   // for BlockTrampolinePoolScope buffer.
-  next_buffer_check_ = kMaxCondBranchReach - kMaxBlockTrampolineSectionSize;
+  next_buffer_check_ = FLAG_force_long_branches
+      ? kMaxInt : kMaxCondBranchReach - kMaxBlockTrampolineSectionSize;
   internal_trampoline_exception_ = false;
   last_bound_pos_ = 0;
 
-  trampoline_emitted_ = false;
+  trampoline_emitted_ = FLAG_force_long_branches;
   unbound_labels_count_ = 0;
 
+#if V8_OOL_CONSTANT_POOL
+  constant_pool_available_ = false;
+  constant_pool_full_ = false;
+#endif
+
   ClearRecordedAstId();
-}
-
-
-Assembler::~Assembler() {
-  if (own_buffer_) {
-    if (isolate()->assembler_spare_buffer() == NULL &&
-        buffer_size_ == kMinimalBufferSize) {
-      isolate()->set_assembler_spare_buffer(buffer_);
-    } else {
-      DeleteArray(buffer_);
-    }
-  }
 }
 
 
@@ -331,6 +329,7 @@ void Assembler::GetCode(CodeDesc* desc) {
   desc->buffer_size = buffer_size_;
   desc->instr_size = pc_offset();
   desc->reloc_size = (buffer_ + buffer_size_) - reloc_info_writer.pos();
+  desc->origin = this;
 }
 
 
@@ -2395,6 +2394,39 @@ void Assembler::lr(Register r1, Register r2) {
   rr_form(LR, r1, r2);
 }
 
+/*
+// TODO(JOHN): might not work
+void Assembler::mov_label_offset(Register dst, Label* label) {
+  if (label->is_bound()) {
+    int target = label->pos();
+    mov(dst, Operand(target + Code::kHeaderSize - kHeapObjectTag));
+  } else {
+    bool is_linked = label->is_linked();
+    // Emit the link to the label in the code stream followed by extra
+    // nop instructions.
+    ASSERT(dst.is(r3));  // target_at_put assumes r3 for now
+    int link = is_linked ? label->pos() - pc_offset(): 0;
+    label->link_to(pc_offset());
+
+    if (!is_linked && !trampoline_emitted_) {
+      unbound_labels_count_++;
+      next_buffer_check_ -= kTrampolineSlotsSize;
+    }
+
+    // When the label is bound, these instructions will be patched
+    // with a 2 instruction mov sequence that will load the
+    // destination register with the position of the label from the
+    // beginning of the code.
+    //
+    // When the label gets bound: target_at extracts the link and
+    // target_at_put patches the instructions.
+    BlockTrampolinePoolScope block_trampoline_pool(this);
+    emit(link);
+    nop();
+  }
+}
+*/
+
 // Load Register-Register (64)
 void Assembler::lgr(Register r1, Register r2) {
   rre_form(LGR, r1, r2);
@@ -3370,21 +3402,21 @@ void Assembler::GrowBuffer() {
   // buffer nor pc absolute pointing inside the code buffer, so there is no need
   // to relocate any emitted relocation entries.
 
-#if ABI_USES_FUNCTION_DESCRIPTORS
+#if ABI_USES_FUNCTION_DESCRIPTORS || V8_OOL_CONSTANT_POOL
   // Relocate runtime entries.
   for (RelocIterator it(desc); !it.done(); it.next()) {
     RelocInfo::Mode rmode = it.rinfo()->rmode();
     if (rmode == RelocInfo::INTERNAL_REFERENCE) {
-      intptr_t* p = reinterpret_cast<intptr_t*>(it.rinfo()->pc());
-      if (*p != 0) {  // 0 means uninitialized.
-        *p += pc_delta;
-      }
+      RelocateInternalReference(it.rinfo()->pc(), pc_delta, 0);
     }
   }
+#if V8_OOL_CONSTANT_POOL
+  constant_pool_builder_.Relocate(pc_delta);
+#endif
 #endif
 }
 
-
+/*
 void Assembler::db(uint8_t data) {
   CheckBuffer();
   *reinterpret_cast<uint8_t*>(pc_) = data;
@@ -3392,38 +3424,40 @@ void Assembler::db(uint8_t data) {
 }
 
 
-void Assembler::dd(uint32_t data) {
+void Assembler::emit_ptr(uintptr_t data) {
   CheckBuffer();
-  *reinterpret_cast<uint32_t*>(pc_) = data;
-  pc_ += sizeof(uint32_t);
+  *reinterpret_cast<uintptr_t*>(pc_) = data;
+  pc_ += sizeof(uintptr_t);
 }
+*/
 
 
 void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
   RelocInfo rinfo(pc_, rmode, data, NULL);
-  if (rmode >= RelocInfo::JS_RETURN && rmode <= RelocInfo::DEBUG_BREAK_SLOT) {
+  RecordRelocInfo(rinfo);
+}
+
+
+void Assembler::RecordRelocInfo(const RelocInfo& rinfo) {
+  if (rinfo.rmode() >= RelocInfo::JS_RETURN &&
+      rinfo.rmode() <= RelocInfo::DEBUG_BREAK_SLOT) {
     // Adjust code for new modes.
-    ASSERT(RelocInfo::IsDebugBreakSlot(rmode)
-           || RelocInfo::IsJSReturn(rmode)
-           || RelocInfo::IsComment(rmode)
-           || RelocInfo::IsPosition(rmode));
+    ASSERT(RelocInfo::IsDebugBreakSlot(rinfo.rmode())
+           || RelocInfo::IsJSReturn(rinfo.rmode())
+           || RelocInfo::IsComment(rinfo.rmode())
+           || RelocInfo::IsPosition(rinfo.rmode()));
   }
-  if (rinfo.rmode() != kRelocInfo_NONEPTR) {
+  if (!RelocInfo::IsNone(rinfo.rmode())) {
     // Don't record external references unless the heap will be serialized.
-    if (rmode == RelocInfo::EXTERNAL_REFERENCE) {
-#ifdef DEBUG
-      if (!Serializer::enabled()) {
-        Serializer::TooLateToEnableNow();
-      }
-#endif
-      if (!Serializer::enabled() && !emit_debug_code()) {
+    if (rinfo.rmode() == RelocInfo::EXTERNAL_REFERENCE) {
+      if (!Serializer::enabled(isolate()) && !emit_debug_code()) {
         return;
       }
     }
     ASSERT(buffer_space() >= kMaxRelocSize);  // too late to grow buffer here
-    if (rmode == RelocInfo::CODE_TARGET_WITH_ID) {
-      RelocInfo reloc_info_with_ast_id(pc_,
-                                       rmode,
+    if (rinfo.rmode() == RelocInfo::CODE_TARGET_WITH_ID) {
+      RelocInfo reloc_info_with_ast_id(rinfo.pc(),
+                                       rinfo.rmode(),
                                        RecordedAstId().ToInt(),
                                        NULL);
       ClearRecordedAstId();
