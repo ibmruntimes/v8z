@@ -2,36 +2,14 @@
 //
 // Copyright IBM Corp. 2012-2014. All rights reserved.
 //
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-//       copyright notice, this list of conditions and the following
-//       disclaimer in the documentation and/or other materials provided
-//       with the distribution.
-//     * Neither the name of Google Inc. nor the names of its
-//       contributors may be used to endorse or promote products derived
-//       from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 #include "v8.h"
 
-#if defined(V8_TARGET_ARCH_S390)
+#if V8_TARGET_ARCH_S390
 
+#include "cpu-profiler.h"
 #include "unicode.h"
 #include "log.h"
 #include "code-stubs.h"
@@ -127,7 +105,7 @@ RegExpMacroAssemblerS390::RegExpMacroAssemblerS390(
     int registers_to_save,
     Zone* zone)
     : NativeRegExpMacroAssembler(zone),
-      masm_(new MacroAssembler(Isolate::Current(), NULL, kRegExpCodeSize)),
+      masm_(new MacroAssembler(zone->isolate(), NULL, kRegExpCodeSize)),
       mode_(mode),
       num_registers_(registers_to_save),
       num_saved_registers_(registers_to_save),
@@ -255,6 +233,7 @@ void RegExpMacroAssemblerS390::CheckCharacterLT(uc16 limit, Label* on_less) {
 }
 
 
+/*
 void RegExpMacroAssemblerS390::CheckCharacters(Vector<const uc16> str,
                                                int cp_offset,
                                                Label* on_failure,
@@ -328,6 +307,7 @@ void RegExpMacroAssemblerS390::CheckCharacters(Vector<const uc16> str,
     BranchOrBacktrack(ne, on_failure);
   }
 }
+*/
 
 
 /*
@@ -447,8 +427,13 @@ void RegExpMacroAssemblerS390::CheckNotBackReferenceIgnoreCase(
     __ bne(&fail);
     __ SubP(r5, Operand('a'));
     __ CmpLogicalP(r5, Operand('z' - 'a'));  // Is r5 a lowercase letter?
-    __ bgt(&fail);
-
+    __ ble(&loop_check);  // In range 'a'-'z'.
+    // Latin-1: Check for values in range [224,254] but not 247.
+    __ SubP(r5, Operand(224 - 'a'));
+    __ CmpLogicalP(r5, Operand(254 - 224));
+    __ bgt(&fail);  // Weren't Latin-1 letters.
+    __ CmpLogicalP(r5, Operand(247 - 224));  // Check for 247.
+    __ beq(&fail);
 
     __ bind(&loop_check);
     __ la(r1, MemOperand(r1, char_size()));
@@ -487,12 +472,12 @@ void RegExpMacroAssemblerS390::CheckNotBackReferenceIgnoreCase(
     // Address of current input position.
     __ AddP(r3, current_input_offset(), end_of_input_address());
     // Isolate.
-    __ mov(r5, Operand(ExternalReference::isolate_address()));
+    __ mov(r5, Operand(ExternalReference::isolate_address(isolate())));
 
     {
       AllowExternalCallThatCantCauseGC scope(masm_);
       ExternalReference function =
-          ExternalReference::re_case_insensitive_compare_uc16(masm_->isolate());
+          ExternalReference::re_case_insensitive_compare_uc16(isolate());
       __ CallCFunction(function, argument_count);
     }
 
@@ -628,7 +613,7 @@ void RegExpMacroAssemblerS390::CheckBitInTable(
     Label* on_bit_set) {
   __ mov(r2, Operand(table));
   Register index = current_character();
-  if (mode_ != ASCII || kTableMask != String::kMaxAsciiCharCode) {
+  if (mode_ != ASCII || kTableMask != String::kMaxOneByteCharCode) {
     __ AndP(r3, current_character(), Operand(kTableSize - 1));
     index = r3;
   }
@@ -647,34 +632,28 @@ bool RegExpMacroAssemblerS390::CheckSpecialCharacterClass(uc16 type,
   case 's':
     // Match space-characters
     if (mode_ == ASCII) {
-      // ASCII space characters are '\t'..'\r' and ' '.
+      // One byte space characters are '\t'..'\r', ' ' and \u00a0.
       Label success;
       __ CmpP(current_character(), Operand(' '));
       __ beq(&success);
       // Check range 0x09..0x0d
       __ SubP(r2, current_character(), Operand('\t'));
       __ CmpLogicalP(r2, Operand('\r' - '\t'));
-      BranchOrBacktrack(gt, on_no_match);
+      __ ble(&success);
+      // \u00a0 (NBSP).
+      __ CmpLogicalP(r2, Operand(0x00a0 - '\t'));
+      BranchOrBacktrack(ne, on_no_match);
       __ bind(&success);
       return true;
     }
     return false;
   case 'S':
-    // Match non-space characters.
-    if (mode_ == ASCII) {
-      // ASCII space characters are '\t'..'\r' and ' '.
-      __ CmpP(current_character(), Operand(' '));
-      BranchOrBacktrack(eq, on_no_match);
-      __ SubP(r2, current_character(), Operand('\t'));
-      __ CmpLogicalP(r2, Operand('\r' - '\t'));
-      BranchOrBacktrack(le, on_no_match);
-      return true;
-    }
+    // The emitted code for generic character classes is good enough.
     return false;
   case 'd':
     // Match ASCII digits ('0'..'9')
     __ SubP(r2, current_character(), Operand('0'));
-    __ CmpLogicalP(current_character(), Operand('9' - '0'));
+    __ CmpLogicalP(r2, Operand('9' - '0'));
     BranchOrBacktrack(gt, on_no_match);
     return true;
   case 'D':
@@ -834,7 +813,7 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     Label stack_ok;
 
     ExternalReference stack_limit =
-      ExternalReference::address_of_stack_limit(masm_->isolate());
+      ExternalReference::address_of_stack_limit(isolate());
     __ mov(r2, Operand(stack_limit));
     __ LoadP(r2, MemOperand(r2));
     __ SubP(r2, sp, r2);
@@ -1086,9 +1065,9 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
       __ PrepareCallCFunction(num_arguments, r2);
       __ LoadRR(r2, backtrack_stackpointer());
       __ AddP(r3, frame_pointer(), Operand(kStackHighEnd));
-      __ mov(r4, Operand(ExternalReference::isolate_address()));
+      __ mov(r4, Operand(ExternalReference::isolate_address(isolate())));
       ExternalReference grow_stack =
-        ExternalReference::re_grow_stack(masm_->isolate());
+        ExternalReference::re_grow_stack(isolate());
       __ CallCFunction(grow_stack, num_arguments);
       // If return NULL, we have failed to grow the stack, and
       // must exit with a stack-overflow exception.
@@ -1111,10 +1090,9 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
 
   CodeDesc code_desc;
   masm_->GetCode(&code_desc);
-  Handle<Code> code = FACTORY->NewCode(code_desc,
-                                       Code::ComputeFlags(Code::REGEXP),
-                                       masm_->CodeObject());
-  PROFILE(Isolate::Current(), RegExpCodeCreateEvent(*code, *source));
+  Handle<Code> code = isolate()->factory()->NewCode(
+      code_desc, Code::ComputeFlags(Code::REGEXP), masm_->CodeObject());
+  PROFILE(masm_->isolate(), RegExpCodeCreateEvent(*code, *source));
   return Handle<HeapObject>::cast(code);
 }
 
@@ -1282,7 +1260,7 @@ void RegExpMacroAssemblerS390::CallCheckStackGuardState(Register scratch) {
   // r2 becomes return address pointer.
   __ lay(r2, MemOperand(sp, kStackFrameRASlot * kPointerSize));
   ExternalReference stack_guard_check =
-      ExternalReference::re_check_stack_guard_state(masm_->isolate());
+      ExternalReference::re_check_stack_guard_state(isolate());
   CallCFunctionUsingStub(stack_guard_check, num_arguments);
 }
 
@@ -1303,7 +1281,6 @@ int RegExpMacroAssemblerS390::CheckStackGuardState(Address* return_address,
                                                   Code* re_code,
                                                   Address re_frame) {
   Isolate* isolate = frame_entry<Isolate*>(re_frame, kIsolate);
-  ASSERT(isolate == Isolate::Current());
   if (isolate->stack_guard()->IsStackOverflow()) {
     isolate->StackOverflow();
     return EXCEPTION;
@@ -1325,13 +1302,13 @@ int RegExpMacroAssemblerS390::CheckStackGuardState(Address* return_address,
   Handle<String> subject(frame_entry<String*>(re_frame, kInputString));
 
   // Current string.
-  bool is_ascii = subject->IsAsciiRepresentationUnderneath();
+  bool is_ascii = subject->IsOneByteRepresentationUnderneath();
 
   ASSERT(re_code->instruction_start() <= *return_address);
   ASSERT(*return_address <=
       re_code->instruction_start() + re_code->instruction_size());
 
-  MaybeObject* result = Execution::HandleStackGuardInterrupt(isolate);
+  Object* result = Execution::HandleStackGuardInterrupt(isolate);
 
   if (*code_handle != re_code) {  // Return address no longer valid
     intptr_t delta = code_handle->address() - re_code->address();
@@ -1356,7 +1333,7 @@ int RegExpMacroAssemblerS390::CheckStackGuardState(Address* return_address,
   }
 
   // String might have changed.
-  if (subject_tmp->IsAsciiRepresentation() != is_ascii) {
+  if (subject_tmp->IsOneByteRepresentation() != is_ascii) {
     // If we changed between an ASCII and an UC16 string, the specialized
     // code cannot be used, and we need to restart regexp matching from
     // scratch (including, potentially, compiling a new version of the code).
@@ -1480,7 +1457,7 @@ void RegExpMacroAssemblerS390::Pop(Register target) {
 void RegExpMacroAssemblerS390::CheckPreemption() {
   // Check for preemption.
   ExternalReference stack_limit =
-      ExternalReference::address_of_stack_limit(masm_->isolate());
+      ExternalReference::address_of_stack_limit(isolate());
   __ mov(r2, Operand(stack_limit));
   __ CmpLogicalP(sp, MemOperand(r2));
   SafeCall(&check_preempt_label_, le);
@@ -1489,7 +1466,7 @@ void RegExpMacroAssemblerS390::CheckPreemption() {
 
 void RegExpMacroAssemblerS390::CheckStackLimit() {
   ExternalReference stack_limit =
-      ExternalReference::address_of_regexp_stack_limit(masm_->isolate());
+      ExternalReference::address_of_regexp_stack_limit(isolate());
   __ mov(r2, Operand(stack_limit));
   __ CmpLogicalP(backtrack_stackpointer(), MemOperand(r2));
   SafeCall(&stack_overflow_label_, le);
@@ -1502,7 +1479,7 @@ void RegExpMacroAssemblerS390::CallCFunctionUsingStub(
   // Must pass all arguments in registers. The stub pushes on the stack.
   ASSERT(num_arguments <= 8);
   __ mov(code_pointer(), Operand(function));
-  RegExpCEntryStub stub;
+  // RegExpCEntryStub stub;
   // __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
   Label ret;
   __ larl(r14, &ret);
@@ -1537,34 +1514,6 @@ void RegExpMacroAssemblerS390::LoadCurrentCharacterUnchecked(int cp_offset,
     __ LoadLogicalHalfWordP(current_character(), MemOperand(
       end_of_input_address(), current_input_offset(), cp_offset * char_size()));
   }
-}
-
-
-void RegExpCEntryStub::Generate(MacroAssembler* masm_) {
-  int stack_alignment = OS::ActivationFrameAlignment();
-  if (stack_alignment < kPointerSize) stack_alignment = kPointerSize;
-
-  __ AddP(r2, sp, Operand(-stack_alignment));
-  __ StoreP(r14, MemOperand(r2, 0));
-
-  // zLINUX ABI:
-  __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
-
-#if ABI_USES_FUNCTION_DESCRIPTORS && !defined(USE_SIMULATOR)
-  // Native AIX/PPC64 Linux use a function descriptor.
-  __ LoadP(ToRegister(2), MemOperand(r7, kPointerSize));  // TOC
-  __ LoadP(ip, MemOperand(r7, 0));  // Instruction address
-  Register target = ip;
-#else
-  Register target = r7;
-#endif
-
-  __ Call(target);
-
-  __ la(sp, MemOperand(sp, +kCalleeRegisterSaveAreaSize));
-
-  __ LoadP(r14, MemOperand(sp, -stack_alignment));
-  __ Ret();
 }
 
 #undef __
