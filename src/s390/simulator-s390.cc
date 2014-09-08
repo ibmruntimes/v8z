@@ -92,6 +92,7 @@ class S390Debugger {
   void RedoBreakpoints();
 };
 
+
 S390Debugger::~S390Debugger() {
 }
 
@@ -133,6 +134,8 @@ void S390Debugger::Stop(Instruction* instr) {  // roohack need to fix for PPC
   }
   sim_->set_pc(sim_->get_pc() + Instruction::kInstrSize + kPointerSize);
 }
+
+
 
 #else  // ndef GENERATED_CODE_COVERAGE
 
@@ -186,9 +189,11 @@ double S390Debugger::GetFPDoubleRegisterValue(int regnum) {
   return sim_->get_double_from_d_register(regnum);
 }
 
+
 float S390Debugger::GetFPFloatRegisterValue(int regnum) {
   return sim_->get_float_from_d_register(regnum);
 }
+
 
 bool S390Debugger::GetValue(const char* desc, intptr_t* value) {
   int regnum = Registers::Number(desc);
@@ -206,6 +211,7 @@ bool S390Debugger::GetValue(const char* desc, intptr_t* value) {
   }
   return false;
 }
+
 
 bool S390Debugger::GetFPDoubleValue(const char* desc, double* value) {
   int regnum = FPRegisters::Number(desc);
@@ -967,6 +973,7 @@ uint64_t Simulator::get_register(int reg) const {
   return registers_[reg];
 }
 
+
 template<typename T>
 T Simulator::get_low_register(int reg) const {
   ASSERT((reg >= 0) && (reg < kNumGPRs));
@@ -976,6 +983,7 @@ T Simulator::get_low_register(int reg) const {
   // End stupid code.
   return static_cast<T>(registers_[reg] & 0xFFFFFFFF);
 }
+
 
 template<typename T>
 T Simulator::get_high_register(int reg) const {
@@ -987,6 +995,7 @@ T Simulator::get_high_register(int reg) const {
   return static_cast<T>(registers_[reg] >> 32);
 }
 
+
 void Simulator::set_low_register(int reg, uint32_t value) {
   uint64_t shifted_val = static_cast<uint64_t>(value);
   uint64_t orig_val = static_cast<uint64_t>(registers_[reg]);
@@ -994,12 +1003,14 @@ void Simulator::set_low_register(int reg, uint32_t value) {
   registers_[reg] = result;
 }
 
+
 void Simulator::set_high_register(int reg, uint32_t value) {
   uint64_t shifted_val = static_cast<uint64_t>(value) << 32;
   uint64_t orig_val = static_cast<uint64_t>(registers_[reg]);
   uint64_t result = (orig_val & 0xFFFFFFFF) | shifted_val;
   registers_[reg] = result;
 }
+
 
 double Simulator::get_double_from_register_pair(int reg) {
   ASSERT((reg >= 0) && (reg < kNumGPRs) && ((reg % 2) == 0));
@@ -1014,6 +1025,7 @@ double Simulator::get_double_from_register_pair(int reg) {
 #endif
   return(dm_val);
 }
+
 
 // Raw access to the PC register.
 void Simulator::set_pc(intptr_t value) {
@@ -1032,12 +1044,14 @@ intptr_t Simulator::get_pc() const {
   return special_reg_pc_;
 }
 
+
 // For use in calls that take two double values which are currently
 // in d1 and d2
 void Simulator::GetFpArgs(double* x, double* y) {
   *x = get_double_from_d_register(0);
   *y = get_double_from_d_register(2);
 }
+
 
 // For use in calls that take one double value (d1)
 void Simulator::GetFpArgs(double* x) {
@@ -1074,6 +1088,7 @@ uint32_t Simulator::ReadWU(intptr_t addr, Instruction* instr) {
   return *ptr;
 }
 
+
 int32_t Simulator::ReadW(intptr_t addr, Instruction* instr) {
   int32_t* ptr = reinterpret_cast<int32_t*>(addr);
   return *ptr;
@@ -1085,6 +1100,7 @@ void Simulator::WriteW(intptr_t addr, uint32_t value, Instruction* instr) {
   *ptr = value;
   return;
 }
+
 
 void Simulator::WriteW(intptr_t addr, int32_t value, Instruction* instr) {
   int32_t* ptr = reinterpret_cast<int32_t*>(addr);
@@ -1142,16 +1158,19 @@ void Simulator::WriteB(intptr_t addr, int8_t value) {
   *ptr = value;
 }
 
+
 int64_t Simulator::ReadDW(intptr_t addr) {
   int64_t* ptr = reinterpret_cast<int64_t*>(addr);
   return *ptr;
 }
+
 
 void Simulator::WriteDW(intptr_t addr, int64_t value) {
   int64_t* ptr = reinterpret_cast<int64_t*>(addr);
   *ptr = value;
   return;
 }
+
 
 /**
  * Reads a double value from memory at given address.
@@ -1591,6 +1610,7 @@ void Simulator::PrintStopInfo(uint32_t code) {
   }
 }
 
+
 // Method for checking overflow on signed addition:
 //   Test src1 and src2 have opposite sign,
 //   (1) No overflow if they have opposite sign
@@ -1847,6 +1867,7 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
   }
   return true;
 }
+
 
 // Decode routine for four-byte instructions
 bool Simulator::DecodeFourByte(Instruction* instr) {
@@ -2323,6 +2344,7 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
   return true;
 }
 
+
 /**
  * Decodes and simulates four byte arithmetic instructions
  */
@@ -2762,6 +2784,7 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
   return true;
 }
 
+
 /**
  * Decodes and simulates four byte floating point instructions
  */
@@ -3090,6 +3113,7 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
   }
   return true;
 }
+
 
 // Decode routine for six-byte instructions
 bool Simulator::DecodeSixByte(Instruction* instr) {
@@ -3620,6 +3644,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
   return true;
 }
 
+
 /**
  * Decodes and simulates six byte arithmetic instructions
  */
@@ -4054,9 +4079,11 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
   return true;
 }
 
+
 int16_t Simulator:: ByteReverse(int16_t hword) {
   return (hword << 8) | ((hword >> 8) & 0x00ff);
 }
+
 
 int32_t Simulator:: ByteReverse(int32_t word) {
   int32_t result = word << 24;
@@ -4065,6 +4092,7 @@ int32_t Simulator:: ByteReverse(int32_t word) {
   result |= (word >> 24) & 0x00000ff;
   return result;
 }
+
 
 // Executes the current instruction.
 void Simulator::InstructionDecode(Instruction* instr, bool auto_incr_pc) {
@@ -4265,6 +4293,7 @@ uintptr_t Simulator::PopAddress() {
   set_register(sp, current_sp + sizeof(uintptr_t));
   return address;
 }
+
 
 } }  // namespace v8::internal
 

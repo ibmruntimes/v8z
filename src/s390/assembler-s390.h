@@ -109,7 +109,7 @@ struct Register {
 #endif
 
   inline static int NumAllocatableRegisters();
- 
+
 
   static int ToAllocationIndex(Register reg) {
     int index = reg.code() - 2;  // r0-r1 are skipped
@@ -473,7 +473,7 @@ class CpuFeatures : public AllStatic {
   }
 
 #if 0
-  // TODO: isolate->enabled_cpu_features not defined.
+  // TODO(johnyan) : isolate->enabled_cpu_features not defined.
   // Check whether a feature is currently enabled.
   static bool IsEnabled(CpuFeature f) {
     ASSERT(initialized_);
@@ -543,7 +543,7 @@ class CpuFeatures : public AllStatic {
       // when there's only a single isolate, which is guaranteed when
       // the serializer is enabled.
       // return Serializer::enabled();
-      // TODO: no matching function
+      // TODO(johnyan) : no matching function
       return false;
     }
 
@@ -575,6 +575,7 @@ class CpuFeatures : public AllStatic {
   }
 
   static bool SupportsCrankshaft() { return true; }
+
  private:
   static bool Check(CpuFeature f, unsigned set) {
     return (set & flag2set(f)) != 0;

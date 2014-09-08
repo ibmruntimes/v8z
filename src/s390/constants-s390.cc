@@ -51,10 +51,12 @@ const char* FPRegisters::names_[kNumFPRegisters] = {
     "f8", "f9", "f10", "f11", "f12", "f13", "f14", "f15"
 };
 
+
 const char* FPRegisters::Name(int reg) {
   ASSERT((0 <= reg) && (reg < kNumFPRegisters));
   return names_[reg];
 }
+
 
 int FPRegisters::Number(const char* name) {
   for (int i = 0; i < kNumFPRegisters; i++) {

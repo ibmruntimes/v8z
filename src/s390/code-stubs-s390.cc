@@ -391,6 +391,7 @@ static void GenerateFastCloneShallowArrayCommon(
   }
 }
 
+
 void FastCloneShallowArrayStub::Generate(MacroAssembler* masm) {
   // Stack layout on entry:
   //
@@ -565,6 +566,7 @@ void FloatingPointHelper::LoadSmis(MacroAssembler* masm,
   __ SmiToDoubleFPRegister(r3, d0, scratch1);
 }
 
+
 // needs cleanup for extra parameters that are unused
 void FloatingPointHelper::LoadOperands(
     MacroAssembler* masm,
@@ -578,6 +580,7 @@ void FloatingPointHelper::LoadOperands(
   // Load left operand (r3) to d0
   LoadNumber(masm, r3, d0, heap_number_map, scratch1, scratch2, slow);
 }
+
 
 // needs cleanup for extra parameters that are unused
 // also needs a scratch double register instead of d3
@@ -666,11 +669,13 @@ void FloatingPointHelper::ConvertUnsignedIntToDouble(MacroAssembler* masm,
   __ cdlfbr(Condition(5), Condition(5), double_dst, src);
 }
 
+
 void FloatingPointHelper::ConvertIntToFloat(MacroAssembler* masm,
                                             const DoubleRegister dst,
                                             const Register src) {
   __ cefbr(dst, src);
 }
+
 
 void FloatingPointHelper::LoadNumberAsInt32Double(MacroAssembler* masm,
                                                   Register object,
@@ -856,6 +861,7 @@ void FloatingPointHelper::CallCCodeForDoubleOperation(
   __ Ret();
 }
 
+
 // Handle the case where the lhs and rhs are the same object.
 // Equality is almost reflexive (everything but NaN), so this is a test
 // for "identity and not NaN".
@@ -1035,6 +1041,7 @@ static void EmitSmiNonsmiComparison(MacroAssembler* masm,
   __ SmiToDoubleFPRegister(rhs, d6, r9);
   // Fall through to both_loaded_as_doubles.
 }
+
 
 // See comment at call site.
 static void EmitStrictTwoHeapObjectCompare(MacroAssembler* masm,
@@ -1735,6 +1742,7 @@ void UnaryOpStub::GenerateHeapNumberStubBitNot(MacroAssembler* masm) {
   __ bind(&slow);
   GenerateTypeTransition(masm);
 }
+
 
 void UnaryOpStub::GenerateHeapNumberCodeSub(MacroAssembler* masm,
                                             Label* slow) {
@@ -4468,6 +4476,7 @@ void ArgumentsAccessStub::GenerateNewNonStrictFast(MacroAssembler* masm) {
   __ TailCallRuntime(Runtime::kNewArgumentsFast, 3, 1);
 }
 
+
 void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
   // sp[0] : number of parameters
   // sp[4] : receiver displacement
@@ -6807,6 +6816,7 @@ void ICCompareStub::GenerateMiss(MacroAssembler* masm) {
   __ Jump(r4);
 }
 
+
 // This stub is paired with DirectCEntryStub::GenerateCall
 void DirectCEntryStub::Generate(MacroAssembler* masm) {
   // Retrieve return address
@@ -7121,6 +7131,7 @@ struct AheadOfTimeWriteBarrierStubList {
   Register object, value, address;
   RememberedSetAction action;
 };
+
 
 #define REG(Name) { kRegister_ ## Name ## _Code }
 
@@ -7560,6 +7571,7 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
   __ Pop(r14, r7, r3);
   __ Ret();
 }
+
 
 #undef __
 } }  // namespace v8::internal

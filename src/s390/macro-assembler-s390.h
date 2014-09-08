@@ -508,7 +508,7 @@ class MacroAssembler: public Assembler {
   void pop() {
     la(sp, MemOperand(sp, kPointerSize));
   }
-  
+
   void Push(Register src) { push(src); }
 
   // Push a handle.
@@ -546,13 +546,12 @@ class MacroAssembler: public Assembler {
     ASSERT(!src1.is(src4));
     ASSERT(!src2.is(src4));
     ASSERT(!src3.is(src4));
-       
+
     lay(sp, MemOperand(sp, -kPointerSize * 4));
     StorePX(src1, MemOperand(sp, kPointerSize * 3));
     StorePX(src2, MemOperand(sp, kPointerSize * 2));
     StorePX(src3, MemOperand(sp, kPointerSize));
     StorePX(src4, MemOperand(sp, 0));
-
   }
 
   // Push five registers.  Pushes leftmost register first (to highest address).
@@ -561,10 +560,9 @@ class MacroAssembler: public Assembler {
             Register src3,
             Register src4,
             Register src5) {
-
     ASSERT(!src1.is(src2));
     ASSERT(!src1.is(src3));
-    ASSERT(!src2.is(src3)); 
+    ASSERT(!src2.is(src3));
     ASSERT(!src1.is(src4));
     ASSERT(!src2.is(src4));
     ASSERT(!src3.is(src4));
@@ -804,7 +802,7 @@ class MacroAssembler: public Assembler {
                       const ParameterCount& actual,
                       InvokeFlag flag,
                       const CallWrapper& call_wrapper);
-  
+
   void InvokeFunction(Handle<JSFunction> function,
                       const ParameterCount& expected,
                       const ParameterCount& actual,
@@ -824,7 +822,7 @@ class MacroAssembler: public Assembler {
   void IsObjectJSStringType(Register object,
                             Register scratch,
                             Label* fail);
-  
+
   void IsObjectNameType(Register object,
                         Register scratch,
                         Label* fail);
@@ -915,7 +913,7 @@ class MacroAssembler: public Assembler {
 
   // ---------------------------------------------------------------------------
   // Allocation support
-  
+
   // Allocate an object in new space or old pointer space. The object_size is
   // specified either in bytes or in words if the allocation flag SIZE_IN_WORDS
   // is passed. If the space is exhausted control continues at the gc_required
@@ -923,7 +921,7 @@ class MacroAssembler: public Assembler {
   // tag_allocated_object is true the result is tagged as as a heap object.
   // All registers are clobbered also when control continues at the gc_required
   // label.
-  
+
   void Allocate(int object_size,
                 Register result,
                 Register scratch1,
@@ -1047,7 +1045,7 @@ class MacroAssembler: public Assembler {
                             InstanceType min_type,
                             InstanceType max_type,
                             Label* false_label);
-  
+
   // Compare instance type in a map.  map contains a valid map object whose
   // object type should be compared with the given type.  This both
   // sets the flags and leaves the object type in the type_reg register.
@@ -1084,7 +1082,7 @@ class MacroAssembler: public Assembler {
                                    DoubleRegister double_scratch,
                                    Label* fail,
                                    int elements_offset = 0);
-  
+
   // Compare an object's map with the specified map and its transitioned
   // elements maps if mode is ALLOW_ELEMENT_TRANSITION_MAPS. Condition flags are
   // set with result of map compare. If multiple map compares are required, the
@@ -1099,7 +1097,7 @@ class MacroAssembler: public Assembler {
   void CompareMap(Register obj_map,
                   Handle<Map> map,
                   Label* early_success);
-                  
+
   // Check if the map of an object is equal to a specified map and branch to
   // label if not. Skip the smi check if not required (object is known to be a
   // heap object). If mode is ALLOW_ELEMENT_TRANSITION_MAPS, then also match
@@ -1166,7 +1164,7 @@ class MacroAssembler: public Assembler {
   // untagged value afterwards.
   void SmiToDoubleFPRegister(DoubleRegister value, Register smi);
 
-  
+
   // Check if a double can be exactly represented as a signed 32-bit integer.
   // CR_EQ in cr7 is set if true.
   void TestDoubleIsInt32(DoubleRegister double_input,
@@ -1291,7 +1289,7 @@ class MacroAssembler: public Assembler {
   void CallRuntime(const Runtime::Function* f,
                    int num_arguments,
                    SaveFPRegsMode save_doubles = kDontSaveFPRegs);
-  
+
   void CallRuntimeSaveDoubles(Runtime::FunctionId id) {
     const Runtime::Function* function = Runtime::FunctionForId(id);
     CallRuntime(function, function->nargs, kSaveFPRegs);
@@ -1367,7 +1365,7 @@ class MacroAssembler: public Assembler {
   // Calls an API function.  Allocates HandleScope, extracts returned value
   // from handle and propagates exceptions.  Restores context.  stack_space
   // - space to be unwound on exit (includes the call JS arguments space and
-  // the additional space allocated for the fast call). 
+  // the additional space allocated for the fast call).
   void CallApiFunctionAndReturn(Register function_address,
                                 ExternalReference thunk_ref,
                                 int stack_space,
@@ -1394,8 +1392,8 @@ class MacroAssembler: public Assembler {
     ASSERT(!code_object_.is_null());
     return code_object_;
   }
-  
-  
+
+
   // Emit code for a truncating division by a constant. The dividend register is
   // unchanged and ip gets clobbered. Dividend and result must be different.
   void TruncatingDiv(Register result, Register dividend, int32_t divisor);
@@ -1777,17 +1775,17 @@ class MacroAssembler: public Assembler {
   void JumpIfInstanceTypeIsNotSequentialAscii(Register type,
                                               Register scratch,
                                               Label* failure);
-  
+
   void JumpIfNotUniqueName(Register reg, Label* not_unique_name);
 
   void EmitSeqStringSetCharCheck(Register string,
                                  Register index,
                                  Register value,
                                  uint32_t encoding_mask);
-  
+
   // ---------------------------------------------------------------------------
   // Patching helpers.
-  
+
   // Retrieve/patch the relocated value (lis/ori pair or constant pool load).
   void GetRelocatedValue(Register location,
                          Register result,

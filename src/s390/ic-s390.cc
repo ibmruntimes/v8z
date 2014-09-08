@@ -929,7 +929,7 @@ static void KeyedStoreGenerateGenericHelper(
   // We have to go to the runtime if the current value is the hole because
   // there may be a callback on the element
   Label holecheck_passed1;
-  // @TODO Fold AddP into memref of LoadP
+  // @TODO(joransiu) : Fold AddP into memref of LoadP
   __ AddP(address, elements, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ SmiToPtrArrayOffset(scratch_value, key);
   __ LoadP(scratch_value, MemOperand(address, scratch_value));
@@ -993,7 +993,7 @@ static void KeyedStoreGenerateGenericHelper(
   // HOLECHECK: guards "A[i] double hole?"
   // We have to see if the double version of the hole is present. If so
   // go to the runtime.
-  // @TOOD Fold AddP Operand into LoadlW
+  // @TODO(joransiu) : Fold AddP Operand into LoadlW
   __ AddP(address, elements,
           Operand((FixedDoubleArray::kHeaderSize + Register::kExponentOffset -
                    kHeapObjectTag)));

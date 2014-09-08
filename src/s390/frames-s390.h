@@ -38,7 +38,6 @@ int JSCallerSavedCode(int n);
 // N.B.  Do not bother saving all non-volatiles -- only those that v8
 //       modifies without saving/restoring inline.
 const RegList kCalleeSaved =
-  
   1 << 6 |   // r6 (argument passing in CEntryStub)
              //    (HandleScope logic in MacroAssembler)
   1 << 7 |   // r7 (argument passing in CEntryStub)

@@ -90,6 +90,7 @@ TEST(0) {
   CHECK_EQ(7, static_cast<int>(res));
 }
 
+
 // Loop 100 times, adding loop counter to result
 TEST(1) {
   InitializeVM();
@@ -271,6 +272,7 @@ TEST(3) {
   CHECK_EQ(10*4, t.c);
   CHECK_EQ(1000/8, t.s);
 }
+
 
 TEST(4) {
   // Test the VFP floating point instructions.
@@ -660,6 +662,7 @@ TEST(7) {
   TestRoundingMode(u32_f64, RN, (kMaxUInt + 0.5), kMaxUInt, true);
   TestRoundingMode(u32_f64, RN, (kMaxUInt + 1.0), kMaxUInt, true);
 }
+
 
 TEST(8) {
   // Test VFP multi load/store with ia_w.
@@ -1232,6 +1235,7 @@ TEST(14) {
   ::exit(0);
 }
 
+
 TEST(15) {
   InitializeVM();
   v8::HandleScope scope;
@@ -1282,6 +1286,7 @@ TEST(15) {
   CHECK_EQ(4, static_cast<int>(res));
 }
 
+
 // Test ExtractBitRange
 TEST(16) {
   InitializeVM();
@@ -1315,6 +1320,7 @@ TEST(16) {
   ::printf("f() = %" V8PRIdPTR "\n", res);
   CHECK_EQ(2, static_cast<int>(res));
 }
+
 
 // Test JumpIfSmi
 TEST(17) {
@@ -1355,6 +1361,7 @@ TEST(17) {
   CHECK_EQ(1, static_cast<int>(res));
 }
 
+
 // Test fix<->floating point conversion.
 TEST(18) {
   InitializeVM();
@@ -1392,6 +1399,7 @@ TEST(18) {
   CHECK_EQ(0x2468, static_cast<int>(res));
 }
 
+
 // Test DSGR
 TEST(19) {
   InitializeVM();
@@ -1424,6 +1432,7 @@ TEST(19) {
   ::printf("f() = %" V8PRIdPTR  "\n", res);
   CHECK_EQ(0, static_cast<int>(res));
 }
+
 
 // Test LZDR
 TEST(20) {

@@ -407,7 +407,6 @@ class NameDictionaryLookupStub: public PlatformCodeStub {
   class LookupModeBits: public BitField<LookupMode, 0, 1> {};
 
   LookupMode mode_;
-
 };
 
 

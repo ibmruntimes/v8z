@@ -19,6 +19,7 @@ bool BreakLocationIterator::IsDebugBreakAtReturn() {
   return Debug::IsDebugBreakAtReturn(rinfo());
 }
 
+
 void BreakLocationIterator::SetDebugBreakAtReturn() {
   // Patch the code changing the return from JS function sequence from
   // 31-bit:
@@ -92,7 +93,7 @@ void BreakLocationIterator::SetDebugBreakAtSlot() {
   //
   //   iilf r14, <address>   6-bytes
   //   basr r14, r14A        2-bytes
-  //   
+  //
   // The 64bit sequence has an extra iihf.
   //
   //   iihf r14, <high 32-bits address>    6-bytes
@@ -266,6 +267,7 @@ void Debug::GenerateCallFunctionStubDebugBreak(MacroAssembler* masm) {
   // -----------------------------------
   Generate_DebugBreakCallHelper(masm, r3.bit(), 0);
 }
+
 
 void Debug::GenerateCallConstructStubDebugBreak(MacroAssembler* masm) {
   // Calling convention for CallConstructStub (from code-stubs-ppc.cc)
