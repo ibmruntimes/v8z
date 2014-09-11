@@ -245,7 +245,7 @@ int Decoder::FormatFloatingRegister(Instruction* instr, const char* format) {
     int reg = rrinstr->R2Value();
     PrintDRegister(reg);
     return 2;
-  } else if(format[1] == '3') {   // 'f3: register resides in bit 16-19
+  } else if (format[1] == '3') {   // 'f3: register resides in bit 16-19
     RRDInstruction* rrdinstr = reinterpret_cast<RRDInstruction*>(instr);
     int reg = rrdinstr->R1Value();
     PrintDRegister(reg);

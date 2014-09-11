@@ -1457,7 +1457,7 @@ class RRFInstruction : Instruction {
   inline int size() const { return 4; }
 };
 
-//RRD Isntruction
+// RRD Isntruction
 class RRDInstruction : Instruction {
  public:
   inline int R1Value() const {
