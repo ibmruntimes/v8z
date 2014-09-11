@@ -848,6 +848,25 @@ class FloatingPointHelper : public AllStatic {
                                           Register heap_number_result,
                                           Register scratch);
 
+  // Tries to convert two values to smis losslessly.
+  // This fails if either argument is not a Smi nor a HeapNumber,
+  // or if it's a HeapNumber with a value that can't be converted
+  // losslessly to a Smi. In that case, control transitions to the
+  // on_not_smis label.
+  // On success, either control goes to the on_success label (if one is
+  // provided), or it falls through at the end of the code (if on_success
+  // is NULL).
+  // On success, both first and second holds Smi tagged values.
+  // One of first or second must be non-Smi when entering.
+  static void NumbersToSmis(MacroAssembler* masm,
+                            Register first,
+                            Register second,
+                            Register scratch1,
+                            Register scratch2,
+                            Register scratch3,
+                            Label* on_success,
+                            Label* on_not_smis);
+
  private:
   static void LoadNumber(MacroAssembler* masm,
                          Register object,
