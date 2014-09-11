@@ -123,15 +123,18 @@ void Decoder::Print(const char* str) {
   out_buffer_[out_buffer_pos_] = 0;
 }
 
+
 // Print the register name according to the active name converter.
 void Decoder::PrintRegister(int reg) {
   Print(converter_.NameOfCPURegister(reg));
 }
 
+
 // Print the double FP register name according to the active name converter.
 void Decoder::PrintDRegister(int reg) {
   Print(FPRegisters::Name(reg));
 }
+
 
 // Print SoftwareInterrupt codes. Factoring this out reduces the complexity of
 // the FormatOption method.
@@ -157,6 +160,7 @@ void Decoder::PrintSoftwareInterrupt(SoftwareInterruptCodes svc) {
       return;
   }
 }
+
 
 // Handle all register based formatting in this function to reduce the
 // complexity of FormatOption.
@@ -226,6 +230,7 @@ int Decoder::FormatRegister(Instruction* instr, const char* format) {
   return -1;
 }
 
+
 int Decoder::FormatFloatingRegister(Instruction* instr, const char* format) {
   ASSERT(format[0] == 'f');
 
@@ -260,6 +265,7 @@ int Decoder::FormatFloatingRegister(Instruction* instr, const char* format) {
   return -1;
 }
 
+
 // Handle all FP register based formatting in this function to reduce the
 // complexity of FormatOption.
 int Decoder::FormatFPRegister(Instruction* instr, const char* format) {
@@ -283,6 +289,7 @@ int Decoder::FormatFPRegister(Instruction* instr, const char* format) {
 
   return retval;
 }
+
 
 // FormatOption takes a formatting string and interprets it based on
 // the current instructions. The format string points to the first
@@ -374,6 +381,7 @@ int Decoder::FormatOption(Instruction* instr, const char* format) {
   return -1;
 }
 
+
 int Decoder::FormatMask(Instruction* instr, const char* format) {
   ASSERT(format[0] == 'm');
   int32_t value = 0;
@@ -393,6 +401,7 @@ int Decoder::FormatMask(Instruction* instr, const char* format) {
       "%d", value);
   return 2;
 }
+
 
 int Decoder::FormatDisplacement(Instruction* instr, const char* format) {
   ASSERT(format[0] == 'd');
@@ -429,6 +438,7 @@ int Decoder::FormatDisplacement(Instruction* instr, const char* format) {
       return 1;
   }
 }
+
 
 int Decoder::FormatImmediate(Instruction *instr, const char* format) {
   ASSERT(format[0] == 'i');
@@ -519,6 +529,7 @@ int Decoder::FormatImmediate(Instruction *instr, const char* format) {
   return -1;
 }
 
+
 // Format takes a formatting string for a whole instruction and prints it into
 // the output buffer. All escaped options are handed to FormatOption to be
 // parsed further.
@@ -535,6 +546,7 @@ void Decoder::Format(Instruction* instr, const char* format) {
   out_buffer_[out_buffer_pos_]  = '\0';
 }
 
+
 // The disassembler may end up decoding data inlined in the code. We do not want
 // it to crash if the data does not ressemble any known instruction.
 #define VERIFY(condition) \
@@ -550,6 +562,7 @@ void Decoder::Unknown(Instruction* instr) {
   Format(instr, "unknown");
 }
 
+
 // For currently unimplemented decodings the disassembler calls
 // UnknownFormat(instr) which will just print opcode name of the
 // instruction bits.
@@ -559,11 +572,13 @@ void Decoder::UnknownFormat(Instruction* instr, const char* name) {
   Format(instr, buffer);
 }
 
+
 void Decoder::MarkerFormat(Instruction* instr, const char* name, int id) {
   char buffer[100];
   snprintf(buffer, sizeof(buffer), "%s %d", name, id);
   Format(instr, buffer);
 }
+
 
 // Disassembles Two Byte S390 Instructions
 // @return true if successfully decoded
@@ -600,6 +615,7 @@ bool Decoder::DecodeTwoByte(Instruction* instr) {
   }
   return true;
 }
+
 
 // Disassembles Four Byte S390 Instructions
 // @return true if successfully decoded
@@ -743,6 +759,7 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
   }
   return true;
 }
+
 
 // Disassembles Six Byte S390 Instructions
 // @return true if successfully decoded
