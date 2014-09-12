@@ -344,7 +344,7 @@ class Simulator {
   }
 
   // Executes one instruction.
-  void InstructionDecode(Instruction* instr, bool auto_incr_pc = true);
+  void ExecuteInstruction(Instruction* instr, bool auto_incr_pc = true);
 
   // ICache.
   static void CheckICache(v8::internal::HashMap* i_cache, Instruction* instr);
@@ -362,7 +362,7 @@ class Simulator {
   void SetFpResult(const double& result);
   void TrashCallerSaveRegisters();
 
-  void CallInternal(byte* entry);
+  void CallInternal(byte* entry, int reg_arg_count = 3);
 
   // Architecture state.
   // On z9 and higher, and supported Linux on System z platforms, all registers
