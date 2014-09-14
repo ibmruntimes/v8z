@@ -1991,6 +1991,7 @@ void lhi(Register dst, const Operand& imm);
 
 
   static bool IsCmpRegister(Instr instr);
+  static bool IsCmpImmediate(Instr instr);
   static bool IsRlwinm(Instr instr);
   static bool IsNop(SixByteInstr instr, int type = NON_MARKING_NOP);
 
