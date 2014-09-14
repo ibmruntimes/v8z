@@ -744,8 +744,10 @@ class MacroAssembler: public Assembler {
   void LoadHalfWordP(Register dst, const MemOperand& mem,
                     Register scratch = no_reg);
 
-  void StoreHalfWord(Register src, const MemOperand& mem, Register scratch);
-  void StoreByte(Register src, const MemOperand& mem, Register scratch);
+  void StoreHalfWord(Register src,
+      const MemOperand& mem, Register scratch = r0);
+  void StoreByte(Register src,
+      const MemOperand& mem, Register scratch = r0);
 
   void AddSmiLiteral(Register dst, Register src, Smi *smi, Register scratch);
   void SubSmiLiteral(Register dst, Register src, Smi *smi, Register scratch);
