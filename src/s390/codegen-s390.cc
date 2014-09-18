@@ -628,7 +628,7 @@ void MathExpGenerator::EmitMathExp(MacroAssembler* masm,
 
 #undef __
 
-// @TODO(Tara): Figure how exactly CodeAgeSequence functions ma to z
+// @TODO(Tara): Figure how exactly CodeAgeSequence functions map to z
 #ifdef DEBUG
 // mflr ip
 static const uint32_t kCodeAgePatchFirstInstruction = 0x7d8802a6;
