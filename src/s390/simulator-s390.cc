@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <cmath>
 #include "v8.h"
-#if defined(V8_TARGET_ARCH_S390)
+#if V8_TARGET_ARCH_S390
 
 #include "disasm.h"
 #include "assembler.h"
@@ -378,7 +378,7 @@ void S390Debugger::Debug() {
                      as_words);
             }
           } else if (strcmp(arg1, "alld") == 0) {
-            for (int i = 0; i < kNumFPDoubleRegisters; i++) {
+            for (int i = 0; i < DoubleRegister::NumRegisters(); i++) {
               dvalue = GetFPDoubleRegisterValue(i);
               uint64_t as_words = BitCast<uint64_t>(dvalue);
               PrintF("%3s: %f 0x%08x %08x\n",
@@ -478,13 +478,11 @@ void S390Debugger::Debug() {
           HeapObject* obj = reinterpret_cast<HeapObject*>(*cur);
           intptr_t value = *cur;
           Heap* current_heap = v8::internal::Isolate::Current()->heap();
-          if (((value & 1) == 0) || current_heap->Contains(obj)) {
+          if ((value & 1) == 0) {
+            PrintF("(smi %d)", PlatformSmiTagging::SmiToInt(obj));
+          } else if (current_heap->Contains(obj)) {
             PrintF(" (");
-            if ((value & 1) == 0) {
-              PrintF("smi %d", PlatformSmiTagging::SmiToInt(obj));
-            } else {
-              obj->ShortPrint();
-            }
+            obj->ShortPrint();
             PrintF(")");
           }
           PrintF("\n");

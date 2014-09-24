@@ -89,7 +89,6 @@ class Decoder {
   void UnknownFormat(Instruction* instr, const char* opcname);
   void MarkerFormat(Instruction* instr, const char* opcname, int id);
 
-  // S390 decoding
   bool DecodeTwoByte(Instruction* instr);
   bool DecodeFourByte(Instruction* instr);
   bool DecodeSixByte(Instruction* instr);
@@ -957,8 +956,9 @@ void Disassembler::Disassemble(FILE* f, byte* begin, byte* end) {
     buffer[0] = '\0';
     byte* prev_pc = pc;
     pc += d.InstructionDecode(buffer, pc);
-    fprintf(f, "%p    %08x      %s\n",
-            prev_pc, *reinterpret_cast<int32_t*>(prev_pc), buffer.start());
+    v8::internal::PrintF(
+        f, "%p    %08x      %s\n",
+        prev_pc, *reinterpret_cast<int32_t*>(prev_pc), buffer.start());
   }
 }
 
