@@ -1345,11 +1345,11 @@ void LCodeGen::DoFlooringDivByPowerOf2I(LFlooringDivByPowerOf2I* instr) {
     return;
   }
 
-  Label overflow, done;
-  __ boverflow(&overflow, cr0);
+  Label overflow_label, done;
+  __ b(overflow, &overflow_label, Label::kNear);
   __ ShiftRightArith(result, result, Operand(shift));
   __ b(&done, Label::kNear);
-  __ bind(&overflow);
+  __ bind(&overflow_label);
   __ mov(result, Operand(kMinInt / divisor));
   __ bind(&done);
 #endif
@@ -1451,10 +1451,10 @@ void LCodeGen::DoFlooringDivI(LFlooringDivI* instr) {
 #if V8_TARGET_ARCH_S390X
   __ Xor(scratch, dividend, divisor);
   __ Cmp32(scratch, Operand::Zero());
-  __ bge(&done);
+  __ bge(&done, Label::kNear);
 #else
-  __ Xor32(scratch, dividend, divisor, SetRC);
-  __ bge(&done, cr0);
+  __ Xor(scratch, dividend, divisor);
+  __ bge(&done, Label::kNear);
 #endif
 
   // If there is no remainder then we are done.
@@ -2596,7 +2596,7 @@ void LCodeGen::DoCompareMinusZeroAndBranch(LCompareMinusZeroAndBranch* instr) {
     __ LoadlW(scratch, FieldMemOperand(value, HeapNumber::kExponentOffset));
     __ LoadlW(ip, FieldMemOperand(value, HeapNumber::kMantissaOffset));
     Label skip;
-    __ CmpP(scratch, Operand(0x800000000));
+    __ CmpP(scratch, Operand(0x80000000));
     __ bne(&skip, Label::kNear);
     __ CmpP(ip, Operand::Zero());
     __ bind(&skip);
