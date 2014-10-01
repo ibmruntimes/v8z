@@ -260,7 +260,7 @@ class LCodeGen: public LCodeGenBase {
                                    String::Encoding encoding);
 
   void EmitMathAbs(LMathAbs* instr);
-#if V8_TARGET_ARCH_S39064
+#if V8_TARGET_ARCH_S390X
   void EmitInteger32MathAbs(LMathAbs* instr);
 #endif
 
