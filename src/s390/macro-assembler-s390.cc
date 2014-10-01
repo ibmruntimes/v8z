@@ -2948,6 +2948,30 @@ void MacroAssembler::JumpIfNotPowerOfTwoOrZeroAndNeg(
   bne(not_power_of_two /*, cr0*/);
 }
 
+#if !V8_TARGET_ARCH_S390X
+void MacroAssembler::SmiTagCheckOverflow(Register reg, Register overflow) {
+  ASSERT(!reg.is(overflow));
+  LoadRR(overflow, reg);  // Save original value.
+  SmiTag(reg);
+  XorP(overflow, overflow, reg);  // Overflow if (value ^ 2 * value) < 0.
+}
+
+
+void MacroAssembler::SmiTagCheckOverflow(Register dst,
+                                         Register src,
+                                         Register overflow) {
+  if (dst.is(src)) {
+    // Fall back to slower case.
+    SmiTagCheckOverflow(dst, overflow);
+  } else {
+    ASSERT(!dst.is(src));
+    ASSERT(!dst.is(overflow));
+    ASSERT(!src.is(overflow));
+    SmiTag(dst, src);
+    XorP(overflow, dst, src);  // Overflow if (value ^ 2 * value) < 0.
+  }
+}
+#endif
 
 void MacroAssembler::JumpIfNotBothSmi(Register reg1,
                                       Register reg2,
