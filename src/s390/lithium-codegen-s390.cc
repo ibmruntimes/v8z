@@ -1133,7 +1133,7 @@ void LCodeGen::DoModI(LModI* instr) {
     if (hmod->CheckFlag(HValue::kBailoutOnMinusZero)) {
       DeoptimizeIf(overflow, instr->environment() /*, cr0*/);
     } else {
-      __ bnooverflow(&no_overflow_possible, Label::kNear /*, cr0*/);
+      __ b(nooverflow, &no_overflow_possible, Label::kNear /*, cr0*/);
       __ mov(result_reg, Operand::Zero());
       __ b(&done);
     }
@@ -1276,7 +1276,7 @@ void LCodeGen::DoDivI(LDivI* instr) {
       DeoptimizeIf(overflow, instr->environment() /*, cr0*/);
     } else {
       // When truncating, we want kMinInt / -1 = kMinInt.
-      __ bnooverflow(&no_overflow_possible /*, cr0*/);
+      __ b(nooverflow, &no_overflow_possible, Label::kNear /*, cr0*/);
       __ LoadRR(result, dividend);
     }
     __ bind(&no_overflow_possible);
@@ -1441,7 +1441,7 @@ void LCodeGen::DoFlooringDivI(LFlooringDivI* instr) {
       DeoptimizeIf(overflow, instr->environment(), cr0);
     } else {
       // When truncating, we want kMinInt / -1 = kMinInt.
-      __ bnooverflow(&no_overflow_possible, cr0);
+      __ b(nooverflow, &no_overflow_possible, Label::kNear);
       __ LoadRR(result, dividend);
     }
     __ bind(&no_overflow_possible);
