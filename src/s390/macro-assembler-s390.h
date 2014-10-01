@@ -1180,7 +1180,7 @@ class MacroAssembler: public Assembler {
   // Load the value of a smi object into a FP double register. The register
   // scratch1 can be the same register as smi in which case smi will hold the
   // untagged value afterwards.
-  void SmiToDoubleFPRegister(DoubleRegister value, Register smi);
+  void SmiToDouble(DoubleRegister value, Register smi);
 
 
   // Check if a double can be exactly represented as a signed 32-bit integer.
