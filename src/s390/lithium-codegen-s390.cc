@@ -269,7 +269,8 @@ bool LCodeGen::GenerateDeferredCode() {
         __ PushFixedFrame();
         __ LoadSmiLiteral(scratch0(), Smi::FromInt(StackFrame::STUB));
         __ push(scratch0());
-        __ la(fp, MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
+        __ la(fp,
+              MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
         Comment(";;; Deferred code");
       }
       code->Generate();
@@ -319,7 +320,8 @@ bool LCodeGen::GenerateDeoptJumpTable() {
         ASSERT(info()->IsStub());
         __ LoadSmiLiteral(scratch0(), Smi::FromInt(StackFrame::STUB));
         __ push(scratch0());
-        __ la(fp, MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
+        __ la(fp,
+              MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
         __ Call(ip);
       }
     } else {
@@ -1083,8 +1085,8 @@ void LCodeGen::DoModByConstI(LModByConstI* instr) {
     DeoptimizeIf(al, instr->environment());
     return;
   }
- 
-  // @TODO (joransiu) : Map the mullw properly (currently commented out).
+
+  // @TODO(joransiu) : Map the mullw properly (currently commented out).
   ASSERT(0);
   __ TruncatingDiv(result, dividend, Abs(divisor));
   __ mov(ip, Operand(Abs(divisor)));
@@ -1126,7 +1128,7 @@ void LCodeGen::DoModI(LModI* instr) {
   // want. We have to deopt if we care about -0, because we can't return that.
   if (hmod->CheckFlag(HValue::kCanOverflow)) {
     Label no_overflow_possible;
-	// TODO (joransiu): Check this path for overflow detection.
+  // TODO(joransiu): Check this path for overflow detection.
   ASSERT(0);
     if (hmod->CheckFlag(HValue::kBailoutOnMinusZero)) {
       DeoptimizeIf(overflow, instr->environment() /*, cr0*/);
@@ -1139,8 +1141,8 @@ void LCodeGen::DoModI(LModI* instr) {
   }
 
   ASSERT(0);
-  // TODO (joransiu): Fix me!
-  //__ mullw(scratch, right_reg, scratch);
+  // TODO(joransiu): Fix me!
+  // __ mullw(scratch, right_reg, scratch);
   __ SubP(result_reg, left_reg, scratch);
 
   // If we care about -0, test if the dividend is <0 and the result is 0.
@@ -1224,7 +1226,7 @@ void LCodeGen::DoDivByConstI(LDivByConstI* instr) {
 
   if (!hdiv->CheckFlag(HInstruction::kAllUsesTruncatingToInt32)) {
     ASSERT(0);
-	// TODO (joransiu): Port this sequence properly to Z.
+  // TODO(joransiu): Port this sequence properly to Z.
     Register scratch = scratch0();
     __ mov(ip, Operand(divisor));
     // __ mullw(scratch, result, ip);
@@ -1244,8 +1246,8 @@ void LCodeGen::DoDivI(LDivI* instr) {
   ASSERT(!dividend.is(result));
   ASSERT(!divisor.is(result));
 
- 
-  // TODO (joransiu): Fix properly for Z.
+
+  // TODO(joransiu): Fix properly for Z.
   ASSERT(0);
   //  __ divw(result, dividend, divisor, SetOE, SetRC);
 
@@ -1268,8 +1270,8 @@ void LCodeGen::DoDivI(LDivI* instr) {
   // Check for (kMinInt / -1).
   if (hdiv->CheckFlag(HValue::kCanOverflow)) {
     Label no_overflow_possible;
-	// TODO (joransiu) : Verify how bnooverflow works or not.
-	ASSERT(0);
+  // TODO(joransiu) : Verify how bnooverflow works or not.
+  ASSERT(0);
     if (!hdiv->CheckFlag(HValue::kAllUsesTruncatingToInt32)) {
       DeoptimizeIf(overflow, instr->environment() /*, cr0*/);
     } else {
@@ -1287,8 +1289,8 @@ void LCodeGen::DoDivI(LDivI* instr) {
   __ dr(r0, divisor);     // R0:R1 = R1 / divisor - R0 remainder - R1 quotient
   if (!hdiv->CheckFlag(HInstruction::kAllUsesTruncatingToInt32)) {
     // Deoptimize if remainder is not 0.
-	// TODO (joransiu) : Validate this sequence is correct.
-	ASSERT(0);
+  // TODO(joransiu) : Validate this sequence is correct.
+  ASSERT(0);
     Register scratch = scratch0();
   __ chi(r0, Operand::Zero());    // Force 32-bit compare
     DeoptimizeIf(ne, instr->environment());
@@ -1313,7 +1315,6 @@ void LCodeGen::DoFlooringDivByPowerOf2I(LFlooringDivByPowerOf2I* instr) {
   }
 
   // If the divisor is negative, we have to negate and handle edge cases.
-  OEBit oe = LeaveOE;
 #if V8_TARGET_ARCH_S390X
   if (divisor == -1 && hdiv->CheckFlag(HValue::kLeftCanBeMinInt)) {
     __ Cmp32(dividend, Operand(0x80000000));
@@ -1413,7 +1414,7 @@ void LCodeGen::DoFlooringDivI(LFlooringDivI* instr) {
   ASSERT(!dividend.is(result));
   ASSERT(!divisor.is(result));
 
-  // TODO (joransiu) : Fix sequence to Z instructions.
+  // TODO(joransiu) : Fix sequence to Z instructions.
   ASSERT(0);
 //  __ divw(result, dividend, divisor, SetOE, SetRC);
 
@@ -1459,7 +1460,7 @@ void LCodeGen::DoFlooringDivI(LFlooringDivI* instr) {
 #endif
 
   // If there is no remainder then we are done.
-  // TODO (joransiu) : Fix this multiply (mullw).
+  // TODO(joransiu) : Fix this multiply (mullw).
   __ Mul(scratch, divisor, result);
   __ Cmp32(dividend, scratch);
   __ beq(&done);
@@ -1476,7 +1477,7 @@ void LCodeGen::DoMultiplyAddD(LMultiplyAddD* instr) {
   DoubleRegister multiplicand = ToDoubleRegister(instr->multiplicand());
   DoubleRegister result = ToDoubleRegister(instr->result());
 
-  // TODO (joransiu): Fix lithium to clobber result
+  // TODO(joransiu): Fix lithium to clobber result
   __ ldr(result, addend);
   __ madbr(result, multiplier, multiplicand);
 }
@@ -1488,7 +1489,7 @@ void LCodeGen::DoMultiplySubD(LMultiplySubD* instr) {
   DoubleRegister multiplicand = ToDoubleRegister(instr->multiplicand());
   DoubleRegister result = ToDoubleRegister(instr->result());
 
-  // TODO (joransiu): Fix lithium to clobber result
+  // TODO(joransiu): Fix lithium to clobber result
   __ ldr(result, minuend);
   __ msdbr(result, multiplier, multiplicand);
 }
@@ -1598,7 +1599,7 @@ void LCodeGen::DoMulI(LMulI* instr) {
         __ SmiUntag(scratch, right);
         __ msgr(result, scratch);
       } else {
-	    __ LoadRR(result, left);
+      __ LoadRR(result, left);
         __ msgr(result, right);
       }
       __ TestIfInt32(result, scratch, r0);
@@ -1607,13 +1608,13 @@ void LCodeGen::DoMulI(LMulI* instr) {
         __ SmiTag(result);
       }
 #else
-	  // r0:scratch = scratch * right
+    // r0:scratch = scratch * right
       if (instr->hydrogen()->representation().IsSmi()) {
         __ SmiUntag(scratch, left);
         __ mr_z(r0, right);
         __ LoadRR(result, scratch);
       } else {
-	    // r0:scratch = scratch * right
+      // r0:scratch = scratch * right
         __ LoadRR(scratch, left);
         __ mr_z(r0, right);
         __ LoadRR(result, scratch);
@@ -1729,8 +1730,8 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
     __ AndP(scratch, ToRegister(right_op), Operand(0x1F));
     switch (instr->op()) {
       case Token::ROR:
-	    ASSERT(0);
-		// TODO(joransiu) : Fix me. 
+      ASSERT(0);
+    // TODO(joransiu) : Fix me.
         // rotate_right(a, b) == rotate_left(a, 32 - b)
         // __ subfic(scratch, scratch, Operand(32));
         // __ rotlw(result, left, scratch);
@@ -1749,7 +1750,6 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
           DeoptimizeIf(lt, instr->environment(), cr0);
         } else {
           __ ShiftRight(result, left, scratch);
-
         }
         break;
       case Token::SHL:
@@ -1769,8 +1769,8 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
     switch (instr->op()) {
       case Token::ROR:
         if (shift_count != 0) {
-		  ASSERT(0);
-		  // TODO(joransiu): Fix me.
+      ASSERT(0);
+      // TODO(joransiu): Fix me.
           // __ rotrwi(result, left, shift_count);
         } else {
           __ Move(result, left);
@@ -1798,9 +1798,9 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
         if (shift_count != 0) {
 #if V8_TARGET_ARCH_S390X
           if (instr->hydrogen_value()->representation().IsSmi()) {
-		    // TODO(joransiu): Fix proper Z equivalent to sldi
-			ASSERT(0);
-			// __ sldi(result, left, Operand(shift_count));
+        // TODO(joransiu): Fix proper Z equivalent to sldi
+      ASSERT(0);
+      // __ sldi(result, left, Operand(shift_count));
 #else
           if (instr->hydrogen_value()->representation().IsSmi() &&
               instr->can_deopt()) {
@@ -2303,7 +2303,6 @@ void LCodeGen::DoDebugBreak(LDebugBreak* instr) {
 void LCodeGen::DoBranch(LBranch* instr) {
   Representation r = instr->hydrogen()->value()->representation();
   DoubleRegister dbl_scratch = double_scratch0();
- 
 
   if (r.IsInteger32()) {
     ASSERT(!info()->IsStub());
@@ -2561,7 +2560,7 @@ void LCodeGen::DoCmpHoleAndBranch(LCmpHoleAndBranch* instr) {
   EmitFalseBranch(instr, ordered);
 
   Register scratch = scratch0();
-  // TODO (joransiu): Probably some better sequence.
+  // TODO(joransiu): Probably some better sequence.
   __ std(input_reg, MemOperand(sp, -kDoubleSize));
   __ LoadlW(scratch, MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
   __ CmpP(scratch, Operand(kHoleNanUpper32));
@@ -2579,7 +2578,8 @@ void LCodeGen::DoCompareMinusZeroAndBranch(LCompareMinusZeroAndBranch* instr) {
     __ cdbr(value, kDoubleRegZero);
     EmitFalseBranch(instr, ne);
     __ std(value, MemOperand(sp, -kDoubleSize));
-    __ LoadlW(scratch, MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
+    __ LoadlW(scratch,
+              MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
     __ Cmp32(scratch, Operand::Zero());
     EmitBranch(instr, lt);
   } else {
@@ -2591,8 +2591,8 @@ void LCodeGen::DoCompareMinusZeroAndBranch(LCompareMinusZeroAndBranch* instr) {
                 DO_SMI_CHECK);
 #if V8_TARGET_ARCH_S390X
     __ LoadP(scratch, FieldMemOperand(value, HeapNumber::kValueOffset));
-	ASSERT(0);
-	// TODO (joransiu): Fix this sequence for Z.
+  ASSERT(0);
+  // TODO(joransiu): Fix this sequence for Z.
     // __ li(ip, Operand(1));
     // __ rotrdi(ip, ip, 1);  // ip = 0x80000000_00000000
     __ CmpP(scratch, ip);
@@ -3064,11 +3064,11 @@ void LCodeGen::DoReturn(LReturn* instr) {
     int parameter_count = ToInteger32(instr->constant_parameter_count());
     int32_t sp_delta = (parameter_count + 1) * kPointerSize;
     if (sp_delta != 0) {
-	  // TODO (joransiu): Clean this up into Macro Assembler
-	  if (sp_delta >= 0 && sp_delta < 4096)
+    // TODO(joransiu): Clean this up into Macro Assembler
+    if (sp_delta >= 0 && sp_delta < 4096)
         __ la(sp, MemOperand(sp, sp_delta));
-	  else
-	    __ lay(sp, MemOperand(sp, sp_delta));
+    else
+      __ lay(sp, MemOperand(sp, sp_delta));
     }
   } else {
     Register reg = ToRegister(instr->parameter_count());
@@ -3307,8 +3307,8 @@ void LCodeGen::DoAccessArgumentsAt(LAccessArgumentsAt* instr) {
       __ LoadP(result, MemOperand(arguments, index * kPointerSize));
     } else {
       Register index = ToRegister(instr->index());
-	  __ LoadImmP(result, Operand(const_length + 1));
-	  __ SubP(result, index);
+      __ LoadImmP(result, Operand(const_length + 1));
+      __ SubP(result, index);
       __ ShiftLeftP(result, result, Operand(kPointerSizeLog2));
       __ LoadP(result, MemOperand(arguments, result));
     }
@@ -3485,7 +3485,7 @@ void LCodeGen::DoLoadKeyedFixedDoubleArray(LLoadKeyed* instr) {
     __ AddP(scratch, elements, r0);
     elements = scratch;
   }
-  // TODO (joransiu): Optimize this for Z.
+  // TODO(joransiu): Optimize this for Z.
   if (!is_int16(base_offset)) {
     __ AddP(scratch, elements, Operand(base_offset));
     base_offset = 0;
@@ -3513,7 +3513,7 @@ void LCodeGen::DoLoadKeyedFixedArray(LLoadKeyed* instr) {
   Register result = ToRegister(instr->result());
   Register scratch = scratch0();
   Register store_base = scratch;
-  // TODO (joransiu) : Exploit RX form - see 3.14 branch
+  // TODO(joransiu) : Exploit RX form - see 3.14 branch
   int offset = 0;
 
   if (instr->key()->IsConstantOperand()) {
@@ -3609,7 +3609,7 @@ MemOperand LCodeGen::PrepareKeyedOperand(Register key,
     key = scratch;
   }
 
-  // TODO (joransiu): Fold base_offset into memOperand
+  // TODO(joransiu): Fold base_offset into memOperand
   if (base_offset) {
     __ AddP(scratch, key, Operand(base_offset));
   }
@@ -4070,9 +4070,10 @@ void LCodeGen::DoMathRound(LMathRound* instr) {
   // If the input is +0.5, the result is 1.
   __ bgt(&convert, Label::kNear);  // Out of [-0.5, +0.5].
   if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
-    // TODO (joransiu): Better Sequence here?
+    // TODO(joransiu): Better Sequence here?
     __ std(input, MemOperand(sp, -kDoubleSize));
-    __ LoadlW(input_high, MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
+    __ LoadlW(input_high,
+              MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
     __ Cmp32(input_high, Operand::Zero());
     DeoptimizeIf(lt, instr->environment());  // [-0.5, -0].
   }
@@ -5366,7 +5367,8 @@ void LCodeGen::DoDoubleToI(LDoubleToI* instr) {
       __ CmpP(result_reg, Operand::Zero());
       __ bne(&done, Label::kNear);
       __ std(double_input, MemOperand(sp, -kDoubleSize));
-      __ LoadlW(scratch1, MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
+      __ LoadlW(scratch1,
+                MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
       __ Cmp32(scratch1, Operand::Zero());
       DeoptimizeIf(lt, instr->environment());
       __ bind(&done);
@@ -5393,7 +5395,8 @@ void LCodeGen::DoDoubleToSmi(LDoubleToSmi* instr) {
       __ CmpP(result_reg, Operand::Zero());
       __ bne(&done, Label::kNear);
       __ std(double_input, MemOperand(sp, -kDoubleSize));
-      __ LoadlW(scratch1, MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
+      __ LoadlW(scratch1,
+                MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
       __ Cmp32(scratch1, Operand::Zero());
       DeoptimizeIf(lt, instr->environment());
       __ bind(&done);
@@ -5611,9 +5614,11 @@ void LCodeGen::DoDoubleBits(LDoubleBits* instr) {
   // TODO(joransiu): Use non-memory version.
   __ std(value_reg, MemOperand(sp, -kDoubleSize));
   if (instr->hydrogen()->bits() == HDoubleBits::HIGH) {
-    __ LoadlW(result_reg, MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
+    __ LoadlW(result_reg,
+              MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
   } else {
-    __ LoadlW(result_reg, MemOperand(sp, -kDoubleSize + Register::kMantissaOffset));
+    __ LoadlW(result_reg,
+              MemOperand(sp, -kDoubleSize + Register::kMantissaOffset));
   }
 }
 
@@ -5622,7 +5627,7 @@ void LCodeGen::DoConstructDouble(LConstructDouble* instr) {
   Register hi_reg = ToRegister(instr->hi());
   Register lo_reg = ToRegister(instr->lo());
   DoubleRegister result_reg = ToDoubleRegister(instr->result());
-  // TODO (joransiu): Construct with ldgr
+  // TODO(joransiu): Construct with ldgr
 #if V8_TARGET_LITTLE_ENDIAN
   __ StoreW(hi_reg, MemOperand(sp, -kDoubleSize / 2));
   __ StoreW(lo_reg, MemOperand(sp, -kDoubleSize / 2));
