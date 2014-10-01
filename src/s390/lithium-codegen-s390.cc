@@ -3369,7 +3369,7 @@ void LCodeGen::DoLoadKeyedExternalArray(LLoadKeyed* instr) {
     }
     if (elements_kind == EXTERNAL_FLOAT32_ELEMENTS ||
         elements_kind == FLOAT32_ELEMENTS) {
-      __ le(result, MemOperand(scratch0(), base_offset));
+      __ ldeb(result, MemOperand(scratch0(), base_offset));
     } else  {  // loading doubles, not floats.
       __ ld(result, MemOperand(scratch0(), base_offset));
     }
@@ -3381,58 +3381,29 @@ void LCodeGen::DoLoadKeyedExternalArray(LLoadKeyed* instr) {
     switch (elements_kind) {
       case EXTERNAL_INT8_ELEMENTS:
       case INT8_ELEMENTS:
-        if (key_is_constant) {
-          __ LoadB(result, mem_operand);
-        } else {
-          __ LoadlB(result, mem_operand);
-        }
-        __ LoadByteRR(result, result);
+        __ LoadB(result, mem_operand);
         break;
       case EXTERNAL_UINT8_CLAMPED_ELEMENTS:
       case EXTERNAL_UINT8_ELEMENTS:
       case UINT8_ELEMENTS:
       case UINT8_CLAMPED_ELEMENTS:
-        if (key_is_constant) {
-          __ LoadB(result, mem_operand);
-        } else {
-          __ LoadlB(result, mem_operand);
-        }
+        __ LoadlB(result, mem_operand);
         break;
       case EXTERNAL_INT16_ELEMENTS:
       case INT16_ELEMENTS:
-        if (key_is_constant) {
-          __ LoadHalfWord(result, mem_operand);
-        } else {
-          __ LoadLogicalHalfWord(result, mem_operand);
-        }
-        __ LoadHalfwordRR(result, result);
+        __ LoadHalfWordP(result, mem_operand);
         break;
       case EXTERNAL_UINT16_ELEMENTS:
       case UINT16_ELEMENTS:
-        if (key_is_constant) {
-          __ LoadHalfWord(result, mem_operand, r0);
-        } else {
-          __ LoadLogicalHalfWord(result, mem_operand);
-        }
+        __ LoadLogicalHalfWordP(result, mem_operand);
         break;
       case EXTERNAL_INT32_ELEMENTS:
       case INT32_ELEMENTS:
-        if (key_is_constant) {
-          __ LoadWord(result, mem_operand, r0);
-        } else {
-          __ LoadlW(result, mem_operand);
-        }
-#if V8_TARGET_ARCH_S390X
-        __ LoadWordRR(result, result);
-#endif
+        __ LoadW(result, mem_operand, r0);
         break;
       case EXTERNAL_UINT32_ELEMENTS:
       case UINT32_ELEMENTS:
-        if (key_is_constant) {
-          __ LoadWord(result, mem_operand, r0);
-        } else {
-          __ LoadlW(result, mem_operand);
-        }
+        __ LoadlW(result, mem_operand, r0);
         if (!instr->hydrogen()->CheckFlag(HInstruction::kUint32)) {
           __ CmpLogical32(result, Operand(0x80000000));
           DeoptimizeIf(ge, instr->environment());
