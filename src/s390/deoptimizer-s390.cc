@@ -298,7 +298,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   for (int i = 0; i < DoubleRegister::kMaxNumAllocatableRegisters; ++i) {
     const DoubleRegister dreg = DoubleRegister::FromAllocationIndex(i);
     int src_offset = i * kDoubleSize + double_regs_offset;
-    __ lfd(dreg, MemOperand(r3, src_offset));
+    __ ld(dreg, MemOperand(r3, src_offset));
   }
 
   // Push state, pc, and continuation from the last output frame.
