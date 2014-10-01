@@ -749,6 +749,17 @@ class MacroAssembler: public Assembler {
   void StoreByte(Register src,
       const MemOperand& mem, Register scratch = r0);
 
+  void LoadRepresentation(Register dst,
+                          const MemOperand& mem,
+                          Representation r,
+                          Register scratch = no_reg);
+
+  void StoreRepresentation(Register src,
+                           const MemOperand& mem,
+                           Representation r,
+                           Register scratch = no_reg);
+
+
   void AddSmiLiteral(Register dst, Register src, Smi *smi, Register scratch);
   void SubSmiLiteral(Register dst, Register src, Smi *smi, Register scratch);
   void CmpSmiLiteral(Register src1, Smi *smi, Register scratch);
@@ -2033,16 +2044,6 @@ inline MemOperand GlobalObjectOperand()  {
 #else
 #define ACCESS_MASM(masm) masm->
 #endif
-
-  void LoadRepresentation(Register dst,
-                          const MemOperand& mem,
-                          Representation r,
-                          Register scratch = no_reg);
-
-  void StoreRepresentation(Register src,
-                           const MemOperand& mem,
-                           Representation r,
-                           Register scratch = no_reg);
 
 
 } }  // namespace v8::internal
