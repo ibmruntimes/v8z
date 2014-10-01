@@ -1270,8 +1270,8 @@ void LCodeGen::DoDivI(LDivI* instr) {
   // Check for (kMinInt / -1).
   if (hdiv->CheckFlag(HValue::kCanOverflow)) {
     Label no_overflow_possible;
-  // TODO(joransiu) : Verify how bnooverflow works or not.
-  ASSERT(0);
+    // TODO(joransiu) : Verify how bnooverflow works or not.
+    ASSERT(0);
     if (!hdiv->CheckFlag(HValue::kAllUsesTruncatingToInt32)) {
       DeoptimizeIf(overflow, instr->environment() /*, cr0*/);
     } else {
@@ -1282,17 +1282,15 @@ void LCodeGen::DoDivI(LDivI* instr) {
     __ bind(&no_overflow_possible);
   }
 
-  ASSERT(scratch.is(r1));
-  ASSERT(!scratch.is(right));   // Following sequence implicitly kills scratch
   __ LoadRR(r0, dividend);
   __ srda(r0, Operand(32));
   __ dr(r0, divisor);     // R0:R1 = R1 / divisor - R0 remainder - R1 quotient
+
   if (!hdiv->CheckFlag(HInstruction::kAllUsesTruncatingToInt32)) {
     // Deoptimize if remainder is not 0.
-  // TODO(joransiu) : Validate this sequence is correct.
-  ASSERT(0);
-    Register scratch = scratch0();
-  __ chi(r0, Operand::Zero());    // Force 32-bit compare
+    // TODO(joransiu) : Validate this sequence is correct.
+    ASSERT(0);
+    __ chi(r0, Operand::Zero());    // Force 32-bit compare
     DeoptimizeIf(ne, instr->environment());
   }
 }
