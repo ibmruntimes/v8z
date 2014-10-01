@@ -28,6 +28,11 @@ inline MemOperand FieldMemOperand(Register object, Register index, int offset) {
   return MemOperand(object, index, offset - kHeapObjectTag);
 }
 
+// Generate a MemOperand for loading a field from Root register
+inline MemOperand RootMemOperand(Heap::RootListIndex index) {
+  return MemOperand(kRootRegister, index << kPointerSizeLog2);
+}
+
 // Flags used for AllocateHeapNumber
 enum TaggingMode {
   // Tag the result.
