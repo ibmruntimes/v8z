@@ -2100,7 +2100,6 @@ RRE_FORM_EMIT(lxr, LXR)
 RRE_FORM_EMIT(lzer, LZER)
 RRE_FORM_EMIT(lzxr, LZXR)
 RXF_FORM_EMIT(madb, MADB)
-RRD_FORM_EMIT(madbr, MADBR)
 RXF_FORM_EMIT(maeb, MAEB)
 RRD_FORM_EMIT(maebr, MAEBR)
 SI_FORM_EMIT(mc, MC)
@@ -2115,7 +2114,6 @@ SS2_FORM_EMIT(mp, MP)
 RX_FORM_EMIT(ms, MS)
 S_FORM_EMIT(msch, MSCH)
 RXF_FORM_EMIT(msdb, MSDB)
-RRD_FORM_EMIT(msdbr, MSDBR)
 RXF_FORM_EMIT(mseb, MSEB)
 RRD_FORM_EMIT(msebr, MSEBR)
 RIL1_FORM_EMIT(msfi, MSFI)
@@ -3656,6 +3654,24 @@ void Assembler::cfebr(Register r1, DoubleRegister r2) {
 void Assembler::ldeb(DoubleRegister d1, const MemOperand& opnd) {
   rxe_form(LDEB, Register::from_code(d1.code()), opnd.rx(), opnd.rb(),
            opnd.offset());
+}
+
+// Multiply and Add - MADBR R1, R3, R2
+// R1 = R3 * R2 + R1
+void Assembler::madbr(DoubleRegister d1, DoubleRegister d3, DoubleRegister d2) {
+  rrd_form(MADBR,
+           Register::from_code(d1.code()),
+           Register::from_code(d3.code()),
+           Register::from_code(d2.code()));
+}
+
+// Multiply and Subtract - MSDBR R1, R3, R2
+// R1 = R3 * R2 - R1
+void Assembler::msdbr(DoubleRegister d1, DoubleRegister d3, DoubleRegister d2) {
+  rrd_form(MSDBR,
+           Register::from_code(d1.code()),
+           Register::from_code(d3.code()),
+           Register::from_code(d2.code()));
 }
 
 

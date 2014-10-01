@@ -1477,7 +1477,6 @@ void LCodeGen::DoMultiplyAddD(LMultiplyAddD* instr) {
   DoubleRegister multiplicand = ToDoubleRegister(instr->multiplicand());
   DoubleRegister result = ToDoubleRegister(instr->result());
 
-  // TODO(joransiu): Fix lithium to clobber result
   __ ldr(result, addend);
   __ madbr(result, multiplier, multiplicand);
 }
@@ -1489,7 +1488,6 @@ void LCodeGen::DoMultiplySubD(LMultiplySubD* instr) {
   DoubleRegister multiplicand = ToDoubleRegister(instr->multiplicand());
   DoubleRegister result = ToDoubleRegister(instr->result());
 
-  // TODO(joransiu): Fix lithium to clobber result
   __ ldr(result, minuend);
   __ msdbr(result, multiplier, multiplicand);
 }
