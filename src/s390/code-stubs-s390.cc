@@ -4497,7 +4497,7 @@ void NameDictionaryLookupStub::GenerateNegativeLookup(MacroAssembler* masm,
     __ LoadRoot(tmp, Heap::kTheHoleValueRootIndex);
 
    // Stop if found the property.
-    __  mov(r0, Operand(Handle<String>(name)));
+    __ mov(r0, Operand(Handle<Name>(name)));
     __ CmpP(entity_name, r0);
     __ beq(miss);
 

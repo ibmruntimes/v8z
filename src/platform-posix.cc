@@ -313,7 +313,7 @@ void OS::DebugBreak() {
 #elif V8_HOST_ARCH_MIPS
   asm("break");
 #elif V8_HOST_ARCH_S390
-  raise(SIGTRAP);
+  //raise(SIGTRAP);
 #elif V8_HOST_ARCH_PPC
   asm("twge 2,2");
   //  asm("nop");  // roohack - nothing for now;
