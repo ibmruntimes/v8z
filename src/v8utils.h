@@ -202,13 +202,47 @@ Vector<const char> ReadFile(FILE* file,
                             bool verbose = true);
 
 
-// Copy from ASCII/16bit chars to ASCII/16bit chars.
+template <typename sourcechar, typename sinkchar>
+INLINE(static void CopyCharsUnsigned(sinkchar* dest,
+                                     const sourcechar* src,
+                                     int chars));
+#if defined(V8_HOST_ARCH_S390)
+INLINE(void CopyCharsUnsigned(uint8_t* dest, const uint8_t* src, int chars));
+INLINE(void CopyCharsUnsigned(uint16_t* dest, const uint16_t* src, int chars));
+#endif
+
 template <typename sourcechar, typename sinkchar>
 INLINE(void CopyChars(sinkchar* dest, const sourcechar* src, int chars));
 
+template<typename sourcechar, typename sinkchar>
+void CopyChars(sinkchar* dest, const sourcechar* src, int chars) {
+  ASSERT(sizeof(sourcechar) <= 2);
+  ASSERT(sizeof(sinkchar) <= 2);
+  if (sizeof(sinkchar) == 1) {
+    if (sizeof(sourcechar) == 1) {
+      CopyCharsUnsigned(reinterpret_cast<uint8_t*>(dest),
+                        reinterpret_cast<const uint8_t*>(src),
+                        chars);
+    } else {
+      CopyCharsUnsigned(reinterpret_cast<uint8_t*>(dest),
+                        reinterpret_cast<const uint16_t*>(src),
+                        chars);
+    }
+  } else {
+    if (sizeof(sourcechar) == 1) {
+      CopyCharsUnsigned(reinterpret_cast<uint16_t*>(dest),
+                        reinterpret_cast<const uint8_t*>(src),
+                        chars);
+    } else {
+      CopyCharsUnsigned(reinterpret_cast<uint16_t*>(dest),
+                        reinterpret_cast<const uint16_t*>(src),
+                        chars);
+    }
+  }
+}
 
 template <typename sourcechar, typename sinkchar>
-void CopyChars(sinkchar* dest, const sourcechar* src, int chars) {
+void CopyCharsUnsigned(sinkchar* dest, const sourcechar* src, int chars) {
   sinkchar* limit = dest + chars;
 #ifdef V8_HOST_CAN_READ_UNALIGNED
   if (sizeof(*dest) == sizeof(*src)) {
@@ -218,7 +252,8 @@ void CopyChars(sinkchar* dest, const sourcechar* src, int chars) {
     }
     // Number of characters in a uintptr_t.
     static const int kStepSize = sizeof(uintptr_t) / sizeof(*dest);  // NOLINT
-    while (dest <= limit - kStepSize) {
+    ASSERT(dest + kStepSize > dest);  // Check for overflow.
+    while (dest + kStepSize <= limit) {
       *reinterpret_cast<uintptr_t*>(dest) =
           *reinterpret_cast<const uintptr_t*>(src);
       dest += kStepSize;
@@ -230,6 +265,139 @@ void CopyChars(sinkchar* dest, const sourcechar* src, int chars) {
     *dest++ = static_cast<sinkchar>(*src++);
   }
 }
+
+
+#if defined(V8_HOST_ARCH_S390)
+#define CASE(n)                                 \
+  case n:                                       \
+    memcpy(dest, src, n);                       \
+    break
+void CopyCharsUnsigned(uint8_t* dest, const uint8_t* src, int chars) {
+  switch (static_cast<unsigned>(chars)) {
+    case 0:
+      break;
+    case 1:
+      *dest = *src;
+      break;
+    CASE(2);
+    CASE(3);
+    CASE(4);
+    CASE(5);
+    CASE(6);
+    CASE(7);
+    CASE(8);
+    CASE(9);
+    CASE(10);
+    CASE(11);
+    CASE(12);
+    CASE(13);
+    CASE(14);
+    CASE(15);
+    CASE(16);
+    CASE(17);
+    CASE(18);
+    CASE(19);
+    CASE(20);
+    CASE(21);
+    CASE(22);
+    CASE(23);
+    CASE(24);
+    CASE(25);
+    CASE(26);
+    CASE(27);
+    CASE(28);
+    CASE(29);
+    CASE(30);
+    CASE(31);
+    CASE(32);
+    CASE(33);
+    CASE(34);
+    CASE(35);
+    CASE(36);
+    CASE(37);
+    CASE(38);
+    CASE(39);
+    CASE(40);
+    CASE(41);
+    CASE(42);
+    CASE(43);
+    CASE(44);
+    CASE(45);
+    CASE(46);
+    CASE(47);
+    CASE(48);
+    CASE(49);
+    CASE(50);
+    CASE(51);
+    CASE(52);
+    CASE(53);
+    CASE(54);
+    CASE(55);
+    CASE(56);
+    CASE(57);
+    CASE(58);
+    CASE(59);
+    CASE(60);
+    CASE(61);
+    CASE(62);
+    CASE(63);
+    CASE(64);
+    default:
+      memcpy(dest, src, chars);
+      break;
+  }
+}
+#undef CASE
+
+#define CASE(n)                                 \
+  case n:                                       \
+    memcpy(dest, src, n * 2);                   \
+    break
+void CopyCharsUnsigned(uint16_t* dest, const uint16_t* src, int chars) {
+  switch (static_cast<unsigned>(chars)) {
+    case 0:
+      break;
+    case 1:
+      *dest = *src;
+      break;
+    CASE(2);
+    CASE(3);
+    CASE(4);
+    CASE(5);
+    CASE(6);
+    CASE(7);
+    CASE(8);
+    CASE(9);
+    CASE(10);
+    CASE(11);
+    CASE(12);
+    CASE(13);
+    CASE(14);
+    CASE(15);
+    CASE(16);
+    CASE(17);
+    CASE(18);
+    CASE(19);
+    CASE(20);
+    CASE(21);
+    CASE(22);
+    CASE(23);
+    CASE(24);
+    CASE(25);
+    CASE(26);
+    CASE(27);
+    CASE(28);
+    CASE(29);
+    CASE(30);
+    CASE(31);
+    CASE(32);
+    default:
+      memcpy(dest, src, chars * 2);
+      break;
+  }
+}
+#undef CASE
+#endif
 
 
 // A resource for using mmapped files to back external strings that are read
