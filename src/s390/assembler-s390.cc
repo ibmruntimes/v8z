@@ -291,11 +291,6 @@ MemOperand::MemOperand(Register rx, Register rb, int32_t offset) {
 
 // -----------------------------------------------------------------------------
 // Specific instructions, constants, and masks.
-
-// Spare buffer.
-static const int kMinimalBufferSize = 4*KB;
-
-
 Assembler::Assembler(Isolate* isolate, void* buffer, int buffer_size)
     : AssemblerBase(isolate, buffer, buffer_size),
       recorded_ast_id_(TypeFeedbackId::None()),

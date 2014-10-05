@@ -3193,8 +3193,8 @@ void FullCodeGenerator::EmitIsMinusZero(CallRuntime* expr) {
   __ iihf(r4, Operand(0x80000000));  // r4 = 0x80000000_00000000
   __ CmpP(r3, r4);
 #else
-  __ lwz(r4, FieldMemOperand(r2, HeapNumber::kExponentOffset));
-  __ lwz(r3, FieldMemOperand(r2, HeapNumber::kMantissaOffset));
+  __ LoadlW(r4, FieldMemOperand(r2, HeapNumber::kExponentOffset));
+  __ LoadlW(r3, FieldMemOperand(r2, HeapNumber::kMantissaOffset));
   Label skip;
   __ iilf(r0, Operand(SIGN_EXT_IMM16(0x8000)));
   __ CmpP(r4, r0);
