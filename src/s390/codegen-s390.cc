@@ -288,7 +288,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
 #if V8_TARGET_ARCH_S390X
   __ stg(r6, MemOperand(r9, 0));
 #else
-  // TODO (joransiu): Check if this works
+  // TODO(joransiu): Check if this works
   __ StoreW(r7, MemOperand(r9, Register::kExponentOffset));
   __ StoreW(r6, MemOperand(r9, Register::kMantissaOffset));
 #endif
