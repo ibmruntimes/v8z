@@ -313,10 +313,10 @@ void OS::DebugBreak() {
 #elif V8_HOST_ARCH_MIPS
   asm("break");
 #elif V8_HOST_ARCH_S390
-  //raise(SIGTRAP);
+  // TODO(joransiu): Fix with proper software breakpoint
+  // raise(SIGTRAP);
 #elif V8_HOST_ARCH_PPC
   asm("twge 2,2");
-  //  asm("nop");  // roohack - nothing for now;
 #elif V8_HOST_ARCH_IA32
 #if defined(__native_client__)
   asm("hlt");
