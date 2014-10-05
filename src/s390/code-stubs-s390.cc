@@ -2407,9 +2407,9 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
   __ SubSmiLiteral(r8, r8, Smi::FromInt(1), r0);
   __ SmiToPtrArrayOffset(r7, r8);
   __ AddP(r7, Operand(kParameterMapHeaderSize - kHeapObjectTag));
-  __ StorePX(r13, MemOperand(r7, r6));
+  __ StoreP(r13, MemOperand(r7, r6));
   __ SubP(r7, Operand(kParameterMapHeaderSize - FixedArray::kHeaderSize));
-  __ StorePX(r9, MemOperand(r7, r5));
+  __ StoreP(r9, MemOperand(r7, r5));
   __ AddSmiLiteral(r13, r13, Smi::FromInt(1), r0);
   __ bind(&parameters_test);
   __ CmpSmiLiteral(r8, Smi::FromInt(0), r0);

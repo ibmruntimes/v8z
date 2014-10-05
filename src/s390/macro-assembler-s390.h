@@ -67,7 +67,6 @@ bool AreAliased(Register reg1,
 // These exist to provide portability between 32 and 64bit
 #if V8_TARGET_ARCH_S390X
 #define LoadAndTestP       ltg
-#define StorePX            stg
 #define Div                divd
 
 // The length of the arithmetic operation is the length
@@ -115,7 +114,6 @@ bool AreAliased(Register reg1,
 #define ShiftRightArithP   srag
 #else
 #define LoadAndTestP       lt_z
-#define StorePX            st
 
 // arithmetics and bitwise
 // Reg2Reg
@@ -524,8 +522,8 @@ class MacroAssembler: public Assembler {
   void Push(Register src1, Register src2, Condition cond = al) {
     ASSERT(!src1.is(src2));
     lay(sp, MemOperand(sp, -kPointerSize * 2));
-    StorePX(src1, MemOperand(sp, kPointerSize));
-    StorePX(src2, MemOperand(sp, 0));
+    StoreP(src1, MemOperand(sp, kPointerSize));
+    StoreP(src2, MemOperand(sp, 0));
   }
 
   // Push three registers.  Pushes leftmost register first (to highest address).
@@ -534,9 +532,9 @@ class MacroAssembler: public Assembler {
     ASSERT(!src2.is(src3));
     ASSERT(!src1.is(src3));
     lay(sp, MemOperand(sp, -kPointerSize * 3));
-    StorePX(src1, MemOperand(sp, kPointerSize * 2));
-    StorePX(src2, MemOperand(sp, kPointerSize));
-    StorePX(src3, MemOperand(sp, 0));
+    StoreP(src1, MemOperand(sp, kPointerSize * 2));
+    StoreP(src2, MemOperand(sp, kPointerSize));
+    StoreP(src3, MemOperand(sp, 0));
   }
 
   // Push four registers.  Pushes leftmost register first (to highest address).
@@ -553,10 +551,10 @@ class MacroAssembler: public Assembler {
     ASSERT(!src3.is(src4));
 
     lay(sp, MemOperand(sp, -kPointerSize * 4));
-    StorePX(src1, MemOperand(sp, kPointerSize * 3));
-    StorePX(src2, MemOperand(sp, kPointerSize * 2));
-    StorePX(src3, MemOperand(sp, kPointerSize));
-    StorePX(src4, MemOperand(sp, 0));
+    StoreP(src1, MemOperand(sp, kPointerSize * 3));
+    StoreP(src2, MemOperand(sp, kPointerSize * 2));
+    StoreP(src3, MemOperand(sp, kPointerSize));
+    StoreP(src4, MemOperand(sp, 0));
   }
 
   // Push five registers.  Pushes leftmost register first (to highest address).
@@ -577,11 +575,11 @@ class MacroAssembler: public Assembler {
     ASSERT(!src4.is(src5));
 
     lay(sp, MemOperand(sp, -kPointerSize * 5));
-    StorePX(src1, MemOperand(sp, kPointerSize * 4));
-    StorePX(src2, MemOperand(sp, kPointerSize * 3));
-    StorePX(src3, MemOperand(sp, kPointerSize * 2));
-    StorePX(src3, MemOperand(sp, kPointerSize));
-    StorePX(src4, MemOperand(sp, 0));
+    StoreP(src1, MemOperand(sp, kPointerSize * 4));
+    StoreP(src2, MemOperand(sp, kPointerSize * 3));
+    StoreP(src3, MemOperand(sp, kPointerSize * 2));
+    StoreP(src3, MemOperand(sp, kPointerSize));
+    StoreP(src4, MemOperand(sp, 0));
   }
 
   void Pop(Register dst) { pop(dst); }

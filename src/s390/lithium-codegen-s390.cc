@@ -754,11 +754,9 @@ void LCodeGen::DeoptimizeIf(Condition cond,
   }
 
   if (FLAG_deopt_every_n_times != 0 && !info()->IsStub()) {
-    CRegister alt_cr = cr6;
     Register scratch = scratch0();
     ExternalReference count = ExternalReference::stress_deopt_count(isolate());
     Label no_deopt;
-    ASSERT(!alt_cr.is(cr));
     __ Push(r3, scratch);
     __ mov(scratch, Operand(count));
     __ l(r3, MemOperand(scratch));
@@ -4162,6 +4160,8 @@ void LCodeGen::DoMathClz32(LMathClz32* instr) {
   Register result = ToRegister(instr->result());
   ASSERT(0);
   // TODO(joransiu) : Figure out proper sequence for Z.
+  USE(input);
+  USE(result);
   // __ cntlzw_(result, input);
 }
 

@@ -952,7 +952,7 @@ static void KeyedStoreGenerateGenericHelper(
   // It's irrelevant whether array is smi-only or not when writing a smi.
   __ AddP(address, elements, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ SmiToPtrArrayOffset(scratch_value, key);
-  __ StorePX(value, MemOperand(address, scratch_value));
+  __ StoreP(value, MemOperand(address, scratch_value));
   __ Ret();
 
   __ bind(&non_smi_value);
