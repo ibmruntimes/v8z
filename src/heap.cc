@@ -3577,10 +3577,6 @@ AllocationResult Heap::Allocate(Map* map, AllocationSpace space,
 }
 
 
-#if defined(__GNUC__) && (__GNUC__ == 4) && (__GNUC_MINOR__ <= 4)
-// Work around bad optimization by GCC 4.4.6 on PPC Linux
-#pragma GCC optimize "O0"
-#endif
 AllocationResult Heap::AllocateArgumentsObject(Object* callee, int length) {
   // To get fast allocation and map sharing for arguments objects we
   // allocate them based on an arguments boilerplate.
@@ -3631,9 +3627,6 @@ AllocationResult Heap::AllocateArgumentsObject(Object* callee, int length) {
 
   return js_obj;
 }
-#if defined(__GNUC__) && (__GNUC__ == 4) && (__GNUC_MINOR__ <= 4)
-#pragma GCC reset_options
-#endif
 
 
 void Heap::InitializeJSObjectFromMap(JSObject* obj,
