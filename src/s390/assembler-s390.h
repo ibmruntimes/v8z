@@ -1955,6 +1955,7 @@ void lhi(Register dst, const Operand& imm);
   // for inline tables, e.g., jump-tables.
   void db(uint8_t data);
   void dd(uint32_t data);
+  void emit_ptr(uintptr_t data);
 
   int pc_offset() const { return pc_ - buffer_; }
 

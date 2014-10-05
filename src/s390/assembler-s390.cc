@@ -3762,11 +3762,17 @@ void Assembler::GrowBuffer() {
 }
 
 
-/*
 void Assembler::db(uint8_t data) {
   CheckBuffer();
   *reinterpret_cast<uint8_t*>(pc_) = data;
   pc_ += sizeof(uint8_t);
+}
+
+
+void Assembler::dd(uint32_t data) {
+  CheckBuffer();
+  *reinterpret_cast<uint32_t*>(pc_) = data;
+  pc_ += sizeof(uint32_t);
 }
 
 
@@ -3775,7 +3781,6 @@ void Assembler::emit_ptr(uintptr_t data) {
   *reinterpret_cast<uintptr_t*>(pc_) = data;
   pc_ += sizeof(uintptr_t);
 }
-*/
 
 
 void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
