@@ -1279,7 +1279,7 @@ INLINE(void CopyCharsUnsigned(uint16_t* dest, const uint16_t* src, int chars));
 INLINE(void CopyCharsUnsigned(uint8_t* dest, const uint8_t* src, int chars));
 INLINE(void CopyCharsUnsigned(uint16_t* dest, const uint16_t* src, int chars));
 #elif defined(V8_HOST_ARCH_S390)
-INLINE(void CopyCharsUnsigned(uint9_t* dest, const uint8_t* src, int chars));
+INLINE(void CopyCharsUnsigned(uint8_t* dest, const uint8_t* src, int chars));
 INLINE(void CopyCharsUnsigned(uint16_t* dest, const uint16_t* src, int chars));
 #endif
 
@@ -1508,7 +1508,6 @@ void CopyCharsUnsigned(uint8_t* dest, const uint8_t* src, int chars) {
     CASE(39);
     CASE(40);
     CASE(41);
-    CASE(42);
     CASE(42);
     CASE(43);
     CASE(44);
