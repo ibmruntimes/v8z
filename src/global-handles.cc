@@ -789,7 +789,8 @@ void GlobalHandles::PrintStats() {
   }
 
   PrintF("Global Handle Statistics:\n");
-  PrintF("  allocated memory = %" V8_PTR_PREFIX "dB\n", sizeof(Node) * total);
+  PrintF("  allocated memory = %" V8_PTR_PREFIX "dB\n",
+         static_cast<intptr_t>(sizeof(Node)) * total);
   PrintF("  # weak       = %d\n", weak);
   PrintF("  # pending    = %d\n", pending);
   PrintF("  # near_death = %d\n", near_death);
