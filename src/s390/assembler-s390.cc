@@ -230,6 +230,15 @@ bool RelocInfo::IsCodedSpecially() {
 }
 
 
+bool RelocInfo::IsInConstantPool() {
+#if V8_OOL_CONSTANT_POOL
+  return Assembler::IsConstantPoolLoadStart(pc_);
+#else
+  return false;
+#endif
+}
+
+
 void RelocInfo::PatchCode(byte* instructions, int num_bytes) {
   // Patch the code at the current address with the supplied instructions.
   byte* pc = reinterpret_cast<byte*>(pc_);
@@ -3866,6 +3875,27 @@ void Assembler::CheckTrampolinePool() {
   }
   return;
 }
-} }  // namespace v8::internal
 
+
+Handle<ConstantPoolArray> Assembler::NewConstantPool(Isolate* isolate) {
+#if V8_OOL_CONSTANT_POOL
+  return constant_pool_builder_.New(isolate);
+#else
+  // No out-of-line constant pool support.
+  ASSERT(!FLAG_enable_ool_constant_pool);
+  return isolate->factory()->empty_constant_pool_array();
+#endif
+}
+
+
+void Assembler::PopulateConstantPool(ConstantPoolArray* constant_pool) {
+#if V8_OOL_CONSTANT_POOL
+  constant_pool_builder_.Populate(this, constant_pool);
+#else
+  // No out-of-line constant pool support.
+  ASSERT(!FLAG_enable_ool_constant_pool);
+#endif
+}
+
+} }  // namespace v8::internal
 #endif  // V8_TARGET_ARCH_S390
