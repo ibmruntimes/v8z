@@ -4428,7 +4428,7 @@ void FullCodeGenerator::VisitCountOperation(CountOperation* expr) {
     __ AddAndCheckForOverflow(r2, r2, scratch1, scratch2, r0);
     __ BranchOnNoOverflow(&done);
     // Call stub. Undo operation first.
-    __ sub(r2, r2, scratch1);
+    __ SubP(r2, r2, scratch1);
     __ b(&stub_call);
     __ bind(&slow);
   }
@@ -4945,18 +4945,21 @@ BackEdgeTable::BackEdgeState BackEdgeTable::GetBackEdgeState(
     Isolate* isolate,
     Code* unoptimized_code,
     Address pc) {
+  // TODO(joransiu): Fix Interrupt case with proper Z instruction check
   UNIMPLEMENTED();
-  static const int kInstrSize = Assembler::kInstrSize;
+  // static const int kInstrSize = Assembler::kInstrSize;
   Address mov_address = Assembler::target_address_from_return_address(pc);
-  Address cmp_address = mov_address - 2 * kInstrSize;
+  // Address cmp_address = mov_address - 2 * kInstrSize;
   Address interrupt_address = Assembler::target_address_at(mov_address,
                                                            unoptimized_code);
 
+/*
   if (Assembler::IsCmpImmediate(Assembler::instr_at(cmp_address))) {
     ASSERT(interrupt_address ==
            isolate->builtins()->InterruptCheck()->entry());
     return INTERRUPT;
   }
+*/
 
   // S390 will always set cr
   // ASSERT(Assembler::IsCrSet(Assembler::instr_at(cmp_address)));
