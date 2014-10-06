@@ -4040,10 +4040,12 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   __ mr_z(r0, scratch1);  // r0:r1 = r1 * scratch1
   // Check for smi overflow. No overflow if higher 33 bits of 64-bit result are
   // zero.
-  // TODO(john): use TestIfInt32
   __ CmpP(r0, Operand::Zero());
   __ bne(&bailout);
-  __ TestSignBit32(scratch2, r0);
+  // TODO(john): TestIfInt32 expanded into the following two instructions
+  __ ShiftRightArith(ip, r0, Operand(31));
+  __ CmpP(ip, scratch2);
+  // __ TestSignBit32(scratch2, r0);
   __ bne(&bailout /*, cr0*/);
 #endif
 
