@@ -424,7 +424,6 @@ class MemOperand BASE_EMBEDDED {
   explicit MemOperand(Register rx, Register rb, Disp offset = 0);
 
   int32_t offset() const {
-    ASSERT(indexRegister.is(no_reg));
     return offset_;
   }
   uint32_t getDisplacement() const { return offset(); }
@@ -2057,13 +2056,6 @@ void lhi(Register dst, const Operand& imm);
 
 
  private:
-  // Code buffer:
-  // The buffer into which code and relocation info are generated.
-  byte* buffer_;
-  int buffer_size_;
-  // True if the assembler owns the buffer, false if buffer is external.
-  bool own_buffer_;
-
   // Code generation
   // The relocation writer's position is at least kGap bytes below the end of
   // the generated instructions. This is so that multi-instruction sequences do
