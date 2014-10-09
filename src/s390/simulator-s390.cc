@@ -1417,7 +1417,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
                  reinterpret_cast<void*>(external), arg[0], arg[1]);
           if (!stack_aligned) {
             PrintF(" with unaligned stack %08" V8PRIxPTR
-                   "\n", get_register(sp));
+                   "\n", static_cast<intptr_t>(get_register(sp)));
           }
           PrintF("\n");
         }
@@ -1454,7 +1454,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
                  reinterpret_cast<void*>(external), arg[0], arg[1], arg[2]);
           if (!stack_aligned) {
             PrintF(" with unaligned stack %08" V8PRIxPTR "\n",
-                   get_register(sp));
+                   static_cast<intptr_t>(get_register(sp)));
           }
           PrintF("\n");
         }
