@@ -1956,7 +1956,6 @@ void lhi(Register dst, const Operand& imm);
   void dd(uint32_t data);
   void emit_ptr(uintptr_t data);
 
-  int pc_offset() const { return pc_ - buffer_; }
 
   PositionsRecorder* positions_recorder() { return &positions_recorder_; }
 
@@ -2062,8 +2061,7 @@ void lhi(Register dst, const Operand& imm);
   // not have to check for overflow. The same is true for writes of large
   // relocation info entries.
   static const int kGap = 32;
-  byte* pc_;  // the program counter; moves forward
-
+  
   // Repeated checking whether the trampoline pool should be emitted is rather
   // expensive. By default we only check again once a number of instructions
   // has been generated.
