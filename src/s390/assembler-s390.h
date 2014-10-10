@@ -2061,7 +2061,7 @@ void lhi(Register dst, const Operand& imm);
   // not have to check for overflow. The same is true for writes of large
   // relocation info entries.
   static const int kGap = 32;
-  
+
   // Repeated checking whether the trampoline pool should be emitted is rather
   // expensive. By default we only check again once a number of instructions
   // has been generated.
