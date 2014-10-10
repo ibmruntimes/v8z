@@ -489,10 +489,8 @@
           ['_toolset=="target"', {
             'variables': {
               'conditions': [
-                [ 'v8_target_arch=="s390"', {
-                  'm32flag': '<!(($(echo ${CXX_target:-<(CXX)}) -m31 -E - > /dev/null 2>&1 < /dev/null) && echo "-m31" || true)',
-                }, {
-                  'm32flag': '<!(($(echo ${CXX_target:-<(CXX)}) -m32 -E - > /dev/null 2>&1 < /dev/null) && echo "-m32" || true)',
+              [ 'v8_target_arch=="s390"', {
+                   'm32flag': '<!(((echo | $(echo ${CXX_host:-$(which g++)}) -m32 -E - > /dev/null 2>&1) && echo "-m32") || ((echo | $(echo ${CXX_host:-$(which g++)}) -m31 -E - > /dev/null 2>&1) && echo "-m31") || true)'
                 }]
               ],
               'clang%': 0,
