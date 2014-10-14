@@ -1244,11 +1244,6 @@ void LCodeGen::DoDivI(LDivI* instr) {
   ASSERT(!dividend.is(result));
   ASSERT(!divisor.is(result));
 
-
-  // TODO(joransiu): Fix properly for Z.
-  ASSERT(0);
-  //  __ divw(result, dividend, divisor, SetOE, SetRC);
-
   // Check for x / 0.
   if (hdiv->CheckFlag(HValue::kCanBeDivByZero)) {
     __ Cmp32(divisor, Operand::Zero());
@@ -1267,28 +1262,23 @@ void LCodeGen::DoDivI(LDivI* instr) {
 
   // Check for (kMinInt / -1).
   if (hdiv->CheckFlag(HValue::kCanOverflow)) {
-    Label no_overflow_possible;
-    // TODO(joransiu) : Verify how bnooverflow works or not.
-    ASSERT(0);
-    if (!hdiv->CheckFlag(HValue::kAllUsesTruncatingToInt32)) {
-      DeoptimizeIf(overflow, instr->environment() /*, cr0*/);
-    } else {
-      // When truncating, we want kMinInt / -1 = kMinInt.
-      __ b(nooverflow, &no_overflow_possible, Label::kNear /*, cr0*/);
-      __ LoadRR(result, dividend);
-    }
-    __ bind(&no_overflow_possible);
+    Label dividend_not_min_int;
+    __ Cmp32(dividend, Operand(kMinInt));
+    __ bne(&dividend_not_min_int, Label::kNear);
+    __ Cmp32(divisor, Operand(-1));
+    DeoptimizeIf(eq, instr->environment());
+    __ bind(&dividend_not_min_int);
   }
 
   __ LoadRR(r0, dividend);
   __ srda(r0, Operand(32));
   __ dr(r0, divisor);     // R0:R1 = R1 / divisor - R0 remainder - R1 quotient
+ 
+  __ lr(result, r1);  // Move quotient to result register
 
   if (!hdiv->CheckFlag(HInstruction::kAllUsesTruncatingToInt32)) {
     // Deoptimize if remainder is not 0.
-    // TODO(joransiu) : Validate this sequence is correct.
-    ASSERT(0);
-    __ chi(r0, Operand::Zero());    // Force 32-bit compare
+    __ Cmp32(r0, Operand::Zero());
     DeoptimizeIf(ne, instr->environment());
   }
 }
