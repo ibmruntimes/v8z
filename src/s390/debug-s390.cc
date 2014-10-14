@@ -189,10 +189,10 @@ static void Generate_DebugBreakCallHelper(MacroAssembler* masm,
 void Debug::GenerateCallICStubDebugBreak(MacroAssembler* masm) {
   // Register state for CallICStub
   // ----------- S t a t e -------------
-  //  -- r4 : function
-  //  -- r6 : slot in feedback array (smi)
+  //  -- r3 : function
+  //  -- r5 : slot in feedback array (smi)
   // -----------------------------------
-  Generate_DebugBreakCallHelper(masm, r4.bit() | r6.bit(), 0);
+  Generate_DebugBreakCallHelper(masm, r3.bit() | r5.bit(), 0);
 }
 
 
