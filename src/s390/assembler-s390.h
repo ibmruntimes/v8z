@@ -113,7 +113,7 @@ struct Register {
 
   static int ToAllocationIndex(Register reg) {
     int index = reg.is(from_code(kCpRegister)) ?
-      kMaxNumAllocatableRegisters -1 :// Return last index for 'cp'
+      kMaxNumAllocatableRegisters -1 :  // Return last index for 'cp'
       reg.code() - 2;  // r0-r1 are skipped
     ASSERT(index < kMaxNumAllocatableRegisters);
     return index;
@@ -122,12 +122,12 @@ struct Register {
   static Register FromAllocationIndex(int index) {
     ASSERT(index >= 0 && index < kMaxNumAllocatableRegisters);
     return index == kMaxNumAllocatableRegisters - 1 ?
-      from_code(kCpRegister) : // Last index is always the 'cp' register.
+      from_code(kCpRegister) :  // Last index is always the 'cp' register.
       from_code(index + 2);  // r0-r1 are skipped
   }
 
   static const char* AllocationIndexToString(int index) {
-    ASSERT(index >= 0 && index < kNumAllocatableRegisters);
+    ASSERT(index >= 0 && index < kMaxNumAllocatableRegisters);
     const char* const names[] = {
         "r2",
         "r3",
@@ -136,7 +136,8 @@ struct Register {
         "r6",
         "r7",
         "r8",
-        "r9"
+        "r9",
+	"cp",
     };
     return names[index];
   }
