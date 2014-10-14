@@ -137,7 +137,7 @@ struct Register {
         "r7",
         "r8",
         "r9",
-	"cp",
+        "cp",
     };
     return names[index];
   }
