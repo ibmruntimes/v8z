@@ -1113,35 +1113,33 @@ void LCodeGen::DoModI(LModI* instr) {
 
    // Check for x % 0.
   if (hmod->CheckFlag(HValue::kCanBeDivByZero)) {
-    __ CmpP(right_reg, Operand::Zero());
+    __ Cmp32(right_reg, Operand::Zero());
     DeoptimizeIf(eq, instr->environment());
   }
 
-    ASSERT(scratch.is(r1));
-    __ LoadRR(r0, left_reg);
-    __ srda(r0, Operand(32));
-    __ dr(r0, right_reg);     // R0:R1 = R1 / divisor - R0 remainder
-
-  // Check for kMinInt % -1, divw will return undefined, which is not what we
+  // Check for kMinInt % -1, dr will return undefined, which is not what we
   // want. We have to deopt if we care about -0, because we can't return that.
   if (hmod->CheckFlag(HValue::kCanOverflow)) {
     Label no_overflow_possible;
-  // TODO(joransiu): Check this path for overflow detection.
-  ASSERT(0);
+    __ Cmp32(left_reg, Operand(kMinInt));
+    __ bne(&no_overflow_possible, Label::kNear);
+    __ Cmp32(right_reg, Operand(-1));
     if (hmod->CheckFlag(HValue::kBailoutOnMinusZero)) {
-      DeoptimizeIf(overflow, instr->environment() /*, cr0*/);
+      DeoptimizeIf(eq, instr->environment());
     } else {
-      __ b(nooverflow, &no_overflow_possible, Label::kNear /*, cr0*/);
+      __ b(ne, &no_overflow_possible, Label::kNear);
       __ mov(result_reg, Operand::Zero());
-      __ b(&done);
+      __ b(&done, Label::kNear);
     }
     __ bind(&no_overflow_possible);
   }
 
-  ASSERT(0);
-  // TODO(joransiu): Fix me!
-  // __ mullw(scratch, right_reg, scratch);
-  __ SubP(result_reg, left_reg, scratch);
+  ASSERT(scratch.is(r1));
+  __ LoadRR(r0, left_reg);
+  __ srda(r0, Operand(32));
+  __ dr(r0, right_reg);     // R0:R1 = R1 / divisor - R0 remainder
+
+  __ ltr(result_reg, r0);    // Copy remainder to resultreg
 
   // If we care about -0, test if the dividend is <0 and the result is 0.
   if (hmod->CheckFlag(HValue::kBailoutOnMinusZero)) {
@@ -1273,7 +1271,7 @@ void LCodeGen::DoDivI(LDivI* instr) {
   __ LoadRR(r0, dividend);
   __ srda(r0, Operand(32));
   __ dr(r0, divisor);     // R0:R1 = R1 / divisor - R0 remainder - R1 quotient
- 
+
   __ lr(result, r1);  // Move quotient to result register
 
   if (!hdiv->CheckFlag(HInstruction::kAllUsesTruncatingToInt32)) {
