@@ -98,7 +98,7 @@ struct Register {
   static const int kNumAllocatableRegisters = 8;  // r2-r9
   static const int kMaxNumAllocatableRegisters = 9;  // r3-r10 and cp
   static const int kSizeInBytes = kPointerSize;
-  static const int kCpRegister = 18;  // cp is r18
+  static const int kCpRegister = 13;  // cp is r13
 
 #if V8_TARGET_LITTLE_ENDIAN
   static const int kMantissaOffset = 0;
@@ -112,14 +112,18 @@ struct Register {
 
 
   static int ToAllocationIndex(Register reg) {
-    int index = reg.code() - 2;  // r0-r1 are skipped
-    ASSERT(index < kNumAllocatableRegisters);
+    int index = reg.is(from_code(kCpRegister)) ?
+      kMaxNumAllocatableRegisters -1 :// Return last index for 'cp'
+      reg.code() - 2;  // r0-r1 are skipped
+    ASSERT(index < kMaxNumAllocatableRegisters);
     return index;
   }
 
   static Register FromAllocationIndex(int index) {
-    ASSERT(index >= 0 && index < kNumAllocatableRegisters);
-    return from_code(index + 2);  // r0-r1 are skipped
+    ASSERT(index >= 0 && index < kMaxNumAllocatableRegisters);
+    return index == kMaxNumAllocatableRegisters - 1 ?
+      from_code(kCpRegister) : // Last index is always the 'cp' register.
+      from_code(index + 2);  // r0-r1 are skipped
   }
 
   static const char* AllocationIndexToString(int index) {
