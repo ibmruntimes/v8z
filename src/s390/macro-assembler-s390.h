@@ -519,18 +519,14 @@ class MacroAssembler: public Assembler {
   void Push(Smi* smi) { Push(Handle<Smi>(smi, isolate())); }
 
   // Push two registers.  Pushes leftmost register first (to highest address).
-  void Push(Register src1, Register src2, Condition cond = al) {
-    ASSERT(!src1.is(src2));
+  void Push(Register src1, Register src2) {
     lay(sp, MemOperand(sp, -kPointerSize * 2));
     StoreP(src1, MemOperand(sp, kPointerSize));
     StoreP(src2, MemOperand(sp, 0));
   }
 
   // Push three registers.  Pushes leftmost register first (to highest address).
-  void Push(Register src1, Register src2, Register src3, Condition cond = al) {
-    ASSERT(!src1.is(src2));
-    ASSERT(!src2.is(src3));
-    ASSERT(!src1.is(src3));
+  void Push(Register src1, Register src2, Register src3) {
     lay(sp, MemOperand(sp, -kPointerSize * 3));
     StoreP(src1, MemOperand(sp, kPointerSize * 2));
     StoreP(src2, MemOperand(sp, kPointerSize));
@@ -541,15 +537,7 @@ class MacroAssembler: public Assembler {
   void Push(Register src1,
             Register src2,
             Register src3,
-            Register src4,
-            Condition cond = al) {
-    ASSERT(!src1.is(src2));
-    ASSERT(!src2.is(src3));
-    ASSERT(!src1.is(src3));
-    ASSERT(!src1.is(src4));
-    ASSERT(!src2.is(src4));
-    ASSERT(!src3.is(src4));
-
+            Register src4) {
     lay(sp, MemOperand(sp, -kPointerSize * 4));
     StoreP(src1, MemOperand(sp, kPointerSize * 3));
     StoreP(src2, MemOperand(sp, kPointerSize * 2));
