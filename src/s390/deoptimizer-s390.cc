@@ -18,7 +18,7 @@ namespace internal {
 #if V8_TARGET_ARCH_S390X
 const int Deoptimizer::table_entry_size_ = 16;
 #else
-const int Deoptimizer::table_entry_size_ = 16;
+const int Deoptimizer::table_entry_size_ = 14;
 #endif
 
 
