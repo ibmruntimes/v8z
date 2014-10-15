@@ -257,9 +257,7 @@ static const int kNoCodeAgeInstructions = 6;
 // TODO(JOHN): please fix this
 static const int kCodeAgingInstructions = 999999;
     // Assembler::kMovInstructionsNoConstantPool + 3;
-static const int kCodeAgeSequenceLength =
-    ((kNoCodeAgeInstructions >= kCodeAgingInstructions) ?
-     kNoCodeAgeInstructions : kCodeAgingInstructions);
+static const int kCodeAgeSequenceLength = 34;
 static const int kNoCodeAgeSequenceNops = (kCodeAgeSequenceLength -
                                            kNoCodeAgeInstructions);
 static const int kCodeAgingSequenceNops = (kCodeAgeSequenceLength -

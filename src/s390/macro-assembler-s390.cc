@@ -717,7 +717,7 @@ void MacroAssembler::Prologue(PrologueFrameMode frame_mode) {
     la(fp, MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
   } else {
     PredictableCodeSizeScope predictible_code_size_scope(
-      this, kCodeAgeSequenceLength * Assembler::kInstrSize);
+      this, kCodeAgeSequenceLength);
     Assembler::BlockTrampolinePoolScope block_trampoline_pool(this);
     // The following instructions must remain together and unmodified
     // for code aging to work properly.
@@ -735,10 +735,12 @@ void MacroAssembler::Prologue(PrologueFrameMode frame_mode) {
       // This matches the code found in GetNoCodeAgeSequence()
       PushFixedFrame(r3);
       // Adjust fp to point to saved fp.
-      la(fp, MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
-      for (int i = 0; i < kNoCodeAgeSequenceNops; i++) {
-        nop();
-      }
+      la(fp, MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));         
+      /*  @TODO(Tara): confirm whether we need to need to use nops 
+       *  for (int i = 0; i < kNoCodeAgeSequenceNops; i++) {
+       *  nop();
+       *  }
+       */
     }
   }
 }
@@ -5936,7 +5938,7 @@ CodePatcher::CodePatcher(byte* address,
                          int instructions,
                          FlushICache flush_cache)
     : address_(address),
-      size_(instructions * Assembler::kInstrSize),
+      size_(instructions),
       masm_(NULL, address, size_ + Assembler::kGap),
       flush_cache_(flush_cache) {
   // Create a new macro assembler pointing to the address of the code to patch.
