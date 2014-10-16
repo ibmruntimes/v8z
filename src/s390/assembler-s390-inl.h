@@ -258,8 +258,13 @@ static const int kNoCodeAgeSequenceLength = 34;
     // IILF + BASR
 static const int kCodeAgingSequenceLength = 8;
 static const int kCodeAgingTargetDelta = 0;
-    // NILH + LAY + 4 * ST + LA
+#if (V8_HOST_ARCH_S390)
+// NILH + LAY + 4 * ST + LA
 static const int kNoCodeAgeSequenceLength = 30;
+#else
+// LAY + 4 * ST + LA
+static const int kNoCodeAgeSequenceLength = 26;
+#endif
 #endif
 
 Handle<Object> RelocInfo::code_age_stub_handle(Assembler* origin) {
