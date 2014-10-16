@@ -3269,8 +3269,8 @@ void CallConstructStub::Generate(MacroAssembler* masm) {
   // Check that the function is not a smi.
   __ JumpIfSmi(r3, &non_function_call);
   // Check that the function is a JSFunction.
-  __ CompareObjectType(r3, r5, r5, JS_FUNCTION_TYPE);
-  __ bne(&slow);
+  __ CompareObjectType(r3, r6, r6, JS_FUNCTION_TYPE);
+  __ bne(&slow, Label::kNear);
 
   if (RecordCallTarget()) {
     GenerateRecordCallTarget(masm);
@@ -3288,7 +3288,7 @@ void CallConstructStub::Generate(MacroAssembler* masm) {
       __ LoadP(r4, FieldMemOperand(r7, FixedArray::kHeaderSize));
       __ LoadP(r7, FieldMemOperand(r4, AllocationSite::kMapOffset));
       __ CompareRoot(r7, Heap::kAllocationSiteMapRootIndex);
-      __ beq(&feedback_register_initialized);
+      __ beq(&feedback_register_initialized, Label::kNear);
       __ LoadRoot(r4, Heap::kUndefinedValueRootIndex);
       __ bind(&feedback_register_initialized);
     }
@@ -3301,7 +3301,8 @@ void CallConstructStub::Generate(MacroAssembler* masm) {
   __ LoadP(jmp_reg, FieldMemOperand(r3, JSFunction::kSharedFunctionInfoOffset));
   __ LoadP(jmp_reg, FieldMemOperand(jmp_reg,
                                   SharedFunctionInfo::kConstructStubOffset));
-  __ AddP(r0, r4, Operand(Code::kHeaderSize - kHeapObjectTag));
+  // TODO(joransiu): Fold AddP into Jump
+  __ AddP(ip, jmp_reg, Operand(Code::kHeaderSize - kHeapObjectTag));
   __ Jump(ip);
 
   // r2: number of arguments
@@ -3310,7 +3311,7 @@ void CallConstructStub::Generate(MacroAssembler* masm) {
   Label do_call;
   __ bind(&slow);
   STATIC_ASSERT(JS_FUNCTION_PROXY_TYPE < 0xffffu);
-  __ CmpP(r5, Operand(JS_FUNCTION_PROXY_TYPE));
+  __ CmpP(r6, Operand(JS_FUNCTION_PROXY_TYPE));
   __ bne(&non_function_call);
   __ GetBuiltinFunction(r3, Builtins::CALL_FUNCTION_PROXY_AS_CONSTRUCTOR);
   __ b(&do_call);
