@@ -945,12 +945,11 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles,
 
   // Tear down the exit frame, pop the arguments, and return.
   LoadRR(sp, fp);
-  pop(fp);
-  pop(r14);
+  Pop(r14, fp);
 
   if (argument_count.is_valid()) {
     ShiftLeftP(argument_count, argument_count, Operand(kPointerSizeLog2));
-    la(sp, MemOperand(sp, argument_count));
+    la(sp, MemOperand(argument_count, sp));
   }
 }
 

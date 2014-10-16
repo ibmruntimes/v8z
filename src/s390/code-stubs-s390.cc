@@ -1655,7 +1655,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // Check result for exception sentinel.
   Label exception_returned;
   __ CompareRoot(r2, Heap::kExceptionRootIndex);
-  __ beq(&exception_returned);
+  __ beq(&exception_returned, Label::kNear);
 
   ExternalReference pending_exception_address(
       Isolate::kPendingExceptionAddress, isolate());
