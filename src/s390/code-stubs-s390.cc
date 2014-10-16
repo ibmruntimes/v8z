@@ -1515,12 +1515,20 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   int arg_stack_space = 1;
 
   // S390 LINUX ABI:
+#if defined(V8_HOST_ARCH_S39064) || defined(V8_HOST_ARCH_S390)
+
 #if V8_TARGET_ARCH_S390X && !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
   // Pass buffer for return value on stack if necessary
   if (result_size_ > 1) {
     ASSERT_EQ(2, result_size_);
     arg_stack_space += 2;
   }
+#endif
+#if defined(V8_TARGET_ARCH_S390X)
+  // 64-bit linux pass Argument object by reference not value
+  arg_stack_space += 2;
+#endif
+
 #endif
 
   __ EnterExitFrame(save_doubles_, arg_stack_space);
