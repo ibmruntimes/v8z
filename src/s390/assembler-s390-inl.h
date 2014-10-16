@@ -247,25 +247,19 @@ void RelocInfo::set_target_cell(Cell* cell, WriteBarrierMode mode) {
   }
 }
 
-
-#if V8_OOL_CONSTANT_POOL
-static const int kNoCodeAgeInstructions = 7;
+#if V8_TARGET_ARCH_S390X
+    // IIHF + IILF + BASR
+static const int kCodeAgingSequenceLength = 14;
+static const int kCodeAgingTargetDelta = 0;
+    // LAY + 4 * STG + LA
+static const int kNoCodeAgeSequenceLength = 34;
 #else
-static const int kNoCodeAgeInstructions = 6;
+    // IILF + BASR
+static const int kCodeAgingSequenceLength = 8;
+static const int kCodeAgingTargetDelta = 0;
+    // NILH + LAY + 4 * ST + LA
+static const int kNoCodeAgeSequenceLength = 30;
 #endif
-
-// TODO(JOHN): please fix this
-static const int kCodeAgingInstructions = 999999;
-    // Assembler::kMovInstructionsNoConstantPool + 3;
-static const int kCodeAgeSequenceLength = 34;
-static const int kNoCodeAgeSequenceNops = (kCodeAgeSequenceLength -
-                                           kNoCodeAgeInstructions);
-static const int kCodeAgingSequenceNops = (kCodeAgeSequenceLength -
-                                           kCodeAgingInstructions);
-static const int kCodeAgingTargetDelta = 1 * Assembler::kInstrSize;
-static const int kCodeAgingPatchDelta = (kCodeAgingInstructions *
-                                         Assembler::kInstrSize);
-
 
 Handle<Object> RelocInfo::code_age_stub_handle(Assembler* origin) {
   UNREACHABLE();  // This should never be reached on S390.

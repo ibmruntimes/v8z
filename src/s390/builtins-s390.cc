@@ -876,9 +876,10 @@ static void GenerateMakeCodeYoungAgainCommon(MacroAssembler* masm) {
   // worrying about which of them contain pointers. We also don't build an
   // internal frame to make the code faster, since we shouldn't have to do stack
   // crawls in MakeCodeYoung. This seems a bit fragile.
+  __ CleanseP(r14);
   __ LoadRR(r2, r14);
   // Adjust r2 to point to the start of the PlatformCodeAge sequence
-  __ SubP(r2, Operand(kCodeAgingPatchDelta));
+  __ SubP(r2, Operand(kCodeAgingSequenceLength));
 
   // The following registers must be saved and restored when calling through to
   // the runtime:
@@ -916,9 +917,10 @@ void Builtins::Generate_MarkCodeAsExecutedOnce(MacroAssembler* masm) {
   // internal frame to make the code faster, since we shouldn't have to do stack
   // crawls in MakeCodeYoung. This seems a bit fragile.
 
+  __ CleanseP(r14);
   __ LoadRR(r2, r14);
   // Adjust r2 to point to the start of the PlatformCodeAge sequence
-  __ SubP(r2, Operand(kCodeAgingPatchDelta));
+  __ SubP(r2, Operand(kCodeAgingSequenceLength));
 
   // The following registers must be saved and restored when calling through to
   // the runtime:
@@ -939,7 +941,7 @@ void Builtins::Generate_MarkCodeAsExecutedOnce(MacroAssembler* masm) {
   __ AddP(fp, sp, Operand(StandardFrameConstants::kFixedFrameSizeFromFp));
 
   // Jump to point after the code-age stub.
-  __ AddP(r2, r2, Operand(kCodeAgeSequenceLength * Assembler::kInstrSize));
+  __ AddP(r2, r2, Operand(kCodeAgingSequenceLength));
   __ Jump(r2);
 }
 

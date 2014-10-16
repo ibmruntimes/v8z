@@ -71,17 +71,16 @@ void MacroAssembler::Jump(Handle<Code> code, RelocInfo::Mode rmode,
 }
 
 
-int MacroAssembler::CallSize(Register target, Condition cond) {
+int MacroAssembler::CallSize(Register target) {
   // 2-byte BASR is used to dispatch.
   return 2;
 }
 
 
-void MacroAssembler::Call(Register target, Condition cond) {
+void MacroAssembler::Call(Register target) {
   BlockTrampolinePoolScope block_trampoline_pool(this);
   Label start;
   bind(&start);
-  ASSERT(cond == al);  // in prep of removal of condition
 
   // Statement positions are expected to be recorded when the target
   // address is loaded.
@@ -90,7 +89,7 @@ void MacroAssembler::Call(Register target, Condition cond) {
   // Branch to target via indirect branch
   basr(r14, target);
 
-  ASSERT_EQ(CallSize(target, cond), SizeOfCodeGeneratedSince(&start));
+  ASSERT_EQ(CallSize(target), SizeOfCodeGeneratedSince(&start));
 }
 
 
@@ -717,7 +716,7 @@ void MacroAssembler::Prologue(PrologueFrameMode frame_mode) {
     la(fp, MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
   } else {
     PredictableCodeSizeScope predictible_code_size_scope(
-      this, kCodeAgeSequenceLength);
+      this, kNoCodeAgeSequenceLength);
     Assembler::BlockTrampolinePoolScope block_trampoline_pool(this);
     // The following instructions must remain together and unmodified
     // for code aging to work properly.
@@ -728,19 +727,17 @@ void MacroAssembler::Prologue(PrologueFrameMode frame_mode) {
       intptr_t target = reinterpret_cast<intptr_t>(stub->instruction_start());
       mov(r2, Operand(target));
       Call(r2);
-      for (int i = 0; i < kCodeAgingSequenceNops; i++) {
-        nop();
+      for (int i = 0;
+           i < kNoCodeAgeSequenceLength - kCodeAgingSequenceLength; i += 2) {
+        // TODO(joransiu): Create nop function to pad
+        //         (kNoCodeAgeSequenceLength - kCodeAgingSequenceLength) bytes.
+        nop();   // 2-byte nops().
       }
     } else {
       // This matches the code found in GetNoCodeAgeSequence()
       PushFixedFrame(r3);
       // Adjust fp to point to saved fp.
-      la(fp, MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));         
-      /*  @TODO(Tara): confirm whether we need to need to use nops 
-       *  for (int i = 0; i < kNoCodeAgeSequenceNops; i++) {
-       *  nop();
-       *  }
-       */
+      la(fp, MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
     }
   }
 }

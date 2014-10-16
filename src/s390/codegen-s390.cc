@@ -638,24 +638,20 @@ static byte* GetNoCodeAgeSequence(uint32_t* length) {
   // The sequence of instructions that is patched out for aging code is the
   // following boilerplate stack-building prologue that is found in FUNCTIONS
   static bool initialized = false;
-  static uint32_t sequence[kCodeAgeSequenceLength];
-  byte* byte_sequence = reinterpret_cast<byte*>(sequence);
-  *length = kCodeAgeSequenceLength * Assembler::kInstrSize;
+  static byte sequence[kNoCodeAgeSequenceLength];
+  *length = kNoCodeAgeSequenceLength;
   if (!initialized) {
     // Since patcher is a large object, allocate it dynamically when needed,
     // to avoid overloading the stack in stress conditions.
     SmartPointer<CodePatcher>
-        patcher(new CodePatcher(byte_sequence, kCodeAgeSequenceLength));
+        patcher(new CodePatcher(sequence, kNoCodeAgeSequenceLength));
     PredictableCodeSizeScope scope(patcher->masm(), *length);
-    patcher->masm()->PushFixedFrame(r4);
-    patcher->masm()->AddP(
-        fp, sp, Operand(StandardFrameConstants::kFixedFrameSizeFromFp));
-    for (int i = 0; i < kNoCodeAgeSequenceNops; i++) {
-      patcher->masm()->nop();
-    }
+    patcher->masm()->PushFixedFrame(r3);
+    patcher->masm()->la(
+        fp, MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
     initialized = true;
   }
-  return byte_sequence;
+  return sequence;
 }
 
 
@@ -702,11 +698,13 @@ void Code::PatchPlatformCodeAge(Isolate* isolate,
     // We use Call to compute the address of this patch sequence.
     // Preserve lr since it will be clobbered.  See
     // GenerateMakeCodeYoungAgainCommon for the stub code.
-   // patcher.masm()->mflr(p);
     patcher.masm()->mov(r2, Operand(target));
     patcher.masm()->Call(r2);
-    for (int i = 0; i < kCodeAgingSequenceNops; i++) {
-      patcher.masm()->nop();
+    for (int i = 0;
+         i < kNoCodeAgeSequenceLength - kCodeAgingSequenceLength; i += 2) {
+      // TODO(joransiu): Create nop function to pad
+      //       (kNoCodeAgeSequenceLength - kCodeAgingSequenceLength) bytes.
+      patcher.masm()->nop();   // 2-byte nops().
     }
   }
 }
