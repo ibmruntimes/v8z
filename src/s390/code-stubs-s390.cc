@@ -5002,6 +5002,7 @@ void StubFailureTrampolineStub::Generate(MacroAssembler* masm) {
 
 void ProfileEntryHookStub::MaybeCallEntryHook(MacroAssembler* masm) {
   if (masm->isolate()->function_entry_hook() != NULL) {
+    ASSERT(0);  //  Fix the todo
     PredictableCodeSizeScope predictable(masm,
 // @TODO: Check size of masm from logs and correct this
 #if V8_TARGET_ARCH_S390X

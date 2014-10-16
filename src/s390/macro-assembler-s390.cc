@@ -810,7 +810,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   Push(r14, fp);
   LoadRR(fp, sp);
   // Reserve room for saved entry sp and code object.
-  lay(sp, MemOperand(sp, ExitFrameConstants::kFrameSize));
+  lay(sp, MemOperand(sp, - ExitFrameConstants::kFrameSize));
 
   if (emit_debug_code()) {
     LoadImmP(r1, Operand::Zero());
