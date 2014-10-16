@@ -148,31 +148,32 @@ void RelocInfo::set_target_address(Address target, WriteBarrierMode mode) {
 Address Assembler::target_address_from_return_address(Address pc) {
   // Returns the address of the call target from the return address that will
   // be returned to after a call.
-  // Call sequence is :
-  //  mov   ip, @ call address
-  //  mtlr  ip
-  //  blrl
-  //                      @ return address
-#if V8_OOL_CONSTANT_POOL
-  if (IsConstantPoolLoadEnd(pc - 3 * kInstrSize)) {
-    return pc - (kMovInstructionsConstantPool + 2) * kInstrSize;
-  }
+  // Sequence is:
+  //    IIHF ip  // 64-bit only
+  //    IILF ip
+  //    BASR r14, ip
+
+  // TODO(joransiu): Define kConsts for these CallTargetSizes.
+#if V8_TARGET_ARCH_S390X
+  return pc - 14;
+#else
+  return pc - 8;
 #endif
-  ASSERT(false);
-  return NULL;
-  // return pc - (kMovInstructionsNoConstantPool + 2) * kInstrSize;
 }
 
 
 Address Assembler::return_address_from_call_start(Address pc) {
-#if V8_OOL_CONSTANT_POOL
-  Address load_address = pc + (kMovInstructionsConstantPool - 1) * kInstrSize;
-  if (IsConstantPoolLoadEnd(load_address))
-    return pc + (kMovInstructionsConstantPool + 2) * kInstrSize;
+  // Sequence is:
+  //    IIHF ip  // 64-bit only
+  //    IILF ip
+  //    BASR r14, ip
+
+  // TODO(joransiu): Define kConsts for these CallTargetSizes.
+#if V8_TARGET_ARCH_S390X
+  return pc + 14;
+#else
+  return pc + 8;
 #endif
-  ASSERT(false);
-  return NULL;
-  // return pc + (kMovInstructionsNoConstantPool + 2) * kInstrSize;
 }
 
 
