@@ -3503,8 +3503,8 @@ void MacroAssembler::PrepareCallCFunction(int num_reg_arguments,
     StoreP(scratch, MemOperand(sp, (stack_passed_arguments) * kPointerSize));
   } else {
     stack_space += stack_passed_arguments;
-    lay(sp, MemOperand(sp, -(stack_space) * kPointerSize));
   }
+  lay(sp, MemOperand(sp, -(stack_space) * kPointerSize));
 }
 
 
@@ -3584,13 +3584,7 @@ void MacroAssembler::CallCFunctionHelper(Register function,
   Register dest = function;
 #endif
 
-  // zLinux ABI requires caller's frame to have sufficient space for callee
-  // preserved regsiter save area.
-  // @TODO Make sure this is in the right place and we need to guard it
-  // with appropriate #ifdefs
-  // lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
   Call(dest);
-  // la(sp, MemOperand(sp, +kCalleeRegisterSaveAreaSize));
 
   int stack_passed_arguments = CalculateStackPassedWords(
       num_reg_arguments, num_double_arguments);
