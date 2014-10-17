@@ -1639,11 +1639,7 @@ void MacroAssembler::Allocate(int object_size,
 
   // Calculate new top and bail out if new space is exhausted. Use result
   // to calculate the new top.
-
-  // mov(scratch2, Operand(object_size));
-  // TODO(Zen): ^This should probably be here...
-  // ASSERT(obj_size_reg.is(scratch2));
-  AddP(scratch2, result);  // Add result + obj_size_reg (scratch2)
+  AddP(scratch2, result, Operand(object_size));
   b(Condition(CC_OF), gc_required);  // Detect overflow
   CmpLogicalP(scratch2, ip);
   bgt(gc_required);
