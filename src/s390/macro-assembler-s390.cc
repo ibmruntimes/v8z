@@ -1598,22 +1598,23 @@ void MacroAssembler::Allocate(int object_size,
 
   // This code stores a temporary value in ip. This is OK, as the code below
   // does not need ip for implicit literal generation.
+  intptr_t limitOffset = 0;
   if ((flags & RESULT_CONTAINS_TOP) == 0) {
-    // Load allocation top into result and allocation limit into ip.
+    // Load allocation top into result
     LoadP(result, MemOperand(topaddr));
-    LoadP(ip, MemOperand(topaddr, kPointerSize));
+    limitOffset = kPointerSize;
   } else {
     if (emit_debug_code()) {
       // Assert that result actually contains top on entry. ip is used
       // immediately below so this use of ip does not cause difference with
       // respect to register content between debug and release mode.
-      LoadP(ip, MemOperand(topaddr));
-      CmpP(result, ip);
+      CmpP(result, MemOperand(topaddr));
       Check(eq, kUnexpectedAllocationTop);
     }
-    // Load allocation limit into ip. Result already contains allocation top.
-    LoadP(ip, MemOperand(topaddr, limit - top), r0);
+    // Result already contains allocation top.
+    limitOffset = limit - top;
   }
+  MemOperand limitMemOperand = MemOperand(topaddr, limitOffset);
 
   if ((flags & DOUBLE_ALIGNMENT) != 0) {
     // Align the next allocation. Storing the filler map without checking top is
@@ -1627,7 +1628,7 @@ void MacroAssembler::Allocate(int object_size,
     Label aligned;
     beq(&aligned /*,cr0*/);
     if ((flags & PRETENURE_OLD_DATA_SPACE) != 0) {
-      CmpLogicalP(result, ip);
+      CmpLogicalP(result, limitMemOperand);
       bge(gc_required);
     }
     mov(scratch2, Operand(isolate()->factory()->one_pointer_filler_map()));
@@ -1641,7 +1642,7 @@ void MacroAssembler::Allocate(int object_size,
   // to calculate the new top.
   AddP(scratch2, result, Operand(object_size));
   b(Condition(CC_OF), gc_required);  // Detect overflow
-  CmpLogicalP(scratch2, ip);
+  CmpLogicalP(scratch2, limitMemOperand);
   bgt(gc_required);
   StoreP(scratch2, MemOperand(topaddr));
 
