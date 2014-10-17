@@ -1515,20 +1515,12 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   int arg_stack_space = 1;
 
   // S390 LINUX ABI:
-#if defined(V8_HOST_ARCH_S39064) || defined(V8_HOST_ARCH_S390)
-
 #if V8_TARGET_ARCH_S390X && !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
   // Pass buffer for return value on stack if necessary
   if (result_size_ > 1) {
     ASSERT_EQ(2, result_size_);
     arg_stack_space += 2;
   }
-#endif
-#if defined(V8_TARGET_ARCH_S390X)
-  // 64-bit linux pass Argument object by reference not value
-  arg_stack_space += 2;
-#endif
-
 #endif
 
   __ EnterExitFrame(save_doubles_, arg_stack_space);
@@ -1543,60 +1535,17 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // Result returned in registers or stack, depending on result size and ABI.
 
   Register isolate_reg = r4;
-/* @TODO Tara: the following code (uptil Call C built-in) is from the 3.14 s390
- * version, the 3.26 ppc version is much smaller(and different)
- */
-#if V8_HOST_ARCH_S390X || V8_HOST_ARCH_S390
-  // Call C built-in on native hardware.
-
-#if V8_TARGET_ARCH_S390X
-  // zLinux 64-bit
-  // Use frame storage reserved by calling function as ABI passes C++ objects
-  // larger than 8 bytes by reference.  On 64-bit, Arguments is 16-bytes, so
-  // we need to build the object on the stack.
-#if ABI_RETURNS_OBJECT_PAIRS_IN_REGS
+#if V8_TARGET_ARCH_S390X && !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
+  if (result_size_ > 1) {
+    // The return value is 16-byte non-scalar value.
+    // Use frame storage reserved by calling function to pass return
+    // buffer as implicit first argument.
+  __ LoadRR(r4, r3);
+  __ LoadRR(r3, r2);
   __ la(r2, MemOperand(sp, (kStackFrameExtraParamSlot + 1) * kPointerSize));
-  __ st(r6, MemOperand(r2));
-  __ StoreP(r3, MemOperand(r2, kPointerSize));
-  isolate_reg = r3;
-#else  // !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
-  // This is the default path for zLinux 64 native.
-  if (result_size_ < 2) {
-    __ la(r2, MemOperand(sp, (kStackFrameExtraParamSlot + 1) * kPointerSize));
-    __ st(r6, MemOperand(r2));
-    __ StoreP(r3, MemOperand(r2, kPointerSize));
-    isolate_reg = r3;
-  } else {
-    // The result of the call is 16-byte non-scalar value (i.e.
-    // ObjectPair), we need to use frame storage reserved by calling function to
-    // pass return buffer as an implicit first argument.
-    ASSERT_EQ(2, result_size_);
-    __ la(r2, MemOperand(sp, (kStackFrameExtraParamSlot + 1) * kPointerSize));
-    __ la(r3, MemOperand(sp, (kStackFrameExtraParamSlot + 3) * kPointerSize));
-    __ st(r6, MemOperand(r3));
-    __ StoreP(r3, MemOperand(r3, kPointerSize));
+  isolate_reg = r5;
   }
-#endif  // !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
-
-#else   // V8_TARGET_ARCH_S390X
-  //  zLinux 31-bit
-  // isolate_reg = r4;
-  // r2 = r6
-#endif  // V8_TARGET_ARCH_S390X
-
-#else  // Simulated
-  // Call C built-in using simulator.
-  // r3 = argc, r4 = argv
-  // @TODO Make sure this is correct for S390
-#if defined(V8_TARGET_ARCH_S390X) && __BYTE_ORDER == __BIG_ENDIAN
-  __ ShiftLeftP(r2, r6, Operand(32));
-// #else
-//  __ LoadRR(r2, r6);
 #endif
- // __ LoadRR(r3, r8);
-#endif
-
-
   // Call C built-in.
   __ mov(isolate_reg, Operand(ExternalReference::isolate_address(isolate())));
 
