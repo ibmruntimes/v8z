@@ -2620,7 +2620,7 @@ void Assembler::lay(Register r1, const MemOperand& opnd) {
 
 // Load Byte Register-Storage (32)
 void Assembler::lb(Register r1, const MemOperand& opnd) {
-  rx_form(LB, r1, opnd.rx(), opnd.rb(), opnd.offset());
+  rxy_form(LB, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 // Load Byte Register-Register (32)

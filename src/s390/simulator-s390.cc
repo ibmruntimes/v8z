@@ -2128,7 +2128,6 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
     case LLGHR: { UNIMPLEMENTED(); break; }
     case L:
     case LA:
-    case LB:
     case LD: {
       RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
       int b2 = rxinst->B2Value();
@@ -2143,9 +2142,6 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
         set_low_register(r1, mem_val);
       } else if (op == LA) {
         set_register(r1, addr);
-      } else if (op == LB) {
-        int32_t mem_val = ReadB(addr);
-        set_low_register(r1, mem_val);
       } else if (op == LD) {
         double dbl_val = ReadDouble(addr);
         set_d_register_from_double(r1, dbl_val);
@@ -3452,6 +3448,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       break;
     }
     case LY:
+    case LB:
     case LG:
     case LGF:
     case LLGF:
@@ -3471,6 +3468,9 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       intptr_t addr = x2_val + b2_val + d2;
       if (op == LY) {
         uint32_t mem_val = ReadWU(addr, instr);
+        set_low_register(r1, mem_val);
+      } else if (op == LB) {
+        int32_t mem_val = ReadB(addr);
         set_low_register(r1, mem_val);
       } else if (op == LG) {
         int64_t mem_val = ReadDW(addr);
