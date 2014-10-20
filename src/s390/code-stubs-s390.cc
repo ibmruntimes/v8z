@@ -2240,23 +2240,23 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
   Label skip2, skip3;
   __ CmpSmiLiteral(r3, Smi::FromInt(0), r0);
   __ bne(&skip2, Label::kNear);
-  __ LoadImmP(r13, Operand::Zero());
+  __ LoadImmP(r1, Operand::Zero());
   __ b(&skip3, Label::kNear);
   __ bind(&skip2);
-  __ SmiToPtrArrayOffset(r13, r3);
-  __ AddP(r13, Operand(kParameterMapHeaderSize));
+  __ SmiToPtrArrayOffset(r1, r3);
+  __ AddP(r1, Operand(kParameterMapHeaderSize));
   __ bind(&skip3);
 
   // 2. Backing store.
   __ SmiToPtrArrayOffset(r6, r4);
-  __ AddP(r13, r6);
-  __ AddP(r13, Operand(FixedArray::kHeaderSize));
+  __ AddP(r1, r6);
+  __ AddP(r1, Operand(FixedArray::kHeaderSize));
 
   // 3. Arguments object.
-  __ AddP(r13, Operand(Heap::kSloppyArgumentsObjectSize));
+  __ AddP(r1, Operand(Heap::kSloppyArgumentsObjectSize));
 
   // Do the allocation of all three objects in one go.
-  __ Allocate(r13, r2, r5, r6, &runtime, TAG_OBJECT);
+  __ Allocate(r1, r2, r5, r6, &runtime, TAG_OBJECT);
 
   // r2 = address of new object(s) (tagged)
   // r4 = argument count (tagged)
@@ -2343,10 +2343,10 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
   // We loop from right to left.
   Label parameters_loop, parameters_test;
   __ LoadRR(r8, r3);
-  __ LoadP(r13, MemOperand(sp, 0 * kPointerSize));
-  __ AddSmiLiteral(r13, r13,
+  __ LoadP(r1, MemOperand(sp, 0 * kPointerSize));
+  __ AddSmiLiteral(r1, r1,
                    Smi::FromInt(Context::MIN_CONTEXT_SLOTS), r0);
-  __ SubP(r13, r13, r3);
+  __ SubP(r1, r1, r3);
   __ LoadRoot(r9, Heap::kTheHoleValueRootIndex);
   __ SmiToPtrArrayOffset(r5, r8);
   __ AddP(r5, r6);
@@ -2364,10 +2364,10 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
   __ SubSmiLiteral(r8, r8, Smi::FromInt(1), r0);
   __ SmiToPtrArrayOffset(r7, r8);
   __ AddP(r7, Operand(kParameterMapHeaderSize - kHeapObjectTag));
-  __ StoreP(r13, MemOperand(r7, r6));
+  __ StoreP(r1, MemOperand(r7, r6));
   __ SubP(r7, Operand(kParameterMapHeaderSize - FixedArray::kHeaderSize));
   __ StoreP(r9, MemOperand(r7, r5));
-  __ AddSmiLiteral(r13, r13, Smi::FromInt(1), r0);
+  __ AddSmiLiteral(r1, r1, Smi::FromInt(1), r0);
   __ bind(&parameters_test);
   __ CmpSmiLiteral(r8, Smi::FromInt(0), r0);
   __ bne(&parameters_loop);
@@ -2382,22 +2382,22 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
   __ StoreP(r4, FieldMemOperand(r5, FixedArray::kLengthOffset));
 
   Label arguments_loop, arguments_test;
-  __ LoadRR(r13, r3);
+  __ LoadRR(r1, r3);
   __ LoadP(r6, MemOperand(sp, 1 * kPointerSize));
-  __ SmiToPtrArrayOffset(r7, r13);
+  __ SmiToPtrArrayOffset(r7, r1);
   __ SubP(r6, r6, r7);
   __ b(&arguments_test, Label::kNear);
 
   __ bind(&arguments_loop);
   __ SubP(r6, Operand(kPointerSize));
   __ LoadP(r8, MemOperand(r6, 0));
-  __ SmiToPtrArrayOffset(r7, r13);
+  __ SmiToPtrArrayOffset(r7, r1);
   __ AddP(r7, r5);
   __ StoreP(r8, FieldMemOperand(r7, FixedArray::kHeaderSize));
-  __ AddSmiLiteral(r13, r13, Smi::FromInt(1), r0);
+  __ AddSmiLiteral(r1, r1, Smi::FromInt(1), r0);
 
   __ bind(&arguments_test);
-  __ CmpP(r13, r4);
+  __ CmpP(r1, r4);
   __ blt(&arguments_loop);
 
   // Return and remove the on-stack parameters.
