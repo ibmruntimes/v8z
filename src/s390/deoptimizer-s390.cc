@@ -119,8 +119,8 @@ void Deoptimizer::SetPlatformCompiledStubRegisters(
   ExternalReference xref(&function, ExternalReference::BUILTIN_CALL, isolate_);
   intptr_t handler = reinterpret_cast<intptr_t>(xref.address());
   int params = descriptor->GetHandlerParameterCount();
-  output_frame->SetRegister(r3.code(), params);
-  output_frame->SetRegister(r4.code(), handler);
+  output_frame->SetRegister(r2.code(), params);
+  output_frame->SetRegister(r3.code(), handler);
 }
 
 
@@ -212,13 +212,6 @@ void Deoptimizer::EntryGenerator::Generate() {
   ASSERT(Register::kNumRegisters == kNumberOfRegisters);
   __ mvc(MemOperand(r3, FrameDescription::registers_offset()), MemOperand(sp),
          kNumberOfRegisters * kPointerSize);
-  /*
-  for (int i = 0; i < kNumberOfRegisters; i++) {
-    int offset = (i * kPointerSize) + FrameDescription::registers_offset();
-    __ LoadP(r4, MemOperand(sp, i * kPointerSize));
-    __ StoreP(r4, MemOperand(r3, offset));
-  }
-  */
 
   int double_regs_offset = FrameDescription::double_registers_offset();
   // Copy VFP registers to
@@ -241,11 +234,11 @@ void Deoptimizer::EntryGenerator::Generate() {
   __ la(r5, MemOperand(r3, FrameDescription::frame_content_offset()));
   Label pop_loop;
   Label pop_loop_header;
-  __ b(&pop_loop_header);
+  __ b(&pop_loop_header, Label::kNear);
   __ bind(&pop_loop);
   __ pop(r6);
   __ StoreP(r6, MemOperand(r5, 0));
-  __ AddP(r5, Operand(kPointerSize));
+  __ la(r5, MemOperand(r5, kPointerSize));
   __ bind(&pop_loop_header);
   __ CmpP(r4, sp);
   __ bne(&pop_loop);
@@ -271,13 +264,13 @@ void Deoptimizer::EntryGenerator::Generate() {
   __ LoadP(r6, MemOperand(r2, Deoptimizer::output_offset()));  // r6 is output_.
   __ ShiftLeftP(r3, r3, Operand(kPointerSizeLog2));
   __ AddP(r3, r6, r3);
-  __ b(&outer_loop_header);
+  __ b(&outer_loop_header, Label::kNear);
 
   __ bind(&outer_push_loop);
   // Inner loop state: r4 = current FrameDescription*, r5 = loop index.
   __ LoadP(r4, MemOperand(r6, 0));  // output_[ix]
   __ LoadP(r5, MemOperand(r4, FrameDescription::frame_size_offset()));
-  __ b(&inner_loop_header);
+  __ b(&inner_loop_header, Label::kNear);
 
   __ bind(&inner_push_loop);
   __ AddP(r5, Operand(-sizeof(intptr_t)));
