@@ -1555,7 +1555,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
 //    __ st(r6, MemOperand(r3));
 //    __ StoreP(r8, MemOperand(r3, kPointerSize));
 //    isolate_reg = r4;
-// }
+   }
 // else {
  //   __ la(r2, MemOperand(sp, (kStackFrameExtraParamSlot + 1) * kPointerSize));
   //  __ st(r6, MemOperand(r2));
