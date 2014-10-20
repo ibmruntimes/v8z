@@ -825,42 +825,25 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   mov(r1, Operand(ExternalReference(Isolate::kContextAddress, isolate())));
   StoreP(cp, MemOperand(r1));
 
-  // ToDo(Zen): Need to upstream changes from PPC here
   // Optionally save all volatile double registers.
   if (save_doubles) {
-    const int kNumRegs = DoubleRegister::kNumVolatileRegisters;
-    lay(sp, MemOperand(sp, -kNumRegs * kDoubleSize));
-#define StoreFloatingPointRegisterToStack(reg, offset) \
-    StoreF(DoubleRegister::from_code(reg), \
-      MemOperand(sp, (offset) * kDoubleSize));
-#ifdef V8_TARGET_ARCH_S390X
-    for (int i = 0; i < 7; i++) {
-      StoreFloatingPointRegisterToStack(i, i);
-    }
-#else
-    StoreFloatingPointRegisterToStack(0, 0);
-    StoreFloatingPointRegisterToStack(1, 1);
-    StoreFloatingPointRegisterToStack(2, 2);
-    StoreFloatingPointRegisterToStack(3, 3);
-    StoreFloatingPointRegisterToStack(5, 4);
-    int offset = 5;
-    for (int i = 7; i < DoubleRegister::kNumRegisters; i++, offset++) {
-      StoreFloatingPointRegisterToStack(i, offset);
-    }
-#endif
-#undef StoreFloatingPointRegisterToStack
+  SaveFPRegs(sp, 0, DoubleRegister::kNumVolatileRegisters);
   }
+
+  lay(sp, MemOperand(sp, -stack_space * kPointerSize));
+
 
   // Allocate and align the frame preparing for calling the runtime
   // function.
-  stack_space += kNumRequiredStackFrameSlots;
-  lay(sp, MemOperand(sp, -stack_space * kPointerSize));
   const int frame_alignment = MacroAssembler::ActivationFrameAlignment();
   if (frame_alignment > 0) {
     ASSERT(frame_alignment == 8);
     ClearRightImm(sp, sp, Operand(3));  // equivalent to &= -8
   }
 
+  LoadImmP(r0, Operand::Zero());
+  StoreP(r0, MemOperand(sp, -kNumRequiredStackFrameSlots * kPointerSize));
+  lay(sp, MemOperand(sp, -kNumRequiredStackFrameSlots * kPointerSize));
   // Set the exit frame sp value to point just before the return address
   // location.
   lay(r1, MemOperand(sp, kStackFrameSPSlot * kPointerSize));

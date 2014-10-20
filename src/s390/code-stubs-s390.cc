@@ -1522,14 +1522,19 @@ void CEntryStub::Generate(MacroAssembler* masm) {
     arg_stack_space += 2;
   }
 #endif
+#if V8_TARGET_ARCH_S390X
+
+  // 64-bit linux pass Argument object by reference not value
+  arg_stack_space += 2;
+#endif
 
   __ EnterExitFrame(save_doubles_, arg_stack_space);
 
-  // Store a copy of argc in callee-saved registers for later.
+  // Store a copy of argc, argv in callee-saved registers for later.
   __ LoadRR(r6, r2);
-
+  __ LoadRR(r8, r3);
   // r2, r6: number of arguments including receiver  (C callee-saved)
-  // r3: pointer to the first argument
+  // r3, r8: pointer to the first argument
   // r7: pointer to builtin function  (C callee-saved)
 
   // Result returned in registers or stack, depending on result size and ABI.
@@ -1544,7 +1549,19 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   __ LoadRR(r3, r2);
   __ la(r2, MemOperand(sp, (kStackFrameExtraParamSlot + 1) * kPointerSize));
   isolate_reg = r5;
-  }
+//    ASSERT_EQ(2, result_size_);
+//  __ la(r2, MemOperand(sp, (kStackFrameExtraParamSlot + 1) * kPointerSize));
+//    __ la(r3, MemOperand(sp, (kStackFrameExtraParamSlot + 3) * kPointerSize));
+//    __ st(r6, MemOperand(r3));
+//    __ StoreP(r8, MemOperand(r3, kPointerSize));
+//    isolate_reg = r4;
+// }
+// else {
+ //   __ la(r2, MemOperand(sp, (kStackFrameExtraParamSlot + 1) * kPointerSize));
+  //  __ st(r6, MemOperand(r2));
+  //  __ StoreP(r8, MemOperand(r2, kPointerSize));
+//    isolate_reg = r3;
+//    }
 #endif
   // Call C built-in.
   __ mov(isolate_reg, Operand(ExternalReference::isolate_address(isolate())));
@@ -5528,7 +5545,6 @@ void CallApiGetterStub::Generate(MacroAssembler* masm) {
 
 
 #undef __
-
 } }  // namespace v8::internal
 
 #endif  // V8_TARGET_ARCH_S390
