@@ -927,13 +927,16 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles,
 #endif
 
   // Tear down the exit frame, pop the arguments, and return.
-  LoadRR(sp, fp);
-  Pop(r14, fp);
-
+  // Pop r14, and adjust sp by 2*kPointerSize
+  LoadP(r14, MemOperand(fp, kPointerSize));
   if (argument_count.is_valid()) {
     ShiftLeftP(argument_count, argument_count, Operand(kPointerSizeLog2));
-    la(sp, MemOperand(argument_count, sp));
+    la(sp, MemOperand(argument_count, fp, 2 * kPointerSize));
+  } else {
+    la(sp, MemOperand(fp, 2 * kPointerSize));
   }
+  // Restore previous FP last, as fp is used as base register in prior instrs.
+  LoadP(fp, MemOperand(fp));
 }
 
 
