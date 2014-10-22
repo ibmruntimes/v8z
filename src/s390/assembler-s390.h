@@ -974,31 +974,26 @@ void name(Register r3, Condition m4, Register r1, Register r2)
 
 #define RS1_FORM(name)\
 void name(Register r1, Register r3, const MemOperand& opnd);\
-void name(Register r1, Register r3, Register b2, \
-                 Disp d2)
+void name(Register r1, Register r3, Register b2, Disp d2)
 
 #define RS2_FORM(name)\
 void name(Register r1, Condition m3, const MemOperand& opnd);\
-void name(Register r1, Condition m3, Register b2, \
-                 Disp d2)
+void name(Register r1, Condition m3, Register b2, Disp d2)
 
 #define RSE_FORM(name)\
 void name(Register r1, Register r3, const MemOperand& opnd);\
-void name(Register r1, Register r3, Register b2, \
-                 Disp d2)
+void name(Register r1, Register r3, Register b2, Disp d2)
 
 #define RSL_FORM(name)\
 void name(Length l, Register b2, Disp d2);\
 void name(const MemOperand& opnd)
 
 #define RSY1_FORM(name)\
-void name(Register r1, Register r3, Register b2, \
-          Disp d2);\
+void name(Register r1, Register r3, Register b2, Disp d2);\
 void name(Register r1, Register r3, const MemOperand& opnd)
 
 #define RSY2_FORM(name)\
-void name(Register r1, Condition m3, Register b2, \
-          Disp d2);\
+void name(Register r1, Condition m3, Register b2, Disp d2);\
 void name(Register r1, Condition m3, const MemOperand& opnd)
 
 #define RRD_FORM(name)\
@@ -1340,7 +1335,6 @@ RRE_FORM(kmo);
 RRE_FORM(kxbr);
 RRE_FORM(kxtr);
 RX_FORM(l);
-RX_FORM(la);
 RSY1_FORM(laa);
 RSY1_FORM(laag);
 RSY1_FORM(laal);
@@ -1355,7 +1349,6 @@ RIL1_FORM(larl);
 RXY_FORM(lat);
 RSY1_FORM(lax);
 RSY1_FORM(laxg);
-RXY_FORM(lay);
 RXY_FORM(lb);
 RXY_FORM(lbh);
 RRE_FORM(lbr);
@@ -1723,14 +1716,20 @@ S_FORM(xsch);
 RXY_FORM(xy);
 SS2_FORM(zap);
 
+
+  // Load Address Instructions
+  void la(Register r1, const MemOperand& src);
+  void lay(Register r1, const MemOperand& src);
+
   // Load Instructions
   void lt_z(Register r1, const MemOperand& src);
   void ltg(Register r1, const MemOperand& src);
 
-  // Load Logical Byte instrs (aka. chars)
+  // Load Logical Byte Instructions (aka. chars)
   void llc(Register r1, const MemOperand& src);
   void llgc(Register r1, const MemOperand& src);
 
+  // Load Multiple Instructions
   void lm(Register r1, Register r2, const MemOperand& src);
   void lmy(Register r1, Register r2, const MemOperand& src);
   void lmg(Register r1, Register r2, const MemOperand& src);
