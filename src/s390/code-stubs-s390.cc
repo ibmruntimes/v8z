@@ -3325,7 +3325,7 @@ void CallICStub::Generate(MacroAssembler* masm) {
   __ AddP(r6, r4, r6);
   __ LoadP(r6, FieldMemOperand(r6, FixedArray::kHeaderSize));
   __ CmpP(r3, r6);
-  __ bne(&extra_checks_or_miss);
+  __ bne(&extra_checks_or_miss, Label::kNear);
 
   __ bind(&have_js_function);
   if (state_.CallAsMethod()) {
@@ -3335,7 +3335,7 @@ void CallICStub::Generate(MacroAssembler* masm) {
 
     __ JumpIfSmi(r5, &wrap);
     __ CompareObjectType(r5, r6, r6, FIRST_SPEC_OBJECT_TYPE);
-    __ blt(&wrap);
+    __ blt(&wrap, Label::kNear);
 
     __ bind(&cont);
   }
@@ -3354,7 +3354,7 @@ void CallICStub::Generate(MacroAssembler* masm) {
   Label miss;
 
   __ CompareRoot(r6, Heap::kMegamorphicSymbolRootIndex);
-  __ beq(&slow_start);
+  __ beq(&slow_start, Label::kNear);
   __ CompareRoot(r6, Heap::kUninitializedSymbolRootIndex);
   __ beq(&miss);
 
@@ -3364,7 +3364,7 @@ void CallICStub::Generate(MacroAssembler* masm) {
     __ AddP(r6, r4, r6);
     __ LoadRoot(ip, Heap::kMegamorphicSymbolRootIndex);
     __ StoreP(ip, FieldMemOperand(r6, FixedArray::kHeaderSize));
-    __ jmp(&slow_start);
+    __ jmp(&slow_start, Label::kNear);
   }
 
   // We are here because tracing is on or we are going monomorphic.
