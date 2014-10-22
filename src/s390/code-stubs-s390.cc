@@ -4970,6 +4970,8 @@ void StubFailureTrampolineStub::Generate(MacroAssembler* masm) {
     __ AddP(r3, Operand(1));
   }
   masm->LeaveFrame(StackFrame::STUB_FAILURE_TRAMPOLINE);
+  __ ShiftLeftP(r3, r3, Operand(kPointerSizeLog2));
+  __ la(sp, MemOperand(r3, sp));
   __ Ret();
 }
 
