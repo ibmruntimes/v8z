@@ -80,7 +80,7 @@ const int kNumSafepointSavedRegisters = kNumJSCallerSaved + kNumCalleeSaved;
 // The following constants describe the stack frame linkage area as
 // defined by the ABI.
 
-#if defined(V8_TARGET_ARCH_S390X)
+#if V8_TARGET_ARCH_S390X
 // [0] Back Chain
 // [1] Reserved for compiler use
 // [2] GPR 2
@@ -114,9 +114,9 @@ const int kStackFrameExtraParamSlot = 24;
 
 // zLinux ABI requires caller frames to include sufficient space for
 // callee preserved register save area.
-#if defined(V8_TARGET_ARCH_S390X)
+#if V8_TARGET_ARCH_S390X
 const int kCalleeRegisterSaveAreaSize = 160;
-#elif defined(V8_TARGET_ARCH_S390)
+#elif V8_TARGET_ARCH_S390
 const int kCalleeRegisterSaveAreaSize = 96;
 #else
 const int kCalleeRegisterSaveAreaSize = 0;
