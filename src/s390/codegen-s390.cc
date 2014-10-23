@@ -596,7 +596,7 @@ void MathExpGenerator::EmitMathExp(MacroAssembler* masm,
   // Must not call ExpConstant() after overwriting temp3!
   __ mov(temp3, Operand(ExternalReference::math_exp_log_table()));
   __ ShiftLeft(temp2, temp2, Operand(3));
-#if V8_TARGET_ARCH_S39064
+#if V8_TARGET_ARCH_S390X
   __ lg(temp2, MemOperand(temp3, temp2));
   __ ShiftLeftP(temp1, temp1, Operand(52));
   __ OrP(temp2, temp1);
