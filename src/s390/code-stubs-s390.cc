@@ -1735,11 +1735,6 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   __ lay(sp, MemOperand(sp, -5 * kPointerSize));
   // Push a bad frame pointer to fail if it is used.
   __ LoadImmP(r10, Operand(-1));
-#if V8_OOL_CONSTANT_POOL
-  __ mov(kConstantPoolRegister,
-         Operand(isolate()->factory()->empty_constant_pool_array()));
-  __ push(kConstantPoolRegister);
-#endif
   int marker = is_construct ? StackFrame::ENTRY_CONSTRUCT : StackFrame::ENTRY;
   __ LoadSmiLiteral(r9, Smi::FromInt(marker));
   __ LoadSmiLiteral(r8, Smi::FromInt(marker));
