@@ -2045,7 +2045,8 @@ void LCodeGen::DoAddI(LAddI* instr) {
   LOperand* left = instr->left();
   LOperand* right = instr->right();
   LOperand* result = instr->result();
-
+  bool isInteger = !(instr->hydrogen()->representation().IsSmi() ||
+                     instr->hydrogen()->representation().IsExternal());
 #if V8_TARGET_ARCH_S390X
   // The overflow detection needs to be tested on the lower 32-bits.
   // As a result, on 64-bit, we need to force 32-bit arithmetic operations
@@ -2056,18 +2057,20 @@ void LCodeGen::DoAddI(LAddI* instr) {
 #endif
 
   if (right->IsConstantOperand()) {
-    if (checkOverflow)
-      __ Add32(ToRegister(result), ToRegister(left),
-           Operand(ToInteger32(LConstantOperand::cast(right))));
-    else
+    if (!isInteger || !checkOverflow)
       __ AddP(ToRegister(result), ToRegister(left),
            Operand(ToInteger32(LConstantOperand::cast(right))));
-  } else if (right->IsRegister()) {
-    if (checkOverflow)
-      __ Add32(ToRegister(result), ToRegister(left), ToRegister(right));
     else
+     __ Add32(ToRegister(result), ToRegister(left),
+           Operand(ToInteger32(LConstantOperand::cast(right))));
+  } else if (right->IsRegister()) {
+    if (!isInteger)
+      __ AddP(ToRegister(result), ToRegister(left), ToRegister(right));
+    else if (!checkOverflow)
       __ AddP_ExtendSrc(ToRegister(result), ToRegister(left),
                         ToRegister(right));
+    else
+      __ Add32(ToRegister(result), ToRegister(left), ToRegister(right));
   } else {
     if (!left->Equals(instr->result()))
       __ LoadRR(ToRegister(result), ToRegister(left));
@@ -2080,7 +2083,9 @@ void LCodeGen::DoAddI(LAddI* instr) {
 #else
     MemOperand mem = ToMemOperand(right);
 #endif
-    if (checkOverflow) {
+      if (!isInteger)
+      __ AddP(ToRegister(result), mem);
+     else if (checkOverflow) {
       __ Add32(ToRegister(result), mem);
     } else {
       __ AddP_ExtendSrc(ToRegister(result), mem);
@@ -2088,7 +2093,7 @@ void LCodeGen::DoAddI(LAddI* instr) {
   }
 
 #if V8_TARGET_ARCH_S390X
-  if (checkOverflow)
+  if (isInteger && checkOverflow)
     __ lgfr(ToRegister(result), ToRegister(result));
 #endif
   // Doptimize on overflow
