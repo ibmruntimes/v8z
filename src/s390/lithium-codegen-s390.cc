@@ -1108,7 +1108,6 @@ void LCodeGen::DoModI(LModI* instr) {
   Register left_reg = ToRegister(instr->left());
   Register right_reg = ToRegister(instr->right());
   Register result_reg = ToRegister(instr->result());
-  Register scratch = scratch0();
   Label done;
 
    // Check for x % 0.
@@ -1134,7 +1133,11 @@ void LCodeGen::DoModI(LModI* instr) {
     __ bind(&no_overflow_possible);
   }
 
-  ASSERT(scratch.is(r1));
+  // Divide instruction dr will implicity use register pair
+  // r0 & r1 below.
+  ASSERT(!left_reg.is(r1));
+  ASSERT(!right_reg.is(r1));
+  ASSERT(!result_reg.is(r1));
   __ LoadRR(r0, left_reg);
   __ srda(r0, Operand(32));
   __ dr(r0, right_reg);     // R0:R1 = R1 / divisor - R0 remainder
