@@ -1108,6 +1108,7 @@ void LCodeGen::DoModI(LModI* instr) {
   Register left_reg = ToRegister(instr->left());
   Register right_reg = ToRegister(instr->right());
   Register result_reg = ToRegister(instr->result());
+  Register scratch = scratch0();
   Label done;
 
    // Check for x % 0.
@@ -1133,11 +1134,7 @@ void LCodeGen::DoModI(LModI* instr) {
     __ bind(&no_overflow_possible);
   }
 
-  // Divide instruction dr will implicity use register pair
-  // r0 & r1 below.
-  ASSERT(!left_reg.is(r1));
-  ASSERT(!right_reg.is(r1));
-  ASSERT(!result_reg.is(r1));
+  ASSERT(scratch.is(r1));
   __ LoadRR(r0, left_reg);
   __ srda(r0, Operand(32));
   __ dr(r0, right_reg);     // R0:R1 = R1 / divisor - R0 remainder
@@ -1820,6 +1817,8 @@ void LCodeGen::DoSubI(LSubI* instr) {
   LOperand* right = instr->right();
   LOperand* result = instr->result();
 
+  bool isInteger = !(instr->hydrogen()->representation().IsSmi() ||
+                     instr->hydrogen()->representation().IsExternal());
 
 #if V8_TARGET_ARCH_S390X
   // The overflow detection needs to be tested on the lower 32-bits.
@@ -1831,18 +1830,20 @@ void LCodeGen::DoSubI(LSubI* instr) {
 #endif
 
   if (right->IsConstantOperand()) {
-    if (checkOverflow)
-      __ Sub32(ToRegister(result), ToRegister(left),
-           Operand(ToInteger32(LConstantOperand::cast(right))));
-    else
+    if (!isInteger || !checkOverflow)
       __ SubP(ToRegister(result), ToRegister(left),
            Operand(ToInteger32(LConstantOperand::cast(right))));
-  } else if (right->IsRegister()) {
-    if (checkOverflow)
-      __ Sub32(ToRegister(result), ToRegister(left), ToRegister(right));
     else
+      __ Sub32(ToRegister(result), ToRegister(left),
+           Operand(ToInteger32(LConstantOperand::cast(right))));
+  } else if (right->IsRegister()) {
+    if (!isInteger)
+      __ SubP(ToRegister(result), ToRegister(left), ToRegister(right));
+    else if (!checkOverflow)
       __ SubP_ExtendSrc(ToRegister(result), ToRegister(left),
                         ToRegister(right));
+    else
+      __ Sub32(ToRegister(result), ToRegister(left), ToRegister(right));
   } else {
     if (!left->Equals(instr->result()))
       __ LoadRR(ToRegister(result), ToRegister(left));
@@ -1855,7 +1856,9 @@ void LCodeGen::DoSubI(LSubI* instr) {
 #else
     MemOperand mem = ToMemOperand(right);
 #endif
-    if (checkOverflow) {
+    if (!isInteger) {
+            __ SubP(ToRegister(result), mem);
+    } else if (checkOverflow) {
       __ Sub32(ToRegister(result), mem);
     } else {
       __ SubP_ExtendSrc(ToRegister(result), mem);
@@ -1863,7 +1866,7 @@ void LCodeGen::DoSubI(LSubI* instr) {
   }
 
 #if V8_TARGET_ARCH_S390X
-  if (checkOverflow)
+  if (isInteger && checkOverflow)
     __ lgfr(ToRegister(result), ToRegister(result));
 #endif
   // Doptimize on overflow
