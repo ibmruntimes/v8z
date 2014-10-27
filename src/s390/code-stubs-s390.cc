@@ -1249,7 +1249,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
   const DoubleRegister double_exponent = d2;
   const DoubleRegister double_result = d3;
   const DoubleRegister double_scratch = d0;
-  const Register scratch = r13;
+  const Register scratch = r1;
   const Register scratch2 = r9;
 
   Label call_runtime, done, int_exponent;
