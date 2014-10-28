@@ -1612,14 +1612,15 @@ void MacroAssembler::Allocate(int object_size,
     STATIC_ASSERT(kPointerAlignment * 2 == kDoubleAlignment);
     AndP(scratch2, result, Operand(kDoubleAlignmentMask));
     Label aligned;
-    beq(&aligned /*,cr0*/);
+    beq(&aligned, Label::kNear);
     if ((flags & PRETENURE_OLD_DATA_SPACE) != 0) {
       CmpLogicalP(result, limitMemOperand);
       bge(gc_required);
     }
     mov(scratch2, Operand(isolate()->factory()->one_pointer_filler_map()));
     StoreW(scratch2, MemOperand(result));
-    AndP(result, Operand(kDoubleSize / 2));
+    // Force alignment on the lower 16-bits
+    nill(result, Operand(kDoubleSize / 2));
     bind(&aligned);
 #endif
   }
@@ -1717,7 +1718,8 @@ void MacroAssembler::Allocate(Register object_size,
     }
     mov(scratch2, Operand(isolate()->factory()->one_pointer_filler_map()));
     StoreW(scratch2, MemOperand(result));
-    AddP(result, Operand(kDoubleSize / 2));
+    // Force alignment on the lower 16-bits
+    nill(result, Operand(kDoubleSize / 2));
     bind(&aligned);
 #endif
   }
