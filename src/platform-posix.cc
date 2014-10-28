@@ -313,8 +313,8 @@ void OS::DebugBreak() {
 #elif V8_HOST_ARCH_MIPS
   asm("break");
 #elif V8_HOST_ARCH_S390
-  // TODO(joransiu): Fix with proper software breakpoint
-  // raise(SIGTRAP);
+  // Software breakpoint instruction is 0x0001
+  asm volatile(".word 0x0001");
 #elif V8_HOST_ARCH_PPC
   asm("twge 2,2");
 #elif V8_HOST_ARCH_IA32
