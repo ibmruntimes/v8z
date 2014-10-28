@@ -1582,8 +1582,6 @@ void MacroAssembler::Allocate(int object_size,
   Register topaddr = scratch1;
   mov(topaddr, Operand(allocation_top));
 
-  // This code stores a temporary value in ip. This is OK, as the code below
-  // does not need ip for implicit literal generation.
   intptr_t limitOffset = 0;
   if ((flags & RESULT_CONTAINS_TOP) == 0) {
     // Load allocation top into result
@@ -1635,7 +1633,7 @@ void MacroAssembler::Allocate(int object_size,
 
   // Tag object if requested.
   if ((flags & TAG_OBJECT) != 0) {
-    AddP(result, Operand(kHeapObjectTag));
+    la(result, MemOperand(result, kHeapObjectTag));
   }
 }
 
@@ -1683,12 +1681,11 @@ void MacroAssembler::Allocate(Register object_size,
   Register topaddr = scratch1;
   mov(topaddr, Operand(allocation_top));
 
-  // This code stores a temporary value in ip. This is OK, as the code below
-  // does not need ip for implicit literal generation.
+  intptr_t limitOffset = 0;
   if ((flags & RESULT_CONTAINS_TOP) == 0) {
     // Load allocation top into result and allocation limit into ip.
     LoadP(result, MemOperand(topaddr));
-    LoadP(ip, MemOperand(topaddr, kPointerSize));
+    limitOffset = kPointerSize;
   } else {
     if (emit_debug_code()) {
       // Assert that result actually contains top on entry. ip is used
@@ -1698,9 +1695,11 @@ void MacroAssembler::Allocate(Register object_size,
       CmpP(result, ip);
       Check(eq, kUnexpectedAllocationTop);
     }
-    // Load allocation limit into ip. Result already contains allocation top.
-    LoadP(ip, MemOperand(topaddr, limit - top));
+    // Result already contains allocation top.
+    limitOffset = limit - top;
   }
+  MemOperand limitMemOperand = MemOperand(topaddr, limitOffset);
+
   if ((flags & DOUBLE_ALIGNMENT) != 0) {
     // Align the next allocation. Storing the filler map without checking top is
     // safe in new-space because the limit of the heap is aligned there.
@@ -1711,9 +1710,9 @@ void MacroAssembler::Allocate(Register object_size,
     STATIC_ASSERT(kPointerAlignment * 2 == kDoubleAlignment);
     AndP(scratch2, result, Operand(kDoubleAlignmentMask));
     Label aligned;
-    beq(&aligned /*, cr0*/);
+    beq(&aligned, Label::kNear);
     if ((flags & PRETENURE_OLD_DATA_SPACE) != 0) {
-      CmpLogicalP(result, ip);
+      CmpLogicalP(result, limitMemOperand);
       bge(gc_required);
     }
     mov(scratch2, Operand(isolate()->factory()->one_pointer_filler_map()));
@@ -1734,20 +1733,19 @@ void MacroAssembler::Allocate(Register object_size,
     AddP(scratch2, result, object_size);
   }
   b(Condition(CC_OF), gc_required);
-  CmpLogicalP(scratch2, ip);
+  CmpLogicalP(scratch2, limitMemOperand);
   bgt(gc_required);
 
   // Update allocation top. result temporarily holds the new top.
   if (emit_debug_code()) {
-    mov(r0, Operand(kObjectAlignmentMask));
-    AndP(r0, scratch2);
+    AndP(r0, scratch2, Operand(kObjectAlignmentMask));
     Check(eq, kUnalignedAllocationInNewSpace);
   }
   StoreP(scratch2, MemOperand(topaddr));
 
   // Tag object if requested.
   if ((flags & TAG_OBJECT) != 0) {
-    AddP(result, Operand(kHeapObjectTag));
+    la(result, MemOperand(result, kHeapObjectTag));
   }
 }
 
