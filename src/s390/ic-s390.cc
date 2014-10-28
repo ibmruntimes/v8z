@@ -1109,8 +1109,7 @@ void KeyedStoreIC::GenerateGeneric(MacroAssembler* masm,
   // Object case: Check key against length in the elements array.
   __ LoadP(elements, FieldMemOperand(receiver, JSObject::kElementsOffset));
   // Check array bounds. Both the key and the length of FixedArray are smis.
-  __ LoadP(ip, FieldMemOperand(elements, FixedArray::kLengthOffset));
-  __ CmpLogicalP(key, ip);
+  __ CmpLogicalP(key, FieldMemOperand(elements, FixedArray::kLengthOffset));
   __ blt(&fast_object);
 
   // Slow case, handle jump to runtime.
@@ -1129,18 +1128,17 @@ void KeyedStoreIC::GenerateGeneric(MacroAssembler* masm,
   __ bne(&slow);  // Only support writing to writing to array[array.length].
   // Check for room in the elements backing store.
   // Both the key and the length of FixedArray are smis.
-  __ LoadP(ip, FieldMemOperand(elements, FixedArray::kLengthOffset));
-  __ CmpLogicalP(key, ip);
+  __ CmpLogicalP(key, FieldMemOperand(elements, FixedArray::kLengthOffset));
   __ bge(&slow);
   __ LoadP(elements_map, FieldMemOperand(elements, HeapObject::kMapOffset));
   __ mov(ip, Operand(masm->isolate()->factory()->fixed_array_map()));
-  __ CmpP(elements_map, ip);  // PPC - I think I can re-use ip here
+  __ CmpP(elements_map, ip);
   __ bne(&check_if_double_array);
   __ b(&fast_object_grow);
 
   __ bind(&check_if_double_array);
   __ mov(ip, Operand(masm->isolate()->factory()->fixed_double_array_map()));
-  __ CmpP(elements_map, ip);  // PPC - another ip re-use
+  __ CmpP(elements_map, ip);
   __ bne(&slow);
   __ b(&fast_double_grow);
 

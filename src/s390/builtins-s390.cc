@@ -305,9 +305,8 @@ void Builtins::Generate_InOptimizationQueue(MacroAssembler* masm) {
   // would be quite expensive.  A good compromise is to first check against
   // stack limit as a cue for an interrupt signal.
   Label ok;
-  __ LoadRoot(ip, Heap::kStackLimitRootIndex);
-  __ CmpLogicalP(sp, ip);
-  __ bge(&ok);
+  __ CmpLogicalP(sp, RootMemOperand(Heap::kStackLimitRootIndex));
+  __ bge(&ok, Label::kNear);
 
   CallRuntimePassFunction(masm, Runtime::kHiddenTryInstallOptimizedCode);
   GenerateTailCallToReturnedCode(masm);
@@ -1078,9 +1077,8 @@ void Builtins::Generate_OnStackReplacement(MacroAssembler* masm) {
 void Builtins::Generate_OsrAfterStackCheck(MacroAssembler* masm) {
   // We check the stack limit as indicator that recompilation might be done.
   Label ok;
-  __ LoadRoot(ip, Heap::kStackLimitRootIndex);
-  __ CmpLogicalP(sp, ip);
-  __ bge(&ok);
+  __ CmpLogicalP(sp, RootMemOperand(Heap::kStackLimitRootIndex));
+  __ bge(&ok, Label::kNear);
   {
     FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
     __ CallRuntime(Runtime::kHiddenStackGuard, 0);
