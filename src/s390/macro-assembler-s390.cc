@@ -1589,9 +1589,7 @@ void MacroAssembler::Allocate(int object_size,
     limitOffset = kPointerSize;
   } else {
     if (emit_debug_code()) {
-      // Assert that result actually contains top on entry. ip is used
-      // immediately below so this use of ip does not cause difference with
-      // respect to register content between debug and release mode.
+      // Assert that result actually contains top on entry.
       CmpP(result, MemOperand(topaddr));
       Check(eq, kUnexpectedAllocationTop);
     }
@@ -1688,11 +1686,8 @@ void MacroAssembler::Allocate(Register object_size,
     limitOffset = kPointerSize;
   } else {
     if (emit_debug_code()) {
-      // Assert that result actually contains top on entry. ip is used
-      // immediately below so this use of ip does not cause difference with
-      // respect to register content between debug and release mode.
-      LoadP(ip, MemOperand(topaddr));
-      CmpP(result, ip);
+      // Assert that result actually contains top on entry.
+      CmpP(result, MemOperand(topaddr));
       Check(eq, kUnexpectedAllocationTop);
     }
     // Result already contains allocation top.
