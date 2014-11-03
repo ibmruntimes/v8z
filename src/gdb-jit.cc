@@ -678,6 +678,12 @@ class ELF BASE_EMBEDDED {
 #elif defined(V8_TARGET_ARCH_X64)
     const uint8_t ident[16] =
         { 0x7f, 'E', 'L', 'F', 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+#elif defined(V8_TARGET_ARCH_S390)
+    const uint8_t ident[16] =
+        { 0x7f, 'E', 'L', 'F', 1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+#elif defined(V8_TARGET_ARCH_S390X)
+    const uint8_t ident[16] =
+        { 0x7f, 'E', 'L', 'F', 2, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 #else
 #error Unsupported target architecture.
 #endif
@@ -694,6 +700,11 @@ class ELF BASE_EMBEDDED {
     // Set to EM_ARM, defined as 40, in "ARM ELF File Format" at
     // infocenter.arm.com/help/topic/com.arm.doc.dui0101a/DUI0101A_Elf.pdf
     header->machine = 40;
+#elif defined(V8_TARGET_ARCH_S390) || defined(V8_TARGET_ARCH_S390X)
+    // Processor identification value is 22 as defined in the System Z ABI,
+    // under Object Files, ELF Header:
+    // http://refspecs.linuxbase.org/ELF/zSeries/lzsabi0_zSeries.html#AEN1597
+    header->machine = 22;
 #else
 #error Unsupported target architecture.
 #endif
@@ -784,7 +795,8 @@ class ELFSymbol BASE_EMBEDDED {
   Binding binding() const {
     return static_cast<Binding>(info >> 4);
   }
-#if defined(V8_TARGET_ARCH_IA32) || defined(V8_TARGET_ARCH_ARM)
+#if defined(V8_TARGET_ARCH_IA32) || defined(V8_TARGET_ARCH_ARM) \
+    || defined(V8_TARGET_ARCH_S390)
   struct SerializedLayout {
     SerializedLayout(uint32_t name,
                      uintptr_t value,
@@ -807,7 +819,7 @@ class ELFSymbol BASE_EMBEDDED {
     uint8_t other;
     uint16_t section;
   };
-#elif defined(V8_TARGET_ARCH_X64)
+#elif defined(V8_TARGET_ARCH_X64) || defined(V8_TARGET_ARCH_S390X)
   struct SerializedLayout {
     SerializedLayout(uint32_t name,
                      uintptr_t value,
@@ -1113,6 +1125,8 @@ class DebugInfoSection : public DebugSection {
 #elif defined(V8_TARGET_ARCH_ARM)
       UNIMPLEMENTED();
 #elif defined(V8_TARGET_ARCH_MIPS)
+      UNIMPLEMENTED();
+#elif defined(V8_TARGET__ARCH_S390X) || defined(V8_TARGET_ARCH_S390)
       UNIMPLEMENTED();
 #else
 #error Unsupported target architecture.
