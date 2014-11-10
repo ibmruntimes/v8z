@@ -2317,8 +2317,8 @@ void MacroAssembler::CallApiFunctionAndReturn(
   if (FLAG_log_timer_events) {
     FrameScope frame(this, StackFrame::MANUAL);
     PushSafepointRegisters();
-    PrepareCallCFunction(1, r3);
-    mov(r3, Operand(ExternalReference::isolate_address(isolate())));
+    PrepareCallCFunction(1, r2);
+    mov(r2, Operand(ExternalReference::isolate_address(isolate())));
     CallCFunction(ExternalReference::log_enter_external_function(isolate()), 1);
     PopSafepointRegisters();
   }
@@ -2332,8 +2332,8 @@ void MacroAssembler::CallApiFunctionAndReturn(
   if (FLAG_log_timer_events) {
     FrameScope frame(this, StackFrame::MANUAL);
     PushSafepointRegisters();
-    PrepareCallCFunction(1, r3);
-    mov(r3, Operand(ExternalReference::isolate_address(isolate())));
+    PrepareCallCFunction(1, r2);
+    mov(r2, Operand(ExternalReference::isolate_address(isolate())));
     CallCFunction(ExternalReference::log_leave_external_function(isolate()), 1);
     PopSafepointRegisters();
   }
@@ -2345,7 +2345,7 @@ void MacroAssembler::CallApiFunctionAndReturn(
   Label return_value_loaded;
 
   // load value from ReturnValue
-  LoadP(r3, return_value_operand);
+  LoadP(r2, return_value_operand);
   bind(&return_value_loaded);
   // No more valid handles (the result handle was the last one). Restore
   // previous handle scope.
