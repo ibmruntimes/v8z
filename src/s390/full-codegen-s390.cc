@@ -1769,7 +1769,6 @@ void FullCodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
   }
 
   if (result_saved) {
-    __ pop();  // literal index
     context()->PlugTOS();
   } else {
     context()->Plug(r2);
@@ -1872,6 +1871,7 @@ void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
   }
 
   if (result_saved) {
+    __ pop(); // literal index
     context()->PlugTOS();
   } else {
     context()->Plug(r2);
