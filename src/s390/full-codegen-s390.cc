@@ -1871,7 +1871,7 @@ void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
   }
 
   if (result_saved) {
-    __ pop(); // literal index
+    __ pop();  // literal index
     context()->PlugTOS();
   } else {
     context()->Plug(r2);
