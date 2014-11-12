@@ -692,7 +692,7 @@ void Code::PatchPlatformCodeAge(Isolate* isolate,
   } else {
     // FIXED_SEQUENCE
     Code* stub = GetCodeAgeStub(isolate, age, parity);
-    CodePatcher patcher(sequence, young_length / Assembler::kInstrSize);
+    CodePatcher patcher(sequence, young_length);
     Assembler::BlockTrampolinePoolScope block_trampoline_pool(patcher.masm());
     intptr_t target = reinterpret_cast<intptr_t>(stub->instruction_start());
     // We use Call to compute the address of this patch sequence.
