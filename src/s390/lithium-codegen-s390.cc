@@ -2990,17 +2990,20 @@ void LCodeGen::DoDeferredInstanceOfKnownGlobal(LInstanceOfKnownGlobal* instr,
   Register temp = ToRegister(instr->temp());
   ASSERT(temp.is(r6));
   __ Move(InstanceofStub::right(), instr->function());
+// Include instructions (mov + call = mov + (mov+call)) in delta below:
+// 64 bit = 2 * (IILF + IIHF) + BASR = 2 * 12 + 2 = 26
+// 32 bit = 2 * IILF + BASR = 2 * 6 + 2 = 14
 #if V8_TARGET_ARCH_S390X
-  static const int kAdditionalDelta = 32;
+  static const int kAdditionalDelta = 26;
 #else
-  static const int kAdditionalDelta = 18;
+  static const int kAdditionalDelta = 14;
 #endif
   int delta = masm_->SizeOfCodeGeneratedSince(map_check) + kAdditionalDelta;
 
   {
     Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm_);
     // r7 is used to communicate the offset to the location of the map check.
-    __ mov(temp, Operand(delta * Instruction::kInstrSize));
+    __ mov(temp, Operand(delta));
   }
   CallCodeGeneric(stub.GetCode(),
                   RelocInfo::CODE_TARGET,
