@@ -941,12 +941,12 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles,
 
 
 void MacroAssembler::MovFromFloatResult(const DoubleRegister dst) {
-  Move(dst, d1);
+  Move(dst, d0);
 }
 
 
 void MacroAssembler::MovFromFloatParameter(const DoubleRegister dst) {
-  Move(dst, d1);
+  Move(dst, d0);
 }
 
 
@@ -3496,12 +3496,12 @@ void MacroAssembler::PrepareCallCFunction(int num_reg_arguments,
 
 
 void MacroAssembler::MovToFloatParameter(DoubleRegister src) {
-  Move(d1, src);
+  Move(d0, src);
 }
 
 
 void MacroAssembler::MovToFloatResult(DoubleRegister src) {
-  Move(d1, src);
+  Move(d0, src);
 }
 
 
