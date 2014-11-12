@@ -331,7 +331,6 @@
   # converted to test S390 ISA yet
   'test-disasm-s390/*': [SKIP],
 }],  # 'arch == s390 or arch == s390x'
-],
 
 ['arch == ppc or arch == ppc64', {
 
