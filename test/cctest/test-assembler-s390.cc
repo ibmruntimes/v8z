@@ -217,6 +217,7 @@ TEST(3) {
 #ifdef DEBUG
   code->Print();
 #endif
+  USE(code);
   ::exit(0);
 }
 
