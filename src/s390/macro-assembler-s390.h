@@ -243,6 +243,10 @@ class MacroAssembler: public Assembler {
   void AddP(Register dst, const MemOperand& opnd);
   void AddP_ExtendSrc(Register dst, const MemOperand& opnd);
 
+  // Add (Mem - Immediate)
+  void Add32(const MemOperand& opnd, const Operand& imm);
+  void AddP(const MemOperand& opnd, const Operand& imm);
+
   // Add Logical (Register - Immediate)
   void AddLogical(Register dst, const Operand& imm);
   void AddLogicalP(Register dst, const Operand& imm);

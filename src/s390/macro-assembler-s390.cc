@@ -4521,6 +4521,30 @@ void MacroAssembler::AddP_ExtendSrc(Register dst, const MemOperand& opnd) {
 }
 
 
+// Add 32-bit (Memory - Immediate)
+void MacroAssembler::Add32(const MemOperand& opnd, const Operand& imm) {
+  ASSERT(is_int8(imm.immediate()));
+  ASSERT(is_int20(opnd.offset()));
+  ASSERT(CpuFeatures::IsSupported(GENERAL_INSTR_EXT));
+  asi(opnd, imm);
+}
+
+
+// Add Pointer-sized (Memory - Immediate)
+void MacroAssembler::AddP(const MemOperand& opnd, const Operand& imm) {
+  ASSERT(is_int8(imm.immediate()));
+  ASSERT(is_int20(opnd.offset()));
+  ASSERT(CpuFeatures::IsSupported(GENERAL_INSTR_EXT));
+#if V8_TARGET_ARCH_S390X
+  agsi(opnd, imm);
+#else
+  asi(opnd, imm);
+#endif
+}
+
+
+
+
 //----------------------------------------------------------------------------
 //  Add Logical Instructions
 //----------------------------------------------------------------------------

@@ -347,9 +347,15 @@ void FullCodeGenerator::ClearAccumulator() {
 
 void FullCodeGenerator::EmitProfilingCounterDecrement(int delta) {
   __ mov(r4, Operand(profiling_counter_));
-  __ LoadP(r5, FieldMemOperand(r4, Cell::kValueOffset));
-  __ SubSmiLiteral(r5, r5, Smi::FromInt(delta), r0);
-  __ StoreP(r5, FieldMemOperand(r4, Cell::kValueOffset));
+  intptr_t smi_delta = reinterpret_cast<intptr_t>(Smi::FromInt(delta));
+  if (CpuFeatures::IsSupported(GENERAL_INSTR_EXT) && is_int8(-smi_delta)) {
+    __ AddP(FieldMemOperand(r4, Cell::kValueOffset),
+            Operand(-smi_delta));
+  } else {
+    __ LoadP(r5, FieldMemOperand(r4, Cell::kValueOffset));
+    __ SubSmiLiteral(r5, r5, Smi::FromInt(delta), r0);
+    __ StoreP(r5, FieldMemOperand(r4, Cell::kValueOffset));
+  }
 }
 
 
@@ -377,8 +383,7 @@ void FullCodeGenerator::EmitBackEdgeBookkeeping(IterationStatement* stmt,
   EmitProfilingCounterDecrement(weight);
   { Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm_);
     // BackEdgeTable::PatchAt manipulates this sequence.
-    __ CmpP(r5, Operand::Zero());
-    __ bge(&ok);
+    __ bge(&ok, Label::kNear);
     __ Call(isolate()->builtins()->InterruptCheck(), RelocInfo::CODE_TARGET);
 
     // Record a mapping of this PC offset to the OSR id.  This is used to find
@@ -4894,42 +4899,44 @@ FullCodeGenerator::NestedStatement* FullCodeGenerator::TryFinally::Exit(
 
 #undef __
 
+#if V8_TARGET_ARCH_S390X
+static const FourByteInstr kInterruptBranchInstruction = 0xA7A40015;
+static const FourByteInstr kOSRBranchInstruction = 0xA7040015;
+static const int16_t kBackEdgeBranchOffset = 0x15 * 2;
+#else
+static const FourByteInstr kInterruptBranchInstruction = 0xA7A4000E;
+static const FourByteInstr kOSRBranchInstruction = 0xA704000E;
+static const int16_t kBackEdgeBranchOffset = 0xE * 2;
+#endif
 
 void BackEdgeTable::PatchAt(Code* unoptimized_code,
                             Address pc,
                             BackEdgeState target_state,
                             Code* replacement_code) {
-  UNIMPLEMENTED();
-  static const int kInstrSize = Assembler::kInstrSize;
   Address mov_address = Assembler::target_address_from_return_address(pc);
-  Address cmp_address = mov_address - 2 * kInstrSize;
-  CodePatcher patcher(cmp_address, 1);
+  Address branch_address = mov_address - 4;
+  CodePatcher patcher(branch_address, 4);
 
   switch (target_state) {
     case INTERRUPT:
     {
       //  <decrement profiling counter>
-      //         cmpi    r6, 0
-      //         bge     <ok>            ;; not changed
-      //         mov     r12, <interrupt stub address>
-      //         mtlr    r12
-      //         blrl
+      //         bge     <ok>            ;; patched to GE BRC
+      //         iilf/iihf    r12, <interrupt stub address>
+      //         basr    r14, r12
       //  ok-label
-      // patcher.masm()->cmpi(r6, Operand::Zero());
+      patcher.masm()->brc(ge, Operand(kBackEdgeBranchOffset));
       break;
     }
     case ON_STACK_REPLACEMENT:
     case OSR_AFTER_STACK_CHECK:
       //  <decrement profiling counter>
-      //         crset
-      //         bge     <ok>            ;; not changed
+      //         brc   0x0, <ok>            ;;  patched to NOP BRC
       //         mov     r12, <on-stack replacement address>
       //         mtlr    r12
       //         blrl
       //  ok-label ----- pc_after points here
-
-      // Set the LT bit such that bge is a NOP
-      // patcher.masm()->crset(Assembler::encode_crbit(cr7, CR_LT));
+      patcher.masm()->brc(CC_NOP, Operand(kBackEdgeBranchOffset));
       break;
   }
 
@@ -4947,24 +4954,25 @@ BackEdgeTable::BackEdgeState BackEdgeTable::GetBackEdgeState(
     Isolate* isolate,
     Code* unoptimized_code,
     Address pc) {
-  // TODO(joransiu): Fix Interrupt case with proper Z instruction check
-  UNIMPLEMENTED();
-  // static const int kInstrSize = Assembler::kInstrSize;
   Address mov_address = Assembler::target_address_from_return_address(pc);
-  // Address cmp_address = mov_address - 2 * kInstrSize;
+  Address branch_address = mov_address - 4;
   Address interrupt_address = Assembler::target_address_at(mov_address,
                                                            unoptimized_code);
 
-/*
-  if (Assembler::IsCmpImmediate(Assembler::instr_at(cmp_address))) {
+  ASSERT(BRC == Instruction::S390OpcodeValue(branch_address));
+  // For interrupt, we expect a branch greater than or equal
+  // i.e. BRC 0xa, +XXXX  (0xA7A4XXXX)
+  FourByteInstr br_instr = Instruction::InstructionBits(
+                              reinterpret_cast<const byte*>(branch_address));
+  if (kInterruptBranchInstruction == br_instr) {
     ASSERT(interrupt_address ==
            isolate->builtins()->InterruptCheck()->entry());
     return INTERRUPT;
   }
-*/
 
-  // S390 will always set cr
-  // ASSERT(Assembler::IsCrSet(Assembler::instr_at(cmp_address)));
+  // Expect BRC to be patched to NOP branch.
+  // i.e. BRC 0x0, +XXXX (0xA704XXXX)
+  ASSERT(kOSRBranchInstruction == br_instr);
 
   if (interrupt_address ==
       isolate->builtins()->OnStackReplacement()->entry()) {

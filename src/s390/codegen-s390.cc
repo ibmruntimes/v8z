@@ -628,10 +628,14 @@ void MathExpGenerator::EmitMathExp(MacroAssembler* masm,
 
 #undef __
 
-// @TODO(Tara): Figure how exactly CodeAgeSequence functions map to z
 #ifdef DEBUG
-// mflr ip
-static const uint32_t kCodeAgePatchFirstInstruction = 0x7d8802a6;
+#if V8_TARGET_ARCH_S390X
+// LGR R14, IP
+static const uint32_t kCodeAgePatchFirstInstruction = 0xb90400ec;
+#else
+// LR R14, IP
+static const uint32_t kCodeAgePatchFirstInstruction = 0x18ec;
+#endif
 #endif
 
 static byte* GetNoCodeAgeSequence(uint32_t* length) {
@@ -660,7 +664,8 @@ bool Code::IsYoungSequence(byte* sequence) {
   byte* young_sequence = GetNoCodeAgeSequence(&young_length);
   bool result = !memcmp(sequence, young_sequence, young_length);
   ASSERT(result ||
-         Memory::uint32_at(sequence) == kCodeAgePatchFirstInstruction);
+        Instruction::InstructionBits(reinterpret_cast<const byte*>(sequence)) ==
+        kCodeAgePatchFirstInstruction);
   return result;
 }
 
@@ -696,8 +701,9 @@ void Code::PatchPlatformCodeAge(Isolate* isolate,
     Assembler::BlockTrampolinePoolScope block_trampoline_pool(patcher.masm());
     intptr_t target = reinterpret_cast<intptr_t>(stub->instruction_start());
     // We use Call to compute the address of this patch sequence.
-    // Preserve lr since it will be clobbered.  See
+    // Preserve R14 since it will be clobbered.  See
     // GenerateMakeCodeYoungAgainCommon for the stub code.
+    patcher.masm()->LoadRR(r14, ip);
     patcher.masm()->mov(r2, Operand(target));
     patcher.masm()->Call(r2);
     for (int i = 0;

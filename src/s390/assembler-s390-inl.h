@@ -249,14 +249,14 @@ void RelocInfo::set_target_cell(Cell* cell, WriteBarrierMode mode) {
 }
 
 #if V8_TARGET_ARCH_S390X
-    // IIHF + IILF + BASR
-static const int kCodeAgingSequenceLength = 14;
+    // LGR + IIHF + IILF + BASR
+static const int kCodeAgingSequenceLength = 18;
 static const int kCodeAgingTargetDelta = 0;
     // LAY + 4 * STG + LA
 static const int kNoCodeAgeSequenceLength = 34;
 #else
-    // IILF + BASR
-static const int kCodeAgingSequenceLength = 8;
+    // LR + IILF + BASR
+static const int kCodeAgingSequenceLength = 10;
 static const int kCodeAgingTargetDelta = 0;
 #if (V8_HOST_ARCH_S390)
 // NILH + LAY + 4 * ST + LA
