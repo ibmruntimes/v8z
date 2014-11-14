@@ -47,7 +47,7 @@ void Deoptimizer::PatchCodeForDeoptimization(Isolate* isolate, Code* code) {
     } else {
       pointer = code->instruction_start();
     }
-    CodePatcher patcher(pointer, 1);
+    CodePatcher patcher(pointer, 2);
     patcher.masm()->bkpt(0);
 
     DeoptimizationInputData* data =
