@@ -2587,8 +2587,7 @@ void LCodeGen::DoCompareMinusZeroAndBranch(LCompareMinusZeroAndBranch* instr) {
                 DO_SMI_CHECK);
 #if V8_TARGET_ARCH_S390X
     __ LoadP(scratch, FieldMemOperand(value, HeapNumber::kValueOffset));
-    __ iilf(ip, Operand::Zero());
-    __ iihf(ip, Operand(0x80000000));  // ip = 0x80000000_00000000
+    __ llihf(ip, Operand(0x80000000));  // ip = 0x80000000_00000000
     __ CmpP(scratch, ip);
 #else
     __ LoadlW(scratch, FieldMemOperand(value, HeapNumber::kExponentOffset));

@@ -3194,8 +3194,7 @@ void FullCodeGenerator::EmitIsMinusZero(CallRuntime* expr) {
   __ CheckMap(r2, r3, Heap::kHeapNumberMapRootIndex, if_false, DO_SMI_CHECK);
 #if V8_TARGET_ARCH_S390X
   __ LoadP(r3, FieldMemOperand(r2, HeapNumber::kValueOffset));
-  __ iilf(r4, Operand::Zero());
-  __ iihf(r4, Operand(0x80000000));  // r4 = 0x80000000_00000000
+  __ llihf(r4, Operand(0x80000000));  // r4 = 0x80000000_00000000
   __ CmpP(r3, r4);
 #else
   __ LoadlW(r4, FieldMemOperand(r2, HeapNumber::kExponentOffset));
