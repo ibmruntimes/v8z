@@ -2945,6 +2945,7 @@ void MacroAssembler::SmiTagCheckOverflow(Register dst,
     ASSERT(!src.is(overflow));
     SmiTag(dst, src);
     XorP(overflow, dst, src);  // Overflow if (value ^ 2 * value) < 0.
+    LoadAndTestRR(overflow, overflow);
   }
 }
 #endif
