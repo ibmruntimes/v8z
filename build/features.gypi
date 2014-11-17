@@ -49,7 +49,8 @@
 
     # Interpreted regexp engine exists as platform-independent alternative
     # based where the regular expression is compiled to a bytecode.
-    'v8_interpreted_regexp%': 0,
+    # TODO(joransiu): Temporarily use interpreted regexp for now on Z.
+    'v8_interpreted_regexp%': 1,
 
     # Enable ECMAScript Internationalization API. Enabling this feature will
     # add a dependency on the ICU library.
