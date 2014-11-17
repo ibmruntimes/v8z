@@ -225,7 +225,7 @@ DEFINE_bool(unbox_double_arrays, true, "automatically unbox arrays of doubles")
 DEFINE_bool(string_slices, true, "use string slices")
 
 // Flags for Crankshaft.
-DEFINE_bool(crankshaft, true, "use crankshaft")
+DEFINE_bool(crankshaft, false, "use crankshaft")
 DEFINE_string(hydrogen_filter, "*", "optimization filter")
 DEFINE_bool(use_gvn, true, "use hydrogen global value numbering")
 DEFINE_int(gvn_iterations, 3, "maximum number of GVN fix-point iterations")
