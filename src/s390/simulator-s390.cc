@@ -4304,7 +4304,7 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   int64_t r12_val = get_register(r12);
   int64_t r13_val = get_register(r13);
 
-  
+
   va_list parameters;
   va_start(parameters, argument_count);
   // Set up arguments
