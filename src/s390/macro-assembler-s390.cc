@@ -3508,12 +3508,12 @@ void MacroAssembler::MovToFloatResult(DoubleRegister src) {
 
 void MacroAssembler::MovToFloatParameters(DoubleRegister src1,
                                           DoubleRegister src2) {
-  if (src2.is(d1)) {
+  if (src2.is(d0)) {
     ASSERT(!src1.is(d2));
     Move(d2, src2);
-    Move(d1, src1);
+    Move(d0, src1);
   } else {
-    Move(d1, src1);
+    Move(d0, src1);
     Move(d2, src2);
   }
 }
