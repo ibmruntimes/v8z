@@ -4234,13 +4234,7 @@ void Simulator::CallInternal(byte *entry, int reg_arg_count) {
   // entry is the instruction address
   set_pc(reinterpret_cast<intptr_t>(entry));
 #endif
-
-  // Put down marker for end of simulation. The simulator will stop simulation
-  // when the PC reaches this value. By saving the "end simulation" value into
-  // the LR the simulation stops when returning to this call point.
-  registers_[14] = end_sim_pc;
-
-  // Remember the values of non-volatile registers.
+// Remember the values of non-volatile registers.
   int64_t r6_val = get_register(r6);
   int64_t r7_val = get_register(r7);
   int64_t r8_val = get_register(r8);
@@ -4249,6 +4243,14 @@ void Simulator::CallInternal(byte *entry, int reg_arg_count) {
   int64_t r11_val = get_register(r11);
   int64_t r12_val = get_register(r12);
   int64_t r13_val = get_register(r13);
+
+
+  // Put down marker for end of simulation. The simulator will stop simulation
+  // when the PC reaches this value. By saving the "end simulation" value into
+  // the LR the simulation stops when returning to this call point.
+  registers_[14] = end_sim_pc;
+
+
 
   // Set up the non-volatile registers with a known value. To be able to check
   // that they are preserved properly across JS execution.
@@ -4292,6 +4294,17 @@ void Simulator::CallInternal(byte *entry, int reg_arg_count) {
 
 
 intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
+  // Remember the values of non-volatile registers.
+  int64_t r6_val = get_register(r6);
+  int64_t r7_val = get_register(r7);
+  int64_t r8_val = get_register(r8);
+  int64_t r9_val = get_register(r9);
+  int64_t r10_val = get_register(r10);
+  int64_t r11_val = get_register(r11);
+  int64_t r12_val = get_register(r12);
+  int64_t r13_val = get_register(r13);
+
+  
   va_list parameters;
   va_start(parameters, argument_count);
   // Set up arguments
@@ -4324,8 +4337,60 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   va_end(parameters);
   set_register(sp, entry_stack);
 
-  CallInternal(entry, reg_arg_count);
+  // Prepare to execute the code at entry
+#if ABI_USES_FUNCTION_DESCRIPTORS
+  // entry is the function descriptor
+  set_pc(*(reinterpret_cast<intptr_t *>(entry)));
+#else
+  // entry is the instruction address
+  set_pc(reinterpret_cast<intptr_t>(entry));
+#endif
 
+  // Put down marker for end of simulation. The simulator will stop simulation
+  // when the PC reaches this value. By saving the "end simulation" value into
+  // the LR the simulation stops when returning to this call point.
+  registers_[14] = end_sim_pc;
+
+
+
+  // Set up the non-volatile registers with a known value. To be able to check
+  // that they are preserved properly across JS execution.
+  intptr_t callee_saved_value = icount_;
+  if (reg_arg_count < 5) {
+    set_register(r6, callee_saved_value);
+  }
+  set_register(r7, callee_saved_value);
+  set_register(r8, callee_saved_value);
+  set_register(r9, callee_saved_value);
+  set_register(r10, callee_saved_value);
+  set_register(r11, callee_saved_value);
+  set_register(r12, callee_saved_value);
+  set_register(r13, callee_saved_value);
+
+  // Start the simulation
+  Execute();
+
+  // Check that the non-volatile registers have been preserved.
+  if (reg_arg_count < 5) {
+    CHECK_EQ(callee_saved_value, get_register(r6));
+  }
+  CHECK_EQ(callee_saved_value, get_register(r7));
+  CHECK_EQ(callee_saved_value, get_register(r8));
+  CHECK_EQ(callee_saved_value, get_register(r9));
+  CHECK_EQ(callee_saved_value, get_register(r10));
+  CHECK_EQ(callee_saved_value, get_register(r11));
+  CHECK_EQ(callee_saved_value, get_register(r12));
+  CHECK_EQ(callee_saved_value, get_register(r13));
+
+  // Restore non-volatile registers with the original value.
+  set_register(r6, r6_val);
+  set_register(r7, r7_val);
+  set_register(r8, r8_val);
+  set_register(r9, r9_val);
+  set_register(r10, r10_val);
+  set_register(r11, r11_val);
+  set_register(r12, r12_val);
+  set_register(r13, r13_val);
   // Pop stack passed arguments.
   CHECK_EQ(entry_stack, get_register(sp));
   set_register(sp, original_stack);
