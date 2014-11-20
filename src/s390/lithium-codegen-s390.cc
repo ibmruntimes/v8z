@@ -153,12 +153,14 @@ bool LCodeGen::GeneratePrologue() {
     __ lay(sp,  MemOperand(sp, -(slots * kPointerSize)));
     if (FLAG_debug_code) {
       __ Push(r2, r3);
-      __ mov(r2, Operand(slots));
+      __ mov(r2, Operand(slots * kPointerSize));
       __ mov(r3, Operand(kSlotsZapValue));
       Label loop;
       __ bind(&loop);
       __ StoreP(r3, MemOperand(sp, r2, kPointerSize));
-      __ BranchOnCount(r2, &loop);
+      __ lay(r2, MemOperand(r2, -kPointerSize));
+      __ CmpP(r2, Operand::Zero());
+      __ bne(&loop);
       __ Pop(r2, r3);
     }
   }
