@@ -5495,13 +5495,10 @@ void LCodeGen::DoCheckMaps(LCheckMaps* instr) {
   };
 
   if (instr->hydrogen()->CanOmitMapChecks()) return;
-  Register map_reg = scratch0();
 
   LOperand* input = instr->value();
   ASSERT(input->IsRegister());
   Register reg = ToRegister(input);
-
-  __ LoadP(map_reg, FieldMemOperand(reg, HeapObject::kMapOffset));
 
   DeferredCheckMaps* deferred = NULL;
   if (instr->hydrogen()->has_migration_target()) {
@@ -5513,12 +5510,12 @@ void LCodeGen::DoCheckMaps(LCheckMaps* instr) {
   Label success;
   for (int i = 0; i < map_set->size() - 1; i++) {
     Handle<Map> map = map_set->at(i).handle();
-    __ CompareMap(map_reg, map, &success);
+    __ CompareMap(reg, map, &success);
     __ beq(&success);
   }
 
   Handle<Map> map = map_set->at(map_set->size() - 1).handle();
-  __ CompareMap(map_reg, map, &success);
+  __ CompareMap(reg, map, &success);
   if (instr->hydrogen()->has_migration_target()) {
     __ bne(deferred->entry());
   } else {
