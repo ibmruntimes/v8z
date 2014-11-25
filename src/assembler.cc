@@ -997,7 +997,7 @@ ExternalReference::ExternalReference(Builtins::Name name, Isolate* isolate)
 
 ExternalReference::ExternalReference(Runtime::FunctionId id,
                                      Isolate* isolate)
-#if V8_TARGET_ARCH_PPC64
+#if V8_TARGET_ARCH_PPC64 || V8_TARGET_ARCH_S390X
   : address_(Redirect(isolate, Runtime::FunctionForId(id)->entry,
                       (Runtime::FunctionForId(id)->result_size == 2) ?
                       BUILTIN_OBJECTPAIR_CALL : BUILTIN_CALL)) {}
@@ -1008,7 +1008,7 @@ ExternalReference::ExternalReference(Runtime::FunctionId id,
 
 ExternalReference::ExternalReference(const Runtime::Function* f,
                                      Isolate* isolate)
-#if V8_TARGET_ARCH_PPC64
+#if V8_TARGET_ARCH_PPC64 || V8_TARGET_ARCH_S390X
   : address_(Redirect(isolate, f->entry,
                       ((f->result_size == 2) ?
                        BUILTIN_OBJECTPAIR_CALL : BUILTIN_CALL))) {}
