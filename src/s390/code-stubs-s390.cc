@@ -1566,16 +1566,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // Call C built-in.
   __ mov(isolate_reg, Operand(ExternalReference::isolate_address(isolate())));
 
-#if ABI_USES_FUNCTION_DESCRIPTORS && !defined(USE_SIMULATOR)
-  // Native AIX/S390X Linux use a function descriptor.
- // @TODO Haven't touched this code for S390.. See if it's applicable.
-  // especially the ToRegister(ABI_TOC_REGISTER) part.
-  __ LoadP(ToRegister(ABI_TOC_REGISTER), MemOperand(r7, kPointerSize));
-  __ LoadP(ip, MemOperand(r7, 0));  // Instruction address
-  Register target = ip;
-#else
   Register target = r7;
-#endif
 
   // To let the GC traverse the return address of the exit frames, we need to
   // know where the return address is. The CEntryStub is unmovable, so
