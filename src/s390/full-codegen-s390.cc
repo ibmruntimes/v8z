@@ -196,18 +196,22 @@ void FullCodeGenerator::Generate() {
         Label loop_header;
         __ bind(&loop_header);
         // Do pushes.
+        // TODO(joransiu): Consider using MVC
+        __ lay(sp, MemOperand(sp, -kMaxPushes * kPointerSize));
         for (int i = 0; i < kMaxPushes; i++) {
-          __ push(ip);
+          __ StoreP(ip, MemOperand(sp, i * kPointerSize));
         }
         // Continue loop if not done.
-        __ SubP(r4, Operand(1));
-        __ bne(&loop_header);
-        __ mov(r4, Operand(loop_iterations));
+        __ BranchOnCount(r4, &loop_header);
       }
       int remaining = locals_count % kMaxPushes;
       // Emit the remaining pushes.
-      for (int i  = 0; i < remaining; i++) {
-        __ push(ip);
+      // TODO(joransiu): Consider using MVC
+      if (remaining > 0) {
+        __ lay(sp, MemOperand(sp, -remaining * kPointerSize));
+        for (int i  = 0; i < remaining; i++) {
+          __ StoreP(ip, MemOperand(sp, i * kPointerSize));
+        }
       }
     }
   }

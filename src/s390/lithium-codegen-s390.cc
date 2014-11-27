@@ -5151,10 +5151,10 @@ void LCodeGen::EmitNumberUntagD(Register input_reg,
 
     // Heap number map check.
     __ LoadP(scratch, FieldMemOperand(input_reg, HeapObject::kMapOffset));
-    __ LoadRoot(ip, Heap::kHeapNumberMapRootIndex);
-    __ CmpP(scratch, ip);
+    __ CmpP(scratch, RootMemOperand(Heap::kHeapNumberMapRootIndex));
+
     if (can_convert_undefined_to_nan) {
-      __ bne(&convert);
+      __ bne(&convert, Label::kNear);
     } else {
       DeoptimizeIf(ne, env);
     }
