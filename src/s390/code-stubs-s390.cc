@@ -1545,12 +1545,11 @@ void CEntryStub::Generate(MacroAssembler* masm) {
     // The return value is 16-byte non-scalar value.
     // Use frame storage reserved by calling function to pass return
     // buffer as implicit first argument.
-  __ LoadRR(r4, r3);
-  __ LoadRR(r3, r2);
-  __ la(r2, MemOperand(sp, (kStackFrameExtraParamSlot + 1) * kPointerSize));
-  isolate_reg = r5;
-   }
-  else __ LoadRR(r6, r2);
+    __ LoadRR(r4, r3);
+    __ LoadRR(r3, r2);
+    __ la(r2, MemOperand(sp, (kStackFrameExtraParamSlot + 1) * kPointerSize));
+    isolate_reg = r5;
+  }
 #endif
   // Call C built-in.
   __ mov(isolate_reg, Operand(ExternalReference::isolate_address(isolate())));
