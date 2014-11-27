@@ -703,7 +703,7 @@ void Code::PatchPlatformCodeAge(Isolate* isolate,
     // We use Call to compute the address of this patch sequence.
     // Preserve R14 since it will be clobbered.  See
     // GenerateMakeCodeYoungAgainCommon for the stub code.
-    patcher.masm()->LoadRR(r14, ip);
+    patcher.masm()->LoadRR(ip, r14);
     patcher.masm()->mov(r2, Operand(target));
     patcher.masm()->Call(r2);
     for (int i = 0;
