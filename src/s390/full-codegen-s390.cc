@@ -113,9 +113,8 @@ static void EmitStackCheck(MacroAssembler* masm_,
   } else {
     index = Heap::kStackLimitRootIndex;
   }
-  __ LoadRoot(stack_limit_scratch, index);
-  __ CmpLogicalP(scratch, stack_limit_scratch);
-  __ bge(&ok);
+  __ CmpLogicalP(scratch, RootMemOperand(index));
+  __ bge(&ok, Label::kNear);
   __ Call(isolate->builtins()->StackCheck(), RelocInfo::CODE_TARGET);
   __ bind(&ok);
 }

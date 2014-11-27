@@ -1149,8 +1149,7 @@ void KeyedStoreIC::GenerateGeneric(MacroAssembler* masm,
   __ LoadP(elements, FieldMemOperand(receiver, JSObject::kElementsOffset));
 
   // Check the key against the length in the array.
-  __ LoadP(ip, FieldMemOperand(receiver, JSArray::kLengthOffset));
-  __ CmpLogicalP(key, ip);
+  __ CmpLogicalP(key, FieldMemOperand(receiver, JSArray::kLengthOffset));
   __ bge(&extra);
 
   KeyedStoreGenerateGenericHelper(masm, &fast_object, &fast_double,

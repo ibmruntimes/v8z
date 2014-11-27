@@ -630,11 +630,11 @@ void MathExpGenerator::EmitMathExp(MacroAssembler* masm,
 
 #ifdef DEBUG
 #if V8_TARGET_ARCH_S390X
-// LGR R14, IP
-static const uint32_t kCodeAgePatchFirstInstruction = 0xb90400ec;
+// LGR IP, R14
+static const uint32_t kCodeAgePatchFirstInstruction = 0xb90400ce;
 #else
-// LR R14, IP
-static const uint32_t kCodeAgePatchFirstInstruction = 0x18ec;
+// LR  IP, R14
+static const uint32_t kCodeAgePatchFirstInstruction = 0x18ce;
 #endif
 #endif
 

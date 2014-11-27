@@ -105,7 +105,6 @@ bool AreAliased(Register reg1,
 // Compare
 #define CmpPH              cghi
 #define CmpLogicalPW       clgfi
-#define CmpLogicalRR       clgr
 
 // Shifts
 #define ShiftLeftP         sllg
@@ -145,7 +144,6 @@ bool AreAliased(Register reg1,
 // Compare
 #define CmpPH              chi
 #define CmpLogicalPW       clfi
-#define CmpLogicalRR       clr
 
 // Shifts
 #define ShiftLeftP         ShiftLeft
