@@ -522,6 +522,12 @@ int Decoder::FormatImmediate(Instruction *instr, const char* format) {
     out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
                                     "%d", value);
     return 2;
+  } else if (format[1] == 'c') {   // signed immediate in 8-15
+    SSInstruction* ssinstr = reinterpret_cast<SSInstruction*>(instr);
+    int8_t value = ssinstr->Length();
+    out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
+                                    "%d", value);
+    return 2;
   }
 
   UNREACHABLE();
@@ -772,6 +778,8 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
     case LLILF: Format(instr, "llilf\t'r1,'i7"); break;
     case LLIHF: Format(instr, "llihf\t'r1,'i7"); break;
     case AFI: Format(instr, "afi\t'r1,'i7"); break;
+    case ASI: Format(instr, "asi\t'd2('r3),'ic"); break;
+    case AGSI: Format(instr, "agsi\t'd2('r3),'ic"); break;
     case ALFI: Format(instr, "alfi\t'r1,'i7"); break;
     case AHIK: Format(instr, "ahik\t'r1,'r2,'i1"); break;
     case AGHIK: Format(instr, "aghik\t'r1,'r2,'i1"); break;
