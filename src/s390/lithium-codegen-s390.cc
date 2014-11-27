@@ -1837,10 +1837,10 @@ void LCodeGen::DoSubI(LSubI* instr) {
   if (right->IsConstantOperand()) {
     if (!isInteger || !checkOverflow)
       __ SubP(ToRegister(result), ToRegister(left),
-           Operand(ToInteger32(LConstantOperand::cast(right))));
+           ToOperand(right));
     else
       __ Sub32(ToRegister(result), ToRegister(left),
-           Operand(ToInteger32(LConstantOperand::cast(right))));
+           ToOperand(right));
   } else if (right->IsRegister()) {
     if (!isInteger)
       __ SubP(ToRegister(result), ToRegister(left), ToRegister(right));
@@ -2071,11 +2071,9 @@ void LCodeGen::DoAddI(LAddI* instr) {
     if (!isInteger || !checkOverflow)
       __ AddP(ToRegister(result), ToRegister(left),
            ToOperand(right));
-//           Operand(ToInteger32(LConstantOperand::cast(right))));
     else
      __ Add32(ToRegister(result), ToRegister(left),
            ToOperand(right));
-           //Operand(ToInteger32(LConstantOperand::cast(right))));
   } else if (right->IsRegister()) {
     if (!isInteger)
       __ AddP(ToRegister(result), ToRegister(left), ToRegister(right));
