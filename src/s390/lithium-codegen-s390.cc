@@ -2558,8 +2558,7 @@ void LCodeGen::DoCmpHoleAndBranch(LCmpHoleAndBranch* instr) {
   EmitFalseBranch(instr, ordered);
 
   Register scratch = scratch0();
-  // TODO(joransiu): Probably some better sequence.
-  __ std(input_reg, MemOperand(sp, -kDoubleSize));
+  __ stdy(input_reg, MemOperand(sp, -kDoubleSize));
   __ LoadlW(scratch, MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
   __ CmpP(scratch, Operand(kHoleNanUpper32));
   EmitBranch(instr, eq);
