@@ -2070,10 +2070,12 @@ void LCodeGen::DoAddI(LAddI* instr) {
   if (right->IsConstantOperand()) {
     if (!isInteger || !checkOverflow)
       __ AddP(ToRegister(result), ToRegister(left),
-           Operand(ToInteger32(LConstantOperand::cast(right))));
+           ToOperand(right));
+//           Operand(ToInteger32(LConstantOperand::cast(right))));
     else
      __ Add32(ToRegister(result), ToRegister(left),
-           Operand(ToInteger32(LConstantOperand::cast(right))));
+           ToOperand(right));
+           //Operand(ToInteger32(LConstantOperand::cast(right))));
   } else if (right->IsRegister()) {
     if (!isInteger)
       __ AddP(ToRegister(result), ToRegister(left), ToRegister(right));
