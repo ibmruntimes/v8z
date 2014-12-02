@@ -621,31 +621,8 @@ void MacroAssembler::ConvertIntToDouble(Register src,
 
 void MacroAssembler::ConvertUnsignedIntToDouble(Register src,
                                                 DoubleRegister double_dst) {
-  ASSERT(!src.is(r0));
-
-  lay(sp, MemOperand(sp, -8));  // reserve one temporary double on the stack
-
-  // zero-extend src to 64-bit and store it to temp double on the stack
-#if V8_TARGET_ARCH_S390X
-  // clrldi(r0, src, Operand(32));
-  LoadRR(r0, src);
-  nihf(r0, Operand::Zero());
-  CmpP(r0, Operand::Zero());
-  stg(r0, MemOperand(sp, 0));
-#else
-  LoadImmP(r0, Operand::Zero());
-  StoreW(r0, MemOperand(sp, Register::kExponentOffset));
-  StoreW(src, MemOperand(sp, Register::kMantissaOffset));
-#endif
-
-  // load into FPR
-  LoadF(double_dst, MemOperand(sp, 0));
-
-  la(sp, MemOperand(sp, 8));  // restore stack
-
-  // convert to double
-  lgdr(r0, double_dst);
-  cdgbr(double_dst, r0);
+  llgfr(src, src);
+  cdgbr(double_dst, src);
 }
 
 
