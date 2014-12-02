@@ -645,7 +645,7 @@ void MacroAssembler::ConvertUnsignedIntToDouble(Register src,
 
   // convert to double
   lgdr(r0, double_dst);
-  cdfbr(double_dst, r0);
+  cdgbr(double_dst, r0);
 }
 
 
