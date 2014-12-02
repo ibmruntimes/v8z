@@ -627,7 +627,6 @@ void Assembler::load_label_offset(Register r1, Label* L) {
 
 // Pseudo op - branch on condition
 void Assembler::branchOnCond(Condition c, int branch_offset, bool is_bound) {
-  positions_recorder()->WriteRecordedPositions();
   int offset = branch_offset;
   if (is_bound && is_int16(offset)) {
     brc(c, Operand(offset & 0xFFFF));  // short jump
