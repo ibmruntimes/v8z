@@ -1917,6 +1917,12 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
   SIInstruction* siInstr = reinterpret_cast<SIInstruction*>(instr);
 
   switch (op) {
+    case LLGFR: {
+      int r1 = rreInst->R1Value();
+      int r2 = rreInst->R2Value();
+      int32_t r2_val = get_low_register<int32_t>(r2);
+      set_register(r1, static_cast<uint64_t>(r2_val));
+    }
     case EX: {
       RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
       int r1 = rxinst->R1Value();
