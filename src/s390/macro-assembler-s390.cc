@@ -594,34 +594,15 @@ void MacroAssembler::CanonicalizeNaN(const DoubleRegister dst,
 
 void MacroAssembler::ConvertIntToDouble(Register src,
                                         DoubleRegister double_dst) {
-  ASSERT(!src.is(r0));
-
-  lay(sp, MemOperand(sp, -8));  // reserve one temporary double on the stack
-
-  // sign-extend src to 64-bit and store it to temp double on the stack
-#if V8_TARGET_ARCH_S390X
-  lgfr(r0, src);
-  stg(r0, MemOperand(sp, 0));
-#else
-  ShiftRightArith(r0, src, Operand(31));
-  StoreW(r0, MemOperand(sp, Register::kExponentOffset));
-  StoreW(src, MemOperand(sp, Register::kMantissaOffset));
-#endif
-
-  // load into FPR
-  LoadF(double_dst, MemOperand(sp, 0));
-
-  la(sp, MemOperand(sp, 8));  // restore stack
-
-  // convert to double
-  lgdr(r0, double_dst);
-  cdfbr(double_dst, r0);
+  cdfbr(double_dst, src);
 }
 
 
 void MacroAssembler::ConvertUnsignedIntToDouble(Register src,
                                                 DoubleRegister double_dst) {
+  //zero-extend src
   llgfr(src, src);
+  //convert to double
   cdgbr(double_dst, src);
 }
 
