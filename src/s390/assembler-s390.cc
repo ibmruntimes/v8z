@@ -176,12 +176,18 @@ void CpuFeatures::Probe(bool serializer_enabled) {
      if (facilities[0] & (1lu << (63 - 34))) {
         supported_ |= (1u << GENERAL_INSTR_EXT);
      }
+     // Test for Floating Point Extension Facility - Bit 37
+     if (facilities[0] & (1lu << (63 - 37))) {
+        supported_ |= (1u << FLOATING_POINT_EXT);
+     }
   }
 #else
   // All distinct ops instructions can be simulated
   supported_ |= (1u << DISTINCT_OPS);
   // RISBG can be simulated
   supported_ |= (1u << GENERAL_INSTR_EXT);
+
+  supported_ |= (1u << FLOATING_POINT_EXT);
   USE(performSTFLE);  // To avoid assert
 #endif
   supported_ |= (1u << FPU);

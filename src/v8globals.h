@@ -407,6 +407,7 @@ enum CpuFeature { SSE4_1 = 32 + 19,  // x86
                   CMOV = 15,   // x86
                   DISTINCT_OPS = 2,       // s390
                   GENERAL_INSTR_EXT = 3,  // s390
+                  FLOATING_POINT_EXT = 4,  // s390
                   VFP3 = 1,    // ARM
                   ARMv7 = 2,   // ARM
                   SUDIV = 3,   // ARM
