@@ -600,9 +600,9 @@ void MacroAssembler::ConvertIntToDouble(Register src,
 
 void MacroAssembler::ConvertUnsignedIntToDouble(Register src,
                                                 DoubleRegister double_dst) {
-  //zero-extend src
+  // zero-extend src
   llgfr(src, src);
-  //convert to double
+  // convert to double
   cdgbr(double_dst, src);
 }
 
