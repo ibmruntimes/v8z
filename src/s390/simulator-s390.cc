@@ -1980,8 +1980,6 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
     case LZDR: {
       int r1 = rreInst->R1Value();
       set_d_register_from_double(r1, 0.0);
-      double dbl_val = get_register(r1);
-      (void)dbl_val;
       break;
     }
     case CGR: {
