@@ -664,9 +664,16 @@ void MacroAssembler::ConvertDoubleToInt64(const DoubleRegister double_input,
       break;
   }
   cgdbr(m, dst, double_input);
-#if !V8_TARGET_ARCH_S390X
-  srlg(dst_hi, dst, Operand(32));
+  ldgr(double_dst, dst);
+  lay(sp, MemOperand(sp, -kDoubleSize));
+  StoreF(double_dst, MemOperand(sp, 0));
+#if V8_TARGET_ARCH_S390X
+  LoadP(dst, MemOperand(sp, 0));
+#else
+  LoadlW(dst_hi, MemOperand(sp, Register::kExponentOffset));
+  LoadlW(dst, MemOperand(sp, Register::kMantissaOffset));
 #endif
+  la(sp, MemOperand(sp, kDoubleSize));
 }
 
 
