@@ -694,6 +694,7 @@ void MacroAssembler::Prologue(PrologueFrameMode frame_mode) {
       // This matches the code found in PatchPlatformCodeAge()
       Code* stub = Code::GetPreAgedCodeAgeStub(isolate());
       intptr_t target = reinterpret_cast<intptr_t>(stub->instruction_start());
+      LoadRR(ip, r14);
       mov(r2, Operand(target));
       Call(r2);
       for (int i = 0;
