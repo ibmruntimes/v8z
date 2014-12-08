@@ -2007,9 +2007,8 @@ void MacroAssembler::StoreNumberToDoubleElements(
 
   bind(&store);
   SmiToDoubleArrayOffset(scratch1, key_reg);
-  AddP(elements_reg, scratch1);
   StoreF(double_scratch,
-       FieldMemOperand(scratch1,
+       FieldMemOperand(elements_reg, scratch1,
                        FixedDoubleArray::kHeaderSize - elements_offset));
 }
 
