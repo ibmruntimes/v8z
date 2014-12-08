@@ -1585,8 +1585,7 @@ void MacroAssembler::Allocate(int object_size,
     }
     mov(scratch2, Operand(isolate()->factory()->one_pointer_filler_map()));
     StoreW(scratch2, MemOperand(result));
-    // Force alignment on the lower 16-bits
-    nill(result, Operand(kDoubleSize / 2));
+    la(result, MemOperand(result, kDoubleSize / 2));
     bind(&aligned);
 #endif
   }
@@ -1682,8 +1681,7 @@ void MacroAssembler::Allocate(Register object_size,
     }
     mov(scratch2, Operand(isolate()->factory()->one_pointer_filler_map()));
     StoreW(scratch2, MemOperand(result));
-    // Force alignment on the lower 16-bits
-    nill(result, Operand(kDoubleSize / 2));
+    la(result, MemOperand(result, kDoubleSize / 2));
     bind(&aligned);
 #endif
   }
