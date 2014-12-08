@@ -574,20 +574,8 @@ void MacroAssembler::CanonicalizeNaN(const DoubleRegister dst,
   // Replace with canonical NaN.
   uint64_t nan_int64 = BitCast<uint64_t>(
     FixedDoubleArray::canonical_not_the_hole_nan_as_double());
-#if V8_TARGET_ARCH_S390X
   mov(r0, Operand(nan_int64));
-  stg(r0, MemOperand(sp, -kDoubleSize));
-  lay(sp, MemOperand(sp, -kDoubleSize));
-#else
-  lay(sp, MemOperand(sp, -kDoubleSize));
-  mov(r0, Operand(static_cast<intptr_t>(nan_int64)));
-  st(r0, MemOperand(sp, Register::kMantissaOffset));
-  mov(r0, Operand(static_cast<intptr_t>(nan_int64 >> 32)));
-  st(r0, MemOperand(sp, Register::kExponentOffset));
-#endif
-  LoadF(dst, MemOperand(sp));
-  la(sp, MemOperand(sp, kDoubleSize));
-
+  ldgr(dst, r0);
   bind(&done);
 }
 
@@ -614,26 +602,7 @@ void MacroAssembler::ConvertUnsignedIntToDouble(Register src,
 void MacroAssembler::ConvertIntToFloat(const DoubleRegister dst,
                                        const Register src,
                                        const Register int_scratch) {
-  lay(sp, MemOperand(sp, -8));  // reserve one temporary double on the stack
-
-  // sign-extend src to 64-bit and store it to temp double on the stack
-#if V8_TARGET_ARCH_S390X
-  lgfr(int_scratch, src);
-  stg(int_scratch, MemOperand(sp, 0));
-#else
-  ShiftRightArith(int_scratch, src, Operand(31));
-  StoreW(int_scratch, MemOperand(sp, Register::kExponentOffset));
-  StoreW(src, MemOperand(sp, Register::kMantissaOffset));
-#endif
-
-  // load sign-extended src into FPR
-  LoadF(dst, MemOperand(sp, 0));
-
-  la(sp, MemOperand(sp, 8));  // restore stack
-
-  lgdr(int_scratch, dst);
-  cdfbr(dst, int_scratch);
-  ledbr(dst, dst);
+  cefbr(dst, src);
 }
 
 
@@ -665,15 +634,9 @@ void MacroAssembler::ConvertDoubleToInt64(const DoubleRegister double_input,
   }
   cgdbr(m, dst, double_input);
   ldgr(double_dst, dst);
-  lay(sp, MemOperand(sp, -kDoubleSize));
-  StoreF(double_dst, MemOperand(sp, 0));
-#if V8_TARGET_ARCH_S390X
-  LoadP(dst, MemOperand(sp, 0));
-#else
-  LoadlW(dst_hi, MemOperand(sp, Register::kExponentOffset));
-  LoadlW(dst, MemOperand(sp, Register::kMantissaOffset));
+#if !V8_TARGET_ARCH_S390X
+  srlg(dst_hi, dst, Operand(32));
 #endif
-  la(sp, MemOperand(sp, kDoubleSize));
 }
 
 
