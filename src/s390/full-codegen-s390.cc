@@ -428,7 +428,7 @@ void FullCodeGenerator::EmitReturnSequence() {
     }
     EmitProfilingCounterDecrement(weight);
     Label ok;
-    __ CmpLogicalP(r6, Operand::Zero());
+    __ CmpLogicalP(r5, Operand::Zero());
     __ bge(&ok);
     __ push(r2);
     __ Call(isolate()->builtins()->InterruptCheck(),
