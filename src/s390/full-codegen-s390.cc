@@ -3203,7 +3203,7 @@ void FullCodeGenerator::EmitIsMinusZero(CallRuntime* expr) {
   __ LoadlW(r4, FieldMemOperand(r2, HeapNumber::kExponentOffset));
   __ LoadlW(r3, FieldMemOperand(r2, HeapNumber::kMantissaOffset));
   Label skip;
-  __ iilf(r0, Operand(SIGN_EXT_IMM16(0x8000)));
+  __ iilf(r0, Operand(0x80000000));
   __ CmpP(r4, r0);
   __ bne(&skip);
   __ CmpP(r3, Operand::Zero());
