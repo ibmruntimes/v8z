@@ -574,7 +574,8 @@ void MacroAssembler::CanonicalizeNaN(const DoubleRegister dst,
   // Replace with canonical NaN.
   uint64_t nan_int64 = BitCast<uint64_t>(
     FixedDoubleArray::canonical_not_the_hole_nan_as_double());
-  mov(r0, Operand(nan_int64));
+  iihf(r0, Operand(nan_int64 >> 32));
+  iilf(r0, Operand(static_cast<int32_t>(nan_int64)));
   ldgr(dst, r0);
   bind(&done);
 }
