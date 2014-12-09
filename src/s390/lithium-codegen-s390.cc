@@ -4626,23 +4626,43 @@ void LCodeGen::DoStoreKeyedFixedDoubleArray(LStoreKeyed* instr) {
   int element_size_shift = ElementsKindToShiftSize(FAST_DOUBLE_ELEMENTS);
   bool key_is_smi = instr->hydrogen()->key()->representation().IsSmi();
   int dst_offset = instr->additional_index() << element_size_shift;
+  bool use_scratch = false;
+  intptr_t address_offset = dst_offset;
+
   if (key_is_constant) {
-    __ AddP(scratch, elements,
-           Operand((constant_key << element_size_shift) +
-            FixedDoubleArray::kHeaderSize - kHeapObjectTag));
+    address_offset += (constant_key << element_size_shift) +
+                      FixedDoubleArray::kHeaderSize - kHeapObjectTag;
+
+    // Memory references support up to 20-bits signed displacement in RXY form
+    if (!is_int20((address_offset))) {
+      __ mov(scratch, Operand(address_offset));
+      address_offset = 0;
+      use_scratch = true;
+    }
   } else {
+    use_scratch = true;
     __ IndexToArrayOffset(scratch, key, element_size_shift, key_is_smi);
-    __ AddP(scratch, elements, scratch);
-    __ AddP(scratch, scratch,
-            Operand(FixedDoubleArray::kHeaderSize - kHeapObjectTag));
+    address_offset += FixedDoubleArray::kHeaderSize - kHeapObjectTag;
+
+    // Memory references support up to 20-bits signed displacement in RXY form
+    if (!is_int20((address_offset))) {
+      __ AddP(scratch, Operand(address_offset));
+      address_offset = 0;
+    }
   }
 
   if (instr->NeedsCanonicalization()) {
     // Force a canonical NaN.
     __ CanonicalizeNaN(double_scratch, value);
-    __ std(double_scratch, MemOperand(scratch, dst_offset));
+    if (use_scratch)
+      __ std(double_scratch, MemOperand(scratch, elements, address_offset));
+    else
+      __ std(double_scratch, MemOperand(elements, address_offset));
   } else {
-    __ std(value, MemOperand(scratch, dst_offset));
+    if (use_scratch)
+      __ std(value, MemOperand(scratch, elements, address_offset));
+    else
+      __ std(value, MemOperand(elements, address_offset));
   }
 }
 
@@ -5668,9 +5688,9 @@ void LCodeGen::DoAllocate(LAllocate* instr) {
     }
     __ lay(scratch, MemOperand(scratch, -kPointerSize));
     Label loop;
-    __ bind(&loop);
     __ mov(scratch2, Operand(isolate()->factory()->one_pointer_filler_map()));
-    __ StoreP(scratch2, MemOperand(result, scratch, -kHeapObjectTag));
+    __ bind(&loop);
+    __ StoreP(scratch2, MemOperand(scratch, result, -kHeapObjectTag));
     __ lay(scratch, MemOperand(scratch, -kPointerSize));
     __ CmpP(scratch, Operand::Zero());
     __ bge(&loop);
