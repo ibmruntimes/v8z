@@ -5691,7 +5691,14 @@ void LCodeGen::DoAllocate(LAllocate* instr) {
     __ mov(scratch2, Operand(isolate()->factory()->one_pointer_filler_map()));
     __ bind(&loop);
     __ StoreP(scratch2, MemOperand(scratch, result, -kHeapObjectTag));
+#if V8_TARGET_ARCH_S390X
     __ lay(scratch, MemOperand(scratch, -kPointerSize));
+#else
+    // TODO(joransiu): Improve the following sequence.
+    // Need to use AHI instead of LAY as top nibble is not set with LAY, causing
+    // incorrect result with the signed compare
+    __ AddP(scratch, Operand(-kPointerSize));
+#endif
     __ CmpP(scratch, Operand::Zero());
     __ bge(&loop);
   }
