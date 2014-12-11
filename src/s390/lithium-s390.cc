@@ -944,7 +944,7 @@ LInstruction* LChunkBuilder::DoCompareMap(HCompareMap* instr) {
   if (goto_instr != NULL) return goto_instr;
 
   ASSERT(instr->value()->representation().IsTagged());
-  LOperand* value = UseRegisterAtStart(instr->value());
+  LOperand* value = UseRegister(instr->value());
   LOperand* temp = TempRegister();
   return new(zone()) LCmpMapAndBranch(value, temp);
 }
