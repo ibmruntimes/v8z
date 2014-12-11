@@ -596,22 +596,11 @@ void MathExpGenerator::EmitMathExp(MacroAssembler* masm,
   // Must not call ExpConstant() after overwriting temp3!
   __ mov(temp3, Operand(ExternalReference::math_exp_log_table()));
   __ ShiftLeft(temp2, temp2, Operand(3));
-#if V8_TARGET_ARCH_S390X
-  __ lg(temp2, MemOperand(temp3, temp2));
-  __ ShiftLeftP(temp1, temp1, Operand(52));
-  __ OrP(temp2, temp1);
-  __ stg(temp2, MemOperand(sp, 0));
-#else
-  __ AddP(ip, temp3, temp2);
-  __ LoadlW(temp3, MemOperand(ip, Register::kExponentOffset));
-  __ LoadlW(temp2, MemOperand(ip, Register::kMantissaOffset));
-  __ ShiftLeft(temp1, temp1, Operand(20));
-  __ OrP(temp3, temp1);
-  __ StoreW(temp3, MemOperand(sp, Register::kExponentOffset));
-  __ StoreW(temp2, MemOperand(sp, Register::kMantissaOffset));
-#endif
-  __ LoadF(double_scratch1, MemOperand(sp, 0));
-  __ AddP(sp, sp, Operand(kDoubleSize));
+
+  __ lg(temp2, MemOperand(temp2, temp3));
+  __ sllg(temp1, temp1, Operand(52));
+  __ ogr(temp2, temp1);
+  __ ldgr(double_scratch1, temp2);
 
   __ mdbr(result, double_scratch1);
   __ b(&done, Label::kNear);
