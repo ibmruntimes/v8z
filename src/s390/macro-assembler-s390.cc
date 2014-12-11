@@ -761,7 +761,27 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
 
   // Optionally save all volatile double registers.
   if (save_doubles) {
-  SaveFPRegs(sp, 0, DoubleRegister::kNumVolatileRegisters);
+    const int kNumRegs = DoubleRegister::kNumVolatileRegisters;
+    lay(sp, MemOperand(sp, -kNumRegs * kDoubleSize));
+#define StoreFloatingPointRegisterToStack(reg, offset) \
+    StoreF(DoubleRegister::from_code(reg), \
+      MemOperand(sp, (offset) * kDoubleSize));
+#ifdef V8_TARGET_ARCH_S390X
+    for (int i = 0; i < 7; i++) {
+      StoreFloatingPointRegisterToStack(i, i);
+    }
+#else
+    StoreFloatingPointRegisterToStack(0, 0);
+    StoreFloatingPointRegisterToStack(1, 1);
+    StoreFloatingPointRegisterToStack(2, 2);
+    StoreFloatingPointRegisterToStack(3, 3);
+    StoreFloatingPointRegisterToStack(5, 4);
+    int offset = 5;
+    for (int i = 7; i < DoubleRegister::kNumRegisters; i++, offset++) {
+      StoreFloatingPointRegisterToStack(i, offset);
+    }
+#endif
+#undef StoreFloatingPointRegisterToStack
   }
 
   lay(sp, MemOperand(sp, -stack_space * kPointerSize));
