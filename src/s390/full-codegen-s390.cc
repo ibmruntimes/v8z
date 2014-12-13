@@ -354,6 +354,7 @@ void FullCodeGenerator::EmitProfilingCounterDecrement(int delta) {
   if (CpuFeatures::IsSupported(GENERAL_INSTR_EXT) && is_int8(-smi_delta)) {
     __ AddP(FieldMemOperand(r4, Cell::kValueOffset),
             Operand(-smi_delta));
+    __ LoadP(r5, FieldMemOperand(r4, Cell::kValueOffset));
   } else {
     __ LoadP(r5, FieldMemOperand(r4, Cell::kValueOffset));
     __ SubSmiLiteral(r5, r5, Smi::FromInt(delta), r0);
