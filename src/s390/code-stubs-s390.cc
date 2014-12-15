@@ -999,7 +999,7 @@ static void EmitCheckForInternalizedStringsOrObjects(MacroAssembler* masm,
   __ bne(&object_test /*, cr0*/, Label::kNear);
   __ mov(r0, Operand(kIsNotInternalizedMask));
   __ AndP(r0, r4);
-  __ beq(possible_strings /*, cr0*/);
+  __ bne(possible_strings /*, cr0*/);
   __ CompareObjectType(lhs, r5, r5, FIRST_NONSTRING_TYPE);
   __ bge(not_both_strings);
   __ mov(r0, Operand(kIsNotInternalizedMask));
