@@ -668,6 +668,7 @@ void DoubleToIStub::Generate(MacroAssembler* masm) {
   // New result = (result eor 0xffffffff) + 1 = 0 - result.
   __ ShiftRightArith(r0, scratch_high, Operand(31));
 #if V8_TARGET_ARCH_S390X
+  __ lgfr(r0, r0);
   __ ShiftRightP(r0, r0, Operand(32));
 #endif
   __ XorP(result_reg, r0);
