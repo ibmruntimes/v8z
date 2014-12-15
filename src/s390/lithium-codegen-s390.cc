@@ -1652,15 +1652,15 @@ void LCodeGen::DoBitI(LBitI* instr) {
     switch (instr->op()) {
       case Token::BIT_AND:
         __ AndP(result, left,
-            Operand(ToInteger32(LConstantOperand::cast(right_op))));
+            Operand(ToOperand(right_op)));
         break;
       case Token::BIT_OR:
         __ OrP(result, left,
-            Operand(ToInteger32(LConstantOperand::cast(right_op))));
+            Operand(ToOperand(right_op)));
         break;
       case Token::BIT_XOR:
         __ XorP(result, left,
-            Operand(ToInteger32(LConstantOperand::cast(right_op))));
+            Operand(ToOperand(right_op)));
         break;
       default:
         UNREACHABLE();
