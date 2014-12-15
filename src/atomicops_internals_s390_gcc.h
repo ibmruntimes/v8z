@@ -45,7 +45,7 @@ inline Atomic32 NoBarrier_AtomicExchange(volatile Atomic32* ptr,
   Atomic32 old_value;
   do {
     old_value = *ptr;
-  } while (__sync_bool_compare_and_swap(ptr, old_value, new_value));
+  } while (__sync_bool_compare_and_swap(ptr, old_value, new_value) == false);
   return old_value;
 }
 
