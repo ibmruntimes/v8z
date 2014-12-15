@@ -1568,9 +1568,9 @@ void LCodeGen::DoMulI(LMulI* instr) {
           if (constant < 0)  __ LoadComplementRR(result, result);
         } else {
           // Generate standard code.
-          __ mov(ip, Operand(constant));
+          __ mov(ip, ToOperand(right_op));
           __ Move(result, left);
-          __ MulP(result, Operand(constant));
+          __ MulP(result, ToOperand(right_op));
         }
     }
 
@@ -2513,14 +2513,14 @@ void LCodeGen::DoCompareNumericAndBranch(LCompareNumericAndBranch* instr) {
         if (instr->hydrogen_value()->representation().IsSmi()) {
           __ CmpSmiLiteral(ToRegister(left), Smi::FromInt(value), r0);
         } else {
-          __ Cmp32(ToRegister(left), Operand(value));
+          __ Cmp32(ToRegister(left), ToOperand(right));
         }
       } else if (left->IsConstantOperand()) {
         int32_t value = ToInteger32(LConstantOperand::cast(left));
         if (instr->hydrogen_value()->representation().IsSmi()) {
           __ CmpSmiLiteral(ToRegister(right), Smi::FromInt(value), r0);
         } else {
-          __ Cmp32(ToRegister(right), Operand(value));
+          __ Cmp32(ToRegister(right), ToOperand(left));
         }
         // We transposed the operands. Reverse the condition.
         cond = ReverseCondition(cond);
