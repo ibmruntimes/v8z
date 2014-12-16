@@ -3571,9 +3571,9 @@ void FullCodeGenerator::EmitTwoByteSeqStringSetChar(CallRuntime* expr) {
   ZoneList<Expression*>* args = expr->arguments();
   ASSERT_EQ(3, args->length());
 
-  Register string = r3;
-  Register index = r4;
-  Register value = r5;
+  Register string = r2;
+  Register index = r3;
+  Register value = r4;
 
   VisitForStackValue(args->at(1));  // index
   VisitForStackValue(args->at(2));  // value
@@ -3592,11 +3592,9 @@ void FullCodeGenerator::EmitTwoByteSeqStringSetChar(CallRuntime* expr) {
   }
 
   __ SmiUntag(value);
-  __ AddP(ip,
-          string,
-          Operand(SeqTwoByteString::kHeaderSize - kHeapObjectTag));
   __ SmiToShortArrayOffset(r1, index);
-  __ StoreHalfWord(value, MemOperand(ip, r1));
+  __ StoreHalfWord(value, MemOperand(r1, string,
+                          SeqTwoByteString::kHeaderSize - kHeapObjectTag));
   context()->Plug(string);
 }
 
