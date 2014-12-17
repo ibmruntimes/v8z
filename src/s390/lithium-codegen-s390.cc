@@ -1993,7 +1993,7 @@ MemOperand LCodeGen::BuildSeqStringOperand(Register string,
     __ AddP(scratch, string, ToRegister(index));
   } else {
     STATIC_ASSERT(kUC16Size == 2);
-    __ ShiftLeft(scratch, ToRegister(index), Operand(1));
+    __ ShiftLeftP(scratch, ToRegister(index), Operand(1));
     __ AddP(scratch, string, scratch);
   }
   return FieldMemOperand(scratch, SeqString::kHeaderSize);
