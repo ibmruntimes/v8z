@@ -2574,7 +2574,7 @@ void LCodeGen::DoCompareMinusZeroAndBranch(LCompareMinusZeroAndBranch* instr) {
     DoubleRegister value = ToDoubleRegister(instr->value());
     __ cdbr(value, kDoubleRegZero);
     EmitFalseBranch(instr, ne);
-    __ std(value, MemOperand(sp, -kDoubleSize));
+    __ stdy(value, MemOperand(sp, -kDoubleSize));
     __ LoadlW(scratch,
               MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
     __ Cmp32(scratch, Operand::Zero());
@@ -4039,7 +4039,7 @@ void LCodeGen::DoMathRound(LMathRound* instr) {
   __ bgt(&convert, Label::kNear);  // Out of [-0.5, +0.5].
   if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
     // TODO(joransiu): Better Sequence here?
-    __ std(input, MemOperand(sp, -kDoubleSize));
+    __ stdy(input, MemOperand(sp, -kDoubleSize));
     __ LoadlW(input_high,
               MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
     __ Cmp32(input_high, Operand::Zero());
@@ -4371,6 +4371,7 @@ void LCodeGen::DoStoreNamedField(LStoreNamedField* instr) {
     ASSERT(!instr->hydrogen()->has_transition());
     ASSERT(!hinstr->NeedsWriteBarrier());
     DoubleRegister value = ToDoubleRegister(instr->value());
+    ASSERT(offset >= 0);
     __ std(value, FieldMemOperand(object, offset));
     return;
   }
@@ -4654,6 +4655,7 @@ void LCodeGen::DoStoreKeyedFixedDoubleArray(LStoreKeyed* instr) {
   if (instr->NeedsCanonicalization()) {
     // Force a canonical NaN.
     __ CanonicalizeNaN(double_scratch, value);
+    ASSERT(address_offset >= 0);
     if (use_scratch)
       __ std(double_scratch, MemOperand(scratch, elements, address_offset));
     else
@@ -5356,7 +5358,7 @@ void LCodeGen::DoDoubleToI(LDoubleToI* instr) {
       Label done;
       __ CmpP(result_reg, Operand::Zero());
       __ bne(&done, Label::kNear);
-      __ std(double_input, MemOperand(sp, -kDoubleSize));
+      __ stdy(double_input, MemOperand(sp, -kDoubleSize));
       __ LoadlW(scratch1,
                 MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
       __ Cmp32(scratch1, Operand::Zero());
@@ -5384,7 +5386,7 @@ void LCodeGen::DoDoubleToSmi(LDoubleToSmi* instr) {
       Label done;
       __ CmpP(result_reg, Operand::Zero());
       __ bne(&done, Label::kNear);
-      __ std(double_input, MemOperand(sp, -kDoubleSize));
+      __ stdy(double_input, MemOperand(sp, -kDoubleSize));
       __ LoadlW(scratch1,
                 MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
       __ Cmp32(scratch1, Operand::Zero());
@@ -5599,7 +5601,7 @@ void LCodeGen::DoDoubleBits(LDoubleBits* instr) {
   DoubleRegister value_reg = ToDoubleRegister(instr->value());
   Register result_reg = ToRegister(instr->result());
   // TODO(joransiu): Use non-memory version.
-  __ std(value_reg, MemOperand(sp, -kDoubleSize));
+  __ stdy(value_reg, MemOperand(sp, -kDoubleSize));
   if (instr->hydrogen()->bits() == HDoubleBits::HIGH) {
     __ LoadlW(result_reg,
               MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
