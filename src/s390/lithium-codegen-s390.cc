@@ -5624,7 +5624,7 @@ void LCodeGen::DoConstructDouble(LConstructDouble* instr) {
   __ StoreW(lo_reg, MemOperand(sp, -kDoubleSize / 2));
   __ StoreW(hi_reg, MemOperand(sp, -kDoubleSize / 2));
 #endif
-  __ ld(result_reg, MemOperand(sp, -kDoubleSize));
+  __ ldy(result_reg, MemOperand(sp, -kDoubleSize));
 }
 
 
