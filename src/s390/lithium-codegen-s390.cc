@@ -1226,11 +1226,11 @@ void LCodeGen::DoDivByConstI(LDivByConstI* instr) {
   if (divisor < 0) __ LoadComplementRR(result, result);
 
   if (!hdiv->CheckFlag(HInstruction::kAllUsesTruncatingToInt32)) {
-    ASSERT(0);
+    // ASSERT(0);
   // TODO(joransiu): Port this sequence properly to Z.
     Register scratch = scratch0();
     __ mov(ip, Operand(divisor));
-    // __ mullw(scratch, result, ip);
+    __ Mul(scratch, result, ip);
     __ Cmp32(scratch, dividend);
     DeoptimizeIf(ne, instr->environment());
   }
