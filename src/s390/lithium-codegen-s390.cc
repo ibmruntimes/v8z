@@ -5619,10 +5619,10 @@ void LCodeGen::DoConstructDouble(LConstructDouble* instr) {
   // TODO(joransiu): Construct with ldgr
 #if V8_TARGET_LITTLE_ENDIAN
   __ StoreW(hi_reg, MemOperand(sp, -kDoubleSize / 2));
-  __ StoreW(lo_reg, MemOperand(sp, -kDoubleSize / 2));
+  __ StoreW(lo_reg, MemOperand(sp, -kDoubleSize));
 #else
   __ StoreW(lo_reg, MemOperand(sp, -kDoubleSize / 2));
-  __ StoreW(hi_reg, MemOperand(sp, -kDoubleSize / 2));
+  __ StoreW(hi_reg, MemOperand(sp, -kDoubleSize));
 #endif
   __ ldy(result_reg, MemOperand(sp, -kDoubleSize));
 }
