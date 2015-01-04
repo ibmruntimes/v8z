@@ -5918,12 +5918,12 @@ void MacroAssembler::TruncatingDiv(Register result,
   ShiftRightArithP(result, result, Operand(32));
 
 #else
-  // TODO: Not sure if we need to save r1 value here
+  // TODO(JOHN): Not sure if we need to save r1 value here
   lay(sp, MemOperand(sp, -kPointerSize));
   StoreP(r1, MemOperand(sp));
 
   mov(r1, Operand(ms.multiplier()));
-  mr_z(r0, dividend); // r0:r1 = r1 * dividend
+  mr_z(r0, dividend);  // r0:r1 = r1 * dividend
 
   LoadRR(result, r0);
   LoadP(r1, MemOperand(sp));
