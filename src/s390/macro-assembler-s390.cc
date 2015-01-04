@@ -5912,8 +5912,24 @@ void MacroAssembler::TruncatingDiv(Register result,
   ASSERT(!dividend.is(r0));
   ASSERT(!result.is(r0));
   MultiplierAndShift ms(divisor);
-  mov(r0, Operand(ms.multiplier()));
-  Mul(result, dividend, r0);
+#ifdef V8_TARGET_ARCH_S390X
+  LoadRR(result, dividend);
+  MulP(result, Operand(ms.multiplier()));
+  ShiftRightArithP(result, result, Operand(32));
+
+#else
+  // TODO: Not sure if we need to save r1 value here
+  lay(sp, MemOperand(sp, -kPointerSize));
+  StoreP(r1, MemOperand(sp));
+
+  mov(r1, Operand(ms.multiplier()));
+  mr_z(r0, dividend); // r0:r1 = r1 * dividend
+
+  LoadRR(result, r0);
+  LoadP(r1, MemOperand(sp));
+  la(sp, MemOperand(sp, kPointerSize));
+#endif
+  // Mul(result, dividend, r0);
   if (divisor > 0 && ms.multiplier() < 0) {
     AddP(result, dividend);
   }
