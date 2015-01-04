@@ -1439,14 +1439,9 @@ void LCodeGen::DoFlooringDivI(LFlooringDivI* instr) {
   Label done;
   Register scratch = scratch0();
   // If both operands have the same sign then we are done.
-#if V8_TARGET_ARCH_S390X
   __ Xor(scratch, dividend, divisor);
-  __ Cmp32(scratch, Operand::Zero());
+  __ ltr(scratch, scratch);  // use 32 bit version LoadAndTestRR even in 64 bit
   __ bge(&done, Label::kNear);
-#else
-  __ Xor(scratch, dividend, divisor);
-  __ bge(&done, Label::kNear);
-#endif
 
   // If there is no remainder then we are done.
   // TODO(joransiu) : Fix this multiply (mullw).
@@ -1624,6 +1619,7 @@ void LCodeGen::DoMulI(LMulI* instr) {
       if (instr->hydrogen()->representation().IsSmi()) {
 #endif
         __ XorP(r0, left, right);
+        __ LoadAndTestRR(r0, r0);
         __ bge(&done, Label::kNear);
 #if V8_TARGET_ARCH_S390X
       } else {
