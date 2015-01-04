@@ -1403,10 +1403,6 @@ void LCodeGen::DoFlooringDivI(LFlooringDivI* instr) {
   ASSERT(!dividend.is(result));
   ASSERT(!divisor.is(result));
 
-  // TODO(joransiu) : Fix sequence to Z instructions.
-  ASSERT(0);
-//  __ divw(result, dividend, divisor, SetOE, SetRC);
-
   // Check for x / 0.
   if (hdiv->CheckFlag(HValue::kCanBeDivByZero)) {
     __ Cmp32(divisor, Operand::Zero());
@@ -1426,15 +1422,28 @@ void LCodeGen::DoFlooringDivI(LFlooringDivI* instr) {
   // Check for (kMinInt / -1).
   if (hdiv->CheckFlag(HValue::kCanOverflow)) {
     Label no_overflow_possible;
+    __ Cmp32(dividend, Operand(kMinInt));
+    __ bne(&no_overflow_possible, Label::kNear);
+    __ Cmp32(divisor, Operand(-1));
     if (!hdiv->CheckFlag(HValue::kAllUsesTruncatingToInt32)) {
-      DeoptimizeIf(overflow, instr->environment(), cr0);
+      DeoptimizeIf(eq, instr->environment());
     } else {
-      // When truncating, we want kMinInt / -1 = kMinInt.
-      __ b(nooverflow, &no_overflow_possible, Label::kNear);
+      __ bne(&no_overflow_possible, Label::kNear);
       __ LoadRR(result, dividend);
     }
     __ bind(&no_overflow_possible);
   }
+
+  __ LoadRR(r0, dividend);
+  __ srda(r0, Operand(32));
+  __ dr(r0, divisor);     // R0:R1 = R1 / divisor - R0 remainder - R1 quotient
+
+  __ lr(result, r1);  // Move quotient to result register
+
+  // TODO(joransiu) : Fix sequence to Z instructions.
+  // ASSERT(0);
+//  __ divw(result, dividend, divisor, SetOE, SetRC);
+
 
   Label done;
   Register scratch = scratch0();
