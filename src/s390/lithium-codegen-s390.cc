@@ -4166,11 +4166,12 @@ void LCodeGen::DoMathLog(LMathLog* instr) {
 void LCodeGen::DoMathClz32(LMathClz32* instr) {
   Register input = ToRegister(instr->value());
   Register result = ToRegister(instr->result());
-  ASSERT(0);
   // TODO(joransiu) : Figure out proper sequence for Z.
-  USE(input);
-  USE(result);
-  // __ cntlzw_(result, input);
+  // TODO(john): not sure how flogr behave in 31 bit mode
+  __ llgfr(result, input);
+  __ flogr(r0, result);
+  __ LoadRR(result, r0);
+  __ SubP(result, Operand(32));
 }
 
 
