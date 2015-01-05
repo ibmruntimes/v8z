@@ -1086,11 +1086,9 @@ void LCodeGen::DoModByConstI(LModByConstI* instr) {
     return;
   }
 
-  // @TODO(joransiu) : Map the mullw properly (currently commented out).
-  ASSERT(0);
   __ TruncatingDiv(result, dividend, Abs(divisor));
   __ mov(ip, Operand(Abs(divisor)));
-  // __ mullw(result, result, ip);
+  __ Mul(result, result, ip);
   __ SubP(result, dividend, result /*, LeaveOE, SetRC*/);
 
   // Check for negative zero.
@@ -1453,8 +1451,8 @@ void LCodeGen::DoFlooringDivI(LFlooringDivI* instr) {
   __ bge(&done, Label::kNear);
 
   // If there is no remainder then we are done.
-  // TODO(joransiu) : Fix this multiply (mullw).
-  __ Mul(scratch, divisor, result);
+  __ lr(scratch, result);
+  __ msr(scratch, divisor);
   __ Cmp32(dividend, scratch);
   __ beq(&done);
 
