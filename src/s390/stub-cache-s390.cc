@@ -433,7 +433,7 @@ void StoreStubCompiler::GenerateStoreTransition(MacroAssembler* masm,
       __ LoadP(scratch1, FieldMemOperand(value_reg, HeapObject::kMapOffset));
       Label do_store;
       while (true) {
-        __ CompareMap(scratch1, it.Current(), &do_store);
+        __ CompareMap(value_reg, it.Current(), &do_store);
         it.Advance();
         if (it.Done()) {
           __ bne(miss_label);
@@ -610,7 +610,7 @@ void StoreStubCompiler::GenerateStoreField(MacroAssembler* masm,
       __ LoadP(scratch1, FieldMemOperand(value_reg, HeapObject::kMapOffset));
       Label do_store;
       while (true) {
-        __ CompareMap(scratch1, it.Current(), &do_store);
+        __ CompareMap(value_reg, it.Current(), &do_store);
         it.Advance();
         if (it.Done()) {
           __ bne(miss_label);
