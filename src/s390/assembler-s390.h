@@ -1487,8 +1487,8 @@ RRF1_FORM(qaxtr);
 S_FORM(rchp);
 RIE_FORM(risbhg);
 RIE_FORM(risblg);
-RSY1_FORM(rll);
-RSY1_FORM(rllg);
+// RSY1_FORM(rll);
+// RSY1_FORM(rllg);
 RIE_FORM(rnsbg);
 RIE_FORM(rosbg);
 S_FORM(rp);
@@ -1676,6 +1676,14 @@ SS2_FORM(zap);
   // Test Under Mask Instructions
   void tm(const MemOperand& mem, const Operand& imm);
   void tmy(const MemOperand& mem, const Operand& imm);
+
+  // Rotate Instruction
+  void rll(Register r1, Register r3, Register opnd);
+  void rll(Register r1, Register r3, const Operand& opnd);
+  void rll(Register r1, Register r3, Register r2, const Operand& opnd);
+  void rllg(Register r1, Register r3, const Operand& opnd);
+  void rllg(Register r1, Register r3, const Register opnd);
+  void rllg(Register r1, Register r3, Register r2, const Operand& opnd);
 
   // Shift Instruction (32)
   void sll(Register r1, Register opnd);

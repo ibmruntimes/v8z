@@ -1720,11 +1720,9 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
     __ AndP(scratch, ToRegister(right_op), Operand(0x1F));
     switch (instr->op()) {
       case Token::ROR:
-      ASSERT(0);
-    // TODO(joransiu) : Fix me.
         // rotate_right(a, b) == rotate_left(a, 32 - b)
-        // __ subfic(scratch, scratch, Operand(32));
-        // __ rotlw(result, left, scratch);
+        __ LoadComplementRR(scratch, scratch);
+        __ rll(result, left, scratch, Operand(32));
         break;
       case Token::SAR:
         __ ShiftRightArith(result, left, scratch);

@@ -2190,8 +2190,8 @@ RRF1_FORM_EMIT(qaxtr, QAXTR)
 S_FORM_EMIT(rchp, RCHP)
 RIE_FORM_EMIT(risbhg, RISBHG)
 RIE_FORM_EMIT(risblg, RISBLG)
-RSY1_FORM_EMIT(rll, RLL)
-RSY1_FORM_EMIT(rllg, RLLG)
+// RSY1_FORM_EMIT(rll, RLL)
+// RSY1_FORM_EMIT(rllg, RLLG)
 RIE_FORM_EMIT(rnsbg, RNSBG)
 RIE_FORM_EMIT(rosbg, ROSBG)
 // S_FORM_EMIT(rp, RP) RP is not a opcode
@@ -2911,6 +2911,38 @@ void Assembler::lgfr(Register r1, Register r2) {
   rre_form(LGFR, r1, r2);
 }
 
+// Rotate Left Single Logical (32)
+void Assembler::rll(Register r1, Register r3, Register opnd) {
+  ASSERT(!opnd.is(r0));
+  rsy_form(RLL, r1, r3, opnd, 0);
+}
+
+
+// Rotate Left Single Logical (32)
+void Assembler::rll(Register r1, Register r3, const Operand& opnd) {
+  rsy_form(RLL, r1, r3, r0, opnd.immediate());
+}
+
+// Rotate Left Single Logical (32)
+void Assembler::rll(Register r1, Register r3, Register r2, const Operand& opnd) {
+  rsy_form(RLL, r1, r3, r2, opnd.immediate());
+}
+
+// Rotate Left Single Logical (64)
+void Assembler::rllg(Register r1, Register r3, Register opnd) {
+  ASSERT(!opnd.is(r0));
+  rsy_form(RLLG, r1, r3, opnd, 0);
+}
+
+// Rotate Left Single Logical (64)
+void Assembler::rllg(Register r1, Register r3, const Operand& opnd) {
+  rsy_form(RLLG, r1, r3, r0, opnd.immediate());
+}
+
+// Rotate Left Single Logical (64)
+void Assembler::rllg(Register r1, Register r3, Register r2, const Operand& opnd) {
+  rsy_form(RLLG, r1, r3, r2, opnd.immediate());
+}
 
 // Shift Left Single Logical (32)
 void Assembler::sll(Register r1, Register opnd) {
