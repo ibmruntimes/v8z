@@ -1922,6 +1922,7 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       int r2 = rreInst->R2Value();
       int32_t r2_val = get_low_register<int32_t>(r2);
       set_register(r1, static_cast<uint64_t>(r2_val));
+      break;
     }
     case EX: {
       RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
@@ -2751,6 +2752,29 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
 
       break;
     }
+    case FLOGR: {
+      RREInstruction * rreInst = reinterpret_cast<RREInstruction*>(instr);
+      int r1 = rreInst->R1Value();
+      int r2 = rreInst->R2Value();
+
+      ASSERT(r1 % 2 == 0);
+
+      int64_t r2_val = get_register(r2);
+
+      int i = 0;
+      for (; i < 64; i++) {
+          if (r2_val < 0) break;
+          r2_val <<= 1;
+      }
+
+      r2_val = get_register(r2);
+
+      int64_t mask = ~(1 << (63 - i));
+      set_register(r1, i);
+      set_register(r1+1, r2_val & mask);
+
+      break;
+    }
     case MSR:
     case MSGR: {  // they do not set overflow code
       RREInstruction * rreInst = reinterpret_cast<RREInstruction*>(instr);
@@ -2834,6 +2858,7 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
     case ADBR:
     case SDBR:
     case MDBR:
+    case MADBR:
     case DDBR:
     case CDBR:
     case CDFBR:
@@ -2859,6 +2884,17 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
           set_d_register_from_double(r1, r1_val);
           SetS390ConditionCode<double>(r1_val, 0);
         } else if (op == MDBR) {
+          RRDInstruction* rrdInstr = reinterpret_cast<RRDInstruction*>(instr);
+          int r1 = rrdInstr->R1Value();
+          int r2 = rrdInstr->R2Value();
+          int r3 = rrdInstr->R3Value();
+          double r1_val = get_double_from_d_register(r1);
+          double r2_val = get_double_from_d_register(r2);
+          double r3_val = get_double_from_d_register(r3);
+          r1_val += r2_val * r3_val;
+          set_d_register_from_double(r1, r1_val);
+          SetS390ConditionCode<double>(r1_val, 0);
+        } else if (op == MADBR) {
           r1_val *= r2_val;
           set_d_register_from_double(r1, r1_val);
           SetS390ConditionCode<double>(r1_val, 0);
@@ -3149,9 +3185,6 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
       set_d_register_from_float(r1, static_cast<float>(r2_val));
       break;
     }
-    // @TODO : implement madbr, msdbr in simulator after checking results
-    // of operation for functional correctness
-    case MADBR:
     case MSDBR: {
       UNIMPLEMENTED();
       break;
