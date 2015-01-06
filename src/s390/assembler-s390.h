@@ -1937,8 +1937,6 @@ void lhi(Register dst, const Operand& imm);
   // the relocation info.
   TypeFeedbackId recorded_ast_id_;
 
-  bool emit_debug_code() const { return emit_debug_code_; }
-
   int buffer_space() const { return reloc_info_writer.pos() - pc_; }
 
   // Decode branch instruction at pos and return branch target pos
@@ -2200,7 +2198,6 @@ void lhi(Register dst, const Operand& imm);
 
   PositionsRecorder positions_recorder_;
 
-  bool emit_debug_code_;
   bool predictable_code_size_;
 
   friend class PositionsRecorder;
