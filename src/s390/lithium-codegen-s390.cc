@@ -1757,7 +1757,8 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
     switch (instr->op()) {
       case Token::ROR:
         if (shift_count != 0) {
-      ASSERT(0);
+      // ASSERT(0);
+        __ rll(result, left, Operand(32 - shift_count));
       // TODO(joransiu): Fix me.
           // __ rotrwi(result, left, shift_count);
         } else {
