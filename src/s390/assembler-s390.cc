@@ -2911,6 +2911,7 @@ void Assembler::lgfr(Register r1, Register r2) {
   rre_form(LGFR, r1, r2);
 }
 
+
 // Rotate Left Single Logical (32)
 void Assembler::rll(Register r1, Register r3, Register opnd) {
   ASSERT(!opnd.is(r0));
@@ -2923,10 +2924,13 @@ void Assembler::rll(Register r1, Register r3, const Operand& opnd) {
   rsy_form(RLL, r1, r3, r0, opnd.immediate());
 }
 
+
 // Rotate Left Single Logical (32)
-void Assembler::rll(Register r1, Register r3, Register r2, const Operand& opnd) {
+void Assembler::rll(Register r1, Register r3, Register r2,
+        const Operand& opnd) {
   rsy_form(RLL, r1, r3, r2, opnd.immediate());
 }
+
 
 // Rotate Left Single Logical (64)
 void Assembler::rllg(Register r1, Register r3, Register opnd) {
@@ -2934,15 +2938,19 @@ void Assembler::rllg(Register r1, Register r3, Register opnd) {
   rsy_form(RLLG, r1, r3, opnd, 0);
 }
 
+
 // Rotate Left Single Logical (64)
 void Assembler::rllg(Register r1, Register r3, const Operand& opnd) {
   rsy_form(RLLG, r1, r3, r0, opnd.immediate());
 }
 
+
 // Rotate Left Single Logical (64)
-void Assembler::rllg(Register r1, Register r3, Register r2, const Operand& opnd) {
+void Assembler::rllg(Register r1, Register r3, Register r2,
+        const Operand& opnd) {
   rsy_form(RLLG, r1, r3, r2, opnd.immediate());
 }
+
 
 // Shift Left Single Logical (32)
 void Assembler::sll(Register r1, Register opnd) {
