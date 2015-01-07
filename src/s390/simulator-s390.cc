@@ -3402,6 +3402,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       break;
     }
     case SLLK:
+    case RLL:
     case SRLK: {
       // For SLLK/SRLL, the 32-bit third operand is shifted the number
       // of bits specified by the second-operand address, and the result is
@@ -3422,6 +3423,9 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
         alu_out = r3_val << shiftBits;
       } else if (SRLK == op) {
         alu_out = r3_val >> shiftBits;
+      } else if (RLL == op) {
+        uint32_t rotateBits =  r3_val >> (32 - shiftBits);
+        alu_out = (r3_val << shiftBits) | (rotateBits);
       } else {
         UNREACHABLE();
       }
