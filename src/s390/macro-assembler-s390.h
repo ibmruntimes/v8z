@@ -717,8 +717,8 @@ class MacroAssembler: public Assembler {
     mov(kRootRegister, Operand(roots_array_start)); }
 
   // ----------------------------------------------------------------
-  // new PPC macro-assembler interfaces that are slightly higher level
-  // than assembler-ppc and may generate variable length sequences
+  // new S390 macro-assembler interfaces that are slightly higher level
+  // than assembler-s390 and may generate variable length sequences
 
   // load a literal signed int value <value> to GPR <dst>
   void LoadIntLiteral(Register dst, int value);
@@ -768,6 +768,8 @@ class MacroAssembler: public Assembler {
   // These exist to provide portability between 32 and 64bit
   void LoadP(Register dst, const MemOperand& mem, Register scratch = no_reg);
   void StoreP(Register src, const MemOperand& mem, Register scratch = no_reg);
+  void StoreP(const MemOperand& mem, const Operand& opnd,
+              Register scratch = no_reg);
   void LoadMultipleP(Register dst1, Register dst2, const MemOperand& mem);
   void StoreMultipleP(Register dst1, Register dst2, const MemOperand& mem);
   void LoadMultipleW(Register dst1, Register dst2, const MemOperand& mem);

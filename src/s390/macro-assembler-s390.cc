@@ -866,9 +866,8 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles,
   }
 
   // Clear top frame.
-  LoadImmP(r0, Operand(0, kRelocInfo_NONEPTR));
   mov(ip, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate())));
-  StoreP(r0, MemOperand(ip));
+  StoreP(MemOperand(ip), Operand(0, kRelocInfo_NONEPTR), r0);
 
   // Restore current context from top and clear it in debug mode.
   if (restore_context) {
@@ -5435,6 +5434,29 @@ void MacroAssembler::StoreP(Register src, const MemOperand& mem,
   }
 }
 
+
+// Store a "pointer" sized constant to the memory location
+void MacroAssembler::StoreP(const MemOperand& mem, const Operand& opnd,
+                            Register scratch) {
+  // Relocations not supported
+  ASSERT(opnd.rmode_ == kRelocInfo_NONEPTR);
+
+  // Try to use MVGHI/MVHI
+  // TODO(joransiu): Re-enable once we add MVHI/MVGHI to simulator
+  if (0 && CpuFeatures::IsSupported(GENERAL_INSTR_EXT) &&
+      is_uint12(mem.offset()) &&
+      mem.getIndexRegister().is(no_reg) &&
+      is_int16(opnd.imm_)) {
+#if V8_TARGET_ARCH_S390X
+    mvghi(mem, opnd);
+#else
+    mvhi(mem, opnd);
+#endif
+  } else {
+    LoadImmP(scratch, Operand::Zero());
+    StoreP(scratch, mem);
+  }
+}
 
 void MacroAssembler::LoadMultipleP(Register dst1, Register dst2,
     const MemOperand& mem) {
