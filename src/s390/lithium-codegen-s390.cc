@@ -3563,8 +3563,14 @@ MemOperand LCodeGen::PrepareKeyedOperand(Register key,
   Register scratch = scratch0();
 
   if (key_is_constant) {
-    return MemOperand(base,
+    int offset = (base_offset + (constant_key << element_size_shift));
+    if (!is_int20(offset)) {
+      __ mov(scratch, Operand(offset));
+      return MemOperand(base, scratch);
+    } else {
+      return MemOperand(base,
                       base_offset + (constant_key << element_size_shift));
+    }
   }
 
   bool needs_shift = (element_size_shift != (key_is_smi ?
