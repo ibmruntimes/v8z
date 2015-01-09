@@ -5453,7 +5453,7 @@ void MacroAssembler::StoreP(const MemOperand& mem, const Operand& opnd,
     mvhi(mem, opnd);
 #endif
   } else {
-    LoadImmP(scratch, Operand::Zero());
+    LoadImmP(scratch, opnd);
     StoreP(scratch, mem);
   }
 }
