@@ -4974,9 +4974,10 @@ void ProfileEntryHookStub::MaybeCallEntryHook(MacroAssembler* masm) {
 #if V8_TARGET_ARCH_S390X
                                          36);
 #else
-                                         26);
+                                         30);
 #endif
     ProfileEntryHookStub stub(masm->isolate());
+    __ CleanseP(r14);
     __ push(r14);
     __ CallStub(&stub);
     __ pop(r14);
@@ -5003,6 +5004,7 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
   const int32_t kNumSavedRegs = kNumJSCallerSaved + 2;
 
   // Save all caller-save registers as this may be called from anywhere.
+  __ CleanseP(r14);
   __ LoadRR(r0, r14);
   __ MultiPush(kSavedRegs | r0.bit());
 
