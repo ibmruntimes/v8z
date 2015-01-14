@@ -1182,9 +1182,9 @@ void Deserializer::ReadChunk(Object** current,
       ALL_SPACES(kBackref, kPlain, kStartOfObject)
       ALL_SPACES(kBackrefWithSkip, kPlain, kStartOfObject)
 #if defined(V8_TARGET_ARCH_MIPS) || defined(V8_TARGET_ARCH_PPC) || \
-    V8_OOL_CONSTANT_POOL
+    defined(V8_TARGET_ARCH_S390) || V8_OOL_CONSTANT_POOL
       // Deserialize a new object from pointer found in code and write
-      // a pointer to it to the current object. Required only for MIPS, PPC or
+      // a pointer to it to the current object. Required for MIPS, PPC, S390 or
       // ARM with ool constant pool, and omitted on the other architectures
       // because it is fully unrolled and would cause bloat.
       ALL_SPACES(kNewObject, kFromCode, kStartOfObject)
@@ -1412,7 +1412,7 @@ int Serializer::RootIndex(HeapObject* heap_object, HowToCode from) {
     Object* root = heap->roots_array_start()[i];
     if (!root->IsSmi() && root == heap_object) {
 #if defined(V8_TARGET_ARCH_MIPS) || defined(V8_TARGET_ARCH_PPC) || \
-    V8_OOL_CONSTANT_POOL
+    defined(V8_TARGET_ARCH_S390) || V8_OOL_CONSTANT_POOL
       if (from == kFromCode) {
         // In order to avoid code bloat in the deserializer we don't have
         // support for the encoding that specifies a particular root should
