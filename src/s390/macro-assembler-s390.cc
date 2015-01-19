@@ -5442,10 +5442,9 @@ void MacroAssembler::StoreP(const MemOperand& mem, const Operand& opnd,
   ASSERT(opnd.rmode_ == kRelocInfo_NONEPTR);
 
   // Try to use MVGHI/MVHI
-  // TODO(joransiu): Re-enable once we add MVHI/MVGHI to simulator
-  if (0 && CpuFeatures::IsSupported(GENERAL_INSTR_EXT) &&
+  if (CpuFeatures::IsSupported(GENERAL_INSTR_EXT) &&
       is_uint12(mem.offset()) &&
-      mem.getIndexRegister().is(no_reg) &&
+      mem.getIndexRegister().is(r0) &&
       is_int16(opnd.imm_)) {
 #if V8_TARGET_ARCH_S390X
     mvghi(mem, opnd);

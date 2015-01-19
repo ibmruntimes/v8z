@@ -1613,6 +1613,21 @@ class SIYInstruction : Instruction {
   inline int size() const { return 6; }
 };
 
+// SIL Instruction
+class SILInstruction : Instruction {
+ public:
+  inline int B1Value() const {
+    return Bits<SixByteInstr, int>(31, 28);
+  }
+  inline int D1Value() const {
+    return Bits<SixByteInstr, int>(27, 16);
+  }
+  inline int I2Value() const {
+    return Bits<SixByteInstr, int>(15, 0);
+  }
+  inline int size() const { return 6; }
+};
+
 // SS Instruction
 class SSInstruction : Instruction {
  public:

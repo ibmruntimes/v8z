@@ -3209,6 +3209,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
   RXEInstruction* rxeInstr = reinterpret_cast<RXEInstruction*>(instr);
   RXYInstruction* rxyInstr = reinterpret_cast<RXYInstruction*>(instr);
   SIYInstruction* siyInstr = reinterpret_cast<SIYInstruction*>(instr);
+  SILInstruction* silInstr = reinterpret_cast<SILInstruction*>(instr);
   SSInstruction* ssInstr = reinterpret_cast<SSInstruction*>(instr);
 
   switch (op) {
@@ -3634,6 +3635,26 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       for (int i = 0; i < length + 1; ++i) {
         WriteB(dst_addr++, ReadB(src_addr++));
       }
+      break;
+    }
+    case MVHI: {
+      // Move Integer (32)
+      int b1 = silInstr->B1Value();
+      intptr_t d1 = silInstr->D1Value();
+      int16_t i2 = silInstr->I2Value();
+      int64_t b1_val = (b1 == 0) ? 0 : get_register(b1);
+      intptr_t src_addr = b1_val + d1;
+      WriteW(src_addr, i2, instr);
+      break;
+    }
+    case MVGHI: {
+      // Move Integer (64)
+      int b1 = silInstr->B1Value();
+      intptr_t d1 = silInstr->D1Value();
+      int16_t i2 = silInstr->I2Value();
+      int64_t b1_val = (b1 == 0) ? 0 : get_register(b1);
+      intptr_t src_addr = b1_val + d1;
+      WriteDW(src_addr, i2);
       break;
     }
     case LLH:

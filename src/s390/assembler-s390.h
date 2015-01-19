@@ -1428,9 +1428,7 @@ SSF_FORM(mvcos);
 SS4_FORM(mvcp);
 SSE_FORM(mvcdk);
 SS4_FORM(mvcs);
-SIL_FORM(mvghi);
 SIL_FORM(mvhhi);
-SIL_FORM(mvhi);
 SI_FORM(mvi);
 SIY_FORM(mviy);
 SS1_FORM(mvn);
@@ -1804,8 +1802,11 @@ SS2_FORM(zap);
   void brct(Register r1, const Operand& opnd);
   void brctg(Register r1, const Operand& opnd);
 
-// end of S390instructions
-void lhi(Register dst, const Operand& imm);
+  // Move integer
+  void mvhi(const MemOperand& opnd1, const Operand& i2);
+  void mvghi(const MemOperand& opnd1, const Operand& i2);
+
+  void lhi(Register dst, const Operand& imm);
 
   void stg(Register rs, const MemOperand &src);
 

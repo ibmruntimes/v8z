@@ -528,6 +528,12 @@ int Decoder::FormatImmediate(Instruction *instr, const char* format) {
     out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
                                     "%d", value);
     return 2;
+  } else if (format[1] == 'd') {   // signed immediate in 32-47
+    SILInstruction* silinstr = reinterpret_cast<SILInstruction*>(instr);
+    int16_t value = silinstr->I2Value();
+    out_buffer_pos_ += OS::SNPrintF(out_buffer_ + out_buffer_pos_,
+                                    "%d", value);
+    return 2;
   }
 
   UNREACHABLE();
@@ -852,6 +858,8 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
     case STG: Format(instr, "stg\t'r1,'d2('r2d,'r3)"); break;
     case ICY: Format(instr, "icy\t'r1,'d2('r2d,'r3)"); break;
     case MVC: Format(instr, "mvc\t'd3('i8,'r3),'d4('r7)"); break;
+    case MVHI: Format(instr, "mvhi\t'd3('r3),'id"); break;
+    case MVGHI: Format(instr, "mvghi\t'd3('r3),'id"); break;
     case ALGFI: Format(instr, "algfi\t'r1,'i7"); break;
     case SLGFI: Format(instr, "slgfi\t'r1,'i7"); break;
     case SLFI: Format(instr, "slfi\t'r1,'i7"); break;

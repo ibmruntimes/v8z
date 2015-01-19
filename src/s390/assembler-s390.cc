@@ -2139,9 +2139,7 @@ SS1_FORM_EMIT(mvcin, MVCIN)
 RR_FORM_EMIT(mvcl, MVCL)
 RS1_FORM_EMIT(mvcle, MVCLE)
 RSY1_FORM_EMIT(mvclu, MVCLU)
-SIL_FORM_EMIT(mvghi, MVGHI)
 SIL_FORM_EMIT(mvhhi, MVHHI)
-SIL_FORM_EMIT(mvhi, MVHI)
 SI_FORM_EMIT(mvi, MVI)
 SIY_FORM_EMIT(mviy, MVIY)
 SS1_FORM_EMIT(mvn, MVN)
@@ -3393,6 +3391,18 @@ void Assembler::xc(const MemOperand& opnd1, const MemOperand& opnd2,
     ss_form(XC, length-1, opnd1.getBaseRegister(),
          opnd1.getDisplacement(), opnd2.getBaseRegister(),
          opnd2.getDisplacement());
+}
+
+
+// Move integer (32)
+void Assembler::mvhi(const MemOperand& opnd1, const Operand& i2) {
+  sil_form(MVHI, opnd1.getBaseRegister(), opnd1.getDisplacement(), i2);
+}
+
+
+// Move integer (64)
+void Assembler::mvghi(const MemOperand& opnd1, const Operand& i2) {
+  sil_form(MVGHI, opnd1.getBaseRegister(), opnd1.getDisplacement(), i2);
 }
 
 
