@@ -2181,7 +2181,7 @@ void FullCodeGenerator::EmitGeneratorResume(Expression *generator,
        FieldMemOperand(r5, SharedFunctionInfo::kFormalParameterCountOffset));
   __ LoadRoot(r4, Heap::kTheHoleValueRootIndex);
   Label argument_loop, push_frame;
-#if V8_TARGET_ARCH_PPC64
+#if V8_TARGET_ARCH_S390X
   __ CmpP(r5, Operand::Zero());
   __ beq(&push_frame);
 #else
