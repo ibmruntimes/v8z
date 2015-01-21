@@ -25,7 +25,43 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// Flags: --harmony-promises --allow-natives-syntax
+// Flags: --allow-natives-syntax
+
+// Make sure we don't rely on functions patchable by monkeys.
+var call = Function.prototype.call.call.bind(Function.prototype.call)
+var observe = Object.observe;
+var getOwnPropertyNames = Object.getOwnPropertyNames
+var defineProperty = Object.defineProperty
+
+function clear(o) {
+  if (o === null || (typeof o !== 'object' && typeof o !== 'function')) return
+  clear(o.__proto__)
+  var properties = getOwnPropertyNames(o)
+  for (var i in properties) {
+    clearProp(o, properties[i])
+  }
+}
+
+function clearProp(o, name) {
+  var poisoned = {caller: 0, callee: 0, arguments: 0}
+  try {
+    var x = o[name]
+    o[name] = undefined
+    clear(x)
+  } catch(e) {} // assertTrue(name in poisoned) }
+}
+
+// Find intrinsics and null them out.
+var globals = Object.getOwnPropertyNames(this)
+var whitelist = {Promise: true, TypeError: true}
+for (var i in globals) {
+  var name = globals[i]
+  if (name in whitelist || name[0] === name[0].toLowerCase()) delete globals[i]
+}
+for (var i in globals) {
+  if (globals[i]) clearProp(this, globals[i])
+}
+
 
 var asyncAssertsExpected = 0;
 
@@ -43,7 +79,7 @@ function assertAsync(b, s) {
 function assertAsyncDone(iteration) {
   var iteration = iteration || 0
   var dummy = {}
-  Object.observe(dummy,
+  observe(dummy,
     function() {
       if (asyncAssertsExpected === 0)
         assertAsync(true, "all")
@@ -391,6 +427,30 @@ function assertAsyncDone(iteration) {
   p3.then(
     assertUnreachable,
     function(x) { assertAsync(x === 5, "then/reject") }
+  )
+  deferred.reject(5)
+  assertAsyncRan()
+})();
+
+(function() {
+  var deferred = Promise.defer()
+  var p1 = deferred.promise
+  var p2 = p1.then(1, 2)
+  p2.then(
+    function(x) { assertAsync(x === 5, "then/resolve-non-function") },
+    assertUnreachable
+  )
+  deferred.resolve(5)
+  assertAsyncRan()
+})();
+
+(function() {
+  var deferred = Promise.defer()
+  var p1 = deferred.promise
+  var p2 = p1.then(1, 2)
+  p2.then(
+    assertUnreachable,
+    function(x) { assertAsync(x === 5, "then/reject-non-function") }
   )
   deferred.reject(5)
   assertAsyncRan()
@@ -753,13 +813,13 @@ function assertAsyncDone(iteration) {
   MyPromise.__proto__ = Promise
   MyPromise.defer = function() {
     log += "d"
-    return this.__proto__.defer.call(this)
+    return call(this.__proto__.defer, this)
   }
 
   MyPromise.prototype.__proto__ = Promise.prototype
   MyPromise.prototype.chain = function(resolve, reject) {
     log += "c"
-    return this.__proto__.__proto__.chain.call(this, resolve, reject)
+    return call(this.__proto__.__proto__.chain, this, resolve, reject)
   }
 
   log = ""

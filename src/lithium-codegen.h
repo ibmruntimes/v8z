@@ -5,9 +5,9 @@
 #ifndef V8_LITHIUM_CODEGEN_H_
 #define V8_LITHIUM_CODEGEN_H_
 
-#include "v8.h"
+#include "src/v8.h"
 
-#include "compiler.h"
+#include "src/compiler.h"
 
 namespace v8 {
 namespace internal {
@@ -77,6 +77,7 @@ class LCodeGenBase BASE_EMBEDDED {
 
   // Methods for code dependencies.
   void AddDeprecationDependency(Handle<Map> map);
+  void AddStabilityDependency(Handle<Map> map);
 };
 
 

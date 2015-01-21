@@ -16,7 +16,7 @@
 #ifndef V8_PPC_SIMULATOR_PPC_H_
 #define V8_PPC_SIMULATOR_PPC_H_
 
-#include "allocation.h"
+#include "src/allocation.h"
 
 #if !defined(USE_SIMULATOR)
 // Running without a simulator on a native ppc platform.
@@ -39,9 +39,6 @@ typedef int (*ppc_regexp_matcher)(String*, int, const byte*, const byte*,
 #define CALL_GENERATED_REGEXP_CODE(entry, p0, p1, p2, p3, p4, p5, p6, p7, p8) \
   (FUNCTION_CAST<ppc_regexp_matcher>(entry)(                              \
       p0, p1, p2, p3, p4, p5, p6, p7, NULL, p8))
-
-#define TRY_CATCH_FROM_ADDRESS(try_catch_address) \
-  reinterpret_cast<TryCatch*>(try_catch_address)
 
 // The stack limit beyond which we will throw stack overflow errors in
 // generated code. Because generated code on ppc uses the C stack, we
@@ -66,9 +63,9 @@ class SimulatorStack : public v8::internal::AllStatic {
 #else  // !defined(USE_SIMULATOR)
 // Running with a simulator.
 
-#include "constants-ppc.h"
-#include "hashmap.h"
-#include "assembler.h"
+#include "src/assembler.h"
+#include "src/hashmap.h"
+#include "src/ppc/constants-ppc.h"
 
 namespace v8 {
 namespace internal {
@@ -133,7 +130,7 @@ class Simulator {
   intptr_t get_register(int reg) const;
   double get_double_from_register_pair(int reg);
   void set_d_register_from_double(int dreg, const double dbl) {
-    ASSERT(dreg >= 0 && dreg < kNumFPRs);
+    DCHECK(dreg >= 0 && dreg < kNumFPRs);
     fp_registers_[dreg] = dbl;
   }
   double get_double_from_d_register(int dreg) {
@@ -254,7 +251,8 @@ class Simulator {
   void ExecuteExt1(Instruction* instr);
   bool ExecuteExt2_10bit(Instruction* instr);
   bool ExecuteExt2_9bit_part1(Instruction* instr);
-  void ExecuteExt2_9bit_part2(Instruction* instr);
+  bool ExecuteExt2_9bit_part2(Instruction* instr);
+  void ExecuteExt2_5bit(Instruction* instr);
   void ExecuteExt2(Instruction* instr);
   void ExecuteExt4(Instruction* instr);
 #if V8_TARGET_ARCH_PPC64
@@ -357,10 +355,6 @@ class Simulator {
     (intptr_t)p7,                                                       \
     (intptr_t)NULL,                                                     \
     (intptr_t)p8)
-
-#define TRY_CATCH_FROM_ADDRESS(try_catch_address)                              \
-  try_catch_address == NULL ?                                                  \
-      NULL : *(reinterpret_cast<TryCatch**>(try_catch_address))
 
 
 // The simulator has its own stack. Thus it has a different stack limit from

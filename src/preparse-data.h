@@ -5,12 +5,15 @@
 #ifndef V8_PREPARSE_DATA_H_
 #define V8_PREPARSE_DATA_H_
 
-#include "allocation.h"
-#include "hashmap.h"
-#include "utils-inl.h"
+#include "src/allocation.h"
+#include "src/hashmap.h"
+#include "src/preparse-data-format.h"
+#include "src/utils-inl.h"
 
 namespace v8 {
 namespace internal {
+
+class ScriptData;
 
 
 // Abstract interface for preparse data recorder.
@@ -34,16 +37,6 @@ class ParserRecorder {
                           const char* message,
                           const char* argument_opt,
                           bool is_reference_error) = 0;
-
-  // The following functions are only callable on CompleteParserRecorder
-  // and are guarded by calls to ShouldLogSymbols.
-  virtual void LogOneByteSymbol(int start, Vector<const uint8_t> literal) {
-    UNREACHABLE();
-  }
-  virtual void LogTwoByteSymbol(int start, Vector<const uint16_t> literal) {
-    UNREACHABLE();
-  }
-
  private:
   DISALLOW_COPY_AND_ASSIGN(ParserRecorder);
 };
@@ -62,13 +55,13 @@ class SingletonLogger : public ParserRecorder {
                            int literals,
                            int properties,
                            StrictMode strict_mode) {
-    ASSERT(!has_error_);
+    DCHECK(!has_error_);
     start_ = start;
     end_ = end;
     literals_ = literals;
     properties_ = properties;
     strict_mode_ = strict_mode;
-  };
+  }
 
   // Logs an error message and marks the log as containing an error.
   // Further logging will be ignored, and ExtractData will return a vector
@@ -92,24 +85,24 @@ class SingletonLogger : public ParserRecorder {
   int start() const { return start_; }
   int end() const { return end_; }
   int literals() const {
-    ASSERT(!has_error_);
+    DCHECK(!has_error_);
     return literals_;
   }
   int properties() const {
-    ASSERT(!has_error_);
+    DCHECK(!has_error_);
     return properties_;
   }
   StrictMode strict_mode() const {
-    ASSERT(!has_error_);
+    DCHECK(!has_error_);
     return strict_mode_;
   }
   int is_reference_error() const { return is_reference_error_; }
   const char* message() {
-    ASSERT(has_error_);
+    DCHECK(has_error_);
     return message_;
   }
   const char* argument_opt() const {
-    ASSERT(has_error_);
+    DCHECK(has_error_);
     return argument_opt_;
   }
 
@@ -158,25 +151,18 @@ class CompleteParserRecorder : public ParserRecorder {
                           const char* message,
                           const char* argument_opt,
                           bool is_reference_error_);
+  ScriptData* GetScriptData();
 
-  virtual void LogOneByteSymbol(int start, Vector<const uint8_t> literal);
-  virtual void LogTwoByteSymbol(int start, Vector<const uint16_t> literal);
-  Vector<unsigned> ExtractData();
-
- private:
-  bool has_error() {
+  bool HasError() {
     return static_cast<bool>(preamble_[PreparseDataConstants::kHasErrorOffset]);
   }
+  Vector<unsigned> ErrorMessageData() {
+    DCHECK(HasError());
+    return function_store_.ToVector();
+  }
 
+ private:
   void WriteString(Vector<const char> str);
-
-  // For testing. Defined in test-parsing.cc.
-  friend struct CompleteParserRecorderFriend;
-
-  void LogSymbol(int start,
-                 int hash,
-                 bool is_one_byte,
-                 Vector<const byte> literal);
 
   // Write a non-negative number to the symbol store.
   void WriteNumber(int number);
@@ -187,12 +173,6 @@ class CompleteParserRecorder : public ParserRecorder {
 #ifdef DEBUG
   int prev_start_;
 #endif
-
-  Collector<byte> literal_chars_;
-  Collector<byte> symbol_store_;
-  Collector<Key> symbol_keys_;
-  HashMap string_table_;
-  int symbol_id_;
 };
 
 

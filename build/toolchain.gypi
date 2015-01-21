@@ -31,8 +31,9 @@
   'variables': {
     'msvs_use_common_release': 0,
     'gcc_version%': 'unknown',
-    'CXX%': '${CXX:-$(which g++)}',  # Used to assemble a shell command.
+    'clang%': 0,
     'v8_target_arch%': '<(target_arch)',
+    'v8_host_byteorder%': '<!(python -c "import sys; print sys.byteorder")',
     # Native Client builds currently use the V8 ARM JIT and
     # arm/simulator-arm.cc to defer the significant effort required
     # for NaCl JIT support. The nacl_target_arch variable provides
@@ -47,7 +48,7 @@
     # these registers in the snapshot and use CPU feature probing when running
     # on the target.
     'v8_can_use_vfp32dregs%': 'false',
-    'arm_test%': 'off',
+    'arm_test_noprobe%': 'off',
 
     # Similar to vfp but on MIPS.
     'v8_can_use_fpu_instructions%': 'true',
@@ -56,7 +57,7 @@
     'v8_use_mips_abi_hardfloat%': 'true',
 
     # Default arch variant for MIPS.
-    'mips_arch_variant%': 'mips32r2',
+    'mips_arch_variant%': 'r2',
 
     'v8_enable_backtrace%': 0,
 
@@ -82,35 +83,88 @@
 
     # Allow to suppress the array bounds warning (default is no suppression).
     'wno_array_bounds%': '',
+
+    'variables': {
+      # This is set when building the Android WebView inside the Android build
+      # system, using the 'android' gyp backend.
+      'android_webview_build%': 0,
+    },
+    # Copy it out one scope.
+    'android_webview_build%': '<(android_webview_build)',
   },
+  'conditions': [
+    ['host_arch=="ia32" or host_arch=="x64" or \
+      host_arch=="ppc" or host_arch=="ppc64" or \
+      clang==1', {
+      'variables': {
+        'host_cxx_is_biarch%': 1,
+       },
+     }, {
+      'variables': {
+        'host_cxx_is_biarch%': 0,
+      },
+    }],
+    ['target_arch=="ia32" or target_arch=="x64" or target_arch=="x87" or \
+      target_arch=="ppc" or target_arch=="ppc64" or \
+      clang==1', {
+      'variables': {
+        'target_cxx_is_biarch%': 1,
+       },
+     }, {
+      'variables': {
+        'target_cxx_is_biarch%': 0,
+      },
+    }],
+  ],
   'target_defaults': {
     'conditions': [
       ['v8_target_arch=="arm"', {
         'defines': [
           'V8_TARGET_ARCH_ARM',
         ],
+        'conditions': [
+          [ 'arm_version==7 or arm_version=="default"', {
+            'defines': [
+              'CAN_USE_ARMV7_INSTRUCTIONS',
+            ],
+          }],
+          [ 'arm_fpu=="vfpv3-d16" or arm_fpu=="default"', {
+            'defines': [
+              'CAN_USE_VFP3_INSTRUCTIONS',
+            ],
+          }],
+          [ 'arm_fpu=="vfpv3"', {
+            'defines': [
+              'CAN_USE_VFP3_INSTRUCTIONS',
+              'CAN_USE_VFP32DREGS',
+            ],
+          }],
+          [ 'arm_fpu=="neon"', {
+            'defines': [
+              'CAN_USE_VFP3_INSTRUCTIONS',
+              'CAN_USE_VFP32DREGS',
+              'CAN_USE_NEON',
+            ],
+          }],
+          [ 'arm_test_noprobe=="on"', {
+            'defines': [
+              'ARM_TEST_NO_FEATURE_PROBE',
+            ],
+          }],
+        ],
         'target_conditions': [
           ['_toolset=="host"', {
-            'variables': {
-              'armcompiler': '<!($(echo ${CXX_host:-$(which g++)}) -v 2>&1 | grep -q "^Target: arm" && echo "yes" || echo "no")',
-            },
             'conditions': [
-              ['armcompiler=="yes"', {
+              ['v8_target_arch==host_arch and android_webview_build==0', {
+                # Host built with an Arm CXX compiler.
                 'conditions': [
                   [ 'arm_version==7', {
                     'cflags': ['-march=armv7-a',],
                   }],
                   [ 'arm_version==7 or arm_version=="default"', {
                     'conditions': [
-                      [ 'arm_neon==1', {
-                        'cflags': ['-mfpu=neon',],
-                      },
-                      {
-                        'conditions': [
-                          [ 'arm_fpu!="default"', {
-                            'cflags': ['-mfpu=<(arm_fpu)',],
-                          }],
-                        ],
+                      [ 'arm_fpu!="default"', {
+                        'cflags': ['-mfpu=<(arm_fpu)',],
                       }],
                     ],
                   }],
@@ -123,44 +177,11 @@
                   [ 'arm_thumb==0', {
                     'cflags': ['-marm',],
                   }],
-                  [ 'arm_test=="on"', {
-                    'defines': [
-                      'ARM_TEST',
-                    ],
-                  }],
                 ],
               }, {
-                # armcompiler=="no"
+                # 'v8_target_arch!=host_arch'
+                # Host not built with an Arm CXX compiler (simulator build).
                 'conditions': [
-                  [ 'arm_version==7 or arm_version=="default"', {
-                    'defines': [
-                      'CAN_USE_ARMV7_INSTRUCTIONS=1',
-                    ],
-                    'conditions': [
-                      [ 'arm_fpu=="default"', {
-                        'defines': [
-                          'CAN_USE_VFP3_INSTRUCTIONS',
-                        ],
-                      }],
-                      [ 'arm_fpu=="vfpv3-d16"', {
-                        'defines': [
-                          'CAN_USE_VFP3_INSTRUCTIONS',
-                        ],
-                      }],
-                      [ 'arm_fpu=="vfpv3"', {
-                        'defines': [
-                          'CAN_USE_VFP3_INSTRUCTIONS',
-                          'CAN_USE_VFP32DREGS',
-                        ],
-                      }],
-                      [ 'arm_fpu=="neon" or arm_neon==1', {
-                        'defines': [
-                          'CAN_USE_VFP3_INSTRUCTIONS',
-                          'CAN_USE_VFP32DREGS',
-                        ],
-                      }],
-                    ],
-                  }],
                   [ 'arm_float_abi=="hard"', {
                     'defines': [
                       'USE_EABI_HARDFLOAT=1',
@@ -171,34 +192,22 @@
                       'USE_EABI_HARDFLOAT=0',
                     ],
                   }],
-                ],
-                'defines': [
-                  'ARM_TEST',
                 ],
               }],
             ],
           }],  # _toolset=="host"
           ['_toolset=="target"', {
-            'variables': {
-              'armcompiler': '<!($(echo ${CXX_target:-<(CXX)}) -v 2>&1 | grep -q "^Target: arm" && echo "yes" || echo "no")',
-            },
             'conditions': [
-              ['armcompiler=="yes"', {
+              ['v8_target_arch==target_arch and android_webview_build==0', {
+                # Target built with an Arm CXX compiler.
                 'conditions': [
                   [ 'arm_version==7', {
                     'cflags': ['-march=armv7-a',],
                   }],
                   [ 'arm_version==7 or arm_version=="default"', {
                     'conditions': [
-                      [ 'arm_neon==1', {
-                        'cflags': ['-mfpu=neon',],
-                      },
-                      {
-                        'conditions': [
-                          [ 'arm_fpu!="default"', {
-                            'cflags': ['-mfpu=<(arm_fpu)',],
-                          }],
-                        ],
+                      [ 'arm_fpu!="default"', {
+                        'cflags': ['-mfpu=<(arm_fpu)',],
                       }],
                     ],
                   }],
@@ -211,44 +220,11 @@
                   [ 'arm_thumb==0', {
                     'cflags': ['-marm',],
                   }],
-                  [ 'arm_test=="on"', {
-                    'defines': [
-                      'ARM_TEST',
-                    ],
-                  }],
                 ],
               }, {
-                # armcompiler=="no"
+                # 'v8_target_arch!=target_arch'
+                # Target not built with an Arm CXX compiler (simulator build).
                 'conditions': [
-                  [ 'arm_version==7 or arm_version=="default"', {
-                    'defines': [
-                      'CAN_USE_ARMV7_INSTRUCTIONS=1',
-                    ],
-                    'conditions': [
-                      [ 'arm_fpu=="default"', {
-                        'defines': [
-                          'CAN_USE_VFP3_INSTRUCTIONS',
-                        ],
-                      }],
-                      [ 'arm_fpu=="vfpv3-d16"', {
-                        'defines': [
-                          'CAN_USE_VFP3_INSTRUCTIONS',
-                        ],
-                      }],
-                      [ 'arm_fpu=="vfpv3"', {
-                        'defines': [
-                          'CAN_USE_VFP3_INSTRUCTIONS',
-                          'CAN_USE_VFP32DREGS',
-                        ],
-                      }],
-                      [ 'arm_fpu=="neon" or arm_neon==1', {
-                        'defines': [
-                          'CAN_USE_VFP3_INSTRUCTIONS',
-                          'CAN_USE_VFP32DREGS',
-                        ],
-                      }],
-                    ],
-                  }],
                   [ 'arm_float_abi=="hard"', {
                     'defines': [
                       'USE_EABI_HARDFLOAT=1',
@@ -259,9 +235,6 @@
                       'USE_EABI_HARDFLOAT=0',
                     ],
                   }],
-                ],
-                'defines': [
-                  'ARM_TEST',
                 ],
               }],
             ],
@@ -312,15 +285,19 @@
           'V8_TARGET_ARCH_IA32',
         ],
       }],  # v8_target_arch=="ia32"
+      ['v8_target_arch=="x87"', {
+        'defines': [
+          'V8_TARGET_ARCH_X87',
+        ],
+        'cflags': ['-march=i586'],
+      }],  # v8_target_arch=="x87"
       ['v8_target_arch=="mips"', {
         'defines': [
           'V8_TARGET_ARCH_MIPS',
         ],
-        'variables': {
-          'mipscompiler': '<!($(echo <(CXX)) -v 2>&1 | grep -q "^Target: mips" && echo "yes" || echo "no")',
-        },
         'conditions': [
-          ['mipscompiler=="yes"', {
+          ['v8_target_arch==target_arch and android_webview_build==0', {
+            # Target built with a Mips CXX compiler.
             'target_conditions': [
               ['_toolset=="target"', {
                 'cflags': ['-EB'],
@@ -333,10 +310,10 @@
                     'cflags': ['-msoft-float'],
                     'ldflags': ['-msoft-float'],
                   }],
-                  ['mips_arch_variant=="mips32r2"', {
+                  ['mips_arch_variant=="r2"', {
                     'cflags': ['-mips32r2', '-Wa,-mips32r2'],
                   }],
-                  ['mips_arch_variant=="mips32r1"', {
+                  ['mips_arch_variant=="r1"', {
                     'cflags': ['-mips32', '-Wa,-mips32'],
                   }],
                 ],
@@ -358,7 +335,7 @@
               '__mips_soft_float=1'
             ],
           }],
-          ['mips_arch_variant=="mips32r2"', {
+          ['mips_arch_variant=="r2"', {
             'defines': ['_MIPS_ARCH_MIPS32R2',],
           }],
         ],
@@ -367,11 +344,9 @@
         'defines': [
           'V8_TARGET_ARCH_MIPS',
         ],
-        'variables': {
-          'mipscompiler': '<!($(echo <(CXX)) -v 2>&1 | grep -q "^Target: mips" && echo "yes" || echo "no")',
-        },
         'conditions': [
-          ['mipscompiler=="yes"', {
+          ['v8_target_arch==target_arch and android_webview_build==0', {
+            # Target built with a Mips CXX compiler.
             'target_conditions': [
               ['_toolset=="target"', {
                 'cflags': ['-EL'],
@@ -384,10 +359,10 @@
                     'cflags': ['-msoft-float'],
                     'ldflags': ['-msoft-float'],
                   }],
-                  ['mips_arch_variant=="mips32r2"', {
+                  ['mips_arch_variant=="r2"', {
                     'cflags': ['-mips32r2', '-Wa,-mips32r2'],
                   }],
-                  ['mips_arch_variant=="mips32r1"', {
+                  ['mips_arch_variant=="r1"', {
                     'cflags': ['-mips32', '-Wa,-mips32'],
                  }],
                   ['mips_arch_variant=="loongson"', {
@@ -412,7 +387,7 @@
               '__mips_soft_float=1'
             ],
           }],
-          ['mips_arch_variant=="mips32r2"', {
+          ['mips_arch_variant=="r2"', {
             'defines': ['_MIPS_ARCH_MIPS32R2',],
           }],
           ['mips_arch_variant=="loongson"', {
@@ -420,6 +395,68 @@
           }],
         ],
       }],  # v8_target_arch=="mipsel"
+      ['v8_target_arch=="mips64el"', {
+        'defines': [
+          'V8_TARGET_ARCH_MIPS64',
+        ],
+        'conditions': [
+          ['v8_target_arch==target_arch and android_webview_build==0', {
+            # Target built with a Mips CXX compiler.
+            'target_conditions': [
+              ['_toolset=="target"', {
+                'cflags': ['-EL'],
+                'ldflags': ['-EL'],
+                'conditions': [
+                  [ 'v8_use_mips_abi_hardfloat=="true"', {
+                    'cflags': ['-mhard-float'],
+                    'ldflags': ['-mhard-float'],
+                  }, {
+                    'cflags': ['-msoft-float'],
+                    'ldflags': ['-msoft-float'],
+                  }],
+                  ['mips_arch_variant=="r6"', {
+                    'cflags': ['-mips64r6', '-mabi=64', '-Wa,-mips64r6'],
+                    'ldflags': [
+                      '-mips64r6', '-mabi=64',
+                      '-Wl,--dynamic-linker=$(LDSO_PATH)',
+                      '-Wl,--rpath=$(LD_R_PATH)',
+                    ],
+                  }],
+                  ['mips_arch_variant=="r2"', {
+                    'cflags': ['-mips64r2', '-mabi=64', '-Wa,-mips64r2'],
+                    'ldflags': [
+                      '-mips64r2', '-mabi=64',
+                      '-Wl,--dynamic-linker=$(LDSO_PATH)',
+                      '-Wl,--rpath=$(LD_R_PATH)',
+                    ],
+                  }],
+                ],
+              }],
+            ],
+          }],
+          [ 'v8_can_use_fpu_instructions=="true"', {
+            'defines': [
+              'CAN_USE_FPU_INSTRUCTIONS',
+            ],
+          }],
+          [ 'v8_use_mips_abi_hardfloat=="true"', {
+            'defines': [
+              '__mips_hard_float=1',
+              'CAN_USE_FPU_INSTRUCTIONS',
+            ],
+          }, {
+            'defines': [
+              '__mips_soft_float=1'
+            ],
+          }],
+          ['mips_arch_variant=="r6"', {
+            'defines': ['_MIPS_ARCH_MIPS64R6',],
+          }],
+          ['mips_arch_variant=="r2"', {
+            'defines': ['_MIPS_ARCH_MIPS64R2',],
+          }],
+        ],
+      }],  # v8_target_arch=="mips64el"
       ['v8_target_arch=="x64"', {
         'defines': [
           'V8_TARGET_ARCH_X64',
@@ -434,14 +471,40 @@
         },
         'msvs_configuration_platform': 'x64',
       }],  # v8_target_arch=="x64"
+      ['v8_target_arch=="x32"', {
+        'defines': [
+          # x32 port shares the source code with x64 port.
+          'V8_TARGET_ARCH_X64',
+          'V8_TARGET_ARCH_32_BIT',
+        ],
+        'cflags': [
+          '-mx32',
+          # Inhibit warning if long long type is used.
+          '-Wno-long-long',
+        ],
+        'ldflags': [
+          '-mx32',
+        ],
+      }],  # v8_target_arch=="x32"
       ['OS=="win"', {
         'defines': [
           'WIN32',
         ],
+        # 4351: VS 2005 and later are warning us that they've fixed a bug
+        #       present in VS 2003 and earlier.
+        'msvs_disabled_warnings': [4351],
         'msvs_configuration_attributes': {
           'OutputDirectory': '<(DEPTH)\\build\\$(ConfigurationName)',
           'IntermediateDirectory': '$(OutDir)\\obj\\$(ProjectName)',
           'CharacterSet': '1',
+        },
+      }],
+      ['OS=="win" and v8_target_arch=="ia32"', {
+        'msvs_settings': {
+          'VCCLCompilerTool': {
+            # Ensure no surprising artifacts from 80bit double math with x86.
+            'AdditionalOptions': ['/arch:SSE2'],
+          },
         },
       }],
       ['OS=="win" and v8_enable_prof==1', {
@@ -451,37 +514,21 @@
           },
         },
       }],
-      ['OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="solaris" \
-         or OS=="netbsd" or OS=="qnx" or OS=="aix"', {
-        'conditions': [
-          [ 'v8_no_strict_aliasing==1', {
-            'cflags': [ '-fno-strict-aliasing' ],
-          }],
-        ],  # conditions
-      }],
-      ['OS=="solaris"', {
-        'defines': [ '__C99FEATURES__=1' ],  # isinf() etc.
-      }],
       ['(OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="solaris" \
          or OS=="netbsd" or OS=="mac" or OS=="android" or OS=="qnx") and \
         (v8_target_arch=="arm" or v8_target_arch=="ia32" or \
-         v8_target_arch=="mips" or v8_target_arch=="mipsel" or v8_target_arch=="ppc" or \
+         v8_target_arch=="x87" or v8_target_arch=="mips" or \
+         v8_target_arch=="mipsel" or v8_target_arch=="ppc"or \
          v8_target_arch=="s390")', {
-        # Check whether the host compiler and target compiler support the
-        # '-m32' option and set it if so.
         'target_conditions': [
           ['_toolset=="host"', {
-            'variables': {
-              'conditions': [
-                [ 'v8_target_arch=="s390"', {
-                  'm32flag': '<!(($(echo ${CXX_host:-$(which g++)}) -m31 -E - > /dev/null 2>&1 < /dev/null) && echo "-m31" || true)',
-                }, {
-                  'm32flag': '<!(($(echo ${CXX_host:-$(which g++)}) -m32 -E - > /dev/null 2>&1 < /dev/null) && echo "-m32" || true)',
-                }]
-              ]
-            },
-            'cflags': [ '<(m32flag)' ],
-            'ldflags': [ '<(m32flag)' ],
+            'conditions': [
+
+              ['host_cxx_is_biarch==1', {
+                'cflags': [ '-m32' ],
+                'ldflags': [ '-m32' ]
+              }],
+            ],
             'xcode_settings': {
               'ARCHS': [ 'i386' ],
             },
@@ -496,10 +543,9 @@
               'clang%': 0,
             },
             'conditions': [
-              ['((OS!="android" and OS!="qnx") or clang==1) and \
-                nacl_target_arch!="nacl_x64"', {
-                'cflags': [ '<(m32flag)' ],
-                'ldflags': [ '<(m32flag)' ],
+              ['target_cxx_is_biarch==1 and nacl_target_arch!="nacl_x64"', {
+                'cflags': [ '-m32' ],
+                'ldflags': [ '-m32' ],
               }],
             ],
             'xcode_settings': {
@@ -509,29 +555,37 @@
         ],
       }],
       ['(OS=="linux" or OS=="android") and \
-        (v8_target_arch=="x64" or v8_target_arch=="arm64")', {
-        # Check whether the host compiler and target compiler support the
-        # '-m64' option and set it if so.
+        (v8_target_arch=="x64" or v8_target_arch=="arm64" or \
+         v8_target_arch=="ppc64")', {
         'target_conditions': [
           ['_toolset=="host"', {
-            'variables': {
-              'm64flag': '<!(($(echo ${CXX_host:-$(which g++)}) -m64 -E - > /dev/null 2>&1 < /dev/null) && echo "-m64" || true)',
-            },
-            'cflags': [ '<(m64flag)' ],
-            'ldflags': [ '<(m64flag)' ],
-          }],
-          ['_toolset=="target"', {
-            'variables': {
-              'm64flag': '<!(($(echo ${CXX_target:-<(CXX)}) -m64 -E - > /dev/null 2>&1 < /dev/null) && echo "-m64" || true)',
-            },
             'conditions': [
-              ['((OS!="android" and OS!="qnx") or clang==1)', {
-                'cflags': [ '<(m64flag)' ],
-                'ldflags': [ '<(m64flag)' ],
+              ['host_cxx_is_biarch==1', {
+                'cflags': [ '-m64' ],
+                'ldflags': [ '-m64' ]
               }],
-            ],
-          }]
-        ],
+             ],
+           }],
+           ['_toolset=="target"', {
+             'conditions': [
+               ['target_cxx_is_biarch==1', {
+                 'cflags': [ '-m64' ],
+                 'ldflags': [ '-m64' ],
+               }],
+             ]
+           }],
+         ],
+      }],
+      ['OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="solaris" \
+         or OS=="netbsd" or OS=="qnx" or OS=="aix"', {
+        'conditions': [
+          [ 'v8_no_strict_aliasing==1', {
+            'cflags': [ '-fno-strict-aliasing' ],
+          }],
+        ],  # conditions
+      }],
+      ['OS=="solaris"', {
+        'defines': [ '__C99FEATURES__=1' ],  # isinf() etc.
       }],
       ['OS=="freebsd" or OS=="openbsd"', {
         'cflags': [ '-I/usr/local/include' ],

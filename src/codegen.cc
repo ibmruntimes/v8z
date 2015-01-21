@@ -2,20 +2,93 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "v8.h"
+#if defined(_AIX)
+#include <fenv.h>
+#endif
 
-#include "bootstrapper.h"
-#include "codegen.h"
-#include "compiler.h"
-#include "cpu-profiler.h"
-#include "debug.h"
-#include "prettyprinter.h"
-#include "rewriter.h"
-#include "runtime.h"
-#include "stub-cache.h"
+#include "src/v8.h"
+
+#include "src/bootstrapper.h"
+#include "src/codegen.h"
+#include "src/compiler.h"
+#include "src/cpu-profiler.h"
+#include "src/debug.h"
+#include "src/prettyprinter.h"
+#include "src/rewriter.h"
+#include "src/runtime.h"
+#include "src/stub-cache.h"
 
 namespace v8 {
 namespace internal {
+
+
+#if defined(_WIN64)
+typedef double (*ModuloFunction)(double, double);
+static ModuloFunction modulo_function = NULL;
+// Defined in codegen-x64.cc.
+ModuloFunction CreateModuloFunction();
+
+void init_modulo_function() {
+  modulo_function = CreateModuloFunction();
+}
+
+
+double modulo(double x, double y) {
+  // Note: here we rely on dependent reads being ordered. This is true
+  // on all architectures we currently support.
+  return (*modulo_function)(x, y);
+}
+#elif defined(_WIN32)
+
+double modulo(double x, double y) {
+  // Workaround MS fmod bugs. ECMA-262 says:
+  // dividend is finite and divisor is an infinity => result equals dividend
+  // dividend is a zero and divisor is nonzero finite => result equals dividend
+  if (!(std::isfinite(x) && (!std::isfinite(y) && !std::isnan(y))) &&
+      !(x == 0 && (y != 0 && std::isfinite(y)))) {
+    x = fmod(x, y);
+  }
+  return x;
+}
+#else  // POSIX
+
+double modulo(double x, double y) {
+#if defined(_AIX)
+  // AIX raises an underflow exception for (Number.MIN_VALUE % Number.MAX_VALUE)
+  double result;
+  int exception;
+  feclearexcept(FE_ALL_EXCEPT);
+  result = std::fmod(x, y);
+  exception = fetestexcept(FE_UNDERFLOW);
+  return (exception ? x : result);
+#else
+  return std::fmod(x, y);
+#endif
+}
+#endif  // defined(_WIN64)
+
+
+#define UNARY_MATH_FUNCTION(name, generator)             \
+static UnaryMathFunction fast_##name##_function = NULL;  \
+void init_fast_##name##_function() {                     \
+  fast_##name##_function = generator;                    \
+}                                                        \
+double fast_##name(double x) {                           \
+  return (*fast_##name##_function)(x);                   \
+}
+
+UNARY_MATH_FUNCTION(exp, CreateExpFunction())
+UNARY_MATH_FUNCTION(sqrt, CreateSqrtFunction())
+
+#undef UNARY_MATH_FUNCTION
+
+
+void lazily_initialize_fast_exp() {
+  if (fast_exp_function == NULL) {
+    init_fast_exp_function();
+  }
+}
+
 
 #define __ ACCESS_MASM(masm_)
 
@@ -91,7 +164,8 @@ Handle<Code> CodeGenerator::MakeCodeEpilogue(MacroAssembler* masm,
   Handle<Code> code =
       isolate->factory()->NewCode(desc, flags, masm->CodeObject(),
                                   false, is_crankshafted,
-                                  info->prologue_offset());
+                                  info->prologue_offset(),
+                                  info->is_debug() && !is_crankshafted);
   isolate->counters()->total_compiled_code_size()->Increment(
       code->instruction_size());
   isolate->heap()->IncrementCodeGeneratedBytes(is_crankshafted,
@@ -115,10 +189,11 @@ void CodeGenerator::PrintCode(Handle<Code> code, CompilationInfo* info) {
         code->kind() == Code::FUNCTION;
 
     CodeTracer::Scope tracing_scope(info->isolate()->GetCodeTracer());
+    OFStream os(tracing_scope.file());
     if (print_source) {
       Handle<Script> script = info->script();
       if (!script->IsUndefined() && !script->source()->IsUndefined()) {
-        PrintF(tracing_scope.file(), "--- Raw source ---\n");
+        os << "--- Raw source ---\n";
         ConsStringIteratorOp op;
         StringCharacterStream stream(String::cast(script->source()),
                                      &op,
@@ -129,54 +204,35 @@ void CodeGenerator::PrintCode(Handle<Code> code, CompilationInfo* info) {
             function->end_position() - function->start_position() + 1;
         for (int i = 0; i < source_len; i++) {
           if (stream.HasMore()) {
-            PrintF(tracing_scope.file(), "%c", stream.GetNext());
+            os << AsUC16(stream.GetNext());
           }
         }
-        PrintF(tracing_scope.file(), "\n\n");
+        os << "\n\n";
       }
     }
     if (info->IsOptimizing()) {
       if (FLAG_print_unopt_code) {
-        PrintF(tracing_scope.file(), "--- Unoptimized code ---\n");
+        os << "--- Unoptimized code ---\n";
         info->closure()->shared()->code()->Disassemble(
-            function->debug_name()->ToCString().get(), tracing_scope.file());
+            function->debug_name()->ToCString().get(), os);
       }
-      PrintF(tracing_scope.file(), "--- Optimized code ---\n");
-      PrintF(tracing_scope.file(),
-             "optimization_id = %d\n", info->optimization_id());
+      os << "--- Optimized code ---\n"
+         << "optimization_id = " << info->optimization_id() << "\n";
     } else {
-      PrintF(tracing_scope.file(), "--- Code ---\n");
+      os << "--- Code ---\n";
     }
     if (print_source) {
-      PrintF(tracing_scope.file(),
-             "source_position = %d\n", function->start_position());
+      os << "source_position = " << function->start_position() << "\n";
     }
     if (info->IsStub()) {
       CodeStub::Major major_key = info->code_stub()->MajorKey();
-      code->Disassemble(CodeStub::MajorName(major_key, false),
-                        tracing_scope.file());
+      code->Disassemble(CodeStub::MajorName(major_key, false), os);
     } else {
-      code->Disassemble(function->debug_name()->ToCString().get(),
-                        tracing_scope.file());
+      code->Disassemble(function->debug_name()->ToCString().get(), os);
     }
-    PrintF(tracing_scope.file(), "--- End code ---\n");
+    os << "--- End code ---\n";
   }
 #endif  // ENABLE_DISASSEMBLER
-}
-
-
-bool CodeGenerator::ShouldGenerateLog(Isolate* isolate, Expression* type) {
-  ASSERT(type != NULL);
-  if (!isolate->logger()->is_logging() &&
-      !isolate->cpu_profiler()->is_profiling()) {
-    return false;
-  }
-  Handle<String> name = Handle<String>::cast(type->AsLiteral()->value());
-  if (FLAG_log_regexp) {
-    if (name->IsOneByteEqualTo(STATIC_ASCII_VECTOR("regexp")))
-      return true;
-  }
-  return false;
 }
 
 
@@ -212,11 +268,11 @@ void ArgumentsAccessStub::Generate(MacroAssembler* masm) {
 }
 
 
-int CEntryStub::MinorKey() {
+int CEntryStub::MinorKey() const {
   int result = (save_doubles_ == kSaveFPRegs) ? 1 : 0;
-  ASSERT(result_size_ == 1 || result_size_ == 2);
+  DCHECK(result_size_ == 1 || result_size_ == 2);
 #if defined(_WIN64) || defined(V8_TARGET_ARCH_PPC64) \
-  || defined(V8_TARGET_ARCH_PPC64) || defined(V8_TARGET_ARCH_S390X)
+  || defined(V8_TARGET_ARCH_S390X)
   return result | ((result_size_ == 1) ? 0 : 2);
 #else
   return result;

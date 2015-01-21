@@ -25,9 +25,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "v8.h"
+#include "src/v8.h"
 
-#include "cctest.h"
+#include "test/cctest/cctest.h"
 
 using namespace v8;
 namespace i = v8::internal;
@@ -36,7 +36,6 @@ namespace {
 class HarmonyIsolate {
  public:
   HarmonyIsolate() {
-    i::FLAG_harmony_promises = true;
     isolate_ = Isolate::New();
     isolate_->Enter();
   }

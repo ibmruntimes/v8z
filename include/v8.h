@@ -895,6 +895,13 @@ struct Maybe {
 };
 
 
+// Convenience wrapper.
+template <class T>
+inline Maybe<T> maybe(T t) {
+  return Maybe<T>(t);
+}
+
+
 // --- Special objects ---
 
 
@@ -916,20 +923,24 @@ class ScriptOrigin {
       Handle<Value> resource_name,
       Handle<Integer> resource_line_offset = Handle<Integer>(),
       Handle<Integer> resource_column_offset = Handle<Integer>(),
-      Handle<Boolean> resource_is_shared_cross_origin = Handle<Boolean>())
+      Handle<Boolean> resource_is_shared_cross_origin = Handle<Boolean>(),
+      Handle<Integer> script_id = Handle<Integer>())
       : resource_name_(resource_name),
         resource_line_offset_(resource_line_offset),
         resource_column_offset_(resource_column_offset),
-        resource_is_shared_cross_origin_(resource_is_shared_cross_origin) { }
+        resource_is_shared_cross_origin_(resource_is_shared_cross_origin),
+        script_id_(script_id) { }
   V8_INLINE Handle<Value> ResourceName() const;
   V8_INLINE Handle<Integer> ResourceLineOffset() const;
   V8_INLINE Handle<Integer> ResourceColumnOffset() const;
   V8_INLINE Handle<Boolean> ResourceIsSharedCrossOrigin() const;
+  V8_INLINE Handle<Integer> ScriptID() const;
  private:
   Handle<Value> resource_name_;
   Handle<Integer> resource_line_offset_;
   Handle<Integer> resource_column_offset_;
   Handle<Boolean> resource_is_shared_cross_origin_;
+  Handle<Integer> script_id_;
 };
 
 
@@ -945,6 +956,15 @@ class V8_EXPORT UnboundScript {
 
   int GetId();
   Handle<Value> GetScriptName();
+
+  /**
+   * Data read from magic sourceURL comments.
+   */
+  Handle<Value> GetSourceURL();
+  /**
+   * Data read from magic sourceMappingURL comments.
+   */
+  Handle<Value> GetSourceMappingURL();
 
   /**
    * Returns zero based line number of the code_pos location in the script.
@@ -984,24 +1004,9 @@ class V8_EXPORT Script {
    */
   Local<UnboundScript> GetUnboundScript();
 
-  // To be deprecated; use GetUnboundScript()->GetId();
-  int GetId() {
-    return GetUnboundScript()->GetId();
-  }
-
-  // Use GetUnboundScript()->GetId();
   V8_DEPRECATED("Use GetUnboundScript()->GetId()",
-                Handle<Value> GetScriptName()) {
-    return GetUnboundScript()->GetScriptName();
-  }
-
-  /**
-   * Returns zero based line number of the code_pos location in the script.
-   * -1 will be returned if no information available.
-   */
-  V8_DEPRECATED("Use GetUnboundScript()->GetLineNumber()",
-                int GetLineNumber(int code_pos)) {
-    return GetUnboundScript()->GetLineNumber(code_pos);
+                int GetId()) {
+    return GetUnboundScript()->GetId();
   }
 };
 
@@ -1039,15 +1044,14 @@ class V8_EXPORT ScriptCompiler {
     int length;
     BufferPolicy buffer_policy;
 
-  private:
-     // Prevent copying. Not implemented.
-     CachedData(const CachedData&);
-     CachedData& operator=(const CachedData&);
+   private:
+    // Prevent copying. Not implemented.
+    CachedData(const CachedData&);
+    CachedData& operator=(const CachedData&);
   };
 
   /**
-   * Source code which can be then compiled to a UnboundScript or
-   * BoundScript.
+   * Source code which can be then compiled to a UnboundScript or Script.
    */
   class Source {
    public:
@@ -1065,7 +1069,7 @@ class V8_EXPORT ScriptCompiler {
 
    private:
     friend class ScriptCompiler;
-     // Prevent copying. Not implemented.
+    // Prevent copying. Not implemented.
     Source(const Source&);
     Source& operator=(const Source&);
 
@@ -1077,19 +1081,31 @@ class V8_EXPORT ScriptCompiler {
     Handle<Integer> resource_column_offset;
     Handle<Boolean> resource_is_shared_cross_origin;
 
-    // Cached data from previous compilation (if any), or generated during
-    // compilation (if the generate_cached_data flag is passed to
-    // ScriptCompiler).
+    // Cached data from previous compilation (if a kConsume*Cache flag is
+    // set), or hold newly generated cache data (kProduce*Cache flags) are
+    // set when calling a compile method.
     CachedData* cached_data;
   };
 
   enum CompileOptions {
-    kNoCompileOptions,
-    kProduceDataToCache = 1 << 0
+    kNoCompileOptions = 0,
+    kProduceParserCache,
+    kConsumeParserCache,
+    kProduceCodeCache,
+    kConsumeCodeCache,
+
+    // Support the previous API for a transition period.
+    kProduceDataToCache
   };
 
   /**
    * Compiles the specified script (context-independent).
+   * Cached data as part of the source object can be optionally produced to be
+   * consumed later to speed up compilation of identical source scripts.
+   *
+   * Note that when producing cached data, the source must point to NULL for
+   * cached data. When consuming cached data, the cached data must have been
+   * produced by the same version of V8.
    *
    * \param source Script source code.
    * \return Compiled script object (context independent; for running it must be
@@ -1125,16 +1141,16 @@ class V8_EXPORT Message {
   Local<String> GetSourceLine() const;
 
   /**
+   * Returns the origin for the script from where the function causing the
+   * error originates.
+   */
+  ScriptOrigin GetScriptOrigin() const;
+
+  /**
    * Returns the resource name for the script from where the function causing
    * the error originates.
    */
   Handle<Value> GetScriptResourceName() const;
-
-  /**
-   * Returns the resource data for the script from where the function causing
-   * the error originates.
-   */
-  Handle<Value> GetScriptData() const;
 
   /**
    * Exception stack trace. By default stack traces are not captured for
@@ -1207,6 +1223,7 @@ class V8_EXPORT StackTrace {
     kIsConstructor = 1 << 5,
     kScriptNameOrSourceURL = 1 << 6,
     kScriptId = 1 << 7,
+    kExposeFramesAcrossSecurityOrigins = 1 << 8,
     kOverview = kLineNumber | kColumnOffset | kScriptName | kFunctionName,
     kDetailed = kOverview | kIsEval | kIsConstructor | kScriptNameOrSourceURL
   };
@@ -2077,11 +2094,7 @@ typedef void (*AccessorSetterCallback)(
  * accessors have an explicit access control parameter which specifies
  * the kind of cross-context access that should be allowed.
  *
- * Additionally, for security, accessors can prohibit overwriting by
- * accessors defined in JavaScript.  For objects that have such
- * accessors either locally or in their prototype chain it is not
- * possible to overwrite the accessor by using __defineGetter__ or
- * __defineSetter__ from JavaScript code.
+ * TODO(dcarney): Remove PROHIBITS_OVERWRITING as it is now unused.
  */
 enum AccessControl {
   DEFAULT               = 0,
@@ -2096,13 +2109,11 @@ enum AccessControl {
  */
 class V8_EXPORT Object : public Value {
  public:
-  bool Set(Handle<Value> key,
-           Handle<Value> value,
-           PropertyAttribute attribs = None);
+  bool Set(Handle<Value> key, Handle<Value> value);
 
   bool Set(uint32_t index, Handle<Value> value);
 
-  // Sets a local property on this object bypassing interceptors and
+  // Sets an own property on this object bypassing interceptors and
   // overriding accessors or read-only properties.
   //
   // Note that if the object has an interceptor the property will be set
@@ -2124,6 +2135,11 @@ class V8_EXPORT Object : public Value {
    * None when the property doesn't exist.
    */
   PropertyAttribute GetPropertyAttributes(Handle<Value> key);
+
+  /**
+   * Returns Object.getOwnPropertyDescriptor as per ES5 section 15.2.3.3.
+   */
+  Local<Value> GetOwnPropertyDescriptor(Local<String> key);
 
   bool Has(Handle<Value> key);
 
@@ -2210,12 +2226,6 @@ class V8_EXPORT Object : public Value {
   Local<String> ObjectProtoToString();
 
   /**
-   * Returns the function invoked as a constructor for this object.
-   * May be the null value.
-   */
-  Local<Value> GetConstructor();
-
-  /**
    * Returns the name of the function invoked as a constructor for this object.
    */
   Local<String> GetConstructorName();
@@ -2236,9 +2246,10 @@ class V8_EXPORT Object : public Value {
   void SetInternalField(int index, Handle<Value> value);
 
   /**
-   * Gets a 2-byte-aligned native pointer from an internal field. This field
-   * must have been set by SetAlignedPointerInInternalField, everything else
-   * leads to undefined behavior.
+   * Gets a (2^kSmiTagSize)-byte-aligned native pointer from an
+   * internal field. This field must have been set by
+   * SetAlignedPointerInInternalField, everything else leads to
+   * undefined behavior.
    */
   V8_INLINE void* GetAlignedPointerFromInternalField(int index);
 
@@ -2249,8 +2260,9 @@ class V8_EXPORT Object : public Value {
   }
 
   /**
-   * Sets a 2-byte-aligned native pointer in an internal field. To retrieve such
-   * a field, GetAlignedPointerFromInternalField must be used, everything else
+   * Sets a (2^kSmiTagSize)-byte-aligned native pointer in an internal
+   * field. To retrieve such a field,
+   * GetAlignedPointerFromInternalField must be used, everything else
    * leads to undefined behavior.
    */
   void SetAlignedPointerInInternalField(int index, void* value);
@@ -2435,6 +2447,10 @@ class ReturnValue {
   // Convenience getter for Isolate
   V8_INLINE Isolate* GetIsolate();
 
+  // Pointer setter: Uncompilable to prevent inadvertent misuse.
+  template <typename S>
+  V8_INLINE void Set(S* whatever);
+
  private:
   template<class F> friend class ReturnValue;
   template<class F> friend class FunctionCallbackInfo;
@@ -2499,7 +2515,7 @@ class PropertyCallbackInfo {
  public:
   V8_INLINE Isolate* GetIsolate() const;
   V8_INLINE Local<Value> Data() const;
-  V8_INLINE Local<Value> This() const;
+  V8_INLINE Local<Object> This() const;
   V8_INLINE Local<Object> Holder() const;
   V8_INLINE ReturnValue<T> GetReturnValue() const;
   // This shouldn't be public, but the arm compiler needs it.
@@ -2635,6 +2651,7 @@ class V8_EXPORT Promise : public Object {
    */
   Local<Promise> Chain(Handle<Function> handler);
   Local<Promise> Catch(Handle<Function> handler);
+  Local<Promise> Then(Handle<Function> handler);
 
   V8_INLINE static Promise* Cast(Value* obj);
 
@@ -3871,8 +3888,8 @@ class V8_EXPORT ResourceConstraints {
                          uint64_t virtual_memory_limit,
                          uint32_t number_of_processors);
 
-  int max_new_space_size() const { return max_new_space_size_; }
-  void set_max_new_space_size(int value) { max_new_space_size_ = value; }
+  int max_semi_space_size() const { return max_semi_space_size_; }
+  void set_max_semi_space_size(int value) { max_semi_space_size_ = value; }
   int max_old_space_size() const { return max_old_space_size_; }
   void set_max_old_space_size(int value) { max_old_space_size_ = value; }
   int max_executable_size() const { return max_executable_size_; }
@@ -3885,18 +3902,18 @@ class V8_EXPORT ResourceConstraints {
   void set_max_available_threads(int value) {
     max_available_threads_ = value;
   }
-  int code_range_size() const { return code_range_size_; }
-  void set_code_range_size(int value) {
+  size_t code_range_size() const { return code_range_size_; }
+  void set_code_range_size(size_t value) {
     code_range_size_ = value;
   }
 
  private:
-  int max_new_space_size_;
+  int max_semi_space_size_;
   int max_old_space_size_;
   int max_executable_size_;
   uint32_t* stack_limit_;
   int max_available_threads_;
-  int code_range_size_;
+  size_t code_range_size_;
 };
 
 
@@ -3970,6 +3987,9 @@ typedef void (*MemoryAllocationCallback)(ObjectSpace space,
 
 // --- Leave Script Callback ---
 typedef void (*CallCompletedCallback)();
+
+// --- Microtask Callback ---
+typedef void (*MicrotaskCallback)(void* data);
 
 // --- Failed Access Check Callback ---
 typedef void (*FailedAccessCheckCallback)(Local<Object> target,
@@ -4140,6 +4160,20 @@ class V8_EXPORT Isolate {
   };
 
   /**
+   * Features reported via the SetUseCounterCallback callback. Do not chang
+   * assigned numbers of existing items; add new features to the end of this
+   * list.
+   */
+  enum UseCounterFeature {
+    kUseAsm = 0,
+    kUseCounterFeatureCount  // This enum value must be last.
+  };
+
+  typedef void (*UseCounterCallback)(Isolate* isolate,
+                                     UseCounterFeature feature);
+
+
+  /**
    * Creates a new isolate.  Does not change the currently entered
    * isolate.
    *
@@ -4217,7 +4251,8 @@ class V8_EXPORT Isolate {
    *   kept alive by JavaScript objects.
    * \returns the adjusted value.
    */
-  int64_t AdjustAmountOfExternalAllocatedMemory(int64_t change_in_bytes);
+  V8_INLINE int64_t
+      AdjustAmountOfExternalAllocatedMemory(int64_t change_in_bytes);
 
   /**
    * Returns heap profiler for this isolate. Will return NULL until the isolate
@@ -4381,6 +4416,7 @@ class V8_EXPORT Isolate {
 
   /**
    * Experimental: Runs the Microtask Work Queue until empty
+   * Any exceptions thrown by microtask callbacks are swallowed.
    */
   void RunMicrotasks();
 
@@ -4389,11 +4425,70 @@ class V8_EXPORT Isolate {
    */
   void EnqueueMicrotask(Handle<Function> microtask);
 
+  /**
+   * Experimental: Enqueues the callback to the Microtask Work Queue
+   */
+  void EnqueueMicrotask(MicrotaskCallback microtask, void* data = NULL);
+
    /**
    * Experimental: Controls whether the Microtask Work Queue is automatically
    * run when the script call depth decrements to zero.
    */
   void SetAutorunMicrotasks(bool autorun);
+
+  /**
+   * Experimental: Returns whether the Microtask Work Queue is automatically
+   * run when the script call depth decrements to zero.
+   */
+  bool WillAutorunMicrotasks() const;
+
+  /**
+   * Sets a callback for counting the number of times a feature of V8 is used.
+   */
+  void SetUseCounterCallback(UseCounterCallback callback);
+
+  /**
+   * Enables the host application to provide a mechanism for recording
+   * statistics counters.
+   */
+  void SetCounterFunction(CounterLookupCallback);
+
+  /**
+   * Enables the host application to provide a mechanism for recording
+   * histograms. The CreateHistogram function returns a
+   * histogram which will later be passed to the AddHistogramSample
+   * function.
+   */
+  void SetCreateHistogramFunction(CreateHistogramCallback);
+  void SetAddHistogramSampleFunction(AddHistogramSampleCallback);
+
+  /**
+   * Optional notification that the embedder is idle.
+   * V8 uses the notification to reduce memory footprint.
+   * This call can be used repeatedly if the embedder remains idle.
+   * Returns true if the embedder should stop calling IdleNotification
+   * until real work has been done.  This indicates that V8 has done
+   * as much cleanup as it will be able to do.
+   *
+   * The idle_time_in_ms argument specifies the time V8 has to do reduce
+   * the memory footprint. There is no guarantee that the actual work will be
+   * done within the time limit.
+   */
+  bool IdleNotification(int idle_time_in_ms);
+
+  /**
+   * Optional notification that the system is running low on memory.
+   * V8 uses these notifications to attempt to free memory.
+   */
+  void LowMemoryNotification();
+
+  /**
+   * Optional notification that a context has been disposed. V8 uses
+   * these notifications to guide the GC heuristic. Returns the number
+   * of context disposals - including this one - since the last time
+   * V8 had a chance to clean up.
+   */
+  int ContextDisposedNotification();
 
  private:
   template<class K, class V, class Traits> friend class PersistentValueMap;
@@ -4408,6 +4503,7 @@ class V8_EXPORT Isolate {
   void SetObjectGroupId(internal::Object** object, UniqueId id);
   void SetReferenceFromGroup(UniqueId id, internal::Object** object);
   void SetReference(internal::Object** parent, internal::Object** child);
+  void CollectAllGarbage(const char* gc_reason);
 };
 
 class V8_EXPORT StartupData {
@@ -4518,7 +4614,7 @@ struct JitCodeEvent {
   // Size of the instructions.
   size_t code_len;
   // Script info for CODE_ADDED event.
-  Handle<Script> script;
+  Handle<UnboundScript> script;
   // User-defined data for *_LINE_INFO_* event. It's used to hold the source
   // code line information which is returned from the
   // CODE_START_LINE_INFO_RECORDING event. And it's passed to subsequent
@@ -4647,6 +4743,24 @@ class V8_EXPORT V8 {
   static void SetDecompressedStartupData(StartupData* decompressed_data);
 
   /**
+   * Hand startup data to V8, in case the embedder has chosen to build
+   * V8 with external startup data.
+   *
+   * Note:
+   * - By default the startup data is linked into the V8 library, in which
+   *   case this function is not meaningful.
+   * - If this needs to be called, it needs to be called before V8
+   *   tries to make use of its built-ins.
+   * - To avoid unnecessary copies of data, V8 will point directly into the
+   *   given data blob, so pretty please keep it around until V8 exit.
+   * - Compression of the startup blob might be useful, but needs to
+   *   handled entirely on the embedders' side.
+   * - The call will abort if the data is invalid.
+   */
+  static void SetNativesDataBlob(StartupData* startup_blob);
+  static void SetSnapshotDataBlob(StartupData* startup_blob);
+
+  /**
    * Adds a message listener.
    *
    * The same message listener can be added more than once and in that
@@ -4686,21 +4800,6 @@ class V8_EXPORT V8 {
 
   /** Get the version string. */
   static const char* GetVersion();
-
-  /**
-   * Enables the host application to provide a mechanism for recording
-   * statistics counters.
-   */
-  static void SetCounterFunction(CounterLookupCallback);
-
-  /**
-   * Enables the host application to provide a mechanism for recording
-   * histograms. The CreateHistogram function returns a
-   * histogram which will later be passed to the AddHistogramSample
-   * function.
-   */
-  static void SetCreateHistogramFunction(CreateHistogramCallback);
-  static void SetAddHistogramSampleFunction(AddHistogramSampleCallback);
 
   /** Callback function for reporting failed access checks.*/
   static void SetFailedAccessCheckCallbackFunction(FailedAccessCheckCallback);
@@ -4755,28 +4854,6 @@ class V8_EXPORT V8 {
    * Removes callback that was installed by AddMemoryAllocationCallback.
    */
   static void RemoveMemoryAllocationCallback(MemoryAllocationCallback callback);
-
-  /**
-   * Experimental: Runs the Microtask Work Queue until empty
-   *
-   * Deprecated: Use methods on Isolate instead.
-   */
-  static void RunMicrotasks(Isolate* isolate);
-
-  /**
-   * Experimental: Enqueues the callback to the Microtask Work Queue
-   *
-   * Deprecated: Use methods on Isolate instead.
-   */
-  static void EnqueueMicrotask(Isolate* isolate, Handle<Function> microtask);
-
-   /**
-   * Experimental: Controls whether the Microtask Work Queue is automatically
-   * run when the script call depth decrements to zero.
-   *
-   * Deprecated: Use methods on Isolate instead.
-   */
-  static void SetAutorunMicrotasks(Isolate *source, bool autorun);
 
   /**
    * Initializes from snapshot if possible. Otherwise, attempts to
@@ -4913,34 +4990,6 @@ class V8_EXPORT V8 {
       Isolate* isolate, PersistentHandleVisitor* visitor);
 
   /**
-   * Optional notification that the embedder is idle.
-   * V8 uses the notification to reduce memory footprint.
-   * This call can be used repeatedly if the embedder remains idle.
-   * Returns true if the embedder should stop calling IdleNotification
-   * until real work has been done.  This indicates that V8 has done
-   * as much cleanup as it will be able to do.
-   *
-   * The hint argument specifies the amount of work to be done in the function
-   * on scale from 1 to 1000. There is no guarantee that the actual work will
-   * match the hint.
-   */
-  static bool IdleNotification(int hint = 1000);
-
-  /**
-   * Optional notification that the system is running low on memory.
-   * V8 uses these notifications to attempt to free memory.
-   */
-  static void LowMemoryNotification();
-
-  /**
-   * Optional notification that a context has been disposed. V8 uses
-   * these notifications to guide the GC heuristic. Returns the number
-   * of context disposals - including this one - since the last time
-   * V8 had a chance to clean up.
-   */
-  static int ContextDisposedNotification();
-
-  /**
    * Initialize the ICU library bundled with V8. The embedder should only
    * invoke this method when using the bundled ICU. Returns true on success.
    *
@@ -5067,7 +5116,8 @@ class V8_EXPORT TryCatch {
 
   /**
    * Clears any exceptions that may have been caught by this try/catch block.
-   * After this method has been called, HasCaught() will return false.
+   * After this method has been called, HasCaught() will return false. Cancels
+   * the scheduled exception if it is caught and ReThrow() is not called before.
    *
    * It is not necessary to clear a try/catch block before using it again; if
    * another exception is thrown the previously caught exception will just be
@@ -5093,7 +5143,25 @@ class V8_EXPORT TryCatch {
    */
   void SetCaptureMessage(bool value);
 
+  /**
+   * There are cases when the raw address of C++ TryCatch object cannot be
+   * used for comparisons with addresses into the JS stack. The cases are:
+   * 1) ARM, ARM64 and MIPS simulators which have separate JS stack.
+   * 2) Address sanitizer allocates local C++ object in the heap when
+   *    UseAfterReturn mode is enabled.
+   * This method returns address that can be used for comparisons with
+   * addresses into the JS stack. When neither simulator nor ASAN's
+   * UseAfterReturn is enabled, then the address returned will be the address
+   * of the C++ try catch handler itself.
+   */
+  static void* JSStackComparableAddress(v8::TryCatch* handler) {
+    if (handler == NULL) return NULL;
+    return handler->js_stack_comparable_address_;
+  }
+
  private:
+  void ResetInternal();
+
   // Make it hard to create heap-allocated TryCatch blocks.
   TryCatch(const TryCatch&);
   void operator=(const TryCatch&);
@@ -5101,10 +5169,11 @@ class V8_EXPORT TryCatch {
   void operator delete(void*, size_t);
 
   v8::internal::Isolate* isolate_;
-  void* next_;
+  v8::TryCatch* next_;
   void* exception_;
   void* message_obj_;
   void* message_script_;
+  void* js_stack_comparable_address_;
   int message_start_pos_;
   int message_end_pos_;
   bool is_verbose_ : 1;
@@ -5214,14 +5283,6 @@ class V8_EXPORT Context {
    */
   void Exit();
 
-  /**
-   * Returns true if the context has experienced an out of memory situation.
-   * Since V8 always treats OOM as fatal error, this can no longer return true.
-   * Therefore this is now deprecated.
-   * */
-  V8_DEPRECATED("This can no longer happen. OOM is a fatal error.",
-                bool HasOutOfMemoryException()) { return false; }
-
   /** Returns an isolate associated with a current context. */
   v8::Isolate* GetIsolate();
 
@@ -5240,17 +5301,19 @@ class V8_EXPORT Context {
   void SetEmbedderData(int index, Handle<Value> value);
 
   /**
-   * Gets a 2-byte-aligned native pointer from the embedder data with the given
-   * index, which must have bees set by a previous call to
-   * SetAlignedPointerInEmbedderData with the same index. Note that index 0
-   * currently has a special meaning for Chrome's debugger.
+   * Gets a (2^kSmiTagSize)-byte-aligned native pointer from the
+   * embedder data with the given index, which must have bees set by a
+   * previous call to SetAlignedPointerInEmbedderData with the same
+   * index. Note that index 0 currently has a special meaning for
+   * Chrome's debugger.
    */
   V8_INLINE void* GetAlignedPointerFromEmbedderData(int index);
 
   /**
-   * Sets a 2-byte-aligned native pointer in the embedder data with the given
-   * index, growing the data as needed. Note that index 0 currently has a
-   * special meaning for Chrome's debugger.
+   * Sets a (2^kSmiTagSize)-byte-aligned native pointer in the
+   * embedder data with the given index, growing the data as
+   * needed. Note that index 0 currently has a special meaning for
+   * Chrome's debugger.
    */
   void SetAlignedPointerInEmbedderData(int index, void* value);
 
@@ -5441,20 +5504,34 @@ namespace internal {
 
 const int kApiPointerSize = sizeof(void*);  // NOLINT
 const int kApiIntSize = sizeof(int);  // NOLINT
+const int kApiInt64Size = sizeof(int64_t);  // NOLINT
 
-// Tag information for HeapObject.
-const int kHeapObjectTag = 1;
-const int kHeapObjectTagSize = 2;
+// Tag information for Heap Objects.
+
+template <size_t ptr_size> struct HeapObjectTagging;
+
+// HeapObject tagging for 32-bit systems.
+template <> struct HeapObjectTagging<4> {
+  static const int kHeapObjectTagSize = 2;
+  static const int kHeapObjectTag = 1;
+};
+
+// HeapObject tagging for 64-bit systems.
+template <> struct HeapObjectTagging<8> {
+  static const int kHeapObjectTagSize = 3;
+  static const int kHeapObjectTag = 4;
+};
+
+typedef HeapObjectTagging<kApiPointerSize> PlatformHeapObjectTagging;
+const int kHeapObjectTag = PlatformHeapObjectTagging::kHeapObjectTag;
+const int kHeapObjectTagSize = PlatformHeapObjectTagging::kHeapObjectTagSize;
 const intptr_t kHeapObjectTagMask = (1 << kHeapObjectTagSize) - 1;
 
 // Tag information for Smi.
-const int kSmiTag = 0;
-const int kSmiTagSize = 1;
-const intptr_t kSmiTagMask = (1 << kSmiTagSize) - 1;
 
 template <size_t ptr_size> struct SmiTagging;
 
-template<int kSmiShiftSize>
+template<int kSmiTag, int kSmiTagSize, int kSmiShiftSize>
 V8_INLINE internal::Object* IntToSmi(int value) {
   int smi_shift_bits = kSmiTagSize + kSmiShiftSize;
   intptr_t tagged_value =
@@ -5464,15 +5541,17 @@ V8_INLINE internal::Object* IntToSmi(int value) {
 
 // Smi constants for 32-bit systems.
 template <> struct SmiTagging<4> {
-  static const int kSmiShiftSize = 0;
+  static const int kSmiTag = 0;
+  static const int kSmiTagSize = 1;
   static const int kSmiValueSize = 31;
-  V8_INLINE static int SmiToInt(internal::Object* value) {
+  static const int kSmiShiftSize = 32 - (kSmiValueSize + kSmiTagSize);
+  V8_INLINE static int SmiToInt(const internal::Object* value) {
     int shift_bits = kSmiTagSize + kSmiShiftSize;
     // Throw away top 32 bits and shift down (requires >> to be sign extending).
     return static_cast<int>(reinterpret_cast<intptr_t>(value)) >> shift_bits;
   }
   V8_INLINE static internal::Object* IntToSmi(int value) {
-    return internal::IntToSmi<kSmiShiftSize>(value);
+    return internal::IntToSmi<kSmiTag, kSmiTagSize, kSmiShiftSize>(value);
   }
   V8_INLINE static bool IsValidSmi(intptr_t value) {
     // To be representable as an tagged small integer, the two
@@ -5492,15 +5571,17 @@ template <> struct SmiTagging<4> {
 
 // Smi constants for 64-bit systems.
 template <> struct SmiTagging<8> {
-  static const int kSmiShiftSize = 31;
+  static const int kSmiTag = 0;
+  static const int kSmiTagSize = 3;
   static const int kSmiValueSize = 32;
-  V8_INLINE static int SmiToInt(internal::Object* value) {
+  static const int kSmiShiftSize = 64 - (kSmiValueSize + kSmiTagSize);
+  V8_INLINE static int SmiToInt(const internal::Object* value) {
     int shift_bits = kSmiTagSize + kSmiShiftSize;
     // Shift down and throw away top 32 bits.
     return static_cast<int>(reinterpret_cast<intptr_t>(value) >> shift_bits);
   }
   V8_INLINE static internal::Object* IntToSmi(int value) {
-    return internal::IntToSmi<kSmiShiftSize>(value);
+    return internal::IntToSmi<kSmiTag, kSmiTagSize, kSmiShiftSize>(value);
   }
   V8_INLINE static bool IsValidSmi(intptr_t value) {
     // To be representable as a long smi, the value must be a 32-bit integer.
@@ -5509,10 +5590,14 @@ template <> struct SmiTagging<8> {
 };
 
 typedef SmiTagging<kApiPointerSize> PlatformSmiTagging;
+const int kSmiTag = PlatformSmiTagging::kSmiTag;
+const int kSmiTagSize = PlatformSmiTagging::kSmiTagSize;
 const int kSmiShiftSize = PlatformSmiTagging::kSmiShiftSize;
 const int kSmiValueSize = PlatformSmiTagging::kSmiValueSize;
+const intptr_t kSmiTagMask = (1 << kSmiTagSize) - 1;
 V8_INLINE static bool SmiValuesAre31Bits() { return kSmiValueSize == 31; }
 V8_INLINE static bool SmiValuesAre32Bits() { return kSmiValueSize == 32; }
+
 
 /**
  * This class exports constants and functionality from within v8 that
@@ -5524,7 +5609,8 @@ class Internals {
   // These values match non-compiler-dependent values defined within
   // the implementation of v8.
   static const int kHeapObjectMapOffset = 0;
-  static const int kMapInstanceTypeOffset = 1 * kApiPointerSize + kApiIntSize;
+  static const int kMapInstanceTypeAndBitFieldOffset =
+      1 * kApiPointerSize + kApiIntSize;
   static const int kStringResourceOffset = 3 * kApiPointerSize;
 
   static const int kOddballKindOffset = 3 * kApiPointerSize;
@@ -5532,19 +5618,29 @@ class Internals {
   static const int kJSObjectHeaderSize = 3 * kApiPointerSize;
   static const int kFixedArrayHeaderSize = 2 * kApiPointerSize;
   static const int kContextHeaderSize = 2 * kApiPointerSize;
-  static const int kContextEmbedderDataIndex = 74;
+  static const int kContextEmbedderDataIndex = 95;
   static const int kFullStringRepresentationMask = 0x07;
   static const int kStringEncodingMask = 0x4;
   static const int kExternalTwoByteRepresentationTag = 0x02;
   static const int kExternalAsciiRepresentationTag = 0x06;
 
   static const int kIsolateEmbedderDataOffset = 0 * kApiPointerSize;
-  static const int kIsolateRootsOffset = 5 * kApiPointerSize;
+  static const int kAmountOfExternalAllocatedMemoryOffset =
+      4 * kApiPointerSize;
+  static const int kAmountOfExternalAllocatedMemoryAtLastGlobalGCOffset =
+      kAmountOfExternalAllocatedMemoryOffset + kApiInt64Size;
+  static const int kIsolateRootsOffset =
+      kAmountOfExternalAllocatedMemoryAtLastGlobalGCOffset + kApiInt64Size +
+      kApiPointerSize;
   static const int kUndefinedValueRootIndex = 5;
   static const int kNullValueRootIndex = 7;
   static const int kTrueValueRootIndex = 8;
   static const int kFalseValueRootIndex = 9;
-  static const int kEmptyStringRootIndex = 162;
+  static const int kEmptyStringRootIndex = 164;
+
+  // The external allocation limit should be below 256 MB on all architectures
+  // to avoid that resource-constrained embedders run low on memory.
+  static const int kExternalAllocationLimit = 192 * 1024 * 1024;
 
   static const int kNodeClassIdOffset = 1 * kApiPointerSize;
   static const int kNodeFlagsOffset = 1 * kApiPointerSize + 3;
@@ -5555,10 +5651,10 @@ class Internals {
   static const int kNodeIsIndependentShift = 4;
   static const int kNodeIsPartiallyDependentShift = 5;
 
-  static const int kJSObjectType = 0xbb;
+  static const int kJSObjectType = 0xbc;
   static const int kFirstNonstringType = 0x80;
   static const int kOddballType = 0x83;
-  static const int kForeignType = 0x87;
+  static const int kForeignType = 0x88;
 
   static const int kUndefinedOddballKind = 5;
   static const int kNullOddballKind = 3;
@@ -5572,12 +5668,12 @@ class Internals {
 #endif
   }
 
-  V8_INLINE static bool HasHeapObjectTag(internal::Object* value) {
+  V8_INLINE static bool HasHeapObjectTag(const internal::Object* value) {
     return ((reinterpret_cast<intptr_t>(value) & kHeapObjectTagMask) ==
             kHeapObjectTag);
   }
 
-  V8_INLINE static int SmiValue(internal::Object* value) {
+  V8_INLINE static int SmiValue(const internal::Object* value) {
     return PlatformSmiTagging::SmiToInt(value);
   }
 
@@ -5589,13 +5685,15 @@ class Internals {
     return PlatformSmiTagging::IsValidSmi(value);
   }
 
-  V8_INLINE static int GetInstanceType(internal::Object* obj) {
+  V8_INLINE static int GetInstanceType(const internal::Object* obj) {
     typedef internal::Object O;
     O* map = ReadField<O*>(obj, kHeapObjectMapOffset);
-    return ReadField<uint8_t>(map, kMapInstanceTypeOffset);
+    // Map::InstanceType is defined so that it will always be loaded into
+    // the LS 8 bits of one 16-bit word, regardless of endianess.
+    return ReadField<uint16_t>(map, kMapInstanceTypeAndBitFieldOffset) & 0xff;
   }
 
-  V8_INLINE static int GetOddballKind(internal::Object* obj) {
+  V8_INLINE static int GetOddballKind(const internal::Object* obj) {
     typedef internal::Object O;
     return SmiValue(ReadField<O*>(obj, kOddballKindOffset));
   }
@@ -5628,18 +5726,19 @@ class Internals {
     *addr = static_cast<uint8_t>((*addr & ~kNodeStateMask) | value);
   }
 
-  V8_INLINE static void SetEmbedderData(v8::Isolate *isolate,
+  V8_INLINE static void SetEmbedderData(v8::Isolate* isolate,
                                         uint32_t slot,
-                                        void *data) {
+                                        void* data) {
     uint8_t *addr = reinterpret_cast<uint8_t *>(isolate) +
                     kIsolateEmbedderDataOffset + slot * kApiPointerSize;
     *reinterpret_cast<void**>(addr) = data;
   }
 
-  V8_INLINE static void* GetEmbedderData(v8::Isolate* isolate, uint32_t slot) {
-    uint8_t* addr = reinterpret_cast<uint8_t*>(isolate) +
+  V8_INLINE static void* GetEmbedderData(const v8::Isolate* isolate,
+                                         uint32_t slot) {
+    const uint8_t* addr = reinterpret_cast<const uint8_t*>(isolate) +
         kIsolateEmbedderDataOffset + slot * kApiPointerSize;
-    return *reinterpret_cast<void**>(addr);
+    return *reinterpret_cast<void* const*>(addr);
   }
 
   V8_INLINE static internal::Object** GetRoot(v8::Isolate* isolate,
@@ -5648,16 +5747,18 @@ class Internals {
     return reinterpret_cast<internal::Object**>(addr + index * kApiPointerSize);
   }
 
-  template <typename T> V8_INLINE static T ReadField(Object* ptr, int offset) {
-    uint8_t* addr = reinterpret_cast<uint8_t*>(ptr) + offset - kHeapObjectTag;
-    return *reinterpret_cast<T*>(addr);
+  template <typename T>
+  V8_INLINE static T ReadField(const internal::Object* ptr, int offset) {
+    const uint8_t* addr =
+        reinterpret_cast<const uint8_t*>(ptr) + offset - kHeapObjectTag;
+    return *reinterpret_cast<const T*>(addr);
   }
 
   template <typename T>
-  V8_INLINE static T ReadEmbedderData(Context* context, int index) {
+  V8_INLINE static T ReadEmbedderData(const v8::Context* context, int index) {
     typedef internal::Object O;
     typedef internal::Internals I;
-    O* ctx = *reinterpret_cast<O**>(context);
+    O* ctx = *reinterpret_cast<O* const*>(context);
     int embedder_data_offset = I::kContextHeaderSize +
         (internal::kApiPointerSize * I::kContextEmbedderDataIndex);
     O* embedder_data = I::ReadField<O*>(ctx, embedder_data_offset);
@@ -5665,14 +5766,6 @@ class Internals {
         I::kFixedArrayHeaderSize + (internal::kApiPointerSize * index);
     return I::ReadField<T>(embedder_data, value_offset);
   }
-
-  V8_INLINE static bool CanCastToHeapObject(void* o) { return false; }
-  V8_INLINE static bool CanCastToHeapObject(Context* o) { return true; }
-  V8_INLINE static bool CanCastToHeapObject(String* o) { return true; }
-  V8_INLINE static bool CanCastToHeapObject(Object* o) { return true; }
-  V8_INLINE static bool CanCastToHeapObject(Message* o) { return true; }
-  V8_INLINE static bool CanCastToHeapObject(StackTrace* o) { return true; }
-  V8_INLINE static bool CanCastToHeapObject(StackFrame* o) { return true; }
 };
 
 }  // namespace internal
@@ -5980,6 +6073,13 @@ Isolate* ReturnValue<T>::GetIsolate() {
 }
 
 template<typename T>
+template<typename S>
+void ReturnValue<T>::Set(S* whatever) {
+  // Uncompilable to prevent inadvertent misuse.
+  TYPE_CHECK(S*, Primitive);
+}
+
+template<typename T>
 internal::Object* ReturnValue<T>::GetDefaultValue() {
   // Default value is always the pointer below value_ on the stack.
   return value_[-1];
@@ -6068,8 +6168,14 @@ Handle<Integer> ScriptOrigin::ResourceColumnOffset() const {
   return resource_column_offset_;
 }
 
+
 Handle<Boolean> ScriptOrigin::ResourceIsSharedCrossOrigin() const {
   return resource_is_shared_cross_origin_;
+}
+
+
+Handle<Integer> ScriptOrigin::ScriptID() const {
+  return script_id_;
 }
 
 
@@ -6164,7 +6270,7 @@ Local<String> String::Empty(Isolate* isolate) {
 String::ExternalStringResource* String::GetExternalStringResource() const {
   typedef internal::Object O;
   typedef internal::Internals I;
-  O* obj = *reinterpret_cast<O**>(const_cast<String*>(this));
+  O* obj = *reinterpret_cast<O* const*>(this);
   String::ExternalStringResource* result;
   if (I::IsExternalTwoByteString(I::GetInstanceType(obj))) {
     void* value = I::ReadField<void*>(obj, I::kStringResourceOffset);
@@ -6183,7 +6289,7 @@ String::ExternalStringResourceBase* String::GetExternalStringResourceBase(
     String::Encoding* encoding_out) const {
   typedef internal::Object O;
   typedef internal::Internals I;
-  O* obj = *reinterpret_cast<O**>(const_cast<String*>(this));
+  O* obj = *reinterpret_cast<O* const*>(this);
   int type = I::GetInstanceType(obj) & I::kFullStringRepresentationMask;
   *encoding_out = static_cast<Encoding>(type & I::kStringEncodingMask);
   ExternalStringResourceBase* resource = NULL;
@@ -6210,7 +6316,7 @@ bool Value::IsUndefined() const {
 bool Value::QuickIsUndefined() const {
   typedef internal::Object O;
   typedef internal::Internals I;
-  O* obj = *reinterpret_cast<O**>(const_cast<Value*>(this));
+  O* obj = *reinterpret_cast<O* const*>(this);
   if (!I::HasHeapObjectTag(obj)) return false;
   if (I::GetInstanceType(obj) != I::kOddballType) return false;
   return (I::GetOddballKind(obj) == I::kUndefinedOddballKind);
@@ -6228,7 +6334,7 @@ bool Value::IsNull() const {
 bool Value::QuickIsNull() const {
   typedef internal::Object O;
   typedef internal::Internals I;
-  O* obj = *reinterpret_cast<O**>(const_cast<Value*>(this));
+  O* obj = *reinterpret_cast<O* const*>(this);
   if (!I::HasHeapObjectTag(obj)) return false;
   if (I::GetInstanceType(obj) != I::kOddballType) return false;
   return (I::GetOddballKind(obj) == I::kNullOddballKind);
@@ -6246,7 +6352,7 @@ bool Value::IsString() const {
 bool Value::QuickIsString() const {
   typedef internal::Object O;
   typedef internal::Internals I;
-  O* obj = *reinterpret_cast<O**>(const_cast<Value*>(this));
+  O* obj = *reinterpret_cast<O* const*>(this);
   if (!I::HasHeapObjectTag(obj)) return false;
   return (I::GetInstanceType(obj) < I::kFirstNonstringType);
 }
@@ -6494,8 +6600,8 @@ Local<Value> PropertyCallbackInfo<T>::Data() const {
 
 
 template<typename T>
-Local<Value> PropertyCallbackInfo<T>::This() const {
-  return Local<Value>(reinterpret_cast<Value*>(&args_[kThisIndex]));
+Local<Object> PropertyCallbackInfo<T>::This() const {
+  return Local<Object>(reinterpret_cast<Object*>(&args_[kThisIndex]));
 }
 
 
@@ -6562,6 +6668,28 @@ void* Isolate::GetData(uint32_t slot) {
 uint32_t Isolate::GetNumberOfDataSlots() {
   typedef internal::Internals I;
   return I::kNumIsolateDataSlots;
+}
+
+
+int64_t Isolate::AdjustAmountOfExternalAllocatedMemory(
+    int64_t change_in_bytes) {
+  typedef internal::Internals I;
+  int64_t* amount_of_external_allocated_memory =
+      reinterpret_cast<int64_t*>(reinterpret_cast<uint8_t*>(this) +
+                                 I::kAmountOfExternalAllocatedMemoryOffset);
+  int64_t* amount_of_external_allocated_memory_at_last_global_gc =
+      reinterpret_cast<int64_t*>(
+          reinterpret_cast<uint8_t*>(this) +
+          I::kAmountOfExternalAllocatedMemoryAtLastGlobalGCOffset);
+  int64_t amount = *amount_of_external_allocated_memory + change_in_bytes;
+  if (change_in_bytes > 0 &&
+      amount - *amount_of_external_allocated_memory_at_last_global_gc >
+          I::kExternalAllocationLimit) {
+    CollectAllGarbage("external memory allocation limit reached.");
+  } else {
+    *amount_of_external_allocated_memory = amount;
+  }
+  return *amount_of_external_allocated_memory;
 }
 
 

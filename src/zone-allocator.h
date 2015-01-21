@@ -7,7 +7,7 @@
 
 #include <limits>
 
-#include "zone.h"
+#include "src/zone.h"
 
 namespace v8 {
 namespace internal {
@@ -48,6 +48,11 @@ class zone_allocator {
   void construct(pointer p, const T& val) {
     new(static_cast<void*>(p)) T(val);
   }
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
+  void construct(pointer p) {
+    new(static_cast<void*>(p)) T();
+  }
+#endif
   void destroy(pointer p) { p->~T(); }
 
   bool operator==(zone_allocator const& other) {
@@ -62,6 +67,8 @@ class zone_allocator {
   Zone* zone_;
 };
 
+typedef zone_allocator<bool> ZoneBoolAllocator;
+typedef zone_allocator<int> ZoneIntAllocator;
 } }  // namespace v8::internal
 
 #endif  // V8_ZONE_ALLOCATOR_H_

@@ -8,14 +8,14 @@
 #ifndef V8_PPC_LITHIUM_CODEGEN_PPC_H_
 #define V8_PPC_LITHIUM_CODEGEN_PPC_H_
 
-#include "ppc/lithium-ppc.h"
+#include "src/ppc/lithium-ppc.h"
 
-#include "ppc/lithium-gap-resolver-ppc.h"
-#include "deoptimizer.h"
-#include "lithium-codegen.h"
-#include "safepoint-table.h"
-#include "scopes.h"
-#include "utils.h"
+#include "src/ppc/lithium-gap-resolver-ppc.h"
+#include "src/deoptimizer.h"
+#include "src/lithium-codegen.h"
+#include "src/safepoint-table.h"
+#include "src/scopes.h"
+#include "src/utils.h"
 
 namespace v8 {
 namespace internal {
@@ -136,8 +136,7 @@ class LCodeGen: public LCodeGenBase {
                                  bool key_is_tagged,
                                  int constant_key,
                                  int element_size_shift,
-                                 int additional_index,
-                                 int additional_offset);
+                                 int base_offset);
 
   // Emit frame translation commands for an environment.
   void WriteTranslation(LEnvironment* environment, Translation* translation);
@@ -275,9 +274,6 @@ class LCodeGen: public LCodeGenBase {
   void RecordSafepointWithRegisters(LPointerMap* pointers,
                                     int arguments,
                                     Safepoint::DeoptMode mode);
-  void RecordSafepointWithRegistersAndDoubles(LPointerMap* pointers,
-                                              int arguments,
-                                              Safepoint::DeoptMode mode);
 
   void RecordAndWritePosition(int position) V8_OVERRIDE;
 
@@ -362,38 +358,19 @@ class LCodeGen: public LCodeGenBase {
 
   class PushSafepointRegistersScope V8_FINAL BASE_EMBEDDED {
    public:
-    PushSafepointRegistersScope(LCodeGen* codegen,
-                                Safepoint::Kind kind)
+    explicit PushSafepointRegistersScope(LCodeGen* codegen)
         : codegen_(codegen) {
-      ASSERT(codegen_->info()->is_calling());
-      ASSERT(codegen_->expected_safepoint_kind_ == Safepoint::kSimple);
-      codegen_->expected_safepoint_kind_ = kind;
-
-      switch (codegen_->expected_safepoint_kind_) {
-        case Safepoint::kWithRegisters:
-          codegen_->masm_->PushSafepointRegisters();
-          break;
-        case Safepoint::kWithRegistersAndDoubles:
-          codegen_->masm_->PushSafepointRegistersAndDoubles();
-          break;
-        default:
-          UNREACHABLE();
-      }
+      DCHECK(codegen_->info()->is_calling());
+      DCHECK(codegen_->expected_safepoint_kind_ == Safepoint::kSimple);
+      codegen_->expected_safepoint_kind_ = Safepoint::kWithRegisters;
+      StoreRegistersStateStub stub(codegen_->isolate());
+      codegen_->masm_->CallStub(&stub);
     }
 
     ~PushSafepointRegistersScope() {
-      Safepoint::Kind kind = codegen_->expected_safepoint_kind_;
-      ASSERT((kind & Safepoint::kWithRegisters) != 0);
-      switch (kind) {
-        case Safepoint::kWithRegisters:
-          codegen_->masm_->PopSafepointRegisters();
-          break;
-        case Safepoint::kWithRegistersAndDoubles:
-          codegen_->masm_->PopSafepointRegistersAndDoubles();
-          break;
-        default:
-          UNREACHABLE();
-      }
+      DCHECK(codegen_->expected_safepoint_kind_ == Safepoint::kWithRegisters);
+      RestoreRegistersStateStub stub(codegen_->isolate());
+      codegen_->masm_->CallStub(&stub);
       codegen_->expected_safepoint_kind_ = Safepoint::kSimple;
     }
 
