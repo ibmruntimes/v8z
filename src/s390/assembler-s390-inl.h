@@ -41,10 +41,10 @@
 #ifndef V8_S390_ASSEMBLER_S390_INL_H_
 #define V8_S390_ASSEMBLER_S390_INL_H_
 
-#include "s390/assembler-s390.h"
+#include "src/s390/assembler-s390.h"
 
-#include "cpu.h"
-#include "debug.h"
+#include "src/base/cpu.h"
+#include "src/debug.h"
 
 
 namespace v8 {
