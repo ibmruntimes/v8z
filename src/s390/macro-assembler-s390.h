@@ -8,9 +8,9 @@
 #ifndef V8_S390_MACRO_ASSEMBLER_S390_H_
 #define V8_S390_MACRO_ASSEMBLER_S390_H_
 
-#include "assembler.h"
-#include "frames.h"
-#include "v8globals.h"
+#include "src/assembler.h"
+#include "src/frames.h"
+#include "src/globals.h"
 
 namespace v8 {
 namespace internal {
