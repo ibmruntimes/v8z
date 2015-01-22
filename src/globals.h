@@ -652,6 +652,10 @@ enum CpuFeature {
     FPR_GPR_MOV,
     LWSYNC,
     ISELECT,
+    // S390
+    DISTINCT_OPS,
+    GENERAL_INSTR_EXT,
+    FLOATING_POINT_EXT,
     NUMBER_OF_CPU_FEATURES
 };
 
