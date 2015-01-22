@@ -6,18 +6,18 @@
 // found in the LICENSE file.
 
 // CPU specific code for ppc independent of OS goes here.
-#include "v8.h"
+#include "src/v8.h"
 
 #if V8_TARGET_ARCH_S390
 
-#include "cpu.h"
-#include "macro-assembler.h"
-#include "simulator.h"  // for cache flushing.
+#include "src/cpu.h"
+#include "src/macro-assembler.h"
+#include "src/simulator.h"  // for cache flushing.
 
 namespace v8 {
 namespace internal {
 
-void CPU::FlushICache(void* buffer, size_t size) {
+void CpuFeatures::FlushICache(void* buffer, size_t size) {
   // Nothing to do flushing no instructions.
   if (size == 0) {
     return;
