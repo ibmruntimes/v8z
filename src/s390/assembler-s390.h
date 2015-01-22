@@ -1834,8 +1834,6 @@ SS2_FORM(zap);
 
   void nop(int type = 0);   // 0 is the default non-marking type.
 
-  bool predictable_code_size() const { return predictable_code_size_; }
-
   // Check the code size generated from label to here.
   int SizeOfCodeGeneratedSince(Label* label) {
     return pc_offset() - label->pos();
@@ -2206,8 +2204,6 @@ SS2_FORM(zap);
   friend class BlockTrampolinePoolScope;
 
   PositionsRecorder positions_recorder_;
-
-  bool predictable_code_size_;
 
   friend class PositionsRecorder;
   friend class EnsureSpace;

@@ -188,7 +188,7 @@ class RecordWriteStub: public PlatformCodeStub {
     ASSERT(first_instr_length == 4 || first_instr_length == 6);
     ASSERT(second_instr_length == 4 || second_instr_length == 6);
 
-    bool isFirstInstrNOP= isBranchNop(first_instr, first_instr_length);
+    bool isFirstInstrNOP = isBranchNop(first_instr, first_instr_length);
     bool isSecondInstrNOP = isBranchNop(second_instr, second_instr_length);
 
     // STORE_BUFFER_ONLY has NOP on both branches
