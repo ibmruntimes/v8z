@@ -91,7 +91,7 @@ enum Condition {
 
 
 inline Condition NegateCondition(Condition cond) {
-  ASSERT(cond != al);
+  DCHECK(cond != al);
   switch (cond) {
   case eq: return ne;
   case ne: return eq;
@@ -107,8 +107,8 @@ inline Condition NegateCondition(Condition cond) {
 }
 
 
-// Corresponds to transposing the operands of a comparison.
-inline Condition ReverseCondition(Condition cond) {
+// Commute a condition such that {a cond b == b cond' a}.
+inline Condition CommuteCondition(Condition cond) {
   switch (cond) {
     case lt: return gt;
     case gt: return lt;
