@@ -16,7 +16,7 @@
 #ifndef V8_S390_SIMULATOR_S390_H_
 #define V8_S390_SIMULATOR_S390_H_
 
-#include "allocation.h"
+#include "src/allocation.h"
 
 #if !defined(USE_SIMULATOR)
 // Running without a simulator on a native ppc platform.
@@ -39,9 +39,6 @@ typedef int (*ppc_regexp_matcher)(String*, int, const byte*, const byte*,
 #define CALL_GENERATED_REGEXP_CODE(entry, p0, p1, p2, p3, p4, p5, p6, p7, p8) \
   (FUNCTION_CAST<ppc_regexp_matcher>(entry)(                              \
       p0, p1, p2, p3, p4, p5, p6, p7, NULL, p8))
-
-#define TRY_CATCH_FROM_ADDRESS(try_catch_address) \
-  reinterpret_cast<TryCatch*>(try_catch_address)
 
 // The stack limit beyond which we will throw stack overflow errors in
 // generated code. Because generated code on ppc uses the C stack, we
@@ -66,9 +63,9 @@ class SimulatorStack : public v8::internal::AllStatic {
 #else  // !defined(USE_SIMULATOR)
 // Running with a simulator.
 
-#include "constants-s390.h"
-#include "hashmap.h"
-#include "assembler.h"
+#include "src/s390/constants-s390.h"
+#include "src/hashmap.h"
+#include "src/assembler.h"
 
 namespace v8 {
 namespace internal {
@@ -153,7 +150,7 @@ class Simulator {
 
   double get_double_from_register_pair(int reg);
   void set_d_register_from_double(int dreg, const double dbl) {
-    ASSERT(dreg >= 0 && dreg < kNumFPRs);
+    DCHECK(dreg >= 0 && dreg < kNumFPRs);
     fp_registers_[dreg] = dbl;
   }
 
@@ -439,10 +436,6 @@ class Simulator {
     (intptr_t)p7,                                                       \
     (intptr_t)NULL,                                                     \
     (intptr_t)p8)
-
-#define TRY_CATCH_FROM_ADDRESS(try_catch_address)                              \
-  try_catch_address == NULL ?                                                  \
-      NULL : *(reinterpret_cast<TryCatch**>(try_catch_address))
 
 
 // The simulator has its own stack. Thus it has a different stack limit from

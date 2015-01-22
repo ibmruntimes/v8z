@@ -1,4 +1,4 @@
-// Copyright 2012 the V8 project authors. All rights reserved.
+// Copyright 2014 the V8 project authors. All rights reserved.
 //
 // Copyright IBM Corp. 2012-2014. All rights reserved.
 //
@@ -8,9 +8,9 @@
 #ifndef V8_S390_REGEXP_MACRO_ASSEMBLER_S390_H_
 #define V8_S390_REGEXP_MACRO_ASSEMBLER_S390_H_
 
-#include "s390/assembler-s390.h"
-#include "s390/assembler-s390-inl.h"
-#include "macro-assembler.h"
+#include "src/s390/assembler-s390.h"
+#include "src/s390/assembler-s390-inl.h"
+#include "src/macro-assembler.h"
 
 namespace v8 {
 namespace internal {
