@@ -630,7 +630,7 @@ void Assembler::set_target_address_at(Address pc,
     Instruction::SetInstructionBits<SixByteInstr>(
                       reinterpret_cast<byte*>(pc + instr1_length), instr_2);
     if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
-      CPUFeatures::FlushICache(p, 12);
+      CpuFeatures::FlushICache(pc, 12);
     }
     patched = true;
   }
@@ -644,7 +644,7 @@ void Assembler::set_target_address_at(Address pc,
     Instruction::SetInstructionBits<SixByteInstr>(
                                      reinterpret_cast<byte*>(pc), instr_1);
     if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
-      CPU::FlushICache(p, 6);
+      CpuFeatures::FlushICache(pc, 6);
     }
     patched = true;
   }

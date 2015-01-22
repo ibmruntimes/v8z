@@ -101,7 +101,7 @@ inline Condition NegateCondition(Condition cond) {
   case lt: return ge;
   case CC_OF: return CC_NOF;
   default:
-    ASSERT(false);
+    DCHECK(false);
   }
   return al;
 }
@@ -117,7 +117,7 @@ inline Condition CommuteCondition(Condition cond) {
     case eq: return eq;
     case ne: return ne;
     default:
-      ASSERT(false);
+      DCHECK(false);
       return cond;
   }
 }
@@ -1326,7 +1326,7 @@ class Instruction {
        return THREE_NIBBLE_OPCODE;
      }
      // Remaining ones are all TWO_BYTE_DISJOINT OPCODES.
-     ASSERT(InstructionLength(instr) == 6);
+     DCHECK(InstructionLength(instr) == 6);
      return TWO_BYTE_DISJOINT_OPCODE;
   }
 
