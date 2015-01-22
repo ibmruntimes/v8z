@@ -210,7 +210,7 @@ class RecordWriteStub: public PlatformCodeStub {
                                                 first_instr_length);
 
     DCHECK(first_instr_length == 4 || first_instr_length == 6);
-    ASSERT(second_instr_length == 4 || second_instr_length == 6);
+    DCHECK(second_instr_length == 4 || second_instr_length == 6);
 
     bool isFirstInstrNOP= isBranchNop(first_instr, first_instr_length);
     bool isSecondInstrNOP = isBranchNop(second_instr, second_instr_length);
@@ -256,7 +256,7 @@ class RecordWriteStub: public PlatformCodeStub {
         break;
     }
     DCHECK(GetMode(stub) == mode);
-    CPU::FlushICache(stub->instruction_start(),
+    CpuFeatures::FlushICache(stub->instruction_start(),
                      first_instr_length + second_instr_length);
   }
 
