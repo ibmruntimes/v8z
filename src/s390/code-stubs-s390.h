@@ -8,7 +8,7 @@
 #ifndef V8_S390_CODE_STUBS_S390_H_
 #define V8_S390_CODE_STUBS_S390_H_
 
-#include "ic-inl.h"
+#include "src/ic-inl.h"
 
 namespace v8 {
 namespace internal {
@@ -30,8 +30,8 @@ class StoreBufferOverflowStub: public PlatformCodeStub {
  private:
   SaveFPRegsMode save_doubles_;
 
-  Major MajorKey() { return StoreBufferOverflow; }
-  int MinorKey() { return (save_doubles_ == kSaveFPRegs) ? 1 : 0; }
+  Major MajorKey() const { return StoreBufferOverflow; }
+  int MinorKey() const { return (save_doubles_ == kSaveFPRegs) ? 1 : 0; }
 };
 
 
@@ -41,16 +41,12 @@ class StringHelper : public AllStatic {
   // is allowed to spend extra time setting up conditions to make copying
   // faster. Copying of overlapping regions is not supported.
   // Dest register ends at the position after the last character written.
-  static void GenerateCopyCharactersLong(MacroAssembler* masm,
-                                         Register dest,
-                                         Register src,
-                                         Register count,
-                                         Register scratch1,
-                                         Register scratch2,
-                                         Register scratch3,
-                                         Register scratch4,
-                                         Register scratch5,
-                                         int flags);
+  static void GenerateCopyCharacters(MacroAssembler* masm,
+                                     Register dest,
+                                     Register src,
+                                     Register count,
+                                     Register scratch,
+                                     String::Encoding encoding);
 
 
   // Generate string hash.
@@ -78,8 +74,8 @@ class SubStringStub: public PlatformCodeStub {
   explicit SubStringStub(Isolate* isolate) : PlatformCodeStub(isolate) {}
 
  private:
-  Major MajorKey() { return SubString; }
-  int MinorKey() { return 0; }
+  Major MajorKey() const { return SubString; }
+  int MinorKey() const { return 0; }
 
   void Generate(MacroAssembler* masm);
 };
@@ -107,8 +103,8 @@ class StringCompareStub: public PlatformCodeStub {
                                             Register scratch2);
 
  private:
-  virtual Major MajorKey() { return StringCompare; }
-  virtual int MinorKey() { return 0; }
+  virtual Major MajorKey() const { return StringCompare; }
+  virtual int MinorKey() const { return 0; }
   virtual void Generate(MacroAssembler* masm);
 
   static void GenerateAsciiCharsCompareLoop(MacroAssembler* masm,
@@ -117,6 +113,34 @@ class StringCompareStub: public PlatformCodeStub {
                                             Register length,
                                             Register scratch1,
                                             Label* chars_not_equal);
+};
+
+
+class StoreRegistersStateStub: public PlatformCodeStub {
+ public:
+  explicit StoreRegistersStateStub(Isolate* isolate)
+      : PlatformCodeStub(isolate) {}
+
+  static void GenerateAheadOfTime(Isolate* isolate);
+ private:
+  Major MajorKey() const { return StoreRegistersState; }
+  int MinorKey() const { return 0; }
+
+  void Generate(MacroAssembler* masm);
+};
+
+
+class RestoreRegistersStateStub: public PlatformCodeStub {
+ public:
+  explicit RestoreRegistersStateStub(Isolate* isolate)
+      : PlatformCodeStub(isolate) {}
+
+  static void GenerateAheadOfTime(Isolate* isolate);
+ private:
+  Major MajorKey() const { return RestoreRegistersState; }
+  int MinorKey() const { return 0; }
+
+  void Generate(MacroAssembler* masm);
 };
 
 
@@ -150,7 +174,7 @@ class RecordWriteStub: public PlatformCodeStub {
   // Patch an always taken branch into a NOP branch
   static void PatchBranchCondMask(MacroAssembler* masm, int pos, Condition c) {
     int32_t instrLen = masm->instr_length_at(pos);
-    ASSERT(instrLen == 4 || instrLen == 6);
+    DCHECK(instrLen == 4 || instrLen == 6);
 
     if (instrLen == 4) {
       // BRC - Branch Mask @ Bits 23-20
@@ -185,21 +209,23 @@ class RecordWriteStub: public PlatformCodeStub {
     uint64_t second_instr = Assembler::instr_at(stub->instruction_start() +
                                                 first_instr_length);
 
-    ASSERT(first_instr_length == 4 || first_instr_length == 6);
+    DCHECK(first_instr_length == 4 || first_instr_length == 6);
     ASSERT(second_instr_length == 4 || second_instr_length == 6);
 
     bool isFirstInstrNOP= isBranchNop(first_instr, first_instr_length);
     bool isSecondInstrNOP = isBranchNop(second_instr, second_instr_length);
 
     // STORE_BUFFER_ONLY has NOP on both branches
-    if (isSecondInstrNOP && isFirstInstrNOP) return STORE_BUFFER_ONLY;
+    if (isSecondInstrNOP && isFirstInstrNOP)
+      return STORE_BUFFER_ONLY;
     // INCREMENTAL_COMPACTION has NOP on second branch.
     else if (isFirstInstrNOP && !isSecondInstrNOP)
       return INCREMENTAL_COMPACTION;
     // INCREMENTAL has NOP on first branch.
-    else if (!isFirstInstrNOP && isSecondInstrNOP) return INCREMENTAL;
+    else if (!isFirstInstrNOP && isSecondInstrNOP)
+      return INCREMENTAL;
 
-    ASSERT(false);
+    DCHECK(false);
     return STORE_BUFFER_ONLY;
   }
 
@@ -214,22 +240,22 @@ class RecordWriteStub: public PlatformCodeStub {
 
     switch (mode) {
       case STORE_BUFFER_ONLY:
-        ASSERT(GetMode(stub) == INCREMENTAL ||
+        DCHECK(GetMode(stub) == INCREMENTAL ||
                GetMode(stub) == INCREMENTAL_COMPACTION);
 
         PatchBranchCondMask(&masm, 0, CC_NOP);
         PatchBranchCondMask(&masm, first_instr_length, CC_NOP);
         break;
       case INCREMENTAL:
-        ASSERT(GetMode(stub) == STORE_BUFFER_ONLY);
+        DCHECK(GetMode(stub) == STORE_BUFFER_ONLY);
         PatchBranchCondMask(&masm, 0, CC_ALWAYS);
         break;
       case INCREMENTAL_COMPACTION:
-        ASSERT(GetMode(stub) == STORE_BUFFER_ONLY);
+        DCHECK(GetMode(stub) == STORE_BUFFER_ONLY);
         PatchBranchCondMask(&masm, first_instr_length, CC_ALWAYS);
         break;
     }
-    ASSERT(GetMode(stub) == mode);
+    DCHECK(GetMode(stub) == mode);
     CPU::FlushICache(stub->instruction_start(),
                      first_instr_length + second_instr_length);
   }
@@ -246,12 +272,12 @@ class RecordWriteStub: public PlatformCodeStub {
         : object_(object),
           address_(address),
           scratch0_(scratch0) {
-      ASSERT(!AreAliased(scratch0, object, address, no_reg));
+      DCHECK(!AreAliased(scratch0, object, address, no_reg));
       scratch1_ = GetRegisterThatIsNotOneOf(object_, address_, scratch0_);
     }
 
     void Save(MacroAssembler* masm) {
-      ASSERT(!AreAliased(object_, address_, scratch1_, scratch0_));
+      DCHECK(!AreAliased(object_, address_, scratch1_, scratch0_));
       // We don't have to save scratch0_ because it was given to us as
       // a scratch register.
       masm->push(scratch1_);
@@ -310,9 +336,9 @@ class RecordWriteStub: public PlatformCodeStub {
       Mode mode);
   void InformIncrementalMarker(MacroAssembler* masm);
 
-  Major MajorKey() { return RecordWrite; }
+  Major MajorKey() const { return RecordWrite; }
 
-  int MinorKey() {
+  int MinorKey() const {
     return ObjectBits::encode(object_.code()) |
         ValueBits::encode(value_.code()) |
         AddressBits::encode(address_.code()) |
@@ -352,8 +378,8 @@ class DirectCEntryStub: public PlatformCodeStub {
   void GenerateCall(MacroAssembler* masm, Register target);
 
  private:
-  Major MajorKey() { return DirectCEntry; }
-  int MinorKey() { return 0; }
+  Major MajorKey() const { return DirectCEntry; }
+  int MinorKey() const { return 0; }
 
   bool NeedsImmovableCode() { return true; }
 };
@@ -398,11 +424,9 @@ class NameDictionaryLookupStub: public PlatformCodeStub {
       NameDictionary::kHeaderSize +
       NameDictionary::kElementsStartIndex * kPointerSize;
 
-  Major MajorKey() { return NameDictionaryLookup; }
+  Major MajorKey() const { return NameDictionaryLookup; }
 
-  int MinorKey() {
-    return LookupModeBits::encode(mode_);
-  }
+  int MinorKey() const { return LookupModeBits::encode(mode_); }
 
   class LookupModeBits: public BitField<LookupMode, 0, 1> {};
 
