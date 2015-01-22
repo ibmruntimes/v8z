@@ -495,26 +495,6 @@ class FloatingPointHelper : public AllStatic {
                                 const DoubleRegister dst,
                                 const Register src);
 
-  /*
-  // Converts the double in |double_value| to an integer, storing the
-  // result in |int_dst|.
-  // Warning: The value in |double_value| will be changed in the process!
-  static void ConvertDoubleToInt(MacroAssembler* masm,
-                                 DoubleRegister double_value,
-                                 Register int_dst,
-                                 Register scratch1,
-                                 DoubleRegister double_scratch);
-
-  // Converts the double in |double_value| to an unsigned integer,
-  // storing the result in |int_dst|.
-  // Warning: The value in |double_value| will be changed in the process!
-  static void ConvertDoubleToUnsignedInt(MacroAssembler* masm,
-                                         DoubleRegister double_value,
-                                         Register int_dst,
-                                         Register scratch1,
-                                         DoubleRegister double_scratch);
-  */
-
   // Load the number from object into double_dst in the double format.
   // Control will jump to not_int32 if the value cannot be exactly represented
   // by a 32-bit integer.
@@ -592,58 +572,6 @@ class FloatingPointHelper : public AllStatic {
                          Register scratch2,
                          Label* not_number);
 };
-
-
-/*
-class StringDictionaryLookupStub: public CodeStub {
- public:
-  enum LookupMode { POSITIVE_LOOKUP, NEGATIVE_LOOKUP };
-
-  explicit StringDictionaryLookupStub(LookupMode mode) : mode_(mode) { }
-
-  void Generate(MacroAssembler* masm);
-
-  static void GenerateNegativeLookup(MacroAssembler* masm,
-                                     Label* miss,
-                                     Label* done,
-                                     Register receiver,
-                                     Register properties,
-                                     Handle<Name> name,
-                                     Register scratch0);
-
-  static void GeneratePositiveLookup(MacroAssembler* masm,
-                                     Label* miss,
-                                     Label* done,
-                                     Register elements,
-                                     Register name,
-                                     Register r0,
-                                     Register r1);
-
-  virtual bool SometimesSetsUpAFrame() { return false; }
-
- private:
-  static const int kInlinedProbes = 4;
-  static const int kTotalProbes = 20;
-
-  static const int kCapacityOffset =
-      NameDictionary::kHeaderSize +
-      NameDictionary::kCapacityIndex * kPointerSize;
-
-  static const int kElementsStartOffset =
-      NameDictionary::kHeaderSize +
-      NameDictionary::kElementsStartIndex * kPointerSize;
-
-  Major MajorKey() { return NameDictionaryLookup; }
-
-  int MinorKey() {
-    return LookupModeBits::encode(mode_);
-  }
-
-  class LookupModeBits: public BitField<LookupMode, 0, 1> {};
-
-  LookupMode mode_;
-};
-*/
 
 } }  // namespace v8::internal
 
