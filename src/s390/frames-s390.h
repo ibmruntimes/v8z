@@ -49,29 +49,6 @@ const RegList kCalleeSaved =
   1 << 11 |  // r11 (fp in Javascript)
   1 << 13;   // r13 (cp in Javascript)
 
-/*
-  Legacy PPC Linkage left here for reference.
-  1 <<  14 |  // r14 
-  1 <<  15 |  // r15 
-  1 <<  16 |  // r16 
-  1 <<  17 |  // r17 
-  1 <<  18 |  // r18 
-  1 <<  19 |  // r19 
-  1 <<  20 |  // r20 
-  1 <<  21 |  // r21
-  1 <<  22 |  // r22
-  1 <<  23 |  // r23
-  1 <<  24 |  // r24
-  1 <<  25 |  // r25
-  1 <<  26 |  // r26
-  1 <<  27 |  // r27
-  1 <<  28 |  // r28
-  1 <<  29 |  // r29
-  1 <<  30 |  // r20
-  1 <<  31;   // r31 
-*/
-
-
 const int kNumCalleeSaved = 7;
 
 // Number of registers for which space is reserved in safepoints. Must be a
