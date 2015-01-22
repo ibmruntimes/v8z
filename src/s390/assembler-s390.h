@@ -66,7 +66,7 @@
 
 #define ABI_RETURNS_OBJECT_PAIRS_IN_REGS \
   (!V8_HOST_ARCH_S390 || (__BYTE_ORDER == __LITTLE_ENDIAN))
-
+#define INSTR_AND_DATA_CACHE_COHERENCY LWSYNC
 namespace v8 {
 namespace internal {
 
@@ -94,10 +94,7 @@ namespace internal {
 // Core register
 struct Register {
   static const int kNumRegisters = 16;
-  static const int kNumAllocatableRegisters = 8;  // r2-r9
-  static const int kMaxNumAllocatableRegisters = 9;  // r3-r10 and cp
   static const int kSizeInBytes = kPointerSize;
-  static const int kCpRegister = 13;  // cp is r13
 
 #if V8_TARGET_LITTLE_ENDIAN
   static const int kMantissaOffset = 0;
@@ -107,36 +104,40 @@ struct Register {
   static const int kExponentOffset = 0;
 #endif
 
-  inline static int NumAllocatableRegisters();
-
+  static const int kAllocatableRangeBegin  = 2;
+  static const int kAllocatableRangeEnd    = 9;
+  static const int kAllocatableContext        = 13;  // cp
+  static const int kNumAllocatable =
+      kAllocatableRangeEnd - kAllocatableRangeBegin + 1;
+  static const int kMaxNumAllocatableRegisters =
+      kNumAllocatable + 1;  // cp
+  static int NumAllocatableRegisters() { return kMaxNumAllocatableRegisters; }
 
   static int ToAllocationIndex(Register reg) {
-    int index = reg.is(from_code(kCpRegister)) ?
-      kMaxNumAllocatableRegisters -1 :  // Return last index for 'cp'
-      reg.code() - 2;  // r0-r1 are skipped
-    ASSERT(index < kMaxNumAllocatableRegisters);
+    int index;
+    int code = reg.code();
+    if (code == kAllocatableContext) {
+      // Context is the last index
+      index = NumAllocatableRegisters() - 1;
+    } else {
+      // r0-r1 are skipped
+      index = code - kAllocatableRangeBegin;  
+    }
+    DCHECK(index >= 0 && index < kMaxNumAllocatableRegisters);
     return index;
   }
 
   static Register FromAllocationIndex(int index) {
-    ASSERT(index >= 0 && index < kMaxNumAllocatableRegisters);
+    DCHECK(index >= 0 && index < kMaxNumAllocatableRegisters);
     return index == kMaxNumAllocatableRegisters - 1 ?
-      from_code(kCpRegister) :  // Last index is always the 'cp' register.
-      from_code(index + 2);  // r0-r1 are skipped
+      from_code(kAllocatableContext) :  // Last index is always the 'cp' register.
+      from_code(index + kAllocatableRangeBegin);  // r0-r1 are skipped
   }
 
   static const char* AllocationIndexToString(int index) {
-    ASSERT(index >= 0 && index < kMaxNumAllocatableRegisters);
+    DCHECK(index >= 0 && index < kMaxNumAllocatableRegisters);
     const char* const names[] = {
-        "r2",
-        "r3",
-        "r4",
-        "r5",
-        "r6",
-        "r7",
-        "r8",
-        "r9",
-        "cp",
+        "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9","cp",
     };
     return names[index];
   }
@@ -150,18 +151,18 @@ struct Register {
 
   bool is(Register reg) const { return code_ == reg.code_; }
   int code() const {
-    ASSERT(is_valid());
+    DCHECK(is_valid());
     return code_;
   }
 
   int bit() const {
-    ASSERT(is_valid());
+    DCHECK(is_valid());
     return 1 << code_;
   }
 
   void set_code(int code) {
     code_ = code;
-    ASSERT(is_valid());
+    DCHECK(is_valid());
   }
 
   // Unfortunately we can't make this private in a struct.
@@ -173,22 +174,22 @@ typedef struct Register Register;
 
 // These constants are used in several locations, including static initializers
 const int kRegister_no_reg_Code = -1;
-const int kRegister_r0_Code = 0;
-const int kRegister_r1_Code = 1;
-const int kRegister_r2_Code = 2;
-const int kRegister_r3_Code = 3;
-const int kRegister_r4_Code = 4;
-const int kRegister_r5_Code = 5;
-const int kRegister_r6_Code = 6;
-const int kRegister_r7_Code = 7;
-const int kRegister_r8_Code = 8;
-const int kRegister_r9_Code = 9;
-const int kRegister_r10_Code = 10;
-const int kRegister_fp_Code = 11;
-const int kRegister_r12_Code = 12;
-const int kRegister_r13_Code = 13;
-const int kRegister_r14_Code = 14;
-const int kRegister_sp_Code = 15;
+const int kRegister_r0_Code  =  0;  // general scratch
+const int kRegister_r1_Code  =  1;
+const int kRegister_r2_Code  =  2;
+const int kRegister_r3_Code  =  3;
+const int kRegister_r4_Code  =  4;
+const int kRegister_r5_Code  =  5;
+const int kRegister_r6_Code  =  6;
+const int kRegister_r7_Code  =  7;
+const int kRegister_r8_Code  =  8;
+const int kRegister_r9_Code  =  9;
+const int kRegister_r10_Code  =  10;  // roots array pointer
+const int kRegister_fp_Code  =  11;  // frame pointer
+const int kRegister_r12_Code  =  12;  // ip (general scratch)
+const int kRegister_r13_Code  =  13;
+const int kRegister_r14_Code  =  14;
+const int kRegister_sp_Code  =  15;  // stack pointer
 
 const Register no_reg = { kRegister_no_reg_Code };
 
@@ -219,68 +220,52 @@ const Register sp   = { kRegister_sp_Code };
 
 // Double word FP register.
 struct DoubleRegister {
-  static const int kMaxNumRegisters = 16;
   static const int kNumRegisters = 16;
+  static const int kMaxNumRegisters = kNumRegisters;
 #ifdef V8_TARGET_ARCH_S390X
   static const int kNumVolatileRegisters = 8;     // d0-d7
 #else
   static const int kNumVolatileRegisters = 14;     // d0-d15 except d4 and d6
 #endif
   // TODO(JOHN): may not be true
-  static const int kMaxNumAllocatableRegisters = 12;  // d1-d12
-  static const int kNumAllocatableRegisters = 12;  // d1-d12
-
-  inline static int NumRegisters();
-  inline static int NumAllocatableRegisters();
-  inline static int ToAllocationIndex(DoubleRegister reg);
+  static const int kAllocatableRangeBegin  = 1;
+  static const int kAllocatableRangeEnd    = 12;
+  static const int kNumAllocatable =
+      kAllocatableRangeEnd - kAllocatableRangeBegin + 1;
+  static const int kMaxNumAllocatableRegisters =
+      kNumAllocatable;
+  static int NumAllocatableRegisters() { return kMaxNumAllocatableRegisters; }
+  static int ToAllocationIndex(DoubleRegister reg) {
+    int code = reg.code();
+    int index = code - kAllocatableRangeBegin;
+    DCHECK(index < kMaxNumAllocatableRegisters);
+    return index;
+  }
 
   static DoubleRegister FromAllocationIndex(int index) {
-    ASSERT(index >= 0 && index < kNumAllocatableRegisters);
-    return from_code(index + 1);  // d0 is skipped
+    DCHECK(index >= 0 && index < kMaxNumAllocatableRegisters);
+    return (from_code(index + kAllocatableRangeBegin)); // d0 is skipped
   }
 
-  static const char* AllocationIndexToString(int index) {
-    ASSERT(index >= 0 && index < kNumRegisters);
-    const char* const names[] = {
-      "f0",
-      "f1",
-      "f2",
-      "f3",
-      "f4",
-      "f5",
-      "f6",
-      "f7",
-      "f8",
-      "f9",
-      "f10",
-      "f11",
-      "f12",
-      "f13",
-      "f14",
-      "f15"
-    };
-    return names[index];
-  }
-
+  static const char* AllocationIndexToString(int index);
   static DoubleRegister from_code(int code) {
     DoubleRegister r = { code };
     return r;
   }
 
-  // Supporting d0 to d15, can be later extended to d31.
   bool is_valid() const { return 0 <= code_ && code_ < kNumRegisters; }
   bool is(DoubleRegister reg) const { return code_ == reg.code_; }
 
   int code() const {
-    ASSERT(is_valid());
+    DCHECK(is_valid());
     return code_;
   }
   int bit() const {
-    ASSERT(is_valid());
+    DCHECK(is_valid());
     return 1 << code_;
   }
   void split_code(int* vm, int* m) const {
-    ASSERT(is_valid());
+    DCHECK(is_valid());
     *m = (code_ & 0x10) >> 4;
     *vm = code_ & 0x0F;
   }
@@ -322,11 +307,11 @@ struct CRegister {
   bool is_valid() const { return 0 <= code_ && code_ < 16; }
   bool is(CRegister creg) const { return code_ == creg.code_; }
   int code() const {
-    ASSERT(is_valid());
+    DCHECK(is_valid());
     return code_;
   }
   int bit() const {
-    ASSERT(is_valid());
+    DCHECK(is_valid());
     return 1 << code_;
   }
 
@@ -371,7 +356,7 @@ struct Mask {
   uint8_t mask;
   uint8_t value() {return mask;}
   static Mask from_value(uint8_t input) {
-    ASSERT(input <= 0x0F);
+    DCHECK(input <= 0x0F);
     Mask m = {input};
     return m;
   }
@@ -395,8 +380,17 @@ class Operand BASE_EMBEDDED {
   // Return true if this is a register operand.
   INLINE(bool is_reg() const);
 
+  // For mov.  Return the number of actual instructions required to
+  // load the operand into a register.  This can be anywhere from
+  // one (constant pool small section) to five instructions (full
+  // 64-bit sequence).
+  //
+  // The value returned is only valid as long as no entries are added to the
+  // constant pool between this call and the actual instruction being emitted.
+  bool must_output_reloc_info(const Assembler* assembler) const;
+
   inline intptr_t immediate() const {
-    ASSERT(!rm_.is_valid());
+    DCHECK(!rm_.is_valid());
     return imm_;
   }
 
@@ -434,7 +428,7 @@ class MemOperand BASE_EMBEDDED {
 
   // Base register
   Register rb() const {
-    ASSERT(!baseRegister.is(no_reg));
+    DCHECK(!baseRegister.is(no_reg));
     return baseRegister;
   }
 
@@ -442,7 +436,7 @@ class MemOperand BASE_EMBEDDED {
 
   // Index Register
   Register rx() const {
-    ASSERT(!indexRegister.is(no_reg));
+    DCHECK(!indexRegister.is(no_reg));
     return indexRegister;
   }
   Register getIndexRegister() const { return rx(); }
@@ -455,104 +449,75 @@ class MemOperand BASE_EMBEDDED {
   friend class Assembler;
 };
 
-// CpuFeatures keeps track of which features are supported by the target CPU.
-// Supported features must be enabled by a Scope before use.
-class CpuFeatures : public AllStatic {
- public:
-  // Detect features of the target CPU. Set safe defaults if the serializer
-  // is enabled (snapshots must be portable).
-  static void Probe(bool serializer_enabled);
-
-  // Display target use when compiling.
-  static void PrintTarget();
-
-  // Display features.
-  static void PrintFeatures();
-
-  // Check whether a feature is supported by the target CPU.
-  static bool IsSupported(CpuFeature f) {
-    ASSERT(initialized_);
-    return (supported_ & (1u << f)) != 0;
-  }
-
-  static bool IsFoundByRuntimeProbingOnly(CpuFeature f) {
-    ASSERT(initialized_);
-    return Check(f, found_by_runtime_probing_only_);
-  }
-
-  static bool IsSafeForSnapshot(Isolate* isolate, CpuFeature f) {
-    return Check(f, cross_compile_) ||
-           (IsSupported(f) &&
-            (!Serializer::enabled(isolate) || !IsFoundByRuntimeProbingOnly(f)));
-  }
-
-  static unsigned cache_line_size_log2() { return cache_line_size_log2_; }
-  static unsigned cache_line_size() { return (1 << cache_line_size_log2_); }
-
-  static bool VerifyCrossCompiling() {
-    return cross_compile_ == 0;
-  }
-
-  static bool VerifyCrossCompiling(CpuFeature f) {
-    unsigned mask = flag2set(f);
-    return cross_compile_ == 0 ||
-           (cross_compile_ & mask) == mask;
-  }
-
-  static bool SupportsCrankshaft() { return true; }
-
- private:
-  static bool Check(CpuFeature f, unsigned set) {
-    return (set & flag2set(f)) != 0;
-  }
-
-  static unsigned flag2set(CpuFeature f) {
-    return 1u << f;
-  }
-
-#ifdef DEBUG
-  static bool initialized_;
-#endif
-  static unsigned supported_;
-  static unsigned found_by_runtime_probing_only_;
-  static unsigned cache_line_size_log2_;
-
-  static unsigned cross_compile_;
-
-  friend class ExternalReference;
-  friend class PlatformFeatureScope;
-  DISALLOW_COPY_AND_ASSIGN(CpuFeatures);
-};
-
-
 #if V8_OOL_CONSTANT_POOL
 // Class used to build a constant pool.
 class ConstantPoolBuilder BASE_EMBEDDED {
  public:
-  explicit ConstantPoolBuilder();
-  void AddEntry(Assembler* assm, const RelocInfo& rinfo);
+  ConstantPoolBuilder();
+  ConstantPoolArray::LayoutSection AddEntry(Assembler* assm,
+                                            const RelocInfo& rinfo);
   void Relocate(intptr_t pc_delta);
   bool IsEmpty();
   Handle<ConstantPoolArray> New(Isolate* isolate);
   void Populate(Assembler* assm, ConstantPoolArray* constant_pool);
 
-  inline int count_of_64bit() const { return count_of_64bit_; }
-  inline int count_of_code_ptr() const { return count_of_code_ptr_; }
-  inline int count_of_heap_ptr() const { return count_of_heap_ptr_; }
-  inline int count_of_32bit() const { return count_of_32bit_; }
+  inline ConstantPoolArray::LayoutSection current_section() const {
+    return current_section_;
+  }
+
+  // Rather than increasing the capacity of the ConstantPoolArray's
+  // small section to match the longer (16-bit) reach of PPC's load
+  // instruction (at the expense of a larger header to describe the
+  // layout), the PPC implementation utilizes the extended section to
+  // satisfy that reach.  I.e. all entries (regardless of their
+  // section) are reachable with a single load instruction.
+  //
+  // This implementation does not support an unlimited constant pool
+  // size (which would require a multi-instruction sequence).  [See
+  // ARM commit e27ab337 for a reference on the changes required to
+  // support the longer instruction sequence.]  Note, however, that
+  // going down that path will necessarily generate that longer
+  // sequence for all extended section accesses since the placement of
+  // a given entry within the section is not known at the time of
+  // code generation.
+  //
+  // TODO(mbrandy): Determine whether there is a benefit to supporting
+  // the longer sequence given that nops could be used for those
+  // entries which are reachable with a single instruction.
+  inline bool is_full() const {
+    return !is_int16(size_);
+  }
+
+  inline ConstantPoolArray::NumberOfEntries* number_of_entries(
+      ConstantPoolArray::LayoutSection section) {
+    return &number_of_entries_[section];
+  }
+
+  inline ConstantPoolArray::NumberOfEntries* small_entries() {
+    return number_of_entries(ConstantPoolArray::SMALL_SECTION);
+  }
+
+  inline ConstantPoolArray::NumberOfEntries* extended_entries() {
+    return number_of_entries(ConstantPoolArray::EXTENDED_SECTION);
+  }
 
  private:
-  bool Is64BitEntry(RelocInfo::Mode rmode);
-  bool Is32BitEntry(RelocInfo::Mode rmode);
-  bool IsCodePtrEntry(RelocInfo::Mode rmode);
-  bool IsHeapPtrEntry(RelocInfo::Mode rmode);
+  struct ConstantPoolEntry {
+    ConstantPoolEntry(RelocInfo rinfo, ConstantPoolArray::LayoutSection section,
+                      int merged_index)
+        : rinfo_(rinfo), section_(section), merged_index_(merged_index) {}
 
-  std::vector<RelocInfo> entries_;
-  std::vector<int> merged_indexes_;
-  int count_of_64bit_;
-  int count_of_code_ptr_;
-  int count_of_heap_ptr_;
-  int count_of_32bit_;
+    RelocInfo rinfo_;
+    ConstantPoolArray::LayoutSection section_;
+    int merged_index_;
+  };
+
+  ConstantPoolArray::Type GetConstantPoolType(RelocInfo::Mode rmode);
+
+  uint32_t size_;
+  std::vector<ConstantPoolEntry> entries_;
+  ConstantPoolArray::LayoutSection current_section_;
+  ConstantPoolArray::NumberOfEntries number_of_entries_[2];
 };
 #endif
 
@@ -627,16 +592,20 @@ class Assembler : public AssemblerBase {
                                           ConstantPoolArray* constant_pool));
   INLINE(static void set_target_address_at(Address pc,
                                            ConstantPoolArray* constant_pool,
-                                           Address target));
+                                           Address target,
+                                           ICacheFlushMode icache_flush_mode =
+                                               FLUSH_ICACHE_IF_NEEDED));
   INLINE(static Address target_address_at(Address pc, Code* code)) {
     ConstantPoolArray* constant_pool = code ? code->constant_pool() : NULL;
     return target_address_at(pc, constant_pool);
   }
   INLINE(static void set_target_address_at(Address pc,
                                            Code* code,
-                                           Address target)) {
+                                           Address target,
+                                           ICacheFlushMode icache_flush_mode =
+                                               FLUSH_ICACHE_IF_NEEDED)) {
     ConstantPoolArray* constant_pool = code ? code->constant_pool() : NULL;
-    set_target_address_at(pc, constant_pool, target);
+    set_target_address_at(pc, constant_pool, target, icache_flush_mode);
   }
 
   // Return the code target address at a call site from the return address
@@ -646,6 +615,9 @@ class Assembler : public AssemblerBase {
   // Given the address of the beginning of a call, return the address
   // in the instruction stream that the call will return to.
   INLINE(static Address return_address_from_call_start(Address pc));
+
+  // Return the code target address of the patch debug break slot
+  INLINE(static Address break_address_from_return_address(Address pc));
 
   // This sets the branch destination.
   // This is for calls and branches within generated code.
@@ -785,14 +757,14 @@ class Assembler : public AssemblerBase {
       printf("DebugBreak is inserted to %p\n", pc_);
     }
 #if V8_HOST_ARCH_64_BIT
-    int64_t value = reinterpret_cast<uint64_t>(&OS::DebugBreak);
+    int64_t value = reinterpret_cast<uint64_t>(&v8::base::OS::DebugBreak);
     int32_t hi_32 = static_cast<int64_t>(value) >> 32;
     int32_t lo_32 = static_cast<int32_t>(value);
 
     iihf(r1, Operand(hi_32));
     iilf(r1, Operand(lo_32));
 #else
-    iilf(r1, Operand(reinterpret_cast<uint32_t>(&OS::DebugBreak)));
+    iilf(r1, Operand(reinterpret_cast<uint32_t>(&v8::base::OS::DebugBreak)));
 #endif
     basr(r14, r1);
   }
@@ -1822,6 +1794,7 @@ SS2_FORM(zap);
   // states of the generated code.
   enum NopMarkerTypes {
     NON_MARKING_NOP = 0,
+    GROUP_ENDING_NOP,
     DEBUG_BREAK_NOP,
     // IC markers.
     PROPERTY_ACCESS_INLINED,
@@ -1833,8 +1806,6 @@ SS2_FORM(zap);
   };
 
   void nop(int type = 0);   // 0 is the default non-marking type.
-
-  bool predictable_code_size() const { return predictable_code_size_; }
 
   // Check the code size generated from label to here.
   int SizeOfCodeGeneratedSince(Label* label) {
@@ -1868,12 +1839,12 @@ SS2_FORM(zap);
   // Record the AST id of the CallIC being compiled, so that it can be placed
   // in the relocation information.
   void SetRecordedAstId(TypeFeedbackId ast_id) {
-// PPC - this shouldn't be failing roohack   ASSERT(recorded_ast_id_.IsNone());
+// PPC - this shouldn't be failing roohack   DCHECK(recorded_ast_id_.IsNone());
     recorded_ast_id_ = ast_id;
   }
 
   TypeFeedbackId RecordedAstId() {
-    // roohack - another issue??? ASSERT(!recorded_ast_id_.IsNone());
+    // roohack - another issue??? DCHECK(!recorded_ast_id_.IsNone());
     return recorded_ast_id_;
   }
 
@@ -1931,6 +1902,7 @@ SS2_FORM(zap);
   // instructions.
   void CheckTrampolinePool();
 
+  int instructions_required_for_mov(const Operand& x) const;
   // Allocate a constant pool of the correct size for the generated code.
   Handle<ConstantPoolArray> NewConstantPool(Isolate* isolate);
 
@@ -2169,7 +2141,7 @@ SS2_FORM(zap);
         // We have run out of space on trampolines.
         // Make sure we fail in debug mode, so we become aware of each case
         // when this happens.
-        ASSERT(0);
+        DCHECK(0);
         // Internal exception will be caught.
       } else {
         trampoline_slot = next_slot_;
@@ -2206,9 +2178,6 @@ SS2_FORM(zap);
   friend class BlockTrampolinePoolScope;
 
   PositionsRecorder positions_recorder_;
-
-  bool predictable_code_size_;
-
   friend class PositionsRecorder;
   friend class EnsureSpace;
 };
