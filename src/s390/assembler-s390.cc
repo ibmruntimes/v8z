@@ -38,31 +38,18 @@
 // Copyright IBM Corp. 2012-2014. All rights reserved.
 //
 
-#include "v8.h"
+#include "src/v8.h"
 
 #if V8_TARGET_ARCH_S390
 
-#include "s390/assembler-s390-inl.h"
-#include "macro-assembler.h"
-#include "serialize.h"
+#include "src/base/cpu.h"
+#include "src/s390/assembler-s390-inl.h"
+
+#include "src/macro-assembler.h"
+#include "src/serialize.h"
 
 namespace v8 {
 namespace internal {
-
-#ifdef DEBUG
-bool CpuFeatures::initialized_ = false;
-#endif
-unsigned CpuFeatures::supported_ = 0;
-unsigned CpuFeatures::found_by_runtime_probing_only_ = 0;
-unsigned CpuFeatures::cross_compile_ = 0;
-unsigned CpuFeatures::cache_line_size_log2_ = 7;  // 128
-
-
-ExternalReference ExternalReference::cpu_features() {
-  ASSERT(CpuFeatures::initialized_);
-  return ExternalReference(&CpuFeatures::supported_);
-}
-
 
 // Get the CPU features enabled by the build.
 static unsigned CpuFeaturesImpliedByCompiler() {
@@ -128,10 +115,15 @@ static bool supportsSTFLE() {
 }
 
 
-void CpuFeatures::Probe(bool serializer_enabled) {
+void CpuFeatures::ProbImpl(bool cross_compile) {
+  cache_line_size_ = 128;
+
+  // Only use statically determined features for cross compile (snapshot).
+  if (cross_compile) return;
+  
   unsigned standard_features = static_cast<unsigned>(
       OS::CpuFeaturesImpliedByPlatform()) | CpuFeaturesImpliedByCompiler();
-  ASSERT(supported_ == 0 || supported_ == standard_features);
+  DCHECK(supported_ == 0 || supported_ == standard_features);
 #ifdef DEBUG
   initialized_ = true;
 #endif
@@ -140,12 +132,6 @@ void CpuFeatures::Probe(bool serializer_enabled) {
   // minimal set of features which is also alowed for generated code in the
   // snapshot.
   supported_ |= standard_features;
-
-  if (serializer_enabled) {
-    // No probing for features if we might serialize (generate snapshot).
-    return;
-  }
-
   static bool performSTFLE = supportsSTFLE();
 
   // Need to define host, as we are generating inlined S390 assembly to test
@@ -164,7 +150,7 @@ void CpuFeatures::Probe(bool serializer_enabled) {
      // LHI sets up GPR0
      // STFLE is specified as .insn, as opcode is not recognized.
      // We register the instructions kill r0 (LHI) and the CC (STFLE).
-     asm volatile("lhi   0,0\n"
+    asm volatile("lhi   0,0\n"
                   ".insn s,0xb2b00000,%0\n"
                   : "=Q" (facilities) : : "cc", "r0");
 
@@ -213,7 +199,7 @@ void CpuFeatures::PrintFeatures() {
 
 
 Register ToRegister(int num) {
-  ASSERT(num >= 0 && num < kNumRegisters);
+  DCHECK(num >= 0 && num < kNumRegisters);
   const Register kRegisters[] = {
     r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, fp, ip, r13, r14, sp
   };
@@ -257,7 +243,7 @@ void RelocInfo::PatchCode(byte* instructions, int num_bytes) {
   }
 
   // Indicate that code has changed.
-  CPU::FlushICache(pc_, num_bytes);
+  CpuFeatures::FlushICache(pc_, num_bytes);
 }
 
 
@@ -279,7 +265,7 @@ Operand::Operand(Handle<Object> handle) {
   // Verify all Objects referred by code are NOT in new space.
   Object* obj = *handle;
   if (obj->IsHeapObject()) {
-    ASSERT(!HeapObject::cast(obj)->GetHeap()->InNewSpace(obj));
+    DCHECK(!HeapObject::cast(obj)->GetHeap()->InNewSpace(obj));
     imm_ = reinterpret_cast<intptr_t>(handle.location());
     rmode_ = RelocInfo::EMBEDDED_OBJECT;
   } else {
@@ -347,7 +333,7 @@ void Assembler::GetCode(CodeDesc* desc) {
 
 
 void Assembler::Align(int m) {
-  ASSERT(m >= 4 && IsPowerOf2(m));
+  DCHECK(m >= 4 && IsPowerOf2(m));
   while ((pc_offset() & (m - 1)) != 0) {
     nop();
   }
@@ -402,7 +388,7 @@ bool Assembler::Is32BitLoadIntoIP(SixByteInstr instr) {
 
 bool Assembler::IsCmpRegister(Instr instr) {
   // @TODO Re-enable this properly
-  ASSERT(false);
+  DCHECK(false);
   return Instruction::S390OpcodeValue(reinterpret_cast<byte*>(&instr)) == CR;
 }
 
@@ -442,7 +428,7 @@ int Assembler::target_at(int pos)  {
   }
 
   // Unknown condition
-  ASSERT(false);
+  DCHECK(false);
   return -1;
 }
 
@@ -454,7 +440,7 @@ void Assembler::target_at_put(int pos, int target_pos) {
   if (BRC == opcode || BRCT == opcode || BRCTG == opcode) {
     int16_t imm16 = target_pos - pos;
     instr &= (~0xffff);
-    ASSERT(is_int16(imm16));
+    DCHECK(is_int16(imm16));
     instr_at_put<FourByteInstr>(pos, instr | (imm16 >> 1));
     return;
   } else if (BRCL == opcode || LARL == opcode || BRASL == opcode) {
@@ -464,7 +450,7 @@ void Assembler::target_at_put(int pos, int target_pos) {
     instr_at_put<SixByteInstr>(pos, instr | (imm32 >> 1));
     return;
   } else if (LLILF == opcode) {
-    ASSERT(target_pos == kEndOfChain || target_pos >= 0);
+    DCHECK(target_pos == kEndOfChain || target_pos >= 0);
     // Emitted label constant, not part of a branch.
     // Make label relative to Code* of generated Code object.
     int32_t imm32 = target_pos + (Code::kHeaderSize - kHeapObjectTag);
@@ -472,7 +458,7 @@ void Assembler::target_at_put(int pos, int target_pos) {
     instr_at_put<SixByteInstr>(pos, instr | imm32);
     return;
   }
-  ASSERT(false);
+  DCHECK(false);
 }
 
 
@@ -490,13 +476,13 @@ int Assembler::max_reach_from(int pos) {
                 // llilf: Emitted label constant, not part of
                 //        a branch (regexp PushBacktrack).
   }
-  ASSERT(false);
+  DCHECK(false);
   return 16;
 }
 
 
 void Assembler::bind_to(Label* L, int pos) {
-  ASSERT(0 <= pos && pos <= pc_offset());  // must have a valid binding position
+  DCHECK(0 <= pos && pos <= pc_offset());  // must have a valid binding position
   // int32_t trampoline_pos = kInvalidSlotPos;
   if (L->is_linked() && !trampoline_emitted_) {
     unbound_labels_count_--;
@@ -518,7 +504,7 @@ void Assembler::bind_to(Label* L, int pos) {
       // }
       // target_at_put(fixup_pos, trampoline_pos);
     // } else {
-      ASSERT(is_intn(offset, maxReach));
+      DCHECK(is_intn(offset, maxReach));
       target_at_put(fixup_pos, pos);
     // }
   }
@@ -532,25 +518,25 @@ void Assembler::bind_to(Label* L, int pos) {
 
 
 void Assembler::bind(Label* L) {
-  ASSERT(!L->is_bound());  // label can only be bound once
+  DCHECK(!L->is_bound());  // label can only be bound once
   bind_to(L, pc_offset());
 }
 
 
 void Assembler::next(Label* L) {
-  ASSERT(L->is_linked());
+  DCHECK(L->is_linked());
   int link = target_at(L->pos());
   if (link == kEndOfChain) {
     L->Unuse();
   } else {
-    ASSERT(link >= 0);
+    DCHECK(link >= 0);
     L->link_to(link);
   }
 }
 
 
 bool Assembler::is_near(Label* L, Condition cond) {
-  ASSERT(L->is_bound());
+  DCHECK(L->is_bound());
   if (L->is_bound() == false)
     return false;
 
@@ -624,7 +610,7 @@ void Assembler::load_label_offset(Register r1, Label* L) {
     L->link_to(pc_offset());
 
     constant = target_pos - pc_offset();
-    // ASSERT(is_int31(constant));
+    // DCHECK(is_int31(constant));
     // instr_at_put(at_offset, constant);
   }
   llilf(r1, Operand(constant));
@@ -688,7 +674,7 @@ void Assembler::stmg(Register r1, Register r2, const MemOperand& src) {
 
 // Exception-generating instructions and debugging support.
 // Stops with a non-negative code less than kNumOfWatchedStops support
-// enabling/disabling and a counter feature. See simulator-ppc.h .
+// enabling/disabling and a counter feature. See simulator-s390.h .
 void Assembler::stop(const char* msg, Condition cond, int32_t code,
                      CRegister cr) {
   if (cond != al) {
@@ -737,8 +723,8 @@ void Assembler::name(const Operand& i) {\
 
 
 void Assembler::i_form(Opcode op, const Operand& i) {
-    ASSERT(is_uint8(i.imm_));
-    ASSERT(is_uint8(op));
+    DCHECK(is_uint8(i.imm_));
+    DCHECK(is_uint8(op));
     emit2bytes(op << 8 | i.imm_);
 }
 
@@ -756,7 +742,7 @@ void Assembler::name() {\
 
 
 void Assembler::e_form(Opcode op) {
-    ASSERT(is_uint16(op));
+    DCHECK(is_uint16(op));
     emit2bytes(op);
 }
 
@@ -773,9 +759,9 @@ void Assembler::name(const Operand& i1, const Operand& i2) {\
 
 
 void Assembler::ie_form(Opcode op, const Operand& i1, const Operand& i2) {
-    ASSERT(is_uint16(op));
-    ASSERT(is_uint4(i1.imm_));
-    ASSERT(is_uint4(i2.imm_));
+    DCHECK(is_uint16(op));
+    DCHECK(is_uint4(i1.imm_));
+    DCHECK(is_uint4(i2.imm_));
     emit4bytes((op << 16) |
                ((i1.imm_ & 0xf) * B4) |
                (i2.imm_ & 0xf));
@@ -794,9 +780,9 @@ void Assembler::name(Register r1, Register r2) { \
 
 
 void Assembler::rr_form(Opcode op, Register r1, Register r2) {
-    ASSERT(is_uint8(op));
-    // ASSERT(is_uint4(r1.code()));
-    // ASSERT(is_uint4(r2.code()));
+    DCHECK(is_uint8(op));
+    // DCHECK(is_uint4(r1.code()));
+    // DCHECK(is_uint4(r2.code()));
     emit2bytes(op*B8 | r1.code()*B4 | r2.code());
 }
 
@@ -804,9 +790,9 @@ void Assembler::rr_form(Opcode op, Register r1, Register r2) {
 void Assembler::rr_form(Opcode op,
                                DoubleRegister r1,
                                DoubleRegister r2) {
-    ASSERT(is_uint8(op));
-    // ASSERT(is_uint4(r1.code()));
-    // ASSERT(is_uint4(r2.code()));
+    DCHECK(is_uint8(op));
+    // DCHECK(is_uint4(r1.code()));
+    // DCHECK(is_uint4(r2.code()));
     emit2bytes(op*B8 | r1.code()*B4 | r2.code());
 }
 
@@ -823,9 +809,9 @@ void Assembler::name(Condition m1, Register r2) { \
 
 
 void Assembler::rr_form(Opcode op, Condition m1, Register r2) {
-    ASSERT(is_uint8(op));
-    ASSERT(is_uint4(m1));
-    // ASSERT(is_uint4(r2.code()));
+    DCHECK(is_uint8(op));
+    DCHECK(is_uint4(m1));
+    // DCHECK(is_uint4(r2.code()));
     emit2bytes(op*B8 | m1*B4 | r2.code());
 }
 
@@ -849,8 +835,8 @@ void Assembler::rx_form(Opcode op,
                         Register x2,
                         Register b2,
                         Disp d2) {
-    ASSERT(is_uint8(op));
-    ASSERT(is_uint12(d2));
+    DCHECK(is_uint8(op));
+    DCHECK(is_uint12(d2));
     emit4bytes(op*B24 | r1.code()*B20 |
              x2.code()*B16 | b2.code()*B12 | d2);
 }
@@ -861,8 +847,8 @@ void Assembler::rx_form(Opcode op,
                                Register x2,
                                Register b2,
                                Disp d2) {
-  ASSERT(is_uint8(op));
-  ASSERT(is_uint12(d2));
+  DCHECK(is_uint8(op));
+  DCHECK(is_uint12(d2));
     emit4bytes(op*B24 | r1.code()*B20 |
              x2.code()*B16 | b2.code()*B12 | d2);
 }
@@ -880,8 +866,8 @@ void Assembler::name(Register r, const Operand& i2) { \
 
 
 void Assembler::ri_form(Opcode op, Register r1, const Operand& i2) {
-    ASSERT(is_uint12(op));
-    ASSERT(is_uint16(i2.imm_) || is_int16(i2.imm_));
+    DCHECK(is_uint12(op));
+    DCHECK(is_uint16(i2.imm_) || is_int16(i2.imm_));
     emit4bytes((op & 0xFF0) * B20 |
              r1.code() * B20 |
              (op & 0xF) * B16 |
@@ -901,9 +887,9 @@ void Assembler::name(Condition m, const Operand& i2) {\
 
 
 void Assembler::ri_form(Opcode op, Condition m1, const Operand& i2) {
-    ASSERT(is_uint12(op));
-    ASSERT(is_uint4(m1));
-    ASSERT(is_uint16(i2.imm_));
+    DCHECK(is_uint12(op));
+    DCHECK(is_uint4(m1));
+    DCHECK(is_uint16(i2.imm_));
     emit4bytes((op & 0xFF0) * B20 |
              m1 * B20 |
              (op & 0xF) * B16 |
@@ -918,10 +904,10 @@ void Assembler::ri_form(Opcode op, Condition m1, const Operand& i2) {
 //    0        8    12   16      24         32       40      47
 void Assembler::rie_f_form(Opcode op, Register r1, Register r2,
          const Operand &i3, const Operand& i4, const Operand& i5) {
-    ASSERT(is_uint16(op));
-    ASSERT(is_uint8(i3.imm_));
-    ASSERT(is_uint8(i4.imm_));
-    ASSERT(is_uint8(i5.imm_));
+    DCHECK(is_uint16(op));
+    DCHECK(is_uint8(i3.imm_));
+    DCHECK(is_uint8(i4.imm_));
+    DCHECK(is_uint8(i5.imm_));
     uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32       |
                     (static_cast<uint64_t>(r1.code())) * B36         |
                     (static_cast<uint64_t>(r2.code())) * B32         |
@@ -947,8 +933,8 @@ void Assembler::name(Register r1, Register r3, \
 
 void Assembler::rie_form(Opcode op, Register r1, Register r3,
                      const Operand& i2) {
-    ASSERT(is_uint16(op));
-    ASSERT(is_int16(i2.imm_));
+    DCHECK(is_uint16(op));
+    DCHECK(is_int16(i2.imm_));
     uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32       |
                     (static_cast<uint64_t>(r1.code())) * B36         |
                     (static_cast<uint64_t>(r3.code())) * B32         |
@@ -970,8 +956,8 @@ void Assembler::name(Register r, const Operand& i2) {\
 
 
 void Assembler::ril_form(Opcode op, Register r1, const Operand& i2) {
-    ASSERT(is_uint12(op));
-    // ASSERT(is_uint4(r1.code()));
+    DCHECK(is_uint12(op));
+    // DCHECK(is_uint4(r1.code()));
     uint64_t code = (static_cast<uint64_t>(op & 0xFF0)) * B36        |
                     (static_cast<uint64_t>(r1.code())) * B36         |
                     (static_cast<uint64_t>(op & 0x00F)) * B32        |
@@ -992,8 +978,8 @@ void Assembler::name(Condition m1, const Operand& i2) {\
 
 
 void Assembler::ril_form(Opcode op, Condition m1, const Operand& i2) {
-    ASSERT(is_uint12(op));
-    ASSERT(is_uint4(m1));
+    DCHECK(is_uint12(op));
+    DCHECK(is_uint4(m1));
     uint64_t code = (static_cast<uint64_t>(op & 0xFF0)) * B36        |
                     (static_cast<uint64_t>(m1)) * B36                |
                     (static_cast<uint64_t>(op & 0x00F)) * B32        |
@@ -1014,18 +1000,18 @@ void Assembler::name(Register r1, Register r2) {\
 
 
 void Assembler::rre_form(Opcode op, Register r1, Register r2) {
-    ASSERT(is_uint16(op));
-    // ASSERT(is_uint4(r1.code()));
-    // ASSERT(is_uint4(r2.code()));
+    DCHECK(is_uint16(op));
+    // DCHECK(is_uint4(r1.code()));
+    // DCHECK(is_uint4(r2.code()));
     emit4bytes(op << 16 | r1.code()*B4 | r2.code());
 }
 
 
 void Assembler::rre_form(Opcode op, DoubleRegister r1,
                                 DoubleRegister r2) {
-    ASSERT(is_uint16(op));
-    // ASSERT(is_uint4(r1.code()));
-    // ASSERT(is_uint4(r2.code()));
+    DCHECK(is_uint16(op));
+    // DCHECK(is_uint4(r1.code()));
+    // DCHECK(is_uint4(r2.code()));
     emit4bytes(op << 16 | r1.code()*B4 | r2.code());
 }
 
@@ -1070,7 +1056,7 @@ void Assembler::rs_form(Opcode op,
                         Register r3,
                         Register b2,
                         const Disp d2) {
-  ASSERT(is_uint12(d2));
+  DCHECK(is_uint12(d2));
   emit4bytes(op * B24 | r1.code() * B20 | r3.code() * B16 |
              b2.code() * B12 | d2);
 }
@@ -1097,7 +1083,7 @@ void Assembler::rs_form(Opcode op,
                         Condition m3,
                         Register b2,
                         const Disp d2) {
-  ASSERT(is_uint12(d2));
+  DCHECK(is_uint12(d2));
   emit4bytes(op * B24 | r1.code() * B20 | m3 * B16 |
              b2.code() * B12 | d2);
 }
@@ -1116,8 +1102,8 @@ void Assembler::name(Register r1, Register r3, const Operand& i2) {\
 
 void Assembler::rsi_form(Opcode op, Register r1,
                            Register r3, const Operand& i2) {
-    ASSERT(is_uint8(op));
-    ASSERT(is_uint16(i2.imm_));
+    DCHECK(is_uint8(op));
+    DCHECK(is_uint16(i2.imm_));
     emit4bytes(op * B24 | r1.code() * B20 | r3.code() * B16 |
                (i2.imm_ & 0xFFFF));
 }
@@ -1135,7 +1121,7 @@ void Assembler::name(Length l1, Register b2, Disp d2) {\
 
 
 void Assembler::rsl_form(Opcode op, Length l1, Register b2, Disp d2) {
-    ASSERT(is_uint16(op));
+    DCHECK(is_uint16(op));
     uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32   |
                     (static_cast<uint64_t>(l1)) * B36            |
                     (static_cast<uint64_t>(b2.code())) * B28     |
@@ -1165,8 +1151,8 @@ void Assembler::rsy_form(Opcode op,
                         Register r3,
                         Register b2,
                         const Disp d2) {
-    ASSERT(is_int20(d2));
-    ASSERT(is_uint16(op));
+    DCHECK(is_int20(d2));
+    DCHECK(is_uint16(op));
     uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32  |
                     (static_cast<uint64_t>(r1.code())) * B36     |
                     (static_cast<uint64_t>(r3.code())) * B32     |
@@ -1198,8 +1184,8 @@ void Assembler::rsy_form(Opcode op,
                         Condition m3,
                         Register b2,
                         const Disp d2) {
-    ASSERT(is_int20(d2));
-    ASSERT(is_uint16(op));
+    DCHECK(is_int20(d2));
+    DCHECK(is_uint16(op));
     uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32  |
                     (static_cast<uint64_t>(r1.code())) * B36     |
                     (static_cast<uint64_t>(m3)) * B32    |
@@ -1229,8 +1215,8 @@ void Assembler::name(Register r1, const MemOperand& opnd) {\
 
 void Assembler::rxe_form(Opcode op, Register r1, Register x2, Register b2,
                      Disp d2) {
-    ASSERT(is_uint12(d2));
-    ASSERT(is_uint16(op));
+    DCHECK(is_uint12(d2));
+    DCHECK(is_uint16(op));
     uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32  |
                     (static_cast<uint64_t>(r1.code())) * B36     |
                     (static_cast<uint64_t>(x2.code())) * B32     |
@@ -1259,8 +1245,8 @@ void Assembler::name(Register r1, const MemOperand& opnd) {\
 
 void Assembler::rxy_form(Opcode op, Register r1, Register x2, Register b2,
                      Disp d2) {
-    ASSERT(is_int20(d2));
-    ASSERT(is_uint16(op));
+    DCHECK(is_int20(d2));
+    DCHECK(is_uint16(op));
     uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32  |
                     (static_cast<uint64_t>(r1.code())) * B36     |
                     (static_cast<uint64_t>(x2.code())) * B32     |
@@ -1275,8 +1261,8 @@ void Assembler::rxy_form(Opcode op, Register r1, Register x2, Register b2,
 void Assembler::rxy_form(Opcode op, DoubleRegister r1,
                                 Register x2, Register b2,
                                 Disp d2) {
-    ASSERT(is_int20(d2));
-    ASSERT(is_uint16(op));
+    DCHECK(is_int20(d2));
+    DCHECK(is_uint16(op));
     uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32  |
                     (static_cast<uint64_t>(r1.code())) * B36     |
                     (static_cast<uint64_t>(x2.code())) * B32     |
@@ -1306,8 +1292,8 @@ void Assembler::name(Register r1, Register r2, Condition m3, \
 
 void Assembler::rrs_form(Opcode op, Register r1, Register r2, Register b4,
                      Disp d4, Condition m3) {
-    ASSERT(is_uint12(d4));
-    ASSERT(is_uint16(op));
+    DCHECK(is_uint12(d4));
+    DCHECK(is_uint16(op));
     uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32  |
                     (static_cast<uint64_t>(r1.code())) * B36     |
                     (static_cast<uint64_t>(r2.code())) * B32     |
@@ -1337,9 +1323,9 @@ void Assembler::name(Register r1, const Operand& i2, Condition m3, \
 
 void Assembler::ris_form(Opcode op, Register r1, Condition m3, Register b4, \
                      Disp d4, const Operand& i2) {
-    ASSERT(is_uint12(d4));
-    ASSERT(is_uint16(op));
-    ASSERT(is_uint8(i2.imm_));
+    DCHECK(is_uint12(d4));
+    DCHECK(is_uint16(op));
+    DCHECK(is_uint8(i2.imm_));
     uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32  |
                     (static_cast<uint64_t>(r1.code())) * B36     |
                     (static_cast<uint64_t>(m3)) * B32    |
@@ -1366,7 +1352,7 @@ void Assembler::name(const MemOperand& opnd) {\
 
 
 void Assembler::s_form(Opcode op, Register b1, Disp d2) {
-    ASSERT(is_uint12(d2));
+    DCHECK(is_uint12(d2));
     emit4bytes(op << 16 | b1.code()*B12 | d2);
 }
 
@@ -1409,9 +1395,9 @@ void Assembler::name(const MemOperand& opnd, const Operand& i2) {\
 
 void Assembler::siy_form(Opcode op, const Operand& i2, Register b1, \
                      Disp d1) {
-    ASSERT(is_uint20(d1));
-    ASSERT(is_uint16(op));
-    ASSERT(is_uint8(i2.imm_));
+    DCHECK(is_uint20(d1));
+    DCHECK(is_uint16(op));
+    DCHECK(is_uint8(i2.imm_));
     uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32  |
                     (static_cast<uint64_t>(i2.imm_)) * B32       |
                     (static_cast<uint64_t>(b1.code())) * B28     |
@@ -1439,9 +1425,9 @@ void Assembler::name(const MemOperand& opnd, const Operand& i2) {\
 
 void Assembler::sil_form(Opcode op, Register b1, Disp d1,
                      const Operand& i2) {
-    ASSERT(is_uint12(d1));
-    ASSERT(is_uint16(op));
-    ASSERT(is_uint16(i2.imm_));
+    DCHECK(is_uint12(d1));
+    DCHECK(is_uint16(op));
+    DCHECK(is_uint16(i2.imm_));
     uint64_t code = (static_cast<uint64_t>(op)) * B32            |
                     (static_cast<uint64_t>(b1.code())) * B28     |
                     (static_cast<uint64_t>(d1)) * B16            |
@@ -1468,8 +1454,8 @@ void Assembler::name(Register r1, Register r3, const MemOperand& opnd) {\
 
 void Assembler::rxf_form(Opcode op, Register r1, Register r3, Register b2, \
                      Register x2, Disp d2) {
-    ASSERT(is_uint12(d2));
-    ASSERT(is_uint16(op));
+    DCHECK(is_uint12(d2));
+    DCHECK(is_uint16(op));
     uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32   |
                     (static_cast<uint64_t>(r3.code())) * B36     |
                     (static_cast<uint64_t>(x2.code())) * B32     |
@@ -1501,10 +1487,10 @@ void Assembler::name(const MemOperand& opnd1, const MemOperand& opnd2, \
 
 void Assembler::ss_form(Opcode op, Length l, Register b1, Disp d1,
                      Register b2, Disp d2) {
-    ASSERT(is_uint12(d2));
-    ASSERT(is_uint12(d1));
-    ASSERT(is_uint8(op));
-    ASSERT(is_uint8(l));
+    DCHECK(is_uint12(d2));
+    DCHECK(is_uint12(d1));
+    DCHECK(is_uint8(op));
+    DCHECK(is_uint8(l));
     uint64_t code = (static_cast<uint64_t>(op)) * B40            |
                     (static_cast<uint64_t>(l)) * B32             |
                     (static_cast<uint64_t>(b1.code())) * B28     |
@@ -1536,11 +1522,11 @@ void Assembler::name(const MemOperand& opnd1, const MemOperand& opnd2, \
 
 void Assembler::ss_form(Opcode op, Length l1, Length l2, Register b1,
                      Disp d1, Register b2, Disp d2) {
-    ASSERT(is_uint12(d2));
-    ASSERT(is_uint12(d1));
-    ASSERT(is_uint8(op));
-    ASSERT(is_uint4(l2));
-    ASSERT(is_uint4(l1));
+    DCHECK(is_uint12(d2));
+    DCHECK(is_uint12(d1));
+    DCHECK(is_uint8(op));
+    DCHECK(is_uint4(l2));
+    DCHECK(is_uint4(l1));
     uint64_t code = (static_cast<uint64_t>(op)) * B40            |
                     (static_cast<uint64_t>(l1)) * B36            |
                     (static_cast<uint64_t>(l2)) * B32            |
@@ -1565,15 +1551,15 @@ void Assembler::name(const Operand& i3, Register b1, \
 }\
 void Assembler::name(const MemOperand& opnd1, const MemOperand& opnd2, \
                      Length length) {\
-    ASSERT(false);\
+    DCHECK(false);\
 }
 void Assembler::ss_form(Opcode op, Length l1, const Operand& i3, Register b1,
                      Disp d1, Register b2, Disp d2) {
-    ASSERT(is_uint12(d2));
-    ASSERT(is_uint12(d1));
-    ASSERT(is_uint8(op));
-    ASSERT(is_uint4(l1));
-    ASSERT(is_uint4(i3.imm_));
+    DCHECK(is_uint12(d2));
+    DCHECK(is_uint12(d1));
+    DCHECK(is_uint8(op));
+    DCHECK(is_uint4(l1));
+    DCHECK(is_uint4(i3.imm_));
     uint64_t code = (static_cast<uint64_t>(op)) * B40            |
                     (static_cast<uint64_t>(l1)) * B36            |
                     (static_cast<uint64_t>(i3.imm_)) * B32       |
@@ -1597,13 +1583,13 @@ void Assembler::name(Register r1, Register r3, Register b1, \
     ss_form(op, r1, r3, b1, d1, b2, d2);\
 }\
 void Assembler::name(const MemOperand& opnd1, const MemOperand& opnd2) {\
-    ASSERT(false);\
+    DCHECK(false);\
 }
 void Assembler::ss_form(Opcode op, Register r1, Register r3, Register b1,
                      Disp d1, Register b2, Disp d2) {
-    ASSERT(is_uint12(d2));
-    ASSERT(is_uint12(d1));
-    ASSERT(is_uint8(op));
+    DCHECK(is_uint12(d2));
+    DCHECK(is_uint12(d1));
+    DCHECK(is_uint8(op));
     uint64_t code = (static_cast<uint64_t>(op)) * B40            |
                     (static_cast<uint64_t>(r1.code())) * B36     |
                     (static_cast<uint64_t>(r3.code())) * B32     |
@@ -1627,7 +1613,7 @@ void Assembler::name(Register r1, Register r3, Register b2, \
     ss_form(op, r1, r3, b2, d2, b4, d4); /*SS5 use the same form as SS4*/ \
 }\
 void Assembler::name(const MemOperand& opnd1, const MemOperand& opnd2) {\
-    ASSERT(false);\
+    DCHECK(false);\
 }
 
 
@@ -1649,9 +1635,9 @@ void Assembler::name(const MemOperand& opnd1, const MemOperand& opnd2) {\
 }
 void Assembler::sse_form(Opcode op, Register b1, Disp d1, Register b2,
                      Disp d2) {
-    ASSERT(is_uint12(d2));
-    ASSERT(is_uint12(d1));
-    ASSERT(is_uint16(op));
+    DCHECK(is_uint12(d2));
+    DCHECK(is_uint12(d1));
+    DCHECK(is_uint16(op));
     uint64_t code = (static_cast<uint64_t>(op)) * B32            |
                     (static_cast<uint64_t>(b1.code())) * B28     |
                     (static_cast<uint64_t>(d1))        * B16     |
@@ -1680,9 +1666,9 @@ void Assembler::name(Register r3, const MemOperand& opnd1, \
 
 void Assembler::ssf_form(Opcode op, Register r3, Register b1, Disp d1,
                      Register b2, Disp d2) {
-    ASSERT(is_uint12(d2));
-    ASSERT(is_uint12(d1));
-    ASSERT(is_uint12(op));
+    DCHECK(is_uint12(d2));
+    DCHECK(is_uint12(d1));
+    DCHECK(is_uint12(op));
     uint64_t code = (static_cast<uint64_t>(op & 0xFF0)) * B36    |
                     (static_cast<uint64_t>(r3.code())) * B36     |
                     (static_cast<uint64_t>(op & 0x00F)) * B32    |
@@ -2332,8 +2318,8 @@ void Assembler::ark(Register r1, Register r2, Register r3) {
 
 // Add Storage-Imm (32)
 void Assembler::asi(const MemOperand& opnd, const Operand& imm) {
-  ASSERT(is_int8(imm.imm_));
-  ASSERT(is_int20(opnd.offset()));
+  DCHECK(is_int8(imm.imm_));
+  DCHECK(is_int20(opnd.offset()));
   siy_form(ASI, Operand(0xff & imm.imm_),
             opnd.rb(), 0xfffff & opnd.offset());
 }
@@ -2341,8 +2327,8 @@ void Assembler::asi(const MemOperand& opnd, const Operand& imm) {
 
 // Add Storage-Imm (64)
 void Assembler::agsi(const MemOperand& opnd, const Operand& imm) {
-  ASSERT(is_int8(imm.imm_));
-  ASSERT(is_int20(opnd.offset()));
+  DCHECK(is_int8(imm.imm_));
+  DCHECK(is_int20(opnd.offset()));
   siy_form(AGSI, Operand(0xff & imm.imm_),
             opnd.rb(), 0xfffff & opnd.offset());
 }
@@ -2362,7 +2348,7 @@ void Assembler::srk(Register r1, Register r2, Register r3) {
 
 // Multiply Register (64<32)
 void Assembler::mr_z(Register r1, Register r2) {
-  ASSERT(r1.code() % 2 == 0);
+  DCHECK(r1.code() % 2 == 0);
   rr_form(MR, r1, r2);
 }
 
@@ -2581,7 +2567,7 @@ void Assembler::mov_label_offset(Register dst, Label* label) {
     bool is_linked = label->is_linked();
     // Emit the link to the label in the code stream followed by extra
     // nop instructions.
-    ASSERT(dst.is(r3));  // target_at_put assumes r3 for now
+    DCHECK(dst.is(r3));  // target_at_put assumes r3 for now
     int link = is_linked ? label->pos() - pc_offset(): 0;
     label->link_to(pc_offset());
 
@@ -2912,7 +2898,7 @@ void Assembler::lgfr(Register r1, Register r2) {
 
 // Rotate Left Single Logical (32)
 void Assembler::rll(Register r1, Register r3, Register opnd) {
-  ASSERT(!opnd.is(r0));
+  DCHECK(!opnd.is(r0));
   rsy_form(RLL, r1, r3, opnd, 0);
 }
 
@@ -2932,7 +2918,7 @@ void Assembler::rll(Register r1, Register r3, Register r2,
 
 // Rotate Left Single Logical (64)
 void Assembler::rllg(Register r1, Register r3, Register opnd) {
-  ASSERT(!opnd.is(r0));
+  DCHECK(!opnd.is(r0));
   rsy_form(RLLG, r1, r3, opnd, 0);
 }
 
@@ -2952,7 +2938,7 @@ void Assembler::rllg(Register r1, Register r3, Register r2,
 
 // Shift Left Single Logical (32)
 void Assembler::sll(Register r1, Register opnd) {
-  ASSERT(!opnd.is(r0));
+  DCHECK(!opnd.is(r0));
   rs_form(SLL, r1, r0, opnd, 0);
 }
 
@@ -2965,7 +2951,7 @@ void Assembler::sll(Register r1, const Operand& opnd) {
 
 // Shift Left Single Logical (32)
 void Assembler::sllk(Register r1, Register r3, Register opnd) {
-  ASSERT(!opnd.is(r0));
+  DCHECK(!opnd.is(r0));
   rsy_form(SLLK, r1, r3, opnd, 0);
 }
 
@@ -2978,7 +2964,7 @@ void Assembler::sllk(Register r1, Register r3, const Operand& opnd) {
 
 // Shift Left Single Logical (64)
 void Assembler::sllg(Register r1, Register r3, Register opnd) {
-  ASSERT(!opnd.is(r0));
+  DCHECK(!opnd.is(r0));
   rsy_form(SLLG, r1, r3, opnd, 0);
 }
 
@@ -2991,7 +2977,7 @@ void Assembler::sllg(Register r1, Register r3, const Operand& opnd) {
 
 // Shift Right Single Logical (32)
 void Assembler::srl(Register r1, Register opnd) {
-  ASSERT(!opnd.is(r0));
+  DCHECK(!opnd.is(r0));
   rs_form(SRL, r1, r0, opnd, 0);
 }
 
@@ -3004,7 +2990,7 @@ void Assembler::srl(Register r1, const Operand& opnd) {
 
 // Shift Right Single Logical (32)
 void Assembler::srlk(Register r1, Register r3, Register opnd) {
-  ASSERT(!opnd.is(r0));
+  DCHECK(!opnd.is(r0));
   rsy_form(SRLK, r1, r3, opnd, 0);
 }
 
@@ -3017,7 +3003,7 @@ void Assembler::srlk(Register r1, Register r3, const Operand& opnd) {
 
 // Shift Right Single Logical (64)
 void Assembler::srlg(Register r1, Register r3, Register opnd) {
-  ASSERT(!opnd.is(r0));
+  DCHECK(!opnd.is(r0));
   rsy_form(SRLG, r1, r3, opnd, 0);
 }
 
@@ -3030,7 +3016,7 @@ void Assembler::srlg(Register r1, Register r3, const Operand& opnd) {
 
 // Shift Left Single (32)
 void Assembler::sla(Register r1, Register opnd) {
-  ASSERT(!opnd.is(r0));
+  DCHECK(!opnd.is(r0));
   rs_form(SLA, r1, r0, opnd, 0);
 }
 
@@ -3043,7 +3029,7 @@ void Assembler::sla(Register r1, const Operand& opnd) {
 
 // Shift Left Single (32)
 void Assembler::slak(Register r1, Register r3, Register opnd) {
-  ASSERT(!opnd.is(r0));
+  DCHECK(!opnd.is(r0));
   rsy_form(SLAK, r1, r3, opnd, 0);
 }
 
@@ -3056,7 +3042,7 @@ void Assembler::slak(Register r1, Register r3, const Operand& opnd) {
 
 // Shift Left Single (64)
 void Assembler::slag(Register r1, Register r3, Register opnd) {
-  ASSERT(!opnd.is(r0));
+  DCHECK(!opnd.is(r0));
   rsy_form(SLAG, r1, r3, opnd, 0);
 }
 
@@ -3069,7 +3055,7 @@ void Assembler::slag(Register r1, Register r3, const Operand& opnd) {
 
 // Shift Right Single (32)
 void Assembler::sra(Register r1, Register opnd) {
-  ASSERT(!opnd.is(r0));
+  DCHECK(!opnd.is(r0));
   rs_form(SRA, r1, r0, opnd, 0);
 }
 
@@ -3082,7 +3068,7 @@ void Assembler::sra(Register r1, const Operand& opnd) {
 
 // Shift Right Single (32)
 void Assembler::srak(Register r1, Register r3, Register opnd) {
-  ASSERT(!opnd.is(r0));
+  DCHECK(!opnd.is(r0));
   rsy_form(SRAK, r1, r3, opnd, 0);
 }
 
@@ -3095,7 +3081,7 @@ void Assembler::srak(Register r1, Register r3, const Operand& opnd) {
 
 // Shift Right Single (64)
 void Assembler::srag(Register r1, Register r3, Register opnd) {
-  ASSERT(!opnd.is(r0));
+  DCHECK(!opnd.is(r0));
   rsy_form(SRAG, r1, r3, opnd, 0);
 }
 
@@ -3107,7 +3093,7 @@ void Assembler::srag(Register r1, Register r3, const Operand& opnd) {
 
 // Shift Right Double
 void Assembler::srda(Register r1, const Operand& opnd) {
-  ASSERT(r1.code() % 2 == 0);
+  DCHECK(r1.code() % 2 == 0);
   rs_form(SRDA, r1, r0, r0, opnd.immediate());
 }
 
@@ -3740,7 +3726,7 @@ void Assembler::msdbr(DoubleRegister d1, DoubleRegister d3, DoubleRegister d2) {
 
 
 bool Assembler::IsNop(SixByteInstr instr, int type) {
-  ASSERT((0 == type) || (DEBUG_BREAK_NOP == type));
+  DCHECK((0 == type) || (DEBUG_BREAK_NOP == type));
   if (DEBUG_BREAK_NOP == type) {
     return (instr == 0xa53b0000);   // oill r3, 0
   }
@@ -3857,7 +3843,7 @@ void Assembler::RecordRelocInfo(const RelocInfo& rinfo) {
   if (rinfo.rmode() >= RelocInfo::JS_RETURN &&
       rinfo.rmode() <= RelocInfo::DEBUG_BREAK_SLOT) {
     // Adjust code for new modes.
-    ASSERT(RelocInfo::IsDebugBreakSlot(rinfo.rmode())
+    DCHECK(RelocInfo::IsDebugBreakSlot(rinfo.rmode())
            || RelocInfo::IsJSReturn(rinfo.rmode())
            || RelocInfo::IsComment(rinfo.rmode())
            || RelocInfo::IsPosition(rinfo.rmode()));
@@ -3865,11 +3851,11 @@ void Assembler::RecordRelocInfo(const RelocInfo& rinfo) {
   if (!RelocInfo::IsNone(rinfo.rmode())) {
     // Don't record external references unless the heap will be serialized.
     if (rinfo.rmode() == RelocInfo::EXTERNAL_REFERENCE) {
-      if (!Serializer::enabled(isolate()) && !emit_debug_code()) {
+      if (!serializer_enabled() && !emit_debug_code()) {
         return;
       }
     }
-    ASSERT(buffer_space() >= kMaxRelocSize);  // too late to grow buffer here
+    DCHECK(buffer_space() >= kMaxRelocSize);  // too late to grow buffer here
     if (rinfo.rmode() == RelocInfo::CODE_TARGET_WITH_ID) {
       RelocInfo reloc_info_with_ast_id(rinfo.pc(),
                                        rinfo.rmode(),
@@ -3902,8 +3888,8 @@ void Assembler::CheckTrampolinePool() {
     return;
   }
 
-  ASSERT(!trampoline_emitted_);
-  ASSERT(unbound_labels_count_ >= 0);
+  DCHECK(!trampoline_emitted_);
+  DCHECK(unbound_labels_count_ >= 0);
   if (unbound_labels_count_ > 0) {
     // First we emit jump, then we emit trampoline pool.
     { BlockTrampolinePoolScope block_trampoline_pool(this);
@@ -3937,7 +3923,7 @@ Handle<ConstantPoolArray> Assembler::NewConstantPool(Isolate* isolate) {
   return constant_pool_builder_.New(isolate);
 #else
   // No out-of-line constant pool support.
-  ASSERT(!FLAG_enable_ool_constant_pool);
+  DCHECK(!FLAG_enable_ool_constant_pool);
   return isolate->factory()->empty_constant_pool_array();
 #endif
 }
@@ -3948,7 +3934,7 @@ void Assembler::PopulateConstantPool(ConstantPoolArray* constant_pool) {
   constant_pool_builder_.Populate(this, constant_pool);
 #else
   // No out-of-line constant pool support.
-  ASSERT(!FLAG_enable_ool_constant_pool);
+  DCHECK(!FLAG_enable_ool_constant_pool);
 #endif
 }
 
