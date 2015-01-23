@@ -5,12 +5,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "v8.h"
+#include "src/v8.h"
 
-#include "codegen.h"
-#include "deoptimizer.h"
-#include "full-codegen.h"
-#include "safepoint-table.h"
+#include "src/codegen.h"
+#include "src/deoptimizer.h"
+#include "src/full-codegen.h"
+#include "src/safepoint-table.h"
 
 namespace v8 {
 namespace internal {
@@ -61,9 +61,6 @@ void Deoptimizer::PatchCodeForDeoptimization(Isolate* isolate, Code* code) {
 
   DeoptimizationInputData* deopt_data =
       DeoptimizationInputData::cast(code->deoptimization_data());
-  SharedFunctionInfo* shared =
-      SharedFunctionInfo::cast(deopt_data->SharedFunctionInfo());
-  shared->EvictFromOptimizedCodeMap(code, "deoptimized code");
 #ifdef DEBUG
   Address prev_call_address = NULL;
 #endif
@@ -78,12 +75,12 @@ void Deoptimizer::PatchCodeForDeoptimization(Isolate* isolate, Code* code) {
     int call_size_in_bytes =
         MacroAssembler::CallSizeNotPredictableCodeSize(deopt_entry,
                                                        kRelocInfo_NONEPTR);
-    ASSERT(call_size_in_bytes <= patch_size());
+    DCHECK(call_size_in_bytes <= patch_size());
     CodePatcher patcher(call_address, call_size_in_bytes);  // FIXME: 2ND ARG
     patcher.masm()->Call(deopt_entry, kRelocInfo_NONEPTR);
-    ASSERT(prev_call_address == NULL ||
+    DCHECK(prev_call_address == NULL ||
            call_address >= prev_call_address + patch_size());
-    ASSERT(call_address + patch_size() <= code->instruction_end());
+    (call_address + patch_size() <= code->instruction_end());
 #ifdef DEBUG
     prev_call_address = call_address;
 #endif
@@ -115,7 +112,7 @@ void Deoptimizer::FillInputFrame(Address tos, JavaScriptFrame* frame) {
 
 void Deoptimizer::SetPlatformCompiledStubRegisters(
     FrameDescription* output_frame, CodeStubInterfaceDescriptor* descriptor) {
-  ApiFunction function(descriptor->deoptimization_handler_);
+  ApiFunction function(descriptor->deoptimization_handler());
   ExternalReference xref(&function, ExternalReference::BUILTIN_CALL, isolate_);
   intptr_t handler = reinterpret_cast<intptr_t>(xref.address());
   int params = descriptor->GetHandlerParameterCount();
@@ -135,11 +132,6 @@ void Deoptimizer::CopyDoubleRegisters(FrameDescription* output_frame) {
 bool Deoptimizer::HasAlignmentPadding(JSFunction* function) {
   // There is no dynamic alignment padding on S390 in the input frame.
   return false;
-}
-
-
-Code* Deoptimizer::NotifyStubFailureBuiltin() {
-  return isolate_->builtins()->builtin(Builtins::kNotifyStubFailureSaveDoubles);
 }
 
 
@@ -209,7 +201,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   __ LoadP(r3, MemOperand(r2, Deoptimizer::input_offset()));
 
   // Copy core registers into FrameDescription::registers_[kNumRegisters].
-  ASSERT(Register::kNumRegisters == kNumberOfRegisters);
+  DCHECK(Register::kNumRegisters == kNumberOfRegisters);
   __ mvc(MemOperand(r3, FrameDescription::registers_offset()), MemOperand(sp),
          kNumberOfRegisters * kPointerSize);
 
@@ -303,7 +295,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   __ push(r8);
 
   // Restore the registers from the last output frame.
-  ASSERT(!(ip.bit() & restored_regs));
+  DCHECK(!(ip.bit() & restored_regs));
   __ LoadRR(ip, r4);
   for (int i = kNumberOfRegisters - 1; i >= 0; i--) {
     int offset = (i * kPointerSize) + FrameDescription::registers_offset();
@@ -332,13 +324,13 @@ void Deoptimizer::TableEntryGenerator::GeneratePrologue() {
     USE(start);
     __ lay(sp, MemOperand(sp, -kPointerSize));
     __ LoadImmP(ip, Operand(i));
-    __ StoreP(ip, MemOperand(sp));
     __ b(&done);
     int end = masm()->pc_offset();
     USE(end);
-    ASSERT(masm()->pc_offset() - start == table_entry_size_);
+    DCHECK(masm()->pc_offset() - start == table_entry_size_);
   }
   __ bind(&done);
+  __ StoreP(ip, MemOperand(sp));
 }
 
 
@@ -354,7 +346,7 @@ void FrameDescription::SetCallerFp(unsigned offset, intptr_t value) {
 
 void FrameDescription::SetCallerConstantPool(unsigned offset, intptr_t value) {
 #if V8_OOL_CONSTANT_POOL
-  ASSERT(FLAG_enable_ool_constant_pool);
+  DCHECK(FLAG_enable_ool_constant_pool);
   SetFrameSlot(offset, value);
 #else
   // No out-of-line constant pool support.
