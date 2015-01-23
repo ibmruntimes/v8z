@@ -134,7 +134,7 @@ struct Register {
       from_code(index + kAllocatableRangeBegin);  // r0-r1 are skipped
   }
 
-  const char* AllocationIndexToString(int index) {
+  static const char* AllocationIndexToString(int index) {
     DCHECK(index >= 0 && index < kMaxNumAllocatableRegisters);
     const char* const names[] = {
         "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9","cp",
