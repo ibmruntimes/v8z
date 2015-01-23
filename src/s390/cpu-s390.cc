@@ -10,7 +10,7 @@
 
 #if V8_TARGET_ARCH_S390
 
-#include "src/cpu.h"
+#include "src/base/cpu.h"
 #include "src/macro-assembler.h"
 #include "src/simulator.h"  // for cache flushing.
 
