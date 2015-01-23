@@ -777,39 +777,6 @@ class MacroAssembler: public Assembler {
                            Representation r,
                            Register scratch = no_reg);
 
-  void LoadDouble(DoubleRegister dst, const MemOperand& mem,
-                  Register scratch);
-  void StoreDouble(DoubleRegister src, const MemOperand& mem,
-                   Register scratch);
-
-  // Move values between integer and floating point registers.
-  void MovIntToDouble(DoubleRegister dst,
-                      Register src,
-                      Register scratch);
-  void MovUnsignedIntToDouble(DoubleRegister dst,
-                              Register src,
-                              Register scratch);
-  void MovInt64ToDouble(DoubleRegister dst,
-#if !V8_TARGET_ARCH_S390X
-                        Register src_hi,
-#endif
-                        Register src);
-#if V8_TARGET_ARCH_S390X
-  void MovInt64ComponentsToDouble(DoubleRegister dst,
-                                  Register src_hi,
-                                  Register src_lo,
-                                  Register scratch);
-#endif
-  void MovDoubleLowToInt(Register dst,
-                         DoubleRegister src);
-  void MovDoubleHighToInt(Register dst,
-                          DoubleRegister src);
-  void MovDoubleToInt64(
-#if !V8_TARGET_ARCH_S390X
-                        Register dst_hi,
-#endif
-                        Register dst,
-                        DoubleRegister src);
   void AddSmiLiteral(Register dst, Register src, Smi *smi, Register scratch);
   void SubSmiLiteral(Register dst, Register src, Smi *smi, Register scratch);
   void CmpSmiLiteral(Register src1, Smi *smi, Register scratch);
@@ -1761,15 +1728,11 @@ class MacroAssembler: public Assembler {
   void AssertNotSmi(Register object);
   void AssertSmi(Register object);
 
-  // Checks to see if 64-bit value fits in SMI range, i.e the upper 33-bits are
-  // the same.
 #if V8_TARGET_ARCH_S390X
-  inline void TestIfInt32(Register value,
-                          Register scratch1, Register scratch2) {
+  inline void TestIfInt32(Register value, Register scratch) {
     // High bits must be identical to fit into an 32-bit integer
-    ShiftRightArith(scratch1, value, Operand(31));
-    srag(scratch2, value, Operand(32));
-    cr_z(scratch1, scratch2);  // force 32-bit comparison
+    lgfr(scratch, value);
+    CmpP(scratch, value);
   }
 #else
   inline void TestIfInt32(Register hi_word, Register lo_word,
