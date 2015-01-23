@@ -115,14 +115,14 @@ static bool supportsSTFLE() {
 }
 
 
-void CpuFeatures::ProbImpl(bool cross_compile) {
+void CpuFeatures::ProbeImpl(bool cross_compile) {
   cache_line_size_ = 128;
 
   // Only use statically determined features for cross compile (snapshot).
   if (cross_compile) return;
   
   unsigned standard_features = static_cast<unsigned>(
-      OS::CpuFeaturesImpliedByPlatform()) | CpuFeaturesImpliedByCompiler();
+      v8::base::OS::CpuFeaturesImpliedByPlatform()) | CpuFeaturesImpliedByCompiler();
   DCHECK(supported_ == 0 || supported_ == standard_features);
 #ifdef DEBUG
   initialized_ = true;
