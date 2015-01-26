@@ -8,15 +8,15 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <cmath>
-#include "v8.h"
+#include "src/v8.h"
 #if V8_TARGET_ARCH_S390
 
-#include "disasm.h"
-#include "assembler.h"
-#include "codegen.h"
-#include "s390/constants-s390.h"
-#include "s390/simulator-s390.h"
-#include "s390/frames-s390.h"
+#include "src/disasm.h"
+#include "src/assembler.h"
+#include "src/codegen.h"
+#include "src/s390/constants-s390.h"
+#include "src/s390/simulator-s390.h"
+#include "src/s390/frames-s390.h"
 #if defined(USE_SIMULATOR)
 
 // Only build the simulator if not compiling for real s390 hardware.
@@ -92,7 +92,7 @@ void S390Debugger::Stop(Instruction* instr) {  // roohack need to fix for PPC
   char** msg_address =
     reinterpret_cast<char**>(sim_->get_pc() + Instruction::kInstrSize);
   char* msg = *msg_address;
-  ASSERT(msg != NULL);
+  DCHECK(msg != NULL);
 
   // Update this stop description.
   if (isWatchedStop(code) && !watched_stops_[code].desc) {
@@ -369,7 +369,7 @@ void S390Debugger::Debug() {
             PrintF("   pc: %08" V8PRIxPTR "  cr: %08x\n",
                    sim_->special_reg_pc_, sim_->condition_reg_);
           } else if (strcmp(arg1, "allf") == 0) {
-            for (int i = 0; i < DoubleRegister::NumRegisters(); i++) {
+            for (int i = 0; i < DoubleRegister::kNumRegisters; i++) {
               float fvalue = GetFPFloatRegisterValue(i);
               uint32_t as_words = BitCast<uint32_t>(fvalue);
               PrintF("%3s: %f 0x%08x\n",
@@ -378,7 +378,7 @@ void S390Debugger::Debug() {
                      as_words);
             }
           } else if (strcmp(arg1, "alld") == 0) {
-            for (int i = 0; i < DoubleRegister::NumRegisters(); i++) {
+            for (int i = 0; i < DoubleRegister::kNumRegisters; i++) {
               dvalue = GetFPDoubleRegisterValue(i);
               uint64_t as_words = BitCast<uint64_t>(dvalue);
               PrintF("%3s: %f 0x%08x %08x\n",
@@ -422,17 +422,18 @@ void S390Debugger::Debug() {
                  || (strcmp(cmd, "printobject") == 0)) {
         if (argc == 2) {
           intptr_t value;
+          OFStream os(stdout);
           if (GetValue(arg1, &value)) {
             Object* obj = reinterpret_cast<Object*>(value);
-            PrintF("%s: \n", arg1);
+            os << arg1 << ": \n";
 #ifdef DEBUG
-            obj->PrintLn();
+            obj->Print(os);
+            os << "\n";
 #else
-            obj->ShortPrint();
-            PrintF("\n");
+            os << Brief(obj) << "\n";
 #endif
           } else {
-            PrintF("%s unrecognized\n", arg1);
+            os << arg1 << " unrecognized\n";
           }
         } else {
           PrintF("printobject <value>\n");
@@ -537,7 +538,7 @@ void S390Debugger::Debug() {
         }
       } else if (strcmp(cmd, "gdb") == 0) {
         PrintF("relinquishing control to gdb\n");
-        v8::internal::OS::DebugBreak();
+        v8::base::OS::DebugBreak();
         PrintF("regaining control from gdb\n");
       } else if (strcmp(cmd, "break") == 0) {
         if (argc == 2) {
@@ -693,8 +694,8 @@ void S390Debugger::Debug() {
 
 
 static bool ICacheMatch(void* one, void* two) {
-  ASSERT((reinterpret_cast<intptr_t>(one) & CachePage::kPageMask) == 0);
-  ASSERT((reinterpret_cast<intptr_t>(two) & CachePage::kPageMask) == 0);
+  DCHECK((reinterpret_cast<intptr_t>(one) & CachePage::kPageMask) == 0);
+  DCHECK((reinterpret_cast<intptr_t>(two) & CachePage::kPageMask) == 0);
   return one == two;
 }
 
@@ -731,7 +732,7 @@ void Simulator::FlushICache(v8::internal::HashMap* i_cache,
     FlushOnePage(i_cache, start, bytes_to_flush);
     start += bytes_to_flush;
     size -= bytes_to_flush;
-    ASSERT_EQ(0, static_cast<int>(start & CachePage::kPageMask));
+    DCHECK_EQ(0, static_cast<int>(start & CachePage::kPageMask));
     offset = 0;
   }
   if (size != 0) {
@@ -756,10 +757,10 @@ CachePage* Simulator::GetCachePage(v8::internal::HashMap* i_cache, void* page) {
 void Simulator::FlushOnePage(v8::internal::HashMap* i_cache,
                              intptr_t start,
                              int size) {
-  ASSERT(size <= CachePage::kPageSize);
-  ASSERT(AllOnOnePage(start, size - 1));
-  ASSERT((start & CachePage::kLineMask) == 0);
-  ASSERT((size & CachePage::kLineMask) == 0);
+  DCHECK(size <= CachePage::kPageSize);
+  DCHECK(AllOnOnePage(start, size - 1));
+  DCHECK((start & CachePage::kLineMask) == 0);
+  DCHECK((size & CachePage::kLineMask) == 0);
   void* page = reinterpret_cast<void*>(start & (~CachePage::kPageMask));
   int offset = (start & CachePage::kPageMask);
   CachePage* cache_page = GetCachePage(i_cache, page);
@@ -785,7 +786,7 @@ void Simulator::CheckICache(v8::internal::HashMap* i_cache,
                  Instruction::kInstrSize), 0);
   } else {
     // Cache miss.  Load memory into the cache.
-    OS::MemCopy(cached_line, line, CachePage::kLineLength);
+    memcpy(cached_line, line, CachePage::kLineLength);
     *cache_valid_byte = CachePage::LINE_VALID;
   }
 }
@@ -821,9 +822,9 @@ Simulator::Simulator(Isolate* isolate) : isolate_(isolate) {
 
   // make sure our register type can hold exactly 4/8 bytes
 #ifdef V8_TARGET_ARCH_S390X
-  ASSERT(sizeof(intptr_t) == 8);
+  DCHECK(sizeof(intptr_t) == 8);
 #else
-  ASSERT(sizeof(intptr_t) == 4);
+  DCHECK(sizeof(intptr_t) == 4);
 #endif
   // Set up architecture state.
   // All registers are initialized to zero to start with.
@@ -897,7 +898,7 @@ class Redirection {
     Redirection* current = isolate->simulator_redirection();
     for (; current != NULL; current = current->next_) {
       if (current->external_function_ == external_function) {
-        ASSERT_EQ(current->type(), type);
+        DCHECK_EQ(current->type(), type);
         return current;
       }
     }
@@ -936,7 +937,7 @@ void* Simulator::RedirectExternalReference(void* external_function,
 Simulator* Simulator::current(Isolate* isolate) {
   v8::internal::Isolate::PerIsolateThreadData* isolate_data =
       isolate->FindOrAllocatePerThreadDataForThisThread();
-  ASSERT(isolate_data != NULL);
+  DCHECK(isolate_data != NULL);
 
   Simulator* sim = isolate_data->simulator();
   if (sim == NULL) {
@@ -950,14 +951,14 @@ Simulator* Simulator::current(Isolate* isolate) {
 
 // Sets the register in the architecture state.
 void Simulator::set_register(int reg, uint64_t value) {
-  ASSERT((reg >= 0) && (reg < kNumGPRs));
+  DCHECK((reg >= 0) && (reg < kNumGPRs));
   registers_[reg] = value;
 }
 
 
 // Get the register from the architecture state.
 uint64_t Simulator::get_register(int reg) const {
-  ASSERT((reg >= 0) && (reg < kNumGPRs));
+  DCHECK((reg >= 0) && (reg < kNumGPRs));
   // Stupid code added to avoid bug in GCC.
   // See: http://gcc.gnu.org/bugzilla/show_bug.cgi?id=43949
   if (reg >= kNumGPRs) return 0;
@@ -968,7 +969,7 @@ uint64_t Simulator::get_register(int reg) const {
 
 template<typename T>
 T Simulator::get_low_register(int reg) const {
-  ASSERT((reg >= 0) && (reg < kNumGPRs));
+  DCHECK((reg >= 0) && (reg < kNumGPRs));
   // Stupid code added to avoid bug in GCC.
   // See: http://gcc.gnu.org/bugzilla/show_bug.cgi?id=43949
   if (reg >= kNumGPRs) return 0;
@@ -979,7 +980,7 @@ T Simulator::get_low_register(int reg) const {
 
 template<typename T>
 T Simulator::get_high_register(int reg) const {
-  ASSERT((reg >= 0) && (reg < kNumGPRs));
+  DCHECK((reg >= 0) && (reg < kNumGPRs));
   // Stupid code added to avoid bug in GCC.
   // See: http://gcc.gnu.org/bugzilla/show_bug.cgi?id=43949
   if (reg >= kNumGPRs) return 0;
@@ -1005,15 +1006,15 @@ void Simulator::set_high_register(int reg, uint32_t value) {
 
 
 double Simulator::get_double_from_register_pair(int reg) {
-  ASSERT((reg >= 0) && (reg < kNumGPRs) && ((reg % 2) == 0));
+  DCHECK((reg >= 0) && (reg < kNumGPRs) && ((reg % 2) == 0));
 
   double dm_val = 0.0;
 #if !V8_TARGET_ARCH_S390X  // doesn't make sense in 64bit mode
   // Read the bits from the unsigned integer register_[] array
   // into the double precision floating point value and return it.
   char buffer[sizeof(fp_registers_[0])];
-  OS::MemCopy(buffer, &registers_[reg], 2 * sizeof(registers_[0]));
-  OS::MemCopy(&dm_val, buffer, 2 * sizeof(registers_[0]));
+  memcpy(buffer, &registers_[reg], 2 * sizeof(registers_[0]));
+  memcpy(&dm_val, buffer, 2 * sizeof(registers_[0]));
 #endif
   return(dm_val);
 }
@@ -1490,7 +1491,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
         }
         CHECK(stack_aligned);
 #if !V8_TARGET_ARCH_S390X
-        ASSERT(redirection->type() == ExternalReference::BUILTIN_CALL);
+        DCHECK(redirection->type() == ExternalReference::BUILTIN_CALL);
         SimulatorRuntimeCall target =
           reinterpret_cast<SimulatorRuntimeCall>(external);
         int64_t result = target(arg[0], arg[1], arg[2], arg[3], arg[4], arg[5]);
@@ -1520,7 +1521,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
           }
           set_register(r2, result);
         } else {
-          ASSERT(redirection->type() ==
+          DCHECK(redirection->type() ==
                  ExternalReference::BUILTIN_OBJECTPAIR_CALL);
           SimulatorRuntimeObjectPairCall target =
             reinterpret_cast<SimulatorRuntimeObjectPairCall>(external);
@@ -1534,7 +1535,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
           set_register(r2, result.x);
           set_register(r3, result.y);
 #else
-          OS::MemCopy(reinterpret_cast<void *>(result_buffer), &result,
+          memcpy(reinterpret_cast<void *>(result_buffer), &result,
                       sizeof(struct ObjectPair));
 #endif
         }
@@ -1585,13 +1586,13 @@ bool Simulator::isStopInstruction(Instruction* instr) {
 
 
 bool Simulator::isWatchedStop(uint32_t code) {
-  ASSERT(code <= kMaxStopCode);
+  DCHECK(code <= kMaxStopCode);
   return code < kNumOfWatchedStops;
 }
 
 
 bool Simulator::isEnabledStop(uint32_t code) {
-  ASSERT(code <= kMaxStopCode);
+  DCHECK(code <= kMaxStopCode);
   // Unwatched stops are always enabled.
   return !isWatchedStop(code) ||
     !(watched_stops_[code].count & kStopDisabledBit);
@@ -1599,7 +1600,7 @@ bool Simulator::isEnabledStop(uint32_t code) {
 
 
 void Simulator::EnableStop(uint32_t code) {
-  ASSERT(isWatchedStop(code));
+  DCHECK(isWatchedStop(code));
   if (!isEnabledStop(code)) {
     watched_stops_[code].count &= ~kStopDisabledBit;
   }
@@ -1607,7 +1608,7 @@ void Simulator::EnableStop(uint32_t code) {
 
 
 void Simulator::DisableStop(uint32_t code) {
-  ASSERT(isWatchedStop(code));
+  DCHECK(isWatchedStop(code));
   if (isEnabledStop(code)) {
     watched_stops_[code].count |= kStopDisabledBit;
   }
@@ -1615,8 +1616,8 @@ void Simulator::DisableStop(uint32_t code) {
 
 
 void Simulator::IncreaseStopCounter(uint32_t code) {
-  ASSERT(code <= kMaxStopCode);
-  ASSERT(isWatchedStop(code));
+  DCHECK(code <= kMaxStopCode);
+  DCHECK(isWatchedStop(code));
   if ((watched_stops_[code].count & ~(1 << 31)) == 0x7fffffff) {
     PrintF("Stop counter for code %i has overflowed.\n"
            "Enabling this code and reseting the counter to 0.\n", code);
@@ -1630,7 +1631,7 @@ void Simulator::IncreaseStopCounter(uint32_t code) {
 
 // Print a stop status.
 void Simulator::PrintStopInfo(uint32_t code) {
-  ASSERT(code <= kMaxStopCode);
+  DCHECK(code <= kMaxStopCode);
   if (!isWatchedStop(code)) {
     PrintF("Stop not watched.");
   } else {
@@ -1733,7 +1734,7 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
           SetS390BitWiseConditionCode<uint32_t>(r1_val);
           break;
         case MR: {
-          ASSERT(r1 % 2 == 0);
+          DCHECK(r1 % 2 == 0);
           r1_val = get_low_register<int32_t>(r1 + 1);
           int64_t product = static_cast<int64_t>(r1_val)
                           * static_cast<int64_t>(r2_val);
@@ -1746,7 +1747,7 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
         }
         case DR: {
           // reg-reg pair should be even-odd pair, assert r1 is an even register
-          ASSERT(r1 % 2 == 0);
+          DCHECK(r1 % 2 == 0);
           // leftmost 32 bits of the dividend are in r1
           // rightmost 32 bits of the dividend are in r1+1
           // get the signed value from r1
@@ -2362,7 +2363,7 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
     case SRDA: {
       RSInstruction* rsInstr = reinterpret_cast<RSInstruction*>(instr);
       int r1 = rsInstr->R1Value();
-      ASSERT(r1 % 2 == 0);  // must be a reg pair
+      DCHECK(r1 % 2 == 0);  // must be a reg pair
       int b2 = rsInstr->B2Value();
       intptr_t d2 = rsInstr->D2Value();
       // only takes rightmost 6bits
@@ -2743,7 +2744,7 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
       int r1 = rreInst->R1Value();
       int r2 = rreInst->R2Value();
 
-      ASSERT(r1 % 2 == 0);
+      DCHECK(r1 % 2 == 0);
 
       int64_t dividend = get_register(r1+1);
       int64_t divisor = get_register(r2);
@@ -2757,7 +2758,7 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
       int r1 = rreInst->R1Value();
       int r2 = rreInst->R2Value();
 
-      ASSERT(r1 % 2 == 0);
+      DCHECK(r1 % 2 == 0);
 
       int64_t r2_val = get_register(r2);
 
@@ -3305,7 +3306,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
         SetS390BitWiseConditionCode<uint32_t>(alu_out);
       } else if (op == IILF) {
         alu_out = imm;
-      } else { ASSERT(false); }
+      } else { DCHECK(false); }
       set_low_register(r1, alu_out);
       break;
     }
@@ -3324,7 +3325,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
         SetS390BitWiseConditionCode<uint32_t>(alu_out);
       } else if (op == IIHF) {
         alu_out = imm;
-      } else { ASSERT(false); }
+      } else { DCHECK(false); }
       set_high_register(r1, alu_out);
       break;
     }
@@ -3398,7 +3399,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
         } else if (op == STMG) {
           int64_t value = get_register((r1 + i) % 16);
           WriteDW(rb_val + offset + 8 * i, value);
-        } else { ASSERT(false); }
+        } else { DCHECK(false); }
       }
       break;
     }
@@ -4015,7 +4016,7 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
           break;
         }
         default: {
-          ASSERT(false);
+          DCHECK(false);
           break;
         }
       }
@@ -4101,7 +4102,7 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
     case ALG:
     case SLG: {
 #ifndef V8_TARGET_ARCH_S390X
-      ASSERT(false);
+      DCHECK(false);
 #endif
       RXYInstruction* rxyInstr = reinterpret_cast<RXYInstruction*>(instr);
       uint64_t r1_val = get_register(rxyInstr->R1Value());
@@ -4129,7 +4130,7 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
         uint32_t mem_val = ReadW(b2_val + d2_val + x2_val, instr);
         alu_out -= mem_val;
         SetS390ConditionCode<int64_t>(alu_out, 0);
-      } else { ASSERT(false); }
+      } else { DCHECK(false); }
       set_register(r1, alu_out);
       break;
     }
@@ -4137,7 +4138,7 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
     case SLGFI: {  // TODO(ALANLI): add carry
 #ifndef V8_TARGET_ARCH_S390X
     // should only be called on 64bit
-      ASSERT(false);
+      DCHECK(false);
 #endif
       RILInstruction* rilInstr = reinterpret_cast<RILInstruction*>(instr);
       int r1 = rilInstr->R1Value();
@@ -4389,8 +4390,8 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   intptr_t entry_stack = (original_stack -
                           (kCalleeRegisterSaveAreaSize +
                            stack_arg_count * sizeof(intptr_t)));
-  if (OS::ActivationFrameAlignment() != 0) {
-    entry_stack &= -OS::ActivationFrameAlignment();
+  if (base::OS::ActivationFrameAlignment() != 0) {
+    entry_stack &= -base::OS::ActivationFrameAlignment();
   }
   // Store remaining arguments on stack, from low to high memory.
   // +2 is a hack for the LR slot + old SP on PPC
