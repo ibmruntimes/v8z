@@ -527,7 +527,7 @@ void KeyedStoreIC::GenerateSloppyArguments(MacroAssembler* masm) {
   __ StoreP(r2, unmapped_location);
   __ AddP(r8, unmapped_base, unmapped_offset);
   __ LoadRR(r1, r2);
-  __ RecordWrite(r5, r8, r1, kLRHasNotBeenSaved, kDontSaveFPRegs);
+  __ RecordWrite(unmapped_base, r8, r1, kLRHasNotBeenSaved, kDontSaveFPRegs);
   __ Ret();
   __ bind(&slow);
   GenerateMiss(masm);
