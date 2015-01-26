@@ -3565,6 +3565,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
     case LGB:
     case LG:
     case LGF:
+    case LGH:
     case LLGF:
     case STG:
     case STY:
@@ -3594,6 +3595,9 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
         set_register(r1, mem_val);
       } else if (op == LGF) {
         int64_t mem_val = static_cast<int64_t>(ReadW(addr, instr));
+        set_register(r1, mem_val);
+      } else if (op == LGH) {
+        int64_t mem_val = static_cast<int64_t>(ReadH(addr, instr));
         set_register(r1, mem_val);
       } else if (op == LLGF) {
         uint64_t mem_val = static_cast<uint64_t>(ReadWU(addr, instr));
