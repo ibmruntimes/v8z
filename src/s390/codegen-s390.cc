@@ -5,13 +5,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "v8.h"
+#include "src/v8.h"
 
 #if V8_TARGET_ARCH_S390
 
-#include "codegen.h"
-#include "macro-assembler.h"
-#include "simulator-s390.h"
+#include "src/codegen.h"
+#include "src/macro-assembler.h"
+#include "src/s390/simulator-s390.h"
 
 namespace v8 {
 namespace internal {
@@ -32,7 +32,7 @@ double fast_exp_simulator(double x) {
 UnaryMathFunction CreateExpFunction() {
   if (!FLAG_fast_math) return &std::exp;
   size_t actual_size;
-  byte* buffer = static_cast<byte*>(OS::Allocate(1 * KB, &actual_size, true));
+  byte* buffer = static_cast<byte*>(base::OS::Allocate(1 * KB, &actual_size, true));
   if (buffer == NULL) return &std::exp;
   ExternalReference::InitializeMathExpData();
 
@@ -64,11 +64,11 @@ UnaryMathFunction CreateExpFunction() {
   CodeDesc desc;
   masm.GetCode(&desc);
 #if !ABI_USES_FUNCTION_DESCRIPTORS
-  ASSERT(!RelocInfo::RequiresRelocation(desc));
+  DCHECK(!RelocInfo::RequiresRelocation(desc));
 #endif
 
-  CPU::FlushICache(buffer, actual_size);
-  OS::ProtectCode(buffer, actual_size);
+  CpuFeatures::FlushICache(buffer, actual_size);
+  base::OS::ProtectCode(buffer, actual_size);
 
 #if !defined(USE_SIMULATOR)
   return FUNCTION_CAST<UnaryMathFunction>(buffer);
@@ -84,7 +84,7 @@ UnaryMathFunction CreateSqrtFunction() {
   return &std::sqrt;
 #else
   size_t actual_size;
-  byte* buffer = static_cast<byte*>(OS::Allocate(1 * KB, &actual_size, true));
+  byte* buffer = static_cast<byte*>(base::OS::Allocate(1 * KB, &actual_size, true));
   if (buffer == NULL) return &std::sqrt;
 
   MacroAssembler masm(NULL, buffer, static_cast<int>(actual_size));
@@ -102,11 +102,11 @@ UnaryMathFunction CreateSqrtFunction() {
   CodeDesc desc;
   masm.GetCode(&desc);
 #if !ABI_USES_FUNCTION_DESCRIPTORS
-  ASSERT(!RelocInfo::RequiresRelocation(desc));
+  DCHECK(!RelocInfo::RequiresRelocation(desc));
 #endif
 
-  CPU::FlushICache(buffer, actual_size);
-  OS::ProtectCode(buffer, actual_size);
+  CpuFeatures::FlushICache(buffer, actual_size);
+  base::OS::ProtectCode(buffer, actual_size);
   return FUNCTION_CAST<UnaryMathFunction>(buffer);
 #endif
 }
@@ -119,14 +119,14 @@ UnaryMathFunction CreateSqrtFunction() {
 
 void StubRuntimeCallHelper::BeforeCall(MacroAssembler* masm) const {
   masm->EnterFrame(StackFrame::INTERNAL);
-  ASSERT(!masm->has_frame());
+  DCHECK(!masm->has_frame());
   masm->set_has_frame(true);
 }
 
 
 void StubRuntimeCallHelper::AfterCall(MacroAssembler* masm) const {
   masm->LeaveFrame(StackFrame::INTERNAL);
-  ASSERT(masm->has_frame());
+  DCHECK(masm->has_frame());
   masm->set_has_frame(false);
 }
 
@@ -137,26 +137,28 @@ void StubRuntimeCallHelper::AfterCall(MacroAssembler* masm) const {
 #define __ ACCESS_MASM(masm)
 
 void ElementsTransitionGenerator::GenerateMapChangeElementsTransition(
-    MacroAssembler* masm, AllocationSiteMode mode,
+    MacroAssembler* masm,
+    Register receiver,
+    Register key,
+    Register value,
+    Register target_map,
+    AllocationSiteMode mode,
     Label* allocation_memento_found) {
-  // ----------- S t a t e -------------
-  //  -- r2    : value
-  //  -- r3    : key
-  //  -- r4    : receiver
-  //  -- r14     : return address
-  //  -- r5    : target map, scratch for subsequent call
-  //  -- r6    : scratch (elements)
-  // -----------------------------------
+  Register scratch_elements = r6;
+  DCHECK(!AreAliased(receiver, key, value, target_map,
+                    scratch_elements));
+
   if (mode == TRACK_ALLOCATION_SITE) {
-    ASSERT(allocation_memento_found != NULL);
-    __ JumpIfJSArrayHasAllocationMemento(r4, r6, allocation_memento_found);
+    DCHECK(allocation_memento_found != NULL);
+    __ JumpIfJSArrayHasAllocationMemento(
+       receiver, scratch_elements, allocation_memento_found);
   }
 
   // Set transitioned map.
-  __ StoreP(r5, FieldMemOperand(r4, HeapObject::kMapOffset));
+  __ StoreP(target_map, FieldMemOperand(receiver, HeapObject::kMapOffset));
   __ RecordWriteField(r4,
                       HeapObject::kMapOffset,
-                      r5,
+                      target_map,
                       r13,
                       kLRHasNotBeenSaved,
                       kDontSaveFPRegs,
@@ -166,92 +168,102 @@ void ElementsTransitionGenerator::GenerateMapChangeElementsTransition(
 
 
 void ElementsTransitionGenerator::GenerateSmiToDouble(
-    MacroAssembler* masm, AllocationSiteMode mode, Label* fail) {
-  // ----------- S t a t e -------------
-  //  -- r2    : value
-  //  -- r3    : key
-  //  -- r4    : receiver
-  //  -- lr    : return address
-  //  -- r5    : target map, scratch for subsequent call
-  //  -- r6    : scratch (elements)
-  // -----------------------------------
+    MacroAssembler* masm,
+    Register receiver,
+    Register key,
+    Register value,
+    Register target_map,
+    AllocationSiteMode mode,
+    Label* fail) {
   Label loop, entry, convert_hole, gc_required, only_change_map, done;
+  Register elements = r6;
+  Register length = r7;
+  Register array = r8;
+  Register array_end = array;
+
+  // target_map parameter can be clobbered.
+  Register scratch1 = target_map;
+  Register scratch2 = r13;
+
+  // Verify input registers don't conflict with locals.
+  DCHECK(!AreAliased(receiver, key, value, target_map,
+                     elements, length, array, scratch2));
 
   if (mode == TRACK_ALLOCATION_SITE) {
-    __ JumpIfJSArrayHasAllocationMemento(r4, r6, fail);
+    __ JumpIfJSArrayHasAllocationMemento(receiver, elements, fail);
   }
 
   // Check for empty arrays, which only require a map transition and no changes
   // to the backing store.
-  __ LoadP(r6, FieldMemOperand(r4, JSObject::kElementsOffset));
-  __ CompareRoot(r6, Heap::kEmptyFixedArrayRootIndex);
+  __ LoadP(elements, FieldMemOperand(receiver, JSObject::kElementsOffset));
+  __ CompareRoot(elements, Heap::kEmptyFixedArrayRootIndex);
   __ beq(&only_change_map, Label::kNear);
 
   // Preserve lr and use r14 as a temporary register.
   __ push(r14);
 
-  __ LoadP(r7, FieldMemOperand(r6, FixedArray::kLengthOffset));
-  // r6: source FixedArray
-  // r7: number of elements (smi-tagged)
+  __ LoadP(length, FieldMemOperand(elements, FixedArray::kLengthOffset));
+  // length: number of elements (smi-tagged)
 
   // Allocate new FixedDoubleArray.
-  __ SmiToDoubleArrayOffset(r14, r7);
+  __ SmiToDoubleArrayOffset(r14, length);
   __ AddP(r14, Operand(FixedDoubleArray::kHeaderSize));
-  __ Allocate(r14, r8, r9, r13, &gc_required, DOUBLE_ALIGNMENT);
+  __ Allocate(r14, array, r9, scratch2, &gc_required, DOUBLE_ALIGNMENT);
   // r8: destination FixedDoubleArray, not tagged as heap object.
 
    // Set destination FixedDoubleArray's length and map.
-  __ LoadRoot(r13, Heap::kFixedDoubleArrayMapRootIndex);
-  __ StoreP(r7, MemOperand(r8, FixedDoubleArray::kLengthOffset));
+  __ LoadRoot(scratch2, Heap::kFixedDoubleArrayMapRootIndex);
+  __ StoreP(length, MemOperand(array, FixedDoubleArray::kLengthOffset));
   // Update receiver's map.
-  __ StoreP(r13, MemOperand(r8, HeapObject::kMapOffset));
+  __ StoreP(scratch2, MemOperand(array, HeapObject::kMapOffset));
 
-  __ StoreP(r5, FieldMemOperand(r4, HeapObject::kMapOffset));
-  __ RecordWriteField(r4,
+  __ StoreP(target_map, FieldMemOperand(receiver, HeapObject::kMapOffset));
+  __ RecordWriteField(receiver,
                       HeapObject::kMapOffset,
-                      r5,
-                      r13,
+                      target_map,
+                      scratch2,
                       kLRHasBeenSaved,
                       kDontSaveFPRegs,
                       OMIT_REMEMBERED_SET,
                       OMIT_SMI_CHECK);
   // Replace receiver's backing store with newly created FixedDoubleArray.
-  __ AddP(r5, r8, Operand(kHeapObjectTag));
-  __ StoreP(r5, FieldMemOperand(r4, JSObject::kElementsOffset));
-  __ RecordWriteField(r4,
+  __ AddP(scratch1, array, Operand(kHeapObjectTag));
+  __ StoreP(scratch1, FieldMemOperand(receiver, JSObject::kElementsOffset));
+  __ RecordWriteField(receiver,
                       JSObject::kElementsOffset,
-                      r5,
-                      r13,
+                      scratch1,
+                      scratch2,
                       kLRHasBeenSaved,
                       kDontSaveFPRegs,
                       EMIT_REMEMBERED_SET,
                       OMIT_SMI_CHECK);
 
   // Prepare for conversion loop.
-  __ AddP(r5, r6, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
-  __ AddP(r9, r8, Operand(FixedDoubleArray::kHeaderSize));
-  __ SmiToDoubleArrayOffset(r8, r7);
-  __ AddP(r8, r9);
+  __ AddP(target_map, elements, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ AddP(r9, array, Operand(FixedDoubleArray::kHeaderSize));
+  __ SmiToDoubleArrayOffset(array, length);
+  __ AddP(array_end, r9);
+  // Repurpose registers no longer in use.
 #if V8_TARGET_ARCH_S390X
-  __ mov(r6, Operand(kHoleNanInt64));
+  Register hole_int64 = elements;
 #else
-  __ mov(r6, Operand(kHoleNanLower32));
-  __ mov(r7, Operand(kHoleNanUpper32));
+  Register hole_lower = elements;
+  Register hole_upper = length;
 #endif
-  // r5: begin of source FixedArray element fields, not tagged
-  // r6: kHoleNanLower32
-  // r7: kHoleNanUpper32
-  // r8: end of destination FixedDoubleArray, not tagged
-  // r9: begin of FixedDoubleArray element fields, not tagged
+  // scratch1: begin of source FixedArray element fields, not tagged
+  // hole_lower: kHoleNanLower32 OR hol_int64
+  // hole_upper: kHoleNanUpper32
+  // array_end: end of destination FixedDoubleArray, not tagged
+  // scratch2: begin of FixedDoubleArray element fields, not tagged
 
   __ b(&entry, Label::kNear);
 
   __ bind(&only_change_map);
-  __ StoreP(r5, FieldMemOperand(r4, HeapObject::kMapOffset));
-  __ RecordWriteField(r4,
+  __ StoreP(target_map, FieldMemOperand(receiver, HeapObject::kMapOffset));
+  __ RecordWriteField(receiver,
                       HeapObject::kMapOffset,
-                      r5,
-                      r13,
+                      target_map,
+                      scratch2,
                       kLRHasNotBeenSaved,
                       kDontSaveFPRegs,
                       OMIT_REMEMBERED_SET,
@@ -265,14 +277,14 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
 
   // Convert and copy elements.
   __ bind(&loop);
-  __ LoadP(r13, MemOperand(r5));
-  __ AddP(r5, Operand(kPointerSize));
+  __ LoadP(r13, MemOperand(scratch1));
+  __ AddP(scratch1, Operand(kPointerSize));
   // r13: current element
   __ UntagAndJumpIfNotSmi(r13, r13, &convert_hole);
 
   // Normal smi, convert to double and store.
   __ ConvertIntToDouble(r13, d0);
-  __ StoreF(d0, MemOperand(r9, 0));
+  __ StoreF(d0, MemOperand(scratch2, 0));
   __ la(r9, MemOperand(r9, 8));
 
   __ b(&entry, Label::kNear);
@@ -286,16 +298,16 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
     __ Assert(eq, kObjectFoundInSmiOnlyArray);
   }
 #if V8_TARGET_ARCH_S390X
-  __ stg(r6, MemOperand(r9, 0));
+  __ stg(hole_int64, MemOperand(r9, 0));
 #else
   // TODO(joransiu): Check if this works
-  __ StoreW(r7, MemOperand(r9, Register::kExponentOffset));
-  __ StoreW(r6, MemOperand(r9, Register::kMantissaOffset));
+  __ StoreW(hole_upper, MemOperand(r9, Register::kExponentOffset));
+  __ StoreW(hole_lower, MemOperand(r9, Register::kMantissaOffset));
 #endif
   __ AddP(r9, Operand(8));
 
   __ bind(&entry);
-  __ CmpP(r9, r8);
+  __ CmpP(r9, array_end);
   __ blt(&loop);
 
   __ pop(r14);
@@ -304,92 +316,118 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
 
 
 void ElementsTransitionGenerator::GenerateDoubleToObject(
-    MacroAssembler* masm, AllocationSiteMode mode, Label* fail) {
-  // ----------- S t a t e -------------
-  //  -- r2    : value
-  //  -- r3    : key
-  //  -- r4    : receiver
-  //  -- lr    : return address
-  //  -- r5    : target map, scratch for subsequent call
-  //  -- r6    : scratch (elements)
-  // -----------------------------------
+    MacroAssembler* masm,
+    Register receiver,
+    Register key,
+    Register value,
+    Register target_map,
+    AllocationSiteMode mode,
+    Label* fail) {
+  // Register lr contains the return address.
   Label entry, loop, convert_hole, gc_required, only_change_map;
+  Register elements = r6;
+  Register array = r8;
+  Register length = r7;
+  Register scratch = r13;
+
+  // Verify input registers don't conflict with locals.
+  DCHECK(!AreAliased(receiver, key, value, target_map,
+                     elements, array, length, scratch));
 
   if (mode == TRACK_ALLOCATION_SITE) {
-    __ JumpIfJSArrayHasAllocationMemento(r4, r6, fail);
+  __ JumpIfJSArrayHasAllocationMemento(receiver, elements, fail);
   }
 
   // Check for empty arrays, which only require a map transition and no changes
   // to the backing store.
-  __ LoadP(r6, FieldMemOperand(r4, JSObject::kElementsOffset));
-  __ CompareRoot(r6, Heap::kEmptyFixedArrayRootIndex);
+  __ LoadP(elements, FieldMemOperand(receiver, JSObject::kElementsOffset)); 
+  __ CompareRoot(elements, Heap::kEmptyFixedArrayRootIndex); 
   __ beq(&only_change_map);
 
-  __ Push(r5, r4, r3, r2);
-  __ LoadP(r7, FieldMemOperand(r6, FixedArray::kLengthOffset));
-  // r6: source FixedDoubleArray
-  // r7: number of elements (smi-tagged)
+  __ Push(target_map, receiver, key, value);
+  __ LoadP(length, FieldMemOperand(elements, FixedArray::kLengthOffset));
+  // elements: source FixedDoubleArray
+  // length: number of elements (smi-tagged)
 
   // Allocate new FixedArray.
-  __ LoadImmP(r2, Operand(FixedDoubleArray::kHeaderSize));
-  __ SmiToPtrArrayOffset(r0, r7);
-  __ AddP(r2, r0);
-  __ Allocate(r2, r8, r9, r13, &gc_required, NO_ALLOCATION_FLAGS);
-  // r8: destination FixedArray, not tagged as heap object
+  // Re-use value and target_map registers, as they have been saved on the
+  // stack.
+  Register array_size = value;
+  Register allocate_scratch = target_map;
+  __ LoadImmP(array_size, Operand(FixedDoubleArray::kHeaderSize));
+  __ SmiToPtrArrayOffset(r0, length);
+  __ AddP(array_size, r0);
+  __ Allocate(array_size, array, allocate_scratch, scratch, &gc_required,
+              NO_ALLOCATION_FLAGS);
+  // array: destination FixedArray, not tagged as heap object
   // Set destination FixedDoubleArray's length and map.
-  __ LoadRoot(r13, Heap::kFixedArrayMapRootIndex);
-  __ StoreP(r7, MemOperand(r8, FixedDoubleArray::kLengthOffset));
-  __ StoreP(r13, MemOperand(r8, HeapObject::kMapOffset));
+  __ LoadRoot(scratch, Heap::kFixedArrayMapRootIndex);
+  __ StoreP(length, MemOperand(array, FixedDoubleArray::kLengthOffset));
+  __ StoreP(scratch, MemOperand(array, HeapObject::kMapOffset));
 
   // Prepare for conversion loop.
-  __ AddP(r6, Operand(FixedDoubleArray::kHeaderSize - kHeapObjectTag));
-  __ AddP(r5, r8, Operand(FixedArray::kHeaderSize));
-  __ AddP(r8, Operand(kHeapObjectTag));
-  __ SmiToPtrArrayOffset(r7, r7);
-  __ AddP(r7, r5);
+  Register src_elements = elements;
+  Register dst_elements = target_map;
+  Register dst_end = length;
+  Register heap_number_map = scratch;
+  __ AddP(src_elements, Operand(FixedDoubleArray::kHeaderSize - kHeapObjectTag));
+  __ AddP(dst_elements, array, Operand(FixedArray::kHeaderSize));
+  __ AddP(array, Operand(kHeapObjectTag));
+  __ SmiToPtrArrayOffset(length, length);
+  __ AddP(dst_end, dst_elements);
   __ LoadRoot(r9, Heap::kTheHoleValueRootIndex);
-  __ LoadRoot(r13, Heap::kHeapNumberMapRootIndex);
-  // Using offsetted addresses in r6 to fully take advantage of post-indexing.
-  // r5: begin of destination FixedArray element fields, not tagged
-  // r6: begin of source FixedDoubleArray element fields, not tagged
-  // r7: end of destination FixedArray, not tagged
-  // r8: destination FixedArray
+  __ LoadRoot(heap_number_map, Heap::kHeapNumberMapRootIndex);
+  // Using offsetted addresses in src_elements to fully take advantage of
+  // post-indexing.
+  // dst_elements: begin of destination FixedArray element fields, not tagged
+  // src_elements: begin of source FixedDoubleArray element fields,
+  //               not tagged, +4
+  // dst_end: end of destination FixedArray, not tagged
+  // array: destination FixedArray
   // r9: the-hole pointer
-  // r13: heap number map
+  // heap_number_map: heap number map
   __ b(&entry, Label::kNear);
 
   // Call into runtime if GC is required.
   __ bind(&gc_required);
-  __ Pop(r5, r4, r3, r2);
+  __ Pop(target_map, receiver, key, value);
   __ b(fail);
 
   __ bind(&loop);
-  __ LoadlW(r3, MemOperand(r6, Register::kExponentOffset));
-  __ AddP(r6, Operand(kDoubleSize));
-  // r3: current element's upper 32 bit
-  // r6: address of next element's upper 32 bit
-  __ CmpP(r3, Operand(kHoleNanUpper32));
+  Register upper_bits = key;
+  __ LoadlW(upper_bits, MemOperand(src_elements, Register::kExponentOffset));
+  __ AddP(src_elements, Operand(kDoubleSize));
+  // upper_bits: current element's upper 32 bit
+  // src_elements: address of next element's upper 32 bit
+  __ CmpP(upper_bits, Operand(kHoleNanUpper32));
   __ beq(&convert_hole);
 
   // Non-hole double, copy value into a heap number.
-   __ AllocateHeapNumber(r4, r2, r3, r1, &gc_required);
-  // r4: new heap number
+  Register heap_number = receiver;
+  Register scratch2 = value;
+  __ AllocateHeapNumber(heap_number, scratch2, r1, heap_number_map,
+                         &gc_required);
+  // heap_number: new heap number
 #if V8_TARGET_ARCH_S390X
-  __ lg(r2, MemOperand(r6, -kDoubleSize));
-  __ AddP(r3, r4, Operand(-1));  // subtract tag for std
-  __ stg(r2, MemOperand(r3, HeapNumber::kValueOffset));
+  __ lg(scratch2, MemOperand(src_elements, -kDoubleSize));
+  __ AddP(upper_bits, heap_number, Operand(-1));  // subtract tag for std
+  __ stg(scratch2, MemOperand(upper_bits, HeapNumber::kValueOffset));
 #else
-  __ LoadlW(r2, MemOperand(r6, Register::kMantissaOffset - kDoubleSize));
-  __ LoadlW(r3, MemOperand(r6, Register::kExponentOffset - kDoubleSize));
-  __ StoreW(r2, FieldMemOperand(r4, HeapNumber::kMantissaOffset));
-  __ StoreW(r3, FieldMemOperand(r4, HeapNumber::kExponentOffset));
+  __ LoadlW(scratch2, MemOperand(src_elements,
+            Register::kMantissaOffset - kDoubleSize));
+  __ LoadlW(upper_bits, MemOperand(src_elements,
+            Register::kExponentOffset - kDoubleSize));
+  __ StoreW(scratch2, FieldMemOperand(heap_number,
+            HeapNumber::kMantissaOffset));
+  __ StoreW(upper_bits, FieldMemOperand(heap_number,
+            HeapNumber::kExponentOffset));
 #endif
-  __ LoadRR(r2, r5);
-  __ StoreP(r4, MemOperand(r5));
-  __ AddP(r5, Operand(kPointerSize));
-  __ RecordWrite(r8,
-                 r2,
-                 r4,
+  __ LoadRR(scratch2, dst_elements);
+  __ StoreP(heap_number, MemOperand(dst_elements));
+  __ AddP(dst_elements, Operand(kPointerSize));
+  __ RecordWrite(array,
+                 scratch2,
+                 heap_number,
                  kLRHasNotBeenSaved,
                  kDontSaveFPRegs,
                  EMIT_REMEMBERED_SET,
@@ -398,20 +436,20 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
 
   // Replace the-hole NaN with the-hole pointer.
   __ bind(&convert_hole);
-  __ StoreP(r9, MemOperand(r5));
-  __ AddP(r5, Operand(kPointerSize));
+  __ StoreP(r9, MemOperand(dst_elements));
+  __ AddP(dst_elements, Operand(kPointerSize));
 
   __ bind(&entry);
-  __ CmpLogicalP(r5, r7);
+  __ CmpLogicalP(dst_elements, dst_end);
   __ blt(&loop);
 
-  __ Pop(r5, r4, r3, r2);
+  __ Pop(target_map, receiver, key, value);
   // Replace receiver's backing store with newly created and filled FixedArray.
-  __ StoreP(r8, FieldMemOperand(r4, JSObject::kElementsOffset));
-  __ RecordWriteField(r4,
+  __ StoreP(array, FieldMemOperand(receiver, JSObject::kElementsOffset));
+  __ RecordWriteField(receiver,
                       JSObject::kElementsOffset,
-                      r8,
-                      r13,
+                      array,
+                      scratch,
                       kLRHasNotBeenSaved,
                       kDontSaveFPRegs,
                       EMIT_REMEMBERED_SET,
@@ -419,11 +457,11 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
 
   __ bind(&only_change_map);
   // Update receiver's map.
-  __ StoreP(r5, FieldMemOperand(r4, HeapObject::kMapOffset));
-  __ RecordWriteField(r4,
+  __ StoreP(target_map, FieldMemOperand(receiver, HeapObject::kMapOffset));
+  __ RecordWriteField(receiver,
                       HeapObject::kMapOffset,
-                      r5,
-                      r13,
+                      target_map,
+                      scratch,
                       kLRHasNotBeenSaved,
                       kDontSaveFPRegs,
                       OMIT_REMEMBERED_SET,
@@ -431,7 +469,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
 }
 
 
-// roohack - assume ip can be used as a scratch register below
+// assume ip can be used as a scratch register below
 void StringCharLoadGenerator::Generate(MacroAssembler* masm,
                                        Register string,
                                        Register index,
@@ -503,7 +541,7 @@ void StringCharLoadGenerator::Generate(MacroAssembler* masm,
     __ Assert(eq, kExternalStringExpectedButNotFound, cr0);
   }
   // Rule out short external strings.
-  STATIC_CHECK(kShortExternalStringTag != 0);
+  STATIC_ASSERT(kShortExternalStringTag != 0);
   __ mov(r0, Operand(kShortExternalStringMask));
   __ AndP(r0, result);
   __ bne(call_runtime /*, cr0*/);
@@ -540,16 +578,16 @@ void MathExpGenerator::EmitMathExp(MacroAssembler* masm,
                                    Register temp1,
                                    Register temp2,
                                    Register temp3) {
-  ASSERT(!input.is(result));
-  ASSERT(!input.is(double_scratch1));
-  ASSERT(!input.is(double_scratch2));
-  ASSERT(!result.is(double_scratch1));
-  ASSERT(!result.is(double_scratch2));
-  ASSERT(!double_scratch1.is(double_scratch2));
-  ASSERT(!temp1.is(temp2));
-  ASSERT(!temp1.is(temp3));
-  ASSERT(!temp2.is(temp3));
-  ASSERT(ExternalReference::math_exp_constants(0).address() != NULL);
+  DCHECK(!input.is(result));
+  DCHECK(!input.is(double_scratch1));
+  DCHECK(!input.is(double_scratch2));
+  DCHECK(!result.is(double_scratch1));
+  DCHECK(!result.is(double_scratch2));
+  DCHECK(!double_scratch1.is(double_scratch2));
+  DCHECK(!temp1.is(temp2));
+  DCHECK(!temp1.is(temp3));
+  DCHECK(!temp2.is(temp3));
+  DCHECK(ExternalReference::math_exp_constants(0).address() != NULL);
 
   Label zero, infinity, done;
 
@@ -617,51 +655,41 @@ void MathExpGenerator::EmitMathExp(MacroAssembler* masm,
 
 #undef __
 
-#ifdef DEBUG
-#if V8_TARGET_ARCH_S390X
-// LGR IP, R14
-static const uint32_t kCodeAgePatchFirstInstruction = 0xb90400ce;
-#else
-// LR  IP, R14
-static const uint32_t kCodeAgePatchFirstInstruction = 0x18ce;
-#endif
-#endif
 
-static byte* GetNoCodeAgeSequence(uint32_t* length) {
-  // The sequence of instructions that is patched out for aging code is the
-  // following boilerplate stack-building prologue that is found in FUNCTIONS
-  static bool initialized = false;
-  static byte sequence[kNoCodeAgeSequenceLength];
-  *length = kNoCodeAgeSequenceLength;
-  if (!initialized) {
-    // Since patcher is a large object, allocate it dynamically when needed,
-    // to avoid overloading the stack in stress conditions.
-    SmartPointer<CodePatcher>
-        patcher(new CodePatcher(sequence, kNoCodeAgeSequenceLength));
-    PredictableCodeSizeScope scope(patcher->masm(), *length);
-    patcher->masm()->PushFixedFrame(r3);
-    patcher->masm()->la(
+CodeAgingHelper::CodeAgingHelper() {
+  DCHECK(young_sequence_.length() == kNoCodeAgeSequenceLength);
+  // Since patcher is a large object, allocate it dynamically when needed,
+  // to avoid overloading the stack in stress conditions.
+  // DONT_FLUSH is used because the CodeAgingHelper is initialized early in
+  // the process, before ARM simulator ICache is setup.
+  SmartPointer<CodePatcher> patcher(
+      new CodePatcher(young_sequence_.start(),
+                      young_sequence_.length() / Assembler::kInstrSize,
+                      CodePatcher::DONT_FLUSH));
+  PredictableCodeSizeScope scope(patcher->masm(), young_sequence_.length());
+  patcher->masm()->PushFixedFrame(r3);
+  patcher->masm()->la(
         fp, MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
-    initialized = true;
-  }
-  return sequence;
 }
 
 
-bool Code::IsYoungSequence(byte* sequence) {
-  uint32_t young_length;
-  byte* young_sequence = GetNoCodeAgeSequence(&young_length);
-  bool result = !memcmp(sequence, young_sequence, young_length);
-  ASSERT(result ||
-        Instruction::InstructionBits(reinterpret_cast<const byte*>(sequence)) ==
-        kCodeAgePatchFirstInstruction);
+#ifdef DEBUG
+bool CodeAgingHelper::IsOld(byte* candidate) const {
+  return Assembler::IsNop(Assembler::instr_at(candidate));
+}
+#endif
+
+
+bool Code::IsYoungSequence(Isolate* isolate, byte* sequence) {
+  bool result = isolate->code_aging_helper()->IsYoung(sequence);
+  DCHECK(result || isolate->code_aging_helper()->IsOld(sequence));
   return result;
 }
 
 
-void Code::GetCodeAgeAndParity(byte* sequence, Age* age,
+void Code::GetCodeAgeAndParity(Isolate* isolate, byte* sequence, Age* age,
                                MarkingParity* parity) {
-  if (IsYoungSequence(sequence)) {
+  if (IsYoungSequence(isolate, sequence)) {
     *age = kNoAgeCodeAge;
     *parity = NO_MARKING_PARITY;
   } else {
@@ -678,23 +706,21 @@ void Code::PatchPlatformCodeAge(Isolate* isolate,
                                 byte* sequence,
                                 Code::Age age,
                                 MarkingParity parity) {
-  uint32_t young_length;
-  byte* young_sequence = GetNoCodeAgeSequence(&young_length);
+  uint32_t young_length = isolate->code_aging_helper()->young_sequence_length();
   if (age == kNoAgeCodeAge) {
-    CopyBytes(sequence, young_sequence, young_length);
-    CPU::FlushICache(sequence, young_length);
+    isolate->code_aging_helper()->CopyYoungSequenceTo(sequence); 
+    CpuFeatures::FlushICache(sequence, young_length);
   } else {
     // FIXED_SEQUENCE
     Code* stub = GetCodeAgeStub(isolate, age, parity);
     CodePatcher patcher(sequence, young_length);
     Assembler::BlockTrampolinePoolScope block_trampoline_pool(patcher.masm());
     intptr_t target = reinterpret_cast<intptr_t>(stub->instruction_start());
-    // We use Call to compute the address of this patch sequence.
-    // Preserve R14 since it will be clobbered.  See
+    // Don't use Call -- we need to preserve ip and lr.
     // GenerateMakeCodeYoungAgainCommon for the stub code.
-    patcher.masm()->LoadRR(ip, r14);
+    patcher.masm()->nop();
     patcher.masm()->mov(r2, Operand(target));
-    patcher.masm()->Call(r2);
+    patcher.masm()->Jump(r2);
     for (int i = 0;
          i < kNoCodeAgeSequenceLength - kCodeAgingSequenceLength; i += 2) {
       // TODO(joransiu): Create nop function to pad
