@@ -4364,7 +4364,8 @@ void JSFunction::set_code(Code* value) {
       value);
 }
 
-#if !defined(DEBUG) && defined(V8_HOST_ARCH_S390) && defined(V8_TARGET_ARCH_S390X)
+#if !defined(DEBUG) &&\
+    defined(V8_HOST_ARCH_S390) && defined(V8_TARGET_ARCH_S390X)
 // On GCC 4.4.0 to 4.4.6 on s390, the compiler with strict aliasing reorders the
 // this->code() (from IsOptimized()) and set_code(code).  Using
 // --fno-strict-aliasing causes other issues, so using this as a temp
