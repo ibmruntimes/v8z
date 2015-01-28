@@ -990,7 +990,7 @@ Register* PropertyAccessCompiler::store_calling_convention() {
   // receiver, name, scratch1, scratch2, scratch3.
   Register receiver = StoreIC::ReceiverRegister();
   Register name = StoreIC::NameRegister();
-  DCHECK(r6.is(KeyedStoreIC::MapRegister()));
+  DCHECK(r5.is(KeyedStoreIC::MapRegister()));
   static Register registers[] = { receiver, name, r5, r6, r7 };
   return registers;
 }
