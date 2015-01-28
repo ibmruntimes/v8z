@@ -471,8 +471,8 @@ void FullCodeGenerator::EmitReturnSequence() {
 #ifdef DEBUG
     // Check that the size of the code used for returning is large enough
     // for the debugger's requirements.
-    DCHECK(Assembler::kJSReturnSequenceInstructions <=
-           masm_->InstructionsGeneratedSince(&check_exit_codesize));
+    DCHECK(Assembler::kJSReturnSequenceLength <=
+           masm_->SizeOfCodeGeneratedSince(&check_exit_codesize));
 #endif
   }
 }
