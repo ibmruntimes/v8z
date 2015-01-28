@@ -5598,13 +5598,9 @@ void LCodeGen::DoCheckMaps(LCheckMaps* instr) {
     return;
   }
 
-  Register map_reg = scratch0();
-
   LOperand* input = instr->value();
   DCHECK(input->IsRegister());
   Register reg = ToRegister(input);
-
-  __ LoadP(map_reg, FieldMemOperand(reg, HeapObject::kMapOffset));
 
   DeferredCheckMaps* deferred = NULL;
   if (instr->hydrogen()->HasMigrationTarget()) {
@@ -5616,12 +5612,12 @@ void LCodeGen::DoCheckMaps(LCheckMaps* instr) {
   Label success;
   for (int i = 0; i < maps->size() - 1; i++) {
     Handle<Map> map = maps->at(i).handle();
-    __ CompareMap(map_reg, map, &success);
+    __ CompareMap(reg, map, &success);
     __ beq(&success);
   }
 
   Handle<Map> map = maps->at(maps->size() - 1).handle();
-  __ CompareMap(map_reg, map, &success);
+  __ CompareMap(reg, map, &success);
   if (instr->hydrogen()->HasMigrationTarget()) {
     __ bne(deferred->entry());
   } else {
