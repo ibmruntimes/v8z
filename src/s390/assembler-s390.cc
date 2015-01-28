@@ -117,7 +117,7 @@ static bool supportsSTFLE() {
 
 void CpuFeatures::ProbeImpl(bool cross_compile) {
   supported_ |= CpuFeaturesImpliedByCompiler();
-  cache_line_size_ = 128;
+  cache_line_size_ = 256;
 
   // Only use statically determined features for cross compile (snapshot).
   if (cross_compile) return;
@@ -144,7 +144,7 @@ void CpuFeatures::ProbeImpl(bool cross_compile) {
      // LHI sets up GPR0
      // STFLE is specified as .insn, as opcode is not recognized.
      // We register the instructions kill r0 (LHI) and the CC (STFLE).
-    asm volatile("lhi   0,0\n"
+     asm volatile("lhi   0,0\n"
                   ".insn s,0xb2b00000,%0\n"
                   : "=Q" (facilities) : : "cc", "r0");
 
