@@ -158,7 +158,7 @@ void ElementsTransitionGenerator::GenerateMapChangeElementsTransition(
 
   // Set transitioned map.
   __ StoreP(target_map, FieldMemOperand(receiver, HeapObject::kMapOffset));
-  __ RecordWriteField(r4,
+  __ RecordWriteField(receiver,
                       HeapObject::kMapOffset,
                       target_map,
                       r13,
@@ -177,6 +177,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
     Register target_map,
     AllocationSiteMode mode,
     Label* fail) {
+  // lr contains the return address  
   Label loop, entry, convert_hole, gc_required, only_change_map, done;
   Register elements = r6;
   Register length = r7;
@@ -211,7 +212,6 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   __ SmiToDoubleArrayOffset(r14, length);
   __ AddP(r14, Operand(FixedDoubleArray::kHeaderSize));
   __ Allocate(r14, array, r9, scratch2, &gc_required, DOUBLE_ALIGNMENT);
-  // r8: destination FixedDoubleArray, not tagged as heap object.
 
    // Set destination FixedDoubleArray's length and map.
   __ LoadRoot(scratch2, Heap::kFixedDoubleArrayMapRootIndex);
@@ -245,7 +245,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
           Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ AddP(r9, array, Operand(FixedDoubleArray::kHeaderSize));
   __ SmiToDoubleArrayOffset(array, length);
-  __ AddP(array_end, r9);
+  __ AddP(array_end, r9, array);
   // Repurpose registers no longer in use.
 #if V8_TARGET_ARCH_S390X
   Register hole_int64 = elements;
@@ -338,7 +338,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
                      elements, array, length, scratch));
 
   if (mode == TRACK_ALLOCATION_SITE) {
-  __ JumpIfJSArrayHasAllocationMemento(receiver, elements, fail);
+    __ JumpIfJSArrayHasAllocationMemento(receiver, elements, fail);
   }
 
   // Check for empty arrays, which only require a map transition and no changes
@@ -592,6 +592,7 @@ void MathExpGenerator::EmitMathExp(MacroAssembler* masm,
   DCHECK(!temp1.is(temp3));
   DCHECK(!temp2.is(temp3));
   DCHECK(ExternalReference::math_exp_constants(0).address() != NULL);
+  DCHECK(!masm->serializer_enabled());
 
   Label zero, infinity, done;
 
