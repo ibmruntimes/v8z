@@ -177,7 +177,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
     Register target_map,
     AllocationSiteMode mode,
     Label* fail) {
-  // lr contains the return address  
+  // lr contains the return address 
   Label loop, entry, convert_hole, gc_required, only_change_map, done;
   Register elements = r6;
   Register length = r7;
