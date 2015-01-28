@@ -80,7 +80,7 @@ void Deoptimizer::PatchCodeForDeoptimization(Isolate* isolate, Code* code) {
     patcher.masm()->Call(deopt_entry, kRelocInfo_NONEPTR);
     DCHECK(prev_call_address == NULL ||
            call_address >= prev_call_address + patch_size());
-    (call_address + patch_size() <= code->instruction_end());
+    DCHECK(call_address + patch_size() <= code->instruction_end());
 #ifdef DEBUG
     prev_call_address = call_address;
 #endif
