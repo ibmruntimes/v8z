@@ -130,14 +130,14 @@ struct Register {
   static Register FromAllocationIndex(int index) {
     DCHECK(index >= 0 && index < kMaxNumAllocatableRegisters);
     return index == kMaxNumAllocatableRegisters - 1 ?
-      from_code(kAllocatableContext) :  // Last index is always the 'cp' register.
+      from_code(kAllocatableContext) :  // Last index is always 'cp' register.
       from_code(index + kAllocatableRangeBegin);  // r0-r1 are skipped
   }
 
   static const char* AllocationIndexToString(int index) {
     DCHECK(index >= 0 && index < kMaxNumAllocatableRegisters);
     const char* const names[] = {
-        "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9","cp",
+        "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cp",
     };
     return names[index];
   }
@@ -244,7 +244,7 @@ struct DoubleRegister {
 
   static DoubleRegister FromAllocationIndex(int index) {
     DCHECK(index >= 0 && index < kMaxNumAllocatableRegisters);
-    return (from_code(index + kAllocatableRangeBegin)); // d0 is skipped
+    return (from_code(index + kAllocatableRangeBegin));  // d0 is skipped
   }
 
   static const char* AllocationIndexToString(int index);

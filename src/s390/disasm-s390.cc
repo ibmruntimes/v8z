@@ -27,18 +27,18 @@
 
 
 #include <assert.h>
-#include <stdio.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "src/v8.h"
 
 #if V8_TARGET_ARCH_S390
 
-#include "src/s390/constants-s390.h"
+#include "src/base/platform/platform.h"
 #include "src/disasm.h"
 #include "src/macro-assembler.h"
-#include "src/base/platform/platform.h"
+#include "src/s390/constants-s390.h"
 
 
 namespace v8 {

@@ -7,8 +7,8 @@
 
 #include "src/v8.h"
 
-#include "src/s390/lithium-gap-resolver-s390.h"
 #include "src/s390/lithium-codegen-s390.h"
+#include "src/s390/lithium-gap-resolver-s390.h"
 
 namespace v8 {
 namespace internal {
@@ -124,7 +124,7 @@ void LGapResolver::PerformMove(int index) {
 
 
 void LGapResolver::Verify() {
-#ifdef ENABLE_SLOW_DCHECKS 
+#ifdef ENABLE_SLOW_DCHECKS
   // No operand should be the destination for more than one move.
   for (int i = 0; i < moves_.length(); ++i) {
     LOperand* destination = moves_[i].destination();

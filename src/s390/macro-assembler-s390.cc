@@ -712,12 +712,12 @@ void MacroAssembler::ConvertDoubleToInt64(const DoubleRegister double_input,
 #endif
 }
 
+
 void MacroAssembler::StubPrologue(int prologue_offset) {
   PushFixedFrame();
   Push(Smi::FromInt(StackFrame::STUB));
   // Adjust FP to point to saved FP.
   la(fp, MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
-
 }
 
 
@@ -2084,7 +2084,6 @@ void MacroAssembler::AddAndCheckForOverflow(Register dst,
     XorP(scratch, dst, right);
     AndP(overflow_dst, scratch/*, SetRC*/);
     LoadAndTestRR(overflow_dst, overflow_dst);
-
   }
 }
 

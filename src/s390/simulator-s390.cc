@@ -11,12 +11,12 @@
 #include "src/v8.h"
 #if V8_TARGET_ARCH_S390
 
-#include "src/disasm.h"
 #include "src/assembler.h"
 #include "src/codegen.h"
+#include "src/disasm.h"
 #include "src/s390/constants-s390.h"
-#include "src/s390/simulator-s390.h"
 #include "src/s390/frames-s390.h"
+#include "src/s390/simulator-s390.h"
 #if defined(USE_SIMULATOR)
 
 // Only build the simulator if not compiling for real s390 hardware.
@@ -262,7 +262,7 @@ void S390Debugger::Debug() {
   // make them invisible to all commands.
   UndoBreakpoints();
   // Disable tracing while simulating
-  bool trace=::v8::internal::FLAG_trace_sim;
+  bool trace = ::v8::internal::FLAG_trace_sim;
   ::v8::internal::FLAG_trace_sim = false;
 
   while (!done && !sim_->has_bad_pc()) {

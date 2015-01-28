@@ -1029,9 +1029,9 @@ enum CRBit {
 // standard SoftwareInterrupCode. Bit 23 is reserved for the stop feature.
 enum SoftwareInterruptCodes {
   // transition to C code
-  kCallRtRedirected= 0x0010,
+  kCallRtRedirected = 0x0010,
   // break point
-  kBreakpoint= 0x0000,
+  kBreakpoint = 0x0000,
   // stop
   kStopCode = 1 << 23,
   // info
