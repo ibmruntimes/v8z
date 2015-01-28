@@ -27,16 +27,12 @@ const RegList kJSCallerSaved =
 
 const int kNumJSCallerSaved = 5;
 
-typedef Object* JSCallerSavedBuffer[kNumJSCallerSaved];
-
 // Return the code of the n-th caller-saved register available to JavaScript
 // e.g. JSCallerSavedReg(0) returns r0.code() == 0
 int JSCallerSavedCode(int n);
 
 
 // Callee-saved registers preserved when switching from C to JavaScript
-// N.B.  Do not bother saving all non-volatiles -- only those that v8
-//       modifies without saving/restoring inline.
 const RegList kCalleeSaved =
   1 << 6 |   // r6 (argument passing in CEntryStub)
              //    (HandleScope logic in MacroAssembler)

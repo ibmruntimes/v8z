@@ -159,7 +159,7 @@ class Simulator {
   }
 
   void set_d_register_from_float(int dreg, const float f) {
-    ASSERT(dreg >= 0 && dreg < kNumFPRs);
+    DCHECK(dreg >= 0 && dreg < kNumFPRs);
     float* f_addr = reinterpret_cast<float*>(&fp_registers_[dreg]);
     *f_addr = f;
   }
