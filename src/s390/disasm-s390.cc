@@ -777,7 +777,7 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
 bool Decoder::DecodeSixByte(Instruction* instr) {
   // Print the Instruction bits.
   out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_,
-                                  "%012llx   ",
+                                  "%012lx   ",
                                   instr->InstructionBits<SixByteInstr>());
 
   Opcode opcode = instr->S390OpcodeValue();
