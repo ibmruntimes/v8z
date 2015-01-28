@@ -32,7 +32,8 @@ double fast_exp_simulator(double x) {
 UnaryMathFunction CreateExpFunction() {
   if (!FLAG_fast_math) return &std::exp;
   size_t actual_size;
-  byte* buffer = static_cast<byte*>(base::OS::Allocate(1 * KB, &actual_size, true));
+  byte* buffer = static_cast<byte*>(base::OS::Allocate(1 * KB,
+                                                       &actual_size, true));
   if (buffer == NULL) return &std::exp;
   ExternalReference::InitializeMathExpData();
 
@@ -84,7 +85,8 @@ UnaryMathFunction CreateSqrtFunction() {
   return &std::sqrt;
 #else
   size_t actual_size;
-  byte* buffer = static_cast<byte*>(base::OS::Allocate(1 * KB, &actual_size, true));
+  byte* buffer = static_cast<byte*>(base::OS::Allocate(1 * KB,
+                                                       &actual_size, true));
   if (buffer == NULL) return &std::sqrt;
 
   MacroAssembler masm(NULL, buffer, static_cast<int>(actual_size));
@@ -239,7 +241,8 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
                       OMIT_SMI_CHECK);
 
   // Prepare for conversion loop.
-  __ AddP(target_map, elements, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ AddP(target_map, elements,
+          Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ AddP(r9, array, Operand(FixedDoubleArray::kHeaderSize));
   __ SmiToDoubleArrayOffset(array, length);
   __ AddP(array_end, r9);
@@ -340,8 +343,8 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
 
   // Check for empty arrays, which only require a map transition and no changes
   // to the backing store.
-  __ LoadP(elements, FieldMemOperand(receiver, JSObject::kElementsOffset)); 
-  __ CompareRoot(elements, Heap::kEmptyFixedArrayRootIndex); 
+  __ LoadP(elements, FieldMemOperand(receiver, JSObject::kElementsOffset));
+  __ CompareRoot(elements, Heap::kEmptyFixedArrayRootIndex);
   __ beq(&only_change_map);
 
   __ Push(target_map, receiver, key, value);
@@ -370,7 +373,8 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   Register dst_elements = target_map;
   Register dst_end = length;
   Register heap_number_map = scratch;
-  __ AddP(src_elements, Operand(FixedDoubleArray::kHeaderSize - kHeapObjectTag));
+  __ AddP(src_elements,
+          Operand(FixedDoubleArray::kHeaderSize - kHeapObjectTag));
   __ AddP(dst_elements, array, Operand(FixedArray::kHeaderSize));
   __ AddP(array, Operand(kHeapObjectTag));
   __ SmiToPtrArrayOffset(length, length);
@@ -708,7 +712,7 @@ void Code::PatchPlatformCodeAge(Isolate* isolate,
                                 MarkingParity parity) {
   uint32_t young_length = isolate->code_aging_helper()->young_sequence_length();
   if (age == kNoAgeCodeAge) {
-    isolate->code_aging_helper()->CopyYoungSequenceTo(sequence); 
+    isolate->code_aging_helper()->CopyYoungSequenceTo(sequence);
     CpuFeatures::FlushICache(sequence, young_length);
   } else {
     // FIXED_SEQUENCE

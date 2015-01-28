@@ -353,7 +353,8 @@ bool LCodeGen::GenerateDeoptJumpTable() {
           DCHECK(info()->IsStub());
           __ LoadSmiLiteral(ip, Smi::FromInt(StackFrame::STUB));
           __ PushFixedFrame(ip);
-          __ la(fp, MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
+          __ la(fp,
+                MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
           __ bind(&call_deopt_entry);
           // Add the base address to the offset previously loaded in
           // entry_offset.

@@ -25,14 +25,13 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "v8.h"
+#include "src/v8.h"
 
-#include "disassembler.h"
-#include "factory.h"
-#include "s390/simulator-s390.h"
-#include "s390/assembler-s390-inl.h"
-#include "macro-assembler.h"
-#include "cctest.h"
+#include "src/disassembler.h"
+#include "src/factory.h"
+#include "src/s390/assembler-s390-inl.h"
+#include "src/s390/simulator-s390.h"
+#include "test/cctest/cctest.h"
 
 using namespace v8::internal;
 

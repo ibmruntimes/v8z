@@ -121,7 +121,7 @@ void CpuFeatures::ProbeImpl(bool cross_compile) {
 
   // Only use statically determined features for cross compile (snapshot).
   if (cross_compile) return;
- 
+
 #ifdef DEBUG
   initialized_ = true;
 #endif
