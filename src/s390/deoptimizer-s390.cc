@@ -15,7 +15,7 @@
 namespace v8 {
 namespace internal {
 
-//LAY + LGHI/LHI + BRCL
+// LAY + LGHI/LHI + BRCL
 const int Deoptimizer::table_entry_size_ = 16;
 
 int Deoptimizer::patch_size() {
