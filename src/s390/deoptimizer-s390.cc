@@ -15,12 +15,8 @@
 namespace v8 {
 namespace internal {
 
-#if V8_TARGET_ARCH_S390X
-const int Deoptimizer::table_entry_size_ = 22;
-#else
-const int Deoptimizer::table_entry_size_ = 20;
-#endif
-
+//LAY + LGHI/LHI + BRCL
+const int Deoptimizer::table_entry_size_ = 16;
 
 int Deoptimizer::patch_size() {
 #if V8_TARGET_ARCH_S390X
@@ -324,6 +320,7 @@ void Deoptimizer::TableEntryGenerator::GeneratePrologue() {
     USE(start);
     __ lay(sp, MemOperand(sp, -kPointerSize));
     __ LoadImmP(ip, Operand(i));
+    __ StoreP(ip, MemOperand(sp));
     __ b(&done);
     int end = masm()->pc_offset();
     USE(end);
