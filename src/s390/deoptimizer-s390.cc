@@ -320,7 +320,6 @@ void Deoptimizer::TableEntryGenerator::GeneratePrologue() {
     USE(start);
     __ lay(sp, MemOperand(sp, -kPointerSize));
     __ LoadImmP(ip, Operand(i));
-    __ StoreP(ip, MemOperand(sp));
     __ b(&done);
     int end = masm()->pc_offset();
     USE(end);
