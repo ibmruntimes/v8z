@@ -669,7 +669,7 @@ CodeAgingHelper::CodeAgingHelper() {
   // the process, before ARM simulator ICache is setup.
   SmartPointer<CodePatcher> patcher(
       new CodePatcher(young_sequence_.start(),
-                      young_sequence_.length() / Assembler::kInstrSize,
+                      young_sequence_.length(),
                       CodePatcher::DONT_FLUSH));
   PredictableCodeSizeScope scope(patcher->masm(), young_sequence_.length());
   patcher->masm()->PushFixedFrame(r3);
