@@ -8,6 +8,12 @@
 #ifndef V8_S390_CONSTANTS_S390_H_
 #define V8_S390_CONSTANTS_S390_H_
 
+// Get the standard printf format macros for C99 stdint types.
+#ifndef __STDC_FORMAT_MACROS
+#define __STDC_FORMAT_MACROS
+#endif
+#include <inttypes.h>
+
 namespace v8 {
 namespace internal {
 
