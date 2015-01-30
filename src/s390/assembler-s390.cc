@@ -227,11 +227,7 @@ bool RelocInfo::IsCodedSpecially() {
 
 
 bool RelocInfo::IsInConstantPool() {
-#if V8_OOL_CONSTANT_POOL
-  return Assembler::IsConstantPoolLoadStart(pc_);
-#else
   return false;
-#endif
 }
 
 
@@ -299,9 +295,6 @@ MemOperand::MemOperand(Register rx, Register rb, int32_t offset) {
 Assembler::Assembler(Isolate* isolate, void* buffer, int buffer_size)
     : AssemblerBase(isolate, buffer, buffer_size),
       recorded_ast_id_(TypeFeedbackId::None()),
-#if V8_OOL_CONSTANT_POOL
-      constant_pool_builder_(),
-#endif
       positions_recorder_(this) {
   reloc_info_writer.Reposition(buffer_ + buffer_size_, pc_);
 
@@ -316,12 +309,6 @@ Assembler::Assembler(Isolate* isolate, void* buffer, int buffer_size)
 
   trampoline_emitted_ = FLAG_force_long_branches;
   unbound_labels_count_ = 0;
-
-#if V8_OOL_CONSTANT_POOL
-  constant_pool_available_ = false;
-  constant_pool_full_ = false;
-#endif
-
   ClearRecordedAstId();
 }
 
@@ -3800,19 +3787,6 @@ void Assembler::GrowBuffer() {
   // None of our relocation types are pc relative pointing outside the code
   // buffer nor pc absolute pointing inside the code buffer, so there is no need
   // to relocate any emitted relocation entries.
-
-#if ABI_USES_FUNCTION_DESCRIPTORS || V8_OOL_CONSTANT_POOL
-  // Relocate runtime entries.
-  for (RelocIterator it(desc); !it.done(); it.next()) {
-    RelocInfo::Mode rmode = it.rinfo()->rmode();
-    if (rmode == RelocInfo::INTERNAL_REFERENCE) {
-      RelocateInternalReference(it.rinfo()->pc(), pc_delta, 0);
-    }
-  }
-#if V8_OOL_CONSTANT_POOL
-  constant_pool_builder_.Relocate(pc_delta);
-#endif
-#endif
 }
 
 
@@ -3923,23 +3897,15 @@ void Assembler::CheckTrampolinePool() {
 
 
 Handle<ConstantPoolArray> Assembler::NewConstantPool(Isolate* isolate) {
-#if V8_OOL_CONSTANT_POOL
-  return constant_pool_builder_.New(isolate);
-#else
   // No out-of-line constant pool support.
   DCHECK(!FLAG_enable_ool_constant_pool);
   return isolate->factory()->empty_constant_pool_array();
-#endif
 }
 
 
 void Assembler::PopulateConstantPool(ConstantPoolArray* constant_pool) {
-#if V8_OOL_CONSTANT_POOL
-  constant_pool_builder_.Populate(this, constant_pool);
-#else
   // No out-of-line constant pool support.
   DCHECK(!FLAG_enable_ool_constant_pool);
-#endif
 }
 
 } }  // namespace v8::internal

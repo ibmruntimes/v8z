@@ -966,12 +966,6 @@ void LCodeGen::RecordSafepoint(
       safepoint.DefinePointerRegister(ToRegister(pointer), zone());
     }
   }
-#if V8_OOL_CONSTANT_POOL
-  if (kind & Safepoint::kWithRegisters) {
-    // Register always contains a pointer to the constant pool.
-    safepoint.DefinePointerRegister(kConstantPoolRegister, zone());
-  }
-#endif
 }
 
 
