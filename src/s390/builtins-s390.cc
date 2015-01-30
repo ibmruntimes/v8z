@@ -1043,12 +1043,6 @@ void Builtins::Generate_OnStackReplacement(MacroAssembler* masm) {
   // <deopt_data> = <code>[#deoptimization_data_offset]
   __ LoadP(r3, FieldMemOperand(r2, Code::kDeoptimizationDataOffset));
 
-#if V8_OOL_CONSTANT_POOL
-  { ConstantPoolUnavailableScope constant_pool_unavailable(masm);
-    __ LoadP(kConstantPoolRegister,
-             FieldMemOperand(r2, Code::kConstantPoolOffset));
-#endif
-
     // Load the OSR entrypoint offset from the deoptimization data.
     // <osr_offset> = <deopt_data>[#header_size + #osr_pc_offset]
     __ LoadP(r3, FieldMemOperand(r3, FixedArray::OffsetOfElementAt(
@@ -1063,9 +1057,6 @@ void Builtins::Generate_OnStackReplacement(MacroAssembler* masm) {
 
     // And "return" to the OSR entry point of the function.
     __ Ret();
-#if V8_OOL_CONSTANT_POOL
-  }
-#endif
 }
 
 
@@ -1474,16 +1465,11 @@ static void EnterArgumentsAdaptorFrame(MacroAssembler* masm) {
 
   // Cleanse the top nibble of 31-bit pointers.
   __ CleanseP(r14);
-#if V8_OOL_CONSTANT_POOL
-  __ Push(fp, kConstantPoolRegister, r6, r3, r2);
-#else
-
   __ StoreP(r14, MemOperand(sp, 4 * kPointerSize));
   __ StoreP(fp, MemOperand(sp, 3 * kPointerSize));
   __ StoreP(r6, MemOperand(sp, 2 * kPointerSize));
   __ StoreP(r3, MemOperand(sp, 1 * kPointerSize));
   __ StoreP(r2, MemOperand(sp, 0 * kPointerSize));
-#endif
   __ la(fp, MemOperand(sp,
         StandardFrameConstants::kFixedFrameSizeFromFp + kPointerSize));
 }

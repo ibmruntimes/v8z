@@ -2219,24 +2219,15 @@ void FullCodeGenerator::EmitGeneratorResume(Expression *generator,
     Label slow_resume;
     __ bne(&slow_resume);
     __ LoadP(ip, FieldMemOperand(r7, JSFunction::kCodeEntryOffset));
-#if V8_OOL_CONSTANT_POOL
-    { ConstantPoolUnavailableScope constant_pool_unavailable(masm_);
-      // Load the new code object's constant pool pointer.
-      __ LoadP(kConstantPoolRegister,
-               MemOperand(ip, Code::kConstantPoolOffset - Code::kHeaderSize));
-#endif
-      __ LoadP(r4, FieldMemOperand(r3, JSGeneratorObject::kContinuationOffset));
-      __ SmiUntag(r4);
-      __ AddP(ip, ip, r4);
-      __ LoadSmiLiteral(r4,
-                        Smi::FromInt(JSGeneratorObject::kGeneratorExecuting));
-      __ StoreP(r4, FieldMemOperand(r3,
-            JSGeneratorObject::kContinuationOffset));
-      __ Jump(ip);
-      __ bind(&slow_resume);
-#if V8_OOL_CONSTANT_POOL
-    }
-#endif
+    __ LoadP(r4, FieldMemOperand(r3, JSGeneratorObject::kContinuationOffset));
+    __ SmiUntag(r4);
+    __ AddP(ip, ip, r4);
+    __ LoadSmiLiteral(r4,
+                      Smi::FromInt(JSGeneratorObject::kGeneratorExecuting));
+    __ StoreP(r4, FieldMemOperand(r3,
+          JSGeneratorObject::kContinuationOffset));
+    __ Jump(ip);
+    __ bind(&slow_resume);
   } else {
     __ beq(&call_resume);
   }

@@ -449,79 +449,6 @@ class MemOperand BASE_EMBEDDED {
   friend class Assembler;
 };
 
-#if V8_OOL_CONSTANT_POOL
-// Class used to build a constant pool.
-class ConstantPoolBuilder BASE_EMBEDDED {
- public:
-  ConstantPoolBuilder();
-  ConstantPoolArray::LayoutSection AddEntry(Assembler* assm,
-                                            const RelocInfo& rinfo);
-  void Relocate(intptr_t pc_delta);
-  bool IsEmpty();
-  Handle<ConstantPoolArray> New(Isolate* isolate);
-  void Populate(Assembler* assm, ConstantPoolArray* constant_pool);
-
-  inline ConstantPoolArray::LayoutSection current_section() const {
-    return current_section_;
-  }
-
-  // Rather than increasing the capacity of the ConstantPoolArray's
-  // small section to match the longer (16-bit) reach of PPC's load
-  // instruction (at the expense of a larger header to describe the
-  // layout), the PPC implementation utilizes the extended section to
-  // satisfy that reach.  I.e. all entries (regardless of their
-  // section) are reachable with a single load instruction.
-  //
-  // This implementation does not support an unlimited constant pool
-  // size (which would require a multi-instruction sequence).  [See
-  // ARM commit e27ab337 for a reference on the changes required to
-  // support the longer instruction sequence.]  Note, however, that
-  // going down that path will necessarily generate that longer
-  // sequence for all extended section accesses since the placement of
-  // a given entry within the section is not known at the time of
-  // code generation.
-  //
-  // TODO(mbrandy): Determine whether there is a benefit to supporting
-  // the longer sequence given that nops could be used for those
-  // entries which are reachable with a single instruction.
-  inline bool is_full() const {
-    return !is_int16(size_);
-  }
-
-  inline ConstantPoolArray::NumberOfEntries* number_of_entries(
-      ConstantPoolArray::LayoutSection section) {
-    return &number_of_entries_[section];
-  }
-
-  inline ConstantPoolArray::NumberOfEntries* small_entries() {
-    return number_of_entries(ConstantPoolArray::SMALL_SECTION);
-  }
-
-  inline ConstantPoolArray::NumberOfEntries* extended_entries() {
-    return number_of_entries(ConstantPoolArray::EXTENDED_SECTION);
-  }
-
- private:
-  struct ConstantPoolEntry {
-    ConstantPoolEntry(RelocInfo rinfo, ConstantPoolArray::LayoutSection section,
-                      int merged_index)
-        : rinfo_(rinfo), section_(section), merged_index_(merged_index) {}
-
-    RelocInfo rinfo_;
-    ConstantPoolArray::LayoutSection section_;
-    int merged_index_;
-  };
-
-  ConstantPoolArray::Type GetConstantPoolType(RelocInfo::Mode rmode);
-
-  uint32_t size_;
-  std::vector<ConstantPoolEntry> entries_;
-  ConstantPoolArray::LayoutSection current_section_;
-  ConstantPoolArray::NumberOfEntries number_of_entries_[2];
-};
-#endif
-
-
 class Assembler : public AssemblerBase {
  public:
   // Create an assembler. Instructions and relocation information are emitted
@@ -574,18 +501,6 @@ class Assembler : public AssemblerBase {
   // The high 8 bits are set to zero.
   void label_at_put(Label* L, int at_offset);
   void load_label_offset(Register r1, Label* L);
-
-#if V8_OOL_CONSTANT_POOL
-  INLINE(static bool IsConstantPoolLoadStart(Address pc));
-  INLINE(static bool IsConstantPoolLoadEnd(Address pc));
-  INLINE(static int GetConstantPoolOffset(Address pc));
-  INLINE(static void SetConstantPoolOffset(Address pc, int offset));
-
-  // Return the address in the constant pool of the code target address used by
-  // the branch/call instruction at pc, or the object in a mov.
-  INLINE(static Address target_constant_pool_address_at(
-           Address pc, ConstantPoolArray* constant_pool));
-#endif
 
   // Read/Modify the code target address in the branch/call instruction at pc.
   INLINE(static Address target_address_at(Address pc,
