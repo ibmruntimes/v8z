@@ -526,7 +526,8 @@
             'conditions': [
               ['host_cxx_is_biarch==1', {
                 'conditions': [
-                  ['v8_target_arch=="s390"', {
+                  ['v8_target_arch=="s390" and \
+                    (host_arch!="ia32" and host_arch!="x64")', {
                     'cflags': [ '-m31' ],
                     'ldflags': [ '-m31' ]
                   },{
@@ -544,7 +545,8 @@
             'conditions': [
               ['target_cxx_is_biarch==1 and nacl_target_arch!="nacl_x64"', {
                 'conditions': [
-                  ['v8_target_arch=="s390"', {
+                  ['v8_target_arch=="s390" and \
+                    (host_arch!="ia32" and host_arch!="x64")', {
                     'cflags': [ '-m31' ],
                     'ldflags': [ '-m31' ]
                   },{
