@@ -176,7 +176,7 @@ static inline bool HasRegisterInput(Instruction* instr, int index) {
                               i.InputRegister(1), kScratchReg, r0); \
     } else { \
     __ AddAndCheckForOverflow(i.OutputRegister(), i.InputRegister(0), \
-                              i.InputImmediate(1).immediate(), kScratchReg, r0); \
+       i.InputImmediate(1).immediate(), kScratchReg, r0); \
     }\
   } while (0)
 #endif
