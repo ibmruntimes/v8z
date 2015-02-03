@@ -62,7 +62,7 @@ class PPCOperandConverter : public InstructionOperandConverter {
         return Operand(
             isolate()->factory()->NewNumber(constant.ToFloat64(), TENURED));
       case Constant::kInt64:
-# V8_TARGET_ARCH_PPC64
+#if V8_TARGET_ARCH_PPC64
         return Operand(constant.ToInt64());
 #endif
       case Constant::kExternalReference:
@@ -128,13 +128,13 @@ static inline bool HasRegisterInput(Instruction* instr, int index) {
 
 #define ASSEMBLE_BINOP(asm_instr_reg, asm_instr_imm) \
   do { \
-   (HasRegisterInput(instr, 1)) { \
-  __ asm_instr_reg(i.OutputRegister(), i.InputRegister(0), \
-  i.InputRegister(1)); \
-  } else { \
-  __ asm_instr_imm(i.OutputRegister(), i.InputRegister(0), \
-  i.InputImmediate(1)); \
-  } \
+    if (HasRegisterInput(instr, 1)) { \
+      __ asm_instr_reg(i.OutputRegister(), i.InputRegister(0), \
+                       i.InputRegister(1)); \
+    } else { \
+      __ asm_instr_imm(i.OutputRegister(), i.InputRegister(0), \
+                       i.InputImmediate(1)); \
+    } \
   } while (0)
 
 
@@ -165,19 +165,19 @@ static inline bool HasRegisterInput(Instruction* instr, int index) {
 #if V8_TARGET_ARCH_PPC64
 #define ASSEMBLE_ADD_WITH_OVERFLOW() \
   do { \
-  ASSEMBLE_BINOP(add, addi); \
-  TestIfInt32(i.OutputRegister(), r0, cr0); \
+    ASSEMBLE_BINOP(add, addi); \
+    __ TestIfInt32(i.OutputRegister(), r0, cr0); \
   } while (0)
 #else
 #define ASSEMBLE_ADD_WITH_OVERFLOW()\
   do { \
-  if (HasRegisterInput(instr, 1)) { \
-  __ AddAndCheckForOverflow(i.OutputRegister(), i.InputRegister(0), \
-  i.InputRegister(1), kScratchReg, r0); \
-  } else { \
-  __ AddAndCheckForOverflow(i.OutputRegister(), i.InputRegister(0), \
-  i.InputImmediate(1).immediate(), kScratchReg, r0); \
-  } \
+    if (HasRegisterInput(instr, 1)) { \
+    __ AddAndCheckForOverflow(i.OutputRegister(), i.InputRegister(0), \
+                              i.InputRegister(1), kScratchReg, r0); \
+    } else { \
+    __ AddAndCheckForOverflow(i.OutputRegister(), i.InputRegister(0), \
+                              i.InputImmediate(1).immediate(), kScratchReg, r0); \
+    }\
   } while (0)
 #endif
 
