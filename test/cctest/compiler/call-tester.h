@@ -198,7 +198,9 @@ class CallHelper {
         Simulator::CallArgument::End()};
     return ReturnValueTraits<R>::Cast(CallSimulator(FUNCTION_ADDR(f), args));
   }
-#elif USE_SIMULATOR && (V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_PPC || V8_TARGET_ARCH_S390)
+#elif USE_SIMULATOR && (V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_PPC || \
+      V8_TARGET_ARCH_S390)
+
   uintptr_t CallSimulator(byte* f, int32_t p1 = 0, int32_t p2 = 0,
                           int32_t p3 = 0, int32_t p4 = 0) {
     Simulator* simulator = Simulator::current(isolate_);
