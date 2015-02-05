@@ -787,7 +787,8 @@ int MacroAssembler::LeaveFrame(StackFrame::Type type,
   LoadP(r14, MemOperand(fp, StandardFrameConstants::kCallerPCOffset));
   LoadP(ip, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
   int frame_ends = pc_offset();
-  lay(sp, MemOperand(fp, StandardFrameConstants::kCallerSPOffset + stack_adjustment));
+  lay(sp, MemOperand(fp,
+      StandardFrameConstants::kCallerSPOffset + stack_adjustment));
   LoadRR(fp, ip);
   return frame_ends;
 }
