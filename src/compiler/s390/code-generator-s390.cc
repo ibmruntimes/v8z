@@ -211,7 +211,7 @@ static inline bool HasRegisterInput(Instruction* instr, int index) {
   DCHECK(!result_reg.is(r1)); \
   __ load_instr(r0, i.InputRegister(0)); \
   __ srda(r0, Operand(32));
-  __ dr(r0, i.InputRegister(1)); \ // R0:R1 = R1 / divisor - R0 remainder
+  __ dr(r0, i.InputRegister(1)); \  // R0:R1 = R1 / divisor - R0 remainder
   __ ltr(i.OutputRegister(), r0);    // Copy remainder to output reg
   } while (0)
 
@@ -266,14 +266,14 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     }
     case kS390_And32:
-	  ASSEMBLE_BINOP(And, And);
-      break; 
+      ASSEMBLE_BINOP(And, And);
+      break;
     case kS390_And64:
       ASSEMBLE_BINOP(AndP, AndP);
       break;
     case kS390_Or32:
       ASSEMBLE_BINOP(Or, Or);
-      break;	 
+      break;
     case kS390_Or64:
       ASSEMBLE_BINOP(OrP, OrP);
       break;
@@ -321,18 +321,18 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       ASSEMBLE_ADD_WITH_OVERFLOW();
       break;
     case kS390_AddFloat64:
-	  // Ensure we don't clobber right/InputReg(1)
-	  if (i.OutputDoubleRegister().is(i.InputDoubleRegister(1))) {
+    // Ensure we don't clobber right/InputReg(1)
+    if (i.OutputDoubleRegister().is(i.InputDoubleRegister(1))) {
         ASSEMBLE_FLOAT_UNOP(adbr);
-	  } else {
+    } else {
         if (!i.OutputDoubleRegister().is(i.InputDoubleRegister(0)))
           __ ldr(i.OutputDoubleRegister(), i.InputDoubleRegister(0));
-		__ adbr(i.OutputDoubleRegister(), i.InputDoubleRegister(1));
-	  }
+      __ adbr(i.OutputDoubleRegister(), i.InputDoubleRegister(1));
+    }
       break;
     case kS390_Sub32:
-	  ASSEMBLE_BINOP(Sub32, Sub32);
-	  break;
+      ASSEMBLE_BINOP(Sub32, Sub32);
+      break;
     case kS390_Sub64:
       ASSEMBLE_BINOP(SubP, SubP);
       break;
@@ -341,8 +341,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     }
     case kS390_SubFloat64:
-	  // InputDoubleReg(1) = i.InputDoubleRegister(0) - i.InputDoubleRegister(1)
-	  if (i.OutputDoubleRegister().is(i.InputDoubleRegister(1))) {
+    // InputDoubleReg(1) = i.InputDoubleRegister(0) - i.InputDoubleRegister(1)
+    if (i.OutputDoubleRegister().is(i.InputDoubleRegister(1))) {
         __ ldr(kScratchDoubleReg, i.InputDoubleRegister(1));
         __ ldr(i.OutputDoubleRegister(), i.InputDoubleRegister(0));
         __ sdbr(i.OutputDoubleRegister(), kScratchDoubleReg);
@@ -357,29 +357,29 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ Mul(i.OutputRegister(), i.InputRegister(0), i.InputRegister(1));
       break;
     case kS390_MulFloat64:
-	  // Ensure we don't clobber right
-   	  if (i.OutputDoubleRegister().is(i.InputDoubleRegister(1))) {
-	    ASSEMBLE_FLOAT_UNOP(mdbr);
-	  } else {
+      // Ensure we don't clobber right
+      if (i.OutputDoubleRegister().is(i.InputDoubleRegister(1))) {
+        ASSEMBLE_FLOAT_UNOP(mdbr);
+      } else {
         if (!i.OutputDoubleRegister().is(i.InputDoubleRegister(0)))
-		  __ ldr(i.OutputDoubleRegister(), i.InputDoubleRegister(0));
+          __ ldr(i.OutputDoubleRegister(), i.InputDoubleRegister(0));
         __ mdbr(i.OutputDoubleRegister(), i.InputDoubleRegister(1));
-	  }
+      }
       break;
 #if V8_TARGET_ARCH_S390X
     case kS390_Div64:
-	case kS390_DivU64:
+    case kS390_DivU64:
 #endif
     case kS390_Div32:
-	case kS390_DivU32:
+    case kS390_DivU32:
       __ LoadRR(r0, i.InputRegister(0)); \
       __ srda(r0, Operand(32));
-      __ dr(r0, i.InputRegister(1)); \ // R0:R1 = R1 / divisor - R0 remainder
+      __ dr(r0, i.InputRegister(1)); \  // R0:R1 = R1 / divisor - R0 remainder
       __ ltr(i.OutputRegister(), r0);    // Copy remainder to output reg
       break;
 
     case kS390_DivFloat64:
-	 // i.InputDoubleRegister(1) = i.InputDoubleRegister(0) / i.InputDoubleRegister(1)
+      // InputDoubleRegister(1)=InputDoubleRegister(0)/InputDoubleRegister(1)
       if (i.OutputDoubleRegister().is(i.InputDoubleRegister(1))) {
       __ ldr(kScratchDoubleReg, i.InputDoubleRegister(1));
       __ ldr(i.OutputDoubleRegister(), i.InputDoubleRegister(0));
@@ -396,7 +396,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
 #if V8_TARGET_ARCH_S390x
     case kS390_Mod64:
-	case kS390_ModU64:
+    case kS390_ModU64:
       ASSEMBLE_MODULO(lgr);
       break;
 #endif
@@ -406,8 +406,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       ASSEMBLE_FLOAT_MODULO();
       break;
     case kS390_Neg32:
-	  __ lcr(i.OutputRegister(), i.InputRegister(0));
-	  break;
+      __ lcr(i.OutputRegister(), i.InputRegister(0));
+      break;
     case kS390_Neg64:
       __ lcgr(i.OutputRegister(), i.InputRegister(0));
       break;
@@ -418,11 +418,11 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       ASSEMBLE_COMPARE(Cmp32, CmpLogical32);
       break;
 #if V8_TARGET_ARCH_S390X
-    case kS390_Cmp64: 
+    case kS390_Cmp64:
       ASSEMBLE_COMPARE(CmpP, CmpLogicalP);
       break;
 #endif
-    case kS390_CmpFloat64: 
+    case kS390_CmpFloat64:
       __ cdbr(i.InputDoubleRegister(0), i.InputDoubleRegister(1));
       break;
     case kS390_Tst32:
@@ -521,19 +521,19 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ LoadLogicalHalfWordP(i.OutputRegister(), i.MemoryOperand());
       break;
     case kS390_LoadWord32:
-	  __ LoadW(i.OutputRegister(), i.MemoryOperand());
+      __ LoadW(i.OutputRegister(), i.MemoryOperand());
       break;
 #if V8_TARGET_ARCH_S390X
     case kS390_LoadWord64:
-	  __ lg(i.OutputRegister(), i.MemoryOperand());
+      __ lg(i.OutputRegister(), i.MemoryOperand());
       break;
 #endif
     case kS390_LoadFloat64:
-	  __ ld(i.OutputRegister(), i.MemoryOperand());
+      __ ld(i.OutputRegister(), i.MemoryOperand());
       break;
     case kS390_StoreWord8:
-	  __ StoreByte(i.OutputRegister(), i.MemoryOperand());
-	  break;
+      __ StoreByte(i.OutputRegister(), i.MemoryOperand());
+      break;
     case kS390_StoreWord16:
       __ StoreHalfWord(i.OutputRegister(), i.MemoryOperand());
       break;
@@ -542,11 +542,11 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
 #if V8_TARGET_ARCH_S390X
     case kS390_StoreWord64:
-	  __ StoreP(i.OutputRegister(), i.MemoryOperand());
+      __ StoreP(i.OutputRegister(), i.MemoryOperand());
       break;
 #endif
     case kS390_StoreFloat64:
-	  __ std(i.OutputRegister(), i.MemoryOperand());
+      __ std(i.OutputRegister(), i.MemoryOperand());
       break;
     case kS390_StoreWriteBarrier:
       ASSEMBLE_FLOAT_COMPARE(cdbr);
@@ -689,25 +689,25 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
   switch (condition) {
     case kUnorderedEqual:
     case kEqual:
-	  // TODO(@Tara):Check all cases -> 
-	  // if kScratchReg needs to be loaded with value)1
-	  // if not, do mov(reg, Operand(1)) instead of LoadRR + mov(kScratch..)
+    // TODO(@Tara) :Check all cases ->
+    // if kScratchReg needs to be loaded with value)1
+    // if not, do mov(reg, Operand(1)) instead of LoadRR + mov(kScratch..)
       __ mov(reg, Operand::Zero());
       __ mov(kScratchReg, Operand(1));
       if (condition == kUnorderedEqual) __ bunordered(&done);
-	  Label not_equal;
-	  __ bne(&not_equal);
-	  __ LoadRR(reg, kScratchReg);
-	  __ bind(&not_equal);
+      Label not_equal;
+      __ bne(&not_equal);
+      __ LoadRR(reg, kScratchReg);
+      __ bind(&not_equal);
       break;
     case kUnorderedNotEqual:
     case kNotEqual:
       __ mov(reg, Operand(1));
       if (condition == kUnorderedNotEqual) __ bunordered(&done);
-	  Label not_equal;
-	  __ bne(&not_equal);
-	  __ LoadRR(reg, r0);
-	  __ bind(&not_equal);
+      Label not_equal;
+      __ bne(&not_equal);
+      __ LoadRR(reg, r0);
+      __ bind(&not_equal);
       break;
     case kUnorderedLessThan:
     case kSignedLessThan:
@@ -715,56 +715,56 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
       __ mov(reg, Operand::Zero());
       __ mov(kScratchReg, Operand(1));
       if (condition == kUnorderedLessThan) __ bunordered(&done);
-	  Label greater_eq;
-	  __ bge(&greater_eq);
-	  __ LoadRR(reg, kScratchReg);
-	  __ bind(&greater_eq);
+      Label greater_eq;
+      __ bge(&greater_eq);
+      __ LoadRR(reg, kScratchReg);
+      __ bind(&greater_eq);
       break;
     case kUnorderedGreaterThanOrEqual:
     case kSignedGreaterThanOrEqual:
     case kUnsignedGreaterThanOrEqual:
       __ mov(reg, Operand(1));
       if (condition == kUnorderedGreaterThanOrEqual) __ bunordered(&done);
-	  Label greater_eq;
-	  __ bge(&greater_eq);
-	  __ LoadRR(reg, r0);
-	  __ bind(&greater_eq);
+      Label greater_eq;
+      __ bge(&greater_eq);
+      __ LoadRR(reg, r0);
+      __ bind(&greater_eq);
       break;
     case kUnorderedLessThanOrEqual:
       __ mov(reg, Operand::Zero());
       __ mov(kScratchReg, Operand(1));
       __ bunordered(&done);
-	  Label less_eq;
-	  __ LoadRR(reg, kScratchReg);
-	  __ ble(&less_eq);
-	  __ LoadRR(reg, r0);
-	  __ bind(&less_eq);
+      Label less_eq;
+      __ LoadRR(reg, kScratchReg);
+      __ ble(&less_eq);
+      __ LoadRR(reg, r0);
+      __ bind(&less_eq);
       break;
     case kSignedLessThanOrEqual:
     case kUnsignedLessThanOrEqual:
       __ mov(reg, Operand(1));
-	  Label less_eq;
-	  __ ble(&less_eq);
-	  __ LoadRR(reg, r0);
-	  __ bind(&less_eq);
+      Label less_eq;
+      __ ble(&less_eq);
+      __ LoadRR(reg, r0);
+      __ bind(&less_eq);
       break;
     case kUnorderedGreaterThan:
       __ mov(reg, Operand(1));
       __ mov(kScratchReg, Operand::Zero());
       __ bunordered(&done);
-	  Label greater_than;
-	  __ bgt(&greater_than);
-	  __ LoadRR(reg, kScratchReg);
-	  __ bind(&greater_than);
+      Label greater_than;
+      __ bgt(&greater_than);
+      __ LoadRR(reg, kScratchReg);
+      __ bind(&greater_than);
       break;
     case kSignedGreaterThan:
     case kUnsignedGreaterThan:
       __ mov(reg, Operand::Zero());
       __ mov(kScratchReg, Operand(1));
-	  Label greater;
-	  __ ble(&less_eq);
-	  __ LoadRR(reg, kScratchReg);
-	  __ bind(&less_eq);
+      Label greater;
+      __ ble(&less_eq);
+      __ LoadRR(reg, kScratchReg);
+      __ bind(&less_eq);
       break;
     case kOverflow:
     case kNotOverflow:
