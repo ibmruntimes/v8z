@@ -2,81 +2,81 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_COMPILER_PPC_INSTRUCTION_CODES_PPC_H_
-#define V8_COMPILER_PPC_INSTRUCTION_CODES_PPC_H_
+#ifndef V8_COMPILER_S390_INSTRUCTION_CODES_S390_H_
+#define V8_COMPILER_S390_INSTRUCTION_CODES_S390_H_
 
 namespace v8 {
 namespace internal {
 namespace compiler {
 
-// PPC-specific opcodes that specify which assembly sequence to emit.
+// S390-specific opcodes that specify which assembly sequence to emit.
 // Most opcodes specify a single instruction.
 #define TARGET_ARCH_OPCODE_LIST(V) \
-  V(PPC_And32)                     \
-  V(PPC_And64)                     \
-  V(PPC_Or32)                      \
-  V(PPC_Or64)                      \
-  V(PPC_Xor32)                     \
-  V(PPC_Xor64)                     \
-  V(PPC_Shl32)                     \
-  V(PPC_Shl64)                     \
-  V(PPC_Shr32)                     \
-  V(PPC_Shr64)                     \
-  V(PPC_Sar32)                     \
-  V(PPC_Sar64)                     \
-  V(PPC_Not32)                     \
-  V(PPC_Not64)                     \
-  V(PPC_Add32)                     \
-  V(PPC_AddWithOverflow32)         \
-  V(PPC_Add64)                     \
-  V(PPC_AddFloat64)                \
-  V(PPC_Sub32)                     \
-  V(PPC_SubWithOverflow32)         \
-  V(PPC_Sub64)                     \
-  V(PPC_SubFloat64)                \
-  V(PPC_Mul32)                     \
-  V(PPC_Mul64)                     \
-  V(PPC_MulFloat64)                \
-  V(PPC_Div32)                     \
-  V(PPC_Div64)                     \
-  V(PPC_DivU32)                    \
-  V(PPC_DivU64)                    \
-  V(PPC_DivFloat64)                \
-  V(PPC_Mod32)                     \
-  V(PPC_Mod64)                     \
-  V(PPC_ModU32)                    \
-  V(PPC_ModU64)                    \
-  V(PPC_ModFloat64)                \
-  V(PPC_Neg32)                     \
-  V(PPC_Neg64)                     \
-  V(PPC_NegFloat64)                \
-  V(PPC_Cmp32)                     \
-  V(PPC_Cmp64)                     \
-  V(PPC_CmpFloat64)                \
-  V(PPC_Tst32)                     \
-  V(PPC_Tst64)                     \
-  V(PPC_CallCodeObject)            \
-  V(PPC_CallJSFunction)            \
-  V(PPC_CallAddress)               \
-  V(PPC_Push)                      \
-  V(PPC_Drop)                      \
-  V(PPC_Int32ToInt64)              \
-  V(PPC_Int64ToInt32)              \
-  V(PPC_Int32ToFloat64)            \
-  V(PPC_Uint32ToFloat64)           \
-  V(PPC_Float64ToInt32)            \
-  V(PPC_Float64ToUint32)           \
-  V(PPC_LoadWord8)                 \
-  V(PPC_LoadWord16)                \
-  V(PPC_LoadWord32)                \
-  V(PPC_LoadWord64)                \
-  V(PPC_LoadFloat64)               \
-  V(PPC_StoreWord8)                \
-  V(PPC_StoreWord16)               \
-  V(PPC_StoreWord32)               \
-  V(PPC_StoreWord64)               \
-  V(PPC_StoreFloat64)              \
-  V(PPC_StoreWriteBarrier)
+  V(S390_And32)                     \
+  V(S390_And64)                     \
+  V(S390_Or32)                      \
+  V(S390_Or64)                      \
+  V(S390_Xor32)                     \
+  V(S390_Xor64)                     \
+  V(S390_Shl32)                     \
+  V(S390_Shl64)                     \
+  V(S390_Shr32)                     \
+  V(S390_Shr64)                     \
+  V(S390_Sar32)                     \
+  V(S390_Sar64)                     \
+  V(S390_Not32)                     \
+  V(S390_Not64)                     \
+  V(S390_Add32)                     \
+  V(S390_AddWithOverflow32)         \
+  V(S390_Add64)                     \
+  V(S390_AddFloat64)                \
+  V(S390_Sub32)                     \
+  V(S390_SubWithOverflow32)         \
+  V(S390_Sub64)                     \
+  V(S390_SubFloat64)                \
+  V(S390_Mul32)                     \
+  V(S390_Mul64)                     \
+  V(S390_MulFloat64)                \
+  V(S390_Div32)                     \
+  V(S390_Div64)                     \
+  V(S390_DivU32)                    \
+  V(S390_DivU64)                    \
+  V(S390_DivFloat64)                \
+  V(S390_Mod32)                     \
+  V(S390_Mod64)                     \
+  V(S390_ModU32)                    \
+  V(S390_ModU64)                    \
+  V(S390_ModFloat64)                \
+  V(S390_Neg32)                     \
+  V(S390_Neg64)                     \
+  V(S390_NegFloat64)                \
+  V(S390_Cmp32)                     \
+  V(S390_Cmp64)                     \
+  V(S390_CmpFloat64)                \
+  V(S390_Tst32)                     \
+  V(S390_Tst64)                     \
+  V(S390_CallCodeObject)            \
+  V(S390_CallJSFunction)            \
+  V(S390_CallAddress)               \
+  V(S390_Push)                      \
+  V(S390_Drop)                      \
+  V(S390_Int32ToInt64)              \
+  V(S390_Int64ToInt32)              \
+  V(S390_Int32ToFloat64)            \
+  V(S390_Uint32ToFloat64)           \
+  V(S390_Float64ToInt32)            \
+  V(S390_Float64ToUint32)           \
+  V(S390_LoadWord8)                 \
+  V(S390_LoadWord16)                \
+  V(S390_LoadWord32)                \
+  V(S390_LoadWord64)                \
+  V(S390_LoadFloat64)               \
+  V(S390_StoreWord8)                \
+  V(S390_StoreWord16)               \
+  V(S390_StoreWord32)               \
+  V(S390_StoreWord64)               \
+  V(S390_StoreFloat64)              \
+  V(S390_StoreWriteBarrier)
 
 
 // Addressing modes represent the "shape" of inputs to an instruction.
@@ -100,4 +100,4 @@ namespace compiler {
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_COMPILER_PPC_INSTRUCTION_CODES_PPC_H_
+#endif  // V8_COMPILER_S390_INSTRUCTION_CODES_S390_H_
