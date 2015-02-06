@@ -1095,7 +1095,14 @@ static void ProfilerSignalHandler(int signal, siginfo_t* info, void* context) {
   sample->fp =
     reinterpret_cast<Address>(ucontext->uc_mcontext.regs->gpr[PT_R31]);
 #elif V8_HOST_ARCH_S390
+#if !V8_TARGET_ARCH_S390X && !V8_TARGET_ARCH_PPC64 && !V8_TARGET_ARCH_X64
+  // 31-bit targets will have the upper bit of the PSW set, and requires
+  // masking out.
+  sample->pc = reinterpret_cast<Address>(ucontext->uc_mcontext.psw.addr &
+                                         0x7FFFFFFF);
+#else
   sample->pc = reinterpret_cast<Address>(ucontext->uc_mcontext.psw.addr);
+#endif
   sample->sp = reinterpret_cast<Address>(ucontext->uc_mcontext.gregs[15]);
   sample->fp = reinterpret_cast<Address>(ucontext->uc_mcontext.gregs[11]);
 #endif  // V8_HOST_ARCH_*
