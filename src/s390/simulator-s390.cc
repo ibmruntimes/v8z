@@ -4052,16 +4052,28 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
       }
       break;
     }
+    case AGFI:
     case AFI: {
-      // 32-bit Add (Register + 32-bit Immediate)
+      // Clobbering Add Word Immediate
       RILInstruction* rilInstr = reinterpret_cast<RILInstruction*>(instr);
       int r1 = rilInstr->R1Value();
       int i2 = rilInstr->I2Value();
-      int32_t r1_val = get_low_register<int32_t>(r1);
-      int isOF = CheckOverflowForIntAdd(r1_val, i2);
-      int32_t alu_out = r1_val + i2;
-      set_low_register(r1, alu_out);
-      SetS390ConditionCode<int32_t>(alu_out, 0);
+      int isOF;
+      if (AFI == op) {
+        // 32-bit Add (Register + 32-bit Immediate)
+        int32_t r1_val = get_low_register<int32_t>(r1);
+        isOF = CheckOverflowForIntAdd(r1_val, i2);
+        int32_t alu_out = r1_val + i2;
+        set_low_register(r1, alu_out);
+        SetS390ConditionCode<int32_t>(alu_out, 0);
+      } else if (AGFI == op) {
+        //64-bit Add (Register + 32-bit Imm)
+        int64_t r1_val = get_register(r1);
+        isOF = CheckOverflowForIntAdd(r1_val, i2);
+        int64_t alu_out = r1_val + i2;
+        set_register(r1, alu_out);
+        SetS390ConditionCode<int64_t>(alu_out, 0); 
+      }
       SetS390OverflowCode(isOF);
       break;
     }
