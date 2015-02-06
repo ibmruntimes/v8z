@@ -2396,15 +2396,15 @@ void MacroAssembler::CallApiFunctionAndReturn(
   StoreW(r8, MemOperand(r9, kLevelOffset));
 
   CmpP(r7, MemOperand(r9, kLimitOffset));
-  bne(&delete_allocated_handles);
+  bne(&delete_allocated_handles, Label::kNear);
 
   // Check if the function scheduled an exception.
   bind(&leave_exit_frame);
-  LoadRoot(r6, Heap::kTheHoleValueRootIndex);
   mov(r7, Operand(ExternalReference::scheduled_exception_address(isolate())));
   LoadP(r7, MemOperand(r7));
-  CmpP(r6, r7);
-  bne(&promote_scheduled_exception);
+  CompareRoot(r7, Heap::kTheHoleValueRootIndex);
+  bne(&promote_scheduled_exception, Label::kNear);
+
   bind(&exception_handled);
 
   bool restore_context = context_restore_operand != NULL;
