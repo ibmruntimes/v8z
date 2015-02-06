@@ -424,7 +424,14 @@ void SignalHandler::HandleProfilerSignal(int signal, siginfo_t* info,
   state.sp = reinterpret_cast<Address>(ucontext->uc_mcontext.regs->gpr[PT_R1]);
   state.fp = reinterpret_cast<Address>(ucontext->uc_mcontext.regs->gpr[PT_R31]);
 #elif V8_HOST_ARCH_S390
+#if V8_TARGET_ARCH_32_BIT
+  // 31-bit targets will have the upper bit of the PSW set, and requires
+  // masking out.
+  state.pc = reinterpret_cast<Address>(ucontext->uc_mcontext.psw.addr &
+                                       0x7FFFFFFF);
+#else
   state.pc = reinterpret_cast<Address>(ucontext->uc_mcontext.psw.addr);
+#endif
   state.sp = reinterpret_cast<Address>(ucontext->uc_mcontext.gregs[15]);
   state.fp = reinterpret_cast<Address>(ucontext->uc_mcontext.gregs[11]);
 #endif  // V8_HOST_ARCH_*
