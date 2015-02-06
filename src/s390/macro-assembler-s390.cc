@@ -2242,11 +2242,11 @@ void MacroAssembler::CallApiFunctionAndReturn(
   mov(scratch, Operand(ExternalReference::is_profiling_address(isolate())));
   LoadlB(scratch, MemOperand(scratch, 0));
   CmpP(scratch, Operand::Zero());
-  beq(&profiler_disabled);
+  beq(&profiler_disabled, Label::kNear);
 
   // Additional parameter is the address of the actual callback.
   mov(scratch, Operand(thunk_ref));
-  jmp(&end_profiler_check);
+  jmp(&end_profiler_check, Label::kNear);
 
   bind(&profiler_disabled);
   LoadRR(scratch, function_address);
@@ -2307,17 +2307,15 @@ void MacroAssembler::CallApiFunctionAndReturn(
   }
   SubP(r8, Operand(1));
   StoreW(r8, MemOperand(r9, kLevelOffset));
-  LoadP(ip, MemOperand(r9, kLimitOffset));
-  CmpP(r7, ip);
-  bne(&delete_allocated_handles);
+  CmpP(r7, MemOperand(r9, kLimitOffset));
+  bne(&delete_allocated_handles, Label::kNear);
 
   // Check if the function scheduled an exception.
   bind(&leave_exit_frame);
-  LoadRoot(r6, Heap::kTheHoleValueRootIndex);
   mov(ip, Operand(ExternalReference::scheduled_exception_address(isolate())));
   LoadP(r7, MemOperand(ip));
-  CmpP(r6, r7);
-  bne(&promote_scheduled_exception);
+  CompareRoot(r7, Heap::kTheHoleValueRootIndex);
+  bne(&promote_scheduled_exception, Label::kNear);
   bind(&exception_handled);
 
   bool restore_context = context_restore_operand != NULL;
