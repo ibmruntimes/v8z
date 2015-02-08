@@ -4380,24 +4380,18 @@ void ICCompareStub::GenerateMiss(MacroAssembler* masm) {
 void DirectCEntryStub::Generate(MacroAssembler* masm) {
   // Place the return address on the stack, making the call
   // GC safe. The RegExp backend also relies on this.
-  __ StoreP(r14, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize));
+  __ CleanseP(r14);
 
-#if V8_TARGET_ARCH_S390X
-  __ Call(ip);  // Call the C++ function.
-#else
-  // 31-bit requires us to cleanse R14 to clear top nibble.
-  Label returnLabel;
-  __ larl(r14, &returnLabel);
+  // Return Address needs to go onto the R14 slot of the callee
+  // saved argument area, which will be pushed onto the stack by
+  // the callee prologue.
+  __ StoreP(r14, MemOperand(sp, kStackFrameRASlot * kPointerSize));
 
   // Statement positions are expected to be recorded when the target
   // address is loaded.
   __ positions_recorder()->WriteRecordedPositions();
 
-  __ b(ip);
-  __ bind(&returnLabel);
-#endif
-  __ LoadP(r14, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize));
-  __ b(r14);
+  __ b(ip);  // Callee will return to R14 directly.
 }
 
 void DirectCEntryStub::GenerateCall(MacroAssembler* masm,
