@@ -4964,29 +4964,29 @@ void StubFailureTrampolineStub::Generate(MacroAssembler* masm) {
 void ProfileEntryHookStub::MaybeCallEntryHook(MacroAssembler* masm) {
   if (masm->isolate()->function_entry_hook() != NULL) {
     PredictableCodeSizeScope predictable(masm,
-// @TODO: Check size of masm from logs and correct this
 #if V8_TARGET_ARCH_S390X
-                                         36);
+                                         48);
 #else
-                                         30);
+                                         38);
 #endif
     ProfileEntryHookStub stub(masm->isolate());
     __ CleanseP(r14);
-    __ push(r14);
+    __ Push(r14, ip);  // ip needs to be preserved as it is callee-saved reg
     __ CallStub(&stub);
-    __ pop(r14);
+    __ Pop(r14, ip);
   }
 }
 
 
 void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
-  // The entry hook is a "push lr" instruction (LAY+ST/STG), followed by a call.
+  // The entry hook is a "push r14, ip" instruction (LAY+ST/STG),
+  // followed by a call. (See ProfileEntryHookStub::MaybeCallEntryHook)
 #if V8_TARGET_ARCH_S390X
   const int32_t kReturnAddressDistanceFromFunctionStart =
-      Assembler::kCallTargetAddressOffset + 12;  // LAY + STG
+      Assembler::kCallTargetAddressOffset + 18;  // LAY + STG * 2
 #else
   const int32_t kReturnAddressDistanceFromFunctionStart =
-      Assembler::kCallTargetAddressOffset + 10;  // LAY + ST
+      Assembler::kCallTargetAddressOffset + 18;  // NILH + LAY + ST*2
 #endif
 
   // This should contain all kJSCallerSaved registers.
@@ -4994,8 +4994,8 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
      kJSCallerSaved |  // Caller saved registers.
      r7.bit();        // Saved stack pointer.
 
-  // We also save lr, so the count here is one higher than the mask indicates.
-  const int32_t kNumSavedRegs = kNumJSCallerSaved + 2;
+  // We also save r14+ip, so count here is two higher than the mask indicates.
+  const int32_t kNumSavedRegs = kNumJSCallerSaved + 3;
 
   // Save all caller-save registers as this may be called from anywhere.
   __ CleanseP(r14);
