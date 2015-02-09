@@ -2984,11 +2984,6 @@ void LCodeGen::DoDeferredInstanceOfKnownGlobal(LInstanceOfKnownGlobal* instr,
 
   PushSafepointRegistersScope scope(this, Safepoint::kWithRegisters);
 
-  // Get the temp register reserved by the instruction. This needs to be r6 as
-  // its slot of the pushing of safepoint registers is used to communicate the
-  // offset to the location of the map check.
-  Register temp = ToRegister(instr->temp());
-  ASSERT(temp.is(r6));
   __ Move(InstanceofStub::right(), instr->function());
 // Include instructions (mov + call = mov + (mov+call)) in delta below:
 // 64 bit = 2 * (IILF + IIHF) + BASR = 2 * 12 + 2 = 26
@@ -3003,7 +2998,7 @@ void LCodeGen::DoDeferredInstanceOfKnownGlobal(LInstanceOfKnownGlobal* instr,
   {
     Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm_);
     // r7 is used to communicate the offset to the location of the map check.
-    __ mov(temp, Operand(delta));
+    __ mov(r7, Operand(delta));
   }
   CallCodeGeneric(stub.GetCode(),
                   RelocInfo::CODE_TARGET,

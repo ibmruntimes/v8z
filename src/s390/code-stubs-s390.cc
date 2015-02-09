@@ -1943,8 +1943,7 @@ void InstanceofStub::Generate(MacroAssembler* masm) {
     //   (See LCodeGen::DoDeferredLInstanceOfKnownGlobal).
     const Register offset = r7;
     __ CleanseP(r14);
-    __ LoadRR(inline_site, r14);
-    __ SubP(inline_site, inline_site, offset);
+    __ SubP(inline_site, r14, offset);
     // Get the map location in r7 and patch it.
     __ GetRelocatedValue(inline_site, offset, scratch);
     __ StoreP(map,
