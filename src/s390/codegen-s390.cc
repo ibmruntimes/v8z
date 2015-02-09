@@ -157,7 +157,7 @@ void ElementsTransitionGenerator::GenerateMapChangeElementsTransition(
   __ RecordWriteField(r4,
                       HeapObject::kMapOffset,
                       r5,
-                      r13,
+                      r1,
                       kLRHasNotBeenSaved,
                       kDontSaveFPRegs,
                       EMIT_REMEMBERED_SET,
@@ -197,20 +197,20 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   // Allocate new FixedDoubleArray.
   __ SmiToDoubleArrayOffset(r14, r7);
   __ AddP(r14, Operand(FixedDoubleArray::kHeaderSize));
-  __ Allocate(r14, r8, r9, r13, &gc_required, DOUBLE_ALIGNMENT);
+  __ Allocate(r14, r8, r9, r1, &gc_required, DOUBLE_ALIGNMENT);
   // r8: destination FixedDoubleArray, not tagged as heap object.
 
    // Set destination FixedDoubleArray's length and map.
-  __ LoadRoot(r13, Heap::kFixedDoubleArrayMapRootIndex);
+  __ LoadRoot(r1, Heap::kFixedDoubleArrayMapRootIndex);
   __ StoreP(r7, MemOperand(r8, FixedDoubleArray::kLengthOffset));
   // Update receiver's map.
-  __ StoreP(r13, MemOperand(r8, HeapObject::kMapOffset));
+  __ StoreP(r1, MemOperand(r8, HeapObject::kMapOffset));
 
   __ StoreP(r5, FieldMemOperand(r4, HeapObject::kMapOffset));
   __ RecordWriteField(r4,
                       HeapObject::kMapOffset,
                       r5,
-                      r13,
+                      r1,
                       kLRHasBeenSaved,
                       kDontSaveFPRegs,
                       OMIT_REMEMBERED_SET,
@@ -221,7 +221,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   __ RecordWriteField(r4,
                       JSObject::kElementsOffset,
                       r5,
-                      r13,
+                      r1,
                       kLRHasBeenSaved,
                       kDontSaveFPRegs,
                       EMIT_REMEMBERED_SET,
@@ -251,7 +251,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   __ RecordWriteField(r4,
                       HeapObject::kMapOffset,
                       r5,
-                      r13,
+                      r1,
                       kLRHasNotBeenSaved,
                       kDontSaveFPRegs,
                       OMIT_REMEMBERED_SET,
@@ -265,13 +265,13 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
 
   // Convert and copy elements.
   __ bind(&loop);
-  __ LoadP(r13, MemOperand(r5));
+  __ LoadP(r1, MemOperand(r5));
   __ AddP(r5, Operand(kPointerSize));
-  // r13: current element
-  __ UntagAndJumpIfNotSmi(r13, r13, &convert_hole);
+  // r1: current element
+  __ UntagAndJumpIfNotSmi(r1, r1, &convert_hole);
 
   // Normal smi, convert to double and store.
-  __ ConvertIntToDouble(r13, d0);
+  __ ConvertIntToDouble(r1, d0);
   __ StoreF(d0, MemOperand(r9, 0));
   __ la(r9, MemOperand(r9, 8));
 
@@ -281,8 +281,8 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   __ bind(&convert_hole);
   if (FLAG_debug_code) {
     // Restore a "smi-untagged" heap object.
-    __ LoadP(r13, MemOperand(r5, -kPointerSize));
-    __ CompareRoot(r13, Heap::kTheHoleValueRootIndex);
+    __ LoadP(r1, MemOperand(r5, -kPointerSize));
+    __ CompareRoot(r1, Heap::kTheHoleValueRootIndex);
     __ Assert(eq, kObjectFoundInSmiOnlyArray);
   }
 #if V8_TARGET_ARCH_S390X
@@ -334,12 +334,12 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   __ LoadImmP(r2, Operand(FixedDoubleArray::kHeaderSize));
   __ SmiToPtrArrayOffset(r0, r7);
   __ AddP(r2, r0);
-  __ Allocate(r2, r8, r9, r13, &gc_required, NO_ALLOCATION_FLAGS);
+  __ Allocate(r2, r8, r9, r1, &gc_required, NO_ALLOCATION_FLAGS);
   // r8: destination FixedArray, not tagged as heap object
   // Set destination FixedDoubleArray's length and map.
-  __ LoadRoot(r13, Heap::kFixedArrayMapRootIndex);
+  __ LoadRoot(r1, Heap::kFixedArrayMapRootIndex);
   __ StoreP(r7, MemOperand(r8, FixedDoubleArray::kLengthOffset));
-  __ StoreP(r13, MemOperand(r8, HeapObject::kMapOffset));
+  __ StoreP(r1, MemOperand(r8, HeapObject::kMapOffset));
 
   // Prepare for conversion loop.
   __ AddP(r6, Operand(FixedDoubleArray::kHeaderSize - kHeapObjectTag));
@@ -348,14 +348,14 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   __ SmiToPtrArrayOffset(r7, r7);
   __ AddP(r7, r5);
   __ LoadRoot(r9, Heap::kTheHoleValueRootIndex);
-  __ LoadRoot(r13, Heap::kHeapNumberMapRootIndex);
+  __ LoadRoot(r1, Heap::kHeapNumberMapRootIndex);
   // Using offsetted addresses in r6 to fully take advantage of post-indexing.
   // r5: begin of destination FixedArray element fields, not tagged
   // r6: begin of source FixedDoubleArray element fields, not tagged
   // r7: end of destination FixedArray, not tagged
   // r8: destination FixedArray
   // r9: the-hole pointer
-  // r13: heap number map
+  // r1: heap number map
   __ b(&entry, Label::kNear);
 
   // Call into runtime if GC is required.
@@ -411,7 +411,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   __ RecordWriteField(r4,
                       JSObject::kElementsOffset,
                       r8,
-                      r13,
+                      r1,
                       kLRHasNotBeenSaved,
                       kDontSaveFPRegs,
                       EMIT_REMEMBERED_SET,
@@ -423,7 +423,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   __ RecordWriteField(r4,
                       HeapObject::kMapOffset,
                       r5,
-                      r13,
+                      r1,
                       kLRHasNotBeenSaved,
                       kDontSaveFPRegs,
                       OMIT_REMEMBERED_SET,
