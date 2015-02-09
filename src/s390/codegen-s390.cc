@@ -723,7 +723,7 @@ void Code::PatchPlatformCodeAge(Isolate* isolate,
     intptr_t target = reinterpret_cast<intptr_t>(stub->instruction_start());
     // Don't use Call -- we need to preserve ip and lr.
     // GenerateMakeCodeYoungAgainCommon for the stub code.
-    patcher.masm()->nop();
+    patcher.masm()->nop(); // marker to detect sequence (see IsOld)
     patcher.masm()->mov(r2, Operand(target));
     patcher.masm()->Jump(r2);
     for (int i = 0;

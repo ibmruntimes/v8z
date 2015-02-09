@@ -224,15 +224,15 @@ void RelocInfo::set_target_cell(Cell* cell,
 }
 
 #if V8_TARGET_ARCH_S390X
-    // LGR + IIHF + IILF + BASR
-static const int kCodeAgingSequenceLength = 18;
-static const int kCodeAgingTargetDelta = 4;  // Jump past LGR to IIHF
+    // NOP(2byte) + IIHF + IILF + BCR
+static const int kCodeAgingSequenceLength = 16;
+static const int kCodeAgingTargetDelta = 2;  // Jump past NOP to IIHF
     // LAY + 4 * STG + LA
 static const int kNoCodeAgeSequenceLength = 34;
 #else
-    // LR + IILF + BASR
+    // NOP + IILF + BCR
 static const int kCodeAgingSequenceLength = 10;
-static const int kCodeAgingTargetDelta = 2;  // Jump past LR to IILF
+static const int kCodeAgingTargetDelta = 2;  // Jump past NOP to IILF
 #if (V8_HOST_ARCH_S390)
 // NILH + LAY + 4 * ST + LA
 static const int kNoCodeAgeSequenceLength = 30;
