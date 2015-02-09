@@ -932,7 +932,7 @@ void Builtins::Generate_MarkCodeAsExecutedOnce(MacroAssembler* masm) {
 
   // Perform prologue operations usually performed by the young code stub.
   __ PushFixedFrame(r3);
-  __ AddP(fp, sp, Operand(StandardFrameConstants::kFixedFrameSizeFromFp));
+  __ la(fp, MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
 
   // Jump to point after the code-age stub.
   __ AddP(r2, ip, Operand(kNoCodeAgeSequenceLength));
