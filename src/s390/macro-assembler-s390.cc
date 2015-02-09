@@ -733,9 +733,9 @@ void MacroAssembler::Prologue(bool code_pre_aging,
       // This matches the code found in PatchPlatformCodeAge()
       Code* stub = Code::GetPreAgedCodeAgeStub(isolate());
       intptr_t target = reinterpret_cast<intptr_t>(stub->instruction_start());
-      LoadRR(ip, r14);
+      nop();
       mov(r2, Operand(target));
-      Call(r2);
+      Jump(r2);
       for (int i = 0;
            i < kNoCodeAgeSequenceLength - kCodeAgingSequenceLength; i += 2) {
         // TODO(joransiu): Create nop function to pad
