@@ -3345,16 +3345,15 @@ void MacroAssembler::CopyBytes(Register src,
 
 
 void MacroAssembler::InitializeNFieldsWithFiller(Register start_offset,
-                                                Register end_offset,
+                                                Register count,
                                                 Register filler) {
-  Label loop, entry;
-  b(&entry);
+  Label loop;
   bind(&loop);
   StoreP(filler, MemOperand(start_offset));
   AddP(start_offset, Operand(kPointerSize));
-  bind(&entry);
-  CmpP(start_offset, end_offset);
-  blt(&loop);
+  SubP(count, Operand(1));
+  CmpP(count, Operand::Zero());
+  bne(&loop);
 }
 
 
