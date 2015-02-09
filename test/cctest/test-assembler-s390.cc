@@ -369,7 +369,9 @@ TEST(8) {
   MacroAssembler assm(isolate, NULL, 0);
 
 
+  __ iihf(r3, Operand::Zero());
   __ mov(r3, Operand(0x0002));
+  __ iihf(r4, Operand::Zero());
   __ mov(r4, Operand(0x0002));
   __ dsgr(r2, r4);
   __ b(r14);
