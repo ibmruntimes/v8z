@@ -960,20 +960,16 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles,
   }
 #ifdef DEBUG
   mov(ip, Operand(ExternalReference(Isolate::kContextAddress, isolate())));
-  StoreP(r0, MemOperand(ip));
+  StoreP(MemOperand(ip), Operand(0, kRelocInfo_NONEPTR), r0);
 #endif
 
   // Tear down the exit frame, pop the arguments, and return.
-  // Pop r14, and adjust sp by 2*kPointerSize
-  LoadP(r14, MemOperand(fp, kPointerSize));
+  LeaveFrame(StackFrame::EXIT);
+
   if (argument_count.is_valid()) {
     ShiftLeftP(argument_count, argument_count, Operand(kPointerSizeLog2));
-    la(sp, MemOperand(argument_count, fp, 2 * kPointerSize));
-  } else {
-    la(sp, MemOperand(fp, 2 * kPointerSize));
+    la(sp, MemOperand(sp, argument_count));
   }
-  // Restore previous FP last, as fp is used as base register in prior instrs.
-  LoadP(fp, MemOperand(fp));
 }
 
 
