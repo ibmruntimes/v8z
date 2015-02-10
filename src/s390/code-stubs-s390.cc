@@ -4381,11 +4381,6 @@ void DirectCEntryStub::Generate(MacroAssembler* masm) {
   // GC safe. The RegExp backend also relies on this.
   __ CleanseP(r14);
 
-  // Return Address needs to go onto the R14 slot of the callee
-  // saved argument area, which will be pushed onto the stack by
-  // the callee prologue.
-  __ StoreP(r14, MemOperand(sp, kStackFrameRASlot * kPointerSize));
-
   // Statement positions are expected to be recorded when the target
   // address is loaded.
   __ positions_recorder()->WriteRecordedPositions();
