@@ -39,8 +39,7 @@
 
     'v8_enable_verify_heap%': 0,
 
-    # Temporarily disable snapshot until we are bootstrapped
-    'v8_use_snapshot%': 'false',
+    'v8_use_snapshot%': 'true',
 
     # With post mortem support enabled, metadata is embedded into libv8 that
     # describes various parameters of the VM for use by debuggers. See
