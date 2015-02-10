@@ -439,7 +439,7 @@ void FullCodeGenerator::EmitReturnSequence() {
     EmitProfilingCounterDecrement(weight);
     Label ok;
     __ CmpLogicalP(r5, Operand::Zero());
-    __ bge(&ok);
+    __ bge(&ok, Label::kNear);
     __ push(r2);
     __ Call(isolate()->builtins()->InterruptCheck(),
             RelocInfo::CODE_TARGET);
@@ -461,11 +461,15 @@ void FullCodeGenerator::EmitReturnSequence() {
       CodeGenerator::RecordPositions(masm_, function()->end_position() - 1);
       __ RecordJSReturn();
       masm_->LoadRR(sp, fp);
+
+      // Mark range where no frame exists, in case profiler receives sample here
+      int32_t no_frame_start = masm_->pc_offset();
       masm_->LoadP(fp, MemOperand(sp));
       masm_->LoadP(r14, MemOperand(sp, kPointerSize));
       masm_->lay(sp,
                  MemOperand(sp, (uint32_t)(sp_delta + (2 * kPointerSize))));
       masm_->Ret();
+      info_->AddNoFrameRange(no_frame_start, masm_->pc_offset());
     }
 
 #ifdef DEBUG
