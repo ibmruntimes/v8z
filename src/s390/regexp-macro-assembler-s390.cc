@@ -1491,7 +1491,7 @@ void RegExpMacroAssemblerS390::CallCFunctionUsingStub(
   // __ CallStub(&stub);
   // __ Call(code_pointer());
   // __ la(sp, MemOperand(sp, kCalleeRegisterSaveAreaSize));
-  if (OS::ActivationFrameAlignment() > kPointerSize) {
+  if (base::OS::ActivationFrameAlignment() > kPointerSize) {
     __ LoadP(sp, MemOperand(sp, (kNumRequiredStackFrameSlots * kPointerSize)));
   } else {
     __ la(sp, MemOperand(sp, (kNumRequiredStackFrameSlots * kPointerSize)));
