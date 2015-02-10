@@ -1234,8 +1234,11 @@ void LCodeGen::DoDivByPowerOf2I(LDivByPowerOf2I* instr) {
       __ ShiftRightArith(result, dividend, Operand(31));
       __ ShiftRight(result, result, Operand(32 - shift));
     }
-    __ Add32(result, dividend, result);
+    __ AddP(result, dividend, result);
     __ ShiftRightArith(result, result, Operand(shift));
+#if V8_TARGET_ARCH_S390X
+    __ lgfr(result, result);
+#endif
   }
   if (divisor < 0) __ LoadComplementRR(result, result);
 }
@@ -1760,9 +1763,15 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
         // rotate_right(a, b) == rotate_left(a, 32 - b)
         __ LoadComplementRR(scratch, scratch);
         __ rll(result, left, scratch, Operand(32));
+#if V8_TARGET_ARCH_S390X
+        __ lgfr(result, result);
+#endif
         break;
       case Token::SAR:
         __ ShiftRightArith(result, left, scratch);
+#if V8_TARGET_ARCH_S390X
+        __ lgfr(result, result);
+#endif
         break;
       case Token::SHR:
         __ ShiftRight(result, left, scratch);
@@ -1793,10 +1802,10 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
     switch (instr->op()) {
       case Token::ROR:
         if (shift_count != 0) {
-      // DCHECK(0);
-        __ rll(result, left, Operand(32 - shift_count));
-      // TODO(joransiu): Fix me.
-          // __ rotrwi(result, left, shift_count);
+          __ rll(result, left, Operand(32 - shift_count));
+#if V8_TARGET_ARCH_S390X
+          __ lgfr(result, result);
+#endif
         } else {
           __ Move(result, left);
         }
@@ -1804,6 +1813,9 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
       case Token::SAR:
         if (shift_count != 0) {
           __ ShiftRightArith(result, left, Operand(shift_count));
+#if V8_TARGET_ARCH_S390X
+          __ lgfr(result, result);
+#endif
         } else {
           __ Move(result, left);
         }
@@ -1811,7 +1823,9 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
       case Token::SHR:
         if (shift_count != 0) {
           __ ShiftRight(result, left, Operand(shift_count));
-          __ AndP(result, Operand(0xFFFFFFFF));
+#if V8_TARGET_ARCH_S390X
+          __ lgfr(result, result);
+#endif
         } else {
           if (instr->can_deopt()) {
             __ Cmp32(left, Operand::Zero());
@@ -1824,9 +1838,9 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
         if (shift_count != 0) {
 #if V8_TARGET_ARCH_S390X
           if (instr->hydrogen_value()->representation().IsSmi()) {
-        // TODO(joransiu): Fix proper Z equivalent to sldi
-      DCHECK(0);
-      // __ sldi(result, left, Operand(shift_count));
+            // TODO(joransiu): Fix proper Z equivalent to sldi
+            DCHECK(0);
+            // __ sldi(result, left, Operand(shift_count));
 #else
           if (instr->hydrogen_value()->representation().IsSmi() &&
               instr->can_deopt()) {
