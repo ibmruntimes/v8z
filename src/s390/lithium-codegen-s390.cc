@@ -1570,9 +1570,8 @@ void LCodeGen::DoMulI(LMulI* instr) {
           if (constant < 0)  __ LoadComplementRR(result, result);
         } else {
           // Generate standard code.
-          __ mov(ip, ToOperand(right_op));
           __ Move(result, left);
-          __ MulP(result, ToOperand(right_op));
+          __ MulP(result, Operand(constant));
         }
     }
 
@@ -5477,8 +5476,7 @@ void LCodeGen::DoCheckValue(LCheckValue* instr) {
     Register reg = ToRegister(instr->value());
     Handle<Cell> cell = isolate()->factory()->NewCell(object);
     __ mov(ip, Operand(Handle<Object>(cell)));
-    __ LoadP(ip, FieldMemOperand(ip, Cell::kValueOffset));
-    __ CmpP(reg, ip);
+    __ CmpP(reg, FieldMemOperand(ip, Cell::kValueOffset));
   } else {
     __ CmpP(reg, Operand(object));
   }
