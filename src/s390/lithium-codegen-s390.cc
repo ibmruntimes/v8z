@@ -1892,20 +1892,22 @@ void LCodeGen::DoSubI(LSubI* instr) {
     if (!left->Equals(instr->result()))
       __ LoadRR(ToRegister(result), ToRegister(left));
 
-#if V8_TARGET_ARCH_S390X &&  __BYTE_ORDER == __BIG_ENDIAN
-    // We want to read the lower 32-bits directly from memory
-    MemOperand rightMem = ToMemOperand(right);
-    MemOperand mem = MemOperand(rightMem.rb(), rightMem.rx(),
-                                rightMem.offset() + 4);
-#else
     MemOperand mem = ToMemOperand(right);
-#endif
     if (!isInteger) {
-            __ SubP(ToRegister(result), mem);
-    } else if (checkOverflow) {
-      __ Sub32(ToRegister(result), mem);
+      __ SubP(ToRegister(result), mem);
     } else {
-      __ SubP_ExtendSrc(ToRegister(result), mem);
+#if V8_TARGET_ARCH_S390X &&  __BYTE_ORDER == __BIG_ENDIAN
+      // We want to read the 32-bits directly from memory
+      MemOperand Upper32Mem = MemOperand(mem.rb(), mem.rx(),
+                                         mem.offset() + 4);
+#else
+      MemOperand Upper32Mem = ToMemOperand(right);
+#endif
+      if (checkOverflow) {
+        __ Sub32(ToRegister(result), Upper32Mem);
+      } else {
+        __ SubP_ExtendSrc(ToRegister(result), Upper32Mem);
+      }
     }
   }
 
@@ -2125,20 +2127,22 @@ void LCodeGen::DoAddI(LAddI* instr) {
     if (!left->Equals(instr->result()))
       __ LoadRR(ToRegister(result), ToRegister(left));
 
-#if V8_TARGET_ARCH_S390X &&  __BYTE_ORDER == __BIG_ENDIAN
-    // We want to read the lower 32-bits directly from memory
-    MemOperand rightMem = ToMemOperand(right);
-    MemOperand mem = MemOperand(rightMem.rb(), rightMem.rx(),
-                                rightMem.offset() + 4);
-#else
     MemOperand mem = ToMemOperand(right);
-#endif
-      if (!isInteger)
+    if (!isInteger) {
       __ AddP(ToRegister(result), mem);
-     else if (checkOverflow) {
-      __ Add32(ToRegister(result), mem);
     } else {
-      __ AddP_ExtendSrc(ToRegister(result), mem);
+#if V8_TARGET_ARCH_S390X &&  __BYTE_ORDER == __BIG_ENDIAN
+      // We want to read the 32-bits directly from memory
+      MemOperand Upper32Mem = MemOperand(mem.rb(), mem.rx(),
+                                         mem.offset() + 4);
+#else
+      MemOperand Upper32Mem = ToMemOperand(right);
+#endif
+      if (checkOverflow) {
+        __ Add32(ToRegister(result), Upper32Mem);
+      } else {
+        __ AddP_ExtendSrc(ToRegister(result), Upper32Mem);
+      }
     }
   }
 
