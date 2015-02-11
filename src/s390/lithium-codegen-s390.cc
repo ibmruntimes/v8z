@@ -4702,9 +4702,6 @@ void LCodeGen::DoStoreKeyedFixedDoubleArray(LStoreKeyed* instr) {
   intptr_t address_offset = base_offset;
 
   if (key_is_constant) {
-    address_offset += (constant_key << element_size_shift) +
-                      FixedDoubleArray::kHeaderSize - kHeapObjectTag;
-
     // Memory references support up to 20-bits signed displacement in RXY form
     if (!is_int20((address_offset))) {
       __ mov(scratch, Operand(address_offset));
@@ -4714,8 +4711,7 @@ void LCodeGen::DoStoreKeyedFixedDoubleArray(LStoreKeyed* instr) {
   } else {
     use_scratch = true;
     __ IndexToArrayOffset(scratch, key, element_size_shift, key_is_smi);
-    address_offset += FixedDoubleArray::kHeaderSize - kHeapObjectTag;
-
+ 
     // Memory references support up to 20-bits signed displacement in RXY form
     if (!is_int20((address_offset))) {
       __ AddP(scratch, Operand(address_offset));
