@@ -1656,6 +1656,7 @@ void MacroAssembler::Allocate(int object_size,
   AddP(scratch2, result, Operand(object_size));
   b(Condition(CC_OF), gc_required);  // Detect overflow
   CmpLogicalP(scratch2, limitMemOperand);
+  bgt(gc_required);
   StoreP(scratch2, MemOperand(topaddr));
 
   // Tag object if requested.
