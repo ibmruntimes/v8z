@@ -4711,7 +4711,6 @@ void LCodeGen::DoStoreKeyedFixedDoubleArray(LStoreKeyed* instr) {
   } else {
     use_scratch = true;
     __ IndexToArrayOffset(scratch, key, element_size_shift, key_is_smi);
- 
     // Memory references support up to 20-bits signed displacement in RXY form
     if (!is_int20((address_offset))) {
       __ AddP(scratch, Operand(address_offset));
