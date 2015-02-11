@@ -1106,7 +1106,8 @@ void Deserializer::ReadChunk(Object** current,
       CASE_STATEMENT(kRootArray, kPlain, kStartOfObject, 0)
       CASE_BODY(kRootArray, kPlain, kStartOfObject, 0)
 #if defined(V8_TARGET_ARCH_MIPS) || defined(V8_TARGET_ARCH_MIPS64) || \
-    defined(V8_TARGET_ARCH_PPC) || V8_OOL_CONSTANT_POOL
+    defined(V8_TARGET_ARCH_PPC) || defined(V8_TARGET_ARCH_S390) || \
+    V8_OOL_CONSTANT_POOL
       // Find an object in the roots array and write a pointer to it to in code.
       CASE_STATEMENT(kRootArray, kFromCode, kStartOfObject, 0)
       CASE_BODY(kRootArray, kFromCode, kStartOfObject, 0)
