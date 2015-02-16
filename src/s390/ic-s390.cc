@@ -657,7 +657,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   // Hit on nth entry.
   for (int i = kEntriesPerBucket - 1; i >= 0; i--) {
     __ bind(&hit_on_nth_entry[i]);
-    __ mov(r7, Operand(cache_field_offsets));
+    __ mov(r6, Operand(cache_field_offsets));
     if (i != 0) {
       __ AddP(r5, Operand(i));
     }
