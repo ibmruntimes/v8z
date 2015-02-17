@@ -3368,8 +3368,8 @@ void LCodeGen::DoAccessArgumentsAt(LAccessArgumentsAt* instr) {
       __ LoadP(result, MemOperand(arguments, index * kPointerSize));
     } else {
       Register index = ToRegister(instr->index());
-      __ LoadImmP(result, Operand(const_length + 1));
-      __ SubP(result, index);
+      __ SubP(result, index, Operand(const_length + 1));
+      __ LoadComplementRR(result, result);
       __ ShiftLeftP(result, result, Operand(kPointerSizeLog2));
       __ LoadP(result, MemOperand(arguments, result));
     }
