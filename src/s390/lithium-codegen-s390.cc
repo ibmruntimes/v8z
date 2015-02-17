@@ -1775,6 +1775,7 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
 #endif
           DeoptimizeIf(lt, instr->environment(), cr0);
         } else {
+          __ AndP(left, Operand(0xFFFFFFFF));
           __ ShiftRight(result, left, scratch);
         }
         break;
