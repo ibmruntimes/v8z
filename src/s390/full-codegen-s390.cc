@@ -2395,6 +2395,7 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
       __ SmiUntag(scratch1, left);
       __ GetLeastBitsFromSmi(scratch2, right, 5);
       __ srl(scratch1, scratch2);
+      __ AndP(scratch1, Operand(0xFFFFFFFF));
       // Unsigned shift is not allowed to produce a negative number.
       __ JumpIfNotUnsignedSmiCandidate(scratch1, r0, &stub_call);
       __ SmiTag(right, scratch1);
