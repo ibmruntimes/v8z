@@ -1949,7 +1949,7 @@ void MacroAssembler::CheckObjectTypeRange(Register object,
   LoadP(map, FieldMemOperand(object, HeapObject::kMapOffset));
   LoadlB(ip, FieldMemOperand(map, Map::kInstanceTypeOffset));
   SubP(ip, Operand(min_type));
-  CmpP(ip, Operand(max_type - min_type));
+  CmpLogicalP(ip, Operand(max_type - min_type));
   bgt(false_label);
 }
 
