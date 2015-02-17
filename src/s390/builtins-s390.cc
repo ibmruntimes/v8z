@@ -1116,13 +1116,21 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
     __ LoadlW(r5,
               FieldMemOperand(r4, SharedFunctionInfo::kCompilerHintsOffset));
     __ TestBit(r5,
+#if V8_TARGET_ARCH_S390X
+               SharedFunctionInfo::kStrictModeFunction,
+#else
                SharedFunctionInfo::kStrictModeFunction + kSmiTagSize,
+#endif
                r0);
     __ bne(&shift_arguments /*, cr0*/);
 
     // Do not transform the receiver for native (Compilerhints already in r5).
     __ TestBit(r5,
+#if V8_TARGET_ARCH_S390X
+               SharedFunctionInfo::kNative,
+#else
                SharedFunctionInfo::kNative + kSmiTagSize,
+#endif
                r0);
     __ bne(&shift_arguments /*, cr0*/);
 
@@ -1333,13 +1341,21 @@ void Builtins::Generate_FunctionApply(MacroAssembler* masm) {
     __ LoadlW(r4,
               FieldMemOperand(r4, SharedFunctionInfo::kCompilerHintsOffset));
     __ TestBit(r4,
+#if V8_TARGET_ARCH_S390X
+               SharedFunctionInfo::kStrictModeFunction,
+#else
                SharedFunctionInfo::kStrictModeFunction + kSmiTagSize,
+#endif
                r0);
     __ bne(&push_receiver /*, cr0*/);
 
     // Do not transform the receiver for strict mode functions.
     __ TestBit(r4,
+#if V8_TARGET_ARCH_S390X
+               SharedFunctionInfo::kNative,
+#else
                SharedFunctionInfo::kNative + kSmiTagSize,
+#endif
                r0);
     __ bne(&push_receiver /*, cr0*/);
 
