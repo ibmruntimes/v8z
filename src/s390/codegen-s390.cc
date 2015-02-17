@@ -161,7 +161,7 @@ void ElementsTransitionGenerator::GenerateMapChangeElementsTransition(
   __ RecordWriteField(receiver,
                       HeapObject::kMapOffset,
                       target_map,
-                      r13,
+                      r1,
                       kLRHasNotBeenSaved,
                       kDontSaveFPRegs,
                       EMIT_REMEMBERED_SET,
@@ -186,7 +186,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
 
   // target_map parameter can be clobbered.
   Register scratch1 = target_map;
-  Register scratch2 = r13;
+  Register scratch2 = r1;
 
   // Verify input registers don't conflict with locals.
   DCHECK(!AreAliased(receiver, key, value, target_map,
@@ -280,15 +280,15 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
 
   // Convert and copy elements.
   __ bind(&loop);
-  __ LoadP(r13, MemOperand(scratch1));
-  __ AddP(scratch1, Operand(kPointerSize));
-  // r13: current element
-  __ UntagAndJumpIfNotSmi(r13, r13, &convert_hole);
+  __ LoadP(r14, MemOperand(scratch1));
+  __ la(scratch1, MemOperand(scratch1, kPointerSize));
+  // r1: current element
+  __ UntagAndJumpIfNotSmi(r14, r14, &convert_hole);
 
   // Normal smi, convert to double and store.
-  __ ConvertIntToDouble(r13, d0);
+  __ ConvertIntToDouble(r14, d0);
   __ StoreF(d0, MemOperand(scratch2, 0));
-  __ la(r9, MemOperand(r9, 8));
+  __ la(scratch2, MemOperand(scratch2, 8));
 
   __ b(&entry, Label::kNear);
 
@@ -296,8 +296,8 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   __ bind(&convert_hole);
   if (FLAG_debug_code) {
     // Restore a "smi-untagged" heap object.
-    __ LoadP(r13, MemOperand(r5, -kPointerSize));
-    __ CompareRoot(r13, Heap::kTheHoleValueRootIndex);
+    __ LoadP(r1, MemOperand(r5, -kPointerSize));
+    __ CompareRoot(r1, Heap::kTheHoleValueRootIndex);
     __ Assert(eq, kObjectFoundInSmiOnlyArray);
   }
 #if V8_TARGET_ARCH_S390X
@@ -331,7 +331,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   Register elements = r6;
   Register array = r8;
   Register length = r7;
-  Register scratch = r13;
+  Register scratch = r1;
 
   // Verify input registers don't conflict with locals.
   DCHECK(!AreAliased(receiver, key, value, target_map,
