@@ -1766,17 +1766,15 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
         __ ShiftRightArith(result, left, scratch);
         break;
       case Token::SHR:
+        __ ShiftRight(result, left, scratch);
+        __ AndP(result, Operand(0xFFFFFFFF));
         if (instr->can_deopt()) {
-          __ ShiftRight(result, left, scratch);
 #if V8_TARGET_ARCH_S390X
           __ ltgfr(result, result/*, SetRC*/);
 #else
           __ ltr(result, result);  // Set the <,==,> condition
 #endif
           DeoptimizeIf(lt, instr->environment(), cr0);
-        } else {
-          __ AndP(left, Operand(0xFFFFFFFF));
-          __ ShiftRight(result, left, scratch);
         }
         break;
       case Token::SHL:
@@ -1814,6 +1812,7 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
       case Token::SHR:
         if (shift_count != 0) {
           __ ShiftRight(result, left, Operand(shift_count));
+          __ AndP(result, Operand(0xFFFFFFFF));
         } else {
           if (instr->can_deopt()) {
             __ Cmp32(left, Operand::Zero());
