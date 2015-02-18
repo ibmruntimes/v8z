@@ -4092,9 +4092,9 @@ void MacroAssembler::NumberOfOwnDescriptors(Register dst, Register map) {
 
 void MacroAssembler::EnumLength(Register dst, Register map) {
   STATIC_ASSERT(Map::EnumLengthBits::kShift == 0);
-  LoadP(dst, FieldMemOperand(map, Map::kBitField3Offset));
-  LoadSmiLiteral(r0, Smi::FromInt(Map::EnumLengthBits::kMask));
-  AndP(dst, r0);
+  LoadW(dst, FieldMemOperand(map, Map::kBitField3Offset));
+  And(dst, Operand(Map::EnumLengthBits::kMask));
+  SmiTag(dst);
 }
 
 
