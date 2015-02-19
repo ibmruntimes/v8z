@@ -1535,7 +1535,8 @@ void MacroAssembler::LoadFromNumberDictionary(Label* miss,
 
     // Scale the index by multiplying by the element size.
     DCHECK(SeededNumberDictionary::kEntrySize == 3);
-    ShiftLeft(ip, t2, Operand(1));
+    LoadRR(ip, t2);
+    sll(ip, Operand(1));
     AddP(t2, ip);  // t2 = t2 * 3
 
     // Check if the key is identical to the name.
