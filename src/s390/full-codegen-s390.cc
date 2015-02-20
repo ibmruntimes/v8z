@@ -2222,7 +2222,7 @@ void FullCodeGenerator::EmitGeneratorResume(Expression *generator,
   if (resume_mode == JSGeneratorObject::NEXT) {
     Label slow_resume;
     __ bne(&slow_resume);
-    __ LoadP(ip, FieldMemOperand(r7, JSFunction::kCodeEntryOffset));
+    __ LoadP(ip, FieldMemOperand(r6, JSFunction::kCodeEntryOffset));
     __ LoadP(r4, FieldMemOperand(r3, JSGeneratorObject::kContinuationOffset));
     __ SmiUntag(r4);
     __ AddP(ip, ip, r4);
