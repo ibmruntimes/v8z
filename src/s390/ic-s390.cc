@@ -1159,7 +1159,7 @@ void StoreIC::GenerateRuntimeSetProperty(MacroAssembler* masm,
   __ Push(r2);
 
   // Do tail-call to runtime routine.
-  __ TailCallRuntime(Runtime::kSetProperty, 5, 1);
+  __ TailCallRuntime(Runtime::kSetProperty, 4, 1);
 }
 
 
