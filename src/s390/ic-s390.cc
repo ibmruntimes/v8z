@@ -468,7 +468,7 @@ void KeyedStoreIC::GenerateSloppyArguments(MacroAssembler* masm) {
   __ StoreP(value, mapped_location);
   __ AddP(r8, mapped_base, mapped_offset);
   __ LoadRR(r1, value);
-  __ RecordWrite(mapped_base, r8, r1, kLRHasNotBeenSaved, kDontSaveFPRegs);
+  __ RecordWrite(r5, r8, r1, kLRHasNotBeenSaved, kDontSaveFPRegs);
   __ Ret();
   __ bind(&notin);
   // The unmapped lookup expects that the parameter map is in r5.
@@ -479,7 +479,7 @@ void KeyedStoreIC::GenerateSloppyArguments(MacroAssembler* masm) {
   __ StoreP(value, unmapped_location);
   __ AddP(r8, unmapped_base, unmapped_offset);
   __ LoadRR(r1, value);
-  __ RecordWrite(unmapped_base, r8, r1, kLRHasNotBeenSaved, kDontSaveFPRegs);
+  __ RecordWrite(r5, r8, r1, kLRHasNotBeenSaved, kDontSaveFPRegs);
   __ Ret();
   __ bind(&slow);
   GenerateMiss(masm);
