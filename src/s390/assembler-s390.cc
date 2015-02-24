@@ -1997,7 +1997,6 @@ RRE_FORM_EMIT(lcgfr, LCGFR)
 RRE_FORM_EMIT(lcgr, LCGR)
 RR_FORM_EMIT(lcr, LCR)
 RRE_FORM_EMIT(lcxbr, LCXBR)
-RRE_FORM_EMIT(ldebr, LDEBR)
 RRF2_FORM_EMIT(ldetr, LDETR)
 RRE_FORM_EMIT(ldxbr, LDXBR)
 RRF2_FORM_EMIT(ldxbra, LDXBRA)
@@ -3551,9 +3550,17 @@ void Assembler::sqdbr(DoubleRegister r1, DoubleRegister r2) {
 }
 
 
-// Load S <- L
+// Load Rounded (double -> float)
 void Assembler::ledbr(DoubleRegister r1, DoubleRegister r2) {
   rre_form(LEDBR,
+           Register::from_code(r1.code()),
+           Register::from_code(r2.code()));
+}
+
+
+// Load Lengthen (float -> double)
+void Assembler::ldebr(DoubleRegister r1, DoubleRegister r2) {
+  rre_form(LDEBR,
            Register::from_code(r1.code()),
            Register::from_code(r2.code()));
 }
