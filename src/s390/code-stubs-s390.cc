@@ -4818,7 +4818,7 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
   // Save all caller-save registers as this may be called from anywhere.
   __ CleanseP(r14);
   __ LoadRR(ip, r14);
-  __ MultiPush(kSavedRegs | r0.bit());
+  __ MultiPush(kSavedRegs | ip.bit());
 
   // Compute the function's address for the first argument.
 
@@ -4826,7 +4826,7 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
 
   // The caller's return address is two slots above the saved temporaries.
   // Grab that for the second argument to the hook.
-  __ lay(r3, MemOperand(sp, (kNumSavedRegs + 1) * kPointerSize));
+  __ lay(r3, MemOperand(sp, kNumSavedRegs * kPointerSize));
 
   // Align the stack if necessary.
   int frame_alignment = masm->ActivationFrameAlignment();
