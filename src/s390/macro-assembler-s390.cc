@@ -3801,13 +3801,8 @@ void MacroAssembler::CheckMapDeprecated(Handle<Map> map,
                                         Label* if_deprecated) {
   if (map->CanBeDeprecated()) {
     mov(scratch, Operand(map));
-//    LoadP(scratch, FieldMemOperand(scratch, Map::kBitField3Offset));
-//    Smi* val = Smi::FromInt(Map::Deprecated::kMask);
-//    (void)val;
-//    LoadSmiLiteral(r0, Smi::FromInt(Map::Deprecated::kMask));
-//    AndP(scratch, r0);
- LoadlW(scratch, FieldMemOperand(scratch, Map::kBitField3Offset));
- ExtractBitMask(scratch, scratch, Map::Deprecated::kMask/*, SetRC*/);
+    LoadlW(scratch, FieldMemOperand(scratch, Map::kBitField3Offset));
+    ExtractBitMask(scratch, scratch, Map::Deprecated::kMask/*, SetRC*/);
     bne(if_deprecated);
   }
 }
