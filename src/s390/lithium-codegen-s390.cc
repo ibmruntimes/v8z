@@ -4154,9 +4154,11 @@ void LCodeGen::DoMathRound(LMathRound* instr) {
 void LCodeGen::DoMathFround(LMathFround* instr) {
   DoubleRegister input_reg = ToDoubleRegister(instr->value());
   DoubleRegister output_reg = ToDoubleRegister(instr->result());
-  DCHECK(0);
-  // TODO(joransiu): Confirm this is the correct instruction
+
+  // Round double to float
   __ ledbr(output_reg, input_reg);
+  // Extend from float to double
+  __ ldebr(output_reg, output_reg);
 }
 
 

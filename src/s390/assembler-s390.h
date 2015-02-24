@@ -121,7 +121,7 @@ struct Register {
       index = NumAllocatableRegisters() - 1;
     } else {
       // r0-r1 are skipped
-      index = code - kAllocatableRangeBegin;  
+      index = code - kAllocatableRangeBegin;
     }
     DCHECK(index >= 0 && index < kMaxNumAllocatableRegisters);
     return index;
@@ -1165,7 +1165,6 @@ RRE_FORM(lcgfr);
 RRE_FORM(lcgr);
 RR_FORM(lcr);
 RRE_FORM(lcxbr);
-RRE_FORM(ldebr);
 RRF2_FORM(ldetr);
 RRE_FORM(ldxbr);
 RRF2_FORM(ldxbra);
@@ -1647,6 +1646,7 @@ SS2_FORM(zap);
   void stey(DoubleRegister r1, const MemOperand& opnd);
 
   void ledbr(DoubleRegister r1, DoubleRegister r2);
+  void ldebr(DoubleRegister r1, DoubleRegister r2);
   void lpdbr(DoubleRegister r1,  DoubleRegister r2);
   // double type conversion
   void cfdbr(Condition m, Register fixReg, DoubleRegister fltReg);
