@@ -1509,8 +1509,11 @@ void LCodeGen::DoMultiplyAddD(LMultiplyAddD* instr) {
   DoubleRegister multiplicand = ToDoubleRegister(instr->multiplicand());
   DoubleRegister result = ToDoubleRegister(instr->result());
 
-  __ ldr(result, addend);
-  __ madbr(result, multiplier, multiplicand);
+  // Unable to use madbr as the intermediate value is not rounded
+  // to proper precision
+  __ ldr(result, multiplier);
+  __ mdbr(result, multiplicand);
+  __ adbr(result, addend);
 }
 
 
@@ -1520,8 +1523,11 @@ void LCodeGen::DoMultiplySubD(LMultiplySubD* instr) {
   DoubleRegister multiplicand = ToDoubleRegister(instr->multiplicand());
   DoubleRegister result = ToDoubleRegister(instr->result());
 
-  __ ldr(result, minuend);
-  __ msdbr(result, multiplier, multiplicand);
+  // Unable to use msdbr as the intermediate value is not rounded
+  // to proper precision
+  __ ldr(result, multiplier);
+  __ mdbr(result, multiplicand);
+  __ sdbr(result, minuend);
 }
 
 
