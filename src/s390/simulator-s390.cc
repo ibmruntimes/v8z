@@ -41,7 +41,7 @@ class S390Debugger {
   void Debug();
 
  private:
-#if V8_TARGET_LITTLE_ENDIAN
+#if __BYTE_ORDER != __LITTLE_ENDIAN
   static const Instr kBreakpointInstr = (0x0000FFB2);  // TRAP4 0000
   static const Instr kNopInstr = (0x00160016);  // OR r0, r0 x2
 #else
@@ -868,8 +868,7 @@ class Redirection {
   Redirection(void* external_function, ExternalReference::Type type)
       : external_function_(external_function),
       // we use TRAP4 here (0xBF22)
-#if V8_TARGET_LITTLE_ENDIAN
-      // quick and dirty way to hack the swi instrution
+#if __BYTE_ORDER == __LITTLE_ENDIAN
         swi_instruction_(0x1000FFB2),
 #else
         swi_instruction_(0xB2FF0000 | kCallRtRedirected),
@@ -1497,7 +1496,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
         int64_t result = target(arg[0], arg[1], arg[2], arg[3], arg[4], arg[5]);
         int32_t lo_res = static_cast<int32_t>(result);
         int32_t hi_res = static_cast<int32_t>(result >> 32);
-#if V8_TARGET_BIG_ENDIAN
+#if __BYTE_ORDER != __LITTLE_ENDIAN
         if (::v8::internal::FLAG_trace_sim) {
           PrintF("Returned %08x\n", hi_res);
         }
