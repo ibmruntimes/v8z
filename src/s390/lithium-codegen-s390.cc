@@ -3592,7 +3592,7 @@ void LCodeGen::DoLoadKeyedFixedArray(LLoadKeyed* instr) {
 #endif
 
   __ LoadRepresentation(result, MemOperand(store_base, offset),
-                        representation, r0);
+                        representation, r1);
 
   // Check for the hole value.
   if (requires_hole_check) {
