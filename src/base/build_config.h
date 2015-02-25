@@ -199,8 +199,6 @@
 #if V8_TARGET_ARCH_PPC && V8_OS_LINUX
 // Bump up for Power Linux due to larger (64K) page size.
 const int kPageSizeBits = 22;
-#elif V8_TARGET_ARCH_S390 && V8_OS_LINUX
-const int kPageSizeBits = 22;
 #else
 const int kPageSizeBits = 20;
 #endif
