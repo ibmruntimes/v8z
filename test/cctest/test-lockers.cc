@@ -246,6 +246,8 @@ TEST(MultithreadedParallelIsolates) {
   const int kNThreads = 10;
 #elif V8_TARGET_ARCH_X64 && V8_TARGET_ARCH_32_BIT
   const int kNThreads = 4;
+#elif V8_TARGET_ARCH_S390 && V8_TARGET_ARCH_32_BIT
+  const int kNThreads = 40;
 #else
   const int kNThreads = 50;
 #endif
