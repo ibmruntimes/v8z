@@ -41,7 +41,7 @@ class S390Debugger {
   void Debug();
 
  private:
-#if __BYTE_ORDER != __LITTLE_ENDIAN
+#if __BYTE_ORDER == __LITTLE_ENDIAN
   static const Instr kBreakpointInstr = (0x0000FFB2);  // TRAP4 0000
   static const Instr kNopInstr = (0x00160016);  // OR r0, r0 x2
 #else
