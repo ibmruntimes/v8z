@@ -39,8 +39,7 @@
 
     'v8_enable_verify_heap%': 0,
 
-    # Temporarily disable snapshot until we are bootstrapped
-    'v8_use_snapshot%': 'false',
+    'v8_use_snapshot%': 'true',
 
     'v8_enable_verify_predictable%': 0,
 
