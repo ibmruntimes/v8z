@@ -3229,7 +3229,6 @@ void LCodeGen::DoLoadContextSlot(LLoadContextSlot* instr) {
   if (instr->hydrogen()->RequiresHoleCheck()) {
     __ CompareRoot(result, Heap::kTheHoleValueRootIndex);
     if (instr->hydrogen()->DeoptimizesOnHole()) {
-      __ CmpP(result, ip);
       DeoptimizeIf(eq, instr->environment());
     } else {
       Label skip;
