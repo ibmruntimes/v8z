@@ -1592,20 +1592,20 @@ LInstruction* LChunkBuilder::DoRSub(HSub* instr) {
 
 
 LInstruction* LChunkBuilder::DoMultiplyAdd(HMul* mul, HValue* addend) {
-  LOperand* multiplier_op = UseRegisterAtStart(mul->left());
-  LOperand* multiplicand_op = UseRegisterAtStart(mul->right());
-  LOperand* addend_op = UseRegisterAtStart(addend);
-  return DefineSameAsFirst(new(zone()) LMultiplyAddD(addend_op, multiplier_op,
+  LOperand* multiplier_op = UseRegister(mul->left());
+  LOperand* multiplicand_op = UseRegister(mul->right());
+  LOperand* addend_op = UseRegister(addend);
+  return DefineAsRegister(new(zone()) LMultiplyAddD(addend_op, multiplier_op,
                                                      multiplicand_op));
 }
 
 
 LInstruction* LChunkBuilder::DoMultiplySub(HValue* minuend, HMul* mul) {
-  LOperand* minuend_op = UseRegisterAtStart(minuend);
-  LOperand* multiplier_op = UseRegisterAtStart(mul->left());
-  LOperand* multiplicand_op = UseRegisterAtStart(mul->right());
+  LOperand* minuend_op = UseRegister(minuend);
+  LOperand* multiplier_op = UseRegister(mul->left());
+  LOperand* multiplicand_op = UseRegister(mul->right());
 
-  return DefineSameAsFirst(new(zone()) LMultiplySubD(minuend_op,
+  return DefineAsRegister(new(zone()) LMultiplySubD(minuend_op,
                                                      multiplier_op,
                                                      multiplicand_op));
 }
