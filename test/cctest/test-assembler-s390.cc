@@ -368,7 +368,9 @@ TEST(8) {
 
   MacroAssembler assm(isolate, NULL, 0);
 
-
+  // Zero upper bits of r3/r4
+  __ llihf(r3, Operand::Zero());
+  __ llihf(r4, Operand::Zero());
   __ mov(r3, Operand(0x0002));
   __ mov(r4, Operand(0x0002));
   __ dsgr(r2, r4);
