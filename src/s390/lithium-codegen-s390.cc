@@ -3573,14 +3573,11 @@ void LCodeGen::DoLoadKeyedFixedArray(LLoadKeyed* instr) {
   Register elements = ToRegister(instr->elements());
   Register result = ToRegister(instr->result());
   Register scratch = scratch0();
-  Register store_base = scratch;
-  // TODO(joransiu) : Exploit RX form - see 3.14 branch
   int offset = instr->base_offset();
 
   if (instr->key()->IsConstantOperand()) {
     LConstantOperand* const_operand = LConstantOperand::cast(instr->key());
     offset += ToInteger32(const_operand) * kPointerSize;
-    store_base = elements;
   } else {
     Register key = ToRegister(instr->key());
     // Even though the HLoadKeyed instruction forces the input
@@ -3588,11 +3585,10 @@ void LCodeGen::DoLoadKeyedFixedArray(LLoadKeyed* instr) {
     // during bound check elimination with the index argument to the bounds
     // check, which can be tagged, so that case must be handled here, too.
     if (hinstr->key()->representation().IsSmi()) {
-      __ SmiToPtrArrayOffset(r0, key);
+      __ SmiToPtrArrayOffset(scratch, key);
     } else {
-      __ ShiftLeftP(r0, key, Operand(kPointerSizeLog2));
+      __ ShiftLeftP(scratch, key, Operand(kPointerSizeLog2));
     }
-    __ AddP(scratch, elements, r0);
   }
 
   bool requires_hole_check = hinstr->RequiresHoleCheck();
@@ -3608,8 +3604,13 @@ void LCodeGen::DoLoadKeyedFixedArray(LLoadKeyed* instr) {
   }
 #endif
 
-  __ LoadRepresentation(result, MemOperand(store_base, offset),
+  if (instr->key()->IsConstantOperand()) {
+     __ LoadRepresentation(result, MemOperand(elements, offset),
                         representation, r1);
+  } else {
+    __ LoadRepresentation(result, MemOperand(scratch, elements, offset),
+                        representation, r1);
+}
 
   // Check for the hole value.
   if (requires_hole_check) {
@@ -4772,7 +4773,6 @@ void LCodeGen::DoStoreKeyedFixedArray(LStoreKeyed* instr) {
   Register elements = ToRegister(instr->elements());
   Register key = instr->key()->IsRegister() ? ToRegister(instr->key()) : no_reg;
   Register scratch = scratch0();
-  Register store_base = scratch;
   int offset = instr->base_offset();
 
   // Do the store.
