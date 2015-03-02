@@ -1749,8 +1749,11 @@ class MacroAssembler: public Assembler {
   STATIC_ASSERT(kSmiTag == 0);
   STATIC_ASSERT(kSmiTagSize + kSmiShiftSize == 32);
 #endif
+#if __BYTE_ORDER == __LITTLE_ENDIA
+#define SmiWordOffset(offset) (offset + kPointerSize / 2)
+#else
 #define SmiWordOffset(offset) offset
-
+#endif
 
   // Abort execution if argument is not a string, enabled via --debug-code.
   void AssertString(Register object);

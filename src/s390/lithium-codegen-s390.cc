@@ -4780,7 +4780,6 @@ void LCodeGen::DoStoreKeyedFixedArray(LStoreKeyed* instr) {
     DCHECK(!hinstr->NeedsWriteBarrier());
     LConstantOperand* const_operand = LConstantOperand::cast(instr->key());
     offset += ToInteger32(const_operand) * kPointerSize;
-    store_base = elements;
   } else {
     // Even though the HLoadKeyed instruction forces the input
     // representation for the key to be an integer, the input gets replaced
@@ -4791,7 +4790,6 @@ void LCodeGen::DoStoreKeyedFixedArray(LStoreKeyed* instr) {
     } else {
       __ ShiftLeftP(scratch, key, Operand(kPointerSizeLog2));
     }
-    __ AddP(scratch, elements, scratch);
   }
 
   Representation representation = hinstr->value()->representation();
@@ -4806,14 +4804,23 @@ void LCodeGen::DoStoreKeyedFixedArray(LStoreKeyed* instr) {
   }
 #endif
 
-  __ StoreRepresentation(value, MemOperand(store_base, offset),
+  if (instr->key()->IsConstantOperand()) {
+    __ StoreRepresentation(value, MemOperand(elements, offset),
                          representation, r0);
+  } else {
+    __ StoreRepresentation(value, MemOperand(scratch, elements, offset),
+                         representation, r0);
+  }
 
   if (hinstr->NeedsWriteBarrier()) {
     SmiCheck check_needed = hinstr->value()->type().IsHeapObject()
                             ? OMIT_SMI_CHECK : INLINE_SMI_CHECK;
     // Compute address of modified element and store it into key register.
-    __ AddP(key, store_base, Operand(offset));
+    if (instr->key()->IsConstantOperand()) {
+      __ lay(key, MemOperand(elements, offset));
+    } else {
+      __ lay(key, MemOperand(scratch, elements, offset));
+    }
     __ RecordWrite(elements,
                    key,
                    value,
