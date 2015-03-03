@@ -1495,7 +1495,7 @@ void LCodeGen::DoFlooringDivI(LFlooringDivI* instr) {
   __ lr(scratch, result);
   __ msr(scratch, divisor);
   __ Cmp32(dividend, scratch);
-  __ beq(&done);
+  __ beq(&done, Label::kNear);
 
   // We performed a truncating division. Correct the result.
   __ SubP(result, result, Operand(1));
@@ -2209,15 +2209,15 @@ void LCodeGen::DoMathMinMax(LMathMinMax* instr) {
     DoubleRegister result_reg = ToDoubleRegister(instr->result());
     Label check_nan_left, check_zero, return_left, return_right, done;
     __ cdbr(left_reg, right_reg);
-    __ bunordered(&check_nan_left);
+    __ bunordered(&check_nan_left, Label::kNear);
     __ beq(&check_zero);
-    __ b(cond, &return_left);
-    __ b(&return_right);
+    __ b(cond, &return_left, Label::kNear);
+    __ b(&return_right, Label::kNear);
 
     __ bind(&check_zero);
     __ lzdr(kDoubleRegZero);
     __ cdbr(left_reg, kDoubleRegZero);
-    __ bne(&return_left);  // left == right != 0.
+    __ bne(&return_left, Label::kNear);  // left == right != 0.
 
     // At this point, both left and right are either 0 or -0.
     // N.B. The following works because +0 + -0 == +0
@@ -2232,17 +2232,17 @@ void LCodeGen::DoMathMinMax(LMathMinMax* instr) {
       __ ldr(result_reg, left_reg);
       __ adbr(result_reg, right_reg);
     }
-    __ b(&done);
+    __ b(&done, Label::kNear);
 
     __ bind(&check_nan_left);
     __ cdbr(left_reg, left_reg);
-    __ bunordered(&return_left);  // left == NaN.
+    __ bunordered(&return_left, Label::kNear);  // left == NaN.
 
     __ bind(&return_right);
     if (!right_reg.is(result_reg)) {
       __ ldr(result_reg, right_reg);
     }
-    __ b(&done);
+    __ b(&done, Label::kNear);
 
     __ bind(&return_left);
     if (!left_reg.is(result_reg)) {
@@ -2468,7 +2468,7 @@ void LCodeGen::DoBranch(LBranch* instr) {
         // String value -> false iff empty.
         Label not_string;
         __ CompareInstanceType(map, ip, FIRST_NONSTRING_TYPE);
-        __ bge(&not_string);
+        __ bge(&not_string, Label::kNear);
         __ LoadP(ip, FieldMemOperand(reg, String::kLengthOffset));
         __ CmpP(ip, Operand::Zero());
         __ bne(instr->TrueLabel(chunk_));
@@ -2486,7 +2486,7 @@ void LCodeGen::DoBranch(LBranch* instr) {
         // heap number -> false iff +0, -0, or NaN.
         Label not_heap_number;
         __ CompareRoot(map, Heap::kHeapNumberMapRootIndex);
-        __ bne(&not_heap_number);
+        __ bne(&not_heap_number, Label::kNear);
         __ LoadF(dbl_scratch, FieldMemOperand(reg, HeapNumber::kValueOffset));
         __ lzdr(kDoubleRegZero);
         __ cdbr(dbl_scratch, kDoubleRegZero);
@@ -3115,7 +3115,7 @@ void LCodeGen::DoCmpT(LCmpT* instr) {
   Condition condition = ComputeCompareCondition(op);
   Label true_value, done;
 
-  __ b(condition, &true_value);
+  __ b(condition, &true_value, Label::kNear);
 
   __ LoadRoot(ToRegister(instr->result()), Heap::kFalseValueRootIndex);
   __ b(&done, Label::kNear);
@@ -3841,7 +3841,7 @@ void LCodeGen::DoApplyArguments(LApplyArguments* instr) {
   Label invoke, loop;
   // length is a small non-negative integer, due to the test above.
   __ CmpP(length, Operand::Zero());
-  __ beq(&invoke);
+  __ beq(&invoke, Label::kNear);
   __ bind(&loop);
   __ ShiftLeftP(r1, length, Operand(kPointerSizeLog2));
   __ LoadP(scratch, MemOperand(elements, r1));
@@ -5291,7 +5291,7 @@ void LCodeGen::EmitNumberUntagD(Register input_reg,
       __ CmpP(scratch, Operand(HeapNumber::kSignMask));
       DeoptimizeIf(eq, env);
     }
-    __ b(&done);
+    __ b(&done, Label::kNear);
     if (can_convert_undefined_to_nan) {
       __ bind(&convert);
       // Convert undefined (and hole) to NaN.
@@ -5299,7 +5299,7 @@ void LCodeGen::EmitNumberUntagD(Register input_reg,
       DeoptimizeIf(ne, env);
       __ LoadRoot(scratch, Heap::kNanValueRootIndex);
       __ ld(result_reg, FieldMemOperand(scratch, HeapNumber::kValueOffset));
-      __ b(&done);
+      __ b(&done, Label::kNear);
     }
   } else {
     __ SmiUntag(scratch, input_reg);
@@ -5344,13 +5344,13 @@ void LCodeGen::DoDeferredTaggedToI(LTaggedToI* instr) {
     __ CompareRoot(input_reg, Heap::kUndefinedValueRootIndex);
     __ bne(&check_bools);
     __ LoadImmP(input_reg, Operand::Zero());
-    __ b(&done);
+    __ b(&done, Label::kNear);
 
     __ bind(&check_bools);
     __ CompareRoot(input_reg, Heap::kTrueValueRootIndex);
     __ bne(&check_false, Label::kNear);
     __ LoadImmP(input_reg, Operand(1));
-    __ b(&done);
+    __ b(&done, Label::kNear);
 
     __ bind(&check_false);
     __ CompareRoot(input_reg, Heap::kFalseValueRootIndex);
@@ -5372,7 +5372,7 @@ void LCodeGen::DoDeferredTaggedToI(LTaggedToI* instr) {
 
     if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
       __ CmpP(input_reg, Operand::Zero());
-      __ bne(&done);
+      __ bne(&done, Label::kNear);
       __ LoadlW(scratch1, FieldMemOperand(scratch2, HeapNumber::kValueOffset +
                                        Register::kExponentOffset));
       __ Cmp32(scratch1, Operand::Zero());
@@ -5690,7 +5690,7 @@ void LCodeGen::DoClampTToUint8(LClampTToUint8* instr) {
   __ bind(&heap_number);
   __ ld(temp_reg, FieldMemOperand(input_reg, HeapNumber::kValueOffset));
   __ ClampDoubleToUint8(result_reg, temp_reg, double_scratch0());
-  __ b(&done);
+  __ b(&done, Label::kNear);
 
   // smi
   __ bind(&is_smi);
@@ -6219,9 +6219,9 @@ void LCodeGen::DoForInCacheArray(LForInCacheArray* instr) {
   Label load_cache, done;
   __ EnumLength(result, map);
   __ CmpSmiLiteral(result, Smi::FromInt(0), r0);
-  __ bne(&load_cache);
+  __ bne(&load_cache, Label::kNear);
   __ mov(result, Operand(isolate()->factory()->empty_fixed_array()));
-  __ b(&done);
+  __ b(&done, Label::kNear);
 
   __ bind(&load_cache);
   __ LoadInstanceDescriptors(map, result);
@@ -6306,7 +6306,7 @@ void LCodeGen::DoLoadFieldByIndex(LLoadFieldByIndex* instr) {
   __ AddP(scratch, object, r0);
   __ LoadP(result, FieldMemOperand(scratch, JSObject::kHeaderSize));
 
-  __ b(&done);
+  __ b(&done, Label::kNear);
 
   __ bind(&out_of_object);
   __ LoadP(result, FieldMemOperand(object, JSObject::kPropertiesOffset));

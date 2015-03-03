@@ -141,7 +141,7 @@ void FullCodeGenerator::Generate() {
     int receiver_offset = info->scope()->num_parameters() * kPointerSize;
     __ LoadP(r4, MemOperand(sp, receiver_offset), r0);
     __ CompareRoot(r4, Heap::kUndefinedValueRootIndex);
-    __ bne(&ok);
+    __ bne(&ok, Label::kNear);
 
     __ LoadP(r4, GlobalObjectOperand());
     __ LoadP(r4, FieldMemOperand(r4, GlobalObject::kGlobalProxyOffset));
@@ -639,7 +639,7 @@ void FullCodeGenerator::AccumulatorValueContext::Plug(
   Label done;
   __ bind(materialize_true);
   __ LoadRoot(result_register(), Heap::kTrueValueRootIndex);
-  __ b(&done);
+  __ b(&done, Label::kNear);
   __ bind(materialize_false);
   __ LoadRoot(result_register(), Heap::kFalseValueRootIndex);
   __ bind(&done);
@@ -652,7 +652,7 @@ void FullCodeGenerator::StackValueContext::Plug(
   Label done;
   __ bind(materialize_true);
   __ LoadRoot(ip, Heap::kTrueValueRootIndex);
-  __ b(&done);
+  __ b(&done, Label::kNear);
   __ bind(materialize_false);
   __ LoadRoot(ip, Heap::kFalseValueRootIndex);
   __ bind(&done);
@@ -1181,7 +1181,7 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
 
   __ EnumLength(r3, r2);
   __ CmpSmiLiteral(r3, Smi::FromInt(0), r0);
-  __ beq(&no_descriptors);
+  __ beq(&no_descriptors, Label::kNear);
 
   __ LoadInstanceDescriptors(r2, r4);
   __ LoadP(r4, FieldMemOperand(r4, DescriptorArray::kEnumCacheOffset));
@@ -1211,7 +1211,7 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   __ LoadP(r4, MemOperand(sp, 0 * kPointerSize));  // Get enumerated object
   STATIC_ASSERT(FIRST_JS_PROXY_TYPE == FIRST_SPEC_OBJECT_TYPE);
   __ CompareObjectType(r4, r5, r5, LAST_JS_PROXY_TYPE);
-  __ bgt(&non_proxy);
+  __ bgt(&non_proxy, Label::kNear);
   __ LoadSmiLiteral(r3, Smi::FromInt(0));  // Zero indicates proxy
   __ bind(&non_proxy);
   __ Push(r3, r2);  // Smi and array
@@ -1406,7 +1406,7 @@ void FullCodeGenerator::EmitLoadGlobalCheckExtensions(VariableProxy* proxy,
     // Terminate at native context.
     __ LoadP(temp, FieldMemOperand(next, HeapObject::kMapOffset));
     __ CompareRoot(temp, Heap::kNativeContextMapRootIndex);
-    __ beq(&fast);
+    __ beq(&fast, Label::kNear);
     // Check that extension is NULL.
     __ LoadP(temp, ContextOperand(next, Context::EXTENSION_INDEX));
     __ CmpP(temp, Operand::Zero());
@@ -1996,7 +1996,7 @@ void FullCodeGenerator::VisitYield(Yield* expr) {
     case Yield::INITIAL: {
       Label suspend, continuation, post_runtime, resume;
 
-      __ b(&suspend);
+      __ b(&suspend, Label::kNear);
 
       __ bind(&continuation);
       __ b(&resume);
@@ -2071,7 +2071,7 @@ void FullCodeGenerator::VisitYield(Yield* expr) {
       __ PushTryHandler(StackHandler::CATCH, expr->index());
       const int handler_size = StackHandlerConstants::kSize;
       __ push(r2);                                       // result
-      __ b(&l_suspend);
+      __ b(&l_suspend, Label::kNear);
       __ bind(&l_continuation);
       __ b(&l_resume);
       __ bind(&l_suspend);
@@ -2184,10 +2184,10 @@ void FullCodeGenerator::EmitGeneratorResume(Expression *generator,
   Label argument_loop, push_frame;
 #if V8_TARGET_ARCH_S390X
   __ CmpP(r5, Operand::Zero());
-  __ beq(&push_frame);
+  __ beq(&push_frame, Label::kNear);
 #else
   __ SmiUntag(r5);
-  __ beq(&push_frame);
+  __ beq(&push_frame, Label::kNear);
 #endif
   __ LoadRR(r0, r5);
   __ bind(&argument_loop);
@@ -2220,7 +2220,7 @@ void FullCodeGenerator::EmitGeneratorResume(Expression *generator,
   Label call_resume;
   if (resume_mode == JSGeneratorObject::NEXT) {
     Label slow_resume;
-    __ bne(&slow_resume);
+    __ bne(&slow_resume, Label::kNear);
     __ LoadP(ip, FieldMemOperand(r6, JSFunction::kCodeEntryOffset));
     __ LoadP(r4, FieldMemOperand(r3, JSGeneratorObject::kContinuationOffset));
     __ SmiUntag(r4);
@@ -2437,7 +2437,7 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
 #endif
       // Go slow on zero result to handle -0.
       __ chi(scratch2, Operand::Zero());
-      __ beq(&mul_zero);
+      __ beq(&mul_zero, Label::kNear);
 #if V8_TARGET_ARCH_S390X
       __ SmiTag(right, scratch2);
 #else
@@ -2861,7 +2861,7 @@ void FullCodeGenerator::VisitCall(Call* expr) {
     // code.
     if (done.is_linked()) {
       Label call;
-      __ b(&call);
+      __ b(&call, Label::kNear);
       __ bind(&done);
       // Push function.
       __ push(r2);
@@ -3122,7 +3122,7 @@ void FullCodeGenerator::EmitIsStringWrapperSafeForDefaultValueOf(
   // The use of ip to store the valueOf string assumes that it is not otherwise
   // used in the loop below.
   __ mov(ip, Operand(isolate()->factory()->value_of_string()));
-  __ b(&entry);
+  __ b(&entry, Label::kNear);
   __ bind(&loop);
   __ LoadP(r5, MemOperand(r6, 0));
   __ CmpP(r5, ip);
@@ -3204,7 +3204,7 @@ void FullCodeGenerator::EmitIsMinusZero(CallRuntime* expr) {
   Label skip;
   __ iilf(r0, Operand(0x80000000));
   __ CmpP(r4, r0);
-  __ bne(&skip);
+  __ bne(&skip, Label::kNear);
   __ CmpP(r3, Operand::Zero());
   __ bind(&skip);
 #endif
@@ -3278,7 +3278,7 @@ void FullCodeGenerator::EmitIsConstructCall(CallRuntime* expr) {
   Label check_frame_marker;
   __ LoadP(r3, MemOperand(r4, StandardFrameConstants::kContextOffset));
   __ CmpSmiLiteral(r3, Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR), r0);
-  __ bne(&check_frame_marker);
+  __ bne(&check_frame_marker, Label::kNear);
   __ LoadP(r4, MemOperand(r4, StandardFrameConstants::kCallerFPOffset));
 
   // Check the marker in the calling frame.
@@ -3342,7 +3342,7 @@ void FullCodeGenerator::EmitArgumentsLength(CallRuntime* expr) {
   __ LoadP(r4, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
   __ LoadP(r5, MemOperand(r4, StandardFrameConstants::kContextOffset));
   __ CmpSmiLiteral(r5, Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR), r0);
-  __ bne(&exit);
+  __ bne(&exit, Label::kNear);
 
   // Arguments adaptor case: Read the arguments length from the
   // adaptor frame.
@@ -3386,24 +3386,24 @@ void FullCodeGenerator::EmitClassOf(CallRuntime* expr) {
   // Check if the constructor in the map is a JS function.
   __ LoadP(r2, FieldMemOperand(r2, Map::kConstructorOffset));
   __ CompareObjectType(r2, r3, r3, JS_FUNCTION_TYPE);
-  __ bne(&non_function_constructor);
+  __ bne(&non_function_constructor, Label::kNear);
 
   // r2 now contains the constructor function. Grab the
   // instance class name from there.
   __ LoadP(r2, FieldMemOperand(r2, JSFunction::kSharedFunctionInfoOffset));
   __ LoadP(r2,
            FieldMemOperand(r2, SharedFunctionInfo::kInstanceClassNameOffset));
-  __ b(&done);
+  __ b(&done, Label::kNear);
 
   // Functions have class 'Function'.
   __ bind(&function);
   __ LoadRoot(r2, Heap::kfunction_class_stringRootIndex);
-  __ b(&done);
+  __ b(&done, Label::kNear);
 
   // Objects with a non-function constructor have class 'Object'.
   __ bind(&non_function_constructor);
   __ LoadRoot(r2, Heap::kObject_stringRootIndex);
-  __ b(&done);
+  __ b(&done, Label::kNear);
 
   // Non-JS objects have class null.
   __ bind(&null);
@@ -3453,7 +3453,7 @@ void FullCodeGenerator::EmitValueOf(CallRuntime* expr) {
   __ JumpIfSmi(r2, &done);
   // If the object is not a value type, return the object.
   __ CompareObjectType(r2, r3, r3, JS_VALUE_TYPE);
-  __ bne(&done);
+  __ bne(&done, Label::kNear);
   __ LoadP(r2, FieldMemOperand(r2, JSValue::kValueOffset));
 
   __ bind(&done);
@@ -3844,7 +3844,7 @@ void FullCodeGenerator::EmitGetFromCache(CallRuntime* expr) {
 
   // r5 now points to the key of the pair.
   __ CmpP(key, r4);
-  __ bne(&not_found);
+  __ bne(&not_found, Label::kNear);
 
   __ LoadP(r2, MemOperand(r5, kPointerSize));
   __ b(&done);
@@ -3933,7 +3933,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
   __ LoadP(array_length, FieldMemOperand(array, JSArray::kLengthOffset));
   __ SmiUntag(array_length);
   __ CmpP(array_length, Operand::Zero());
-  __ bne(&non_trivial_array);
+  __ bne(&non_trivial_array, Label::kNear);
   __ LoadRoot(r2, Heap::kempty_stringRootIndex);
   __ b(&done);
 
@@ -3980,7 +3980,7 @@ void FullCodeGenerator::EmitFastAsciiArrayJoin(CallRuntime* expr) {
 
   // If array_length is 1, return elements[0], a string.
   __ CmpP(array_length, Operand(1));
-  __ bne(&not_size_one_array);
+  __ bne(&not_size_one_array, Label::kNear);
   __ LoadP(r2, FieldMemOperand(elements, FixedArray::kHeaderSize));
   __ b(&done);
 

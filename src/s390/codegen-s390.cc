@@ -487,14 +487,14 @@ void StringCharLoadGenerator::Generate(MacroAssembler* masm,
   Label check_sequential;
   __ mov(r0, Operand(kIsIndirectStringMask));
   __ AndP(r0, result);
-  __ beq(&check_sequential /*, cr0*/);
+  __ beq(&check_sequential, Label::kNear/*, cr0*/);
 
   // Dispatch on the indirect string shape: slice or cons.
   Label cons_string;
   __ mov(ip, Operand(kSlicedNotConsMask));
   __ LoadRR(r0, result);
   __ AndP(r0, ip/*, SetRC*/);  // Should be okay to remove RC
-  __ beq(&cons_string /*, cr0*/);
+  __ beq(&cons_string , Label::kNear/*, cr0*/);
 
   // Handle slices.
   Label indirect_string_loaded;
@@ -502,7 +502,7 @@ void StringCharLoadGenerator::Generate(MacroAssembler* masm,
   __ LoadP(string, FieldMemOperand(string, SlicedString::kParentOffset));
   __ SmiUntag(ip, result);
   __ AddP(index, ip);
-  __ b(&indirect_string_loaded);
+  __ b(&indirect_string_loaded, Label::kNear);
 
   // Handle cons strings.
   // Check whether the right hand side is the empty string (i.e. if
@@ -528,12 +528,12 @@ void StringCharLoadGenerator::Generate(MacroAssembler* masm,
   STATIC_ASSERT(kSeqStringTag == 0);
   __ mov(r0, Operand(kStringRepresentationMask));
   __ AndP(r0, result);
-  __ bne(&external_string /*, cr0*/);
+  __ bne(&external_string, Label::kNear);
 
   // Prepare sequential strings
   STATIC_ASSERT(SeqTwoByteString::kHeaderSize == SeqOneByteString::kHeaderSize);
   __ AddP(string, Operand(SeqTwoByteString::kHeaderSize - kHeapObjectTag));
-  __ b(&check_encoding);
+  __ b(&check_encoding, Label::kNear);
 
   // Handle external strings.
   __ bind(&external_string);
@@ -557,11 +557,11 @@ void StringCharLoadGenerator::Generate(MacroAssembler* masm,
   STATIC_ASSERT(kTwoByteStringTag == 0);
   __ mov(r0, Operand(kStringEncodingMask));
   __ AndP(r0, result);
-  __ bne(&ascii /*, cr0*/);
+  __ bne(&ascii, Label::kNear);
   // Two-byte string.
   __ ShiftLeftP(result, index, Operand(1));
   __ LoadLogicalHalfWordP(result, MemOperand(string, result));
-  __ b(&done);
+  __ b(&done, Label::kNear);
   __ bind(&ascii);
   // Ascii string.
   __ LoadlB(result, MemOperand(string, index));
@@ -601,12 +601,12 @@ void MathExpGenerator::EmitMathExp(MacroAssembler* masm,
   __ LoadF(double_scratch1, ExpConstant(0, temp3));
   __ cdbr(double_scratch1, input);
   __ ldr(result, input);
-  __ bunordered(&done);
-  __ bge(&zero);
+  __ bunordered(&done, Label::kNear);
+  __ bge(&zero, Label::kNear);
 
   __ LoadF(double_scratch2, ExpConstant(1, temp3));
   __ cdbr(input, double_scratch2);
-  __ bge(&infinity);
+  __ bge(&infinity, Label::kNear);
 
   __ LoadF(double_scratch1, ExpConstant(3, temp3));
   __ LoadF(result, ExpConstant(4, temp3));
@@ -650,7 +650,7 @@ void MathExpGenerator::EmitMathExp(MacroAssembler* masm,
 
   __ bind(&zero);
   __ ldr(result, kDoubleRegZero);
-  __ b(&done);
+  __ b(&done, Label::kNear);
 
   __ bind(&infinity);
   __ LoadF(result, ExpConstant(2, temp3));

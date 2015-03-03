@@ -1321,7 +1321,7 @@ void MacroAssembler::Throw(Register value) {
   // (kind == ENTRY) == (fp == 0) == (cp == 0), so we could test either fp
   // or cp.
   CmpP(cp, Operand::Zero());
-  beq(&skip);
+  beq(&skip, Label::kNear);
   StoreP(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
   bind(&skip);
 
@@ -1348,7 +1348,7 @@ void MacroAssembler::ThrowUncatchable(Register value) {
 
   // Unwind the handlers until the ENTRY handler is found.
   Label fetch_next, check_kind;
-  b(&check_kind);
+  b(&check_kind, Label::kNear);
   bind(&fetch_next);
   LoadP(sp, MemOperand(sp, StackHandlerConstants::kNextOffset));
 
@@ -1411,7 +1411,7 @@ void MacroAssembler::CheckAccessGlobalProxy(Register holder_reg,
   // Check if both contexts are the same.
   LoadP(ip, FieldMemOperand(holder_reg, JSGlobalProxy::kNativeContextOffset));
   CmpP(scratch, ip);
-  beq(&same_contexts);
+  beq(&same_contexts, Label::kNear);
 
   // Check the context is a native context.
   if (emit_debug_code()) {
@@ -1546,7 +1546,7 @@ void MacroAssembler::LoadFromNumberDictionary(Label* miss,
           FieldMemOperand(t2, SeededNumberDictionary::kElementsStartOffset));
     CmpP(key, ip);
     if (i != kNumberDictionaryProbes - 1) {
-      beq(&done);
+      beq(&done, Label::kNear);
     } else {
       bne(miss);
     }
@@ -3071,7 +3071,7 @@ void MacroAssembler::AssertUndefinedOrAllocationSite(Register object,
     Label done_checking;
     AssertNotSmi(object);
     CompareRoot(object, Heap::kUndefinedValueRootIndex);
-    beq(&done_checking);
+    beq(&done_checking, Label::kNear);
     LoadP(scratch, FieldMemOperand(object, HeapObject::kMapOffset));
     CompareRoot(scratch, Heap::kAllocationSiteMapRootIndex);
     Assert(eq, kExpectedUndefinedOrCell);
@@ -3219,7 +3219,7 @@ void MacroAssembler::JumpIfNotUniqueName(Register reg,
   STATIC_ASSERT(kInternalizedTag == 0 && kStringTag == 0);
   Label succeed;
   AndP(r0, reg, Operand(kIsNotStringMask | kIsNotInternalizedMask));
-  beq(&succeed);
+  beq(&succeed, Label::kNear);
   CmpP(reg, Operand(SYMBOL_TYPE));
   bne(not_unique_name);
 
@@ -3834,7 +3834,7 @@ void MacroAssembler::HasColor(Register object,
   // Shift left 1
   // May need to load the next cell
   sll(mask_scratch, Operand(1)/*, SetRC*/);
-  beq(&word_boundary /*, cr0*/);
+  beq(&word_boundary, Label::kNear);
   // Test the second bit
   AndP(r0, ip, mask_scratch/*, SetRC*/);  // Should be okay to remove rc
   b(second_bit == 1 ? ne : eq, has_color);
@@ -3858,7 +3858,7 @@ void MacroAssembler::JumpIfDataObject(Register value,
   Label is_data_object;
   LoadP(scratch, FieldMemOperand(value, HeapObject::kMapOffset));
   CompareRoot(scratch, Heap::kHeapNumberMapRootIndex);
-  beq(&is_data_object);
+  beq(&is_data_object, Label::kNear);
   DCHECK(kIsIndirectStringTag == 1 && kIsIndirectStringMask == 1);
   DCHECK(kNotStringTag == 0x80 && kIsNotStringMask == 0x80);
   // If it's a string and it's not a cons string then it's an object containing
@@ -3943,7 +3943,7 @@ void MacroAssembler::EnsureNotWhite(
   // Check for heap-number
   LoadP(map, FieldMemOperand(value, HeapObject::kMapOffset));
   CompareRoot(map, Heap::kHeapNumberMapRootIndex);
-  bne(&maybe_string_object);
+  bne(&maybe_string_object, Label::kNear);
   LoadImmP(length, Operand(HeapNumber::kSize));
   b(&is_data_object);
   bind(&maybe_string_object);
@@ -3969,7 +3969,7 @@ void MacroAssembler::EnsureNotWhite(
   AndP(r0, instance_type);
   beq(&is_string_object, Label::kNear/*, cr0*/);
   LoadImmP(length, Operand(ExternalString::kSize));
-  b(&is_data_object);
+  b(&is_data_object, Label::kNear);
   bind(&is_string_object);
 
   // Sequential string, either ASCII or UC16.
@@ -3982,10 +3982,10 @@ void MacroAssembler::EnsureNotWhite(
   LoadP(ip, FieldMemOperand(value, String::kLengthOffset));
   mov(r0, Operand(kStringEncodingMask));
   AndP(r0, instance_type);
-  beq(&is_encoded /*, cr0*/);
+  beq(&is_encoded, Label::kNear);
   SmiUntag(ip);
 #if V8_TARGET_ARCH_S390X
-  b(&length_computed);
+  b(&length_computed, Label::kNear);
 #endif
   bind(&is_encoded);
 #if V8_TARGET_ARCH_S390X
@@ -4054,19 +4054,19 @@ void MacroAssembler::ClampDoubleToUint8(Register result_reg,
 
   LoadDoubleLiteral(double_scratch, 0.0, result_reg);
   cdbr(input_reg, double_scratch);
-  bgt(&above_zero);
+  bgt(&above_zero, Label::kNear);
 
   // Double value is less than zero, NaN or Inf, return 0.
   LoadIntLiteral(result_reg, 0);
-  b(&done);
+  b(&done, Label::kNear);
 
   // Double value is >= 255, return 255.
   bind(&above_zero);
   LoadDoubleLiteral(double_scratch, 255.0, result_reg);
   cdbr(input_reg, double_scratch);
-  ble(&in_bounds);
+  ble(&in_bounds, Label::kNear);
   LoadIntLiteral(result_reg, 255);
-  b(&done);
+  b(&done, Label::kNear);
 
   // In 0-255 range, round and truncate.
   bind(&in_bounds);
@@ -4111,7 +4111,7 @@ void MacroAssembler::CheckEnumCache(Register null_value, Label* call_runtime) {
   CmpSmiLiteral(r5, Smi::FromInt(kInvalidEnumCacheSentinel), r0);
   beq(call_runtime);
 
-  b(&start);
+  b(&start, Label::kNear);
 
   bind(&next);
   LoadP(r3, FieldMemOperand(r4, HeapObject::kMapOffset));
@@ -4128,7 +4128,7 @@ void MacroAssembler::CheckEnumCache(Register null_value, Label* call_runtime) {
   Label no_elements;
   LoadP(r4, FieldMemOperand(r4, JSObject::kElementsOffset));
   CmpP(r4, empty_fixed_array_value);
-  beq(&no_elements);
+  beq(&no_elements, Label::kNear);
 
   // Second chance, the object may be using the empty slow element dictionary.
   CompareRoot(r5, Heap::kEmptySlowElementDictionaryRootIndex);

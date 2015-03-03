@@ -69,13 +69,13 @@ static void ProbeTable(Isolate* isolate,
   // Check that the key in the entry matches the name.
   __ LoadP(ip, MemOperand(base_addr, 0));
   __ CmpP(name, ip);
-  __ bne(&miss);
+  __ bne(&miss, Label::kNear);
 
   // Check the map matches.
   __ LoadP(ip, MemOperand(base_addr, map_off_addr - key_off_addr));
   __ LoadP(scratch2, FieldMemOperand(receiver, HeapObject::kMapOffset));
   __ CmpP(ip, scratch2);
-  __ bne(&miss);
+  __ bne(&miss, Label::kNear);
 
   // Get the code entry from the cache.
   Register code = scratch2;
@@ -93,13 +93,13 @@ static void ProbeTable(Isolate* isolate,
   __ AndP(flags_reg, r0);
   __ mov(r0, Operand(flags));
   __ CmpLogicalP(flags_reg, r0);
-  __ bne(&miss);
+  __ bne(&miss, Label::kNear);
 
 #ifdef DEBUG
     if (FLAG_test_secondary_stub_cache && table == StubCache::kPrimary) {
-      __ b(&miss);
+      __ b(&miss, Label::kNear);
     } else if (FLAG_test_primary_stub_cache && table == StubCache::kSecondary) {
-      __ b(&miss);
+      __ b(&miss, Label::kNear);
     }
 #endif
 
@@ -610,7 +610,7 @@ void NamedStoreHandlerCompiler::GenerateStoreField(LookupResult* lookup,
       __ bne(miss_label);
       break;
     }
-    __ beq(&do_store);
+    __ beq(&do_store, Label::kNear);
   }
   __ bind(&do_store);
 
@@ -1085,7 +1085,7 @@ Handle<Code> PropertyICCompiler::CompilePolymorphic(TypeHandleList* types,
       __ JumpIfNotUniqueName(this->name(), &miss);
     } else {
       __ CmpP(this->name(), Operand(name));
-      __ bne(&miss);
+      __ bne(&miss, Label::kNear);
     }
   }
 
@@ -1138,7 +1138,7 @@ Handle<Code> PropertyICCompiler::CompileKeyedStorePolymorphic(
     __ CmpP(scratch1(), Operand(receiver_maps->at(i)));
     if (transitioned_maps->at(i).is_null()) {
       Label skip;
-      __ bne(&skip);
+      __ bne(&skip, Label::kNear);
       __ Jump(handler_stubs->at(i), RelocInfo::CODE_TARGET);
       __ bind(&skip);
     } else {
