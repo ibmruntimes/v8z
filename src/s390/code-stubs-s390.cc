@@ -1917,7 +1917,7 @@ void ArgumentsAccessStub::GenerateReadElement(MacroAssembler* masm) {
   // Read the argument from the stack and return it.
   __ SubP(r5, r2, r3);
   __ SmiToPtrArrayOffset(r5, r5);
-  __ AddP(r5, fp);
+  __ lay(r5, MemOperand(r5, fp));
   __ LoadP(r2, MemOperand(r5, kDisplacement));
   __ Ret();
 
