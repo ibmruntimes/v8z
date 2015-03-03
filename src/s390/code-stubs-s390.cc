@@ -4278,16 +4278,13 @@ void NameDictionaryLookupStub::GenerateNegativeLookup(MacroAssembler* masm,
     __ CompareRoot(entity_name, Heap::kUndefinedValueRootIndex);
     __ beq(done);
 
-    // Load the hole ready for use below:
-    __ LoadRoot(tmp, Heap::kTheHoleValueRootIndex);
-
    // Stop if found the property.
     __ mov(r0, Operand(Handle<Name>(name)));
     __ CmpP(entity_name, r0);
     __ beq(miss);
 
     Label good;
-    __ CmpP(entity_name, tmp);
+    __ CompareRoot(entity_name, Heap::kTheHoleValueRootIndex);
     __ beq(&good);
 
     // Check if the entry name is not a unique name.

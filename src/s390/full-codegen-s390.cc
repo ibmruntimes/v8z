@@ -1073,8 +1073,7 @@ void FullCodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
     Label skip;
     __ b(&skip);
     PrepareForBailout(clause, TOS_REG);
-    __ LoadRoot(ip, Heap::kTrueValueRootIndex);
-    __ CmpP(r2, ip);
+    __ CompareRoot(r2, Heap::kTrueValueRootIndex);
     __ bne(&next_test);
     __ Drop(1);
     __ b(clause->body_target());
