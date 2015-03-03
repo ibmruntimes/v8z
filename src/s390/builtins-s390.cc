@@ -233,7 +233,7 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
   STATIC_ASSERT(kNotStringTag != 0);
   __ mov(r0, Operand(kIsNotStringMask));
   __ AndP(r0, r5);
-  __ bne(&convert_argument /*, cr0*/);
+  __ bne(&convert_argument, Label::kNear);
   __ LoadRR(argument, r2);
   __ IncrementCounter(counters->string_ctor_conversions(), 1, r5, r6);
   __ b(&argument_is_string);
@@ -601,7 +601,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     // increment.
     Label count_incremented;
     if (create_memento) {
-      __ b(&count_incremented);
+      __ b(&count_incremented, Label::kNear);
     }
 
     // Receiver for constructor call allocated.
@@ -650,7 +650,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     // sp[3]: number of arguments (smi-tagged)
     Label loop, no_args;
     __ CmpP(r2, Operand::Zero());
-    __ beq(&no_args);
+    __ beq(&no_args, Label::kNear);
     __ ShiftLeftP(ip, r2, Operand(kPointerSizeLog2));
     __ bind(&loop);
     __ SubP(ip, Operand(kPointerSize));
@@ -700,7 +700,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     // If the type of the result (stored in its map) is less than
     // FIRST_SPEC_OBJECT_TYPE, it is not an object in the ECMA sense.
     __ CompareObjectType(r2, r3, r5, FIRST_SPEC_OBJECT_TYPE);
-    __ bge(&exit);
+    __ bge(&exit, Label::kNear);
 
     // Throw away the result of the constructor invocation and use the
     // on-stack receiver as the result.
@@ -1084,7 +1084,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
   // r2: actual number of arguments
   { Label done;
     __ CmpP(r2, Operand::Zero());
-    __ bne(&done);
+    __ bne(&done, Label::kNear);
     __ LoadRoot(r4, Heap::kUndefinedValueRootIndex);
     __ push(r4);
     __ AddP(r2, Operand(1));
@@ -1175,7 +1175,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
     __ lay(r6, MemOperand(r6, sp));
     __ LoadP(r3, MemOperand(r6));
     __ LoadImmP(r6, Operand::Zero());
-    __ b(&patch_receiver);
+    __ b(&patch_receiver, Label::kNear);
 
     __ bind(&use_global_proxy);
     __ LoadP(r4, ContextOperand(cp, Context::GLOBAL_OBJECT_INDEX));
@@ -1193,7 +1193,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
   __ bind(&slow);
   __ LoadImmP(r6, Operand(1, kRelocInfo_NONEPTR));  // indicate function proxy
   __ CmpP(r4, Operand(JS_FUNCTION_PROXY_TYPE));
-  __ beq(&shift_arguments);
+  __ beq(&shift_arguments, Label::kNear);
   __ bind(&non_function);
   __ LoadImmP(r6, Operand(2, kRelocInfo_NONEPTR));  // indicate non-function
 
@@ -1394,7 +1394,7 @@ void Builtins::Generate_FunctionApply(MacroAssembler* masm) {
     // Copy all arguments from the array to the stack.
     Label entry, loop;
     __ LoadP(r2, MemOperand(fp, kIndexOffset));
-    __ b(&entry);
+    __ b(&entry, Label::kNear);
 
     // Load the current argument from the arguments array and push it to the
     // stack.

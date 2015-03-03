@@ -670,7 +670,7 @@ void Assembler::stop(const char* msg, Condition cond, int32_t code,
                      CRegister cr) {
   if (cond != al) {
     Label skip;
-    b(NegateCondition(cond), &skip /*, cr*/);
+    b(NegateCondition(cond), &skip, Label::kNear);
     bkpt(0);
     bind(&skip);
   } else {

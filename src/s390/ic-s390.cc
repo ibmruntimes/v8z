@@ -262,7 +262,7 @@ static void GenerateKeyNameCheck(MacroAssembler* masm,
   __ CompareObjectType(key, map, hash, LAST_UNIQUE_NAME_TYPE);
   __ bgt(not_unique);
   STATIC_ASSERT(LAST_UNIQUE_NAME_TYPE == FIRST_NONSTRING_TYPE);
-  __ beq(&unique);
+  __ beq(&unique, Label::kNear);
 
   // Is the string an array index, with cached numeric value?
   __ LoadlW(hash, FieldMemOperand(key, Name::kHashFieldOffset));
@@ -576,7 +576,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
   // r5: elements map
   // r6: elements
   __ CompareRoot(r5, Heap::kHashTableMapRootIndex);
-  __ bne(&slow);
+  __ bne(&slow, Label::kNear);
   __ SmiUntag(r2, key);
   __ LoadFromNumberDictionary(&slow, r6, key, r2, r2, r5, r7);
   __ Ret();
@@ -632,7 +632,7 @@ void KeyedLoadIC::GenerateGeneric(MacroAssembler* masm) {
     __ LoadP(r7, MemOperand(r6));
     __ AddP(r6, Operand(kPointerSize * 2));
     __ CmpP(r2, r7);
-    __ bne(&try_next_entry);
+    __ bne(&try_next_entry, Label::kNear);
     __ LoadP(r7, MemOperand(r6, -kPointerSize));  // Load name
     __ CmpP(key, r7);
     __ beq(&hit_on_nth_entry[i]);
@@ -934,7 +934,7 @@ static void KeyedStoreGenerateGenericHelper(
   __ SmiToDoubleArrayOffset(scratch_value, key);
   __ LoadlW(scratch_value, MemOperand(address, scratch_value));
   __ CmpP(scratch_value, Operand(kHoleNanUpper32));
-  __ bne(&fast_double_without_map_check);
+  __ bne(&fast_double_without_map_check, Label::kNear);
   __ JumpIfDictionaryInPrototypeChain(receiver, elements_map, scratch_value,
                                       slow);
 
@@ -1069,7 +1069,7 @@ void KeyedStoreIC::GenerateGeneric(MacroAssembler* masm,
   __ LoadP(elements_map, FieldMemOperand(elements, HeapObject::kMapOffset));
   __ mov(ip, Operand(masm->isolate()->factory()->fixed_array_map()));
   __ CmpP(elements_map, ip);
-  __ bne(&check_if_double_array);
+  __ bne(&check_if_double_array, Label::kNear);
   __ b(&fast_object_grow);
 
   __ bind(&check_if_double_array);
