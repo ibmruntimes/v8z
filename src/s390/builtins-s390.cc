@@ -1096,7 +1096,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
   // r2: actual number of arguments
   Label slow, non_function;
   __ ShiftLeftP(r3, r2, Operand(kPointerSizeLog2));
-  __ AddP(r3, sp);
+  __ lay(r3, MemOperand(r3, sp));
   __ LoadP(r3, MemOperand(r3));
   __ JumpIfSmi(r3, &non_function);
   __ CompareObjectType(r3, r4, r4, JS_FUNCTION_TYPE);
@@ -1138,7 +1138,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
 
     // Compute the receiver in sloppy mode.
     __ ShiftLeftP(ip, r2, Operand(kPointerSizeLog2));
-    __ AddP(r4, sp, ip);
+    __ lay(r4, MemOperand(sp, ip));
     __ LoadP(r4, MemOperand(r4, -kPointerSize));
     // r2: actual number of arguments
     // r3: function
@@ -1172,7 +1172,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
 
     // Restore the function to r3, and the flag to r6.
     __ ShiftLeftP(r6, r2, Operand(kPointerSizeLog2));
-    __ AddP(r6, sp);
+    __ lay(r6, MemOperand(r6, sp));
     __ LoadP(r3, MemOperand(r6));
     __ LoadImmP(r6, Operand::Zero());
     __ b(&patch_receiver);
@@ -1183,7 +1183,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
 
     __ bind(&patch_receiver);
     __ ShiftLeftP(ip, r2, Operand(kPointerSizeLog2));
-    __ AddP(r5, sp, ip);
+    __ lay(r5, MemOperand(sp, ip));
     __ StoreP(r4, MemOperand(r5, -kPointerSize));
 
     __ b(&shift_arguments);
@@ -1205,7 +1205,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
   // r3: function
   // r6: call type (0: JS function, 1: function proxy, 2: non-function)
   __ ShiftLeftP(ip, r2, Operand(kPointerSizeLog2));
-  __ AddP(r4, sp, ip);
+  __ lay(r4, MemOperand(sp, ip));
   __ StoreP(r3, MemOperand(r4, -kPointerSize));
 
   // 4. Shift arguments and return address one slot down on the stack
@@ -1218,7 +1218,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
   { Label loop;
     // Calculate the copy start address (destination). Copy end address is sp.
     __ ShiftLeftP(ip, r2, Operand(kPointerSizeLog2));
-    __ AddP(r4, sp, ip);
+    __ lay(r4, MemOperand(sp, ip));
 
     __ bind(&loop);
     __ LoadP(ip, MemOperand(r4, -kPointerSize));
@@ -1504,7 +1504,7 @@ static void LeaveArgumentsAdaptorFrame(MacroAssembler* masm) {
   int stack_adjustment = kPointerSize;  // adjust for receiver
   __ LeaveFrame(StackFrame::ARGUMENTS_ADAPTOR, stack_adjustment);
   __ SmiToPtrArrayOffset(r3, r3);
-  __ AddP(sp, sp, r3);
+  __ lay(sp, MemOperand(sp, r3));
 }
 
 
@@ -1569,7 +1569,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     // r4: expected number of arguments
     // ip: code entry to call
     __ SmiToPtrArrayOffset(r2, r2);
-    __ AddP(r2, fp);
+    __ lay(r2, MemOperand(r2, fp));
 
     // Copy the arguments (including the receiver) to the new stack frame.
     // r2: copy start address
