@@ -5295,8 +5295,7 @@ void LCodeGen::EmitNumberUntagD(Register input_reg,
     if (can_convert_undefined_to_nan) {
       __ bind(&convert);
       // Convert undefined (and hole) to NaN.
-      __ LoadRoot(ip, Heap::kUndefinedValueRootIndex);
-      __ CmpP(input_reg, ip);
+      __ CompareRoot(input_reg, Heap::kUndefinedValueRootIndex);
       DeoptimizeIf(ne, env);
       __ LoadRoot(scratch, Heap::kNanValueRootIndex);
       __ ld(result_reg, FieldMemOperand(scratch, HeapNumber::kValueOffset));
@@ -5342,22 +5341,19 @@ void LCodeGen::DoDeferredTaggedToI(LTaggedToI* instr) {
     // Check for Oddballs. Undefined/False is converted to zero and True to one
     // for truncating conversions.
     __ bind(&no_heap_number);
-    __ LoadRoot(ip, Heap::kUndefinedValueRootIndex);
-    __ CmpP(input_reg, ip);
+    __ CompareRoot(input_reg, Heap::kUndefinedValueRootIndex);
     __ bne(&check_bools);
     __ LoadImmP(input_reg, Operand::Zero());
     __ b(&done);
 
     __ bind(&check_bools);
-    __ LoadRoot(ip, Heap::kTrueValueRootIndex);
-    __ CmpP(input_reg, ip);
+    __ CompareRoot(input_reg, Heap::kTrueValueRootIndex);
     __ bne(&check_false, Label::kNear);
     __ LoadImmP(input_reg, Operand(1));
     __ b(&done);
 
     __ bind(&check_false);
-    __ LoadRoot(ip, Heap::kFalseValueRootIndex);
-    __ CmpP(input_reg, ip);
+    __ CompareRoot(input_reg, Heap::kFalseValueRootIndex);
     DeoptimizeIf(ne, instr->environment());
     __ LoadImmP(input_reg, Operand::Zero());
   } else {
@@ -5882,8 +5878,7 @@ void LCodeGen::DoRegExpLiteral(LRegExpLiteral* instr) {
       FixedArray::OffsetOfElementAt(instr->hydrogen()->literal_index());
   __ Move(r9, instr->hydrogen()->literals());
   __ LoadP(r3, FieldMemOperand(r9, literal_offset));
-  __ LoadRoot(ip, Heap::kUndefinedValueRootIndex);
-  __ CmpP(r3, ip);
+  __ CompareRoot(r3, Heap::kUndefinedValueRootIndex);
   __ bne(&materialized);
 
   // Create regexp literal using runtime function
