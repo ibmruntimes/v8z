@@ -2637,8 +2637,7 @@ void LCodeGen::DoCmpObjectEqAndBranch(LCmpObjectEqAndBranch* instr) {
 void LCodeGen::DoCmpHoleAndBranch(LCmpHoleAndBranch* instr) {
   if (instr->hydrogen()->representation().IsTagged()) {
     Register input_reg = ToRegister(instr->object());
-    __ mov(ip, Operand(factory()->the_hole_value()));
-    __ CmpP(input_reg, ip);
+    __ CmpP(input_reg, Operand(factory()->the_hole_value()));
     EmitBranch(instr, eq);
     return;
   }
