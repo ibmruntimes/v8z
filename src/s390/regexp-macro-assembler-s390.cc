@@ -709,8 +709,7 @@ bool RegExpMacroAssemblerS390::CheckSpecialCharacterClass(uc16 type,
     }
     ExternalReference map = ExternalReference::re_word_character_map();
     __ mov(r2, Operand(map));
-    __ LoadlB(r2, MemOperand(r2, current_character()));
-    __ CmpLogicalP(r2, Operand::Zero());
+    __ CmpLogicalByte(MemOperand(r2, current_character()), Operand::Zero());
     BranchOrBacktrack(eq, on_no_match);
     return true;
   }
@@ -723,8 +722,7 @@ bool RegExpMacroAssemblerS390::CheckSpecialCharacterClass(uc16 type,
     }
     ExternalReference map = ExternalReference::re_word_character_map();
     __ mov(r2, Operand(map));
-    __ LoadlB(r2, MemOperand(r2, current_character()));
-    __ CmpLogicalP(r2, Operand::Zero());
+    __ CmpLogicalByte(MemOperand(r2, current_character()), Operand::Zero());
     BranchOrBacktrack(ne, on_no_match);
     if (mode_ != ASCII) {
       __ bind(&done);

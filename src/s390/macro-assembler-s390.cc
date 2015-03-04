@@ -1976,9 +1976,9 @@ void MacroAssembler::CheckFastElements(Register map,
   STATIC_ASSERT(FAST_HOLEY_SMI_ELEMENTS == 1);
   STATIC_ASSERT(FAST_ELEMENTS == 2);
   STATIC_ASSERT(FAST_HOLEY_ELEMENTS == 3);
-  LoadlB(scratch, FieldMemOperand(map, Map::kBitField2Offset));
   STATIC_ASSERT(Map::kMaximumBitField2FastHoleyElementValue < 0x8000);
-  CmpLogicalP(scratch, Operand(Map::kMaximumBitField2FastHoleyElementValue));
+  CmpLogicalByte(FieldMemOperand(map, Map::kBitField2Offset),
+      Operand(Map::kMaximumBitField2FastHoleyElementValue));
   bgt(fail);
 }
 
@@ -1990,10 +1990,11 @@ void MacroAssembler::CheckFastObjectElements(Register map,
   STATIC_ASSERT(FAST_HOLEY_SMI_ELEMENTS == 1);
   STATIC_ASSERT(FAST_ELEMENTS == 2);
   STATIC_ASSERT(FAST_HOLEY_ELEMENTS == 3);
-  LoadlB(scratch, FieldMemOperand(map, Map::kBitField2Offset));
-  CmpLogicalP(scratch, Operand(Map::kMaximumBitField2FastHoleySmiElementValue));
+  CmpLogicalByte(FieldMemOperand(map, Map::kBitField2Offset),
+      Operand(Map::kMaximumBitField2FastHoleySmiElementValue));
   ble(fail);
-  CmpLogicalP(scratch, Operand(Map::kMaximumBitField2FastHoleyElementValue));
+  CmpLogicalByte(FieldMemOperand(map, Map::kBitField2Offset),
+      Operand(Map::kMaximumBitField2FastHoleyElementValue));
   bgt(fail);
 }
 
@@ -2003,8 +2004,8 @@ void MacroAssembler::CheckFastSmiElements(Register map,
                                           Label* fail) {
   STATIC_ASSERT(FAST_SMI_ELEMENTS == 0);
   STATIC_ASSERT(FAST_HOLEY_SMI_ELEMENTS == 1);
-  LoadlB(scratch, FieldMemOperand(map, Map::kBitField2Offset));
-  CmpLogicalP(scratch, Operand(Map::kMaximumBitField2FastHoleySmiElementValue));
+  CmpLogicalByte(FieldMemOperand(map, Map::kBitField2Offset),
+      Operand(Map::kMaximumBitField2FastHoleySmiElementValue));
   bgt(fail);
 }
 
