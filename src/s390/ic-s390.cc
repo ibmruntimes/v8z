@@ -853,9 +853,8 @@ static void KeyedStoreGenerateGenericHelper(
   Register address = r7;
   if (check_map == kCheckMap) {
     __ LoadP(elements_map, FieldMemOperand(elements, HeapObject::kMapOffset));
-    __ mov(scratch_value,
+    __ CmpP(elements_map,
             Operand(masm->isolate()->factory()->fixed_array_map()));
-    __ CmpP(elements_map, scratch_value);
     __ bne(fast_double);
   }
 
@@ -1067,14 +1066,13 @@ void KeyedStoreIC::GenerateGeneric(MacroAssembler* masm,
   __ CmpLogicalP(key, FieldMemOperand(elements, FixedArray::kLengthOffset));
   __ bge(&slow);
   __ LoadP(elements_map, FieldMemOperand(elements, HeapObject::kMapOffset));
-  __ mov(ip, Operand(masm->isolate()->factory()->fixed_array_map()));
-  __ CmpP(elements_map, ip);
+  __ CmpP(elements_map, Operand(masm->isolate()->factory()->fixed_array_map()));
   __ bne(&check_if_double_array, Label::kNear);
   __ b(&fast_object_grow);
 
   __ bind(&check_if_double_array);
-  __ mov(ip, Operand(masm->isolate()->factory()->fixed_double_array_map()));
-  __ CmpP(elements_map, ip);
+  __ CmpP(elements_map,
+          Operand(masm->isolate()->factory()->fixed_double_array_map()));
   __ bne(&slow);
   __ b(&fast_double_grow);
 

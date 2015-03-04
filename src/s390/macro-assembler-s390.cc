@@ -301,8 +301,7 @@ void MacroAssembler::InNewSpace(Register object,
   mov(r0, Operand(ExternalReference::new_space_mask(isolate())));
 
   AndP(scratch, object, r0);
-  mov(r0, Operand(ExternalReference::new_space_start(isolate())));
-  CmpP(scratch, r0);
+  CmpP(scratch, Operand(ExternalReference::new_space_start(isolate())));
   b(cond, branch);
 }
 
@@ -2213,8 +2212,7 @@ void MacroAssembler::DispatchMap(Register obj,
     JumpIfSmi(obj, &fail);
   }
   LoadP(scratch, FieldMemOperand(obj, HeapObject::kMapOffset));
-  mov(r0, Operand(map));
-  CmpP(scratch, r0);
+  CmpP(scratch, Operand(map));
   bne(&fail);
   Jump(success, RelocInfo::CODE_TARGET, al);
   bind(&fail);
