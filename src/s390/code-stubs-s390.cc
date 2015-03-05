@@ -2740,6 +2740,8 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
 
   // Do the runtime call to execute the regexp.
   __ bind(&runtime);
+  __ LoadMultipleP(r3, sp, MemOperand(sp, 0));
+  __ la(sp, MemOperand(sp, 13 * kPointerSize));
   __ TailCallRuntime(Runtime::kRegExpExecRT, 4, 1);
 
   // Deferred code for string handling.
