@@ -2391,7 +2391,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
 
   // Reset offset for possibly sliced string.
   __ LoadImmP(r13, Operand::Zero());
-  __ LoadP(subject, MemOperand(sp, kSubjectOffset));
+  __ LoadP(subject, MemOperand(fp, kSubjectOffset));
   __ JumpIfSmi(subject, &runtime);
   __ LoadRR(r5, subject);  // Make a copy of the original subject string.
   __ LoadP(r2, FieldMemOperand(subject, HeapObject::kMapOffset));
