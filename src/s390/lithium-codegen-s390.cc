@@ -4698,7 +4698,6 @@ void LCodeGen::DoStoreKeyedFixedArray(LStoreKeyed* instr) {
   Register elements = ToRegister(instr->elements());
   Register key = instr->key()->IsRegister() ? ToRegister(instr->key()) : no_reg;
   Register scratch = scratch0();
-  Register store_base = scratch;
   int offset = 0;
 
   // Do the store.
@@ -4707,7 +4706,6 @@ void LCodeGen::DoStoreKeyedFixedArray(LStoreKeyed* instr) {
     LConstantOperand* const_operand = LConstantOperand::cast(instr->key());
     offset = FixedArray::OffsetOfElementAt(ToInteger32(const_operand) +
                                            instr->additional_index());
-    store_base = elements;
   } else {
     // Even though the HLoadKeyed instruction forces the input
     // representation for the key to be an integer, the input gets replaced
@@ -4718,7 +4716,6 @@ void LCodeGen::DoStoreKeyedFixedArray(LStoreKeyed* instr) {
     } else {
       __ ShiftLeftP(scratch, key, Operand(kPointerSizeLog2));
     }
-    __ AddP(scratch, elements, scratch);
     offset = FixedArray::OffsetOfElementAt(instr->additional_index());
   }
 
@@ -4732,20 +4729,29 @@ void LCodeGen::DoStoreKeyedFixedArray(LStoreKeyed* instr) {
     // Store int value directly to upper half of the smi.
     STATIC_ASSERT(kSmiTag == 0);
     STATIC_ASSERT(kSmiTagSize + kSmiShiftSize == 32);
-#if V8_TARGET_LITTLE_ENDIAN
+#if __BYTE_ORDER == __LITTLE_ENDIAN
     offset += kPointerSize / 2;
 #endif
   }
 #endif
 
-  __ StoreRepresentation(value, FieldMemOperand(store_base, offset),
+  if (instr->key()->IsConstantOperand()) {
+    __ StoreRepresentation(value, FieldMemOperand(elements, offset),
                          representation, r0);
+  } else {
+    __ StoreRepresentation(value, FieldMemOperand(scratch, elements, offset),
+                         representation, r0);
+  }
 
   if (hinstr->NeedsWriteBarrier()) {
     SmiCheck check_needed = hinstr->value()->IsHeapObject()
                             ? OMIT_SMI_CHECK : INLINE_SMI_CHECK;
     // Compute address of modified element and store it into key register.
-    __ AddP(key, store_base, Operand(offset - kHeapObjectTag));
+    if (instr->key()->IsConstantOperand()) {
+      __ lay(key, MemOperand(elements, offset - kHeapObjectTag));
+    } else {
+      __ lay(key, MemOperand(scratch, elements, offset - kHeapObjectTag));
+    }
     __ RecordWrite(elements,
                    key,
                    value,
