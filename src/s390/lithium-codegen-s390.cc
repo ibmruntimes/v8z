@@ -3495,15 +3495,12 @@ void LCodeGen::DoLoadKeyedFixedArray(LLoadKeyed* instr) {
   Register elements = ToRegister(instr->elements());
   Register result = ToRegister(instr->result());
   Register scratch = scratch0();
-  Register store_base = scratch;
-  // TODO(joransiu) : Exploit RX form - see 3.14 branch
   int offset = 0;
 
   if (instr->key()->IsConstantOperand()) {
     LConstantOperand* const_operand = LConstantOperand::cast(instr->key());
     offset = FixedArray::OffsetOfElementAt(ToInteger32(const_operand) +
                                            instr->additional_index());
-    store_base = elements;
   } else {
     Register key = ToRegister(instr->key());
     // Even though the HLoadKeyed instruction forces the input
@@ -3511,11 +3508,10 @@ void LCodeGen::DoLoadKeyedFixedArray(LLoadKeyed* instr) {
     // during bound check elimination with the index argument to the bounds
     // check, which can be tagged, so that case must be handled here, too.
     if (hinstr->key()->representation().IsSmi()) {
-      __ SmiToPtrArrayOffset(r0, key);
+      __ SmiToPtrArrayOffset(scratch, key);
     } else {
-      __ ShiftLeftP(r0, key, Operand(kPointerSizeLog2));
+      __ ShiftLeftP(scratch, key, Operand(kPointerSizeLog2));
     }
-    __ AddP(scratch, elements, r0);
     offset = FixedArray::OffsetOfElementAt(instr->additional_index());
   }
 
@@ -3530,14 +3526,19 @@ void LCodeGen::DoLoadKeyedFixedArray(LLoadKeyed* instr) {
     // Read int value directly from upper half of the smi.
     STATIC_ASSERT(kSmiTag == 0);
     STATIC_ASSERT(kSmiTagSize + kSmiShiftSize == 32);
-#if V8_TARGET_LITTLE_ENDIAN
+#if __BYTE_ORDER == __LITTLE_ENDIAN
     offset += kPointerSize / 2;
 #endif
   }
 #endif
 
-  __ LoadRepresentation(result, FieldMemOperand(store_base, offset),
+  if (instr->key()->IsConstantOperand()) {
+    __ LoadRepresentation(result, FieldMemOperand(elements, offset),
                         representation, r0);
+  } else {
+    __ LoadRepresentation(result, FieldMemOperand(scratch, elements, offset),
+                        representation, r0);
+  }
 
   // Check for the hole value.
   if (requires_hole_check) {
