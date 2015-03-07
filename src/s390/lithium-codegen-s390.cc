@@ -3461,30 +3461,38 @@ void LCodeGen::DoLoadKeyedFixedDoubleArray(LLoadKeyed* instr) {
     key = ToRegister(instr->key());
   }
 
-  int base_offset = (FixedDoubleArray::kHeaderSize - kHeapObjectTag) +
+  bool use_scratch = false;
+  intptr_t base_offset = (FixedDoubleArray::kHeaderSize - kHeapObjectTag) +
     ((constant_key + instr->additional_index()) << element_size_shift);
   if (!key_is_constant) {
-    __ IndexToArrayOffset(r0, key, element_size_shift, key_is_smi);
-    __ AddP(scratch, elements, r0);
-    elements = scratch;
+    use_scratch = true;
+    __ IndexToArrayOffset(scratch, key, element_size_shift, key_is_smi);
   }
-  // TODO(joransiu): Optimize this for Z.
-  if (!is_int16(base_offset)) {
-    __ AddP(scratch, elements, Operand(base_offset));
+  if (!is_int20(base_offset + Register::kExponentOffset)) {
+    use_scratch = true;
+    if (!key_is_constant) {
+      __ AddP(scratch, Operand(base_offset));
+    } else {
+      __ mov(scratch, Operand(base_offset));
+    }
     base_offset = 0;
-    elements = scratch;
   }
-  __ ld(result, MemOperand(elements, base_offset));
+
+  if (!use_scratch) {
+    __ ld(result, MemOperand(elements, base_offset));
+  } else {
+    __ ld(result, MemOperand(scratch, elements, base_offset));
+  }
 
   if (instr->hydrogen()->RequiresHoleCheck()) {
-    if (is_int16(base_offset + Register::kExponentOffset)) {
-      __ LoadlW(scratch, MemOperand(elements,
-                                 base_offset + Register::kExponentOffset));
+    if (!use_scratch) {
+      __ LoadlW(r0, MemOperand(elements,
+                              base_offset + Register::kExponentOffset));
     } else {
-      __ AddP(scratch, elements, Operand(base_offset));
-      __ LoadlW(scratch, MemOperand(scratch, Register::kExponentOffset));
+      __ LoadlW(r0, MemOperand(scratch, elements, 
+                              base_offset + Register::kExponentOffset));
     }
-    __ CmpP(scratch, Operand(kHoleNanUpper32));
+    __ CmpP(r0, Operand(kHoleNanUpper32));
     DeoptimizeIf(eq, instr->environment());
   }
 }
