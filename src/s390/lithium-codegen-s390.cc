@@ -3434,6 +3434,7 @@ void LCodeGen::DoLoadKeyedExternalArray(LLoadKeyed* instr) {
   int element_size_shift = ElementsKindToShiftSize(elements_kind);
   bool key_is_smi = instr->hydrogen()->key()->representation().IsSmi();
   int base_offset = instr->base_offset();
+  bool use_scratch = false;
 
   if (elements_kind == EXTERNAL_FLOAT32_ELEMENTS ||
       elements_kind == FLOAT32_ELEMENTS ||
@@ -3441,17 +3442,31 @@ void LCodeGen::DoLoadKeyedExternalArray(LLoadKeyed* instr) {
       elements_kind == FLOAT64_ELEMENTS) {
     DoubleRegister result = ToDoubleRegister(instr->result());
     if (key_is_constant) {
-      __ AddP(scratch0(), external_pointer,
-             Operand(constant_key << element_size_shift));
+      base_offset += constant_key << element_size_shift;
+      if (!is_int20(base_offset)) {
+        __ mov(scratch0(), Operand(base_offset));
+        base_offset = 0;
+        use_scratch = true;
+      }
     } else {
-      __ IndexToArrayOffset(r0, key, element_size_shift, key_is_smi);
-      __ AddP(scratch0(), external_pointer, r0);
+      __ IndexToArrayOffset(scratch0(), key, element_size_shift, key_is_smi);
+      use_scratch = true;
     }
     if (elements_kind == EXTERNAL_FLOAT32_ELEMENTS ||
         elements_kind == FLOAT32_ELEMENTS) {
-      __ ldeb(result, MemOperand(scratch0(), base_offset));
+      if (!use_scratch) {
+        __ ldeb(result, MemOperand(external_pointer, base_offset));
+      } else {
+        __ ldeb(result,
+                MemOperand(scratch0(), external_pointer, base_offset));
+      }
     } else  {  // i.e. elements_kind == EXTERNAL_DOUBLE_ELEMENTS
-      __ ld(result, MemOperand(scratch0(), base_offset));
+      if (!use_scratch) {
+        __ ld(result, MemOperand(external_pointer, base_offset));
+      } else {
+        __ ld(result,
+                MemOperand(scratch0(), external_pointer, base_offset));
+      }
     }
   } else {
     Register result = ToRegister(instr->result());
