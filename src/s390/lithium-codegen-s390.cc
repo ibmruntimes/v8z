@@ -3650,28 +3650,25 @@ MemOperand LCodeGen::PrepareKeyedOperand(Register key,
       __ mov(scratch, Operand(offset));
       return MemOperand(base, scratch);
     } else {
-    return MemOperand(base, (constant_key << element_size_shift) + base_offset);
+      return MemOperand(base,
+                    (constant_key << element_size_shift) + base_offset);
     }
   }
 
   bool needs_shift = (element_size_shift != (key_is_smi ?
                                              kSmiTagSize + kSmiShiftSize : 0));
 
-  if (!(base_offset || needs_shift)) {
-    return MemOperand(base, key);
-  }
-
   if (needs_shift) {
     __ IndexToArrayOffset(scratch, key, element_size_shift, key_is_smi);
-    key = scratch;
+  } else {
+    scratch = key;
   }
 
-  // TODO(joransiu): Fold base_offset into memOperand
-  if (base_offset) {
-    __ AddP(scratch, key, Operand(base_offset));
+  if (!is_int20(base_offset)) {
+    __ AddP(scratch, Operand(base_offset));
+    base_offset = 0;
   }
-
-  return MemOperand(base, scratch);
+  return MemOperand(base, scratch, base_offset);
 }
 
 
@@ -4625,30 +4622,44 @@ void LCodeGen::DoStoreKeyedExternalArray(LStoreKeyed* instr) {
   int element_size_shift = ElementsKindToShiftSize(elements_kind);
   bool key_is_smi = instr->hydrogen()->key()->representation().IsSmi();
   int base_offset = instr->base_offset();
+  bool use_scratch = false;
 
   if (elements_kind == EXTERNAL_FLOAT32_ELEMENTS ||
       elements_kind == FLOAT32_ELEMENTS ||
       elements_kind == EXTERNAL_FLOAT64_ELEMENTS ||
       elements_kind == FLOAT64_ELEMENTS) {
-    Register address = scratch0();
+    Register scratch = scratch0();
     DoubleRegister value(ToDoubleRegister(instr->value()));
     if (key_is_constant) {
       if (constant_key != 0) {
-        __ AddP(address, external_pointer,
-                Operand(constant_key << element_size_shift));
-      } else {
-        address = external_pointer;
+        base_offset += constant_key << element_size_shift;
+        if (!is_int20(base_offset)) {
+          __ mov(scratch, Operand(base_offset));
+          base_offset = 0;
+          use_scratch = true;
+        }
       }
     } else {
-      __ IndexToArrayOffset(r0, key, element_size_shift, key_is_smi);
-      __ AddP(address, external_pointer, r0);
+      __ IndexToArrayOffset(scratch, key, element_size_shift, key_is_smi);
+      use_scratch = true;
     }
     if (elements_kind == EXTERNAL_FLOAT32_ELEMENTS ||
         elements_kind == FLOAT32_ELEMENTS) {
       __ ledbr(double_scratch0(), value);
-      __ StoreShortF(double_scratch0(), MemOperand(address, base_offset));
+      if (!use_scratch) {
+        __ StoreShortF(double_scratch0(),
+                  MemOperand(external_pointer, base_offset));
+      } else {
+        __ StoreShortF(double_scratch0(),
+                  MemOperand(scratch, external_pointer, base_offset));
+      }
     } else {  // Storing doubles, not floats.
-      __ StoreF(value, MemOperand(address, base_offset));
+      if (!use_scratch) {
+        __ StoreF(value, MemOperand(external_pointer, base_offset));
+      } else {
+        __ StoreF(value,
+                  MemOperand(scratch, external_pointer, base_offset));
+      }
     }
   } else {
     Register value(ToRegister(instr->value()));
