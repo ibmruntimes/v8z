@@ -4431,8 +4431,8 @@ void LCodeGen::DoCallRuntime(LCallRuntime* instr) {
 void LCodeGen::DoStoreCodeEntry(LStoreCodeEntry* instr) {
   Register function = ToRegister(instr->function());
   Register code_object = ToRegister(instr->code_object());
-  __ AddP(code_object, code_object,
-          Operand(Code::kHeaderSize - kHeapObjectTag));
+  __ lay(code_object, MemOperand(code_object,
+          Code::kHeaderSize - kHeapObjectTag));
   __ StoreP(code_object,
             FieldMemOperand(function, JSFunction::kCodeEntryOffset), r0);
 }
@@ -4443,10 +4443,10 @@ void LCodeGen::DoInnerAllocatedObject(LInnerAllocatedObject* instr) {
   Register base = ToRegister(instr->base_object());
   if (instr->offset()->IsConstantOperand()) {
     LConstantOperand* offset = LConstantOperand::cast(instr->offset());
-    __ AddP(result, base, Operand(ToInteger32(offset)));
+    __ lay(result, MemOperand(base, ToInteger32(offset)));
   } else {
     Register offset = ToRegister(instr->offset());
-    __ AddP(result, base, offset);
+    __ lay(result, MemOperand(base, offset));
   }
 }
 

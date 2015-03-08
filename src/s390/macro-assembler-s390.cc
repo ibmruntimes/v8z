@@ -329,7 +329,7 @@ void MacroAssembler::RecordWriteField(
   // of the object, so so offset must be a multiple of kPointerSize.
   DCHECK(IsAligned(offset, kPointerSize));
 
-  AddP(dst, object, Operand(offset - kHeapObjectTag));
+  lay(dst, MemOperand(object, offset - kHeapObjectTag));
   if (emit_debug_code()) {
     Label ok;
     AndP(r0, dst, Operand((1 << kPointerSizeLog2) - 1));
@@ -392,7 +392,7 @@ void MacroAssembler::RecordWriteForMap(Register object,
                 eq,
                 &done);
 
-  AddP(dst, object, Operand(HeapObject::kMapOffset - kHeapObjectTag));
+  lay(dst, MemOperand(object, HeapObject::kMapOffset - kHeapObjectTag));
   if (emit_debug_code()) {
     Label ok;
     AndP(r0, dst, Operand((1 << kPointerSizeLog2) - 1));
