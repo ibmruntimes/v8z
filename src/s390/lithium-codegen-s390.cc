@@ -4549,6 +4549,7 @@ void LCodeGen::DoStoreKeyedExternalArray(LStoreKeyed* instr) {
   int additional_offset = IsFixedTypedArrayElementsKind(elements_kind)
       ? FixedTypedArrayBase::kDataOffset - kHeapObjectTag
       : 0;
+  bool use_scratch = false;
 
   if (elements_kind == EXTERNAL_FLOAT32_ELEMENTS ||
       elements_kind == FLOAT32_ELEMENTS ||
@@ -4556,25 +4557,38 @@ void LCodeGen::DoStoreKeyedExternalArray(LStoreKeyed* instr) {
       elements_kind == FLOAT64_ELEMENTS) {
     int base_offset =
       (instr->additional_index() << element_size_shift) + additional_offset;
-    Register address = scratch0();
+    Register scratch = scratch0();
     DoubleRegister value(ToDoubleRegister(instr->value()));
     if (key_is_constant) {
       if (constant_key != 0) {
-        __ AddP(address, external_pointer,
-                Operand(constant_key << element_size_shift));
-      } else {
-        address = external_pointer;
+        base_offset += constant_key << element_size_shift;
+        if (!is_int20(base_offset)) {
+          __ mov(scratch, Operand(base_offset));
+          base_offset = 0;
+          use_scratch = true;
+        }
       }
     } else {
-      __ IndexToArrayOffset(r0, key, element_size_shift, key_is_smi);
-      __ AddP(address, external_pointer, r0);
+      __ IndexToArrayOffset(scratch, key, element_size_shift, key_is_smi);
+      use_scratch = true;
     }
     if (elements_kind == EXTERNAL_FLOAT32_ELEMENTS ||
         elements_kind == FLOAT32_ELEMENTS) {
       __ ledbr(double_scratch0(), value);
-      __ StoreShortF(double_scratch0(), MemOperand(address, base_offset));
+      if (!use_scratch) {
+        __ StoreShortF(double_scratch0(),
+                  MemOperand(external_pointer, base_offset));
+      } else {
+        __ StoreShortF(double_scratch0(),
+                  MemOperand(scratch, external_pointer, base_offset));
+      }
     } else {  // Storing doubles, not floats.
-      __ StoreF(value, MemOperand(address, base_offset));
+      if (!use_scratch) {
+        __ StoreF(value, MemOperand(external_pointer, base_offset));
+      } else {
+        __ StoreF(value,
+                  MemOperand(scratch, external_pointer, base_offset));
+      }
     }
   } else {
     Register value(ToRegister(instr->value()));
