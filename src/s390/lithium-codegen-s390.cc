@@ -3504,7 +3504,7 @@ void LCodeGen::DoLoadKeyedFixedDoubleArray(LLoadKeyed* instr) {
       __ LoadlW(r0, MemOperand(elements,
                               base_offset + Register::kExponentOffset));
     } else {
-      __ LoadlW(r0, MemOperand(scratch, elements, 
+      __ LoadlW(r0, MemOperand(scratch, elements,
                               base_offset + Register::kExponentOffset));
     }
     __ CmpP(r0, Operand(kHoleNanUpper32));
