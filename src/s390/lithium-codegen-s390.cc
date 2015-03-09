@@ -3598,21 +3598,18 @@ MemOperand LCodeGen::PrepareKeyedOperand(Register key,
   bool needs_shift = (element_size_shift != (key_is_smi ?
                                              kSmiTagSize + kSmiShiftSize : 0));
 
-  if (!(base_offset || needs_shift)) {
-    return MemOperand(base, key);
-  }
-
   if (needs_shift) {
     __ IndexToArrayOffset(scratch, key, element_size_shift, key_is_smi);
-    key = scratch;
+  } else {
+    scratch = key;
   }
 
-  // TODO(joransiu): Fold base_offset into memOperand
-  if (base_offset) {
-    __ AddP(scratch, key, Operand(base_offset));
+  if (!is_int20(base_offset)) {
+    __ AddP(scratch, Operand(base_offset));
+    base_offset = 0;
   }
 
-  return MemOperand(base, scratch);
+  return MemOperand(base, scratch, base_offset);
 }
 
 
