@@ -1509,6 +1509,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   __ lay(sp, MemOperand(sp, -5 * kPointerSize));
   // Push a bad frame pointer to fail if it is used.
   __ LoadImmP(r10, Operand(-1));
+
   int marker = is_construct ? StackFrame::ENTRY_CONSTRUCT : StackFrame::ENTRY;
   __ LoadSmiLiteral(r9, Smi::FromInt(marker));
   __ LoadSmiLiteral(r8, Smi::FromInt(marker));
@@ -1516,7 +1517,6 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   __ mov(r7, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate())));
   __ LoadP(r7, MemOperand(r7));
   __ StoreMultipleP(r7, r10, MemOperand(sp, kPointerSize));
-
   // Set up frame pointer for the frame to be pushed.
   // Need to add kPointerSize, because sp has one extra
   // frame already for the frame type being pushed later.
@@ -2328,7 +2328,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // this code is called using the normal C calling convention. When calling
   // directly from generated code the native RegExp code will not do a GC and
   // therefore the content of these registers are safe to use after the call.
-  Register subject = r6;
+  Register subject = r10;
   Register regexp_data = r7;
   Register last_match_info_elements = r8;
   Register code = r9;
@@ -2551,8 +2551,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // Argument 2 (r3): Previous index.
   // Already there
 
-  __ AddP(r1, r6, Operand(SeqString::kHeaderSize - kHeapObjectTag));
-
+  __ AddP(r1, subject, Operand(SeqString::kHeaderSize - kHeapObjectTag));
   // Argument 5 (r6): static offsets vector buffer.
   __ mov(r6,
          Operand(ExternalReference::address_of_static_offsets_vector(
