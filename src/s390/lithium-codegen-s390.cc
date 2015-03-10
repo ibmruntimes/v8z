@@ -1788,7 +1788,7 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
       case Token::SHR:
         __ ShiftRight(result, left, scratch);
 #if V8_TARGET_ARCH_S390X
-          __ lgfr(result, result);
+        __ lgfr(result, result);
 #endif
         if (instr->can_deopt()) {
 #if V8_TARGET_ARCH_S390X
