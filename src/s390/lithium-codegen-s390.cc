@@ -1340,6 +1340,9 @@ void LCodeGen::DoFlooringDivByPowerOf2I(LFlooringDivByPowerOf2I* instr) {
   if (divisor > 0) {
     if (shift || !result.is(dividend)) {
       __ ShiftRightArith(result, dividend, Operand(shift));
+#if V8_TARGET_ARCH_S390X
+      __ lgfr(result, result);
+#endif
     }
     return;
   }
@@ -1378,6 +1381,9 @@ void LCodeGen::DoFlooringDivByPowerOf2I(LFlooringDivByPowerOf2I* instr) {
   Label overflow_label, done;
   __ b(overflow, &overflow_label, Label::kNear);
   __ ShiftRightArith(result, result, Operand(shift));
+#if V8_TARGET_ARCH_S390X
+  __ lgfr(result, result);
+#endif
   __ b(&done, Label::kNear);
   __ bind(&overflow_label);
   __ mov(result, Operand(kMinInt / divisor));
@@ -1781,7 +1787,9 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
         break;
       case Token::SHR:
         __ ShiftRight(result, left, scratch);
-        __ AndP(result, Operand(0xFFFFFFFF));
+#if V8_TARGET_ARCH_S390X
+          __ lgfr(result, result);
+#endif
         if (instr->can_deopt()) {
 #if V8_TARGET_ARCH_S390X
           __ ltgfr(result, result/*, SetRC*/);
@@ -1852,6 +1860,9 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
               instr->can_deopt()) {
             if (shift_count != 1) {
               __ ShiftLeft(result, left, Operand(shift_count - 1));
+#if V8_TARGET_ARCH_S390X
+              __ lgfr(result, result);
+#endif
               __ SmiTagCheckOverflow(result, result, scratch);
             } else {
               __ SmiTagCheckOverflow(result, left, scratch);
