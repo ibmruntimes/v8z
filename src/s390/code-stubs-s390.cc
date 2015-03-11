@@ -2328,7 +2328,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // this code is called using the normal C calling convention. When calling
   // directly from generated code the native RegExp code will not do a GC and
   // therefore the content of these registers are safe to use after the call.
-  Register subject = r10;
+  Register subject = r6;
   Register regexp_data = r7;
   Register last_match_info_elements = r8;
   Register code = r9;
@@ -2550,8 +2550,8 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
 
   // Argument 2 (r3): Previous index.
   // Already there
-
   __ AddP(r1, subject, Operand(SeqString::kHeaderSize - kHeapObjectTag));
+
   // Argument 5 (r6): static offsets vector buffer.
   __ mov(r6,
          Operand(ExternalReference::address_of_static_offsets_vector(
@@ -2566,13 +2566,12 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // Argument 3, r4: Start of string data
   // Prepare start and end index of the input.
   __ ShiftLeftP(r13, r13, r5);
-// @TODO Tara:Check if the mapping for r18 to r1 is correct
   __ AddP(r13, r1, r13);
   __ ShiftLeftP(r4, r3, r5);
   __ AddP(r4, r13, r4);
 
   // Argument 4, r5: End of string data
-  __ LoadP(r1, FieldMemOperand(subject, String::kLengthOffset));
+  __ LoadP(r1, FieldMemOperand(r2, String::kLengthOffset));
   __ SmiUntag(r1);
   __ ShiftLeftP(r0, r1, r5);
   __ AddP(r5, r13, r0);
