@@ -2657,7 +2657,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ SmiToShortArrayOffset(r3, r3);
   __ AddP(r3, Operand(2));
 
-  __ LoadP(r2, MemOperand(sp, kLastMatchInfoOffset));
+  __ LoadP(r2, MemOperand(fp, kLastMatchInfoOffset));
   __ JumpIfSmi(r2, &runtime);
   __ CompareObjectType(r2, r4, r4, JS_ARRAY_TYPE);
   __ bne(&runtime);
