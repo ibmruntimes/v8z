@@ -2670,7 +2670,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // Load previous index and check range before r5 is overwritten.  We have to
   // use r5 instead of subject here because subject might have been only made
   // to look like a sequential string when it actually is an external string.
-  __ LoadP(r3, MemOperand(sp, kPreviousIndexOffset));
+  __ LoadP(r3, MemOperand(fp, kPreviousIndexOffset));
   __ JumpIfNotSmi(r3, &runtime);
   __ LoadP(r5, FieldMemOperand(r5, String::kLengthOffset));
   __ CmpLogicalP(r5, r3);
