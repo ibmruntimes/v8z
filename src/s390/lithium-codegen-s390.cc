@@ -1181,7 +1181,7 @@ void LCodeGen::DoModI(LModI* instr) {
   __ srda(r0, Operand(32));
   __ dr(r0, right_reg);     // R0:R1 = R1 / divisor - R0 remainder
 
-  __ ltr(result_reg, r0);    // Copy remainder to resultreg
+  __ LoadAndTestP_ExtendSrc(result_reg, r0);   // Copy remainder to resultreg
 
   // If we care about -0, test if the dividend is <0 and the result is 0.
   if (hmod->CheckFlag(HValue::kBailoutOnMinusZero)) {
@@ -1317,7 +1317,7 @@ void LCodeGen::DoDivI(LDivI* instr) {
   __ srda(r0, Operand(32));
   __ dr(r0, divisor);     // R0:R1 = R1 / divisor - R0 remainder - R1 quotient
 
-  __ lr(result, r1);  // Move quotient to result register
+  __ LoadAndTestP_ExtendSrc(result, r1);  // Move quotient to result register
 
   if (!hdiv->CheckFlag(HInstruction::kAllUsesTruncatingToInt32)) {
     // Deoptimize if remainder is not 0.
