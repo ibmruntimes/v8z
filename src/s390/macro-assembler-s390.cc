@@ -5648,6 +5648,51 @@ void MacroAssembler::LoadlB(Register dst, const MemOperand& mem) {
 }
 
 
+// Load And Test (Reg <- Reg)
+void MacroAssembler::LoadAndTest32(Register dst, Register src) {
+  ltr(dst, src);
+}
+
+
+// Load And Test
+//     (Register dst(ptr) = Register src (32 | 32->64))
+// src is treated as a 32-bit signed integer, which is sign extended to
+// 64-bit if necessary.
+void MacroAssembler::LoadAndTestP_ExtendSrc(Register dst, Register src) {
+#if V8_TARGET_ARCH_S390X
+  ltgfr(dst, src);
+#else
+  ltr(dst, src);
+#endif
+}
+
+
+// Load And Test Pointer Sized (Reg <- Reg)
+void MacroAssembler::LoadAndTestP(Register dst, Register src) {
+#if V8_TARGET_ARCH_S390X
+  ltgr(dst, src);
+#else
+  ltr(dst, src);
+#endif
+}
+
+
+// Load And Test 32-bit (Reg <- Mem)
+void MacroAssembler::LoadAndTest32(Register dst, const MemOperand& mem) {
+  lt_z(dst, mem);
+}
+
+
+// Load And Test Pointer Sized (Reg <- Mem)
+void MacroAssembler::LoadAndTestP(Register dst, const MemOperand& mem) {
+#if V8_TARGET_ARCH_S390X
+  ltg(dst, mem);
+#else
+  lt_z(dst, mem);
+#endif
+}
+
+
 void MacroAssembler::LoadF(DoubleRegister dst, const MemOperand& mem) {
   // for 32bit and 64bit we all use 64bit floating point regs
   if (is_uint12(mem.offset())) {

@@ -72,7 +72,6 @@ bool AreAliased(Register reg1,
 
 // These exist to provide portability between 32 and 64bit
 #if V8_TARGET_ARCH_S390X
-#define LoadAndTestP       ltg
 #define Div                divd
 
 // The length of the arithmetic operation is the length
@@ -118,7 +117,6 @@ bool AreAliased(Register reg1,
 #define ShiftLeftArithP    slag
 #define ShiftRightArithP   srag
 #else
-#define LoadAndTestP       lt_z
 
 // arithmetics and bitwise
 // Reg2Reg
@@ -330,6 +328,14 @@ class MacroAssembler: public Assembler {
   void LoadlB(Register dst, const MemOperand& opnd);
 
   void LoadF(DoubleRegister dst, const MemOperand& opnd);
+
+  // Load And Test
+  void LoadAndTest32(Register dst, Register src);
+  void LoadAndTestP_ExtendSrc(Register dst, Register src);
+  void LoadAndTestP(Register dst, Register src);
+
+  void LoadAndTest32(Register dst, const MemOperand& opnd);
+  void LoadAndTestP(Register dst, const MemOperand& opnd);
 
   // Store
   void StoreF(DoubleRegister dst, const MemOperand& opnd);
