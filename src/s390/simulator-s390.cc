@@ -1799,7 +1799,7 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       int r2 = rrinst->R2Value();
       int32_t r2_val = get_low_register<int32_t>(r2);
       r2_val = (r2_val >= 0)? -r2_val : r2_val;  // If pos, then negate it.
-      set_low_register(r1, -r2_val);
+      set_low_register(r1, r2_val);
       condition_reg_ = (r2_val == 0)?CC_EQ:CC_LT;  // CC0 - result is zero
                                                    // CC1 - result is negative
       break;
