@@ -1227,7 +1227,7 @@ class Instruction {
   // Extract the raw instruction bits
   template <typename T>
   static inline T InstructionBits(const byte *instr) {
-  #if __BYTE_ORDER == __BIG_ENDIAN
+  #if !V8_TARGET_LITTLE_ENDIAN
     if (sizeof(T) <= 4) {
       return *reinterpret_cast<const T*>(instr);
     } else {
@@ -1254,7 +1254,7 @@ class Instruction {
   // Set the Instruction Bits to value
   template <typename T>
   static inline void SetInstructionBits(byte *instr, T value) {
-#if __BYTE_ORDER == __LITTLE_ENDIAN
+#if V8_TARGET_LITTLE_ENDIAN
     // The instruction bits are stored in big endian format even on little
     // endian hosts, in order to decode instruction length and opcode.
     // The following code will reverse the bytes so that the stores later
@@ -1281,7 +1281,7 @@ class Instruction {
     if (sizeof(T) <= 4) {
       *reinterpret_cast<T*>(instr) = value;
     } else {
-#if __BYTE_ORDER == __LITTLE_ENDIAN
+#if V8_TARGET_LITTLE_ENDIAN
       uint64_t orig_value = static_cast<uint64_t>(value);
       *reinterpret_cast<uint32_t*>(instr) = static_cast<uint32_t>(value);
       *reinterpret_cast<uint16_t*>(instr + 4) =

@@ -1927,7 +1927,7 @@ void LCodeGen::DoSubI(LSubI* instr) {
     if (!isInteger) {
       __ SubP(ToRegister(result), mem);
     } else {
-#if V8_TARGET_ARCH_S390X &&  __BYTE_ORDER == __BIG_ENDIAN
+#if V8_TARGET_ARCH_S390X &&  !V8_TARGET_LITTLE_ENDIAN
       // We want to read the 32-bits directly from memory
       MemOperand Upper32Mem = MemOperand(mem.rb(), mem.rx(),
                                          mem.offset() + 4);
@@ -2162,7 +2162,7 @@ void LCodeGen::DoAddI(LAddI* instr) {
     if (!isInteger) {
       __ AddP(ToRegister(result), mem);
     } else {
-#if V8_TARGET_ARCH_S390X &&  __BYTE_ORDER == __BIG_ENDIAN
+#if V8_TARGET_ARCH_S390X &&  !V8_TARGET_LITTLE_ENDIAN
       // We want to read the 32-bits directly from memory
       MemOperand Upper32Mem = MemOperand(mem.rb(), mem.rx(),
                                          mem.offset() + 4);
