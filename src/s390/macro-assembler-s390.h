@@ -1755,7 +1755,7 @@ class MacroAssembler: public Assembler {
   STATIC_ASSERT(kSmiTag == 0);
   STATIC_ASSERT(kSmiTagSize + kSmiShiftSize == 32);
 #endif
-#if __BYTE_ORDER == __LITTLE_ENDIA
+#if __BYTE_ORDER == __LITTLE_ENDIAN
 #define SmiWordOffset(offset) (offset + kPointerSize / 2)
 #else
 #define SmiWordOffset(offset) offset
