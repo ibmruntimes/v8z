@@ -438,7 +438,7 @@ void Assembler::CheckTrampolinePoolQuick() {
 // S390 specific emitting helpers
 void Assembler::emit2bytes(uint16_t x) {
     CheckBuffer();
-#if __BYTE_ORDER == __LITTLE_ENDIAN
+#if V8_TARGET_LITTLE_ENDIAN
     // We need to emit instructions in big endian format as disassembler /
     // simulator require the first byte of the instruction in order to decode
     // the instruction length.  Swap the bytes.
@@ -451,7 +451,7 @@ void Assembler::emit2bytes(uint16_t x) {
 
 void Assembler::emit4bytes(uint32_t x) {
     CheckBuffer();
-#if __BYTE_ORDER == __LITTLE_ENDIAN
+#if V8_TARGET_LITTLE_ENDIAN
     // We need to emit instructions in big endian format as disassembler /
     // simulator require the first byte of the instruction in order to decode
     // the instruction length.  Swap the bytes.
@@ -465,7 +465,7 @@ void Assembler::emit4bytes(uint32_t x) {
 
 void Assembler::emit6bytes(uint64_t x) {
     CheckBuffer();
-#if __BYTE_ORDER == __LITTLE_ENDIAN
+#if V8_TARGET_LITTLE_ENDIAN
     // We need to emit instructions in big endian format as disassembler /
     // simulator require the first byte of the instruction in order to decode
     // the instruction length.  Swap the bytes.
