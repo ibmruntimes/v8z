@@ -3694,7 +3694,7 @@ MemOperand LCodeGen::PrepareKeyedOperand(Register key,
     __ AddP(scratch, Operand(base_offset));
     base_offset = 0;
   }
-  return MemOperand(base, scratch, base_offset);
+  return MemOperand(scratch, base, base_offset);
 }
 
 
