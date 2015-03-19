@@ -736,10 +736,10 @@ LInstruction* LChunkBuilder::DoArithmeticD(Token::Value op,
     // TODO(fschneider): Allow any register as input registers.
     return MarkAsCall(DefineFixedDouble(result, d1), instr);
   } else {
-    LOperand* left = UseRegisterAtStart(instr->left());
-    LOperand* right = UseRegisterAtStart(instr->right());
+    LOperand* left = UseRegisterAtStart(instr->BetterLeftOperand());
+    LOperand* right = UseRegisterAtStart(instr->BetterRightOperand());
     LArithmeticD* result = new(zone()) LArithmeticD(op, left, right);
-    return DefineAsRegister(result);
+    return DefineSameAsFirst(result);
   }
 }
 
