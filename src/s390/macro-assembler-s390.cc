@@ -829,8 +829,8 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   lay(sp, MemOperand(sp, - ExitFrameConstants::kFrameSize));
 
   if (emit_debug_code()) {
-    LoadImmP(r1, Operand::Zero());
-    StoreP(r1, MemOperand(fp, ExitFrameConstants::kSPOffset));
+    StoreP(MemOperand(fp, ExitFrameConstants::kSPOffset),
+           Operand::Zero(), r1);
   }
   mov(r1, Operand(CodeObject()));
   StoreP(r1, MemOperand(fp, ExitFrameConstants::kCodeOffset));
@@ -877,8 +877,8 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
     ClearRightImm(sp, sp, Operand(3));  // equivalent to &= -8
   }
 
-  LoadImmP(r0, Operand::Zero());
-  StoreP(r0, MemOperand(sp, -kNumRequiredStackFrameSlots * kPointerSize));
+  StoreP(MemOperand(sp, -kNumRequiredStackFrameSlots * kPointerSize),
+         Operand::Zero(), r0);
   lay(sp, MemOperand(sp, -kNumRequiredStackFrameSlots * kPointerSize));
   // Set the exit frame sp value to point just before the return address
   // location.
@@ -895,9 +895,9 @@ void MacroAssembler::InitializeNewString(Register string,
   SmiTag(scratch1, length);
   LoadRoot(scratch2, map_index);
   StoreP(scratch1, FieldMemOperand(string, String::kLengthOffset));
-  LoadImmP(scratch1, Operand(String::kEmptyHashField));
+  StoreP(FieldMemOperand(string, String::kHashFieldSlot),
+         Operand(String::kEmptyHashField), scratch1);
   StoreP(scratch2, FieldMemOperand(string, HeapObject::kMapOffset));
-  StoreP(scratch1, FieldMemOperand(string, String::kHashFieldSlot));
 }
 
 
