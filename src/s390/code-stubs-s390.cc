@@ -4778,8 +4778,10 @@ void ProfileEntryHookStub::MaybeCallEntryHook(MacroAssembler* masm) {
     PredictableCodeSizeScope predictable(masm,
 #if V8_TARGET_ARCH_S390X
                                          48);
-#else
+#elif V8_HOST_ARCH_S390
                                          38);
+#else
+                                         34);
 #endif
     ProfileEntryHookStub stub(masm->isolate());
     __ CleanseP(r14);
