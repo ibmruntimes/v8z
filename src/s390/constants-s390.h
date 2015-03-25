@@ -105,6 +105,8 @@ inline Condition NegateCondition(Condition cond) {
   case gt: return le;
   case le: return gt;
   case lt: return ge;
+  case lt|gt: return eq;
+  case le|ge: return CC_OF;
   case CC_OF: return CC_NOF;
   default:
     DCHECK(false);
