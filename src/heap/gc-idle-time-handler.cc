@@ -258,11 +258,13 @@ GCIdleTimeAction GCIdleTimeHandler::Compute(double idle_time_in_ms,
       return GCIdleTimeAction::FullGC();
     }
   }
-
-  if (heap_state.sweeping_in_progress && heap_state.sweeping_completed) {
-    return GCIdleTimeAction::FinalizeSweeping();
+  if (heap_state.sweeping_in_progress) {
+    if (heap_state.sweeping_completed) {
+      return GCIdleTimeAction::FinalizeSweeping();
+    } else {
+      return NothingOrDone();
+    }
   }
-
   if (heap_state.incremental_marking_stopped &&
       !heap_state.can_start_incremental_marking) {
     return NothingOrDone();

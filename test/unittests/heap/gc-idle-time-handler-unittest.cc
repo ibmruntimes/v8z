@@ -486,6 +486,7 @@ TEST_F(GCIdleTimeHandlerTest, DoneIfNotMakingProgressOnSweeping) {
   heap_state.incremental_marking_stopped = true;
   heap_state.can_start_incremental_marking = false;
   heap_state.sweeping_in_progress = true;
+  heap_state.sweeping_completed = false;
   double idle_time_ms = 10.0;
   for (int i = 0; i < GCIdleTimeHandler::kMaxNoProgressIdleTimesPerIdleRound;
        i++) {
