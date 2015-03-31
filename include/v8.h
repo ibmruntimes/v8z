@@ -5104,6 +5104,7 @@ class V8_EXPORT Isolate {
     kMarkDequeOverflow = 3,
     kStoreBufferOverflow = 4,
     kSlotsBufferOverflow = 5,
+    kObjectObserve = 6,
     kUseCounterFeatureCount  // This enum value must be last.
   };
 
