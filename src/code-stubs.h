@@ -2278,6 +2278,8 @@ class StoreFastElementStub : public HydrogenCodeStub {
                       StoreModeBits::encode(mode));
   }
 
+  static void GenerateAheadOfTime(Isolate* isolate);
+
   bool is_js_array() const { return IsJSArrayBits::decode(sub_minor_key()); }
 
   ElementsKind elements_kind() const {
