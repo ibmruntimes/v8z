@@ -11131,7 +11131,7 @@ void SharedFunctionInfo::ClearTypeFeedbackInfo() {
 
 
 void SharedFunctionInfo::ClearTypeFeedbackInfoAtGCTime() {
-  feedback_vector()->ClearSlots(this);
+  feedback_vector()->ClearSlotsAtGCTime(this);
   feedback_vector()->ClearICSlotsAtGCTime(this);
 }
 
