@@ -7543,12 +7543,6 @@ const CpuProfileNode* CpuProfileNode::GetChild(int index) const {
 }
 
 
-const std::vector<CpuProfileDeoptInfo>& CpuProfileNode::GetDeoptInfos() const {
-  const i::ProfileNode* node = reinterpret_cast<const i::ProfileNode*>(this);
-  return node->deopt_infos();
-}
-
-
 void CpuProfile::Delete() {
   i::Isolate* isolate = i::Isolate::Current();
   i::CpuProfiler* profiler = isolate->cpu_profiler();
