@@ -4224,6 +4224,11 @@ bool HOptimizedGraphBuilder::BuildGraph() {
     return false;
   }
 
+  if (current_info()->scope()->is_script_scope()) {
+    Bailout(kScriptContext);
+    return false;
+  }
+
   Scope* scope = current_info()->scope();
   SetUpScope(scope);
 
@@ -11436,7 +11441,7 @@ void HOptimizedGraphBuilder::VisitFunctionDeclaration(
 
 void HOptimizedGraphBuilder::VisitModuleDeclaration(
     ModuleDeclaration* declaration) {
-  UNREACHABLE();
+  return Bailout(kModuleDeclaration);
 }
 
 
