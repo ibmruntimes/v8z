@@ -58,17 +58,17 @@ namespace compiler {
   V(PPC_Mod64)                     \
   V(PPC_ModU32)                    \
   V(PPC_ModU64)                    \
-  V(PPC_ModFloat64)                \
-  V(PPC_Neg32)                     \
-  V(PPC_Neg64)                     \
-  V(PPC_NegFloat64)                \
-  V(PPC_SqrtFloat64)               \
-  V(PPC_FloorFloat64)              \
-  V(PPC_CeilFloat64)               \
-  V(PPC_TruncateFloat64)           \
-  V(PPC_RoundFloat64)              \
-  V(PPC_MaxFloat64)                \
-  V(PPC_MinFloat64)                \
+  V(PPC_ModDouble)                 \
+  V(PPC_Neg)                       \
+  V(PPC_NegDouble)                 \
+  V(PPC_SqrtDouble)                \
+  V(PPC_FloorDouble)               \
+  V(PPC_CeilDouble)                \
+  V(PPC_TruncateDouble)            \
+  V(PPC_RoundDouble)               \
+  V(PPC_MaxDouble)                 \
+  V(PPC_MinDouble)                 \
+  V(PPC_AbsDouble)                 \
   V(PPC_Cntlz32)                   \
   V(PPC_Cmp32)                     \
   V(PPC_Cmp64)                     \

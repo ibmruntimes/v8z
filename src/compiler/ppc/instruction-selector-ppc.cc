@@ -995,10 +995,14 @@ void InstructionSelector::VisitFloat64Min(Node* node) {
 }
 
 
-void InstructionSelector::VisitFloat32Abs(Node* node) { UNREACHABLE(); }
+void InstructionSelector::VisitFloat32Abs(Node* node) {
+  VisitRR(this, kPPC_AbsDouble, node);
+}
 
 
-void InstructionSelector::VisitFloat64Abs(Node* node) { UNREACHABLE(); }
+void InstructionSelector::VisitFloat64Abs(Node* node) {
+  VisitRR(this, kPPC_AbsDouble, node);
+}
 
 
 void InstructionSelector::VisitFloat32Sqrt(Node* node) {
@@ -1494,7 +1498,11 @@ void InstructionSelector::VisitFloat64InsertHighWord32(Node* node) {
 // static
 MachineOperatorBuilder::Flags
 InstructionSelector::SupportedMachineOperatorFlags() {
-  return MachineOperatorBuilder::kFloat64Max |
+  return MachineOperatorBuilder::kFloat32Abs |
+         MachineOperatorBuilder::kFloat32Max |
+         MachineOperatorBuilder::kFloat32Min |
+         MachineOperatorBuilder::kFloat64Abs |
+         MachineOperatorBuilder::kFloat64Max |
          MachineOperatorBuilder::kFloat64Min |
          MachineOperatorBuilder::kFloat64RoundDown |
          MachineOperatorBuilder::kFloat64RoundTruncate |

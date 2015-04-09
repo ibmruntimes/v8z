@@ -822,7 +822,10 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     case kPPC_MinFloat64:
       ASSEMBLE_FLOAT_MIN(kScratchDoubleReg);
       break;
-    case kPPC_SqrtFloat64:
+    case kPPC_AbsDouble:
+      ASSEMBLE_FLOAT_UNOP_RC(fabs);
+      break;
+    case kPPC_SqrtDouble:
       ASSEMBLE_FLOAT_UNOP_RC(fsqrt);
       break;
     case kPPC_FloorFloat64:
