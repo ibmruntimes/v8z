@@ -657,6 +657,12 @@ class ELF BASE_EMBEDDED {
 #elif V8_TARGET_ARCH_X64 && V8_TARGET_ARCH_64_BIT
     const uint8_t ident[16] =
         { 0x7f, 'E', 'L', 'F', 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+#elif defined(V8_TARGET_ARCH_S390) && V8_TARGET_ARCH_32_BIT
+    const uint8_t ident[16] =
+        { 0x7f, 'E', 'L', 'F', 1, 2, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0};
+#elif defined(V8_TARGET_ARCH_S390X)
+     const uint8_t ident[16] =
+        { 0x7f, 'E', 'L', 'F', 2, 2, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0};
 #else
 #error Unsupported target architecture.
 #endif
@@ -673,6 +679,11 @@ class ELF BASE_EMBEDDED {
     // Set to EM_ARM, defined as 40, in "ARM ELF File Format" at
     // infocenter.arm.com/help/topic/com.arm.doc.dui0101a/DUI0101A_Elf.pdf
     header->machine = 40;
+#elif V8_TARGET_ARCH_S390
+    // Processor identification value is 22 as defined in the System Z ABI,
+    // under Object Files, ELF Header:
+    // http://refspecs.linuxbase.org/ELF/zSeries/lzsabi0_zSeries.html#AEN1597
+    header->machine = 22;
 #else
 #error Unsupported target architecture.
 #endif
@@ -765,7 +776,8 @@ class ELFSymbol BASE_EMBEDDED {
     return static_cast<Binding>(info >> 4);
   }
 #if (V8_TARGET_ARCH_IA32 || V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_X87 || \
-     (V8_TARGET_ARCH_X64 && V8_TARGET_ARCH_32_BIT))
+     (V8_TARGET_ARCH_X64 && V8_TARGET_ARCH_32_BIT) || \
+     (V8_TARGET_ARCH_S390 && V8_TARGET_ARCH_32_BIT))
   struct SerializedLayout {
     SerializedLayout(uint32_t name,
                      uintptr_t value,
@@ -788,7 +800,8 @@ class ELFSymbol BASE_EMBEDDED {
     uint8_t other;
     uint16_t section;
   };
-#elif V8_TARGET_ARCH_X64 && V8_TARGET_ARCH_64_BIT
+#elif V8_TARGET_ARCH_X64 && V8_TARGET_ARCH_64_BIT || \
+      V8_TARGET_ARCH_S390X
   struct SerializedLayout {
     SerializedLayout(uint32_t name,
                      uintptr_t value,
@@ -1072,6 +1085,10 @@ class DebugInfoSection : public DebugSection {
     DW_OP_reg5 = 0x55,
     DW_OP_reg6 = 0x56,
     DW_OP_reg7 = 0x57,
+    DW_OP_reg8 = 0x58,
+    DW_OP_reg9 = 0x59,
+    DW_OP_reg10 = 0x5a,
+    DW_OP_reg11 = 0x5b,
     DW_OP_fbreg = 0x91  // 1 param: SLEB128 offset
   };
 
@@ -1117,6 +1134,8 @@ class DebugInfoSection : public DebugSection {
       UNIMPLEMENTED();
 #elif V8_TARGET_ARCH_MIPS64
       UNIMPLEMENTED();
+#elif V8_TARGET_ARCH_S390
+      w->Write<uint8_t>(DW_OP_reg11);  // The frame pointer's here on s390
 #else
 #error Unsupported target architecture.
 #endif
