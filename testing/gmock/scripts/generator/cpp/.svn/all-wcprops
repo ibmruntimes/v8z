@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/470/trunk/scripts/generator/cpp
+END
+tokenize.py
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/34/trunk/scripts/generator/cpp/tokenize.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/34/trunk/scripts/generator/cpp/__init__.py
+END
+utils.py
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/34/trunk/scripts/generator/cpp/utils.py
+END
+gmock_class_test.py
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/!svn/ver/470/trunk/scripts/generator/cpp/gmock_class_test.py
+END
+gmock_class.py
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/!svn/ver/470/trunk/scripts/generator/cpp/gmock_class.py
+END
+ast.py
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/470/trunk/scripts/generator/cpp/ast.py
+END
+keywords.py
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/150/trunk/scripts/generator/cpp/keywords.py
+END

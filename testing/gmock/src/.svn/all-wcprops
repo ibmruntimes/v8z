@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 27
+/svn/!svn/ver/471/trunk/src
+END
+gmock-spec-builders.cc
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/467/trunk/src/gmock-spec-builders.cc
+END
+gmock.cc
+K 25
+svn:wc:ra_dav:version-url
+V 36
+/svn/!svn/ver/410/trunk/src/gmock.cc
+END
+gmock_main.cc
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/391/trunk/src/gmock_main.cc
+END
+gmock-matchers.cc
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/471/trunk/src/gmock-matchers.cc
+END
+gmock-all.cc
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/svn/!svn/ver/320/trunk/src/gmock-all.cc
+END
+gmock-internal-utils.cc
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/407/trunk/src/gmock-internal-utils.cc
+END
+gmock-cardinalities.cc
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/405/trunk/src/gmock-cardinalities.cc
+END
