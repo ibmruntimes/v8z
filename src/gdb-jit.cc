@@ -55,6 +55,7 @@ class Writer BASE_EMBEDDED {
   class Slot {
    public:
     Slot(Writer* w, uintptr_t offset) : w_(w), offset_(offset) { }
+    Slot() { }
 
     T* operator-> () {
       return w_->RawSlotAt<T>(offset_);
@@ -78,6 +79,12 @@ class Writer BASE_EMBEDDED {
     Ensure(position_ + sizeof(T));
     *RawSlotAt<T>(position_) = val;
     position_ += sizeof(T);
+  }
+
+  void WriteChunk(const byte* source, uint32_t size) {
+    Ensure(position_ + size);
+    memcpy(RawSlotAt(position_, size), source, static_cast<size_t>(size));
+    position_ += size;
   }
 
   template<typename T>
@@ -157,6 +164,11 @@ class Writer BASE_EMBEDDED {
   T* RawSlotAt(uintptr_t offset) {
     DCHECK(offset < capacity_ && offset + sizeof(T) <= capacity_);
     return reinterpret_cast<T*>(&buffer_[offset]);
+  }
+
+  void* RawSlotAt(uintptr_t offset, uint32_t size) {
+    DCHECK(offset < capacity_ && offset + size <= capacity_);
+    return reinterpret_cast<void*>(&buffer_[offset]);
   }
 
   DebugObject* debug_object_;
@@ -333,6 +345,7 @@ class ELFSection : public DebugSectionBase<ELFSectionHeader> {
 
   uint16_t index() const { return index_; }
   void set_index(uint16_t index) { index_ = index; }
+  const char* getName() { return name_; }
 
  protected:
   virtual void PopulateHeader(Writer::Slot<Header> header) {
@@ -399,6 +412,26 @@ class FullHeaderELFSection : public ELFSection {
         size_(size),
         flags_(flags) { }
 
+  bool WriteBodyInternal(Writer* w) {
+    byte* pc = reinterpret_cast<byte*>(addr_);
+    uintptr_t start = w->position();
+    w->WriteChunk(pc, size_);
+    offset_ = start;
+    return true;
+  }
+
+  uintptr_t getAddress() {
+    return addr_;
+  }
+
+  uintptr_t getSize() {
+    return size_;
+  }
+
+  uintptr_t getOffset() {
+    return offset_;
+  }
+
  protected:
   virtual void PopulateHeader(Writer::Slot<Header> header) {
     ELFSection::PopulateHeader(header);
@@ -446,6 +479,10 @@ class ELFStringTable : public ELFSection {
     DCHECK(writer_ == NULL);
     header->offset = offset_;
     header->size = size_;
+  }
+
+  uintptr_t getSize() {
+    return size_;
   }
 
  private:
@@ -615,6 +652,7 @@ class ELF BASE_EMBEDDED {
   void Write(Writer* w) {
     WriteHeader(w);
     WriteSectionTable(w);
+    WriteProgramHeader(w);
     WriteSections(w);
   }
 
@@ -649,7 +687,7 @@ class ELF BASE_EMBEDDED {
 
   void WriteHeader(Writer* w) {
     DCHECK(w->position() == 0);
-    Writer::Slot<ELFHeader> header = w->CreateSlotHere<ELFHeader>();
+    header_ = w->CreateSlotHere<ELFHeader>();
 #if (V8_TARGET_ARCH_IA32 || V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_X87 || \
      (V8_TARGET_ARCH_X64 && V8_TARGET_ARCH_32_BIT))
     const uint8_t ident[16] =
@@ -666,38 +704,94 @@ class ELF BASE_EMBEDDED {
 #else
 #error Unsupported target architecture.
 #endif
-    memcpy(header->ident, ident, 16);
-    header->type = 1;
+    memcpy(header_->ident, ident, 16);
+    header_->type = 2; //Executable file
 #if V8_TARGET_ARCH_IA32 || V8_TARGET_ARCH_X87
-    header->machine = 3;
+    header_->machine = 3;
 #elif V8_TARGET_ARCH_X64
     // Processor identification value for x64 is 62 as defined in
     //    System V ABI, AMD64 Supplement
     //    http://www.x86-64.org/documentation/abi.pdf
-    header->machine = 62;
+    header_->machine = 62;
 #elif V8_TARGET_ARCH_ARM
     // Set to EM_ARM, defined as 40, in "ARM ELF File Format" at
     // infocenter.arm.com/help/topic/com.arm.doc.dui0101a/DUI0101A_Elf.pdf
-    header->machine = 40;
+    header_->machine = 40;
 #elif V8_TARGET_ARCH_S390
     // Processor identification value is 22 as defined in the System Z ABI,
     // under Object Files, ELF Header:
     // http://refspecs.linuxbase.org/ELF/zSeries/lzsabi0_zSeries.html#AEN1597
-    header->machine = 22;
+    header_->machine = 22;
 #else
 #error Unsupported target architecture.
 #endif
-    header->version = 1;
-    header->entry = 0;
-    header->pht_offset = 0;
-    header->sht_offset = sizeof(ELFHeader);  // Section table follows header.
-    header->flags = 0;
-    header->header_size = sizeof(ELFHeader);
-    header->pht_entry_size = 0;
-    header->pht_entry_num = 0;
-    header->sht_entry_size = sizeof(ELFSection::Header);
-    header->sht_entry_num = sections_.length();
-    header->sht_strtab_index = 1;
+    header_->version = 1;
+    // Should be the code section
+    FullHeaderELFSection* text = static_cast<FullHeaderELFSection*>(SectionAt(2));
+    DCHECK(strcmp(text->getName(), ".text") == 0);
+    header_->entry = text->getAddress();
+    header_->sht_offset = sizeof(ELFHeader);  // Section table follows header.
+    header_->flags = 0;
+    header_->header_size = sizeof(ELFHeader);
+    header_->pht_entry_size = sizeof(ProgramHeader);
+    header_->pht_entry_num = 1;
+    header_->sht_entry_size = sizeof(ELFSection::Header);
+    header_->sht_entry_num = sections_.length();
+    header_->sht_strtab_index = 1;
+  }
+
+#if V8_TARGET_ARCH_32_BIT
+  struct ProgramHeader {
+    uint32_t p_type;
+    uintptr_t p_offset;
+    uintptr_t p_vaddr;
+    uintptr_t p_paddr;
+    uintptr_t p_filesz;
+    uintptr_t p_memsz;
+    uint32_t p_flags;
+    uintptr_t p_align;
+  };
+#else
+  struct ProgramHeader {
+    uint32_t p_type;
+    uint32_t p_flags;
+    uintptr_t p_offset;
+    uintptr_t p_vaddr;
+    uintptr_t p_paddr;
+    uintptr_t p_filesz;
+    uintptr_t p_memsz;
+    uintptr_t p_align;
+  };
+#endif
+
+  enum ProgramFlags {
+    PF_X = 0x1, // Execute
+    PF_W = 0x2, // Write
+    PF_R = 0x4 // Read
+  };
+
+  void WriteProgramHeader(Writer* w) {
+    // Section headers table immediately follows file header.
+    DCHECK(w->position() == ProgramHeaderOffset());
+    header_->pht_offset = ProgramHeaderOffset();
+    program_ = w->CreateSlotHere<ProgramHeader>();
+    program_->p_type = 1;
+    // Should be the code section
+    FullHeaderELFSection* text = static_cast<FullHeaderELFSection*>(SectionAt(2));
+    DCHECK(strcmp(text->getName(), ".text") == 0);
+    program_->p_vaddr = text->getAddress();
+    program_->p_paddr = text->getAddress();
+    program_->p_filesz = text->getSize();
+    program_->p_memsz = text->getSize();
+    program_->p_flags = PF_X | PF_R;
+    program_->p_align = 0x1000;
+  }
+
+  uintptr_t ProgramHeaderOffset() {
+    ELFStringTable* strtab = static_cast<ELFStringTable*>(SectionAt(1));
+    return (sizeof(ELFHeader)
+        + sizeof(ELFSection::Header) * sections_.length()
+        + strtab->getSize());
   }
 
   void WriteSectionTable(Writer* w) {
@@ -731,10 +825,15 @@ class ELF BASE_EMBEDDED {
          i++) {
       sections_[i]->WriteBody(headers.at(i), w);
     }
+    FullHeaderELFSection* text = static_cast<FullHeaderELFSection*>(SectionAt(2));
+    DCHECK(strcmp(text->getName(), ".text") == 0);
+    program_->p_offset =text->getOffset();
   }
 
   Zone* zone_;
   ZoneList<ELFSection*> sections_;
+  Writer::Slot<ProgramHeader> program_;
+  Writer::Slot<ELFHeader> header_;
 };
 
 
@@ -987,7 +1086,12 @@ class CodeDescription BASE_EMBEDDED {
   }
 
   uintptr_t CodeSize() const {
-    return CodeEnd() - CodeStart();
+    if (code_->is_crankshafted()) {
+      SafepointTable table(code_);
+      return code_->instruction_size() - table.size();
+    } else {
+      return code_->instruction_size();
+    }
   }
 
   bool IsLineInfoAvailable() {
@@ -1052,7 +1156,7 @@ static void CreateSymbolsTable(CodeDescription* desc,
               zone);
 
   symtab->Add(ELFSymbol(desc->name(),
-                        0,
+                        desc->CodeStart(),
                         desc->CodeSize(),
                         ELFSymbol::BIND_GLOBAL,
                         ELFSymbol::TYPE_FUNC,
@@ -1960,7 +2064,7 @@ static JITCodeEntry* CreateELFObject(CodeDescription* desc, Isolate* isolate) {
   int text_section_index = elf.AddSection(
       new(&zone) FullHeaderELFSection(
           ".text",
-          ELFSection::TYPE_NOBITS,
+          ELFSection::TYPE_PROGBITS,
           kCodeAlignment,
           desc->CodeStart(),
           0,
