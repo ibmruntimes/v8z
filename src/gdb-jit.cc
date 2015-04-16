@@ -1998,7 +1998,7 @@ static void DestroyCodeEntry(JITCodeEntry* entry) {
 static void RegisterCodeEntry(JITCodeEntry* entry,
                               bool dump_if_enabled,
                               const char* name_hint) {
-#if defined(DEBUG) && !V8_OS_WIN
+#if !V8_OS_WIN
   static int file_num = 0;
   if (FLAG_gdbjit_dump && dump_if_enabled) {
     static const int kMaxFileNameSize = 64;
