@@ -2533,7 +2533,8 @@ class FixedArray: public FixedArrayBase {
   class BodyDescriptor : public FlexibleBodyDescriptor<kHeaderSize> {
    public:
     static inline int SizeOf(Map* map, HeapObject* object) {
-      return SizeFor(reinterpret_cast<FixedArray*>(object)->length());
+      return SizeFor(
+          reinterpret_cast<FixedArray*>(object)->synchronized_length());
     }
   };
 
