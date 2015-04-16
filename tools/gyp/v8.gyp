@@ -1729,6 +1729,8 @@
       ],
       'variables': {
         'library_files': [
+          '../../src/macros.py',
+          '../../src/messages.h',
           '../../src/runtime.js',
           '../../src/v8natives.js',
           '../../src/symbol.js',
@@ -1755,10 +1757,10 @@
           '../../src/mirror-debugger.js',
           '../../src/liveedit-debugger.js',
           '../../src/templates.js',
-          '../../src/macros.py',
         ],
         'experimental_library_files': [
           '../../src/macros.py',
+          '../../src/messages.h',
           '../../src/proxy.js',
           '../../src/generator.js',
           '../../src/harmony-array.js',
