@@ -8,9 +8,9 @@
 #ifndef V8_PPC_MACRO_ASSEMBLER_PPC_H_
 #define V8_PPC_MACRO_ASSEMBLER_PPC_H_
 
-#include "assembler.h"
-#include "frames.h"
-#include "v8globals.h"
+#include "src/assembler.h"
+#include "src/frames.h"
+#include "src/globals.h"
 
 namespace v8 {
 namespace internal {
@@ -35,6 +35,10 @@ enum TaggingMode {
 
 enum RememberedSetAction { EMIT_REMEMBERED_SET, OMIT_REMEMBERED_SET };
 enum SmiCheck { INLINE_SMI_CHECK, OMIT_SMI_CHECK };
+enum PointersToHereCheck {
+  kPointersToHereMaybeInteresting,
+  kPointersToHereAreAlwaysInteresting
+};
 enum LinkRegisterStatus { kLRHasNotBeenSaved, kLRHasBeenSaved };
 
 
@@ -52,7 +56,9 @@ bool AreAliased(Register reg1,
                 Register reg3 = no_reg,
                 Register reg4 = no_reg,
                 Register reg5 = no_reg,
-                Register reg6 = no_reg);
+                Register reg6 = no_reg,
+                Register reg7 = no_reg,
+                Register reg8 = no_reg);
 #endif
 
 // These exist to provide portability between 32 and 64bit
@@ -102,17 +108,24 @@ class MacroAssembler: public Assembler {
   // macro assembler.
   MacroAssembler(Isolate* isolate, void* buffer, int size);
 
-  // Jump, Call, and Ret pseudo instructions implementing inter-working.
-  void Jump(Register target, Condition cond = al);
-  void Jump(Address target, RelocInfo::Mode rmode, Condition cond = al,
-            CRegister cr = cr7);
-  void Jump(Handle<Code> code, RelocInfo::Mode rmode, Condition cond = al);
-  static int CallSize(Register target, Condition cond = al);
-  void Call(Register target, Condition cond = al);
+
+  // Returns the size of a call in instructions. Note, the value returned is
+  // only valid as long as no entries are added to the constant pool between
+  // checking the call size and emitting the actual call.
+  static int CallSize(Register target);
   int CallSize(Address target, RelocInfo::Mode rmode, Condition cond = al);
   static int CallSizeNotPredictableCodeSize(Address target,
                                             RelocInfo::Mode rmode,
                                             Condition cond = al);
+
+  // Jump, Call, and Ret pseudo instructions implementing inter-working.
+  void Jump(Register target);
+  void JumpToJSEntry(Register target);
+  void Jump(Address target, RelocInfo::Mode rmode, Condition cond = al,
+            CRegister cr = cr7);
+  void Jump(Handle<Code> code, RelocInfo::Mode rmode, Condition cond = al);
+  void Call(Register target);
+  void CallJSEntry(Register target);
   void Call(Address target, RelocInfo::Mode rmode, Condition cond = al);
   int CallSize(Handle<Code> code,
                RelocInfo::Mode rmode = RelocInfo::CODE_TARGET,
@@ -245,7 +258,9 @@ class MacroAssembler: public Assembler {
       LinkRegisterStatus lr_status,
       SaveFPRegsMode save_fp,
       RememberedSetAction remembered_set_action = EMIT_REMEMBERED_SET,
-      SmiCheck smi_check = INLINE_SMI_CHECK);
+      SmiCheck smi_check = INLINE_SMI_CHECK,
+      PointersToHereCheck pointers_to_here_check_for_value =
+          kPointersToHereMaybeInteresting);
 
   // As above, but the offset has the tag presubtracted.  For use with
   // MemOperand(reg, off).
@@ -257,7 +272,9 @@ class MacroAssembler: public Assembler {
       LinkRegisterStatus lr_status,
       SaveFPRegsMode save_fp,
       RememberedSetAction remembered_set_action = EMIT_REMEMBERED_SET,
-      SmiCheck smi_check = INLINE_SMI_CHECK) {
+      SmiCheck smi_check = INLINE_SMI_CHECK,
+      PointersToHereCheck pointers_to_here_check_for_value =
+          kPointersToHereMaybeInteresting) {
     RecordWriteField(context,
                      offset + kHeapObjectTag,
                      value,
@@ -265,8 +282,16 @@ class MacroAssembler: public Assembler {
                      lr_status,
                      save_fp,
                      remembered_set_action,
-                     smi_check);
+                     smi_check,
+                     pointers_to_here_check_for_value);
   }
+
+  void RecordWriteForMap(
+      Register object,
+      Register map,
+      Register dst,
+      LinkRegisterStatus lr_status,
+      SaveFPRegsMode save_fp);
 
   // For a given |object| notify the garbage collector that the slot |address|
   // has been written.  |value| is the object being stored. The value and
@@ -278,7 +303,9 @@ class MacroAssembler: public Assembler {
       LinkRegisterStatus lr_status,
       SaveFPRegsMode save_fp,
       RememberedSetAction remembered_set_action = EMIT_REMEMBERED_SET,
-      SmiCheck smi_check = INLINE_SMI_CHECK);
+      SmiCheck smi_check = INLINE_SMI_CHECK,
+      PointersToHereCheck pointers_to_here_check_for_value =
+          kPointersToHereMaybeInteresting);
 
   void Push(Register src) { push(src); }
 
@@ -288,15 +315,15 @@ class MacroAssembler: public Assembler {
 
   // Push two registers.  Pushes leftmost register first (to highest address).
   void Push(Register src1, Register src2) {
-    StorePU(src1, MemOperand(sp, -kPointerSize));
-    StorePU(src2, MemOperand(sp, -kPointerSize));
+    StorePU(src2, MemOperand(sp, -2 * kPointerSize));
+    StoreP(src1, MemOperand(sp, kPointerSize));
   }
 
   // Push three registers.  Pushes leftmost register first (to highest address).
   void Push(Register src1, Register src2, Register src3) {
-    StorePU(src1, MemOperand(sp, -kPointerSize));
-    StorePU(src2, MemOperand(sp, -kPointerSize));
-    StorePU(src3, MemOperand(sp, -kPointerSize));
+    StorePU(src3, MemOperand(sp, -3 * kPointerSize));
+    StoreP(src2, MemOperand(sp, kPointerSize));
+    StoreP(src1, MemOperand(sp, 2 * kPointerSize));
   }
 
   // Push four registers.  Pushes leftmost register first (to highest address).
@@ -304,10 +331,10 @@ class MacroAssembler: public Assembler {
             Register src2,
             Register src3,
             Register src4) {
-    StorePU(src1, MemOperand(sp, -kPointerSize));
-    StorePU(src2, MemOperand(sp, -kPointerSize));
-    StorePU(src3, MemOperand(sp, -kPointerSize));
-    StorePU(src4, MemOperand(sp, -kPointerSize));
+    StorePU(src4, MemOperand(sp, -4 * kPointerSize));
+    StoreP(src3, MemOperand(sp, kPointerSize));
+    StoreP(src2, MemOperand(sp, 2 * kPointerSize));
+    StoreP(src1, MemOperand(sp, 3 * kPointerSize));
   }
 
   // Push five registers.  Pushes leftmost register first (to highest address).
@@ -316,11 +343,11 @@ class MacroAssembler: public Assembler {
             Register src3,
             Register src4,
             Register src5) {
-    StorePU(src1, MemOperand(sp, -kPointerSize));
-    StorePU(src2, MemOperand(sp, -kPointerSize));
-    StorePU(src3, MemOperand(sp, -kPointerSize));
-    StorePU(src4, MemOperand(sp, -kPointerSize));
-    StorePU(src5, MemOperand(sp, -kPointerSize));
+    StorePU(src5, MemOperand(sp, -5 * kPointerSize));
+    StoreP(src4, MemOperand(sp, kPointerSize));
+    StoreP(src3, MemOperand(sp, 2 * kPointerSize));
+    StoreP(src2, MemOperand(sp, 3 * kPointerSize));
+    StoreP(src1, MemOperand(sp, 4 * kPointerSize));
   }
 
   void Pop(Register dst) { pop(dst); }
@@ -375,9 +402,6 @@ class MacroAssembler: public Assembler {
   // RegList constant kSafepointSavedRegisters.
   void PushSafepointRegisters();
   void PopSafepointRegisters();
-  void PushSafepointRegistersAndDoubles();
-  void PopSafepointRegistersAndDoubles();
-
   // Store value in register src in the safepoint stack slot for
   // register dst.
   void StoreToSafepointRegisterSlot(Register src, Register dst);
@@ -385,7 +409,8 @@ class MacroAssembler: public Assembler {
   // into register dst.
   void LoadFromSafepointRegisterSlot(Register dst, Register src);
 
-  // Flush the I-cache from asm code. You should use CPU::FlushICache from C.
+  // Flush the I-cache from asm code. You should use CpuFeatures::FlushICache
+  // from C.
   // Does not handle errors.
   void FlushICache(Register address, size_t size,
                    Register scratch);
@@ -417,15 +442,16 @@ class MacroAssembler: public Assembler {
   // Converts the double_input to an integer.  Note that, upon return,
   // the contents of double_dst will also hold the fixed point representation.
   void ConvertDoubleToInt64(const DoubleRegister double_input,
-                            const Register dst,
 #if !V8_TARGET_ARCH_PPC64
                             const Register dst_hi,
 #endif
+                            const Register dst,
                             const DoubleRegister double_dst,
                             FPRoundingMode rounding_mode = kRoundToZero);
 
   // Generates function and stub prologue code.
-  void Prologue(PrologueFrameMode frame_mode);
+  void StubPrologue(int prologue_offset = 0);
+  void Prologue(bool code_pre_aging, int prologue_offset = 0);
 
   // Enter exit frame.
   // stack_space - extra stack space, used for alignment before call to C.
@@ -485,49 +511,74 @@ class MacroAssembler: public Assembler {
 
   void LoadWord(Register dst,
                 const MemOperand& mem,
-                Register scratch,
-                bool updateForm = false);
-
+                Register scratch);
   void LoadWordArith(Register dst,
                      const MemOperand& mem,
                      Register scratch = no_reg);
 
   void StoreWord(Register src,
                  const MemOperand& mem,
-                 Register scratch,
-                 bool updateForm = false);
-
+                 Register scratch);
   void LoadHalfWord(Register dst,
                     const MemOperand& mem,
-                    Register scratch,
-                    bool updateForm = false);
+                    Register scratch);
 
+  void LoadHalfWordArith(Register dst,
+                         const MemOperand& mem,
+                         Register scratch = no_reg);
   void StoreHalfWord(Register src,
                      const MemOperand& mem,
-                     Register scratch,
-                     bool updateForm = false);
+                     Register scratch);
 
   void LoadByte(Register dst,
                 const MemOperand& mem,
-                Register scratch,
-                bool updateForm = false);
-
+                Register scratch);
   void StoreByte(Register src,
                  const MemOperand& mem,
-                 Register scratch,
-                 bool updateForm = false);
+                 Register scratch);
 
   void LoadRepresentation(Register dst,
                           const MemOperand& mem,
                           Representation r,
                           Register scratch = no_reg);
-
   void StoreRepresentation(Register src,
                            const MemOperand& mem,
                            Representation r,
                            Register scratch = no_reg);
 
+  void LoadDouble(DoubleRegister dst, const MemOperand& mem,
+                  Register scratch);
+  void StoreDouble(DoubleRegister src, const MemOperand& mem,
+                   Register scratch);
 
+  // Move values between integer and floating point registers.
+  void MovIntToDouble(DoubleRegister dst,
+                      Register src,
+                      Register scratch);
+  void MovUnsignedIntToDouble(DoubleRegister dst,
+                              Register src,
+                              Register scratch);
+  void MovInt64ToDouble(DoubleRegister dst,
+#if !V8_TARGET_ARCH_PPC64
+                        Register src_hi,
+#endif
+                        Register src);
+#if V8_TARGET_ARCH_PPC64
+  void MovInt64ComponentsToDouble(DoubleRegister dst,
+                                  Register src_hi,
+                                  Register src_lo,
+                                  Register scratch);
+#endif
+  void MovDoubleLowToInt(Register dst,
+                         DoubleRegister src);
+  void MovDoubleHighToInt(Register dst,
+                          DoubleRegister src);
+  void MovDoubleToInt64(
+#if !V8_TARGET_ARCH_PPC64
+                        Register dst_hi,
+#endif
+                        Register dst,
+                        DoubleRegister src);
 
   void Add(Register dst, Register src, intptr_t value, Register scratch);
   void Cmpi(Register src1, const Operand& src2, Register scratch,
@@ -629,12 +680,6 @@ class MacroAssembler: public Assembler {
   // handler chain.
   void ThrowUncatchable(Register value);
 
-  // Throw a message string as an exception.
-  void Throw(BailoutReason reason);
-
-  // Throw a message string as an exception if a condition is not true.
-  void ThrowIf(Condition cond, BailoutReason reason, CRegister cr = cr7);
-
   // ---------------------------------------------------------------------------
   // Inline caching support
 
@@ -665,7 +710,7 @@ class MacroAssembler: public Assembler {
   // These instructions are generated to mark special location in the code,
   // like some special IC code.
   static inline bool IsMarkedCode(Instr instr, int type) {
-    ASSERT((FIRST_IC_MARKER <= type) && (type < LAST_CODE_MARKER));
+    DCHECK((FIRST_IC_MARKER <= type) && (type < LAST_CODE_MARKER));
     return IsNop(instr, type);
   }
 
@@ -685,7 +730,7 @@ class MacroAssembler: public Assembler {
                (FIRST_IC_MARKER <= dst_reg) && (dst_reg < LAST_CODE_MARKER)
                    ? src_reg
                    : -1;
-    ASSERT((type == -1) ||
+    DCHECK((type == -1) ||
            ((FIRST_IC_MARKER <= type) && (type < LAST_CODE_MARKER)));
     return type;
   }
@@ -763,7 +808,8 @@ class MacroAssembler: public Assembler {
                           Register scratch2,
                           Register heap_number_map,
                           Label* gc_required,
-                          TaggingMode tagging_mode = TAG_RESULT);
+                          TaggingMode tagging_mode = TAG_RESULT,
+                          MutableMode mode = IMMUTABLE);
   void AllocateHeapNumberWithValue(Register result,
                                    DoubleRegister value,
                                    Register scratch1,
@@ -781,6 +827,14 @@ class MacroAssembler: public Assembler {
                  Register dst,
                  Register length,
                  Register scratch);
+
+  // Initialize fields with filler values.  |count| fields starting at
+  // |start_offset| are overwritten with the value in |filler|.  At the end the
+  // loop, |start_offset| points at the next uninitialized field.  |count| is
+  // assumed to be non-zero.
+  void InitializeNFieldsWithFiller(Register start_offset,
+                                   Register count,
+                                   Register filler);
 
   // Initialize fields with filler values.  Fields starting at |start_offset|
   // not including end_offset are overwritten with the value in |filler|.  At
@@ -918,14 +972,10 @@ class MacroAssembler: public Assembler {
     LoadP(type, FieldMemOperand(obj, HeapObject::kMapOffset));
     lbz(type, FieldMemOperand(type, Map::kInstanceTypeOffset));
     andi(r0, type, Operand(kIsNotStringMask));
-    ASSERT_EQ(0, kStringTag);
+    DCHECK_EQ(0, kStringTag);
     return eq;
   }
 
-
-  // Generates code for reporting that an illegal operation has
-  // occurred.
-  void IllegalOperation(int num_arguments);
 
   // Picks out an array index from the hash field.
   // Register use:
@@ -1006,6 +1056,11 @@ class MacroAssembler: public Assembler {
   void AddAndCheckForOverflow(Register dst,
                               Register left,
                               Register right,
+                              Register overflow_dst,
+                              Register scratch = r0);
+  void AddAndCheckForOverflow(Register dst,
+                              Register left,
+                              intptr_t right,
                               Register overflow_dst,
                               Register scratch = r0);
 
@@ -1162,7 +1217,7 @@ class MacroAssembler: public Assembler {
   void GetBuiltinFunction(Register target, Builtins::JavaScript id);
 
   Handle<Object> CodeObject() {
-    ASSERT(!code_object_.is_null());
+    DCHECK(!code_object_.is_null());
     return code_object_;
   }
 
@@ -1235,7 +1290,7 @@ class MacroAssembler: public Assembler {
   inline void ExtractBitRange(Register dst, Register src,
                               int rangeStart, int rangeEnd,
                               RCBit rc = LeaveRC) {
-    ASSERT(rangeStart >= rangeEnd && rangeStart < kBitsPerPointer);
+    DCHECK(rangeStart >= rangeEnd && rangeStart < kBitsPerPointer);
     int rotate = (rangeEnd == 0) ? 0 : kBitsPerPointer - rangeEnd;
     int width  = rangeStart - rangeEnd + 1;
 #if V8_TARGET_ARCH_PPC64
@@ -1271,7 +1326,7 @@ class MacroAssembler: public Assembler {
     }
 
     // 1-bits in mask must be contiguous
-    ASSERT(bit == 0 || (mask & ((bit << 1) - 1)) == 0);
+    DCHECK(bit == 0 || (mask & ((bit << 1) - 1)) == 0);
 
     ExtractBitRange(dst, src, start, end, rc);
   }
@@ -1300,7 +1355,7 @@ class MacroAssembler: public Assembler {
   // ---------------------------------------------------------------------------
   // Smi utilities
 
-  // Shift left by 1
+  // Shift left by kSmiShift
   void SmiTag(Register reg, RCBit rc = LeaveRC) {
     SmiTag(reg, reg, rc);
   }
@@ -1316,6 +1371,7 @@ class MacroAssembler: public Assembler {
   inline void JumpIfNotSmiCandidate(Register value, Register scratch,
                                     Label* not_smi_label) {
     // High bits must be identical to fit into an Smi
+    STATIC_ASSERT(kSmiShift == 1);
     addis(scratch, value, Operand(0x40000000u >> 16));
     cmpi(scratch, Operand::Zero());
     blt(not_smi_label);
@@ -1420,16 +1476,15 @@ class MacroAssembler: public Assembler {
   void UntagAndJumpIfNotSmi(Register dst, Register src, Label* non_smi_case);
 
   inline void TestIfSmi(Register value, Register scratch) {
-    TestBit(value, 0, scratch);  // tst(value, Operand(kSmiTagMask));
+    TestBitRange(value, kSmiTagSize - 1, 0, scratch);
   }
 
   inline void TestIfPositiveSmi(Register value, Register scratch) {
-    STATIC_ASSERT((kSmiTagMask | kSmiSignMask) ==
-                  (intptr_t)(1UL << (kBitsPerPointer - 1) | 1));
 #if V8_TARGET_ARCH_PPC64
-    rldicl(scratch, value, 1, kBitsPerPointer - 2, SetRC);
+    rldicl(scratch, value, 1, kBitsPerPointer - (1 + kSmiTagSize), SetRC);
 #else
-    rlwinm(scratch, value, 1, kBitsPerPointer - 2, kBitsPerPointer - 1, SetRC);
+    rlwinm(scratch, value, 1, kBitsPerPointer - (1 + kSmiTagSize),
+           kBitsPerPointer - 1, SetRC);
 #endif
   }
 
@@ -1455,12 +1510,11 @@ class MacroAssembler: public Assembler {
 
 #if V8_TARGET_ARCH_PPC64
   inline void TestIfInt32(Register value,
-                          Register scratch1, Register scratch2,
+                          Register scratch,
                           CRegister cr = cr7) {
     // High bits must be identical to fit into an 32-bit integer
-    srawi(scratch1, value, 31);
-    sradi(scratch2, value, 32);
-    cmp(scratch1, scratch2, cr);
+    extsw(scratch, value);
+    cmp(scratch, value, cr);
   }
 #else
   inline void TestIfInt32(Register hi_word, Register lo_word,
@@ -1469,6 +1523,18 @@ class MacroAssembler: public Assembler {
     srawi(scratch, lo_word, 31);
     cmp(scratch, hi_word, cr);
   }
+#endif
+
+#if V8_TARGET_ARCH_PPC64
+  // Ensure it is permissable to read/write int value directly from
+  // upper half of the smi.
+  STATIC_ASSERT(kSmiTag == 0);
+  STATIC_ASSERT(kSmiTagSize + kSmiShiftSize == 32);
+#endif
+#if V8_TARGET_ARCH_PPC64 && V8_TARGET_LITTLE_ENDIAN
+#define SmiWordOffset(offset) (offset + kPointerSize / 2)
+#else
+#define SmiWordOffset(offset) offset
 #endif
 
   // Abort execution if argument is not a string, enabled via --debug-code.
@@ -1573,16 +1639,43 @@ class MacroAssembler: public Assembler {
   void NumberOfOwnDescriptors(Register dst, Register map);
 
   template<typename Field>
+  void DecodeField(Register dst, Register src) {
+    ExtractBitRange(dst, src, Field::kShift + Field::kSize - 1, Field::kShift);
+  }
+
+  template<typename Field>
   void DecodeField(Register reg) {
-    uintptr_t mask = reinterpret_cast<intptr_t>(Smi::FromInt(Field::kMask));
-    ExtractBitMask(reg, reg, mask);
-    SmiTag(reg);
+    DecodeField<Field>(reg, reg);
+  }
+
+  template<typename Field>
+  void DecodeFieldToSmi(Register dst, Register src) {
+#if V8_TARGET_ARCH_PPC64
+    DecodeField<Field>(dst, src);
+    SmiTag(dst);
+#else
+    // 32-bit can do this in one instruction:
+    int start = Field::kSize + kSmiShift - 1;
+    int end = kSmiShift;
+    int rotate = kSmiShift - Field::kShift;
+    if (rotate < 0) {
+      rotate += kBitsPerPointer;
+    }
+    rlwinm(dst, src, rotate,
+           kBitsPerPointer - start - 1,
+           kBitsPerPointer - end - 1);
+#endif
+  }
+
+  template<typename Field>
+  void DecodeFieldToSmi(Register reg) {
+    DecodeFieldToSmi<Field>(reg, reg);
   }
 
   // Activation support.
   void EnterFrame(StackFrame::Type type, bool load_constant_pool = false);
   // Returns the pc offset at which the frame ends.
-  int LeaveFrame(StackFrame::Type type);
+  int LeaveFrame(StackFrame::Type type, int stack_adjustment = 0);
 
   // Expects object in r0 and returns map with validated enum cache
   // in r0.  Assumes that any other register can be used as a scratch.
@@ -1611,6 +1704,10 @@ class MacroAssembler: public Assembler {
   // Jumps to found label if a prototype map has dictionary elements.
   void JumpIfDictionaryInPrototypeChain(Register object, Register scratch0,
                                         Register scratch1, Label* found);
+
+  // Loads the constant pool pointer (kConstantPoolRegister).
+  void LoadConstantPoolPointerRegister(Register base = no_reg,
+                                       int code_entry_delta = 0);
 
  private:
   static const int kSmiShift = kSmiTagSize + kSmiShiftSize;
@@ -1655,15 +1752,13 @@ class MacroAssembler: public Assembler {
   // it.  See the implementation for register usage.
   void JumpToHandlerEntry();
 
+  static const RegList kSafepointSavedRegisters;
+  static const int kNumSafepointSavedRegisters;
+
   // Compute memory operands for safepoint stack slots.
   static int SafepointRegisterStackIndex(int reg_code);
   MemOperand SafepointRegisterSlot(Register reg);
   MemOperand SafepointRegistersAndDoublesSlot(Register reg);
-
-#if V8_OOL_CONSTANT_POOL
-  // Loads the constant pool pointer (kConstantPoolRegister).
-  void LoadConstantPoolPointerRegister();
-#endif
 
   bool generating_stub_;
   bool has_frame_;
@@ -1711,26 +1806,30 @@ class CodePatcher {
 };
 
 
-#if V8_OOL_CONSTANT_POOL
 class FrameAndConstantPoolScope {
  public:
   FrameAndConstantPoolScope(MacroAssembler* masm, StackFrame::Type type)
       : masm_(masm),
         type_(type),
         old_has_frame_(masm->has_frame()),
-        old_constant_pool_available_(masm->is_constant_pool_available())  {
+        old_constant_pool_available_(FLAG_enable_ool_constant_pool &&
+                                     masm->is_constant_pool_available())  {
     // We only want to enable constant pool access for non-manual frame scopes
     // to ensure the constant pool pointer is valid throughout the scope.
-    ASSERT(type_ != StackFrame::MANUAL && type_ != StackFrame::NONE);
+    DCHECK(type_ != StackFrame::MANUAL && type_ != StackFrame::NONE);
     masm->set_has_frame(true);
-    masm->set_constant_pool_available(true);
+    if (FLAG_enable_ool_constant_pool) {
+      masm->set_constant_pool_available(true);
+    }
     masm->EnterFrame(type, !old_constant_pool_available_);
   }
 
   ~FrameAndConstantPoolScope() {
     masm_->LeaveFrame(type_);
     masm_->set_has_frame(old_has_frame_);
-    masm_->set_constant_pool_available(old_constant_pool_available_);
+    if (FLAG_enable_ool_constant_pool) {
+      masm_->set_constant_pool_available(old_constant_pool_available_);
+    }
   }
 
   // Normally we generate the leave-frame code when this object goes
@@ -1738,9 +1837,9 @@ class FrameAndConstantPoolScope {
   // in addition.  Calling this will achieve that, but the object stays in
   // scope, the MacroAssembler is still marked as being in a frame scope, and
   // the code will be generated again when it goes out of scope.
-  void GenerateLeaveFrame() {
-    ASSERT(type_ != StackFrame::MANUAL && type_ != StackFrame::NONE);
-    masm_->LeaveFrame(type_);
+  void GenerateLeaveFrame(int stack_adjustment = 0) {
+    DCHECK(type_ != StackFrame::MANUAL && type_ != StackFrame::NONE);
+    masm_->LeaveFrame(type_, stack_adjustment);
   }
 
  private:
@@ -1751,12 +1850,8 @@ class FrameAndConstantPoolScope {
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(FrameAndConstantPoolScope);
 };
-#else
-#define FrameAndConstantPoolScope FrameScope
-#endif
 
 
-#if V8_OOL_CONSTANT_POOL
 // Class for scoping the the unavailability of constant pool access.
 class ConstantPoolUnavailableScope {
  public:
@@ -1779,7 +1874,6 @@ class ConstantPoolUnavailableScope {
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(ConstantPoolUnavailableScope);
 };
-#endif
 
 
 // -----------------------------------------------------------------------------

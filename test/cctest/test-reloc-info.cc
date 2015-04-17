@@ -26,8 +26,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-#include "cctest.h"
-#include "assembler.h"
+#include "src/assembler.h"
+#include "test/cctest/cctest.h"
 
 namespace v8 {
 namespace internal {
@@ -61,7 +61,7 @@ TEST(Positions) {
 
   relocation_info_size = static_cast<int>(buffer_end - writer.pos());
   CodeDesc desc = { buffer.get(), buffer_size, code_size,
-                    relocation_info_size, NULL };
+                    relocation_info_size, 0, NULL };
 
   // Read only (non-statement) positions.
   {

@@ -6,18 +6,18 @@
 // found in the LICENSE file.
 
 // CPU specific code for ppc independent of OS goes here.
-#include "v8.h"
+#include "src/v8.h"
 
 #if V8_TARGET_ARCH_PPC
 
-#include "cpu.h"
-#include "macro-assembler.h"
-#include "simulator.h"  // for cache flushing.
+#include "src/assembler.h"
+#include "src/macro-assembler.h"
+#include "src/simulator.h"  // for cache flushing.
 
 namespace v8 {
 namespace internal {
 
-void CPU::FlushICache(void* buffer, size_t size) {
+void CpuFeatures::FlushICache(void* buffer, size_t size) {
   // Nothing to do flushing no instructions.
   if (size == 0) {
     return;
@@ -31,6 +31,16 @@ void CPU::FlushICache(void* buffer, size_t size) {
   // around whether or not to generate the code when building snapshots.
   Simulator::FlushICache(Isolate::Current()->simulator_i_cache(), buffer, size);
 #else
+
+  if (CpuFeatures::IsSupported(INSTR_AND_DATA_CACHE_COHERENCY)) {
+    __asm__ __volatile__("sync \n"  \
+                         "icbi 0, %0  \n"  \
+                         "isync  \n"
+                         : /* no output */
+                         : "r" (buffer)
+                         : "memory");
+    return;
+  }
 
   const int kCacheLineSize = CpuFeatures::cache_line_size();
   intptr_t mask = kCacheLineSize - 1;

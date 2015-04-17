@@ -31,45 +31,38 @@ const RegList kJSCallerSaved =
 
 const int kNumJSCallerSaved = 9;
 
-typedef Object* JSCallerSavedBuffer[kNumJSCallerSaved];
-
 // Return the code of the n-th caller-saved register available to JavaScript
 // e.g. JSCallerSavedReg(0) returns r0.code() == 0
 int JSCallerSavedCode(int n);
 
 
 // Callee-saved registers preserved when switching from C to JavaScript
-// N.B.  Do not bother saving all non-volatiles -- only those that v8
-//       modifies without saving/restoring inline.
 const RegList kCalleeSaved =
-  1 <<  14 |  // r14 (general use)
-  1 <<  15 |  // r15 (general use)
-  1 <<  16 |  // r16 (general use)
-  1 <<  17 |  // r17 (general use)
-  1 <<  18 |  // r18 (general use / cp in Javascript code)
-  1 <<  19 |  // r19 (roots array in Javascript code)
-#if V8_OOL_CONSTANT_POOL
-  1 <<  20 |  // r20 (constant pool array in Javascript code)
-#endif
-  1 <<  31;   // r31 (fp in Javascript code)
+  1 <<  14 |  // r14
+  1 <<  15 |  // r15
+  1 <<  16 |  // r16
+  1 <<  17 |  // r17
+  1 <<  18 |  // r18
+  1 <<  19 |  // r19
+  1 <<  20 |  // r20
+  1 <<  21 |  // r21
+  1 <<  22 |  // r22
+  1 <<  23 |  // r23
+  1 <<  24 |  // r24
+  1 <<  25 |  // r25
+  1 <<  26 |  // r26
+  1 <<  27 |  // r27
+  1 <<  28 |  // r28
+  1 <<  29 |  // r29
+  1 <<  30 |  // r20
+  1 <<  31;   // r31
 
 
-#if V8_OOL_CONSTANT_POOL
-const int kNumCalleeSaved = 8;
-#else
-const int kNumCalleeSaved = 7;
-#endif
+const int kNumCalleeSaved = 18;
 
 // Number of registers for which space is reserved in safepoints. Must be a
 // multiple of 8.
-// TODO(regis): Only 8 registers may actually be sufficient. Revisit.
 const int kNumSafepointRegisters = 32;
-
-// Define the list of registers actually saved at safepoints.
-// Note that the number of saved registers may be smaller than the reserved
-// space, i.e. kNumSafepointSavedRegisters <= kNumSafepointRegisters.
-const RegList kSafepointSavedRegisters = kJSCallerSaved | kCalleeSaved;
-const int kNumSafepointSavedRegisters = kNumJSCallerSaved + kNumCalleeSaved;
 
 // The following constants describe the stack frame linkage area as
 // defined by the ABI.  Note that kNumRequiredStackFrameSlots must
@@ -128,13 +121,11 @@ class EntryFrameConstants : public AllStatic {
 
 class ExitFrameConstants : public AllStatic {
  public:
-#if V8_OOL_CONSTANT_POOL
-  static const int kFrameSize = 3 * kPointerSize;
-  static const int kConstantPoolOffset = -3 * kPointerSize;
-#else
-  static const int kFrameSize = 2 * kPointerSize;
-  static const int kConstantPoolOffset = 0;  // Not used.
-#endif
+  static const int kFrameSize          = FLAG_enable_ool_constant_pool ?
+                                         3 * kPointerSize : 2 * kPointerSize;
+
+  static const int kConstantPoolOffset = FLAG_enable_ool_constant_pool ?
+                                         -3 * kPointerSize : 0;
   static const int kCodeOffset = -2 * kPointerSize;
   static const int kSPOffset = -1 * kPointerSize;
 

@@ -8,7 +8,7 @@
 #ifndef V8_PPC_CODE_STUBS_PPC_H_
 #define V8_PPC_CODE_STUBS_PPC_H_
 
-#include "ic-inl.h"
+#include "src/ic-inl.h"
 
 namespace v8 {
 namespace internal {
@@ -30,8 +30,8 @@ class StoreBufferOverflowStub: public PlatformCodeStub {
  private:
   SaveFPRegsMode save_doubles_;
 
-  Major MajorKey() { return StoreBufferOverflow; }
-  int MinorKey() { return (save_doubles_ == kSaveFPRegs) ? 1 : 0; }
+  Major MajorKey() const { return StoreBufferOverflow; }
+  int MinorKey() const { return (save_doubles_ == kSaveFPRegs) ? 1 : 0; }
 };
 
 
@@ -41,16 +41,12 @@ class StringHelper : public AllStatic {
   // is allowed to spend extra time setting up conditions to make copying
   // faster. Copying of overlapping regions is not supported.
   // Dest register ends at the position after the last character written.
-  static void GenerateCopyCharactersLong(MacroAssembler* masm,
-                                         Register dest,
-                                         Register src,
-                                         Register count,
-                                         Register scratch1,
-                                         Register scratch2,
-                                         Register scratch3,
-                                         Register scratch4,
-                                         Register scratch5,
-                                         int flags);
+  static void GenerateCopyCharacters(MacroAssembler* masm,
+                                     Register dest,
+                                     Register src,
+                                     Register count,
+                                     Register scratch,
+                                     String::Encoding encoding);
 
 
   // Generate string hash.
@@ -78,8 +74,8 @@ class SubStringStub: public PlatformCodeStub {
   explicit SubStringStub(Isolate* isolate) : PlatformCodeStub(isolate) {}
 
  private:
-  Major MajorKey() { return SubString; }
-  int MinorKey() { return 0; }
+  Major MajorKey() const { return SubString; }
+  int MinorKey() const { return 0; }
 
   void Generate(MacroAssembler* masm);
 };
@@ -107,8 +103,8 @@ class StringCompareStub: public PlatformCodeStub {
                                             Register scratch2);
 
  private:
-  virtual Major MajorKey() { return StringCompare; }
-  virtual int MinorKey() { return 0; }
+  virtual Major MajorKey() const { return StringCompare; }
+  virtual int MinorKey() const { return 0; }
   virtual void Generate(MacroAssembler* masm);
 
   static void GenerateAsciiCharsCompareLoop(MacroAssembler* masm,
@@ -117,6 +113,34 @@ class StringCompareStub: public PlatformCodeStub {
                                             Register length,
                                             Register scratch1,
                                             Label* chars_not_equal);
+};
+
+
+class StoreRegistersStateStub: public PlatformCodeStub {
+ public:
+  explicit StoreRegistersStateStub(Isolate* isolate)
+      : PlatformCodeStub(isolate) {}
+
+  static void GenerateAheadOfTime(Isolate* isolate);
+ private:
+  Major MajorKey() const { return StoreRegistersState; }
+  int MinorKey() const { return 0; }
+
+  void Generate(MacroAssembler* masm);
+};
+
+
+class RestoreRegistersStateStub: public PlatformCodeStub {
+ public:
+  explicit RestoreRegistersStateStub(Isolate* isolate)
+      : PlatformCodeStub(isolate) {}
+
+  static void GenerateAheadOfTime(Isolate* isolate);
+ private:
+  Major MajorKey() const { return RestoreRegistersState; }
+  int MinorKey() const { return 0; }
+
+  void Generate(MacroAssembler* masm);
 };
 
 
@@ -149,12 +173,12 @@ class RecordWriteStub: public PlatformCodeStub {
 
   static void PatchBranchIntoNop(MacroAssembler* masm, int pos) {
     masm->instr_at_put(pos, (masm->instr_at(pos) & ~kBOfieldMask) | BT);
-    // roohack ASSERT(Assembler::IsTstImmediate(masm->instr_at(pos)));
+    // roohack DCHECK(Assembler::IsTstImmediate(masm->instr_at(pos)));
   }
 
   static void PatchNopIntoBranch(MacroAssembler* masm, int pos) {
     masm->instr_at_put(pos, (masm->instr_at(pos) & ~kBOfieldMask) | BF);
-    // roohack ASSERT(Assembler::IsBranch(masm->instr_at(pos)));
+    // roohack DCHECK(Assembler::IsBranch(masm->instr_at(pos)));
   }
 
   static Mode GetMode(Code* stub) {
@@ -167,13 +191,13 @@ class RecordWriteStub: public PlatformCodeStub {
       return INCREMENTAL;
     }
 
-    // roohack ASSERT(Assembler::IsTstImmediate(first_instruction));
+    // roohack DCHECK(Assembler::IsTstImmediate(first_instruction));
 
     if (BF == (second_instruction & kBOfieldMask)) {
       return INCREMENTAL_COMPACTION;
     }
 
-    // roohack ASSERT(Assembler::IsTstImmediate(second_instruction));
+    // roohack DCHECK(Assembler::IsTstImmediate(second_instruction));
 
     return STORE_BUFFER_ONLY;
   }
@@ -184,23 +208,23 @@ class RecordWriteStub: public PlatformCodeStub {
                         stub->instruction_size());
     switch (mode) {
       case STORE_BUFFER_ONLY:
-        ASSERT(GetMode(stub) == INCREMENTAL ||
+        DCHECK(GetMode(stub) == INCREMENTAL ||
                GetMode(stub) == INCREMENTAL_COMPACTION);
 
         PatchBranchIntoNop(&masm, Assembler::kInstrSize);
         PatchBranchIntoNop(&masm, Assembler::kInstrSize*2);
         break;
       case INCREMENTAL:
-        ASSERT(GetMode(stub) == STORE_BUFFER_ONLY);
+        DCHECK(GetMode(stub) == STORE_BUFFER_ONLY);
         PatchNopIntoBranch(&masm, Assembler::kInstrSize);
         break;
       case INCREMENTAL_COMPACTION:
-        ASSERT(GetMode(stub) == STORE_BUFFER_ONLY);
+        DCHECK(GetMode(stub) == STORE_BUFFER_ONLY);
         PatchNopIntoBranch(&masm, Assembler::kInstrSize*2);
         break;
     }
-    ASSERT(GetMode(stub) == mode);
-    CPU::FlushICache(stub->instruction_start()+Assembler::kInstrSize,
+    DCHECK(GetMode(stub) == mode);
+    CpuFeatures::FlushICache(stub->instruction_start()+Assembler::kInstrSize,
                       2 * Assembler::kInstrSize);
   }
 
@@ -216,12 +240,12 @@ class RecordWriteStub: public PlatformCodeStub {
         : object_(object),
           address_(address),
           scratch0_(scratch0) {
-      ASSERT(!AreAliased(scratch0, object, address, no_reg));
+      DCHECK(!AreAliased(scratch0, object, address, no_reg));
       scratch1_ = GetRegisterThatIsNotOneOf(object_, address_, scratch0_);
     }
 
     void Save(MacroAssembler* masm) {
-      ASSERT(!AreAliased(object_, address_, scratch1_, scratch0_));
+      DCHECK(!AreAliased(object_, address_, scratch1_, scratch0_));
       // We don't have to save scratch0_ because it was given to us as
       // a scratch register.
       masm->push(scratch1_);
@@ -282,9 +306,9 @@ class RecordWriteStub: public PlatformCodeStub {
       Mode mode);
   void InformIncrementalMarker(MacroAssembler* masm);
 
-  Major MajorKey() { return RecordWrite; }
+  Major MajorKey() const { return RecordWrite; }
 
-  int MinorKey() {
+  int MinorKey() const {
     return ObjectBits::encode(object_.code()) |
         ValueBits::encode(value_.code()) |
         AddressBits::encode(address_.code()) |
@@ -324,8 +348,8 @@ class DirectCEntryStub: public PlatformCodeStub {
   void GenerateCall(MacroAssembler* masm, Register target);
 
  private:
-  Major MajorKey() { return DirectCEntry; }
-  int MinorKey() { return 0; }
+  Major MajorKey() const { return DirectCEntry; }
+  int MinorKey() const { return 0; }
 
   bool NeedsImmovableCode() { return true; }
 };
@@ -370,11 +394,9 @@ class NameDictionaryLookupStub: public PlatformCodeStub {
       NameDictionary::kHeaderSize +
       NameDictionary::kElementsStartIndex * kPointerSize;
 
-  Major MajorKey() { return NameDictionaryLookup; }
+  Major MajorKey() const { return NameDictionaryLookup; }
 
-  int MinorKey() {
-    return LookupModeBits::encode(mode_);
-  }
+  int MinorKey() const { return LookupModeBits::encode(mode_); }
 
   class LookupModeBits: public BitField<LookupMode, 0, 1> {};
 

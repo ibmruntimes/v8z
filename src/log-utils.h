@@ -5,7 +5,7 @@
 #ifndef V8_LOG_UTILS_H_
 #define V8_LOG_UTILS_H_
 
-#include "allocation.h"
+#include "src/allocation.h"
 
 namespace v8 {
 namespace internal {
@@ -22,10 +22,10 @@ class Log {
   void stop() { is_stopped_ = true; }
 
   static bool InitLogAtStart() {
-    return FLAG_log || FLAG_log_runtime || FLAG_log_api
-        || FLAG_log_code || FLAG_log_gc || FLAG_log_handles || FLAG_log_suspect
-        || FLAG_log_regexp || FLAG_ll_prof || FLAG_perf_basic_prof
-        || FLAG_perf_jit_prof || FLAG_log_internal_timer_events;
+    return FLAG_log || FLAG_log_api || FLAG_log_code || FLAG_log_gc
+        || FLAG_log_handles || FLAG_log_suspect || FLAG_log_regexp
+        || FLAG_ll_prof || FLAG_perf_basic_prof || FLAG_perf_jit_prof
+        || FLAG_log_internal_timer_events;
   }
 
   // Frees all resources acquired in Initialize and Open... functions.
@@ -85,7 +85,7 @@ class Log {
 
    private:
     Log* log_;
-    LockGuard<Mutex> lock_guard_;
+    base::LockGuard<base::Mutex> lock_guard_;
     int pos_;
   };
 
@@ -103,9 +103,9 @@ class Log {
 
   // Implementation of writing to a log file.
   int WriteToFile(const char* msg, int length) {
-    ASSERT(output_handle_ != NULL);
+    DCHECK(output_handle_ != NULL);
     size_t rv = fwrite(msg, 1, length, output_handle_);
-    ASSERT(static_cast<size_t>(length) == rv);
+    DCHECK(static_cast<size_t>(length) == rv);
     USE(rv);
     fflush(output_handle_);
     return length;
@@ -120,7 +120,7 @@ class Log {
 
   // mutex_ is a Mutex used for enforcing exclusive
   // access to the formatting buffer and the log file or log memory buffer.
-  Mutex mutex_;
+  base::Mutex mutex_;
 
   // Buffer used for formatting log messages. This is a singleton buffer and
   // mutex_ should be acquired before using it.

@@ -5,17 +5,17 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "v8.h"
+#include "src/v8.h"
 
-#include "codegen.h"
-#include "deoptimizer.h"
-#include "full-codegen.h"
-#include "safepoint-table.h"
+#include "src/codegen.h"
+#include "src/deoptimizer.h"
+#include "src/full-codegen.h"
+#include "src/safepoint-table.h"
 
 namespace v8 {
 namespace internal {
 
-const int Deoptimizer::table_entry_size_ = 12;
+const int Deoptimizer::table_entry_size_ = 8;
 
 
 int Deoptimizer::patch_size() {
@@ -39,7 +39,7 @@ void Deoptimizer::PatchCodeForDeoptimization(Isolate* isolate, Code* code) {
     // Fail hard and early if we enter this code object again.
     byte* pointer = code->FindCodeAgeSequence();
     if (pointer != NULL) {
-      pointer += kCodeAgeSequenceLength * Assembler::kInstrSize;
+      pointer += kNoCodeAgeSequenceLength;
     } else {
       pointer = code->instruction_start();
     }
@@ -57,9 +57,6 @@ void Deoptimizer::PatchCodeForDeoptimization(Isolate* isolate, Code* code) {
 
   DeoptimizationInputData* deopt_data =
       DeoptimizationInputData::cast(code->deoptimization_data());
-  SharedFunctionInfo* shared =
-      SharedFunctionInfo::cast(deopt_data->SharedFunctionInfo());
-  shared->EvictFromOptimizedCodeMap(code, "deoptimized code");
 #ifdef DEBUG
   Address prev_call_address = NULL;
 #endif
@@ -75,13 +72,13 @@ void Deoptimizer::PatchCodeForDeoptimization(Isolate* isolate, Code* code) {
         MacroAssembler::CallSizeNotPredictableCodeSize(deopt_entry,
                                                        kRelocInfo_NONEPTR);
     int call_size_in_words = call_size_in_bytes / Assembler::kInstrSize;
-    ASSERT(call_size_in_bytes % Assembler::kInstrSize == 0);
-    ASSERT(call_size_in_bytes <= patch_size());
+    DCHECK(call_size_in_bytes % Assembler::kInstrSize == 0);
+    DCHECK(call_size_in_bytes <= patch_size());
     CodePatcher patcher(call_address, call_size_in_words);
     patcher.masm()->Call(deopt_entry, kRelocInfo_NONEPTR);
-    ASSERT(prev_call_address == NULL ||
+    DCHECK(prev_call_address == NULL ||
            call_address >= prev_call_address + patch_size());
-    ASSERT(call_address + patch_size() <= code->instruction_end());
+    DCHECK(call_address + patch_size() <= code->instruction_end());
 #ifdef DEBUG
     prev_call_address = call_address;
 #endif
@@ -93,9 +90,12 @@ void Deoptimizer::FillInputFrame(Address tos, JavaScriptFrame* frame) {
   // Set the register values. The values are not important as there are no
   // callee saved registers in JavaScript frames, so all registers are
   // spilled. Registers fp and sp are set to the correct values though.
+  // We ensure the values are Smis to avoid confusing the garbage
+  // collector in the event that any values are retreived and stored
+  // elsewhere.
 
   for (int i = 0; i < Register::kNumRegisters; i++) {
-    input_->SetRegister(i, i * 4);
+    input_->SetRegister(i, reinterpret_cast<intptr_t>(Smi::FromInt(i)));
   }
   input_->SetRegister(sp.code(), reinterpret_cast<intptr_t>(frame->sp()));
   input_->SetRegister(fp.code(), reinterpret_cast<intptr_t>(frame->fp()));
@@ -113,7 +113,7 @@ void Deoptimizer::FillInputFrame(Address tos, JavaScriptFrame* frame) {
 
 void Deoptimizer::SetPlatformCompiledStubRegisters(
     FrameDescription* output_frame, CodeStubInterfaceDescriptor* descriptor) {
-  ApiFunction function(descriptor->deoptimization_handler_);
+  ApiFunction function(descriptor->deoptimization_handler());
   ExternalReference xref(&function, ExternalReference::BUILTIN_CALL, isolate_);
   intptr_t handler = reinterpret_cast<intptr_t>(xref.address());
   int params = descriptor->GetHandlerParameterCount();
@@ -133,11 +133,6 @@ void Deoptimizer::CopyDoubleRegisters(FrameDescription* output_frame) {
 bool Deoptimizer::HasAlignmentPadding(JSFunction* function) {
   // There is no dynamic alignment padding on PPC in the input frame.
   return false;
-}
-
-
-Code* Deoptimizer::NotifyStubFailureBuiltin() {
-  return isolate_->builtins()->builtin(Builtins::kNotifyStubFailureSaveDoubles);
 }
 
 
@@ -209,7 +204,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   __ LoadP(r4, MemOperand(r3, Deoptimizer::input_offset()));
 
   // Copy core registers into FrameDescription::registers_[kNumRegisters].
-  ASSERT(Register::kNumRegisters == kNumberOfRegisters);
+  DCHECK(Register::kNumRegisters == kNumberOfRegisters);
   for (int i = 0; i < kNumberOfRegisters; i++) {
     int offset = (i * kPointerSize) + FrameDescription::registers_offset();
     __ LoadP(r5, MemOperand(sp, i * kPointerSize));
@@ -309,7 +304,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   __ push(r9);
 
   // Restore the registers from the last output frame.
-  ASSERT(!(ip.bit() & restored_regs));
+  DCHECK(!(ip.bit() & restored_regs));
   __ mr(ip, r5);
   for (int i = kNumberOfRegisters - 1; i >= 0; i--) {
     int offset = (i * kPointerSize) + FrameDescription::registers_offset();
@@ -338,11 +333,11 @@ void Deoptimizer::TableEntryGenerator::GeneratePrologue() {
     int start = masm()->pc_offset();
     USE(start);
     __ li(ip, Operand(i));
-    __ push(ip);
     __ b(&done);
-    ASSERT(masm()->pc_offset() - start == table_entry_size_);
+    DCHECK(masm()->pc_offset() - start == table_entry_size_);
   }
   __ bind(&done);
+  __ push(ip);
 }
 
 
@@ -357,13 +352,8 @@ void FrameDescription::SetCallerFp(unsigned offset, intptr_t value) {
 
 
 void FrameDescription::SetCallerConstantPool(unsigned offset, intptr_t value) {
-#if V8_OOL_CONSTANT_POOL
-  ASSERT(FLAG_enable_ool_constant_pool);
+  DCHECK(FLAG_enable_ool_constant_pool);
   SetFrameSlot(offset, value);
-#else
-  // No out-of-line constant pool support.
-  UNREACHABLE();
-#endif
 }
 
 

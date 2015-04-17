@@ -2,31 +2,37 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "v8.h"
+#include "src/v8.h"
 
-#include "lithium-codegen.h"
+#include "src/lithium-codegen.h"
 
 #if V8_TARGET_ARCH_IA32
-#include "ia32/lithium-ia32.h"
-#include "ia32/lithium-codegen-ia32.h"
+#include "src/ia32/lithium-ia32.h"  // NOLINT
+#include "src/ia32/lithium-codegen-ia32.h"  // NOLINT
 #elif V8_TARGET_ARCH_X64
-#include "x64/lithium-x64.h"
-#include "x64/lithium-codegen-x64.h"
+#include "src/x64/lithium-x64.h"  // NOLINT
+#include "src/x64/lithium-codegen-x64.h"  // NOLINT
 #elif V8_TARGET_ARCH_ARM
-#include "arm/lithium-arm.h"
-#include "arm/lithium-codegen-arm.h"
+#include "src/arm/lithium-arm.h"  // NOLINT
+#include "src/arm/lithium-codegen-arm.h"  // NOLINT
 #elif V8_TARGET_ARCH_ARM64
-#include "arm64/lithium-arm64.h"
-#include "arm64/lithium-codegen-arm64.h"
+#include "src/arm64/lithium-arm64.h"  // NOLINT
+#include "src/arm64/lithium-codegen-arm64.h"  // NOLINT
 #elif V8_TARGET_ARCH_MIPS
-#include "mips/lithium-mips.h"
-#include "mips/lithium-codegen-mips.h"
-#elif V8_TARGET_ARCH_S390
-#include "s390/lithium-s390.h"
-#include "s390/lithium-codegen-s390.h"
+#include "src/mips/lithium-mips.h"  // NOLINT
+#include "src/mips/lithium-codegen-mips.h"  // NOLINT
+#elif V8_TARGET_ARCH_MIPS64
+#include "src/mips64/lithium-mips64.h"  // NOLINT
+#include "src/mips64/lithium-codegen-mips64.h"  // NOLINT
+#elif V8_TARGET_ARCH_X87
+#include "src/x87/lithium-x87.h"  // NOLINT
+#include "src/x87/lithium-codegen-x87.h"  // NOLINT
 #elif V8_TARGET_ARCH_PPC
-#include "ppc/lithium-ppc.h"
-#include "ppc/lithium-codegen-ppc.h"
+#include "src/ppc/lithium-ppc.h"  // NOLINT
+#include "src/ppc/lithium-codegen-ppc.h"  // NOLINT
+#elif V8_TARGET_ARCH_S390
+#include "src/s390/lithium-s390.h" // NOLINT
+#include "src/s390/lithium-codegen-s390.h" // NOLINT
 #else
 #error Unsupported target architecture.
 #endif
@@ -56,7 +62,7 @@ LCodeGenBase::LCodeGenBase(LChunk* chunk,
 
 
 bool LCodeGenBase::GenerateBody() {
-  ASSERT(is_generating());
+  DCHECK(is_generating());
   bool emit_instructions = true;
   LCodeGen* codegen = static_cast<LCodeGen*>(this);
   for (current_instruction_ = 0;
@@ -116,12 +122,12 @@ void LCodeGenBase::CheckEnvironmentUsage() {
 
     HInstruction* hinstr = HInstruction::cast(hval);
     if (!hinstr->CanDeoptimize() && instr->HasEnvironment()) {
-      V8_Fatal(__FILE__, __LINE__, "CanDeoptimize is wrong for %s (%s)\n",
+      V8_Fatal(__FILE__, __LINE__, "CanDeoptimize is wrong for %s (%s)",
                hinstr->Mnemonic(), instr->Mnemonic());
     }
 
     if (instr->HasEnvironment() && !instr->environment()->has_been_used()) {
-      V8_Fatal(__FILE__, __LINE__, "unused environment for %s (%s)\n",
+      V8_Fatal(__FILE__, __LINE__, "unused environment for %s (%s)",
                hinstr->Mnemonic(), instr->Mnemonic());
     }
   }
@@ -142,7 +148,7 @@ void LCodeGenBase::Comment(const char* format, ...) {
   // issues when the stack allocated buffer goes out of scope.
   size_t length = builder.position();
   Vector<char> copy = Vector<char>::New(static_cast<int>(length) + 1);
-  OS::MemCopy(copy.start(), builder.Finalize(), copy.length());
+  MemCopy(copy.start(), builder.Finalize(), copy.length());
   masm()->RecordComment(copy.start());
 }
 
@@ -168,7 +174,7 @@ static void AddWeakObjectToCodeDependency(Isolate* isolate,
 
 
 void LCodeGenBase::RegisterWeakObjectsInOptimizedCode(Handle<Code> code) {
-  ASSERT(code->is_optimized_code());
+  DCHECK(code->is_optimized_code());
   ZoneList<Handle<Map> > maps(1, zone());
   ZoneList<Handle<JSObject> > objects(1, zone());
   ZoneList<Handle<Cell> > cells(1, zone());
@@ -194,8 +200,10 @@ void LCodeGenBase::RegisterWeakObjectsInOptimizedCode(Handle<Code> code) {
       }
     }
   }
-  if (FLAG_enable_ool_constant_pool) {
-    code->constant_pool()->set_weak_object_state(
+  if (FLAG_enable_ool_constant_pool_in_heapobject) {
+    ConstantPoolArray* constant_pool =
+        reinterpret_cast<ConstantPoolArray*>(code->constant_pool());
+    constant_pool->set_weak_object_state(
         ConstantPoolArray::WEAK_OBJECTS_IN_OPTIMIZED_CODE);
   }
 #ifdef VERIFY_HEAP
@@ -225,6 +233,12 @@ void LCodeGenBase::Abort(BailoutReason reason) {
 void LCodeGenBase::AddDeprecationDependency(Handle<Map> map) {
   if (map->is_deprecated()) return Abort(kMapBecameDeprecated);
   chunk_->AddDeprecationDependency(map);
+}
+
+
+void LCodeGenBase::AddStabilityDependency(Handle<Map> map) {
+  if (!map->is_stable()) return Abort(kMapBecameUnstable);
+  chunk_->AddStabilityDependency(map);
 }
 
 } }  // namespace v8::internal

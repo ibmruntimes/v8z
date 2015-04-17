@@ -56,13 +56,13 @@ enum Condition {
 
 
 inline Condition NegateCondition(Condition cond) {
-  ASSERT(cond != al);
+  DCHECK(cond != al);
   return static_cast<Condition>(cond ^ ne);
 }
 
 
-// Corresponds to transposing the operands of a comparison.
-inline Condition ReverseCondition(Condition cond) {
+// Commute a condition such that {a cond b == b cond' a}.
+inline Condition CommuteCondition(Condition cond) {
   switch (cond) {
     case lt:
       return gt;
@@ -74,7 +74,7 @@ inline Condition ReverseCondition(Condition cond) {
       return ge;
     default:
       return cond;
-  };
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -166,6 +166,7 @@ enum OpcodeExt2 {
   SUBFCX = 8 << 1,
   ADDCX = 10 << 1,
   MULHWUX = 11 << 1,
+  ISEL = 15 << 1,
   MFCR = 19 << 1,
   LWARX = 20 << 1,
   LDX = 21 << 1,
@@ -176,6 +177,7 @@ enum OpcodeExt2 {
   ANDX = 28 << 1,
   CMPL = 32 << 1,
   SUBFX = 40 << 1,
+  MFVSRD = 51 << 1,  // Move From VSR Doubleword
   LDUX = 53 << 1,
   DCBST = 54 << 1,
   LWZUX = 55 << 1,   // load word zero w/ update x-form
@@ -185,12 +187,14 @@ enum OpcodeExt2 {
   DCBF = 86 << 1,
   LBZX = 87 << 1,    // load byte zero w/ x-form
   NEGX = 104 << 1,
+  MFVSRWZ = 115 << 1,  // Move From VSR Word And Zero
   LBZUX = 119 << 1,  // load byte zero w/ update x-form
   NORX = 124 << 1,
   SUBFEX = 136 << 1,
   ADDEX = 138 << 1,
   STDX = 149 << 1,
   STWX = 151 << 1,    // store word w/ x-form
+  MTVSRD = 179 << 1,  // Move To VSR Doubleword
   STDUX = 181 << 1,
   STWUX = 183 << 1,   // store word w/ update x-form
 /*
@@ -203,20 +207,25 @@ enum OpcodeExt2 {
 /*
   MTSR
 */
+  MTVSRWA = 211 << 1,  // Move To VSR Word Algebraic
   STBX = 215 << 1,    // store byte w/ x-form
   MULLD  = 233 << 1,  // Multiply Low Double Word
   MULLW  = 235 << 1,  // Multiply Low Word
+  MTVSRWZ = 243 << 1,  // Move To VSR Word And Zero
   STBUX = 247 << 1,   // store byte w/ update x-form
   ADDX = 266 << 1,    // Add
   LHZX = 279 << 1,    // load half-word zero w/ x-form
   LHZUX = 311 << 1,   // load half-word zero w/ update x-form
-  LHAX =343 << 1,     // load half-word algebraic w/ x-form
+  LWAX = 341 << 1,    // load word algebraic w/ x-form
+  LHAX = 343 << 1,    // load half-word algebraic w/ x-form
   LHAUX = 375 << 1,   // load half-word algebraic w/ update x-form
   XORX = 316 << 1,    // Exclusive OR
   MFSPR = 339 <<1,    // Move from Special-Purpose-Register
   STHX = 407 << 1,    // store half-word w/ x-form
   STHUX = 439 << 1,   // store half-word w/ update x-form
   ORX = 444 << 1,     // Or
+  DIVDU = 457 << 1,   // Divide Double Word Unsigned
+  DIVWU = 459 << 1,   // Divide Word Unsigned
   MTSPR = 467 <<1,    // Move to Special-Purpose-Register
   DIVD  = 489 << 1,   // Divide Double Word
   DIVW  = 491 << 1,   // Divide Word

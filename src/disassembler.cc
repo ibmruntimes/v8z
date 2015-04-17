@@ -2,17 +2,17 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "v8.h"
+#include "src/v8.h"
 
-#include "code-stubs.h"
-#include "codegen.h"
-#include "debug.h"
-#include "deoptimizer.h"
-#include "disasm.h"
-#include "disassembler.h"
-#include "macro-assembler.h"
-#include "serialize.h"
-#include "string-stream.h"
+#include "src/code-stubs.h"
+#include "src/codegen.h"
+#include "src/debug.h"
+#include "src/deoptimizer.h"
+#include "src/disasm.h"
+#include "src/disassembler.h"
+#include "src/macro-assembler.h"
+#include "src/serialize.h"
+#include "src/string-stream.h"
 
 namespace v8 {
 namespace internal {
@@ -50,7 +50,7 @@ class V8NameConverter: public disasm::NameConverter {
 const char* V8NameConverter::NameOfAddress(byte* pc) const {
   const char* name = code_->GetIsolate()->builtins()->Lookup(pc);
   if (name != NULL) {
-    OS::SNPrintF(v8_buffer_, "%s  (%p)", name, pc);
+    SNPrintF(v8_buffer_, "%s  (%p)", name, pc);
     return v8_buffer_.start();
   }
 
@@ -58,7 +58,7 @@ const char* V8NameConverter::NameOfAddress(byte* pc) const {
     int offs = static_cast<int>(pc - code_->instruction_start());
     // print as code offset, if it seems reasonable
     if (0 <= offs && offs < code_->instruction_size()) {
-      OS::SNPrintF(v8_buffer_, "%d  (%p)", offs, pc);
+      SNPrintF(v8_buffer_, "%d  (%p)", offs, pc);
       return v8_buffer_.start();
     }
   }
@@ -95,7 +95,6 @@ static int DecodeIt(Isolate* isolate,
   SealHandleScope shs(isolate);
   DisallowHeapAllocation no_alloc;
   ExternalReferenceEncoder ref_encoder(isolate);
-  Heap* heap = isolate->heap();
 
   v8::internal::EmbeddedVector<char, 128> decode_buffer;
   v8::internal::EmbeddedVector<char, kOutBufferSize> out_buffer;
@@ -108,41 +107,54 @@ static int DecodeIt(Isolate* isolate,
   } else {
     // No relocation information when printing code stubs.
   }
+#if !V8_TARGET_ARCH_PPC
   int constants = -1;  // no constants being decoded at the start
+#endif
 
   while (pc < end) {
     // First decode instruction so that we know its length.
     byte* prev_pc = pc;
+#if !V8_TARGET_ARCH_PPC
     if (constants > 0) {
-      OS::SNPrintF(decode_buffer,
-                   "%08x       constant",
-                   *reinterpret_cast<int32_t*>(pc));
+      SNPrintF(decode_buffer,
+               "%08x       constant",
+               *reinterpret_cast<int32_t*>(pc));
       constants--;
       pc += 4;
     } else {
       int num_const = d.ConstantPoolSizeAt(pc);
       if (num_const >= 0) {
-        OS::SNPrintF(decode_buffer,
-                     "%08x       constant pool begin",
-                     *reinterpret_cast<int32_t*>(pc));
+        SNPrintF(decode_buffer,
+                 "%08x       constant pool begin",
+                 *reinterpret_cast<int32_t*>(pc));
         constants = num_const;
         pc += 4;
       } else if (it != NULL && !it->done() && it->rinfo()->pc() == pc &&
           it->rinfo()->rmode() == RelocInfo::INTERNAL_REFERENCE) {
         // raw pointer embedded in code stream, e.g., jump table
         byte* ptr = *reinterpret_cast<byte**>(pc);
-        OS::SNPrintF(decode_buffer,
-                     "%08" V8PRIxPTR "      jump table entry %4" V8PRIdPTR,
-                     ptr,
-                     ptr - begin);
-#if V8_TARGET_ARCH_PPC64
-        pc += 8;
-#elif V8_TARGET_ARCH_S390X
-        pc += 8;
-#else
+        SNPrintF(decode_buffer,
+                 "%08" V8PRIxPTR "      jump table entry %4" V8PRIdPTR,
+                 reinterpret_cast<intptr_t>(ptr),
+                 ptr - begin);
         pc += 4;
-#endif
       } else {
+#elif ABI_USES_FUNCTION_DESCRIPTORS || V8_OOL_CONSTANT_POOL
+    // V8_TARGET_ARCH_PPC
+    {
+      // Function descriptors are specially decoded and skipped.
+      // Other internal references (load of ool constant pool pointer)
+      // are not since they are a encoded as a regular mov sequence.
+      int skip;
+      if (it != NULL && !it->done() && it->rinfo()->pc() == pc &&
+          it->rinfo()->rmode() == RelocInfo::INTERNAL_REFERENCE &&
+          (skip = Assembler::DecodeInternalReference(decode_buffer, pc))) {
+        pc += skip;
+      } else {
+#else
+    {
+      {
+#endif
         decode_buffer[0] = '\0';
         pc += d.InstructionDecode(decode_buffer, pc);
       }
@@ -232,29 +244,21 @@ static int DecodeIt(Isolate* isolate,
             out.AddFormatted(", %s", Code::StubType2String(type));
           }
         } else if (kind == Code::STUB || kind == Code::HANDLER) {
-          // Reverse lookup required as the minor key cannot be retrieved
-          // from the code object.
-          Object* obj = heap->code_stubs()->SlowReverseLookup(code);
-          if (obj != heap->undefined_value()) {
-            ASSERT(obj->IsSmi());
-            // Get the STUB key and extract major and minor key.
-            uint32_t key = Smi::cast(obj)->value();
-            uint32_t minor_key = CodeStub::MinorKeyFromKey(key);
-            CodeStub::Major major_key = CodeStub::GetMajorKey(code);
-            ASSERT(major_key == CodeStub::MajorKeyFromKey(key));
-            out.AddFormatted(" %s, %s, ",
-                             Code::Kind2String(kind),
-                             CodeStub::MajorName(major_key, false));
-            switch (major_key) {
-              case CodeStub::CallFunction: {
-                int argc =
-                    CallFunctionStub::ExtractArgcFromMinorKey(minor_key);
-                out.AddFormatted("argc = %d", argc);
-                break;
-              }
-              default:
-                out.AddFormatted("minor: %d", minor_key);
+          // Get the STUB key and extract major and minor key.
+          uint32_t key = code->stub_key();
+          uint32_t minor_key = CodeStub::MinorKeyFromKey(key);
+          CodeStub::Major major_key = CodeStub::GetMajorKey(code);
+          DCHECK(major_key == CodeStub::MajorKeyFromKey(key));
+          out.AddFormatted(" %s, %s, ", Code::Kind2String(kind),
+                           CodeStub::MajorName(major_key, false));
+          switch (major_key) {
+            case CodeStub::CallFunction: {
+              int argc = CallFunctionStub::ExtractArgcFromMinorKey(minor_key);
+              out.AddFormatted("argc = %d", argc);
+              break;
             }
+            default:
+              out.AddFormatted("minor: %d", minor_key);
           }
         } else {
           out.AddFormatted(" %s", Code::Kind2String(kind));
@@ -320,19 +324,34 @@ int Disassembler::Decode(Isolate* isolate, FILE* f, byte* begin, byte* end) {
 // Called by Code::CodePrint.
 void Disassembler::Decode(FILE* f, Code* code) {
   Isolate* isolate = code->GetIsolate();
-  int decode_size = code->is_crankshafted()
-      ? static_cast<int>(code->safepoint_table_offset())
-      : code->instruction_size();
-  // If there might be a back edge table, stop before reaching it.
-  if (code->kind() == Code::FUNCTION) {
-    decode_size =
-        Min(decode_size, static_cast<int>(code->back_edge_table_offset()));
-  }
+  int size = code->instruction_size();
+  int safepoint_offset = code->is_crankshafted()
+      ? static_cast<int>(code->safepoint_table_offset()) : size;
+  int back_edge_offset = (code->kind() == Code::FUNCTION)
+      ? static_cast<int>(code->back_edge_table_offset()) : size;
+  int constant_offset = FLAG_enable_ool_constant_pool_in_code
+      ? code->constant_pool_offset() : size;
 
+  // Stop before reaching any embedded tables
+  int code_size = Min(safepoint_offset, back_edge_offset);
   byte* begin = code->instruction_start();
-  byte* end = begin + decode_size;
+  byte* end = begin + Min(code_size, constant_offset);
   V8NameConverter v8NameConverter(code);
   DecodeIt(isolate, f, v8NameConverter, begin, end);
+
+  if (constant_offset < code_size) {
+    v8::internal::EmbeddedVector<char, kOutBufferSize> out_buffer;
+    StringBuilder out(out_buffer.start(), out_buffer.length());
+    int constant_size = code_size - constant_offset;
+    DCHECK((constant_size & kPointerAlignmentMask) == 0);
+    out.AddFormatted("\nConstant Pool (size = %d)", constant_size);
+    DumpBuffer(f, &out);
+    intptr_t* ptr = reinterpret_cast<intptr_t*>(begin + constant_offset);
+    for (int i = 0; i < constant_size; i += kPointerSize, ptr++) {
+      out.AddFormatted("%08" V8PRIxPTR "  %4d %08" V8PRIxPTR, ptr, i, *ptr);
+      DumpBuffer(f, &out);
+    }
+  }
 }
 
 #else  // ENABLE_DISASSEMBLER
