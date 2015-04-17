@@ -5698,6 +5698,8 @@ class Code: public HeapObject {
 };
 
 
+class CompilationInfo;
+
 // This class describes the layout of dependent codes array of a map. The
 // array is partitioned into several groups of dependent codes. Each group
 // contains codes with the same dependency on the map. The array has the
@@ -5767,7 +5769,7 @@ class DependentCode: public FixedArray {
 
   bool Contains(DependencyGroup group, WeakCell* code_cell);
 
-  static Handle<DependentCode> InsertCompilationDependencies(
+  static Handle<DependentCode> InsertCompilationInfo(
       Handle<DependentCode> entries, DependencyGroup group,
       Handle<Foreign> info);
 
@@ -5778,8 +5780,8 @@ class DependentCode: public FixedArray {
   void UpdateToFinishedCode(DependencyGroup group, Foreign* info,
                             WeakCell* code_cell);
 
-  void RemoveCompilationDependencies(DependentCode::DependencyGroup group,
-                                     Foreign* info);
+  void RemoveCompilationInfo(DependentCode::DependencyGroup group,
+                             Foreign* info);
 
   void DeoptimizeDependentCodeGroup(Isolate* isolate,
                                     DependentCode::DependencyGroup group);
@@ -5796,6 +5798,9 @@ class DependentCode: public FixedArray {
   inline void clear_at(int i);
   inline void copy(int from, int to);
   DECLARE_CAST(DependentCode)
+
+  static DependentCode* ForObject(Handle<HeapObject> object,
+                                  DependencyGroup group);
 
   static const char* DependencyGroupName(DependencyGroup group);
   static void SetMarkedForDeoptimization(Code* code, DependencyGroup group);
@@ -6353,6 +6358,10 @@ class Map: public HeapObject {
   }
 
   inline bool CanOmitMapChecks();
+
+  static void AddDependentCompilationInfo(Handle<Map> map,
+                                          DependentCode::DependencyGroup group,
+                                          CompilationInfo* info);
 
   static void AddDependentCode(Handle<Map> map,
                                DependentCode::DependencyGroup group,
@@ -8556,6 +8565,12 @@ class AllocationSite: public Struct {
   static void DigestTransitionFeedback(Handle<AllocationSite> site,
                                        ElementsKind to_kind);
 
+  static void RegisterForDeoptOnTenureChange(Handle<AllocationSite> site,
+                                             CompilationInfo* info);
+
+  static void RegisterForDeoptOnTransitionChange(Handle<AllocationSite> site,
+                                                 CompilationInfo* info);
+
   DECLARE_PRINTER(AllocationSite)
   DECLARE_VERIFIER(AllocationSite)
 
@@ -8586,6 +8601,10 @@ class AllocationSite: public Struct {
                               kSize> BodyDescriptor;
 
  private:
+  static void AddDependentCompilationInfo(Handle<AllocationSite> site,
+                                          DependentCode::DependencyGroup group,
+                                          CompilationInfo* info);
+
   bool PretenuringDecisionMade() {
     return pretenure_decision() != kUndecided;
   }
@@ -9817,6 +9836,9 @@ class PropertyCell : public HeapObject {
 
   static Handle<PropertyCell> InvalidateEntry(Handle<NameDictionary> dictionary,
                                               int entry);
+
+  static void AddDependentCompilationInfo(Handle<PropertyCell> cell,
+                                          CompilationInfo* info);
 
   DECLARE_CAST(PropertyCell)
 

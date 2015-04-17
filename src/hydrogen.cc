@@ -5398,7 +5398,7 @@ void HOptimizedGraphBuilder::VisitVariableProxy(VariableProxy* expr) {
 
       if (type == kUseCell) {
         Handle<PropertyCell> cell = it.GetPropertyCell();
-        top_info()->dependencies()->AssumePropertyCell(cell);
+        PropertyCell::AddDependentCompilationInfo(cell, top_info());
         if (it.property_details().cell_type() == PropertyCellType::kConstant) {
           Handle<Object> constant_object(cell->value(), isolate());
           if (constant_object->IsConsString()) {
@@ -5779,7 +5779,7 @@ void HOptimizedGraphBuilder::VisitArrayLiteral(ArrayLiteral* expr) {
                                 4);
 
     // Register to deopt if the boilerplate ElementsKind changes.
-    top_info()->dependencies()->AssumeTransitionStable(site);
+    AllocationSite::RegisterForDeoptOnTransitionChange(site, top_info());
   }
 
   // The array is expected in the bailout environment during computation
@@ -6094,7 +6094,8 @@ bool HOptimizedGraphBuilder::PropertyAccessInfo::LoadFieldMaps(
   DCHECK(field_type_.IsHeapObject());
 
   // Add dependency on the map that introduced the field.
-  top_info()->dependencies()->AssumeFieldType(GetFieldOwnerFromMap(map));
+  Map::AddDependentCompilationInfo(GetFieldOwnerFromMap(map),
+                                   DependentCode::kFieldTypeGroup, top_info());
   return true;
 }
 
@@ -6563,7 +6564,7 @@ void HOptimizedGraphBuilder::HandleGlobalVariableAssignment(
   GlobalPropertyAccess type = LookupGlobalProperty(var, &it, STORE);
   if (type == kUseCell) {
     Handle<PropertyCell> cell = it.GetPropertyCell();
-    top_info()->dependencies()->AssumePropertyCell(cell);
+    PropertyCell::AddDependentCompilationInfo(cell, top_info());
     if (it.property_details().cell_type() == PropertyCellType::kConstant) {
       Handle<Object> constant(cell->value(), isolate());
       if (value->IsConstant()) {
@@ -9357,7 +9358,7 @@ void HOptimizedGraphBuilder::BuildInlinedCallArray(
   HValue* constructor = environment()->ExpressionStackAt(argument_count);
 
   // Register on the site for deoptimization if the transition feedback changes.
-  top_info()->dependencies()->AssumeTransitionStable(site);
+  AllocationSite::RegisterForDeoptOnTransitionChange(site, top_info());
   ElementsKind kind = site->GetElementsKind();
   HInstruction* site_instruction = Add<HConstant>(site);
 
@@ -9493,7 +9494,8 @@ void HOptimizedGraphBuilder::VisitCallNew(CallNew* expr) {
         Handle<AllocationSite> allocation_site = expr->allocation_site();
         allocation_mode = HAllocationMode(allocation_site);
         // Take a dependency on allocation site.
-        top_info()->dependencies()->AssumeTenuringDecision(allocation_site);
+        AllocationSite::RegisterForDeoptOnTenureChange(allocation_site,
+                                                       top_info());
       }
     }
 
@@ -9537,7 +9539,8 @@ void HOptimizedGraphBuilder::VisitCallNew(CallNew* expr) {
       // Inlining worked, add a dependency on the initial map to make sure that
       // this code is deoptimized whenever the initial map of the constructor
       // changes.
-      top_info()->dependencies()->AssumeInitialMapCantChange(initial_map);
+      Map::AddDependentCompilationInfo(
+          initial_map, DependentCode::kInitialMapChangedGroup, top_info());
       return;
     }
 
@@ -10511,7 +10514,7 @@ HValue* HGraphBuilder::BuildBinaryOperation(
     if (!allocation_mode.feedback_site().is_null()) {
       DCHECK(!graph()->info()->IsStub());
       Handle<AllocationSite> site(allocation_mode.feedback_site());
-      top_info()->dependencies()->AssumeTenuringDecision(site);
+      AllocationSite::RegisterForDeoptOnTenureChange(site, top_info());
     }
 
     // Inline the string addition into the stub when creating allocation
@@ -11082,10 +11085,10 @@ HInstruction* HOptimizedGraphBuilder::BuildFastLiteral(
   Handle<AllocationSite> site(site_context->current());
   if (FLAG_allocation_site_pretenuring) {
     pretenure_flag = site_context->current()->GetPretenureMode();
-    top_info()->dependencies()->AssumeTenuringDecision(site);
+    AllocationSite::RegisterForDeoptOnTenureChange(site, top_info());
   }
 
-  top_info()->dependencies()->AssumeTransitionStable(site);
+  AllocationSite::RegisterForDeoptOnTransitionChange(site, top_info());
 
   HInstruction* object = Add<HAllocate>(object_size_constant, type,
       pretenure_flag, instance_type, site_context->current());
