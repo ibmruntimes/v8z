@@ -6116,8 +6116,9 @@ bool HOptimizedGraphBuilder::PropertyAccessInfo::LookupInPrototypes() {
     LookupDescriptor(*map, *name_);
     if (IsFound()) return LoadResult(map);
   }
+
   NotFound();
-  return true;
+  return !map->prototype()->IsJSReceiver();
 }
 
 
