@@ -487,11 +487,18 @@ Address Assembler::target_address_at(Address pc, Address constant_pool) {
 
 
 bool Assembler::IsConstantPoolLoadStart(Address pc) {
+#if V8_TARGET_ARCH_PPC64
+  if (!IsLi(instr_at(pc))) return false;
+  pc += kInstrSize;
+#endif
   return GetRA(instr_at(pc)).is(kConstantPoolRegister);
 }
 
 
 bool Assembler::IsConstantPoolLoadEnd(Address pc) {
+#if V8_TARGET_ARCH_PPC64
+  pc -= kInstrSize;
+#endif
   return IsConstantPoolLoadStart(pc);
 }
 

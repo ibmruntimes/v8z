@@ -3707,20 +3707,26 @@ void MacroAssembler::SetRelocatedValue(Register location,
                                        Register new_value) {
   lwz(scratch, MemOperand(location));
 
-  if (FLAG_enable_ool_constant_pool) {
-    if (emit_debug_code()) {
-      // Check that the instruction sequence is a load from the constant pool
-      ExtractBitMask(scratch, scratch, 0x1f * B16);
-      cmpi(scratch, Operand(kConstantPoolRegister.code()));
-      Check(eq, kTheInstructionToPatchShouldBeALoadFromConstantPool);
-      // Scratch was clobbered. Restore it.
-      lwz(scratch, MemOperand(location));
-    }
-    // Get the address of the constant and patch it.
-    andi(scratch, scratch, Operand(kImm16Mask));
-    StorePX(new_value, MemOperand(kConstantPoolRegister, scratch));
-  } else {
-    // This code assumes a FIXED_SEQUENCE for lis/ori
+#if V8_OOL_CONSTANT_POOL
+  if (emit_debug_code()) {
+    // Check that the instruction sequence is a load from the constant pool
+#if V8_TARGET_ARCH_PPC64
+    And(scratch, scratch, Operand(kOpcodeMask | (0x1f * B16)));
+    Cmpi(scratch, Operand(ADDI), r0);
+    Check(eq, kTheInstructionShouldBeALi);
+    lwz(scratch, MemOperand(location, kInstrSize));
+#endif
+    ExtractBitMask(scratch, scratch, 0x1f * B16);
+    cmpi(scratch, Operand(kConstantPoolRegister.code()));
+    Check(eq, kTheInstructionToPatchShouldBeALoadFromConstantPool);
+    // Scratch was clobbered. Restore it.
+    lwz(scratch, MemOperand(location));
+  }
+  // Get the address of the constant and patch it.
+  andi(scratch, scratch, Operand(kImm16Mask));
+  StorePX(new_value, MemOperand(kConstantPoolRegister, scratch));
+#else
+  // This code assumes a FIXED_SEQUENCE for lis/ori
 
     // At this point scratch is a lis instruction.
     if (emit_debug_code()) {
@@ -3805,25 +3811,31 @@ void MacroAssembler::GetRelocatedValue(Register location,
                                        Register scratch) {
   lwz(result, MemOperand(location));
 
-  if (FLAG_enable_ool_constant_pool) {
-    if (emit_debug_code()) {
-      // Check that the instruction sequence is a load from the constant pool
-      ExtractBitMask(result, result, 0x1f * B16);
-      cmpi(result, Operand(kConstantPoolRegister.code()));
-      Check(eq, kTheInstructionToPatchShouldBeALoadFromConstantPool);
-      lwz(result, MemOperand(location));
-    }
-    // Get the address of the constant and retrieve it.
-    andi(result, result, Operand(kImm16Mask));
-    LoadPX(result, MemOperand(kConstantPoolRegister, result));
-  } else {
-    // This code assumes a FIXED_SEQUENCE for lis/ori
-    if (emit_debug_code()) {
-      And(result, result, Operand(kOpcodeMask | (0x1f * B16)));
-      Cmpi(result, Operand(ADDIS), r0);
-      Check(eq, kTheInstructionShouldBeALis);
-      lwz(result, MemOperand(location));
-    }
+#if V8_OOL_CONSTANT_POOL
+  if (emit_debug_code()) {
+    // Check that the instruction sequence is a load from the constant pool
+#if V8_TARGET_ARCH_PPC64
+    And(result, result, Operand(kOpcodeMask | (0x1f * B16)));
+    Cmpi(result, Operand(ADDI), r0);
+    Check(eq, kTheInstructionShouldBeALi);
+    lwz(result, MemOperand(location, kInstrSize));
+#endif
+    ExtractBitMask(result, result, 0x1f * B16);
+    cmpi(result, Operand(kConstantPoolRegister.code()));
+    Check(eq, kTheInstructionToPatchShouldBeALoadFromConstantPool);
+    lwz(result, MemOperand(location));
+  }
+  // Get the address of the constant and retrieve it.
+  andi(result, result, Operand(kImm16Mask));
+  LoadPX(result, MemOperand(kConstantPoolRegister, result));
+#else
+  // This code assumes a FIXED_SEQUENCE for lis/ori
+  if (emit_debug_code()) {
+    And(result, result, Operand(kOpcodeMask | (0x1f * B16)));
+    Cmpi(result, Operand(ADDIS), r0);
+    Check(eq, kTheInstructionShouldBeALis);
+    lwz(result, MemOperand(location));
+  }
 
     // result now holds a lis instruction. Extract the immediate.
     slwi(result, result, Operand(16));
@@ -4276,7 +4288,13 @@ void MacroAssembler::LoadDoubleLiteral(DoubleRegister result,
       is_constant_pool_available() && !is_constant_pool_full()) {
     RelocInfo rinfo(pc_, value);
     ConstantPoolAddEntry(rinfo);
+#if V8_TARGET_ARCH_PPC64
+    // We use 2 instruction sequence here for consistency with mov.
+    li(scratch, Operand::Zero());
+    lfdx(result, MemOperand(kConstantPoolRegister, scratch));
+#else
     lfd(result, MemOperand(kConstantPoolRegister, 0));
+#endif
     return;
   }
 
@@ -4647,10 +4665,9 @@ void MacroAssembler::LoadP(Register dst, const MemOperand& mem,
                            Register scratch) {
   int offset = mem.offset();
 
-  if (!is_int16(offset)) {
+  if (!scratch.is(no_reg) && !is_int16(offset)) {
     /* cannot use d-form */
-    DCHECK(!scratch.is(no_reg));
-    mov(scratch, Operand(offset));
+    LoadIntLiteral(scratch, offset);
 #if V8_TARGET_ARCH_PPC64
     ldx(dst, MemOperand(mem.ra(), scratch));
 #else
@@ -4680,10 +4697,9 @@ void MacroAssembler::StoreP(Register src, const MemOperand& mem,
                             Register scratch) {
   int offset = mem.offset();
 
-  if (!is_int16(offset)) {
+  if (!scratch.is(no_reg) && !is_int16(offset)) {
     /* cannot use d-form */
-    DCHECK(!scratch.is(no_reg));
-    mov(scratch, Operand(offset));
+    LoadIntLiteral(scratch, offset);
 #if V8_TARGET_ARCH_PPC64
     stdx(src, MemOperand(mem.ra(), scratch));
 #else
@@ -4716,10 +4732,14 @@ void MacroAssembler::LoadWordArith(Register dst, const MemOperand& mem,
                                    Register scratch) {
   int offset = mem.offset();
 
-  if (!is_int16(offset)) {
-    DCHECK(!scratch.is(no_reg));
-    mov(scratch, Operand(offset));
+  if (!scratch.is(no_reg) && !is_int16(offset)) {
+    /* cannot use d-form */
+    LoadIntLiteral(scratch, offset);
+#if V8_TARGET_ARCH_PPC64
     lwax(dst, MemOperand(mem.ra(), scratch));
+#else
+    lwzx(dst, MemOperand(mem.ra(), scratch));
+#endif
   } else {
 #if V8_TARGET_ARCH_PPC64
     int misaligned = (offset & 3);
