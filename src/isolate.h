@@ -1513,7 +1513,7 @@ class PostponeInterruptsScope BASE_EMBEDDED {
 };
 
 
-class CodeTracer FINAL : public Malloced {
+class CodeTracer final : public Malloced {
  public:
   explicit CodeTracer(int isolate_id)
       : file_(NULL),
