@@ -2597,7 +2597,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
 
   __ la(fp, MemOperand(sp, 13 * kPointerSize));
 
-  // r2: result
+  // r2: result (int32)
   // subject: subject string -- needed to reload
   __ LoadP(subject, MemOperand(fp, kSubjectOffset));
 
@@ -2605,14 +2605,14 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // last_match_info_elements: Last match info elements (callee saved)
   // Check the result.
   Label success;
-  __ CmpP(r2, Operand(1));
+  __ Cmp32(r2, Operand(1));
   // We expect exactly one result since we force the called regexp to behave
   // as non-global.
   __ beq(&success);
   Label failure;
-  __ CmpP(r2, Operand(NativeRegExpMacroAssembler::FAILURE));
+  __ Cmp32(r2, Operand(NativeRegExpMacroAssembler::FAILURE));
   __ beq(&failure);
-  __ CmpP(r2, Operand(NativeRegExpMacroAssembler::EXCEPTION));
+  __ Cmp32(r2, Operand(NativeRegExpMacroAssembler::EXCEPTION));
   // If not exception it can only be retry. Handle that in the runtime system.
   __ bne(&runtime);
   // Result must now be exception. If there is no pending exception already a
