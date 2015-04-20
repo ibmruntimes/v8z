@@ -503,15 +503,14 @@ class Assembler : public AssemblerBase {
   void load_label_offset(Register r1, Label* L);
 
   // Read/Modify the code target address in the branch/call instruction at pc.
-  INLINE(static Address target_address_at(Address pc,
-                                          ConstantPoolArray* constant_pool));
+  INLINE(static Address target_address_at(Address pc, Address constant_pool));
   INLINE(static void set_target_address_at(Address pc,
-                                           ConstantPoolArray* constant_pool,
+                                           Address constant_pool,
                                            Address target,
                                            ICacheFlushMode icache_flush_mode =
                                                FLUSH_ICACHE_IF_NEEDED));
   INLINE(static Address target_address_at(Address pc, Code* code)) {
-    ConstantPoolArray* constant_pool = code ? code->constant_pool() : NULL;
+    Address constant_pool = code ? code->constant_pool() : NULL;
     return target_address_at(pc, constant_pool);
   }
   INLINE(static void set_target_address_at(Address pc,
@@ -519,7 +518,7 @@ class Assembler : public AssemblerBase {
                                            Address target,
                                            ICacheFlushMode icache_flush_mode =
                                                FLUSH_ICACHE_IF_NEEDED)) {
-    ConstantPoolArray* constant_pool = code ? code->constant_pool() : NULL;
+    Address constant_pool = code ? code->constant_pool() : NULL;
     set_target_address_at(pc, constant_pool, target, icache_flush_mode);
   }
 
