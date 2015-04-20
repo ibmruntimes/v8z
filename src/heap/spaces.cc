@@ -807,7 +807,8 @@ void MemoryAllocator::ReportStatistics() {
          ", used: %" V8_PTR_PREFIX
          "d"
          ", available: %%%d\n\n",
-         capacity_, size_, static_cast<int>(pct * 100));
+         static_cast<intptr_t>(capacity_), static_cast<intptr_t>(size_),
+         static_cast<int>(pct * 100));
 }
 #endif
 
