@@ -1812,9 +1812,9 @@ static void LeaveArgumentsAdaptorFrame(MacroAssembler* masm) {
   // -----------------------------------
   // Get the number of arguments passed (as a smi), tear down the frame and
   // then tear down the parameters.
-  __ LoadRR(sp, fp);
   __ LoadP(r3, MemOperand(fp, -3 * kPointerSize));
   __ SmiToPtrArrayOffset(r3, r3);
+  __ LoadRR(sp, fp);
   __ LoadP(fp, MemOperand(fp));
   __ LoadP(r14, MemOperand(sp, kPointerSize));
   // adjust SP with 3 ptrs for receiver + fp + lr
