@@ -354,6 +354,7 @@ def ProcessOptions(options):
 
   if options.asan:
     options.extra_flags.append("--invoke-weak-callbacks")
+    options.extra_flags.append("--omit-quit")
 
   if options.tsan:
     VARIANTS = ["default"]
