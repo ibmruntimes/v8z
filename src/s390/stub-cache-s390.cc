@@ -1107,11 +1107,14 @@ Handle<Code> PropertyICCompiler::CompilePolymorphic(TypeHandleList* types,
     if (!map->is_deprecated()) {
       number_of_handled_maps++;
       __ CmpP(map_reg, Operand(map));
+      Label next;
+      __ bne(&next);
       if (type->Is(HeapType::Number())) {
         DCHECK(!number_case.is_unused());
         __ bind(&number_case);
       }
-      __ Jump(handlers->at(current), RelocInfo::CODE_TARGET, eq);
+      __ Jump(handlers->at(current), RelocInfo::CODE_TARGET);
+      __ bind(&next);
     }
   }
   DCHECK(number_of_handled_maps != 0);
