@@ -1030,6 +1030,9 @@ class Isolate {
   // object prototype. Also ensure that changes to prototype chain between
   // Array and Object fire notifications.
   void UpdateArrayProtectorOnSetElement(Handle<JSObject> object);
+  void UpdateArrayProtectorOnSetLength(Handle<JSObject> object) {
+    UpdateArrayProtectorOnSetElement(object);
+  }
   void UpdateArrayProtectorOnSetPrototype(Handle<JSObject> object) {
     UpdateArrayProtectorOnSetElement(object);
   }
