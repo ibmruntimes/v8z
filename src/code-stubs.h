@@ -1262,9 +1262,9 @@ class CallApiGetterStub : public PlatformCodeStub {
 
 class BinaryOpICStub : public HydrogenCodeStub {
  public:
-  BinaryOpICStub(Isolate* isolate, Token::Value op)
+  BinaryOpICStub(Isolate* isolate, Token::Value op, LanguageMode language_mode)
       : HydrogenCodeStub(isolate, UNINITIALIZED) {
-    BinaryOpICState state(isolate, op);
+    BinaryOpICState state(isolate, op, language_mode);
     set_sub_minor_key(state.GetExtraICState());
   }
 
@@ -1345,8 +1345,9 @@ class BinaryOpICWithAllocationSiteStub final : public PlatformCodeStub {
 
 class BinaryOpWithAllocationSiteStub final : public BinaryOpICStub {
  public:
-  BinaryOpWithAllocationSiteStub(Isolate* isolate, Token::Value op)
-      : BinaryOpICStub(isolate, op) {}
+  BinaryOpWithAllocationSiteStub(Isolate* isolate, Token::Value op,
+                                 LanguageMode language_mode)
+      : BinaryOpICStub(isolate, op, language_mode) {}
 
   BinaryOpWithAllocationSiteStub(Isolate* isolate, const BinaryOpICState& state)
       : BinaryOpICStub(isolate, state) {}
