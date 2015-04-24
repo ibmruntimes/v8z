@@ -233,10 +233,6 @@ const char* OS::GetGCFakeMMapFile() {
 
 
 void* OS::GetRandomMmapAddr() {
-#if V8_TARGET_ARCH_S390
-  // disable on s390 for now.
-  return NULL;
-#endif
 #if V8_OS_NACL
   // TODO(bradchen): restore randomization once Native Client gets
   // smarter about using mmap address hints.
