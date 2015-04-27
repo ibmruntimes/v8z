@@ -2242,13 +2242,19 @@ class StoreScriptContextFieldStub : public ScriptContextFieldStub {
 class LoadFastElementStub : public HydrogenCodeStub {
  public:
   LoadFastElementStub(Isolate* isolate, bool is_js_array,
-                      ElementsKind elements_kind)
+                      ElementsKind elements_kind,
+                      bool convert_hole_to_undefined = false)
       : HydrogenCodeStub(isolate) {
-    set_sub_minor_key(ElementsKindBits::encode(elements_kind) |
-                      IsJSArrayBits::encode(is_js_array));
+    set_sub_minor_key(
+        ElementsKindBits::encode(elements_kind) |
+        IsJSArrayBits::encode(is_js_array) |
+        CanConvertHoleToUndefined::encode(convert_hole_to_undefined));
   }
 
   bool is_js_array() const { return IsJSArrayBits::decode(sub_minor_key()); }
+  bool convert_hole_to_undefined() const {
+    return CanConvertHoleToUndefined::decode(sub_minor_key());
+  }
 
   ElementsKind elements_kind() const {
     return ElementsKindBits::decode(sub_minor_key());
@@ -2257,6 +2263,7 @@ class LoadFastElementStub : public HydrogenCodeStub {
  private:
   class ElementsKindBits: public BitField<ElementsKind, 0, 8> {};
   class IsJSArrayBits: public BitField<bool, 8, 1> {};
+  class CanConvertHoleToUndefined : public BitField<bool, 9, 1> {};
 
   CallInterfaceDescriptor GetCallInterfaceDescriptor() override {
     if (FLAG_vector_ics) {

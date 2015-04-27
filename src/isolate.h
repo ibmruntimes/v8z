@@ -1023,6 +1023,9 @@ class Isolate {
 
   Map* get_initial_js_array_map(ElementsKind kind);
 
+  static const int kArrayProtectorValid = 1;
+  static const int kArrayProtectorInvalid = 0;
+
   bool IsFastArrayConstructorPrototypeChainIntact();
 
   // On intent to set an element in object, make sure that appropriate
