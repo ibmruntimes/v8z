@@ -198,7 +198,7 @@ class DebugSectionBase : public ZoneObject {
     uintptr_t start = writer->position();
     if (WriteBodyInternal(writer)) {
       uintptr_t end = writer->position();
-      header->offset = start;
+      header->offset = static_cast<uint32_t>(start);
 #if defined(__MACH_O)
       header->addr = 0;
 #endif
@@ -514,7 +514,7 @@ class ELFStringTable : public ELFSection {
 
 void ELFSection::PopulateHeader(Writer::Slot<ELFSection::Header> header,
                                 ELFStringTable* strtab) {
-  header->name = strtab->Add(name_);
+  header->name = static_cast<uint32_t>(strtab->Add(name_));
   header->type = type_;
   header->alignment = align_;
   PopulateHeader(header);
@@ -966,7 +966,7 @@ class ELFSymbol BASE_EMBEDDED {
 
   void Write(Writer::Slot<SerializedLayout> s, ELFStringTable* t) {
     // Convert symbol names from strings to indexes in the string table.
-    s->name = t->Add(name);
+    s->name = static_cast<uint32_t>(t->Add(name));
     s->value = value;
     s->size = size;
     s->info = info;
@@ -1810,7 +1810,7 @@ void UnwindInfoSection::WriteLength(Writer* w,
   }
 
   DCHECK((w->position() - initial_position) % kPointerSize == 0);
-  length_slot->set(w->position() - initial_position);
+  length_slot->set(static_cast<uint32_t>(w->position() - initial_position));
 }
 
 
@@ -1825,7 +1825,7 @@ UnwindInfoSection::UnwindInfoSection(CodeDescription* desc)
 
 int UnwindInfoSection::WriteCIE(Writer* w) {
   Writer::Slot<uint32_t> cie_length_slot = w->CreateSlotHere<uint32_t>();
-  uint32_t cie_position = w->position();
+  uint32_t cie_position = static_cast<uint32_t>(w->position());
 
   // Write out the CIE header. Currently no 'common instructions' are
   // emitted onto the CIE; every FDE has its own set of instructions.
@@ -1846,7 +1846,7 @@ int UnwindInfoSection::WriteCIE(Writer* w) {
 void UnwindInfoSection::WriteFDE(Writer* w, int cie_position) {
   // The only FDE for this function. The CFA is the current RBP.
   Writer::Slot<uint32_t> fde_length_slot = w->CreateSlotHere<uint32_t>();
-  int fde_position = w->position();
+  int fde_position = static_cast<uint32_t>(w->position());
   w->Write<int32_t>(fde_position - cie_position + 4);
 
   w->Write<uintptr_t>(desc_->CodeStart());
@@ -2243,7 +2243,8 @@ static void AddJITCodeEntry(CodeMap* map, const AddressRange& range,
 
     SNPrintF(Vector<char>(file_name, kMaxFileNameSize), "/tmp/elfdump%s%d.o",
              (name_hint != NULL) ? name_hint : "", file_num++);
-    WriteBytes(file_name, entry->symfile_addr_, entry->symfile_size_);
+    WriteBytes(file_name, entry->symfile_addr_,
+               static_cast<int>(entry->symfile_size_));
   }
 #endif
 
