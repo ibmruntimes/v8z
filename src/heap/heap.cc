@@ -4539,17 +4539,8 @@ void Heap::MakeHeapIterable() {
 }
 
 
-void Heap::IdleMarkCompact(const char* message) {
-  bool uncommit = false;
-  if (gc_count_at_last_idle_gc_ == gc_count_) {
-    // No GC since the last full GC, the mutator is probably not active.
-    isolate_->compilation_cache()->Clear();
-    uncommit = true;
-  }
-  CollectAllGarbage(kReduceMemoryFootprintMask, message);
-  gc_idle_time_handler_.NotifyIdleMarkCompact();
-  gc_count_at_last_idle_gc_ = gc_count_;
-  if (uncommit) {
+void Heap::ReduceNewSpaceSize(bool is_long_idle_notification) {
+  if (is_long_idle_notification) {
     new_space_.Shrink();
     UncommitFromSpace();
   }
@@ -4557,7 +4548,8 @@ void Heap::IdleMarkCompact(const char* message) {
 
 
 bool Heap::TryFinalizeIdleIncrementalMarking(
-    double idle_time_in_ms, size_t size_of_objects,
+    bool is_long_idle_notification, double idle_time_in_ms,
+    size_t size_of_objects,
     size_t final_incremental_mark_compact_speed_in_bytes_per_ms) {
   if (FLAG_overapproximate_weak_closure &&
       (incremental_marking()->IsReadyToOverApproximateWeakClosure() ||
@@ -4574,6 +4566,7 @@ bool Heap::TryFinalizeIdleIncrementalMarking(
                   static_cast<size_t>(idle_time_in_ms), size_of_objects,
                   final_incremental_mark_compact_speed_in_bytes_per_ms))) {
     CollectAllGarbage(kNoGCFlags, "idle notification: finalize incremental");
+    ReduceNewSpaceSize(is_long_idle_notification);
     return true;
   }
   return false;
@@ -4602,6 +4595,9 @@ bool Heap::IdleNotification(double deadline_in_seconds) {
   HistogramTimerScope idle_notification_scope(
       isolate_->counters()->gc_idle_notification());
   double idle_time_in_ms = deadline_in_ms - MonotonicallyIncreasingTimeInMs();
+  bool is_long_idle_notification =
+      static_cast<size_t>(idle_time_in_ms) >
+      GCIdleTimeHandler::kMaxFrameRenderingIdleTime;
 
   GCIdleTimeHandler::HeapState heap_state;
   heap_state.contexts_disposed = contexts_disposed_;
@@ -4611,8 +4607,7 @@ bool Heap::IdleNotification(double deadline_in_seconds) {
   heap_state.incremental_marking_stopped = incremental_marking()->IsStopped();
   // TODO(ulan): Start incremental marking only for large heaps.
   intptr_t limit = old_generation_allocation_limit_;
-  if (static_cast<size_t>(idle_time_in_ms) >
-      GCIdleTimeHandler::kMaxFrameRenderingIdleTime) {
+  if (is_long_idle_notification) {
     limit = idle_old_generation_allocation_limit_;
   }
 
@@ -4667,24 +4662,31 @@ bool Heap::IdleNotification(double deadline_in_seconds) {
                !mark_compact_collector_.marking_deque()->IsEmpty());
       if (remaining_idle_time_in_ms > 0.0) {
         action.additional_work = TryFinalizeIdleIncrementalMarking(
-            remaining_idle_time_in_ms, heap_state.size_of_objects,
+            is_long_idle_notification, remaining_idle_time_in_ms,
+            heap_state.size_of_objects,
             heap_state.final_incremental_mark_compact_speed_in_bytes_per_ms);
       }
       break;
     }
     case DO_FULL_GC: {
+      if (is_long_idle_notification && gc_count_at_last_idle_gc_ == gc_count_) {
+        isolate_->compilation_cache()->Clear();
+      }
       if (contexts_disposed_) {
         HistogramTimerScope scope(isolate_->counters()->gc_context());
         CollectAllGarbage(kNoGCFlags, "idle notification: contexts disposed");
-        gc_idle_time_handler_.NotifyIdleMarkCompact();
-        gc_count_at_last_idle_gc_ = gc_count_;
       } else {
-        IdleMarkCompact("idle notification: finalize idle round");
+        CollectAllGarbage(kReduceMemoryFootprintMask,
+                          "idle notification: finalize idle round");
       }
+      gc_count_at_last_idle_gc_ = gc_count_;
+      ReduceNewSpaceSize(is_long_idle_notification);
+      gc_idle_time_handler_.NotifyIdleMarkCompact();
       break;
     }
     case DO_SCAVENGE:
       CollectGarbage(NEW_SPACE, "idle notification: scavenge");
+      ReduceNewSpaceSize(is_long_idle_notification);
       break;
     case DO_FINALIZE_SWEEPING:
       mark_compact_collector()->EnsureSweepingCompleted();
