@@ -21,6 +21,11 @@ int Deoptimizer::patch_size() {
 }
 
 
+void Deoptimizer::EnsureRelocSpaceForLazyDeoptimization(Handle<Code> code) {
+  // Empty because there is no need for relocation information for the code
+  // patching in Deoptimizer::PatchCodeForDeoptimization below.
+}
+
 
 void Deoptimizer::PatchCodeForDeoptimization(Isolate* isolate, Code* code) {
   // Invalidate the relocation information, as it will become invalid by the
@@ -89,7 +94,7 @@ bool Deoptimizer::HasAlignmentPadding(JSFunction* function) {
 
 
 void Deoptimizer::SetPlatformCompiledStubRegisters(
-    FrameDescription* output_frame, CodeStubInterfaceDescriptor* descriptor) {
+    FrameDescription* output_frame, CodeStubDescriptor* descriptor) {
   ApiFunction function(descriptor->deoptimization_handler());
   ExternalReference xref(&function, ExternalReference::BUILTIN_CALL, isolate_);
   intptr_t handler = reinterpret_cast<intptr_t>(xref.address());
@@ -110,7 +115,7 @@ void Deoptimizer::CopyDoubleRegisters(FrameDescription* output_frame) {
 
 #define __ masm()->
 
-void Deoptimizer::EntryGenerator::Generate() {
+void Deoptimizer::TableEntryGenerator::Generate() {
   GeneratePrologue();
 
   // TODO(all): This code needs to be revisited. We probably only need to save
@@ -126,6 +131,9 @@ void Deoptimizer::EntryGenerator::Generate() {
   CPURegList saved_registers(CPURegister::kRegister, kXRegSizeInBits, 0, 27);
   saved_registers.Combine(fp);
   __ PushCPURegList(saved_registers);
+
+  __ Mov(x3, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate())));
+  __ Str(fp, MemOperand(x3));
 
   const int kSavedRegistersAreaSize =
       (saved_registers.Count() * kXRegSize) +

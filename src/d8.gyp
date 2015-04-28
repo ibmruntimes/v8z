@@ -49,6 +49,8 @@
       ],
       'sources': [
         'd8.cc',
+        'startup-data-util.h',
+        'startup-data-util.cc'
       ],
       'conditions': [
         [ 'want_separate_host_toolset==1', {
@@ -129,7 +131,6 @@
             '../tools/js2c.py',
             '<@(_outputs)',
             'D8',
-            'off',  # compress startup data
             '<@(js_files)'
           ],
         },

@@ -288,8 +288,8 @@ MemCopyUint16Uint8Function CreateMemCopyUint16Uint8Function(
 
     __ bind(&loop);
     __ ldr(temp1, MemOperand(src, 4, PostIndex));
-    __ uxtb16(temp3, Operand(temp1, ROR, 0));
-    __ uxtb16(temp4, Operand(temp1, ROR, 8));
+    __ uxtb16(temp3, temp1);
+    __ uxtb16(temp4, temp1, 8);
     __ pkhbt(temp1, temp3, Operand(temp4, LSL, 16));
     __ str(temp1, MemOperand(dest));
     __ pkhtb(temp1, temp4, Operand(temp3, ASR, 16));
@@ -301,9 +301,9 @@ MemCopyUint16Uint8Function CreateMemCopyUint16Uint8Function(
     __ mov(chars, Operand(chars, LSL, 31), SetCC);  // bit0 => ne, bit1 => cs
     __ b(&not_two, cc);
     __ ldrh(temp1, MemOperand(src, 2, PostIndex));
-    __ uxtb(temp3, Operand(temp1, ROR, 8));
+    __ uxtb(temp3, temp1, 8);
     __ mov(temp3, Operand(temp3, LSL, 16));
-    __ uxtab(temp3, temp3, Operand(temp1, ROR, 0));
+    __ uxtab(temp3, temp3, temp1);
     __ str(temp3, MemOperand(dest, 4, PostIndex));
     __ bind(&not_two);
     __ ldrb(temp1, MemOperand(src), ne);
@@ -604,8 +604,22 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   __ add(src_elements, elements,
          Operand(FixedDoubleArray::kHeaderSize - kHeapObjectTag + 4));
   __ add(dst_elements, array, Operand(FixedArray::kHeaderSize));
-  __ add(array, array, Operand(kHeapObjectTag));
   __ add(dst_end, dst_elements, Operand(length, LSL, 1));
+
+  // Allocating heap numbers in the loop below can fail and cause a jump to
+  // gc_required. We can't leave a partly initialized FixedArray behind,
+  // so pessimistically fill it with holes now.
+  Label initialization_loop, initialization_loop_entry;
+  __ LoadRoot(scratch, Heap::kTheHoleValueRootIndex);
+  __ b(&initialization_loop_entry);
+  __ bind(&initialization_loop);
+  __ str(scratch, MemOperand(dst_elements, kPointerSize, PostIndex));
+  __ bind(&initialization_loop_entry);
+  __ cmp(dst_elements, dst_end);
+  __ b(lt, &initialization_loop);
+
+  __ add(dst_elements, array, Operand(FixedArray::kHeaderSize));
+  __ add(array, array, Operand(kHeapObjectTag));
   __ LoadRoot(heap_number_map, Heap::kHeapNumberMapRootIndex);
   // Using offsetted addresses in src_elements to fully take advantage of
   // post-indexing.
@@ -759,16 +773,16 @@ void StringCharLoadGenerator::Generate(MacroAssembler* masm,
   __ b(ne, call_runtime);
   __ ldr(string, FieldMemOperand(string, ExternalString::kResourceDataOffset));
 
-  Label ascii, done;
+  Label one_byte, done;
   __ bind(&check_encoding);
   STATIC_ASSERT(kTwoByteStringTag == 0);
   __ tst(result, Operand(kStringEncodingMask));
-  __ b(ne, &ascii);
+  __ b(ne, &one_byte);
   // Two-byte string.
   __ ldrh(result, MemOperand(string, index, LSL, 1));
   __ jmp(&done);
-  __ bind(&ascii);
-  // Ascii string.
+  __ bind(&one_byte);
+  // One-byte string.
   __ ldrb(result, MemOperand(string, index));
   __ bind(&done);
 }

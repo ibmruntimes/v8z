@@ -32,11 +32,7 @@
 
 // The original source code covered by the above license above has been
 // modified significantly by Google Inc.
-// Copyright 2012 the V8 project authors. All rights reserved.
-
-//
-// Copyright IBM Corp. 2012, 2013. All rights reserved.
-//
+// Copyright 2014 the V8 project authors. All rights reserved.
 
 // A light-weight PPC Assembler
 // Generates user mode instructions for the PPC architecture up
@@ -48,26 +44,21 @@
 #include <vector>
 
 #include "src/assembler.h"
+#include "src/compiler.h"
 #include "src/ppc/constants-ppc.h"
-#include "src/serialize.h"
 
-#define ABI_USES_FUNCTION_DESCRIPTORS                                     \
-  (V8_HOST_ARCH_PPC &&                                                    \
-     (V8_OS_AIX ||                                                        \
-      (V8_TARGET_ARCH_PPC64 && V8_TARGET_BIG_ENDIAN)))
+#define ABI_USES_FUNCTION_DESCRIPTORS \
+  (V8_HOST_ARCH_PPC && (V8_OS_AIX ||    \
+                      (V8_TARGET_ARCH_PPC64 && V8_TARGET_BIG_ENDIAN)))
 
 #define ABI_PASSES_HANDLES_IN_REGS \
   (!V8_HOST_ARCH_PPC || V8_OS_AIX || V8_TARGET_ARCH_PPC64)
 
-#define ABI_RETURNS_HANDLES_IN_REGS \
-  (!V8_HOST_ARCH_PPC || V8_TARGET_LITTLE_ENDIAN)
-
 #define ABI_RETURNS_OBJECT_PAIRS_IN_REGS \
-  (!V8_HOST_ARCH_PPC || V8_TARGET_LITTLE_ENDIAN)
+  (!V8_HOST_ARCH_PPC || !V8_TARGET_ARCH_PPC64 || V8_TARGET_LITTLE_ENDIAN)
 
 #define ABI_TOC_ADDRESSABILITY_VIA_IP \
-  (V8_HOST_ARCH_PPC && V8_TARGET_ARCH_PPC64 && \
-    V8_TARGET_LITTLE_ENDIAN)
+  (V8_HOST_ARCH_PPC && V8_TARGET_ARCH_PPC64 && V8_TARGET_LITTLE_ENDIAN)
 
 #if !V8_HOST_ARCH_PPC || V8_OS_AIX || V8_TARGET_ARCH_PPC64
 #define ABI_TOC_REGISTER kRegister_r2_Code
@@ -114,11 +105,10 @@ struct Register {
   static const int kExponentOffset = 0;
 #endif
 
-  static const int kAllocatableLowRangeBegin  = 3;
-  static const int kAllocatableLowRangeEnd    = 10;
+  static const int kAllocatableLowRangeBegin = 3;
+  static const int kAllocatableLowRangeEnd = 10;
   static const int kAllocatableHighRangeBegin = 14;
-  static const int kAllocatableHighRangeEnd =
-      FLAG_enable_ool_constant_pool? 27 : 28;
+  static const int kAllocatableHighRangeEnd = 28;
   static const int kAllocatableContext = 30;
 
   static const int kNumAllocatableLow =
@@ -127,6 +117,7 @@ struct Register {
       kAllocatableHighRangeEnd - kAllocatableHighRangeBegin + 1;
   static const int kMaxNumAllocatableRegisters =
       kNumAllocatableLow + kNumAllocatableHigh + 1;  // cp
+
   static int NumAllocatableRegisters() { return kMaxNumAllocatableRegisters; }
 
   static int ToAllocationIndex(Register reg) {
@@ -153,8 +144,9 @@ struct Register {
       return from_code(kAllocatableContext);
     }
     return (index < kNumAllocatableLow)
-        ? from_code(index + kAllocatableLowRangeBegin)
-        : from_code(index - kNumAllocatableLow + kAllocatableHighRangeBegin);
+               ? from_code(index + kAllocatableLowRangeBegin)
+               : from_code(index - kNumAllocatableLow +
+                           kAllocatableHighRangeBegin);
   }
 
   static const char* AllocationIndexToString(int index) {
@@ -185,41 +177,17 @@ struct Register {
       "r28",
       "cp",
     };
-    if (FLAG_enable_ool_constant_pool &&
-        (index == kMaxNumAllocatableRegisters - 2)) {
-      return names[index + 1];
-    }
     return names[index];
   }
 
   static const RegList kAllocatable =
-      1 << 3 |
-      1 << 4 |
-      1 << 5 |
-      1 << 6 |
-      1 << 7 |
-      1 << 8 |
-      1 << 9 |
-      1 << 10 |
-      1 << 14 |
-      1 << 15 |
-      1 << 16 |
-      1 << 17 |
-      1 << 18 |
-      1 << 19 |
-      1 << 20 |
-      1 << 21 |
-      1 << 22 |
-      1 << 23 |
-      1 << 24 |
-      1 << 25 |
-      1 << 26 |
-      1 << 27 |
-      (FLAG_enable_ool_constant_pool ? 0 : 1 << 28) |
-      1 << 30;
+      1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 7 | 1 << 8 | 1 << 9 | 1 << 10 |
+      1 << 14 | 1 << 15 | 1 << 16 | 1 << 17 | 1 << 18 | 1 << 19 | 1 << 20 |
+      1 << 21 | 1 << 22 | 1 << 23 | 1 << 24 | 1 << 25 | 1 << 26 | 1 << 27 |
+      1 << 28 | 1 << 30;
 
   static Register from_code(int code) {
-    Register r = { code };
+    Register r = {code};
     return r;
   }
 
@@ -245,19 +213,19 @@ struct Register {
 
 // These constants are used in several locations, including static initializers
 const int kRegister_no_reg_Code = -1;
-const int kRegister_r0_Code  =  0;  // general scratch
-const int kRegister_sp_Code  =  1;  // stack pointer
-const int kRegister_r2_Code  =  2;  // special on PowerPC
-const int kRegister_r3_Code  =  3;
-const int kRegister_r4_Code  =  4;
-const int kRegister_r5_Code  =  5;
-const int kRegister_r6_Code  =  6;
-const int kRegister_r7_Code  =  7;
-const int kRegister_r8_Code  =  8;
-const int kRegister_r9_Code  =  9;
+const int kRegister_r0_Code = 0;  // general scratch
+const int kRegister_sp_Code = 1;  // stack pointer
+const int kRegister_r2_Code = 2;  // special on PowerPC
+const int kRegister_r3_Code = 3;
+const int kRegister_r4_Code = 4;
+const int kRegister_r5_Code = 5;
+const int kRegister_r6_Code = 6;
+const int kRegister_r7_Code = 7;
+const int kRegister_r8_Code = 8;
+const int kRegister_r9_Code = 9;
 const int kRegister_r10_Code = 10;
 const int kRegister_r11_Code = 11;  // lithium scratch
-const int kRegister_ip_Code  = 12;  // ip (general scratch)
+const int kRegister_ip_Code = 12;   // ip (general scratch)
 const int kRegister_r13_Code = 13;  // special on PowerPC
 const int kRegister_r14_Code = 14;
 const int kRegister_r15_Code = 15;
@@ -274,63 +242,62 @@ const int kRegister_r24_Code = 24;
 const int kRegister_r25_Code = 25;
 const int kRegister_r26_Code = 26;
 const int kRegister_r27_Code = 27;
-const int kRegister_r28_Code = 28;  // constant pool pointer
+const int kRegister_r28_Code = 28;
 const int kRegister_r29_Code = 29;  // roots array pointer
 const int kRegister_r30_Code = 30;  // context pointer
-const int kRegister_fp_Code  = 31;  // frame pointer
+const int kRegister_fp_Code = 31;   // frame pointer
 
-const Register no_reg = { kRegister_no_reg_Code };
+const Register no_reg = {kRegister_no_reg_Code};
 
-const Register r0  = { kRegister_r0_Code };
-const Register sp  = { kRegister_sp_Code };
-const Register r2  = { kRegister_r2_Code };
-const Register r3  = { kRegister_r3_Code };
-const Register r4  = { kRegister_r4_Code };
-const Register r5  = { kRegister_r5_Code };
-const Register r6  = { kRegister_r6_Code };
-const Register r7  = { kRegister_r7_Code };
-const Register r8  = { kRegister_r8_Code };
-const Register r9  = { kRegister_r9_Code };
-const Register r10 = { kRegister_r10_Code };
-const Register r11 = { kRegister_r11_Code };
-const Register ip  = { kRegister_ip_Code };
-const Register r13  = { kRegister_r13_Code };
-const Register r14  = { kRegister_r14_Code };
-const Register r15  = { kRegister_r15_Code };
+const Register r0 = {kRegister_r0_Code};
+const Register sp = {kRegister_sp_Code};
+const Register r2 = {kRegister_r2_Code};
+const Register r3 = {kRegister_r3_Code};
+const Register r4 = {kRegister_r4_Code};
+const Register r5 = {kRegister_r5_Code};
+const Register r6 = {kRegister_r6_Code};
+const Register r7 = {kRegister_r7_Code};
+const Register r8 = {kRegister_r8_Code};
+const Register r9 = {kRegister_r9_Code};
+const Register r10 = {kRegister_r10_Code};
+const Register r11 = {kRegister_r11_Code};
+const Register ip = {kRegister_ip_Code};
+const Register r13 = {kRegister_r13_Code};
+const Register r14 = {kRegister_r14_Code};
+const Register r15 = {kRegister_r15_Code};
 
-const Register r16  = { kRegister_r16_Code };
-const Register r17  = { kRegister_r17_Code };
-const Register r18  = { kRegister_r18_Code };
-const Register r19  = { kRegister_r19_Code };
-const Register r20  = { kRegister_r20_Code };
-const Register r21  = { kRegister_r21_Code };
-const Register r22  = { kRegister_r22_Code };
-const Register r23  = { kRegister_r23_Code };
-const Register r24  = { kRegister_r24_Code };
-const Register r25  = { kRegister_r25_Code };
-const Register r26  = { kRegister_r26_Code };
-const Register r27  = { kRegister_r27_Code };
-const Register r28  = { kRegister_r28_Code };
-const Register r29  = { kRegister_r29_Code };
-const Register r30  = { kRegister_r30_Code };
-const Register fp = { kRegister_fp_Code };
+const Register r16 = {kRegister_r16_Code};
+const Register r17 = {kRegister_r17_Code};
+const Register r18 = {kRegister_r18_Code};
+const Register r19 = {kRegister_r19_Code};
+const Register r20 = {kRegister_r20_Code};
+const Register r21 = {kRegister_r21_Code};
+const Register r22 = {kRegister_r22_Code};
+const Register r23 = {kRegister_r23_Code};
+const Register r24 = {kRegister_r24_Code};
+const Register r25 = {kRegister_r25_Code};
+const Register r26 = {kRegister_r26_Code};
+const Register r27 = {kRegister_r27_Code};
+const Register r28 = {kRegister_r28_Code};
+const Register r29 = {kRegister_r29_Code};
+const Register r30 = {kRegister_r30_Code};
+const Register fp = {kRegister_fp_Code};
 
 // Give alias names to registers
 const Register cp = {kRegister_r30_Code};  // JavaScript context pointer
 const Register kRootRegister = {kRegister_r29_Code};  // Roots array pointer.
-const Register kConstantPoolRegister = {kRegister_r28_Code};  // Constant pool
 
 // Double word FP register.
 struct DoubleRegister {
   static const int kNumRegisters = 32;
   static const int kMaxNumRegisters = kNumRegisters;
-  static const int kNumVolatileRegisters = 14;     // d0-d13
+  static const int kNumVolatileRegisters = 14;  // d0-d13
   static const int kSizeInBytes = 8;
 
-  static const int kAllocatableLowRangeBegin  = 1;
-  static const int kAllocatableLowRangeEnd    = 12;
+  static const int kAllocatableLowRangeBegin = 1;
+  static const int kAllocatableLowRangeEnd = 12;
   static const int kAllocatableHighRangeBegin = 15;
-  static const int kAllocatableHighRangeEnd   = 31;
+  static const int kAllocatableHighRangeEnd = 31;
 
   static const int kNumAllocatableLow =
       kAllocatableLowRangeEnd - kAllocatableLowRangeBegin + 1;
@@ -340,11 +307,16 @@ struct DoubleRegister {
       kNumAllocatableLow + kNumAllocatableHigh;
   static int NumAllocatableRegisters() { return kMaxNumAllocatableRegisters; }
 
+  // TODO(turbofan)
+  inline static int NumAllocatableAliasedRegisters() {
+    return NumAllocatableRegisters();
+  }
+
   static int ToAllocationIndex(DoubleRegister reg) {
     int code = reg.code();
     int index = (code <= kAllocatableLowRangeEnd)
-      ? code - kAllocatableLowRangeBegin
-      : code - kAllocatableHighRangeBegin + kNumAllocatableLow;
+                    ? code - kAllocatableLowRangeBegin
+                    : code - kAllocatableHighRangeBegin + kNumAllocatableLow;
     DCHECK(index < kMaxNumAllocatableRegisters);
     return index;
   }
@@ -352,14 +324,15 @@ struct DoubleRegister {
   static DoubleRegister FromAllocationIndex(int index) {
     DCHECK(index >= 0 && index < kMaxNumAllocatableRegisters);
     return (index < kNumAllocatableLow)
-        ? from_code(index + kAllocatableLowRangeBegin)
-        : from_code(index - kNumAllocatableLow + kAllocatableHighRangeBegin);
+               ? from_code(index + kAllocatableLowRangeBegin)
+               : from_code(index - kNumAllocatableLow +
+                           kAllocatableHighRangeBegin);
   }
 
   static const char* AllocationIndexToString(int index);
 
   static DoubleRegister from_code(int code) {
-    DoubleRegister r = { code };
+    DoubleRegister r = {code};
     return r;
   }
 
@@ -384,39 +357,39 @@ struct DoubleRegister {
 };
 
 
-const DoubleRegister no_dreg = { -1 };
-const DoubleRegister d0  = {  0 };
-const DoubleRegister d1  = {  1 };
-const DoubleRegister d2  = {  2 };
-const DoubleRegister d3  = {  3 };
-const DoubleRegister d4  = {  4 };
-const DoubleRegister d5  = {  5 };
-const DoubleRegister d6  = {  6 };
-const DoubleRegister d7  = {  7 };
-const DoubleRegister d8  = {  8 };
-const DoubleRegister d9  = {  9 };
-const DoubleRegister d10 = { 10 };
-const DoubleRegister d11 = { 11 };
-const DoubleRegister d12 = { 12 };
-const DoubleRegister d13 = { 13 };
-const DoubleRegister d14 = { 14 };
-const DoubleRegister d15 = { 15 };
-const DoubleRegister d16 = { 16 };
-const DoubleRegister d17 = { 17 };
-const DoubleRegister d18 = { 18 };
-const DoubleRegister d19 = { 19 };
-const DoubleRegister d20 = { 20 };
-const DoubleRegister d21 = { 21 };
-const DoubleRegister d22 = { 22 };
-const DoubleRegister d23 = { 23 };
-const DoubleRegister d24 = { 24 };
-const DoubleRegister d25 = { 25 };
-const DoubleRegister d26 = { 26 };
-const DoubleRegister d27 = { 27 };
-const DoubleRegister d28 = { 28 };
-const DoubleRegister d29 = { 29 };
-const DoubleRegister d30 = { 30 };
-const DoubleRegister d31 = { 31 };
+const DoubleRegister no_dreg = {-1};
+const DoubleRegister d0 = {0};
+const DoubleRegister d1 = {1};
+const DoubleRegister d2 = {2};
+const DoubleRegister d3 = {3};
+const DoubleRegister d4 = {4};
+const DoubleRegister d5 = {5};
+const DoubleRegister d6 = {6};
+const DoubleRegister d7 = {7};
+const DoubleRegister d8 = {8};
+const DoubleRegister d9 = {9};
+const DoubleRegister d10 = {10};
+const DoubleRegister d11 = {11};
+const DoubleRegister d12 = {12};
+const DoubleRegister d13 = {13};
+const DoubleRegister d14 = {14};
+const DoubleRegister d15 = {15};
+const DoubleRegister d16 = {16};
+const DoubleRegister d17 = {17};
+const DoubleRegister d18 = {18};
+const DoubleRegister d19 = {19};
+const DoubleRegister d20 = {20};
+const DoubleRegister d21 = {21};
+const DoubleRegister d22 = {22};
+const DoubleRegister d23 = {23};
+const DoubleRegister d24 = {24};
+const DoubleRegister d25 = {25};
+const DoubleRegister d26 = {26};
+const DoubleRegister d27 = {27};
+const DoubleRegister d28 = {28};
+const DoubleRegister d29 = {29};
+const DoubleRegister d30 = {30};
+const DoubleRegister d31 = {31};
 
 // Aliases for double registers.  Defined using #define instead of
 // "static const DoubleRegister&" because Clang complains otherwise when a
@@ -446,24 +419,24 @@ struct CRegister {
 };
 
 
-const CRegister no_creg = { -1 };
+const CRegister no_creg = {-1};
 
-const CRegister cr0  = {  0 };
-const CRegister cr1  = {  1 };
-const CRegister cr2  = {  2 };
-const CRegister cr3  = {  3 };
-const CRegister cr4  = {  4 };
-const CRegister cr5  = {  5 };
-const CRegister cr6  = {  6 };
-const CRegister cr7  = {  7 };
-const CRegister cr8  = {  8 };
-const CRegister cr9  = {  9 };
-const CRegister cr10 = { 10 };
-const CRegister cr11 = { 11 };
-const CRegister cr12 = { 12 };
-const CRegister cr13 = { 13 };
-const CRegister cr14 = { 14 };
-const CRegister cr15 = { 15 };
+const CRegister cr0 = {0};
+const CRegister cr1 = {1};
+const CRegister cr2 = {2};
+const CRegister cr3 = {3};
+const CRegister cr4 = {4};
+const CRegister cr5 = {5};
+const CRegister cr6 = {6};
+const CRegister cr7 = {7};
+const CRegister cr8 = {8};
+const CRegister cr9 = {9};
+const CRegister cr10 = {10};
+const CRegister cr11 = {11};
+const CRegister cr12 = {12};
+const CRegister cr13 = {13};
+const CRegister cr14 = {14};
+const CRegister cr15 = {15};
 
 // -----------------------------------------------------------------------------
 // Machine instruction Operands
@@ -479,10 +452,8 @@ class Operand BASE_EMBEDDED {
  public:
   // immediate
   INLINE(explicit Operand(intptr_t immediate,
-         RelocInfo::Mode rmode = kRelocInfo_NONEPTR));
-  INLINE(static Operand Zero()) {
-    return Operand(static_cast<intptr_t>(0));
-  }
+                          RelocInfo::Mode rmode = kRelocInfo_NONEPTR));
+  INLINE(static Operand Zero()) { return Operand(static_cast<intptr_t>(0)); }
   INLINE(explicit Operand(const ExternalReference& f));
   explicit Operand(Handle<Object> handle);
   INLINE(explicit Operand(Smi* value));
@@ -493,13 +464,6 @@ class Operand BASE_EMBEDDED {
   // Return true if this is a register operand.
   INLINE(bool is_reg() const);
 
-  // For mov.  Return the number of actual instructions required to
-  // load the operand into a register.  This can be anywhere from
-  // one (constant pool small section) to five instructions (full
-  // 64-bit sequence).
-  //
-  // The value returned is only valid as long as no entries are added to the
-  // constant pool between this call and the actual instruction being emitted.
   bool must_output_reloc_info(const Assembler* assembler) const;
 
   inline intptr_t immediate() const {
@@ -545,98 +509,28 @@ class MemOperand BASE_EMBEDDED {
   }
 
  private:
-  Register ra_;  // base
+  Register ra_;     // base
   int32_t offset_;  // offset
-  Register rb_;  // index
+  Register rb_;     // index
 
   friend class Assembler;
 };
 
 
-// Class used to build a constant pool.
-class ConstantPoolBuilder BASE_EMBEDDED {
+class DeferredRelocInfo {
  public:
-  ConstantPoolBuilder();
-  void AddEntry(const RelocInfo& rinfo, bool sharing_ok);
-  void Relocate(intptr_t pc_delta);
-  int Emit(Assembler* assm);
+  DeferredRelocInfo() {}
+  DeferredRelocInfo(int position, RelocInfo::Mode rmode, intptr_t data)
+      : position_(position), rmode_(rmode), data_(data) {}
 
-  // This implementation does not currently support an unlimited constant
-  // pool size (which would require a multi-instruction sequence).
-  inline bool IsFull() const { return !is_int16(size_); }
-  inline bool IsEmpty() const { return entries_.size() == 0; }
-  inline bool IsEmitted() const { return position_ > 0; }
+  int position() const { return position_; }
+  RelocInfo::Mode rmode() const { return rmode_; }
+  intptr_t data() const { return data_; }
 
  private:
-  struct ConstantPoolEntry {
-    ConstantPoolEntry(RelocInfo rinfo, int merged_index)
-        : rinfo_(rinfo), merged_index_(merged_index) {}
-
-    RelocInfo rinfo_;
-    int merged_index_;
-  };
-
-  enum Type {
-    INT64 = 0,
-    CODE_PTR,
-    HEAP_PTR,
-    INT32,
-    NUMBER_OF_TYPES,
-    FIRST_TYPE = INT64,
-    LAST_TYPE = INT32
-  };
-
-  class NumberOfEntries {
-   public:
-    inline NumberOfEntries() {
-      for (int i = 0; i < NUMBER_OF_TYPES; i++) {
-        element_counts_[i] = 0;
-      }
-    }
-
-    inline void increment(Type type) {
-      DCHECK(type < NUMBER_OF_TYPES);
-      element_counts_[type]++;
-    }
-
-    inline int count_of(Type type) const {
-      return element_counts_[type];
-    }
-
-    inline int size() {
-      int size = (count_of(INT64) * kInt64Size) +
-        (count_of(CODE_PTR) * kPointerSize) +
-        (count_of(HEAP_PTR) * kPointerSize) +
-        (count_of(INT32) * kInt32Size);
-      return RoundUp(size, kPointerSize);
-    }
-
-   private:
-    int element_counts_[NUMBER_OF_TYPES];
-  };
-
-  inline static int entry_size(Type type) {
-    switch (type) {
-      case INT32:
-        return kInt32Size;
-      case INT64:
-        return kInt64Size;
-      case CODE_PTR:
-      case HEAP_PTR:
-        return kPointerSize;
-      default:
-        UNREACHABLE();
-        return 0;
-    }
-  }
-
-  Type GetConstantPoolType(RelocInfo::Mode rmode);
-  void EmitGroup(Assembler* assm, int entrySize);
-
-  int size_;
   int position_;
-  std::vector<ConstantPoolEntry> entries_;
-  NumberOfEntries number_of_entries_;
+  RelocInfo::Mode rmode_;
+  intptr_t data_;
 };
 
 
@@ -656,7 +550,7 @@ class Assembler : public AssemblerBase {
   // is too small, a fatal error occurs. No deallocation of the buffer is done
   // upon destruction of the assembler.
   Assembler(Isolate* isolate, void* buffer, int buffer_size);
-  virtual ~Assembler() { }
+  virtual ~Assembler() {}
 
   // GetCode emits any pending (non-emitted) code and fills the descriptor
   // desc. GetCode() is idempotent; it returns the same result if no other
@@ -679,6 +573,12 @@ class Assembler : public AssemblerBase {
   // but it may be bound only once.
 
   void bind(Label* L);  // binds an unbound label L to the current code position
+
+  // Links a label at the current pc_offset().  If already bound, returns the
+  // bound position.  If already linked, returns the position of the prior link.
+  // Otherwise, returns the current pc_offset().
+  int link(Label* L);
+
   // Determines if Label is bound and near enough so that a single
   // branch instruction can be used to reach it.
   bool is_near(Label* L, Condition cond);
@@ -686,35 +586,29 @@ class Assembler : public AssemblerBase {
   // Returns the branch offset to the given label from the current code position
   // Links the label to the current position if it is still unbound
   // Manages the jump elimination optimization if the second parameter is true.
-  int branch_offset(Label* L, bool jump_elimination_allowed);
+  int branch_offset(Label* L, bool jump_elimination_allowed) {
+    int position = link(L);
+    return position - pc_offset();
+  }
 
   // Puts a labels target address at the given position.
   // The high 8 bits are set to zero.
   void label_at_put(Label* L, int at_offset);
 
-  INLINE(static bool IsConstantPoolLoadStart(Address pc));
-  INLINE(static bool IsConstantPoolLoadEnd(Address pc));
-  INLINE(static int GetConstantPoolOffset(Address pc));
-  INLINE(static void SetConstantPoolOffset(Address pc, int offset));
-
-  // Return the address in the constant pool of the code target address used by
-  // the branch/call instruction at pc, or the object in a mov.
-  INLINE(static Address target_constant_pool_address_at(Address pc,
-                                                        Address constant_pool));
-
   // Read/Modify the code target address in the branch/call instruction at pc.
-  INLINE(static Address target_address_at(Address pc, Address constant_pool));
+  INLINE(static Address target_address_at(Address pc,
+                                          ConstantPoolArray* constant_pool));
   INLINE(static void set_target_address_at(
-      Address pc, Address constant_pool, Address target,
+      Address pc, ConstantPoolArray* constant_pool, Address target,
       ICacheFlushMode icache_flush_mode = FLUSH_ICACHE_IF_NEEDED));
   INLINE(static Address target_address_at(Address pc, Code* code)) {
-    Address constant_pool = code ? code->constant_pool() : NULL;
+    ConstantPoolArray* constant_pool = NULL;
     return target_address_at(pc, constant_pool);
   }
   INLINE(static void set_target_address_at(
       Address pc, Code* code, Address target,
       ICacheFlushMode icache_flush_mode = FLUSH_ICACHE_IF_NEEDED)) {
-    Address constant_pool = code ? code->constant_pool() : NULL;
+    ConstantPoolArray* constant_pool = NULL;
     set_target_address_at(pc, constant_pool, target, icache_flush_mode);
   }
 
@@ -734,6 +628,11 @@ class Assembler : public AssemblerBase {
   inline static void deserialization_set_special_target_at(
       Address instruction_payload, Code* code, Address target);
 
+  // This sets the internal reference at the pc.
+  inline static void deserialization_set_target_internal_reference_at(
+      Address pc, Address target,
+      RelocInfo::Mode mode = RelocInfo::INTERNAL_REFERENCE);
+
   // Size of an instruction.
   static const int kInstrSize = sizeof(Instr);
 
@@ -745,18 +644,14 @@ class Assembler : public AssemblerBase {
   // a target is resolved and written.
   static const int kSpecialTargetSize = 0;
 
-  // Number of instructions to load an address via a mov sequence.
+// Number of instructions to load an address via a mov sequence.
 #if V8_TARGET_ARCH_PPC64
-  static const int kMovInstructionsConstantPool = 2;
-  static const int kMovInstructionsNoConstantPool = 5;
+  static const int kMovInstructions = 5;
   static const int kTaggedLoadInstructions = 2;
 #else
-  static const int kMovInstructionsConstantPool = 1;
-  static const int kMovInstructionsNoConstantPool = 2;
+  static const int kMovInstructions = 2;
   static const int kTaggedLoadInstructions = 1;
 #endif
-  static const int kMovInstructions = FLAG_enable_ool_constant_pool ?
-      kMovInstructionsConstantPool : kMovInstructionsNoConstantPool;
 
   // Distance between the instruction referring to the address of the call
   // target and the return address.
@@ -775,7 +670,7 @@ class Assembler : public AssemblerBase {
   //   mov r0, <address>
   //   mtlr r0
   //   blrl
-  static const int kPatchReturnSequenceAddressOffset =  0 * kInstrSize;
+  static const int kPatchReturnSequenceAddressOffset = 0 * kInstrSize;
 
   // Distance between start of patched debug break slot and the emitted address
   // to jump to.
@@ -783,17 +678,17 @@ class Assembler : public AssemblerBase {
   //   mov r0, <address>
   //   mtlr r0
   //   blrl
-  static const int kPatchDebugBreakSlotAddressOffset =  0 * kInstrSize;
+  static const int kPatchDebugBreakSlotAddressOffset = 0 * kInstrSize;
 
-  // This is the length of the BreakLocationIterator::SetDebugBreakAtReturn()
+  // This is the length of the BreakLocation::SetDebugBreakAtReturn()
   // code patch FIXED_SEQUENCE
-  static const int kJSReturnSequenceInstructions =
-      kMovInstructionsNoConstantPool + 3;
+  static const int kJSReturnSequenceInstructions = kMovInstructions + 3;
+  static const int kJSReturnSequenceLength =
+      kJSReturnSequenceInstructions * kInstrSize;
 
   // This is the length of the code sequence from SetDebugBreakAtSlot()
   // FIXED_SEQUENCE
-  static const int kDebugBreakSlotInstructions =
-      kMovInstructionsNoConstantPool + 2;
+  static const int kDebugBreakSlotInstructions = kMovInstructions + 2;
   static const int kDebugBreakSlotLength =
       kDebugBreakSlotInstructions * kInstrSize;
 
@@ -822,12 +717,10 @@ class Assembler : public AssemblerBase {
   void bctrl();
 
   // Convenience branch instructions using labels
-  void b(Label* L, LKBit lk = LeaveLK)  {
-    b(branch_offset(L, false), lk);
-  }
+  void b(Label* L, LKBit lk = LeaveLK) { b(branch_offset(L, false), lk); }
 
   void bc_short(Condition cond, Label* L, CRegister cr = cr7,
-                LKBit lk = LeaveLK)  {
+                LKBit lk = LeaveLK) {
     DCHECK(cond != al);
     DCHECK(cr.code() >= 0 && cr.code() <= 7);
 
@@ -871,7 +764,7 @@ class Assembler : public AssemblerBase {
 
   void isel(Register rt, Register ra, Register rb, int cb);
   void isel(Condition cond, Register rt, Register ra, Register rb,
-            CRegister cr = cr7)  {
+            CRegister cr = cr7) {
     DCHECK(cond != al);
     DCHECK(cr.code() >= 0 && cr.code() <= 7);
 
@@ -911,14 +804,13 @@ class Assembler : public AssemblerBase {
     }
   }
 
-  void b(Condition cond, Label* L, CRegister cr = cr7, LKBit lk = LeaveLK)  {
+  void b(Condition cond, Label* L, CRegister cr = cr7, LKBit lk = LeaveLK) {
     if (cond == al) {
-        b(L, lk);
-        return;
+      b(L, lk);
+      return;
     }
 
-    if ((L->is_bound() && is_near(L, cond)) ||
-        !is_trampoline_emitted()) {
+    if ((L->is_bound() && is_near(L, cond)) || !is_trampoline_emitted()) {
       bc_short(cond, L, cr, lk);
       return;
     }
@@ -931,25 +823,35 @@ class Assembler : public AssemblerBase {
   }
 
   void bne(Label* L, CRegister cr = cr7, LKBit lk = LeaveLK) {
-    b(ne, L, cr, lk); }
+    b(ne, L, cr, lk);
+  }
   void beq(Label* L, CRegister cr = cr7, LKBit lk = LeaveLK) {
-    b(eq, L, cr, lk); }
+    b(eq, L, cr, lk);
+  }
   void blt(Label* L, CRegister cr = cr7, LKBit lk = LeaveLK) {
-    b(lt, L, cr, lk); }
+    b(lt, L, cr, lk);
+  }
   void bge(Label* L, CRegister cr = cr7, LKBit lk = LeaveLK) {
-    b(ge, L, cr, lk); }
+    b(ge, L, cr, lk);
+  }
   void ble(Label* L, CRegister cr = cr7, LKBit lk = LeaveLK) {
-    b(le, L, cr, lk); }
+    b(le, L, cr, lk);
+  }
   void bgt(Label* L, CRegister cr = cr7, LKBit lk = LeaveLK) {
-    b(gt, L, cr, lk); }
+    b(gt, L, cr, lk);
+  }
   void bunordered(Label* L, CRegister cr = cr7, LKBit lk = LeaveLK) {
-    b(unordered, L, cr, lk); }
+    b(unordered, L, cr, lk);
+  }
   void bordered(Label* L, CRegister cr = cr7, LKBit lk = LeaveLK) {
-    b(ordered, L, cr, lk); }
+    b(ordered, L, cr, lk);
+  }
   void boverflow(Label* L, CRegister cr = cr0, LKBit lk = LeaveLK) {
-    b(overflow, L, cr, lk); }
+    b(overflow, L, cr, lk);
+  }
   void bnooverflow(Label* L, CRegister cr = cr0, LKBit lk = LeaveLK) {
-    b(nooverflow, L, cr, lk); }
+    b(nooverflow, L, cr, lk);
+  }
 
   // Decrement CTR; branch if CTR != 0
   void bdnz(Label* L, LKBit lk = LeaveLK) {
@@ -958,32 +860,32 @@ class Assembler : public AssemblerBase {
 
   // Data-processing instructions
 
-  void sub(Register dst, Register src1, Register src2,
-           OEBit s = LeaveOE, RCBit r = LeaveRC);
+  void sub(Register dst, Register src1, Register src2, OEBit s = LeaveOE,
+           RCBit r = LeaveRC);
 
   void subfic(Register dst, Register src, const Operand& imm);
 
-  void subfc(Register dst, Register src1, Register src2,
-           OEBit s = LeaveOE, RCBit r = LeaveRC);
+  void subfc(Register dst, Register src1, Register src2, OEBit s = LeaveOE,
+             RCBit r = LeaveRC);
 
-  void add(Register dst, Register src1, Register src2,
-           OEBit s = LeaveOE, RCBit r = LeaveRC);
+  void add(Register dst, Register src1, Register src2, OEBit s = LeaveOE,
+           RCBit r = LeaveRC);
 
-  void addc(Register dst, Register src1, Register src2,
-                    OEBit o = LeaveOE, RCBit r = LeaveRC);
+  void addc(Register dst, Register src1, Register src2, OEBit o = LeaveOE,
+            RCBit r = LeaveRC);
 
   void addze(Register dst, Register src1, OEBit o, RCBit r);
 
-  void mullw(Register dst, Register src1, Register src2,
-               OEBit o = LeaveOE, RCBit r = LeaveRC);
+  void mullw(Register dst, Register src1, Register src2, OEBit o = LeaveOE,
+             RCBit r = LeaveRC);
 
-  void mulhw(Register dst, Register src1, Register src2,
-               OEBit o = LeaveOE, RCBit r = LeaveRC);
+  void mulhw(Register dst, Register src1, Register src2, RCBit r = LeaveRC);
+  void mulhwu(Register dst, Register src1, Register src2, RCBit r = LeaveRC);
 
-  void divw(Register dst, Register src1, Register src2,
-            OEBit o = LeaveOE, RCBit r = LeaveRC);
-  void divwu(Register dst, Register src1, Register src2,
-             OEBit o = LeaveOE, RCBit r = LeaveRC);
+  void divw(Register dst, Register src1, Register src2, OEBit o = LeaveOE,
+            RCBit r = LeaveRC);
+  void divwu(Register dst, Register src1, Register src2, OEBit o = LeaveOE,
+             RCBit r = LeaveRC);
 
   void addi(Register dst, Register src, const Operand& imm);
   void addis(Register dst, Register src, const Operand& imm);
@@ -998,6 +900,7 @@ class Assembler : public AssemblerBase {
   void ori(Register dst, Register src, const Operand& imm);
   void oris(Register dst, Register src, const Operand& imm);
   void orx(Register dst, Register src1, Register src2, RCBit rc = LeaveRC);
+  void orc(Register dst, Register src1, Register src2, RCBit rc = LeaveRC);
   void xori(Register dst, Register src, const Operand& imm);
   void xoris(Register ra, Register rs, const Operand& imm);
   void xor_(Register dst, Register src1, Register src2, RCBit rc = LeaveRC);
@@ -1036,18 +939,19 @@ class Assembler : public AssemblerBase {
 
   void extsb(Register rs, Register ra, RCBit r = LeaveRC);
   void extsh(Register rs, Register ra, RCBit r = LeaveRC);
+  void extsw(Register rs, Register ra, RCBit r = LeaveRC);
 
   void neg(Register rt, Register ra, OEBit o = LeaveOE, RCBit c = LeaveRC);
 
 #if V8_TARGET_ARCH_PPC64
-  void ld(Register rd, const MemOperand &src);
-  void ldx(Register rd, const MemOperand &src);
-  void ldu(Register rd, const MemOperand &src);
-  void ldux(Register rd, const MemOperand &src);
-  void std(Register rs, const MemOperand &src);
-  void stdx(Register rs, const MemOperand &src);
-  void stdu(Register rs, const MemOperand &src);
-  void stdux(Register rs, const MemOperand &src);
+  void ld(Register rd, const MemOperand& src);
+  void ldx(Register rd, const MemOperand& src);
+  void ldu(Register rd, const MemOperand& src);
+  void ldux(Register rd, const MemOperand& src);
+  void std(Register rs, const MemOperand& src);
+  void stdx(Register rs, const MemOperand& src);
+  void stdu(Register rs, const MemOperand& src);
+  void stdux(Register rs, const MemOperand& src);
   void rldic(Register dst, Register src, int sh, int mb, RCBit r = LeaveRC);
   void rldicl(Register dst, Register src, int sh, int mb, RCBit r = LeaveRC);
   void rldcl(Register ra, Register rs, Register rb, int mb, RCBit r = LeaveRC);
@@ -1067,13 +971,12 @@ class Assembler : public AssemblerBase {
   void rotldi(Register ra, Register rs, int sh, RCBit r = LeaveRC);
   void rotrdi(Register ra, Register rs, int sh, RCBit r = LeaveRC);
   void cntlzd_(Register dst, Register src, RCBit rc = LeaveRC);
-  void extsw(Register rs, Register ra, RCBit r = LeaveRC);
-  void mulld(Register dst, Register src1, Register src2,
-             OEBit o = LeaveOE, RCBit r = LeaveRC);
-  void divd(Register dst, Register src1, Register src2,
-            OEBit o = LeaveOE, RCBit r = LeaveRC);
-  void divdu(Register dst, Register src1, Register src2,
-             OEBit o = LeaveOE, RCBit r = LeaveRC);
+  void mulld(Register dst, Register src1, Register src2, OEBit o = LeaveOE,
+             RCBit r = LeaveRC);
+  void divd(Register dst, Register src1, Register src2, OEBit o = LeaveOE,
+            RCBit r = LeaveRC);
+  void divdu(Register dst, Register src1, Register src2, OEBit o = LeaveOE,
+             RCBit r = LeaveRC);
 #endif
 
   void rlwinm(Register ra, Register rs, int sh, int mb, int me,
@@ -1106,14 +1009,29 @@ class Assembler : public AssemblerBase {
   void cmplw(Register src1, Register src2, CRegister cr = cr7);
 
   void mov(Register dst, const Operand& src);
+  void bitwise_mov(Register dst, intptr_t value);
+  void bitwise_mov32(Register dst, int32_t value);
+  void bitwise_add32(Register dst, Register src, int32_t value);
 
   // Load the position of the label relative to the generated code object
   // pointer in a register.
   void mov_label_offset(Register dst, Label* label);
 
+  // dst = base + label position + delta
+  void add_label_offset(Register dst, Register base, Label* label,
+                        int delta = 0);
+
+  // Load the address of the label in a register and associate with an
+  // internal reference relocation.
+  void mov_label_addr(Register dst, Label* label);
+
+  // Emit the address of the label (i.e. a jump table entry) and associate with
+  // an internal reference relocation.
+  void emit_label_addr(Label* label);
+
   // Multiply instructions
-  void mul(Register dst, Register src1, Register src2,
-           OEBit s = LeaveOE, RCBit r = LeaveRC);
+  void mul(Register dst, Register src1, Register src2, OEBit s = LeaveOE,
+           RCBit r = LeaveRC);
 
   // Miscellaneous arithmetic instructions
 
@@ -1136,23 +1054,13 @@ class Assembler : public AssemblerBase {
   void mtfprwa(DoubleRegister dst, Register src);
 #endif
 
-  void fake_asm(enum FAKE_OPCODE_T fopcode);
-  void marker_asm(int mcode);
   void function_descriptor();
 
   // Exception-generating instructions and debugging support
-  void stop(const char* msg,
-            Condition cond = al,
-            int32_t code = kDefaultStopCode,
-            CRegister cr = cr7);
+  void stop(const char* msg, Condition cond = al,
+            int32_t code = kDefaultStopCode, CRegister cr = cr7);
 
   void bkpt(uint32_t imm16);  // v5 and above
-
-  // Informational messages when simulating
-  void info(const char* msg,
-            Condition cond = al,
-            int32_t code = kDefaultStopCode,
-            CRegister cr = cr7);
 
   void dcbf(Register ra, Register rb);
   void sync();
@@ -1192,15 +1100,22 @@ class Assembler : public AssemblerBase {
            RCBit rc = LeaveRC);
   void fctiwz(const DoubleRegister frt, const DoubleRegister frb);
   void fctiw(const DoubleRegister frt, const DoubleRegister frb);
-  void frim(const DoubleRegister frt, const DoubleRegister frb);
+  void frin(const DoubleRegister frt, const DoubleRegister frb,
+            RCBit rc = LeaveRC);
+  void friz(const DoubleRegister frt, const DoubleRegister frb,
+            RCBit rc = LeaveRC);
+  void frip(const DoubleRegister frt, const DoubleRegister frb,
+            RCBit rc = LeaveRC);
+  void frim(const DoubleRegister frt, const DoubleRegister frb,
+            RCBit rc = LeaveRC);
   void frsp(const DoubleRegister frt, const DoubleRegister frb,
             RCBit rc = LeaveRC);
   void fcfid(const DoubleRegister frt, const DoubleRegister frb,
-            RCBit rc = LeaveRC);
+             RCBit rc = LeaveRC);
   void fctid(const DoubleRegister frt, const DoubleRegister frb,
-            RCBit rc = LeaveRC);
+             RCBit rc = LeaveRC);
   void fctidz(const DoubleRegister frt, const DoubleRegister frb,
-            RCBit rc = LeaveRC);
+              RCBit rc = LeaveRC);
   void fsel(const DoubleRegister frt, const DoubleRegister fra,
             const DoubleRegister frc, const DoubleRegister frb,
             RCBit rc = LeaveRC);
@@ -1238,7 +1153,7 @@ class Assembler : public AssemblerBase {
     FIRST_IC_MARKER = PROPERTY_ACCESS_INLINED
   };
 
-  void nop(int type = 0);   // 0 is the default non-marking type.
+  void nop(int type = 0);  // 0 is the default non-marking type.
 
   void push(Register src) {
 #if V8_TARGET_ARCH_PPC64
@@ -1257,9 +1172,7 @@ class Assembler : public AssemblerBase {
     addi(sp, sp, Operand(kPointerSize));
   }
 
-  void pop() {
-    addi(sp, sp, Operand(kPointerSize));
-  }
+  void pop() { addi(sp, sp, Operand(kPointerSize)); }
 
   // Jump unconditionally to given label.
   void jmp(Label* L) { b(L); }
@@ -1280,31 +1193,12 @@ class Assembler : public AssemblerBase {
     explicit BlockTrampolinePoolScope(Assembler* assem) : assem_(assem) {
       assem_->StartBlockTrampolinePool();
     }
-    ~BlockTrampolinePoolScope() {
-      assem_->EndBlockTrampolinePool();
-    }
+    ~BlockTrampolinePoolScope() { assem_->EndBlockTrampolinePool(); }
 
    private:
     Assembler* assem_;
 
     DISALLOW_IMPLICIT_CONSTRUCTORS(BlockTrampolinePoolScope);
-  };
-
-  // Class for scoping disabling constant pool entry merging
-  class BlockConstantPoolEntrySharingScope {
-   public:
-    explicit BlockConstantPoolEntrySharingScope(Assembler* assem)
-        : assem_(assem) {
-      assem_->StartBlockConstantPoolEntrySharing();
-    }
-    ~BlockConstantPoolEntrySharingScope() {
-      assem_->EndBlockConstantPoolEntrySharing();
-    }
-
-   private:
-    Assembler* assem_;
-
-    DISALLOW_IMPLICIT_CONSTRUCTORS(BlockConstantPoolEntrySharingScope);
   };
 
   // Debugging
@@ -1318,12 +1212,14 @@ class Assembler : public AssemblerBase {
   // Record the AST id of the CallIC being compiled, so that it can be placed
   // in the relocation information.
   void SetRecordedAstId(TypeFeedbackId ast_id) {
-// PPC - this shouldn't be failing roohack   DCHECK(recorded_ast_id_.IsNone());
+    // Causes compiler to fail
+    // DCHECK(recorded_ast_id_.IsNone());
     recorded_ast_id_ = ast_id;
   }
 
   TypeFeedbackId RecordedAstId() {
-    // roohack - another issue??? DCHECK(!recorded_ast_id_.IsNone());
+    // Causes compiler to fail
+    // DCHECK(!recorded_ast_id_.IsNone());
     return recorded_ast_id_;
   }
 
@@ -1333,12 +1229,16 @@ class Assembler : public AssemblerBase {
   // Use --code-comments to enable.
   void RecordComment(const char* msg);
 
+  // Record a deoptimization reason that can be used by a log or cpu profiler.
+  // Use --trace-deopt to enable.
+  void RecordDeoptReason(const int reason, const SourcePosition position);
+
   // Writes a single byte or word of data in the code stream.  Used
   // for inline tables, e.g., jump-tables.
   void db(uint8_t data);
   void dd(uint32_t data);
-  void emit_ptr(uintptr_t data);
-  void emit_constant_pool_entry(RelocInfo* rinfo);
+  void emit_ptr(intptr_t data);
+  void emit_double(double data);
 
   PositionsRecorder* positions_recorder() { return &positions_recorder_; }
 
@@ -1362,8 +1262,8 @@ class Assembler : public AssemblerBase {
   static Register GetRA(Instr instr);
   static Register GetRB(Instr instr);
 #if V8_TARGET_ARCH_PPC64
-  static bool Is64BitLoadIntoR12(Instr instr1, Instr instr2,
-                                 Instr instr3, Instr instr4, Instr instr5);
+  static bool Is64BitLoadIntoR12(Instr instr1, Instr instr2, Instr instr3,
+                                 Instr instr4, Instr instr5);
 #else
   static bool Is32BitLoadIntoR12(Instr instr1, Instr instr2);
 #endif
@@ -1384,17 +1284,9 @@ class Assembler : public AssemblerBase {
   void BlockTrampolinePoolFor(int instructions);
   void CheckTrampolinePool();
 
-  int instructions_required_for_mov(const Operand& x) const;
-
-  // Decide between using the constant pool vs. a mov immediate sequence.
-  bool use_constant_pool_for_mov(const Operand& x, bool canOptimize) const;
-
   // The code currently calls CheckBuffer() too often. This has the side
   // effect of randomly growing the buffer in the middle of multi-instruction
   // sequences.
-  // MacroAssembler::LoadConstantPoolPointerRegister() includes a relocation
-  // and multiple instructions. We cannot grow the buffer until the
-  // relocation and all of the instructions are written.
   //
   // This function allows outside callers to check and grow the buffer
   void EnsureSpaceFor(int space_needed);
@@ -1405,21 +1297,7 @@ class Assembler : public AssemblerBase {
   // Generate the constant pool for the generated code.
   void PopulateConstantPool(ConstantPoolArray* constant_pool);
 
-  bool is_constant_pool_available() const { return constant_pool_available_; }
-
-  bool is_constant_pool_full() const {
-    return constant_pool_builder_.IsFull();
-  }
-
-  int EmitConstantPool() {
-    return constant_pool_builder_.Emit(this);
-  }
-
-  static void RelocateInternalReference(Address pc, intptr_t delta,
-                                        Address code_start,
-                                        ICacheFlushMode icache_flush_mode =
-                                            FLUSH_ICACHE_IF_NEEDED);
-  static int DecodeInternalReference(Vector<char> buffer, Address pc);
+  void EmitRelocations();
 
  protected:
   // Relocation for a type-recording IC has the AST id added to it.  This
@@ -1437,8 +1315,7 @@ class Assembler : public AssemblerBase {
 
   // Record reloc info for current pc_
   void RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data = 0);
-  void RecordRelocInfo(const RelocInfo& rinfo);
-  void ConstantPoolAddEntry(const RelocInfo& rinfo);
+  void RecordRelocInfo(const DeferredRelocInfo& rinfo);
 
   // Block the emission of the trampoline pool before pc_offset.
   void BlockTrampolinePoolBefore(int pc_offset) {
@@ -1452,27 +1329,9 @@ class Assembler : public AssemblerBase {
     return trampoline_pool_blocked_nesting_ > 0;
   }
 
-  void StartBlockConstantPoolEntrySharing() {
-    constant_pool_entry_sharing_blocked_nesting_++;
-  }
-  void EndBlockConstantPoolEntrySharing() {
-    constant_pool_entry_sharing_blocked_nesting_--;
-  }
-  bool is_constant_pool_entry_sharing_blocked() const {
-    return constant_pool_entry_sharing_blocked_nesting_ > 0;
-  }
+  bool has_exception() const { return internal_trampoline_exception_; }
 
-  bool has_exception() const {
-    return internal_trampoline_exception_;
-  }
-
-  bool is_trampoline_emitted() const {
-    return trampoline_emitted_;
-  }
-
-  void set_constant_pool_available(bool available) {
-    constant_pool_available_ = available;
-  }
+  bool is_trampoline_emitted() const { return trampoline_emitted_; }
 
  private:
   // Code generation
@@ -1491,22 +1350,14 @@ class Assembler : public AssemblerBase {
   int trampoline_pool_blocked_nesting_;  // Block emission if this is not zero.
   int no_trampoline_pool_before_;  // Block emission before this pc offset.
 
-  // Do not share constant pool entries.
-  int constant_pool_entry_sharing_blocked_nesting_;
-
   // Relocation info generation
   // Each relocation is encoded as a variable size value
   static const int kMaxRelocSize = RelocInfoWriter::kMaxSize;
   RelocInfoWriter reloc_info_writer;
+  std::vector<DeferredRelocInfo> relocations_;
 
   // The bound position, before this we cannot do instruction elimination.
   int last_bound_pos_;
-
-  ConstantPoolBuilder constant_pool_builder_;
-
-  // Indicates whether the constant pool can be accessed, which is only possible
-  // if kConstantPoolRegister points to the current code object's constant pool.
-  bool constant_pool_available_;
 
   // Code emission
   inline void CheckBuffer();
@@ -1520,8 +1371,8 @@ class Assembler : public AssemblerBase {
   void d_form(Instr instr, Register rt, Register ra, const intptr_t val,
               bool signed_disp);
   void x_form(Instr instr, Register ra, Register rs, Register rb, RCBit r);
-  void xo_form(Instr instr, Register rt, Register ra, Register rb,
-               OEBit o, RCBit r);
+  void xo_form(Instr instr, Register rt, Register ra, Register rb, OEBit o,
+               RCBit r);
   void md_form(Instr instr, Register ra, Register rs, int shift, int maskbit,
                RCBit r);
   void mds_form(Instr instr, Register ra, Register rs, Register rb, int maskbit,
@@ -1529,7 +1380,7 @@ class Assembler : public AssemblerBase {
 
   // Labels
   void print(Label* L);
-  int  max_reach_from(int pos);
+  int max_reach_from(int pos);
   void bind_to(Label* L, int pos);
   void next(Label* L);
 
@@ -1584,9 +1435,6 @@ class Assembler : public AssemblerBase {
   friend class RelocInfo;
   friend class CodePatcher;
   friend class BlockTrampolinePoolScope;
-  friend class FrameAndConstantPoolScope;
-  friend class ConstantPoolUnavailableScope;
-
   PositionsRecorder positions_recorder_;
   friend class PositionsRecorder;
   friend class EnsureSpace;
@@ -1595,11 +1443,9 @@ class Assembler : public AssemblerBase {
 
 class EnsureSpace BASE_EMBEDDED {
  public:
-  explicit EnsureSpace(Assembler* assembler) {
-    assembler->CheckBuffer();
-  }
+  explicit EnsureSpace(Assembler* assembler) { assembler->CheckBuffer(); }
 };
-
-} }  // namespace v8::internal
+}
+}  // namespace v8::internal
 
 #endif  // V8_PPC_ASSEMBLER_PPC_H_

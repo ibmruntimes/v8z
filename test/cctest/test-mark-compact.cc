@@ -41,10 +41,10 @@
 
 #include "src/full-codegen.h"
 #include "src/global-handles.h"
-#include "src/snapshot.h"
 #include "test/cctest/cctest.h"
 
 using namespace v8::internal;
+using v8::Just;
 
 
 TEST(MarkingDeque) {
@@ -127,6 +127,7 @@ TEST(NoPromotion) {
 
 TEST(MarkCompactCollector) {
   FLAG_incremental_marking = false;
+  FLAG_retain_maps_for_n_gc = 0;
   CcTest::InitializeVM();
   Isolate* isolate = CcTest::i_isolate();
   TestHeap* heap = CcTest::test_heap();
@@ -139,13 +140,13 @@ TEST(MarkCompactCollector) {
   heap->CollectGarbage(OLD_POINTER_SPACE, "trigger 1");
 
   // keep allocating garbage in new space until it fails
-  const int ARRAY_SIZE = 100;
+  const int arraysize = 100;
   AllocationResult allocation;
   do {
-    allocation = heap->AllocateFixedArray(ARRAY_SIZE);
+    allocation = heap->AllocateFixedArray(arraysize);
   } while (!allocation.IsRetry());
   heap->CollectGarbage(NEW_SPACE, "trigger 2");
-  heap->AllocateFixedArray(ARRAY_SIZE).ToObjectChecked();
+  heap->AllocateFixedArray(arraysize).ToObjectChecked();
 
   // keep allocating maps until it fails
   do {
@@ -167,9 +168,7 @@ TEST(MarkCompactCollector) {
 
   { HandleScope scope(isolate);
     Handle<String> func_name = factory->InternalizeUtf8String("theFunction");
-    v8::Maybe<bool> maybe = JSReceiver::HasOwnProperty(global, func_name);
-    CHECK(maybe.has_value);
-    CHECK(maybe.value);
+    CHECK(Just(true) == JSReceiver::HasOwnProperty(global, func_name));
     Handle<Object> func_value =
         Object::GetProperty(global, func_name).ToHandleChecked();
     CHECK(func_value->IsJSFunction());
@@ -187,9 +186,7 @@ TEST(MarkCompactCollector) {
 
   { HandleScope scope(isolate);
     Handle<String> obj_name = factory->InternalizeUtf8String("theObject");
-    v8::Maybe<bool> maybe = JSReceiver::HasOwnProperty(global, obj_name);
-    CHECK(maybe.has_value);
-    CHECK(maybe.value);
+    CHECK(Just(true) == JSReceiver::HasOwnProperty(global, obj_name));
     Handle<Object> object =
         Object::GetProperty(global, obj_name).ToHandleChecked();
     CHECK(object->IsJSObject());
@@ -301,15 +298,13 @@ TEST(ObjectGroups) {
 
   {
     Object** g1_objects[] = { g1s1.location(), g1s2.location() };
-    Object** g1_children[] = { g1c1.location() };
     Object** g2_objects[] = { g2s1.location(), g2s2.location() };
-    Object** g2_children[] = { g2c1.location() };
     global_handles->AddObjectGroup(g1_objects, 2, NULL);
-    global_handles->AddImplicitReferences(
-        Handle<HeapObject>::cast(g1s1).location(), g1_children, 1);
+    global_handles->SetReference(Handle<HeapObject>::cast(g1s1).location(),
+                                 g1c1.location());
     global_handles->AddObjectGroup(g2_objects, 2, NULL);
-    global_handles->AddImplicitReferences(
-        Handle<HeapObject>::cast(g2s1).location(), g2_children, 1);
+    global_handles->SetReference(Handle<HeapObject>::cast(g2s1).location(),
+                                 g2c1.location());
   }
   // Do a full GC
   heap->CollectGarbage(OLD_POINTER_SPACE);
@@ -330,15 +325,13 @@ TEST(ObjectGroups) {
   // Groups are deleted, rebuild groups.
   {
     Object** g1_objects[] = { g1s1.location(), g1s2.location() };
-    Object** g1_children[] = { g1c1.location() };
     Object** g2_objects[] = { g2s1.location(), g2s2.location() };
-    Object** g2_children[] = { g2c1.location() };
     global_handles->AddObjectGroup(g1_objects, 2, NULL);
-    global_handles->AddImplicitReferences(
-        Handle<HeapObject>::cast(g1s1).location(), g1_children, 1);
+    global_handles->SetReference(Handle<HeapObject>::cast(g1s1).location(),
+                                 g1c1.location());
     global_handles->AddObjectGroup(g2_objects, 2, NULL);
-    global_handles->AddImplicitReferences(
-        Handle<HeapObject>::cast(g2s1).location(), g2_children, 1);
+    global_handles->SetReference(Handle<HeapObject>::cast(g2s1).location(),
+                                 g2c1.location());
   }
 
   heap->CollectGarbage(OLD_POINTER_SPACE);
@@ -389,15 +382,9 @@ TEST(EmptyObjectGroups) {
 
   v8::HandleScope handle_scope(CcTest::isolate());
 
-  Handle<Object> object = global_handles->Create(
-      CcTest::test_heap()->AllocateFixedArray(1).ToObjectChecked());
-
   TestRetainedObjectInfo info;
   global_handles->AddObjectGroup(NULL, 0, &info);
   DCHECK(info.has_been_disposed());
-
-  global_handles->AddImplicitReferences(
-        Handle<HeapObject>::cast(object).location(), NULL, 0);
 }
 
 
@@ -456,7 +443,7 @@ static intptr_t MemoryInUse() {
     bool write_permission = (buffer[position++] == 'w');
     CHECK(buffer[position] == '-' || buffer[position] == 'x');
     bool execute_permission = (buffer[position++] == 'x');
-    CHECK(buffer[position] == '-' || buffer[position] == 'p');
+    CHECK(buffer[position] == 's' || buffer[position] == 'p');
     bool private_mapping = (buffer[position++] == 'p');
     CHECK_EQ(buffer[position++], ' ');
     uintptr_t offset = ReadLong(buffer, &position, 16);

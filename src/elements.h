@@ -33,16 +33,14 @@ class ElementsAccessor {
   // the ElementsKind of the ElementsAccessor. If backing_store is NULL, the
   // holder->elements() is used as the backing store.
   virtual bool HasElement(
-      Handle<Object> receiver,
       Handle<JSObject> holder,
       uint32_t key,
       Handle<FixedArrayBase> backing_store) = 0;
 
   inline bool HasElement(
-      Handle<Object> receiver,
       Handle<JSObject> holder,
       uint32_t key) {
-    return HasElement(receiver, holder, key, handle(holder->elements()));
+    return HasElement(holder, key, handle(holder->elements()));
   }
 
   // Returns the element with the specified key or undefined if there is no such
@@ -69,34 +67,14 @@ class ElementsAccessor {
   // be compatible with the ElementsKind of the ElementsAccessor. If
   // backing_store is NULL, the holder->elements() is used as the backing store.
   MUST_USE_RESULT virtual PropertyAttributes GetAttributes(
-      Handle<Object> receiver,
       Handle<JSObject> holder,
       uint32_t key,
       Handle<FixedArrayBase> backing_store) = 0;
 
   MUST_USE_RESULT inline PropertyAttributes GetAttributes(
-      Handle<Object> receiver,
       Handle<JSObject> holder,
       uint32_t key) {
-    return GetAttributes(receiver, holder, key, handle(holder->elements()));
-  }
-
-  // Returns an element's type, or NONEXISTENT if there is no such
-  // element. This method doesn't iterate up the prototype chain.  The caller
-  // can optionally pass in the backing store to use for the check, which must
-  // be compatible with the ElementsKind of the ElementsAccessor. If
-  // backing_store is NULL, the holder->elements() is used as the backing store.
-  MUST_USE_RESULT virtual PropertyType GetType(
-      Handle<Object> receiver,
-      Handle<JSObject> holder,
-      uint32_t key,
-      Handle<FixedArrayBase> backing_store) = 0;
-
-  MUST_USE_RESULT inline PropertyType GetType(
-      Handle<Object> receiver,
-      Handle<JSObject> holder,
-      uint32_t key) {
-    return GetType(receiver, holder, key, handle(holder->elements()));
+    return GetAttributes(holder, key, handle(holder->elements()));
   }
 
   // Returns an element's accessors, or NULL if the element does not exist or
@@ -105,16 +83,14 @@ class ElementsAccessor {
   // be compatible with the ElementsKind of the ElementsAccessor. If
   // backing_store is NULL, the holder->elements() is used as the backing store.
   MUST_USE_RESULT virtual MaybeHandle<AccessorPair> GetAccessorPair(
-      Handle<Object> receiver,
       Handle<JSObject> holder,
       uint32_t key,
       Handle<FixedArrayBase> backing_store) = 0;
 
   MUST_USE_RESULT inline MaybeHandle<AccessorPair> GetAccessorPair(
-      Handle<Object> receiver,
       Handle<JSObject> holder,
       uint32_t key) {
-    return GetAccessorPair(receiver, holder, key, handle(holder->elements()));
+    return GetAccessorPair(holder, key, handle(holder->elements()));
   }
 
   // Modifies the length data property as specified for JSArrays and resizes the
@@ -139,9 +115,7 @@ class ElementsAccessor {
 
   // Deletes an element in an object, returning a new elements backing store.
   MUST_USE_RESULT virtual MaybeHandle<Object> Delete(
-      Handle<JSObject> holder,
-      uint32_t key,
-      JSReceiver::DeleteMode mode) = 0;
+      Handle<JSObject> holder, uint32_t key, LanguageMode language_mode) = 0;
 
   // If kCopyToEnd is specified as the copy_size to CopyElements, it copies all
   // of elements from source after source_start to the destination array.
@@ -164,9 +138,10 @@ class ElementsAccessor {
       uint32_t destination_start,
       int copy_size) = 0;
 
-  // TODO(ishell): Keeping |source_holder| parameter in a non-handlified form
-  // helps avoiding ArrayConcat() builtin performance degradation.
-  // Revisit this later.
+  // NOTE: this method violates the handlified function signature convention:
+  // raw pointer parameter |source_holder| in the function that allocates.
+  // This is done intentionally to avoid ArrayConcat() builtin performance
+  // degradation.
   virtual void CopyElements(
       JSObject* source_holder,
       uint32_t source_start,
@@ -184,22 +159,19 @@ class ElementsAccessor {
   }
 
   MUST_USE_RESULT virtual MaybeHandle<FixedArray> AddElementsToFixedArray(
-      Handle<Object> receiver,
-      Handle<JSObject> holder,
-      Handle<FixedArray> to,
-      Handle<FixedArrayBase> from) = 0;
+      Handle<Object> receiver, Handle<JSObject> holder, Handle<FixedArray> to,
+      Handle<FixedArrayBase> from, FixedArray::KeyFilter filter) = 0;
 
   MUST_USE_RESULT inline MaybeHandle<FixedArray> AddElementsToFixedArray(
-      Handle<Object> receiver,
-      Handle<JSObject> holder,
-      Handle<FixedArray> to) {
-    return AddElementsToFixedArray(
-        receiver, holder, to, handle(holder->elements()));
+      Handle<Object> receiver, Handle<JSObject> holder, Handle<FixedArray> to,
+      FixedArray::KeyFilter filter) {
+    return AddElementsToFixedArray(receiver, holder, to,
+                                   handle(holder->elements()), filter);
   }
 
   // Returns a shared ElementsAccessor for the specified ElementsKind.
   static ElementsAccessor* ForKind(ElementsKind elements_kind) {
-    DCHECK(elements_kind < kElementsKindCount);
+    DCHECK(static_cast<int>(elements_kind) < kElementsKindCount);
     return elements_accessors_[elements_kind];
   }
 

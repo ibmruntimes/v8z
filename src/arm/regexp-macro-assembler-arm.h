@@ -16,7 +16,8 @@ namespace internal {
 #ifndef V8_INTERPRETED_REGEXP
 class RegExpMacroAssemblerARM: public NativeRegExpMacroAssembler {
  public:
-  RegExpMacroAssemblerARM(Mode mode, int registers_to_save, Zone* zone);
+  RegExpMacroAssemblerARM(Isolate* isolate, Zone* zone, Mode mode,
+                          int registers_to_save);
   virtual ~RegExpMacroAssemblerARM();
   virtual int stack_limit_slack();
   virtual void AdvanceCurrentPosition(int by);
@@ -190,7 +191,7 @@ class RegExpMacroAssemblerARM: public NativeRegExpMacroAssembler {
 
   MacroAssembler* masm_;
 
-  // Which mode to generate code for (ASCII or UC16).
+  // Which mode to generate code for (Latin1 or UC16).
   Mode mode_;
 
   // One greater than maximal register index actually used.

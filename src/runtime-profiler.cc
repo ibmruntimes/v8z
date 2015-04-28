@@ -57,9 +57,11 @@ RuntimeProfiler::RuntimeProfiler(Isolate* isolate)
 }
 
 
-static void GetICCounts(Code* shared_code, int* ic_with_type_info_count,
-                        int* ic_generic_count, int* ic_total_count,
-                        int* type_info_percentage, int* generic_percentage) {
+static void GetICCounts(SharedFunctionInfo* shared,
+                        int* ic_with_type_info_count, int* ic_generic_count,
+                        int* ic_total_count, int* type_info_percentage,
+                        int* generic_percentage) {
+  Code* shared_code = shared->code();
   *ic_total_count = 0;
   *ic_generic_count = 0;
   *ic_with_type_info_count = 0;
@@ -70,6 +72,12 @@ static void GetICCounts(Code* shared_code, int* ic_with_type_info_count,
     *ic_generic_count = info->ic_generic_count();
     *ic_total_count = info->ic_total_count();
   }
+
+  // Harvest vector-ics as well
+  TypeFeedbackVector* vector = shared->feedback_vector();
+  *ic_with_type_info_count += vector->ic_with_type_info_count();
+  *ic_generic_count += vector->ic_generic_count();
+
   if (*ic_total_count > 0) {
     *type_info_percentage = 100 * *ic_with_type_info_count / *ic_total_count;
     *generic_percentage = 100 * *ic_generic_count / *ic_total_count;
@@ -89,7 +97,7 @@ void RuntimeProfiler::Optimize(JSFunction* function, const char* reason) {
     PrintF(" for recompilation, reason: %s", reason);
     if (FLAG_type_info_threshold > 0) {
       int typeinfo, generic, total, type_percentage, generic_percentage;
-      GetICCounts(function->shared()->code(), &typeinfo, &generic, &total,
+      GetICCounts(function->shared(), &typeinfo, &generic, &total,
                   &type_percentage, &generic_percentage);
       PrintF(", ICs with typeinfo: %d/%d (%d%%)", typeinfo, total,
              type_percentage);
@@ -98,34 +106,14 @@ void RuntimeProfiler::Optimize(JSFunction* function, const char* reason) {
     PrintF("]\n");
   }
 
-
-  if (isolate_->concurrent_recompilation_enabled() &&
-      !isolate_->bootstrapper()->IsActive()) {
-    if (isolate_->concurrent_osr_enabled() &&
-        isolate_->optimizing_compiler_thread()->IsQueuedForOSR(function)) {
-      // Do not attempt regular recompilation if we already queued this for OSR.
-      // TODO(yangguo): This is necessary so that we don't install optimized
-      // code on a function that is already optimized, since OSR and regular
-      // recompilation race.  This goes away as soon as OSR becomes one-shot.
-      return;
-    }
-    DCHECK(!function->IsInOptimizationQueue());
-    function->MarkForConcurrentOptimization();
-  } else {
-    // The next call to the function will trigger optimization.
-    function->MarkForOptimization();
-  }
+  function->AttemptConcurrentOptimization();
 }
 
 
 void RuntimeProfiler::AttemptOnStackReplacement(JSFunction* function,
                                                 int loop_nesting_levels) {
   SharedFunctionInfo* shared = function->shared();
-  // See AlwaysFullCompiler (in compiler.cc) comment on why we need
-  // Debug::has_break_points().
-  if (!FLAG_use_osr ||
-      isolate_->DebuggerHasBreakPoints() ||
-      function->IsBuiltin()) {
+  if (!FLAG_use_osr || function->IsBuiltin()) {
     return;
   }
 
@@ -155,7 +143,7 @@ void RuntimeProfiler::AttemptOnStackReplacement(JSFunction* function,
 void RuntimeProfiler::OptimizeNow() {
   HandleScope scope(isolate_);
 
-  if (isolate_->DebuggerHasBreakPoints()) return;
+  if (!isolate_->use_crankshaft()) return;
 
   DisallowHeapAllocation no_gc;
 
@@ -236,7 +224,7 @@ void RuntimeProfiler::OptimizeNow() {
 
     if (ticks >= kProfilerTicksBeforeOptimization) {
       int typeinfo, generic, total, type_percentage, generic_percentage;
-      GetICCounts(shared_code, &typeinfo, &generic, &total, &type_percentage,
+      GetICCounts(shared, &typeinfo, &generic, &total, &type_percentage,
                   &generic_percentage);
       if (type_percentage >= FLAG_type_info_threshold &&
           generic_percentage <= FLAG_generic_ic_threshold) {
@@ -259,7 +247,7 @@ void RuntimeProfiler::OptimizeNow() {
       // If no IC was patched since the last tick and this function is very
       // small, optimistically optimize it now.
       int typeinfo, generic, total, type_percentage, generic_percentage;
-      GetICCounts(shared_code, &typeinfo, &generic, &total, &type_percentage,
+      GetICCounts(shared, &typeinfo, &generic, &total, &type_percentage,
                   &generic_percentage);
       if (type_percentage >= FLAG_type_info_threshold &&
           generic_percentage <= FLAG_generic_ic_threshold) {

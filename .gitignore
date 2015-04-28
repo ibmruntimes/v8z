@@ -13,7 +13,6 @@
 *.sln
 *.so
 *.suo
-*.swp
 *.user
 *.vcproj
 *.vcxproj
@@ -25,11 +24,13 @@
 .cproject
 .d8_history
 .gclient_entries
+.landmines
 .project
 .pydevproject
 .settings
 .*.sw?
 bsuite
+compile_commands.json
 d8
 d8_g
 gccauses
@@ -62,10 +63,16 @@ shell_g
 /test/test262/data
 /test/test262/data.old
 /test/test262/tc39-test262-*
+/test/test262-es6/data
+/test/test262-es6/data.old
+/test/test262-es6/tc39-test262-*
 /testing/gmock
 /testing/gtest
+/third_party
 /third_party/icu
 /third_party/llvm
+/third_party/llvm-build
+/tools/clang
 /tools/jsfunfuzz
 /tools/jsfunfuzz.zip
 /tools/oom_dump/oom_dump
@@ -81,3 +88,6 @@ GRTAGS
 GSYMS
 GPATH
 gtags.files
+turbo*.cfg
+turbo*.dot
+turbo*.json

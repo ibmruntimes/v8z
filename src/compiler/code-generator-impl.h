@@ -5,15 +5,12 @@
 #ifndef V8_COMPILER_CODE_GENERATOR_IMPL_H_
 #define V8_COMPILER_CODE_GENERATOR_IMPL_H_
 
+#include "src/code-stubs.h"
 #include "src/compiler/code-generator.h"
-#include "src/compiler/common-operator.h"
-#include "src/compiler/generic-graph.h"
 #include "src/compiler/instruction.h"
 #include "src/compiler/linkage.h"
-#include "src/compiler/machine-operator.h"
-#include "src/compiler/node.h"
 #include "src/compiler/opcodes.h"
-#include "src/compiler/operator.h"
+#include "src/macro-assembler.h"
 
 namespace v8 {
 namespace internal {
@@ -28,59 +25,69 @@ class InstructionOperandConverter {
   InstructionOperandConverter(CodeGenerator* gen, Instruction* instr)
       : gen_(gen), instr_(instr) {}
 
-  Register InputRegister(int index) {
+  // -- Instruction operand accesses with conversions --------------------------
+
+  Register InputRegister(size_t index) {
     return ToRegister(instr_->InputAt(index));
   }
 
-  DoubleRegister InputDoubleRegister(int index) {
+  DoubleRegister InputDoubleRegister(size_t index) {
     return ToDoubleRegister(instr_->InputAt(index));
   }
 
-  double InputDouble(int index) { return ToDouble(instr_->InputAt(index)); }
+  double InputDouble(size_t index) { return ToDouble(instr_->InputAt(index)); }
 
-  int32_t InputInt32(int index) {
+  int32_t InputInt32(size_t index) {
     return ToConstant(instr_->InputAt(index)).ToInt32();
   }
 
-  int8_t InputInt8(int index) { return static_cast<int8_t>(InputInt32(index)); }
+  int8_t InputInt8(size_t index) {
+    return static_cast<int8_t>(InputInt32(index));
+  }
 
-  int16_t InputInt16(int index) {
+  int16_t InputInt16(size_t index) {
     return static_cast<int16_t>(InputInt32(index));
   }
 
-  uint8_t InputInt5(int index) {
+  uint8_t InputInt5(size_t index) {
     return static_cast<uint8_t>(InputInt32(index) & 0x1F);
   }
 
-  uint8_t InputInt6(int index) {
+  uint8_t InputInt6(size_t index) {
     return static_cast<uint8_t>(InputInt32(index) & 0x3F);
   }
 
-  Handle<HeapObject> InputHeapObject(int index) {
+  Handle<HeapObject> InputHeapObject(size_t index) {
     return ToHeapObject(instr_->InputAt(index));
   }
 
-  Label* InputLabel(int index) {
-    return gen_->code()->GetLabel(InputBlock(index));
+  Label* InputLabel(size_t index) { return ToLabel(instr_->InputAt(index)); }
+
+  RpoNumber InputRpo(size_t index) {
+    return ToRpoNumber(instr_->InputAt(index));
   }
 
-  BasicBlock* InputBlock(int index) {
-    NodeId block_id = static_cast<NodeId>(InputInt32(index));
-    // operand should be a block id.
-    DCHECK(block_id >= 0);
-    DCHECK(block_id < gen_->schedule()->BasicBlockCount());
-    return gen_->schedule()->GetBlockById(block_id);
-  }
-
-  Register OutputRegister(int index = 0) {
+  Register OutputRegister(size_t index = 0) {
     return ToRegister(instr_->OutputAt(index));
+  }
+
+  Register TempRegister(size_t index) {
+    return ToRegister(instr_->TempAt(index));
   }
 
   DoubleRegister OutputDoubleRegister() {
     return ToDoubleRegister(instr_->Output());
   }
 
-  Register TempRegister(int index) { return ToRegister(instr_->TempAt(index)); }
+  // -- Conversions for operands -----------------------------------------------
+
+  Label* ToLabel(InstructionOperand* op) {
+    return gen_->GetLabel(ToRpoNumber(op));
+  }
+
+  RpoNumber ToRpoNumber(InstructionOperand* op) {
+    return ToConstant(op).ToRpoNumber();
+  }
 
   Register ToRegister(InstructionOperand* op) {
     DCHECK(op->IsRegister());
@@ -92,19 +99,17 @@ class InstructionOperandConverter {
     return DoubleRegister::FromAllocationIndex(op->index());
   }
 
-  Constant ToConstant(InstructionOperand* operand) {
-    if (operand->IsImmediate()) {
-      return gen_->code()->GetImmediate(operand->index());
+  Constant ToConstant(InstructionOperand* op) {
+    if (op->IsImmediate()) {
+      return gen_->code()->GetImmediate(op->index());
     }
-    return gen_->code()->GetConstant(operand->index());
+    return gen_->code()->GetConstant(op->index());
   }
 
-  double ToDouble(InstructionOperand* operand) {
-    return ToConstant(operand).ToFloat64();
-  }
+  double ToDouble(InstructionOperand* op) { return ToConstant(op).ToFloat64(); }
 
-  Handle<HeapObject> ToHeapObject(InstructionOperand* operand) {
-    return ToConstant(operand).ToHeapObject();
+  Handle<HeapObject> ToHeapObject(InstructionOperand* op) {
+    return ToConstant(op).ToHeapObject();
   }
 
   Frame* frame() const { return gen_->frame(); }
@@ -117,13 +122,34 @@ class InstructionOperandConverter {
 };
 
 
+// Generator for out-of-line code that is emitted after the main code is done.
+class OutOfLineCode : public ZoneObject {
+ public:
+  explicit OutOfLineCode(CodeGenerator* gen);
+  virtual ~OutOfLineCode();
+
+  virtual void Generate() = 0;
+
+  Label* entry() { return &entry_; }
+  Label* exit() { return &exit_; }
+  MacroAssembler* masm() const { return masm_; }
+  OutOfLineCode* next() const { return next_; }
+
+ private:
+  Label entry_;
+  Label exit_;
+  MacroAssembler* const masm_;
+  OutOfLineCode* const next_;
+};
+
+
 // TODO(dcarney): generify this on bleeding_edge and replace this call
 // when merged.
 static inline void FinishCode(MacroAssembler* masm) {
 #if V8_TARGET_ARCH_ARM64 || V8_TARGET_ARCH_ARM
   masm->CheckConstPool(true, false);
-#elif V8_TARGET_ARCH_PPC
-  masm->EmitConstantPool();
+#elif V8_TARGET_ARCH_IA32 || V8_TARGET_ARCH_X64
+  masm->ud2();
 #endif
 }
 

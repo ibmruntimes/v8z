@@ -2,22 +2,25 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <stdarg.h>
+#include "src/log.h"
+
+#include <cstdarg>
+#include <sstream>
 
 #include "src/v8.h"
 
+#include "src/bailout-reason.h"
 #include "src/base/platform/platform.h"
 #include "src/bootstrapper.h"
 #include "src/code-stubs.h"
 #include "src/cpu-profiler.h"
 #include "src/deoptimizer.h"
 #include "src/global-handles.h"
-#include "src/log.h"
+#include "src/log-inl.h"
 #include "src/log-utils.h"
 #include "src/macro-assembler.h"
 #include "src/perf-jit.h"
 #include "src/runtime-profiler.h"
-#include "src/serialize.h"
 #include "src/string-stream.h"
 #include "src/vm-state-inl.h"
 
@@ -267,7 +270,7 @@ PerfBasicLogger::PerfBasicLogger()
   CHECK_NE(size, -1);
   perf_output_handle_ =
       base::OS::FOpen(perf_dump_name.start(), base::OS::LogFileOpenMode);
-  CHECK_NE(perf_output_handle_, NULL);
+  CHECK_NOT_NULL(perf_output_handle_);
   setvbuf(perf_output_handle_, NULL, _IOFBF, kLogBufferSize);
 }
 
@@ -608,7 +611,7 @@ class Profiler: public base::Thread {
     if (paused_)
       return;
 
-    if (Succ(head_) == tail_) {
+    if (Succ(head_) == static_cast<int>(base::NoBarrier_Load(&tail_))) {
       overflow_ = true;
     } else {
       buffer_[head_] = *sample;
@@ -627,9 +630,10 @@ class Profiler: public base::Thread {
   // Waits for a signal and removes profiling data.
   bool Remove(TickSample* sample) {
     buffer_semaphore_.Wait();  // Wait for an element.
-    *sample = buffer_[tail_];
+    *sample = buffer_[base::NoBarrier_Load(&tail_)];
     bool result = overflow_;
-    tail_ = Succ(tail_);
+    base::NoBarrier_Store(&tail_, static_cast<base::Atomic32>(
+                                      Succ(base::NoBarrier_Load(&tail_))));
     overflow_ = false;
     return result;
   }
@@ -643,7 +647,7 @@ class Profiler: public base::Thread {
   static const int kBufferSize = 128;
   TickSample buffer_[kBufferSize];  // Buffer storage.
   int head_;  // Index to the buffer head.
-  int tail_;  // Index to the buffer tail.
+  base::Atomic32 tail_;             // Index to the buffer tail.
   bool overflow_;  // Tell whether a buffer overflow has occurred.
   // Sempahore used for buffer synchronization.
   base::Semaphore buffer_semaphore_;
@@ -652,7 +656,7 @@ class Profiler: public base::Thread {
   bool engaged_;
 
   // Tells whether worker thread should continue running.
-  bool running_;
+  base::Atomic32 running_;
 
   // Tells whether we are currently recording tick samples.
   bool paused_;
@@ -700,12 +704,13 @@ Profiler::Profiler(Isolate* isolate)
     : base::Thread(Options("v8:Profiler")),
       isolate_(isolate),
       head_(0),
-      tail_(0),
       overflow_(false),
       buffer_semaphore_(0),
       engaged_(false),
-      running_(false),
-      paused_(false) {}
+      paused_(false) {
+  base::NoBarrier_Store(&tail_, 0);
+  base::NoBarrier_Store(&running_, 0);
+}
 
 
 void Profiler::Engage() {
@@ -720,7 +725,7 @@ void Profiler::Engage() {
   }
 
   // Start thread processing the profiler buffer.
-  running_ = true;
+  base::NoBarrier_Store(&running_, 1);
   Start();
 
   // Register to get ticks.
@@ -740,7 +745,7 @@ void Profiler::Disengage() {
   // Terminate the worker thread by setting running_ to false,
   // inserting a fake element in the queue and then wait for
   // the thread to terminate.
-  running_ = false;
+  base::NoBarrier_Store(&running_, 0);
   TickSample sample;
   // Reset 'paused_' flag, otherwise semaphore may not be signalled.
   resume();
@@ -754,7 +759,7 @@ void Profiler::Disengage() {
 void Profiler::Run() {
   TickSample sample;
   bool overflow = Remove(&sample);
-  while (running_) {
+  while (base::NoBarrier_Load(&running_)) {
     LOG(isolate_, TickEvent(&sample, overflow));
     overflow = Remove(&sample);
   }
@@ -872,34 +877,16 @@ void Logger::ApiEvent(const char* format, ...) {
 }
 
 
-void Logger::ApiNamedSecurityCheck(Object* key) {
+void Logger::ApiSecurityCheck() {
   if (!log_->IsEnabled() || !FLAG_log_api) return;
-  if (key->IsString()) {
-    SmartArrayPointer<char> str =
-        String::cast(key)->ToCString(DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
-    ApiEvent("api,check-security,\"%s\"", str.get());
-  } else if (key->IsSymbol()) {
-    Symbol* symbol = Symbol::cast(key);
-    if (symbol->name()->IsUndefined()) {
-      ApiEvent("api,check-security,symbol(hash %x)", Symbol::cast(key)->Hash());
-    } else {
-      SmartArrayPointer<char> str = String::cast(symbol->name())->ToCString(
-          DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
-      ApiEvent("api,check-security,symbol(\"%s\" hash %x)", str.get(),
-               Symbol::cast(key)->Hash());
-    }
-  } else if (key->IsUndefined()) {
-    ApiEvent("api,check-security,undefined");
-  } else {
-    ApiEvent("api,check-security,['no-name']");
-  }
+  ApiEvent("api,check-security");
 }
 
 
 void Logger::SharedLibraryEvent(const std::string& library_path,
                                 uintptr_t start,
                                 uintptr_t end) {
-  if (!log_->IsEnabled() || !FLAG_prof) return;
+  if (!log_->IsEnabled() || !FLAG_prof_cpp) return;
   Log::MessageBuilder msg(log_);
   msg.Append("shared-library,\"%s\",0x%08" V8PRIxPTR ",0x%08" V8PRIxPTR,
              library_path.c_str(), start, end);
@@ -907,9 +894,9 @@ void Logger::SharedLibraryEvent(const std::string& library_path,
 }
 
 
-void Logger::CodeDeoptEvent(Code* code) {
-  if (!log_->IsEnabled()) return;
-  DCHECK(FLAG_log_internal_timer_events);
+void Logger::CodeDeoptEvent(Code* code, Address pc, int fp_to_sp_delta) {
+  PROFILER_LOG(CodeDeoptEvent(code, pc, fp_to_sp_delta));
+  if (!log_->IsEnabled() || !FLAG_log_internal_timer_events) return;
   Log::MessageBuilder msg(log_);
   int since_epoch = static_cast<int>(timer_.Elapsed().InMicroseconds());
   msg.Append("code-deopt,%ld,%d", since_epoch, code->CodeSize());
@@ -953,18 +940,10 @@ void Logger::LeaveExternal(Isolate* isolate) {
 }
 
 
-void Logger::DefaultTimerEventsLogger(const char* name, int se) {
-  Isolate* isolate = Isolate::Current();
-  LOG(isolate, TimerEvent(static_cast<StartEnd>(se), name));
-}
-
-
 template <class TimerEvent>
 void TimerEventScope<TimerEvent>::LogTimerEvent(Logger::StartEnd se) {
-  if (TimerEvent::expose_to_api() ||
-      isolate_->event_logger() == Logger::DefaultTimerEventsLogger) {
-    isolate_->event_logger()(TimerEvent::name(), se);
-  }
+  Logger::CallEventLogger(isolate_, TimerEvent::name(), se,
+                          TimerEvent::expose_to_api());
 }
 
 
@@ -1029,12 +1008,6 @@ void Logger::RegExpCompileEvent(Handle<JSRegExp> regexp, bool in_cache) {
   LogRegExpSource(regexp);
   msg.Append(in_cache ? ",hit" : ",miss");
   msg.WriteToLogFile();
-}
-
-
-void Logger::ApiIndexedSecurityCheck(uint32_t index) {
-  if (!log_->IsEnabled() || !FLAG_log_api) return;
-  ApiEvent("api,check-security,%u", index);
 }
 
 
@@ -1225,8 +1198,7 @@ void Logger::CodeCreateEvent(LogEventsAndTags tag,
   CALL_LISTENERS(CodeCreateEvent(tag, code, shared, info, name));
 
   if (!FLAG_log_code || !log_->IsEnabled()) return;
-  if (code == isolate_->builtins()->builtin(Builtins::kCompileUnoptimized))
-    return;
+  if (code == isolate_->builtins()->builtin(Builtins::kCompileLazy)) return;
 
   Log::MessageBuilder msg(log_);
   AppendCodeCreateHeader(&msg, tag, code);
@@ -1307,7 +1279,7 @@ void Logger::CodeDisableOptEvent(Code* code,
   SmartArrayPointer<char> name =
       shared->DebugName()->ToCString(DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
   msg.Append("\"%s\",", name.get());
-  msg.Append("\"%s\"", GetBailoutReason(shared->DisableOptimizationReason()));
+  msg.Append("\"%s\"", GetBailoutReason(shared->disable_optimization_reason()));
   msg.WriteToLogFile();
 }
 
@@ -1416,8 +1388,6 @@ void Logger::SnapshotPositionEvent(Address addr, int pos) {
 
 
 void Logger::SharedFunctionInfoMoveEvent(Address from, Address to) {
-  PROFILER_LOG(SharedFunctionInfoMoveEvent(from, to));
-
   if (!is_logging_code_events()) return;
   MoveEventInternal(SHARED_FUNC_MOVE_EVENT, from, to);
 }
@@ -1521,7 +1491,7 @@ void Logger::DebugEvent(const char* event_type, Vector<uint16_t> parameter) {
 
 
 void Logger::TickEvent(TickSample* sample, bool overflow) {
-  if (!log_->IsEnabled() || !FLAG_prof) return;
+  if (!log_->IsEnabled() || !FLAG_prof_cpp) return;
   Log::MessageBuilder msg(log_);
   msg.Append("%s,", kLogEventsNames[TICK_EVENT]);
   msg.AppendAddress(sample->pc);
@@ -1759,8 +1729,7 @@ void Logger::LogCompiledFunctions() {
   // During iteration, there can be heap allocation due to
   // GetScriptLineNumber call.
   for (int i = 0; i < compiled_funcs_count; ++i) {
-    if (code_objects[i].is_identical_to(
-            isolate_->builtins()->CompileUnoptimized()))
+    if (code_objects[i].is_identical_to(isolate_->builtins()->CompileLazy()))
       continue;
     LogExistingFunction(sfis[i], code_objects[i]);
   }
@@ -1790,16 +1759,24 @@ void Logger::LogAccessorCallbacks() {
 }
 
 
-static void AddIsolateIdIfNeeded(OStream& os,  // NOLINT
+static void AddIsolateIdIfNeeded(std::ostream& os,  // NOLINT
                                  Isolate* isolate) {
   if (FLAG_logfile_per_isolate) os << "isolate-" << isolate << "-";
 }
 
 
-static void PrepareLogFileName(OStream& os,  // NOLINT
+static void PrepareLogFileName(std::ostream& os,  // NOLINT
                                Isolate* isolate, const char* file_name) {
-  AddIsolateIdIfNeeded(os, isolate);
+  int dir_separator_count = 0;
   for (const char* p = file_name; *p; p++) {
+    if (base::OS::isDirectorySeparator(*p)) dir_separator_count++;
+  }
+
+  for (const char* p = file_name; *p; p++) {
+    if (dir_separator_count == 0) {
+      AddIsolateIdIfNeeded(os, isolate);
+      dir_separator_count--;
+    }
     if (*p == '%') {
       p++;
       switch (*p) {
@@ -1825,6 +1802,7 @@ static void PrepareLogFileName(OStream& os,  // NOLINT
           break;
       }
     } else {
+      if (base::OS::isDirectorySeparator(*p)) dir_separator_count--;
       os << *p;
     }
   }
@@ -1841,9 +1819,9 @@ bool Logger::SetUp(Isolate* isolate) {
     FLAG_log_snapshot_positions = true;
   }
 
-  OStringStream log_file_name;
+  std::ostringstream log_file_name;
   PrepareLogFileName(log_file_name, isolate, FLAG_logfile);
-  log_->Initialize(log_file_name.c_str());
+  log_->Initialize(log_file_name.str().c_str());
 
 
   if (FLAG_perf_basic_prof) {
@@ -1857,7 +1835,7 @@ bool Logger::SetUp(Isolate* isolate) {
   }
 
   if (FLAG_ll_prof) {
-    ll_logger_ = new LowLevelLogger(log_file_name.c_str());
+    ll_logger_ = new LowLevelLogger(log_file_name.str().c_str());
     addCodeEventListener(ll_logger_);
   }
 
@@ -1867,13 +1845,13 @@ bool Logger::SetUp(Isolate* isolate) {
     is_logging_ = true;
   }
 
-  if (FLAG_prof) {
+  if (FLAG_log_internal_timer_events || FLAG_prof_cpp) timer_.Start();
+
+  if (FLAG_prof_cpp) {
     profiler_ = new Profiler(isolate);
     is_logging_ = true;
     profiler_->Engage();
   }
-
-  if (FLAG_log_internal_timer_events || FLAG_prof) timer_.Start();
 
   return true;
 }

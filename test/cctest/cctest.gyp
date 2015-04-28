@@ -44,6 +44,7 @@
       ],
       'sources': [  ### gcmole(all) ###
         '<(generated_file)',
+        'compiler/c-signature.h',
         'compiler/codegen-tester.cc',
         'compiler/codegen-tester.h',
         'compiler/function-tester.h',
@@ -52,38 +53,42 @@
         'compiler/graph-tester.h',
         'compiler/simplified-graph-builder.cc',
         'compiler/simplified-graph-builder.h',
+        'compiler/test-basic-block-profiler.cc',
         'compiler/test-branch-combine.cc',
         'compiler/test-changes-lowering.cc',
         'compiler/test-codegen-deopt.cc',
+        'compiler/test-control-reducer.cc',
         'compiler/test-gap-resolver.cc',
-        'compiler/test-graph-reducer.cc',
-        'compiler/test-instruction-selector.cc',
+        'compiler/test-graph-visualizer.cc',
         'compiler/test-instruction.cc',
         'compiler/test-js-context-specialization.cc',
         'compiler/test-js-constant-cache.cc',
         'compiler/test-js-typed-lowering.cc',
+        'compiler/test-jump-threading.cc',
         'compiler/test-linkage.cc',
+        'compiler/test-loop-assignment-analysis.cc',
+        'compiler/test-loop-analysis.cc',
         'compiler/test-machine-operator-reducer.cc',
         'compiler/test-node-algorithm.cc',
         'compiler/test-node-cache.cc',
         'compiler/test-node.cc',
         'compiler/test-operator.cc',
-        'compiler/test-phi-reducer.cc',
+        'compiler/test-osr.cc',
         'compiler/test-pipeline.cc',
         'compiler/test-representation-change.cc',
         'compiler/test-run-deopt.cc',
+        'compiler/test-run-inlining.cc',
         'compiler/test-run-intrinsics.cc',
         'compiler/test-run-jsbranches.cc',
         'compiler/test-run-jscalls.cc',
         'compiler/test-run-jsexceptions.cc',
         'compiler/test-run-jsops.cc',
         'compiler/test-run-machops.cc',
+        'compiler/test-run-properties.cc',
+        'compiler/test-run-stackcheck.cc',
+        'compiler/test-run-stubs.cc',
         'compiler/test-run-variables.cc',
-        'compiler/test-schedule.cc',
-        'compiler/test-scheduler.cc',
         'compiler/test-simplified-lowering.cc',
-        'compiler/test-structured-ifbuilder-fuzzer.cc',
-        'compiler/test-structured-machine-assembler.cc',
         'cctest.cc',
         'gay-fixed.cc',
         'gay-precision.cc',
@@ -93,20 +98,21 @@
         'test-accessors.cc',
         'test-alloc.cc',
         'test-api.cc',
+        'test-api.h',
+        'test-api-interceptors.cc',
+        'test-array-list.cc',
         'test-ast.cc',
         'test-atomicops.cc',
         'test-bignum.cc',
         'test-bignum-dtoa.cc',
-        'test-checks.cc',
+        'test-bit-vector.cc',
         'test-circular-queue.cc',
         'test-compiler.cc',
         'test-constantpool.cc',
         'test-conversions.cc',
         'test-cpu-profiler.cc',
-        'test-dataflow.cc',
         'test-date.cc',
         'test-debug.cc',
-        'test-declarative-accessors.cc',
         'test-decls.cc',
         'test-deoptimization.cc',
         'test-dictionary.cc',
@@ -114,6 +120,7 @@
         'test-double.cc',
         'test-dtoa.cc',
         'test-fast-dtoa.cc',
+        'test-feedback-vector.cc',
         'test-fixed-dtoa.cc',
         'test-flags.cc',
         'test-func-name-inference.cc',
@@ -125,9 +132,6 @@
         'test-heap.cc',
         'test-heap-profiler.cc',
         'test-hydrogen-types.cc',
-        'test-libplatform-default-platform.cc',
-        'test-libplatform-task-queue.cc',
-        'test-libplatform-worker-thread.cc',
         'test-list.cc',
         'test-liveedit.cc',
         'test-lockers.cc',
@@ -135,9 +139,9 @@
         'test-microtask-delivery.cc',
         'test-mark-compact.cc',
         'test-mementos.cc',
+        'test-migrations.cc',
         'test-object-observe.cc',
         'test-ordered-hash-table.cc',
-        'test-ostreams.cc',
         'test-parsing.cc',
         'test-platform.cc',
         'test-profile-generator.cc',
@@ -145,7 +149,7 @@
         'test-regexp.cc',
         'test-reloc-info.cc',
         'test-representation.cc',
-        'test-semaphore.cc',
+        'test-sampler-api.cc',
         'test-serialize.cc',
         'test-spaces.cc',
         'test-strings.cc',
@@ -153,8 +157,10 @@
         'test-strtod.cc',
         'test-thread-termination.cc',
         'test-threads.cc',
+        'test-transitions.cc',
         'test-types.cc',
         'test-unbound-queue.cc',
+        'test-unboxed-doubles.cc',
         'test-unique.cc',
         'test-unscopables-hidden-prototype.cc',
         'test-utils.cc',
@@ -162,12 +168,13 @@
         'test-weakmaps.cc',
         'test-weaksets.cc',
         'test-weaktypedarrays.cc',
-        'trace-extension.cc'
+        'trace-extension.cc',
+        '../../src/startup-data-util.h',
+        '../../src/startup-data-util.cc'
       ],
       'conditions': [
         ['v8_target_arch=="ia32"', {
           'sources': [  ### gcmole(arch:ia32) ###
-            'compiler/test-instruction-selector-ia32.cc',
             'test-assembler-ia32.cc',
             'test-code-stubs.cc',
             'test-code-stubs-ia32.cc',
@@ -188,7 +195,6 @@
         }],
         ['v8_target_arch=="arm"', {
           'sources': [  ### gcmole(arch:arm) ###
-            'compiler/test-instruction-selector-arm.cc',
             'test-assembler-arm.cc',
             'test-code-stubs.cc',
             'test-code-stubs-arm.cc',
@@ -269,11 +275,6 @@
             'test-platform-linux.cc',
           ],
         }],
-        [ 'OS=="aix" and v8_target_arch=="ppc64"', {
-          'sources': [
-            'test-api2.cc',
-          ],
-        }],
         [ 'OS=="win"', {
           'sources': [
             'test-platform-win32.cc',
@@ -285,17 +286,21 @@
             },
           },
         }],
+        ['OS=="aix"', {
+          'ldflags': [ '-Wl,-bbigtoc' ],
+        }],
         ['component=="shared_library"', {
           # cctest can't be built against a shared library, so we need to
           # depend on the underlying static target in that case.
           'conditions': [
-            ['v8_use_snapshot=="true"', {
+            ['v8_use_snapshot=="true" and v8_use_external_startup_data==0', {
               'dependencies': ['../../tools/gyp/v8.gyp:v8_snapshot'],
-            },
-            {
-              'dependencies': [
-                '../../tools/gyp/v8.gyp:v8_nosnapshot',
-              ],
+            }],
+            ['v8_use_snapshot=="true" and v8_use_external_startup_data==1', {
+              'dependencies': ['../../tools/gyp/v8.gyp:v8_external_snapshot'],
+            }],
+            ['v8_use_snapshot!="true"', {
+              'dependencies': ['../../tools/gyp/v8.gyp:v8_nosnapshot'],
             }],
           ],
         }, {
@@ -333,7 +338,6 @@
             '../../tools/js2c.py',
             '<@(_outputs)',
             'TEST',  # type
-            'off',  # compression
             '<@(file_list)',
           ],
         }

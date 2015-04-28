@@ -19,6 +19,7 @@ var PromiseChain;
 var PromiseCatch;
 var PromiseThen;
 var PromiseHasRejectHandler;
+var PromiseHasUserDefinedRejectHandler;
 
 // mirror-debugger.js currently uses builtins.promiseStatus. It would be nice
 // if we could move these property names into the closure below.
@@ -30,8 +31,9 @@ var promiseValue = GLOBAL_PRIVATE("Promise#value");
 var promiseOnResolve = GLOBAL_PRIVATE("Promise#onResolve");
 var promiseOnReject = GLOBAL_PRIVATE("Promise#onReject");
 var promiseRaw = GLOBAL_PRIVATE("Promise#raw");
-var promiseDebug = GLOBAL_PRIVATE("Promise#debug");
+var promiseHasHandler = %PromiseHasHandlerSymbol();
 var lastMicrotaskId = 0;
+
 
 (function() {
 
@@ -42,7 +44,7 @@ var lastMicrotaskId = 0;
       throw MakeTypeError('resolver_not_a_function', [resolver]);
     var promise = PromiseInit(this);
     try {
-      %DebugPushPromise(promise);
+      %DebugPushPromise(promise, Promise);
       resolver(function(x) { PromiseResolve(promise, x) },
                function(r) { PromiseReject(promise, r) });
     } catch (e) {
@@ -65,6 +67,13 @@ var lastMicrotaskId = 0;
     return promise;
   }
 
+  function PromiseCreateAndSet(status, value) {
+    var promise = new $Promise(promiseRaw);
+    // If debug is active, notify about the newly created promise first.
+    if (DEBUG_IS_ACTIVE) PromiseSet(promise, 0, UNDEFINED);
+    return PromiseSet(promise, status, value);
+  }
+
   function PromiseInit(promise) {
     return PromiseSet(
         promise, 0, UNDEFINED, new InternalArray, new InternalArray)
@@ -72,7 +81,8 @@ var lastMicrotaskId = 0;
 
   function PromiseDone(promise, status, value, promiseQueue) {
     if (GET_PRIVATE(promise, promiseStatus) === 0) {
-      PromiseEnqueue(value, GET_PRIVATE(promise, promiseQueue), status);
+      var tasks = GET_PRIVATE(promise, promiseQueue);
+      if (tasks.length) PromiseEnqueue(value, tasks, status);
       PromiseSet(promise, status, value);
     }
   }
@@ -100,7 +110,8 @@ var lastMicrotaskId = 0;
 
   function PromiseHandle(value, handler, deferred) {
     try {
-      %DebugPushPromise(deferred.promise);
+      %DebugPushPromise(deferred.promise, PromiseHandle);
+      DEBUG_PREPARE_STEP_IN_IF_STEPPING(handler);
       var result = handler(value);
       if (result === deferred.promise)
         throw MakeTypeError('promise_cyclic', [result]);
@@ -146,7 +157,7 @@ var lastMicrotaskId = 0;
   // For bootstrapper.
 
   IsPromise = function IsPromise(x) {
-    return IS_SPEC_OBJECT(x) && HAS_PRIVATE(x, promiseStatus);
+    return IS_SPEC_OBJECT(x) && HAS_DEFINED_PRIVATE(x, promiseStatus);
   }
 
   PromiseCreate = function PromiseCreate() {
@@ -159,11 +170,12 @@ var lastMicrotaskId = 0;
 
   PromiseReject = function PromiseReject(promise, r) {
     // Check promise status to confirm that this reject has an effect.
-    // Check promiseDebug property to avoid duplicate event.
-    if (DEBUG_IS_ACTIVE &&
-        GET_PRIVATE(promise, promiseStatus) == 0 &&
-        !HAS_PRIVATE(promise, promiseDebug)) {
-      %DebugPromiseRejectEvent(promise, r);
+    // Call runtime for callbacks to the debugger or for unhandled reject.
+    if (GET_PRIVATE(promise, promiseStatus) == 0) {
+      var debug_is_active = DEBUG_IS_ACTIVE;
+      if (debug_is_active || !HAS_DEFINED_PRIVATE(promise, promiseHasHandler)) {
+        %PromiseRejectEvent(promise, r, debug_is_active);
+      }
     }
     PromiseDone(promise, -1, r, promiseOnReject)
   }
@@ -192,19 +204,24 @@ var lastMicrotaskId = 0;
   function PromiseResolved(x) {
     if (this === $Promise) {
       // Optimized case, avoid extra closure.
-      return PromiseSet(new $Promise(promiseRaw), +1, x);
+      return PromiseCreateAndSet(+1, x);
     } else {
       return new this(function(resolve, reject) { resolve(x) });
     }
   }
 
   function PromiseRejected(r) {
+    var promise;
     if (this === $Promise) {
       // Optimized case, avoid extra closure.
-      return PromiseSet(new $Promise(promiseRaw), -1, r);
+      promise = PromiseCreateAndSet(-1, r);
+      // The debug event for this would always be an uncaught promise reject,
+      // which is usually simply noise. Do not trigger that debug event.
+      %PromiseRejectEvent(promise, r, false);
     } else {
-      return new this(function(resolve, reject) { reject(r) });
+      promise = new this(function(resolve, reject) { reject(r) });
     }
+    return promise;
   }
 
   // Simple chaining.
@@ -227,11 +244,18 @@ var lastMicrotaskId = 0;
                        +1);
         break;
       case -1:  // Rejected
+        if (!HAS_DEFINED_PRIVATE(this, promiseHasHandler)) {
+          // Promise has already been rejected, but had no handler.
+          // Revoke previously triggered reject event.
+          %PromiseRevokeReject(this);
+        }
         PromiseEnqueue(GET_PRIVATE(this, promiseValue),
                        [onReject, deferred],
                        -1);
         break;
     }
+    // Mark this promise as having handler.
+    SET_PRIVATE(this, promiseHasHandler, true);
     if (DEBUG_IS_ACTIVE) {
       %DebugPromiseEvent({ promise: deferred.promise, parentPromise: this });
     }
@@ -255,8 +279,15 @@ var lastMicrotaskId = 0;
       this,
       function(x) {
         x = PromiseCoerce(constructor, x);
-        return x === that ? onReject(MakeTypeError('promise_cyclic', [x])) :
-               IsPromise(x) ? x.then(onResolve, onReject) : onResolve(x);
+        if (x === that) {
+          DEBUG_PREPARE_STEP_IN_IF_STEPPING(onReject);
+          return onReject(MakeTypeError('promise_cyclic', [x]));
+        } else if (IsPromise(x)) {
+          return x.then(onResolve, onReject);
+        } else {
+          DEBUG_PREPARE_STEP_IN_IF_STEPPING(onResolve);
+          return onResolve(x);
+        }
       },
       onReject,
       PromiseChain
@@ -270,51 +301,44 @@ var lastMicrotaskId = 0;
     return IsPromise(x) ? x : new this(function(resolve) { resolve(x) });
   }
 
-  function PromiseAll(values) {
+  function PromiseAll(iterable) {
     var deferred = %_CallFunction(this, PromiseDeferred);
     var resolutions = [];
-    if (!%_IsArray(values)) {
-      deferred.reject(MakeTypeError('invalid_argument'));
-      return deferred.promise;
-    }
     try {
-      var count = values.length;
+      var count = 0;
+      var i = 0;
+      for (var value of iterable) {
+        this.resolve(value).then(
+            // Nested scope to get closure over current i.
+            // TODO(arv): Use an inner let binding once available.
+            (function(i) {
+              return function(x) {
+                resolutions[i] = x;
+                if (--count === 0) deferred.resolve(resolutions);
+              }
+            })(i),
+            function(r) { deferred.reject(r); });
+        ++i;
+        ++count;
+      }
+
       if (count === 0) {
         deferred.resolve(resolutions);
-      } else {
-        for (var i = 0; i < values.length; ++i) {
-          this.resolve(values[i]).then(
-            (function() {
-              // Nested scope to get closure over current i (and avoid .bind).
-              // TODO(rossberg): Use for-let instead once available.
-              var i_captured = i;
-              return function(x) {
-                resolutions[i_captured] = x;
-                if (--count === 0) deferred.resolve(resolutions);
-              };
-            })(),
-            function(r) { deferred.reject(r) }
-          );
-        }
       }
+
     } catch (e) {
       deferred.reject(e)
     }
     return deferred.promise;
   }
 
-  function PromiseOne(values) {
+  function PromiseRace(iterable) {
     var deferred = %_CallFunction(this, PromiseDeferred);
-    if (!%_IsArray(values)) {
-      deferred.reject(MakeTypeError('invalid_argument'));
-      return deferred.promise;
-    }
     try {
-      for (var i = 0; i < values.length; ++i) {
-        this.resolve(values[i]).then(
-          function(x) { deferred.resolve(x) },
-          function(r) { deferred.reject(r) }
-        );
+      for (var value of iterable) {
+        this.resolve(value).then(
+            function(x) { deferred.resolve(x) },
+            function(r) { deferred.reject(r) });
       }
     } catch (e) {
       deferred.reject(e)
@@ -325,11 +349,24 @@ var lastMicrotaskId = 0;
 
   // Utility for debugger
 
-  PromiseHasRejectHandler = function PromiseHasRejectHandler() {
-    // Mark promise as already having triggered a reject event.
-    SET_PRIVATE(this, promiseDebug, true);
-    var queue = GET_PRIVATE(this, promiseOnReject);
-    return !IS_UNDEFINED(queue) && queue.length > 0;
+  function PromiseHasUserDefinedRejectHandlerRecursive(promise) {
+    var queue = GET_PRIVATE(promise, promiseOnReject);
+    if (IS_UNDEFINED(queue)) return false;
+    for (var i = 0; i < queue.length; i += 2) {
+      if (queue[i] != PromiseIdRejectHandler) return true;
+      if (PromiseHasUserDefinedRejectHandlerRecursive(queue[i + 1].promise)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Return whether the promise will be handled by a user-defined reject
+  // handler somewhere down the promise chain. For this, we do a depth-first
+  // search for a reject handler that's not the default PromiseIdRejectHandler.
+  PromiseHasUserDefinedRejectHandler =
+      function PromiseHasUserDefinedRejectHandler() {
+    return PromiseHasUserDefinedRejectHandlerRecursive(this);
   };
 
   // -------------------------------------------------------------------
@@ -337,12 +374,14 @@ var lastMicrotaskId = 0;
 
   %CheckIsBootstrapping();
   %AddNamedProperty(global, 'Promise', $Promise, DONT_ENUM);
+  %AddNamedProperty(
+      $Promise.prototype, symbolToStringTag, "Promise", DONT_ENUM | READ_ONLY);
   InstallFunctions($Promise, DONT_ENUM, [
     "defer", PromiseDeferred,
     "accept", PromiseResolved,
     "reject", PromiseRejected,
     "all", PromiseAll,
-    "race", PromiseOne,
+    "race", PromiseRace,
     "resolve", PromiseCast
   ]);
   InstallFunctions($Promise.prototype, DONT_ENUM, [

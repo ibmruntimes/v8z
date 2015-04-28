@@ -58,13 +58,16 @@ class InterpreterState {
     return Value(op->kind(), op->index());
   }
 
-  friend OStream& operator<<(OStream& os, const InterpreterState& is) {
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const InterpreterState& is) {
     for (OperandMap::const_iterator it = is.values_.begin();
          it != is.values_.end(); ++it) {
       if (it != is.values_.begin()) os << " ";
       InstructionOperand source(it->first.first, it->first.second);
       InstructionOperand destination(it->second.first, it->second.second);
-      os << MoveOperands(&source, &destination);
+      MoveOperands mo(&source, &destination);
+      PrintableMoveOperands pmo = {RegisterConfiguration::ArchDefault(), &mo};
+      os << pmo;
     }
     return os;
   }
@@ -77,14 +80,14 @@ class InterpreterState {
 class MoveInterpreter : public GapResolver::Assembler {
  public:
   virtual void AssembleMove(InstructionOperand* source,
-                            InstructionOperand* destination) V8_OVERRIDE {
+                            InstructionOperand* destination) OVERRIDE {
     InterpreterState::Moves moves;
     moves.push_back(MoveOperands(source, destination));
     state_.ExecuteInParallel(moves);
   }
 
   virtual void AssembleSwap(InstructionOperand* source,
-                            InstructionOperand* destination) V8_OVERRIDE {
+                            InstructionOperand* destination) OVERRIDE {
     InterpreterState::Moves moves;
     moves.push_back(MoveOperands(source, destination));
     moves.push_back(MoveOperands(destination, source));
@@ -134,15 +137,15 @@ class ParallelMoveCreator : public HandleAndZoneScope {
     int index = rng_->NextInt(6);
     switch (rng_->NextInt(5)) {
       case 0:
-        return ConstantOperand::Create(index, main_zone());
+        return ConstantOperand::New(index, main_zone());
       case 1:
-        return StackSlotOperand::Create(index, main_zone());
+        return StackSlotOperand::New(index, main_zone());
       case 2:
-        return DoubleStackSlotOperand::Create(index, main_zone());
+        return DoubleStackSlotOperand::New(index, main_zone());
       case 3:
-        return RegisterOperand::Create(index, main_zone());
+        return RegisterOperand::New(index, main_zone());
       case 4:
-        return DoubleRegisterOperand::Create(index, main_zone());
+        return DoubleRegisterOperand::New(index, main_zone());
     }
     UNREACHABLE();
     return NULL;

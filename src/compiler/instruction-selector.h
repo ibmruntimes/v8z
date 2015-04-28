@@ -5,11 +5,12 @@
 #ifndef V8_COMPILER_INSTRUCTION_SELECTOR_H_
 #define V8_COMPILER_INSTRUCTION_SELECTOR_H_
 
-#include <deque>
+#include <map>
 
 #include "src/compiler/common-operator.h"
 #include "src/compiler/instruction.h"
 #include "src/compiler/machine-operator.h"
+#include "src/compiler/node.h"
 #include "src/zone-containers.h"
 
 namespace v8 {
@@ -17,15 +18,23 @@ namespace internal {
 namespace compiler {
 
 // Forward declarations.
+class BasicBlock;
 struct CallBuffer;  // TODO(bmeurer): Remove this.
 class FlagsContinuation;
+class Linkage;
+struct SwitchInfo;
 
-class InstructionSelector V8_FINAL {
+typedef ZoneVector<InstructionOperand> InstructionOperandVector;
+
+
+// Instruction selection generates an InstructionSequence for a given Schedule.
+class InstructionSelector FINAL {
  public:
   // Forward declarations.
   class Features;
 
-  InstructionSelector(InstructionSequence* sequence,
+  InstructionSelector(Zone* zone, size_t node_count, Linkage* linkage,
+                      InstructionSequence* sequence, Schedule* schedule,
                       SourcePositionTable* source_positions,
                       Features features = SupportedFeatures());
 
@@ -36,33 +45,43 @@ class InstructionSelector V8_FINAL {
   // ============= Architecture-independent code emission methods. =============
   // ===========================================================================
 
-  Instruction* Emit(InstructionCode opcode, InstructionOperand* output,
-                    size_t temp_count = 0, InstructionOperand* *temps = NULL);
-  Instruction* Emit(InstructionCode opcode, InstructionOperand* output,
-                    InstructionOperand* a, size_t temp_count = 0,
-                    InstructionOperand* *temps = NULL);
-  Instruction* Emit(InstructionCode opcode, InstructionOperand* output,
-                    InstructionOperand* a, InstructionOperand* b,
-                    size_t temp_count = 0, InstructionOperand* *temps = NULL);
-  Instruction* Emit(InstructionCode opcode, InstructionOperand* output,
-                    InstructionOperand* a, InstructionOperand* b,
-                    InstructionOperand* c, size_t temp_count = 0,
-                    InstructionOperand* *temps = NULL);
-  Instruction* Emit(InstructionCode opcode, InstructionOperand* output,
-                    InstructionOperand* a, InstructionOperand* b,
-                    InstructionOperand* c, InstructionOperand* d,
-                    size_t temp_count = 0, InstructionOperand* *temps = NULL);
+  Instruction* Emit(InstructionCode opcode, InstructionOperand output,
+                    size_t temp_count = 0, InstructionOperand* temps = NULL);
+  Instruction* Emit(InstructionCode opcode, InstructionOperand output,
+                    InstructionOperand a, size_t temp_count = 0,
+                    InstructionOperand* temps = NULL);
+  Instruction* Emit(InstructionCode opcode, InstructionOperand output,
+                    InstructionOperand a, InstructionOperand b,
+                    size_t temp_count = 0, InstructionOperand* temps = NULL);
+  Instruction* Emit(InstructionCode opcode, InstructionOperand output,
+                    InstructionOperand a, InstructionOperand b,
+                    InstructionOperand c, size_t temp_count = 0,
+                    InstructionOperand* temps = NULL);
+  Instruction* Emit(InstructionCode opcode, InstructionOperand output,
+                    InstructionOperand a, InstructionOperand b,
+                    InstructionOperand c, InstructionOperand d,
+                    size_t temp_count = 0, InstructionOperand* temps = NULL);
+  Instruction* Emit(InstructionCode opcode, InstructionOperand output,
+                    InstructionOperand a, InstructionOperand b,
+                    InstructionOperand c, InstructionOperand d,
+                    InstructionOperand e, size_t temp_count = 0,
+                    InstructionOperand* temps = NULL);
+  Instruction* Emit(InstructionCode opcode, InstructionOperand output,
+                    InstructionOperand a, InstructionOperand b,
+                    InstructionOperand c, InstructionOperand d,
+                    InstructionOperand e, InstructionOperand f,
+                    size_t temp_count = 0, InstructionOperand* temps = NULL);
   Instruction* Emit(InstructionCode opcode, size_t output_count,
-                    InstructionOperand** outputs, size_t input_count,
-                    InstructionOperand** inputs, size_t temp_count = 0,
-                    InstructionOperand* *temps = NULL);
+                    InstructionOperand* outputs, size_t input_count,
+                    InstructionOperand* inputs, size_t temp_count = 0,
+                    InstructionOperand* temps = NULL);
   Instruction* Emit(Instruction* instr);
 
   // ===========================================================================
   // ============== Architecture-independent CPU feature methods. ==============
   // ===========================================================================
 
-  class Features V8_FINAL {
+  class Features FINAL {
    public:
     Features() : bits_(0) {}
     explicit Features(unsigned bits) : bits_(bits) {}
@@ -84,16 +103,12 @@ class InstructionSelector V8_FINAL {
     return Features(CpuFeatures::SupportedFeatures());
   }
 
- private:
-  friend class OperandGenerator;
+  // TODO(sigurds) This should take a CpuFeatures argument.
+  static MachineOperatorBuilder::Flags SupportedMachineOperatorFlags();
 
   // ===========================================================================
   // ============ Architecture-independent graph covering methods. =============
   // ===========================================================================
-
-  // Checks if {block} will appear directly after {current_block_} when
-  // assembling code, in which case, a fall-through can be used.
-  bool IsNextInAssemblyOrder(const BasicBlock* block) const;
 
   // Used in pattern matching during code generation.
   // Check if {node} can be covered while generating code for the current
@@ -105,12 +120,27 @@ class InstructionSelector V8_FINAL {
   // generated for it.
   bool IsDefined(Node* node) const;
 
-  // Inform the instruction selection that {node} was just defined.
-  void MarkAsDefined(Node* node);
-
   // Checks if {node} has any uses, and therefore code has to be generated for
   // it.
   bool IsUsed(Node* node) const;
+
+  // Checks if {node} is currently live.
+  bool IsLive(Node* node) const { return !IsDefined(node) && IsUsed(node); }
+
+  int GetVirtualRegister(const Node* node);
+  const std::map<NodeId, int> GetVirtualRegistersForTesting() const;
+
+  Isolate* isolate() const { return sequence()->isolate(); }
+
+ private:
+  friend class OperandGenerator;
+
+  void EmitTableSwitch(const SwitchInfo& sw, InstructionOperand& index_operand);
+  void EmitLookupSwitch(const SwitchInfo& sw,
+                        InstructionOperand& value_operand);
+
+  // Inform the instruction selection that {node} was just defined.
+  void MarkAsDefined(Node* node);
 
   // Inform the instruction selection that {node} has at least one use and we
   // will need to generate code for it.
@@ -132,6 +162,10 @@ class InstructionSelector V8_FINAL {
   // by {node}.
   void MarkAsRepresentation(MachineType rep, Node* node);
 
+  // Inform the register allocation of the representation of the unallocated
+  // operand {op}.
+  void MarkAsRepresentation(MachineType rep, const InstructionOperand& op);
+
   // Initialize the call buffer with the InstructionOperands, nodes, etc,
   // corresponding
   // to the inputs and outputs of the call.
@@ -139,8 +173,11 @@ class InstructionSelector V8_FINAL {
   // {call_address_immediate} to generate immediate operands to address calls.
   void InitializeCallBuffer(Node* call, CallBuffer* buffer,
                             bool call_code_immediate,
-                            bool call_address_immediate, BasicBlock* cont_node,
-                            BasicBlock* deopt_node);
+                            bool call_address_immediate);
+
+  FrameStateDescriptor* GetFrameStateDescriptor(Node* node);
+  void AddFrameStateInputs(Node* state, InstructionOperandVector* inputs,
+                           FrameStateDescriptor* descriptor);
 
   // ===========================================================================
   // ============= Architecture-specific graph covering methods. ===============
@@ -160,49 +197,41 @@ class InstructionSelector V8_FINAL {
   MACHINE_OP_LIST(DECLARE_GENERATOR)
 #undef DECLARE_GENERATOR
 
-  void VisitInt32AddWithOverflow(Node* node, FlagsContinuation* cont);
-  void VisitInt32SubWithOverflow(Node* node, FlagsContinuation* cont);
-
-  void VisitWord32Test(Node* node, FlagsContinuation* cont);
-  void VisitWord64Test(Node* node, FlagsContinuation* cont);
-  void VisitWord32Compare(Node* node, FlagsContinuation* cont);
-  void VisitWord64Compare(Node* node, FlagsContinuation* cont);
-  void VisitFloat64Compare(Node* node, FlagsContinuation* cont);
-
+  void VisitFinish(Node* node);
   void VisitParameter(Node* node);
+  void VisitOsrValue(Node* node);
   void VisitPhi(Node* node);
   void VisitProjection(Node* node);
   void VisitConstant(Node* node);
-  void VisitCall(Node* call, BasicBlock* continuation,
-                 BasicBlock* deoptimization);
+  void VisitCall(Node* call, BasicBlock* handler);
   void VisitGoto(BasicBlock* target);
   void VisitBranch(Node* input, BasicBlock* tbranch, BasicBlock* fbranch);
+  void VisitSwitch(Node* node, const SwitchInfo& sw);
+  void VisitDeoptimize(Node* value);
   void VisitReturn(Node* value);
   void VisitThrow(Node* value);
-  void VisitDeoptimize(Node* deopt);
 
   // ===========================================================================
 
-  Graph* graph() const { return sequence()->graph(); }
-  Linkage* linkage() const { return sequence()->linkage(); }
-  Schedule* schedule() const { return sequence()->schedule(); }
+  Schedule* schedule() const { return schedule_; }
+  Linkage* linkage() const { return linkage_; }
   InstructionSequence* sequence() const { return sequence_; }
   Zone* instruction_zone() const { return sequence()->zone(); }
-  Zone* zone() { return &zone_; }
+  Zone* zone() const { return zone_; }
 
   // ===========================================================================
 
-  typedef zone_allocator<Instruction*> InstructionPtrZoneAllocator;
-  typedef std::deque<Instruction*, InstructionPtrZoneAllocator> Instructions;
-
-  Zone zone_;
-  InstructionSequence* sequence_;
-  SourcePositionTable* source_positions_;
+  Zone* const zone_;
+  Linkage* const linkage_;
+  InstructionSequence* const sequence_;
+  SourcePositionTable* const source_positions_;
   Features features_;
+  Schedule* const schedule_;
   BasicBlock* current_block_;
-  Instructions instructions_;
+  ZoneVector<Instruction*> instructions_;
   BoolVector defined_;
   BoolVector used_;
+  IntVector virtual_registers_;
 };
 
 }  // namespace compiler

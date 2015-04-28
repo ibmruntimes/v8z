@@ -5,6 +5,7 @@
 #include "src/v8.h"
 
 #include "src/api.h"
+#include "src/api-natives.h"
 #include "src/arguments.h"
 #include "src/base/once.h"
 #include "src/bootstrapper.h"
@@ -13,9 +14,9 @@
 #include "src/gdb-jit.h"
 #include "src/heap/mark-compact.h"
 #include "src/heap-profiler.h"
-#include "src/ic-inl.h"
+#include "src/ic/handler-compiler.h"
+#include "src/ic/ic.h"
 #include "src/prototype.h"
-#include "src/stub-cache.h"
 #include "src/vm-state-inl.h"
 
 namespace v8 {
@@ -182,23 +183,24 @@ static void MoveDoubleElements(FixedDoubleArray* dst, int dst_index,
 }
 
 
-static bool ArrayPrototypeHasNoElements(Heap* heap,
-                                        Context* native_context,
-                                        JSObject* array_proto) {
+static bool ArrayPrototypeHasNoElements(Heap* heap, PrototypeIterator* iter) {
   DisallowHeapAllocation no_gc;
-  // This method depends on non writability of Object and Array prototype
-  // fields.
-  if (array_proto->elements() != heap->empty_fixed_array()) return false;
-  // Object.prototype
-  PrototypeIterator iter(heap->isolate(), array_proto);
-  if (iter.IsAtEnd()) {
-    return false;
+  for (; !iter->IsAtEnd(); iter->Advance()) {
+    if (iter->GetCurrent()->IsJSProxy()) return false;
+    if (JSObject::cast(iter->GetCurrent())->elements() !=
+        heap->empty_fixed_array()) {
+      return false;
+    }
   }
-  array_proto = JSObject::cast(iter.GetCurrent());
-  if (array_proto != native_context->initial_object_prototype()) return false;
-  if (array_proto->elements() != heap->empty_fixed_array()) return false;
-  iter.Advance();
-  return iter.IsAtEnd();
+  return true;
+}
+
+
+static inline bool IsJSArrayFastElementMovingAllowed(Heap* heap,
+                                                     JSArray* receiver) {
+  DisallowHeapAllocation no_gc;
+  PrototypeIterator iter(heap->isolate(), receiver);
+  return ArrayPrototypeHasNoElements(heap, &iter);
 }
 
 
@@ -213,13 +215,13 @@ static inline MaybeHandle<FixedArrayBase> EnsureJSArrayWithWritableFastElements(
   Handle<JSArray> array = Handle<JSArray>::cast(receiver);
   // If there may be elements accessors in the prototype chain, the fast path
   // cannot be used if there arguments to add to the array.
-  if (args != NULL && array->map()->DictionaryElementsInPrototypeChainOnly()) {
+  Heap* heap = isolate->heap();
+  if (args != NULL && !IsJSArrayFastElementMovingAllowed(heap, *array)) {
     return MaybeHandle<FixedArrayBase>();
   }
   if (array->map()->is_observed()) return MaybeHandle<FixedArrayBase>();
   if (!array->map()->is_extensible()) return MaybeHandle<FixedArrayBase>();
   Handle<FixedArrayBase> elms(array->elements(), isolate);
-  Heap* heap = isolate->heap();
   Map* map = elms->map();
   if (map == heap->fixed_array_map()) {
     if (args == NULL || array->HasFastObjectElements()) return elms;
@@ -261,19 +263,6 @@ static inline MaybeHandle<FixedArrayBase> EnsureJSArrayWithWritableFastElements(
     return handle(array->elements(), isolate);
   }
   return elms;
-}
-
-
-static inline bool IsJSArrayFastElementMovingAllowed(Heap* heap,
-                                                     JSArray* receiver) {
-  if (!FLAG_clever_optimizations) return false;
-  DisallowHeapAllocation no_gc;
-  Context* native_context = heap->isolate()->context()->native_context();
-  JSObject* array_proto =
-      JSObject::cast(native_context->array_function()->prototype());
-  PrototypeIterator iter(heap->isolate(), receiver);
-  return iter.GetCurrent() == array_proto &&
-         ArrayPrototypeHasNoElements(heap, native_context, array_proto);
 }
 
 
@@ -431,6 +420,10 @@ BUILTIN(ArrayPop) {
   int len = Smi::cast(array->length())->value();
   if (len == 0) return isolate->heap()->undefined_value();
 
+  if (JSArray::HasReadOnlyLength(array)) {
+    return CallJsBuiltin(isolate, "ArrayPop", args);
+  }
+
   ElementsAccessor* accessor = array->GetElementsAccessor();
   int new_length = len - 1;
   Handle<Object> element =
@@ -453,8 +446,7 @@ BUILTIN(ArrayShift) {
       EnsureJSArrayWithWritableFastElements(isolate, receiver, NULL, 0);
   Handle<FixedArrayBase> elms_obj;
   if (!maybe_elms_obj.ToHandle(&elms_obj) ||
-      !IsJSArrayFastElementMovingAllowed(heap,
-                                         *Handle<JSArray>::cast(receiver))) {
+      !IsJSArrayFastElementMovingAllowed(heap, JSArray::cast(*receiver))) {
     return CallJsBuiltin(isolate, "ArrayShift", args);
   }
   Handle<JSArray> array = Handle<JSArray>::cast(receiver);
@@ -462,6 +454,10 @@ BUILTIN(ArrayShift) {
 
   int len = Smi::cast(array->length())->value();
   if (len == 0) return heap->undefined_value();
+
+  if (JSArray::HasReadOnlyLength(array)) {
+    return CallJsBuiltin(isolate, "ArrayShift", args);
+  }
 
   // Get first element
   ElementsAccessor* accessor = array->GetElementsAccessor();
@@ -499,11 +495,9 @@ BUILTIN(ArrayUnshift) {
   Heap* heap = isolate->heap();
   Handle<Object> receiver = args.receiver();
   MaybeHandle<FixedArrayBase> maybe_elms_obj =
-      EnsureJSArrayWithWritableFastElements(isolate, receiver, NULL, 0);
+      EnsureJSArrayWithWritableFastElements(isolate, receiver, &args, 1);
   Handle<FixedArrayBase> elms_obj;
-  if (!maybe_elms_obj.ToHandle(&elms_obj) ||
-      !IsJSArrayFastElementMovingAllowed(heap,
-                                         *Handle<JSArray>::cast(receiver))) {
+  if (!maybe_elms_obj.ToHandle(&elms_obj)) {
     return CallJsBuiltin(isolate, "ArrayUnshift", args);
   }
   Handle<JSArray> array = Handle<JSArray>::cast(receiver);
@@ -523,9 +517,6 @@ BUILTIN(ArrayUnshift) {
   }
 
   Handle<FixedArray> elms = Handle<FixedArray>::cast(elms_obj);
-
-  JSObject::EnsureCanContainElements(array, &args, 1, to_add,
-                                     DONT_ALLOW_DOUBLE_ELEMENTS);
 
   if (new_length > elms->length()) {
     // New backing storage is needed.
@@ -675,7 +666,7 @@ BUILTIN(ArraySlice) {
     bool packed = true;
     ElementsAccessor* accessor = ElementsAccessor::ForKind(kind);
     for (int i = k; i < final; i++) {
-      if (!accessor->HasElement(object, object, i, elms)) {
+      if (!accessor->HasElement(object, i, elms)) {
         packed = false;
         break;
       }
@@ -708,9 +699,7 @@ BUILTIN(ArraySplice) {
   MaybeHandle<FixedArrayBase> maybe_elms_obj =
       EnsureJSArrayWithWritableFastElements(isolate, receiver, &args, 3);
   Handle<FixedArrayBase> elms_obj;
-  if (!maybe_elms_obj.ToHandle(&elms_obj) ||
-      !IsJSArrayFastElementMovingAllowed(heap,
-                                         *Handle<JSArray>::cast(receiver))) {
+  if (!maybe_elms_obj.ToHandle(&elms_obj)) {
     return CallJsBuiltin(isolate, "ArraySplice", args);
   }
   Handle<JSArray> array = Handle<JSArray>::cast(receiver);
@@ -772,6 +761,11 @@ BUILTIN(ArraySplice) {
 
   // For double mode we do not support changing the length.
   if (new_length > len && IsFastDoubleElementsKind(elements_kind)) {
+    return CallJsBuiltin(isolate, "ArraySplice", args);
+  }
+
+  if (new_length != len && JSArray::HasReadOnlyLength(array)) {
+    AllowHeapAllocation allow_allocation;
     return CallJsBuiltin(isolate, "ArraySplice", args);
   }
 
@@ -928,9 +922,10 @@ BUILTIN(ArrayConcat) {
     DisallowHeapAllocation no_gc;
     Heap* heap = isolate->heap();
     Context* native_context = isolate->context()->native_context();
-    JSObject* array_proto =
-        JSObject::cast(native_context->array_function()->prototype());
-    if (!ArrayPrototypeHasNoElements(heap, native_context, array_proto)) {
+    Object* array_proto = native_context->array_function()->prototype();
+    PrototypeIterator iter(isolate, array_proto,
+                           PrototypeIterator::START_AT_RECEIVER);
+    if (!ArrayPrototypeHasNoElements(heap, &iter)) {
       AllowHeapAllocation allow_allocation;
       return CallJsBuiltin(isolate, "ArrayConcatJS", args);
     }
@@ -987,12 +982,12 @@ BUILTIN(ArrayConcat) {
   Handle<FixedArrayBase> storage(result_array->elements(), isolate);
   ElementsAccessor* accessor = ElementsAccessor::ForKind(elements_kind);
   for (int i = 0; i < n_arguments; i++) {
-    // TODO(ishell): It is crucial to keep |array| as a raw pointer to avoid
-    // performance degradation. Revisit this later.
+    // It is crucial to keep |array| in a raw pointer form to avoid performance
+    // degradation.
     JSArray* array = JSArray::cast(args[i]);
     int len = Smi::cast(array->length())->value();
-    ElementsKind from_kind = array->GetElementsKind();
     if (len > 0) {
+      ElementsKind from_kind = array->GetElementsKind();
       accessor->CopyElements(array, 0, from_kind, storage, j, len);
       j += len;
     }
@@ -1010,15 +1005,17 @@ BUILTIN(ArrayConcat) {
 
 BUILTIN(StrictModePoisonPill) {
   HandleScope scope(isolate);
-  return isolate->Throw(*isolate->factory()->NewTypeError(
-      "strict_poison_pill", HandleVector<Object>(NULL, 0)));
+  THROW_NEW_ERROR_RETURN_FAILURE(
+      isolate,
+      NewTypeError("strict_poison_pill", HandleVector<Object>(NULL, 0)));
 }
 
 
 BUILTIN(GeneratorPoisonPill) {
   HandleScope scope(isolate);
-  return isolate->Throw(*isolate->factory()->NewTypeError(
-      "generator_poison_pill", HandleVector<Object>(NULL, 0)));
+  THROW_NEW_ERROR_RETURN_FAILURE(
+      isolate,
+      NewTypeError("generator_poison_pill", HandleVector<Object>(NULL, 0)));
 }
 
 
@@ -1026,109 +1023,56 @@ BUILTIN(GeneratorPoisonPill) {
 //
 
 
-// Searches the hidden prototype chain of the given object for the first
-// object that is an instance of the given type.  If no such object can
-// be found then Heap::null_value() is returned.
-static inline Object* FindHidden(Heap* heap,
-                                 Object* object,
-                                 FunctionTemplateInfo* type) {
-  for (PrototypeIterator iter(heap->isolate(), object,
-                              PrototypeIterator::START_AT_RECEIVER);
-       !iter.IsAtEnd(PrototypeIterator::END_AT_NON_HIDDEN); iter.Advance()) {
-    if (type->IsTemplateFor(iter.GetCurrent())) {
-      return iter.GetCurrent();
-    }
-  }
-  return heap->null_value();
-}
-
-
-// Returns the holder JSObject if the function can legally be called
-// with this receiver.  Returns Heap::null_value() if the call is
-// illegal.  Any arguments that don't fit the expected type is
-// overwritten with undefined.  Note that holder and the arguments are
-// implicitly rewritten with the first object in the hidden prototype
-// chain that actually has the expected type.
-static inline Object* TypeCheck(Heap* heap,
-                                int argc,
-                                Object** argv,
-                                FunctionTemplateInfo* info) {
-  Object* recv = argv[0];
-  // API calls are only supported with JSObject receivers.
-  if (!recv->IsJSObject()) return heap->null_value();
-  Object* sig_obj = info->signature();
-  if (sig_obj->IsUndefined()) return recv;
-  SignatureInfo* sig = SignatureInfo::cast(sig_obj);
-  // If necessary, check the receiver
-  Object* recv_type = sig->receiver();
-  Object* holder = recv;
-  if (!recv_type->IsUndefined()) {
-    holder = FindHidden(heap, holder, FunctionTemplateInfo::cast(recv_type));
-    if (holder == heap->null_value()) return heap->null_value();
-  }
-  Object* args_obj = sig->args();
-  // If there is no argument signature we're done
-  if (args_obj->IsUndefined()) return holder;
-  FixedArray* args = FixedArray::cast(args_obj);
-  int length = args->length();
-  if (argc <= length) length = argc - 1;
-  for (int i = 0; i < length; i++) {
-    Object* argtype = args->get(i);
-    if (argtype->IsUndefined()) continue;
-    Object** arg = &argv[-1 - i];
-    Object* current = *arg;
-    current = FindHidden(heap, current, FunctionTemplateInfo::cast(argtype));
-    if (current == heap->null_value()) current = heap->undefined_value();
-    *arg = current;
-  }
-  return holder;
-}
-
-
 template <bool is_construct>
-MUST_USE_RESULT static Object* HandleApiCallHelper(
-    BuiltinArguments<NEEDS_CALLED_FUNCTION> args, Isolate* isolate) {
-  DCHECK(is_construct == CalledAsConstructor(isolate));
-  Heap* heap = isolate->heap();
-
+MUST_USE_RESULT static MaybeHandle<Object> HandleApiCallHelper(
+    Isolate* isolate, BuiltinArguments<NEEDS_CALLED_FUNCTION>& args) {
   HandleScope scope(isolate);
   Handle<JSFunction> function = args.called_function();
-  DCHECK(function->shared()->IsApiFunction());
+  // TODO(ishell): turn this back to a DCHECK.
+  CHECK(function->shared()->IsApiFunction());
 
   Handle<FunctionTemplateInfo> fun_data(
       function->shared()->get_api_func_data(), isolate);
   if (is_construct) {
-    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+    ASSIGN_RETURN_ON_EXCEPTION(
         isolate, fun_data,
-        isolate->factory()->ConfigureInstance(
-            fun_data, Handle<JSObject>::cast(args.receiver())));
+        ApiNatives::ConfigureInstance(isolate, fun_data,
+                                      Handle<JSObject>::cast(args.receiver())),
+        Object);
   }
 
-  SharedFunctionInfo* shared = function->shared();
-  if (shared->strict_mode() == SLOPPY && !shared->native()) {
-    Object* recv = args[0];
-    DCHECK(!recv->IsNull());
-    if (recv->IsUndefined()) args[0] = function->global_proxy();
+  DCHECK(!args[0]->IsNull());
+  if (args[0]->IsUndefined()) args[0] = function->global_proxy();
+
+  if (!is_construct && !fun_data->accept_any_receiver()) {
+    Handle<Object> receiver(&args[0]);
+    if (receiver->IsJSObject() && receiver->IsAccessCheckNeeded()) {
+      Handle<JSObject> js_receiver = Handle<JSObject>::cast(receiver);
+      if (!isolate->MayAccess(js_receiver)) {
+        isolate->ReportFailedAccessCheck(js_receiver);
+        RETURN_EXCEPTION_IF_SCHEDULED_EXCEPTION(isolate, Object);
+      }
+    }
   }
 
-  Object* raw_holder = TypeCheck(heap, args.length(), &args[0], *fun_data);
+  Object* raw_holder = fun_data->GetCompatibleReceiver(isolate, args[0]);
 
   if (raw_holder->IsNull()) {
     // This function cannot be called with the given receiver.  Abort!
-    Handle<Object> obj =
-        isolate->factory()->NewTypeError(
-            "illegal_invocation", HandleVector(&function, 1));
-    return isolate->Throw(*obj);
+    THROW_NEW_ERROR(
+        isolate, NewTypeError("illegal_invocation", HandleVector(&function, 1)),
+        Object);
   }
 
   Object* raw_call_data = fun_data->call_code();
   if (!raw_call_data->IsUndefined()) {
+    // TODO(ishell): remove this debugging code.
+    CHECK(raw_call_data->IsCallHandlerInfo());
     CallHandlerInfo* call_data = CallHandlerInfo::cast(raw_call_data);
     Object* callback_obj = call_data->callback();
     v8::FunctionCallback callback =
         v8::ToCData<v8::FunctionCallback>(callback_obj);
     Object* data_obj = call_data->data();
-    Object* result;
 
     LOG(isolate, ApiObjectAccess("call", JSObject::cast(*args.receiver())));
     DCHECK(raw_holder->IsJSObject());
@@ -1142,28 +1086,93 @@ MUST_USE_RESULT static Object* HandleApiCallHelper(
                                      is_construct);
 
     v8::Handle<v8::Value> value = custom.Call(callback);
+    Handle<Object> result;
     if (value.IsEmpty()) {
-      result = heap->undefined_value();
+      result = isolate->factory()->undefined_value();
     } else {
-      result = *reinterpret_cast<Object**>(*value);
+      result = v8::Utils::OpenHandle(*value);
       result->VerifyApiCallResultType();
     }
 
-    RETURN_FAILURE_IF_SCHEDULED_EXCEPTION(isolate);
-    if (!is_construct || result->IsJSObject()) return result;
+    RETURN_EXCEPTION_IF_SCHEDULED_EXCEPTION(isolate, Object);
+    if (!is_construct || result->IsJSObject()) {
+      return scope.CloseAndEscape(result);
+    }
   }
 
-  return *args.receiver();
+  return scope.CloseAndEscape(args.receiver());
 }
 
 
 BUILTIN(HandleApiCall) {
-  return HandleApiCallHelper<false>(args, isolate);
+  HandleScope scope(isolate);
+  DCHECK(!CalledAsConstructor(isolate));
+  Handle<Object> result;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, result,
+                                     HandleApiCallHelper<false>(isolate, args));
+  return *result;
 }
 
 
 BUILTIN(HandleApiCallConstruct) {
-  return HandleApiCallHelper<true>(args, isolate);
+  HandleScope scope(isolate);
+  DCHECK(CalledAsConstructor(isolate));
+  Handle<Object> result;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, result,
+                                     HandleApiCallHelper<true>(isolate, args));
+  return *result;
+}
+
+
+namespace {
+
+class RelocatableArguments : public BuiltinArguments<NEEDS_CALLED_FUNCTION>,
+                             public Relocatable {
+ public:
+  RelocatableArguments(Isolate* isolate, int length, Object** arguments)
+      : BuiltinArguments<NEEDS_CALLED_FUNCTION>(length, arguments),
+        Relocatable(isolate) {}
+
+  virtual inline void IterateInstance(ObjectVisitor* v) {
+    if (length() == 0) return;
+    v->VisitPointers(lowest_address(), highest_address() + 1);
+  }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(RelocatableArguments);
+};
+
+}  // namespace
+
+
+MaybeHandle<Object> Builtins::InvokeApiFunction(Handle<JSFunction> function,
+                                                Handle<Object> receiver,
+                                                int argc,
+                                                Handle<Object> args[]) {
+  // Construct BuiltinArguments object: function, arguments reversed, receiver.
+  const int kBufferSize = 32;
+  Object* small_argv[kBufferSize];
+  Object** argv;
+  if (argc + 2 <= kBufferSize) {
+    argv = small_argv;
+  } else {
+    argv = new Object* [argc + 2];
+  }
+  argv[argc + 1] = *receiver;
+  for (int i = 0; i < argc; ++i) {
+    argv[argc - i] = *args[i];
+  }
+  argv[0] = *function;
+  MaybeHandle<Object> result;
+  {
+    auto isolate = function->GetIsolate();
+    RelocatableArguments arguments(isolate, argc + 2, &argv[argc + 1]);
+    result = HandleApiCallHelper<false>(isolate, arguments);
+  }
+  if (argv != small_argv) {
+    delete[] argv;
+  }
+  return result;
 }
 
 
@@ -1187,11 +1196,14 @@ MUST_USE_RESULT static Object* HandleApiCallAsFunctionOrConstructor(
   // Get the invocation callback from the function descriptor that was
   // used to create the called object.
   DCHECK(obj->map()->has_instance_call_handler());
-  JSFunction* constructor = JSFunction::cast(obj->map()->constructor());
-  DCHECK(constructor->shared()->IsApiFunction());
+  JSFunction* constructor = JSFunction::cast(obj->map()->GetConstructor());
+  // TODO(ishell): turn this back to a DCHECK.
+  CHECK(constructor->shared()->IsApiFunction());
   Object* handler =
       constructor->shared()->get_api_func_data()->instance_call_handler();
   DCHECK(!handler->IsUndefined());
+  // TODO(ishell): remove this debugging code.
+  CHECK(handler->IsCallHandlerInfo());
   CallHandlerInfo* call_data = CallHandlerInfo::cast(handler);
   Object* callback_obj = call_data->callback();
   v8::FunctionCallback callback =
@@ -1273,33 +1285,13 @@ static void Generate_KeyedLoadIC_Miss(MacroAssembler* masm) {
 }
 
 
-static void Generate_KeyedLoadIC_Generic(MacroAssembler* masm) {
-  KeyedLoadIC::GenerateGeneric(masm);
-}
-
-
-static void Generate_KeyedLoadIC_String(MacroAssembler* masm) {
-  KeyedLoadIC::GenerateString(masm);
+static void Generate_KeyedLoadIC_Megamorphic(MacroAssembler* masm) {
+  KeyedLoadIC::GenerateMegamorphic(masm);
 }
 
 
 static void Generate_KeyedLoadIC_PreMonomorphic(MacroAssembler* masm) {
   KeyedLoadIC::GeneratePreMonomorphic(masm);
-}
-
-
-static void Generate_KeyedLoadIC_IndexedInterceptor(MacroAssembler* masm) {
-  KeyedLoadIC::GenerateIndexedInterceptor(masm);
-}
-
-
-static void Generate_KeyedLoadIC_SloppyArguments(MacroAssembler* masm) {
-  KeyedLoadIC::GenerateSloppyArguments(masm);
-}
-
-
-static void Generate_StoreIC_Slow(MacroAssembler* masm) {
-  StoreIC::GenerateSlow(masm);
 }
 
 
@@ -1313,28 +1305,33 @@ static void Generate_StoreIC_Normal(MacroAssembler* masm) {
 }
 
 
+static void Generate_StoreIC_Slow(MacroAssembler* masm) {
+  NamedStoreHandlerCompiler::GenerateSlow(masm);
+}
+
+
+static void Generate_KeyedStoreIC_Slow(MacroAssembler* masm) {
+  ElementHandlerCompiler::GenerateStoreSlow(masm);
+}
+
+
 static void Generate_StoreIC_Setter_ForDeopt(MacroAssembler* masm) {
   NamedStoreHandlerCompiler::GenerateStoreViaSetterForDeopt(masm);
 }
 
 
-static void Generate_KeyedStoreIC_Generic(MacroAssembler* masm) {
-  KeyedStoreIC::GenerateGeneric(masm, SLOPPY);
+static void Generate_KeyedStoreIC_Megamorphic(MacroAssembler* masm) {
+  KeyedStoreIC::GenerateMegamorphic(masm, SLOPPY);
 }
 
 
-static void Generate_KeyedStoreIC_Generic_Strict(MacroAssembler* masm) {
-  KeyedStoreIC::GenerateGeneric(masm, STRICT);
+static void Generate_KeyedStoreIC_Megamorphic_Strict(MacroAssembler* masm) {
+  KeyedStoreIC::GenerateMegamorphic(masm, STRICT);
 }
 
 
 static void Generate_KeyedStoreIC_Miss(MacroAssembler* masm) {
   KeyedStoreIC::GenerateMiss(masm);
-}
-
-
-static void Generate_KeyedStoreIC_Slow(MacroAssembler* masm) {
-  KeyedStoreIC::GenerateSlow(masm);
 }
 
 
@@ -1571,14 +1568,14 @@ void Builtins::SetUp(Isolate* isolate, bool create_heap_objects) {
       // Move the code into the object heap.
       CodeDesc desc;
       masm.GetCode(&desc);
-      Code::Flags flags =  functions[i].flags;
+      Code::Flags flags = functions[i].flags;
       Handle<Code> code =
           isolate->factory()->NewCode(desc, flags, masm.CodeObject());
       // Log the event and add the code to the builtins array.
       PROFILE(isolate,
               CodeCreateEvent(Logger::BUILTIN_TAG, *code, functions[i].s_name));
       builtins_[i] = *code;
-      if (code->kind() == Code::BUILTIN) code->set_builtin_index(i);
+      code->set_builtin_index(i);
 #ifdef ENABLE_DISASSEMBLER
       if (FLAG_print_builtin_code) {
         CodeTracer::Scope trace_scope(isolate->GetCodeTracer());

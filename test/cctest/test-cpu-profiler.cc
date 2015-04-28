@@ -32,6 +32,7 @@
 #include "include/v8-profiler.h"
 #include "src/base/platform/platform.h"
 #include "src/cpu-profiler-inl.h"
+#include "src/deoptimizer.h"
 #include "src/smart-pointers.h"
 #include "src/utils.h"
 #include "test/cctest/cctest.h"
@@ -47,6 +48,22 @@ using i::ProfilerEventsProcessor;
 using i::ScopedVector;
 using i::SmartPointer;
 using i::Vector;
+
+
+// Helper methods
+static v8::Local<v8::Function> GetFunction(v8::Context* env, const char* name) {
+  return v8::Local<v8::Function>::Cast(env->Global()->Get(v8_str(name)));
+}
+
+
+static int offset(const char* src, const char* substring) {
+  return static_cast<int>(strstr(src, substring) - src);
+}
+
+
+static const char* reason(const i::Deoptimizer::DeoptReason reason) {
+  return i::Deoptimizer::GetDeoptReason(reason);
+}
 
 
 TEST(StartStop) {
@@ -114,9 +131,9 @@ i::Code* CreateCode(LocalContext* env) {
        "}\n"
        "%s();\n", name_start, counter, name_start, name_start);
   CompileRun(script.start());
-  i::Handle<i::JSFunction> fun = v8::Utils::OpenHandle(
-      *v8::Local<v8::Function>::Cast(
-          (*env)->Global()->Get(v8_str(name_start))));
+
+  i::Handle<i::JSFunction> fun =
+      v8::Utils::OpenHandle(*GetFunction(**env, name_start));
   return fun->code();
 }
 
@@ -164,22 +181,22 @@ TEST(CodeEvents) {
 
   // Check the state of profile generator.
   CodeEntry* aaa = generator.code_map()->FindEntry(aaa_code->address());
-  CHECK_NE(NULL, aaa);
-  CHECK_EQ(aaa_str, aaa->name());
+  CHECK(aaa);
+  CHECK_EQ(0, strcmp(aaa_str, aaa->name()));
 
   CodeEntry* comment = generator.code_map()->FindEntry(comment_code->address());
-  CHECK_NE(NULL, comment);
-  CHECK_EQ("comment", comment->name());
+  CHECK(comment);
+  CHECK_EQ(0, strcmp("comment", comment->name()));
 
   CodeEntry* args5 = generator.code_map()->FindEntry(args5_code->address());
-  CHECK_NE(NULL, args5);
-  CHECK_EQ("5", args5->name());
+  CHECK(args5);
+  CHECK_EQ(0, strcmp("5", args5->name()));
 
-  CHECK_EQ(NULL, generator.code_map()->FindEntry(comment2_code->address()));
+  CHECK(!generator.code_map()->FindEntry(comment2_code->address()));
 
   CodeEntry* comment2 = generator.code_map()->FindEntry(moved_code->address());
-  CHECK_NE(NULL, comment2);
-  CHECK_EQ("comment2", comment2->name());
+  CHECK(comment2);
+  CHECK_EQ(0, strcmp("comment2", comment2->name()));
 }
 
 
@@ -224,21 +241,21 @@ TEST(TickEvents) {
 
   processor->StopSynchronously();
   CpuProfile* profile = profiles->StopProfiling("");
-  CHECK_NE(NULL, profile);
+  CHECK(profile);
 
   // Check call trees.
   const i::List<ProfileNode*>* top_down_root_children =
       profile->top_down()->root()->children();
   CHECK_EQ(1, top_down_root_children->length());
-  CHECK_EQ("bbb", top_down_root_children->last()->entry()->name());
+  CHECK_EQ(0, strcmp("bbb", top_down_root_children->last()->entry()->name()));
   const i::List<ProfileNode*>* top_down_bbb_children =
       top_down_root_children->last()->children();
   CHECK_EQ(1, top_down_bbb_children->length());
-  CHECK_EQ("5", top_down_bbb_children->last()->entry()->name());
+  CHECK_EQ(0, strcmp("5", top_down_bbb_children->last()->entry()->name()));
   const i::List<ProfileNode*>* top_down_stub_children =
       top_down_bbb_children->last()->children();
   CHECK_EQ(1, top_down_stub_children->length());
-  CHECK_EQ("ddd", top_down_stub_children->last()->entry()->name());
+  CHECK_EQ(0, strcmp("ddd", top_down_stub_children->last()->entry()->name()));
   const i::List<ProfileNode*>* top_down_ddd_children =
       top_down_stub_children->last()->children();
   CHECK_EQ(0, top_down_ddd_children->length());
@@ -289,9 +306,9 @@ TEST(Issue1398) {
 
   processor->StopSynchronously();
   CpuProfile* profile = profiles->StopProfiling("");
-  CHECK_NE(NULL, profile);
+  CHECK(profile);
 
-  int actual_depth = 0;
+  unsigned actual_depth = 0;
   const ProfileNode* node = profile->top_down()->root();
   while (node->children()->length() > 0) {
     node = node->children()->last();
@@ -353,25 +370,25 @@ TEST(DeleteCpuProfile) {
   i::CpuProfiler* iprofiler = reinterpret_cast<i::CpuProfiler*>(cpu_profiler);
 
   CHECK_EQ(0, iprofiler->GetProfilesCount());
-  v8::Local<v8::String> name1 = v8::String::NewFromUtf8(env->GetIsolate(), "1");
+  v8::Local<v8::String> name1 = v8_str("1");
   cpu_profiler->StartProfiling(name1);
   v8::CpuProfile* p1 = cpu_profiler->StopProfiling(name1);
-  CHECK_NE(NULL, p1);
+  CHECK(p1);
   CHECK_EQ(1, iprofiler->GetProfilesCount());
   CHECK(FindCpuProfile(cpu_profiler, p1));
   p1->Delete();
   CHECK_EQ(0, iprofiler->GetProfilesCount());
 
-  v8::Local<v8::String> name2 = v8::String::NewFromUtf8(env->GetIsolate(), "2");
+  v8::Local<v8::String> name2 = v8_str("2");
   cpu_profiler->StartProfiling(name2);
   v8::CpuProfile* p2 = cpu_profiler->StopProfiling(name2);
-  CHECK_NE(NULL, p2);
+  CHECK(p2);
   CHECK_EQ(1, iprofiler->GetProfilesCount());
   CHECK(FindCpuProfile(cpu_profiler, p2));
-  v8::Local<v8::String> name3 = v8::String::NewFromUtf8(env->GetIsolate(), "3");
+  v8::Local<v8::String> name3 = v8_str("3");
   cpu_profiler->StartProfiling(name3);
   v8::CpuProfile* p3 = cpu_profiler->StopProfiling(name3);
-  CHECK_NE(NULL, p3);
+  CHECK(p3);
   CHECK_EQ(2, iprofiler->GetProfilesCount());
   CHECK_NE(p2, p3);
   CHECK(FindCpuProfile(cpu_profiler, p3));
@@ -390,8 +407,7 @@ TEST(ProfileStartEndTime) {
   v8::HandleScope scope(env->GetIsolate());
   v8::CpuProfiler* cpu_profiler = env->GetIsolate()->GetCpuProfiler();
 
-  v8::Local<v8::String> profile_name =
-      v8::String::NewFromUtf8(env->GetIsolate(), "test");
+  v8::Local<v8::String> profile_name = v8_str("test");
   cpu_profiler->StartProfiling(profile_name);
   const v8::CpuProfile* profile = cpu_profiler->StopProfiling(profile_name);
   CHECK(profile->GetStartTime() <= profile->GetEndTime());
@@ -403,8 +419,7 @@ static v8::CpuProfile* RunProfiler(
     v8::Handle<v8::Value> argv[], int argc,
     unsigned min_js_samples, bool collect_samples = false) {
   v8::CpuProfiler* cpu_profiler = env->GetIsolate()->GetCpuProfiler();
-  v8::Local<v8::String> profile_name =
-      v8::String::NewFromUtf8(env->GetIsolate(), "my_profile");
+  v8::Local<v8::String> profile_name = v8_str("my_profile");
 
   cpu_profiler->StartProfiling(profile_name, collect_samples);
 
@@ -417,7 +432,7 @@ static v8::CpuProfile* RunProfiler(
 
   v8::CpuProfile* profile = cpu_profiler->StopProfiling(profile_name);
 
-  CHECK_NE(NULL, profile);
+  CHECK(profile);
   // Dump collected profile to have a better diagnostic in case of failure.
   reinterpret_cast<i::CpuProfile*>(profile)->Print();
 
@@ -428,8 +443,7 @@ static v8::CpuProfile* RunProfiler(
 static bool ContainsString(v8::Handle<v8::String> string,
                            const Vector<v8::Handle<v8::String> >& vector) {
   for (int i = 0; i < vector.length(); i++) {
-    if (string->Equals(vector[i]))
-      return true;
+    if (string->Equals(vector[i])) return true;
   }
   return false;
 }
@@ -440,21 +454,34 @@ static void CheckChildrenNames(const v8::CpuProfileNode* node,
   int count = node->GetChildrenCount();
   for (int i = 0; i < count; i++) {
     v8::Handle<v8::String> name = node->GetChild(i)->GetFunctionName();
-    CHECK(ContainsString(name, names));
+    if (!ContainsString(name, names)) {
+      char buffer[100];
+      i::SNPrintF(Vector<char>(buffer, arraysize(buffer)),
+                  "Unexpected child '%s' found in '%s'",
+                  *v8::String::Utf8Value(name),
+                  *v8::String::Utf8Value(node->GetFunctionName()));
+      FATAL(buffer);
+    }
     // Check that there are no duplicates.
     for (int j = 0; j < count; j++) {
       if (j == i) continue;
-      CHECK_NE(name, node->GetChild(j)->GetFunctionName());
+      if (name->Equals(node->GetChild(j)->GetFunctionName())) {
+        char buffer[100];
+        i::SNPrintF(Vector<char>(buffer, arraysize(buffer)),
+                    "Second child with the same name '%s' found in '%s'",
+                    *v8::String::Utf8Value(name),
+                    *v8::String::Utf8Value(node->GetFunctionName()));
+        FATAL(buffer);
+      }
     }
   }
 }
 
 
-static const v8::CpuProfileNode* FindChild(v8::Isolate* isolate,
-                                           const v8::CpuProfileNode* node,
+static const v8::CpuProfileNode* FindChild(const v8::CpuProfileNode* node,
                                            const char* name) {
   int count = node->GetChildrenCount();
-  v8::Handle<v8::String> nameHandle = v8::String::NewFromUtf8(isolate, name);
+  v8::Handle<v8::String> nameHandle = v8_str(name);
   for (int i = 0; i < count; i++) {
     const v8::CpuProfileNode* child = node->GetChild(i);
     if (nameHandle->Equals(child->GetFunctionName())) return child;
@@ -463,13 +490,12 @@ static const v8::CpuProfileNode* FindChild(v8::Isolate* isolate,
 }
 
 
-static const v8::CpuProfileNode* GetChild(v8::Isolate* isolate,
-                                          const v8::CpuProfileNode* node,
+static const v8::CpuProfileNode* GetChild(const v8::CpuProfileNode* node,
                                           const char* name) {
-  const v8::CpuProfileNode* result = FindChild(isolate, node, name);
+  const v8::CpuProfileNode* result = FindChild(node, name);
   if (!result) {
     char buffer[100];
-    i::SNPrintF(Vector<char>(buffer, ARRAY_SIZE(buffer)),
+    i::SNPrintF(Vector<char>(buffer, arraysize(buffer)),
                 "Failed to GetChild: %s", name);
     FATAL(buffer);
   }
@@ -477,15 +503,24 @@ static const v8::CpuProfileNode* GetChild(v8::Isolate* isolate,
 }
 
 
-static void CheckSimpleBranch(v8::Isolate* isolate,
-                              const v8::CpuProfileNode* node,
+static void CheckSimpleBranch(const v8::CpuProfileNode* node,
                               const char* names[], int length) {
   for (int i = 0; i < length; i++) {
     const char* name = names[i];
-    node = GetChild(isolate, node, name);
+    node = GetChild(node, name);
     int expectedChildrenCount = (i == length - 1) ? 0 : 1;
     CHECK_EQ(expectedChildrenCount, node->GetChildrenCount());
   }
+}
+
+
+static const ProfileNode* GetSimpleBranch(v8::CpuProfile* profile,
+                                          const char* names[], int length) {
+  const v8::CpuProfileNode* node = profile->GetTopDownRoot();
+  for (int i = 0; i < length; i++) {
+    node = GetChild(node, names[i]);
+  }
+  return reinterpret_cast<const ProfileNode*>(node);
 }
 
 
@@ -542,46 +577,37 @@ TEST(CollectCpuProfile) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
 
-  v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(),
-                                              cpu_profiler_test_source))->Run();
-  v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "start")));
+  CompileRun(cpu_profiler_test_source);
+  v8::Local<v8::Function> function = GetFunction(*env, "start");
 
   int32_t profiling_interval_ms = 200;
   v8::Handle<v8::Value> args[] = {
     v8::Integer::New(env->GetIsolate(), profiling_interval_ms)
   };
   v8::CpuProfile* profile =
-      RunProfiler(env.local(), function, args, ARRAY_SIZE(args), 200);
-  function->Call(env->Global(), ARRAY_SIZE(args), args);
+      RunProfiler(env.local(), function, args, arraysize(args), 200);
+  function->Call(env->Global(), arraysize(args), args);
 
   const v8::CpuProfileNode* root = profile->GetTopDownRoot();
 
   ScopedVector<v8::Handle<v8::String> > names(3);
-  names[0] = v8::String::NewFromUtf8(
-      env->GetIsolate(), ProfileGenerator::kGarbageCollectorEntryName);
-  names[1] = v8::String::NewFromUtf8(env->GetIsolate(),
-                                     ProfileGenerator::kProgramEntryName);
-  names[2] = v8::String::NewFromUtf8(env->GetIsolate(), "start");
+  names[0] = v8_str(ProfileGenerator::kGarbageCollectorEntryName);
+  names[1] = v8_str(ProfileGenerator::kProgramEntryName);
+  names[2] = v8_str("start");
   CheckChildrenNames(root, names);
 
-  const v8::CpuProfileNode* startNode =
-      GetChild(env->GetIsolate(), root, "start");
+  const v8::CpuProfileNode* startNode = GetChild(root, "start");
   CHECK_EQ(1, startNode->GetChildrenCount());
 
-  const v8::CpuProfileNode* fooNode =
-      GetChild(env->GetIsolate(), startNode, "foo");
+  const v8::CpuProfileNode* fooNode = GetChild(startNode, "foo");
   CHECK_EQ(3, fooNode->GetChildrenCount());
 
   const char* barBranch[] = { "bar", "delay", "loop" };
-  CheckSimpleBranch(env->GetIsolate(), fooNode, barBranch,
-                    ARRAY_SIZE(barBranch));
+  CheckSimpleBranch(fooNode, barBranch, arraysize(barBranch));
   const char* bazBranch[] = { "baz", "delay", "loop" };
-  CheckSimpleBranch(env->GetIsolate(), fooNode, bazBranch,
-                    ARRAY_SIZE(bazBranch));
+  CheckSimpleBranch(fooNode, bazBranch, arraysize(bazBranch));
   const char* delayBranch[] = { "delay", "loop" };
-  CheckSimpleBranch(env->GetIsolate(), fooNode, delayBranch,
-                    ARRAY_SIZE(delayBranch));
+  CheckSimpleBranch(fooNode, delayBranch, arraysize(delayBranch));
 
   profile->Delete();
 }
@@ -619,35 +645,29 @@ TEST(HotDeoptNoFrameEntry) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
 
-  v8::Script::Compile(v8::String::NewFromUtf8(
-      env->GetIsolate(),
-      hot_deopt_no_frame_entry_test_source))->Run();
-  v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "start")));
+  CompileRun(hot_deopt_no_frame_entry_test_source);
+  v8::Local<v8::Function> function = GetFunction(*env, "start");
 
   int32_t profiling_interval_ms = 200;
   v8::Handle<v8::Value> args[] = {
     v8::Integer::New(env->GetIsolate(), profiling_interval_ms)
   };
   v8::CpuProfile* profile =
-      RunProfiler(env.local(), function, args, ARRAY_SIZE(args), 200);
-  function->Call(env->Global(), ARRAY_SIZE(args), args);
+      RunProfiler(env.local(), function, args, arraysize(args), 200);
+  function->Call(env->Global(), arraysize(args), args);
 
   const v8::CpuProfileNode* root = profile->GetTopDownRoot();
 
   ScopedVector<v8::Handle<v8::String> > names(3);
-  names[0] = v8::String::NewFromUtf8(
-      env->GetIsolate(), ProfileGenerator::kGarbageCollectorEntryName);
-  names[1] = v8::String::NewFromUtf8(env->GetIsolate(),
-                                     ProfileGenerator::kProgramEntryName);
-  names[2] = v8::String::NewFromUtf8(env->GetIsolate(), "start");
+  names[0] = v8_str(ProfileGenerator::kGarbageCollectorEntryName);
+  names[1] = v8_str(ProfileGenerator::kProgramEntryName);
+  names[2] = v8_str("start");
   CheckChildrenNames(root, names);
 
-  const v8::CpuProfileNode* startNode =
-      GetChild(env->GetIsolate(), root, "start");
+  const v8::CpuProfileNode* startNode = GetChild(root, "start");
   CHECK_EQ(1, startNode->GetChildrenCount());
 
-  GetChild(env->GetIsolate(), startNode, "foo");
+  GetChild(startNode, "foo");
 
   profile->Delete();
 }
@@ -657,24 +677,22 @@ TEST(CollectCpuProfileSamples) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
 
-  v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(),
-                                              cpu_profiler_test_source))->Run();
-  v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "start")));
+  CompileRun(cpu_profiler_test_source);
+  v8::Local<v8::Function> function = GetFunction(*env, "start");
 
   int32_t profiling_interval_ms = 200;
   v8::Handle<v8::Value> args[] = {
     v8::Integer::New(env->GetIsolate(), profiling_interval_ms)
   };
   v8::CpuProfile* profile =
-      RunProfiler(env.local(), function, args, ARRAY_SIZE(args), 200, true);
+      RunProfiler(env.local(), function, args, arraysize(args), 200, true);
 
   CHECK_LE(200, profile->GetSamplesCount());
   uint64_t end_time = profile->GetEndTime();
   uint64_t current_time = profile->GetStartTime();
   CHECK_LE(current_time, end_time);
   for (int i = 0; i < profile->GetSamplesCount(); i++) {
-    CHECK_NE(NULL, profile->GetSample(i));
+    CHECK(profile->GetSample(i));
     uint64_t timestamp = profile->GetSampleTimestamp(i);
     CHECK_LE(current_time, timestamp);
     CHECK_LE(timestamp, end_time);
@@ -709,10 +727,8 @@ TEST(SampleWhenFrameIsNotSetup) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
 
-  v8::Script::Compile(v8::String::NewFromUtf8(
-                          env->GetIsolate(), cpu_profiler_test_source2))->Run();
-  v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "start")));
+  CompileRun(cpu_profiler_test_source2);
+  v8::Local<v8::Function> function = GetFunction(*env, "start");
 
   int32_t repeat_count = 100;
 #if defined(USE_SIMULATOR)
@@ -723,29 +739,25 @@ TEST(SampleWhenFrameIsNotSetup) {
     v8::Integer::New(env->GetIsolate(), repeat_count)
   };
   v8::CpuProfile* profile =
-      RunProfiler(env.local(), function, args, ARRAY_SIZE(args), 100);
+      RunProfiler(env.local(), function, args, arraysize(args), 100);
 
   const v8::CpuProfileNode* root = profile->GetTopDownRoot();
 
   ScopedVector<v8::Handle<v8::String> > names(3);
-  names[0] = v8::String::NewFromUtf8(
-      env->GetIsolate(), ProfileGenerator::kGarbageCollectorEntryName);
-  names[1] = v8::String::NewFromUtf8(env->GetIsolate(),
-                                     ProfileGenerator::kProgramEntryName);
-  names[2] = v8::String::NewFromUtf8(env->GetIsolate(), "start");
+  names[0] = v8_str(ProfileGenerator::kGarbageCollectorEntryName);
+  names[1] = v8_str(ProfileGenerator::kProgramEntryName);
+  names[2] = v8_str("start");
   CheckChildrenNames(root, names);
 
-  const v8::CpuProfileNode* startNode =
-      FindChild(env->GetIsolate(), root, "start");
+  const v8::CpuProfileNode* startNode = FindChild(root, "start");
   // On slow machines there may be no meaningfull samples at all, skip the
   // check there.
   if (startNode && startNode->GetChildrenCount() > 0) {
     CHECK_EQ(1, startNode->GetChildrenCount());
-    const v8::CpuProfileNode* delayNode =
-        GetChild(env->GetIsolate(), startNode, "delay");
+    const v8::CpuProfileNode* delayNode = GetChild(startNode, "delay");
     if (delayNode->GetChildrenCount() > 0) {
       CHECK_EQ(1, delayNode->GetChildrenCount());
-      GetChild(env->GetIsolate(), delayNode, "loop");
+      GetChild(delayNode, "loop");
     }
   }
 
@@ -826,30 +838,24 @@ TEST(NativeAccessorUninitializedIC) {
   TestApiCallbacks accessors(100);
   v8::Local<v8::External> data =
       v8::External::New(isolate, &accessors);
-  instance_template->SetAccessor(
-      v8::String::NewFromUtf8(isolate, "foo"),
-      &TestApiCallbacks::Getter, &TestApiCallbacks::Setter, data);
+  instance_template->SetAccessor(v8_str("foo"), &TestApiCallbacks::Getter,
+                                 &TestApiCallbacks::Setter, data);
   v8::Local<v8::Function> func = func_template->GetFunction();
   v8::Local<v8::Object> instance = func->NewInstance();
-  env->Global()->Set(v8::String::NewFromUtf8(isolate, "instance"),
-                     instance);
+  env->Global()->Set(v8_str("instance"), instance);
 
-  v8::Script::Compile(
-      v8::String::NewFromUtf8(isolate, native_accessor_test_source))
-      ->Run();
-  v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(isolate, "start")));
+  CompileRun(native_accessor_test_source);
+  v8::Local<v8::Function> function = GetFunction(*env, "start");
 
   int32_t repeat_count = 1;
   v8::Handle<v8::Value> args[] = { v8::Integer::New(isolate, repeat_count) };
   v8::CpuProfile* profile =
-      RunProfiler(env.local(), function, args, ARRAY_SIZE(args), 180);
+      RunProfiler(env.local(), function, args, arraysize(args), 180);
 
   const v8::CpuProfileNode* root = profile->GetTopDownRoot();
-  const v8::CpuProfileNode* startNode =
-      GetChild(isolate, root, "start");
-  GetChild(isolate, startNode, "get foo");
-  GetChild(isolate, startNode, "set foo");
+  const v8::CpuProfileNode* startNode = GetChild(root, "start");
+  GetChild(startNode, "get foo");
+  GetChild(startNode, "set foo");
 
   profile->Delete();
 }
@@ -871,19 +877,14 @@ TEST(NativeAccessorMonomorphicIC) {
   TestApiCallbacks accessors(1);
   v8::Local<v8::External> data =
       v8::External::New(isolate, &accessors);
-  instance_template->SetAccessor(
-      v8::String::NewFromUtf8(isolate, "foo"),
-      &TestApiCallbacks::Getter, &TestApiCallbacks::Setter, data);
+  instance_template->SetAccessor(v8_str("foo"), &TestApiCallbacks::Getter,
+                                 &TestApiCallbacks::Setter, data);
   v8::Local<v8::Function> func = func_template->GetFunction();
   v8::Local<v8::Object> instance = func->NewInstance();
-  env->Global()->Set(v8::String::NewFromUtf8(isolate, "instance"),
-                     instance);
+  env->Global()->Set(v8_str("instance"), instance);
 
-  v8::Script::Compile(
-      v8::String::NewFromUtf8(isolate, native_accessor_test_source))
-      ->Run();
-  v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(isolate, "start")));
+  CompileRun(native_accessor_test_source);
+  v8::Local<v8::Function> function = GetFunction(*env, "start");
 
   {
     // Make sure accessors ICs are in monomorphic state before starting
@@ -893,20 +894,19 @@ TEST(NativeAccessorMonomorphicIC) {
     v8::Handle<v8::Value> args[] = {
       v8::Integer::New(isolate, warm_up_iterations)
     };
-    function->Call(env->Global(), ARRAY_SIZE(args), args);
+    function->Call(env->Global(), arraysize(args), args);
     accessors.set_warming_up(false);
   }
 
   int32_t repeat_count = 100;
   v8::Handle<v8::Value> args[] = { v8::Integer::New(isolate, repeat_count) };
   v8::CpuProfile* profile =
-      RunProfiler(env.local(), function, args, ARRAY_SIZE(args), 200);
+      RunProfiler(env.local(), function, args, arraysize(args), 200);
 
   const v8::CpuProfileNode* root = profile->GetTopDownRoot();
-  const v8::CpuProfileNode* startNode =
-      GetChild(isolate, root, "start");
-  GetChild(isolate, startNode, "get foo");
-  GetChild(isolate, startNode, "set foo");
+  const v8::CpuProfileNode* startNode = GetChild(root, "start");
+  GetChild(startNode, "get foo");
+  GetChild(startNode, "set foo");
 
   profile->Delete();
 }
@@ -930,36 +930,31 @@ TEST(NativeMethodUninitializedIC) {
 
   v8::Local<v8::FunctionTemplate> func_template =
       v8::FunctionTemplate::New(isolate);
-  func_template->SetClassName(
-      v8::String::NewFromUtf8(isolate, "Test_InstanceCostructor"));
+  func_template->SetClassName(v8_str("Test_InstanceCostructor"));
   v8::Local<v8::ObjectTemplate> proto_template =
       func_template->PrototypeTemplate();
   v8::Local<v8::Signature> signature =
       v8::Signature::New(isolate, func_template);
-  proto_template->Set(v8::String::NewFromUtf8(isolate, "fooMethod"),
-                      v8::FunctionTemplate::New(isolate,
-                                                &TestApiCallbacks::Callback,
-                                                data, signature, 0));
+  proto_template->Set(
+      v8_str("fooMethod"),
+      v8::FunctionTemplate::New(isolate, &TestApiCallbacks::Callback, data,
+                                signature, 0));
 
   v8::Local<v8::Function> func = func_template->GetFunction();
   v8::Local<v8::Object> instance = func->NewInstance();
-  env->Global()->Set(v8::String::NewFromUtf8(isolate, "instance"),
-                     instance);
+  env->Global()->Set(v8_str("instance"), instance);
 
-  v8::Script::Compile(v8::String::NewFromUtf8(
-                          isolate, native_method_test_source))->Run();
-  v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(isolate, "start")));
+  CompileRun(native_method_test_source);
+  v8::Local<v8::Function> function = GetFunction(*env, "start");
 
   int32_t repeat_count = 1;
   v8::Handle<v8::Value> args[] = { v8::Integer::New(isolate, repeat_count) };
   v8::CpuProfile* profile =
-      RunProfiler(env.local(), function, args, ARRAY_SIZE(args), 100);
+      RunProfiler(env.local(), function, args, arraysize(args), 100);
 
   const v8::CpuProfileNode* root = profile->GetTopDownRoot();
-  const v8::CpuProfileNode* startNode =
-      GetChild(isolate, root, "start");
-  GetChild(isolate, startNode, "fooMethod");
+  const v8::CpuProfileNode* startNode = GetChild(root, "start");
+  GetChild(startNode, "fooMethod");
 
   profile->Delete();
 }
@@ -976,26 +971,22 @@ TEST(NativeMethodMonomorphicIC) {
 
   v8::Local<v8::FunctionTemplate> func_template =
       v8::FunctionTemplate::New(isolate);
-  func_template->SetClassName(
-      v8::String::NewFromUtf8(isolate, "Test_InstanceCostructor"));
+  func_template->SetClassName(v8_str("Test_InstanceCostructor"));
   v8::Local<v8::ObjectTemplate> proto_template =
       func_template->PrototypeTemplate();
   v8::Local<v8::Signature> signature =
       v8::Signature::New(isolate, func_template);
-  proto_template->Set(v8::String::NewFromUtf8(isolate, "fooMethod"),
-                      v8::FunctionTemplate::New(isolate,
-                                                &TestApiCallbacks::Callback,
-                                                data, signature, 0));
+  proto_template->Set(
+      v8_str("fooMethod"),
+      v8::FunctionTemplate::New(isolate, &TestApiCallbacks::Callback, data,
+                                signature, 0));
 
   v8::Local<v8::Function> func = func_template->GetFunction();
   v8::Local<v8::Object> instance = func->NewInstance();
-  env->Global()->Set(v8::String::NewFromUtf8(isolate, "instance"),
-                     instance);
+  env->Global()->Set(v8_str("instance"), instance);
 
-  v8::Script::Compile(v8::String::NewFromUtf8(
-                          isolate, native_method_test_source))->Run();
-  v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(isolate, "start")));
+  CompileRun(native_method_test_source);
+  v8::Local<v8::Function> function = GetFunction(*env, "start");
   {
     // Make sure method ICs are in monomorphic state before starting
     // profiling.
@@ -1004,20 +995,19 @@ TEST(NativeMethodMonomorphicIC) {
     v8::Handle<v8::Value> args[] = {
       v8::Integer::New(isolate, warm_up_iterations)
     };
-    function->Call(env->Global(), ARRAY_SIZE(args), args);
+    function->Call(env->Global(), arraysize(args), args);
     callbacks.set_warming_up(false);
   }
 
   int32_t repeat_count = 100;
   v8::Handle<v8::Value> args[] = { v8::Integer::New(isolate, repeat_count) };
   v8::CpuProfile* profile =
-      RunProfiler(env.local(), function, args, ARRAY_SIZE(args), 100);
+      RunProfiler(env.local(), function, args, arraysize(args), 100);
 
   const v8::CpuProfileNode* root = profile->GetTopDownRoot();
-  GetChild(isolate, root, "start");
-  const v8::CpuProfileNode* startNode =
-      GetChild(isolate, root, "start");
-  GetChild(isolate, startNode, "fooMethod");
+  GetChild(root, "start");
+  const v8::CpuProfileNode* startNode = GetChild(root, "start");
+  GetChild(startNode, "fooMethod");
 
   profile->Delete();
 }
@@ -1038,29 +1028,121 @@ TEST(BoundFunctionCall) {
   v8::Local<v8::Context> env = CcTest::NewContext(PROFILER_EXTENSION);
   v8::Context::Scope context_scope(env);
 
-  v8::Script::Compile(
-      v8::String::NewFromUtf8(env->GetIsolate(), bound_function_test_source))
-      ->Run();
-  v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "start")));
+  CompileRun(bound_function_test_source);
+  v8::Local<v8::Function> function = GetFunction(*env, "start");
 
   v8::CpuProfile* profile = RunProfiler(env, function, NULL, 0, 0);
 
   const v8::CpuProfileNode* root = profile->GetTopDownRoot();
   ScopedVector<v8::Handle<v8::String> > names(3);
-  names[0] = v8::String::NewFromUtf8(
-      env->GetIsolate(), ProfileGenerator::kGarbageCollectorEntryName);
-  names[1] = v8::String::NewFromUtf8(env->GetIsolate(),
-                                     ProfileGenerator::kProgramEntryName);
-  names[2] = v8::String::NewFromUtf8(env->GetIsolate(), "start");
+  names[0] = v8_str(ProfileGenerator::kGarbageCollectorEntryName);
+  names[1] = v8_str(ProfileGenerator::kProgramEntryName);
+  names[2] = v8_str("start");
   // Don't allow |foo| node to be at the top level.
   CheckChildrenNames(root, names);
 
-  const v8::CpuProfileNode* startNode =
-      GetChild(env->GetIsolate(), root, "start");
-  GetChild(env->GetIsolate(), startNode, "foo");
+  const v8::CpuProfileNode* startNode = GetChild(root, "start");
+  GetChild(startNode, "foo");
 
   profile->Delete();
+}
+
+
+// This tests checks distribution of the samples through the source lines.
+TEST(TickLines) {
+  CcTest::InitializeVM();
+  LocalContext env;
+  i::FLAG_turbo_source_positions = true;
+  i::Isolate* isolate = CcTest::i_isolate();
+  i::Factory* factory = isolate->factory();
+  i::HandleScope scope(isolate);
+
+  i::EmbeddedVector<char, 512> script;
+
+  const char* func_name = "func";
+  i::SNPrintF(script,
+              "function %s() {\n"
+              "  var n = 0;\n"
+              "  var m = 100*100;\n"
+              "  while (m > 1) {\n"
+              "    m--;\n"
+              "    n += m * m * m;\n"
+              "  }\n"
+              "}\n"
+              "%s();\n",
+              func_name, func_name);
+
+  CompileRun(script.start());
+
+  i::Handle<i::JSFunction> func =
+      v8::Utils::OpenHandle(*GetFunction(*env, func_name));
+  CHECK(func->shared());
+  CHECK(func->shared()->code());
+  i::Code* code = NULL;
+  if (func->code()->is_optimized_code()) {
+    code = func->code();
+  } else {
+    CHECK(func->shared()->code() == func->code() || !i::FLAG_crankshaft);
+    code = func->shared()->code();
+  }
+  CHECK(code);
+  i::Address code_address = code->instruction_start();
+  CHECK(code_address);
+
+  CpuProfilesCollection* profiles = new CpuProfilesCollection(isolate->heap());
+  profiles->StartProfiling("", false);
+  ProfileGenerator generator(profiles);
+  SmartPointer<ProfilerEventsProcessor> processor(new ProfilerEventsProcessor(
+      &generator, NULL, v8::base::TimeDelta::FromMicroseconds(100)));
+  processor->Start();
+  CpuProfiler profiler(isolate, profiles, &generator, processor.get());
+
+  // Enqueue code creation events.
+  i::Handle<i::String> str = factory->NewStringFromAsciiChecked(func_name);
+  int line = 1;
+  int column = 1;
+  profiler.CodeCreateEvent(i::Logger::FUNCTION_TAG, code, func->shared(), NULL,
+                           *str, line, column);
+
+  // Enqueue a tick event to enable code events processing.
+  EnqueueTickSampleEvent(processor.get(), code_address);
+
+  processor->StopSynchronously();
+
+  CpuProfile* profile = profiles->StopProfiling("");
+  CHECK(profile);
+
+  // Check the state of profile generator.
+  CodeEntry* func_entry = generator.code_map()->FindEntry(code_address);
+  CHECK(func_entry);
+  CHECK_EQ(0, strcmp(func_name, func_entry->name()));
+  const i::JITLineInfoTable* line_info = func_entry->line_info();
+  CHECK(line_info);
+  CHECK(!line_info->empty());
+
+  // Check the hit source lines using V8 Public APIs.
+  const i::ProfileTree* tree = profile->top_down();
+  ProfileNode* root = tree->root();
+  CHECK(root);
+  ProfileNode* func_node = root->FindChild(func_entry);
+  CHECK(func_node);
+
+  // Add 10 faked ticks to source line #5.
+  int hit_line = 5;
+  int hit_count = 10;
+  for (int i = 0; i < hit_count; i++) func_node->IncrementLineTicks(hit_line);
+
+  unsigned int line_count = func_node->GetHitLineCount();
+  CHECK_EQ(2u, line_count);  // Expect two hit source lines - #1 and #5.
+  ScopedVector<v8::CpuProfileNode::LineTick> entries(line_count);
+  CHECK(func_node->GetLineTicks(&entries[0], line_count));
+  int value = 0;
+  for (int i = 0; i < entries.length(); i++)
+    if (entries[i].line == hit_line) {
+      value = entries[i].hit_count;
+      break;
+    }
+  CHECK_EQ(hit_count, value);
 }
 
 
@@ -1092,31 +1174,27 @@ TEST(FunctionCallSample) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
 
-  // Collect garbage that might have be generated while installing extensions.
+  // Collect garbage that might have be generated while installing
+  // extensions.
   CcTest::heap()->CollectAllGarbage(Heap::kNoGCFlags);
 
-  v8::Script::Compile(v8::String::NewFromUtf8(
-                          env->GetIsolate(), call_function_test_source))->Run();
-  v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "start")));
+  CompileRun(call_function_test_source);
+  v8::Local<v8::Function> function = GetFunction(*env, "start");
 
   int32_t duration_ms = 100;
   v8::Handle<v8::Value> args[] = {
     v8::Integer::New(env->GetIsolate(), duration_ms)
   };
   v8::CpuProfile* profile =
-      RunProfiler(env.local(), function, args, ARRAY_SIZE(args), 100);
+      RunProfiler(env.local(), function, args, arraysize(args), 100);
 
   const v8::CpuProfileNode* root = profile->GetTopDownRoot();
   {
     ScopedVector<v8::Handle<v8::String> > names(4);
-    names[0] = v8::String::NewFromUtf8(
-        env->GetIsolate(), ProfileGenerator::kGarbageCollectorEntryName);
-    names[1] = v8::String::NewFromUtf8(env->GetIsolate(),
-                                       ProfileGenerator::kProgramEntryName);
-    names[2] = v8::String::NewFromUtf8(env->GetIsolate(), "start");
-    names[3] = v8::String::NewFromUtf8(
-        env->GetIsolate(), i::ProfileGenerator::kUnresolvedFunctionName);
+    names[0] = v8_str(ProfileGenerator::kGarbageCollectorEntryName);
+    names[1] = v8_str(ProfileGenerator::kProgramEntryName);
+    names[2] = v8_str("start");
+    names[3] = v8_str(i::ProfileGenerator::kUnresolvedFunctionName);
     // Don't allow |bar| and |call| nodes to be at the top level.
     CheckChildrenNames(root, names);
   }
@@ -1125,21 +1203,20 @@ TEST(FunctionCallSample) {
   // won't be |start| node in the profiles.
   bool is_gc_stress_testing =
       (i::FLAG_gc_interval != -1) || i::FLAG_stress_compaction;
-  const v8::CpuProfileNode* startNode =
-      FindChild(env->GetIsolate(), root, "start");
+  const v8::CpuProfileNode* startNode = FindChild(root, "start");
   CHECK(is_gc_stress_testing || startNode);
   if (startNode) {
     ScopedVector<v8::Handle<v8::String> > names(2);
-    names[0] = v8::String::NewFromUtf8(env->GetIsolate(), "bar");
-    names[1] = v8::String::NewFromUtf8(env->GetIsolate(), "call");
+    names[0] = v8_str("bar");
+    names[1] = v8_str("call");
     CheckChildrenNames(startNode, names);
   }
 
-  const v8::CpuProfileNode* unresolvedNode = FindChild(
-      env->GetIsolate(), root, i::ProfileGenerator::kUnresolvedFunctionName);
+  const v8::CpuProfileNode* unresolvedNode =
+      FindChild(root, i::ProfileGenerator::kUnresolvedFunctionName);
   if (unresolvedNode) {
     ScopedVector<v8::Handle<v8::String> > names(1);
-    names[0] = v8::String::NewFromUtf8(env->GetIsolate(), "call");
+    names[0] = v8_str("call");
     CheckChildrenNames(unresolvedNode, names);
   }
 
@@ -1147,19 +1224,20 @@ TEST(FunctionCallSample) {
 }
 
 
-static const char* function_apply_test_source = "function bar(iterations) {\n"
-"}\n"
-"function test() {\n"
-"  bar.apply(this, [10 * 1000]);\n"
-"}\n"
-"function start(duration) {\n"
-"  var start = Date.now();\n"
-"  while (Date.now() - start < duration) {\n"
-"    try {\n"
-"      test();\n"
-"    } catch(e) {}\n"
-"  }\n"
-"}";
+static const char* function_apply_test_source =
+    "function bar(iterations) {\n"
+    "}\n"
+    "function test() {\n"
+    "  bar.apply(this, [10 * 1000]);\n"
+    "}\n"
+    "function start(duration) {\n"
+    "  var start = Date.now();\n"
+    "  while (Date.now() - start < duration) {\n"
+    "    try {\n"
+    "      test();\n"
+    "    } catch(e) {}\n"
+    "  }\n"
+    "}";
 
 
 // [Top down]:
@@ -1176,11 +1254,8 @@ TEST(FunctionApplySample) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
 
-  v8::Script::Compile(
-      v8::String::NewFromUtf8(env->GetIsolate(), function_apply_test_source))
-      ->Run();
-  v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "start")));
+  CompileRun(function_apply_test_source);
+  v8::Local<v8::Function> function = GetFunction(*env, "start");
 
   int32_t duration_ms = 100;
   v8::Handle<v8::Value> args[] = {
@@ -1188,50 +1263,44 @@ TEST(FunctionApplySample) {
   };
 
   v8::CpuProfile* profile =
-      RunProfiler(env.local(), function, args, ARRAY_SIZE(args), 100);
+      RunProfiler(env.local(), function, args, arraysize(args), 100);
 
   const v8::CpuProfileNode* root = profile->GetTopDownRoot();
   {
     ScopedVector<v8::Handle<v8::String> > names(3);
-    names[0] = v8::String::NewFromUtf8(
-        env->GetIsolate(), ProfileGenerator::kGarbageCollectorEntryName);
-    names[1] = v8::String::NewFromUtf8(env->GetIsolate(),
-                                       ProfileGenerator::kProgramEntryName);
-    names[2] = v8::String::NewFromUtf8(env->GetIsolate(), "start");
+    names[0] = v8_str(ProfileGenerator::kGarbageCollectorEntryName);
+    names[1] = v8_str(ProfileGenerator::kProgramEntryName);
+    names[2] = v8_str("start");
     // Don't allow |test|, |bar| and |apply| nodes to be at the top level.
     CheckChildrenNames(root, names);
   }
 
-  const v8::CpuProfileNode* startNode =
-      FindChild(env->GetIsolate(), root, "start");
+  const v8::CpuProfileNode* startNode = FindChild(root, "start");
   if (startNode) {
     {
       ScopedVector<v8::Handle<v8::String> > names(2);
-      names[0] = v8::String::NewFromUtf8(env->GetIsolate(), "test");
-      names[1] = v8::String::NewFromUtf8(
-          env->GetIsolate(), ProfileGenerator::kUnresolvedFunctionName);
+      names[0] = v8_str("test");
+      names[1] = v8_str(ProfileGenerator::kUnresolvedFunctionName);
       CheckChildrenNames(startNode, names);
     }
 
-    const v8::CpuProfileNode* testNode =
-        FindChild(env->GetIsolate(), startNode, "test");
+    const v8::CpuProfileNode* testNode = FindChild(startNode, "test");
     if (testNode) {
       ScopedVector<v8::Handle<v8::String> > names(3);
-      names[0] = v8::String::NewFromUtf8(env->GetIsolate(), "bar");
-      names[1] = v8::String::NewFromUtf8(env->GetIsolate(), "apply");
+      names[0] = v8_str("bar");
+      names[1] = v8_str("apply");
       // apply calls "get length" before invoking the function itself
       // and we may get hit into it.
-      names[2] = v8::String::NewFromUtf8(env->GetIsolate(), "get length");
+      names[2] = v8_str("get length");
       CheckChildrenNames(testNode, names);
     }
 
     if (const v8::CpuProfileNode* unresolvedNode =
-            FindChild(env->GetIsolate(), startNode,
-                      ProfileGenerator::kUnresolvedFunctionName)) {
+            FindChild(startNode, ProfileGenerator::kUnresolvedFunctionName)) {
       ScopedVector<v8::Handle<v8::String> > names(1);
-      names[0] = v8::String::NewFromUtf8(env->GetIsolate(), "apply");
+      names[0] = v8_str("apply");
       CheckChildrenNames(unresolvedNode, names);
-      GetChild(env->GetIsolate(), unresolvedNode, "apply");
+      GetChild(unresolvedNode, "apply");
     }
   }
 
@@ -1267,35 +1336,29 @@ TEST(CpuProfileDeepStack) {
   v8::Local<v8::Context> env = CcTest::NewContext(PROFILER_EXTENSION);
   v8::Context::Scope context_scope(env);
 
-  v8::Script::Compile(v8::String::NewFromUtf8(
-      env->GetIsolate(), cpu_profiler_deep_stack_test_source))->Run();
-  v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "start")));
+  CompileRun(cpu_profiler_deep_stack_test_source);
+  v8::Local<v8::Function> function = GetFunction(*env, "start");
 
   v8::CpuProfiler* cpu_profiler = env->GetIsolate()->GetCpuProfiler();
-  v8::Local<v8::String> profile_name =
-      v8::String::NewFromUtf8(env->GetIsolate(), "my_profile");
+  v8::Local<v8::String> profile_name = v8_str("my_profile");
   function->Call(env->Global(), 0, NULL);
   v8::CpuProfile* profile = cpu_profiler->StopProfiling(profile_name);
-  CHECK_NE(NULL, profile);
+  CHECK(profile);
   // Dump collected profile to have a better diagnostic in case of failure.
   reinterpret_cast<i::CpuProfile*>(profile)->Print();
 
   const v8::CpuProfileNode* root = profile->GetTopDownRoot();
   {
     ScopedVector<v8::Handle<v8::String> > names(3);
-    names[0] = v8::String::NewFromUtf8(
-        env->GetIsolate(), ProfileGenerator::kGarbageCollectorEntryName);
-    names[1] = v8::String::NewFromUtf8(env->GetIsolate(),
-                                       ProfileGenerator::kProgramEntryName);
-    names[2] = v8::String::NewFromUtf8(env->GetIsolate(), "start");
+    names[0] = v8_str(ProfileGenerator::kGarbageCollectorEntryName);
+    names[1] = v8_str(ProfileGenerator::kProgramEntryName);
+    names[2] = v8_str("start");
     CheckChildrenNames(root, names);
   }
 
-  const v8::CpuProfileNode* node =
-      GetChild(env->GetIsolate(), root, "start");
+  const v8::CpuProfileNode* node = GetChild(root, "start");
   for (int i = 0; i < 250; ++i) {
-    node = GetChild(env->GetIsolate(), node, "foo");
+    node = GetChild(node, "foo");
   }
   // TODO(alph):
   // In theory there must be one more 'foo' and a 'startProfiling' nodes,
@@ -1321,7 +1384,7 @@ static const char* js_native_js_test_source =
 static void CallJsFunction(const v8::FunctionCallbackInfo<v8::Value>& info) {
   v8::Handle<v8::Function> function = info[0].As<v8::Function>();
   v8::Handle<v8::Value> argv[] = { info[1] };
-  function->Call(info.This(), ARRAY_SIZE(argv), argv);
+  function->Call(info.This(), arraysize(argv), argv);
 }
 
 
@@ -1340,40 +1403,33 @@ TEST(JsNativeJsSample) {
   v8::Local<v8::FunctionTemplate> func_template = v8::FunctionTemplate::New(
       env->GetIsolate(), CallJsFunction);
   v8::Local<v8::Function> func = func_template->GetFunction();
-  func->SetName(v8::String::NewFromUtf8(env->GetIsolate(), "CallJsFunction"));
-  env->Global()->Set(
-      v8::String::NewFromUtf8(env->GetIsolate(), "CallJsFunction"), func);
+  func->SetName(v8_str("CallJsFunction"));
+  env->Global()->Set(v8_str("CallJsFunction"), func);
 
-  v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(),
-                                              js_native_js_test_source))->Run();
-  v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "start")));
+  CompileRun(js_native_js_test_source);
+  v8::Local<v8::Function> function = GetFunction(*env, "start");
 
   v8::CpuProfile* profile = RunProfiler(env, function, NULL, 0, 0);
 
   const v8::CpuProfileNode* root = profile->GetTopDownRoot();
   {
     ScopedVector<v8::Handle<v8::String> > names(3);
-    names[0] = v8::String::NewFromUtf8(
-        env->GetIsolate(), ProfileGenerator::kGarbageCollectorEntryName);
-    names[1] = v8::String::NewFromUtf8(env->GetIsolate(),
-                                       ProfileGenerator::kProgramEntryName);
-    names[2] = v8::String::NewFromUtf8(env->GetIsolate(), "start");
+    names[0] = v8_str(ProfileGenerator::kGarbageCollectorEntryName);
+    names[1] = v8_str(ProfileGenerator::kProgramEntryName);
+    names[2] = v8_str("start");
     CheckChildrenNames(root, names);
   }
 
-  const v8::CpuProfileNode* startNode =
-      GetChild(env->GetIsolate(), root, "start");
+  const v8::CpuProfileNode* startNode = GetChild(root, "start");
   CHECK_EQ(1, startNode->GetChildrenCount());
   const v8::CpuProfileNode* nativeFunctionNode =
-      GetChild(env->GetIsolate(), startNode, "CallJsFunction");
+      GetChild(startNode, "CallJsFunction");
 
   CHECK_EQ(1, nativeFunctionNode->GetChildrenCount());
-  const v8::CpuProfileNode* barNode =
-      GetChild(env->GetIsolate(), nativeFunctionNode, "bar");
+  const v8::CpuProfileNode* barNode = GetChild(nativeFunctionNode, "bar");
 
   CHECK_EQ(1, barNode->GetChildrenCount());
-  GetChild(env->GetIsolate(), barNode, "foo");
+  GetChild(barNode, "foo");
 
   profile->Delete();
 }
@@ -1409,43 +1465,35 @@ TEST(JsNativeJsRuntimeJsSample) {
   v8::Local<v8::FunctionTemplate> func_template = v8::FunctionTemplate::New(
       env->GetIsolate(), CallJsFunction);
   v8::Local<v8::Function> func = func_template->GetFunction();
-  func->SetName(v8::String::NewFromUtf8(env->GetIsolate(), "CallJsFunction"));
-  env->Global()->Set(
-      v8::String::NewFromUtf8(env->GetIsolate(), "CallJsFunction"), func);
+  func->SetName(v8_str("CallJsFunction"));
+  env->Global()->Set(v8_str("CallJsFunction"), func);
 
-  v8::Script::Compile(
-      v8::String::NewFromUtf8(env->GetIsolate(),
-                              js_native_js_runtime_js_test_source))->Run();
-  v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "start")));
+  CompileRun(js_native_js_runtime_js_test_source);
+  v8::Local<v8::Function> function = GetFunction(*env, "start");
 
   v8::CpuProfile* profile = RunProfiler(env, function, NULL, 0, 0);
 
   const v8::CpuProfileNode* root = profile->GetTopDownRoot();
   ScopedVector<v8::Handle<v8::String> > names(3);
-  names[0] = v8::String::NewFromUtf8(
-      env->GetIsolate(), ProfileGenerator::kGarbageCollectorEntryName);
-  names[1] = v8::String::NewFromUtf8(env->GetIsolate(),
-                                     ProfileGenerator::kProgramEntryName);
-  names[2] = v8::String::NewFromUtf8(env->GetIsolate(), "start");
+  names[0] = v8_str(ProfileGenerator::kGarbageCollectorEntryName);
+  names[1] = v8_str(ProfileGenerator::kProgramEntryName);
+  names[2] = v8_str("start");
   CheckChildrenNames(root, names);
 
-  const v8::CpuProfileNode* startNode =
-      GetChild(env->GetIsolate(), root, "start");
+  const v8::CpuProfileNode* startNode = GetChild(root, "start");
   CHECK_EQ(1, startNode->GetChildrenCount());
   const v8::CpuProfileNode* nativeFunctionNode =
-      GetChild(env->GetIsolate(), startNode, "CallJsFunction");
+      GetChild(startNode, "CallJsFunction");
 
   CHECK_EQ(1, nativeFunctionNode->GetChildrenCount());
-  const v8::CpuProfileNode* barNode =
-      GetChild(env->GetIsolate(), nativeFunctionNode, "bar");
+  const v8::CpuProfileNode* barNode = GetChild(nativeFunctionNode, "bar");
 
   // The child is in fact a bound foo.
   // A bound function has a wrapper that may make calls to
   // other functions e.g. "get length".
   CHECK_LE(1, barNode->GetChildrenCount());
   CHECK_GE(2, barNode->GetChildrenCount());
-  GetChild(env->GetIsolate(), barNode, "foo");
+  GetChild(barNode, "foo");
 
   profile->Delete();
 }
@@ -1489,49 +1537,39 @@ TEST(JsNative1JsNative2JsSample) {
   v8::Local<v8::FunctionTemplate> func_template = v8::FunctionTemplate::New(
       env->GetIsolate(), CallJsFunction);
   v8::Local<v8::Function> func1 = func_template->GetFunction();
-  func1->SetName(v8::String::NewFromUtf8(env->GetIsolate(), "CallJsFunction1"));
-  env->Global()->Set(
-      v8::String::NewFromUtf8(env->GetIsolate(), "CallJsFunction1"), func1);
+  func1->SetName(v8_str("CallJsFunction1"));
+  env->Global()->Set(v8_str("CallJsFunction1"), func1);
 
   v8::Local<v8::Function> func2 = v8::FunctionTemplate::New(
       env->GetIsolate(), CallJsFunction2)->GetFunction();
-  func2->SetName(v8::String::NewFromUtf8(env->GetIsolate(), "CallJsFunction2"));
-  env->Global()->Set(
-      v8::String::NewFromUtf8(env->GetIsolate(), "CallJsFunction2"), func2);
+  func2->SetName(v8_str("CallJsFunction2"));
+  env->Global()->Set(v8_str("CallJsFunction2"), func2);
 
-  v8::Script::Compile(
-      v8::String::NewFromUtf8(env->GetIsolate(),
-                              js_native1_js_native2_js_test_source))->Run();
-  v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "start")));
+  CompileRun(js_native1_js_native2_js_test_source);
+  v8::Local<v8::Function> function = GetFunction(*env, "start");
 
   v8::CpuProfile* profile = RunProfiler(env, function, NULL, 0, 0);
 
   const v8::CpuProfileNode* root = profile->GetTopDownRoot();
   ScopedVector<v8::Handle<v8::String> > names(3);
-  names[0] = v8::String::NewFromUtf8(
-      env->GetIsolate(), ProfileGenerator::kGarbageCollectorEntryName);
-  names[1] = v8::String::NewFromUtf8(env->GetIsolate(),
-                                     ProfileGenerator::kProgramEntryName);
-  names[2] = v8::String::NewFromUtf8(env->GetIsolate(), "start");
+  names[0] = v8_str(ProfileGenerator::kGarbageCollectorEntryName);
+  names[1] = v8_str(ProfileGenerator::kProgramEntryName);
+  names[2] = v8_str("start");
   CheckChildrenNames(root, names);
 
-  const v8::CpuProfileNode* startNode =
-      GetChild(env->GetIsolate(), root, "start");
+  const v8::CpuProfileNode* startNode = GetChild(root, "start");
   CHECK_EQ(1, startNode->GetChildrenCount());
   const v8::CpuProfileNode* nativeNode1 =
-      GetChild(env->GetIsolate(), startNode, "CallJsFunction1");
+      GetChild(startNode, "CallJsFunction1");
 
   CHECK_EQ(1, nativeNode1->GetChildrenCount());
-  const v8::CpuProfileNode* barNode =
-      GetChild(env->GetIsolate(), nativeNode1, "bar");
+  const v8::CpuProfileNode* barNode = GetChild(nativeNode1, "bar");
 
   CHECK_EQ(1, barNode->GetChildrenCount());
-  const v8::CpuProfileNode* nativeNode2 =
-      GetChild(env->GetIsolate(), barNode, "CallJsFunction2");
+  const v8::CpuProfileNode* nativeNode2 = GetChild(barNode, "CallJsFunction2");
 
   CHECK_EQ(1, nativeNode2->GetChildrenCount());
-  GetChild(env->GetIsolate(), nativeNode2, "foo");
+  GetChild(nativeNode2, "foo");
 
   profile->Delete();
 }
@@ -1546,8 +1584,7 @@ TEST(IdleTime) {
   v8::HandleScope scope(env->GetIsolate());
   v8::CpuProfiler* cpu_profiler = env->GetIsolate()->GetCpuProfiler();
 
-  v8::Local<v8::String> profile_name =
-      v8::String::NewFromUtf8(env->GetIsolate(), "my_profile");
+  v8::Local<v8::String> profile_name = v8_str("my_profile");
   cpu_profiler->StartProfiling(profile_name);
 
   i::Isolate* isolate = CcTest::i_isolate();
@@ -1565,29 +1602,26 @@ TEST(IdleTime) {
 
 
   v8::CpuProfile* profile = cpu_profiler->StopProfiling(profile_name);
-  CHECK_NE(NULL, profile);
+  CHECK(profile);
   // Dump collected profile to have a better diagnostic in case of failure.
   reinterpret_cast<i::CpuProfile*>(profile)->Print();
 
   const v8::CpuProfileNode* root = profile->GetTopDownRoot();
   ScopedVector<v8::Handle<v8::String> > names(3);
-  names[0] = v8::String::NewFromUtf8(
-      env->GetIsolate(), ProfileGenerator::kGarbageCollectorEntryName);
-  names[1] = v8::String::NewFromUtf8(env->GetIsolate(),
-                                     ProfileGenerator::kProgramEntryName);
-  names[2] = v8::String::NewFromUtf8(env->GetIsolate(),
-                                     ProfileGenerator::kIdleEntryName);
+  names[0] = v8_str(ProfileGenerator::kGarbageCollectorEntryName);
+  names[1] = v8_str(ProfileGenerator::kProgramEntryName);
+  names[2] = v8_str(ProfileGenerator::kIdleEntryName);
   CheckChildrenNames(root, names);
 
   const v8::CpuProfileNode* programNode =
-      GetChild(env->GetIsolate(), root, ProfileGenerator::kProgramEntryName);
+      GetChild(root, ProfileGenerator::kProgramEntryName);
   CHECK_EQ(0, programNode->GetChildrenCount());
-  CHECK_GE(programNode->GetHitCount(), 3);
+  CHECK_GE(programNode->GetHitCount(), 3u);
 
   const v8::CpuProfileNode* idleNode =
-      GetChild(env->GetIsolate(), root, ProfileGenerator::kIdleEntryName);
+      GetChild(root, ProfileGenerator::kIdleEntryName);
   CHECK_EQ(0, idleNode->GetChildrenCount());
-  CHECK_GE(idleNode->GetHitCount(), 3);
+  CHECK_GE(idleNode->GetHitCount(), 3u);
 
   profile->Delete();
 }
@@ -1597,10 +1631,8 @@ static void CheckFunctionDetails(v8::Isolate* isolate,
                                  const v8::CpuProfileNode* node,
                                  const char* name, const char* script_name,
                                  int script_id, int line, int column) {
-  CHECK_EQ(v8::String::NewFromUtf8(isolate, name),
-           node->GetFunctionName());
-  CHECK_EQ(v8::String::NewFromUtf8(isolate, script_name),
-           node->GetScriptResourceName());
+  CHECK(v8_str(name)->Equals(node->GetFunctionName()));
+  CHECK(v8_str(script_name)->Equals(node->GetScriptResourceName()));
   CHECK_EQ(script_id, node->GetScriptId());
   CHECK_EQ(line, node->GetLineNumber());
   CHECK_EQ(column, node->GetColumnNumber());
@@ -1634,16 +1666,16 @@ TEST(FunctionDetails) {
   //  0        foo 18 #4 TryCatchStatement script_a:2
   //  1          bar 18 #5 no reason script_a:3
   const v8::CpuProfileNode* root = profile->GetTopDownRoot();
-  const v8::CpuProfileNode* script = GetChild(env->GetIsolate(), root, "");
+  const v8::CpuProfileNode* script = GetChild(root, "");
   CheckFunctionDetails(env->GetIsolate(), script, "", "script_b",
                        script_b->GetUnboundScript()->GetId(), 1, 1);
-  const v8::CpuProfileNode* baz = GetChild(env->GetIsolate(), script, "baz");
+  const v8::CpuProfileNode* baz = GetChild(script, "baz");
   CheckFunctionDetails(env->GetIsolate(), baz, "baz", "script_b",
                        script_b->GetUnboundScript()->GetId(), 3, 16);
-  const v8::CpuProfileNode* foo = GetChild(env->GetIsolate(), baz, "foo");
+  const v8::CpuProfileNode* foo = GetChild(baz, "foo");
   CheckFunctionDetails(env->GetIsolate(), foo, "foo", "script_a",
                        script_a->GetUnboundScript()->GetId(), 2, 1);
-  const v8::CpuProfileNode* bar = GetChild(env->GetIsolate(), foo, "bar");
+  const v8::CpuProfileNode* bar = GetChild(foo, "bar");
   CheckFunctionDetails(env->GetIsolate(), bar, "bar", "script_a",
                        script_a->GetUnboundScript()->GetId(), 3, 14);
 }
@@ -1653,17 +1685,16 @@ TEST(DontStopOnFinishedProfileDelete) {
   v8::HandleScope scope(CcTest::isolate());
   v8::Local<v8::Context> env = CcTest::NewContext(PROFILER_EXTENSION);
   v8::Context::Scope context_scope(env);
-  v8::Isolate* isolate = env->GetIsolate();
 
   v8::CpuProfiler* profiler = env->GetIsolate()->GetCpuProfiler();
   i::CpuProfiler* iprofiler = reinterpret_cast<i::CpuProfiler*>(profiler);
 
   CHECK_EQ(0, iprofiler->GetProfilesCount());
-  v8::Handle<v8::String> outer = v8::String::NewFromUtf8(isolate, "outer");
+  v8::Handle<v8::String> outer = v8_str("outer");
   profiler->StartProfiling(outer);
   CHECK_EQ(0, iprofiler->GetProfilesCount());
 
-  v8::Handle<v8::String> inner = v8::String::NewFromUtf8(isolate, "inner");
+  v8::Handle<v8::String> inner = v8_str("inner");
   profiler->StartProfiling(inner);
   CHECK_EQ(0, iprofiler->GetProfilesCount());
 
@@ -1680,4 +1711,323 @@ TEST(DontStopOnFinishedProfileDelete) {
   outer_profile->Delete();
   outer_profile = NULL;
   CHECK_EQ(0, iprofiler->GetProfilesCount());
+}
+
+
+const char* GetBranchDeoptReason(i::CpuProfile* iprofile, const char* branch[],
+                                 int length) {
+  v8::CpuProfile* profile = reinterpret_cast<v8::CpuProfile*>(iprofile);
+  const ProfileNode* iopt_function = NULL;
+  iopt_function = GetSimpleBranch(profile, branch, length);
+  CHECK_EQ(1, iopt_function->deopt_infos().size());
+  return iopt_function->deopt_infos()[0].deopt_reason;
+}
+
+
+// deopt at top function
+TEST(CollectDeoptEvents) {
+  if (!CcTest::i_isolate()->use_crankshaft() || i::FLAG_always_opt) return;
+  i::FLAG_allow_natives_syntax = true;
+  v8::HandleScope scope(CcTest::isolate());
+  v8::Local<v8::Context> env = CcTest::NewContext(PROFILER_EXTENSION);
+  v8::Context::Scope context_scope(env);
+  v8::Isolate* isolate = env->GetIsolate();
+  v8::CpuProfiler* profiler = isolate->GetCpuProfiler();
+  i::CpuProfiler* iprofiler = reinterpret_cast<i::CpuProfiler*>(profiler);
+
+  const char opt_source[] =
+      "function opt_function%d(value, depth) {\n"
+      "  if (depth) return opt_function%d(value, depth - 1);\n"
+      "\n"
+      "  return  10 / value;\n"
+      "}\n"
+      "\n";
+
+  for (int i = 0; i < 3; ++i) {
+    i::EmbeddedVector<char, sizeof(opt_source) + 100> buffer;
+    i::SNPrintF(buffer, opt_source, i, i);
+    v8::Script::Compile(v8_str(buffer.start()))->Run();
+  }
+
+  const char* source =
+      "startProfiling();\n"
+      "\n"
+      "opt_function0(1, 1);\n"
+      "\n"
+      "%OptimizeFunctionOnNextCall(opt_function0)\n"
+      "\n"
+      "opt_function0(1, 1);\n"
+      "\n"
+      "opt_function0(undefined, 1);\n"
+      "\n"
+      "opt_function1(1, 1);\n"
+      "\n"
+      "%OptimizeFunctionOnNextCall(opt_function1)\n"
+      "\n"
+      "opt_function1(1, 1);\n"
+      "\n"
+      "opt_function1(NaN, 1);\n"
+      "\n"
+      "opt_function2(1, 1);\n"
+      "\n"
+      "%OptimizeFunctionOnNextCall(opt_function2)\n"
+      "\n"
+      "opt_function2(1, 1);\n"
+      "\n"
+      "opt_function2(0, 1);\n"
+      "\n"
+      "stopProfiling();\n"
+      "\n";
+
+  v8::Script::Compile(v8_str(source))->Run();
+  i::CpuProfile* iprofile = iprofiler->GetProfile(0);
+  iprofile->Print();
+  /* The expected profile
+  [Top down]:
+      0  (root) 0 #1
+     23     32 #2
+      1      opt_function2 31 #7
+      1        opt_function2 31 #8
+                  ;;; deopted at script_id: 31 position: 106 with reason
+  'division by zero'.
+      2      opt_function0 29 #3
+      4        opt_function0 29 #4
+                  ;;; deopted at script_id: 29 position: 108 with reason 'not a
+  heap number'.
+      0      opt_function1 30 #5
+      1        opt_function1 30 #6
+                  ;;; deopted at script_id: 30 position: 108 with reason 'lost
+  precision or NaN'.
+  */
+
+  {
+    const char* branch[] = {"", "opt_function0", "opt_function0"};
+    CHECK_EQ(reason(i::Deoptimizer::kNotAHeapNumber),
+             GetBranchDeoptReason(iprofile, branch, arraysize(branch)));
+  }
+  {
+    const char* branch[] = {"", "opt_function1", "opt_function1"};
+    const char* deopt_reason =
+        GetBranchDeoptReason(iprofile, branch, arraysize(branch));
+    if (deopt_reason != reason(i::Deoptimizer::kNaN) &&
+        deopt_reason != reason(i::Deoptimizer::kLostPrecisionOrNaN)) {
+      FATAL(deopt_reason);
+    }
+  }
+  {
+    const char* branch[] = {"", "opt_function2", "opt_function2"};
+    CHECK_EQ(reason(i::Deoptimizer::kDivisionByZero),
+             GetBranchDeoptReason(iprofile, branch, arraysize(branch)));
+  }
+  iprofiler->DeleteProfile(iprofile);
+}
+
+
+TEST(SourceLocation) {
+  i::FLAG_always_opt = true;
+  i::FLAG_hydrogen_track_positions = true;
+  LocalContext env;
+  v8::HandleScope scope(CcTest::isolate());
+
+  const char* source =
+      "function CompareStatementWithThis() {\n"
+      "  if (this === 1) {}\n"
+      "}\n"
+      "CompareStatementWithThis();\n";
+
+  v8::Script::Compile(v8_str(source))->Run();
+}
+
+
+static const char* inlined_source =
+    "function opt_function(left, right) { var k = left / 10; var r = 10 / "
+    "right; return k + r; }\n";
+//   0.........1.........2.........3.........4....*....5.........6......*..7
+
+
+// deopt at the first level inlined function
+TEST(DeoptAtFirstLevelInlinedSource) {
+  if (!CcTest::i_isolate()->use_crankshaft() || i::FLAG_always_opt) return;
+  i::FLAG_allow_natives_syntax = true;
+  v8::HandleScope scope(CcTest::isolate());
+  v8::Local<v8::Context> env = CcTest::NewContext(PROFILER_EXTENSION);
+  v8::Context::Scope context_scope(env);
+  v8::Isolate* isolate = env->GetIsolate();
+  v8::CpuProfiler* profiler = isolate->GetCpuProfiler();
+  i::CpuProfiler* iprofiler = reinterpret_cast<i::CpuProfiler*>(profiler);
+
+  //   0.........1.........2.........3.........4.........5.........6.........7
+  const char* source =
+      "function test(left, right) { return opt_function(left, right); }\n"
+      "\n"
+      "startProfiling();\n"
+      "\n"
+      "test(10, 10);\n"
+      "\n"
+      "%OptimizeFunctionOnNextCall(test)\n"
+      "\n"
+      "test(10, 10);\n"
+      "\n"
+      "test(undefined, 10);\n"
+      "\n"
+      "stopProfiling();\n"
+      "\n";
+
+  v8::Handle<v8::Script> inlined_script = v8_compile(inlined_source);
+  inlined_script->Run();
+  int inlined_script_id = inlined_script->GetUnboundScript()->GetId();
+
+  v8::Handle<v8::Script> script = v8_compile(source);
+  script->Run();
+  int script_id = script->GetUnboundScript()->GetId();
+
+  i::CpuProfile* iprofile = iprofiler->GetProfile(0);
+  iprofile->Print();
+  /* The expected profile output
+  [Top down]:
+      0  (root) 0 #1
+     10     30 #2
+      1      test 30 #3
+                ;;; deopted at script_id: 29 position: 45 with reason 'not a
+  heap number'.
+                ;;;     Inline point: script_id 30 position: 36.
+      4        opt_function 29 #4
+  */
+  v8::CpuProfile* profile = reinterpret_cast<v8::CpuProfile*>(iprofile);
+
+  const char* branch[] = {"", "test"};
+  const ProfileNode* itest_node =
+      GetSimpleBranch(profile, branch, arraysize(branch));
+  const std::vector<i::DeoptInfo>& deopt_infos = itest_node->deopt_infos();
+  CHECK_EQ(1, deopt_infos.size());
+
+  const i::DeoptInfo& info = deopt_infos[0];
+  CHECK_EQ(reason(i::Deoptimizer::kNotAHeapNumber), info.deopt_reason);
+  CHECK_EQ(2, info.stack.size());
+  CHECK_EQ(inlined_script_id, info.stack[0].script_id);
+  CHECK_EQ(offset(inlined_source, "left /"), info.stack[0].position);
+  CHECK_EQ(script_id, info.stack[1].script_id);
+  CHECK_EQ(offset(source, "opt_function(left,"), info.stack[1].position);
+
+  iprofiler->DeleteProfile(iprofile);
+}
+
+
+// deopt at the second level inlined function
+TEST(DeoptAtSecondLevelInlinedSource) {
+  if (!CcTest::i_isolate()->use_crankshaft() || i::FLAG_always_opt) return;
+  i::FLAG_allow_natives_syntax = true;
+  v8::HandleScope scope(CcTest::isolate());
+  v8::Local<v8::Context> env = CcTest::NewContext(PROFILER_EXTENSION);
+  v8::Context::Scope context_scope(env);
+  v8::Isolate* isolate = env->GetIsolate();
+  v8::CpuProfiler* profiler = isolate->GetCpuProfiler();
+  i::CpuProfiler* iprofiler = reinterpret_cast<i::CpuProfiler*>(profiler);
+
+  //   0.........1.........2.........3.........4.........5.........6.........7
+  const char* source =
+      "function test2(left, right) { return opt_function(left, right); }\n"
+      "function test1(left, right) { return test2(left, right); }\n"
+      "\n"
+      "startProfiling();\n"
+      "\n"
+      "test1(10, 10);\n"
+      "\n"
+      "%OptimizeFunctionOnNextCall(test1)\n"
+      "\n"
+      "test1(10, 10);\n"
+      "\n"
+      "test1(undefined, 10);\n"
+      "\n"
+      "stopProfiling();\n"
+      "\n";
+
+  v8::Handle<v8::Script> inlined_script = v8_compile(inlined_source);
+  inlined_script->Run();
+  int inlined_script_id = inlined_script->GetUnboundScript()->GetId();
+
+  v8::Handle<v8::Script> script = v8_compile(source);
+  script->Run();
+  int script_id = script->GetUnboundScript()->GetId();
+
+  i::CpuProfile* iprofile = iprofiler->GetProfile(0);
+  iprofile->Print();
+  /* The expected profile output
+  [Top down]:
+      0  (root) 0 #1
+     11     30 #2
+      1      test1 30 #3
+                ;;; deopted at script_id: 29 position: 45 with reason 'not a
+  heap number'.
+                ;;;     Inline point: script_id 30 position: 37.
+                ;;;     Inline point: script_id 30 position: 103.
+      1        test2 30 #4
+      3          opt_function 29 #5
+  */
+
+  v8::CpuProfile* profile = reinterpret_cast<v8::CpuProfile*>(iprofile);
+
+  const char* branch[] = {"", "test1"};
+  const ProfileNode* itest_node =
+      GetSimpleBranch(profile, branch, arraysize(branch));
+  const std::vector<i::DeoptInfo>& deopt_infos = itest_node->deopt_infos();
+  CHECK_EQ(1, deopt_infos.size());
+
+  const i::DeoptInfo info = deopt_infos[0];
+  CHECK_EQ(reason(i::Deoptimizer::kNotAHeapNumber), info.deopt_reason);
+  CHECK_EQ(3, info.stack.size());
+  CHECK_EQ(inlined_script_id, info.stack[0].script_id);
+  CHECK_EQ(offset(inlined_source, "left /"), info.stack[0].position);
+  CHECK_EQ(script_id, info.stack[1].script_id);
+  CHECK_EQ(offset(source, "opt_function(left,"), info.stack[1].position);
+  CHECK_EQ(offset(source, "test2(left, right);"), info.stack[2].position);
+
+  iprofiler->DeleteProfile(iprofile);
+}
+
+
+// deopt in untracked function
+TEST(DeoptUntrackedFunction) {
+  if (!CcTest::i_isolate()->use_crankshaft() || i::FLAG_always_opt) return;
+  i::FLAG_allow_natives_syntax = true;
+  v8::HandleScope scope(CcTest::isolate());
+  v8::Local<v8::Context> env = CcTest::NewContext(PROFILER_EXTENSION);
+  v8::Context::Scope context_scope(env);
+  v8::Isolate* isolate = env->GetIsolate();
+  v8::CpuProfiler* profiler = isolate->GetCpuProfiler();
+  i::CpuProfiler* iprofiler = reinterpret_cast<i::CpuProfiler*>(profiler);
+
+  //   0.........1.........2.........3.........4.........5.........6.........7
+  const char* source =
+      "function test(left, right) { return opt_function(left, right); }\n"
+      "\n"
+      "test(10, 10);\n"
+      "\n"
+      "%OptimizeFunctionOnNextCall(test)\n"
+      "\n"
+      "test(10, 10);\n"
+      "\n"
+      "startProfiling();\n"  // profiler started after compilation.
+      "\n"
+      "test(undefined, 10);\n"
+      "\n"
+      "stopProfiling();\n"
+      "\n";
+
+  v8::Handle<v8::Script> inlined_script = v8_compile(inlined_source);
+  inlined_script->Run();
+
+  v8::Handle<v8::Script> script = v8_compile(source);
+  script->Run();
+
+  i::CpuProfile* iprofile = iprofiler->GetProfile(0);
+  iprofile->Print();
+  v8::CpuProfile* profile = reinterpret_cast<v8::CpuProfile*>(iprofile);
+
+  const char* branch[] = {"", "test"};
+  const ProfileNode* itest_node =
+      GetSimpleBranch(profile, branch, arraysize(branch));
+  CHECK_EQ(0, itest_node->deopt_infos().size());
+
+  iprofiler->DeleteProfile(iprofile);
 }

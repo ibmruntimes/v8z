@@ -20,6 +20,12 @@ int Deoptimizer::patch_size() {
 }
 
 
+void Deoptimizer::EnsureRelocSpaceForLazyDeoptimization(Handle<Code> code) {
+  // Empty because there is no need for relocation information for the code
+  // patching in Deoptimizer::PatchCodeForDeoptimization below.
+}
+
+
 void Deoptimizer::PatchCodeForDeoptimization(Isolate* isolate, Code* code) {
   Address code_start_address = code->instruction_start();
   // Invalidate the relocation information, as it will become invalid by the
@@ -97,14 +103,13 @@ void Deoptimizer::FillInputFrame(Address tos, JavaScriptFrame* frame) {
 
 
 void Deoptimizer::SetPlatformCompiledStubRegisters(
-    FrameDescription* output_frame, CodeStubInterfaceDescriptor* descriptor) {
+    FrameDescription* output_frame, CodeStubDescriptor* descriptor) {
   ApiFunction function(descriptor->deoptimization_handler());
   ExternalReference xref(&function, ExternalReference::BUILTIN_CALL, isolate_);
   intptr_t handler = reinterpret_cast<intptr_t>(xref.address());
   int params = descriptor->GetHandlerParameterCount();
-  output_frame->SetRegister(s0.code(), params);
-  output_frame->SetRegister(s1.code(), (params - 1) * kPointerSize);
-  output_frame->SetRegister(s2.code(), handler);
+  output_frame->SetRegister(a0.code(), params);
+  output_frame->SetRegister(a1.code(), handler);
 }
 
 
@@ -127,7 +132,7 @@ bool Deoptimizer::HasAlignmentPadding(JSFunction* function) {
 
 // This code tries to be close to ia32 code so that any changes can be
 // easily ported.
-void Deoptimizer::EntryGenerator::Generate() {
+void Deoptimizer::TableEntryGenerator::Generate() {
   GeneratePrologue();
 
   // Unlike on ARM we don't save all the registers, just the useful ones.
@@ -156,6 +161,9 @@ void Deoptimizer::EntryGenerator::Generate() {
       __ sw(ToRegister(i), MemOperand(sp, kPointerSize * i));
     }
   }
+
+  __ li(a2, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate())));
+  __ sw(fp, MemOperand(a2));
 
   const int kSavedRegistersAreaSize =
       (kNumberOfRegisters * kPointerSize) + kDoubleRegsSize;
@@ -324,22 +332,59 @@ void Deoptimizer::TableEntryGenerator::GeneratePrologue() {
 
   // Create a sequence of deoptimization entries.
   // Note that registers are still live when jumping to an entry.
-  Label table_start, done;
+  Label table_start, done, done_special, trampoline_jump;
   __ bind(&table_start);
-  for (int i = 0; i < count(); i++) {
-    Label start;
-    __ bind(&start);
-    DCHECK(is_int16(i));
-    __ Branch(USE_DELAY_SLOT, &done);  // Expose delay slot.
-    __ li(at, i);  // In the delay slot.
+  int kMaxEntriesBranchReach = (1 << (kImm16Bits - 2))/
+     (table_entry_size_ /  Assembler::kInstrSize);
 
-    DCHECK_EQ(table_entry_size_, masm()->SizeOfCodeGeneratedSince(&start));
+  if (count() <= kMaxEntriesBranchReach) {
+    // Common case.
+    for (int i = 0; i < count(); i++) {
+      Label start;
+      __ bind(&start);
+      DCHECK(is_int16(i));
+      __ Branch(USE_DELAY_SLOT, &done);  // Expose delay slot.
+      __ li(at, i);  // In the delay slot.
+
+      DCHECK_EQ(table_entry_size_, masm()->SizeOfCodeGeneratedSince(&start));
+    }
+
+    DCHECK_EQ(masm()->SizeOfCodeGeneratedSince(&table_start),
+        count() * table_entry_size_);
+    __ bind(&done);
+    __ Push(at);
+  } else {
+    // Uncommon case, the branch cannot reach.
+    // Create mini trampoline and adjust id constants to get proper value at
+    // the end of table.
+    for (int i = kMaxEntriesBranchReach; i > 1; i--) {
+      Label start;
+      __ bind(&start);
+      DCHECK(is_int16(i));
+      __ Branch(USE_DELAY_SLOT, &trampoline_jump);  // Expose delay slot.
+      __ li(at, - i);  // In the delay slot.
+      DCHECK_EQ(table_entry_size_, masm()->SizeOfCodeGeneratedSince(&start));
+    }
+    // Entry with id == kMaxEntriesBranchReach - 1.
+    __ bind(&trampoline_jump);
+    __ Branch(USE_DELAY_SLOT, &done_special);
+    __ li(at, -1);
+
+    for (int i = kMaxEntriesBranchReach ; i < count(); i++) {
+      Label start;
+      __ bind(&start);
+      DCHECK(is_int16(i));
+      __ Branch(USE_DELAY_SLOT, &done);  // Expose delay slot.
+      __ li(at, i);  // In the delay slot.
+    }
+
+    DCHECK_EQ(masm()->SizeOfCodeGeneratedSince(&table_start),
+        count() * table_entry_size_);
+    __ bind(&done_special);
+    __ addiu(at, at, kMaxEntriesBranchReach);
+    __ bind(&done);
+    __ Push(at);
   }
-
-  DCHECK_EQ(masm()->SizeOfCodeGeneratedSince(&table_start),
-      count() * table_entry_size_);
-  __ bind(&done);
-  __ Push(at);
 }
 
 

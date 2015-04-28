@@ -56,13 +56,23 @@
   # TODO(turbofan): These are all covered by mjsunit as well. Enable them once
   # we pass 'mjsunit' and 'webkit' with TurboFan.
   'js1_4/Functions/function-001': [PASS, NO_VARIANTS],
-  'js1_5/Regress/regress-104077': [PASS, NO_VARIANTS],
-  'js1_5/Regress/regress-396684': [PASS, NO_VARIANTS],
   'js1_5/Regress/regress-80981': [PASS, NO_VARIANTS],
 
   # TODO(turbofan): Large switch statements crash.
-  'js1_5/Regress/regress-366601': [PASS, NO_VARIANTS],
   'js1_5/Regress/regress-398085-01': [PASS, NO_VARIANTS],
+
+  ############################ INVALID TESTS #############################
+
+  # Function length properties are configurable in ES6
+  'ecma/Array/15.4.4.3-1': [FAIL],
+  'ecma/Array/15.4.4.4-1': [FAIL],
+  'ecma/Array/15.4.4.4-2': [FAIL],
+  'ecma/String/15.5.4.10-1': [FAIL],
+  'ecma/String/15.5.4.11-1': [FAIL],
+  'ecma/String/15.5.4.7-2': [FAIL],
+  'ecma/String/15.5.4.8-1': [FAIL],
+  'ecma/String/15.5.4.9-1': [FAIL],
+
 
   ##################### SKIPPED TESTS #####################
 
@@ -117,6 +127,11 @@
   # Runs out of memory while trying to build huge string of 'x'
   # characters. This takes a long time to run (~32 seconds).
   'js1_5/GC/regress-348532': [SKIP],
+
+
+  # Runs for too long: huge array with getters and setters. As it says
+  # in the test: "This test will probably run out of memory".
+  'js1_5/extensions/regress-345967': [SKIP],
 
 
   ##################### FLAKY TESTS #####################
@@ -218,7 +233,8 @@
 
   # Test that depends on timer resolution. Fails every now and then
   # if we're unlucky enough to get a context switch at a bad time.
-  'js1_5/extensions/regress-363258': [PASS, FAIL],
+  # TODO(mstarzinger): Switch off TF on windows due to timeouts.
+  'js1_5/extensions/regress-363258': [PASS, FAIL, ['system == windows', NO_VARIANTS]],
 
 
   # Test that assumes specific runtime for a regexp, flaky in debug mode.
@@ -275,21 +291,6 @@
   # RegExp flags.
   'ecma_3/RegExp/15.10.4.1-6': [FAIL_OK],
 
-  # PCRE doesn't allow subpattern nesting deeper than 200, this tests
-  # depth 500.  JSC detects the case, and return null from the match,
-  # and passes this test (the test doesn't check for a correct return
-  # value).
-  'ecma_3/RegExp/regress-119909': [PASS, FAIL_OK],
-
-
-  # Difference in the way capturing subpatterns work.  In JS, when the
-  # 'minimum repeat count' is reached, the empty string must not match.
-  # In this case, we are similar but not identical to JSC.  Hard to
-  # support the JS behavior with PCRE, so maybe emulate JSC?
-  'ecma_3/RegExp/regress-209919': [PASS, FAIL_OK],
-  'js1_5/extensions/regress-459606': [PASS, FAIL_OK],
-
-
   # PCRE's match limit is reached.  SpiderMonkey hangs on the first one,
   # JSC returns true somehow.  Maybe they up the match limit?  There is
   # an open V8 bug 676063 about this.
@@ -312,12 +313,12 @@
   'js1_5/Regress/regress-230216-2': [FAIL_OK],
 
 
-  # Regexp too long for PCRE.
-  'js1_5/Regress/regress-280769': [PASS, FAIL],
-  'js1_5/Regress/regress-280769-1': [PASS, FAIL],
-  'js1_5/Regress/regress-280769-2': [PASS, FAIL],
-  'js1_5/Regress/regress-280769-4': [PASS, FAIL],
-  'js1_5/Regress/regress-280769-5': [PASS, FAIL],
+  # BUG(v8:3767)
+  'js1_5/Regress/regress-280769-2': [PASS, ['arch == arm64', SKIP]],
+
+  # Regexps too big.
+  'js1_5/Regress/regress-280769-1': [SKIP],
+  'js1_5/Regress/regress-280769-5': [SKIP],
 
 
   # We do not support static RegExp.multiline - should we?.
@@ -363,9 +364,9 @@
 
 
   # No support for toSource().
-  'js1_5/Regress/regress-248444': [FAIL_OK],
   'js1_5/Regress/regress-313967-01': [FAIL_OK],
   'js1_5/Regress/regress-313967-02': [FAIL_OK],
+  'js1_5/extensions/regress-459606': [FAIL_OK],
 
   # This fails because we don't have stack space for Function.prototype.apply
   # with very large numbers of arguments.  The test uses 2^24 arguments.
@@ -401,7 +402,6 @@
   'js1_5/LexicalConventions/regress-469940': [FAIL_OK],
   'js1_5/Exceptions/regress-332472': [FAIL_OK],
   'js1_5/Regress/regress-173067': [FAIL_OK],
-  'js1_5/Regress/regress-355556': [FAIL_OK],
   'js1_5/Regress/regress-328664': [FAIL_OK],
   'js1_5/Regress/regress-252892': [FAIL_OK],
   'js1_5/Regress/regress-352208': [FAIL_OK],
@@ -569,11 +569,6 @@
   'js1_5/Regress/regress-336100': [FAIL_OK],
 
 
-  # Regular expression test failures due to PCRE. We match JSC (ie, perl)
-  # behavior and not the ECMA spec.
-  'ecma_3/RegExp/perlstress-001': [PASS, FAIL_OK],
-  'ecma_3/RegExp/regress-334158': [PASS, FAIL],
-
   # This test fails due to http://code.google.com/p/v8/issues/detail?id=187
   # Failure to clear captures when a lookahead is unwound.
   'ecma_3/RegExp/15.10.2-1': [PASS, FAIL_OK],
@@ -676,7 +671,6 @@
   'js1_5/extensions/regress-311792-01': [FAIL_OK],
   'js1_5/extensions/regress-312278': [FAIL_OK],
   'js1_5/extensions/regress-313630': [FAIL_OK],
-  'js1_5/extensions/regress-313763': [FAIL_OK],
   'js1_5/extensions/regress-313803': [FAIL_OK],
   'js1_5/extensions/regress-314874': [FAIL_OK],
   'js1_5/extensions/regress-322957': [FAIL_OK],
@@ -686,8 +680,6 @@
   'js1_5/extensions/regress-336409-1': [FAIL_OK],
   'js1_5/extensions/regress-336409-2': [FAIL_OK],
   'js1_5/extensions/regress-336410-2': [FAIL_OK],
-  'js1_5/extensions/regress-341956-01': [FAIL_OK],
-  'js1_5/extensions/regress-345967': [FAIL_OK],
   'js1_5/extensions/regress-346494-01': [FAIL_OK],
   'js1_5/extensions/regress-346494': [FAIL_OK],
   'js1_5/extensions/regress-347306-02': [FAIL_OK],
@@ -865,11 +857,10 @@
 
 
 ['arch ==  arm64', {
-  # BUG(v8:3152): Runs out of stack in debug mode.
-  'js1_5/extensions/regress-355497': [FAIL_OK, ['mode == debug', SKIP]],
-
   # BUG(v8:3503): Times out in debug mode.
   'js1_5/Regress/regress-280769-2': [PASS, FAIL, ['mode == debug', SKIP]],
+  # BUG(v8:3716): Flaky failure.
+  'ecma/Date/15.9.5.26-1': [PASS, FAIL],
 }],  # 'arch ==  arm64'
 
 
@@ -892,6 +883,15 @@
   'js1_5/GC/regress-203278-2': [PASS, TIMEOUT, NO_VARIANTS],
 }],  # 'arch == mipsel or arch == mips64el'
 
+['arch == mipsel and simulator_run == True', {
+  # Crashes due to C stack overflow.
+  'js1_5/extensions/regress-355497': [SKIP],
+}], # 'arch == mipsel and simulator_run == True'
+
+['arch == mips64el and simulator_run == True', {
+  'js1_5/extensions/regress-355497': [FAIL_OK, 'Flags: --sim-stack-size=512'],
+}], # 'arch == mips64el and simulator_run == True'
+
 ['arch == mips', {
 
   # BUG(3251229): Times out when running new crankshaft test script.
@@ -910,6 +910,12 @@
   # BUG(1040): Allow this test to timeout.
   'js1_5/GC/regress-203278-2': [PASS, TIMEOUT, NO_VARIANTS],
 }],  # 'arch == mips'
+
+['arch == arm and simulator_run == True', {
+
+  #BUG(3837): Crashes due to C stack overflow.
+  'js1_5/extensions/regress-355497': [SKIP],
+}],  # 'arch == arm and simulator_run == True'
 
 ['arch == arm64 and simulator_run == True', {
 
@@ -930,5 +936,8 @@
   'js1_5/extensions/regress-330569': [SKIP],
   'js1_5/extensions/regress-351448': [SKIP],
   'js1_5/extensions/regress-336410-1': [SKIP],
+
+  #BUG(3152): Avoid C stack overflow.
+  'js1_5/extensions/regress-355497': [FAIL_OK, 'Flags: --sim-stack-size=512'],
 }],  # 'arch == arm64 and simulator_run == True'
 ]

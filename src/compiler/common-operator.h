@@ -5,280 +5,229 @@
 #ifndef V8_COMPILER_COMMON_OPERATOR_H_
 #define V8_COMPILER_COMMON_OPERATOR_H_
 
-#include "src/v8.h"
-
-#include "src/assembler.h"
-#include "src/compiler/linkage.h"
-#include "src/compiler/opcodes.h"
-#include "src/compiler/operator.h"
+#include "src/compiler/machine-type.h"
 #include "src/unique.h"
 
 namespace v8 {
 namespace internal {
 
-class OStream;
+// Forward declarations.
+class ExternalReference;
+
 
 namespace compiler {
 
-class ControlOperator : public Operator1<int> {
- public:
-  ControlOperator(IrOpcode::Value opcode, uint16_t properties, int inputs,
-                  int outputs, int controls, const char* mnemonic)
-      : Operator1<int>(opcode, properties, inputs, outputs, mnemonic,
-                       controls) {}
+// Forward declarations.
+class CallDescriptor;
+struct CommonOperatorGlobalCache;
+class Operator;
 
-  virtual OStream& PrintParameter(OStream& os) const { return os; }  // NOLINT
-  int ControlInputCount() const { return parameter(); }
+
+// Prediction hint for branches.
+enum class BranchHint : uint8_t { kNone, kTrue, kFalse };
+
+inline size_t hash_value(BranchHint hint) { return static_cast<size_t>(hint); }
+
+std::ostream& operator<<(std::ostream&, BranchHint);
+
+BranchHint BranchHintOf(const Operator* const);
+
+
+class SelectParameters FINAL {
+ public:
+  explicit SelectParameters(MachineType type,
+                            BranchHint hint = BranchHint::kNone)
+      : type_(type), hint_(hint) {}
+
+  MachineType type() const { return type_; }
+  BranchHint hint() const { return hint_; }
+
+ private:
+  const MachineType type_;
+  const BranchHint hint_;
 };
 
-class CallOperator : public Operator1<CallDescriptor*> {
- public:
-  CallOperator(CallDescriptor* descriptor, const char* mnemonic)
-      : Operator1<CallDescriptor*>(
-            IrOpcode::kCall, descriptor->properties(), descriptor->InputCount(),
-            descriptor->ReturnCount(), mnemonic, descriptor) {}
+bool operator==(SelectParameters const&, SelectParameters const&);
+bool operator!=(SelectParameters const&, SelectParameters const&);
 
-  virtual OStream& PrintParameter(OStream& os) const {  // NOLINT
-    return os << "[" << *parameter() << "]";
+size_t hash_value(SelectParameters const& p);
+
+std::ostream& operator<<(std::ostream&, SelectParameters const& p);
+
+SelectParameters const& SelectParametersOf(const Operator* const);
+
+
+// Flag that describes how to combine the current environment with
+// the output of a node to obtain a framestate for lazy bailout.
+class OutputFrameStateCombine {
+ public:
+  enum Kind {
+    kPushOutput,  // Push the output on the expression stack.
+    kPokeAt       // Poke at the given environment location,
+                  // counting from the top of the stack.
+  };
+
+  static OutputFrameStateCombine Ignore() {
+    return OutputFrameStateCombine(kPushOutput, 0);
   }
+  static OutputFrameStateCombine Push(size_t count = 1) {
+    return OutputFrameStateCombine(kPushOutput, count);
+  }
+  static OutputFrameStateCombine PokeAt(size_t index) {
+    return OutputFrameStateCombine(kPokeAt, index);
+  }
+
+  Kind kind() const { return kind_; }
+  size_t GetPushCount() const {
+    DCHECK_EQ(kPushOutput, kind());
+    return parameter_;
+  }
+  size_t GetOffsetToPokeAt() const {
+    DCHECK_EQ(kPokeAt, kind());
+    return parameter_;
+  }
+
+  bool IsOutputIgnored() const {
+    return kind_ == kPushOutput && parameter_ == 0;
+  }
+
+  size_t ConsumedOutputCount() const {
+    return kind_ == kPushOutput ? GetPushCount() : 1;
+  }
+
+  bool operator==(OutputFrameStateCombine const& other) const {
+    return kind_ == other.kind_ && parameter_ == other.parameter_;
+  }
+  bool operator!=(OutputFrameStateCombine const& other) const {
+    return !(*this == other);
+  }
+
+  friend size_t hash_value(OutputFrameStateCombine const&);
+  friend std::ostream& operator<<(std::ostream&,
+                                  OutputFrameStateCombine const&);
+
+ private:
+  OutputFrameStateCombine(Kind kind, size_t parameter)
+      : kind_(kind), parameter_(parameter) {}
+
+  Kind const kind_;
+  size_t const parameter_;
 };
+
+
+// The type of stack frame that a FrameState node represents.
+enum FrameStateType {
+  JS_FRAME,          // Represents an unoptimized JavaScriptFrame.
+  ARGUMENTS_ADAPTOR  // Represents an ArgumentsAdaptorFrame.
+};
+
+
+class FrameStateCallInfo FINAL {
+ public:
+  FrameStateCallInfo(
+      FrameStateType type, BailoutId bailout_id,
+      OutputFrameStateCombine state_combine,
+      MaybeHandle<JSFunction> jsfunction = MaybeHandle<JSFunction>())
+      : type_(type),
+        bailout_id_(bailout_id),
+        frame_state_combine_(state_combine),
+        jsfunction_(jsfunction) {}
+
+  FrameStateType type() const { return type_; }
+  BailoutId bailout_id() const { return bailout_id_; }
+  OutputFrameStateCombine state_combine() const { return frame_state_combine_; }
+  MaybeHandle<JSFunction> jsfunction() const { return jsfunction_; }
+
+ private:
+  FrameStateType type_;
+  BailoutId bailout_id_;
+  OutputFrameStateCombine frame_state_combine_;
+  MaybeHandle<JSFunction> jsfunction_;
+};
+
+bool operator==(FrameStateCallInfo const&, FrameStateCallInfo const&);
+bool operator!=(FrameStateCallInfo const&, FrameStateCallInfo const&);
+
+size_t hash_value(FrameStateCallInfo const&);
+
+std::ostream& operator<<(std::ostream&, FrameStateCallInfo const&);
+
+
+size_t ProjectionIndexOf(const Operator* const);
+
 
 // Interface for building common operators that can be used at any level of IR,
 // including JavaScript, mid-level, and low-level.
-// TODO(titzer): Move the mnemonics into SimpleOperator and Operator1 classes.
-class CommonOperatorBuilder {
+class CommonOperatorBuilder FINAL : public ZoneObject {
  public:
-  explicit CommonOperatorBuilder(Zone* zone) : zone_(zone) {}
+  explicit CommonOperatorBuilder(Zone* zone);
 
-#define CONTROL_OP(name, inputs, controls)                                   \
-  return new (zone_) ControlOperator(IrOpcode::k##name, Operator::kFoldable, \
-                                     inputs, 0, controls, #name);
+  // Special operator used only in Branches to mark them as always taken, but
+  // still unfoldable. This is required to properly connect non terminating
+  // loops to end (in both the sea of nodes and the CFG).
+  const Operator* Always();
 
-  Operator* Start(int num_formal_parameters) {
-    // Outputs are formal parameters, plus context, receiver, and JSFunction.
-    int outputs = num_formal_parameters + 3;
-    return new (zone_) ControlOperator(IrOpcode::kStart, Operator::kFoldable, 0,
-                                       outputs, 0, "Start");
-  }
-  Operator* Dead() { CONTROL_OP(Dead, 0, 0); }
-  Operator* End() { CONTROL_OP(End, 0, 1); }
-  Operator* Branch() { CONTROL_OP(Branch, 1, 1); }
-  Operator* IfTrue() { CONTROL_OP(IfTrue, 0, 1); }
-  Operator* IfFalse() { CONTROL_OP(IfFalse, 0, 1); }
-  Operator* Throw() { CONTROL_OP(Throw, 1, 1); }
-  Operator* LazyDeoptimization() { CONTROL_OP(LazyDeoptimization, 0, 1); }
-  Operator* Continuation() { CONTROL_OP(Continuation, 0, 1); }
+  const Operator* Dead();
+  const Operator* End();
+  const Operator* Branch(BranchHint = BranchHint::kNone);
+  const Operator* IfTrue();
+  const Operator* IfFalse();
+  const Operator* IfSuccess();
+  const Operator* IfException();
+  const Operator* Switch(size_t control_output_count);
+  const Operator* IfValue(int32_t value);
+  const Operator* IfDefault();
+  const Operator* Throw();
+  const Operator* Deoptimize();
+  const Operator* Return();
 
-  Operator* Deoptimize() {
-    return new (zone_)
-        ControlOperator(IrOpcode::kDeoptimize, 0, 1, 0, 1, "Deoptimize");
-  }
+  const Operator* Start(int num_formal_parameters);
+  const Operator* Loop(int control_input_count);
+  const Operator* Merge(int control_input_count);
+  const Operator* Parameter(int index);
 
-  Operator* Return() {
-    return new (zone_) ControlOperator(IrOpcode::kReturn, 0, 1, 0, 1, "Return");
-  }
+  const Operator* OsrNormalEntry();
+  const Operator* OsrLoopEntry();
+  const Operator* OsrValue(int index);
 
-  Operator* Merge(int controls) {
-    return new (zone_) ControlOperator(IrOpcode::kMerge, Operator::kFoldable, 0,
-                                       0, controls, "Merge");
-  }
+  const Operator* Int32Constant(int32_t);
+  const Operator* Int64Constant(int64_t);
+  const Operator* Float32Constant(volatile float);
+  const Operator* Float64Constant(volatile double);
+  const Operator* ExternalConstant(const ExternalReference&);
+  const Operator* NumberConstant(volatile double);
+  const Operator* HeapConstant(const Unique<HeapObject>&);
 
-  Operator* Loop(int controls) {
-    return new (zone_) ControlOperator(IrOpcode::kLoop, Operator::kFoldable, 0,
-                                       0, controls, "Loop");
-  }
+  const Operator* Select(MachineType, BranchHint = BranchHint::kNone);
+  const Operator* Phi(MachineType type, int value_input_count);
+  const Operator* EffectPhi(int effect_input_count);
+  const Operator* EffectSet(int arguments);
+  const Operator* ValueEffect(int arguments);
+  const Operator* Finish(int arguments);
+  const Operator* StateValues(int arguments);
+  const Operator* TypedStateValues(const ZoneVector<MachineType>* types);
+  const Operator* FrameState(
+      FrameStateType type, BailoutId bailout_id,
+      OutputFrameStateCombine state_combine,
+      MaybeHandle<JSFunction> jsfunction = MaybeHandle<JSFunction>());
+  const Operator* Call(const CallDescriptor* descriptor);
+  const Operator* Projection(size_t index);
 
-  Operator* Parameter(int index) {
-    return new (zone_) Operator1<int>(IrOpcode::kParameter, Operator::kPure, 1,
-                                      1, "Parameter", index);
-  }
-  Operator* Int32Constant(int32_t value) {
-    return new (zone_) Operator1<int>(IrOpcode::kInt32Constant, Operator::kPure,
-                                      0, 1, "Int32Constant", value);
-  }
-  Operator* Int64Constant(int64_t value) {
-    return new (zone_)
-        Operator1<int64_t>(IrOpcode::kInt64Constant, Operator::kPure, 0, 1,
-                           "Int64Constant", value);
-  }
-  Operator* Float64Constant(double value) {
-    return new (zone_)
-        Operator1<double>(IrOpcode::kFloat64Constant, Operator::kPure, 0, 1,
-                          "Float64Constant", value);
-  }
-  Operator* ExternalConstant(ExternalReference value) {
-    return new (zone_) Operator1<ExternalReference>(IrOpcode::kExternalConstant,
-                                                    Operator::kPure, 0, 1,
-                                                    "ExternalConstant", value);
-  }
-  Operator* NumberConstant(double value) {
-    return new (zone_)
-        Operator1<double>(IrOpcode::kNumberConstant, Operator::kPure, 0, 1,
-                          "NumberConstant", value);
-  }
-  Operator* HeapConstant(PrintableUnique<Object> value) {
-    return new (zone_) Operator1<PrintableUnique<Object> >(
-        IrOpcode::kHeapConstant, Operator::kPure, 0, 1, "HeapConstant", value);
-  }
-  Operator* Phi(int arguments) {
-    DCHECK(arguments > 0);  // Disallow empty phis.
-    return new (zone_) Operator1<int>(IrOpcode::kPhi, Operator::kPure,
-                                      arguments, 1, "Phi", arguments);
-  }
-  Operator* EffectPhi(int arguments) {
-    DCHECK(arguments > 0);  // Disallow empty phis.
-    return new (zone_) Operator1<int>(IrOpcode::kEffectPhi, Operator::kPure, 0,
-                                      0, "EffectPhi", arguments);
-  }
-  Operator* StateValues(int arguments) {
-    return new (zone_) Operator1<int>(IrOpcode::kStateValues, Operator::kPure,
-                                      arguments, 1, "StateValues", arguments);
-  }
-  Operator* FrameState(BailoutId ast_id) {
-    return new (zone_) Operator1<BailoutId>(
-        IrOpcode::kFrameState, Operator::kPure, 3, 1, "FrameState", ast_id);
-  }
-  Operator* Call(CallDescriptor* descriptor) {
-    return new (zone_) CallOperator(descriptor, "Call");
-  }
-  Operator* Projection(int index) {
-    return new (zone_) Operator1<int>(IrOpcode::kProjection, Operator::kPure, 1,
-                                      1, "Projection", index);
-  }
+  // Constructs a new merge or phi operator with the same opcode as {op}, but
+  // with {size} inputs.
+  const Operator* ResizeMergeOrPhi(const Operator* op, int size);
 
  private:
-  Zone* zone_;
+  Zone* zone() const { return zone_; }
+
+  const CommonOperatorGlobalCache& cache_;
+  Zone* const zone_;
+
+  DISALLOW_COPY_AND_ASSIGN(CommonOperatorBuilder);
 };
 
-
-template <typename T>
-struct CommonOperatorTraits {
-  static inline bool Equals(T a, T b);
-  static inline bool HasValue(Operator* op);
-  static inline T ValueOf(Operator* op);
-};
-
-template <>
-struct CommonOperatorTraits<int32_t> {
-  static inline bool Equals(int32_t a, int32_t b) { return a == b; }
-  static inline bool HasValue(Operator* op) {
-    return op->opcode() == IrOpcode::kInt32Constant ||
-           op->opcode() == IrOpcode::kNumberConstant;
-  }
-  static inline int32_t ValueOf(Operator* op) {
-    if (op->opcode() == IrOpcode::kNumberConstant) {
-      // TODO(titzer): cache the converted int32 value in NumberConstant.
-      return FastD2I(reinterpret_cast<Operator1<double>*>(op)->parameter());
-    }
-    CHECK_EQ(IrOpcode::kInt32Constant, op->opcode());
-    return static_cast<Operator1<int32_t>*>(op)->parameter();
-  }
-};
-
-template <>
-struct CommonOperatorTraits<uint32_t> {
-  static inline bool Equals(uint32_t a, uint32_t b) { return a == b; }
-  static inline bool HasValue(Operator* op) {
-    return CommonOperatorTraits<int32_t>::HasValue(op);
-  }
-  static inline uint32_t ValueOf(Operator* op) {
-    if (op->opcode() == IrOpcode::kNumberConstant) {
-      // TODO(titzer): cache the converted uint32 value in NumberConstant.
-      return FastD2UI(reinterpret_cast<Operator1<double>*>(op)->parameter());
-    }
-    return static_cast<uint32_t>(CommonOperatorTraits<int32_t>::ValueOf(op));
-  }
-};
-
-template <>
-struct CommonOperatorTraits<int64_t> {
-  static inline bool Equals(int64_t a, int64_t b) { return a == b; }
-  static inline bool HasValue(Operator* op) {
-    return op->opcode() == IrOpcode::kInt32Constant ||
-           op->opcode() == IrOpcode::kInt64Constant ||
-           op->opcode() == IrOpcode::kNumberConstant;
-  }
-  static inline int64_t ValueOf(Operator* op) {
-    if (op->opcode() == IrOpcode::kInt32Constant) {
-      return static_cast<int64_t>(CommonOperatorTraits<int32_t>::ValueOf(op));
-    }
-    CHECK_EQ(IrOpcode::kInt64Constant, op->opcode());
-    return static_cast<Operator1<int64_t>*>(op)->parameter();
-  }
-};
-
-template <>
-struct CommonOperatorTraits<uint64_t> {
-  static inline bool Equals(uint64_t a, uint64_t b) { return a == b; }
-  static inline bool HasValue(Operator* op) {
-    return CommonOperatorTraits<int64_t>::HasValue(op);
-  }
-  static inline uint64_t ValueOf(Operator* op) {
-    return static_cast<uint64_t>(CommonOperatorTraits<int64_t>::ValueOf(op));
-  }
-};
-
-template <>
-struct CommonOperatorTraits<double> {
-  static inline bool Equals(double a, double b) {
-    return DoubleRepresentation(a).bits == DoubleRepresentation(b).bits;
-  }
-  static inline bool HasValue(Operator* op) {
-    return op->opcode() == IrOpcode::kFloat64Constant ||
-           op->opcode() == IrOpcode::kInt32Constant ||
-           op->opcode() == IrOpcode::kNumberConstant;
-  }
-  static inline double ValueOf(Operator* op) {
-    if (op->opcode() == IrOpcode::kFloat64Constant ||
-        op->opcode() == IrOpcode::kNumberConstant) {
-      return reinterpret_cast<Operator1<double>*>(op)->parameter();
-    }
-    return static_cast<double>(CommonOperatorTraits<int32_t>::ValueOf(op));
-  }
-};
-
-template <>
-struct CommonOperatorTraits<ExternalReference> {
-  static inline bool Equals(ExternalReference a, ExternalReference b) {
-    return a == b;
-  }
-  static inline bool HasValue(Operator* op) {
-    return op->opcode() == IrOpcode::kExternalConstant;
-  }
-  static inline ExternalReference ValueOf(Operator* op) {
-    CHECK_EQ(IrOpcode::kExternalConstant, op->opcode());
-    return static_cast<Operator1<ExternalReference>*>(op)->parameter();
-  }
-};
-
-template <typename T>
-struct CommonOperatorTraits<PrintableUnique<T> > {
-  static inline bool HasValue(Operator* op) {
-    return op->opcode() == IrOpcode::kHeapConstant;
-  }
-  static inline PrintableUnique<T> ValueOf(Operator* op) {
-    CHECK_EQ(IrOpcode::kHeapConstant, op->opcode());
-    return static_cast<Operator1<PrintableUnique<T> >*>(op)->parameter();
-  }
-};
-
-template <typename T>
-struct CommonOperatorTraits<Handle<T> > {
-  static inline bool HasValue(Operator* op) {
-    return CommonOperatorTraits<PrintableUnique<T> >::HasValue(op);
-  }
-  static inline Handle<T> ValueOf(Operator* op) {
-    return CommonOperatorTraits<PrintableUnique<T> >::ValueOf(op).handle();
-  }
-};
-
-
-template <typename T>
-inline T ValueOf(Operator* op) {
-  return CommonOperatorTraits<T>::ValueOf(op);
-}
-}
-}
-}  // namespace v8::internal::compiler
+}  // namespace compiler
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_COMPILER_COMMON_OPERATOR_H_

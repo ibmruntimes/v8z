@@ -3766,17 +3766,17 @@ TEST(add_sub_zero) {
   __ Add(x0, x0, 0);
   __ Sub(x1, x1, 0);
   __ Sub(x2, x2, xzr);
-  CHECK_EQ(0, __ SizeOfCodeGeneratedSince(&blob1));
+  CHECK_EQ(0u, __ SizeOfCodeGeneratedSince(&blob1));
 
   Label blob2;
   __ Bind(&blob2);
   __ Add(w3, w3, 0);
-  CHECK_NE(0, __ SizeOfCodeGeneratedSince(&blob2));
+  CHECK_NE(0u, __ SizeOfCodeGeneratedSince(&blob2));
 
   Label blob3;
   __ Bind(&blob3);
   __ Sub(w3, w3, wzr);
-  CHECK_NE(0, __ SizeOfCodeGeneratedSince(&blob3));
+  CHECK_NE(0u, __ SizeOfCodeGeneratedSince(&blob3));
 
   END();
 
@@ -3810,7 +3810,7 @@ TEST(claim_drop_zero) {
   __ DropBySMI(xzr, 8);
   __ ClaimBySMI(xzr, 0);
   __ DropBySMI(xzr, 0);
-  CHECK_EQ(0, __ SizeOfCodeGeneratedSince(&start));
+  CHECK_EQ(0u, __ SizeOfCodeGeneratedSince(&start));
 
   END();
 
@@ -6543,6 +6543,95 @@ TEST(frintn) {
   CHECK_EQUAL_FP64(2.0, d15);
   CHECK_EQUAL_FP64(2.0, d16);
   CHECK_EQUAL_FP64(-2.0, d17);
+  CHECK_EQUAL_FP64(-2.0, d18);
+  CHECK_EQUAL_FP64(kFP64PositiveInfinity, d19);
+  CHECK_EQUAL_FP64(kFP64NegativeInfinity, d20);
+  CHECK_EQUAL_FP64(0.0, d21);
+  CHECK_EQUAL_FP64(-0.0, d22);
+  CHECK_EQUAL_FP64(-0.0, d23);
+
+  TEARDOWN();
+}
+
+
+TEST(frintp) {
+  INIT_V8();
+  SETUP();
+
+  START();
+  __ Fmov(s16, 1.0);
+  __ Fmov(s17, 1.1);
+  __ Fmov(s18, 1.5);
+  __ Fmov(s19, 1.9);
+  __ Fmov(s20, 2.5);
+  __ Fmov(s21, -1.5);
+  __ Fmov(s22, -2.5);
+  __ Fmov(s23, kFP32PositiveInfinity);
+  __ Fmov(s24, kFP32NegativeInfinity);
+  __ Fmov(s25, 0.0);
+  __ Fmov(s26, -0.0);
+  __ Fmov(s27, -0.2);
+
+  __ Frintp(s0, s16);
+  __ Frintp(s1, s17);
+  __ Frintp(s2, s18);
+  __ Frintp(s3, s19);
+  __ Frintp(s4, s20);
+  __ Frintp(s5, s21);
+  __ Frintp(s6, s22);
+  __ Frintp(s7, s23);
+  __ Frintp(s8, s24);
+  __ Frintp(s9, s25);
+  __ Frintp(s10, s26);
+  __ Frintp(s11, s27);
+
+  __ Fmov(d16, -0.5);
+  __ Fmov(d17, -0.8);
+  __ Fmov(d18, 1.5);
+  __ Fmov(d19, 1.9);
+  __ Fmov(d20, 2.5);
+  __ Fmov(d21, -1.5);
+  __ Fmov(d22, -2.5);
+  __ Fmov(d23, kFP32PositiveInfinity);
+  __ Fmov(d24, kFP32NegativeInfinity);
+  __ Fmov(d25, 0.0);
+  __ Fmov(d26, -0.0);
+  __ Fmov(d27, -0.2);
+
+  __ Frintp(d12, d16);
+  __ Frintp(d13, d17);
+  __ Frintp(d14, d18);
+  __ Frintp(d15, d19);
+  __ Frintp(d16, d20);
+  __ Frintp(d17, d21);
+  __ Frintp(d18, d22);
+  __ Frintp(d19, d23);
+  __ Frintp(d20, d24);
+  __ Frintp(d21, d25);
+  __ Frintp(d22, d26);
+  __ Frintp(d23, d27);
+  END();
+
+  RUN();
+
+  CHECK_EQUAL_FP32(1.0, s0);
+  CHECK_EQUAL_FP32(2.0, s1);
+  CHECK_EQUAL_FP32(2.0, s2);
+  CHECK_EQUAL_FP32(2.0, s3);
+  CHECK_EQUAL_FP32(3.0, s4);
+  CHECK_EQUAL_FP32(-1.0, s5);
+  CHECK_EQUAL_FP32(-2.0, s6);
+  CHECK_EQUAL_FP32(kFP32PositiveInfinity, s7);
+  CHECK_EQUAL_FP32(kFP32NegativeInfinity, s8);
+  CHECK_EQUAL_FP32(0.0, s9);
+  CHECK_EQUAL_FP32(-0.0, s10);
+  CHECK_EQUAL_FP32(-0.0, s11);
+  CHECK_EQUAL_FP64(-0.0, d12);
+  CHECK_EQUAL_FP64(-0.0, d13);
+  CHECK_EQUAL_FP64(2.0, d14);
+  CHECK_EQUAL_FP64(2.0, d15);
+  CHECK_EQUAL_FP64(3.0, d16);
+  CHECK_EQUAL_FP64(-1.0, d17);
   CHECK_EQUAL_FP64(-2.0, d18);
   CHECK_EQUAL_FP64(kFP64PositiveInfinity, d19);
   CHECK_EQUAL_FP64(kFP64NegativeInfinity, d20);
@@ -10270,58 +10359,6 @@ TEST(copyfields) {
 }
 
 
-static void DoSmiAbsTest(int32_t value, bool must_fail = false) {
-  SETUP();
-
-  START();
-  Label end, slow;
-  __ Mov(x2, 0xc001c0de);
-  __ Mov(x1, value);
-  __ SmiTag(x1);
-  __ SmiAbs(x1, &slow);
-  __ SmiUntag(x1);
-  __ B(&end);
-
-  __ Bind(&slow);
-  __ Mov(x2, 0xbad);
-
-  __ Bind(&end);
-  END();
-
-  RUN();
-
-  if (must_fail) {
-    // We tested an invalid conversion. The code must have jump on slow.
-    CHECK_EQUAL_64(0xbad, x2);
-  } else {
-    // The conversion is valid, check the result.
-    int32_t result = (value >= 0) ? value : -value;
-    CHECK_EQUAL_64(result, x1);
-
-    // Check that we didn't jump on slow.
-    CHECK_EQUAL_64(0xc001c0de, x2);
-  }
-
-  TEARDOWN();
-}
-
-
-TEST(smi_abs) {
-  INIT_V8();
-  // Simple and edge cases.
-  DoSmiAbsTest(0);
-  DoSmiAbsTest(0x12345);
-  DoSmiAbsTest(0x40000000);
-  DoSmiAbsTest(0x7fffffff);
-  DoSmiAbsTest(-1);
-  DoSmiAbsTest(-12345);
-  DoSmiAbsTest(0x80000001);
-
-  // Check that the most negative SMI is detected.
-  DoSmiAbsTest(0x80000000, true);
-}
-
-
 TEST(blr_lr) {
   // A simple test to check that the simulator correcty handle "blr lr".
   INIT_V8();
@@ -11183,6 +11220,176 @@ TEST(pool_size) {
   }
 
   DCHECK(pool_count == 2);
+
+  TEARDOWN();
+}
+
+
+TEST(jump_tables_forward) {
+  // Test jump tables with forward jumps.
+  const int kNumCases = 512;
+
+  INIT_V8();
+  SETUP_SIZE(kNumCases * 5 * kInstructionSize + 8192);
+  START();
+
+  int32_t values[kNumCases];
+  isolate->random_number_generator()->NextBytes(values, sizeof(values));
+  int32_t results[kNumCases];
+  memset(results, 0, sizeof(results));
+  uintptr_t results_ptr = reinterpret_cast<uintptr_t>(results);
+
+  Label loop;
+  Label labels[kNumCases];
+  Label done;
+
+  const Register& index = x0;
+  STATIC_ASSERT(sizeof(results[0]) == 4);
+  const Register& value = w1;
+  const Register& target = x2;
+
+  __ Mov(index, 0);
+  __ Mov(target, results_ptr);
+  __ Bind(&loop);
+
+  {
+    Assembler::BlockPoolsScope block_pools(&masm);
+    Label base;
+
+    __ Adr(x10, &base);
+    __ Ldr(x11, MemOperand(x10, index, LSL, kPointerSizeLog2));
+    __ Br(x11);
+    __ Bind(&base);
+    for (int i = 0; i < kNumCases; ++i) {
+      __ dcptr(&labels[i]);
+    }
+  }
+
+  for (int i = 0; i < kNumCases; ++i) {
+    __ Bind(&labels[i]);
+    __ Mov(value, values[i]);
+    __ B(&done);
+  }
+
+  __ Bind(&done);
+  __ Str(value, MemOperand(target, 4, PostIndex));
+  __ Add(index, index, 1);
+  __ Cmp(index, kNumCases);
+  __ B(ne, &loop);
+
+  END();
+
+  RUN();
+
+  for (int i = 0; i < kNumCases; ++i) {
+    CHECK_EQ(values[i], results[i]);
+  }
+
+  TEARDOWN();
+}
+
+
+TEST(jump_tables_backward) {
+  // Test jump tables with backward jumps.
+  const int kNumCases = 512;
+
+  INIT_V8();
+  SETUP_SIZE(kNumCases * 5 * kInstructionSize + 8192);
+  START();
+
+  int32_t values[kNumCases];
+  isolate->random_number_generator()->NextBytes(values, sizeof(values));
+  int32_t results[kNumCases];
+  memset(results, 0, sizeof(results));
+  uintptr_t results_ptr = reinterpret_cast<uintptr_t>(results);
+
+  Label loop;
+  Label labels[kNumCases];
+  Label done;
+
+  const Register& index = x0;
+  STATIC_ASSERT(sizeof(results[0]) == 4);
+  const Register& value = w1;
+  const Register& target = x2;
+
+  __ Mov(index, 0);
+  __ Mov(target, results_ptr);
+  __ B(&loop);
+
+  for (int i = 0; i < kNumCases; ++i) {
+    __ Bind(&labels[i]);
+    __ Mov(value, values[i]);
+    __ B(&done);
+  }
+
+  __ Bind(&loop);
+  {
+    Assembler::BlockPoolsScope block_pools(&masm);
+    Label base;
+
+    __ Adr(x10, &base);
+    __ Ldr(x11, MemOperand(x10, index, LSL, kPointerSizeLog2));
+    __ Br(x11);
+    __ Bind(&base);
+    for (int i = 0; i < kNumCases; ++i) {
+      __ dcptr(&labels[i]);
+    }
+  }
+
+  __ Bind(&done);
+  __ Str(value, MemOperand(target, 4, PostIndex));
+  __ Add(index, index, 1);
+  __ Cmp(index, kNumCases);
+  __ B(ne, &loop);
+
+  END();
+
+  RUN();
+
+  for (int i = 0; i < kNumCases; ++i) {
+    CHECK_EQ(values[i], results[i]);
+  }
+
+  TEARDOWN();
+}
+
+
+TEST(internal_reference_linked) {
+  // Test internal reference when they are linked in a label chain.
+
+  INIT_V8();
+  SETUP();
+  START();
+
+  Label done;
+
+  __ Mov(x0, 0);
+  __ Cbnz(x0, &done);
+
+  {
+    Assembler::BlockPoolsScope block_pools(&masm);
+    Label base;
+
+    __ Adr(x10, &base);
+    __ Ldr(x11, MemOperand(x10));
+    __ Br(x11);
+    __ Bind(&base);
+    __ dcptr(&done);
+  }
+
+  // Dead code, just to extend the label chain.
+  __ B(&done);
+  __ dcptr(&done);
+  __ Tbz(x0, 1, &done);
+
+  __ Bind(&done);
+  __ Mov(x0, 1);
+
+  END();
+
+  RUN();
+
+  CHECK_EQUAL_64(0x1, x0);
 
   TEARDOWN();
 }

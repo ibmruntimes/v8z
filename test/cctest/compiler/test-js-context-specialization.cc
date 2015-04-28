@@ -5,10 +5,8 @@
 #include "src/compiler/js-context-specialization.h"
 #include "src/compiler/js-operator.h"
 #include "src/compiler/node-matchers.h"
-#include "src/compiler/node-properties-inl.h"
-#include "src/compiler/simplified-node-factory.h"
+#include "src/compiler/node-properties.h"
 #include "src/compiler/source-position.h"
-#include "src/compiler/typer.h"
 #include "test/cctest/cctest.h"
 #include "test/cctest/compiler/function-tester.h"
 #include "test/cctest/compiler/graph-builder-tester.h"
@@ -16,34 +14,30 @@
 using namespace v8::internal;
 using namespace v8::internal::compiler;
 
-class ContextSpecializationTester
-    : public HandleAndZoneScope,
-      public DirectGraphBuilder,
-      public SimplifiedNodeFactory<ContextSpecializationTester> {
+class ContextSpecializationTester : public HandleAndZoneScope,
+                                    public DirectGraphBuilder {
  public:
   ContextSpecializationTester()
-      : DirectGraphBuilder(new (main_zone()) Graph(main_zone())),
+      : DirectGraphBuilder(main_isolate(),
+                           new (main_zone()) Graph(main_zone())),
         common_(main_zone()),
         javascript_(main_zone()),
+        machine_(main_zone()),
         simplified_(main_zone()),
-        typer_(main_zone()),
-        jsgraph_(graph(), common(), &typer_),
-        info_(main_isolate(), main_zone()) {}
+        jsgraph_(main_isolate(), graph(), common(), &javascript_, &machine_) {}
 
   Factory* factory() { return main_isolate()->factory(); }
   CommonOperatorBuilder* common() { return &common_; }
   JSOperatorBuilder* javascript() { return &javascript_; }
   SimplifiedOperatorBuilder* simplified() { return &simplified_; }
   JSGraph* jsgraph() { return &jsgraph_; }
-  CompilationInfo* info() { return &info_; }
 
  private:
   CommonOperatorBuilder common_;
   JSOperatorBuilder javascript_;
+  MachineOperatorBuilder machine_;
   SimplifiedOperatorBuilder simplified_;
-  Typer typer_;
   JSGraph jsgraph_;
-  CompilationInfo info_;
 };
 
 
@@ -66,7 +60,7 @@ TEST(ReduceJSLoadContext) {
   Node* const_context = t.jsgraph()->Constant(native);
   Node* deep_const_context = t.jsgraph()->Constant(subcontext2);
   Node* param_context = t.NewNode(t.common()->Parameter(0), start);
-  JSContextSpecializer spec(t.info(), t.jsgraph(), const_context);
+  JSContextSpecializer spec(t.jsgraph());
 
   {
     // Mutable slot, constant context, depth = 0 => do nothing.
@@ -93,12 +87,11 @@ TEST(ReduceJSLoadContext) {
     CHECK(r.Changed());
     Node* new_context_input = NodeProperties::GetValueInput(r.replacement(), 0);
     CHECK_EQ(IrOpcode::kHeapConstant, new_context_input->opcode());
-    ValueMatcher<Handle<Context> > match(new_context_input);
-    CHECK_EQ(*native, *match.Value());
-    ContextAccess access = static_cast<Operator1<ContextAccess>*>(
-                               r.replacement()->op())->parameter();
-    CHECK_EQ(Context::GLOBAL_EVAL_FUN_INDEX, access.index());
-    CHECK_EQ(0, access.depth());
+    HeapObjectMatcher<Context> match(new_context_input);
+    CHECK_EQ(*native, *match.Value().handle());
+    ContextAccess access = OpParameter<ContextAccess>(r.replacement());
+    CHECK_EQ(Context::GLOBAL_EVAL_FUN_INDEX, static_cast<int>(access.index()));
+    CHECK_EQ(0, static_cast<int>(access.depth()));
     CHECK_EQ(false, access.immutable());
   }
 
@@ -110,9 +103,9 @@ TEST(ReduceJSLoadContext) {
     CHECK(r.Changed());
     CHECK(r.replacement() != load);
 
-    ValueMatcher<Handle<Object> > match(r.replacement());
+    HeapObjectMatcher<Object> match(r.replacement());
     CHECK(match.HasValue());
-    CHECK_EQ(*expected, *match.Value());
+    CHECK_EQ(*expected, *match.Value().handle());
   }
 
   // TODO(titzer): test with other kinds of contexts, e.g. a function context.
@@ -139,7 +132,7 @@ TEST(ReduceJSStoreContext) {
   Node* const_context = t.jsgraph()->Constant(native);
   Node* deep_const_context = t.jsgraph()->Constant(subcontext2);
   Node* param_context = t.NewNode(t.common()->Parameter(0), start);
-  JSContextSpecializer spec(t.info(), t.jsgraph(), const_context);
+  JSContextSpecializer spec(t.jsgraph());
 
   {
     // Mutable slot, constant context, depth = 0 => do nothing.
@@ -174,12 +167,11 @@ TEST(ReduceJSStoreContext) {
     CHECK(r.Changed());
     Node* new_context_input = NodeProperties::GetValueInput(r.replacement(), 0);
     CHECK_EQ(IrOpcode::kHeapConstant, new_context_input->opcode());
-    ValueMatcher<Handle<Context> > match(new_context_input);
-    CHECK_EQ(*native, *match.Value());
-    ContextAccess access = static_cast<Operator1<ContextAccess>*>(
-                               r.replacement()->op())->parameter();
-    CHECK_EQ(Context::GLOBAL_EVAL_FUN_INDEX, access.index());
-    CHECK_EQ(0, access.depth());
+    HeapObjectMatcher<Context> match(new_context_input);
+    CHECK_EQ(*native, *match.Value().handle());
+    ContextAccess access = OpParameter<ContextAccess>(r.replacement());
+    CHECK_EQ(Context::GLOBAL_EVAL_FUN_INDEX, static_cast<int>(access.index()));
+    CHECK_EQ(0, static_cast<int>(access.depth()));
     CHECK_EQ(false, access.immutable());
   }
 }
@@ -202,25 +194,25 @@ TEST(SpecializeToContext) {
   Handle<Object> expected = t.factory()->InternalizeUtf8String("gboy!");
   const int slot = Context::GLOBAL_OBJECT_INDEX;
   native->set(slot, *expected);
-  t.info()->SetContext(native);
 
   Node* const_context = t.jsgraph()->Constant(native);
   Node* param_context = t.NewNode(t.common()->Parameter(0), start);
-  JSContextSpecializer spec(t.info(), t.jsgraph(), const_context);
+  JSContextSpecializer spec(t.jsgraph());
 
   {
-    // Check that SpecializeToContext() replaces values and forwards effects
+    // Check that specialization replaces values and forwards effects
     // correctly, and folds values from constant and non-constant contexts
     Node* effect_in = start;
     Node* load = t.NewNode(t.javascript()->LoadContext(0, slot, true),
                            const_context, const_context, effect_in);
 
 
-    Node* value_use = t.ChangeTaggedToInt32(load);
+    Node* value_use = t.NewNode(t.simplified()->ChangeTaggedToInt32(), load);
     Node* other_load = t.NewNode(t.javascript()->LoadContext(0, slot, true),
                                  param_context, param_context, load);
     Node* effect_use = other_load;
-    Node* other_use = t.ChangeTaggedToInt32(other_load);
+    Node* other_use =
+        t.NewNode(t.simplified()->ChangeTaggedToInt32(), other_load);
 
     Node* add = t.NewNode(t.javascript()->Add(), value_use, other_use,
                           param_context, other_load, start);
@@ -234,8 +226,10 @@ TEST(SpecializeToContext) {
     CheckEffectInput(effect_in, load);
     CheckEffectInput(load, effect_use);
 
-    // Perform the substitution on the entire graph.
-    spec.SpecializeToContext();
+    // Perform the reduction on the entire graph.
+    GraphReducer graph_reducer(t.graph(), t.main_zone());
+    graph_reducer.AddReducer(&spec);
+    graph_reducer.ReduceGraph();
 
     // Effects should have been forwarded (not replaced with a value).
     CheckEffectInput(effect_in, effect_use);
@@ -244,9 +238,9 @@ TEST(SpecializeToContext) {
     CHECK_EQ(other_load, other_use->InputAt(0));
 
     Node* replacement = value_use->InputAt(0);
-    ValueMatcher<Handle<Object> > match(replacement);
+    HeapObjectMatcher<Object> match(replacement);
     CHECK(match.HasValue());
-    CHECK_EQ(*expected, *match.Value());
+    CHECK_EQ(*expected, *match.Value().handle());
   }
   // TODO(titzer): clean up above test and test more complicated effects.
 }

@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Flags: --harmony-unscopables
 // Flags: --harmony-proxies
 
 
@@ -75,12 +74,17 @@ function TestUseProxyAsUnscopables() {
   var calls = 0;
   var proxy = Proxy.create({
     has: function(key) {
-      calls++;
-      assertEquals('x', key);
-      return calls === 2;
+      assertUnreachable();
     },
     getPropertyDescriptor: function(key) {
-      assertUnreachable();
+      calls++;
+      assertEquals('x', key);
+      return {
+        value: calls === 2 ? true : undefined,
+        configurable: true,
+        enumerable: true,
+        writable: true,
+      };
     }
   });
 
@@ -108,12 +112,12 @@ function TestThrowInHasUnscopables() {
   var calls = 0;
   var proxy = Proxy.create({
     has: function(key) {
-      if (calls++ === 0) {
-        throw new CustomError();
-      }
       assertUnreachable();
     },
     getPropertyDescriptor: function(key) {
+      if (calls++ === 0) {
+        throw new CustomError();
+      }
       assertUnreachable();
     }
   });

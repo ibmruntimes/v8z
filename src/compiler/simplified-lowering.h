@@ -5,9 +5,7 @@
 #ifndef V8_COMPILER_SIMPLIFIED_LOWERING_H_
 #define V8_COMPILER_SIMPLIFIED_LOWERING_H_
 
-#include "src/compiler/graph-reducer.h"
 #include "src/compiler/js-graph.h"
-#include "src/compiler/lowering-builder.h"
 #include "src/compiler/machine-operator.h"
 #include "src/compiler/node.h"
 #include "src/compiler/simplified-operator.h"
@@ -16,44 +14,55 @@ namespace v8 {
 namespace internal {
 namespace compiler {
 
-class SimplifiedLowering : public LoweringBuilder {
+// Forward declarations.
+class RepresentationChanger;
+class SourcePositionTable;
+
+class SimplifiedLowering FINAL {
  public:
-  explicit SimplifiedLowering(JSGraph* jsgraph,
-                              SourcePositionTable* source_positions)
-      : LoweringBuilder(jsgraph->graph(), source_positions),
-        jsgraph_(jsgraph),
-        machine_(jsgraph->zone()) {}
-  virtual ~SimplifiedLowering() {}
+  SimplifiedLowering(JSGraph* jsgraph, Zone* zone,
+                     SourcePositionTable* source_positions)
+      : jsgraph_(jsgraph), zone_(zone), source_positions_(source_positions) {}
+  ~SimplifiedLowering() {}
 
   void LowerAllNodes();
-
-  virtual void Lower(Node* node);
-  void LowerChange(Node* node, Node* effect, Node* control);
 
   // TODO(titzer): These are exposed for direct testing. Use a friend class.
   void DoLoadField(Node* node);
   void DoStoreField(Node* node);
+  // TODO(turbofan): The output_type can be removed once the result of the
+  // representation analysis is stored in the node bounds.
+  void DoLoadBuffer(Node* node, MachineType output_type,
+                    RepresentationChanger* changer);
+  void DoStoreBuffer(Node* node);
   void DoLoadElement(Node* node);
   void DoStoreElement(Node* node);
+  void DoStringAdd(Node* node);
+  void DoStringEqual(Node* node);
+  void DoStringLessThan(Node* node);
+  void DoStringLessThanOrEqual(Node* node);
 
  private:
-  JSGraph* jsgraph_;
-  MachineOperatorBuilder machine_;
+  JSGraph* const jsgraph_;
+  Zone* const zone_;
+
+  // TODO(danno): SimplifiedLowering shouldn't know anything about the source
+  // positions table, but must for now since there currently is no other way to
+  // pass down source position information to nodes created during
+  // lowering. Once this phase becomes a vanilla reducer, it should get source
+  // position information via the SourcePositionWrapper like all other reducers.
+  SourcePositionTable* source_positions_;
 
   Node* SmiTag(Node* node);
   Node* IsTagged(Node* node);
   Node* Untag(Node* node);
   Node* OffsetMinusTagConstant(int32_t offset);
-  Node* ComputeIndex(const ElementAccess& access, Node* index);
-
-  void DoChangeTaggedToUI32(Node* node, Node* effect, Node* control,
-                            bool is_signed);
-  void DoChangeUI32ToTagged(Node* node, Node* effect, Node* control,
-                            bool is_signed);
-  void DoChangeTaggedToFloat64(Node* node, Node* effect, Node* control);
-  void DoChangeFloat64ToTagged(Node* node, Node* effect, Node* control);
-  void DoChangeBoolToBit(Node* node, Node* effect, Node* control);
-  void DoChangeBitToBool(Node* node, Node* effect, Node* control);
+  Node* ComputeIndex(const ElementAccess& access, Node* const key);
+  Node* StringComparison(Node* node, bool requires_ordering);
+  Node* Int32Div(Node* const node);
+  Node* Int32Mod(Node* const node);
+  Node* Uint32Div(Node* const node);
+  Node* Uint32Mod(Node* const node);
 
   friend class RepresentationSelector;
 
@@ -61,7 +70,7 @@ class SimplifiedLowering : public LoweringBuilder {
   JSGraph* jsgraph() { return jsgraph_; }
   Graph* graph() { return jsgraph()->graph(); }
   CommonOperatorBuilder* common() { return jsgraph()->common(); }
-  MachineOperatorBuilder* machine() { return &machine_; }
+  MachineOperatorBuilder* machine() { return jsgraph()->machine(); }
 };
 
 }  // namespace compiler

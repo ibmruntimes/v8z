@@ -79,7 +79,7 @@ RandomNumberGenerator::RandomNumberGenerator() {
 
 
 int RandomNumberGenerator::NextInt(int max) {
-  DCHECK_LE(0, max);
+  DCHECK_LT(0, max);
 
   // Fast path if max is a power of 2.
   if (IS_POWER_OF_TWO(max)) {
@@ -99,6 +99,13 @@ int RandomNumberGenerator::NextInt(int max) {
 double RandomNumberGenerator::NextDouble() {
   return ((static_cast<int64_t>(Next(26)) << 27) + Next(27)) /
       static_cast<double>(static_cast<int64_t>(1) << 53);
+}
+
+
+int64_t RandomNumberGenerator::NextInt64() {
+  uint64_t lo = bit_cast<unsigned>(Next(32));
+  uint64_t hi = bit_cast<unsigned>(Next(32));
+  return lo | (hi << 32);
 }
 
 
@@ -125,6 +132,7 @@ int RandomNumberGenerator::Next(int bits) {
 
 
 void RandomNumberGenerator::SetSeed(int64_t seed) {
+  initial_seed_ = seed;
   seed_ = (seed ^ kMultiplier) & kMask;
 }
 

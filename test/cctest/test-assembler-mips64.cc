@@ -25,6 +25,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#include <iostream>  // NOLINT(readability/streams)
+
 #include "src/v8.h"
 
 #include "src/disassembler.h"
@@ -66,7 +68,6 @@ TEST(MIPS0) {
   F2 f = FUNCTION_CAST<F2>(code->entry());
   int64_t res =
       reinterpret_cast<int64_t>(CALL_GENERATED_CODE(f, 0xab0, 0xc, 0, 0, 0));
-  ::printf("f() = %ld\n", res);
   CHECK_EQ(0xabcL, res);
 }
 
@@ -103,7 +104,6 @@ TEST(MIPS1) {
   F1 f = FUNCTION_CAST<F1>(code->entry());
   int64_t res =
      reinterpret_cast<int64_t>(CALL_GENERATED_CODE(f, 50, 0, 0, 0, 0));
-  ::printf("f() = %ld\n", res);
   CHECK_EQ(1275L, res);
 }
 
@@ -250,7 +250,6 @@ TEST(MIPS2) {
   F2 f = FUNCTION_CAST<F2>(code->entry());
   int64_t res =
       reinterpret_cast<int64_t>(CALL_GENERATED_CODE(f, 0xab0, 0xc, 0, 0, 0));
-  ::printf("f() = %ld\n", res);
 
   CHECK_EQ(0x31415926L, res);
 }
@@ -353,14 +352,17 @@ TEST(MIPS4) {
     double a;
     double b;
     double c;
+    double d;
+    int64_t high;
+    int64_t low;
   } T;
   T t;
 
   Assembler assm(isolate, NULL, 0);
   Label L, C;
 
-  __ ldc1(f4, MemOperand(a0, OFFSET_OF(T, a)) );
-  __ ldc1(f5, MemOperand(a0, OFFSET_OF(T, b)) );
+  __ ldc1(f4, MemOperand(a0, OFFSET_OF(T, a)));
+  __ ldc1(f5, MemOperand(a0, OFFSET_OF(T, b)));
 
   // Swap f4 and f5, by using 3 integer registers, a4-a6,
   // both two 32-bit chunks, and one 64-bit chunk.
@@ -375,8 +377,16 @@ TEST(MIPS4) {
   __ dmtc1(a6, f4);
 
   // Store the swapped f4 and f5 back to memory.
-  __ sdc1(f4, MemOperand(a0, OFFSET_OF(T, a)) );
-  __ sdc1(f5, MemOperand(a0, OFFSET_OF(T, c)) );
+  __ sdc1(f4, MemOperand(a0, OFFSET_OF(T, a)));
+  __ sdc1(f5, MemOperand(a0, OFFSET_OF(T, c)));
+
+  // Test sign extension of move operations from coprocessor.
+  __ ldc1(f4, MemOperand(a0, OFFSET_OF(T, d)));
+  __ mfhc1(a4, f4);
+  __ mfc1(a5, f4);
+
+  __ sd(a4, MemOperand(a0, OFFSET_OF(T, high)));
+  __ sd(a5, MemOperand(a0, OFFSET_OF(T, low)));
 
   __ jr(ra);
   __ nop();
@@ -389,12 +399,15 @@ TEST(MIPS4) {
   t.a = 1.5e22;
   t.b = 2.75e11;
   t.c = 17.17;
+  t.d = -2.75e11;
   Object* dummy = CALL_GENERATED_CODE(f, &t, 0, 0, 0, 0);
   USE(dummy);
 
   CHECK_EQ(2.75e11, t.a);
   CHECK_EQ(2.75e11, t.b);
   CHECK_EQ(1.5e22, t.c);
+  CHECK_EQ(static_cast<int64_t>(0xffffffffc25001d1L), t.high);
+  CHECK_EQ(static_cast<int64_t>(0xffffffffbf800000L), t.low);
 }
 
 
@@ -524,12 +537,12 @@ TEST(MIPS6) {
   Object* dummy = CALL_GENERATED_CODE(f, &t, 0, 0, 0, 0);
   USE(dummy);
 
-  CHECK_EQ(0x11223344, t.r1);
-  CHECK_EQ(0x3344, t.r2);
-  CHECK_EQ(0xffffbbcc, t.r3);
-  CHECK_EQ(0x0000bbcc, t.r4);
-  CHECK_EQ(0xffffffcc, t.r5);
-  CHECK_EQ(0x3333bbcc, t.r6);
+  CHECK_EQ(static_cast<int32_t>(0x11223344), t.r1);
+  CHECK_EQ(static_cast<int32_t>(0x3344), t.r2);
+  CHECK_EQ(static_cast<int32_t>(0xffffbbcc), t.r3);
+  CHECK_EQ(static_cast<int32_t>(0x0000bbcc), t.r4);
+  CHECK_EQ(static_cast<int32_t>(0xffffffcc), t.r5);
+  CHECK_EQ(static_cast<int32_t>(0x3333bbcc), t.r6);
 }
 
 
@@ -698,21 +711,21 @@ TEST(MIPS8) {
   t.input = 0x12345678;
   Object* dummy = CALL_GENERATED_CODE(f, &t, 0x0, 0, 0, 0);
   USE(dummy);
-  CHECK_EQ(0x81234567, t.result_rotr_4);
-  CHECK_EQ(0x78123456, t.result_rotr_8);
-  CHECK_EQ(0x67812345, t.result_rotr_12);
-  CHECK_EQ(0x56781234, t.result_rotr_16);
-  CHECK_EQ(0x45678123, t.result_rotr_20);
-  CHECK_EQ(0x34567812, t.result_rotr_24);
-  CHECK_EQ(0x23456781, t.result_rotr_28);
+  CHECK_EQ(static_cast<int32_t>(0x81234567), t.result_rotr_4);
+  CHECK_EQ(static_cast<int32_t>(0x78123456), t.result_rotr_8);
+  CHECK_EQ(static_cast<int32_t>(0x67812345), t.result_rotr_12);
+  CHECK_EQ(static_cast<int32_t>(0x56781234), t.result_rotr_16);
+  CHECK_EQ(static_cast<int32_t>(0x45678123), t.result_rotr_20);
+  CHECK_EQ(static_cast<int32_t>(0x34567812), t.result_rotr_24);
+  CHECK_EQ(static_cast<int32_t>(0x23456781), t.result_rotr_28);
 
-  CHECK_EQ(0x81234567, t.result_rotrv_4);
-  CHECK_EQ(0x78123456, t.result_rotrv_8);
-  CHECK_EQ(0x67812345, t.result_rotrv_12);
-  CHECK_EQ(0x56781234, t.result_rotrv_16);
-  CHECK_EQ(0x45678123, t.result_rotrv_20);
-  CHECK_EQ(0x34567812, t.result_rotrv_24);
-  CHECK_EQ(0x23456781, t.result_rotrv_28);
+  CHECK_EQ(static_cast<int32_t>(0x81234567), t.result_rotrv_4);
+  CHECK_EQ(static_cast<int32_t>(0x78123456), t.result_rotrv_8);
+  CHECK_EQ(static_cast<int32_t>(0x67812345), t.result_rotrv_12);
+  CHECK_EQ(static_cast<int32_t>(0x56781234), t.result_rotrv_16);
+  CHECK_EQ(static_cast<int32_t>(0x45678123), t.result_rotrv_20);
+  CHECK_EQ(static_cast<int32_t>(0x34567812), t.result_rotrv_24);
+  CHECK_EQ(static_cast<int32_t>(0x23456781), t.result_rotrv_28);
 }
 
 
@@ -824,15 +837,15 @@ TEST(MIPS10) {
     Object* dummy = CALL_GENERATED_CODE(f, &t, 0, 0, 0, 0);
     USE(dummy);
 
-    CHECK_EQ(0x41DFFFFF, t.dbl_exp);
-    CHECK_EQ(0xFFC00000, t.dbl_mant);
+    CHECK_EQ(static_cast<int32_t>(0x41DFFFFF), t.dbl_exp);
+    CHECK_EQ(static_cast<int32_t>(0xFFC00000), t.dbl_mant);
     CHECK_EQ(0, t.long_hi);
-    CHECK_EQ(0x7fffffff, t.long_lo);
+    CHECK_EQ(static_cast<int32_t>(0x7fffffff), t.long_lo);
     CHECK_EQ(2.147483647e9, t.a_converted);
 
     // 0xFF00FF00FF -> 1.095233372415e12.
     CHECK_EQ(1.095233372415e12, t.b);
-    CHECK_EQ(0xFF00FF00FF, t.b_long_as_int64);
+    CHECK_EQ(static_cast<int64_t>(0xFF00FF00FF), t.b_long_as_int64);
   }
 }
 
@@ -870,80 +883,80 @@ TEST(MIPS11) {
     Assembler assm(isolate, NULL, 0);
 
     // Test all combinations of LWL and vAddr.
-    __ lw(a4, MemOperand(a0, OFFSET_OF(T, reg_init)) );
-    __ lwl(a4, MemOperand(a0, OFFSET_OF(T, mem_init)) );
-    __ sw(a4, MemOperand(a0, OFFSET_OF(T, lwl_0)) );
+    __ lw(a4, MemOperand(a0, OFFSET_OF(T, reg_init)));
+    __ lwl(a4, MemOperand(a0, OFFSET_OF(T, mem_init)));
+    __ sw(a4, MemOperand(a0, OFFSET_OF(T, lwl_0)));
 
-    __ lw(a5, MemOperand(a0, OFFSET_OF(T, reg_init)) );
-    __ lwl(a5, MemOperand(a0, OFFSET_OF(T, mem_init) + 1) );
-    __ sw(a5, MemOperand(a0, OFFSET_OF(T, lwl_1)) );
+    __ lw(a5, MemOperand(a0, OFFSET_OF(T, reg_init)));
+    __ lwl(a5, MemOperand(a0, OFFSET_OF(T, mem_init) + 1));
+    __ sw(a5, MemOperand(a0, OFFSET_OF(T, lwl_1)));
 
-    __ lw(a6, MemOperand(a0, OFFSET_OF(T, reg_init)) );
-    __ lwl(a6, MemOperand(a0, OFFSET_OF(T, mem_init) + 2) );
-    __ sw(a6, MemOperand(a0, OFFSET_OF(T, lwl_2)) );
+    __ lw(a6, MemOperand(a0, OFFSET_OF(T, reg_init)));
+    __ lwl(a6, MemOperand(a0, OFFSET_OF(T, mem_init) + 2));
+    __ sw(a6, MemOperand(a0, OFFSET_OF(T, lwl_2)));
 
-    __ lw(a7, MemOperand(a0, OFFSET_OF(T, reg_init)) );
-    __ lwl(a7, MemOperand(a0, OFFSET_OF(T, mem_init) + 3) );
-    __ sw(a7, MemOperand(a0, OFFSET_OF(T, lwl_3)) );
+    __ lw(a7, MemOperand(a0, OFFSET_OF(T, reg_init)));
+    __ lwl(a7, MemOperand(a0, OFFSET_OF(T, mem_init) + 3));
+    __ sw(a7, MemOperand(a0, OFFSET_OF(T, lwl_3)));
 
     // Test all combinations of LWR and vAddr.
-    __ lw(a4, MemOperand(a0, OFFSET_OF(T, reg_init)) );
-    __ lwr(a4, MemOperand(a0, OFFSET_OF(T, mem_init)) );
-    __ sw(a4, MemOperand(a0, OFFSET_OF(T, lwr_0)) );
+    __ lw(a4, MemOperand(a0, OFFSET_OF(T, reg_init)));
+    __ lwr(a4, MemOperand(a0, OFFSET_OF(T, mem_init)));
+    __ sw(a4, MemOperand(a0, OFFSET_OF(T, lwr_0)));
 
-    __ lw(a5, MemOperand(a0, OFFSET_OF(T, reg_init)) );
-    __ lwr(a5, MemOperand(a0, OFFSET_OF(T, mem_init) + 1) );
-    __ sw(a5, MemOperand(a0, OFFSET_OF(T, lwr_1)) );
+    __ lw(a5, MemOperand(a0, OFFSET_OF(T, reg_init)));
+    __ lwr(a5, MemOperand(a0, OFFSET_OF(T, mem_init) + 1));
+    __ sw(a5, MemOperand(a0, OFFSET_OF(T, lwr_1)));
 
-    __ lw(a6, MemOperand(a0, OFFSET_OF(T, reg_init)) );
-    __ lwr(a6, MemOperand(a0, OFFSET_OF(T, mem_init) + 2) );
+    __ lw(a6, MemOperand(a0, OFFSET_OF(T, reg_init)));
+    __ lwr(a6, MemOperand(a0, OFFSET_OF(T, mem_init) + 2));
     __ sw(a6, MemOperand(a0, OFFSET_OF(T, lwr_2)) );
 
-    __ lw(a7, MemOperand(a0, OFFSET_OF(T, reg_init)) );
-    __ lwr(a7, MemOperand(a0, OFFSET_OF(T, mem_init) + 3) );
+    __ lw(a7, MemOperand(a0, OFFSET_OF(T, reg_init)));
+    __ lwr(a7, MemOperand(a0, OFFSET_OF(T, mem_init) + 3));
     __ sw(a7, MemOperand(a0, OFFSET_OF(T, lwr_3)) );
 
     // Test all combinations of SWL and vAddr.
-    __ lw(a4, MemOperand(a0, OFFSET_OF(T, mem_init)) );
-    __ sw(a4, MemOperand(a0, OFFSET_OF(T, swl_0)) );
-    __ lw(a4, MemOperand(a0, OFFSET_OF(T, reg_init)) );
-    __ swl(a4, MemOperand(a0, OFFSET_OF(T, swl_0)) );
+    __ lw(a4, MemOperand(a0, OFFSET_OF(T, mem_init)));
+    __ sw(a4, MemOperand(a0, OFFSET_OF(T, swl_0)));
+    __ lw(a4, MemOperand(a0, OFFSET_OF(T, reg_init)));
+    __ swl(a4, MemOperand(a0, OFFSET_OF(T, swl_0)));
 
-    __ lw(a5, MemOperand(a0, OFFSET_OF(T, mem_init)) );
-    __ sw(a5, MemOperand(a0, OFFSET_OF(T, swl_1)) );
-    __ lw(a5, MemOperand(a0, OFFSET_OF(T, reg_init)) );
-    __ swl(a5, MemOperand(a0, OFFSET_OF(T, swl_1) + 1) );
+    __ lw(a5, MemOperand(a0, OFFSET_OF(T, mem_init)));
+    __ sw(a5, MemOperand(a0, OFFSET_OF(T, swl_1)));
+    __ lw(a5, MemOperand(a0, OFFSET_OF(T, reg_init)));
+    __ swl(a5, MemOperand(a0, OFFSET_OF(T, swl_1) + 1));
 
-    __ lw(a6, MemOperand(a0, OFFSET_OF(T, mem_init)) );
-    __ sw(a6, MemOperand(a0, OFFSET_OF(T, swl_2)) );
-    __ lw(a6, MemOperand(a0, OFFSET_OF(T, reg_init)) );
-    __ swl(a6, MemOperand(a0, OFFSET_OF(T, swl_2) + 2) );
+    __ lw(a6, MemOperand(a0, OFFSET_OF(T, mem_init)));
+    __ sw(a6, MemOperand(a0, OFFSET_OF(T, swl_2)));
+    __ lw(a6, MemOperand(a0, OFFSET_OF(T, reg_init)));
+    __ swl(a6, MemOperand(a0, OFFSET_OF(T, swl_2) + 2));
 
-    __ lw(a7, MemOperand(a0, OFFSET_OF(T, mem_init)) );
-    __ sw(a7, MemOperand(a0, OFFSET_OF(T, swl_3)) );
-    __ lw(a7, MemOperand(a0, OFFSET_OF(T, reg_init)) );
-    __ swl(a7, MemOperand(a0, OFFSET_OF(T, swl_3) + 3) );
+    __ lw(a7, MemOperand(a0, OFFSET_OF(T, mem_init)));
+    __ sw(a7, MemOperand(a0, OFFSET_OF(T, swl_3)));
+    __ lw(a7, MemOperand(a0, OFFSET_OF(T, reg_init)));
+    __ swl(a7, MemOperand(a0, OFFSET_OF(T, swl_3) + 3));
 
     // Test all combinations of SWR and vAddr.
-    __ lw(a4, MemOperand(a0, OFFSET_OF(T, mem_init)) );
-    __ sw(a4, MemOperand(a0, OFFSET_OF(T, swr_0)) );
-    __ lw(a4, MemOperand(a0, OFFSET_OF(T, reg_init)) );
-    __ swr(a4, MemOperand(a0, OFFSET_OF(T, swr_0)) );
+    __ lw(a4, MemOperand(a0, OFFSET_OF(T, mem_init)));
+    __ sw(a4, MemOperand(a0, OFFSET_OF(T, swr_0)));
+    __ lw(a4, MemOperand(a0, OFFSET_OF(T, reg_init)));
+    __ swr(a4, MemOperand(a0, OFFSET_OF(T, swr_0)));
 
-    __ lw(a5, MemOperand(a0, OFFSET_OF(T, mem_init)) );
-    __ sw(a5, MemOperand(a0, OFFSET_OF(T, swr_1)) );
-    __ lw(a5, MemOperand(a0, OFFSET_OF(T, reg_init)) );
-    __ swr(a5, MemOperand(a0, OFFSET_OF(T, swr_1) + 1) );
+    __ lw(a5, MemOperand(a0, OFFSET_OF(T, mem_init)));
+    __ sw(a5, MemOperand(a0, OFFSET_OF(T, swr_1)));
+    __ lw(a5, MemOperand(a0, OFFSET_OF(T, reg_init)));
+    __ swr(a5, MemOperand(a0, OFFSET_OF(T, swr_1) + 1));
 
-    __ lw(a6, MemOperand(a0, OFFSET_OF(T, mem_init)) );
-    __ sw(a6, MemOperand(a0, OFFSET_OF(T, swr_2)) );
-    __ lw(a6, MemOperand(a0, OFFSET_OF(T, reg_init)) );
-    __ swr(a6, MemOperand(a0, OFFSET_OF(T, swr_2) + 2) );
+    __ lw(a6, MemOperand(a0, OFFSET_OF(T, mem_init)));
+    __ sw(a6, MemOperand(a0, OFFSET_OF(T, swr_2)));
+    __ lw(a6, MemOperand(a0, OFFSET_OF(T, reg_init)));
+    __ swr(a6, MemOperand(a0, OFFSET_OF(T, swr_2) + 2));
 
-    __ lw(a7, MemOperand(a0, OFFSET_OF(T, mem_init)) );
-    __ sw(a7, MemOperand(a0, OFFSET_OF(T, swr_3)) );
-    __ lw(a7, MemOperand(a0, OFFSET_OF(T, reg_init)) );
-    __ swr(a7, MemOperand(a0, OFFSET_OF(T, swr_3) + 3) );
+    __ lw(a7, MemOperand(a0, OFFSET_OF(T, mem_init)));
+    __ sw(a7, MemOperand(a0, OFFSET_OF(T, swr_3)));
+    __ lw(a7, MemOperand(a0, OFFSET_OF(T, reg_init)));
+    __ swr(a7, MemOperand(a0, OFFSET_OF(T, swr_3) + 3));
 
     __ jr(ra);
     __ nop();
@@ -959,25 +972,25 @@ TEST(MIPS11) {
     Object* dummy = CALL_GENERATED_CODE(f, &t, 0, 0, 0, 0);
     USE(dummy);
 
-    CHECK_EQ(0x44bbccdd, t.lwl_0);
-    CHECK_EQ(0x3344ccdd, t.lwl_1);
-    CHECK_EQ(0x223344dd, t.lwl_2);
-    CHECK_EQ(0x11223344, t.lwl_3);
+    CHECK_EQ(static_cast<int32_t>(0x44bbccdd), t.lwl_0);
+    CHECK_EQ(static_cast<int32_t>(0x3344ccdd), t.lwl_1);
+    CHECK_EQ(static_cast<int32_t>(0x223344dd), t.lwl_2);
+    CHECK_EQ(static_cast<int32_t>(0x11223344), t.lwl_3);
 
-    CHECK_EQ(0x11223344, t.lwr_0);
-    CHECK_EQ(0xaa112233, t.lwr_1);
-    CHECK_EQ(0xaabb1122, t.lwr_2);
-    CHECK_EQ(0xaabbcc11, t.lwr_3);
+    CHECK_EQ(static_cast<int32_t>(0x11223344), t.lwr_0);
+    CHECK_EQ(static_cast<int32_t>(0xaa112233), t.lwr_1);
+    CHECK_EQ(static_cast<int32_t>(0xaabb1122), t.lwr_2);
+    CHECK_EQ(static_cast<int32_t>(0xaabbcc11), t.lwr_3);
 
-    CHECK_EQ(0x112233aa, t.swl_0);
-    CHECK_EQ(0x1122aabb, t.swl_1);
-    CHECK_EQ(0x11aabbcc, t.swl_2);
-    CHECK_EQ(0xaabbccdd, t.swl_3);
+    CHECK_EQ(static_cast<int32_t>(0x112233aa), t.swl_0);
+    CHECK_EQ(static_cast<int32_t>(0x1122aabb), t.swl_1);
+    CHECK_EQ(static_cast<int32_t>(0x11aabbcc), t.swl_2);
+    CHECK_EQ(static_cast<int32_t>(0xaabbccdd), t.swl_3);
 
-    CHECK_EQ(0xaabbccdd, t.swr_0);
-    CHECK_EQ(0xbbccdd44, t.swr_1);
-    CHECK_EQ(0xccdd3344, t.swr_2);
-    CHECK_EQ(0xdd223344, t.swr_3);
+    CHECK_EQ(static_cast<int32_t>(0xaabbccdd), t.swr_0);
+    CHECK_EQ(static_cast<int32_t>(0xbbccdd44), t.swr_1);
+    CHECK_EQ(static_cast<int32_t>(0xccdd3344), t.swr_2);
+    CHECK_EQ(static_cast<int32_t>(0xdd223344), t.swr_3);
   }
 }
 
@@ -1001,8 +1014,8 @@ TEST(MIPS12) {
 
   __ mov(t2, fp);  // Save frame pointer.
   __ mov(fp, a0);  // Access struct T by fp.
-  __ lw(a4, MemOperand(a0, OFFSET_OF(T, y)) );
-  __ lw(a7, MemOperand(a0, OFFSET_OF(T, y4)) );
+  __ lw(a4, MemOperand(a0, OFFSET_OF(T, y)));
+  __ lw(a7, MemOperand(a0, OFFSET_OF(T, y4)));
 
   __ addu(a5, a4, a7);
   __ subu(t0, a4, a7);
@@ -1020,30 +1033,30 @@ TEST(MIPS12) {
   __ push(a7);
   __ pop(t0);
   __ nop();
-  __ sw(a4, MemOperand(fp, OFFSET_OF(T, y)) );
-  __ lw(a4, MemOperand(fp, OFFSET_OF(T, y)) );
+  __ sw(a4, MemOperand(fp, OFFSET_OF(T, y)));
+  __ lw(a4, MemOperand(fp, OFFSET_OF(T, y)));
   __ nop();
-  __ sw(a4, MemOperand(fp, OFFSET_OF(T, y)) );
-  __ lw(a5, MemOperand(fp, OFFSET_OF(T, y)) );
+  __ sw(a4, MemOperand(fp, OFFSET_OF(T, y)));
+  __ lw(a5, MemOperand(fp, OFFSET_OF(T, y)));
   __ nop();
   __ push(a5);
-  __ lw(a5, MemOperand(fp, OFFSET_OF(T, y)) );
+  __ lw(a5, MemOperand(fp, OFFSET_OF(T, y)));
   __ pop(a5);
   __ nop();
   __ push(a5);
-  __ lw(a6, MemOperand(fp, OFFSET_OF(T, y)) );
+  __ lw(a6, MemOperand(fp, OFFSET_OF(T, y)));
   __ pop(a5);
   __ nop();
   __ push(a5);
-  __ lw(a6, MemOperand(fp, OFFSET_OF(T, y)) );
+  __ lw(a6, MemOperand(fp, OFFSET_OF(T, y)));
   __ pop(a6);
   __ nop();
   __ push(a6);
-  __ lw(a6, MemOperand(fp, OFFSET_OF(T, y)) );
+  __ lw(a6, MemOperand(fp, OFFSET_OF(T, y)));
   __ pop(a5);
   __ nop();
   __ push(a5);
-  __ lw(a6, MemOperand(fp, OFFSET_OF(T, y)) );
+  __ lw(a6, MemOperand(fp, OFFSET_OF(T, y)));
   __ pop(a7);
   __ nop();
 
@@ -1297,48 +1310,48 @@ TEST(MIPS16) {
   Label L, C;
 
   // Basic 32-bit word load/store, with un-signed data.
-  __ lw(a4, MemOperand(a0, OFFSET_OF(T, ui)) );
-  __ sw(a4, MemOperand(a0, OFFSET_OF(T, r1)) );
+  __ lw(a4, MemOperand(a0, OFFSET_OF(T, ui)));
+  __ sw(a4, MemOperand(a0, OFFSET_OF(T, r1)));
 
   // Check that the data got zero-extended into 64-bit a4.
-  __ sd(a4, MemOperand(a0, OFFSET_OF(T, r2)) );
+  __ sd(a4, MemOperand(a0, OFFSET_OF(T, r2)));
 
   // Basic 32-bit word load/store, with SIGNED data.
-  __ lw(a5, MemOperand(a0, OFFSET_OF(T, si)) );
-  __ sw(a5, MemOperand(a0, OFFSET_OF(T, r3)) );
+  __ lw(a5, MemOperand(a0, OFFSET_OF(T, si)));
+  __ sw(a5, MemOperand(a0, OFFSET_OF(T, r3)));
 
   // Check that the data got sign-extended into 64-bit a4.
-  __ sd(a5, MemOperand(a0, OFFSET_OF(T, r4)) );
+  __ sd(a5, MemOperand(a0, OFFSET_OF(T, r4)));
 
   // 32-bit UNSIGNED word load/store, with SIGNED data.
-  __ lwu(a6, MemOperand(a0, OFFSET_OF(T, si)) );
-  __ sw(a6, MemOperand(a0, OFFSET_OF(T, r5)) );
+  __ lwu(a6, MemOperand(a0, OFFSET_OF(T, si)));
+  __ sw(a6, MemOperand(a0, OFFSET_OF(T, r5)));
 
   // Check that the data got zero-extended into 64-bit a4.
-  __ sd(a6, MemOperand(a0, OFFSET_OF(T, r6)) );
+  __ sd(a6, MemOperand(a0, OFFSET_OF(T, r6)));
 
   // lh with positive data.
-  __ lh(a5, MemOperand(a0, OFFSET_OF(T, ui)) );
-  __ sw(a5, MemOperand(a0, OFFSET_OF(T, r2)) );
+  __ lh(a5, MemOperand(a0, OFFSET_OF(T, ui)));
+  __ sw(a5, MemOperand(a0, OFFSET_OF(T, r2)));
 
   // lh with negative data.
-  __ lh(a6, MemOperand(a0, OFFSET_OF(T, si)) );
-  __ sw(a6, MemOperand(a0, OFFSET_OF(T, r3)) );
+  __ lh(a6, MemOperand(a0, OFFSET_OF(T, si)));
+  __ sw(a6, MemOperand(a0, OFFSET_OF(T, r3)));
 
   // lhu with negative data.
-  __ lhu(a7, MemOperand(a0, OFFSET_OF(T, si)) );
-  __ sw(a7, MemOperand(a0, OFFSET_OF(T, r4)) );
+  __ lhu(a7, MemOperand(a0, OFFSET_OF(T, si)));
+  __ sw(a7, MemOperand(a0, OFFSET_OF(T, r4)));
 
   // lb with negative data.
-  __ lb(t0, MemOperand(a0, OFFSET_OF(T, si)) );
-  __ sw(t0, MemOperand(a0, OFFSET_OF(T, r5)) );
+  __ lb(t0, MemOperand(a0, OFFSET_OF(T, si)));
+  __ sw(t0, MemOperand(a0, OFFSET_OF(T, r5)));
 
   // // sh writes only 1/2 of word.
   __ lui(t1, 0x3333);
   __ ori(t1, t1, 0x3333);
-  __ sw(t1, MemOperand(a0, OFFSET_OF(T, r6)) );
-  __ lhu(t1, MemOperand(a0, OFFSET_OF(T, si)) );
-  __ sh(t1, MemOperand(a0, OFFSET_OF(T, r6)) );
+  __ sw(t1, MemOperand(a0, OFFSET_OF(T, r6)));
+  __ lhu(t1, MemOperand(a0, OFFSET_OF(T, si)));
+  __ sh(t1, MemOperand(a0, OFFSET_OF(T, r6)));
 
   __ jr(ra);
   __ nop();
@@ -1360,16 +1373,240 @@ TEST(MIPS16) {
   USE(dummy);
 
   // Unsigned data, 32 & 64.
-  CHECK_EQ(0x1111111144332211L, t.r1);
-  CHECK_EQ(0x0000000000002211L, t.r2);
+  CHECK_EQ(static_cast<int64_t>(0x1111111144332211L), t.r1);
+  CHECK_EQ(static_cast<int64_t>(0x0000000000002211L), t.r2);
 
   // Signed data, 32 & 64.
-  CHECK_EQ(0x33333333ffffbbccL, t.r3);
-  CHECK_EQ(0xffffffff0000bbccL, t.r4);
+  CHECK_EQ(static_cast<int64_t>(0x33333333ffffbbccL), t.r3);
+  CHECK_EQ(static_cast<int64_t>(0xffffffff0000bbccL), t.r4);
 
   // Signed data, 32 & 64.
-  CHECK_EQ(0x55555555ffffffccL, t.r5);
-  CHECK_EQ(0x000000003333bbccL, t.r6);
+  CHECK_EQ(static_cast<int64_t>(0x55555555ffffffccL), t.r5);
+  CHECK_EQ(static_cast<int64_t>(0x000000003333bbccL), t.r6);
 }
+
+
+TEST(jump_tables1) {
+  // Test jump tables with forward jumps.
+  CcTest::InitializeVM();
+  Isolate* isolate = CcTest::i_isolate();
+  HandleScope scope(isolate);
+  Assembler assm(isolate, nullptr, 0);
+
+  const int kNumCases = 512;
+  int values[kNumCases];
+  isolate->random_number_generator()->NextBytes(values, sizeof(values));
+  Label labels[kNumCases];
+
+  __ daddiu(sp, sp, -8);
+  __ sd(ra, MemOperand(sp));
+  if ((assm.pc_offset() & 7) == 0) {
+    __ nop();
+  }
+
+  Label done;
+  {
+    PredictableCodeSizeScope predictable(
+        &assm, (kNumCases * 2 + 7) * Assembler::kInstrSize);
+    Label here;
+
+    __ bal(&here);
+    __ nop();
+    __ bind(&here);
+    __ dsll(at, a0, 3);
+    __ daddu(at, at, ra);
+    __ ld(at, MemOperand(at, 5 * Assembler::kInstrSize));
+    __ jr(at);
+    __ nop();
+    for (int i = 0; i < kNumCases; ++i) {
+      __ dd(&labels[i]);
+    }
+  }
+
+  for (int i = 0; i < kNumCases; ++i) {
+    __ bind(&labels[i]);
+    __ lui(v0, (values[i] >> 16) & 0xffff);
+    __ ori(v0, v0, values[i] & 0xffff);
+    __ b(&done);
+    __ nop();
+  }
+
+  __ bind(&done);
+  __ ld(ra, MemOperand(sp));
+  __ daddiu(sp, sp, 8);
+  __ jr(ra);
+  __ nop();
+
+  CodeDesc desc;
+  assm.GetCode(&desc);
+  Handle<Code> code = isolate->factory()->NewCode(
+      desc, Code::ComputeFlags(Code::STUB), Handle<Code>());
+#ifdef OBJECT_PRINT
+  code->Print(std::cout);
+#endif
+  F1 f = FUNCTION_CAST<F1>(code->entry());
+  for (int i = 0; i < kNumCases; ++i) {
+    int res = reinterpret_cast<int64_t>(CALL_GENERATED_CODE(f, i, 0, 0, 0, 0));
+    ::printf("f(%d) = %d\n", i, res);
+    CHECK_EQ(values[i], static_cast<int>(res));
+  }
+}
+
+
+TEST(jump_tables2) {
+  // Test jump tables with backward jumps.
+  CcTest::InitializeVM();
+  Isolate* isolate = CcTest::i_isolate();
+  HandleScope scope(isolate);
+  Assembler assm(isolate, nullptr, 0);
+
+  const int kNumCases = 512;
+  int values[kNumCases];
+  isolate->random_number_generator()->NextBytes(values, sizeof(values));
+  Label labels[kNumCases];
+
+  __ daddiu(sp, sp, -8);
+  __ sd(ra, MemOperand(sp));
+
+  Label done, dispatch;
+  __ b(&dispatch);
+  __ nop();
+
+  for (int i = 0; i < kNumCases; ++i) {
+    __ bind(&labels[i]);
+    __ lui(v0, (values[i] >> 16) & 0xffff);
+    __ ori(v0, v0, values[i] & 0xffff);
+    __ b(&done);
+    __ nop();
+  }
+
+  if ((assm.pc_offset() & 7) == 0) {
+    __ nop();
+  }
+  __ bind(&dispatch);
+  {
+    PredictableCodeSizeScope predictable(
+        &assm, (kNumCases * 2 + 7) * Assembler::kInstrSize);
+    Label here;
+
+    __ bal(&here);
+    __ nop();
+    __ bind(&here);
+    __ dsll(at, a0, 3);
+    __ daddu(at, at, ra);
+    __ ld(at, MemOperand(at, 5 * Assembler::kInstrSize));
+    __ jr(at);
+    __ nop();
+    for (int i = 0; i < kNumCases; ++i) {
+      __ dd(&labels[i]);
+    }
+  }
+
+  __ bind(&done);
+  __ ld(ra, MemOperand(sp));
+  __ daddiu(sp, sp, 8);
+  __ jr(ra);
+  __ nop();
+
+  CodeDesc desc;
+  assm.GetCode(&desc);
+  Handle<Code> code = isolate->factory()->NewCode(
+      desc, Code::ComputeFlags(Code::STUB), Handle<Code>());
+#ifdef OBJECT_PRINT
+  code->Print(std::cout);
+#endif
+  F1 f = FUNCTION_CAST<F1>(code->entry());
+  for (int i = 0; i < kNumCases; ++i) {
+    int res = reinterpret_cast<int64_t>(CALL_GENERATED_CODE(f, i, 0, 0, 0, 0));
+    ::printf("f(%d) = %d\n", i, res);
+    CHECK_EQ(values[i], res);
+  }
+}
+
+
+TEST(jump_tables3) {
+  // Test jump tables with backward jumps and embedded heap objects.
+  CcTest::InitializeVM();
+  Isolate* isolate = CcTest::i_isolate();
+  HandleScope scope(isolate);
+  Assembler assm(isolate, nullptr, 0);
+
+  const int kNumCases = 512;
+  Handle<Object> values[kNumCases];
+  for (int i = 0; i < kNumCases; ++i) {
+    double value = isolate->random_number_generator()->NextDouble();
+    values[i] = isolate->factory()->NewHeapNumber(value, IMMUTABLE, TENURED);
+  }
+  Label labels[kNumCases];
+  Object* obj;
+  int64_t imm64;
+
+  __ daddiu(sp, sp, -8);
+  __ sd(ra, MemOperand(sp));
+
+  Label done, dispatch;
+  __ b(&dispatch);
+
+
+  for (int i = 0; i < kNumCases; ++i) {
+    __ bind(&labels[i]);
+    obj = *values[i];
+    imm64 = reinterpret_cast<intptr_t>(obj);
+    __ lui(v0, (imm64 >> 32) & kImm16Mask);
+    __ ori(v0, v0, (imm64 >> 16) & kImm16Mask);
+    __ dsll(v0, v0, 16);
+    __ ori(v0, v0, imm64 & kImm16Mask);
+    __ b(&done);
+    __ nop();
+  }
+
+  __ stop("chk");
+  if ((assm.pc_offset() & 7) == 0) {
+    __ nop();
+  }
+  __ bind(&dispatch);
+  {
+    PredictableCodeSizeScope predictable(
+        &assm, (kNumCases * 2 + 7) * Assembler::kInstrSize);
+    Label here;
+
+    __ bal(&here);
+    __ nop();
+    __ bind(&here);
+    __ dsll(at, a0, 3);
+    __ daddu(at, at, ra);
+    __ ld(at, MemOperand(at, 5 * Assembler::kInstrSize));
+    __ jr(at);
+    __ nop();
+    for (int i = 0; i < kNumCases; ++i) {
+      __ dd(&labels[i]);
+    }
+  }
+
+  __ bind(&done);
+  __ ld(ra, MemOperand(sp));
+  __ daddiu(sp, sp, 8);
+  __ jr(ra);
+  __ nop();
+
+  CodeDesc desc;
+  assm.GetCode(&desc);
+  Handle<Code> code = isolate->factory()->NewCode(
+      desc, Code::ComputeFlags(Code::STUB), Handle<Code>());
+#ifdef OBJECT_PRINT
+  code->Print(std::cout);
+#endif
+  F1 f = FUNCTION_CAST<F1>(code->entry());
+  for (int i = 0; i < kNumCases; ++i) {
+    Handle<Object> result(CALL_GENERATED_CODE(f, i, 0, 0, 0, 0), isolate);
+#ifdef OBJECT_PRINT
+    ::printf("f(%d) = ", i);
+    result->Print(std::cout);
+    ::printf("\n");
+#endif
+    CHECK(values[i].is_identical_to(result));
+  }
+}
+
 
 #undef __

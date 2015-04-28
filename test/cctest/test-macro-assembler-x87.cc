@@ -33,7 +33,6 @@
 #include "src/base/platform/platform.h"
 #include "src/factory.h"
 #include "src/macro-assembler.h"
-#include "src/serialize.h"
 
 using namespace v8::internal;
 
@@ -50,8 +49,6 @@ typedef F0Type* F0;
 
 
 TEST(LoadAndStoreWithRepresentation) {
-  v8::internal::V8::Initialize(NULL);
-
   // Allocate an executable page of memory.
   size_t actual_size;
   byte* buffer = static_cast<byte*>(v8::base::OS::Allocate(

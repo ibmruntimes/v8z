@@ -38,10 +38,10 @@
 
 #if V8_TARGET_ARCH_X87
 
+#include "src/base/bits.h"
 #include "src/base/cpu.h"
 #include "src/disassembler.h"
 #include "src/macro-assembler.h"
-#include "src/serialize.h"
 
 namespace v8 {
 namespace internal {
@@ -101,17 +101,6 @@ bool RelocInfo::IsInConstantPool() {
 }
 
 
-void RelocInfo::PatchCode(byte* instructions, int instruction_count) {
-  // Patch the code at the current address with the supplied instructions.
-  for (int i = 0; i < instruction_count; i++) {
-    *(pc_ + i) = *(instructions + i);
-  }
-
-  // Indicate that code has changed.
-  CpuFeatures::FlushICache(pc_, instruction_count);
-}
-
-
 // Patch the code at the current PC with a call to the target address.
 // Additional guard int3 instructions can be added if required.
 void RelocInfo::PatchCodeWithCall(Address target, int guard_bytes) {
@@ -122,7 +111,7 @@ void RelocInfo::PatchCodeWithCall(Address target, int guard_bytes) {
   // Create a code patcher.
   CodePatcher patcher(pc_, code_size);
 
-  // Add a label for checking the size of the code used for returning.
+// Add a label for checking the size of the code used for returning.
 #ifdef DEBUG
   Label check_codesize;
   patcher.masm()->bind(&check_codesize);
@@ -255,6 +244,7 @@ Assembler::Assembler(Isolate* isolate, void* buffer, int buffer_size)
 void Assembler::GetCode(CodeDesc* desc) {
   // Finalize code (at this point overflow() may be true, but the gap ensures
   // that we are still not overlapping instructions and relocation info).
+  reloc_info_writer.Finish();
   DCHECK(pc_ <= reloc_info_writer.pos());  // No overlap.
   // Set up code descriptor.
   desc->buffer = buffer_;
@@ -266,7 +256,7 @@ void Assembler::GetCode(CodeDesc* desc) {
 
 
 void Assembler::Align(int m) {
-  DCHECK(IsPowerOf2(m));
+  DCHECK(base::bits::IsPowerOfTwo32(m));
   int mask = m - 1;
   int addr = pc_offset();
   Nop((m - (addr & mask)) & mask);
@@ -914,24 +904,24 @@ void Assembler::rcr(Register dst, uint8_t imm8) {
 }
 
 
-void Assembler::ror(Register dst, uint8_t imm8) {
+void Assembler::ror(const Operand& dst, uint8_t imm8) {
   EnsureSpace ensure_space(this);
   DCHECK(is_uint5(imm8));  // illegal shift count
   if (imm8 == 1) {
     EMIT(0xD1);
-    EMIT(0xC8 | dst.code());
+    emit_operand(ecx, dst);
   } else {
     EMIT(0xC1);
-    EMIT(0xC8 | dst.code());
+    emit_operand(ecx, dst);
     EMIT(imm8);
   }
 }
 
 
-void Assembler::ror_cl(Register dst) {
+void Assembler::ror_cl(const Operand& dst) {
   EnsureSpace ensure_space(this);
   EMIT(0xD3);
-  EMIT(0xC8 | dst.code());
+  emit_operand(ecx, dst);
 }
 
 
@@ -1200,6 +1190,13 @@ void Assembler::ret(int imm16) {
 }
 
 
+void Assembler::ud2() {
+  EnsureSpace ensure_space(this);
+  EMIT(0x0F);
+  EMIT(0x0B);
+}
+
+
 // Labels refer to positions in the (to be) generated code.
 // There are bound, linked, and unused labels.
 //
@@ -1238,7 +1235,10 @@ void Assembler::bind_to(Label* L, int pos) {
   while (L->is_linked()) {
     Displacement disp = disp_at(L);
     int fixup_pos = L->pos();
-    if (disp.type() == Displacement::CODE_RELATIVE) {
+    if (disp.type() == Displacement::CODE_ABSOLUTE) {
+      long_at_put(fixup_pos, reinterpret_cast<int>(buffer_ + pos));
+      internal_reference_positions_.push_back(fixup_pos);
+    } else if (disp.type() == Displacement::CODE_RELATIVE) {
       // Relative to Code* heap object pointer.
       long_at_put(fixup_pos, pos + Code::kHeaderSize - kHeapObjectTag);
     } else {
@@ -1518,6 +1518,20 @@ void Assembler::fst_s(const Operand& adr) {
 }
 
 
+void Assembler::fldcw(const Operand& adr) {
+  EnsureSpace ensure_space(this);
+  EMIT(0xD9);
+  emit_operand(ebp, adr);
+}
+
+
+void Assembler::fnstcw(const Operand& adr) {
+  EnsureSpace ensure_space(this);
+  EMIT(0xD9);
+  emit_operand(edi, adr);
+}
+
+
 void Assembler::fstp_d(const Operand& adr) {
   EnsureSpace ensure_space(this);
   EMIT(0xDD);
@@ -1597,6 +1611,13 @@ void Assembler::fchs() {
 }
 
 
+void Assembler::fsqrt() {
+  EnsureSpace ensure_space(this);
+  EMIT(0xD9);
+  EMIT(0xFA);
+}
+
+
 void Assembler::fcos() {
   EnsureSpace ensure_space(this);
   EMIT(0xD9);
@@ -1655,6 +1676,13 @@ void Assembler::fadd(int i) {
 void Assembler::fadd_i(int i) {
   EnsureSpace ensure_space(this);
   emit_farith(0xD8, 0xC0, i);
+}
+
+
+void Assembler::fadd_d(const Operand& adr) {
+  EnsureSpace ensure_space(this);
+  EMIT(0xDC);
+  emit_operand(eax, adr);
 }
 
 
@@ -1771,6 +1799,13 @@ void Assembler::ftst() {
 }
 
 
+void Assembler::fxam() {
+  EnsureSpace ensure_space(this);
+  EMIT(0xD9);
+  EMIT(0xE5);
+}
+
+
 void Assembler::fucomp(int i) {
   EnsureSpace ensure_space(this);
   emit_farith(0xDD, 0xE8, i);
@@ -1832,6 +1867,20 @@ void Assembler::fnclex() {
 }
 
 
+void Assembler::fnsave(const Operand& adr) {
+  EnsureSpace ensure_space(this);
+  EMIT(0xDD);
+  emit_operand(esi, adr);
+}
+
+
+void Assembler::frstor(const Operand& adr) {
+  EnsureSpace ensure_space(this);
+  EMIT(0xDD);
+  emit_operand(esp, adr);
+}
+
+
 void Assembler::sahf() {
   EnsureSpace ensure_space(this);
   EMIT(0x9E);
@@ -1844,33 +1893,6 @@ void Assembler::setcc(Condition cc, Register reg) {
   EMIT(0x0F);
   EMIT(0x90 | cc);
   EMIT(0xC0 | reg.code());
-}
-
-
-void Assembler::Print() {
-  Disassembler::Decode(isolate(), stdout, buffer_, pc_);
-}
-
-
-void Assembler::RecordJSReturn() {
-  positions_recorder()->WriteRecordedPositions();
-  EnsureSpace ensure_space(this);
-  RecordRelocInfo(RelocInfo::JS_RETURN);
-}
-
-
-void Assembler::RecordDebugBreakSlot() {
-  positions_recorder()->WriteRecordedPositions();
-  EnsureSpace ensure_space(this);
-  RecordRelocInfo(RelocInfo::DEBUG_BREAK_SLOT);
-}
-
-
-void Assembler::RecordComment(const char* msg, bool force) {
-  if (FLAG_code_comments || force) {
-    EnsureSpace ensure_space(this);
-    RecordRelocInfo(RelocInfo::COMMENT, reinterpret_cast<intptr_t>(msg));
-  }
 }
 
 
@@ -1914,15 +1936,10 @@ void Assembler::GrowBuffer() {
   reloc_info_writer.Reposition(reloc_info_writer.pos() + rc_delta,
                                reloc_info_writer.last_pc() + pc_delta);
 
-  // Relocate runtime entries.
-  for (RelocIterator it(desc); !it.done(); it.next()) {
-    RelocInfo::Mode rmode = it.rinfo()->rmode();
-    if (rmode == RelocInfo::INTERNAL_REFERENCE) {
-      int32_t* p = reinterpret_cast<int32_t*>(it.rinfo()->pc());
-      if (*p != 0) {  // 0 means uninitialized.
-        *p += pc_delta;
-      }
-    }
+  // Relocate internal references.
+  for (auto pos : internal_reference_positions_) {
+    int32_t* p = reinterpret_cast<int32_t*>(buffer_ + pos);
+    *p += pc_delta;
   }
 
   DCHECK(!buffer_overflow());
@@ -1972,7 +1989,21 @@ void Assembler::emit_operand(Register reg, const Operand& adr) {
   if (length >= sizeof(int32_t) && !RelocInfo::IsNone(adr.rmode_)) {
     pc_ -= sizeof(int32_t);  // pc_ must be *at* disp32
     RecordRelocInfo(adr.rmode_);
-    pc_ += sizeof(int32_t);
+    if (adr.rmode_ == RelocInfo::INTERNAL_REFERENCE) {  // Fixup for labels
+      emit_label(*reinterpret_cast<Label**>(pc_));
+    } else {
+      pc_ += sizeof(int32_t);
+    }
+  }
+}
+
+
+void Assembler::emit_label(Label* label) {
+  if (label->is_bound()) {
+    internal_reference_positions_.push_back(pc_offset());
+    emit(reinterpret_cast<uint32_t>(buffer_ + label->pos()));
+  } else {
+    emit_disp(label, Displacement::CODE_ABSOLUTE);
   }
 }
 
@@ -1997,6 +2028,13 @@ void Assembler::dd(uint32_t data) {
 }
 
 
+void Assembler::dd(Label* label) {
+  EnsureSpace ensure_space(this);
+  RecordRelocInfo(RelocInfo::INTERNAL_REFERENCE);
+  emit_label(label);
+}
+
+
 void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
   DCHECK(!RelocInfo::IsNone(rmode));
   // Don't record external references unless the heap will be serialized.
@@ -2011,14 +2049,14 @@ void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
 
 Handle<ConstantPoolArray> Assembler::NewConstantPool(Isolate* isolate) {
   // No out-of-line constant pool support.
-  UNREACHABLE();
+  DCHECK(!FLAG_enable_ool_constant_pool);
   return isolate->factory()->empty_constant_pool_array();
 }
 
 
 void Assembler::PopulateConstantPool(ConstantPoolArray* constant_pool) {
   // No out-of-line constant pool support.
-  UNREACHABLE();
+  DCHECK(!FLAG_enable_ool_constant_pool);
   return;
 }
 

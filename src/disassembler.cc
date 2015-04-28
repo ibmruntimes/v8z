@@ -11,28 +11,13 @@
 #include "src/disasm.h"
 #include "src/disassembler.h"
 #include "src/macro-assembler.h"
-#include "src/serialize.h"
+#include "src/snapshot/serialize.h"
 #include "src/string-stream.h"
 
 namespace v8 {
 namespace internal {
 
 #ifdef ENABLE_DISASSEMBLER
-
-void Disassembler::Dump(FILE* f, byte* begin, byte* end) {
-  for (byte* pc = begin; pc < end; pc++) {
-    if (f == NULL) {
-      PrintF("%" V8PRIxPTR "  %4" V8PRIdPTR "  %02x\n",
-             reinterpret_cast<intptr_t>(pc),
-             pc - begin,
-             *pc);
-    } else {
-      PrintF(f, "%" V8PRIxPTR "  %4" V8PRIdPTR "  %02x\n",
-             reinterpret_cast<uintptr_t>(pc), pc - begin, *pc);
-    }
-  }
-}
-
 
 class V8NameConverter: public disasm::NameConverter {
  public:
@@ -74,12 +59,8 @@ const char* V8NameConverter::NameInCode(byte* addr) const {
 }
 
 
-static void DumpBuffer(FILE* f, StringBuilder* out) {
-  if (f == NULL) {
-    PrintF("%s\n", out->Finalize());
-  } else {
-    PrintF(f, "%s\n", out->Finalize());
-  }
+static void DumpBuffer(std::ostream* os, StringBuilder* out) {
+  (*os) << out->Finalize() << std::endl;
   out->Reset();
 }
 
@@ -87,11 +68,8 @@ static void DumpBuffer(FILE* f, StringBuilder* out) {
 static const int kOutBufferSize = 2048 + String::kMaxShortPrintLength;
 static const int kRelocInfoPosition = 57;
 
-static int DecodeIt(Isolate* isolate,
-                    FILE* f,
-                    const V8NameConverter& converter,
-                    byte* begin,
-                    byte* end) {
+static int DecodeIt(Isolate* isolate, std::ostream* os,
+                    const V8NameConverter& converter, byte* begin, byte* end) {
   SealHandleScope shs(isolate);
   DisallowHeapAllocation no_alloc;
   ExternalReferenceEncoder ref_encoder(isolate);
@@ -107,14 +85,11 @@ static int DecodeIt(Isolate* isolate,
   } else {
     // No relocation information when printing code stubs.
   }
-#if !V8_TARGET_ARCH_PPC
   int constants = -1;  // no constants being decoded at the start
-#endif
 
   while (pc < end) {
     // First decode instruction so that we know its length.
     byte* prev_pc = pc;
-#if !V8_TARGET_ARCH_PPC
     if (constants > 0) {
       SNPrintF(decode_buffer,
                "%08x       constant",
@@ -137,24 +112,8 @@ static int DecodeIt(Isolate* isolate,
                  "%08" V8PRIxPTR "      jump table entry %4" V8PRIdPTR,
                  reinterpret_cast<intptr_t>(ptr),
                  ptr - begin);
-        pc += 4;
+        pc += sizeof(ptr);
       } else {
-#elif ABI_USES_FUNCTION_DESCRIPTORS || V8_OOL_CONSTANT_POOL
-    // V8_TARGET_ARCH_PPC
-    {
-      // Function descriptors are specially decoded and skipped.
-      // Other internal references (load of ool constant pool pointer)
-      // are not since they are a encoded as a regular mov sequence.
-      int skip;
-      if (it != NULL && !it->done() && it->rinfo()->pc() == pc &&
-          it->rinfo()->rmode() == RelocInfo::INTERNAL_REFERENCE &&
-          (skip = Assembler::DecodeInternalReference(decode_buffer, pc))) {
-        pc += skip;
-      } else {
-#else
-    {
-      {
-#endif
         decode_buffer[0] = '\0';
         pc += d.InstructionDecode(decode_buffer, pc);
       }
@@ -183,7 +142,7 @@ static int DecodeIt(Isolate* isolate,
     // Comments.
     for (int i = 0; i < comments.length(); i++) {
       out.AddFormatted("                  %s", comments[i]);
-      DumpBuffer(f, &out);
+      DumpBuffer(os, &out);
     }
 
     // Instruction address and instruction offset.
@@ -203,7 +162,7 @@ static int DecodeIt(Isolate* isolate,
         out.AddPadding(' ', kRelocInfoPosition - out.position());
       } else {
         // Additional reloc infos are printed on separate lines.
-        DumpBuffer(f, &out);
+        DumpBuffer(os, &out);
         out.AddPadding(' ', kRelocInfoPosition);
       }
 
@@ -214,6 +173,11 @@ static int DecodeIt(Isolate* isolate,
         } else {
           out.AddFormatted("    ;; debug: position %d", relocinfo.data());
         }
+      } else if (rmode == RelocInfo::DEOPT_REASON) {
+        Deoptimizer::DeoptReason reason =
+            static_cast<Deoptimizer::DeoptReason>(relocinfo.data());
+        out.AddFormatted("    ;; debug: deopt reason '%s'",
+                         Deoptimizer::GetDeoptReason(reason));
       } else if (rmode == RelocInfo::EMBEDDED_OBJECT) {
         HeapStringAllocator allocator;
         StringStream accumulator(&allocator);
@@ -221,8 +185,8 @@ static int DecodeIt(Isolate* isolate,
         SmartArrayPointer<const char> obj_name = accumulator.ToCString();
         out.AddFormatted("    ;; object: %s", obj_name.get());
       } else if (rmode == RelocInfo::EXTERNAL_REFERENCE) {
-        const char* reference_name =
-            ref_encoder.NameOfAddress(relocinfo.target_reference());
+        const char* reference_name = ref_encoder.NameOfAddress(
+            isolate, relocinfo.target_external_reference());
         out.AddFormatted("    ;; external reference (%s)", reference_name);
       } else if (RelocInfo::IsCodeTarget(rmode)) {
         out.AddFormatted("    ;; code:");
@@ -233,7 +197,8 @@ static int DecodeIt(Isolate* isolate,
         Code::Kind kind = code->kind();
         if (code->is_inline_cache_stub()) {
           if (kind == Code::LOAD_IC &&
-              LoadIC::GetContextualMode(code->extra_ic_state()) == CONTEXTUAL) {
+              LoadICState::GetContextualMode(code->extra_ic_state()) ==
+                  CONTEXTUAL) {
             out.AddFormatted(" contextual,");
           }
           InlineCacheState ic_state = code->ic_state();
@@ -296,7 +261,7 @@ static int DecodeIt(Isolate* isolate,
         out.AddFormatted("    ;; %s", RelocInfo::RelocModeName(rmode));
       }
     }
-    DumpBuffer(f, &out);
+    DumpBuffer(os, &out);
   }
 
   // Emit comments following the last instruction (if any).
@@ -305,7 +270,7 @@ static int DecodeIt(Isolate* isolate,
       if (RelocInfo::IsComment(it->rinfo()->rmode())) {
         out.AddFormatted("                  %s",
                          reinterpret_cast<const char*>(it->rinfo()->data()));
-        DumpBuffer(f, &out);
+        DumpBuffer(os, &out);
       }
     }
   }
@@ -315,54 +280,18 @@ static int DecodeIt(Isolate* isolate,
 }
 
 
-int Disassembler::Decode(Isolate* isolate, FILE* f, byte* begin, byte* end) {
-  V8NameConverter defaultConverter(NULL);
-  return DecodeIt(isolate, f, defaultConverter, begin, end);
-}
-
-
-// Called by Code::CodePrint.
-void Disassembler::Decode(FILE* f, Code* code) {
-  Isolate* isolate = code->GetIsolate();
-  int size = code->instruction_size();
-  int safepoint_offset = code->is_crankshafted()
-      ? static_cast<int>(code->safepoint_table_offset()) : size;
-  int back_edge_offset = (code->kind() == Code::FUNCTION)
-      ? static_cast<int>(code->back_edge_table_offset()) : size;
-  int constant_offset = FLAG_enable_ool_constant_pool_in_code
-      ? code->constant_pool_offset() : size;
-
-  // Stop before reaching any embedded tables
-  int code_size = Min(safepoint_offset, back_edge_offset);
-  byte* begin = code->instruction_start();
-  byte* end = begin + Min(code_size, constant_offset);
+int Disassembler::Decode(Isolate* isolate, std::ostream* os, byte* begin,
+                         byte* end, Code* code) {
   V8NameConverter v8NameConverter(code);
-  DecodeIt(isolate, f, v8NameConverter, begin, end);
-
-  if (constant_offset < code_size) {
-    v8::internal::EmbeddedVector<char, kOutBufferSize> out_buffer;
-    StringBuilder out(out_buffer.start(), out_buffer.length());
-    int constant_size = code_size - constant_offset;
-    DCHECK((constant_size & kPointerAlignmentMask) == 0);
-    out.AddFormatted("\nConstant Pool (size = %d)", constant_size);
-    DumpBuffer(f, &out);
-    intptr_t* ptr = reinterpret_cast<intptr_t*>(begin + constant_offset);
-    for (int i = 0; i < constant_size; i += kPointerSize, ptr++) {
-      out.AddFormatted("%08" V8PRIxPTR "  %4d %08" V8PRIxPTR, ptr, i, *ptr);
-      DumpBuffer(f, &out);
-    }
-  }
+  return DecodeIt(isolate, os, v8NameConverter, begin, end);
 }
 
 #else  // ENABLE_DISASSEMBLER
 
-void Disassembler::Dump(FILE* f, byte* begin, byte* end) {}
-int Disassembler::Decode(Isolate* isolate, FILE* f, byte* begin, byte* end) {
+int Disassembler::Decode(Isolate* isolate, std::ostream* os, byte* begin,
+                         byte* end, Code* code) {
   return 0;
 }
-
-
-void Disassembler::Decode(FILE* f, Code* code) {}
 
 #endif  // ENABLE_DISASSEMBLER
 

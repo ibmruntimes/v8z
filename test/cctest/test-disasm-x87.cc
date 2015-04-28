@@ -32,9 +32,8 @@
 #include "src/debug.h"
 #include "src/disasm.h"
 #include "src/disassembler.h"
+#include "src/ic/ic.h"
 #include "src/macro-assembler.h"
-#include "src/serialize.h"
-#include "src/stub-cache.h"
 #include "test/cctest/cctest.h"
 
 using namespace v8::internal;
@@ -201,6 +200,12 @@ TEST(DisasmIa320) {
   __ rcl(edx, 7);
   __ rcr(edx, 1);
   __ rcr(edx, 7);
+  __ ror(edx, 1);
+  __ ror(edx, 6);
+  __ ror_cl(edx);
+  __ ror(Operand(ebx, ecx, times_4, 10000), 1);
+  __ ror(Operand(ebx, ecx, times_4, 10000), 6);
+  __ ror_cl(Operand(ebx, ecx, times_4, 10000));
   __ sar(edx, 1);
   __ sar(edx, 6);
   __ sar_cl(edx);
@@ -349,6 +354,7 @@ TEST(DisasmIa320) {
   __ fprem1();
   __ fincstp();
   __ ftst();
+  __ fxam();
   __ fxch(3);
   __ fld_s(Operand(ebx, ecx, times_4, 10000));
   __ fstp_s(Operand(ebx, ecx, times_4, 10000));
@@ -377,6 +383,12 @@ TEST(DisasmIa320) {
   __ frndint();
   __ fninit();
   __ nop();
+
+  __ fldcw(Operand(ebx, ecx, times_4, 10000));
+  __ fnstcw(Operand(ebx, ecx, times_4, 10000));
+  __ fadd_d(Operand(ebx, ecx, times_4, 10000));
+  __ fnsave(Operand(ebx, ecx, times_4, 10000));
+  __ frstor(Operand(ebx, ecx, times_4, 10000));
 
   // xchg.
   {

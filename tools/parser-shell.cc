@@ -45,7 +45,7 @@
 
 using namespace v8::internal;
 
-class StringResource8 : public v8::String::ExternalAsciiStringResource {
+class StringResource8 : public v8::String::ExternalOneByteStringResource {
  public:
   StringResource8(const char* data, int length)
       : data_(data), length_(length) { }
@@ -88,14 +88,16 @@ std::pair<v8::base::TimeDelta, v8::base::TimeDelta> RunBaselineParser(
   i::ScriptData* cached_data_impl = NULL;
   // First round of parsing (produce data to cache).
   {
-    CompilationInfoWithZone info(script);
-    info.MarkAsGlobal();
-    info.SetCachedData(&cached_data_impl,
-                       v8::ScriptCompiler::kProduceParserCache);
+    Zone zone;
+    ParseInfo info(&zone, script);
+    info.set_global();
+    info.set_cached_data(&cached_data_impl);
+    info.set_compile_options(v8::ScriptCompiler::kProduceParserCache);
     v8::base::ElapsedTimer timer;
     timer.Start();
     // Allow lazy parsing; otherwise we won't produce cached data.
-    bool success = Parser::Parse(&info, true);
+    info.set_allow_lazy_parsing();
+    bool success = Parser::ParseStatic(&info);
     parse_time1 = timer.Elapsed();
     if (!success) {
       fprintf(stderr, "Parsing failed\n");
@@ -104,14 +106,16 @@ std::pair<v8::base::TimeDelta, v8::base::TimeDelta> RunBaselineParser(
   }
   // Second round of parsing (consume cached data).
   {
-    CompilationInfoWithZone info(script);
-    info.MarkAsGlobal();
-    info.SetCachedData(&cached_data_impl,
-                       v8::ScriptCompiler::kConsumeParserCache);
+    Zone zone;
+    ParseInfo info(&zone, script);
+    info.set_global();
+    info.set_cached_data(&cached_data_impl);
+    info.set_compile_options(v8::ScriptCompiler::kConsumeParserCache);
     v8::base::ElapsedTimer timer;
     timer.Start();
     // Allow lazy parsing; otherwise cached data won't help.
-    bool success = Parser::Parse(&info, true);
+    info.set_allow_lazy_parsing();
+    bool success = Parser::ParseStatic(&info);
     parse_time2 = timer.Elapsed();
     if (!success) {
       fprintf(stderr, "Parsing failed\n");
@@ -123,10 +127,11 @@ std::pair<v8::base::TimeDelta, v8::base::TimeDelta> RunBaselineParser(
 
 
 int main(int argc, char* argv[]) {
+  v8::V8::SetFlagsFromCommandLine(&argc, argv, true);
   v8::V8::InitializeICU();
   v8::Platform* platform = v8::platform::CreateDefaultPlatform();
   v8::V8::InitializePlatform(platform);
-  v8::V8::SetFlagsFromCommandLine(&argc, argv, true);
+  v8::V8::Initialize();
   Encoding encoding = LATIN1;
   std::vector<std::string> fnames;
   std::string benchmark;

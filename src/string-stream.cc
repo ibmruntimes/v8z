@@ -295,8 +295,7 @@ bool StringStream::Put(String* str) {
 
 
 bool StringStream::Put(String* str, int start, int end) {
-  ConsStringIteratorOp op;
-  StringCharacterStream stream(str, &op, start);
+  StringCharacterStream stream(str, start);
   for (int i = start; i < end && stream.HasMore(); i++) {
     uint16_t c = stream.GetNext();
     if (c >= 127 || c < 32) {
@@ -336,7 +335,7 @@ void StringStream::PrintUsingMap(JSObject* js_object) {
   DescriptorArray* descs = map->instance_descriptors();
   for (int i = 0; i < real_size; i++) {
     PropertyDetails details = descs->GetDetails(i);
-    if (details.type() == FIELD) {
+    if (details.type() == DATA) {
       Object* key = descs->GetKey(i);
       if (key->IsString() || key->IsNumber()) {
         int len = 3;
@@ -352,8 +351,13 @@ void StringStream::PrintUsingMap(JSObject* js_object) {
         }
         Add(": ");
         FieldIndex index = FieldIndex::ForDescriptor(map, i);
-        Object* value = js_object->RawFastPropertyAt(index);
-        Add("%o\n", value);
+        if (js_object->IsUnboxedDoubleField(index)) {
+          double value = js_object->RawFastDoublePropertyAt(index);
+          Add("<unboxed double> %.16g\n", FmtElm(value));
+        } else {
+          Object* value = js_object->RawFastPropertyAt(index);
+          Add("%o\n", value);
+        }
       }
     }
   }

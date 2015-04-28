@@ -38,6 +38,7 @@ using ::v8::ObjectTemplate;
 using ::v8::Value;
 using ::v8::Context;
 using ::v8::Local;
+using ::v8::Name;
 using ::v8::String;
 using ::v8::Script;
 using ::v8::Function;
@@ -149,20 +150,20 @@ static void XGetter(const Info& info, int offset) {
   ApiTestFuzzer::Fuzz();
   v8::Isolate* isolate = CcTest::isolate();
   CHECK_EQ(isolate, info.GetIsolate());
-  CHECK_EQ(x_receiver, info.This());
+  CHECK(x_receiver->Equals(info.This()));
   info.GetReturnValue().Set(v8_num(x_register[offset]));
 }
 
 
 static void XGetter(Local<String> name,
                     const v8::PropertyCallbackInfo<v8::Value>& info) {
-  CHECK_EQ(x_holder, info.Holder());
+  CHECK(x_holder->Equals(info.Holder()));
   XGetter(info, 0);
 }
 
 
 static void XGetter(const v8::FunctionCallbackInfo<v8::Value>& info) {
-  CHECK_EQ(x_receiver, info.Holder());
+  CHECK(x_receiver->Equals(info.Holder()));
   XGetter(info, 1);
 }
 
@@ -171,8 +172,8 @@ template<class Info>
 static void XSetter(Local<Value> value, const Info& info, int offset) {
   v8::Isolate* isolate = CcTest::isolate();
   CHECK_EQ(isolate, info.GetIsolate());
-  CHECK_EQ(x_holder, info.This());
-  CHECK_EQ(x_holder, info.Holder());
+  CHECK(x_holder->Equals(info.This()));
+  CHECK(x_holder->Equals(info.Holder()));
   x_register[offset] = value->Int32Value();
   info.GetReturnValue().Set(v8_num(-1));
 }
@@ -221,10 +222,10 @@ THREADED_TEST(AccessorIC) {
     "  result.push(obj[key_1]);"
     "}"
     "result"));
-  CHECK_EQ(80, array->Length());
+  CHECK_EQ(80u, array->Length());
   for (int i = 0; i < 80; i++) {
     v8::Handle<Value> entry = array->Get(v8::Integer::New(isolate, i));
-    CHECK_EQ(v8::Integer::New(isolate, i/2), entry);
+    CHECK(v8::Integer::New(isolate, i / 2)->Equals(entry));
   }
 }
 
@@ -406,7 +407,7 @@ THREADED_TEST(Regress1054726) {
       "for (var i = 0; i < 5; i++) {"
       "  try { obj.x; } catch (e) { result += e; }"
       "}; result"))->Run();
-  CHECK_EQ(v8_str("ggggg"), result);
+  CHECK(v8_str("ggggg")->Equals(result));
 
   result = Script::Compile(String::NewFromUtf8(
       isolate,
@@ -414,7 +415,7 @@ THREADED_TEST(Regress1054726) {
       "for (var i = 0; i < 5; i++) {"
       "  try { obj.x = i; } catch (e) { result += e; }"
       "}; result"))->Run();
-  CHECK_EQ(v8_str("01234"), result);
+  CHECK(v8_str("01234")->Equals(result));
 }
 
 
@@ -513,7 +514,7 @@ void JSONStringifyEnumerator(const v8::PropertyCallbackInfo<v8::Array>& info) {
 }
 
 
-void JSONStringifyGetter(Local<String> name,
+void JSONStringifyGetter(Local<Name> name,
                          const v8::PropertyCallbackInfo<v8::Value>& info) {
   info.GetReturnValue().Set(v8_str("crbug-161028"));
 }
@@ -525,8 +526,8 @@ THREADED_TEST(JSONStringifyNamedInterceptorObject) {
   v8::HandleScope scope(isolate);
 
   v8::Handle<v8::ObjectTemplate> obj = ObjectTemplate::New(isolate);
-  obj->SetNamedPropertyHandler(
-      JSONStringifyGetter, NULL, NULL, NULL, JSONStringifyEnumerator);
+  obj->SetHandler(v8::NamedPropertyHandlerConfiguration(
+      JSONStringifyGetter, NULL, NULL, NULL, JSONStringifyEnumerator));
   env->Global()->Set(v8_str("obj"), obj->NewInstance());
   v8::Handle<v8::String> expected = v8_str("{\"regress\":\"crbug-161028\"}");
   CHECK(CompileRun("JSON.stringify(obj)")->Equals(expected));
@@ -576,4 +577,114 @@ THREADED_TEST(GlobalObjectAccessor) {
       "for (var i = 0; i < 4; i++) { getter(); setter(); }");
   CHECK(v8::Utils::OpenHandle(*CompileRun("getter()"))->IsJSGlobalProxy());
   CHECK(v8::Utils::OpenHandle(*CompileRun("set_value"))->IsJSGlobalProxy());
+}
+
+
+static void EmptyGetter(Local<Name> name,
+                        const v8::PropertyCallbackInfo<v8::Value>& info) {
+  ApiTestFuzzer::Fuzz();
+}
+
+
+static void OneProperty(Local<String> name,
+                        const v8::PropertyCallbackInfo<v8::Value>& info) {
+  ApiTestFuzzer::Fuzz();
+  info.GetReturnValue().Set(v8_num(1));
+}
+
+
+THREADED_TEST(Regress433458) {
+  LocalContext env;
+  v8::Isolate* isolate = env->GetIsolate();
+  v8::HandleScope scope(isolate);
+  v8::Handle<v8::ObjectTemplate> obj = ObjectTemplate::New(isolate);
+  obj->SetHandler(v8::NamedPropertyHandlerConfiguration(EmptyGetter));
+  obj->SetNativeDataProperty(v8_str("prop"), OneProperty);
+  env->Global()->Set(v8_str("obj"), obj->NewInstance());
+  CompileRun(
+      "Object.defineProperty(obj, 'prop', { writable: false });"
+      "Object.defineProperty(obj, 'prop', { writable: true });");
+}
+
+
+static bool security_check_value = false;
+
+
+static bool SecurityTestCallback(Local<v8::Object> global, Local<Value> name,
+                                 v8::AccessType type, Local<Value> data) {
+  return security_check_value;
+}
+
+
+TEST(PrototypeGetterAccessCheck) {
+  i::FLAG_allow_natives_syntax = true;
+  LocalContext env;
+  v8::Isolate* isolate = env->GetIsolate();
+  v8::HandleScope scope(isolate);
+  auto fun_templ = v8::FunctionTemplate::New(isolate);
+  auto getter_templ = v8::FunctionTemplate::New(isolate, handle_property);
+  getter_templ->SetAcceptAnyReceiver(false);
+  fun_templ->InstanceTemplate()->SetAccessorProperty(v8_str("foo"),
+                                                     getter_templ);
+  auto obj_templ = v8::ObjectTemplate::New(isolate);
+  obj_templ->SetAccessCheckCallbacks(SecurityTestCallback, nullptr);
+  env->Global()->Set(v8_str("Fun"), fun_templ->GetFunction());
+  env->Global()->Set(v8_str("obj"), obj_templ->NewInstance());
+  env->Global()->Set(v8_str("obj2"), obj_templ->NewInstance());
+
+  security_check_value = true;
+  CompileRun("var proto = new Fun();");
+  CompileRun("obj.__proto__ = proto;");
+  ExpectInt32("proto.foo", 907);
+
+  // Test direct.
+  security_check_value = true;
+  ExpectInt32("obj.foo", 907);
+  security_check_value = false;
+  {
+    v8::TryCatch try_catch(isolate);
+    CompileRun("obj.foo");
+    CHECK(try_catch.HasCaught());
+  }
+
+  // Test through call.
+  security_check_value = true;
+  ExpectInt32("proto.__lookupGetter__('foo').call(obj)", 907);
+  security_check_value = false;
+  {
+    v8::TryCatch try_catch(isolate);
+    CompileRun("proto.__lookupGetter__('foo').call(obj)");
+    CHECK(try_catch.HasCaught());
+  }
+
+  // Test ics.
+  CompileRun(
+      "function f() {"
+      "   var x;"
+      "  for (var i = 0; i < 4; i++) {"
+      "    x = obj.foo;"
+      "  }"
+      "  return x;"
+      "}");
+
+  security_check_value = true;
+  ExpectInt32("f()", 907);
+  security_check_value = false;
+  {
+    v8::TryCatch try_catch(isolate);
+    CompileRun("f();");
+    CHECK(try_catch.HasCaught());
+  }
+
+  // Test crankshaft.
+  CompileRun("%OptimizeFunctionOnNextCall(f);");
+
+  security_check_value = true;
+  ExpectInt32("f()", 907);
+  security_check_value = false;
+  {
+    v8::TryCatch try_catch(isolate);
+    CompileRun("f();");
+    CHECK(try_catch.HasCaught());
+  }
 }

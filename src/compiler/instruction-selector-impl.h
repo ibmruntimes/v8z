@@ -8,10 +8,23 @@
 #include "src/compiler/instruction.h"
 #include "src/compiler/instruction-selector.h"
 #include "src/compiler/linkage.h"
+#include "src/compiler/schedule.h"
+#include "src/macro-assembler.h"
 
 namespace v8 {
 namespace internal {
 namespace compiler {
+
+// Helper struct containing data about a table or lookup switch.
+struct SwitchInfo {
+  int32_t min_value;           // minimum value of {case_values}
+  int32_t max_value;           // maximum value of {case_values}
+  size_t value_range;          // |max_value - min_value| + 1
+  size_t case_count;           // number of cases
+  int32_t* case_values;        // actual case values, unsorted
+  BasicBlock** case_branches;  // basic blocks corresponding to case values
+  BasicBlock* default_branch;  // default branch target
+};
 
 // A helper class for the instruction selector that simplifies construction of
 // Operands. This class implements a base for architecture-specific helpers.
@@ -20,155 +33,160 @@ class OperandGenerator {
   explicit OperandGenerator(InstructionSelector* selector)
       : selector_(selector) {}
 
-  InstructionOperand* DefineAsRegister(Node* node) {
-    return Define(node, new (zone())
-                  UnallocatedOperand(UnallocatedOperand::MUST_HAVE_REGISTER));
+  InstructionOperand NoOutput() {
+    return InstructionOperand();  // Generates an invalid operand.
   }
 
-  InstructionOperand* DefineAsDoubleRegister(Node* node) {
-    return Define(node, new (zone())
-                  UnallocatedOperand(UnallocatedOperand::MUST_HAVE_REGISTER));
+  InstructionOperand DefineAsRegister(Node* node) {
+    return Define(node,
+                  UnallocatedOperand(UnallocatedOperand::MUST_HAVE_REGISTER,
+                                     GetVReg(node)));
   }
 
-  InstructionOperand* DefineSameAsFirst(Node* result) {
-    return Define(result, new (zone())
-                  UnallocatedOperand(UnallocatedOperand::SAME_AS_FIRST_INPUT));
+  InstructionOperand DefineSameAsFirst(Node* node) {
+    return Define(node,
+                  UnallocatedOperand(UnallocatedOperand::SAME_AS_FIRST_INPUT,
+                                     GetVReg(node)));
   }
 
-  InstructionOperand* DefineAsFixed(Node* node, Register reg) {
-    return Define(node, new (zone())
-                  UnallocatedOperand(UnallocatedOperand::FIXED_REGISTER,
-                                     Register::ToAllocationIndex(reg)));
+  InstructionOperand DefineAsFixed(Node* node, Register reg) {
+    return Define(node, UnallocatedOperand(UnallocatedOperand::FIXED_REGISTER,
+                                           Register::ToAllocationIndex(reg),
+                                           GetVReg(node)));
   }
 
-  InstructionOperand* DefineAsFixedDouble(Node* node, DoubleRegister reg) {
-    return Define(node, new (zone())
+  InstructionOperand DefineAsFixed(Node* node, DoubleRegister reg) {
+    return Define(node,
                   UnallocatedOperand(UnallocatedOperand::FIXED_DOUBLE_REGISTER,
-                                     DoubleRegister::ToAllocationIndex(reg)));
+                                     DoubleRegister::ToAllocationIndex(reg),
+                                     GetVReg(node)));
   }
 
-  InstructionOperand* DefineAsConstant(Node* node) {
+  InstructionOperand DefineAsConstant(Node* node) {
     selector()->MarkAsDefined(node);
-    sequence()->AddConstant(node->id(), ToConstant(node));
-    return ConstantOperand::Create(node->id(), zone());
+    int virtual_register = GetVReg(node);
+    sequence()->AddConstant(virtual_register, ToConstant(node));
+    return ConstantOperand(virtual_register);
   }
 
-  InstructionOperand* DefineAsLocation(Node* node, LinkageLocation location) {
-    return Define(node, ToUnallocatedOperand(location));
+  InstructionOperand DefineAsLocation(Node* node, LinkageLocation location,
+                                      MachineType type) {
+    return Define(node, ToUnallocatedOperand(location, type, GetVReg(node)));
   }
 
-  InstructionOperand* Use(Node* node) {
-    return Use(node,
-               new (zone()) UnallocatedOperand(
-                   UnallocatedOperand::ANY, UnallocatedOperand::USED_AT_START));
+  InstructionOperand Use(Node* node) {
+    return Use(node, UnallocatedOperand(UnallocatedOperand::NONE,
+                                        UnallocatedOperand::USED_AT_START,
+                                        GetVReg(node)));
   }
 
-  InstructionOperand* UseRegister(Node* node) {
-    return Use(node, new (zone())
-               UnallocatedOperand(UnallocatedOperand::MUST_HAVE_REGISTER,
-                                  UnallocatedOperand::USED_AT_START));
+  InstructionOperand UseRegister(Node* node) {
+    return Use(node, UnallocatedOperand(UnallocatedOperand::MUST_HAVE_REGISTER,
+                                        UnallocatedOperand::USED_AT_START,
+                                        GetVReg(node)));
   }
 
-  InstructionOperand* UseDoubleRegister(Node* node) {
-    return Use(node, new (zone())
-               UnallocatedOperand(UnallocatedOperand::MUST_HAVE_REGISTER,
-                                  UnallocatedOperand::USED_AT_START));
+  InstructionOperand UseUniqueSlot(Node* node) {
+    return Use(node, UnallocatedOperand(UnallocatedOperand::MUST_HAVE_SLOT,
+                                        GetVReg(node)));
   }
 
   // Use register or operand for the node. If a register is chosen, it won't
   // alias any temporary or output registers.
-  InstructionOperand* UseUnique(Node* node) {
-    return Use(node, new (zone()) UnallocatedOperand(UnallocatedOperand::ANY));
+  InstructionOperand UseUnique(Node* node) {
+    return Use(node,
+               UnallocatedOperand(UnallocatedOperand::NONE, GetVReg(node)));
   }
 
   // Use a unique register for the node that does not alias any temporary or
   // output registers.
-  InstructionOperand* UseUniqueRegister(Node* node) {
-    return Use(node, new (zone())
-               UnallocatedOperand(UnallocatedOperand::MUST_HAVE_REGISTER));
+  InstructionOperand UseUniqueRegister(Node* node) {
+    return Use(node, UnallocatedOperand(UnallocatedOperand::MUST_HAVE_REGISTER,
+                                        GetVReg(node)));
   }
 
-  // Use a unique double register for the node that does not alias any temporary
-  // or output double registers.
-  InstructionOperand* UseUniqueDoubleRegister(Node* node) {
-    return Use(node, new (zone())
-               UnallocatedOperand(UnallocatedOperand::MUST_HAVE_REGISTER));
+  InstructionOperand UseFixed(Node* node, Register reg) {
+    return Use(node, UnallocatedOperand(UnallocatedOperand::FIXED_REGISTER,
+                                        Register::ToAllocationIndex(reg),
+                                        GetVReg(node)));
   }
 
-  InstructionOperand* UseFixed(Node* node, Register reg) {
-    return Use(node, new (zone())
-               UnallocatedOperand(UnallocatedOperand::FIXED_REGISTER,
-                                  Register::ToAllocationIndex(reg)));
-  }
-
-  InstructionOperand* UseFixedDouble(Node* node, DoubleRegister reg) {
-    return Use(node, new (zone())
+  InstructionOperand UseFixed(Node* node, DoubleRegister reg) {
+    return Use(node,
                UnallocatedOperand(UnallocatedOperand::FIXED_DOUBLE_REGISTER,
-                                  DoubleRegister::ToAllocationIndex(reg)));
+                                  DoubleRegister::ToAllocationIndex(reg),
+                                  GetVReg(node)));
   }
 
-  InstructionOperand* UseImmediate(Node* node) {
+  InstructionOperand UseImmediate(Node* node) {
     int index = sequence()->AddImmediate(ToConstant(node));
-    return ImmediateOperand::Create(index, zone());
+    return ImmediateOperand(index);
   }
 
-  InstructionOperand* UseLocation(Node* node, LinkageLocation location) {
-    return Use(node, ToUnallocatedOperand(location));
+  InstructionOperand UseLocation(Node* node, LinkageLocation location,
+                                 MachineType type) {
+    return Use(node, ToUnallocatedOperand(location, type, GetVReg(node)));
   }
 
-  InstructionOperand* TempRegister() {
-    UnallocatedOperand* op =
-        new (zone()) UnallocatedOperand(UnallocatedOperand::MUST_HAVE_REGISTER,
-                                        UnallocatedOperand::USED_AT_START);
-    op->set_virtual_register(sequence()->NextVirtualRegister());
+  InstructionOperand TempRegister() {
+    return UnallocatedOperand(UnallocatedOperand::MUST_HAVE_REGISTER,
+                              UnallocatedOperand::USED_AT_START,
+                              sequence()->NextVirtualRegister());
+  }
+
+  InstructionOperand TempDoubleRegister() {
+    UnallocatedOperand op = UnallocatedOperand(
+        UnallocatedOperand::MUST_HAVE_REGISTER,
+        UnallocatedOperand::USED_AT_START, sequence()->NextVirtualRegister());
+    sequence()->MarkAsDouble(op.virtual_register());
     return op;
   }
 
-  InstructionOperand* TempDoubleRegister() {
-    UnallocatedOperand* op =
-        new (zone()) UnallocatedOperand(UnallocatedOperand::MUST_HAVE_REGISTER,
-                                        UnallocatedOperand::USED_AT_START);
-    op->set_virtual_register(sequence()->NextVirtualRegister());
-    sequence()->MarkAsDouble(op->virtual_register());
-    return op;
+  InstructionOperand TempRegister(Register reg) {
+    return UnallocatedOperand(UnallocatedOperand::FIXED_REGISTER,
+                              Register::ToAllocationIndex(reg),
+                              InstructionOperand::kInvalidVirtualRegister);
   }
 
-  InstructionOperand* TempRegister(Register reg) {
-    return new (zone()) UnallocatedOperand(UnallocatedOperand::FIXED_REGISTER,
-                                           Register::ToAllocationIndex(reg));
-  }
-
-  InstructionOperand* TempImmediate(int32_t imm) {
+  InstructionOperand TempImmediate(int32_t imm) {
     int index = sequence()->AddImmediate(Constant(imm));
-    return ImmediateOperand::Create(index, zone());
+    return ImmediateOperand(index);
   }
 
-  InstructionOperand* Label(BasicBlock* block) {
-    // TODO(bmeurer): We misuse ImmediateOperand here.
-    return TempImmediate(block->id());
+  InstructionOperand TempLocation(LinkageLocation location, MachineType type) {
+    return ToUnallocatedOperand(location, type,
+                                sequence()->NextVirtualRegister());
+  }
+
+  InstructionOperand Label(BasicBlock* block) {
+    int index = sequence()->AddImmediate(
+        Constant(RpoNumber::FromInt(block->rpo_number())));
+    return ImmediateOperand(index);
   }
 
  protected:
-  Graph* graph() const { return selector()->graph(); }
   InstructionSelector* selector() const { return selector_; }
   InstructionSequence* sequence() const { return selector()->sequence(); }
-  Isolate* isolate() const { return zone()->isolate(); }
   Zone* zone() const { return selector()->instruction_zone(); }
 
  private:
+  int GetVReg(Node* node) const { return selector_->GetVirtualRegister(node); }
+
   static Constant ToConstant(const Node* node) {
     switch (node->opcode()) {
       case IrOpcode::kInt32Constant:
-        return Constant(ValueOf<int32_t>(node->op()));
+        return Constant(OpParameter<int32_t>(node));
       case IrOpcode::kInt64Constant:
-        return Constant(ValueOf<int64_t>(node->op()));
-      case IrOpcode::kNumberConstant:
+        return Constant(OpParameter<int64_t>(node));
+      case IrOpcode::kFloat32Constant:
+        return Constant(OpParameter<float>(node));
       case IrOpcode::kFloat64Constant:
-        return Constant(ValueOf<double>(node->op()));
+      case IrOpcode::kNumberConstant:
+        return Constant(OpParameter<double>(node));
       case IrOpcode::kExternalConstant:
-        return Constant(ValueOf<ExternalReference>(node->op()));
+        return Constant(OpParameter<ExternalReference>(node));
       case IrOpcode::kHeapConstant:
-        return Constant(ValueOf<Handle<HeapObject> >(node->op()));
+        return Constant(OpParameter<Unique<HeapObject> >(node).handle());
       default:
         break;
     }
@@ -176,37 +194,47 @@ class OperandGenerator {
     return Constant(static_cast<int32_t>(0));
   }
 
-  UnallocatedOperand* Define(Node* node, UnallocatedOperand* operand) {
+  UnallocatedOperand Define(Node* node, UnallocatedOperand operand) {
     DCHECK_NOT_NULL(node);
-    DCHECK_NOT_NULL(operand);
-    operand->set_virtual_register(node->id());
+    DCHECK_EQ(operand.virtual_register(), GetVReg(node));
     selector()->MarkAsDefined(node);
     return operand;
   }
 
-  UnallocatedOperand* Use(Node* node, UnallocatedOperand* operand) {
+  UnallocatedOperand Use(Node* node, UnallocatedOperand operand) {
     DCHECK_NOT_NULL(node);
-    DCHECK_NOT_NULL(operand);
-    operand->set_virtual_register(node->id());
+    DCHECK_EQ(operand.virtual_register(), GetVReg(node));
     selector()->MarkAsUsed(node);
     return operand;
   }
 
-  UnallocatedOperand* ToUnallocatedOperand(LinkageLocation location) {
+  UnallocatedOperand ToUnallocatedOperand(LinkageLocation location,
+                                          MachineType type,
+                                          int virtual_register) {
     if (location.location_ == LinkageLocation::ANY_REGISTER) {
-      return new (zone())
-          UnallocatedOperand(UnallocatedOperand::MUST_HAVE_REGISTER);
+      // any machine register.
+      return UnallocatedOperand(UnallocatedOperand::MUST_HAVE_REGISTER,
+                                virtual_register);
     }
     if (location.location_ < 0) {
-      return new (zone()) UnallocatedOperand(UnallocatedOperand::FIXED_SLOT,
-                                             location.location_);
+      // a location on the caller frame.
+      return UnallocatedOperand(UnallocatedOperand::FIXED_SLOT,
+                                location.location_, virtual_register);
     }
-    if (location.rep_ == kMachineFloat64) {
-      return new (zone()) UnallocatedOperand(
-          UnallocatedOperand::FIXED_DOUBLE_REGISTER, location.location_);
+    if (location.location_ > LinkageLocation::ANY_REGISTER) {
+      // a spill location on this (callee) frame.
+      return UnallocatedOperand(
+          UnallocatedOperand::FIXED_SLOT,
+          location.location_ - LinkageLocation::ANY_REGISTER - 1,
+          virtual_register);
     }
-    return new (zone()) UnallocatedOperand(UnallocatedOperand::FIXED_REGISTER,
-                                           location.location_);
+    // a fixed register.
+    if (RepresentationOf(type) == kRepFloat64) {
+      return UnallocatedOperand(UnallocatedOperand::FIXED_DOUBLE_REGISTER,
+                                location.location_, virtual_register);
+    }
+    return UnallocatedOperand(UnallocatedOperand::FIXED_REGISTER,
+                              location.location_, virtual_register);
   }
 
   InstructionSelector* selector_;
@@ -218,7 +246,7 @@ class OperandGenerator {
 // The whole instruction is treated as a unit by the register allocator, and
 // thus no spills or moves can be introduced between the flags-setting
 // instruction and the branch or set it should be combined with.
-class FlagsContinuation V8_FINAL {
+class FlagsContinuation FINAL {
  public:
   FlagsContinuation() : mode_(kFlags_none) {}
 
@@ -262,7 +290,7 @@ class FlagsContinuation V8_FINAL {
 
   void Negate() {
     DCHECK(!IsNone());
-    condition_ = static_cast<FlagsCondition>(condition_ ^ 1);
+    condition_ = NegateFlagsCondition(condition_);
   }
 
   void Commute() {
@@ -300,18 +328,6 @@ class FlagsContinuation V8_FINAL {
       case kUnorderedEqual:
       case kUnorderedNotEqual:
         return;
-      case kUnorderedLessThan:
-        condition_ = kUnorderedGreaterThan;
-        return;
-      case kUnorderedGreaterThanOrEqual:
-        condition_ = kUnorderedLessThanOrEqual;
-        return;
-      case kUnorderedLessThanOrEqual:
-        condition_ = kUnorderedGreaterThanOrEqual;
-        return;
-      case kUnorderedGreaterThan:
-        condition_ = kUnorderedLessThan;
-        return;
     }
     UNREACHABLE();
   }
@@ -321,8 +337,6 @@ class FlagsContinuation V8_FINAL {
     condition_ = condition;
     if (negate) Negate();
   }
-
-  void SwapBlocks() { std::swap(true_block_, false_block_); }
 
   // Encodes this flags continuation into the given opcode.
   InstructionCode Encode(InstructionCode opcode) {
@@ -346,22 +360,26 @@ class FlagsContinuation V8_FINAL {
 // TODO(bmeurer): Get rid of the CallBuffer business and make
 // InstructionSelector::VisitCall platform independent instead.
 struct CallBuffer {
-  CallBuffer(Zone* zone, CallDescriptor* descriptor);
+  CallBuffer(Zone* zone, const CallDescriptor* descriptor,
+             FrameStateDescriptor* frame_state);
 
-  int output_count;
-  CallDescriptor* descriptor;
-  Node** output_nodes;
-  InstructionOperand** outputs;
-  InstructionOperand** fixed_and_control_args;
-  int fixed_count;
-  Node** pushed_nodes;
-  int pushed_count;
+  const CallDescriptor* descriptor;
+  FrameStateDescriptor* frame_state_descriptor;
+  NodeVector output_nodes;
+  InstructionOperandVector outputs;
+  InstructionOperandVector instruction_args;
+  NodeVector pushed_nodes;
 
-  int input_count() { return descriptor->InputCount(); }
+  size_t input_count() const { return descriptor->InputCount(); }
 
-  int control_count() { return descriptor->CanLazilyDeoptimize() ? 2 : 0; }
+  size_t frame_state_count() const { return descriptor->FrameStateCount(); }
 
-  int fixed_and_control_count() { return fixed_count + control_count(); }
+  size_t frame_state_value_count() const {
+    return (frame_state_descriptor == NULL)
+               ? 0
+               : (frame_state_descriptor->GetTotalSize() +
+                  1);  // Include deopt id.
+  }
 };
 
 }  // namespace compiler

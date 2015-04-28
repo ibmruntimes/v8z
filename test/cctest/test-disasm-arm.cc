@@ -34,7 +34,6 @@
 #include "src/disasm.h"
 #include "src/disassembler.h"
 #include "src/macro-assembler.h"
-#include "src/serialize.h"
 #include "test/cctest/cctest.h"
 
 using namespace v8::internal;
@@ -410,15 +409,39 @@ TEST(Type3) {
             "e6843895       pkhbt r3, r4, r5, lsl #17");
     COMPARE(pkhtb(r3, r4, Operand(r5, ASR, 17)),
             "e68438d5       pkhtb r3, r4, r5, asr #17");
-    COMPARE(uxtb(r9, Operand(r10, ROR, 0)),
-            "e6ef907a       uxtb r9, r10");
-    COMPARE(uxtb(r3, Operand(r4, ROR, 8)),
-            "e6ef3474       uxtb r3, r4, ror #8");
-    COMPARE(uxtab(r3, r4, Operand(r5, ROR, 8)),
-            "e6e43475       uxtab r3, r4, r5, ror #8");
-    COMPARE(uxtb16(r3, Operand(r4, ROR, 8)),
-            "e6cf3474       uxtb16 r3, r4, ror #8");
+
+    COMPARE(sxtb(r1, r7, 0, eq), "06af1077       sxtbeq r1, r7");
+    COMPARE(sxtb(r0, r0, 8, ne), "16af0470       sxtbne r0, r0, ror #8");
+    COMPARE(sxtb(r9, r10, 16), "e6af987a       sxtb r9, r10, ror #16");
+    COMPARE(sxtb(r4, r3, 24), "e6af4c73       sxtb r4, r3, ror #24");
+
+    COMPARE(sxtab(r3, r4, r5), "e6a43075       sxtab r3, r4, r5");
+
+    COMPARE(sxth(r5, r0), "e6bf5070       sxth r5, r0");
+    COMPARE(sxth(r5, r9, 8), "e6bf5479       sxth r5, r9, ror #8");
+    COMPARE(sxth(r5, r9, 16, hi), "86bf5879       sxthhi r5, r9, ror #16");
+    COMPARE(sxth(r8, r9, 24, cc), "36bf8c79       sxthcc r8, r9, ror #24");
+
+    COMPARE(sxtah(r3, r4, r5, 16), "e6b43875       sxtah r3, r4, r5, ror #16");
+
+    COMPARE(uxtb(r9, r10), "e6ef907a       uxtb r9, r10");
+    COMPARE(uxtb(r3, r4, 8), "e6ef3474       uxtb r3, r4, ror #8");
+
+    COMPARE(uxtab(r3, r4, r5, 8), "e6e43475       uxtab r3, r4, r5, ror #8");
+
+    COMPARE(uxtb16(r3, r4, 8), "e6cf3474       uxtb16 r3, r4, ror #8");
+
+    COMPARE(uxth(r9, r10), "e6ff907a       uxth r9, r10");
+    COMPARE(uxth(r3, r4, 8), "e6ff3474       uxth r3, r4, ror #8");
+
+    COMPARE(uxtah(r3, r4, r5, 24), "e6f43c75       uxtah r3, r4, r5, ror #24");
   }
+
+  COMPARE(smmla(r0, r1, r2, r3), "e7503211       smmla r0, r1, r2, r3");
+  COMPARE(smmla(r10, r9, r8, r7), "e75a7819       smmla r10, r9, r8, r7");
+
+  COMPARE(smmul(r0, r1, r2), "e750f211       smmul r0, r1, r2");
+  COMPARE(smmul(r8, r9, r10), "e758fa19       smmul r8, r9, r10");
 
   VERIFY_RUN();
 }
@@ -674,6 +697,30 @@ TEST(Vfp) {
       COMPARE(vcvt_f64_u32(d16, s1),
               "eef80b60       vcvt.f64.u32 d16, s1");
     }
+  }
+
+  VERIFY_RUN();
+}
+
+
+TEST(ARMv8_vrintX_disasm) {
+  SET_UP();
+
+  if (CpuFeatures::IsSupported(ARMv8)) {
+    COMPARE(vrinta(d0, d0), "feb80b40       vrinta.f64.f64 d0, d0");
+    COMPARE(vrinta(d2, d3), "feb82b43       vrinta.f64.f64 d2, d3");
+
+    COMPARE(vrintp(d0, d0), "feba0b40       vrintp.f64.f64 d0, d0");
+    COMPARE(vrintp(d2, d3), "feba2b43       vrintp.f64.f64 d2, d3");
+
+    COMPARE(vrintn(d0, d0), "feb90b40       vrintn.f64.f64 d0, d0");
+    COMPARE(vrintn(d2, d3), "feb92b43       vrintn.f64.f64 d2, d3");
+
+    COMPARE(vrintm(d0, d0), "febb0b40       vrintm.f64.f64 d0, d0");
+    COMPARE(vrintm(d2, d3), "febb2b43       vrintm.f64.f64 d2, d3");
+
+    COMPARE(vrintz(d0, d0), "eeb60bc0       vrintz.f64.f64 d0, d0");
+    COMPARE(vrintz(d2, d3, ne), "1eb62bc3       vrintzne.f64.f64 d2, d3");
   }
 
   VERIFY_RUN();

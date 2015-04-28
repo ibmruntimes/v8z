@@ -27,7 +27,7 @@ void Deoptimizer::EnsureRelocSpaceForLazyDeoptimization(Handle<Code> code) {
   HandleScope scope(isolate);
 
   // Compute the size of relocation information needed for the code
-  // patching in Deoptimizer::DeoptimizeFunction.
+  // patching in Deoptimizer::PatchCodeForDeoptimization below.
   int min_reloc_size = 0;
   int prev_pc_offset = 0;
   DeoptimizationInputData* deopt_data =
@@ -194,7 +194,7 @@ void Deoptimizer::FillInputFrame(Address tos, JavaScriptFrame* frame) {
 
 
 void Deoptimizer::SetPlatformCompiledStubRegisters(
-    FrameDescription* output_frame, CodeStubInterfaceDescriptor* descriptor) {
+    FrameDescription* output_frame, CodeStubDescriptor* descriptor) {
   intptr_t handler =
       reinterpret_cast<intptr_t>(descriptor->deoptimization_handler());
   int params = descriptor->GetHandlerParameterCount();
@@ -212,7 +212,8 @@ void Deoptimizer::CopyDoubleRegisters(FrameDescription* output_frame) {
 
 
 bool Deoptimizer::HasAlignmentPadding(JSFunction* function) {
-  int parameter_count = function->shared()->formal_parameter_count() + 1;
+  int parameter_count =
+      function->shared()->internal_formal_parameter_count() + 1;
   unsigned input_frame_size = input_->GetFrameSize();
   unsigned alignment_state_offset =
       input_frame_size - parameter_count * kPointerSize -
@@ -227,7 +228,7 @@ bool Deoptimizer::HasAlignmentPadding(JSFunction* function) {
 
 #define __ masm()->
 
-void Deoptimizer::EntryGenerator::Generate() {
+void Deoptimizer::TableEntryGenerator::Generate() {
   GeneratePrologue();
 
   // Save all general purpose registers before messing with them.
@@ -243,6 +244,9 @@ void Deoptimizer::EntryGenerator::Generate() {
   }
 
   __ pushad();
+
+  ExternalReference c_entry_fp_address(Isolate::kCEntryFPAddress, isolate());
+  __ mov(Operand::StaticVariable(c_entry_fp_address), ebp);
 
   const int kSavedRegistersAreaSize = kNumberOfRegisters * kPointerSize +
                                       kDoubleRegsSize;

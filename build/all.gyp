@@ -10,15 +10,13 @@
       'dependencies': [
         '../samples/samples.gyp:*',
         '../src/d8.gyp:d8',
-        '../test/base-unittests/base-unittests.gyp:*',
         '../test/cctest/cctest.gyp:*',
-        '../test/compiler-unittests/compiler-unittests.gyp:*',
+        '../test/unittests/unittests.gyp:*',
       ],
       'conditions': [
         ['component!="shared_library"', {
           'dependencies': [
-            '../tools/lexer-shell.gyp:lexer-shell',
-            '../tools/lexer-shell.gyp:parser-shell',
+            '../tools/parser-shell.gyp:parser-shell',
           ],
         }],
       ]

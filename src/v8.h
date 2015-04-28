@@ -9,8 +9,8 @@
 #ifndef V8_V8_H_
 #define V8_V8_H_
 
-#if defined(GOOGLE3)
-// Google3 special flag handling.
+#if defined(GOOGLE3) || defined(DCHECK_ALWAYS_ON)
+// Google3 and Chromium special flag handling.
 #if defined(DEBUG) && defined(NDEBUG)
 // V8 only uses DEBUG and whenever it is set we are building a debug
 // version of V8. We do not use NDEBUG and simply undef it here for
@@ -44,25 +44,19 @@
 #include "src/log-inl.h"  // NOLINT
 #include "src/handles-inl.h"  // NOLINT
 #include "src/types-inl.h"  // NOLINT
-#include "src/zone-inl.h"  // NOLINT
 
 namespace v8 {
 namespace internal {
-
-class Deserializer;
 
 class V8 : public AllStatic {
  public:
   // Global actions.
 
-  // If Initialize is called with des == NULL, the initial state is
-  // created from scratch. If a non-null Deserializer is given, the
-  // initial state is created by reading the deserialized data into an
-  // empty heap.
-  static bool Initialize(Deserializer* des);
+  static bool Initialize();
   static void TearDown();
 
   // Report process out of memory. Implementation found in api.cc.
+  // This function will not return, but will terminate the execution.
   static void FatalProcessOutOfMemory(const char* location,
                                       bool take_snapshot = false);
 
@@ -80,13 +74,16 @@ class V8 : public AllStatic {
   }
 
   static void SetArrayBufferAllocator(v8::ArrayBuffer::Allocator *allocator) {
-    CHECK_EQ(NULL, array_buffer_allocator_);
+    CHECK_NULL(array_buffer_allocator_);
     array_buffer_allocator_ = allocator;
   }
 
   static void InitializePlatform(v8::Platform* platform);
   static void ShutdownPlatform();
   static v8::Platform* GetCurrentPlatform();
+
+  static void SetNativesBlob(StartupData* natives_blob);
+  static void SetSnapshotBlob(StartupData* snapshot_blob);
 
  private:
   static void InitializeOncePerProcessImpl();

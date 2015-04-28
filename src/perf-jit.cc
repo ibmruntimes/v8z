@@ -57,7 +57,7 @@ PerfJitLogger::PerfJitLogger() : perf_output_handle_(NULL), code_index_(0) {
   CHECK_NE(size, -1);
   perf_output_handle_ =
       base::OS::FOpen(perf_dump_name.start(), base::OS::LogFileOpenMode);
-  CHECK_NE(perf_output_handle_, NULL);
+  CHECK_NOT_NULL(perf_output_handle_);
   setvbuf(perf_output_handle_, NULL, _IOFBF, kLogBufferSize);
 
   LogWriteHeader();
@@ -83,7 +83,8 @@ void PerfJitLogger::LogRecordedBuffer(Code* code, SharedFunctionInfo*,
 
   const char* code_name = name;
   uint8_t* code_pointer = reinterpret_cast<uint8_t*>(code->instruction_start());
-  uint32_t code_size = code->instruction_size();
+  uint32_t code_size = code->is_crankshafted() ? code->safepoint_table_offset()
+                                               : code->instruction_size();
 
   static const char string_terminator[] = "\0";
 

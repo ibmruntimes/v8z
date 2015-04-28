@@ -6,7 +6,6 @@
 // own, but contains the parts which are the same across the POSIX platforms
 // Linux, MacOS, FreeBSD, OpenBSD, NetBSD and QNX.
 
-#include <dlfcn.h>
 #include <errno.h>
 #include <limits.h>
 #include <pthread.h>
@@ -14,28 +13,19 @@
 #include <pthread_np.h>  // for pthread_set_name_np
 #endif
 #include <sched.h>  // for sched_yield
+#include <stdio.h>
 #include <time.h>
 #include <unistd.h>
 
 #include <sys/mman.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
-#if !defined(_AIX)
-#include <sys/syscall.h>
-#endif
 #include <sys/time.h>
 #include <sys/types.h>
-#if defined(__linux__)
-#include <sys/prctl.h>  // NOLINT, for prctl
-#endif
 #if defined(__APPLE__) || defined(__DragonFly__) || defined(__FreeBSD__) || \
     defined(__NetBSD__) || defined(__OpenBSD__)
 #include <sys/sysctl.h>  // NOLINT, for sysctl
 #endif
-
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <netinet/in.h>
 
 #undef MAP_TYPE
 
@@ -57,6 +47,18 @@
 #include "src/base/atomicops.h"
 #endif
 
+#if V8_OS_MACOSX
+#include <dlfcn.h>
+#endif
+
+#if V8_OS_LINUX
+#include <sys/prctl.h>  // NOLINT, for prctl
+#endif
+
+#if !defined(V8_OS_NACL) && !defined(_AIX)
+#include <sys/syscall.h>
+#endif
+
 namespace v8 {
 namespace base {
 
@@ -72,85 +74,6 @@ const char* g_gc_fake_mmap = NULL;
 }  // namespace
 
 
-int OS::NumberOfProcessorsOnline() {
-  return static_cast<int>(sysconf(_SC_NPROCESSORS_ONLN));
-}
-
-
-// Maximum size of the virtual memory.  0 means there is no artificial
-// limit.
-
-intptr_t OS::MaxVirtualMemory() {
-  struct rlimit limit;
-  int result = getrlimit(RLIMIT_DATA, &limit);
-  if (result != 0) return 0;
-#if V8_OS_NACL
-  // The NaCl compiler doesn't like resource.h constants.
-  if (static_cast<int>(limit.rlim_cur) == -1) return 0;
-#else
-  if (limit.rlim_cur == RLIM_INFINITY) return 0;
-#endif
-  return limit.rlim_cur;
-}
-
-
-uint64_t OS::TotalPhysicalMemory() {
-#if V8_OS_MACOSX
-  int mib[2];
-  mib[0] = CTL_HW;
-  mib[1] = HW_MEMSIZE;
-  int64_t size = 0;
-  size_t len = sizeof(size);
-  if (sysctl(mib, 2, &size, &len, NULL, 0) != 0) {
-    UNREACHABLE();
-    return 0;
-  }
-  return static_cast<uint64_t>(size);
-#elif V8_OS_FREEBSD
-  int pages, page_size;
-  size_t size = sizeof(pages);
-  sysctlbyname("vm.stats.vm.v_page_count", &pages, &size, NULL, 0);
-  sysctlbyname("vm.stats.vm.v_page_size", &page_size, &size, NULL, 0);
-  if (pages == -1 || page_size == -1) {
-    UNREACHABLE();
-    return 0;
-  }
-  return static_cast<uint64_t>(pages) * page_size;
-#elif V8_OS_CYGWIN
-  MEMORYSTATUS memory_info;
-  memory_info.dwLength = sizeof(memory_info);
-  if (!GlobalMemoryStatus(&memory_info)) {
-    UNREACHABLE();
-    return 0;
-  }
-  return static_cast<uint64_t>(memory_info.dwTotalPhys);
-#elif V8_OS_QNX
-  struct stat stat_buf;
-  if (stat("/proc", &stat_buf) != 0) {
-    UNREACHABLE();
-    return 0;
-  }
-  return static_cast<uint64_t>(stat_buf.st_size);
-#elif V8_OS_AIX
-  intptr_t realMem = sysconf(_SC_AIX_REALMEM);
-  if (realMem == -1) {
-    UNREACHABLE();
-    return 0;
-  }
-  // convert Kb to bytes.
-  return static_cast<uint64_t>(realMem) * 1024;
-#else
-  intptr_t pages = sysconf(_SC_PHYS_PAGES);
-  intptr_t page_size = sysconf(_SC_PAGESIZE);
-  if (pages == -1 || page_size == -1) {
-    UNREACHABLE();
-    return 0;
-  }
-  return static_cast<uint64_t>(pages) * page_size;
-#endif
-}
-
-
 int OS::ActivationFrameAlignment() {
 #if V8_TARGET_ARCH_ARM
   // On EABI ARM targets this is required for fp correctness in the
@@ -160,14 +83,12 @@ int OS::ActivationFrameAlignment() {
   return 8;
 #elif V8_TARGET_ARCH_S390
   return 8;
-#elif V8_TARGET_ARCH_PPC
-  return 16;
 #else
   // Otherwise we just assume 16 byte alignment, i.e.:
   // - With gcc 4.4 the tree vectorization optimizer can generate code
   //   that requires 16 byte alignment such as movdqa on x86.
-  // - Mac OS X and Solaris (64-bit) activation frames must be 16 byte-aligned;
-  //   see "Mac OS X ABI Function Call Guide"
+  // - Mac OS X, PPC and Solaris (64-bit) activation frames must
+  //   be 16 byte-aligned;  see "Mac OS X ABI Function Call Guide"
   return 16;
 #endif
 }
@@ -263,20 +184,19 @@ void* OS::GetRandomMmapAddr() {
   // 31 bits of virtual addressing.
   raw_addr &= 0x1ffff000;
 #elif V8_TARGET_ARCH_PPC64
-# if V8_OS_AIX
+#if V8_OS_AIX
   // AIX: 64 bits of virtual addressing, but we limit address range to:
   //   a) minimize Segment Lookaside Buffer (SLB) misses and
-  //   b) avoid losing precision if address is stored as a double.
   raw_addr &= V8_UINT64_C(0x3ffff000);
   // Use extra address space to isolate the mmap regions.
   raw_addr += V8_UINT64_C(0x400000000000);
-# elif V8_TARGET_ARCH_PPC_BE
+#elif V8_TARGET_BIG_ENDIAN
   // Big-endian Linux: 44 bits of virtual addressing.
   raw_addr &= V8_UINT64_C(0x03fffffff000);
-# else
+#else
   // Little-endian Linux: 48 bits of virtual addressing.
   raw_addr &= V8_UINT64_C(0x3ffffffff000);
-# endif
+#endif
 #else
   raw_addr &= 0x3ffff000;
 
@@ -291,7 +211,7 @@ void* OS::GetRandomMmapAddr() {
   // no hint at all. The high hint prevents the break from getting hemmed in
   // at low values, ceding half of the address space to the system heap.
   raw_addr += 0x80000000;
-# elif V8_OS_AIX
+#elif V8_OS_AIX
   // The range 0x30000000 - 0xD0000000 is available on AIX;
   // choose the upper range.
   raw_addr += 0x90000000;
@@ -341,30 +261,16 @@ void OS::DebugBreak() {
 #elif V8_HOST_ARCH_PPC
   asm("twge 2,2");
 #elif V8_HOST_ARCH_IA32
-#if defined(__native_client__)
+#if V8_OS_NACL
   asm("hlt");
 #else
   asm("int $3");
-#endif  // __native_client__
+#endif  // V8_OS_NACL
 #elif V8_HOST_ARCH_X64
   asm("int $3");
 #else
 #error Unsupported host architecture.
 #endif
-}
-
-
-// ----------------------------------------------------------------------------
-// Math functions
-
-#if V8_OS_AIX
-#undef NAN
-#define NAN (__builtin_nanf(""))
-#endif
-
-double OS::nan_value() {
-  // NAN from math.h is defined in C99 and not in POSIX.
-  return NAN;
 }
 
 
@@ -374,13 +280,19 @@ int OS::GetCurrentProcessId() {
 
 
 int OS::GetCurrentThreadId() {
-#if defined(ANDROID)
+#if V8_OS_MACOSX || (V8_OS_ANDROID && defined(__APPLE__))
+  return static_cast<int>(pthread_mach_thread_np(pthread_self()));
+#elif V8_OS_LINUX
   return static_cast<int>(syscall(__NR_gettid));
+#elif V8_OS_ANDROID
+  return static_cast<int>(gettid());
 #elif V8_OS_AIX
   return static_cast<int>(thread_self());
+#elif V8_OS_SOLARIS
+  return static_cast<int>(pthread_self());
 #else
-  return static_cast<int>(syscall(SYS_gettid));
-#endif  // defined(ANDROID)
+  return static_cast<int>(reinterpret_cast<intptr_t>(pthread_self()));
+#endif
 }
 
 
@@ -389,12 +301,17 @@ int OS::GetCurrentThreadId() {
 //
 
 int OS::GetUserTime(uint32_t* secs,  uint32_t* usecs) {
+#if V8_OS_NACL
+  // Optionally used in Logger::ResourceEvent.
+  return -1;
+#else
   struct rusage usage;
 
   if (getrusage(RUSAGE_SELF, &usage) < 0) return -1;
   *secs = usage.ru_utime.tv_sec;
   *usecs = usage.ru_utime.tv_usec;
   return 0;
+#endif
 }
 
 
@@ -422,10 +339,10 @@ void OS::ClearTimezoneCache(TimezoneCache* cache) {
 
 
 double OS::DaylightSavingsOffset(double time, TimezoneCache*) {
-  if (std::isnan(time)) return nan_value();
+  if (std::isnan(time)) return std::numeric_limits<double>::quiet_NaN();
   time_t tv = static_cast<time_t>(std::floor(time/msPerSecond));
   struct tm* t = localtime(&tv);
-  if (NULL == t) return nan_value();
+  if (NULL == t) return std::numeric_limits<double>::quiet_NaN();
   return t->tm_isdst > 0 ? 3600 * msPerSecond : 0;
 }
 
@@ -453,6 +370,11 @@ FILE* OS::FOpen(const char* path, const char* mode) {
 
 bool OS::Remove(const char* path) {
   return (remove(path) == 0);
+}
+
+
+bool OS::isDirectorySeparator(const char ch) {
+  return ch == '/';
 }
 
 
@@ -666,13 +588,9 @@ void Thread::Join() {
 
 
 void Thread::YieldCPU() {
-#if V8_TARGET_ARCH_PPC && !V8_OS_AIX
-  OS::Sleep(0);
-#else
   int result = sched_yield();
   DCHECK_EQ(0, result);
   USE(result);
-#endif
 }
 
 

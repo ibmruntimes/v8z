@@ -184,26 +184,6 @@ TEST(RuntimeCallInline) {
 }
 
 
-TEST(RuntimeCallBooleanize) {
-  // TODO(turbofan): %Booleanize will disappear, don't hesitate to remove this
-  // test case, two-argument case is covered by the above test already.
-  FLAG_allow_natives_syntax = true;
-  FunctionTester T("(function(a,b) { return %Booleanize(a, b); })");
-
-  T.CheckCall(T.true_value(), T.Val(-1), T.Val(Token::LT));
-  T.CheckCall(T.false_value(), T.Val(-1), T.Val(Token::EQ));
-  T.CheckCall(T.false_value(), T.Val(-1), T.Val(Token::GT));
-
-  T.CheckCall(T.false_value(), T.Val(0.0), T.Val(Token::LT));
-  T.CheckCall(T.true_value(), T.Val(0.0), T.Val(Token::EQ));
-  T.CheckCall(T.false_value(), T.Val(0.0), T.Val(Token::GT));
-
-  T.CheckCall(T.false_value(), T.Val(1), T.Val(Token::LT));
-  T.CheckCall(T.false_value(), T.Val(1), T.Val(Token::EQ));
-  T.CheckCall(T.true_value(), T.Val(1), T.Val(Token::GT));
-}
-
-
 TEST(EvalCall) {
   FunctionTester T("(function(a,b) { return eval(a); })");
   Handle<JSObject> g(T.function->context()->global_object()->global_proxy());
@@ -232,4 +212,58 @@ TEST(ReceiverPatching) {
   FunctionTester T("(function(a) { return this; })");
   Handle<JSObject> g(T.function->context()->global_object()->global_proxy());
   T.CheckCall(g, T.undefined());
+}
+
+
+TEST(CallEval) {
+  FunctionTester T(
+      "var x = 42;"
+      "(function () {"
+      "function bar() { return eval('x') };"
+      "return bar;"
+      "})();");
+
+  T.CheckCall(T.Val(42), T.Val("x"), T.undefined());
+}
+
+
+TEST(ContextLoadedFromActivation) {
+  const char* script =
+      "var x = 42;"
+      "(function() {"
+      "  return function () { return x };"
+      "})()";
+
+  // Disable context specialization.
+  FunctionTester T(script);
+  v8::Local<v8::Context> context = v8::Context::New(CcTest::isolate());
+  v8::Context::Scope scope(context);
+  v8::Local<v8::Value> value = CompileRun(script);
+  i::Handle<i::Object> ofun = v8::Utils::OpenHandle(*value);
+  i::Handle<i::JSFunction> jsfun = Handle<JSFunction>::cast(ofun);
+  jsfun->set_code(T.function->code());
+  context->Global()->Set(v8_str("foo"), v8::Utils::ToLocal(jsfun));
+  CompileRun("var x = 24;");
+  ExpectInt32("foo();", 24);
+}
+
+
+TEST(BuiltinLoadedFromActivation) {
+  const char* script =
+      "var x = 42;"
+      "(function() {"
+      "  return function () { return this; };"
+      "})()";
+
+  // Disable context specialization.
+  FunctionTester T(script);
+  v8::Local<v8::Context> context = v8::Context::New(CcTest::isolate());
+  v8::Context::Scope scope(context);
+  v8::Local<v8::Value> value = CompileRun(script);
+  i::Handle<i::Object> ofun = v8::Utils::OpenHandle(*value);
+  i::Handle<i::JSFunction> jsfun = Handle<JSFunction>::cast(ofun);
+  jsfun->set_code(T.function->code());
+  context->Global()->Set(v8_str("foo"), v8::Utils::ToLocal(jsfun));
+  CompileRun("var x = 24;");
+  ExpectObject("foo()", context->Global());
 }

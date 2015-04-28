@@ -4,18 +4,18 @@
 
 #include "src/compiler/source-position.h"
 #include "src/compiler/graph.h"
-#include "src/compiler/node-aux-data-inl.h"
+#include "src/compiler/node-aux-data.h"
 
 namespace v8 {
 namespace internal {
 namespace compiler {
 
-class SourcePositionTable::Decorator : public GraphDecorator {
+class SourcePositionTable::Decorator FINAL : public GraphDecorator {
  public:
   explicit Decorator(SourcePositionTable* source_positions)
       : source_positions_(source_positions) {}
 
-  virtual void Decorate(Node* node) {
+  void Decorate(Node* node, bool incomplete) FINAL {
     DCHECK(!source_positions_->current_position_.IsInvalid());
     source_positions_->table_.Set(node, source_positions_->current_position_);
   }
@@ -46,7 +46,7 @@ void SourcePositionTable::RemoveDecorator() {
 }
 
 
-SourcePosition SourcePositionTable::GetSourcePosition(Node* node) {
+SourcePosition SourcePositionTable::GetSourcePosition(Node* node) const {
   return table_.Get(node);
 }
 

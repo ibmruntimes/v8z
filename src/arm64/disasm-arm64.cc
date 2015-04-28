@@ -1517,7 +1517,9 @@ int Disassembler::SubstituteLiteralField(Instruction* instr,
     case LDR_w_lit:
     case LDR_x_lit:
     case LDR_s_lit:
-    case LDR_d_lit: AppendToOutput("(addr %p)", instr->LiteralAddress()); break;
+    case LDR_d_lit:
+      AppendToOutput("(addr 0x%016" PRIxPTR ")", instr->LiteralAddress());
+      break;
     default: UNREACHABLE();
   }
 
@@ -1693,7 +1695,7 @@ int Disassembler::SubstituteBarrierField(Instruction* instr,
   DCHECK(format[0] == 'M');
   USE(format);
 
-  static const char* options[4][4] = {
+  static const char* const options[4][4] = {
     { "sy (0b0000)", "oshld", "oshst", "osh" },
     { "sy (0b0100)", "nshld", "nshst", "nsh" },
     { "sy (0b1000)", "ishld", "ishst", "ish" },

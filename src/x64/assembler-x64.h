@@ -37,7 +37,10 @@
 #ifndef V8_X64_ASSEMBLER_X64_H_
 #define V8_X64_ASSEMBLER_X64_H_
 
-#include "src/serialize.h"
+#include <deque>
+
+#include "src/assembler.h"
+#include "src/compiler.h"
 
 namespace v8 {
 namespace internal {
@@ -71,9 +74,8 @@ struct Register {
   //  rsp - stack pointer
   //  rbp - frame pointer
   //  r10 - fixed scratch register
-  //  r12 - smi constant register
   //  r13 - root register
-  static const int kMaxNumAllocatableRegisters = 11;
+  static const int kMaxNumAllocatableRegisters = 12;
   static int NumAllocatableRegisters() {
     return kMaxNumAllocatableRegisters;
   }
@@ -101,6 +103,7 @@ struct Register {
       "r8",
       "r9",
       "r11",
+      "r12",
       "r14",
       "r15"
     };
@@ -198,6 +201,11 @@ struct XMMRegister {
   static const int kMaxNumAllocatableRegisters = 15;
   static int NumAllocatableRegisters() {
     return kMaxNumAllocatableRegisters;
+  }
+
+  // TODO(turbofan): Proper support for float32.
+  static int NumAllocatableAliasedRegisters() {
+    return NumAllocatableRegisters();
   }
 
   static int ToAllocationIndex(XMMRegister reg) {
@@ -351,6 +359,14 @@ inline Condition CommuteCondition(Condition cc) {
 }
 
 
+enum RoundingMode {
+  kRoundToNearest = 0x0,
+  kRoundDown = 0x1,
+  kRoundUp = 0x2,
+  kRoundToZero = 0x3
+};
+
+
 // -----------------------------------------------------------------------------
 // Machine instruction Immediates
 
@@ -403,6 +419,9 @@ class Operand BASE_EMBEDDED {
   // this must not overflow.
   Operand(const Operand& base, int32_t offset);
 
+  // [rip + disp/r]
+  explicit Operand(Label* label);
+
   // Checks whether either base or index register is the given register.
   // Does not check the "reg" part of the Operand.
   bool AddressUsesRegister(Register reg) const;
@@ -416,7 +435,7 @@ class Operand BASE_EMBEDDED {
 
  private:
   byte rex_;
-  byte buf_[6];
+  byte buf_[9];
   // The number of bytes of buf_ in use.
   byte len_;
 
@@ -432,6 +451,7 @@ class Operand BASE_EMBEDDED {
   // Needs to be called after set_sib, not before it.
   inline void set_disp8(int disp);
   inline void set_disp32(int disp);
+  inline void set_disp64(int64_t disp);  // for labels.
 
   friend class Assembler;
 };
@@ -515,13 +535,15 @@ class Assembler : public AssemblerBase {
   // the absolute address of the target.
   // These functions convert between absolute Addresses of Code objects and
   // the relative displacements stored in the code.
-  static inline Address target_address_at(Address pc, Address constant_pool);
-  static inline void set_target_address_at(Address pc, Address constant_pool,
+  static inline Address target_address_at(Address pc,
+                                          ConstantPoolArray* constant_pool);
+  static inline void set_target_address_at(Address pc,
+                                           ConstantPoolArray* constant_pool,
                                            Address target,
                                            ICacheFlushMode icache_flush_mode =
                                                FLUSH_ICACHE_IF_NEEDED) ;
   static inline Address target_address_at(Address pc, Code* code) {
-    Address constant_pool = code ? code->constant_pool() : NULL;
+    ConstantPoolArray* constant_pool = code ? code->constant_pool() : NULL;
     return target_address_at(pc, constant_pool);
   }
   static inline void set_target_address_at(Address pc,
@@ -529,7 +551,7 @@ class Assembler : public AssemblerBase {
                                            Address target,
                                            ICacheFlushMode icache_flush_mode =
                                                FLUSH_ICACHE_IF_NEEDED) {
-    Address constant_pool = code ? code->constant_pool() : NULL;
+    ConstantPoolArray* constant_pool = code ? code->constant_pool() : NULL;
     set_target_address_at(pc, constant_pool, target, icache_flush_mode);
   }
 
@@ -546,6 +568,11 @@ class Assembler : public AssemblerBase {
       Address instruction_payload, Code* code, Address target) {
     set_target_address_at(instruction_payload, code, target);
   }
+
+  // This sets the internal reference at the pc.
+  inline static void deserialization_set_target_internal_reference_at(
+      Address pc, Address target,
+      RelocInfo::Mode mode = RelocInfo::INTERNAL_REFERENCE);
 
   static inline RelocInfo::Mode RelocInfoNone() {
     if (kPointerSize == kInt64Size) {
@@ -724,8 +751,10 @@ class Assembler : public AssemblerBase {
   void movq(Register dst, int64_t value);
   void movq(Register dst, uint64_t value);
 
+  void movsxbl(Register dst, Register src);
   void movsxbl(Register dst, const Operand& src);
   void movsxbq(Register dst, const Operand& src);
+  void movsxwl(Register dst, Register src);
   void movsxwl(Register dst, const Operand& src);
   void movsxwq(Register dst, const Operand& src);
   void movsxlq(Register dst, Register src);
@@ -803,33 +832,48 @@ class Assembler : public AssemblerBase {
   // Sign-extends eax into edx:eax.
   void cdq();
 
+  // Multiply eax by src, put the result in edx:eax.
+  void mull(Register src);
+  void mull(const Operand& src);
   // Multiply rax by src, put the result in rdx:rax.
-  void mul(Register src);
+  void mulq(Register src);
 
-#define DECLARE_SHIFT_INSTRUCTION(instruction, subcode)     \
-  void instruction##p(Register dst, Immediate imm8) {       \
-    shift(dst, imm8, subcode, kPointerSize);                \
-  }                                                         \
-                                                            \
-  void instruction##l(Register dst, Immediate imm8) {       \
-    shift(dst, imm8, subcode, kInt32Size);                  \
-  }                                                         \
-                                                            \
-  void instruction##q(Register dst, Immediate imm8) {       \
-    shift(dst, imm8, subcode, kInt64Size);                  \
-  }                                                         \
-                                                            \
-  void instruction##p_cl(Register dst) {                    \
-    shift(dst, subcode, kPointerSize);                      \
-  }                                                         \
-                                                            \
-  void instruction##l_cl(Register dst) {                    \
-    shift(dst, subcode, kInt32Size);                        \
-  }                                                         \
-                                                            \
-  void instruction##q_cl(Register dst) {                    \
-    shift(dst, subcode, kInt64Size);                        \
-  }
+#define DECLARE_SHIFT_INSTRUCTION(instruction, subcode)                       \
+  void instruction##p(Register dst, Immediate imm8) {                         \
+    shift(dst, imm8, subcode, kPointerSize);                                  \
+  }                                                                           \
+                                                                              \
+  void instruction##l(Register dst, Immediate imm8) {                         \
+    shift(dst, imm8, subcode, kInt32Size);                                    \
+  }                                                                           \
+                                                                              \
+  void instruction##q(Register dst, Immediate imm8) {                         \
+    shift(dst, imm8, subcode, kInt64Size);                                    \
+  }                                                                           \
+                                                                              \
+  void instruction##p(Operand dst, Immediate imm8) {                          \
+    shift(dst, imm8, subcode, kPointerSize);                                  \
+  }                                                                           \
+                                                                              \
+  void instruction##l(Operand dst, Immediate imm8) {                          \
+    shift(dst, imm8, subcode, kInt32Size);                                    \
+  }                                                                           \
+                                                                              \
+  void instruction##q(Operand dst, Immediate imm8) {                          \
+    shift(dst, imm8, subcode, kInt64Size);                                    \
+  }                                                                           \
+                                                                              \
+  void instruction##p_cl(Register dst) { shift(dst, subcode, kPointerSize); } \
+                                                                              \
+  void instruction##l_cl(Register dst) { shift(dst, subcode, kInt32Size); }   \
+                                                                              \
+  void instruction##q_cl(Register dst) { shift(dst, subcode, kInt64Size); }   \
+                                                                              \
+  void instruction##p_cl(Operand dst) { shift(dst, subcode, kPointerSize); }  \
+                                                                              \
+  void instruction##l_cl(Operand dst) { shift(dst, subcode, kInt32Size); }    \
+                                                                              \
+  void instruction##q_cl(Operand dst) { shift(dst, subcode, kInt64Size); }
   SHIFT_INSTRUCTION_LIST(DECLARE_SHIFT_INSTRUCTION)
 #undef DECLARE_SHIFT_INSTRUCTION
 
@@ -855,6 +899,7 @@ class Assembler : public AssemblerBase {
   void bt(const Operand& dst, Register src);
   void bts(const Operand& dst, Register src);
   void bsrl(Register dst, Register src);
+  void bsrl(Register dst, const Operand& src);
 
   // Miscellaneous
   void clc();
@@ -864,6 +909,7 @@ class Assembler : public AssemblerBase {
   void int3();
   void nop();
   void ret(int imm16);
+  void ud2();
   void setcc(Condition cc, Register reg);
 
   // Label operations & relative jumps (PPUM Appendix D)
@@ -910,6 +956,7 @@ class Assembler : public AssemblerBase {
 
   // Jump near absolute indirect (r64)
   void jmp(Register adr);
+  void jmp(const Operand& src);
 
   // Conditional jumps
   void j(Condition cc,
@@ -990,6 +1037,17 @@ class Assembler : public AssemblerBase {
   void sahf();
 
   // SSE instructions
+  void addss(XMMRegister dst, XMMRegister src);
+  void addss(XMMRegister dst, const Operand& src);
+  void subss(XMMRegister dst, XMMRegister src);
+  void subss(XMMRegister dst, const Operand& src);
+  void mulss(XMMRegister dst, XMMRegister src);
+  void mulss(XMMRegister dst, const Operand& src);
+  void divss(XMMRegister dst, XMMRegister src);
+  void divss(XMMRegister dst, const Operand& src);
+
+  void ucomiss(XMMRegister dst, XMMRegister src);
+  void ucomiss(XMMRegister dst, const Operand& src);
   void movaps(XMMRegister dst, XMMRegister src);
   void movss(XMMRegister dst, const Operand& src);
   void movss(const Operand& dst, XMMRegister src);
@@ -1019,6 +1077,7 @@ class Assembler : public AssemblerBase {
 
   // SSE2 instructions
   void movd(XMMRegister dst, Register src);
+  void movd(XMMRegister dst, const Operand& src);
   void movd(Register dst, XMMRegister src);
   void movq(XMMRegister dst, Register src);
   void movq(Register dst, XMMRegister src);
@@ -1042,10 +1101,14 @@ class Assembler : public AssemblerBase {
   void movapd(XMMRegister dst, XMMRegister src);
 
   void psllq(XMMRegister reg, byte imm8);
+  void psrlq(XMMRegister reg, byte imm8);
+  void pslld(XMMRegister reg, byte imm8);
+  void psrld(XMMRegister reg, byte imm8);
 
   void cvttsd2si(Register dst, const Operand& src);
   void cvttsd2si(Register dst, XMMRegister src);
   void cvttsd2siq(Register dst, XMMRegister src);
+  void cvttsd2siq(Register dst, const Operand& src);
 
   void cvtlsi2sd(XMMRegister dst, const Operand& src);
   void cvtlsi2sd(XMMRegister dst, Register src);
@@ -1056,6 +1119,7 @@ class Assembler : public AssemblerBase {
   void cvtss2sd(XMMRegister dst, XMMRegister src);
   void cvtss2sd(XMMRegister dst, const Operand& src);
   void cvtsd2ss(XMMRegister dst, XMMRegister src);
+  void cvtsd2ss(XMMRegister dst, const Operand& src);
 
   void cvtsd2si(Register dst, XMMRegister src);
   void cvtsd2siq(Register dst, XMMRegister src);
@@ -1063,9 +1127,11 @@ class Assembler : public AssemblerBase {
   void addsd(XMMRegister dst, XMMRegister src);
   void addsd(XMMRegister dst, const Operand& src);
   void subsd(XMMRegister dst, XMMRegister src);
+  void subsd(XMMRegister dst, const Operand& src);
   void mulsd(XMMRegister dst, XMMRegister src);
   void mulsd(XMMRegister dst, const Operand& src);
   void divsd(XMMRegister dst, XMMRegister src);
+  void divsd(XMMRegister dst, const Operand& src);
 
   void andpd(XMMRegister dst, XMMRegister src);
   void orpd(XMMRegister dst, XMMRegister src);
@@ -1076,20 +1142,217 @@ class Assembler : public AssemblerBase {
   void ucomisd(XMMRegister dst, XMMRegister src);
   void ucomisd(XMMRegister dst, const Operand& src);
   void cmpltsd(XMMRegister dst, XMMRegister src);
+  void pcmpeqd(XMMRegister dst, XMMRegister src);
 
   void movmskpd(Register dst, XMMRegister src);
+
+  void punpckldq(XMMRegister dst, XMMRegister src);
+  void punpckhdq(XMMRegister dst, XMMRegister src);
+
+  void maxsd(XMMRegister dst, XMMRegister src);
+  void maxsd(XMMRegister dst, const Operand& src);
+  void minsd(XMMRegister dst, XMMRegister src);
+  void minsd(XMMRegister dst, const Operand& src);
 
   // SSE 4.1 instruction
   void extractps(Register dst, XMMRegister src, byte imm8);
 
-  enum RoundingMode {
-    kRoundToNearest = 0x0,
-    kRoundDown      = 0x1,
-    kRoundUp        = 0x2,
-    kRoundToZero    = 0x3
-  };
+  void pextrd(Register dst, XMMRegister src, int8_t imm8);
+
+  void pinsrd(XMMRegister dst, Register src, int8_t imm8);
+  void pinsrd(XMMRegister dst, const Operand& src, int8_t imm8);
 
   void roundsd(XMMRegister dst, XMMRegister src, RoundingMode mode);
+
+  // AVX instruction
+  void vfmadd132sd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vfmasd(0x99, dst, src1, src2);
+  }
+  void vfmadd213sd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vfmasd(0xa9, dst, src1, src2);
+  }
+  void vfmadd231sd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vfmasd(0xb9, dst, src1, src2);
+  }
+  void vfmadd132sd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vfmasd(0x99, dst, src1, src2);
+  }
+  void vfmadd213sd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vfmasd(0xa9, dst, src1, src2);
+  }
+  void vfmadd231sd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vfmasd(0xb9, dst, src1, src2);
+  }
+  void vfmsub132sd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vfmasd(0x9b, dst, src1, src2);
+  }
+  void vfmsub213sd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vfmasd(0xab, dst, src1, src2);
+  }
+  void vfmsub231sd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vfmasd(0xbb, dst, src1, src2);
+  }
+  void vfmsub132sd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vfmasd(0x9b, dst, src1, src2);
+  }
+  void vfmsub213sd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vfmasd(0xab, dst, src1, src2);
+  }
+  void vfmsub231sd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vfmasd(0xbb, dst, src1, src2);
+  }
+  void vfnmadd132sd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vfmasd(0x9d, dst, src1, src2);
+  }
+  void vfnmadd213sd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vfmasd(0xad, dst, src1, src2);
+  }
+  void vfnmadd231sd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vfmasd(0xbd, dst, src1, src2);
+  }
+  void vfnmadd132sd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vfmasd(0x9d, dst, src1, src2);
+  }
+  void vfnmadd213sd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vfmasd(0xad, dst, src1, src2);
+  }
+  void vfnmadd231sd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vfmasd(0xbd, dst, src1, src2);
+  }
+  void vfnmsub132sd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vfmasd(0x9f, dst, src1, src2);
+  }
+  void vfnmsub213sd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vfmasd(0xaf, dst, src1, src2);
+  }
+  void vfnmsub231sd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vfmasd(0xbf, dst, src1, src2);
+  }
+  void vfnmsub132sd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vfmasd(0x9f, dst, src1, src2);
+  }
+  void vfnmsub213sd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vfmasd(0xaf, dst, src1, src2);
+  }
+  void vfnmsub231sd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vfmasd(0xbf, dst, src1, src2);
+  }
+  void vfmasd(byte op, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vfmasd(byte op, XMMRegister dst, XMMRegister src1, const Operand& src2);
+
+  void vfmadd132ss(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vfmass(0x99, dst, src1, src2);
+  }
+  void vfmadd213ss(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vfmass(0xa9, dst, src1, src2);
+  }
+  void vfmadd231ss(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vfmass(0xb9, dst, src1, src2);
+  }
+  void vfmadd132ss(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vfmass(0x99, dst, src1, src2);
+  }
+  void vfmadd213ss(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vfmass(0xa9, dst, src1, src2);
+  }
+  void vfmadd231ss(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vfmass(0xb9, dst, src1, src2);
+  }
+  void vfmsub132ss(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vfmass(0x9b, dst, src1, src2);
+  }
+  void vfmsub213ss(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vfmass(0xab, dst, src1, src2);
+  }
+  void vfmsub231ss(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vfmass(0xbb, dst, src1, src2);
+  }
+  void vfmsub132ss(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vfmass(0x9b, dst, src1, src2);
+  }
+  void vfmsub213ss(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vfmass(0xab, dst, src1, src2);
+  }
+  void vfmsub231ss(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vfmass(0xbb, dst, src1, src2);
+  }
+  void vfnmadd132ss(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vfmass(0x9d, dst, src1, src2);
+  }
+  void vfnmadd213ss(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vfmass(0xad, dst, src1, src2);
+  }
+  void vfnmadd231ss(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vfmass(0xbd, dst, src1, src2);
+  }
+  void vfnmadd132ss(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vfmass(0x9d, dst, src1, src2);
+  }
+  void vfnmadd213ss(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vfmass(0xad, dst, src1, src2);
+  }
+  void vfnmadd231ss(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vfmass(0xbd, dst, src1, src2);
+  }
+  void vfnmsub132ss(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vfmass(0x9f, dst, src1, src2);
+  }
+  void vfnmsub213ss(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vfmass(0xaf, dst, src1, src2);
+  }
+  void vfnmsub231ss(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vfmass(0xbf, dst, src1, src2);
+  }
+  void vfnmsub132ss(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vfmass(0x9f, dst, src1, src2);
+  }
+  void vfnmsub213ss(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vfmass(0xaf, dst, src1, src2);
+  }
+  void vfnmsub231ss(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vfmass(0xbf, dst, src1, src2);
+  }
+  void vfmass(byte op, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vfmass(byte op, XMMRegister dst, XMMRegister src1, const Operand& src2);
+
+  void vaddsd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vsd(0x58, dst, src1, src2);
+  }
+  void vaddsd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vsd(0x58, dst, src1, src2);
+  }
+  void vsubsd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vsd(0x5c, dst, src1, src2);
+  }
+  void vsubsd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vsd(0x5c, dst, src1, src2);
+  }
+  void vmulsd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vsd(0x59, dst, src1, src2);
+  }
+  void vmulsd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vsd(0x59, dst, src1, src2);
+  }
+  void vdivsd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vsd(0x5e, dst, src1, src2);
+  }
+  void vdivsd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vsd(0x5e, dst, src1, src2);
+  }
+  void vmaxsd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vsd(0x5f, dst, src1, src2);
+  }
+  void vmaxsd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vsd(0x5f, dst, src1, src2);
+  }
+  void vminsd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vsd(0x5d, dst, src1, src2);
+  }
+  void vminsd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vsd(0x5d, dst, src1, src2);
+  }
+  void vsd(byte op, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vsd(byte op, XMMRegister dst, XMMRegister src1, const Operand& src2);
 
   // Debugging
   void Print();
@@ -1107,7 +1370,11 @@ class Assembler : public AssemblerBase {
 
   // Record a comment relocation entry that can be used by a disassembler.
   // Use --code-comments to enable.
-  void RecordComment(const char* msg, bool force = false);
+  void RecordComment(const char* msg);
+
+  // Record a deoptimization reason that can be used by a log or cpu profiler.
+  // Use --trace-deopt to enable.
+  void RecordDeoptReason(const int reason, const SourcePosition position);
 
   // Allocate a constant pool of the correct size for the generated code.
   Handle<ConstantPoolArray> NewConstantPool(Isolate* isolate);
@@ -1119,6 +1386,7 @@ class Assembler : public AssemblerBase {
   // Used for inline tables, e.g., jump-tables.
   void db(uint8_t data);
   void dd(uint32_t data);
+  void dq(Label* label);
 
   PositionsRecorder* positions_recorder() { return &positions_recorder_; }
 
@@ -1145,9 +1413,6 @@ class Assembler : public AssemblerBase {
  protected:
   // Call near indirect
   void call(const Operand& operand);
-
-  // Jump near absolute indirect (m64)
-  void jmp(const Operand& src);
 
  private:
   byte* addr_at(int pos)  { return buffer_ + pos; }
@@ -1250,6 +1515,7 @@ class Assembler : public AssemblerBase {
   // Optionally do as emit_rex_32(Register) if the register number has
   // the high bit set.
   inline void emit_optional_rex_32(Register rm_reg);
+  inline void emit_optional_rex_32(XMMRegister rm_reg);
 
   // Optionally do as emit_rex_32(const Operand&) if the operand register
   // numbers have a high bit set.
@@ -1283,6 +1549,28 @@ class Assembler : public AssemblerBase {
     }
   }
 
+  // Emit vex prefix
+  enum SIMDPrefix { kNone = 0x0, k66 = 0x1, kF3 = 0x2, kF2 = 0x3 };
+  enum VectorLength { kL128 = 0x0, kL256 = 0x4, kLIG = kL128 };
+  enum VexW { kW0 = 0x0, kW1 = 0x80, kWIG = kW0 };
+  enum LeadingOpcode { k0F = 0x1, k0F38 = 0x2, k0F3A = 0x2 };
+
+  void emit_vex2_byte0() { emit(0xc5); }
+  inline void emit_vex2_byte1(XMMRegister reg, XMMRegister v, VectorLength l,
+                              SIMDPrefix pp);
+  void emit_vex3_byte0() { emit(0xc4); }
+  inline void emit_vex3_byte1(XMMRegister reg, XMMRegister rm, LeadingOpcode m);
+  inline void emit_vex3_byte1(XMMRegister reg, const Operand& rm,
+                              LeadingOpcode m);
+  inline void emit_vex3_byte2(VexW w, XMMRegister v, VectorLength l,
+                              SIMDPrefix pp);
+  inline void emit_vex_prefix(XMMRegister reg, XMMRegister v, XMMRegister rm,
+                              VectorLength l, SIMDPrefix pp, LeadingOpcode m,
+                              VexW w);
+  inline void emit_vex_prefix(XMMRegister reg, XMMRegister v, const Operand& rm,
+                              VectorLength l, SIMDPrefix pp, LeadingOpcode m,
+                              VexW w);
+
   // Emit the ModR/M byte, and optionally the SIB byte and
   // 1- or 4-byte offset for a memory operand.  Also encodes
   // the second operand of the operation, a register or operation
@@ -1314,6 +1602,7 @@ class Assembler : public AssemblerBase {
   // The first argument is the reg field, the second argument is the r/m field.
   void emit_sse_operand(XMMRegister dst, XMMRegister src);
   void emit_sse_operand(XMMRegister reg, const Operand& adr);
+  void emit_sse_operand(Register reg, const Operand& adr);
   void emit_sse_operand(XMMRegister dst, Register src);
   void emit_sse_operand(Register dst, XMMRegister src);
 
@@ -1356,9 +1645,11 @@ class Assembler : public AssemblerBase {
                                int size);
 
   // Emit machine code for a shift operation.
+  void shift(Operand dst, Immediate shift_amount, int subcode, int size);
   void shift(Register dst, Immediate shift_amount, int subcode, int size);
   // Shift dst by cl % 64 bits.
   void shift(Register dst, int subcode, int size);
+  void shift(Operand dst, int subcode, int size);
 
   void emit_farith(int b1, int b2, int i);
 
@@ -1442,9 +1733,11 @@ class Assembler : public AssemblerBase {
   // Signed multiply instructions.
   // rdx:rax = rax * src when size is 64 or edx:eax = eax * src when size is 32.
   void emit_imul(Register src, int size);
+  void emit_imul(const Operand& src, int size);
   void emit_imul(Register dst, Register src, int size);
   void emit_imul(Register dst, const Operand& src, int size);
   void emit_imul(Register dst, Register src, Immediate imm, int size);
+  void emit_imul(Register dst, const Operand& src, Immediate imm, int size);
 
   void emit_inc(Register dst, int size);
   void emit_inc(const Operand& dst, int size);
@@ -1557,6 +1850,11 @@ class Assembler : public AssemblerBase {
 
   // code generation
   RelocInfoWriter reloc_info_writer;
+
+  // Internal reference positions, required for (potential) patching in
+  // GrowBuffer(); contains only those internal references whose labels
+  // are already bound.
+  std::deque<int> internal_reference_positions_;
 
   List< Handle<Code> > code_targets_;
 

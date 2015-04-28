@@ -4,9 +4,9 @@
 
 #include <limits.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <cmath>
 
-#include "include/v8stdint.h"
 #include "src/base/logging.h"
 #include "src/cached-powers.h"
 #include "src/globals.h"
@@ -111,7 +111,7 @@ static const CachedPower kCachedPowers[] = {
 };
 
 #ifdef DEBUG
-static const int kCachedPowersLength = ARRAY_SIZE(kCachedPowers);
+static const int kCachedPowersLength = arraysize(kCachedPowers);
 #endif
 
 static const int kCachedPowersOffset = 348;  // -1 * the first decimal_exponent.

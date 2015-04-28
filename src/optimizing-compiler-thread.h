@@ -6,6 +6,7 @@
 #define V8_OPTIMIZING_COMPILER_THREAD_H_
 
 #include "src/base/atomicops.h"
+#include "src/base/platform/condition-variable.h"
 #include "src/base/platform/mutex.h"
 #include "src/base/platform/platform.h"
 #include "src/base/platform/time.h"
@@ -37,7 +38,11 @@ class OptimizingCompilerThread : public base::Thread {
         osr_buffer_cursor_(0),
         osr_hits_(0),
         osr_attempts_(0),
-        blocked_jobs_(0) {
+        blocked_jobs_(0),
+        ref_count_(0),
+        tracing_enabled_(FLAG_trace_concurrent_recompilation),
+        job_based_recompilation_(FLAG_job_based_recompilation),
+        recompilation_delay_(FLAG_concurrent_recompilation_delay) {
     base::NoBarrier_Store(&stop_thread_,
                           static_cast<base::AtomicWord>(CONTINUE));
     input_queue_ = NewArray<OptimizedCompileJob*>(input_queue_capacity_);
@@ -84,13 +89,15 @@ class OptimizingCompilerThread : public base::Thread {
 #endif
 
  private:
+  class CompileTask;
+
   enum StopFlag { CONTINUE, STOP, FLUSH };
 
   void FlushInputQueue(bool restore_function_code);
   void FlushOutputQueue(bool restore_function_code);
   void FlushOsrBuffer(bool restore_function_code);
-  void CompileNext();
-  OptimizedCompileJob* NextInput();
+  void CompileNext(OptimizedCompileJob* job);
+  OptimizedCompileJob* NextInput(bool check_if_flushing = false);
 
   // Add a recompilation task for OSR to the cyclic buffer, awaiting OSR entry.
   // Tasks evicted from the cyclic buffer are discarded.
@@ -121,6 +128,9 @@ class OptimizingCompilerThread : public base::Thread {
 
   // Queue of recompilation tasks ready to be installed (excluding OSR).
   UnboundQueue<OptimizedCompileJob*> output_queue_;
+  // Used for job based recompilation which has multiple producers on
+  // different threads.
+  base::Mutex output_queue_mutex_;
 
   // Cyclic buffer of recompilation tasks for OSR.
   OptimizedCompileJob** osr_buffer_;
@@ -135,6 +145,20 @@ class OptimizingCompilerThread : public base::Thread {
   int osr_attempts_;
 
   int blocked_jobs_;
+
+  int ref_count_;
+  base::Mutex ref_count_mutex_;
+  base::ConditionVariable ref_count_zero_;
+
+  // Copies of FLAG_trace_concurrent_recompilation,
+  // FLAG_concurrent_recompilation_delay and
+  // FLAG_job_based_recompilation that will be used from the background thread.
+  //
+  // Since flags might get modified while the background thread is running, it
+  // is not safe to access them directly.
+  bool tracing_enabled_;
+  bool job_based_recompilation_;
+  int recompilation_delay_;
 };
 
 } }  // namespace v8::internal

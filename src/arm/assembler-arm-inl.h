@@ -70,6 +70,12 @@ int DwVfpRegister::NumAllocatableRegisters() {
 }
 
 
+// static
+int DwVfpRegister::NumAllocatableAliasedRegisters() {
+  return LowDwVfpRegister::kMaxNumLowRegisters - kNumReservedRegisters;
+}
+
+
 int DwVfpRegister::ToAllocationIndex(DwVfpRegister reg) {
   DCHECK(!reg.is(kDoubleRegZero));
   DCHECK(!reg.is(kScratchDoubleReg));
@@ -115,7 +121,7 @@ Address RelocInfo::target_address_address() {
   if (FLAG_enable_ool_constant_pool ||
       Assembler::IsMovW(Memory::int32_at(pc_))) {
     // We return the PC for ool constant pool since this function is used by the
-    // serializerer and expects the address to reside within the code object.
+    // serializer and expects the address to reside within the code object.
     return reinterpret_cast<Address>(pc_);
   } else {
     DCHECK(Assembler::IsLdrPcImmediateOffset(Memory::int32_at(pc_)));
@@ -178,9 +184,21 @@ void RelocInfo::set_target_object(Object* target,
 }
 
 
-Address RelocInfo::target_reference() {
+Address RelocInfo::target_external_reference() {
   DCHECK(rmode_ == EXTERNAL_REFERENCE);
   return Assembler::target_address_at(pc_, host_);
+}
+
+
+Address RelocInfo::target_internal_reference() {
+  DCHECK(rmode_ == INTERNAL_REFERENCE);
+  return Memory::Address_at(pc_);
+}
+
+
+Address RelocInfo::target_internal_reference_address() {
+  DCHECK(rmode_ == INTERNAL_REFERENCE);
+  return reinterpret_cast<Address>(pc_);
 }
 
 
@@ -292,11 +310,14 @@ Object** RelocInfo::call_object_address() {
 
 
 void RelocInfo::WipeOut() {
-  DCHECK(IsEmbeddedObject(rmode_) ||
-         IsCodeTarget(rmode_) ||
-         IsRuntimeEntry(rmode_) ||
-         IsExternalReference(rmode_));
-  Assembler::set_target_address_at(pc_, host_, NULL);
+  DCHECK(IsEmbeddedObject(rmode_) || IsCodeTarget(rmode_) ||
+         IsRuntimeEntry(rmode_) || IsExternalReference(rmode_) ||
+         IsInternalReference(rmode_));
+  if (IsInternalReference(rmode_)) {
+    Memory::Address_at(pc_) = NULL;
+  } else {
+    Assembler::set_target_address_at(pc_, host_, NULL);
+  }
 }
 
 
@@ -327,6 +348,8 @@ void RelocInfo::Visit(Isolate* isolate, ObjectVisitor* visitor) {
     visitor->VisitCell(this);
   } else if (mode == RelocInfo::EXTERNAL_REFERENCE) {
     visitor->VisitExternalReference(this);
+  } else if (mode == RelocInfo::INTERNAL_REFERENCE) {
+    visitor->VisitInternalReference(this);
   } else if (RelocInfo::IsCodeAgeSequence(mode)) {
     visitor->VisitCodeAgeSequence(this);
   } else if (((RelocInfo::IsJSReturn(mode) &&
@@ -352,6 +375,8 @@ void RelocInfo::Visit(Heap* heap) {
     StaticVisitor::VisitCell(heap, this);
   } else if (mode == RelocInfo::EXTERNAL_REFERENCE) {
     StaticVisitor::VisitExternalReference(this);
+  } else if (mode == RelocInfo::INTERNAL_REFERENCE) {
+    StaticVisitor::VisitInternalReference(this);
   } else if (RelocInfo::IsCodeAgeSequence(mode)) {
     StaticVisitor::VisitCodeAgeSequence(heap, this);
   } else if (heap->isolate()->debug()->has_break_points() &&
@@ -423,19 +448,34 @@ void Assembler::emit(Instr x) {
 Address Assembler::target_address_from_return_address(Address pc) {
   // Returns the address of the call target from the return address that will
   // be returned to after a call.
-  // Call sequence on V7 or later is :
+  // Call sequence on V7 or later is:
   //  movw  ip, #... @ call address low 16
   //  movt  ip, #... @ call address high 16
   //  blx   ip
   //                      @ return address
-  // Or pre-V7 or cases that need frequent patching, the address is in the
+  // For V6 when the constant pool is unavailable, it is:
+  //  mov  ip, #...     @ call address low 8
+  //  orr  ip, ip, #... @ call address 2nd 8
+  //  orr  ip, ip, #... @ call address 3rd 8
+  //  orr  ip, ip, #... @ call address high 8
+  //  blx   ip
+  //                      @ return address
+  // In cases that need frequent patching, the address is in the
   // constant pool.  It could be a small constant pool load:
   //  ldr   ip, [pc / pp, #...] @ call address
   //  blx   ip
   //                      @ return address
-  // Or an extended constant pool load:
+  // Or an extended constant pool load (ARMv7):
   //  movw  ip, #...
   //  movt  ip, #...
+  //  ldr   ip, [pc, ip]  @ call address
+  //  blx   ip
+  //                      @ return address
+  // Or an extended constant pool load (ARMv6):
+  //  mov  ip, #...
+  //  orr  ip, ip, #...
+  //  orr  ip, ip, #...
+  //  orr  ip, ip, #...
   //  ldr   ip, [pc, ip]  @ call address
   //  blx   ip
   //                      @ return address
@@ -444,15 +484,22 @@ Address Assembler::target_address_from_return_address(Address pc) {
   if (IsLdrPcImmediateOffset(candidate_instr) |
       IsLdrPpImmediateOffset(candidate_instr)) {
     return candidate;
-  } else if (IsLdrPpRegOffset(candidate_instr)) {
-    candidate = pc - 4 * Assembler::kInstrSize;
-    DCHECK(IsMovW(Memory::int32_at(candidate)) &&
-           IsMovT(Memory::int32_at(candidate + Assembler::kInstrSize)));
-    return candidate;
   } else {
-    candidate = pc - 3 * Assembler::kInstrSize;
-    DCHECK(IsMovW(Memory::int32_at(candidate)) &&
-           IsMovT(Memory::int32_at(candidate + kInstrSize)));
+    if (IsLdrPpRegOffset(candidate_instr)) {
+      candidate -= Assembler::kInstrSize;
+    }
+    if (CpuFeatures::IsSupported(ARMv7)) {
+      candidate -= 1 * Assembler::kInstrSize;
+      DCHECK(IsMovW(Memory::int32_at(candidate)) &&
+             IsMovT(Memory::int32_at(candidate + Assembler::kInstrSize)));
+    } else {
+      candidate -= 3 * Assembler::kInstrSize;
+      DCHECK(
+          IsMovImmed(Memory::int32_at(candidate)) &&
+          IsOrrImmed(Memory::int32_at(candidate + Assembler::kInstrSize)) &&
+          IsOrrImmed(Memory::int32_at(candidate + 2 * Assembler::kInstrSize)) &&
+          IsOrrImmed(Memory::int32_at(candidate + 3 * Assembler::kInstrSize)));
+    }
     return candidate;
   }
 }
@@ -469,14 +516,28 @@ Address Assembler::return_address_from_call_start(Address pc) {
     // Load from constant pool, small section.
     return pc + kInstrSize * 2;
   } else {
-    DCHECK(IsMovW(Memory::int32_at(pc)));
-    DCHECK(IsMovT(Memory::int32_at(pc + kInstrSize)));
-    if (IsLdrPpRegOffset(Memory::int32_at(pc + kInstrSize))) {
-      // Load from constant pool, extended section.
-      return pc + kInstrSize * 4;
+    if (CpuFeatures::IsSupported(ARMv7)) {
+      DCHECK(IsMovW(Memory::int32_at(pc)));
+      DCHECK(IsMovT(Memory::int32_at(pc + kInstrSize)));
+      if (IsLdrPpRegOffset(Memory::int32_at(pc + 2 * kInstrSize))) {
+        // Load from constant pool, extended section.
+        return pc + kInstrSize * 4;
+      } else {
+        // A movw / movt load immediate.
+        return pc + kInstrSize * 3;
+      }
     } else {
-      // A movw / movt load immediate.
-      return pc + kInstrSize * 3;
+      DCHECK(IsMovImmed(Memory::int32_at(pc)));
+      DCHECK(IsOrrImmed(Memory::int32_at(pc + kInstrSize)));
+      DCHECK(IsOrrImmed(Memory::int32_at(pc + 2 * kInstrSize)));
+      DCHECK(IsOrrImmed(Memory::int32_at(pc + 3 * kInstrSize)));
+      if (IsLdrPpRegOffset(Memory::int32_at(pc + 4 * kInstrSize))) {
+        // Load from constant pool, extended section.
+        return pc + kInstrSize * 6;
+      } else {
+        // A mov / orr load immediate.
+        return pc + kInstrSize * 5;
+      }
     }
   }
 }
@@ -492,23 +553,48 @@ void Assembler::deserialization_set_special_target_at(
 }
 
 
+void Assembler::deserialization_set_target_internal_reference_at(
+    Address pc, Address target, RelocInfo::Mode mode) {
+  Memory::Address_at(pc) = target;
+}
+
+
 bool Assembler::is_constant_pool_load(Address pc) {
-  return !Assembler::IsMovW(Memory::int32_at(pc)) ||
-         (FLAG_enable_ool_constant_pool &&
-          Assembler::IsLdrPpRegOffset(
-              Memory::int32_at(pc + 2 * Assembler::kInstrSize)));
+  if (CpuFeatures::IsSupported(ARMv7)) {
+    return !Assembler::IsMovW(Memory::int32_at(pc)) ||
+           (FLAG_enable_ool_constant_pool &&
+            Assembler::IsLdrPpRegOffset(
+                Memory::int32_at(pc + 2 * Assembler::kInstrSize)));
+  } else {
+    return !Assembler::IsMovImmed(Memory::int32_at(pc)) ||
+           (FLAG_enable_ool_constant_pool &&
+            Assembler::IsLdrPpRegOffset(
+                Memory::int32_at(pc + 4 * Assembler::kInstrSize)));
+  }
 }
 
 
 Address Assembler::constant_pool_entry_address(
-    Address pc, Address constant_pool) {
+    Address pc, ConstantPoolArray* constant_pool) {
   if (FLAG_enable_ool_constant_pool) {
     DCHECK(constant_pool != NULL);
     int cp_offset;
-    if (IsMovW(Memory::int32_at(pc))) {
+    if (!CpuFeatures::IsSupported(ARMv7) && IsMovImmed(Memory::int32_at(pc))) {
+      DCHECK(IsOrrImmed(Memory::int32_at(pc + kInstrSize)) &&
+             IsOrrImmed(Memory::int32_at(pc + 2 * kInstrSize)) &&
+             IsOrrImmed(Memory::int32_at(pc + 3 * kInstrSize)) &&
+             IsLdrPpRegOffset(Memory::int32_at(pc + 4 * kInstrSize)));
+      // This is an extended constant pool lookup (ARMv6).
+      Instr mov_instr = instr_at(pc);
+      Instr orr_instr_1 = instr_at(pc + kInstrSize);
+      Instr orr_instr_2 = instr_at(pc + 2 * kInstrSize);
+      Instr orr_instr_3 = instr_at(pc + 3 * kInstrSize);
+      cp_offset = DecodeShiftImm(mov_instr) | DecodeShiftImm(orr_instr_1) |
+                  DecodeShiftImm(orr_instr_2) | DecodeShiftImm(orr_instr_3);
+    } else if (IsMovW(Memory::int32_at(pc))) {
       DCHECK(IsMovT(Memory::int32_at(pc + kInstrSize)) &&
              IsLdrPpRegOffset(Memory::int32_at(pc + 2 * kInstrSize)));
-      // This is an extended constant pool lookup.
+      // This is an extended constant pool lookup (ARMv7).
       Instruction* movw_instr = Instruction::At(pc);
       Instruction* movt_instr = Instruction::At(pc + kInstrSize);
       cp_offset = (movt_instr->ImmedMovwMovtValue() << 16) |
@@ -518,7 +604,7 @@ Address Assembler::constant_pool_entry_address(
       DCHECK(Assembler::IsLdrPpImmediateOffset(Memory::int32_at(pc)));
       cp_offset = GetLdrRegisterImmediateOffset(Memory::int32_at(pc));
     }
-    return constant_pool + cp_offset;
+    return reinterpret_cast<Address>(constant_pool) + cp_offset;
   } else {
     DCHECK(Assembler::IsLdrPcImmediateOffset(Memory::int32_at(pc)));
     Instr instr = Memory::int32_at(pc);
@@ -527,12 +613,13 @@ Address Assembler::constant_pool_entry_address(
 }
 
 
-Address Assembler::target_address_at(Address pc, Address constant_pool) {
+Address Assembler::target_address_at(Address pc,
+                                     ConstantPoolArray* constant_pool) {
   if (is_constant_pool_load(pc)) {
     // This is a constant pool lookup. Return the value in the constant pool.
     return Memory::Address_at(constant_pool_entry_address(pc, constant_pool));
-  } else {
-    // This is an movw_movt immediate load. Return the immediate.
+  } else if (CpuFeatures::IsSupported(ARMv7)) {
+    // This is an movw / movt immediate load. Return the immediate.
     DCHECK(IsMovW(Memory::int32_at(pc)) &&
            IsMovT(Memory::int32_at(pc + kInstrSize)));
     Instruction* movw_instr = Instruction::At(pc);
@@ -540,11 +627,26 @@ Address Assembler::target_address_at(Address pc, Address constant_pool) {
     return reinterpret_cast<Address>(
         (movt_instr->ImmedMovwMovtValue() << 16) |
          movw_instr->ImmedMovwMovtValue());
+  } else {
+    // This is an mov / orr immediate load. Return the immediate.
+    DCHECK(IsMovImmed(Memory::int32_at(pc)) &&
+           IsOrrImmed(Memory::int32_at(pc + kInstrSize)) &&
+           IsOrrImmed(Memory::int32_at(pc + 2 * kInstrSize)) &&
+           IsOrrImmed(Memory::int32_at(pc + 3 * kInstrSize)));
+    Instr mov_instr = instr_at(pc);
+    Instr orr_instr_1 = instr_at(pc + kInstrSize);
+    Instr orr_instr_2 = instr_at(pc + 2 * kInstrSize);
+    Instr orr_instr_3 = instr_at(pc + 3 * kInstrSize);
+    Address ret = reinterpret_cast<Address>(
+        DecodeShiftImm(mov_instr) | DecodeShiftImm(orr_instr_1) |
+        DecodeShiftImm(orr_instr_2) | DecodeShiftImm(orr_instr_3));
+    return ret;
   }
 }
 
 
-void Assembler::set_target_address_at(Address pc, Address constant_pool,
+void Assembler::set_target_address_at(Address pc,
+                                      ConstantPoolArray* constant_pool,
                                       Address target,
                                       ICacheFlushMode icache_flush_mode) {
   if (is_constant_pool_load(pc)) {
@@ -558,9 +660,9 @@ void Assembler::set_target_address_at(Address pc, Address constant_pool,
     // ldr   ip, [pp, #...]
     // since the instruction accessing this address in the constant pool remains
     // unchanged.
-  } else {
-    // This is an movw_movt immediate load. Patch the immediate embedded in the
-    // instructions.
+  } else if (CpuFeatures::IsSupported(ARMv7)) {
+    // This is an movw / movt immediate load. Patch the immediate embedded in
+    // the instructions.
     DCHECK(IsMovW(Memory::int32_at(pc)));
     DCHECK(IsMovT(Memory::int32_at(pc + kInstrSize)));
     uint32_t* instr_ptr = reinterpret_cast<uint32_t*>(pc);
@@ -571,6 +673,26 @@ void Assembler::set_target_address_at(Address pc, Address constant_pool,
     DCHECK(IsMovT(Memory::int32_at(pc + kInstrSize)));
     if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
       CpuFeatures::FlushICache(pc, 2 * kInstrSize);
+    }
+  } else {
+    // This is an mov / orr immediate load. Patch the immediate embedded in
+    // the instructions.
+    DCHECK(IsMovImmed(Memory::int32_at(pc)) &&
+           IsOrrImmed(Memory::int32_at(pc + kInstrSize)) &&
+           IsOrrImmed(Memory::int32_at(pc + 2 * kInstrSize)) &&
+           IsOrrImmed(Memory::int32_at(pc + 3 * kInstrSize)));
+    uint32_t* instr_ptr = reinterpret_cast<uint32_t*>(pc);
+    uint32_t immediate = reinterpret_cast<uint32_t>(target);
+    instr_ptr[0] = PatchShiftImm(instr_ptr[0], immediate & kImm8Mask);
+    instr_ptr[1] = PatchShiftImm(instr_ptr[1], immediate & (kImm8Mask << 8));
+    instr_ptr[2] = PatchShiftImm(instr_ptr[2], immediate & (kImm8Mask << 16));
+    instr_ptr[3] = PatchShiftImm(instr_ptr[3], immediate & (kImm8Mask << 24));
+    DCHECK(IsMovImmed(Memory::int32_at(pc)) &&
+           IsOrrImmed(Memory::int32_at(pc + kInstrSize)) &&
+           IsOrrImmed(Memory::int32_at(pc + 2 * kInstrSize)) &&
+           IsOrrImmed(Memory::int32_at(pc + 3 * kInstrSize)));
+    if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
+      CpuFeatures::FlushICache(pc, 4 * kInstrSize);
     }
   }
 }

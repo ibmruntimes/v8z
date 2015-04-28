@@ -15,6 +15,7 @@
 #include "src/list.h"
 #include "src/token.h"
 #include "src/unicode-inl.h"
+#include "src/unicode-decoder.h"
 #include "src/utils.h"
 
 namespace v8 {
@@ -66,15 +67,14 @@ class Utf16CharacterStream {
 
   // Return the current position in the code unit stream.
   // Starts at zero.
-  inline unsigned pos() const { return pos_; }
+  inline size_t pos() const { return pos_; }
 
   // Skips forward past the next code_unit_count UTF-16 code units
   // in the input, or until the end of input if that comes sooner.
   // Returns the number of code units actually skipped. If less
   // than code_unit_count,
-  inline unsigned SeekForward(unsigned code_unit_count) {
-    unsigned buffered_chars =
-        static_cast<unsigned>(buffer_end_ - buffer_cursor_);
+  inline size_t SeekForward(size_t code_unit_count) {
+    size_t buffered_chars = buffer_end_ - buffer_cursor_;
     if (code_unit_count <= buffered_chars) {
       buffer_cursor_ += code_unit_count;
       pos_ += code_unit_count;
@@ -97,11 +97,11 @@ class Utf16CharacterStream {
   // is at or after the end of the input, return false. If there
   // are more code_units available, return true.
   virtual bool ReadBlock() = 0;
-  virtual unsigned SlowSeekForward(unsigned code_unit_count) = 0;
+  virtual size_t SlowSeekForward(size_t code_unit_count) = 0;
 
   const uint16_t* buffer_cursor_;
   const uint16_t* buffer_end_;
-  unsigned pos_;
+  size_t pos_;
 };
 
 
@@ -120,6 +120,12 @@ class UnicodeCache {
   bool IsIdentifierStart(unibrow::uchar c) { return kIsIdentifierStart.get(c); }
   bool IsIdentifierPart(unibrow::uchar c) { return kIsIdentifierPart.get(c); }
   bool IsLineTerminator(unibrow::uchar c) { return kIsLineTerminator.get(c); }
+  bool IsLineTerminatorSequence(unibrow::uchar c, unibrow::uchar next) {
+    if (!IsLineTerminator(c)) return false;
+    if (c == 0x000d && next == 0x000a) return false;  // CR with following LF.
+    return true;
+  }
+
   bool IsWhiteSpace(unibrow::uchar c) { return kIsWhiteSpace.get(c); }
   bool IsWhiteSpaceOrLineTerminator(unibrow::uchar c) {
     return kIsWhiteSpaceOrLineTerminator.get(c);
@@ -152,7 +158,7 @@ class DuplicateFinder {
   int AddTwoByteSymbol(Vector<const uint16_t> key, int value);
   // Add a a number literal by converting it (if necessary)
   // to the string that ToString(ToNumber(literal)) would generate.
-  // and then adding that string with AddAsciiSymbol.
+  // and then adding that string with AddOneByteSymbol.
   // This string is the actual value used as key in an object literal,
   // and the one that must be different from the other keys.
   int AddNumber(Vector<const uint8_t> key, int value);
@@ -166,7 +172,7 @@ class DuplicateFinder {
   uint8_t* BackupKey(Vector<const uint8_t> key, bool is_one_byte);
 
   // Compare two encoded keys (both pointing into the backing store)
-  // for having the same base-127 encoded lengths and ASCII-ness,
+  // for having the same base-127 encoded lengths and representation.
   // and then having the same 'length' bytes following.
   static bool Match(void* first, void* second);
   // Creates a hash from a sequence of bytes.
@@ -211,9 +217,18 @@ class LiteralBuffer {
       }
       ConvertToTwoByte();
     }
-    DCHECK(code_unit < 0x10000u);
-    *reinterpret_cast<uint16_t*>(&backing_store_[position_]) = code_unit;
-    position_ += kUC16Size;
+    if (code_unit <= unibrow::Utf16::kMaxNonSurrogateCharCode) {
+      *reinterpret_cast<uint16_t*>(&backing_store_[position_]) = code_unit;
+      position_ += kUC16Size;
+    } else {
+      *reinterpret_cast<uint16_t*>(&backing_store_[position_]) =
+          unibrow::Utf16::LeadSurrogate(code_unit);
+      position_ += kUC16Size;
+      if (position_ >= backing_store_.length()) ExpandBuffer();
+      *reinterpret_cast<uint16_t*>(&backing_store_[position_]) =
+          unibrow::Utf16::TrailSurrogate(code_unit);
+      position_ += kUC16Size;
+    }
   }
 
   bool is_one_byte() const { return is_one_byte_; }
@@ -240,6 +255,10 @@ class LiteralBuffer {
 
   int length() const {
     return is_one_byte_ ? position_ : (position_ >> 1);
+  }
+
+  void ReduceLength(int delta) {
+    position_ -= delta * (is_one_byte_ ? kOneByteSize : kUC16Size);
   }
 
   void Reset() {
@@ -308,15 +327,13 @@ class Scanner {
   // if aborting the scanning before it's complete.
   class LiteralScope {
    public:
-    explicit LiteralScope(Scanner* self)
-        : scanner_(self), complete_(false) {
+    explicit LiteralScope(Scanner* self) : scanner_(self), complete_(false) {
       scanner_->StartLiteral();
     }
      ~LiteralScope() {
        if (!complete_) scanner_->DropLiteral();
      }
     void Complete() {
-      scanner_->TerminateLiteral();
       complete_ = true;
     }
 
@@ -382,18 +399,23 @@ class Scanner {
 
   const AstRawString* CurrentSymbol(AstValueFactory* ast_value_factory);
   const AstRawString* NextSymbol(AstValueFactory* ast_value_factory);
+  const AstRawString* CurrentRawSymbol(AstValueFactory* ast_value_factory);
 
   double DoubleValue();
-  bool UnescapedLiteralMatches(const char* data, int length) {
+  bool LiteralMatches(const char* data, int length, bool allow_escapes = true) {
     if (is_literal_one_byte() &&
         literal_length() == length &&
-        !literal_contains_escapes()) {
+        (allow_escapes || !literal_contains_escapes())) {
       const char* token =
           reinterpret_cast<const char*>(literal_one_byte_string().start());
       return !strncmp(token, data, length);
     }
     return false;
   }
+  inline bool UnescapedLiteralMatches(const char* data, int length) {
+    return LiteralMatches(data, length, false);
+  }
+
   void IsGetOrSet(bool* is_get, bool* is_set) {
     if (is_literal_one_byte() &&
         literal_length() == 3 &&
@@ -405,7 +427,6 @@ class Scanner {
     }
   }
 
-  int FindNumber(DuplicateFinder* finder, int value);
   int FindSymbol(DuplicateFinder* finder, int value);
 
   UnicodeCache* unicode_cache() { return unicode_cache_; }
@@ -414,18 +435,15 @@ class Scanner {
   Location octal_position() const { return octal_pos_; }
   void clear_octal_position() { octal_pos_ = Location::invalid(); }
 
+  // Returns the value of the last smi that was scanned.
+  int smi_value() const { return smi_value_; }
+
   // Seek forward to the given position.  This operation does not
   // work in general, for instance when there are pushed back
   // characters, but works for seeking forward until simple delimiter
   // tokens, which is what it is used for.
   void SeekForward(int pos);
 
-  bool HarmonyScoping() const {
-    return harmony_scoping_;
-  }
-  void SetHarmonyScoping(bool scoping) {
-    harmony_scoping_ = scoping;
-  }
   bool HarmonyModules() const {
     return harmony_modules_;
   }
@@ -438,6 +456,14 @@ class Scanner {
   void SetHarmonyNumericLiterals(bool numeric_literals) {
     harmony_numeric_literals_ = numeric_literals;
   }
+  bool HarmonyClasses() const {
+    return harmony_classes_;
+  }
+  void SetHarmonyClasses(bool classes) {
+    harmony_classes_ = classes;
+  }
+  bool HarmonyUnicode() const { return harmony_unicode_; }
+  void SetHarmonyUnicode(bool unicode) { harmony_unicode_ = unicode; }
 
   // Returns true if there was a line terminator before the peek'ed token,
   // possibly inside a multi-line comment.
@@ -453,6 +479,10 @@ class Scanner {
   // be empty).
   bool ScanRegExpFlags();
 
+  // Scans the input as a template literal
+  Token::Value ScanTemplateStart();
+  Token::Value ScanTemplateContinuation();
+
   const LiteralBuffer* source_url() const { return &source_url_; }
   const LiteralBuffer* source_mapping_url() const {
     return &source_mapping_url_;
@@ -466,11 +496,13 @@ class Scanner {
     Token::Value token;
     Location location;
     LiteralBuffer* literal_chars;
+    LiteralBuffer* raw_literal_chars;
   };
 
   static const int kCharacterLookaheadBufferSize = 1;
 
   // Scans octal escape sequence. Also accepts "\0" decimal escape sequence.
+  template <bool capture_raw>
   uc32 ScanOctalEscape(uc32 c, int length);
 
   // Call this after setting source_ to the input.
@@ -480,6 +512,7 @@ class Scanner {
     Advance();
     // Initialize current_ to not refer to a literal.
     current_.literal_chars = NULL;
+    current_.raw_literal_chars = NULL;
   }
 
   // Literal buffer support
@@ -490,20 +523,34 @@ class Scanner {
     next_.literal_chars = free_buffer;
   }
 
+  inline void StartRawLiteral() {
+    LiteralBuffer* free_buffer =
+        (current_.raw_literal_chars == &raw_literal_buffer1_) ?
+            &raw_literal_buffer2_ : &raw_literal_buffer1_;
+    free_buffer->Reset();
+    next_.raw_literal_chars = free_buffer;
+  }
+
   INLINE(void AddLiteralChar(uc32 c)) {
     DCHECK_NOT_NULL(next_.literal_chars);
     next_.literal_chars->AddChar(c);
   }
 
-  // Complete scanning of a literal.
-  inline void TerminateLiteral() {
-    // Does nothing in the current implementation.
+  INLINE(void AddRawLiteralChar(uc32 c)) {
+    DCHECK_NOT_NULL(next_.raw_literal_chars);
+    next_.raw_literal_chars->AddChar(c);
+  }
+
+  INLINE(void ReduceRawLiteralLength(int delta)) {
+    DCHECK_NOT_NULL(next_.raw_literal_chars);
+    next_.raw_literal_chars->ReduceLength(delta);
   }
 
   // Stops scanning of a literal and drop the collected characters,
   // e.g., due to an encountered error.
   inline void DropLiteral() {
     next_.literal_chars = NULL;
+    next_.raw_literal_chars = NULL;
   }
 
   inline void AddLiteralCharAdvance() {
@@ -512,9 +559,33 @@ class Scanner {
   }
 
   // Low-level scanning support.
-  void Advance() { c0_ = source_->Advance(); }
+  template <bool capture_raw = false, bool check_surrogate = true>
+  void Advance() {
+    if (capture_raw) {
+      AddRawLiteralChar(c0_);
+    }
+    c0_ = source_->Advance();
+    if (check_surrogate) HandleLeadSurrogate();
+  }
+
+  void HandleLeadSurrogate() {
+    if (unibrow::Utf16::IsLeadSurrogate(c0_)) {
+      uc32 c1 = source_->Advance();
+      if (!unibrow::Utf16::IsTrailSurrogate(c1)) {
+        source_->PushBack(c1);
+      } else {
+        c0_ = unibrow::Utf16::CombineSurrogatePair(c0_, c1);
+      }
+    }
+  }
+
   void PushBack(uc32 ch) {
-    source_->PushBack(c0_);
+    if (ch > static_cast<uc32>(unibrow::Utf16::kMaxNonSurrogateCharCode)) {
+      source_->PushBack(unibrow::Utf16::TrailSurrogate(c0_));
+      source_->PushBack(unibrow::Utf16::LeadSurrogate(c0_));
+    } else {
+      source_->PushBack(c0_);
+    }
     c0_ = ch;
   }
 
@@ -535,10 +606,11 @@ class Scanner {
 
   // Returns the literal string, if any, for the current token (the
   // token last returned by Next()). The string is 0-terminated.
-  // Literal strings are collected for identifiers, strings, and
-  // numbers.
-  // These functions only give the correct result if the literal
-  // was scanned between calls to StartLiteral() and TerminateLiteral().
+  // Literal strings are collected for identifiers, strings, numbers as well
+  // as for template literals. For template literals we also collect the raw
+  // form.
+  // These functions only give the correct result if the literal was scanned
+  // when a LiteralScope object is alive.
   Vector<const uint8_t> literal_one_byte_string() {
     DCHECK_NOT_NULL(current_.literal_chars);
     return current_.literal_chars->one_byte_literal();
@@ -569,12 +641,26 @@ class Scanner {
     DCHECK_NOT_NULL(next_.literal_chars);
     return next_.literal_chars->is_one_byte();
   }
-  int next_literal_length() const {
-    DCHECK_NOT_NULL(next_.literal_chars);
-    return next_.literal_chars->length();
+  Vector<const uint8_t> raw_literal_one_byte_string() {
+    DCHECK_NOT_NULL(current_.raw_literal_chars);
+    return current_.raw_literal_chars->one_byte_literal();
+  }
+  Vector<const uint16_t> raw_literal_two_byte_string() {
+    DCHECK_NOT_NULL(current_.raw_literal_chars);
+    return current_.raw_literal_chars->two_byte_literal();
+  }
+  bool is_raw_literal_one_byte() {
+    DCHECK_NOT_NULL(current_.raw_literal_chars);
+    return current_.raw_literal_chars->is_one_byte();
   }
 
+  template <bool capture_raw>
   uc32 ScanHexNumber(int expected_length);
+  // Scan a number of any length but not bigger than max_value. For example, the
+  // number can be 000000001, so it's very long in characters but its value is
+  // small.
+  template <bool capture_raw>
+  uc32 ScanUnlimitedLengthHexNumber(int max_value);
 
   // Scans a single JavaScript token.
   void Scan();
@@ -597,18 +683,21 @@ class Scanner {
   // Scans an escape-sequence which is part of a string and adds the
   // decoded character to the current literal. Returns true if a pattern
   // is scanned.
+  template <bool capture_raw, bool in_template_literal>
   bool ScanEscape();
+
   // Decodes a Unicode escape-sequence which is part of an identifier.
   // If the escape sequence cannot be decoded the result is kBadChar.
   uc32 ScanIdentifierUnicodeEscape();
-  // Scans a Unicode escape-sequence and adds its characters,
-  // uninterpreted, to the current literal. Used for parsing RegExp
-  // flags.
-  bool ScanLiteralUnicodeEscape();
+  // Helper for the above functions.
+  template <bool capture_raw>
+  uc32 ScanUnicodeEscape();
+
+  Token::Value ScanTemplateSpan();
 
   // Return the current source position.
   int source_pos() {
-    return source_->pos() - kCharacterLookaheadBufferSize;
+    return static_cast<int>(source_->pos()) - kCharacterLookaheadBufferSize;
   }
 
   UnicodeCache* unicode_cache_;
@@ -621,6 +710,10 @@ class Scanner {
   LiteralBuffer source_url_;
   LiteralBuffer source_mapping_url_;
 
+  // Buffer to store raw string values
+  LiteralBuffer raw_literal_buffer1_;
+  LiteralBuffer raw_literal_buffer2_;
+
   TokenDesc current_;  // desc for current token (as returned by Next())
   TokenDesc next_;     // desc for next token (one token look-ahead)
 
@@ -630,6 +723,9 @@ class Scanner {
 
   // Start position of the octal literal last scanned.
   Location octal_pos_;
+
+  // Value of the last smi that was scanned.
+  int smi_value_;
 
   // One Unicode character look-ahead; c0_ < 0 at the end of the input.
   uc32 c0_;
@@ -641,12 +737,14 @@ class Scanner {
   // Whether there is a multi-line comment that contains a
   // line-terminator after the current token, and before the next.
   bool has_multiline_comment_before_next_;
-  // Whether we scan 'let' as a keyword for harmony block-scoped let bindings.
-  bool harmony_scoping_;
   // Whether we scan 'module', 'import', 'export' as keywords.
   bool harmony_modules_;
   // Whether we scan 0o777 and 0b111 as numbers.
   bool harmony_numeric_literals_;
+  // Whether we scan 'class', 'extends', 'static' and 'super' as keywords.
+  bool harmony_classes_;
+  // Whether we allow \u{xxxxx}.
+  bool harmony_unicode_;
 };
 
 } }  // namespace v8::internal

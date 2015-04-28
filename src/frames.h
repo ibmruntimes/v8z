@@ -66,73 +66,34 @@ class InnerPointerToCodeCache {
 };
 
 
+// Every try-block pushes the context register.
+class TryBlockConstant : public AllStatic {
+ public:
+  static const int kElementCount = 1;
+};
+
+
 class StackHandlerConstants : public AllStatic {
  public:
-  static const int kNextOffset     = 0 * kPointerSize;
-  static const int kCodeOffset     = 1 * kPointerSize;
-  static const int kStateOffset    = 2 * kPointerSize;
-#if V8_TARGET_LITTLE_ENDIAN || !V8_HOST_ARCH_64_BIT
-  static const int kStateIntOffset = kStateOffset;
-#else
-  static const int kStateIntOffset = kStateOffset + kIntSize;
-#endif
-  static const int kContextOffset  = 3 * kPointerSize;
-  static const int kFPOffset       = 4 * kPointerSize;
+  static const int kNextOffset = 0 * kPointerSize;
 
-  static const int kSize = kFPOffset + kFPOnStackSize;
+  static const int kSize = kNextOffset + kPointerSize;
   static const int kSlotCount = kSize >> kPointerSizeLog2;
 };
 
 
 class StackHandler BASE_EMBEDDED {
  public:
-  enum Kind {
-    JS_ENTRY,
-    CATCH,
-    FINALLY,
-    LAST_KIND = FINALLY
-  };
-
-  static const int kKindWidth = 2;
-  STATIC_ASSERT(LAST_KIND < (1 << kKindWidth));
-  static const int kIndexWidth = 32 - kKindWidth;
-  class KindField: public BitField<StackHandler::Kind, 0, kKindWidth> {};
-  class IndexField: public BitField<unsigned, kKindWidth, kIndexWidth> {};
-
   // Get the address of this stack handler.
   inline Address address() const;
 
   // Get the next stack handler in the chain.
   inline StackHandler* next() const;
 
-  // Tells whether the given address is inside this handler.
-  inline bool includes(Address address) const;
-
-  // Garbage collection support.
-  inline void Iterate(ObjectVisitor* v, Code* holder) const;
-
   // Conversion support.
   static inline StackHandler* FromAddress(Address address);
 
-  // Testers
-  inline bool is_js_entry() const;
-  inline bool is_catch() const;
-  inline bool is_finally() const;
-
-  // Generator support to preserve stack handlers.
-  void Unwind(Isolate* isolate, FixedArray* array, int offset,
-              int previous_handler_offset) const;
-  int Rewind(Isolate* isolate, FixedArray* array, int offset, Address fp);
-
  private:
-  // Accessors.
-  inline Kind kind() const;
-  inline unsigned index() const;
-
-  inline Object** context_address() const;
-  inline Object** code_address() const;
-  inline void SetFp(Address slot, Address fp);
-
   DISALLOW_IMPLICIT_CONSTRUCTORS(StackHandler);
 };
 
@@ -254,8 +215,8 @@ class StackFrame BASE_EMBEDDED {
   void set_pc(Address pc) { *pc_address() = pc; }
 
   Address constant_pool() const { return *constant_pool_address(); }
-  void set_constant_pool(Address constant_pool) {
-    *constant_pool_address() = constant_pool;
+  void set_constant_pool(ConstantPoolArray* constant_pool) {
+    *constant_pool_address() = reinterpret_cast<Address>(constant_pool);
   }
 
   virtual void SetCallerFp(Address caller_fp) = 0;
@@ -272,8 +233,8 @@ class StackFrame BASE_EMBEDDED {
   // Get the id of this stack frame.
   Id id() const { return static_cast<Id>(OffsetFrom(caller_sp())); }
 
-  // Checks if this frame includes any stack handlers.
-  bool HasHandler() const;
+  // Get the top handler from the current stack iterator.
+  inline StackHandler* top_handler() const;
 
   // Get the type of this frame.
   virtual Type type() const = 0;
@@ -297,8 +258,7 @@ class StackFrame BASE_EMBEDDED {
                                 unsigned* stack_slots);
 
   virtual void Iterate(ObjectVisitor* v) const = 0;
-  static void IteratePc(ObjectVisitor* v, Address* pc_address,
-                        Address* constant_pool_address, Code* holder);
+  static void IteratePc(ObjectVisitor* v, Address* pc_address, Code* holder);
 
   // Sets a callback function for return-address rewriting profilers
   // to resolve the location of a return address to the location of the
@@ -308,7 +268,6 @@ class StackFrame BASE_EMBEDDED {
 
   // Resolves pc_address through the resolution address function if one is set.
   static inline Address* ResolveReturnAddressLocation(Address* pc_address);
-
 
   // Printing support.
   enum PrintMode { OVERVIEW, DETAILS };
@@ -329,9 +288,6 @@ class StackFrame BASE_EMBEDDED {
   static void PrintIndex(StringStream* accumulator,
                          PrintMode mode,
                          int index);
-
-  // Get the top handler from the current stack iterator.
-  inline StackHandler* top_handler() const;
 
   // Compute the stack frame type for the given state.
   static Type ComputeType(const StackFrameIteratorBase* iterator, State* state);
@@ -501,10 +457,6 @@ class StandardFrame: public StackFrame {
   Address GetExpressionAddress(int n) const;
   static Address GetExpressionAddress(Address fp, int n);
 
-  // Determines if the n'th expression stack element is in a stack
-  // handler or not. Requires traversing all handlers in this frame.
-  bool IsExpressionInsideHandler(int n) const;
-
   // Determines if the standard frame for the given frame pointer is
   // an arguments adaptor frame.
   static inline bool IsArgumentsAdaptorFrame(Address fp);
@@ -573,9 +525,9 @@ class JavaScriptFrame: public StandardFrame {
   inline Object* GetOperand(int index) const;
   inline int ComputeOperandsCount() const;
 
-  // Generator support to preserve operand stack and stack handlers.
-  void SaveOperandStack(FixedArray* store, int* stack_handler_index) const;
-  void RestoreOperandStack(FixedArray* store, int stack_handler_index);
+  // Generator support to preserve operand stack.
+  void SaveOperandStack(FixedArray* store) const;
+  void RestoreOperandStack(FixedArray* store);
 
   // Debugger access.
   void SetParameterValue(int index, Object* value) const;
@@ -608,6 +560,10 @@ class JavaScriptFrame: public StandardFrame {
 
   // Build a list with summaries for this frame including all inlined frames.
   virtual void Summarize(List<FrameSummary>* frames);
+
+  // Lookup exception handler for current {pc}, returns -1 if none found. Also
+  // returns the expected number of stack slots at the handler site.
+  virtual int LookupExceptionHandlerInTable(int* stack_slots);
 
   // Architecture-specific register description.
   static Register fp_register();
@@ -680,6 +636,10 @@ class OptimizedFrame : public JavaScriptFrame {
   virtual void GetFunctions(List<JSFunction*>* functions);
 
   virtual void Summarize(List<FrameSummary>* frames);
+
+  // Lookup exception handler for current {pc}, returns -1 if none found. Also
+  // returns the expected number of stack slots at the handler site.
+  virtual int LookupExceptionHandlerInTable(int* stack_slots);
 
   DeoptimizationInputData* GetDeoptimizationData(int* deopt_index);
 

@@ -9,6 +9,7 @@
 #include "src/compiler/common-operator.h"
 #include "src/compiler/graph.h"
 #include "src/compiler/js-operator.h"
+#include "src/compiler/machine-operator.h"
 #include "src/compiler/node-properties.h"
 
 namespace v8 {
@@ -22,14 +23,17 @@ class Typer;
 // constants, and various helper methods.
 class JSGraph : public ZoneObject {
  public:
-  JSGraph(Graph* graph, CommonOperatorBuilder* common, Typer* typer)
-      : graph_(graph),
+  JSGraph(Isolate* isolate, Graph* graph, CommonOperatorBuilder* common,
+          JSOperatorBuilder* javascript, MachineOperatorBuilder* machine)
+      : isolate_(isolate),
+        graph_(graph),
         common_(common),
-        javascript_(zone()),
-        typer_(typer),
+        javascript_(javascript),
+        machine_(machine),
         cache_(zone()) {}
 
   // Canonicalized global constants.
+  Node* CEntryStubConstant(int result_size);
   Node* UndefinedConstant();
   Node* TheHoleConstant();
   Node* TrueConstant();
@@ -41,11 +45,11 @@ class JSGraph : public ZoneObject {
 
   // Creates a HeapConstant node, possibly canonicalized, without inspecting the
   // object.
-  Node* HeapConstant(PrintableUnique<Object> value);
+  Node* HeapConstant(Unique<HeapObject> value);
 
   // Creates a HeapConstant node, possibly canonicalized, and may access the
   // heap to inspect the object.
-  Node* HeapConstant(Handle<Object> value);
+  Node* HeapConstant(Handle<HeapObject> value);
 
   // Creates a Constant node of the appropriate type for the given object.
   // Accesses the heap to inspect the object and determine whether one of the
@@ -60,6 +64,36 @@ class JSGraph : public ZoneObject {
 
   // Creates a Int32Constant node, usually canonicalized.
   Node* Int32Constant(int32_t value);
+  Node* Uint32Constant(uint32_t value) {
+    return Int32Constant(bit_cast<int32_t>(value));
+  }
+
+  // Creates a HeapConstant node for either true or false.
+  Node* BooleanConstant(bool is_true) {
+    return is_true ? TrueConstant() : FalseConstant();
+  }
+
+  // Creates a Int64Constant node, usually canonicalized.
+  Node* Int64Constant(int64_t value);
+  Node* Uint64Constant(uint64_t value) {
+    return Int64Constant(bit_cast<int64_t>(value));
+  }
+
+  // Creates a Int32Constant/Int64Constant node, depending on the word size of
+  // the target machine.
+  // TODO(turbofan): Code using Int32Constant/Int64Constant to store pointer
+  // constants is probably not serializable.
+  Node* IntPtrConstant(intptr_t value) {
+    return machine()->Is32() ? Int32Constant(static_cast<int32_t>(value))
+                             : Int64Constant(static_cast<int64_t>(value));
+  }
+  template <typename T>
+  Node* PointerConstant(T* value) {
+    return IntPtrConstant(bit_cast<intptr_t>(value));
+  }
+
+  // Creates a Float32Constant node, usually canonicalized.
+  Node* Float32Constant(float value);
 
   // Creates a Float64Constant node, usually canonicalized.
   Node* Float64Constant(double value);
@@ -72,17 +106,36 @@ class JSGraph : public ZoneObject {
     return Constant(immediate);
   }
 
-  JSOperatorBuilder* javascript() { return &javascript_; }
-  CommonOperatorBuilder* common() { return common_; }
-  Graph* graph() { return graph_; }
-  Zone* zone() { return graph()->zone(); }
+  // Creates a dummy Constant node, used to satisfy calling conventions of
+  // stubs and runtime functions that do not require a context.
+  Node* NoContextConstant() { return ZeroConstant(); }
+
+  // Creates an empty frame states for cases where we know that a function
+  // cannot deopt.
+  Node* EmptyFrameState();
+
+  // Create a control node that serves as control dependency for dead nodes.
+  Node* DeadControl();
+
+  JSOperatorBuilder* javascript() const { return javascript_; }
+  CommonOperatorBuilder* common() const { return common_; }
+  MachineOperatorBuilder* machine() const { return machine_; }
+  Graph* graph() const { return graph_; }
+  Zone* zone() const { return graph()->zone(); }
+  Isolate* isolate() const { return isolate_; }
+  Factory* factory() const { return isolate()->factory(); }
+
+  void GetCachedNodes(NodeVector* nodes);
 
  private:
+  Isolate* isolate_;
   Graph* graph_;
   CommonOperatorBuilder* common_;
-  JSOperatorBuilder javascript_;
-  Typer* typer_;
+  JSOperatorBuilder* javascript_;
+  MachineOperatorBuilder* machine_;
 
+  // TODO(titzer): make this into a simple array.
+  SetOncePointer<Node> c_entry_stub_constant_;
   SetOncePointer<Node> undefined_constant_;
   SetOncePointer<Node> the_hole_constant_;
   SetOncePointer<Node> true_constant_;
@@ -91,15 +144,17 @@ class JSGraph : public ZoneObject {
   SetOncePointer<Node> zero_constant_;
   SetOncePointer<Node> one_constant_;
   SetOncePointer<Node> nan_constant_;
+  SetOncePointer<Node> empty_frame_state_;
+  SetOncePointer<Node> dead_control_;
 
   CommonNodeCache cache_;
 
-  Node* ImmovableHeapConstant(Handle<Object> value);
+  Node* ImmovableHeapConstant(Handle<HeapObject> value);
   Node* NumberConstant(double value);
-  Node* NewNode(Operator* op);
 
-  Factory* factory() { return zone()->isolate()->factory(); }
+  DISALLOW_COPY_AND_ASSIGN(JSGraph);
 };
+
 }  // namespace compiler
 }  // namespace internal
 }  // namespace v8

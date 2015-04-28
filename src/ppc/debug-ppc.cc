@@ -1,7 +1,4 @@
-// Copyright 2012 the V8 project authors. All rights reserved.
-//
-// Copyright IBM Corp. 2012, 2013. All rights reserved.
-//
+// Copyright 2014 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -15,12 +12,7 @@
 namespace v8 {
 namespace internal {
 
-bool BreakLocationIterator::IsDebugBreakAtReturn() {
-  return Debug::IsDebugBreakAtReturn(rinfo());
-}
-
-
-void BreakLocationIterator::SetDebugBreakAtReturn() {
+void BreakLocation::SetDebugBreakAtReturn() {
   // Patch the code changing the return from JS function sequence from
   //
   //   LeaveFrame
@@ -34,39 +26,21 @@ void BreakLocationIterator::SetDebugBreakAtReturn() {
   //   blrl
   //   bkpt
   //
-  CodePatcher patcher(rinfo()->pc(), Assembler::kJSReturnSequenceInstructions);
+  CodePatcher patcher(pc(), Assembler::kJSReturnSequenceInstructions);
   Assembler::BlockTrampolinePoolScope block_trampoline_pool(patcher.masm());
-  patcher.masm()->mov(v8::internal::r0, Operand(reinterpret_cast<intptr_t>(
-      debug_info_->GetIsolate()->builtins()->Return_DebugBreak()->entry())));
+  patcher.masm()->mov(
+      v8::internal::r0,
+      Operand(reinterpret_cast<intptr_t>(debug_info_->GetIsolate()
+                                             ->builtins()
+                                             ->Return_DebugBreak()
+                                             ->entry())));
   patcher.masm()->mtctr(v8::internal::r0);
   patcher.masm()->bctrl();
   patcher.masm()->bkpt(0);
 }
 
 
-// Restore the JS frame exit code.
-void BreakLocationIterator::ClearDebugBreakAtReturn() {
-  rinfo()->PatchCode(original_rinfo()->pc(),
-                     Assembler::kJSReturnSequenceInstructions);
-}
-
-
-// A debug break in the frame exit code is identified by the JS frame exit code
-// having been patched with a call instruction.
-bool Debug::IsDebugBreakAtReturn(RelocInfo* rinfo) {
-  DCHECK(RelocInfo::IsJSReturn(rinfo->rmode()));
-  return rinfo->IsPatchedReturnSequence();
-}
-
-
-bool BreakLocationIterator::IsDebugBreakAtSlot() {
-  DCHECK(IsDebugBreakSlot());
-  // Check whether the debug break slot instructions have been patched.
-  return rinfo()->IsPatchedDebugBreakSlotSequence();
-}
-
-
-void BreakLocationIterator::SetDebugBreakAtSlot() {
+void BreakLocation::SetDebugBreakAtSlot() {
   DCHECK(IsDebugBreakSlot());
   // Patch the code changing the debug break slot code from
   //
@@ -82,19 +56,14 @@ void BreakLocationIterator::SetDebugBreakAtSlot() {
   //   mtlr r0
   //   blrl
   //
-  CodePatcher patcher(rinfo()->pc(), Assembler::kDebugBreakSlotInstructions);
+  CodePatcher patcher(pc(), Assembler::kDebugBreakSlotInstructions);
   Assembler::BlockTrampolinePoolScope block_trampoline_pool(patcher.masm());
-  patcher.masm()->mov(v8::internal::r0, Operand(reinterpret_cast<intptr_t>(
-      debug_info_->GetIsolate()->builtins()->Slot_DebugBreak()->entry())));
+  patcher.masm()->mov(
+      v8::internal::r0,
+      Operand(reinterpret_cast<intptr_t>(
+          debug_info_->GetIsolate()->builtins()->Slot_DebugBreak()->entry())));
   patcher.masm()->mtctr(v8::internal::r0);
   patcher.masm()->bctrl();
-}
-
-
-void BreakLocationIterator::ClearDebugBreakAtSlot() {
-  DCHECK(IsDebugBreakSlot());
-  rinfo()->PatchCode(original_rinfo()->pc(),
-                     Assembler::kDebugBreakSlotInstructions);
 }
 
 
@@ -105,7 +74,7 @@ static void Generate_DebugBreakCallHelper(MacroAssembler* masm,
                                           RegList object_regs,
                                           RegList non_object_regs) {
   {
-    FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
+    FrameScope scope(masm, StackFrame::INTERNAL);
 
     // Load padding words on stack.
     __ LoadSmiLiteral(ip, Smi::FromInt(LiveEdit::kFramePaddingValue));
@@ -124,7 +93,7 @@ static void Generate_DebugBreakCallHelper(MacroAssembler* masm,
     if ((object_regs | non_object_regs) != 0) {
       for (int i = 0; i < kNumJSCallerSaved; i++) {
         int r = JSCallerSavedCode(i);
-        Register reg = { r };
+        Register reg = {r};
         if ((non_object_regs & (1 << r)) != 0) {
           if (FLAG_debug_code) {
             __ TestUnsignedSmiCandidate(reg, r0);
@@ -150,12 +119,12 @@ static void Generate_DebugBreakCallHelper(MacroAssembler* masm,
       __ MultiPop(object_regs | non_object_regs);
       for (int i = 0; i < kNumJSCallerSaved; i++) {
         int r = JSCallerSavedCode(i);
-        Register reg = { r };
+        Register reg = {r};
         if ((non_object_regs & (1 << r)) != 0) {
           __ SmiUntag(reg);
         }
         if (FLAG_debug_code &&
-            (((object_regs |non_object_regs) & (1 << r)) == 0)) {
+            (((object_regs | non_object_regs) & (1 << r)) == 0)) {
           __ mov(reg, Operand(kDebugZapValue));
         }
       }
@@ -190,19 +159,23 @@ void DebugCodegen::GenerateCallICStubDebugBreak(MacroAssembler* masm) {
 
 void DebugCodegen::GenerateLoadICDebugBreak(MacroAssembler* masm) {
   // Calling convention for IC load (from ic-ppc.cc).
-  Register receiver = LoadIC::ReceiverRegister();
-  Register name = LoadIC::NameRegister();
-  Generate_DebugBreakCallHelper(masm, receiver.bit() | name.bit(), 0);
+  Register receiver = LoadDescriptor::ReceiverRegister();
+  Register name = LoadDescriptor::NameRegister();
+  RegList regs = receiver.bit() | name.bit();
+  if (FLAG_vector_ics) {
+    regs |= VectorLoadICTrampolineDescriptor::SlotRegister().bit();
+  }
+  Generate_DebugBreakCallHelper(masm, regs, 0);
 }
 
 
 void DebugCodegen::GenerateStoreICDebugBreak(MacroAssembler* masm) {
   // Calling convention for IC store (from ic-ppc.cc).
-  Register receiver = StoreIC::ReceiverRegister();
-  Register name = StoreIC::NameRegister();
-  Register value = StoreIC::ValueRegister();
-  Generate_DebugBreakCallHelper(
-      masm, receiver.bit() | name.bit() | value.bit(), 0);
+  Register receiver = StoreDescriptor::ReceiverRegister();
+  Register name = StoreDescriptor::NameRegister();
+  Register value = StoreDescriptor::ValueRegister();
+  Generate_DebugBreakCallHelper(masm, receiver.bit() | name.bit() | value.bit(),
+                                0);
 }
 
 
@@ -214,11 +187,11 @@ void DebugCodegen::GenerateKeyedLoadICDebugBreak(MacroAssembler* masm) {
 
 void DebugCodegen::GenerateKeyedStoreICDebugBreak(MacroAssembler* masm) {
   // Calling convention for IC keyed store call (from ic-ppc.cc).
-  Register receiver = KeyedStoreIC::ReceiverRegister();
-  Register name = KeyedStoreIC::NameRegister();
-  Register value = KeyedStoreIC::ValueRegister();
-  Generate_DebugBreakCallHelper(
-      masm, receiver.bit() | name.bit() | value.bit(), 0);
+  Register receiver = StoreDescriptor::ReceiverRegister();
+  Register name = StoreDescriptor::NameRegister();
+  Register value = StoreDescriptor::ValueRegister();
+  Generate_DebugBreakCallHelper(masm, receiver.bit() | name.bit() | value.bit(),
+                                0);
 }
 
 
@@ -307,11 +280,10 @@ void DebugCodegen::GenerateFrameDropperLiveEdit(MacroAssembler* masm) {
   __ StoreP(r4, MemOperand(ip, 0));
 
   // Load the function pointer off of our current stack frame.
-  __ LoadP(r4, MemOperand(fp,
-           StandardFrameConstants::kConstantPoolOffset - kPointerSize));
+  __ LoadP(r4, MemOperand(fp, StandardFrameConstants::kConstantPoolOffset -
+                                  kPointerSize));
 
-  // Pop return address, frame and constant pool pointer (if
-  // FLAG_enable_ool_constant_pool).
+  // Pop return address and frame
   __ LeaveFrame(StackFrame::INTERNAL);
 
   // Load context from the function.
@@ -330,7 +302,7 @@ void DebugCodegen::GenerateFrameDropperLiveEdit(MacroAssembler* masm) {
 const bool LiveEdit::kFrameDropperSupported = true;
 
 #undef __
-
-} }  // namespace v8::internal
+}
+}  // namespace v8::internal
 
 #endif  // V8_TARGET_ARCH_PPC

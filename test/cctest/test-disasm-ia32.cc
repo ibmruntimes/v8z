@@ -32,9 +32,8 @@
 #include "src/debug.h"
 #include "src/disasm.h"
 #include "src/disassembler.h"
+#include "src/ic/ic.h"
 #include "src/macro-assembler.h"
-#include "src/serialize.h"
-#include "src/stub-cache.h"
 #include "test/cctest/cctest.h"
 
 using namespace v8::internal;
@@ -51,7 +50,7 @@ TEST(DisasmIa320) {
   CcTest::InitializeVM();
   Isolate* isolate = CcTest::i_isolate();
   HandleScope scope(isolate);
-  v8::internal::byte buffer[2048];
+  v8::internal::byte buffer[4096];
   Assembler assm(isolate, buffer, sizeof buffer);
   DummyStaticFunction(NULL);  // just bloody use it (DELETE; debugging)
 
@@ -201,6 +200,12 @@ TEST(DisasmIa320) {
   __ rcl(edx, 7);
   __ rcr(edx, 1);
   __ rcr(edx, 7);
+  __ ror(edx, 1);
+  __ ror(edx, 6);
+  __ ror_cl(edx);
+  __ ror(Operand(ebx, ecx, times_4, 10000), 1);
+  __ ror(Operand(ebx, ecx, times_4, 10000), 6);
+  __ ror_cl(Operand(ebx, ecx, times_4, 10000));
   __ sar(edx, 1);
   __ sar(edx, 6);
   __ sar_cl(edx);
@@ -383,6 +388,8 @@ TEST(DisasmIa320) {
     // Move operation
     __ movaps(xmm0, xmm1);
     __ shufps(xmm0, xmm0, 0x0);
+    __ cvtsd2ss(xmm0, xmm1);
+    __ cvtsd2ss(xmm0, Operand(ebx, ecx, times_4, 10000));
 
     // logic operation
     __ andps(xmm0, xmm1);
@@ -393,6 +400,14 @@ TEST(DisasmIa320) {
     __ xorps(xmm0, Operand(ebx, ecx, times_4, 10000));
 
     // Arithmetic operation
+    __ addss(xmm1, xmm0);
+    __ addss(xmm1, Operand(ebx, ecx, times_4, 10000));
+    __ mulss(xmm1, xmm0);
+    __ mulss(xmm1, Operand(ebx, ecx, times_4, 10000));
+    __ subss(xmm1, xmm0);
+    __ subss(xmm1, Operand(ebx, ecx, times_4, 10000));
+    __ divss(xmm1, xmm0);
+    __ divss(xmm1, Operand(ebx, ecx, times_4, 10000));
     __ addps(xmm1, xmm0);
     __ addps(xmm1, Operand(ebx, ecx, times_4, 10000));
     __ subps(xmm1, xmm0);
@@ -401,10 +416,15 @@ TEST(DisasmIa320) {
     __ mulps(xmm1, Operand(ebx, ecx, times_4, 10000));
     __ divps(xmm1, xmm0);
     __ divps(xmm1, Operand(ebx, ecx, times_4, 10000));
+
+    __ ucomiss(xmm0, xmm1);
+    __ ucomiss(xmm0, Operand(ebx, ecx, times_4, 10000));
   }
   {
     __ cvttss2si(edx, Operand(ebx, ecx, times_4, 10000));
     __ cvtsi2sd(xmm1, Operand(ebx, ecx, times_4, 10000));
+    __ cvtss2sd(xmm1, Operand(ebx, ecx, times_4, 10000));
+    __ cvtss2sd(xmm1, xmm0);
     __ movsd(xmm1, Operand(ebx, ecx, times_4, 10000));
     __ movsd(Operand(ebx, ecx, times_4, 10000), xmm1);
     // 128 bit move instructions.
@@ -414,9 +434,17 @@ TEST(DisasmIa320) {
     __ movdqu(Operand(ebx, ecx, times_4, 10000), xmm0);
 
     __ addsd(xmm1, xmm0);
+    __ addsd(xmm1, Operand(ebx, ecx, times_4, 10000));
     __ mulsd(xmm1, xmm0);
+    __ mulsd(xmm1, Operand(ebx, ecx, times_4, 10000));
     __ subsd(xmm1, xmm0);
+    __ subsd(xmm1, Operand(ebx, ecx, times_4, 10000));
     __ divsd(xmm1, xmm0);
+    __ divsd(xmm1, Operand(ebx, ecx, times_4, 10000));
+    __ minsd(xmm1, xmm0);
+    __ minsd(xmm1, Operand(ebx, ecx, times_4, 10000));
+    __ maxsd(xmm1, xmm0);
+    __ maxsd(xmm1, Operand(ebx, ecx, times_4, 10000));
     __ ucomisd(xmm0, xmm1);
     __ cmpltsd(xmm0, xmm1);
 
@@ -426,6 +454,11 @@ TEST(DisasmIa320) {
     __ psrlq(xmm0, 17);
     __ psrlq(xmm0, xmm1);
     __ por(xmm0, xmm1);
+
+    __ pcmpeqd(xmm1, xmm0);
+
+    __ punpckldq(xmm1, xmm6);
+    __ punpckhdq(xmm7, xmm5);
   }
 
   // cmov.
@@ -454,6 +487,87 @@ TEST(DisasmIa320) {
       __ pextrd(eax, xmm0, 1);
       __ pinsrd(xmm1, eax, 0);
       __ extractps(eax, xmm1, 0);
+    }
+  }
+
+  // AVX instruction
+  {
+    if (CpuFeatures::IsSupported(AVX)) {
+      CpuFeatureScope scope(&assm, AVX);
+      __ vaddsd(xmm0, xmm1, xmm2);
+      __ vaddsd(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+      __ vmulsd(xmm0, xmm1, xmm2);
+      __ vmulsd(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+      __ vsubsd(xmm0, xmm1, xmm2);
+      __ vsubsd(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+      __ vdivsd(xmm0, xmm1, xmm2);
+      __ vdivsd(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+      __ vminsd(xmm0, xmm1, xmm2);
+      __ vminsd(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+      __ vmaxsd(xmm0, xmm1, xmm2);
+      __ vmaxsd(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+    }
+  }
+
+  // FMA3 instruction
+  {
+    if (CpuFeatures::IsSupported(FMA3)) {
+      CpuFeatureScope scope(&assm, FMA3);
+      __ vfmadd132sd(xmm0, xmm1, xmm2);
+      __ vfmadd132sd(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+      __ vfmadd213sd(xmm0, xmm1, xmm2);
+      __ vfmadd213sd(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+      __ vfmadd231sd(xmm0, xmm1, xmm2);
+      __ vfmadd231sd(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+
+      __ vfmsub132sd(xmm0, xmm1, xmm2);
+      __ vfmsub132sd(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+      __ vfmsub213sd(xmm0, xmm1, xmm2);
+      __ vfmsub213sd(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+      __ vfmsub231sd(xmm0, xmm1, xmm2);
+      __ vfmsub231sd(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+
+      __ vfnmadd132sd(xmm0, xmm1, xmm2);
+      __ vfnmadd132sd(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+      __ vfnmadd213sd(xmm0, xmm1, xmm2);
+      __ vfnmadd213sd(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+      __ vfnmadd231sd(xmm0, xmm1, xmm2);
+      __ vfnmadd231sd(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+
+      __ vfnmsub132sd(xmm0, xmm1, xmm2);
+      __ vfnmsub132sd(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+      __ vfnmsub213sd(xmm0, xmm1, xmm2);
+      __ vfnmsub213sd(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+      __ vfnmsub231sd(xmm0, xmm1, xmm2);
+      __ vfnmsub231sd(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+
+      __ vfmadd132ss(xmm0, xmm1, xmm2);
+      __ vfmadd132ss(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+      __ vfmadd213ss(xmm0, xmm1, xmm2);
+      __ vfmadd213ss(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+      __ vfmadd231ss(xmm0, xmm1, xmm2);
+      __ vfmadd231ss(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+
+      __ vfmsub132ss(xmm0, xmm1, xmm2);
+      __ vfmsub132ss(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+      __ vfmsub213ss(xmm0, xmm1, xmm2);
+      __ vfmsub213ss(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+      __ vfmsub231ss(xmm0, xmm1, xmm2);
+      __ vfmsub231ss(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+
+      __ vfnmadd132ss(xmm0, xmm1, xmm2);
+      __ vfnmadd132ss(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+      __ vfnmadd213ss(xmm0, xmm1, xmm2);
+      __ vfnmadd213ss(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+      __ vfnmadd231ss(xmm0, xmm1, xmm2);
+      __ vfnmadd231ss(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+
+      __ vfnmsub132ss(xmm0, xmm1, xmm2);
+      __ vfnmsub132ss(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+      __ vfnmsub213ss(xmm0, xmm1, xmm2);
+      __ vfnmsub213ss(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
+      __ vfnmsub231ss(xmm0, xmm1, xmm2);
+      __ vfnmsub231ss(xmm0, xmm1, Operand(ebx, ecx, times_4, 10000));
     }
   }
 

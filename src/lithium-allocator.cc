@@ -108,8 +108,8 @@ LiveRange::LiveRange(int id, Zone* zone)
       current_interval_(NULL),
       last_processed_use_(NULL),
       current_hint_operand_(NULL),
-      spill_operand_(new(zone) LOperand()),
-      spill_start_index_(kMaxInt) { }
+      spill_operand_(new (zone) LOperand()),
+      spill_start_index_(kMaxInt) {}
 
 
 void LiveRange::set_assigned_register(int reg, Zone* zone) {
@@ -511,8 +511,7 @@ LifetimePosition LiveRange::FirstIntersection(LiveRange* other) {
 
 
 LAllocator::LAllocator(int num_values, HGraph* graph)
-    : zone_(graph->isolate()),
-      chunk_(NULL),
+    : chunk_(NULL),
       live_in_sets_(graph->blocks()->length(), zone()),
       live_ranges_(num_values * 2, zone()),
       fixed_live_ranges_(NULL),
@@ -527,7 +526,7 @@ LAllocator::LAllocator(int num_values, HGraph* graph)
       num_registers_(-1),
       graph_(graph),
       has_osr_entry_(false),
-      allocation_ok_(true) { }
+      allocation_ok_(true) {}
 
 
 void LAllocator::InitializeLivenessAnalysis() {
@@ -1016,7 +1015,7 @@ void LAllocator::ResolvePhis(HBasicBlock* block) {
   for (int i = 0; i < phis->length(); ++i) {
     HPhi* phi = phis->at(i);
     LUnallocated* phi_operand =
-        new(chunk()->zone()) LUnallocated(LUnallocated::NONE);
+        new (chunk()->zone()) LUnallocated(LUnallocated::NONE);
     phi_operand->set_virtual_register(phi->id());
     for (int j = 0; j < phi->OperandCount(); ++j) {
       HValue* op = phi->OperandAt(j);
@@ -2175,8 +2174,8 @@ LAllocatorPhase::LAllocatorPhase(const char* name, LAllocator* allocator)
 
 LAllocatorPhase::~LAllocatorPhase() {
   if (FLAG_hydrogen_stats) {
-    unsigned size = allocator_->zone()->allocation_size() -
-                    allocator_zone_start_allocation_size_;
+    size_t size = allocator_->zone()->allocation_size() -
+                  allocator_zone_start_allocation_size_;
     isolate()->GetHStatistics()->SaveTiming(name(), base::TimeDelta(), size);
   }
 

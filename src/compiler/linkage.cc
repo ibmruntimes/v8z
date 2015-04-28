@@ -2,10 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/compiler/linkage.h"
-
 #include "src/code-stubs.h"
 #include "src/compiler.h"
+#include "src/compiler/linkage.h"
 #include "src/compiler/node.h"
 #include "src/compiler/pipeline.h"
 #include "src/scopes.h"
@@ -15,7 +14,7 @@ namespace internal {
 namespace compiler {
 
 
-OStream& operator<<(OStream& os, const CallDescriptor::Kind& k) {
+std::ostream& operator<<(std::ostream& os, const CallDescriptor::Kind& k) {
   switch (k) {
     case CallDescriptor::kCallCodeObject:
       os << "Code";
@@ -31,37 +30,44 @@ OStream& operator<<(OStream& os, const CallDescriptor::Kind& k) {
 }
 
 
-OStream& operator<<(OStream& os, const CallDescriptor& d) {
+std::ostream& operator<<(std::ostream& os, const CallDescriptor& d) {
   // TODO(svenpanne) Output properties etc. and be less cryptic.
   return os << d.kind() << ":" << d.debug_name() << ":r" << d.ReturnCount()
-            << "p" << d.ParameterCount() << "i" << d.InputCount()
-            << (d.CanLazilyDeoptimize() ? "deopt" : "");
+            << "j" << d.JSParameterCount() << "i" << d.InputCount() << "f"
+            << d.FrameStateCount();
 }
 
 
-Linkage::Linkage(CompilationInfo* info) : info_(info) {
+CallDescriptor* Linkage::ComputeIncoming(Zone* zone, CompilationInfo* info) {
+  if (info->code_stub() != NULL) {
+    // Use the code stub interface descriptor.
+    CallInterfaceDescriptor descriptor =
+        info->code_stub()->GetCallInterfaceDescriptor();
+    return GetStubCallDescriptor(info->isolate(), zone, descriptor, 0,
+                                 CallDescriptor::kNoFlags,
+                                 Operator::kNoProperties);
+  }
   if (info->function() != NULL) {
     // If we already have the function literal, use the number of parameters
     // plus the receiver.
-    incoming_ = GetJSCallDescriptor(1 + info->function()->parameter_count());
-  } else if (!info->closure().is_null()) {
+    return GetJSCallDescriptor(zone, info->is_osr(),
+                               1 + info->function()->parameter_count(),
+                               CallDescriptor::kNoFlags);
+  }
+  if (!info->closure().is_null()) {
     // If we are compiling a JS function, use a JS call descriptor,
     // plus the receiver.
     SharedFunctionInfo* shared = info->closure()->shared();
-    incoming_ = GetJSCallDescriptor(1 + shared->formal_parameter_count());
-  } else if (info->code_stub() != NULL) {
-    // Use the code stub interface descriptor.
-    HydrogenCodeStub* stub = info->code_stub();
-    CodeStubInterfaceDescriptor* descriptor =
-        info_->isolate()->code_stub_interface_descriptor(stub->MajorKey());
-    incoming_ = GetStubCallDescriptor(descriptor);
-  } else {
-    incoming_ = NULL;  // TODO(titzer): ?
+    return GetJSCallDescriptor(zone, info->is_osr(),
+                               1 + shared->internal_formal_parameter_count(),
+                               CallDescriptor::kNoFlags);
   }
+  return NULL;  // TODO(titzer): ?
 }
 
 
-FrameOffset Linkage::GetFrameOffset(int spill_slot, Frame* frame, int extra) {
+FrameOffset Linkage::GetFrameOffset(int spill_slot, Frame* frame,
+                                    int extra) const {
   if (frame->GetSpillSlotCount() > 0 || incoming_->IsJSFunctionCall() ||
       incoming_->kind() == CallDescriptor::kCallAddress) {
     int offset;
@@ -88,25 +94,55 @@ FrameOffset Linkage::GetFrameOffset(int spill_slot, Frame* frame, int extra) {
 }
 
 
-CallDescriptor* Linkage::GetJSCallDescriptor(int parameter_count) {
-  return GetJSCallDescriptor(parameter_count, this->info_->zone());
-}
+// static
+bool Linkage::NeedsFrameState(Runtime::FunctionId function) {
+  if (!FLAG_turbo_deoptimization) {
+    return false;
+  }
 
+  // Most runtime functions need a FrameState. A few chosen ones that we know
+  // not to call into arbitrary JavaScript, not to throw, and not to deoptimize
+  // are blacklisted here and can be called without a FrameState.
+  switch (function) {
+    case Runtime::kDeclareGlobals:                 // TODO(jarin): Is it safe?
+    case Runtime::kDefineClassMethod:              // TODO(jarin): Is it safe?
+    case Runtime::kDefineGetterPropertyUnchecked:  // TODO(jarin): Is it safe?
+    case Runtime::kDefineSetterPropertyUnchecked:  // TODO(jarin): Is it safe?
+    case Runtime::kForInCacheArrayLength:
+    case Runtime::kForInInit:
+    case Runtime::kForInNext:
+    case Runtime::kNewArguments:
+    case Runtime::kNewClosure:
+    case Runtime::kNewFunctionContext:
+    case Runtime::kNewRestParamSlow:
+    case Runtime::kPushBlockContext:
+    case Runtime::kPushCatchContext:
+    case Runtime::kReThrow:
+    case Runtime::kSetProperty:  // TODO(jarin): Is it safe?
+    case Runtime::kStringCompareRT:
+    case Runtime::kStringEquals:
+    case Runtime::kToFastProperties:  // TODO(jarin): Is it safe?
+    case Runtime::kTraceEnter:
+    case Runtime::kTraceExit:
+    case Runtime::kTypeof:
+      return false;
+    case Runtime::kInlineArguments:
+    case Runtime::kInlineCallFunction:
+    case Runtime::kInlineDateField:
+    case Runtime::kInlineDeoptimizeNow:
+    case Runtime::kInlineGetPrototype:
+    case Runtime::kInlineRegExpExec:
+      return true;
+    default:
+      break;
+  }
 
-CallDescriptor* Linkage::GetRuntimeCallDescriptor(
-    Runtime::FunctionId function, int parameter_count,
-    Operator::Property properties,
-    CallDescriptor::DeoptimizationSupport can_deoptimize) {
-  return GetRuntimeCallDescriptor(function, parameter_count, properties,
-                                  can_deoptimize, this->info_->zone());
-}
+  // Most inlined runtime functions (except the ones listed above) can be called
+  // without a FrameState or will be lowered by JSIntrinsicLowering internally.
+  const Runtime::Function* const f = Runtime::FunctionForId(function);
+  if (f->intrinsic_type == Runtime::IntrinsicType::INLINE) return false;
 
-
-CallDescriptor* Linkage::GetStubCallDescriptor(
-    CodeStubInterfaceDescriptor* descriptor, int stack_parameter_count,
-    CallDescriptor::DeoptimizationSupport can_deoptimize) {
-  return GetStubCallDescriptor(descriptor, stack_parameter_count,
-                               can_deoptimize, this->info_->zone());
+  return true;
 }
 
 
@@ -114,32 +150,39 @@ CallDescriptor* Linkage::GetStubCallDescriptor(
 // Provide unimplemented methods on unsupported architectures, to at least link.
 //==============================================================================
 #if !V8_TURBOFAN_BACKEND
-CallDescriptor* Linkage::GetJSCallDescriptor(int parameter_count, Zone* zone) {
+CallDescriptor* Linkage::GetJSCallDescriptor(Zone* zone, bool is_osr,
+                                             int parameter_count,
+                                             CallDescriptor::Flags flags) {
   UNIMPLEMENTED();
   return NULL;
 }
 
 
+LinkageLocation Linkage::GetOsrValueLocation(int index) const {
+  UNIMPLEMENTED();
+  return LinkageLocation(-1);  // Dummy value
+}
+
+
 CallDescriptor* Linkage::GetRuntimeCallDescriptor(
-    Runtime::FunctionId function, int parameter_count,
-    Operator::Property properties,
-    CallDescriptor::DeoptimizationSupport can_deoptimize, Zone* zone) {
+    Zone* zone, Runtime::FunctionId function, int parameter_count,
+    Operator::Properties properties) {
   UNIMPLEMENTED();
   return NULL;
 }
 
 
 CallDescriptor* Linkage::GetStubCallDescriptor(
-    CodeStubInterfaceDescriptor* descriptor, int stack_parameter_count,
-    CallDescriptor::DeoptimizationSupport can_deoptimize, Zone* zone) {
+    Isolate* isolate, Zone* zone, const CallInterfaceDescriptor& descriptor,
+    int stack_parameter_count, CallDescriptor::Flags flags,
+    Operator::Properties properties, MachineType return_type) {
   UNIMPLEMENTED();
   return NULL;
 }
 
 
-CallDescriptor* Linkage::GetSimplifiedCDescriptor(
-    Zone* zone, int num_params, MachineType return_type,
-    const MachineType* param_types) {
+CallDescriptor* Linkage::GetSimplifiedCDescriptor(Zone* zone,
+                                                  const MachineSignature* sig) {
   UNIMPLEMENTED();
   return NULL;
 }

@@ -15,7 +15,7 @@ namespace internal {
 template <class T>
 HType HType::FromType(typename T::TypeHandle type) {
   if (T::Any()->Is(type)) return HType::Any();
-  if (type->Is(T::None())) return HType::None();
+  if (!type->IsInhabited()) return HType::None();
   if (type->Is(T::SignedSmall())) return HType::Smi();
   if (type->Is(T::Number())) return HType::TaggedNumber();
   if (type->Is(T::Null())) return HType::Null();
@@ -24,6 +24,7 @@ HType HType::FromType(typename T::TypeHandle type) {
   if (type->Is(T::Undefined())) return HType::Undefined();
   if (type->Is(T::Array())) return HType::JSArray();
   if (type->Is(T::Object())) return HType::JSObject();
+  if (type->Is(T::Receiver())) return HType::JSReceiver();
   return HType::Tagged();
 }
 
@@ -42,7 +43,10 @@ HType HType::FromType<HeapType>(Handle<HeapType> type);
 HType HType::FromValue(Handle<Object> value) {
   if (value->IsSmi()) return HType::Smi();
   if (value->IsNull()) return HType::Null();
-  if (value->IsHeapNumber()) return HType::HeapNumber();
+  if (value->IsHeapNumber()) {
+    double n = Handle<v8::internal::HeapNumber>::cast(value)->value();
+    return IsSmiDouble(n) ? HType::Smi() : HType::HeapNumber();
+  }
   if (value->IsString()) return HType::String();
   if (value->IsBoolean()) return HType::Boolean();
   if (value->IsUndefined()) return HType::Undefined();
@@ -53,7 +57,7 @@ HType HType::FromValue(Handle<Object> value) {
 }
 
 
-OStream& operator<<(OStream& os, const HType& t) {
+std::ostream& operator<<(std::ostream& os, const HType& t) {
   // Note: The c1visualizer syntax for locals allows only a sequence of the
   // following characters: A-Za-z0-9_-|:
   switch (t.kind_) {

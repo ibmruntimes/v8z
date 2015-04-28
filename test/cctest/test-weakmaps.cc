@@ -30,7 +30,6 @@
 #include "src/v8.h"
 
 #include "src/global-handles.h"
-#include "src/snapshot.h"
 #include "test/cctest/cctest.h"
 
 using namespace v8::internal;
@@ -42,10 +41,7 @@ static Isolate* GetIsolateFrom(LocalContext* context) {
 
 
 static Handle<JSWeakMap> AllocateJSWeakMap(Isolate* isolate) {
-  Factory* factory = isolate->factory();
-  Handle<Map> map = factory->NewMap(JS_WEAK_MAP_TYPE, JSWeakMap::kSize);
-  Handle<JSObject> weakmap_obj = factory->NewJSObjectFromMap(map);
-  Handle<JSWeakMap> weakmap(JSWeakMap::cast(*weakmap_obj));
+  Handle<JSWeakMap> weakmap = isolate->factory()->NewJSWeakMap();
   // Do not leak handles for the hash table, it would make entries strong.
   {
     HandleScope scope(isolate);
@@ -53,16 +49,6 @@ static Handle<JSWeakMap> AllocateJSWeakMap(Isolate* isolate) {
     weakmap->set_table(*table);
   }
   return weakmap;
-}
-
-static void PutIntoWeakMap(Handle<JSWeakMap> weakmap,
-                           Handle<JSObject> key,
-                           Handle<Object> value) {
-  Handle<ObjectHashTable> table = ObjectHashTable::Put(
-      Handle<ObjectHashTable>(ObjectHashTable::cast(weakmap->table())),
-      Handle<JSObject>(JSObject::cast(*key)),
-      value);
-  weakmap->set_table(*table);
 }
 
 static int NumberOfWeakCalls = 0;
@@ -97,19 +83,21 @@ TEST(Weakness) {
   }
   CHECK(!global_handles->IsWeak(key.location()));
 
-  // Put entry into weak map.
+  // Put two chained entries into weak map.
   {
     HandleScope scope(isolate);
-    PutIntoWeakMap(weakmap,
-                   Handle<JSObject>(JSObject::cast(*key)),
-                   Handle<Smi>(Smi::FromInt(23), isolate));
+    Handle<Map> map = factory->NewMap(JS_OBJECT_TYPE, JSObject::kHeaderSize);
+    Handle<JSObject> object = factory->NewJSObjectFromMap(map);
+    Handle<Smi> smi(Smi::FromInt(23), isolate);
+    Runtime::WeakCollectionSet(weakmap, key, object);
+    Runtime::WeakCollectionSet(weakmap, object, smi);
   }
-  CHECK_EQ(1, ObjectHashTable::cast(weakmap->table())->NumberOfElements());
+  CHECK_EQ(2, ObjectHashTable::cast(weakmap->table())->NumberOfElements());
 
   // Force a full GC.
   heap->CollectAllGarbage(false);
   CHECK_EQ(0, NumberOfWeakCalls);
-  CHECK_EQ(1, ObjectHashTable::cast(weakmap->table())->NumberOfElements());
+  CHECK_EQ(2, ObjectHashTable::cast(weakmap->table())->NumberOfElements());
   CHECK_EQ(
       0, ObjectHashTable::cast(weakmap->table())->NumberOfDeletedElements());
 
@@ -128,14 +116,14 @@ TEST(Weakness) {
   // weak references whereas the second one will also clear weak maps.
   heap->CollectAllGarbage(false);
   CHECK_EQ(1, NumberOfWeakCalls);
-  CHECK_EQ(1, ObjectHashTable::cast(weakmap->table())->NumberOfElements());
+  CHECK_EQ(2, ObjectHashTable::cast(weakmap->table())->NumberOfElements());
   CHECK_EQ(
       0, ObjectHashTable::cast(weakmap->table())->NumberOfDeletedElements());
   heap->CollectAllGarbage(false);
   CHECK_EQ(1, NumberOfWeakCalls);
   CHECK_EQ(0, ObjectHashTable::cast(weakmap->table())->NumberOfElements());
-  CHECK_EQ(
-      1, ObjectHashTable::cast(weakmap->table())->NumberOfDeletedElements());
+  CHECK_EQ(2,
+           ObjectHashTable::cast(weakmap->table())->NumberOfDeletedElements());
 }
 
 
@@ -156,7 +144,8 @@ TEST(Shrinking) {
     Handle<Map> map = factory->NewMap(JS_OBJECT_TYPE, JSObject::kHeaderSize);
     for (int i = 0; i < 32; i++) {
       Handle<JSObject> object = factory->NewJSObjectFromMap(map);
-      PutIntoWeakMap(weakmap, object, Handle<Smi>(Smi::FromInt(i), isolate));
+      Handle<Smi> smi(Smi::FromInt(i), isolate);
+      Runtime::WeakCollectionSet(weakmap, object, smi);
     }
   }
 
@@ -194,7 +183,8 @@ TEST(Regress2060a) {
 
   // Start second old-space page so that values land on evacuation candidate.
   Page* first_page = heap->old_pointer_space()->anchor()->next_page();
-  factory->NewFixedArray(900 * KB / kPointerSize, TENURED);
+  int dummy_array_size = Page::kMaxRegularHeapObjectSize - 92 * KB;
+  factory->NewFixedArray(dummy_array_size / kPointerSize, TENURED);
 
   // Fill up weak map with values on an evacuation candidate.
   {
@@ -203,7 +193,7 @@ TEST(Regress2060a) {
       Handle<JSObject> object = factory->NewJSObject(function, TENURED);
       CHECK(!heap->InNewSpace(object->address()));
       CHECK(!first_page->Contains(object->address()));
-      PutIntoWeakMap(weakmap, key, object);
+      Runtime::WeakCollectionSet(weakmap, key, object);
     }
   }
 
@@ -232,7 +222,8 @@ TEST(Regress2060b) {
 
   // Start second old-space page so that keys land on evacuation candidate.
   Page* first_page = heap->old_pointer_space()->anchor()->next_page();
-  factory->NewFixedArray(900 * KB / kPointerSize, TENURED);
+  int dummy_array_size = Page::kMaxRegularHeapObjectSize - 92 * KB;
+  factory->NewFixedArray(dummy_array_size / kPointerSize, TENURED);
 
   // Fill up weak map with keys on an evacuation candidate.
   Handle<JSObject> keys[32];
@@ -243,9 +234,8 @@ TEST(Regress2060b) {
   }
   Handle<JSWeakMap> weakmap = AllocateJSWeakMap(isolate);
   for (int i = 0; i < 32; i++) {
-    PutIntoWeakMap(weakmap,
-                   keys[i],
-                   Handle<Smi>(Smi::FromInt(i), isolate));
+    Handle<Smi> smi(Smi::FromInt(i), isolate);
+    Runtime::WeakCollectionSet(weakmap, keys[i], smi);
   }
 
   // Force compacting garbage collection. The subsequent collections are used

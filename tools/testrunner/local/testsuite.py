@@ -29,8 +29,21 @@
 import imp
 import os
 
+from . import commands
 from . import statusfile
 from . import utils
+from ..objects import testcase
+
+# Use this to run several variants of the tests.
+VARIANT_FLAGS = {
+    "default": [],
+    "stress": ["--stress-opt", "--always-opt"],
+    "turbofan": ["--turbo-deoptimization", "--turbo-filter=*", "--always-opt"],
+    "nocrankshaft": ["--nocrankshaft"]}
+
+FAST_VARIANT_FLAGS = [
+    f for v, f in VARIANT_FLAGS.iteritems() if v in ["default", "turbofan"]
+]
 
 class TestSuite(object):
 
@@ -41,11 +54,13 @@ class TestSuite(object):
     try:
       (f, pathname, description) = imp.find_module("testcfg", [root])
       module = imp.load_module("testcfg", f, pathname, description)
-      suite = module.GetSuite(name, root)
+      return module.GetSuite(name, root)
+    except:
+      # Use default if no testcfg is present.
+      return GoogleTestSuite(name, root)
     finally:
       if f:
         f.close()
-    return suite
 
   def __init__(self, name, root):
     self.name = name  # string
@@ -77,6 +92,8 @@ class TestSuite(object):
   def VariantFlags(self, testcase, default_flags):
     if testcase.outcomes and statusfile.OnlyStandardVariant(testcase.outcomes):
       return [[]]
+    if testcase.outcomes and statusfile.OnlyFastVariants(testcase.outcomes):
+      return filter(lambda flags: flags in FAST_VARIANT_FLAGS, default_flags)
     return default_flags
 
   def DownloadData(self):
@@ -112,8 +129,6 @@ class TestSuite(object):
       slow = False
       pass_fail = False
       testname = self.CommonTestName(t)
-      if utils.IsWindows():
-        testname = testname.replace("\\", "/")
       if testname in self.rules:
         used_rules.add(testname)
         # Even for skipped tests, as the TestCase object stays around and
@@ -121,6 +136,9 @@ class TestSuite(object):
         t.outcomes = self.rules[testname]
         if statusfile.DoSkip(t.outcomes):
           continue  # Don't add skipped tests to |filtered|.
+        for outcome in t.outcomes:
+          if outcome.startswith('Flags: '):
+            t.flags += outcome[7:].split()
         flaky = statusfile.IsFlaky(t.outcomes)
         slow = statusfile.IsSlow(t.outcomes)
         pass_fail = statusfile.IsPassOrFail(t.outcomes)
@@ -216,3 +234,40 @@ class TestSuite(object):
     for t in self.tests:
       self.total_duration += t.duration
     return self.total_duration
+
+
+class GoogleTestSuite(TestSuite):
+  def __init__(self, name, root):
+    super(GoogleTestSuite, self).__init__(name, root)
+
+  def ListTests(self, context):
+    shell = os.path.abspath(os.path.join(context.shell_dir, self.shell()))
+    if utils.IsWindows():
+      shell += ".exe"
+    output = commands.Execute(context.command_prefix +
+                              [shell, "--gtest_list_tests"] +
+                              context.extra_flags)
+    if output.exit_code != 0:
+      print output.stdout
+      print output.stderr
+      raise Exception("Test executable failed to list the tests.")
+    tests = []
+    test_case = ''
+    for line in output.stdout.splitlines():
+      test_desc = line.strip().split()[0]
+      if test_desc.endswith('.'):
+        test_case = test_desc
+      elif test_case and test_desc:
+        test = testcase.TestCase(self, test_case + test_desc, dependency=None)
+        tests.append(test)
+    tests.sort()
+    return tests
+
+  def GetFlagsForTestCase(self, testcase, context):
+    return (testcase.flags + ["--gtest_filter=" + testcase.path] +
+            ["--gtest_random_seed=%s" % context.random_seed] +
+            ["--gtest_print_time=0"] +
+            context.mode_flags)
+
+  def shell(self):
+    return self.name

@@ -2,9 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "src/frames.h"
+
+#include <sstream>
+
 #include "src/v8.h"
 
 #include "src/ast.h"
+#include "src/base/bits.h"
 #include "src/deoptimizer.h"
 #include "src/frames-inl.h"
 #include "src/full-codegen.h"
@@ -316,6 +321,9 @@ bool SafeStackFrameIterator::IsValidExitFrame(Address fp) const {
   if (!IsValidStackAddress(sp)) return false;
   StackFrame::State state;
   ExitFrame::FillState(fp, sp, &state);
+  if (!IsValidStackAddress(reinterpret_cast<Address>(state.pc_address))) {
+    return false;
+  }
   return *state.pc_address != NULL;
 }
 
@@ -372,12 +380,6 @@ Code* StackFrame::GetSafepointData(Isolate* isolate,
 }
 
 
-bool StackFrame::HasHandler() const {
-  StackHandlerIterator it(this, top_handler());
-  return !it.done();
-}
-
-
 #ifdef DEBUG
 static bool GcSafeCodeContains(HeapObject* object, Address addr);
 #endif
@@ -385,7 +387,6 @@ static bool GcSafeCodeContains(HeapObject* object, Address addr);
 
 void StackFrame::IteratePc(ObjectVisitor* v,
                            Address* pc_address,
-                           Address* constant_pool_address,
                            Code* holder) {
   Address pc = *pc_address;
   DCHECK(GcSafeCodeContains(holder, pc));
@@ -396,9 +397,6 @@ void StackFrame::IteratePc(ObjectVisitor* v,
     holder = reinterpret_cast<Code*>(code);
     pc = holder->instruction_start() + pc_offset;
     *pc_address = pc;
-    if (FLAG_enable_ool_constant_pool_in_code && constant_pool_address) {
-      *constant_pool_address = holder->constant_pool();
-    }
   }
 }
 
@@ -523,9 +521,9 @@ void ExitFrame::SetCallerFp(Address caller_fp) {
 void ExitFrame::Iterate(ObjectVisitor* v) const {
   // The arguments are traversed as part of the expression stack of
   // the calling frame.
-  IteratePc(v, pc_address(), constant_pool_address(), LookupCode());
+  IteratePc(v, pc_address(), LookupCode());
   v->VisitPointer(&code_slot());
-  if (FLAG_enable_ool_constant_pool_in_heapobject) {
+  if (FLAG_enable_ool_constant_pool) {
     v->VisitPointer(&constant_pool_slot());
   }
 }
@@ -555,16 +553,8 @@ void ExitFrame::FillState(Address fp, Address sp, State* state) {
   state->fp = fp;
   state->pc_address = ResolveReturnAddressLocation(
       reinterpret_cast<Address*>(sp - 1 * kPCOnStackSize));
-  if (FLAG_enable_ool_constant_pool_in_code) {
-    // The constant pool recorded in the exit frame is not associated
-    // with the pc in this state (the return address into a C entry
-    // stub).  ComputeCallerState will retrieve the constant pool
-    // together with the associated caller pc.
-    state->constant_pool_address = NULL;
-  } else {
-    state->constant_pool_address =
-        reinterpret_cast<Address*>(fp + ExitFrameConstants::kConstantPoolOffset);
-  }
+  state->constant_pool_address =
+      reinterpret_cast<Address*>(fp + ExitFrameConstants::kConstantPoolOffset);
 }
 
 
@@ -609,15 +599,6 @@ void StandardFrame::ComputeCallerState(State* state) const {
 void StandardFrame::SetCallerFp(Address caller_fp) {
   Memory::Address_at(fp() + StandardFrameConstants::kCallerFPOffset) =
       caller_fp;
-}
-
-
-bool StandardFrame::IsExpressionInsideHandler(int n) const {
-  Address address = GetExpressionAddress(n);
-  for (StackHandlerIterator it(this, top_handler()); !it.done(); it.Advance()) {
-    if (it.handler()->includes(address)) return true;
-  }
-  return false;
 }
 
 
@@ -682,7 +663,7 @@ void StandardFrame::IterateCompiledFrame(ObjectVisitor* v) const {
   }
 
   // Visit the return address in the callee and incoming arguments.
-  IteratePc(v, pc_address(), constant_pool_address(), code);
+  IteratePc(v, pc_address(), code);
 
   // Visit the context in stub frame and JavaScript frame.
   // Visit the function in JavaScript frame.
@@ -714,12 +695,6 @@ int StubFrame::GetNumberOfIncomingArguments() const {
 
 
 void OptimizedFrame::Iterate(ObjectVisitor* v) const {
-#ifdef DEBUG
-  // Make sure that optimized frames do not contain any stack handlers.
-  StackHandlerIterator it(this, top_handler());
-  DCHECK(it.done());
-#endif
-
   IterateCompiledFrame(v);
 }
 
@@ -758,7 +733,7 @@ int JavaScriptFrame::GetNumberOfIncomingArguments() const {
   DCHECK(can_access_heap_objects() &&
          isolate()->heap()->gc_state() == Heap::NOT_IN_GC);
 
-  return function()->shared()->formal_parameter_count();
+  return function()->shared()->internal_formal_parameter_count();
 }
 
 
@@ -783,6 +758,15 @@ void JavaScriptFrame::Summarize(List<FrameSummary>* functions) {
                        offset,
                        IsConstructor());
   functions->Add(summary);
+}
+
+
+int JavaScriptFrame::LookupExceptionHandlerInTable(int* stack_slots) {
+  Code* code = LookupCode();
+  DCHECK(!code->is_optimized_code());
+  HandlerTable* table = HandlerTable::cast(code->handler_table());
+  int pc_offset = static_cast<int>(pc() - code->entry());
+  return table->LookupRange(pc_offset, stack_slots);
 }
 
 
@@ -847,66 +831,19 @@ void JavaScriptFrame::PrintTop(Isolate* isolate, FILE* file, bool print_args,
 }
 
 
-void JavaScriptFrame::SaveOperandStack(FixedArray* store,
-                                       int* stack_handler_index) const {
+void JavaScriptFrame::SaveOperandStack(FixedArray* store) const {
   int operands_count = store->length();
   DCHECK_LE(operands_count, ComputeOperandsCount());
-
-  // Visit the stack in LIFO order, saving operands and stack handlers into the
-  // array.  The saved stack handlers store a link to the next stack handler,
-  // which will allow RestoreOperandStack to rewind the handlers.
-  StackHandlerIterator it(this, top_handler());
-  int i = operands_count - 1;
-  *stack_handler_index = -1;
-  for (; !it.done(); it.Advance()) {
-    StackHandler* handler = it.handler();
-    // Save operands pushed after the handler was pushed.
-    for (; GetOperandSlot(i) < handler->address(); i--) {
-      store->set(i, GetOperand(i));
-    }
-    DCHECK_GE(i + 1, StackHandlerConstants::kSlotCount);
-    DCHECK_EQ(handler->address(), GetOperandSlot(i));
-    int next_stack_handler_index = i + 1 - StackHandlerConstants::kSlotCount;
-    handler->Unwind(isolate(), store, next_stack_handler_index,
-                    *stack_handler_index);
-    *stack_handler_index = next_stack_handler_index;
-    i -= StackHandlerConstants::kSlotCount;
-  }
-
-  // Save any remaining operands.
-  for (; i >= 0; i--) {
+  for (int i = 0; i < operands_count; i++) {
     store->set(i, GetOperand(i));
   }
 }
 
 
-void JavaScriptFrame::RestoreOperandStack(FixedArray* store,
-                                          int stack_handler_index) {
+void JavaScriptFrame::RestoreOperandStack(FixedArray* store) {
   int operands_count = store->length();
   DCHECK_LE(operands_count, ComputeOperandsCount());
-  int i = 0;
-  while (i <= stack_handler_index) {
-    if (i < stack_handler_index) {
-      // An operand.
-      DCHECK_EQ(GetOperand(i), isolate()->heap()->the_hole_value());
-      Memory::Object_at(GetOperandSlot(i)) = store->get(i);
-      i++;
-    } else {
-      // A stack handler.
-      DCHECK_EQ(i, stack_handler_index);
-      // The FixedArray store grows up.  The stack grows down.  So the operand
-      // slot for i actually points to the bottom of the top word in the
-      // handler.  The base of the StackHandler* is the address of the bottom
-      // word, which will be the last slot that is in the handler.
-      int handler_slot_index = i + StackHandlerConstants::kSlotCount - 1;
-      StackHandler *handler =
-          StackHandler::FromAddress(GetOperandSlot(handler_slot_index));
-      stack_handler_index = handler->Rewind(isolate(), store, i, fp());
-      i += StackHandlerConstants::kSlotCount;
-    }
-  }
-
-  for (; i < operands_count; i++) {
+  for (int i = 0; i < operands_count; i++) {
     DCHECK_EQ(GetOperand(i), isolate()->heap()->the_hole_value());
     Memory::Object_at(GetOperandSlot(i)) = store->get(i);
   }
@@ -940,9 +877,9 @@ void OptimizedFrame::Summarize(List<FrameSummary>* frames) {
   DCHECK(frames->length() == 0);
   DCHECK(is_optimized());
 
-  // Delegate to JS frame in absence of inlining.
-  // TODO(turbofan): Revisit once we support inlining.
-  if (LookupCode()->is_turbofanned()) {
+  // Delegate to JS frame in absence of turbofan deoptimization.
+  // TODO(turbofan): Revisit once we support deoptimization across the board.
+  if (LookupCode()->is_turbofanned() && !FLAG_turbo_deoptimization) {
     return JavaScriptFrame::Summarize(frames);
   }
 
@@ -1039,6 +976,16 @@ void OptimizedFrame::Summarize(List<FrameSummary>* frames) {
 }
 
 
+int OptimizedFrame::LookupExceptionHandlerInTable(int* stack_slots) {
+  Code* code = LookupCode();
+  DCHECK(code->is_optimized_code());
+  HandlerTable* table = HandlerTable::cast(code->handler_table());
+  int pc_offset = static_cast<int>(pc() - code->entry());
+  *stack_slots = code->stack_slots();
+  return table->LookupReturn(pc_offset);
+}
+
+
 DeoptimizationInputData* OptimizedFrame::GetDeoptimizationData(
     int* deopt_index) {
   DCHECK(is_optimized());
@@ -1067,9 +1014,9 @@ DeoptimizationInputData* OptimizedFrame::GetDeoptimizationData(
 int OptimizedFrame::GetInlineCount() {
   DCHECK(is_optimized());
 
-  // Delegate to JS frame in absence of inlining.
-  // TODO(turbofan): Revisit once we support inlining.
-  if (LookupCode()->is_turbofanned()) {
+  // Delegate to JS frame in absence of turbofan deoptimization.
+  // TODO(turbofan): Revisit once we support deoptimization across the board.
+  if (LookupCode()->is_turbofanned() && !FLAG_turbo_deoptimization) {
     return JavaScriptFrame::GetInlineCount();
   }
 
@@ -1091,9 +1038,9 @@ void OptimizedFrame::GetFunctions(List<JSFunction*>* functions) {
   DCHECK(functions->length() == 0);
   DCHECK(is_optimized());
 
-  // Delegate to JS frame in absence of inlining.
-  // TODO(turbofan): Revisit once we support inlining.
-  if (LookupCode()->is_turbofanned()) {
+  // Delegate to JS frame in absence of turbofan deoptimization.
+  // TODO(turbofan): Revisit once we support deoptimization across the board.
+  if (LookupCode()->is_turbofanned() && !FLAG_turbo_deoptimization) {
     return JavaScriptFrame::GetFunctions(functions);
   }
 
@@ -1290,18 +1237,17 @@ void JavaScriptFrame::Print(StringStream* accumulator,
     accumulator->Add("  // expression stack (top to bottom)\n");
   }
   for (int i = expressions_count - 1; i >= expressions_start; i--) {
-    if (IsExpressionInsideHandler(i)) continue;
     accumulator->Add("  [%02d] : %o\n", i, GetExpression(i));
   }
 
   // Print details about the function.
   if (FLAG_max_stack_trace_source_length != 0 && code != NULL) {
-    OStringStream os;
+    std::ostringstream os;
     SharedFunctionInfo* shared = function->shared();
     os << "--------- s o u r c e   c o d e ---------\n"
        << SourceCodeOf(shared, FLAG_max_stack_trace_source_length)
        << "\n-----------------------------------------\n";
-    accumulator->Add(os.c_str());
+    accumulator->Add(os.str().c_str());
   }
 
   accumulator->Add("}\n\n");
@@ -1314,7 +1260,7 @@ void ArgumentsAdaptorFrame::Print(StringStream* accumulator,
   int actual = ComputeParametersCount();
   int expected = -1;
   JSFunction* function = this->function();
-  expected = function->shared()->formal_parameter_count();
+  expected = function->shared()->internal_formal_parameter_count();
 
   PrintIndex(accumulator, mode, index);
   accumulator->Add("arguments adaptor frame: %d->%d", actual, expected);
@@ -1339,18 +1285,7 @@ void ArgumentsAdaptorFrame::Print(StringStream* accumulator,
 
 
 void EntryFrame::Iterate(ObjectVisitor* v) const {
-  StackHandlerIterator it(this, top_handler());
-  DCHECK(!it.done());
-  StackHandler* handler = it.handler();
-  DCHECK(handler->is_js_entry());
-  handler->Iterate(v, LookupCode());
-#ifdef DEBUG
-  // Make sure that the entry frame does not contain more than one
-  // stack handler.
-  it.Advance();
-  DCHECK(it.done());
-#endif
-  IteratePc(v, pc_address(), constant_pool_address(), LookupCode());
+  IteratePc(v, pc_address(), LookupCode());
 }
 
 
@@ -1358,24 +1293,13 @@ void StandardFrame::IterateExpressions(ObjectVisitor* v) const {
   const int offset = StandardFrameConstants::kLastObjectOffset;
   Object** base = &Memory::Object_at(sp());
   Object** limit = &Memory::Object_at(fp() + offset) + 1;
-  for (StackHandlerIterator it(this, top_handler()); !it.done(); it.Advance()) {
-    StackHandler* handler = it.handler();
-    // Traverse pointers down to - but not including - the next
-    // handler in the handler chain. Update the base to skip the
-    // handler and allow the handler to traverse its own pointers.
-    const Address address = handler->address();
-    v->VisitPointers(base, reinterpret_cast<Object**>(address));
-    base = reinterpret_cast<Object**>(address + StackHandlerConstants::kSize);
-    // Traverse the pointers in the handler itself.
-    handler->Iterate(v, LookupCode());
-  }
   v->VisitPointers(base, limit);
 }
 
 
 void JavaScriptFrame::Iterate(ObjectVisitor* v) const {
   IterateExpressions(v);
-  IteratePc(v, pc_address(), constant_pool_address(), LookupCode());
+  IteratePc(v, pc_address(), LookupCode());
 }
 
 
@@ -1383,7 +1307,7 @@ void InternalFrame::Iterate(ObjectVisitor* v) const {
   // Internal frames only have object pointers on the expression stack
   // as they never have any arguments.
   IterateExpressions(v);
-  IteratePc(v, pc_address(), constant_pool_address(), LookupCode());
+  IteratePc(v, pc_address(), LookupCode());
 }
 
 
@@ -1396,7 +1320,7 @@ void StubFailureTrampolineFrame::Iterate(ObjectVisitor* v) const {
   const int offset = StandardFrameConstants::kLastObjectOffset;
   limit = &Memory::Object_at(fp() + offset) + 1;
   v->VisitPointers(base, limit);
-  IteratePc(v, pc_address(), constant_pool_address(), LookupCode());
+  IteratePc(v, pc_address(), LookupCode());
 }
 
 
@@ -1509,7 +1433,7 @@ Code* InnerPointerToCodeCache::GcSafeFindCodeForInnerPointer(
 InnerPointerToCodeCache::InnerPointerToCodeCacheEntry*
     InnerPointerToCodeCache::GetCacheEntry(Address inner_pointer) {
   isolate_->counters()->pc_to_code()->Increment();
-  DCHECK(IsPowerOf2(kInnerPointerToCodeCacheSize));
+  DCHECK(base::bits::IsPowerOfTwo32(kInnerPointerToCodeCacheSize));
   uint32_t hash = ComputeIntegerHash(
       static_cast<uint32_t>(reinterpret_cast<uintptr_t>(inner_pointer)),
       v8::internal::kZeroHashSeed);
@@ -1534,62 +1458,7 @@ InnerPointerToCodeCache::InnerPointerToCodeCacheEntry*
 // -------------------------------------------------------------------------
 
 
-void StackHandler::Unwind(Isolate* isolate,
-                          FixedArray* array,
-                          int offset,
-                          int previous_handler_offset) const {
-  STATIC_ASSERT(StackHandlerConstants::kSlotCount >= 5);
-  DCHECK_LE(0, offset);
-  DCHECK_GE(array->length(), offset + StackHandlerConstants::kSlotCount);
-  // Unwinding a stack handler into an array chains it in the opposite
-  // direction, re-using the "next" slot as a "previous" link, so that stack
-  // handlers can be later re-wound in the correct order.  Decode the "state"
-  // slot into "index" and "kind" and store them separately, using the fp slot.
-  array->set(offset, Smi::FromInt(previous_handler_offset));        // next
-  array->set(offset + 1, *code_address());                          // code
-  array->set(offset + 2, Smi::FromInt(static_cast<int>(index())));  // state
-  array->set(offset + 3, *context_address());                       // context
-  array->set(offset + 4, Smi::FromInt(static_cast<int>(kind())));   // fp
-
-  *isolate->handler_address() = next()->address();
-}
-
-
-int StackHandler::Rewind(Isolate* isolate,
-                         FixedArray* array,
-                         int offset,
-                         Address fp) {
-  STATIC_ASSERT(StackHandlerConstants::kSlotCount >= 5);
-  DCHECK_LE(0, offset);
-  DCHECK_GE(array->length(), offset + StackHandlerConstants::kSlotCount);
-  Smi* prev_handler_offset = Smi::cast(array->get(offset));
-  Code* code = Code::cast(array->get(offset + 1));
-  Smi* smi_index = Smi::cast(array->get(offset + 2));
-  Object* context = array->get(offset + 3);
-  Smi* smi_kind = Smi::cast(array->get(offset + 4));
-
-  unsigned state = KindField::encode(static_cast<Kind>(smi_kind->value())) |
-      IndexField::encode(static_cast<unsigned>(smi_index->value()));
-
-  Memory::Address_at(address() + StackHandlerConstants::kNextOffset) =
-      *isolate->handler_address();
-  Memory::Object_at(address() + StackHandlerConstants::kCodeOffset) = code;
-  Memory::uintptr_at(address() + StackHandlerConstants::kStateOffset) = state;
-  Memory::Object_at(address() + StackHandlerConstants::kContextOffset) =
-      context;
-  SetFp(address() + StackHandlerConstants::kFPOffset, fp);
-
-  *isolate->handler_address() = address();
-
-  return prev_handler_offset->value();
-}
-
-
-// -------------------------------------------------------------------------
-
-int NumRegs(RegList reglist) {
-  return CompilerIntrinsics::CountSetBits(reglist);
-}
+int NumRegs(RegList reglist) { return base::bits::CountPopulation32(reglist); }
 
 
 struct JSCallerSavedCodeData {

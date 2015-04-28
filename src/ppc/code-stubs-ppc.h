@@ -1,14 +1,9 @@
-// Copyright 2012 the V8 project authors. All rights reserved.
-//
-// Copyright IBM Corp. 2012, 2013. All rights reserved.
-//
+// Copyright 2014 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #ifndef V8_PPC_CODE_STUBS_PPC_H_
 #define V8_PPC_CODE_STUBS_PPC_H_
-
-#include "src/ic-inl.h"
 
 namespace v8 {
 namespace internal {
@@ -17,194 +12,120 @@ namespace internal {
 void ArrayNativeCode(MacroAssembler* masm, Label* call_generic_code);
 
 
-class StoreBufferOverflowStub: public PlatformCodeStub {
- public:
-  StoreBufferOverflowStub(Isolate* isolate, SaveFPRegsMode save_fp)
-      : PlatformCodeStub(isolate), save_doubles_(save_fp) {}
-
-  void Generate(MacroAssembler* masm);
-
-  static void GenerateFixedRegStubsAheadOfTime(Isolate* isolate);
-  virtual bool SometimesSetsUpAFrame() { return false; }
-
- private:
-  SaveFPRegsMode save_doubles_;
-
-  Major MajorKey() const { return StoreBufferOverflow; }
-  int MinorKey() const { return (save_doubles_ == kSaveFPRegs) ? 1 : 0; }
-};
-
-
 class StringHelper : public AllStatic {
  public:
   // Generate code for copying a large number of characters. This function
   // is allowed to spend extra time setting up conditions to make copying
   // faster. Copying of overlapping regions is not supported.
   // Dest register ends at the position after the last character written.
-  static void GenerateCopyCharacters(MacroAssembler* masm,
-                                     Register dest,
-                                     Register src,
-                                     Register count,
+  static void GenerateCopyCharacters(MacroAssembler* masm, Register dest,
+                                     Register src, Register count,
                                      Register scratch,
                                      String::Encoding encoding);
 
+  // Compares two flat one-byte strings and returns result in r0.
+  static void GenerateCompareFlatOneByteStrings(MacroAssembler* masm,
+                                                Register left, Register right,
+                                                Register scratch1,
+                                                Register scratch2,
+                                                Register scratch3);
 
-  // Generate string hash.
-  static void GenerateHashInit(MacroAssembler* masm,
-                               Register hash,
-                               Register character,
-                               Register scratch);
-
-  static void GenerateHashAddCharacter(MacroAssembler* masm,
-                                       Register hash,
-                                       Register character,
-                                       Register scratch);
-
-  static void GenerateHashGetHash(MacroAssembler* masm,
-                                  Register hash,
-                                  Register scratch);
+  // Compares two flat one-byte strings for equality and returns result in r0.
+  static void GenerateFlatOneByteStringEquals(MacroAssembler* masm,
+                                              Register left, Register right,
+                                              Register scratch1,
+                                              Register scratch2);
 
  private:
+  static void GenerateOneByteCharsCompareLoop(MacroAssembler* masm,
+                                              Register left, Register right,
+                                              Register length,
+                                              Register scratch1,
+                                              Label* chars_not_equal);
+
   DISALLOW_IMPLICIT_CONSTRUCTORS(StringHelper);
 };
 
 
-class SubStringStub: public PlatformCodeStub {
- public:
-  explicit SubStringStub(Isolate* isolate) : PlatformCodeStub(isolate) {}
-
- private:
-  Major MajorKey() const { return SubString; }
-  int MinorKey() const { return 0; }
-
-  void Generate(MacroAssembler* masm);
-};
-
-
-
-class StringCompareStub: public PlatformCodeStub {
- public:
-  explicit StringCompareStub(Isolate* isolate) : PlatformCodeStub(isolate) { }
-
-  // Compares two flat ASCII strings and returns result in r0.
-  static void GenerateCompareFlatAsciiStrings(MacroAssembler* masm,
-                                              Register left,
-                                              Register right,
-                                              Register scratch1,
-                                              Register scratch2,
-                                              Register scratch3);
-
-  // Compares two flat ASCII strings for equality and returns result
-  // in r0.
-  static void GenerateFlatAsciiStringEquals(MacroAssembler* masm,
-                                            Register left,
-                                            Register right,
-                                            Register scratch1,
-                                            Register scratch2);
-
- private:
-  virtual Major MajorKey() const { return StringCompare; }
-  virtual int MinorKey() const { return 0; }
-  virtual void Generate(MacroAssembler* masm);
-
-  static void GenerateAsciiCharsCompareLoop(MacroAssembler* masm,
-                                            Register left,
-                                            Register right,
-                                            Register length,
-                                            Register scratch1,
-                                            Label* chars_not_equal);
-};
-
-
-class StoreRegistersStateStub: public PlatformCodeStub {
+class StoreRegistersStateStub : public PlatformCodeStub {
  public:
   explicit StoreRegistersStateStub(Isolate* isolate)
       : PlatformCodeStub(isolate) {}
 
   static void GenerateAheadOfTime(Isolate* isolate);
- private:
-  Major MajorKey() const { return StoreRegistersState; }
-  int MinorKey() const { return 0; }
 
-  void Generate(MacroAssembler* masm);
+ private:
+  DEFINE_NULL_CALL_INTERFACE_DESCRIPTOR();
+  DEFINE_PLATFORM_CODE_STUB(StoreRegistersState, PlatformCodeStub);
 };
 
 
-class RestoreRegistersStateStub: public PlatformCodeStub {
+class RestoreRegistersStateStub : public PlatformCodeStub {
  public:
   explicit RestoreRegistersStateStub(Isolate* isolate)
       : PlatformCodeStub(isolate) {}
 
   static void GenerateAheadOfTime(Isolate* isolate);
- private:
-  Major MajorKey() const { return RestoreRegistersState; }
-  int MinorKey() const { return 0; }
 
-  void Generate(MacroAssembler* masm);
+ private:
+  DEFINE_NULL_CALL_INTERFACE_DESCRIPTOR();
+  DEFINE_PLATFORM_CODE_STUB(RestoreRegistersState, PlatformCodeStub);
 };
 
 
-class RecordWriteStub: public PlatformCodeStub {
+class RecordWriteStub : public PlatformCodeStub {
  public:
-  RecordWriteStub(Isolate* isolate,
-                  Register object,
-                  Register value,
-                  Register address,
-                  RememberedSetAction remembered_set_action,
+  RecordWriteStub(Isolate* isolate, Register object, Register value,
+                  Register address, RememberedSetAction remembered_set_action,
                   SaveFPRegsMode fp_mode)
       : PlatformCodeStub(isolate),
-        object_(object),
-        value_(value),
-        address_(address),
-        remembered_set_action_(remembered_set_action),
-        save_fp_regs_mode_(fp_mode),
         regs_(object,   // An input reg.
               address,  // An input reg.
               value) {  // One scratch reg.
+    minor_key_ = ObjectBits::encode(object.code()) |
+                 ValueBits::encode(value.code()) |
+                 AddressBits::encode(address.code()) |
+                 RememberedSetActionBits::encode(remembered_set_action) |
+                 SaveFPRegsModeBits::encode(fp_mode);
   }
 
-  enum Mode {
-    STORE_BUFFER_ONLY,
-    INCREMENTAL,
-    INCREMENTAL_COMPACTION
-  };
+  RecordWriteStub(uint32_t key, Isolate* isolate)
+      : PlatformCodeStub(key, isolate), regs_(object(), address(), value()) {}
 
-  virtual bool SometimesSetsUpAFrame() { return false; }
+  enum Mode { STORE_BUFFER_ONLY, INCREMENTAL, INCREMENTAL_COMPACTION };
+
+  bool SometimesSetsUpAFrame() OVERRIDE { return false; }
 
   static void PatchBranchIntoNop(MacroAssembler* masm, int pos) {
+    // Consider adding DCHECK here to catch bad patching
     masm->instr_at_put(pos, (masm->instr_at(pos) & ~kBOfieldMask) | BT);
-    // roohack DCHECK(Assembler::IsTstImmediate(masm->instr_at(pos)));
   }
 
   static void PatchNopIntoBranch(MacroAssembler* masm, int pos) {
+    // Consider adding DCHECK here to catch bad patching
     masm->instr_at_put(pos, (masm->instr_at(pos) & ~kBOfieldMask) | BF);
-    // roohack DCHECK(Assembler::IsBranch(masm->instr_at(pos)));
   }
 
   static Mode GetMode(Code* stub) {
-    Instr first_instruction = Assembler::instr_at(stub->instruction_start() +
-                                                   Assembler::kInstrSize);
+    Instr first_instruction =
+        Assembler::instr_at(stub->instruction_start() + Assembler::kInstrSize);
     Instr second_instruction = Assembler::instr_at(stub->instruction_start() +
-                                                   (Assembler::kInstrSize*2));
+                                                   (Assembler::kInstrSize * 2));
 
+    // Consider adding DCHECK here to catch unexpected instruction sequence
     if (BF == (first_instruction & kBOfieldMask)) {
       return INCREMENTAL;
     }
-
-    // roohack DCHECK(Assembler::IsTstImmediate(first_instruction));
 
     if (BF == (second_instruction & kBOfieldMask)) {
       return INCREMENTAL_COMPACTION;
     }
 
-    // roohack DCHECK(Assembler::IsTstImmediate(second_instruction));
-
     return STORE_BUFFER_ONLY;
   }
 
   static void Patch(Code* stub, Mode mode) {
-    MacroAssembler masm(NULL,
-                        stub->instruction_start(),
+    MacroAssembler masm(NULL, stub->instruction_start(),
                         stub->instruction_size());
     switch (mode) {
       case STORE_BUFFER_ONLY:
@@ -212,7 +133,7 @@ class RecordWriteStub: public PlatformCodeStub {
                GetMode(stub) == INCREMENTAL_COMPACTION);
 
         PatchBranchIntoNop(&masm, Assembler::kInstrSize);
-        PatchBranchIntoNop(&masm, Assembler::kInstrSize*2);
+        PatchBranchIntoNop(&masm, Assembler::kInstrSize * 2);
         break;
       case INCREMENTAL:
         DCHECK(GetMode(stub) == STORE_BUFFER_ONLY);
@@ -220,13 +141,15 @@ class RecordWriteStub: public PlatformCodeStub {
         break;
       case INCREMENTAL_COMPACTION:
         DCHECK(GetMode(stub) == STORE_BUFFER_ONLY);
-        PatchNopIntoBranch(&masm, Assembler::kInstrSize*2);
+        PatchNopIntoBranch(&masm, Assembler::kInstrSize * 2);
         break;
     }
     DCHECK(GetMode(stub) == mode);
-    CpuFeatures::FlushICache(stub->instruction_start()+Assembler::kInstrSize,
-                      2 * Assembler::kInstrSize);
+    CpuFeatures::FlushICache(stub->instruction_start() + Assembler::kInstrSize,
+                             2 * Assembler::kInstrSize);
   }
+
+  DEFINE_NULL_CALL_INTERFACE_DESCRIPTOR();
 
  private:
   // This is a helper class for freeing up 3 scratch registers.  The input is
@@ -234,12 +157,8 @@ class RecordWriteStub: public PlatformCodeStub {
   // the caller.
   class RegisterAllocation {
    public:
-    RegisterAllocation(Register object,
-                       Register address,
-                       Register scratch0)
-        : object_(object),
-          address_(address),
-          scratch0_(scratch0) {
+    RegisterAllocation(Register object, Register address, Register scratch0)
+        : object_(object), address_(address), scratch0_(scratch0) {
       DCHECK(!AreAliased(scratch0, object, address, no_reg));
       scratch1_ = GetRegisterThatIsNotOneOf(object_, address_, scratch0_);
     }
@@ -251,9 +170,7 @@ class RecordWriteStub: public PlatformCodeStub {
       masm->push(scratch1_);
     }
 
-    void Restore(MacroAssembler* masm) {
-      masm->pop(scratch1_);
-    }
+    void Restore(MacroAssembler* masm) { masm->pop(scratch1_); }
 
     // If we have to call into C then we need to save and restore all caller-
     // saved registers that were not already preserved.  The scratch registers
@@ -268,7 +185,7 @@ class RecordWriteStub: public PlatformCodeStub {
       }
     }
 
-    inline void RestoreCallerSaveRegisters(MacroAssembler*masm,
+    inline void RestoreCallerSaveRegisters(MacroAssembler* masm,
                                            SaveFPRegsMode mode) {
       if (mode == kSaveFPRegs) {
         // Restore all volatile FP registers except d0.
@@ -298,41 +215,50 @@ class RecordWriteStub: public PlatformCodeStub {
     kUpdateRememberedSetOnNoNeedToInformIncrementalMarker
   };
 
-  void Generate(MacroAssembler* masm);
+  inline Major MajorKey() const FINAL { return RecordWrite; }
+
+  void Generate(MacroAssembler* masm) OVERRIDE;
   void GenerateIncremental(MacroAssembler* masm, Mode mode);
   void CheckNeedsToInformIncrementalMarker(
-      MacroAssembler* masm,
-      OnNoNeedToInformIncrementalMarker on_no_need,
+      MacroAssembler* masm, OnNoNeedToInformIncrementalMarker on_no_need,
       Mode mode);
   void InformIncrementalMarker(MacroAssembler* masm);
 
-  Major MajorKey() const { return RecordWrite; }
-
-  int MinorKey() const {
-    return ObjectBits::encode(object_.code()) |
-        ValueBits::encode(value_.code()) |
-        AddressBits::encode(address_.code()) |
-        RememberedSetActionBits::encode(remembered_set_action_) |
-        SaveFPRegsModeBits::encode(save_fp_regs_mode_);
-  }
-
-  void Activate(Code* code) {
+  void Activate(Code* code) OVERRIDE {
     code->GetHeap()->incremental_marking()->ActivateGeneratedStub(code);
   }
 
-  class ObjectBits: public BitField<int, 0, 5> {};
-  class ValueBits: public BitField<int, 5, 5> {};
-  class AddressBits: public BitField<int, 10, 5> {};
-  class RememberedSetActionBits: public BitField<RememberedSetAction, 15, 1> {};
-  class SaveFPRegsModeBits: public BitField<SaveFPRegsMode, 16, 1> {};
+  Register object() const {
+    return Register::from_code(ObjectBits::decode(minor_key_));
+  }
 
-  Register object_;
-  Register value_;
-  Register address_;
-  RememberedSetAction remembered_set_action_;
-  SaveFPRegsMode save_fp_regs_mode_;
+  Register value() const {
+    return Register::from_code(ValueBits::decode(minor_key_));
+  }
+
+  Register address() const {
+    return Register::from_code(AddressBits::decode(minor_key_));
+  }
+
+  RememberedSetAction remembered_set_action() const {
+    return RememberedSetActionBits::decode(minor_key_);
+  }
+
+  SaveFPRegsMode save_fp_regs_mode() const {
+    return SaveFPRegsModeBits::decode(minor_key_);
+  }
+
+  class ObjectBits : public BitField<int, 0, 5> {};
+  class ValueBits : public BitField<int, 5, 5> {};
+  class AddressBits : public BitField<int, 10, 5> {};
+  class RememberedSetActionBits : public BitField<RememberedSetAction, 15, 1> {
+  };
+  class SaveFPRegsModeBits : public BitField<SaveFPRegsMode, 16, 1> {};
+
   Label slow_;
   RegisterAllocation regs_;
+
+  DISALLOW_COPY_AND_ASSIGN(RecordWriteStub);
 };
 
 
@@ -341,46 +267,38 @@ class RecordWriteStub: public PlatformCodeStub {
 // keep the code which called into native pinned in the memory. Currently the
 // simplest approach is to generate such stub early enough so it can never be
 // moved by GC
-class DirectCEntryStub: public PlatformCodeStub {
+class DirectCEntryStub : public PlatformCodeStub {
  public:
   explicit DirectCEntryStub(Isolate* isolate) : PlatformCodeStub(isolate) {}
-  void Generate(MacroAssembler* masm);
   void GenerateCall(MacroAssembler* masm, Register target);
 
  private:
-  Major MajorKey() const { return DirectCEntry; }
-  int MinorKey() const { return 0; }
+  bool NeedsImmovableCode() OVERRIDE { return true; }
 
-  bool NeedsImmovableCode() { return true; }
+  DEFINE_NULL_CALL_INTERFACE_DESCRIPTOR();
+  DEFINE_PLATFORM_CODE_STUB(DirectCEntry, PlatformCodeStub);
 };
 
 
-class NameDictionaryLookupStub: public PlatformCodeStub {
+class NameDictionaryLookupStub : public PlatformCodeStub {
  public:
   enum LookupMode { POSITIVE_LOOKUP, NEGATIVE_LOOKUP };
 
   NameDictionaryLookupStub(Isolate* isolate, LookupMode mode)
-      : PlatformCodeStub(isolate), mode_(mode) { }
+      : PlatformCodeStub(isolate) {
+    minor_key_ = LookupModeBits::encode(mode);
+  }
 
-  void Generate(MacroAssembler* masm);
-
-  static void GenerateNegativeLookup(MacroAssembler* masm,
-                                     Label* miss,
-                                     Label* done,
-                                     Register receiver,
-                                     Register properties,
-                                     Handle<Name> name,
+  static void GenerateNegativeLookup(MacroAssembler* masm, Label* miss,
+                                     Label* done, Register receiver,
+                                     Register properties, Handle<Name> name,
                                      Register scratch0);
 
-  static void GeneratePositiveLookup(MacroAssembler* masm,
-                                     Label* miss,
-                                     Label* done,
-                                     Register elements,
-                                     Register name,
-                                     Register r0,
-                                     Register r1);
+  static void GeneratePositiveLookup(MacroAssembler* masm, Label* miss,
+                                     Label* done, Register elements,
+                                     Register name, Register r0, Register r1);
 
-  virtual bool SometimesSetsUpAFrame() { return false; }
+  bool SometimesSetsUpAFrame() OVERRIDE { return false; }
 
  private:
   static const int kInlinedProbes = 4;
@@ -394,15 +312,14 @@ class NameDictionaryLookupStub: public PlatformCodeStub {
       NameDictionary::kHeaderSize +
       NameDictionary::kElementsStartIndex * kPointerSize;
 
-  Major MajorKey() const { return NameDictionaryLookup; }
+  LookupMode mode() const { return LookupModeBits::decode(minor_key_); }
 
-  int MinorKey() const { return LookupModeBits::encode(mode_); }
+  class LookupModeBits : public BitField<LookupMode, 0, 1> {};
 
-  class LookupModeBits: public BitField<LookupMode, 0, 1> {};
-
-  LookupMode mode_;
+  DEFINE_NULL_CALL_INTERFACE_DESCRIPTOR();
+  DEFINE_PLATFORM_CODE_STUB(NameDictionaryLookup, PlatformCodeStub);
 };
-
-} }  // namespace v8::internal
+}
+}  // namespace v8::internal
 
 #endif  // V8_PPC_CODE_STUBS_PPC_H_

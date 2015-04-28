@@ -12,12 +12,7 @@
 namespace v8 {
 namespace internal {
 
-bool BreakLocationIterator::IsDebugBreakAtReturn() {
-  return Debug::IsDebugBreakAtReturn(rinfo());
-}
-
-
-void BreakLocationIterator::SetDebugBreakAtReturn() {
+void BreakLocation::SetDebugBreakAtReturn() {
   // Patch the code changing the return from JS function sequence from
   //   mov sp, fp
   //   ldmia sp!, {fp, lr}
@@ -28,7 +23,7 @@ void BreakLocationIterator::SetDebugBreakAtReturn() {
   //   blx ip
   //   <debug break return code entry point address>
   //   bkpt 0
-  CodePatcher patcher(rinfo()->pc(), Assembler::kJSReturnSequenceInstructions);
+  CodePatcher patcher(pc(), Assembler::kJSReturnSequenceInstructions);
   patcher.masm()->ldr(v8::internal::ip, MemOperand(v8::internal::pc, 0));
   patcher.masm()->blx(v8::internal::ip);
   patcher.Emit(
@@ -37,29 +32,7 @@ void BreakLocationIterator::SetDebugBreakAtReturn() {
 }
 
 
-// Restore the JS frame exit code.
-void BreakLocationIterator::ClearDebugBreakAtReturn() {
-  rinfo()->PatchCode(original_rinfo()->pc(),
-                     Assembler::kJSReturnSequenceInstructions);
-}
-
-
-// A debug break in the frame exit code is identified by the JS frame exit code
-// having been patched with a call instruction.
-bool Debug::IsDebugBreakAtReturn(RelocInfo* rinfo) {
-  DCHECK(RelocInfo::IsJSReturn(rinfo->rmode()));
-  return rinfo->IsPatchedReturnSequence();
-}
-
-
-bool BreakLocationIterator::IsDebugBreakAtSlot() {
-  DCHECK(IsDebugBreakSlot());
-  // Check whether the debug break slot instructions have been patched.
-  return rinfo()->IsPatchedDebugBreakSlotSequence();
-}
-
-
-void BreakLocationIterator::SetDebugBreakAtSlot() {
+void BreakLocation::SetDebugBreakAtSlot() {
   DCHECK(IsDebugBreakSlot());
   // Patch the code changing the debug break slot code from
   //   mov r2, r2
@@ -69,18 +42,11 @@ void BreakLocationIterator::SetDebugBreakAtSlot() {
   //   ldr ip, [pc, #0]
   //   blx ip
   //   <debug break slot code entry point address>
-  CodePatcher patcher(rinfo()->pc(), Assembler::kDebugBreakSlotInstructions);
+  CodePatcher patcher(pc(), Assembler::kDebugBreakSlotInstructions);
   patcher.masm()->ldr(v8::internal::ip, MemOperand(v8::internal::pc, 0));
   patcher.masm()->blx(v8::internal::ip);
   patcher.Emit(
       debug_info_->GetIsolate()->builtins()->Slot_DebugBreak()->entry());
-}
-
-
-void BreakLocationIterator::ClearDebugBreakAtSlot() {
-  DCHECK(IsDebugBreakSlot());
-  rinfo()->PatchCode(original_rinfo()->pc(),
-                     Assembler::kDebugBreakSlotInstructions);
 }
 
 
@@ -176,17 +142,21 @@ void DebugCodegen::GenerateCallICStubDebugBreak(MacroAssembler* masm) {
 
 void DebugCodegen::GenerateLoadICDebugBreak(MacroAssembler* masm) {
   // Calling convention for IC load (from ic-arm.cc).
-  Register receiver = LoadIC::ReceiverRegister();
-  Register name = LoadIC::NameRegister();
-  Generate_DebugBreakCallHelper(masm, receiver.bit() | name.bit(), 0);
+  Register receiver = LoadDescriptor::ReceiverRegister();
+  Register name = LoadDescriptor::NameRegister();
+  RegList regs = receiver.bit() | name.bit();
+  if (FLAG_vector_ics) {
+    regs |= VectorLoadICTrampolineDescriptor::SlotRegister().bit();
+  }
+  Generate_DebugBreakCallHelper(masm, regs, 0);
 }
 
 
 void DebugCodegen::GenerateStoreICDebugBreak(MacroAssembler* masm) {
   // Calling convention for IC store (from ic-arm.cc).
-  Register receiver = StoreIC::ReceiverRegister();
-  Register name = StoreIC::NameRegister();
-  Register value = StoreIC::ValueRegister();
+  Register receiver = StoreDescriptor::ReceiverRegister();
+  Register name = StoreDescriptor::NameRegister();
+  Register value = StoreDescriptor::ValueRegister();
   Generate_DebugBreakCallHelper(
       masm, receiver.bit() | name.bit() | value.bit(), 0);
 }
@@ -200,9 +170,9 @@ void DebugCodegen::GenerateKeyedLoadICDebugBreak(MacroAssembler* masm) {
 
 void DebugCodegen::GenerateKeyedStoreICDebugBreak(MacroAssembler* masm) {
   // Calling convention for IC keyed store call (from ic-arm.cc).
-  Register receiver = KeyedStoreIC::ReceiverRegister();
-  Register name = KeyedStoreIC::NameRegister();
-  Register value = KeyedStoreIC::ValueRegister();
+  Register receiver = StoreDescriptor::ReceiverRegister();
+  Register name = StoreDescriptor::NameRegister();
+  Register value = StoreDescriptor::ValueRegister();
   Generate_DebugBreakCallHelper(
       masm, receiver.bit() | name.bit() | value.bit(), 0);
 }

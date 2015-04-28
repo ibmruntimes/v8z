@@ -13,8 +13,37 @@
 namespace v8 {
 namespace internal {
 
-class ScriptData;
+class ScriptData {
+ public:
+  ScriptData(const byte* data, int length);
+  ~ScriptData() {
+    if (owns_data_) DeleteArray(data_);
+  }
 
+  const byte* data() const { return data_; }
+  int length() const { return length_; }
+  bool rejected() const { return rejected_; }
+
+  void Reject() { rejected_ = true; }
+
+  void AcquireDataOwnership() {
+    DCHECK(!owns_data_);
+    owns_data_ = true;
+  }
+
+  void ReleaseDataOwnership() {
+    DCHECK(owns_data_);
+    owns_data_ = false;
+  }
+
+ private:
+  bool owns_data_ : 1;
+  bool rejected_ : 1;
+  const byte* data_;
+  int length_;
+
+  DISALLOW_COPY_AND_ASSIGN(ScriptData);
+};
 
 // Abstract interface for preparse data recorder.
 class ParserRecorder {
@@ -23,20 +52,17 @@ class ParserRecorder {
   virtual ~ParserRecorder() { }
 
   // Logs the scope and some details of a function literal in the source.
-  virtual void LogFunction(int start,
-                           int end,
-                           int literals,
-                           int properties,
-                           StrictMode strict_mode) = 0;
+  virtual void LogFunction(int start, int end, int literals, int properties,
+                           LanguageMode language_mode,
+                           bool uses_super_property) = 0;
 
   // Logs an error message and marks the log as containing an error.
   // Further logging will be ignored, and ExtractData will return a vector
   // representing the error only.
-  virtual void LogMessage(int start,
-                          int end,
-                          const char* message,
+  virtual void LogMessage(int start, int end, const char* message,
                           const char* argument_opt,
-                          bool is_reference_error) = 0;
+                          ParseErrorType error_type) = 0;
+
  private:
   DISALLOW_COPY_AND_ASSIGN(ParserRecorder);
 };
@@ -45,39 +71,35 @@ class ParserRecorder {
 class SingletonLogger : public ParserRecorder {
  public:
   SingletonLogger()
-      : has_error_(false), start_(-1), end_(-1), is_reference_error_(false) {}
+      : has_error_(false), start_(-1), end_(-1), error_type_(kSyntaxError) {}
   virtual ~SingletonLogger() {}
 
   void Reset() { has_error_ = false; }
 
-  virtual void LogFunction(int start,
-                           int end,
-                           int literals,
-                           int properties,
-                           StrictMode strict_mode) {
+  virtual void LogFunction(int start, int end, int literals, int properties,
+                           LanguageMode language_mode,
+                           bool scope_uses_super_property) {
     DCHECK(!has_error_);
     start_ = start;
     end_ = end;
     literals_ = literals;
     properties_ = properties;
-    strict_mode_ = strict_mode;
+    language_mode_ = language_mode;
+    scope_uses_super_property_ = scope_uses_super_property;
   }
 
   // Logs an error message and marks the log as containing an error.
   // Further logging will be ignored, and ExtractData will return a vector
   // representing the error only.
-  virtual void LogMessage(int start,
-                          int end,
-                          const char* message,
-                          const char* argument_opt,
-                          bool is_reference_error) {
+  virtual void LogMessage(int start, int end, const char* message,
+                          const char* argument_opt, ParseErrorType error_type) {
     if (has_error_) return;
     has_error_ = true;
     start_ = start;
     end_ = end;
     message_ = message;
     argument_opt_ = argument_opt;
-    is_reference_error_ = is_reference_error;
+    error_type_ = error_type;
   }
 
   bool has_error() const { return has_error_; }
@@ -92,11 +114,18 @@ class SingletonLogger : public ParserRecorder {
     DCHECK(!has_error_);
     return properties_;
   }
-  StrictMode strict_mode() const {
+  LanguageMode language_mode() const {
     DCHECK(!has_error_);
-    return strict_mode_;
+    return language_mode_;
   }
-  int is_reference_error() const { return is_reference_error_; }
+  bool scope_uses_super_property() const {
+    DCHECK(!has_error_);
+    return scope_uses_super_property_;
+  }
+  ParseErrorType error_type() const {
+    DCHECK(has_error_);
+    return error_type_;
+  }
   const char* message() {
     DCHECK(has_error_);
     return message_;
@@ -113,11 +142,12 @@ class SingletonLogger : public ParserRecorder {
   // For function entries.
   int literals_;
   int properties_;
-  StrictMode strict_mode_;
+  LanguageMode language_mode_;
+  bool scope_uses_super_property_;
   // For error messages.
   const char* message_;
   const char* argument_opt_;
-  bool is_reference_error_;
+  ParseErrorType error_type_;
 };
 
 
@@ -131,26 +161,22 @@ class CompleteParserRecorder : public ParserRecorder {
   CompleteParserRecorder();
   virtual ~CompleteParserRecorder() {}
 
-  virtual void LogFunction(int start,
-                           int end,
-                           int literals,
-                           int properties,
-                           StrictMode strict_mode) {
+  virtual void LogFunction(int start, int end, int literals, int properties,
+                           LanguageMode language_mode,
+                           bool scope_uses_super_property) {
     function_store_.Add(start);
     function_store_.Add(end);
     function_store_.Add(literals);
     function_store_.Add(properties);
-    function_store_.Add(strict_mode);
+    function_store_.Add(language_mode);
+    function_store_.Add(scope_uses_super_property);
   }
 
   // Logs an error message and marks the log as containing an error.
   // Further logging will be ignored, and ExtractData will return a vector
   // representing the error only.
-  virtual void LogMessage(int start,
-                          int end,
-                          const char* message,
-                          const char* argument_opt,
-                          bool is_reference_error_);
+  virtual void LogMessage(int start, int end, const char* message,
+                          const char* argument_opt, ParseErrorType error_type);
   ScriptData* GetScriptData();
 
   bool HasError() {

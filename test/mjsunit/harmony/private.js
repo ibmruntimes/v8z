@@ -83,7 +83,8 @@ TestConstructor()
 
 function TestToString() {
   for (var i in symbols) {
-    assertThrows(function() { String(symbols[i]) }, TypeError)
+    assertThrows(function() {new String(symbols[i]) }, TypeError)
+    assertEquals(symbols[i].toString(), String(symbols[i]))
     assertThrows(function() { symbols[i] + "" }, TypeError)
     assertTrue(isValidSymbolString(symbols[i].toString()))
     assertTrue(isValidSymbolString(Object(symbols[i]).toString()))
@@ -195,25 +196,20 @@ TestSet()
 function TestCollections() {
   var set = new Set
   var map = new Map
-  var weakmap = new WeakMap
   for (var i in symbols) {
     set.add(symbols[i])
     map.set(symbols[i], i)
-    weakmap.set(symbols[i], i)
   }
   assertEquals(symbols.length, set.size)
   assertEquals(symbols.length, map.size)
   for (var i in symbols) {
     assertTrue(set.has(symbols[i]))
     assertTrue(map.has(symbols[i]))
-    assertTrue(weakmap.has(symbols[i]))
     assertEquals(i, map.get(symbols[i]))
-    assertEquals(i, weakmap.get(symbols[i]))
   }
   for (var i in symbols) {
     assertTrue(set.delete(symbols[i]))
     assertTrue(map.delete(symbols[i]))
-    assertTrue(weakmap.delete(symbols[i]))
   }
   assertEquals(0, set.size)
   assertEquals(0, map.size)

@@ -12,6 +12,7 @@
 #include "src/v8.h"
 #else
 #include "include/v8.h"
+#include "src/base/compiler-specific.h"
 #endif  // !V8_SHARED
 
 namespace v8 {
@@ -171,7 +172,7 @@ class SourceGroup {
 };
 
 
-class BinaryResource : public v8::String::ExternalAsciiStringResource {
+class BinaryResource : public v8::String::ExternalOneByteStringResource {
  public:
   BinaryResource(const char* string, int length)
       : data_(string),
@@ -247,14 +248,16 @@ class Shell : public i::AllStatic {
 #endif  // V8_SHARED
 
  public:
-  static Local<UnboundScript> CompileString(
+  enum SourceType { SCRIPT, MODULE };
+
+  static Local<Script> CompileString(
       Isolate* isolate, Local<String> source, Local<Value> name,
-      v8::ScriptCompiler::CompileOptions compile_options);
-  static bool ExecuteString(Isolate* isolate,
-                            Handle<String> source,
-                            Handle<Value> name,
-                            bool print_result,
-                            bool report_exceptions);
+      v8::ScriptCompiler::CompileOptions compile_options,
+      SourceType source_type);
+  static bool ExecuteString(Isolate* isolate, Handle<String> source,
+                            Handle<Value> name, bool print_result,
+                            bool report_exceptions,
+                            SourceType source_type = SCRIPT);
   static const char* ToCString(const v8::String::Utf8Value& value);
   static void ReportException(Isolate* isolate, TryCatch* try_catch);
   static Handle<String> ReadFile(Isolate* isolate, const char* name);
@@ -262,7 +265,7 @@ class Shell : public i::AllStatic {
   static int RunMain(Isolate* isolate, int argc, char* argv[]);
   static int Main(int argc, char* argv[]);
   static void Exit(int exit_code);
-  static void OnExit();
+  static void OnExit(Isolate* isolate);
 
 #ifndef V8_SHARED
   static Handle<Array> GetCompletions(Isolate* isolate,

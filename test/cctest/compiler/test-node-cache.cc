@@ -17,7 +17,7 @@ TEST(Int32Constant_back_to_back) {
 
   for (int i = -2000000000; i < 2000000000; i += 3315177) {
     Node** pos = cache.Find(graph.zone(), i);
-    CHECK_NE(NULL, pos);
+    CHECK(pos);
     for (int j = 0; j < 3; j++) {
       Node** npos = cache.Find(graph.zone(), i);
       CHECK_EQ(pos, npos);
@@ -33,15 +33,15 @@ TEST(Int32Constant_five) {
 
   int32_t constants[] = {static_cast<int32_t>(0x80000000), -77, 0, 1, -1};
 
-  Node* nodes[ARRAY_SIZE(constants)];
+  Node* nodes[arraysize(constants)];
 
-  for (size_t i = 0; i < ARRAY_SIZE(constants); i++) {
+  for (size_t i = 0; i < arraysize(constants); i++) {
     int32_t k = constants[i];
     Node* node = graph.NewNode(common.Int32Constant(k));
     *cache.Find(graph.zone(), k) = nodes[i] = node;
   }
 
-  for (size_t i = 0; i < ARRAY_SIZE(constants); i++) {
+  for (size_t i = 0; i < arraysize(constants); i++) {
     int32_t k = constants[i];
     CHECK_EQ(nodes[i], *cache.Find(graph.zone(), k));
   }
@@ -80,7 +80,7 @@ TEST(Int64Constant_back_to_back) {
 
   for (int64_t i = -2000000000; i < 2000000000; i += 3315177) {
     Node** pos = cache.Find(graph.zone(), i);
-    CHECK_NE(NULL, pos);
+    CHECK(pos);
     for (int j = 0; j < 3; j++) {
       Node** npos = cache.Find(graph.zone(), i);
       CHECK_EQ(pos, npos);
@@ -115,46 +115,61 @@ TEST(Int64Constant_hits) {
 }
 
 
-TEST(PtrConstant_back_to_back) {
-  GraphTester graph;
-  PtrNodeCache cache;
-  int32_t buffer[50];
+static bool Contains(ZoneVector<Node*>* nodes, Node* n) {
+  for (size_t i = 0; i < nodes->size(); i++) {
+    if (nodes->at(i) == n) return true;
+  }
+  return false;
+}
 
-  for (int32_t* p = buffer;
-       (p - buffer) < static_cast<ptrdiff_t>(ARRAY_SIZE(buffer)); p++) {
-    Node** pos = cache.Find(graph.zone(), p);
-    CHECK_NE(NULL, pos);
-    for (int j = 0; j < 3; j++) {
-      Node** npos = cache.Find(graph.zone(), p);
-      CHECK_EQ(pos, npos);
+
+TEST(NodeCache_GetCachedNodes_int32) {
+  GraphTester graph;
+  Int32NodeCache cache;
+  CommonOperatorBuilder common(graph.zone());
+
+  int32_t constants[] = {0, 311, 12,  13,  14,  555, -555, -44, -33, -22, -11,
+                         0, 311, 311, 412, 412, 11,  11,   -33, -33, -22, -11};
+
+  for (size_t i = 0; i < arraysize(constants); i++) {
+    int32_t k = constants[i];
+    Node** pos = cache.Find(graph.zone(), k);
+    if (*pos != NULL) {
+      ZoneVector<Node*> nodes(graph.zone());
+      cache.GetCachedNodes(&nodes);
+      CHECK(Contains(&nodes, *pos));
+    } else {
+      ZoneVector<Node*> nodes(graph.zone());
+      Node* n = graph.NewNode(common.Int32Constant(k));
+      *pos = n;
+      cache.GetCachedNodes(&nodes);
+      CHECK(Contains(&nodes, n));
     }
   }
 }
 
 
-TEST(PtrConstant_hits) {
+TEST(NodeCache_GetCachedNodes_int64) {
   GraphTester graph;
-  PtrNodeCache cache;
-  const int32_t kSize = 50;
-  int32_t buffer[kSize];
-  Node* nodes[kSize];
+  Int64NodeCache cache;
   CommonOperatorBuilder common(graph.zone());
 
-  for (size_t i = 0; i < ARRAY_SIZE(buffer); i++) {
-    int k = static_cast<int>(i);
-    int32_t* p = &buffer[i];
-    nodes[i] = graph.NewNode(common.Int32Constant(k));
-    *cache.Find(graph.zone(), p) = nodes[i];
-  }
+  int64_t constants[] = {0, 311, 12,  13,  14,  555, -555, -44, -33, -22, -11,
+                         0, 311, 311, 412, 412, 11,  11,   -33, -33, -22, -11};
 
-  int hits = 0;
-  for (size_t i = 0; i < ARRAY_SIZE(buffer); i++) {
-    int32_t* p = &buffer[i];
-    Node** pos = cache.Find(graph.zone(), p);
+  for (size_t i = 0; i < arraysize(constants); i++) {
+    int64_t k = constants[i];
+    Node** pos = cache.Find(graph.zone(), k);
     if (*pos != NULL) {
-      CHECK_EQ(nodes[i], *pos);
-      hits++;
+      ZoneVector<Node*> nodes(graph.zone());
+      cache.GetCachedNodes(&nodes);
+      CHECK(Contains(&nodes, *pos));
+    } else {
+      ZoneVector<Node*> nodes(graph.zone());
+      Node* n = graph.NewNode(common.Int64Constant(k));
+      *pos = n;
+      cache.GetCachedNodes(&nodes);
+      CHECK(Contains(&nodes, n));
     }
   }
-  CHECK_LT(4, hits);
 }

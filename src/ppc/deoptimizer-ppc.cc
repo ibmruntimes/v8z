@@ -1,7 +1,4 @@
-// Copyright 2012 the V8 project authors. All rights reserved.
-//
-// Copyright IBM Corp. 2012, 2013. All rights reserved.
-//
+// Copyright 2014 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -25,6 +22,12 @@ int Deoptimizer::patch_size() {
   const int kCallInstructionSizeInWords = 4;
 #endif
   return kCallInstructionSizeInWords * Assembler::kInstrSize;
+}
+
+
+void Deoptimizer::EnsureRelocSpaceForLazyDeoptimization(Handle<Code> code) {
+  // Empty because there is no need for relocation information for the code
+  // patching in Deoptimizer::PatchCodeForDeoptimization below.
 }
 
 
@@ -68,9 +71,8 @@ void Deoptimizer::PatchCodeForDeoptimization(Isolate* isolate, Code* code) {
     Address deopt_entry = GetDeoptimizationEntry(isolate, i, LAZY);
     // We need calls to have a predictable size in the unoptimized code, but
     // this is optimized code, so we don't have to have a predictable size.
-    int call_size_in_bytes =
-        MacroAssembler::CallSizeNotPredictableCodeSize(deopt_entry,
-                                                       kRelocInfo_NONEPTR);
+    int call_size_in_bytes = MacroAssembler::CallSizeNotPredictableCodeSize(
+        deopt_entry, kRelocInfo_NONEPTR);
     int call_size_in_words = call_size_in_bytes / Assembler::kInstrSize;
     DCHECK(call_size_in_bytes % Assembler::kInstrSize == 0);
     DCHECK(call_size_in_bytes <= patch_size());
@@ -105,14 +107,14 @@ void Deoptimizer::FillInputFrame(Address tos, JavaScriptFrame* frame) {
 
   // Fill the frame content from the actual data on the frame.
   for (unsigned i = 0; i < input_->GetFrameSize(); i += kPointerSize) {
-    input_->SetFrameSlot(i, reinterpret_cast<intptr_t>(
-                           Memory::Address_at(tos + i)));
+    input_->SetFrameSlot(
+        i, reinterpret_cast<intptr_t>(Memory::Address_at(tos + i)));
   }
 }
 
 
 void Deoptimizer::SetPlatformCompiledStubRegisters(
-    FrameDescription* output_frame, CodeStubInterfaceDescriptor* descriptor) {
+    FrameDescription* output_frame, CodeStubDescriptor* descriptor) {
   ApiFunction function(descriptor->deoptimization_handler());
   ExternalReference xref(&function, ExternalReference::BUILTIN_CALL, isolate_);
   intptr_t handler = reinterpret_cast<intptr_t>(xref.address());
@@ -140,7 +142,7 @@ bool Deoptimizer::HasAlignmentPadding(JSFunction* function) {
 
 // This code tries to be close to ia32 code so that any changes can be
 // easily ported.
-void Deoptimizer::EntryGenerator::Generate() {
+void Deoptimizer::TableEntryGenerator::Generate() {
   GeneratePrologue();
 
   // Unlike on ARM we don't save all the registers, just the useful ones.
@@ -169,6 +171,9 @@ void Deoptimizer::EntryGenerator::Generate() {
       __ StoreP(ToRegister(i), MemOperand(sp, kPointerSize * i));
     }
   }
+
+  __ mov(ip, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate())));
+  __ StoreP(fp, MemOperand(ip));
 
   const int kSavedRegistersAreaSize =
       (kNumberOfRegisters * kPointerSize) + kDoubleRegsSize;
@@ -232,7 +237,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   // Unwind the stack down to - but not including - the unwinding
   // limit and copy the contents of the activation frame to the input
   // frame description.
-  __ addi(r6,  r4, Operand(FrameDescription::frame_content_offset()));
+  __ addi(r6, r4, Operand(FrameDescription::frame_content_offset()));
   Label pop_loop;
   Label pop_loop_header;
   __ b(&pop_loop_header);
@@ -252,13 +257,12 @@ void Deoptimizer::EntryGenerator::Generate() {
   {
     AllowExternalCallThatCantCauseGC scope(masm());
     __ CallCFunction(
-      ExternalReference::compute_output_frames_function(isolate()), 1);
+        ExternalReference::compute_output_frames_function(isolate()), 1);
   }
   __ pop(r3);  // Restore deoptimizer object (class Deoptimizer).
 
   // Replace the current (input) frame with the output frames.
-  Label outer_push_loop, inner_push_loop,
-    outer_loop_header, inner_loop_header;
+  Label outer_push_loop, inner_push_loop, outer_loop_header, inner_loop_header;
   // Outer loop state: r7 = current "FrameDescription** output_",
   // r4 = one past the last FrameDescription**.
   __ lwz(r4, MemOperand(r3, Deoptimizer::output_count_offset()));
@@ -352,11 +356,11 @@ void FrameDescription::SetCallerFp(unsigned offset, intptr_t value) {
 
 
 void FrameDescription::SetCallerConstantPool(unsigned offset, intptr_t value) {
-  DCHECK(FLAG_enable_ool_constant_pool);
-  SetFrameSlot(offset, value);
+  // No out-of-line constant pool support.
+  UNREACHABLE();
 }
 
 
 #undef __
-
-} }  // namespace v8::internal
+}
+}  // namespace v8::internal

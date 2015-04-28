@@ -12,7 +12,7 @@ namespace internal {
 
 
 HeapEntry* HeapGraphEdge::from() const {
-  return &snapshot()->entries()[from_index_];
+  return &snapshot()->entries()[from_index()];
 }
 
 
@@ -42,25 +42,6 @@ HeapGraphEdge** HeapEntry::children_arr() {
   return &snapshot_->children().first() + children_index_;
 }
 
-
-SnapshotObjectId HeapObjectsMap::GetNthGcSubrootId(int delta) {
-  return kGcRootsFirstSubrootId + delta * kObjectIdStep;
-}
-
-
-HeapObject* V8HeapExplorer::GetNthGcSubrootObject(int delta) {
-  return reinterpret_cast<HeapObject*>(
-      reinterpret_cast<char*>(kFirstGcSubrootObject) +
-      delta * HeapObjectsMap::kObjectIdStep);
-}
-
-
-int V8HeapExplorer::GetGcSubrootOrder(HeapObject* subroot) {
-  return static_cast<int>(
-      (reinterpret_cast<char*>(subroot) -
-       reinterpret_cast<char*>(kFirstGcSubrootObject)) /
-      HeapObjectsMap::kObjectIdStep);
-}
 
 } }  // namespace v8::internal
 

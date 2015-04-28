@@ -63,7 +63,7 @@ class List {
   // backing store (e.g. Add).
   inline T& operator[](int i) const {
     DCHECK(0 <= i);
-    SLOW_DCHECK(i < length_);
+    SLOW_DCHECK(static_cast<unsigned>(i) < static_cast<unsigned>(length_));
     return data_[i];
   }
   inline T& at(int i) const { return operator[](i); }
@@ -80,7 +80,9 @@ class List {
 
   Vector<T> ToVector() const { return Vector<T>(data_, length_); }
 
-  Vector<const T> ToConstVector() { return Vector<const T>(data_, length_); }
+  Vector<const T> ToConstVector() const {
+    return Vector<const T>(data_, length_);
+  }
 
   // Adds a copy of the given 'element' to the end of the list,
   // expanding the list if necessary.

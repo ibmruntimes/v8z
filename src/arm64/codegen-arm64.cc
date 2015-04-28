@@ -290,15 +290,28 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   Register src_elements = x10;
   Register dst_elements = x11;
   Register dst_end = x12;
+  Register the_hole = x14;
+  __ LoadRoot(the_hole, Heap::kTheHoleValueRootIndex);
   __ Add(src_elements, elements,
          FixedDoubleArray::kHeaderSize - kHeapObjectTag);
   __ Add(dst_elements, array, FixedArray::kHeaderSize);
-  __ Add(array, array, kHeapObjectTag);
   __ Add(dst_end, dst_elements, Operand(length, LSL, kPointerSizeLog2));
 
-  Register the_hole = x14;
+  // Allocating heap numbers in the loop below can fail and cause a jump to
+  // gc_required. We can't leave a partly initialized FixedArray behind,
+  // so pessimistically fill it with holes now.
+  Label initialization_loop, initialization_loop_entry;
+  __ B(&initialization_loop_entry);
+  __ bind(&initialization_loop);
+  __ Str(the_hole, MemOperand(dst_elements, kPointerSize, PostIndex));
+  __ bind(&initialization_loop_entry);
+  __ Cmp(dst_elements, dst_end);
+  __ B(lt, &initialization_loop);
+
+  __ Add(dst_elements, array, FixedArray::kHeaderSize);
+  __ Add(array, array, kHeapObjectTag);
+
   Register heap_num_map = x15;
-  __ LoadRoot(the_hole, Heap::kTheHoleValueRootIndex);
   __ LoadRoot(heap_num_map, Heap::kHeapNumberMapRootIndex);
 
   Label entry;
@@ -485,15 +498,15 @@ void StringCharLoadGenerator::Generate(MacroAssembler* masm,
   __ B(ne, call_runtime);
   __ Ldr(string, FieldMemOperand(string, ExternalString::kResourceDataOffset));
 
-  Label ascii, done;
+  Label one_byte, done;
   __ Bind(&check_encoding);
   STATIC_ASSERT(kTwoByteStringTag == 0);
-  __ TestAndBranchIfAnySet(result, kStringEncodingMask, &ascii);
+  __ TestAndBranchIfAnySet(result, kStringEncodingMask, &one_byte);
   // Two-byte string.
   __ Ldrh(result, MemOperand(string, index, SXTW, 1));
   __ B(&done);
-  __ Bind(&ascii);
-  // Ascii string.
+  __ Bind(&one_byte);
+  // One-byte string.
   __ Ldrb(result, MemOperand(string, index, SXTW));
   __ Bind(&done);
 }

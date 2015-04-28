@@ -5,7 +5,7 @@
 #ifndef V8_HEAP_MARK_COMPACT_H_
 #define V8_HEAP_MARK_COMPACT_H_
 
-#include "src/compiler-intrinsics.h"
+#include "src/base/bits.h"
 #include "src/heap/spaces.h"
 
 namespace v8 {
@@ -15,6 +15,9 @@ namespace internal {
 // of the object is returned in size. It optionally updates the offset
 // to the first live object in the page (only used for old and map objects).
 typedef bool (*IsAliveFunction)(HeapObject* obj, int* size, int* offset);
+
+// Callback function to mark an object in a given heap.
+typedef void (*MarkObjectFunction)(Heap* heap, HeapObject* object);
 
 // Forward declarations.
 class CodeFlusher;
@@ -146,7 +149,9 @@ class MarkingDeque {
     HeapObject** obj_low = reinterpret_cast<HeapObject**>(low);
     HeapObject** obj_high = reinterpret_cast<HeapObject**>(high);
     array_ = obj_low;
-    mask_ = RoundDownToPowerOf2(static_cast<int>(obj_high - obj_low)) - 1;
+    mask_ = base::bits::RoundDownToPowerOfTwo32(
+                static_cast<uint32_t>(obj_high - obj_low)) -
+            1;
     top_ = bottom_ = 0;
     overflowed_ = false;
   }
@@ -166,6 +171,8 @@ class MarkingDeque {
   // heap.
   INLINE(void PushBlack(HeapObject* object)) {
     DCHECK(object->IsHeapObject());
+    // TODO(jochen): Remove again before we branch for 4.2.
+    CHECK(object->IsHeapObject() && object->map()->IsMap());
     if (IsFull()) {
       Marking::BlackToGrey(object);
       MemoryChunk::IncrementLiveBytesFromGC(object->address(), -object->Size());
@@ -178,6 +185,8 @@ class MarkingDeque {
 
   INLINE(void PushGrey(HeapObject* object)) {
     DCHECK(object->IsHeapObject());
+    // TODO(jochen): Remove again before we branch for 4.2.
+    CHECK(object->IsHeapObject() && object->map()->IsMap());
     if (IsFull()) {
       SetOverflowed();
     } else {
@@ -260,6 +269,11 @@ class SlotsBuffer {
 
   void Add(ObjectSlot slot) {
     DCHECK(0 <= idx_ && idx_ < kNumberOfElements);
+#ifdef DEBUG
+    if (slot >= reinterpret_cast<ObjectSlot>(NUMBER_OF_SLOT_TYPES)) {
+      DCHECK_NOT_NULL(*slot);
+    }
+#endif
     slots_[idx_++] = slot;
   }
 
@@ -348,6 +362,15 @@ class SlotsBuffer {
   static bool AddTo(SlotsBufferAllocator* allocator,
                     SlotsBuffer** buffer_address, SlotType type, Address addr,
                     AdditionMode mode);
+
+  // Eliminates all stale entries from the slots buffer, i.e., slots that
+  // are not part of live objects anymore. This method must be called after
+  // marking, when the whole transitive closure is known and must be called
+  // before sweeping when mark bits are still intact.
+  static void RemoveInvalidSlots(Heap* heap, SlotsBuffer* buffer);
+
+  // Ensures that there are no invalid slots in the chain of slots buffers.
+  static void VerifySlots(Heap* heap, SlotsBuffer* buffer);
 
   static const int kNumberOfElements = 1021;
 
@@ -536,6 +559,7 @@ class MarkCompactCollector {
   static const uint32_t kMultiFreeEncoding = 1;
 
   static inline bool IsMarked(Object* obj);
+  static bool IsUnmarkedHeapObjectWithHeap(Heap* heap, Object** p);
 
   inline Heap* heap() const { return heap_; }
   inline Isolate* isolate() const;
@@ -545,11 +569,8 @@ class MarkCompactCollector {
   void EnableCodeFlushing(bool enable);
 
   enum SweeperType {
-    PARALLEL_CONSERVATIVE,
-    CONCURRENT_CONSERVATIVE,
-    PARALLEL_PRECISE,
-    CONCURRENT_PRECISE,
-    PRECISE
+    CONCURRENT_SWEEPING,
+    SEQUENTIAL_SWEEPING
   };
 
   enum SweepingParallelism { SWEEP_ON_MAIN_THREAD, SWEEP_IN_PARALLEL };
@@ -561,12 +582,6 @@ class MarkCompactCollector {
   void VerifyWeakEmbeddedObjectsInCode();
   void VerifyOmittedMapChecks();
 #endif
-
-  // Sweep a single page from the given space conservatively.
-  // Returns the size of the biggest continuous freed memory chunk in bytes.
-  template <SweepingParallelism type>
-  static int SweepConservatively(PagedSpace* space, FreeList* free_list,
-                                 Page* p);
 
   INLINE(static bool ShouldSkipEvacuationSlotRecording(Object** anchor)) {
     return Page::FromAddress(reinterpret_cast<Address>(anchor))
@@ -647,24 +662,36 @@ class MarkCompactCollector {
 
   void RefillFreeList(PagedSpace* space);
 
-  bool AreSweeperThreadsActivated();
-
   // Checks if sweeping is in progress right now on any space.
   bool sweeping_in_progress() { return sweeping_in_progress_; }
 
-  void set_sequential_sweeping(bool sequential_sweeping) {
-    sequential_sweeping_ = sequential_sweeping;
-  }
+  void set_evacuation(bool evacuation) { evacuation_ = evacuation; }
 
-  bool sequential_sweeping() const { return sequential_sweeping_; }
-
-  // Mark the global table which maps weak objects to dependent code without
-  // marking its contents.
-  void MarkWeakObjectToCodeTable();
+  bool evacuation() const { return evacuation_; }
 
   // Special case for processing weak references in a full collection. We need
   // to artificially keep AllocationSites alive for a time.
   void MarkAllocationSite(AllocationSite* site);
+
+  // Mark objects in implicit references groups if their parent object
+  // is marked.
+  void MarkImplicitRefGroups(MarkObjectFunction mark_object);
+
+  MarkingDeque* marking_deque() { return &marking_deque_; }
+
+  void EnsureMarkingDequeIsCommittedAndInitialize();
+
+  void InitializeMarkingDeque();
+
+  void UncommitMarkingDeque();
+
+  // The following four methods can just be called after marking, when the
+  // whole transitive closure is known. They must be called before sweeping
+  // when mark bits are still intact.
+  bool IsSlotInBlackObject(Page* p, Address slot, HeapObject** out_object);
+  bool IsSlotInBlackObjectSlow(Page* p, Address slot);
+  bool IsSlotInLiveObject(Address slot);
+  void VerifyIsSlotInLiveObject(Address slot, HeapObject* object);
 
  private:
   class SweeperTask;
@@ -676,6 +703,8 @@ class MarkCompactCollector {
   bool WillBeDeoptimized(Code* code);
   void RemoveDeadInvalidatedCode();
   void ProcessInvalidatedCode(ObjectVisitor* visitor);
+  void ClearInvalidSlotsBufferEntries(PagedSpace* space);
+  void ClearInvalidStoreAndSlotsBufferEntries();
 
   void StartSweeperThreads();
 
@@ -694,10 +723,6 @@ class MarkCompactCollector {
   CollectorState state_;
 #endif
 
-  // Global flag that forces sweeping to be precise, so we can traverse the
-  // heap.
-  bool sweep_precisely_;
-
   bool reduce_memory_footprint_;
 
   bool abort_incremental_marking_;
@@ -715,7 +740,7 @@ class MarkCompactCollector {
 
   base::Semaphore pending_sweeper_jobs_semaphore_;
 
-  bool sequential_sweeping_;
+  bool evacuation_;
 
   SlotsBufferAllocator slots_buffer_allocator_;
 
@@ -765,10 +790,6 @@ class MarkCompactCollector {
   // the string table are weak.
   void MarkStringTable(RootMarkingVisitor* visitor);
 
-  // Mark objects in implicit references groups if their parent object
-  // is marked.
-  void MarkImplicitRefGroups();
-
   // Mark objects reachable (transitively) from objects in the marking stack
   // or overflowed in the heap.
   void ProcessMarkingDeque();
@@ -779,12 +800,17 @@ class MarkCompactCollector {
   //    - Processing of objects reachable through Harmony WeakMaps.
   //    - Objects reachable due to host application logic like object groups
   //      or implicit references' groups.
-  void ProcessEphemeralMarking(ObjectVisitor* visitor);
+  void ProcessEphemeralMarking(ObjectVisitor* visitor,
+                               bool only_process_harmony_weak_collections);
 
   // If the call-site of the top optimized code was not prepared for
   // deoptimization, then treat the maps in the code as strong pointers,
   // otherwise a map can die and deoptimize the code.
   void ProcessTopOptimizedFrame(ObjectVisitor* visitor);
+
+  // Retain dying maps for <FLAG_retain_maps_for_n_gc> garbage collections to
+  // increase chances of reusing of map transition tree in future.
+  void RetainMaps();
 
   // Mark objects reachable (transitively) from objects in the marking
   // stack.  This function empties the marking stack, but may leave
@@ -797,31 +823,20 @@ class MarkCompactCollector {
   // flag on the marking stack.
   void RefillMarkingDeque();
 
-  // After reachable maps have been marked process per context object
-  // literal map caches removing unmarked entries.
-  void ProcessMapCaches();
-
   // Callback function for telling whether the object *p is an unmarked
   // heap object.
   static bool IsUnmarkedHeapObject(Object** p);
-  static bool IsUnmarkedHeapObjectWithHeap(Heap* heap, Object** p);
 
   // Map transitions from a live map to a dead map must be killed.
   // We replace them with a null descriptor, with the same key.
   void ClearNonLiveReferences();
   void ClearNonLivePrototypeTransitions(Map* map);
   void ClearNonLiveMapTransitions(Map* map, MarkBit map_mark);
-  void ClearMapTransitions(Map* map);
+  void ClearMapTransitions(Map* map, Map* dead_transition);
   bool ClearMapBackPointer(Map* map);
   void TrimDescriptorArray(Map* map, DescriptorArray* descriptors,
                            int number_of_own_descriptors);
   void TrimEnumCache(Map* map, DescriptorArray* descriptors);
-
-  void ClearDependentCode(DependentCode* dependent_code);
-  void ClearDependentICList(Object* head);
-  void ClearNonLiveDependentCode(DependentCode* dependent_code);
-  int ClearNonLiveDependentCodeInGroup(DependentCode* dependent_code, int group,
-                                       int start, int end, int new_start);
 
   // Mark all values associated with reachable keys in weak collections
   // encountered so far.  This might push new object or even new weak maps onto
@@ -836,6 +851,10 @@ class MarkCompactCollector {
   // We have to remove all encountered weak maps from the list of weak
   // collections when incremental marking is aborted.
   void AbortWeakCollections();
+
+
+  void ProcessAndClearWeakCells();
+  void AbortWeakCells();
 
   // -----------------------------------------------------------------------
   // Phase 2: Sweeping to clear mark bits and free non-live objects for
@@ -890,6 +909,8 @@ class MarkCompactCollector {
 #endif
 
   Heap* heap_;
+  base::VirtualMemory* marking_deque_memory_;
+  bool marking_deque_memory_committed_;
   MarkingDeque marking_deque_;
   CodeFlusher* code_flusher_;
   bool have_code_to_deoptimize_;
@@ -945,14 +966,14 @@ class MarkBitCellIterator BASE_EMBEDDED {
 };
 
 
-class SequentialSweepingScope BASE_EMBEDDED {
+class EvacuationScope BASE_EMBEDDED {
  public:
-  explicit SequentialSweepingScope(MarkCompactCollector* collector)
+  explicit EvacuationScope(MarkCompactCollector* collector)
       : collector_(collector) {
-    collector_->set_sequential_sweeping(true);
+    collector_->set_evacuation(true);
   }
 
-  ~SequentialSweepingScope() { collector_->set_sequential_sweeping(false); }
+  ~EvacuationScope() { collector_->set_evacuation(false); }
 
  private:
   MarkCompactCollector* collector_;

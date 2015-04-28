@@ -28,6 +28,7 @@
 #include "test/cctest/trace-extension.h"
 
 #include "src/sampler.h"
+#include "src/vm-state-inl.h"
 #include "test/cctest/cctest.h"
 
 namespace v8 {
@@ -91,11 +92,17 @@ void TraceExtension::DoTrace(Address fp) {
   // sp is only used to define stack high bound
   regs.sp =
       reinterpret_cast<Address>(trace_env.sample) - 10240;
-  trace_env.sample->Init(CcTest::i_isolate(), regs);
+  trace_env.sample->Init(CcTest::i_isolate(), regs,
+                         TickSample::kSkipCEntryFrame);
 }
 
 
 void TraceExtension::Trace(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(args.GetIsolate());
+  i::VMState<EXTERNAL> state(isolate);
+  Address address = reinterpret_cast<Address>(
+      reinterpret_cast<intptr_t>(&TraceExtension::Trace));
+  i::ExternalCallbackScope call_scope(isolate, address);
   DoTrace(GetFP(args));
 }
 
@@ -113,19 +120,24 @@ static void DoTraceHideCEntryFPAddress(Address fp) {
 
 
 void TraceExtension::JSTrace(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(args.GetIsolate());
+  i::VMState<EXTERNAL> state(isolate);
+  Address address = reinterpret_cast<Address>(
+      reinterpret_cast<intptr_t>(&TraceExtension::JSTrace));
+  i::ExternalCallbackScope call_scope(isolate, address);
   DoTraceHideCEntryFPAddress(GetFP(args));
 }
 
 
 Address TraceExtension::GetJsEntrySp() {
-  CHECK_NE(NULL, CcTest::i_isolate()->thread_local_top());
+  CHECK(CcTest::i_isolate()->thread_local_top());
   return CcTest::i_isolate()->js_entry_sp();
 }
 
 
 void TraceExtension::JSEntrySP(
     const v8::FunctionCallbackInfo<v8::Value>& args) {
-  CHECK_NE(0, GetJsEntrySp());
+  CHECK(GetJsEntrySp());
 }
 
 
@@ -133,7 +145,7 @@ void TraceExtension::JSEntrySPLevel2(
     const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::HandleScope scope(args.GetIsolate());
   const Address js_entry_sp = GetJsEntrySp();
-  CHECK_NE(0, js_entry_sp);
+  CHECK(js_entry_sp);
   CompileRun("js_entry_sp();");
   CHECK_EQ(js_entry_sp, GetJsEntrySp());
 }

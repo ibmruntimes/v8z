@@ -6,7 +6,7 @@
 #define V8_CODEGEN_H_
 
 #include "src/code-stubs.h"
-#include "src/runtime.h"
+#include "src/runtime/runtime.h"
 
 // Include the declaration of the architecture defined class CodeGenerator.
 // The contract  to the shared code is that the the CodeGenerator is a subclass
@@ -52,7 +52,7 @@ enum TypeofState { INSIDE_TYPEOF, NOT_INSIDE_TYPEOF };
 #elif V8_TARGET_ARCH_ARM64
 #include "src/arm64/codegen-arm64.h"  // NOLINT
 #elif V8_TARGET_ARCH_ARM
-#include "src/arm/codegen-arm.h" // NOLINT
+#include "src/arm/codegen-arm.h"  // NOLINT
 #elif V8_TARGET_ARCH_S390
 #include "src/s390/codegen-s390.h" // NOLINT
 #elif V8_TARGET_ARCH_PPC

@@ -12,8 +12,9 @@
 #if V8_TARGET_ARCH_MIPS64
 
 #include "src/assembler.h"
+#include "src/base/bits.h"
+#include "src/codegen.h"
 #include "src/disasm.h"
-#include "src/globals.h"    // Need the BitCast.
 #include "src/mips64/constants-mips64.h"
 #include "src/mips64/simulator-mips64.h"
 #include "src/ostreams.h"
@@ -808,7 +809,7 @@ void Simulator::FlushICache(v8::internal::HashMap* i_cache,
     FlushOnePage(i_cache, start, bytes_to_flush);
     start += bytes_to_flush;
     size -= bytes_to_flush;
-    DCHECK_EQ((uint64_t)0, start & CachePage::kPageMask);
+    DCHECK_EQ((int64_t)0, start & CachePage::kPageMask);
     offset = 0;
   }
   if (size != 0) {
@@ -1056,13 +1057,13 @@ void Simulator::set_fpu_register_hi_word(int fpureg, int32_t value) {
 
 void Simulator::set_fpu_register_float(int fpureg, float value) {
   DCHECK((fpureg >= 0) && (fpureg < kNumFPURegisters));
-  *BitCast<float*>(&FPUregisters_[fpureg]) = value;
+  *bit_cast<float*>(&FPUregisters_[fpureg]) = value;
 }
 
 
 void Simulator::set_fpu_register_double(int fpureg, double value) {
   DCHECK((fpureg >= 0) && (fpureg < kNumFPURegisters));
-  *BitCast<double*>(&FPUregisters_[fpureg]) = value;
+  *bit_cast<double*>(&FPUregisters_[fpureg]) = value;
 }
 
 
@@ -1109,22 +1110,21 @@ int32_t Simulator::get_fpu_register_signed_word(int fpureg) const {
 }
 
 
-uint32_t Simulator::get_fpu_register_hi_word(int fpureg) const {
+int32_t Simulator::get_fpu_register_hi_word(int fpureg) const {
   DCHECK((fpureg >= 0) && (fpureg < kNumFPURegisters));
-  return static_cast<uint32_t>((FPUregisters_[fpureg] >> 32) & 0xffffffff);
+  return static_cast<int32_t>((FPUregisters_[fpureg] >> 32) & 0xffffffff);
 }
 
 
 float Simulator::get_fpu_register_float(int fpureg) const {
   DCHECK((fpureg >= 0) && (fpureg < kNumFPURegisters));
-  return *BitCast<float*>(
-      const_cast<int64_t*>(&FPUregisters_[fpureg]));
+  return *bit_cast<float*>(const_cast<int64_t*>(&FPUregisters_[fpureg]));
 }
 
 
 double Simulator::get_fpu_register_double(int fpureg) const {
   DCHECK((fpureg >= 0) && (fpureg < kNumFPURegisters));
-  return *BitCast<double*>(&FPUregisters_[fpureg]);
+  return *bit_cast<double*>(&FPUregisters_[fpureg]);
 }
 
 
@@ -1995,7 +1995,7 @@ void Simulator::ConfigureTypeRegister(Instruction* instr,
           *return_addr_reg = instr->RdValue();
           break;
         case SLL:
-          *alu_out = (int32_t)rt << sa;
+          *alu_out = static_cast<int32_t>(rt) << sa;
           break;
         case DSLL:
           *alu_out = rt << sa;
@@ -2007,12 +2007,14 @@ void Simulator::ConfigureTypeRegister(Instruction* instr,
           if (rs_reg == 0) {
             // Regular logical right shift of a word by a fixed number of
             // bits instruction. RS field is always equal to 0.
-            *alu_out = (uint32_t)rt_u >> sa;
+            // Sign-extend the 32-bit result.
+            *alu_out = static_cast<int32_t>(static_cast<uint32_t>(rt_u) >> sa);
           } else {
             // Logical right-rotate of a word by a fixed number of bits. This
             // is special case of SRL instruction, added in MIPS32 Release 2.
             // RS field is equal to 00001.
-            *alu_out = ((uint32_t)rt_u >> sa) | ((uint32_t)rt_u << (32 - sa));
+            *alu_out = static_cast<int32_t>(
+                base::bits::RotateRight32((uint32_t)rt_u, sa));
           }
           break;
         case DSRL:
@@ -2040,13 +2042,13 @@ void Simulator::ConfigureTypeRegister(Instruction* instr,
           if (sa == 0) {
             // Regular logical right-shift of a word by a variable number of
             // bits instruction. SA field is always equal to 0.
-            *alu_out = (uint32_t)rt_u >> rs;
+            *alu_out = static_cast<int32_t>((uint32_t)rt_u >> rs);
           } else {
             // Logical right-rotate of a word by a variable number of bits.
             // This is special case od SRLV instruction, added in MIPS32
             // Release 2. SA field is equal to 00001.
-            *alu_out =
-                ((uint32_t)rt_u >> rs_u) | ((uint32_t)rt_u << (32 - rs_u));
+            *alu_out = static_cast<int32_t>(
+                base::bits::RotateRight32((uint32_t)rt_u, rs_u));
           }
           break;
         case DSRLV:
@@ -2058,7 +2060,7 @@ void Simulator::ConfigureTypeRegister(Instruction* instr,
             // Logical right-rotate of a word by a variable number of bits.
             // This is special case od SRLV instruction, added in MIPS32
             // Release 2. SA field is equal to 00001.
-            *alu_out = (rt_u >> rs_u) | (rt_u << (32 - rs_u));
+            *alu_out = base::bits::RotateRight32(rt_u, rs_u);
           }
           break;
         case SRAV:
@@ -2074,25 +2076,22 @@ void Simulator::ConfigureTypeRegister(Instruction* instr,
           } else {
             // MIPS spec: If no bits were set in GPR rs, the result written to
             // GPR rd is 32.
-            // GCC __builtin_clz: If input is 0, the result is undefined.
             DCHECK(instr->SaValue() == 1);
-            *alu_out =
-                rs_u == 0 ? 32 : CompilerIntrinsics::CountLeadingZeros(rs_u);
+            *alu_out = base::bits::CountLeadingZeros32(rs_u);
           }
           break;
         case MFLO:
           *alu_out = get_register(LO);
           break;
-        case MULT:  // MULT == D_MUL_MUH.
-          // TODO(plind) - Unify MULT/DMULT with single set of 64-bit HI/Lo
-          // regs.
-          // TODO(plind) - make the 32-bit MULT ops conform to spec regarding
-          //   checking of 32-bit input values, and un-define operations of HW.
-          *i64hilo = static_cast<int64_t>((int32_t)rs) *
-              static_cast<int64_t>((int32_t)rt);
+        case MULT: {  // MULT == D_MUL_MUH.
+          int32_t rs_lo = static_cast<int32_t>(rs);
+          int32_t rt_lo = static_cast<int32_t>(rt);
+          *i64hilo = static_cast<int64_t>(rs_lo) * static_cast<int64_t>(rt_lo);
           break;
+        }
         case MULTU:
-          *u64hilo = static_cast<uint64_t>(rs_u) * static_cast<uint64_t>(rt_u);
+          *u64hilo = static_cast<uint64_t>(rs_u & 0xffffffff) *
+                     static_cast<uint64_t>(rt_u & 0xffffffff);
           break;
         case DMULT:  // DMULT == D_MUL_MUH.
           if (kArchVariant != kMips64r6) {
@@ -2220,9 +2219,7 @@ void Simulator::ConfigureTypeRegister(Instruction* instr,
         case CLZ:
           // MIPS32 spec: If no bits were set in GPR rs, the result written to
           // GPR rd is 32.
-          // GCC __builtin_clz: If input is 0, the result is undefined.
-          *alu_out =
-              rs_u == 0 ? 32 : CompilerIntrinsics::CountLeadingZeros(rs_u);
+          *alu_out = base::bits::CountLeadingZeros32(rs_u);
           break;
         default:
           UNREACHABLE();
@@ -2236,7 +2233,7 @@ void Simulator::ConfigureTypeRegister(Instruction* instr,
           // Interpret sa field as 5-bit lsb of insert.
           uint16_t lsb = sa;
           uint16_t size = msb - lsb + 1;
-          uint32_t mask = (1 << size) - 1;
+          uint64_t mask = (1ULL << size) - 1;
           *alu_out = (rt_u & ~(mask << lsb)) | ((rs_u & mask) << lsb);
           break;
         }
@@ -2246,8 +2243,18 @@ void Simulator::ConfigureTypeRegister(Instruction* instr,
           // Interpret sa field as 5-bit lsb of extract.
           uint16_t lsb = sa;
           uint16_t size = msb + 1;
-          uint32_t mask = (1 << size) - 1;
-          *alu_out = (rs_u & (mask << lsb)) >> lsb;
+          uint64_t mask = (1ULL << size) - 1;
+          *alu_out = static_cast<int32_t>((rs_u & (mask << lsb)) >> lsb);
+          break;
+        }
+        case DEXT: {  // Mips32r2 instruction.
+          // Interpret rd field as 5-bit msb of extract.
+          uint16_t msb = rd_reg;
+          // Interpret sa field as 5-bit lsb of extract.
+          uint16_t lsb = sa;
+          uint16_t size = msb + 1;
+          uint64_t mask = (1ULL << size) - 1;
+          *alu_out = static_cast<int64_t>((rs_u & (mask << lsb)) >> lsb);
           break;
         }
         default:
@@ -2387,7 +2394,7 @@ void Simulator::DecodeTypeRegister(Instruction* instr) {
               set_fpu_register_double(fd_reg, -fs);
               break;
             case SQRT_D:
-              set_fpu_register_double(fd_reg, sqrt(fs));
+              set_fpu_register_double(fd_reg, fast_sqrt(fs));
               break;
             case C_UN_D:
               set_fcsr_bit(fcsr_cc, std::isnan(fs) || std::isnan(ft));
@@ -2789,7 +2796,8 @@ void Simulator::DecodeTypeRegister(Instruction* instr) {
           TraceRegWr(alu_out);
           break;
         case EXT:
-          // Ext instr leaves result in Rt, rather than Rd.
+        case DEXT:
+          // Dext/Ext instr leaves result in Rt, rather than Rd.
           set_register(rt_reg, alu_out);
           TraceRegWr(alu_out);
           break;
@@ -2821,9 +2829,9 @@ void Simulator::DecodeTypeImmediate(Instruction* instr) {
   int64_t  ft     = get_fpu_register(ft_reg);
 
   // Zero extended immediate.
-  uint32_t  oe_imm16 = 0xffff & imm16;
+  uint64_t oe_imm16 = 0xffff & imm16;
   // Sign extended immediate.
-  int32_t   se_imm16 = imm16;
+  int64_t se_imm16 = imm16;
 
   // Get current pc.
   int64_t current_pc = get_pc();
@@ -2968,7 +2976,7 @@ void Simulator::DecodeTypeImmediate(Instruction* instr) {
       alu_out = (rs < se_imm16) ? 1 : 0;
       break;
     case SLTIU:
-      alu_out = (rs_u < static_cast<uint32_t>(se_imm16)) ? 1 : 0;
+      alu_out = (rs_u < static_cast<uint64_t>(se_imm16)) ? 1 : 0;
       break;
     case ANDI:
         alu_out = rs & oe_imm16;

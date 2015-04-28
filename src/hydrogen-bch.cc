@@ -174,9 +174,6 @@ class InductionVariableBlocksTable BASE_EMBEDDED {
     return unsafe ? OPTIMISTICALLY_HOISTABLE : HOISTABLE;
   }
 
-// Work around for GCC 4.4.6 at -O3 reporting
-// warning: may be used uninitialized in this function
-#pragma GCC diagnostic ignored "-Wuninitialized"
   explicit InductionVariableBlocksTable(HGraph* graph)
     : graph_(graph), loop_header_(NULL),
       elements_(graph->blocks()->length(), graph->zone()) {
@@ -240,14 +237,13 @@ class InductionVariableBlocksTable BASE_EMBEDDED {
     // constant limit we will use that instead of the induction limit.
     bool has_upper_constant_limit = true;
     int32_t upper_constant_limit =
-        check != NULL && check->HasUpperLimit() ? check->upper_limit() : 0;
+        check->HasUpperLimit() ? check->upper_limit() : 0;
     for (InductionVariableData::InductionVariableCheck* current_check = check;
          current_check != NULL;
          current_check = current_check->next()) {
       has_upper_constant_limit =
-          has_upper_constant_limit &&
-          check->HasUpperLimit() &&
-          check->upper_limit() == upper_constant_limit;
+          has_upper_constant_limit && current_check->HasUpperLimit() &&
+          current_check->upper_limit() == upper_constant_limit;
       counters()->bounds_checks_eliminated()->Increment();
       current_check->check()->set_skip_check();
     }
@@ -257,7 +253,7 @@ class InductionVariableBlocksTable BASE_EMBEDDED {
     HValue* context = graph()->GetInvalidContext();
     HValue* limit = data->limit();
     if (has_upper_constant_limit) {
-      HConstant* new_limit = HConstant::New(zone, context,
+      HConstant* new_limit = HConstant::New(graph()->isolate(), zone, context,
                                             upper_constant_limit);
       new_limit->InsertBefore(pre_header->end());
       limit = new_limit;
@@ -267,7 +263,7 @@ class InductionVariableBlocksTable BASE_EMBEDDED {
     if (limit->IsInteger32Constant() &&
         limit->block() != pre_header &&
         !limit->block()->Dominates(pre_header)) {
-      HConstant* new_limit = HConstant::New(zone, context,
+      HConstant* new_limit = HConstant::New(graph()->isolate(), zone, context,
                                             limit->GetInteger32Constant());
       new_limit->InsertBefore(pre_header->end());
       limit = new_limit;
@@ -275,7 +271,7 @@ class InductionVariableBlocksTable BASE_EMBEDDED {
 
     // Do the hoisting.
     HBoundsCheck* hoisted_check = HBoundsCheck::New(
-        zone, context, limit, check->check()->length());
+        graph()->isolate(), zone, context, limit, check->check()->length());
     hoisted_check->InsertBefore(pre_header->end());
     hoisted_check->set_allow_equality(true);
     counters()->bounds_checks_hoisted()->Increment();

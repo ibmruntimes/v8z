@@ -702,7 +702,12 @@ int DisassemblerX87::MemoryFPUInstruction(int escape_opcode,
         case 0: mnem = "fld_s"; break;
         case 2: mnem = "fst_s"; break;
         case 3: mnem = "fstp_s"; break;
-        case 7: mnem = "fstcw"; break;
+        case 5:
+          mnem = "fldcw";
+          break;
+        case 7:
+          mnem = "fnstcw";
+          break;
         default: UnimplementedInstruction();
       }
       break;
@@ -716,11 +721,27 @@ int DisassemblerX87::MemoryFPUInstruction(int escape_opcode,
       }
       break;
 
+    case 0xDC:
+      switch (regop) {
+        case 0:
+          mnem = "fadd_d";
+          break;
+        default:
+          UnimplementedInstruction();
+      }
+      break;
+
     case 0xDD: switch (regop) {
         case 0: mnem = "fld_d"; break;
         case 1: mnem = "fisttp_d"; break;
         case 2: mnem = "fst_d"; break;
         case 3: mnem = "fstp_d"; break;
+        case 4:
+          mnem = "frstor";
+          break;
+        case 6:
+          mnem = "fnsave";
+          break;
         default: UnimplementedInstruction();
       }
       break;
@@ -872,6 +893,8 @@ int DisassemblerX87::RegisterFPUInstruction(int escape_opcode,
 // Returns NULL if the instruction is not handled here.
 static const char* F0Mnem(byte f0byte) {
   switch (f0byte) {
+    case 0x0B:
+      return "ud2";
     case 0x18: return "prefetch";
     case 0xA2: return "cpuid";
     case 0xBE: return "movsx_b";
@@ -1036,7 +1059,7 @@ int DisassemblerX87::InstructionDecode(v8::internal::Vector<char> out_buffer,
                      data[7] == 0) {
             AppendToBuffer("nop");  // 8 byte nop.
             data += 8;
-          } else if (f0byte == 0xA2 || f0byte == 0x31) {
+          } else if (f0byte == 0x0B || f0byte == 0xA2 || f0byte == 0x31) {
             AppendToBuffer("%s", f0mnem);
             data += 2;
           } else if (f0byte == 0x28) {
@@ -1677,17 +1700,17 @@ int DisassemblerX87::InstructionDecode(v8::internal::Vector<char> out_buffer,
 //------------------------------------------------------------------------------
 
 
-static const char* cpu_regs[8] = {
+static const char* const cpu_regs[8] = {
   "eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi"
 };
 
 
-static const char* byte_cpu_regs[8] = {
+static const char* const byte_cpu_regs[8] = {
   "al", "cl", "dl", "bl", "ah", "ch", "dh", "bh"
 };
 
 
-static const char* xmm_regs[8] = {
+static const char* const xmm_regs[8] = {
   "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7"
 };
 

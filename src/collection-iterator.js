@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-'use strict';
+"use strict";
 
 
 // This file relies on the fact that the following declaration has been made
@@ -77,6 +77,8 @@ function SetUpSetIterator() {
   %FunctionSetName(SetIteratorSymbolIterator, '[Symbol.iterator]');
   %AddNamedProperty(SetIterator.prototype, symbolIterator,
       SetIteratorSymbolIterator, DONT_ENUM);
+  %AddNamedProperty(SetIterator.prototype, symbolToStringTag,
+      "Set Iterator", READ_ONLY | DONT_ENUM);
 }
 
 SetUpSetIterator();
@@ -174,6 +176,8 @@ function SetUpMapIterator() {
   %FunctionSetName(MapIteratorSymbolIterator, '[Symbol.iterator]');
   %AddNamedProperty(MapIterator.prototype, symbolIterator,
       MapIteratorSymbolIterator, DONT_ENUM);
+  %AddNamedProperty(MapIterator.prototype, symbolToStringTag,
+      "Map Iterator", READ_ONLY | DONT_ENUM);
 }
 
 SetUpMapIterator();

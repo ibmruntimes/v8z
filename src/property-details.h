@@ -41,21 +41,24 @@ typedef TypeImpl<ZoneTypeConfig> Type;
 class TypeInfo;
 
 // Type of properties.
+// Order of kinds is significant.
+// Must fit in the BitField PropertyDetails::KindField.
+enum PropertyKind { kData = 0, kAccessor = 1 };
+
+
+// Order of modes is significant.
+// Must fit in the BitField PropertyDetails::StoreModeField.
+enum PropertyLocation { kField = 0, kDescriptor = 1 };
+
+
 // Order of properties is significant.
 // Must fit in the BitField PropertyDetails::TypeField.
 // A copy of this is in mirror-debugger.js.
 enum PropertyType {
-  // Only in slow mode.
-  NORMAL                    = 0,
-  // Only in fast mode.
-  FIELD                     = 1,
-  CONSTANT                  = 2,
-  CALLBACKS                 = 3,
-  // Only in lookup results, not in descriptors.
-  HANDLER                   = 4,
-  INTERCEPTOR               = 5,
-  // Only used as a marker in LookupResult.
-  NONEXISTENT               = 6
+  DATA = (kField << 1) | kData,
+  DATA_CONSTANT = (kDescriptor << 1) | kData,
+  ACCESSOR = (kField << 1) | kAccessor,
+  ACCESSOR_CONSTANT = (kDescriptor << 1) | kAccessor
 };
 
 
@@ -184,16 +187,25 @@ static const int kInvalidEnumCacheSentinel =
     (1 << kDescriptorIndexBitCount) - 1;
 
 
+enum class PropertyCellType {
+  kUninitialized,        // Cell is deleted or not yet defined.
+  kUndefined,            // The PREMONOMORPHIC of property cells.
+  kConstant,             // Cell has been assigned only once.
+  kMutable,              // Cell will no longer be tracked as constant.
+  kDeleted = kConstant,  // like kUninitialized, but for cells already deleted.
+  kInvalid = kMutable,   // For dictionaries not holding cells.
+};
+
+
 // PropertyDetails captures type and attributes for a property.
 // They are used both in property dictionaries and instance descriptors.
 class PropertyDetails BASE_EMBEDDED {
  public:
-  PropertyDetails(PropertyAttributes attributes,
-                  PropertyType type,
-                  int index) {
-    value_ = TypeField::encode(type)
-        | AttributesField::encode(attributes)
-        | DictionaryStorageField::encode(index);
+  PropertyDetails(PropertyAttributes attributes, PropertyType type, int index,
+                  PropertyCellType cell_type) {
+    value_ = TypeField::encode(type) | AttributesField::encode(attributes) |
+             DictionaryStorageField::encode(index) |
+             PropertyCellTypeField::encode(cell_type);
 
     DCHECK(type == this->type());
     DCHECK(attributes == this->attributes());
@@ -209,14 +221,41 @@ class PropertyDetails BASE_EMBEDDED {
         | FieldIndexField::encode(field_index);
   }
 
+  PropertyDetails(PropertyAttributes attributes, PropertyKind kind,
+                  PropertyLocation location, Representation representation,
+                  int field_index = 0) {
+    value_ = KindField::encode(kind) | LocationField::encode(location) |
+             AttributesField::encode(attributes) |
+             RepresentationField::encode(EncodeRepresentation(representation)) |
+             FieldIndexField::encode(field_index);
+  }
+
+  static PropertyDetails Empty() {
+    return PropertyDetails(NONE, DATA, 0, PropertyCellType::kInvalid);
+  }
+
   int pointer() const { return DescriptorPointer::decode(value_); }
 
-  PropertyDetails set_pointer(int i) { return PropertyDetails(value_, i); }
+  PropertyDetails set_pointer(int i) const {
+    return PropertyDetails(value_, i);
+  }
+
+  PropertyDetails set_cell_type(PropertyCellType type) const {
+    PropertyDetails details = *this;
+    details.value_ = PropertyCellTypeField::update(details.value_, type);
+    return details;
+  }
+
+  PropertyDetails set_index(int index) const {
+    PropertyDetails details = *this;
+    details.value_ = DictionaryStorageField::update(details.value_, index);
+    return details;
+  }
 
   PropertyDetails CopyWithRepresentation(Representation representation) const {
     return PropertyDetails(value_, representation);
   }
-  PropertyDetails CopyAddAttributes(PropertyAttributes new_attributes) {
+  PropertyDetails CopyAddAttributes(PropertyAttributes new_attributes) const {
     new_attributes =
         static_cast<PropertyAttributes>(attributes() | new_attributes);
     return PropertyDetails(value_, new_attributes);
@@ -234,6 +273,9 @@ class PropertyDetails BASE_EMBEDDED {
     return Representation::FromKind(static_cast<Representation::Kind>(bits));
   }
 
+  PropertyKind kind() const { return KindField::decode(value_); }
+  PropertyLocation location() const { return LocationField::decode(value_); }
+
   PropertyType type() const { return TypeField::decode(value_); }
 
   PropertyAttributes attributes() const {
@@ -245,45 +287,58 @@ class PropertyDetails BASE_EMBEDDED {
   }
 
   Representation representation() const {
-    DCHECK(type() != NORMAL);
     return DecodeRepresentation(RepresentationField::decode(value_));
   }
 
-  int field_index() const {
-    return FieldIndexField::decode(value_);
-  }
+  int field_index() const { return FieldIndexField::decode(value_); }
 
-  inline PropertyDetails AsDeleted() const;
+  inline int field_width_in_words() const;
 
   static bool IsValidIndex(int index) {
     return DictionaryStorageField::is_valid(index);
   }
 
   bool IsReadOnly() const { return (attributes() & READ_ONLY) != 0; }
-  bool IsDontDelete() const { return (attributes() & DONT_DELETE) != 0; }
+  bool IsConfigurable() const { return (attributes() & DONT_DELETE) == 0; }
   bool IsDontEnum() const { return (attributes() & DONT_ENUM) != 0; }
-  bool IsDeleted() const { return DeletedField::decode(value_) != 0;}
+  PropertyCellType cell_type() const {
+    return PropertyCellTypeField::decode(value_);
+  }
 
   // Bit fields in value_ (type, shift, size). Must be public so the
   // constants can be embedded in generated code.
-  class TypeField:                public BitField<PropertyType,       0,  3> {};
-  class AttributesField:          public BitField<PropertyAttributes, 3,  3> {};
+  class KindField : public BitField<PropertyKind, 0, 1> {};
+  class LocationField : public BitField<PropertyLocation, 1, 1> {};
+  class AttributesField : public BitField<PropertyAttributes, 2, 3> {};
 
   // Bit fields for normalized objects.
-  class DeletedField:             public BitField<uint32_t,           6,  1> {};
-  class DictionaryStorageField:   public BitField<uint32_t,           7, 24> {};
+  class PropertyCellTypeField : public BitField<PropertyCellType, 5, 2> {};
+  class DictionaryStorageField : public BitField<uint32_t, 7, 24> {};
 
   // Bit fields for fast objects.
-  class RepresentationField:      public BitField<uint32_t,           6,  4> {};
-  class DescriptorPointer:        public BitField<uint32_t, 10,
-      kDescriptorIndexBitCount> {};  // NOLINT
-  class FieldIndexField:          public BitField<uint32_t,
-      10 + kDescriptorIndexBitCount,
-      kDescriptorIndexBitCount> {};  // NOLINT
-  // All bits for fast objects must fix in a smi.
-  STATIC_ASSERT(10 + kDescriptorIndexBitCount + kDescriptorIndexBitCount <= 31);
+  class RepresentationField : public BitField<uint32_t, 5, 4> {};
+  class DescriptorPointer
+      : public BitField<uint32_t, 9, kDescriptorIndexBitCount> {};  // NOLINT
+  class FieldIndexField
+      : public BitField<uint32_t, 9 + kDescriptorIndexBitCount,
+                        kDescriptorIndexBitCount> {};  // NOLINT
+
+  // NOTE: TypeField overlaps with KindField and LocationField.
+  class TypeField : public BitField<PropertyType, 0, 2> {};
+  STATIC_ASSERT(KindField::kNext == LocationField::kShift);
+  STATIC_ASSERT(TypeField::kShift == KindField::kShift);
+  STATIC_ASSERT(TypeField::kNext == LocationField::kNext);
+
+  // All bits for both fast and slow objects must fit in a smi.
+  STATIC_ASSERT(DictionaryStorageField::kNext <= 31);
+  STATIC_ASSERT(FieldIndexField::kNext <= 31);
 
   static const int kInitialIndex = 1;
+
+#ifdef OBJECT_PRINT
+  // For our gdb macros, we should perhaps change these in the future.
+  void Print(bool dictionary_mode);
+#endif
 
  private:
   PropertyDetails(int value, int pointer) {
@@ -300,6 +355,10 @@ class PropertyDetails BASE_EMBEDDED {
   uint32_t value_;
 };
 
+
+std::ostream& operator<<(std::ostream& os,
+                         const PropertyAttributes& attributes);
+std::ostream& operator<<(std::ostream& os, const PropertyDetails& details);
 } }  // namespace v8::internal
 
 #endif  // V8_PROPERTY_DETAILS_H_

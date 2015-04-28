@@ -39,21 +39,9 @@ const NEW_TWO_BYTE_STRING = false;
 const GETTER = 0;
 const SETTER = 1;
 
-# These definitions must match the index of the properties in objects.h.
-const kApiTagOffset                 = 0;
-const kApiPropertyListOffset        = 1;
-const kApiSerialNumberOffset        = 3;
-const kApiConstructorOffset         = 3;
-const kApiPrototypeTemplateOffset   = 5;
-const kApiParentTemplateOffset      = 6;
-const kApiFlagOffset                = 14;
-
 const NO_HINT     = 0;
 const NUMBER_HINT = 1;
 const STRING_HINT = 2;
-
-const kFunctionTag  = 0;
-const kNewObjectTag = 1;
 
 # For date.js.
 const HoursPerDay      = 24;
@@ -64,12 +52,6 @@ const msPerMinute      = 60000;
 const msPerHour        = 3600000;
 const msPerDay         = 86400000;
 const msPerMonth       = 2592000000;
-
-# For apinatives.js
-const kUninitialized = -1;
-const kReadOnlyPrototypeBit = 3;
-const kRemovePrototypeBit = 4;  # For FunctionTemplateInfo, matches objects.h
-const kDoNotCacheBit = 5;  # For FunctionTemplateInfo, matches objects.h
 
 # Note: kDayZeroInJulianDay = ToJulianDay(1970, 0, 1).
 const kInvalidDate        = 'Invalid Date';
@@ -86,6 +68,11 @@ const kMinYear  = -1000000;
 const kMaxYear  = 1000000;
 const kMinMonth = -10000000;
 const kMaxMonth = 10000000;
+
+# Safe maximum number of arguments to push to stack, when multiplied by
+# pointer size. Used by Function.prototype.apply(), Reflect.apply() and
+# Reflect.construct().
+const kSafeArgumentsLength = 0x800000;
 
 # Strict mode flags for passing to %SetProperty
 const kSloppyMode = 0;
@@ -129,7 +116,6 @@ macro IS_GENERATOR(arg)         = (%_ClassOf(arg) === 'Generator');
 macro IS_SET_ITERATOR(arg)      = (%_ClassOf(arg) === 'Set Iterator');
 macro IS_MAP_ITERATOR(arg)      = (%_ClassOf(arg) === 'Map Iterator');
 macro IS_UNDETECTABLE(arg)      = (%_IsUndetectableObject(arg));
-macro FLOOR(arg)                = $floor(arg);
 
 # Macro for ECMAScript 5 queries of the type:
 # "Type(O) is object."
@@ -166,14 +152,18 @@ macro TO_STRING_INLINE(arg) = (IS_STRING(%IS_VAR(arg)) ? arg : NonStringToString
 macro TO_NUMBER_INLINE(arg) = (IS_NUMBER(%IS_VAR(arg)) ? arg : NonNumberToNumber(arg));
 macro TO_OBJECT_INLINE(arg) = (IS_SPEC_OBJECT(%IS_VAR(arg)) ? arg : ToObject(arg));
 macro JSON_NUMBER_TO_STRING(arg) = ((%_IsSmi(%IS_VAR(arg)) || arg - arg == 0) ? %_NumberToString(arg) : "null");
+macro HAS_OWN_PROPERTY(obj, index) = (%_CallFunction(obj, index, ObjectHasOwnProperty));
+macro SHOULD_CREATE_WRAPPER(functionName, receiver) = (!IS_SPEC_OBJECT(receiver) && %IsSloppyModeFunction(functionName));
+macro HAS_INDEX(array, index, is_array) = ((is_array && %_HasFastPackedElements(%IS_VAR(array))) ? (index < array.length) : (index in array));
 
 # Private names.
 # GET_PRIVATE should only be used if the property is known to exists on obj
 # itself (it should really use %GetOwnProperty, but that would be way slower).
-macro GLOBAL_PRIVATE(name) = (%CreateGlobalPrivateSymbol(name));
-macro NEW_PRIVATE(name) = (%CreatePrivateSymbol(name));
+macro GLOBAL_PRIVATE(name) = (%CreateGlobalPrivateOwnSymbol(name));
+macro NEW_PRIVATE_OWN(name) = (%CreatePrivateOwnSymbol(name));
 macro IS_PRIVATE(sym) = (%SymbolIsPrivate(sym));
 macro HAS_PRIVATE(obj, sym) = (%HasOwnProperty(obj, sym));
+macro HAS_DEFINED_PRIVATE(obj, sym) = (!IS_UNDEFINED(obj[sym]));
 macro GET_PRIVATE(obj, sym) = (obj[sym]);
 macro SET_PRIVATE(obj, sym, val) = (obj[sym] = val);
 macro DELETE_PRIVATE(obj, sym) = (delete obj[sym]);
@@ -252,7 +242,7 @@ macro OVERRIDE_SUBJECT(override) = ((override)[(override).length - 1]);
 macro OVERRIDE_CAPTURE(override, index) = ((override)[(index)]);
 
 # PropertyDescriptor return value indices - must match
-# PropertyDescriptorIndices in runtime.cc.
+# PropertyDescriptorIndices in runtime-object.cc.
 const IS_ACCESSOR_INDEX = 0;
 const VALUE_INDEX = 1;
 const GETTER_INDEX = 2;
@@ -288,3 +278,5 @@ const ITERATOR_KIND_ENTRIES = 3;
 
 # Check whether debug is active.
 const DEBUG_IS_ACTIVE = (%_DebugIsActive() != 0);
+macro DEBUG_IS_STEPPING(function) = (%_DebugIsActive() != 0 && %DebugCallbackSupportsStepping(function));
+macro DEBUG_PREPARE_STEP_IN_IF_STEPPING(function) = if (DEBUG_IS_STEPPING(function)) %DebugPrepareStepInIfStepping(function);

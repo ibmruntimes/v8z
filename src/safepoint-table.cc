@@ -10,7 +10,6 @@
 #include "src/disasm.h"
 #include "src/macro-assembler.h"
 #include "src/ostreams.h"
-#include "src/zone-inl.h"
 
 namespace v8 {
 namespace internal {
@@ -44,7 +43,7 @@ SafepointTable::SafepointTable(Code* code) {
   entry_size_ = Memory::uint32_at(header + kEntrySizeOffset);
   pc_and_deoptimization_indexes_ = header + kHeaderSize;
   entries_ = pc_and_deoptimization_indexes_ +
-            (length_ * kPcAndDeoptimizationIndexSize);
+             (length_ * kPcAndDeoptimizationIndexSize);
   DCHECK(entry_size_ > 0);
   STATIC_ASSERT(SafepointEntry::DeoptimizationIndexField::kMax ==
                 Safepoint::kNoDeoptimizationIndex);
@@ -61,7 +60,8 @@ SafepointEntry SafepointTable::FindEntry(Address pc) const {
 }
 
 
-void SafepointTable::PrintEntry(unsigned index, OStream& os) const {  // NOLINT
+void SafepointTable::PrintEntry(unsigned index,
+                                std::ostream& os) const {  // NOLINT
   disasm::NameConverter converter;
   SafepointEntry entry = GetEntry(index);
   uint8_t* bits = entry.bits();
@@ -86,7 +86,7 @@ void SafepointTable::PrintEntry(unsigned index, OStream& os) const {  // NOLINT
 }
 
 
-void SafepointTable::PrintBits(OStream& os,  // NOLINT
+void SafepointTable::PrintBits(std::ostream& os,  // NOLINT
                                uint8_t byte, int digits) {
   DCHECK(digits >= 0 && digits <= kBitsPerByte);
   for (int i = 0; i < digits; i++) {

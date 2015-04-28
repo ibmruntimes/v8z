@@ -10,9 +10,7 @@
 
 #include "src/compiler/common-operator.h"
 #include "src/compiler/graph-builder.h"
-#include "src/compiler/machine-node-factory.h"
 #include "src/compiler/machine-operator.h"
-#include "src/compiler/simplified-node-factory.h"
 #include "src/compiler/simplified-operator.h"
 #include "test/cctest/compiler/call-tester.h"
 #include "test/cctest/compiler/simplified-graph-builder.h"
@@ -24,39 +22,37 @@ namespace compiler {
 // A class that just passes node creation on to the Graph.
 class DirectGraphBuilder : public GraphBuilder {
  public:
-  explicit DirectGraphBuilder(Graph* graph) : GraphBuilder(graph) {}
+  DirectGraphBuilder(Isolate* isolate, Graph* graph)
+      : GraphBuilder(isolate, graph) {}
   virtual ~DirectGraphBuilder() {}
 
  protected:
-  virtual Node* MakeNode(Operator* op, int value_input_count,
-                         Node** value_inputs) {
-    return graph()->NewNode(op, value_input_count, value_inputs);
+  virtual Node* MakeNode(const Operator* op, int value_input_count,
+                         Node** value_inputs, bool incomplete) FINAL {
+    return graph()->NewNode(op, value_input_count, value_inputs, incomplete);
   }
 };
 
 
 class MachineCallHelper : public CallHelper {
  public:
-  MachineCallHelper(Zone* zone, MachineCallDescriptorBuilder* builder);
+  MachineCallHelper(Isolate* isolate, MachineSignature* machine_sig);
 
-  Node* Parameter(int offset);
+  Node* Parameter(size_t index);
 
   void GenerateCode() { Generate(); }
 
  protected:
   virtual byte* Generate();
-  virtual void VerifyParameters(int parameter_count, MachineType* parameters);
   void InitParameters(GraphBuilder* builder, CommonOperatorBuilder* common);
 
  protected:
-  int parameter_count() const {
-    return call_descriptor_builder_->parameter_count();
-  }
+  size_t parameter_count() const { return machine_sig_->parameter_count(); }
 
  private:
-  MachineCallDescriptorBuilder* call_descriptor_builder_;
   Node** parameters_;
   // TODO(dcarney): shouldn't need graph stored.
+  Isolate* isolate_;
   Graph* graph_;
   MaybeHandle<Code> code_;
 };
@@ -87,20 +83,20 @@ class GraphBuilderTester
       public SimplifiedGraphBuilder,
       public CallHelper2<ReturnType, GraphBuilderTester<ReturnType> > {
  public:
-  explicit GraphBuilderTester(MachineType p0 = kMachineLast,
-                              MachineType p1 = kMachineLast,
-                              MachineType p2 = kMachineLast,
-                              MachineType p3 = kMachineLast,
-                              MachineType p4 = kMachineLast)
+  explicit GraphBuilderTester(MachineType p0 = kMachNone,
+                              MachineType p1 = kMachNone,
+                              MachineType p2 = kMachNone,
+                              MachineType p3 = kMachNone,
+                              MachineType p4 = kMachNone)
       : GraphAndBuilders(main_zone()),
         MachineCallHelper(
-            main_zone(),
-            ToCallDescriptorBuilder(
+            main_isolate(),
+            MakeMachineSignature(
                 main_zone(), ReturnValueTraits<ReturnType>::Representation(),
                 p0, p1, p2, p3, p4)),
-        SimplifiedGraphBuilder(main_graph_, &main_common_, &main_machine_,
-                               &main_simplified_) {
-    Begin(parameter_count());
+        SimplifiedGraphBuilder(main_isolate(), main_graph_, &main_common_,
+                               &main_machine_, &main_simplified_) {
+    Begin(static_cast<int>(parameter_count()));
     InitParameters(this, &main_common_);
   }
   virtual ~GraphBuilderTester() {}

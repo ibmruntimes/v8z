@@ -2,13 +2,25 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// Expects following symbols to be set in the bootstrapper during genesis:
+// - symbolHasInstance
+// - symbolIsConcatSpreadable
+// - symbolIsRegExp
+// - symbolIterator
+// - symbolToStringTag
+// - symbolUnscopables
+
+var $symbolToString;
+
+(function() {
+
 "use strict";
 
-// This file relies on the fact that the following declaration has been made
-// in runtime.js:
-// var $Array = global.Array;
+%CheckIsBootstrapping();
 
-var $Symbol = global.Symbol;
+var GlobalArray = global.Array;
+var GlobalObject = global.Object;
+var GlobalSymbol = global.Symbol;
 
 // -------------------------------------------------------------------
 
@@ -40,15 +52,6 @@ function SymbolValueOf() {
 }
 
 
-function InternalSymbol(key) {
-  var internal_registry = %SymbolRegistry().for_intern;
-  if (IS_UNDEFINED(internal_registry[key])) {
-    internal_registry[key] = %CreateSymbol(key);
-  }
-  return internal_registry[key];
-}
-
-
 function SymbolFor(key) {
   key = TO_STRING_INLINE(key);
   var registry = %SymbolRegistry();
@@ -69,65 +72,49 @@ function SymbolKeyFor(symbol) {
 
 // ES6 19.1.2.8
 function ObjectGetOwnPropertySymbols(obj) {
-  if (!IS_SPEC_OBJECT(obj)) {
-    throw MakeTypeError("called_on_non_object",
-                        ["Object.getOwnPropertySymbols"]);
-  }
+  obj = ToObject(obj);
 
   // TODO(arv): Proxies use a shared trap for String and Symbol keys.
 
-  return ObjectGetOwnPropertyKeys(obj, true);
+  return ObjectGetOwnPropertyKeys(obj, PROPERTY_ATTRIBUTES_STRING);
 }
-
 
 //-------------------------------------------------------------------
 
-var symbolHasInstance = InternalSymbol("Symbol.hasInstance");
-var symbolIsConcatSpreadable = InternalSymbol("Symbol.isConcatSpreadable");
-var symbolIsRegExp = InternalSymbol("Symbol.isRegExp");
-var symbolIterator = InternalSymbol("Symbol.iterator");
-var symbolToStringTag = InternalSymbol("Symbol.toStringTag");
-var symbolUnscopables = InternalSymbol("Symbol.unscopables");
+%SetCode(GlobalSymbol, SymbolConstructor);
+%FunctionSetPrototype(GlobalSymbol, new GlobalObject());
 
+InstallConstants(GlobalSymbol, GlobalArray(
+  // TODO(rossberg): expose when implemented.
+  // "hasInstance", symbolHasInstance,
+  // "isConcatSpreadable", symbolIsConcatSpreadable,
+  // "isRegExp", symbolIsRegExp,
+  "iterator", symbolIterator,
+  // TODO(dslomov, caitp): Currently defined in harmony-tostring.js ---
+  // Move here when shipping
+  // "toStringTag", symbolToStringTag,
+  "unscopables", symbolUnscopables
+));
 
-//-------------------------------------------------------------------
+InstallFunctions(GlobalSymbol, DONT_ENUM, GlobalArray(
+  "for", SymbolFor,
+  "keyFor", SymbolKeyFor
+));
 
-function SetUpSymbol() {
-  %CheckIsBootstrapping();
+%AddNamedProperty(
+    GlobalSymbol.prototype, "constructor", GlobalSymbol, DONT_ENUM);
+%AddNamedProperty(
+    GlobalSymbol.prototype, symbolToStringTag, "Symbol", DONT_ENUM | READ_ONLY);
 
-  %SetCode($Symbol, SymbolConstructor);
-  %FunctionSetPrototype($Symbol, new $Object());
+InstallFunctions(GlobalSymbol.prototype, DONT_ENUM, GlobalArray(
+  "toString", SymbolToString,
+  "valueOf", SymbolValueOf
+));
 
-  InstallConstants($Symbol, $Array(
-    // TODO(rossberg): expose when implemented.
-    // "hasInstance", symbolHasInstance,
-    // "isConcatSpreadable", symbolIsConcatSpreadable,
-    // "isRegExp", symbolIsRegExp,
-    "iterator", symbolIterator,
-    // "toStringTag", symbolToStringTag,
-    "unscopables", symbolUnscopables
-  ));
-  InstallFunctions($Symbol, DONT_ENUM, $Array(
-    "for", SymbolFor,
-    "keyFor", SymbolKeyFor
-  ));
+InstallFunctions(GlobalObject, DONT_ENUM, GlobalArray(
+  "getOwnPropertySymbols", ObjectGetOwnPropertySymbols
+));
 
-  %AddNamedProperty($Symbol.prototype, "constructor", $Symbol, DONT_ENUM);
-  InstallFunctions($Symbol.prototype, DONT_ENUM, $Array(
-    "toString", SymbolToString,
-    "valueOf", SymbolValueOf
-  ));
-}
+$symbolToString = SymbolToString;
 
-SetUpSymbol();
-
-
-function ExtendObject() {
-  %CheckIsBootstrapping();
-
-  InstallFunctions($Object, DONT_ENUM, $Array(
-    "getOwnPropertySymbols", ObjectGetOwnPropertySymbols
-  ));
-}
-
-ExtendObject();
+})();

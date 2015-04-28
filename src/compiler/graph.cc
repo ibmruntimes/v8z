@@ -4,51 +4,59 @@
 
 #include "src/compiler/graph.h"
 
-#include "src/compiler/common-operator.h"
-#include "src/compiler/generic-node-inl.h"
-#include "src/compiler/graph-inl.h"
+#include <algorithm>
+
+#include "src/base/bits.h"
 #include "src/compiler/node.h"
-#include "src/compiler/node-aux-data-inl.h"
-#include "src/compiler/node-properties.h"
-#include "src/compiler/node-properties-inl.h"
-#include "src/compiler/operator-properties.h"
-#include "src/compiler/operator-properties-inl.h"
 
 namespace v8 {
 namespace internal {
 namespace compiler {
 
 Graph::Graph(Zone* zone)
-    : GenericGraph<Node>(zone),
-      decorators_(DecoratorVector::allocator_type(zone)) {}
+    : zone_(zone),
+      start_(nullptr),
+      end_(nullptr),
+      mark_max_(0),
+      next_node_id_(0),
+      decorators_(zone) {}
 
 
-Node* Graph::NewNode(Operator* op, int input_count, Node** inputs) {
-  DCHECK(op->InputCount() <= input_count);
-  Node* result = Node::New(this, input_count, inputs);
-  result->Initialize(op);
-  for (DecoratorVector::iterator i = decorators_.begin();
-       i != decorators_.end(); ++i) {
-    (*i)->Decorate(result);
+void Graph::Decorate(Node* node, bool incomplete) {
+  for (auto const decorator : decorators_) {
+    decorator->Decorate(node, incomplete);
   }
-  return result;
 }
 
 
-void Graph::ChangeOperator(Node* node, Operator* op) { node->set_op(op); }
+void Graph::AddDecorator(GraphDecorator* decorator) {
+  decorators_.push_back(decorator);
+}
 
 
-void Graph::DeleteNode(Node* node) {
-#if DEBUG
-  // Nodes can't be deleted if they have uses.
-  Node::Uses::iterator use_iterator(node->uses().begin());
-  DCHECK(use_iterator == node->uses().end());
-#endif
+void Graph::RemoveDecorator(GraphDecorator* decorator) {
+  auto const it = std::find(decorators_.begin(), decorators_.end(), decorator);
+  DCHECK(it != decorators_.end());
+  decorators_.erase(it);
+}
 
-#if DEBUG
-  memset(node, 0xDE, sizeof(Node));
-#endif
+
+Node* Graph::NewNode(const Operator* op, int input_count, Node** inputs,
+                     bool incomplete) {
+  DCHECK_LE(op->ValueInputCount(), input_count);
+  Node* const node =
+      Node::New(zone(), NextNodeId(), op, input_count, inputs, incomplete);
+  Decorate(node, incomplete);
+  return node;
 }
+
+
+NodeId Graph::NextNodeId() {
+  NodeId const id = next_node_id_;
+  CHECK(!base::bits::SignedAddOverflow32(id, 1, &next_node_id_));
+  return id;
 }
-}
-}  // namespace v8::internal::compiler
+
+}  // namespace compiler
+}  // namespace internal
+}  // namespace v8

@@ -36,9 +36,7 @@ import urllib2
 
 
 def GetSuitePaths(test_root):
-  def IsSuite(path):
-    return isdir(path) and exists(join(path, 'testcfg.py'))
-  return [ f for f in os.listdir(test_root) if IsSuite(join(test_root, f)) ]
+  return [ f for f in os.listdir(test_root) if isdir(join(test_root, f)) ]
 
 
 # Reads a file into an array of strings
@@ -75,7 +73,7 @@ def GuessOS():
     return 'solaris'
   elif system == 'NetBSD':
     return 'netbsd'
-  elif id == 'AIX':
+  elif system == 'AIX':
     return 'aix'
   else:
     return None
@@ -105,7 +103,7 @@ def DefaultArch():
     return 'ia32'
   elif id == 's390x':
     return 's390'
-  elif id == 'ppc64':
+  elif machine == 'ppc64':
     return 'ppc'
   else:
     return None

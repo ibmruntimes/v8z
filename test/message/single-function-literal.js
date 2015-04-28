@@ -27,6 +27,12 @@
 
 // Flags: --allow-natives-syntax
 var single_function_good = "(function() { return 5; })";
+<<<<<<< HEAD
 %CompileString(single_function_good, true);
 var single_function_bad = "(function() { return 5; })();";
 %CompileString(single_function_bad, true);
+=======
+%CompileString(single_function_good, true, 0);
+var single_function_bad = "(function() { return 5; })();";
+%CompileString(single_function_bad, true, 0);
+>>>>>>> 4.3

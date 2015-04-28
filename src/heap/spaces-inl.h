@@ -8,6 +8,7 @@
 #include "src/heap/spaces.h"
 #include "src/heap-profiler.h"
 #include "src/isolate.h"
+#include "src/msan.h"
 #include "src/v8memory.h"
 
 namespace v8 {
@@ -90,6 +91,12 @@ HeapObject* HeapObjectIterator::FromCurrentPage() {
     int obj_size = (size_func_ == NULL) ? obj->Size() : size_func_(obj);
     cur_addr_ += obj_size;
     DCHECK(cur_addr_ <= cur_end_);
+    // TODO(hpayer): Remove the debugging code.
+    if (cur_addr_ > cur_end_) {
+      space_->heap()->isolate()->PushStackTraceAndDie(0xaaaaaaaa, obj, NULL,
+                                                      obj_size);
+    }
+
     if (!obj->IsFiller()) {
       DCHECK_OBJECT_SIZE(obj_size);
       return obj;
@@ -258,6 +265,7 @@ AllocationResult PagedSpace::AllocateRaw(int size_in_bytes) {
     if (identity() == CODE_SPACE) {
       SkipList::Update(object->address(), size_in_bytes);
     }
+    MSAN_ALLOCATED_UNINITIALIZED_MEMORY(object->address(), size_in_bytes);
     return object;
   }
 
@@ -280,6 +288,9 @@ AllocationResult NewSpace::AllocateRaw(int size_in_bytes) {
   allocation_info_.set_top(allocation_info_.top() + size_in_bytes);
   DCHECK_SEMISPACE_ALLOCATION_INFO(allocation_info_, to_space_);
 
+  // The slow path above ultimately goes through AllocateRaw, so this suffices.
+  MSAN_ALLOCATED_UNINITIALIZED_MEMORY(obj->address(), size_in_bytes);
+
   return obj;
 }
 
@@ -294,14 +305,6 @@ intptr_t LargeObjectSpace::Available() {
   return ObjectSizeFor(heap()->isolate()->memory_allocator()->Available());
 }
 
-
-bool FreeListNode::IsFreeListNode(HeapObject* object) {
-  Map* map = object->map();
-  Heap* heap = object->GetHeap();
-  return map == heap->raw_unchecked_free_space_map() ||
-         map == heap->raw_unchecked_one_pointer_filler_map() ||
-         map == heap->raw_unchecked_two_pointer_filler_map();
-}
 }
 }  // namespace v8::internal
 

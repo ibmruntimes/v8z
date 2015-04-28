@@ -18,7 +18,12 @@ bool CpuFeatures::SupportsCrankshaft() { return true; }
 
 
 void RelocInfo::apply(intptr_t delta, ICacheFlushMode icache_flush_mode) {
-  UNIMPLEMENTED();
+  // On arm64 only internal references need extra work.
+  DCHECK(RelocInfo::IsInternalReference(rmode_));
+
+  // Absolute code pointer inside code object moves with the code object.
+  intptr_t* p = reinterpret_cast<intptr_t*>(pc_);
+  *p += delta;  // Relocate entry.
 }
 
 
@@ -457,7 +462,7 @@ MemOperand::MemOperand()
 }
 
 
-MemOperand::MemOperand(Register base, ptrdiff_t offset, AddrMode addrmode)
+MemOperand::MemOperand(Register base, int64_t offset, AddrMode addrmode)
   : base_(base), regoffset_(NoReg), offset_(offset), addrmode_(addrmode),
     shift_(NO_SHIFT), extend_(NO_EXTEND), shift_amount_(0) {
   DCHECK(base.Is64Bits() && !base.IsZero());
@@ -503,7 +508,7 @@ MemOperand::MemOperand(Register base, const Operand& offset, AddrMode addrmode)
     DCHECK(addrmode == Offset);
 
     regoffset_ = offset.reg();
-    shift_= offset.shift();
+    shift_ = offset.shift();
     shift_amount_ = offset.shift_amount();
 
     extend_ = NO_EXTEND;
@@ -520,7 +525,7 @@ MemOperand::MemOperand(Register base, const Operand& offset, AddrMode addrmode)
     extend_ = offset.extend();
     shift_amount_ = offset.shift_amount();
 
-    shift_= NO_SHIFT;
+    shift_ = NO_SHIFT;
     offset_ = 0;
 
     // These assertions match those in the extended-register constructor.
@@ -581,13 +586,14 @@ Address Assembler::target_pointer_address_at(Address pc) {
 
 
 // Read/Modify the code target address in the branch/call instruction at pc.
-Address Assembler::target_address_at(Address pc, Address constant_pool) {
+Address Assembler::target_address_at(Address pc,
+                                     ConstantPoolArray* constant_pool) {
   return Memory::Address_at(target_pointer_address_at(pc));
 }
 
 
 Address Assembler::target_address_at(Address pc, Code* code) {
-  Address constant_pool = code ? code->constant_pool() : NULL;
+  ConstantPoolArray* constant_pool = code ? code->constant_pool() : NULL;
   return target_address_at(pc, constant_pool);
 }
 
@@ -653,7 +659,14 @@ void Assembler::deserialization_set_special_target_at(
 }
 
 
-void Assembler::set_target_address_at(Address pc, Address constant_pool,
+void Assembler::deserialization_set_target_internal_reference_at(
+    Address pc, Address target, RelocInfo::Mode mode) {
+  Memory::Address_at(pc) = target;
+}
+
+
+void Assembler::set_target_address_at(Address pc,
+                                      ConstantPoolArray* constant_pool,
                                       Address target,
                                       ICacheFlushMode icache_flush_mode) {
   Memory::Address_at(target_pointer_address_at(pc)) = target;
@@ -672,7 +685,7 @@ void Assembler::set_target_address_at(Address pc,
                                       Code* code,
                                       Address target,
                                       ICacheFlushMode icache_flush_mode) {
-  Address constant_pool = code ? code->constant_pool() : NULL;
+  ConstantPoolArray* constant_pool = code ? code->constant_pool() : NULL;
   set_target_address_at(pc, constant_pool, target, icache_flush_mode);
 }
 
@@ -731,9 +744,21 @@ void RelocInfo::set_target_object(Object* target,
 }
 
 
-Address RelocInfo::target_reference() {
+Address RelocInfo::target_external_reference() {
   DCHECK(rmode_ == EXTERNAL_REFERENCE);
   return Assembler::target_address_at(pc_, host_);
+}
+
+
+Address RelocInfo::target_internal_reference() {
+  DCHECK(rmode_ == INTERNAL_REFERENCE);
+  return Memory::Address_at(pc_);
+}
+
+
+Address RelocInfo::target_internal_reference_address() {
+  DCHECK(rmode_ == INTERNAL_REFERENCE);
+  return reinterpret_cast<Address>(pc_);
 }
 
 
@@ -824,11 +849,14 @@ void RelocInfo::set_call_address(Address target) {
 
 
 void RelocInfo::WipeOut() {
-  DCHECK(IsEmbeddedObject(rmode_) ||
-         IsCodeTarget(rmode_) ||
-         IsRuntimeEntry(rmode_) ||
-         IsExternalReference(rmode_));
-  Assembler::set_target_address_at(pc_, host_, NULL);
+  DCHECK(IsEmbeddedObject(rmode_) || IsCodeTarget(rmode_) ||
+         IsRuntimeEntry(rmode_) || IsExternalReference(rmode_) ||
+         IsInternalReference(rmode_));
+  if (IsInternalReference(rmode_)) {
+    Memory::Address_at(pc_) = NULL;
+  } else {
+    Assembler::set_target_address_at(pc_, host_, NULL);
+  }
 }
 
 
@@ -836,7 +864,7 @@ bool RelocInfo::IsPatchedReturnSequence() {
   // The sequence must be:
   //   ldr ip0, [pc, #offset]
   //   blr ip0
-  // See arm64/debug-arm64.cc BreakLocationIterator::SetDebugBreakAtReturn().
+  // See arm64/debug-arm64.cc BreakLocation::SetDebugBreakAtReturn().
   Instruction* i1 = reinterpret_cast<Instruction*>(pc_);
   Instruction* i2 = i1->following();
   return i1->IsLdrLiteralX() && (i1->Rt() == ip0.code()) &&
@@ -860,6 +888,8 @@ void RelocInfo::Visit(Isolate* isolate, ObjectVisitor* visitor) {
     visitor->VisitCell(this);
   } else if (mode == RelocInfo::EXTERNAL_REFERENCE) {
     visitor->VisitExternalReference(this);
+  } else if (mode == RelocInfo::INTERNAL_REFERENCE) {
+    visitor->VisitInternalReference(this);
   } else if (((RelocInfo::IsJSReturn(mode) &&
               IsPatchedReturnSequence()) ||
              (RelocInfo::IsDebugBreakSlot(mode) &&
@@ -883,6 +913,8 @@ void RelocInfo::Visit(Heap* heap) {
     StaticVisitor::VisitCell(heap, this);
   } else if (mode == RelocInfo::EXTERNAL_REFERENCE) {
     StaticVisitor::VisitExternalReference(this);
+  } else if (mode == RelocInfo::INTERNAL_REFERENCE) {
+    StaticVisitor::VisitInternalReference(this);
   } else if (heap->isolate()->debug()->has_break_points() &&
              ((RelocInfo::IsJSReturn(mode) &&
               IsPatchedReturnSequence()) ||

@@ -39,16 +39,16 @@ function ArrayBufferSlice(start, end) {
   var first;
   var byte_length = %_ArrayBufferGetByteLength(this);
   if (relativeStart < 0) {
-    first = MathMax(byte_length + relativeStart, 0);
+    first = $max(byte_length + relativeStart, 0);
   } else {
-    first = MathMin(relativeStart, byte_length);
+    first = $min(relativeStart, byte_length);
   }
   var relativeEnd = IS_UNDEFINED(end) ? byte_length : end;
   var fin;
   if (relativeEnd < 0) {
-    fin = MathMax(byte_length + relativeEnd, 0);
+    fin = $max(byte_length + relativeEnd, 0);
   } else {
-    fin = MathMin(relativeEnd, byte_length);
+    fin = $min(relativeEnd, byte_length);
   }
 
   if (fin < first) {
@@ -76,6 +76,9 @@ function SetUpArrayBuffer() {
   // Set up the constructor property on the ArrayBuffer prototype object.
   %AddNamedProperty(
       $ArrayBuffer.prototype, "constructor", $ArrayBuffer, DONT_ENUM);
+
+  %AddNamedProperty($ArrayBuffer.prototype,
+      symbolToStringTag, "ArrayBuffer", DONT_ENUM | READ_ONLY);
 
   InstallGetter($ArrayBuffer.prototype, "byteLength", ArrayBufferGetByteLen);
 

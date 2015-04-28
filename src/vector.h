@@ -31,9 +31,9 @@ class Vector {
   // Returns a vector using the same backing storage as this one,
   // spanning from and including 'from', to but not including 'to'.
   Vector<T> SubVector(int from, int to) {
-    SLOW_DCHECK(to <= length_);
-    SLOW_DCHECK(from < to);
     DCHECK(0 <= from);
+    SLOW_DCHECK(from < to);
+    SLOW_DCHECK(static_cast<unsigned>(to) <= static_cast<unsigned>(length_));
     return Vector<T>(start() + from, to - from);
   }
 
@@ -57,6 +57,10 @@ class Vector {
   T& first() { return start_[0]; }
 
   T& last() { return start_[length_ - 1]; }
+
+  typedef T* iterator;
+  inline iterator begin() const { return &start_[0]; }
+  inline iterator end() const { return &start_[length_]; }
 
   // Returns a clone of this vector with a new backing store.
   Vector<T> Clone() const {
@@ -151,9 +155,9 @@ inline int StrLength(const char* string) {
 }
 
 
-#define STATIC_ASCII_VECTOR(x)                        \
+#define STATIC_CHAR_VECTOR(x)                                              \
   v8::internal::Vector<const uint8_t>(reinterpret_cast<const uint8_t*>(x), \
-                                      ARRAY_SIZE(x)-1)
+                                      arraysize(x) - 1)
 
 inline Vector<const char> CStrVector(const char* data) {
   return Vector<const char>(data, StrLength(data));

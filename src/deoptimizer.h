@@ -9,7 +9,6 @@
 
 #include "src/allocation.h"
 #include "src/macro-assembler.h"
-#include "src/zone-inl.h"
 
 
 namespace v8 {
@@ -17,19 +16,9 @@ namespace internal {
 
 
 static inline double read_double_value(Address p) {
-#ifdef V8_HOST_CAN_READ_UNALIGNED
-  return Memory::double_at(p);
-#else  // V8_HOST_CAN_READ_UNALIGNED
-  // Prevent gcc from using load-double (mips ldc1) on (possibly)
-  // non-64-bit aligned address.
-  union conversion {
-    double d;
-    uint32_t u[2];
-  } c;
-  c.u[0] = *reinterpret_cast<uint32_t*>(p);
-  c.u[1] = *reinterpret_cast<uint32_t*>(p + 4);
-  return c.d;
-#endif  // V8_HOST_CAN_READ_UNALIGNED
+  double d;
+  memcpy(&d, p, sizeof(d));
+  return d;
 }
 
 
@@ -98,6 +87,82 @@ class OptimizedFunctionVisitor BASE_EMBEDDED {
 };
 
 
+#define DEOPT_MESSAGES_LIST(V)                                                 \
+  V(kNoReason, "no reason")                                                    \
+  V(kConstantGlobalVariableAssignment, "Constant global variable assignment")  \
+  V(kConversionOverflow, "conversion overflow")                                \
+  V(kDivisionByZero, "division by zero")                                       \
+  V(kElementsKindUnhandledInKeyedLoadGenericStub,                              \
+    "ElementsKind unhandled in KeyedLoadGenericStub")                          \
+  V(kExpectedHeapNumber, "Expected heap number")                               \
+  V(kExpectedSmi, "Expected smi")                                              \
+  V(kForcedDeoptToRuntime, "Forced deopt to runtime")                          \
+  V(kHole, "hole")                                                             \
+  V(kHoleyArrayDespitePackedElements_kindFeedback,                             \
+    "Holey array despite packed elements_kind feedback")                       \
+  V(kInstanceMigrationFailed, "instance migration failed")                     \
+  V(kInsufficientTypeFeedbackForCallWithArguments,                             \
+    "Insufficient type feedback for call with arguments")                      \
+  V(kInsufficientTypeFeedbackForCombinedTypeOfBinaryOperation,                 \
+    "Insufficient type feedback for combined type of binary operation")        \
+  V(kInsufficientTypeFeedbackForGenericNamedAccess,                            \
+    "Insufficient type feedback for generic named access")                     \
+  V(kInsufficientTypeFeedbackForKeyedLoad,                                     \
+    "Insufficient type feedback for keyed load")                               \
+  V(kInsufficientTypeFeedbackForKeyedStore,                                    \
+    "Insufficient type feedback for keyed store")                              \
+  V(kInsufficientTypeFeedbackForLHSOfBinaryOperation,                          \
+    "Insufficient type feedback for LHS of binary operation")                  \
+  V(kInsufficientTypeFeedbackForRHSOfBinaryOperation,                          \
+    "Insufficient type feedback for RHS of binary operation")                  \
+  V(kKeyIsNegative, "key is negative")                                         \
+  V(kLostPrecision, "lost precision")                                          \
+  V(kLostPrecisionOrNaN, "lost precision or NaN")                              \
+  V(kMementoFound, "memento found")                                            \
+  V(kMinusZero, "minus zero")                                                  \
+  V(kNaN, "NaN")                                                               \
+  V(kNegativeKeyEncountered, "Negative key encountered")                       \
+  V(kNegativeValue, "negative value")                                          \
+  V(kNoCache, "no cache")                                                      \
+  V(kNonStrictElementsInKeyedLoadGenericStub,                                  \
+    "non-strict elements in KeyedLoadGenericStub")                             \
+  V(kNotADateObject, "not a date object")                                      \
+  V(kNotAHeapNumber, "not a heap number")                                      \
+  V(kNotAHeapNumberUndefinedBoolean, "not a heap number/undefined/true/false") \
+  V(kNotAHeapNumberUndefined, "not a heap number/undefined")                   \
+  V(kNotAJavaScriptObject, "not a JavaScript object")                          \
+  V(kNotASmi, "not a Smi")                                                     \
+  V(kNull, "null")                                                             \
+  V(kOutOfBounds, "out of bounds")                                             \
+  V(kOutsideOfRange, "Outside of range")                                       \
+  V(kOverflow, "overflow")                                                     \
+  V(kReceiverWasAGlobalObject, "receiver was a global object")                 \
+  V(kSmi, "Smi")                                                               \
+  V(kTooManyArguments, "too many arguments")                                   \
+  V(kTooManyUndetectableTypes, "Too many undetectable types")                  \
+  V(kTracingElementsTransitions, "Tracing elements transitions")               \
+  V(kTypeMismatchBetweenFeedbackAndConstant,                                   \
+    "Type mismatch between feedback and constant")                             \
+  V(kUndefined, "undefined")                                                   \
+  V(kUnexpectedCellContentsInConstantGlobalStore,                              \
+    "Unexpected cell contents in constant global store")                       \
+  V(kUnexpectedCellContentsInGlobalStore,                                      \
+    "Unexpected cell contents in global store")                                \
+  V(kUnexpectedObject, "unexpected object")                                    \
+  V(kUnexpectedRHSOfBinaryOperation, "Unexpected RHS of binary operation")     \
+  V(kUninitializedBoilerplateInFastClone,                                      \
+    "Uninitialized boilerplate in fast clone")                                 \
+  V(kUninitializedBoilerplateLiterals, "Uninitialized boilerplate literals")   \
+  V(kUnknownMapInPolymorphicAccess, "Unknown map in polymorphic access")       \
+  V(kUnknownMapInPolymorphicCall, "Unknown map in polymorphic call")           \
+  V(kUnknownMapInPolymorphicElementAccess,                                     \
+    "Unknown map in polymorphic element access")                               \
+  V(kUnknownMap, "Unknown map")                                                \
+  V(kValueMismatch, "value mismatch")                                          \
+  V(kWrongInstanceType, "wrong instance type")                                 \
+  V(kWrongMap, "wrong map")
+
+
 class Deoptimizer : public Malloced {
  public:
   enum BailoutType {
@@ -106,21 +171,46 @@ class Deoptimizer : public Malloced {
     SOFT,
     // This last bailout type is not really a bailout, but used by the
     // debugger to deoptimize stack frames to allow inspection.
-    DEBUGGER
+    DEBUGGER,
+    kBailoutTypesWithCodeEntry = SOFT + 1
   };
 
-  static const int kBailoutTypesWithCodeEntry = SOFT + 1;
+#define DEOPT_MESSAGES_CONSTANTS(C, T) C,
+  enum DeoptReason {
+    DEOPT_MESSAGES_LIST(DEOPT_MESSAGES_CONSTANTS) kLastDeoptReason
+  };
+#undef DEOPT_MESSAGES_CONSTANTS
+  static const char* GetDeoptReason(DeoptReason deopt_reason);
+
+  struct DeoptInfo {
+    DeoptInfo(SourcePosition position, const char* m, DeoptReason d)
+        : position(position), mnemonic(m), deopt_reason(d), inlining_id(0) {}
+
+    SourcePosition position;
+    const char* mnemonic;
+    DeoptReason deopt_reason;
+    int inlining_id;
+  };
+
+  static DeoptInfo GetDeoptInfo(Code* code, byte* from);
 
   struct JumpTableEntry : public ZoneObject {
-    inline JumpTableEntry(Address entry,
-                          Deoptimizer::BailoutType type,
-                          bool frame)
+    inline JumpTableEntry(Address entry, const DeoptInfo& deopt_info,
+                          Deoptimizer::BailoutType type, bool frame)
         : label(),
           address(entry),
+          deopt_info(deopt_info),
           bailout_type(type),
-          needs_frame(frame) { }
+          needs_frame(frame) {}
+
+    bool IsEquivalentTo(const JumpTableEntry& other) const {
+      return address == other.address && bailout_type == other.bailout_type &&
+             needs_frame == other.needs_frame;
+    }
+
     Label label;
     Address address;
+    DeoptInfo deopt_info;
     Deoptimizer::BailoutType bailout_type;
     bool needs_frame;
   };
@@ -177,8 +267,6 @@ class Deoptimizer : public Malloced {
   // refer to that code.
   static void DeoptimizeMarkedCode(Isolate* isolate);
 
-  static void PatchStackForMarkedCode(Isolate* isolate);
-
   // Visit all the known optimized functions in a given isolate.
   static void VisitAllOptimizedFunctions(
       Isolate* isolate, OptimizedFunctionVisitor* visitor);
@@ -234,11 +322,10 @@ class Deoptimizer : public Malloced {
   static const int kNotDeoptimizationEntry = -1;
 
   // Generators for the deoptimization entry code.
-  class EntryGenerator BASE_EMBEDDED {
+  class TableEntryGenerator BASE_EMBEDDED {
    public:
-    EntryGenerator(MacroAssembler* masm, BailoutType type)
-        : masm_(masm), type_(type) { }
-    virtual ~EntryGenerator() { }
+    TableEntryGenerator(MacroAssembler* masm, BailoutType type, int count)
+        : masm_(masm), type_(type), count_(count) {}
 
     void Generate();
 
@@ -247,24 +334,13 @@ class Deoptimizer : public Malloced {
     BailoutType type() const { return type_; }
     Isolate* isolate() const { return masm_->isolate(); }
 
-    virtual void GeneratePrologue() { }
-
-   private:
-    MacroAssembler* masm_;
-    Deoptimizer::BailoutType type_;
-  };
-
-  class TableEntryGenerator : public EntryGenerator {
-   public:
-    TableEntryGenerator(MacroAssembler* masm, BailoutType type,  int count)
-        : EntryGenerator(masm, type), count_(count) { }
-
-   protected:
-    virtual void GeneratePrologue();
+    void GeneratePrologue();
 
    private:
     int count() const { return count_; }
 
+    MacroAssembler* masm_;
+    Deoptimizer::BailoutType type_;
     int count_;
   };
 
@@ -379,7 +455,7 @@ class Deoptimizer : public Malloced {
   // Fill the given output frame's registers to contain the failure handler
   // address and the number of parameters for a stub failure trampoline.
   void SetPlatformCompiledStubRegisters(FrameDescription* output_frame,
-                                        CodeStubInterfaceDescriptor* desc);
+                                        CodeStubDescriptor* desc);
 
   // Fill the given output frame's double registers with the original values
   // from the input frame's double registers.
@@ -494,7 +570,7 @@ class FrameDescription {
     // This convoluted DCHECK is needed to work around a gcc problem that
     // improperly detects an array bounds overflow in optimized debug builds
     // when using a plain DCHECK.
-    if (n >= ARRAY_SIZE(registers_)) {
+    if (n >= arraysize(registers_)) {
       DCHECK(false);
       return 0;
     }
@@ -503,17 +579,17 @@ class FrameDescription {
   }
 
   double GetDoubleRegister(unsigned n) const {
-    DCHECK(n < ARRAY_SIZE(double_registers_));
+    DCHECK(n < arraysize(double_registers_));
     return double_registers_[n];
   }
 
   void SetRegister(unsigned n, intptr_t value) {
-    DCHECK(n < ARRAY_SIZE(registers_));
+    DCHECK(n < arraysize(registers_));
     registers_[n] = value;
   }
 
   void SetDoubleRegister(unsigned n, double value) {
-    DCHECK(n < ARRAY_SIZE(double_registers_));
+    DCHECK(n < arraysize(double_registers_));
     double_registers_[n] = value;
   }
 
@@ -851,6 +927,7 @@ class SlotRefValueBuilder BASE_EMBEDDED {
   int current_slot_;
   int args_length_;
   int first_slot_index_;
+  bool should_deoptimize_;
 
   static SlotRef ComputeSlotForNextArgument(
       Translation::Opcode opcode,
@@ -922,6 +999,9 @@ class DeoptimizedFrameInfo : public Malloced {
     return function_;
   }
 
+  // Get the frame context.
+  Object* GetContext() { return context_; }
+
   // Check if this frame is preceded by construct stub frame.  The bottom-most
   // inlined frame might still be called by an uninlined construct stub.
   bool HasConstructStub() {
@@ -958,6 +1038,7 @@ class DeoptimizedFrameInfo : public Malloced {
   }
 
   JSFunction* function_;
+  Object* context_;
   bool has_construct_stub_;
   int parameters_count_;
   int expression_count_;

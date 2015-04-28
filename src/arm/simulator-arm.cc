@@ -13,6 +13,7 @@
 #include "src/arm/constants-arm.h"
 #include "src/arm/simulator-arm.h"
 #include "src/assembler.h"
+#include "src/base/bits.h"
 #include "src/codegen.h"
 #include "src/disasm.h"
 
@@ -311,7 +312,7 @@ void ArmDebugger::Debug() {
             }
             for (int i = 0; i < DwVfpRegister::NumRegisters(); i++) {
               dvalue = GetVFPDoubleRegisterValue(i);
-              uint64_t as_words = BitCast<uint64_t>(dvalue);
+              uint64_t as_words = bit_cast<uint64_t>(dvalue);
               PrintF("%3s: %f 0x%08x %08x\n",
                      VFPRegisters::Name(i, true),
                      dvalue,
@@ -322,10 +323,10 @@ void ArmDebugger::Debug() {
             if (GetValue(arg1, &value)) {
               PrintF("%s: 0x%08x %d \n", arg1, value, value);
             } else if (GetVFPSingleValue(arg1, &svalue)) {
-              uint32_t as_word = BitCast<uint32_t>(svalue);
+              uint32_t as_word = bit_cast<uint32_t>(svalue);
               PrintF("%s: %f 0x%08x\n", arg1, svalue, as_word);
             } else if (GetVFPDoubleValue(arg1, &dvalue)) {
-              uint64_t as_words = BitCast<uint64_t>(dvalue);
+              uint64_t as_words = bit_cast<uint64_t>(dvalue);
               PrintF("%s: %f 0x%08x %08x\n",
                      arg1,
                      dvalue,
@@ -1506,7 +1507,7 @@ int32_t Simulator::GetShiftRm(Instruction* instr, bool* carry_out) {
 int32_t Simulator::GetImm(Instruction* instr, bool* carry_out) {
   int rotate = instr->RotateValue() * 2;
   int immed8 = instr->Immed8Value();
-  int imm = (immed8 >> rotate) | (immed8 << (32 - rotate));
+  int imm = base::bits::RotateRight32(immed8, rotate);
   *carry_out = (rotate == 0) ? c_flag_ : (imm < 0);
   return imm;
 }
@@ -1635,13 +1636,10 @@ void Simulator::HandleVList(Instruction* instr) {
           ReadW(reinterpret_cast<int32_t>(address), instr),
           ReadW(reinterpret_cast<int32_t>(address + 1), instr)
         };
-        double d;
-        memcpy(&d, data, 8);
-        set_d_register_from_double(reg, d);
+        set_d_register(reg, reinterpret_cast<uint32_t*>(data));
       } else {
-        int32_t data[2];
-        double d = get_double_from_d_register(reg);
-        memcpy(data, &d, 8);
+        uint32_t data[2];
+        get_d_register(reg, data);
         WriteW(reinterpret_cast<int32_t>(address), data[0], instr);
         WriteW(reinterpret_cast<int32_t>(address + 1), data[1], instr);
       }
@@ -1917,8 +1915,13 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
 
 
 double Simulator::canonicalizeNaN(double value) {
-  return (FPSCR_default_NaN_mode_ && std::isnan(value)) ?
-    FixedDoubleArray::canonical_not_the_hole_nan_as_double() : value;
+  // Default NaN value, see "NaN handling" in "IEEE 754 standard implementation
+  // choices" of the ARM Reference Manual.
+  const uint64_t kDefaultNaN = V8_UINT64_C(0x7FF8000000000000);
+  if (FPSCR_default_NaN_mode_ && std::isnan(value)) {
+    value = bit_cast<double>(kDefaultNaN);
+  }
+  return value;
 }
 
 
@@ -2629,7 +2632,89 @@ void Simulator::DecodeType3(Instruction* instr) {
               UNIMPLEMENTED();
               break;
             case 1:
-              UNIMPLEMENTED();
+              if (instr->Bits(9, 6) == 1) {
+                if (instr->Bit(20) == 0) {
+                  if (instr->Bits(19, 16) == 0xF) {
+                    // Sxtb.
+                    int32_t rm_val = get_register(instr->RmValue());
+                    int32_t rotate = instr->Bits(11, 10);
+                    switch (rotate) {
+                      case 0:
+                        break;
+                      case 1:
+                        rm_val = (rm_val >> 8) | (rm_val << 24);
+                        break;
+                      case 2:
+                        rm_val = (rm_val >> 16) | (rm_val << 16);
+                        break;
+                      case 3:
+                        rm_val = (rm_val >> 24) | (rm_val << 8);
+                        break;
+                    }
+                    set_register(rd, static_cast<int8_t>(rm_val));
+                  } else {
+                    // Sxtab.
+                    int32_t rn_val = get_register(rn);
+                    int32_t rm_val = get_register(instr->RmValue());
+                    int32_t rotate = instr->Bits(11, 10);
+                    switch (rotate) {
+                      case 0:
+                        break;
+                      case 1:
+                        rm_val = (rm_val >> 8) | (rm_val << 24);
+                        break;
+                      case 2:
+                        rm_val = (rm_val >> 16) | (rm_val << 16);
+                        break;
+                      case 3:
+                        rm_val = (rm_val >> 24) | (rm_val << 8);
+                        break;
+                    }
+                    set_register(rd, rn_val + static_cast<int8_t>(rm_val));
+                  }
+                } else {
+                  if (instr->Bits(19, 16) == 0xF) {
+                    // Sxth.
+                    int32_t rm_val = get_register(instr->RmValue());
+                    int32_t rotate = instr->Bits(11, 10);
+                    switch (rotate) {
+                      case 0:
+                        break;
+                      case 1:
+                        rm_val = (rm_val >> 8) | (rm_val << 24);
+                        break;
+                      case 2:
+                        rm_val = (rm_val >> 16) | (rm_val << 16);
+                        break;
+                      case 3:
+                        rm_val = (rm_val >> 24) | (rm_val << 8);
+                        break;
+                    }
+                    set_register(rd, static_cast<int16_t>(rm_val));
+                  } else {
+                    // Sxtah.
+                    int32_t rn_val = get_register(rn);
+                    int32_t rm_val = get_register(instr->RmValue());
+                    int32_t rotate = instr->Bits(11, 10);
+                    switch (rotate) {
+                      case 0:
+                        break;
+                      case 1:
+                        rm_val = (rm_val >> 8) | (rm_val << 24);
+                        break;
+                      case 2:
+                        rm_val = (rm_val >> 16) | (rm_val << 16);
+                        break;
+                      case 3:
+                        rm_val = (rm_val >> 24) | (rm_val << 8);
+                        break;
+                    }
+                    set_register(rd, rn_val + static_cast<int16_t>(rm_val));
+                  }
+                }
+              } else {
+                UNREACHABLE();
+              }
               break;
             case 2:
               if ((instr->Bit(20) == 0) && (instr->Bits(9, 6) == 1)) {
@@ -2650,8 +2735,7 @@ void Simulator::DecodeType3(Instruction* instr) {
                       rm_val = (rm_val >> 24) | (rm_val << 8);
                       break;
                   }
-                  set_register(rd,
-                               (rm_val & 0xFF) | (rm_val & 0xFF0000));
+                  set_register(rd, (rm_val & 0xFF) | (rm_val & 0xFF0000));
                 } else {
                   UNIMPLEMENTED();
                 }
@@ -2660,44 +2744,85 @@ void Simulator::DecodeType3(Instruction* instr) {
               }
               break;
             case 3:
-              if ((instr->Bit(20) == 0) && (instr->Bits(9, 6) == 1)) {
-                if (instr->Bits(19, 16) == 0xF) {
-                  // Uxtb.
-                  uint32_t rm_val = get_register(instr->RmValue());
-                  int32_t rotate = instr->Bits(11, 10);
-                  switch (rotate) {
-                    case 0:
-                      break;
-                    case 1:
-                      rm_val = (rm_val >> 8) | (rm_val << 24);
-                      break;
-                    case 2:
-                      rm_val = (rm_val >> 16) | (rm_val << 16);
-                      break;
-                    case 3:
-                      rm_val = (rm_val >> 24) | (rm_val << 8);
-                      break;
+              if ((instr->Bits(9, 6) == 1)) {
+                if (instr->Bit(20) == 0) {
+                  if (instr->Bits(19, 16) == 0xF) {
+                    // Uxtb.
+                    uint32_t rm_val = get_register(instr->RmValue());
+                    int32_t rotate = instr->Bits(11, 10);
+                    switch (rotate) {
+                      case 0:
+                        break;
+                      case 1:
+                        rm_val = (rm_val >> 8) | (rm_val << 24);
+                        break;
+                      case 2:
+                        rm_val = (rm_val >> 16) | (rm_val << 16);
+                        break;
+                      case 3:
+                        rm_val = (rm_val >> 24) | (rm_val << 8);
+                        break;
+                    }
+                    set_register(rd, (rm_val & 0xFF));
+                  } else {
+                    // Uxtab.
+                    uint32_t rn_val = get_register(rn);
+                    uint32_t rm_val = get_register(instr->RmValue());
+                    int32_t rotate = instr->Bits(11, 10);
+                    switch (rotate) {
+                      case 0:
+                        break;
+                      case 1:
+                        rm_val = (rm_val >> 8) | (rm_val << 24);
+                        break;
+                      case 2:
+                        rm_val = (rm_val >> 16) | (rm_val << 16);
+                        break;
+                      case 3:
+                        rm_val = (rm_val >> 24) | (rm_val << 8);
+                        break;
+                    }
+                    set_register(rd, rn_val + (rm_val & 0xFF));
                   }
-                  set_register(rd, (rm_val & 0xFF));
                 } else {
-                  // Uxtab.
-                  uint32_t rn_val = get_register(rn);
-                  uint32_t rm_val = get_register(instr->RmValue());
-                  int32_t rotate = instr->Bits(11, 10);
-                  switch (rotate) {
-                    case 0:
-                      break;
-                    case 1:
-                      rm_val = (rm_val >> 8) | (rm_val << 24);
-                      break;
-                    case 2:
-                      rm_val = (rm_val >> 16) | (rm_val << 16);
-                      break;
-                    case 3:
-                      rm_val = (rm_val >> 24) | (rm_val << 8);
-                      break;
+                  if (instr->Bits(19, 16) == 0xF) {
+                    // Uxth.
+                    uint32_t rm_val = get_register(instr->RmValue());
+                    int32_t rotate = instr->Bits(11, 10);
+                    switch (rotate) {
+                      case 0:
+                        break;
+                      case 1:
+                        rm_val = (rm_val >> 8) | (rm_val << 24);
+                        break;
+                      case 2:
+                        rm_val = (rm_val >> 16) | (rm_val << 16);
+                        break;
+                      case 3:
+                        rm_val = (rm_val >> 24) | (rm_val << 8);
+                        break;
+                    }
+                    set_register(rd, (rm_val & 0xFFFF));
+                  } else {
+                    // Uxtah.
+                    uint32_t rn_val = get_register(rn);
+                    uint32_t rm_val = get_register(instr->RmValue());
+                    int32_t rotate = instr->Bits(11, 10);
+                    switch (rotate) {
+                      case 0:
+                        break;
+                      case 1:
+                        rm_val = (rm_val >> 8) | (rm_val << 24);
+                        break;
+                      case 2:
+                        rm_val = (rm_val >> 16) | (rm_val << 16);
+                        break;
+                      case 3:
+                        rm_val = (rm_val >> 24) | (rm_val << 8);
+                        break;
+                    }
+                    set_register(rd, rn_val + (rm_val & 0xFFFF));
                   }
-                  set_register(rd, rn_val + (rm_val & 0xFF));
                 }
               } else {
                 UNIMPLEMENTED();
@@ -2710,6 +2835,27 @@ void Simulator::DecodeType3(Instruction* instr) {
       break;
     }
     case db_x: {
+      if (instr->Bits(22, 20) == 0x5) {
+        if (instr->Bits(7, 4) == 0x1) {
+          int rm = instr->RmValue();
+          int32_t rm_val = get_register(rm);
+          int rs = instr->RsValue();
+          int32_t rs_val = get_register(rs);
+          if (instr->Bits(15, 12) == 0xF) {
+            // SMMUL (in V8 notation matching ARM ISA format)
+            // Format(instr, "smmul'cond 'rn, 'rm, 'rs");
+            rn_val = base::bits::SignedMulHigh32(rm_val, rs_val);
+          } else {
+            // SMMLA (in V8 notation matching ARM ISA format)
+            // Format(instr, "smmla'cond 'rn, 'rm, 'rs, 'rd");
+            int rd = instr->RdValue();
+            int32_t rd_val = get_register(rd);
+            rn_val = base::bits::SignedMulHighAndAdd32(rm_val, rs_val, rd_val);
+          }
+          set_register(rn, rn_val);
+          return;
+        }
+      }
       if (FLAG_enable_sudiv) {
         if (instr->Bits(5, 4) == 0x1) {
           if ((instr->Bit(22) == 0x0) && (instr->Bit(20) == 0x1)) {
@@ -2720,15 +2866,12 @@ void Simulator::DecodeType3(Instruction* instr) {
             int rs = instr->RsValue();
             int32_t rs_val = get_register(rs);
             int32_t ret_val = 0;
-            DCHECK(rs_val != 0);
             // udiv
             if (instr->Bit(21) == 0x1) {
-              ret_val = static_cast<int32_t>(static_cast<uint32_t>(rm_val) /
-                                             static_cast<uint32_t>(rs_val));
-            } else if ((rm_val == kMinInt) && (rs_val == -1)) {
-              ret_val = kMinInt;
+              ret_val = bit_cast<int32_t>(base::bits::UnsignedDiv32(
+                  bit_cast<uint32_t>(rm_val), bit_cast<uint32_t>(rs_val)));
             } else {
-              ret_val = rm_val / rs_val;
+              ret_val = base::bits::SignedDiv32(rm_val, rs_val);
             }
             set_register(rn, ret_val);
             return;
@@ -2891,7 +3034,9 @@ void Simulator::DecodeTypeVFP(Instruction* instr) {
         if (instr->SzValue() == 0x1) {
           int m = instr->VFPMRegValue(kDoublePrecision);
           int d = instr->VFPDRegValue(kDoublePrecision);
-          set_d_register_from_double(d, get_double_from_d_register(m));
+          uint32_t data[2];
+          get_d_register(m, data);
+          set_d_register(d, data);
         } else {
           int m = instr->VFPMRegValue(kSinglePrecision);
           int d = instr->VFPDRegValue(kSinglePrecision);
@@ -2929,7 +3074,7 @@ void Simulator::DecodeTypeVFP(Instruction* instr) {
       } else if (((instr->Opc2Value() == 0x1)) && (instr->Opc3Value() == 0x3)) {
         // vsqrt
         double dm_value = get_double_from_d_register(vm);
-        double dd_value = std::sqrt(dm_value);
+        double dd_value = fast_sqrt(dm_value);
         dd_value = canonicalizeNaN(dd_value);
         set_d_register_from_double(vd, dd_value);
       } else if (instr->Opc3Value() == 0x0) {
@@ -2939,6 +3084,12 @@ void Simulator::DecodeTypeVFP(Instruction* instr) {
         } else {
           UNREACHABLE();  // Not used by v8.
         }
+      } else if (((instr->Opc2Value() == 0x6)) && (instr->Opc3Value() == 0x3)) {
+        // vrintz - truncate
+        double dm_value = get_double_from_d_register(vm);
+        double dd_value = trunc(dm_value);
+        dd_value = canonicalizeNaN(dd_value);
+        set_d_register_from_double(vd, dd_value);
       } else {
         UNREACHABLE();  // Not used by V8.
       }
@@ -3021,12 +3172,10 @@ void Simulator::DecodeTypeVFP(Instruction* instr) {
                (instr->Bit(23) == 0x0)) {
       // vmov (ARM core register to scalar)
       int vd = instr->Bits(19, 16) | (instr->Bit(7) << 4);
-      double dd_value = get_double_from_d_register(vd);
-      int32_t data[2];
-      memcpy(data, &dd_value, 8);
+      uint32_t data[2];
+      get_d_register(vd, data);
       data[instr->Bit(21)] = get_register(instr->RtValue());
-      memcpy(&dd_value, data, 8);
-      set_d_register_from_double(vd, dd_value);
+      set_d_register(vd, data);
     } else if ((instr->VLValue() == 0x1) &&
                (instr->VCValue() == 0x1) &&
                (instr->Bit(23) == 0x0)) {
@@ -3383,16 +3532,13 @@ void Simulator::DecodeType6CoprocessorIns(Instruction* instr) {
           int rn = instr->RnValue();
           int vm = instr->VFPMRegValue(kDoublePrecision);
           if (instr->HasL()) {
-            int32_t data[2];
-            double d = get_double_from_d_register(vm);
-            memcpy(data, &d, 8);
+            uint32_t data[2];
+            get_d_register(vm, data);
             set_register(rt, data[0]);
             set_register(rn, data[1]);
           } else {
             int32_t data[] = { get_register(rt), get_register(rn) };
-            double d;
-            memcpy(&d, data, 8);
-            set_d_register_from_double(vm, d);
+            set_d_register(vm, reinterpret_cast<uint32_t*>(data));
           }
         }
         break;
@@ -3413,14 +3559,11 @@ void Simulator::DecodeType6CoprocessorIns(Instruction* instr) {
             ReadW(address, instr),
             ReadW(address + 4, instr)
           };
-          double val;
-          memcpy(&val, data, 8);
-          set_d_register_from_double(vd, val);
+          set_d_register(vd, reinterpret_cast<uint32_t*>(data));
         } else {
           // Store double to memory: vstr.
-          int32_t data[2];
-          double val = get_double_from_d_register(vd);
-          memcpy(data, &val, 8);
+          uint32_t data[2];
+          get_d_register(vd, data);
           WriteW(address, data[0], instr);
           WriteW(address + 4, data[1], instr);
         }
@@ -3585,6 +3728,50 @@ void Simulator::DecodeSpecialCondition(Instruction* instr) {
     case 0xB:
       if ((instr->Bits(22, 20) == 5) && (instr->Bits(15, 12) == 0xf)) {
         // pld: ignore instruction.
+      } else {
+        UNIMPLEMENTED();
+      }
+      break;
+    case 0x1D:
+      if (instr->Opc1Value() == 0x7 && instr->Opc3Value() == 0x1 &&
+          instr->Bits(11, 9) == 0x5 && instr->Bits(19, 18) == 0x2 &&
+          instr->Bit(8) == 0x1) {
+        int vm = instr->VFPMRegValue(kDoublePrecision);
+        int vd = instr->VFPDRegValue(kDoublePrecision);
+        double dm_value = get_double_from_d_register(vm);
+        double dd_value = 0.0;
+        int rounding_mode = instr->Bits(17, 16);
+        switch (rounding_mode) {
+          case 0x0:  // vrinta - round with ties to away from zero
+            dd_value = round(dm_value);
+            break;
+          case 0x1: {  // vrintn - round with ties to even
+            dd_value = std::floor(dm_value);
+            double error = dm_value - dd_value;
+            // Take care of correctly handling the range [-0.5, -0.0], which
+            // must yield -0.0.
+            if ((-0.5 <= dm_value) && (dm_value < 0.0)) {
+              dd_value = -0.0;
+              // If the error is greater than 0.5, or is equal to 0.5 and the
+              // integer result is odd, round up.
+            } else if ((error > 0.5) ||
+                       ((error == 0.5) && (fmod(dd_value, 2) != 0))) {
+              dd_value++;
+            }
+            break;
+          }
+          case 0x2:  // vrintp - ceil
+            dd_value = std::ceil(dm_value);
+            break;
+          case 0x3:  // vrintm - floor
+            dd_value = std::floor(dm_value);
+            break;
+          default:
+            UNREACHABLE();  // Case analysis is exhaustive.
+            break;
+        }
+        dd_value = canonicalizeNaN(dd_value);
+        set_d_register_from_double(vd, dd_value);
       } else {
         UNIMPLEMENTED();
       }

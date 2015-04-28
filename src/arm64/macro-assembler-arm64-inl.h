@@ -13,6 +13,7 @@
 #include "src/arm64/assembler-arm64.h"
 #include "src/arm64/instrument-arm64.h"
 #include "src/arm64/macro-assembler-arm64.h"
+#include "src/base/bits.h"
 
 
 namespace v8 {
@@ -824,6 +825,12 @@ void MacroAssembler::Frintn(const FPRegister& fd, const FPRegister& fn) {
 }
 
 
+void MacroAssembler::Frintp(const FPRegister& fd, const FPRegister& fn) {
+  DCHECK(allow_macro_instructions_);
+  frintp(fd, fn);
+}
+
+
 void MacroAssembler::Frintz(const FPRegister& fd, const FPRegister& fn) {
   DCHECK(allow_macro_instructions_);
   frintz(fd, fn);
@@ -1119,6 +1126,14 @@ void MacroAssembler::Smulh(const Register& rd,
 }
 
 
+void MacroAssembler::Umull(const Register& rd, const Register& rn,
+                           const Register& rm) {
+  DCHECK(allow_macro_instructions_);
+  DCHECK(!rd.IsZero());
+  umaddl(rd, rn, rm, xzr);
+}
+
+
 void MacroAssembler::Stnp(const CPURegister& rt,
                           const CPURegister& rt2,
                           const MemOperand& dst) {
@@ -1229,14 +1244,7 @@ void MacroAssembler::Uxtw(const Register& rd, const Register& rn) {
 void MacroAssembler::BumpSystemStackPointer(const Operand& space) {
   DCHECK(!csp.Is(sp_));
   if (!TmpList()->IsEmpty()) {
-    if (CpuFeatures::IsSupported(ALWAYS_ALIGN_CSP)) {
-      UseScratchRegisterScope temps(this);
-      Register temp = temps.AcquireX();
-      Sub(temp, StackPointer(), space);
-      Bic(csp, temp, 0xf);
-    } else {
-      Sub(csp, StackPointer(), space);
-    }
+    Sub(csp, StackPointer(), space);
   } else {
     // TODO(jbramley): Several callers rely on this not using scratch
     // registers, so we use the assembler directly here. However, this means
@@ -1273,11 +1281,7 @@ void MacroAssembler::SyncSystemStackPointer() {
   DCHECK(emit_debug_code());
   DCHECK(!csp.Is(sp_));
   { InstructionAccurateScope scope(this);
-    if (CpuFeatures::IsSupported(ALWAYS_ALIGN_CSP)) {
-      bic(csp, StackPointer(), 0xf);
-    } else {
-      mov(csp, StackPointer());
-    }
+    mov(csp, StackPointer());
   }
   AssertStackConsistency();
 }
@@ -1520,7 +1524,7 @@ void MacroAssembler::Claim(uint64_t count, uint64_t unit_size) {
 
 void MacroAssembler::Claim(const Register& count, uint64_t unit_size) {
   if (unit_size == 0) return;
-  DCHECK(IsPowerOf2(unit_size));
+  DCHECK(base::bits::IsPowerOfTwo64(unit_size));
 
   const int shift = CountTrailingZeros(unit_size, kXRegSizeInBits);
   const Operand size(count, LSL, shift);
@@ -1538,7 +1542,7 @@ void MacroAssembler::Claim(const Register& count, uint64_t unit_size) {
 
 
 void MacroAssembler::ClaimBySMI(const Register& count_smi, uint64_t unit_size) {
-  DCHECK(unit_size == 0 || IsPowerOf2(unit_size));
+  DCHECK(unit_size == 0 || base::bits::IsPowerOfTwo64(unit_size));
   const int shift = CountTrailingZeros(unit_size, kXRegSizeInBits) - kSmiShift;
   const Operand size(count_smi,
                      (shift >= 0) ? (LSL) : (LSR),
@@ -1578,7 +1582,7 @@ void MacroAssembler::Drop(uint64_t count, uint64_t unit_size) {
 
 void MacroAssembler::Drop(const Register& count, uint64_t unit_size) {
   if (unit_size == 0) return;
-  DCHECK(IsPowerOf2(unit_size));
+  DCHECK(base::bits::IsPowerOfTwo64(unit_size));
 
   const int shift = CountTrailingZeros(unit_size, kXRegSizeInBits);
   const Operand size(count, LSL, shift);
@@ -1599,7 +1603,7 @@ void MacroAssembler::Drop(const Register& count, uint64_t unit_size) {
 
 
 void MacroAssembler::DropBySMI(const Register& count_smi, uint64_t unit_size) {
-  DCHECK(unit_size == 0 || IsPowerOf2(unit_size));
+  DCHECK(unit_size == 0 || base::bits::IsPowerOfTwo64(unit_size));
   const int shift = CountTrailingZeros(unit_size, kXRegSizeInBits) - kSmiShift;
   const Operand size(count_smi,
                      (shift >= 0) ? (LSL) : (LSR),

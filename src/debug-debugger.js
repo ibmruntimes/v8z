@@ -1,6 +1,7 @@
 // Copyright 2012 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+"use strict";
 
 // Default number of frames to include in the response to backtrace request.
 var kDefaultBacktraceLength = 10;
@@ -21,7 +22,8 @@ Debug.DebugEvent = { Break: 1,
                      AfterCompile: 5,
                      CompileError: 6,
                      PromiseEvent: 7,
-                     AsyncTaskEvent: 8 };
+                     AsyncTaskEvent: 8,
+                     BreakForCommand: 9 };
 
 // Types of exceptions that can be broken upon.
 Debug.ExceptionBreak = { Caught : 0,
@@ -32,7 +34,8 @@ Debug.StepAction = { StepOut: 0,
                      StepNext: 1,
                      StepIn: 2,
                      StepMin: 3,
-                     StepInMin: 4 };
+                     StepInMin: 4,
+                     StepFrame: 5 };
 
 // The different types of scripts matching enum ScriptType in objects.h.
 Debug.ScriptType = { Native: 0,
@@ -261,7 +264,7 @@ function ScriptBreakPoint(type, script_id_or_name, opt_line, opt_column,
 }
 
 
-//Creates a clone of script breakpoint that is linked to another script.
+// Creates a clone of script breakpoint that is linked to another script.
 ScriptBreakPoint.prototype.cloneForOtherScript = function (other_script) {
   var copy = new ScriptBreakPoint(Debug.ScriptBreakPointType.ScriptId,
       other_script.id, this.line_, this.column_, this.groupId_,
@@ -430,7 +433,7 @@ ScriptBreakPoint.prototype.set = function (script) {
   if (IS_NULL(position)) return;
 
   // Create a break point object and set the break point.
-  break_point = MakeBreakPoint(position, this);
+  var break_point = MakeBreakPoint(position, this);
   break_point.setIgnoreCount(this.ignoreCount());
   var actual_position = %SetScriptBreakPoint(script, position,
                                              this.position_alignment_,
@@ -496,10 +499,6 @@ Debug.setListener = function(listener, opt_data) {
 };
 
 
-Debug.breakExecution = function(f) {
-  %Break();
-};
-
 Debug.breakLocations = function(f, opt_position_aligment) {
   if (!IS_FUNCTION(f)) throw new Error('Parameters have wrong types.');
   var position_aligment = IS_UNDEFINED(opt_position_aligment)
@@ -549,25 +548,12 @@ Debug.scriptSource = function(func_or_script_name) {
   return this.findScript(func_or_script_name).source;
 };
 
+
 Debug.source = function(f) {
   if (!IS_FUNCTION(f)) throw new Error('Parameters have wrong types.');
   return %FunctionGetSourceCode(f);
 };
 
-Debug.disassemble = function(f) {
-  if (!IS_FUNCTION(f)) throw new Error('Parameters have wrong types.');
-  return %DebugDisassembleFunction(f);
-};
-
-Debug.disassembleConstructor = function(f) {
-  if (!IS_FUNCTION(f)) throw new Error('Parameters have wrong types.');
-  return %DebugDisassembleConstructor(f);
-};
-
-Debug.ExecuteInDebugContext = function(f, without_debugger) {
-  if (!IS_FUNCTION(f)) throw new Error('Parameters have wrong types.');
-  return %ExecuteInDebugContext(f, !!without_debugger);
-};
 
 Debug.sourcePosition = function(f) {
   if (!IS_FUNCTION(f)) throw new Error('Parameters have wrong types.');
@@ -670,7 +656,7 @@ Debug.setBreakPointByScriptIdAndPosition = function(script_id, position,
                                                     condition, enabled,
                                                     opt_position_alignment)
 {
-  break_point = MakeBreakPoint(position);
+  var break_point = MakeBreakPoint(position);
   break_point.setCondition(condition);
   if (!enabled) {
     break_point.disable();
@@ -737,7 +723,7 @@ Debug.clearBreakPoint = function(break_point_number) {
 
 Debug.clearAllBreakPoints = function() {
   for (var i = 0; i < break_points.length; i++) {
-    break_point = break_points[i];
+    var break_point = break_points[i];
     %ClearBreakPoint(break_point);
   }
   break_points = [];
@@ -1172,10 +1158,13 @@ CompileEvent.prototype.toJSONProtocol = function() {
   switch (this.type_) {
     case Debug.DebugEvent.BeforeCompile:
       o.event = "beforeCompile";
+      break;
     case Debug.DebugEvent.AfterCompile:
       o.event = "afterCompile";
+      break;
     case Debug.DebugEvent.CompileError:
       o.event = "compileError";
+      break;
   }
   o.body = {};
   o.body.script = this.script_;
@@ -1881,7 +1870,7 @@ DebugCommandProcessor.prototype.resolveFrameFromScopeDescription_ =
   // Get the frame for which the scope or scopes are requested.
   // With no frameNumber argument use the currently selected frame.
   if (scope_description && !IS_UNDEFINED(scope_description.frameNumber)) {
-    frame_index = scope_description.frameNumber;
+    var frame_index = scope_description.frameNumber;
     if (frame_index < 0 || this.exec_state_.frameCount() <= frame_index) {
       throw new Error('Invalid frame number');
     }
@@ -1966,7 +1955,7 @@ DebugCommandProcessor.resolveValue_ = function(value_description) {
     var value_mirror = LookupMirror(value_description.handle);
     if (!value_mirror) {
       throw new Error("Failed to resolve value by handle, ' #" +
-          mapping.handle + "# not found");
+          value_description.handle + "# not found");
     }
     return value_mirror.value();
   } else if ("stringDescription" in value_description) {
@@ -2121,7 +2110,7 @@ DebugCommandProcessor.prototype.lookupRequest_ = function(request, response) {
 
   // Set 'includeSource' option for script lookup.
   if (!IS_UNDEFINED(request.arguments.includeSource)) {
-    includeSource = %ToBoolean(request.arguments.includeSource);
+    var includeSource = %ToBoolean(request.arguments.includeSource);
     response.setOption('includeSource', includeSource);
   }
 
@@ -2578,7 +2567,3 @@ function ValueToProtocolValue_(value, mirror_serializer) {
   }
   return json;
 }
-
-Debug.TestApi = {
-  CommandProcessorResolveValue: DebugCommandProcessor.resolveValue_
-};

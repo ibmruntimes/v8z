@@ -35,6 +35,7 @@ TIMEOUT = "TIMEOUT"
 CRASH = "CRASH"
 SLOW = "SLOW"
 FLAKY = "FLAKY"
+FAST_VARIANTS = "FAST_VARIANTS"
 NO_VARIANTS = "NO_VARIANTS"
 # These are just for the status files and are mapped below in DEFS:
 FAIL_OK = "FAIL_OK"
@@ -44,7 +45,7 @@ ALWAYS = "ALWAYS"
 
 KEYWORDS = {}
 for key in [SKIP, FAIL, PASS, OKAY, TIMEOUT, CRASH, SLOW, FLAKY, FAIL_OK,
-            NO_VARIANTS, PASS_OR_FAIL, ALWAYS]:
+            FAST_VARIANTS, NO_VARIANTS, PASS_OR_FAIL, ALWAYS]:
   KEYWORDS[key] = key
 
 DEFS = {FAIL_OK: [FAIL, OKAY],
@@ -52,9 +53,11 @@ DEFS = {FAIL_OK: [FAIL, OKAY],
 
 # Support arches, modes to be written as keywords instead of strings.
 VARIABLES = {ALWAYS: True}
-for var in ["debug", "release", "android_arm", "android_arm64", "android_ia32", "android_x87",
-            "arm", "arm64", "ia32", "mips", "mipsel", "mips64el", "x64", "x87", "nacl_ia32",
-            "nacl_x64", "ppc", "ppc64", "s390", "s390x", "macos", "windows", "linux", "aix"]:
+for var in ["debug", "release", "big", "little",
+            "android_arm", "android_arm64", "android_ia32", "android_x87",
+            "android_x64", "arm", "arm64", "ia32", "mips", "mipsel",
+            "mips64el", "x64", "x87", "nacl_ia32", "nacl_x64", "ppc", "ppc64", "s390", "s390x",
+            "macos", "windows", "linux", "aix"]:
   VARIABLES[var] = var
 
 
@@ -68,6 +71,10 @@ def IsSlow(outcomes):
 
 def OnlyStandardVariant(outcomes):
   return NO_VARIANTS in outcomes
+
+
+def OnlyFastVariants(outcomes):
+  return FAST_VARIANTS in outcomes
 
 
 def IsFlaky(outcomes):

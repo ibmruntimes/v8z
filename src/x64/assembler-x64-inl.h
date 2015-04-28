@@ -179,23 +179,95 @@ void Assembler::emit_optional_rex_32(Register rm_reg) {
 }
 
 
+void Assembler::emit_optional_rex_32(XMMRegister rm_reg) {
+  if (rm_reg.high_bit()) emit(0x41);
+}
+
+
 void Assembler::emit_optional_rex_32(const Operand& op) {
   if (op.rex_ != 0) emit(0x40 | op.rex_);
 }
 
 
-Address Assembler::target_address_at(Address pc, Address constant_pool) {
+// byte 1 of 3-byte VEX
+void Assembler::emit_vex3_byte1(XMMRegister reg, XMMRegister rm,
+                                LeadingOpcode m) {
+  byte rxb = ~((reg.high_bit() << 2) | rm.high_bit()) << 5;
+  emit(rxb | m);
+}
+
+
+// byte 1 of 3-byte VEX
+void Assembler::emit_vex3_byte1(XMMRegister reg, const Operand& rm,
+                                LeadingOpcode m) {
+  byte rxb = ~((reg.high_bit() << 2) | rm.rex_) << 5;
+  emit(rxb | m);
+}
+
+
+// byte 1 of 2-byte VEX
+void Assembler::emit_vex2_byte1(XMMRegister reg, XMMRegister v, VectorLength l,
+                                SIMDPrefix pp) {
+  byte rv = ~((reg.high_bit() << 4) | v.code()) << 3;
+  emit(rv | l | pp);
+}
+
+
+// byte 2 of 3-byte VEX
+void Assembler::emit_vex3_byte2(VexW w, XMMRegister v, VectorLength l,
+                                SIMDPrefix pp) {
+  emit(w | ((~v.code() & 0xf) << 3) | l | pp);
+}
+
+
+void Assembler::emit_vex_prefix(XMMRegister reg, XMMRegister vreg,
+                                XMMRegister rm, VectorLength l, SIMDPrefix pp,
+                                LeadingOpcode mm, VexW w) {
+  if (rm.high_bit() || mm != k0F || w != kW0) {
+    emit_vex3_byte0();
+    emit_vex3_byte1(reg, rm, mm);
+    emit_vex3_byte2(w, vreg, l, pp);
+  } else {
+    emit_vex2_byte0();
+    emit_vex2_byte1(reg, vreg, l, pp);
+  }
+}
+
+
+void Assembler::emit_vex_prefix(XMMRegister reg, XMMRegister vreg,
+                                const Operand& rm, VectorLength l,
+                                SIMDPrefix pp, LeadingOpcode mm, VexW w) {
+  if (rm.rex_ || mm != k0F || w != kW0) {
+    emit_vex3_byte0();
+    emit_vex3_byte1(reg, rm, mm);
+    emit_vex3_byte2(w, vreg, l, pp);
+  } else {
+    emit_vex2_byte0();
+    emit_vex2_byte1(reg, vreg, l, pp);
+  }
+}
+
+
+Address Assembler::target_address_at(Address pc,
+                                     ConstantPoolArray* constant_pool) {
   return Memory::int32_at(pc) + pc + 4;
 }
 
 
-void Assembler::set_target_address_at(Address pc, Address constant_pool,
+void Assembler::set_target_address_at(Address pc,
+                                      ConstantPoolArray* constant_pool,
                                       Address target,
                                       ICacheFlushMode icache_flush_mode) {
   Memory::int32_at(pc) = static_cast<int32_t>(target - pc - 4);
   if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
     CpuFeatures::FlushICache(pc, sizeof(int32_t));
   }
+}
+
+
+void Assembler::deserialization_set_target_internal_reference_at(
+    Address pc, Address target, RelocInfo::Mode mode) {
+  Memory::Address_at(pc) = target;
 }
 
 
@@ -226,7 +298,7 @@ void RelocInfo::apply(intptr_t delta, ICacheFlushMode icache_flush_mode) {
   bool flush_icache = icache_flush_mode != SKIP_ICACHE_FLUSH;
   if (IsInternalReference(rmode_)) {
     // absolute code pointer inside code object moves with the code object.
-    Memory::Address_at(pc_) += static_cast<int32_t>(delta);
+    Memory::Address_at(pc_) += delta;
     if (flush_icache) CpuFeatures::FlushICache(pc_, sizeof(Address));
   } else if (IsCodeTarget(rmode_) || IsRuntimeEntry(rmode_)) {
     Memory::int32_at(pc_) -= static_cast<int32_t>(delta);
@@ -300,9 +372,21 @@ Handle<Object> RelocInfo::target_object_handle(Assembler* origin) {
 }
 
 
-Address RelocInfo::target_reference() {
+Address RelocInfo::target_external_reference() {
   DCHECK(rmode_ == RelocInfo::EXTERNAL_REFERENCE);
   return Memory::Address_at(pc_);
+}
+
+
+Address RelocInfo::target_internal_reference() {
+  DCHECK(rmode_ == INTERNAL_REFERENCE);
+  return Memory::Address_at(pc_);
+}
+
+
+Address RelocInfo::target_internal_reference_address() {
+  DCHECK(rmode_ == INTERNAL_REFERENCE);
+  return reinterpret_cast<Address>(pc_);
 }
 
 
@@ -372,7 +456,8 @@ void RelocInfo::set_target_cell(Cell* cell,
 
 
 void RelocInfo::WipeOut() {
-  if (IsEmbeddedObject(rmode_) || IsExternalReference(rmode_)) {
+  if (IsEmbeddedObject(rmode_) || IsExternalReference(rmode_) ||
+      IsInternalReference(rmode_)) {
     Memory::Address_at(pc_) = NULL;
   } else if (IsCodeTarget(rmode_) || IsRuntimeEntry(rmode_)) {
     // Effectively write zero into the relocation.
@@ -476,7 +561,8 @@ void RelocInfo::Visit(Isolate* isolate, ObjectVisitor* visitor) {
     visitor->VisitCell(this);
   } else if (mode == RelocInfo::EXTERNAL_REFERENCE) {
     visitor->VisitExternalReference(this);
-    CpuFeatures::FlushICache(pc_, sizeof(Address));
+  } else if (mode == RelocInfo::INTERNAL_REFERENCE) {
+    visitor->VisitInternalReference(this);
   } else if (RelocInfo::IsCodeAgeSequence(mode)) {
     visitor->VisitCodeAgeSequence(this);
   } else if (((RelocInfo::IsJSReturn(mode) &&
@@ -503,7 +589,8 @@ void RelocInfo::Visit(Heap* heap) {
     StaticVisitor::VisitCell(heap, this);
   } else if (mode == RelocInfo::EXTERNAL_REFERENCE) {
     StaticVisitor::VisitExternalReference(this);
-    CpuFeatures::FlushICache(pc_, sizeof(Address));
+  } else if (mode == RelocInfo::INTERNAL_REFERENCE) {
+    StaticVisitor::VisitInternalReference(this);
   } else if (RelocInfo::IsCodeAgeSequence(mode)) {
     StaticVisitor::VisitCodeAgeSequence(heap, this);
   } else if (heap->isolate()->debug()->has_break_points() &&
@@ -555,7 +642,12 @@ void Operand::set_disp32(int disp) {
   len_ += sizeof(int32_t);
 }
 
-
+void Operand::set_disp64(int64_t disp) {
+  DCHECK_EQ(1, len_);
+  int64_t* p = reinterpret_cast<int64_t*>(&buf_[len_]);
+  *p = disp;
+  len_ += sizeof(disp);
+}
 } }  // namespace v8::internal
 
 #endif  // V8_X64_ASSEMBLER_X64_INL_H_

@@ -2,21 +2,20 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#if defined(_AIX)
-#include <fenv.h>
-#endif
-
 #include "src/v8.h"
 
+#if defined(V8_OS_AIX)
+#include <fenv.h>
+#endif
 #include "src/bootstrapper.h"
 #include "src/codegen.h"
 #include "src/compiler.h"
 #include "src/cpu-profiler.h"
 #include "src/debug.h"
+#include "src/parser.h"
 #include "src/prettyprinter.h"
 #include "src/rewriter.h"
-#include "src/runtime.h"
-#include "src/stub-cache.h"
+#include "src/runtime/runtime.h"
 
 namespace v8 {
 namespace internal {
@@ -53,13 +52,11 @@ double modulo(double x, double y) {
 #else  // POSIX
 
 double modulo(double x, double y) {
-#if defined(_AIX)
+#if defined(V8_OS_AIX)
   // AIX raises an underflow exception for (Number.MIN_VALUE % Number.MAX_VALUE)
-  double result;
-  int exception;
   feclearexcept(FE_ALL_EXCEPT);
-  result = std::fmod(x, y);
-  exception = fetestexcept(FE_UNDERFLOW);
+  double result = std::fmod(x, y);
+  int exception = fetestexcept(FE_UNDERFLOW);
   return (exception ? x : result);
 #else
   return std::fmod(x, y);
@@ -131,20 +128,22 @@ void CodeGenerator::MakeCodePrologue(CompilationInfo* info, const char* kind) {
           CodeStub::MajorName(info->code_stub()->MajorKey(), true);
       PrintF("%s", name == NULL ? "<unknown>" : name);
     } else {
+      AllowDeferredHandleDereference allow_deference_for_trace;
       PrintF("%s", info->function()->debug_name()->ToCString().get());
     }
     PrintF("]\n");
   }
 
 #ifdef DEBUG
-  if (!info->IsStub() && print_source) {
+  if (info->parse_info() && print_source) {
     PrintF("--- Source from AST ---\n%s\n",
-           PrettyPrinter(info->zone()).PrintProgram(info->function()));
+           PrettyPrinter(info->isolate(), info->zone())
+               .PrintProgram(info->function()));
   }
 
-  if (!info->IsStub() && print_ast) {
-    PrintF("--- AST ---\n%s\n",
-           AstPrinter(info->zone()).PrintProgram(info->function()));
+  if (info->parse_info() && print_ast) {
+    PrintF("--- AST ---\n%s\n", AstPrinter(info->isolate(), info->zone())
+                                    .PrintProgram(info->function()));
   }
 #endif  // DEBUG
 }
@@ -183,20 +182,31 @@ void CodeGenerator::PrintCode(Handle<Code> code, CompilationInfo* info) {
          (info->IsStub() && FLAG_print_code_stubs) ||
          (info->IsOptimizing() && FLAG_print_opt_code));
   if (print_code) {
-    // Print the source code if available.
-    FunctionLiteral* function = info->function();
-    bool print_source = code->kind() == Code::OPTIMIZED_FUNCTION ||
-        code->kind() == Code::FUNCTION;
+    const char* debug_name;
+    SmartArrayPointer<char> debug_name_holder;
+    if (info->IsStub()) {
+      CodeStub::Major major_key = info->code_stub()->MajorKey();
+      debug_name = CodeStub::MajorName(major_key, false);
+    } else {
+      debug_name_holder =
+          info->parse_info()->function()->debug_name()->ToCString();
+      debug_name = debug_name_holder.get();
+    }
 
     CodeTracer::Scope tracing_scope(info->isolate()->GetCodeTracer());
     OFStream os(tracing_scope.file());
+
+    // Print the source code if available.
+    FunctionLiteral* function = nullptr;
+    bool print_source =
+        info->parse_info() && (code->kind() == Code::OPTIMIZED_FUNCTION ||
+                               code->kind() == Code::FUNCTION);
     if (print_source) {
+      function = info->function();
       Handle<Script> script = info->script();
       if (!script->IsUndefined() && !script->source()->IsUndefined()) {
         os << "--- Raw source ---\n";
-        ConsStringIteratorOp op;
         StringCharacterStream stream(String::cast(script->source()),
-                                     &op,
                                      function->start_position());
         // fun->end_position() points to the last character in the stream. We
         // need to compensate by adding one to calculate the length.
@@ -204,17 +214,16 @@ void CodeGenerator::PrintCode(Handle<Code> code, CompilationInfo* info) {
             function->end_position() - function->start_position() + 1;
         for (int i = 0; i < source_len; i++) {
           if (stream.HasMore()) {
-            os << AsUC16(stream.GetNext());
+            os << AsReversiblyEscapedUC16(stream.GetNext());
           }
         }
         os << "\n\n";
       }
     }
     if (info->IsOptimizing()) {
-      if (FLAG_print_unopt_code) {
+      if (FLAG_print_unopt_code && info->parse_info()) {
         os << "--- Unoptimized code ---\n";
-        info->closure()->shared()->code()->Disassemble(
-            function->debug_name()->ToCString().get(), os);
+        info->closure()->shared()->code()->Disassemble(debug_name, os);
       }
       os << "--- Optimized code ---\n"
          << "optimization_id = " << info->optimization_id() << "\n";
@@ -224,12 +233,7 @@ void CodeGenerator::PrintCode(Handle<Code> code, CompilationInfo* info) {
     if (print_source) {
       os << "source_position = " << function->start_position() << "\n";
     }
-    if (info->IsStub()) {
-      CodeStub::Major major_key = info->code_stub()->MajorKey();
-      code->Disassemble(CodeStub::MajorName(major_key, false), os);
-    } else {
-      code->Disassemble(function->debug_name()->ToCString().get(), os);
-    }
+    code->Disassemble(debug_name, os);
     os << "--- End code ---\n";
   }
 #endif  // ENABLE_DISASSEMBLER
@@ -248,36 +252,5 @@ bool CodeGenerator::RecordPositions(MacroAssembler* masm,
   }
   return false;
 }
-
-
-void ArgumentsAccessStub::Generate(MacroAssembler* masm) {
-  switch (type_) {
-    case READ_ELEMENT:
-      GenerateReadElement(masm);
-      break;
-    case NEW_SLOPPY_FAST:
-      GenerateNewSloppyFast(masm);
-      break;
-    case NEW_SLOPPY_SLOW:
-      GenerateNewSloppySlow(masm);
-      break;
-    case NEW_STRICT:
-      GenerateNewStrict(masm);
-      break;
-  }
-}
-
-
-int CEntryStub::MinorKey() const {
-  int result = (save_doubles_ == kSaveFPRegs) ? 1 : 0;
-  DCHECK(result_size_ == 1 || result_size_ == 2);
-#if defined(_WIN64) || defined(V8_TARGET_ARCH_PPC64) \
-  || defined(V8_TARGET_ARCH_S390X)
-  return result | ((result_size_ == 1) ? 0 : 2);
-#else
-  return result;
-#endif
-}
-
 
 } }  // namespace v8::internal

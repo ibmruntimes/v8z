@@ -63,7 +63,7 @@ static AllocationResult AllocateAfterFailures() {
   heap->AllocateFixedArray(10000, TENURED).ToObjectChecked();
 
   // Large object space.
-  static const int kLargeObjectSpaceFillerLength = 3 * (Page::kPageSize/10);
+  static const int kLargeObjectSpaceFillerLength = 3 * (Page::kPageSize / 10);
   static const int kLargeObjectSpaceFillerSize = FixedArray::SizeFor(
       kLargeObjectSpaceFillerLength);
   DCHECK(kLargeObjectSpaceFillerSize > heap->old_pointer_space()->AreaSize());
@@ -86,7 +86,7 @@ static AllocationResult AllocateAfterFailures() {
       Builtins::kIllegal)).ToObjectChecked();
 
   // Return success.
-  return Smi::FromInt(42);
+  return heap->true_value();
 }
 
 
@@ -100,13 +100,13 @@ TEST(StressHandles) {
   v8::Handle<v8::Context> env = v8::Context::New(CcTest::isolate());
   env->Enter();
   Handle<Object> o = Test();
-  CHECK(o->IsSmi() && Smi::cast(*o)->value() == 42);
+  CHECK(o->IsTrue());
   env->Exit();
 }
 
 
 void TestGetter(
-    v8::Local<v8::String> name,
+    v8::Local<v8::Name> name,
     const v8::PropertyCallbackInfo<v8::Value>& info) {
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(info.GetIsolate());
   HandleScope scope(isolate);
@@ -115,7 +115,7 @@ void TestGetter(
 
 
 void TestSetter(
-    v8::Local<v8::String> name,
+    v8::Local<v8::Name> name,
     v8::Local<v8::Value> value,
     const v8::PropertyCallbackInfo<void>& info) {
   UNREACHABLE();
@@ -124,7 +124,7 @@ void TestSetter(
 
 Handle<AccessorInfo> TestAccessorInfo(
       Isolate* isolate, PropertyAttributes attributes) {
-  Handle<String> name = isolate->factory()->NewStringFromStaticAscii("get");
+  Handle<String> name = isolate->factory()->NewStringFromStaticChars("get");
   return Accessors::MakeAccessor(isolate, name, &TestGetter, &TestSetter,
                                  attributes);
 }
@@ -152,8 +152,8 @@ TEST(StressJS) {
   Handle<AccessorInfo> foreign = TestAccessorInfo(isolate, attrs);
   Map::EnsureDescriptorSlack(map, 1);
 
-  CallbacksDescriptor d(Handle<Name>(Name::cast(foreign->name())),
-                        foreign, attrs);
+  AccessorConstantDescriptor d(Handle<Name>(Name::cast(foreign->name())),
+                               foreign, attrs);
   map->AppendDescriptor(&d);
 
   // Add the Foo constructor the global object.
@@ -162,7 +162,7 @@ TEST(StressJS) {
   // Call the accessor through JavaScript.
   v8::Handle<v8::Value> result = v8::Script::Compile(
       v8::String::NewFromUtf8(CcTest::isolate(), "(new Foo).get"))->Run();
-  CHECK_EQ(42, result->Int32Value());
+  CHECK_EQ(true, result->BooleanValue());
   env->Exit();
 }
 
@@ -198,7 +198,8 @@ TEST(CodeRange) {
   const size_t code_range_size = 32*MB;
   CcTest::InitializeVM();
   CodeRange code_range(reinterpret_cast<Isolate*>(CcTest::isolate()));
-  code_range.SetUp(code_range_size);
+  code_range.SetUp(code_range_size +
+                   kReservedCodeRangePages * v8::base::OS::CommitPageSize());
   size_t current_allocated = 0;
   size_t total_allocated = 0;
   List< ::Block> blocks(1000);
@@ -209,7 +210,7 @@ TEST(CodeRange) {
       // Geometrically distributed sizes, greater than
       // Page::kMaxRegularHeapObjectSize (which is greater than code page area).
       // TODO(gc): instead of using 3 use some contant based on code_range_size
-      // kMaxHeapObjectSize.
+      // kMaxRegularHeapObjectSize.
       size_t requested =
           (Page::kMaxRegularHeapObjectSize << (Pseudorandom() % 3)) +
           Pseudorandom() % 5000 + 1;

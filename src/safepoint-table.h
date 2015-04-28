@@ -84,7 +84,8 @@ class SafepointTable BASE_EMBEDDED {
 
   int size() const {
     return kHeaderSize +
-           (length_ * (kPcAndDeoptimizationIndexSize + entry_size_)); }
+           (length_ * (kPcAndDeoptimizationIndexSize + entry_size_));
+  }
   unsigned length() const { return length_; }
   unsigned entry_size() const { return entry_size_; }
 
@@ -103,7 +104,7 @@ class SafepointTable BASE_EMBEDDED {
   // Returns the entry for the given pc.
   SafepointEntry FindEntry(Address pc) const;
 
-  void PrintEntry(unsigned index, OStream& os) const;  // NOLINT
+  void PrintEntry(unsigned index, std::ostream& os) const;  // NOLINT
 
  private:
   static const uint8_t kNoRegisters = 0xFF;
@@ -126,7 +127,7 @@ class SafepointTable BASE_EMBEDDED {
     return GetPcOffsetLocation(index) + kPcSize;
   }
 
-  static void PrintBits(OStream& os,  // NOLINT
+  static void PrintBits(std::ostream& os,  // NOLINT
                         uint8_t byte, int digits);
 
   DisallowHeapAllocation no_allocation_;
@@ -165,8 +166,8 @@ class Safepoint BASE_EMBEDDED {
   void DefinePointerRegister(Register reg, Zone* zone);
 
  private:
-  Safepoint(ZoneList<int>* indexes, ZoneList<int>* registers) :
-      indexes_(indexes), registers_(registers) { }
+  Safepoint(ZoneList<int>* indexes, ZoneList<int>* registers)
+      : indexes_(indexes), registers_(registers) {}
   ZoneList<int>* indexes_;
   ZoneList<int>* registers_;
 

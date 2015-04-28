@@ -28,7 +28,6 @@
 #include "src/v8.h"
 
 #include "src/global-handles.h"
-#include "src/snapshot.h"
 #include "test/cctest/cctest.h"
 
 using namespace v8::internal;
@@ -132,7 +131,7 @@ TEST(DaylightSavingsTime) {
   int local_offset_ms = -36000000;  // -10 hours.
 
   DateCacheMock* date_cache =
-    new DateCacheMock(local_offset_ms, rules, ARRAY_SIZE(rules));
+    new DateCacheMock(local_offset_ms, rules, arraysize(rules));
 
   reinterpret_cast<Isolate*>(isolate)->set_date_cache(date_cache);
 

@@ -130,6 +130,59 @@ TEST(DeliveryOrdering) {
 }
 
 
+TEST(DeliveryCallbackThrows) {
+  HandleScope scope(CcTest::isolate());
+  LocalContext context(CcTest::isolate());
+  CompileRun(
+      "var obj = {};"
+      "var ordering = [];"
+      "function observer1() { ordering.push(1); };"
+      "function observer2() { ordering.push(2); };"
+      "function observer_throws() {"
+      "  ordering.push(0);"
+      "  throw new Error();"
+      "  ordering.push(-1);"
+      "};"
+      "Object.observe(obj, observer_throws.bind());"
+      "Object.observe(obj, observer1);"
+      "Object.observe(obj, observer_throws.bind());"
+      "Object.observe(obj, observer2);"
+      "Object.observe(obj, observer_throws.bind());"
+      "obj.foo = 'bar';");
+  CHECK_EQ(5, CompileRun("ordering.length")->Int32Value());
+  CHECK_EQ(0, CompileRun("ordering[0]")->Int32Value());
+  CHECK_EQ(1, CompileRun("ordering[1]")->Int32Value());
+  CHECK_EQ(0, CompileRun("ordering[2]")->Int32Value());
+  CHECK_EQ(2, CompileRun("ordering[3]")->Int32Value());
+  CHECK_EQ(0, CompileRun("ordering[4]")->Int32Value());
+}
+
+
+TEST(DeliveryChangesMutationInCallback) {
+  HandleScope scope(CcTest::isolate());
+  LocalContext context(CcTest::isolate());
+  CompileRun(
+      "var obj = {};"
+      "var ordering = [];"
+      "function observer1(records) {"
+      "  ordering.push(100 + records.length);"
+      "  records.push(11);"
+      "  records.push(22);"
+      "};"
+      "function observer2(records) {"
+      "  ordering.push(200 + records.length);"
+      "  records.push(33);"
+      "  records.push(44);"
+      "};"
+      "Object.observe(obj, observer1);"
+      "Object.observe(obj, observer2);"
+      "obj.foo = 'bar';");
+  CHECK_EQ(2, CompileRun("ordering.length")->Int32Value());
+  CHECK_EQ(101, CompileRun("ordering[0]")->Int32Value());
+  CHECK_EQ(201, CompileRun("ordering[1]")->Int32Value());
+}
+
+
 TEST(DeliveryOrderingReentrant) {
   HandleScope scope(CcTest::isolate());
   LocalContext context(CcTest::isolate());
@@ -253,7 +306,7 @@ static void ExpectRecords(v8::Isolate* isolate,
 
 #define EXPECT_RECORDS(records, expectations)                \
   ExpectRecords(CcTest::isolate(), records, expectations, \
-                ARRAY_SIZE(expectations))
+                arraysize(expectations))
 
 TEST(APITestBasicMutation) {
   v8::Isolate* v8_isolate = CcTest::isolate();
@@ -275,11 +328,10 @@ TEST(APITestBasicMutation) {
   // Setting an indexed element via the property setting method
   obj->Set(Number::New(v8_isolate, 1), Number::New(v8_isolate, 5));
   // Setting with a non-String, non-uint32 key
-  obj->ForceSet(Number::New(v8_isolate, 1.1), Number::New(v8_isolate, 6),
-                DontDelete);
+  obj->Set(Number::New(v8_isolate, 1.1), Number::New(v8_isolate, 6));
   obj->Delete(String::NewFromUtf8(v8_isolate, "foo"));
   obj->Delete(1);
-  obj->ForceDelete(Number::New(v8_isolate, 1.1));
+  obj->Delete(Number::New(v8_isolate, 1.1));
 
   // Force delivery
   // TODO(adamk): Should the above set methods trigger delivery themselves?
@@ -708,4 +760,77 @@ TEST(DontLeakContextOnNotifierPerformChange) {
 
   CcTest::isolate()->ContextDisposedNotification();
   CheckSurvivingGlobalObjectsCount(1);
+}
+
+
+static void ObserverCallback(const FunctionCallbackInfo<Value>& args) {
+  *static_cast<int*>(Handle<External>::Cast(args.Data())->Value()) =
+      Handle<Array>::Cast(args[0])->Length();
+}
+
+
+TEST(ObjectObserveCallsCppFunction) {
+  Isolate* isolate = CcTest::isolate();
+  HandleScope scope(isolate);
+  LocalContext context(isolate);
+  int numRecordsSent = 0;
+  Handle<Function> observer =
+      Function::New(CcTest::isolate(), ObserverCallback,
+                    External::New(isolate, &numRecordsSent));
+  context->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "observer"),
+                         observer);
+  CompileRun(
+      "var obj = {};"
+      "Object.observe(obj, observer);"
+      "obj.foo = 1;"
+      "obj.bar = 2;");
+  CHECK_EQ(2, numRecordsSent);
+}
+
+
+TEST(ObjectObserveCallsFunctionTemplateInstance) {
+  Isolate* isolate = CcTest::isolate();
+  HandleScope scope(isolate);
+  LocalContext context(isolate);
+  int numRecordsSent = 0;
+  Handle<FunctionTemplate> tmpl = FunctionTemplate::New(
+      isolate, ObserverCallback, External::New(isolate, &numRecordsSent));
+  context->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "observer"),
+                         tmpl->GetFunction());
+  CompileRun(
+      "var obj = {};"
+      "Object.observe(obj, observer);"
+      "obj.foo = 1;"
+      "obj.bar = 2;");
+  CHECK_EQ(2, numRecordsSent);
+}
+
+
+static void AccessorGetter(Local<String> property,
+                           const PropertyCallbackInfo<Value>& info) {
+  info.GetReturnValue().Set(Integer::New(info.GetIsolate(), 42));
+}
+
+
+static void AccessorSetter(Local<String> property, Local<Value> value,
+                           const PropertyCallbackInfo<void>& info) {
+  info.GetReturnValue().SetUndefined();
+}
+
+
+TEST(APIAccessorsShouldNotNotify) {
+  Isolate* isolate = CcTest::isolate();
+  HandleScope handle_scope(isolate);
+  LocalContext context(isolate);
+  Handle<Object> object = Object::New(isolate);
+  object->SetAccessor(String::NewFromUtf8(isolate, "accessor"), &AccessorGetter,
+                      &AccessorSetter);
+  context->Global()->Set(String::NewFromUtf8(isolate, "obj"), object);
+  CompileRun(
+      "var records = null;"
+      "Object.observe(obj, function(r) { records = r });"
+      "obj.accessor = 43;");
+  CHECK(CompileRun("records")->IsNull());
+  CompileRun("Object.defineProperty(obj, 'accessor', { value: 44 });");
+  CHECK(CompileRun("records")->IsNull());
 }

@@ -20,11 +20,15 @@ class IncrementalMarking {
 
   enum CompletionAction { GC_VIA_STACK_GUARD, NO_GC_VIA_STACK_GUARD };
 
+  enum ForceMarkingAction { FORCE_MARKING, DO_NOT_FORCE_MARKING };
+
+  enum ForceCompletionAction { FORCE_COMPLETION, DO_NOT_FORCE_COMPLETION };
+
+  enum GCRequestType { COMPLETE_MARKING, OVERAPPROXIMATION };
+
   explicit IncrementalMarking(Heap* heap);
 
   static void Initialize();
-
-  void TearDown();
 
   State state() {
     DCHECK(state_ == STOPPED || FLAG_incremental_marking);
@@ -34,6 +38,14 @@ class IncrementalMarking {
   bool should_hurry() { return should_hurry_; }
   void set_should_hurry(bool val) { should_hurry_ = val; }
 
+  bool weak_closure_was_overapproximated() const {
+    return weak_closure_was_overapproximated_;
+  }
+
+  void SetWeakClosureWasOverApproximatedForTesting(bool val) {
+    weak_closure_was_overapproximated_ = val;
+  }
+
   inline bool IsStopped() { return state() == STOPPED; }
 
   INLINE(bool IsMarking()) { return state() >= MARKING; }
@@ -42,13 +54,26 @@ class IncrementalMarking {
 
   inline bool IsComplete() { return state() == COMPLETE; }
 
+  inline bool IsReadyToOverApproximateWeakClosure() const {
+    return request_type_ == OVERAPPROXIMATION &&
+           !weak_closure_was_overapproximated_;
+  }
+
+  GCRequestType request_type() const { return request_type_; }
+
   bool WorthActivating();
+
+  bool ShouldActivate();
+
+  bool WasActivated();
 
   enum CompactionFlag { ALLOW_COMPACTION, PREVENT_COMPACTION };
 
   void Start(CompactionFlag flag = ALLOW_COMPACTION);
 
   void Stop();
+
+  void MarkObjectGroups();
 
   void PrepareForScavenge();
 
@@ -60,7 +85,11 @@ class IncrementalMarking {
 
   void Abort();
 
+  void OverApproximateWeakClosure(CompletionAction action);
+
   void MarkingComplete(CompletionAction action);
+
+  void Epilogue();
 
   // It's hard to know how much work the incremental marker should do to make
   // progress in the face of the mutator creating new work for it.  We start
@@ -81,10 +110,15 @@ class IncrementalMarking {
   static const intptr_t kMarkingSpeedAccelleration = 2;
   static const intptr_t kMaxMarkingSpeed = 1000;
 
+  // This is the upper bound for how many times we allow finalization of
+  // incremental marking to be postponed.
+  static const size_t kMaxIdleMarkingDelayCounter = 3;
+
   void OldSpaceStep(intptr_t allocated);
 
-  void Step(intptr_t allocated, CompletionAction action,
-            bool force_marking = false);
+  intptr_t Step(intptr_t allocated, CompletionAction action,
+                ForceMarkingAction marking = DO_NOT_FORCE_MARKING,
+                ForceCompletionAction completion = FORCE_COMPLETION);
 
   inline void RestartIfNotMarking() {
     if (state_ == COMPLETE) {
@@ -133,8 +167,6 @@ class IncrementalMarking {
     SetNewSpacePageFlags(chunk, IsMarking());
   }
 
-  MarkingDeque* marking_deque() { return &marking_deque_; }
-
   bool IsCompacting() { return IsMarking() && is_compacting_; }
 
   void ActivateGeneratedStub(Code* stub);
@@ -157,14 +189,22 @@ class IncrementalMarking {
 
   void LeaveNoMarkingScope() { no_marking_scope_depth_--; }
 
-  void UncommitMarkingDeque();
-
   void NotifyIncompleteScanOfObject(int unscanned_bytes) {
     unscanned_bytes_of_large_object_ = unscanned_bytes;
   }
 
+  void ClearIdleMarkingDelayCounter();
+
+  bool IsIdleMarkingDelayCounterLimitReached();
+
+  INLINE(static void MarkObject(Heap* heap, HeapObject* object));
+
+  Heap* heap() const { return heap_; }
+
  private:
   int64_t SpaceLeftInOldSpace();
+
+  void SpeedUp();
 
   void ResetStepCounters();
 
@@ -183,22 +223,18 @@ class IncrementalMarking {
 
   static void SetNewSpacePageFlags(NewSpacePage* chunk, bool is_marking);
 
-  void EnsureMarkingDequeIsCommitted();
-
   INLINE(void ProcessMarkingDeque());
 
   INLINE(intptr_t ProcessMarkingDeque(intptr_t bytes_to_process));
 
   INLINE(void VisitObject(Map* map, HeapObject* obj, int size));
 
+  void IncrementIdleMarkingDelayCounter();
+
   Heap* heap_;
 
   State state_;
   bool is_compacting_;
-
-  base::VirtualMemory* marking_deque_memory_;
-  bool marking_deque_memory_committed_;
-  MarkingDeque marking_deque_;
 
   int steps_count_;
   int64_t old_generation_space_available_at_start_of_incremental_;
@@ -209,10 +245,19 @@ class IncrementalMarking {
   intptr_t bytes_scanned_;
   intptr_t allocated_;
   intptr_t write_barriers_invoked_since_last_step_;
+  size_t idle_marking_delay_counter_;
 
   int no_marking_scope_depth_;
 
   int unscanned_bytes_of_large_object_;
+
+  bool was_activated_;
+
+  bool weak_closure_was_overapproximated_;
+
+  int weak_closure_approximation_rounds_;
+
+  GCRequestType request_type_;
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(IncrementalMarking);
 };

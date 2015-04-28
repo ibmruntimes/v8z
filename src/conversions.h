@@ -77,6 +77,10 @@ inline double FastUI2D(unsigned x) {
 }
 
 
+// This function should match the exact semantics of ECMA-262 20.2.2.17.
+inline float DoubleToFloat32(double x);
+
+
 // This function should match the exact semantics of ECMA-262 9.4.
 inline double DoubleToInteger(double x);
 
@@ -153,6 +157,12 @@ static inline bool IsMinusZero(double value) {
 }
 
 
+static inline bool IsSmiDouble(double value) {
+  return !IsMinusZero(value) && value >= Smi::kMinValue &&
+         value <= Smi::kMaxValue && value == FastI2D(FastD2I(value));
+}
+
+
 // Integer32 is an integer that can be represented as a signed 32-bit
 // integer. It has to be in the range [-2^31, 2^31 - 1].
 // We also have to check for negative 0 as it is not an Integer32.
@@ -188,10 +198,8 @@ inline uint32_t NumberToUint32(Object* number) {
 }
 
 
-double StringToDouble(UnicodeCache* unicode_cache,
-                      String* string,
-                      int flags,
-                      double empty_string_val = 0.0);
+double StringToDouble(UnicodeCache* unicode_cache, Handle<String> string,
+                      int flags, double empty_string_val = 0.0);
 
 
 inline bool TryNumberToSize(Isolate* isolate,
@@ -228,6 +236,8 @@ inline size_t NumberToSize(Isolate* isolate,
   return result;
 }
 
+
+bool IsNonArrayIndexInteger(String* string);
 } }  // namespace v8::internal
 
 #endif  // V8_CONVERSIONS_H_

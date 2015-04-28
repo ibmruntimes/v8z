@@ -34,6 +34,22 @@ void StackGuard::reset_limits(const ExecutionAccess& lock) {
 }
 
 
+static void PrintDeserializedCodeInfo(Handle<JSFunction> function) {
+  if (function->code() == function->shared()->code() &&
+      function->shared()->deserialized()) {
+    PrintF("[Running deserialized script");
+    Object* script = function->shared()->script();
+    if (script->IsScript()) {
+      Object* name = Script::cast(script)->name();
+      if (name->IsString()) {
+        PrintF(": %s", String::cast(name)->ToCString().get());
+      }
+    }
+    PrintF("]\n");
+  }
+}
+
+
 MUST_USE_RESULT static MaybeHandle<Object> Invoke(
     bool is_construct,
     Handle<JSFunction> function,
@@ -41,6 +57,26 @@ MUST_USE_RESULT static MaybeHandle<Object> Invoke(
     int argc,
     Handle<Object> args[]) {
   Isolate* isolate = function->GetIsolate();
+
+  // api callbacks can be called directly.
+  if (!is_construct && function->shared()->IsApiFunction()) {
+    SaveContext save(isolate);
+    isolate->set_context(function->context());
+    if (receiver->IsGlobalObject()) {
+      receiver = handle(Handle<GlobalObject>::cast(receiver)->global_proxy());
+    }
+    DCHECK(function->context()->global_object()->IsGlobalObject());
+    auto value = Builtins::InvokeApiFunction(function, receiver, argc, args);
+    bool has_exception = value.is_null();
+    DCHECK(has_exception == isolate->has_pending_exception());
+    if (has_exception) {
+      isolate->ReportPendingMessages();
+      return MaybeHandle<Object>();
+    } else {
+      isolate->clear_pending_message();
+    }
+    return value;
+  }
 
   // Entering JavaScript.
   VMState<JS> state(isolate);
@@ -87,12 +123,15 @@ MUST_USE_RESULT static MaybeHandle<Object> Invoke(
     JSFunction* func = *function;
     Object* recv = *receiver;
     Object*** argv = reinterpret_cast<Object***>(args);
+    if (FLAG_profile_deserialization) PrintDeserializedCodeInfo(function);
     value =
         CALL_GENERATED_CODE(stub_entry, function_entry, func, recv, argc, argv);
   }
 
 #ifdef VERIFY_HEAP
-  value->ObjectVerify();
+  if (FLAG_verify_heap) {
+    value->ObjectVerify();
+  }
 #endif
 
   // Update the pending exception flag and return the value.
@@ -127,8 +166,7 @@ MaybeHandle<Object> Execution::Call(Isolate* isolate,
 
   // In sloppy mode, convert receiver.
   if (convert_receiver && !receiver->IsJSReceiver() &&
-      !func->shared()->native() &&
-      func->shared()->strict_mode() == SLOPPY) {
+      !func->shared()->native() && is_sloppy(func->shared()->language_mode())) {
     if (receiver->IsUndefined() || receiver->IsNull()) {
       receiver = handle(func->global_proxy());
       DCHECK(!receiver->IsJSBuiltinsObject());
@@ -150,40 +188,45 @@ MaybeHandle<Object> Execution::New(Handle<JSFunction> func,
 
 
 MaybeHandle<Object> Execution::TryCall(Handle<JSFunction> func,
-                                       Handle<Object> receiver,
-                                       int argc,
+                                       Handle<Object> receiver, int argc,
                                        Handle<Object> args[],
-                                       Handle<Object>* exception_out) {
+                                       MaybeHandle<Object>* exception_out) {
+  bool is_termination = false;
+  Isolate* isolate = func->GetIsolate();
+  MaybeHandle<Object> maybe_result;
+  if (exception_out != NULL) *exception_out = MaybeHandle<Object>();
   // Enter a try-block while executing the JavaScript code. To avoid
   // duplicate error printing it must be non-verbose.  Also, to avoid
   // creating message objects during stack overflow we shouldn't
   // capture messages.
-  v8::TryCatch catcher;
-  catcher.SetVerbose(false);
-  catcher.SetCaptureMessage(false);
+  {
+    v8::TryCatch catcher;
+    catcher.SetVerbose(false);
+    catcher.SetCaptureMessage(false);
 
-  // Get isolate now, because handle might be persistent
-  // and get destroyed in the next call.
-  Isolate* isolate = func->GetIsolate();
-  MaybeHandle<Object> maybe_result = Invoke(false, func, receiver, argc, args);
+    maybe_result = Invoke(false, func, receiver, argc, args);
 
-  if (maybe_result.is_null()) {
-    DCHECK(catcher.HasCaught());
-    DCHECK(isolate->has_pending_exception());
-    DCHECK(isolate->external_caught_exception());
-    if (exception_out != NULL) {
+    if (maybe_result.is_null()) {
+      DCHECK(catcher.HasCaught());
+      DCHECK(isolate->has_pending_exception());
+      DCHECK(isolate->external_caught_exception());
       if (isolate->pending_exception() ==
           isolate->heap()->termination_exception()) {
-        *exception_out = isolate->factory()->termination_exception();
+        is_termination = true;
       } else {
-        *exception_out = v8::Utils::OpenHandle(*catcher.Exception());
+        if (exception_out != NULL) {
+          *exception_out = v8::Utils::OpenHandle(*catcher.Exception());
+        }
       }
+      isolate->OptionalRescheduleException(true);
     }
-    isolate->OptionalRescheduleException(true);
+
+    DCHECK(!isolate->has_pending_exception());
   }
 
-  DCHECK(!isolate->has_pending_exception());
-  DCHECK(!isolate->external_caught_exception());
+  // Re-request terminate execution interrupt to trigger later.
+  if (is_termination) isolate->stack_guard()->RequestTerminateExecution();
+
   return maybe_result;
 }
 
@@ -236,10 +279,9 @@ MaybeHandle<Object> Execution::TryGetFunctionDelegate(Isolate* isolate,
 
   // If the Object doesn't have an instance-call handler we should
   // throw a non-callable exception.
-  i::Handle<i::Object> error_obj = isolate->factory()->NewTypeError(
-      "called_non_callable", i::HandleVector<i::Object>(&object, 1));
-
-  return isolate->Throw<Object>(error_obj);
+  THROW_NEW_ERROR(isolate, NewTypeError("called_non_callable",
+                                        i::HandleVector<i::Object>(&object, 1)),
+                  Object);
 }
 
 
@@ -293,9 +335,9 @@ MaybeHandle<Object> Execution::TryGetConstructorDelegate(
 
   // If the Object doesn't have an instance-call handler we should
   // throw a non-callable exception.
-  i::Handle<i::Object> error_obj = isolate->factory()->NewTypeError(
-      "called_non_callable", i::HandleVector<i::Object>(&object, 1));
-  return isolate->Throw<Object>(error_obj);
+  THROW_NEW_ERROR(isolate, NewTypeError("called_non_callable",
+                                        i::HandleVector<i::Object>(&object, 1)),
+                  Object);
 }
 
 
@@ -484,7 +526,7 @@ void StackGuard::InitThread(const ExecutionAccess& lock) {
     return Call(isolate,                                                \
                 isolate->name##_fun(),                                  \
                 isolate->js_builtins_object(),                          \
-                ARRAY_SIZE(argv), argv);                                \
+                arraysize(argv), argv);                                \
   } while (false)
 
 
@@ -528,6 +570,12 @@ MaybeHandle<Object> Execution::ToUint32(
 MaybeHandle<Object> Execution::ToInt32(
     Isolate* isolate, Handle<Object> obj) {
   RETURN_NATIVE_CALL(to_int32, { obj });
+}
+
+
+MaybeHandle<Object> Execution::ToLength(
+    Isolate* isolate, Handle<Object> obj) {
+  RETURN_NATIVE_CALL(to_length, { obj });
 }
 
 
@@ -575,78 +623,11 @@ Handle<Object> Execution::CharAt(Handle<String> string, uint32_t index) {
   Handle<Object> result;
   if (!TryCall(Handle<JSFunction>::cast(char_at),
                string,
-               ARRAY_SIZE(index_arg),
+               arraysize(index_arg),
                index_arg).ToHandle(&result)) {
     return factory->undefined_value();
   }
   return result;
-}
-
-
-MaybeHandle<JSFunction> Execution::InstantiateFunction(
-    Handle<FunctionTemplateInfo> data) {
-  Isolate* isolate = data->GetIsolate();
-  if (!data->do_not_cache()) {
-    // Fast case: see if the function has already been instantiated
-    int serial_number = Smi::cast(data->serial_number())->value();
-    Handle<JSObject> cache(isolate->native_context()->function_cache());
-    Handle<Object> elm =
-        Object::GetElement(isolate, cache, serial_number).ToHandleChecked();
-    if (elm->IsJSFunction()) return Handle<JSFunction>::cast(elm);
-  }
-  // The function has not yet been instantiated in this context; do it.
-  Handle<Object> args[] = { data };
-  Handle<Object> result;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, result,
-      Call(isolate,
-           isolate->instantiate_fun(),
-           isolate->js_builtins_object(),
-           ARRAY_SIZE(args),
-           args),
-      JSFunction);
-  return Handle<JSFunction>::cast(result);
-}
-
-
-MaybeHandle<JSObject> Execution::InstantiateObject(
-    Handle<ObjectTemplateInfo> data) {
-  Isolate* isolate = data->GetIsolate();
-  Handle<Object> result;
-  if (data->property_list()->IsUndefined() &&
-      !data->constructor()->IsUndefined()) {
-    Handle<FunctionTemplateInfo> cons_template =
-        Handle<FunctionTemplateInfo>(
-            FunctionTemplateInfo::cast(data->constructor()));
-    Handle<JSFunction> cons;
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, cons, InstantiateFunction(cons_template), JSObject);
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, result, New(cons, 0, NULL), JSObject);
-  } else {
-    Handle<Object> args[] = { data };
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, result,
-        Call(isolate,
-             isolate->instantiate_fun(),
-             isolate->js_builtins_object(),
-             ARRAY_SIZE(args),
-             args),
-        JSObject);
-  }
-  return Handle<JSObject>::cast(result);
-}
-
-
-MaybeHandle<Object> Execution::ConfigureInstance(
-    Isolate* isolate,
-    Handle<Object> instance,
-    Handle<Object> instance_template) {
-  Handle<Object> args[] = { instance, instance_template };
-  return Execution::Call(isolate,
-                         isolate->configure_instance_fun(),
-                         isolate->js_builtins_object(),
-                         ARRAY_SIZE(args),
-                         args);
 }
 
 
@@ -659,7 +640,7 @@ Handle<String> Execution::GetStackTraceLine(Handle<Object> recv,
   MaybeHandle<Object> maybe_result =
       TryCall(isolate->get_stack_trace_line_fun(),
               isolate->js_builtins_object(),
-              ARRAY_SIZE(args),
+              arraysize(args),
               args);
   Handle<Object> result;
   if (!maybe_result.ToHandle(&result) || !result->IsString()) {
@@ -670,9 +651,16 @@ Handle<String> Execution::GetStackTraceLine(Handle<Object> recv,
 }
 
 
+void StackGuard::CheckAndHandleGCInterrupt() {
+  if (CheckAndClearInterrupt(GC_REQUEST)) {
+    isolate_->heap()->HandleGCRequest();
+  }
+}
+
+
 Object* StackGuard::HandleInterrupts() {
   if (CheckAndClearInterrupt(GC_REQUEST)) {
-    isolate_->heap()->CollectAllGarbage(Heap::kNoGCFlags, "GC interrupt");
+    isolate_->heap()->HandleGCRequest();
   }
 
   if (CheckDebugBreak() || CheckDebugCommand()) {
@@ -693,8 +681,8 @@ Object* StackGuard::HandleInterrupts() {
   }
 
   if (CheckAndClearInterrupt(API_INTERRUPT)) {
-    // Callback must be invoked outside of ExecusionAccess lock.
-    isolate_->InvokeApiInterruptCallback();
+    // Callbacks must be invoked outside of ExecusionAccess lock.
+    isolate_->InvokeApiInterruptCallbacks();
   }
 
   isolate_->counters()->stack_interrupts()->Increment();

@@ -607,10 +607,8 @@ static int GetArrayLength(Handle<JSArray> array) {
 
 void FunctionInfoWrapper::SetInitialProperties(Handle<String> name,
                                                int start_position,
-                                               int end_position,
-                                               int param_num,
+                                               int end_position, int param_num,
                                                int literal_count,
-                                               int slot_count,
                                                int parent_index) {
   HandleScope scope(isolate());
   this->SetField(kFunctionNameOffset_, name);
@@ -618,7 +616,6 @@ void FunctionInfoWrapper::SetInitialProperties(Handle<String> name,
   this->SetSmiValueField(kEndPositionOffset_, end_position);
   this->SetSmiValueField(kParamNumOffset_, param_num);
   this->SetSmiValueField(kLiteralNumOffset_, literal_count);
-  this->SetSmiValueField(kSlotNumOffset_, slot_count);
   this->SetSmiValueField(kParentIndexOffset_, parent_index);
 }
 
@@ -649,23 +646,18 @@ Handle<Code> FunctionInfoWrapper::GetFunctionCode() {
 }
 
 
-Handle<FixedArray> FunctionInfoWrapper::GetFeedbackVector() {
+MaybeHandle<TypeFeedbackVector> FunctionInfoWrapper::GetFeedbackVector() {
   Handle<Object> element = this->GetField(kSharedFunctionInfoOffset_);
-  Handle<FixedArray> result;
   if (element->IsJSValue()) {
     Handle<JSValue> value_wrapper = Handle<JSValue>::cast(element);
     Handle<Object> raw_result = UnwrapJSValue(value_wrapper);
     Handle<SharedFunctionInfo> shared =
         Handle<SharedFunctionInfo>::cast(raw_result);
-    result = Handle<FixedArray>(shared->feedback_vector(), isolate());
-    CHECK_EQ(result->length(), GetSlotCount());
+    return Handle<TypeFeedbackVector>(shared->feedback_vector(), isolate());
   } else {
-    // Scripts may never have a SharedFunctionInfo created, so
-    // create a type feedback vector here.
-    int slot_count = GetSlotCount();
-    result = isolate()->factory()->NewTypeFeedbackVector(slot_count);
+    // Scripts may never have a SharedFunctionInfo created.
+    return MaybeHandle<TypeFeedbackVector>();
   }
-  return result;
 }
 
 
@@ -709,7 +701,6 @@ class FunctionInfoListener {
     info.SetInitialProperties(fun->name(), fun->start_position(),
                               fun->end_position(), fun->parameter_count(),
                               fun->materialized_literal_count(),
-                              fun->slot_count(),
                               current_parent_index_);
     current_parent_index_ = len_;
     SetElementSloppy(result_, len_, info.GetJSArray());
@@ -875,11 +866,11 @@ MaybeHandle<JSArray> LiveEdit::GatherCompileInfo(Handle<Script> script,
 
       Factory* factory = isolate->factory();
       Handle<String> start_pos_key = factory->InternalizeOneByteString(
-          STATIC_ASCII_VECTOR("startPosition"));
-      Handle<String> end_pos_key = factory->InternalizeOneByteString(
-          STATIC_ASCII_VECTOR("endPosition"));
-      Handle<String> script_obj_key = factory->InternalizeOneByteString(
-          STATIC_ASCII_VECTOR("scriptObject"));
+          STATIC_CHAR_VECTOR("startPosition"));
+      Handle<String> end_pos_key =
+          factory->InternalizeOneByteString(STATIC_CHAR_VECTOR("endPosition"));
+      Handle<String> script_obj_key =
+          factory->InternalizeOneByteString(STATIC_CHAR_VECTOR("scriptObject"));
       Handle<Smi> start_pos(
           Smi::FromInt(message_location.start_pos()), isolate);
       Handle<Smi> end_pos(Smi::FromInt(message_location.end_pos()), isolate);
@@ -1004,9 +995,6 @@ class LiteralFixer {
                             Handle<SharedFunctionInfo> shared_info,
                             Isolate* isolate) {
     int new_literal_count = compile_info_wrapper->GetLiteralCount();
-    if (new_literal_count > 0) {
-      new_literal_count += JSFunction::kLiteralsPrefixSize;
-    }
     int old_literal_count = shared_info->num_literals();
 
     if (old_literal_count == new_literal_count) {
@@ -1022,21 +1010,8 @@ class LiteralFixer {
           CollectJSFunctions(shared_info, isolate);
       for (int i = 0; i < function_instances->length(); i++) {
         Handle<JSFunction> fun(JSFunction::cast(function_instances->get(i)));
-        Handle<FixedArray> old_literals(fun->literals());
         Handle<FixedArray> new_literals =
             isolate->factory()->NewFixedArray(new_literal_count);
-        if (new_literal_count > 0) {
-          Handle<Context> native_context;
-          if (old_literals->length() >
-              JSFunction::kLiteralNativeContextIndex) {
-            native_context = Handle<Context>(
-                JSFunction::NativeContextFromLiterals(fun->literals()));
-          } else {
-            native_context = Handle<Context>(fun->context()->native_context());
-          }
-          new_literals->set(JSFunction::kLiteralNativeContextIndex,
-              *native_context);
-        }
         fun->set_literals(*new_literals);
       }
 
@@ -1084,7 +1059,7 @@ class LiteralFixer {
     void visit(JSFunction* fun) {
       FixedArray* literals = fun->literals();
       int len = literals->length();
-      for (int j = JSFunction::kLiteralsPrefixSize; j < len; j++) {
+      for (int j = 0; j < len; j++) {
         literals->set_undefined(j);
       }
     }
@@ -1202,10 +1177,12 @@ void LiveEdit::ReplaceFunctionCode(
       shared_info->set_scope_info(ScopeInfo::cast(*code_scope_info));
     }
     shared_info->DisableOptimization(kLiveEdit);
-    // Update the type feedback vector
-    Handle<FixedArray> feedback_vector =
+    // Update the type feedback vector, if needed.
+    MaybeHandle<TypeFeedbackVector> feedback_vector =
         compile_info_wrapper.GetFeedbackVector();
-    shared_info->set_feedback_vector(*feedback_vector);
+    if (!feedback_vector.is_null()) {
+      shared_info->set_feedback_vector(*feedback_vector.ToHandleChecked());
+    }
   }
 
   if (shared_info->debug_info()->IsDebugInfo()) {
@@ -1245,6 +1222,7 @@ void LiveEdit::SetFunctionScript(Handle<JSValue> function_wrapper,
       UnwrapSharedFunctionInfoFromJSValue(function_wrapper);
   CHECK(script_handle->IsScript() || script_handle->IsUndefined());
   shared_info->set_script(*script_handle);
+  shared_info->DisableOptimization(kLiveEdit);
 
   function_wrapper->GetIsolate()->compilation_cache()->Remove(shared_info);
 }
@@ -1755,13 +1733,12 @@ class MultipleFunctionTarget {
 
 
 // Drops all call frame matched by target and all frames above them.
-template<typename TARGET>
-static const char* DropActivationsInActiveThreadImpl(
-    Isolate* isolate,
-    TARGET& target,  // NOLINT
-    bool do_drop) {
+template <typename TARGET>
+static const char* DropActivationsInActiveThreadImpl(Isolate* isolate,
+                                                     TARGET& target,  // NOLINT
+                                                     bool do_drop) {
   Debug* debug = isolate->debug();
-  Zone zone(isolate);
+  Zone zone;
   Vector<StackFrame*> frames = CreateStackMap(isolate, &zone);
 
 
@@ -1865,14 +1842,14 @@ static const char* DropActivationsInActiveThreadImpl(
 static const char* DropActivationsInActiveThread(
     Handle<JSArray> shared_info_array, Handle<JSArray> result, bool do_drop) {
   MultipleFunctionTarget target(shared_info_array, result);
+  Isolate* isolate = shared_info_array->GetIsolate();
 
-  const char* message = DropActivationsInActiveThreadImpl(
-      shared_info_array->GetIsolate(), target, do_drop);
+  const char* message =
+      DropActivationsInActiveThreadImpl(isolate, target, do_drop);
   if (message) {
     return message;
   }
 
-  Isolate* isolate = shared_info_array->GetIsolate();
   int array_len = GetArrayLength(shared_info_array);
 
   // Replace "blocked on active" with "replaced on active" status.
@@ -2034,8 +2011,8 @@ class SingleFrameTarget {
 const char* LiveEdit::RestartFrame(JavaScriptFrame* frame) {
   SingleFrameTarget target(frame);
 
-  const char* result = DropActivationsInActiveThreadImpl(
-      frame->isolate(), target, true);
+  const char* result =
+      DropActivationsInActiveThreadImpl(frame->isolate(), target, true);
   if (result != NULL) {
     return result;
   }

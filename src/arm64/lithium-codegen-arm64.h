@@ -27,7 +27,7 @@ class LCodeGen: public LCodeGenBase {
   LCodeGen(LChunk* chunk, MacroAssembler* assembler, CompilationInfo* info)
       : LCodeGenBase(chunk, assembler, info),
         deoptimizations_(4, info->zone()),
-        deopt_jump_table_(4, info->zone()),
+        jump_table_(4, info->zone()),
         deoptimization_literals_(8, info->zone()),
         inlined_function_count_(0),
         scope_(info->scope()),
@@ -37,14 +37,8 @@ class LCodeGen: public LCodeGenBase {
         frame_is_built_(false),
         safepoints_(info->zone()),
         resolver_(this),
-        expected_safepoint_kind_(Safepoint::kSimple),
-        after_push_argument_(false),
-        inlined_arguments_(false) {
+        expected_safepoint_kind_(Safepoint::kSimple) {
     PopulateDeoptimizationLiteralsWithInlinedFunctions();
-  }
-
-  ~LCodeGen() {
-    DCHECK(!after_push_argument_ || inlined_arguments_);
   }
 
   // Simple accessors.
@@ -83,31 +77,15 @@ class LCodeGen: public LCodeGenBase {
 
   enum IntegerSignedness { SIGNED_INT32, UNSIGNED_INT32 };
   // Support for converting LOperands to assembler types.
-  // LOperand must be a register.
   Register ToRegister(LOperand* op) const;
   Register ToRegister32(LOperand* op) const;
   Operand ToOperand(LOperand* op);
-  Operand ToOperand32I(LOperand* op);
-  Operand ToOperand32U(LOperand* op);
-  enum StackMode { kMustUseFramePointer, kCanUseStackPointer };
-  MemOperand ToMemOperand(LOperand* op,
-                          StackMode stack_mode = kCanUseStackPointer) const;
+  Operand ToOperand32(LOperand* op);
+  MemOperand ToMemOperand(LOperand* op) const;
   Handle<Object> ToHandle(LConstantOperand* op) const;
 
-  template<class LI>
-  Operand ToShiftedRightOperand32I(LOperand* right,
-                                   LI* shift_info) {
-    return ToShiftedRightOperand32(right, shift_info, SIGNED_INT32);
-  }
-  template<class LI>
-  Operand ToShiftedRightOperand32U(LOperand* right,
-                                   LI* shift_info) {
-    return ToShiftedRightOperand32(right, shift_info, UNSIGNED_INT32);
-  }
-  template<class LI>
-  Operand ToShiftedRightOperand32(LOperand* right,
-                                  LI* shift_info,
-                                  IntegerSignedness signedness);
+  template <class LI>
+  Operand ToShiftedRightOperand32(LOperand* right, LI* shift_info);
 
   int JSShiftAmountFromLConstant(LOperand* constant) {
     return ToInteger32(LConstantOperand::cast(constant)) & 0x1f;
@@ -157,8 +135,6 @@ class LCodeGen: public LCodeGenBase {
                                    Register result,
                                    Register object,
                                    Register index);
-
-  Operand ToOperand32(LOperand* op, IntegerSignedness signedness);
 
   static Condition TokenToCondition(Token::Value op, bool is_unsigned);
   void EmitGoto(int block);
@@ -212,6 +188,9 @@ class LCodeGen: public LCodeGenBase {
                     int* offset,
                     AllocationSiteMode mode);
 
+  template <class T>
+  void EmitVectorLoadICRegisters(T* instr);
+
   // Emits optimized code for %_IsString(x).  Preserves input register.
   // Returns the condition on which a final split to
   // true and false label should be made, to optimize fallthrough.
@@ -226,27 +205,38 @@ class LCodeGen: public LCodeGenBase {
                                    Register temp,
                                    LOperand* index,
                                    String::Encoding encoding);
-  void DeoptimizeBranch(
-      LEnvironment* environment,
-      BranchType branch_type, Register reg = NoReg, int bit = -1,
-      Deoptimizer::BailoutType* override_bailout_type = NULL);
-  void Deoptimize(LEnvironment* environment,
+  void DeoptimizeBranch(LInstruction* instr,
+                        Deoptimizer::DeoptReason deopt_reason,
+                        BranchType branch_type, Register reg = NoReg,
+                        int bit = -1,
+                        Deoptimizer::BailoutType* override_bailout_type = NULL);
+  void Deoptimize(LInstruction* instr, Deoptimizer::DeoptReason deopt_reason,
                   Deoptimizer::BailoutType* override_bailout_type = NULL);
-  void DeoptimizeIf(Condition cond, LEnvironment* environment);
-  void DeoptimizeIfZero(Register rt, LEnvironment* environment);
-  void DeoptimizeIfNotZero(Register rt, LEnvironment* environment);
-  void DeoptimizeIfNegative(Register rt, LEnvironment* environment);
-  void DeoptimizeIfSmi(Register rt, LEnvironment* environment);
-  void DeoptimizeIfNotSmi(Register rt, LEnvironment* environment);
-  void DeoptimizeIfRoot(Register rt,
-                        Heap::RootListIndex index,
-                        LEnvironment* environment);
-  void DeoptimizeIfNotRoot(Register rt,
-                           Heap::RootListIndex index,
-                           LEnvironment* environment);
-  void DeoptimizeIfMinusZero(DoubleRegister input, LEnvironment* environment);
-  void DeoptimizeIfBitSet(Register rt, int bit, LEnvironment* environment);
-  void DeoptimizeIfBitClear(Register rt, int bit, LEnvironment* environment);
+  void DeoptimizeIf(Condition cond, LInstruction* instr,
+                    Deoptimizer::DeoptReason deopt_reason);
+  void DeoptimizeIfZero(Register rt, LInstruction* instr,
+                        Deoptimizer::DeoptReason deopt_reason);
+  void DeoptimizeIfNotZero(Register rt, LInstruction* instr,
+                           Deoptimizer::DeoptReason deopt_reason);
+  void DeoptimizeIfNegative(Register rt, LInstruction* instr,
+                            Deoptimizer::DeoptReason deopt_reason);
+  void DeoptimizeIfSmi(Register rt, LInstruction* instr,
+                       Deoptimizer::DeoptReason deopt_reason);
+  void DeoptimizeIfNotSmi(Register rt, LInstruction* instr,
+                          Deoptimizer::DeoptReason deopt_reason);
+  void DeoptimizeIfRoot(Register rt, Heap::RootListIndex index,
+                        LInstruction* instr,
+                        Deoptimizer::DeoptReason deopt_reason);
+  void DeoptimizeIfNotRoot(Register rt, Heap::RootListIndex index,
+                           LInstruction* instr,
+                           Deoptimizer::DeoptReason deopt_reason);
+  void DeoptimizeIfNotHeapNumber(Register object, LInstruction* instr);
+  void DeoptimizeIfMinusZero(DoubleRegister input, LInstruction* instr,
+                             Deoptimizer::DeoptReason deopt_reason);
+  void DeoptimizeIfBitSet(Register rt, int bit, LInstruction* instr,
+                          Deoptimizer::DeoptReason deopt_reason);
+  void DeoptimizeIfBitClear(Register rt, int bit, LInstruction* instr,
+                            Deoptimizer::DeoptReason deopt_reason);
 
   MemOperand PrepareKeyedExternalArrayOperand(Register key,
                                               Register base,
@@ -286,10 +276,10 @@ class LCodeGen: public LCodeGenBase {
   void RestoreCallerDoubles();
 
   // Code generation steps.  Returns true if code generation should continue.
-  void GenerateBodyInstructionPre(LInstruction* instr) V8_OVERRIDE;
+  void GenerateBodyInstructionPre(LInstruction* instr) OVERRIDE;
   bool GeneratePrologue();
   bool GenerateDeferredCode();
-  bool GenerateDeoptJumpTable();
+  bool GenerateJumpTable();
   bool GenerateSafepointTable();
 
   // Generates the custom OSR entrypoint and sets the osr_pc_offset.
@@ -327,18 +317,14 @@ class LCodeGen: public LCodeGenBase {
                                LInstruction* instr,
                                LOperand* context);
 
-  // Generate a direct call to a known function.
-  // If the function is already loaded into x1 by the caller, function_reg may
-  // be set to x1. Otherwise, it must be NoReg, and CallKnownFunction will
-  // automatically load it.
+  // Generate a direct call to a known function.  Expects the function
+  // to be in x1.
   void CallKnownFunction(Handle<JSFunction> function,
-                         int formal_parameter_count,
-                         int arity,
-                         LInstruction* instr,
-                         Register function_reg = NoReg);
+                         int formal_parameter_count, int arity,
+                         LInstruction* instr);
 
   // Support for recording safepoint and position information.
-  void RecordAndWritePosition(int position) V8_OVERRIDE;
+  void RecordAndWritePosition(int position) OVERRIDE;
   void RecordSafepoint(LPointerMap* pointers,
                        Safepoint::Kind kind,
                        int arguments,
@@ -351,10 +337,10 @@ class LCodeGen: public LCodeGenBase {
   void RecordSafepointWithLazyDeopt(LInstruction* instr,
                                     SafepointMode safepoint_mode);
 
-  void EnsureSpaceForLazyDeopt(int space_needed) V8_OVERRIDE;
+  void EnsureSpaceForLazyDeopt(int space_needed) OVERRIDE;
 
   ZoneList<LEnvironment*> deoptimizations_;
-  ZoneList<Deoptimizer::JumpTableEntry*> deopt_jump_table_;
+  ZoneList<Deoptimizer::JumpTableEntry*> jump_table_;
   ZoneList<Handle<Object> > deoptimization_literals_;
   int inlined_function_count_;
   Scope* const scope_;
@@ -371,15 +357,6 @@ class LCodeGen: public LCodeGenBase {
   LGapResolver resolver_;
 
   Safepoint::Kind expected_safepoint_kind_;
-
-  // This flag is true when we are after a push (but before a call).
-  // In this situation, jssp no longer references the end of the stack slots so,
-  // we can only reference a stack slot via fp.
-  bool after_push_argument_;
-  // If we have inlined arguments, we are no longer able to use jssp because
-  // jssp is modified and we never know if we are in a block after or before
-  // the pop of the arguments (which restores jssp).
-  bool inlined_arguments_;
 
   int old_position_;
 

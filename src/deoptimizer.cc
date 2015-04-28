@@ -6,6 +6,7 @@
 
 #include "src/accessors.h"
 #include "src/codegen.h"
+#include "src/cpu-profiler.h"
 #include "src/deoptimizer.h"
 #include "src/disasm.h"
 #include "src/full-codegen.h"
@@ -110,7 +111,7 @@ size_t Deoptimizer::GetMaxDeoptTableSize() {
 
 Deoptimizer* Deoptimizer::Grab(Isolate* isolate) {
   Deoptimizer* result = isolate->deoptimizer_data()->current_;
-  CHECK_NE(result, NULL);
+  CHECK_NOT_NULL(result);
   result->DeleteFrameDescriptions();
   isolate->deoptimizer_data()->current_ = NULL;
   return result;
@@ -353,7 +354,7 @@ void Deoptimizer::DeoptimizeMarkedCodeForContext(Context* context) {
       SafepointEntry safepoint = code->GetSafepointEntry(it.frame()->pc());
       int deopt_index = safepoint.deoptimization_index();
       // Turbofan deopt is checked when we are patching addresses on stack.
-      bool turbofanned = code->is_turbofanned();
+      bool turbofanned = code->is_turbofanned() && !FLAG_turbo_deoptimization;
       bool safe_to_deopt =
           deopt_index != Safepoint::kNoDeoptimizationIndex || turbofanned;
       CHECK(topmost_optimized_code == NULL || safe_to_deopt || turbofanned);
@@ -367,7 +368,7 @@ void Deoptimizer::DeoptimizeMarkedCodeForContext(Context* context) {
 
   // Move marked code from the optimized code list to the deoptimized
   // code list, collecting them into a ZoneList.
-  Zone zone(isolate);
+  Zone zone;
   ZoneList<Code*> codes(10, &zone);
 
   // Walk over all optimized code objects in this native context.
@@ -378,7 +379,8 @@ void Deoptimizer::DeoptimizeMarkedCodeForContext(Context* context) {
     CHECK_EQ(code->kind(), Code::OPTIMIZED_FUNCTION);
     Object* next = code->next_code_link();
 
-    if (code->marked_for_deoptimization()) {
+    if (code->marked_for_deoptimization() &&
+        (!code->is_turbofanned() || FLAG_turbo_deoptimization)) {
       // Put the code into the list for later patching.
       codes.Add(code, &zone);
 
@@ -398,10 +400,6 @@ void Deoptimizer::DeoptimizeMarkedCodeForContext(Context* context) {
       prev = code;
     }
     element = next;
-  }
-
-  if (FLAG_turbo_deoptimization) {
-    PatchStackForMarkedCode(isolate);
   }
 
   // TODO(titzer): we need a handle scope only because of the macro assembler,
@@ -425,67 +423,13 @@ void Deoptimizer::DeoptimizeMarkedCodeForContext(Context* context) {
     shared->EvictFromOptimizedCodeMap(codes[i], "deoptimized code");
 
     // Do platform-specific patching to force any activations to lazy deopt.
-    //
-    // We skip patching Turbofan code - we patch return addresses on stack.
-    // TODO(jarin) We should still zap the code object (but we have to
-    // be careful not to zap the deoptimization block).
-    if (!codes[i]->is_turbofanned()) {
+    if (!codes[i]->is_turbofanned() || FLAG_turbo_deoptimization) {
       PatchCodeForDeoptimization(isolate, codes[i]);
 
       // We might be in the middle of incremental marking with compaction.
       // Tell collector to treat this code object in a special way and
       // ignore all slots that might have been recorded on it.
       isolate->heap()->mark_compact_collector()->InvalidateCode(codes[i]);
-    }
-  }
-}
-
-
-static int FindPatchAddressForReturnAddress(Code* code, int pc) {
-  DeoptimizationInputData* input_data =
-      DeoptimizationInputData::cast(code->deoptimization_data());
-  int patch_count = input_data->ReturnAddressPatchCount();
-  for (int i = 0; i < patch_count; i++) {
-    int return_pc = input_data->ReturnAddressPc(i)->value();
-    int patch_pc = input_data->PatchedAddressPc(i)->value();
-    // If the supplied pc matches the return pc or if the address
-    // has been already patched, return the patch pc.
-    if (pc == return_pc || pc == patch_pc) {
-      return patch_pc;
-    }
-  }
-  return -1;
-}
-
-
-// For all marked Turbofanned code on stack, change the return address to go
-// to the deoptimization block.
-void Deoptimizer::PatchStackForMarkedCode(Isolate* isolate) {
-  // TODO(jarin) We should tolerate missing patch entry for the topmost frame.
-  for (StackFrameIterator it(isolate, isolate->thread_local_top()); !it.done();
-       it.Advance()) {
-    StackFrame::Type type = it.frame()->type();
-    if (type == StackFrame::OPTIMIZED) {
-      Code* code = it.frame()->LookupCode();
-      if (code->is_turbofanned() && code->marked_for_deoptimization()) {
-        JSFunction* function =
-            static_cast<OptimizedFrame*>(it.frame())->function();
-        Address* pc_address = it.frame()->pc_address();
-        int pc_offset =
-            static_cast<int>(*pc_address - code->instruction_start());
-        int new_pc_offset = FindPatchAddressForReturnAddress(code, pc_offset);
-
-        if (FLAG_trace_deopt) {
-          CodeTracer::Scope scope(isolate->GetCodeTracer());
-          PrintF(scope.file(), "[patching stack address for function: ");
-          function->PrintName(scope.file());
-          PrintF(scope.file(), " (Pc offset %i -> %i)]\n", pc_offset,
-                 new_pc_offset);
-        }
-
-        CHECK_LE(0, new_pc_offset);
-        *pc_address += new_pc_offset - pc_offset;
-      }
     }
   }
 }
@@ -649,7 +593,6 @@ Deoptimizer::Deoptimizer(Isolate* isolate,
     }
   }
   compiled_code_ = FindOptimizedCode(function, optimized_code);
-
 #if DEBUG
   DCHECK(compiled_code_ != NULL);
   if (type == EAGER || type == SOFT || type == LAZY) {
@@ -666,6 +609,9 @@ Deoptimizer::Deoptimizer(Isolate* isolate,
   CHECK(AllowHeapAllocation::IsAllowed());
   disallow_heap_allocation_ = new DisallowHeapAllocation();
 #endif  // DEBUG
+  if (compiled_code_->kind() == Code::OPTIMIZED_FUNCTION) {
+    PROFILE(isolate_, CodeDeoptEvent(compiled_code_, from_, fp_to_sp_delta_));
+  }
   unsigned size = ComputeInputFrameSize();
   input_ = new(size) FrameDescription(size, function);
   input_->SetFrameType(frame_type);
@@ -694,7 +640,7 @@ Code* Deoptimizer::FindOptimizedCode(JSFunction* function,
 
 void Deoptimizer::PrintFunctionName() {
   if (function_->IsJSFunction()) {
-    function_->PrintName(trace_scope_->file());
+    function_->ShortPrint(trace_scope_->file());
   } else {
     PrintF(trace_scope_->file(),
            "%s", Code::Kind2String(compiled_code_->kind()));
@@ -750,8 +696,7 @@ int Deoptimizer::GetDeoptimizationId(Isolate* isolate,
   DeoptimizerData* data = isolate->deoptimizer_data();
   MemoryChunk* base = data->deopt_entry_code_[type];
   Address start = base->area_start();
-  if (base == NULL ||
-      addr < start ||
+  if (addr < start ||
       addr >= start + (kMaxNumberOfEntries * table_entry_size_)) {
     return kNotDeoptimizationEntry;
   }
@@ -776,7 +721,7 @@ int Deoptimizer::GetOutputInfo(DeoptimizationOutputData* data,
   OFStream os(stderr);
   os << "[couldn't find pc offset for node=" << id.ToInt() << "]\n"
      << "[method: " << shared->DebugName()->ToCString().get() << "]\n"
-     << "[source:\n" << SourceCodeOf(shared) << "\n]" << endl;
+     << "[source:\n" << SourceCodeOf(shared) << "\n]" << std::endl;
 
   FATAL("unable to find pc offset during deoptimization");
   return -1;
@@ -805,11 +750,6 @@ int Deoptimizer::GetDeoptimizedCodeCount(Isolate* isolate) {
 // We rely on this function not causing a GC.  It is called from generated code
 // without having a real stack frame in place.
 void Deoptimizer::DoComputeOutputFrames() {
-  // Print some helpful diagnostic information.
-  if (FLAG_log_timer_events &&
-      compiled_code_->kind() == Code::OPTIMIZED_FUNCTION) {
-    LOG(isolate(), CodeDeoptEvent(compiled_code_));
-  }
   base::ElapsedTimer timer;
 
   // Determine basic deoptimization information.  The optimized frame is
@@ -819,10 +759,8 @@ void Deoptimizer::DoComputeOutputFrames() {
 
   if (trace_scope_ != NULL) {
     timer.Start();
-    PrintF(trace_scope_->file(),
-           "[deoptimizing (DEOPT %s): begin 0x%08" V8PRIxPTR " ",
-           MessageFor(bailout_type_),
-           reinterpret_cast<intptr_t>(function_));
+    PrintF(trace_scope_->file(), "[deoptimizing (DEOPT %s): begin ",
+           MessageFor(bailout_type_));
     PrintFunctionName();
     PrintF(trace_scope_->file(),
            " (opt #%d) @%d, FP to SP delta: %d]\n",
@@ -831,7 +769,7 @@ void Deoptimizer::DoComputeOutputFrames() {
            fp_to_sp_delta_);
     if (bailout_type_ == EAGER || bailout_type_ == SOFT ||
         (compiled_code_->is_hydrogen_stub())) {
-      compiled_code_->PrintDeoptLocation(trace_scope_->file(), bailout_id_);
+      compiled_code_->PrintDeoptLocation(trace_scope_->file(), from_);
     }
   }
 
@@ -908,11 +846,8 @@ void Deoptimizer::DoComputeOutputFrames() {
   if (trace_scope_ != NULL) {
     double ms = timer.Elapsed().InMillisecondsF();
     int index = output_count_ - 1;  // Index of the topmost frame.
-    JSFunction* function = output_[index]->GetFunction();
-    PrintF(trace_scope_->file(),
-           "[deoptimizing (%s): end 0x%08" V8PRIxPTR " ",
-           MessageFor(bailout_type_),
-           reinterpret_cast<intptr_t>(function));
+    PrintF(trace_scope_->file(), "[deoptimizing (%s): end ",
+           MessageFor(bailout_type_));
     PrintFunctionName();
     PrintF(trace_scope_->file(),
            " @%d => node=%d, pc=0x%08" V8PRIxPTR ", state=%s, alignment=%s,"
@@ -941,7 +876,7 @@ void Deoptimizer::DoComputeJSFrame(TranslationIterator* iterator,
     CHECK_EQ(Translation::kSelfLiteralId, closure_id);
     function = function_;
   }
-  unsigned height = iterator->Next();
+  unsigned height = iterator->Next() - 1;  // Do not count the context.
   unsigned height_in_bytes = height * kPointerSize;
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(), "  translating ");
@@ -964,7 +899,7 @@ void Deoptimizer::DoComputeJSFrame(TranslationIterator* iterator,
   bool is_bottommost = (0 == frame_index);
   bool is_topmost = (output_count_ - 1 == frame_index);
   CHECK(frame_index >= 0 && frame_index < output_count_);
-  CHECK_EQ(output_[frame_index], NULL);
+  CHECK_NULL(output_[frame_index]);
   output_[frame_index] = output_frame;
 
   // The top address for the bottommost output frame can be computed from
@@ -992,7 +927,8 @@ void Deoptimizer::DoComputeJSFrame(TranslationIterator* iterator,
   output_frame->SetTop(top_address);
 
   // Compute the incoming parameter translation.
-  int parameter_count = function->shared()->formal_parameter_count() + 1;
+  int parameter_count =
+      function->shared()->internal_formal_parameter_count() + 1;
   unsigned output_offset = output_frame_size;
   unsigned input_offset = input_frame_size;
   for (int i = 0; i < parameter_count; ++i) {
@@ -1076,12 +1012,24 @@ void Deoptimizer::DoComputeJSFrame(TranslationIterator* iterator,
   Register context_reg = JavaScriptFrame::context_register();
   output_offset -= kPointerSize;
   input_offset -= kPointerSize;
-  if (is_bottommost) {
-    value = input_->GetFrameSlot(input_offset);
-  } else {
-    value = reinterpret_cast<intptr_t>(function->context());
+  // Read the context from the translations.
+  DoTranslateCommand(iterator, frame_index, output_offset);
+  value = output_frame->GetFrameSlot(output_offset);
+  // The context should not be a placeholder for a materialized object.
+  CHECK(value !=
+        reinterpret_cast<intptr_t>(isolate_->heap()->arguments_marker()));
+  if (value ==
+      reinterpret_cast<intptr_t>(isolate_->heap()->undefined_value())) {
+    // If the context was optimized away, just use the context from
+    // the activation. This should only apply to Crankshaft code.
+    CHECK(!compiled_code_->is_turbofanned());
+    if (is_bottommost) {
+      value = input_->GetFrameSlot(input_offset);
+    } else {
+      value = reinterpret_cast<intptr_t>(function->context());
+    }
+    output_frame->SetFrameSlot(output_offset, value);
   }
-  output_frame->SetFrameSlot(output_offset, value);
   output_frame->SetContext(value);
   if (is_topmost) output_frame->SetRegister(context_reg.code(), value);
   if (trace_scope_ != NULL) {
@@ -1111,7 +1059,7 @@ void Deoptimizer::DoComputeJSFrame(TranslationIterator* iterator,
     output_offset -= kPointerSize;
     DoTranslateCommand(iterator, frame_index, output_offset);
   }
-  CHECK_EQ(0, output_offset);
+  CHECK_EQ(0u, output_offset);
 
   // Compute this frame's PC, state, and continuation.
   Code* non_optimized_code = function->shared()->code();
@@ -1433,7 +1381,7 @@ void Deoptimizer::DoComputeConstructStubFrame(TranslationIterator* iterator,
            top_address + output_offset, output_offset, value);
   }
 
-  CHECK_EQ(0, output_offset);
+  CHECK_EQ(0u, output_offset);
 
   intptr_t pc = reinterpret_cast<intptr_t>(
       construct_stub->instruction_start() +
@@ -1480,7 +1428,7 @@ void Deoptimizer::DoComputeAccessorStubFrame(TranslationIterator* iterator,
 
   // A frame for an accessor stub can not be the topmost or bottommost one.
   CHECK(frame_index > 0 && frame_index < output_count_ - 1);
-  CHECK_EQ(output_[frame_index], NULL);
+  CHECK_NULL(output_[frame_index]);
   output_[frame_index] = output_frame;
 
   // The top address of the frame is computed from the previous frame's top and
@@ -1573,7 +1521,7 @@ void Deoptimizer::DoComputeAccessorStubFrame(TranslationIterator* iterator,
     DoTranslateCommand(iterator, frame_index, output_offset);
   }
 
-  CHECK_EQ(output_offset, 0);
+  CHECK_EQ(0u, output_offset);
 
   Smi* offset = is_setter_stub_frame ?
       isolate_->heap()->setter_stub_deopt_pc_offset() :
@@ -1625,17 +1573,13 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslationIterator* iterator,
 
   CHECK(compiled_code_->is_hydrogen_stub());
   int major_key = CodeStub::GetMajorKey(compiled_code_);
-  CodeStubInterfaceDescriptor* descriptor =
-      isolate_->code_stub_interface_descriptor(major_key);
-  // Check that there is a matching descriptor to the major key.
-  // This will fail if there has not been one installed to the isolate.
-  DCHECK_EQ(descriptor->MajorKey(), major_key);
+  CodeStubDescriptor descriptor(isolate_, compiled_code_->stub_key());
 
   // The output frame must have room for all pushed register parameters
   // and the standard stack frame slots.  Include space for an argument
   // object to the callee and optionally the space to pass the argument
   // object to the stub failure handler.
-  int param_count = descriptor->GetEnvironmentParameterCount();
+  int param_count = descriptor.GetEnvironmentParameterCount();
   CHECK_GE(param_count, 0);
 
   int height_in_bytes = kPointerSize * param_count + sizeof(Arguments) +
@@ -1733,7 +1677,7 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslationIterator* iterator,
   }
 
   intptr_t caller_arg_count = 0;
-  bool arg_count_known = !descriptor->stack_parameter_count().is_valid();
+  bool arg_count_known = !descriptor.stack_parameter_count().is_valid();
 
   // Build the Arguments object for the caller's parameters and a pointer to it.
   output_frame_offset -= kPointerSize;
@@ -1785,13 +1729,12 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslationIterator* iterator,
     output_frame_offset -= kPointerSize;
     DoTranslateCommand(iterator, 0, output_frame_offset);
 
-    if (!arg_count_known &&
-        descriptor->IsEnvironmentParameterCountRegister(i)) {
+    if (!arg_count_known && descriptor.IsEnvironmentParameterCountRegister(i)) {
       arguments_length_offset = output_frame_offset;
     }
   }
 
-  CHECK_EQ(output_frame_offset, 0);
+  CHECK_EQ(0u, output_frame_offset);
 
   if (!arg_count_known) {
     CHECK_GE(arguments_length_offset, 0);
@@ -1825,11 +1768,11 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslationIterator* iterator,
   CopyDoubleRegisters(output_frame);
 
   // Fill registers containing handler and number of parameters.
-  SetPlatformCompiledStubRegisters(output_frame, descriptor);
+  SetPlatformCompiledStubRegisters(output_frame, &descriptor);
 
   // Compute this frame's PC, state, and continuation.
   Code* trampoline = NULL;
-  StubFunctionMode function_mode = descriptor->function_mode();
+  StubFunctionMode function_mode = descriptor.function_mode();
   StubFailureTrampolineStub(isolate_,
                             function_mode).FindCodeInCache(&trampoline);
   DCHECK(trampoline != NULL);
@@ -2782,7 +2725,8 @@ unsigned Deoptimizer::ComputeIncomingArgumentSize(JSFunction* function) const {
     CHECK_EQ(Smi::cast(function), Smi::FromInt(StackFrame::STUB));
     return 0;
   }
-  unsigned arguments = function->shared()->formal_parameter_count() + 1;
+  unsigned arguments =
+      function->shared()->internal_formal_parameter_count() + 1;
   return arguments * kPointerSize;
 }
 
@@ -2919,7 +2863,7 @@ unsigned FrameDescription::GetOffsetFromSlotIndex(int slot_index) {
 int FrameDescription::ComputeParametersCount() {
   switch (type_) {
     case StackFrame::JAVA_SCRIPT:
-      return function_->shared()->formal_parameter_count();
+      return function_->shared()->internal_formal_parameter_count();
     case StackFrame::ARGUMENTS_ADAPTOR: {
       // Last slot contains number of incomming arguments as a smi.
       // Can't use GetExpression(0) because it would cause infinite recursion.
@@ -3246,7 +3190,10 @@ SlotRef SlotRefValueBuilder::ComputeSlotForNextArgument(
 SlotRefValueBuilder::SlotRefValueBuilder(JavaScriptFrame* frame,
                                          int inlined_jsframe_index,
                                          int formal_parameter_count)
-    : current_slot_(0), args_length_(-1), first_slot_index_(-1) {
+    : current_slot_(0),
+      args_length_(-1),
+      first_slot_index_(-1),
+      should_deoptimize_(false) {
   DisallowHeapAllocation no_gc;
 
   int deopt_index = Safepoint::kNoDeoptimizationIndex;
@@ -3264,7 +3211,6 @@ SlotRefValueBuilder::SlotRefValueBuilder(JavaScriptFrame* frame,
   CHECK_GT(jsframe_count, inlined_jsframe_index);
   int jsframes_to_skip = inlined_jsframe_index;
   int number_of_slots = -1;  // Number of slots inside our frame (yet unknown)
-  bool should_deopt = false;
   while (number_of_slots != 0) {
     opcode = static_cast<Translation::Opcode>(it.Next());
     bool processed = false;
@@ -3321,7 +3267,7 @@ SlotRefValueBuilder::SlotRefValueBuilder(JavaScriptFrame* frame,
         number_of_slots += slot.GetChildrenCount();
         if (slot.Representation() == SlotRef::DEFERRED_OBJECT ||
             slot.Representation() == SlotRef::DUPLICATE_OBJECT) {
-          should_deopt = true;
+          should_deoptimize_ = true;
         }
       }
 
@@ -3332,7 +3278,7 @@ SlotRefValueBuilder::SlotRefValueBuilder(JavaScriptFrame* frame,
       it.Skip(Translation::NumberOfOperandsFor(opcode));
     }
   }
-  if (should_deopt) {
+  if (should_deoptimize_) {
     List<JSFunction*> functions(2);
     frame->GetFunctions(&functions);
     Deoptimizer::DeoptimizeFunction(functions[0]);
@@ -3342,8 +3288,13 @@ SlotRefValueBuilder::SlotRefValueBuilder(JavaScriptFrame* frame,
 
 Handle<Object> SlotRef::GetValue(Isolate* isolate) {
   switch (representation_) {
-    case TAGGED:
-      return Handle<Object>(Memory::Object_at(addr_), isolate);
+    case TAGGED: {
+      Handle<Object> value(Memory::Object_at(addr_), isolate);
+      if (value->IsMutableHeapNumber()) {
+        HeapNumber::cast(*value)->set_map(isolate->heap()->heap_number_map());
+      }
+      return value;
+    }
 
     case INT32: {
 #if V8_TARGET_BIG_ENDIAN && V8_HOST_ARCH_64_BIT
@@ -3444,9 +3395,9 @@ Handle<Object> SlotRefValueBuilder::GetNext(Isolate* isolate, int lvl) {
     case SlotRef::INT32:
     case SlotRef::UINT32:
     case SlotRef::DOUBLE:
-    case SlotRef::LITERAL: {
+    case SlotRef::LITERAL:
       return slot.GetValue(isolate);
-    }
+
     case SlotRef::ARGUMENTS_OBJECT: {
       // We should never need to materialize an arguments object,
       // but we still need to put something into the array
@@ -3548,9 +3499,11 @@ void SlotRefValueBuilder::Finish(Isolate* isolate) {
   // We should have processed all the slots
   CHECK_EQ(slot_refs_.length(), current_slot_);
 
-  if (materialized_objects_.length() > prev_materialized_count_) {
-    // We have materialized some new objects, so we have to store them
-    // to prevent duplicate materialization
+  if (should_deoptimize_ &&
+      materialized_objects_.length() > prev_materialized_count_) {
+    // We have materialized some new objects and they might be accessible
+    // from the arguments object, so we have to store them
+    // to prevent duplicate materialization.
     Handle<FixedArray> array = isolate->factory()->NewFixedArray(
         materialized_objects_.length());
     for (int i = 0; i < materialized_objects_.length(); i++) {
@@ -3645,6 +3598,7 @@ DeoptimizedFrameInfo::DeoptimizedFrameInfo(Deoptimizer* deoptimizer,
                                            bool has_construct_stub) {
   FrameDescription* output_frame = deoptimizer->output_[frame_index];
   function_ = output_frame->GetFunction();
+  context_ = reinterpret_cast<Object*>(output_frame->GetContext());
   has_construct_stub_ = has_construct_stub;
   expression_count_ = output_frame->GetExpressionCount();
   expression_stack_ = new Object*[expression_count_];
@@ -3677,9 +3631,39 @@ DeoptimizedFrameInfo::~DeoptimizedFrameInfo() {
 
 
 void DeoptimizedFrameInfo::Iterate(ObjectVisitor* v) {
-  v->VisitPointer(BitCast<Object**>(&function_));
+  v->VisitPointer(bit_cast<Object**>(&function_));
+  v->VisitPointer(&context_);
   v->VisitPointers(parameters_, parameters_ + parameters_count_);
   v->VisitPointers(expression_stack_, expression_stack_ + expression_count_);
 }
 
+
+const char* Deoptimizer::GetDeoptReason(DeoptReason deopt_reason) {
+  DCHECK(deopt_reason < kLastDeoptReason);
+#define DEOPT_MESSAGES_TEXTS(C, T) T,
+  static const char* deopt_messages_[] = {
+      DEOPT_MESSAGES_LIST(DEOPT_MESSAGES_TEXTS)};
+#undef DEOPT_MESSAGES_TEXTS
+  return deopt_messages_[deopt_reason];
+}
+
+
+Deoptimizer::DeoptInfo Deoptimizer::GetDeoptInfo(Code* code, Address pc) {
+  SourcePosition last_position = SourcePosition::Unknown();
+  Deoptimizer::DeoptReason last_reason = Deoptimizer::kNoReason;
+  int mask = RelocInfo::ModeMask(RelocInfo::DEOPT_REASON) |
+             RelocInfo::ModeMask(RelocInfo::POSITION);
+  for (RelocIterator it(code, mask); !it.done(); it.next()) {
+    RelocInfo* info = it.rinfo();
+    if (info->pc() >= pc) return DeoptInfo(last_position, NULL, last_reason);
+    if (info->rmode() == RelocInfo::POSITION) {
+      int raw_position = static_cast<int>(info->data());
+      last_position = raw_position ? SourcePosition::FromRaw(raw_position)
+                                   : SourcePosition::Unknown();
+    } else if (info->rmode() == RelocInfo::DEOPT_REASON) {
+      last_reason = static_cast<Deoptimizer::DeoptReason>(info->data());
+    }
+  }
+  return DeoptInfo(SourcePosition::Unknown(), NULL, Deoptimizer::kNoReason);
+}
 } }  // namespace v8::internal

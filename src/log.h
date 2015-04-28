@@ -210,8 +210,7 @@ class Logger {
 
 
   // ==== Events logged by --log-api. ====
-  void ApiNamedSecurityCheck(Object* key);
-  void ApiIndexedSecurityCheck(uint32_t index);
+  void ApiSecurityCheck();
   void ApiNamedPropertyAccess(const char* tag, JSObject* holder, Object* name);
   void ApiIndexedPropertyAccess(const char* tag,
                                 JSObject* holder,
@@ -292,7 +291,7 @@ class Logger {
                           uintptr_t start,
                           uintptr_t end);
 
-  void CodeDeoptEvent(Code* code);
+  void CodeDeoptEvent(Code* code, Address pc, int fp_to_sp_delta);
   void CurrentTimeEvent();
 
   void TimerEvent(StartEnd se, const char* name);
@@ -300,8 +299,10 @@ class Logger {
   static void EnterExternal(Isolate* isolate);
   static void LeaveExternal(Isolate* isolate);
 
-  static void EmptyTimerEventsLogger(const char* name, int se) {}
-  static void DefaultTimerEventsLogger(const char* name, int se);
+  static void DefaultEventLoggerSentinel(const char* name, int event) {}
+
+  INLINE(static void CallEventLogger(Isolate* isolate, const char* name,
+                                     StartEnd se, bool expose_to_api));
 
   // ==== Events logged by --log-regexp ====
   // Regexp compilation and execution events.

@@ -28,7 +28,7 @@ namespace base {
 // architectures. For each architecture the file cpu_<arch>.cc contains the
 // implementation of these static functions.
 
-class CPU V8_FINAL {
+class CPU FINAL {
  public:
   CPU();
 
@@ -47,8 +47,9 @@ class CPU V8_FINAL {
   static const int NVIDIA = 0x4e;
   static const int QUALCOMM = 0x51;
   int architecture() const { return architecture_; }
+  int variant() const { return variant_; }
+  static const int NVIDIA_DENVER = 0x0;
   int part() const { return part_; }
-  int cache_line_size() const { return cache_line_size_; }
 
   // ARM-specific part codes
   static const int ARM_CORTEX_A5 = 0xc05;
@@ -82,6 +83,10 @@ class CPU V8_FINAL {
   bool has_ssse3() const { return has_ssse3_; }
   bool has_sse41() const { return has_sse41_; }
   bool has_sse42() const { return has_sse42_; }
+  bool has_osxsave() const { return has_osxsave_; }
+  bool has_avx() const { return has_avx_; }
+  bool has_fma3() const { return has_fma3_; }
+  bool is_atom() const { return is_atom_; }
 
   // arm features
   bool has_idiva() const { return has_idiva_; }
@@ -90,6 +95,9 @@ class CPU V8_FINAL {
   bool has_vfp() const { return has_vfp_; }
   bool has_vfp3() const { return has_vfp3_; }
   bool has_vfp3_d32() const { return has_vfp3_d32_; }
+
+  // mips features
+  bool is_fp64_mode() const { return is_fp64_mode_; }
 
  private:
   char vendor_[13];
@@ -101,8 +109,8 @@ class CPU V8_FINAL {
   int type_;
   int implementer_;
   int architecture_;
+  int variant_;
   int part_;
-  int cache_line_size_;
   bool has_fpu_;
   bool has_cmov_;
   bool has_sahf_;
@@ -113,12 +121,17 @@ class CPU V8_FINAL {
   bool has_ssse3_;
   bool has_sse41_;
   bool has_sse42_;
+  bool is_atom_;
+  bool has_osxsave_;
+  bool has_avx_;
+  bool has_fma3_;
   bool has_idiva_;
   bool has_neon_;
   bool has_thumb2_;
   bool has_vfp_;
   bool has_vfp3_;
   bool has_vfp3_d32_;
+  bool is_fp64_mode_;
 };
 
 } }  // namespace v8::base

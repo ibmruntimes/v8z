@@ -235,9 +235,9 @@ TEST(PureJSStackTrace) {
 
 static void CFuncDoTrace(byte dummy_parameter) {
   Address fp;
-#ifdef __GNUC__
+#if V8_HAS_BUILTIN_FRAME_ADDRESS
   fp = reinterpret_cast<Address>(__builtin_frame_address(0));
-#elif defined _MSC_VER
+#elif V8_CC_MSVC
   // Approximate a frame pointer address. We compile without base pointers,
   // so we can't trust ebp/rbp.
   fp = &dummy_parameter - 2 * sizeof(void*);  // NOLINT
@@ -276,11 +276,11 @@ TEST(JsEntrySp) {
   v8::HandleScope scope(CcTest::isolate());
   v8::Local<v8::Context> context = CcTest::NewContext(TRACE_EXTENSION);
   v8::Context::Scope context_scope(context);
-  CHECK_EQ(0, i::TraceExtension::GetJsEntrySp());
+  CHECK(!i::TraceExtension::GetJsEntrySp());
   CompileRun("a = 1; b = a + 1;");
-  CHECK_EQ(0, i::TraceExtension::GetJsEntrySp());
+  CHECK(!i::TraceExtension::GetJsEntrySp());
   CompileRun("js_entry_sp();");
-  CHECK_EQ(0, i::TraceExtension::GetJsEntrySp());
+  CHECK(!i::TraceExtension::GetJsEntrySp());
   CompileRun("js_entry_sp_level2();");
-  CHECK_EQ(0, i::TraceExtension::GetJsEntrySp());
+  CHECK(!i::TraceExtension::GetJsEntrySp());
 }

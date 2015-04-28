@@ -4,12 +4,12 @@
 
 #include "src/compiler/graph-replay.h"
 
+#include "src/compiler/all-nodes.h"
 #include "src/compiler/common-operator.h"
 #include "src/compiler/graph.h"
-#include "src/compiler/graph-inl.h"
 #include "src/compiler/node.h"
 #include "src/compiler/operator.h"
-#include "src/compiler/operator-properties-inl.h"
+#include "src/compiler/operator-properties.h"
 
 namespace v8 {
 namespace internal {
@@ -20,27 +20,30 @@ namespace compiler {
 void GraphReplayPrinter::PrintReplay(Graph* graph) {
   GraphReplayPrinter replay;
   PrintF("  Node* nil = graph.NewNode(common_builder.Dead());\n");
-  graph->VisitNodeInputsFromEnd(&replay);
-}
+  Zone zone;
+  AllNodes nodes(&zone, graph);
 
-
-GenericGraphVisit::Control GraphReplayPrinter::Pre(Node* node) {
-  PrintReplayOpCreator(node->op());
-  PrintF("  Node* n%d = graph.NewNode(op", node->id());
-  for (int i = 0; i < node->InputCount(); ++i) {
-    PrintF(", nil");
+  // Allocate the nodes first.
+  for (Node* node : nodes.live) {
+    PrintReplayOpCreator(node->op());
+    PrintF("  Node* n%d = graph.NewNode(op", node->id());
+    for (int i = 0; i < node->InputCount(); ++i) {
+      PrintF(", nil");
+    }
+    PrintF("); USE(n%d);\n", node->id());
   }
-  PrintF("); USE(n%d);\n", node->id());
-  return GenericGraphVisit::CONTINUE;
+
+  // Connect the nodes to their inputs.
+  for (Node* node : nodes.live) {
+    for (int i = 0; i < node->InputCount(); i++) {
+      PrintF("  n%d->ReplaceInput(%d, n%d);\n", node->id(), i,
+             node->InputAt(i)->id());
+    }
+  }
 }
 
 
-void GraphReplayPrinter::PostEdge(Node* from, int index, Node* to) {
-  PrintF("  n%d->ReplaceInput(%d, n%d);\n", from->id(), index, to->id());
-}
-
-
-void GraphReplayPrinter::PrintReplayOpCreator(Operator* op) {
+void GraphReplayPrinter::PrintReplayOpCreator(const Operator* op) {
   IrOpcode::Value opcode = static_cast<IrOpcode::Value>(op->opcode());
   const char* builder =
       IrOpcode::IsCommonOpcode(opcode) ? "common_builder" : "js_builder";
@@ -60,14 +63,14 @@ void GraphReplayPrinter::PrintReplayOpCreator(Operator* op) {
       PrintF("unique_constant");
       break;
     case IrOpcode::kPhi:
-      PrintF("%d", op->InputCount());
+      PrintF("%d", op->ValueInputCount());
       break;
     case IrOpcode::kEffectPhi:
-      PrintF("%d", OperatorProperties::GetEffectInputCount(op));
+      PrintF("%d", op->EffectInputCount());
       break;
     case IrOpcode::kLoop:
     case IrOpcode::kMerge:
-      PrintF("%d", OperatorProperties::GetControlInputCount(op));
+      PrintF("%d", op->ControlInputCount());
       break;
     default:
       break;

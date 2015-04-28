@@ -56,7 +56,8 @@ class BoundsCheckKey : public ZoneObject {
       constant = HConstant::cast(check->index());
     }
 
-    if (constant != NULL && constant->HasInteger32Value()) {
+    if (constant != NULL && constant->HasInteger32Value() &&
+        constant->Integer32Value() != kMinInt) {
       *offset = is_sub ? - constant->Integer32Value()
                        : constant->Integer32Value();
     } else {
@@ -379,7 +380,7 @@ BoundsCheckBbData* HBoundsCheckEliminationPhase::PreProcessBlock(
     if (!i->IsBoundsCheck()) continue;
 
     HBoundsCheck* check = HBoundsCheck::cast(i);
-    int32_t offset;
+    int32_t offset = 0;
     BoundsCheckKey* key =
         BoundsCheckKey::Create(zone(), check, &offset);
     if (key == NULL) continue;

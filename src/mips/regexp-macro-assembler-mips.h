@@ -17,7 +17,8 @@ namespace internal {
 #ifndef V8_INTERPRETED_REGEXP
 class RegExpMacroAssemblerMIPS: public NativeRegExpMacroAssembler {
  public:
-  RegExpMacroAssemblerMIPS(Mode mode, int registers_to_save, Zone* zone);
+  RegExpMacroAssemblerMIPS(Isolate* isolate, Zone* zone, Mode mode,
+                           int registers_to_save);
   virtual ~RegExpMacroAssemblerMIPS();
   virtual int stack_limit_slack();
   virtual void AdvanceCurrentPosition(int by);
@@ -197,7 +198,7 @@ class RegExpMacroAssemblerMIPS: public NativeRegExpMacroAssembler {
 
   MacroAssembler* masm_;
 
-  // Which mode to generate code for (ASCII or UC16).
+  // Which mode to generate code for (Latin1 or UC16).
   Mode mode_;
 
   // One greater than maximal register index actually used.

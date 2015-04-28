@@ -11,7 +11,6 @@
 #include "src/macro-assembler.h"
 #include "src/regexp-macro-assembler.h"
 #include "src/regexp-stack.h"
-#include "src/serialize.h"
 #include "src/unicode.h"
 #include "src/x64/regexp-macro-assembler-x64.h"
 
@@ -22,7 +21,7 @@ namespace internal {
 
 /*
  * This assembler uses the following register assignment convention
- * - rdx : Currently loaded character(s) as ASCII or UC16.  Must be loaded
+ * - rdx : Currently loaded character(s) as Latin1 or UC16.  Must be loaded
  *         using LoadCurrentCharacter before using any of the dispatch methods.
  *         Temporarily stores the index of capture start after a matching pass
  *         for a global regexp.
@@ -43,10 +42,9 @@ namespace internal {
  *
  * The registers rax, rbx, r9 and r11 are free to use for computations.
  * If changed to use r12+, they should be saved as callee-save registers.
- * The macro assembler special registers r12 and r13 (kSmiConstantRegister,
- * kRootRegister) aren't special during execution of RegExp code (they don't
- * hold the values assumed when creating JS code), so no Smi or Root related
- * macro operations can be used.
+ * The macro assembler special register r13 (kRootRegister) isn't special
+ * during execution of RegExp code (it doesn't hold the value assumed when
+ * creating JS code), so Root related macro operations can be used.
  *
  * Each call to a C++ method should retain these registers.
  *
@@ -93,12 +91,11 @@ namespace internal {
 
 #define __ ACCESS_MASM((&masm_))
 
-RegExpMacroAssemblerX64::RegExpMacroAssemblerX64(
-    Mode mode,
-    int registers_to_save,
-    Zone* zone)
-    : NativeRegExpMacroAssembler(zone),
-      masm_(zone->isolate(), NULL, kRegExpCodeSize),
+RegExpMacroAssemblerX64::RegExpMacroAssemblerX64(Isolate* isolate, Zone* zone,
+                                                 Mode mode,
+                                                 int registers_to_save)
+    : NativeRegExpMacroAssembler(isolate, zone),
+      masm_(isolate, NULL, kRegExpCodeSize),
       no_root_array_scope_(&masm_),
       code_relative_fixup_positions_(4, zone),
       mode_(mode),
@@ -244,7 +241,7 @@ void RegExpMacroAssemblerX64::CheckNotBackReferenceIgnoreCase(
   __ addl(rax, rbx);
   BranchOrBacktrack(greater, on_no_match);
 
-  if (mode_ == ASCII) {
+  if (mode_ == LATIN1) {
     Label loop_increment;
     if (on_no_match == NULL) {
       on_no_match = &backtrack_label_;
@@ -400,7 +397,7 @@ void RegExpMacroAssemblerX64::CheckNotBackReference(
 
   Label loop;
   __ bind(&loop);
-  if (mode_ == ASCII) {
+  if (mode_ == LATIN1) {
     __ movzxbl(rax, Operand(rdx, 0));
     __ cmpb(rax, Operand(rbx, 0));
   } else {
@@ -498,7 +495,7 @@ void RegExpMacroAssemblerX64::CheckBitInTable(
     Label* on_bit_set) {
   __ Move(rax, table);
   Register index = current_character();
-  if (mode_ != ASCII || kTableMask != String::kMaxOneByteCharCode) {
+  if (mode_ != LATIN1 || kTableMask != String::kMaxOneByteCharCode) {
     __ movp(rbx, current_character());
     __ andp(rbx, Immediate(kTableMask));
     index = rbx;
@@ -518,7 +515,7 @@ bool RegExpMacroAssemblerX64::CheckSpecialCharacterClass(uc16 type,
   switch (type) {
   case 's':
     // Match space-characters
-    if (mode_ == ASCII) {
+    if (mode_ == LATIN1) {
       // One byte space characters are '\t'..'\r', ' ' and \u00a0.
       Label success;
       __ cmpl(current_character(), Immediate(' '));
@@ -574,7 +571,7 @@ bool RegExpMacroAssemblerX64::CheckSpecialCharacterClass(uc16 type,
     // See if current character is '\n'^1 or '\r'^1, i.e., 0x0b or 0x0c
     __ subl(rax, Immediate(0x0b));
     __ cmpl(rax, Immediate(0x0c - 0x0b));
-    if (mode_ == ASCII) {
+    if (mode_ == LATIN1) {
       BranchOrBacktrack(above, on_no_match);
     } else {
       Label done;
@@ -590,8 +587,8 @@ bool RegExpMacroAssemblerX64::CheckSpecialCharacterClass(uc16 type,
     return true;
   }
   case 'w': {
-    if (mode_ != ASCII) {
-      // Table is 128 entries, so all ASCII characters can be tested.
+    if (mode_ != LATIN1) {
+      // Table is 256 entries, so all Latin1 characters can be tested.
       __ cmpl(current_character(), Immediate('z'));
       BranchOrBacktrack(above, on_no_match);
     }
@@ -604,8 +601,8 @@ bool RegExpMacroAssemblerX64::CheckSpecialCharacterClass(uc16 type,
   }
   case 'W': {
     Label done;
-    if (mode_ != ASCII) {
-      // Table is 128 entries, so all ASCII characters can be tested.
+    if (mode_ != LATIN1) {
+      // Table is 256 entries, so all Latin1 characters can be tested.
       __ cmpl(current_character(), Immediate('z'));
       __ j(above, &done);
     }
@@ -614,7 +611,7 @@ bool RegExpMacroAssemblerX64::CheckSpecialCharacterClass(uc16 type,
     __ testb(Operand(rbx, current_character(), times_1, 0),
              current_character());
     BranchOrBacktrack(not_zero, on_no_match);
-    if (mode_ != ASCII) {
+    if (mode_ != LATIN1) {
       __ bind(&done);
     }
     return true;
@@ -1205,7 +1202,7 @@ int RegExpMacroAssemblerX64::CheckStackGuardState(Address* return_address,
   Handle<String> subject(frame_entry<String*>(re_frame, kInputString));
 
   // Current string.
-  bool is_ascii = subject->IsOneByteRepresentationUnderneath();
+  bool is_one_byte = subject->IsOneByteRepresentationUnderneath();
 
   DCHECK(re_code->instruction_start() <= *return_address);
   DCHECK(*return_address <=
@@ -1236,8 +1233,8 @@ int RegExpMacroAssemblerX64::CheckStackGuardState(Address* return_address,
   }
 
   // String might have changed.
-  if (subject_tmp->IsOneByteRepresentation() != is_ascii) {
-    // If we changed between an ASCII and an UC16 string, the specialized
+  if (subject_tmp->IsOneByteRepresentation() != is_one_byte) {
+    // If we changed between an Latin1 and an UC16 string, the specialized
     // code cannot be used, and we need to restart regexp matching from
     // scratch (including, potentially, compiling a new version of the code).
     return RETRY;
@@ -1413,7 +1410,7 @@ void RegExpMacroAssemblerX64::CheckStackLimit() {
 
 void RegExpMacroAssemblerX64::LoadCurrentCharacterUnchecked(int cp_offset,
                                                             int characters) {
-  if (mode_ == ASCII) {
+  if (mode_ == LATIN1) {
     if (characters == 4) {
       __ movl(current_character(), Operand(rsi, rdi, times_1, cp_offset));
     } else if (characters == 2) {

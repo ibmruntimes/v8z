@@ -37,9 +37,12 @@
 #define V8_MIPS_ASSEMBLER_MIPS_H_
 
 #include <stdio.h>
+
+#include <set>
+
 #include "src/assembler.h"
+#include "src/compiler.h"
 #include "src/mips64/constants-mips64.h"
-#include "src/serialize.h"
 
 namespace v8 {
 namespace internal {
@@ -211,6 +214,10 @@ struct FPURegister {
 
   inline static int NumRegisters();
   inline static int NumAllocatableRegisters();
+
+  // TODO(turbofan): Proper support for float32.
+  inline static int NumAllocatableAliasedRegisters();
+
   inline static int ToAllocationIndex(FPURegister reg);
   static const char* AllocationIndexToString(int index);
 
@@ -319,6 +326,8 @@ const FPURegister f31 = { 31 };
 #define kLithiumScratchReg2 s4
 #define kLithiumScratchDouble f30
 #define kDoubleRegZero f28
+// Used on mips64r6 for compare operations.
+#define kDoubleCompareReg f31
 
 // FPU (coprocessor 1) control registers.
 // Currently only FCSR (#31) is implemented.
@@ -484,17 +493,19 @@ class Assembler : public AssemblerBase {
                                     ICacheFlushMode icache_flush_mode =
                                         FLUSH_ICACHE_IF_NEEDED);
   // On MIPS there is no Constant Pool so we skip that parameter.
-  INLINE(static Address target_address_at(Address pc, Address constant_pool)) {
+  INLINE(static Address target_address_at(Address pc,
+                                          ConstantPoolArray* constant_pool)) {
     return target_address_at(pc);
   }
-  INLINE(static void set_target_address_at(Address pc, Address constant_pool,
+  INLINE(static void set_target_address_at(Address pc,
+                                           ConstantPoolArray* constant_pool,
                                            Address target,
                                            ICacheFlushMode icache_flush_mode =
                                                FLUSH_ICACHE_IF_NEEDED)) {
     set_target_address_at(pc, target, icache_flush_mode);
   }
   INLINE(static Address target_address_at(Address pc, Code* code)) {
-    Address constant_pool = code ? code->constant_pool() : NULL;
+    ConstantPoolArray* constant_pool = code ? code->constant_pool() : NULL;
     return target_address_at(pc, constant_pool);
   }
   INLINE(static void set_target_address_at(Address pc,
@@ -502,7 +513,7 @@ class Assembler : public AssemblerBase {
                                            Address target,
                                            ICacheFlushMode icache_flush_mode =
                                                FLUSH_ICACHE_IF_NEEDED)) {
-    Address constant_pool = code ? code->constant_pool() : NULL;
+    ConstantPoolArray* constant_pool = code ? code->constant_pool() : NULL;
     set_target_address_at(pc, constant_pool, target, icache_flush_mode);
   }
 
@@ -528,6 +539,11 @@ class Assembler : public AssemblerBase {
         target);
   }
 
+  // This sets the internal reference at the pc.
+  inline static void deserialization_set_target_internal_reference_at(
+      Address pc, Address target,
+      RelocInfo::Mode mode = RelocInfo::INTERNAL_REFERENCE);
+
   // Size of an instruction.
   static const int kInstrSize = sizeof(Instr);
 
@@ -543,14 +559,11 @@ class Assembler : public AssemblerBase {
   static const int kSpecialTargetSize = 0;
 
   // Number of consecutive instructions used to store 32bit/64bit constant.
-  // Before jump-optimizations, this constant was used in
-  // RelocInfo::target_address_address() function to tell serializer address of
-  // the instruction that follows LUI/ORI instruction pair. Now, with new jump
-  // optimization, where jump-through-register instruction that usually
-  // follows LUI/ORI pair is substituted with J/JAL, this constant equals
-  // to 3 instructions (LUI+ORI+J/JAL/JR/JALR).
-  static const int kInstructionsFor32BitConstant = 3;
-  static const int kInstructionsFor64BitConstant = 5;
+  // This constant was used in RelocInfo::target_address_address() function
+  // to tell serializer address of the instruction that follows
+  // LUI/ORI instruction pair.
+  static const int kInstructionsFor32BitConstant = 2;
+  static const int kInstructionsFor64BitConstant = 4;
 
   // Distance between the instruction referring to the address of the call
   // target and the return address.
@@ -573,6 +586,8 @@ class Assembler : public AssemblerBase {
   // Number of instructions used for the JS return sequence. The constant is
   // used by the debugger to patch the JS return sequence.
   static const int kJSReturnSequenceInstructions = 7;
+  static const int kJSReturnSequenceLength =
+      kJSReturnSequenceInstructions * kInstrSize;
   static const int kDebugBreakSlotInstructions = 6;
   static const int kDebugBreakSlotLength =
       kDebugBreakSlotInstructions * kInstrSize;
@@ -880,6 +895,7 @@ class Assembler : public AssemblerBase {
   void clz(Register rd, Register rs);
   void ins_(Register rt, Register rs, uint16_t pos, uint16_t size);
   void ext_(Register rt, Register rs, uint16_t pos, uint16_t size);
+  void dext_(Register rt, Register rs, uint16_t pos, uint16_t size);
 
   // --------Coprocessor-instructions----------------
 
@@ -1046,12 +1062,18 @@ class Assembler : public AssemblerBase {
   // Use --code-comments to enable.
   void RecordComment(const char* msg);
 
-  static int RelocateInternalReference(byte* pc, intptr_t pc_delta);
+  // Record a deoptimization reason that can be used by a log or cpu profiler.
+  // Use --trace-deopt to enable.
+  void RecordDeoptReason(const int reason, const SourcePosition position);
+
+  static int RelocateInternalReference(RelocInfo::Mode rmode, byte* pc,
+                                       intptr_t pc_delta);
 
   // Writes a single byte or word of data in the code stream.  Used for
   // inline tables, e.g., jump-tables.
   void db(uint8_t data);
   void dd(uint32_t data);
+  void dd(Label* label);
 
   // Emits the address of the code stub's first instruction.
   void emit_code_stub_address(Code* stub);
@@ -1147,13 +1169,16 @@ class Assembler : public AssemblerBase {
   // the relocation info.
   TypeFeedbackId recorded_ast_id_;
 
+  inline static void set_target_internal_reference_encoded_at(Address pc,
+                                                              Address target);
+
   int64_t buffer_space() const { return reloc_info_writer.pos() - pc_; }
 
   // Decode branch instruction at pos and return branch target pos.
-  int64_t target_at(int64_t pos);
+  int target_at(int pos, bool is_internal);
 
   // Patch branch instruction at pos to branch to given branch target pos.
-  void target_at_put(int64_t pos, int64_t target_pos);
+  void target_at_put(int pos, int target_pos, bool is_internal);
 
   // Say if we need to relocate with this mode.
   bool MustUseReg(RelocInfo::Mode rmode);
@@ -1323,7 +1348,7 @@ class Assembler : public AssemblerBase {
   // Labels.
   void print(Label* L);
   void bind_to(Label* L, int pos);
-  void next(Label* L);
+  void next(Label* L, bool is_internal);
 
   // One trampoline consists of:
   // - space for trampoline slots,
@@ -1387,6 +1412,10 @@ class Assembler : public AssemblerBase {
   static const int kTrampolineSlotsSize = 6 * kInstrSize;
   static const int kMaxBranchOffset = (1 << (18 - 1)) - 1;
   static const int kInvalidSlotPos = -1;
+
+  // Internal reference positions, required for unbounded internal reference
+  // labels.
+  std::set<int64_t> internal_reference_positions_;
 
   Trampoline trampoline_;
   bool internal_trampoline_exception_;

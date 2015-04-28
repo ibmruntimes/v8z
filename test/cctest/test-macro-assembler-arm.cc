@@ -137,8 +137,6 @@ typedef int (*F5)(void*, void*, void*, void*, void*);
 
 
 TEST(LoadAndStoreWithRepresentation) {
-  v8::internal::V8::Initialize(NULL);
-
   // Allocate an executable page of memory.
   size_t actual_size;
   byte* buffer = static_cast<byte*>(v8::base::OS::Allocate(
@@ -223,7 +221,7 @@ TEST(LoadAndStoreWithRepresentation) {
 
   // Call the function from C++.
   F5 f = FUNCTION_CAST<F5>(code->entry());
-  CHECK_EQ(0, CALL_GENERATED_CODE(f, 0, 0, 0, 0, 0));
+  CHECK(!CALL_GENERATED_CODE(f, 0, 0, 0, 0, 0));
 }
 
 #undef __

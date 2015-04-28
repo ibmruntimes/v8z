@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "src/lithium.h"
+
 #include "src/v8.h"
 
-#include "src/lithium.h"
 #include "src/scopes.h"
-#include "src/serialize.h"
 
 #if V8_TARGET_ARCH_IA32
 #include "src/ia32/lithium-ia32.h"  // NOLINT
@@ -18,7 +18,7 @@
 #include "src/arm/lithium-arm.h"  // NOLINT
 #include "src/arm/lithium-codegen-arm.h"  // NOLINT
 #elif V8_TARGET_ARCH_PPC
-#include "src/ppc/lithium-ppc.h"  // NOLINT
+#include "src/ppc/lithium-ppc.h"          // NOLINT
 #include "src/ppc/lithium-codegen-ppc.h"  // NOLINT
 #elif V8_TARGET_ARCH_MIPS
 #include "src/mips/lithium-mips.h"  // NOLINT
@@ -151,6 +151,7 @@ void LSubKindOperand<kOperandKind, kNumCachedOperands>::SetUpCache() {
 template<LOperand::Kind kOperandKind, int kNumCachedOperands>
 void LSubKindOperand<kOperandKind, kNumCachedOperands>::TearDownCache() {
   delete[] cache;
+  cache = NULL;
 }
 
 
@@ -414,7 +415,62 @@ Representation LChunk::LookupLiteralRepresentation(
 }
 
 
+static void AddWeakObjectToCodeDependency(Isolate* isolate,
+                                          Handle<HeapObject> object,
+                                          Handle<Code> code) {
+  Handle<WeakCell> cell = Code::WeakCellFor(code);
+  Heap* heap = isolate->heap();
+  Handle<DependentCode> dep(heap->LookupWeakObjectToCodeDependency(object));
+  dep = DependentCode::InsertWeakCode(dep, DependentCode::kWeakCodeGroup, cell);
+  heap->AddWeakObjectToCodeDependency(object, dep);
+}
+
+
+void LChunk::RegisterWeakObjectsInOptimizedCode(Handle<Code> code) const {
+  DCHECK(code->is_optimized_code());
+  ZoneList<Handle<Map> > maps(1, zone());
+  ZoneList<Handle<HeapObject> > objects(1, zone());
+  int mode_mask = RelocInfo::ModeMask(RelocInfo::EMBEDDED_OBJECT) |
+                  RelocInfo::ModeMask(RelocInfo::CELL);
+  for (RelocIterator it(*code, mode_mask); !it.done(); it.next()) {
+    RelocInfo::Mode mode = it.rinfo()->rmode();
+    if (mode == RelocInfo::CELL &&
+        code->IsWeakObjectInOptimizedCode(it.rinfo()->target_cell())) {
+      objects.Add(Handle<HeapObject>(it.rinfo()->target_cell()), zone());
+    } else if (mode == RelocInfo::EMBEDDED_OBJECT &&
+               code->IsWeakObjectInOptimizedCode(it.rinfo()->target_object())) {
+      if (it.rinfo()->target_object()->IsMap()) {
+        Handle<Map> map(Map::cast(it.rinfo()->target_object()));
+        maps.Add(map, zone());
+      } else {
+        Handle<HeapObject> object(
+            HeapObject::cast(it.rinfo()->target_object()));
+        objects.Add(object, zone());
+      }
+    }
+  }
+  for (int i = 0; i < maps.length(); i++) {
+    if (maps.at(i)->dependent_code()->number_of_entries(
+            DependentCode::kWeakCodeGroup) == 0) {
+      isolate()->heap()->AddRetainedMap(maps.at(i));
+    }
+    Map::AddDependentCode(maps.at(i), DependentCode::kWeakCodeGroup, code);
+  }
+  for (int i = 0; i < objects.length(); i++) {
+    AddWeakObjectToCodeDependency(isolate(), objects.at(i), code);
+  }
+  if (FLAG_enable_ool_constant_pool) {
+    code->constant_pool()->set_weak_object_state(
+        ConstantPoolArray::WEAK_OBJECTS_IN_OPTIMIZED_CODE);
+  }
+  code->set_can_have_weak_objects(true);
+}
+
+
 void LChunk::CommitDependencies(Handle<Code> code) const {
+  if (!code->is_optimized_code()) return;
+  HandleScope scope(isolate());
+
   for (MapSet::const_iterator it = deprecation_dependencies_.begin(),
        iend = deprecation_dependencies_.end(); it != iend; ++it) {
     Handle<Map> map = *it;
@@ -432,6 +488,7 @@ void LChunk::CommitDependencies(Handle<Code> code) const {
   }
 
   info_->CommitDependencies(code);
+  RegisterWeakObjectsInOptimizedCode(code);
 }
 
 
@@ -442,7 +499,7 @@ LChunk* LChunk::NewChunk(HGraph* graph) {
   int values = graph->GetMaximumValueID();
   CompilationInfo* info = graph->info();
   if (values > LUnallocated::kMaxVirtualRegisters) {
-    info->set_bailout_reason(kNotEnoughVirtualRegistersForValues);
+    info->AbortOptimization(kNotEnoughVirtualRegistersForValues);
     return NULL;
   }
   LAllocator allocator(values, graph);
@@ -451,7 +508,7 @@ LChunk* LChunk::NewChunk(HGraph* graph) {
   if (chunk == NULL) return NULL;
 
   if (!allocator.Allocate(chunk)) {
-    info->set_bailout_reason(kNotEnoughVirtualRegistersRegalloc);
+    info->AbortOptimization(kNotEnoughVirtualRegistersRegalloc);
     return NULL;
   }
 
@@ -467,8 +524,8 @@ Handle<Code> LChunk::Codegen() {
   LOG_CODE_EVENT(info()->isolate(),
                  CodeStartLinePosInfoRecordEvent(
                      assembler.positions_recorder()));
-  // TODO(yangguo) remove this once the code serializer handles code stubs.
-  if (info()->will_serialize()) assembler.enable_serializer();
+  // Code serializer only takes unoptimized code.
+  DCHECK(!info()->will_serialize());
   LCodeGen generator(this, &assembler, info());
 
   MarkEmptyBlocks();
@@ -515,19 +572,35 @@ void LChunk::set_allocated_double_registers(BitVector* allocated_registers) {
 }
 
 
+void LChunkBuilderBase::Abort(BailoutReason reason) {
+  info()->AbortOptimization(reason);
+  status_ = ABORTED;
+}
+
+
+void LChunkBuilderBase::Retry(BailoutReason reason) {
+  info()->RetryOptimization(reason);
+  status_ = ABORTED;
+}
+
+
 LEnvironment* LChunkBuilderBase::CreateEnvironment(
-    HEnvironment* hydrogen_env,
-    int* argument_index_accumulator,
+    HEnvironment* hydrogen_env, int* argument_index_accumulator,
     ZoneList<HValue*>* objects_to_materialize) {
   if (hydrogen_env == NULL) return NULL;
 
-  LEnvironment* outer = CreateEnvironment(hydrogen_env->outer(),
-                                          argument_index_accumulator,
-                                          objects_to_materialize);
+  LEnvironment* outer =
+      CreateEnvironment(hydrogen_env->outer(), argument_index_accumulator,
+                        objects_to_materialize);
   BailoutId ast_id = hydrogen_env->ast_id();
   DCHECK(!ast_id.IsNone() ||
          hydrogen_env->frame_type() != JS_FUNCTION);
-  int value_count = hydrogen_env->length() - hydrogen_env->specials_count();
+
+  int omitted_count = (hydrogen_env->frame_type() == JS_FUNCTION)
+                          ? 0
+                          : hydrogen_env->specials_count();
+
+  int value_count = hydrogen_env->length() - omitted_count;
   LEnvironment* result =
       new(zone()) LEnvironment(hydrogen_env->closure(),
                                hydrogen_env->frame_type(),
@@ -543,8 +616,10 @@ LEnvironment* LChunkBuilderBase::CreateEnvironment(
   // Store the environment description into the environment
   // (with holes for nested objects)
   for (int i = 0; i < hydrogen_env->length(); ++i) {
-    if (hydrogen_env->is_special_index(i)) continue;
-
+    if (hydrogen_env->is_special_index(i) &&
+        hydrogen_env->frame_type() != JS_FUNCTION) {
+      continue;
+    }
     LOperand* op;
     HValue* value = hydrogen_env->values()->at(i);
     CHECK(!value->IsPushArguments());  // Do not deopt outgoing arguments

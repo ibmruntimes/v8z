@@ -9,9 +9,6 @@
 // var $Number = global.Number;
 // var $Function = global.Function;
 // var $Array = global.Array;
-//
-// in math.js:
-// var $floor = MathFloor
 
 var $isNaN = GlobalIsNaN;
 var $isFinite = GlobalIsFinite;
@@ -32,6 +29,17 @@ function InstallFunctions(object, attributes, functions) {
     %SetNativeFlag(f);
   }
   %ToFastProperties(object);
+}
+
+
+function OverrideFunction(object, name, f) {
+  ObjectDefineProperty(object, name, { value: f,
+                                       writeable: true,
+                                       configurable: true,
+                                       enumerable: false });
+  %FunctionSetName(f, name);
+  %FunctionRemovePrototype(f);
+  %SetNativeFlag(f);
 }
 
 
@@ -163,19 +171,9 @@ function GlobalParseFloat(string) {
 function GlobalEval(x) {
   if (!IS_STRING(x)) return x;
 
-  // For consistency with JSC we require the global object passed to
-  // eval to be the global object from which 'eval' originated. This
-  // is not mandated by the spec.
-  // We only throw if the global has been detached, since we need the
-  // receiver as this-value for the call.
-  if (!%IsAttachedGlobal(global)) {
-    throw new $EvalError('The "this" value passed to eval must ' +
-                         'be the global object from which eval originated');
-  }
-
   var global_proxy = %GlobalProxy(global);
 
-  var f = %CompileString(x, false);
+  var f = %CompileString(x, false, 0);
   if (!IS_FUNCTION(f)) return f;
 
   return %_CallFunction(global_proxy, f);
@@ -215,11 +213,12 @@ SetUpGlobal();
 // ----------------------------------------------------------------------------
 // Object
 
+var DefaultObjectToString = NoSideEffectsObjectToString;
 // ECMA-262 - 15.2.4.2
-function ObjectToString() {
+function NoSideEffectsObjectToString() {
   if (IS_UNDEFINED(this) && !IS_UNDETECTABLE(this)) return "[object Undefined]";
   if (IS_NULL(this)) return "[object Null]";
-  return "[object " + %_ClassOf(ToObject(this)) + "]";
+  return "[object " + %_ClassOf(TO_OBJECT_INLINE(this)) + "]";
 }
 
 
@@ -232,13 +231,13 @@ function ObjectToLocaleString() {
 
 // ECMA-262 - 15.2.4.4
 function ObjectValueOf() {
-  return ToObject(this);
+  return TO_OBJECT_INLINE(this);
 }
 
 
 // ECMA-262 - 15.2.4.5
 function ObjectHasOwnProperty(V) {
-  if (%IsJSProxy(this)) {
+  if (%_IsJSProxy(this)) {
     // TODO(rossberg): adjust once there is a story for symbols vs proxies.
     if (IS_SYMBOL(V)) return false;
 
@@ -251,8 +250,8 @@ function ObjectHasOwnProperty(V) {
 
 // ECMA-262 - 15.2.4.6
 function ObjectIsPrototypeOf(V) {
-  CHECK_OBJECT_COERCIBLE(this, "Object.prototype.isPrototypeOf");
   if (!IS_SPEC_OBJECT(V)) return false;
+  CHECK_OBJECT_COERCIBLE(this, "Object.prototype.isPrototypeOf");
   return %IsInPrototypeChain(this, V);
 }
 
@@ -260,14 +259,14 @@ function ObjectIsPrototypeOf(V) {
 // ECMA-262 - 15.2.4.6
 function ObjectPropertyIsEnumerable(V) {
   var P = ToName(V);
-  if (%IsJSProxy(this)) {
+  if (%_IsJSProxy(this)) {
     // TODO(rossberg): adjust once there is a story for symbols vs proxies.
     if (IS_SYMBOL(V)) return false;
 
     var desc = GetOwnPropertyJS(this, P);
     return IS_UNDEFINED(desc) ? false : desc.isEnumerable();
   }
-  return %IsPropertyEnumerable(ToObject(this), P);
+  return %IsPropertyEnumerable(TO_OBJECT_INLINE(this), P);
 }
 
 
@@ -285,7 +284,7 @@ function ObjectDefineGetter(name, fun) {
   desc.setGet(fun);
   desc.setEnumerable(true);
   desc.setConfigurable(true);
-  DefineOwnProperty(ToObject(receiver), ToName(name), desc, false);
+  DefineOwnProperty(TO_OBJECT_INLINE(receiver), ToName(name), desc, false);
 }
 
 
@@ -294,7 +293,7 @@ function ObjectLookupGetter(name) {
   if (receiver == null && !IS_UNDETECTABLE(receiver)) {
     receiver = %GlobalProxy(global);
   }
-  return %LookupAccessor(ToObject(receiver), ToName(name), GETTER);
+  return %LookupAccessor(TO_OBJECT_INLINE(receiver), ToName(name), GETTER);
 }
 
 
@@ -311,7 +310,7 @@ function ObjectDefineSetter(name, fun) {
   desc.setSet(fun);
   desc.setEnumerable(true);
   desc.setConfigurable(true);
-  DefineOwnProperty(ToObject(receiver), ToName(name), desc, false);
+  DefineOwnProperty(TO_OBJECT_INLINE(receiver), ToName(name), desc, false);
 }
 
 
@@ -320,15 +319,13 @@ function ObjectLookupSetter(name) {
   if (receiver == null && !IS_UNDETECTABLE(receiver)) {
     receiver = %GlobalProxy(global);
   }
-  return %LookupAccessor(ToObject(receiver), ToName(name), SETTER);
+  return %LookupAccessor(TO_OBJECT_INLINE(receiver), ToName(name), SETTER);
 }
 
 
 function ObjectKeys(obj) {
-  if (!IS_SPEC_OBJECT(obj)) {
-    throw MakeTypeError("called_on_non_object", ["Object.keys"]);
-  }
-  if (%IsJSProxy(obj)) {
+  obj = TO_OBJECT_INLINE(obj);
+  if (%_IsJSProxy(obj)) {
     var handler = %GetHandler(obj);
     var names = CallTrap0(handler, "keys", DerivedKeysTrap);
     return ToNameArray(names, "keys", false);
@@ -502,67 +499,68 @@ SetUpLockedPrototype(PropertyDescriptor, $Array(
     "set_",
     "hasSetter_"
   ), $Array(
-    "toString", function() {
+    "toString", function PropertyDescriptor_ToString() {
       return "[object PropertyDescriptor]";
     },
-    "setValue", function(value) {
+    "setValue", function PropertyDescriptor_SetValue(value) {
       this.value_ = value;
       this.hasValue_ = true;
     },
-    "getValue", function() {
+    "getValue", function PropertyDescriptor_GetValue() {
       return this.value_;
     },
-    "hasValue", function() {
+    "hasValue", function PropertyDescriptor_HasValue() {
       return this.hasValue_;
     },
-    "setEnumerable", function(enumerable) {
+    "setEnumerable", function PropertyDescriptor_SetEnumerable(enumerable) {
       this.enumerable_ = enumerable;
         this.hasEnumerable_ = true;
     },
-    "isEnumerable", function () {
+    "isEnumerable", function PropertyDescriptor_IsEnumerable() {
       return this.enumerable_;
     },
-    "hasEnumerable", function() {
+    "hasEnumerable", function PropertyDescriptor_HasEnumerable() {
       return this.hasEnumerable_;
     },
-    "setWritable", function(writable) {
+    "setWritable", function PropertyDescriptor_SetWritable(writable) {
       this.writable_ = writable;
       this.hasWritable_ = true;
     },
-    "isWritable", function() {
+    "isWritable", function PropertyDescriptor_IsWritable() {
       return this.writable_;
     },
-    "hasWritable", function() {
+    "hasWritable", function PropertyDescriptor_HasWritable() {
       return this.hasWritable_;
     },
-    "setConfigurable", function(configurable) {
+    "setConfigurable",
+    function PropertyDescriptor_SetConfigurable(configurable) {
       this.configurable_ = configurable;
       this.hasConfigurable_ = true;
     },
-    "hasConfigurable", function() {
+    "hasConfigurable", function PropertyDescriptor_HasConfigurable() {
       return this.hasConfigurable_;
     },
-    "isConfigurable", function() {
+    "isConfigurable", function PropertyDescriptor_IsConfigurable() {
       return this.configurable_;
     },
-    "setGet", function(get) {
+    "setGet", function PropertyDescriptor_SetGetter(get) {
       this.get_ = get;
-        this.hasGetter_ = true;
+      this.hasGetter_ = true;
     },
-    "getGet", function() {
+    "getGet", function PropertyDescriptor_GetGetter() {
       return this.get_;
     },
-    "hasGetter", function() {
+    "hasGetter", function PropertyDescriptor_HasGetter() {
       return this.hasGetter_;
     },
-    "setSet", function(set) {
+    "setSet", function PropertyDescriptor_SetSetter(set) {
       this.set_ = set;
       this.hasSetter_ = true;
     },
-    "getSet", function() {
+    "getSet", function PropertyDescriptor_GetSetter() {
       return this.set_;
     },
-    "hasSetter", function() {
+    "hasSetter", function PropertyDescriptor_HasSetter() {
       return this.hasSetter_;
   }));
 
@@ -571,10 +569,6 @@ SetUpLockedPrototype(PropertyDescriptor, $Array(
 // property descriptor. For a description of the array layout please
 // see the runtime.cc file.
 function ConvertDescriptorArrayToDescriptor(desc_array) {
-  if (desc_array === false) {
-    throw 'Internal error: invalid desc_array';
-  }
-
   if (IS_UNDEFINED(desc_array)) {
     return UNDEFINED;
   }
@@ -628,7 +622,7 @@ function CallTrap2(handler, name, defaultTrap, x, y) {
 // ES5 section 8.12.1.
 function GetOwnPropertyJS(obj, v) {
   var p = ToName(v);
-  if (%IsJSProxy(obj)) {
+  if (%_IsJSProxy(obj)) {
     // TODO(rossberg): adjust once there is a story for symbols vs proxies.
     if (IS_SYMBOL(v)) return UNDEFINED;
 
@@ -647,10 +641,7 @@ function GetOwnPropertyJS(obj, v) {
   // GetOwnProperty returns an array indexed by the constants
   // defined in macros.py.
   // If p is not a property on obj undefined is returned.
-  var props = %GetOwnProperty(ToObject(obj), p);
-
-  // A false value here means that access checks failed.
-  if (props === false) return UNDEFINED;
+  var props = %GetOwnProperty(TO_OBJECT_INLINE(obj), p);
 
   return ConvertDescriptorArrayToDescriptor(props);
 }
@@ -668,6 +659,15 @@ function Delete(obj, p, should_throw) {
   } else {
     return;
   }
+}
+
+
+// ES6, draft 12-24-14, section 7.3.8
+function GetMethod(obj, p) {
+  var func = obj[p];
+  if (IS_NULL_OR_UNDEFINED(func)) return UNDEFINED;
+  if (IS_SPEC_FUNCTION(func)) return func;
+  throw MakeTypeError('called_non_callable', [typeof func]);
 }
 
 
@@ -692,12 +692,9 @@ function DefineProxyProperty(obj, p, attributes, should_throw) {
 
 // ES5 8.12.9.
 function DefineObjectProperty(obj, p, desc, should_throw) {
-  var current_or_access = %GetOwnProperty(ToObject(obj), ToName(p));
-  // A false value here means that access checks failed.
-  if (current_or_access === false) return UNDEFINED;
-
-  var current = ConvertDescriptorArrayToDescriptor(current_or_access);
-  var extensible = %IsExtensible(ToObject(obj));
+  var current_array = %GetOwnProperty(obj, ToName(p));
+  var current = ConvertDescriptorArrayToDescriptor(current_array);
+  var extensible = %IsExtensible(obj);
 
   // Error handling according to spec.
   // Step 3
@@ -840,8 +837,18 @@ function DefineObjectProperty(obj, p, desc, should_throw) {
     //                 property.
     // Step 12 - updating an existing accessor property with an accessor
     //           descriptor.
-    var getter = desc.hasGetter() ? desc.getGet() : null;
-    var setter = desc.hasSetter() ? desc.getSet() : null;
+    var getter = null;
+    if (desc.hasGetter()) {
+      getter = desc.getGet();
+    } else if (IsAccessorDescriptor(current) && current.hasGetter()) {
+      getter = current.getGet();
+    }
+    var setter = null;
+    if (desc.hasSetter()) {
+      setter = desc.getSet();
+    } else if (IsAccessorDescriptor(current) && current.hasSetter()) {
+      setter = current.getSet();
+    }
     %DefineAccessorPropertyUnchecked(obj, p, getter, setter, flag);
   }
   return true;
@@ -897,15 +904,6 @@ function DefineArrayProperty(obj, p, desc, should_throw) {
         break;
       }
     }
-    // Make sure the below call to DefineObjectProperty() doesn't overwrite
-    // any magic "length" property by removing the value.
-    // TODO(mstarzinger): This hack should be removed once we have addressed the
-    // respective TODO in Runtime_DefineDataPropertyUnchecked.
-    // For the time being, we need a hack to prevent Object.observe from
-    // generating two change records.
-    obj.length = new_length;
-    desc.value_ = UNDEFINED;
-    desc.hasValue_ = false;
     threw = !DefineObjectProperty(obj, "length", desc, should_throw) || threw;
     if (emit_splice) {
       EndPerformSplice(obj);
@@ -964,7 +962,7 @@ function DefineArrayProperty(obj, p, desc, should_throw) {
 
 // ES5 section 8.12.9, ES5 section 15.4.5.1 and Harmony proxies.
 function DefineOwnProperty(obj, p, desc, should_throw) {
-  if (%IsJSProxy(obj)) {
+  if (%_IsJSProxy(obj)) {
     // TODO(rossberg): adjust once there is a story for symbols vs proxies.
     if (IS_SYMBOL(p)) return false;
 
@@ -983,7 +981,7 @@ function ObjectGetPrototypeOf(obj) {
   if (!IS_SPEC_OBJECT(obj)) {
     throw MakeTypeError("called_on_non_object", ["Object.getPrototypeOf"]);
   }
-  return %GetPrototype(obj);
+  return %_GetPrototype(obj);
 }
 
 // ES6 section 19.1.2.19.
@@ -1038,24 +1036,21 @@ function ToNameArray(obj, trap, includeSymbols) {
 }
 
 
-function ObjectGetOwnPropertyKeys(obj, symbolsOnly) {
+function ObjectGetOwnPropertyKeys(obj, filter) {
   var nameArrays = new InternalArray();
-  var filter = symbolsOnly ?
-      PROPERTY_ATTRIBUTES_STRING | PROPERTY_ATTRIBUTES_PRIVATE_SYMBOL :
-      PROPERTY_ATTRIBUTES_SYMBOLIC;
+  filter |= PROPERTY_ATTRIBUTES_PRIVATE_SYMBOL;
+  var interceptorInfo = %GetInterceptorInfo(obj);
 
   // Find all the indexed properties.
 
   // Only get own element names if we want to include string keys.
-  if (!symbolsOnly) {
+  if ((filter & PROPERTY_ATTRIBUTES_STRING) === 0) {
     var ownElementNames = %GetOwnElementNames(obj);
     for (var i = 0; i < ownElementNames.length; ++i) {
       ownElementNames[i] = %_NumberToString(ownElementNames[i]);
     }
     nameArrays.push(ownElementNames);
-
     // Get names for indexed interceptor properties.
-    var interceptorInfo = %GetInterceptorInfo(obj);
     if ((interceptorInfo & 1) != 0) {
       var indexedInterceptorNames = %GetIndexedInterceptorElementNames(obj);
       if (!IS_UNDEFINED(indexedInterceptorNames)) {
@@ -1089,10 +1084,12 @@ function ObjectGetOwnPropertyKeys(obj, symbolsOnly) {
     var j = 0;
     for (var i = 0; i < propertyNames.length; ++i) {
       var name = propertyNames[i];
-      if (symbolsOnly) {
-        if (!IS_SYMBOL(name) || IS_PRIVATE(name)) continue;
+      if (IS_SYMBOL(name)) {
+        if ((filter & PROPERTY_ATTRIBUTES_SYMBOLIC) || IS_PRIVATE(name)) {
+          continue;
+        }
       } else {
-        if (IS_SYMBOL(name)) continue;
+        if (filter & PROPERTY_ATTRIBUTES_STRING) continue;
         name = ToString(name);
       }
       if (seenKeys[name]) continue;
@@ -1108,17 +1105,15 @@ function ObjectGetOwnPropertyKeys(obj, symbolsOnly) {
 
 // ES5 section 15.2.3.4.
 function ObjectGetOwnPropertyNames(obj) {
-  if (!IS_SPEC_OBJECT(obj)) {
-    throw MakeTypeError("called_on_non_object", ["Object.getOwnPropertyNames"]);
-  }
+  obj = TO_OBJECT_INLINE(obj);
   // Special handling for proxies.
-  if (%IsJSProxy(obj)) {
+  if (%_IsJSProxy(obj)) {
     var handler = %GetHandler(obj);
     var names = CallTrap0(handler, "getOwnPropertyNames", UNDEFINED);
     return ToNameArray(names, "getOwnPropertyNames", false);
   }
 
-  return ObjectGetOwnPropertyKeys(obj, false);
+  return ObjectGetOwnPropertyKeys(obj, PROPERTY_ATTRIBUTES_SYMBOLIC);
 }
 
 
@@ -1140,7 +1135,7 @@ function ObjectDefineProperty(obj, p, attributes) {
     throw MakeTypeError("called_on_non_object", ["Object.defineProperty"]);
   }
   var name = ToName(p);
-  if (%IsJSProxy(obj)) {
+  if (%_IsJSProxy(obj)) {
     // Clone the attributes object for protection.
     // TODO(rossberg): not spec'ed yet, so not sure if this should involve
     // non-own properties as it does (or non-enumerable ones, as it doesn't?).
@@ -1202,7 +1197,7 @@ function ObjectDefineProperties(obj, properties) {
   if (!IS_SPEC_OBJECT(obj)) {
     throw MakeTypeError("called_on_non_object", ["Object.defineProperties"]);
   }
-  var props = ToObject(properties);
+  var props = TO_OBJECT_INLINE(properties);
   var names = GetOwnEnumerablePropertyNames(props);
   var descriptors = new InternalArray();
   for (var i = 0; i < names.length; i++) {
@@ -1245,23 +1240,30 @@ function ProxyFix(obj) {
 
 
 // ES5 section 15.2.3.8.
-function ObjectSeal(obj) {
+function ObjectSealJS(obj) {
   if (!IS_SPEC_OBJECT(obj)) {
     throw MakeTypeError("called_on_non_object", ["Object.seal"]);
   }
-  if (%IsJSProxy(obj)) {
-    ProxyFix(obj);
-  }
-  var names = ObjectGetOwnPropertyNames(obj);
-  for (var i = 0; i < names.length; i++) {
-    var name = names[i];
-    var desc = GetOwnPropertyJS(obj, name);
-    if (desc.isConfigurable()) {
-      desc.setConfigurable(false);
-      DefineOwnProperty(obj, name, desc, true);
+  var isProxy = %_IsJSProxy(obj);
+  if (isProxy || %HasSloppyArgumentsElements(obj) || %IsObserved(obj)) {
+    if (isProxy) {
+      ProxyFix(obj);
     }
+    var names = ObjectGetOwnPropertyNames(obj);
+    for (var i = 0; i < names.length; i++) {
+      var name = names[i];
+      var desc = GetOwnPropertyJS(obj, name);
+      if (desc.isConfigurable()) {
+        desc.setConfigurable(false);
+        DefineOwnProperty(obj, name, desc, true);
+      }
+    }
+    %PreventExtensions(obj);
+  } else {
+    // TODO(adamk): Is it worth going to this fast path if the
+    // object's properties are already in dictionary mode?
+    %ObjectSeal(obj);
   }
-  %PreventExtensions(obj);
   return obj;
 }
 
@@ -1271,7 +1273,7 @@ function ObjectFreezeJS(obj) {
   if (!IS_SPEC_OBJECT(obj)) {
     throw MakeTypeError("called_on_non_object", ["Object.freeze"]);
   }
-  var isProxy = %IsJSProxy(obj);
+  var isProxy = %_IsJSProxy(obj);
   if (isProxy || %HasSloppyArgumentsElements(obj) || %IsObserved(obj)) {
     if (isProxy) {
       ProxyFix(obj);
@@ -1301,7 +1303,7 @@ function ObjectPreventExtension(obj) {
   if (!IS_SPEC_OBJECT(obj)) {
     throw MakeTypeError("called_on_non_object", ["Object.preventExtension"]);
   }
-  if (%IsJSProxy(obj)) {
+  if (%_IsJSProxy(obj)) {
     ProxyFix(obj);
   }
   %PreventExtensions(obj);
@@ -1314,7 +1316,7 @@ function ObjectIsSealed(obj) {
   if (!IS_SPEC_OBJECT(obj)) {
     throw MakeTypeError("called_on_non_object", ["Object.isSealed"]);
   }
-  if (%IsJSProxy(obj)) {
+  if (%_IsJSProxy(obj)) {
     return false;
   }
   if (%IsExtensible(obj)) {
@@ -1337,7 +1339,7 @@ function ObjectIsFrozen(obj) {
   if (!IS_SPEC_OBJECT(obj)) {
     throw MakeTypeError("called_on_non_object", ["Object.isFrozen"]);
   }
-  if (%IsJSProxy(obj)) {
+  if (%_IsJSProxy(obj)) {
     return false;
   }
   if (%IsExtensible(obj)) {
@@ -1359,26 +1361,22 @@ function ObjectIsExtensible(obj) {
   if (!IS_SPEC_OBJECT(obj)) {
     throw MakeTypeError("called_on_non_object", ["Object.isExtensible"]);
   }
-  if (%IsJSProxy(obj)) {
+  if (%_IsJSProxy(obj)) {
     return true;
   }
   return %IsExtensible(obj);
 }
 
 
-// Harmony egal.
+// ECMA-262, Edition 6, section 19.1.2.10
 function ObjectIs(obj1, obj2) {
-  if (obj1 === obj2) {
-    return (obj1 !== 0) || (1 / obj1 === 1 / obj2);
-  } else {
-    return (obj1 !== obj1) && (obj2 !== obj2);
-  }
+  return SameValue(obj1, obj2);
 }
 
 
 // ECMA-262, Edition 6, section B.2.2.1.1
 function ObjectGetProto() {
-  return %GetPrototype(ToObject(this));
+  return %_GetPrototype(TO_OBJECT_INLINE(this));
 }
 
 
@@ -1395,10 +1393,10 @@ function ObjectSetProto(proto) {
 function ObjectConstructor(x) {
   if (%_IsConstructCall()) {
     if (x == null) return this;
-    return ToObject(x);
+    return TO_OBJECT_INLINE(x);
   } else {
     if (x == null) return { };
-    return ToObject(x);
+    return TO_OBJECT_INLINE(x);
   }
 }
 
@@ -1416,7 +1414,7 @@ function SetUpObject() {
 
   // Set up non-enumerable functions on the Object.prototype object.
   InstallFunctions($Object.prototype, DONT_ENUM, $Array(
-    "toString", ObjectToString,
+    "toString", NoSideEffectsObjectToString,
     "toLocaleString", ObjectToLocaleString,
     "valueOf", ObjectValueOf,
     "hasOwnProperty", ObjectHasOwnProperty,
@@ -1447,7 +1445,7 @@ function SetUpObject() {
     "isFrozen", ObjectIsFrozen,
     "isSealed", ObjectIsSealed,
     "preventExtensions", ObjectPreventExtension,
-    "seal", ObjectSeal
+    "seal", ObjectSealJS
     // deliverChangeRecords, getNotifier, observe and unobserve are added
     // in object-observe.js.
   ));
@@ -1524,7 +1522,7 @@ function NumberConstructor(x) {
 
 
 // ECMA-262 section 15.7.4.2.
-function NumberToString(radix) {
+function NumberToStringJS(radix) {
   // NOTE: Both Number objects and values can enter here as
   // 'this'. This is not as dictated by ECMA-262.
   var number = this;
@@ -1552,7 +1550,7 @@ function NumberToString(radix) {
 
 // ECMA-262 section 15.7.4.3
 function NumberToLocaleString() {
-  return %_CallFunction(this, NumberToString);
+  return %_CallFunction(this, NumberToStringJS);
 }
 
 
@@ -1665,8 +1663,7 @@ function NumberIsNaN(number) {
 function NumberIsSafeInteger(number) {
   if (NumberIsFinite(number)) {
     var integral = TO_INTEGER(number);
-    if (integral == number)
-      return MathAbs(integral) <= $Number.MAX_SAFE_INTEGER;
+    if (integral == number) return $abs(integral) <= $Number.MAX_SAFE_INTEGER;
   }
   return false;
 }
@@ -1705,7 +1702,7 @@ function SetUpNumber() {
 
   // Set up non-enumerable functions on the Number prototype object.
   InstallFunctions($Number.prototype, DONT_ENUM, $Array(
-    "toString", NumberToString,
+    "toString", NumberToStringJS,
     "toLocaleString", NumberToLocaleString,
     "valueOf", NumberValueOf,
     "toFixed", NumberToFixedJS,
@@ -1739,6 +1736,11 @@ function FunctionSourceString(func) {
     throw new $TypeError('Function.prototype.toString is not generic');
   }
 
+  var classSource = %ClassGetSourceCode(func);
+  if (IS_STRING(classSource)) {
+    return classSource;
+  }
+
   var source = %FunctionGetSourceCode(func);
   if (!IS_STRING(source) || %FunctionIsBuiltin(func)) {
     var name = %FunctionGetName(func);
@@ -1757,7 +1759,11 @@ function FunctionSourceString(func) {
   var name = %FunctionNameShouldPrintAsAnonymous(func)
       ? 'anonymous'
       : %FunctionGetName(func);
-  var head = %FunctionIsGenerator(func) ? 'function* ' : 'function ';
+
+  var isGenerator = %FunctionIsGenerator(func);
+  var head = %FunctionIsConciseMethod(func)
+      ? (isGenerator ? '*' : '')
+      : (isGenerator ? 'function* ' : 'function ');
   return head + name + source;
 }
 
@@ -1826,7 +1832,7 @@ function FunctionBind(this_arg) { // Length is 1.
 }
 
 
-function NewFunctionString(arguments, function_token) {
+function NewFunctionFromString(arguments, function_token) {
   var n = arguments.length;
   var p = '';
   if (n > 1) {
@@ -1837,27 +1843,26 @@ function NewFunctionString(arguments, function_token) {
     // If the formal parameters string include ) - an illegal
     // character - it may make the combined function expression
     // compile. We avoid this problem by checking for this early on.
-    if (%_CallFunction(p, ')', StringIndexOfJS) != -1) {
+    if (%_CallFunction(p, ')', $stringIndexOf) != -1) {
       throw MakeSyntaxError('paren_in_arg_string', []);
     }
     // If the formal parameters include an unbalanced block comment, the
     // function must be rejected. Since JavaScript does not allow nested
     // comments we can include a trailing block comment to catch this.
-    p += '\n/' + '**/';
+    p += '\n\x2f**\x2f';
   }
   var body = (n > 0) ? ToString(arguments[n - 1]) : '';
-  return '(' + function_token + '(' + p + ') {\n' + body + '\n})';
+  var head = '(' + function_token + '(' + p + ') {\n';
+  var src = head + body + '\n})';
+  var global_proxy = %GlobalProxy(global);
+  var f = %_CallFunction(global_proxy, %CompileString(src, true, head.length));
+  %FunctionMarkNameShouldPrintAsAnonymous(f);
+  return f;
 }
 
 
 function FunctionConstructor(arg1) {  // length == 1
-  var source = NewFunctionString(arguments, 'function');
-  var global_proxy = %GlobalProxy(global);
-  // Compile the string in the constructor and not a helper so that errors
-  // appear to come from here.
-  var f = %_CallFunction(global_proxy, %CompileString(source, true));
-  %FunctionMarkNameShouldPrintAsAnonymous(f);
-  return f;
+  return NewFunctionFromString(arguments, 'function');
 }
 
 
@@ -1881,21 +1886,11 @@ SetUpFunction();
 // ----------------------------------------------------------------------------
 // Iterator related spec functions.
 
-// ES6 rev 26, 2014-07-18
-// 7.4.1 CheckIterable ( obj )
-function ToIterable(obj) {
-  if (!IS_SPEC_OBJECT(obj)) {
-    return UNDEFINED;
-  }
-  return obj[symbolIterator];
-}
-
-
-// ES6 rev 26, 2014-07-18
-// 7.4.2 GetIterator ( obj, method )
+// ES6 rev 33, 2015-02-12
+// 7.4.1 GetIterator ( obj, method )
 function GetIterator(obj, method) {
   if (IS_UNDEFINED(method)) {
-    method = ToIterable(obj);
+    method = obj[symbolIterator];
   }
   if (!IS_SPEC_FUNCTION(method)) {
     throw MakeTypeError('not_iterable', [obj]);

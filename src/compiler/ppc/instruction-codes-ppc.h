@@ -14,6 +14,7 @@ namespace compiler {
 #define TARGET_ARCH_OPCODE_LIST(V) \
   V(PPC_And32)                     \
   V(PPC_And64)                     \
+<<<<<<< HEAD
   V(PPC_Or32)                      \
   V(PPC_Or64)                      \
   V(PPC_Xor32)                     \
@@ -26,6 +27,30 @@ namespace compiler {
   V(PPC_Sar64)                     \
   V(PPC_Not32)                     \
   V(PPC_Not64)                     \
+=======
+  V(PPC_AndComplement32)           \
+  V(PPC_AndComplement64)           \
+  V(PPC_Or32)                      \
+  V(PPC_Or64)                      \
+  V(PPC_OrComplement32)            \
+  V(PPC_OrComplement64)            \
+  V(PPC_Xor32)                     \
+  V(PPC_Xor64)                     \
+  V(PPC_ShiftLeft32)               \
+  V(PPC_ShiftLeft64)               \
+  V(PPC_ShiftRight32)              \
+  V(PPC_ShiftRight64)              \
+  V(PPC_ShiftRightAlg32)           \
+  V(PPC_ShiftRightAlg64)           \
+  V(PPC_RotRight32)                \
+  V(PPC_RotRight64)                \
+  V(PPC_Not32)                     \
+  V(PPC_Not64)                     \
+  V(PPC_RotLeftAndMask32)          \
+  V(PPC_RotLeftAndClear64)         \
+  V(PPC_RotLeftAndClearLeft64)     \
+  V(PPC_RotLeftAndClearRight64)    \
+>>>>>>> 4.3
   V(PPC_Add32)                     \
   V(PPC_AddWithOverflow32)         \
   V(PPC_Add64)                     \
@@ -36,6 +61,11 @@ namespace compiler {
   V(PPC_SubFloat64)                \
   V(PPC_Mul32)                     \
   V(PPC_Mul64)                     \
+<<<<<<< HEAD
+=======
+  V(PPC_MulHigh32)                 \
+  V(PPC_MulHighU32)                \
+>>>>>>> 4.3
   V(PPC_MulFloat64)                \
   V(PPC_Div32)                     \
   V(PPC_Div64)                     \
@@ -50,11 +80,23 @@ namespace compiler {
   V(PPC_Neg32)                     \
   V(PPC_Neg64)                     \
   V(PPC_NegFloat64)                \
+<<<<<<< HEAD
+=======
+  V(PPC_SqrtFloat64)               \
+  V(PPC_FloorFloat64)              \
+  V(PPC_CeilFloat64)               \
+  V(PPC_TruncateFloat64)           \
+  V(PPC_RoundFloat64)              \
+  V(PPC_MaxFloat64)                \
+  V(PPC_MinFloat64)                \
+  V(PPC_Cntlz32)                   \
+>>>>>>> 4.3
   V(PPC_Cmp32)                     \
   V(PPC_Cmp64)                     \
   V(PPC_CmpFloat64)                \
   V(PPC_Tst32)                     \
   V(PPC_Tst64)                     \
+<<<<<<< HEAD
   V(PPC_CallCodeObject)            \
   V(PPC_CallJSFunction)            \
   V(PPC_CallAddress)               \
@@ -70,11 +112,41 @@ namespace compiler {
   V(PPC_LoadWord16)                \
   V(PPC_LoadWord32)                \
   V(PPC_LoadWord64)                \
+=======
+  V(PPC_Push)                      \
+  V(PPC_ExtendSignWord8)           \
+  V(PPC_ExtendSignWord16)          \
+  V(PPC_ExtendSignWord32)          \
+  V(PPC_Uint32ToUint64)            \
+  V(PPC_Int64ToInt32)              \
+  V(PPC_Int32ToFloat64)            \
+  V(PPC_Uint32ToFloat64)           \
+  V(PPC_Float32ToFloat64)          \
+  V(PPC_Float64ToInt32)            \
+  V(PPC_Float64ToUint32)           \
+  V(PPC_Float64ToFloat32)          \
+  V(PPC_Float64ExtractLowWord32)   \
+  V(PPC_Float64ExtractHighWord32)  \
+  V(PPC_Float64InsertLowWord32)    \
+  V(PPC_Float64InsertHighWord32)   \
+  V(PPC_Float64Construct)          \
+  V(PPC_LoadWordS8)                \
+  V(PPC_LoadWordU8)                \
+  V(PPC_LoadWordS16)               \
+  V(PPC_LoadWordU16)               \
+  V(PPC_LoadWordS32)               \
+  V(PPC_LoadWord64)                \
+  V(PPC_LoadFloat32)               \
+>>>>>>> 4.3
   V(PPC_LoadFloat64)               \
   V(PPC_StoreWord8)                \
   V(PPC_StoreWord16)               \
   V(PPC_StoreWord32)               \
   V(PPC_StoreWord64)               \
+<<<<<<< HEAD
+=======
+  V(PPC_StoreFloat32)              \
+>>>>>>> 4.3
   V(PPC_StoreFloat64)              \
   V(PPC_StoreWriteBarrier)
 

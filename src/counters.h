@@ -8,6 +8,7 @@
 #include "include/v8.h"
 #include "src/allocation.h"
 #include "src/base/platform/elapsed-timer.h"
+#include "src/base/platform/time.h"
 #include "src/globals.h"
 #include "src/objects.h"
 
@@ -223,13 +224,16 @@ class Histogram {
 // A HistogramTimer allows distributions of results to be created.
 class HistogramTimer : public Histogram {
  public:
-  HistogramTimer() { }
-  HistogramTimer(const char* name,
-                 int min,
-                 int max,
-                 int num_buckets,
-                 Isolate* isolate)
-      : Histogram(name, min, max, num_buckets, isolate) {}
+  enum Resolution {
+    MILLISECOND,
+    MICROSECOND
+  };
+
+  HistogramTimer() {}
+  HistogramTimer(const char* name, int min, int max, Resolution resolution,
+                 int num_buckets, Isolate* isolate)
+      : Histogram(name, min, max, num_buckets, isolate),
+        resolution_(resolution) {}
 
   // Start the timer.
   void Start();
@@ -249,6 +253,7 @@ class HistogramTimer : public Histogram {
 
  private:
   base::ElapsedTimer timer_;
+  Resolution resolution_;
 };
 
 // Helper class for scoping a HistogramTimer.
@@ -291,65 +296,129 @@ class HistogramTimerScope BASE_EMBEDDED {
 #endif
 };
 
-#define HISTOGRAM_RANGE_LIST(HR) \
-  /* Generic range histograms */ \
-  HR(gc_idle_time_allotted_in_ms, V8.GCIdleTimeAllottedInMS, 0, 10000, 101)
 
-#define HISTOGRAM_TIMER_LIST(HT)                             \
-  /* Garbage collection timers. */                           \
-  HT(gc_compactor, V8.GCCompactor)                           \
-  HT(gc_scavenger, V8.GCScavenger)                           \
-  HT(gc_context, V8.GCContext) /* GC context cleanup time */ \
-  HT(gc_idle_notification, V8.GCIdleNotification)            \
-  HT(gc_incremental_marking, V8.GCIncrementalMarking)        \
-  HT(gc_low_memory_notification, V8.GCLowMemoryNotification) \
-  /* Parsing timers. */                                      \
-  HT(parse, V8.Parse)                                        \
-  HT(parse_lazy, V8.ParseLazy)                               \
-  HT(pre_parse, V8.PreParse)                                 \
-  /* Total compilation times. */                             \
-  HT(compile, V8.Compile)                                    \
-  HT(compile_eval, V8.CompileEval)                           \
-  HT(compile_lazy, V8.CompileLazy)
+// A histogram timer that can aggregate events within a larger scope.
+//
+// Intended use of this timer is to have an outer (aggregating) and an inner
+// (to be aggregated) scope, where the inner scope measure the time of events,
+// and all those inner scope measurements will be summed up by the outer scope.
+// An example use might be to aggregate the time spent in lazy compilation
+// while running a script.
+//
+// Helpers:
+// - AggregatingHistogramTimerScope, the "outer" scope within which
+//     times will be summed up.
+// - AggregatedHistogramTimerScope, the "inner" scope which defines the
+//     events to be timed.
+class AggregatableHistogramTimer : public Histogram {
+ public:
+  AggregatableHistogramTimer() {}
+  AggregatableHistogramTimer(const char* name, int min, int max,
+                             int num_buckets, Isolate* isolate)
+      : Histogram(name, min, max, num_buckets, isolate) {}
 
-#define HISTOGRAM_PERCENTAGE_LIST(HP)                                 \
-  /* Heap fragmentation. */                                           \
-  HP(external_fragmentation_total,                                    \
-     V8.MemoryExternalFragmentationTotal)                             \
-  HP(external_fragmentation_old_pointer_space,                        \
-     V8.MemoryExternalFragmentationOldPointerSpace)                   \
-  HP(external_fragmentation_old_data_space,                           \
-     V8.MemoryExternalFragmentationOldDataSpace)                      \
-  HP(external_fragmentation_code_space,                               \
-     V8.MemoryExternalFragmentationCodeSpace)                         \
-  HP(external_fragmentation_map_space,                                \
-     V8.MemoryExternalFragmentationMapSpace)                          \
-  HP(external_fragmentation_cell_space,                               \
-     V8.MemoryExternalFragmentationCellSpace)                         \
-  HP(external_fragmentation_property_cell_space,                      \
-     V8.MemoryExternalFragmentationPropertyCellSpace)                 \
-  HP(external_fragmentation_lo_space,                                 \
-     V8.MemoryExternalFragmentationLoSpace)                           \
-  /* Percentages of heap committed to each space. */                  \
-  HP(heap_fraction_new_space,                                         \
-     V8.MemoryHeapFractionNewSpace)                                   \
-  HP(heap_fraction_old_pointer_space,                                 \
-     V8.MemoryHeapFractionOldPointerSpace)                            \
-  HP(heap_fraction_old_data_space,                                    \
-     V8.MemoryHeapFractionOldDataSpace)                               \
-  HP(heap_fraction_code_space,                                        \
-     V8.MemoryHeapFractionCodeSpace)                                  \
-  HP(heap_fraction_map_space,                                         \
-     V8.MemoryHeapFractionMapSpace)                                   \
-  HP(heap_fraction_cell_space,                                        \
-     V8.MemoryHeapFractionCellSpace)                                  \
-  HP(heap_fraction_property_cell_space,                               \
-     V8.MemoryHeapFractionPropertyCellSpace)                          \
-  HP(heap_fraction_lo_space,                                          \
-     V8.MemoryHeapFractionLoSpace)                                    \
-  /* Percentage of crankshafted codegen. */                           \
-  HP(codegen_fraction_crankshaft,                                     \
-     V8.CodegenFractionCrankshaft)                                    \
+  // Start/stop the "outer" scope.
+  void Start() { time_ = base::TimeDelta(); }
+  void Stop() { AddSample(static_cast<int>(time_.InMicroseconds())); }
+
+  // Add a time value ("inner" scope).
+  void Add(base::TimeDelta other) { time_ += other; }
+
+ private:
+  base::TimeDelta time_;
+};
+
+
+// A helper class for use with AggregatableHistogramTimer.
+class AggregatingHistogramTimerScope {
+ public:
+  explicit AggregatingHistogramTimerScope(AggregatableHistogramTimer* histogram)
+      : histogram_(histogram) {
+    histogram_->Start();
+  }
+  ~AggregatingHistogramTimerScope() { histogram_->Stop(); }
+
+ private:
+  AggregatableHistogramTimer* histogram_;
+};
+
+
+// A helper class for use with AggregatableHistogramTimer.
+class AggregatedHistogramTimerScope {
+ public:
+  explicit AggregatedHistogramTimerScope(AggregatableHistogramTimer* histogram)
+      : histogram_(histogram) {
+    timer_.Start();
+  }
+  ~AggregatedHistogramTimerScope() { histogram_->Add(timer_.Elapsed()); }
+
+ private:
+  base::ElapsedTimer timer_;
+  AggregatableHistogramTimer* histogram_;
+};
+
+
+#define HISTOGRAM_RANGE_LIST(HR)                                              \
+  /* Generic range histograms */                                              \
+  HR(detached_context_age_in_gc, V8.DetachedContextAgeInGC, 0, 20, 21)        \
+  HR(gc_idle_time_allotted_in_ms, V8.GCIdleTimeAllottedInMS, 0, 10000, 101)   \
+  HR(gc_idle_time_limit_overshot, V8.GCIdleTimeLimit.Overshot, 0, 10000, 101) \
+  HR(gc_idle_time_limit_undershot, V8.GCIdleTimeLimit.Undershot, 0, 10000,    \
+     101)                                                                     \
+  HR(code_cache_reject_reason, V8.CodeCacheRejectReason, 1, 6, 6)
+
+#define HISTOGRAM_TIMER_LIST(HT)                                              \
+  /* Garbage collection timers. */                                            \
+  HT(gc_compactor, V8.GCCompactor, 10000, MILLISECOND)                        \
+  HT(gc_scavenger, V8.GCScavenger, 10000, MILLISECOND)                        \
+  HT(gc_context, V8.GCContext, 10000,                                         \
+     MILLISECOND) /* GC context cleanup time */                               \
+  HT(gc_idle_notification, V8.GCIdleNotification, 10000, MILLISECOND)         \
+  HT(gc_incremental_marking, V8.GCIncrementalMarking, 10000, MILLISECOND)     \
+  HT(gc_low_memory_notification, V8.GCLowMemoryNotification, 10000,           \
+     MILLISECOND)                                                             \
+  /* Parsing timers. */                                                       \
+  HT(parse, V8.ParseMicroSeconds, 1000000, MICROSECOND)                       \
+  HT(parse_lazy, V8.ParseLazyMicroSeconds, 1000000, MICROSECOND)              \
+  HT(pre_parse, V8.PreParseMicroSeconds, 1000000, MICROSECOND)                \
+  /* Compilation times. */                                                    \
+  HT(compile, V8.CompileMicroSeconds, 1000000, MICROSECOND)                   \
+  HT(compile_eval, V8.CompileEvalMicroSeconds, 1000000, MICROSECOND)          \
+  /* Serialization as part of compilation (code caching) */                   \
+  HT(compile_serialize, V8.CompileSerializeMicroSeconds, 100000, MICROSECOND) \
+  HT(compile_deserialize, V8.CompileDeserializeMicroSeconds, 1000000,         \
+     MICROSECOND)                                                             \
+  /* Total compilation time incl. caching/parsing */                          \
+  HT(compile_script, V8.CompileScriptMicroSeconds, 1000000, MICROSECOND)
+
+
+#define AGGREGATABLE_HISTOGRAM_TIMER_LIST(AHT) \
+  AHT(compile_lazy, V8.CompileLazyMicroSeconds)
+
+
+#define HISTOGRAM_PERCENTAGE_LIST(HP)                                          \
+  /* Heap fragmentation. */                                                    \
+  HP(external_fragmentation_total, V8.MemoryExternalFragmentationTotal)        \
+  HP(external_fragmentation_old_pointer_space,                                 \
+     V8.MemoryExternalFragmentationOldPointerSpace)                            \
+  HP(external_fragmentation_old_data_space,                                    \
+     V8.MemoryExternalFragmentationOldDataSpace)                               \
+  HP(external_fragmentation_code_space,                                        \
+     V8.MemoryExternalFragmentationCodeSpace)                                  \
+  HP(external_fragmentation_map_space, V8.MemoryExternalFragmentationMapSpace) \
+  HP(external_fragmentation_cell_space,                                        \
+     V8.MemoryExternalFragmentationCellSpace)                                  \
+  HP(external_fragmentation_lo_space, V8.MemoryExternalFragmentationLoSpace)   \
+  /* Percentages of heap committed to each space. */                           \
+  HP(heap_fraction_new_space, V8.MemoryHeapFractionNewSpace)                   \
+  HP(heap_fraction_old_pointer_space, V8.MemoryHeapFractionOldPointerSpace)    \
+  HP(heap_fraction_old_data_space, V8.MemoryHeapFractionOldDataSpace)          \
+  HP(heap_fraction_code_space, V8.MemoryHeapFractionCodeSpace)                 \
+  HP(heap_fraction_map_space, V8.MemoryHeapFractionMapSpace)                   \
+  HP(heap_fraction_cell_space, V8.MemoryHeapFractionCellSpace)                 \
+  HP(heap_fraction_lo_space, V8.MemoryHeapFractionLoSpace)                     \
+  /* Percentage of crankshafted codegen. */                                    \
+  HP(codegen_fraction_crankshaft, V8.CodegenFractionCrankshaft)
 
 
 #define HISTOGRAM_MEMORY_LIST(HM)                                     \
@@ -359,8 +428,6 @@ class HistogramTimerScope BASE_EMBEDDED {
      V8.MemoryHeapSampleMapSpaceCommitted)                            \
   HM(heap_sample_cell_space_committed,                                \
      V8.MemoryHeapSampleCellSpaceCommitted)                           \
-  HM(heap_sample_property_cell_space_committed,                       \
-     V8.MemoryHeapSamplePropertyCellSpaceCommitted)                   \
   HM(heap_sample_code_space_committed,                                \
      V8.MemoryHeapSampleCodeSpaceCommitted)                           \
   HM(heap_sample_maximum_committed,                                   \
@@ -425,130 +492,123 @@ class HistogramTimerScope BASE_EMBEDDED {
   SC(store_buffer_overflows, V8.StoreBufferOverflows)
 
 
-#define STATS_COUNTER_LIST_2(SC)                                      \
-  /* Number of code stubs. */                                         \
-  SC(code_stubs, V8.CodeStubs)                                        \
-  /* Amount of stub code. */                                          \
-  SC(total_stubs_code_size, V8.TotalStubsCodeSize)                    \
-  /* Amount of (JS) compiled code. */                                 \
-  SC(total_compiled_code_size, V8.TotalCompiledCodeSize)              \
-  SC(gc_compactor_caused_by_request, V8.GCCompactorCausedByRequest)   \
-  SC(gc_compactor_caused_by_promoted_data,                            \
-     V8.GCCompactorCausedByPromotedData)                              \
-  SC(gc_compactor_caused_by_oldspace_exhaustion,                      \
-     V8.GCCompactorCausedByOldspaceExhaustion)                        \
-  SC(gc_last_resort_from_js, V8.GCLastResortFromJS)                   \
-  SC(gc_last_resort_from_handles, V8.GCLastResortFromHandles)         \
-  /* How is the generic keyed-load stub used? */                      \
-  SC(keyed_load_generic_smi, V8.KeyedLoadGenericSmi)                  \
-  SC(keyed_load_generic_symbol, V8.KeyedLoadGenericSymbol)            \
-  SC(keyed_load_generic_lookup_cache, V8.KeyedLoadGenericLookupCache) \
-  SC(keyed_load_generic_slow, V8.KeyedLoadGenericSlow)                \
-  SC(keyed_load_polymorphic_stubs, V8.KeyedLoadPolymorphicStubs)      \
-  SC(keyed_load_external_array_slow, V8.KeyedLoadExternalArraySlow)   \
-  /* How is the generic keyed-call stub used? */                      \
-  SC(keyed_call_generic_smi_fast, V8.KeyedCallGenericSmiFast)         \
-  SC(keyed_call_generic_smi_dict, V8.KeyedCallGenericSmiDict)         \
-  SC(keyed_call_generic_lookup_cache, V8.KeyedCallGenericLookupCache) \
-  SC(keyed_call_generic_lookup_dict, V8.KeyedCallGenericLookupDict)   \
-  SC(keyed_call_generic_slow, V8.KeyedCallGenericSlow)                \
-  SC(keyed_call_generic_slow_load, V8.KeyedCallGenericSlowLoad)       \
-  SC(named_load_global_stub, V8.NamedLoadGlobalStub)                  \
-  SC(named_store_global_inline, V8.NamedStoreGlobalInline)            \
-  SC(named_store_global_inline_miss, V8.NamedStoreGlobalInlineMiss)   \
-  SC(keyed_store_polymorphic_stubs, V8.KeyedStorePolymorphicStubs)    \
-  SC(keyed_store_external_array_slow, V8.KeyedStoreExternalArraySlow) \
-  SC(store_normal_miss, V8.StoreNormalMiss)                           \
-  SC(store_normal_hit, V8.StoreNormalHit)                             \
-  SC(cow_arrays_created_stub, V8.COWArraysCreatedStub)                \
-  SC(cow_arrays_created_runtime, V8.COWArraysCreatedRuntime)          \
-  SC(cow_arrays_converted, V8.COWArraysConverted)                     \
-  SC(call_miss, V8.CallMiss)                                          \
-  SC(keyed_call_miss, V8.KeyedCallMiss)                               \
-  SC(load_miss, V8.LoadMiss)                                          \
-  SC(keyed_load_miss, V8.KeyedLoadMiss)                               \
-  SC(call_const, V8.CallConst)                                        \
-  SC(call_const_fast_api, V8.CallConstFastApi)                        \
-  SC(call_const_interceptor, V8.CallConstInterceptor)                 \
-  SC(call_const_interceptor_fast_api, V8.CallConstInterceptorFastApi) \
-  SC(call_global_inline, V8.CallGlobalInline)                         \
-  SC(call_global_inline_miss, V8.CallGlobalInlineMiss)                \
-  SC(constructed_objects, V8.ConstructedObjects)                      \
-  SC(constructed_objects_runtime, V8.ConstructedObjectsRuntime)       \
-  SC(negative_lookups, V8.NegativeLookups)                            \
-  SC(negative_lookups_miss, V8.NegativeLookupsMiss)                   \
-  SC(megamorphic_stub_cache_probes, V8.MegamorphicStubCacheProbes)    \
-  SC(megamorphic_stub_cache_misses, V8.MegamorphicStubCacheMisses)    \
-  SC(megamorphic_stub_cache_updates, V8.MegamorphicStubCacheUpdates)  \
-  SC(array_function_runtime, V8.ArrayFunctionRuntime)                 \
-  SC(array_function_native, V8.ArrayFunctionNative)                   \
-  SC(for_in, V8.ForIn)                                                \
-  SC(enum_cache_hits, V8.EnumCacheHits)                               \
-  SC(enum_cache_misses, V8.EnumCacheMisses)                           \
-  SC(zone_segment_bytes, V8.ZoneSegmentBytes)                         \
-  SC(fast_new_closure_total, V8.FastNewClosureTotal)                  \
-  SC(fast_new_closure_try_optimized, V8.FastNewClosureTryOptimized)   \
-  SC(fast_new_closure_install_optimized, V8.FastNewClosureInstallOptimized) \
-  SC(string_add_runtime, V8.StringAddRuntime)                         \
-  SC(string_add_native, V8.StringAddNative)                           \
-  SC(string_add_runtime_ext_to_ascii, V8.StringAddRuntimeExtToAscii)  \
-  SC(sub_string_runtime, V8.SubStringRuntime)                         \
-  SC(sub_string_native, V8.SubStringNative)                           \
-  SC(string_add_make_two_char, V8.StringAddMakeTwoChar)               \
-  SC(string_compare_native, V8.StringCompareNative)                   \
-  SC(string_compare_runtime, V8.StringCompareRuntime)                 \
-  SC(regexp_entry_runtime, V8.RegExpEntryRuntime)                     \
-  SC(regexp_entry_native, V8.RegExpEntryNative)                       \
-  SC(number_to_string_native, V8.NumberToStringNative)                \
-  SC(number_to_string_runtime, V8.NumberToStringRuntime)              \
-  SC(math_acos, V8.MathAcos)                                          \
-  SC(math_asin, V8.MathAsin)                                          \
-  SC(math_atan, V8.MathAtan)                                          \
-  SC(math_atan2, V8.MathAtan2)                                        \
-  SC(math_exp, V8.MathExp)                                            \
-  SC(math_floor, V8.MathFloor)                                        \
-  SC(math_log, V8.MathLog)                                            \
-  SC(math_pow, V8.MathPow)                                            \
-  SC(math_round, V8.MathRound)                                        \
-  SC(math_sqrt, V8.MathSqrt)                                          \
-  SC(stack_interrupts, V8.StackInterrupts)                            \
-  SC(runtime_profiler_ticks, V8.RuntimeProfilerTicks)                 \
-  SC(bounds_checks_eliminated, V8.BoundsChecksEliminated)             \
-  SC(bounds_checks_hoisted, V8.BoundsChecksHoisted)                   \
-  SC(soft_deopts_requested, V8.SoftDeoptsRequested)                   \
-  SC(soft_deopts_inserted, V8.SoftDeoptsInserted)                     \
-  SC(soft_deopts_executed, V8.SoftDeoptsExecuted)                     \
-  /* Number of write barriers in generated code. */                   \
-  SC(write_barriers_dynamic, V8.WriteBarriersDynamic)                 \
-  SC(write_barriers_static, V8.WriteBarriersStatic)                   \
-  SC(new_space_bytes_available, V8.MemoryNewSpaceBytesAvailable)      \
-  SC(new_space_bytes_committed, V8.MemoryNewSpaceBytesCommitted)      \
-  SC(new_space_bytes_used, V8.MemoryNewSpaceBytesUsed)                \
-  SC(old_pointer_space_bytes_available,                               \
-     V8.MemoryOldPointerSpaceBytesAvailable)                          \
-  SC(old_pointer_space_bytes_committed,                               \
-     V8.MemoryOldPointerSpaceBytesCommitted)                          \
-  SC(old_pointer_space_bytes_used, V8.MemoryOldPointerSpaceBytesUsed) \
-  SC(old_data_space_bytes_available, V8.MemoryOldDataSpaceBytesAvailable) \
-  SC(old_data_space_bytes_committed, V8.MemoryOldDataSpaceBytesCommitted) \
-  SC(old_data_space_bytes_used, V8.MemoryOldDataSpaceBytesUsed)       \
-  SC(code_space_bytes_available, V8.MemoryCodeSpaceBytesAvailable)    \
-  SC(code_space_bytes_committed, V8.MemoryCodeSpaceBytesCommitted)    \
-  SC(code_space_bytes_used, V8.MemoryCodeSpaceBytesUsed)              \
-  SC(map_space_bytes_available, V8.MemoryMapSpaceBytesAvailable)      \
-  SC(map_space_bytes_committed, V8.MemoryMapSpaceBytesCommitted)      \
-  SC(map_space_bytes_used, V8.MemoryMapSpaceBytesUsed)                \
-  SC(cell_space_bytes_available, V8.MemoryCellSpaceBytesAvailable)    \
-  SC(cell_space_bytes_committed, V8.MemoryCellSpaceBytesCommitted)    \
-  SC(cell_space_bytes_used, V8.MemoryCellSpaceBytesUsed)              \
-  SC(property_cell_space_bytes_available,                             \
-     V8.MemoryPropertyCellSpaceBytesAvailable)                        \
-  SC(property_cell_space_bytes_committed,                             \
-     V8.MemoryPropertyCellSpaceBytesCommitted)                        \
-  SC(property_cell_space_bytes_used,                                  \
-     V8.MemoryPropertyCellSpaceBytesUsed)                             \
-  SC(lo_space_bytes_available, V8.MemoryLoSpaceBytesAvailable)        \
-  SC(lo_space_bytes_committed, V8.MemoryLoSpaceBytesCommitted)        \
+#define STATS_COUNTER_LIST_2(SC)                                               \
+  /* Number of code stubs. */                                                  \
+  SC(code_stubs, V8.CodeStubs)                                                 \
+  /* Amount of stub code. */                                                   \
+  SC(total_stubs_code_size, V8.TotalStubsCodeSize)                             \
+  /* Amount of (JS) compiled code. */                                          \
+  SC(total_compiled_code_size, V8.TotalCompiledCodeSize)                       \
+  SC(gc_compactor_caused_by_request, V8.GCCompactorCausedByRequest)            \
+  SC(gc_compactor_caused_by_promoted_data, V8.GCCompactorCausedByPromotedData) \
+  SC(gc_compactor_caused_by_oldspace_exhaustion,                               \
+     V8.GCCompactorCausedByOldspaceExhaustion)                                 \
+  SC(gc_last_resort_from_js, V8.GCLastResortFromJS)                            \
+  SC(gc_last_resort_from_handles, V8.GCLastResortFromHandles)                  \
+  /* How is the generic keyed-load stub used? */                               \
+  SC(keyed_load_generic_smi, V8.KeyedLoadGenericSmi)                           \
+  SC(keyed_load_generic_symbol, V8.KeyedLoadGenericSymbol)                     \
+  SC(keyed_load_generic_lookup_cache, V8.KeyedLoadGenericLookupCache)          \
+  SC(keyed_load_generic_slow, V8.KeyedLoadGenericSlow)                         \
+  SC(keyed_load_polymorphic_stubs, V8.KeyedLoadPolymorphicStubs)               \
+  SC(keyed_load_external_array_slow, V8.KeyedLoadExternalArraySlow)            \
+  /* How is the generic keyed-call stub used? */                               \
+  SC(keyed_call_generic_smi_fast, V8.KeyedCallGenericSmiFast)                  \
+  SC(keyed_call_generic_smi_dict, V8.KeyedCallGenericSmiDict)                  \
+  SC(keyed_call_generic_lookup_cache, V8.KeyedCallGenericLookupCache)          \
+  SC(keyed_call_generic_lookup_dict, V8.KeyedCallGenericLookupDict)            \
+  SC(keyed_call_generic_slow, V8.KeyedCallGenericSlow)                         \
+  SC(keyed_call_generic_slow_load, V8.KeyedCallGenericSlowLoad)                \
+  SC(named_load_global_stub, V8.NamedLoadGlobalStub)                           \
+  SC(named_store_global_inline, V8.NamedStoreGlobalInline)                     \
+  SC(named_store_global_inline_miss, V8.NamedStoreGlobalInlineMiss)            \
+  SC(keyed_store_polymorphic_stubs, V8.KeyedStorePolymorphicStubs)             \
+  SC(keyed_store_external_array_slow, V8.KeyedStoreExternalArraySlow)          \
+  SC(store_normal_miss, V8.StoreNormalMiss)                                    \
+  SC(store_normal_hit, V8.StoreNormalHit)                                      \
+  SC(cow_arrays_created_stub, V8.COWArraysCreatedStub)                         \
+  SC(cow_arrays_created_runtime, V8.COWArraysCreatedRuntime)                   \
+  SC(cow_arrays_converted, V8.COWArraysConverted)                              \
+  SC(call_miss, V8.CallMiss)                                                   \
+  SC(keyed_call_miss, V8.KeyedCallMiss)                                        \
+  SC(load_miss, V8.LoadMiss)                                                   \
+  SC(keyed_load_miss, V8.KeyedLoadMiss)                                        \
+  SC(call_const, V8.CallConst)                                                 \
+  SC(call_const_fast_api, V8.CallConstFastApi)                                 \
+  SC(call_const_interceptor, V8.CallConstInterceptor)                          \
+  SC(call_const_interceptor_fast_api, V8.CallConstInterceptorFastApi)          \
+  SC(call_global_inline, V8.CallGlobalInline)                                  \
+  SC(call_global_inline_miss, V8.CallGlobalInlineMiss)                         \
+  SC(constructed_objects, V8.ConstructedObjects)                               \
+  SC(constructed_objects_runtime, V8.ConstructedObjectsRuntime)                \
+  SC(negative_lookups, V8.NegativeLookups)                                     \
+  SC(negative_lookups_miss, V8.NegativeLookupsMiss)                            \
+  SC(megamorphic_stub_cache_probes, V8.MegamorphicStubCacheProbes)             \
+  SC(megamorphic_stub_cache_misses, V8.MegamorphicStubCacheMisses)             \
+  SC(megamorphic_stub_cache_updates, V8.MegamorphicStubCacheUpdates)           \
+  SC(array_function_runtime, V8.ArrayFunctionRuntime)                          \
+  SC(array_function_native, V8.ArrayFunctionNative)                            \
+  SC(for_in, V8.ForIn)                                                         \
+  SC(enum_cache_hits, V8.EnumCacheHits)                                        \
+  SC(enum_cache_misses, V8.EnumCacheMisses)                                    \
+  SC(fast_new_closure_total, V8.FastNewClosureTotal)                           \
+  SC(fast_new_closure_try_optimized, V8.FastNewClosureTryOptimized)            \
+  SC(fast_new_closure_install_optimized, V8.FastNewClosureInstallOptimized)    \
+  SC(string_add_runtime, V8.StringAddRuntime)                                  \
+  SC(string_add_native, V8.StringAddNative)                                    \
+  SC(string_add_runtime_ext_to_one_byte, V8.StringAddRuntimeExtToOneByte)      \
+  SC(sub_string_runtime, V8.SubStringRuntime)                                  \
+  SC(sub_string_native, V8.SubStringNative)                                    \
+  SC(string_add_make_two_char, V8.StringAddMakeTwoChar)                        \
+  SC(string_compare_native, V8.StringCompareNative)                            \
+  SC(string_compare_runtime, V8.StringCompareRuntime)                          \
+  SC(regexp_entry_runtime, V8.RegExpEntryRuntime)                              \
+  SC(regexp_entry_native, V8.RegExpEntryNative)                                \
+  SC(number_to_string_native, V8.NumberToStringNative)                         \
+  SC(number_to_string_runtime, V8.NumberToStringRuntime)                       \
+  SC(math_acos, V8.MathAcos)                                                   \
+  SC(math_asin, V8.MathAsin)                                                   \
+  SC(math_atan, V8.MathAtan)                                                   \
+  SC(math_atan2, V8.MathAtan2)                                                 \
+  SC(math_clz32, V8.MathClz32)                                                 \
+  SC(math_exp, V8.MathExp)                                                     \
+  SC(math_floor, V8.MathFloor)                                                 \
+  SC(math_log, V8.MathLog)                                                     \
+  SC(math_pow, V8.MathPow)                                                     \
+  SC(math_round, V8.MathRound)                                                 \
+  SC(math_sqrt, V8.MathSqrt)                                                   \
+  SC(stack_interrupts, V8.StackInterrupts)                                     \
+  SC(runtime_profiler_ticks, V8.RuntimeProfilerTicks)                          \
+  SC(bounds_checks_eliminated, V8.BoundsChecksEliminated)                      \
+  SC(bounds_checks_hoisted, V8.BoundsChecksHoisted)                            \
+  SC(soft_deopts_requested, V8.SoftDeoptsRequested)                            \
+  SC(soft_deopts_inserted, V8.SoftDeoptsInserted)                              \
+  SC(soft_deopts_executed, V8.SoftDeoptsExecuted)                              \
+  /* Number of write barriers in generated code. */                            \
+  SC(write_barriers_dynamic, V8.WriteBarriersDynamic)                          \
+  SC(write_barriers_static, V8.WriteBarriersStatic)                            \
+  SC(new_space_bytes_available, V8.MemoryNewSpaceBytesAvailable)               \
+  SC(new_space_bytes_committed, V8.MemoryNewSpaceBytesCommitted)               \
+  SC(new_space_bytes_used, V8.MemoryNewSpaceBytesUsed)                         \
+  SC(old_pointer_space_bytes_available,                                        \
+     V8.MemoryOldPointerSpaceBytesAvailable)                                   \
+  SC(old_pointer_space_bytes_committed,                                        \
+     V8.MemoryOldPointerSpaceBytesCommitted)                                   \
+  SC(old_pointer_space_bytes_used, V8.MemoryOldPointerSpaceBytesUsed)          \
+  SC(old_data_space_bytes_available, V8.MemoryOldDataSpaceBytesAvailable)      \
+  SC(old_data_space_bytes_committed, V8.MemoryOldDataSpaceBytesCommitted)      \
+  SC(old_data_space_bytes_used, V8.MemoryOldDataSpaceBytesUsed)                \
+  SC(code_space_bytes_available, V8.MemoryCodeSpaceBytesAvailable)             \
+  SC(code_space_bytes_committed, V8.MemoryCodeSpaceBytesCommitted)             \
+  SC(code_space_bytes_used, V8.MemoryCodeSpaceBytesUsed)                       \
+  SC(map_space_bytes_available, V8.MemoryMapSpaceBytesAvailable)               \
+  SC(map_space_bytes_committed, V8.MemoryMapSpaceBytesCommitted)               \
+  SC(map_space_bytes_used, V8.MemoryMapSpaceBytesUsed)                         \
+  SC(cell_space_bytes_available, V8.MemoryCellSpaceBytesAvailable)             \
+  SC(cell_space_bytes_committed, V8.MemoryCellSpaceBytesCommitted)             \
+  SC(cell_space_bytes_used, V8.MemoryCellSpaceBytesUsed)                       \
+  SC(lo_space_bytes_available, V8.MemoryLoSpaceBytesAvailable)                 \
+  SC(lo_space_bytes_committed, V8.MemoryLoSpaceBytesCommitted)                 \
   SC(lo_space_bytes_used, V8.MemoryLoSpaceBytesUsed)
 
 
@@ -560,10 +620,15 @@ class Counters {
   HISTOGRAM_RANGE_LIST(HR)
 #undef HR
 
-#define HT(name, caption) \
+#define HT(name, caption, max, res) \
   HistogramTimer* name() { return &name##_; }
   HISTOGRAM_TIMER_LIST(HT)
 #undef HT
+
+#define AHT(name, caption) \
+  AggregatableHistogramTimer* name() { return &name##_; }
+  AGGREGATABLE_HISTOGRAM_TIMER_LIST(AHT)
+#undef AHT
 
 #define HP(name, caption) \
   Histogram* name() { return &name##_; }
@@ -612,9 +677,12 @@ class Counters {
 #undef SC
 
   enum Id {
-#define RATE_ID(name, caption) k_##name,
+#define RATE_ID(name, caption, max, res) k_##name,
     HISTOGRAM_TIMER_LIST(RATE_ID)
 #undef RATE_ID
+#define AGGREGATABLE_ID(name, caption) k_##name,
+    AGGREGATABLE_HISTOGRAM_TIMER_LIST(AGGREGATABLE_ID)
+#undef AGGREGATABLE_ID
 #define PERCENTAGE_ID(name, caption) k_##name,
     HISTOGRAM_PERCENTAGE_LIST(PERCENTAGE_ID)
 #undef PERCENTAGE_ID
@@ -651,10 +719,14 @@ class Counters {
   HISTOGRAM_RANGE_LIST(HR)
 #undef HR
 
-#define HT(name, caption) \
-  HistogramTimer name##_;
+#define HT(name, caption, max, res) HistogramTimer name##_;
   HISTOGRAM_TIMER_LIST(HT)
 #undef HT
+
+#define AHT(name, caption) \
+  AggregatableHistogramTimer name##_;
+  AGGREGATABLE_HISTOGRAM_TIMER_LIST(AHT)
+#undef AHT
 
 #define HP(name, caption) \
   Histogram name##_;

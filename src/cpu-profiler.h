@@ -9,6 +9,7 @@
 #include "src/base/atomicops.h"
 #include "src/base/platform/time.h"
 #include "src/circular-queue.h"
+#include "src/compiler.h"
 #include "src/sampler.h"
 #include "src/unbound-queue.h"
 
@@ -23,12 +24,12 @@ class CpuProfile;
 class CpuProfilesCollection;
 class ProfileGenerator;
 
-#define CODE_EVENTS_TYPE_LIST(V)                                   \
-  V(CODE_CREATION,    CodeCreateEventRecord)                       \
-  V(CODE_MOVE,        CodeMoveEventRecord)                         \
-  V(CODE_DISABLE_OPT, CodeDisableOptEventRecord)                   \
-  V(SHARED_FUNC_MOVE, SharedFunctionInfoMoveEventRecord)           \
-  V(REPORT_BUILTIN,   ReportBuiltinEventRecord)
+#define CODE_EVENTS_TYPE_LIST(V)                         \
+  V(CODE_CREATION, CodeCreateEventRecord)                \
+  V(CODE_MOVE, CodeMoveEventRecord)                      \
+  V(CODE_DISABLE_OPT, CodeDisableOptEventRecord)         \
+  V(CODE_DEOPT, CodeDeoptEventRecord)                    \
+  V(REPORT_BUILTIN, ReportBuiltinEventRecord)
 
 
 class CodeEventRecord {
@@ -51,7 +52,6 @@ class CodeCreateEventRecord : public CodeEventRecord {
   Address start;
   CodeEntry* entry;
   unsigned size;
-  Address shared;
 
   INLINE(void UpdateCodeMap(CodeMap* code_map));
 };
@@ -75,10 +75,12 @@ class CodeDisableOptEventRecord : public CodeEventRecord {
 };
 
 
-class SharedFunctionInfoMoveEventRecord : public CodeEventRecord {
+class CodeDeoptEventRecord : public CodeEventRecord {
  public:
-  Address from;
-  Address to;
+  Address start;
+  const char* deopt_reason;
+  SourcePosition position;
+  size_t pc_offset;
 
   INLINE(void UpdateCodeMap(CodeMap* code_map));
 };
@@ -132,11 +134,12 @@ class ProfilerEventsProcessor : public base::Thread {
   // Thread control.
   virtual void Run();
   void StopSynchronously();
-  INLINE(bool running()) { return running_; }
+  INLINE(bool running()) { return !!base::NoBarrier_Load(&running_); }
   void Enqueue(const CodeEventsContainer& event);
 
   // Puts current stack into tick sample events buffer.
   void AddCurrentStack(Isolate* isolate);
+  void AddDeoptStack(Isolate* isolate, Address from, int fp_to_sp_delta);
 
   // Tick sample events are filled directly in the buffer of the circular
   // queue (because the structure is of fixed width, but usually not all
@@ -163,7 +166,7 @@ class ProfilerEventsProcessor : public base::Thread {
 
   ProfileGenerator* generator_;
   Sampler* sampler_;
-  bool running_;
+  base::Atomic32 running_;
   // Sampling period in microseconds.
   const base::TimeDelta period_;
   UnboundQueue<CodeEventsContainer> events_buffer_;
@@ -233,11 +236,12 @@ class CpuProfiler : public CodeEventListener {
   virtual void CodeMovingGCEvent() {}
   virtual void CodeMoveEvent(Address from, Address to);
   virtual void CodeDisableOptEvent(Code* code, SharedFunctionInfo* shared);
+  virtual void CodeDeoptEvent(Code* code, Address pc, int fp_to_sp_delta);
   virtual void CodeDeleteEvent(Address from);
   virtual void GetterCallbackEvent(Name* name, Address entry_point);
   virtual void RegExpCodeCreateEvent(Code* code, String* source);
   virtual void SetterCallbackEvent(Name* name, Address entry_point);
-  virtual void SharedFunctionInfoMoveEvent(Address from, Address to);
+  virtual void SharedFunctionInfoMoveEvent(Address from, Address to) {}
 
   INLINE(bool is_profiling() const) { return is_profiling_; }
   bool* is_profiling_address() {

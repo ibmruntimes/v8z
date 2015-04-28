@@ -154,7 +154,8 @@ function TickProcessor(
     snapshotLogProcessor,
     distortion,
     range,
-    sourceMap) {
+    sourceMap,
+    timedRange) {
   LogReader.call(this, {
       'shared-library': { parsers: [null, parseInt, parseInt],
           processor: this.processSharedLibrary },
@@ -187,10 +188,12 @@ function TickProcessor(
       'function-move': null,
       'function-delete': null,
       'heap-sample-item': null,
+      'current-time': null,  // Handled specially, not parsed.
       // Obsolete row types.
       'code-allocate': null,
       'begin-code-region': null,
-      'end-code-region': null });
+      'end-code-region': null },
+      timedRange);
 
   this.cppEntriesProvider_ = cppEntriesProvider;
   this.callGraphSize_ = callGraphSize;
@@ -292,7 +295,7 @@ TickProcessor.prototype.isCppCode = function(name) {
 
 
 TickProcessor.prototype.isJsCode = function(name) {
-  return !(name in this.codeTypes_);
+  return name !== "UNKNOWN" && !(name in this.codeTypes_);
 };
 
 
@@ -483,6 +486,15 @@ TickProcessor.prototype.printStatistics = function() {
   if (!this.ignoreUnknown_ && this.ticks_.unaccounted > 0) {
     this.printLine('Unaccounted', this.ticks_.unaccounted,
                    this.ticks_.total, null);
+  }
+
+  print('\n [C++ entry points]:');
+  print('   ticks    cpp   total   name');
+  var c_entry_functions = this.profile_.getCEntryProfile();
+  var total_c_entry = c_entry_functions[0].ticks;
+  for (var i = 1; i < c_entry_functions.length; i++) {
+    c = c_entry_functions[i];
+    this.printLine(c.name, c.ticks, total_c_entry, totalTicks);
   }
 
   this.printHeavyProfHeader();
@@ -866,7 +878,9 @@ function ArgumentsProcessor(args) {
     '--distortion': ['distortion', 0,
         'Specify the logging overhead in picoseconds'],
     '--source-map': ['sourceMap', null,
-        'Specify the source map that should be used for output']
+        'Specify the source map that should be used for output'],
+    '--timed-range': ['timedRange', true,
+        'Ignore ticks before first and after last Date.now() call']
   };
   this.argsDispatch_['--js'] = this.argsDispatch_['-j'];
   this.argsDispatch_['--gc'] = this.argsDispatch_['-g'];
@@ -887,7 +901,8 @@ ArgumentsProcessor.DEFAULTS = {
   targetRootFS: '',
   nm: 'nm',
   range: 'auto,auto',
-  distortion: 0
+  distortion: 0,
+  timedRange: false
 };
 
 

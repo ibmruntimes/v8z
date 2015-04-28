@@ -43,7 +43,13 @@
           'android_stlport': '<(android_toolchain)/sources/cxx-stl/stlport/',
         },
         'android_include': '<(android_sysroot)/usr/include',
-        'android_lib': '<(android_sysroot)/usr/lib',
+        'conditions': [
+          ['target_arch=="x64"', {
+            'android_lib': '<(android_sysroot)/usr/lib64',
+          }, {
+            'android_lib': '<(android_sysroot)/usr/lib',
+          }],
+        ],
         'android_stlport_include': '<(android_stlport)/stlport',
         'android_stlport_libs': '<(android_stlport)/libs',
       }, {
@@ -52,7 +58,13 @@
           'android_stlport': '<(android_ndk_root)/sources/cxx-stl/stlport/',
         },
         'android_include': '<(android_sysroot)/usr/include',
-        'android_lib': '<(android_sysroot)/usr/lib',
+        'conditions': [
+          ['target_arch=="x64"', {
+            'android_lib': '<(android_sysroot)/usr/lib64',
+          }, {
+            'android_lib': '<(android_sysroot)/usr/lib',
+          }],
+        ],
         'android_stlport_include': '<(android_stlport)/stlport',
         'android_stlport_libs': '<(android_stlport)/libs',
       }],
@@ -74,30 +86,31 @@
         ],
       },  # Release
     },  # configurations
-    'cflags': [ '-Wno-abi', '-Wall', '-W', '-Wno-unused-parameter',
-                '-Wnon-virtual-dtor', '-fno-rtti', '-fno-exceptions',
-                # Note: Using -std=c++0x will define __STRICT_ANSI__, which in
-                # turn will leave out some template stuff for 'long long'. What
-                # we want is -std=c++11, but this is not supported by GCC 4.6 or
-                # Xcode 4.2
-                '-std=gnu++0x' ],
+    'cflags': [ '-Wno-abi', '-Wall', '-W', '-Wno-unused-parameter'],
+    'cflags_cc': [ '-Wnon-virtual-dtor', '-fno-rtti', '-fno-exceptions',
+                   # Note: Using -std=c++0x will define __STRICT_ANSI__, which
+                   # in turn will leave out some template stuff for 'long
+                   # long'.  What we want is -std=c++11, but this is not
+                   # supported by GCC 4.6 or Xcode 4.2
+                   '-std=gnu++0x' ],
     'target_conditions': [
       ['_toolset=="target"', {
         'cflags!': [
           '-pthread',  # Not supported by Android toolchain.
         ],
         'cflags': [
-          '-U__linux__',  # Don't allow toolchain to claim -D__linux__
           '-ffunction-sections',
           '-funwind-tables',
           '-fstack-protector',
           '-fno-short-enums',
           '-finline-limit=64',
           '-Wa,--noexecstack',
-          '-Wno-error=non-virtual-dtor',  # TODO(michaelbai): Fix warnings.
           # Note: This include is in cflags to ensure that it comes after
           # all of the includes.
           '-I<(android_include)',
+        ],
+        'cflags_cc': [
+          '-Wno-error=non-virtual-dtor',  # TODO(michaelbai): Fix warnings.
         ],
         'defines': [
           'ANDROID',
@@ -214,8 +227,7 @@
               '-fno-stack-protector',
             ],
           }],
-          ['target_arch=="arm64" or target_arch=="x64"', {
-            # TODO(ulan): Enable PIE for other architectures (crbug.com/373219).
+          ['(target_arch=="arm" or target_arch=="arm64" or target_arch=="x64") and component!="shared_library"', {
             'cflags': [
               '-fPIE',
             ],
@@ -227,7 +239,7 @@
         'target_conditions': [
           ['_type=="executable"', {
             'conditions': [
-              ['target_arch=="arm64"', {
+              ['target_arch=="arm64" or target_arch=="x64"', {
                 'ldflags': [
                   '-Wl,-dynamic-linker,/system/bin/linker64',
                 ],

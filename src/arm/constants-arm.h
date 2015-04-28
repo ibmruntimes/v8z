@@ -161,26 +161,27 @@ enum MiscInstructionsBits74 {
 
 // Instruction encoding bits and masks.
 enum {
-  H   = 1 << 5,   // Halfword (or byte).
-  S6  = 1 << 6,   // Signed (or unsigned).
-  L   = 1 << 20,  // Load (or store).
-  S   = 1 << 20,  // Set condition code (or leave unchanged).
-  W   = 1 << 21,  // Writeback base register (or leave unchanged).
-  A   = 1 << 21,  // Accumulate in multiply instruction (or not).
-  B   = 1 << 22,  // Unsigned byte (or word).
-  N   = 1 << 22,  // Long (or short).
-  U   = 1 << 23,  // Positive (or negative) offset/index.
-  P   = 1 << 24,  // Offset/pre-indexed addressing (or post-indexed addressing).
-  I   = 1 << 25,  // Immediate shifter operand (or not).
-
-  B4  = 1 << 4,
-  B5  = 1 << 5,
-  B6  = 1 << 6,
-  B7  = 1 << 7,
-  B8  = 1 << 8,
-  B9  = 1 << 9,
+  H = 1 << 5,   // Halfword (or byte).
+  S6 = 1 << 6,  // Signed (or unsigned).
+  L = 1 << 20,  // Load (or store).
+  S = 1 << 20,  // Set condition code (or leave unchanged).
+  W = 1 << 21,  // Writeback base register (or leave unchanged).
+  A = 1 << 21,  // Accumulate in multiply instruction (or not).
+  B = 1 << 22,  // Unsigned byte (or word).
+  N = 1 << 22,  // Long (or short).
+  U = 1 << 23,  // Positive (or negative) offset/index.
+  P = 1 << 24,  // Offset/pre-indexed addressing (or post-indexed addressing).
+  I = 1 << 25,  // Immediate shifter operand (or not).
+  B0 = 1 << 0,
+  B4 = 1 << 4,
+  B5 = 1 << 5,
+  B6 = 1 << 6,
+  B7 = 1 << 7,
+  B8 = 1 << 8,
+  B9 = 1 << 9,
   B12 = 1 << 12,
   B16 = 1 << 16,
+  B17 = 1 << 17,
   B18 = 1 << 18,
   B19 = 1 << 19,
   B20 = 1 << 20,
@@ -194,16 +195,16 @@ enum {
   B28 = 1 << 28,
 
   // Instruction bit masks.
-  kCondMask   = 15 << 28,
-  kALUMask    = 0x6f << 21,
-  kRdMask     = 15 << 12,  // In str instruction.
+  kCondMask = 15 << 28,
+  kALUMask = 0x6f << 21,
+  kRdMask = 15 << 12,  // In str instruction.
   kCoprocessorMask = 15 << 8,
   kOpCodeMask = 15 << 21,  // In data-processing instructions.
-  kImm24Mask  = (1 << 24) - 1,
-  kImm16Mask  = (1 << 16) - 1,
-  kImm8Mask  = (1 << 8) - 1,
-  kOff12Mask  = (1 << 12) - 1,
-  kOff8Mask  = (1 << 8) - 1
+  kImm24Mask = (1 << 24) - 1,
+  kImm16Mask = (1 << 16) - 1,
+  kImm8Mask = (1 << 8) - 1,
+  kOff12Mask = (1 << 12) - 1,
+  kOff8Mask = (1 << 8) - 1
 };
 
 
@@ -332,9 +333,9 @@ enum NeonSize {
 // standard SoftwareInterrupCode. Bit 23 is reserved for the stop feature.
 enum SoftwareInterruptCodes {
   // transition to C code
-  kCallRtRedirected= 0x10,
+  kCallRtRedirected = 0x10,
   // break point
-  kBreakpoint= 0x20,
+  kBreakpoint = 0x20,
   // stop
   kStopCode = 1 << 23
 };
@@ -564,7 +565,9 @@ class Instruction {
   inline int ShiftAmountValue() const { return Bits(11, 7); }
     // with immediate
   inline int RotateValue() const { return Bits(11, 8); }
+  DECLARE_STATIC_ACCESSOR(RotateValue);
   inline int Immed8Value() const { return Bits(7, 0); }
+  DECLARE_STATIC_ACCESSOR(Immed8Value);
   inline int Immed4Value() const { return Bits(19, 16); }
   inline int ImmedMovwMovtValue() const {
       return Immed4Value() << 12 | Offset12Value(); }

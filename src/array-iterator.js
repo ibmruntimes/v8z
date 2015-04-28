@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-'use strict';
+"use strict";
 
 
 // This file relies on the fact that the following declaration has been made
@@ -50,7 +50,7 @@ function ArrayIteratorIterator() {
 function ArrayIteratorNext() {
   var iterator = ToObject(this);
 
-  if (!HAS_PRIVATE(iterator, arrayIteratorObjectSymbol)) {
+  if (!HAS_DEFINED_PRIVATE(iterator, arrayIteratorNextIndexSymbol)) {
     throw MakeTypeError('incompatible_method_receiver',
                         ['Array Iterator.prototype.next']);
   }
@@ -112,6 +112,8 @@ function SetUpArrayIterator() {
   %FunctionSetName(ArrayIteratorIterator, '[Symbol.iterator]');
   %AddNamedProperty(ArrayIterator.prototype, symbolIterator,
                     ArrayIteratorIterator, DONT_ENUM);
+  %AddNamedProperty(ArrayIterator.prototype, symbolToStringTag,
+                    "Array Iterator", READ_ONLY | DONT_ENUM);
 }
 SetUpArrayIterator();
 
