@@ -28,8 +28,8 @@ namespace internal {
 #define CALL_GENERATED_CODE(entry, p0, p1, p2, p3, p4) \
   (entry(p0, p1, p2, p3, p4))
 
-typedef int (*ppc_regexp_matcher)(String*, int, const byte*, const byte*,
-                                  int*, int, Address, int, void*, Isolate*);
+typedef int (*ppc_regexp_matcher)(String*, int, const byte*, const byte*, int*,
+                                  int, Address, int, void*, Isolate*);
 
 
 // Call the generated regexp code directly. The code at the entry address
@@ -37,8 +37,8 @@ typedef int (*ppc_regexp_matcher)(String*, int, const byte*, const byte*,
 // The ninth argument is a dummy that reserves the space used for
 // the return address added by the ExitFrame in native calls.
 #define CALL_GENERATED_REGEXP_CODE(entry, p0, p1, p2, p3, p4, p5, p6, p7, p8) \
-  (FUNCTION_CAST<ppc_regexp_matcher>(entry)(                              \
-      p0, p1, p2, p3, p4, p5, p6, p7, NULL, p8))
+  (FUNCTION_CAST<ppc_regexp_matcher>(entry)(p0, p1, p2, p3, p4, p5, p6, p7,   \
+                                            NULL, p8))
 
 // The stack limit beyond which we will throw stack overflow errors in
 // generated code. Because generated code on ppc uses the C stack, we
@@ -55,10 +55,11 @@ class SimulatorStack : public v8::internal::AllStatic {
     return try_catch_address;
   }
 
-  static inline void UnregisterCTryCatch() { }
+  static inline void UnregisterCTryCatch() {}
 };
 
-} }  // namespace v8::internal
+}
+}  // namespace v8::internal
 
 #else  // !defined(USE_SIMULATOR)
 // Running with a simulator.
@@ -82,9 +83,7 @@ class CachePage {
   static const int kLineLength = 1 << kLineShift;
   static const int kLineMask = kLineLength - 1;
 
-  CachePage() {
-    memset(&validity_map_, LINE_INVALID, sizeof(validity_map_));
-  }
+  CachePage() { memset(&validity_map_, LINE_INVALID, sizeof(validity_map_)); }
 
   char* ValidityByte(int offset) {
     return &validity_map_[offset >> kLineShift];
@@ -151,10 +150,19 @@ class Simulator {
   double get_double_from_register_pair(int reg);
   void set_d_register_from_double(int dreg, const double dbl) {
     DCHECK(dreg >= 0 && dreg < kNumFPRs);
-    fp_registers_[dreg] = dbl;
+    *bit_cast<double*>(&fp_registers_[dreg]) = dbl;
   }
 
   double get_double_from_d_register(int dreg) {
+    DCHECK(dreg >= 0 && dreg < kNumFPRs);
+    return *bit_cast<double*>(&fp_registers_[dreg]);
+  }
+  void set_d_register(int dreg, int64_t value) {
+    DCHECK(dreg >= 0 && dreg < kNumFPRs);
+    fp_registers_[dreg] = value;
+  }
+  int64_t get_d_register(int dreg) {
+    DCHECK(dreg >= 0 && dreg < kNumFPRs);
     return fp_registers_[dreg];
   }
 
@@ -231,19 +239,14 @@ class Simulator {
   // Helper functions to set the conditional flags in the architecture state.
   bool CarryFrom(int32_t left, int32_t right, int32_t carry = 0);
   bool BorrowFrom(int32_t left, int32_t right);
-  bool OverflowFrom(int32_t alu_out,
-                    int32_t left,
-                    int32_t right,
+  bool OverflowFrom(int32_t alu_out, int32_t left, int32_t right,
                     bool addition);
 
   // Helper functions to decode common "addressing" modes
   int32_t GetShiftRm(Instruction* instr, bool* carry_out);
   int32_t GetImm(Instruction* instr, bool* carry_out);
-  void ProcessPUW(Instruction* instr,
-                  int num_regs,
-                  int operand_size,
-                  intptr_t* start_address,
-                  intptr_t* end_address);
+  void ProcessPUW(Instruction* instr, int num_regs, int operand_size,
+                  intptr_t* start_address, intptr_t* end_address);
   void HandleRList(Instruction* instr, bool load);
   void HandleVList(Instruction* inst);
   void SoftwareInterrupt(Instruction* instr);
@@ -351,8 +354,7 @@ class Simulator {
 
   // Runtime call support.
   static void* RedirectExternalReference(
-      void* external_function,
-      v8::internal::ExternalReference::Type type);
+      void* external_function, v8::internal::ExternalReference::Type type);
 
   // Handle arguments and return value for runtime FP functions.
   void GetFpArgs(double* x, double* y, intptr_t* z);
@@ -373,7 +375,7 @@ class Simulator {
   intptr_t special_reg_ctr_;  // PowerPC
   int32_t special_reg_xer_;  // PowerPC
 
-  double fp_registers_[kNumFPRs];
+  int64_t fp_registers_[kNumFPRs];
 
   // Simulator support.
   char* stack_;
@@ -414,28 +416,16 @@ class Simulator {
 
 // When running with the simulator transition into simulated execution at this
 // point.
-#define CALL_GENERATED_CODE(entry, p0, p1, p2, p3, p4) \
+#define CALL_GENERATED_CODE(entry, p0, p1, p2, p3, p4)                    \
   reinterpret_cast<Object*>(Simulator::current(Isolate::Current())->Call( \
-                              FUNCTION_ADDR(entry), 5,                  \
-                              (intptr_t)p0,                             \
-                              (intptr_t)p1,                             \
-                              (intptr_t)p2,                             \
-                              (intptr_t)p3,                             \
-                              (intptr_t)p4))
+      FUNCTION_ADDR(entry), 5, (intptr_t)p0, (intptr_t)p1, (intptr_t)p2,  \
+      (intptr_t)p3, (intptr_t)p4))
 
 #define CALL_GENERATED_REGEXP_CODE(entry, p0, p1, p2, p3, p4, p5, p6, p7, p8) \
-  Simulator::current(Isolate::Current())->Call(                         \
-    entry, 10,                                                          \
-    (intptr_t)p0,                                                       \
-    (intptr_t)p1,                                                       \
-    (intptr_t)p2,                                                       \
-    (intptr_t)p3,                                                       \
-    (intptr_t)p4,                                                       \
-    (intptr_t)p5,                                                       \
-    (intptr_t)p6,                                                       \
-    (intptr_t)p7,                                                       \
-    (intptr_t)NULL,                                                     \
-    (intptr_t)p8)
+  Simulator::current(Isolate::Current())                                      \
+      ->Call(entry, 10, (intptr_t)p0, (intptr_t)p1, (intptr_t)p2,             \
+             (intptr_t)p3, (intptr_t)p4, (intptr_t)p5, (intptr_t)p6,          \
+             (intptr_t)p7, (intptr_t)NULL, (intptr_t)p8)
 
 
 // The simulator has its own stack. Thus it has a different stack limit from
@@ -459,8 +449,8 @@ class SimulatorStack : public v8::internal::AllStatic {
     Simulator::current(Isolate::Current())->PopAddress();
   }
 };
-
-} }  // namespace v8::internal
+}
+}  // namespace v8::internal
 
 #endif  // !defined(USE_SIMULATOR)
 #endif  // V8_S390_SIMULATOR_S390_H_
