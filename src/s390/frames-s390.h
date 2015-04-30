@@ -18,12 +18,11 @@ const int kNumRegs = 16;
 
 
 // Caller-saved/arguments registers
-const RegList kJSCallerSaved =
-  1 << 1  |  // r1
-  1 << 2  |  // r2  a1
-  1 << 3  |  // r3  a2
-  1 << 4  |  // r4  a3
-  1 << 5;    // r5  a4
+const RegList kJSCallerSaved = 1 << 1  |  // r1
+                               1 << 2  |  // r2  a1
+                               1 << 3  |  // r3  a2
+                               1 << 4  |  // r4  a3
+                               1 << 5;    // r5  a4
 
 const int kNumJSCallerSaved = 5;
 
@@ -139,7 +138,7 @@ class JavaScriptFrameConstants : public AllStatic {
   static const int kFunctionOffset = StandardFrameConstants::kMarkerOffset;
 
   // Caller SP-relative.
-  static const int kParam0Offset   = -2 * kPointerSize;
+  static const int kParam0Offset = -2 * kPointerSize;
   static const int kReceiverOffset = -1 * kPointerSize;
 };
 
@@ -158,8 +157,8 @@ class ConstructFrameConstants : public AllStatic {
  public:
   // FP-relative.
   static const int kImplicitReceiverOffset = -6 * kPointerSize;
-  static const int kConstructorOffset      = -5 * kPointerSize;
-  static const int kLengthOffset           = -4 * kPointerSize;
+  static const int kConstructorOffset = -5 * kPointerSize;
+  static const int kLengthOffset = -4 * kPointerSize;
   static const int kCodeOffset = StandardFrameConstants::kExpressionsOffset;
 
   static const int kFrameSize =
@@ -180,11 +179,7 @@ inline Object* JavaScriptFrame::function_slot_object() const {
 }
 
 
-inline void StackHandler::SetFp(Address slot, Address fp) {
-  Memory::Address_at(slot) = fp;
 }
-
-
-} }  // namespace v8::internal
+}  // namespace v8::internal
 
 #endif  // V8_S390_FRAMES_S390_H_
