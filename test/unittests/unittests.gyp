@@ -132,6 +132,9 @@
             'compiler/s390/instruction-selector-s390-unittest.cc',
           ],
         }],
+        ['OS=="aix"', {
+          'ldflags': [ '-Wl,-bbigtoc' ],
+        }],
         ['component=="shared_library"', {
           # compiler-unittests can't be built against a shared library, so we
           # need to depend on the underlying static target in that case.
