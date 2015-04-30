@@ -8,7 +8,6 @@
 #ifndef V8_S390_CODE_STUBS_S390_H_
 #define V8_S390_CODE_STUBS_S390_H_
 
-#include "src/ic-inl.h"
 
 namespace v8 {
 namespace internal {

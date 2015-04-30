@@ -55,7 +55,6 @@
 #include <unistd.h>
 #include "src/assembler.h"
 #include "src/s390/constants-s390.h"
-#include "src/serialize.h"
 
 #define ABI_USES_FUNCTION_DESCRIPTORS 0
 

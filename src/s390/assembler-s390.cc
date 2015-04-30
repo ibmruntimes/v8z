@@ -46,7 +46,6 @@
 #include "src/s390/assembler-s390-inl.h"
 
 #include "src/macro-assembler.h"
-#include "src/serialize.h"
 
 namespace v8 {
 namespace internal {

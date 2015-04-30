@@ -9,7 +9,7 @@
 #define V8_S390_CODEGEN_S390_H_
 
 #include "src/ast.h"
-#include "src/ic-inl.h"
+#include "src/macro-assembler.h"
 
 namespace v8 {
 namespace internal {
