@@ -1,6 +1,6 @@
 // Copyright 2011 the V8 project authors. All rights reserved.
 //
-// Copyright IBM Corp. 2012-2014. All rights reserved.
+// Copyright IBM Corp. 2012-2015. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
@@ -46,44 +46,44 @@ const int kNoRegister = -1;
 // General constants are in an anonymous enum in class Instr.
 enum Condition {
   kNoCondition = -1,
-  eq         =  0x8,         // Equal.
-  ne         =  0x7,         // Not equal.
-  ge         =  0xa,         // Greater or equal.
-  lt         =  0x4,         // Less than.
-  gt         =  0x2,         // Greater than.
-  le         =  0xc,         // Less then or equal
-  al         =  0xf,         // Always.
+  eq = 0x8,         // Equal.
+  ne = 0x7,         // Not equal.
+  ge = 0xa,         // Greater or equal.
+  lt = 0x4,         // Less than.
+  gt = 0x2,         // Greater than.
+  le = 0xc,         // Less then or equal
+  al = 0xf,         // Always.
 
-  CC_NOP     = 0x0,             // S390 NOP
-  CC_EQ      = 0x08,            // S390 condition code 0b1000
-  CC_LT      = 0x04,            // S390 condition code 0b0100
-  CC_LE      = CC_EQ | CC_LT,   // S390 condition code 0b1100
-  CC_GT      = 0x02,            // S390 condition code 0b0010
-  CC_GE      = CC_EQ | CC_GT,   // S390 condition code 0b1010
-  CC_OF      = 0x01,            // S390 condition code 0b0001
-  CC_NOF     = 0x0E,            // S390 condition code 0b1110
-  CC_ALWAYS  = 0x0F,            // S390 always taken branch
-  unordered  = CC_OF,           // Floating-point unordered
-  ordered    = CC_NOF,          // floating-point ordered
-  overflow   = CC_OF,           // Summary overflow
+  CC_NOP = 0x0,            // S390 NOP
+  CC_EQ = 0x08,            // S390 condition code 0b1000
+  CC_LT = 0x04,            // S390 condition code 0b0100
+  CC_LE = CC_EQ | CC_LT,   // S390 condition code 0b1100
+  CC_GT = 0x02,            // S390 condition code 0b0010
+  CC_GE = CC_EQ | CC_GT,   // S390 condition code 0b1010
+  CC_OF = 0x01,            // S390 condition code 0b0001
+  CC_NOF = 0x0E,           // S390 condition code 0b1110
+  CC_ALWAYS = 0x0F,        // S390 always taken branch
+  unordered = CC_OF,       // Floating-point unordered
+  ordered = CC_NOF,        // floating-point ordered
+  overflow = CC_OF,        // Summary overflow
   nooverflow = CC_NOF,
 
-  mask0x0    =  0,         // no jumps
-  mask0x1    =  1,
-  mask0x2    =  2,
-  mask0x3    =  3,
-  mask0x4    =  4,
-  mask0x5    =  5,
-  mask0x6    =  6,
-  mask0x7    =  7,
-  mask0x8    =  8,
-  mask0x9    =  9,
-  mask0xA    = 10,
-  mask0xB    = 11,
-  mask0xC    = 12,
-  mask0xD    = 13,
-  mask0xE    = 14,
-  mask0xF    = 15,
+  mask0x0 = 0,         // no jumps
+  mask0x1 = 1,
+  mask0x2 = 2,
+  mask0x3 = 3,
+  mask0x4 = 4,
+  mask0x5 = 5,
+  mask0x6 = 6,
+  mask0x7 = 7,
+  mask0x8 = 8,
+  mask0x9 = 9,
+  mask0xA = 10,
+  mask0xB = 11,
+  mask0xC = 12,
+  mask0xD = 13,
+  mask0xE = 14,
+  mask0xF = 15,
 
   // Rounding modes for floating poing facility
   CURRENT_ROUNDING_MODE = 0,
@@ -900,18 +900,18 @@ enum Opcode {
   XSCH    = 0xB276,  // Cancel Subchannel
   XY      = 0xE357,  // Exclusive Or (32)
   ZAP     = 0xF8,    // Zero And Add
-  BKPT    = 0x0001  // GDB Software Breakpoint
+  BKPT    = 0x0001   // GDB Software Breakpoint
 };
 
 // Instruction encoding bits and masks.
 enum {
   // Instruction encoding bit
-  B1  = 1 << 1,
-  B4  = 1 << 4,
-  B5  = 1 << 5,
-  B7  = 1 << 7,
-  B8  = 1 << 8,
-  B9  = 1 << 9,
+  B1 = 1 << 1,
+  B4 = 1 << 4,
+  B5 = 1 << 5,
+  B7 = 1 << 7,
+  B8 = 1 << 8,
+  B9 = 1 << 9,
   B12 = 1 << 12,
   B18 = 1 << 18,
   B19 = 1 << 19,
@@ -932,12 +932,12 @@ enum {
   B21 = 1 << 21,
 
   // Instruction bit masks
-  kCondMask   = 0x1F << 21,
-  kOff12Mask  = (1 << 12) - 1,
-  kImm24Mask  = (1 << 24) - 1,
-  kOff16Mask  = (1 << 16) - 1,
-  kImm16Mask  = (1 << 16) - 1,
-  kImm26Mask  = (1 << 26) - 1,
+  kCondMask = 0x1F << 21,
+  kOff12Mask = (1 << 12) - 1,
+  kImm24Mask = (1 << 24) - 1,
+  kOff16Mask = (1 << 16) - 1,
+  kImm16Mask = (1 << 16) - 1,
+  kImm26Mask = (1 << 26) - 1,
   kBOfieldMask = 0x1f << 21,
   kOpcodeMask = 0x3f << 26,
   kExt2OpcodeMask = 0x1f << 1,
@@ -958,57 +958,37 @@ enum {
 const FourByteInstr kFourByteBrCondMask = 0xF << 20;
 const SixByteInstr  kSixByteBrCondMask = static_cast<SixByteInstr>(0xF) << 36;
 
-// the following is to differentiate different faked opcodes for
-// the BOGUS PPC instruction we invented (when bit 25 is 0) or to mark
-// different stub code (when bit 25 is 1)
-//   - use primary opcode 1 for undefined instruction
-//   - use bit 25 to indicate whether the opcode is for fake-arm
-//     instr or stub-marker
-//   - use the least significant 6-bit to indicate FAKE_OPCODE_T or
-//     MARKER_T
-#define FAKE_OPCODE 1 << 26
-#define MARKER_SUBOPCODE_BIT 25
-#define MARKER_SUBOPCODE 1 << MARKER_SUBOPCODE_BIT
-#define FAKER_SUBOPCODE 0 << MARKER_SUBOPCODE_BIT
-
-enum FAKE_OPCODE_T {
-  fBKPT = 14,
-  fLastFaker  // can't be more than 128 (2^^7)
-};
-#define FAKE_OPCODE_HIGH_BIT 7  // fake opcode has to fall into bit 0~7
-#define F_NEXT_AVAILABLE_STUB_MARKER 369  // must be less than 2^^9 (512)
-#define STUB_MARKER_HIGH_BIT 9  // stub marker has to fall into bit 0~9
 // -----------------------------------------------------------------------------
 // Addressing modes and instruction variants.
 
 // Overflow Exception
 enum OEBit {
-  SetOE   = 1 << 10,  // Set overflow exception
+  SetOE = 1 << 10,    // Set overflow exception
   LeaveOE = 0 << 10   // No overflow exception
 };
 
 // Record bit
-enum RCBit {  // Bit 0
-  SetRC   = 1,  // LT,GT,EQ,SO
+enum RCBit {    // Bit 0
+  SetRC = 1,    // LT,GT,EQ,SO
   LeaveRC = 0   // None
 };
 
 // Link bit
-enum LKBit {  // Bit 0
-  SetLK   = 1,  // Load effective address of next instruction
+enum LKBit {    // Bit 0
+  SetLK = 1,    // Load effective address of next instruction
   LeaveLK = 0   // No action
 };
 
-enum BOfield {  // Bits 25-21
-  DCBNZF =  0 << 21,  // Decrement CTR; branch if CTR != 0 and condition false
-  DCBEZF =  2 << 21,  // Decrement CTR; branch if CTR == 0 and condition false
-  BF     =  4 << 21,  // Branch if condition false
-  DCBNZT =  8 << 21,  // Decrement CTR; branch if CTR != 0 and condition true
-  DCBEZT = 10 << 21,  // Decrement CTR; branch if CTR == 0 and condition true
-  BT     = 12 << 21,  // Branch if condition true
-  DCBNZ  = 16 << 21,  // Decrement CTR; branch if CTR != 0
-  DCBEZ  = 18 << 21,  // Decrement CTR; branch if CTR == 0
-  BA     = 20 << 21   // Branch always
+enum BOfield {       // Bits 25-21
+  DCBNZF = 0 << 21,  // Decrement CTR; branch if CTR != 0 and condition false
+  DCBEZF = 2 << 21,  // Decrement CTR; branch if CTR == 0 and condition false
+  BF = 4 << 21,      // Branch if condition false
+  DCBNZT = 8 << 21,  // Decrement CTR; branch if CTR != 0 and condition true
+  DCBEZT = 10 << 21, // Decrement CTR; branch if CTR == 0 and condition true
+  BT = 12 << 21,     // Branch if condition true
+  DCBNZ = 16 << 21,  // Decrement CTR; branch if CTR != 0
+  DCBEZ = 18 << 21,  // Decrement CTR; branch if CTR == 0
+  BA = 20 << 21      // Branch always
 };
 
 #ifdef _AIX
@@ -1018,13 +998,7 @@ enum BOfield {  // Bits 25-21
 #undef CR_SO
 #endif
 
-enum CRBit {
-  CR_LT = 0,
-  CR_GT = 1,
-  CR_EQ = 2,
-  CR_SO = 3,
-  CR_FU = 3
-};
+enum CRBit { CR_LT = 0, CR_GT = 1, CR_EQ = 2, CR_SO = 3, CR_FU = 3 };
 
 #define CRWIDTH 4
 
@@ -1042,12 +1016,10 @@ enum SoftwareInterruptCodes {
   kBreakpoint = 0x0000,
   // stop
   kStopCode = 1 << 23,
-  // info
-  kInfo     = 0x0001
 };
 const uint32_t kStopCodeMask = kStopCode - 1;
 const uint32_t kMaxStopCode = kStopCode - 1;
-const int32_t  kDefaultStopCode = -1;
+const int32_t kDefaultStopCode = -1;
 
 // FP rounding modes.
 enum FPRoundingMode {
@@ -1109,11 +1081,7 @@ const Instr rtCallRedirInstr = TRAP4;
 //
 class Instruction {
  public:
-  enum {
-    kInstrSize = 4,
-    kInstrSizeLog2 = 2,
-    kPCReadOffset = 8
-  };
+  enum { kInstrSize = 4, kInstrSizeLog2 = 2, kPCReadOffset = 8 };
 
   // S390 Opcode Format Types
   //   Based on the first byte of the opcode, we can determine how to extract
@@ -1125,15 +1093,15 @@ class Instruction {
     THREE_NIBBLE_OPCODE         // Three Nibbles - Bits 0 to 7, 12 to 15
   };
 
-  // Helper macro to define static accessors.
-  // We use the cast to char* trick to bypass the strict anti-aliasing rules.
-  #define DECLARE_STATIC_TYPED_ACCESSOR(return_type, Name)                     \
-    static inline return_type Name(Instr instr) {                              \
-      char* temp = reinterpret_cast<char*>(&instr);                            \
-      return reinterpret_cast<Instruction*>(temp)->Name();                     \
-    }
+ // Helper macro to define static accessors.
+ // We use the cast to char* trick to bypass the strict anti-aliasing rules.
+ #define DECLARE_STATIC_TYPED_ACCESSOR(return_type, Name)                     \
+   static inline return_type Name(Instr instr) {                              \
+     char* temp = reinterpret_cast<char*>(&instr);                            \
+     return reinterpret_cast<Instruction*>(temp)->Name();                     \
+   }
 
-  #define DECLARE_STATIC_ACCESSOR(Name) DECLARE_STATIC_TYPED_ACCESSOR(int, Name)
+ #define DECLARE_STATIC_ACCESSOR(Name) DECLARE_STATIC_TYPED_ACCESSOR(int, Name)
 
   // Get the raw instruction bits.
   template<typename T>
@@ -1155,9 +1123,7 @@ class Instruction {
   }
 
   // Read one particular bit out of the instruction bits.
-  inline int Bit(int nr) const {
-    return (InstructionBits() >> nr) & 1;
-  }
+  inline int Bit(int nr) const { return (InstructionBits() >> nr) & 1; }
 
   // Read a bit field's value out of the instruction bits.
   inline int Bits(int hi, int lo) const {
@@ -1187,9 +1153,7 @@ class Instruction {
   // Static support.
 
   // Read one particular bit out of the instruction bits.
-  static inline int Bit(Instr instr, int nr) {
-    return (instr >> nr) & 1;
-  }
+  static inline int Bit(Instr instr, int nr) { return (instr >> nr) & 1; }
 
   // Read the value of a bit field out of the instruction bits.
   static inline int Bits(Instr instr, int hi, int lo) {
@@ -1735,6 +1699,7 @@ class FPRegisters {
   static const char* names_[kNumFPRegisters];
 };
 
-} }  // namespace v8::internal
+}
+}  // namespace v8::internal
 
 #endif  // V8_S390_CONSTANTS_S390_H_
