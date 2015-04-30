@@ -1,6 +1,6 @@
 // Copyright 2012 the V8 project authors. All rights reserved.
 //
-// Copyright IBM Corp. 2012-2014. All rights reserved.
+// Copyright IBM Corp. 2012-2015. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
@@ -23,12 +23,12 @@ namespace internal {
 class LDeferredCode;
 class SafepointGenerator;
 
-class LCodeGen: public LCodeGenBase {
+class LCodeGen : public LCodeGenBase {
  public:
   LCodeGen(LChunk* chunk, MacroAssembler* assembler, CompilationInfo* info)
       : LCodeGenBase(chunk, assembler, info),
         deoptimizations_(4, info->zone()),
-        deopt_jump_table_(4, info->zone()),
+        jump_table_(4, info->zone()),
         deoptimization_literals_(8, info->zone()),
         inlined_function_count_(0),
         scope_(info->scope()),
@@ -52,10 +52,8 @@ class LCodeGen: public LCodeGenBase {
   }
 
   bool NeedsEagerFrame() const {
-    return GetStackSlotCount() > 0 ||
-        info()->is_non_deferred_calling() ||
-        !info()->IsStub() ||
-        info()->requires_frame();
+    return GetStackSlotCount() > 0 || info()->is_non_deferred_calling() ||
+        !info()->IsStub() || info()->requires_frame();
   }
   bool NeedsDeferredFrame() const {
     return !NeedsEagerFrame() && info()->is_deferred_calling();
@@ -105,10 +103,8 @@ class LCodeGen: public LCodeGenBase {
   void DoDeferredNumberTagD(LNumberTagD* instr);
 
   enum IntegerSignedness { SIGNED_INT32, UNSIGNED_INT32 };
-  void DoDeferredNumberTagIU(LInstruction* instr,
-                             LOperand* value,
-                             LOperand* temp1,
-                             LOperand* temp2,
+  void DoDeferredNumberTagIU(LInstruction* instr, LOperand* value,
+                             LOperand* temp1, LOperand* temp2,
                              IntegerSignedness signedness);
 
   void DoDeferredTaggedToI(LTaggedToI* instr);
@@ -120,33 +116,28 @@ class LCodeGen: public LCodeGenBase {
   void DoDeferredInstanceOfKnownGlobal(LInstanceOfKnownGlobal* instr,
                                        Label* map_check);
   void DoDeferredInstanceMigration(LCheckMaps* instr, Register object);
-  void DoDeferredLoadMutableDouble(LLoadFieldByIndex* instr,
-                                   Register result,
-                                   Register object,
-                                   Register index);
+  void DoDeferredLoadMutableDouble(LLoadFieldByIndex* instr, Register result,
+                                   Register object, Register index);
 
   // Parallel move support.
   void DoParallelMove(LParallelMove* move);
   void DoGap(LGap* instr);
 
-  MemOperand PrepareKeyedOperand(Register key,
-                                 Register base,
-                                 bool key_is_constant,
-                                 bool key_is_tagged,
-                                 int constant_key,
-                                 int element_size_shift,
+  MemOperand PrepareKeyedOperand(Register key, Register base,
+                                 bool key_is_constant, bool key_is_tagged,
+                                 int constant_key, int element_size_shift,
                                  int base_offset);
 
   // Emit frame translation commands for an environment.
   void WriteTranslation(LEnvironment* environment, Translation* translation);
 
-  // Declare methods that deal with the individual node types.
-#define DECLARE_DO(type) void Do##type(L##type* node);
-  LITHIUM_CONCRETE_INSTRUCTION_LIST(DECLARE_DO)
-#undef DECLARE_DO
+ // Declare methods that deal with the individual node types.
+ #define DECLARE_DO(type) void Do##type(L##type* node);
+   LITHIUM_CONCRETE_INSTRUCTION_LIST(DECLARE_DO)
+ #undef DECLARE_DO
 
  private:
-  StrictMode strict_mode() const { return info()->strict_mode(); }
+  LanguageMode language_mode() const { return info()->language_mode(); }
 
   Scope* scope() const { return scope_; }
 
@@ -155,12 +146,9 @@ class LCodeGen: public LCodeGenBase {
 
   LInstruction* GetNextInstruction();
 
-  void EmitClassOfTest(Label* if_true,
-                       Label* if_false,
-                       Handle<String> class_name,
-                       Register input,
-                       Register temporary,
-                       Register temporary2);
+  void EmitClassOfTest(Label* if_true, Label* if_false,
+                       Handle<String> class_name, Register input,
+                       Register temporary, Register temporary2);
 
   int GetStackSlotCount() const { return chunk()->spill_slot_count(); }
 
@@ -171,10 +159,10 @@ class LCodeGen: public LCodeGenBase {
 
   // Code generation passes.  Returns true if code generation should
   // continue.
-  void GenerateBodyInstructionPre(LInstruction* instr) V8_OVERRIDE;
+  void GenerateBodyInstructionPre(LInstruction* instr) OVERRIDE;
   bool GeneratePrologue();
   bool GenerateDeferredCode();
-  bool GenerateDeoptJumpTable();
+  bool GenerateJumpTable();
   bool GenerateSafepointTable();
 
   // Generates the custom OSR entrypoint and sets the osr_pc_offset.
@@ -185,65 +173,44 @@ class LCodeGen: public LCodeGenBase {
     RECORD_SAFEPOINT_WITH_REGISTERS_AND_NO_ARGUMENTS
   };
 
-  void CallCode(
-      Handle<Code> code,
-      RelocInfo::Mode mode,
-      LInstruction* instr);
+  void CallCode(Handle<Code> code, RelocInfo::Mode mode, LInstruction* instr);
 
-  void CallCodeGeneric(
-      Handle<Code> code,
-      RelocInfo::Mode mode,
-      LInstruction* instr,
-      SafepointMode safepoint_mode);
+  void CallCodeGeneric(Handle<Code> code, RelocInfo::Mode mode,
+                       LInstruction* instr, SafepointMode safepoint_mode);
 
-  void CallRuntime(const Runtime::Function* function,
-                   int num_arguments,
+  void CallRuntime(const Runtime::Function* function, int num_arguments,
                    LInstruction* instr,
                    SaveFPRegsMode save_doubles = kDontSaveFPRegs);
 
-  void CallRuntime(Runtime::FunctionId id,
-                   int num_arguments,
+  void CallRuntime(Runtime::FunctionId id, int num_arguments,
                    LInstruction* instr) {
     const Runtime::Function* function = Runtime::FunctionForId(id);
     CallRuntime(function, num_arguments, instr);
   }
 
   void LoadContextFromDeferred(LOperand* context);
-  void CallRuntimeFromDeferred(Runtime::FunctionId id,
-                               int argc,
-                               LInstruction* instr,
-                               LOperand* context);
-
-  enum R4State {
-    R4_UNINITIALIZED,
-    R4_CONTAINS_TARGET
-  };
+  void CallRuntimeFromDeferred(Runtime::FunctionId id, int argc,
+                               LInstruction* instr, LOperand* context);
 
   // Generate a direct call to a known function.  Expects the function
   // to be in r4.
   void CallKnownFunction(Handle<JSFunction> function,
-                         int formal_parameter_count,
-                         int arity,
-                         LInstruction* instr,
-                         R4State r4_state);
+                         int formal_parameter_count, int arity,
+                         LInstruction* instr);
 
   void RecordSafepointWithLazyDeopt(LInstruction* instr,
                                     SafepointMode safepoint_mode);
 
   void RegisterEnvironmentForDeoptimization(LEnvironment* environment,
                                             Safepoint::DeoptMode mode);
-  void DeoptimizeIf(Condition condition,
-                    LEnvironment* environment,
-                    Deoptimizer::BailoutType bailout_type,
-                    CRegister cr = cr7);
-  void DeoptimizeIf(Condition condition, LEnvironment* environment,
-                    CRegister cr = cr7);
+  void DeoptimizeIf(Condition condition, LInstruction* instr,
+                    Deoptimizer::DeoptReason deopt_reason,
+                    Deoptimizer::BailoutType bailout_type, CRegister cr = cr7);
+  void DeoptimizeIf(Condition condition, LInstruction* instr,
+                    Deoptimizer::DeoptReason deopt_reason, CRegister cr = cr7);
 
-  void AddToTranslation(LEnvironment* environment,
-                        Translation* translation,
-                        LOperand* op,
-                        bool is_tagged,
-                        bool is_uint32,
+  void AddToTranslation(LEnvironment* environment, Translation* translation,
+                        LOperand* op, bool is_tagged, bool is_uint32,
                         int* object_index_pointer,
                         int* dematerialized_index_pointer);
   void PopulateDeoptimizationData(Handle<Code> code);
@@ -254,8 +221,7 @@ class LCodeGen: public LCodeGenBase {
   Register ToRegister(int index) const;
   DoubleRegister ToDoubleRegister(int index) const;
 
-  MemOperand BuildSeqStringOperand(Register string,
-                                   LOperand* index,
+  MemOperand BuildSeqStringOperand(Register string, LOperand* index,
                                    String::Encoding encoding);
 
   void EmitMathAbs(LMathAbs* instr);
@@ -264,56 +230,43 @@ class LCodeGen: public LCodeGenBase {
 #endif
 
   // Support for recording safepoint and position information.
-  void RecordSafepoint(LPointerMap* pointers,
-                       Safepoint::Kind kind,
-                       int arguments,
-                       Safepoint::DeoptMode mode);
+  void RecordSafepoint(LPointerMap* pointers, Safepoint::Kind kind,
+                       int arguments, Safepoint::DeoptMode mode);
   void RecordSafepoint(LPointerMap* pointers, Safepoint::DeoptMode mode);
   void RecordSafepoint(Safepoint::DeoptMode mode);
-  void RecordSafepointWithRegisters(LPointerMap* pointers,
-                                    int arguments,
+  void RecordSafepointWithRegisters(LPointerMap* pointers, int arguments,
                                     Safepoint::DeoptMode mode);
 
-  void RecordAndWritePosition(int position) V8_OVERRIDE;
+  void RecordAndWritePosition(int position) OVERRIDE;
 
   static Condition TokenToCondition(Token::Value op);
   void EmitGoto(int block);
 
   // EmitBranch expects to be the last instruction of a block.
-  template<class InstrType>
+  template <class InstrType>
   void EmitBranch(InstrType instr, Condition condition, CRegister cr = cr7);
-  template<class InstrType>
+  template <class InstrType>
   void EmitFalseBranch(InstrType instr, Condition condition,
                        CRegister cr = cr7);
-  void EmitNumberUntagD(Register input,
-                        DoubleRegister result,
-                        bool allow_undefined_as_nan,
-                        bool deoptimize_on_minus_zero,
-                        LEnvironment* env,
-                        NumberUntagDMode mode);
+  void EmitNumberUntagD(LNumberUntagD* instr, Register input,
+                        DoubleRegister result, NumberUntagDMode mode);
 
   // Emits optimized code for typeof x == "y".  Modifies input register.
   // Returns the condition on which a final split to
   // true and false label should be made, to optimize fallthrough.
-  Condition EmitTypeofIs(Label* true_label,
-                         Label* false_label,
-                         Register input,
+  Condition EmitTypeofIs(Label* true_label, Label* false_label, Register input,
                          Handle<String> type_name);
 
   // Emits optimized code for %_IsObject(x).  Preserves input register.
   // Returns the condition on which a final split to
   // true and false label should be made, to optimize fallthrough.
-  Condition EmitIsObject(Register input,
-                         Register temp1,
-                         Label* is_not_object,
+  Condition EmitIsObject(Register input, Register temp1, Label* is_not_object,
                          Label* is_object);
 
   // Emits optimized code for %_IsString(x).  Preserves input register.
   // Returns the condition on which a final split to
   // true and false label should be made, to optimize fallthrough.
-  Condition EmitIsString(Register input,
-                         Register temp1,
-                         Label* is_not_string,
+  Condition EmitIsString(Register input, Register temp1, Label* is_not_string,
                          SmiCheck check_needed);
 
   // Emits optimized code for %_IsConstructCall().
@@ -322,13 +275,10 @@ class LCodeGen: public LCodeGenBase {
 
   // Emits optimized code to deep-copy the contents of statically known
   // object graphs (e.g. object literal boilerplate).
-  void EmitDeepCopy(Handle<JSObject> object,
-                    Register result,
-                    Register source,
-                    int* offset,
-                    AllocationSiteMode mode);
+  void EmitDeepCopy(Handle<JSObject> object, Register result, Register source,
+                    int* offset, AllocationSiteMode mode);
 
-  void EnsureSpaceForLazyDeopt(int space_needed) V8_OVERRIDE;
+  void EnsureSpaceForLazyDeopt(int space_needed) OVERRIDE;
   void DoLoadKeyedExternalArray(LLoadKeyed* instr);
   void DoLoadKeyedFixedDoubleArray(LLoadKeyed* instr);
   void DoLoadKeyedFixedArray(LLoadKeyed* instr);
@@ -337,7 +287,7 @@ class LCodeGen: public LCodeGenBase {
   void DoStoreKeyedFixedArray(LStoreKeyed* instr);
 
   ZoneList<LEnvironment*> deoptimizations_;
-  ZoneList<Deoptimizer::JumpTableEntry> deopt_jump_table_;
+  ZoneList<Deoptimizer::JumpTableEntry> jump_table_;
   ZoneList<Handle<Object> > deoptimization_literals_;
   int inlined_function_count_;
   Scope* const scope_;
@@ -355,7 +305,7 @@ class LCodeGen: public LCodeGenBase {
 
   Safepoint::Kind expected_safepoint_kind_;
 
-  class PushSafepointRegistersScope V8_FINAL BASE_EMBEDDED {
+  class PushSafepointRegistersScope FINAL BASE_EMBEDDED {
    public:
     explicit PushSafepointRegistersScope(LCodeGen* codegen)
       : codegen_(codegen) {
@@ -414,6 +364,7 @@ class LDeferredCode : public ZoneObject {
   int instruction_index_;
 };
 
-} }  // namespace v8::internal
+}
+}  // namespace v8::internal
 
 #endif  // V8_S390_LITHIUM_CODEGEN_S390_H_
