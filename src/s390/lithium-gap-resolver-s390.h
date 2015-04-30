@@ -1,6 +1,6 @@
 // Copyright 2011 the V8 project authors. All rights reserved.
 //
-// Copyright IBM Corp. 2012-2014. All rights reserved.
+// Copyright IBM Corp. 2012-2015. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
@@ -19,7 +19,7 @@ namespace internal {
 class LCodeGen;
 class LGapResolver;
 
-class LGapResolver V8_FINAL BASE_EMBEDDED {
+class LGapResolver FINAL BASE_EMBEDDED {
  public:
   explicit LGapResolver(LCodeGen* owner);
 
@@ -58,7 +58,7 @@ class LGapResolver V8_FINAL BASE_EMBEDDED {
   bool in_cycle_;
   LOperand* saved_destination_;
 };
-
-} }  // namespace v8::internal
+}
+}  // namespace v8::internal
 
 #endif  // V8_S390_LITHIUM_GAP_RESOLVER_S390_H_
