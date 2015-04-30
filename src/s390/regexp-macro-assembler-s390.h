@@ -215,8 +215,7 @@ const RegList kRegExpCalleeSaved =
   1 <<  6 | 1 <<  7 | 1 <<  8 | 1 <<  9 | 1 <<  10 | 1 <<  11 | 1 <<  13;
 
 #endif  // V8_INTERPRETED_REGEXP
-
-
-}}  // namespace v8::internal
+}
+}  // namespace v8::internal
 
 #endif  // V8_S390_REGEXP_MACRO_ASSEMBLER_S390_H_
