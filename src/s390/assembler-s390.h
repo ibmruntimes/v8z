@@ -32,11 +32,7 @@
 
 // The original source code covered by the above license above has been
 // modified significantly by Google Inc.
-// Copyright 2012 the V8 project authors. All rights reserved.
-
-//
-// Copyright IBM Corp. 2012-2014. All rights reserved.
-//
+// Copyright 2014 the V8 project authors. All rights reserved.
 
 // A light-weight S390 Assembler
 // Generates user mode instructions for the S390 architecture
@@ -44,7 +40,6 @@
 #ifndef V8_S390_ASSEMBLER_S390_H_
 #define V8_S390_ASSEMBLER_S390_H_
 #include <stdio.h>
-
 #if V8_HOST_ARCH_S390
 // elf.h include is required for auxv check for STFLE facility used
 // for hardware detection, which is sensible only on s390 hosts.
@@ -54,14 +49,12 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include "src/assembler.h"
+#include "src/compiler.h"
 #include "src/s390/constants-s390.h"
 
 #define ABI_USES_FUNCTION_DESCRIPTORS 0
 
 #define ABI_PASSES_HANDLES_IN_REGS 1
-
-#define ABI_RETURNS_HANDLES_IN_REGS \
-  (!V8_HOST_ARCH_S390 || (V8_TARGET_LITTLE_ENDIAN))
 
 #define ABI_RETURNS_OBJECT_PAIRS_IN_REGS \
   (!V8_HOST_ARCH_S390 || (V8_TARGET_LITTLE_ENDIAN))
@@ -103,9 +96,9 @@ struct Register {
   static const int kExponentOffset = 0;
 #endif
 
-  static const int kAllocatableRangeBegin  = 2;
-  static const int kAllocatableRangeEnd    = 9;
-  static const int kAllocatableContext        = 13;  // cp
+  static const int kAllocatableRangeBegin = 2;
+  static const int kAllocatableRangeEnd = 9;
+  static const int kAllocatableContext = 13;  // cp
   static const int kNumAllocatable =
       kAllocatableRangeEnd - kAllocatableRangeBegin + 1;
   static const int kMaxNumAllocatableRegisters =
@@ -142,18 +135,16 @@ struct Register {
   }
 
   static Register from_code(int code) {
-    Register r = { code };
+    Register r = {code};
     return r;
   }
 
   bool is_valid() const { return 0 <= code_ && code_ < kNumRegisters; }
-
   bool is(Register reg) const { return code_ == reg.code_; }
   int code() const {
     DCHECK(is_valid());
     return code_;
   }
-
   int bit() const {
     DCHECK(is_valid());
     return 1 << code_;
@@ -173,49 +164,49 @@ typedef struct Register Register;
 
 // These constants are used in several locations, including static initializers
 const int kRegister_no_reg_Code = -1;
-const int kRegister_r0_Code  =  0;  // general scratch
-const int kRegister_r1_Code  =  1;
-const int kRegister_r2_Code  =  2;
-const int kRegister_r3_Code  =  3;
-const int kRegister_r4_Code  =  4;
-const int kRegister_r5_Code  =  5;
-const int kRegister_r6_Code  =  6;
-const int kRegister_r7_Code  =  7;
-const int kRegister_r8_Code  =  8;
-const int kRegister_r9_Code  =  9;
-const int kRegister_r10_Code  =  10;  // roots array pointer
-const int kRegister_fp_Code  =  11;  // frame pointer
-const int kRegister_r12_Code  =  12;  // ip (general scratch)
-const int kRegister_r13_Code  =  13;
-const int kRegister_r14_Code  =  14;
-const int kRegister_sp_Code  =  15;  // stack pointer
+const int kRegister_r0_Code = 0;  // general scratch
+const int kRegister_r1_Code = 1;
+const int kRegister_r2_Code = 2;
+const int kRegister_r3_Code = 3;
+const int kRegister_r4_Code = 4;
+const int kRegister_r5_Code = 5;
+const int kRegister_r6_Code = 6;
+const int kRegister_r7_Code = 7;
+const int kRegister_r8_Code = 8;
+const int kRegister_r9_Code = 9;
+const int kRegister_r10_Code = 10;  // roots array pointer
+const int kRegister_fp_Code = 11;  // frame pointer
+const int kRegister_r12_Code = 12;  // ip (general scratch)
+const int kRegister_r13_Code = 13;
+const int kRegister_r14_Code = 14;
+const int kRegister_sp_Code = 15;  // stack pointer
 
-const Register no_reg = { kRegister_no_reg_Code };
+const Register no_reg = {kRegister_no_reg_Code};
 
 // Give alias names to registers
-const Register cp = { kRegister_r13_Code };  // JavaScript context pointer
-const Register kRootRegister = { kRegister_r10_Code };  // Roots array pointer.
+const Register cp = {kRegister_r13_Code};  // JavaScript context pointer
+const Register kRootRegister = {kRegister_r10_Code};  // Roots array pointer.
 
-const Register r0  = { kRegister_r0_Code };
+const Register r0  = {kRegister_r0_Code};
 // Lithium scratch register - defined in lithium-codegen-s390.h
-const Register r1  = { kRegister_r1_Code };
-const Register r2  = { kRegister_r2_Code };
-const Register r3  = { kRegister_r3_Code };
-const Register r4  = { kRegister_r4_Code };
-const Register r5  = { kRegister_r5_Code };
-const Register r6  = { kRegister_r6_Code };
-const Register r7  = { kRegister_r7_Code };
-const Register r8  = { kRegister_r8_Code };
-const Register r9  = { kRegister_r9_Code };
+const Register r1  = {kRegister_r1_Code};
+const Register r2  = {kRegister_r2_Code};
+const Register r3  = {kRegister_r3_Code};
+const Register r4  = {kRegister_r4_Code};
+const Register r5  = {kRegister_r5_Code};
+const Register r6  = {kRegister_r6_Code};
+const Register r7  = {kRegister_r7_Code};
+const Register r8  = {kRegister_r8_Code};
+const Register r9  = {kRegister_r9_Code};
 // Used as roots register.
-const Register r10 = { kRegister_r10_Code };
-const Register fp  = { kRegister_fp_Code };
+const Register r10 = {kRegister_r10_Code};
+const Register fp  = {kRegister_fp_Code};
 // IP - Intra procedural register
-const Register ip  = { kRegister_r12_Code };
+const Register ip  = {kRegister_r12_Code};
 // CP - Context Register
-const Register r13  = { kRegister_r13_Code };
-const Register r14  = { kRegister_r14_Code };
-const Register sp   = { kRegister_sp_Code };
+const Register r13  = {kRegister_r13_Code};
+const Register r14  = {kRegister_r14_Code};
+const Register sp   = {kRegister_sp_Code};
 
 // Double word FP register.
 struct DoubleRegister {
@@ -227,13 +218,18 @@ struct DoubleRegister {
   static const int kNumVolatileRegisters = 14;     // d0-d15 except d4 and d6
 #endif
   // TODO(JOHN): may not be true
-  static const int kAllocatableRangeBegin  = 1;
-  static const int kAllocatableRangeEnd    = 12;
+  static const int kAllocatableRangeBegin = 1;
+  static const int kAllocatableRangeEnd = 12;
   static const int kNumAllocatable =
       kAllocatableRangeEnd - kAllocatableRangeBegin + 1;
   static const int kMaxNumAllocatableRegisters =
       kNumAllocatable;
   static int NumAllocatableRegisters() { return kMaxNumAllocatableRegisters; }
+  // TODO(turbofan)
+  inline static int NumAllocatableAliasedRegisters() {
+    return NumAllocatableRegisters();
+  }
+
   static int ToAllocationIndex(DoubleRegister reg) {
     int code = reg.code();
     int index = code - kAllocatableRangeBegin;
@@ -248,7 +244,7 @@ struct DoubleRegister {
 
   static const char* AllocationIndexToString(int index);
   static DoubleRegister from_code(int code) {
-    DoubleRegister r = { code };
+    DoubleRegister r = {code};
     return r;
   }
 
@@ -275,23 +271,23 @@ struct DoubleRegister {
 
 typedef DoubleRegister DoubleRegister;
 
-const DoubleRegister no_dreg = { -1 };
-const DoubleRegister d0  = {  0 };
-const DoubleRegister d1  = {  1 };
-const DoubleRegister d2  = {  2 };
-const DoubleRegister d3  = {  3 };
-const DoubleRegister d4  = {  4 };
-const DoubleRegister d5  = {  5 };
-const DoubleRegister d6  = {  6 };
-const DoubleRegister d7  = {  7 };
-const DoubleRegister d8  = {  8 };
-const DoubleRegister d9  = {  9 };
-const DoubleRegister d10 = { 10 };
-const DoubleRegister d11 = { 11 };
-const DoubleRegister d12 = { 12 };
-const DoubleRegister d13 = { 13 };
-const DoubleRegister d14 = { 14 };
-const DoubleRegister d15 = { 15 };
+const DoubleRegister no_dreg = {-1};
+const DoubleRegister d0 = {0};
+const DoubleRegister d1 = {1};
+const DoubleRegister d2 = {2};
+const DoubleRegister d3 = {3};
+const DoubleRegister d4 = {4};
+const DoubleRegister d5 = {5};
+const DoubleRegister d6 = {6};
+const DoubleRegister d7 = {7};
+const DoubleRegister d8 = {8};
+const DoubleRegister d9 = {9};
+const DoubleRegister d10 = {10};
+const DoubleRegister d11 = {11};
+const DoubleRegister d12 = {12};
+const DoubleRegister d13 = {13};
+const DoubleRegister d14 = {14};
+const DoubleRegister d15 = {15};
 
 // Aliases for double registers.  Defined using #define instead of
 // "static const DoubleRegister&" because Clang complains otherwise when a
@@ -319,24 +315,24 @@ struct CRegister {
 };
 
 
-const CRegister no_creg = { -1 };
+const CRegister no_creg = {-1};
 
-const CRegister cr0  = {  0 };
-const CRegister cr1  = {  1 };
-const CRegister cr2  = {  2 };
-const CRegister cr3  = {  3 };
-const CRegister cr4  = {  4 };
-const CRegister cr5  = {  5 };
-const CRegister cr6  = {  6 };
-const CRegister cr7  = {  7 };
-const CRegister cr8  = {  8 };
-const CRegister cr9  = {  9 };
-const CRegister cr10 = { 10 };
-const CRegister cr11 = { 11 };
-const CRegister cr12 = { 12 };
-const CRegister cr13 = { 13 };
-const CRegister cr14 = { 14 };
-const CRegister cr15 = { 15 };
+const CRegister cr0 = {0};
+const CRegister cr1 = {1};
+const CRegister cr2 = {2};
+const CRegister cr3 = {3};
+const CRegister cr4 = {4};
+const CRegister cr5 = {5};
+const CRegister cr6 = {6};
+const CRegister cr7 = {7};
+const CRegister cr8 = {8};
+const CRegister cr9 = {9};
+const CRegister cr10 = {10};
+const CRegister cr11 = {11};
+const CRegister cr12 = {12};
+const CRegister cr13 = {13};
+const CRegister cr14 = {14};
+const CRegister cr15 = {15};
 
 // -----------------------------------------------------------------------------
 // Machine instruction Operands
@@ -365,10 +361,8 @@ class Operand BASE_EMBEDDED {
  public:
   // immediate
   INLINE(explicit Operand(intptr_t immediate,
-         RelocInfo::Mode rmode = kRelocInfo_NONEPTR));
-  INLINE(static Operand Zero()) {
-    return Operand(static_cast<intptr_t>(0));
-  }
+                          RelocInfo::Mode rmode = kRelocInfo_NONEPTR));
+  INLINE(static Operand Zero()) { return Operand(static_cast<intptr_t>(0)); }
   INLINE(explicit Operand(const ExternalReference& f));
   explicit Operand(Handle<Object> handle);
   INLINE(explicit Operand(Smi* value));
@@ -379,13 +373,6 @@ class Operand BASE_EMBEDDED {
   // Return true if this is a register operand.
   INLINE(bool is_reg() const);
 
-  // For mov.  Return the number of actual instructions required to
-  // load the operand into a register.  This can be anywhere from
-  // one (constant pool small section) to five instructions (full
-  // 64-bit sequence).
-  //
-  // The value returned is only valid as long as no entries are added to the
-  // constant pool between this call and the actual instruction being emitted.
   bool must_output_reloc_info(const Assembler* assembler) const;
 
   inline intptr_t immediate() const {
@@ -448,6 +435,23 @@ class MemOperand BASE_EMBEDDED {
   friend class Assembler;
 };
 
+
+class DeferredRelocInfo {
+ public:
+  DeferredRelocInfo() {}
+  DeferredRelocInfo(int position, RelocInfo::Mode rmode, intptr_t data)
+      : position_(position), rmode_(rmode), data_(data) {}
+
+  int position() const { return position_; }
+  RelocInfo::Mode rmode() const { return rmode_; }
+  intptr_t data() const { return data_; }
+
+ private:
+  int position_;
+  RelocInfo::Mode rmode_;
+  intptr_t data_;
+};
+
 class Assembler : public AssemblerBase {
  public:
   // Create an assembler. Instructions and relocation information are emitted
@@ -464,7 +468,7 @@ class Assembler : public AssemblerBase {
   // is too small, a fatal error occurs. No deallocation of the buffer is done
   // upon destruction of the assembler.
   Assembler(Isolate* isolate, void* buffer, int buffer_size);
-  virtual ~Assembler() { }
+  virtual ~Assembler() {}
 
   // GetCode emits any pending (non-emitted) code and fills the descriptor
   // desc. GetCode() is idempotent; it returns the same result if no other
@@ -487,6 +491,12 @@ class Assembler : public AssemblerBase {
   // but it may be bound only once.
 
   void bind(Label* L);  // binds an unbound label L to the current code position
+
+  // Links a label at the current pc_offset().  If already bound, returns the
+  // bound position.  If already linked, returns the position of the prior link.
+  // Otherwise, returns the current pc_offset().
+  int link(Label* L);
+
   // Determines if Label is bound and near enough so that a single
   // branch instruction can be used to reach it.
   bool is_near(Label* L, Condition cond);
@@ -494,7 +504,10 @@ class Assembler : public AssemblerBase {
   // Returns the branch offset to the given label from the current code position
   // Links the label to the current position if it is still unbound
   // Manages the jump elimination optimization if the second parameter is true.
-  int branch_offset(Label* L, bool jump_elimination_allowed);
+  int branch_offset(Label* L, bool jump_elimination_allowed) {
+    int position = link(L);
+    return position - pc_offset();
+  }
 
   // Puts a labels target address at the given position.
   // The high 8 bits are set to zero.
@@ -502,22 +515,19 @@ class Assembler : public AssemblerBase {
   void load_label_offset(Register r1, Label* L);
 
   // Read/Modify the code target address in the branch/call instruction at pc.
-  INLINE(static Address target_address_at(Address pc, Address constant_pool));
-  INLINE(static void set_target_address_at(Address pc,
-                                           Address constant_pool,
-                                           Address target,
-                                           ICacheFlushMode icache_flush_mode =
-                                               FLUSH_ICACHE_IF_NEEDED));
+  INLINE(static Address target_address_at(Address pc,
+                                          ConstantPoolArray* constant_pool));
+  INLINE(static void set_target_address_at(
+      Address pc, ConstantPoolArray* constant_pool, Address target,
+      ICacheFlushMode icache_flush_mode = FLUSH_ICACHE_IF_NEEDED));
   INLINE(static Address target_address_at(Address pc, Code* code)) {
-    Address constant_pool = code ? code->constant_pool() : NULL;
+    ConstantPoolArray* constant_pool = NULL;
     return target_address_at(pc, constant_pool);
   }
-  INLINE(static void set_target_address_at(Address pc,
-                                           Code* code,
-                                           Address target,
-                                           ICacheFlushMode icache_flush_mode =
-                                               FLUSH_ICACHE_IF_NEEDED)) {
-    Address constant_pool = code ? code->constant_pool() : NULL;
+  INLINE(static void set_target_address_at(
+      Address pc, Code* code, Address target,
+      ICacheFlushMode icache_flush_mode = FLUSH_ICACHE_IF_NEEDED)) {
+    ConstantPoolArray* constant_pool = NULL;
     set_target_address_at(pc, constant_pool, target, icache_flush_mode);
   }
 
@@ -536,6 +546,11 @@ class Assembler : public AssemblerBase {
   // This is for calls and branches within generated code.
   inline static void deserialization_set_special_target_at(
       Address instruction_payload, Code* code, Address target);
+
+  // This sets the internal reference at the pc.
+  inline static void deserialization_set_target_internal_reference_at(
+      Address pc, Address target,
+      RelocInfo::Mode mode = RelocInfo::INTERNAL_REFERENCE);
 
   // Size of an instruction.
   static const int kInstrSize = sizeof(Instr);
@@ -575,7 +590,7 @@ class Assembler : public AssemblerBase {
   //   mov r0, <address>
   //   mtlr r0
   //   blrl
-  static const int kPatchReturnSequenceAddressOffset =  0 * kInstrSize;
+  static const int kPatchReturnSequenceAddressOffset = 0 * kInstrSize;
 
   // Distance between start of patched debug break slot and the emitted address
   // to jump to.
@@ -583,7 +598,7 @@ class Assembler : public AssemblerBase {
   //   mov r0, <address>
   //   mtlr r0
   //   blrl
-  static const int kPatchDebugBreakSlotAddressOffset =  0 * kInstrSize;
+  static const int kPatchDebugBreakSlotAddressOffset = 0 * kInstrSize;
 
   // This is the length of the BreakLocationIterator::SetDebugBreakAtReturn()
   // code patch FIXED_SEQUENCE in bytes!
@@ -1731,9 +1746,7 @@ SS2_FORM(zap);
     explicit BlockTrampolinePoolScope(Assembler* assem) : assem_(assem) {
       assem_->StartBlockTrampolinePool();
     }
-    ~BlockTrampolinePoolScope() {
-      assem_->EndBlockTrampolinePool();
-    }
+    ~BlockTrampolinePoolScope() { assem_->EndBlockTrampolinePool(); }
 
    private:
     Assembler* assem_;
@@ -1767,12 +1780,16 @@ SS2_FORM(zap);
   // Use --code-comments to enable.
   void RecordComment(const char* msg);
 
+  // Record a deoptimization reason that can be used by a log or cpu profiler.
+  // Use --trace-deopt to enable.
+  void RecordDeoptReason(const int reason, const SourcePosition position);
+
   // Writes a single byte or word of data in the code stream.  Used
   // for inline tables, e.g., jump-tables.
   void db(uint8_t data);
   void dd(uint32_t data);
-  void emit_ptr(uintptr_t data);
-
+  void emit_ptr(intptr_t data);
+  void emit_double(double data);
 
   PositionsRecorder* positions_recorder() { return &positions_recorder_; }
 
@@ -1815,7 +1832,13 @@ SS2_FORM(zap);
   // instructions.
   void CheckTrampolinePool();
 
-  int instructions_required_for_mov(const Operand& x) const;
+  // The code currently calls CheckBuffer() too often. This has the side
+  // effect of randomly growing the buffer in the middle of multi-instruction
+  // sequences.
+  //
+  // This function allows outside callers to check and grow the buffer
+  void EnsureSpaceFor(int space_needed);
+
   // Allocate a constant pool of the correct size for the generated code.
   Handle<ConstantPoolArray> NewConstantPool(Isolate* isolate);
 
@@ -1841,7 +1864,7 @@ SS2_FORM(zap);
 
   // Record reloc info for current pc_
   void RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data = 0);
-  void RecordRelocInfo(const RelocInfo& rinfo);
+  void RecordRelocInfo(const DeferredRelocInfo& rinfo);
 
   // Block the emission of the trampoline pool before pc_offset.
   void BlockTrampolinePoolBefore(int pc_offset) {
@@ -1849,26 +1872,15 @@ SS2_FORM(zap);
       no_trampoline_pool_before_ = pc_offset;
   }
 
-  void StartBlockTrampolinePool() {
-    trampoline_pool_blocked_nesting_++;
-  }
-
-  void EndBlockTrampolinePool() {
-    trampoline_pool_blocked_nesting_--;
-  }
-
+  void StartBlockTrampolinePool() { trampoline_pool_blocked_nesting_++; }
+  void EndBlockTrampolinePool() { trampoline_pool_blocked_nesting_--; }
   bool is_trampoline_pool_blocked() const {
     return trampoline_pool_blocked_nesting_ > 0;
   }
 
-  bool has_exception() const {
-    return internal_trampoline_exception_;
-  }
+  bool has_exception() const { return internal_trampoline_exception_; }
 
-  bool is_trampoline_emitted() const {
-    return trampoline_emitted_;
-  }
-
+  bool is_trampoline_emitted() const { return trampoline_emitted_; }
 
  private:
   // Code generation
@@ -2098,11 +2110,9 @@ SS2_FORM(zap);
 
 class EnsureSpace BASE_EMBEDDED {
  public:
-  explicit EnsureSpace(Assembler* assembler) {
-    assembler->CheckBuffer();
-  }
+  explicit EnsureSpace(Assembler* assembler) { assembler->CheckBuffer(); }
 };
-
-} }  // namespace v8::internal
+}
+}  // namespace v8::internal
 
 #endif  // V8_S390_ASSEMBLER_S390_H_
