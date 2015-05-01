@@ -35,7 +35,7 @@
 // Copyright 2012 the V8 project authors. All rights reserved.
 
 //
-// Copyright IBM Corp. 2012-2014. All rights reserved.
+// Copyright IBM Corp. 2012-2015. All rights reserved.
 //
 
 #ifndef V8_S390_ASSEMBLER_S390_INL_H_
@@ -55,8 +55,37 @@ bool CpuFeatures::SupportsCrankshaft() { return true; }
 
 
 void RelocInfo::apply(intptr_t delta, ICacheFlushMode icache_flush_mode) {
-  // We do not use pc relative addressing on S390, so there is
-  // nothing else to do.
+  // Might need to re-implement this once we have BRASL
+  // absolute code pointer inside code object moves with the code object.
+  if (IsInternalReference(rmode_)) {
+    // Jump table entry
+    Address target = Memory::Address_at(pc_);
+    Memory::Address_at(pc_) = target + delta;
+  } else {
+    // mov sequence
+    DCHECK(IsInternalReferenceEncoded(rmode_));
+    Address target = Assembler::target_address_at(pc_, host_);
+    Assembler::set_target_address_at(pc_, host_, target + delta,
+                                     icache_flush_mode);
+  }
+}
+
+
+Address RelocInfo::target_internal_reference() {
+  if (IsInternalReference(rmode_)) {
+    // Jump table entry
+    return Memory::Address_at(pc_);
+  } else {
+    // mov sequence
+    DCHECK(IsInternalReferenceEncoded(rmode_));
+    return Assembler::target_address_at(pc_, host_);
+  }
+}
+
+
+Address RelocInfo::target_internal_reference_address() {
+  DCHECK(IsInternalReference(rmode_) || IsInternalReferenceEncoded(rmode_));
+  return reinterpret_cast<Address>(pc_);
 }
 
 
@@ -67,9 +96,8 @@ Address RelocInfo::target_address() {
 
 
 Address RelocInfo::target_address_address() {
-  DCHECK(IsCodeTarget(rmode_) || IsRuntimeEntry(rmode_)
-                              || rmode_ == EMBEDDED_OBJECT
-                              || rmode_ == EXTERNAL_REFERENCE);
+  DCHECK(IsCodeTarget(rmode_) || IsRuntimeEntry(rmode_) ||
+         rmode_ == EMBEDDED_OBJECT || rmode_ == EXTERNAL_REFERENCE);
 
   // Read the address of the word containing the target_address in an
   // instruction stream.
@@ -90,9 +118,7 @@ Address RelocInfo::constant_pool_entry_address() {
 }
 
 
-int RelocInfo::target_address_size() {
-  return Assembler::kSpecialTargetSize;
-}
+int RelocInfo::target_address_size() { return Assembler::kSpecialTargetSize; }
 
 
 void RelocInfo::set_target_address(Address target,
@@ -100,8 +126,8 @@ void RelocInfo::set_target_address(Address target,
                                    ICacheFlushMode icache_flush_mode) {
   DCHECK(IsCodeTarget(rmode_) || IsRuntimeEntry(rmode_));
   Assembler::set_target_address_at(pc_, host_, target, icache_flush_mode);
-  if (write_barrier_mode == UPDATE_WRITE_BARRIER &&
-      host() != NULL && IsCodeTarget(rmode_)) {
+  if (write_barrier_mode == UPDATE_WRITE_BARRIER && host() != NULL &&
+      IsCodeTarget(rmode_)) {
     Object* target_code = Code::GetCodeFromTargetAddress(target);
     host()->GetHeap()->incremental_marking()->RecordWriteIntoCode(
         host(), this, HeapObject::cast(target_code));
@@ -154,8 +180,8 @@ Object* RelocInfo::target_object() {
 
 Handle<Object> RelocInfo::target_object_handle(Assembler* origin) {
   DCHECK(IsCodeTarget(rmode_) || rmode_ == EMBEDDED_OBJECT);
-  return Handle<Object>(reinterpret_cast<Object**>(
-      Assembler::target_address_at(pc_, host_)));
+  return Handle<Object>(
+      reinterpret_cast<Object**>(Assembler::target_address_at(pc_, host_)));
 }
 
 
@@ -163,11 +189,9 @@ void RelocInfo::set_target_object(Object* target,
                                   WriteBarrierMode write_barrier_mode,
                                   ICacheFlushMode icache_flush_mode) {
   DCHECK(IsCodeTarget(rmode_) || rmode_ == EMBEDDED_OBJECT);
-  Assembler::set_target_address_at(pc_, host_,
-                                   reinterpret_cast<Address>(target),
-                                   icache_flush_mode);
-  if (write_barrier_mode == UPDATE_WRITE_BARRIER &&
-      host() != NULL &&
+  Assembler::set_target_address_at(
+      pc_, host_, reinterpret_cast<Address>(target), icache_flush_mode);
+  if (write_barrier_mode == UPDATE_WRITE_BARRIER && host() != NULL &&
       target->IsHeapObject()) {
     host()->GetHeap()->incremental_marking()->RecordWrite(
         host(), &Memory::Object_at(pc_), HeapObject::cast(target));
@@ -175,7 +199,7 @@ void RelocInfo::set_target_object(Object* target,
 }
 
 
-Address RelocInfo::target_reference() {
+Address RelocInfo::target_external_reference() {
   DCHECK(rmode_ == EXTERNAL_REFERENCE);
   return Assembler::target_address_at(pc_, host_);
 }
@@ -209,8 +233,7 @@ Cell* RelocInfo::target_cell() {
 }
 
 
-void RelocInfo::set_target_cell(Cell* cell,
-                                WriteBarrierMode write_barrier_mode,
+void RelocInfo::set_target_cell(Cell* cell, WriteBarrierMode write_barrier_mode,
                                 ICacheFlushMode icache_flush_mode) {
   DCHECK(rmode_ == RelocInfo::CELL);
   Address address = cell->address() + Cell::kValueOffset;
@@ -218,8 +241,7 @@ void RelocInfo::set_target_cell(Cell* cell,
   if (write_barrier_mode == UPDATE_WRITE_BARRIER && host() != NULL) {
     // TODO(1550) We are passing NULL as a slot because cell can never be on
     // evacuation candidate.
-    host()->GetHeap()->incremental_marking()->RecordWrite(
-        host(), NULL, cell);
+    host()->GetHeap()->incremental_marking()->RecordWrite(host(), NULL, cell);
   }
 }
 
@@ -251,15 +273,14 @@ Handle<Object> RelocInfo::code_age_stub_handle(Assembler* origin) {
 Code* RelocInfo::code_age_stub() {
   DCHECK(rmode_ == RelocInfo::CODE_AGE_SEQUENCE);
   return Code::GetCodeFromTargetAddress(
-    Assembler::target_address_at(pc_ + kCodeAgingTargetDelta, host_));
+      Assembler::target_address_at(pc_ + kCodeAgingTargetDelta, host_));
 }
 
 
 void RelocInfo::set_code_age_stub(Code* stub,
                                   ICacheFlushMode icache_flush_mode) {
   DCHECK(rmode_ == RelocInfo::CODE_AGE_SEQUENCE);
-  Assembler::set_target_address_at(pc_ + kCodeAgingTargetDelta,
-                                   host_,
+  Assembler::set_target_address_at(pc_ + kCodeAgingTargetDelta, host_,
                                    stub->instruction_start(),
                                    icache_flush_mode);
 }
@@ -269,8 +290,8 @@ Address RelocInfo::call_address() {
   DCHECK((IsJSReturn(rmode()) && IsPatchedReturnSequence()) ||
          (IsDebugBreakSlot(rmode()) && IsPatchedDebugBreakSlotSequence()));
   // The pc_ offset of 0 assumes patched return sequence per
-  // BreakLocationIterator::SetDebugBreakAtReturn(), or debug break
-  // slot per BreakLocationIterator::SetDebugBreakAtSlot().
+  // BreakLocation::SetDebugBreakAtReturn(), or debug break
+  // slot per BreakLocation::SetDebugBreakAtSlot().
   return Assembler::target_address_at(pc_, host_);
 }
 
@@ -287,9 +308,7 @@ void RelocInfo::set_call_address(Address target) {
 }
 
 
-Object* RelocInfo::call_object() {
-  return *call_object_address();
-}
+Object* RelocInfo::call_object() { return *call_object_address(); }
 
 
 void RelocInfo::set_call_object(Object* target) {
@@ -305,41 +324,48 @@ Object** RelocInfo::call_object_address() {
 
 
 void RelocInfo::WipeOut() {
-  DCHECK(IsEmbeddedObject(rmode_) ||
-         IsCodeTarget(rmode_) ||
-         IsRuntimeEntry(rmode_) ||
-         IsExternalReference(rmode_));
-  Assembler::set_target_address_at(pc_, host_, NULL);
+  DCHECK(IsEmbeddedObject(rmode_) || IsCodeTarget(rmode_) ||
+         IsRuntimeEntry(rmode_) || IsExternalReference(rmode_));
+  if (IsInternalReference(rmode_)) {
+    // Jump table entry
+    Memory::Address_at(pc_) = NULL;
+  } else if (IsInternalReferenceEncoded(rmode_)) {
+    // mov sequence
+    // Currently used only by deserializer, no need to flush.
+    Assembler::set_target_address_at(pc_, host_, NULL, SKIP_ICACHE_FLUSH);
+  } else {
+    Assembler::set_target_address_at(pc_, host_, NULL);
+  }
 }
 
 
 bool RelocInfo::IsPatchedReturnSequence() {
   //
   // The patched return sequence is defined by
-  // BreakLocationIterator::SetDebugBreakAtReturn()
+  // BreakLocation::SetDebugBreakAtReturn()
   // FIXED_SEQUENCE
 
   bool patched_return = true;
 #if V8_TARGET_ARCH_S390X
-  Opcode instr0 = Instruction::S390OpcodeValue(
-                                      reinterpret_cast<const byte*>(pc_));
-  Opcode instr1 = Instruction::S390OpcodeValue(
-                                      reinterpret_cast<const byte*>(pc_+6));
-  Opcode basr = Instruction::S390OpcodeValue(
-                                      reinterpret_cast<const byte*>(pc_ + 12));
-  Opcode bkpt = Instruction::S390OpcodeValue(
-                                      reinterpret_cast<const byte*>(pc_ + 14));
+  Opcode instr0 =
+      Instruction::S390OpcodeValue(reinterpret_cast<const byte*>(pc_));
+  Opcode instr1 =
+      Instruction::S390OpcodeValue(reinterpret_cast<const byte*>(pc_+6));
+  Opcode basr =
+      Instruction::S390OpcodeValue(reinterpret_cast<const byte*>(pc_ + 12));
+  Opcode bkpt =
+      Instruction::S390OpcodeValue(reinterpret_cast<const byte*>(pc_ + 14));
   patched_return = (IIHF == instr0);
 #else
-  Opcode instr1 = Instruction::S390OpcodeValue(
-                                      reinterpret_cast<const byte*>(pc_));
-  Opcode basr = Instruction::S390OpcodeValue(
-                                      reinterpret_cast<const byte*>(pc_ + 6));
-  Opcode bkpt = Instruction::S390OpcodeValue(
-                                      reinterpret_cast<const byte*>(pc_ + 8));
+  Opcode instr1 =
+      Instruction::S390OpcodeValue(reinterpret_cast<const byte*>(pc_));
+  Opcode basr =
+      Instruction::S390OpcodeValue(reinterpret_cast<const byte*>(pc_ + 6));
+  Opcode bkpt =
+      Instruction::S390OpcodeValue(reinterpret_cast<const byte*>(pc_ + 8));
 #endif
-  patched_return = patched_return &&
-                   (IILF == instr1) && (BASR == basr) && (BKPT == bkpt);
+  patched_return =
+      patched_return && (IILF == instr1) && (BASR == basr) && (BKPT == bkpt);
 
   return patched_return;
 }
@@ -361,12 +387,14 @@ void RelocInfo::Visit(Isolate* isolate, ObjectVisitor* visitor) {
     visitor->VisitCell(this);
   } else if (mode == RelocInfo::EXTERNAL_REFERENCE) {
     visitor->VisitExternalReference(this);
+  } else if (mode == RelocInfo::INTERNAL_REFERENCE ||
+             mode == RelocInfo::INTERNAL_REFERENCE_ENCODED) {
+    visitor->VisitInternalReference(this);
   } else if (RelocInfo::IsCodeAgeSequence(mode)) {
     visitor->VisitCodeAgeSequence(this);
-  } else if (((RelocInfo::IsJSReturn(mode) &&
-              IsPatchedReturnSequence()) ||
-             (RelocInfo::IsDebugBreakSlot(mode) &&
-              IsPatchedDebugBreakSlotSequence())) &&
+  } else if (((RelocInfo::IsJSReturn(mode) && IsPatchedReturnSequence()) ||
+              (RelocInfo::IsDebugBreakSlot(mode) &&
+               IsPatchedDebugBreakSlotSequence())) &&
              isolate->debug()->has_break_points()) {
     visitor->VisitDebugTarget(this);
   } else if (IsRuntimeEntry(mode)) {
@@ -375,7 +403,7 @@ void RelocInfo::Visit(Isolate* isolate, ObjectVisitor* visitor) {
 }
 
 
-template<typename StaticVisitor>
+template <typename StaticVisitor>
 void RelocInfo::Visit(Heap* heap) {
   RelocInfo::Mode mode = rmode();
   if (mode == RelocInfo::EMBEDDED_OBJECT) {
@@ -386,13 +414,15 @@ void RelocInfo::Visit(Heap* heap) {
     StaticVisitor::VisitCell(heap, this);
   } else if (mode == RelocInfo::EXTERNAL_REFERENCE) {
     StaticVisitor::VisitExternalReference(this);
+  } else if (mode == RelocInfo::INTERNAL_REFERENCE ||
+             mode == RelocInfo::INTERNAL_REFERENCE_ENCODED) {
+    StaticVisitor::VisitInternalReference(this);
   } else if (RelocInfo::IsCodeAgeSequence(mode)) {
     StaticVisitor::VisitCodeAgeSequence(heap, this);
   } else if (heap->isolate()->debug()->has_break_points() &&
-             ((RelocInfo::IsJSReturn(mode) &&
-              IsPatchedReturnSequence()) ||
-             (RelocInfo::IsDebugBreakSlot(mode) &&
-              IsPatchedDebugBreakSlotSequence()))) {
+             ((RelocInfo::IsJSReturn(mode) && IsPatchedReturnSequence()) ||
+              (RelocInfo::IsDebugBreakSlot(mode) &&
+               IsPatchedDebugBreakSlotSequence()))) {
     StaticVisitor::VisitDebugTarget(heap, this);
   } else if (IsRuntimeEntry(mode)) {
     StaticVisitor::VisitRuntimeEntry(this);
@@ -400,13 +430,13 @@ void RelocInfo::Visit(Heap* heap) {
 }
 
 // Operand constructors
-Operand::Operand(intptr_t immediate, RelocInfo::Mode rmode)  {
+Operand::Operand(intptr_t immediate, RelocInfo::Mode rmode) {
   rm_ = no_reg;
   imm_ = immediate;
   rmode_ = rmode;
 }
 
-Operand::Operand(const ExternalReference& f)  {
+Operand::Operand(const ExternalReference& f) {
   rm_ = no_reg;
   imm_ = reinterpret_cast<intptr_t>(f.address());
   rmode_ = RelocInfo::EXTERNAL_REFERENCE;
@@ -414,7 +444,7 @@ Operand::Operand(const ExternalReference& f)  {
 
 Operand::Operand(Smi* value) {
   rm_ = no_reg;
-  imm_ =  reinterpret_cast<intptr_t>(value);
+  imm_ = reinterpret_cast<intptr_t>(value);
   rmode_ = kRelocInfo_NONEPTR;
 }
 
@@ -489,14 +519,12 @@ void Assembler::emit6bytes(uint64_t x) {
 }
 // end of S390 specific emitting helpers
 
-bool Operand::is_reg() const {
-  return rm_.is_valid();
-}
+bool Operand::is_reg() const { return rm_.is_valid(); }
 
 
 // Fetch the 32bit value from the FIXED_SEQUENCE IIHF / IILF
 Address Assembler::target_address_at(Address pc,
-                                     Address constant_pool) {
+                                     ConstantPoolArray* constant_pool) {
   // S390 Instruction!
   // We want to check for instructions generated by Asm::mov()
   Opcode op1 = Instruction::S390OpcodeValue(reinterpret_cast<const byte*>(pc));
@@ -535,9 +563,21 @@ void Assembler::deserialization_set_special_target_at(
   set_target_address_at(instruction_payload, code, target);
 }
 
+
+void Assembler::deserialization_set_target_internal_reference_at(
+    Address pc, Address target, RelocInfo::Mode mode) {
+  if (RelocInfo::IsInternalReferenceEncoded(mode)) {
+    Code* code = NULL;
+    set_target_address_at(pc, code, target, SKIP_ICACHE_FLUSH);
+  } else {
+    Memory::Address_at(pc) = target;
+  }
+}
+
+
 // This code assumes the FIXED_SEQUENCE of IIHF/IILF
 void Assembler::set_target_address_at(Address pc,
-                                      Address constant_pool,
+                                      ConstantPoolArray* constant_pool,
                                       Address target,
                                       ICacheFlushMode icache_flush_mode) {
   // S390 Instruction!
@@ -593,7 +633,7 @@ void Assembler::set_target_address_at(Address pc,
   if (!patched)
     UNREACHABLE();
 }
-
-} }  // namespace v8::internal
+}
+}  // namespace v8::internal
 
 #endif  // V8_S390_ASSEMBLER_S390_INL_H_
