@@ -773,7 +773,7 @@ class Isolate {
 
   // Find the correct handler for the current pending exception. This also
   // clears and returns the current pending exception.
-  Object* FindHandler();
+  Object* UnwindAndFindHandler();
 
   // Tries to predict whether an exception will be caught. Note that this can
   // only produce an estimate, because it is undecidable whether a finally
@@ -1262,6 +1262,10 @@ class Isolate {
   // If there is no external try-catch or message was successfully propagated,
   // then return true.
   bool PropagatePendingExceptionToExternalTryCatch();
+
+  // Remove per-frame stored materialized objects when we are unwinding
+  // the frame.
+  void RemoveMaterializedObjectsOnUnwind(StackFrame* frame);
 
   // Traverse prototype chain to find out whether the object is derived from
   // the Error object.
