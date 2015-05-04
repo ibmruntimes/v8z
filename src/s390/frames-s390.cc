@@ -1,7 +1,4 @@
-// Copyright 2011 the V8 project authors. All rights reserved.
-//
-// Copyright IBM Corp. 2012-2014. All rights reserved.
-//
+// Copyright 2015 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -40,8 +37,7 @@ Object*& ExitFrame::constant_pool_slot() const {
   UNREACHABLE();
   return Memory::Object_at(NULL);
 }
-
-
-} }  // namespace v8::internal
+}
+}  // namespace v8::internal
 
 #endif  // V8_TARGET_ARCH_S390
