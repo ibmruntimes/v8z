@@ -1,7 +1,4 @@
-// Copyright 2009 the V8 project authors. All rights reserved.
-//
-// Copyright IBM Corp. 2012-2014. All rights reserved.
-//
+// Copyright 2015 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -24,15 +21,13 @@ const char* Registers::names_[kNumRegisters] = {
 
 
 // List of alias names which can be used when referring to PPC registers.
-const Registers::RegisterAlias Registers::aliases_[] = {
-  {10, "sl"},
-  {11, "r11"},
-  {12, "r12"},
-  {13, "r13"},
-  {14, "r14"},
-  {15, "r15"},
-  {kNoRegister, NULL}
-};
+const Registers::RegisterAlias Registers::aliases_[] = {{10, "sl"},
+                                                        {11, "r11"},
+                                                        {12, "r12"},
+                                                        {13, "r13"},
+                                                        {14, "r14"},
+                                                        {15, "r15"},
+                                                        {kNoRegister, NULL}};
 
 
 const char* Registers::Name(int reg) {
@@ -61,7 +56,7 @@ const char* FPRegisters::Name(int reg) {
 int FPRegisters::Number(const char* name) {
   for (int i = 0; i < kNumFPRegisters; i++) {
     if (strcmp(names_[i], name) == 0) {
-        return i;
+      return i;
     }
   }
 
@@ -90,8 +85,7 @@ int Registers::Number(const char* name) {
   // No register with the requested name found.
   return kNoRegister;
 }
-
-
-} }  // namespace v8::internal
+}
+}  // namespace v8::internal
 
 #endif  // V8_TARGET_ARCH_S390
