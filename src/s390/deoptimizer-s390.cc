@@ -1,7 +1,4 @@
-// Copyright 2012 the V8 project authors. All rights reserved.
-//
-// Copyright IBM Corp. 2012-2014. All rights reserved.
-//
+// Copyright 2015 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -25,6 +22,12 @@ int Deoptimizer::patch_size() {
   const int kCallInstructionSize = 10;
 #endif
   return kCallInstructionSize;
+}
+
+
+void Deoptimizer::EnsureRelocSpaceForLazyDeoptimization(Handle<Code> code) {
+  // Empty because there is no need for relocation information for the code
+  // patching in Deoptimizer::PatchCodeForDeoptimization below.
 }
 
 
@@ -68,9 +71,8 @@ void Deoptimizer::PatchCodeForDeoptimization(Isolate* isolate, Code* code) {
     Address deopt_entry = GetDeoptimizationEntry(isolate, i, LAZY);
     // We need calls to have a predictable size in the unoptimized code, but
     // this is optimized code, so we don't have to have a predictable size.
-    int call_size_in_bytes =
-        MacroAssembler::CallSizeNotPredictableCodeSize(deopt_entry,
-                                                       kRelocInfo_NONEPTR);
+    int call_size_in_bytes = MacroAssembler::CallSizeNotPredictableCodeSize(
+        deopt_entry, kRelocInfo_NONEPTR);
     DCHECK(call_size_in_bytes <= patch_size());
     CodePatcher patcher(call_address, call_size_in_bytes);  // FIXME: 2ND ARG
     patcher.masm()->Call(deopt_entry, kRelocInfo_NONEPTR);
@@ -103,14 +105,14 @@ void Deoptimizer::FillInputFrame(Address tos, JavaScriptFrame* frame) {
 
   // Fill the frame content from the actual data on the frame.
   for (unsigned i = 0; i < input_->GetFrameSize(); i += kPointerSize) {
-    input_->SetFrameSlot(i, reinterpret_cast<intptr_t>(
-                           Memory::Address_at(tos + i)));
+    input_->SetFrameSlot(
+        i, reinterpret_cast<intptr_t>(Memory::Address_at(tos + i)));
   }
 }
 
 
 void Deoptimizer::SetPlatformCompiledStubRegisters(
-    FrameDescription* output_frame, CodeStubInterfaceDescriptor* descriptor) {
+    FrameDescription* output_frame, CodeStubDescriptor* descriptor) {
   ApiFunction function(descriptor->deoptimization_handler());
   ExternalReference xref(&function, ExternalReference::BUILTIN_CALL, isolate_);
   intptr_t handler = reinterpret_cast<intptr_t>(xref.address());
@@ -138,7 +140,7 @@ bool Deoptimizer::HasAlignmentPadding(JSFunction* function) {
 
 // This code tries to be close to ia32 code so that any changes can be
 // easily ported.
-void Deoptimizer::EntryGenerator::Generate() {
+void Deoptimizer::TableEntryGenerator::Generate() {
   GeneratePrologue();
 
   // Save all the registers onto the stack
@@ -160,6 +162,9 @@ void Deoptimizer::EntryGenerator::Generate() {
   // Push all GPRs onto the stack
   __ lay(sp, MemOperand(sp, -kNumberOfRegisters * kPointerSize));
   __ StoreMultipleP(r0, sp, MemOperand(sp));   // Save all 16 registers
+
+  __ mov(ip, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate())));
+  __ StoreP(fp, MemOperand(ip));
 
   const int kSavedRegistersAreaSize =
       (kNumberOfRegisters * kPointerSize) + kDoubleRegsSize;
@@ -242,13 +247,12 @@ void Deoptimizer::EntryGenerator::Generate() {
   {
     AllowExternalCallThatCantCauseGC scope(masm());
     __ CallCFunction(
-      ExternalReference::compute_output_frames_function(isolate()), 1);
+        ExternalReference::compute_output_frames_function(isolate()), 1);
   }
   __ pop(r2);  // Restore deoptimizer object (class Deoptimizer).
 
   // Replace the current (input) frame with the output frames.
-  Label outer_push_loop, inner_push_loop,
-    outer_loop_header, inner_loop_header;
+  Label outer_push_loop, inner_push_loop, outer_loop_header, inner_loop_header;
   // Outer loop state: r6 = current "FrameDescription** output_",
   // r3 = one past the last FrameDescription**.
   __ LoadlW(r3, MemOperand(r2, Deoptimizer::output_count_offset()));
@@ -350,5 +354,5 @@ void FrameDescription::SetCallerConstantPool(unsigned offset, intptr_t value) {
 
 
 #undef __
-
-} }  // namespace v8::internal
+}
+}  // namespace v8::internal
