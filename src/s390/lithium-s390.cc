@@ -1268,8 +1268,8 @@ LInstruction* LChunkBuilder::DoCallFunction(HCallFunction* instr) {
   LOperand* slot = NULL;
   LOperand* vector = NULL;
   if (instr->HasVectorAndSlot()) {
-    slot = FixedTemp(r6);
-    vector = FixedTemp(r5);
+    slot = FixedTemp(r5);
+    vector = FixedTemp(r4);
   }
 
   LCallFunction* call =
