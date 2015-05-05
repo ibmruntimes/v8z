@@ -1,6 +1,6 @@
 // Copyright 2012 the V8 project authors. All rights reserved.
 //
-// Copyright IBM Corp. 2012-2015. All rights reserved.
+// Copyright IBM Corp. 2012, 2015. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
@@ -1103,7 +1103,7 @@ LInstruction* LChunkBuilder::DoCallWithDescriptor(HCallWithDescriptor* instr) {
   ops.Add(target, zone());
   for (int i = 1; i < instr->OperandCount(); i++) {
     LOperand* op =
-        UseFixed(instr->OperandAt(i), descriptor->GetParameterRegister(i - 1));
+        UseFixed(instr->OperandAt(i), descriptor.GetParameterRegister(i - 1));
     ops.Add(op, zone());
   }
 
@@ -1257,6 +1257,14 @@ LInstruction* LChunkBuilder::DoCallNew(HCallNew* instr) {
 LInstruction* LChunkBuilder::DoCallNewArray(HCallNewArray* instr) {
   LOperand* context = UseFixed(instr->context(), cp);
   LOperand* constructor = UseFixed(instr->constructor(), r3);
+  LCallNewArray* result = new(zone()) LCallNewArray(context, constructor);
+  return MarkAsCall(DefineFixed(result, r2), instr);
+}
+
+
+LInstruction* LChunkBuilder::DoCallFunction(HCallFunction* instr) {
+  LOperand* context = UseFixed(instr->context(), cp);
+  LOperand* function = UseFixed(instr->function(), r3);
   LOperand* slot = NULL;
   LOperand* vector = NULL;
   if (instr->HasVectorAndSlot()) {
@@ -1266,14 +1274,6 @@ LInstruction* LChunkBuilder::DoCallNewArray(HCallNewArray* instr) {
 
   LCallFunction* call =
       new (zone()) LCallFunction(context, function, slot, vector);
-  return MarkAsCall(DefineFixed(result, r2), instr);
-}
-
-
-LInstruction* LChunkBuilder::DoCallFunction(HCallFunction* instr) {
-  LOperand* context = UseFixed(instr->context(), cp);
-  LOperand* function = UseFixed(instr->function(), r3);
-  LCallFunction* call = new (zone()) LCallFunction(context, function);
   return MarkAsCall(DefineFixed(call, r2), instr);
 }
 
@@ -2101,7 +2101,7 @@ LInstruction* LChunkBuilder::DoConstant(HConstant* instr) {
 LInstruction* LChunkBuilder::DoLoadGlobalGeneric(HLoadGlobalGeneric* instr) {
   LOperand* context = UseFixed(instr->context(), cp);
   LOperand* global_object =
-      UseFixed(instr->global_object(), LoadIC::ReceiverRegister());
+      UseFixed(instr->global_object(), LoadDescriptor::ReceiverRegister());
   LOperand* vector = NULL;
   if (instr->HasVectorAndSlot()) {
     vector = FixedTemp(VectorLoadICDescriptor::VectorRegister());
@@ -2218,7 +2218,6 @@ LInstruction* LChunkBuilder::DoLoadKeyedGeneric(HLoadKeyedGeneric* instr) {
   LOperand* object =
       UseFixed(instr->object(), LoadDescriptor::ReceiverRegister());
   LOperand* key = UseFixed(instr->key(), LoadDescriptor::NameRegister());
-  LOperand* key = UseFixed(instr->key(), LoadIC::NameRegister());
   LOperand* vector = NULL;
   if (instr->HasVectorAndSlot()) {
     vector = FixedTemp(VectorLoadICDescriptor::VectorRegister());
