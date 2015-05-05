@@ -32,16 +32,13 @@
 
 // The original source code covered by the above license above has been
 // modified significantly by Google Inc.
-// Copyright 2012 the V8 project authors. All rights reserved.
-
-//
-// Copyright IBM Corp. 2012-2014. All rights reserved.
-//
+// Copyright 2015 the V8 project authors. All rights reserved.
 
 #include "src/v8.h"
 
 #if V8_TARGET_ARCH_S390
 
+#include "src/base/bits.h"
 #include "src/base/cpu.h"
 #include "src/s390/assembler-s390-inl.h"
 
@@ -193,9 +190,9 @@ void CpuFeatures::PrintFeatures() {
 
 Register ToRegister(int num) {
   DCHECK(num >= 0 && num < kNumRegisters);
-  const Register kRegisters[] = {
-    r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, fp, ip, r13, r14, sp
-  };
+  const Register kRegisters[] = {r0, r1, r2, r3, r4, r5, r6, r7,
+                                 r8, r9, r10, fp, ip, r13, r14,
+								 sp};
   return kRegisters[num];
 }
 
@@ -203,9 +200,8 @@ Register ToRegister(int num) {
 const char* DoubleRegister::AllocationIndexToString(int index) {
   DCHECK(index >= 0 && index < kMaxNumAllocatableRegisters);
   const char* const names[] = {
-    "d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9", "d10", "d11", "d12",
-    "d15"
-  };
+      "d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9", "d10",
+	  "d11", "d12","d15"};
   return names[index];
 }
 
@@ -213,7 +209,8 @@ const char* DoubleRegister::AllocationIndexToString(int index) {
 // -----------------------------------------------------------------------------
 // Implementation of RelocInfo
 
-const int RelocInfo::kApplyMask = 1 << RelocInfo::INTERNAL_REFERENCE;
+const int RelocInfo::kApplyMask = 1 << RelocInfo::INTERNAL_REFERENCE |
+                                  1 << RelocInfo::INTERNAL_REFERENCE_ENCODED;
 
 
 bool RelocInfo::IsCodedSpecially() {
@@ -227,30 +224,6 @@ bool RelocInfo::IsCodedSpecially() {
 
 bool RelocInfo::IsInConstantPool() {
   return false;
-}
-
-
-void RelocInfo::PatchCode(byte* instructions, int num_bytes) {
-  // Patch the code at the current address with the supplied instructions.
-  byte* pc = reinterpret_cast<byte*>(pc_);
-  byte *instr = instructions;
-
-  // We patch byte to byte as instructions have to be stored in big endian
-  // regardless of host's endianness
-  for (int i = 0; i < num_bytes; i++) {
-    *(pc++) = *(instr++);
-  }
-
-  // Indicate that code has changed.
-  CpuFeatures::FlushICache(pc_, num_bytes);
-}
-
-
-// Patch the code at the current PC with a call to the target address.
-// Additional guard instructions can be added if required.
-void RelocInfo::PatchCodeWithCall(Address target, int guard_bytes) {
-  // Patch the code at the current address with a call to the target.
-  UNIMPLEMENTED();
 }
 
 
@@ -269,7 +242,7 @@ Operand::Operand(Handle<Object> handle) {
     rmode_ = RelocInfo::EMBEDDED_OBJECT;
   } else {
     // no relocation needed
-    imm_   = reinterpret_cast<intptr_t>(obj);
+    imm_ = reinterpret_cast<intptr_t>(obj);
     rmode_ = kRelocInfo_NONEPTR;
   }
 }
@@ -291,6 +264,8 @@ MemOperand::MemOperand(Register rx, Register rb, int32_t offset) {
 
 // -----------------------------------------------------------------------------
 // Specific instructions, constants, and masks.
+
+
 Assembler::Assembler(Isolate* isolate, void* buffer, int buffer_size)
     : AssemblerBase(isolate, buffer, buffer_size),
       recorded_ast_id_(TypeFeedbackId::None()),
@@ -301,18 +276,21 @@ Assembler::Assembler(Isolate* isolate, void* buffer, int buffer_size)
   trampoline_pool_blocked_nesting_ = 0;
   // We leave space (kMaxBlockTrampolineSectionSize)
   // for BlockTrampolinePoolScope buffer.
-  next_buffer_check_ = FLAG_force_long_branches
-      ? kMaxInt : kMaxCondBranchReach - kMaxBlockTrampolineSectionSize;
+  next_buffer_check_ =
+      FLAG_force_long_branches ? kMaxInt : kMaxCondBranchReach -
+                                               kMaxBlockTrampolineSectionSize;
   internal_trampoline_exception_ = false;
   last_bound_pos_ = 0;
-
   trampoline_emitted_ = FLAG_force_long_branches;
   unbound_labels_count_ = 0;
   ClearRecordedAstId();
+  relocations_.reserve(128);
 }
 
 
 void Assembler::GetCode(CodeDesc* desc) {
+  EmitRelocations();
+
   // Set up code descriptor.
   desc->buffer = buffer_;
   desc->buffer_size = buffer_size_;
@@ -323,16 +301,18 @@ void Assembler::GetCode(CodeDesc* desc) {
 
 
 void Assembler::Align(int m) {
-  DCHECK(m >= 4 && IsPowerOf2(m));
+#if V8_TARGET_ARCH_S390
+  DCHECK(m >= 4 && base::bits::IsPowerOfTwo64(m));
+#else
+  DCHECK(m >= 4 && base::bits::IsPowerOfTwo32(m));
+#endif
   while ((pc_offset() & (m - 1)) != 0) {
     nop();
   }
 }
 
 
-void Assembler::CodeTargetAlign() {
-  Align(8);
-}
+void Assembler::CodeTargetAlign() { Align(8); }
 
 
 Condition Assembler::GetCondition(Instr instr) {
@@ -343,7 +323,7 @@ Condition Assembler::GetCondition(Instr instr) {
       return ne;
     default:
       UNIMPLEMENTED();
-    }
+  }
   return al;
 }
 
@@ -502,8 +482,7 @@ void Assembler::bind_to(Label* L, int pos) {
 
   // Keep track of the last bound label so we don't eliminate any instructions
   // before a bound label.
-  if (pos > last_bound_pos_)
-    last_bound_pos_ = pos;
+  if (pos > last_bound_pos_) last_bound_pos_ = pos;
 }
 
 
@@ -527,8 +506,7 @@ void Assembler::next(Label* L) {
 
 bool Assembler::is_near(Label* L, Condition cond) {
   DCHECK(L->is_bound());
-  if (L->is_bound() == false)
-    return false;
+  if (L->is_bound() == false) return false;
 
   int maxReach = ((cond == al) ? 26 : 16);
   int offset = L->pos() - pc_offset();
@@ -552,19 +530,19 @@ int32_t Assembler::get_trampoline_entry() {
 }
 
 
-int Assembler::branch_offset(Label* L, bool jump_elimination_allowed) {
-  int target_pos;
+int Assembler::link(Label* L) {
+  int position;
   if (L->is_bound()) {
-    target_pos = L->pos();
+    position = L->pos();
   } else {
     if (L->is_linked()) {
-      target_pos = L->pos();  // L's link
+      position = L->pos();  // L's link
     } else {
       // was: target_pos = kEndOfChain;
-      // However, using branch to self to mark the first reference
+      // However, using self to mark the first reference
       // should avoid most instances of branch offset overflow.  See
       // target_at() for where this is converted back to kEndOfChain.
-      target_pos = pc_offset();
+      position = pc_offset();
       if (!trampoline_emitted_) {
         unbound_labels_count_++;
         next_buffer_check_ -= kTrampolineSlotsSize;
@@ -573,7 +551,7 @@ int Assembler::branch_offset(Label* L, bool jump_elimination_allowed) {
     L->link_to(pc_offset());
   }
 
-  return target_pos - pc_offset();
+  return position;
 }
 
 
@@ -3731,29 +3709,6 @@ bool Assembler::IsNop(SixByteInstr instr, int type) {
 }
 
 
-// Debugging.
-void Assembler::RecordJSReturn() {
-  positions_recorder()->WriteRecordedPositions();
-  CheckBuffer();
-  RecordRelocInfo(RelocInfo::JS_RETURN);
-}
-
-
-void Assembler::RecordDebugBreakSlot() {
-  positions_recorder()->WriteRecordedPositions();
-  CheckBuffer();
-  RecordRelocInfo(RelocInfo::DEBUG_BREAK_SLOT);
-}
-
-
-void Assembler::RecordComment(const char* msg) {
-  if (FLAG_code_comments) {
-    CheckBuffer();
-    RecordRelocInfo(RelocInfo::COMMENT, reinterpret_cast<intptr_t>(msg));
-  }
-}
-
-
 void Assembler::GrowBuffer() {
   if (!own_buffer_) FATAL("external code buffer is too small");
 
@@ -3810,27 +3765,34 @@ void Assembler::dd(uint32_t data) {
 }
 
 
-void Assembler::emit_ptr(uintptr_t data) {
+void Assembler::emit_ptr(intptr_t data) {
   CheckBuffer();
   *reinterpret_cast<uintptr_t*>(pc_) = data;
   pc_ += sizeof(uintptr_t);
 }
 
 
+void Assembler::emit_double(double value) {
+    CheckBuffer();
+      *reinterpret_cast<double*>(pc_) = value;
+        pc_ += sizeof(double);
+}
+
+
 void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
-  RelocInfo rinfo(pc_, rmode, data, NULL);
+  DeferredRelocInfo rinfo(pc_offset(), rmode, data);
   RecordRelocInfo(rinfo);
 }
 
 
-void Assembler::RecordRelocInfo(const RelocInfo& rinfo) {
+void Assembler::RecordRelocInfo(const DeferredRelocInfo& rinfo) {
   if (rinfo.rmode() >= RelocInfo::JS_RETURN &&
       rinfo.rmode() <= RelocInfo::DEBUG_BREAK_SLOT) {
     // Adjust code for new modes.
-    DCHECK(RelocInfo::IsDebugBreakSlot(rinfo.rmode())
-           || RelocInfo::IsJSReturn(rinfo.rmode())
-           || RelocInfo::IsComment(rinfo.rmode())
-           || RelocInfo::IsPosition(rinfo.rmode()));
+    DCHECK(RelocInfo::IsDebugBreakSlot(rinfo.rmode()) ||
+           RelocInfo::IsJSReturn(rinfo.rmode()) ||
+           RelocInfo::IsComment(rinfo.rmode()) ||
+           RelocInfo::IsPosition(rinfo.rmode()));
   }
   if (!RelocInfo::IsNone(rinfo.rmode())) {
     // Don't record external references unless the heap will be serialized.
@@ -3839,18 +3801,43 @@ void Assembler::RecordRelocInfo(const RelocInfo& rinfo) {
         return;
       }
     }
-    DCHECK(buffer_space() >= kMaxRelocSize);  // too late to grow buffer here
     if (rinfo.rmode() == RelocInfo::CODE_TARGET_WITH_ID) {
-      RelocInfo reloc_info_with_ast_id(rinfo.pc(),
-                                       rinfo.rmode(),
-                                       RecordedAstId().ToInt(),
-                                       NULL);
+      DeferredRelocInfo reloc_info_with_ast_id(rinfo.position(), rinfo.rmode(),
+                                               RecordedAstId().ToInt());
       ClearRecordedAstId();
-      reloc_info_writer.Write(&reloc_info_with_ast_id);
+      relocations_.push_back(reloc_info_with_ast_id);
     } else {
-      reloc_info_writer.Write(&rinfo);
+      relocations_.push_back(rinfo);
     }
   }
+}
+
+
+void Assembler::EmitRelocations() {
+    EnsureSpaceFor(relocations_.size() * kMaxRelocSize);
+
+      for (std::vector<DeferredRelocInfo>::iterator it = relocations_.begin();
+           it != relocations_.end(); it++) {
+        RelocInfo::Mode rmode = it->rmode();
+        Address pc = buffer_ + it->position();
+        Code* code = NULL;
+        RelocInfo rinfo(pc, rmode, it->data(), code);
+
+        // Fix up internal references now that they are guaranteed to be bound.
+        if (RelocInfo::IsInternalReference(rmode)) {
+          // Jump table entry
+          intptr_t pos = reinterpret_cast<intptr_t>(Memory::Address_at(pc));
+          Memory::Address_at(pc) = buffer_ + pos;
+        } else if (RelocInfo::IsInternalReferenceEncoded(rmode)) {
+          // mov sequence
+          intptr_t pos = reinterpret_cast<intptr_t>(target_address_at(pc, code));
+          set_target_address_at(pc, code, buffer_ + pos, SKIP_ICACHE_FLUSH);
+        }
+
+        reloc_info_writer.Write(&rinfo);
+      }
+
+      reloc_info_writer.Finish();
 }
 
 
@@ -3913,6 +3900,6 @@ void Assembler::PopulateConstantPool(ConstantPoolArray* constant_pool) {
   // No out-of-line constant pool support.
   DCHECK(!FLAG_enable_ool_constant_pool);
 }
-
-} }  // namespace v8::internal
+}
+}  // namespace v8::internal
 #endif  // V8_TARGET_ARCH_S390
