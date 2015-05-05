@@ -1,7 +1,4 @@
-// Copyright 2011 the V8 project authors. All rights reserved.
-//
-// Copyright IBM Corp. 2012-2014. All rights reserved.
-//
+// Copyright 2015 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -52,11 +49,8 @@ namespace internal {
 // more informative description.
 class Decoder {
  public:
-  Decoder(const disasm::NameConverter& converter,
-          Vector<char> out_buffer)
-    : converter_(converter),
-      out_buffer_(out_buffer),
-      out_buffer_pos_(0) {
+  Decoder(const disasm::NameConverter& converter, Vector<char> out_buffer)
+      : converter_(converter), out_buffer_(out_buffer), out_buffer_pos_(0) {
     out_buffer_[out_buffer_pos_] = '\0';
   }
 
@@ -87,7 +81,6 @@ class Decoder {
   void Format(Instruction* instr, const char* format);
   void Unknown(Instruction* instr);
   void UnknownFormat(Instruction* instr, const char* opcname);
-  void MarkerFormat(Instruction* instr, const char* opcname, int id);
 
   bool DecodeTwoByte(Instruction* instr);
   bool DecodeFourByte(Instruction* instr);
@@ -107,9 +100,7 @@ class Decoder {
 
 
 // Append the ch to the output buffer.
-void Decoder::PrintChar(const char ch) {
-  out_buffer_[out_buffer_pos_++] = ch;
-}
+void Decoder::PrintChar(const char ch) { out_buffer_[out_buffer_pos_++] = ch; }
 
 
 // Append the str to the output buffer.
@@ -130,9 +121,7 @@ void Decoder::PrintRegister(int reg) {
 
 
 // Print the double FP register name according to the active name converter.
-void Decoder::PrintDRegister(int reg) {
-  Print(FPRegisters::Name(reg));
-}
+void Decoder::PrintDRegister(int reg) { Print(FPRegisters::Name(reg)); }
 
 
 // Print SoftwareInterrupt codes. Factoring this out reduces the complexity of
@@ -147,14 +136,10 @@ void Decoder::PrintSoftwareInterrupt(SoftwareInterruptCodes svc) {
       return;
     default:
       if (svc >= kStopCode) {
-        out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_,
-                                        "%d - 0x%x",
-                                        svc & kStopCodeMask,
-                                        svc & kStopCodeMask);
+        out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%d - 0x%x",
+                                    svc & kStopCodeMask, svc & kStopCodeMask);
       } else {
-        out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_,
-                                        "%d",
-                                        svc);
+        out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%d", svc);
       }
       return;
   }
@@ -325,8 +310,7 @@ int Decoder::FormatOption(Instruction* instr, const char* format) {
     }
     case 'u': {  // uint16
       int32_t value = instr->Bits(15, 0);
-      out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_,
-                                      "%d", value);
+      out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%d", value);
       return 6;
     }
     case 'l': {
@@ -348,19 +332,15 @@ int Decoder::FormatOption(Instruction* instr, const char* format) {
       DCHECK(STRING_STARTS_WITH(format, "target"));
       if ((format[6] == '2') && (format[7] == '6')) {
         int off = ((instr->Bits(25, 2)) << 8) >> 6;
-        out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_,
-                                        "%+d -> %s",
-                                        off,
-                                        converter_.NameOfAddress(
-                                        reinterpret_cast<byte*>(instr) + off));
+        out_buffer_pos_ += SNPrintF(
+            out_buffer_ + out_buffer_pos_, "%+d -> %s", off,
+            converter_.NameOfAddress(reinterpret_cast<byte*>(instr) + off));
         return 8;
       } else if ((format[6] == '1') && (format[7] == '6')) {
         int off = ((instr->Bits(15, 2)) << 18) >> 16;
-        out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_,
-                                        "%+d -> %s",
-                                        off,
-                                        converter_.NameOfAddress(
-                                        reinterpret_cast<byte*>(instr) + off));
+        out_buffer_pos_ += SNPrintF(
+            out_buffer_ + out_buffer_pos_, "%+d -> %s", off,
+            converter_.NameOfAddress(reinterpret_cast<byte*>(instr) + off));
         return 8;
       }
      case 'm': {
@@ -580,13 +560,6 @@ void Decoder::Unknown(Instruction* instr) {
 void Decoder::UnknownFormat(Instruction* instr, const char* name) {
   char buffer[100];
   snprintf(buffer, sizeof(buffer), "%s (unknown-format)", name);
-  Format(instr, buffer);
-}
-
-
-void Decoder::MarkerFormat(Instruction* instr, const char* name, int id) {
-  char buffer[100];
-  snprintf(buffer, sizeof(buffer), "%s %d", name, id);
   Format(instr, buffer);
 }
 
@@ -961,9 +934,7 @@ int Disassembler::InstructionDecode(v8::internal::Vector<char> buffer,
 
 
 // The PPC assembler does not currently use constant pools.
-int Disassembler::ConstantPoolSizeAt(byte* instruction) {
-  return -1;
-}
+int Disassembler::ConstantPoolSizeAt(byte* instruction) { return -1; }
 
 
 void Disassembler::Disassemble(FILE* f, byte* begin, byte* end) {
@@ -974,9 +945,8 @@ void Disassembler::Disassemble(FILE* f, byte* begin, byte* end) {
     buffer[0] = '\0';
     byte* prev_pc = pc;
     pc += d.InstructionDecode(buffer, pc);
-    v8::internal::PrintF(
-        f, "%p    %08x      %s\n",
-        prev_pc, *reinterpret_cast<int32_t*>(prev_pc), buffer.start());
+    v8::internal::PrintF(f, "%p    %08x      %s\n", prev_pc,
+                         *reinterpret_cast<int32_t*>(prev_pc), buffer.start());
   }
 }
 
