@@ -32,7 +32,7 @@
 
 // The original source code covered by the above license above has been
 // modified significantly by Google Inc.
-// Copyright 2014 the V8 project authors. All rights reserved.
+// Copyright 2015 the V8 project authors. All rights reserved.
 
 // A light-weight S390 Assembler
 // Generates user mode instructions for the S390 architecture
@@ -58,7 +58,9 @@
 
 #define ABI_RETURNS_OBJECT_PAIRS_IN_REGS \
   (!V8_HOST_ARCH_S390 || (V8_TARGET_LITTLE_ENDIAN))
+
 #define INSTR_AND_DATA_CACHE_COHERENCY LWSYNC
+
 namespace v8 {
 namespace internal {
 
@@ -225,6 +227,7 @@ struct DoubleRegister {
   static const int kMaxNumAllocatableRegisters =
       kNumAllocatable;
   static int NumAllocatableRegisters() { return kMaxNumAllocatableRegisters; }
+
   // TODO(turbofan)
   inline static int NumAllocatableAliasedRegisters() {
     return NumAllocatableRegisters();
@@ -1845,6 +1848,8 @@ SS2_FORM(zap);
   // Generate the constant pool for the generated code.
   void PopulateConstantPool(ConstantPoolArray* constant_pool);
 
+  void EmitRelocations();
+
  public:
   byte* buffer_pos() const { return buffer_; }
 
@@ -1903,6 +1908,7 @@ SS2_FORM(zap);
   // Each relocation is encoded as a variable size value
   static const int kMaxRelocSize = RelocInfoWriter::kMaxSize;
   RelocInfoWriter reloc_info_writer;
+  std::vector<DeferredRelocInfo> relocations_;
 
   // The bound position, before this we cannot do instruction elimination.
   int last_bound_pos_;

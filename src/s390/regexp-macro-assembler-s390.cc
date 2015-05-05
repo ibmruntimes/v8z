@@ -552,7 +552,7 @@ bool RegExpMacroAssemblerS390::CheckSpecialCharacterClass(uc16 type,
   }
   case 'w': {
     if (mode_ != LATIN1) {
-      // Table is 128 entries, so all ASCII characters can be tested.
+      // Table is 1256 entries, so all LATIN1 characters can be tested.
       __ CmpP(current_character(), Operand('z'));
       BranchOrBacktrack(gt, on_no_match);
     }
