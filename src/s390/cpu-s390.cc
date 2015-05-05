@@ -1,7 +1,4 @@
-// Copyright 2006-2009 the V8 project authors. All rights reserved.
-//
-// Copyright IBM Corp. 2012-2014. All rights reserved.
-//
+// Copyright 2015 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -23,7 +20,7 @@ void CpuFeatures::FlushICache(void* buffer, size_t size) {
     return;
   }
 
-#if defined (USE_SIMULATOR)
+#if defined(USE_SIMULATOR)
   // Not generating S390 instructions for C-code. This means that we are
   // building an S390 emulator based target.  We should notify the simulator
   // that the Icache was flushed.
@@ -32,7 +29,7 @@ void CpuFeatures::FlushICache(void* buffer, size_t size) {
   Simulator::FlushICache(Isolate::Current()->simulator_i_cache(), buffer, size);
 #endif  // USE_SIMULATOR
 }
-
-} }  // namespace v8::internal
+}
+}  // namespace v8::internal
 
 #endif  // V8_TARGET_ARCH_S390
