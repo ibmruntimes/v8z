@@ -4,7 +4,7 @@
 
 #include "src/v8.h"
 
-#if V8_TARGET_ARCH_PPC
+#if V8_TARGET_ARCH_S390
 
 #include "src/ic/access-compiler.h"
 
@@ -24,7 +24,7 @@ Register* PropertyAccessCompiler::load_calling_convention() {
   // receiver, name, scratch1, scratch2, scratch3, scratch4.
   Register receiver = LoadDescriptor::ReceiverRegister();
   Register name = LoadDescriptor::NameRegister();
-  static Register registers[] = {receiver, name, r6, r3, r7, r8};
+  static Register registers[] = {receiver, name, r5, r2, r6, r7};
   return registers;
 }
 
@@ -33,8 +33,8 @@ Register* PropertyAccessCompiler::store_calling_convention() {
   // receiver, name, scratch1, scratch2, scratch3.
   Register receiver = StoreDescriptor::ReceiverRegister();
   Register name = StoreDescriptor::NameRegister();
-  DCHECK(r6.is(ElementTransitionAndStoreDescriptor::MapRegister()));
-  static Register registers[] = {receiver, name, r6, r7, r8};
+  DCHECK(r5.is(ElementTransitionAndStoreDescriptor::MapRegister()));
+  static Register registers[] = {receiver, name, r5, r6, r7};
   return registers;
 }
 
@@ -43,4 +43,4 @@ Register* PropertyAccessCompiler::store_calling_convention() {
 }
 }  // namespace v8::internal
 
-#endif  // V8_TARGET_ARCH_PPC
+#endif  // V8_TARGET_ARCH_S390
