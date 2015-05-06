@@ -4,7 +4,7 @@
 
 #include "src/v8.h"
 
-#if V8_TARGET_ARCH_PPC
+#if V8_TARGET_ARCH_S390
 
 #include "src/ic/ic.h"
 #include "src/ic/ic-compiler.h"
@@ -48,10 +48,10 @@ Handle<Code> PropertyICCompiler::CompilePolymorphic(MapHandleList* maps,
       Register tmp = scratch1();
       __ JumpIfSmi(this->name(), &miss);
       __ LoadP(tmp, FieldMemOperand(this->name(), HeapObject::kMapOffset));
-      __ lbz(tmp, FieldMemOperand(tmp, Map::kInstanceTypeOffset));
+      __ LoadlB(tmp, FieldMemOperand(tmp, Map::kInstanceTypeOffset));
       __ JumpIfNotUniqueNameInstanceType(tmp, &miss);
     } else {
-      __ Cmpi(this->name(), Operand(name), r0);
+      __ CmpP(this->name(), Operand(name));
       __ bne(&miss);
     }
   }
@@ -132,4 +132,4 @@ Handle<Code> PropertyICCompiler::CompileKeyedStorePolymorphic(
 }
 }  // namespace v8::internal
 
-#endif  // V8_TARGET_ARCH_PPC
+#endif  // V8_TARGET_ARCH_S390
