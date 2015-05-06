@@ -353,6 +353,13 @@ inline void USE(T) { }
 #endif
 #endif
 
+//Fix for difference in size_t and int for s390
+#if V8_HOST_ARCH_S390 && !V8_HOST_ARCH_64_BIT
+# define V8_SIZET_PREFIX "z"
+#else
+# define V8_SIZET_PREFIX ""
+#endif
+
 #define V8PRIxPTR V8_PTR_PREFIX "x"
 #define V8PRIdPTR V8_PTR_PREFIX "d"
 #define V8PRIuPTR V8_PTR_PREFIX "u"
@@ -363,12 +370,6 @@ inline void USE(T) { }
 #define V8PRIxPTR "lx"
 #endif
 
-//Fix for difference in size_t and int for s390
-#if V8_HOST_ARCH_S390
-# define V8_SIZET_PREFIX "z"
-#else 
-# define V8_SIZET_PREFIX ""
-#endif
 // The following macro works on both 32 and 64-bit platforms.
 // Usage: instead of writing 0x1234567890123456
 //      write V8_2PART_UINT64_C(0x12345678,90123456);
