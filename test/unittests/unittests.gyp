@@ -125,6 +125,11 @@
             'compiler/ppc/instruction-selector-ppc-unittest.cc',
           ],
         }],
+        ['v8_target_arch=="s390" or v8_target_arch=="s390x"', {
+          'sources': [  ### gcmole(arch:s390) ###
+            'compiler/s390/instruction-selector-s390-unittest.cc',
+          ],
+        }],
         ['component=="shared_library"', {
           # compiler-unittests can't be built against a shared library, so we
           # need to depend on the underlying static target in that case.
