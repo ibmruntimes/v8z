@@ -4,7 +4,7 @@
 
 #include "src/v8.h"
 
-#if V8_TARGET_ARCH_PPC
+#if V8_TARGET_ARCH_S390
 
 #include "src/ic/call-optimization.h"
 #include "src/ic/handler-compiler.h"
@@ -20,8 +20,8 @@ void NamedLoadHandlerCompiler::GenerateLoadViaGetter(
     MacroAssembler* masm, Handle<Map> map, Register receiver, Register holder,
     int accessor_index, int expected_arguments, Register scratch) {
   // ----------- S t a t e -------------
-  //  -- r3    : receiver
-  //  -- r5    : name
+  //  -- r2    : receiver
+  //  -- r4    : name
   //  -- lr    : return address
   // -----------------------------------
   {
@@ -37,11 +37,11 @@ void NamedLoadHandlerCompiler::GenerateLoadViaGetter(
                  FieldMemOperand(receiver, JSGlobalObject::kGlobalProxyOffset));
         receiver = scratch;
       }
-      __ push(receiver);
+      __ Push(receiver);
       ParameterCount actual(0);
       ParameterCount expected(expected_arguments);
-      __ LoadAccessor(r4, holder, accessor_index, ACCESSOR_GETTER);
-      __ InvokeFunction(r4, expected, actual, CALL_FUNCTION, NullCallWrapper());
+      __ LoadAccessor(r3, holder, accessor_index, ACCESSOR_GETTER);
+      __ InvokeFunction(r3, expected, actual, CALL_FUNCTION, NullCallWrapper());
     } else {
       // If we generate a global code snippet for deoptimization only, remember
       // the place to continue after deoptimization.
@@ -65,7 +65,7 @@ void NamedStoreHandlerCompiler::GenerateStoreViaSetter(
     FrameScope scope(masm, StackFrame::INTERNAL);
 
     // Save value register, so we can restore it later.
-    __ push(value());
+    __ Push(value());
 
     if (accessor_index >= 0) {
       DCHECK(!holder.is(scratch));
@@ -81,8 +81,8 @@ void NamedStoreHandlerCompiler::GenerateStoreViaSetter(
       __ Push(receiver, value());
       ParameterCount actual(1);
       ParameterCount expected(expected_arguments);
-      __ LoadAccessor(r4, holder, accessor_index, ACCESSOR_SETTER);
-      __ InvokeFunction(r4, expected, actual, CALL_FUNCTION, NullCallWrapper());
+      __ LoadAccessor(r3, holder, accessor_index, ACCESSOR_SETTER);
+      __ InvokeFunction(r3, expected, actual, CALL_FUNCTION, NullCallWrapper());
     } else {
       // If we generate a global code snippet for deoptimization only, remember
       // the place to continue after deoptimization.
@@ -90,7 +90,7 @@ void NamedStoreHandlerCompiler::GenerateStoreViaSetter(
     }
 
     // We have to return the passed value, not the return value of the setter.
-    __ pop(r3);
+    __ Pop(r2);
 
     // Restore context register.
     __ LoadP(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
@@ -115,7 +115,7 @@ void PropertyHandlerCompiler::PopVectorAndSlot(Register vector, Register slot) {
 void PropertyHandlerCompiler::DiscardVectorAndSlot() {
   MacroAssembler* masm = this->masm();
   // Remove vector and slot.
-  __ addi(sp, sp, Operand(2 * kPointerSize));
+  __ la(sp, MemOperand(sp, 2 * kPointerSize));
 }
 
 
@@ -136,13 +136,14 @@ void PropertyHandlerCompiler::GenerateDictionaryNegativeLookup(
   // Bail out if the receiver has a named interceptor or requires access checks.
   Register map = scratch1;
   __ LoadP(map, FieldMemOperand(receiver, HeapObject::kMapOffset));
-  __ lbz(scratch0, FieldMemOperand(map, Map::kBitFieldOffset));
-  __ andi(r0, scratch0, Operand(kInterceptorOrAccessCheckNeededMask));
-  __ bne(miss_label, cr0);
+  __ LoadlB(scratch0, FieldMemOperand(map, Map::kBitFieldOffset));
+  __ AndP(r0, scratch0, Operand(kInterceptorOrAccessCheckNeededMask));
+  __ bne(miss_label);
 
   // Check that receiver is a JSObject.
-  __ lbz(scratch0, FieldMemOperand(map, Map::kInstanceTypeOffset));
-  __ cmpi(scratch0, Operand(FIRST_SPEC_OBJECT_TYPE));
+  // TODO(joransiu): Merge into SI compare
+  __ LoadlB(scratch0, FieldMemOperand(map, Map::kInstanceTypeOffset));
+  __ CmpP(scratch0, Operand(FIRST_SPEC_OBJECT_TYPE));
   __ blt(miss_label);
 
   // Load properties array.
@@ -150,9 +151,7 @@ void PropertyHandlerCompiler::GenerateDictionaryNegativeLookup(
   __ LoadP(properties, FieldMemOperand(receiver, JSObject::kPropertiesOffset));
   // Check that the properties array is a dictionary.
   __ LoadP(map, FieldMemOperand(properties, HeapObject::kMapOffset));
-  Register tmp = properties;
-  __ LoadRoot(tmp, Heap::kHashTableMapRootIndex);
-  __ cmp(map, tmp);
+  __ CompareRoot(map, Heap::kHashTableMapRootIndex);
   __ bne(miss_label);
 
   // Restore the temporarily used register.
@@ -184,7 +183,7 @@ void NamedLoadHandlerCompiler::GenerateLoadFunctionPrototype(
     MacroAssembler* masm, Register receiver, Register scratch1,
     Register scratch2, Label* miss_label) {
   __ TryGetFunctionPrototype(receiver, scratch1, scratch2, miss_label);
-  __ mr(r3, scratch1);
+  __ LoadRR(r2, scratch1);
   __ Ret();
 }
 
@@ -200,8 +199,7 @@ void PropertyHandlerCompiler::GenerateCheckPropertyCell(
   Handle<WeakCell> weak_cell = masm->isolate()->factory()->NewWeakCell(cell);
   __ LoadWeakValue(scratch, weak_cell, miss);
   __ LoadP(scratch, FieldMemOperand(scratch, PropertyCell::kValueOffset));
-  __ LoadRoot(ip, Heap::kTheHoleValueRootIndex);
-  __ cmp(scratch, ip);
+  __ CompareRoot(scratch, Heap::kTheHoleValueRootIndex);
   __ bne(miss);
 }
 
@@ -213,9 +211,9 @@ static void PushInterceptorArguments(MacroAssembler* masm, Register receiver,
   STATIC_ASSERT(NamedLoadHandlerCompiler::kInterceptorArgsThisIndex == 1);
   STATIC_ASSERT(NamedLoadHandlerCompiler::kInterceptorArgsHolderIndex == 2);
   STATIC_ASSERT(NamedLoadHandlerCompiler::kInterceptorArgsLength == 3);
-  __ push(name);
-  __ push(receiver);
-  __ push(holder);
+  __ Push(name);
+  __ Push(receiver);
+  __ Push(holder);
 }
 
 
@@ -236,20 +234,20 @@ void PropertyHandlerCompiler::GenerateApiAccessorCall(
     int accessor_index) {
   DCHECK(!accessor_holder.is(scratch_in));
   DCHECK(!receiver.is(scratch_in));
-  __ push(receiver);
+  __ Push(receiver);
   // Write the arguments to stack frame.
   if (is_store) {
     DCHECK(!receiver.is(store_parameter));
     DCHECK(!scratch_in.is(store_parameter));
-    __ push(store_parameter);
+    __ Push(store_parameter);
   }
   DCHECK(optimization.is_simple_api_call());
 
   // Abi for CallApiFunctionStub.
-  Register callee = r3;
-  Register data = r7;
-  Register holder = r5;
-  Register api_function_address = r4;
+  Register callee = r2;
+  Register data = r6;
+  Register holder = r4;
+  Register api_function_address = r3;
 
   // Put callee in place.
   __ LoadAccessor(callee, accessor_holder, accessor_index,
@@ -359,9 +357,9 @@ void NamedStoreHandlerCompiler::GenerateRestoreMap(Handle<Map> transition,
   DCHECK(!map_reg.is(scratch));
   __ LoadWeakValue(map_reg, cell, miss);
   if (transition->CanBeDeprecated()) {
-    __ lwz(scratch, FieldMemOperand(map_reg, Map::kBitField3Offset));
-    __ DecodeField<Map::Deprecated>(r0, scratch, SetRC);
-    __ bne(miss, cr0);
+    __ LoadlW(scratch, FieldMemOperand(map_reg, Map::kBitField3Offset));
+    __ DecodeField<Map::Deprecated>(r0, scratch);
+    __ bne(miss);
   }
 }
 
@@ -375,9 +373,8 @@ void NamedStoreHandlerCompiler::GenerateConstantCheck(Register map_reg,
   DCHECK(!map_reg.is(value_reg));
   DCHECK(!value_reg.is(scratch));
   __ LoadInstanceDescriptors(map_reg, scratch);
-  __ LoadP(scratch, FieldMemOperand(
+  __ CmpP(value_reg, FieldMemOperand(
                         scratch, DescriptorArray::GetValueOffset(descriptor)));
-  __ cmp(value_reg, scratch);
   __ bne(miss_label);
 }
 
@@ -535,7 +532,7 @@ void NamedStoreHandlerCompiler::FrontendFooter(Handle<Name> name, Label* miss) {
 
 void NamedLoadHandlerCompiler::GenerateLoadConstant(Handle<Object> value) {
   // Return the constant value.
-  __ Move(r3, value);
+  __ Move(r2, value);
   __ Ret();
 }
 
@@ -554,7 +551,7 @@ void NamedLoadHandlerCompiler::GenerateLoadCallback(
   DCHECK(!scratch2().is(reg));
   DCHECK(!scratch3().is(reg));
   DCHECK(!scratch4().is(reg));
-  __ push(receiver());
+  __ Push(receiver());
   // Push data from ExecutableAccessorInfo.
   Handle<Object> data(callback->data(), isolate());
   if (data->IsUndefined() || data->IsSmi()) {
@@ -566,13 +563,13 @@ void NamedLoadHandlerCompiler::GenerateLoadCallback(
     // so the weak cell is not cleared and points to data.
     __ GetWeakValue(scratch3(), cell);
   }
-  __ push(scratch3());
+  __ Push(scratch3());
   __ LoadRoot(scratch3(), Heap::kUndefinedValueRootIndex);
-  __ mr(scratch4(), scratch3());
+  __ LoadRR(scratch4(), scratch3());
   __ Push(scratch3(), scratch4());
   __ mov(scratch4(), Operand(ExternalReference::isolate_address(isolate())));
   __ Push(scratch4(), reg);
-  __ push(name());
+  __ Push(name());
 
   // Abi for CallApiGetter
   Register getter_address_reg = ApiGetterDescriptor::function_address();
@@ -628,18 +625,17 @@ void NamedLoadHandlerCompiler::GenerateLoadInterceptorWithFollowup(
     // Check if interceptor provided a value for property.  If it's
     // the case, return immediately.
     Label interceptor_failed;
-    __ LoadRoot(scratch1(), Heap::kNoInterceptorResultSentinelRootIndex);
-    __ cmp(r3, scratch1());
-    __ beq(&interceptor_failed);
+    __ CompareRoot(r2, Heap::kNoInterceptorResultSentinelRootIndex);
+    __ beq(&interceptor_failed, Label::kNear);
     frame_scope.GenerateLeaveFrame();
     __ Ret();
 
     __ bind(&interceptor_failed);
     InterceptorVectorSlotPop(holder_reg);
-    __ pop(this->name());
-    __ pop(holder_reg);
+    __ Pop(this->name());
+    __ Pop(holder_reg);
     if (must_preserve_receiver_reg) {
-      __ pop(receiver());
+      __ Pop(receiver());
     }
     // Leave the internal frame.
   }
@@ -677,7 +673,7 @@ Handle<Code> NamedStoreHandlerCompiler::CompileStoreCallback(
     Handle<WeakCell> cell = isolate()->factory()->NewWeakCell(callback);
     __ mov(ip, Operand(cell));
   }
-  __ push(ip);
+  __ Push(ip);
   __ mov(ip, Operand(name));
   __ Push(ip, value());
 
@@ -726,13 +722,12 @@ Handle<Code> NamedLoadHandlerCompiler::CompileLoadGlobal(
 
   // Check for deleted property if property can actually be deleted.
   if (is_configurable) {
-    __ LoadRoot(ip, Heap::kTheHoleValueRootIndex);
-    __ cmp(result, ip);
+    __ CompareRoot(result, Heap::kTheHoleValueRootIndex);
     __ beq(&miss);
   }
 
   Counters* counters = isolate()->counters();
-  __ IncrementCounter(counters->named_load_global_stub(), 1, r4, r6);
+  __ IncrementCounter(counters->named_load_global_stub(), 1, r3, r5);
   if (IC::ICUseVector(kind())) {
     DiscardVectorAndSlot();
   }
