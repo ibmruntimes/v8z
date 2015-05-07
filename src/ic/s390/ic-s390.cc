@@ -1,10 +1,10 @@
-// Copyright 2014 the V8 project authors. All rights reserved.
+// Copyright 2015 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #include "src/v8.h"
 
-#if V8_TARGET_ARCH_PPC
+#if V8_TARGET_ARCH_S390
 
 #include "src/codegen.h"
 #include "src/ic/ic.h"
@@ -26,11 +26,11 @@ static void GenerateGlobalInstanceTypeCheck(MacroAssembler* masm, Register type,
                                             Label* global_object) {
   // Register usage:
   //   type: holds the receiver instance type on entry.
-  __ cmpi(type, Operand(JS_GLOBAL_OBJECT_TYPE));
+  __ CmpP(type, Operand(JS_GLOBAL_OBJECT_TYPE));
   __ beq(global_object);
-  __ cmpi(type, Operand(JS_BUILTINS_OBJECT_TYPE));
+  __ CmpP(type, Operand(JS_BUILTINS_OBJECT_TYPE));
   __ beq(global_object);
-  __ cmpi(type, Operand(JS_GLOBAL_PROXY_TYPE));
+  __ CmpP(type, Operand(JS_GLOBAL_PROXY_TYPE));
   __ beq(global_object);
 }
 
@@ -158,7 +158,7 @@ static void GenerateKeyedLoadReceiverCheck(MacroAssembler* masm,
   // objects work as intended.
   DCHECK(JS_OBJECT_TYPE > JS_VALUE_TYPE);
   __ lbz(scratch, FieldMemOperand(map, Map::kInstanceTypeOffset));
-  __ cmpi(scratch, Operand(JS_OBJECT_TYPE));
+  __ CmpP(scratch, Operand(JS_OBJECT_TYPE));
   __ blt(slow);
 }
 
@@ -200,7 +200,7 @@ static void GenerateFastArrayLoad(MacroAssembler* masm, Register receiver,
   __ blt(&in_bounds);
   // Out-of-bounds. Check the prototype chain to see if we can just return
   // 'undefined'.
-  __ cmpi(key, Operand::Zero());
+  __ CmpP(key, Operand::Zero());
   __ blt(slow);  // Negative keys can't take the fast OOB path.
   __ bind(&check_prototypes);
   __ LoadP(scratch2, FieldMemOperand(receiver, HeapObject::kMapOffset));
@@ -777,10 +777,10 @@ void KeyedStoreIC::GenerateMegamorphic(MacroAssembler* masm,
   __ bne(&slow, cr0);
   // Check if the object is a JS array or not.
   __ lbz(r7, FieldMemOperand(receiver_map, Map::kInstanceTypeOffset));
-  __ cmpi(r7, Operand(JS_ARRAY_TYPE));
+  __ CmpP(r7, Operand(JS_ARRAY_TYPE));
   __ beq(&array);
   // Check that the object is some kind of JSObject.
-  __ cmpi(r7, Operand(FIRST_JS_OBJECT_TYPE));
+  __ CmpP(r7, Operand(FIRST_JS_OBJECT_TYPE));
   __ blt(&slow);
 
   // Object case: Check key against length in the elements array.
@@ -823,13 +823,13 @@ void KeyedStoreIC::GenerateMegamorphic(MacroAssembler* masm,
   __ bge(&slow);
   __ LoadP(elements_map, FieldMemOperand(elements, HeapObject::kMapOffset));
   __ mov(ip, Operand(masm->isolate()->factory()->fixed_array_map()));
-  __ cmp(elements_map, ip);  // PPC - I think I can re-use ip here
+  __ cmp(elements_map, ip);  // S390 - I think I can re-use ip here
   __ bne(&check_if_double_array);
   __ b(&fast_object_grow);
 
   __ bind(&check_if_double_array);
   __ mov(ip, Operand(masm->isolate()->factory()->fixed_double_array_map()));
-  __ cmp(elements_map, ip);  // PPC - another ip re-use
+  __ cmp(elements_map, ip);  // S390 - another ip re-use
   __ bne(&slow);
   __ b(&fast_double_grow);
 
@@ -994,7 +994,7 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
     patcher.masm()->TestIfSmi(reg, r0);
   } else {
     DCHECK(check == DISABLE_INLINED_SMI_CHECK);
-#if V8_TARGET_ARCH_PPC64
+#if V8_TARGET_ARCH_S390X
     DCHECK(Assembler::IsRldicl(instr_at_patch));
 #else
     DCHECK(Assembler::IsRlwinm(instr_at_patch));
@@ -1014,4 +1014,4 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
 }
 }  // namespace v8::internal
 
-#endif  // V8_TARGET_ARCH_PPC
+#endif  // V8_TARGET_ARCH_S390
