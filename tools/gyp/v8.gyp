@@ -180,7 +180,6 @@
       'sources': [
         '<(SHARED_INTERMEDIATE_DIR)/libraries.cc',
         '<(SHARED_INTERMEDIATE_DIR)/experimental-libraries.cc',
-        '<(SHARED_INTERMEDIATE_DIR)/extras-libraries.cc',
         '<(INTERMEDIATE_DIR)/snapshot.cc',
       ],
       'actions': [
@@ -225,7 +224,6 @@
       'sources': [
         '<(SHARED_INTERMEDIATE_DIR)/libraries.cc',
         '<(SHARED_INTERMEDIATE_DIR)/experimental-libraries.cc',
-        '<(SHARED_INTERMEDIATE_DIR)/extras-libraries.cc',
         '../../src/snapshot/snapshot-empty.cc',
       ],
       'conditions': [
@@ -1684,7 +1682,6 @@
               '../../tools/concatenate-files.py',
               '<(SHARED_INTERMEDIATE_DIR)/libraries.bin',
               '<(SHARED_INTERMEDIATE_DIR)/libraries-experimental.bin',
-              '<(SHARED_INTERMEDIATE_DIR)/libraries-extras.bin',
             ],
             'conditions': [
               ['want_separate_host_toolset==1', {
@@ -1791,7 +1788,6 @@
         ],
         'libraries_bin_file': '<(SHARED_INTERMEDIATE_DIR)/libraries.bin',
         'libraries_experimental_bin_file': '<(SHARED_INTERMEDIATE_DIR)/libraries-experimental.bin',
-        'libraries_extras_bin_file': '<(SHARED_INTERMEDIATE_DIR)/libraries-extras.bin',
       },
       'actions': [
         {
@@ -1799,7 +1795,8 @@
           'inputs': [
             '../../tools/js2c.py',
             '<@(library_files)',
-            '<@(i18n_library_files)'
+            '<@(i18n_library_files)',
+            '<@(v8_extra_library_files)',
           ],
           'outputs': [
             '<(SHARED_INTERMEDIATE_DIR)/libraries.cc',
@@ -1810,7 +1807,9 @@
             '<(SHARED_INTERMEDIATE_DIR)/libraries.cc',
             'CORE',
             '<@(library_files)',
-            '<@(i18n_library_files)'
+            '<@(i18n_library_files)',
+            '--extra',
+            '<@(v8_extra_library_files)',
           ],
           'conditions': [
             [ 'v8_use_external_startup_data==1', {
@@ -1842,31 +1841,6 @@
               'outputs': ['<@(libraries_experimental_bin_file)'],
               'action': [
                 '--startup_blob', '<@(libraries_experimental_bin_file)'
-              ],
-            }],
-          ],
-        },
-        {
-          'action_name': 'js2c_extras',
-          'inputs': [
-            '../../tools/js2c.py',
-            '<@(v8_extra_library_files)',
-          ],
-          'outputs': [
-            '<(SHARED_INTERMEDIATE_DIR)/extras-libraries.cc',
-          ],
-          'action': [
-            'python',
-            '../../tools/js2c.py',
-            '<(SHARED_INTERMEDIATE_DIR)/extras-libraries.cc',
-            'EXTRAS',
-            '<@(v8_extra_library_files)',
-          ],
-          'conditions': [
-            [ 'v8_use_external_startup_data==1', {
-              'outputs': ['<@(libraries_extras_bin_file)'],
-              'action': [
-                '--startup_blob', '<@(libraries_extras_bin_file)',
               ],
             }],
           ],
