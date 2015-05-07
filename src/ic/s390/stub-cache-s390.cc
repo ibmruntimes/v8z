@@ -4,7 +4,7 @@
 
 #include "src/v8.h"
 
-#if V8_TARGET_ARCH_PPC
+#if V8_TARGET_ARCH_S390
 
 #include "src/codegen.h"
 #include "src/ic/ic.h"
@@ -45,30 +45,28 @@ static void ProbeTable(Isolate* isolate, MacroAssembler* masm,
   scratch = no_reg;
 
   // Multiply by 3 because there are 3 fields per entry (name, code, map).
-  __ ShiftLeftImm(offset_scratch, offset, Operand(1));
-  __ add(offset_scratch, offset, offset_scratch);
+  __ ShiftLeftP(offset_scratch, offset, Operand(1));
+  __ AddP(offset_scratch, offset, offset_scratch);
 
   // Calculate the base address of the entry.
   __ mov(base_addr, Operand(key_offset));
-#if V8_TARGET_ARCH_PPC64
+#if V8_TARGET_ARCH_S390X
   DCHECK(kPointerSizeLog2 > StubCache::kCacheIndexShift);
-  __ ShiftLeftImm(offset_scratch, offset_scratch,
+  __ ShiftLeftP(offset_scratch, offset_scratch,
                   Operand(kPointerSizeLog2 - StubCache::kCacheIndexShift));
 #else
   DCHECK(kPointerSizeLog2 == StubCache::kCacheIndexShift);
 #endif
-  __ add(base_addr, base_addr, offset_scratch);
+  __ AddP(base_addr, base_addr, offset_scratch);
 
   // Check that the key in the entry matches the name.
-  __ LoadP(ip, MemOperand(base_addr, 0));
-  __ cmp(name, ip);
-  __ bne(&miss);
+  __ CmpP(name, MemOperand(base_addr, 0)); 
+  __ bne(&miss, Label::kNear);
 
   // Check the map matches.
   __ LoadP(ip, MemOperand(base_addr, map_off_addr - key_off_addr));
-  __ LoadP(scratch2, FieldMemOperand(receiver, HeapObject::kMapOffset));
-  __ cmp(ip, scratch2);
-  __ bne(&miss);
+  __ CmpP(ip, FieldMemOperand(receiver, HeapObject::kMapOffset));
+  __ bne(&miss, Label::kNear);
 
   // Get the code entry from the cache.
   Register code = scratch2;
@@ -78,29 +76,27 @@ static void ProbeTable(Isolate* isolate, MacroAssembler* masm,
   // Check that the flags match what we're looking for.
   Register flags_reg = base_addr;
   base_addr = no_reg;
-  __ lwz(flags_reg, FieldMemOperand(code, Code::kFlagsOffset));
+  __ LoadlW(flags_reg, FieldMemOperand(code, Code::kFlagsOffset));
 
   DCHECK(!r0.is(flags_reg));
-  __ li(r0, Operand(Code::kFlagsNotUsedInLookup));
-  __ andc(flags_reg, flags_reg, r0);
-  __ mov(r0, Operand(flags));
-  __ cmpl(flags_reg, r0);
-  __ bne(&miss);
+  __ AndP(flags_reg, flags_reg, Operand(~Code::kFlagsNotUsedInLookup));
+  __ CmpLogicalP(flags_reg, Operand(flags));
+  __ bne(&miss, Label::kNear);
 
 #ifdef DEBUG
   if (FLAG_test_secondary_stub_cache && table == StubCache::kPrimary) {
-    __ b(&miss);
+    __ b(&miss, Label::kNear);
   } else if (FLAG_test_primary_stub_cache && table == StubCache::kSecondary) {
-    __ b(&miss);
+    __ b(&miss, Label::kNear);
   }
 #endif
 
   if (leave_frame) __ LeaveFrame(StackFrame::INTERNAL);
 
   // Jump to the first instruction in the code stub.
-  __ addi(r0, code, Operand(Code::kHeaderSize - kHeapObjectTag));
-  __ mtctr(r0);
-  __ bctr();
+  // TODO(joransiu): Combine into indirect branch
+  __ la(code, MemOperand(code, Code::kHeaderSize - kHeapObjectTag));
+  __ b(code);
 
   // Miss: fall through.
   __ bind(&miss);
@@ -115,7 +111,7 @@ void StubCache::GenerateProbe(MacroAssembler* masm, Code::Kind ic_kind,
   Isolate* isolate = masm->isolate();
   Label miss;
 
-#if V8_TARGET_ARCH_PPC64
+#if V8_TARGET_ARCH_S390X
   // Make sure that code is valid. The multiplying code relies on the
   // entry size being 24.
   DCHECK(sizeof(Entry) == 24);
@@ -156,12 +152,12 @@ void StubCache::GenerateProbe(MacroAssembler* masm, Code::Kind ic_kind,
   __ JumpIfSmi(receiver, &miss);
 
   // Get the map of the receiver and compute the hash.
-  __ lwz(scratch, FieldMemOperand(name, Name::kHashFieldOffset));
+  __ LoadlW(scratch, FieldMemOperand(name, Name::kHashFieldOffset));
   __ LoadP(ip, FieldMemOperand(receiver, HeapObject::kMapOffset));
-  __ add(scratch, scratch, ip);
-  __ xori(scratch, scratch, Operand(flags));
+  __ AddP(scratch, scratch, ip);
+  __ XorP(scratch, scratch, Operand(flags));
   // The mask omits the last two bits because they are not part of the hash.
-  __ andi(scratch, scratch,
+  __ AndP(scratch, scratch,
           Operand((kPrimaryTableSize - 1) << kCacheIndexShift));
 
   // Probe the primary table.
@@ -169,9 +165,9 @@ void StubCache::GenerateProbe(MacroAssembler* masm, Code::Kind ic_kind,
              name, scratch, extra, extra2, extra3);
 
   // Primary miss: Compute hash for secondary probe.
-  __ sub(scratch, scratch, name);
-  __ addi(scratch, scratch, Operand(flags));
-  __ andi(scratch, scratch,
+  __ SubP(scratch, scratch, name);
+  __ AddP(scratch, scratch, Operand(flags));
+  __ AndP(scratch, scratch,
           Operand((kSecondaryTableSize - 1) << kCacheIndexShift));
 
   // Probe the secondary table.
@@ -190,4 +186,4 @@ void StubCache::GenerateProbe(MacroAssembler* masm, Code::Kind ic_kind,
 }
 }  // namespace v8::internal
 
-#endif  // V8_TARGET_ARCH_PPC
+#endif  // V8_TARGET_ARCH_S390
