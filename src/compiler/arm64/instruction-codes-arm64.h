@@ -16,10 +16,6 @@ namespace compiler {
   V(Arm64Add32)                    \
   V(Arm64And)                      \
   V(Arm64And32)                    \
-<<<<<<< HEAD
-  V(Arm64Cmp)                      \
-  V(Arm64Cmp32)                    \
-=======
   V(Arm64Bic)                      \
   V(Arm64Bic32)                    \
   V(Arm64Clz32)                    \
@@ -27,28 +23,20 @@ namespace compiler {
   V(Arm64Cmp32)                    \
   V(Arm64Cmn)                      \
   V(Arm64Cmn32)                    \
->>>>>>> 4.3
   V(Arm64Tst)                      \
   V(Arm64Tst32)                    \
   V(Arm64Or)                       \
   V(Arm64Or32)                     \
-<<<<<<< HEAD
-  V(Arm64Xor)                      \
-  V(Arm64Xor32)                    \
-=======
   V(Arm64Orn)                      \
   V(Arm64Orn32)                    \
   V(Arm64Eor)                      \
   V(Arm64Eor32)                    \
   V(Arm64Eon)                      \
   V(Arm64Eon32)                    \
->>>>>>> 4.3
   V(Arm64Sub)                      \
   V(Arm64Sub32)                    \
   V(Arm64Mul)                      \
   V(Arm64Mul32)                    \
-<<<<<<< HEAD
-=======
   V(Arm64Smull)                    \
   V(Arm64Umull)                    \
   V(Arm64Madd)                     \
@@ -57,7 +45,6 @@ namespace compiler {
   V(Arm64Msub32)                   \
   V(Arm64Mneg)                     \
   V(Arm64Mneg32)                   \
->>>>>>> 4.3
   V(Arm64Idiv)                     \
   V(Arm64Idiv32)                   \
   V(Arm64Udiv)                     \
@@ -70,22 +57,6 @@ namespace compiler {
   V(Arm64Not32)                    \
   V(Arm64Neg)                      \
   V(Arm64Neg32)                    \
-<<<<<<< HEAD
-  V(Arm64Shl)                      \
-  V(Arm64Shl32)                    \
-  V(Arm64Shr)                      \
-  V(Arm64Shr32)                    \
-  V(Arm64Sar)                      \
-  V(Arm64Sar32)                    \
-  V(Arm64CallCodeObject)           \
-  V(Arm64CallJSFunction)           \
-  V(Arm64CallAddress)              \
-  V(Arm64Claim)                    \
-  V(Arm64Poke)                     \
-  V(Arm64PokePairZero)             \
-  V(Arm64PokePair)                 \
-  V(Arm64Drop)                     \
-=======
   V(Arm64Lsl)                      \
   V(Arm64Lsl32)                    \
   V(Arm64Lsr)                      \
@@ -107,17 +78,12 @@ namespace compiler {
   V(Arm64Claim)                    \
   V(Arm64Poke)                     \
   V(Arm64PokePair)                 \
->>>>>>> 4.3
   V(Arm64Float64Cmp)               \
   V(Arm64Float64Add)               \
   V(Arm64Float64Sub)               \
   V(Arm64Float64Mul)               \
   V(Arm64Float64Div)               \
   V(Arm64Float64Mod)               \
-<<<<<<< HEAD
-  V(Arm64Int32ToInt64)             \
-  V(Arm64Int64ToInt32)             \
-=======
   V(Arm64Float64Sqrt)              \
   V(Arm64Float64RoundDown)         \
   V(Arm64Float64RoundTiesAway)     \
@@ -125,23 +91,10 @@ namespace compiler {
   V(Arm64Float64RoundUp)           \
   V(Arm64Float32ToFloat64)         \
   V(Arm64Float64ToFloat32)         \
->>>>>>> 4.3
   V(Arm64Float64ToInt32)           \
   V(Arm64Float64ToUint32)          \
   V(Arm64Int32ToFloat64)           \
   V(Arm64Uint32ToFloat64)          \
-<<<<<<< HEAD
-  V(Arm64Float64Load)              \
-  V(Arm64Float64Store)             \
-  V(Arm64LoadWord8)                \
-  V(Arm64StoreWord8)               \
-  V(Arm64LoadWord16)               \
-  V(Arm64StoreWord16)              \
-  V(Arm64LoadWord32)               \
-  V(Arm64StoreWord32)              \
-  V(Arm64LoadWord64)               \
-  V(Arm64StoreWord64)              \
-=======
   V(Arm64Float64ExtractLowWord32)  \
   V(Arm64Float64ExtractHighWord32) \
   V(Arm64Float64InsertLowWord32)   \
@@ -163,7 +116,6 @@ namespace compiler {
   V(Arm64StrW)                     \
   V(Arm64Ldr)                      \
   V(Arm64Str)                      \
->>>>>>> 4.3
   V(Arm64StoreWriteBarrier)
 
 
@@ -180,11 +132,6 @@ namespace compiler {
 // I = immediate (handle, external, int32)
 // MRI = [register + immediate]
 // MRR = [register + register]
-<<<<<<< HEAD
-#define TARGET_ADDRESSING_MODE_LIST(V) \
-  V(MRI) /* [%r0 + K] */               \
-  V(MRR) /* [%r0 + %r1] */
-=======
 #define TARGET_ADDRESSING_MODE_LIST(V)                      \
   V(MRI)              /* [%r0 + K] */                       \
   V(MRR)              /* [%r0 + %r1] */                     \
@@ -194,7 +141,6 @@ namespace compiler {
   V(Operand2_R_ROR_I) /* %r0 ROR K */                       \
   V(Operand2_R_UXTB)  /* %r0 UXTB (unsigned extend byte) */ \
   V(Operand2_R_UXTH)  /* %r0 UXTH (unsigned extend halfword) */
->>>>>>> 4.3
 
 }  // namespace internal
 }  // namespace compiler
