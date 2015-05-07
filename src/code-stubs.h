@@ -1578,8 +1578,7 @@ class CEntryStub : public PlatformCodeStub {
 
  private:
   bool save_doubles() const { return SaveDoublesBits::decode(minor_key_); }
-  //TODO (@Tara): define result_size for s390?
-#if _WIN64 || V8_TARGET_ARCH_PPC
+#if _WIN64 || V8_TARGET_ARCH_PPC || V8_TARGET_ARCH_S390
   int result_size() const { return ResultSizeBits::decode(minor_key_); }
 #endif  // _WIN64
 
