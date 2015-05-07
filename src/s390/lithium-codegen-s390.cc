@@ -1852,17 +1852,12 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
         if (shift_count != 0) {
 #if V8_TARGET_ARCH_S390X
           if (instr->hydrogen_value()->representation().IsSmi()) {
-            // TODO(joransiu): Fix proper Z equivalent to sldi
-            DCHECK(0);
-            // __ sldi(result, left, Operand(shift_count));
+            __ sllg(result, left, Operand(shift_count));
 #else
           if (instr->hydrogen_value()->representation().IsSmi() &&
               instr->can_deopt()) {
             if (shift_count != 1) {
               __ ShiftLeft(result, left, Operand(shift_count - 1));
-#if V8_TARGET_ARCH_S390X
-              __ lgfr(result, result);
-#endif
               __ SmiTagCheckOverflow(result, result, scratch);
             } else {
               __ SmiTagCheckOverflow(result, left, scratch);
