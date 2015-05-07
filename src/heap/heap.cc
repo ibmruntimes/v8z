@@ -919,6 +919,13 @@ bool Heap::CollectGarbage(GarbageCollector collector, const char* gc_reason,
     if (collector == MARK_COMPACTOR && FLAG_track_detached_contexts) {
       isolate()->CheckDetachedContextsAfterGC();
     }
+
+    if (collector == MARK_COMPACTOR) {
+      gc_idle_time_handler_.NotifyMarkCompact();
+    } else {
+      gc_idle_time_handler_.NotifyScavenge();
+    }
+
     tracer()->Stop(collector);
   }
 
@@ -1646,8 +1653,6 @@ void Heap::Scavenge() {
   LOG(isolate_, ResourceEvent("scavenge", "end"));
 
   gc_state_ = NOT_IN_GC;
-
-  gc_idle_time_handler_.NotifyScavenge();
 }
 
 
@@ -4577,6 +4582,7 @@ bool Heap::TryFinalizeIdleIncrementalMarking(
                   static_cast<size_t>(idle_time_in_ms), size_of_objects,
                   final_incremental_mark_compact_speed_in_bytes_per_ms))) {
     CollectAllGarbage(kNoGCFlags, "idle notification: finalize incremental");
+    gc_idle_time_handler_.NotifyIdleMarkCompact();
     ReduceNewSpaceSize(is_long_idle_notification);
     return true;
   }
@@ -4667,6 +4673,7 @@ bool Heap::IdleNotification(double deadline_in_seconds) {
       break;
     case DO_INCREMENTAL_MARKING: {
       if (incremental_marking()->IsStopped()) {
+        // TODO(ulan): take reduce_memory into account.
         incremental_marking()->Start();
       }
       double remaining_idle_time_in_ms = 0.0;
