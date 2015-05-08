@@ -247,7 +247,7 @@ TEST(MultithreadedParallelIsolates) {
 #elif V8_TARGET_ARCH_X64 && V8_TARGET_ARCH_32_BIT
   const int kNThreads = 4;
 #elif V8_TARGET_ARCH_S390 && V8_TARGET_ARCH_32_BIT
-  const int kNThreads = 40;
+  const int kNThreads = 10;
 #else
   const int kNThreads = 50;
 #endif
@@ -716,6 +716,8 @@ TEST(ExtensionsRegistration) {
   const int kNThreads = 10;
 #elif V8_TARGET_ARCH_X64 && V8_TARGET_ARCH_32_BIT
   const int kNThreads = 4;
+#elif V8_TARGET_ARCH_S390 && V8_TARGET_ARCH_32_BIT
+  const int kNThreads = 10;
 #else
   const int kNThreads = 40;
 #endif
