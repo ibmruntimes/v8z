@@ -736,7 +736,8 @@ void MacroAssembler::LoadConstantPoolPointerRegister(Register base,
     EnsureSpaceFor(kMovInstructionsNoConstantPool * kInstrSize);
 
     intptr_t code_start_addr = reinterpret_cast<intptr_t>(pc_) - pc_offset();
-    mov(code_start_reg, Operand(code_start_addr, RelocInfo::INTERNAL_REFERENCE));
+    mov(code_start_reg,
+        Operand(code_start_addr, RelocInfo::INTERNAL_REFERENCE));
   } else if (code_start_delta) {
     addi(code_start_reg, base, Operand(code_start_delta));
   } else {
@@ -5112,8 +5113,6 @@ void MacroAssembler::TruncatingDiv(Register result,
   ExtractBit(r0, dividend, 31);
   add(result, result, r0);
 }
-
-
 } }  // namespace v8::internal
 
 #endif  // V8_TARGET_ARCH_PPC

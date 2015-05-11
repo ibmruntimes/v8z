@@ -563,7 +563,8 @@ void ExitFrame::FillState(Address fp, Address sp, State* state) {
     state->constant_pool_address = NULL;
   } else {
     state->constant_pool_address =
-        reinterpret_cast<Address*>(fp + ExitFrameConstants::kConstantPoolOffset);
+        reinterpret_cast<Address*>
+        (fp + ExitFrameConstants::kConstantPoolOffset);
   }
 }
 

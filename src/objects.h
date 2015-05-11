@@ -5877,8 +5877,10 @@ class Code: public HeapObject {
       kKindSpecificFlags1Offset + kIntSize;
   // Note: We might be able to squeeze this into the flags above.
   static const int kPrologueOffset = kKindSpecificFlags2Offset + kIntSize;
-  static const int kConstantPoolHeapObjectOffset = kPrologueOffset + kPointerSize;
-  static const int kConstantPoolCodeOffset = kConstantPoolHeapObjectOffset + kCPHOSize;
+  static const int kConstantPoolHeapObjectOffset =
+                       kPrologueOffset + kPointerSize;
+  static const int kConstantPoolCodeOffset =
+                       kConstantPoolHeapObjectOffset + kCPHOSize;
   static const int kHeaderPaddingStart = kConstantPoolCodeOffset + kCPCSize;
 
   static const int kConstantPoolOffset = kCPHOSize ?
