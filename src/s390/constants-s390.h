@@ -1015,7 +1015,7 @@ enum SoftwareInterruptCodes {
   // break point
   kBreakpoint = 0x0000,
   // stop
-  kStopCode = 1 << 23,
+  kStopCode = 1 << 23
 };
 const uint32_t kStopCodeMask = kStopCode - 1;
 const uint32_t kMaxStopCode = kStopCode - 1;
