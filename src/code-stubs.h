@@ -89,6 +89,9 @@ namespace internal {
   V(TransitionElementsKind)                 \
   V(VectorRawKeyedLoad)                     \
   V(VectorRawLoad)                          \
+  /* TurboFanCodeStubs */                   \
+  V(StringLengthTF)                         \
+  V(MathFloor)                              \
   /* IC Handler stubs */                    \
   V(ArrayBufferViewLoadField)               \
   V(LoadConstant)                           \
@@ -164,6 +167,8 @@ namespace internal {
   CODE_STUB_LIST_MIPS(V)          \
   CODE_STUB_LIST_S390(V)
 
+static const int kHasReturnedMinusZeroSentinel = 1;
+
 // Stub is base classes of all stubs.
 class CodeStub BASE_EMBEDDED {
  public:
@@ -217,6 +222,8 @@ class CodeStub BASE_EMBEDDED {
   bool FindCodeInCache(Code** code_out);
 
   virtual CallInterfaceDescriptor GetCallInterfaceDescriptor() = 0;
+
+  virtual int GetStackParameterCount() const { return 0; }
 
   virtual void InitializeDescriptor(CodeStubDescriptor* descriptor) {}
 
@@ -358,6 +365,19 @@ struct FakeStubForTesting : public CodeStub {
  public:                                                              \
   void InitializeDescriptor(CodeStubDescriptor* descriptor) override; \
   Handle<Code> GenerateCode() override;                               \
+  DEFINE_CODE_STUB(NAME, SUPER)
+
+#define DEFINE_TURBOFAN_CODE_STUB(NAME, SUPER, DESC, STACK_PARAMS)     \
+ public:                                                               \
+  NAME##Stub(Isolate* isolate) : SUPER(isolate) {}                     \
+  CallInterfaceDescriptor GetCallInterfaceDescriptor() override {      \
+    return DESC(isolate());                                            \
+  };                                                                   \
+  virtual const char* GetFunctionName() const override {               \
+    return #NAME "_STUB";                                              \
+  }                                                                    \
+  int GetStackParameterCount() const override { return STACK_PARAMS; } \
+  Code::StubType GetStubType() const override { return Code::FAST; }   \
   DEFINE_CODE_STUB(NAME, SUPER)
 
 #define DEFINE_HANDLER_CODE_STUB(NAME, SUPER) \
@@ -530,6 +550,23 @@ class HydrogenCodeStub : public CodeStub {
 };
 
 
+class TurboFanCodeStub : public CodeStub {
+ public:
+  Code::Kind GetCodeKind() const override { return Code::STUB; }
+
+  // Retrieve the code for the stub. Generate the code if needed.
+  Handle<Code> GenerateCode() override;
+
+  virtual const char* GetFunctionName() const = 0;
+
+ protected:
+  explicit TurboFanCodeStub(Isolate* isolate) : CodeStub(isolate) {}
+
+ private:
+  DEFINE_CODE_STUB_BASE(TurboFanCodeStub, CodeStub);
+};
+
+
 // Helper interface to prepare to/restore after making runtime calls.
 class RuntimeCallHelper {
  public:
@@ -595,6 +632,23 @@ class NopRuntimeCallHelper : public RuntimeCallHelper {
   virtual void BeforeCall(MacroAssembler* masm) const {}
 
   virtual void AfterCall(MacroAssembler* masm) const {}
+};
+
+
+class MathFloorStub : public TurboFanCodeStub {
+  DEFINE_TURBOFAN_CODE_STUB(MathFloor, TurboFanCodeStub,
+                            MathRoundVariantDescriptor, 1);
+};
+
+
+class StringLengthTFStub : public TurboFanCodeStub {
+  DEFINE_TURBOFAN_CODE_STUB(StringLengthTF, TurboFanCodeStub, LoadDescriptor,
+                            0);
+
+ public:
+  Code::Kind GetCodeKind() const override { return Code::HANDLER; }
+  InlineCacheState GetICState() const override { return MONOMORPHIC; }
+  ExtraICState GetExtraICState() const override { return Code::LOAD_IC; }
 };
 
 
