@@ -1,4 +1,4 @@
-// Copyright 2014 the V8 project authors. All rights reserved.
+// Copyright 2015 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -16,16 +16,24 @@ namespace compiler {
   V(S390_And64)                     \
   V(S390_Or32)                      \
   V(S390_Or64)                      \
+  V(S390_OrComplement32)            \
+  V(S390_OrComplement64)            \
   V(S390_Xor32)                     \
   V(S390_Xor64)                     \
-  V(S390_Shl32)                     \
-  V(S390_Shl64)                     \
-  V(S390_Shr32)                     \
-  V(S390_Shr64)                     \
-  V(S390_Sar32)                     \
-  V(S390_Sar64)                     \
+  V(S390_ShiftLeft32)               \
+  V(S390_ShiftLeft64)               \
+  V(S390_ShiftRight32)              \
+  V(S390_ShiftRight64)              \
+  V(S390_ShiftRightAlg32)           \
+  V(S390_ShiftRightAlg64)           \
+  V(S390_RotRight32)                \
+  V(S390_RotRight64)                \
   V(S390_Not32)                     \
   V(S390_Not64)                     \
+  V(S390_RotLeftAndMask32)          \
+  V(S390_RotLeftAndClear64)         \
+  V(S390_RotLeftAndClearLeft64)     \
+  V(S390_RotLeftAndClearRight64)    \
   V(S390_Add32)                     \
   V(S390_AddWithOverflow32)         \
   V(S390_Add64)                     \
@@ -36,6 +44,8 @@ namespace compiler {
   V(S390_SubFloat64)                \
   V(S390_Mul32)                     \
   V(S390_Mul64)                     \
+  V(S390_MulHigh32)                 \
+  V(S390_MulHighU32)                \
   V(S390_MulFloat64)                \
   V(S390_Div32)                     \
   V(S390_Div64)                     \
@@ -50,31 +60,49 @@ namespace compiler {
   V(S390_Neg32)                     \
   V(S390_Neg64)                     \
   V(S390_NegFloat64)                \
+  V(S390_SqrtFloat64)               \
+  V(S390_FloorFloat64)              \
+  V(S390_CeilFloat64)               \
+  V(S390_TruncateFloat64)           \
+  V(S390_RoundFloat64)              \
+  V(S390_MaxFloat64)                \
+  V(S390_MinFloat64)                \
+  V(S390_Cntlz32)                   \
   V(S390_Cmp32)                     \
   V(S390_Cmp64)                     \
   V(S390_CmpFloat64)                \
   V(S390_Tst32)                     \
   V(S390_Tst64)                     \
-  V(S390_CallCodeObject)            \
-  V(S390_CallJSFunction)            \
-  V(S390_CallAddress)               \
   V(S390_Push)                      \
-  V(S390_Drop)                      \
-  V(S390_Int32ToInt64)              \
+  V(S390_ExtendSignWord8)           \
+  V(S390_ExtendSignWord16)          \
+  V(S390_ExtendSignWord32)          \
+  V(S390_Uint32ToUint64)            \
   V(S390_Int64ToInt32)              \
   V(S390_Int32ToFloat64)            \
   V(S390_Uint32ToFloat64)           \
+  V(S390_Float32ToFloat64)          \
   V(S390_Float64ToInt32)            \
   V(S390_Float64ToUint32)           \
-  V(S390_LoadWord8)                 \
-  V(S390_LoadWord16)                \
-  V(S390_LoadWord32)                \
+  V(S390_Float64ToFloat32)          \
+  V(S390_Float64ExtractLowWord32)   \
+  V(S390_Float64ExtractHighWord32)  \
+  V(S390_Float64InsertLowWord32)    \
+  V(S390_Float64InsertHighWord32)   \
+  V(S390_Float64Construct)          \
+  V(S390_LoadWordS8)                \
+  V(S390_LoadWordU8)                \
+  V(S390_LoadWordS16)               \
+  V(S390_LoadWordU16)               \
+  V(S390_LoadWordS32)               \
   V(S390_LoadWord64)                \
+  V(S390_LoadFloat32)               \
   V(S390_LoadFloat64)               \
   V(S390_StoreWord8)                \
   V(S390_StoreWord16)               \
   V(S390_StoreWord32)               \
   V(S390_StoreWord64)               \
+  V(S390_StoreFloat32)              \
   V(S390_StoreFloat64)              \
   V(S390_StoreWriteBarrier)
 
