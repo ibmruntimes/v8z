@@ -1483,6 +1483,7 @@ class HeapObject: public Object {
 #endif
 
   inline bool NeedsToEnsureDoubleAlignment();
+  inline bool NeedsToEnsureDoubleUnalignment();
 
   // Layout description.
   // First field in a heap object is map.
