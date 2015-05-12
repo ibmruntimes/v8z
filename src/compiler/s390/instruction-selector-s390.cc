@@ -349,7 +349,7 @@ static void VisitLogical(InstructionSelector* selector, Node* node, Matcher* m,
   ArchOpcode inv_opcode = opcode;
   switch (opcode) {
     case kS390_And32:
-      inv_opcode = kS390_And32;
+      inv_opcode = kS390_AndComplement32;
       break;
     case kS390_And64:
       inv_opcode = kS390_AndComplement64;

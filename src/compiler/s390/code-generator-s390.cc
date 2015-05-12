@@ -82,6 +82,7 @@ class S390OperandConverter FINAL : public InstructionOperandConverter {
     return MemOperand(r0);
   }
 
+
   MemOperand MemoryOperand(AddressingMode* mode, size_t first_index = 0) {
     return MemoryOperand(mode, &first_index);
   }
@@ -187,13 +188,13 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
 
 }  // namespace
 
-#define ASSEMBLE_FLOAT_UNOP_RC(asm_instr)                            \
+#define ASSEMBLE_FLOAT_UNOP(asm_instr)                            \
   do {                                                               \
     __ asm_instr(i.OutputDoubleRegister(), i.InputDoubleRegister(0));\
   } while (0)
 
 
-#define ASSEMBLE_FLOAT_BINOP_RC(asm_instr)                           \
+#define ASSEMBLE_FLOAT_BINOP(asm_instr)                           \
   do {                                                               \
     __ asm_instr(i.OutputDoubleRegister(), i.InputDoubleRegister(0), \
                  i.InputDoubleRegister(1));                          \
@@ -212,7 +213,7 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
   } while (0)
 
 
-#define ASSEMBLE_BINOP_RC(asm_instr_reg, asm_instr_imm)        \
+#define ASSEMBLE_BINOP(asm_instr_reg, asm_instr_imm)        \
   do {                                                         \
     if (HasRegisterInput(instr, 1)) {                          \
       __ asm_instr_reg(i.OutputRegister(), i.InputRegister(0), \
@@ -224,7 +225,7 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
   } while (0)
 
 
-#define ASSEMBLE_BINOP_INT_RC(asm_instr_reg, asm_instr_imm)    \
+#define ASSEMBLE_BINOP_INT(asm_instr_reg, asm_instr_imm)    \
   do {                                                         \
     if (HasRegisterInput(instr, 1)) {                          \
       __ asm_instr_reg(i.OutputRegister(), i.InputRegister(0), \
@@ -278,19 +279,11 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
 
 #define ASSEMBLE_COMPARE(cmp_instr, cmpl_instr)                        \
   do {                                                                 \
-    if (HasRegisterInput(instr, 1)) {                                  \
-      if (i.CompareLogical()) {                                        \
-        __ cmpl_instr(i.InputRegister(0), i.InputRegister(1));         \
-      } else {                                                         \
-        __ cmp_instr(i.InputRegister(0), i.InputRegister(1));          \
-      }                                                                \
-    } else {                                                           \
-      if (i.CompareLogical()) {                                        \
-        __ cmpl_instr##i(i.InputRegister(0), i.InputImmediate(1));     \
-      } else {                                                         \
-        __ cmp_instr##i(i.InputRegister(0), i.InputImmediate(1));      \
-      }                                                                \
-    }                                                                  \
+    if (i.CompareLogical()) {                                        \
+      __ cmpl_instr(i.InputRegister(0), i.InputRegister(1));         \
+    } else {                                                         \
+      __ cmp_instr(i.InputRegister(0), i.InputRegister(1));          \
+    }                                                                \
   } while (0)
 
 
@@ -333,30 +326,30 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
     Label ge, done;                                                           \
     __ ldr(double_scratch_reg, i.InputDoubleRegister(0));                     \
     __ sdbr(double_scratch_reg, i.InputDoubleRegister(1));                    \
-	__ lgdr(general_scratch_reg, double_scratch_reg);                         \
-	__ CmpP(general_scratch_reg, Operand::Zero());                            \
+	  __ lgdr(general_scratch_reg, double_scratch_reg);                         \
+	  __ CmpP(general_scratch_reg, Operand::Zero());                            \
     __ bge(&ge, Label::kNear);                                                \
-  	__ LoadRR(i.OutputDoubleRegister(), i.InputDoubleRegister(1));            \
-	__ b(&done, Label::kNear);                                                \
-	__ bind(&ge);                                                             \
-	__ LoadRR(i.OutputDoubleRegister(), i.InputDoubleRegister(0));            \
-	__ bind(&done);                                                           \
+  	__ Move(i.OutputDoubleRegister(), i.InputDoubleRegister(1));            \
+	  __ b(&done, Label::kNear);                                                \
+	  __ bind(&ge);                                                             \
+	  __ Move(i.OutputDoubleRegister(), i.InputDoubleRegister(0));            \
+	  __ bind(&done);                                                           \
   } while (0)
 
 
 #define ASSEMBLE_FLOAT_MIN(double_scratch_reg, general_scratch_reg)           \
   do {                                                                        \
     Label ge, done;                                                           \
-    __ ldr(scratch_reg, i.InputDoubleRegister(0));                            \
-    __ sdbr(scratch_reg, i.InputDoubleRegister(1));                           \
-	__ lgdr(general_scratch_reg, double_scratch_reg);                         \
-	__ CmpP(general_scratch_reg, Operand::Zero());                            \
+    __ ldr(double_scratch_reg, i.InputDoubleRegister(0));                            \
+    __ sdbr(double_scratch_reg, i.InputDoubleRegister(1));                           \
+	  __ lgdr(general_scratch_reg, double_scratch_reg);                         \
+	  __ CmpP(general_scratch_reg, Operand::Zero());                            \
     __ bge(&ge, Label::kNear);                                                \
-  	__ LoadRR(i.OutputDoubleRegister(), i.InputDoubleRegister(0));            \
-	__ b(&done, Label::kNear);                                                \
-	__ bind(&ge);                                                             \
-	__ LoadRR(i.OutputDoubleRegister(), i.InputDoubleRegister(1));            \
-	__ bind(&done);                                                           \
+  	__ Move(i.OutputDoubleRegister(), i.InputDoubleRegister(0));            \
+	  __ b(&done, Label::kNear);                                                \
+	  __ bind(&ge);                                                             \
+	  __ Move(i.OutputDoubleRegister(), i.InputDoubleRegister(1));            \
+	  __ bind(&done);                                                           \
   } while (0)
 
 
@@ -364,7 +357,8 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
 #define ASSEMBLE_LOAD_FLOAT(asm_instr)                \
   do {                                                \
     DoubleRegister result = i.OutputDoubleRegister(); \
-    MemOperand operand = i.MemoryOperand();           \
+    AddressingMode mode = kMode_None;                 \
+    MemOperand operand = i.MemoryOperand(&mode);      \
     __ asm_instr(result, operand);                    \
   } while (0)
 
@@ -374,7 +368,7 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
     Register result = i.OutputRegister();            \
     AddressingMode mode = kMode_None;                \
     MemOperand operand = i.MemoryOperand(&mode);     \
-    __ asm_instr(result, operand);                 \
+    __ asm_instr(result, operand);                   \
   } while (0)
 
 
@@ -404,7 +398,8 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
   do {                                                             \
     DoubleRegister result = i.OutputDoubleRegister();              \
     size_t index = 0;                                              \
-    MemOperand operand = i.MemoryOperand(index);                   \
+    AddressingMode mode = kMode_None;                              \
+    MemOperand operand = i.MemoryOperand(&mode, index);            \
     Register offset = operand.rb();                                \
     __ lgfr(offset, offset);                                       \
     if (HasRegisterInput(instr, 2)) {                              \
@@ -424,7 +419,8 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
   do {                                                       \
     Register result = i.OutputRegister();                    \
     size_t index = 0;                                        \
-    MemOperand operand = i.MemoryOperand(index);             \
+    AddressingMode mode = kMode_None;                        \
+    MemOperand operand = i.MemoryOperand(&mode, index);      \
     Register offset = operand.rb();                          \
     __ lgfr(offset, offset);                                 \
     if (HasRegisterInput(instr, 2)) {                        \
@@ -530,7 +526,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     }
     case kArchJmp:
-      __ b(code_->GetLabel(i.InputBlock(0)));
+      AssembleArchJump(i.InputRpo(0));
       break;
     case kArchLookupSwitch:
       AssembleArchLookupSwitch(instr);
@@ -788,7 +784,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
 //      ASSEMBLE_FLOAT_UNOP_RC(frin);
       break;
     case kS390_NegFloat64:
-      ASSEMBLE_FLOAT_UNOP_RC(lcdbr);
+      ASSEMBLE_FLOAT_UNOP(lcdbr);
       break;
     case kS390_Cntlz32:
 //     __ cntlzw_(i.OutputRegister(), i.InputRegister(0));
@@ -882,25 +878,33 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ Move(i.OutputDoubleRegister(), i.InputDoubleRegister(0));
       break;
     case kS390_Float64ExtractLowWord32:
-      __ MovDoubleLowToInt(i.OutputRegister(), i.InputDoubleRegister(0));
+     // __ MovDoubleLowToInt(i.OutputRegister(), i.InputDoubleRegister(0));
+      __ stdy(i.InputDoubleRegister(0), MemOperand(sp, -kDoubleSize));
+      __ LoadlW(i.OutputRegister(),
+                  MemOperand(sp, -kDoubleSize + Register::kMantissaOffset));
       break;
     case kS390_Float64ExtractHighWord32:
-      __ MovDoubleHighToInt(i.OutputRegister(), i.InputDoubleRegister(0));
+      //__ MovDoubleHighToInt(i.OutputRegister(), i.InputDoubleRegister(0));
+      __ stdy(i.InputDoubleRegister(0), MemOperand(sp, -kDoubleSize));
+      __ LoadlW(i.OutputRegister(),
+                 MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
       break;
     case kS390_Float64InsertLowWord32:
-      __ InsertDoubleLow(i.OutputDoubleRegister(), i.InputRegister(1), r0);
+      __ InsertDoubleLow(i.OutputDoubleRegister(), i.InputRegister(1));
       break;
     case kS390_Float64InsertHighWord32:
-      __ InsertDoubleHigh(i.OutputDoubleRegister(), i.InputRegister(1), r0);
+      __ InsertDoubleHigh(i.OutputDoubleRegister(), i.InputRegister(1));
       break;
     case kS390_Float64Construct:
-#if V8_TARGET_ARCH_S390X
-      __ MovInt64ComponentsToDouble(i.OutputDoubleRegister(),
-                                    i.InputRegister(0), i.InputRegister(1), r0);
-#else
-      __ MovInt64ToDouble(i.OutputDoubleRegister(), i.InputRegister(0),
-                          i.InputRegister(1));
-#endif
+   //TODO(Tara): Use ldgr
+    #if V8_TARGET_LITTLE_ENDIAN
+      __ StoreW(i.InputRegister(0), MemOperand(sp, -kDoubleSize / 2));
+      __ StoreW(i.InputRegister(1), MemOperand(sp, -kDoubleSize));
+    #else
+      __ StoreW(i.InputRegister(0), MemOperand(sp, -kDoubleSize / 2));
+      __ StoreW(i.InputRegister(0), MemOperand(sp, -kDoubleSize));
+    #endif
+      __ ldy(i.OutputDoubleRegister(), MemOperand(sp, -kDoubleSize));
       break;
     case kS390_LoadWordU8:
       ASSEMBLE_LOAD_INTEGER(LoadlB);
@@ -1045,7 +1049,6 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
   Label done;
   ArchOpcode op = instr->arch_opcode();
   bool check_unordered = (op == kS390_CmpFloat64);
-  CRegister cr = cr0;
 
   // Overflow checked for add/sub only.
   DCHECK((condition != kOverflow && condition != kNotOverflow) ||
@@ -1060,42 +1063,45 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
   switch (cond) {
     case eq:
     case lt:
+      {
       __ LoadImmP(reg, Operand::Zero());
       __ LoadImmP(kScratchReg, Operand(1));
       //__ isel(cond, reg, kScratchReg, reg, cr);
-	  Label cond_false;
-	  __ b(NegateCondition(cond), &cond_false, Label::kNear);
-	  __ LoadRR(reg, kScratchReg);
-	  __ bind(&cond_false);
-	  
+   	  Label cond_false;
+	    __ b(NegateCondition(cond), &cond_false, Label::kNear);
+	    __ LoadRR(reg, kScratchReg);
+	    __ bind(&cond_false);
       break;
+      }
     case ne:
     case ge:
+      {
       __ LoadImmP(reg, Operand(1));
-     // __ isel(NegateCondition(cond), reg, r0, reg, cr);
-	 Label cond_true;
-	 __ b(cond, &cond_true, Label::kNear);
-	 __ LoadRR(reg, r0);
-	 __ bind(&cond_true);
-      break;
+      // __ isel(NegateCondition(cond), reg, r0, reg, cr);
+	    Label cond_true;
+	    __ b(cond, &cond_true, Label::kNear);
+	    __ LoadRR(reg, r0);
+	    __ bind(&cond_true);
+     break;
+      }
     case gt:
       if (check_unordered) {
         __ LoadImmP(reg, Operand(1));
         __ LoadImmP(kScratchReg, Operand::Zero());
         __ bunordered(&done);
         //__ isel(cond, reg, reg, kScratchReg, cr);
-		Label cond_true;
-		__ b(cond, &cond_true, Label::kNear);
-		__ LoadRR(reg, kScratchReg);
-		__ bind(&cond_true);
+		    Label cond_true;
+		    __ b(cond, &cond_true, Label::kNear);
+		    __ LoadRR(reg, kScratchReg);
+		    __ bind(&cond_true);
       } else {
         __ LoadImmP(reg, Operand::Zero());
         __ LoadImmP(kScratchReg, Operand(1));
         //__ isel(cond, reg, kScratchReg, reg, cr);
         Label cond_false;
-		__ b(NegateCondition(cond), cond_false, Label::kNear);
-		__ LoadRR(reg, kScratchReg);
-		__ bind(&cond_false);
+	      __ b(NegateCondition(cond), &cond_false, Label::kNear);
+        __ LoadRR(reg, kScratchReg);
+        __ bind(&cond_false);
       }
       break;
     case le:
@@ -1104,20 +1110,20 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
         __ LoadImmP(kScratchReg, Operand(1));
         __ bunordered(&done);
         //__ isel(NegateCondition(cond), reg, r0, kScratchReg, cr);
-		Label cond_true, load_done;
-		__ b(cond, &cond_true, Label::kNear);
-		__ LoadRR(reg, r0);
-		__ b(&load_done, Label::kNear);
-		__ bind(&cond_true);
-		__ LoadRR(reg, kScratchReg);
-		__ bind(&load_done);
+		    Label cond_true, load_done;
+		    __ b(cond, &cond_true, Label::kNear);
+		    __ LoadRR(reg, r0);
+		    __ b(&load_done, Label::kNear);
+		    __ bind(&cond_true);
+		    __ LoadRR(reg, kScratchReg);
+		    __ bind(&load_done);
       } else {
         __ LoadImmP(reg, Operand(1));
         //__ isel(NegateCondition(cond), reg, r0, reg, cr);
         Label cond_true;
-		__ b(cond, &cond_true, Label::kNear);
-		__ LoadRR(reg, r0);
-		__ bind(&cond_true);
+		    __ b(cond, &cond_true, Label::kNear);
+		    __ LoadRR(reg, r0);
+		    __ bind(&cond_true);
       }
       break;
     default:
@@ -1150,7 +1156,10 @@ void CodeGenerator::AssembleArchTableSwitch(Instruction* instr) {
   Label* const table = AddJumpTable(cases, case_count);
   __ CmpLogicalP(input, Operand(case_count));
   __ bge(GetLabel(i.InputRpo(1)));
-  __ mov_label_addr(kScratchReg, table);
+  //TODO(Tara): Implement mov_label_addr in s930
+  (void)table;
+  DCHECK(0);
+//  __ mov_label_addr(kScratchReg, table);
   __ ShiftLeftP(r0, input, Operand(kPointerSizeLog2));
   __ LoadP(kScratchReg, MemOperand(kScratchReg, r0));
   __ Jump(kScratchReg);
@@ -1405,11 +1414,12 @@ void CodeGenerator::AssembleSwap(InstructionOperand* source,
   }
 }
 
-//emit_label_addr used only with function_descriptors
 
 void CodeGenerator::AssembleJumpTable(Label** targets, size_t target_count) {
   for (size_t index = 0; index < target_count; ++index) {
-    __ emit_label_addr(targets[index]);
+//TODO(Tara): Implement emit_label_addr
+     DCHECK(0);
+//    __ emit_label_addr(targets[index]);
   }
 }
 

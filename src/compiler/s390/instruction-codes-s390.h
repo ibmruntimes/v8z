@@ -16,6 +16,8 @@ namespace compiler {
   V(S390_And64)                     \
   V(S390_Or32)                      \
   V(S390_Or64)                      \
+  V(S390_AndComplement32)           \
+  V(S390_AndComplement64)           \
   V(S390_OrComplement32)            \
   V(S390_OrComplement64)            \
   V(S390_Xor32)                     \

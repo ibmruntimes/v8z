@@ -239,6 +239,28 @@ void MacroAssembler::Move(DoubleRegister dst, DoubleRegister src) {
 }
 
 
+void MacroAssembler::InsertDoubleLow(DoubleRegister dst, Register src) {
+  StoreF(dst, MemOperand(sp, -kDoubleSize));
+#if V8_TARGET_LITTLE_ENDIAN
+  StoreW(src, MemOperand(sp, -kDoubleSize));
+#else
+  StoreW(src, MemOperand(sp, -kDoubleSize / 2));
+#endif
+  ldy(dst, MemOperand(sp, -kDoubleSize));
+}
+
+
+void MacroAssembler::InsertDoubleHigh(DoubleRegister dst, Register src) {
+  StoreF(dst, MemOperand(sp, -kDoubleSize));
+#if V8_TARGET_LITTLE_ENDIAN
+  StoreW(src, MemOperand(sp, -kDoubleSize / 2));
+#else
+  StoreW(src, MemOperand(sp, -kDoubleSize));
+#endif
+  ldy(dst, MemOperand(sp, -kDoubleSize));
+}
+
+
 void MacroAssembler::MultiPush(RegList regs) {
   int16_t num_to_push = NumberOfBitsSet(regs);
   int16_t stack_offset = num_to_push * kPointerSize;
