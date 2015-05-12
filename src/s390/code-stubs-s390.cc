@@ -4925,6 +4925,7 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
   __ LoadP(ip, MemOperand(ip, 0));
 // ip already set.
 #endif
+#endif
 
   // zLinux ABI requires caller's frame to have sufficient space for callee
   // preserved regsiter save area.
@@ -4933,7 +4934,7 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
                           kNumRequiredStackFrameSlots * kPointerSize));
   __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize -
                         kNumRequiredStackFrameSlots * kPointerSize));
-#else
+#if defined(USE_SIMULATOR)
   // Under the simulator we need to indirect the entry hook through a
   // trampoline function at a known address.
   // It additionally takes an isolate as a third parameter
@@ -4945,12 +4946,10 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
 #endif
   __ Call(ip);
 
-#if !defined(USE_SIMULATOR)
   // zLinux ABI requires caller's frame to have sufficient space for callee
   // preserved regsiter save area.
   __ la(sp, MemOperand(sp, kCalleeRegisterSaveAreaSize +
                        kNumRequiredStackFrameSlots * kPointerSize));
-#endif
 
   // Restore the stack pointer if needed.
   if (frame_alignment > kPointerSize) {
