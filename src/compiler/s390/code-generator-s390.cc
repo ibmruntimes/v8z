@@ -297,15 +297,12 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
 // r0 & r1 below.
 // R0:R1 = R1 / divisor - R0 remainder
 // Copy remainder to output reg
-#define ASSEMBLE_MODULO(load_instr)      \
-  do {                                   \
-  DCHECK(!left_reg.is(r1));              \
-  DCHECK(!right_reg.is(r1));             \
-  DCHECK(!result_reg.is(r1));            \
-  __ load_instr(r0, i.InputRegister(0)); \
-  __ srda(r0, Operand(32));              \
-  __ dr(r0, i.InputRegister(1));         \
-  __ ltr(i.OutputRegister(), r0);        \
+#define ASSEMBLE_MODULO(load_instr, scratch_reg)      \
+  do {                                                \
+  __ load_instr(scratch_reg, i.InputRegister(0));     \
+  __ srda(scratch_reg, Operand(32));                  \
+  __ dr(scratch_reg, i.InputRegister(1));             \
+  __ ltr(i.OutputRegister(), scratch_reg);            \
   } while (0)
 
 
@@ -649,8 +646,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
  //     __ rldicr(i.OutputRegister(), i.InputRegister(0), i.InputInt32(1),
  //               63 - i.InputInt32(2), i.OutputRCBit());  == sldi
       UNIMPLEMENTED();  //Confirm this sllg is correct
-      __ sllg(i.OutputRegister(), i.InputRegister(0), i.InputInt32(1),
-              63 - i.InputInt32(2));
+//      __ sllg(i.OutputRegister(), i.InputRegister(0), i.InputInt32(1),
+//              63 - i.InputInt32(2));
       break;
 #endif
     case kS390_Add32:
@@ -739,12 +736,12 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     case kS390_Mod32:
     case kS390_ModU32:
-      ASSEMBLE_MODULO(lr);
+      ASSEMBLE_MODULO(lr, kScratchReg);
       break;
 #if V8_TARGET_ARCH_S390x
     case kS390_Mod64:
     case kS390_ModU64:
-      ASSEMBLE_MODULO(lgr);
+      ASSEMBLE_MODULO(lgr, kScratchReg);
       break;
 #endif
     case kS390_ModFloat64:
@@ -842,7 +839,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
 	  #endif
       break;
 #if V8_TARGET_ARCH_S390X
-    case k390_ExtendSignWord32:
+    case kS390_ExtendSignWord32:
       __ lgfr(i.OutputRegister(), i.InputRegister(0));
       break;
     case kS390_Uint32ToUint64:

@@ -75,7 +75,7 @@ bool AreAliased(Register reg1, Register reg2, Register reg3 = no_reg,
 // W = word
 
 // arithmetics and bitwise
-#define AddMI gsi
+#define AddMI agsi
 #define AddRR agr
 #define SubRR sgr
 #define AndRR ngr
