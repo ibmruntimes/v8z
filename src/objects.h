@@ -1672,6 +1672,11 @@ class JSReceiver: public HeapObject {
   MUST_USE_RESULT static inline Maybe<PropertyAttributes>
       GetOwnElementAttribute(Handle<JSReceiver> object, uint32_t index);
 
+  static Handle<Object> GetDataProperty(Handle<JSReceiver> object,
+                                        Handle<Name> key);
+  static Handle<Object> GetDataProperty(LookupIterator* it);
+
+
   // Retrieves a permanent object identity hash code. The undefined value might
   // be returned in case no hash was created yet.
   inline Object* GetIdentityHash();
@@ -2167,10 +2172,6 @@ class JSObject: public JSReceiver {
   MUST_USE_RESULT static MaybeHandle<JSObject> DeepWalk(
       Handle<JSObject> object,
       AllocationSiteCreationContext* site_context);
-
-  static Handle<Object> GetDataProperty(Handle<JSObject> object,
-                                        Handle<Name> key);
-  static Handle<Object> GetDataProperty(LookupIterator* it);
 
   DECLARE_CAST(JSObject)
 
