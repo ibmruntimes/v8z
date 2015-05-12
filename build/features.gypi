@@ -39,7 +39,7 @@
 
     'v8_trace_maps%': 0,
 
-    'v8_use_snapshot%': 'true',
+    'v8_use_snapshot%': 'false',
 
     'v8_enable_verify_predictable%': 0,
 
