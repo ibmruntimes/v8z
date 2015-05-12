@@ -25,7 +25,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-
+//TODO(Tara): Remove #if 0 after test has been ported
+#if 0
 #include <stdlib.h>
 
 #include "src/v8.h"
@@ -753,4 +754,5 @@ TEST(LoadStore) {
 
   VERIFY_RUN();
 }
+#endif
 #endif
