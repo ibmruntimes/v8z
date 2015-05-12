@@ -1915,7 +1915,7 @@ SS2_FORM(zap);
 
   // Code emission
   inline void CheckBuffer();
-  void GrowBuffer();
+  void GrowBuffer(int needed = 0);
 
   // S390 emitting helpers
   inline void emit2bytes(uint16_t x);

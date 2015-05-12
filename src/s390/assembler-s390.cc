@@ -2523,6 +2523,11 @@ void Assembler::lr(Register r1, Register r2) {
   rr_form(LR, r1, r2);
 }
 
+void Assembler::EnsureSpaceFor(int space_needed) {
+  if (buffer_space() <= (kGap + space_needed)) {
+    GrowBuffer(space_needed);
+  }
+}
 
 /*
 // TODO(JOHN): might not work
@@ -3709,7 +3714,7 @@ bool Assembler::IsNop(SixByteInstr instr, int type) {
 }
 
 
-void Assembler::GrowBuffer() {
+void Assembler::GrowBuffer(int needed) {
   if (!own_buffer_) FATAL("external code buffer is too small");
 
   // Compute new buffer size.
@@ -3721,6 +3726,10 @@ void Assembler::GrowBuffer() {
   } else {
     desc.buffer_size = buffer_size_ + 1*MB;
   }
+  int space = buffer_space() + (desc.buffer_size - buffer_size_);
+  if (space < needed) {
+    desc.buffer_size += needed - space;
+  }
   CHECK_GT(desc.buffer_size, 0);  // no overflow
 
   // Set up new buffer.
@@ -3731,11 +3740,10 @@ void Assembler::GrowBuffer() {
 
   // Copy the data.
   intptr_t pc_delta = desc.buffer - buffer_;
-  intptr_t rc_delta = (desc.buffer + desc.buffer_size) -
-    (buffer_ + buffer_size_);
+  intptr_t rc_delta = (desc.buffer + desc.buffer_size) - (buffer_ + buffer_size_);
   memmove(desc.buffer, buffer_, desc.instr_size);
-  memmove(reloc_info_writer.pos() + rc_delta,
-          reloc_info_writer.pos(), desc.reloc_size);
+  memmove(reloc_info_writer.pos() + rc_delta, reloc_info_writer.pos(),
+          desc.reloc_size);
 
   // Switch buffers.
   DeleteArray(buffer_);
