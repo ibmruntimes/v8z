@@ -1702,9 +1702,6 @@ class JSReceiver: public HeapObject {
 // Forward declaration for JSObject::GetOrCreateHiddenPropertiesHashTable.
 class ObjectHashTable;
 
-// Forward declaration for JSObject::Copy.
-class AllocationSite;
-
 
 // The JSObject describes real heap allocated JavaScript objects with
 // properties.
@@ -2165,7 +2162,6 @@ class JSObject: public JSReceiver {
   // Copy object.
   enum DeepCopyHints { kNoHints = 0, kObjectIsShallow = 1 };
 
-  static Handle<JSObject> Copy(Handle<JSObject> object);
   MUST_USE_RESULT static MaybeHandle<JSObject> DeepCopy(
       Handle<JSObject> object,
       AllocationSiteUsageContext* site_context,
