@@ -4664,7 +4664,7 @@ void MacroAssembler::CmpP(Register dst, const Operand& opnd) {
     cgfi(dst, opnd);
   } else {
     mov(r0, opnd);   // Need to generate 64-bit relocation
-    Cmp32(dst, r0);
+    cgr(dst, r0);
   }
 #else
   Cmp32(dst, opnd);
