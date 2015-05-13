@@ -15,7 +15,7 @@ namespace compiler {
 struct S390LinkageHelperTraits {
   static Register ReturnValueReg() { return r2; }
   static Register ReturnValue2Reg() { return r3; }
-  //TODO: Confirm if the JSCallFunctionReg = r3 is correct
+  // TODO(Tara): Confirm if the JSCallFunctionReg = r3 is correct
   static Register JSCallFunctionReg() { return r3; }
   static Register ContextReg() { return cp; }
   static Register RuntimeCallFunctionReg() { return r3; }
@@ -25,7 +25,7 @@ struct S390LinkageHelperTraits {
            fp.bit() | ip.bit() | r13.bit() | sp.bit();
   }
   static Register CRegisterParameter(int i) {
-    static Register register_parameters[] = {r2, r3, r4, r5, r6,};
+    static Register register_parameters[] = {r2, r3, r4, r5, r6};
     return register_parameters[i];
   }
   static int CRegisterParametersLength() { return 5; }

@@ -60,7 +60,7 @@ static void ProbeTable(Isolate* isolate, MacroAssembler* masm,
   __ AddP(base_addr, base_addr, offset_scratch);
 
   // Check that the key in the entry matches the name.
-  __ CmpP(name, MemOperand(base_addr, 0)); 
+  __ CmpP(name, MemOperand(base_addr, 0));
   __ bne(&miss, Label::kNear);
 
   // Check the map matches.

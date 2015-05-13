@@ -353,7 +353,7 @@ inline void USE(T) { }
 #endif
 #endif
 
-//Fix for difference in size_t and int for s390
+// Fix for difference in size_t and int for s390
 #if V8_HOST_ARCH_S390 && !V8_HOST_ARCH_64_BIT
 # define V8_SIZET_PREFIX "z"
 #else

@@ -131,10 +131,10 @@ class LCodeGen : public LCodeGenBase {
   // Emit frame translation commands for an environment.
   void WriteTranslation(LEnvironment* environment, Translation* translation);
 
- // Declare methods that deal with the individual node types.
- #define DECLARE_DO(type) void Do##type(L##type* node);
-   LITHIUM_CONCRETE_INSTRUCTION_LIST(DECLARE_DO)
- #undef DECLARE_DO
+  // Declare methods that deal with the individual node types.
+#define DECLARE_DO(type) void Do##type(L##type* node);
+    LITHIUM_CONCRETE_INSTRUCTION_LIST(DECLARE_DO)
+#undef DECLARE_DO
 
  private:
   LanguageMode language_mode() const { return info()->language_mode(); }

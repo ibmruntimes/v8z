@@ -979,16 +979,16 @@ enum LKBit {    // Bit 0
   LeaveLK = 0   // No action
 };
 
-enum BOfield {       // Bits 25-21
-  DCBNZF = 0 << 21,  // Decrement CTR; branch if CTR != 0 and condition false
-  DCBEZF = 2 << 21,  // Decrement CTR; branch if CTR == 0 and condition false
-  BF = 4 << 21,      // Branch if condition false
-  DCBNZT = 8 << 21,  // Decrement CTR; branch if CTR != 0 and condition true
-  DCBEZT = 10 << 21, // Decrement CTR; branch if CTR == 0 and condition true
-  BT = 12 << 21,     // Branch if condition true
-  DCBNZ = 16 << 21,  // Decrement CTR; branch if CTR != 0
-  DCBEZ = 18 << 21,  // Decrement CTR; branch if CTR == 0
-  BA = 20 << 21      // Branch always
+enum BOfield {        // Bits 25-21
+  DCBNZF = 0 << 21,   // Decrement CTR; branch if CTR != 0 and condition false
+  DCBEZF = 2 << 21,   // Decrement CTR; branch if CTR == 0 and condition false
+  BF = 4 << 21,       // Branch if condition false
+  DCBNZT = 8 << 21,   // Decrement CTR; branch if CTR != 0 and condition true
+  DCBEZT = 10 << 21,  // Decrement CTR; branch if CTR == 0 and condition true
+  BT = 12 << 21,      // Branch if condition true
+  DCBNZ = 16 << 21,   // Decrement CTR; branch if CTR != 0
+  DCBEZ = 18 << 21,   // Decrement CTR; branch if CTR == 0
+  BA = 20 << 21       // Branch always
 };
 
 #ifdef _AIX
@@ -1093,15 +1093,15 @@ class Instruction {
     THREE_NIBBLE_OPCODE         // Three Nibbles - Bits 0 to 7, 12 to 15
   };
 
- // Helper macro to define static accessors.
- // We use the cast to char* trick to bypass the strict anti-aliasing rules.
- #define DECLARE_STATIC_TYPED_ACCESSOR(return_type, Name)                     \
-   static inline return_type Name(Instr instr) {                              \
+  // Helper macro to define static accessors.
+  // We use the cast to char* trick to bypass the strict anti-aliasing rules.
+  #define DECLARE_STATIC_TYPED_ACCESSOR(return_type, Name)                    \
+     static inline return_type Name(Instr instr) {                            \
      char* temp = reinterpret_cast<char*>(&instr);                            \
      return reinterpret_cast<Instruction*>(temp)->Name();                     \
-   }
+     }
 
- #define DECLARE_STATIC_ACCESSOR(Name) DECLARE_STATIC_TYPED_ACCESSOR(int, Name)
+  #define DECLARE_STATIC_ACCESSOR(Name) DECLARE_STATIC_TYPED_ACCESSOR(int, Name)
 
   // Get the raw instruction bits.
   template<typename T>

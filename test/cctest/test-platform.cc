@@ -27,7 +27,7 @@ void GetStackPointer(const v8::FunctionCallbackInfo<v8::Value>& args) {
 #elif defined(__s390x__) || defined(_ARCH_S390X)
   __asm__ __volatile__("stg 15, %0" : "=g" (sp_addr));
 #elif defined(__s390__) || defined(_ARCH_S390)
-  __asm__ __volatile__("st 15, %0" : "=g" (sp_addr)); 
+  __asm__ __volatile__("st 15, %0" : "=g" (sp_addr));
 #elif defined(__PPC64__) || defined(_ARCH_PPC64)
   __asm__ __volatile__("std 1, %0" : "=g"(sp_addr));
 #elif defined(__PPC__) || defined(_ARCH_PPC)

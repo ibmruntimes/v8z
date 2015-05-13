@@ -380,7 +380,7 @@ class RelocInfo {
     INTERNAL_REFERENCE,  // An address inside the same function.
 
     // Encoded internal reference, used only on MIPS, MIPS64 and PPC.
-    //TODO(@Tara): Check if this is required for s390
+    // TODO(Tara): Check if this is required for s390
     INTERNAL_REFERENCE_ENCODED,
 
     // Marks constant and veneer pools. Only used on ARM and ARM64.

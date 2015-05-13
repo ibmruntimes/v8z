@@ -76,7 +76,7 @@ class SimulatorHelper {
     state->sp = reinterpret_cast<void*>(
             simulator_->get_register(v8::internal::Simulator::sp));
     state->fp = reinterpret_cast<void*>(
-            simulator_->get_register(v8::internal::Simulator::fp));    
+            simulator_->get_register(v8::internal::Simulator::fp));
 #endif
   }
 

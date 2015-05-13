@@ -1164,7 +1164,6 @@ void MacroAssembler::PushStackHandler() {
       MemOperand(r7), kPointerSize);
   // Set this new handler as the current one.
   StoreP(sp, MemOperand(r7));
-
 }
 
 
@@ -1785,7 +1784,7 @@ void MacroAssembler::StoreNumberToDoubleElements(
   bind(&store);
   SmiToDoubleArrayOffset(scratch1, key_reg);
   StoreF(double_scratch, FieldMemOperand(elements_reg, scratch1,
-                                         FixedDoubleArray::kHeaderSize - elements_offset));
+         FixedDoubleArray::kHeaderSize - elements_offset));
 }
 
 void MacroAssembler::AddAndCheckForOverflow(Register dst, Register left,
@@ -2970,7 +2969,6 @@ void MacroAssembler::JumpIfBothInstanceTypesAreNotSequentialOneByte(
   nilf(scratch2, Operand(kFlatOneByteStringMask));
   CmpP(scratch2, Operand(kFlatOneByteStringTag));
   bne(failure);
-
 }
 
 
@@ -2986,7 +2984,6 @@ void MacroAssembler::JumpIfInstanceTypeIsNotSequentialOneByte(Register type,
   nilf(scratch, Operand(kFlatOneByteStringMask));
   CmpP(scratch, Operand(kFlatOneByteStringTag));
   bne(failure);
-
 }
 
 

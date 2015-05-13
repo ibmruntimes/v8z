@@ -191,8 +191,7 @@ void CpuFeatures::PrintFeatures() {
 Register ToRegister(int num) {
   DCHECK(num >= 0 && num < kNumRegisters);
   const Register kRegisters[] = {r0, r1, r2, r3, r4, r5, r6, r7,
-                                 r8, r9, r10, fp, ip, r13, r14,
-								 sp};
+                                 r8, r9, r10, fp, ip, r13, r14, sp};
   return kRegisters[num];
 }
 
@@ -200,8 +199,8 @@ Register ToRegister(int num) {
 const char* DoubleRegister::AllocationIndexToString(int index) {
   DCHECK(index >= 0 && index < kMaxNumAllocatableRegisters);
   const char* const names[] = {
-      "d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9", "d10",
-	  "d11", "d12","d15"};
+       "d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9", "d10",
+       "d11", "d12", "d15"};
   return names[index];
 }
 
@@ -2523,11 +2522,13 @@ void Assembler::lr(Register r1, Register r2) {
   rr_form(LR, r1, r2);
 }
 
+
 void Assembler::EnsureSpaceFor(int space_needed) {
   if (buffer_space() <= (kGap + space_needed)) {
     GrowBuffer(space_needed);
   }
 }
+
 
 /*
 // TODO(JOHN): might not work
@@ -3740,7 +3741,8 @@ void Assembler::GrowBuffer(int needed) {
 
   // Copy the data.
   intptr_t pc_delta = desc.buffer - buffer_;
-  intptr_t rc_delta = (desc.buffer + desc.buffer_size) - (buffer_ + buffer_size_);
+  intptr_t rc_delta = (desc.buffer + desc.buffer_size) -
+                       (buffer_ + buffer_size_);
   memmove(desc.buffer, buffer_, desc.instr_size);
   memmove(reloc_info_writer.pos() + rc_delta, reloc_info_writer.pos(),
           desc.reloc_size);
@@ -3838,7 +3840,8 @@ void Assembler::EmitRelocations() {
           Memory::Address_at(pc) = buffer_ + pos;
         } else if (RelocInfo::IsInternalReferenceEncoded(rmode)) {
           // mov sequence
-          intptr_t pos = reinterpret_cast<intptr_t>(target_address_at(pc, code));
+          intptr_t pos =
+             reinterpret_cast<intptr_t>(target_address_at(pc, code));
           set_target_address_at(pc, code, buffer_ + pos, SKIP_ICACHE_FLUSH);
         }
 

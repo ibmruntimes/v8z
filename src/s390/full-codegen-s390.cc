@@ -416,7 +416,7 @@ void FullCodeGenerator::EmitProfilingCounterReset() {
 void FullCodeGenerator::EmitBackEdgeBookkeeping(IterationStatement* stmt,
                                                 Label* back_edge_target) {
   Comment cmnt(masm_, "[ Back edge bookkeeping");
-   Label ok;
+  Label ok;
 
   DCHECK(back_edge_target->is_bound());
   int distance = masm_->SizeOfCodeGeneratedSince(back_edge_target) +
@@ -1210,7 +1210,8 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   __ Move(r3, FeedbackVector());
   __ mov(r4, Operand(TypeFeedbackVector::MegamorphicSentinel(isolate())));
   int vector_index = FeedbackVector()->GetIndex(slot);
-  __ StoreP(r4, FieldMemOperand(r3, FixedArray::OffsetOfElementAt(vector_index)));
+  __ StoreP(r4, FieldMemOperand(r3,
+        FixedArray::OffsetOfElementAt(vector_index)));
 
   __ LoadSmiLiteral(r3, Smi::FromInt(1));  // Smi indicates slow check
   __ LoadP(r4, MemOperand(sp, 0 * kPointerSize));  // Get enumerated object
@@ -2389,8 +2390,8 @@ void FullCodeGenerator::EmitCreateIteratorResult(bool done) {
 
   // Only the value field needs a write barrier, as the other values are in the
   // root set.
-  __ RecordWriteField(r2, JSGeneratorObject::kResultValuePropertyOffset, r4,r5,
-                      kLRHasBeenSaved, kDontSaveFPRegs);
+  __ RecordWriteField(r2, JSGeneratorObject::kResultValuePropertyOffset, r4,
+      r5, kLRHasBeenSaved, kDontSaveFPRegs);
 }
 
 
@@ -4272,9 +4273,9 @@ void FullCodeGenerator::EmitDefaultConstructorCallSuper(CallRuntime* expr) {
     __ bind(&loop);
     // Pre-decrement in order to skip receiver.
     __ LoadP(r5, MemOperand(r4, -kPointerSize));
-	__ lay(r4, MemOperand(r4, -kPointerSize));
+    __ lay(r4, MemOperand(r4, -kPointerSize));
     __ Push(r5);
-	__ BranchOnCount(r2, &loop);
+    __ BranchOnCount(r2, &loop);
   }
 
   __ bind(&args_set_up);

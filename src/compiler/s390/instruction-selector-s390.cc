@@ -445,8 +445,9 @@ void InstructionSelector::VisitWord32And(Node* node) {
       }
     }
     if (mb >= me) {
-      Emit(kS390_RotLeftAndMask32, g.DefineAsRegister(node), g.UseRegister(left),
-           g.TempImmediate(sh), g.TempImmediate(mb), g.TempImmediate(me));
+      Emit(kS390_RotLeftAndMask32, g.DefineAsRegister(node),
+           g.UseRegister(left), g.TempImmediate(sh), g.TempImmediate(mb),
+             g.TempImmediate(me));
       return;
     }
   }
@@ -738,7 +739,8 @@ void InstructionSelector::VisitWord64Ror(Node* node) {
 
 void InstructionSelector::VisitWord32Clz(Node* node) {
   S390OperandGenerator g(this);
-  Emit(kS390_Cntlz32, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)));
+  Emit(kS390_Cntlz32, g.DefineAsRegister(node),
+      g.UseRegister(node->InputAt(0)));
 }
 
 
@@ -758,7 +760,8 @@ void InstructionSelector::VisitInt32Sub(Node* node) {
   S390OperandGenerator g(this);
   Int32BinopMatcher m(node);
   if (m.left().Is(0)) {
-    Emit(kS390_Neg32, g.DefineAsRegister(node), g.UseRegister(m.right().node()));
+    Emit(kS390_Neg32,
+        g.DefineAsRegister(node), g.UseRegister(m.right().node()));
   } else {
     VisitBinop<Int32BinopMatcher>(this, node, kS390_Sub32, kInt16Imm_Negate);
   }
@@ -770,7 +773,8 @@ void InstructionSelector::VisitInt64Sub(Node* node) {
   S390OperandGenerator g(this);
   Int64BinopMatcher m(node);
   if (m.left().Is(0)) {
-    Emit(kS390_Neg64, g.DefineAsRegister(node), g.UseRegister(m.right().node()));
+    Emit(kS390_Neg64, g.DefineAsRegister(node),
+        g.UseRegister(m.right().node()));
   } else {
     VisitBinop<Int64BinopMatcher>(this, node, kS390_Sub64, kInt16Imm_Negate);
   }

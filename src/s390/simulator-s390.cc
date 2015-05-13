@@ -759,7 +759,7 @@ void Simulator::CheckICache(v8::internal::HashMap* i_cache,
   if (cache_hit) {
     // Check that the data in memory matches the contents of the I-cache.
     CHECK_EQ(memcmp(reinterpret_cast<void*>(instr),
-                    cache_page->CachedData(offset), Instruction::kInstrSize), 0);
+             cache_page->CachedData(offset), Instruction::kInstrSize), 0);
   } else {
     // Cache miss.  Load memory into the cache.
     memcpy(cached_line, line, CachePage::kLineLength);
@@ -1196,6 +1196,7 @@ struct ObjectPair {
   intptr_t x;
   intptr_t y;
 };
+
 
 static void decodeObjectPair(ObjectPair* pair, intptr_t* x, intptr_t* y) {
   *x = pair->x;

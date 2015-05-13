@@ -184,7 +184,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   __ AddP(r14, Operand(FixedDoubleArray::kHeaderSize));
   __ Allocate(r14, array, r9, scratch2, &gc_required, DOUBLE_ALIGNMENT);
 
-   // Set destination FixedDoubleArray's length and map.
+  // Set destination FixedDoubleArray's length and map.
   __ LoadRoot(scratch2, Heap::kFixedDoubleArrayMapRootIndex);
   __ StoreP(length, MemOperand(array, FixedDoubleArray::kLengthOffset));
   // Update receiver's map.
@@ -632,7 +632,7 @@ CodeAgingHelper::CodeAgingHelper() {
   PredictableCodeSizeScope scope(patcher->masm(), young_sequence_.length());
   patcher->masm()->PushFixedFrame(r3);
   patcher->masm()->la(fp,
-                      MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
+           MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
 }
 
 

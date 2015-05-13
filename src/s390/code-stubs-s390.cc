@@ -174,7 +174,7 @@ void DoubleToIStub::Generate(MacroAssembler* masm) {
 
   __ LoadlW(scratch_high,
             MemOperand(input_reg, double_offset + Register::kExponentOffset));
-  __ LoadlW(scratch_low, 
+  __ LoadlW(scratch_low,
             MemOperand(input_reg, double_offset + Register::kMantissaOffset));
 
   __ ExtractBitMask(scratch, scratch_high, HeapNumber::kExponentMask);
@@ -1170,7 +1170,6 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   __ AddP(r3, r3, Operand(Code::kHeaderSize - kHeapObjectTag));  // Code start
   __ AddP(ip, r3, r4);
   __ Jump(ip);
- 
 }
 
 
@@ -2045,7 +2044,7 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
   __ AssertSmi(r3);
   __ StoreP(r3,
             FieldMemOperand(r2, JSObject::kHeaderSize +
-                                    Heap::kArgumentsLengthIndex * kPointerSize));
+                                   Heap::kArgumentsLengthIndex * kPointerSize));
 
   // If there are no actual arguments, we're done.
   Label done;
@@ -2366,9 +2365,8 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ AddP(r1, subject, Operand(SeqString::kHeaderSize - kHeapObjectTag));
 
   // Argument 5 (r6): static offsets vector buffer.
-  __ mov(
-         r6,
-         Operand(ExternalReference::address_of_static_offsets_vector(isolate())));
+  __ mov(r6,
+      Operand(ExternalReference::address_of_static_offsets_vector(isolate())));
 
   // For arguments 4 (r5) and 3 (r4) get string length, calculate start of data
   // and calculate the shift of the index (0 for one-byte and 1 for two byte).
@@ -3083,7 +3081,7 @@ void CallICStub::GenerateMiss(MacroAssembler* masm) {
 
   ExternalReference miss = ExternalReference(IC_Utility(id), masm->isolate());
   __ CallExternalReference(miss, 3);
-  
+
   // Move result to r3 and exit the internal frame.
   __ LoadRR(r4, r2);
 }
@@ -4057,6 +4055,7 @@ void DirectCEntryStub::Generate(MacroAssembler* masm) {
   __ b(ip);  // Callee will return to R14 directly
 }
 
+
 void DirectCEntryStub::GenerateCall(MacroAssembler* masm, Register target) {
 #if ABI_USES_FUNCTION_DESCRIPTORS && !defined(USE_SIMULATOR)
   // Native AIX/S390X Linux use a function descriptor.
@@ -4120,7 +4119,7 @@ void NameDictionaryLookupStub::GenerateNegativeLookup(
     __ CompareRoot(entity_name, Heap::kUndefinedValueRootIndex);
     __ beq(done);
 
-   // Stop if found the property.
+    // Stop if found the property.
     __ CmpP(entity_name, Operand(Handle<Name>(name)));
     __ beq(miss);
 
@@ -4130,7 +4129,8 @@ void NameDictionaryLookupStub::GenerateNegativeLookup(
 
     // Check if the entry name is not a unique name.
     __ LoadP(entity_name, FieldMemOperand(entity_name, HeapObject::kMapOffset));
-    __ LoadlB(entity_name, FieldMemOperand(entity_name, Map::kInstanceTypeOffset));
+    __ LoadlB(entity_name,
+        FieldMemOperand(entity_name, Map::kInstanceTypeOffset));
     __ JumpIfNotUniqueNameInstanceType(entity_name, miss);
     __ bind(&good);
 
@@ -4190,7 +4190,7 @@ void NameDictionaryLookupStub::GeneratePositiveLookup(
       // shifted in the following and instruction.
       DCHECK(NameDictionary::GetProbeOffset(i) <
              1 << (32 - Name::kHashFieldOffset));
-      __ AddP(scratch2, 
+      __ AddP(scratch2,
               Operand(NameDictionary::GetProbeOffset(i) << Name::kHashShift));
     }
     __ srl(scratch2, Operand(String::kHashShift));
@@ -4278,7 +4278,7 @@ void NameDictionaryLookupStub::Generate(MacroAssembler* masm) {
       // shifted in the following and instruction.
       DCHECK(NameDictionary::GetProbeOffset(i) <
              1 << (32 - Name::kHashFieldOffset));
-      __ AddP(index, hash, 
+      __ AddP(index, hash,
               Operand(NameDictionary::GetProbeOffset(i) << Name::kHashShift));
     } else {
       __ LoadRR(index, hash);
@@ -4306,7 +4306,8 @@ void NameDictionaryLookupStub::Generate(MacroAssembler* masm) {
     if (i != kTotalProbes - 1 && mode() == NEGATIVE_LOOKUP) {
       // Check if the entry name is not a unique name.
       __ LoadP(entry_key, FieldMemOperand(entry_key, HeapObject::kMapOffset));
-      __ LoadlB(entry_key, FieldMemOperand(entry_key, Map::kInstanceTypeOffset));
+      __ LoadlB(entry_key,
+          FieldMemOperand(entry_key, Map::kInstanceTypeOffset));
       __ JumpIfNotUniqueNameInstanceType(entry_key, &maybe_in_dictionary);
     }
   }

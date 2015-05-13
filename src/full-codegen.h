@@ -114,7 +114,7 @@ class FullCodeGenerator: public AstVisitor {
   static const int kCodeSizeMultiplier = 142;
 #elif V8_TARGET_ARCH_S390
 // TODO(all): Copied ARM value. Check this is sensible for S390.
-  static const int kCodeSizeMultiplier = 142;     
+  static const int kCodeSizeMultiplier = 142;
 #elif V8_TARGET_ARCH_PPC64
   static const int kCodeSizeMultiplier = 200;
 #elif V8_TARGET_ARCH_PPC

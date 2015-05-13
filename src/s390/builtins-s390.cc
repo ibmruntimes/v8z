@@ -390,7 +390,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // Load the initial map and verify that it is in fact a map.
       // r3: constructor function
       __ LoadP(r4,
-	           FieldMemOperand(r3, JSFunction::kPrototypeOrInitialMapOffset));
+               FieldMemOperand(r3, JSFunction::kPrototypeOrInitialMapOffset));
       __ JumpIfSmi(r4, &rt_call);
       __ CompareObjectType(r4, r5, r6, MAP_TYPE);
       __ bne(&rt_call);
@@ -620,12 +620,12 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       __ beq(&count_incremented);
       // r4 is an AllocationSite. We are creating a memento from it, so we
       // need to increment the memento create count.
-      __ LoadP(
-	      r5, FieldMemOperand(r4, AllocationSite::kPretenureCreateCountOffset));
+      __ LoadP(r5,
+           FieldMemOperand(r4, AllocationSite::kPretenureCreateCountOffset));
       __ AddSmiLiteral(r5, r5, Smi::FromInt(1), r0);
-      __ StoreP(
-	      r5, FieldMemOperand(r4, AllocationSite::kPretenureCreateCountOffset),
-                r0);
+      __ StoreP(r5,
+           FieldMemOperand(r4, AllocationSite::kPretenureCreateCountOffset),
+           r0);
       __ bind(&count_incremented);
     }
 
@@ -1142,7 +1142,7 @@ void Builtins::Generate_OnStackReplacement(MacroAssembler* masm) {
     // Load the OSR entrypoint offset from the deoptimization data.
     // <osr_offset> = <deopt_data>[#header_size + #osr_pc_offset]
     __ LoadP(r3, FieldMemOperand(
-	                 r3, FixedArray::OffsetOfElementAt(
+             r3, FixedArray::OffsetOfElementAt(
                              DeoptimizationInputData::kOsrPcOffsetIndex)));
     __ SmiUntag(r3);
 

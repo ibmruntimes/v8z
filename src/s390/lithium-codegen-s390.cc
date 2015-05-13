@@ -1110,7 +1110,7 @@ void LCodeGen::DoModI(LModI* instr) {
   Register result_reg = ToRegister(instr->result());
   Label done;
 
-   // Check for x % 0.
+  // Check for x % 0.
   if (hmod->CheckFlag(HValue::kCanBeDivByZero)) {
     __ Cmp32(right_reg, Operand::Zero());
     DeoptimizeIf(eq, instr, Deoptimizer::kDivisionByZero);
@@ -3018,7 +3018,7 @@ void LCodeGen::DoDeferredInstanceOfKnownGlobal(LInstanceOfKnownGlobal* instr,
     Handle<Code> code = stub.GetCode();
     // Include instructions below in delta: mov + call
     // IILF + IIHF + Call
-    int delta = masm_->SizeOfCodeGeneratedSince(map_check) + 
+    int delta = masm_->SizeOfCodeGeneratedSince(map_check) +
                 2 * sizeof(SixByteInstr) + masm_->CallSize(code);
     // r7 is used to communicate the offset to the location of the map check.
     if (is_int16(delta)) {
@@ -4500,7 +4500,7 @@ void LCodeGen::DoStoreNamedField(LStoreNamedField* instr) {
       // 64-bit Smi optimization
       // Store int value directly to upper half of the smi.
       offset = SmiWordOffset(offset);
-      representation = Representation::Integer32(); 
+      representation = Representation::Integer32();
     }
 #endif
     if (access.IsInobject()) {

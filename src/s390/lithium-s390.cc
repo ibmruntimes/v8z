@@ -478,7 +478,8 @@ LOperand* LChunkBuilder::UseFixedDouble(HValue* value, DoubleRegister reg) {
 
 
 LOperand* LChunkBuilder::UseRegister(HValue* value) {
-  return Use(value, new (zone()) LUnallocated(LUnallocated::MUST_HAVE_REGISTER));
+  return Use(value,
+      new (zone()) LUnallocated(LUnallocated::MUST_HAVE_REGISTER));
 }
 
 

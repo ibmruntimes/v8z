@@ -766,7 +766,7 @@ void KeyedStoreIC::GenerateMegamorphic(MacroAssembler* masm,
   // Check that the receiver does not require access checks and is not observed.
   // The generic stub does not perform map checks or handle observed objects.
   __ LoadlB(ip, FieldMemOperand(receiver_map, Map::kBitFieldOffset));
-  __ AndP(r0, ip, 
+  __ AndP(r0, ip,
           Operand(1 << Map::kIsAccessCheckNeeded | 1 << Map::kIsObserved));
   __ bne(&slow, Label::kNear);
   // Check if the object is a JS array or not.
@@ -1031,7 +1031,6 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
   } else {
     DCHECK(false);
   }
-
 }
 
 

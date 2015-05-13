@@ -697,7 +697,8 @@ class MacroAssembler : public Assembler {
   void LoadHalfWordP(Register dst, const MemOperand& mem,
                     Register scratch = no_reg);
 
-  void StoreHalfWord(Register src, const MemOperand& mem, Register scratch = r0);
+  void StoreHalfWord(Register src, const MemOperand& mem,
+                    Register scratch = r0);
   void StoreByte(Register src, const MemOperand& mem, Register scratch = r0);
 
   void LoadRepresentation(Register dst, const MemOperand& mem, Representation r,
@@ -1700,6 +1701,7 @@ class MacroAssembler : public Assembler {
   // Jumps to found label if a prototype map has dictionary elements.
   void JumpIfDictionaryInPrototypeChain(Register object, Register scratch0,
                                         Register scratch1, Label* found);
+
  private:
   static const int kSmiShift = kSmiTagSize + kSmiShiftSize;
 
