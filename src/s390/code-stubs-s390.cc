@@ -3033,9 +3033,10 @@ void CallICStub::Generate(MacroAssembler* masm) {
   __ beq(&miss);
 
   // Update stats.
+  // TODO(joransiu): Exploit ASI if possible
   __ LoadP(r6, FieldMemOperand(r4, with_types_offset));
   __ AddSmiLiteral(r6, r6, Smi::FromInt(1), r0);
-  __ StoreP(r6, FieldMemOperand(r5, with_types_offset));
+  __ StoreP(r6, FieldMemOperand(r4, with_types_offset));
 
   // Store the function. Use a stub since we need a frame for allocation.
   // r4 - vector
