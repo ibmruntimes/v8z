@@ -26,7 +26,7 @@ The Project requires that each Contribution You Submit now or in the future to c
 
 * You will only Submit Contributions to which You have the necessary rights. This means that if You are employed You have received the necessary permissions from Your employer to make the Contributions.
 
-* Whatever content You Contribute will be provided under the BSD 3-clause license. You can read a copy of the BSD 3-Clause License at  [http://opensource.org/licenses/BSD-3-Clause](http://opensource.org/licenses/BSD-3-Clause) In the license```<YEAR> ```, ```<OWNER>``` are assumed to be replaced by Your name and date You supply when signing this Agreement</font></font></font></font>`<font color="#000000">. This is similar to the license associated with the Project. You can see the existing license(s), or find links to the license(s) in the notices and file headers for the Project.
+* Whatever content You Contribute will be provided under the BSD 3-clause license. You can read a copy of the BSD 3-Clause License at  [http://opensource.org/licenses/BSD-3-Clause](http://opensource.org/licenses/BSD-3-Clause) In the license```<YEAR> ```, ```<OWNER>``` are assumed to be replaced by Your name and date You supply when signing this Agreement. This is similar to the license associated with the Project. You can see the existing license(s), or find links to the license(s) in the notices and file headers for the Project.
 
 * You understand and agree that the Project and Your contributions are public, and that a record of the contribution (including all personal information You submit with it, including Your sign-off) is maintained indefinitely and may be redistributed consistent with the license(s) involved.
 
