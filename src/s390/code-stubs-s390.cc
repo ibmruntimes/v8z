@@ -4886,7 +4886,7 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
       Assembler::kCallTargetAddressOffset + 18;  // NILH + LAY + ST * 2
 #else
   const int32_t kReturnAddressDistanceFromFunctionStart =
-      Assembler::kCallTargetAddressOffset + 14; // LAY + ST * 2
+      Assembler::kCallTargetAddressOffset + 14;  // LAY + ST * 2
 #endif
 
   // This should contain all kJSCallerSaved registers.
