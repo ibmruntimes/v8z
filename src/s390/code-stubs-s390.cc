@@ -4806,9 +4806,12 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
 #if V8_TARGET_ARCH_S390X
   const int32_t kReturnAddressDistanceFromFunctionStart =
       Assembler::kCallTargetAddressOffset + 18;  // LAY + STG * 2
-#else
+#elif V8_HOST_ARCH_S390
   const int32_t kReturnAddressDistanceFromFunctionStart =
       Assembler::kCallTargetAddressOffset + 18;  // NILH + LAY + ST * 2
+#else
+  const int32_t kReturnAddressDistanceFromFunctionStart =
+      Assembler::kCallTargetAddressOffset + 14;  // LAY + ST * 2
 #endif
 
   // This should contain all kJSCallerSaved registers.
