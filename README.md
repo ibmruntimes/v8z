@@ -1,25 +1,3 @@
-<<<<<<< HEAD
-v8z
-=====
-
-Port of Google V8 javascript engine to Linux on IBM System Z.
-
-Compile code:
-31-bit:
-<code>
-make dependencies; make s390
-</code>
-64-bit:
-<code>
-make dependencies; make s390x
-</code>
-
-Test code:
-<code>
-tools/run-tests.py -j 12 --progress=dots --no-presubmit --arch-and-mode=s390.debug --junitout v8tests-junit.xml
-tools/run-tests.py -j 12 --progress=dots --no-presubmit --arch-and-mode=s390x.debug --junitout v8tests-junit.xml
-</code>
-=======
 V8 JavaScript Engine
 =============
 
@@ -53,4 +31,18 @@ configuration in `.git/config`:
 
         fetch = +refs/branch-heads/*:refs/remotes/branch-heads/*
         fetch = +refs/tags/*:refs/tags/*
->>>>>>> 4.3
+
++++++++++++++++
+S390 Specific:
+Make code:
+<code>
+make -j4 s390 i18nsupport=off V=1
+make -j4 s390x i18nsupport=off V=1
+</code>
+
+Test code:
+<code>
+tools/run-tests.py -j 12 --progress=dots --noi18n --no-presubmit --arch-and-mode=s390.debug --junitout v8tests-junit.xml
+tools/run-tests.py -j 12 --progress=dots --noi18n --no-presubmit --arch-and-mode=s390x.debug --junitout v8tests-junit.xml
+</code>
+

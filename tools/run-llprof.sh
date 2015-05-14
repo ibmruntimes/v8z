@@ -66,8 +66,4 @@ if [ "$ACTUAL_KERNEL_MAP_RESTRICTION" -ne "0" ] ; then
 fi
 
 echo "Running benchmark..."
-<<<<<<< HEAD
-perf record -R -e cycles -c $SAMPLE_EVERY_N_CYCLES -f -i $@ --ll-prof
-=======
 perf record -R -e cycles -c $SAMPLE_EVERY_N_CYCLES -i $@ --ll-prof
->>>>>>> 4.3
