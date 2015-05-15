@@ -1390,8 +1390,9 @@ class V8_EXPORT Message {
  public:
   Local<String> Get() const;
 
-  V8_DEPRECATE_SOON("Use maybe version", Local<String> GetSourceLine()) const;
-  MaybeLocal<String> GetSourceLine(Local<Context> context) const;
+  V8_DEPRECATE_SOON("Use maybe version", Local<String> GetSourceLine() const);
+  V8_WARN_UNUSED_RESULT MaybeLocal<String> GetSourceLine(
+      Local<Context> context) const;
 
   /**
    * Returns the origin for the script from where the function causing the
@@ -1415,8 +1416,8 @@ class V8_EXPORT Message {
   /**
    * Returns the number, 1-based, of the line where the error occurred.
    */
-  V8_DEPRECATE_SOON("Use maybe version", int GetLineNumber()) const;
-  Maybe<int> GetLineNumber(Local<Context> context) const;
+  V8_DEPRECATE_SOON("Use maybe version", int GetLineNumber() const);
+  V8_WARN_UNUSED_RESULT Maybe<int> GetLineNumber(Local<Context> context) const;
 
   /**
    * Returns the index within the script of the first character where
@@ -1434,15 +1435,15 @@ class V8_EXPORT Message {
    * Returns the index within the line of the first character where
    * the error occurred.
    */
-  V8_DEPRECATE_SOON("Use maybe version", int GetStartColumn()) const;
-  Maybe<int> GetStartColumn(Local<Context> context) const;
+  V8_DEPRECATE_SOON("Use maybe version", int GetStartColumn() const);
+  V8_WARN_UNUSED_RESULT Maybe<int> GetStartColumn(Local<Context> context) const;
 
   /**
    * Returns the index within the line of the last character where
    * the error occurred.
    */
-  V8_DEPRECATE_SOON("Use maybe version", int GetEndColumn()) const;
-  Maybe<int> GetEndColumn(Local<Context> context) const;
+  V8_DEPRECATE_SOON("Use maybe version", int GetEndColumn() const);
+  V8_WARN_UNUSED_RESULT Maybe<int> GetEndColumn(Local<Context> context) const;
 
   /**
    * Passes on the value set by the embedder when it fed the script from which
@@ -1901,40 +1902,41 @@ class V8_EXPORT Value : public Data {
   MaybeLocal<Int32> ToInt32(Local<Context> context) const;
 
   V8_DEPRECATE_SOON("Use maybe version",
-                    Local<Boolean> ToBoolean(Isolate* isolate)) const;
+                    Local<Boolean> ToBoolean(Isolate* isolate) const);
   V8_DEPRECATE_SOON("Use maybe version",
-                    Local<Number> ToNumber(Isolate* isolate)) const;
+                    Local<Number> ToNumber(Isolate* isolate) const);
   V8_DEPRECATE_SOON("Use maybe version",
-                    Local<String> ToString(Isolate* isolate)) const;
+                    Local<String> ToString(Isolate* isolate) const);
   V8_DEPRECATE_SOON("Use maybe version",
-                    Local<String> ToDetailString(Isolate* isolate)) const;
+                    Local<String> ToDetailString(Isolate* isolate) const);
   V8_DEPRECATE_SOON("Use maybe version",
-                    Local<Object> ToObject(Isolate* isolate)) const;
+                    Local<Object> ToObject(Isolate* isolate) const);
   V8_DEPRECATE_SOON("Use maybe version",
-                    Local<Integer> ToInteger(Isolate* isolate)) const;
+                    Local<Integer> ToInteger(Isolate* isolate) const);
   V8_DEPRECATE_SOON("Use maybe version",
-                    Local<Uint32> ToUint32(Isolate* isolate)) const;
+                    Local<Uint32> ToUint32(Isolate* isolate) const);
   V8_DEPRECATE_SOON("Use maybe version",
-                    Local<Int32> ToInt32(Isolate* isolate)) const;
+                    Local<Int32> ToInt32(Isolate* isolate) const);
 
   inline V8_DEPRECATE_SOON("Use maybe version",
-                           Local<Boolean> ToBoolean()) const;
-  inline V8_DEPRECATE_SOON("Use maybe version", Local<Number> ToNumber()) const;
-  inline V8_DEPRECATE_SOON("Use maybe version", Local<String> ToString()) const;
+                           Local<Boolean> ToBoolean() const);
+  inline V8_DEPRECATE_SOON("Use maybe version", Local<Number> ToNumber() const);
+  inline V8_DEPRECATE_SOON("Use maybe version", Local<String> ToString() const);
   inline V8_DEPRECATE_SOON("Use maybe version",
-                           Local<String> ToDetailString()) const;
-  inline V8_DEPRECATE_SOON("Use maybe version", Local<Object> ToObject()) const;
+                           Local<String> ToDetailString() const);
+  inline V8_DEPRECATE_SOON("Use maybe version", Local<Object> ToObject() const);
   inline V8_DEPRECATE_SOON("Use maybe version",
-                           Local<Integer> ToInteger()) const;
-  inline V8_DEPRECATE_SOON("Use maybe version", Local<Uint32> ToUint32()) const;
-  inline V8_DEPRECATE_SOON("Use maybe version", Local<Int32> ToInt32()) const;
+                           Local<Integer> ToInteger() const);
+  inline V8_DEPRECATE_SOON("Use maybe version", Local<Uint32> ToUint32() const);
+  inline V8_DEPRECATE_SOON("Use maybe version", Local<Int32> ToInt32() const);
 
   /**
    * Attempts to convert a string to an array index.
    * Returns an empty handle if the conversion fails.
    */
-  V8_DEPRECATE_SOON("Use maybe version", Local<Uint32> ToArrayIndex()) const;
-  MaybeLocal<Uint32> ToArrayIndex(Local<Context> context) const;
+  V8_DEPRECATE_SOON("Use maybe version", Local<Uint32> ToArrayIndex() const);
+  V8_WARN_UNUSED_RESULT MaybeLocal<Uint32> ToArrayIndex(
+      Local<Context> context) const;
 
   Maybe<bool> BooleanValue(Local<Context> context) const;
   Maybe<double> NumberValue(Local<Context> context) const;
@@ -1942,15 +1944,16 @@ class V8_EXPORT Value : public Data {
   Maybe<uint32_t> Uint32Value(Local<Context> context) const;
   Maybe<int32_t> Int32Value(Local<Context> context) const;
 
-  V8_DEPRECATE_SOON("Use maybe version", bool BooleanValue()) const;
-  V8_DEPRECATE_SOON("Use maybe version", double NumberValue()) const;
-  V8_DEPRECATE_SOON("Use maybe version", int64_t IntegerValue()) const;
-  V8_DEPRECATE_SOON("Use maybe version", uint32_t Uint32Value()) const;
-  V8_DEPRECATE_SOON("Use maybe version", int32_t Int32Value()) const;
+  V8_DEPRECATE_SOON("Use maybe version", bool BooleanValue() const);
+  V8_DEPRECATE_SOON("Use maybe version", double NumberValue() const);
+  V8_DEPRECATE_SOON("Use maybe version", int64_t IntegerValue() const);
+  V8_DEPRECATE_SOON("Use maybe version", uint32_t Uint32Value() const);
+  V8_DEPRECATE_SOON("Use maybe version", int32_t Int32Value() const);
 
   /** JS == */
-  V8_DEPRECATE_SOON("Use maybe version", bool Equals(Handle<Value> that)) const;
-  Maybe<bool> Equals(Local<Context> context, Handle<Value> that) const;
+  V8_DEPRECATE_SOON("Use maybe version", bool Equals(Handle<Value> that) const);
+  V8_WARN_UNUSED_RESULT Maybe<bool> Equals(Local<Context> context,
+                                           Handle<Value> that) const;
   bool StrictEquals(Handle<Value> that) const;
   bool SameValue(Handle<Value> that) const;
 
@@ -3046,8 +3049,9 @@ class V8_EXPORT Function : public Object {
   MaybeLocal<Object> NewInstance(Local<Context> context, int argc,
                                  Handle<Value> argv[]) const;
 
-  V8_DEPRECATE_SOON("Use maybe version", Local<Object> NewInstance()) const;
-  MaybeLocal<Object> NewInstance(Local<Context> context) const {
+  V8_DEPRECATE_SOON("Use maybe version", Local<Object> NewInstance() const);
+  V8_WARN_UNUSED_RESULT MaybeLocal<Object> NewInstance(
+      Local<Context> context) const {
     return NewInstance(context, 0, nullptr);
   }
 
@@ -6133,8 +6137,9 @@ class V8_EXPORT TryCatch {
    * Returns the .stack property of the thrown object.  If no .stack
    * property is present an empty handle is returned.
    */
-  V8_DEPRECATE_SOON("Use maybe version.", Local<Value> StackTrace()) const;
-  MaybeLocal<Value> StackTrace(Local<Context> context) const;
+  V8_DEPRECATE_SOON("Use maybe version.", Local<Value> StackTrace() const);
+  V8_WARN_UNUSED_RESULT MaybeLocal<Value> StackTrace(
+      Local<Context> context) const;
 
   /**
    * Returns the message associated with this exception.  If there is
@@ -7251,7 +7256,9 @@ Handle<Boolean> Boolean::New(Isolate* isolate, bool value) {
 
 
 void Template::Set(Isolate* isolate, const char* name, v8::Handle<Data> value) {
-  Set(v8::String::NewFromUtf8(isolate, name), value);
+  Set(v8::String::NewFromUtf8(isolate, name, NewStringType::kNormal)
+          .ToLocalChecked(),
+      value);
 }
 
 
