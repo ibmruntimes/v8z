@@ -3084,7 +3084,7 @@ void CallICStub::GenerateMiss(MacroAssembler* masm) {
   __ CallExternalReference(miss, 3);
 
   // Move result to r3 and exit the internal frame.
-  __ LoadRR(r4, r2);
+  __ LoadRR(r3, r2);
 }
 
 
