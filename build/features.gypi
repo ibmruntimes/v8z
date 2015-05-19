@@ -71,7 +71,7 @@
           'NATIVE_SIMULATION',
           'USE_SIMULATOR',
         ],
-      }],      
+      }],
       ['v8_enable_disassembler==1', {
         'defines': ['ENABLE_DISASSEMBLER',],
       }],
