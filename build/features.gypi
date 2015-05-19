@@ -61,9 +61,17 @@
 
     # Set to 1 to enable DCHECKs in release builds.
     'dcheck_always_on%': 0,
+
+    'v8_native_sim%': 'false',
   },
   'target_defaults': {
     'conditions': [
+      ['v8_native_sim=="true"', {
+        'defines': [
+          'NATIVE_SIMULATION',
+          'USE_SIMULATOR',
+        ],
+      }],      
       ['v8_enable_disassembler==1', {
         'defines': ['ENABLE_DISASSEMBLER',],
       }],

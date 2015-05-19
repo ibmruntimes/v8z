@@ -82,7 +82,8 @@ class Debug;
 class Debugger;
 class PromiseOnStack;
 
-#if !defined(__arm__) && V8_TARGET_ARCH_ARM ||       \
+#if defined(NATIVE_SIMULATION) || \
+    !defined(__arm__) && V8_TARGET_ARCH_ARM ||       \
     !defined(__aarch64__) && V8_TARGET_ARCH_ARM64 || \
     !defined(__S390__) && V8_TARGET_ARCH_S390 ||     \
     !defined(__PPC__) && V8_TARGET_ARCH_PPC ||       \
@@ -321,8 +322,8 @@ class ThreadLocalTop BASE_EMBEDDED {
   v8::TryCatch* try_catch_handler_;
 };
 
-
-#if V8_TARGET_ARCH_ARM && !defined(__arm__) ||       \
+#if defined(NATIVE_SIMULATION) || \
+    V8_TARGET_ARCH_ARM && !defined(__arm__) ||       \
     V8_TARGET_ARCH_ARM64 && !defined(__aarch64__) || \
     V8_TARGET_ARCH_S390 && !defined(__S390__) ||     \
     V8_TARGET_ARCH_PPC && !defined(__PPC__) ||       \
@@ -420,7 +421,8 @@ class Isolate {
           thread_id_(thread_id),
           stack_limit_(0),
           thread_state_(NULL),
-#if !defined(__arm__) && V8_TARGET_ARCH_ARM ||       \
+#if defined(NATIVE_SIMULATION) || \
+    !defined(__arm__) && V8_TARGET_ARCH_ARM ||       \
     !defined(__aarch64__) && V8_TARGET_ARCH_ARM64 || \
     !defined(__S390__) && V8_TARGET_ARCH_S390 ||     \
     !defined(__PPC__) && V8_TARGET_ARCH_PPC ||       \
@@ -437,7 +439,8 @@ class Isolate {
     FIELD_ACCESSOR(uintptr_t, stack_limit)
     FIELD_ACCESSOR(ThreadState*, thread_state)
 
-#if !defined(__arm__) && V8_TARGET_ARCH_ARM ||       \
+#if defined(NATIVE_SIMULATION) || \
+    !defined(__arm__) && V8_TARGET_ARCH_ARM ||       \
     !defined(__aarch64__) && V8_TARGET_ARCH_ARM64 || \
     !defined(__S390__) && V8_TARGET_ARCH_S390 ||     \
     !defined(__PPC__) && V8_TARGET_ARCH_PPC ||       \
@@ -456,7 +459,8 @@ class Isolate {
     uintptr_t stack_limit_;
     ThreadState* thread_state_;
 
-#if !defined(__arm__) && V8_TARGET_ARCH_ARM ||       \
+#if defined(NATIVE_SIMULATION) || \
+    !defined(__arm__) && V8_TARGET_ARCH_ARM ||       \
     !defined(__aarch64__) && V8_TARGET_ARCH_ARM64 || \
     !defined(__S390__) && V8_TARGET_ARCH_S390 ||     \
     !defined(__PPC__) && V8_TARGET_ARCH_PPC ||       \
