@@ -211,10 +211,6 @@ endif
 ifeq ($(arm_test_noprobe), on)
   GYPFLAGS += -Darm_test_noprobe=on
 endif
-# nativesim=true
-ifeq ($(nativesim), true)
-  GYPFLAGS += -Dv8_native_sim=true
-endif
 
 # ----------------- available targets: --------------------
 # - "grokdump": rebuilds heap constants lists used by grokdump
