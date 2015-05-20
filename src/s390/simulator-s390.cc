@@ -4291,15 +4291,15 @@ void Simulator::CallInternal(byte*entry, int reg_arg_count) {
 
   // Check that the non-volatile registers have been preserved.
   if (reg_arg_count < 5) {
-    CHECK_EQ(callee_saved_value, get_register(r6));
+    DCHECK_EQ(callee_saved_value, get_register(r6));
   }
-  CHECK_EQ(callee_saved_value, get_register(r7));
-  CHECK_EQ(callee_saved_value, get_register(r8));
-  CHECK_EQ(callee_saved_value, get_register(r9));
-  CHECK_EQ(callee_saved_value, get_register(r10));
-  CHECK_EQ(callee_saved_value, get_register(r11));
-  CHECK_EQ(callee_saved_value, get_register(r12));
-  CHECK_EQ(callee_saved_value, get_register(r13));
+  DCHECK_EQ(callee_saved_value, get_register(r7));
+  DCHECK_EQ(callee_saved_value, get_register(r8));
+  DCHECK_EQ(callee_saved_value, get_register(r9));
+  DCHECK_EQ(callee_saved_value, get_register(r10));
+  DCHECK_EQ(callee_saved_value, get_register(r11));
+  DCHECK_EQ(callee_saved_value, get_register(r12));
+  DCHECK_EQ(callee_saved_value, get_register(r13));
 
   // Restore non-volatile registers with the original value.
   set_register(r6, r6_val);
@@ -4392,15 +4392,15 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
 
   // Check that the non-volatile registers have been preserved.
   if (reg_arg_count < 5) {
-    CHECK_EQ(callee_saved_value, get_register(r6));
+    DCHECK_EQ(callee_saved_value, get_register(r6));
   }
-  CHECK_EQ(callee_saved_value, get_register(r7));
-  CHECK_EQ(callee_saved_value, get_register(r8));
-  CHECK_EQ(callee_saved_value, get_register(r9));
-  CHECK_EQ(callee_saved_value, get_register(r10));
-  CHECK_EQ(callee_saved_value, get_register(r11));
-  CHECK_EQ(callee_saved_value, get_register(r12));
-  CHECK_EQ(callee_saved_value, get_register(r13));
+  DCHECK_EQ(callee_saved_value, get_register(r7));
+  DCHECK_EQ(callee_saved_value, get_register(r8));
+  DCHECK_EQ(callee_saved_value, get_register(r9));
+  DCHECK_EQ(callee_saved_value, get_register(r10));
+  DCHECK_EQ(callee_saved_value, get_register(r11));
+  DCHECK_EQ(callee_saved_value, get_register(r12));
+  DCHECK_EQ(callee_saved_value, get_register(r13));
 
   // Restore non-volatile registers with the original value.
   set_register(r6, r6_val);
@@ -4412,7 +4412,7 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   set_register(r12, r12_val);
   set_register(r13, r13_val);
   // Pop stack passed arguments.
-  CHECK_EQ(entry_stack, get_register(sp));
+  DCHECK_EQ(entry_stack, get_register(sp));
   set_register(sp, original_stack);
 
   // Return value register
