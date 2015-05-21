@@ -1031,18 +1031,25 @@ ExternalReference::ExternalReference(
 ExternalReference::ExternalReference(Builtins::Name name, Isolate* isolate)
   : address_(isolate->builtins()->builtin_address(name)) {}
 
-// TODO(@Tara): Check if BUILTIN_CALL/BUILTIN_OBJECTPAIR_CALL should be passed
-// in as param #3 ccording to result_size 1/2 respectively for S390X
 ExternalReference::ExternalReference(Runtime::FunctionId id,
                                      Isolate* isolate)
+#if V8_TARGET_ARCH_S390X
+  : address_(Redirect(isolate, Runtime::FunctionForId(id)->entry,
+                      (Runtime::FunctionForId(id)->result_size == 2) ?
+                      BUILTIN_OBJECTPAIR_CALL : BUILTIN_CALL)) {}
+#else
   : address_(Redirect(isolate, Runtime::FunctionForId(id)->entry)) {}
-
+#endif
 
 ExternalReference::ExternalReference(const Runtime::Function* f,
                                      Isolate* isolate)
-// TODO(@Tara): Same as above
+#if V8_TARGET_ARCH_S390X
+  : address_(Redirect(isolate, f->entry,
+                      ((f->result_size == 2) ?
+                       BUILTIN_OBJECTPAIR_CALL : BUILTIN_CALL))) {}
+#else
   : address_(Redirect(isolate, f->entry)) {}
-
+#endif
 
 ExternalReference ExternalReference::isolate_address(Isolate* isolate) {
   return ExternalReference(isolate);

@@ -1198,16 +1198,18 @@ struct ObjectPair {
 };
 
 
+/*
 static void decodeObjectPair(ObjectPair* pair, intptr_t* x, intptr_t* y) {
   *x = pair->x;
   *y = pair->y;
 }
+*/
 #else
 typedef uint64_t ObjectPair;
 
 
 static void decodeObjectPair(ObjectPair* pair, intptr_t* x, intptr_t* y) {
-#if V8_TARGET_BIG_ENDIAN
+#if !V8_TARGET_LITTLE_ENDIAN
   *x = static_cast<int32_t>(*pair >> 32);
   *y = static_cast<int32_t>(*pair);
 #else
@@ -1224,10 +1226,20 @@ static void decodeObjectPair(ObjectPair* pair, intptr_t* x, intptr_t* y) {
 // all runtime calls return this pair. If they don't, the r4 result
 // register contains a bogus value, which is fine because it is
 // caller-saved.
+#if !V8_TARGET_ARCH_S390X
 typedef ObjectPair (*SimulatorRuntimeCall)(intptr_t arg0, intptr_t arg1,
                                            intptr_t arg2, intptr_t arg3,
                                            intptr_t arg4, intptr_t arg5);
+#else
+typedef ObjectPair (*SimulatorRuntimeObjectPairCall)(intptr_t arg0,
+                                         intptr_t arg1,
+                                         intptr_t arg2, intptr_t arg3,
+                                         intptr_t arg14, intptr_t arg5);
 
+typedef intptr_t (*SimulatorRuntimeCall)(intptr_t arg0, intptr_t arg1,
+                                        intptr_t arg2, intptr_t arg3,
+                                        intptr_t arg14, intptr_t arg5);
+#endif
 // These prototypes handle the four types of FP calls.
 typedef int (*SimulatorRuntimeCompareCall)(double darg0, double darg1);
 typedef double (*SimulatorRuntimeFPFPCall)(double darg0, double darg1);
@@ -1258,7 +1270,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       Redirection* redirection = Redirection::FromSwiInstruction(instr);
       const int kArgCount = 6;
       int arg0_regnum = 2;
-#if !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
+#if V8_TARGET_ARCH_S390X && !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
       intptr_t result_buffer = 0;
       if (redirection->type() == ExternalReference::BUILTIN_OBJECTPAIR_CALL) {
         result_buffer = get_register(r2);
@@ -1458,19 +1470,56 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
           PrintF("\n");
         }
         CHECK(stack_aligned);
+#if !V8_TARGET_ARCH_S390X
         DCHECK(redirection->type() == ExternalReference::BUILTIN_CALL);
         SimulatorRuntimeCall target =
             reinterpret_cast<SimulatorRuntimeCall>(external);
-        ObjectPair result =
-            target(arg[0], arg[1], arg[2], arg[3], arg[4], arg[5]);
-        intptr_t x;
-        intptr_t y;
-        decodeObjectPair(&result, &x, &y);
+        int64_t result = target(arg[0], arg[1], arg[2], arg[3], arg[4], arg[5]);
+        int32_t lo_res = static_cast<int32_t>(result);
+        int32_t hi_res = static_cast<int32_t>(result >> 32);u
+#if !V8_TARGET_LITTLE_ENDIAN
         if (::v8::internal::FLAG_trace_sim) {
-          PrintF("Returned {%08" V8PRIxPTR ", %08" V8PRIxPTR "}\n", x, y);
+          PrintF("Returned %08x\n", hi_res);
         }
-        set_register(r2, x);
-        set_register(r3, y);
+        set_register(r2, hi_res);
+        set_register(r3, lo_res);
+#else
+        if (::v8::internal::FLAG_trace_sim) {
+          PrintF("Returned %08x\n", lo_res);
+        }
+        set_register(r2, lo_res);
+        set_register(r3, hi_res);
+#endif
+#else
+        if (redirection->type() == ExternalReference::BUILTIN_CALL) {
+          SimulatorRuntimeCall target =
+            reinterpret_cast<SimulatorRuntimeCall>(external);
+          intptr_t result = target(arg[0], arg[1], arg[2], arg[3], arg[4],
+              arg[5]);
+          if (::v8::internal::FLAG_trace_sim) {
+            PrintF("Returned %08" V8PRIxPTR "\n", result);
+          }
+          set_register(r2, result);
+        } else {
+          DCHECK(redirection->type() ==
+              ExternalReference::BUILTIN_OBJECTPAIR_CALL);
+          SimulatorRuntimeObjectPairCall target =
+            reinterpret_cast<SimulatorRuntimeObjectPairCall>(external);
+          ObjectPair result = target(arg[0], arg[1], arg[2], arg[3],
+              arg[4], arg[5]);
+          if (::v8::internal::FLAG_trace_sim) {
+            PrintF("Returned %08" V8PRIxPTR ", %08" V8PRIxPTR "\n",
+                result.x, result.y);
+          }
+#if ABI_RETURNS_OBJECT_PAIRS_IN_REGS
+          set_register(r2, result.x);
+          set_register(r3, result.y);
+#else
+           memcpy(reinterpret_cast<void *>(result_buffer), &result,
+               sizeof(ObjectPair));
+#endif
+        }
+#endif
       }
       set_pc(saved_lr);
       break;

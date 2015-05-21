@@ -1015,7 +1015,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // Need at least one extra slot for return address location.
   int arg_stack_space = 1;
 
-#if !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
+#if V8_TARGET_ARCH_S390X && !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
   // Pass buffer for return value on stack if necessary
   if (result_size() > 1) {
     DCHECK_EQ(2, result_size());
@@ -1040,7 +1040,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // Result returned in registers or stack, depending on result size and ABI.
 
   Register isolate_reg = r4;
-#if !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
+#if V8_TARGET_ARCH_S390X && !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
   if (result_size() > 1) {
     // The return value is 16-byte non-scalar value.
     // Use frame storage reserved by calling function to pass return
@@ -1074,7 +1074,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
     // __ la(sp, MemOperand(sp, +kCalleeRegisterSaveAreaSize));
   }
 
-#if !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
+#if V8_TARGET_ARCH_S390X && !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
   // If return value is on the stack, pop it to registers.
   if (result_size() > 1) {
     __ LoadP(r3, MemOperand(r2, kPointerSize));
