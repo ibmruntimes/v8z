@@ -3901,12 +3901,17 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
       int64_t b2_val = (b2 == 0) ? 0 : get_register(b2);
       int32_t alu_out = get_low_register<int32_t>(r1);
       int32_t mem_val = ReadW(b2_val + x2_val + d2, instr);
+      bool isOF = false;
       if (op == AY) {
+        isOF = CheckOverflowForIntAdd(alu_out, mem_val);
         alu_out += mem_val;
         SetS390ConditionCode<int32_t>(alu_out, 0);
+        SetS390OverflowCode(isOF);
       } else if (op == SY) {
+        isOF = CheckOverflowForIntSub(alu_out, mem_val);
         alu_out -= mem_val;
         SetS390ConditionCode<int32_t>(alu_out, 0);
+        SetS390OverflowCode(isOF);
       } else if (op == NY) {
         alu_out &= mem_val;
         SetS390BitWiseConditionCode<uint32_t>(alu_out);
