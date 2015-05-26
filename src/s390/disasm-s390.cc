@@ -821,9 +821,9 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
     case OY: Format(instr, "oy\t'r1,'d2('r2d,'r3)"); break;
     case XY: Format(instr, "xy\t'r1,'d2('r2d,'r3)"); break;
     case CY: Format(instr, "cy\t'r1,'d2('r2d,'r3)"); break;
-    case AHY: Format(instr, "ahy\t'r1,'d1('r2d,'r3)"); break;
-    case SHY: Format(instr, "shy\t'r1,'d1('r2d,'r3)"); break;
-    case LGH: Format(instr, "lgh\t'r1,'d1('r2d,'r3)"); break;
+    case AHY: Format(instr, "ahy\t'r1,'d2('r2d,'r3)"); break;
+    case SHY: Format(instr, "shy\t'r1,'d2('r2d,'r3)"); break;
+    case LGH: Format(instr, "lgh\t'r1,'d2('r2d,'r3)"); break;
     case AG: Format(instr, "ag\t'r1,'d2('r2d,'r3)"); break;
     case AGF: Format(instr, "agf\t'r1,'d2('r2d,'r3)"); break;
     case SG: Format(instr, "sg\t'r1,'d2('r2d,'r3)"); break;
