@@ -2477,7 +2477,7 @@ void Assembler::m(Register r1, const MemOperand& opnd) {
 
 // Multiply Logical Register-Storage (64<32)
 void Assembler::ml(Register r1, const MemOperand& opnd) {
-  rxy_form(ML, r1, opnd.rb(), opnd.rx(), opnd.offset());
+  rxy_form(ML, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 
@@ -2648,7 +2648,7 @@ void Assembler::ahy(Register r1, const MemOperand& opnd) {
 
 // Subtract Halfword Register-Storage (32)
 void Assembler::shy(Register r1, const MemOperand& opnd) {
-  rxy_form(AHY, r1, opnd.rx(), opnd.rb(), opnd.offset());
+  rxy_form(SHY, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 
@@ -2732,7 +2732,7 @@ void Assembler::sl(Register r1, const MemOperand& opnd) {
 
 // Subtract Logical Register-Storage (32)
 void Assembler::sly(Register r1, const MemOperand& opnd) {
-  rxy_form(SL, r1, opnd.rx(), opnd.rb(), opnd.offset());
+  rxy_form(SLY, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 
