@@ -456,7 +456,7 @@ int Decoder::FormatImmediate(Instruction *instr, const char* format) {
     return 2;
   } else if (format[1] == '3') {  // immediate in I format
     IInstruction* iinstr = reinterpret_cast<IInstruction*>(instr);
-    int16_t value = iinstr->IValue();
+    int8_t value = iinstr->IValue();
     out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_,
                                     "%d", value);
     return 2;

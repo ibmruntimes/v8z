@@ -1408,7 +1408,7 @@ class Instruction {
 class IInstruction : Instruction {
  public:
   inline int IValue() const {
-    return Bits(16+7, 16);
+    return Bits<TwoByteInstr, int>(7, 0);
   }
 
   inline int size() const { return 2; }
