@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// CPU specific code for ppc independent of OS goes here.
+// CPU specific code for s390 independent of OS goes here.
 #include "src/v8.h"
 
 #if V8_TARGET_ARCH_S390

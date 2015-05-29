@@ -410,7 +410,7 @@ int Decoder::FormatDisplacement(Instruction* instr, const char* format) {
     out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_,
                                     "%d", value);
     return 2;
-  } else {  // ppc specific
+  } else {  // s390 specific
       int32_t value = SIGN_EXT_IMM16(instr->Bits(15, 0) & ~3);
       out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_,
                                       "%d", value);
@@ -900,13 +900,14 @@ const char* NameConverter::NameOfCPURegister(int reg) const {
 }
 
 const char* NameConverter::NameOfByteCPURegister(int reg) const {
-  UNREACHABLE();  // PPC does not have the concept of a byte register
+  UNREACHABLE();  // s390 does not have the concept of a byte register
   return "nobytereg";
 }
 
 
 const char* NameConverter::NameOfXMMRegister(int reg) const {
-  UNREACHABLE();  // PPC does not have any XMM registers
+  UNREACHABLE();  // s390 does not have any XMM registers
+                  // Perhaps update for VRs?? (PPC too)
   return "noxmmreg";
 }
 

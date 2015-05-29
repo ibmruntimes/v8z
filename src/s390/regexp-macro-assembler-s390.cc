@@ -89,7 +89,7 @@ namespace internal {
  *              bool direct_call = false)
  * The call is performed by NativeRegExpMacroAssembler::Execute()
  * (in regexp-macro-assembler.cc) via the CALL_GENERATED_REGEXP_CODE macro
- * in ppc/simulator-ppc.h.
+ * in s390/simulator-s390.h.
  * When calling as a non-direct call (i.e., from C++ code), the return address
  * area is overwritten with the LR register by the RegExp code. When doing a
  * direct call from generated code, the return address is placed there by

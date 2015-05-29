@@ -175,7 +175,7 @@ void DebugCodegen::GenerateCallICStubDebugBreak(MacroAssembler* masm) {
 
 
 void DebugCodegen::GenerateLoadICDebugBreak(MacroAssembler* masm) {
-  // Calling convention for IC load (from ic-ppc.cc).
+  // Calling convention for IC load (from ic-s390.cc).
   Register receiver = LoadDescriptor::ReceiverRegister();
   Register name = LoadDescriptor::NameRegister();
   RegList regs = receiver.bit() | name.bit();
@@ -187,7 +187,7 @@ void DebugCodegen::GenerateLoadICDebugBreak(MacroAssembler* masm) {
 
 
 void DebugCodegen::GenerateStoreICDebugBreak(MacroAssembler* masm) {
-  // Calling convention for IC store (from ic-ppc.cc).
+  // Calling convention for IC store (from ic-s390.cc).
   Register receiver = StoreDescriptor::ReceiverRegister();
   Register name = StoreDescriptor::NameRegister();
   Register value = StoreDescriptor::ValueRegister();
@@ -197,13 +197,13 @@ void DebugCodegen::GenerateStoreICDebugBreak(MacroAssembler* masm) {
 
 
 void DebugCodegen::GenerateKeyedLoadICDebugBreak(MacroAssembler* masm) {
-  // Calling convention for keyed IC load (from ic-ppc.cc).
+  // Calling convention for keyed IC load (from ic-s390.cc).
   GenerateLoadICDebugBreak(masm);
 }
 
 
 void DebugCodegen::GenerateKeyedStoreICDebugBreak(MacroAssembler* masm) {
-  // Calling convention for IC keyed store call (from ic-ppc.cc).
+  // Calling convention for IC keyed store call (from ic-s390.cc).
   Register receiver = StoreDescriptor::ReceiverRegister();
   Register name = StoreDescriptor::NameRegister();
   Register value = StoreDescriptor::ValueRegister();
@@ -230,7 +230,7 @@ void DebugCodegen::GenerateReturnDebugBreak(MacroAssembler* masm) {
 
 
 void DebugCodegen::GenerateCallFunctionStubDebugBreak(MacroAssembler* masm) {
-  // Register state for CallFunctionStub (from code-stubs-ppc.cc).
+  // Register state for CallFunctionStub (from code-stubs-s390.cc).
   // ----------- S t a t e -------------
   //  -- r3 : function
   // -----------------------------------
@@ -239,7 +239,7 @@ void DebugCodegen::GenerateCallFunctionStubDebugBreak(MacroAssembler* masm) {
 
 
 void DebugCodegen::GenerateCallConstructStubDebugBreak(MacroAssembler* masm) {
-  // Calling convention for CallConstructStub (from code-stubs-ppc.cc)
+  // Calling convention for CallConstructStub (from code-stubs-s390.cc)
   // ----------- S t a t e -------------
   //  -- r2     : number of arguments (not smi)
   //  -- r3     : constructor function
@@ -250,7 +250,7 @@ void DebugCodegen::GenerateCallConstructStubDebugBreak(MacroAssembler* masm) {
 
 void DebugCodegen::GenerateCallConstructStubRecordDebugBreak(
     MacroAssembler* masm) {
-  // Calling convention for CallConstructStub (from code-stubs-ppc.cc)
+  // Calling convention for CallConstructStub (from code-stubs-s390.cc)
   // ----------- S t a t e -------------
   //  -- r2     : number of arguments (not smi)
   //  -- r3     : constructor function

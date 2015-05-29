@@ -19,7 +19,7 @@
 #include "src/allocation.h"
 
 #if !defined(USE_SIMULATOR)
-// Running without a simulator on a native ppc platform.
+// Running without a simulator on a native s390 platform.
 
 namespace v8 {
 namespace internal {
@@ -41,7 +41,7 @@ typedef int (*ppc_regexp_matcher)(String*, int, const byte*, const byte*, int*,
                                             NULL, p8))
 
 // The stack limit beyond which we will throw stack overflow errors in
-// generated code. Because generated code on ppc uses the C stack, we
+// generated code. Because generated code on s390 uses the C stack, we
 // just use the C stack limit.
 class SimulatorStack : public v8::internal::AllStatic {
  public:
