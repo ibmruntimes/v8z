@@ -1889,6 +1889,10 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       r2_val = r2_val+1;
       set_low_register(r1, r2_val);
       SetS390ConditionCode<int32_t>(r2_val, 0);
+      // Checks for overflow where r2_val = -2147483648.
+      // Cannot do int comparison due to GCC 4.8 bug on x86.
+      // Detect INT_MIN alternatively, as it is the only value where both
+      // original and result are negative due to overflow.
       if (r2_val < 0 && original_r2_val < 0) {
         SetS390OverflowCode(true);
       }
