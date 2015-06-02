@@ -3185,6 +3185,14 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
       UNIMPLEMENTED();
       break;
     }
+    case LDEBR: {
+      RREInstruction* rreInstr = reinterpret_cast<RREInstruction*>(instr);
+      int r1 = rreInstr->R1Value();
+      int r2 = rreInstr->R2Value();
+      float r2_val = get_float_from_d_register(r2);
+      set_d_register_from_double(r1, static_cast<double>(r2_val));
+      break;
+    }
     default: {
       UNREACHABLE();
       return false;
