@@ -3759,6 +3759,10 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
 
       uint64_t src_val = get_register(r2);
 
+      // assume end_bit is always greater than or equal to start_bit.
+      // otherwise we need to wrap around from bit 63 to bit 0
+      DCHECK(start_bit <= end_bit);
+
       // Rotate Left by Shift Amount first
       uint64_t rotated_val = (src_val << shift_amount) |
         (src_val >> (64 - shift_amount));
