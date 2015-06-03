@@ -227,7 +227,6 @@ struct DoubleRegister {
 #else
   static const int kNumVolatileRegisters = 14;     // d0-d15 except d4 and d6
 #endif
-  // TODO(JOHN): may not be true
   static const int kAllocatableRangeBegin  = 1;
   static const int kAllocatableRangeEnd    = 12;
   static const int kNumAllocatable =
