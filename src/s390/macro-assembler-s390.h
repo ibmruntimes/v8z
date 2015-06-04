@@ -1878,8 +1878,10 @@ class MacroAssembler: public Assembler {
     if (CpuFeatures::IsSupported(GENERAL_INSTR_EXT)) {
       int rangeStart = Field::kShift + Field::kSize - 1;
       int rangeEnd = Field::kShift;
-      int shiftAmount = (64 - rangeEnd + kSmiShift) % 64;  // Convert to shift left.
-      int endBit = (63 - kSmiShift) % 64;                     // End is always LSB after shifting.
+      // Convert to shift left.
+      int shiftAmount = (64 - rangeEnd + kSmiShift) % 64;
+      // End is always LSB after shifting.
+      int endBit = (63 - kSmiShift) % 64;
       int startBit = (63 - rangeStart + rangeEnd - kSmiShift) % 64;
       risbg(dst, src, Operand(startBit), Operand(endBit), Operand(shiftAmount),
             true);
