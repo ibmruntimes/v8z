@@ -1476,7 +1476,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
             reinterpret_cast<SimulatorRuntimeCall>(external);
         int64_t result = target(arg[0], arg[1], arg[2], arg[3], arg[4], arg[5]);
         int32_t lo_res = static_cast<int32_t>(result);
-        int32_t hi_res = static_cast<int32_t>(result >> 32);u
+        int32_t hi_res = static_cast<int32_t>(result >> 32);
 #if !V8_TARGET_LITTLE_ENDIAN
         if (::v8::internal::FLAG_trace_sim) {
           PrintF("Returned %08x\n", hi_res);
