@@ -1929,13 +1929,13 @@ class ScavengingVisitor : public StaticVisitorBase {
   // allocated target object and update the forwarding pointer in the source
   // object.  Returns the target object.
 
-  static void 
+  static void
 #if (V8_TARGET_ARCH_S390X && V8_SHARED)
-    V8_NOINLINE(
+  V8_NOINLINE(
 #else
-    V8_INLINE(
+  V8_INLINE(
 #endif
-    MigrateObject(Heap* heap, HeapObject* source,
+  MigrateObject(Heap* heap, HeapObject* source,
                                    HeapObject* target, int size)) {
     // If we migrate into to-space, then the to-space top pointer should be
     // right after the target object. Incorporate double alignment
