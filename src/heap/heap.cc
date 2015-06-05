@@ -1929,7 +1929,13 @@ class ScavengingVisitor : public StaticVisitorBase {
   // Helper function used by CopyObject to copy a source object to an
   // allocated target object and update the forwarding pointer in the source
   // object.  Returns the target object.
-  INLINE(static void MigrateObject(Heap* heap, HeapObject* source,
+  static void
+#if (V8_TARGET_ARCH_S390X && V8_SHARED)
+  V8_NOINLINE(
+#else
+  V8_INLINE(
+#endif
+  MigrateObject(Heap* heap, HeapObject* source,
                                    HeapObject* target, int size)) {
     // If we migrate into to-space, then the to-space top pointer should be
     // right after the target object. Incorporate double alignment
