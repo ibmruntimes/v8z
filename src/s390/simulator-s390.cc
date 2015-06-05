@@ -1951,7 +1951,6 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
         set_pc(mem_addr);
       }
       break;
-
     }
     case EX: {
       RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
