@@ -1929,6 +1929,30 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       set_register(r1, static_cast<uint64_t>(r2_val));
       break;
     }
+    case BC: {
+      RXbInstruction * rxbinst = reinterpret_cast<RXbInstruction*>(instr);
+      int m1 = rxbinst->M1Value();
+      int x2 = rxbinst->X2Value();
+      int b2 = rxbinst->B2Value();
+      intptr_t d2_val = rxbinst->D2Value();
+
+      int64_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+      int64_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+      intptr_t mem_addr = x2_val + b2_val + d2_val;
+
+      if (TestConditionCode(Condition(m1))) {
+#if (!V8_TARGET_ARCH_S390X && V8_HOST_ARCH_S390)
+        // On 31-bit, the top most bit may be 0 or 1, but is ignored by the
+        // hardware.  Cleanse the top bit before jumping to it, unless it's one
+        // of the special PCs
+        if (mem_addr != bad_lr && mem_addr != end_sim_pc)
+          mem_addr &= 0x7FFFFFFF;
+#endif
+        set_pc(mem_addr);
+      }
+      break;
+
+    }
     case EX: {
       RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
       int r1 = rxinst->R1Value();

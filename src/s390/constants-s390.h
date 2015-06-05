@@ -1536,6 +1536,24 @@ class RSYInstruction : Instruction {
   inline int size() const { return 6; }
 };
 
+// RX_b Instruction
+class RXbInstruction : Instruction {
+ public:
+  inline int M1Value() const {
+    return Bits<FourByteInstr, int>(23, 20);
+  }
+  inline int X2Value() const {
+    return Bits<FourByteInstr, int>(19, 16);
+  }
+  inline int B2Value() const {
+    return Bits<FourByteInstr, int>(15, 12);
+  }
+  inline uint32_t D2Value() const {
+    return Bits<FourByteInstr, uint32_t>(11, 0);
+  }
+  inline int size() const { return 4; }
+};
+
 // RX Instruction
 class RXInstruction : Instruction {
  public:

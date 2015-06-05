@@ -3053,9 +3053,9 @@ void CallConstructStub::Generate(MacroAssembler* masm) {
   __ LoadP(jmp_reg, FieldMemOperand(r3, JSFunction::kSharedFunctionInfoOffset));
   __ LoadP(jmp_reg, FieldMemOperand(jmp_reg,
                                   SharedFunctionInfo::kConstructStubOffset));
-  // TODO(joransiu): Fold AddP into Jump
-  __ AddP(ip, jmp_reg, Operand(Code::kHeaderSize - kHeapObjectTag));
-  __ JumpToJSEntry(ip);
+  // __ AddP(ip, jmp_reg, Operand(Code::kHeaderSize - kHeapObjectTag));
+  // __ JumpToJSEntry(ip);
+  __ b(jmp_reg, Code::kHeaderSize - kHeapObjectTag);
 
   // r2: number of arguments
   // r3: called object

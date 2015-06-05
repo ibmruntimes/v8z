@@ -845,6 +845,34 @@ void Assembler::rx_form(Opcode op,
 }
 
 
+// RX_b format: <insn> M1,D2(X2,B2)
+//    +--------+----+----+----+-------------+
+//    | OpCode | M1 | X2 | B2 |     D2      |
+//    +--------+----+----+----+-------------+
+//    0        8    12   16   20           31
+#define RX_b_FORM_EMIT(name, op) \
+void Assembler::name(Condition m, const MemOperand& opnd) { \
+    name(m, opnd.getIndexRegister(), opnd.getBaseRegister(), \
+         opnd.getDisplacement());\
+}\
+void Assembler::name(Condition m1, Register x2, \
+                     Register b2, Disp d2) {\
+    rx_b_form(op, m1, x2, b2, d2);\
+}
+
+void Assembler::rx_b_form(Opcode op,
+                        Condition m1,
+                        Register x2,
+                        Register b2,
+                        Disp d2) {
+    DCHECK(is_uint8(op));
+    DCHECK(is_uint4(m1));
+    DCHECK(is_uint12(d2));
+    emit4bytes(op*B24 | m1 * B20 |
+             x2.code()*B16 | b2.code()*B12 | d2);
+}
+
+
 // RI1 format: <insn> R1,I2
 //    +--------+----+----+------------------+
 //    | OpCode | R1 |OpCd|        I2        |
@@ -1780,7 +1808,7 @@ RX_FORM_EMIT(bal, BAL)
 RR_FORM_EMIT(balr, BALR)
 RX_FORM_EMIT(bas, BAS)
 RR_FORM_EMIT(bassm, BASSM)
-RX_FORM_EMIT(bc, BC)
+RX_b_FORM_EMIT(bc, BC)
 RRE_FORM_EMIT(bctgr, BCTGR)
 RR_FORM_EMIT(bctr, BCTR)
 RIL1_FORM_EMIT(brcth, BRCTH)
