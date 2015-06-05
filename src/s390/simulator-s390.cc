@@ -4509,7 +4509,7 @@ double Simulator::CallFPReturnsDouble(byte* entry, double d0, double d1) {
 
 
 uintptr_t Simulator::PushAddress(uintptr_t address) {
-  uint64_t new_sp = get_register(sp) - sizeof(uint64_t);
+  uintptr_t new_sp = get_register(sp) - sizeof(uintptr_t);
   uintptr_t* stack_slot = reinterpret_cast<uintptr_t*>(new_sp);
   *stack_slot = address;
   set_register(sp, new_sp);
@@ -4518,7 +4518,7 @@ uintptr_t Simulator::PushAddress(uintptr_t address) {
 
 
 uintptr_t Simulator::PopAddress() {
-  uint64_t current_sp = get_register(sp);
+  uintptr_t current_sp = get_register(sp);
   uintptr_t* stack_slot = reinterpret_cast<uintptr_t*>(current_sp);
   uintptr_t address = *stack_slot;
   set_register(sp, current_sp + sizeof(uintptr_t));
