@@ -1814,7 +1814,7 @@ SS2_FORM(zap);
 #endif
 
 
-  static bool IsCmpRegister(Instr instr);
+  static bool IsCmpRegister(Address addr);
   static bool IsCmpImmediate(Instr instr);
   static bool IsRlwinm(Instr instr);
   static bool IsNop(SixByteInstr instr, int type = NON_MARKING_NOP);

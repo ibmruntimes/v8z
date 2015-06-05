@@ -377,10 +377,8 @@ bool Assembler::Is32BitLoadIntoIP(SixByteInstr instr) {
 }
 #endif
 
-bool Assembler::IsCmpRegister(Instr instr) {
-  // @TODO Re-enable this properly
-  DCHECK(false);
-  return Instruction::S390OpcodeValue(reinterpret_cast<byte*>(&instr)) == CR;
+bool Assembler::IsCmpRegister(Address addr) {
+  return Instruction::S390OpcodeValue(addr) == CR;
 }
 
 
