@@ -3677,7 +3677,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       int64_t b2_val = (b2 == 0) ? 0 : get_register(b2);
       int64_t x2_val = (x2 == 0) ? 0 : get_register(x2);
       intptr_t d2_val = rxyInstr->D2Value();
-      uint16_t mem_val = ReadBU(b2_val + d2_val + x2_val);
+      uint8_t mem_val = ReadBU(b2_val + d2_val + x2_val);
       if (op == LLC) {
         set_low_register(r1, static_cast<uint32_t>(mem_val));
       } else if (op == LLGC) {

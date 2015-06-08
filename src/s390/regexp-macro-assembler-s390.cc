@@ -1351,12 +1351,12 @@ void RegExpMacroAssemblerS390::LoadCurrentCharacterUnchecked(int cp_offset,
                                                             int characters) {
   DCHECK(characters == 1);
   if (mode_ == LATIN1) {
-    __ LoadlB(current_character(), MemOperand(end_of_input_address(),
-                        current_input_offset(), cp_offset * char_size()));
+    __ LoadlB(current_character(), MemOperand(current_input_offset(),
+                  end_of_input_address(), cp_offset * char_size()));
   } else {
     DCHECK(mode_ == UC16);
     __ LoadLogicalHalfWordP(current_character(), MemOperand(
-      end_of_input_address(), current_input_offset(), cp_offset * char_size()));
+      current_input_offset(), end_of_input_address(), cp_offset * char_size()));
   }
 }
 
