@@ -1197,26 +1197,10 @@ struct ObjectPair {
   intptr_t y;
 };
 
-
-/*
-static void decodeObjectPair(ObjectPair* pair, intptr_t* x, intptr_t* y) {
-  *x = pair->x;
-  *y = pair->y;
-}
-*/
 #else
+
 typedef uint64_t ObjectPair;
 
-
-static void decodeObjectPair(ObjectPair* pair, intptr_t* x, intptr_t* y) {
-#if !V8_TARGET_LITTLE_ENDIAN
-  *x = static_cast<int32_t>(*pair >> 32);
-  *y = static_cast<int32_t>(*pair);
-#else
-  *x = static_cast<int32_t>(*pair);
-  *y = static_cast<int32_t>(*pair >> 32);
-#endif
-}
 #endif
 
 // Calls into the V8 runtime are based on this very simple interface.
