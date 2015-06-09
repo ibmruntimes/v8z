@@ -530,7 +530,7 @@ void KeyedLoadIC::GenerateMegamorphic(MacroAssembler* masm) {
   // If the receiver is a fast-case object, check the stub cache. Otherwise
   // probe the dictionary.
   __ LoadP(r5, FieldMemOperand(receiver, JSObject::kPropertiesOffset));
-  __ LoadP(r6, FieldMemOperand(r6, HeapObject::kMapOffset));
+  __ LoadP(r6, FieldMemOperand(r5, HeapObject::kMapOffset));
   __ CompareRoot(r6, Heap::kHashTableMapRootIndex);
   __ beq(&probe_dictionary);
 
