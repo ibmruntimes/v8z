@@ -4414,8 +4414,8 @@ void MacroAssembler::AndP(Register dst, Register src, const Operand& opnd) {
     // Special case: If shift_value is zero, we cannot use RISBG, as it requires
     //               selection of at least 1 bit.
     if ((0 != shifted_value) && base::bits::IsPowerOfTwo64(shifted_value + 1)) {
-      int startBit = 32 + base::bits::CountLeadingZeros64(shifted_value) -
-                     trailing_zeros;
+      int startBit = base::bits::CountLeadingZeros64(shifted_value) -
+                     trailing_zeros - 1;
       int endBit = 63 - trailing_zeros;
       // Start: startBit, End: endBit, Shift = 0, true = zero unselected bits.
       risbg(dst, src, Operand(startBit), Operand(endBit), Operand::Zero(),
