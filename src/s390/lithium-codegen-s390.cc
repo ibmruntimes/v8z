@@ -344,9 +344,9 @@ bool LCodeGen::GenerateJumpTable() {
         DCHECK(!info()->saves_caller_doubles());
         Comment(";;; call deopt with frame");
         __ PushFixedFrame();
-        __ b(&needs_frame/*, SetLK*/);
+        __ b(r14, &needs_frame);
       } else {
-        __ b(&call_deopt_entry/*, SetLK*/);
+        __ b(r14, &call_deopt_entry);
       }
       info()->LogDeoptCallPosition(masm()->pc_offset(),
                                    table_entry->deopt_info.inlining_id);
