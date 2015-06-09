@@ -378,7 +378,11 @@ bool Assembler::Is32BitLoadIntoIP(SixByteInstr instr) {
 #endif
 
 bool Assembler::IsCmpRegister(Address addr) {
+#if V8_TARGET_ARCH_S390X
+  return Instruction::S390OpcodeValue(addr) == CGR;
+#else
   return Instruction::S390OpcodeValue(addr) == CR;
+#endif
 }
 
 
