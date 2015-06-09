@@ -860,17 +860,15 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     // Allocate space on stack for registers.
     __ lay(sp, MemOperand(sp, (-num_registers_ * kPointerSize)));
     // Load string end.
-    __ LoadRR(end_of_input_address(), r5);
+    __ LoadP(end_of_input_address(), MemOperand(frame_pointer(), kInputEnd));
+    // Load input start.
+    __ LoadP(r4, MemOperand(frame_pointer(), kInputStart));
     // Find negative length (offset of start relative to end).
     __ SubP(current_input_offset(), r4, end_of_input_address());
-    // Load input start.
-    __ LoadRR(r1, r4);
-
-    // r3 is already start index
-    // __ LoadP(r3, MemOperand(frame_pointer(), kStartIndex));
-
+    __ LoadP(r3, MemOperand(frame_pointer(), kStartIndex));
     // Set r1 to address of char before start of the input string
     // (effectively string position -1).
+    __ LoadRR(r1, r4);
     __ SubP(r1, current_input_offset(), Operand(char_size()));
     if (mode_ == UC16) {
       __ ShiftLeftP(r0, r3, Operand(1));
