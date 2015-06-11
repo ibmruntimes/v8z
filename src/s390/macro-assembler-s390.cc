@@ -4415,7 +4415,7 @@ void MacroAssembler::AndP(Register dst, Register src, const Operand& opnd) {
     //               selection of at least 1 bit.
     if ((0 != shifted_value) && base::bits::IsPowerOfTwo64(shifted_value + 1)) {
       int startBit = base::bits::CountLeadingZeros64(shifted_value) -
-                     trailing_zeros - 1;
+                     trailing_zeros;
       int endBit = 63 - trailing_zeros;
       // Start: startBit, End: endBit, Shift = 0, true = zero unselected bits.
       risbg(dst, src, Operand(startBit), Operand(endBit), Operand::Zero(),
