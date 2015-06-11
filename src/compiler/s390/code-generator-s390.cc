@@ -1434,13 +1434,12 @@ void CodeGenerator::EnsureSpaceForLazyDeopt() {
     // Ensure that we have enough space after the previous lazy-bailout
     // instruction for patching the code here.
     int current_pc = masm()->pc_offset();
-    DCHECK(0);  // Fix this to have variable instr size for s390
     if (current_pc < last_lazy_deopt_pc_ + space_needed) {
       int padding_size = last_lazy_deopt_pc_ + space_needed - current_pc;
-      DCHECK_EQ(0, padding_size % v8::internal::Assembler::kInstrSize);
+      DCHECK_EQ(0, padding_size % 2);
       while (padding_size > 0) {
         __ nop();
-        padding_size -= v8::internal::Assembler::kInstrSize;
+        padding_size -= 2;
       }
     }
   }
