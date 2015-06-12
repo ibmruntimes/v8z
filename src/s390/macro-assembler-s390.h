@@ -540,8 +540,8 @@ class MacroAssembler : public Assembler {
     StoreP(src1, MemOperand(sp, kPointerSize * 4));
     StoreP(src2, MemOperand(sp, kPointerSize * 3));
     StoreP(src3, MemOperand(sp, kPointerSize * 2));
-    StoreP(src3, MemOperand(sp, kPointerSize));
-    StoreP(src4, MemOperand(sp, 0));
+    StoreP(src4, MemOperand(sp, kPointerSize));
+    StoreP(src5, MemOperand(sp, 0));
   }
 
   void Pop(Register dst) { pop(dst); }
