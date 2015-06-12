@@ -1564,8 +1564,7 @@ class CEntryStub : public PlatformCodeStub {
       : PlatformCodeStub(isolate) {
     minor_key_ = SaveDoublesBits::encode(save_doubles == kSaveFPRegs);
     DCHECK(result_size == 1 || result_size == 2);
-  // TODO(Tara): Update minor key for s390 here?
-#if _WIN64 || V8_TARGET_ARCH_PPC
+#if _WIN64 || V8_TARGET_ARCH_PPC || V8_TARGET_ARCH_S390
     minor_key_ = ResultSizeBits::update(minor_key_, result_size);
 #endif  // _WIN64
   }
