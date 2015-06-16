@@ -32,17 +32,16 @@ configuration in `.git/config`:
         fetch = +refs/branch-heads/*:refs/remotes/branch-heads/*
         fetch = +refs/tags/*:refs/tags/*
 
-+++++++++++++++
-S390 Specific:
-Make code:
-<code>
-make -j4 s390 i18nsupport=off V=1
-make -j4 s390x i18nsupport=off V=1
-</code>
+S390 Specific Instructions
+=============
 
-Test code:
-<code>
-tools/run-tests.py -j 12 --progress=dots --noi18n --no-presubmit --arch-and-mode=s390.debug --junitout v8tests-junit.xml
-tools/run-tests.py -j 12 --progress=dots --noi18n --no-presubmit --arch-and-mode=s390x.debug --junitout v8tests-junit.xml
-</code>
+To build a driver:
+
+        make s390 i18nsupport=off     (31-bit)
+        make s390x i18nsupport=off    (64-bit)
+
+To run the V8 tests:
+
+        tools/run-tests.py --progress=dots --noi18n --no-presubmit --arch-and-mode=s390.release --junitout v8tests-junit.xml     (31-bit)
+        tools/run-tests.py --progress=dots --noi18n --no-presubmit --arch-and-mode=s390x.release --junitout v8tests-junit.xml    (64-bit)
 
