@@ -1485,11 +1485,6 @@ void LCodeGen::DoFlooringDivI(LFlooringDivI* instr) {
 
   __ lr(result, r1);  // Move quotient to result register
 
-  // TODO(joransiu) : Fix sequence to Z instructions.
-  // DCHECK(0);
-//  __ divw(result, dividend, divisor, SetOE, SetRC);
-
-
   Label done;
   Register scratch = scratch0();
   // If both operands have the same sign then we are done.
