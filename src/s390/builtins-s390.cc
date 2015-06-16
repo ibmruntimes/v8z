@@ -502,11 +502,10 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
                                     Map::kPreAllocatedPropertyFieldsOffset));
       __ AddP(r5, r0);
       __ LoadlB(r0, FieldMemOperand(r4, Map::kInObjectPropertiesOffset));
-      // @TODO: Okay to remove LeaveOE, SetRC?
-      __ SubP(r5, r5, r0 /*, LeaveOE, SetRC */);
+      __ SubP(r5, r5, r0);
 
       // Done if no extra properties are to be allocated.
-      __ beq(&allocated /*, cr0*/);
+      __ beq(&allocated);
       __ Assert(ge, kPropertyAllocationCountFailed, cr0);
 
       // Scale the number of elements by pointer size and add the header for
