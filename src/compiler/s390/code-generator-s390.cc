@@ -689,9 +689,6 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
   switch (condition) {
     case kUnorderedEqual:
     case kEqual:
-    // TODO(@Tara) :Check all cases ->
-    // if kScratchReg needs to be loaded with value)1
-    // if not, do mov(reg, Operand(1)) instead of LoadRR + mov(kScratch..)
       __ mov(reg, Operand::Zero());
       __ mov(kScratchReg, Operand(1));
       if (condition == kUnorderedEqual) __ bunordered(&done);
