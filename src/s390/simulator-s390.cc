@@ -1299,14 +1299,11 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
          (redirection->type() == ExternalReference::BUILTIN_COMPARE_CALL) ||
          (redirection->type() == ExternalReference::BUILTIN_FP_CALL) ||
          (redirection->type() == ExternalReference::BUILTIN_FP_INT_CALL);
-      // This is dodgy but it works because the C entry stubs are never moved.
-      // See comment in codegen-arm.cc and bug 1242173.
-      int64_t saved_lr = get_register(r14);
-#if (!V8_TARGET_ARCH_S390X && V8_HOST_ARCH_S390)
-      // On zLinux-31, the saved_lr might be tagged with a high bit of 1.
-      // Cleanse it before proceeding with simulation.
-      saved_lr &= 0x7FFFFFFF;
-#endif
+
+      // Place the return address on the stack, making the call GC safe.
+      *reinterpret_cast<intptr_t*>(get_register(sp)
+          + kStackFrameRASlot * kPointerSize) = get_register(r14);
+
       intptr_t external =
           reinterpret_cast<intptr_t>(redirection->external_function());
       if (fp_call) {
@@ -1540,6 +1537,13 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
         }
 #endif
       }
+      int64_t saved_lr = *reinterpret_cast<intptr_t*>(get_register(sp)
+                             + kStackFrameRASlot * kPointerSize);
+#if (!V8_TARGET_ARCH_S390X && V8_HOST_ARCH_S390)
+      // On zLinux-31, the saved_lr might be tagged with a high bit of 1.
+      // Cleanse it before proceeding with simulation.
+      saved_lr &= 0x7FFFFFFF;
+#endif
       set_pc(saved_lr);
       break;
     }
