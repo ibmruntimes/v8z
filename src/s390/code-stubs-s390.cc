@@ -2905,6 +2905,7 @@ void CallIC_ArrayStub::Generate(MacroAssembler* masm) {
   __ CompareRoot(r7, Heap::kAllocationSiteMapRootIndex);
   __ bne(&miss, Label::kNear);
 
+  __ LoadRR(r4, r6);
   __ LoadRR(r5, r3);
   ArrayConstructorStub stub(masm->isolate(), arg_count());
   __ TailCallStub(&stub);
