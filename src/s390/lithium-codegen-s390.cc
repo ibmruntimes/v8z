@@ -2643,15 +2643,8 @@ void LCodeGen::DoCompareMinusZeroAndBranch(LCompareMinusZeroAndBranch* instr) {
     DoubleRegister value = ToDoubleRegister(instr->value());
     __ cdbr(value, kDoubleRegZero);
     EmitFalseBranch(instr, ne);
-#if V8_TARGET_ARCH_S390X
     __ lgdr(scratch, value);
-    __ LoadAndTestP(scratch, scratch);
-#else
-    __ stdy(value, MemOperand(sp, -kDoubleSize));
-    __ LoadlW(scratch,
-              MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
-    __ Cmp32(scratch, Operand::Zero());
-#endif
+    __ ltgr(scratch, scratch);
     EmitBranch(instr, lt);
   } else {
     Register value = ToRegister(instr->value());
@@ -4023,8 +4016,7 @@ void LCodeGen::EmitMathAbs(LMathAbs* instr) {
   __ CmpP(input, Operand::Zero());
   __ Move(result, input);
   __ bge(&done, Label::kNear);
-  __ LoadComplementRR(result, result/*, SetOE, SetRC*/);
-  // TODO(john): might be a problem removing SetOE here.
+  __ LoadComplementRR(result, result);
   // Deoptimize on overflow.
   DeoptimizeIf(overflow, instr->environment(), cr0);
   __ bind(&done);
@@ -4133,15 +4125,8 @@ void LCodeGen::DoMathRound(LMathRound* instr) {
   // If the input is +0.5, the result is 1.
   __ bgt(&convert, Label::kNear);  // Out of [-0.5, +0.5].
   if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
-#if V8_TARGET_ARCH_S390X
     __ lgdr(scratch1, input);
-    __ LoadAndTestP(scratch1, scratch1);
-#else
-    __ stdy(input, MemOperand(sp, -kDoubleSize));
-    __ LoadlW(scratch1,
-              MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
-    __ Cmp32(scratch1, Operand::Zero());
-#endif
+    __ ltgr(scratch1, scratch1);
     DeoptimizeIf(lt, instr->environment());  // [-0.5, -0].
   }
   Label return_zero;
@@ -5466,15 +5451,8 @@ void LCodeGen::DoDoubleToI(LDoubleToI* instr) {
       Label done;
       __ CmpP(result_reg, Operand::Zero());
       __ bne(&done, Label::kNear);
-#if V8_TARGET_ARCH_S390X
       __ lgdr(scratch1, double_input);
-      __ LoadAndTestP(scratch1, scratch1);
-#else
-      __ stdy(double_input, MemOperand(sp, -kDoubleSize));
-      __ LoadlW(scratch1,
-                MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
-      __ Cmp32(scratch1, Operand::Zero());
-#endif
+      __ ltgr(scratch1, scratch1);
       DeoptimizeIf(lt, instr->environment());
       __ bind(&done);
     }
@@ -5499,15 +5477,8 @@ void LCodeGen::DoDoubleToSmi(LDoubleToSmi* instr) {
       Label done;
       __ CmpP(result_reg, Operand::Zero());
       __ bne(&done, Label::kNear);
-#if V8_TARGET_ARCH_S390X
       __ lgdr(scratch1, double_input);
-      __ LoadAndTestP(scratch1, scratch1);
-#else
-      __ stdy(double_input, MemOperand(sp, -kDoubleSize));
-      __ LoadlW(scratch1,
-                MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
-      __ Cmp32(scratch1, Operand::Zero());
-#endif
+      __ ltgr(scratch1, scratch1);
       DeoptimizeIf(lt, instr->environment());
       __ bind(&done);
     }
