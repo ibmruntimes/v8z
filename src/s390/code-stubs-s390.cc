@@ -4069,19 +4069,9 @@ void DirectCEntryStub::GenerateCall(MacroAssembler* masm, Register target) {
   __ Move(ip, target);
 #endif
 
-#if defined(USE_SIMULATOR)
-  Label return_label;
-  __ larl(r14, &return_label);
-  __ StoreP(r14, MemOperand(sp, kStackFrameRASlot * kPointerSize));
-#endif
-
   intptr_t code = reinterpret_cast<intptr_t>(GetCode().location());
   __ mov(r1, Operand(code, RelocInfo::CODE_TARGET));
   __ Call(r1);  // Call the stub.
-
-#if defined(USE_SIMULATOR)
-  __ bind(&return_label);
-#endif
 }
 
 
