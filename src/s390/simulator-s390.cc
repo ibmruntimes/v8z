@@ -4348,6 +4348,21 @@ void Simulator::CallInternal(byte*entry, int reg_arg_count) {
   if (reg_arg_count < 5) {
     DCHECK_EQ(callee_saved_value, get_register(r6));
   }
+#ifndef V8_TARGET_ARCH_S390X
+  if (reg_arg_count < 5) {
+    DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r6));
+  }
+  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r7));
+  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r8));
+  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r9));
+  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r10));
+  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r11));
+  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r12));
+  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r13));
+#else
+  if (reg_arg_count < 5) {
+    DCHECK_EQ(callee_saved_value, get_register(r6));
+  }
   DCHECK_EQ(callee_saved_value, get_register(r7));
   DCHECK_EQ(callee_saved_value, get_register(r8));
   DCHECK_EQ(callee_saved_value, get_register(r9));
@@ -4355,6 +4370,7 @@ void Simulator::CallInternal(byte*entry, int reg_arg_count) {
   DCHECK_EQ(callee_saved_value, get_register(r11));
   DCHECK_EQ(callee_saved_value, get_register(r12));
   DCHECK_EQ(callee_saved_value, get_register(r13));
+#endif
 
   // Restore non-volatile registers with the original value.
   set_register(r6, r6_val);
@@ -4446,6 +4462,18 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   Execute();
 
   // Check that the non-volatile registers have been preserved.
+#ifndef V8_TARGET_ARCH_S390X
+  if (reg_arg_count < 5) {
+    DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r6));
+  }
+  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r7));
+  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r8));
+  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r9));
+  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r10));
+  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r11));
+  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r12));
+  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r13));
+#else
   if (reg_arg_count < 5) {
     DCHECK_EQ(callee_saved_value, get_register(r6));
   }
@@ -4456,6 +4484,8 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   DCHECK_EQ(callee_saved_value, get_register(r11));
   DCHECK_EQ(callee_saved_value, get_register(r12));
   DCHECK_EQ(callee_saved_value, get_register(r13));
+#endif
+
 
   // Restore non-volatile registers with the original value.
   set_register(r6, r6_val);
