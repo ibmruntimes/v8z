@@ -5314,9 +5314,9 @@ static void CallApiFunctionAndReturn(MacroAssembler* masm,
   __ mov(r9, Operand(next_address));
   __ LoadP(r6, MemOperand(r9, kNextOffset));
   __ LoadP(r7, MemOperand(r9, kLimitOffset));
-  __ l(r8, MemOperand(r9, kLevelOffset));
+  __ LoadlW(r8, MemOperand(r9, kLevelOffset));
   __ AddP(r8, Operand(1));
-  __ st(r8, MemOperand(r9, kLevelOffset));
+  __ StoreW(r8, MemOperand(r9, kLevelOffset));
 
   if (FLAG_log_timer_events) {
     FrameScope frame(masm, StackFrame::MANUAL);
@@ -5356,15 +5356,14 @@ static void CallApiFunctionAndReturn(MacroAssembler* masm,
   // previous handle scope.
   __ StoreP(r6, MemOperand(r9, kNextOffset));
   if (__ emit_debug_code()) {
-    __ l(r3, MemOperand(r9, kLevelOffset));
+    __ LoadlW(r3, MemOperand(r9, kLevelOffset));
     __ CmpP(r3, r8);
     __ Check(eq, kUnexpectedLevelAfterReturnFromApiCall);
   }
   __ SubP(r8, Operand(1));
   __ StoreW(r8, MemOperand(r9, kLevelOffset));
-  __ LoadP(r0, MemOperand(r9, kLimitOffset));
-  __ CmpP(r7, r0);
-  __ bne(&delete_allocated_handles);
+  __ CmpP(r7, MemOperand(r9, kLimitOffset));
+  __ bne(&delete_allocated_handles, Label::kNear);
 
   // Leave the API exit frame.
   __ bind(&leave_exit_frame);
@@ -5381,11 +5380,10 @@ static void CallApiFunctionAndReturn(MacroAssembler* masm,
   __ LeaveExitFrame(false, r6, !restore_context, stack_space_operand != NULL);
 
   // Check if the function scheduled an exception.
-  __ LoadRoot(r6, Heap::kTheHoleValueRootIndex);
   __ mov(r7, Operand(ExternalReference::scheduled_exception_address(isolate)));
   __ LoadP(r7, MemOperand(r7));
-  __ CmpP(r6, r7);
-  __ bne(&promote_scheduled_exception);
+  __ CompareRoot(r7, Heap::kTheHoleValueRootIndex);
+  __ bne(&promote_scheduled_exception, Label::kNear);
 
   __ b(r14);
 
