@@ -4345,9 +4345,6 @@ void Simulator::CallInternal(byte*entry, int reg_arg_count) {
   Execute();
 
   // Check that the non-volatile registers have been preserved.
-  if (reg_arg_count < 5) {
-    DCHECK_EQ(callee_saved_value, get_register(r6));
-  }
 #ifndef V8_TARGET_ARCH_S390X
   if (reg_arg_count < 5) {
     DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r6));
@@ -4497,7 +4494,12 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   set_register(r12, r12_val);
   set_register(r13, r13_val);
   // Pop stack passed arguments.
+
+#ifndef V8_TARGET_ARCH_S390X
+  DCHECK_EQ(entry_stack, get_low_register<int32_t>(sp));
+#else
   DCHECK_EQ(entry_stack, get_register(sp));
+#endif
   set_register(sp, original_stack);
 
   // Return value register
