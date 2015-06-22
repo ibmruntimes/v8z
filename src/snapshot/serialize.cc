@@ -994,7 +994,7 @@ void Deserializer::ReadData(Object** current, Object** limit, int source_space,
       ALL_SPACES(kBackref, kPlain, kStartOfObject)
       ALL_SPACES(kBackrefWithSkip, kPlain, kStartOfObject)
 #if defined(V8_TARGET_ARCH_MIPS) || defined(V8_TARGET_ARCH_MIPS64) || \
-    defined(V8_TARGET_ARCH_PPC) || V8_OOL_CONSTANT_POOL
+    defined(V8_TARGET_ARCH_PPC) || defined(V8_TARGET_ARCH_S390)|| V8_OOL_CONSTANT_POOL
       // Deserialize a new object from pointer found in code and write
       // a pointer to it to the current object. Required only for MIPS, PPC or
       // ARM with ool constant pool, and omitted on the other architectures
@@ -1019,7 +1019,7 @@ void Deserializer::ReadData(Object** current, Object** limit, int source_space,
       CASE_STATEMENT(kRootArray, kPlain, kStartOfObject, 0)
       CASE_BODY(kRootArray, kPlain, kStartOfObject, 0)
 #if defined(V8_TARGET_ARCH_MIPS) || V8_OOL_CONSTANT_POOL || \
-    defined(V8_TARGET_ARCH_MIPS64) || defined(V8_TARGET_ARCH_PPC)
+    defined(V8_TARGET_ARCH_MIPS64) || defined(V8_TARGET_ARCH_S390)|| defined(V8_TARGET_ARCH_PPC)
       // Find an object in the roots array and write a pointer to it to in code.
       CASE_STATEMENT(kRootArray, kFromCode, kStartOfObject, 0)
       CASE_BODY(kRootArray, kFromCode, kStartOfObject, 0)
