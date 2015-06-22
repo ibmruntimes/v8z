@@ -307,10 +307,10 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
 // Copy remainder to output reg
 #define ASSEMBLE_MODULO(load_instr, scratch_reg)      \
   do {                                                \
-  __ load_instr(scratch_reg, i.InputRegister(0));     \
-  __ srda(scratch_reg, Operand(32));                  \
-  __ dr(scratch_reg, i.InputRegister(1));             \
-  __ ltr(i.OutputRegister(), scratch_reg);            \
+  __ load_instr(r0, i.InputRegister(0));     \
+  __ srda(r0, Operand(32));                  \
+  __ dr(r0, i.InputRegister(1));             \
+  __ ltr(i.OutputRegister(), r0);            \
   } while (0)
 
 
