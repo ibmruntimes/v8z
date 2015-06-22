@@ -279,11 +279,19 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
 
 #define ASSEMBLE_COMPARE(cmp_instr, cmpl_instr)                        \
   do {                                                                 \
-    if (i.CompareLogical()) {                                        \
-      __ cmpl_instr(i.InputRegister(0), i.InputRegister(1));         \
-    } else {                                                         \
-      __ cmp_instr(i.InputRegister(0), i.InputRegister(1));          \
-    }                                                                \
+    if (HasRegisterInput(instr, 1)) {                                  \
+      if (i.CompareLogical()) {                                        \
+        __ cmpl_instr(i.InputRegister(0), i.InputRegister(1));         \
+      } else {                                                         \
+        __ cmp_instr(i.InputRegister(0), i.InputRegister(1));          \
+      }                                                                \
+    } else {                                                           \
+      if (i.CompareLogical()) {                                        \
+        __ cmpl_instr(i.InputRegister(0), i.InputImmediate(1));        \
+      } else {                                                         \
+        __ cmp_instr(i.InputRegister(0), i.InputImmediate(1));         \
+      }                                                                \
+    }                                                                  \
   } while (0)
 
 
