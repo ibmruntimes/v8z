@@ -4113,6 +4113,7 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
       DCHECK(false);
 #endif
       RXYInstruction* rxyInstr = reinterpret_cast<RXYInstruction*>(instr);
+      int r1 = rxyInstr->R1Value();
       uint64_t r1_val = get_register(rxyInstr->R1Value());
       int b2 = rxyInstr->B2Value();
       int x2 = rxyInstr->X2Value();
