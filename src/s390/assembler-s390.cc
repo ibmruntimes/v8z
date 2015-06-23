@@ -2321,12 +2321,14 @@ void Assembler::mr_z(Register r1, Register r2) {
 
 // Multiply Logical Register (64<32)
 void Assembler::mlr(Register r1, Register r2) {
+  DCHECK(r1.code() % 2 == 0);
   rre_form(MLR, r1, r2);
 }
 
 
 // Divide Register (32)
 void Assembler::dr(Register r1, Register r2) {
+  DCHECK(r1.code() % 2 == 0);
   rr_form(DR, r1, r2);
 }
 
