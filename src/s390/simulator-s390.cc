@@ -2428,6 +2428,7 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
       int64_t r2_val = static_cast<int64_t>(get_low_register<int32_t>(r2));
       bool isOF = false;
       isOF = CheckOverflowForIntSub(r1_val, r2_val);
+      r1_val -= r2_val;
       SetS390ConditionCode<int64_t>(r1_val, 0);
       SetS390OverflowCode(isOF);
       set_register(r1, r1_val);
