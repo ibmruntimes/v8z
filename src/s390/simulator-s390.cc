@@ -2595,7 +2595,19 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
       break;
     }
     case MLR: {
-      UNIMPLEMENTED();
+      RREInstruction* rreinst = reinterpret_cast<RREInstruction*>(instr);
+      int r1 = rreinst->R1Value();
+      int r2 = rreinst->R2Value();
+      DCHECK(r1 % 2 == 0);
+
+      uint32_t r1_val = get_low_register<uint32_t>(r1 + 1);
+      uint32_t r2_val = get_low_register<uint32_t>(r2);
+      uint64_t product = static_cast<uint64_t>(r1_val)
+                      * static_cast<uint64_t>(r2_val);
+      int32_t high_bits = product >> 32;
+      int32_t low_bits  = product & 0x00000000FFFFFFFF;
+      set_low_register(r1, high_bits);
+      set_low_register(r1 + 1, low_bits);
       break;
     }
     case A:
