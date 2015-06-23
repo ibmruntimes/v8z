@@ -701,14 +701,19 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     case kS390_Mul32:
 #if V8_TARGET_ARCH_S390X
     case kS390_Mul64:
+#endif
       __ Mul(i.OutputRegister(), i.InputRegister(0), i.InputRegister(1));
       break;
-#endif
     case kS390_MulHigh32:
-      UNIMPLEMENTED();
+      __ LoadRR(r1, i.InputRegister(0));
+      __ mr_z(r0, i.InputRegister(1));
+      __ LoadRR(i.OutputRegister(), r0);
       break;
     case kS390_MulHighU32:
-      UNIMPLEMENTED();
+      // UNIMPLEMENTED();
+      __ LoadRR(r1, i.InputRegister(0));
+      __ mlr(r0, i.InputRegister(1));
+      __ LoadRR(i.OutputRegister(), r0);
       break;
     case kS390_MulFloat64:
       // Ensure we don't clobber right
