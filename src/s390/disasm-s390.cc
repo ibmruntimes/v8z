@@ -667,6 +667,7 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case ARK: Format(instr, "ark\t'r5,'r6,'r3"); break;
       case AGRK: Format(instr, "agrk\t'r5,'r6,'r3"); break;
       case SGR: Format(instr, "sgr\t'r5,'r6"); break;
+      case SGFR: Format(instr, "sgfr\t'r5,'r6"); break;
       case SRK: Format(instr, "srk\t'r5,'r6,'r3"); break;
       case SGRK: Format(instr, "sgrk\t'r5,'r6,'r3"); break;
       case NGR: Format(instr, "ngr\t'r5,'r6"); break;
