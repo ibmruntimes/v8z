@@ -4156,7 +4156,7 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
       break;
     }
     case AGSI: {
-      int i2 = siyInstr->I2Value();
+      int8_t i2 = static_cast<int8_t>(siyInstr->I2Value());
       int b1 = siyInstr->B1Value();
       intptr_t b1_val = (b1 == 0) ? 0 : get_register(b1);
 
