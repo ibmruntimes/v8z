@@ -616,7 +616,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
         __ LoadComplementRR(kScratchReg, i.InputRegister(1));
         __ rll(i.OutputRegister(), i.InputRegister(0), kScratchReg);
       } else {
-        __ rll(i.OutputRegister(), i.InputRegister(0), Operand(32 - i.InputInt32(1)));
+        __ rll(i.OutputRegister(),
+            i.InputRegister(0), Operand(32 - i.InputInt32(1)));
         // DCHECK(0);  // Not implemented for now
       }
       break;
