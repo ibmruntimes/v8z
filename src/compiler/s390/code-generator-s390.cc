@@ -616,7 +616,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
         __ LoadComplementRR(kScratchReg, i.InputRegister(1));
         __ rll(i.OutputRegister(), i.InputRegister(0), kScratchReg);
       } else {
-        DCHECK(0);  // Not implemented for now
+        __ rll(i.OutputRegister(), i.InputRegister(0), Operand(32 - i.InputInt32(1)));
+        // DCHECK(0);  // Not implemented for now
       }
       break;
 #if V8_TARGET_ARCH_S390X
@@ -710,7 +711,6 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ LoadRR(i.OutputRegister(), r0);
       break;
     case kS390_MulHighU32:
-      // UNIMPLEMENTED();
       __ LoadRR(r1, i.InputRegister(0));
       __ mlr(r0, i.InputRegister(1));
       __ LoadRR(i.OutputRegister(), r0);
