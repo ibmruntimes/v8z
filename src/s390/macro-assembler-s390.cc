@@ -656,7 +656,6 @@ void MacroAssembler::ConvertDoubleToInt64(const DoubleRegister double_input,
       m = Condition(5);
       break;
     case kRoundToNearest:
-      // ToDo(Zen): 1 or 3?
       UNIMPLEMENTED();
       break;
     case kRoundToPlusInf:
@@ -5359,12 +5358,12 @@ void MacroAssembler::ShiftLeft(Register dst, Register src,
 // Shift left logical for 32-bit integer types.
 void MacroAssembler::ShiftLeft(Register dst, Register src,
                                Register val) {
-  DCHECK(!dst.is(val));  // The lr/sll path clobbers val.
   if (dst.is(src)) {
     sll(dst, val);
   } else if (CpuFeatures::IsSupported(DISTINCT_OPS)) {
     sllk(dst, src, val);
   } else {
+    DCHECK(!dst.is(val));  // The lr/sll path clobbers val.
     lr(dst, src);
     sll(dst, val);
   }
