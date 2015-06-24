@@ -882,7 +882,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
                               i.OutputRegister(), kScratchDoubleReg);
       break;
     case kS390_Float64ToFloat32:
-      UNIMPLEMENTED();
+      __ ledbr(i.OutputDoubleRegister(), i.InputDoubleRegister(0));
+      // UNIMPLEMENTED();
 // floating point single precision rounding
       break;
     case kS390_Float32ToFloat64:
