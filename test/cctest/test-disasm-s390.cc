@@ -100,7 +100,7 @@ TEST(TwoBytes) {
   COMPARE(ar(r3, r10), "1a3a           ar\tr3,r10");
   COMPARE(sr(r8, ip), "1b8c           sr\tr8,ip");
   COMPARE(mr_z(r0, r6), "1c06           mr\tr0,r6");
-  COMPARE(dr(r1, r5), "1d15           dr\tr1,r5");
+  COMPARE(dr(r0, r5), "1d05           dr\tr0,r5");
   COMPARE(or_z(r4, r2), "1642           or\tr4,r2");
   COMPARE(nr(fp, r9), "14b9           nr\tfp,r9");
   COMPARE(xr(r10, ip), "17ac           xr\tr10,ip");
