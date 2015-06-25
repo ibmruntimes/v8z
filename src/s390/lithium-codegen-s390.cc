@@ -4086,11 +4086,11 @@ void LCodeGen::DoMathAbs(LMathAbs* instr) {
 void LCodeGen::DoMathFloor(LMathFloor* instr) {
   DoubleRegister input = ToDoubleRegister(instr->value());
   Register result = ToRegister(instr->result());
-  Register input_high = scratch0();
+  Register input_gpr64 = scratch0();
   Register scratch = ip;
   Label done, exact;
 
-  __ TryInt32Floor(result, input, input_high, scratch, double_scratch0(),
+  __ TryInt32Floor(result, input, input_gpr64, scratch, double_scratch0(),
                    &done, &exact);
   DeoptimizeIf(al, instr->environment());
 
@@ -4099,7 +4099,7 @@ void LCodeGen::DoMathFloor(LMathFloor* instr) {
     // Test for -0.
     __ CmpP(result, Operand::Zero());
     __ bne(&done, Label::kNear);
-    __ Cmp32(input_high, Operand::Zero());
+    __ cghi(input_gpr64, Operand::Zero());
     DeoptimizeIf(lt, instr->environment());
   }
   __ bind(&done);

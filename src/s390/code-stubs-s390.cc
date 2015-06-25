@@ -411,18 +411,10 @@ void DoubleToIStub::Generate(MacroAssembler* masm) {
     __ LoadF(double_scratch, MemOperand(input_reg, double_offset));
 
     // Do fast-path convert from double to int.
-    __ ConvertDoubleToInt64(double_scratch,
-#if !V8_TARGET_ARCH_S390X
-                            scratch,
-#endif
-                            result_reg, d0);
+    __ ConvertDoubleToInt64(double_scratch, result_reg);
 
     // Test for overflow
-#if V8_TARGET_ARCH_S390X
     __ TestIfInt32(result_reg, r0);
-#else
-    __ TestIfInt32(scratch, result_reg, r0);
-#endif
     __ beq(&fastpath_done, Label::kNear);
   }
 

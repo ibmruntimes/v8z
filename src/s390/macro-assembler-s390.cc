@@ -678,11 +678,7 @@ void MacroAssembler::ConvertIntToFloat(const DoubleRegister dst,
 
 
 void MacroAssembler::ConvertDoubleToInt64(const DoubleRegister double_input,
-#if !V8_TARGET_ARCH_S390X
-                                          const Register dst_hi,
-#endif
                                           const Register dst,
-                                          const DoubleRegister double_dst,
                                           FPRoundingMode rounding_mode) {
   Condition m = Condition(0);
   switch (rounding_mode) {
@@ -704,10 +700,6 @@ void MacroAssembler::ConvertDoubleToInt64(const DoubleRegister double_input,
       break;
   }
   cgdbr(m, dst, double_input);
-  ldgr(double_dst, dst);
-#if !V8_TARGET_ARCH_S390X
-  srlg(dst_hi, dst, Operand(32));
-#endif
 }
 
 
@@ -2460,72 +2452,51 @@ void MacroAssembler::TestDoubleIsInt32(DoubleRegister double_input,
 
 void MacroAssembler::TryDoubleToInt32Exact(Register result,
                                            DoubleRegister double_input,
-                                           Register scratch,
+                                           Register,
                                            DoubleRegister double_scratch) {
   Label done;
   DCHECK(!double_input.is(double_scratch));
 
-  ConvertDoubleToInt64(double_input,
-#if !V8_TARGET_ARCH_S390X
-                       scratch,
-#endif
-                       result, double_scratch);
+  ConvertDoubleToInt64(double_input, result);
 
-#if V8_TARGET_ARCH_S390X
   TestIfInt32(result, r0);
-#else
-  TestIfInt32(scratch, result, r0);
-#endif
-  bne(&done);
+  bne(&done, Label::kNear);
 
   // convert back and compare
-  lgdr(scratch, double_scratch);
-  cdfbr(double_scratch, scratch);
+  cdfbr(double_scratch, result);
   cdbr(double_scratch, double_input);
   bind(&done);
 }
 
 void MacroAssembler::TryInt32Floor(Register result,
                                    DoubleRegister double_input,
-                                   Register input_high,
-                                   Register scratch,
+                                   Register input_gpr64,
+                                   Register,
                                    DoubleRegister double_scratch,
                                    Label* done,
                                    Label* exact) {
-  DCHECK(!result.is(input_high));
+  DCHECK(!result.is(input_gpr64));
   DCHECK(!double_input.is(double_scratch));
   Label exception;
 
-  // Move high word into input_high
-  StoreF(double_input, MemOperand(sp, -kDoubleSize));
-  lay(sp, MemOperand(sp, -kDoubleSize));
-  LoadlW(input_high, MemOperand(sp, Register::kExponentOffset));
-  la(sp, MemOperand(sp, kDoubleSize));
+  // Move double input into input_gpr64
+  lgdr(input_gpr64, double_input);
 
   // Test for NaN/Inf
-  ExtractBitMask(result, input_high, HeapNumber::kExponentMask);
+  DCHECK(0x7ff00000u == HeapNumber::kExponentMask);
+  ExtractBitRange(result, input_gpr64, 62, 52);
   CmpLogicalP(result, Operand(0x7ff));
-  beq(&exception);
+  beq(&exception, Label::kNear);
 
   // Convert (rounding to -Inf)
-  ConvertDoubleToInt64(double_input,
-#if !V8_TARGET_ARCH_S390X
-                       scratch,
-#endif
-                       result, double_scratch,
-                       kRoundToMinusInf);
+  ConvertDoubleToInt64(double_input, result, kRoundToMinusInf);
 
   // Test for overflow
-#if V8_TARGET_ARCH_S390X
   TestIfInt32(result, r0);
-#else
-  TestIfInt32(scratch, result, r0);
-#endif
-  bne(&exception);
+  bne(&exception, Label::kNear);
 
   // Test for exactness
-  lgdr(scratch, double_scratch);
-  cdfbr(double_scratch, scratch);
+  cdfbr(double_scratch, result);
   cdbr(double_scratch, double_input);
   beq(exact);
   b(done);
@@ -2536,23 +2507,9 @@ void MacroAssembler::TryInt32Floor(Register result,
 void MacroAssembler::TryInlineTruncateDoubleToI(Register result,
                                                 DoubleRegister double_input,
                                                 Label* done) {
-  DoubleRegister double_scratch = kScratchDoubleReg;
-#if !V8_TARGET_ARCH_S390X
-  Register scratch = ip;
-#endif
-
-  ConvertDoubleToInt64(double_input,
-#if !V8_TARGET_ARCH_S390X
-                       scratch,
-#endif
-                       result, double_scratch);
-
+  ConvertDoubleToInt64(double_input, result);
   // Test for overflow
-#if V8_TARGET_ARCH_S390X
   TestIfInt32(result, r0);
-#else
-  TestIfInt32(scratch, result, r0);
-#endif
   beq(done);
 }
 

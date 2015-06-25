@@ -697,11 +697,7 @@ class MacroAssembler: public Assembler {
   // Converts the double_input to an integer.  Note that, upon return,
   // the contents of double_dst will also hold the fixed point representation.
   void ConvertDoubleToInt64(const DoubleRegister double_input,
-#if !V8_TARGET_ARCH_S390X
-                            const Register dst_hi,
-#endif
                             const Register dst,
-                            const DoubleRegister double_dst,
                             FPRoundingMode rounding_mode = kRoundToZero);
 
   // Generates function and stub prologue code.
@@ -1734,13 +1730,13 @@ class MacroAssembler: public Assembler {
   void AssertNotSmi(Register object);
   void AssertSmi(Register object);
 
-#if V8_TARGET_ARCH_S390X
+  // Test if the 64-bit value fits within 32-bit integer range.
   inline void TestIfInt32(Register value, Register scratch) {
     // High bits must be identical to fit into an 32-bit integer
     lgfr(scratch, value);
-    CmpP(scratch, value);
+    cgr(scratch, value);
   }
-#else
+#if !V8_TARGET_ARCH_S390X
   inline void TestIfInt32(Register hi_word, Register lo_word,
                           Register scratch) {
     // High bits must be identical to fit into an 32-bit integer
