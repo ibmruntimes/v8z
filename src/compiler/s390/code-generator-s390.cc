@@ -649,9 +649,15 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
         UNIMPLEMENTED();  // Find correct instruction
       break;
     case kS390_RotLeftAndClearLeft64:
-//      __ rldicl(i.OutputRegister(), i.InputRegister(0), i.InputInt32(1),
-//                63 - i.InputInt32(2), i.OutputRCBit());
-        UNIMPLEMENTED();  // Find correct instruction
+      if (CpuFeatures::IsSupported(GENERAL_INSTR_EXT)) {
+        int shiftAmount = i.InputInt32(1);
+        int endBit = 63;
+        int startBit = 63 - i.InputInt32(2);
+        __ risbg(i.OutputRegister(), i.InputRegister(0), Operand(startBit),
+            Operand(endBit), Operand(shiftAmount), true);
+      } else {
+        UNIMPLEMENTED();
+      }
       break;
     case kS390_RotLeftAndClearRight64:
 //     __ rldicr(i.OutputRegister(), i.InputRegister(0), i.InputInt32(1),
