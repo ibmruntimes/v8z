@@ -1120,7 +1120,6 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
         __ bind(&cond_true);
         __ LoadImmP(reg, Operand(1));
         __ bind(&done_here);
-
       }
       break;
     case le:
