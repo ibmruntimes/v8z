@@ -1079,26 +1079,24 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
   // last output of the instruction.
   DCHECK_NE(0u, instr->OutputCount());
   Register reg = i.OutputRegister(instr->OutputCount() - 1);
-
   Condition cond = FlagsConditionToCondition(condition);
   switch (cond) {
     case eq:
     case lt:
       {
+      Label cond_true, done_here;
+      __ b(cond, &cond_true, Label::kNear);
       __ LoadImmP(reg, Operand::Zero());
-      __ LoadImmP(kScratchReg, Operand(1));
-      // __ isel(cond, reg, kScratchReg, reg, cr);
-      Label cond_false;
-      __ b(NegateCondition(cond), &cond_false, Label::kNear);
-      __ LoadRR(reg, kScratchReg);
-      __ bind(&cond_false);
+      __ b(&done_here);
+      __ bind(&cond_true);
+      __ LoadImmP(reg, Operand(1));
+      __ bind(&done_here);
       break;
       }
     case ne:
     case ge:
       {
       __ LoadImmP(reg, Operand(1));
-      // __ isel(NegateCondition(cond), reg, r0, reg, cr);
       Label cond_true;
       __ b(cond, &cond_true, Label::kNear);
       __ LoadRR(reg, r0);
@@ -1110,19 +1108,19 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
         __ LoadImmP(reg, Operand(1));
         __ LoadImmP(kScratchReg, Operand::Zero());
         __ bunordered(&done);
-        // __ isel(cond, reg, reg, kScratchReg, cr);
         Label cond_true;
         __ b(cond, &cond_true, Label::kNear);
         __ LoadRR(reg, kScratchReg);
         __ bind(&cond_true);
       } else {
+      Label cond_true, done_here;
+        __ b(cond, &cond_true, Label::kNear);
         __ LoadImmP(reg, Operand::Zero());
-        __ LoadImmP(kScratchReg, Operand(1));
-        // __ isel(cond, reg, kScratchReg, reg, cr);
-        Label cond_false;
-        __ b(NegateCondition(cond), &cond_false, Label::kNear);
-        __ LoadRR(reg, kScratchReg);
-        __ bind(&cond_false);
+        __ b(&done_here);
+        __ bind(&cond_true);
+        __ LoadImmP(reg, Operand(1));
+        __ bind(&done_here);
+
       }
       break;
     case le:
@@ -1130,7 +1128,6 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
         __ LoadImmP(reg, Operand::Zero());
         __ LoadImmP(kScratchReg, Operand(1));
         __ bunordered(&done);
-        // __ isel(NegateCondition(cond), reg, r0, kScratchReg, cr);
         Label cond_true, load_done;
         __ b(cond, &cond_true, Label::kNear);
         __ LoadRR(reg, r0);
@@ -1140,7 +1137,6 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
         __ bind(&load_done);
       } else {
         __ LoadImmP(reg, Operand(1));
-        // __ isel(NegateCondition(cond), reg, r0, reg, cr);
         Label cond_true;
         __ b(cond, &cond_true, Label::kNear);
         __ LoadRR(reg, r0);
