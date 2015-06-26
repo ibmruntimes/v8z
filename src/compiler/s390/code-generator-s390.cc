@@ -785,8 +785,9 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       UNIMPLEMENTED();
       break;
     case kS390_CeilFloat64:
-//      ASSEMBLE_FLOAT_UNOP_RC(frip);
-      UNIMPLEMENTED();
+      __ FloatCeiling64(i.OutputDoubleRegister(),
+                        i.InputDoubleRegister(0),
+                        kScratchReg);
       break;
     case kS390_TruncateFloat64:
       UNIMPLEMENTED();
