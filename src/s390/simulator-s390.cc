@@ -1743,8 +1743,8 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
       RRInstruction* rrinst = reinterpret_cast<RRInstruction*>(instr);
       int r1 = rrinst->R1Value();
       int r2 = rrinst->R2Value();
-      double r2_val = get_double_from_d_register(r2);
-      set_d_register_from_double(r1, r2_val);
+      int64_t r2_val = get_d_register(r2);
+      set_d_register(r1, r2_val);
       break;
     }
     case CR: {
@@ -2175,8 +2175,8 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       } else if (op == LA) {
         set_register(r1, addr);
       } else if (op == LD) {
-        double dbl_val = ReadDouble(addr);
-        set_d_register_from_double(r1, dbl_val);
+        int64_t dbl_val = *reinterpret_cast<int64_t*>(addr);
+        set_d_register(r1, dbl_val);
       }
       break;
     }
@@ -3617,9 +3617,8 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
         uint64_t value = get_register(r1);
         WriteDW(addr, value);
       } else if (op == STDY) {
-        double frs_val = get_double_from_d_register(r1);
-        int64_t *p = reinterpret_cast<int64_t *>(&frs_val);
-        WriteDW(addr, *p);
+        int64_t frs_val = get_d_register(r1);
+        WriteDW(addr, frs_val);
       } else if (op == STCY) {
         uint8_t value = get_low_register<uint32_t>(r1);
         WriteB(addr, value);
