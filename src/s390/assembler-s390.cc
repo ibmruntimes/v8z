@@ -3593,12 +3593,14 @@ void Assembler::stey(DoubleRegister r1, const MemOperand& opnd) {
 
 // Load (L)
 void Assembler::ld(DoubleRegister r1, const MemOperand& opnd) {
-  rx_form(LD, r1, opnd.rx(), opnd.rb(), opnd.offset());
+  DCHECK(is_uint12(opnd.offset()));
+  rx_form(LD, r1, opnd.rx(), opnd.rb(), opnd.offset() & 0xfff);
 }
 
 
 // Load (L)
 void Assembler::ldy(DoubleRegister r1, const MemOperand& opnd) {
+  DCHECK(is_int20(opnd.offset()));
   rxy_form(LDY, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
