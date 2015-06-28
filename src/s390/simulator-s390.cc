@@ -982,7 +982,7 @@ double Simulator::get_double_from_register_pair(int reg) {
   DCHECK((reg >= 0) && (reg < kNumGPRs) && ((reg % 2) == 0));
 
   double dm_val = 0.0;
-#if !V8_TARGET_ARCH_S390X  // doesn't make sense in 64bit mode
+#if 0 && !V8_TARGET_ARCH_S390X  // doesn't make sense in 64bit mode
   // Read the bits from the unsigned integer register_[] array
   // into the double precision floating point value and return it.
   char buffer[sizeof(fp_registers_[0])];
