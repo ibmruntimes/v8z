@@ -780,13 +780,14 @@ void Builtins::Generate_JSConstructStubForDerived(MacroAssembler* masm) {
     // sp[1]: new.target
     // sp[2]: number of arguments (smi-tagged)
     Label loop, no_args;
+    __ LoadAndTestRR(r1, r2);
     __ beq(&no_args/*, cr0*/);
-    __ ShiftLeftP(ip, r2, Operand(kPointerSizeLog2));
+    __ ShiftLeftP(ip, r1, Operand(kPointerSizeLog2));
     __ bind(&loop);
     __ SubP(ip, ip, Operand(kPointerSize));
     __ LoadP(r0, MemOperand(r4, ip));
     __ push(r0);
-    __ BranchOnCount(r2, &loop);
+    __ BranchOnCount(r1, &loop);
     __ bind(&no_args);
 
     __ AddP(r2, r2, Operand(1));
