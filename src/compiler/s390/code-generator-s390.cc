@@ -957,7 +957,16 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       ASSEMBLE_LOAD_FLOAT(ldeb);
       break;
     case kS390_LoadFloat64:
-      ASSEMBLE_LOAD_FLOAT(ld);
+      // ASSEMBLE_LOAD_FLOAT(ld);
+      do {
+        AddressingMode mode = kMode_None;
+        MemOperand operand = i.MemoryOperand(&mode);
+        if (is_uint12(operand.offset())) {
+          __ ld(i.OutputDoubleRegister(), operand);
+        } else {
+          __ ldy(i.OutputDoubleRegister(), operand);
+        }
+      } while(false);
       break;
     case kS390_StoreWord8:
       ASSEMBLE_STORE_INTEGER(StoreByte);
