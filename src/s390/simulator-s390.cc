@@ -1020,9 +1020,9 @@ void Simulator::GetFpArgs(double* x, double* y, intptr_t* z) {
 }
 
 
-// The return value is in d1.
+// The return value is in d0.
 void Simulator::SetFpResult(const double& result) {
-  set_d_register_from_double(1, result);
+  set_d_register_from_double(0, result);
 }
 
 
