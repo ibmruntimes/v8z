@@ -201,18 +201,6 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
   } while (0)
 
 
-#define ASSEMBLE_BINOP(asm_instr_reg, asm_instr_imm)           \
-  do {                                                         \
-    if (HasRegisterInput(instr, 1)) {                          \
-      __ asm_instr_reg(i.OutputRegister(), i.InputRegister(0), \
-                       i.InputRegister(1));                    \
-    } else {                                                   \
-      __ asm_instr_imm(i.OutputRegister(), i.InputRegister(0), \
-                       i.InputImmediate(1));                   \
-    }                                                          \
-  } while (0)
-
-
 #define ASSEMBLE_BINOP(asm_instr_reg, asm_instr_imm)        \
   do {                                                         \
     if (HasRegisterInput(instr, 1)) {                          \
@@ -588,7 +576,16 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       ASSEMBLE_BINOP(XorP, XorP);
       break;
     case kS390_ShiftLeft32:
-      ASSEMBLE_BINOP(ShiftLeft, ShiftLeft);
+      if (HasRegisterInput(instr, 1)) {
+        if (i.OutputRegister().is(i.InputRegister(1))) {
+          __ LoadRR(kScratchReg, i.InputRegister(1));
+          __ ShiftLeft(i.OutputRegister(), i.InputRegister(0), kScratchReg);
+        } else {
+          ASSEMBLE_BINOP(ShiftLeft, ShiftLeft);
+        }
+      } else {
+        ASSEMBLE_BINOP(ShiftLeft, ShiftLeft);
+      }
       break;
 #if V8_TARGET_ARCH_S390X
     case kS390_ShiftLeft64:
@@ -596,7 +593,16 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
 #endif
     case kS390_ShiftRight32:
-      ASSEMBLE_BINOP(ShiftRight, ShiftRight);
+      if (HasRegisterInput(instr, 1)) {
+          if (i.OutputRegister().is(i.InputRegister(1))) {
+            __ LoadRR(kScratchReg, i.InputRegister(1));
+            __ ShiftRight(i.OutputRegister(), i.InputRegister(0), kScratchReg);
+          } else {
+            ASSEMBLE_BINOP(ShiftRight, ShiftRight);
+          }
+      } else {
+        ASSEMBLE_BINOP(ShiftRight, ShiftRight);
+      }
       break;
 #if V8_TARGET_ARCH_S390X
     case kS390_ShiftRight64:
@@ -604,7 +610,17 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
 #endif
     case kS390_ShiftRightAlg32:
-      ASSEMBLE_BINOP(ShiftRightArith, ShiftRightArith);
+      if (HasRegisterInput(instr, 1)) {
+        if (i.OutputRegister().is(i.InputRegister(1))) {
+          __ LoadRR(kScratchReg, i.InputRegister(1));
+          __ ShiftRightArith(i.OutputRegister(), i.InputRegister(0),
+              kScratchReg);
+        } else {
+          ASSEMBLE_BINOP(ShiftRightArith, ShiftRightArith);
+        }
+      } else {
+        ASSEMBLE_BINOP(ShiftRightArith, ShiftRightArith);
+      }
       break;
 #if V8_TARGET_ARCH_S390X
     case kS390_ShiftRightAlg64:
