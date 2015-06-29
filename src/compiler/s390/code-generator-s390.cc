@@ -966,7 +966,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
         } else {
           __ ldy(i.OutputDoubleRegister(), operand);
         }
-      } while(false);
+      } while (false);
       break;
     case kS390_StoreWord8:
       ASSEMBLE_STORE_INTEGER(StoreByte);
