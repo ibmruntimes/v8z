@@ -2585,7 +2585,7 @@ void LCodeGen::DoCmpHoleAndBranch(LCmpHoleAndBranch* instr) {
   // TODO(joransiu): Use double to int instruction instead.
   __ stdy(input_reg, MemOperand(sp, -kDoubleSize));
   __ LoadlW(scratch, MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
-  __ CmpP(scratch, Operand(kHoleNanUpper32));
+  __ Cmp32(scratch, Operand(kHoleNanUpper32));
   EmitBranch(instr, eq);
 }
 
@@ -3470,7 +3470,7 @@ void LCodeGen::DoLoadKeyedFixedDoubleArray(LLoadKeyed* instr) {
       __ LoadlW(r0, MemOperand(scratch, elements,
           base_offset + Register::kExponentOffset));
     }
-    __ CmpP(r0, Operand(kHoleNanUpper32));
+    __ Cmp32(r0, Operand(kHoleNanUpper32));
     DeoptimizeIf(eq, instr, Deoptimizer::kHole);
   }
 }

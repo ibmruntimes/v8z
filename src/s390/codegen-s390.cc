@@ -387,7 +387,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   __ AddP(src_elements, Operand(kDoubleSize));
   // upper_bits: current element's upper 32 bit
   // src_elements: address of next element's upper 32 bit
-  __ CmpP(upper_bits, Operand(kHoleNanUpper32));
+  __ Cmp32(upper_bits, Operand(kHoleNanUpper32));
   __ beq(&convert_hole, Label::kNear);
 
   // Non-hole double, copy value into a heap number.
