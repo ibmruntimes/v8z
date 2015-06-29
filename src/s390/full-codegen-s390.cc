@@ -4270,12 +4270,13 @@ void FullCodeGenerator::EmitDefaultConstructorCallSuper(CallRuntime* expr) {
     __ AddP(r4, Operand(StandardFrameConstants::kCallerSPOffset));
 
     Label loop;
+    __ LoadRR(r1, r2);
     __ bind(&loop);
     // Pre-decrement in order to skip receiver.
     __ LoadP(r5, MemOperand(r4, -kPointerSize));
     __ lay(r4, MemOperand(r4, -kPointerSize));
     __ Push(r5);
-    __ BranchOnCount(r2, &loop);
+    __ BranchOnCount(r1, &loop);
   }
 
   __ bind(&args_set_up);
