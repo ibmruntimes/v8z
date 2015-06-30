@@ -2802,6 +2802,7 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
       set_low_register(r1, r1_val * mem_val);
       break;
     }
+    case LGBR:
     case LBR: {
       RREInstruction* rrinst = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rrinst->R1Value();
