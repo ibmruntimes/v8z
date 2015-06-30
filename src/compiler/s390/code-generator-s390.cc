@@ -655,8 +655,15 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ NotP(i.OutputRegister());
       break;
     case kS390_RotLeftAndMask32:
-//      __ rlwinm(i.OutputRegister(), i.InputRegister(0), i.InputInt32(1),
-//                31 - i.InputInt32(2), 31 - i.InputInt32(3), i.OutputRCBit());
+      if (CpuFeatures::IsSupported(GENERAL_INSTR_EXT)) {
+        int shiftAmount = i.InputInt32(1);
+        int endBit = 63 - i.InputInt32(3);
+        int startBit = 63 - i.InputInt32(2);
+        __ risbg(i.OutputRegister(), i.InputRegister(0), Operand(startBit),
+                 Operand(endBit), Operand(shiftAmount), true);
+      } else {
+        UNIMPLEMENTED();
+      }
       break;
 #if V8_TARGET_ARCH_S390X
     case kS390_RotLeftAndClear64:
@@ -788,10 +795,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       ASSEMBLE_FLOAT_MODULO();
       break;
     case kS390_Neg32:
-      __ lcr(i.OutputRegister(), i.InputRegister(0));
-      break;
     case kS390_Neg64:
-      __ lcgr(i.OutputRegister(), i.InputRegister(0));
+      __ LoadComplementRR(i.OutputRegister(), i.InputRegister(0));
       break;
     case kS390_MaxFloat64:
       ASSEMBLE_FLOAT_MAX(kScratchDoubleReg, kScratchReg);
