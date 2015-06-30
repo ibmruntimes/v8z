@@ -3577,6 +3577,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
     case STCY:
     case STHY:
     case LDY:
+    case LHY:
     case STDY: {
       // Miscellaneous Loads and Stores
       int r1 = rxyInstr->R1Value();
@@ -3625,6 +3626,9 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       } else if (op == STHY) {
         uint16_t value = get_low_register<uint32_t>(r1);
         WriteH(addr, value, instr);
+      } else if (op == LHY) {
+        int32_t result = static_cast<int32_t>(ReadH(addr, instr));
+        set_low_register(r1, result);
       }
       break;
     }
