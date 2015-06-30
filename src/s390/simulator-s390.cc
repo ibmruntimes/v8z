@@ -2243,9 +2243,8 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       if (op == ST) {
         WriteW(addr, r1_val, instr);
       } else if (op == STD) {
-        double frs_val = get_double_from_d_register(rxinst->R1Value());
-        int64_t *p = reinterpret_cast<int64_t *>(&frs_val);
-        WriteDW(addr, *p);
+        int64_t frs_val = get_d_register(rxinst->R1Value());
+        WriteDW(addr, frs_val);
       } else if (op == STE) {
         float frs_val = get_float_from_d_register(rxinst->R1Value());
         int32_t *p = reinterpret_cast<int32_t *>(&frs_val);
@@ -3609,8 +3608,8 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
         uint64_t mem_val = static_cast<uint64_t>(ReadWU(addr, instr));
         set_register(r1, mem_val);
       } else if (op == LDY) {
-        double dbl_val = ReadDouble(addr);
-        set_d_register_from_double(r1, dbl_val);
+        uint64_t dbl_val = *reinterpret_cast<uint64_t*>(addr);
+        set_d_register(r1, dbl_val);
       } else if (op == STY) {
         uint32_t value = get_low_register<uint32_t>(r1);
         WriteW(addr, value, instr);
