@@ -975,10 +975,17 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
 #endif
     case kS390_LoadFloat32:
-      ASSEMBLE_LOAD_FLOAT(ldeb);
+    do {
+      AddressingMode mode = kMode_None;
+      MemOperand operand = i.MemoryOperand(&mode);
+      if (is_uint12(operand.offset())) {
+        __ le_z(i.OutputDoubleRegister(), operand);
+      } else {
+        __ ley(i.OutputDoubleRegister(), operand);
+      }
+    } while (false);
       break;
     case kS390_LoadFloat64:
-      // ASSEMBLE_LOAD_FLOAT(ld);
       do {
         AddressingMode mode = kMode_None;
         MemOperand operand = i.MemoryOperand(&mode);

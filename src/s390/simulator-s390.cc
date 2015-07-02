@@ -2160,7 +2160,8 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
     case LLGHR: { UNIMPLEMENTED(); break; }
     case L:
     case LA:
-    case LD: {
+    case LD:
+    case LE: {
       RXInstruction* rxinst = reinterpret_cast<RXInstruction*>(instr);
       int b2 = rxinst->B2Value();
       int x2 = rxinst->X2Value();
@@ -2177,6 +2178,9 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       } else if (op == LD) {
         int64_t dbl_val = *reinterpret_cast<int64_t*>(addr);
         set_d_register(r1, dbl_val);
+      } else if (op == LE) {
+        float dbl_val = *reinterpret_cast<float*>(addr);
+        set_d_register_from_float(r1, dbl_val);
       }
       break;
     }
@@ -3578,8 +3582,9 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
     case STHY:
     case LDY:
     case LHY:
-    case STDY: {
-      // Miscellaneous Loads and Stores
+    case STDY:
+    case LEY: {
+    // Miscellaneous Loads and Stores
       int r1 = rxyInstr->R1Value();
       int x2 = rxyInstr->X2Value();
       int b2 = rxyInstr->B2Value();
@@ -3611,6 +3616,8 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       } else if (op == LDY) {
         uint64_t dbl_val = *reinterpret_cast<uint64_t*>(addr);
         set_d_register(r1, dbl_val);
+      } else if (op == LEY) {
+        UNIMPLEMENTED();
       } else if (op == STY) {
         uint32_t value = get_low_register<uint32_t>(r1);
         WriteW(addr, value, instr);

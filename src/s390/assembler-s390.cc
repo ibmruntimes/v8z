@@ -3605,6 +3605,20 @@ void Assembler::ldy(DoubleRegister r1, const MemOperand& opnd) {
 }
 
 
+// Load (S)
+void Assembler::le_z(DoubleRegister r1, const MemOperand& opnd) {
+    DCHECK(is_uint12(opnd.offset()));
+    rx_form(LE, r1, opnd.rx(), opnd.rb(), opnd.offset() & 0xfff);
+}
+
+
+// Load (S)
+void Assembler::ley(DoubleRegister r1, const MemOperand& opnd) {
+  DCHECK(is_int20(opnd.offset()));
+  rxy_form(LEY, r1, opnd.rx(), opnd.rb(), opnd.offset());
+}
+
+
 // Load Register-Register (L)
 void Assembler::ldr(DoubleRegister r1, DoubleRegister r2) {
   rr_form(LDR, r1, r2);

@@ -1655,6 +1655,8 @@ SS2_FORM(zap);
   // floating point instructions
   void ld(DoubleRegister r1, const MemOperand& opnd);
   void ldy(DoubleRegister r1, const MemOperand& opnd);
+  void le_z(DoubleRegister r1, const MemOperand& opnd);
+  void ley(DoubleRegister r1, const MemOperand& opnd);
   void ldr(DoubleRegister r1, DoubleRegister r2);
   void std(DoubleRegister r1, const MemOperand& opnd);
   void stdy(DoubleRegister r1, const MemOperand& opnd);
