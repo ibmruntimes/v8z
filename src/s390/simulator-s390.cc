@@ -3594,8 +3594,8 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
         int32_t mem_val = ReadB(addr);
         set_low_register(r1, mem_val);
       } else if (op == LGB) {
-        int8_t mem_val = ReadB(addr);
-        set_low_register(r1, mem_val);
+        int64_t mem_val = ReadB(addr);
+        set_register(r1, mem_val);
       } else if (op == LG) {
         int64_t mem_val = ReadDW(addr);
         set_register(r1, mem_val);
