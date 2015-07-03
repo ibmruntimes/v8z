@@ -3844,8 +3844,14 @@ void MacroAssembler::mov(Register dst, const Operand& src) {
 
 
 void MacroAssembler::Mul(Register dst, Register src1, Register src2) {
-  Move(dst, src1);
-  MulP(dst, src2);
+  if (dst.is(src2)) {
+    MulP(dst, src1);
+  } else if (dst.is(src1)) {
+    MulP(dst, src2);
+  } else {
+    Move(dst, src1);
+    MulP(dst, src2);
+  }
 }
 
 
