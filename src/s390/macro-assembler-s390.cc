@@ -1829,27 +1829,13 @@ void MacroAssembler::AddAndCheckForOverflow(Register dst, Register left,
                                             intptr_t right,
                                             Register overflow_dst,
                                             Register scratch) {
-  Register original_left = left;
   DCHECK(!dst.is(overflow_dst));
   DCHECK(!dst.is(scratch));
   DCHECK(!overflow_dst.is(scratch));
   DCHECK(!overflow_dst.is(left));
 
-  // C = A+B; C overflows if A/B have same sign and C has diff sign than A
-  if (dst.is(left)) {
-    // Preserve left.
-    original_left = overflow_dst;
-    LoadRR(original_left, left);
-  }
-  AddP(dst, left, Operand(right));
-  XorP(overflow_dst, dst, original_left);
-  if (right >= 0) {
-    AndP(overflow_dst, overflow_dst, dst);
-  } else {
-    DCHECK(0);
-    // andc(overflow_dst, overflow_dst, dst, SetRC);
-    AndP(overflow_dst, overflow_dst, dst);
-  }
+  mov(r1, Operand(right));
+  AddAndCheckForOverflow(dst, left, r1, overflow_dst, scratch);
 }
 
 
