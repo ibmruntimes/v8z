@@ -3808,12 +3808,12 @@ void Assembler::emit_double(double value) {
 
 
 void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
-  DeferredRelocInfo rinfo(pc_offset(), rmode, data);
+  RelocInfo rinfo(pc_, rmode, data, NULL);
   RecordRelocInfo(rinfo);
 }
 
 
-void Assembler::RecordRelocInfo(const DeferredRelocInfo& rinfo) {
+void Assembler::RecordRelocInfo(const RelocInfo& rinfo) {
   if (rinfo.rmode() >= RelocInfo::JS_RETURN &&
       rinfo.rmode() <= RelocInfo::DEBUG_BREAK_SLOT) {
     // Adjust code for new modes.
@@ -3829,13 +3829,14 @@ void Assembler::RecordRelocInfo(const DeferredRelocInfo& rinfo) {
         return;
       }
     }
+    DCHECK(buffer_space() >= kMaxRelocSize);  // too late to grow buffer here
     if (rinfo.rmode() == RelocInfo::CODE_TARGET_WITH_ID) {
-      DeferredRelocInfo reloc_info_with_ast_id(rinfo.position(), rinfo.rmode(),
-                                               RecordedAstId().ToInt());
+      RelocInfo reloc_info_with_ast_id(rinfo.pc(), rinfo.rmode(),
+                                               RecordedAstId().ToInt(), NULL);
       ClearRecordedAstId();
-      relocations_.push_back(reloc_info_with_ast_id);
+      reloc_info_writer.Write(&reloc_info_with_ast_id);
     } else {
-      relocations_.push_back(rinfo);
+      reloc_info_writer.Write(&rinfo);
     }
   }
 }

@@ -1871,7 +1871,7 @@ SS2_FORM(zap);
 
   // Record reloc info for current pc_
   void RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data = 0);
-  void RecordRelocInfo(const DeferredRelocInfo& rinfo);
+  void RecordRelocInfo(const RelocInfo& rinfo);
 
   // Block the emission of the trampoline pool before pc_offset.
   void BlockTrampolinePoolBefore(int pc_offset) {
