@@ -761,10 +761,11 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
 #endif
     case kS390_Div32:
     case kS390_DivU32:
+      // TODO(Tara): This clobbers r1, check if this is okay
       __ LoadRR(r0, i.InputRegister(0));
       __ srda(r0, Operand(32));
-      __ dr(r0, i.InputRegister(1));   // R0:R1 = R1 / divisor - R0 remainder
-      __ ltr(i.OutputRegister(), r0);  // Copy remainder to output reg
+      __ dr(r0, i.InputRegister(1));   // R0:R1 = R1 / divisor - R0 remainderi - R1 quotient
+      __ ltr(i.OutputRegister(), r1);  // Copy remainder to output reg
       break;
 
     case kS390_DivFloat64:
