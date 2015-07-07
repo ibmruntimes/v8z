@@ -1084,12 +1084,11 @@ void CodeGenerator::AssembleArchBranch(Instruction* instr, BranchInfo* branch) {
   Condition cond = FlagsConditionToCondition(condition);
   if (op == kS390_CmpFloat64) {
     // check for unordered if necessary
-    if (cond == le) {
+    // Branching to flabel/tlabel according to what's expected by tests
+    if (cond == le || cond == eq || cond == lt) {
       __ bunordered(flabel);
-      // Unnecessary for eq/lt since only FU bit will be set.
-    } else if (cond == gt) {
+    } else if (cond == gt || cond == ne || cond == ge) {
       __ bunordered(tlabel);
-      // Unnecessary for ne/ge since only FU bit will be set.
     }
   }
   __ b(cond, tlabel);
