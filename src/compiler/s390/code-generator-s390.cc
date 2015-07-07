@@ -764,7 +764,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       // TODO(Tara): This clobbers r1, check if this is okay
       __ LoadRR(r0, i.InputRegister(0));
       __ srda(r0, Operand(32));
-      __ dr(r0, i.InputRegister(1));   // R0:R1 = R1 / divisor - R0 remainderi - R1 quotient
+      __ dr(r0, i.InputRegister(1));   // R0:R1 = R1 / divisor -
+      // R0 remainderi - R1 quotient
       __ ltr(i.OutputRegister(), r1);  // Copy remainder to output reg
       break;
 
@@ -1134,11 +1135,11 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
     case ne:
     case ge:
       {
+      __ LoadImmP(reg, Operand::Zero());
+      Label cond_false;
+      __ b(NegateCondition(cond), &cond_false, Label::kNear);
       __ LoadImmP(reg, Operand(1));
-      Label cond_true;
-      __ b(cond, &cond_true, Label::kNear);
-      __ LoadRR(reg, r0);
-      __ bind(&cond_true);
+      __ bind(&cond_false);
      break;
       }
     case gt:
@@ -1152,12 +1153,10 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
         __ bind(&cond_true);
       } else {
       Label cond_true, done_here;
+        __ LoadImmP(reg, Operand(1));
         __ b(cond, &cond_true, Label::kNear);
         __ LoadImmP(reg, Operand::Zero());
-        __ b(&done_here);
         __ bind(&cond_true);
-        __ LoadImmP(reg, Operand(1));
-        __ bind(&done_here);
       }
       break;
     case le:
@@ -1165,19 +1164,16 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
         __ LoadImmP(reg, Operand::Zero());
         __ LoadImmP(kScratchReg, Operand(1));
         __ bunordered(&done);
-        Label cond_true, load_done;
-        __ b(cond, &cond_true, Label::kNear);
-        __ LoadRR(reg, r0);
-        __ b(&load_done, Label::kNear);
-        __ bind(&cond_true);
+        Label cond_false;
+        __ b(NegateCondition(cond), &cond_false, Label::kNear);
         __ LoadRR(reg, kScratchReg);
-        __ bind(&load_done);
+        __ bind(&cond_false);
       } else {
+        __ LoadImmP(reg, Operand::Zero());
+        Label cond_false;
+        __ b(NegateCondition(cond), &cond_false, Label::kNear);
         __ LoadImmP(reg, Operand(1));
-        Label cond_true;
-        __ b(cond, &cond_true, Label::kNear);
-        __ LoadRR(reg, r0);
-        __ bind(&cond_true);
+        __ bind(&cond_false);
       }
       break;
     default:
