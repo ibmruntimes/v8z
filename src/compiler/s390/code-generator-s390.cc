@@ -1119,28 +1119,8 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
   Register reg = i.OutputRegister(instr->OutputCount() - 1);
   Condition cond = FlagsConditionToCondition(condition);
   switch (cond) {
-    case eq:
-    case lt:
-      {
-      Label cond_true, done_here;
-      __ b(cond, &cond_true, Label::kNear);
-      __ LoadImmP(reg, Operand::Zero());
-      __ b(&done_here);
-      __ bind(&cond_true);
-      __ LoadImmP(reg, Operand(1));
-      __ bind(&done_here);
-      break;
-      }
     case ne:
     case ge:
-      {
-      __ LoadImmP(reg, Operand::Zero());
-      Label cond_false;
-      __ b(NegateCondition(cond), &cond_false, Label::kNear);
-      __ LoadImmP(reg, Operand(1));
-      __ bind(&cond_false);
-     break;
-      }
     case gt:
       if (check_unordered) {
         __ LoadImmP(reg, Operand(1));
@@ -1158,6 +1138,8 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
         __ bind(&cond_true);
       }
       break;
+    case eq:
+    case lt:
     case le:
       if (check_unordered) {
         __ LoadImmP(reg, Operand::Zero());
