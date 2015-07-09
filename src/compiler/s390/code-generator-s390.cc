@@ -289,16 +289,26 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
   } while (0)
 
 
+
 // Divide instruction dr will implicity use register pair
 // r0 & r1 below.
 // R0:R1 = R1 / divisor - R0 remainder
 // Copy remainder to output reg
-#define ASSEMBLE_MODULO(load_instr, scratch_reg)      \
+#define ASSEMBLE_MODULO(div_instr, shift_instr)       \
   do {                                                \
-  __ load_instr(r0, i.InputRegister(0));     \
-  __ srda(r0, Operand(32));                  \
-  __ dr(r0, i.InputRegister(1));             \
-  __ ltr(i.OutputRegister(), r0);            \
+  Label done, no_overflow_possible;                   \
+  __ Cmp32(i.InputRegister(0), Operand(kMinInt));     \
+  __ bne(&no_overflow_possible, Label::kNear);        \
+  __ Cmp32(i.InputRegister(1), Operand(-1));          \
+  __ b(ne, &no_overflow_possible, Label::kNear);      \
+  __ mov(i.OutputRegister(), Operand::Zero());        \
+  __ b(&done, Label::kNear);                          \
+  __ bind(&no_overflow_possible);                     \
+  __ LoadRR(r0, i.InputRegister(0));                  \
+  __ shift_instr(r0, Operand(32));                    \
+  __ div_instr(r0, i.InputRegister(1));               \
+  __ ltr(i.OutputRegister(), r0);                     \
+  __ bind(&done);                                     \
   } while (0)
 
 
@@ -782,18 +792,20 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
 }
       break;
     case kS390_Mod32:
+      ASSEMBLE_MODULO(dr, srda);
+      break;
     case kS390_ModU32:
-      ASSEMBLE_MODULO(lr, kScratchReg);
+      ASSEMBLE_MODULO(dlr, srdl);
       break;
 #if V8_TARGET_ARCH_S390x
     case kS390_Mod64:
+      ASSEMBLE_MODULO(dr, srda);
+      break;
     case kS390_ModU64:
-      ASSEMBLE_MODULO(lgr, kScratchReg);
+      ASSEMBLE_MODULO(dlr, srdl);
       break;
 #endif
     case kS390_ModFloat64:
-      // TODO(bmeurer): We should really get rid of this special instruction,
-      // and generate a CallAddress instruction instead.
       ASSEMBLE_FLOAT_MODULO();
       break;
     case kS390_Neg32:
