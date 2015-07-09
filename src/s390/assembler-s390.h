@@ -1616,6 +1616,7 @@ SS2_FORM(zap);
   void srag(Register r1, Register r3, const Operand& opnd);
   void srag(Register r1, Register r3, const Register opnd);
   void srda(Register r1, const Operand& opnd);
+  void srdl(Register r1, const Operand& opnd);
   void slag(Register r1, Register r3, const Operand& opnd);
   void slag(Register r1, Register r3, const Register opnd);
 

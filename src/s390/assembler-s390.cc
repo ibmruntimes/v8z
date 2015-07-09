@@ -2181,7 +2181,6 @@ RR_FORM_EMIT(spm, SPM)
 RXE_FORM_EMIT(sqeb, SQEB)
 RRE_FORM_EMIT(sqebr, SQEBR)
 RRE_FORM_EMIT(sqxbr, SQXBR)
-RS1_FORM_EMIT(srdl, SRDL)
 RXF_FORM_EMIT(srdt, SRDT)
 S_FORM_EMIT(srnm, SRNM)
 S_FORM_EMIT(srnmb, SRNMB)
@@ -3070,6 +3069,13 @@ void Assembler::srag(Register r1, Register r3, const Operand& opnd) {
 void Assembler::srda(Register r1, const Operand& opnd) {
   DCHECK(r1.code() % 2 == 0);
   rs_form(SRDA, r1, r0, r0, opnd.immediate());
+}
+
+
+// Shift Right Double Logical
+void Assembler::srdl(Register r1, const Operand& opnd) {
+  DCHECK(r1.code() % 2 == 0);
+  rs_form(SRDL, r1, r0, r0, opnd.immediate());
 }
 
 
