@@ -1199,10 +1199,7 @@ void CodeGenerator::AssembleArchTableSwitch(Instruction* instr) {
   Label* const table = AddJumpTable(cases, case_count);
   __ CmpLogicalP(input, Operand(case_count));
   __ bge(GetLabel(i.InputRpo(1)));
-  // TODO(Tara): Implement mov_label_addr in s930
-  (void)table;
-  DCHECK(0);
-//  __ mov_label_addr(kScratchReg, table);
+  __ larl(kScratchReg, table);
   __ ShiftLeftP(r0, input, Operand(kPointerSizeLog2));
   __ LoadP(kScratchReg, MemOperand(kScratchReg, r0));
   __ Jump(kScratchReg);
