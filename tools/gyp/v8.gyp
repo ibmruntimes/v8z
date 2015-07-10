@@ -1829,6 +1829,7 @@
           '../../src/generator.js',
           '../../src/harmony-atomics.js',
           '../../src/harmony-array-includes.js',
+          '../../src/harmony-concat-spreadable.js',
           '../../src/harmony-tostring.js',
           '../../src/harmony-regexp.js',
           '../../src/harmony-reflect.js',
