@@ -767,15 +767,20 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
 #if V8_TARGET_ARCH_S390X
     case kS390_Div64:
-    case kS390_DivU64:
 #endif
     case kS390_Div32:
-    case kS390_DivU32:
-      // TODO(Tara): This clobbers r1, check if this is okay
       __ LoadRR(r0, i.InputRegister(0));
       __ srda(r0, Operand(32));
-      __ dr(r0, i.InputRegister(1));   // R0:R1 = R1 / divisor -
-      // R0 remainderi - R1 quotient
+      __ dr(r0, i.InputRegister(1));
+      __ ltr(i.OutputRegister(), r1);
+      break;
+#if V8_TARGET_ARCH_S390X
+    case kS390_DivU64:
+#endif
+    case kS390_DivU32:
+      __ LoadRR(r0, i.InputRegister(0));
+      __ srdl(r0, Operand(32));
+      __ dlr(r0, i.InputRegister(1));   // R0:R1 = R1 / divisor -
       __ ltr(i.OutputRegister(), r1);  // Copy remainder to output reg
       break;
 
