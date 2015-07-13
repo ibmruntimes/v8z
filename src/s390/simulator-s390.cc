@@ -2351,6 +2351,24 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       SetS390ConditionCode<int32_t>(alu_out, 0);
       break;
     }
+    case SRDL: {
+      RSInstruction* rsInstr = reinterpret_cast<RSInstruction*>(instr);
+      int r1 = rsInstr->R1Value();
+      DCHECK(r1 % 2 == 0);  // must be a reg pair
+      int b2 = rsInstr->B2Value();
+      intptr_t d2 = rsInstr->D2Value();
+      // only takes rightmost 6bits
+      int64_t b2_val = b2 == 0 ? 0 : get_register(b2);
+      int shiftBits = (b2_val + d2) & 0x3F;
+      uint64_t opnd1 = static_cast<uint64_t>(get_low_register<uint32_t>(r1)) <<32;
+      uint64_t opnd2 = static_cast<uint64_t>(get_low_register<uint32_t>(r1+1));
+      uint64_t r1_val = opnd1 | opnd2;
+      uint64_t alu_out = r1_val >> shiftBits;
+      set_low_register(r1, alu_out >> 32);
+      set_low_register(r1 + 1, alu_out & 0x00000000FFFFFFFF);
+      SetS390ConditionCode<int32_t>(alu_out, 0);
+      break;
+    }
     default: {
       return DecodeFourByteArithmetic(instr);
     }
