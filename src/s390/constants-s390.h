@@ -1233,8 +1233,12 @@ class Instruction {
     if (sizeof(T) <= 4) {
       return *reinterpret_cast<const T*>(instr);
     } else {
-      // 6-byte instr requires a right shift of 16-bit after 64-bit load
-      return *reinterpret_cast<const T*>(instr) >> 16;
+      // We cannot read 8-byte instructon address directly, because for a
+      // six-byte instruction, the extra 2-byte address might not be
+      // allocated.
+      uint64_t fourBytes = *reinterpret_cast<const uint32_t*>(instr);
+      uint16_t twoBytes = *reinterpret_cast<const uint16_t*>(instr + 4);
+      return (fourBytes << 16 | twoBytes);
     }
   #else
     // Even on little endian hosts (simulation), the instructions
