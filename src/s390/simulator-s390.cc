@@ -1935,9 +1935,8 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
     }
     case LGDR: {
       // Load GPR from FPR (64 <- L)
-      double double_val = get_double_from_d_register(rreInst->R2Value());
-      uint64_t int_val = bit_cast<uint64_t, double>(double_val);
-      set_register(rreInst->R1Value(), int_val);
+      int64_t double_val = get_d_register(rreInst->R2Value());
+      set_register(rreInst->R1Value(), double_val);
       break;
     }
     case LTGR: {
