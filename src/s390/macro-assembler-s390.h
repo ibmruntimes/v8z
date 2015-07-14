@@ -1068,6 +1068,10 @@ class MacroAssembler : public Assembler {
   void FloatCeiling64(DoubleRegister double_output, DoubleRegister double_input,
                       Register scratch);
 
+  // Perform floor of double in input_register and store in double_output.
+  void FloatFloor64(DoubleRegister double_output, DoubleRegister double_input,
+                    Register scratch);
+
   // Performs a truncating conversion of a floating point number as used by
   // the JS bitwise operations. See ECMA-262 9.5: ToInt32. Goes to 'done' if it
   // succeeds, otherwise falls through if result is saturated. On return

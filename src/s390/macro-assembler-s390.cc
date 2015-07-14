@@ -2179,6 +2179,38 @@ void MacroAssembler::FloatCeiling64(DoubleRegister double_output,
 }
 
 
+void MacroAssembler::FloatFloor64(DoubleRegister double_output,
+    DoubleRegister double_input, Register scratch) {
+  Label not_zero, no_nan_inf, done, do_floor;
+  Register scratch2 = r0;
+
+  // Move high word into scratch
+  StoreF(double_input, MemOperand(sp, -kDoubleSize));
+  LoadlW(scratch, MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
+
+  // Test for NaN/Inf which results in NaN/Inf respectively
+  ExtractBitMask(scratch2, scratch, HeapNumber::kExponentMask);
+  CmpLogicalP(scratch2, Operand(0x7ff));
+  bne(&no_nan_inf, Label::kNear);
+  Move(double_output, double_input);
+  b(&done);
+  bind(&no_nan_inf);
+
+  // Test for double_input=+/- 0 which results in +/- 0 respectively
+  LoadDoubleLiteral(d0, 0, scratch2);
+  cdbr(double_input, d0);
+  bne(&do_floor, Label::kNear);
+  Move(double_output, double_input);
+  b(&done);
+  bind(&do_floor);
+
+  // Regular case
+  cgdbr(Condition(7), scratch, double_input);
+  cdfbr(double_output, scratch);
+  bind(&done);
+}
+
+
 void MacroAssembler::TryInlineTruncateDoubleToI(Register result,
                                                 DoubleRegister double_input,
                                                 Label* done) {
