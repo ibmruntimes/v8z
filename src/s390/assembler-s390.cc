@@ -3841,6 +3841,9 @@ void Assembler::RecordRelocInfo(const RelocInfo& rinfo) {
                                                RecordedAstId().ToInt(), NULL);
       ClearRecordedAstId();
       reloc_info_writer.Write(&reloc_info_with_ast_id);
+    } else if (rinfo.rmode() == RelocInfo::INTERNAL_REFERENCE) {
+      DeferredRelocInfo drinfo(pc_offset(), rinfo.rmode(), rinfo.data());
+      relocations_.push_back(drinfo);
     } else {
       reloc_info_writer.Write(&rinfo);
     }
@@ -3848,32 +3851,41 @@ void Assembler::RecordRelocInfo(const RelocInfo& rinfo) {
 }
 
 
+void Assembler::emit_label_addr(Label* label) {
+  CheckBuffer();
+  RecordRelocInfo(RelocInfo::INTERNAL_REFERENCE);
+  int position = link(label);
+  DCHECK(label->is_bound());
+  // Keep internal references relative until EmitRelocations.
+  emit_ptr(position);
+}
+
 void Assembler::EmitRelocations() {
-    EnsureSpaceFor(relocations_.size() * kMaxRelocSize);
+  EnsureSpaceFor(relocations_.size() * kMaxRelocSize);
 
-      for (std::vector<DeferredRelocInfo>::iterator it = relocations_.begin();
-           it != relocations_.end(); it++) {
-        RelocInfo::Mode rmode = it->rmode();
-        Address pc = buffer_ + it->position();
-        Code* code = NULL;
-        RelocInfo rinfo(pc, rmode, it->data(), code);
+    for (std::vector<DeferredRelocInfo>::iterator it = relocations_.begin();
+         it != relocations_.end(); it++) {
+      RelocInfo::Mode rmode = it->rmode();
+      Address pc = buffer_ + it->position();
+      Code* code = NULL;
+      RelocInfo rinfo(pc, rmode, it->data(), code);
 
-        // Fix up internal references now that they are guaranteed to be bound.
-        if (RelocInfo::IsInternalReference(rmode)) {
-          // Jump table entry
-          intptr_t pos = reinterpret_cast<intptr_t>(Memory::Address_at(pc));
-          Memory::Address_at(pc) = buffer_ + pos;
-        } else if (RelocInfo::IsInternalReferenceEncoded(rmode)) {
-          // mov sequence
-          intptr_t pos =
-             reinterpret_cast<intptr_t>(target_address_at(pc, code));
-          set_target_address_at(pc, code, buffer_ + pos, SKIP_ICACHE_FLUSH);
-        }
-
-        reloc_info_writer.Write(&rinfo);
+      // Fix up internal references now that they are guaranteed to be bound.
+      if (RelocInfo::IsInternalReference(rmode)) {
+        // Jump table entry
+        intptr_t pos = reinterpret_cast<intptr_t>(Memory::Address_at(pc));
+        Memory::Address_at(pc) = buffer_ + pos;
+      } else if (RelocInfo::IsInternalReferenceEncoded(rmode)) {
+        // mov sequence
+        intptr_t pos =
+           reinterpret_cast<intptr_t>(target_address_at(pc, code));
+        set_target_address_at(pc, code, buffer_ + pos, SKIP_ICACHE_FLUSH);
       }
 
-      reloc_info_writer.Finish();
+      reloc_info_writer.Write(&rinfo);
+    }
+
+    reloc_info_writer.Finish();
 }
 
 

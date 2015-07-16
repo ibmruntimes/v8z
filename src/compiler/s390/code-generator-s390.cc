@@ -1205,8 +1205,8 @@ void CodeGenerator::AssembleArchTableSwitch(Instruction* instr) {
   __ CmpLogicalP(input, Operand(case_count));
   __ bge(GetLabel(i.InputRpo(1)));
   __ larl(kScratchReg, table);
-  __ ShiftLeftP(r0, input, Operand(kPointerSizeLog2));
-  __ LoadP(kScratchReg, MemOperand(kScratchReg, r0));
+  __ ShiftLeftP(r1, input, Operand(kPointerSizeLog2));
+  __ LoadP(kScratchReg, MemOperand(kScratchReg, r1));
   __ Jump(kScratchReg);
 }
 
@@ -1462,9 +1462,7 @@ void CodeGenerator::AssembleSwap(InstructionOperand* source,
 
 void CodeGenerator::AssembleJumpTable(Label** targets, size_t target_count) {
   for (size_t index = 0; index < target_count; ++index) {
-// TODO(Tara): Implement emit_label_addr
-     DCHECK(0);
-//    __ emit_label_addr(targets[index]);
+    __ emit_label_addr(targets[index]);
   }
 }
 

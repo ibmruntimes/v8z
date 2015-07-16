@@ -1852,6 +1852,7 @@ SS2_FORM(zap);
   void PopulateConstantPool(ConstantPoolArray* constant_pool);
 
   void EmitRelocations();
+  void emit_label_addr(Label* label);
 
  public:
   byte* buffer_pos() const { return buffer_; }
