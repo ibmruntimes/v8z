@@ -2359,8 +2359,10 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       // only takes rightmost 6bits
       int64_t b2_val = b2 == 0 ? 0 : get_register(b2);
       int shiftBits = (b2_val + d2) & 0x3F;
-      uint64_t opnd1 = static_cast<uint64_t>(get_low_register<uint32_t>(r1)) <<32;
-      uint64_t opnd2 = static_cast<uint64_t>(get_low_register<uint32_t>(r1+1));
+      uint64_t opnd1 = static_cast<uint64_t>(
+          get_low_register<uint32_t>(r1)) << 32;
+      uint64_t opnd2 = static_cast<uint64_t>(
+          get_low_register<uint32_t>(r1 + 1));
       uint64_t r1_val = opnd1 | opnd2;
       uint64_t alu_out = r1_val >> shiftBits;
       set_low_register(r1, alu_out >> 32);
