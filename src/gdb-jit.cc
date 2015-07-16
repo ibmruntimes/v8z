@@ -59,6 +59,10 @@ class Writer BASE_EMBEDDED {
    public:
     Slot(Writer* w, uintptr_t offset) : w_(w), offset_(offset) { }
 
+#if V8_TARGET_ARCH_S390
+    Slot() { }
+#endif
+
     T* operator-> () {
       return w_->RawSlotAt<T>(offset_);
     }
@@ -82,6 +86,14 @@ class Writer BASE_EMBEDDED {
     *RawSlotAt<T>(position_) = val;
     position_ += sizeof(T);
   }
+
+#if V8_TARGET_ARCH_S390
+  void WriteChunk(const byte* source, uint32_t size) {
+    Ensure(position_ + size);
+    memcpy(RawSlotAt(position_, size), source, static_cast<size_t>(size));
+    position_ += size;
+  }
+#endif
 
   template<typename T>
   Slot<T> SlotAt(uintptr_t offset) {
@@ -161,6 +173,13 @@ class Writer BASE_EMBEDDED {
     DCHECK(offset < capacity_ && offset + sizeof(T) <= capacity_);
     return reinterpret_cast<T*>(&buffer_[offset]);
   }
+
+#if V8_TARGET_ARCH_S390
+  void* RawSlotAt(uintptr_t offset, uint32_t size) {
+    DCHECK(offset < capacity_ && offset + size <= capacity_);
+    return reinterpret_cast<void*>(&buffer_[offset]);
+  }
+#endif
 
   DebugObject* debug_object_;
   uintptr_t position_;
@@ -331,6 +350,9 @@ class ELFSection : public DebugSectionBase<ELFSectionHeader> {
 
   uint16_t index() const { return index_; }
   void set_index(uint16_t index) { index_ = index; }
+#if V8_TARGET_ARCH_S390
+  const char* getName() { return name_; }
+#endif
 
  protected:
   virtual void PopulateHeader(Writer::Slot<Header> header) {
@@ -397,6 +419,28 @@ class FullHeaderELFSection : public ELFSection {
         size_(size),
         flags_(flags) { }
 
+#if V8_TARGET_ARCH_S390
+  bool WriteBodyInternal(Writer* w) {
+    byte* pc = reinterpret_cast<byte*>(addr_);
+    uintptr_t start = w->position();
+    w->WriteChunk(pc, size_);
+    offset_ = start;
+    return true;
+  }
+
+  uintptr_t getAddress() {
+    return addr_;
+  }
+
+  uintptr_t getSize() {
+    return size_;
+  }
+
+  uintptr_t getOffset() {
+    return offset_;
+  }
+#endif
+
  protected:
   virtual void PopulateHeader(Writer::Slot<Header> header) {
     ELFSection::PopulateHeader(header);
@@ -445,6 +489,11 @@ class ELFStringTable : public ELFSection {
     header->offset = offset_;
     header->size = size_;
   }
+#if V8_TARGET_ARCH_S390
+  uintptr_t getSize() {
+    return size_;
+  }
+#endif
 
  private:
   void WriteString(const char* str) {
@@ -613,6 +662,9 @@ class ELF BASE_EMBEDDED {
   void Write(Writer* w) {
     WriteHeader(w);
     WriteSectionTable(w);
+#if V8_TARGET_ARCH_S390
+    WriteProgramHeader(w);
+#endif
     WriteSections(w);
   }
 
@@ -648,6 +700,9 @@ class ELF BASE_EMBEDDED {
   void WriteHeader(Writer* w) {
     DCHECK(w->position() == 0);
     Writer::Slot<ELFHeader> header = w->CreateSlotHere<ELFHeader>();
+#if V8_TARGET_ARCH_S390
+    header_ = header;
+#endif
 #if (V8_TARGET_ARCH_IA32 || V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_X87 || \
      (V8_TARGET_ARCH_X64 && V8_TARGET_ARCH_32_BIT))
     const uint8_t ident[16] =
@@ -665,7 +720,11 @@ class ELF BASE_EMBEDDED {
 #error Unsupported target architecture.
 #endif
     memcpy(header->ident, ident, 16);
+#if V8_TARGET_ARCH_S390
+    header->type = 2; //Executable file
+#else
     header->type = 1;
+#endif
 #if V8_TARGET_ARCH_IA32 || V8_TARGET_ARCH_X87
     header->machine = 3;
 #elif V8_TARGET_ARCH_X64
@@ -686,17 +745,86 @@ class ELF BASE_EMBEDDED {
 #error Unsupported target architecture.
 #endif
     header->version = 1;
+#if V8_TARGET_ARCH_S390
+    // Get code section entry
+    FullHeaderELFSection* text = static_cast<FullHeaderELFSection*>(SectionAt(2));
+    DCHECK(strcmp(text->getName(), ".text") == 0);
+    header->entry = text->getAddress();
+#else
     header->entry = 0;
+#endif
     header->pht_offset = 0;
     header->sht_offset = sizeof(ELFHeader);  // Section table follows header.
     header->flags = 0;
     header->header_size = sizeof(ELFHeader);
+#if V8_TARGET_ARCH_S390
+    header->pht_entry_size = sizeof(ProgramHeader);
+    header->pht_entry_num = 1;
+#else
     header->pht_entry_size = 0;
     header->pht_entry_num = 0;
+#endif
     header->sht_entry_size = sizeof(ELFSection::Header);
     header->sht_entry_num = sections_.length();
     header->sht_strtab_index = 1;
   }
+
+#if V8_TARGET_ARCH_S390
+#if V8_TARGET_ARCH_32_BIT
+  struct ProgramHeader {
+    uint32_t p_type;
+    uintptr_t p_offset;
+    uintptr_t p_vaddr;
+    uintptr_t p_paddr;
+    uintptr_t p_filesz;
+    uintptr_t p_memsz;
+    uint32_t p_flags;
+    uintptr_t p_align;
+  };
+#else
+  struct ProgramHeader {
+    uint32_t p_type;
+    uint32_t p_flags;
+    uintptr_t p_offset;
+    uintptr_t p_vaddr;
+    uintptr_t p_paddr;
+    uintptr_t p_filesz;
+    uintptr_t p_memsz;
+    uintptr_t p_align;
+  };
+#endif
+
+  enum ProgramFlags {
+    PF_X = 0x1, // Execute
+    PF_W = 0x2, // Write
+    PF_R = 0x4 // Read
+  };
+
+  void WriteProgramHeader(Writer* w) {
+    // Program header immediately follows file header and section table.
+    DCHECK(w->position() == ProgramHeaderOffset());
+    // Program header offset is updated after WriteSectionTable
+    header_->pht_offset = ProgramHeaderOffset();
+    program_ = w->CreateSlotHere<ProgramHeader>();
+    program_->p_type = 1;
+    // Should be the code section
+    FullHeaderELFSection* text = static_cast<FullHeaderELFSection*>(SectionAt(2));
+    DCHECK(strcmp(text->getName(), ".text") == 0);
+    program_->p_vaddr = text->getAddress();
+    program_->p_paddr = text->getAddress();
+    program_->p_filesz = text->getSize();
+    program_->p_memsz = text->getSize();
+    program_->p_flags = PF_X | PF_R;
+    program_->p_align = 0x1000;
+  }
+
+  uintptr_t ProgramHeaderOffset() {
+    ELFStringTable* strtab = static_cast<ELFStringTable*>(SectionAt(1));
+    return (sizeof(ELFHeader)
+        + sizeof(ELFSection::Header) * sections_.length()
+        + strtab->getSize());
+  }
+#endif
 
   void WriteSectionTable(Writer* w) {
     // Section headers table immediately follows file header.
@@ -729,10 +857,19 @@ class ELF BASE_EMBEDDED {
          i++) {
       sections_[i]->WriteBody(headers.at(i), w);
     }
+#if V8_TARGET_ARCH_S390
+    FullHeaderELFSection* text = static_cast<FullHeaderELFSection*>(SectionAt(2));
+    DCHECK(strcmp(text->getName(), ".text") == 0);
+    program_->p_offset =text->getOffset();
+#endif
   }
 
   Zone* zone_;
   ZoneList<ELFSection*> sections_;
+#if V8_TARGET_ARCH_S390
+  Writer::Slot<ProgramHeader> program_;
+  Writer::Slot<ELFHeader> header_;
+#endif
 };
 
 
@@ -979,7 +1116,16 @@ class CodeDescription BASE_EMBEDDED {
   }
 
   uintptr_t CodeSize() const {
+#if V8_TARGET_ARCH_S390
+    if (code_->is_crankshafted()) {
+      SafepointTable table(code_);
+      return CodeEnd() - CodeStart() - table.size();
+    } else {
+      return CodeEnd() - CodeStart();
+    }
+#else
     return CodeEnd() - CodeStart();
+#endif
   }
 
   bool has_script() {
@@ -1044,7 +1190,11 @@ static void CreateSymbolsTable(CodeDescription* desc,
               zone);
 
   symtab->Add(ELFSymbol(desc->name(),
+#if V8_TARGET_ARCH_S390
+                        desc->CodeStart(),
+#else
                         0,
+#endif
                         desc->CodeSize(),
                         ELFSymbol::BIND_GLOBAL,
                         ELFSymbol::TYPE_FUNC,
@@ -1929,7 +2079,11 @@ static JITCodeEntry* CreateELFObject(CodeDescription* desc, Isolate* isolate) {
   int text_section_index = elf.AddSection(
       new(&zone) FullHeaderELFSection(
           ".text",
+#if V8_TARGET_ARCH_S390
+          ELFSection::TYPE_PROGBITS,
+#else
           ELFSection::TYPE_NOBITS,
+#endif
           kCodeAlignment,
           desc->CodeStart(),
           0,
@@ -2078,7 +2232,7 @@ static void RemoveJITCodeEntries(CodeMap* map, const AddressRange& range) {
 static void AddJITCodeEntry(CodeMap* map, const AddressRange& range,
                             JITCodeEntry* entry, bool dump_if_enabled,
                             const char* name_hint) {
-#if defined(DEBUG) && !V8_OS_WIN
+#if (defined(DEBUG) && !V8_OS_WIN) | V8_TARGET_ARCH_S390
   static int file_num = 0;
   if (FLAG_gdbjit_dump && dump_if_enabled) {
     static const int kMaxFileNameSize = 64;
