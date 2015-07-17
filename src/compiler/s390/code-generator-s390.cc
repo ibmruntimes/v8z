@@ -296,19 +296,10 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
 // Copy remainder to output reg
 #define ASSEMBLE_MODULO(div_instr, shift_instr)       \
   do {                                                \
-  Label done, no_overflow_possible;                   \
-  __ Cmp32(i.InputRegister(0), Operand(kMinInt));     \
-  __ bne(&no_overflow_possible, Label::kNear);        \
-  __ Cmp32(i.InputRegister(1), Operand(-1));          \
-  __ b(ne, &no_overflow_possible, Label::kNear);      \
-  __ mov(i.OutputRegister(), Operand::Zero());        \
-  __ b(&done, Label::kNear);                          \
-  __ bind(&no_overflow_possible);                     \
   __ LoadRR(r0, i.InputRegister(0));                  \
   __ shift_instr(r0, Operand(32));                    \
   __ div_instr(r0, i.InputRegister(1));               \
   __ ltr(i.OutputRegister(), r0);                     \
-  __ bind(&done);                                     \
   } while (0)
 
 
