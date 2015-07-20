@@ -828,12 +828,12 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
                         kScratchReg);
       break;
     case kS390_TruncateFloat64:
-      UNIMPLEMENTED();
-//      ASSEMBLE_FLOAT_UNOP_RC(friz);
+      __ fidbra(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
+          v8::internal::Assembler::FIDBRA_ROUND_TOWARD_0);
       break;
     case kS390_RoundFloat64:
-      UNIMPLEMENTED();
-//      ASSEMBLE_FLOAT_UNOP_RC(frin);
+      __ fidbra(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
+          v8::internal::Assembler::FIDBRA_ROUND_TO_NEAREST_AWAY_FROM_0);
       break;
     case kS390_NegFloat64:
       ASSEMBLE_FLOAT_UNOP(lcdbr);
