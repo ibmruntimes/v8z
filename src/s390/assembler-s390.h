@@ -1119,7 +1119,6 @@ RRE_FORM(etnd);
 RX_FORM(ex);
 RIL1_FORM(exrl);
 RRF2_FORM(fidbr);
-RRF2_FORM(fidbra);
 RRF2_FORM(fidtr);
 RRF2_FORM(fiebr);
 RRF2_FORM(fiebra);
@@ -1703,6 +1702,14 @@ SS2_FORM(zap);
   void sqdbr(DoubleRegister r1, DoubleRegister r2);
   void lcdbr(DoubleRegister r1, DoubleRegister r2);
   void ldeb(DoubleRegister r1, const MemOperand& opnd);
+
+  enum FIDBRA_MASK3 {
+    FIDBRA_CURRENT_ROUNDING_MODE = 0,
+    FIDBRA_ROUND_TO_NEAREST_AWAY_FROM_0 = 1,
+    // ...
+    FIDBRA_ROUND_TOWARD_0 = 5
+  };
+  void fidbra(DoubleRegister d1, DoubleRegister d2, FIDBRA_MASK3 m3);
 
   // Branch Instructions
   void brct(Register r1, const Operand& opnd);

@@ -1921,8 +1921,6 @@ RRE_FORM_EMIT(esxtr, ESXTR)
 RRE_FORM_EMIT(etnd, ETND)
 RX_FORM_EMIT(ex, EX)
 RIL1_FORM_EMIT(exrl, EXRL)
-RRF2_FORM_EMIT(fidbr, FIDBR)
-RRF2_FORM_EMIT(fidbra, FIDBRA)
 RRF2_FORM_EMIT(fidtr, FIDTR)
 RRF2_FORM_EMIT(fiebr, FIEBR)
 RRF2_FORM_EMIT(fiebra, FIEBRA)
@@ -3706,6 +3704,14 @@ void Assembler::ldeb(DoubleRegister d1, const MemOperand& opnd) {
            opnd.offset());
 }
 
+// Load FP Integer
+void Assembler::fidbra(DoubleRegister d1, DoubleRegister d2, FIDBRA_MASK3 m3) {
+
+  rrf2_form(FIDBRA << 16 |
+      m3 * B12 |
+      d1.code() * B4 |
+      d2.code());
+}
 
 // Multiply and Add - MADBR R1, R3, R2
 // R1 = R3 * R2 + R1
