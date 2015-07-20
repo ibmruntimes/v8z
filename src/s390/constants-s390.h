@@ -1430,6 +1430,12 @@ class RRFInstruction : Instruction {
   inline int R3Value() const {
     return Bits<FourByteInstr, int>(15, 12);
   }
+  inline int M3Value() const {
+    return Bits<FourByteInstr, int>(15, 12);
+  }
+  inline int M4Value() const {
+    return Bits<FourByteInstr, int>(11, 8);
+  }
   inline int size() const { return 4; }
 };
 
