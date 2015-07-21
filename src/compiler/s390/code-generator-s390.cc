@@ -839,12 +839,16 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       ASSEMBLE_FLOAT_UNOP(lcdbr);
       break;
     case kS390_Cntlz32:
-//     __ cntlzw_(i.OutputRegister(), i.InputRegister(0));
+      {
+       Label done;
        __ llgfr(i.OutputRegister(), i.InputRegister(0));
-       __ flogr(kScratchReg, i.OutputRegister());
-       __ LoadRR(i.OutputRegister(), kScratchReg);
+       __ flogr(r0, i.OutputRegister());
+       __ LoadRR(i.OutputRegister(), r0);
+       __ CmpP(r0, Operand::Zero());
+       __ beq(&done, Label::kNear);
        __ SubP(i.OutputRegister(), Operand(32));
-      DCHECK(0);  // Check if this is correct
+       __ bind(&done);
+      }
       break;
     case kS390_Cmp32:
       ASSEMBLE_COMPARE(Cmp32, CmpLogical32);
