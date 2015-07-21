@@ -3706,7 +3706,6 @@ void Assembler::ldeb(DoubleRegister d1, const MemOperand& opnd) {
 
 // Load FP Integer
 void Assembler::fidbra(DoubleRegister d1, DoubleRegister d2, FIDBRA_MASK3 m3) {
-
   rrf2_form(FIDBRA << 16 |
       m3 * B12 |
       d1.code() * B4 |
