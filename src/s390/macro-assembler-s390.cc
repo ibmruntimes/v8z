@@ -2173,8 +2173,9 @@ void MacroAssembler::FloatCeiling64(DoubleRegister double_output,
   bind(&do_ceil);
 
   // Regular case
-  cgdbr(Condition(6), scratch, double_input);
-  cdfbr(double_output, scratch);
+  // cgdbr(Condition(6), scratch, double_input);
+  // cdfbr(double_output, scratch);
+  fidbra(double_output, double_input, FIDBRA_ROUND_TOWARD_POS_INF);
   bind(&done);
 }
 
@@ -2205,8 +2206,9 @@ void MacroAssembler::FloatFloor64(DoubleRegister double_output,
   bind(&do_floor);
 
   // Regular case
-  cgdbr(Condition(7), scratch, double_input);
-  cdfbr(double_output, scratch);
+  // cgdbr(Condition(7), scratch, double_input);
+  // cdfbr(double_output, scratch);
+  fidbra(double_output, double_input, FIDBRA_ROUND_TOWARD_NEG_INF);
   bind(&done);
 }
 
