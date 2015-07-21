@@ -3236,6 +3236,12 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
         case Assembler::FIDBRA_ROUND_TOWARD_0:
           set_d_register_from_double(r1, std::trunc(r2_val));
           break;
+        case Assembler::FIDBRA_ROUND_TOWARD_POS_INF:
+          set_d_register_from_double(r1, std::ceil(r2_val));
+          break;
+        case Assembler::FIDBRA_ROUND_TOWARD_NEG_INF:
+          set_d_register_from_double(r1, std::floor(r2_val));
+          break;
         default:
           UNIMPLEMENTED();
           break;
