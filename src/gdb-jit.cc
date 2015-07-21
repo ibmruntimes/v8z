@@ -721,7 +721,7 @@ class ELF BASE_EMBEDDED {
 #endif
     memcpy(header->ident, ident, 16);
 #if V8_TARGET_ARCH_S390
-    header->type = 2; //Executable file
+    header->type = 2;  // Executable file
 #else
     header->type = 1;
 #endif
@@ -747,7 +747,8 @@ class ELF BASE_EMBEDDED {
     header->version = 1;
 #if V8_TARGET_ARCH_S390
     // Get code section entry
-    FullHeaderELFSection* text = static_cast<FullHeaderELFSection*>(SectionAt(2));
+    FullHeaderELFSection* text =
+            static_cast<FullHeaderELFSection*>(SectionAt(2));
     DCHECK(strcmp(text->getName(), ".text") == 0);
     header->entry = text->getAddress();
 #else
@@ -795,9 +796,9 @@ class ELF BASE_EMBEDDED {
 #endif
 
   enum ProgramFlags {
-    PF_X = 0x1, // Execute
-    PF_W = 0x2, // Write
-    PF_R = 0x4 // Read
+    PF_X = 0x1,  // Execute
+    PF_W = 0x2,  // Write
+    PF_R = 0x4  // Read
   };
 
   void WriteProgramHeader(Writer* w) {
@@ -808,7 +809,8 @@ class ELF BASE_EMBEDDED {
     program_ = w->CreateSlotHere<ProgramHeader>();
     program_->p_type = 1;
     // Should be the code section
-    FullHeaderELFSection* text = static_cast<FullHeaderELFSection*>(SectionAt(2));
+    FullHeaderELFSection* text =
+            static_cast<FullHeaderELFSection*>(SectionAt(2));
     DCHECK(strcmp(text->getName(), ".text") == 0);
     program_->p_vaddr = text->getAddress();
     program_->p_paddr = text->getAddress();
@@ -858,9 +860,10 @@ class ELF BASE_EMBEDDED {
       sections_[i]->WriteBody(headers.at(i), w);
     }
 #if V8_TARGET_ARCH_S390
-    FullHeaderELFSection* text = static_cast<FullHeaderELFSection*>(SectionAt(2));
+    FullHeaderELFSection* text =
+            static_cast<FullHeaderELFSection*>(SectionAt(2));
     DCHECK(strcmp(text->getName(), ".text") == 0);
-    program_->p_offset =text->getOffset();
+    program_->p_offset = text->getOffset();
 #endif
   }
 
