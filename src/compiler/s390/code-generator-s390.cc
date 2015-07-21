@@ -925,7 +925,6 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ ledbr(i.OutputDoubleRegister(), i.InputDoubleRegister(0));
       break;
     case kS390_Float32ToFloat64:
-      // Nothing to do.
       __ ldebr(i.OutputDoubleRegister(), i.InputDoubleRegister(0));
       break;
     case kS390_Float64ExtractLowWord32:
@@ -984,26 +983,10 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
 #endif
     case kS390_LoadFloat32:
-    do {
-      AddressingMode mode = kMode_None;
-      MemOperand operand = i.MemoryOperand(&mode);
-      if (is_uint12(operand.offset())) {
-        __ le_z(i.OutputDoubleRegister(), operand);
-      } else {
-        __ ley(i.OutputDoubleRegister(), operand);
-      }
-    } while (false);
+      ASSEMBLE_LOAD_FLOAT(LoadShortF);
       break;
     case kS390_LoadFloat64:
-      do {
-        AddressingMode mode = kMode_None;
-        MemOperand operand = i.MemoryOperand(&mode);
-        if (is_uint12(operand.offset())) {
-          __ ld(i.OutputDoubleRegister(), operand);
-        } else {
-          __ ldy(i.OutputDoubleRegister(), operand);
-        }
-      } while (false);
+      ASSEMBLE_LOAD_FLOAT(LoadF);
       break;
     case kS390_StoreWord8:
       ASSEMBLE_STORE_INTEGER(StoreByte);
@@ -1049,10 +1032,10 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       ASSEMBLE_CHECKED_LOAD_INTEGER(LoadW);
       break;
     case kCheckedLoadFloat32:
-      ASSEMBLE_CHECKED_LOAD_FLOAT(ldeb, 32);
+      ASSEMBLE_CHECKED_LOAD_FLOAT(LoadShortF, 32);
       break;
     case kCheckedLoadFloat64:
-      ASSEMBLE_CHECKED_LOAD_FLOAT(ld, 64);
+      ASSEMBLE_CHECKED_LOAD_FLOAT(LoadF, 64);
       break;
     case kCheckedStoreWord8:
       ASSEMBLE_CHECKED_STORE_INTEGER(StoreByte);

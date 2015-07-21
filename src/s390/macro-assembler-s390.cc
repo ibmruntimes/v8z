@@ -5290,6 +5290,15 @@ void MacroAssembler::LoadF(DoubleRegister dst, const MemOperand& mem) {
 }
 
 
+void MacroAssembler::LoadShortF(DoubleRegister dst, const MemOperand& mem) {
+  if (is_uint12(mem.offset())) {
+    le_z(dst, mem);
+  } else {
+    ley(dst, mem);
+  }
+}
+
+
 void MacroAssembler::StoreF(DoubleRegister dst, const MemOperand& mem) {
   // for 32bit and 64bit we all use 64bit floating point regs
   if (is_uint12(mem.offset())) {

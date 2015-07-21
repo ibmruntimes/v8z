@@ -320,6 +320,7 @@ class MacroAssembler : public Assembler {
   void LoadlB(Register dst, const MemOperand& opnd);
 
   void LoadF(DoubleRegister dst, const MemOperand& opnd);
+  void LoadShortF(DoubleRegister dst, const MemOperand& opnd);
 
   // Load And Test
   void LoadAndTest32(Register dst, Register src);
