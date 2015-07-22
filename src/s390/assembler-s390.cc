@@ -3704,6 +3704,7 @@ void Assembler::ldeb(DoubleRegister d1, const MemOperand& opnd) {
            opnd.offset());
 }
 
+
 // Load FP Integer
 void Assembler::fidbra(DoubleRegister d1, DoubleRegister d2, FIDBRA_MASK3 m3) {
   rrf2_form(FIDBRA << 16 |
@@ -3711,6 +3712,7 @@ void Assembler::fidbra(DoubleRegister d1, DoubleRegister d2, FIDBRA_MASK3 m3) {
       d1.code() * B4 |
       d2.code());
 }
+
 
 // Multiply and Add - MADBR R1, R3, R2
 // R1 = R3 * R2 + R1
@@ -3864,6 +3866,7 @@ void Assembler::emit_label_addr(Label* label) {
   // Keep internal references relative until EmitRelocations.
   emit_ptr(position);
 }
+
 
 void Assembler::EmitRelocations() {
   EnsureSpaceFor(relocations_.size() * kMaxRelocSize);
