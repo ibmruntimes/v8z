@@ -4417,15 +4417,15 @@ void Simulator::CallInternal(byte*entry, int reg_arg_count) {
   // that they are preserved properly across JS execution.
   intptr_t callee_saved_value = icount_;
   if (reg_arg_count < 5) {
-    set_register(r6, callee_saved_value);
+    set_register(r6, callee_saved_value + 6);
   }
-  set_register(r7, callee_saved_value);
-  set_register(r8, callee_saved_value);
-  set_register(r9, callee_saved_value);
-  set_register(r10, callee_saved_value);
-  set_register(r11, callee_saved_value);
-  set_register(r12, callee_saved_value);
-  set_register(r13, callee_saved_value);
+  set_register(r7,  callee_saved_value + 7);
+  set_register(r8,  callee_saved_value + 8);
+  set_register(r9,  callee_saved_value + 9);
+  set_register(r10, callee_saved_value + 10);
+  set_register(r11, callee_saved_value + 11);
+  set_register(r12, callee_saved_value + 12);
+  set_register(r13, callee_saved_value + 13);
 
   // Start the simulation
   Execute();
@@ -4433,26 +4433,26 @@ void Simulator::CallInternal(byte*entry, int reg_arg_count) {
   // Check that the non-volatile registers have been preserved.
 #ifndef V8_TARGET_ARCH_S390X
   if (reg_arg_count < 5) {
-    DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r6));
+    DCHECK_EQ(callee_saved_value + 6, get_low_register<int32_t>(r6));
   }
-  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r7));
-  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r8));
-  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r9));
-  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r10));
-  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r11));
-  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r12));
-  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r13));
+  DCHECK_EQ(callee_saved_value + 7 , get_low_register<int32_t>(r7));
+  DCHECK_EQ(callee_saved_value + 8 , get_low_register<int32_t>(r8));
+  DCHECK_EQ(callee_saved_value + 9 , get_low_register<int32_t>(r9));
+  DCHECK_EQ(callee_saved_value + 10, get_low_register<int32_t>(r10));
+  DCHECK_EQ(callee_saved_value + 11, get_low_register<int32_t>(r11));
+  DCHECK_EQ(callee_saved_value + 12, get_low_register<int32_t>(r12));
+  DCHECK_EQ(callee_saved_value + 13, get_low_register<int32_t>(r13));
 #else
   if (reg_arg_count < 5) {
-    DCHECK_EQ(callee_saved_value, get_register(r6));
+    DCHECK_EQ(callee_saved_value + 6, get_register(r6));
   }
-  DCHECK_EQ(callee_saved_value, get_register(r7));
-  DCHECK_EQ(callee_saved_value, get_register(r8));
-  DCHECK_EQ(callee_saved_value, get_register(r9));
-  DCHECK_EQ(callee_saved_value, get_register(r10));
-  DCHECK_EQ(callee_saved_value, get_register(r11));
-  DCHECK_EQ(callee_saved_value, get_register(r12));
-  DCHECK_EQ(callee_saved_value, get_register(r13));
+  DCHECK_EQ(callee_saved_value + 7 , get_register(r7));
+  DCHECK_EQ(callee_saved_value + 8 , get_register(r8));
+  DCHECK_EQ(callee_saved_value + 9 , get_register(r9));
+  DCHECK_EQ(callee_saved_value + 10, get_register(r10));
+  DCHECK_EQ(callee_saved_value + 11, get_register(r11));
+  DCHECK_EQ(callee_saved_value + 12, get_register(r12));
+  DCHECK_EQ(callee_saved_value + 13, get_register(r13));
 #endif
 
   // Restore non-volatile registers with the original value.
@@ -4531,15 +4531,15 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   // that they are preserved properly across JS execution.
   intptr_t callee_saved_value = icount_;
   if (reg_arg_count < 5) {
-    set_register(r6, callee_saved_value);
+    set_register(r6, callee_saved_value + 6);
   }
-  set_register(r7, callee_saved_value);
-  set_register(r8, callee_saved_value);
-  set_register(r9, callee_saved_value);
-  set_register(r10, callee_saved_value);
-  set_register(r11, callee_saved_value);
-  set_register(r12, callee_saved_value);
-  set_register(r13, callee_saved_value);
+  set_register(r7,  callee_saved_value + 7);
+  set_register(r8,  callee_saved_value + 8);
+  set_register(r9,  callee_saved_value + 9);
+  set_register(r10, callee_saved_value + 10);
+  set_register(r11, callee_saved_value + 11);
+  set_register(r12, callee_saved_value + 12);
+  set_register(r13, callee_saved_value + 13);
 
   // Start the simulation
   Execute();
@@ -4547,26 +4547,26 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   // Check that the non-volatile registers have been preserved.
 #ifndef V8_TARGET_ARCH_S390X
   if (reg_arg_count < 5) {
-    DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r6));
+    DCHECK_EQ(callee_saved_value + 6, get_low_register<int32_t>(r6));
   }
-  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r7));
-  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r8));
-  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r9));
-  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r10));
-  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r11));
-  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r12));
-  DCHECK_EQ(callee_saved_value, get_low_register<int32_t>(r13));
+  DCHECK_EQ(callee_saved_value + 7 , get_low_register<int32_t>(r7));
+  DCHECK_EQ(callee_saved_value + 8 , get_low_register<int32_t>(r8));
+  DCHECK_EQ(callee_saved_value + 9 , get_low_register<int32_t>(r9));
+  DCHECK_EQ(callee_saved_value + 10, get_low_register<int32_t>(r10));
+  DCHECK_EQ(callee_saved_value + 11, get_low_register<int32_t>(r11));
+  DCHECK_EQ(callee_saved_value + 12, get_low_register<int32_t>(r12));
+  DCHECK_EQ(callee_saved_value + 13, get_low_register<int32_t>(r13));
 #else
   if (reg_arg_count < 5) {
-    DCHECK_EQ(callee_saved_value, get_register(r6));
+    DCHECK_EQ(callee_saved_value + 6, get_register(r6));
   }
-  DCHECK_EQ(callee_saved_value, get_register(r7));
-  DCHECK_EQ(callee_saved_value, get_register(r8));
-  DCHECK_EQ(callee_saved_value, get_register(r9));
-  DCHECK_EQ(callee_saved_value, get_register(r10));
-  DCHECK_EQ(callee_saved_value, get_register(r11));
-  DCHECK_EQ(callee_saved_value, get_register(r12));
-  DCHECK_EQ(callee_saved_value, get_register(r13));
+  DCHECK_EQ(callee_saved_value + 7 , get_register(r7));
+  DCHECK_EQ(callee_saved_value + 8 , get_register(r8));
+  DCHECK_EQ(callee_saved_value + 9 , get_register(r9));
+  DCHECK_EQ(callee_saved_value + 10, get_register(r10));
+  DCHECK_EQ(callee_saved_value + 11, get_register(r11));
+  DCHECK_EQ(callee_saved_value + 12, get_register(r12));
+  DCHECK_EQ(callee_saved_value + 13, get_register(r13));
 #endif
 
 
