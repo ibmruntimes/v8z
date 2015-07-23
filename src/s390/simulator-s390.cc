@@ -1929,8 +1929,9 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
     case LDGR: {
       // Load FPR from GPR (L <- 64)
       uint64_t int_val = get_register(rreInst->R2Value());
-      double double_val = bit_cast<double, uint64_t>(int_val);
-      set_d_register_from_double(rreInst->R1Value(), double_val);
+      // double double_val = bit_cast<double, uint64_t>(int_val);
+      // set_d_register_from_double(rreInst->R1Value(), double_val);
+      set_d_register(rreInst->R1Value(), int_val);
       break;
     }
     case LGDR: {
@@ -3229,7 +3230,7 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
       int m4 = rrfInst->M4Value();
       double r2_val = get_double_from_d_register(r2);
       DCHECK(m4 == 0);
-      switch(m3) {
+      switch (m3) {
         case Assembler::FIDBRA_ROUND_TO_NEAREST_AWAY_FROM_0:
           set_d_register_from_double(r1, std::round(r2_val));
           break;
