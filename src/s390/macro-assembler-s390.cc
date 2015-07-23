@@ -2197,7 +2197,7 @@ void MacroAssembler::FloatFloor64(DoubleRegister double_output,
   bind(&no_nan_inf);
 
   // Test for double_input=+/- 0 which results in +/- 0 respectively
-  LoadDoubleLiteral(d0, 0, scratch2);
+  LoadDoubleLiteral(d0, 0.0, scratch2);
   cdbr(double_input, d0);
   bne(&do_floor, Label::kNear);
   Move(double_output, double_input);
@@ -4948,16 +4948,22 @@ void MacroAssembler::LoadSmiLiteral(Register dst, Smi *smi) {
 
 
 void MacroAssembler::LoadDoubleLiteral(DoubleRegister result,
-                                       double value,
+                                       uint64_t value,
                                        Register scratch) {
-  uint64_t int_val = bit_cast<uint64_t, double>(value);
-  uint32_t hi_32 = int_val >> 32;
-  uint32_t lo_32 = static_cast<uint32_t>(int_val);
+  uint32_t hi_32 = value >> 32;
+  uint32_t lo_32 = static_cast<uint32_t>(value);
 
   // Load the 64-bit value into a GPR, then transfer it to FPR via LDGR
   iihf(scratch, Operand(hi_32));
   iilf(scratch, Operand(lo_32));
   ldgr(result, scratch);
+}
+
+void MacroAssembler::LoadDoubleLiteral(DoubleRegister result,
+                                       double value,
+                                       Register scratch) {
+  uint64_t int_val = bit_cast<uint64_t, double>(value);
+  LoadDoubleLiteral(result, int_val, scratch);
 }
 
 

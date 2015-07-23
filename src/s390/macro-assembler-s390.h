@@ -691,6 +691,8 @@ class MacroAssembler : public Assembler {
 
   // load a literal double value <value> to FPR <result>
   void LoadDoubleLiteral(DoubleRegister result, double value, Register scratch);
+  void LoadDoubleLiteral(DoubleRegister result,
+      uint64_t value, Register scratch);
 
   void StoreW(Register src, const MemOperand& mem,
                  Register scratch = no_reg);

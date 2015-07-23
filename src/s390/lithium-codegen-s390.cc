@@ -1938,8 +1938,8 @@ void LCodeGen::DoConstantS(LConstantS* instr) {
 void LCodeGen::DoConstantD(LConstantD* instr) {
   DCHECK(instr->result()->IsDoubleRegister());
   DoubleRegister result = ToDoubleRegister(instr->result());
-  double v = instr->value();
-  __ LoadDoubleLiteral(result, v, scratch0());
+  uint64_t bits = instr->bits();
+  __ LoadDoubleLiteral(result, bits, scratch0());
 }
 
 
