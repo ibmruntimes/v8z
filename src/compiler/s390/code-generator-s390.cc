@@ -709,8 +709,6 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     }
       break;
     case kS390_Sub32:
-      ASSEMBLE_BINOP(Sub32, Sub32);
-      break;
     case kS390_Sub64:
       ASSEMBLE_BINOP(SubP, SubP);
       break;
