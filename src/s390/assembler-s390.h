@@ -1935,9 +1935,8 @@ SS2_FORM(zap);
   inline void CheckBuffer();
   void GrowBuffer(int needed = 0);
 
-  inline int32_t emit_code_target(Handle<Code> target,
-                                  RelocInfo::Mode rmode,
-                                  TypeFeedbackId ast_id = TypeFeedbackId::None());
+  inline int32_t emit_code_target(Handle<Code> target, RelocInfo::Mode rmode,
+                     TypeFeedbackId ast_id = TypeFeedbackId::None());
   // S390 emitting helpers
   inline void emit2bytes(uint16_t x);
   inline void emit4bytes(uint32_t x);
