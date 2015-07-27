@@ -82,7 +82,7 @@ TEST_MAP = {
 
 TIMEOUT_DEFAULT = 60
 
-VARIANTS = ["default", "stress", "nocrankshaft"]
+VARIANTS = ["default", "stress", "turbofan", "nocrankshaft"]
 
 DEBUG_FLAGS = ["--nohard-abort", "--nodead-code-elimination",
                "--nofold-constants", "--enable-slow-asserts",
