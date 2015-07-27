@@ -4069,9 +4069,7 @@ void DirectCEntryStub::GenerateCall(MacroAssembler* masm, Register target) {
   __ Move(ip, target);
 #endif
 
-  intptr_t code = reinterpret_cast<intptr_t>(GetCode().location());
-  __ mov(r1, Operand(code, RelocInfo::CODE_TARGET));
-  __ Call(r1);  // Call the stub.
+  __ call(GetCode(), RelocInfo::CODE_TARGET);  // Call the stub.
 }
 
 
@@ -4853,16 +4851,16 @@ void ProfileEntryHookStub::MaybeCallEntryHook(MacroAssembler* masm) {
   if (masm->isolate()->function_entry_hook() != NULL) {
     PredictableCodeSizeScope predictable(masm,
 #if V8_TARGET_ARCH_S390X
-                                         48);
+                                         40);
 #elif V8_HOST_ARCH_S390
-                                         38);
+                                         36);
 #else
-                                         34);
+                                         32);
 #endif
     ProfileEntryHookStub stub(masm->isolate());
     __ CleanseP(r14);
     __ Push(r14, ip);
-    __ CallStub(&stub);
+    __ CallStub(&stub);  // BRASL
     __ Pop(r14, ip);
   }
 }

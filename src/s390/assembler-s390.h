@@ -545,6 +545,7 @@ class Assembler : public AssemblerBase {
   // Return the code target address of the patch debug break slot
   INLINE(static Address break_address_from_return_address(Address pc));
 
+  inline Handle<Object> code_target_object_handle_at(Address pc);
   // This sets the branch destination.
   // This is for calls and branches within generated code.
   inline static void deserialization_set_special_target_at(
@@ -576,49 +577,47 @@ class Assembler : public AssemblerBase {
   // Distance between the instruction referring to the address of the call
   // target and the return address.
 
-  // Call sequence is a FIXED_SEQUENCE:
-  // iihf    r8, 2148      @ call address hi  // <64-bit only>
-  // iilf    r8, 5728      @ call address lo
+  // Offset between call target address and return address
+  // for BRASL calls
+  // Patch will be appiled to other FIXED_SEQUENCE call
+  static const int kCallTargetAddressOffset = 6;
+
+  // The length of FIXED_SEQUENCE call
+  // iihf    r8, <address_hi>  // <64-bit only>
+  // iilf    r8, <address_lo>
   // basr    r14, r8
-  //                      @ return address
 #if V8_TARGET_ARCH_S390X
-  static const int kCallTargetAddressOffset = 14;
+  static const int kCallSequenceLength = 14;
 #else
-  static const int kCallTargetAddressOffset = 8;
+  static const int kCallSequenceLength = 8;
 #endif
 
-  // Distance between start of patched return sequence and the emitted address
-  // to jump to.
-  // Patched return sequence is a FIXED_SEQUENCE:
-  //   mov r0, <address>
-  //   mtlr r0
-  //   blrl
-  static const int kPatchReturnSequenceAddressOffset = 0 * kInstrSize;
-
-  // Distance between start of patched debug break slot and the emitted address
-  // to jump to.
-  // Patched debug break slot code is a FIXED_SEQUENCE:
-  //   mov r0, <address>
-  //   mtlr r0
-  //   blrl
-  static const int kPatchDebugBreakSlotAddressOffset = 0 * kInstrSize;
 
   // This is the length of the BreakLocationIterator::SetDebugBreakAtReturn()
   // code patch FIXED_SEQUENCE in bytes!
-#if V8_TARGET_ARCH_S390X
-  static const int kJSReturnSequenceLength = 16;
-#else
-  static const int kJSReturnSequenceLength = 10;
-#endif
+  // JS Return Sequence = Call Sequence + BKPT
+  static const int kJSReturnSequenceLength = kCallSequenceLength + 2;
 
   // This is the length of the code sequence from SetDebugBreakAtSlot()
   // FIXED_SEQUENCE in bytes!
-#if V8_TARGET_ARCH_S390X
-  static const int kDebugBreakSlotLength = 14;
-#else
-  static const int kDebugBreakSlotLength = 8;
-#endif
-  static const int kPatchDebugBreakSlotReturnOffset = kDebugBreakSlotLength;
+  static const int kDebugBreakSlotLength = kCallSequenceLength;
+  static const int kPatchDebugBreakSlotReturnOffset = kCallTargetAddressOffset;
+
+  // Length to patch between the start of the JS return sequence
+  // from SetDebugBreakAtReturn and the address from
+  // break_address_from_return_address.
+  //
+  // frame->pc() in Debug::SetAfterBreakTarget will point to BKPT in
+  // JS return sequence, so the length to patch will not include BKPT
+  // instruction length.
+  static const int kPatchReturnSequenceAddressOffset =
+      kCallSequenceLength - kPatchDebugBreakSlotReturnOffset;
+
+  // Length to patch between the start of the FIXED call sequence from
+  // SetDebugBreakAtSlot() and the the address from
+  // break_address_from_return_address.
+  static const int kPatchDebugBreakSlotAddressOffset =
+      kDebugBreakSlotLength - kPatchDebugBreakSlotReturnOffset;
 
   static inline int encode_crbit(const CRegister& cr, enum CRBit crbit) {
     return ((cr.code() * CRWIDTH) + crbit);
@@ -673,6 +672,9 @@ class Assembler : public AssemblerBase {
   // S390 native instructions
   // Indirect Conditional Branch via register
   void bcr(Condition m, Register target);
+
+  // Conditional Branch Relative Long
+  void brcl(Condition m, const Operand& opnd, bool isCodeTarget = false);
   // ---------------------------------------------------------------------------
   // Code generation
 
@@ -704,6 +706,10 @@ class Assembler : public AssemblerBase {
   void larl(Register r, Label *l) {
     larl(r, Operand(branch_offset(l, false)));
   }
+
+  void call(Handle<Code> target, RelocInfo::Mode rmode,
+            TypeFeedbackId ast_id = TypeFeedbackId::None());
+  void jump(Handle<Code> target, RelocInfo::Mode rmode, Condition cond);
 
   void mvc(const MemOperand& opnd1, const MemOperand& opnd2, uint32_t length);
   void asi(const MemOperand&, const Operand&);
@@ -933,7 +939,6 @@ RR_FORM(bctr);
 RI1_FORM(bras);
 RIL1_FORM(brasl);
 RI2_FORM(brc);
-RIL2_FORM(brcl);
 RIL1_FORM(brcth);
 RSI_FORM(brxh);
 RIE_FORM(brxhg);
@@ -1930,6 +1935,9 @@ SS2_FORM(zap);
   inline void CheckBuffer();
   void GrowBuffer(int needed = 0);
 
+  inline int32_t emit_code_target(Handle<Code> target,
+                                  RelocInfo::Mode rmode,
+                                  TypeFeedbackId ast_id = TypeFeedbackId::None());
   // S390 emitting helpers
   inline void emit2bytes(uint16_t x);
   inline void emit4bytes(uint32_t x);
@@ -2120,6 +2128,8 @@ SS2_FORM(zap);
   friend class RelocInfo;
   friend class CodePatcher;
   friend class BlockTrampolinePoolScope;
+
+  List< Handle<Code> > code_targets_;
 
   PositionsRecorder positions_recorder_;
   friend class PositionsRecorder;

@@ -965,7 +965,9 @@ static void GenerateMakeCodeYoungAgainCommon(MacroAssembler* masm) {
   // crawls in MakeCodeYoung. This seems a bit fragile.
 
   // Point r2 at the start of the PlatformCodeAge sequence.
-  __ LoadRR(r2, ip);
+  __ CleanseP(r14);
+  __ SubP(r14, Operand(kCodeAgingSequenceLength));
+  __ LoadRR(r2, r14);
 
   // The following registers must be saved and restored when calling through to
   // the runtime:
@@ -973,7 +975,7 @@ static void GenerateMakeCodeYoungAgainCommon(MacroAssembler* masm) {
   //   r3 - isolate
   //   ir - return address
   FrameScope scope(masm, StackFrame::MANUAL);
-  __ CleanseP(r14);
+  __ Pop(r14);
   __ LoadRR(r0, r14);
   __ MultiPush(r0.bit() | r2.bit() | r3.bit() | fp.bit());
   __ PrepareCallCFunction(2, 0, r4);
@@ -1007,7 +1009,9 @@ void Builtins::Generate_MarkCodeAsExecutedOnce(MacroAssembler* masm) {
   // crawls in MakeCodeYoung. This seems a bit fragile.
 
   // Point r2 at the start of the PlatformCodeAge sequence.
-  __ LoadRR(r2, ip);
+  __ CleanseP(r14);
+  __ SubP(r14, Operand(kCodeAgingSequenceLength));
+  __ LoadRR(r2, r14);
 
   // The following registers must be saved and restored when calling through to
   // the runtime:
@@ -1015,7 +1019,7 @@ void Builtins::Generate_MarkCodeAsExecutedOnce(MacroAssembler* masm) {
   //   r3 - isolate
   //   ir - return address
   FrameScope scope(masm, StackFrame::MANUAL);
-  __ CleanseP(r14);
+  __ Pop(r14);
   __ LoadRR(r0, r14);
   __ MultiPush(r0.bit() | r2.bit() | r3.bit() | fp.bit());
   __ PrepareCallCFunction(2, 0, r4);

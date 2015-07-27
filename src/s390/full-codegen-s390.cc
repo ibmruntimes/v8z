@@ -154,12 +154,6 @@ void FullCodeGenerator::Generate() {
   FrameScope frame_scope(masm_, StackFrame::MANUAL);
   int prologue_offset = masm_->pc_offset();
 
-  if (prologue_offset) {
-    // Prologue logic requires it's starting address in ip and the
-    // corresponding offset from the function entry.
-    prologue_offset += Instruction::kInstrSize;
-    __ AddP(ip, ip, Operand(prologue_offset));
-  }
   info->set_prologue_offset(prologue_offset);
   __ Prologue(info->IsCodePreAgingActive(), prologue_offset);
   info->AddNoFrameRange(0, masm_->pc_offset());
@@ -5395,28 +5389,27 @@ void FullCodeGenerator::ExitFinallyBlock() {
 #undef __
 
 #if V8_TARGET_ARCH_S390X
-static const FourByteInstr kInterruptBranchInstruction = 0xA7A40015;
-static const FourByteInstr kOSRBranchInstruction = 0xA7040015;
-static const int16_t kBackEdgeBranchOffset = 0x15 * 2;
+static const FourByteInstr kInterruptBranchInstruction = 0xA7A40011;
+static const FourByteInstr kOSRBranchInstruction = 0xA7040011;
+static const int16_t kBackEdgeBranchOffset = 0x11 * 2;
 #else
-static const FourByteInstr kInterruptBranchInstruction = 0xA7A4000E;
-static const FourByteInstr kOSRBranchInstruction = 0xA704000E;
-static const int16_t kBackEdgeBranchOffset = 0xE * 2;
+static const FourByteInstr kInterruptBranchInstruction = 0xA7A4000D;
+static const FourByteInstr kOSRBranchInstruction = 0xA704000D;
+static const int16_t kBackEdgeBranchOffset = 0xD * 2;
 #endif
 
 void BackEdgeTable::PatchAt(Code* unoptimized_code, Address pc,
                             BackEdgeState target_state,
                             Code* replacement_code) {
-  Address mov_address = Assembler::target_address_from_return_address(pc);
-  Address branch_address = mov_address - 4;
+  Address call_address = Assembler::target_address_from_return_address(pc);
+  Address branch_address = call_address - 4;
   CodePatcher patcher(branch_address, 4);
 
   switch (target_state) {
     case INTERRUPT: {
       //  <decrement profiling counter>
       //         bge     <ok>            ;; patched to GE BRC
-      //         iilf/iihf    r12, <interrupt stub address>
-      //         basr    r14, r12
+      //         brasrl    r14, <interrupt stub address>
       //  <reset profiling counter>
       //  ok-label
       patcher.masm()->brc(ge, Operand(kBackEdgeBranchOffset));
@@ -5426,9 +5419,7 @@ void BackEdgeTable::PatchAt(Code* unoptimized_code, Address pc,
     case OSR_AFTER_STACK_CHECK:
       //  <decrement profiling counter>
       //         brc   0x0, <ok>            ;;  patched to NOP BRC
-      //         mov     r12, <on-stack replacement address>
-      //         mtlr    r12
-      //         blrl
+      //         brasrl    r14, <interrupt stub address>
       //  <reset profiling counter>
       //  ok-label ----- pc_after points here
       patcher.masm()->brc(CC_NOP, Operand(kBackEdgeBranchOffset));
@@ -5437,20 +5428,20 @@ void BackEdgeTable::PatchAt(Code* unoptimized_code, Address pc,
 
   // Replace the stack check address in the mov sequence with the
   // entry address of the replacement code.
-  Assembler::set_target_address_at(mov_address, unoptimized_code,
+  Assembler::set_target_address_at(call_address, unoptimized_code,
                                    replacement_code->entry());
 
   unoptimized_code->GetHeap()->incremental_marking()->RecordCodeTargetPatch(
-      unoptimized_code, mov_address, replacement_code);
+      unoptimized_code, call_address, replacement_code);
 }
 
 
 BackEdgeTable::BackEdgeState BackEdgeTable::GetBackEdgeState(
     Isolate* isolate, Code* unoptimized_code, Address pc) {
-  Address mov_address = Assembler::target_address_from_return_address(pc);
-  Address branch_address = mov_address - 4;
+  Address call_address = Assembler::target_address_from_return_address(pc);
+  Address branch_address = call_address - 4;
   Address interrupt_address =
-      Assembler::target_address_at(mov_address, unoptimized_code);
+      Assembler::target_address_at(call_address, unoptimized_code);
 
   DCHECK(BRC == Instruction::S390OpcodeValue(branch_address));
   // For interrupt, we expect a branch greater than or equal

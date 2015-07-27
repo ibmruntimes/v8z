@@ -208,8 +208,9 @@ const char* DoubleRegister::AllocationIndexToString(int index) {
 // -----------------------------------------------------------------------------
 // Implementation of RelocInfo
 
-const int RelocInfo::kApplyMask = 1 << RelocInfo::INTERNAL_REFERENCE |
-                                  1 << RelocInfo::INTERNAL_REFERENCE_ENCODED;
+const int RelocInfo::kApplyMask = RelocInfo::kCodeTargetMask |
+    1 << RelocInfo::INTERNAL_REFERENCE |
+    1 << RelocInfo::INTERNAL_REFERENCE_ENCODED;
 
 
 bool RelocInfo::IsCodedSpecially() {
@@ -268,6 +269,7 @@ MemOperand::MemOperand(Register rx, Register rb, int32_t offset) {
 Assembler::Assembler(Isolate* isolate, void* buffer, int buffer_size)
     : AssemblerBase(isolate, buffer, buffer_size),
       recorded_ast_id_(TypeFeedbackId::None()),
+      code_targets_(100),
       positions_recorder_(this) {
   reloc_info_writer.Reposition(buffer_ + buffer_size_, pc_);
 
@@ -3252,10 +3254,14 @@ void Assembler::brc(Condition c, const Operand& opnd) {
 
 
 // Branch Relative on Condition (64)
-void Assembler::brcl(Condition c, const Operand& opnd) {
-  // BRCL actually encodes # of halfwords, so divide by 2.
-  int32_t numHalfwords = static_cast<int32_t>(opnd.immediate()) / 2;
-  Operand halfwordOp = Operand(numHalfwords);
+void Assembler::brcl(Condition c, const Operand& opnd, bool isCodeTarget) {
+  Operand halfwordOp = opnd;
+  // Operand for code targets will be index to code_targets_
+  if (!isCodeTarget) {
+    // BRCL actually encodes # of halfwords, so divide by 2.
+    int32_t numHalfwords = static_cast<int32_t>(opnd.immediate()) / 2;
+    halfwordOp = Operand(numHalfwords);
+  }
   ril_form(BRCL, c, halfwordOp);
 }
 
@@ -3275,6 +3281,27 @@ void Assembler::bct(Register r, const MemOperand& opnd) {
 // Branch on Count (64)
 void Assembler::bctg(Register r, const MemOperand& opnd) {
   rxy_form(BCTG, r, opnd.rx(), opnd.rb(), opnd.offset());
+}
+
+
+void Assembler::call(Handle<Code> target,
+                     RelocInfo::Mode rmode,
+                     TypeFeedbackId ast_id) {
+  positions_recorder()->WriteRecordedPositions();
+  EnsureSpace ensure_space(this);
+
+  int32_t target_index = emit_code_target(target, rmode, ast_id);
+  brasl(r14, Operand(target_index));
+}
+
+
+void Assembler::jump(Handle<Code> target,
+                     RelocInfo::Mode rmode,
+                     Condition cond) {
+  EnsureSpace ensure_space(this);
+
+  int32_t target_index = emit_code_target(target, rmode);
+  brcl(cond, Operand(target_index), true);
 }
 
 

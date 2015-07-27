@@ -54,6 +54,7 @@ namespace internal {
 bool CpuFeatures::SupportsCrankshaft() { return true; }
 
 
+// The modes possibly affected by apply must be in kApplyMask.
 void RelocInfo::apply(intptr_t delta, ICacheFlushMode icache_flush_mode) {
   // Might need to re-implement this once we have BRASL
   // absolute code pointer inside code object moves with the code object.
@@ -61,6 +62,18 @@ void RelocInfo::apply(intptr_t delta, ICacheFlushMode icache_flush_mode) {
     // Jump table entry
     Address target = Memory::Address_at(pc_);
     Memory::Address_at(pc_) = target + delta;
+  } else if (IsCodeTarget(rmode_)) {
+    bool flush_icache = icache_flush_mode != SKIP_ICACHE_FLUSH;
+    SixByteInstr instr = Instruction::InstructionBits(
+                                 reinterpret_cast<const byte*>(pc_));
+    int32_t dis = static_cast<int32_t>(instr & 0xFFFFFFFF) * 2  // halfwords
+                         - static_cast<int32_t>(delta);
+    instr >>= 32;
+    instr <<= 32;
+    instr |= static_cast<uint32_t>(dis/2);
+    Instruction::SetInstructionBits<SixByteInstr>(
+                         reinterpret_cast<byte*>(pc_), instr);
+    if (flush_icache) CpuFeatures::FlushICache(pc_, 6);
   } else {
     // mov sequence
     DCHECK(IsInternalReferenceEncoded(rmode_));
@@ -144,31 +157,23 @@ Address Assembler::target_address_from_return_address(Address pc) {
   // Returns the address of the call target from the return address that will
   // be returned to after a call.
   // Sequence is:
-  //    IIHF ip  // 64-bit only
-  //    IILF ip
-  //    BASR r14, ip
-
-  // TODO(joransiu): Define kConsts for these CallTargetSizes.
-#if V8_TARGET_ARCH_S390X
-  return pc - 14;
-#else
-  return pc - 8;
-#endif
+  //    BRASL r14, RI
+  return pc - kCallTargetAddressOffset;
 }
 
 
 Address Assembler::return_address_from_call_start(Address pc) {
   // Sequence is:
-  //    IIHF ip  // 64-bit only
-  //    IILF ip
-  //    BASR r14, ip
+  //    BRASL r14, RI
+  return pc + kCallTargetAddressOffset;
+}
 
-  // TODO(joransiu): Define kConsts for these CallTargetSizes.
-#if V8_TARGET_ARCH_S390X
-  return pc + 14;
-#else
-  return pc + 8;
-#endif
+
+Handle<Object> Assembler::code_target_object_handle_at(Address pc) {
+  SixByteInstr instr = Instruction::InstructionBits(
+                           reinterpret_cast<const byte*>(pc));
+  int index = instr & 0xFFFFFFFF;
+  return code_targets_[index];
 }
 
 
@@ -180,8 +185,12 @@ Object* RelocInfo::target_object() {
 
 Handle<Object> RelocInfo::target_object_handle(Assembler* origin) {
   DCHECK(IsCodeTarget(rmode_) || rmode_ == EMBEDDED_OBJECT);
-  return Handle<Object>(
-      reinterpret_cast<Object**>(Assembler::target_address_at(pc_, host_)));
+  if (rmode_ == EMBEDDED_OBJECT) {
+    return Handle<Object>(
+        reinterpret_cast<Object**>(Assembler::target_address_at(pc_, host_)));
+  } else {
+    return origin->code_target_object_handle_at(pc_);
+  }
 }
 
 
@@ -246,19 +255,23 @@ void RelocInfo::set_target_cell(Cell* cell, WriteBarrierMode write_barrier_mode,
 }
 
 #if V8_TARGET_ARCH_S390X
-    // NOP(2byte) + IIHF + IILF + BCR
-static const int kCodeAgingSequenceLength = 16;
-static const int kCodeAgingTargetDelta = 2;  // Jump past NOP to IIHF
+    // NOP(2byte) + PUSH + MOV + BASR =
+    // NOP + LAY + STG + IIHF + IILF + BASR
+static const int kCodeAgingSequenceLength = 28;
+static const int kCodeAgingTargetDelta = 14;  // Jump past NOP + PUSH to IIHF
     // LAY + 4 * STG + LA
 static const int kNoCodeAgeSequenceLength = 34;
 #else
-    // NOP + IILF + BCR
-static const int kCodeAgingSequenceLength = 10;
-static const int kCodeAgingTargetDelta = 2;  // Jump past NOP to IILF
 #if (V8_HOST_ARCH_S390)
+// NOP + NILH + LAY + ST + IILF + BASR
+static const int kCodeAgingSequenceLength = 24;
+static const int kCodeAgingTargetDelta = 16;  // Jump past NOP to IILF
 // NILH + LAY + 4 * ST + LA
 static const int kNoCodeAgeSequenceLength = 30;
 #else
+// NOP + LAY + ST + IILF + BASR
+static const int kCodeAgingSequenceLength = 20;
+static const int kCodeAgingTargetDelta = 12;  // Jump past NOP to IILF
 // LAY + 4 * ST + LA
 static const int kNoCodeAgeSequenceLength = 26;
 #endif
@@ -464,6 +477,26 @@ void Assembler::CheckTrampolinePoolQuick() {
     CheckTrampolinePool();
   }
 }
+int32_t Assembler::emit_code_target(Handle<Code> target,
+                                    RelocInfo::Mode rmode,
+                                    TypeFeedbackId ast_id) {
+  DCHECK(RelocInfo::IsCodeTarget(rmode));
+  if (rmode == RelocInfo::CODE_TARGET && !ast_id.IsNone()) {
+    SetRecordedAstId(ast_id);
+    RecordRelocInfo(RelocInfo::CODE_TARGET_WITH_ID);
+  } else {
+    RecordRelocInfo(rmode);
+  }
+
+  int current = code_targets_.length();
+  if (current > 0 && code_targets_.last().is_identical_to(target)) {
+    // Optimization if we keep jumping to the same code target.
+    current--;
+  } else {
+    code_targets_.Add(target);
+  }
+  return current;
+}
 
 // S390 specific emitting helpers
 void Assembler::emit2bytes(uint16_t x) {
@@ -531,6 +564,11 @@ Address Assembler::target_address_at(Address pc,
   SixByteInstr instr_1 = Instruction::InstructionBits(
                                         reinterpret_cast<const byte*>(pc));
 
+  if (BRASL == op1 || BRCL == op1) {
+    int32_t dis = static_cast<int32_t>(instr_1 & 0xFFFFFFFF) * 2;
+    return reinterpret_cast<Address>(reinterpret_cast<uint64_t>(pc) + dis);
+  }
+
 #if V8_TARGET_ARCH_S390X
   int instr1_length = Instruction::InstructionLength(
                                       reinterpret_cast<const byte*>(pc));
@@ -586,50 +624,64 @@ void Assembler::set_target_address_at(Address pc,
   SixByteInstr instr_1 = Instruction::InstructionBits(
                                             reinterpret_cast<const byte*>(pc));
   bool patched = false;
-#if V8_TARGET_ARCH_S390X
-  int instr1_length = Instruction::InstructionLength(
-                                            reinterpret_cast<const byte*>(pc));
-  Opcode op2 = Instruction::S390OpcodeValue(
-                            reinterpret_cast<const byte*>(pc + instr1_length));
-  SixByteInstr instr_2 = Instruction::InstructionBits(
-                            reinterpret_cast<const byte*>(pc + instr1_length));
-  // IIHF for hi_32, IILF for lo_32
-  if (IIHF == op1 && IILF == op2) {
-    // IIHF
+
+  if (BRASL == op1 || BRCL == op1) {
     instr_1 >>= 32;  // Zero out the lower 32-bits
     instr_1 <<= 32;
-    instr_1 |= reinterpret_cast<uint64_t>(target) >> 32;
-
-    Instruction::SetInstructionBits<SixByteInstr>(
-                                      reinterpret_cast<byte*>(pc), instr_1);
-
-    // IILF
-    instr_2 >>= 32;
-    instr_2 <<= 32;
-    instr_2 |= reinterpret_cast<uint64_t>(target) & 0xFFFFFFFF;
-
-    Instruction::SetInstructionBits<SixByteInstr>(
-                      reinterpret_cast<byte*>(pc + instr1_length), instr_2);
-    if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
-      CpuFeatures::FlushICache(pc, 12);
-    }
-    patched = true;
-  }
-#else
-  // IILF loads 32-bits
-  if (IILF == op1 || CFI == op1) {
-    instr_1 >>= 32;  // Zero out the lower 32-bits
-    instr_1 <<= 32;
-    instr_1 |= reinterpret_cast<uint32_t>(target);
-
+    int32_t halfwords = (target - pc)/2;  // number of halfwords
+    instr_1 |= static_cast<uint32_t>(halfwords);
     Instruction::SetInstructionBits<SixByteInstr>(
                                      reinterpret_cast<byte*>(pc), instr_1);
     if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
       CpuFeatures::FlushICache(pc, 6);
     }
     patched = true;
-  }
+  } else {
+#if V8_TARGET_ARCH_S390X
+    int instr1_length = Instruction::InstructionLength(
+                                            reinterpret_cast<const byte*>(pc));
+    Opcode op2 = Instruction::S390OpcodeValue(
+                            reinterpret_cast<const byte*>(pc + instr1_length));
+    SixByteInstr instr_2 = Instruction::InstructionBits(
+                            reinterpret_cast<const byte*>(pc + instr1_length));
+    // IIHF for hi_32, IILF for lo_32
+    if (IIHF == op1 && IILF == op2) {
+      // IIHF
+      instr_1 >>= 32;  // Zero out the lower 32-bits
+      instr_1 <<= 32;
+      instr_1 |= reinterpret_cast<uint64_t>(target) >> 32;
+
+      Instruction::SetInstructionBits<SixByteInstr>(
+                                      reinterpret_cast<byte*>(pc), instr_1);
+
+      // IILF
+      instr_2 >>= 32;
+      instr_2 <<= 32;
+      instr_2 |= reinterpret_cast<uint64_t>(target) & 0xFFFFFFFF;
+
+      Instruction::SetInstructionBits<SixByteInstr>(
+                      reinterpret_cast<byte*>(pc + instr1_length), instr_2);
+      if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
+        CpuFeatures::FlushICache(pc, 12);
+      }
+      patched = true;
+    }
+#else
+    // IILF loads 32-bits
+    if (IILF == op1 || CFI == op1) {
+      instr_1 >>= 32;  // Zero out the lower 32-bits
+      instr_1 <<= 32;
+      instr_1 |= reinterpret_cast<uint32_t>(target);
+
+      Instruction::SetInstructionBits<SixByteInstr>(
+                                     reinterpret_cast<byte*>(pc), instr_1);
+      if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
+        CpuFeatures::FlushICache(pc, 6);
+      }
+      patched = true;
+    }
 #endif
+  }
   if (!patched)
     UNREACHABLE();
 }

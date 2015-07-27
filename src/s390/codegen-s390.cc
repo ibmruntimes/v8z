@@ -677,11 +677,17 @@ void Code::PatchPlatformCodeAge(Isolate* isolate, byte* sequence, Code::Age age,
     CodePatcher patcher(sequence, young_length);
     Assembler::BlockTrampolinePoolScope block_trampoline_pool(patcher.masm());
     intptr_t target = reinterpret_cast<intptr_t>(stub->instruction_start());
-    // Don't use Call -- we need to preserve ip and lr.
-    // GenerateMakeCodeYoungAgainCommon for the stub code.
+    // We need to push lr on stack so that GenerateMakeCodeYoungAgainCommon
+    // knows where to pick up the return address
+    //
+    // Since we can no longer guarentee ip will hold the branch address
+    // because of BRASL, use Call so that GenerateMakeCodeYoungAgainCommon
+    // can calculate the branch address offset
     patcher.masm()->nop();  // marker to detect sequence (see IsOld)
+    patcher.masm()->CleanseP(r14);
+    patcher.masm()->Push(r14);
     patcher.masm()->mov(r2, Operand(target));
-    patcher.masm()->Jump(r2);
+    patcher.masm()->Call(r2);
     for (int i = 0;
          i < kNoCodeAgeSequenceLength - kCodeAgingSequenceLength; i += 2) {
       // TODO(joransiu): Create nop function to pad

@@ -69,9 +69,7 @@ void MacroAssembler::Jump(Address target, RelocInfo::Mode rmode, Condition cond,
 void MacroAssembler::Jump(Handle<Code> code, RelocInfo::Mode rmode,
                           Condition cond) {
   DCHECK(RelocInfo::IsCodeTarget(rmode));
-  // 'code' is always generated s390 code, never THUMB code
-  AllowDeferredHandleDereference embedding_raw_address;
-  Jump(reinterpret_cast<intptr_t>(code.location()), rmode, cond);
+  jump(code, rmode, cond);
 }
 
 
@@ -153,15 +151,14 @@ void MacroAssembler::Call(Address target, RelocInfo::Mode rmode,
 
 int MacroAssembler::CallSize(Handle<Code> code, RelocInfo::Mode rmode,
                              TypeFeedbackId ast_id, Condition cond) {
-  AllowDeferredHandleDereference using_raw_address;
-  return CallSize(reinterpret_cast<Address>(code.location()), rmode, cond);
+  return 6;  // BRASL
 }
 
 
 void MacroAssembler::Call(Handle<Code> code, RelocInfo::Mode rmode,
                           TypeFeedbackId ast_id, Condition cond) {
   BlockTrampolinePoolScope block_trampoline_pool(this);
-  DCHECK(RelocInfo::IsCodeTarget(rmode));
+  DCHECK(RelocInfo::IsCodeTarget(rmode) && cond == al);
 
 #ifdef DEBUG
   // Check the expected size before generating code to ensure we assume the same
@@ -170,13 +167,7 @@ void MacroAssembler::Call(Handle<Code> code, RelocInfo::Mode rmode,
   Label start;
   bind(&start);
 #endif
-
-  if (rmode == RelocInfo::CODE_TARGET && !ast_id.IsNone()) {
-    SetRecordedAstId(ast_id);
-    rmode = RelocInfo::CODE_TARGET_WITH_ID;
-  }
-  AllowDeferredHandleDereference using_raw_address;
-  Call(reinterpret_cast<Address>(code.location()), rmode, cond);
+  call(code, rmode, ast_id);
   DCHECK_EQ(expected_size, SizeOfCodeGeneratedSince(&start));
 }
 
@@ -697,8 +688,10 @@ void MacroAssembler::Prologue(bool code_pre_aging, int prologue_offset) {
       Code* stub = Code::GetPreAgedCodeAgeStub(isolate());
       intptr_t target = reinterpret_cast<intptr_t>(stub->instruction_start());
       nop();
+      CleanseP(r14);
+      Push(r14);
       mov(r2, Operand(target));
-      Jump(r2);
+      Call(r2);
       for (int i = 0;
            i < kNoCodeAgeSequenceLength - kCodeAgingSequenceLength; i += 2) {
         // TODO(joransiu): Create nop function to pad
