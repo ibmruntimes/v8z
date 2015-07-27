@@ -947,8 +947,7 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
     return;
   }
 
-  Address basrAddr = address + Assembler::kCallTargetAddressOffset - 2;
-  if (Instruction::S390OpcodeValue(basrAddr) != BASR) {
+  if (Instruction::S390OpcodeValue(address) != BASR) {
     return;
   }
   // The delta to the start of the map check instruction and the
