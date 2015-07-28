@@ -951,7 +951,7 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
     return;
   }
 
-  if (Instruction::S390OpcodeValue(address) != BASR) {
+  if (Instruction::S390OpcodeValue(address) != BRASL) {
     return;
   }
   // The delta to the start of the map check instruction and the
