@@ -267,6 +267,10 @@ static void GenerateKeyNameCheck(MacroAssembler* masm, Register key,
   // bit test is enough.
   // map: key map
   __ LoadlB(hash, FieldMemOperand(map, Map::kInstanceTypeOffset));
+  STATIC_ASSERT(kInternalizedTag == 0);
+  __ tmll(hash, Operand(kIsNotInternalizedMask));
+  __ bne(not_unique);
+
   __ bind(&unique);
 }
 
@@ -561,7 +565,7 @@ void KeyedLoadIC::GenerateMegamorphic(MacroAssembler* masm) {
   __ bind(&probe_dictionary);
   // r5: elements
   __ LoadP(r2, FieldMemOperand(receiver, HeapObject::kMapOffset));
-  __ LoadlB(r2, FieldMemOperand(r3, Map::kInstanceTypeOffset));
+  __ LoadlB(r2, FieldMemOperand(r2, Map::kInstanceTypeOffset));
   GenerateGlobalInstanceTypeCheck(masm, r2, &slow);
   // Load the property to r2.
   GenerateDictionaryLoad(masm, &slow, r5, key, r2, r7, r6);
