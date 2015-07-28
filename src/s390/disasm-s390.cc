@@ -514,6 +514,19 @@ int Decoder::FormatImmediate(Instruction *instr, const char* format) {
     out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_,
                                     "%d", value);
     return 2;
+  } else if (format[1] == 'e') {  // immediate in 16-47, but outputs as offset
+    RILInstruction* rilinstr = reinterpret_cast<RILInstruction*>(instr);
+    int32_t value = rilinstr->I2Value()*2;
+    if (value >= 0)
+      out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "*+");
+    else
+      out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "*");
+
+    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_,
+                                    "%d -> %s", value,
+                                    converter_.NameOfAddress(
+                                       reinterpret_cast<byte*>(instr) + value));
+    return 2;
   }
 
   UNREACHABLE();
@@ -768,7 +781,7 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
     case CLFI: Format(instr, "clfi\t'r1,'i7"); break;
     case CFI: Format(instr, "cfi\t'r1,'i2"); break;
     case CGFI: Format(instr, "cgfi\t'r1,'i2"); break;
-    case BRASL: Format(instr, "brasl\t'r1,'i2"); break;
+    case BRASL: Format(instr, "brasl\t'r1,'ie"); break;
     case BRCL: Format(instr, "brcl\t'm1,'i5"); break;
     case IIHF: Format(instr, "iihf\t'r1,'i7"); break;
     case IILF: Format(instr, "iilf\t'r1,'i7"); break;
