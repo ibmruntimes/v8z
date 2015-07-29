@@ -907,6 +907,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
 
   // Test whether result is zero.  Bail out to check for subnormal result.
   // Due to subnormals, x^-y == (1/x)^y does not hold in all cases.
+  __ lzdr(kDoubleRegZero);
   __ cdbr(double_result, kDoubleRegZero);
   __ bne(&done, Label::kNear);
   // double_exponent may not containe the exponent value if the input was a
