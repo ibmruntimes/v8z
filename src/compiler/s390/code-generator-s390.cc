@@ -953,7 +953,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ StoreW(i.InputRegister(0), MemOperand(sp, -kDoubleSize / 2));
       __ StoreW(i.InputRegister(1), MemOperand(sp, -kDoubleSize));
     #else
-      __ StoreW(i.InputRegister(0), MemOperand(sp, -kDoubleSize / 2));
+      __ StoreW(i.InputRegister(1), MemOperand(sp, -kDoubleSize / 2));
       __ StoreW(i.InputRegister(0), MemOperand(sp, -kDoubleSize));
     #endif
       __ ldy(i.OutputDoubleRegister(), MemOperand(sp, -kDoubleSize));
