@@ -4008,7 +4008,7 @@ void CompareICStub::GenerateKnownObjects(MacroAssembler* masm) {
   Handle<WeakCell> cell = Map::WeakCellForMap(known_map_);
   __ AndP(r4, r3, r2);
   __ JumpIfSmi(r4, &miss);
-  __ GetWeakValue(r7, cell);
+  __ GetWeakValue(r6, cell);
   __ LoadP(r4, FieldMemOperand(r2, HeapObject::kMapOffset));
   __ LoadP(r5, FieldMemOperand(r3, HeapObject::kMapOffset));
   __ CmpP(r4, r6);
