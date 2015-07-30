@@ -104,6 +104,13 @@ endif
 ifeq ($(gdbjit), off)
   GYPFLAGS += -Dv8_enable_gdbjit=0
 endif
+# perfelf=on/off
+ifeq ($(perfelf), on)
+  GYPFLAGS += -Dv8_perf_elf_annotate=1 -Dv8_enable_gdbjit=1
+endif
+ifeq ($(perfelf), off)
+  GYPFLAGS += -Dv8_perf_elf_annotate=0
+endif
 # vtunejit=on
 ifeq ($(vtunejit), on)
   GYPFLAGS += -Dv8_enable_vtunejit=1

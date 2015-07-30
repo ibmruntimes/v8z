@@ -15,6 +15,7 @@ import("//build/module_args/v8.gni")
 v8_deprecation_warnings = false
 v8_enable_disassembler = false
 v8_enable_gdbjit = false
+v8_perf_elf_annotate = false
 v8_enable_handle_zapping = true
 v8_enable_i18n_support = true
 v8_enable_verify_heap = false
@@ -83,6 +84,9 @@ config("features") {
   }
   if (v8_enable_gdbjit == true) {
     defines += [ "ENABLE_GDB_JIT_INTERFACE" ]
+  }
+  if (v8_perf_elf_annotate == true) {
+    defines += [ "PERF_ELF_ANNOTATE" ]
   }
   if (v8_object_print == true) {
     defines += [ "OBJECT_PRINT" ]

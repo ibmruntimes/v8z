@@ -59,7 +59,7 @@ class Writer BASE_EMBEDDED {
    public:
     Slot(Writer* w, uintptr_t offset) : w_(w), offset_(offset) { }
 
-#if V8_TARGET_ARCH_S390
+#if PERF_ELF_ANNOTATE
     Slot() { }
 #endif
 
@@ -87,7 +87,7 @@ class Writer BASE_EMBEDDED {
     position_ += sizeof(T);
   }
 
-#if V8_TARGET_ARCH_S390
+#if PERF_ELF_ANNOTATE
   void WriteChunk(const byte* source, uint32_t size) {
     Ensure(position_ + size);
     memcpy(RawSlotAt(position_, size), source, static_cast<size_t>(size));
@@ -174,7 +174,7 @@ class Writer BASE_EMBEDDED {
     return reinterpret_cast<T*>(&buffer_[offset]);
   }
 
-#if V8_TARGET_ARCH_S390
+#if PERF_ELF_ANNOTATE
   void* RawSlotAt(uintptr_t offset, uint32_t size) {
     DCHECK(offset < capacity_ && offset + size <= capacity_);
     return reinterpret_cast<void*>(&buffer_[offset]);
@@ -350,7 +350,7 @@ class ELFSection : public DebugSectionBase<ELFSectionHeader> {
 
   uint16_t index() const { return index_; }
   void set_index(uint16_t index) { index_ = index; }
-#if V8_TARGET_ARCH_S390
+#if PERF_ELF_ANNOTATE
   const char* getName() { return name_; }
 #endif
 
@@ -419,7 +419,7 @@ class FullHeaderELFSection : public ELFSection {
         size_(size),
         flags_(flags) { }
 
-#if V8_TARGET_ARCH_S390
+#if PERF_ELF_ANNOTATE
   bool WriteBodyInternal(Writer* w) {
     byte* pc = reinterpret_cast<byte*>(addr_);
     uintptr_t start = w->position();
@@ -489,7 +489,7 @@ class ELFStringTable : public ELFSection {
     header->offset = offset_;
     header->size = size_;
   }
-#if V8_TARGET_ARCH_S390
+#if PERF_ELF_ANNOTATE
   uintptr_t getSize() {
     return size_;
   }
@@ -662,7 +662,7 @@ class ELF BASE_EMBEDDED {
   void Write(Writer* w) {
     WriteHeader(w);
     WriteSectionTable(w);
-#if V8_TARGET_ARCH_S390
+#if PERF_ELF_ANNOTATE
     WriteProgramHeader(w);
 #endif
     WriteSections(w);
@@ -700,7 +700,7 @@ class ELF BASE_EMBEDDED {
   void WriteHeader(Writer* w) {
     DCHECK(w->position() == 0);
     Writer::Slot<ELFHeader> header = w->CreateSlotHere<ELFHeader>();
-#if V8_TARGET_ARCH_S390
+#if PERF_ELF_ANNOTATE
     header_ = header;
 #endif
 #if (V8_TARGET_ARCH_IA32 || V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_X87 || \
@@ -720,7 +720,7 @@ class ELF BASE_EMBEDDED {
 #error Unsupported target architecture.
 #endif
     memcpy(header->ident, ident, 16);
-#if V8_TARGET_ARCH_S390
+#if PERF_ELF_ANNOTATE
     header->type = 2;  // Executable file
 #else
     header->type = 1;
@@ -745,7 +745,7 @@ class ELF BASE_EMBEDDED {
 #error Unsupported target architecture.
 #endif
     header->version = 1;
-#if V8_TARGET_ARCH_S390
+#if PERF_ELF_ANNOTATE
     // Get code section entry
     FullHeaderELFSection* text =
             static_cast<FullHeaderELFSection*>(SectionAt(2));
@@ -758,7 +758,7 @@ class ELF BASE_EMBEDDED {
     header->sht_offset = sizeof(ELFHeader);  // Section table follows header.
     header->flags = 0;
     header->header_size = sizeof(ELFHeader);
-#if V8_TARGET_ARCH_S390
+#if PERF_ELF_ANNOTATE
     header->pht_entry_size = sizeof(ProgramHeader);
     header->pht_entry_num = 1;
 #else
@@ -770,7 +770,7 @@ class ELF BASE_EMBEDDED {
     header->sht_strtab_index = 1;
   }
 
-#if V8_TARGET_ARCH_S390
+#if PERF_ELF_ANNOTATE
 #if V8_TARGET_ARCH_32_BIT
   struct ProgramHeader {
     uint32_t p_type;
@@ -859,7 +859,7 @@ class ELF BASE_EMBEDDED {
          i++) {
       sections_[i]->WriteBody(headers.at(i), w);
     }
-#if V8_TARGET_ARCH_S390
+#if PERF_ELF_ANNOTATE
     FullHeaderELFSection* text =
             static_cast<FullHeaderELFSection*>(SectionAt(2));
     DCHECK(strcmp(text->getName(), ".text") == 0);
@@ -869,7 +869,7 @@ class ELF BASE_EMBEDDED {
 
   Zone* zone_;
   ZoneList<ELFSection*> sections_;
-#if V8_TARGET_ARCH_S390
+#if PERF_ELF_ANNOTATE
   Writer::Slot<ProgramHeader> program_;
   Writer::Slot<ELFHeader> header_;
 #endif
@@ -1119,7 +1119,7 @@ class CodeDescription BASE_EMBEDDED {
   }
 
   uintptr_t CodeSize() const {
-#if V8_TARGET_ARCH_S390
+#if PERF_ELF_ANNOTATE
     if (code_->is_crankshafted()) {
       SafepointTable table(code_);
       return CodeEnd() - CodeStart() - table.size();
@@ -1193,7 +1193,7 @@ static void CreateSymbolsTable(CodeDescription* desc,
               zone);
 
   symtab->Add(ELFSymbol(desc->name(),
-#if V8_TARGET_ARCH_S390
+#if PERF_ELF_ANNOTATE
                         desc->CodeStart(),
 #else
                         0,
@@ -2082,7 +2082,7 @@ static JITCodeEntry* CreateELFObject(CodeDescription* desc, Isolate* isolate) {
   int text_section_index = elf.AddSection(
       new(&zone) FullHeaderELFSection(
           ".text",
-#if V8_TARGET_ARCH_S390
+#if PERF_ELF_ANNOTATE
           ELFSection::TYPE_PROGBITS,
 #else
           ELFSection::TYPE_NOBITS,
@@ -2235,7 +2235,7 @@ static void RemoveJITCodeEntries(CodeMap* map, const AddressRange& range) {
 static void AddJITCodeEntry(CodeMap* map, const AddressRange& range,
                             JITCodeEntry* entry, bool dump_if_enabled,
                             const char* name_hint) {
-#if (defined(DEBUG) && !V8_OS_WIN) | V8_TARGET_ARCH_S390
+#if (defined(DEBUG) && !V8_OS_WIN) | PERF_ELF_ANNOTATE
   static int file_num = 0;
   if (FLAG_gdbjit_dump && dump_if_enabled) {
     static const int kMaxFileNameSize = 64;
