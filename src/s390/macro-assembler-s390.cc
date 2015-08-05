@@ -604,6 +604,7 @@ void MacroAssembler::CanonicalizeNaN(const DoubleRegister dst,
   // Turn potential sNaN into qNaN
   if (!dst.is(src))
     ldr(dst, src);
+  lzdr(kDoubleRegZero);
   adbr(dst, kDoubleRegZero);
 }
 
@@ -5634,11 +5635,11 @@ void MacroAssembler::TruncatingDiv(Register result, Register dividend,
   LoadP(r1, MemOperand(sp));
   la(sp, MemOperand(sp, kPointerSize));
 #endif
-  // Mul(result, dividend, r0);
-  if (divisor > 0 && mag.multiplier < 0) {
+  bool neg = (mag.multiplier & (static_cast<uint32_t>(1) << 31)) != 0;
+  if (divisor > 0 && neg) {
     AddP(result, dividend);
   }
-  if (divisor < 0 && mag.multiplier > 0) {
+  if (divisor < 0 && !neg && mag.multiplier > 0) {
     SubP(result, dividend);
   }
   if (mag.shift > 0)
