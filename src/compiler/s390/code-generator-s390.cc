@@ -660,8 +660,9 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
         int shiftAmount = i.InputInt32(1);
         int endBit = 63 - i.InputInt32(3);
         int startBit = 63 - i.InputInt32(2);
+        __ rll(i.OutputRegister(), i.InputRegister(0), Operand(shiftAmount));
         __ risbg(i.OutputRegister(), i.InputRegister(0), Operand(startBit),
-                 Operand(endBit), Operand(shiftAmount), true);
+                 Operand(endBit), Operand(0), true);
       } else {
         UNIMPLEMENTED();
       }
