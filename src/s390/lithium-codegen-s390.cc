@@ -2597,6 +2597,7 @@ void LCodeGen::DoCompareMinusZeroAndBranch(LCompareMinusZeroAndBranch* instr) {
 
   if (rep.IsDouble()) {
     DoubleRegister value = ToDoubleRegister(instr->value());
+    __ lzdr(kDoubleRegZero);
     __ cdbr(value, kDoubleRegZero);
     EmitFalseBranch(instr, ne);
     // TODO(joransiu): Use doubleToInt instruction.

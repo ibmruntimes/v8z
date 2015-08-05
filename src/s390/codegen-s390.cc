@@ -608,6 +608,7 @@ void MathExpGenerator::EmitMathExp(MacroAssembler* masm, DoubleRegister input,
   __ b(&done, Label::kNear);
 
   __ bind(&zero);
+  __ lzdr(kDoubleRegZero);
   __ ldr(result, kDoubleRegZero);
   __ b(&done, Label::kNear);
 
