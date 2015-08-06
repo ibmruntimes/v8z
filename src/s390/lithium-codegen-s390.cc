@@ -3003,15 +3003,23 @@ void LCodeGen::DoDeferredInstanceOfKnownGlobal(LInstanceOfKnownGlobal* instr,
   {
     Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm_);
     Handle<Code> code = stub.GetCode();
-    // Include instructions below in delta: mov + call
-    // IILF + IIHF + Call
-    int delta = masm_->SizeOfCodeGeneratedSince(map_check) +
-                2 * sizeof(SixByteInstr) + masm_->CallSize(code);
+    // Calculate delta for optimal case: LoadImmP + Call
+    // LoadImmP - LHI for 31-bit or LGHI for 64-bit
+    int delta = masm_->SizeOfCodeGeneratedSince(map_check)
+      + sizeof(FourByteInstr) + masm_->CallSize(code);
     // r7 is used to communicate the offset to the location of the map check.
     if (is_int16(delta)) {
-      delta = delta - 2 * sizeof(SixByteInstr) + sizeof(FourByteInstr);
       __ LoadImmP(r7, Operand(delta));
     } else {
+      // Fix delta for mov + Call
+      delta -= sizeof(FourByteInstr);
+#if V8_TARGET_ARCH_S390X
+      // IILF + IIHF for 64-bit
+      delta += 6 * 2;
+#else
+      // IILF for 31-bit
+      delta += 6;
+#endif
       __ mov(r7, Operand(delta));
     }
     CallCodeGeneric(code, RelocInfo::CODE_TARGET, instr,
