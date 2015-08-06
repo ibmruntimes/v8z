@@ -661,7 +661,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
         int endBit = 63 - i.InputInt32(3);
         int startBit = 63 - i.InputInt32(2);
         __ rll(i.OutputRegister(), i.InputRegister(0), Operand(shiftAmount));
-        __ risbg(i.OutputRegister(), i.InputRegister(0), Operand(startBit),
+        __ risbg(i.OutputRegister(), i.OutputRegister(), Operand(startBit),
                  Operand(endBit), Operand::Zero(), true);
       } else {
         UNIMPLEMENTED();
