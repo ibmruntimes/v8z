@@ -16,8 +16,7 @@ namespace compiler {
 
 #define __ masm()->
 
-
-#define kScratchReg r13
+#define kScratchReg ip
 
 
 // Adds S390-specific methods to convert InstructionOperands.
