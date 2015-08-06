@@ -317,10 +317,7 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
 #define ASSEMBLE_FLOAT_MAX(double_scratch_reg, general_scratch_reg)           \
   do {                                                                        \
     Label ge, done;                                                           \
-    __ ldr(double_scratch_reg, i.InputDoubleRegister(0));                     \
-    __ sdbr(double_scratch_reg, i.InputDoubleRegister(1));                    \
-    __ lgdr(general_scratch_reg, double_scratch_reg);                         \
-    __ CmpP(general_scratch_reg, Operand::Zero());                            \
+    __ cdbr(i.InputDoubleRegister(0), i.InputDoubleRegister(1));              \
     __ bge(&ge, Label::kNear);                                                \
     __ Move(i.OutputDoubleRegister(), i.InputDoubleRegister(1));              \
     __ b(&done, Label::kNear);                                                \
@@ -333,10 +330,7 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
 #define ASSEMBLE_FLOAT_MIN(double_scratch_reg, general_scratch_reg)           \
   do {                                                                        \
     Label ge, done;                                                           \
-    __ ldr(double_scratch_reg, i.InputDoubleRegister(0));                     \
-    __ sdbr(double_scratch_reg, i.InputDoubleRegister(1));                    \
-    __ lgdr(general_scratch_reg, double_scratch_reg);                         \
-    __ CmpP(general_scratch_reg, Operand::Zero());                            \
+    __ cdbr(i.InputDoubleRegister(0), i.InputDoubleRegister(1));              \
     __ bge(&ge, Label::kNear);                                                \
     __ Move(i.OutputDoubleRegister(), i.InputDoubleRegister(0));              \
     __ b(&done, Label::kNear);                                                \
