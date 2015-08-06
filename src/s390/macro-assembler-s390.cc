@@ -3744,7 +3744,7 @@ void MacroAssembler::LoadRepresentation(Register dst, const MemOperand& mem,
     LoadB(dst, mem);
     lgbr(dst, dst);
   } else if (r.IsUInteger8()) {
-    LoadB(dst, mem);
+    LoadlB(dst, mem);
   } else if (r.IsInteger16()) {
     LoadHalfWordP(dst, mem, scratch);
     lghr(dst, dst);
