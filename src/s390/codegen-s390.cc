@@ -253,8 +253,8 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
 
   // Normal smi, convert to double and store.
   __ ConvertIntToDouble(r14, d0);
-  __ StoreF(d0, MemOperand(scratch2, 0));
-  __ la(scratch2, MemOperand(scratch2, 8));
+  __ StoreF(d0, MemOperand(r9, 0));
+  __ la(r9, MemOperand(r9, 8));
 
   __ b(&entry, Label::kNear);
 
