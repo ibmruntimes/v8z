@@ -3848,12 +3848,12 @@ void Assembler::emit_double(double value) {
 
 
 void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
-  RelocInfo rinfo(pc_, rmode, data, NULL);
+  DeferredRelocInfo rinfo(pc_offset(), rmode, data);
   RecordRelocInfo(rinfo);
 }
 
 
-void Assembler::RecordRelocInfo(const RelocInfo& rinfo) {
+void Assembler::RecordRelocInfo(const DeferredRelocInfo& rinfo) {
   if (rinfo.rmode() >= RelocInfo::JS_RETURN &&
       rinfo.rmode() <= RelocInfo::DEBUG_BREAK_SLOT) {
     // Adjust code for new modes.
@@ -3869,17 +3869,13 @@ void Assembler::RecordRelocInfo(const RelocInfo& rinfo) {
         return;
       }
     }
-    DCHECK(buffer_space() >= kMaxRelocSize);  // too late to grow buffer here
     if (rinfo.rmode() == RelocInfo::CODE_TARGET_WITH_ID) {
-      RelocInfo reloc_info_with_ast_id(rinfo.pc(), rinfo.rmode(),
-                                               RecordedAstId().ToInt(), NULL);
+      DeferredRelocInfo reloc_info_with_ast_id(rinfo.position(), rinfo.rmode(),
+                                               RecordedAstId().ToInt());
       ClearRecordedAstId();
-      reloc_info_writer.Write(&reloc_info_with_ast_id);
-    } else if (rinfo.rmode() == RelocInfo::INTERNAL_REFERENCE) {
-      DeferredRelocInfo drinfo(pc_offset(), rinfo.rmode(), rinfo.data());
-      relocations_.push_back(drinfo);
+      relocations_.push_back(reloc_info_with_ast_id);
     } else {
-      reloc_info_writer.Write(&rinfo);
+      relocations_.push_back(rinfo);
     }
   }
 }
