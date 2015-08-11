@@ -2131,10 +2131,11 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   //  sp[8]: subject string
   //  sp[12]: JSRegExp object
 
-  const int kLastMatchInfoOffset = 0 * kPointerSize;
-  const int kPreviousIndexOffset = 1 * kPointerSize;
-  const int kSubjectOffset = 2 * kPointerSize;
-  const int kJSRegExpOffset = 3 * kPointerSize;
+  const int kSaveRegArea = 13 * kPointerSize;
+  const int kLastMatchInfoOffset = kSaveRegArea + 0 * kPointerSize;
+  const int kPreviousIndexOffset = kSaveRegArea + 1 * kPointerSize;
+  const int kSubjectOffset = kSaveRegArea + 2 * kPointerSize;
+  const int kJSRegExpOffset = kSaveRegArea + 3 * kPointerSize;
 
   Label runtime, br_over, encoding_type_UC16;
 
@@ -2150,9 +2151,9 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
 
   __ CleanseP(r14);
 
-  __ lay(sp, MemOperand(sp, -13 * kPointerSize));
+  __ lay(sp, MemOperand(sp, -kSaveRegArea));
   __ StoreMultipleP(r3, sp, MemOperand(sp, 0));
-  __ la(fp, MemOperand(sp, 13 * kPointerSize));
+  // __ la(fp, MemOperand(sp, 13 * kPointerSize));
 
   // Ensure register assigments are consistent with callee save masks
   DCHECK(subject.bit() & kCalleeSaved);
@@ -2170,7 +2171,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ beq(&runtime);
 
   // Check that the first argument is a JSRegExp object.
-  __ LoadP(r2, MemOperand(fp, kJSRegExpOffset));
+  __ LoadP(r2, MemOperand(sp, kJSRegExpOffset));
   __ JumpIfSmi(r2, &runtime);
   __ CompareObjectType(r2, r3, r3, JS_REGEXP_TYPE);
   __ bne(&runtime);
@@ -2205,8 +2206,8 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ bgt(&runtime);
 
   // Reset offset for possibly sliced string.
-  __ LoadImmP(r13, Operand::Zero());
-  __ LoadP(subject, MemOperand(fp, kSubjectOffset));
+  __ LoadImmP(ip, Operand::Zero());
+  __ LoadP(subject, MemOperand(sp, kSubjectOffset));
   __ JumpIfSmi(subject, &runtime);
   __ LoadRR(r5, subject);  // Make a copy of the original subject string.
   __ LoadP(r2, FieldMemOperand(subject, HeapObject::kMapOffset));
@@ -2279,7 +2280,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // Load previous index and check range before r5 is overwritten.  We have to
   // use r5 instead of subject here because subject might have been only made
   // to look like a sequential string when it actually is an external string.
-  __ LoadP(r3, MemOperand(fp, kPreviousIndexOffset));
+  __ LoadP(r3, MemOperand(sp, kPreviousIndexOffset));
   __ JumpIfNotSmi(r3, &runtime);
   __ LoadP(r5, FieldMemOperand(r5, String::kLengthOffset));
   __ CmpLogicalP(r5, r3);
@@ -2359,7 +2360,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // sizes below the previous sp. (Because creating a new stack frame pushes
   // the previous fp onto the stack and moves up sp by 2 * kPointerSize and
   // 13 registers saved on the stack previously)
-  __ LoadP(r2, MemOperand(fp, kSubjectOffset + 15 * kPointerSize));
+  __ LoadP(r2, MemOperand(fp, kSubjectOffset + 2 * kPointerSize));
 
   // Argument 2 (r3): Previous index.
   // Already there
@@ -2375,16 +2376,16 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // If slice offset is not 0, load the length from the original sliced string.
   // Argument 3, r4: Start of string data
   // Prepare start and end index of the input.
-  __ ShiftLeftP(r13, r13, r5);
-  __ AddP(r13, r1, r13);
+  __ ShiftLeftP(ip, ip, r5);
+  __ AddP(ip, r1, ip);
   __ ShiftLeftP(r4, r3, r5);
-  __ AddP(r4, r13, r4);
+  __ AddP(r4, ip, r4);
 
   // Argument 4, r5: End of string data
   __ LoadP(r1, FieldMemOperand(r2, String::kLengthOffset));
   __ SmiUntag(r1);
   __ ShiftLeftP(r0, r1, r5);
-  __ AddP(r5, r13, r0);
+  __ AddP(r5, ip, r0);
 
 
   // Locate the code entry and call it.
@@ -2405,11 +2406,11 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
 
   __ LeaveExitFrame(false, no_reg, true);
 
-  __ la(fp, MemOperand(sp, 13 * kPointerSize));
+  // __ la(fp, MemOperand(sp, 13 * kPointerSize));
 
   // r2: result (int32)
   // subject: subject string -- needed to reload
-  __ LoadP(subject, MemOperand(fp, kSubjectOffset));
+  __ LoadP(subject, MemOperand(sp, kSubjectOffset));
 
   // regexp_data: RegExp data (callee saved)
   // last_match_info_elements: Last match info elements (callee saved)
@@ -2457,7 +2458,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ SmiToShortArrayOffset(r3, r3);
   __ AddP(r3, Operand(2));
 
-  __ LoadP(r2, MemOperand(fp, kLastMatchInfoOffset));
+  __ LoadP(r2, MemOperand(sp, kLastMatchInfoOffset));
   __ JumpIfSmi(r2, &runtime);
   __ CompareObjectType(r2, r4, r4, JS_ARRAY_TYPE);
   __ bne(&runtime);
@@ -2521,7 +2522,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ BranchOnCount(r3, &next_capture);
 
   // Return last match info.
-  __ LoadP(r2, MemOperand(fp, kLastMatchInfoOffset));
+  __ LoadP(r2, MemOperand(sp, kLastMatchInfoOffset));
   __ LoadMultipleP(r3, sp, MemOperand(sp, 0));
   __ la(sp, MemOperand(sp, 13 * kPointerSize));
   __ la(sp, MemOperand(sp, (4 * kPointerSize)));
@@ -2566,9 +2567,9 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ bne(&runtime/*, cr0*/);
 
   // (9) Sliced string.  Replace subject with parent.  Go to (4).
-  // Load offset into r13 and replace subject string with parent.
-  __ LoadP(r13, FieldMemOperand(subject, SlicedString::kOffsetOffset));
-  __ SmiUntag(r13);
+  // Load offset into ip and replace subject string with parent.
+  __ LoadP(ip, FieldMemOperand(subject, SlicedString::kOffsetOffset));
+  __ SmiUntag(ip);
   __ LoadP(subject, FieldMemOperand(subject, SlicedString::kParentOffset));
   __ b(&check_underlying);  // Go to (4).
 #endif  // V8_INTERPRETED_REGEXP
