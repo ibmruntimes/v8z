@@ -3227,9 +3227,8 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
       int r1 = rrfInst->R1Value();
       int r2 = rrfInst->R2Value();
       int m3 = rrfInst->M3Value();
-      int m4 = rrfInst->M4Value();
       double r2_val = get_double_from_d_register(r2);
-      DCHECK(m4 == 0);
+      DCHECK(rrfInst->M4Value() == 0);
       switch (m3) {
         case Assembler::FIDBRA_ROUND_TO_NEAREST_AWAY_FROM_0:
           set_d_register_from_double(r1, std::round(r2_val));
