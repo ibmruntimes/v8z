@@ -54,6 +54,11 @@ const Register MathPowIntegerDescriptor::exponent() {
 }
 
 
+const Register GrowArrayElementsDescriptor::ObjectRegister() { return r2; }
+const Register GrowArrayElementsDescriptor::KeyRegister() { return r5; }
+const Register GrowArrayElementsDescriptor::CapacityRegister() { return r4; }
+
+
 void FastNewClosureDescriptor::Initialize(CallInterfaceDescriptorData* data) {
   Register registers[] = {cp, r4};
   data->Initialize(arraysize(registers), registers, NULL);
@@ -74,6 +79,12 @@ void ToNumberDescriptor::Initialize(CallInterfaceDescriptorData* data) {
 
 void NumberToStringDescriptor::Initialize(CallInterfaceDescriptorData* data) {
   Register registers[] = {cp, r2};
+  data->Initialize(arraysize(registers), registers, NULL);
+}
+
+
+void TypeofDescriptor::Initialize(CallInterfaceDescriptorData* data) {
+  Register registers[] = {cp, r5};
   data->Initialize(arraysize(registers), registers, NULL);
 }
 
@@ -355,6 +366,21 @@ void ApiAccessorDescriptor::Initialize(CallInterfaceDescriptorData* data) {
       Representation::Tagged(),    // call_data
       Representation::Tagged(),    // holder
       Representation::External(),  // api_function_address
+  };
+  data->Initialize(arraysize(registers), registers, representations);
+}
+
+
+void MathRoundVariantDescriptor::Initialize(CallInterfaceDescriptorData* data) {
+  Register registers[] = {
+      cp,  // context
+      r3,  // math rounding function
+      r5,  // vector slot id
+  };
+  Representation representations[] = {
+      Representation::Tagged(),  //
+      Representation::Tagged(),  //
+      Representation::Tagged(),  //
   };
   data->Initialize(arraysize(registers), registers, representations);
 }

@@ -16,7 +16,6 @@
 #include "src/codegen.h"
 #include "src/cpu-profiler.h"
 #include "src/debug.h"
-#include "src/isolate-inl.h"
 #include "src/runtime/runtime.h"
 
 namespace v8 {
@@ -605,7 +604,7 @@ void MacroAssembler::CanonicalizeNaN(const DoubleRegister dst,
   if (!dst.is(src))
     ldr(dst, src);
   lzdr(kDoubleRegZero);
-  adbr(dst, kDoubleRegZero);
+  sdbr(dst, kDoubleRegZero);
 }
 
 
@@ -1423,7 +1422,6 @@ void MacroAssembler::Allocate(int object_size, Register result,
   if ((flags & DOUBLE_ALIGNMENT) != 0) {
     // Align the next allocation. Storing the filler map without checking top is
     // safe in new-space because the limit of the heap is aligned there.
-    DCHECK((flags & PRETENURE_OLD_POINTER_SPACE) == 0);
 #if V8_TARGET_ARCH_S390X
     STATIC_ASSERT(kPointerAlignment == kDoubleAlignment);
 #else
@@ -1431,7 +1429,7 @@ void MacroAssembler::Allocate(int object_size, Register result,
     AndP(scratch2, result, Operand(kDoubleAlignmentMask));
     Label aligned;
     beq(&aligned, Label::kNear);
-    if ((flags & PRETENURE_OLD_DATA_SPACE) != 0) {
+    if ((flags & PRETENURE) != 0) {
       CmpLogicalP(result, limitMemOperand);
       bge(gc_required);
     }
@@ -1513,7 +1511,6 @@ void MacroAssembler::Allocate(Register object_size, Register result,
   if ((flags & DOUBLE_ALIGNMENT) != 0) {
     // Align the next allocation. Storing the filler map without checking top is
     // safe in new-space because the limit of the heap is aligned there.
-    DCHECK((flags & PRETENURE_OLD_POINTER_SPACE) == 0);
 #if V8_TARGET_ARCH_S390X
     STATIC_ASSERT(kPointerAlignment == kDoubleAlignment);
 #else
@@ -1521,7 +1518,7 @@ void MacroAssembler::Allocate(Register object_size, Register result,
     AndP(scratch2, result, Operand(kDoubleAlignmentMask));
     Label aligned;
     beq(&aligned, Label::kNear);
-    if ((flags & PRETENURE_OLD_DATA_SPACE) != 0) {
+    if ((flags & PRETENURE) != 0) {
       CmpLogicalP(result, limitMemOperand);
       bge(gc_required);
     }

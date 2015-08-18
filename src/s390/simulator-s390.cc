@@ -722,7 +722,7 @@ void Simulator::FlushICache(v8::internal::HashMap* i_cache, void* start_addr,
 
 CachePage* Simulator::GetCachePage(v8::internal::HashMap* i_cache, void* page) {
   v8::internal::HashMap::Entry* entry =
-      i_cache->Lookup(page, ICacheHash(page), true);
+      i_cache->LookupOrInsert(page, ICacheHash(page));
   if (entry->value == NULL) {
     CachePage* new_page = new CachePage();
     entry->value = new_page;
@@ -1202,6 +1202,32 @@ struct ObjectPair {
 typedef uint64_t ObjectPair;
 
 #endif
+
+// #if V8_TARGET_ARCH_S390X
+// struct ObjectPair {
+//   intptr_t x;
+//   intptr_t y;
+// };
+// 
+// 
+// static void decodeObjectPair(ObjectPair* pair, intptr_t* x, intptr_t* y) {
+//   *x = pair->x;
+//   *y = pair->y;
+// }
+// #else
+// typedef uint64_t ObjectPair;
+// 
+// 
+// static void decodeObjectPair(ObjectPair* pair, intptr_t* x, intptr_t* y) {
+// #if V8_TARGET_BIG_ENDIAN
+//   *x = static_cast<int32_t>(*pair >> 32);
+//   *y = static_cast<int32_t>(*pair);
+// #else
+//   *x = static_cast<int32_t>(*pair);
+//   *y = static_cast<int32_t>(*pair >> 32);
+// #endif
+// }
+// #endif
 
 // Calls into the V8 runtime are based on this very simple interface.
 // Note: To be able to return two values from some calls the code in
@@ -4321,8 +4347,13 @@ void Simulator::ExecuteInstruction(Instruction* instr, bool auto_incr_pc) {
     // use a reasonably large buffer
     v8::internal::EmbeddedVector<char, 256> buffer;
     dasm.InstructionDecode(buffer, reinterpret_cast<byte*>(instr));
-    PrintF("%05d  %08" V8PRIxPTR "  %s\n", icount_,
+#ifdef V8_TARGET_ARCH_S390X
+    PrintF("%05ld  %08" V8PRIxPTR "  %s\n", icount_,
            reinterpret_cast<intptr_t>(instr), buffer.start());
+#else
+    PrintF("%05lld  %08" V8PRIxPTR "  %s\n", icount_,
+           reinterpret_cast<intptr_t>(instr), buffer.start());
+#endif
     // Flush stdout to prevent incomplete file output during abnormal exits
     // This is caused by the output being buffered before being written to file
     fflush(stdout);

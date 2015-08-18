@@ -708,7 +708,7 @@ enum Opcode {
   PKA     = 0xE9,    // Pack Ascii
   PKU     = 0xE1,    // Pack Unicode
   PLO     = 0xEE,    // Perform Locked Operation
-  POPCNT  = 0xB9E1,  // Population Count
+  // POPCNT  = 0xB9E1,  // Population Count
   PPA     = 0xB2E8,  // Perform Processor Assist
   QADTR   = 0xB3F5,  // Quantize (long DFP)
   QAXTR   = 0xB3FD,  // Quantize (extended DFP)
