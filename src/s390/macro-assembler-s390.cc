@@ -5051,6 +5051,7 @@ void MacroAssembler::StoreP(Register src, const MemOperand& mem,
                            Register scratch) {
   if (!is_int20(mem.offset())) {
     DCHECK(!scratch.is(no_reg));
+    DCHECK(!scratch.is(r0));
     LoadIntLiteral(scratch, mem.offset());
 #if V8_TARGET_ARCH_S390X
     stg(src, MemOperand(mem.rb(), scratch));

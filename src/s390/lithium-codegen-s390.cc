@@ -4796,7 +4796,7 @@ void LCodeGen::DoStoreKeyedFixedArray(LStoreKeyed* instr) {
 
   if (instr->key()->IsConstantOperand()) {
     __ StoreRepresentation(value, MemOperand(elements, offset),
-                           representation, r0);
+                           representation, scratch);
   } else {
     __ StoreRepresentation(value, MemOperand(scratch, elements, offset),
                            representation, r0);
