@@ -159,7 +159,7 @@ class LCodeGen : public LCodeGenBase {
 
   // Code generation passes.  Returns true if code generation should
   // continue.
-  void GenerateBodyInstructionPre(LInstruction* instr) OVERRIDE;
+  void GenerateBodyInstructionPre(LInstruction* instr) override;
   bool GeneratePrologue();
   bool GenerateDeferredCode();
   bool GenerateJumpTable();
@@ -237,7 +237,7 @@ class LCodeGen : public LCodeGenBase {
   void RecordSafepointWithRegisters(LPointerMap* pointers, int arguments,
                                     Safepoint::DeoptMode mode);
 
-  void RecordAndWritePosition(int position) OVERRIDE;
+  void RecordAndWritePosition(int position) override;
 
   static Condition TokenToCondition(Token::Value op);
   void EmitGoto(int block);
@@ -278,7 +278,7 @@ class LCodeGen : public LCodeGenBase {
   void EmitDeepCopy(Handle<JSObject> object, Register result, Register source,
                     int* offset, AllocationSiteMode mode);
 
-  void EnsureSpaceForLazyDeopt(int space_needed) OVERRIDE;
+  void EnsureSpaceForLazyDeopt(int space_needed) override;
   void DoLoadKeyedExternalArray(LLoadKeyed* instr);
   void DoLoadKeyedFixedDoubleArray(LLoadKeyed* instr);
   void DoLoadKeyedFixedArray(LLoadKeyed* instr);
@@ -308,7 +308,7 @@ class LCodeGen : public LCodeGenBase {
 
   Safepoint::Kind expected_safepoint_kind_;
 
-  class PushSafepointRegistersScope FINAL BASE_EMBEDDED {
+  class PushSafepointRegistersScope final BASE_EMBEDDED {
    public:
     explicit PushSafepointRegistersScope(LCodeGen* codegen)
       : codegen_(codegen) {

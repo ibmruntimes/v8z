@@ -1384,7 +1384,7 @@ E_FORM(pfpo);
 SS1_FORM(pka);
 SS1_FORM(pku);
 SS5_FORM(plo);
-RRE_FORM(popcnt);
+// RRE_FORM(popcnt);
 RRF1_FORM(ppa);
 RRF1_FORM(qadtr);
 RRF1_FORM(qaxtr);

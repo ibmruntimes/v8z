@@ -13,7 +13,6 @@
 #include "src/debug.h"
 #include "src/full-codegen.h"
 #include "src/ic/ic.h"
-#include "src/isolate-inl.h"
 #include "src/parser.h"
 #include "src/scopes.h"
 
@@ -133,7 +132,8 @@ void FullCodeGenerator::Generate() {
   // Sloppy mode functions and builtins need to replace the receiver with the
   // global proxy when called as functions (without an explicit receiver
   // object).
-  if (is_sloppy(info->language_mode()) && !info->is_native()) {
+  if (is_sloppy(info->language_mode()) && !info->is_native() &&
+      info->MayUseThis() && info->scope()->has_this_declaration()) {
     Label ok;
     int receiver_offset = info->scope()->num_parameters() * kPointerSize;
     __ LoadP(r4, MemOperand(sp, receiver_offset), r0);
@@ -229,8 +229,9 @@ void FullCodeGenerator::Generate() {
     __ StoreP(r2, MemOperand(fp, StandardFrameConstants::kContextOffset));
     // Copy any necessary parameters into the context.
     int num_parameters = info->scope()->num_parameters();
-    for (int i = 0; i < num_parameters; i++) {
-      Variable* var = scope()->parameter(i);
+    int first_parameter = info->scope()->has_this_declaration() ? -1 : 0;
+    for (int i = first_parameter; i < num_parameters; i++) {
+      Variable* var = (i == -1) ? scope()->receiver() : scope()->parameter(i);
       if (var->IsContextSlot()) {
         int parameter_offset = StandardFrameConstants::kCallerSPOffset +
                                (num_parameters - 1 - i) * kPointerSize;
@@ -936,33 +937,6 @@ void FullCodeGenerator::VisitFunctionDeclaration(
 }
 
 
-void FullCodeGenerator::VisitModuleDeclaration(ModuleDeclaration* declaration) {
-  Variable* variable = declaration->proxy()->var();
-  ModuleDescriptor* descriptor = declaration->module()->descriptor();
-  DCHECK(variable->location() == Variable::CONTEXT);
-  DCHECK(descriptor->IsFrozen());
-
-  Comment cmnt(masm_, "[ ModuleDeclaration");
-  EmitDebugCheckDeclarationContext(variable);
-
-  // Load instance object.
-  __ LoadContext(r3, scope_->ContextChainLength(scope_->ScriptScope()));
-  __ LoadP(r3, ContextOperand(r3, descriptor->Index()));
-  __ LoadP(r3, ContextOperand(r3, Context::EXTENSION_INDEX));
-
-  // Assign it.
-  __ StoreP(r3, ContextOperand(cp, variable->index()), r0);
-  // We know that we have written a module, which is not a smi.
-  __ RecordWriteContextSlot(cp, Context::SlotOffset(variable->index()), r3, r5,
-                            kLRHasBeenSaved, kDontSaveFPRegs,
-                            EMIT_REMEMBERED_SET, OMIT_SMI_CHECK);
-  PrepareForBailoutForId(declaration->proxy()->id(), NO_REGISTERS);
-
-  // Traverse into body.
-  Visit(declaration->module());
-}
-
-
 void FullCodeGenerator::VisitImportDeclaration(ImportDeclaration* declaration) {
   VariableProxy* proxy = declaration->proxy();
   Variable* variable = proxy->var();
@@ -1258,6 +1232,7 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   // just skip it.
   __ Push(r3, r5);  // Enumerable and current entry.
   __ InvokeBuiltin(Builtins::FILTER_KEY, CALL_FUNCTION);
+  PrepareForBailoutForId(stmt->FilterId(), TOS_REG);
   __ LoadRR(r5, r2);
   __ CmpP(r5, Operand::Zero());
   __ beq(loop_statement.continue_label());
@@ -1492,6 +1467,7 @@ void FullCodeGenerator::EmitDynamicLookupFastCase(VariableProxy* proxy,
 void FullCodeGenerator::EmitVariableLoad(VariableProxy* proxy) {
   // Record position before possible IC call.
   SetSourcePosition(proxy->position());
+  PrepareForBailoutForId(proxy->BeforeId(), NO_REGISTERS);
   Variable* var = proxy->var();
 
   // Three cases: global variables, lookup variables, and all other types of
@@ -1666,19 +1642,13 @@ void FullCodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
   __ LoadP(r5, FieldMemOperand(r5, JSFunction::kLiteralsOffset));
   __ LoadSmiLiteral(r4, Smi::FromInt(expr->literal_index()));
   __ mov(r3, Operand(constant_properties));
-  int flags = expr->fast_elements() ? ObjectLiteral::kFastElements
-                                    : ObjectLiteral::kNoFlags;
-  flags |= expr->has_function() ? ObjectLiteral::kHasFunction
-                                : ObjectLiteral::kNoFlags;
+  int flags = expr->ComputeFlags();
   __ LoadSmiLiteral(r2, Smi::FromInt(flags));
-  int properties_count = constant_properties->length() / 2;
-  if (expr->may_store_doubles() || expr->depth() > 1 ||
-      masm()->serializer_enabled() || flags != ObjectLiteral::kFastElements ||
-      properties_count > FastCloneShallowObjectStub::kMaximumClonedProperties) {
+  if (MustCreateObjectLiteralWithRuntime(expr)) {
     __ Push(r5, r4, r3, r2);
     __ CallRuntime(Runtime::kCreateObjectLiteral, 4);
   } else {
-    FastCloneShallowObjectStub stub(isolate(), properties_count);
+    FastCloneShallowObjectStub stub(isolate(), expr->properties_count());
     __ CallStub(&stub);
   }
   PrepareForBailoutForId(expr->CreateLiteralId(), TOS_REG);
@@ -1868,16 +1838,9 @@ void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
   Comment cmnt(masm_, "[ ArrayLiteral");
 
   expr->BuildConstantElements(isolate());
-  int flags = expr->depth() == 1 ? ArrayLiteral::kShallowElements
-                                 : ArrayLiteral::kNoFlags;
-
-  ZoneList<Expression*>* subexprs = expr->values();
-  int length = subexprs->length();
   Handle<FixedArray> constant_elements = expr->constant_elements();
-  DCHECK_EQ(2, constant_elements->length());
-  ElementsKind constant_elements_kind =
-      static_cast<ElementsKind>(Smi::cast(constant_elements->get(0))->value());
-  bool has_fast_elements = IsFastObjectElementsKind(constant_elements_kind);
+  bool has_fast_elements =
+      IsFastObjectElementsKind(expr->constant_elements_kind());
   Handle<FixedArrayBase> constant_elements_values(
       FixedArrayBase::cast(constant_elements->get(1)));
 
@@ -1892,8 +1855,8 @@ void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
   __ LoadP(r5, FieldMemOperand(r5, JSFunction::kLiteralsOffset));
   __ LoadSmiLiteral(r4, Smi::FromInt(expr->literal_index()));
   __ mov(r3, Operand(constant_elements));
-  if (expr->depth() > 1 || length > JSObject::kInitialMaxFastElementArray) {
-    __ LoadSmiLiteral(r2, Smi::FromInt(flags));
+  if (MustCreateArrayLiteralWithRuntime(expr)) {
+    __ LoadSmiLiteral(r2, Smi::FromInt(expr->ComputeFlags()));
     __ Push(r5, r4, r3, r2);
     __ CallRuntime(Runtime::kCreateArrayLiteral, 4);
   } else {
@@ -1903,6 +1866,8 @@ void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
   PrepareForBailoutForId(expr->CreateLiteralId(), TOS_REG);
 
   bool result_saved = false;  // Is the result saved to the stack?
+  ZoneList<Expression*>* subexprs = expr->values();
+  int length = subexprs->length();
 
   // Emit code to evaluate all the non-constant subexpressions and to store
   // them into the newly cloned array.
@@ -1919,7 +1884,7 @@ void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
     }
     VisitForAccumulatorValue(subexpr);
 
-    if (IsFastObjectElementsKind(constant_elements_kind)) {
+    if (has_fast_elements) {
       int offset = FixedArray::kHeaderSize + (i * kPointerSize);
       __ LoadP(r7, MemOperand(sp, kPointerSize));  // Copy of array literal.
       __ LoadP(r3, FieldMemOperand(r7, JSObject::kElementsOffset));
@@ -2460,7 +2425,8 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
   patch_site.EmitJumpIfSmi(scratch1, &smi_case);
 
   __ bind(&stub_call);
-  Handle<Code> code = CodeFactory::BinaryOpIC(isolate(), op).code();
+  Handle<Code> code = CodeFactory::BinaryOpIC(
+      isolate(), op, language_mode()).code();
   CallIC(code, expr->BinaryOperationFeedbackId());
   patch_site.EmitPatchInfo();
   __ b(&done);
@@ -2640,7 +2606,8 @@ void FullCodeGenerator::EmitClassDefineProperties(ClassLiteral* lit) {
 
 void FullCodeGenerator::EmitBinaryOp(BinaryOperation* expr, Token::Value op) {
   __ pop(r3);
-  Handle<Code> code = CodeFactory::BinaryOpIC(isolate(), op).code();
+  Handle<Code> code = CodeFactory::BinaryOpIC(
+      isolate(), op, language_mode()).code();
   JumpPatchSite patch_site(masm_);  // unbound, signals no inlined smi code.
   CallIC(code, expr->BinaryOperationFeedbackId());
   patch_site.EmitPatchInfo();
@@ -3102,8 +3069,9 @@ void FullCodeGenerator::EmitResolvePossiblyDirectEval(int arg_count) {
   __ LoadP(r6, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
 
   // r5: the receiver of the enclosing function.
-  int receiver_offset = 2 + info_->scope()->num_parameters();
-  __ LoadP(r5, MemOperand(fp, receiver_offset * kPointerSize), r0);
+  Variable* this_var = scope()->LookupThis();
+  DCHECK_NOT_NULL(this_var);
+  GetVar(r5, this_var);
 
   // r4: language mode.
   __ LoadSmiLiteral(r4, Smi::FromInt(language_mode()));
@@ -3121,6 +3089,22 @@ void FullCodeGenerator::EmitLoadSuperConstructor() {
   __ LoadP(r2, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
   __ Push(r2);
   __ CallRuntime(Runtime::kGetPrototype, 1);
+}
+
+
+void FullCodeGenerator::EmitInitializeThisAfterSuper(
+    SuperReference* super_ref) {
+  Variable* this_var = super_ref->this_var()->var();
+  GetVar(r3, this_var);
+  __ CompareRoot(r3, Heap::kTheHoleValueRootIndex);
+  Label uninitialized_this;
+  __ beq(&uninitialized_this);
+  __ mov(r3, Operand(this_var->name()));
+  __ push(r3);
+  __ CallRuntime(Runtime::kThrowReferenceError, 1);
+  __ bind(&uninitialized_this);
+
+  EmitVariableAssignment(this_var, Token::INIT_CONST);
 }
 
 
@@ -3350,18 +3334,7 @@ void FullCodeGenerator::EmitSuperConstructorCall(Call* expr) {
 
   RecordJSReturnSite(expr);
 
-  SuperReference* super_ref = expr->expression()->AsSuperReference();
-  Variable* this_var = super_ref->this_var()->var();
-  GetVar(r3, this_var);
-  __ CompareRoot(r3, Heap::kTheHoleValueRootIndex);
-  Label uninitialized_this;
-  __ beq(&uninitialized_this);
-  __ mov(r3, Operand(this_var->name()));
-  __ push(r3);
-  __ CallRuntime(Runtime::kThrowReferenceError, 1);
-  __ bind(&uninitialized_this);
-
-  EmitVariableAssignment(this_var, Token::INIT_CONST);
+  EmitInitializeThisAfterSuper(expr->expression()->AsSuperReference());
   context()->Plug(r2);
 }
 
@@ -4656,28 +4629,81 @@ void FullCodeGenerator::EmitDebugIsActive(CallRuntime* expr) {
 }
 
 
+void FullCodeGenerator::EmitCallSuperWithSpread(CallRuntime* expr) {
+  // Assert: expr === CallRuntime("ReflectConstruct")
+  CallRuntime* call = expr->arguments()->at(0)->AsCallRuntime();
+  ZoneList<Expression*>* args = call->arguments();
+  DCHECK_EQ(3, args->length());
+
+  SuperReference* super_reference = args->at(0)->AsSuperReference();
+
+  // Load ReflectConstruct function
+  EmitLoadJSRuntimeFunction(call);
+
+  // Push the target function under the receiver.
+  __ LoadP(r0, MemOperand(sp, 0));
+  __ push(r0);
+  __ StoreP(r2, MemOperand(sp, kPointerSize));
+
+  // Push super
+  EmitLoadSuperConstructor();
+  __ Push(result_register());
+
+  // Push arguments array
+  VisitForStackValue(args->at(1));
+
+  // Push NewTarget
+  DCHECK(args->at(2)->IsVariableProxy());
+  VisitForStackValue(args->at(2));
+
+  EmitCallJSRuntimeFunction(call);
+
+  // Restore context register.
+  __ LoadP(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
+  context()->DropAndPlug(1, r2);
+
+  EmitInitializeThisAfterSuper(super_reference);
+}
+
+
+void FullCodeGenerator::EmitLoadJSRuntimeFunction(CallRuntime* expr) {
+  // Push the builtins object as the receiver.
+  Register receiver = LoadDescriptor::ReceiverRegister();
+  __ LoadP(receiver, GlobalObjectOperand());
+  __ LoadP(receiver, FieldMemOperand(receiver, GlobalObject::kBuiltinsOffset));
+  __ push(receiver);
+
+  // Load the function from the receiver.
+  __ mov(LoadDescriptor::NameRegister(), Operand(expr->name()));
+  if (FLAG_vector_ics) {
+    __ mov(VectorLoadICDescriptor::SlotRegister(),
+           Operand(SmiFromSlot(expr->CallRuntimeFeedbackSlot())));
+    CallLoadIC(NOT_CONTEXTUAL);
+  } else {
+    CallLoadIC(NOT_CONTEXTUAL, expr->CallRuntimeFeedbackId());
+  }
+}
+
+
+void FullCodeGenerator::EmitCallJSRuntimeFunction(CallRuntime* expr) {
+  ZoneList<Expression*>* args = expr->arguments();
+  int arg_count = args->length();
+
+  // Record source position of the IC call.
+  SetSourcePosition(expr->position());
+  CallFunctionStub stub(isolate(), arg_count, NO_CALL_FUNCTION_FLAGS);
+  __ LoadP(r3, MemOperand(sp, (arg_count + 1) * kPointerSize), r0);
+  __ CallStub(&stub);
+}
+
+
 void FullCodeGenerator::VisitCallRuntime(CallRuntime* expr) {
   ZoneList<Expression*>* args = expr->arguments();
   int arg_count = args->length();
 
   if (expr->is_jsruntime()) {
     Comment cmnt(masm_, "[ CallRuntime");
-    // Push the builtins object as the receiver.
-    Register receiver = LoadDescriptor::ReceiverRegister();
-    __ LoadP(receiver, GlobalObjectOperand());
-    __ LoadP(receiver,
-             FieldMemOperand(receiver, GlobalObject::kBuiltinsOffset));
-    __ push(receiver);
-
-    // Load the function from the receiver.
-    __ mov(LoadDescriptor::NameRegister(), Operand(expr->name()));
-    if (FLAG_vector_ics) {
-      __ mov(VectorLoadICDescriptor::SlotRegister(),
-             Operand(SmiFromSlot(expr->CallRuntimeFeedbackSlot())));
-      CallLoadIC(NOT_CONTEXTUAL);
-    } else {
-      CallLoadIC(NOT_CONTEXTUAL, expr->CallRuntimeFeedbackId());
-    }
+    EmitLoadJSRuntimeFunction(expr);
 
     // Push the target function under the receiver.
     __ LoadP(ip, MemOperand(sp, 0));
@@ -4689,11 +4715,7 @@ void FullCodeGenerator::VisitCallRuntime(CallRuntime* expr) {
       VisitForStackValue(args->at(i));
     }
 
-    // Record source position of the IC call.
-    SetSourcePosition(expr->position());
-    CallFunctionStub stub(isolate(), arg_count, NO_CALL_FUNCTION_FLAGS);
-    __ LoadP(r3, MemOperand(sp, (arg_count + 1) * kPointerSize));
-    __ CallStub(&stub);
+    EmitCallJSRuntimeFunction(expr);
 
     // Restore context register.
     __ LoadP(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
@@ -4819,10 +4841,12 @@ void FullCodeGenerator::VisitUnaryOperation(UnaryOperation* expr) {
     case Token::TYPEOF: {
       Comment cmnt(masm_, "[ UnaryOperation (TYPEOF)");
       {
-        StackValueContext context(this);
+        AccumulatorValueContext context(this);
         VisitForTypeofValue(expr->expression());
       }
-      __ CallRuntime(Runtime::kTypeof, 1);
+      __ LoadRR(r5, r2);
+      TypeofStub typeof_stub(isolate());
+      __ CallStub(&typeof_stub);
       context()->Plug(r2);
       break;
     }
@@ -4992,7 +5016,8 @@ void FullCodeGenerator::VisitCountOperation(CountOperation* expr) {
   // Record position before stub call.
   SetSourcePosition(expr->position());
 
-  Handle<Code> code = CodeFactory::BinaryOpIC(isolate(), Token::ADD).code();
+  Handle<Code> code = CodeFactory::BinaryOpIC(
+      isolate(), Token::ADD, language_mode()).code();
   CallIC(code, expr->CountBinOpFeedbackId());
   patch_site.EmitPatchInfo();
   __ bind(&done);
@@ -5465,6 +5490,8 @@ BackEdgeTable::BackEdgeState BackEdgeTable::GetBackEdgeState(
          isolate->builtins()->OsrAfterStackCheck()->entry());
   return OSR_AFTER_STACK_CHECK;
 }
+
+
 }
 }  // namespace v8::internal
 #endif  // V8_TARGET_ARCH_S390
