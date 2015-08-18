@@ -380,12 +380,8 @@ class LockerUnlockerThread : public JoinableThread {
 
 // Use unlocker inside of a Locker, multiple threads.
 TEST(LockerUnlocker) {
-<<<<<<< HEAD
-#if V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_MIPS || V8_TARGET_ARCH_S390
-=======
   i::FLAG_always_opt = false;
-#if V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_MIPS
->>>>>>> 7f994ee... Disable always-opt for locker tests.
+#if V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_MIPS || V8_TARGET_ARCH_S390
   const int kNThreads = 50;
 #else
   const int kNThreads = 100;
@@ -441,12 +437,8 @@ class LockTwiceAndUnlockThread : public JoinableThread {
 
 // Use Unlocker inside two Lockers.
 TEST(LockTwiceAndUnlock) {
-<<<<<<< HEAD
-#if V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_MIPS || V8_TARGET_ARCH_S390
-=======
   i::FLAG_always_opt = false;
-#if V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_MIPS
->>>>>>> 7f994ee... Disable always-opt for locker tests.
+#if V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_MIPS || V8_TARGET_ARCH_S390
   const int kNThreads = 50;
 #else
   const int kNThreads = 100;
