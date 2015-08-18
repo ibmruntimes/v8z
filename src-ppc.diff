@@ -1,0 +1,3682 @@
+diff --git a/src/s390/OWNERS b/src/s390/OWNERS
+index beecb3d..a04d29a 100644
+--- a/src/s390/OWNERS
++++ b/src/s390/OWNERS
+@@ -1,3 +1,4 @@
++dstence@us.ibm.com
+ joransiu@ca.ibm.com
+ mbrandy@us.ibm.com
+ michael_dawson@ca.ibm.com
+diff --git a/src/s390/builtins-s390.cc b/src/s390/builtins-s390.cc
+index c6f0336..9c969fd 100644
+--- a/src/s390/builtins-s390.cc
++++ b/src/s390/builtins-s390.cc
+@@ -827,6 +827,43 @@ void Builtins::Generate_JSConstructStubForDerived(MacroAssembler* masm) {
+ }
+ 
+ 
++enum IsTagged { kArgcIsSmiTagged, kArgcIsUntaggedInt };
++
++
++// Clobbers r5; preserves all other registers.
++static void Generate_CheckStackOverflow(MacroAssembler* masm,
++                                        const int calleeOffset, Register argc,
++                                        IsTagged argc_is_tagged) {
++  // Check the stack for overflow. We are not trying to catch
++  // interruptions (e.g. debug break and preemption) here, so the "real stack
++  // limit" is checked.
++  Label okay;
++  __ LoadRoot(r5, Heap::kRealStackLimitRootIndex);
++  // Make r5 the space we have left. The stack might already be overflowed
++  // here which will cause r5 to become negative.
++  __ sub(r5, sp, r5);
++  // Check if the arguments will overflow the stack.
++  if (argc_is_tagged == kArgcIsSmiTagged) {
++    __ SmiToPtrArrayOffset(r0, argc);
++  } else {
++    DCHECK(argc_is_tagged == kArgcIsUntaggedInt);
++    __ ShiftLeftImm(r0, argc, Operand(kPointerSizeLog2));
++  }
++  __ cmp(r5, r0);
++  __ bgt(&okay);  // Signed comparison.
++
++  // Out of stack space.
++  __ LoadP(r4, MemOperand(fp, calleeOffset));
++  if (argc_is_tagged == kArgcIsUntaggedInt) {
++    __ SmiTag(argc);
++  }
++  __ Push(r4, argc);
++  __ InvokeBuiltin(Builtins::STACK_OVERFLOW, CALL_FUNCTION);
++
++  __ bind(&okay);
++}
++
++
+ static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
+                                              bool is_construct) {
+   // Called from Generate_JS_Entry
+@@ -854,6 +891,14 @@ static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
+     __ push(r4);
+     __ push(r5);
+ 
++    // Check if we have enough stack space to push all arguments.
++    // The function is the first thing that was pushed above after entering
++    // the internal frame.
++    const int kFunctionOffset =
++        InternalFrameConstants::kCodeOffset - kPointerSize;
++    // Clobbers r5.
++    Generate_CheckStackOverflow(masm, kFunctionOffset, r6, kArgcIsUntaggedInt);
++
+     // Copy arguments to the stack in a loop.
+     // r4: function
+     // r6: argc
+@@ -1027,6 +1072,11 @@ void Builtins::Generate_MarkCodeAsExecutedTwice(MacroAssembler* masm) {
+ }
+ 
+ 
++void Builtins::Generate_MarkCodeAsToBeExecutedOnce(MacroAssembler* masm) {
++  Generate_MarkCodeAsExecutedOnce(masm);
++}
++
++
+ static void Generate_NotifyStubFailureHelper(MacroAssembler* masm,
+                                              SaveFPRegsMode save_doubles) {
+   {
+@@ -1366,63 +1416,41 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
+ }
+ 
+ 
+-static void Generate_CheckStackOverflow(MacroAssembler* masm,
+-                                        const int calleeOffset) {
+-  // Check the stack for overflow. We are not trying to catch
+-  // interruptions (e.g. debug break and preemption) here, so the "real stack
+-  // limit" is checked.
+-  Label okay;
+-  __ LoadRoot(r5, Heap::kRealStackLimitRootIndex);
+-  // Make r5 the space we have left. The stack might already be overflowed
+-  // here which will cause r5 to become negative.
+-  __ sub(r5, sp, r5);
+-  // Check if the arguments will overflow the stack.
+-  __ SmiToPtrArrayOffset(r0, r3);
+-  __ cmp(r5, r0);
+-  __ bgt(&okay);  // Signed comparison.
+-
+-  // Out of stack space.
+-  __ LoadP(r4, MemOperand(fp, calleeOffset));
+-  __ Push(r4, r3);
+-  __ InvokeBuiltin(Builtins::STACK_OVERFLOW, CALL_FUNCTION);
+-
+-  __ bind(&okay);
+-}
+-
+-
+ static void Generate_PushAppliedArguments(MacroAssembler* masm,
+                                           const int argumentsOffset,
+                                           const int indexOffset,
+                                           const int limitOffset) {
++  Register receiver = LoadDescriptor::ReceiverRegister();
++  Register key = LoadDescriptor::NameRegister();
++
++  // Copy all arguments from the array to the stack.
+   Label entry, loop;
+-  __ LoadP(r3, MemOperand(fp, indexOffset));
++  __ LoadP(key, MemOperand(fp, indexOffset));
+   __ b(&entry);
+-
+-  // Load the current argument from the arguments array and push it to the
+-  // stack.
+-  // r3: current argument index
+   __ bind(&loop);
+-  __ LoadP(r4, MemOperand(fp, argumentsOffset));
+-  __ Push(r4, r3);
++  __ LoadP(receiver, MemOperand(fp, argumentsOffset));
++
++  // Use inline caching to speed up access to arguments.
++  Handle<Code> ic = masm->isolate()->builtins()->KeyedLoadIC_Megamorphic();
++  __ Call(ic, RelocInfo::CODE_TARGET);
+ 
+-  // Call the runtime to access the property in the arguments array.
+-  __ CallRuntime(Runtime::kGetProperty, 2);
++  // Push the nth argument.
+   __ push(r3);
+ 
+-  // Use inline caching to access the arguments.
+-  __ LoadP(r3, MemOperand(fp, indexOffset));
+-  __ AddSmiLiteral(r3, r3, Smi::FromInt(1), r0);
+-  __ StoreP(r3, MemOperand(fp, indexOffset));
++  // Update the index on the stack and in register key.
++  __ LoadP(key, MemOperand(fp, indexOffset));
++  __ AddSmiLiteral(key, key, Smi::FromInt(1), r0);
++  __ StoreP(key, MemOperand(fp, indexOffset));
+ 
+   // Test if the copy loop has finished copying all the elements from the
+   // arguments object.
+   __ bind(&entry);
+-  __ LoadP(r4, MemOperand(fp, limitOffset));
+-  __ cmp(r3, r4);
++  __ LoadP(r0, MemOperand(fp, limitOffset));
++  __ cmp(key, r0);
+   __ bne(&loop);
+ 
+-  // On exit, the pushed arguments count is in r0, untagged
+-  __ SmiUntag(r3);
++  // On exit, the pushed arguments count is in r3, untagged
++  __ SmiUntag(r3, key);
+ }
+ 
+ 
+@@ -1447,7 +1475,7 @@ static void Generate_ApplyHelper(MacroAssembler* masm, bool targetIsArgument) {
+       __ InvokeBuiltin(Builtins::APPLY_PREPARE, CALL_FUNCTION);
+     }
+ 
+-    Generate_CheckStackOverflow(masm, kFunctionOffset);
++    Generate_CheckStackOverflow(masm, kFunctionOffset, r3, kArgcIsSmiTagged);
+ 
+     // Push current limit and index.
+     const int kIndexOffset =
+@@ -1584,7 +1612,7 @@ static void Generate_ConstructHelper(MacroAssembler* masm) {
+     __ push(r3);
+     __ InvokeBuiltin(Builtins::REFLECT_CONSTRUCT_PREPARE, CALL_FUNCTION);
+ 
+-    Generate_CheckStackOverflow(masm, kFunctionOffset);
++    Generate_CheckStackOverflow(masm, kFunctionOffset, r3, kArgcIsSmiTagged);
+ 
+     // Push current limit and index.
+     const int kIndexOffset =
+@@ -1735,6 +1763,27 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
+ 
+   {  // Too few parameters: Actual < expected
+     __ bind(&too_few);
++
++    // If the function is strong we need to throw an error.
++    Label weak_function;
++    __ LoadP(r7, FieldMemOperand(r4, JSFunction::kSharedFunctionInfoOffset));
++    __ lwz(r7, FieldMemOperand(r7, SharedFunctionInfo::kCompilerHintsOffset));
++    __ TestBit(r7,
++#if V8_TARGET_ARCH_S390X
++               SharedFunctionInfo::kStrongModeFunction,
++#else
++               SharedFunctionInfo::kStrongModeFunction + kSmiTagSize,
++#endif
++               r0);
++    __ beq(&weak_function, cr0);
++
++    {
++      FrameScope frame(masm, StackFrame::MANUAL);
++      EnterArgumentsAdaptorFrame(masm);
++      __ CallRuntime(Runtime::kThrowStrongModeTooFewArguments, 0);
++    }
++
++    __ bind(&weak_function);
+     EnterArgumentsAdaptorFrame(masm);
+ 
+     // Calculate copy start address into r0 and copy end address is fp.
+diff --git a/src/s390/code-stubs-s390.cc b/src/s390/code-stubs-s390.cc
+index e03741e..2b848b2 100644
+--- a/src/s390/code-stubs-s390.cc
++++ b/src/s390/code-stubs-s390.cc
+@@ -262,6 +262,8 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm, Label* slow,
+   if (cond == lt || cond == gt) {
+     __ CompareObjectType(r3, r7, r7, FIRST_SPEC_OBJECT_TYPE);
+     __ bge(slow);
++    __ cmpi(r7, Operand(SYMBOL_TYPE));
++    __ beq(slow);
+   } else {
+     __ CompareObjectType(r3, r7, r7, HEAP_NUMBER_TYPE);
+     __ beq(&heap_number);
+@@ -269,6 +271,8 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm, Label* slow,
+     if (cond != eq) {
+       __ cmpi(r7, Operand(FIRST_SPEC_OBJECT_TYPE));
+       __ bge(slow);
++      __ cmpi(r7, Operand(SYMBOL_TYPE));
++      __ beq(slow);
+       // Normally here we fall through to return_equal, but undefined is
+       // special: (undefined == undefined) == true, but
+       // (undefined <= undefined) == false!  See ECMAScript 11.8.5.
+@@ -966,6 +970,8 @@ void CodeStub::GenerateStubsAheadOfTime(Isolate* isolate) {
+   StoreRegistersStateStub::GenerateAheadOfTime(isolate);
+   RestoreRegistersStateStub::GenerateAheadOfTime(isolate);
+   BinaryOpICWithAllocationSiteStub::GenerateAheadOfTime(isolate);
++  StoreFastElementStub::GenerateAheadOfTime(isolate);
++  TypeofStub::GenerateAheadOfTime(isolate);
+ }
+ 
+ 
+@@ -1085,16 +1091,6 @@ void CEntryStub::Generate(MacroAssembler* masm) {
+   }
+ #endif
+ 
+-  // Runtime functions should not return 'the hole'.  Allowing it to escape may
+-  // lead to crashes in the IC code later.
+-  if (FLAG_debug_code) {
+-    Label okay;
+-    __ CompareRoot(r3, Heap::kTheHoleValueRootIndex);
+-    __ bne(&okay);
+-    __ stop("The hole escaped");
+-    __ bind(&okay);
+-  }
+-
+   // Check result for exception sentinel.
+   Label exception_returned;
+   __ CompareRoot(r3, Heap::kExceptionRootIndex);
+@@ -1140,7 +1136,8 @@ void CEntryStub::Generate(MacroAssembler* masm) {
+ 
+   // Ask the runtime for help to determine the handler. This will set r3 to
+   // contain the current pending exception, don't clobber it.
+-  ExternalReference find_handler(Runtime::kFindExceptionHandler, isolate());
++  ExternalReference find_handler(Runtime::kUnwindAndFindExceptionHandler,
++                                 isolate());
+   {
+     FrameScope scope(masm, StackFrame::MANUAL);
+     __ PrepareCallCFunction(3, 0, r3);
+@@ -1413,6 +1410,11 @@ void InstanceofStub::Generate(MacroAssembler* masm) {
+     // Get the map location in r8 and patch it.
+     __ GetRelocatedValue(inline_site, offset, scratch);
+     __ StoreP(map, FieldMemOperand(offset, Cell::kValueOffset), r0);
++
++    __ mr(r10, map);
++    __ RecordWriteField(offset, Cell::kValueOffset, r10, function,
++                        kLRHasNotBeenSaved, kDontSaveFPRegs,
++                        OMIT_REMEMBERED_SET, OMIT_SMI_CHECK);
+   }
+ 
+   // Register mapping: r6 is object map and r7 is function prototype.
+@@ -1979,8 +1981,12 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
+   __ bind(&adaptor_frame);
+   __ LoadP(r4, MemOperand(r5, ArgumentsAdaptorFrameConstants::kLengthOffset));
+   if (has_new_target()) {
++    __ CmpSmiLiteral(r4, Smi::FromInt(0), r0);
++    Label skip_decrement;
++    __ beq(&skip_decrement);
+     // Subtract 1 from smi-tagged arguments count.
+     __ SubSmiLiteral(r4, r4, Smi::FromInt(1), r0);
++    __ bind(&skip_decrement);
+   }
+   __ StoreP(r4, MemOperand(sp, 0));
+   __ SmiToPtrArrayOffset(r6, r4);
+@@ -2525,6 +2531,24 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
+ }
+ 
+ 
++static void CallStubInRecordCallTarget(MacroAssembler* masm, CodeStub* stub) {
++  // r3 : number of arguments to the construct function
++  // r5 : Feedback vector
++  // r6 : slot in feedback vector (Smi)
++  // r4 : the function to call
++  FrameScope scope(masm, StackFrame::INTERNAL);
++
++  // Number-of-arguments register must be smi-tagged to call out.
++  __ SmiTag(r3);
++  __ Push(r6, r5, r4, r3);
++
++  __ CallStub(stub);
++
++  __ Pop(r6, r5, r4, r3);
++  __ SmiUntag(r3);
++}
++
++
+ static void GenerateRecordCallTarget(MacroAssembler* masm) {
+   // Cache the called function in a feedback vector slot.  Cache states
+   // are uninitialized, monomorphic (indicated by a JSFunction), and
+@@ -2547,16 +2571,31 @@ static void GenerateRecordCallTarget(MacroAssembler* masm) {
+ 
+   // A monomorphic cache hit or an already megamorphic state: invoke the
+   // function without changing the state.
+-  __ cmp(r7, r4);
+-  __ b(eq, &done);
++  // We don't know if r7 is a WeakCell or a Symbol, but it's harmless to read at
++  // this position in a symbol (see static asserts in type-feedback-vector.h).
++  Label check_allocation_site;
++  Register feedback_map = r8;
++  Register weak_value = r9;
++  __ LoadP(weak_value, FieldMemOperand(r7, WeakCell::kValueOffset));
++  __ cmp(r4, weak_value);
++  __ beq(&done);
++  __ CompareRoot(r7, Heap::kmegamorphic_symbolRootIndex);
++  __ beq(&done);
++  __ LoadP(feedback_map, FieldMemOperand(r7, HeapObject::kMapOffset));
++  __ CompareRoot(feedback_map, Heap::kWeakCellMapRootIndex);
++  __ bne(FLAG_pretenuring_call_new ? &miss : &check_allocation_site);
++
++  // If the weak cell is cleared, we have a new chance to become monomorphic.
++  __ JumpIfSmi(weak_value, &initialize);
++  __ b(&megamorphic);
+ 
+   if (!FLAG_pretenuring_call_new) {
++    __ bind(&check_allocation_site);
+     // If we came here, we need to see if we are the array function.
+     // If we didn't have a matching function, and we didn't find the megamorph
+     // sentinel, then we have in the slot either some other function or an
+-    // AllocationSite. Do a map check on the object in ecx.
+-    __ LoadP(r8, FieldMemOperand(r7, 0));
+-    __ CompareRoot(r8, Heap::kAllocationSiteMapRootIndex);
++    // AllocationSite.
++    __ CompareRoot(feedback_map, Heap::kAllocationSiteMapRootIndex);
+     __ bne(&miss);
+ 
+     // Make sure the function is the Array() function
+@@ -2593,34 +2632,15 @@ static void GenerateRecordCallTarget(MacroAssembler* masm) {
+     // The target function is the Array constructor,
+     // Create an AllocationSite if we don't already have it, store it in the
+     // slot.
+-    {
+-      FrameScope scope(masm, StackFrame::INTERNAL);
+-
+-      // Arguments register must be smi-tagged to call out.
+-      __ SmiTag(r3);
+-      __ Push(r6, r5, r4, r3);
+-
+-      CreateAllocationSiteStub create_stub(masm->isolate());
+-      __ CallStub(&create_stub);
+-
+-      __ Pop(r6, r5, r4, r3);
+-      __ SmiUntag(r3);
+-    }
++    CreateAllocationSiteStub create_stub(masm->isolate());
++    CallStubInRecordCallTarget(masm, &create_stub);
+     __ b(&done);
+ 
+     __ bind(&not_array_function);
+   }
+ 
+-  __ SmiToPtrArrayOffset(r7, r6);
+-  __ add(r7, r5, r7);
+-  __ addi(r7, r7, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+-  __ StoreP(r4, MemOperand(r7, 0));
+-
+-  __ Push(r7, r5, r4);
+-  __ RecordWrite(r5, r7, r4, kLRHasNotBeenSaved, kDontSaveFPRegs,
+-                 EMIT_REMEMBERED_SET, OMIT_SMI_CHECK);
+-  __ Pop(r7, r5, r4);
+-
++  CreateWeakCellStub create_stub(masm->isolate());
++  CallStubInRecordCallTarget(masm, &create_stub);
+   __ bind(&done);
+ }
+ 
+@@ -4597,21 +4617,15 @@ void VectorRawLoadStub::GenerateForTrampoline(MacroAssembler* masm) {
+ 
+ static void HandleArrayCases(MacroAssembler* masm, Register receiver,
+                              Register key, Register vector, Register slot,
+-                             Register feedback, Register scratch1,
+-                             Register scratch2, Register scratch3,
++                             Register feedback, Register receiver_map,
++                             Register scratch1, Register scratch2,
+                              bool is_polymorphic, Label* miss) {
+   // feedback initially contains the feedback array
+   Label next_loop, prepare_next;
+-  Label load_smi_map, compare_map;
+   Label start_polymorphic;
+ 
+-  Register receiver_map = scratch1;
+-  Register cached_map = scratch2;
++  Register cached_map = scratch1;
+ 
+-  // Receiver might not be a heap object.
+-  __ JumpIfSmi(receiver, &load_smi_map);
+-  __ LoadP(receiver_map, FieldMemOperand(receiver, HeapObject::kMapOffset));
+-  __ bind(&compare_map);
+   __ LoadP(cached_map,
+            FieldMemOperand(feedback, FixedArray::OffsetOfElementAt(0)));
+   __ LoadP(cached_map, FieldMemOperand(cached_map, WeakCell::kValueOffset));
+@@ -4625,7 +4639,7 @@ static void HandleArrayCases(MacroAssembler* masm, Register receiver,
+   __ Jump(ip);
+ 
+ 
+-  Register length = scratch3;
++  Register length = scratch2;
+   __ bind(&start_polymorphic);
+   __ LoadP(length, FieldMemOperand(feedback, FixedArray::kLengthOffset));
+   if (!is_polymorphic) {
+@@ -4645,9 +4659,9 @@ static void HandleArrayCases(MacroAssembler* masm, Register receiver,
+   //                              ^              ^
+   //                              |              |
+   //                         pointer_reg      too_far
+-  //                         aka feedback     scratch3
+-  // also need receiver_map (aka scratch1)
+-  // use cached_map (scratch2) to look in the weak map values.
++  //                         aka feedback     scratch2
++  // also need receiver_map
++  // use cached_map (scratch1) to look in the weak map values.
+   __ SmiToPtrArrayOffset(r0, length);
+   __ add(too_far, feedback, r0);
+   __ addi(too_far, too_far, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+@@ -4670,44 +4684,23 @@ static void HandleArrayCases(MacroAssembler* masm, Register receiver,
+ 
+   // We exhausted our array of map handler pairs.
+   __ b(miss);
+-
+-  __ bind(&load_smi_map);
+-  __ LoadRoot(receiver_map, Heap::kHeapNumberMapRootIndex);
+-  __ b(&compare_map);
+ }
+ 
+ 
+ static void HandleMonomorphicCase(MacroAssembler* masm, Register receiver,
+-                                  Register key, Register vector, Register slot,
+-                                  Register weak_cell, Register scratch,
+-                                  Label* miss) {
+-  // feedback initially contains the feedback array
+-  Label compare_smi_map;
+-  Register receiver_map = scratch;
+-  Register cached_map = weak_cell;
+-
+-  // Move the weak map into the weak_cell register.
+-  __ LoadP(cached_map, FieldMemOperand(weak_cell, WeakCell::kValueOffset));
+-
+-  // Receiver might not be a heap object.
+-  __ JumpIfSmi(receiver, &compare_smi_map);
++                                  Register receiver_map, Register feedback,
++                                  Register vector, Register slot,
++                                  Register scratch, Label* compare_map,
++                                  Label* load_smi_map, Label* try_array) {
++  __ JumpIfSmi(receiver, load_smi_map);
+   __ LoadP(receiver_map, FieldMemOperand(receiver, HeapObject::kMapOffset));
++  __ bind(compare_map);
++  Register cached_map = scratch;
++  // Move the weak map into the weak_cell register.
++  __ LoadP(cached_map, FieldMemOperand(feedback, WeakCell::kValueOffset));
+   __ cmp(cached_map, receiver_map);
+-  __ bne(miss);
+-
+-  Register handler = weak_cell;
+-  __ SmiToPtrArrayOffset(r0, slot);
+-  __ add(handler, vector, r0);
+-  __ LoadP(handler,
+-           FieldMemOperand(handler, FixedArray::kHeaderSize + kPointerSize));
+-  __ addi(ip, handler, Operand(Code::kHeaderSize - kHeapObjectTag));
+-  __ Jump(ip);
+-
+-  // In microbenchmarks, it made sense to unroll this code so that the call to
+-  // the handler is duplicated for a HeapObject receiver and a Smi receiver.
+-  __ bind(&compare_smi_map);
+-  __ CompareRoot(weak_cell, Heap::kHeapNumberMapRootIndex);
+-  __ bne(miss);
++  __ bne(try_array);
++  Register handler = feedback;
+   __ SmiToPtrArrayOffset(r0, slot);
+   __ add(handler, vector, r0);
+   __ LoadP(handler,
+@@ -4723,27 +4716,28 @@ void VectorRawLoadStub::GenerateImpl(MacroAssembler* masm, bool in_frame) {
+   Register vector = VectorLoadICDescriptor::VectorRegister();      // r6
+   Register slot = VectorLoadICDescriptor::SlotRegister();          // r3
+   Register feedback = r7;
+-  Register scratch1 = r8;
++  Register receiver_map = r8;
++  Register scratch1 = r9;
+ 
+   __ SmiToPtrArrayOffset(r0, slot);
+   __ add(feedback, vector, r0);
+   __ LoadP(feedback, FieldMemOperand(feedback, FixedArray::kHeaderSize));
+ 
+-  // Is it a weak cell?
+-  Label try_array;
+-  Label not_array, smi_key, key_okay, miss;
+-  __ LoadP(scratch1, FieldMemOperand(feedback, HeapObject::kMapOffset));
+-  __ CompareRoot(scratch1, Heap::kWeakCellMapRootIndex);
+-  __ bne(&try_array);
+-  HandleMonomorphicCase(masm, receiver, name, vector, slot, feedback, scratch1,
+-                        &miss);
++  // Try to quickly handle the monomorphic case without knowing for sure
++  // if we have a weak cell in feedback. We do know it's safe to look
++  // at WeakCell::kValueOffset.
++  Label try_array, load_smi_map, compare_map;
++  Label not_array, miss;
++  HandleMonomorphicCase(masm, receiver, receiver_map, feedback, vector, slot,
++                        scratch1, &compare_map, &load_smi_map, &try_array);
+ 
+   // Is it a fixed array?
+   __ bind(&try_array);
++  __ LoadP(scratch1, FieldMemOperand(feedback, HeapObject::kMapOffset));
+   __ CompareRoot(scratch1, Heap::kFixedArrayMapRootIndex);
+   __ bne(&not_array);
+-  HandleArrayCases(masm, receiver, name, vector, slot, feedback, scratch1, r9,
+-                   r10, true, &miss);
++  HandleArrayCases(masm, receiver, name, vector, slot, feedback, receiver_map,
++                   scratch1, r10, true, &miss);
+ 
+   __ bind(&not_array);
+   __ CompareRoot(feedback, Heap::kmegamorphic_symbolRootIndex);
+@@ -4752,10 +4746,14 @@ void VectorRawLoadStub::GenerateImpl(MacroAssembler* masm, bool in_frame) {
+       Code::ComputeHandlerFlags(Code::LOAD_IC));
+   masm->isolate()->stub_cache()->GenerateProbe(masm, Code::LOAD_IC, code_flags,
+                                                false, receiver, name, feedback,
+-                                               scratch1, r9, r10);
++                                               receiver_map, scratch1, r10);
+ 
+   __ bind(&miss);
+   LoadIC::GenerateMiss(masm);
++
++  __ bind(&load_smi_map);
++  __ LoadRoot(receiver_map, Heap::kHeapNumberMapRootIndex);
++  __ b(&compare_map);
+ }
+ 
+ 
+@@ -4775,31 +4773,32 @@ void VectorRawKeyedLoadStub::GenerateImpl(MacroAssembler* masm, bool in_frame) {
+   Register vector = VectorLoadICDescriptor::VectorRegister();      // r6
+   Register slot = VectorLoadICDescriptor::SlotRegister();          // r3
+   Register feedback = r7;
+-  Register scratch1 = r8;
++  Register receiver_map = r8;
++  Register scratch1 = r9;
+ 
+   __ SmiToPtrArrayOffset(r0, slot);
+   __ add(feedback, vector, r0);
+   __ LoadP(feedback, FieldMemOperand(feedback, FixedArray::kHeaderSize));
+ 
+-  // Is it a weak cell?
+-  Label try_array;
+-  Label not_array, smi_key, key_okay, miss;
+-  __ LoadP(scratch1, FieldMemOperand(feedback, HeapObject::kMapOffset));
+-  __ CompareRoot(scratch1, Heap::kWeakCellMapRootIndex);
+-  __ bne(&try_array);
+-  HandleMonomorphicCase(masm, receiver, key, vector, slot, feedback, scratch1,
+-                        &miss);
++  // Try to quickly handle the monomorphic case without knowing for sure
++  // if we have a weak cell in feedback. We do know it's safe to look
++  // at WeakCell::kValueOffset.
++  Label try_array, load_smi_map, compare_map;
++  Label not_array, miss;
++  HandleMonomorphicCase(masm, receiver, receiver_map, feedback, vector, slot,
++                        scratch1, &compare_map, &load_smi_map, &try_array);
+ 
+   __ bind(&try_array);
+   // Is it a fixed array?
++  __ LoadP(scratch1, FieldMemOperand(feedback, HeapObject::kMapOffset));
+   __ CompareRoot(scratch1, Heap::kFixedArrayMapRootIndex);
+   __ bne(&not_array);
+ 
+   // We have a polymorphic element handler.
+   Label polymorphic, try_poly_name;
+   __ bind(&polymorphic);
+-  HandleArrayCases(masm, receiver, key, vector, slot, feedback, scratch1, r9,
+-                   r10, true, &miss);
++  HandleArrayCases(masm, receiver, key, vector, slot, feedback, receiver_map,
++                   scratch1, r10, true, &miss);
+ 
+   __ bind(&not_array);
+   // Is it generic?
+@@ -4819,11 +4818,15 @@ void VectorRawKeyedLoadStub::GenerateImpl(MacroAssembler* masm, bool in_frame) {
+   __ add(feedback, vector, r0);
+   __ LoadP(feedback,
+            FieldMemOperand(feedback, FixedArray::kHeaderSize + kPointerSize));
+-  HandleArrayCases(masm, receiver, key, vector, slot, feedback, scratch1, r9,
+-                   r10, false, &miss);
++  HandleArrayCases(masm, receiver, key, vector, slot, feedback, receiver_map,
++                   scratch1, r10, false, &miss);
+ 
+   __ bind(&miss);
+   KeyedLoadIC::GenerateMiss(masm);
++
++  __ bind(&load_smi_map);
++  __ LoadRoot(receiver_map, Heap::kHeapNumberMapRootIndex);
++  __ b(&compare_map);
+ }
+ 
+ 
+diff --git a/src/s390/code-stubs-s390.h b/src/s390/code-stubs-s390.h
+index 72f71b7..3c71a23 100644
+--- a/src/s390/code-stubs-s390.h
++++ b/src/s390/code-stubs-s390.h
+@@ -94,7 +94,7 @@ class RecordWriteStub : public PlatformCodeStub {
+ 
+   enum Mode { STORE_BUFFER_ONLY, INCREMENTAL, INCREMENTAL_COMPACTION };
+ 
+-  bool SometimesSetsUpAFrame() OVERRIDE { return false; }
++  bool SometimesSetsUpAFrame() override { return false; }
+ 
+   static void PatchBranchIntoNop(MacroAssembler* masm, int pos) {
+     // Consider adding DCHECK here to catch bad patching
+@@ -215,16 +215,16 @@ class RecordWriteStub : public PlatformCodeStub {
+     kUpdateRememberedSetOnNoNeedToInformIncrementalMarker
+   };
+ 
+-  inline Major MajorKey() const FINAL { return RecordWrite; }
++  inline Major MajorKey() const final { return RecordWrite; }
+ 
+-  void Generate(MacroAssembler* masm) OVERRIDE;
++  void Generate(MacroAssembler* masm) override;
+   void GenerateIncremental(MacroAssembler* masm, Mode mode);
+   void CheckNeedsToInformIncrementalMarker(
+       MacroAssembler* masm, OnNoNeedToInformIncrementalMarker on_no_need,
+       Mode mode);
+   void InformIncrementalMarker(MacroAssembler* masm);
+ 
+-  void Activate(Code* code) OVERRIDE {
++  void Activate(Code* code) override {
+     code->GetHeap()->incremental_marking()->ActivateGeneratedStub(code);
+   }
+ 
+@@ -273,7 +273,7 @@ class DirectCEntryStub : public PlatformCodeStub {
+   void GenerateCall(MacroAssembler* masm, Register target);
+ 
+  private:
+-  bool NeedsImmovableCode() OVERRIDE { return true; }
++  bool NeedsImmovableCode() override { return true; }
+ 
+   DEFINE_NULL_CALL_INTERFACE_DESCRIPTOR();
+   DEFINE_PLATFORM_CODE_STUB(DirectCEntry, PlatformCodeStub);
+@@ -298,7 +298,7 @@ class NameDictionaryLookupStub : public PlatformCodeStub {
+                                      Label* done, Register elements,
+                                      Register name, Register r0, Register r1);
+ 
+-  bool SometimesSetsUpAFrame() OVERRIDE { return false; }
++  bool SometimesSetsUpAFrame() override { return false; }
+ 
+  private:
+   static const int kInlinedProbes = 4;
+diff --git a/src/s390/full-codegen-s390.cc b/src/s390/full-codegen-s390.cc
+index 3082504..5be88fb 100644
+--- a/src/s390/full-codegen-s390.cc
++++ b/src/s390/full-codegen-s390.cc
+@@ -13,7 +13,6 @@
+ #include "src/debug.h"
+ #include "src/full-codegen.h"
+ #include "src/ic/ic.h"
+-#include "src/isolate-inl.h"
+ #include "src/parser.h"
+ #include "src/scopes.h"
+ 
+@@ -124,7 +123,8 @@ void FullCodeGenerator::Generate() {
+   // Sloppy mode functions and builtins need to replace the receiver with the
+   // global proxy when called as functions (without an explicit receiver
+   // object).
+-  if (is_sloppy(info->language_mode()) && !info->is_native()) {
++  if (is_sloppy(info->language_mode()) && !info->is_native() &&
++      info->MayUseThis() && info->scope()->has_this_declaration()) {
+     Label ok;
+     int receiver_offset = info->scope()->num_parameters() * kPointerSize;
+     __ LoadP(r5, MemOperand(sp, receiver_offset), r0);
+@@ -221,8 +221,9 @@ void FullCodeGenerator::Generate() {
+     __ StoreP(r3, MemOperand(fp, StandardFrameConstants::kContextOffset));
+     // Copy any necessary parameters into the context.
+     int num_parameters = info->scope()->num_parameters();
+-    for (int i = 0; i < num_parameters; i++) {
+-      Variable* var = scope()->parameter(i);
++    int first_parameter = info->scope()->has_this_declaration() ? -1 : 0;
++    for (int i = first_parameter; i < num_parameters; i++) {
++      Variable* var = (i == -1) ? scope()->receiver() : scope()->parameter(i);
+       if (var->IsContextSlot()) {
+         int parameter_offset = StandardFrameConstants::kCallerSPOffset +
+                                (num_parameters - 1 - i) * kPointerSize;
+@@ -920,33 +921,6 @@ void FullCodeGenerator::VisitFunctionDeclaration(
+ }
+ 
+ 
+-void FullCodeGenerator::VisitModuleDeclaration(ModuleDeclaration* declaration) {
+-  Variable* variable = declaration->proxy()->var();
+-  ModuleDescriptor* descriptor = declaration->module()->descriptor();
+-  DCHECK(variable->location() == Variable::CONTEXT);
+-  DCHECK(descriptor->IsFrozen());
+-
+-  Comment cmnt(masm_, "[ ModuleDeclaration");
+-  EmitDebugCheckDeclarationContext(variable);
+-
+-  // Load instance object.
+-  __ LoadContext(r4, scope_->ContextChainLength(scope_->ScriptScope()));
+-  __ LoadP(r4, ContextOperand(r4, descriptor->Index()));
+-  __ LoadP(r4, ContextOperand(r4, Context::EXTENSION_INDEX));
+-
+-  // Assign it.
+-  __ StoreP(r4, ContextOperand(cp, variable->index()), r0);
+-  // We know that we have written a module, which is not a smi.
+-  __ RecordWriteContextSlot(cp, Context::SlotOffset(variable->index()), r4, r6,
+-                            kLRHasBeenSaved, kDontSaveFPRegs,
+-                            EMIT_REMEMBERED_SET, OMIT_SMI_CHECK);
+-  PrepareForBailoutForId(declaration->proxy()->id(), NO_REGISTERS);
+-
+-  // Traverse into body.
+-  Visit(declaration->module());
+-}
+-
+-
+ void FullCodeGenerator::VisitImportDeclaration(ImportDeclaration* declaration) {
+   VariableProxy* proxy = declaration->proxy();
+   Variable* variable = proxy->var();
+@@ -1241,6 +1215,7 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
+   // just skip it.
+   __ Push(r4, r6);  // Enumerable and current entry.
+   __ InvokeBuiltin(Builtins::FILTER_KEY, CALL_FUNCTION);
++  PrepareForBailoutForId(stmt->FilterId(), TOS_REG);
+   __ mr(r6, r3);
+   __ cmpi(r6, Operand::Zero());
+   __ beq(loop_statement.continue_label());
+@@ -1476,6 +1451,7 @@ void FullCodeGenerator::EmitDynamicLookupFastCase(VariableProxy* proxy,
+ void FullCodeGenerator::EmitVariableLoad(VariableProxy* proxy) {
+   // Record position before possible IC call.
+   SetSourcePosition(proxy->position());
++  PrepareForBailoutForId(proxy->BeforeId(), NO_REGISTERS);
+   Variable* var = proxy->var();
+ 
+   // Three cases: global variables, lookup variables, and all other types of
+@@ -1651,19 +1627,13 @@ void FullCodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
+   __ LoadP(r6, FieldMemOperand(r6, JSFunction::kLiteralsOffset));
+   __ LoadSmiLiteral(r5, Smi::FromInt(expr->literal_index()));
+   __ mov(r4, Operand(constant_properties));
+-  int flags = expr->fast_elements() ? ObjectLiteral::kFastElements
+-                                    : ObjectLiteral::kNoFlags;
+-  flags |= expr->has_function() ? ObjectLiteral::kHasFunction
+-                                : ObjectLiteral::kNoFlags;
++  int flags = expr->ComputeFlags();
+   __ LoadSmiLiteral(r3, Smi::FromInt(flags));
+-  int properties_count = constant_properties->length() / 2;
+-  if (expr->may_store_doubles() || expr->depth() > 1 ||
+-      masm()->serializer_enabled() || flags != ObjectLiteral::kFastElements ||
+-      properties_count > FastCloneShallowObjectStub::kMaximumClonedProperties) {
++  if (MustCreateObjectLiteralWithRuntime(expr)) {
+     __ Push(r6, r5, r4, r3);
+     __ CallRuntime(Runtime::kCreateObjectLiteral, 4);
+   } else {
+-    FastCloneShallowObjectStub stub(isolate(), properties_count);
++    FastCloneShallowObjectStub stub(isolate(), expr->properties_count());
+     __ CallStub(&stub);
+   }
+   PrepareForBailoutForId(expr->CreateLiteralId(), TOS_REG);
+@@ -1853,16 +1823,9 @@ void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
+   Comment cmnt(masm_, "[ ArrayLiteral");
+ 
+   expr->BuildConstantElements(isolate());
+-  int flags = expr->depth() == 1 ? ArrayLiteral::kShallowElements
+-                                 : ArrayLiteral::kNoFlags;
+-
+-  ZoneList<Expression*>* subexprs = expr->values();
+-  int length = subexprs->length();
+   Handle<FixedArray> constant_elements = expr->constant_elements();
+-  DCHECK_EQ(2, constant_elements->length());
+-  ElementsKind constant_elements_kind =
+-      static_cast<ElementsKind>(Smi::cast(constant_elements->get(0))->value());
+-  bool has_fast_elements = IsFastObjectElementsKind(constant_elements_kind);
++  bool has_fast_elements =
++      IsFastObjectElementsKind(expr->constant_elements_kind());
+   Handle<FixedArrayBase> constant_elements_values(
+       FixedArrayBase::cast(constant_elements->get(1)));
+ 
+@@ -1877,8 +1840,8 @@ void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
+   __ LoadP(r6, FieldMemOperand(r6, JSFunction::kLiteralsOffset));
+   __ LoadSmiLiteral(r5, Smi::FromInt(expr->literal_index()));
+   __ mov(r4, Operand(constant_elements));
+-  if (expr->depth() > 1 || length > JSObject::kInitialMaxFastElementArray) {
+-    __ LoadSmiLiteral(r3, Smi::FromInt(flags));
++  if (MustCreateArrayLiteralWithRuntime(expr)) {
++    __ LoadSmiLiteral(r3, Smi::FromInt(expr->ComputeFlags()));
+     __ Push(r6, r5, r4, r3);
+     __ CallRuntime(Runtime::kCreateArrayLiteral, 4);
+   } else {
+@@ -1888,6 +1851,8 @@ void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
+   PrepareForBailoutForId(expr->CreateLiteralId(), TOS_REG);
+ 
+   bool result_saved = false;  // Is the result saved to the stack?
++  ZoneList<Expression*>* subexprs = expr->values();
++  int length = subexprs->length();
+ 
+   // Emit code to evaluate all the non-constant subexpressions and to store
+   // them into the newly cloned array.
+@@ -1904,7 +1869,7 @@ void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
+     }
+     VisitForAccumulatorValue(subexpr);
+ 
+-    if (IsFastObjectElementsKind(constant_elements_kind)) {
++    if (has_fast_elements) {
+       int offset = FixedArray::kHeaderSize + (i * kPointerSize);
+       __ LoadP(r8, MemOperand(sp, kPointerSize));  // Copy of array literal.
+       __ LoadP(r4, FieldMemOperand(r8, JSObject::kElementsOffset));
+@@ -2446,7 +2411,8 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
+   patch_site.EmitJumpIfSmi(scratch1, &smi_case);
+ 
+   __ bind(&stub_call);
+-  Handle<Code> code = CodeFactory::BinaryOpIC(isolate(), op).code();
++  Handle<Code> code = CodeFactory::BinaryOpIC(
++      isolate(), op, language_mode()).code();
+   CallIC(code, expr->BinaryOperationFeedbackId());
+   patch_site.EmitPatchInfo();
+   __ b(&done);
+@@ -2622,7 +2588,8 @@ void FullCodeGenerator::EmitClassDefineProperties(ClassLiteral* lit) {
+ 
+ void FullCodeGenerator::EmitBinaryOp(BinaryOperation* expr, Token::Value op) {
+   __ pop(r4);
+-  Handle<Code> code = CodeFactory::BinaryOpIC(isolate(), op).code();
++  Handle<Code> code = CodeFactory::BinaryOpIC(
++      isolate(), op, language_mode()).code();
+   JumpPatchSite patch_site(masm_);  // unbound, signals no inlined smi code.
+   CallIC(code, expr->BinaryOperationFeedbackId());
+   patch_site.EmitPatchInfo();
+@@ -3084,8 +3051,9 @@ void FullCodeGenerator::EmitResolvePossiblyDirectEval(int arg_count) {
+   __ LoadP(r7, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
+ 
+   // r6: the receiver of the enclosing function.
+-  int receiver_offset = 2 + info_->scope()->num_parameters();
+-  __ LoadP(r6, MemOperand(fp, receiver_offset * kPointerSize), r0);
++  Variable* this_var = scope()->LookupThis();
++  DCHECK_NOT_NULL(this_var);
++  GetVar(r6, this_var);
+ 
+   // r5: language mode.
+   __ LoadSmiLiteral(r5, Smi::FromInt(language_mode()));
+@@ -3106,6 +3074,22 @@ void FullCodeGenerator::EmitLoadSuperConstructor() {
+ }
+ 
+ 
++void FullCodeGenerator::EmitInitializeThisAfterSuper(
++    SuperReference* super_ref) {
++  Variable* this_var = super_ref->this_var()->var();
++  GetVar(r4, this_var);
++  __ CompareRoot(r4, Heap::kTheHoleValueRootIndex);
++  Label uninitialized_this;
++  __ beq(&uninitialized_this);
++  __ mov(r4, Operand(this_var->name()));
++  __ push(r4);
++  __ CallRuntime(Runtime::kThrowReferenceError, 1);
++  __ bind(&uninitialized_this);
++
++  EmitVariableAssignment(this_var, Token::INIT_CONST);
++}
++
++
+ void FullCodeGenerator::VisitCall(Call* expr) {
+ #ifdef DEBUG
+   // We want to verify that RecordJSReturnSite gets called on all paths
+@@ -3332,18 +3316,7 @@ void FullCodeGenerator::EmitSuperConstructorCall(Call* expr) {
+ 
+   RecordJSReturnSite(expr);
+ 
+-  SuperReference* super_ref = expr->expression()->AsSuperReference();
+-  Variable* this_var = super_ref->this_var()->var();
+-  GetVar(r4, this_var);
+-  __ CompareRoot(r4, Heap::kTheHoleValueRootIndex);
+-  Label uninitialized_this;
+-  __ beq(&uninitialized_this);
+-  __ mov(r4, Operand(this_var->name()));
+-  __ push(r4);
+-  __ CallRuntime(Runtime::kThrowReferenceError, 1);
+-  __ bind(&uninitialized_this);
+-
+-  EmitVariableAssignment(this_var, Token::INIT_CONST);
++  EmitInitializeThisAfterSuper(expr->expression()->AsSuperReference());
+   context()->Plug(r3);
+ }
+ 
+@@ -4629,28 +4602,81 @@ void FullCodeGenerator::EmitDebugIsActive(CallRuntime* expr) {
+ }
+ 
+ 
++void FullCodeGenerator::EmitCallSuperWithSpread(CallRuntime* expr) {
++  // Assert: expr === CallRuntime("ReflectConstruct")
++  CallRuntime* call = expr->arguments()->at(0)->AsCallRuntime();
++  ZoneList<Expression*>* args = call->arguments();
++  DCHECK_EQ(3, args->length());
++
++  SuperReference* super_reference = args->at(0)->AsSuperReference();
++
++  // Load ReflectConstruct function
++  EmitLoadJSRuntimeFunction(call);
++
++  // Push the target function under the receiver.
++  __ LoadP(r0, MemOperand(sp, 0));
++  __ push(r0);
++  __ StoreP(r3, MemOperand(sp, kPointerSize));
++
++  // Push super
++  EmitLoadSuperConstructor();
++  __ Push(result_register());
++
++  // Push arguments array
++  VisitForStackValue(args->at(1));
++
++  // Push NewTarget
++  DCHECK(args->at(2)->IsVariableProxy());
++  VisitForStackValue(args->at(2));
++
++  EmitCallJSRuntimeFunction(call);
++
++  // Restore context register.
++  __ LoadP(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
++  context()->DropAndPlug(1, r3);
++
++  EmitInitializeThisAfterSuper(super_reference);
++}
++
++
++void FullCodeGenerator::EmitLoadJSRuntimeFunction(CallRuntime* expr) {
++  // Push the builtins object as the receiver.
++  Register receiver = LoadDescriptor::ReceiverRegister();
++  __ LoadP(receiver, GlobalObjectOperand());
++  __ LoadP(receiver, FieldMemOperand(receiver, GlobalObject::kBuiltinsOffset));
++  __ push(receiver);
++
++  // Load the function from the receiver.
++  __ mov(LoadDescriptor::NameRegister(), Operand(expr->name()));
++  if (FLAG_vector_ics) {
++    __ mov(VectorLoadICDescriptor::SlotRegister(),
++           Operand(SmiFromSlot(expr->CallRuntimeFeedbackSlot())));
++    CallLoadIC(NOT_CONTEXTUAL);
++  } else {
++    CallLoadIC(NOT_CONTEXTUAL, expr->CallRuntimeFeedbackId());
++  }
++}
++
++
++void FullCodeGenerator::EmitCallJSRuntimeFunction(CallRuntime* expr) {
++  ZoneList<Expression*>* args = expr->arguments();
++  int arg_count = args->length();
++
++  // Record source position of the IC call.
++  SetSourcePosition(expr->position());
++  CallFunctionStub stub(isolate(), arg_count, NO_CALL_FUNCTION_FLAGS);
++  __ LoadP(r4, MemOperand(sp, (arg_count + 1) * kPointerSize), r0);
++  __ CallStub(&stub);
++}
++
++
+ void FullCodeGenerator::VisitCallRuntime(CallRuntime* expr) {
+   ZoneList<Expression*>* args = expr->arguments();
+   int arg_count = args->length();
+ 
+   if (expr->is_jsruntime()) {
+     Comment cmnt(masm_, "[ CallRuntime");
+-    // Push the builtins object as the receiver.
+-    Register receiver = LoadDescriptor::ReceiverRegister();
+-    __ LoadP(receiver, GlobalObjectOperand());
+-    __ LoadP(receiver,
+-             FieldMemOperand(receiver, GlobalObject::kBuiltinsOffset));
+-    __ push(receiver);
+-
+-    // Load the function from the receiver.
+-    __ mov(LoadDescriptor::NameRegister(), Operand(expr->name()));
+-    if (FLAG_vector_ics) {
+-      __ mov(VectorLoadICDescriptor::SlotRegister(),
+-             Operand(SmiFromSlot(expr->CallRuntimeFeedbackSlot())));
+-      CallLoadIC(NOT_CONTEXTUAL);
+-    } else {
+-      CallLoadIC(NOT_CONTEXTUAL, expr->CallRuntimeFeedbackId());
+-    }
++    EmitLoadJSRuntimeFunction(expr);
+ 
+     // Push the target function under the receiver.
+     __ LoadP(ip, MemOperand(sp, 0));
+@@ -4662,11 +4688,7 @@ void FullCodeGenerator::VisitCallRuntime(CallRuntime* expr) {
+       VisitForStackValue(args->at(i));
+     }
+ 
+-    // Record source position of the IC call.
+-    SetSourcePosition(expr->position());
+-    CallFunctionStub stub(isolate(), arg_count, NO_CALL_FUNCTION_FLAGS);
+-    __ LoadP(r4, MemOperand(sp, (arg_count + 1) * kPointerSize), r0);
+-    __ CallStub(&stub);
++    EmitCallJSRuntimeFunction(expr);
+ 
+     // Restore context register.
+     __ LoadP(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
+@@ -4792,10 +4814,12 @@ void FullCodeGenerator::VisitUnaryOperation(UnaryOperation* expr) {
+     case Token::TYPEOF: {
+       Comment cmnt(masm_, "[ UnaryOperation (TYPEOF)");
+       {
+-        StackValueContext context(this);
++        AccumulatorValueContext context(this);
+         VisitForTypeofValue(expr->expression());
+       }
+-      __ CallRuntime(Runtime::kTypeof, 1);
++      __ mr(r6, r3);
++      TypeofStub typeof_stub(isolate());
++      __ CallStub(&typeof_stub);
+       context()->Plug(r3);
+       break;
+     }
+@@ -4965,7 +4989,8 @@ void FullCodeGenerator::VisitCountOperation(CountOperation* expr) {
+   // Record position before stub call.
+   SetSourcePosition(expr->position());
+ 
+-  Handle<Code> code = CodeFactory::BinaryOpIC(isolate(), Token::ADD).code();
++  Handle<Code> code = CodeFactory::BinaryOpIC(
++      isolate(), Token::ADD, language_mode()).code();
+   CallIC(code, expr->CountBinOpFeedbackId());
+   patch_site.EmitPatchInfo();
+   __ bind(&done);
+diff --git a/src/s390/interface-descriptors-s390.cc b/src/s390/interface-descriptors-s390.cc
+index 01d0150..2bfea40 100644
+--- a/src/s390/interface-descriptors-s390.cc
++++ b/src/s390/interface-descriptors-s390.cc
+@@ -54,6 +54,11 @@ const Register MathPowIntegerDescriptor::exponent() {
+ }
+ 
+ 
++const Register GrowArrayElementsDescriptor::ObjectRegister() { return r3; }
++const Register GrowArrayElementsDescriptor::KeyRegister() { return r6; }
++const Register GrowArrayElementsDescriptor::CapacityRegister() { return r5; }
++
++
+ void FastNewClosureDescriptor::Initialize(CallInterfaceDescriptorData* data) {
+   Register registers[] = {cp, r5};
+   data->Initialize(arraysize(registers), registers, NULL);
+@@ -78,6 +83,12 @@ void NumberToStringDescriptor::Initialize(CallInterfaceDescriptorData* data) {
+ }
+ 
+ 
++void TypeofDescriptor::Initialize(CallInterfaceDescriptorData* data) {
++  Register registers[] = {cp, r6};
++  data->Initialize(arraysize(registers), registers, NULL);
++}
++
++
+ void FastCloneShallowArrayDescriptor::Initialize(
+     CallInterfaceDescriptorData* data) {
+   Register registers[] = {cp, r6, r5, r4};
+@@ -358,6 +369,21 @@ void ApiAccessorDescriptor::Initialize(CallInterfaceDescriptorData* data) {
+   };
+   data->Initialize(arraysize(registers), registers, representations);
+ }
++
++
++void MathRoundVariantDescriptor::Initialize(CallInterfaceDescriptorData* data) {
++  Register registers[] = {
++      cp,  // context
++      r4,  // math rounding function
++      r6,  // vector slot id
++  };
++  Representation representations[] = {
++      Representation::Tagged(),  //
++      Representation::Tagged(),  //
++      Representation::Tagged(),  //
++  };
++  data->Initialize(arraysize(registers), registers, representations);
++}
+ }
+ }  // namespace v8::internal
+ 
+diff --git a/src/s390/lithium-codegen-s390.cc b/src/s390/lithium-codegen-s390.cc
+index f6147c2..2f28717 100644
+--- a/src/s390/lithium-codegen-s390.cc
++++ b/src/s390/lithium-codegen-s390.cc
+@@ -18,16 +18,16 @@ namespace v8 {
+ namespace internal {
+ 
+ 
+-class SafepointGenerator FINAL : public CallWrapper {
++class SafepointGenerator final : public CallWrapper {
+  public:
+   SafepointGenerator(LCodeGen* codegen, LPointerMap* pointers,
+                      Safepoint::DeoptMode mode)
+       : codegen_(codegen), pointers_(pointers), deopt_mode_(mode) {}
+   virtual ~SafepointGenerator() {}
+ 
+-  void BeforeCall(int call_size) const OVERRIDE {}
++  void BeforeCall(int call_size) const override {}
+ 
+-  void AfterCall() const OVERRIDE {
++  void AfterCall() const override {
+     codegen_->RecordSafepoint(pointers_, deopt_mode_);
+   }
+ 
+@@ -118,8 +118,8 @@ bool LCodeGen::GeneratePrologue() {
+     // Sloppy mode functions and builtins need to replace the receiver with the
+     // global proxy when called as functions (without an explicit receiver
+     // object).
+-    if (graph()->this_has_uses() && is_sloppy(info_->language_mode()) &&
+-        !info_->is_native()) {
++    if (is_sloppy(info_->language_mode()) && info_->MayUseThis() &&
++        !info_->is_native() && info_->scope()->has_this_declaration()) {
+       Label ok;
+       int receiver_offset = info_->scope()->num_parameters() * kPointerSize;
+       __ LoadP(r5, MemOperand(sp, receiver_offset));
+@@ -182,6 +182,7 @@ bool LCodeGen::GeneratePrologue() {
+     Comment(";;; Allocate local context");
+     bool need_write_barrier = true;
+     // Argument to NewContext is the function, which is in r4.
++    DCHECK(!info()->scope()->is_script_scope());
+     if (heap_slots <= FastNewContextStub::kMaximumSlots) {
+       FastNewContextStub stub(isolate(), heap_slots);
+       __ CallStub(&stub);
+@@ -198,8 +199,9 @@ bool LCodeGen::GeneratePrologue() {
+     __ StoreP(r3, MemOperand(fp, StandardFrameConstants::kContextOffset));
+     // Copy any necessary parameters into the context.
+     int num_parameters = scope()->num_parameters();
+-    for (int i = 0; i < num_parameters; i++) {
+-      Variable* var = scope()->parameter(i);
++    int first_parameter = scope()->has_this_declaration() ? -1 : 0;
++    for (int i = first_parameter; i < num_parameters; i++) {
++      Variable* var = (i == -1) ? scope()->receiver() : scope()->parameter(i);
+       if (var->IsContextSlot()) {
+         int parameter_offset = StandardFrameConstants::kCallerSPOffset +
+                                (num_parameters - 1 - i) * kPointerSize;
+@@ -2192,7 +2194,8 @@ void LCodeGen::DoArithmeticT(LArithmeticT* instr) {
+   DCHECK(ToRegister(instr->right()).is(r3));
+   DCHECK(ToRegister(instr->result()).is(r3));
+ 
+-  Handle<Code> code = CodeFactory::BinaryOpIC(isolate(), instr->op()).code();
++  Handle<Code> code = CodeFactory::BinaryOpIC(
++      isolate(), instr->op(), instr->language_mode()).code();
+   CallCode(code, RelocInfo::CODE_TARGET, instr);
+ }
+ 
+@@ -2851,15 +2854,15 @@ void LCodeGen::DoInstanceOf(LInstanceOf* instr) {
+ 
+ 
+ void LCodeGen::DoInstanceOfKnownGlobal(LInstanceOfKnownGlobal* instr) {
+-  class DeferredInstanceOfKnownGlobal FINAL : public LDeferredCode {
++  class DeferredInstanceOfKnownGlobal final : public LDeferredCode {
+    public:
+     DeferredInstanceOfKnownGlobal(LCodeGen* codegen,
+                                   LInstanceOfKnownGlobal* instr)
+         : LDeferredCode(codegen), instr_(instr) {}
+-    void Generate() OVERRIDE {
++    void Generate() override {
+       codegen()->DoDeferredInstanceOfKnownGlobal(instr_, &map_check_);
+     }
+-    LInstruction* instr() OVERRIDE { return instr_; }
++    LInstruction* instr() override { return instr_; }
+     Label* map_check() { return &map_check_; }
+ 
+    private:
+@@ -3491,6 +3494,23 @@ void LCodeGen::DoLoadKeyedFixedArray(LLoadKeyed* instr) {
+       __ cmp(result, scratch);
+       DeoptimizeIf(eq, instr, Deoptimizer::kHole);
+     }
++  } else if (instr->hydrogen()->hole_mode() == CONVERT_HOLE_TO_UNDEFINED) {
++    DCHECK(instr->hydrogen()->elements_kind() == FAST_HOLEY_ELEMENTS);
++    Label done;
++    __ LoadRoot(scratch, Heap::kTheHoleValueRootIndex);
++    __ cmp(result, scratch);
++    __ bne(&done);
++    if (info()->IsStub()) {
++      // A stub can safely convert the hole to undefined only if the array
++      // protector cell contains (Smi) Isolate::kArrayProtectorValid. Otherwise
++      // it needs to bail out.
++      __ LoadRoot(result, Heap::kArrayProtectorRootIndex);
++      __ LoadP(result, FieldMemOperand(result, Cell::kValueOffset));
++      __ CmpSmiLiteral(result, Smi::FromInt(Isolate::kArrayProtectorValid), r0);
++      DeoptimizeIf(ne, instr, Deoptimizer::kHole);
++    }
++    __ LoadRoot(result, Heap::kUndefinedValueRootIndex);
++    __ bind(&done);
+   }
+ }
+ 
+@@ -3542,7 +3562,7 @@ void LCodeGen::DoLoadKeyedGeneric(LLoadKeyedGeneric* instr) {
+   DCHECK(ToRegister(instr->object()).is(LoadDescriptor::ReceiverRegister()));
+   DCHECK(ToRegister(instr->key()).is(LoadDescriptor::NameRegister()));
+ 
+-  if (FLAG_vector_ics) {
++  if (instr->hydrogen()->HasVectorAndSlot()) {
+     EmitVectorLoadICRegisters<LLoadKeyedGeneric>(instr);
+   }
+ 
+@@ -3917,14 +3937,14 @@ void LCodeGen::EmitInteger32MathAbs(LMathAbs* instr) {
+ 
+ void LCodeGen::DoMathAbs(LMathAbs* instr) {
+   // Class for deferred case.
+-  class DeferredMathAbsTaggedHeapNumber FINAL : public LDeferredCode {
++  class DeferredMathAbsTaggedHeapNumber final : public LDeferredCode {
+    public:
+     DeferredMathAbsTaggedHeapNumber(LCodeGen* codegen, LMathAbs* instr)
+         : LDeferredCode(codegen), instr_(instr) {}
+-    void Generate() OVERRIDE {
++    void Generate() override {
+       codegen()->DoDeferredMathAbsTaggedHeapNumber(instr_);
+     }
+-    LInstruction* instr() OVERRIDE { return instr_; }
++    LInstruction* instr() override { return instr_; }
+ 
+    private:
+     LMathAbs* instr_;
+@@ -4171,32 +4191,13 @@ void LCodeGen::DoTailCallThroughMegamorphicCache(
+   Register extra2 = r9;
+   Register extra3 = r10;
+ 
+-#ifdef DEBUG
+-  Register slot = FLAG_vector_ics ? ToRegister(instr->slot()) : no_reg;
+-  Register vector = FLAG_vector_ics ? ToRegister(instr->vector()) : no_reg;
+-  DCHECK(!FLAG_vector_ics ||
+-         !AreAliased(slot, vector, scratch, extra, extra2, extra3));
+-#endif
+-
+-  // Important for the tail-call.
+-  bool must_teardown_frame = NeedsEagerFrame();
+-
+-  if (!instr->hydrogen()->is_just_miss()) {
+-    DCHECK(!instr->hydrogen()->is_keyed_load());
+-
+-    // The probe will tail call to a handler if found.
+-    isolate()->stub_cache()->GenerateProbe(
+-        masm(), Code::LOAD_IC, instr->hydrogen()->flags(), must_teardown_frame,
+-        receiver, name, scratch, extra, extra2, extra3);
+-  }
++  // The probe will tail call to a handler if found.
++  isolate()->stub_cache()->GenerateProbe(
++      masm(), Code::LOAD_IC, instr->hydrogen()->flags(), false, receiver, name,
++      scratch, extra, extra2, extra3);
+ 
+   // Tail call to miss if we ended up here.
+-  if (must_teardown_frame) __ LeaveFrame(StackFrame::INTERNAL);
+-  if (instr->hydrogen()->is_keyed_load()) {
+-    KeyedLoadIC::GenerateMiss(masm());
+-  } else {
+-    LoadIC::GenerateMiss(masm());
+-  }
++  LoadIC::GenerateMiss(masm());
+ }
+ 
+ 
+@@ -4319,7 +4320,14 @@ void LCodeGen::DoCallNewArray(LCallNewArray* instr) {
+   DCHECK(ToRegister(instr->result()).is(r3));
+ 
+   __ mov(r3, Operand(instr->arity()));
+-  __ LoadRoot(r5, Heap::kUndefinedValueRootIndex);
++  if (instr->arity() == 1) {
++    // We only need the allocation site for the case we have a length argument.
++    // The case may bail out to the runtime, which will determine the correct
++    // elements kind with the site.
++    __ Move(r5, instr->hydrogen()->site());
++  } else {
++    __ LoadRoot(r5, Heap::kUndefinedValueRootIndex);
++  }
+   ElementsKind kind = instr->hydrogen()->elements_kind();
+   AllocationSiteOverrideMode override_mode =
+       (AllocationSite::GetMode(kind) == TRACK_ALLOCATION_SITE)
+@@ -4818,12 +4826,12 @@ void LCodeGen::DoStringAdd(LStringAdd* instr) {
+ 
+ 
+ void LCodeGen::DoStringCharCodeAt(LStringCharCodeAt* instr) {
+-  class DeferredStringCharCodeAt FINAL : public LDeferredCode {
++  class DeferredStringCharCodeAt final : public LDeferredCode {
+    public:
+     DeferredStringCharCodeAt(LCodeGen* codegen, LStringCharCodeAt* instr)
+         : LDeferredCode(codegen), instr_(instr) {}
+-    void Generate() OVERRIDE { codegen()->DoDeferredStringCharCodeAt(instr_); }
+-    LInstruction* instr() OVERRIDE { return instr_; }
++    void Generate() override { codegen()->DoDeferredStringCharCodeAt(instr_); }
++    LInstruction* instr() override { return instr_; }
+ 
+    private:
+     LStringCharCodeAt* instr_;
+@@ -4871,14 +4879,14 @@ void LCodeGen::DoDeferredStringCharCodeAt(LStringCharCodeAt* instr) {
+ 
+ 
+ void LCodeGen::DoStringCharFromCode(LStringCharFromCode* instr) {
+-  class DeferredStringCharFromCode FINAL : public LDeferredCode {
++  class DeferredStringCharFromCode final : public LDeferredCode {
+    public:
+     DeferredStringCharFromCode(LCodeGen* codegen, LStringCharFromCode* instr)
+         : LDeferredCode(codegen), instr_(instr) {}
+-    void Generate() OVERRIDE {
++    void Generate() override {
+       codegen()->DoDeferredStringCharFromCode(instr_);
+     }
+-    LInstruction* instr() OVERRIDE { return instr_; }
++    LInstruction* instr() override { return instr_; }
+ 
+    private:
+     LStringCharFromCode* instr_;
+@@ -4945,15 +4953,15 @@ void LCodeGen::DoUint32ToDouble(LUint32ToDouble* instr) {
+ 
+ 
+ void LCodeGen::DoNumberTagI(LNumberTagI* instr) {
+-  class DeferredNumberTagI FINAL : public LDeferredCode {
++  class DeferredNumberTagI final : public LDeferredCode {
+    public:
+     DeferredNumberTagI(LCodeGen* codegen, LNumberTagI* instr)
+         : LDeferredCode(codegen), instr_(instr) {}
+-    void Generate() OVERRIDE {
++    void Generate() override {
+       codegen()->DoDeferredNumberTagIU(instr_, instr_->value(), instr_->temp1(),
+                                        instr_->temp2(), SIGNED_INT32);
+     }
+-    LInstruction* instr() OVERRIDE { return instr_; }
++    LInstruction* instr() override { return instr_; }
+ 
+    private:
+     LNumberTagI* instr_;
+@@ -4974,15 +4982,15 @@ void LCodeGen::DoNumberTagI(LNumberTagI* instr) {
+ 
+ 
+ void LCodeGen::DoNumberTagU(LNumberTagU* instr) {
+-  class DeferredNumberTagU FINAL : public LDeferredCode {
++  class DeferredNumberTagU final : public LDeferredCode {
+    public:
+     DeferredNumberTagU(LCodeGen* codegen, LNumberTagU* instr)
+         : LDeferredCode(codegen), instr_(instr) {}
+-    void Generate() OVERRIDE {
++    void Generate() override {
+       codegen()->DoDeferredNumberTagIU(instr_, instr_->value(), instr_->temp1(),
+                                        instr_->temp2(), UNSIGNED_INT32);
+     }
+-    LInstruction* instr() OVERRIDE { return instr_; }
++    LInstruction* instr() override { return instr_; }
+ 
+    private:
+     LNumberTagU* instr_;
+@@ -5060,12 +5068,12 @@ void LCodeGen::DoDeferredNumberTagIU(LInstruction* instr, LOperand* value,
+ 
+ 
+ void LCodeGen::DoNumberTagD(LNumberTagD* instr) {
+-  class DeferredNumberTagD FINAL : public LDeferredCode {
++  class DeferredNumberTagD final : public LDeferredCode {
+    public:
+     DeferredNumberTagD(LCodeGen* codegen, LNumberTagD* instr)
+         : LDeferredCode(codegen), instr_(instr) {}
+-    void Generate() OVERRIDE { codegen()->DoDeferredNumberTagD(instr_); }
+-    LInstruction* instr() OVERRIDE { return instr_; }
++    void Generate() override { codegen()->DoDeferredNumberTagD(instr_); }
++    LInstruction* instr() override { return instr_; }
+ 
+    private:
+     LNumberTagD* instr_;
+@@ -5287,12 +5295,12 @@ void LCodeGen::DoDeferredTaggedToI(LTaggedToI* instr) {
+ 
+ 
+ void LCodeGen::DoTaggedToI(LTaggedToI* instr) {
+-  class DeferredTaggedToI FINAL : public LDeferredCode {
++  class DeferredTaggedToI final : public LDeferredCode {
+    public:
+     DeferredTaggedToI(LCodeGen* codegen, LTaggedToI* instr)
+         : LDeferredCode(codegen), instr_(instr) {}
+-    void Generate() OVERRIDE { codegen()->DoDeferredTaggedToI(instr_); }
+-    LInstruction* instr() OVERRIDE { return instr_; }
++    void Generate() override { codegen()->DoDeferredTaggedToI(instr_); }
++    LInstruction* instr() override { return instr_; }
+ 
+    private:
+     LTaggedToI* instr_;
+@@ -5418,6 +5426,18 @@ void LCodeGen::DoCheckNonSmi(LCheckNonSmi* instr) {
+ }
+ 
+ 
++void LCodeGen::DoCheckArrayBufferNotNeutered(
++    LCheckArrayBufferNotNeutered* instr) {
++  Register view = ToRegister(instr->view());
++  Register scratch = scratch0();
++
++  __ LoadP(scratch, FieldMemOperand(view, JSArrayBufferView::kBufferOffset));
++  __ lwz(scratch, FieldMemOperand(scratch, JSArrayBuffer::kBitFieldOffset));
++  __ andi(r0, scratch, Operand(1 << JSArrayBuffer::WasNeutered::kShift));
++  DeoptimizeIf(ne, instr, Deoptimizer::kOutOfBounds, cr0);
++}
++
++
+ void LCodeGen::DoCheckInstanceType(LCheckInstanceType* instr) {
+   Register input = ToRegister(instr->value());
+   Register scratch = scratch0();
+@@ -5496,17 +5516,17 @@ void LCodeGen::DoDeferredInstanceMigration(LCheckMaps* instr, Register object) {
+ 
+ 
+ void LCodeGen::DoCheckMaps(LCheckMaps* instr) {
+-  class DeferredCheckMaps FINAL : public LDeferredCode {
++  class DeferredCheckMaps final : public LDeferredCode {
+    public:
+     DeferredCheckMaps(LCodeGen* codegen, LCheckMaps* instr, Register object)
+         : LDeferredCode(codegen), instr_(instr), object_(object) {
+       SetExit(check_maps());
+     }
+-    void Generate() OVERRIDE {
++    void Generate() override {
+       codegen()->DoDeferredInstanceMigration(instr_, object_);
+     }
+     Label* check_maps() { return &check_maps_; }
+-    LInstruction* instr() OVERRIDE { return instr_; }
++    LInstruction* instr() override { return instr_; }
+ 
+    private:
+     LCheckMaps* instr_;
+@@ -5628,12 +5648,12 @@ void LCodeGen::DoConstructDouble(LConstructDouble* instr) {
+ 
+ 
+ void LCodeGen::DoAllocate(LAllocate* instr) {
+-  class DeferredAllocate FINAL : public LDeferredCode {
++  class DeferredAllocate final : public LDeferredCode {
+    public:
+     DeferredAllocate(LCodeGen* codegen, LAllocate* instr)
+         : LDeferredCode(codegen), instr_(instr) {}
+-    void Generate() OVERRIDE { codegen()->DoDeferredAllocate(instr_); }
+-    LInstruction* instr() OVERRIDE { return instr_; }
++    void Generate() override { codegen()->DoDeferredAllocate(instr_); }
++    LInstruction* instr() override { return instr_; }
+ 
+    private:
+     LAllocate* instr_;
+@@ -5650,13 +5670,9 @@ void LCodeGen::DoAllocate(LAllocate* instr) {
+   if (instr->hydrogen()->MustAllocateDoubleAligned()) {
+     flags = static_cast<AllocationFlags>(flags | DOUBLE_ALIGNMENT);
+   }
+-  if (instr->hydrogen()->IsOldPointerSpaceAllocation()) {
+-    DCHECK(!instr->hydrogen()->IsOldDataSpaceAllocation());
++  if (instr->hydrogen()->IsOldSpaceAllocation()) {
+     DCHECK(!instr->hydrogen()->IsNewSpaceAllocation());
+-    flags = static_cast<AllocationFlags>(flags | PRETENURE_OLD_POINTER_SPACE);
+-  } else if (instr->hydrogen()->IsOldDataSpaceAllocation()) {
+-    DCHECK(!instr->hydrogen()->IsNewSpaceAllocation());
+-    flags = static_cast<AllocationFlags>(flags | PRETENURE_OLD_DATA_SPACE);
++    flags = static_cast<AllocationFlags>(flags | PRETENURE);
+   }
+ 
+   if (instr->size()->IsConstantOperand()) {
+@@ -5722,13 +5738,9 @@ void LCodeGen::DoDeferredAllocate(LAllocate* instr) {
+ 
+   int flags = AllocateDoubleAlignFlag::encode(
+       instr->hydrogen()->MustAllocateDoubleAligned());
+-  if (instr->hydrogen()->IsOldPointerSpaceAllocation()) {
+-    DCHECK(!instr->hydrogen()->IsOldDataSpaceAllocation());
+-    DCHECK(!instr->hydrogen()->IsNewSpaceAllocation());
+-    flags = AllocateTargetSpace::update(flags, OLD_POINTER_SPACE);
+-  } else if (instr->hydrogen()->IsOldDataSpaceAllocation()) {
++  if (instr->hydrogen()->IsOldSpaceAllocation()) {
+     DCHECK(!instr->hydrogen()->IsNewSpaceAllocation());
+-    flags = AllocateTargetSpace::update(flags, OLD_DATA_SPACE);
++    flags = AllocateTargetSpace::update(flags, OLD_SPACE);
+   } else {
+     flags = AllocateTargetSpace::update(flags, NEW_SPACE);
+   }
+@@ -5812,9 +5824,17 @@ void LCodeGen::DoFunctionLiteral(LFunctionLiteral* instr) {
+ 
+ 
+ void LCodeGen::DoTypeof(LTypeof* instr) {
+-  Register input = ToRegister(instr->value());
+-  __ push(input);
+-  CallRuntime(Runtime::kTypeof, 1, instr);
++  DCHECK(ToRegister(instr->value()).is(r6));
++  DCHECK(ToRegister(instr->result()).is(r3));
++  Label end, do_call;
++  Register value_register = ToRegister(instr->value());
++  __ JumpIfNotSmi(value_register, &do_call);
++  __ mov(r3, Operand(isolate()->factory()->number_string()));
++  __ b(&end);
++  __ bind(&do_call);
++  TypeofStub stub(isolate());
++  CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
++  __ bind(&end);
+ }
+ 
+ 
+@@ -5993,12 +6013,12 @@ void LCodeGen::DoDeferredStackCheck(LStackCheck* instr) {
+ 
+ 
+ void LCodeGen::DoStackCheck(LStackCheck* instr) {
+-  class DeferredStackCheck FINAL : public LDeferredCode {
++  class DeferredStackCheck final : public LDeferredCode {
+    public:
+     DeferredStackCheck(LCodeGen* codegen, LStackCheck* instr)
+         : LDeferredCode(codegen), instr_(instr) {}
+-    void Generate() OVERRIDE { codegen()->DoDeferredStackCheck(instr_); }
+-    LInstruction* instr() OVERRIDE { return instr_; }
++    void Generate() override { codegen()->DoDeferredStackCheck(instr_); }
++    LInstruction* instr() override { return instr_; }
+ 
+    private:
+     LStackCheck* instr_;
+@@ -6054,15 +6074,6 @@ void LCodeGen::DoOsrEntry(LOsrEntry* instr) {
+ 
+ 
+ void LCodeGen::DoForInPrepareMap(LForInPrepareMap* instr) {
+-  __ LoadRoot(ip, Heap::kUndefinedValueRootIndex);
+-  __ cmp(r3, ip);
+-  DeoptimizeIf(eq, instr, Deoptimizer::kUndefined);
+-
+-  Register null_value = r8;
+-  __ LoadRoot(null_value, Heap::kNullValueRootIndex);
+-  __ cmp(r3, null_value);
+-  DeoptimizeIf(eq, instr, Deoptimizer::kNull);
+-
+   __ TestIfSmi(r3, r0);
+   DeoptimizeIf(eq, instr, Deoptimizer::kSmi, cr0);
+ 
+@@ -6071,6 +6082,8 @@ void LCodeGen::DoForInPrepareMap(LForInPrepareMap* instr) {
+   DeoptimizeIf(le, instr, Deoptimizer::kWrongInstanceType);
+ 
+   Label use_cache, call_runtime;
++  Register null_value = r8;
++  __ LoadRoot(null_value, Heap::kNullValueRootIndex);
+   __ CheckEnumCache(null_value, &call_runtime);
+ 
+   __ LoadP(r3, FieldMemOperand(r3, HeapObject::kMapOffset));
+@@ -6133,7 +6146,7 @@ void LCodeGen::DoDeferredLoadMutableDouble(LLoadFieldByIndex* instr,
+ 
+ 
+ void LCodeGen::DoLoadFieldByIndex(LLoadFieldByIndex* instr) {
+-  class DeferredLoadMutableDouble FINAL : public LDeferredCode {
++  class DeferredLoadMutableDouble final : public LDeferredCode {
+    public:
+     DeferredLoadMutableDouble(LCodeGen* codegen, LLoadFieldByIndex* instr,
+                               Register result, Register object, Register index)
+@@ -6142,10 +6155,10 @@ void LCodeGen::DoLoadFieldByIndex(LLoadFieldByIndex* instr) {
+           result_(result),
+           object_(object),
+           index_(index) {}
+-    void Generate() OVERRIDE {
++    void Generate() override {
+       codegen()->DoDeferredLoadMutableDouble(instr_, result_, object_, index_);
+     }
+-    LInstruction* instr() OVERRIDE { return instr_; }
++    LInstruction* instr() override { return instr_; }
+ 
+    private:
+     LLoadFieldByIndex* instr_;
+diff --git a/src/s390/lithium-codegen-s390.h b/src/s390/lithium-codegen-s390.h
+index 7da1253..248792f 100644
+--- a/src/s390/lithium-codegen-s390.h
++++ b/src/s390/lithium-codegen-s390.h
+@@ -157,7 +157,7 @@ class LCodeGen : public LCodeGenBase {
+ 
+   // Code generation passes.  Returns true if code generation should
+   // continue.
+-  void GenerateBodyInstructionPre(LInstruction* instr) OVERRIDE;
++  void GenerateBodyInstructionPre(LInstruction* instr) override;
+   bool GeneratePrologue();
+   bool GenerateDeferredCode();
+   bool GenerateJumpTable();
+@@ -235,7 +235,7 @@ class LCodeGen : public LCodeGenBase {
+   void RecordSafepointWithRegisters(LPointerMap* pointers, int arguments,
+                                     Safepoint::DeoptMode mode);
+ 
+-  void RecordAndWritePosition(int position) OVERRIDE;
++  void RecordAndWritePosition(int position) override;
+ 
+   static Condition TokenToCondition(Token::Value op);
+   void EmitGoto(int block);
+@@ -276,7 +276,7 @@ class LCodeGen : public LCodeGenBase {
+   void EmitDeepCopy(Handle<JSObject> object, Register result, Register source,
+                     int* offset, AllocationSiteMode mode);
+ 
+-  void EnsureSpaceForLazyDeopt(int space_needed) OVERRIDE;
++  void EnsureSpaceForLazyDeopt(int space_needed) override;
+   void DoLoadKeyedExternalArray(LLoadKeyed* instr);
+   void DoLoadKeyedFixedDoubleArray(LLoadKeyed* instr);
+   void DoLoadKeyedFixedArray(LLoadKeyed* instr);
+@@ -306,7 +306,7 @@ class LCodeGen : public LCodeGenBase {
+ 
+   Safepoint::Kind expected_safepoint_kind_;
+ 
+-  class PushSafepointRegistersScope FINAL BASE_EMBEDDED {
++  class PushSafepointRegistersScope final BASE_EMBEDDED {
+    public:
+     explicit PushSafepointRegistersScope(LCodeGen* codegen)
+         : codegen_(codegen) {
+diff --git a/src/s390/lithium-gap-resolver-s390.h b/src/s390/lithium-gap-resolver-s390.h
+index 78bd213..1b006db 100644
+--- a/src/s390/lithium-gap-resolver-s390.h
++++ b/src/s390/lithium-gap-resolver-s390.h
+@@ -15,7 +15,7 @@ namespace internal {
+ class LCodeGen;
+ class LGapResolver;
+ 
+-class LGapResolver FINAL BASE_EMBEDDED {
++class LGapResolver final BASE_EMBEDDED {
+  public:
+   explicit LGapResolver(LCodeGen* owner);
+ 
+diff --git a/src/s390/lithium-s390.cc b/src/s390/lithium-s390.cc
+index ec75713..db6cfb2 100644
+--- a/src/s390/lithium-s390.cc
++++ b/src/s390/lithium-s390.cc
+@@ -1118,17 +1118,10 @@ LInstruction* LChunkBuilder::DoTailCallThroughMegamorphicCache(
+       UseFixed(instr->receiver(), LoadDescriptor::ReceiverRegister());
+   LOperand* name_register =
+       UseFixed(instr->name(), LoadDescriptor::NameRegister());
+-  LOperand* slot = NULL;
+-  LOperand* vector = NULL;
+-  if (FLAG_vector_ics) {
+-    slot = UseFixed(instr->slot(), VectorLoadICDescriptor::SlotRegister());
+-    vector =
+-        UseFixed(instr->vector(), VectorLoadICDescriptor::VectorRegister());
+-  }
+ 
+   // Not marked as call. It can't deoptimize, and it never returns.
+   return new (zone()) LTailCallThroughMegamorphicCache(
+-      context, receiver_register, name_register, slot, vector);
++      context, receiver_register, name_register);
+ }
+ 
+ 
+@@ -2013,6 +2006,15 @@ LInstruction* LChunkBuilder::DoCheckSmi(HCheckSmi* instr) {
+ }
+ 
+ 
++LInstruction* LChunkBuilder::DoCheckArrayBufferNotNeutered(
++    HCheckArrayBufferNotNeutered* instr) {
++  LOperand* view = UseRegisterAtStart(instr->value());
++  LCheckArrayBufferNotNeutered* result =
++      new (zone()) LCheckArrayBufferNotNeutered(view);
++  return AssignEnvironment(result);
++}
++
++
+ LInstruction* LChunkBuilder::DoCheckInstanceType(HCheckInstanceType* instr) {
+   LOperand* value = UseRegisterAtStart(instr->value());
+   LInstruction* result = new (zone()) LCheckInstanceType(value);
+@@ -2197,16 +2199,21 @@ LInstruction* LChunkBuilder::DoLoadKeyed(HLoadKeyed* instr) {
+     result = DefineAsRegister(new (zone()) LLoadKeyed(backing_store, key));
+   }
+ 
+-  if ((instr->is_external() || instr->is_fixed_typed_array())
+-          ?
+-          // see LCodeGen::DoLoadKeyedExternalArray
+-          ((elements_kind == EXTERNAL_UINT32_ELEMENTS ||
+-            elements_kind == UINT32_ELEMENTS) &&
+-           !instr->CheckFlag(HInstruction::kUint32))
+-          :
+-          // see LCodeGen::DoLoadKeyedFixedDoubleArray and
+-          // LCodeGen::DoLoadKeyedFixedArray
+-          instr->RequiresHoleCheck()) {
++  bool needs_environment;
++  if (instr->is_external() || instr->is_fixed_typed_array()) {
++    // see LCodeGen::DoLoadKeyedExternalArray
++    needs_environment = (elements_kind == EXTERNAL_UINT32_ELEMENTS ||
++                         elements_kind == UINT32_ELEMENTS) &&
++                        !instr->CheckFlag(HInstruction::kUint32);
++  } else {
++    // see LCodeGen::DoLoadKeyedFixedDoubleArray and
++    // LCodeGen::DoLoadKeyedFixedArray
++    needs_environment =
++        instr->RequiresHoleCheck() ||
++        (instr->hole_mode() == CONVERT_HOLE_TO_UNDEFINED && info()->IsStub());
++  }
++
++  if (needs_environment) {
+     result = AssignEnvironment(result);
+   }
+   return result;
+@@ -2493,7 +2500,8 @@ LInstruction* LChunkBuilder::DoToFastProperties(HToFastProperties* instr) {
+ 
+ LInstruction* LChunkBuilder::DoTypeof(HTypeof* instr) {
+   LOperand* context = UseFixed(instr->context(), cp);
+-  LTypeof* result = new (zone()) LTypeof(context, UseFixed(instr->value(), r3));
++  LOperand* value = UseFixed(instr->value(), r6);
++  LTypeof* result = new (zone()) LTypeof(context, value);
+   return MarkAsCall(DefineFixed(result, r3), instr);
+ }
+ 
+diff --git a/src/s390/lithium-s390.h b/src/s390/lithium-s390.h
+index 5dce71c..22545e5 100644
+--- a/src/s390/lithium-s390.h
++++ b/src/s390/lithium-s390.h
+@@ -37,6 +37,7 @@ class LCodeGen;
+   V(CallNewArray)                            \
+   V(CallRuntime)                             \
+   V(CallStub)                                \
++  V(CheckArrayBufferNotNeutered)             \
+   V(CheckInstanceType)                       \
+   V(CheckNonSmi)                             \
+   V(CheckMaps)                               \
+@@ -165,9 +166,9 @@ class LCodeGen;
+ 
+ 
+ #define DECLARE_CONCRETE_INSTRUCTION(type, mnemonic)            \
+-  Opcode opcode() const FINAL { return LInstruction::k##type; } \
+-  void CompileToNative(LCodeGen* generator) FINAL;              \
+-  const char* Mnemonic() const FINAL { return mnemonic; }       \
++  Opcode opcode() const final { return LInstruction::k##type; } \
++  void CompileToNative(LCodeGen* generator) final;              \
++  const char* Mnemonic() const final { return mnemonic; }       \
+   static L##type* cast(LInstruction* instr) {                   \
+     DCHECK(instr->Is##type());                                  \
+     return reinterpret_cast<L##type*>(instr);                   \
+@@ -281,9 +282,9 @@ class LTemplateResultInstruction : public LInstruction {
+  public:
+   // Allow 0 or 1 output operands.
+   STATIC_ASSERT(R == 0 || R == 1);
+-  bool HasResult() const FINAL { return R != 0 && result() != NULL; }
++  bool HasResult() const final { return R != 0 && result() != NULL; }
+   void set_result(LOperand* operand) { results_[0] = operand; }
+-  LOperand* result() const OVERRIDE { return results_[0]; }
++  LOperand* result() const override { return results_[0]; }
+ 
+  protected:
+   EmbeddedContainer<LOperand*, R> results_;
+@@ -301,11 +302,11 @@ class LTemplateInstruction : public LTemplateResultInstruction<R> {
+ 
+  private:
+   // Iterator support.
+-  int InputCount() FINAL { return I; }
+-  LOperand* InputAt(int i) FINAL { return inputs_[i]; }
++  int InputCount() final { return I; }
++  LOperand* InputAt(int i) final { return inputs_[i]; }
+ 
+-  int TempCount() FINAL { return T; }
+-  LOperand* TempAt(int i) FINAL { return temps_[i]; }
++  int TempCount() final { return T; }
++  LOperand* TempAt(int i) final { return temps_[i]; }
+ };
+ 
+ 
+@@ -319,8 +320,8 @@ class LGap : public LTemplateInstruction<0, 0, 0> {
+   }
+ 
+   // Can't use the DECLARE-macro here because of sub-classes.
+-  bool IsGap() const OVERRIDE { return true; }
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  bool IsGap() const override { return true; }
++  void PrintDataTo(StringStream* stream) override;
+   static LGap* cast(LInstruction* instr) {
+     DCHECK(instr->IsGap());
+     return reinterpret_cast<LGap*>(instr);
+@@ -356,11 +357,11 @@ class LGap : public LTemplateInstruction<0, 0, 0> {
+ };
+ 
+ 
+-class LInstructionGap FINAL : public LGap {
++class LInstructionGap final : public LGap {
+  public:
+   explicit LInstructionGap(HBasicBlock* block) : LGap(block) {}
+ 
+-  bool HasInterestingComment(LCodeGen* gen) const OVERRIDE {
++  bool HasInterestingComment(LCodeGen* gen) const override {
+     return !IsRedundant();
+   }
+ 
+@@ -368,14 +369,14 @@ class LInstructionGap FINAL : public LGap {
+ };
+ 
+ 
+-class LGoto FINAL : public LTemplateInstruction<0, 0, 0> {
++class LGoto final : public LTemplateInstruction<0, 0, 0> {
+  public:
+   explicit LGoto(HBasicBlock* block) : block_(block) {}
+ 
+-  bool HasInterestingComment(LCodeGen* gen) const OVERRIDE;
++  bool HasInterestingComment(LCodeGen* gen) const override;
+   DECLARE_CONCRETE_INSTRUCTION(Goto, "goto")
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
+-  bool IsControl() const OVERRIDE { return true; }
++  void PrintDataTo(StringStream* stream) override;
++  bool IsControl() const override { return true; }
+ 
+   int block_id() const { return block_->block_id(); }
+ 
+@@ -384,7 +385,7 @@ class LGoto FINAL : public LTemplateInstruction<0, 0, 0> {
+ };
+ 
+ 
+-class LLazyBailout FINAL : public LTemplateInstruction<0, 0, 0> {
++class LLazyBailout final : public LTemplateInstruction<0, 0, 0> {
+  public:
+   LLazyBailout() : gap_instructions_size_(0) {}
+ 
+@@ -400,36 +401,36 @@ class LLazyBailout FINAL : public LTemplateInstruction<0, 0, 0> {
+ };
+ 
+ 
+-class LDummy FINAL : public LTemplateInstruction<1, 0, 0> {
++class LDummy final : public LTemplateInstruction<1, 0, 0> {
+  public:
+   LDummy() {}
+   DECLARE_CONCRETE_INSTRUCTION(Dummy, "dummy")
+ };
+ 
+ 
+-class LDummyUse FINAL : public LTemplateInstruction<1, 1, 0> {
++class LDummyUse final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LDummyUse(LOperand* value) { inputs_[0] = value; }
+   DECLARE_CONCRETE_INSTRUCTION(DummyUse, "dummy-use")
+ };
+ 
+ 
+-class LDeoptimize FINAL : public LTemplateInstruction<0, 0, 0> {
++class LDeoptimize final : public LTemplateInstruction<0, 0, 0> {
+  public:
+-  bool IsControl() const OVERRIDE { return true; }
++  bool IsControl() const override { return true; }
+   DECLARE_CONCRETE_INSTRUCTION(Deoptimize, "deoptimize")
+   DECLARE_HYDROGEN_ACCESSOR(Deoptimize)
+ };
+ 
+ 
+-class LLabel FINAL : public LGap {
++class LLabel final : public LGap {
+  public:
+   explicit LLabel(HBasicBlock* block) : LGap(block), replacement_(NULL) {}
+ 
+-  bool HasInterestingComment(LCodeGen* gen) const OVERRIDE { return false; }
++  bool HasInterestingComment(LCodeGen* gen) const override { return false; }
+   DECLARE_CONCRETE_INSTRUCTION(Label, "label")
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ 
+   int block_id() const { return block()->block_id(); }
+   bool is_loop_header() const { return block()->IsLoopHeader(); }
+@@ -445,14 +446,14 @@ class LLabel FINAL : public LGap {
+ };
+ 
+ 
+-class LParameter FINAL : public LTemplateInstruction<1, 0, 0> {
++class LParameter final : public LTemplateInstruction<1, 0, 0> {
+  public:
+   virtual bool HasInterestingComment(LCodeGen* gen) const { return false; }
+   DECLARE_CONCRETE_INSTRUCTION(Parameter, "parameter")
+ };
+ 
+ 
+-class LCallStub FINAL : public LTemplateInstruction<1, 1, 0> {
++class LCallStub final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LCallStub(LOperand* context) { inputs_[0] = context; }
+ 
+@@ -463,24 +464,19 @@ class LCallStub FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LTailCallThroughMegamorphicCache FINAL
+-    : public LTemplateInstruction<0, 5, 0> {
++class LTailCallThroughMegamorphicCache final
++    : public LTemplateInstruction<0, 3, 0> {
+  public:
+   LTailCallThroughMegamorphicCache(LOperand* context, LOperand* receiver,
+-                                   LOperand* name, LOperand* slot,
+-                                   LOperand* vector) {
++                                   LOperand* name) {
+     inputs_[0] = context;
+     inputs_[1] = receiver;
+     inputs_[2] = name;
+-    inputs_[3] = slot;
+-    inputs_[4] = vector;
+   }
+ 
+   LOperand* context() { return inputs_[0]; }
+   LOperand* receiver() { return inputs_[1]; }
+   LOperand* name() { return inputs_[2]; }
+-  LOperand* slot() { return inputs_[3]; }
+-  LOperand* vector() { return inputs_[4]; }
+ 
+   DECLARE_CONCRETE_INSTRUCTION(TailCallThroughMegamorphicCache,
+                                "tail-call-through-megamorphic-cache")
+@@ -488,9 +484,9 @@ class LTailCallThroughMegamorphicCache FINAL
+ };
+ 
+ 
+-class LUnknownOSRValue FINAL : public LTemplateInstruction<1, 0, 0> {
++class LUnknownOSRValue final : public LTemplateInstruction<1, 0, 0> {
+  public:
+-  bool HasInterestingComment(LCodeGen* gen) const OVERRIDE { return false; }
++  bool HasInterestingComment(LCodeGen* gen) const override { return false; }
+   DECLARE_CONCRETE_INSTRUCTION(UnknownOSRValue, "unknown-osr-value")
+ };
+ 
+@@ -500,7 +496,7 @@ class LControlInstruction : public LTemplateInstruction<0, I, T> {
+  public:
+   LControlInstruction() : false_label_(NULL), true_label_(NULL) {}
+ 
+-  bool IsControl() const FINAL { return true; }
++  bool IsControl() const final { return true; }
+ 
+   int SuccessorCount() { return hydrogen()->SuccessorCount(); }
+   HBasicBlock* SuccessorAt(int i) { return hydrogen()->SuccessorAt(i); }
+@@ -539,7 +535,7 @@ class LControlInstruction : public LTemplateInstruction<0, I, T> {
+ };
+ 
+ 
+-class LWrapReceiver FINAL : public LTemplateInstruction<1, 2, 0> {
++class LWrapReceiver final : public LTemplateInstruction<1, 2, 0> {
+  public:
+   LWrapReceiver(LOperand* receiver, LOperand* function) {
+     inputs_[0] = receiver;
+@@ -554,7 +550,7 @@ class LWrapReceiver FINAL : public LTemplateInstruction<1, 2, 0> {
+ };
+ 
+ 
+-class LApplyArguments FINAL : public LTemplateInstruction<1, 4, 0> {
++class LApplyArguments final : public LTemplateInstruction<1, 4, 0> {
+  public:
+   LApplyArguments(LOperand* function, LOperand* receiver, LOperand* length,
+                   LOperand* elements) {
+@@ -573,7 +569,7 @@ class LApplyArguments FINAL : public LTemplateInstruction<1, 4, 0> {
+ };
+ 
+ 
+-class LAccessArgumentsAt FINAL : public LTemplateInstruction<1, 3, 0> {
++class LAccessArgumentsAt final : public LTemplateInstruction<1, 3, 0> {
+  public:
+   LAccessArgumentsAt(LOperand* arguments, LOperand* length, LOperand* index) {
+     inputs_[0] = arguments;
+@@ -587,11 +583,11 @@ class LAccessArgumentsAt FINAL : public LTemplateInstruction<1, 3, 0> {
+   LOperand* length() { return inputs_[1]; }
+   LOperand* index() { return inputs_[2]; }
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ };
+ 
+ 
+-class LArgumentsLength FINAL : public LTemplateInstruction<1, 1, 0> {
++class LArgumentsLength final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LArgumentsLength(LOperand* elements) { inputs_[0] = elements; }
+ 
+@@ -601,14 +597,14 @@ class LArgumentsLength FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LArgumentsElements FINAL : public LTemplateInstruction<1, 0, 0> {
++class LArgumentsElements final : public LTemplateInstruction<1, 0, 0> {
+  public:
+   DECLARE_CONCRETE_INSTRUCTION(ArgumentsElements, "arguments-elements")
+   DECLARE_HYDROGEN_ACCESSOR(ArgumentsElements)
+ };
+ 
+ 
+-class LModByPowerOf2I FINAL : public LTemplateInstruction<1, 1, 0> {
++class LModByPowerOf2I final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   LModByPowerOf2I(LOperand* dividend, int32_t divisor) {
+     inputs_[0] = dividend;
+@@ -626,7 +622,7 @@ class LModByPowerOf2I FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LModByConstI FINAL : public LTemplateInstruction<1, 1, 0> {
++class LModByConstI final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   LModByConstI(LOperand* dividend, int32_t divisor) {
+     inputs_[0] = dividend;
+@@ -644,7 +640,7 @@ class LModByConstI FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LModI FINAL : public LTemplateInstruction<1, 2, 0> {
++class LModI final : public LTemplateInstruction<1, 2, 0> {
+  public:
+   LModI(LOperand* left, LOperand* right) {
+     inputs_[0] = left;
+@@ -659,7 +655,7 @@ class LModI FINAL : public LTemplateInstruction<1, 2, 0> {
+ };
+ 
+ 
+-class LDivByPowerOf2I FINAL : public LTemplateInstruction<1, 1, 0> {
++class LDivByPowerOf2I final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   LDivByPowerOf2I(LOperand* dividend, int32_t divisor) {
+     inputs_[0] = dividend;
+@@ -677,7 +673,7 @@ class LDivByPowerOf2I FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LDivByConstI FINAL : public LTemplateInstruction<1, 1, 0> {
++class LDivByConstI final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   LDivByConstI(LOperand* dividend, int32_t divisor) {
+     inputs_[0] = dividend;
+@@ -695,7 +691,7 @@ class LDivByConstI FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LDivI FINAL : public LTemplateInstruction<1, 2, 0> {
++class LDivI final : public LTemplateInstruction<1, 2, 0> {
+  public:
+   LDivI(LOperand* dividend, LOperand* divisor) {
+     inputs_[0] = dividend;
+@@ -710,7 +706,7 @@ class LDivI FINAL : public LTemplateInstruction<1, 2, 0> {
+ };
+ 
+ 
+-class LFlooringDivByPowerOf2I FINAL : public LTemplateInstruction<1, 1, 0> {
++class LFlooringDivByPowerOf2I final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   LFlooringDivByPowerOf2I(LOperand* dividend, int32_t divisor) {
+     inputs_[0] = dividend;
+@@ -729,7 +725,7 @@ class LFlooringDivByPowerOf2I FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LFlooringDivByConstI FINAL : public LTemplateInstruction<1, 1, 1> {
++class LFlooringDivByConstI final : public LTemplateInstruction<1, 1, 1> {
+  public:
+   LFlooringDivByConstI(LOperand* dividend, int32_t divisor, LOperand* temp) {
+     inputs_[0] = dividend;
+@@ -749,7 +745,7 @@ class LFlooringDivByConstI FINAL : public LTemplateInstruction<1, 1, 1> {
+ };
+ 
+ 
+-class LFlooringDivI FINAL : public LTemplateInstruction<1, 2, 0> {
++class LFlooringDivI final : public LTemplateInstruction<1, 2, 0> {
+  public:
+   LFlooringDivI(LOperand* dividend, LOperand* divisor) {
+     inputs_[0] = dividend;
+@@ -764,7 +760,7 @@ class LFlooringDivI FINAL : public LTemplateInstruction<1, 2, 0> {
+ };
+ 
+ 
+-class LMulI FINAL : public LTemplateInstruction<1, 2, 0> {
++class LMulI final : public LTemplateInstruction<1, 2, 0> {
+  public:
+   LMulI(LOperand* left, LOperand* right) {
+     inputs_[0] = left;
+@@ -780,7 +776,7 @@ class LMulI FINAL : public LTemplateInstruction<1, 2, 0> {
+ 
+ 
+ // Instruction for computing multiplier * multiplicand + addend.
+-class LMultiplyAddD FINAL : public LTemplateInstruction<1, 3, 0> {
++class LMultiplyAddD final : public LTemplateInstruction<1, 3, 0> {
+  public:
+   LMultiplyAddD(LOperand* addend, LOperand* multiplier,
+                 LOperand* multiplicand) {
+@@ -798,7 +794,7 @@ class LMultiplyAddD FINAL : public LTemplateInstruction<1, 3, 0> {
+ 
+ 
+ // Instruction for computing minuend - multiplier * multiplicand.
+-class LMultiplySubD FINAL : public LTemplateInstruction<1, 3, 0> {
++class LMultiplySubD final : public LTemplateInstruction<1, 3, 0> {
+  public:
+   LMultiplySubD(LOperand* minuend, LOperand* multiplier,
+                 LOperand* multiplicand) {
+@@ -815,13 +811,13 @@ class LMultiplySubD FINAL : public LTemplateInstruction<1, 3, 0> {
+ };
+ 
+ 
+-class LDebugBreak FINAL : public LTemplateInstruction<0, 0, 0> {
++class LDebugBreak final : public LTemplateInstruction<0, 0, 0> {
+  public:
+   DECLARE_CONCRETE_INSTRUCTION(DebugBreak, "break")
+ };
+ 
+ 
+-class LCompareNumericAndBranch FINAL : public LControlInstruction<2, 0> {
++class LCompareNumericAndBranch final : public LControlInstruction<2, 0> {
+  public:
+   LCompareNumericAndBranch(LOperand* left, LOperand* right) {
+     inputs_[0] = left;
+@@ -838,11 +834,11 @@ class LCompareNumericAndBranch FINAL : public LControlInstruction<2, 0> {
+   Token::Value op() const { return hydrogen()->token(); }
+   bool is_double() const { return hydrogen()->representation().IsDouble(); }
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ };
+ 
+ 
+-class LMathFloor FINAL : public LTemplateInstruction<1, 1, 0> {
++class LMathFloor final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LMathFloor(LOperand* value) { inputs_[0] = value; }
+ 
+@@ -853,7 +849,7 @@ class LMathFloor FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LMathRound FINAL : public LTemplateInstruction<1, 1, 1> {
++class LMathRound final : public LTemplateInstruction<1, 1, 1> {
+  public:
+   LMathRound(LOperand* value, LOperand* temp) {
+     inputs_[0] = value;
+@@ -868,7 +864,7 @@ class LMathRound FINAL : public LTemplateInstruction<1, 1, 1> {
+ };
+ 
+ 
+-class LMathFround FINAL : public LTemplateInstruction<1, 1, 0> {
++class LMathFround final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LMathFround(LOperand* value) { inputs_[0] = value; }
+ 
+@@ -878,7 +874,7 @@ class LMathFround FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LMathAbs FINAL : public LTemplateInstruction<1, 2, 0> {
++class LMathAbs final : public LTemplateInstruction<1, 2, 0> {
+  public:
+   LMathAbs(LOperand* context, LOperand* value) {
+     inputs_[1] = context;
+@@ -893,7 +889,7 @@ class LMathAbs FINAL : public LTemplateInstruction<1, 2, 0> {
+ };
+ 
+ 
+-class LMathLog FINAL : public LTemplateInstruction<1, 1, 0> {
++class LMathLog final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LMathLog(LOperand* value) { inputs_[0] = value; }
+ 
+@@ -903,7 +899,7 @@ class LMathLog FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LMathClz32 FINAL : public LTemplateInstruction<1, 1, 0> {
++class LMathClz32 final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LMathClz32(LOperand* value) { inputs_[0] = value; }
+ 
+@@ -913,7 +909,7 @@ class LMathClz32 FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LMathExp FINAL : public LTemplateInstruction<1, 1, 3> {
++class LMathExp final : public LTemplateInstruction<1, 1, 3> {
+  public:
+   LMathExp(LOperand* value, LOperand* double_temp, LOperand* temp1,
+            LOperand* temp2) {
+@@ -933,7 +929,7 @@ class LMathExp FINAL : public LTemplateInstruction<1, 1, 3> {
+ };
+ 
+ 
+-class LMathSqrt FINAL : public LTemplateInstruction<1, 1, 0> {
++class LMathSqrt final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LMathSqrt(LOperand* value) { inputs_[0] = value; }
+ 
+@@ -943,7 +939,7 @@ class LMathSqrt FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LMathPowHalf FINAL : public LTemplateInstruction<1, 1, 0> {
++class LMathPowHalf final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LMathPowHalf(LOperand* value) { inputs_[0] = value; }
+ 
+@@ -953,7 +949,7 @@ class LMathPowHalf FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LCmpObjectEqAndBranch FINAL : public LControlInstruction<2, 0> {
++class LCmpObjectEqAndBranch final : public LControlInstruction<2, 0> {
+  public:
+   LCmpObjectEqAndBranch(LOperand* left, LOperand* right) {
+     inputs_[0] = left;
+@@ -968,7 +964,7 @@ class LCmpObjectEqAndBranch FINAL : public LControlInstruction<2, 0> {
+ };
+ 
+ 
+-class LCmpHoleAndBranch FINAL : public LControlInstruction<1, 0> {
++class LCmpHoleAndBranch final : public LControlInstruction<1, 0> {
+  public:
+   explicit LCmpHoleAndBranch(LOperand* object) { inputs_[0] = object; }
+ 
+@@ -979,7 +975,7 @@ class LCmpHoleAndBranch FINAL : public LControlInstruction<1, 0> {
+ };
+ 
+ 
+-class LCompareMinusZeroAndBranch FINAL : public LControlInstruction<1, 1> {
++class LCompareMinusZeroAndBranch final : public LControlInstruction<1, 1> {
+  public:
+   LCompareMinusZeroAndBranch(LOperand* value, LOperand* temp) {
+     inputs_[0] = value;
+@@ -995,7 +991,7 @@ class LCompareMinusZeroAndBranch FINAL : public LControlInstruction<1, 1> {
+ };
+ 
+ 
+-class LIsObjectAndBranch FINAL : public LControlInstruction<1, 1> {
++class LIsObjectAndBranch final : public LControlInstruction<1, 1> {
+  public:
+   LIsObjectAndBranch(LOperand* value, LOperand* temp) {
+     inputs_[0] = value;
+@@ -1008,11 +1004,11 @@ class LIsObjectAndBranch FINAL : public LControlInstruction<1, 1> {
+   DECLARE_CONCRETE_INSTRUCTION(IsObjectAndBranch, "is-object-and-branch")
+   DECLARE_HYDROGEN_ACCESSOR(IsObjectAndBranch)
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ };
+ 
+ 
+-class LIsStringAndBranch FINAL : public LControlInstruction<1, 1> {
++class LIsStringAndBranch final : public LControlInstruction<1, 1> {
+  public:
+   LIsStringAndBranch(LOperand* value, LOperand* temp) {
+     inputs_[0] = value;
+@@ -1025,11 +1021,11 @@ class LIsStringAndBranch FINAL : public LControlInstruction<1, 1> {
+   DECLARE_CONCRETE_INSTRUCTION(IsStringAndBranch, "is-string-and-branch")
+   DECLARE_HYDROGEN_ACCESSOR(IsStringAndBranch)
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ };
+ 
+ 
+-class LIsSmiAndBranch FINAL : public LControlInstruction<1, 0> {
++class LIsSmiAndBranch final : public LControlInstruction<1, 0> {
+  public:
+   explicit LIsSmiAndBranch(LOperand* value) { inputs_[0] = value; }
+ 
+@@ -1038,11 +1034,11 @@ class LIsSmiAndBranch FINAL : public LControlInstruction<1, 0> {
+   DECLARE_CONCRETE_INSTRUCTION(IsSmiAndBranch, "is-smi-and-branch")
+   DECLARE_HYDROGEN_ACCESSOR(IsSmiAndBranch)
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ };
+ 
+ 
+-class LIsUndetectableAndBranch FINAL : public LControlInstruction<1, 1> {
++class LIsUndetectableAndBranch final : public LControlInstruction<1, 1> {
+  public:
+   explicit LIsUndetectableAndBranch(LOperand* value, LOperand* temp) {
+     inputs_[0] = value;
+@@ -1056,11 +1052,11 @@ class LIsUndetectableAndBranch FINAL : public LControlInstruction<1, 1> {
+                                "is-undetectable-and-branch")
+   DECLARE_HYDROGEN_ACCESSOR(IsUndetectableAndBranch)
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ };
+ 
+ 
+-class LStringCompareAndBranch FINAL : public LControlInstruction<3, 0> {
++class LStringCompareAndBranch final : public LControlInstruction<3, 0> {
+  public:
+   LStringCompareAndBranch(LOperand* context, LOperand* left, LOperand* right) {
+     inputs_[0] = context;
+@@ -1078,11 +1074,11 @@ class LStringCompareAndBranch FINAL : public LControlInstruction<3, 0> {
+ 
+   Token::Value op() const { return hydrogen()->token(); }
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ };
+ 
+ 
+-class LHasInstanceTypeAndBranch FINAL : public LControlInstruction<1, 0> {
++class LHasInstanceTypeAndBranch final : public LControlInstruction<1, 0> {
+  public:
+   explicit LHasInstanceTypeAndBranch(LOperand* value) { inputs_[0] = value; }
+ 
+@@ -1092,11 +1088,11 @@ class LHasInstanceTypeAndBranch FINAL : public LControlInstruction<1, 0> {
+                                "has-instance-type-and-branch")
+   DECLARE_HYDROGEN_ACCESSOR(HasInstanceTypeAndBranch)
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ };
+ 
+ 
+-class LGetCachedArrayIndex FINAL : public LTemplateInstruction<1, 1, 0> {
++class LGetCachedArrayIndex final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LGetCachedArrayIndex(LOperand* value) { inputs_[0] = value; }
+ 
+@@ -1107,7 +1103,7 @@ class LGetCachedArrayIndex FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LHasCachedArrayIndexAndBranch FINAL : public LControlInstruction<1, 0> {
++class LHasCachedArrayIndexAndBranch final : public LControlInstruction<1, 0> {
+  public:
+   explicit LHasCachedArrayIndexAndBranch(LOperand* value) {
+     inputs_[0] = value;
+@@ -1119,11 +1115,11 @@ class LHasCachedArrayIndexAndBranch FINAL : public LControlInstruction<1, 0> {
+                                "has-cached-array-index-and-branch")
+   DECLARE_HYDROGEN_ACCESSOR(HasCachedArrayIndexAndBranch)
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ };
+ 
+ 
+-class LClassOfTestAndBranch FINAL : public LControlInstruction<1, 1> {
++class LClassOfTestAndBranch final : public LControlInstruction<1, 1> {
+  public:
+   LClassOfTestAndBranch(LOperand* value, LOperand* temp) {
+     inputs_[0] = value;
+@@ -1136,11 +1132,11 @@ class LClassOfTestAndBranch FINAL : public LControlInstruction<1, 1> {
+   DECLARE_CONCRETE_INSTRUCTION(ClassOfTestAndBranch, "class-of-test-and-branch")
+   DECLARE_HYDROGEN_ACCESSOR(ClassOfTestAndBranch)
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ };
+ 
+ 
+-class LCmpT FINAL : public LTemplateInstruction<1, 3, 0> {
++class LCmpT final : public LTemplateInstruction<1, 3, 0> {
+  public:
+   LCmpT(LOperand* context, LOperand* left, LOperand* right) {
+     inputs_[0] = context;
+@@ -1159,7 +1155,7 @@ class LCmpT FINAL : public LTemplateInstruction<1, 3, 0> {
+ };
+ 
+ 
+-class LInstanceOf FINAL : public LTemplateInstruction<1, 3, 0> {
++class LInstanceOf final : public LTemplateInstruction<1, 3, 0> {
+  public:
+   LInstanceOf(LOperand* context, LOperand* left, LOperand* right) {
+     inputs_[0] = context;
+@@ -1175,7 +1171,7 @@ class LInstanceOf FINAL : public LTemplateInstruction<1, 3, 0> {
+ };
+ 
+ 
+-class LInstanceOfKnownGlobal FINAL : public LTemplateInstruction<1, 2, 1> {
++class LInstanceOfKnownGlobal final : public LTemplateInstruction<1, 2, 1> {
+  public:
+   LInstanceOfKnownGlobal(LOperand* context, LOperand* value, LOperand* temp) {
+     inputs_[0] = context;
+@@ -1196,7 +1192,7 @@ class LInstanceOfKnownGlobal FINAL : public LTemplateInstruction<1, 2, 1> {
+     return lazy_deopt_env_;
+   }
+   virtual void SetDeferredLazyDeoptimizationEnvironment(
+-      LEnvironment* env) OVERRIDE {
++      LEnvironment* env) override {
+     lazy_deopt_env_ = env;
+   }
+ 
+@@ -1205,7 +1201,7 @@ class LInstanceOfKnownGlobal FINAL : public LTemplateInstruction<1, 2, 1> {
+ };
+ 
+ 
+-class LBoundsCheck FINAL : public LTemplateInstruction<0, 2, 0> {
++class LBoundsCheck final : public LTemplateInstruction<0, 2, 0> {
+  public:
+   LBoundsCheck(LOperand* index, LOperand* length) {
+     inputs_[0] = index;
+@@ -1220,7 +1216,7 @@ class LBoundsCheck FINAL : public LTemplateInstruction<0, 2, 0> {
+ };
+ 
+ 
+-class LBitI FINAL : public LTemplateInstruction<1, 2, 0> {
++class LBitI final : public LTemplateInstruction<1, 2, 0> {
+  public:
+   LBitI(LOperand* left, LOperand* right) {
+     inputs_[0] = left;
+@@ -1237,7 +1233,7 @@ class LBitI FINAL : public LTemplateInstruction<1, 2, 0> {
+ };
+ 
+ 
+-class LShiftI FINAL : public LTemplateInstruction<1, 2, 0> {
++class LShiftI final : public LTemplateInstruction<1, 2, 0> {
+  public:
+   LShiftI(Token::Value op, LOperand* left, LOperand* right, bool can_deopt)
+       : op_(op), can_deopt_(can_deopt) {
+@@ -1258,7 +1254,7 @@ class LShiftI FINAL : public LTemplateInstruction<1, 2, 0> {
+ };
+ 
+ 
+-class LSubI FINAL : public LTemplateInstruction<1, 2, 0> {
++class LSubI final : public LTemplateInstruction<1, 2, 0> {
+  public:
+   LSubI(LOperand* left, LOperand* right) {
+     inputs_[0] = left;
+@@ -1273,7 +1269,7 @@ class LSubI FINAL : public LTemplateInstruction<1, 2, 0> {
+ };
+ 
+ 
+-class LRSubI FINAL : public LTemplateInstruction<1, 2, 0> {
++class LRSubI final : public LTemplateInstruction<1, 2, 0> {
+  public:
+   LRSubI(LOperand* left, LOperand* right) {
+     inputs_[0] = left;
+@@ -1288,7 +1284,7 @@ class LRSubI FINAL : public LTemplateInstruction<1, 2, 0> {
+ };
+ 
+ 
+-class LConstantI FINAL : public LTemplateInstruction<1, 0, 0> {
++class LConstantI final : public LTemplateInstruction<1, 0, 0> {
+  public:
+   DECLARE_CONCRETE_INSTRUCTION(ConstantI, "constant-i")
+   DECLARE_HYDROGEN_ACCESSOR(Constant)
+@@ -1297,7 +1293,7 @@ class LConstantI FINAL : public LTemplateInstruction<1, 0, 0> {
+ };
+ 
+ 
+-class LConstantS FINAL : public LTemplateInstruction<1, 0, 0> {
++class LConstantS final : public LTemplateInstruction<1, 0, 0> {
+  public:
+   DECLARE_CONCRETE_INSTRUCTION(ConstantS, "constant-s")
+   DECLARE_HYDROGEN_ACCESSOR(Constant)
+@@ -1306,7 +1302,7 @@ class LConstantS FINAL : public LTemplateInstruction<1, 0, 0> {
+ };
+ 
+ 
+-class LConstantD FINAL : public LTemplateInstruction<1, 0, 0> {
++class LConstantD final : public LTemplateInstruction<1, 0, 0> {
+  public:
+   DECLARE_CONCRETE_INSTRUCTION(ConstantD, "constant-d")
+   DECLARE_HYDROGEN_ACCESSOR(Constant)
+@@ -1316,7 +1312,7 @@ class LConstantD FINAL : public LTemplateInstruction<1, 0, 0> {
+ };
+ 
+ 
+-class LConstantE FINAL : public LTemplateInstruction<1, 0, 0> {
++class LConstantE final : public LTemplateInstruction<1, 0, 0> {
+  public:
+   DECLARE_CONCRETE_INSTRUCTION(ConstantE, "constant-e")
+   DECLARE_HYDROGEN_ACCESSOR(Constant)
+@@ -1327,7 +1323,7 @@ class LConstantE FINAL : public LTemplateInstruction<1, 0, 0> {
+ };
+ 
+ 
+-class LConstantT FINAL : public LTemplateInstruction<1, 0, 0> {
++class LConstantT final : public LTemplateInstruction<1, 0, 0> {
+  public:
+   DECLARE_CONCRETE_INSTRUCTION(ConstantT, "constant-t")
+   DECLARE_HYDROGEN_ACCESSOR(Constant)
+@@ -1338,7 +1334,7 @@ class LConstantT FINAL : public LTemplateInstruction<1, 0, 0> {
+ };
+ 
+ 
+-class LBranch FINAL : public LControlInstruction<1, 0> {
++class LBranch final : public LControlInstruction<1, 0> {
+  public:
+   explicit LBranch(LOperand* value) { inputs_[0] = value; }
+ 
+@@ -1347,11 +1343,11 @@ class LBranch FINAL : public LControlInstruction<1, 0> {
+   DECLARE_CONCRETE_INSTRUCTION(Branch, "branch")
+   DECLARE_HYDROGEN_ACCESSOR(Branch)
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ };
+ 
+ 
+-class LCmpMapAndBranch FINAL : public LControlInstruction<1, 1> {
++class LCmpMapAndBranch final : public LControlInstruction<1, 1> {
+  public:
+   LCmpMapAndBranch(LOperand* value, LOperand* temp) {
+     inputs_[0] = value;
+@@ -1368,7 +1364,7 @@ class LCmpMapAndBranch FINAL : public LControlInstruction<1, 1> {
+ };
+ 
+ 
+-class LMapEnumLength FINAL : public LTemplateInstruction<1, 1, 0> {
++class LMapEnumLength final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LMapEnumLength(LOperand* value) { inputs_[0] = value; }
+ 
+@@ -1378,7 +1374,7 @@ class LMapEnumLength FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LDateField FINAL : public LTemplateInstruction<1, 1, 1> {
++class LDateField final : public LTemplateInstruction<1, 1, 1> {
+  public:
+   LDateField(LOperand* date, LOperand* temp, Smi* index) : index_(index) {
+     inputs_[0] = date;
+@@ -1397,7 +1393,7 @@ class LDateField FINAL : public LTemplateInstruction<1, 1, 1> {
+ };
+ 
+ 
+-class LSeqStringGetChar FINAL : public LTemplateInstruction<1, 2, 0> {
++class LSeqStringGetChar final : public LTemplateInstruction<1, 2, 0> {
+  public:
+   LSeqStringGetChar(LOperand* string, LOperand* index) {
+     inputs_[0] = string;
+@@ -1412,7 +1408,7 @@ class LSeqStringGetChar FINAL : public LTemplateInstruction<1, 2, 0> {
+ };
+ 
+ 
+-class LSeqStringSetChar FINAL : public LTemplateInstruction<1, 4, 0> {
++class LSeqStringSetChar final : public LTemplateInstruction<1, 4, 0> {
+  public:
+   LSeqStringSetChar(LOperand* context, LOperand* string, LOperand* index,
+                     LOperand* value) {
+@@ -1431,7 +1427,7 @@ class LSeqStringSetChar FINAL : public LTemplateInstruction<1, 4, 0> {
+ };
+ 
+ 
+-class LAddI FINAL : public LTemplateInstruction<1, 2, 0> {
++class LAddI final : public LTemplateInstruction<1, 2, 0> {
+  public:
+   LAddI(LOperand* left, LOperand* right) {
+     inputs_[0] = left;
+@@ -1446,7 +1442,7 @@ class LAddI FINAL : public LTemplateInstruction<1, 2, 0> {
+ };
+ 
+ 
+-class LMathMinMax FINAL : public LTemplateInstruction<1, 2, 0> {
++class LMathMinMax final : public LTemplateInstruction<1, 2, 0> {
+  public:
+   LMathMinMax(LOperand* left, LOperand* right) {
+     inputs_[0] = left;
+@@ -1461,7 +1457,7 @@ class LMathMinMax FINAL : public LTemplateInstruction<1, 2, 0> {
+ };
+ 
+ 
+-class LPower FINAL : public LTemplateInstruction<1, 2, 0> {
++class LPower final : public LTemplateInstruction<1, 2, 0> {
+  public:
+   LPower(LOperand* left, LOperand* right) {
+     inputs_[0] = left;
+@@ -1476,7 +1472,7 @@ class LPower FINAL : public LTemplateInstruction<1, 2, 0> {
+ };
+ 
+ 
+-class LArithmeticD FINAL : public LTemplateInstruction<1, 2, 0> {
++class LArithmeticD final : public LTemplateInstruction<1, 2, 0> {
+  public:
+   LArithmeticD(Token::Value op, LOperand* left, LOperand* right) : op_(op) {
+     inputs_[0] = left;
+@@ -1487,16 +1483,16 @@ class LArithmeticD FINAL : public LTemplateInstruction<1, 2, 0> {
+   LOperand* left() { return inputs_[0]; }
+   LOperand* right() { return inputs_[1]; }
+ 
+-  Opcode opcode() const OVERRIDE { return LInstruction::kArithmeticD; }
+-  void CompileToNative(LCodeGen* generator) OVERRIDE;
+-  const char* Mnemonic() const OVERRIDE;
++  Opcode opcode() const override { return LInstruction::kArithmeticD; }
++  void CompileToNative(LCodeGen* generator) override;
++  const char* Mnemonic() const override;
+ 
+  private:
+   Token::Value op_;
+ };
+ 
+ 
+-class LArithmeticT FINAL : public LTemplateInstruction<1, 3, 0> {
++class LArithmeticT final : public LTemplateInstruction<1, 3, 0> {
+  public:
+   LArithmeticT(Token::Value op, LOperand* context, LOperand* left,
+                LOperand* right)
+@@ -1511,16 +1507,20 @@ class LArithmeticT FINAL : public LTemplateInstruction<1, 3, 0> {
+   LOperand* right() { return inputs_[2]; }
+   Token::Value op() const { return op_; }
+ 
+-  Opcode opcode() const OVERRIDE { return LInstruction::kArithmeticT; }
+-  void CompileToNative(LCodeGen* generator) OVERRIDE;
+-  const char* Mnemonic() const OVERRIDE;
++  Opcode opcode() const override { return LInstruction::kArithmeticT; }
++  void CompileToNative(LCodeGen* generator) override;
++  const char* Mnemonic() const override;
++
++  DECLARE_HYDROGEN_ACCESSOR(BinaryOperation)
++
++  LanguageMode language_mode() { return hydrogen()->language_mode(); }
+ 
+  private:
+   Token::Value op_;
+ };
+ 
+ 
+-class LReturn FINAL : public LTemplateInstruction<0, 3, 0> {
++class LReturn final : public LTemplateInstruction<0, 3, 0> {
+  public:
+   LReturn(LOperand* value, LOperand* context, LOperand* parameter_count) {
+     inputs_[0] = value;
+@@ -1543,7 +1543,7 @@ class LReturn FINAL : public LTemplateInstruction<0, 3, 0> {
+ };
+ 
+ 
+-class LLoadNamedField FINAL : public LTemplateInstruction<1, 1, 0> {
++class LLoadNamedField final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LLoadNamedField(LOperand* object) { inputs_[0] = object; }
+ 
+@@ -1554,7 +1554,7 @@ class LLoadNamedField FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LLoadNamedGeneric FINAL : public LTemplateInstruction<1, 2, 1> {
++class LLoadNamedGeneric final : public LTemplateInstruction<1, 2, 1> {
+  public:
+   LLoadNamedGeneric(LOperand* context, LOperand* object, LOperand* vector) {
+     inputs_[0] = context;
+@@ -1573,7 +1573,7 @@ class LLoadNamedGeneric FINAL : public LTemplateInstruction<1, 2, 1> {
+ };
+ 
+ 
+-class LLoadFunctionPrototype FINAL : public LTemplateInstruction<1, 1, 0> {
++class LLoadFunctionPrototype final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LLoadFunctionPrototype(LOperand* function) { inputs_[0] = function; }
+ 
+@@ -1584,7 +1584,7 @@ class LLoadFunctionPrototype FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LLoadRoot FINAL : public LTemplateInstruction<1, 0, 0> {
++class LLoadRoot final : public LTemplateInstruction<1, 0, 0> {
+  public:
+   DECLARE_CONCRETE_INSTRUCTION(LoadRoot, "load-root")
+   DECLARE_HYDROGEN_ACCESSOR(LoadRoot)
+@@ -1593,7 +1593,7 @@ class LLoadRoot FINAL : public LTemplateInstruction<1, 0, 0> {
+ };
+ 
+ 
+-class LLoadKeyed FINAL : public LTemplateInstruction<1, 2, 0> {
++class LLoadKeyed final : public LTemplateInstruction<1, 2, 0> {
+  public:
+   LLoadKeyed(LOperand* elements, LOperand* key) {
+     inputs_[0] = elements;
+@@ -1614,12 +1614,12 @@ class LLoadKeyed FINAL : public LTemplateInstruction<1, 2, 0> {
+   DECLARE_CONCRETE_INSTRUCTION(LoadKeyed, "load-keyed")
+   DECLARE_HYDROGEN_ACCESSOR(LoadKeyed)
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+   uint32_t base_offset() const { return hydrogen()->base_offset(); }
+ };
+ 
+ 
+-class LLoadKeyedGeneric FINAL : public LTemplateInstruction<1, 3, 1> {
++class LLoadKeyedGeneric final : public LTemplateInstruction<1, 3, 1> {
+  public:
+   LLoadKeyedGeneric(LOperand* context, LOperand* object, LOperand* key,
+                     LOperand* vector) {
+@@ -1639,7 +1639,7 @@ class LLoadKeyedGeneric FINAL : public LTemplateInstruction<1, 3, 1> {
+ };
+ 
+ 
+-class LLoadGlobalGeneric FINAL : public LTemplateInstruction<1, 2, 1> {
++class LLoadGlobalGeneric final : public LTemplateInstruction<1, 2, 1> {
+  public:
+   LLoadGlobalGeneric(LOperand* context, LOperand* global_object,
+                      LOperand* vector) {
+@@ -1660,7 +1660,7 @@ class LLoadGlobalGeneric FINAL : public LTemplateInstruction<1, 2, 1> {
+ };
+ 
+ 
+-class LLoadContextSlot FINAL : public LTemplateInstruction<1, 1, 0> {
++class LLoadContextSlot final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LLoadContextSlot(LOperand* context) { inputs_[0] = context; }
+ 
+@@ -1671,11 +1671,11 @@ class LLoadContextSlot FINAL : public LTemplateInstruction<1, 1, 0> {
+ 
+   int slot_index() { return hydrogen()->slot_index(); }
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ };
+ 
+ 
+-class LStoreContextSlot FINAL : public LTemplateInstruction<0, 2, 0> {
++class LStoreContextSlot final : public LTemplateInstruction<0, 2, 0> {
+  public:
+   LStoreContextSlot(LOperand* context, LOperand* value) {
+     inputs_[0] = context;
+@@ -1690,11 +1690,11 @@ class LStoreContextSlot FINAL : public LTemplateInstruction<0, 2, 0> {
+ 
+   int slot_index() { return hydrogen()->slot_index(); }
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ };
+ 
+ 
+-class LPushArgument FINAL : public LTemplateInstruction<0, 1, 0> {
++class LPushArgument final : public LTemplateInstruction<0, 1, 0> {
+  public:
+   explicit LPushArgument(LOperand* value) { inputs_[0] = value; }
+ 
+@@ -1704,7 +1704,7 @@ class LPushArgument FINAL : public LTemplateInstruction<0, 1, 0> {
+ };
+ 
+ 
+-class LDrop FINAL : public LTemplateInstruction<0, 0, 0> {
++class LDrop final : public LTemplateInstruction<0, 0, 0> {
+  public:
+   explicit LDrop(int count) : count_(count) {}
+ 
+@@ -1717,7 +1717,7 @@ class LDrop FINAL : public LTemplateInstruction<0, 0, 0> {
+ };
+ 
+ 
+-class LStoreCodeEntry FINAL : public LTemplateInstruction<0, 2, 0> {
++class LStoreCodeEntry final : public LTemplateInstruction<0, 2, 0> {
+  public:
+   LStoreCodeEntry(LOperand* function, LOperand* code_object) {
+     inputs_[0] = function;
+@@ -1727,14 +1727,14 @@ class LStoreCodeEntry FINAL : public LTemplateInstruction<0, 2, 0> {
+   LOperand* function() { return inputs_[0]; }
+   LOperand* code_object() { return inputs_[1]; }
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ 
+   DECLARE_CONCRETE_INSTRUCTION(StoreCodeEntry, "store-code-entry")
+   DECLARE_HYDROGEN_ACCESSOR(StoreCodeEntry)
+ };
+ 
+ 
+-class LInnerAllocatedObject FINAL : public LTemplateInstruction<1, 2, 0> {
++class LInnerAllocatedObject final : public LTemplateInstruction<1, 2, 0> {
+  public:
+   LInnerAllocatedObject(LOperand* base_object, LOperand* offset) {
+     inputs_[0] = base_object;
+@@ -1744,27 +1744,27 @@ class LInnerAllocatedObject FINAL : public LTemplateInstruction<1, 2, 0> {
+   LOperand* base_object() const { return inputs_[0]; }
+   LOperand* offset() const { return inputs_[1]; }
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ 
+   DECLARE_CONCRETE_INSTRUCTION(InnerAllocatedObject, "inner-allocated-object")
+ };
+ 
+ 
+-class LThisFunction FINAL : public LTemplateInstruction<1, 0, 0> {
++class LThisFunction final : public LTemplateInstruction<1, 0, 0> {
+  public:
+   DECLARE_CONCRETE_INSTRUCTION(ThisFunction, "this-function")
+   DECLARE_HYDROGEN_ACCESSOR(ThisFunction)
+ };
+ 
+ 
+-class LContext FINAL : public LTemplateInstruction<1, 0, 0> {
++class LContext final : public LTemplateInstruction<1, 0, 0> {
+  public:
+   DECLARE_CONCRETE_INSTRUCTION(Context, "context")
+   DECLARE_HYDROGEN_ACCESSOR(Context)
+ };
+ 
+ 
+-class LDeclareGlobals FINAL : public LTemplateInstruction<0, 1, 0> {
++class LDeclareGlobals final : public LTemplateInstruction<0, 1, 0> {
+  public:
+   explicit LDeclareGlobals(LOperand* context) { inputs_[0] = context; }
+ 
+@@ -1775,7 +1775,7 @@ class LDeclareGlobals FINAL : public LTemplateInstruction<0, 1, 0> {
+ };
+ 
+ 
+-class LCallJSFunction FINAL : public LTemplateInstruction<1, 1, 0> {
++class LCallJSFunction final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LCallJSFunction(LOperand* function) { inputs_[0] = function; }
+ 
+@@ -1784,13 +1784,13 @@ class LCallJSFunction FINAL : public LTemplateInstruction<1, 1, 0> {
+   DECLARE_CONCRETE_INSTRUCTION(CallJSFunction, "call-js-function")
+   DECLARE_HYDROGEN_ACCESSOR(CallJSFunction)
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ 
+   int arity() const { return hydrogen()->argument_count() - 1; }
+ };
+ 
+ 
+-class LCallWithDescriptor FINAL : public LTemplateResultInstruction<1> {
++class LCallWithDescriptor final : public LTemplateResultInstruction<1> {
+  public:
+   LCallWithDescriptor(CallInterfaceDescriptor descriptor,
+                       const ZoneList<LOperand*>& operands, Zone* zone)
+@@ -1809,7 +1809,7 @@ class LCallWithDescriptor FINAL : public LTemplateResultInstruction<1> {
+  private:
+   DECLARE_CONCRETE_INSTRUCTION(CallWithDescriptor, "call-with-descriptor")
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ 
+   int arity() const { return hydrogen()->argument_count() - 1; }
+ 
+@@ -1817,15 +1817,15 @@ class LCallWithDescriptor FINAL : public LTemplateResultInstruction<1> {
+   ZoneList<LOperand*> inputs_;
+ 
+   // Iterator support.
+-  int InputCount() FINAL { return inputs_.length(); }
+-  LOperand* InputAt(int i) FINAL { return inputs_[i]; }
++  int InputCount() final { return inputs_.length(); }
++  LOperand* InputAt(int i) final { return inputs_[i]; }
+ 
+-  int TempCount() FINAL { return 0; }
+-  LOperand* TempAt(int i) FINAL { return NULL; }
++  int TempCount() final { return 0; }
++  LOperand* TempAt(int i) final { return NULL; }
+ };
+ 
+ 
+-class LInvokeFunction FINAL : public LTemplateInstruction<1, 2, 0> {
++class LInvokeFunction final : public LTemplateInstruction<1, 2, 0> {
+  public:
+   LInvokeFunction(LOperand* context, LOperand* function) {
+     inputs_[0] = context;
+@@ -1838,13 +1838,13 @@ class LInvokeFunction FINAL : public LTemplateInstruction<1, 2, 0> {
+   DECLARE_CONCRETE_INSTRUCTION(InvokeFunction, "invoke-function")
+   DECLARE_HYDROGEN_ACCESSOR(InvokeFunction)
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ 
+   int arity() const { return hydrogen()->argument_count() - 1; }
+ };
+ 
+ 
+-class LCallFunction FINAL : public LTemplateInstruction<1, 2, 2> {
++class LCallFunction final : public LTemplateInstruction<1, 2, 2> {
+  public:
+   LCallFunction(LOperand* context, LOperand* function, LOperand* slot,
+                 LOperand* vector) {
+@@ -1863,11 +1863,11 @@ class LCallFunction FINAL : public LTemplateInstruction<1, 2, 2> {
+   DECLARE_HYDROGEN_ACCESSOR(CallFunction)
+ 
+   int arity() const { return hydrogen()->argument_count() - 1; }
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ };
+ 
+ 
+-class LCallNew FINAL : public LTemplateInstruction<1, 2, 0> {
++class LCallNew final : public LTemplateInstruction<1, 2, 0> {
+  public:
+   LCallNew(LOperand* context, LOperand* constructor) {
+     inputs_[0] = context;
+@@ -1880,13 +1880,13 @@ class LCallNew FINAL : public LTemplateInstruction<1, 2, 0> {
+   DECLARE_CONCRETE_INSTRUCTION(CallNew, "call-new")
+   DECLARE_HYDROGEN_ACCESSOR(CallNew)
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ 
+   int arity() const { return hydrogen()->argument_count() - 1; }
+ };
+ 
+ 
+-class LCallNewArray FINAL : public LTemplateInstruction<1, 2, 0> {
++class LCallNewArray final : public LTemplateInstruction<1, 2, 0> {
+  public:
+   LCallNewArray(LOperand* context, LOperand* constructor) {
+     inputs_[0] = context;
+@@ -1899,13 +1899,13 @@ class LCallNewArray FINAL : public LTemplateInstruction<1, 2, 0> {
+   DECLARE_CONCRETE_INSTRUCTION(CallNewArray, "call-new-array")
+   DECLARE_HYDROGEN_ACCESSOR(CallNewArray)
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ 
+   int arity() const { return hydrogen()->argument_count() - 1; }
+ };
+ 
+ 
+-class LCallRuntime FINAL : public LTemplateInstruction<1, 1, 0> {
++class LCallRuntime final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LCallRuntime(LOperand* context) { inputs_[0] = context; }
+ 
+@@ -1914,7 +1914,7 @@ class LCallRuntime FINAL : public LTemplateInstruction<1, 1, 0> {
+   DECLARE_CONCRETE_INSTRUCTION(CallRuntime, "call-runtime")
+   DECLARE_HYDROGEN_ACCESSOR(CallRuntime)
+ 
+-  bool ClobbersDoubleRegisters(Isolate* isolate) const OVERRIDE {
++  bool ClobbersDoubleRegisters(Isolate* isolate) const override {
+     return save_doubles() == kDontSaveFPRegs;
+   }
+ 
+@@ -1924,7 +1924,7 @@ class LCallRuntime FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LInteger32ToDouble FINAL : public LTemplateInstruction<1, 1, 0> {
++class LInteger32ToDouble final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LInteger32ToDouble(LOperand* value) { inputs_[0] = value; }
+ 
+@@ -1934,7 +1934,7 @@ class LInteger32ToDouble FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LUint32ToDouble FINAL : public LTemplateInstruction<1, 1, 0> {
++class LUint32ToDouble final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LUint32ToDouble(LOperand* value) { inputs_[0] = value; }
+ 
+@@ -1944,7 +1944,7 @@ class LUint32ToDouble FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LNumberTagI FINAL : public LTemplateInstruction<1, 1, 2> {
++class LNumberTagI final : public LTemplateInstruction<1, 1, 2> {
+  public:
+   LNumberTagI(LOperand* value, LOperand* temp1, LOperand* temp2) {
+     inputs_[0] = value;
+@@ -1960,7 +1960,7 @@ class LNumberTagI FINAL : public LTemplateInstruction<1, 1, 2> {
+ };
+ 
+ 
+-class LNumberTagU FINAL : public LTemplateInstruction<1, 1, 2> {
++class LNumberTagU final : public LTemplateInstruction<1, 1, 2> {
+  public:
+   LNumberTagU(LOperand* value, LOperand* temp1, LOperand* temp2) {
+     inputs_[0] = value;
+@@ -1976,7 +1976,7 @@ class LNumberTagU FINAL : public LTemplateInstruction<1, 1, 2> {
+ };
+ 
+ 
+-class LNumberTagD FINAL : public LTemplateInstruction<1, 1, 2> {
++class LNumberTagD final : public LTemplateInstruction<1, 1, 2> {
+  public:
+   LNumberTagD(LOperand* value, LOperand* temp, LOperand* temp2) {
+     inputs_[0] = value;
+@@ -1993,7 +1993,7 @@ class LNumberTagD FINAL : public LTemplateInstruction<1, 1, 2> {
+ };
+ 
+ 
+-class LDoubleToSmi FINAL : public LTemplateInstruction<1, 1, 0> {
++class LDoubleToSmi final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LDoubleToSmi(LOperand* value) { inputs_[0] = value; }
+ 
+@@ -2007,7 +2007,7 @@ class LDoubleToSmi FINAL : public LTemplateInstruction<1, 1, 0> {
+ 
+ 
+ // Sometimes truncating conversion from a tagged value to an int32.
+-class LDoubleToI FINAL : public LTemplateInstruction<1, 1, 0> {
++class LDoubleToI final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LDoubleToI(LOperand* value) { inputs_[0] = value; }
+ 
+@@ -2021,7 +2021,7 @@ class LDoubleToI FINAL : public LTemplateInstruction<1, 1, 0> {
+ 
+ 
+ // Truncating conversion from a tagged value to an int32.
+-class LTaggedToI FINAL : public LTemplateInstruction<1, 1, 2> {
++class LTaggedToI final : public LTemplateInstruction<1, 1, 2> {
+  public:
+   LTaggedToI(LOperand* value, LOperand* temp, LOperand* temp2) {
+     inputs_[0] = value;
+@@ -2040,7 +2040,7 @@ class LTaggedToI FINAL : public LTemplateInstruction<1, 1, 2> {
+ };
+ 
+ 
+-class LSmiTag FINAL : public LTemplateInstruction<1, 1, 0> {
++class LSmiTag final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LSmiTag(LOperand* value) { inputs_[0] = value; }
+ 
+@@ -2051,7 +2051,7 @@ class LSmiTag FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LNumberUntagD FINAL : public LTemplateInstruction<1, 1, 0> {
++class LNumberUntagD final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LNumberUntagD(LOperand* value) { inputs_[0] = value; }
+ 
+@@ -2062,7 +2062,7 @@ class LNumberUntagD FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LSmiUntag FINAL : public LTemplateInstruction<1, 1, 0> {
++class LSmiUntag final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   LSmiUntag(LOperand* value, bool needs_check) : needs_check_(needs_check) {
+     inputs_[0] = value;
+@@ -2078,7 +2078,7 @@ class LSmiUntag FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LStoreNamedField FINAL : public LTemplateInstruction<0, 2, 1> {
++class LStoreNamedField final : public LTemplateInstruction<0, 2, 1> {
+  public:
+   LStoreNamedField(LOperand* object, LOperand* value, LOperand* temp) {
+     inputs_[0] = object;
+@@ -2093,7 +2093,7 @@ class LStoreNamedField FINAL : public LTemplateInstruction<0, 2, 1> {
+   DECLARE_CONCRETE_INSTRUCTION(StoreNamedField, "store-named-field")
+   DECLARE_HYDROGEN_ACCESSOR(StoreNamedField)
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ 
+   Representation representation() const {
+     return hydrogen()->field_representation();
+@@ -2101,7 +2101,7 @@ class LStoreNamedField FINAL : public LTemplateInstruction<0, 2, 1> {
+ };
+ 
+ 
+-class LStoreNamedGeneric FINAL : public LTemplateInstruction<0, 3, 0> {
++class LStoreNamedGeneric final : public LTemplateInstruction<0, 3, 0> {
+  public:
+   LStoreNamedGeneric(LOperand* context, LOperand* object, LOperand* value) {
+     inputs_[0] = context;
+@@ -2116,14 +2116,14 @@ class LStoreNamedGeneric FINAL : public LTemplateInstruction<0, 3, 0> {
+   DECLARE_CONCRETE_INSTRUCTION(StoreNamedGeneric, "store-named-generic")
+   DECLARE_HYDROGEN_ACCESSOR(StoreNamedGeneric)
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ 
+   Handle<Object> name() const { return hydrogen()->name(); }
+   LanguageMode language_mode() { return hydrogen()->language_mode(); }
+ };
+ 
+ 
+-class LStoreKeyed FINAL : public LTemplateInstruction<0, 3, 0> {
++class LStoreKeyed final : public LTemplateInstruction<0, 3, 0> {
+  public:
+   LStoreKeyed(LOperand* object, LOperand* key, LOperand* value) {
+     inputs_[0] = object;
+@@ -2146,7 +2146,7 @@ class LStoreKeyed FINAL : public LTemplateInstruction<0, 3, 0> {
+   DECLARE_CONCRETE_INSTRUCTION(StoreKeyed, "store-keyed")
+   DECLARE_HYDROGEN_ACCESSOR(StoreKeyed)
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+   bool NeedsCanonicalization() {
+     if (hydrogen()->value()->IsAdd() || hydrogen()->value()->IsSub() ||
+         hydrogen()->value()->IsMul() || hydrogen()->value()->IsDiv()) {
+@@ -2158,7 +2158,7 @@ class LStoreKeyed FINAL : public LTemplateInstruction<0, 3, 0> {
+ };
+ 
+ 
+-class LStoreKeyedGeneric FINAL : public LTemplateInstruction<0, 4, 0> {
++class LStoreKeyedGeneric final : public LTemplateInstruction<0, 4, 0> {
+  public:
+   LStoreKeyedGeneric(LOperand* context, LOperand* obj, LOperand* key,
+                      LOperand* value) {
+@@ -2176,13 +2176,13 @@ class LStoreKeyedGeneric FINAL : public LTemplateInstruction<0, 4, 0> {
+   DECLARE_CONCRETE_INSTRUCTION(StoreKeyedGeneric, "store-keyed-generic")
+   DECLARE_HYDROGEN_ACCESSOR(StoreKeyedGeneric)
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ 
+   LanguageMode language_mode() { return hydrogen()->language_mode(); }
+ };
+ 
+ 
+-class LTransitionElementsKind FINAL : public LTemplateInstruction<0, 2, 1> {
++class LTransitionElementsKind final : public LTemplateInstruction<0, 2, 1> {
+  public:
+   LTransitionElementsKind(LOperand* object, LOperand* context,
+                           LOperand* new_map_temp) {
+@@ -2199,7 +2199,7 @@ class LTransitionElementsKind FINAL : public LTemplateInstruction<0, 2, 1> {
+                                "transition-elements-kind")
+   DECLARE_HYDROGEN_ACCESSOR(TransitionElementsKind)
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ 
+   Handle<Map> original_map() { return hydrogen()->original_map().handle(); }
+   Handle<Map> transitioned_map() {
+@@ -2210,7 +2210,7 @@ class LTransitionElementsKind FINAL : public LTemplateInstruction<0, 2, 1> {
+ };
+ 
+ 
+-class LTrapAllocationMemento FINAL : public LTemplateInstruction<0, 1, 1> {
++class LTrapAllocationMemento final : public LTemplateInstruction<0, 1, 1> {
+  public:
+   LTrapAllocationMemento(LOperand* object, LOperand* temp) {
+     inputs_[0] = object;
+@@ -2224,7 +2224,7 @@ class LTrapAllocationMemento FINAL : public LTemplateInstruction<0, 1, 1> {
+ };
+ 
+ 
+-class LStringAdd FINAL : public LTemplateInstruction<1, 3, 0> {
++class LStringAdd final : public LTemplateInstruction<1, 3, 0> {
+  public:
+   LStringAdd(LOperand* context, LOperand* left, LOperand* right) {
+     inputs_[0] = context;
+@@ -2241,7 +2241,7 @@ class LStringAdd FINAL : public LTemplateInstruction<1, 3, 0> {
+ };
+ 
+ 
+-class LStringCharCodeAt FINAL : public LTemplateInstruction<1, 3, 0> {
++class LStringCharCodeAt final : public LTemplateInstruction<1, 3, 0> {
+  public:
+   LStringCharCodeAt(LOperand* context, LOperand* string, LOperand* index) {
+     inputs_[0] = context;
+@@ -2258,7 +2258,7 @@ class LStringCharCodeAt FINAL : public LTemplateInstruction<1, 3, 0> {
+ };
+ 
+ 
+-class LStringCharFromCode FINAL : public LTemplateInstruction<1, 2, 0> {
++class LStringCharFromCode final : public LTemplateInstruction<1, 2, 0> {
+  public:
+   explicit LStringCharFromCode(LOperand* context, LOperand* char_code) {
+     inputs_[0] = context;
+@@ -2273,7 +2273,7 @@ class LStringCharFromCode FINAL : public LTemplateInstruction<1, 2, 0> {
+ };
+ 
+ 
+-class LCheckValue FINAL : public LTemplateInstruction<0, 1, 0> {
++class LCheckValue final : public LTemplateInstruction<0, 1, 0> {
+  public:
+   explicit LCheckValue(LOperand* value) { inputs_[0] = value; }
+ 
+@@ -2284,7 +2284,20 @@ class LCheckValue FINAL : public LTemplateInstruction<0, 1, 0> {
+ };
+ 
+ 
+-class LCheckInstanceType FINAL : public LTemplateInstruction<0, 1, 0> {
++class LCheckArrayBufferNotNeutered final
++    : public LTemplateInstruction<0, 1, 0> {
++ public:
++  explicit LCheckArrayBufferNotNeutered(LOperand* view) { inputs_[0] = view; }
++
++  LOperand* view() { return inputs_[0]; }
++
++  DECLARE_CONCRETE_INSTRUCTION(CheckArrayBufferNotNeutered,
++                               "check-array-buffer-not-neutered")
++  DECLARE_HYDROGEN_ACCESSOR(CheckArrayBufferNotNeutered)
++};
++
++
++class LCheckInstanceType final : public LTemplateInstruction<0, 1, 0> {
+  public:
+   explicit LCheckInstanceType(LOperand* value) { inputs_[0] = value; }
+ 
+@@ -2295,7 +2308,7 @@ class LCheckInstanceType FINAL : public LTemplateInstruction<0, 1, 0> {
+ };
+ 
+ 
+-class LCheckMaps FINAL : public LTemplateInstruction<0, 1, 1> {
++class LCheckMaps final : public LTemplateInstruction<0, 1, 1> {
+  public:
+   explicit LCheckMaps(LOperand* value = NULL, LOperand* temp = NULL) {
+     inputs_[0] = value;
+@@ -2310,7 +2323,7 @@ class LCheckMaps FINAL : public LTemplateInstruction<0, 1, 1> {
+ };
+ 
+ 
+-class LCheckSmi FINAL : public LTemplateInstruction<1, 1, 0> {
++class LCheckSmi final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LCheckSmi(LOperand* value) { inputs_[0] = value; }
+ 
+@@ -2320,7 +2333,7 @@ class LCheckSmi FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LCheckNonSmi FINAL : public LTemplateInstruction<0, 1, 0> {
++class LCheckNonSmi final : public LTemplateInstruction<0, 1, 0> {
+  public:
+   explicit LCheckNonSmi(LOperand* value) { inputs_[0] = value; }
+ 
+@@ -2331,7 +2344,7 @@ class LCheckNonSmi FINAL : public LTemplateInstruction<0, 1, 0> {
+ };
+ 
+ 
+-class LClampDToUint8 FINAL : public LTemplateInstruction<1, 1, 0> {
++class LClampDToUint8 final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LClampDToUint8(LOperand* unclamped) { inputs_[0] = unclamped; }
+ 
+@@ -2341,7 +2354,7 @@ class LClampDToUint8 FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LClampIToUint8 FINAL : public LTemplateInstruction<1, 1, 0> {
++class LClampIToUint8 final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LClampIToUint8(LOperand* unclamped) { inputs_[0] = unclamped; }
+ 
+@@ -2351,7 +2364,7 @@ class LClampIToUint8 FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LClampTToUint8 FINAL : public LTemplateInstruction<1, 1, 1> {
++class LClampTToUint8 final : public LTemplateInstruction<1, 1, 1> {
+  public:
+   LClampTToUint8(LOperand* unclamped, LOperand* temp) {
+     inputs_[0] = unclamped;
+@@ -2365,7 +2378,7 @@ class LClampTToUint8 FINAL : public LTemplateInstruction<1, 1, 1> {
+ };
+ 
+ 
+-class LDoubleBits FINAL : public LTemplateInstruction<1, 1, 0> {
++class LDoubleBits final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LDoubleBits(LOperand* value) { inputs_[0] = value; }
+ 
+@@ -2376,7 +2389,7 @@ class LDoubleBits FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LConstructDouble FINAL : public LTemplateInstruction<1, 2, 0> {
++class LConstructDouble final : public LTemplateInstruction<1, 2, 0> {
+  public:
+   LConstructDouble(LOperand* hi, LOperand* lo) {
+     inputs_[0] = hi;
+@@ -2390,7 +2403,7 @@ class LConstructDouble FINAL : public LTemplateInstruction<1, 2, 0> {
+ };
+ 
+ 
+-class LAllocate FINAL : public LTemplateInstruction<1, 2, 2> {
++class LAllocate final : public LTemplateInstruction<1, 2, 2> {
+  public:
+   LAllocate(LOperand* context, LOperand* size, LOperand* temp1,
+             LOperand* temp2) {
+@@ -2410,7 +2423,7 @@ class LAllocate FINAL : public LTemplateInstruction<1, 2, 2> {
+ };
+ 
+ 
+-class LRegExpLiteral FINAL : public LTemplateInstruction<1, 1, 0> {
++class LRegExpLiteral final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LRegExpLiteral(LOperand* context) { inputs_[0] = context; }
+ 
+@@ -2421,7 +2434,7 @@ class LRegExpLiteral FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LFunctionLiteral FINAL : public LTemplateInstruction<1, 1, 0> {
++class LFunctionLiteral final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LFunctionLiteral(LOperand* context) { inputs_[0] = context; }
+ 
+@@ -2432,7 +2445,7 @@ class LFunctionLiteral FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LToFastProperties FINAL : public LTemplateInstruction<1, 1, 0> {
++class LToFastProperties final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LToFastProperties(LOperand* value) { inputs_[0] = value; }
+ 
+@@ -2443,7 +2456,7 @@ class LToFastProperties FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LTypeof FINAL : public LTemplateInstruction<1, 2, 0> {
++class LTypeof final : public LTemplateInstruction<1, 2, 0> {
+  public:
+   LTypeof(LOperand* context, LOperand* value) {
+     inputs_[0] = context;
+@@ -2457,7 +2470,7 @@ class LTypeof FINAL : public LTemplateInstruction<1, 2, 0> {
+ };
+ 
+ 
+-class LTypeofIsAndBranch FINAL : public LControlInstruction<1, 0> {
++class LTypeofIsAndBranch final : public LControlInstruction<1, 0> {
+  public:
+   explicit LTypeofIsAndBranch(LOperand* value) { inputs_[0] = value; }
+ 
+@@ -2468,11 +2481,11 @@ class LTypeofIsAndBranch FINAL : public LControlInstruction<1, 0> {
+ 
+   Handle<String> type_literal() { return hydrogen()->type_literal(); }
+ 
+-  void PrintDataTo(StringStream* stream) OVERRIDE;
++  void PrintDataTo(StringStream* stream) override;
+ };
+ 
+ 
+-class LIsConstructCallAndBranch FINAL : public LControlInstruction<0, 1> {
++class LIsConstructCallAndBranch final : public LControlInstruction<0, 1> {
+  public:
+   explicit LIsConstructCallAndBranch(LOperand* temp) { temps_[0] = temp; }
+ 
+@@ -2483,16 +2496,16 @@ class LIsConstructCallAndBranch FINAL : public LControlInstruction<0, 1> {
+ };
+ 
+ 
+-class LOsrEntry FINAL : public LTemplateInstruction<0, 0, 0> {
++class LOsrEntry final : public LTemplateInstruction<0, 0, 0> {
+  public:
+   LOsrEntry() {}
+ 
+-  bool HasInterestingComment(LCodeGen* gen) const OVERRIDE { return false; }
++  bool HasInterestingComment(LCodeGen* gen) const override { return false; }
+   DECLARE_CONCRETE_INSTRUCTION(OsrEntry, "osr-entry")
+ };
+ 
+ 
+-class LStackCheck FINAL : public LTemplateInstruction<0, 1, 0> {
++class LStackCheck final : public LTemplateInstruction<0, 1, 0> {
+  public:
+   explicit LStackCheck(LOperand* context) { inputs_[0] = context; }
+ 
+@@ -2508,7 +2521,7 @@ class LStackCheck FINAL : public LTemplateInstruction<0, 1, 0> {
+ };
+ 
+ 
+-class LForInPrepareMap FINAL : public LTemplateInstruction<1, 2, 0> {
++class LForInPrepareMap final : public LTemplateInstruction<1, 2, 0> {
+  public:
+   LForInPrepareMap(LOperand* context, LOperand* object) {
+     inputs_[0] = context;
+@@ -2522,7 +2535,7 @@ class LForInPrepareMap FINAL : public LTemplateInstruction<1, 2, 0> {
+ };
+ 
+ 
+-class LForInCacheArray FINAL : public LTemplateInstruction<1, 1, 0> {
++class LForInCacheArray final : public LTemplateInstruction<1, 1, 0> {
+  public:
+   explicit LForInCacheArray(LOperand* map) { inputs_[0] = map; }
+ 
+@@ -2534,7 +2547,7 @@ class LForInCacheArray FINAL : public LTemplateInstruction<1, 1, 0> {
+ };
+ 
+ 
+-class LCheckMapValue FINAL : public LTemplateInstruction<0, 2, 0> {
++class LCheckMapValue final : public LTemplateInstruction<0, 2, 0> {
+  public:
+   LCheckMapValue(LOperand* value, LOperand* map) {
+     inputs_[0] = value;
+@@ -2548,7 +2561,7 @@ class LCheckMapValue FINAL : public LTemplateInstruction<0, 2, 0> {
+ };
+ 
+ 
+-class LLoadFieldByIndex FINAL : public LTemplateInstruction<1, 2, 0> {
++class LLoadFieldByIndex final : public LTemplateInstruction<1, 2, 0> {
+  public:
+   LLoadFieldByIndex(LOperand* object, LOperand* index) {
+     inputs_[0] = object;
+@@ -2590,7 +2603,7 @@ class LAllocateBlockContext : public LTemplateInstruction<1, 2, 0> {
+ 
+ 
+ class LChunkBuilder;
+-class LPlatformChunk FINAL : public LChunk {
++class LPlatformChunk final : public LChunk {
+  public:
+   LPlatformChunk(CompilationInfo* info, HGraph* graph) : LChunk(info, graph) {}
+ 
+@@ -2599,7 +2612,7 @@ class LPlatformChunk FINAL : public LChunk {
+ };
+ 
+ 
+-class LChunkBuilder FINAL : public LChunkBuilderBase {
++class LChunkBuilder final : public LChunkBuilderBase {
+  public:
+   LChunkBuilder(CompilationInfo* info, HGraph* graph, LAllocator* allocator)
+       : LChunkBuilderBase(info, graph),
+@@ -2683,7 +2696,7 @@ class LChunkBuilder FINAL : public LChunkBuilderBase {
+ 
+   // An input operand in register, stack slot or a constant operand.
+   // Will not be moved to a register even if one is freely available.
+-  MUST_USE_RESULT LOperand* UseAny(HValue* value) OVERRIDE;
++  MUST_USE_RESULT LOperand* UseAny(HValue* value) override;
+ 
+   // Temporary operand that must be in a register.
+   MUST_USE_RESULT LUnallocated* TempRegister();
+diff --git a/src/s390/macro-assembler-s390.cc b/src/s390/macro-assembler-s390.cc
+index 2f56d39..e075c17 100644
+--- a/src/s390/macro-assembler-s390.cc
++++ b/src/s390/macro-assembler-s390.cc
+@@ -15,7 +15,6 @@
+ #include "src/codegen.h"
+ #include "src/cpu-profiler.h"
+ #include "src/debug.h"
+-#include "src/isolate-inl.h"
+ #include "src/runtime/runtime.h"
+ 
+ namespace v8 {
+@@ -602,7 +601,7 @@ MemOperand MacroAssembler::SafepointRegistersAndDoublesSlot(Register reg) {
+ void MacroAssembler::CanonicalizeNaN(const DoubleRegister dst,
+                                      const DoubleRegister src) {
+   // Turn potential sNaN into qNaN.
+-  fadd(dst, src, kDoubleRegZero);
++  fsub(dst, src, kDoubleRegZero);
+ }
+ 
+ 
+@@ -1368,7 +1367,6 @@ void MacroAssembler::Allocate(int object_size, Register result,
+   if ((flags & DOUBLE_ALIGNMENT) != 0) {
+     // Align the next allocation. Storing the filler map without checking top is
+     // safe in new-space because the limit of the heap is aligned there.
+-    DCHECK((flags & PRETENURE_OLD_POINTER_SPACE) == 0);
+ #if V8_TARGET_ARCH_S390X
+     STATIC_ASSERT(kPointerAlignment == kDoubleAlignment);
+ #else
+@@ -1376,7 +1374,7 @@ void MacroAssembler::Allocate(int object_size, Register result,
+     andi(scratch2, result, Operand(kDoubleAlignmentMask));
+     Label aligned;
+     beq(&aligned, cr0);
+-    if ((flags & PRETENURE_OLD_DATA_SPACE) != 0) {
++    if ((flags & PRETENURE) != 0) {
+       cmpl(result, ip);
+       bge(gc_required);
+     }
+@@ -1467,7 +1465,6 @@ void MacroAssembler::Allocate(Register object_size, Register result,
+   if ((flags & DOUBLE_ALIGNMENT) != 0) {
+     // Align the next allocation. Storing the filler map without checking top is
+     // safe in new-space because the limit of the heap is aligned there.
+-    DCHECK((flags & PRETENURE_OLD_POINTER_SPACE) == 0);
+ #if V8_TARGET_ARCH_S390X
+     STATIC_ASSERT(kPointerAlignment == kDoubleAlignment);
+ #else
+@@ -1475,7 +1472,7 @@ void MacroAssembler::Allocate(Register object_size, Register result,
+     andi(scratch2, result, Operand(kDoubleAlignmentMask));
+     Label aligned;
+     beq(&aligned, cr0);
+-    if ((flags & PRETENURE_OLD_DATA_SPACE) != 0) {
++    if ((flags & PRETENURE) != 0) {
+       cmpl(result, ip);
+       bge(gc_required);
+     }
+diff --git a/src/s390/macro-assembler-s390.h b/src/s390/macro-assembler-s390.h
+index 04e9bd8..2e415d6 100644
+--- a/src/s390/macro-assembler-s390.h
++++ b/src/s390/macro-assembler-s390.h
+@@ -603,7 +603,7 @@ class MacroAssembler : public Assembler {
+   // ---------------------------------------------------------------------------
+   // Allocation support
+ 
+-  // Allocate an object in new space or old pointer space. The object_size is
++  // Allocate an object in new space or old space. The object_size is
+   // specified either in bytes or in words if the allocation flag SIZE_IN_WORDS
+   // is passed. If the space is exhausted control continues at the gc_required
+   // label. The allocated object is returned in result. If the flag
+diff --git a/src/s390/regexp-macro-assembler-s390.cc b/src/s390/regexp-macro-assembler-s390.cc
+index 5772724..5f754ca 100644
+--- a/src/s390/regexp-macro-assembler-s390.cc
++++ b/src/s390/regexp-macro-assembler-s390.cc
+@@ -1104,102 +1104,22 @@ static T& frame_entry(Address re_frame, int frame_offset) {
+ }
+ 
+ 
++template <typename T>
++static T* frame_entry_address(Address re_frame, int frame_offset) {
++  return reinterpret_cast<T*>(re_frame + frame_offset);
++}
++
++
+ int RegExpMacroAssemblerS390::CheckStackGuardState(Address* return_address,
+                                                   Code* re_code,
+                                                   Address re_frame) {
+-  Isolate* isolate = frame_entry<Isolate*>(re_frame, kIsolate);
+-  StackLimitCheck check(isolate);
+-  if (check.JsHasOverflowed()) {
+-    isolate->StackOverflow();
+-    return EXCEPTION;
+-  }
+-
+-  // If not real stack overflow the stack guard was used to interrupt
+-  // execution for another purpose.
+-
+-  // If this is a direct call from JavaScript retry the RegExp forcing the call
+-  // through the runtime system. Currently the direct call cannot handle a GC.
+-  if (frame_entry<int>(re_frame, kDirectCall) == 1) {
+-    return RETRY;
+-  }
+-
+-  // Prepare for possible GC.
+-  HandleScope handles(isolate);
+-  Handle<Code> code_handle(re_code);
+-
+-  Handle<String> subject(frame_entry<String*>(re_frame, kInputString));
+-
+-  // Current string.
+-  bool is_one_byte = subject->IsOneByteRepresentationUnderneath();
+-
+-  DCHECK(re_code->instruction_start() <= *return_address);
+-  DCHECK(*return_address <=
+-         re_code->instruction_start() + re_code->instruction_size());
+-
+-  Object* result = isolate->stack_guard()->HandleInterrupts();
+-
+-  if (*code_handle != re_code) {  // Return address no longer valid
+-    intptr_t delta = code_handle->address() - re_code->address();
+-    // Overwrite the return address on the stack.
+-    *return_address += delta;
+-  }
+-
+-  if (result->IsException()) {
+-    return EXCEPTION;
+-  }
+-
+-  Handle<String> subject_tmp = subject;
+-  int slice_offset = 0;
+-
+-  // Extract the underlying string and the slice offset.
+-  if (StringShape(*subject_tmp).IsCons()) {
+-    subject_tmp = Handle<String>(ConsString::cast(*subject_tmp)->first());
+-  } else if (StringShape(*subject_tmp).IsSliced()) {
+-    SlicedString* slice = SlicedString::cast(*subject_tmp);
+-    subject_tmp = Handle<String>(slice->parent());
+-    slice_offset = slice->offset();
+-  }
+-
+-  // String might have changed.
+-  if (subject_tmp->IsOneByteRepresentation() != is_one_byte) {
+-    // If we changed between an Latin1 and an UC16 string, the specialized
+-    // code cannot be used, and we need to restart regexp matching from
+-    // scratch (including, potentially, compiling a new version of the code).
+-    return RETRY;
+-  }
+-
+-  // Otherwise, the content of the string might have moved. It must still
+-  // be a sequential or external string with the same content.
+-  // Update the start and end pointers in the stack frame to the current
+-  // location (whether it has actually moved or not).
+-  DCHECK(StringShape(*subject_tmp).IsSequential() ||
+-         StringShape(*subject_tmp).IsExternal());
+-
+-  // The original start address of the characters to match.
+-  const byte* start_address = frame_entry<const byte*>(re_frame, kInputStart);
+-
+-  // Find the current start address of the same character at the current string
+-  // position.
+-  int start_index = frame_entry<intptr_t>(re_frame, kStartIndex);
+-  const byte* new_address =
+-      StringCharacterPosition(*subject_tmp, start_index + slice_offset);
+-
+-  if (start_address != new_address) {
+-    // If there is a difference, update the object pointer and start and end
+-    // addresses in the RegExp stack frame to match the new value.
+-    const byte* end_address = frame_entry<const byte*>(re_frame, kInputEnd);
+-    int byte_length = static_cast<int>(end_address - start_address);
+-    frame_entry<const String*>(re_frame, kInputString) = *subject;
+-    frame_entry<const byte*>(re_frame, kInputStart) = new_address;
+-    frame_entry<const byte*>(re_frame, kInputEnd) = new_address + byte_length;
+-  } else if (frame_entry<const String*>(re_frame, kInputString) != *subject) {
+-    // Subject string might have been a ConsString that underwent
+-    // short-circuiting during GC. That will not change start_address but
+-    // will change pointer inside the subject handle.
+-    frame_entry<const String*>(re_frame, kInputString) = *subject;
+-  }
+-
+-  return 0;
++  return NativeRegExpMacroAssembler::CheckStackGuardState(
++      frame_entry<Isolate*>(re_frame, kIsolate),
++      frame_entry<intptr_t>(re_frame, kStartIndex),
++      frame_entry<intptr_t>(re_frame, kDirectCall) == 1, return_address,
++      re_code, frame_entry_address<String*>(re_frame, kInputString),
++      frame_entry_address<const byte*>(re_frame, kInputStart),
++      frame_entry_address<const byte*>(re_frame, kInputEnd));
+ }
+ 
+ 
+diff --git a/src/s390/simulator-s390.cc b/src/s390/simulator-s390.cc
+index eb14e66..7139ead 100644
+--- a/src/s390/simulator-s390.cc
++++ b/src/s390/simulator-s390.cc
+@@ -729,7 +729,7 @@ void Simulator::FlushICache(v8::internal::HashMap* i_cache, void* start_addr,
+ 
+ CachePage* Simulator::GetCachePage(v8::internal::HashMap* i_cache, void* page) {
+   v8::internal::HashMap::Entry* entry =
+-      i_cache->Lookup(page, ICacheHash(page), true);
++      i_cache->LookupOrInsert(page, ICacheHash(page));
+   if (entry->value == NULL) {
+     CachePage* new_page = new CachePage();
+     entry->value = new_page;
+@@ -1141,6 +1141,32 @@ bool Simulator::OverflowFrom(int32_t alu_out, int32_t left, int32_t right,
+ }
+ 
+ 
++#if V8_TARGET_ARCH_S390X
++struct ObjectPair {
++  intptr_t x;
++  intptr_t y;
++};
++
++
++static void decodeObjectPair(ObjectPair* pair, intptr_t* x, intptr_t* y) {
++  *x = pair->x;
++  *y = pair->y;
++}
++#else
++typedef uint64_t ObjectPair;
++
++
++static void decodeObjectPair(ObjectPair* pair, intptr_t* x, intptr_t* y) {
++#if V8_TARGET_BIG_ENDIAN
++  *x = static_cast<int32_t>(*pair >> 32);
++  *y = static_cast<int32_t>(*pair);
++#else
++  *x = static_cast<int32_t>(*pair);
++  *y = static_cast<int32_t>(*pair >> 32);
++#endif
++}
++#endif
++
+ // Calls into the V8 runtime are based on this very simple interface.
+ // Note: To be able to return two values from some calls the code in
+ // runtime.cc uses the ObjectPair which is essentially two pointer
+@@ -1148,30 +1174,9 @@ bool Simulator::OverflowFrom(int32_t alu_out, int32_t left, int32_t right,
+ // all runtime calls return this pair. If they don't, the r4 result
+ // register contains a bogus value, which is fine because it is
+ // caller-saved.
+-#if !V8_TARGET_ARCH_S390X
+-typedef uint64_t (*SimulatorRuntimeCall)(intptr_t arg0, intptr_t arg1,
++typedef ObjectPair (*SimulatorRuntimeCall)(intptr_t arg0, intptr_t arg1,
+                                            intptr_t arg2, intptr_t arg3,
+                                            intptr_t arg4, intptr_t arg5);
+-#else
+-// For 64-bit, we need to be more explicit.
+-typedef intptr_t (*SimulatorRuntimeCall)(intptr_t arg0,
+-                                        intptr_t arg1,
+-                                        intptr_t arg2,
+-                                        intptr_t arg3,
+-                                        intptr_t arg4,
+-                                        intptr_t arg5);
+-struct ObjectPair {
+-  intptr_t x;
+-  intptr_t y;
+-};
+-
+-typedef struct ObjectPair (*SimulatorRuntimeObjectPairCall)(intptr_t arg0,
+-                                                            intptr_t arg1,
+-                                                            intptr_t arg2,
+-                                                            intptr_t arg3,
+-                                                            intptr_t arg4,
+-                                                            intptr_t arg5);
+-#endif
+ 
+ // These prototypes handle the four types of FP calls.
+ typedef int (*SimulatorRuntimeCompareCall)(double darg0, double darg1);
+@@ -1396,56 +1401,19 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
+           PrintF("\n");
+         }
+         CHECK(stack_aligned);
+-#if !V8_TARGET_ARCH_S390X
+         DCHECK(redirection->type() == ExternalReference::BUILTIN_CALL);
+         SimulatorRuntimeCall target =
+-          reinterpret_cast<SimulatorRuntimeCall>(external);
+-        int64_t result = target(arg[0], arg[1], arg[2], arg[3], arg[4], arg[5]);
+-        int32_t lo_res = static_cast<int32_t>(result);
+-        int32_t hi_res = static_cast<int32_t>(result >> 32);
+-#if V8_TARGET_BIG_ENDIAN
+-        if (::v8::internal::FLAG_trace_sim) {
+-          PrintF("Returned %08x\n", hi_res);
+-        }
+-        set_register(r3, hi_res);
+-        set_register(r4, lo_res);
+-#else
+-        if (::v8::internal::FLAG_trace_sim) {
+-          PrintF("Returned %08x\n", lo_res);
+-        }
+-        set_register(r3, lo_res);
+-        set_register(r4, hi_res);
+-#endif
+-#else
+-        if (redirection->type() == ExternalReference::BUILTIN_CALL) {
+-          SimulatorRuntimeCall target =
+             reinterpret_cast<SimulatorRuntimeCall>(external);
+-          intptr_t result = target(arg[0], arg[1], arg[2], arg[3], arg[4],
+-                                   arg[5]);
+-          if (::v8::internal::FLAG_trace_sim) {
+-            PrintF("Returned %08" V8PRIxPTR "\n", result);
+-          }
+-          set_register(r3, result);
+-        } else {
+-          DCHECK(redirection->type() ==
+-                 ExternalReference::BUILTIN_OBJECTPAIR_CALL);
+-          SimulatorRuntimeObjectPairCall target =
+-            reinterpret_cast<SimulatorRuntimeObjectPairCall>(external);
+-          struct ObjectPair result = target(arg[0], arg[1], arg[2], arg[3],
+-                                            arg[4], arg[5]);
+-          if (::v8::internal::FLAG_trace_sim) {
+-            PrintF("Returned %08" V8PRIxPTR ", %08" V8PRIxPTR "\n",
+-                   result.x, result.y);
+-          }
+-#if ABI_RETURNS_OBJECT_PAIRS_IN_REGS
+-          set_register(r3, result.x);
+-          set_register(r4, result.y);
+-#else
+-          memcpy(reinterpret_cast<void *>(result_buffer), &result,
+-                 sizeof(struct ObjectPair));
+-#endif
++        ObjectPair result =
++            target(arg[0], arg[1], arg[2], arg[3], arg[4], arg[5]);
++        intptr_t x;
++        intptr_t y;
++        decodeObjectPair(&result, &x, &y);
++        if (::v8::internal::FLAG_trace_sim) {
++          PrintF("Returned {%08" V8PRIxPTR ", %08" V8PRIxPTR "}\n", x, y);
+         }
+-#endif
++        set_register(r3, x);
++        set_register(r4, y);
+       }
+       set_pc(saved_lr);
+       break;
