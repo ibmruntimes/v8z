@@ -1260,7 +1260,7 @@ void Serializer::OutputStatistics(const char* name) {
   for (int space = 0; space < kNumberOfPreallocatedSpaces; space++) {
     size_t s = pending_chunk_[space];
     for (uint32_t chunk_size : completed_chunks_[space]) s += chunk_size;
-    PrintF("%16" V8_PTR_PREFIX "d", s);
+    PrintF("%16" V8_PTR_PREFIX "d", static_cast<int>(s));
   }
   PrintF("%16d\n", large_objects_total_size_);
 #ifdef OBJECT_PRINT
