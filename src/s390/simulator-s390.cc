@@ -3668,6 +3668,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
     case STY:
     case STCY:
     case STHY:
+    case STEY:
     case LDY:
     case LHY:
     case STDY:
@@ -3704,8 +3705,12 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       } else if (op == LDY) {
         uint64_t dbl_val = *reinterpret_cast<uint64_t*>(addr);
         set_d_register(r1, dbl_val);
+      } else if (op == STEY) {
+        int64_t frs_val = get_d_register(r1);
+        WriteW(addr, static_cast<int32_t>(frs_val), instr);
       } else if (op == LEY) {
-        UNIMPLEMENTED();
+        uint32_t float_val = *reinterpret_cast<uint32_t*>(addr);
+        set_d_register(r1, static_cast<uint64_t>(float_val));
       } else if (op == STY) {
         uint32_t value = get_low_register<uint32_t>(r1);
         WriteW(addr, value, instr);
