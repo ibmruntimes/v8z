@@ -360,14 +360,14 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
   } while (0)
 
 
-#define ASSEMBLE_STORE_FLOAT32(asm_instr)                  \
+#define ASSEMBLE_STORE_FLOAT32()                         \
   do {                                                   \
     size_t index = 0;                                    \
     AddressingMode mode = kMode_None;                    \
     MemOperand operand = i.MemoryOperand(&mode, &index); \
     DoubleRegister value = i.InputDoubleRegister(index); \
     DCHECK(0);  /* Need to round to single precision */  \
-    __ asm_instr(value, operand);                        \
+    __ StoreShortF(value, operand);                      \
   } while (0)
 
 
@@ -377,7 +377,7 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
     AddressingMode mode = kMode_None;                    \
     MemOperand operand = i.MemoryOperand(&mode, &index); \
     DoubleRegister value = i.InputDoubleRegister(index); \
-    UNIMPLEMENTED();  /* ppc: stfd */                    \
+    __ StoreF(value, operand);                           \
   } while (0)
 
 
@@ -1063,11 +1063,10 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
 #endif
     case kS390_StoreFloat32:
-      ASSEMBLE_STORE_FLOAT32(StoreShortF);
+      ASSEMBLE_STORE_FLOAT32();
       break;
     case kS390_StoreDouble:
-      UNIMPLEMENTED();
-      // ASSEMBLE_STORE_Double(StoreF);
+      ASSEMBLE_STORE_DOUBLE();
       break;
     case kS390_StoreWriteBarrier:
       ASSEMBLE_STORE_WRITE_BARRIER();
