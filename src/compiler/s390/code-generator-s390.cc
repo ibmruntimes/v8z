@@ -366,7 +366,6 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
     AddressingMode mode = kMode_None;                    \
     MemOperand operand = i.MemoryOperand(&mode, &index); \
     DoubleRegister value = i.InputDoubleRegister(index); \
-    DCHECK(0);  /* Need to round to single precision */  \
     __ StoreShortF(value, operand);                      \
   } while (0)
 
@@ -869,6 +868,9 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     case kS390_MinDouble:
       ASSEMBLE_FLOAT_MIN(kScratchDoubleReg, kScratchReg);
+      break;
+    case kS390_AbsDouble:
+      __ lpdbr(i.OutputDoubleRegister(), i.InputDoubleRegister(0));
       break;
     case kS390_SqrtDouble:
       ASSEMBLE_FLOAT_UNOP(sqdbr);
