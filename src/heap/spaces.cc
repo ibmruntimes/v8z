@@ -835,9 +835,9 @@ void MemoryAllocator::RemoveMemoryAllocationCallback(
 #ifdef DEBUG
 void MemoryAllocator::ReportStatistics() {
   float pct = static_cast<float>(capacity_ - size_) / capacity_;
-  PrintF("  capacity: %" V8_PTR_PREFIX
+  PrintF("  capacity: %" V8_SIZET_PREFIX V8_PTR_PREFIX
          "d"
-         ", used: %" V8_PTR_PREFIX
+         ", used: %" V8_SIZET_PREFIX V8_PTR_PREFIX
          "d"
          ", available: %%%d\n\n",
          capacity_, size_, static_cast<int>(pct * 100));
