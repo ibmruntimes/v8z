@@ -2205,8 +2205,8 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
         int64_t dbl_val = *reinterpret_cast<int64_t*>(addr);
         set_d_register(r1, dbl_val);
       } else if (op == LE) {
-        float dbl_val = *reinterpret_cast<float*>(addr);
-        set_d_register_from_float(r1, dbl_val);
+        uint32_t float_val = *reinterpret_cast<uint32_t*>(addr);
+        set_d_register(r1, static_cast<uint64_t>(float_val));
       }
       break;
     }
@@ -2276,9 +2276,8 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
         int64_t frs_val = get_d_register(rxinst->R1Value());
         WriteDW(addr, frs_val);
       } else if (op == STE) {
-        float frs_val = get_float_from_d_register(rxinst->R1Value());
-        int32_t *p = reinterpret_cast<int32_t *>(&frs_val);
-        WriteW(addr, *p, instr);
+        int64_t frs_val = get_d_register(rxinst->R1Value());
+        WriteW(addr, static_cast<int32_t>(frs_val), instr);
       }
       break;
     }
