@@ -435,7 +435,7 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
 
 
 // TODO(mbrandy): fix paths that produce garbage in offset's upper 32-bits.
-#define ASSEMBLE_CHECKED_STORE_FLOAT32(asm_instr)             \
+#define ASSEMBLE_CHECKED_STORE_FLOAT32()             \
   do {                                                      \
     Label done;                                             \
     size_t index = 0;                                       \
@@ -450,36 +450,31 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
     }                                                       \
     __ bge(&done);                                          \
     DoubleRegister value = i.InputDoubleRegister(3);        \
-    __ asm_instr(value, operand, kScratchDoubleReg);        \
+    __ StoreDoubleAsFloat32(value, operand,                 \
+            kScratchDoubleReg);                             \
     __ bind(&done);                                         \
   } while (0)
 
 
 // TODO(mbrandy): fix paths that produce garbage in offset's upper 32-bits.
-#define ASSEMBLE_CHECKED_STORE_DOUBLE()                 \
-  do {                                                  \
-    Label done;                                         \
-    size_t index = 0;                                   \
-    AddressingMode mode = kMode_None;                   \
-    MemOperand operand = i.MemoryOperand(&mode, index); \
-    DCHECK_EQ(kMode_MRR, mode);                         \
-    UNIMPLEMENTED();                                    \
- /*   Register offset = operand.rb();                   */  \
- /*   __ extsw(offset, offset);                         */  \
- /*   if (HasRegisterInput(instr, 2)) {                 */  \
- /*     __ cmplw(offset, i.InputRegister(2));           */  \
- /*   } else {                                          */  \
- /*     __ cmplwi(offset, i.InputImmediate(2));         */  \
- /*   }                                                 */  \
- /*   __ bge(&done);                                    */  \
- /*   DoubleRegister value = i.InputDoubleRegister(3);  */  \
- /*   if (mode == kMode_MRI) {                          */  \
- /*     __ stfd(value, operand);                        */  \
- /*   } else {                                          */  \
- /*     __ stfdx(value, operand);                       */  \
- /*   }                                                 */  \
- /*   __ bind(&done);                                   */  \
- /*   DCHECK_EQ(LeaveRC, i.OutputRCBit());              */  \
+#define ASSEMBLE_CHECKED_STORE_DOUBLE()                     \
+  do {                                                      \
+    Label done;                                             \
+    size_t index = 0;                                       \
+    AddressingMode mode = kMode_None;                       \
+    MemOperand operand = i.MemoryOperand(&mode, index);     \
+    DCHECK_EQ(kMode_MRR, mode);                             \
+    Register offset = operand.rb();                         \
+    __ lgfr(offset, offset);                                \
+    if (HasRegisterInput(instr, 2)) {                       \
+      __ CmpLogical32(offset, i.InputRegister(2));          \
+    } else {                                                \
+      __ CmpLogical32(offset, i.InputImmediate(2));         \
+    }                                                       \
+    __ bge(&done);                                          \
+    DoubleRegister value = i.InputDoubleRegister(3);        \
+    __ StoreF(value, operand);                              \
+    __ bind(&done);                                         \
   } while (0)
  
  
@@ -1111,11 +1106,10 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       ASSEMBLE_CHECKED_STORE_INTEGER(StoreW);
       break;
     case kCheckedStoreFloat32:
-      ASSEMBLE_CHECKED_STORE_FLOAT32(StoreDoubleAsFloat32);
+      ASSEMBLE_CHECKED_STORE_FLOAT32();
       break;
     case kCheckedStoreFloat64:
-      UNIMPLEMENTED();
-      // ASSEMBLE_CHECKED_STORE_Double(StoreF);
+      ASSEMBLE_CHECKED_STORE_DOUBLE();
       break;
     default:
       UNREACHABLE();
