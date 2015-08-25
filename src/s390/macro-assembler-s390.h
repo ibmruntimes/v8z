@@ -321,6 +321,7 @@ class MacroAssembler : public Assembler {
 
   void LoadF(DoubleRegister dst, const MemOperand& opnd);
   void LoadShortF(DoubleRegister dst, const MemOperand& opnd);
+  void LoadShortConvertToDoubleF(DoubleRegister dst, const MemOperand& mem);
 
   // Load And Test
   void LoadAndTest32(Register dst, Register src);
@@ -333,6 +334,8 @@ class MacroAssembler : public Assembler {
   // Store
   void StoreF(DoubleRegister dst, const MemOperand& opnd);
   void StoreShortF(DoubleRegister dst, const MemOperand& opnd);
+  void StoreDoubleAsFloat32(DoubleRegister src, const MemOperand& mem,
+                                          DoubleRegister scratch);
 
   // void XorP(Register dst, Register src, const Operand& opnd);
   void Branch(Condition c, const Operand& opnd);
