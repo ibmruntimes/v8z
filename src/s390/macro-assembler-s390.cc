@@ -5291,8 +5291,16 @@ void MacroAssembler::LoadShortF(DoubleRegister dst, const MemOperand& mem) {
   if (is_uint12(mem.offset())) {
     le_z(dst, mem);
   } else {
+    DCHECK(is_int20(mem.offset()));
     ley(dst, mem);
   }
+}
+
+
+void MacroAssembler::LoadShortConvertToDoubleF(DoubleRegister dst,
+                                                const MemOperand& mem) {
+  LoadShortF(dst, mem);
+  ldebr(dst, dst);
 }
 
 
@@ -5306,13 +5314,20 @@ void MacroAssembler::StoreF(DoubleRegister dst, const MemOperand& mem) {
 }
 
 
-void MacroAssembler::StoreShortF(DoubleRegister dst, const MemOperand& mem) {
+void MacroAssembler::StoreShortF(DoubleRegister src, const MemOperand& mem) {
   // for 32bit and 64bit we all use 64bit floating point regs
   if (is_uint12(mem.offset())) {
-    ste(dst, mem);
+    ste(src, mem);
   } else {
-    stey(dst, mem);
+    stey(src, mem);
   }
+}
+
+
+void MacroAssembler::StoreDoubleAsFloat32(DoubleRegister src, const MemOperand& mem,
+                                          DoubleRegister scratch) {
+  ledbr(scratch, src);
+  StoreShortF(scratch, mem);
 }
 
 

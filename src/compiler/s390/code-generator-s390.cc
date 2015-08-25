@@ -366,7 +366,7 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
     AddressingMode mode = kMode_None;                    \
     MemOperand operand = i.MemoryOperand(&mode, &index); \
     DoubleRegister value = i.InputDoubleRegister(index); \
-    __ StoreShortF(value, operand);                      \
+    __ StoreDoubleAsFloat32(value, operand, kScratchDoubleReg);             \
   } while (0)
 
 
@@ -450,7 +450,7 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
     }                                                       \
     __ bge(&done);                                          \
     DoubleRegister value = i.InputDoubleRegister(3);        \
-    __ asm_instr(value, operand);                           \
+    __ asm_instr(value, operand, kScratchDoubleReg);        \
     __ bind(&done);                                         \
   } while (0)
 
@@ -1045,7 +1045,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
 #endif
     case kS390_LoadFloat32:
-      ASSEMBLE_LOAD_FLOAT(LoadShortF);
+      ASSEMBLE_LOAD_FLOAT(LoadShortConvertToDoubleF);
       break;
     case kS390_LoadDouble:
       ASSEMBLE_LOAD_FLOAT(LoadF);
@@ -1094,7 +1094,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       ASSEMBLE_CHECKED_LOAD_INTEGER(LoadW);
       break;
     case kCheckedLoadFloat32:
-      ASSEMBLE_CHECKED_LOAD_FLOAT(LoadShortF, 32);
+      ASSEMBLE_CHECKED_LOAD_FLOAT(LoadShortConvertToDoubleF, 32);
       break;
     case kCheckedLoadFloat64:
       ASSEMBLE_CHECKED_LOAD_FLOAT(LoadF, 64);
@@ -1109,7 +1109,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       ASSEMBLE_CHECKED_STORE_INTEGER(StoreW);
       break;
     case kCheckedStoreFloat32:
-      ASSEMBLE_CHECKED_STORE_FLOAT32(StoreShortF);
+      ASSEMBLE_CHECKED_STORE_FLOAT32(StoreDoubleAsFloat32);
       break;
     case kCheckedStoreFloat64:
       UNIMPLEMENTED();
