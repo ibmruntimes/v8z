@@ -985,9 +985,11 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     case kS390_DoubleToFloat32:
       __ ledbr(i.OutputDoubleRegister(), i.InputDoubleRegister(0));
+      __ ldebr(i.OutputDoubleRegister(), i.OutputDoubleRegister());
       break;
     case kS390_Float32ToDouble:
-      __ ldebr(i.OutputDoubleRegister(), i.InputDoubleRegister(0));
+      // Nothing to do.
+      __ Move(i.OutputDoubleRegister(), i.InputDoubleRegister(0));
       break;
     case kS390_DoubleExtractLowWord32:
      // __ MovDoubleLowToInt(i.OutputRegister(), i.InputDoubleRegister(0));
