@@ -1408,8 +1408,6 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
       double value = (src.type() == Constant::kFloat32) ? src.ToFloat32()
                                                         : src.ToFloat64();
       __ LoadDoubleLiteral(dst, value, kScratchReg);
-      if (src.type() == Constant::kFloat32)
-        __ ledbr(dst, dst);
       if (destination->IsDoubleStackSlot()) {
         __ StoreF(dst, g.ToMemOperand(destination));
       }
