@@ -922,6 +922,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       }
 #if V8_TARGET_ARCH_S390X
       __ lgfr(r0, r0);
+      __ LoadAndTestP(r0, r0);
 #endif
       break;
 #if V8_TARGET_ARCH_S390X
