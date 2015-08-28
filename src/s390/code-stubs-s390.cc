@@ -1089,16 +1089,6 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   }
 #endif
 
-  // Runtime functions should not return 'the hole'.  Allowing it to escape may
-  // lead to crashes in the IC code later.
-  if (FLAG_debug_code) {
-    Label okay;
-    __ CompareRoot(r2, Heap::kTheHoleValueRootIndex);
-    __ bne(&okay, Label::kNear);
-    __ stop("The hole escaped");
-    __ bind(&okay);
-  }
-
   // Check result for exception sentinel.
   Label exception_returned;
   __ CompareRoot(r2, Heap::kExceptionRootIndex);
@@ -2147,11 +2137,10 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   //  sp[8]: subject string
   //  sp[12]: JSRegExp object
 
-  const int kSaveRegArea = 13 * kPointerSize;
-  const int kLastMatchInfoOffset = kSaveRegArea + 0 * kPointerSize;
-  const int kPreviousIndexOffset = kSaveRegArea + 1 * kPointerSize;
-  const int kSubjectOffset = kSaveRegArea + 2 * kPointerSize;
-  const int kJSRegExpOffset = kSaveRegArea + 3 * kPointerSize;
+  const int kLastMatchInfoOffset = 0 * kPointerSize;
+  const int kPreviousIndexOffset = 1 * kPointerSize;
+  const int kSubjectOffset = 2 * kPointerSize;
+  const int kJSRegExpOffset = 3 * kPointerSize;
 
   Label runtime, br_over, encoding_type_UC16;
 
@@ -2166,10 +2155,6 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   Register code = r9;
 
   __ CleanseP(r14);
-
-  __ lay(sp, MemOperand(sp, -kSaveRegArea));
-  __ StoreMultipleP(r3, sp, MemOperand(sp, 0));
-  // __ la(fp, MemOperand(sp, 13 * kPointerSize));
 
   // Ensure register assigments are consistent with callee save masks
   DCHECK(subject.bit() & kCalleeSaved);
@@ -2422,8 +2407,6 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
 
   __ LeaveExitFrame(false, no_reg, true);
 
-  // __ la(fp, MemOperand(sp, 13 * kPointerSize));
-
   // r2: result (int32)
   // subject: subject string -- needed to reload
   __ LoadP(subject, MemOperand(sp, kSubjectOffset));
@@ -2459,8 +2442,6 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ bind(&failure);
   // For failure and exception return null.
   __ mov(r2, Operand(isolate()->factory()->null_value()));
-  __ LoadMultipleP(r3, sp, MemOperand(sp, 0));
-  __ la(sp, MemOperand(sp, 13 * kPointerSize));
   __ la(sp, MemOperand(sp, (4 * kPointerSize)));
   __ Ret();
 
@@ -2539,15 +2520,11 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
 
   // Return last match info.
   __ LoadP(r2, MemOperand(sp, kLastMatchInfoOffset));
-  __ LoadMultipleP(r3, sp, MemOperand(sp, 0));
-  __ la(sp, MemOperand(sp, 13 * kPointerSize));
   __ la(sp, MemOperand(sp, (4 * kPointerSize)));
   __ Ret();
 
   // Do the runtime call to execute the regexp.
   __ bind(&runtime);
-  __ LoadMultipleP(r3, sp, MemOperand(sp, 0));
-  __ la(sp, MemOperand(sp, 13 * kPointerSize));
   __ TailCallRuntime(Runtime::kRegExpExec, 4, 1);
 
   // Deferred code for string handling.
