@@ -2,19 +2,33 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-var $innerArrayCopyWithin;
-var $innerArrayFill;
-var $innerArrayFind;
-var $innerArrayFindIndex;
-
-(function(global, exports) {
+(function(global, utils) {
 
 'use strict';
 
 %CheckIsBootstrapping();
 
+// -------------------------------------------------------------------
+// Imports
+
 var GlobalArray = global.Array;
 var GlobalSymbol = global.Symbol;
+
+var GetIterator;
+var GetMethod;
+var MathMax;
+var MathMin;
+var ObjectIsFrozen;
+var ObjectDefineProperty;
+
+utils.Import(function(from) {
+  GetIterator = from.GetIterator;
+  GetMethod = from.GetMethod;
+  MathMax = from.MathMax;
+  MathMin = from.MathMin;
+  ObjectIsFrozen = from.ObjectIsFrozen;
+  ObjectDefineProperty = from.ObjectDefineProperty;
+});
 
 // -------------------------------------------------------------------
 
@@ -22,28 +36,28 @@ function InnerArrayCopyWithin(target, start, end, array, length) {
   target = TO_INTEGER(target);
   var to;
   if (target < 0) {
-    to = $max(length + target, 0);
+    to = MathMax(length + target, 0);
   } else {
-    to = $min(target, length);
+    to = MathMin(target, length);
   }
 
   start = TO_INTEGER(start);
   var from;
   if (start < 0) {
-    from = $max(length + start, 0);
+    from = MathMax(length + start, 0);
   } else {
-    from = $min(start, length);
+    from = MathMin(start, length);
   }
 
   end = IS_UNDEFINED(end) ? length : TO_INTEGER(end);
   var final;
   if (end < 0) {
-    final = $max(length + end, 0);
+    final = MathMax(length + end, 0);
   } else {
-    final = $min(end, length);
+    final = MathMin(end, length);
   }
 
-  var count = $min(final - from, length - to);
+  var count = MathMin(final - from, length - to);
   var direction = 1;
   if (from < to && to < (from + count)) {
     direction = -1;
@@ -64,7 +78,6 @@ function InnerArrayCopyWithin(target, start, end, array, length) {
 
   return array;
 }
-$innerArrayCopyWithin = InnerArrayCopyWithin;
 
 // ES6 draft 03-17-15, section 22.1.3.3
 function ArrayCopyWithin(target, start, end) {
@@ -89,18 +102,15 @@ function InnerArrayFind(predicate, thisArg, array, length) {
   }
 
   for (var i = 0; i < length; i++) {
-    if (i in array) {
-      var element = array[i];
-      var newThisArg = needs_wrapper ? $toObject(thisArg) : thisArg;
-      if (%_CallFunction(newThisArg, element, i, array, predicate)) {
-        return element;
-      }
+    var element = array[i];
+    var newThisArg = needs_wrapper ? $toObject(thisArg) : thisArg;
+    if (%_CallFunction(newThisArg, element, i, array, predicate)) {
+      return element;
     }
   }
 
   return;
 }
-$innerArrayFind = InnerArrayFind;
 
 // ES6 draft 07-15-13, section 15.4.3.23
 function ArrayFind(predicate, thisArg) {
@@ -125,18 +135,15 @@ function InnerArrayFindIndex(predicate, thisArg, array, length) {
   }
 
   for (var i = 0; i < length; i++) {
-    if (i in array) {
-      var element = array[i];
-      var newThisArg = needs_wrapper ? $toObject(thisArg) : thisArg;
-      if (%_CallFunction(newThisArg, element, i, array, predicate)) {
-        return i;
-      }
+    var element = array[i];
+    var newThisArg = needs_wrapper ? $toObject(thisArg) : thisArg;
+    if (%_CallFunction(newThisArg, element, i, array, predicate)) {
+      return i;
     }
   }
 
   return -1;
 }
-$innerArrayFindIndex = InnerArrayFindIndex;
 
 // ES6 draft 07-15-13, section 15.4.3.24
 function ArrayFindIndex(predicate, thisArg) {
@@ -167,7 +174,7 @@ function InnerArrayFill(value, start, end, array, length) {
     if (end > length) end = length;
   }
 
-  if ((end - i) > 0 && $objectIsFrozen(array)) {
+  if ((end - i) > 0 && ObjectIsFrozen(array)) {
     throw MakeTypeError(kArrayFunctionsOnFrozen);
   }
 
@@ -175,7 +182,6 @@ function InnerArrayFill(value, start, end, array, length) {
     array[i] = value;
   return array;
 }
-$innerArrayFill = InnerArrayFill;
 
 // ES6, draft 04-05-14, section 22.1.3.6
 function ArrayFill(value, start, end) {
@@ -185,6 +191,16 @@ function ArrayFill(value, start, end) {
   var length = TO_UINT32(array.length);
 
   return InnerArrayFill(value, start, end, array, length);
+}
+
+function AddArrayElement(constructor, array, i, value) {
+  if (constructor === GlobalArray) {
+    %AddElement(array, i, value);
+  } else {
+    ObjectDefineProperty(array, i, {
+      value: value, writable: true, configurable: true, enumerable: true
+    });
+  }
 }
 
 // ES6, draft 10-14-14, section 22.1.2.1
@@ -204,7 +220,7 @@ function ArrayFrom(arrayLike, mapfn, receiver) {
     }
   }
 
-  var iterable = $getMethod(items, symbolIterator);
+  var iterable = GetMethod(items, symbolIterator);
   var k;
   var result;
   var mappedValue;
@@ -213,7 +229,7 @@ function ArrayFrom(arrayLike, mapfn, receiver) {
   if (!IS_UNDEFINED(iterable)) {
     result = %IsConstructor(this) ? new this() : [];
 
-    var iterator = $getIterator(items, iterable);
+    var iterator = GetIterator(items, iterable);
 
     k = 0;
     while (true) {
@@ -234,7 +250,8 @@ function ArrayFrom(arrayLike, mapfn, receiver) {
       } else {
         mappedValue = nextValue;
       }
-      %AddElement(result, k++, mappedValue, NONE);
+      AddArrayElement(this, result, k, mappedValue);
+      k++;
     }
   } else {
     var len = $toLength(items.length);
@@ -247,7 +264,7 @@ function ArrayFrom(arrayLike, mapfn, receiver) {
       } else {
         mappedValue = nextValue;
       }
-      %AddElement(result, k, mappedValue, NONE);
+      AddArrayElement(this, result, k, mappedValue);
     }
 
     result.length = k;
@@ -262,7 +279,7 @@ function ArrayOf() {
   // TODO: Implement IsConstructor (ES6 section 7.2.5)
   var array = %IsConstructor(constructor) ? new constructor(length) : [];
   for (var i = 0; i < length; i++) {
-    %AddElement(array, i, %_Arguments(i), NONE);
+    AddArrayElement(constructor, array, i, %_Arguments(i));
   }
   array.length = length;
   return array;
@@ -270,7 +287,7 @@ function ArrayOf() {
 
 // -------------------------------------------------------------------
 
-$installConstants(GlobalSymbol, [
+utils.InstallConstants(GlobalSymbol, [
   // TODO(dslomov, caitp): Move to symbol.js when shipping
   "isConcatSpreadable", symbolIsConcatSpreadable
 ]);
@@ -282,17 +299,28 @@ $installConstants(GlobalSymbol, [
 %FunctionSetLength(ArrayFindIndex, 1);
 
 // Set up non-enumerable functions on the Array object.
-$installFunctions(GlobalArray, DONT_ENUM, [
+utils.InstallFunctions(GlobalArray, DONT_ENUM, [
   "from", ArrayFrom,
   "of", ArrayOf
 ]);
 
 // Set up the non-enumerable functions on the Array prototype object.
-$installFunctions(GlobalArray.prototype, DONT_ENUM, [
+utils.InstallFunctions(GlobalArray.prototype, DONT_ENUM, [
   "copyWithin", ArrayCopyWithin,
   "find", ArrayFind,
   "findIndex", ArrayFindIndex,
   "fill", ArrayFill
 ]);
+
+// -------------------------------------------------------------------
+// Exports
+
+utils.Export(function(to) {
+  to.ArrayFrom = ArrayFrom;
+  to.InnerArrayCopyWithin = InnerArrayCopyWithin;
+  to.InnerArrayFill = InnerArrayFill;
+  to.InnerArrayFind = InnerArrayFind;
+  to.InnerArrayFindIndex = InnerArrayFindIndex;
+});
 
 })

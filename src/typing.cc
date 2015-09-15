@@ -105,7 +105,9 @@ void AstTyper::ObserveTypesAtOsrEntry(IterationStatement* stmt) {
 
     ZoneList<Variable*> local_vars(locals, zone());
     ZoneList<Variable*> context_vars(scope->ContextLocalCount(), zone());
-    scope->CollectStackAndContextLocals(&local_vars, &context_vars);
+    ZoneList<Variable*> global_vars(scope->ContextGlobalCount(), zone());
+    scope->CollectStackAndContextLocals(&local_vars, &context_vars,
+                                        &global_vars);
     for (int i = 0; i < locals; i++) {
       PrintObserved(local_vars.at(i),
                     frame->GetExpression(i),
@@ -346,9 +348,7 @@ void AstTyper::VisitDebuggerStatement(DebuggerStatement* stmt) {
 }
 
 
-void AstTyper::VisitFunctionLiteral(FunctionLiteral* expr) {
-  expr->InitializeSharedInfo(Handle<Code>(info_->closure()->shared()->code()));
-}
+void AstTyper::VisitFunctionLiteral(FunctionLiteral* expr) {}
 
 
 void AstTyper::VisitClassLiteral(ClassLiteral* expr) {}
@@ -754,14 +754,17 @@ void AstTyper::VisitCompareOperation(CompareOperation* expr) {
 }
 
 
-void AstTyper::VisitSpread(Spread* expr) { UNREACHABLE(); }
+void AstTyper::VisitSpread(Spread* expr) { RECURSE(Visit(expr->expression())); }
 
 
 void AstTyper::VisitThisFunction(ThisFunction* expr) {
 }
 
 
-void AstTyper::VisitSuperReference(SuperReference* expr) {}
+void AstTyper::VisitSuperPropertyReference(SuperPropertyReference* expr) {}
+
+
+void AstTyper::VisitSuperCallReference(SuperCallReference* expr) {}
 
 
 void AstTyper::VisitDeclarations(ZoneList<Declaration*>* decls) {
@@ -789,4 +792,5 @@ void AstTyper::VisitExportDeclaration(ExportDeclaration* declaration) {
 }
 
 
-} }  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8

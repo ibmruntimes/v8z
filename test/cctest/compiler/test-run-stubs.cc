@@ -40,7 +40,7 @@ TEST(RunMathFloorStub) {
   JSGraph js(isolate, &graph, &common, &javascript, &machine);
 
   // FunctionTester (ab)uses a 2-argument function
-  Node* start = graph.NewNode(common.Start(2));
+  Node* start = graph.NewNode(common.Start(4));
   // Parameter 0 is the number to round
   Node* numberParam = graph.NewNode(common.Parameter(1), start);
   Unique<HeapObject> u = Unique<HeapObject>::CreateImmovable(code);
@@ -50,7 +50,7 @@ TEST(RunMathFloorStub) {
                              js.UndefinedConstant(), js.UndefinedConstant(),
                              numberParam, dummyContext, start, start);
   Node* ret = graph.NewNode(common.Return(), call, call, start);
-  Node* end = graph.NewNode(common.End(), ret);
+  Node* end = graph.NewNode(common.End(1), ret);
   graph.SetStart(start);
   graph.SetEnd(end);
   FunctionTester ft(&graph);
@@ -75,18 +75,21 @@ TEST(RunStringLengthTFStub) {
   // Create a function to call the code using the descriptor.
   Graph graph(zone);
   CommonOperatorBuilder common(zone);
-  // FunctionTester (ab)uses a 2-argument function
-  Node* start = graph.NewNode(common.Start(2));
+  // FunctionTester (ab)uses a 4-argument function
+  Node* start = graph.NewNode(common.Start(6));
   // Parameter 0 is the receiver
   Node* receiverParam = graph.NewNode(common.Parameter(1), start);
   Node* nameParam = graph.NewNode(common.Parameter(2), start);
+  Node* slotParam = graph.NewNode(common.Parameter(3), start);
+  Node* vectorParam = graph.NewNode(common.Parameter(4), start);
   Unique<HeapObject> u = Unique<HeapObject>::CreateImmovable(code);
   Node* theCode = graph.NewNode(common.HeapConstant(u));
   Node* dummyContext = graph.NewNode(common.NumberConstant(0.0));
-  Node* call = graph.NewNode(common.Call(descriptor), theCode, receiverParam,
-                             nameParam, dummyContext, start, start);
+  Node* call =
+      graph.NewNode(common.Call(descriptor), theCode, receiverParam, nameParam,
+                    slotParam, vectorParam, dummyContext, start, start);
   Node* ret = graph.NewNode(common.Return(), call, call, start);
-  Node* end = graph.NewNode(common.End(), ret);
+  Node* end = graph.NewNode(common.End(1), ret);
   graph.SetStart(start);
   graph.SetEnd(end);
   FunctionTester ft(&graph);
@@ -96,8 +99,49 @@ TEST(RunStringLengthTFStub) {
   Handle<JSReceiver> receiverArg =
       Object::ToObject(isolate, ft.Val(testString)).ToHandleChecked();
   Handle<String> nameArg = ft.Val("length");
-  Handle<Object> result = ft.Call(receiverArg, nameArg).ToHandleChecked();
+  Handle<Object> slot = ft.Val(0.0);
+  Handle<Object> vector = ft.Val(0.0);
+  Handle<Object> result =
+      ft.Call(receiverArg, nameArg, slot, vector).ToHandleChecked();
   CHECK_EQ(static_cast<int>(strlen(testString)), Smi::cast(*result)->value());
+}
+
+
+TEST(RunStringAddTFStub) {
+  HandleAndZoneScope scope;
+  Isolate* isolate = scope.main_isolate();
+  Zone* zone = scope.main_zone();
+
+  // Create code and an accompanying descriptor.
+  StringAddTFStub stub(isolate, STRING_ADD_CHECK_BOTH, NOT_TENURED);
+  Handle<Code> code = stub.GenerateCode();
+  CompilationInfo info(&stub, isolate, zone);
+  CallDescriptor* descriptor = Linkage::ComputeIncoming(zone, &info);
+
+  // Create a function to call the code using the descriptor.
+  Graph graph(zone);
+  CommonOperatorBuilder common(zone);
+  // FunctionTester (ab)uses a 2-argument function
+  Node* start = graph.NewNode(common.Start(4));
+  // Parameter 0 is the receiver
+  Node* leftParam = graph.NewNode(common.Parameter(1), start);
+  Node* rightParam = graph.NewNode(common.Parameter(2), start);
+  Unique<HeapObject> u = Unique<HeapObject>::CreateImmovable(code);
+  Node* theCode = graph.NewNode(common.HeapConstant(u));
+  Node* dummyContext = graph.NewNode(common.NumberConstant(0.0));
+  Node* call = graph.NewNode(common.Call(descriptor), theCode, leftParam,
+                             rightParam, dummyContext, start, start);
+  Node* ret = graph.NewNode(common.Return(), call, call, start);
+  Node* end = graph.NewNode(common.End(1), ret);
+  graph.SetStart(start);
+  graph.SetEnd(end);
+  FunctionTester ft(&graph);
+
+  // Actuall call through to the stub, verifying its result.
+  Handle<String> leftArg = ft.Val("links");
+  Handle<String> rightArg = ft.Val("rechts");
+  Handle<Object> result = ft.Call(leftArg, rightArg).ToHandleChecked();
+  CHECK(String::Equals(ft.Val("linksrechts"), Handle<String>::cast(result)));
 }
 
 #endif  // V8_TURBOFAN_TARGET

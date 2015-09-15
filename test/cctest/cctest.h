@@ -93,6 +93,7 @@ class TestHeap : public i::Heap {
   using i::Heap::AllocateByteArray;
   using i::Heap::AllocateFixedArray;
   using i::Heap::AllocateHeapNumber;
+  using i::Heap::AllocateFloat32x4;
   using i::Heap::AllocateJSObject;
   using i::Heap::AllocateJSObjectFromMap;
   using i::Heap::AllocateMap;
@@ -397,6 +398,13 @@ static inline v8::Local<v8::Value> CompileRun(const char* source) {
 }
 
 
+// Helper functions that compile and run the source.
+static inline v8::MaybeLocal<v8::Value> CompileRun(
+    v8::Local<v8::Context> context, const char* source) {
+  return v8::Script::Compile(v8_str(source))->Run(context);
+}
+
+
 // Compiles source as an ES6 module.
 static inline v8::Local<v8::Value> CompileRunModule(const char* source) {
   v8::ScriptCompiler::Source script_source(v8_str(source));
@@ -561,7 +569,7 @@ static inline void SimulateIncrementalMarking(i::Heap* heap) {
   }
   CHECK(marking->IsMarking() || marking->IsStopped());
   if (marking->IsStopped()) {
-    marking->Start();
+    marking->Start(i::Heap::kNoGCFlags);
   }
   CHECK(marking->IsMarking());
   while (!marking->IsComplete()) {
@@ -572,6 +580,18 @@ static inline void SimulateIncrementalMarking(i::Heap* heap) {
   }
   CHECK(marking->IsComplete());
 }
+
+
+static void DummyDebugEventListener(
+    const v8::Debug::EventDetails& event_details) {}
+
+
+static inline void EnableDebugger() {
+  v8::Debug::SetDebugEventListener(&DummyDebugEventListener);
+}
+
+
+static inline void DisableDebugger() { v8::Debug::SetDebugEventListener(NULL); }
 
 
 // Helper class for new allocations tracking and checking.

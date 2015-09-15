@@ -60,6 +60,39 @@ RUNTIME_FUNCTION(Runtime_ThrowReferenceError) {
 }
 
 
+RUNTIME_FUNCTION(Runtime_NewTypeError) {
+  HandleScope scope(isolate);
+  DCHECK(args.length() == 2);
+  CONVERT_INT32_ARG_CHECKED(template_index, 0);
+  CONVERT_ARG_HANDLE_CHECKED(Object, arg0, 1);
+  auto message_template =
+      static_cast<MessageTemplate::Template>(template_index);
+  return *isolate->factory()->NewTypeError(message_template, arg0);
+}
+
+
+RUNTIME_FUNCTION(Runtime_NewReferenceError) {
+  HandleScope scope(isolate);
+  DCHECK(args.length() == 2);
+  CONVERT_INT32_ARG_CHECKED(template_index, 0);
+  CONVERT_ARG_HANDLE_CHECKED(Object, arg0, 1);
+  auto message_template =
+      static_cast<MessageTemplate::Template>(template_index);
+  return *isolate->factory()->NewReferenceError(message_template, arg0);
+}
+
+
+RUNTIME_FUNCTION(Runtime_NewSyntaxError) {
+  HandleScope scope(isolate);
+  DCHECK(args.length() == 2);
+  CONVERT_INT32_ARG_CHECKED(template_index, 0);
+  CONVERT_ARG_HANDLE_CHECKED(Object, arg0, 1);
+  auto message_template =
+      static_cast<MessageTemplate::Template>(template_index);
+  return *isolate->factory()->NewSyntaxError(message_template, arg0);
+}
+
+
 RUNTIME_FUNCTION(Runtime_ThrowIteratorResultNotAnObject) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 1);
@@ -67,6 +100,14 @@ RUNTIME_FUNCTION(Runtime_ThrowIteratorResultNotAnObject) {
   THROW_NEW_ERROR_RETURN_FAILURE(
       isolate,
       NewTypeError(MessageTemplate::kIteratorResultNotAnObject, value));
+}
+
+
+RUNTIME_FUNCTION(Runtime_ThrowStrongModeImplicitConversion) {
+  HandleScope scope(isolate);
+  DCHECK(args.length() == 0);
+  THROW_NEW_ERROR_RETURN_FAILURE(
+      isolate, NewTypeError(MessageTemplate::kStrongImplicitConversion));
 }
 
 
@@ -416,5 +457,15 @@ RUNTIME_FUNCTION(Runtime_GetTypeFeedbackVector) {
   CONVERT_ARG_CHECKED(JSFunction, function, 0);
   return function->shared()->feedback_vector();
 }
+
+
+RUNTIME_FUNCTION(Runtime_GetCallerJSFunction) {
+  SealHandleScope shs(isolate);
+  StackFrameIterator it(isolate);
+  RUNTIME_ASSERT(it.frame()->type() == StackFrame::STUB);
+  it.Advance();
+  RUNTIME_ASSERT(it.frame()->type() == StackFrame::JAVA_SCRIPT);
+  return JavaScriptFrame::cast(it.frame())->function();
 }
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8

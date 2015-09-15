@@ -129,8 +129,8 @@ bool LCodeGen::GeneratePrologue() {
 
     // Sloppy mode functions need to replace the receiver with the global proxy
     // when called as functions (without an explicit receiver object).
-    if (is_sloppy(info_->language_mode()) && info()->MayUseThis() &&
-        !info_->is_native()) {
+    if (is_sloppy(info()->language_mode()) && info()->MayUseThis() &&
+        !info()->is_native() && info()->scope()->has_this_declaration()) {
       Label ok;
       StackArgumentsAccessor args(rsp, scope()->num_parameters());
       __ movp(rcx, args.GetReceiverOperand());
@@ -213,8 +213,9 @@ bool LCodeGen::GeneratePrologue() {
 
     // Copy any necessary parameters into the context.
     int num_parameters = scope()->num_parameters();
-    for (int i = 0; i < num_parameters; i++) {
-      Variable* var = scope()->parameter(i);
+    int first_parameter = scope()->has_this_declaration() ? -1 : 0;
+    for (int i = first_parameter; i < num_parameters; i++) {
+      Variable* var = (i == -1) ? scope()->receiver() : scope()->parameter(i);
       if (var->IsContextSlot()) {
         int parameter_offset = StandardFrameConstants::kCallerSPOffset +
             (num_parameters - 1 - i) * kPointerSize;
@@ -536,52 +537,17 @@ void LCodeGen::WriteTranslation(LEnvironment* environment,
 
   // The translation includes one command per value in the environment.
   int translation_size = environment->translation_size();
-  // The output frame height does not include the parameters.
-  int height = translation_size - environment->parameter_count();
 
   WriteTranslation(environment->outer(), translation);
-  bool has_closure_id = !info()->closure().is_null() &&
-      !info()->closure().is_identical_to(environment->closure());
-  int closure_id = has_closure_id
-      ? DefineDeoptimizationLiteral(environment->closure())
-      : Translation::kSelfLiteralId;
-
-  switch (environment->frame_type()) {
-    case JS_FUNCTION:
-      translation->BeginJSFrame(environment->ast_id(), closure_id, height);
-      break;
-    case JS_CONSTRUCT:
-      translation->BeginConstructStubFrame(closure_id, translation_size);
-      break;
-    case JS_GETTER:
-      DCHECK(translation_size == 1);
-      DCHECK(height == 0);
-      translation->BeginGetterStubFrame(closure_id);
-      break;
-    case JS_SETTER:
-      DCHECK(translation_size == 2);
-      DCHECK(height == 0);
-      translation->BeginSetterStubFrame(closure_id);
-      break;
-    case ARGUMENTS_ADAPTOR:
-      translation->BeginArgumentsAdaptorFrame(closure_id, translation_size);
-      break;
-    case STUB:
-      translation->BeginCompiledStubFrame();
-      break;
-  }
+  WriteTranslationFrame(environment, translation);
 
   int object_index = 0;
   int dematerialized_index = 0;
   for (int i = 0; i < translation_size; ++i) {
     LOperand* value = environment->values()->at(i);
-    AddToTranslation(environment,
-                     translation,
-                     value,
-                     environment->HasTaggedValueAt(i),
-                     environment->HasUint32ValueAt(i),
-                     &object_index,
-                     &dematerialized_index);
+    AddToTranslation(
+        environment, translation, value, environment->HasTaggedValueAt(i),
+        environment->HasUint32ValueAt(i), &object_index, &dematerialized_index);
   }
 }
 
@@ -888,28 +854,11 @@ void LCodeGen::PopulateDeoptimizationData(Handle<Code> code) {
 }
 
 
-int LCodeGen::DefineDeoptimizationLiteral(Handle<Object> literal) {
-  int result = deoptimization_literals_.length();
-  for (int i = 0; i < deoptimization_literals_.length(); ++i) {
-    if (deoptimization_literals_[i].is_identical_to(literal)) return i;
-  }
-  deoptimization_literals_.Add(literal, zone());
-  return result;
-}
-
-
 void LCodeGen::PopulateDeoptimizationLiteralsWithInlinedFunctions() {
-  DCHECK(deoptimization_literals_.length() == 0);
-
-  const ZoneList<Handle<JSFunction> >* inlined_closures =
-      chunk()->inlined_closures();
-
-  for (int i = 0, length = inlined_closures->length();
-       i < length;
-       i++) {
-    DefineDeoptimizationLiteral(inlined_closures->at(i));
+  DCHECK_EQ(0, deoptimization_literals_.length());
+  for (auto function : chunk()->inlined_functions()) {
+    DefineDeoptimizationLiteral(function);
   }
-
   inlined_function_count_ = deoptimization_literals_.length();
 }
 
@@ -1782,18 +1731,19 @@ void LCodeGen::DoDateField(LDateField* instr) {
   Register object = ToRegister(instr->date());
   Register result = ToRegister(instr->result());
   Smi* index = instr->index();
-  Label runtime, done, not_date_object;
   DCHECK(object.is(result));
   DCHECK(object.is(rax));
 
-  Condition cc = masm()->CheckSmi(object);
-  DeoptimizeIf(cc, instr, Deoptimizer::kSmi);
-  __ CmpObjectType(object, JS_DATE_TYPE, kScratchRegister);
-  DeoptimizeIf(not_equal, instr, Deoptimizer::kNotADateObject);
+  if (FLAG_debug_code) {
+    __ AssertNotSmi(object);
+    __ CmpObjectType(object, JS_DATE_TYPE, kScratchRegister);
+    __ Check(equal, kOperandIsNotADate);
+  }
 
   if (index->value() == 0) {
     __ movp(result, FieldOperand(object, JSDate::kValueOffset));
   } else {
+    Label runtime, done;
     if (index->value() < JSDate::kFirstUncachedField) {
       ExternalReference stamp = ExternalReference::date_cache_stamp(isolate());
       Operand stamp_operand = __ ExternalOperand(stamp);
@@ -2104,8 +2054,8 @@ void LCodeGen::DoArithmeticT(LArithmeticT* instr) {
   DCHECK(ToRegister(instr->right()).is(rax));
   DCHECK(ToRegister(instr->result()).is(rax));
 
-  Handle<Code> code = CodeFactory::BinaryOpIC(
-      isolate(), instr->op(), instr->language_mode()).code();
+  Handle<Code> code =
+      CodeFactory::BinaryOpIC(isolate(), instr->op(), instr->strength()).code();
   CallCode(code, RelocInfo::CODE_TARGET, instr);
 }
 
@@ -2548,7 +2498,8 @@ void LCodeGen::DoStringCompareAndBranch(LStringCompareAndBranch* instr) {
   DCHECK(ToRegister(instr->context()).is(rsi));
   Token::Value op = instr->op();
 
-  Handle<Code> ic = CodeFactory::CompareIC(isolate(), op, SLOPPY).code();
+  Handle<Code> ic =
+      CodeFactory::CompareIC(isolate(), op, Strength::WEAK).code();
   CallCode(ic, RelocInfo::CODE_TARGET, instr);
 
   Condition condition = TokenToCondition(op, false);
@@ -2833,7 +2784,7 @@ void LCodeGen::DoCmpT(LCmpT* instr) {
   Token::Value op = instr->op();
 
   Handle<Code> ic =
-      CodeFactory::CompareIC(isolate(), op, instr->language_mode()).code();
+      CodeFactory::CompareIC(isolate(), op, instr->strength()).code();
   CallCode(ic, RelocInfo::CODE_TARGET, instr);
 
   Condition condition = TokenToCondition(op, false);
@@ -2890,14 +2841,28 @@ void LCodeGen::DoReturn(LReturn* instr) {
 template <class T>
 void LCodeGen::EmitVectorLoadICRegisters(T* instr) {
   Register vector_register = ToRegister(instr->temp_vector());
-  Register slot_register = VectorLoadICDescriptor::SlotRegister();
-  DCHECK(vector_register.is(VectorLoadICDescriptor::VectorRegister()));
+  Register slot_register = LoadWithVectorDescriptor::SlotRegister();
+  DCHECK(vector_register.is(LoadWithVectorDescriptor::VectorRegister()));
   DCHECK(slot_register.is(rax));
 
   AllowDeferredHandleDereference vector_structure_check;
   Handle<TypeFeedbackVector> vector = instr->hydrogen()->feedback_vector();
   __ Move(vector_register, vector);
   // No need to allocate this register.
+  FeedbackVectorICSlot slot = instr->hydrogen()->slot();
+  int index = vector->GetIndex(slot);
+  __ Move(slot_register, Smi::FromInt(index));
+}
+
+
+template <class T>
+void LCodeGen::EmitVectorStoreICRegisters(T* instr) {
+  Register vector_register = ToRegister(instr->temp_vector());
+  Register slot_register = ToRegister(instr->temp_slot());
+
+  AllowDeferredHandleDereference vector_structure_check;
+  Handle<TypeFeedbackVector> vector = instr->hydrogen()->feedback_vector();
+  __ Move(vector_register, vector);
   FeedbackVectorICSlot slot = instr->hydrogen()->slot();
   int index = vector->GetIndex(slot);
   __ Move(slot_register, Smi::FromInt(index));
@@ -2913,7 +2878,7 @@ void LCodeGen::DoLoadGlobalGeneric(LLoadGlobalGeneric* instr) {
   __ Move(LoadDescriptor::NameRegister(), instr->name());
   EmitVectorLoadICRegisters<LLoadGlobalGeneric>(instr);
   ContextualMode mode = instr->for_typeof() ? NOT_CONTEXTUAL : CONTEXTUAL;
-  Handle<Code> ic = CodeFactory::LoadICInOptimizedCode(isolate(), mode,
+  Handle<Code> ic = CodeFactory::LoadICInOptimizedCode(isolate(), mode, SLOPPY,
                                                        PREMONOMORPHIC).code();
   CallCode(ic, RelocInfo::CODE_TARGET, instr);
 }
@@ -3029,9 +2994,10 @@ void LCodeGen::DoLoadNamedGeneric(LLoadNamedGeneric* instr) {
 
   __ Move(LoadDescriptor::NameRegister(), instr->name());
   EmitVectorLoadICRegisters<LLoadNamedGeneric>(instr);
-  Handle<Code> ic = CodeFactory::LoadICInOptimizedCode(
-                        isolate(), NOT_CONTEXTUAL,
-                        instr->hydrogen()->initialization_state()).code();
+  Handle<Code> ic =
+      CodeFactory::LoadICInOptimizedCode(
+          isolate(), NOT_CONTEXTUAL, instr->hydrogen()->language_mode(),
+          instr->hydrogen()->initialization_state()).code();
   CallCode(ic, RelocInfo::CODE_TARGET, instr);
 }
 
@@ -3172,7 +3138,8 @@ void LCodeGen::DoLoadKeyedExternalArray(LLoadKeyed* instr) {
       case FAST_HOLEY_SMI_ELEMENTS:
       case FAST_HOLEY_DOUBLE_ELEMENTS:
       case DICTIONARY_ELEMENTS:
-      case SLOPPY_ARGUMENTS_ELEMENTS:
+      case FAST_SLOPPY_ARGUMENTS_ELEMENTS:
+      case SLOW_SLOPPY_ARGUMENTS_ELEMENTS:
         UNREACHABLE();
         break;
     }
@@ -3327,9 +3294,9 @@ void LCodeGen::DoLoadKeyedGeneric(LLoadKeyedGeneric* instr) {
     EmitVectorLoadICRegisters<LLoadKeyedGeneric>(instr);
   }
 
-  Handle<Code> ic =
-      CodeFactory::KeyedLoadICInOptimizedCode(
-          isolate(), instr->hydrogen()->initialization_state()).code();
+  Handle<Code> ic = CodeFactory::KeyedLoadICInOptimizedCode(
+                        isolate(), instr->hydrogen()->language_mode(),
+                        instr->hydrogen()->initialization_state()).code();
   CallCode(ic, RelocInfo::CODE_TARGET, instr);
 }
 
@@ -4257,10 +4224,14 @@ void LCodeGen::DoStoreNamedGeneric(LStoreNamedGeneric* instr) {
   DCHECK(ToRegister(instr->object()).is(StoreDescriptor::ReceiverRegister()));
   DCHECK(ToRegister(instr->value()).is(StoreDescriptor::ValueRegister()));
 
+  if (instr->hydrogen()->HasVectorAndSlot()) {
+    EmitVectorStoreICRegisters<LStoreNamedGeneric>(instr);
+  }
+
   __ Move(StoreDescriptor::NameRegister(), instr->hydrogen()->name());
-  Handle<Code> ic =
-      StoreIC::initialize_stub(isolate(), instr->language_mode(),
-                               instr->hydrogen()->initialization_state());
+  Handle<Code> ic = CodeFactory::StoreICInOptimizedCode(
+                        isolate(), instr->language_mode(),
+                        instr->hydrogen()->initialization_state()).code();
   CallCode(ic, RelocInfo::CODE_TARGET, instr);
 }
 
@@ -4390,7 +4361,8 @@ void LCodeGen::DoStoreKeyedExternalArray(LStoreKeyed* instr) {
       case FAST_HOLEY_SMI_ELEMENTS:
       case FAST_HOLEY_DOUBLE_ELEMENTS:
       case DICTIONARY_ELEMENTS:
-      case SLOPPY_ARGUMENTS_ELEMENTS:
+      case FAST_SLOPPY_ARGUMENTS_ELEMENTS:
+      case SLOW_SLOPPY_ARGUMENTS_ELEMENTS:
         UNREACHABLE();
         break;
     }
@@ -4518,6 +4490,10 @@ void LCodeGen::DoStoreKeyedGeneric(LStoreKeyedGeneric* instr) {
   DCHECK(ToRegister(instr->object()).is(StoreDescriptor::ReceiverRegister()));
   DCHECK(ToRegister(instr->key()).is(StoreDescriptor::NameRegister()));
   DCHECK(ToRegister(instr->value()).is(StoreDescriptor::ValueRegister()));
+
+  if (instr->hydrogen()->HasVectorAndSlot()) {
+    EmitVectorStoreICRegisters<LStoreKeyedGeneric>(instr);
+  }
 
   Handle<Code> ic = CodeFactory::KeyedStoreICInOptimizedCode(
                         isolate(), instr->language_mode(),
@@ -5890,8 +5866,6 @@ void LCodeGen::DoOsrEntry(LOsrEntry* instr) {
 void LCodeGen::DoForInPrepareMap(LForInPrepareMap* instr) {
   DCHECK(ToRegister(instr->context()).is(rsi));
 
-  DeoptimizeIf(equal, instr, Deoptimizer::kNull);
-
   Condition cc = masm()->CheckSmi(rax);
   DeoptimizeIf(cc, instr, Deoptimizer::kSmi);
 
@@ -6037,6 +6011,7 @@ void LCodeGen::DoAllocateBlockContext(LAllocateBlockContext* instr) {
 
 #undef __
 
-} }  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_TARGET_ARCH_X64

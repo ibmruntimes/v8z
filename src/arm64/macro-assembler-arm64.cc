@@ -3928,6 +3928,7 @@ void MacroAssembler::GetNumberHash(Register key, Register scratch) {
   Add(key, key, scratch);
   // hash = hash ^ (hash >> 16);
   Eor(key, key, Operand(key, LSR, 16));
+  Bic(key, key, Operand(0xc0000000u));
 }
 
 
@@ -5151,6 +5152,7 @@ InlineSmiCheckInfo::InlineSmiCheckInfo(Address info)
 #undef __
 
 
-} }  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_TARGET_ARCH_ARM64

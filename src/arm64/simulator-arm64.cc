@@ -490,7 +490,7 @@ class Redirection {
   static Redirection* FromHltInstruction(Instruction* redirect_call) {
     char* addr_of_hlt = reinterpret_cast<char*>(redirect_call);
     char* addr_of_redirection =
-        addr_of_hlt - OFFSET_OF(Redirection, redirect_call_);
+        addr_of_hlt - offsetof(Redirection, redirect_call_);
     return reinterpret_cast<Redirection*>(addr_of_redirection);
   }
 
@@ -500,12 +500,26 @@ class Redirection {
     return redirection->external_function<void*>();
   }
 
+  static void DeleteChain(Redirection* redirection) {
+    while (redirection != nullptr) {
+      Redirection* next = redirection->next_;
+      delete redirection;
+      redirection = next;
+    }
+  }
+
  private:
   void* external_function_;
   Instruction redirect_call_;
   ExternalReference::Type type_;
   Redirection* next_;
 };
+
+
+// static
+void Simulator::TearDown(HashMap* i_cache, Redirection* first) {
+  Redirection::DeleteChain(first);
+}
 
 
 // Calls into the V8 runtime are based on this very simple interface.
@@ -3823,6 +3837,7 @@ void Simulator::DoPrintf(Instruction* instr) {
 
 #endif  // USE_SIMULATOR
 
-} }  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_TARGET_ARCH_ARM64

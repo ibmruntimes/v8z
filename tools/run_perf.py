@@ -108,11 +108,7 @@ from testrunner.local import commands
 from testrunner.local import utils
 
 ARCH_GUESS = utils.DefaultArch()
-SUPPORTED_ARCHS = ["android_arm",
-                   "android_arm64",
-                   "android_ia32",
-                   "android_x64",
-                   "arm",
+SUPPORTED_ARCHS = ["arm",
                    "ia32",
                    "mips",
                    "mipsel",
@@ -464,9 +460,13 @@ def FlattenRunnables(node, node_cb):
 
 
 class Platform(object):
+  def __init__(self, options):
+    self.shell_dir = options.shell_dir
+    self.extra_flags = options.extra_flags.split()
+
   @staticmethod
   def GetPlatform(options):
-    if options.arch.startswith("android"):
+    if options.android_build_tools:
       return AndroidPlatform(options)
     else:
       return DesktopPlatform(options)
@@ -474,8 +474,7 @@ class Platform(object):
 
 class DesktopPlatform(Platform):
   def __init__(self, options):
-    self.shell_dir = options.shell_dir
-    self.extra_flags = options.extra_flags.split()
+    super(DesktopPlatform, self).__init__(options)
 
   def PreExecution(self):
     pass
@@ -512,8 +511,7 @@ class AndroidPlatform(Platform):  # pragma: no cover
   DEVICE_DIR = "/data/local/tmp/v8/"
 
   def __init__(self, options):
-    self.shell_dir = options.shell_dir
-    self.extra_flags = options.extra_flags.split()
+    super(AndroidPlatform, self).__init__(options)
     LoadAndroidBuildTools(options.android_build_tools)
 
     if not options.device:
@@ -585,12 +583,22 @@ class AndroidPlatform(Platform):  # pragma: no cover
       bench_rel = "."
       bench_abs = suite_dir
 
-    self._PushFile(self.shell_dir, node.binary)
+    self._PushFile(self.shell_dir, node.binary, "bin")
 
     # Push external startup data. Backwards compatible for revisions where
     # these files didn't exist.
-    self._PushFile(self.shell_dir, "natives_blob.bin", skip_if_missing=True)
-    self._PushFile(self.shell_dir, "snapshot_blob.bin", skip_if_missing=True)
+    self._PushFile(
+        self.shell_dir,
+        "natives_blob.bin",
+        "bin",
+        skip_if_missing=True,
+    )
+    self._PushFile(
+        self.shell_dir,
+        "snapshot_blob.bin",
+        "bin",
+        skip_if_missing=True,
+    )
 
     if isinstance(node, Runnable):
       self._PushFile(bench_abs, node.main, bench_rel)
@@ -600,7 +608,8 @@ class AndroidPlatform(Platform):  # pragma: no cover
   def Run(self, runnable, count):
     cache = cache_control.CacheControl(self.device)
     cache.DropRamCaches()
-    binary_on_device = AndroidPlatform.DEVICE_DIR + runnable.binary
+    binary_on_device = os.path.join(
+        AndroidPlatform.DEVICE_DIR, "bin", runnable.binary)
     cmd = [binary_on_device] + runnable.GetCommandFlags(self.extra_flags)
 
     # Relative path to benchmark directory.
@@ -630,7 +639,8 @@ def Main(args):
   logging.getLogger().setLevel(logging.INFO)
   parser = optparse.OptionParser()
   parser.add_option("--android-build-tools",
-                    help="Path to chromium's build/android.")
+                    help="Path to chromium's build/android. Specifying this "
+                         "option will run tests using android platform.")
   parser.add_option("--arch",
                     help=("The architecture to run tests for, "
                           "'auto' or 'native' for auto-detect"),
@@ -661,15 +671,8 @@ def Main(args):
     print "Unknown architecture %s" % options.arch
     return 1
 
-  if (bool(options.arch.startswith("android")) !=
-      bool(options.android_build_tools)):  # pragma: no cover
-    print ("Android architectures imply setting --android-build-tools and the "
-           "other way around.")
-    return 1
-
-  if (options.device and not
-      options.arch.startswith("android")):  # pragma: no cover
-    print "Specifying a device requires an Android architecture to be used."
+  if (options.device and not options.android_build_tools):  # pragma: no cover
+    print "Specifying a device requires Android build tools."
     return 1
 
   workspace = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))

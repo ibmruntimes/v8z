@@ -23,6 +23,12 @@ TypeFeedbackVector::VectorICKind TypeFeedbackVector::FromCodeKind(
       return KindLoadIC;
     case Code::KEYED_LOAD_IC:
       return KindKeyedLoadIC;
+    case Code::STORE_IC:
+      DCHECK(FLAG_vector_stores);
+      return KindStoreIC;
+    case Code::KEYED_STORE_IC:
+      DCHECK(FLAG_vector_stores);
+      return KindKeyedStoreIC;
     default:
       // Shouldn't get here.
       UNREACHABLE();
@@ -41,6 +47,12 @@ Code::Kind TypeFeedbackVector::FromVectorICKind(VectorICKind kind) {
       return Code::LOAD_IC;
     case KindKeyedLoadIC:
       return Code::KEYED_LOAD_IC;
+    case KindStoreIC:
+      DCHECK(FLAG_vector_stores);
+      return Code::STORE_IC;
+    case KindKeyedStoreIC:
+      DCHECK(FLAG_vector_stores);
+      return Code::KEYED_STORE_IC;
     case KindUnused:
       break;
   }
@@ -199,6 +211,14 @@ void TypeFeedbackVector::ClearICSlotsImpl(SharedFunctionInfo* shared,
       } else if (kind == Code::KEYED_LOAD_IC) {
         KeyedLoadICNexus nexus(this, slot);
         nexus.Clear(host);
+      } else if (kind == Code::STORE_IC) {
+        DCHECK(FLAG_vector_stores);
+        StoreICNexus nexus(this, slot);
+        nexus.Clear(host);
+      } else if (kind == Code::KEYED_STORE_IC) {
+        DCHECK(FLAG_vector_stores);
+        KeyedStoreICNexus nexus(this, slot);
+        nexus.Clear(host);
       }
     }
   }
@@ -244,15 +264,40 @@ void FeedbackNexus::InstallHandlers(Handle<FixedArray> array,
 }
 
 
+void FeedbackNexus::ConfigureUninitialized() {
+  SetFeedback(*TypeFeedbackVector::UninitializedSentinel(GetIsolate()),
+              SKIP_WRITE_BARRIER);
+  SetFeedbackExtra(*TypeFeedbackVector::UninitializedSentinel(GetIsolate()),
+                   SKIP_WRITE_BARRIER);
+}
+
+
+void FeedbackNexus::ConfigurePremonomorphic() {
+  SetFeedback(*TypeFeedbackVector::PremonomorphicSentinel(GetIsolate()),
+              SKIP_WRITE_BARRIER);
+  SetFeedbackExtra(*TypeFeedbackVector::UninitializedSentinel(GetIsolate()),
+                   SKIP_WRITE_BARRIER);
+}
+
+
+void FeedbackNexus::ConfigureMegamorphic() {
+  Isolate* isolate = GetIsolate();
+  SetFeedback(*TypeFeedbackVector::MegamorphicSentinel(isolate),
+              SKIP_WRITE_BARRIER);
+  SetFeedbackExtra(*TypeFeedbackVector::UninitializedSentinel(isolate),
+                   SKIP_WRITE_BARRIER);
+}
+
+
 InlineCacheState LoadICNexus::StateFromFeedback() const {
   Isolate* isolate = GetIsolate();
   Object* feedback = GetFeedback();
 
-  if (feedback == *vector()->UninitializedSentinel(isolate)) {
+  if (feedback == *TypeFeedbackVector::UninitializedSentinel(isolate)) {
     return UNINITIALIZED;
-  } else if (feedback == *vector()->MegamorphicSentinel(isolate)) {
+  } else if (feedback == *TypeFeedbackVector::MegamorphicSentinel(isolate)) {
     return MEGAMORPHIC;
-  } else if (feedback == *vector()->PremonomorphicSentinel(isolate)) {
+  } else if (feedback == *TypeFeedbackVector::PremonomorphicSentinel(isolate)) {
     return PREMONOMORPHIC;
   } else if (feedback->IsFixedArray()) {
     // Determine state purely by our structure, don't check if the maps are
@@ -271,11 +316,61 @@ InlineCacheState KeyedLoadICNexus::StateFromFeedback() const {
   Isolate* isolate = GetIsolate();
   Object* feedback = GetFeedback();
 
-  if (feedback == *vector()->UninitializedSentinel(isolate)) {
+  if (feedback == *TypeFeedbackVector::UninitializedSentinel(isolate)) {
     return UNINITIALIZED;
-  } else if (feedback == *vector()->PremonomorphicSentinel(isolate)) {
+  } else if (feedback == *TypeFeedbackVector::PremonomorphicSentinel(isolate)) {
     return PREMONOMORPHIC;
-  } else if (feedback == *vector()->MegamorphicSentinel(isolate)) {
+  } else if (feedback == *TypeFeedbackVector::MegamorphicSentinel(isolate)) {
+    return MEGAMORPHIC;
+  } else if (feedback->IsFixedArray()) {
+    // Determine state purely by our structure, don't check if the maps are
+    // cleared.
+    return POLYMORPHIC;
+  } else if (feedback->IsWeakCell()) {
+    // Don't check if the map is cleared.
+    return MONOMORPHIC;
+  } else if (feedback->IsName()) {
+    Object* extra = GetFeedbackExtra();
+    FixedArray* extra_array = FixedArray::cast(extra);
+    return extra_array->length() > 2 ? POLYMORPHIC : MONOMORPHIC;
+  }
+
+  return UNINITIALIZED;
+}
+
+
+InlineCacheState StoreICNexus::StateFromFeedback() const {
+  Isolate* isolate = GetIsolate();
+  Object* feedback = GetFeedback();
+
+  if (feedback == *TypeFeedbackVector::UninitializedSentinel(isolate)) {
+    return UNINITIALIZED;
+  } else if (feedback == *TypeFeedbackVector::MegamorphicSentinel(isolate)) {
+    return MEGAMORPHIC;
+  } else if (feedback == *TypeFeedbackVector::PremonomorphicSentinel(isolate)) {
+    return PREMONOMORPHIC;
+  } else if (feedback->IsFixedArray()) {
+    // Determine state purely by our structure, don't check if the maps are
+    // cleared.
+    return POLYMORPHIC;
+  } else if (feedback->IsWeakCell()) {
+    // Don't check if the map is cleared.
+    return MONOMORPHIC;
+  }
+
+  return UNINITIALIZED;
+}
+
+
+InlineCacheState KeyedStoreICNexus::StateFromFeedback() const {
+  Isolate* isolate = GetIsolate();
+  Object* feedback = GetFeedback();
+
+  if (feedback == *TypeFeedbackVector::UninitializedSentinel(isolate)) {
+    return UNINITIALIZED;
+  } else if (feedback == *TypeFeedbackVector::PremonomorphicSentinel(isolate)) {
+    return PREMONOMORPHIC;
+  } else if (feedback == *TypeFeedbackVector::MegamorphicSentinel(isolate)) {
     return MEGAMORPHIC;
   } else if (feedback->IsFixedArray()) {
     // Determine state purely by our structure, don't check if the maps are
@@ -297,26 +392,32 @@ InlineCacheState KeyedLoadICNexus::StateFromFeedback() const {
 InlineCacheState CallICNexus::StateFromFeedback() const {
   Isolate* isolate = GetIsolate();
   Object* feedback = GetFeedback();
-  DCHECK(GetFeedbackExtra() == *vector()->UninitializedSentinel(isolate) ||
-         GetFeedbackExtra() == Smi::FromInt(kHasReturnedMinusZeroSentinel));
+  DCHECK(GetFeedbackExtra() ==
+             *TypeFeedbackVector::UninitializedSentinel(isolate) ||
+         GetFeedbackExtra()->IsSmi());
 
-  if (feedback == *vector()->MegamorphicSentinel(isolate)) {
+  if (feedback == *TypeFeedbackVector::MegamorphicSentinel(isolate)) {
     return GENERIC;
   } else if (feedback->IsAllocationSite() || feedback->IsWeakCell()) {
     return MONOMORPHIC;
   }
 
-  CHECK(feedback == *vector()->UninitializedSentinel(isolate));
+  CHECK(feedback == *TypeFeedbackVector::UninitializedSentinel(isolate));
   return UNINITIALIZED;
 }
 
 
-void CallICNexus::Clear(Code* host) { CallIC::Clear(GetIsolate(), host, this); }
-
-
-void CallICNexus::ConfigureGeneric() {
-  SetFeedback(*vector()->MegamorphicSentinel(GetIsolate()), SKIP_WRITE_BARRIER);
+int CallICNexus::ExtractCallCount() {
+  Object* call_count = GetFeedbackExtra();
+  if (call_count->IsSmi()) {
+    int value = Smi::cast(call_count)->value() / 2;
+    return value;
+  }
+  return -1;
 }
+
+
+void CallICNexus::Clear(Code* host) { CallIC::Clear(GetIsolate(), host, this); }
 
 
 void CallICNexus::ConfigureMonomorphicArray() {
@@ -326,49 +427,14 @@ void CallICNexus::ConfigureMonomorphicArray() {
         GetIsolate()->factory()->NewAllocationSite();
     SetFeedback(*new_site);
   }
-}
-
-
-void CallICNexus::ConfigureUninitialized() {
-  SetFeedback(*vector()->UninitializedSentinel(GetIsolate()),
-              SKIP_WRITE_BARRIER);
+  SetFeedbackExtra(Smi::FromInt(kCallCountIncrement), SKIP_WRITE_BARRIER);
 }
 
 
 void CallICNexus::ConfigureMonomorphic(Handle<JSFunction> function) {
   Handle<WeakCell> new_cell = GetIsolate()->factory()->NewWeakCell(function);
   SetFeedback(*new_cell);
-}
-
-
-void KeyedLoadICNexus::ConfigureMegamorphic() {
-  Isolate* isolate = GetIsolate();
-  SetFeedback(*vector()->MegamorphicSentinel(isolate), SKIP_WRITE_BARRIER);
-  SetFeedbackExtra(*vector()->UninitializedSentinel(isolate),
-                   SKIP_WRITE_BARRIER);
-}
-
-
-void LoadICNexus::ConfigureMegamorphic() {
-  SetFeedback(*vector()->MegamorphicSentinel(GetIsolate()), SKIP_WRITE_BARRIER);
-  SetFeedbackExtra(*vector()->UninitializedSentinel(GetIsolate()),
-                   SKIP_WRITE_BARRIER);
-}
-
-
-void LoadICNexus::ConfigurePremonomorphic() {
-  SetFeedback(*vector()->PremonomorphicSentinel(GetIsolate()),
-              SKIP_WRITE_BARRIER);
-  SetFeedbackExtra(*vector()->UninitializedSentinel(GetIsolate()),
-                   SKIP_WRITE_BARRIER);
-}
-
-
-void KeyedLoadICNexus::ConfigurePremonomorphic() {
-  Isolate* isolate = GetIsolate();
-  SetFeedback(*vector()->PremonomorphicSentinel(isolate), SKIP_WRITE_BARRIER);
-  SetFeedbackExtra(*vector()->UninitializedSentinel(isolate),
-                   SKIP_WRITE_BARRIER);
+  SetFeedbackExtra(Smi::FromInt(kCallCountIncrement), SKIP_WRITE_BARRIER);
 }
 
 
@@ -396,13 +462,37 @@ void KeyedLoadICNexus::ConfigureMonomorphic(Handle<Name> name,
 }
 
 
+void StoreICNexus::ConfigureMonomorphic(Handle<Map> receiver_map,
+                                        Handle<Code> handler) {
+  Handle<WeakCell> cell = Map::WeakCellForMap(receiver_map);
+  SetFeedback(*cell);
+  SetFeedbackExtra(*handler);
+}
+
+
+void KeyedStoreICNexus::ConfigureMonomorphic(Handle<Name> name,
+                                             Handle<Map> receiver_map,
+                                             Handle<Code> handler) {
+  Handle<WeakCell> cell = Map::WeakCellForMap(receiver_map);
+  if (name.is_null()) {
+    SetFeedback(*cell);
+    SetFeedbackExtra(*handler);
+  } else {
+    SetFeedback(*name);
+    Handle<FixedArray> array = EnsureExtraArrayOfSize(2);
+    array->set(0, *cell);
+    array->set(1, *handler);
+  }
+}
+
+
 void LoadICNexus::ConfigurePolymorphic(MapHandleList* maps,
                                        CodeHandleList* handlers) {
   Isolate* isolate = GetIsolate();
   int receiver_count = maps->length();
   Handle<FixedArray> array = EnsureArrayOfSize(receiver_count * 2);
   InstallHandlers(array, maps, handlers);
-  SetFeedbackExtra(*vector()->UninitializedSentinel(isolate),
+  SetFeedbackExtra(*TypeFeedbackVector::UninitializedSentinel(isolate),
                    SKIP_WRITE_BARRIER);
 }
 
@@ -415,7 +505,37 @@ void KeyedLoadICNexus::ConfigurePolymorphic(Handle<Name> name,
   Handle<FixedArray> array;
   if (name.is_null()) {
     array = EnsureArrayOfSize(receiver_count * 2);
-    SetFeedbackExtra(*vector()->UninitializedSentinel(GetIsolate()),
+    SetFeedbackExtra(*TypeFeedbackVector::UninitializedSentinel(GetIsolate()),
+                     SKIP_WRITE_BARRIER);
+  } else {
+    SetFeedback(*name);
+    array = EnsureExtraArrayOfSize(receiver_count * 2);
+  }
+
+  InstallHandlers(array, maps, handlers);
+}
+
+
+void StoreICNexus::ConfigurePolymorphic(MapHandleList* maps,
+                                        CodeHandleList* handlers) {
+  Isolate* isolate = GetIsolate();
+  int receiver_count = maps->length();
+  Handle<FixedArray> array = EnsureArrayOfSize(receiver_count * 2);
+  InstallHandlers(array, maps, handlers);
+  SetFeedbackExtra(*TypeFeedbackVector::UninitializedSentinel(isolate),
+                   SKIP_WRITE_BARRIER);
+}
+
+
+void KeyedStoreICNexus::ConfigurePolymorphic(Handle<Name> name,
+                                             MapHandleList* maps,
+                                             CodeHandleList* handlers) {
+  int receiver_count = maps->length();
+  DCHECK(receiver_count > 1);
+  Handle<FixedArray> array;
+  if (name.is_null()) {
+    array = EnsureArrayOfSize(receiver_count * 2);
+    SetFeedbackExtra(*TypeFeedbackVector::UninitializedSentinel(GetIsolate()),
                      SKIP_WRITE_BARRIER);
   } else {
     SetFeedback(*name);
@@ -545,5 +665,24 @@ Name* KeyedLoadICNexus::FindFirstName() const {
   }
   return NULL;
 }
+
+
+Name* KeyedStoreICNexus::FindFirstName() const {
+  Object* feedback = GetFeedback();
+  if (feedback->IsString()) {
+    return Name::cast(feedback);
+  }
+  return NULL;
 }
-}  // namespace v8::internal
+
+
+void StoreICNexus::Clear(Code* host) {
+  StoreIC::Clear(GetIsolate(), host, this);
+}
+
+
+void KeyedStoreICNexus::Clear(Code* host) {
+  KeyedStoreIC::Clear(GetIsolate(), host, this);
+}
+}  // namespace internal
+}  // namespace v8

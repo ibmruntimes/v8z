@@ -145,7 +145,8 @@ class TestCodeRangeScope {
   DISALLOW_COPY_AND_ASSIGN(TestCodeRangeScope);
 };
 
-} }  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 
 static void VerifyMemoryChunk(Isolate* isolate,
@@ -437,6 +438,9 @@ TEST(SizeOfFirstPageIsLargeEnough) {
   Isolate* isolate = CcTest::i_isolate();
   if (!isolate->snapshot_available()) return;
   if (Snapshot::EmbedsScript(isolate)) return;
+
+  // If this test fails due to enabling experimental natives that are not part
+  // of the snapshot, we may need to adjust CalculateFirstPageSizes.
 
   // Freshly initialized VM gets by with one page per space.
   for (int i = FIRST_PAGED_SPACE; i <= LAST_PAGED_SPACE; i++) {

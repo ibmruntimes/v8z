@@ -149,12 +149,6 @@ AllocationResult Heap::CopyFixedDoubleArray(FixedDoubleArray* src) {
 }
 
 
-AllocationResult Heap::CopyConstantPoolArray(ConstantPoolArray* src) {
-  if (src->length() == 0) return src;
-  return CopyConstantPoolArrayWithMap(src, src->map());
-}
-
-
 AllocationResult Heap::AllocateRaw(int size_in_bytes, AllocationSpace space,
                                    AllocationSpace retry_space,
                                    AllocationAlignment alignment) {
@@ -458,7 +452,7 @@ AllocationMemento* Heap::FindAllocationMemento(HeapObject* object) {
   Address top = NewSpaceTop();
   DCHECK(memento_address == top ||
          memento_address + HeapObject::kHeaderSize <= top ||
-         !NewSpacePage::OnSamePage(memento_address, top));
+         !NewSpacePage::OnSamePage(memento_address, top - 1));
   if (memento_address == top) return NULL;
 
   AllocationMemento* memento = AllocationMemento::cast(candidate);

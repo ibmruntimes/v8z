@@ -52,6 +52,7 @@ Handle<Code> PropertyICCompiler::ComputeMonomorphic(
     ExtraICState extra_ic_state) {
   Isolate* isolate = name->GetIsolate();
   if (handler.is_identical_to(isolate->builtins()->LoadIC_Normal()) ||
+      handler.is_identical_to(isolate->builtins()->LoadIC_Normal_Strong()) ||
       handler.is_identical_to(isolate->builtins()->StoreIC_Normal())) {
     name = isolate->factory()->normal_ic_symbol();
   }
@@ -88,7 +89,7 @@ Handle<Code> PropertyICCompiler::ComputeMonomorphic(
 
 
 Handle<Code> PropertyICCompiler::ComputeKeyedLoadMonomorphicHandler(
-    Handle<Map> receiver_map) {
+    Handle<Map> receiver_map, ExtraICState extra_ic_state) {
   Isolate* isolate = receiver_map->GetIsolate();
   bool is_js_array = receiver_map->instance_type() == JS_ARRAY_TYPE;
   ElementsKind elements_kind = receiver_map->elements_kind();
@@ -97,8 +98,8 @@ Handle<Code> PropertyICCompiler::ComputeKeyedLoadMonomorphicHandler(
   // stub code needs to check that dynamically anyway.
   bool convert_hole_to_undefined =
       is_js_array && elements_kind == FAST_HOLEY_ELEMENTS &&
-      *receiver_map == isolate->get_initial_js_array_map(elements_kind);
-
+      *receiver_map == isolate->get_initial_js_array_map(elements_kind) &&
+      !(is_strong(LoadICState::GetLanguageMode(extra_ic_state)));
   Handle<Code> stub;
   if (receiver_map->has_indexed_interceptor()) {
     stub = LoadIndexedInterceptorStub(isolate).GetCode();
@@ -113,7 +114,8 @@ Handle<Code> PropertyICCompiler::ComputeKeyedLoadMonomorphicHandler(
     stub = LoadFastElementStub(isolate, is_js_array, elements_kind,
                                convert_hole_to_undefined).GetCode();
   } else {
-    stub = LoadDictionaryElementStub(isolate).GetCode();
+    stub = LoadDictionaryElementStub(isolate, LoadICState(extra_ic_state))
+               .GetCode();
   }
   return stub;
 }
@@ -221,7 +223,7 @@ Handle<Code> PropertyICCompiler::ComputeCompareNil(Handle<Map> receiver_map,
 
 
 Handle<Code> PropertyICCompiler::ComputeKeyedLoadPolymorphic(
-    MapHandleList* receiver_maps) {
+    MapHandleList* receiver_maps, LanguageMode language_mode) {
   Isolate* isolate = receiver_maps->at(0)->GetIsolate();
   DCHECK(KeyedLoadIC::GetKeyType(kNoExtraICState) == ELEMENT);
   Code::Flags flags = Code::ComputeFlags(Code::KEYED_LOAD_IC, POLYMORPHIC);
@@ -232,7 +234,7 @@ Handle<Code> PropertyICCompiler::ComputeKeyedLoadPolymorphic(
 
   CodeHandleList handlers(receiver_maps->length());
   ElementHandlerCompiler compiler(isolate);
-  compiler.CompileElementHandlers(receiver_maps, &handlers);
+  compiler.CompileElementHandlers(receiver_maps, &handlers, language_mode);
   PropertyICCompiler ic_compiler(isolate, Code::KEYED_LOAD_IC);
   Handle<Code> code = ic_compiler.CompilePolymorphic(
       receiver_maps, &handlers, isolate->factory()->empty_string(),
@@ -308,7 +310,7 @@ Handle<Code> PropertyICCompiler::CompileStorePreMonomorphic(Code::Flags flags) {
 
 Handle<Code> PropertyICCompiler::CompileStoreGeneric(Code::Flags flags) {
   ExtraICState extra_state = Code::ExtractExtraICStateFromFlags(flags);
-  LanguageMode language_mode = StoreIC::GetLanguageMode(extra_state);
+  LanguageMode language_mode = StoreICState::GetLanguageMode(extra_state);
   GenerateRuntimeSetProperty(masm(), language_mode);
   Handle<Code> code = GetCodeWithFlags(flags, "CompileStoreGeneric");
   PROFILE(isolate(), CodeCreateEvent(Logger::STORE_GENERIC_TAG, *code, 0));
@@ -347,7 +349,7 @@ Handle<Code> PropertyICCompiler::CompileKeyedStorePolymorphic(
     Handle<Map> receiver_map(receiver_maps->at(i));
     Handle<Code> cached_stub;
     Handle<Map> transitioned_map =
-        receiver_map->FindTransitionedMap(receiver_maps);
+        Map::FindTransitionedMap(receiver_map, receiver_maps);
 
     // TODO(mvstanton): The code below is doing pessimistic elements
     // transitions. I would like to stop doing that and rely on Allocation Site
@@ -364,9 +366,11 @@ Handle<Code> PropertyICCompiler::CompileKeyedStorePolymorphic(
     } else if (receiver_map->instance_type() < FIRST_JS_RECEIVER_TYPE) {
       cached_stub = isolate()->builtins()->KeyedStoreIC_Slow();
     } else {
-      if (receiver_map->has_fast_elements() ||
-          receiver_map->has_external_array_elements() ||
-          receiver_map->has_fixed_typed_array_elements()) {
+      if (IsSloppyArgumentsElements(elements_kind)) {
+        cached_stub = KeyedStoreSloppyArgumentsStub(isolate()).GetCode();
+      } else if (receiver_map->has_fast_elements() ||
+                 receiver_map->has_external_array_elements() ||
+                 receiver_map->has_fixed_typed_array_elements()) {
         cached_stub = StoreFastElementStub(isolate(), is_js_array,
                                            elements_kind, store_mode).GetCode();
       } else {
@@ -394,9 +398,11 @@ Handle<Code> PropertyICCompiler::CompileKeyedStoreMonomorphic(
   ElementsKind elements_kind = receiver_map->elements_kind();
   bool is_jsarray = receiver_map->instance_type() == JS_ARRAY_TYPE;
   Handle<Code> stub;
-  if (receiver_map->has_fast_elements() ||
-      receiver_map->has_external_array_elements() ||
-      receiver_map->has_fixed_typed_array_elements()) {
+  if (receiver_map->has_sloppy_arguments_elements()) {
+    stub = KeyedStoreSloppyArgumentsStub(isolate()).GetCode();
+  } else if (receiver_map->has_fast_elements() ||
+             receiver_map->has_external_array_elements() ||
+             receiver_map->has_fixed_typed_array_elements()) {
     stub = StoreFastElementStub(isolate(), is_jsarray, elements_kind,
                                 store_mode).GetCode();
   } else {
@@ -415,5 +421,5 @@ Handle<Code> PropertyICCompiler::CompileKeyedStoreMonomorphic(
 
 
 #undef __
-}
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8

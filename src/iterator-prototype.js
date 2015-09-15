@@ -4,7 +4,7 @@
 
 var $iteratorPrototype;
 
-(function(global, shared, exports) {
+(function(global, utils) {
   "use strict";
   %CheckIsBootstrapping();
 
@@ -15,7 +15,7 @@ var $iteratorPrototype;
     return this;
   }
 
-  $setFunctionName(IteratorPrototypeIterator, symbolIterator);
+  utils.SetFunctionName(IteratorPrototypeIterator, symbolIterator);
   %AddNamedProperty($iteratorPrototype, symbolIterator,
       IteratorPrototypeIterator, DONT_ENUM);
 })
