@@ -1059,9 +1059,9 @@ class V8_EXPORT Script {
       "Use maybe version",
       Local<Script> Compile(Handle<String> source,
                             ScriptOrigin* origin = nullptr));
-  static MaybeLocal<Script> Compile(Local<Context> context,
-                                    Handle<String> source,
-                                    ScriptOrigin* origin = nullptr);
+  static V8_WARN_UNUSED_RESULT MaybeLocal<Script> Compile(
+      Local<Context> context, Handle<String> source,
+      ScriptOrigin* origin = nullptr);
 
   static Local<Script> V8_DEPRECATE_SOON("Use maybe version",
                                          Compile(Handle<String> source,
@@ -1073,7 +1073,7 @@ class V8_EXPORT Script {
    * UnboundScript::BindToCurrentContext()).
    */
   V8_DEPRECATE_SOON("Use maybe version", Local<Value> Run());
-  MaybeLocal<Value> Run(Local<Context> context);
+  V8_WARN_UNUSED_RESULT MaybeLocal<Value> Run(Local<Context> context);
 
   /**
    * Returns the corresponding context-unbound script.
@@ -1265,7 +1265,7 @@ class V8_EXPORT ScriptCompiler {
                            Local<UnboundScript> CompileUnbound(
                                Isolate* isolate, Source* source,
                                CompileOptions options = kNoCompileOptions));
-  static MaybeLocal<UnboundScript> CompileUnboundScript(
+  static V8_WARN_UNUSED_RESULT MaybeLocal<UnboundScript> CompileUnboundScript(
       Isolate* isolate, Source* source,
       CompileOptions options = kNoCompileOptions);
 
@@ -1284,8 +1284,9 @@ class V8_EXPORT ScriptCompiler {
       "Use maybe version",
       Local<Script> Compile(Isolate* isolate, Source* source,
                             CompileOptions options = kNoCompileOptions));
-  static MaybeLocal<Script> Compile(Local<Context> context, Source* source,
-                                    CompileOptions options = kNoCompileOptions);
+  static V8_WARN_UNUSED_RESULT MaybeLocal<Script> Compile(
+      Local<Context> context, Source* source,
+      CompileOptions options = kNoCompileOptions);
 
   /**
    * Returns a task which streams script data into V8, or NULL if the script
@@ -1314,10 +1315,9 @@ class V8_EXPORT ScriptCompiler {
       Local<Script> Compile(Isolate* isolate, StreamedSource* source,
                             Handle<String> full_source_string,
                             const ScriptOrigin& origin));
-  static MaybeLocal<Script> Compile(Local<Context> context,
-                                    StreamedSource* source,
-                                    Handle<String> full_source_string,
-                                    const ScriptOrigin& origin);
+  static V8_WARN_UNUSED_RESULT MaybeLocal<Script> Compile(
+      Local<Context> context, StreamedSource* source,
+      Handle<String> full_source_string, const ScriptOrigin& origin);
 
   /**
    * Return a version tag for CachedData for the current V8 version & flags.
@@ -1351,7 +1351,7 @@ class V8_EXPORT ScriptCompiler {
       "Use maybe version",
       Local<Script> CompileModule(Isolate* isolate, Source* source,
                                   CompileOptions options = kNoCompileOptions));
-  static MaybeLocal<Script> CompileModule(
+  static V8_WARN_UNUSED_RESULT MaybeLocal<Script> CompileModule(
       Local<Context> context, Source* source,
       CompileOptions options = kNoCompileOptions);
 
@@ -1372,13 +1372,13 @@ class V8_EXPORT ScriptCompiler {
                                Local<String> arguments[],
                                size_t context_extension_count,
                                Local<Object> context_extensions[]));
-  static MaybeLocal<Function> CompileFunctionInContext(
+  static V8_WARN_UNUSED_RESULT MaybeLocal<Function> CompileFunctionInContext(
       Local<Context> context, Source* source, size_t arguments_count,
       Local<String> arguments[], size_t context_extension_count,
       Local<Object> context_extensions[]);
 
  private:
-  static MaybeLocal<UnboundScript> CompileUnboundInternal(
+  static V8_WARN_UNUSED_RESULT MaybeLocal<UnboundScript> CompileUnboundInternal(
       Isolate* isolate, Source* source, CompileOptions options, bool is_module);
 };
 
@@ -1612,7 +1612,8 @@ class V8_EXPORT JSON {
    */
   static V8_DEPRECATE_SOON("Use maybe version",
                            Local<Value> Parse(Local<String> json_string));
-  static MaybeLocal<Value> Parse(Isolate* isolate, Local<String> json_string);
+  static V8_WARN_UNUSED_RESULT MaybeLocal<Value> Parse(
+      Isolate* isolate, Local<String> json_string);
 };
 
 
@@ -1892,14 +1893,21 @@ class V8_EXPORT Value : public Data {
    */
   bool IsDataView() const;
 
-  MaybeLocal<Boolean> ToBoolean(Local<Context> context) const;
-  MaybeLocal<Number> ToNumber(Local<Context> context) const;
-  MaybeLocal<String> ToString(Local<Context> context) const;
-  MaybeLocal<String> ToDetailString(Local<Context> context) const;
-  MaybeLocal<Object> ToObject(Local<Context> context) const;
-  MaybeLocal<Integer> ToInteger(Local<Context> context) const;
-  MaybeLocal<Uint32> ToUint32(Local<Context> context) const;
-  MaybeLocal<Int32> ToInt32(Local<Context> context) const;
+  V8_WARN_UNUSED_RESULT MaybeLocal<Boolean> ToBoolean(
+      Local<Context> context) const;
+  V8_WARN_UNUSED_RESULT MaybeLocal<Number> ToNumber(
+      Local<Context> context) const;
+  V8_WARN_UNUSED_RESULT MaybeLocal<String> ToString(
+      Local<Context> context) const;
+  V8_WARN_UNUSED_RESULT MaybeLocal<String> ToDetailString(
+      Local<Context> context) const;
+  V8_WARN_UNUSED_RESULT MaybeLocal<Object> ToObject(
+      Local<Context> context) const;
+  V8_WARN_UNUSED_RESULT MaybeLocal<Integer> ToInteger(
+      Local<Context> context) const;
+  V8_WARN_UNUSED_RESULT MaybeLocal<Uint32> ToUint32(
+      Local<Context> context) const;
+  V8_WARN_UNUSED_RESULT MaybeLocal<Int32> ToInt32(Local<Context> context) const;
 
   V8_DEPRECATE_SOON("Use maybe version",
                     Local<Boolean> ToBoolean(Isolate* isolate) const);
@@ -1938,11 +1946,13 @@ class V8_EXPORT Value : public Data {
   V8_WARN_UNUSED_RESULT MaybeLocal<Uint32> ToArrayIndex(
       Local<Context> context) const;
 
-  Maybe<bool> BooleanValue(Local<Context> context) const;
-  Maybe<double> NumberValue(Local<Context> context) const;
-  Maybe<int64_t> IntegerValue(Local<Context> context) const;
-  Maybe<uint32_t> Uint32Value(Local<Context> context) const;
-  Maybe<int32_t> Int32Value(Local<Context> context) const;
+  V8_WARN_UNUSED_RESULT Maybe<bool> BooleanValue(Local<Context> context) const;
+  V8_WARN_UNUSED_RESULT Maybe<double> NumberValue(Local<Context> context) const;
+  V8_WARN_UNUSED_RESULT Maybe<int64_t> IntegerValue(
+      Local<Context> context) const;
+  V8_WARN_UNUSED_RESULT Maybe<uint32_t> Uint32Value(
+      Local<Context> context) const;
+  V8_WARN_UNUSED_RESULT Maybe<int32_t> Int32Value(Local<Context> context) const;
 
   V8_DEPRECATE_SOON("Use maybe version", bool BooleanValue() const);
   V8_DEPRECATE_SOON("Use maybe version", double NumberValue() const);
@@ -2230,9 +2240,9 @@ class V8_EXPORT String : public Name {
 
   /** Allocates a new string from UTF-8 data. Only returns an empty value when
    * length > kMaxLength. **/
-  static MaybeLocal<String> NewFromUtf8(Isolate* isolate, const char* data,
-                                        v8::NewStringType type,
-                                        int length = -1);
+  static V8_WARN_UNUSED_RESULT MaybeLocal<String> NewFromUtf8(
+      Isolate* isolate, const char* data, v8::NewStringType type,
+      int length = -1);
 
   /** Allocates a new string from Latin-1 data.*/
   static V8_DEPRECATE_SOON(
@@ -2243,10 +2253,9 @@ class V8_EXPORT String : public Name {
 
   /** Allocates a new string from Latin-1 data.  Only returns an empty value
    * when length > kMaxLength. **/
-  static MaybeLocal<String> NewFromOneByte(Isolate* isolate,
-                                           const uint8_t* data,
-                                           v8::NewStringType type,
-                                           int length = -1);
+  static V8_WARN_UNUSED_RESULT MaybeLocal<String> NewFromOneByte(
+      Isolate* isolate, const uint8_t* data, v8::NewStringType type,
+      int length = -1);
 
   /** Allocates a new string from UTF-16 data.*/
   static V8_DEPRECATE_SOON(
@@ -2257,10 +2266,9 @@ class V8_EXPORT String : public Name {
 
   /** Allocates a new string from UTF-16 data. Only returns an empty value when
    * length > kMaxLength. **/
-  static MaybeLocal<String> NewFromTwoByte(Isolate* isolate,
-                                           const uint16_t* data,
-                                           v8::NewStringType type,
-                                           int length = -1);
+  static V8_WARN_UNUSED_RESULT MaybeLocal<String> NewFromTwoByte(
+      Isolate* isolate, const uint16_t* data, v8::NewStringType type,
+      int length = -1);
 
   /**
    * Creates a new string by concatenating the left and the right strings
@@ -2280,7 +2288,7 @@ class V8_EXPORT String : public Name {
       "Use maybe version",
       Local<String> NewExternal(Isolate* isolate,
                                 ExternalStringResource* resource));
-  static MaybeLocal<String> NewExternalTwoByte(
+  static V8_WARN_UNUSED_RESULT MaybeLocal<String> NewExternalTwoByte(
       Isolate* isolate, ExternalStringResource* resource);
 
   /**
@@ -2306,7 +2314,7 @@ class V8_EXPORT String : public Name {
       "Use maybe version",
       Local<String> NewExternal(Isolate* isolate,
                                 ExternalOneByteStringResource* resource));
-  static MaybeLocal<String> NewExternalOneByte(
+  static V8_WARN_UNUSED_RESULT MaybeLocal<String> NewExternalOneByte(
       Isolate* isolate, ExternalOneByteStringResource* resource);
 
   /**
@@ -2555,11 +2563,13 @@ class V8_EXPORT Object : public Value {
  public:
   V8_DEPRECATE_SOON("Use maybe version",
                     bool Set(Handle<Value> key, Handle<Value> value));
-  Maybe<bool> Set(Local<Context> context, Local<Value> key, Local<Value> value);
+  V8_WARN_UNUSED_RESULT Maybe<bool> Set(Local<Context> context,
+                                        Local<Value> key, Local<Value> value);
 
   V8_DEPRECATE_SOON("Use maybe version",
                     bool Set(uint32_t index, Handle<Value> value));
-  Maybe<bool> Set(Local<Context> context, uint32_t index, Local<Value> value);
+  V8_WARN_UNUSED_RESULT Maybe<bool> Set(Local<Context> context, uint32_t index,
+                                        Local<Value> value);
 
   // Sets an own property on this object bypassing interceptors and
   // overriding accessors or read-only properties.
@@ -2572,14 +2582,17 @@ class V8_EXPORT Object : public Value {
   V8_DEPRECATE_SOON("Use maybe version",
                     bool ForceSet(Handle<Value> key, Handle<Value> value,
                                   PropertyAttribute attribs = None));
+  // TODO(dcarney): mark V8_WARN_UNUSED_RESULT
   Maybe<bool> ForceSet(Local<Context> context, Local<Value> key,
                        Local<Value> value, PropertyAttribute attribs = None);
 
   V8_DEPRECATE_SOON("Use maybe version", Local<Value> Get(Handle<Value> key));
-  MaybeLocal<Value> Get(Local<Context> context, Local<Value> key);
+  V8_WARN_UNUSED_RESULT MaybeLocal<Value> Get(Local<Context> context,
+                                              Local<Value> key);
 
   V8_DEPRECATE_SOON("Use maybe version", Local<Value> Get(uint32_t index));
-  MaybeLocal<Value> Get(Local<Context> context, uint32_t index);
+  V8_WARN_UNUSED_RESULT MaybeLocal<Value> Get(Local<Context> context,
+                                              uint32_t index);
 
   /**
    * Gets the property attributes of a property which can be None or
@@ -2588,27 +2601,30 @@ class V8_EXPORT Object : public Value {
    */
   V8_DEPRECATE_SOON("Use maybe version",
                     PropertyAttribute GetPropertyAttributes(Handle<Value> key));
-  Maybe<PropertyAttribute> GetPropertyAttributes(Local<Context> context,
-                                                 Local<Value> key);
+  V8_WARN_UNUSED_RESULT Maybe<PropertyAttribute> GetPropertyAttributes(
+      Local<Context> context, Local<Value> key);
 
   /**
    * Returns Object.getOwnPropertyDescriptor as per ES5 section 15.2.3.3.
    */
   V8_DEPRECATE_SOON("Use maybe version",
                     Local<Value> GetOwnPropertyDescriptor(Local<String> key));
-  MaybeLocal<Value> GetOwnPropertyDescriptor(Local<Context> context,
-                                             Local<String> key);
+  V8_WARN_UNUSED_RESULT MaybeLocal<Value> GetOwnPropertyDescriptor(
+      Local<Context> context, Local<String> key);
 
   V8_DEPRECATE_SOON("Use maybe version", bool Has(Handle<Value> key));
-  Maybe<bool> Has(Local<Context> context, Local<Value> key);
+  V8_WARN_UNUSED_RESULT Maybe<bool> Has(Local<Context> context,
+                                        Local<Value> key);
 
   V8_DEPRECATE_SOON("Use maybe version", bool Delete(Handle<Value> key));
+  // TODO(dcarney): mark V8_WARN_UNUSED_RESULT
   Maybe<bool> Delete(Local<Context> context, Local<Value> key);
 
   V8_DEPRECATE_SOON("Use maybe version", bool Has(uint32_t index));
-  Maybe<bool> Has(Local<Context> context, uint32_t index);
+  V8_WARN_UNUSED_RESULT Maybe<bool> Has(Local<Context> context, uint32_t index);
 
   V8_DEPRECATE_SOON("Use maybe version", bool Delete(uint32_t index));
+  // TODO(dcarney): mark V8_WARN_UNUSED_RESULT
   Maybe<bool> Delete(Local<Context> context, uint32_t index);
 
   V8_DEPRECATE_SOON("Use maybe version",
@@ -2625,6 +2641,7 @@ class V8_EXPORT Object : public Value {
                                      Handle<Value> data = Handle<Value>(),
                                      AccessControl settings = DEFAULT,
                                      PropertyAttribute attribute = None));
+  // TODO(dcarney): mark V8_WARN_UNUSED_RESULT
   Maybe<bool> SetAccessor(Local<Context> context, Local<Name> name,
                           AccessorNameGetterCallback getter,
                           AccessorNameSetterCallback setter = 0,
@@ -2657,7 +2674,8 @@ class V8_EXPORT Object : public Value {
    * be enumerated by a for-in statement over this object.
    */
   V8_DEPRECATE_SOON("Use maybe version", Local<Array> GetPropertyNames());
-  MaybeLocal<Array> GetPropertyNames(Local<Context> context);
+  V8_WARN_UNUSED_RESULT MaybeLocal<Array> GetPropertyNames(
+      Local<Context> context);
 
   /**
    * This function has the same functionality as GetPropertyNames but
@@ -2665,7 +2683,8 @@ class V8_EXPORT Object : public Value {
    * prototype objects.
    */
   V8_DEPRECATE_SOON("Use maybe version", Local<Array> GetOwnPropertyNames());
-  MaybeLocal<Array> GetOwnPropertyNames(Local<Context> context);
+  V8_WARN_UNUSED_RESULT MaybeLocal<Array> GetOwnPropertyNames(
+      Local<Context> context);
 
   /**
    * Get the prototype object.  This does not skip objects marked to
@@ -2681,7 +2700,8 @@ class V8_EXPORT Object : public Value {
    */
   V8_DEPRECATE_SOON("Use maybe version",
                     bool SetPrototype(Handle<Value> prototype));
-  Maybe<bool> SetPrototype(Local<Context> context, Local<Value> prototype);
+  V8_WARN_UNUSED_RESULT Maybe<bool> SetPrototype(Local<Context> context,
+                                                 Local<Value> prototype);
 
   /**
    * Finds an instance of the given function template in the prototype
@@ -2695,7 +2715,8 @@ class V8_EXPORT Object : public Value {
    * user-defined toString function. This one does not.
    */
   V8_DEPRECATE_SOON("Use maybe version", Local<String> ObjectProtoToString());
-  MaybeLocal<String> ObjectProtoToString(Local<Context> context);
+  V8_WARN_UNUSED_RESULT MaybeLocal<String> ObjectProtoToString(
+      Local<Context> context);
 
   /**
    * Returns the name of the function invoked as a constructor for this object.
@@ -2740,17 +2761,20 @@ class V8_EXPORT Object : public Value {
   // Testers for local properties.
   V8_DEPRECATE_SOON("Use maybe version",
                     bool HasOwnProperty(Handle<String> key));
-  Maybe<bool> HasOwnProperty(Local<Context> context, Local<Name> key);
+  V8_WARN_UNUSED_RESULT Maybe<bool> HasOwnProperty(Local<Context> context,
+                                                   Local<Name> key);
   V8_DEPRECATE_SOON("Use maybe version",
                     bool HasRealNamedProperty(Handle<String> key));
-  Maybe<bool> HasRealNamedProperty(Local<Context> context, Local<Name> key);
+  V8_WARN_UNUSED_RESULT Maybe<bool> HasRealNamedProperty(Local<Context> context,
+                                                         Local<Name> key);
   V8_DEPRECATE_SOON("Use maybe version",
                     bool HasRealIndexedProperty(uint32_t index));
-  Maybe<bool> HasRealIndexedProperty(Local<Context> context, uint32_t index);
+  V8_WARN_UNUSED_RESULT Maybe<bool> HasRealIndexedProperty(
+      Local<Context> context, uint32_t index);
   V8_DEPRECATE_SOON("Use maybe version",
                     bool HasRealNamedCallbackProperty(Handle<String> key));
-  Maybe<bool> HasRealNamedCallbackProperty(Local<Context> context,
-                                           Local<Name> key);
+  V8_WARN_UNUSED_RESULT Maybe<bool> HasRealNamedCallbackProperty(
+      Local<Context> context, Local<Name> key);
 
   /**
    * If result.IsEmpty() no real property was located in the prototype chain.
@@ -2759,8 +2783,8 @@ class V8_EXPORT Object : public Value {
   V8_DEPRECATE_SOON(
       "Use maybe version",
       Local<Value> GetRealNamedPropertyInPrototypeChain(Handle<String> key));
-  MaybeLocal<Value> GetRealNamedPropertyInPrototypeChain(Local<Context> context,
-                                                         Local<Name> key);
+  V8_WARN_UNUSED_RESULT MaybeLocal<Value> GetRealNamedPropertyInPrototypeChain(
+      Local<Context> context, Local<Name> key);
 
   /**
    * Gets the property attributes of a real property in the prototype chain,
@@ -2771,8 +2795,9 @@ class V8_EXPORT Object : public Value {
       "Use maybe version",
       Maybe<PropertyAttribute> GetRealNamedPropertyAttributesInPrototypeChain(
           Handle<String> key));
-  Maybe<PropertyAttribute> GetRealNamedPropertyAttributesInPrototypeChain(
-      Local<Context> context, Local<Name> key);
+  V8_WARN_UNUSED_RESULT Maybe<PropertyAttribute>
+  GetRealNamedPropertyAttributesInPrototypeChain(Local<Context> context,
+                                                 Local<Name> key);
 
   /**
    * If result.IsEmpty() no real property was located on the object or
@@ -2781,8 +2806,8 @@ class V8_EXPORT Object : public Value {
    */
   V8_DEPRECATE_SOON("Use maybe version",
                     Local<Value> GetRealNamedProperty(Handle<String> key));
-  MaybeLocal<Value> GetRealNamedProperty(Local<Context> context,
-                                         Local<Name> key);
+  V8_WARN_UNUSED_RESULT MaybeLocal<Value> GetRealNamedProperty(
+      Local<Context> context, Local<Name> key);
 
   /**
    * Gets the property attributes of a real property which can be
@@ -2792,7 +2817,7 @@ class V8_EXPORT Object : public Value {
   V8_DEPRECATE_SOON("Use maybe version",
                     Maybe<PropertyAttribute> GetRealNamedPropertyAttributes(
                         Handle<String> key));
-  Maybe<PropertyAttribute> GetRealNamedPropertyAttributes(
+  V8_WARN_UNUSED_RESULT Maybe<PropertyAttribute> GetRealNamedPropertyAttributes(
       Local<Context> context, Local<Name> key);
 
   /** Tests for a named lookup interceptor.*/
@@ -2854,8 +2879,10 @@ class V8_EXPORT Object : public Value {
   V8_DEPRECATE_SOON("Use maybe version",
                     Local<Value> CallAsFunction(Handle<Value> recv, int argc,
                                                 Handle<Value> argv[]));
-  MaybeLocal<Value> CallAsFunction(Local<Context> context, Handle<Value> recv,
-                                   int argc, Handle<Value> argv[]);
+  V8_WARN_UNUSED_RESULT MaybeLocal<Value> CallAsFunction(Local<Context> context,
+                                                         Handle<Value> recv,
+                                                         int argc,
+                                                         Handle<Value> argv[]);
 
   /**
    * Call an Object as a constructor if a callback is set by the
@@ -2865,8 +2892,8 @@ class V8_EXPORT Object : public Value {
   V8_DEPRECATE_SOON("Use maybe version",
                     Local<Value> CallAsConstructor(int argc,
                                                    Handle<Value> argv[]));
-  MaybeLocal<Value> CallAsConstructor(Local<Context> context, int argc,
-                                      Local<Value> argv[]);
+  V8_WARN_UNUSED_RESULT MaybeLocal<Value> CallAsConstructor(
+      Local<Context> context, int argc, Local<Value> argv[]);
 
   /**
    * Return the isolate to which the Object belongs to.
@@ -2898,7 +2925,8 @@ class V8_EXPORT Array : public Object {
    */
   V8_DEPRECATE_SOON("Use maybe version",
                     Local<Object> CloneElementAt(uint32_t index));
-  MaybeLocal<Object> CloneElementAt(Local<Context> context, uint32_t index);
+  V8_WARN_UNUSED_RESULT MaybeLocal<Object> CloneElementAt(
+      Local<Context> context, uint32_t index);
 
   /**
    * Creates a JavaScript array with the given length. If the length
@@ -3046,8 +3074,8 @@ class V8_EXPORT Function : public Object {
   V8_DEPRECATE_SOON("Use maybe version",
                     Local<Object> NewInstance(int argc,
                                               Handle<Value> argv[])) const;
-  MaybeLocal<Object> NewInstance(Local<Context> context, int argc,
-                                 Handle<Value> argv[]) const;
+  V8_WARN_UNUSED_RESULT MaybeLocal<Object> NewInstance(
+      Local<Context> context, int argc, Handle<Value> argv[]) const;
 
   V8_DEPRECATE_SOON("Use maybe version", Local<Object> NewInstance() const);
   V8_WARN_UNUSED_RESULT MaybeLocal<Object> NewInstance(
@@ -3058,8 +3086,9 @@ class V8_EXPORT Function : public Object {
   V8_DEPRECATE_SOON("Use maybe version",
                     Local<Value> Call(Handle<Value> recv, int argc,
                                       Handle<Value> argv[]));
-  MaybeLocal<Value> Call(Local<Context> context, Handle<Value> recv, int argc,
-                         Handle<Value> argv[]);
+  V8_WARN_UNUSED_RESULT MaybeLocal<Value> Call(Local<Context> context,
+                                               Handle<Value> recv, int argc,
+                                               Handle<Value> argv[]);
 
   void SetName(Handle<String> name);
   Handle<Value> GetName() const;
@@ -3128,7 +3157,8 @@ class V8_EXPORT Promise : public Object {
      */
     static V8_DEPRECATE_SOON("Use maybe version",
                              Local<Resolver> New(Isolate* isolate));
-    static MaybeLocal<Resolver> New(Local<Context> context);
+    static V8_WARN_UNUSED_RESULT MaybeLocal<Resolver> New(
+        Local<Context> context);
 
     /**
      * Extract the associated promise.
@@ -3140,9 +3170,11 @@ class V8_EXPORT Promise : public Object {
      * Ignored if the promise is no longer pending.
      */
     V8_DEPRECATE_SOON("Use maybe version", void Resolve(Handle<Value> value));
+    // TODO(dcarney): mark V8_WARN_UNUSED_RESULT
     Maybe<bool> Resolve(Local<Context> context, Handle<Value> value);
 
     V8_DEPRECATE_SOON("Use maybe version", void Reject(Handle<Value> value));
+    // TODO(dcarney): mark V8_WARN_UNUSED_RESULT
     Maybe<bool> Reject(Local<Context> context, Handle<Value> value);
 
     V8_INLINE static Resolver* Cast(Value* obj);
@@ -3160,15 +3192,18 @@ class V8_EXPORT Promise : public Object {
    */
   V8_DEPRECATE_SOON("Use maybe version",
                     Local<Promise> Chain(Handle<Function> handler));
-  MaybeLocal<Promise> Chain(Local<Context> context, Handle<Function> handler);
+  V8_WARN_UNUSED_RESULT MaybeLocal<Promise> Chain(Local<Context> context,
+                                                  Handle<Function> handler);
 
   V8_DEPRECATE_SOON("Use maybe version",
                     Local<Promise> Catch(Handle<Function> handler));
-  MaybeLocal<Promise> Catch(Local<Context> context, Handle<Function> handler);
+  V8_WARN_UNUSED_RESULT MaybeLocal<Promise> Catch(Local<Context> context,
+                                                  Handle<Function> handler);
 
   V8_DEPRECATE_SOON("Use maybe version",
                     Local<Promise> Then(Handle<Function> handler));
-  MaybeLocal<Promise> Then(Local<Context> context, Handle<Function> handler);
+  V8_WARN_UNUSED_RESULT MaybeLocal<Promise> Then(Local<Context> context,
+                                                 Handle<Function> handler);
 
   /**
    * Returns true if the promise has at least one derived promise, and
@@ -3570,7 +3605,8 @@ class V8_EXPORT Date : public Object {
  public:
   static V8_DEPRECATE_SOON("Use maybe version.",
                            Local<Value> New(Isolate* isolate, double time));
-  static MaybeLocal<Value> New(Local<Context> context, double time);
+  static V8_WARN_UNUSED_RESULT MaybeLocal<Value> New(Local<Context> context,
+                                                     double time);
 
   /**
    * A specialization of Value::NumberValue that is more efficient
@@ -3694,8 +3730,9 @@ class V8_EXPORT RegExp : public Object {
   static V8_DEPRECATE_SOON("Use maybe version",
                            Local<RegExp> New(Handle<String> pattern,
                                              Flags flags));
-  static MaybeLocal<RegExp> New(Local<Context> context, Handle<String> pattern,
-                                Flags flags);
+  static V8_WARN_UNUSED_RESULT MaybeLocal<RegExp> New(Local<Context> context,
+                                                      Handle<String> pattern,
+                                                      Flags flags);
 
   /**
    * Returns the value of the source property: a string representing
@@ -4080,7 +4117,8 @@ class V8_EXPORT FunctionTemplate : public Template {
 
   /** Returns the unique function instance in the current execution context.*/
   V8_DEPRECATE_SOON("Use maybe version", Local<Function> GetFunction());
-  MaybeLocal<Function> GetFunction(Local<Context> context);
+  V8_WARN_UNUSED_RESULT MaybeLocal<Function> GetFunction(
+      Local<Context> context);
 
   /**
    * Set the call-handler callback for a FunctionTemplate.  This
@@ -4243,7 +4281,7 @@ class V8_EXPORT ObjectTemplate : public Template {
 
   /** Creates a new instance of this template.*/
   V8_DEPRECATE_SOON("Use maybe version", Local<Object> NewInstance());
-  MaybeLocal<Object> NewInstance(Local<Context> context);
+  V8_WARN_UNUSED_RESULT MaybeLocal<Object> NewInstance(Local<Context> context);
 
   /**
    * Sets an accessor on the object template.
