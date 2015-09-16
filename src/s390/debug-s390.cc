@@ -174,51 +174,6 @@ void DebugCodegen::GenerateCallICStubDebugBreak(MacroAssembler* masm) {
 }
 
 
-void DebugCodegen::GenerateLoadICDebugBreak(MacroAssembler* masm) {
-  // Calling convention for IC load (from ic-s390.cc).
-  Register receiver = LoadDescriptor::ReceiverRegister();
-  Register name = LoadDescriptor::NameRegister();
-  RegList regs = receiver.bit() | name.bit() |
-                 VectorLoadICTrampolineDescriptor::SlotRegister().bit();
-  Generate_DebugBreakCallHelper(masm, regs, 0);
-}
-
-
-void DebugCodegen::GenerateStoreICDebugBreak(MacroAssembler* masm) {
-  // Calling convention for IC store (from ic-s390.cc).
-  Register receiver = StoreDescriptor::ReceiverRegister();
-  Register name = StoreDescriptor::NameRegister();
-  Register value = StoreDescriptor::ValueRegister();
-  Generate_DebugBreakCallHelper(
-      masm, receiver.bit() | name.bit() | value.bit(), 0);
-}
-
-
-void DebugCodegen::GenerateKeyedLoadICDebugBreak(MacroAssembler* masm) {
-  // Calling convention for keyed IC load (from ic-s390.cc).
-  GenerateLoadICDebugBreak(masm);
-}
-
-
-void DebugCodegen::GenerateKeyedStoreICDebugBreak(MacroAssembler* masm) {
-  // Calling convention for IC keyed store call (from ic-s390.cc).
-  Register receiver = StoreDescriptor::ReceiverRegister();
-  Register name = StoreDescriptor::NameRegister();
-  Register value = StoreDescriptor::ValueRegister();
-  Generate_DebugBreakCallHelper(masm, receiver.bit() | name.bit() | value.bit(),
-                                0);
-}
-
-
-void DebugCodegen::GenerateCompareNilICDebugBreak(MacroAssembler* masm) {
-  // Register state for CompareNil IC
-  // ----------- S t a t e -------------
-  //  -- r2    : value
-  // -----------------------------------
-  Generate_DebugBreakCallHelper(masm, r2.bit(), 0);
-}
-
-
 void DebugCodegen::GenerateReturnDebugBreak(MacroAssembler* masm) {
   // In places other than IC call sites it is expected that r2 is TOS which
   // is an object - this is not generally the case so this should be used with
@@ -320,7 +275,7 @@ void DebugCodegen::GenerateFrameDropperLiveEdit(MacroAssembler* masm) {
 const bool LiveEdit::kFrameDropperSupported = true;
 
 #undef __
-}
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_TARGET_ARCH_S390

@@ -302,11 +302,8 @@ void Assembler::GetCode(CodeDesc* desc) {
 
 
 void Assembler::Align(int m) {
-#if V8_TARGET_ARCH_S390
-  DCHECK(m >= 4 && base::bits::IsPowerOfTwo64(m));
-#else
   DCHECK(m >= 4 && base::bits::IsPowerOfTwo32(m));
-#endif
+  DCHECK((pc_offset() & (kInstrSize - 1)) == 0);
   while ((pc_offset() & (m - 1)) != 0) {
     nop();
   }
@@ -3833,51 +3830,33 @@ void Assembler::dd(uint32_t data) {
 }
 
 
-void Assembler::emit_ptr(intptr_t data) {
+void Assembler::dq(uint64_t value) {
+  CheckBuffer();
+  *reinterpret_cast<uint64_t*>(pc_) = value;
+  pc_ += sizeof(uint64_t);
+}
+
+
+void Assembler::dp(uintptr_t data) {
   CheckBuffer();
   *reinterpret_cast<uintptr_t*>(pc_) = data;
   pc_ += sizeof(uintptr_t);
 }
 
 
-void Assembler::emit_double(double value) {
-    CheckBuffer();
-      *reinterpret_cast<double*>(pc_) = value;
-        pc_ += sizeof(double);
-}
-
-
 void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
+  if (RelocInfo::IsNone(rmode) ||
+      // Don't record external references unless the heap will be serialized.
+      (rmode == RelocInfo::EXTERNAL_REFERENCE && !serializer_enabled() &&
+       !emit_debug_code())) {
+    return;
+  }
+  if (rmode == RelocInfo::CODE_TARGET_WITH_ID) {
+    data = RecordedAstId().ToInt();
+    ClearRecordedAstId();
+  }
   DeferredRelocInfo rinfo(pc_offset(), rmode, data);
-  RecordRelocInfo(rinfo);
-}
-
-
-void Assembler::RecordRelocInfo(const DeferredRelocInfo& rinfo) {
-  if (rinfo.rmode() >= RelocInfo::JS_RETURN &&
-      rinfo.rmode() <= RelocInfo::DEBUG_BREAK_SLOT) {
-    // Adjust code for new modes.
-    DCHECK(RelocInfo::IsDebugBreakSlot(rinfo.rmode()) ||
-           RelocInfo::IsJSReturn(rinfo.rmode()) ||
-           RelocInfo::IsComment(rinfo.rmode()) ||
-           RelocInfo::IsPosition(rinfo.rmode()));
-  }
-  if (!RelocInfo::IsNone(rinfo.rmode())) {
-    // Don't record external references unless the heap will be serialized.
-    if (rinfo.rmode() == RelocInfo::EXTERNAL_REFERENCE) {
-      if (!serializer_enabled() && !emit_debug_code()) {
-        return;
-      }
-    }
-    if (rinfo.rmode() == RelocInfo::CODE_TARGET_WITH_ID) {
-      DeferredRelocInfo reloc_info_with_ast_id(rinfo.position(), rinfo.rmode(),
-                                               RecordedAstId().ToInt());
-      ClearRecordedAstId();
-      relocations_.push_back(reloc_info_with_ast_id);
-    } else {
-      relocations_.push_back(rinfo);
-    }
-  }
+  relocations_.push_back(rinfo);
 }
 
 

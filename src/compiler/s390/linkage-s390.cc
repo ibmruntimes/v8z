@@ -24,11 +24,16 @@ struct S390LinkageHelperTraits {
     return r6.bit() | r7.bit() | r8.bit() | r9.bit() | r10.bit() |
            fp.bit() | ip.bit() | r13.bit() | sp.bit();
   }
+  static RegList CCalleeSaveFPRegisters() { 
+    UNIMPLEMENTED();
+    return 0; 
+  }
   static Register CRegisterParameter(int i) {
     static Register register_parameters[] = {r2, r3, r4, r5, r6};
     return register_parameters[i];
   }
   static int CRegisterParametersLength() { return 5; }
+  static int CStackBackingStoreLength() { return 0; }
 };
 
 
