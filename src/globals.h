@@ -37,7 +37,7 @@
 
 #define V8_TURBOFAN_BACKEND 1
 #if V8_TARGET_ARCH_X64 || V8_TARGET_ARCH_ARM64 || V8_TARGET_ARCH_MIPS64 || \
-    V8_TARGET_ARCH_PPC64
+    V8_TARGET_ARCH_PPC64 || V8_TARGET_ARCH_S390X
 // 64-bit TurboFan backends support 64-bit integer arithmetic.
 #define V8_TURBOFAN_BACKEND_64 1
 #else
