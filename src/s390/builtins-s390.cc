@@ -1841,7 +1841,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     __ LoadlW(r6, FieldMemOperand(r6, SharedFunctionInfo::kLengthOffset));
 #if V8_TARGET_ARCH_S390X
     // See commment near kLenghtOffset in src/objects.h
-    __ ShiftRightArith(r6, r6, kSmiTagSize);
+    __ ShiftRightArith(r6, r6, Operand(kSmiTagSize));
 #else
     __ SmiUntag(r6);
 #endif
