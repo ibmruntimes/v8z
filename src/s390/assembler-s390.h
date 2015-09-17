@@ -519,18 +519,18 @@ class Assembler : public AssemblerBase {
 
   // Read/Modify the code target address in the branch/call instruction at pc.
   INLINE(static Address target_address_at(Address pc,
-                                          ConstantPoolArray* constant_pool));
+                                          Address constant_pool));
   INLINE(static void set_target_address_at(
-      Address pc, ConstantPoolArray* constant_pool, Address target,
+      Address pc, Address constant_pool, Address target,
       ICacheFlushMode icache_flush_mode = FLUSH_ICACHE_IF_NEEDED));
   INLINE(static Address target_address_at(Address pc, Code* code)) {
-    ConstantPoolArray* constant_pool = NULL;
+    Address constant_pool = NULL;
     return target_address_at(pc, constant_pool);
   }
   INLINE(static void set_target_address_at(
       Address pc, Code* code, Address target,
       ICacheFlushMode icache_flush_mode = FLUSH_ICACHE_IF_NEEDED)) {
-    ConstantPoolArray* constant_pool = NULL;
+    Address constant_pool = NULL;
     set_target_address_at(pc, constant_pool, target, icache_flush_mode);
   }
 
@@ -642,6 +642,9 @@ class Assembler : public AssemblerBase {
                  l->is_bound() || (dist == Label::kNear));
   }
 
+  void bc_short(Condition cond, Label* l, Label::Distance dist = Label::kFar) {
+    b(cond, l, Label::kNear);
+  }
   // Helpers for conditional branch to Label
   void beq(Label * l, Label::Distance dist = Label::kFar) { b(eq, l, dist); }
   void bne(Label * l, Label::Distance dist = Label::kFar) { b(ne, l, dist); }
@@ -1816,6 +1819,13 @@ SS2_FORM(zap);
 
   PositionsRecorder* positions_recorder() { return &positions_recorder_; }
 
+  void PatchConstantPoolAccessInstruction(int pc_offset, int offset,
+                                          ConstantPoolEntry::Access access,
+                                          ConstantPoolEntry::Type type) {
+    // No embedded constant pool support.
+    UNREACHABLE();
+  }
+
   // Read/patch instructions
   SixByteInstr instr_at(int pos) {
     return Instruction::InstructionBits(buffer_ + pos);
@@ -1861,12 +1871,6 @@ SS2_FORM(zap);
   //
   // This function allows outside callers to check and grow the buffer
   void EnsureSpaceFor(int space_needed);
-
-  // Allocate a constant pool of the correct size for the generated code.
-  Handle<ConstantPoolArray> NewConstantPool(Isolate* isolate);
-
-  // Generate the constant pool for the generated code.
-  void PopulateConstantPool(ConstantPoolArray* constant_pool);
 
   void EmitRelocations();
   void emit_label_addr(Label* label);

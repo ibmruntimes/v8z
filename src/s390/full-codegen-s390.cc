@@ -406,9 +406,6 @@ void FullCodeGenerator::Generate() {
   }
   EmitReturnSequence();
 
-  if (HasStackOverflow()) {
-    masm_->AbortConstantPoolBuilding();
-  }
 }
 
 
@@ -456,7 +453,6 @@ void FullCodeGenerator::EmitBackEdgeBookkeeping(IterationStatement* stmt,
   EmitProfilingCounterDecrement(weight);
   {
     Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm_);
-    Assembler::BlockConstantPoolEntrySharingScope prevent_entry_sharing(masm_);
     // BackEdgeTable::PatchAt manipulates this sequence.
     __ bge(&ok, Label::kNear);
     __ Call(isolate()->builtins()->InterruptCheck(), RelocInfo::CODE_TARGET);

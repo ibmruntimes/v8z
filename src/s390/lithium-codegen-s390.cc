@@ -2968,18 +2968,18 @@ void LCodeGen::DoDeferredInstanceOfKnownGlobal(LInstanceOfKnownGlobal* instr,
     DCHECK(map_check->is_bound());
     DCHECK(bool_load->is_bound());
     int map_check_delta =
-        masm_->InstructionsGeneratedSince(map_check) * Instruction::kInstrSize;
+        masm_->SizeOfCodeGeneratedSince(map_check);
     int bool_load_delta =
-        masm_->InstructionsGeneratedSince(bool_load) * Instruction::kInstrSize;
+        masm_->SizeOfCodeGeneratedSince(bool_load);
     // r7 is the delta from our callee's lr to the location of the map check.
-    __ bitwise_mov32(r7, map_check_delta + additional_delta);
+    __ Load(r7, Operand(map_check_delta + additional_delta));
     // r8 is the delta from map check to bool load.
     __ LoadImmP(r8, Operand(map_check_delta - bool_load_delta));
     UNIMPLEMENTED();
     CallCodeGeneric(code, RelocInfo::CODE_TARGET, instr,
                     RECORD_SAFEPOINT_WITH_REGISTERS_AND_NO_ARGUMENTS);
-    DCHECK_EQ((map_check_delta + additional_delta) / Instruction::kInstrSize,
-              masm_->InstructionsGeneratedSince(map_check));
+    DCHECK_EQ((map_check_delta + additional_delta),
+              masm_->SizeOfCodeGeneratedSince(map_check));
   }
   LEnvironment* env = instr->GetDeferredLazyDeoptimizationEnvironment();
   safepoints_.RecordLazyDeoptimizationIndex(env->deoptimization_index());

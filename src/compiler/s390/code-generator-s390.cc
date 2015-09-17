@@ -628,7 +628,6 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     case kArchFramePointer:
       __ LoadRR(i.OutputRegister(), fp);
-      DCHECK_EQ(LeaveRC, i.OutputRCBit());
       break;
     case kArchTruncateDoubleToI:
       // TODO(mbrandy): move slow call to stub out of line.
@@ -1344,9 +1343,6 @@ void CodeGenerator::AssembleReturn() {
       }
       // Restore registers.
       RegList frame_saves = fp.bit();
-      if (FLAG_enable_embedded_constant_pool) {
-        frame_saves |= kConstantPoolRegister.bit();
-      }
       const RegList saves = descriptor->CalleeSavedRegisters() & ~frame_saves;
       if (saves != 0) {
         __ MultiPop(saves);

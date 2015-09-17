@@ -1898,7 +1898,7 @@ RXY_FORM_EMIT(dl, DL)
 RXY_FORM_EMIT(dlg, DLG)
 RRE_FORM_EMIT(dlgr, DLGR)
 RRE_FORM_EMIT(dlr, DLR)
-SS2_FORM_EMIT(dp, DP)
+// SS2_FORM_EMIT(dp, DP)
 RXY_FORM_EMIT(dsg, DSG)
 RXY_FORM_EMIT(dsgf, DSGF)
 RRE_FORM_EMIT(dsgfr, DSGFR)
@@ -3866,7 +3866,7 @@ void Assembler::emit_label_addr(Label* label) {
   int position = link(label);
   DCHECK(label->is_bound());
   // Keep internal references relative until EmitRelocations.
-  emit_ptr(position);
+  dp(position);
 }
 
 
@@ -3947,17 +3947,6 @@ void Assembler::CheckTrampolinePool() {
 }
 
 
-Handle<ConstantPoolArray> Assembler::NewConstantPool(Isolate* isolate) {
-  // No out-of-line constant pool support.
-  DCHECK(!FLAG_enable_ool_constant_pool);
-  return isolate->factory()->empty_constant_pool_array();
-}
-
-
-void Assembler::PopulateConstantPool(ConstantPoolArray* constant_pool) {
-  // No out-of-line constant pool support.
-  DCHECK(!FLAG_enable_ool_constant_pool);
-}
 }
 }  // namespace v8::internal
 #endif  // V8_TARGET_ARCH_S390
