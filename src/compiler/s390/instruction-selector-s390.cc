@@ -876,26 +876,31 @@ void InstructionSelector::VisitChangeInt32ToInt64(Node* node) {
 
 void InstructionSelector::VisitChangeUint32ToUint64(Node* node) {
   // TODO(mbrandy): inspect input to see if nop is appropriate.
-  S390OperandGenerator g(this);
-  Emit(kS390_Uint32ToUint64, g.DefineAsRegister(node),
-       g.UseRegister(node->InputAt(0)));
+  VisitRR(this, kS390_Uint32ToUint64, node);
 }
 #endif
 
 
 void InstructionSelector::VisitTruncateFloat64ToFloat32(Node* node) {
-  S390OperandGenerator g(this);
-  Emit(kS390_DoubleToFloat32, g.DefineAsRegister(node),
-       g.UseRegister(node->InputAt(0)));
+  VisitRR(this, kS390_DoubleToFloat32, node);
+}
+
+
+void InstructionSelector::VisitTruncateFloat64ToInt32(Node* node) {
+  switch (TruncationModeOf(node->op())) {
+    case TruncationMode::kJavaScript:
+      return VisitRR(this, kArchTruncateDoubleToI, node);
+    case TruncationMode::kRoundToZero:
+      return VisitRR(this, kS390_DoubleToInt32, node);
+  }
+  UNREACHABLE();
 }
 
 
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitTruncateInt64ToInt32(Node* node) {
-  S390OperandGenerator g(this);
   // TODO(mbrandy): inspect input to see if nop is appropriate.
-  Emit(kS390_Int64ToInt32, g.DefineAsRegister(node),
-       g.UseRegister(node->InputAt(0)));
+  VisitRR(this, kS390_Int64ToInt32, node);
 }
 #endif
 
