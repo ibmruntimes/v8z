@@ -25,7 +25,7 @@ void NamedLoadHandlerCompiler::GenerateLoadViaGetter(
   //  -- lr    : return address
   // -----------------------------------
   {
-    FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
+    FrameScope scope(masm, StackFrame::INTERNAL);
 
     if (accessor_index >= 0) {
       DCHECK(!holder.is(scratch));
@@ -62,7 +62,7 @@ void NamedStoreHandlerCompiler::GenerateStoreViaSetter(
   //  -- lr    : return address
   // -----------------------------------
   {
-    FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
+    FrameScope scope(masm, StackFrame::INTERNAL);
 
     // Save value register, so we can restore it later.
     __ Push(value());
@@ -646,7 +646,7 @@ void NamedLoadHandlerCompiler::GenerateLoadInterceptorWithFollowup(
   // Save necessary data before invoking an interceptor.
   // Requires a frame to make GC aware of pushed pointers.
   {
-    FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
+    FrameScope frame_scope(masm(), StackFrame::INTERNAL);
     if (must_preserve_receiver_reg) {
       __ Push(receiver(), holder_reg, this->name());
     } else {
@@ -779,7 +779,7 @@ Handle<Code> NamedLoadHandlerCompiler::CompileLoadGlobal(
 
 
 #undef __
-}  // namespace internal
-}  // namespace v8
+}
+}  // namespace v8::internal
 
 #endif  // V8_TARGET_ARCH_ARM
