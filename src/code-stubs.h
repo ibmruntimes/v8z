@@ -174,8 +174,6 @@ namespace internal {
 
 static const int kHasReturnedMinusZeroSentinel = 1;
 
-static const int kHasReturnedMinusZeroSentinel = 1;
-
 // Stub is base classes of all stubs.
 class CodeStub BASE_EMBEDDED {
  public:
