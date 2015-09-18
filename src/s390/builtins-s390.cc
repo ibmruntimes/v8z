@@ -636,7 +636,6 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       __ bind(&count_incremented);
     }
 
-    __ Push(r6, r6);
     // Restore the parameters.
     if (use_new_target) {
       __ Pop(r3, ip);
