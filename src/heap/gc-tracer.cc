@@ -448,7 +448,7 @@ void GCTracer::PrintNVP() const {
   PrintF("average_survival_ratio=%.1f%% ", AverageSurvivalRatio());
   PrintF("promotion_rate=%.1f%% ", heap_->promotion_rate_);
   PrintF("semi_space_copy_rate=%.1f%% ", heap_->semi_space_copied_rate_);
-  PrintF("new_space_allocation_throughput=%" V8_PTR_PREFIX "d ",
+  PrintF("new_space_allocation_throughput=%" V8_SIZET_PREFIX V8_PTR_PREFIX "d ",
          NewSpaceAllocationThroughputInBytesPerMillisecond());
   PrintF("context_disposal_rate=%.1f ", ContextDisposalRateInMilliseconds());
 
