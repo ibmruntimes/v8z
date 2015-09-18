@@ -671,9 +671,9 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     __ ShiftLeftP(ip, r2, Operand(kPointerSizeLog2));
     __ SubP(sp, sp, ip);
     __ bind(&loop);
-    __ SubP(ip, Operand(kPointerSize));
-    __ LoadP(r0, MemOperand(r4, ip));
-    __ StoreP(r0, MemOperand(sp, ip));
+    __ lay(ip, MemOperand(ip, -kPointerSize));
+    __ LoadP(r0, MemOperand(ip, r4));
+    __ StoreP(r0, MemOperand(ip, sp));
     __ BranchOnCount(r2, &loop);
     __ SmiUntag(r2, r5);
     __ bind(&no_args);
