@@ -2956,13 +2956,14 @@ void LCodeGen::DoDeferredInstanceOfKnownGlobal(LInstanceOfKnownGlobal* instr,
   InstanceofStub stub(isolate(), flags);
 
   PushSafepointRegistersScope scope(this);
+  LoadContextFromDeferred(instr->context());
 
   __ Move(InstanceofStub::right(), instr->function());
   {
     Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm_);
     Handle<Code> code = stub.GetCode();
-    // Include instructions below in delta: bitwise_mov32 + LoadImmP + call
-    int additional_delta = 3 * Instruction::kInstrSize + masm_->CallSize(code);
+    // Include instructions below in delta: LHI/LGHI * 2 + call
+    int additional_delta = 8 + masm_->CallSize(code);
     // The labels must be already bound since the code has predictabel size up
     // to the call instruction.
     DCHECK(map_check->is_bound());
@@ -2972,10 +2973,9 @@ void LCodeGen::DoDeferredInstanceOfKnownGlobal(LInstanceOfKnownGlobal* instr,
     int bool_load_delta =
         masm_->SizeOfCodeGeneratedSince(bool_load);
     // r7 is the delta from our callee's lr to the location of the map check.
-    __ Load(r7, Operand(map_check_delta + additional_delta));
+    __ LoadImmP(r7, Operand(map_check_delta + additional_delta));
     // r8 is the delta from map check to bool load.
     __ LoadImmP(r8, Operand(map_check_delta - bool_load_delta));
-    UNIMPLEMENTED();
     CallCodeGeneric(code, RelocInfo::CODE_TARGET, instr,
                     RECORD_SAFEPOINT_WITH_REGISTERS_AND_NO_ARGUMENTS);
     DCHECK_EQ((map_check_delta + additional_delta),
