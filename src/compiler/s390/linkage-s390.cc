@@ -25,8 +25,12 @@ struct S390LinkageHelperTraits {
            fp.bit() | ip.bit() | r13.bit() | sp.bit();
   }
   static RegList CCalleeSaveFPRegisters() { 
-    UNIMPLEMENTED();
-    return 0; 
+#if V8_TARGET_ARCH_S390X
+    return d8.bit() | d9.bit() | d10.bit() |
+      d11.bit() | d12.bit() | d13.bit() | d14.bit() | d15.bit();
+#else
+    return d2.bit() | d4.bit();
+#endif
   }
   static Register CRegisterParameter(int i) {
     static Register register_parameters[] = {r2, r3, r4, r5, r6};
