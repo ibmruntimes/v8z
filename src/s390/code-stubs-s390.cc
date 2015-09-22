@@ -1482,8 +1482,8 @@ void InstanceofStub::Generate(MacroAssembler* masm) {
     __ StoreP(map,
          FieldMemOperand(offset, Cell::kValueOffset));
 
-    __ LoadRR(ip, map);
-    __ RecordWriteField(offset, Cell::kValueOffset, ip, function,
+    __ LoadRR(scratch, map);
+    __ RecordWriteField(offset, Cell::kValueOffset, scratch, function,
                         kLRHasNotBeenSaved, kDontSaveFPRegs,
                         OMIT_REMEMBERED_SET, OMIT_SMI_CHECK);
   }
