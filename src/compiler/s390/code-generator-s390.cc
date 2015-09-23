@@ -476,8 +476,8 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
     __ StoreF(value, operand);                              \
     __ bind(&done);                                         \
   } while (0)
- 
- 
+
+
 // TODO(mbrandy): fix paths that produce garbage in offset's upper 32-bits.
 #define ASSEMBLE_CHECKED_STORE_INTEGER(asm_instr)             \
   do {                                                        \
@@ -554,7 +554,6 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
         __ Jump(Handle<Code>::cast(i.InputHeapObject(0)),
                 RelocInfo::CODE_TARGET);
       }
-      UNIMPLEMENTED();
       break;
     }
     case kArchCallJSFunction: {
