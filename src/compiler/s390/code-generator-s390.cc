@@ -862,7 +862,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     case kS390_ModU32:
       ASSEMBLE_MODULO(dlr, srdl);
       break;
-#if V8_TARGET_ARCH_S390x
+#if V8_TARGET_ARCH_S390X
     case kS390_Mod64:
       ASSEMBLE_MODULO(dr, srda);
       break;
