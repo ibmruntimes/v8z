@@ -2202,6 +2202,7 @@ void FullCodeGenerator::VisitYield(Yield* expr) {
       // Shuffle the received result above a try handler and yield it without
       // re-boxing.
       __ bind(&l_try);
+      __ pop(r2);  // result
       int handler_index = NewHandlerTableEntry();
       EnterTryBlock(handler_index, &l_catch);
       const int try_block_size = TryCatch::kElementCount * kPointerSize;
