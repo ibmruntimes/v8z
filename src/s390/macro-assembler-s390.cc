@@ -1789,31 +1789,30 @@ void MacroAssembler::AddAndCheckForOverflow(Register dst, Register left,
   DCHECK(!overflow_dst.is(right));
 
   // TODO(joransiu): Optimize paths for left == right.
+  bool left_is_right = left.is(right);
 
   // C = A+B; C overflows if A/B have same sign and C has diff sign than A
   if (dst.is(left)) {
     LoadRR(scratch, left);            // Preserve left.
     AddP(dst, left, right);            // Left is overwritten.
-    XorP(scratch, dst);               // Original left.
-    XorP(overflow_dst, dst, right);
-    AndP(overflow_dst, scratch/*, SetRC*/);
-    LoadAndTestRR(overflow_dst, overflow_dst);
-    // Should be okay to remove rc
+    XorP(overflow_dst, scratch, dst);               // Original left.
+    if (!left_is_right)
+      XorP(scratch, dst, right);
   } else if (dst.is(right)) {
     LoadRR(scratch, right);           // Preserve right.
     AddP(dst, left, right);            // Right is overwritten.
-    XorP(scratch, dst);               // Original right.
     XorP(overflow_dst, dst, left);
-    AndP(overflow_dst, scratch/*, SetRC*/);
-    LoadAndTestRR(overflow_dst, overflow_dst);
-    // Should be okay to remove rc
+    if (!left_is_right)
+      XorP(scratch, dst, scratch);
   } else {
     AddP(dst, left, right);
     XorP(overflow_dst, dst, left);
-    XorP(scratch, dst, right);
-    AndP(overflow_dst, scratch/*, SetRC*/);
-    LoadAndTestRR(overflow_dst, overflow_dst);
+    if (!left_is_right)
+      XorP(scratch, dst, right);
   }
+  if (!left_is_right)
+    AndP(overflow_dst, scratch, overflow_dst);
+  LoadAndTestRR(overflow_dst, overflow_dst);
 }
 
 
