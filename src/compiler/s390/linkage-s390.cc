@@ -24,7 +24,7 @@ struct S390LinkageHelperTraits {
     return r6.bit() | r7.bit() | r8.bit() | r9.bit() | r10.bit() |
            fp.bit() | ip.bit() | r13.bit() | sp.bit();
   }
-  static RegList CCalleeSaveFPRegisters() { 
+  static RegList CCalleeSaveFPRegisters() {
 #if V8_TARGET_ARCH_S390X
     return d8.bit() | d9.bit() | d10.bit() |
       d11.bit() | d12.bit() | d13.bit() | d14.bit() | d15.bit();

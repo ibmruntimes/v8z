@@ -1431,7 +1431,7 @@ void InstanceofStub::Generate(MacroAssembler* masm) {
 // #else
 //   const int32_t kDeltaToLoadBoolResult = 18;  // IILF + L + CR + BRCL
 // #endif
-// 
+//
   Label slow, loop, is_instance, is_not_instance, not_js_object;
 
   if (!HasArgsInRegisters()) {
