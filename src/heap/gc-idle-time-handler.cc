@@ -48,7 +48,8 @@ void GCIdleTimeAction::Print() {
 void GCIdleTimeHandler::HeapState::Print() {
   PrintF("contexts_disposed=%d ", contexts_disposed);
   PrintF("contexts_disposal_rate=%f ", contexts_disposal_rate);
-  PrintF("size_of_objects=%" V8_SIZET_PREFIX V8_PTR_PREFIX "d ", size_of_objects);
+  PrintF("size_of_objects=%" V8_SIZET_PREFIX V8_PTR_PREFIX "d ",
+                             size_of_objects);
   PrintF("incremental_marking_stopped=%d ", incremental_marking_stopped);
   PrintF("sweeping_in_progress=%d ", sweeping_in_progress);
   PrintF("has_low_allocation_rate=%d", has_low_allocation_rate);
@@ -56,9 +57,12 @@ void GCIdleTimeHandler::HeapState::Print() {
          mark_compact_speed_in_bytes_per_ms);
   PrintF("incremental_marking_speed=%" V8_SIZET_PREFIX V8_PTR_PREFIX "d ",
          incremental_marking_speed_in_bytes_per_ms);
-  PrintF("scavenge_speed=%" V8_SIZET_PREFIX V8_PTR_PREFIX "d ", scavenge_speed_in_bytes_per_ms);
-  PrintF("new_space_size=%" V8_SIZET_PREFIX V8_PTR_PREFIX "d ", used_new_space_size);
-  PrintF("new_space_capacity=%" V8_SIZET_PREFIX V8_PTR_PREFIX "d ", new_space_capacity);
+  PrintF("scavenge_speed=%" V8_SIZET_PREFIX V8_PTR_PREFIX "d ",
+                            scavenge_speed_in_bytes_per_ms);
+  PrintF("new_space_size=%" V8_SIZET_PREFIX V8_PTR_PREFIX "d ",
+                            used_new_space_size);
+  PrintF("new_space_capacity=%" V8_SIZET_PREFIX V8_PTR_PREFIX "d ",
+                            new_space_capacity);
   PrintF("new_space_allocation_throughput=%" V8_SIZET_PREFIX V8_PTR_PREFIX "d",
          new_space_allocation_throughput_in_bytes_per_ms);
 }

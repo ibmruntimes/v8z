@@ -342,7 +342,7 @@ void LoadIC::GenerateRuntimeGetProperty(MacroAssembler* masm,
   __ TailCallRuntime(is_strong(language_mode) ? Runtime::kGetPropertyStrong
                                               : Runtime::kGetProperty,
                      2, 1);
- }
+}
 
 
 void KeyedLoadIC::GenerateMiss(MacroAssembler* masm) {

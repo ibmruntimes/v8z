@@ -1826,7 +1826,8 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     // If the function is strong we need to throw an error.
     Label no_strong_error;
     __ LoadP(r6, FieldMemOperand(r3, JSFunction::kSharedFunctionInfoOffset));
-    __ LoadlW(r7, FieldMemOperand(r6, SharedFunctionInfo::kCompilerHintsOffset));
+    __ LoadlW(r7, FieldMemOperand(r6,
+                                  SharedFunctionInfo::kCompilerHintsOffset));
     __ TestBit(r7,
 #if V8_TARGET_ARCH_S390X
                SharedFunctionInfo::kStrongModeFunction,

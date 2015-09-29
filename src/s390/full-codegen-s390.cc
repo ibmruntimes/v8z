@@ -405,7 +405,6 @@ void FullCodeGenerator::Generate() {
     __ LoadRoot(r2, Heap::kUndefinedValueRootIndex);
   }
   EmitReturnSequence();
-
 }
 
 

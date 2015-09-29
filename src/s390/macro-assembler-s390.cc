@@ -5325,7 +5325,8 @@ void MacroAssembler::StoreShortF(DoubleRegister src, const MemOperand& mem) {
 }
 
 
-void MacroAssembler::StoreDoubleAsFloat32(DoubleRegister src, const MemOperand& mem,
+void MacroAssembler::StoreDoubleAsFloat32(DoubleRegister src,
+                                          const MemOperand& mem,
                                           DoubleRegister scratch) {
   ledbr(scratch, src);
   StoreShortF(scratch, mem);

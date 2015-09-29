@@ -1360,7 +1360,8 @@ void Serializer::OutputStatistics(const char* name) {
   PrintF("  Instance types (count and bytes):\n");
 #define PRINT_INSTANCE_TYPE(Name)                                          \
   if (instance_type_count_[Name]) {                                        \
-    PrintF("%10d %10" V8_SIZET_PREFIX V8_PTR_PREFIX "d  %s\n", instance_type_count_[Name], \
+    PrintF("%10d %10" V8_SIZET_PREFIX V8_PTR_PREFIX "d  %s\n",             \
+           instance_type_count_[Name],                                     \
            instance_type_size_[Name], #Name);                              \
   }
   INSTANCE_TYPE_LIST(PRINT_INSTANCE_TYPE)
