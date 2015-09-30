@@ -28,6 +28,9 @@
 // Create a regexp in the form of a?a?...a? so that fully
 // traversing the entire graph would be prohibitively expensive.
 // This should not cause time out.
+// S390X uses more stack space for recursion calls.
+// Flags: --stack_size=8192
+//
 var r1 = "";
 for (var i = 0; i < 1000; i++) {
   r1 += "a?";
