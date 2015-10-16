@@ -734,9 +734,10 @@ int MacroAssembler::LeaveFrame(StackFrame::Type type, int stack_adjustment) {
   // Drop the execution stack down to the frame pointer and restore
   // the caller frame pointer, return address and constant pool pointer.
   LoadP(r14, MemOperand(fp, StandardFrameConstants::kCallerPCOffset));
-  lay(sp, MemOperand(fp,
+  lay(r1, MemOperand(fp,
       StandardFrameConstants::kCallerSPOffset + stack_adjustment));
   LoadP(fp, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
+  LoadRR(sp, r1);
   int frame_ends = pc_offset();
   return frame_ends;
 }
@@ -758,6 +759,14 @@ int MacroAssembler::LeaveFrame(StackFrame::Type type, int stack_adjustment) {
 // in the fp register (r11)
 // Then - we buy a new frame
 
+// r14
+// oldFP <- newFP
+// SP
+// Code
+// Floats
+// gaps
+// Args
+// ABIRes <- newSP
 void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   // Set up the frame structure on the stack.
   DCHECK_EQ(2 * kPointerSize, ExitFrameConstants::kCallerSPDisplacement);
