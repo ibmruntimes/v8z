@@ -37,6 +37,8 @@ class SimplifiedLowering final {
   void DoStoreBuffer(Node* node);
   void DoLoadElement(Node* node);
   void DoStoreElement(Node* node);
+  void DoObjectIsNumber(Node* node);
+  void DoObjectIsSmi(Node* node);
   void DoShift(Node* node, Operator const* op);
   void DoStringEqual(Node* node);
   void DoStringLessThan(Node* node);
@@ -54,12 +56,8 @@ class SimplifiedLowering final {
   // position information via the SourcePositionWrapper like all other reducers.
   SourcePositionTable* source_positions_;
 
-  Node* SmiTag(Node* node);
-  Node* IsTagged(Node* node);
-  Node* Untag(Node* node);
-  Node* OffsetMinusTagConstant(int32_t offset);
   Node* ComputeIndex(const ElementAccess& access, Node* const key);
-  Node* StringComparison(Node* node, bool requires_ordering);
+  Node* StringComparison(Node* node);
   Node* Int32Div(Node* const node);
   Node* Int32Mod(Node* const node);
   Node* Uint32Div(Node* const node);
@@ -67,6 +65,7 @@ class SimplifiedLowering final {
 
   friend class RepresentationSelector;
 
+  Isolate* isolate() { return jsgraph_->isolate(); }
   Zone* zone() { return jsgraph_->zone(); }
   JSGraph* jsgraph() { return jsgraph_; }
   Graph* graph() { return jsgraph()->graph(); }

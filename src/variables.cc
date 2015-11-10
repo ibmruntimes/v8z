@@ -2,11 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/v8.h"
+#include "src/variables.h"
 
 #include "src/ast.h"
 #include "src/scopes.h"
-#include "src/variables.h"
 
 namespace v8 {
 namespace internal {
@@ -24,7 +23,6 @@ const char* Variable::Mode2String(VariableMode mode) {
     case DYNAMIC: return "DYNAMIC";
     case DYNAMIC_GLOBAL: return "DYNAMIC_GLOBAL";
     case DYNAMIC_LOCAL: return "DYNAMIC_LOCAL";
-    case INTERNAL: return "INTERNAL";
     case TEMPORARY: return "TEMPORARY";
   }
   UNREACHABLE();
@@ -46,6 +44,7 @@ Variable::Variable(Scope* scope, const AstRawString* name, VariableMode mode,
       strong_mode_reference_start_position_(RelocInfo::kNoPosition),
       strong_mode_reference_end_position_(RelocInfo::kNoPosition),
       local_if_not_shadowed_(NULL),
+      is_from_eval_(false),
       force_context_allocation_(false),
       is_used_(false),
       initialization_flag_(initialization_flag),
@@ -58,7 +57,9 @@ Variable::Variable(Scope* scope, const AstRawString* name, VariableMode mode,
 bool Variable::IsGlobalObjectProperty() const {
   // Temporaries are never global, they must always be allocated in the
   // activation frame.
-  return IsDynamicVariableMode(mode_) || IsStaticGlobalObjectProperty();
+  return (IsDynamicVariableMode(mode_) ||
+          (IsDeclaredVariableMode(mode_) && !IsLexicalVariableMode(mode_))) &&
+         scope_ != NULL && scope_->is_script_scope() && !is_this();
 }
 
 

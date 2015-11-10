@@ -17,14 +17,17 @@ class PlatformInterfaceDescriptor;
   V(Load)                                     \
   V(Store)                                    \
   V(StoreTransition)                          \
-  V(ElementTransitionAndStore)                \
+  V(VectorStoreTransition)                    \
   V(VectorStoreICTrampoline)                  \
   V(VectorStoreIC)                            \
-  V(Instanceof)                               \
+  V(InstanceOf)                               \
   V(LoadWithVector)                           \
   V(FastNewClosure)                           \
   V(FastNewContext)                           \
   V(ToNumber)                                 \
+  V(ToLength)                                 \
+  V(ToString)                                 \
+  V(ToObject)                                 \
   V(NumberToString)                           \
   V(Typeof)                                   \
   V(FastCloneShallowArray)                    \
@@ -35,9 +38,12 @@ class PlatformInterfaceDescriptor;
   V(CallFunctionWithFeedback)                 \
   V(CallFunctionWithFeedbackAndVector)        \
   V(CallConstruct)                            \
+  V(CallTrampoline)                           \
   V(RegExpConstructResult)                    \
   V(TransitionElementsKind)                   \
   V(AllocateHeapNumber)                       \
+  V(AllocateMutableHeapNumber)                \
+  V(AllocateInNewSpace)                       \
   V(ArrayConstructorConstantArgCount)         \
   V(ArrayConstructor)                         \
   V(InternalArrayConstructorConstantArgCount) \
@@ -48,6 +54,7 @@ class PlatformInterfaceDescriptor;
   V(BinaryOp)                                 \
   V(BinaryOpWithAllocationSite)               \
   V(StringAdd)                                \
+  V(StringCompare)                            \
   V(Keyed)                                    \
   V(Named)                                    \
   V(CallHandler)                              \
@@ -56,28 +63,31 @@ class PlatformInterfaceDescriptor;
   V(ApiAccessor)                              \
   V(ApiGetter)                                \
   V(ArgumentsAccessRead)                      \
+  V(ArgumentsAccessNew)                       \
   V(StoreArrayLiteralElement)                 \
+  V(LoadGlobalViaContext)                     \
+  V(StoreGlobalViaContext)                    \
   V(MathPowTagged)                            \
   V(MathPowInteger)                           \
   V(ContextOnly)                              \
   V(GrowArrayElements)                        \
-  V(MathRoundVariant)
+  V(MathRoundVariantCallFromUnoptimizedCode)  \
+  V(MathRoundVariantCallFromOptimizedCode)    \
+  V(InterpreterPushArgsAndCall)               \
+  V(InterpreterPushArgsAndConstruct)          \
+  V(InterpreterCEntry)
 
 
 class CallInterfaceDescriptorData {
  public:
   CallInterfaceDescriptorData()
-      : stack_paramater_count_(-1),
-        register_param_count_(-1),
-        function_type_(nullptr) {}
+      : register_param_count_(-1), function_type_(nullptr) {}
 
   // A copy of the passed in registers and param_representations is made
   // and owned by the CallInterfaceDescriptorData.
 
-  void InitializePlatformIndependent(int stack_paramater_count,
-                                     Type::FunctionType* function_type) {
+  void InitializePlatformIndependent(Type::FunctionType* function_type) {
     function_type_ = function_type;
-    stack_paramater_count_ = stack_paramater_count;
   }
 
   // TODO(mvstanton): Instead of taking parallel arrays register and
@@ -90,12 +100,11 @@ class CallInterfaceDescriptorData {
 
   bool IsInitialized() const { return register_param_count_ >= 0; }
 
+  int param_count() const { return function_type_->Arity(); }
   int register_param_count() const { return register_param_count_; }
   Register register_param(int index) const { return register_params_[index]; }
   Register* register_params() const { return register_params_.get(); }
-  Type* register_param_type(int index) const {
-    return function_type_->Parameter(index);
-  }
+  Type* param_type(int index) const { return function_type_->Parameter(index); }
   PlatformInterfaceDescriptor* platform_specific_descriptor() const {
     return platform_specific_descriptor_;
   }
@@ -103,14 +112,13 @@ class CallInterfaceDescriptorData {
   Type::FunctionType* function_type() const { return function_type_; }
 
  private:
-  int stack_paramater_count_;
   int register_param_count_;
 
   // The Register params are allocated dynamically by the
   // InterfaceDescriptor, and freed on destruction. This is because static
   // arrays of Registers cause creation of runtime static initializers
   // which we don't want.
-  SmartArrayPointer<Register> register_params_;
+  base::SmartArrayPointer<Register> register_params_;
 
   // Specifies types for parameters and return
   Type::FunctionType* function_type_;
@@ -140,6 +148,8 @@ class CallInterfaceDescriptor {
   CallInterfaceDescriptor(Isolate* isolate, CallDescriptors::Key key)
       : data_(isolate->call_descriptor_data(key)) {}
 
+  int GetParameterCount() const { return data()->param_count(); }
+
   int GetRegisterParameterCount() const {
     return data()->register_param_count();
   }
@@ -153,8 +163,8 @@ class CallInterfaceDescriptor {
   }
 
   Type* GetParameterType(int index) const {
-    DCHECK(index < data()->register_param_count());
-    return data()->register_param_type(index);
+    DCHECK(index < data()->param_count());
+    return data()->param_type(index);
   }
 
   // Some platforms have extra information to associate with the descriptor.
@@ -192,7 +202,7 @@ class CallInterfaceDescriptor {
       Type::FunctionType* function_type =
           BuildCallInterfaceDescriptorFunctionType(isolate,
                                                    d->register_param_count());
-      d->InitializePlatformIndependent(0, function_type);
+      d->InitializePlatformIndependent(function_type);
     }
   }
 
@@ -214,12 +224,12 @@ class CallInterfaceDescriptor {
   static inline CallDescriptors::Key key();
 
 
-#define DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(name, base)        \
-  DECLARE_DESCRIPTOR(name, base)                                        \
- protected:                                                             \
-  virtual Type::FunctionType* BuildCallInterfaceDescriptorFunctionType( \
-      Isolate* isolate, int register_param_count) override;             \
-                                                                        \
+#define DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(name, base) \
+  DECLARE_DESCRIPTOR(name, base)                                 \
+ protected:                                                      \
+  Type::FunctionType* BuildCallInterfaceDescriptorFunctionType(  \
+      Isolate* isolate, int register_param_count) override;      \
+                                                                 \
  public:
 // LoadDescriptor is used by all stubs that implement Load/KeyedLoad ICs.
 class LoadDescriptor : public CallInterfaceDescriptor {
@@ -252,7 +262,8 @@ class StoreDescriptor : public CallInterfaceDescriptor {
 
 class StoreTransitionDescriptor : public StoreDescriptor {
  public:
-  DECLARE_DESCRIPTOR(StoreTransitionDescriptor, StoreDescriptor)
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(StoreTransitionDescriptor,
+                                               StoreDescriptor)
 
   // Extends StoreDescriptor with Map parameter.
   enum ParameterIndices {
@@ -262,25 +273,43 @@ class StoreTransitionDescriptor : public StoreDescriptor {
     kMapIndex,
     kParameterCount
   };
-  static const Register MapRegister();
-};
-
-
-class ElementTransitionAndStoreDescriptor : public StoreDescriptor {
- public:
-  DECLARE_DESCRIPTOR(ElementTransitionAndStoreDescriptor, StoreDescriptor)
 
   static const Register MapRegister();
 };
 
 
-class InstanceofDescriptor : public CallInterfaceDescriptor {
+class VectorStoreTransitionDescriptor : public StoreDescriptor {
  public:
-  DECLARE_DESCRIPTOR(InstanceofDescriptor, CallInterfaceDescriptor)
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(VectorStoreTransitionDescriptor,
+                                               StoreDescriptor)
+
+  // Extends StoreDescriptor with Map parameter.
+  enum ParameterIndices {
+    kReceiverIndex = 0,
+    kNameIndex = 1,
+    kValueIndex = 2,
+
+    kMapIndex = 3,
+
+    kSlotIndex = 4,  // not present on ia32.
+    kVirtualSlotVectorIndex = 4,
+
+    kVectorIndex = 5
+  };
+
+  static const Register MapRegister();
+  static const Register SlotRegister();
+  static const Register VectorRegister();
+};
+
+
+class InstanceOfDescriptor final : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR(InstanceOfDescriptor, CallInterfaceDescriptor)
 
   enum ParameterIndices { kLeftIndex, kRightIndex, kParameterCount };
-  static const Register left();
-  static const Register right();
+  static const Register LeftRegister();
+  static const Register RightRegister();
 };
 
 
@@ -346,6 +375,36 @@ class ToNumberDescriptor : public CallInterfaceDescriptor {
 };
 
 
+class ToLengthDescriptor : public CallInterfaceDescriptor {
+ public:
+  enum ParameterIndices { kReceiverIndex };
+
+  DECLARE_DESCRIPTOR(ToLengthDescriptor, CallInterfaceDescriptor)
+
+  static const Register ReceiverRegister();
+};
+
+
+class ToStringDescriptor : public CallInterfaceDescriptor {
+ public:
+  enum ParameterIndices { kReceiverIndex };
+
+  DECLARE_DESCRIPTOR(ToStringDescriptor, CallInterfaceDescriptor)
+
+  static const Register ReceiverRegister();
+};
+
+
+class ToObjectDescriptor : public CallInterfaceDescriptor {
+ public:
+  enum ParameterIndices { kReceiverIndex };
+
+  DECLARE_DESCRIPTOR(ToObjectDescriptor, CallInterfaceDescriptor)
+
+  static const Register ReceiverRegister();
+};
+
+
 class NumberToStringDescriptor : public CallInterfaceDescriptor {
  public:
   DECLARE_DESCRIPTOR(NumberToStringDescriptor, CallInterfaceDescriptor)
@@ -392,6 +451,13 @@ class CreateWeakCellDescriptor : public CallInterfaceDescriptor {
 };
 
 
+class CallTrampolineDescriptor : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(CallTrampolineDescriptor,
+                                               CallInterfaceDescriptor)
+};
+
+
 class CallFunctionDescriptor : public CallInterfaceDescriptor {
  public:
   DECLARE_DESCRIPTOR(CallFunctionDescriptor, CallInterfaceDescriptor)
@@ -425,6 +491,25 @@ class RegExpConstructResultDescriptor : public CallInterfaceDescriptor {
 };
 
 
+class LoadGlobalViaContextDescriptor : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(LoadGlobalViaContextDescriptor,
+                                               CallInterfaceDescriptor)
+
+  static const Register SlotRegister();
+};
+
+
+class StoreGlobalViaContextDescriptor : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(StoreGlobalViaContextDescriptor,
+                                               CallInterfaceDescriptor)
+
+  static const Register SlotRegister();
+  static const Register ValueRegister();
+};
+
+
 class TransitionElementsKindDescriptor : public CallInterfaceDescriptor {
  public:
   DECLARE_DESCRIPTOR(TransitionElementsKindDescriptor, CallInterfaceDescriptor)
@@ -434,6 +519,19 @@ class TransitionElementsKindDescriptor : public CallInterfaceDescriptor {
 class AllocateHeapNumberDescriptor : public CallInterfaceDescriptor {
  public:
   DECLARE_DESCRIPTOR(AllocateHeapNumberDescriptor, CallInterfaceDescriptor)
+};
+
+
+class AllocateMutableHeapNumberDescriptor : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR(AllocateMutableHeapNumberDescriptor,
+                     CallInterfaceDescriptor)
+};
+
+
+class AllocateInNewSpaceDescriptor : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR(AllocateInNewSpaceDescriptor, CallInterfaceDescriptor)
 };
 
 
@@ -504,6 +602,16 @@ class StringAddDescriptor : public CallInterfaceDescriptor {
 };
 
 
+class StringCompareDescriptor : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR(StringCompareDescriptor, CallInterfaceDescriptor)
+
+  enum ParameterIndices { kLeftIndex, kRightIndex, kParameterCount };
+  static const Register LeftRegister();
+  static const Register RightRegister();
+};
+
+
 class KeyedDescriptor : public CallInterfaceDescriptor {
  public:
   DECLARE_DESCRIPTOR(KeyedDescriptor, CallInterfaceDescriptor)
@@ -561,6 +669,17 @@ class ArgumentsAccessReadDescriptor : public CallInterfaceDescriptor {
 };
 
 
+class ArgumentsAccessNewDescriptor : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(ArgumentsAccessNewDescriptor,
+                                               CallInterfaceDescriptor)
+
+  static const Register function();
+  static const Register parameter_count();
+  static const Register parameter_pointer();
+};
+
+
 class StoreArrayLiteralElementDescriptor : public CallInterfaceDescriptor {
  public:
   DECLARE_DESCRIPTOR(StoreArrayLiteralElementDescriptor,
@@ -584,10 +703,20 @@ class MathPowIntegerDescriptor : public CallInterfaceDescriptor {
 };
 
 
-class MathRoundVariantDescriptor : public CallInterfaceDescriptor {
+class MathRoundVariantCallFromOptimizedCodeDescriptor
+    : public CallInterfaceDescriptor {
  public:
-  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(MathRoundVariantDescriptor,
-                                               CallInterfaceDescriptor)
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(
+      MathRoundVariantCallFromOptimizedCodeDescriptor, CallInterfaceDescriptor)
+};
+
+
+class MathRoundVariantCallFromUnoptimizedCodeDescriptor
+    : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(
+      MathRoundVariantCallFromUnoptimizedCodeDescriptor,
+      CallInterfaceDescriptor)
 };
 
 
@@ -606,6 +735,28 @@ class GrowArrayElementsDescriptor : public CallInterfaceDescriptor {
   static const Register KeyRegister();
 };
 
+
+class InterpreterPushArgsAndCallDescriptor : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR(InterpreterPushArgsAndCallDescriptor,
+                     CallInterfaceDescriptor)
+};
+
+
+class InterpreterPushArgsAndConstructDescriptor
+    : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR(InterpreterPushArgsAndConstructDescriptor,
+                     CallInterfaceDescriptor)
+};
+
+
+class InterpreterCEntryDescriptor : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR(InterpreterCEntryDescriptor, CallInterfaceDescriptor)
+};
+
+
 #undef DECLARE_DESCRIPTOR
 
 
@@ -615,8 +766,8 @@ class GrowArrayElementsDescriptor : public CallInterfaceDescriptor {
   CallDescriptors::Key name##Descriptor::key() { return CallDescriptors::name; }
 INTERFACE_DESCRIPTOR_LIST(DEF_KEY)
 #undef DEF_KEY
-}
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 
 #if V8_TARGET_ARCH_ARM64

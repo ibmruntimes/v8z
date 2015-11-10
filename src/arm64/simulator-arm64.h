@@ -8,8 +8,6 @@
 #include <stdarg.h>
 #include <vector>
 
-#include "src/v8.h"
-
 #include "src/allocation.h"
 #include "src/arm64/assembler-arm64.h"
 #include "src/arm64/decoder-arm64.h"
@@ -18,12 +16,6 @@
 #include "src/assembler.h"
 #include "src/globals.h"
 #include "src/utils.h"
-
-#define REGISTER_CODE_LIST(R)                                                  \
-R(0)  R(1)  R(2)  R(3)  R(4)  R(5)  R(6)  R(7)                                 \
-R(8)  R(9)  R(10) R(11) R(12) R(13) R(14) R(15)                                \
-R(16) R(17) R(18) R(19) R(20) R(21) R(22) R(23)                                \
-R(24) R(25) R(26) R(27) R(28) R(29) R(30) R(31)
 
 namespace v8 {
 namespace internal {
@@ -153,6 +145,13 @@ typedef SimRegisterBase SimFPRegister;    // v0-v31
 
 class Simulator : public DecoderVisitor {
  public:
+  static void FlushICache(v8::internal::HashMap* i_cache, void* start,
+                          size_t size) {
+    USE(i_cache);
+    USE(start);
+    USE(size);
+  }
+
   explicit Simulator(Decoder<DispatchingDecoderVisitor>* decoder,
                      Isolate* isolate = NULL,
                      FILE* stream = stderr);
@@ -182,8 +181,8 @@ class Simulator : public DecoderVisitor {
   // generated RegExp code with 10 parameters. These are convenience functions,
   // which set up the simulator state and grab the result on return.
   int64_t CallJS(byte* entry,
-                 byte* function_entry,
-                 JSFunction* func,
+                 Object* new_target,
+                 Object* target,
                  Object* revc,
                  int64_t argc,
                  Object*** argv);
@@ -268,7 +267,7 @@ class Simulator : public DecoderVisitor {
   uintptr_t PopAddress();
 
   // Accessor to the internal simulator stack area.
-  uintptr_t StackLimit() const;
+  uintptr_t StackLimit(uintptr_t c_limit) const;
 
   void ResetState();
 
@@ -403,7 +402,7 @@ class Simulator : public DecoderVisitor {
   }
   Instruction* lr() { return reg<Instruction*>(kLinkRegCode); }
 
-  Address get_sp() { return reg<Address>(31, Reg31IsStackPointer); }
+  Address get_sp() const { return reg<Address>(31, Reg31IsStackPointer); }
 
   template<typename T>
   T fpreg(unsigned code) const {
@@ -884,13 +883,14 @@ class Simulator : public DecoderVisitor {
 
 
 // The simulator has its own stack. Thus it has a different stack limit from
-// the C-based native code.
-// See also 'class SimulatorStack' in arm/simulator-arm.h.
+// the C-based native code.  The JS-based limit normally points near the end of
+// the simulator stack.  When the C-based limit is exhausted we reflect that by
+// lowering the JS-based limit as well, to make stack checks trigger.
 class SimulatorStack : public v8::internal::AllStatic {
  public:
   static uintptr_t JsLimitFromCLimit(v8::internal::Isolate* isolate,
                                             uintptr_t c_limit) {
-    return Simulator::current(isolate)->StackLimit();
+    return Simulator::current(isolate)->StackLimit(c_limit);
   }
 
   static uintptr_t RegisterCTryCatch(uintptr_t try_catch_address) {
@@ -905,6 +905,7 @@ class SimulatorStack : public v8::internal::AllStatic {
 
 #endif  // !defined(USE_SIMULATOR)
 
-} }  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_ARM64_SIMULATOR_ARM64_H_

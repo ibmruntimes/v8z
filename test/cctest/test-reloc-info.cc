@@ -25,6 +25,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+// TODO(mythria): Remove this define after this flag is turned on globally
+#define V8_IMMINENT_DEPRECATION_WARNINGS
 
 #include "src/assembler.h"
 #include "test/cctest/cctest.h"
@@ -45,7 +47,7 @@ TEST(Positions) {
   const int code_size = 10 * KB;
   int relocation_info_size = 10 * KB;
   const int buffer_size = code_size + relocation_info_size;
-  SmartArrayPointer<byte> buffer(new byte[buffer_size]);
+  v8::base::SmartArrayPointer<byte> buffer(new byte[buffer_size]);
 
   byte* pc = buffer.get();
   byte* buffer_end = buffer.get() + buffer_size;

@@ -2,6 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// TODO(jochen): Remove this after the setting is turned on globally.
+#define V8_IMMINENT_DEPRECATION_WARNINGS
+
 #include "src/compiler/js-context-specialization.h"
 #include "src/compiler/js-graph.h"
 #include "src/compiler/js-operator.h"
@@ -12,8 +15,9 @@
 #include "test/cctest/compiler/function-tester.h"
 #include "test/cctest/compiler/graph-builder-tester.h"
 
-using namespace v8::internal;
-using namespace v8::internal::compiler;
+namespace v8 {
+namespace internal {
+namespace compiler {
 
 class ContextSpecializationTester : public HandleAndZoneScope {
  public:
@@ -23,7 +27,8 @@ class ContextSpecializationTester : public HandleAndZoneScope {
         javascript_(main_zone()),
         machine_(main_zone()),
         simplified_(main_zone()),
-        jsgraph_(main_isolate(), graph(), common(), &javascript_, &machine_),
+        jsgraph_(main_isolate(), graph(), common(), &javascript_, &simplified_,
+                 &machine_),
         reducer_(main_zone(), graph()),
         spec_(&reducer_, jsgraph(), MaybeHandle<Context>()) {}
 
@@ -93,7 +98,7 @@ TEST(ReduceJSLoadContext) {
     Node* new_context_input = NodeProperties::GetValueInput(r.replacement(), 0);
     CHECK_EQ(IrOpcode::kHeapConstant, new_context_input->opcode());
     HeapObjectMatcher match(new_context_input);
-    CHECK_EQ(*native, *match.Value().handle());
+    CHECK_EQ(*native, *match.Value());
     ContextAccess access = OpParameter<ContextAccess>(r.replacement());
     CHECK_EQ(Context::GLOBAL_EVAL_FUN_INDEX, static_cast<int>(access.index()));
     CHECK_EQ(0, static_cast<int>(access.depth()));
@@ -110,7 +115,7 @@ TEST(ReduceJSLoadContext) {
 
     HeapObjectMatcher match(r.replacement());
     CHECK(match.HasValue());
-    CHECK_EQ(*expected, *match.Value().handle());
+    CHECK_EQ(*expected, *match.Value());
   }
 
   // TODO(titzer): test with other kinds of contexts, e.g. a function context.
@@ -140,24 +145,27 @@ TEST(ReduceJSStoreContext) {
 
   {
     // Mutable slot, constant context, depth = 0 => do nothing.
-    Node* load = t.graph()->NewNode(t.javascript()->StoreContext(0, 0),
-                                    const_context, const_context, start);
+    Node* load =
+        t.graph()->NewNode(t.javascript()->StoreContext(0, 0), const_context,
+                           const_context, const_context, start, start);
     Reduction r = t.spec()->Reduce(load);
     CHECK(!r.Changed());
   }
 
   {
     // Mutable slot, non-constant context, depth = 0 => do nothing.
-    Node* load = t.graph()->NewNode(t.javascript()->StoreContext(0, 0),
-                                    param_context, param_context, start);
+    Node* load =
+        t.graph()->NewNode(t.javascript()->StoreContext(0, 0), param_context,
+                           param_context, const_context, start, start);
     Reduction r = t.spec()->Reduce(load);
     CHECK(!r.Changed());
   }
 
   {
     // Immutable slot, constant context, depth = 0 => do nothing.
-    Node* load = t.graph()->NewNode(t.javascript()->StoreContext(0, slot),
-                                    const_context, const_context, start);
+    Node* load =
+        t.graph()->NewNode(t.javascript()->StoreContext(0, slot), const_context,
+                           const_context, const_context, start, start);
     Reduction r = t.spec()->Reduce(load);
     CHECK(!r.Changed());
   }
@@ -166,13 +174,13 @@ TEST(ReduceJSStoreContext) {
     // Mutable slot, constant context, depth > 0 => fold-in parent context.
     Node* load = t.graph()->NewNode(
         t.javascript()->StoreContext(2, Context::GLOBAL_EVAL_FUN_INDEX),
-        deep_const_context, deep_const_context, start);
+        deep_const_context, deep_const_context, const_context, start, start);
     Reduction r = t.spec()->Reduce(load);
     CHECK(r.Changed());
     Node* new_context_input = NodeProperties::GetValueInput(r.replacement(), 0);
     CHECK_EQ(IrOpcode::kHeapConstant, new_context_input->opcode());
     HeapObjectMatcher match(new_context_input);
-    CHECK_EQ(*native, *match.Value().handle());
+    CHECK_EQ(*native, *match.Value());
     ContextAccess access = OpParameter<ContextAccess>(r.replacement());
     CHECK_EQ(Context::GLOBAL_EVAL_FUN_INDEX, static_cast<int>(access.index()));
     CHECK_EQ(0, static_cast<int>(access.depth()));
@@ -219,9 +227,10 @@ TEST(SpecializeToContext) {
     Node* other_use =
         t.graph()->NewNode(t.simplified()->ChangeTaggedToInt32(), other_load);
 
-    Node* add =
-        t.graph()->NewNode(t.javascript()->Add(LanguageMode::SLOPPY), value_use,
-                           other_use, param_context, other_load, start);
+    Node* add = t.graph()->NewNode(
+        t.javascript()->Add(LanguageMode::SLOPPY), value_use, other_use,
+        param_context, t.jsgraph()->EmptyFrameState(),
+        t.jsgraph()->EmptyFrameState(), other_load, start);
 
     Node* ret =
         t.graph()->NewNode(t.common()->Return(), add, effect_use, start);
@@ -249,7 +258,7 @@ TEST(SpecializeToContext) {
     Node* replacement = value_use->InputAt(0);
     HeapObjectMatcher match(replacement);
     CHECK(match.HasValue());
-    CHECK_EQ(*expected, *match.Value().handle());
+    CHECK_EQ(*expected, *match.Value());
   }
   // TODO(titzer): clean up above test and test more complicated effects.
 }
@@ -310,3 +319,7 @@ TEST(SpecializeJSFunction_ToConstant_uninit) {
     CHECK(T.Call(T.Val(-2.1), T.Val(0.0)).ToHandleChecked()->IsNaN());
   }
 }
+
+}  // namespace compiler
+}  // namespace internal
+}  // namespace v8

@@ -26,15 +26,16 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "src/v8.h"
-
 #if V8_TARGET_ARCH_ARM64
 
 #define ARM64_DEFINE_REG_STATICS
+#include "src/arm64/assembler-arm64.h"
 
 #include "src/arm64/assembler-arm64-inl.h"
+#include "src/arm64/frames-arm64.h"
 #include "src/base/bits.h"
 #include "src/base/cpu.h"
+#include "src/register-configuration.h"
 
 namespace v8 {
 namespace internal {
@@ -53,7 +54,8 @@ void CpuFeatures::ProbeImpl(bool cross_compile) {
   // Probe for runtime features
   base::CPU cpu;
   if (cpu.implementer() == base::CPU::NVIDIA &&
-      cpu.variant() == base::CPU::NVIDIA_DENVER) {
+      cpu.variant() == base::CPU::NVIDIA_DENVER &&
+      cpu.part() <= base::CPU::NVIDIA_DENVER_V10) {
     supported_ |= 1u << COHERENT_CACHE;
   }
 }
@@ -108,17 +110,17 @@ void CPURegList::RemoveCalleeSaved() {
 }
 
 
-CPURegList CPURegList::GetCalleeSaved(unsigned size) {
+CPURegList CPURegList::GetCalleeSaved(int size) {
   return CPURegList(CPURegister::kRegister, size, 19, 29);
 }
 
 
-CPURegList CPURegList::GetCalleeSavedFP(unsigned size) {
+CPURegList CPURegList::GetCalleeSavedFP(int size) {
   return CPURegList(CPURegister::kFPRegister, size, 8, 15);
 }
 
 
-CPURegList CPURegList::GetCallerSaved(unsigned size) {
+CPURegList CPURegList::GetCallerSaved(int size) {
   // Registers x0-x18 and lr (x30) are caller-saved.
   CPURegList list = CPURegList(CPURegister::kRegister, size, 0, 18);
   list.Combine(lr);
@@ -126,7 +128,7 @@ CPURegList CPURegList::GetCallerSaved(unsigned size) {
 }
 
 
-CPURegList CPURegList::GetCallerSavedFP(unsigned size) {
+CPURegList CPURegList::GetCallerSavedFP(int size) {
   // Registers d0-d7 and d16-d31 are caller-saved.
   CPURegList list = CPURegList(CPURegister::kFPRegister, size, 0, 7);
   list.Combine(CPURegList(CPURegister::kFPRegister, size, 16, 31));
@@ -191,8 +193,11 @@ bool RelocInfo::IsInConstantPool() {
 Register GetAllocatableRegisterThatIsNotOneOf(Register reg1, Register reg2,
                                               Register reg3, Register reg4) {
   CPURegList regs(reg1, reg2, reg3, reg4);
-  for (int i = 0; i < Register::NumAllocatableRegisters(); i++) {
-    Register candidate = Register::FromAllocationIndex(i);
+  const RegisterConfiguration* config =
+      RegisterConfiguration::ArchDefault(RegisterConfiguration::CRANKSHAFT);
+  for (int i = 0; i < config->num_allocatable_double_registers(); ++i) {
+    int code = config->GetAllocatableDoubleCode(i);
+    Register candidate = Register::from_code(code);
     if (regs.IncludesAliasOf(candidate)) continue;
     return candidate;
   }
@@ -1274,10 +1279,8 @@ void Assembler::rorv(const Register& rd,
 
 
 // Bitfield operations.
-void Assembler::bfm(const Register& rd,
-                     const Register& rn,
-                     unsigned immr,
-                     unsigned imms) {
+void Assembler::bfm(const Register& rd, const Register& rn, int immr,
+                    int imms) {
   DCHECK(rd.SizeInBits() == rn.SizeInBits());
   Instr N = SF(rd) >> (kSFOffset - kBitfieldNOffset);
   Emit(SF(rd) | BFM | N |
@@ -1287,10 +1290,8 @@ void Assembler::bfm(const Register& rd,
 }
 
 
-void Assembler::sbfm(const Register& rd,
-                     const Register& rn,
-                     unsigned immr,
-                     unsigned imms) {
+void Assembler::sbfm(const Register& rd, const Register& rn, int immr,
+                     int imms) {
   DCHECK(rd.Is64Bits() || rn.Is32Bits());
   Instr N = SF(rd) >> (kSFOffset - kBitfieldNOffset);
   Emit(SF(rd) | SBFM | N |
@@ -1300,10 +1301,8 @@ void Assembler::sbfm(const Register& rd,
 }
 
 
-void Assembler::ubfm(const Register& rd,
-                     const Register& rn,
-                     unsigned immr,
-                     unsigned imms) {
+void Assembler::ubfm(const Register& rd, const Register& rn, int immr,
+                     int imms) {
   DCHECK(rd.SizeInBits() == rn.SizeInBits());
   Instr N = SF(rd) >> (kSFOffset - kBitfieldNOffset);
   Emit(SF(rd) | UBFM | N |
@@ -1313,10 +1312,8 @@ void Assembler::ubfm(const Register& rd,
 }
 
 
-void Assembler::extr(const Register& rd,
-                     const Register& rn,
-                     const Register& rm,
-                     unsigned lsb) {
+void Assembler::extr(const Register& rd, const Register& rn, const Register& rm,
+                     int lsb) {
   DCHECK(rd.SizeInBits() == rn.SizeInBits());
   DCHECK(rd.SizeInBits() == rm.SizeInBits());
   Instr N = SF(rd) >> (kSFOffset - kBitfieldNOffset);
@@ -1624,37 +1621,6 @@ void Assembler::LoadStorePair(const CPURegister& rt,
     }
   }
   Emit(addrmodeop | memop);
-}
-
-
-void Assembler::ldnp(const CPURegister& rt,
-                     const CPURegister& rt2,
-                     const MemOperand& src) {
-  LoadStorePairNonTemporal(rt, rt2, src,
-                           LoadPairNonTemporalOpFor(rt, rt2));
-}
-
-
-void Assembler::stnp(const CPURegister& rt,
-                     const CPURegister& rt2,
-                     const MemOperand& dst) {
-  LoadStorePairNonTemporal(rt, rt2, dst,
-                           StorePairNonTemporalOpFor(rt, rt2));
-}
-
-
-void Assembler::LoadStorePairNonTemporal(const CPURegister& rt,
-                                         const CPURegister& rt2,
-                                         const MemOperand& addr,
-                                         LoadStorePairNonTemporalOp op) {
-  DCHECK(!rt.Is(rt2));
-  DCHECK(AreSameSizeAndType(rt, rt2));
-  DCHECK(addr.IsImmediateOffset());
-  LSDataSize size = CalcLSPairDataSize(
-    static_cast<LoadStorePairOp>(op & LoadStorePairMask));
-  DCHECK(IsImmLSPair(addr.offset(), size));
-  int offset = static_cast<int>(addr.offset());
-  Emit(op | Rt(rt) | Rt2(rt2) | RnSP(addr.base()) | ImmLSPair(offset, size));
 }
 
 
@@ -2901,21 +2867,18 @@ void Assembler::GrowBuffer() {
 void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
   // We do not try to reuse pool constants.
   RelocInfo rinfo(reinterpret_cast<byte*>(pc_), rmode, data, NULL);
-  if (((rmode >= RelocInfo::JS_RETURN) &&
-       (rmode <= RelocInfo::DEBUG_BREAK_SLOT)) ||
+  if (((rmode >= RelocInfo::COMMENT) &&
+       (rmode <= RelocInfo::DEBUG_BREAK_SLOT_AT_CONSTRUCT_CALL)) ||
       (rmode == RelocInfo::INTERNAL_REFERENCE) ||
-      (rmode == RelocInfo::CONST_POOL) ||
-      (rmode == RelocInfo::VENEER_POOL) ||
-      (rmode == RelocInfo::DEOPT_REASON)) {
+      (rmode == RelocInfo::CONST_POOL) || (rmode == RelocInfo::VENEER_POOL) ||
+      (rmode == RelocInfo::DEOPT_REASON) ||
+      (rmode == RelocInfo::GENERATOR_CONTINUATION)) {
     // Adjust code for new modes.
-    DCHECK(RelocInfo::IsDebugBreakSlot(rmode)
-           || RelocInfo::IsJSReturn(rmode)
-           || RelocInfo::IsComment(rmode)
-           || RelocInfo::IsDeoptReason(rmode)
-           || RelocInfo::IsPosition(rmode)
-           || RelocInfo::IsInternalReference(rmode)
-           || RelocInfo::IsConstPool(rmode)
-           || RelocInfo::IsVeneerPool(rmode));
+    DCHECK(RelocInfo::IsDebugBreakSlot(rmode) || RelocInfo::IsComment(rmode) ||
+           RelocInfo::IsDeoptReason(rmode) || RelocInfo::IsPosition(rmode) ||
+           RelocInfo::IsInternalReference(rmode) ||
+           RelocInfo::IsConstPool(rmode) || RelocInfo::IsVeneerPool(rmode) ||
+           RelocInfo::IsGeneratorContinuation(rmode));
     // These modes do not need an entry in the constant pool.
   } else {
     constpool_.RecordEntry(data, rmode);

@@ -2,6 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// TODO(jochen): Remove this after the setting is turned on globally.
+#define V8_IMMINENT_DEPRECATION_WARNINGS
+
 #include "src/codegen.h"
 #include "src/compiler/all-nodes.h"
 #include "src/compiler/common-operator.h"
@@ -13,8 +16,9 @@
 #include "src/compiler/osr.h"
 #include "test/cctest/cctest.h"
 
-using namespace v8::internal;
-using namespace v8::internal::compiler;
+namespace v8 {
+namespace internal {
+namespace compiler {
 
 // TODO(titzer): move this method to a common testing place.
 
@@ -48,7 +52,7 @@ class OsrDeconstructorTester : public HandleAndZoneScope {
       : isolate(main_isolate()),
         common(main_zone()),
         graph(main_zone()),
-        jsgraph(main_isolate(), &graph, &common, NULL, NULL),
+        jsgraph(main_isolate(), &graph, &common, nullptr, nullptr, nullptr),
         start(graph.NewNode(common.Start(1))),
         p0(graph.NewNode(common.Parameter(0), start)),
         end(graph.NewNode(common.End(1), start)),
@@ -93,22 +97,16 @@ class OsrDeconstructorTester : public HandleAndZoneScope {
     return graph.NewNode(common.Phi(kMachAnyTagged, count), count + 1, inputs);
   }
 
-  Node* NewLoop(bool is_osr, int num_backedges, Node* entry = NULL) {
-    CHECK_LT(num_backedges, 4);
-    CHECK_GE(num_backedges, 0);
-    int count = 1 + num_backedges;
-    if (entry == NULL) entry = osr_normal_entry;
-    Node* inputs[5] = {entry, self, self, self, self};
+  Node* NewLoop(bool is_osr, int num_backedges, Node* entry = nullptr) {
+    if (entry == nullptr) entry = osr_normal_entry;
+    Node* loop = graph.NewNode(common.Loop(1), entry);
     if (is_osr) {
-      count = 2 + num_backedges;
-      inputs[1] = osr_loop_entry;
+      loop->AppendInput(graph.zone(), osr_loop_entry);
     }
-
-    Node* loop = graph.NewNode(common.Loop(count), count, inputs);
-    for (int i = 0; i < loop->InputCount(); i++) {
-      if (loop->InputAt(i) == self) loop->ReplaceInput(i, loop);
+    for (int i = 0; i < num_backedges; i++) {
+      loop->AppendInput(graph.zone(), loop);
     }
-
+    NodeProperties::ChangeOp(loop, common.Loop(loop->InputCount()));
     return loop;
   }
 
@@ -497,8 +495,7 @@ TEST(Deconstruct_osr_nested3) {
   loop0.branch->ReplaceInput(0, loop0_cntr);
 
   // middle loop.
-  Node* loop1 = T.graph.NewNode(T.common.Loop(2), loop0.if_true, T.self);
-  loop1->ReplaceInput(0, loop0.if_true);
+  Node* loop1 = T.graph.NewNode(T.common.Loop(1), loop0.if_true);
   Node* loop1_phi = T.graph.NewNode(T.common.Phi(kMachAnyTagged, 2), loop0_cntr,
                                     loop0_cntr, loop1);
 
@@ -521,7 +518,8 @@ TEST(Deconstruct_osr_nested3) {
   Node* if_false = T.graph.NewNode(T.common.IfFalse(), branch);
 
   loop0.loop->ReplaceInput(1, if_true);
-  loop1->ReplaceInput(1, if_false);
+  loop1->AppendInput(T.graph.zone(), if_false);
+  NodeProperties::ChangeOp(loop1, T.common.Loop(2));
 
   Node* ret =
       T.graph.NewNode(T.common.Return(), loop0_cntr, T.start, loop0.exit);
@@ -569,3 +567,7 @@ TEST(Deconstruct_osr_nested3) {
   // depends on the copy of the outer loop0.
   CheckInputs(new_ret, new_loop0_phi, T.graph.start(), new_loop0_exit);
 }
+
+}  // namespace compiler
+}  // namespace internal
+}  // namespace v8

@@ -5,11 +5,17 @@
 #ifndef V8_ACCESSORS_H_
 #define V8_ACCESSORS_H_
 
+#include "include/v8.h"
 #include "src/allocation.h"
 #include "src/globals.h"
+#include "src/handles.h"
+#include "src/property-details.h"
 
 namespace v8 {
 namespace internal {
+
+// Forward declarations.
+class ExecutableAccessorInfo;
 
 // The list of accessor descriptors. This is a second-order macro
 // taking a macro to be applied to all accessor descriptor names.
@@ -100,6 +106,7 @@ class Accessors : public AllStatic {
       Handle<ExecutableAccessorInfo> accessor);
 };
 
-} }  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_ACCESSORS_H_

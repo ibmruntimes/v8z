@@ -44,8 +44,9 @@
   V(Phi)                 \
   V(EffectSet)           \
   V(EffectPhi)           \
-  V(ValueEffect)         \
-  V(Finish)              \
+  V(Guard)               \
+  V(BeginRegion)         \
+  V(FinishRegion)        \
   V(FrameState)          \
   V(StateValues)         \
   V(TypedStateValues)    \
@@ -109,6 +110,7 @@
 
 #define JS_OBJECT_OP_LIST(V) \
   V(JSCreate)                \
+  V(JSCreateArguments)       \
   V(JSCreateClosure)         \
   V(JSCreateLiteralArray)    \
   V(JSCreateLiteralObject)   \
@@ -125,8 +127,7 @@
 #define JS_CONTEXT_OP_LIST(V) \
   V(JSLoadContext)            \
   V(JSStoreContext)           \
-  V(JSLoadDynamicGlobal)      \
-  V(JSLoadDynamicContext)     \
+  V(JSLoadDynamic)            \
   V(JSCreateFunctionContext)  \
   V(JSCreateCatchContext)     \
   V(JSCreateWithContext)      \
@@ -138,10 +139,13 @@
   V(JSCallConstruct)        \
   V(JSCallFunction)         \
   V(JSCallRuntime)          \
+  V(JSConvertReceiver)      \
   V(JSForInDone)            \
   V(JSForInNext)            \
   V(JSForInPrepare)         \
   V(JSForInStep)            \
+  V(JSLoadMessage)          \
+  V(JSStoreMessage)         \
   V(JSYield)                \
   V(JSStackCheck)
 
@@ -171,6 +175,9 @@
   V(NumberMultiply)                \
   V(NumberDivide)                  \
   V(NumberModulus)                 \
+  V(NumberBitwiseOr)               \
+  V(NumberBitwiseXor)              \
+  V(NumberBitwiseAnd)              \
   V(NumberShiftLeft)               \
   V(NumberShiftRight)              \
   V(NumberShiftRightLogical)       \
@@ -192,8 +199,8 @@
   V(StoreField)                    \
   V(StoreBuffer)                   \
   V(StoreElement)                  \
-  V(ObjectIsSmi)                   \
-  V(ObjectIsNonNegativeSmi)
+  V(ObjectIsNumber)                \
+  V(ObjectIsSmi)
 
 // Opcodes for Machine-level operators.
 #define MACHINE_COMPARE_BINOP_LIST(V) \
@@ -226,6 +233,8 @@
   V(Word32Sar)                  \
   V(Word32Ror)                  \
   V(Word32Clz)                  \
+  V(Word32Ctz)                  \
+  V(Word32Popcnt)               \
   V(Word64And)                  \
   V(Word64Or)                   \
   V(Word64Xor)                  \
@@ -233,6 +242,7 @@
   V(Word64Shr)                  \
   V(Word64Sar)                  \
   V(Word64Ror)                  \
+  V(Word64Clz)                  \
   V(Int32Add)                   \
   V(Int32AddWithOverflow)       \
   V(Int32Sub)                   \
@@ -261,6 +271,11 @@
   V(TruncateFloat64ToFloat32)   \
   V(TruncateFloat64ToInt32)     \
   V(TruncateInt64ToInt32)       \
+  V(RoundInt64ToFloat64)        \
+  V(BitcastFloat32ToInt32)      \
+  V(BitcastFloat64ToInt64)      \
+  V(BitcastInt32ToFloat32)      \
+  V(BitcastInt64ToFloat64)      \
   V(Float32Add)                 \
   V(Float32Sub)                 \
   V(Float32Mul)                 \

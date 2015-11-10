@@ -3,21 +3,12 @@
 # found in the LICENSE file.
 
 
-import hashlib
 import os
 import shutil
 import sys
-import tarfile
-import imp
 
 from testrunner.local import testsuite
-from testrunner.local import utils
 from testrunner.objects import testcase
-
-SIMDJS_ARCHIVE_REVISION = "07e2713e0c9ea19feb0732d5bd84770c87310d79"
-SIMDJS_ARCHIVE_MD5 = "cf6bddf99f18800b68e782054268ee3c"
-SIMDJS_URL = (
-    "https://github.com/johnmccutchan/ecmascript_simd/archive/%s.tar.gz")
 
 SIMDJS_SUITE_PATH = ["data", "src"]
 
@@ -45,7 +36,7 @@ class SimdJsTestSuite(testsuite.TestSuite):
   def GetFlagsForTestCase(self, testcase, context):
     return (testcase.flags + context.mode_flags +
             [os.path.join(self.root, "harness-adapt.js"),
-             "--harmony",
+             "--harmony", "--harmony-simd",
              os.path.join(self.testroot, testcase.path + ".js"),
              os.path.join(self.root, "harness-finish.js")])
 
@@ -63,38 +54,19 @@ class SimdJsTestSuite(testsuite.TestSuite):
     return "FAILED!" in output.stdout
 
   def DownloadData(self):
-    revision = SIMDJS_ARCHIVE_REVISION
-    archive_url = SIMDJS_URL % revision
-    archive_name = os.path.join(
-        self.root, "ecmascript_simd-%s.tar.gz" % revision)
-    directory_name = os.path.join(self.root, "data")
+    print "SimdJs download is deprecated. It's part of DEPS."
+
+    # Clean up old directories and archive files.
     directory_old_name = os.path.join(self.root, "data.old")
-    if not os.path.exists(archive_name):
-      print "Downloading test data from %s ..." % archive_url
-      utils.URLRetrieve(archive_url, archive_name)
-      if os.path.exists(directory_name):
-        if os.path.exists(directory_old_name):
-          shutil.rmtree(directory_old_name)
-        os.rename(directory_name, directory_old_name)
-    if not os.path.exists(directory_name):
-      print "Extracting ecmascript_simd-%s.tar.gz ..." % revision
-      md5 = hashlib.md5()
-      with open(archive_name, "rb") as f:
-        for chunk in iter(lambda: f.read(8192), ""):
-          md5.update(chunk)
-      print "MD5 hash is %s" % md5.hexdigest()
-      if md5.hexdigest() != SIMDJS_ARCHIVE_MD5:
-        os.remove(archive_name)
-        print "MD5 expected %s" % SIMDJS_ARCHIVE_MD5
-        raise Exception("MD5 hash mismatch of test data file")
-      archive = tarfile.open(archive_name, "r:gz")
-      if sys.platform in ("win32", "cygwin"):
-        # Magic incantation to allow longer path names on Windows.
-        archive.extractall(u"\\\\?\\%s" % self.root)
-      else:
-        archive.extractall(self.root)
-      os.rename(os.path.join(self.root, "ecmascript_simd-%s" % revision),
-                directory_name)
+    if os.path.exists(directory_old_name):
+      shutil.rmtree(directory_old_name)
+
+    archive_files = [f for f in os.listdir(self.root)
+                     if f.startswith("ecmascript_simd-")]
+    if len(archive_files) > 0:
+      print "Clobber outdated test archives ..."
+      for f in archive_files:
+        os.remove(os.path.join(self.root, f))
 
 
 def GetSuite(name, root):

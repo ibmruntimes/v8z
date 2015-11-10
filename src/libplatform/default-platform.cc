@@ -155,8 +155,18 @@ void DefaultPlatform::CallDelayedOnForegroundThread(Isolate* isolate,
 }
 
 
+void DefaultPlatform::CallIdleOnForegroundThread(Isolate* isolate,
+                                                 IdleTask* task) {
+  UNREACHABLE();
+}
+
+
+bool DefaultPlatform::IdleTasksEnabled(Isolate* isolate) { return false; }
+
+
 double DefaultPlatform::MonotonicallyIncreasingTime() {
   return base::TimeTicks::HighResolutionNow().ToInternalValue() /
          static_cast<double>(base::Time::kMicrosecondsPerSecond);
 }
-} }  // namespace v8::platform
+}  // namespace platform
+}  // namespace v8

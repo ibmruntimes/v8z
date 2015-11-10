@@ -9,7 +9,7 @@
 #include "src/compiler/linkage.h"
 #include "src/compiler/opcodes.h"
 #include "src/compiler/operator.h"
-#include "src/unique.h"
+#include "src/handles-inl.h"
 #include "src/zone.h"
 
 namespace v8 {
@@ -123,10 +123,17 @@ std::ostream& operator<<(std::ostream& os, ParameterInfo const& i) {
   V(IfDefault, Operator::kKontrol, 0, 0, 1, 0, 0, 1)       \
   V(Throw, Operator::kKontrol, 1, 1, 1, 0, 0, 1)           \
   V(Deoptimize, Operator::kNoThrow, 1, 1, 1, 0, 0, 1)      \
-  V(Return, Operator::kNoThrow, 1, 1, 1, 0, 0, 1)          \
   V(Terminate, Operator::kKontrol, 0, 1, 1, 0, 0, 1)       \
   V(OsrNormalEntry, Operator::kFoldable, 0, 1, 1, 0, 1, 1) \
-  V(OsrLoopEntry, Operator::kFoldable, 0, 1, 1, 0, 1, 1)
+  V(OsrLoopEntry, Operator::kFoldable, 0, 1, 1, 0, 1, 1)   \
+  V(BeginRegion, Operator::kNoThrow, 0, 1, 0, 0, 1, 0)     \
+  V(FinishRegion, Operator::kNoThrow, 1, 1, 0, 1, 1, 0)
+
+
+#define CACHED_RETURN_LIST(V) \
+  V(1)                        \
+  V(2)                        \
+  V(3)
 
 
 #define CACHED_END_LIST(V) \
@@ -248,6 +255,19 @@ struct CommonOperatorGlobalCache final {
   EndOperator<input_count> kEnd##input_count##Operator;
   CACHED_END_LIST(CACHED_END)
 #undef CACHED_END
+
+  template <size_t kInputCount>
+  struct ReturnOperator final : public Operator {
+    ReturnOperator()
+        : Operator(                                   // --
+              IrOpcode::kReturn, Operator::kNoThrow,  // opcode
+              "Return",                               // name
+              kInputCount, 1, 1, 0, 0, 1) {}          // counts
+  };
+#define CACHED_RETURN(input_count) \
+  ReturnOperator<input_count> kReturn##input_count##Operator;
+  CACHED_RETURN_LIST(CACHED_RETURN)
+#undef CACHED_RETURN
 
   template <BranchHint kBranchHint>
   struct BranchOperator final : public Operator1<BranchHint> {
@@ -394,6 +414,24 @@ const Operator* CommonOperatorBuilder::End(size_t control_input_count) {
       IrOpcode::kEnd, Operator::kKontrol,   // opcode
       "End",                                // name
       0, 0, control_input_count, 0, 0, 0);  // counts
+}
+
+
+const Operator* CommonOperatorBuilder::Return(int value_input_count) {
+  switch (value_input_count) {
+#define CACHED_RETURN(input_count) \
+  case input_count:                \
+    return &cache_.kReturn##input_count##Operator;
+    CACHED_RETURN_LIST(CACHED_RETURN)
+#undef CACHED_RETURN
+    default:
+      break;
+  }
+  // Uncached.
+  return new (zone()) Operator(               //--
+      IrOpcode::kReturn, Operator::kNoThrow,  // opcode
+      "Return",                               // name
+      value_input_count, 1, 1, 0, 0, 1);      // counts
 }
 
 
@@ -575,12 +613,14 @@ const Operator* CommonOperatorBuilder::NumberConstant(volatile double value) {
 
 
 const Operator* CommonOperatorBuilder::HeapConstant(
-    const Unique<HeapObject>& value) {
-  return new (zone()) Operator1<Unique<HeapObject>>(  // --
-      IrOpcode::kHeapConstant, Operator::kPure,       // opcode
-      "HeapConstant",                                 // name
-      0, 0, 0, 1, 0, 0,                               // counts
-      value);                                         // parameter
+    const Handle<HeapObject>& value) {
+  return new (zone())
+      Operator1<Handle<HeapObject>, Handle<HeapObject>::equal_to,
+                Handle<HeapObject>::hash>(           // --
+          IrOpcode::kHeapConstant, Operator::kPure,  // opcode
+          "HeapConstant",                            // name
+          0, 0, 0, 1, 0, 0,                          // counts
+          value);                                    // parameter
 }
 
 
@@ -631,30 +671,21 @@ const Operator* CommonOperatorBuilder::EffectPhi(int effect_input_count) {
 }
 
 
+const Operator* CommonOperatorBuilder::Guard(Type* type) {
+  return new (zone()) Operator1<Type*>(      // --
+      IrOpcode::kGuard, Operator::kKontrol,  // opcode
+      "Guard",                               // name
+      1, 0, 1, 1, 0, 0,                      // counts
+      type);                                 // parameter
+}
+
+
 const Operator* CommonOperatorBuilder::EffectSet(int arguments) {
   DCHECK(arguments > 1);                      // Disallow empty/singleton sets.
   return new (zone()) Operator(               // --
       IrOpcode::kEffectSet, Operator::kPure,  // opcode
       "EffectSet",                            // name
       0, arguments, 0, 0, 1, 0);              // counts
-}
-
-
-const Operator* CommonOperatorBuilder::ValueEffect(int arguments) {
-  DCHECK(arguments > 0);                        // Disallow empty value effects.
-  return new (zone()) Operator(                 // --
-      IrOpcode::kValueEffect, Operator::kPure,  // opcode
-      "ValueEffect",                            // name
-      arguments, 0, 0, 0, 1, 0);                // counts
-}
-
-
-const Operator* CommonOperatorBuilder::Finish(int arguments) {
-  DCHECK(arguments > 0);                   // Disallow empty finishes.
-  return new (zone()) Operator(            // --
-      IrOpcode::kFinish, Operator::kPure,  // opcode
-      "Finish",                            // name
-      1, arguments, 0, 1, 0, 0);           // counts
 }
 
 
@@ -718,6 +749,11 @@ const Operator* CommonOperatorBuilder::Call(const CallDescriptor* descriptor) {
 }
 
 
+const Operator* CommonOperatorBuilder::LazyBailout() {
+  return Call(Linkage::GetLazyBailoutDescriptor(zone()));
+}
+
+
 const Operator* CommonOperatorBuilder::TailCall(
     const CallDescriptor* descriptor) {
   class TailCallOperator final : public Operator1<const CallDescriptor*> {
@@ -776,9 +812,11 @@ const Operator* CommonOperatorBuilder::ResizeMergeOrPhi(const Operator* op,
 const FrameStateFunctionInfo*
 CommonOperatorBuilder::CreateFrameStateFunctionInfo(
     FrameStateType type, int parameter_count, int local_count,
-    Handle<SharedFunctionInfo> shared_info) {
+    Handle<SharedFunctionInfo> shared_info,
+    ContextCallingMode context_calling_mode) {
   return new (zone()->New(sizeof(FrameStateFunctionInfo)))
-      FrameStateFunctionInfo(type, parameter_count, local_count, shared_info);
+      FrameStateFunctionInfo(type, parameter_count, local_count, shared_info,
+                             context_calling_mode);
 }
 
 }  // namespace compiler

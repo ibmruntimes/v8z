@@ -6,6 +6,8 @@
 #include "src/compiler/graph.h"
 #include "src/compiler/node-properties.h"
 #include "src/compiler/operator-properties.h"
+#include "src/compiler/verifier.h"
+#include "src/types-inl.h"
 
 namespace v8 {
 namespace internal {
@@ -129,6 +131,13 @@ bool NodeProperties::IsExceptionalCall(Node* node) {
 
 
 // static
+void NodeProperties::ReplaceValueInput(Node* node, Node* value, int index) {
+  DCHECK(index < node->op()->ValueInputCount());
+  node->ReplaceInput(FirstValueIndex(node) + index, value);
+}
+
+
+// static
 void NodeProperties::ReplaceContextInput(Node* node, Node* context) {
   node->ReplaceInput(FirstContextIndex(node), context);
 }
@@ -152,6 +161,13 @@ void NodeProperties::ReplaceFrameStateInput(Node* node, int index,
                                             Node* frame_state) {
   DCHECK_LT(index, OperatorProperties::GetFrameStateInputCount(node->op()));
   node->ReplaceInput(FirstFrameStateIndex(node) + index, frame_state);
+}
+
+
+// static
+void NodeProperties::RemoveFrameStateInput(Node* node, int index) {
+  DCHECK_LT(index, OperatorProperties::GetFrameStateInputCount(node->op()));
+  node->RemoveInput(FirstFrameStateIndex(node) + index);
 }
 
 
@@ -192,6 +208,13 @@ void NodeProperties::ReplaceUses(Node* node, Node* value, Node* effect,
       edge.UpdateTo(value);
     }
   }
+}
+
+
+// static
+void NodeProperties::ChangeOp(Node* node, const Operator* new_op) {
+  node->set_op(new_op);
+  Verifier::VerifyNode(node);
 }
 
 
@@ -257,6 +280,12 @@ void NodeProperties::CollectControlProjections(Node* node, Node** projections,
     DCHECK_NOT_NULL(projections[index]);
   }
 #endif
+}
+
+
+// static
+Type* NodeProperties::GetTypeOrAny(Node* node) {
+  return IsTyped(node) ? node->type() : Type::Any();
 }
 
 

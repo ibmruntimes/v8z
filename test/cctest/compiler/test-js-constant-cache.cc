@@ -2,7 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/v8.h"
+// TODO(jochen): Remove this after the setting is turned on globally.
+#define V8_IMMINENT_DEPRECATION_WARNINGS
 
 #include "src/assembler.h"
 #include "src/compiler/js-graph.h"
@@ -12,8 +13,9 @@
 #include "test/cctest/cctest.h"
 #include "test/cctest/compiler/value-helper.h"
 
-using namespace v8::internal;
-using namespace v8::internal::compiler;
+namespace v8 {
+namespace internal {
+namespace compiler {
 
 class JSCacheTesterHelper {
  protected:
@@ -39,17 +41,18 @@ class JSConstantCacheTester : public HandleAndZoneScope,
   JSConstantCacheTester()
       : JSCacheTesterHelper(main_isolate(), main_zone()),
         JSGraph(main_isolate(), &main_graph_, &main_common_, &main_javascript_,
-                &main_machine_) {
+                nullptr, &main_machine_) {
     main_graph_.SetStart(main_graph_.NewNode(common()->Start(0)));
-    main_graph_.SetEnd(main_graph_.NewNode(common()->End(1)));
+    main_graph_.SetEnd(
+        main_graph_.NewNode(common()->End(1), main_graph_.start()));
     main_typer_.Run();
   }
 
-  Type* upper(Node* node) { return NodeProperties::GetBounds(node).upper; }
+  Type* TypeOf(Node* node) { return NodeProperties::GetType(node); }
 
-  Handle<Object> handle(Node* node) {
+  Handle<HeapObject> handle(Node* node) {
     CHECK_EQ(IrOpcode::kHeapConstant, node->opcode());
-    return OpParameter<Unique<Object> >(node).handle();
+    return OpParameter<Handle<HeapObject>>(node);
   }
 
   Factory* factory() { return main_isolate()->factory(); }
@@ -69,7 +72,7 @@ TEST(ZeroConstant1) {
   CHECK_NE(zero, T.Float64Constant(0));
   CHECK_NE(zero, T.Int32Constant(0));
 
-  Type* t = T.upper(zero);
+  Type* t = T.TypeOf(zero);
 
   CHECK(t->Is(Type::Number()));
   CHECK(t->Is(Type::Integral32()));
@@ -90,7 +93,7 @@ TEST(MinusZeroConstant) {
   CHECK_EQ(minus_zero, T.Constant(-0.0));
   CHECK_NE(zero, minus_zero);
 
-  Type* t = T.upper(minus_zero);
+  Type* t = T.TypeOf(minus_zero);
 
   CHECK(t->Is(Type::Number()));
   CHECK(t->Is(Type::MinusZero()));
@@ -123,7 +126,7 @@ TEST(ZeroConstant2) {
   CHECK_NE(zero, T.Float64Constant(0));
   CHECK_NE(zero, T.Int32Constant(0));
 
-  Type* t = T.upper(zero);
+  Type* t = T.TypeOf(zero);
 
   CHECK(t->Is(Type::Number()));
   CHECK(t->Is(Type::Integral32()));
@@ -148,7 +151,7 @@ TEST(OneConstant1) {
   CHECK_NE(one, T.Float64Constant(1.0));
   CHECK_NE(one, T.Int32Constant(1));
 
-  Type* t = T.upper(one);
+  Type* t = T.TypeOf(one);
 
   CHECK(t->Is(Type::Number()));
   CHECK(t->Is(Type::Integral32()));
@@ -173,7 +176,7 @@ TEST(OneConstant2) {
   CHECK_NE(one, T.Float64Constant(1.0));
   CHECK_NE(one, T.Int32Constant(1));
 
-  Type* t = T.upper(one);
+  Type* t = T.TypeOf(one);
 
   CHECK(t->Is(Type::Number()));
   CHECK(t->Is(Type::Integral32()));
@@ -233,7 +236,7 @@ TEST(NumberTypes) {
   FOR_FLOAT64_INPUTS(i) {
     double value = *i;
     Node* node = T.Constant(value);
-    CHECK(T.upper(node)->Is(Type::Of(value, T.main_zone())));
+    CHECK(T.TypeOf(node)->Is(Type::Of(value, T.main_zone())));
   }
 }
 
@@ -280,15 +283,15 @@ TEST(OddballValues) {
 TEST(OddballTypes) {
   JSConstantCacheTester T;
 
-  CHECK(T.upper(T.UndefinedConstant())->Is(Type::Undefined()));
+  CHECK(T.TypeOf(T.UndefinedConstant())->Is(Type::Undefined()));
   // TODO(dcarney): figure this out.
-  // CHECK(T.upper(T.TheHoleConstant())->Is(Type::Internal()));
-  CHECK(T.upper(T.TrueConstant())->Is(Type::Boolean()));
-  CHECK(T.upper(T.FalseConstant())->Is(Type::Boolean()));
-  CHECK(T.upper(T.NullConstant())->Is(Type::Null()));
-  CHECK(T.upper(T.ZeroConstant())->Is(Type::Number()));
-  CHECK(T.upper(T.OneConstant())->Is(Type::Number()));
-  CHECK(T.upper(T.NaNConstant())->Is(Type::NaN()));
+  // CHECK(T.TypeOf(T.TheHoleConstant())->Is(Type::Internal()));
+  CHECK(T.TypeOf(T.TrueConstant())->Is(Type::Boolean()));
+  CHECK(T.TypeOf(T.FalseConstant())->Is(Type::Boolean()));
+  CHECK(T.TypeOf(T.NullConstant())->Is(Type::Null()));
+  CHECK(T.TypeOf(T.ZeroConstant())->Is(Type::Number()));
+  CHECK(T.TypeOf(T.OneConstant())->Is(Type::Number()));
+  CHECK(T.TypeOf(T.NaNConstant())->Is(Type::NaN()));
 }
 
 
@@ -472,3 +475,7 @@ TEST(JSGraph_GetCachedNodes_together) {
     CHECK(Contains(&nodes, constants[i]));
   }
 }
+
+}  // namespace compiler
+}  // namespace internal
+}  // namespace v8

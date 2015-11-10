@@ -9,6 +9,7 @@
 #include "src/compiler/graph-reducer.h"
 #include "src/compiler/node.h"
 #include "src/compiler/node-properties.h"
+#include "src/compiler/verifier.h"
 
 namespace v8 {
 namespace internal {
@@ -20,6 +21,9 @@ enum class GraphReducer::State : uint8_t {
   kOnStack,
   kVisited
 };
+
+
+void Reducer::Finalize() {}
 
 
 GraphReducer::GraphReducer(Zone* zone, Graph* graph, Node* dead)
@@ -57,7 +61,11 @@ void GraphReducer::ReduceNode(Node* node) {
         Push(node);
       }
     } else {
-      break;
+      // Run all finalizers.
+      for (Reducer* const reducer : reducers_) reducer->Finalize();
+
+      // Check if we have new nodes to revisit.
+      if (revisit_.empty()) break;
     }
   }
   DCHECK(revisit_.empty());
@@ -167,6 +175,7 @@ void GraphReducer::Replace(Node* node, Node* replacement, NodeId max_id) {
     // {replacement} was already reduced and finish.
     for (Edge edge : node->use_edges()) {
       Node* const user = edge.from();
+      Verifier::VerifyEdgeInputReplacement(edge, replacement);
       edge.UpdateTo(replacement);
       // Don't revisit this node if it refers to itself.
       if (user != node) Revisit(user);

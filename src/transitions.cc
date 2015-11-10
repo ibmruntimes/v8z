@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/v8.h"
+#include "src/transitions.h"
 
-#include "src/objects.h"
+#include "src/objects-inl.h"
 #include "src/transitions-inl.h"
 #include "src/utils.h"
 
@@ -106,10 +106,9 @@ void TransitionArray::Insert(Handle<Map> map, Handle<Name> name,
   }
 
   // We're gonna need a bigger TransitionArray.
-  Handle<TransitionArray> result =
-      Allocate(map->GetIsolate(), new_nof,
-               Map::SlackForArraySize(false, number_of_transitions,
-                                      kMaxNumberOfTransitions));
+  Handle<TransitionArray> result = Allocate(
+      map->GetIsolate(), new_nof,
+      Map::SlackForArraySize(number_of_transitions, kMaxNumberOfTransitions));
 
   // The map's transition array may have shrunk during the allocation above as
   // it was weakly traversed, though it is guaranteed not to disappear. Trim the
@@ -256,8 +255,10 @@ void TransitionArray::PutPrototypeTransition(Handle<Map> map,
     // Grow array by factor 2 up to MaxCachedPrototypeTransitions.
     int new_capacity = Min(kMaxCachedPrototypeTransitions, transitions * 2);
     if (new_capacity == capacity) return;
+    int grow_by = new_capacity - capacity;
 
-    cache = FixedArray::CopySize(cache, header + new_capacity);
+    Isolate* isolate = map->GetIsolate();
+    cache = isolate->factory()->CopyFixedArrayAndGrow(cache, grow_by);
     if (capacity < 0) {
       // There was no prototype transitions array before, so the size
       // couldn't be copied. Initialize it explicitly.

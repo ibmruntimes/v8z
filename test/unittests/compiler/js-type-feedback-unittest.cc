@@ -40,7 +40,9 @@ class JSTypeFeedbackTest : public TypedGraphTest {
         isolate()->native_context()->global_object(), isolate());
 
     MachineOperatorBuilder machine(zone());
-    JSGraph jsgraph(isolate(), graph(), common(), javascript(), &machine);
+    SimplifiedOperatorBuilder simplified(zone());
+    JSGraph jsgraph(isolate(), graph(), common(), javascript(), &simplified,
+                    &machine);
     JSTypeFeedbackTable table(zone());
     // TODO(titzer): mock the GraphReducer here for better unit testing.
     GraphReducer graph_reducer(zone(), graph());
@@ -51,7 +53,8 @@ class JSTypeFeedbackTest : public TypedGraphTest {
 
   Node* EmptyFrameState() {
     MachineOperatorBuilder machine(zone());
-    JSGraph jsgraph(isolate(), graph(), common(), javascript(), &machine);
+    JSGraph jsgraph(isolate(), graph(), common(), javascript(), nullptr,
+                    &machine);
     return jsgraph.EmptyFrameState();
   }
 
@@ -78,22 +81,13 @@ class JSTypeFeedbackTest : public TypedGraphTest {
       const char* string, Node* effect, Node* control,
       JSTypeFeedbackSpecializer::DeoptimizationMode mode) {
     VectorSlotPair feedback;
-    Node* global = UndefinedConstant();
     Node* vector = UndefinedConstant();
     Node* context = UndefinedConstant();
 
-    Unique<Name> name = Unique<Name>::CreateUninitialized(
-        isolate()->factory()->InternalizeUtf8String(string));
+    Handle<Name> name = isolate()->factory()->InternalizeUtf8String(string);
     const Operator* op = javascript()->LoadGlobal(name, feedback);
-    Node* load = graph()->NewNode(op, global, vector, context);
-    if (mode == JSTypeFeedbackSpecializer::kDeoptimizationEnabled) {
-      for (int i = 0; i < OperatorProperties::GetFrameStateInputCount(op);
-           i++) {
-        load->AppendInput(zone(), EmptyFrameState());
-      }
-    }
-    load->AppendInput(zone(), effect);
-    load->AppendInput(zone(), control);
+    Node* load = graph()->NewNode(op, vector, context, EmptyFrameState(),
+                                  EmptyFrameState(), effect, control);
     Node* if_success = graph()->NewNode(common()->IfSuccess(), load);
     return graph()->NewNode(common()->Return(), load, load, if_success);
   }
@@ -193,10 +187,9 @@ TEST_F(JSTypeFeedbackTest, JSLoadNamedGlobalConstNumberWithDeoptimization) {
 
 
 TEST_F(JSTypeFeedbackTest, JSLoadNamedGlobalConstString) {
-  Unique<HeapObject> kValue = Unique<HeapObject>::CreateImmovable(
-      isolate()->factory()->undefined_string());
+  Handle<HeapObject> kValue = isolate()->factory()->undefined_string();
   const char* kName = "mango";
-  SetGlobalProperty(kName, kValue.handle());
+  SetGlobalProperty(kName, kValue);
 
   Node* ret = ReturnLoadNamedFromGlobal(
       kName, graph()->start(), graph()->start(),
@@ -211,10 +204,9 @@ TEST_F(JSTypeFeedbackTest, JSLoadNamedGlobalConstString) {
 
 
 TEST_F(JSTypeFeedbackTest, JSLoadNamedGlobalConstStringWithDeoptimization) {
-  Unique<HeapObject> kValue = Unique<HeapObject>::CreateImmovable(
-      isolate()->factory()->undefined_string());
+  Handle<HeapObject> kValue = isolate()->factory()->undefined_string();
   const char* kName = "mango";
-  SetGlobalProperty(kName, kValue.handle());
+  SetGlobalProperty(kName, kValue);
 
   Node* ret = ReturnLoadNamedFromGlobal(
       kName, graph()->start(), graph()->start(),
@@ -277,7 +269,7 @@ TEST_F(JSTypeFeedbackTest, JSLoadNamedGlobalPropertyCellSmiWithDeoptimization) {
 
   HeapObjectMatcher cell(cell_capture.value());
   EXPECT_TRUE(cell.HasValue());
-  EXPECT_TRUE(cell.Value().handle()->IsPropertyCell());
+  EXPECT_TRUE(cell.Value()->IsPropertyCell());
 
   EXPECT_THAT(ret,
               IsReturn(load_field_match, load_field_match, graph()->start()));
@@ -329,7 +321,7 @@ TEST_F(JSTypeFeedbackTest,
 
   HeapObjectMatcher cell(cell_capture.value());
   EXPECT_TRUE(cell.HasValue());
-  EXPECT_TRUE(cell.Value().handle()->IsPropertyCell());
+  EXPECT_TRUE(cell.Value()->IsPropertyCell());
 
   EXPECT_THAT(ret,
               IsReturn(load_field_match, load_field_match, graph()->start()));

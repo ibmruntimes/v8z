@@ -34,7 +34,7 @@
 // modified significantly by Google Inc.
 // Copyright 2012 the V8 project authors. All rights reserved.
 
-#include "src/v8.h"
+#include "src/arm/assembler-arm.h"
 
 #if V8_TARGET_ARCH_ARM
 
@@ -52,6 +52,14 @@ namespace internal {
 // snapshot.
 static unsigned CpuFeaturesImpliedByCompiler() {
   unsigned answer = 0;
+#ifdef CAN_USE_ARMV8_INSTRUCTIONS
+  if (FLAG_enable_armv8) {
+    answer |= 1u << ARMv8;
+    // ARMv8 always features VFP and NEON.
+    answer |= 1u << ARMv7 | 1u << VFP3 | 1u << NEON | 1u << VFP32DREGS;
+    answer |= 1u << SUDIV | 1u << MLS;
+  }
+#endif  // CAN_USE_ARMV8_INSTRUCTIONS
 #ifdef CAN_USE_ARMV7_INSTRUCTIONS
   if (FLAG_enable_armv7) answer |= 1u << ARMv7;
 #endif  // CAN_USE_ARMV7_INSTRUCTIONS
@@ -81,6 +89,13 @@ void CpuFeatures::ProbeImpl(bool cross_compile) {
 
 #ifndef __arm__
   // For the simulator build, use whatever the flags specify.
+  if (FLAG_enable_armv8) {
+    supported_ |= 1u << ARMv8;
+    // ARMv8 always features VFP and NEON.
+    supported_ |= 1u << ARMv7 | 1u << VFP3 | 1u << NEON | 1u << VFP32DREGS;
+    supported_ |= 1u << SUDIV | 1u << MLS;
+    if (FLAG_enable_movw_movt) supported_ |= 1u << MOVW_MOVT_IMMEDIATE_LOADS;
+  }
   if (FLAG_enable_armv7) {
     supported_ |= 1u << ARMv7;
     if (FLAG_enable_vfp3) supported_ |= 1u << VFP3;
@@ -128,7 +143,8 @@ void CpuFeatures::ProbeImpl(bool cross_compile) {
   if (FLAG_enable_32dregs && cpu.has_vfp3_d32()) supported_ |= 1u << VFP32DREGS;
 
   if (cpu.implementer() == base::CPU::NVIDIA &&
-      cpu.variant() == base::CPU::NVIDIA_DENVER) {
+      cpu.variant() == base::CPU::NVIDIA_DENVER &&
+      cpu.part() <= base::CPU::NVIDIA_DENVER_V10) {
     supported_ |= 1u << COHERENT_CACHE;
   }
 #endif
@@ -153,7 +169,9 @@ void CpuFeatures::PrintTarget() {
   arm_no_probe = " noprobe";
 #endif
 
-#if defined CAN_USE_ARMV7_INSTRUCTIONS
+#if defined CAN_USE_ARMV8_INSTRUCTIONS
+  arm_arch = "arm v8";
+#elif defined CAN_USE_ARMV7_INSTRUCTIONS
   arm_arch = "arm v7";
 #else
   arm_arch = "arm v6";
@@ -191,13 +209,15 @@ void CpuFeatures::PrintTarget() {
 
 void CpuFeatures::PrintFeatures() {
   printf(
-    "ARMv7=%d VFP3=%d VFP32DREGS=%d NEON=%d SUDIV=%d UNALIGNED_ACCESSES=%d "
-    "MOVW_MOVT_IMMEDIATE_LOADS=%d COHERENT_CACHE=%d",
+    "ARMv8=%d ARMv7=%d VFP3=%d VFP32DREGS=%d NEON=%d SUDIV=%d MLS=%d"
+    "UNALIGNED_ACCESSES=%d MOVW_MOVT_IMMEDIATE_LOADS=%d COHERENT_CACHE=%d",
+    CpuFeatures::IsSupported(ARMv8),
     CpuFeatures::IsSupported(ARMv7),
     CpuFeatures::IsSupported(VFP3),
     CpuFeatures::IsSupported(VFP32DREGS),
     CpuFeatures::IsSupported(NEON),
     CpuFeatures::IsSupported(SUDIV),
+    CpuFeatures::IsSupported(MLS),
     CpuFeatures::IsSupported(UNALIGNED_ACCESSES),
     CpuFeatures::IsSupported(MOVW_MOVT_IMMEDIATE_LOADS),
     CpuFeatures::IsSupported(COHERENT_CACHE));
@@ -209,18 +229,6 @@ void CpuFeatures::PrintFeatures() {
   bool eabi_hardfloat = false;
 #endif
     printf(" USE_EABI_HARDFLOAT=%d\n", eabi_hardfloat);
-}
-
-
-// -----------------------------------------------------------------------------
-// Implementation of DwVfpRegister
-
-const char* DwVfpRegister::AllocationIndexToString(int index) {
-  DCHECK(index >= 0 && index < NumAllocatableRegisters());
-  DCHECK(kScratchDoubleReg.code() - kDoubleRegZero.code() ==
-         kNumReservedRegisters - 1);
-  if (index >= kDoubleRegZero.code()) index += kNumReservedRegisters;
-  return VFPRegisters::Name(index, true);
 }
 
 
@@ -301,6 +309,13 @@ MemOperand::MemOperand(Register rn, int32_t offset, AddrMode am) {
   rm_ = no_reg;
   offset_ = offset;
   am_ = am;
+
+  // Accesses below the stack pointer are not safe, and are prohibited by the
+  // ABI. We can check obvious violations here.
+  if (rn.is(sp)) {
+    if (am == Offset) DCHECK_LE(0, offset);
+    if (am == NegOffset) DCHECK_GE(0, offset);
+  }
 }
 
 
@@ -390,26 +405,26 @@ NeonListOperand::NeonListOperand(DoubleRegister base, int registers_count) {
 // str(r, MemOperand(sp, 4, NegPreIndex), al) instruction (aka push(r))
 // register r is not encoded.
 const Instr kPushRegPattern =
-    al | B26 | 4 | NegPreIndex | kRegister_sp_Code * B16;
+    al | B26 | 4 | NegPreIndex | Register::kCode_sp * B16;
 // ldr(r, MemOperand(sp, 4, PostIndex), al) instruction (aka pop(r))
 // register r is not encoded.
 const Instr kPopRegPattern =
-    al | B26 | L | 4 | PostIndex | kRegister_sp_Code * B16;
+    al | B26 | L | 4 | PostIndex | Register::kCode_sp * B16;
 // ldr rd, [pc, #offset]
 const Instr kLdrPCImmedMask = 15 * B24 | 7 * B20 | 15 * B16;
-const Instr kLdrPCImmedPattern = 5 * B24 | L | kRegister_pc_Code * B16;
+const Instr kLdrPCImmedPattern = 5 * B24 | L | Register::kCode_pc * B16;
 // ldr rd, [pp, #offset]
 const Instr kLdrPpImmedMask = 15 * B24 | 7 * B20 | 15 * B16;
-const Instr kLdrPpImmedPattern = 5 * B24 | L | kRegister_r8_Code * B16;
+const Instr kLdrPpImmedPattern = 5 * B24 | L | Register::kCode_r8 * B16;
 // ldr rd, [pp, rn]
 const Instr kLdrPpRegMask = 15 * B24 | 7 * B20 | 15 * B16;
-const Instr kLdrPpRegPattern = 7 * B24 | L | kRegister_r8_Code * B16;
+const Instr kLdrPpRegPattern = 7 * B24 | L | Register::kCode_r8 * B16;
 // vldr dd, [pc, #offset]
 const Instr kVldrDPCMask = 15 * B24 | 3 * B20 | 15 * B16 | 15 * B8;
-const Instr kVldrDPCPattern = 13 * B24 | L | kRegister_pc_Code * B16 | 11 * B8;
+const Instr kVldrDPCPattern = 13 * B24 | L | Register::kCode_pc * B16 | 11 * B8;
 // vldr dd, [pp, #offset]
 const Instr kVldrDPpMask = 15 * B24 | 3 * B20 | 15 * B16 | 15 * B8;
-const Instr kVldrDPpPattern = 13 * B24 | L | kRegister_r8_Code * B16 | 11 * B8;
+const Instr kVldrDPpPattern = 13 * B24 | L | Register::kCode_r8 * B16 | 11 * B8;
 // blxcc rm
 const Instr kBlxRegMask =
     15 * B24 | 15 * B20 | 15 * B16 | 15 * B12 | 15 * B8 | 15 * B4;
@@ -436,19 +451,21 @@ const Instr kAndBicFlip = 0xe * B21;
 
 // A mask for the Rd register for push, pop, ldr, str instructions.
 const Instr kLdrRegFpOffsetPattern =
-    al | B26 | L | Offset | kRegister_fp_Code * B16;
+    al | B26 | L | Offset | Register::kCode_fp * B16;
 const Instr kStrRegFpOffsetPattern =
-    al | B26 | Offset | kRegister_fp_Code * B16;
+    al | B26 | Offset | Register::kCode_fp * B16;
 const Instr kLdrRegFpNegOffsetPattern =
-    al | B26 | L | NegOffset | kRegister_fp_Code * B16;
+    al | B26 | L | NegOffset | Register::kCode_fp * B16;
 const Instr kStrRegFpNegOffsetPattern =
-    al | B26 | NegOffset | kRegister_fp_Code * B16;
+    al | B26 | NegOffset | Register::kCode_fp * B16;
 const Instr kLdrStrInstrTypeMask = 0xffff0000;
 
 
 Assembler::Assembler(Isolate* isolate, void* buffer, int buffer_size)
     : AssemblerBase(isolate, buffer, buffer_size),
       recorded_ast_id_(TypeFeedbackId::None()),
+      pending_32_bit_constants_(&pending_32_bit_constants_buffer_[0]),
+      pending_64_bit_constants_(&pending_64_bit_constants_buffer_[0]),
       constant_pool_builder_(kLdrMaxReachBits, kVldrMaxReachBits),
       positions_recorder_(this) {
   reloc_info_writer.Reposition(buffer_ + buffer_size_, pc_);
@@ -466,6 +483,12 @@ Assembler::Assembler(Isolate* isolate, void* buffer, int buffer_size)
 
 Assembler::~Assembler() {
   DCHECK(const_pool_blocked_nesting_ == 0);
+  if (pending_32_bit_constants_ != &pending_32_bit_constants_buffer_[0]) {
+    delete[] pending_32_bit_constants_;
+  }
+  if (pending_64_bit_constants_ != &pending_64_bit_constants_buffer_[0]) {
+    delete[] pending_64_bit_constants_;
+  }
 }
 
 
@@ -610,21 +633,21 @@ Instr Assembler::SetAddRegisterImmediateOffset(Instr instr, int offset) {
 
 Register Assembler::GetRd(Instr instr) {
   Register reg;
-  reg.code_ = Instruction::RdValue(instr);
+  reg.reg_code = Instruction::RdValue(instr);
   return reg;
 }
 
 
 Register Assembler::GetRn(Instr instr) {
   Register reg;
-  reg.code_ = Instruction::RnValue(instr);
+  reg.reg_code = Instruction::RnValue(instr);
   return reg;
 }
 
 
 Register Assembler::GetRm(Instr instr) {
   Register reg;
-  reg.code_ = Instruction::RmValue(instr);
+  reg.reg_code = Instruction::RmValue(instr);
   return reg;
 }
 
@@ -1308,7 +1331,7 @@ void Assembler::addrmod5(Instr instr, CRegister crd, const MemOperand& x) {
 }
 
 
-int Assembler::branch_offset(Label* L, bool jump_elimination_allowed) {
+int Assembler::branch_offset(Label* L) {
   int target_pos;
   if (L->is_bound()) {
     target_pos = L->pos();
@@ -1325,7 +1348,8 @@ int Assembler::branch_offset(Label* L, bool jump_elimination_allowed) {
 
   // Block the emission of the constant pool, since the branch instruction must
   // be emitted at the pc offset recorded by the label.
-  BlockConstPoolFor(1);
+  if (!is_const_pool_blocked()) BlockConstPoolFor(1);
+
   return target_pos - (pc_offset() + kPcLoadDelta);
 }
 
@@ -1374,6 +1398,24 @@ void Assembler::bx(Register target, Condition cond) {  // v5 and above, plus v4t
   positions_recorder()->WriteRecordedPositions();
   DCHECK(!target.is(pc));  // use of pc is actually allowed, but discouraged
   emit(cond | B24 | B21 | 15*B16 | 15*B12 | 15*B8 | BX | target.code());
+}
+
+
+void Assembler::b(Label* L, Condition cond) {
+  CheckBuffer();
+  b(branch_offset(L), cond);
+}
+
+
+void Assembler::bl(Label* L, Condition cond) {
+  CheckBuffer();
+  bl(branch_offset(L), cond);
+}
+
+
+void Assembler::blx(Label* L) {
+  CheckBuffer();
+  blx(branch_offset(L));
 }
 
 
@@ -2554,6 +2596,12 @@ void Assembler::vmov(const DwVfpRegister dst,
                      double imm,
                      const Register scratch) {
   uint32_t enc;
+  // If the embedded constant pool is disabled, we can use the normal, inline
+  // constant pool. If the embedded constant pool is enabled (via
+  // FLAG_enable_embedded_constant_pool), we can only use it where the pool
+  // pointer (pp) is valid.
+  bool can_use_pool =
+      !FLAG_enable_embedded_constant_pool || is_constant_pool_available();
   if (CpuFeatures::IsSupported(VFP3) && FitsVMOVDoubleImmediate(imm, &enc)) {
     // The double can be encoded in the instruction.
     //
@@ -2564,7 +2612,7 @@ void Assembler::vmov(const DwVfpRegister dst,
     int vd, d;
     dst.split_code(&vd, &d);
     emit(al | 0x1D*B23 | d*B22 | 0x3*B20 | vd*B12 | 0x5*B9 | B8 | enc);
-  } else if (FLAG_enable_vldr_imm && is_constant_pool_available()) {
+  } else if (FLAG_enable_vldr_imm && can_use_pool) {
     // TODO(jfb) Temporarily turned off until we have constant blinding or
     //           some equivalent mitigation: an attacker can otherwise control
     //           generated data which also happens to be executable, a Very Bad
@@ -3569,11 +3617,10 @@ void Assembler::GrowBuffer() {
 
 
 void Assembler::db(uint8_t data) {
-  // No relocation info should be pending while using db. db is used
-  // to write pure data with no pointers and the constant pool should
-  // be emitted before using db.
-  DCHECK(num_pending_32_bit_constants_ == 0);
-  DCHECK(num_pending_64_bit_constants_ == 0);
+  // db is used to write raw data. The constant pool should be emitted or
+  // blocked before using db.
+  DCHECK(is_const_pool_blocked() || (num_pending_32_bit_constants_ == 0));
+  DCHECK(is_const_pool_blocked() || (num_pending_64_bit_constants_ == 0));
   CheckBuffer();
   *reinterpret_cast<uint8_t*>(pc_) = data;
   pc_ += sizeof(uint8_t);
@@ -3581,11 +3628,10 @@ void Assembler::db(uint8_t data) {
 
 
 void Assembler::dd(uint32_t data) {
-  // No relocation info should be pending while using dd. dd is used
-  // to write pure data with no pointers and the constant pool should
-  // be emitted before using dd.
-  DCHECK(num_pending_32_bit_constants_ == 0);
-  DCHECK(num_pending_64_bit_constants_ == 0);
+  // dd is used to write raw data. The constant pool should be emitted or
+  // blocked before using dd.
+  DCHECK(is_const_pool_blocked() || (num_pending_32_bit_constants_ == 0));
+  DCHECK(is_const_pool_blocked() || (num_pending_64_bit_constants_ == 0));
   CheckBuffer();
   *reinterpret_cast<uint32_t*>(pc_) = data;
   pc_ += sizeof(uint32_t);
@@ -3593,11 +3639,10 @@ void Assembler::dd(uint32_t data) {
 
 
 void Assembler::dq(uint64_t value) {
-  // No relocation info should be pending while using dq. dq is used
-  // to write pure data with no pointers and the constant pool should
-  // be emitted before using dd.
-  DCHECK(num_pending_32_bit_constants_ == 0);
-  DCHECK(num_pending_64_bit_constants_ == 0);
+  // dq is used to write raw data. The constant pool should be emitted or
+  // blocked before using dq.
+  DCHECK(is_const_pool_blocked() || (num_pending_32_bit_constants_ == 0));
+  DCHECK(is_const_pool_blocked() || (num_pending_64_bit_constants_ == 0));
   CheckBuffer();
   *reinterpret_cast<uint64_t*>(pc_) = value;
   pc_ += sizeof(uint64_t);
@@ -3643,6 +3688,15 @@ ConstantPoolEntry::Access Assembler::ConstantPoolAddEntry(int position,
     DCHECK(num_pending_32_bit_constants_ < kMaxNumPending32Constants);
     if (num_pending_32_bit_constants_ == 0) {
       first_const_pool_32_use_ = position;
+    } else if (num_pending_32_bit_constants_ == kMinNumPendingConstants &&
+               pending_32_bit_constants_ ==
+                   &pending_32_bit_constants_buffer_[0]) {
+      // Inline buffer is full, switch to dynamically allocated buffer.
+      pending_32_bit_constants_ =
+          new ConstantPoolEntry[kMaxNumPending32Constants];
+      std::copy(&pending_32_bit_constants_buffer_[0],
+                &pending_32_bit_constants_buffer_[kMinNumPendingConstants],
+                &pending_32_bit_constants_[0]);
     }
     ConstantPoolEntry entry(position, value, sharing_ok);
     pending_32_bit_constants_[num_pending_32_bit_constants_++] = entry;
@@ -3663,6 +3717,15 @@ ConstantPoolEntry::Access Assembler::ConstantPoolAddEntry(int position,
     DCHECK(num_pending_64_bit_constants_ < kMaxNumPending64Constants);
     if (num_pending_64_bit_constants_ == 0) {
       first_const_pool_64_use_ = position;
+    } else if (num_pending_64_bit_constants_ == kMinNumPendingConstants &&
+               pending_64_bit_constants_ ==
+                   &pending_64_bit_constants_buffer_[0]) {
+      // Inline buffer is full, switch to dynamically allocated buffer.
+      pending_64_bit_constants_ =
+          new ConstantPoolEntry[kMaxNumPending64Constants];
+      std::copy(&pending_64_bit_constants_buffer_[0],
+                &pending_64_bit_constants_buffer_[kMinNumPendingConstants],
+                &pending_64_bit_constants_[0]);
     }
     ConstantPoolEntry entry(position, value);
     pending_64_bit_constants_[num_pending_64_bit_constants_++] = entry;
@@ -3736,11 +3799,13 @@ void Assembler::CheckConstPool(bool force_emit, bool require_jump) {
   int size_up_to_marker = jump_instr + kInstrSize;
   int estimated_size_after_marker =
       num_pending_32_bit_constants_ * kPointerSize;
+  bool has_int_values = (num_pending_32_bit_constants_ > 0);
   bool has_fp_values = (num_pending_64_bit_constants_ > 0);
   bool require_64_bit_align = false;
   if (has_fp_values) {
-    require_64_bit_align = IsAligned(
-        reinterpret_cast<intptr_t>(pc_ + size_up_to_marker), kDoubleAlignment);
+    require_64_bit_align =
+        !IsAligned(reinterpret_cast<intptr_t>(pc_ + size_up_to_marker),
+                   kDoubleAlignment);
     if (require_64_bit_align) {
       estimated_size_after_marker += kInstrSize;
     }
@@ -3757,9 +3822,11 @@ void Assembler::CheckConstPool(bool force_emit, bool require_jump) {
   //  * the instruction doesn't require a jump after itself to jump over the
   //    constant pool, and we're getting close to running out of range.
   if (!force_emit) {
-    DCHECK((first_const_pool_32_use_ >= 0) || (first_const_pool_64_use_ >= 0));
+    DCHECK(has_fp_values || has_int_values);
     bool need_emit = false;
     if (has_fp_values) {
+      // The 64-bit constants are always emitted before the 32-bit constants, so
+      // we can ignore the effect of the 32-bit constants on estimated_size.
       int dist64 = pc_offset() + estimated_size -
                    num_pending_32_bit_constants_ * kPointerSize -
                    first_const_pool_64_use_;
@@ -3768,10 +3835,12 @@ void Assembler::CheckConstPool(bool force_emit, bool require_jump) {
         need_emit = true;
       }
     }
-    int dist32 = pc_offset() + estimated_size - first_const_pool_32_use_;
-    if ((dist32 >= kMaxDistToIntPool - kCheckPoolInterval) ||
-        (!require_jump && (dist32 >= kMaxDistToIntPool / 2))) {
-      need_emit = true;
+    if (has_int_values) {
+      int dist32 = pc_offset() + estimated_size - first_const_pool_32_use_;
+      if ((dist32 >= kMaxDistToIntPool - kCheckPoolInterval) ||
+          (!require_jump && (dist32 >= kMaxDistToIntPool / 2))) {
+        need_emit = true;
+      }
     }
     if (!need_emit) return;
   }

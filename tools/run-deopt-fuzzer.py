@@ -390,6 +390,7 @@ def Execute(arch, mode, args, options, suites, workspace):
     "asan": options.asan,
     "deopt_fuzzer": True,
     "gc_stress": False,
+    "ignition": False,
     "isolates": options.isolates,
     "mode": mode,
     "no_i18n": False,
@@ -400,6 +401,7 @@ def Execute(arch, mode, args, options, suites, workspace):
     "msan": False,
     "dcheck_always_on": options.dcheck_always_on,
     "novfp3": False,
+    "predictable": False,
     "byteorder": sys.byteorder,
   }
   all_tests = []
@@ -419,7 +421,7 @@ def Execute(arch, mode, args, options, suites, workspace):
     test_backup[s] = s.tests
     analysis_flags = ["--deopt-every-n-times", "%d" % MAX_DEOPT,
                       "--print-deopt-stress"]
-    s.tests = [ t.CopyAddingFlags(analysis_flags) for t in s.tests ]
+    s.tests = [ t.CopyAddingFlags(t.variant, analysis_flags) for t in s.tests ]
     num_tests += len(s.tests)
     for t in s.tests:
       t.id = test_id
@@ -466,7 +468,7 @@ def Execute(arch, mode, args, options, suites, workspace):
         print "%s %s" % (t.path, distribution)
       for i in distribution:
         fuzzing_flags = ["--deopt-every-n-times", "%d" % i]
-        s.tests.append(t.CopyAddingFlags(fuzzing_flags))
+        s.tests.append(t.CopyAddingFlags(t.variant, fuzzing_flags))
     num_tests += len(s.tests)
     for t in s.tests:
       t.id = test_id

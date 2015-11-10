@@ -7,13 +7,17 @@
 
 #include "src/compiler/frame-states.h"
 #include "src/compiler/machine-type.h"
-#include "src/unique.h"
+#include "src/zone-containers.h"
 
 namespace v8 {
 namespace internal {
 
 // Forward declarations.
 class ExternalReference;
+template <class>
+class TypeImpl;
+struct ZoneTypeConfig;
+typedef TypeImpl<ZoneTypeConfig> Type;
 
 
 namespace compiler {
@@ -121,7 +125,7 @@ class CommonOperatorBuilder final : public ZoneObject {
   const Operator* IfDefault();
   const Operator* Throw();
   const Operator* Deoptimize();
-  const Operator* Return();
+  const Operator* Return(int value_input_count = 1);
   const Operator* Terminate();
 
   const Operator* Start(int value_output_count);
@@ -139,14 +143,15 @@ class CommonOperatorBuilder final : public ZoneObject {
   const Operator* Float64Constant(volatile double);
   const Operator* ExternalConstant(const ExternalReference&);
   const Operator* NumberConstant(volatile double);
-  const Operator* HeapConstant(const Unique<HeapObject>&);
+  const Operator* HeapConstant(const Handle<HeapObject>&);
 
   const Operator* Select(MachineType, BranchHint = BranchHint::kNone);
   const Operator* Phi(MachineType type, int value_input_count);
   const Operator* EffectPhi(int effect_input_count);
   const Operator* EffectSet(int arguments);
-  const Operator* ValueEffect(int arguments);
-  const Operator* Finish(int arguments);
+  const Operator* Guard(Type* type);
+  const Operator* BeginRegion();
+  const Operator* FinishRegion();
   const Operator* StateValues(int arguments);
   const Operator* TypedStateValues(const ZoneVector<MachineType>* types);
   const Operator* FrameState(BailoutId bailout_id,
@@ -155,6 +160,7 @@ class CommonOperatorBuilder final : public ZoneObject {
   const Operator* Call(const CallDescriptor* descriptor);
   const Operator* TailCall(const CallDescriptor* descriptor);
   const Operator* Projection(size_t index);
+  const Operator* LazyBailout();
 
   // Constructs a new merge or phi operator with the same opcode as {op}, but
   // with {size} inputs.
@@ -163,7 +169,8 @@ class CommonOperatorBuilder final : public ZoneObject {
   // Constructs function info for frame state construction.
   const FrameStateFunctionInfo* CreateFrameStateFunctionInfo(
       FrameStateType type, int parameter_count, int local_count,
-      Handle<SharedFunctionInfo> shared_info);
+      Handle<SharedFunctionInfo> shared_info,
+      ContextCallingMode context_calling_mode);
 
  private:
   Zone* zone() const { return zone_; }

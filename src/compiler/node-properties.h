@@ -72,15 +72,19 @@ class NodeProperties final {
     return IrOpcode::IsPhiOpcode(node->opcode());
   }
 
+  // Determines whether exceptions thrown by the given node are handled locally
+  // within the graph (i.e. an IfException projection is present).
   static bool IsExceptionalCall(Node* node);
 
   // ---------------------------------------------------------------------------
   // Miscellaneous mutators.
 
+  static void ReplaceValueInput(Node* node, Node* value, int index);
   static void ReplaceContextInput(Node* node, Node* context);
   static void ReplaceControlInput(Node* node, Node* control);
   static void ReplaceEffectInput(Node* node, Node* effect, int index = 0);
   static void ReplaceFrameStateInput(Node* node, int index, Node* frame_state);
+  static void RemoveFrameStateInput(Node* node, int index);
   static void RemoveNonValueInputs(Node* node);
 
   // Merge the control node {node} into the end of the graph, introducing a
@@ -94,6 +98,10 @@ class NodeProperties final {
   static void ReplaceUses(Node* node, Node* value, Node* effect = nullptr,
                           Node* success = nullptr, Node* exception = nullptr);
 
+  // Safe wrapper to mutate the operator of a node. Checks that the node is
+  // currently in a state that satisfies constraints of the new operator.
+  static void ChangeOp(Node* node, const Operator* new_op);
+
   // ---------------------------------------------------------------------------
   // Miscellaneous utilities.
 
@@ -106,25 +114,20 @@ class NodeProperties final {
   //  - Switch: [ IfValue, ..., IfDefault ]
   static void CollectControlProjections(Node* node, Node** proj, size_t count);
 
-
   // ---------------------------------------------------------------------------
-  // Type Bounds.
+  // Type.
 
-  static bool IsTyped(Node* node) {
-    Bounds const bounds = node->bounds();
-    DCHECK(!bounds.lower == !bounds.upper);
-    return bounds.upper;
-  }
-  static Bounds GetBounds(Node* node) {
+  static bool IsTyped(Node* node) { return node->type() != nullptr; }
+  static Type* GetType(Node* node) {
     DCHECK(IsTyped(node));
-    return node->bounds();
+    return node->type();
   }
-  static void SetBounds(Node* node, Bounds bounds) {
-    DCHECK_NOT_NULL(bounds.lower);
-    DCHECK_NOT_NULL(bounds.upper);
-    node->set_bounds(bounds);
+  static Type* GetTypeOrAny(Node* node);
+  static void SetType(Node* node, Type* type) {
+    DCHECK_NOT_NULL(type);
+    node->set_type(type);
   }
-  static void RemoveBounds(Node* node) { node->set_bounds(Bounds()); }
+  static void RemoveType(Node* node) { node->set_type(nullptr); }
   static bool AllValueInputsAreTyped(Node* node);
 
  private:

@@ -18,6 +18,7 @@ namespace compiler {
   V(Arm64And32)                    \
   V(Arm64Bic)                      \
   V(Arm64Bic32)                    \
+  V(Arm64Clz)                      \
   V(Arm64Clz32)                    \
   V(Arm64Cmp)                      \
   V(Arm64Cmp32)                    \
@@ -55,8 +56,6 @@ namespace compiler {
   V(Arm64Umod32)                   \
   V(Arm64Not)                      \
   V(Arm64Not32)                    \
-  V(Arm64Neg)                      \
-  V(Arm64Neg32)                    \
   V(Arm64Lsl)                      \
   V(Arm64Lsl32)                    \
   V(Arm64Lsr)                      \
@@ -109,12 +108,14 @@ namespace compiler {
   V(Arm64Float64ToInt32)           \
   V(Arm64Float64ToUint32)          \
   V(Arm64Int32ToFloat64)           \
+  V(Arm64Int64ToFloat64)           \
   V(Arm64Uint32ToFloat64)          \
   V(Arm64Float64ExtractLowWord32)  \
   V(Arm64Float64ExtractHighWord32) \
   V(Arm64Float64InsertLowWord32)   \
   V(Arm64Float64InsertHighWord32)  \
   V(Arm64Float64MoveU64)           \
+  V(Arm64U64MoveFloat64)           \
   V(Arm64LdrS)                     \
   V(Arm64StrS)                     \
   V(Arm64LdrD)                     \
@@ -157,8 +158,8 @@ namespace compiler {
   V(Operand2_R_SXTB)  /* %r0 SXTB (signed extend byte) */       \
   V(Operand2_R_SXTH)  /* %r0 SXTH (signed extend halfword) */
 
-}  // namespace internal
 }  // namespace compiler
+}  // namespace internal
 }  // namespace v8
 
 #endif  // V8_COMPILER_ARM64_INSTRUCTION_CODES_ARM64_H_

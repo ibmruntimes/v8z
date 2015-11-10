@@ -44,6 +44,7 @@ namespace compiler {
   V(ArchTailCallJSFunction)   \
   V(ArchPrepareCallCFunction) \
   V(ArchCallCFunction)        \
+  V(ArchLazyBailout)          \
   V(ArchJmp)                  \
   V(ArchLookupSwitch)         \
   V(ArchTableSwitch)          \
@@ -58,11 +59,13 @@ namespace compiler {
   V(CheckedLoadInt16)         \
   V(CheckedLoadUint16)        \
   V(CheckedLoadWord32)        \
+  V(CheckedLoadWord64)        \
   V(CheckedLoadFloat32)       \
   V(CheckedLoadFloat64)       \
   V(CheckedStoreWord8)        \
   V(CheckedStoreWord16)       \
   V(CheckedStoreWord32)       \
+  V(CheckedStoreWord64)       \
   V(CheckedStoreFloat32)      \
   V(CheckedStoreFloat64)      \
   TARGET_ARCH_OPCODE_LIST(V)
@@ -114,6 +117,14 @@ enum FlagsCondition {
   kUnsignedGreaterThanOrEqual,
   kUnsignedLessThanOrEqual,
   kUnsignedGreaterThan,
+  kFloatLessThanOrUnordered,
+  kFloatGreaterThanOrEqual,
+  kFloatLessThanOrEqual,
+  kFloatGreaterThanOrUnordered,
+  kFloatLessThan,
+  kFloatGreaterThanOrEqualOrUnordered,
+  kFloatLessThanOrEqualOrUnordered,
+  kFloatGreaterThan,
   kUnorderedEqual,
   kUnorderedNotEqual,
   kOverflow,
@@ -123,6 +134,8 @@ enum FlagsCondition {
 inline FlagsCondition NegateFlagsCondition(FlagsCondition condition) {
   return static_cast<FlagsCondition>(condition ^ 1);
 }
+
+FlagsCondition CommuteFlagsCondition(FlagsCondition condition);
 
 std::ostream& operator<<(std::ostream& os, const FlagsCondition& fc);
 
@@ -139,8 +152,8 @@ typedef int32_t InstructionCode;
 typedef BitField<ArchOpcode, 0, 8> ArchOpcodeField;
 typedef BitField<AddressingMode, 8, 5> AddressingModeField;
 typedef BitField<FlagsMode, 13, 2> FlagsModeField;
-typedef BitField<FlagsCondition, 15, 4> FlagsConditionField;
-typedef BitField<int, 19, 13> MiscField;
+typedef BitField<FlagsCondition, 15, 5> FlagsConditionField;
+typedef BitField<int, 20, 12> MiscField;
 
 }  // namespace compiler
 }  // namespace internal

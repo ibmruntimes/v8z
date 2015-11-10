@@ -37,6 +37,15 @@ class Arm64OperandGenerator final : public OperandGenerator {
     return UseRegister(node);
   }
 
+  // Use the zero register if the node has the immediate value zero, otherwise
+  // assign a register.
+  InstructionOperand UseRegisterOrImmediateZero(Node* node) {
+    if (IsIntegerConstant(node) && (GetIntegerConstantValue(node) == 0)) {
+      return UseImmediate(node);
+    }
+    return UseRegister(node);
+  }
+
   // Use the provided node if it has the required value, or create a
   // TempImmediate otherwise.
   InstructionOperand UseImmediateOrTemp(Node* node, int32_t value) {
@@ -214,14 +223,14 @@ void VisitBinop(InstructionSelector* selector, Node* node,
   size_t input_count = 0;
   InstructionOperand outputs[2];
   size_t output_count = 0;
-  bool is_cmp = opcode == kArm64Cmp32;
+  bool is_cmp = (opcode == kArm64Cmp32) || (opcode == kArm64Cmn32);
 
   // We can commute cmp by switching the inputs and commuting the flags
   // continuation.
   bool can_commute = m.HasProperty(Operator::kCommutative) || is_cmp;
 
-  // The cmp instruction is encoded as sub with zero output register, and
-  // therefore supports the same operand modes.
+  // The cmp and cmn instructions are encoded as sub or add with zero output
+  // register, and therefore support the same operand modes.
   bool is_add_sub = m.IsInt32Add() || m.IsInt64Add() || m.IsInt32Sub() ||
                     m.IsInt64Sub() || is_cmp;
 
@@ -247,18 +256,18 @@ void VisitBinop(InstructionSelector* selector, Node* node,
   } else if (TryMatchAnyShift(selector, node, right_node, &opcode,
                               !is_add_sub)) {
     Matcher m_shift(right_node);
-    inputs[input_count++] = g.UseRegister(left_node);
+    inputs[input_count++] = g.UseRegisterOrImmediateZero(left_node);
     inputs[input_count++] = g.UseRegister(m_shift.left().node());
     inputs[input_count++] = g.UseImmediate(m_shift.right().node());
   } else if (can_commute && TryMatchAnyShift(selector, node, left_node, &opcode,
                                              !is_add_sub)) {
     if (is_cmp) cont->Commute();
     Matcher m_shift(left_node);
-    inputs[input_count++] = g.UseRegister(right_node);
+    inputs[input_count++] = g.UseRegisterOrImmediateZero(right_node);
     inputs[input_count++] = g.UseRegister(m_shift.left().node());
     inputs[input_count++] = g.UseImmediate(m_shift.right().node());
   } else {
-    inputs[input_count++] = g.UseRegister(left_node);
+    inputs[input_count++] = g.UseRegisterOrImmediateZero(left_node);
     inputs[input_count++] = g.UseRegister(right_node);
   }
 
@@ -458,6 +467,9 @@ void InstructionSelector::VisitCheckedLoad(Node* node) {
     case kRepWord32:
       opcode = kCheckedLoadWord32;
       break;
+    case kRepWord64:
+      opcode = kCheckedLoadWord64;
+      break;
     case kRepFloat32:
       opcode = kCheckedLoadFloat32;
       break;
@@ -490,6 +502,9 @@ void InstructionSelector::VisitCheckedStore(Node* node) {
       break;
     case kRepWord32:
       opcode = kCheckedStoreWord32;
+      break;
+    case kRepWord64:
+      opcode = kCheckedStoreWord64;
       break;
     case kRepFloat32:
       opcode = kCheckedStoreFloat32;
@@ -906,10 +921,22 @@ void InstructionSelector::VisitWord64Ror(Node* node) {
 }
 
 
+void InstructionSelector::VisitWord64Clz(Node* node) {
+  Arm64OperandGenerator g(this);
+  Emit(kArm64Clz, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)));
+}
+
+
 void InstructionSelector::VisitWord32Clz(Node* node) {
   Arm64OperandGenerator g(this);
   Emit(kArm64Clz32, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)));
 }
+
+
+void InstructionSelector::VisitWord32Ctz(Node* node) { UNREACHABLE(); }
+
+
+void InstructionSelector::VisitWord32Popcnt(Node* node) { UNREACHABLE(); }
 
 
 void InstructionSelector::VisitInt32Add(Node* node) {
@@ -991,12 +1018,7 @@ void InstructionSelector::VisitInt32Sub(Node* node) {
     }
   }
 
-  if (m.left().Is(0)) {
-    Emit(kArm64Neg32, g.DefineAsRegister(node),
-         g.UseRegister(m.right().node()));
-  } else {
-    VisitAddSub<Int32BinopMatcher>(this, node, kArm64Sub32, kArm64Add32);
-  }
+  VisitAddSub<Int32BinopMatcher>(this, node, kArm64Sub32, kArm64Add32);
 }
 
 
@@ -1017,11 +1039,7 @@ void InstructionSelector::VisitInt64Sub(Node* node) {
     }
   }
 
-  if (m.left().Is(0)) {
-    Emit(kArm64Neg, g.DefineAsRegister(node), g.UseRegister(m.right().node()));
-  } else {
-    VisitAddSub<Int64BinopMatcher>(this, node, kArm64Sub, kArm64Add);
-  }
+  VisitAddSub<Int64BinopMatcher>(this, node, kArm64Sub, kArm64Add);
 }
 
 
@@ -1270,6 +1288,31 @@ void InstructionSelector::VisitTruncateInt64ToInt32(Node* node) {
 }
 
 
+void InstructionSelector::VisitRoundInt64ToFloat64(Node* node) {
+  VisitRR(this, kArm64Int64ToFloat64, node);
+}
+
+
+void InstructionSelector::VisitBitcastFloat32ToInt32(Node* node) {
+  VisitRR(this, kArm64Float64ExtractLowWord32, node);
+}
+
+
+void InstructionSelector::VisitBitcastFloat64ToInt64(Node* node) {
+  VisitRR(this, kArm64U64MoveFloat64, node);
+}
+
+
+void InstructionSelector::VisitBitcastInt32ToFloat32(Node* node) {
+  VisitRR(this, kArm64Float64MoveU64, node);
+}
+
+
+void InstructionSelector::VisitBitcastInt64ToFloat64(Node* node) {
+  VisitRR(this, kArm64Float64MoveU64, node);
+}
+
+
 void InstructionSelector::VisitFloat32Add(Node* node) {
   VisitRRR(this, kArm64Float32Add, node);
 }
@@ -1337,16 +1380,24 @@ void InstructionSelector::VisitFloat64Mod(Node* node) {
 }
 
 
-void InstructionSelector::VisitFloat32Max(Node* node) { UNREACHABLE(); }
+void InstructionSelector::VisitFloat32Max(Node* node) {
+  VisitRRR(this, kArm64Float32Max, node);
+}
 
 
-void InstructionSelector::VisitFloat64Max(Node* node) { UNREACHABLE(); }
+void InstructionSelector::VisitFloat64Max(Node* node) {
+  VisitRRR(this, kArm64Float64Max, node);
+}
 
 
-void InstructionSelector::VisitFloat32Min(Node* node) { UNREACHABLE(); }
+void InstructionSelector::VisitFloat32Min(Node* node) {
+  VisitRRR(this, kArm64Float32Min, node);
+}
 
 
-void InstructionSelector::VisitFloat64Min(Node* node) { UNREACHABLE(); }
+void InstructionSelector::VisitFloat64Min(Node* node) {
+  VisitRRR(this, kArm64Float64Min, node);
+}
 
 
 void InstructionSelector::VisitFloat32Abs(Node* node) {
@@ -1384,26 +1435,13 @@ void InstructionSelector::VisitFloat64RoundTiesAway(Node* node) {
 }
 
 
-void InstructionSelector::VisitCall(Node* node, BasicBlock* handler) {
+void InstructionSelector::EmitPrepareArguments(NodeVector* arguments,
+                                               const CallDescriptor* descriptor,
+                                               Node* node) {
   Arm64OperandGenerator g(this);
-  const CallDescriptor* descriptor = OpParameter<const CallDescriptor*>(node);
-
-  FrameStateDescriptor* frame_state_descriptor = nullptr;
-  if (descriptor->NeedsFrameState()) {
-    frame_state_descriptor = GetFrameStateDescriptor(
-        node->InputAt(static_cast<int>(descriptor->InputCount())));
-  }
-
-  CallBuffer buffer(zone(), descriptor, frame_state_descriptor);
-
-  // Compute InstructionOperands for inputs and outputs.
-  // TODO(turbofan): on ARM64 it's probably better to use the code object in a
-  // register if there are multiple uses of it. Improve constant pool and the
-  // heuristics in the register allocator for where to emit constants.
-  InitializeCallBuffer(node, &buffer, true, true);
 
   // Push the arguments to the stack.
-  int aligned_push_count = static_cast<int>(buffer.pushed_nodes.size());
+  int aligned_push_count = static_cast<int>(arguments->size());
   bool pushed_count_uneven = aligned_push_count & 1;
   // TODO(dcarney): claim and poke probably take small immediates,
   //                loop here or whatever.
@@ -1418,163 +1456,21 @@ void InstructionSelector::VisitCall(Node* node, BasicBlock* handler) {
     int slot = aligned_push_count - 1;
     // Emit the uneven pushes.
     if (pushed_count_uneven) {
-      Node* input = buffer.pushed_nodes[slot];
+      Node* input = (*arguments)[slot];
       Emit(kArm64Poke, g.NoOutput(), g.UseRegister(input),
            g.TempImmediate(slot));
       slot--;
     }
     // Now all pushes can be done in pairs.
     for (; slot >= 0; slot -= 2) {
-      Emit(kArm64PokePair, g.NoOutput(),
-           g.UseRegister(buffer.pushed_nodes[slot]),
-           g.UseRegister(buffer.pushed_nodes[slot - 1]),
-           g.TempImmediate(slot));
+      Emit(kArm64PokePair, g.NoOutput(), g.UseRegister((*arguments)[slot]),
+           g.UseRegister((*arguments)[slot - 1]), g.TempImmediate(slot));
     }
   }
-
-  // Pass label of exception handler block.
-  CallDescriptor::Flags flags = descriptor->flags();
-  if (handler != nullptr) {
-    DCHECK_EQ(IrOpcode::kIfException, handler->front()->opcode());
-    IfExceptionHint hint = OpParameter<IfExceptionHint>(handler->front());
-    if (hint == IfExceptionHint::kLocallyCaught) {
-      flags |= CallDescriptor::kHasLocalCatchHandler;
-    }
-    flags |= CallDescriptor::kHasExceptionHandler;
-    buffer.instruction_args.push_back(g.Label(handler));
-  }
-
-  // Select the appropriate opcode based on the call type.
-  InstructionCode opcode;
-  switch (descriptor->kind()) {
-    case CallDescriptor::kCallAddress:
-      opcode =
-          kArchCallCFunction |
-          MiscField::encode(static_cast<int>(descriptor->CParameterCount()));
-      break;
-    case CallDescriptor::kCallCodeObject:
-      opcode = kArchCallCodeObject | MiscField::encode(flags);
-      break;
-    case CallDescriptor::kCallJSFunction:
-      opcode = kArchCallJSFunction | MiscField::encode(flags);
-      break;
-    default:
-      UNREACHABLE();
-      return;
-  }
-
-  // Emit the call instruction.
-  size_t const output_count = buffer.outputs.size();
-  auto* outputs = output_count ? &buffer.outputs.front() : nullptr;
-  Emit(opcode, output_count, outputs, buffer.instruction_args.size(),
-       &buffer.instruction_args.front())->MarkAsCall();
 }
 
 
-void InstructionSelector::VisitTailCall(Node* node) {
-  Arm64OperandGenerator g(this);
-  const CallDescriptor* descriptor = OpParameter<const CallDescriptor*>(node);
-  DCHECK_NE(0, descriptor->flags() & CallDescriptor::kSupportsTailCalls);
-  DCHECK_EQ(0, descriptor->flags() & CallDescriptor::kPatchableCallSite);
-  DCHECK_EQ(0, descriptor->flags() & CallDescriptor::kNeedsNopAfterCall);
-
-  // TODO(turbofan): Relax restriction for stack parameters.
-  if (linkage()->GetIncomingDescriptor()->CanTailCall(node)) {
-    CallBuffer buffer(zone(), descriptor, nullptr);
-
-    // Compute InstructionOperands for inputs and outputs.
-    // TODO(turbofan): on ARM64 it's probably better to use the code object in a
-    // register if there are multiple uses of it. Improve constant pool and the
-    // heuristics in the register allocator for where to emit constants.
-    InitializeCallBuffer(node, &buffer, true, false);
-
-    // Select the appropriate opcode based on the call type.
-    InstructionCode opcode;
-    switch (descriptor->kind()) {
-      case CallDescriptor::kCallCodeObject:
-        opcode = kArchTailCallCodeObject;
-        break;
-      case CallDescriptor::kCallJSFunction:
-        opcode = kArchTailCallJSFunction;
-        break;
-      default:
-        UNREACHABLE();
-        return;
-    }
-    opcode |= MiscField::encode(descriptor->flags());
-
-    // Emit the tailcall instruction.
-    Emit(opcode, 0, nullptr, buffer.instruction_args.size(),
-         &buffer.instruction_args.front());
-  } else {
-    FrameStateDescriptor* frame_state_descriptor = nullptr;
-    if (descriptor->NeedsFrameState()) {
-      frame_state_descriptor = GetFrameStateDescriptor(
-          node->InputAt(static_cast<int>(descriptor->InputCount())));
-    }
-
-    CallBuffer buffer(zone(), descriptor, frame_state_descriptor);
-
-    // Compute InstructionOperands for inputs and outputs.
-    // TODO(turbofan): on ARM64 it's probably better to use the code object in a
-    // register if there are multiple uses of it. Improve constant pool and the
-    // heuristics in the register allocator for where to emit constants.
-    InitializeCallBuffer(node, &buffer, true, false);
-
-    // Push the arguments to the stack.
-    int aligned_push_count = static_cast<int>(buffer.pushed_nodes.size());
-    bool pushed_count_uneven = aligned_push_count & 1;
-    // TODO(dcarney): claim and poke probably take small immediates,
-    //                loop here or whatever.
-    // Bump the stack pointer(s).
-    if (aligned_push_count > 0) {
-      // TODO(dcarney): it would be better to bump the csp here only
-      //                and emit paired stores with increment for non c frames.
-      Emit(kArm64Claim, g.NoOutput(), g.TempImmediate(aligned_push_count));
-    }
-    // Move arguments to the stack.
-    {
-      int slot = aligned_push_count - 1;
-      // Emit the uneven pushes.
-      if (pushed_count_uneven) {
-        Node* input = buffer.pushed_nodes[slot];
-        Emit(kArm64Poke, g.NoOutput(), g.UseRegister(input),
-             g.TempImmediate(slot));
-        slot--;
-      }
-      // Now all pushes can be done in pairs.
-      for (; slot >= 0; slot -= 2) {
-        Emit(kArm64PokePair, g.NoOutput(),
-             g.UseRegister(buffer.pushed_nodes[slot]),
-             g.UseRegister(buffer.pushed_nodes[slot - 1]),
-             g.TempImmediate(slot));
-      }
-    }
-
-    // Select the appropriate opcode based on the call type.
-    InstructionCode opcode;
-    switch (descriptor->kind()) {
-      case CallDescriptor::kCallCodeObject: {
-        opcode = kArchCallCodeObject;
-        break;
-      }
-      case CallDescriptor::kCallJSFunction:
-        opcode = kArchCallJSFunction;
-        break;
-      default:
-        UNREACHABLE();
-        return;
-    }
-    opcode |= MiscField::encode(descriptor->flags());
-
-    // Emit the call instruction.
-    size_t const output_count = buffer.outputs.size();
-    auto* outputs = output_count ? &buffer.outputs.front() : nullptr;
-    Emit(opcode, output_count, outputs, buffer.instruction_args.size(),
-         &buffer.instruction_args.front())->MarkAsCall();
-    Emit(kArchRet, 0, nullptr, output_count, outputs);
-  }
-}
+bool InstructionSelector::IsTailCallAddressImmediate() { return false; }
 
 
 namespace {
@@ -1620,8 +1516,29 @@ void VisitWordCompare(InstructionSelector* selector, Node* node,
 
 void VisitWord32Compare(InstructionSelector* selector, Node* node,
                         FlagsContinuation* cont) {
-  VisitBinop<Int32BinopMatcher>(selector, node, kArm64Cmp32, kArithmeticImm,
-                                cont);
+  Int32BinopMatcher m(node);
+  ArchOpcode opcode = kArm64Cmp32;
+
+  // Select negated compare for comparisons with negated right input.
+  if (m.right().IsInt32Sub()) {
+    Node* sub = m.right().node();
+    Int32BinopMatcher msub(sub);
+    if (msub.left().Is(0)) {
+      bool can_cover = selector->CanCover(node, sub);
+      node->ReplaceInput(1, msub.right().node());
+      // Even if the comparison node covers the subtraction, after the input
+      // replacement above, the node still won't cover the input to the
+      // subtraction; the subtraction still uses it.
+      // In order to get shifted operations to work, we must remove the rhs
+      // input to the subtraction, as TryMatchAnyShift requires this node to
+      // cover the input shift. We do this by setting it to the lhs input,
+      // as we know it's zero, and the result of the subtraction isn't used by
+      // any other node.
+      if (can_cover) sub->ReplaceInput(1, msub.left().node());
+      opcode = kArm64Cmn32;
+    }
+  }
+  VisitBinop<Int32BinopMatcher>(selector, node, opcode, kArithmeticImm, cont);
 }
 
 
@@ -1645,7 +1562,7 @@ void VisitWord64Test(InstructionSelector* selector, Node* node,
 }
 
 
-// Shared routine for multiple float64 compare operations.
+// Shared routine for multiple float32 compare operations.
 void VisitFloat32Compare(InstructionSelector* selector, Node* node,
                          FlagsContinuation* cont) {
   Arm64OperandGenerator g(selector);
@@ -1653,6 +1570,10 @@ void VisitFloat32Compare(InstructionSelector* selector, Node* node,
   if (m.right().Is(0.0f)) {
     VisitCompare(selector, kArm64Float32Cmp, g.UseRegister(m.left().node()),
                  g.UseImmediate(m.right().node()), cont);
+  } else if (m.left().Is(0.0f)) {
+    cont->Commute();
+    VisitCompare(selector, kArm64Float32Cmp, g.UseRegister(m.right().node()),
+                 g.UseImmediate(m.left().node()), cont);
   } else {
     VisitCompare(selector, kArm64Float32Cmp, g.UseRegister(m.left().node()),
                  g.UseRegister(m.right().node()), cont);
@@ -1668,6 +1589,10 @@ void VisitFloat64Compare(InstructionSelector* selector, Node* node,
   if (m.right().Is(0.0)) {
     VisitCompare(selector, kArm64Float64Cmp, g.UseRegister(m.left().node()),
                  g.UseImmediate(m.right().node()), cont);
+  } else if (m.left().Is(0.0)) {
+    cont->Commute();
+    VisitCompare(selector, kArm64Float64Cmp, g.UseRegister(m.right().node()),
+                 g.UseImmediate(m.left().node()), cont);
   } else {
     VisitCompare(selector, kArm64Float64Cmp, g.UseRegister(m.left().node()),
                  g.UseRegister(m.right().node()), cont);
@@ -1739,19 +1664,19 @@ void InstructionSelector::VisitBranch(Node* branch, BasicBlock* tbranch,
         cont.OverwriteAndNegateIfEqual(kEqual);
         return VisitFloat32Compare(this, value, &cont);
       case IrOpcode::kFloat32LessThan:
-        cont.OverwriteAndNegateIfEqual(kUnsignedLessThan);
+        cont.OverwriteAndNegateIfEqual(kFloatLessThan);
         return VisitFloat32Compare(this, value, &cont);
       case IrOpcode::kFloat32LessThanOrEqual:
-        cont.OverwriteAndNegateIfEqual(kUnsignedLessThanOrEqual);
+        cont.OverwriteAndNegateIfEqual(kFloatLessThanOrEqual);
         return VisitFloat32Compare(this, value, &cont);
       case IrOpcode::kFloat64Equal:
         cont.OverwriteAndNegateIfEqual(kEqual);
         return VisitFloat64Compare(this, value, &cont);
       case IrOpcode::kFloat64LessThan:
-        cont.OverwriteAndNegateIfEqual(kUnsignedLessThan);
+        cont.OverwriteAndNegateIfEqual(kFloatLessThan);
         return VisitFloat64Compare(this, value, &cont);
       case IrOpcode::kFloat64LessThanOrEqual:
-        cont.OverwriteAndNegateIfEqual(kUnsignedLessThanOrEqual);
+        cont.OverwriteAndNegateIfEqual(kFloatLessThanOrEqual);
         return VisitFloat64Compare(this, value, &cont);
       case IrOpcode::kProjection:
         // Check if this is the overflow output projection of an
@@ -1876,6 +1801,14 @@ void InstructionSelector::VisitWord32Equal(Node* const node) {
         case IrOpcode::kWord32And:
           return VisitWordCompare(this, value, kArm64Tst32, &cont, true,
                                   kLogical32Imm);
+        case IrOpcode::kWord32Equal: {
+          // Word32Equal(Word32Equal(x, y), 0) => Word32Compare(x, y, ne).
+          Int32BinopMatcher mequal(value);
+          node->ReplaceInput(0, mequal.left().node());
+          node->ReplaceInput(1, mequal.right().node());
+          cont.Negate();
+          return VisitWord32Compare(this, node, &cont);
+        }
         default:
           break;
       }
@@ -1984,13 +1917,13 @@ void InstructionSelector::VisitFloat32Equal(Node* node) {
 
 
 void InstructionSelector::VisitFloat32LessThan(Node* node) {
-  FlagsContinuation cont(kUnsignedLessThan, node);
+  FlagsContinuation cont(kFloatLessThan, node);
   VisitFloat32Compare(this, node, &cont);
 }
 
 
 void InstructionSelector::VisitFloat32LessThanOrEqual(Node* node) {
-  FlagsContinuation cont(kUnsignedLessThanOrEqual, node);
+  FlagsContinuation cont(kFloatLessThanOrEqual, node);
   VisitFloat32Compare(this, node, &cont);
 }
 
@@ -2002,13 +1935,13 @@ void InstructionSelector::VisitFloat64Equal(Node* node) {
 
 
 void InstructionSelector::VisitFloat64LessThan(Node* node) {
-  FlagsContinuation cont(kUnsignedLessThan, node);
+  FlagsContinuation cont(kFloatLessThan, node);
   VisitFloat64Compare(this, node, &cont);
 }
 
 
 void InstructionSelector::VisitFloat64LessThanOrEqual(Node* node) {
-  FlagsContinuation cont(kUnsignedLessThanOrEqual, node);
+  FlagsContinuation cont(kFloatLessThanOrEqual, node);
   VisitFloat64Compare(this, node, &cont);
 }
 
@@ -2065,7 +1998,11 @@ void InstructionSelector::VisitFloat64InsertHighWord32(Node* node) {
 // static
 MachineOperatorBuilder::Flags
 InstructionSelector::SupportedMachineOperatorFlags() {
-  return MachineOperatorBuilder::kFloat64RoundDown |
+  return MachineOperatorBuilder::kFloat32Max |
+         MachineOperatorBuilder::kFloat32Min |
+         MachineOperatorBuilder::kFloat64Max |
+         MachineOperatorBuilder::kFloat64Min |
+         MachineOperatorBuilder::kFloat64RoundDown |
          MachineOperatorBuilder::kFloat64RoundTruncate |
          MachineOperatorBuilder::kFloat64RoundTiesAway |
          MachineOperatorBuilder::kWord32ShiftIsSafe |

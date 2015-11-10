@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Flags: --harmony-rest-parameters --harmony-arrow-functions
+// Flags: --harmony-rest-parameters
 
 (function testRestIndex() {
   assertEquals(5, ((...args) => args.length)(1,2,3,4,5));
@@ -18,18 +18,20 @@
 //
 //   strictTest(6,5,4,3,2,1)
 //
-var strictTest = (a, b, ...c) => {
+var strictTest = (() => {
   "use strict";
-  assertEquals(Array, c.constructor);
-  assertTrue(Array.isArray(c));
+  return (a, b, ...c) => {
+    assertEquals(Array, c.constructor);
+    assertTrue(Array.isArray(c));
 
-  var expectedLength = (a === undefined) ? 0 : a - 2;
-  assertEquals(expectedLength, c.length);
+    var expectedLength = (a === undefined) ? 0 : a - 2;
+    assertEquals(expectedLength, c.length);
 
-  for (var i = 2; i < a; ++i) {
-    assertEquals(c[i - 2], a - i);
-  }
-}
+    for (var i = 2; i < a; ++i) {
+      assertEquals(c[i - 2], a - i);
+    }
+  };
+})();
 
 var sloppyTest = (a, b, ...c) => {
   assertEquals(Array, c.constructor);

@@ -42,8 +42,6 @@
 //   CodeForDoWhileConditionPosition
 //   CodeForSourcePosition
 
-enum TypeofState { INSIDE_TYPEOF, NOT_INSIDE_TYPEOF };
-
 #if V8_TARGET_ARCH_IA32
 #include "src/ia32/codegen-ia32.h"  // NOLINT
 #elif V8_TARGET_ARCH_X64
@@ -80,7 +78,6 @@ class CodeGenerator {
 
   // Allocate and install the code.
   static Handle<Code> MakeCodeEpilogue(MacroAssembler* masm,
-                                       Code::Flags flags,
                                        CompilationInfo* info);
 
   // Print the code after compiling it.
@@ -175,6 +172,7 @@ class CodeAgingHelper {
 #endif
 };
 
-} }  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_CODEGEN_H_

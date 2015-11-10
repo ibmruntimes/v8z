@@ -4,10 +4,11 @@
 
 #include "src/compiler/code-generator.h"
 
+#include "src/address-map.h"
 #include "src/compiler/code-generator-impl.h"
 #include "src/compiler/linkage.h"
 #include "src/compiler/pipeline.h"
-#include "src/snapshot/serialize.h"  // TODO(turbofan): RootIndexMap
+#include "src/frames-inl.h"
 
 namespace v8 {
 namespace internal {
@@ -82,9 +83,9 @@ Handle<Code> CodeGenerator::GenerateCode() {
 
   // Define deoptimization literals for all inlined functions.
   DCHECK_EQ(0u, deoptimization_literals_.size());
-  for (auto shared_info : info->inlined_functions()) {
-    if (!shared_info.is_identical_to(info->shared_info())) {
-      DefineDeoptimizationLiteral(shared_info);
+  for (auto& inlined : info->inlined_functions()) {
+    if (!inlined.shared_info.is_identical_to(info->shared_info())) {
+      DefineDeoptimizationLiteral(inlined.shared_info);
     }
   }
   inlined_function_count_ = deoptimization_literals_.size();
@@ -146,7 +147,7 @@ Handle<Code> CodeGenerator::GenerateCode() {
   }
 
   // Ensure there is space for lazy deoptimization in the code.
-  if (!info->IsStub()) {
+  if (info->ShouldEnsureSpaceForLazyDeopt()) {
     int target_offset = masm()->pc_offset() + Deoptimizer::patch_size();
     while (masm()->pc_offset() < target_offset) {
       masm()->nop();
@@ -166,8 +167,8 @@ Handle<Code> CodeGenerator::GenerateCode() {
 
   safepoints()->Emit(masm(), frame()->GetSpillSlotCount());
 
-  Handle<Code> result = v8::internal::CodeGenerator::MakeCodeEpilogue(
-      masm(), info->flags(), info);
+  Handle<Code> result =
+      v8::internal::CodeGenerator::MakeCodeEpilogue(masm(), info);
   result->set_is_turbofanned(true);
   result->set_stack_slots(frame()->GetSpillSlotCount());
   result->set_safepoint_table_offset(safepoints()->GetCodeOffset());
@@ -192,7 +193,7 @@ Handle<Code> CodeGenerator::GenerateCode() {
   PopulateDeoptimizationData(result);
 
   // Ensure there is space for lazy deoptimization in the relocation info.
-  if (!info->IsStub()) {
+  if (info->ShouldEnsureSpaceForLazyDeopt()) {
     Deoptimizer::EnsureRelocSpaceForLazyDeoptimization(result);
   }
 
@@ -215,13 +216,18 @@ void CodeGenerator::RecordSafepoint(ReferenceMap* references,
                                     Safepoint::DeoptMode deopt_mode) {
   Safepoint safepoint =
       safepoints()->DefineSafepoint(masm(), kind, arguments, deopt_mode);
+  int stackSlotToSpillSlotDelta =
+      frame()->GetTotalFrameSlotCount() - frame()->GetSpillSlotCount();
   for (auto& operand : references->reference_operands()) {
     if (operand.IsStackSlot()) {
-      safepoint.DefinePointerSlot(StackSlotOperand::cast(operand).index(),
-                                  zone());
+      int index = LocationOperand::cast(operand).index();
+      DCHECK(index >= 0);
+      // Safepoint table indices are 0-based from the beginning of the spill
+      // slot area, adjust appropriately.
+      index -= stackSlotToSpillSlotDelta;
+      safepoint.DefinePointerSlot(index, zone());
     } else if (operand.IsRegister() && (kind & Safepoint::kWithRegisters)) {
-      Register reg =
-          Register::FromAllocationIndex(RegisterOperand::cast(operand).index());
+      Register reg = LocationOperand::cast(operand).GetRegister();
       safepoint.DefinePointerRegister(reg, zone());
     }
   }
@@ -231,7 +237,8 @@ void CodeGenerator::RecordSafepoint(ReferenceMap* references,
 bool CodeGenerator::IsMaterializableFromFrame(Handle<HeapObject> object,
                                               int* offset_return) {
   if (linkage()->GetIncomingDescriptor()->IsJSFunctionCall()) {
-    if (object.is_identical_to(info()->context()) && !info()->is_osr()) {
+    if (info()->has_context() && object.is_identical_to(info()->context()) &&
+        !info()->is_osr()) {
       *offset_return = StandardFrameConstants::kContextOffset;
       return true;
     } else if (object.is_identical_to(info()->closure())) {
@@ -245,7 +252,9 @@ bool CodeGenerator::IsMaterializableFromFrame(Handle<HeapObject> object,
 
 bool CodeGenerator::IsMaterializableFromRoot(
     Handle<HeapObject> object, Heap::RootListIndex* index_return) {
-  if (linkage()->GetIncomingDescriptor()->IsJSFunctionCall()) {
+  const CallDescriptor* incoming_descriptor =
+      linkage()->GetIncomingDescriptor();
+  if (incoming_descriptor->flags() & CallDescriptor::kCanUseRoots) {
     RootIndexMap map(isolate());
     int root_index = map.Lookup(*object);
     if (root_index != RootIndexMap::kInvalidRootIndex) {
@@ -349,11 +358,8 @@ void CodeGenerator::PopulateDeoptimizationData(Handle<Code> code_object) {
   data->SetInlinedFunctionCount(
       Smi::FromInt(static_cast<int>(inlined_function_count_)));
   data->SetOptimizationId(Smi::FromInt(info->optimization_id()));
-  // TODO(jarin) The following code was copied over from Lithium, not sure
-  // whether the scope or the IsOptimizing condition are really needed.
-  if (info->IsOptimizing()) {
-    // Reference to shared function info does not change between phases.
-    AllowDeferredHandleDereference allow_handle_dereference;
+
+  if (info->has_shared_info()) {
     data->SetSharedFunctionInfo(*info->shared_info());
   } else {
     data->SetSharedFunctionInfo(Smi::FromInt(0));
@@ -528,6 +534,7 @@ void CodeGenerator::BuildTranslationForFrameStateDescriptor(
 
   Handle<SharedFunctionInfo> shared_info;
   if (!descriptor->shared_info().ToHandle(&shared_info)) {
+    if (!info()->has_shared_info()) return;  // Stub with no SharedFunctionInfo.
     shared_info = info()->shared_info();
   }
   int shared_info_id = DefineDeoptimizationLiteral(shared_info);
@@ -582,21 +589,20 @@ void CodeGenerator::AddTranslationForOperand(Translation* translation,
                                              MachineType type) {
   if (op->IsStackSlot()) {
     if (type == kMachBool || type == kRepBit) {
-      translation->StoreBoolStackSlot(StackSlotOperand::cast(op)->index());
+      translation->StoreBoolStackSlot(LocationOperand::cast(op)->index());
     } else if (type == kMachInt32 || type == kMachInt8 || type == kMachInt16) {
-      translation->StoreInt32StackSlot(StackSlotOperand::cast(op)->index());
+      translation->StoreInt32StackSlot(LocationOperand::cast(op)->index());
     } else if (type == kMachUint32 || type == kMachUint16 ||
                type == kMachUint8) {
-      translation->StoreUint32StackSlot(StackSlotOperand::cast(op)->index());
+      translation->StoreUint32StackSlot(LocationOperand::cast(op)->index());
     } else if ((type & kRepMask) == kRepTagged) {
-      translation->StoreStackSlot(StackSlotOperand::cast(op)->index());
+      translation->StoreStackSlot(LocationOperand::cast(op)->index());
     } else {
       CHECK(false);
     }
   } else if (op->IsDoubleStackSlot()) {
     DCHECK((type & (kRepFloat32 | kRepFloat64)) != 0);
-    translation->StoreDoubleStackSlot(
-        DoubleStackSlotOperand::cast(op)->index());
+    translation->StoreDoubleStackSlot(LocationOperand::cast(op)->index());
   } else if (op->IsRegister()) {
     InstructionOperandConverter converter(this, instr);
     if (type == kMachBool || type == kRepBit) {
@@ -625,6 +631,10 @@ void CodeGenerator::AddTranslationForOperand(Translation* translation,
         constant_object =
             isolate()->factory()->NewNumberFromInt(constant.ToInt32());
         break;
+      case Constant::kFloat32:
+        DCHECK((type & (kRepFloat32 | kRepTagged)) != 0);
+        constant_object = isolate()->factory()->NewNumber(constant.ToFloat32());
+        break;
       case Constant::kFloat64:
         DCHECK((type & (kRepFloat64 | kRepTagged)) != 0);
         constant_object = isolate()->factory()->NewNumber(constant.ToFloat64());
@@ -651,61 +661,6 @@ void CodeGenerator::AddTranslationForOperand(Translation* translation,
 void CodeGenerator::MarkLazyDeoptSite() {
   last_lazy_deopt_pc_ = masm()->pc_offset();
 }
-
-#if !V8_TURBOFAN_BACKEND
-
-void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
-  UNIMPLEMENTED();
-}
-
-
-void CodeGenerator::AssembleArchBranch(Instruction* instr,
-                                       BranchInfo* branch) {
-  UNIMPLEMENTED();
-}
-
-
-void CodeGenerator::AssembleArchBoolean(Instruction* instr,
-                                        FlagsCondition condition) {
-  UNIMPLEMENTED();
-}
-
-
-void CodeGenerator::AssembleArchJump(RpoNumber target) { UNIMPLEMENTED(); }
-
-
-void CodeGenerator::AssembleDeoptimizerCall(
-    int deoptimization_id, Deoptimizer::BailoutType bailout_type) {
-  UNIMPLEMENTED();
-}
-
-
-void CodeGenerator::AssemblePrologue() { UNIMPLEMENTED(); }
-
-
-void CodeGenerator::AssembleReturn() { UNIMPLEMENTED(); }
-
-
-void CodeGenerator::AssembleMove(InstructionOperand* source,
-                                 InstructionOperand* destination) {
-  UNIMPLEMENTED();
-}
-
-
-void CodeGenerator::AssembleSwap(InstructionOperand* source,
-                                 InstructionOperand* destination) {
-  UNIMPLEMENTED();
-}
-
-
-void CodeGenerator::AddNopForSmiCodeInlining() { UNIMPLEMENTED(); }
-
-
-void CodeGenerator::AssembleJumpTable(Label** targets, size_t target_count) {
-  UNIMPLEMENTED();
-}
-
-#endif  // !V8_TURBOFAN_BACKEND
 
 
 OutOfLineCode::OutOfLineCode(CodeGenerator* gen)

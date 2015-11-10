@@ -72,6 +72,8 @@ class Runner(object):
     if not context.no_sorting:
       for t in self.tests:
         t.duration = self.perfdata.FetchPerfData(t) or 1.0
+      slow_key = lambda t: statusfile.IsSlow(t.outcomes)
+      self.tests.sort(key=slow_key, reverse=True)
       self.tests.sort(key=lambda t: t.duration, reverse=True)
     self._CommonInit(suites, progress_indicator, context)
 
@@ -104,6 +106,8 @@ class Runner(object):
         "--stress-opt" in self.context.mode_flags or
         "--stress-opt" in self.context.extra_flags):
       timeout *= 4
+    if "--noenable-vfp3" in self.context.extra_flags:
+      timeout *= 2
     # FIXME(machenbach): Make this more OO. Don't expose default outcomes or
     # the like.
     if statusfile.IsSlow(test.outcomes or [statusfile.PASS]):
@@ -212,8 +216,10 @@ class Runner(object):
     self.indicator.Starting()
     self._RunInternal(jobs)
     self.indicator.Done()
-    if self.failed or self.remaining:
+    if self.failed:
       return 1
+    elif self.remaining:
+      return 2
     return 0
 
   def _RunInternal(self, jobs):

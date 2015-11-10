@@ -11,6 +11,54 @@ namespace v8 {
 namespace internal {
 namespace compiler {
 
+
+FlagsCondition CommuteFlagsCondition(FlagsCondition condition) {
+  switch (condition) {
+    case kSignedLessThan:
+      return kSignedGreaterThan;
+    case kSignedGreaterThanOrEqual:
+      return kSignedLessThanOrEqual;
+    case kSignedLessThanOrEqual:
+      return kSignedGreaterThanOrEqual;
+    case kSignedGreaterThan:
+      return kSignedLessThan;
+    case kUnsignedLessThan:
+      return kUnsignedGreaterThan;
+    case kUnsignedGreaterThanOrEqual:
+      return kUnsignedLessThanOrEqual;
+    case kUnsignedLessThanOrEqual:
+      return kUnsignedGreaterThanOrEqual;
+    case kUnsignedGreaterThan:
+      return kUnsignedLessThan;
+    case kFloatLessThanOrUnordered:
+      return kFloatGreaterThanOrUnordered;
+    case kFloatGreaterThanOrEqual:
+      return kFloatLessThanOrEqual;
+    case kFloatLessThanOrEqual:
+      return kFloatGreaterThanOrEqual;
+    case kFloatGreaterThanOrUnordered:
+      return kFloatLessThanOrUnordered;
+    case kFloatLessThan:
+      return kFloatGreaterThan;
+    case kFloatGreaterThanOrEqualOrUnordered:
+      return kFloatLessThanOrEqualOrUnordered;
+    case kFloatLessThanOrEqualOrUnordered:
+      return kFloatGreaterThanOrEqualOrUnordered;
+    case kFloatGreaterThan:
+      return kFloatLessThan;
+    case kEqual:
+    case kNotEqual:
+    case kOverflow:
+    case kNotOverflow:
+    case kUnorderedEqual:
+    case kUnorderedNotEqual:
+      return condition;
+  }
+  UNREACHABLE();
+  return condition;
+}
+
+
 std::ostream& operator<<(std::ostream& os,
                          const PrintableInstructionOperand& printable) {
   const InstructionOperand& op = printable.op_;
@@ -26,11 +74,15 @@ std::ostream& operator<<(std::ostream& os,
         case UnallocatedOperand::NONE:
           return os;
         case UnallocatedOperand::FIXED_REGISTER:
-          return os << "(=" << conf->general_register_name(
-                                   unalloc->fixed_register_index()) << ")";
+          return os << "(="
+                    << conf->GetGeneralRegisterName(
+                           unalloc->fixed_register_index())
+                    << ")";
         case UnallocatedOperand::FIXED_DOUBLE_REGISTER:
-          return os << "(=" << conf->double_register_name(
-                                   unalloc->fixed_register_index()) << ")";
+          return os << "(="
+                    << conf->GetDoubleRegisterName(
+                           unalloc->fixed_register_index())
+                    << ")";
         case UnallocatedOperand::MUST_HAVE_REGISTER:
           return os << "(R)";
         case UnallocatedOperand::MUST_HAVE_SLOT:
@@ -53,25 +105,22 @@ std::ostream& operator<<(std::ostream& os,
           return os << "[immediate:" << imm.indexed_value() << "]";
       }
     }
+    case InstructionOperand::EXPLICIT:
     case InstructionOperand::ALLOCATED: {
-      auto allocated = AllocatedOperand::cast(op);
-      switch (allocated.allocated_kind()) {
-        case AllocatedOperand::STACK_SLOT:
-          os << "[stack:" << StackSlotOperand::cast(op).index();
-          break;
-        case AllocatedOperand::DOUBLE_STACK_SLOT:
-          os << "[double_stack:" << DoubleStackSlotOperand::cast(op).index();
-          break;
-        case AllocatedOperand::REGISTER:
-          os << "["
-             << conf->general_register_name(RegisterOperand::cast(op).index())
-             << "|R";
-          break;
-        case AllocatedOperand::DOUBLE_REGISTER:
-          os << "["
-             << conf->double_register_name(
-                    DoubleRegisterOperand::cast(op).index()) << "|R";
-          break;
+      auto allocated = LocationOperand::cast(op);
+      if (op.IsStackSlot()) {
+        os << "[stack:" << LocationOperand::cast(op).index();
+      } else if (op.IsDoubleStackSlot()) {
+        os << "[double_stack:" << LocationOperand::cast(op).index();
+      } else if (op.IsRegister()) {
+        os << "[" << LocationOperand::cast(op).GetRegister().ToString() << "|R";
+      } else {
+        DCHECK(op.IsDoubleRegister());
+        os << "[" << LocationOperand::cast(op).GetDoubleRegister().ToString()
+           << "|R";
+      }
+      if (allocated.IsExplicit()) {
+        os << "|E";
       }
       switch (allocated.machine_type()) {
         case kRepWord32:
@@ -130,11 +179,11 @@ MoveOperands* ParallelMove::PrepareInsertAfter(MoveOperands* move) const {
   MoveOperands* to_eliminate = nullptr;
   for (auto curr : *this) {
     if (curr->IsEliminated()) continue;
-    if (curr->destination().EqualsModuloType(move->source())) {
+    if (curr->destination().EqualsCanonicalized(move->source())) {
       DCHECK(!replacement);
       replacement = curr;
       if (to_eliminate != nullptr) break;
-    } else if (curr->destination().EqualsModuloType(move->destination())) {
+    } else if (curr->destination().EqualsCanonicalized(move->destination())) {
       DCHECK(!to_eliminate);
       to_eliminate = curr;
       if (replacement != nullptr) break;
@@ -143,6 +192,16 @@ MoveOperands* ParallelMove::PrepareInsertAfter(MoveOperands* move) const {
   DCHECK_IMPLIES(replacement == to_eliminate, replacement == nullptr);
   if (replacement != nullptr) move->set_source(replacement->source());
   return to_eliminate;
+}
+
+
+ExplicitOperand::ExplicitOperand(LocationKind kind, MachineType machine_type,
+                                 int index)
+    : LocationOperand(EXPLICIT, kind, machine_type, index) {
+  DCHECK_IMPLIES(kind == REGISTER && !IsFloatingPoint(machine_type),
+                 Register::from_code(index).IsAllocatable());
+  DCHECK_IMPLIES(kind == REGISTER && IsFloatingPoint(machine_type),
+                 DoubleRegister::from_code(index).IsAllocatable());
 }
 
 
@@ -212,7 +271,7 @@ std::ostream& operator<<(std::ostream& os,
 
 void ReferenceMap::RecordReference(const AllocatedOperand& op) {
   // Do not record arguments as pointers.
-  if (op.IsStackSlot() && StackSlotOperand::cast(op).index() < 0) return;
+  if (op.IsStackSlot() && LocationOperand::cast(op).index() < 0) return;
   DCHECK(!op.IsDoubleRegister() && !op.IsDoubleStackSlot());
   reference_operands_.push_back(op);
 }
@@ -221,8 +280,9 @@ void ReferenceMap::RecordReference(const AllocatedOperand& op) {
 std::ostream& operator<<(std::ostream& os, const ReferenceMap& pm) {
   os << "{";
   bool first = true;
-  PrintableInstructionOperand poi = {RegisterConfiguration::ArchDefault(),
-                                     InstructionOperand()};
+  PrintableInstructionOperand poi = {
+      RegisterConfiguration::ArchDefault(RegisterConfiguration::TURBOFAN),
+      InstructionOperand()};
   for (auto& op : pm.reference_operands_) {
     if (!first) {
       os << ";";
@@ -300,6 +360,22 @@ std::ostream& operator<<(std::ostream& os, const FlagsCondition& fc) {
       return os << "unsigned less than or equal";
     case kUnsignedGreaterThan:
       return os << "unsigned greater than";
+    case kFloatLessThanOrUnordered:
+      return os << "less than or unordered (FP)";
+    case kFloatGreaterThanOrEqual:
+      return os << "greater than or equal (FP)";
+    case kFloatLessThanOrEqual:
+      return os << "less than or equal (FP)";
+    case kFloatGreaterThanOrUnordered:
+      return os << "greater than or unordered (FP)";
+    case kFloatLessThan:
+      return os << "less than (FP)";
+    case kFloatGreaterThanOrEqualOrUnordered:
+      return os << "greater than, equal or unordered (FP)";
+    case kFloatLessThanOrEqualOrUnordered:
+      return os << "less than, equal or unordered (FP)";
+    case kFloatGreaterThan:
+      return os << "greater than (FP)";
     case kUnorderedEqual:
       return os << "unordered equal";
     case kUnorderedNotEqual:
@@ -417,7 +493,8 @@ InstructionBlock::InstructionBlock(Zone* zone, RpoNumber rpo_number,
       handler_(handler),
       needs_frame_(false),
       must_construct_frame_(false),
-      must_deconstruct_frame_(false) {}
+      must_deconstruct_frame_(false),
+      last_deferred_(RpoNumber::Invalid()) {}
 
 
 size_t InstructionBlock::PredecessorIndexOf(RpoNumber rpo_number) const {
@@ -566,9 +643,12 @@ InstructionBlock* InstructionSequence::GetInstructionBlock(
     int instruction_index) const {
   DCHECK(instruction_blocks_->size() == block_starts_.size());
   auto begin = block_starts_.begin();
-  auto end = std::lower_bound(begin, block_starts_.end(), instruction_index,
-                              std::less_equal<int>());
-  size_t index = std::distance(begin, end) - 1;
+  auto end = std::lower_bound(begin, block_starts_.end(), instruction_index);
+  // Post condition of std::lower_bound:
+  DCHECK(end == block_starts_.end() || *end >= instruction_index);
+  if (end == block_starts_.end() || *end > instruction_index) --end;
+  DCHECK(*end <= instruction_index);
+  size_t index = std::distance(begin, end);
   auto block = instruction_blocks_->at(index);
   DCHECK(block->code_start() <= instruction_index &&
          instruction_index < block->code_end());

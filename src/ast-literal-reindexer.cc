@@ -1,10 +1,10 @@
 // Copyright 2015 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-#include "src/v8.h"
+
+#include "src/ast-literal-reindexer.h"
 
 #include "src/ast.h"
-#include "src/ast-literal-reindexer.h"
 #include "src/scopes.h"
 
 namespace v8 {
@@ -24,6 +24,12 @@ void AstLiteralReindexer::VisitExportDeclaration(ExportDeclaration* node) {
 void AstLiteralReindexer::VisitEmptyStatement(EmptyStatement* node) {}
 
 
+void AstLiteralReindexer::VisitSloppyBlockFunctionStatement(
+    SloppyBlockFunctionStatement* node) {
+  Visit(node->statement());
+}
+
+
 void AstLiteralReindexer::VisitContinueStatement(ContinueStatement* node) {}
 
 
@@ -35,6 +41,11 @@ void AstLiteralReindexer::VisitDebuggerStatement(DebuggerStatement* node) {}
 
 void AstLiteralReindexer::VisitNativeFunctionLiteral(
     NativeFunctionLiteral* node) {}
+
+
+void AstLiteralReindexer::VisitDoExpression(DoExpression* node) {
+  // TODO(caitp): literals in do expressions need re-indexing too.
+}
 
 
 void AstLiteralReindexer::VisitLiteral(Literal* node) {}
@@ -174,6 +185,9 @@ void AstLiteralReindexer::VisitSpread(Spread* node) {
 }
 
 
+void AstLiteralReindexer::VisitEmptyParentheses(EmptyParentheses* node) {}
+
+
 void AstLiteralReindexer::VisitForInStatement(ForInStatement* node) {
   Visit(node->each());
   Visit(node->enumerable());
@@ -307,5 +321,5 @@ void AstLiteralReindexer::VisitFunctionLiteral(FunctionLiteral* node) {
 void AstLiteralReindexer::Reindex(Expression* pattern) {
   pattern->Accept(this);
 }
-}
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8

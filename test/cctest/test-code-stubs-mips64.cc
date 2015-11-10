@@ -34,6 +34,7 @@
 #include "src/factory.h"
 #include "src/macro-assembler.h"
 #include "src/mips64/constants-mips64.h"
+#include "src/register-configuration.h"
 #include "src/simulator.h"
 #include "test/cctest/cctest.h"
 #include "test/cctest/test-code-stubs.h"
@@ -62,6 +63,11 @@ ConvertDToIFunc MakeConvertDToIFuncTrampoline(Isolate* isolate,
   // Save callee save registers.
   __ MultiPush(kCalleeSaved | ra.bit());
 
+  // Save callee-saved FPU registers.
+  __ MultiPushFPU(kCalleeSavedFPU);
+  // Set up the reserved register for 0.0.
+  __ Move(kDoubleRegZero, 0.0);
+
   // For softfp, move the input value into f12.
   if (IsMipsSoftFloatABI) {
     __ Move(f12, a0, a1);
@@ -74,7 +80,9 @@ ConvertDToIFunc MakeConvertDToIFuncTrampoline(Isolate* isolate,
   // Save registers make sure they don't get clobbered.
   int source_reg_offset = kDoubleSize;
   int reg_num = 2;
-  for (;reg_num < Register::NumAllocatableRegisters(); ++reg_num) {
+  const RegisterConfiguration* config =
+      RegisterConfiguration::ArchDefault(RegisterConfiguration::CRANKSHAFT);
+  for (; reg_num < config->num_allocatable_general_registers(); ++reg_num) {
     Register reg = Register::from_code(reg_num);
     if (!reg.is(destination_reg)) {
       __ push(reg);
@@ -116,6 +124,9 @@ ConvertDToIFunc MakeConvertDToIFuncTrampoline(Isolate* isolate,
   Label ok;
   __ Branch(&ok, eq, v0, Operand(zero_reg));
   __ bind(&ok);
+
+  // Restore callee-saved FPU registers.
+  __ MultiPopFPU(kCalleeSavedFPU);
 
   // Restore callee save registers.
   __ MultiPop(kCalleeSaved | ra.bit());

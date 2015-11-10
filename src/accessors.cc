@@ -2,16 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/v8.h"
-
 #include "src/accessors.h"
+
 #include "src/api.h"
 #include "src/contexts.h"
 #include "src/deoptimizer.h"
 #include "src/execution.h"
 #include "src/factory.h"
 #include "src/frames-inl.h"
-#include "src/isolate.h"
+#include "src/isolate-inl.h"
 #include "src/list-inl.h"
 #include "src/messages.h"
 #include "src/property-details.h"
@@ -100,22 +99,37 @@ bool Accessors::IsJSArrayBufferViewFieldAccessor(Handle<Map> map,
   Isolate* isolate = name->GetIsolate();
 
   switch (map->instance_type()) {
-    case JS_TYPED_ARRAY_TYPE:
-      // %TypedArray%.prototype is non-configurable, and so are the following
-      // named properties on %TypedArray%.prototype, so we can directly inline
-      // the field-load for typed array maps that still use their
-      // %TypedArray%.prototype.
-      if (JSFunction::cast(map->GetConstructor())->prototype() !=
-          map->prototype()) {
+    case JS_TYPED_ARRAY_TYPE: {
+      if (!CheckForName(name, isolate->factory()->length_string(),
+                        JSTypedArray::kLengthOffset, object_offset) &&
+          !CheckForName(name, isolate->factory()->byte_length_string(),
+                        JSTypedArray::kByteLengthOffset, object_offset) &&
+          !CheckForName(name, isolate->factory()->byte_offset_string(),
+                        JSTypedArray::kByteOffsetOffset, object_offset)) {
         return false;
       }
-      return CheckForName(name, isolate->factory()->length_string(),
-                          JSTypedArray::kLengthOffset, object_offset) ||
-             CheckForName(name, isolate->factory()->byte_length_string(),
-                          JSTypedArray::kByteLengthOffset, object_offset) ||
-             CheckForName(name, isolate->factory()->byte_offset_string(),
-                          JSTypedArray::kByteOffsetOffset, object_offset);
 
+      if (map->is_dictionary_map()) return false;
+
+      // Check if the property is overridden on the instance.
+      DescriptorArray* descriptors = map->instance_descriptors();
+      int descriptor = descriptors->SearchWithCache(*name, *map);
+      if (descriptor != DescriptorArray::kNotFound) return false;
+
+      Handle<Object> proto = Handle<Object>(map->prototype(), isolate);
+      if (!proto->IsJSReceiver()) return false;
+
+      // Check if the property is defined in the prototype chain.
+      LookupIterator it(proto, name);
+      if (!it.IsFound()) return false;
+
+      Object* original_proto =
+          JSFunction::cast(map->GetConstructor())->prototype();
+
+      // Property is not configurable. It is enough to verify that
+      // the holder is the same.
+      return *it.GetHolder<Object>() == original_proto;
+    }
     case JS_DATA_VIEW_TYPE:
       return CheckForName(name, isolate->factory()->byte_length_string(),
                           JSDataView::kByteLengthOffset, object_offset) ||
@@ -147,14 +161,13 @@ void Accessors::ArgumentsIteratorSetter(
     const v8::PropertyCallbackInfo<void>& info) {
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(info.GetIsolate());
   HandleScope scope(isolate);
-  Handle<JSObject> object = Utils::OpenHandle(*info.This());
-  Handle<Object> value = Utils::OpenHandle(*val);
+  Handle<JSObject> object_handle = Utils::OpenHandle(*info.This());
+  Handle<Object> value_handle = Utils::OpenHandle(*val);
+  Handle<Name> name_handle = Utils::OpenHandle(*name);
 
-  LookupIterator it(object, Utils::OpenHandle(*name));
-  CHECK_EQ(LookupIterator::ACCESSOR, it.state());
-  DCHECK(it.HolderIsReceiverOrHiddenPrototype());
-
-  if (Object::SetDataProperty(&it, value).is_null()) {
+  if (JSObject::DefinePropertyOrElementIgnoreAttributes(
+          object_handle, name_handle, value_handle, NONE)
+          .is_null()) {
     isolate->OptionalRescheduleException(false);
   }
 }
@@ -185,18 +198,6 @@ void Accessors::ArrayLengthGetter(
 }
 
 
-// Tries to non-observably convert |value| to a valid array length.
-// Returns false if it fails.
-static bool FastAsArrayLength(Isolate* isolate, Handle<Object> value,
-                              uint32_t* length) {
-  if (value->ToArrayLength(length)) return true;
-  // We don't support AsArrayLength, so use AsArrayIndex for now. This just
-  // misses out on kMaxUInt32.
-  if (value->IsString()) return String::cast(*value)->AsArrayIndex(length);
-  return false;
-}
-
-
 void Accessors::ArrayLengthSetter(
     v8::Local<v8::Name> name,
     v8::Local<v8::Value> val,
@@ -209,26 +210,9 @@ void Accessors::ArrayLengthSetter(
   Handle<Object> length_obj = Utils::OpenHandle(*val);
 
   uint32_t length = 0;
-  if (!FastAsArrayLength(isolate, length_obj, &length)) {
-    Handle<Object> uint32_v;
-    if (!Execution::ToUint32(isolate, length_obj).ToHandle(&uint32_v)) {
-      isolate->OptionalRescheduleException(false);
-      return;
-    }
-
-    Handle<Object> number_v;
-    if (!Execution::ToNumber(isolate, length_obj).ToHandle(&number_v)) {
-      isolate->OptionalRescheduleException(false);
-      return;
-    }
-
-    if (uint32_v->Number() != number_v->Number()) {
-      Handle<Object> exception = isolate->factory()->NewRangeError(
-          MessageTemplate::kInvalidArrayLength);
-      return isolate->ScheduleThrow(*exception);
-    }
-
-    CHECK(uint32_v->ToArrayLength(&length));
+  if (!JSArray::AnythingToArrayLength(isolate, length_obj, &length)) {
+    isolate->OptionalRescheduleException(false);
+    return;
   }
 
   if (JSArray::ObservableSetLength(array, length).is_null()) {
@@ -245,7 +229,6 @@ Handle<AccessorInfo> Accessors::ArrayLengthInfo(
                       &ArrayLengthSetter,
                       attributes);
 }
-
 
 
 //
@@ -305,7 +288,8 @@ void Accessors::ScriptColumnOffsetGetter(
   DisallowHeapAllocation no_allocation;
   HandleScope scope(isolate);
   Object* object = *Utils::OpenHandle(*info.This());
-  Object* res = Script::cast(JSValue::cast(object)->value())->column_offset();
+  Object* res = Smi::FromInt(
+      Script::cast(JSValue::cast(object)->value())->column_offset());
   info.GetReturnValue().Set(Utils::ToLocal(Handle<Object>(res, isolate)));
 }
 
@@ -342,7 +326,7 @@ void Accessors::ScriptIdGetter(
   DisallowHeapAllocation no_allocation;
   HandleScope scope(isolate);
   Object* object = *Utils::OpenHandle(*info.This());
-  Object* id = Script::cast(JSValue::cast(object)->value())->id();
+  Object* id = Smi::FromInt(Script::cast(JSValue::cast(object)->value())->id());
   info.GetReturnValue().Set(Utils::ToLocal(Handle<Object>(id, isolate)));
 }
 
@@ -449,7 +433,8 @@ void Accessors::ScriptLineOffsetGetter(
   DisallowHeapAllocation no_allocation;
   HandleScope scope(isolate);
   Object* object = *Utils::OpenHandle(*info.This());
-  Object* res = Script::cast(JSValue::cast(object)->value())->line_offset();
+  Object* res =
+      Smi::FromInt(Script::cast(JSValue::cast(object)->value())->line_offset());
   info.GetReturnValue().Set(Utils::ToLocal(Handle<Object>(res, isolate)));
 }
 
@@ -486,7 +471,8 @@ void Accessors::ScriptTypeGetter(
   DisallowHeapAllocation no_allocation;
   HandleScope scope(isolate);
   Object* object = *Utils::OpenHandle(*info.This());
-  Object* res = Script::cast(JSValue::cast(object)->value())->type();
+  Object* res =
+      Smi::FromInt(Script::cast(JSValue::cast(object)->value())->type());
   info.GetReturnValue().Set(Utils::ToLocal(Handle<Object>(res, isolate)));
 }
 
@@ -801,10 +787,10 @@ void Accessors::ScriptEvalFromScriptPositionGetter(
   if (script->compilation_type() == Script::COMPILATION_TYPE_EVAL) {
     Handle<Code> code(SharedFunctionInfo::cast(
         script->eval_from_shared())->code());
-    result = Handle<Object>(
-        Smi::FromInt(code->SourcePosition(code->instruction_start() +
-                     script->eval_from_instructions_offset()->value())),
-        isolate);
+    result = Handle<Object>(Smi::FromInt(code->SourcePosition(
+                                code->instruction_start() +
+                                script->eval_from_instructions_offset())),
+                            isolate);
   }
   info.GetReturnValue().Set(Utils::ToLocal(result));
 }
@@ -916,7 +902,7 @@ MUST_USE_RESULT static MaybeHandle<Object> SetFunctionPrototype(
 
 MaybeHandle<Object> Accessors::FunctionSetPrototype(Handle<JSFunction> function,
                                                     Handle<Object> prototype) {
-  DCHECK(function->should_have_prototype());
+  DCHECK(function->IsConstructor());
   Isolate* isolate = function->GetIsolate();
   return SetFunctionPrototype(isolate, function, prototype);
 }
@@ -978,7 +964,7 @@ void Accessors::FunctionLengthGetter(
   } else {
     // If the function isn't compiled yet, the length is not computed
     // correctly yet. Compile it now and return the right length.
-    if (Compiler::EnsureCompiled(function, KEEP_EXCEPTION)) {
+    if (Compiler::Compile(function, KEEP_EXCEPTION)) {
       length = function->shared()->length();
     }
     if (isolate->has_pending_exception()) {
@@ -997,7 +983,6 @@ MUST_USE_RESULT static MaybeHandle<Object> ReplaceAccessorWithDataProperty(
   CHECK_EQ(LookupIterator::ACCESSOR, it.state());
   DCHECK(it.HolderIsReceiverOrHiddenPrototype());
   it.ReconfigureDataProperty(value, it.property_details().attributes());
-  it.WriteDataValue(value);
 
   if (is_observed && !old_value->SameValue(*value)) {
     return JSObject::EnqueueChangeRecord(object, "update", name, old_value);
@@ -1059,7 +1044,12 @@ void Accessors::FunctionNameGetter(
   HandleScope scope(isolate);
   Handle<JSFunction> function =
       Handle<JSFunction>::cast(Utils::OpenHandle(*info.Holder()));
-  Handle<Object> result(function->shared()->name(), isolate);
+  Handle<Object> result;
+  if (function->shared()->name_should_print_as_anonymous()) {
+    result = isolate->factory()->anonymous_string();
+  } else {
+    result = handle(function->shared()->name(), isolate);
+  }
   info.GetReturnValue().Set(Utils::ToLocal(result));
 }
 
@@ -1185,20 +1175,7 @@ Handle<Object> GetFunctionArguments(Isolate* isolate,
       return ArgumentsForInlinedFunction(frame, function, function_index);
     }
 
-    if (!frame->is_optimized()) {
-      // If there is an arguments variable in the stack, we return that.
-      Handle<ScopeInfo> scope_info(function->shared()->scope_info());
-      int index = scope_info->StackSlotIndex(
-          isolate->heap()->arguments_string());
-      if (index >= 0) {
-        Handle<Object> arguments(frame->GetExpression(index), isolate);
-        if (!arguments->IsArgumentsMarker()) return arguments;
-      }
-    }
-
-    // If there is no arguments variable in the stack or we have an
-    // optimized frame, we find the frame that holds the actual arguments
-    // passed to the function.
+    // Find the frame that holds the actual arguments passed to the function.
     it.AdvanceToArgumentsFrame();
     frame = it.frame();
 
@@ -1344,7 +1321,7 @@ MaybeHandle<JSFunction> FindCaller(Isolate* isolate,
   // If caller is a built-in function and caller's caller is also built-in,
   // use that instead.
   JSFunction* potential_caller = caller;
-  while (potential_caller != NULL && potential_caller->IsBuiltin()) {
+  while (potential_caller != NULL && potential_caller->shared()->IsBuiltin()) {
     caller = potential_caller;
     potential_caller = it.next();
   }

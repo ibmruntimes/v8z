@@ -7,6 +7,7 @@
 #include "src/compiler/js-graph.h"
 #include "src/compiler/machine-operator-reducer.h"
 #include "src/compiler/typer.h"
+#include "src/conversions-inl.h"
 #include "test/unittests/compiler/graph-unittest.h"
 #include "test/unittests/compiler/node-test-utils.h"
 #include "testing/gmock-support.h"
@@ -28,7 +29,8 @@ class MachineOperatorReducerTest : public TypedGraphTest {
  protected:
   Reduction Reduce(Node* node) {
     JSOperatorBuilder javascript(zone());
-    JSGraph jsgraph(isolate(), graph(), common(), &javascript, &machine_);
+    JSGraph jsgraph(isolate(), graph(), common(), &javascript, nullptr,
+                    &machine_);
     MachineOperatorReducer reducer(&jsgraph);
     return reducer.Reduce(node);
   }
@@ -1438,11 +1440,123 @@ TEST_F(MachineOperatorReducerTest, Float64InsertHighWord32WithConstant) {
 
 
 // -----------------------------------------------------------------------------
+// Float64Equal
+
+
+TEST_F(MachineOperatorReducerTest, Float64EqualWithFloat32Conversions) {
+  Node* const p0 = Parameter(0);
+  Node* const p1 = Parameter(1);
+  Reduction const r = Reduce(graph()->NewNode(
+      machine()->Float64Equal(),
+      graph()->NewNode(machine()->ChangeFloat32ToFloat64(), p0),
+      graph()->NewNode(machine()->ChangeFloat32ToFloat64(), p1)));
+  ASSERT_TRUE(r.Changed());
+  EXPECT_THAT(r.replacement(), IsFloat32Equal(p0, p1));
+}
+
+
+TEST_F(MachineOperatorReducerTest, Float64EqualWithFloat32Constant) {
+  Node* const p0 = Parameter(0);
+  TRACED_FOREACH(float, x, kFloat32Values) {
+    Reduction r = Reduce(graph()->NewNode(
+        machine()->Float64Equal(),
+        graph()->NewNode(machine()->ChangeFloat32ToFloat64(), p0),
+        Float64Constant(x)));
+    ASSERT_TRUE(r.Changed());
+    EXPECT_THAT(r.replacement(), IsFloat32Equal(p0, IsFloat32Constant(x)));
+  }
+}
+
+
+// -----------------------------------------------------------------------------
+// Float64LessThan
+
+
+TEST_F(MachineOperatorReducerTest, Float64LessThanWithFloat32Conversions) {
+  Node* const p0 = Parameter(0);
+  Node* const p1 = Parameter(1);
+  Reduction const r = Reduce(graph()->NewNode(
+      machine()->Float64LessThan(),
+      graph()->NewNode(machine()->ChangeFloat32ToFloat64(), p0),
+      graph()->NewNode(machine()->ChangeFloat32ToFloat64(), p1)));
+  ASSERT_TRUE(r.Changed());
+  EXPECT_THAT(r.replacement(), IsFloat32LessThan(p0, p1));
+}
+
+
+TEST_F(MachineOperatorReducerTest, Float64LessThanWithFloat32Constant) {
+  Node* const p0 = Parameter(0);
+  {
+    TRACED_FOREACH(float, x, kFloat32Values) {
+      Reduction r = Reduce(graph()->NewNode(
+          machine()->Float64LessThan(),
+          graph()->NewNode(machine()->ChangeFloat32ToFloat64(), p0),
+          Float64Constant(x)));
+      ASSERT_TRUE(r.Changed());
+      EXPECT_THAT(r.replacement(), IsFloat32LessThan(p0, IsFloat32Constant(x)));
+    }
+  }
+  {
+    TRACED_FOREACH(float, x, kFloat32Values) {
+      Reduction r = Reduce(graph()->NewNode(
+          machine()->Float64LessThan(), Float64Constant(x),
+          graph()->NewNode(machine()->ChangeFloat32ToFloat64(), p0)));
+      ASSERT_TRUE(r.Changed());
+      EXPECT_THAT(r.replacement(), IsFloat32LessThan(IsFloat32Constant(x), p0));
+    }
+  }
+}
+
+
+// -----------------------------------------------------------------------------
+// Float64LessThanOrEqual
+
+
+TEST_F(MachineOperatorReducerTest,
+       Float64LessThanOrEqualWithFloat32Conversions) {
+  Node* const p0 = Parameter(0);
+  Node* const p1 = Parameter(1);
+  Reduction const r = Reduce(graph()->NewNode(
+      machine()->Float64LessThanOrEqual(),
+      graph()->NewNode(machine()->ChangeFloat32ToFloat64(), p0),
+      graph()->NewNode(machine()->ChangeFloat32ToFloat64(), p1)));
+  ASSERT_TRUE(r.Changed());
+  EXPECT_THAT(r.replacement(), IsFloat32LessThanOrEqual(p0, p1));
+}
+
+
+TEST_F(MachineOperatorReducerTest, Float64LessThanOrEqualWithFloat32Constant) {
+  Node* const p0 = Parameter(0);
+  {
+    TRACED_FOREACH(float, x, kFloat32Values) {
+      Reduction r = Reduce(graph()->NewNode(
+          machine()->Float64LessThanOrEqual(),
+          graph()->NewNode(machine()->ChangeFloat32ToFloat64(), p0),
+          Float64Constant(x)));
+      ASSERT_TRUE(r.Changed());
+      EXPECT_THAT(r.replacement(),
+                  IsFloat32LessThanOrEqual(p0, IsFloat32Constant(x)));
+    }
+  }
+  {
+    TRACED_FOREACH(float, x, kFloat32Values) {
+      Reduction r = Reduce(graph()->NewNode(
+          machine()->Float64LessThanOrEqual(), Float64Constant(x),
+          graph()->NewNode(machine()->ChangeFloat32ToFloat64(), p0)));
+      ASSERT_TRUE(r.Changed());
+      EXPECT_THAT(r.replacement(),
+                  IsFloat32LessThanOrEqual(IsFloat32Constant(x), p0));
+    }
+  }
+}
+
+
+// -----------------------------------------------------------------------------
 // Store
 
 
 TEST_F(MachineOperatorReducerTest, StoreRepWord8WithWord32And) {
-  const StoreRepresentation rep(kRepWord8, kNoWriteBarrier);
+  const StoreRepresentation rep(kMachUint8, kNoWriteBarrier);
   Node* const base = Parameter(0);
   Node* const index = Parameter(1);
   Node* const value = Parameter(2);
@@ -1464,7 +1578,7 @@ TEST_F(MachineOperatorReducerTest, StoreRepWord8WithWord32And) {
 
 
 TEST_F(MachineOperatorReducerTest, StoreRepWord8WithWord32SarAndWord32Shl) {
-  const StoreRepresentation rep(kRepWord8, kNoWriteBarrier);
+  const StoreRepresentation rep(kMachUint8, kNoWriteBarrier);
   Node* const base = Parameter(0);
   Node* const index = Parameter(1);
   Node* const value = Parameter(2);
@@ -1488,7 +1602,7 @@ TEST_F(MachineOperatorReducerTest, StoreRepWord8WithWord32SarAndWord32Shl) {
 
 
 TEST_F(MachineOperatorReducerTest, StoreRepWord16WithWord32And) {
-  const StoreRepresentation rep(kRepWord16, kNoWriteBarrier);
+  const StoreRepresentation rep(kMachUint16, kNoWriteBarrier);
   Node* const base = Parameter(0);
   Node* const index = Parameter(1);
   Node* const value = Parameter(2);
@@ -1510,7 +1624,7 @@ TEST_F(MachineOperatorReducerTest, StoreRepWord16WithWord32And) {
 
 
 TEST_F(MachineOperatorReducerTest, StoreRepWord16WithWord32SarAndWord32Shl) {
-  const StoreRepresentation rep(kRepWord16, kNoWriteBarrier);
+  const StoreRepresentation rep(kMachUint16, kNoWriteBarrier);
   Node* const base = Parameter(0);
   Node* const index = Parameter(1);
   Node* const value = Parameter(2);
@@ -1530,6 +1644,18 @@ TEST_F(MachineOperatorReducerTest, StoreRepWord16WithWord32SarAndWord32Shl) {
     EXPECT_THAT(r.replacement(),
                 IsStore(rep, base, index, value, effect, control));
   }
+}
+
+
+TEST_F(MachineOperatorReducerTest, RoundPlusTruncate) {
+  Node* p0 = Parameter(0);
+  Node* t0 = graph()->NewNode(machine()->RoundInt64ToFloat64(), p0);
+  Node* t1 = graph()->NewNode(
+      machine()->TruncateFloat64ToInt32(TruncationMode::kJavaScript), t0);
+
+  Reduction r = Reduce(t1);
+  ASSERT_TRUE(r.Changed());
+  EXPECT_THAT(r.replacement(), p0);
 }
 
 }  // namespace compiler

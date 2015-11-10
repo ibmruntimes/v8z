@@ -382,6 +382,10 @@ function TestSet2(create, handler) {
   assertEquals(46, (function(n) { return p[n] = 46 })(99))
   assertEquals("99", key)
   assertEquals(46, val)
+
+  assertEquals(47, p["0"] = 47)
+  assertEquals("0", key)
+  assertEquals(47, val)
 }
 
 TestSet({
@@ -1306,7 +1310,7 @@ function TestDescriptorGetOrder(handler) {
   TestDescriptorGetOrder2(function(n) { return p[n] }, "vV")
   TestDescriptorGetOrder2(function(n) { return n in p }, "")
   TestDescriptorGetOrder2(function(n) { return o[n] }, "vV")
-  TestDescriptorGetOrder2(function(n) { return n in o }, "eEcCvVwWgs")
+  TestDescriptorGetOrder2(function(n) { return n in o }, "")
 }
 
 function TestDescriptorGetOrder2(f, access) {

@@ -29,10 +29,13 @@ namespace internal {
 class Arguments BASE_EMBEDDED {
  public:
   Arguments(int length, Object** arguments)
-      : length_(length), arguments_(arguments) { }
+      : length_(length), arguments_(arguments) {
+    DCHECK_GE(length_, 0);
+  }
 
   Object*& operator[] (int index) {
-    DCHECK(0 <= index && index < length_);
+    DCHECK_GE(index, 0);
+    DCHECK_LT(static_cast<uint32_t>(index), static_cast<uint32_t>(length_));
     return *(reinterpret_cast<Object**>(reinterpret_cast<intptr_t>(arguments_) -
                                         index * kPointerSize));
   }
@@ -269,9 +272,6 @@ double ClobberDoubleRegisters(double x1, double x2, double x3, double x4);
 #endif
 
 
-#define DECLARE_RUNTIME_FUNCTION(Name)    \
-Object* Name(int args_length, Object** args_object, Isolate* isolate)
-
 #define RUNTIME_FUNCTION_RETURNS_TYPE(Type, Name)                        \
 static INLINE(Type __RT_impl_##Name(Arguments args, Isolate* isolate));  \
 Type Name(int args_length, Object** args_object, Isolate* isolate) {     \
@@ -286,9 +286,7 @@ static Type __RT_impl_##Name(Arguments args, Isolate* isolate)
 #define RUNTIME_FUNCTION_RETURN_PAIR(Name) \
     RUNTIME_FUNCTION_RETURNS_TYPE(ObjectPair, Name)
 
-#define RUNTIME_ARGUMENTS(isolate, args) \
-  args.length(), args.arguments(), isolate
-
-} }  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_ARGUMENTS_H_

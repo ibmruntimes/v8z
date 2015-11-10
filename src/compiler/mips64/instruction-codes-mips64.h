@@ -37,6 +37,7 @@ namespace compiler {
   V(Mips64Sar)                      \
   V(Mips64Ext)                      \
   V(Mips64Dext)                     \
+  V(Mips64Dclz)                     \
   V(Mips64Dshl)                     \
   V(Mips64Dshr)                     \
   V(Mips64Dsar)                     \
@@ -73,6 +74,7 @@ namespace compiler {
   V(Mips64TruncWD)                  \
   V(Mips64TruncUwD)                 \
   V(Mips64CvtDW)                    \
+  V(Mips64CvtDL)                    \
   V(Mips64CvtDUw)                   \
   V(Mips64Lb)                       \
   V(Mips64Lbu)                      \
@@ -88,10 +90,16 @@ namespace compiler {
   V(Mips64Swc1)                     \
   V(Mips64Ldc1)                     \
   V(Mips64Sdc1)                     \
+  V(Mips64BitcastDL)                \
+  V(Mips64BitcastLD)                \
   V(Mips64Float64ExtractLowWord32)  \
   V(Mips64Float64ExtractHighWord32) \
   V(Mips64Float64InsertLowWord32)   \
   V(Mips64Float64InsertHighWord32)  \
+  V(Mips64Float64Max)               \
+  V(Mips64Float64Min)               \
+  V(Mips64Float32Max)               \
+  V(Mips64Float32Min)               \
   V(Mips64Push)                     \
   V(Mips64StoreToStackSlot)         \
   V(Mips64StackClaim)               \

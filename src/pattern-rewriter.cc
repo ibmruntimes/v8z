@@ -4,6 +4,7 @@
 
 #include "src/ast.h"
 #include "src/messages.h"
+#include "src/parameter-initializer-rewriter.h"
 #include "src/parser.h"
 
 namespace v8 {
@@ -30,7 +31,7 @@ void Parser::PatternRewriter::DeclareAndInitializeVariables(
 
 void Parser::PatternRewriter::VisitVariableProxy(VariableProxy* pattern) {
   Expression* value = current_value_;
-  descriptor_->scope->RemoveUnresolved(pattern->AsVariableProxy());
+  descriptor_->scope->RemoveUnresolved(pattern);
 
   // Declare variable.
   // Note that we *always* must treat the initial value via a separate init
@@ -54,7 +55,8 @@ void Parser::PatternRewriter::VisitVariableProxy(VariableProxy* pattern) {
       proxy, descriptor_->mode, descriptor_->scope,
       descriptor_->declaration_pos);
   Variable* var = parser->Declare(declaration, descriptor_->declaration_kind,
-                                  descriptor_->mode != VAR, ok_);
+                                  descriptor_->mode != VAR, ok_,
+                                  descriptor_->hoist_scope);
   if (!*ok_) return;
   DCHECK_NOT_NULL(var);
   DCHECK(!proxy->is_resolved() || proxy->var() == var);
@@ -141,10 +143,9 @@ void Parser::PatternRewriter::VisitVariableProxy(VariableProxy* pattern) {
       // and add it to the initialization statement block.
       // Note that the function does different things depending on
       // the number of arguments (1 or 2).
-      initialize = factory()->NewCallRuntime(
-          ast_value_factory()->initialize_const_global_string(),
-          Runtime::FunctionForId(Runtime::kInitializeConstGlobal), arguments,
-          descriptor_->initialization_pos);
+      initialize =
+          factory()->NewCallRuntime(Runtime::kInitializeConstGlobal, arguments,
+                                    descriptor_->initialization_pos);
     } else {
       // Add language mode.
       // We may want to pass singleton to avoid Literal allocations.
@@ -157,26 +158,25 @@ void Parser::PatternRewriter::VisitVariableProxy(VariableProxy* pattern) {
       // we're in a with. The initialization value should not
       // necessarily be stored in the global object in that case,
       // which is why we need to generate a separate assignment node.
-      if (value != NULL && !inside_with()) {
+      if (value != NULL && !descriptor_->scope->inside_with()) {
         arguments->Add(value, zone());
         value = NULL;  // zap the value to avoid the unnecessary assignment
         // Construct the call to Runtime_InitializeVarGlobal
         // and add it to the initialization statement block.
-        initialize = factory()->NewCallRuntime(
-            ast_value_factory()->initialize_var_global_string(),
-            Runtime::FunctionForId(Runtime::kInitializeVarGlobal), arguments,
-            descriptor_->declaration_pos);
+        initialize =
+            factory()->NewCallRuntime(Runtime::kInitializeVarGlobal, arguments,
+                                      descriptor_->declaration_pos);
       } else {
         initialize = NULL;
       }
     }
 
     if (initialize != NULL) {
-      block_->AddStatement(
+      block_->statements()->Add(
           factory()->NewExpressionStatement(initialize, RelocInfo::kNoPosition),
           zone());
     }
-  } else if (value != nullptr && (descriptor_->needs_init ||
+  } else if (value != nullptr && (descriptor_->mode == CONST_LEGACY ||
                                   IsLexicalVariableMode(descriptor_->mode))) {
     // Constant initializations always assign to the declared constant which
     // is always at the function scope level. This is only relevant for
@@ -190,7 +190,7 @@ void Parser::PatternRewriter::VisitVariableProxy(VariableProxy* pattern) {
     DCHECK_NOT_NULL(value);
     Assignment* assignment = factory()->NewAssignment(
         descriptor_->init_op, proxy, value, descriptor_->initialization_pos);
-    block_->AddStatement(
+    block_->statements()->Add(
         factory()->NewExpressionStatement(assignment, RelocInfo::kNoPosition),
         zone());
     value = NULL;
@@ -206,7 +206,7 @@ void Parser::PatternRewriter::VisitVariableProxy(VariableProxy* pattern) {
     VariableProxy* proxy = initialization_scope->NewUnresolved(factory(), name);
     Assignment* assignment = factory()->NewAssignment(
         descriptor_->init_op, proxy, value, descriptor_->initialization_pos);
-    block_->AddStatement(
+    block_->statements()->Add(
         factory()->NewExpressionStatement(assignment, RelocInfo::kNoPosition),
         zone());
   }
@@ -214,14 +214,14 @@ void Parser::PatternRewriter::VisitVariableProxy(VariableProxy* pattern) {
 
 
 Variable* Parser::PatternRewriter::CreateTempVar(Expression* value) {
-  auto temp_scope = descriptor_->parser->scope_->DeclarationScope();
-  auto temp = temp_scope->NewTemporary(ast_value_factory()->empty_string());
+  auto temp = descriptor_->parser->scope_->NewTemporary(
+      ast_value_factory()->empty_string());
   if (value != nullptr) {
     auto assignment = factory()->NewAssignment(
         Token::ASSIGN, factory()->NewVariableProxy(temp), value,
         RelocInfo::kNoPosition);
 
-    block_->AddStatement(
+    block_->statements()->Add(
         factory()->NewExpressionStatement(assignment, RelocInfo::kNoPosition),
         zone());
   }
@@ -232,8 +232,8 @@ Variable* Parser::PatternRewriter::CreateTempVar(Expression* value) {
 void Parser::PatternRewriter::VisitObjectLiteral(ObjectLiteral* pattern) {
   auto temp = CreateTempVar(current_value_);
 
-  block_->AddStatement(descriptor_->parser->BuildAssertIsCoercible(temp),
-                       zone());
+  block_->statements()->Add(descriptor_->parser->BuildAssertIsCoercible(temp),
+                            zone());
 
   for (ObjectLiteralProperty* property : *pattern->properties()) {
     RecurseIntoSubpattern(
@@ -245,8 +245,13 @@ void Parser::PatternRewriter::VisitObjectLiteral(ObjectLiteral* pattern) {
 
 
 void Parser::PatternRewriter::VisitArrayLiteral(ArrayLiteral* node) {
-  auto iterator = CreateTempVar(
-      descriptor_->parser->GetIterator(current_value_, factory()));
+  auto temp = CreateTempVar(current_value_);
+
+  block_->statements()->Add(descriptor_->parser->BuildAssertIsCoercible(temp),
+                            zone());
+
+  auto iterator = CreateTempVar(descriptor_->parser->GetIterator(
+      factory()->NewVariableProxy(temp), factory()));
   auto done = CreateTempVar(
       factory()->NewBooleanLiteral(false, RelocInfo::kNoPosition));
   auto result = CreateTempVar();
@@ -265,12 +270,13 @@ void Parser::PatternRewriter::VisitArrayLiteral(ArrayLiteral* node) {
     // }
     auto next_block =
         factory()->NewBlock(nullptr, 2, true, RelocInfo::kNoPosition);
-    next_block->AddStatement(factory()->NewExpressionStatement(
-                                 descriptor_->parser->BuildIteratorNextResult(
-                                     factory()->NewVariableProxy(iterator),
-                                     result, RelocInfo::kNoPosition),
-                                 RelocInfo::kNoPosition),
-                             zone());
+    next_block->statements()->Add(
+        factory()->NewExpressionStatement(
+            descriptor_->parser->BuildIteratorNextResult(
+                factory()->NewVariableProxy(iterator), result,
+                RelocInfo::kNoPosition),
+            RelocInfo::kNoPosition),
+        zone());
 
     auto assign_to_done = factory()->NewAssignment(
         Token::ASSIGN, factory()->NewVariableProxy(done),
@@ -288,7 +294,7 @@ void Parser::PatternRewriter::VisitArrayLiteral(ArrayLiteral* node) {
                                         RelocInfo::kNoPosition),
             RelocInfo::kNoPosition),
         RelocInfo::kNoPosition);
-    next_block->AddStatement(
+    next_block->statements()->Add(
         factory()->NewExpressionStatement(
             factory()->NewAssignment(Token::ASSIGN,
                                      factory()->NewVariableProxy(v), next_value,
@@ -302,7 +308,7 @@ void Parser::PatternRewriter::VisitArrayLiteral(ArrayLiteral* node) {
                                      RelocInfo::kNoPosition),
         next_block, factory()->NewEmptyStatement(RelocInfo::kNoPosition),
         RelocInfo::kNoPosition);
-    block_->AddStatement(if_statement, zone());
+    block_->statements()->Add(if_statement, zone());
 
     if (!(value->IsLiteral() && value->AsLiteral()->raw_value()->IsTheHole())) {
       RecurseIntoSubpattern(value, factory()->NewVariableProxy(v));
@@ -311,7 +317,7 @@ void Parser::PatternRewriter::VisitArrayLiteral(ArrayLiteral* node) {
 
   if (spread != nullptr) {
     // array = [];
-    // if (!done) $concatIterableToArray(array, iterator);
+    // if (!done) %concat_iterable_to_array(array, iterator);
     auto empty_exprs = new (zone()) ZoneList<Expression*>(0, zone());
     auto array = CreateTempVar(factory()->NewArrayLiteral(
         empty_exprs,
@@ -323,9 +329,9 @@ void Parser::PatternRewriter::VisitArrayLiteral(ArrayLiteral* node) {
     auto arguments = new (zone()) ZoneList<Expression*>(2, zone());
     arguments->Add(factory()->NewVariableProxy(array), zone());
     arguments->Add(factory()->NewVariableProxy(iterator), zone());
-    auto spread_into_array_call = factory()->NewCallRuntime(
-        ast_value_factory()->concat_iterable_to_array_string(), nullptr,
-        arguments, RelocInfo::kNoPosition);
+    auto spread_into_array_call =
+        factory()->NewCallRuntime(Context::CONCAT_ITERABLE_TO_ARRAY_INDEX,
+                                  arguments, RelocInfo::kNoPosition);
 
     auto if_statement = factory()->NewIfStatement(
         factory()->NewUnaryOperation(Token::NOT,
@@ -335,8 +341,7 @@ void Parser::PatternRewriter::VisitArrayLiteral(ArrayLiteral* node) {
                                           RelocInfo::kNoPosition),
         factory()->NewEmptyStatement(RelocInfo::kNoPosition),
         RelocInfo::kNoPosition);
-    block_->AddStatement(if_statement, zone());
-
+    block_->statements()->Add(if_statement, zone());
 
     RecurseIntoSubpattern(spread->expression(),
                           factory()->NewVariableProxy(array));
@@ -355,15 +360,18 @@ void Parser::PatternRewriter::VisitAssignment(Assignment* node) {
       Token::EQ_STRICT, factory()->NewVariableProxy(temp),
       factory()->NewUndefinedLiteral(RelocInfo::kNoPosition),
       RelocInfo::kNoPosition);
+  Expression* initializer = node->value();
+  if (descriptor_->declaration_kind == DeclarationDescriptor::PARAMETER &&
+      descriptor_->scope->is_arrow_scope()) {
+    // TODO(adamk): Only call this if necessary.
+    RewriteParameterInitializerScope(
+        descriptor_->parser->stack_limit(), initializer,
+        descriptor_->scope->outer_scope(), descriptor_->scope);
+  }
   Expression* value = factory()->NewConditional(
-      is_undefined, node->value(), factory()->NewVariableProxy(temp),
+      is_undefined, initializer, factory()->NewVariableProxy(temp),
       RelocInfo::kNoPosition);
   RecurseIntoSubpattern(node->target(), value);
-}
-
-
-void Parser::PatternRewriter::VisitSpread(Spread* node) {
-  // TODO(dslomov): implement.
 }
 
 
@@ -389,8 +397,10 @@ NOT_A_PATTERN(Conditional)
 NOT_A_PATTERN(ContinueStatement)
 NOT_A_PATTERN(CountOperation)
 NOT_A_PATTERN(DebuggerStatement)
+NOT_A_PATTERN(DoExpression)
 NOT_A_PATTERN(DoWhileStatement)
 NOT_A_PATTERN(EmptyStatement)
+NOT_A_PATTERN(EmptyParentheses)
 NOT_A_PATTERN(ExportDeclaration)
 NOT_A_PATTERN(ExpressionStatement)
 NOT_A_PATTERN(ForInStatement)
@@ -405,6 +415,8 @@ NOT_A_PATTERN(NativeFunctionLiteral)
 NOT_A_PATTERN(Property)
 NOT_A_PATTERN(RegExpLiteral)
 NOT_A_PATTERN(ReturnStatement)
+NOT_A_PATTERN(SloppyBlockFunctionStatement)
+NOT_A_PATTERN(Spread)
 NOT_A_PATTERN(SuperPropertyReference)
 NOT_A_PATTERN(SuperCallReference)
 NOT_A_PATTERN(SwitchStatement)

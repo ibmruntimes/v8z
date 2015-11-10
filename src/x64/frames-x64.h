@@ -71,12 +71,7 @@ class JavaScriptFrameConstants : public AllStatic {
 };
 
 
-inline Object* JavaScriptFrame::function_slot_object() const {
-  const int offset = JavaScriptFrameConstants::kFunctionOffset;
-  return Memory::Object_at(fp() + offset);
-}
-
-
-} }  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_X64_FRAMES_X64_H_

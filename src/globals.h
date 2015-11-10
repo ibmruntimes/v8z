@@ -30,30 +30,6 @@
 # define V8_INFINITY INFINITY
 #endif
 
-#if V8_TARGET_ARCH_IA32 || (V8_TARGET_ARCH_X64 && !V8_TARGET_ARCH_32_BIT) || \
-    V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_ARM64 || V8_TARGET_ARCH_MIPS ||     \
-    V8_TARGET_ARCH_MIPS64 || V8_TARGET_ARCH_PPC || V8_TARGET_ARCH_X87 ||     \
-    V8_TARGET_ARCH_S390
-
-#define V8_TURBOFAN_BACKEND 1
-#if V8_TARGET_ARCH_X64 || V8_TARGET_ARCH_ARM64 || V8_TARGET_ARCH_MIPS64 || \
-    V8_TARGET_ARCH_PPC64 || V8_TARGET_ARCH_S390X
-// 64-bit TurboFan backends support 64-bit integer arithmetic.
-#define V8_TURBOFAN_BACKEND_64 1
-#else
-#define V8_TURBOFAN_BACKEND_64 0
-#endif
-
-#else
-#define V8_TURBOFAN_BACKEND 0
-#endif
-
-#if V8_TURBOFAN_BACKEND
-#define V8_TURBOFAN_TARGET 1
-#else
-#define V8_TURBOFAN_TARGET 0
-#endif
-
 namespace v8 {
 
 namespace base {
@@ -244,6 +220,20 @@ F FUNCTION_CAST(Address addr) {
 }
 
 
+// Determine whether the architecture uses function descriptors
+// which provide a level of indirection between the function pointer
+// and the function entrypoint.
+#if V8_HOST_ARCH_PPC && \
+    (V8_OS_AIX || (V8_TARGET_ARCH_PPC64 && V8_TARGET_BIG_ENDIAN))
+#define USES_FUNCTION_DESCRIPTORS 1
+#define FUNCTION_ENTRYPOINT_ADDRESS(f)       \
+  (reinterpret_cast<v8::internal::Address*>( \
+      &(reinterpret_cast<intptr_t*>(f)[0])))
+#else
+#define USES_FUNCTION_DESCRIPTORS 0
+#endif
+
+
 // -----------------------------------------------------------------------------
 // Forward declarations for frequently used classes
 // (sorted alphabetically)
@@ -427,7 +417,6 @@ class CodeGenerator;
 class CodeStub;
 class Context;
 class Debug;
-class Debugger;
 class DebugInfo;
 class Descriptor;
 class DescriptorArray;
@@ -459,18 +448,19 @@ class MarkCompactCollector;
 class NewSpace;
 class Object;
 class OldSpace;
+class ParameterCount;
 class Foreign;
 class Scope;
 class ScopeInfo;
 class Script;
 class Smi;
 template <typename Config, class Allocator = FreeStoreAllocationPolicy>
-    class SplayTree;
+class SplayTree;
 class String;
 class Symbol;
 class Name;
 class Struct;
-class Symbol;
+class TypeFeedbackVector;
 class Variable;
 class RelocInfo;
 class Deserializer;
@@ -544,6 +534,8 @@ enum VisitMode {
 // Flag indicating whether code is built into the VM (one of the natives files).
 enum NativesFlag { NOT_NATIVES_CODE, NATIVES_CODE };
 
+// JavaScript defines two kinds of 'nil'.
+enum NilValue { kNullValue, kUndefinedValue };
 
 // ParseRestriction is used to restrict the set of valid statements in a
 // unit of compilation.  Restriction violations cause a syntax error.
@@ -578,11 +570,6 @@ struct CodeDesc {
 };
 
 
-// Callback function used for iterating objects in heap spaces,
-// for example, scanning heap objects.
-typedef int (*HeapObjectCallback)(HeapObject* obj);
-
-
 // Callback function used for checking constraints when copying/relocating
 // objects. Returns true if an object can be copied/relocated from its
 // old_addr to a new_addr.
@@ -611,20 +598,7 @@ enum InlineCacheState {
   // A generic handler is installed and no extra typefeedback is recorded.
   GENERIC,
   // Special state for debug break or step in prepare stubs.
-  DEBUG_STUB,
-  // Type-vector-based ICs have a default state, with the full calculation
-  // of IC state only determined by a look at the IC and the typevector
-  // together.
-  DEFAULT
-};
-
-
-enum CallFunctionFlags {
-  NO_CALL_FUNCTION_FLAGS,
-  CALL_AS_METHOD,
-  // Always wrap the receiver and call to the JSFunction. Only use this flag
-  // both the receiver type and the target method are statically known.
-  WRAP_AND_CALL
+  DEBUG_STUB
 };
 
 
@@ -632,6 +606,10 @@ enum CallConstructorFlags {
   NO_CALL_CONSTRUCTOR_FLAGS = 0,
   // The call target is cached in the instruction stream.
   RECORD_CONSTRUCTOR_TARGET = 1,
+  // TODO(bmeurer): Kill these SUPER_* modes and use the Construct builtin
+  // directly instead; also there's no point in collecting any "targets" for
+  // super constructor calls, since these are known when we optimize the
+  // constructor that contains the super call.
   SUPER_CONSTRUCTOR_CALL = 1 << 1,
   SUPER_CALL_RECORD_TARGET = SUPER_CONSTRUCTOR_CALL | RECORD_CONSTRUCTOR_TARGET
 };
@@ -772,6 +750,31 @@ enum CpuFeature {
 };
 
 
+// Defines hints about receiver values based on structural knowledge.
+enum class ConvertReceiverMode : unsigned {
+  kNullOrUndefined,     // Guaranteed to be null or undefined.
+  kNotNullOrUndefined,  // Guaranteed to never be null or undefined.
+  kAny                  // No specific knowledge about receiver.
+};
+
+inline size_t hash_value(ConvertReceiverMode mode) {
+  return bit_cast<unsigned>(mode);
+}
+
+inline std::ostream& operator<<(std::ostream& os, ConvertReceiverMode mode) {
+  switch (mode) {
+    case ConvertReceiverMode::kNullOrUndefined:
+      return os << "NULL_OR_UNDEFINED";
+    case ConvertReceiverMode::kNotNullOrUndefined:
+      return os << "NOT_NULL_OR_UNDEFINED";
+    case ConvertReceiverMode::kAny:
+      return os << "ANY";
+  }
+  UNREACHABLE();
+  return os;
+}
+
+
 // Used to specify if a macro instruction must perform a smi check on tagged
 // values.
 enum SmiCheckType {
@@ -787,8 +790,7 @@ enum ScopeType {
   SCRIPT_SCOPE,    // The top-level scope for a script or a top-level eval.
   CATCH_SCOPE,     // The scope introduced by catch.
   BLOCK_SCOPE,     // The scope introduced by a new block.
-  WITH_SCOPE,      // The scope introduced by with.
-  ARROW_SCOPE      // The top-level scope for an arrow function literal.
+  WITH_SCOPE       // The scope introduced by with.
 };
 
 // TODO(@Tara): Check this encoding for NaN in s390
@@ -806,6 +808,10 @@ const uint64_t kHoleNanInt64 =
     (static_cast<uint64_t>(kHoleNanUpper32) << 32) | kHoleNanLower32;
 
 
+// ES6 section 20.1.2.6 Number.MAX_SAFE_INTEGER
+const double kMaxSafeInteger = 9007199254740991.0;  // 2^53-1
+
+
 // The order of this enum has to be kept in sync with the predicates below.
 enum VariableMode {
   // User declared variables:
@@ -820,9 +826,6 @@ enum VariableMode {
   IMPORT,          // declared via 'import' declarations (last lexical)
 
   // Variables introduced by the compiler:
-  INTERNAL,        // like VAR, but not user-visible (may or may not
-                   // be in a context)
-
   TEMPORARY,       // temporary variables (not user-visible), stack-allocated
                    // unless the scope as a whole has forced context allocation
 
@@ -966,6 +969,8 @@ enum FunctionKind {
   kInObjectLiteral = 1 << 7,
   kDefaultBaseConstructor = kDefaultConstructor | kBaseConstructor,
   kDefaultSubclassConstructor = kDefaultConstructor | kSubclassConstructor,
+  kClassConstructor =
+      kBaseConstructor | kSubclassConstructor | kDefaultConstructor,
   kConciseMethodInObjectLiteral = kConciseMethod | kInObjectLiteral,
   kConciseGeneratorMethodInObjectLiteral =
       kConciseGeneratorMethod | kInObjectLiteral,
@@ -1032,11 +1037,9 @@ inline bool IsSubclassConstructor(FunctionKind kind) {
 }
 
 
-inline bool IsConstructor(FunctionKind kind) {
+inline bool IsClassConstructor(FunctionKind kind) {
   DCHECK(IsValidFunctionKind(kind));
-  return kind &
-         (FunctionKind::kBaseConstructor | FunctionKind::kSubclassConstructor |
-          FunctionKind::kDefaultConstructor);
+  return kind & FunctionKind::kClassConstructor;
 }
 
 
@@ -1051,7 +1054,8 @@ inline FunctionKind WithObjectLiteralBit(FunctionKind kind) {
   DCHECK(IsValidFunctionKind(kind));
   return kind;
 }
-} }  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 namespace i = v8::internal;
 
