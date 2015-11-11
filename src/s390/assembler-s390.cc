@@ -34,7 +34,7 @@
 // modified significantly by Google Inc.
 // Copyright 2015 the V8 project authors. All rights reserved.
 
-#include "src/v8.h"
+#include "src/s390/assembler-s390.h"
 
 #if V8_TARGET_ARCH_S390
 
@@ -196,15 +196,6 @@ Register ToRegister(int num) {
 }
 
 
-const char* DoubleRegister::AllocationIndexToString(int index) {
-  DCHECK(index >= 0 && index < kMaxNumAllocatableRegisters);
-  const char* const names[] = {
-       "d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9", "d10",
-       "d11", "d12", "d15"};
-  return names[index];
-}
-
-
 // -----------------------------------------------------------------------------
 // Implementation of RelocInfo
 
@@ -275,15 +266,11 @@ Assembler::Assembler(Isolate* isolate, void* buffer, int buffer_size)
 
   no_trampoline_pool_before_ = 0;
   trampoline_pool_blocked_nesting_ = 0;
-  // We leave space (kMaxBlockTrampolineSectionSize)
-  // for BlockTrampolinePoolScope buffer.
-  next_buffer_check_ =
-      FLAG_force_long_branches ? kMaxInt : kMaxCondBranchReach -
-                                               kMaxBlockTrampolineSectionSize;
+  next_trampoline_check_ = kMaxInt;
   internal_trampoline_exception_ = false;
   last_bound_pos_ = 0;
   trampoline_emitted_ = FLAG_force_long_branches;
-  unbound_labels_count_ = 0;
+  tracked_branch_count_ = 0;
   ClearRecordedAstId();
   relocations_.reserve(128);
 }
@@ -328,14 +315,14 @@ Condition Assembler::GetCondition(Instr instr) {
 
 Register Assembler::GetRA(Instr instr) {
   Register reg;
-  reg.code_ = Instruction::RAValue(instr);
+  reg.reg_code = Instruction::RAValue(instr);
   return reg;
 }
 
 
 Register Assembler::GetRB(Instr instr) {
   Register reg;
-  reg.code_ = Instruction::RBValue(instr);
+  reg.reg_code = Instruction::RBValue(instr);
   return reg;
 }
 
@@ -401,14 +388,19 @@ int Assembler::target_at(int pos)  {
 }
 
 
-void Assembler::target_at_put(int pos, int target_pos) {
+void Assembler::target_at_put(int pos, int target_pos, bool* is_branch) {
   SixByteInstr instr = instr_at(pos);
   Opcode opcode = Instruction::S390OpcodeValue(buffer_ + pos);
+
+  if (is_branch != nullptr) {
+    UNIMPLEMENTED();
+    *is_branch = false;
+  }
 
   if (BRC == opcode || BRCT == opcode || BRCTG == opcode) {
     int16_t imm16 = target_pos - pos;
     instr &= (~0xffff);
-    DCHECK(is_int16(imm16));
+    CHECK(is_int16(imm16));
     instr_at_put<FourByteInstr>(pos, instr | (imm16 >> 1));
     return;
   } else if (BRCL == opcode || LARL == opcode || BRASL == opcode) {
@@ -418,7 +410,7 @@ void Assembler::target_at_put(int pos, int target_pos) {
     instr_at_put<SixByteInstr>(pos, instr | (imm32 >> 1));
     return;
   } else if (LLILF == opcode) {
-    DCHECK(target_pos == kEndOfChain || target_pos >= 0);
+    CHECK(target_pos == kEndOfChain || target_pos >= 0);
     // Emitted label constant, not part of a branch.
     // Make label relative to Code* of generated Code object.
     int32_t imm32 = target_pos + (Code::kHeaderSize - kHeapObjectTag);
@@ -452,11 +444,7 @@ int Assembler::max_reach_from(int pos) {
 void Assembler::bind_to(Label* L, int pos) {
   DCHECK(0 <= pos && pos <= pc_offset());  // must have a valid binding position
   // int32_t trampoline_pos = kInvalidSlotPos;
-  if (L->is_linked() && !trampoline_emitted_) {
-    unbound_labels_count_--;
-    next_buffer_check_ += kTrampolineSlotsSize;
-  }
-
+  bool is_branch = false;
   while (L->is_linked()) {
     int fixup_pos = L->pos();
 #ifdef DEBUG
@@ -473,10 +461,14 @@ void Assembler::bind_to(Label* L, int pos) {
       // target_at_put(fixup_pos, trampoline_pos);
     // } else {
       DCHECK(is_intn(offset, maxReach));
-      target_at_put(fixup_pos, pos);
+      target_at_put(fixup_pos, pos, &is_branch);
     // }
   }
   L->bind_to(pos);
+
+  if (!trampoline_emitted_ && is_branch) {
+    UntrackBranch();
+  }
 
   // Keep track of the last bound label so we don't eliminate any instructions
   // before a bound label.
@@ -3445,48 +3437,34 @@ void Assembler::CheckTrampolinePool() {
   // either trampoline_pool_blocked_nesting_ or no_trampoline_pool_before_,
   // which are both checked here. Also, recursive calls to CheckTrampolinePool
   // are blocked by trampoline_pool_blocked_nesting_.
-  if ((trampoline_pool_blocked_nesting_ > 0) ||
-      (pc_offset() < no_trampoline_pool_before_)) {
-    // Emission is currently blocked; make sure we try again as soon as
-    // possible.
-    if (trampoline_pool_blocked_nesting_ > 0) {
-      next_buffer_check_ = pc_offset() + kInstrSize;
-    } else {
-      next_buffer_check_ = no_trampoline_pool_before_;
-    }
+  if (trampoline_pool_blocked_nesting_ > 0) return;
+  if (pc_offset() < no_trampoline_pool_before_) {
+    next_trampoline_check_ = no_trampoline_pool_before_;
     return;
   }
 
   DCHECK(!trampoline_emitted_);
-  DCHECK(unbound_labels_count_ >= 0);
-  if (unbound_labels_count_ > 0) {
+  if (tracked_branch_count_ > 0) {
+    int pool_start = pc_offset();
+    label after_pool;
+
+    // As we are only going to emit trampoline once, we need to prevent any
+    // further emission.
+    trampoline_emitted_ = true;
+    next_trampoline_check_ = kMaxInt;
+
     // First we emit jump, then we emit trampoline pool.
-    { BlockTrampolinePoolScope block_trampoline_pool(this);
-      Label after_pool;
+    b(&after_pool);
+    for (int i = tracked_branch_count_; i > 0; i--) {
       b(&after_pool);
-
-      int pool_start = pc_offset();
-      for (int i = 0; i < unbound_labels_count_; i++) {
-        b(&after_pool);
-      }
-      bind(&after_pool);
-      trampoline_ = Trampoline(pool_start, unbound_labels_count_);
-
-      trampoline_emitted_ = true;
-      // As we are only going to emit trampoline once, we need to prevent any
-      // further emission.
-      next_buffer_check_ = kMaxInt;
     }
-  } else {
-    // Number of branches to unbound label at this point is zero, so we can
-    // move next buffer check to maximum.
-    next_buffer_check_ = pc_offset() +
-      kMaxCondBranchReach - kMaxBlockTrampolineSectionSize;
+    bind(&after_pool);
+
+    trampoline_ = Trampoline(pool_start, tracked_branch_count_);
   }
-  return;
 }
 
 
-}
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 #endif  // V8_TARGET_ARCH_S390
