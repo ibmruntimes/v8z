@@ -49,7 +49,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include "src/assembler.h"
-#include "src/compiler.h"
 #include "src/s390/constants-s390.h"
 
 #define ABI_USES_FUNCTION_DESCRIPTORS 0
@@ -63,6 +62,24 @@
 
 namespace v8 {
 namespace internal {
+
+// clang-format off
+#define GENERAL_REGISTERS(V)                              \
+  V(r0)  V(r1)  V(r2)  V(r3)  V(r4)  V(r5)  V(r6)  V(r7)  \
+  V(r8)  V(r9)  V(r10) V(r11) V(r12) V(r13) V(r14) V(r15)
+
+#define ALLOCATABLE_GENERAL_REGISTERS(V)                  \
+  V(r2)  V(r3)  V(r4)  V(r5)  V(r6)  V(r7)                \
+  V(r8)  V(r9)  V(r12) V(r13)
+
+#define DOUBLE_REGISTERS(V)                               \
+  V(d0)  V(d1)  V(d2)  V(d3)  V(d4)  V(d5)  V(d6)  V(d7)  \
+  V(d8)  V(d9)  V(d10) V(d11) V(d12) V(d13) V(d14) V(d15)
+
+#define ALLOCATABLE_DOUBLE_REGISTERS(V)                   \
+  V(d1)  V(d2)  V(d3)  V(d4)  V(d5)  V(d6)  V(d7)         \
+  V(d8)  V(d9)  V(d10) V(d11) V(d12) V(d15) V(d0)
+// clang-format on
 
 // CPU Registers.
 //
@@ -85,10 +102,49 @@ namespace internal {
 // mode. This way we get the compile-time error checking in debug mode
 // and best performance in optimized code.
 
-// Core register
 struct Register {
-  static const int kNumRegisters = 16;
-  static const int kSizeInBytes = kPointerSize;
+  enum Code {
+#define REGISTER_CODE(R) kCode_##R,
+    GENERAL_REGISTERS(REGISTER_CODE)
+#undef REGISTER_CODE
+        kAfterLast,
+    kCode_no_reg = -1
+  };
+  static const int kNumRegisters = Code::kAfterLast;
+
+#define REGISTER_COUNT(R) 1 +
+  static const int kNumAllocatable =
+      ALLOCATABLE_GENERAL_REGISTERS(REGISTER_COUNT)0;
+#undef REGISTER_COUNT
+
+#define REGISTER_BIT(R) 1 << kCode_##R |
+      ALLOCATABLE_GENERAL_REGISTERS(REGISTER_BIT)0;
+#undef REGISTER_BIT
+
+  static Register from_code(int code) {
+    DCHECK(code >= 0);
+    DCHECK(code < kNumRegisters);
+    Register r = {code};
+    return r;
+  }
+
+  const char* ToString();
+  bool IsAllocatable() const;
+  bool is_valid() const { return 0 <= reg_code && reg_code < kNumRegisters; }
+  bool is(Register reg) const { return reg_code == reg.reg_code; }
+  int code() const {
+    DCHECK(is_valid());
+    return reg_code;
+  }
+  int bit() const {
+    DCHECK(is_valid());
+    return 1 << reg_code;
+  }
+
+  void set_code(int code) {
+    reg_code = code;
+    DCHECK(is_valid());
+  }
 
 #if V8_TARGET_LITTLE_ENDIAN
   static const int kMantissaOffset = 0;
@@ -98,199 +154,69 @@ struct Register {
   static const int kExponentOffset = 0;
 #endif
 
-  static const int kAllocatableRangeBegin = 2;
-  static const int kAllocatableRangeEnd = 9;
-  static const int kAllocatableContext = 13;  // cp
-  static const int kNumAllocatable =
-      kAllocatableRangeEnd - kAllocatableRangeBegin + 1;
-  static const int kMaxNumAllocatableRegisters =
-      kNumAllocatable + 1;  // cp
-  static int NumAllocatableRegisters() { return kMaxNumAllocatableRegisters; }
-
-  static int ToAllocationIndex(Register reg) {
-    int index;
-    int code = reg.code();
-    if (code == kAllocatableContext) {
-      // Context is the last index
-      index = NumAllocatableRegisters() - 1;
-    } else {
-      // r0-r1 are skipped
-      index = code - kAllocatableRangeBegin;
-    }
-    DCHECK(index >= 0 && index < kMaxNumAllocatableRegisters);
-    return index;
-  }
-
-  static Register FromAllocationIndex(int index) {
-    DCHECK(index >= 0 && index < kMaxNumAllocatableRegisters);
-    return index == kMaxNumAllocatableRegisters - 1 ?
-      from_code(kAllocatableContext) :  // Last index is always 'cp' register.
-      from_code(index + kAllocatableRangeBegin);  // r0-r1 are skipped
-  }
-
-  static const char* AllocationIndexToString(int index) {
-    DCHECK(index >= 0 && index < kMaxNumAllocatableRegisters);
-    const char* const names[] = {
-        "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cp",
-    };
-    return names[index];
-  }
-
-  static Register from_code(int code) {
-    Register r = {code};
-    return r;
-  }
-
-  bool is_valid() const { return 0 <= code_ && code_ < kNumRegisters; }
-  bool is(Register reg) const { return code_ == reg.code_; }
-  int code() const {
-    DCHECK(is_valid());
-    return code_;
-  }
-  int bit() const {
-    DCHECK(is_valid());
-    return 1 << code_;
-  }
-
-  void set_code(int code) {
-    code_ = code;
-    DCHECK(is_valid());
-  }
-
   // Unfortunately we can't make this private in a struct.
-  int code_;
+  int reg_code;
 };
 
 typedef struct Register Register;
 
+#define DECLARE_REGISTER(R) const Register R = {Register::kCode_##R};
+GENERAL_REGISTERS(DECLARE_REGISTER)
+#undef DECLARE_REGISTER
+const Register no_reg = {Register::kCode_no_reg};
 
-// These constants are used in several locations, including static initializers
-const int kRegister_no_reg_Code = -1;
-const int kRegister_r0_Code = 0;  // general scratch
-const int kRegister_r1_Code = 1;
-const int kRegister_r2_Code = 2;
-const int kRegister_r3_Code = 3;
-const int kRegister_r4_Code = 4;
-const int kRegister_r5_Code = 5;
-const int kRegister_r6_Code = 6;
-const int kRegister_r7_Code = 7;
-const int kRegister_r8_Code = 8;
-const int kRegister_r9_Code = 9;
-const int kRegister_r10_Code = 10;  // roots array pointer
-const int kRegister_fp_Code = 11;  // frame pointer
-const int kRegister_r12_Code = 12;  // ip (general scratch)
-const int kRegister_r13_Code = 13;
-const int kRegister_r14_Code = 14;
-const int kRegister_sp_Code = 15;  // stack pointer
-
-const Register no_reg = {kRegister_no_reg_Code};
-
-// Give alias names to registers
-const Register cp = {kRegister_r13_Code};  // JavaScript context pointer
-const Register kRootRegister = {kRegister_r10_Code};  // Roots array pointer.
-
-const Register r0  = {kRegister_r0_Code};
-// Lithium scratch register - defined in lithium-codegen-s390.h
-const Register r1  = {kRegister_r1_Code};
-const Register r2  = {kRegister_r2_Code};
-const Register r3  = {kRegister_r3_Code};
-const Register r4  = {kRegister_r4_Code};
-const Register r5  = {kRegister_r5_Code};
-const Register r6  = {kRegister_r6_Code};
-const Register r7  = {kRegister_r7_Code};
-const Register r8  = {kRegister_r8_Code};
-const Register r9  = {kRegister_r9_Code};
-// Used as roots register.
-const Register r10 = {kRegister_r10_Code};
-const Register fp  = {kRegister_fp_Code};
-// IP - Intra procedural register
-const Register ip  = {kRegister_r12_Code};
+// Aliases
+const Register kLithiumScratch = r1;         // lithium scratch.
+// const Register kConstantPoolRegister = r28;  // Constant pool.
+const Register kRootRegister = r10;          // Roots array pointer.
+const Register sp = r15;
 // CP - Context Register
-const Register r13  = {kRegister_r13_Code};
-const Register r14  = {kRegister_r14_Code};
-const Register sp   = {kRegister_sp_Code};
+const Register cp = r13;                     // JavaScript context pointer.
+// IP - Intra procedural register
+const Register ip = r12;
+const Register fp = r11;
+
+// Double word FP register.
 
 // Double word FP register.
 struct DoubleRegister {
-  static const int kNumRegisters = 16;
+  enum Code {
+#define REGISTER_CODE(R) kCode_##R,
+    DOUBLE_REGISTERS(REGISTER_CODE)
+#undef REGISTER_CODE
+        kAfterLast,
+    kCode_no_reg = -1
+  };
+
+  static const int kNumRegisters = Code::kAfterLast;
   static const int kMaxNumRegisters = kNumRegisters;
-#ifdef V8_TARGET_ARCH_S390X
-  static const int kNumVolatileRegisters = 8;     // d0-d7
-#else
-  static const int kNumVolatileRegisters = 14;     // d0-d15 except d4 and d6
-#endif
-  // TODO(JOHN): may not be true
-  static const int kAllocatableRangeBegin = 1;
-  static const int kAllocatableRangeEnd = 12;
-  static const int kNumAllocatable =
-      kAllocatableRangeEnd - kAllocatableRangeBegin + 1;
-  static const int kMaxNumAllocatableRegisters =
-      kNumAllocatable;
-  static int NumAllocatableRegisters() { return kMaxNumAllocatableRegisters; }
 
-  // TODO(turbofan)
-  inline static int NumAllocatableAliasedRegisters() {
-    return NumAllocatableRegisters();
-  }
-
-  static int ToAllocationIndex(DoubleRegister reg) {
-    int code = reg.code();
-    int index = code - kAllocatableRangeBegin;
-    DCHECK(index < kMaxNumAllocatableRegisters);
-    return index;
-  }
-
-  static DoubleRegister FromAllocationIndex(int index) {
-    DCHECK(index >= 0 && index < kMaxNumAllocatableRegisters);
-    return (from_code(index + kAllocatableRangeBegin));  // d0 is skipped
-  }
-
-  static const char* AllocationIndexToString(int index);
-  static DoubleRegister from_code(int code) {
-    DoubleRegister r = {code};
-    return r;
-  }
-
-  bool is_valid() const { return 0 <= code_ && code_ < kNumRegisters; }
-  bool is(DoubleRegister reg) const { return code_ == reg.code_; }
+  const char* ToString();
+  bool IsAllocatable() const;
+  bool is_valid() const { return 0 <= reg_code && reg_code < kNumRegisters; }
+  bool is(DoubleRegister reg) const { return reg_code == reg.reg_code; }
 
   int code() const {
     DCHECK(is_valid());
-    return code_;
-  }
-  int bit() const {
-    DCHECK(is_valid());
-    return 1 << code_;
-  }
-  void split_code(int* vm, int* m) const {
-    DCHECK(is_valid());
-    *m = (code_ & 0x10) >> 4;
-    *vm = code_ & 0x0F;
+    return reg_code;
   }
 
-  int code_;
+  int bit() const {
+    DCHECK(is_valid());
+    return 1 << reg_code;
+  }
+
+  int reg_code;
 };
 
 
 typedef DoubleRegister DoubleRegister;
 
-const DoubleRegister no_dreg = {-1};
-const DoubleRegister d0 = {0};
-const DoubleRegister d1 = {1};
-const DoubleRegister d2 = {2};
-const DoubleRegister d3 = {3};
-const DoubleRegister d4 = {4};
-const DoubleRegister d5 = {5};
-const DoubleRegister d6 = {6};
-const DoubleRegister d7 = {7};
-const DoubleRegister d8 = {8};
-const DoubleRegister d9 = {9};
-const DoubleRegister d10 = {10};
-const DoubleRegister d11 = {11};
-const DoubleRegister d12 = {12};
-const DoubleRegister d13 = {13};
-const DoubleRegister d14 = {14};
-const DoubleRegister d15 = {15};
+#define DECLARE_REGISTER(R) \
+  const DoubleRegister R = {DoubleRegister::kCode_##R};
+DOUBLE_REGISTERS(DECLARE_REGISTER)
+#undef DECLARE_REGISTER
+const Register no_dreg = {Register::kCode_no_reg};
 
 // Aliases for double registers.  Defined using #define instead of
 // "static const DoubleRegister&" because Clang complains otherwise when a
@@ -302,19 +228,19 @@ Register ToRegister(int num);
 
 // Coprocessor register
 struct CRegister {
-  bool is_valid() const { return 0 <= code_ && code_ < 16; }
-  bool is(CRegister creg) const { return code_ == creg.code_; }
+  bool is_valid() const { return 0 <= reg_code && reg_code < 16; }
+  bool is(CRegister creg) const { return reg_code == creg.reg_code; }
   int code() const {
     DCHECK(is_valid());
-    return code_;
+    return reg_code;
   }
   int bit() const {
     DCHECK(is_valid());
-    return 1 << code_;
+    return 1 << reg_code;
   }
 
   // Unfortunately we can't make this private in a struct.
-  int code_;
+  int reg_code;
 };
 
 
@@ -506,10 +432,11 @@ class Assembler : public AssemblerBase {
 
   // Returns the branch offset to the given label from the current code position
   // Links the label to the current position if it is still unbound
-  // Manages the jump elimination optimization if the second parameter is true.
-  int branch_offset(Label* L, bool jump_elimination_allowed) {
-    int position = link(L);
-    return position - pc_offset();
+  int branch_offset(Label* L) {
+    if (L->is_unused() && !trampoline_emitted_) {
+      TrackBranch();
+    }
+    return link(L) - pc_offset();
   }
 
   // Puts a labels target address at the given position.
@@ -541,9 +468,6 @@ class Assembler : public AssemblerBase {
   // Given the address of the beginning of a call, return the address
   // in the instruction stream that the call will return to.
   INLINE(static Address return_address_from_call_start(Address pc));
-
-  // Return the code target address of the patch debug break slot
-  INLINE(static Address break_address_from_return_address(Address pc));
 
   inline Handle<Object> code_target_object_handle_at(Address pc);
   // This sets the branch destination.
@@ -596,7 +520,7 @@ class Assembler : public AssemblerBase {
   // This is the length of the BreakLocationIterator::SetDebugBreakAtReturn()
   // code patch FIXED_SEQUENCE in bytes!
   // JS Return Sequence = Call Sequence + BKPT
-  static const int kJSReturnSequenceLength = kCallSequenceLength + 2;
+  // static const int kJSReturnSequenceLength = kCallSequenceLength + 2;
 
   // This is the length of the code sequence from SetDebugBreakAtSlot()
   // FIXED_SEQUENCE in bytes!
@@ -610,8 +534,8 @@ class Assembler : public AssemblerBase {
   // frame->pc() in Debug::SetAfterBreakTarget will point to BKPT in
   // JS return sequence, so the length to patch will not include BKPT
   // instruction length.
-  static const int kPatchReturnSequenceAddressOffset =
-      kCallSequenceLength - kPatchDebugBreakSlotReturnOffset;
+  // static const int kPatchReturnSequenceAddressOffset =
+  //     kCallSequenceLength - kPatchDebugBreakSlotReturnOffset;
 
   // Length to patch between the start of the FIXED call sequence from
   // SetDebugBreakAtSlot() and the the address from
@@ -629,7 +553,7 @@ class Assembler : public AssemblerBase {
   // Helper for unconditional branch to Label with update to save register
   void b(Register r, Label* l) {
     positions_recorder()->WriteRecordedPositions();
-    int32_t halfwords = branch_offset(l, false) / 2;
+    int32_t halfwords = branch_offset(l) / 2;
     brasl(r, Operand(halfwords));
   }
 
@@ -638,7 +562,7 @@ class Assembler : public AssemblerBase {
 
   // Helpers for conditional branch to Label
   void b(Condition cond, Label* l, Label::Distance dist = Label::kFar) {
-    branchOnCond(cond, branch_offset(l, false),
+    branchOnCond(cond, branch_offset(l),
                  l->is_bound() || (dist == Label::kNear));
   }
 
@@ -710,7 +634,7 @@ class Assembler : public AssemblerBase {
 
   // Load address relative long.
   void larl(Register r, Label *l) {
-    larl(r, Operand(branch_offset(l, false)));
+    larl(r, Operand(branch_offset(l)));
   }
 
   void call(Handle<Code> target, RelocInfo::Mode rmode,
@@ -1322,11 +1246,11 @@ SS2_FORM(zap);
 
   // Debugging
 
-  // Mark address of the ExitJSFrame code.
-  void RecordJSReturn();
+  // Mark generator continuation.
+  void RecordGeneratorContinuation();
 
   // Mark address of a debug break slot.
-  void RecordDebugBreakSlot();
+  void RecordDebugBreakSlot(RelocInfo::Mode mode, int argc = 0);
 
   // Record the AST id of the CallIC being compiled, so that it can be placed
   // in the relocation information.
@@ -1426,11 +1350,12 @@ SS2_FORM(zap);
 
   int buffer_space() const { return reloc_info_writer.pos() - pc_; }
 
-  // Decode branch instruction at pos and return branch target pos
+  // Decode instruction(s) at pos and return backchain to previous
+  // label reference or kEndOfChain.
   int target_at(int pos);
 
-  // Patch branch instruction at pos to branch to given branch target pos
-  void target_at_put(int pos, int target_pos);
+  // Patch instruction(s) at pos to target target_pos (e.g. branch)
+  void target_at_put(int pos, int target_pos, bool* is_branch = nullptr);
 
   // Record reloc info for current pc_
   void RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data = 0);
@@ -1462,7 +1387,7 @@ SS2_FORM(zap);
   // Repeated checking whether the trampoline pool should be emitted is rather
   // expensive. By default we only check again once a number of instructions
   // has been generated.
-  int next_buffer_check_;  // pc offset of next buffer check.
+  int next_trampoline_check_;  // pc offset of next buffer check.
 
   // Emission of the trampoline pool may be blocked in some code sequences.
   int trampoline_pool_blocked_nesting_;  // Block emission if this is not zero.
@@ -1480,6 +1405,8 @@ SS2_FORM(zap);
   // Code emission
   inline void CheckBuffer();
   void GrowBuffer(int needed = 0);
+  inline void TrackBranch();
+  inline void UntrackBranch();
 
   inline int32_t emit_code_target(Handle<Code> target, RelocInfo::Mode rmode,
                      TypeFeedbackId ast_id = TypeFeedbackId::None());
@@ -1654,7 +1581,7 @@ SS2_FORM(zap);
   };
 
   int32_t get_trampoline_entry();
-  int unbound_labels_count_;
+  int tracked_branch_count_;
   // If trampoline is emitted, generated code is becoming large. As
   // this is already a slow case which can possibly break our code
   // generation for the extreme case, we use this information to
@@ -1686,7 +1613,7 @@ class EnsureSpace BASE_EMBEDDED {
  public:
   explicit EnsureSpace(Assembler* assembler) { assembler->CheckBuffer(); }
 };
-}
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_S390_ASSEMBLER_S390_H_
