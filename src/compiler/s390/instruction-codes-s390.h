@@ -62,6 +62,8 @@ namespace compiler {
   V(S390_MinDouble)                 \
   V(S390_AbsDouble)                 \
   V(S390_Cntlz32)                   \
+  V(S390_Cntlz64)                   \
+  V(S390_Popcnt32)                  \
   V(S390_Cmp32)                     \
   V(S390_Cmp64)                     \
   V(S390_CmpDouble)                 \
@@ -75,6 +77,7 @@ namespace compiler {
   V(S390_ExtendSignWord32)          \
   V(S390_Uint32ToUint64)            \
   V(S390_Int64ToInt32)              \
+  V(S390_Int64ToDouble)             \
   V(S390_Int32ToDouble)             \
   V(S390_Uint32ToDouble)            \
   V(S390_Float32ToDouble)           \
@@ -86,6 +89,10 @@ namespace compiler {
   V(S390_DoubleInsertLowWord32)     \
   V(S390_DoubleInsertHighWord32)    \
   V(S390_DoubleConstruct)           \
+  V(S390_BitcastInt32ToFloat32)     \
+  V(S390_BitcastFloat32ToInt32)     \
+  V(S390_BitcastInt64ToDouble)      \
+  V(S390_BitcastDoubleToInt64)      \
   V(S390_LoadWordS8)                \
   V(S390_LoadWordU8)                \
   V(S390_LoadWordS16)               \

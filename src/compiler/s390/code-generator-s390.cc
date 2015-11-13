@@ -7,6 +7,7 @@
 #include "src/compiler/code-generator-impl.h"
 #include "src/compiler/gap-resolver.h"
 #include "src/compiler/node-matchers.h"
+#include "src/compiler/osr.h"
 #include "src/s390/macro-assembler-s390.h"
 #include "src/scopes.h"
 
@@ -88,12 +89,9 @@ class S390OperandConverter final : public InstructionOperandConverter {
 
   MemOperand ToMemOperand(InstructionOperand* op) const {
     DCHECK(op != NULL);
-    DCHECK(!op->IsRegister());
-    DCHECK(!op->IsDoubleRegister());
     DCHECK(op->IsStackSlot() || op->IsDoubleStackSlot());
-    // The linkage computes where all spill slots are located.
-    FrameOffset offset = linkage()->GetFrameOffset(
-        AllocatedOperand::cast(op)->index(), frame(), 0);
+    FrameOffset offset =
+        linkage()->GetFrameOffset(AllocatedOperand::cast(op)->index(), frame());
     return MemOperand(offset.from_stack_pointer() ? sp : fp, offset.offset());
   }
 };
@@ -178,8 +176,7 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
 #else
       return ge;
 #endif
-    case kUnorderedEqual:
-    case kUnorderedNotEqual:
+    default:
       break;
   }
   UNREACHABLE();
@@ -585,6 +582,11 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ Jump(ip);
       break;
     }
+    case kArchLazyBailout: {
+      EnsureSpaceForLazyDeopt();
+      RecordCallPosition(instr);
+      break;
+    }
     case kArchPrepareCallCFunction: {
       int const num_parameters = MiscField::decode(instr->opcode());
       __ PrepareCallCFunction(num_parameters, kScratchReg);
@@ -921,6 +923,18 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
        __ bind(&done);
       }
       break;
+#if V8_TARGET_ARCH_S390X
+    case kS390_Cntlz64:
+      UNIMPLEMENTED();
+      // __ cntlzd_(i.OutputRegister(), i.InputRegister(0));
+      // DCHECK_EQ(LeaveRC, i.OutputRCBit());
+      break;
+#endif
+    case kS390_Popcnt32:
+      UNIMPLEMENTED();
+      // __ popcntw(i.OutputRegister(), i.InputRegister(0));
+      // DCHECK_EQ(LeaveRC, i.OutputRCBit());
+      break;
     case kS390_Cmp32:
       ASSEMBLE_COMPARE(Cmp32, CmpLogical32);
       break;
@@ -953,17 +967,33 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
 #endif
     case kS390_Push:
-      __ Push(i.InputRegister(0));
+      if (instr->InputAt(0)->IsDoubleRegister()) {
+        __ StoreF(i.InputDoubleRegister(0), MemOperand(sp, -kDoubleSize));
+        __ lay(sp, MemOperand(sp, -kDoubleSize));
+      } else {
+        __ Push(i.InputRegister(0));
+      }
+      // DCHECK_EQ(LeaveRC, i.OutputRCBit());
       break;
     case kS390_PushFrame: {
       int num_slots = i.InputInt32(1);
-      __ StoreP(i.InputRegister(0), MemOperand(sp, -num_slots * kPointerSize));
+      if (instr->InputAt(0)->IsDoubleRegister()) {
+        __ StoreF(i.InputDoubleRegister(0),
+                 MemOperand(sp, -num_slots * kPointerSize));
+      } else {
+        __ StoreP(i.InputRegister(0),
+                  MemOperand(sp, -num_slots * kPointerSize));
+      }
       __ lay(sp, MemOperand(sp, -num_slots * kPointerSize));
       break;
     }
     case kS390_StoreToStackSlot: {
       int slot = i.InputInt32(1);
-      __ StoreP(i.InputRegister(0), MemOperand(sp, slot * kPointerSize));
+      if (instr->InputAt(0)->IsDoubleRegister()) {
+        __ StoreF(i.InputDoubleRegister(0), MemOperand(sp, slot * kPointerSize));
+      } else {
+        __ StoreP(i.InputRegister(0), MemOperand(sp, slot * kPointerSize));
+      }
       break;
     }
     case kS390_ExtendSignWord8:
@@ -991,6 +1021,11 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     case kS390_Int64ToInt32:
       // TODO(mbrandy): sign extend?
       __ Move(i.OutputRegister(), i.InputRegister(0));
+      break;
+    case kS390_Int64ToDouble:
+      UNIMPLEMENTED();
+      __ ConvertInt64ToDouble(i.InputRegister(0), i.OutputDoubleRegister());
+      // DCHECK_EQ(LeaveRC, i.OutputRCBit());
       break;
 #endif
     case kS390_Int32ToDouble:
@@ -1056,6 +1091,25 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
 #else
       __ lbr(i.OutputRegister(), i.OutputRegister());
 #endif
+      UNIMPLEMENTED();
+      // DCHECK_EQ(LeaveRC, i.OutputRCBit());
+      break;
+    case kS390_BitcastFloat32ToInt32:
+      __ MovFloatToInt(i.OutputRegister(), i.InputDoubleRegister(0));
+      break;
+    case kS390_BitcastInt32ToFloat32:
+      __ MovIntToFloat(i.OutputDoubleRegister(), i.InputRegister(0));
+      break;
+#if V8_TARGET_ARCH_S390X
+    case kS390_BitcastDoubleToInt64:
+      __ MovDoubleToInt64(i.OutputRegister(), i.InputDoubleRegister(0));
+      break;
+    case kS390_BitcastInt64ToDouble:
+      __ MovInt64ToDouble(i.OutputDoubleRegister(), i.InputRegister(0));
+      break;
+#endif
+    case kS390_LoadWordU8:
+      ASSEMBLE_LOAD_INTEGER(LoadlB, LoadlB);
       break;
     case kS390_LoadWordU16:
       ASSEMBLE_LOAD_INTEGER(LoadLogicalHalfWordP);
@@ -1120,6 +1174,15 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     case kCheckedLoadWord32:
       ASSEMBLE_CHECKED_LOAD_INTEGER(LoadW);
       break;
+    case kCheckedLoadWord64:
+#if V8_TARGET_ARCH_S390X
+      // TODO: port for s390
+      UNIMPLEMENTED();
+      ASSEMBLE_CHECKED_LOAD_INTEGER(ld, ldx);
+#else
+      UNREACHABLE();
+#endif
+      break;
     case kCheckedLoadFloat32:
       ASSEMBLE_CHECKED_LOAD_FLOAT(LoadShortConvertToDoubleF, 32);
       break;
@@ -1134,6 +1197,15 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     case kCheckedStoreWord32:
       ASSEMBLE_CHECKED_STORE_INTEGER(StoreW);
+      break;
+    case kCheckedStoreWord64:
+#if V8_TARGET_ARCH_S390X
+      // TODO: port for s390
+      UNIMPLEMENTED();
+      ASSEMBLE_CHECKED_STORE_INTEGER(std, stdx);
+#else
+      UNREACHABLE();
+#endif
       break;
     case kCheckedStoreFloat32:
       ASSEMBLE_CHECKED_STORE_FLOAT32();
@@ -1283,32 +1355,24 @@ void CodeGenerator::AssembleDeoptimizerCall(
 
 void CodeGenerator::AssemblePrologue() {
   CallDescriptor* descriptor = linkage()->GetIncomingDescriptor();
-  int stack_slots = frame()->GetSpillSlotCount();
+
   if (descriptor->kind() == CallDescriptor::kCallAddress) {
+    // TODO: s390 port
 //    __ function_descriptor();
     int register_save_area_size = 0;
     RegList frame_saves = fp.bit();
     __ Push(r14, fp);
     __ LoadRR(fp, sp);
-    // Save callee-saved registers.
-    const RegList saves = descriptor->CalleeSavedRegisters() & ~frame_saves;
-    for (int i = Register::kNumRegisters - 1; i >= 0; i--) {
-      if (!((1 << i) & saves)) continue;
-      register_save_area_size += kPointerSize;
-    }
-    frame()->SetRegisterSaveAreaSize(register_save_area_size);
-    __ MultiPush(saves);
   } else if (descriptor->IsJSFunctionCall()) {
     CompilationInfo* info = this->info();
     __ Prologue(info->IsCodePreAgingActive());
-    frame()->SetRegisterSaveAreaSize(
-        StandardFrameConstants::kFixedFrameSizeFromFp);
   } else if (needs_frame_) {
     __ StubPrologue();
-    frame()->SetRegisterSaveAreaSize(
-        StandardFrameConstants::kFixedFrameSizeFromFp);
+  } else {
+    frame()->SetElidedFrameSizeInSlots(0);
   }
 
+  int stack_shrink_slots = frame()->GetSpillSlotCount();
   if (info()->is_osr()) {
     // TurboFan OSR-compiled functions cannot be entered directly.
     __ Abort(kShouldNotDirectlyEnterOsrFunction);
@@ -1321,51 +1385,76 @@ void CodeGenerator::AssemblePrologue() {
     osr_pc_offset_ = __ pc_offset();
     // TODO(titzer): cannot address target function == local #-1
     __ LoadP(r3, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
-    DCHECK(stack_slots >= frame()->GetOsrStackSlotCount());
-    stack_slots -= frame()->GetOsrStackSlotCount();
+    stack_shrink_slots -= OsrHelper(info()).UnoptimizedFrameSlots();
   }
 
-  if (stack_slots > 0) {
+  const RegList double_saves = descriptor->CalleeSavedFPRegisters();
+  if (double_saves != 0) {
+    stack_shrink_slots += frame()->AlignSavedCalleeRegisterSlots();
+  }
+  if (stack_shrink_slots > 0) {
     __ lay(sp, MemOperand(sp, -stack_slots * kPointerSize));
+  }
+
+  // Save callee-saved Double registers.
+  if (double_saves != 0) {
+    __ MultiPushDoubles(double_saves);
+    DCHECK(kNumCalleeSavedDoubles ==
+           base::bits::CountPopulation32(double_saves));
+    frame()->AllocateSavedCalleeRegisterSlots(kNumCalleeSavedDoubles *
+                                              (kDoubleSize / kPointerSize));
+  }
+
+  // Save callee-saved registers.
+  const RegList saves =
+      FLAG_enable_embedded_constant_pool
+          ? descriptor->CalleeSavedRegisters() & ~kConstantPoolRegister.bit()
+          : descriptor->CalleeSavedRegisters();
+  if (saves != 0) {
+    __ MultiPush(saves);
+    // register save area does not include the fp or constant pool pointer.
+    const int num_saves =
+        kNumCalleeSaved - 1 - (FLAG_enable_embedded_constant_pool ? 1 : 0);
+    DCHECK(num_saves == base::bits::CountPopulation32(saves));
+    frame()->AllocateSavedCalleeRegisterSlots(num_saves);
   }
 }
 
 
 void CodeGenerator::AssembleReturn() {
   CallDescriptor* descriptor = linkage()->GetIncomingDescriptor();
-  int stack_slots = frame()->GetSpillSlotCount();
+  int pop_count = static_cast<int>(descriptor->StackParameterCount());
+
+  // Restore registers.
+  const RegList saves =
+      FLAG_enable_embedded_constant_pool
+          ? descriptor->CalleeSavedRegisters() & ~kConstantPoolRegister.bit()
+          : descriptor->CalleeSavedRegisters();
+  if (saves != 0) {
+    __ MultiPop(saves);
+  }
+
+  // Restore double registers.
+  const RegList double_saves = descriptor->CalleeSavedFPRegisters();
+  if (double_saves != 0) {
+    __ MultiPopDoubles(double_saves);
+  }
+
   if (descriptor->kind() == CallDescriptor::kCallAddress) {
-    if (frame()->GetRegisterSaveAreaSize() > 0) {
-      // Remove this frame's spill slots first.
-      if (stack_slots > 0) {
-        __ lay(sp, MemOperand(sp, stack_slots * kPointerSize));
-      }
-      // Restore registers.
-      RegList frame_saves = fp.bit();
-      const RegList saves = descriptor->CalleeSavedRegisters() & ~frame_saves;
-      if (saves != 0) {
-        __ MultiPop(saves);
-      }
-    }
-    __ LeaveFrame(StackFrame::MANUAL);
-    __ Ret();
+    __ LeaveFrame(StackFrame::MANUAL, pop_count * kPointerSize);
   } else if (descriptor->IsJSFunctionCall() || needs_frame_) {
     // Canonicalize JSFunction return sites for now.
     if (return_label_.is_bound()) {
       __ b(&return_label_);
+      return;
     } else {
       __ bind(&return_label_);
-      int pop_count = descriptor->IsJSFunctionCall()
-                          ? static_cast<int>(descriptor->JSParameterCount())
-                          : (info()->IsStub()
-                                 ? info()->code_stub()->GetStackParameterCount()
-                                 : 0);
       __ LeaveFrame(StackFrame::MANUAL, pop_count * kPointerSize);
-      __ Ret();
     }
   } else {
-    __ Ret();
+    __ Drop(pop_count);
   }
+  __ Ret();
 }
 
 
@@ -1553,18 +1642,20 @@ void CodeGenerator::AddNopForSmiCodeInlining() {
 
 
 void CodeGenerator::EnsureSpaceForLazyDeopt() {
+  if (!info()->ShouldEnsureSpaceForLazyDeopt()) {
+    return;
+  }
+
   int space_needed = Deoptimizer::patch_size();
-  if (!info()->IsStub()) {
-    // Ensure that we have enough space after the previous lazy-bailout
-    // instruction for patching the code here.
-    int current_pc = masm()->pc_offset();
-    if (current_pc < last_lazy_deopt_pc_ + space_needed) {
-      int padding_size = last_lazy_deopt_pc_ + space_needed - current_pc;
-      DCHECK_EQ(0, padding_size % 2);
-      while (padding_size > 0) {
-        __ nop();
-        padding_size -= 2;
-      }
+  // Ensure that we have enough space after the previous lazy-bailout
+  // instruction for patching the code here.
+  int current_pc = masm()->pc_offset();
+  if (current_pc < last_lazy_deopt_pc_ + space_needed) {
+    int padding_size = last_lazy_deopt_pc_ + space_needed - current_pc;
+    DCHECK_EQ(0, padding_size % 2);
+    while (padding_size > 0) {
+      __ nop();
+      padding_size -= 2;
     }
   }
 }
