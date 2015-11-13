@@ -9,6 +9,8 @@
 #define V8_S390_CODE_STUBS_S390_H_
 
 
+#include "src/s390/frames-s390.h"
+
 namespace v8 {
 namespace internal {
 
@@ -182,8 +184,9 @@ class RecordWriteStub : public PlatformCodeStub {
         break;
     }
     DCHECK(GetMode(stub) == mode);
-    CpuFeatures::FlushICache(stub->instruction_start(),
-                     first_instr_length + second_instr_length);
+    Assembler::FlushICache(stub->GetIsolate(),
+                           stub->instruction_start(),
+                           first_instr_length + second_instr_length);
   }
 
   DEFINE_NULL_CALL_INTERFACE_DESCRIPTOR();
@@ -217,7 +220,7 @@ class RecordWriteStub : public PlatformCodeStub {
       masm->MultiPush(kJSCallerSaved & ~scratch1_.bit());
       if (mode == kSaveFPRegs) {
         // Save all volatile FP registers except d0.
-        masm->SaveFPRegs(sp, 1, DoubleRegister::kNumVolatileRegisters - 1);
+        masm->MultiPushDoubles(kCallerSavedDoubles & ~d0.bit());
       }
     }
 
@@ -225,7 +228,7 @@ class RecordWriteStub : public PlatformCodeStub {
                                            SaveFPRegsMode mode) {
       if (mode == kSaveFPRegs) {
         // Restore all volatile FP registers except d0.
-        masm->RestoreFPRegs(sp, 1, DoubleRegister::kNumVolatileRegisters - 1);
+        masm->MultiPopDoubles(kCallerSavedDoubles & ~d0.bit());
       }
       masm->MultiPop(kJSCallerSaved & ~scratch1_.bit());
       masm->pop(r14);
@@ -494,7 +497,7 @@ class FloatingPointHelper : public AllStatic {
                          Register scratch2,
                          Label* not_number);
 };
-}
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_S390_CODE_STUBS_S390_H_
