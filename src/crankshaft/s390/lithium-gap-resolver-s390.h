@@ -6,12 +6,10 @@
 // found in the LICENSE file.
 
 
-#ifndef V8_S390_LITHIUM_GAP_RESOLVER_S390_H_
-#define V8_S390_LITHIUM_GAP_RESOLVER_S390_H_
+#ifndef V8_CRANKSHAFT_S390_LITHIUM_GAP_RESOLVER_S390_H_
+#define V8_CRANKSHAFT_S390_LITHIUM_GAP_RESOLVER_S390_H_
 
-#include "src/v8.h"
-
-#include "src/lithium.h"
+#include "src/crankshaft/lithium.h"
 
 namespace v8 {
 namespace internal {
@@ -58,7 +56,7 @@ class LGapResolver final BASE_EMBEDDED {
   bool in_cycle_;
   LOperand* saved_destination_;
 };
-}
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
-#endif  // V8_S390_LITHIUM_GAP_RESOLVER_S390_H_
+#endif  // V8_CRANKSHAFT_S390_LITHIUM_GAP_RESOLVER_S390_H_

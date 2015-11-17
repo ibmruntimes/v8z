@@ -2,10 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/v8.h"
+#include "src/crankshaft/s390/lithium-gap-resolver-s390.h"
 
-#include "src/s390/lithium-codegen-s390.h"
-#include "src/s390/lithium-gap-resolver-s390.h"
+#include "src/crankshaft/s390/lithium-codegen-s390.h"
 
 namespace v8 {
 namespace internal {

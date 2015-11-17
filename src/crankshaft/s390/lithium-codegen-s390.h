@@ -5,13 +5,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_S390_LITHIUM_CODEGEN_S390_H_
-#define V8_S390_LITHIUM_CODEGEN_S390_H_
+#ifndef V8_CRANKSHAFT_S390_LITHIUM_CODEGEN_S390_H_
+#define V8_CRANKSHAFT_S390_LITHIUM_CODEGEN_S390_H_
 
+#include "src/crankshaft/lithium-codegen.h"
+#include "src/crankshaft/s390/lithium-gap-resolver-s390.h"
+#include "src/crankshaft/s390/lithium-s390.h"
 #include "src/deoptimizer.h"
-#include "src/lithium-codegen.h"
-#include "src/s390/lithium-gap-resolver-s390.h"
-#include "src/s390/lithium-s390.h"
 #include "src/safepoint-table.h"
 #include "src/scopes.h"
 #include "src/utils.h"
@@ -113,8 +113,6 @@ class LCodeGen : public LCodeGenBase {
   void DoDeferredStringCharCodeAt(LStringCharCodeAt* instr);
   void DoDeferredStringCharFromCode(LStringCharFromCode* instr);
   void DoDeferredAllocate(LAllocate* instr);
-  void DoDeferredInstanceOfKnownGlobal(LInstanceOfKnownGlobal* instr,
-                                       Label* map_check, Label* bool_load);
   void DoDeferredInstanceMigration(LCheckMaps* instr, Register object);
   void DoDeferredLoadMutableDouble(LLoadFieldByIndex* instr, Register result,
                                    Register object, Register index);
@@ -141,7 +139,7 @@ class LCodeGen : public LCodeGenBase {
 
   Scope* scope() const { return scope_; }
 
-  Register scratch0() { return r1; }
+  Register scratch0() { return kLithiumScratch; }
   DoubleRegister double_scratch0() { return kScratchDoubleReg; }
 
   LInstruction* GetNextInstruction();
@@ -245,6 +243,8 @@ class LCodeGen : public LCodeGenBase {
   template <class InstrType>
   void EmitBranch(InstrType instr, Condition condition, CRegister cr = cr7);
   template <class InstrType>
+  void EmitTrueBranch(InstrType instr, Condition condition, CRegister cr = cr7);
+  template <class InstrType>
   void EmitFalseBranch(InstrType instr, Condition condition,
                        CRegister cr = cr7);
   void EmitNumberUntagD(LNumberUntagD* instr, Register input,
@@ -255,12 +255,6 @@ class LCodeGen : public LCodeGenBase {
   // true and false label should be made, to optimize fallthrough.
   Condition EmitTypeofIs(Label* true_label, Label* false_label, Register input,
                          Handle<String> type_name);
-
-  // Emits optimized code for %_IsObject(x).  Preserves input register.
-  // Returns the condition on which a final split to
-  // true and false label should be made, to optimize fallthrough.
-  Condition EmitIsObject(Register input, Register temp1, Label* is_not_object,
-                         Label* is_object);
 
   // Emits optimized code for %_IsString(x).  Preserves input register.
   // Returns the condition on which a final split to
@@ -366,8 +360,7 @@ class LDeferredCode : public ZoneObject {
   Label* external_exit_;
   int instruction_index_;
 };
+}  // namespace internal
+}  // namespace v8
 
-}
-}  // namespace v8::internal
-
-#endif  // V8_S390_LITHIUM_CODEGEN_S390_H_
+#endif  // V8_CRANKSHAFT_S390_LITHIUM_CODEGEN_S390_H_
