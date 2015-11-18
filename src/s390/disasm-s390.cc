@@ -28,8 +28,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "src/v8.h"
-
 #if V8_TARGET_ARCH_S390
 
 #include "src/base/platform/platform.h"
@@ -121,7 +119,9 @@ void Decoder::PrintRegister(int reg) {
 
 
 // Print the double FP register name according to the active name converter.
-void Decoder::PrintDRegister(int reg) { Print(FPRegisters::Name(reg)); }
+void Decoder::PrintDRegister(int reg) {
+  Print(DoubleRegister::from_code(reg).ToString());
+}
 
 
 // Print SoftwareInterrupt codes. Factoring this out reduces the complexity of
