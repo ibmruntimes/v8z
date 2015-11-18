@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/v8.h"
-
 #if V8_TARGET_ARCH_S390
 
 #include "src/assembler.h"
@@ -11,6 +9,7 @@
 #include "src/macro-assembler.h"
 #include "src/s390/assembler-s390.h"
 #include "src/s390/assembler-s390-inl.h"
+#include "src/s390/frames-s390.h"
 #include "src/s390/macro-assembler-s390.h"
 
 namespace v8 {
