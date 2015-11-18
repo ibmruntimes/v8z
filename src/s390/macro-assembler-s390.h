@@ -13,6 +13,20 @@
 namespace v8 {
 namespace internal {
 
+// Give alias names to registers for calling conventions.
+const Register kReturnRegister0 = {Register::kCode_r2};
+const Register kReturnRegister1 = {Register::kCode_r3};
+const Register kJSFunctionRegister = {Register::kCode_r3};
+// const Register kContextRegister = {Register::kCode_r30};
+const Register kInterpreterAccumulatorRegister = {Register::kCode_r2};
+// const Register kInterpreterRegisterFileRegister = {Register::kCode_r14};
+// const Register kInterpreterBytecodeOffsetRegister = {Register::kCode_r15};
+// const Register kInterpreterBytecodeArrayRegister = {Register::kCode_r16};
+// const Register kInterpreterDispatchTableRegister = {Register::kCode_r17};
+const Register kJavaScriptCallArgCountRegister = {Register::kCode_r2};
+const Register kRuntimeCallFunctionRegister = {Register::kCode_r3};
+const Register kRuntimeCallArgCountRegister = {Register::kCode_r2};
+
 // ----------------------------------------------------------------------------
 // Static helper functions
 
@@ -185,12 +199,16 @@ class MacroAssembler : public Assembler {
             TypeFeedbackId ast_id = TypeFeedbackId::None(),
             Condition cond = al);
   void Ret();
+  void Ret(Condition cond) { UNIMPLEMENTED(); }
 
   // Emit code to discard a non-negative number of pointer-sized elements
   // from the stack, clobbering only the sp register.
   void Drop(int count);
 
-  void Ret(int drop);
+  void Ret(int drop) {
+    Drop(drop);
+    Ret();
+  }
 
   void Call(Label* target);
 
@@ -208,8 +226,11 @@ class MacroAssembler : public Assembler {
   void InsertDoubleLow(DoubleRegister dst, Register src);
   void InsertDoubleHigh(DoubleRegister dst, Register src);
 
-  void MultiPush(RegList regs);
-  void MultiPop(RegList regs);
+  void MultiPush(RegList regs, Register location = sp);
+  void MultiPop(RegList regs, Register location = sp);
+
+  void MultiPushDoubles(RegList dregs, Register location = sp);
+  void MultiPopDoubles(RegList dregs, Register location = sp);
 
   // Load an object from the root table.
   void LoadRoot(Register destination,
@@ -445,7 +466,7 @@ class MacroAssembler : public Assembler {
   // |object| is the object being stored into, |value| is the object being
   // stored.  value and scratch registers are clobbered by the operation.
   // The offset is the offset from the start of the object, not the offset from
-  // the tagged HeapObject pointer.  For use with FieldOperand(reg, off).
+  // the tagged HeapObject pointer.  For use with FieldMemOperand(reg, off).
   void RecordWriteField(
       Register object, int offset, Register value, Register scratch,
       LinkRegisterStatus lr_status, SaveFPRegsMode save_fp,
@@ -629,6 +650,13 @@ class MacroAssembler : public Assembler {
   void ConvertIntToFloat(const DoubleRegister dst, const Register src,
                          const Register int_scratch);
 
+#if V8_TARGET_ARCH_S390X
+  void ConvertInt64ToDouble(Register src, DoubleRegister double_dst);
+#endif
+
+  void MovIntToFloat(DoubleRegister dst, Register src);
+  void MovFloatToInt(Register dst, DoubleRegister src);
+
   // Converts the double_input to an integer.  Note that, upon return,
   // the contents of double_dst will also hold the fixed point representation.
   void ConvertDoubleToInt64(const DoubleRegister double_input,
@@ -658,6 +686,9 @@ class MacroAssembler : public Assembler {
   static int ActivationFrameAlignment();
 
   void LoadContext(Register dst, int context_chain_length);
+
+  // Load the global proxy from the current context.
+  void LoadGlobalProxy(Register dst);
 
   // Conditionally load the cached Array transitioned map of type
   // transitioned_kind from the native context if the map in register
@@ -769,11 +800,6 @@ class MacroAssembler : public Assembler {
                       const ParameterCount& actual, InvokeFlag flag,
                       const CallWrapper& call_wrapper);
 
-  void IsObjectJSObjectType(Register heap_object, Register map,
-                            Register scratch, Label* fail);
-
-  void IsInstanceJSObjectType(Register map, Register scratch, Label* fail);
-
   void IsObjectJSStringType(Register object, Register scratch, Label* fail);
 
   void IsObjectNameType(Register object, Register scratch, Label* fail);
@@ -858,13 +884,6 @@ class MacroAssembler : public Assembler {
   void Allocate(Register object_size, Register result, Register scratch1,
                 Register scratch2, Label* gc_required, AllocationFlags flags);
 
-  // Undo allocation in new space. The object passed and objects allocated after
-  // it will no longer be allocated. The caller must make sure that no pointers
-  // are left to the object(s) no longer allocated as they would be invalid when
-  // allocation is undone.
-  void UndoAllocationInNewSpace(Register object, Register scratch);
-
-
   void AllocateTwoByteString(Register result, Register length,
                              Register scratch1, Register scratch2,
                              Register scratch3, Label* gc_required);
@@ -931,8 +950,7 @@ class MacroAssembler : public Assembler {
   // function register will be untouched; the other registers may be
   // clobbered.
   void TryGetFunctionPrototype(Register function, Register result,
-                               Register scratch, Label* miss,
-                               bool miss_on_bound_function = false);
+                               Register scratch, Label* miss);
 
   // Compare object type for heap object.  heap_object contains a non-Smi
   // whose object type should be compared with the given type.  This both
@@ -944,13 +962,6 @@ class MacroAssembler : public Assembler {
   // Type_reg can be no_reg. In that case ip is used.
   void CompareObjectType(Register heap_object, Register map, Register type_reg,
                          InstanceType type);
-
-  // Compare object type for heap object. Branch to false_label if type
-  // is lower than min_type or greater than max_type.
-  // Load map into the register map.
-  void CheckObjectTypeRange(Register heap_object, Register map,
-                            InstanceType min_type, InstanceType max_type,
-                            Label* false_label);
 
   // Compare instance type in a map.  map contains a valid map object whose
   // object type should be compared with the given type.  This both
@@ -1021,7 +1032,23 @@ class MacroAssembler : public Assembler {
   // Compare the object in a register to a value from the root list.
   // Uses the ip register as scratch.
   void CompareRoot(Register obj, Heap::RootListIndex index);
+  void PushRoot(Heap::RootListIndex index) {
+    LoadRoot(r0, index);
+    Push(r0);
+  }
 
+  // Compare the object in a register to a value and jump if they are equal.
+  void JumpIfRoot(Register with, Heap::RootListIndex index, Label* if_equal) {
+    CompareRoot(with, index);
+    beq(if_equal);
+  }
+
+  // Compare the object in a register to a value and jump if they are not equal.
+  void JumpIfNotRoot(Register with, Heap::RootListIndex index,
+                     Label* if_not_equal) {
+    CompareRoot(with, index);
+    bne(if_not_equal);
+  }
 
   // Load and check the instance type of an object for being a string.
   // Loads the type into the second argument register.
@@ -1148,12 +1175,6 @@ class MacroAssembler : public Assembler {
     bind(&label);
   }
 
-  // Pushes <count> double values to <location>, starting from d<first>.
-  void SaveFPRegs(Register location, int first, int count);
-
-  // Pops <count> double values from <location>, starting from d<first>.
-  void RestoreFPRegs(Register location, int first, int count);
-
   // ---------------------------------------------------------------------------
   // Runtime calls
 
@@ -1234,17 +1255,16 @@ class MacroAssembler : public Assembler {
   // Jump to a runtime routine.
   void JumpToExternalReference(const ExternalReference& builtin);
 
-  // Invoke specified builtin JavaScript function. Adds an entry to
-  // the unresolved list if the name does not resolve.
-  void InvokeBuiltin(Builtins::JavaScript id, InvokeFlag flag,
+  // Invoke specified builtin JavaScript function.
+  void InvokeBuiltin(int native_context_index, InvokeFlag flag,
                      const CallWrapper& call_wrapper = NullCallWrapper());
 
   // Store the code object for the given builtin in the target register and
   // setup the function in r1.
-  void GetBuiltinEntry(Register target, Builtins::JavaScript id);
+  void GetBuiltinEntry(Register target, int native_context_index);
 
   // Store the function for the given builtin in the target register.
-  void GetBuiltinFunction(Register target, Builtins::JavaScript id);
+  void GetBuiltinFunction(Register target, int native_context_index);
 
   Handle<Object> CodeObject() {
     DCHECK(!code_object_.is_null());
@@ -1577,6 +1597,8 @@ class MacroAssembler : public Assembler {
   // Abort execution if argument is not a name, enabled via --debug-code.
   void AssertName(Register object);
 
+  void AssertFunction(Register object);
+
   // Abort execution if argument is not undefined or an AllocationSite, enabled
   // via --debug-code.
   void AssertUndefinedOrAllocationSite(Register object, Register scratch);
@@ -1594,16 +1616,6 @@ class MacroAssembler : public Assembler {
 
   // ---------------------------------------------------------------------------
   // String utilities
-
-  // Generate code to do a lookup in the number string cache. If the number in
-  // the register object is found in the cache the generated code falls through
-  // with the result in the result register. The object and the result register
-  // can be the same. If the number is not found in the cache the code jumps to
-  // the label not_found with only the content of register object unchanged.
-  void LookupNumberStringCache(Register object, Register result,
-                               Register scratch1, Register scratch2,
-                               Register scratch3, Label* not_found);
-
 
   // Checks if both objects are sequential one-byte strings and jumps to label
   // if either is not. Assumes that neither object is a smi.
@@ -1638,11 +1650,6 @@ class MacroAssembler : public Assembler {
 
   // ---------------------------------------------------------------------------
   // Patching helpers.
-
-  // Retrieve/patch the relocated value (lis/ori pair).
-  void GetRelocatedValue(Register location, Register result, Register scratch);
-  void SetRelocatedValue(Register location, Register scratch,
-                         Register new_value);
 
   void ClampUint8(Register output_reg, Register input_reg);
 
@@ -1681,6 +1688,9 @@ class MacroAssembler : public Assembler {
   void DecodeFieldToSmi(Register reg) {
     DecodeFieldToSmi<Field>(reg, reg);
   }
+
+  // Load the type feedback vector from a JavaScript frame.
+  void EmitLoadTypeFeedbackVector(Register vector);
 
   // Activation support.
   void EnterFrame(StackFrame::Type type,
@@ -1773,7 +1783,7 @@ class CodePatcher {
   enum FlushICache { FLUSH, DONT_FLUSH };
 
   CodePatcher(byte* address, int instructions, FlushICache flush_cache = FLUSH);
-  virtual ~CodePatcher();
+  ~CodePatcher();
 
   // Macro assembler to emit code.
   MacroAssembler* masm() { return &masm_; }
@@ -1789,7 +1799,7 @@ class CodePatcher {
 // -----------------------------------------------------------------------------
 // Static helper functions.
 
-inline MemOperand ContextOperand(Register context, int index) {
+inline MemOperand ContextOperand(Register context, int index = 0) {
   return MemOperand(context, Context::SlotOffset(index));
 }
 
@@ -1809,7 +1819,7 @@ inline MemOperand GlobalObjectOperand() {
 #else
 #define ACCESS_MASM(masm) masm->
 #endif
-}
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_S390_MACRO_ASSEMBLER_S390_H_
