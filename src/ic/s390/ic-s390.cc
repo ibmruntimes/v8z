@@ -921,7 +921,7 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
   }
   CodePatcher patcher(patch_address, patch_size);
   Register reg;
-  reg.code_ = instr_at_patch & 0xf;
+  reg.reg_code = instr_at_patch & 0xf;
   if (check == ENABLE_INLINED_SMI_CHECK) {
     // DCHECK(Assembler::IsCmpRegister(instr_at_patch));
     // DCHECK_EQ(Assembler::GetRA(instr_at_patch).code(),

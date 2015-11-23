@@ -1080,10 +1080,6 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     #endif
       __ ldy(i.OutputDoubleRegister(), MemOperand(sp, -kDoubleSize));
       break;
-    case kS390_LoadWordU8:
-      ASSEMBLE_LOAD_INTEGER(LoadlB);
-     // __ LoadlB(i.OutputRegister(), i.MemoryOperand());
-      break;
     case kS390_LoadWordS8:
       ASSEMBLE_LOAD_INTEGER(LoadlB);
 #if V8_TARGET_ARCH_S390X
@@ -1109,7 +1105,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
 #endif
     case kS390_LoadWordU8:
-      ASSEMBLE_LOAD_INTEGER(LoadlB, LoadlB);
+      ASSEMBLE_LOAD_INTEGER(LoadlB);
       break;
     case kS390_LoadWordU16:
       ASSEMBLE_LOAD_INTEGER(LoadLogicalHalfWordP);
@@ -1357,10 +1353,6 @@ void CodeGenerator::AssemblePrologue() {
   CallDescriptor* descriptor = linkage()->GetIncomingDescriptor();
 
   if (descriptor->kind() == CallDescriptor::kCallAddress) {
-    // TODO: s390 port
-//    __ function_descriptor();
-    int register_save_area_size = 0;
-    RegList frame_saves = fp.bit();
     __ Push(r14, fp);
     __ LoadRR(fp, sp);
   } else if (descriptor->IsJSFunctionCall()) {
@@ -1393,7 +1385,7 @@ void CodeGenerator::AssemblePrologue() {
     stack_shrink_slots += frame()->AlignSavedCalleeRegisterSlots();
   }
   if (stack_shrink_slots > 0) {
-    __ lay(sp, MemOperand(sp, -stack_slots * kPointerSize));
+    __ lay(sp, MemOperand(sp, -stack_shrink_slots * kPointerSize));
   }
 
   // Save callee-saved Double registers.
@@ -1406,10 +1398,7 @@ void CodeGenerator::AssemblePrologue() {
   }
 
   // Save callee-saved registers.
-  const RegList saves =
-      FLAG_enable_embedded_constant_pool
-          ? descriptor->CalleeSavedRegisters() & ~kConstantPoolRegister.bit()
-          : descriptor->CalleeSavedRegisters();
+  const RegList saves = descriptor->CalleeSavedRegisters();
   if (saves != 0) {
     __ MultiPush(saves);
     // register save area does not include the fp or constant pool pointer.
@@ -1426,10 +1415,7 @@ void CodeGenerator::AssembleReturn() {
   int pop_count = static_cast<int>(descriptor->StackParameterCount());
 
   // Restore registers.
-  const RegList saves =
-      FLAG_enable_embedded_constant_pool
-          ? descriptor->CalleeSavedRegisters() & ~kConstantPoolRegister.bit()
-          : descriptor->CalleeSavedRegisters();
+  const RegList saves = descriptor->CalleeSavedRegisters();
   if (saves != 0) {
     __ MultiPop(saves);
   }

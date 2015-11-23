@@ -118,6 +118,7 @@ struct Register {
 #undef REGISTER_COUNT
 
 #define REGISTER_BIT(R) 1 << kCode_##R |
+  static const RegList kAllocatable =
       ALLOCATABLE_GENERAL_REGISTERS(REGISTER_BIT)0;
 #undef REGISTER_BIT
 
@@ -204,6 +205,11 @@ struct DoubleRegister {
   int bit() const {
     DCHECK(is_valid());
     return 1 << reg_code;
+  }
+
+  static DoubleRegister from_code(int code) {
+    DoubleRegister r = {code};
+    return r;
   }
 
   int reg_code;
@@ -526,6 +532,7 @@ class Assembler : public AssemblerBase {
   // FIXED_SEQUENCE in bytes!
   static const int kDebugBreakSlotLength = kCallSequenceLength;
   static const int kPatchDebugBreakSlotReturnOffset = kCallTargetAddressOffset;
+  static const int kDebugBreakSlotInstructions = 1;
 
   // Length to patch between the start of the JS return sequence
   // from SetDebugBreakAtReturn and the address from

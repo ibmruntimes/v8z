@@ -17,12 +17,12 @@ namespace internal {
 const Register kReturnRegister0 = {Register::kCode_r2};
 const Register kReturnRegister1 = {Register::kCode_r3};
 const Register kJSFunctionRegister = {Register::kCode_r3};
-// const Register kContextRegister = {Register::kCode_r30};
+const Register kContextRegister = {Register::kCode_r13};
 const Register kInterpreterAccumulatorRegister = {Register::kCode_r2};
-// const Register kInterpreterRegisterFileRegister = {Register::kCode_r14};
-// const Register kInterpreterBytecodeOffsetRegister = {Register::kCode_r15};
-// const Register kInterpreterBytecodeArrayRegister = {Register::kCode_r16};
-// const Register kInterpreterDispatchTableRegister = {Register::kCode_r17};
+const Register kInterpreterRegisterFileRegister = {Register::kCode_r4};
+const Register kInterpreterBytecodeOffsetRegister = {Register::kCode_r5};
+const Register kInterpreterBytecodeArrayRegister = {Register::kCode_r6};
+const Register kInterpreterDispatchTableRegister = {Register::kCode_r8};
 const Register kJavaScriptCallArgCountRegister = {Register::kCode_r2};
 const Register kRuntimeCallFunctionRegister = {Register::kCode_r3};
 const Register kRuntimeCallArgCountRegister = {Register::kCode_r2};
@@ -198,7 +198,7 @@ class MacroAssembler : public Assembler {
   void Call(Handle<Code> code, RelocInfo::Mode rmode = RelocInfo::CODE_TARGET,
             TypeFeedbackId ast_id = TypeFeedbackId::None(),
             Condition cond = al);
-  void Ret();
+  void Ret() { b(r14); };
   void Ret(Condition cond) { UNIMPLEMENTED(); }
 
   // Emit code to discard a non-negative number of pointer-sized elements
@@ -1756,6 +1756,9 @@ class MacroAssembler : public Assembler {
   // the position of the first bit.  Leaves addr_reg unchanged.
   inline void GetMarkBits(Register addr_reg, Register bitmap_reg,
                           Register mask_reg);
+
+  static const RegList kSafepointSavedRegisters;
+  static const int kNumSafepointSavedRegisters;
 
   // Compute memory operands for safepoint stack slots.
   static int SafepointRegisterStackIndex(int reg_code);

@@ -52,7 +52,7 @@ void Builtins::Generate_Adaptor(MacroAssembler* masm, CFunctionId id,
   // if the called function is marked as DontAdaptArguments, otherwise we
   // need to load the argument count from the SharedFunctionInfo.
   __ LoadP(r4, FieldMemOperand(r3, JSFunction::kSharedFunctionInfoOffset));
-  __ LoadWordArith(
+  __ LoadW(
       r4, FieldMemOperand(r4, SharedFunctionInfo::kFormalParameterCountOffset));
 #if !V8_TARGET_ARCH_S390X
   __ SmiUntag(r4);
@@ -175,7 +175,8 @@ void Builtins::Generate_StringConstructor(MacroAssembler* masm) {
     __ beq(&no_arguments);
     __ SubP(r2, r2, Operand(1));
     __ ShiftLeftP(r2, r2, Operand(kPointerSizeLog2));
-    __ LoadPUX(r2, MemOperand(sp, r2));
+    __ LoadP(r2, MemOperand(sp, r2));
+    __ lay(sp, MemOperand(sp, r2));
     __ Drop(2);
   }
 
@@ -231,7 +232,8 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
     __ beq(&no_arguments);
     __ SubP(r2, r2, Operand(1));
     __ ShiftLeftP(r4, r2, Operand(kPointerSizeLog2));
-    __ LoadPUX(r4, MemOperand(sp, r4));
+    __ LoadP(r4, MemOperand(sp, r4));
+    __ lay(sp, MemOperand(sp, r4));
     __ Drop(2);
     __ b(&done);
     __ bind(&no_arguments);
@@ -884,7 +886,7 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
 
   if (FLAG_debug_code) {
     // Check function data field is actually a BytecodeArray object.
-    __ TestIfSmi(kInterpreterBytecodeArrayRegister, r0);
+    __ TestIfSmi(kInterpreterBytecodeArrayRegister);
     __ Assert(ne, kFunctionDataShouldBeBytecodeArrayOnInterpreterEntry);
     __ CompareObjectType(kInterpreterBytecodeArrayRegister, r2, no_reg,
                          BYTECODE_ARRAY_TYPE);
@@ -911,11 +913,14 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
     Label loop, no_args;
     __ LoadRoot(r5, Heap::kUndefinedValueRootIndex);
     __ ShiftRightP(r4, r4, Operand(kPointerSizeLog2));
-    __ beq(&no_args, cr0);
-    __ mtctr(r4);
+    __ beq(&no_args);
+    // __ mtctr(r4);
+    __ LoadRR(r1, r4);
     __ bind(&loop);
     __ push(r5);
-    __ bdnz(&loop);
+    __ SubP(r1, Operand(1));
+    __ bne(&loop);
+    // __ bdnz(&loop);
     __ bind(&no_args);
   }
 
@@ -979,7 +984,7 @@ void Builtins::Generate_InterpreterExitTrampoline(MacroAssembler* masm) {
   __ LoadlW(r0, FieldMemOperand(kInterpreterBytecodeArrayRegister,
                              BytecodeArray::kParameterSizeOffset));
   __ AddP(sp, sp, r0);
-  __ blr();
+  __ Ret();
 }
 
 
@@ -987,11 +992,15 @@ static void Generate_InterpreterPushArgs(MacroAssembler* masm, Register index,
                                          Register count, Register scratch) {
   Label loop;
   __ AddP(index, index, Operand(kPointerSize));  // Bias up for LoadPU
-  __ mtctr(count);
+  // __ mtctr(count);
+  __ LoadRR(r0, count);
   __ bind(&loop);
-  __ LoadPU(scratch, MemOperand(index, -kPointerSize));
+  __ LoadP(scratch, MemOperand(index, -kPointerSize));
+  __ lay(index, MemOperand(index, -kPointerSize));
   __ push(scratch);
-  __ bdnz(&loop);
+  __ SubP(r0, Operand(1));
+  __ bne(&loop);
+  // __ bdnz(&loop);
 }
 
 
@@ -1616,7 +1625,7 @@ void Builtins::Generate_CallFunction(MacroAssembler* masm,
   Label done_convert;
   __ AndP(r0, r5, Operand((1 << SharedFunctionInfo::kStrictModeBit) |
                           (1 << SharedFunctionInfo::kNativeBit)));
-  __ bne(&done_convert, cr0);
+  __ bne(&done_convert);
   {
     // ----------- S t a t e -------------
     //  -- r2 : the number of arguments (not including the receiver)
@@ -1678,7 +1687,7 @@ void Builtins::Generate_CallFunction(MacroAssembler* masm,
   //  -- cp : the function context.
   // -----------------------------------
 
-  __ LoadWordArith(
+  __ LoadW(
       r4, FieldMemOperand(r4, SharedFunctionInfo::kFormalParameterCountOffset));
 #if !V8_TARGET_ARCH_S390X
   __ SmiUntag(r4);
@@ -1725,7 +1734,7 @@ void Builtins::Generate_Call(MacroAssembler* masm, ConvertReceiverMode mode) {
   // Check if target has a [[Call]] internal method.
   __ LoadlB(r6, FieldMemOperand(r6, Map::kBitFieldOffset));
   __ TestBit(r6, Map::kIsCallable, r0);
-  __ beq(&non_callable, cr0);
+  __ beq(&non_callable);
   // Overwrite the original receiver the (original) target.
   __ ShiftLeftP(r7, r2, Operand(kPointerSizeLog2));
   __ StoreP(r3, MemOperand(sp, r7));
@@ -1798,7 +1807,7 @@ void Builtins::Generate_Construct(MacroAssembler* masm) {
   __ LoadP(r6, FieldMemOperand(r3, HeapObject::kMapOffset));
   __ LoadlB(r4, FieldMemOperand(r6, Map::kBitFieldOffset));
   __ TestBit(r4, Map::kIsConstructor, r0);
-  __ beq(&non_constructor, cr0);
+  __ beq(&non_constructor);
 
   // Dispatch based on instance type.
   __ CompareInstanceType(r6, r7, JS_FUNCTION_TYPE);

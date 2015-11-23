@@ -620,7 +620,8 @@ void InterpreterAssembler::End() {
 bool InterpreterAssembler::TargetSupportsUnalignedAccess() {
 #if V8_TARGET_ARCH_MIPS || V8_TARGET_ARCH_MIPS64
   return false;
-#elif V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_ARM64 || V8_TARGET_ARCH_PPC
+#elif V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_ARM64 || V8_TARGET_ARCH_PPC \
+      || V8_TARGET_ARCH_S390
   return CpuFeatures::IsSupported(UNALIGNED_ACCESSES);
 #elif V8_TARGET_ARCH_IA32 || V8_TARGET_ARCH_X64 || V8_TARGET_ARCH_X87
   return true;

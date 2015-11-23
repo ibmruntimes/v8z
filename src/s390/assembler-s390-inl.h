@@ -61,18 +61,6 @@ void RelocInfo::apply(intptr_t delta) {
     // Jump table entry
     Address target = Memory::Address_at(pc_);
     Memory::Address_at(pc_) = target + delta;
-  } else if (IsCodeTarget(rmode_)) {
-    bool flush_icache = icache_flush_mode != SKIP_ICACHE_FLUSH;
-    SixByteInstr instr = Instruction::InstructionBits(
-                                 reinterpret_cast<const byte*>(pc_));
-    int32_t dis = static_cast<int32_t>(instr & 0xFFFFFFFF) * 2  // halfwords
-                         - static_cast<int32_t>(delta);
-    instr >>= 32;
-    instr <<= 32;
-    instr |= static_cast<uint32_t>(dis/2);
-    Instruction::SetInstructionBits<SixByteInstr>(
-                         reinterpret_cast<byte*>(pc_), instr);
-    if (flush_icache) CpuFeatures::FlushICache(pc_, 6);
   } else {
     // mov sequence
     DCHECK(IsInternalReferenceEncoded(rmode_));

@@ -1451,7 +1451,7 @@ void InstanceOfStub::Generate(MacroAssembler* masm) {
   // Ensure that {function} has an instance prototype.
   __ LoadlB(scratch, FieldMemOperand(function_map, Map::kBitFieldOffset));
   __ TestBit(scratch, Map::kHasNonInstancePrototype, r0);
-  __ bne(&slow_case, cr0);
+  __ bne(&slow_case);
 
   // Ensure that {function} is not bound.
   Register const shared_info = scratch;
@@ -1460,7 +1460,7 @@ void InstanceOfStub::Generate(MacroAssembler* masm) {
   __ LoadlW(scratch, FieldMemOperand(shared_info,
                                   SharedFunctionInfo::kCompilerHintsOffset));
   __ TestBit(scratch, SharedFunctionInfo::kBoundBit, r0);
-  __ bne(&slow_case, cr0);
+  __ bne(&slow_case);
 
   // Get the "prototype" (or initial map) of the {function}.
   __ LoadP(function_prototype,
@@ -1822,8 +1822,10 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
   __ AddP(r7, r7, Operand(kParameterMapHeaderSize - kHeapObjectTag));
 
   __ bind(&parameters_loop);
-  __ StorePU(r1, MemOperand(r7, -kPointerSize));
-  __ StorePU(ip, MemOperand(r9, -kPointerSize));
+  __ StoreP(r1, MemOperand(r7, -kPointerSize));
+  __ lay(r7, MemOperand(r7, -kPointerSize));
+  __ StoreP(ip, MemOperand(r9, -kPointerSize));
+  __ lay(r9, MemOperand(r9, -kPointerSize));
   __ AddSmiLiteral(r1, r1, Smi::FromInt(1), r0);
   __ SubP(r4, Operand(1));
   __ bne(&parameters_loop);
@@ -1843,10 +1845,10 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
   __ StoreP(r1, FieldMemOperand(r3, FixedArray::kMapOffset), r0);
   __ StoreP(r7, FieldMemOperand(r3, FixedArray::kLengthOffset), r0);
   __ SubP(r1, r7, r8);
-  Label skip;
-  __ bne(&skip, Label::kNear);
+  Label skip7;
+  __ bne(&skip7, Label::kNear);
   __ Ret();
-  __ bind(&skip);
+  __ bind(&skip7);
 
   Label arguments_loop;
   __ SmiUntag(r1);
@@ -1860,8 +1862,10 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
           Operand(FixedArray::kHeaderSize - kHeapObjectTag - kPointerSize));
 
   __ bind(&arguments_loop);
-  __ LoadPU(r6, MemOperand(r5, -kPointerSize));
-  __ StorePU(r6, MemOperand(r1, kPointerSize));
+  __ LoadP(r6, MemOperand(r5, -kPointerSize));
+  __ lay(r5, MemOperand(r5, -kPointerSize));
+  __ StoreP(r6, MemOperand(r1, kPointerSize));
+  __ lay(r1, MemOperand(r1, kPointerSize));
   __ SubP(r4, Operand(1));
   __ bne(&parameters_loop);
   // __ bdnz(&arguments_loop);
@@ -1927,7 +1931,7 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
   Label add_arguments_object;
   __ bind(&try_allocate);
   __ SmiUntag(r1, r4);
-  __ beq(&add_arguments_object, cr0);
+  __ beq(&add_arguments_object);
   __ AddP(r1, r1, Operand(FixedArray::kHeaderSize / kPointerSize));
   __ bind(&add_arguments_object);
   __ AddP(r1, r1, Operand(Heap::kStrictArgumentsObjectSize / kPointerSize));
@@ -1979,9 +1983,11 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
   __ bind(&loop);
   // Pre-decrement r5 with kPointerSize on each iteration.
   // Pre-decrement in order to skip receiver.
-  __ LoadPU(r7, MemOperand(r5, -kPointerSize));
+  __ LoadP(r7, MemOperand(r5, -kPointerSize));
+  __ lay(r5, MemOperand(r5, -kPointerSize));
   // Pre-increment r6 with kPointerSize on each iteration.
-  __ StorePU(r7, MemOperand(r6, kPointerSize));
+  __ StoreP(r7, MemOperand(r6, kPointerSize));
+  __ lay(r6, MemOperand(r6, kPointerSize));
   __ SubP(r1, Operand(1));
   __ bne(&loop);
   // __ bdnz(&loop);
@@ -3242,14 +3248,10 @@ void ToLengthStub::Generate(MacroAssembler* masm) {
   __ JumpIfNotSmi(r2, &not_smi);
   STATIC_ASSERT(kSmiTag == 0);
   __ CmpP(r2, Operand::Zero());
-  if (CpuFeatures::IsSupported(ISELECT)) {
-    __ isel(lt, r2, r0, r2);
-  } else {
-    Label positive;
-    __ bgt(&positive);
-    __ LoadImmP(r2, Operand::Zero());
-    __ bind(&positive);
-  }
+  Label positive;
+  __ bgt(&positive);
+  __ LoadImmP(r2, Operand::Zero());
+  __ bind(&positive);
   __ Ret();
   __ bind(&not_smi);
 
@@ -3724,7 +3726,7 @@ void CompareICStub::GenerateStrings(MacroAssembler* masm) {
     // Make sure r2 is non-zero. At this point input operands are
     // guaranteed to be non-zero.
     DCHECK(right.is(r2));
-    __ Ret(eq, cr0);
+    __ Ret(eq);
     __ bind(&is_symbol);
   }
 
@@ -4653,7 +4655,7 @@ void VectorStoreICStub::GenerateImpl(MacroAssembler* masm, bool in_frame) {
   __ CompareRoot(scratch1, Heap::kFixedArrayMapRootIndex);
   __ bne(&not_array);
 
-  Register scratch2 = r11_p;
+  Register scratch2 = ip;
   HandleArrayCases(masm, feedback, receiver_map, scratch1, scratch2, true,
                    &miss);
 
@@ -5330,7 +5332,7 @@ void StoreGlobalViaContextStub::Generate(MacroAssembler* masm) {
 
   // Make sure the PropertyCell is not marked READ_ONLY.
   __ AndP(r0, cell_details, Operand(PropertyDetails::kAttributesReadOnlyMask));
-  __ bne(&slow_case, cr0);
+  __ bne(&slow_case);
 
   if (FLAG_debug_code) {
     Label done;

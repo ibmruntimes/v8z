@@ -843,27 +843,11 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
 
   // Optionally save all volatile double registers.
   if (save_doubles) {
-    const int kNumRegs = DoubleRegister::kNumVolatileRegisters;
-    lay(sp, MemOperand(sp, -kNumRegs * kDoubleSize));
-#define StoreFloatingPointRegisterToStack(reg, offset) \
-    StoreF(DoubleRegister::from_code(reg), \
-      MemOperand(sp, (offset) * kDoubleSize));
-#ifdef V8_TARGET_ARCH_S390X
-    for (int i = 0; i < 7; i++) {
-      StoreFloatingPointRegisterToStack(i, i);
-    }
-#else
-    StoreFloatingPointRegisterToStack(0, 0);
-    StoreFloatingPointRegisterToStack(1, 1);
-    StoreFloatingPointRegisterToStack(2, 2);
-    StoreFloatingPointRegisterToStack(3, 3);
-    StoreFloatingPointRegisterToStack(5, 4);
-    int offset = 5;
-    for (int i = 7; i < DoubleRegister::kNumRegisters; i++, offset++) {
-      StoreFloatingPointRegisterToStack(i, offset);
-    }
-#endif
-#undef StoreFloatingPointRegisterToStack
+    MultiPushDoubles(kCallerSavedDoubles);
+    // Note that d0 will be accessible at
+    //   fp - ExitFrameConstants::kFrameSize -
+    //   kNumCallerSavedDoubles * kDoubleSize,
+    // since the sp slot and code slot were pushed after the fp.
   }
 
   lay(sp, MemOperand(sp, -stack_space * kPointerSize));
@@ -922,27 +906,10 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles, Register argument_count,
   // Optionally restore all double registers.
   if (save_doubles) {
     // Calculate the stack location of the saved doubles and restore them.
-    const int kNumRegs = DoubleRegister::kNumVolatileRegisters;
-    lay(sp, MemOperand(fp, -(2 * kPointerSize + kNumRegs * kDoubleSize)));
-#define LoadFloatingPointRegisterToStack(reg, offset) \
-    LoadF(DoubleRegister::from_code(reg), \
-      MemOperand(sp, (offset) * kDoubleSize));
-#ifdef V8_TARGET_ARCH_S390X
-    for (int i = 0; i < 7; i++) {
-      LoadFloatingPointRegisterToStack(i, i);
-    }
-#else
-    LoadFloatingPointRegisterToStack(0, 0);
-    LoadFloatingPointRegisterToStack(1, 1);
-    LoadFloatingPointRegisterToStack(2, 2);
-    LoadFloatingPointRegisterToStack(3, 3);
-    LoadFloatingPointRegisterToStack(5, 4);
-    int offset = 5;
-    for (int i = 7; i < DoubleRegister::kNumRegisters; i++, offset++) {
-      LoadFloatingPointRegisterToStack(i, offset);
-    }
-#endif
-#undef LoadFloatingPointRegisterToStack
+    const int kNumRegs = kNumCallerSavedDoubles;
+    lay(r5, MemOperand(fp, -(ExitFrameConstants::kFrameSize +
+                             kNumRegs * kDoubleSize)));
+    MultiPopDoubles(kCallerSavedDoubles, r5);
   }
 
   // Clear top frame.
@@ -2680,7 +2647,7 @@ void MacroAssembler::AssertName(Register object) {
 void MacroAssembler::AssertFunction(Register object) {
   if (emit_debug_code()) {
     STATIC_ASSERT(kSmiTag == 0);
-    TestIfSmi(object, r0);
+    TestIfSmi(object);
     Check(ne, kOperandIsASmiAndNotAFunction, cr0);
     push(object);
     CompareObjectType(object, object, object, JS_FUNCTION_TYPE);
@@ -4080,9 +4047,8 @@ void MacroAssembler::SubP(Register dst, const MemOperand& opnd) {
 void MacroAssembler::MovIntToFloat(DoubleRegister dst, Register src) {
   UNIMPLEMENTED();
   SubP(sp, sp, Operand(kFloatSize));
-  stw(src, MemOperand(sp, 0));
-  nop(GROUP_ENDING_NOP);  // LHS/RAW optimization
-  lfs(dst, MemOperand(sp, 0));
+  StoreW(src, MemOperand(sp, 0));
+  // lfs(dst, MemOperand(sp, 0));
   AddP(sp, sp, Operand(kFloatSize));
 }
 
@@ -4090,21 +4056,14 @@ void MacroAssembler::MovIntToFloat(DoubleRegister dst, Register src) {
 void MacroAssembler::MovFloatToInt(Register dst, DoubleRegister src) {
   UNIMPLEMENTED();
   SubP(sp, sp, Operand(kFloatSize));
-  frsp(src, src);
-  stfs(src, MemOperand(sp, 0));
-  nop(GROUP_ENDING_NOP);  // LHS/RAW optimization
+  // frsp(src, src);
+  // stfs(src, MemOperand(sp, 0));
+  // nop(GROUP_ENDING_NOP);  // LHS/RAW optimization
   LoadlW(dst, MemOperand(sp, 0));
   AddP(sp, sp, Operand(kFloatSize));
 }
 
 
-void MacroAssembler::Add(Register dst, Register src, intptr_t value,
-                         Register scratch) {
-  if (is_int16(value)) {
-// Subtract Pointer Size with src extension
-//      (Register dst (ptr) = Register dst (ptr) - Mem opnd (32 | 32->64))
-// src is treated as a 32-bit signed integer, which is sign extended to
-// 64-bit if necessary.
 void MacroAssembler::SubP_ExtendSrc(Register dst, const MemOperand& opnd) {
 #if V8_TARGET_ARCH_S390X
   DCHECK(is_int20(opnd.offset()));
@@ -4709,7 +4668,7 @@ void MacroAssembler::Branch(Condition c, const Operand& opnd) {
 
 // Branch On Count.  Decrement R1, and branch if R1 != 0.
 void MacroAssembler::BranchOnCount(Register r1, Label *l) {
-  int32_t offset = branch_offset(l, false);
+  int32_t offset = branch_offset(l);
   positions_recorder()->WriteRecordedPositions();
   if (is_int16(offset)) {
 #if V8_TARGET_ARCH_S390X

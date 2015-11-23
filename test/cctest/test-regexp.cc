@@ -59,7 +59,7 @@
 #if V8_TARGET_ARCH_S390
 #include "src/s390/assembler-s390.h"
 #include "src/s390/macro-assembler-s390.h"
-#include "src/s390/regexp-macro-assembler-s390.h"
+#include "src/regexp/s390/regexp-macro-assembler-s390.h"
 #endif
 #if V8_TARGET_ARCH_PPC
 #include "src/ppc/assembler-ppc.h"

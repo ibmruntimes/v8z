@@ -358,7 +358,8 @@ void S390Debugger::Debug() {
             for (int i = 0; i < DoubleRegister::kNumRegisters; i++) {
               float fvalue = GetFPFloatRegisterValue(i);
               uint32_t as_words = bit_cast<uint32_t>(fvalue);
-              PrintF("%3s: %f 0x%08x\n", FPRegisters::Name(i), fvalue,
+              PrintF("%3s: %f 0x%08x\n",
+                     DoubleRegister::from_code(i).ToString(), fvalue,
                      as_words);
             }
           } else if (strcmp(arg1, "alld") == 0) {

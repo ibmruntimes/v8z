@@ -38,6 +38,7 @@
 
 #if V8_TARGET_ARCH_S390
 
+#include <elf.h>
 #include "src/base/bits.h"
 #include "src/base/cpu.h"
 #include "src/s390/assembler-s390-inl.h"
@@ -533,10 +534,6 @@ int Assembler::link(Label* L) {
       // should avoid most instances of branch offset overflow.  See
       // target_at() for where this is converted back to kEndOfChain.
       position = pc_offset();
-      if (!trampoline_emitted_) {
-        unbound_labels_count_++;
-        next_buffer_check_ -= kTrampolineSlotsSize;
-      }
     }
     L->link_to(pc_offset());
   }
@@ -560,10 +557,6 @@ void Assembler::load_label_offset(Register r1, Label* L) {
       // should avoid most instances of branch offset overflow.  See
       // target_at() for where this is converted back to kEndOfChain.
       target_pos = pc_offset();
-      if (!trampoline_emitted_) {
-        unbound_labels_count_++;
-        next_buffer_check_ -= kTrampolineSlotsSize;
-      }
     }
     L->link_to(pc_offset());
 
@@ -3446,7 +3439,7 @@ void Assembler::CheckTrampolinePool() {
   DCHECK(!trampoline_emitted_);
   if (tracked_branch_count_ > 0) {
     int pool_start = pc_offset();
-    label after_pool;
+    Label after_pool;
 
     // As we are only going to emit trampoline once, we need to prevent any
     // further emission.

@@ -460,11 +460,6 @@ void FullCodeGenerator::EmitReturnSequence() {
     EmitProfilingCounterReset();
     __ bind(&ok);
 
-#ifdef DEBUG
-    // Add a label for checking the size of the code used for returning.
-    Label check_exit_codesize;
-    __ bind(&check_exit_codesize);
-#endif
     // Make sure that the constant pool is not emitted inside of the return
     // sequence.
     {
@@ -473,26 +468,11 @@ void FullCodeGenerator::EmitReturnSequence() {
       // tool from instrumenting as we rely on the code size here.
       int32_t arg_count = info_->scope()->num_parameters() + 1;
       int32_t sp_delta = arg_count * kPointerSize;
-      SetReturnPosition(function());
-      __ RecordJSReturn();
-      masm_->LoadRR(sp, fp);
+      SetReturnPosition(literal());
+      __ LeaveFrame(StackFrame::JAVA_SCRIPT, sp_delta);
 
-      // Mark range where no frame exists, in case profiler receives sample here
-      int32_t no_frame_start = masm_->pc_offset();
-      masm_->LoadP(fp, MemOperand(sp));
-      masm_->LoadP(r14, MemOperand(sp, kPointerSize));
-      masm_->lay(sp,
-                 MemOperand(sp, (uint32_t)(sp_delta + (2 * kPointerSize))));
-      masm_->Ret();
-      info_->AddNoFrameRange(no_frame_start, masm_->pc_offset());
+      __ Ret();
     }
-
-#ifdef DEBUG
-    // Check that the size of the code used for returning is large enough
-    // for the debugger's requirements.
-    DCHECK(Assembler::kJSReturnSequenceLength <=
-           masm_->SizeOfCodeGeneratedSince(&check_exit_codesize));
-#endif
   }
 }
 
@@ -501,6 +481,9 @@ void FullCodeGenerator::StackValueContext::Plug(Variable* var) const {
   codegen()->GetVar(result_register(), var);
   __ push(result_register());
 }
+
+
+void FullCodeGenerator::EffectContext::Plug(Heap::RootListIndex index) const {}
 
 
 void FullCodeGenerator::AccumulatorValueContext::Plug(
@@ -647,9 +630,6 @@ void FullCodeGenerator::TestContext::Plug(Label* materialize_true,
   DCHECK(materialize_true == true_label_);
   DCHECK(materialize_false == false_label_);
 }
-
-
-void FullCodeGenerator::EffectContext::Plug(bool flag) const {}
 
 
 void FullCodeGenerator::AccumulatorValueContext::Plug(bool flag) const {

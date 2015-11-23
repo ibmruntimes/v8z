@@ -213,9 +213,13 @@ void Deoptimizer::TableEntryGenerator::Generate() {
   int double_regs_offset = FrameDescription::double_registers_offset();
   // Copy double registers to
   // double_registers_[DoubleRegister::kNumRegisters]
-  __ mvc(MemOperand(r3, double_regs_offset),
-         MemOperand(sp, kNumberOfRegisters * kPointerSize),
-         DoubleRegister::NumAllocatableRegisters() * kDoubleSize);
+  for (int i = 0; i < config->num_allocatable_double_registers(); ++i) {
+    int code = config->GetAllocatableDoubleCode(i);
+    int dst_offset = code * kDoubleSize + double_regs_offset;
+    int src_offset = code * kDoubleSize + kNumberOfRegisters * kPointerSize;
+    __ LoadF(d0, MemOperand(sp, src_offset));
+    __ StoreF(d0, MemOperand(r4, dst_offset));
+  }
 
   // Remove the bailout id and the saved registers from the stack.
   __ la(sp, MemOperand(sp, kSavedRegistersAreaSize + (1 * kPointerSize)));
