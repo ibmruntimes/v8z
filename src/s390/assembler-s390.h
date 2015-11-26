@@ -70,7 +70,7 @@ namespace internal {
 
 #define ALLOCATABLE_GENERAL_REGISTERS(V)                  \
   V(r2)  V(r3)  V(r4)  V(r5)  V(r6)  V(r7)                \
-  V(r8)  V(r9)  V(r12) V(r13)
+  V(r8)  V(r9)
 
 #define DOUBLE_REGISTERS(V)                               \
   V(d0)  V(d1)  V(d2)  V(d3)  V(d4)  V(d5)  V(d6)  V(d7)  \
