@@ -707,8 +707,7 @@ void KeyedStoreIC::GenerateMegamorphic(MacroAssembler* masm,
     // change the IC from any downstream misses, a dummy vector can be used.
     Register vector = VectorStoreICDescriptor::VectorRegister();
     Register slot = VectorStoreICDescriptor::SlotRegister();
-    UNIMPLEMENTED(); // TODO: check r1.
-    DCHECK(!AreAliased(vector, slot, r7, r8, r9, r1));
+    DCHECK(!AreAliased(vector, slot, r7, r8, r9, ip));
     Handle<TypeFeedbackVector> dummy_vector =
         TypeFeedbackVector::DummyVector(masm->isolate());
     int slot_index = dummy_vector->GetIndex(
@@ -719,7 +718,6 @@ void KeyedStoreIC::GenerateMegamorphic(MacroAssembler* masm,
 
   Code::Flags flags = Code::RemoveTypeAndHolderFromFlags(
       Code::ComputeHandlerFlags(Code::STORE_IC));
-  UNIMPLEMENTED(); // TODO: check r1.
   masm->isolate()->stub_cache()->GenerateProbe(masm, Code::STORE_IC, flags,
                                                receiver, key, r7, r8, r9, ip);
   // Cache miss.
