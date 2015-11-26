@@ -1885,7 +1885,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     __ LoadP(r0, MemOperand(r2, 0));
     __ push(r0);
     __ CmpP(r2, r5);  // Compare before moving to next argument.
-    __ SubP(r2, r2, Operand(kPointerSize));
+    __ lay(r2, MemOperand(r2, -kPointerSize));
     __ bne(&copy);
 
     __ b(&invoke);
