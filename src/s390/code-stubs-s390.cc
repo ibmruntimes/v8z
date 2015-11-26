@@ -3262,13 +3262,14 @@ void ToLengthStub::Generate(MacroAssembler* masm) {
 
 void ToStringStub::Generate(MacroAssembler* masm) {
   // The ToString stub takes one argument in r2.
+  Label done;
   Label is_number;
   __ JumpIfSmi(r2, &is_number);
 
   __ CompareObjectType(r2, r3, r3, FIRST_NONSTRING_TYPE);
   // r2: receiver
   // r3: receiver instance type
-  __ Ret(lt);
+  __ blt(&done);
 
   Label not_heap_number;
   __ CmpP(r3, Operand(HEAP_NUMBER_TYPE));
@@ -3287,6 +3288,9 @@ void ToStringStub::Generate(MacroAssembler* masm) {
 
   __ push(r2);  // Push argument.
   __ TailCallRuntime(Runtime::kToString, 1, 1);
+
+  __ bind(&done);
+  __ Ret();
 }
 
 
@@ -3726,7 +3730,7 @@ void CompareICStub::GenerateStrings(MacroAssembler* masm) {
     // Make sure r2 is non-zero. At this point input operands are
     // guaranteed to be non-zero.
     DCHECK(right.is(r2));
-    __ Ret(eq);
+    __ Ret();
     __ bind(&is_symbol);
   }
 
