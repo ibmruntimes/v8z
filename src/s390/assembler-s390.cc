@@ -394,8 +394,11 @@ void Assembler::target_at_put(int pos, int target_pos, bool* is_branch) {
   Opcode opcode = Instruction::S390OpcodeValue(buffer_ + pos);
 
   if (is_branch != nullptr) {
-    UNIMPLEMENTED();
-    *is_branch = false;
+    *is_branch = (opcode == BRC ||
+                  opcode == BRCT ||
+                  opcode == BRCTG ||
+                  opcode == BRCL ||
+                  opcode == BRASL);
   }
 
   if (BRC == opcode || BRCT == opcode || BRCTG == opcode) {
