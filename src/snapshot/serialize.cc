@@ -1041,7 +1041,7 @@ bool Deserializer::ReadData(Object** current, Object** limit, int source_space,
       ALL_SPACES(kBackrefWithSkip, kPlain, kStartOfObject)
 #if defined(V8_TARGET_ARCH_MIPS) || defined(V8_TARGET_ARCH_MIPS64) || \
     defined(V8_TARGET_ARCH_PPC) || defined(V8_TARGET_ARCH_S390)|| \
-    V8_OOL_CONSTANT_POOL
+    V8_EMBEDDED_CONSTANT_POOL
       // Deserialize a new object from pointer found in code and write
       // a pointer to it to the current object. Required only for MIPS, PPC or
       // ARM with embedded constant pool, and omitted on the other architectures
