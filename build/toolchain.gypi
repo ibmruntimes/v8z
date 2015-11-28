@@ -308,11 +308,6 @@
               'V8_TARGET_ARCH_S390X',
             ],
           }],
-          ['v8_host_byteorder=="little"', {
-            'defines': [
-              'V8_TARGET_ARCH_S390_LE',
-            ],
-          }],
           ],
       }],  # s390
       ['v8_target_arch=="ppc" or v8_target_arch=="ppc64"', {
