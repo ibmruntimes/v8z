@@ -96,6 +96,7 @@ void HeapObject::HeapObjectVerify() {
       break;
     case JS_OBJECT_TYPE:
     case JS_CONTEXT_EXTENSION_OBJECT_TYPE:
+    case JS_PROMISE_TYPE:
       JSObject::cast(this)->JSObjectVerify();
       break;
     case JS_GENERATOR_OBJECT_TYPE:
@@ -350,8 +351,7 @@ void Map::VerifyOmittedMapChecks() {
   if (!is_stable() ||
       is_deprecated() ||
       is_dictionary_map()) {
-    CHECK_EQ(0, dependent_code()->number_of_entries(
-        DependentCode::kPrototypeCheckGroup));
+    CHECK(dependent_code()->IsEmpty(DependentCode::kPrototypeCheckGroup));
   }
 }
 

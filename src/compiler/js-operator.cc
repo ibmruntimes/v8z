@@ -63,6 +63,34 @@ std::ostream& operator<<(std::ostream& os, TailCallMode mode) {
 }
 
 
+bool operator==(CallConstructParameters const& lhs,
+                CallConstructParameters const& rhs) {
+  return lhs.arity() == rhs.arity() && lhs.feedback() == rhs.feedback();
+}
+
+
+bool operator!=(CallConstructParameters const& lhs,
+                CallConstructParameters const& rhs) {
+  return !(lhs == rhs);
+}
+
+
+size_t hash_value(CallConstructParameters const& p) {
+  return base::hash_combine(p.arity(), p.feedback());
+}
+
+
+std::ostream& operator<<(std::ostream& os, CallConstructParameters const& p) {
+  return os << p.arity();
+}
+
+
+CallConstructParameters const& CallConstructParametersOf(Operator const* op) {
+  DCHECK_EQ(IrOpcode::kJSCallConstruct, op->opcode());
+  return OpParameter<CallConstructParameters>(op);
+}
+
+
 std::ostream& operator<<(std::ostream& os, CallFunctionParameters const& p) {
   os << p.arity() << ", " << p.language_mode() << ", " << p.convert_mode()
      << ", " << p.tail_call_mode();
@@ -322,6 +350,37 @@ const CreateArgumentsParameters& CreateArgumentsParametersOf(
 }
 
 
+bool operator==(CreateArrayParameters const& lhs,
+                CreateArrayParameters const& rhs) {
+  return lhs.arity() == rhs.arity() &&
+         lhs.site().location() == rhs.site().location();
+}
+
+
+bool operator!=(CreateArrayParameters const& lhs,
+                CreateArrayParameters const& rhs) {
+  return !(lhs == rhs);
+}
+
+
+size_t hash_value(CreateArrayParameters const& p) {
+  return base::hash_combine(p.arity(), p.site().location());
+}
+
+
+std::ostream& operator<<(std::ostream& os, CreateArrayParameters const& p) {
+  os << p.arity();
+  if (!p.site().is_null()) os << ", " << Brief(*p.site());
+  return os;
+}
+
+
+const CreateArrayParameters& CreateArrayParametersOf(const Operator* op) {
+  DCHECK_EQ(IrOpcode::kJSCreateArray, op->opcode());
+  return OpParameter<CreateArrayParameters>(op);
+}
+
+
 bool operator==(CreateClosureParameters const& lhs,
                 CreateClosureParameters const& rhs) {
   return lhs.pretenure() == rhs.pretenure() &&
@@ -351,6 +410,36 @@ const CreateClosureParameters& CreateClosureParametersOf(const Operator* op) {
 }
 
 
+bool operator==(CreateLiteralParameters const& lhs,
+                CreateLiteralParameters const& rhs) {
+  return lhs.constants().location() == rhs.constants().location() &&
+         lhs.flags() == rhs.flags() && lhs.index() == rhs.index();
+}
+
+
+bool operator!=(CreateLiteralParameters const& lhs,
+                CreateLiteralParameters const& rhs) {
+  return !(lhs == rhs);
+}
+
+
+size_t hash_value(CreateLiteralParameters const& p) {
+  return base::hash_combine(p.constants().location(), p.flags(), p.index());
+}
+
+
+std::ostream& operator<<(std::ostream& os, CreateLiteralParameters const& p) {
+  return os << Brief(*p.constants()) << ", " << p.flags() << ", " << p.index();
+}
+
+
+const CreateLiteralParameters& CreateLiteralParametersOf(const Operator* op) {
+  DCHECK(op->opcode() == IrOpcode::kJSCreateLiteralArray ||
+         op->opcode() == IrOpcode::kJSCreateLiteralObject);
+  return OpParameter<CreateLiteralParameters>(op);
+}
+
+
 #define CACHED_OP_LIST(V)                             \
   V(Equal, Operator::kNoProperties, 2, 1)             \
   V(NotEqual, Operator::kNoProperties, 2, 1)          \
@@ -363,7 +452,7 @@ const CreateClosureParameters& CreateClosureParametersOf(const Operator* op) {
   V(ToName, Operator::kNoProperties, 1, 1)            \
   V(ToObject, Operator::kNoProperties, 1, 1)          \
   V(Yield, Operator::kNoProperties, 1, 1)             \
-  V(Create, Operator::kEliminatable, 0, 1)            \
+  V(Create, Operator::kEliminatable, 2, 1)            \
   V(HasProperty, Operator::kNoProperties, 2, 1)       \
   V(TypeOf, Operator::kEliminatable, 1, 1)            \
   V(InstanceOf, Operator::kNoProperties, 2, 1)        \
@@ -374,6 +463,7 @@ const CreateClosureParameters& CreateClosureParametersOf(const Operator* op) {
   V(LoadMessage, Operator::kNoThrow, 0, 1)            \
   V(StoreMessage, Operator::kNoThrow, 1, 0)           \
   V(StackCheck, Operator::kNoProperties, 0, 0)        \
+  V(LoadNativeContext, Operator::kEliminatable, 1, 1) \
   V(CreateWithContext, Operator::kNoProperties, 2, 1) \
   V(CreateModuleContext, Operator::kNoProperties, 2, 1)
 
@@ -493,12 +583,14 @@ const Operator* JSOperatorBuilder::CallRuntime(Runtime::FunctionId id,
 }
 
 
-const Operator* JSOperatorBuilder::CallConstruct(int arguments) {
-  return new (zone()) Operator1<int>(                       // --
+const Operator* JSOperatorBuilder::CallConstruct(
+    size_t arity, VectorSlotPair const& feedback) {
+  CallConstructParameters parameters(arity, feedback);
+  return new (zone()) Operator1<CallConstructParameters>(   // --
       IrOpcode::kJSCallConstruct, Operator::kNoProperties,  // opcode
       "JSCallConstruct",                                    // name
-      arguments, 1, 1, 1, 1, 2,                             // counts
-      arguments);                                           // parameter
+      parameters.arity(), 1, 1, 1, 1, 2,                    // counts
+      parameters);                                          // parameter
 }
 
 
@@ -637,6 +729,19 @@ const Operator* JSOperatorBuilder::CreateArguments(
 }
 
 
+const Operator* JSOperatorBuilder::CreateArray(size_t arity,
+                                               Handle<AllocationSite> site) {
+  // constructor, new_target, arg1, ..., argN
+  int const value_input_count = static_cast<int>(arity) + 2;
+  CreateArrayParameters parameters(arity, site);
+  return new (zone()) Operator1<CreateArrayParameters>(   // --
+      IrOpcode::kJSCreateArray, Operator::kNoProperties,  // opcode
+      "JSCreateArray",                                    // name
+      value_input_count, 1, 1, 1, 1, 2,                   // counts
+      parameters);                                        // parameter
+}
+
+
 const Operator* JSOperatorBuilder::CreateClosure(
     Handle<SharedFunctionInfo> shared_info, PretenureFlag pretenure) {
   CreateClosureParameters parameters(shared_info, pretenure);
@@ -648,21 +753,29 @@ const Operator* JSOperatorBuilder::CreateClosure(
 }
 
 
-const Operator* JSOperatorBuilder::CreateLiteralArray(int literal_flags) {
-  return new (zone()) Operator1<int>(                            // --
+const Operator* JSOperatorBuilder::CreateLiteralArray(
+    Handle<FixedArray> constant_elements, int literal_flags,
+    int literal_index) {
+  CreateLiteralParameters parameters(constant_elements, literal_flags,
+                                     literal_index);
+  return new (zone()) Operator1<CreateLiteralParameters>(        // --
       IrOpcode::kJSCreateLiteralArray, Operator::kNoProperties,  // opcode
       "JSCreateLiteralArray",                                    // name
-      3, 1, 1, 1, 1, 2,                                          // counts
-      literal_flags);                                            // parameter
+      1, 1, 1, 1, 1, 2,                                          // counts
+      parameters);                                               // parameter
 }
 
 
-const Operator* JSOperatorBuilder::CreateLiteralObject(int literal_flags) {
-  return new (zone()) Operator1<int>(                             // --
+const Operator* JSOperatorBuilder::CreateLiteralObject(
+    Handle<FixedArray> constant_properties, int literal_flags,
+    int literal_index) {
+  CreateLiteralParameters parameters(constant_properties, literal_flags,
+                                     literal_index);
+  return new (zone()) Operator1<CreateLiteralParameters>(         // --
       IrOpcode::kJSCreateLiteralObject, Operator::kNoProperties,  // opcode
       "JSCreateLiteralObject",                                    // name
-      3, 1, 1, 1, 1, 2,                                           // counts
-      literal_flags);                                             // parameter
+      1, 1, 1, 1, 1, 2,                                           // counts
+      parameters);                                                // parameter
 }
 
 
@@ -677,8 +790,7 @@ const Operator* JSOperatorBuilder::CreateFunctionContext(int slot_count) {
 
 const Operator* JSOperatorBuilder::CreateCatchContext(
     const Handle<String>& name) {
-  return new (zone()) Operator1<Handle<String>, Handle<String>::equal_to,
-                                Handle<String>::hash>(           // --
+  return new (zone()) Operator1<Handle<String>>(                 // --
       IrOpcode::kJSCreateCatchContext, Operator::kNoProperties,  // opcode
       "JSCreateCatchContext",                                    // name
       2, 1, 1, 1, 1, 2,                                          // counts
@@ -688,8 +800,7 @@ const Operator* JSOperatorBuilder::CreateCatchContext(
 
 const Operator* JSOperatorBuilder::CreateBlockContext(
     const Handle<ScopeInfo>& scpope_info) {
-  return new (zone()) Operator1<Handle<ScopeInfo>, Handle<ScopeInfo>::equal_to,
-                                Handle<ScopeInfo>::hash>(        // --
+  return new (zone()) Operator1<Handle<ScopeInfo>>(              // --
       IrOpcode::kJSCreateBlockContext, Operator::kNoProperties,  // opcode
       "JSCreateBlockContext",                                    // name
       1, 1, 1, 1, 1, 2,                                          // counts
@@ -699,8 +810,7 @@ const Operator* JSOperatorBuilder::CreateBlockContext(
 
 const Operator* JSOperatorBuilder::CreateScriptContext(
     const Handle<ScopeInfo>& scpope_info) {
-  return new (zone()) Operator1<Handle<ScopeInfo>, Handle<ScopeInfo>::equal_to,
-                                Handle<ScopeInfo>::hash>(         // --
+  return new (zone()) Operator1<Handle<ScopeInfo>>(               // --
       IrOpcode::kJSCreateScriptContext, Operator::kNoProperties,  // opcode
       "JSCreateScriptContext",                                    // name
       1, 1, 1, 1, 1, 2,                                           // counts

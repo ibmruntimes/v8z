@@ -198,6 +198,48 @@ class OutOfLineLoadInteger final : public OutOfLineCode {
 };
 
 
+class OutOfLineRecordWrite final : public OutOfLineCode {
+ public:
+  OutOfLineRecordWrite(CodeGenerator* gen, Register object, Register index,
+                       Register value, Register scratch0, Register scratch1,
+                       RecordWriteMode mode)
+      : OutOfLineCode(gen),
+        object_(object),
+        index_(index),
+        value_(value),
+        scratch0_(scratch0),
+        scratch1_(scratch1),
+        mode_(mode) {}
+
+  void Generate() final {
+    if (mode_ > RecordWriteMode::kValueIsPointer) {
+      __ JumpIfSmi(value_, exit());
+    }
+    if (mode_ > RecordWriteMode::kValueIsMap) {
+      __ CheckPageFlag(value_, scratch0_,
+                       MemoryChunk::kPointersToHereAreInterestingMask, eq,
+                       exit());
+    }
+    SaveFPRegsMode const save_fp_mode =
+        frame()->DidAllocateDoubleRegisters() ? kSaveFPRegs : kDontSaveFPRegs;
+    // TODO(turbofan): Once we get frame elision working, we need to save
+    // and restore lr properly here if the frame was elided.
+    RecordWriteStub stub(isolate(), object_, scratch0_, scratch1_,
+                         EMIT_REMEMBERED_SET, save_fp_mode);
+    __ add(scratch1_, object_, index_);
+    __ CallStub(&stub);
+  }
+
+ private:
+  Register const object_;
+  Register const index_;
+  Register const value_;
+  Register const scratch0_;
+  Register const scratch1_;
+  RecordWriteMode const mode_;
+};
+
+
 Condition FlagsConditionToCondition(FlagsCondition condition) {
   switch (condition) {
     case kEqual:
@@ -312,11 +354,28 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
   } while (0)
 
 
-void CodeGenerator::AssembleDeconstructActivationRecord() {
+void CodeGenerator::AssembleDeconstructActivationRecord(int stack_param_delta) {
+  int sp_slot_delta = TailCallFrameStackSlotDelta(stack_param_delta);
+  if (sp_slot_delta > 0) {
+    __ add(sp, sp, Operand(sp_slot_delta * kPointerSize));
+  }
   CallDescriptor* descriptor = linkage()->GetIncomingDescriptor();
-  int stack_slots = frame()->GetSpillSlotCount();
-  if (descriptor->IsJSFunctionCall() || stack_slots > 0) {
-    __ LeaveFrame(StackFrame::MANUAL);
+  int spill_slots = frame()->GetSpillSlotCount();
+  bool has_frame = descriptor->IsJSFunctionCall() || spill_slots > 0;
+  if (has_frame) {
+    if (FLAG_enable_embedded_constant_pool) {
+      __ ldm(ia_w, sp, pp.bit() | fp.bit() | lr.bit());
+    } else {
+      __ ldm(ia_w, sp, fp.bit() | lr.bit());
+    }
+  }
+}
+
+
+void CodeGenerator::AssemblePrepareTailCall(int stack_param_delta) {
+  int sp_slot_delta = TailCallFrameStackSlotDelta(stack_param_delta);
+  if (sp_slot_delta < 0) {
+    __ sub(sp, sp, Operand(-sp_slot_delta * kPointerSize));
   }
 }
 
@@ -343,7 +402,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     }
     case kArchTailCallCodeObject: {
-      AssembleDeconstructActivationRecord();
+      int stack_param_delta = i.InputInt32(instr->InputCount() - 1);
+      AssembleDeconstructActivationRecord(stack_param_delta);
       if (instr->InputAt(0)->IsImmediate()) {
         __ Jump(Handle<Code>::cast(i.InputHeapObject(0)),
                 RelocInfo::CODE_TARGET);
@@ -378,7 +438,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
         __ cmp(cp, kScratchReg);
         __ Assert(eq, kWrongFunctionContext);
       }
-      AssembleDeconstructActivationRecord();
+      int stack_param_delta = i.InputInt32(instr->InputCount() - 1);
+      AssembleDeconstructActivationRecord(stack_param_delta);
       __ ldr(ip, FieldMemOperand(func, JSFunction::kCodeEntryOffset));
       __ Jump(ip);
       DCHECK_EQ(LeaveCC, i.OutputSBit());
@@ -394,6 +455,9 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ PrepareCallCFunction(num_parameters, kScratchReg);
       break;
     }
+    case kArchPrepareTailCall:
+      AssemblePrepareTailCall(i.InputInt32(instr->InputCount() - 1));
+      break;
     case kArchCallCFunction: {
       int const num_parameters = MiscField::decode(instr->opcode());
       if (instr->InputAt(0)->IsImmediate()) {
@@ -443,6 +507,23 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ TruncateDoubleToI(i.OutputRegister(), i.InputFloat64Register(0));
       DCHECK_EQ(LeaveCC, i.OutputSBit());
       break;
+    case kArchStoreWithWriteBarrier: {
+      RecordWriteMode mode =
+          static_cast<RecordWriteMode>(MiscField::decode(instr->opcode()));
+      Register object = i.InputRegister(0);
+      Register index = i.InputRegister(1);
+      Register value = i.InputRegister(2);
+      Register scratch0 = i.TempRegister(0);
+      Register scratch1 = i.TempRegister(1);
+      auto ool = new (zone()) OutOfLineRecordWrite(this, object, index, value,
+                                                   scratch0, scratch1, mode);
+      __ str(value, MemOperand(object, index));
+      __ CheckPageFlag(object, scratch0,
+                       MemoryChunk::kPointersFromHereAreInterestingMask, ne,
+                       ool->entry());
+      __ bind(ool->exit());
+      break;
+    }
     case kArmAdd:
       __ add(i.OutputRegister(), i.InputRegister(0), i.InputOperand2(1),
              i.OutputSBit());
@@ -714,6 +795,9 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     case kArmVrintaF64:
       __ vrinta(i.OutputFloat64Register(), i.InputFloat64Register(0));
       break;
+    case kArmVrintnF64:
+      __ vrintn(i.OutputFloat64Register(), i.InputFloat64Register(0));
+      break;
     case kArmVcvtF32F64: {
       __ vcvt_f32_f64(i.OutputFloat32Register(), i.InputFloat64Register(0));
       DCHECK_EQ(LeaveCC, i.OutputSBit());
@@ -845,19 +929,6 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     case kArmPoke: {
       int const slot = MiscField::decode(instr->opcode());
       __ str(i.InputRegister(0), MemOperand(sp, slot * kPointerSize));
-      DCHECK_EQ(LeaveCC, i.OutputSBit());
-      break;
-    }
-    case kArmStoreWriteBarrier: {
-      Register object = i.InputRegister(0);
-      Register index = i.InputRegister(1);
-      Register value = i.InputRegister(2);
-      __ add(index, object, index);
-      __ str(value, MemOperand(index));
-      SaveFPRegsMode mode =
-          frame()->DidAllocateDoubleRegisters() ? kSaveFPRegs : kDontSaveFPRegs;
-      LinkRegisterStatus lr_status = kLRHasNotBeenSaved;
-      __ RecordWrite(object, index, value, lr_status, mode);
       DCHECK_EQ(LeaveCC, i.OutputSBit());
       break;
     }

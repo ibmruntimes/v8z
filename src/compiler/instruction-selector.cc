@@ -374,8 +374,8 @@ struct CallBuffer {
 // TODO(bmeurer): Get rid of the CallBuffer business and make
 // InstructionSelector::VisitCall platform independent instead.
 void InstructionSelector::InitializeCallBuffer(Node* call, CallBuffer* buffer,
-                                               bool call_code_immediate,
-                                               bool call_address_immediate) {
+                                               CallBufferFlags flags,
+                                               int stack_param_delta) {
   OperandGenerator g(this);
   DCHECK_LE(call->op()->ValueOutputCount(),
             static_cast<int>(buffer->descriptor->ReturnCount()));
@@ -426,6 +426,8 @@ void InstructionSelector::InitializeCallBuffer(Node* call, CallBuffer* buffer,
 
   // The first argument is always the callee code.
   Node* callee = call->InputAt(0);
+  bool call_code_immediate = (flags & kCallCodeImmediate) != 0;
+  bool call_address_immediate = (flags & kCallAddressImmediate) != 0;
   switch (buffer->descriptor->kind()) {
     case CallDescriptor::kCallCodeObject:
       buffer->instruction_args.push_back(
@@ -478,14 +480,20 @@ void InstructionSelector::InitializeCallBuffer(Node* call, CallBuffer* buffer,
   // as an InstructionOperand argument to the call.
   auto iter(call->inputs().begin());
   size_t pushed_count = 0;
+  bool call_tail = (flags & kCallTail) != 0;
   for (size_t index = 0; index < input_count; ++iter, ++index) {
     DCHECK(iter != call->inputs().end());
     DCHECK((*iter)->op()->opcode() != IrOpcode::kFrameState);
     if (index == 0) continue;  // The first argument (callee) is already done.
+
+    LinkageLocation location = buffer->descriptor->GetInputLocation(index);
+    if (call_tail) {
+      location = LinkageLocation::ConvertToTailCallerLocation(
+          location, stack_param_delta);
+    }
     InstructionOperand op =
-        g.UseLocation(*iter, buffer->descriptor->GetInputLocation(index),
-                      buffer->descriptor->GetInputType(index));
-    if (UnallocatedOperand::cast(op).HasFixedSlotPolicy()) {
+        g.UseLocation(*iter, location, buffer->descriptor->GetInputType(index));
+    if (UnallocatedOperand::cast(op).HasFixedSlotPolicy() && !call_tail) {
       int stack_index = -UnallocatedOperand::cast(op).fixed_slot_index() - 1;
       if (static_cast<size_t>(stack_index) >= buffer->pushed_nodes.size()) {
         buffer->pushed_nodes.resize(stack_index + 1, NULL);
@@ -499,6 +507,40 @@ void InstructionSelector::InitializeCallBuffer(Node* call, CallBuffer* buffer,
   }
   DCHECK_EQ(input_count, buffer->instruction_args.size() + pushed_count -
                              buffer->frame_state_value_count());
+  if (call_tail && stack_param_delta != 0) {
+    // For tail calls that change the size of their parameter list, move the
+    // saved caller return address, parent frame pointer and parent constant
+    // pool pointer to just above the parameters.
+
+    // Return address
+    LinkageLocation saved_return_location =
+        LinkageLocation::ForSavedCallerReturnAddress();
+    InstructionOperand return_address =
+        g.UsePointerLocation(LinkageLocation::ConvertToTailCallerLocation(
+                                 saved_return_location, stack_param_delta),
+                             saved_return_location);
+    buffer->instruction_args.push_back(return_address);
+
+    // Parent frame pointer
+    LinkageLocation saved_frame_location =
+        LinkageLocation::ForSavedCallerFramePtr();
+    InstructionOperand saved_frame =
+        g.UsePointerLocation(LinkageLocation::ConvertToTailCallerLocation(
+                                 saved_frame_location, stack_param_delta),
+                             saved_frame_location);
+    buffer->instruction_args.push_back(saved_frame);
+
+    if (V8_EMBEDDED_CONSTANT_POOL) {
+      // Constant pool pointer
+      LinkageLocation saved_cp_location =
+          LinkageLocation::ForSavedCallerConstantPool();
+      InstructionOperand saved_cp =
+          g.UsePointerLocation(LinkageLocation::ConvertToTailCallerLocation(
+                                   saved_cp_location, stack_param_delta),
+                               saved_cp_location);
+      buffer->instruction_args.push_back(saved_cp);
+    }
+  }
 }
 
 
@@ -585,7 +627,6 @@ void InstructionSelector::VisitControl(BasicBlock* block) {
       DCHECK_EQ(IrOpcode::kIfDefault, sw.default_branch->front()->opcode());
       // All other successors must be cases.
       sw.case_count = block->SuccessorCount() - 1;
-      DCHECK_LE(1u, sw.case_count);
       sw.case_branches = &block->successors().front();
       // Determine case values and their min/max.
       sw.case_values = zone()->NewArray<int32_t>(sw.case_count);
@@ -722,6 +763,8 @@ void InstructionSelector::VisitNode(Node* node) {
       return MarkAsWord32(node), VisitWord32Ctz(node);
     case IrOpcode::kWord32Popcnt:
       return MarkAsWord32(node), VisitWord32Popcnt(node);
+    case IrOpcode::kWord64Popcnt:
+      return MarkAsWord32(node), VisitWord64Popcnt(node);
     case IrOpcode::kWord64And:
       return MarkAsWord64(node), VisitWord64And(node);
     case IrOpcode::kWord64Or:
@@ -738,6 +781,8 @@ void InstructionSelector::VisitNode(Node* node) {
       return MarkAsWord64(node), VisitWord64Ror(node);
     case IrOpcode::kWord64Clz:
       return MarkAsWord64(node), VisitWord64Clz(node);
+    case IrOpcode::kWord64Ctz:
+      return MarkAsWord64(node), VisitWord64Ctz(node);
     case IrOpcode::kWord64Equal:
       return VisitWord64Equal(node);
     case IrOpcode::kInt32Add:
@@ -802,6 +847,10 @@ void InstructionSelector::VisitNode(Node* node) {
       return MarkAsWord32(node), VisitChangeFloat64ToInt32(node);
     case IrOpcode::kChangeFloat64ToUint32:
       return MarkAsWord32(node), VisitChangeFloat64ToUint32(node);
+    case IrOpcode::kTruncateFloat64ToInt64:
+      return MarkAsWord64(node), VisitTruncateFloat64ToInt64(node);
+    case IrOpcode::kTruncateFloat64ToUint64:
+      return MarkAsWord64(node), VisitTruncateFloat64ToUint64(node);
     case IrOpcode::kChangeInt32ToInt64:
       return MarkAsWord64(node), VisitChangeInt32ToInt64(node);
     case IrOpcode::kChangeUint32ToUint64:
@@ -812,10 +861,16 @@ void InstructionSelector::VisitNode(Node* node) {
       return MarkAsWord32(node), VisitTruncateFloat64ToInt32(node);
     case IrOpcode::kTruncateInt64ToInt32:
       return MarkAsWord32(node), VisitTruncateInt64ToInt32(node);
+    case IrOpcode::kRoundInt64ToFloat32:
+      return MarkAsFloat32(node), VisitRoundInt64ToFloat32(node);
     case IrOpcode::kRoundInt64ToFloat64:
       return MarkAsFloat64(node), VisitRoundInt64ToFloat64(node);
     case IrOpcode::kBitcastFloat32ToInt32:
       return MarkAsWord32(node), VisitBitcastFloat32ToInt32(node);
+    case IrOpcode::kRoundUint64ToFloat32:
+      return MarkAsFloat64(node), VisitRoundUint64ToFloat32(node);
+    case IrOpcode::kRoundUint64ToFloat64:
+      return MarkAsFloat64(node), VisitRoundUint64ToFloat64(node);
     case IrOpcode::kBitcastFloat64ToInt64:
       return MarkAsWord64(node), VisitBitcastFloat64ToInt64(node);
     case IrOpcode::kBitcastInt32ToFloat32:
@@ -870,10 +925,14 @@ void InstructionSelector::VisitNode(Node* node) {
       return VisitFloat64LessThanOrEqual(node);
     case IrOpcode::kFloat64RoundDown:
       return MarkAsFloat64(node), VisitFloat64RoundDown(node);
+    case IrOpcode::kFloat64RoundUp:
+      return MarkAsFloat64(node), VisitFloat64RoundUp(node);
     case IrOpcode::kFloat64RoundTruncate:
       return MarkAsFloat64(node), VisitFloat64RoundTruncate(node);
     case IrOpcode::kFloat64RoundTiesAway:
       return MarkAsFloat64(node), VisitFloat64RoundTiesAway(node);
+    case IrOpcode::kFloat64RoundTiesEven:
+      return MarkAsFloat64(node), VisitFloat64RoundTiesEven(node);
     case IrOpcode::kFloat64ExtractLowWord32:
       return MarkAsWord32(node), VisitFloat64ExtractLowWord32(node);
     case IrOpcode::kFloat64ExtractHighWord32:
@@ -976,6 +1035,12 @@ void InstructionSelector::VisitWord64Ror(Node* node) { UNIMPLEMENTED(); }
 void InstructionSelector::VisitWord64Clz(Node* node) { UNIMPLEMENTED(); }
 
 
+void InstructionSelector::VisitWord64Ctz(Node* node) { UNIMPLEMENTED(); }
+
+
+void InstructionSelector::VisitWord64Popcnt(Node* node) { UNIMPLEMENTED(); }
+
+
 void InstructionSelector::VisitWord64Equal(Node* node) { UNIMPLEMENTED(); }
 
 
@@ -1026,12 +1091,37 @@ void InstructionSelector::VisitChangeUint32ToUint64(Node* node) {
 }
 
 
+void InstructionSelector::VisitTruncateFloat64ToInt64(Node* node) {
+  UNIMPLEMENTED();
+}
+
+
+void InstructionSelector::VisitTruncateFloat64ToUint64(Node* node) {
+  UNIMPLEMENTED();
+}
+
+
 void InstructionSelector::VisitTruncateInt64ToInt32(Node* node) {
   UNIMPLEMENTED();
 }
 
 
+void InstructionSelector::VisitRoundInt64ToFloat32(Node* node) {
+  UNIMPLEMENTED();
+}
+
+
 void InstructionSelector::VisitRoundInt64ToFloat64(Node* node) {
+  UNIMPLEMENTED();
+}
+
+
+void InstructionSelector::VisitRoundUint64ToFloat32(Node* node) {
+  UNIMPLEMENTED();
+}
+
+
+void InstructionSelector::VisitRoundUint64ToFloat64(Node* node) {
   UNIMPLEMENTED();
 }
 
@@ -1065,9 +1155,15 @@ void InstructionSelector::VisitGuard(Node* node) {
 void InstructionSelector::VisitParameter(Node* node) {
   OperandGenerator g(this);
   int index = ParameterIndexOf(node->op());
-  Emit(kArchNop,
-       g.DefineAsLocation(node, linkage()->GetParameterLocation(index),
-                          linkage()->GetParameterType(index)));
+  InstructionOperand op =
+      linkage()->ParameterHasSecondaryLocation(index)
+          ? g.DefineAsDualLocation(
+                node, linkage()->GetParameterLocation(index),
+                linkage()->GetParameterSecondaryLocation(index))
+          : g.DefineAsLocation(node, linkage()->GetParameterLocation(index),
+                               linkage()->GetParameterType(index));
+
+  Emit(kArchNop, op);
 }
 
 
@@ -1149,7 +1245,8 @@ void InstructionSelector::VisitCall(Node* node, BasicBlock* handler) {
   // the code object in a register if there are multiple uses of it.
   // Improve constant pool and the heuristics in the register allocator
   // for where to emit constants.
-  InitializeCallBuffer(node, &buffer, true, true);
+  CallBufferFlags call_buffer_flags(kCallCodeImmediate | kCallAddressImmediate);
+  InitializeCallBuffer(node, &buffer, call_buffer_flags);
 
   EmitPrepareArguments(&(buffer.pushed_nodes), descriptor, node);
 
@@ -1202,11 +1299,17 @@ void InstructionSelector::VisitTailCall(Node* node) {
 
   // TODO(turbofan): Relax restriction for stack parameters.
 
-  if (linkage()->GetIncomingDescriptor()->CanTailCall(node)) {
+  int stack_param_delta = 0;
+  if (linkage()->GetIncomingDescriptor()->CanTailCall(node,
+                                                      &stack_param_delta)) {
     CallBuffer buffer(zone(), descriptor, nullptr);
 
     // Compute InstructionOperands for inputs and outputs.
-    InitializeCallBuffer(node, &buffer, true, IsTailCallAddressImmediate());
+    CallBufferFlags flags(kCallCodeImmediate | kCallTail);
+    if (IsTailCallAddressImmediate()) {
+      flags |= kCallAddressImmediate;
+    }
+    InitializeCallBuffer(node, &buffer, flags, stack_param_delta);
 
     // Select the appropriate opcode based on the call type.
     InstructionCode opcode;
@@ -1223,6 +1326,11 @@ void InstructionSelector::VisitTailCall(Node* node) {
     }
     opcode |= MiscField::encode(descriptor->flags());
 
+    buffer.instruction_args.push_back(g.TempImmediate(stack_param_delta));
+
+    Emit(kArchPrepareTailCall, g.NoOutput(),
+         g.TempImmediate(stack_param_delta));
+
     // Emit the tailcall instruction.
     Emit(opcode, 0, nullptr, buffer.instruction_args.size(),
          &buffer.instruction_args.front());
@@ -1236,7 +1344,11 @@ void InstructionSelector::VisitTailCall(Node* node) {
     CallBuffer buffer(zone(), descriptor, frame_state_descriptor);
 
     // Compute InstructionOperands for inputs and outputs.
-    InitializeCallBuffer(node, &buffer, true, IsTailCallAddressImmediate());
+    CallBufferFlags flags = kCallCodeImmediate;
+    if (IsTailCallAddressImmediate()) {
+      flags |= kCallAddressImmediate;
+    }
+    InitializeCallBuffer(node, &buffer, flags);
 
     EmitPrepareArguments(&(buffer.pushed_nodes), descriptor, node);
 

@@ -1753,11 +1753,9 @@ void CompareICStub::GenerateGeneric(MacroAssembler* masm) {
 }
 
 
-static void CallStubInRecordCallTarget(MacroAssembler* masm, CodeStub* stub,
-                                       bool is_super) {
+static void CallStubInRecordCallTarget(MacroAssembler* masm, CodeStub* stub) {
   // rax : number of arguments to the construct function
   // rbx : feedback vector
-  // rcx : original constructor (for IsSuperConstructorCall)
   // rdx : slot in feedback vector (Smi)
   // rdi : the function to call
   FrameScope scope(masm, StackFrame::INTERNAL);
@@ -1769,15 +1767,9 @@ static void CallStubInRecordCallTarget(MacroAssembler* masm, CodeStub* stub,
   __ Integer32ToSmi(rdx, rdx);
   __ Push(rdx);
   __ Push(rbx);
-  if (is_super) {
-    __ Push(rcx);
-  }
 
   __ CallStub(stub);
 
-  if (is_super) {
-    __ Pop(rcx);
-  }
   __ Pop(rbx);
   __ Pop(rdx);
   __ Pop(rdi);
@@ -1786,13 +1778,12 @@ static void CallStubInRecordCallTarget(MacroAssembler* masm, CodeStub* stub,
 }
 
 
-static void GenerateRecordCallTarget(MacroAssembler* masm, bool is_super) {
+static void GenerateRecordCallTarget(MacroAssembler* masm) {
   // Cache the called function in a feedback vector slot.  Cache states
   // are uninitialized, monomorphic (indicated by a JSFunction), and
   // megamorphic.
   // rax : number of arguments to the construct function
   // rbx : feedback vector
-  // rcx : original constructor (for IsSuperConstructorCall)
   // rdx : slot in feedback vector (Smi)
   // rdi : the function to call
   Isolate* isolate = masm->isolate();
@@ -1860,12 +1851,12 @@ static void GenerateRecordCallTarget(MacroAssembler* masm, bool is_super) {
   __ j(not_equal, &not_array_function);
 
   CreateAllocationSiteStub create_stub(isolate);
-  CallStubInRecordCallTarget(masm, &create_stub, is_super);
+  CallStubInRecordCallTarget(masm, &create_stub);
   __ jmp(&done_no_smi_convert);
 
   __ bind(&not_array_function);
   CreateWeakCellStub weak_cell_stub(isolate);
-  CallStubInRecordCallTarget(masm, &weak_cell_stub, is_super);
+  CallStubInRecordCallTarget(masm, &weak_cell_stub);
   __ jmp(&done_no_smi_convert);
 
   __ bind(&done);
@@ -1878,8 +1869,7 @@ static void GenerateRecordCallTarget(MacroAssembler* masm, bool is_super) {
 void CallConstructStub::Generate(MacroAssembler* masm) {
   // rax : number of arguments
   // rbx : feedback vector
-  // rcx : original constructor (for IsSuperConstructorCall)
-  // rdx : slot in feedback vector (Smi, for RecordCallTarget)
+  // rdx : slot in feedback vector (Smi)
   // rdi : constructor function
 
   Label non_function;
@@ -1889,28 +1879,22 @@ void CallConstructStub::Generate(MacroAssembler* masm) {
   __ CmpObjectType(rdi, JS_FUNCTION_TYPE, r11);
   __ j(not_equal, &non_function);
 
-  if (RecordCallTarget()) {
-    GenerateRecordCallTarget(masm, IsSuperConstructorCall());
+  GenerateRecordCallTarget(masm);
 
-    __ SmiToInteger32(rdx, rdx);
-    Label feedback_register_initialized;
-    // Put the AllocationSite from the feedback vector into rbx, or undefined.
-    __ movp(rbx, FieldOperand(rbx, rdx, times_pointer_size,
-                              FixedArray::kHeaderSize));
-    __ CompareRoot(FieldOperand(rbx, 0), Heap::kAllocationSiteMapRootIndex);
-    __ j(equal, &feedback_register_initialized);
-    __ LoadRoot(rbx, Heap::kUndefinedValueRootIndex);
-    __ bind(&feedback_register_initialized);
+  __ SmiToInteger32(rdx, rdx);
+  Label feedback_register_initialized;
+  // Put the AllocationSite from the feedback vector into rbx, or undefined.
+  __ movp(rbx,
+          FieldOperand(rbx, rdx, times_pointer_size, FixedArray::kHeaderSize));
+  __ CompareRoot(FieldOperand(rbx, 0), Heap::kAllocationSiteMapRootIndex);
+  __ j(equal, &feedback_register_initialized, Label::kNear);
+  __ LoadRoot(rbx, Heap::kUndefinedValueRootIndex);
+  __ bind(&feedback_register_initialized);
 
-    __ AssertUndefinedOrAllocationSite(rbx);
-  }
+  __ AssertUndefinedOrAllocationSite(rbx);
 
-  // Pass original constructor to construct stub.
-  if (IsSuperConstructorCall()) {
-    __ movp(rdx, rcx);
-  } else {
-    __ movp(rdx, rdi);
-  }
+  // Pass new target to construct stub.
+  __ movp(rdx, rdi);
 
   // Tail call to the function-specific construct stub (still in the caller
   // context at this point).
@@ -1959,7 +1943,7 @@ void CallICStub::Generate(MacroAssembler* masm) {
       FixedArray::OffsetOfElementAt(TypeFeedbackVector::kWithTypesIndex);
   const int generic_offset =
       FixedArray::OffsetOfElementAt(TypeFeedbackVector::kGenericCountIndex);
-  Label extra_checks_or_miss, call;
+  Label extra_checks_or_miss, call, call_function;
   int argc = arg_count();
   StackArgumentsAccessor args(rsp, argc);
   ParameterCount actual(argc);
@@ -1995,9 +1979,10 @@ void CallICStub::Generate(MacroAssembler* masm) {
                                  FixedArray::kHeaderSize + kPointerSize),
                     Smi::FromInt(CallICNexus::kCallCountIncrement));
 
-  __ bind(&call);
+  __ bind(&call_function);
   __ Set(rax, argc);
-  __ Jump(masm->isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
+  __ Jump(masm->isolate()->builtins()->CallFunction(convert_mode()),
+          RelocInfo::CODE_TARGET);
 
   __ bind(&extra_checks_or_miss);
   Label uninitialized, miss, not_allocation_site;
@@ -2034,7 +2019,11 @@ void CallICStub::Generate(MacroAssembler* masm) {
   // We have to update statistics for runtime profiling.
   __ SmiAddConstant(FieldOperand(rbx, with_types_offset), Smi::FromInt(-1));
   __ SmiAddConstant(FieldOperand(rbx, generic_offset), Smi::FromInt(1));
-  __ jmp(&call);
+
+  __ bind(&call);
+  __ Set(rax, argc);
+  __ Jump(masm->isolate()->builtins()->Call(convert_mode()),
+          RelocInfo::CODE_TARGET);
 
   __ bind(&uninitialized);
 
@@ -2050,6 +2039,13 @@ void CallICStub::Generate(MacroAssembler* masm) {
   __ LoadGlobalFunction(Context::ARRAY_FUNCTION_INDEX, rcx);
   __ cmpp(rdi, rcx);
   __ j(equal, &miss);
+
+  // Make sure the function belongs to the same native context (which implies
+  // the same global object).
+  __ movp(rcx, FieldOperand(rdi, JSFunction::kContextOffset));
+  __ movp(rcx, ContextOperand(rcx, Context::GLOBAL_OBJECT_INDEX));
+  __ cmpp(rcx, GlobalObjectOperand());
+  __ j(not_equal, &miss);
 
   // Update stats.
   __ SmiAddConstant(FieldOperand(rbx, with_types_offset), Smi::FromInt(1));
@@ -2073,7 +2069,7 @@ void CallICStub::Generate(MacroAssembler* masm) {
     __ Pop(rdi);
   }
 
-  __ jmp(&call);
+  __ jmp(&call_function);
 
   // We are here because tracing is on or we encountered a MISS case we can't
   // handle here.
@@ -4027,85 +4023,6 @@ void RecordWriteStub::CheckNeedsToInformIncrementalMarker(
 }
 
 
-void StoreArrayLiteralElementStub::Generate(MacroAssembler* masm) {
-  // ----------- S t a t e -------------
-  //  -- rax     : element value to store
-  //  -- rcx     : element index as smi
-  //  -- rsp[0]  : return address
-  //  -- rsp[8]  : array literal index in function
-  //  -- rsp[16] : array literal
-  // clobbers rbx, rdx, rdi
-  // -----------------------------------
-
-  Label element_done;
-  Label double_elements;
-  Label smi_element;
-  Label slow_elements;
-  Label fast_elements;
-
-  // Get array literal index, array literal and its map.
-  StackArgumentsAccessor args(rsp, 2, ARGUMENTS_DONT_CONTAIN_RECEIVER);
-  __ movp(rdx, args.GetArgumentOperand(1));
-  __ movp(rbx, args.GetArgumentOperand(0));
-  __ movp(rdi, FieldOperand(rbx, JSObject::kMapOffset));
-
-  __ CheckFastElements(rdi, &double_elements);
-
-  // FAST_*_SMI_ELEMENTS or FAST_*_ELEMENTS
-  __ JumpIfSmi(rax, &smi_element);
-  __ CheckFastSmiElements(rdi, &fast_elements);
-
-  // Store into the array literal requires a elements transition. Call into
-  // the runtime.
-
-  __ bind(&slow_elements);
-  __ PopReturnAddressTo(rdi);
-  __ Push(rbx);
-  __ Push(rcx);
-  __ Push(rax);
-  __ movp(rbx, Operand(rbp, JavaScriptFrameConstants::kFunctionOffset));
-  __ Push(FieldOperand(rbx, JSFunction::kLiteralsOffset));
-  __ Push(rdx);
-  __ PushReturnAddressFrom(rdi);
-  __ TailCallRuntime(Runtime::kStoreArrayLiteralElement, 5, 1);
-
-  // Array literal has ElementsKind of FAST_*_ELEMENTS and value is an object.
-  __ bind(&fast_elements);
-  __ SmiToInteger32(kScratchRegister, rcx);
-  __ movp(rbx, FieldOperand(rbx, JSObject::kElementsOffset));
-  __ leap(rcx, FieldOperand(rbx, kScratchRegister, times_pointer_size,
-                           FixedArrayBase::kHeaderSize));
-  __ movp(Operand(rcx, 0), rax);
-  // Update the write barrier for the array store.
-  __ RecordWrite(rbx, rcx, rax,
-                 kDontSaveFPRegs,
-                 EMIT_REMEMBERED_SET,
-                 OMIT_SMI_CHECK);
-  __ ret(0);
-
-  // Array literal has ElementsKind of FAST_*_SMI_ELEMENTS or
-  // FAST_*_ELEMENTS, and value is Smi.
-  __ bind(&smi_element);
-  __ SmiToInteger32(kScratchRegister, rcx);
-  __ movp(rbx, FieldOperand(rbx, JSObject::kElementsOffset));
-  __ movp(FieldOperand(rbx, kScratchRegister, times_pointer_size,
-                       FixedArrayBase::kHeaderSize), rax);
-  __ ret(0);
-
-  // Array literal has ElementsKind of FAST_DOUBLE_ELEMENTS.
-  __ bind(&double_elements);
-
-  __ movp(r9, FieldOperand(rbx, JSObject::kElementsOffset));
-  __ SmiToInteger32(r11, rcx);
-  __ StoreNumberToDoubleElements(rax,
-                                 r9,
-                                 r11,
-                                 xmm0,
-                                 &slow_elements);
-  __ ret(0);
-}
-
-
 void StubFailureTrampolineStub::Generate(MacroAssembler* masm) {
   CEntryStub ces(isolate(), 1, kSaveFPRegs);
   __ Call(ces.GetCode(), RelocInfo::CODE_TARGET);
@@ -4763,7 +4680,7 @@ void ArrayConstructorStub::Generate(MacroAssembler* masm) {
   //  -- rax    : argc
   //  -- rbx    : AllocationSite or undefined
   //  -- rdi    : constructor
-  //  -- rdx    : original constructor
+  //  -- rdx    : new target
   //  -- rsp[0] : return address
   //  -- rsp[8] : last argument
   // -----------------------------------
@@ -4806,28 +4723,33 @@ void ArrayConstructorStub::Generate(MacroAssembler* masm) {
 
   // Subclassing
   __ bind(&subclassing);
-  __ Pop(rcx);  // return address.
-  __ Push(rdi);
-  __ Push(rdx);
-
-  // Adjust argc.
   switch (argument_count()) {
     case ANY:
-    case MORE_THAN_ONE:
-      __ addp(rax, Immediate(2));
+    case MORE_THAN_ONE: {
+      StackArgumentsAccessor args(rsp, rax);
+      __ movp(args.GetReceiverOperand(), rdi);
+      __ addp(rax, Immediate(3));
       break;
-    case NONE:
-      __ movp(rax, Immediate(2));
+    }
+    case NONE: {
+      StackArgumentsAccessor args(rsp, 0);
+      __ movp(args.GetReceiverOperand(), rdi);
+      __ Set(rax, 3);
       break;
-    case ONE:
-      __ movp(rax, Immediate(3));
+    }
+    case ONE: {
+      StackArgumentsAccessor args(rsp, 1);
+      __ movp(args.GetReceiverOperand(), rdi);
+      __ Set(rax, 4);
       break;
+    }
   }
-
-  __ Push(rcx);
-  __ JumpToExternalReference(
-      ExternalReference(Runtime::kArrayConstructorWithSubclassing, isolate()),
-      1);
+  __ PopReturnAddressTo(rcx);
+  __ Push(rdx);
+  __ Push(rbx);
+  __ PushReturnAddressFrom(rcx);
+  __ JumpToExternalReference(ExternalReference(Runtime::kNewArray, isolate()),
+                             1);
 }
 
 

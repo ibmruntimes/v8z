@@ -97,6 +97,9 @@ class BytecodeArrayBuilder {
   BytecodeArrayBuilder& LoadAccumulatorWithRegister(Register reg);
   BytecodeArrayBuilder& StoreAccumulatorInRegister(Register reg);
 
+  // Register-register transfer.
+  BytecodeArrayBuilder& MoveRegister(Register from, Register to);
+
   // Named load property.
   BytecodeArrayBuilder& LoadNamedProperty(Register object, size_t name_index,
                                           int feedback_slot,
@@ -136,7 +139,7 @@ class BytecodeArrayBuilder {
   // arguments should be in registers <receiver + 1> to
   // <receiver + 1 + arg_count>.
   BytecodeArrayBuilder& Call(Register callable, Register receiver,
-                             size_t arg_count);
+                             size_t arg_count, int feedback_slot);
 
   // Call the new operator. The |constructor| register is followed by
   // |arg_count| consecutive registers containing arguments to be
@@ -233,6 +236,8 @@ class BytecodeArrayBuilder {
   template <size_t N>
   INLINE(void Output(Bytecode bytecode, uint32_t(&oprands)[N]));
   void Output(Bytecode bytecode, uint32_t operand0, uint32_t operand1,
+              uint32_t operand2, uint32_t operand3);
+  void Output(Bytecode bytecode, uint32_t operand0, uint32_t operand1,
               uint32_t operand2);
   void Output(Bytecode bytecode, uint32_t operand0, uint32_t operand1);
   void Output(Bytecode bytecode, uint32_t operand0);
@@ -251,6 +256,7 @@ class BytecodeArrayBuilder {
   bool LastBytecodeInSameBlock() const;
 
   bool NeedToBooleanCast();
+  bool IsRegisterInAccumulator(Register reg);
 
   int BorrowTemporaryRegister();
   void ReturnTemporaryRegister(int reg_index);

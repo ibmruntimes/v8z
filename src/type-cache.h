@@ -54,7 +54,25 @@ class TypeCache final {
 
   Type* const kPositiveSafeInteger = CreateRange(0.0, kMaxSafeInteger);
 
-  Type* const kIntegral32 = Type::Union(kInt32, kUint32, zone());
+  // Asm.js related types.
+  Type* const kAsmSigned = kInt32;
+  Type* const kAsmUnsigned = kUint32;
+  Type* const kAsmInt = Type::Union(kAsmSigned, kAsmUnsigned, zone());
+  Type* const kAsmFixnum = Type::Intersect(kAsmSigned, kAsmUnsigned, zone());
+  Type* const kAsmFloat = kFloat32;
+  Type* const kAsmDouble = kFloat64;
+  // Asm.js size unions.
+  Type* const kAsmSize8 = Type::Union(kInt8, kUint8, zone());
+  Type* const kAsmSize16 = Type::Union(kInt16, kUint16, zone());
+  Type* const kAsmSize32 =
+      Type::Union(Type::Union(kInt32, kUint32, zone()), kAsmFloat, zone());
+  Type* const kAsmSize64 = kFloat64;
+  // Asm.js other types.
+  Type* const kAsmComparable = Type::Union(
+      kAsmSigned,
+      Type::Union(kAsmUnsigned, Type::Union(kAsmDouble, kAsmFloat, zone()),
+                  zone()),
+      zone());
 
   // The FixedArray::length property always containts a smi in the range
   // [0, FixedArray::kMaxLength].
@@ -75,6 +93,10 @@ class TypeCache final {
   // [0, String::kMaxLength].
   Type* const kStringLengthType =
       CreateNative(CreateRange(0.0, String::kMaxLength), Type::TaggedSigned());
+
+  // When initializing arrays, we'll unfold the loop if the number of
+  // elements is known to be of this type.
+  Type* const kElementLoopUnrollType = CreateRange(0.0, 16.0);
 
 #define TYPED_ARRAY(TypeName, type_name, TYPE_NAME, ctype, size) \
   Type* const k##TypeName##Array = CreateArray(k##TypeName);

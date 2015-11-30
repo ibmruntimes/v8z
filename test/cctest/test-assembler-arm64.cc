@@ -25,6 +25,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+// TODO(jochen): Remove this after the setting is turned on globally.
+#define V8_IMMINENT_DEPRECATION_WARNINGS
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -115,7 +118,7 @@ static void InitializeVM() {
 
 // Run tests with the simulator.
 #define SETUP_SIZE(buf_size)                    \
-  Isolate* isolate = Isolate::Current();        \
+  Isolate* isolate = CcTest::i_isolate();       \
   HandleScope scope(isolate);                   \
   DCHECK(isolate != NULL);                      \
   byte* buf = new byte[buf_size];               \
@@ -168,12 +171,12 @@ static void InitializeVM() {
 
 #else  // ifdef USE_SIMULATOR.
 // Run the test on real hardware or models.
-#define SETUP_SIZE(buf_size)                                                   \
-  Isolate* isolate = Isolate::Current();                                       \
-  HandleScope scope(isolate);                                                  \
-  DCHECK(isolate != NULL);                                                     \
-  byte* buf = new byte[buf_size];                                              \
-  MacroAssembler masm(isolate, buf, buf_size);                                 \
+#define SETUP_SIZE(buf_size)                   \
+  Isolate* isolate = CcTest::i_isolate();      \
+  HandleScope scope(isolate);                  \
+  DCHECK(isolate != NULL);                     \
+  byte* buf = new byte[buf_size];              \
+  MacroAssembler masm(isolate, buf, buf_size); \
   RegisterDump core;
 
 #define RESET()                                                                \

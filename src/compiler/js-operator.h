@@ -54,6 +54,31 @@ size_t hash_value(TailCallMode);
 std::ostream& operator<<(std::ostream&, TailCallMode);
 
 
+// Defines the arity and the feedback for a JavaScript constructor call. This is
+// used as a parameter by JSCallConstruct operators.
+class CallConstructParameters final {
+ public:
+  CallConstructParameters(size_t arity, VectorSlotPair const& feedback)
+      : arity_(arity), feedback_(feedback) {}
+
+  size_t arity() const { return arity_; }
+  VectorSlotPair const& feedback() const { return feedback_; }
+
+ private:
+  size_t const arity_;
+  VectorSlotPair const feedback_;
+};
+
+bool operator==(CallConstructParameters const&, CallConstructParameters const&);
+bool operator!=(CallConstructParameters const&, CallConstructParameters const&);
+
+size_t hash_value(CallConstructParameters const&);
+
+std::ostream& operator<<(std::ostream&, CallConstructParameters const&);
+
+CallConstructParameters const& CallConstructParametersOf(Operator const*);
+
+
 // Defines the arity and the call flags for a JavaScript function call. This is
 // used as a parameter by JSCallFunction operators.
 class CallFunctionParameters final {
@@ -327,6 +352,31 @@ const CreateArgumentsParameters& CreateArgumentsParametersOf(
     const Operator* op);
 
 
+// Defines shared information for the array that should be created. This is
+// used as parameter by JSCreateArray operators.
+class CreateArrayParameters final {
+ public:
+  explicit CreateArrayParameters(size_t arity, Handle<AllocationSite> site)
+      : arity_(arity), site_(site) {}
+
+  size_t arity() const { return arity_; }
+  Handle<AllocationSite> site() const { return site_; }
+
+ private:
+  size_t const arity_;
+  Handle<AllocationSite> const site_;
+};
+
+bool operator==(CreateArrayParameters const&, CreateArrayParameters const&);
+bool operator!=(CreateArrayParameters const&, CreateArrayParameters const&);
+
+size_t hash_value(CreateArrayParameters const&);
+
+std::ostream& operator<<(std::ostream&, CreateArrayParameters const&);
+
+const CreateArrayParameters& CreateArrayParametersOf(const Operator* op);
+
+
 // Defines shared information for the closure that should be created. This is
 // used as a parameter by JSCreateClosure operators.
 class CreateClosureParameters final {
@@ -351,6 +401,34 @@ size_t hash_value(CreateClosureParameters const&);
 std::ostream& operator<<(std::ostream&, CreateClosureParameters const&);
 
 const CreateClosureParameters& CreateClosureParametersOf(const Operator* op);
+
+
+// Defines shared information for the literal that should be created. This is
+// used as parameter by JSCreateLiteralArray and JSCreateLiteralObject
+// operators.
+class CreateLiteralParameters final {
+ public:
+  CreateLiteralParameters(Handle<FixedArray> constants, int flags, int index)
+      : constants_(constants), flags_(flags), index_(index) {}
+
+  Handle<FixedArray> constants() const { return constants_; }
+  int flags() const { return flags_; }
+  int index() const { return index_; }
+
+ private:
+  Handle<FixedArray> const constants_;
+  int const flags_;
+  int const index_;
+};
+
+bool operator==(CreateLiteralParameters const&, CreateLiteralParameters const&);
+bool operator!=(CreateLiteralParameters const&, CreateLiteralParameters const&);
+
+size_t hash_value(CreateLiteralParameters const&);
+
+std::ostream& operator<<(std::ostream&, CreateLiteralParameters const&);
+
+const CreateLiteralParameters& CreateLiteralParametersOf(const Operator* op);
 
 
 // Interface for building JavaScript-level operators, e.g. directly from the
@@ -391,10 +469,13 @@ class JSOperatorBuilder final : public ZoneObject {
   const Operator* Create();
   const Operator* CreateArguments(CreateArgumentsParameters::Type type,
                                   int start_index);
+  const Operator* CreateArray(size_t arity, Handle<AllocationSite> site);
   const Operator* CreateClosure(Handle<SharedFunctionInfo> shared_info,
                                 PretenureFlag pretenure);
-  const Operator* CreateLiteralArray(int literal_flags);
-  const Operator* CreateLiteralObject(int literal_flags);
+  const Operator* CreateLiteralArray(Handle<FixedArray> constant_elements,
+                                     int literal_flags, int literal_index);
+  const Operator* CreateLiteralObject(Handle<FixedArray> constant_properties,
+                                      int literal_flags, int literal_index);
 
   const Operator* CallFunction(
       size_t arity, LanguageMode language_mode,
@@ -402,7 +483,7 @@ class JSOperatorBuilder final : public ZoneObject {
       ConvertReceiverMode convert_mode = ConvertReceiverMode::kAny,
       TailCallMode tail_call_mode = TailCallMode::kDisallow);
   const Operator* CallRuntime(Runtime::FunctionId id, size_t arity);
-  const Operator* CallConstruct(int arguments);
+  const Operator* CallConstruct(size_t arity, VectorSlotPair const& feedback);
 
   const Operator* ConvertReceiver(ConvertReceiverMode convert_mode);
 
@@ -429,6 +510,8 @@ class JSOperatorBuilder final : public ZoneObject {
 
   const Operator* LoadContext(size_t depth, size_t index, bool immutable);
   const Operator* StoreContext(size_t depth, size_t index);
+
+  const Operator* LoadNativeContext();
 
   const Operator* LoadDynamic(const Handle<String>& name,
                               TypeofMode typeof_mode);

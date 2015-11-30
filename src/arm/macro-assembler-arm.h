@@ -24,6 +24,7 @@ const Register kInterpreterBytecodeOffsetRegister = {Register::kCode_r5};
 const Register kInterpreterBytecodeArrayRegister = {Register::kCode_r6};
 const Register kInterpreterDispatchTableRegister = {Register::kCode_r8};
 const Register kJavaScriptCallArgCountRegister = {Register::kCode_r0};
+const Register kJavaScriptCallNewTargetRegister = {Register::kCode_r3};
 const Register kRuntimeCallFunctionRegister = {Register::kCode_r1};
 const Register kRuntimeCallArgCountRegister = {Register::kCode_r0};
 
@@ -643,6 +644,7 @@ class MacroAssembler: public Assembler {
 
   // Invoke the JavaScript function code by either calling or jumping.
   void InvokeCode(Register code,
+                  Register new_target,
                   const ParameterCount& expected,
                   const ParameterCount& actual,
                   InvokeFlag flag,
@@ -651,6 +653,7 @@ class MacroAssembler: public Assembler {
   // Invoke the JavaScript function in the given register. Changes the
   // current context to the context in the function before invoking.
   void InvokeFunction(Register function,
+                      Register new_target,
                       const ParameterCount& actual,
                       InvokeFlag flag,
                       const CallWrapper& call_wrapper);
@@ -763,12 +766,8 @@ class MacroAssembler: public Assembler {
                 Label* gc_required,
                 AllocationFlags flags);
 
-  void Allocate(Register object_size,
-                Register result,
-                Register scratch1,
-                Register scratch2,
-                Label* gc_required,
-                AllocationFlags flags);
+  void Allocate(Register object_size, Register result, Register result_end,
+                Register scratch, Label* gc_required, AllocationFlags flags);
 
   void AllocateTwoByteString(Register result,
                              Register length,
@@ -827,12 +826,11 @@ class MacroAssembler: public Assembler {
                  Register length,
                  Register scratch);
 
-  // Initialize fields with filler values.  Fields starting at |start_offset|
-  // not including end_offset are overwritten with the value in |filler|.  At
-  // the end the loop, |start_offset| takes the value of |end_offset|.
-  void InitializeFieldsWithFiller(Register start_offset,
-                                  Register end_offset,
-                                  Register filler);
+  // Initialize fields with filler values.  Fields starting at |current_address|
+  // not including |end_address| are overwritten with the value in |filler|.  At
+  // the end the loop, |current_address| takes the value of |end_address|.
+  void InitializeFieldsWithFiller(Register current_address,
+                                  Register end_address, Register filler);
 
   // ---------------------------------------------------------------------------
   // Support functions.
@@ -1462,8 +1460,6 @@ class MacroAssembler: public Assembler {
   // Helper functions for generating invokes.
   void InvokePrologue(const ParameterCount& expected,
                       const ParameterCount& actual,
-                      Handle<Code> code_constant,
-                      Register code_reg,
                       Label* done,
                       bool* definitely_mismatches,
                       InvokeFlag flag,

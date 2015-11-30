@@ -396,23 +396,6 @@ void LCodeGen::DoCallFunction(LCallFunction* instr) {
 }
 
 
-void LCodeGen::DoCallNew(LCallNew* instr) {
-  DCHECK(ToRegister(instr->context()).is(cp));
-  DCHECK(instr->IsMarkedAsCall());
-  DCHECK(ToRegister(instr->constructor()).is(x1));
-
-  __ Mov(x0, instr->arity());
-  // No cell in x2 for construct type feedback in optimized code.
-  __ LoadRoot(x2, Heap::kUndefinedValueRootIndex);
-
-  CallConstructStub stub(isolate(), NO_CALL_CONSTRUCTOR_FLAGS);
-  CallCode(stub.GetCode(), RelocInfo::CONSTRUCT_CALL, instr);
-  RecordPushedArgumentsDelta(instr->hydrogen()->argument_delta());
-
-  DCHECK(ToRegister(instr->result()).is(x0));
-}
-
-
 void LCodeGen::DoCallNewArray(LCallNewArray* instr) {
   DCHECK(instr->IsMarkedAsCall());
   DCHECK(ToRegister(instr->context()).is(cp));
@@ -1555,20 +1538,20 @@ void LCodeGen::DoAllocate(LAllocate* instr) {
   __ Bind(deferred->exit());
 
   if (instr->hydrogen()->MustPrefillWithFiller()) {
-    Register filler_count = temp1;
-    Register filler = temp2;
-    Register untagged_result = ToRegister(instr->temp3());
+    Register start = temp1;
+    Register end = temp2;
+    Register filler = ToRegister(instr->temp3());
+
+    __ Sub(start, result, kHeapObjectTag);
 
     if (instr->size()->IsConstantOperand()) {
       int32_t size = ToInteger32(LConstantOperand::cast(instr->size()));
-      __ Mov(filler_count, size / kPointerSize);
+      __ Add(end, start, size);
     } else {
-      __ Lsr(filler_count.W(), ToRegister32(instr->size()), kPointerSizeLog2);
+      __ Add(end, start, ToRegister(instr->size()));
     }
-
-    __ Sub(untagged_result, result, kHeapObjectTag);
-    __ Mov(filler, Operand(isolate()->factory()->one_pointer_filler_map()));
-    __ FillFields(untagged_result, filler_count, filler);
+    __ LoadRoot(filler, Heap::kOnePointerFillerMapRootIndex);
+    __ InitializeFieldsWithFiller(start, end, filler);
   } else {
     DCHECK(instr->temp3() == NULL);
   }
@@ -1651,7 +1634,8 @@ void LCodeGen::DoApplyArguments(LApplyArguments* instr) {
   // The number of arguments is stored in argc (receiver) which is x0, as
   // expected by InvokeFunction.
   ParameterCount actual(argc);
-  __ InvokeFunction(function, actual, CALL_FUNCTION, safepoint_generator);
+  __ InvokeFunction(function, no_reg, actual, CALL_FUNCTION,
+                    safepoint_generator);
 }
 
 
@@ -1979,7 +1963,8 @@ void LCodeGen::CallKnownFunction(Handle<JSFunction> function,
     // Change context.
     __ Ldr(cp, FieldMemOperand(function_reg, JSFunction::kContextOffset));
 
-    // Always initialize x0 to the number of actual arguments.
+    // Always initialize new target and number of actual arguments.
+    __ LoadRoot(x3, Heap::kUndefinedValueRootIndex);
     __ Mov(arity_reg, arity);
 
     // Invoke function.
@@ -2047,10 +2032,12 @@ void LCodeGen::DoCallJSFunction(LCallJSFunction* instr) {
   DCHECK(instr->IsMarkedAsCall());
   DCHECK(ToRegister(instr->function()).is(x1));
 
-  __ Mov(x0, Operand(instr->arity()));
-
   // Change context.
   __ Ldr(cp, FieldMemOperand(x1, JSFunction::kContextOffset));
+
+  // Always initialize new target and number of actual arguments.
+  __ LoadRoot(x3, Heap::kUndefinedValueRootIndex);
+  __ Mov(x0, instr->arity());
 
   // Load the code entry address
   __ Ldr(x10, FieldMemOperand(x1, JSFunction::kCodeEntryOffset));
@@ -3020,7 +3007,7 @@ void LCodeGen::DoInvokeFunction(LInvokeFunction* instr) {
     LPointerMap* pointers = instr->pointer_map();
     SafepointGenerator generator(this, pointers, Safepoint::kLazyDeopt);
     ParameterCount count(instr->arity());
-    __ InvokeFunction(x1, count, CALL_FUNCTION, generator);
+    __ InvokeFunction(x1, no_reg, count, CALL_FUNCTION, generator);
   } else {
     CallKnownFunction(known_function,
                       instr->hydrogen()->formal_parameter_count(),

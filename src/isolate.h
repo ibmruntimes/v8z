@@ -481,14 +481,9 @@ class Isolate {
     return isolate;
   }
 
-  INLINE(static Isolate* UncheckedCurrent()) {
-    DCHECK(base::NoBarrier_Load(&isolate_key_created_) == 1);
-    return reinterpret_cast<Isolate*>(
-        base::Thread::GetThreadLocal(isolate_key_));
-  }
-
-  // Like UncheckedCurrent, but skips the check that |isolate_key_| was
-  // initialized. Callers have to ensure that themselves.
+  // Like Current, but skips the check that |isolate_key_| was initialized.
+  // Callers have to ensure that themselves.
+  // DO NOT USE. The only remaining callsite will be deleted soon.
   INLINE(static Isolate* UnsafeCurrent()) {
     return reinterpret_cast<Isolate*>(
         base::Thread::GetThreadLocal(isolate_key_));
@@ -939,7 +934,7 @@ class Isolate {
   bool initialized_from_snapshot() { return initialized_from_snapshot_; }
 
   double time_millis_since_init() {
-    return base::OS::TimeCurrentMillis() - time_millis_at_init_;
+    return heap_.MonotonicallyIncreasingTimeInMs() - time_millis_at_init_;
   }
 
   DateCache* date_cache() {
@@ -1093,8 +1088,9 @@ class Isolate {
 
   FutexWaitListNode* futex_wait_list_node() { return &futex_wait_list_node_; }
 
-  void RegisterCancelableTask(Cancelable* task);
-  void RemoveCancelableTask(Cancelable* task);
+  CancelableTaskManager* cancelable_task_manager() {
+    return cancelable_task_manager_;
+  }
 
   interpreter::Interpreter* interpreter() const { return interpreter_; }
 
@@ -1338,7 +1334,7 @@ class Isolate {
 
   FutexWaitListNode futex_wait_list_node_;
 
-  std::set<Cancelable*> cancelable_tasks_;
+  CancelableTaskManager* cancelable_task_manager_;
 
   v8::Isolate::AbortOnUncaughtExceptionCallback
       abort_on_uncaught_exception_callback_;

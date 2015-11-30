@@ -3471,7 +3471,8 @@ void LCodeGen::DoApplyArguments(LApplyArguments* instr) {
   // The number of arguments is stored in receiver which is a0, as expected
   // by InvokeFunction.
   ParameterCount actual(receiver);
-  __ InvokeFunction(function, actual, CALL_FUNCTION, safepoint_generator);
+  __ InvokeFunction(function, no_reg, actual, CALL_FUNCTION,
+                    safepoint_generator);
 }
 
 
@@ -3533,7 +3534,8 @@ void LCodeGen::CallKnownFunction(Handle<JSFunction> function,
     // Change context.
     __ ld(cp, FieldMemOperand(function_reg, JSFunction::kContextOffset));
 
-    // Always initialize a0 to the number of actual arguments.
+    // Always initialize new target and number of actual arguments.
+    __ LoadRoot(a3, Heap::kUndefinedValueRootIndex);
     __ li(a0, Operand(arity));
 
     // Invoke function.
@@ -3910,7 +3912,7 @@ void LCodeGen::DoInvokeFunction(LInvokeFunction* instr) {
     LPointerMap* pointers = instr->pointer_map();
     SafepointGenerator generator(this, pointers, Safepoint::kLazyDeopt);
     ParameterCount count(instr->arity());
-    __ InvokeFunction(a1, count, CALL_FUNCTION, generator);
+    __ InvokeFunction(a1, no_reg, count, CALL_FUNCTION, generator);
   } else {
     CallKnownFunction(known_function,
                       instr->hydrogen()->formal_parameter_count(),
@@ -3960,10 +3962,12 @@ void LCodeGen::DoCallJSFunction(LCallJSFunction* instr) {
   DCHECK(ToRegister(instr->function()).is(a1));
   DCHECK(ToRegister(instr->result()).is(v0));
 
-  __ li(a0, Operand(instr->arity()));
-
   // Change context.
   __ ld(cp, FieldMemOperand(a1, JSFunction::kContextOffset));
+
+  // Always initialize new target and number of actual arguments.
+  __ LoadRoot(a3, Heap::kUndefinedValueRootIndex);
+  __ li(a0, Operand(instr->arity()));
 
   // Load the code entry address
   __ ld(at, FieldMemOperand(a1, JSFunction::kCodeEntryOffset));
@@ -4000,19 +4004,6 @@ void LCodeGen::DoCallFunction(LCallFunction* instr) {
     __ li(a0, Operand(arity));
     CallCode(isolate()->builtins()->Call(mode), RelocInfo::CODE_TARGET, instr);
   }
-}
-
-
-void LCodeGen::DoCallNew(LCallNew* instr) {
-  DCHECK(ToRegister(instr->context()).is(cp));
-  DCHECK(ToRegister(instr->constructor()).is(a1));
-  DCHECK(ToRegister(instr->result()).is(v0));
-
-  __ li(a0, Operand(instr->arity()));
-  // No cell in a2 for construct type feedback in optimized code
-  __ LoadRoot(a2, Heap::kUndefinedValueRootIndex);
-  CallConstructStub stub(isolate(), NO_CALL_CONSTRUCTOR_FLAGS);
-  CallCode(stub.GetCode(), RelocInfo::CONSTRUCT_CALL, instr);
 }
 
 
@@ -4736,7 +4727,7 @@ void LCodeGen::DoUint32ToDouble(LUint32ToDouble* instr) {
 
   FPURegister dbl_scratch = double_scratch0();
   __ mtc1(ToRegister(input), dbl_scratch);
-  __ Cvt_d_uw(ToDoubleRegister(output), dbl_scratch, f22);  // TODO(plind): f22?
+  __ Cvt_d_uw(ToDoubleRegister(output), dbl_scratch);
 }
 
 
@@ -4793,7 +4784,7 @@ void LCodeGen::DoDeferredNumberTagIU(LInstruction* instr,
     __ cvt_d_w(dbl_scratch, dbl_scratch);
   } else {
     __ mtc1(src, dbl_scratch);
-    __ Cvt_d_uw(dbl_scratch, dbl_scratch, f22);
+    __ Cvt_d_uw(dbl_scratch, dbl_scratch);
   }
 
   if (FLAG_inline_new) {

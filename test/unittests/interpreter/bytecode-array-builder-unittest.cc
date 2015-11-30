@@ -22,12 +22,12 @@ class BytecodeArrayBuilderTest : public TestWithIsolateAndZone {
 TEST_F(BytecodeArrayBuilderTest, AllBytecodesGenerated) {
   BytecodeArrayBuilder builder(isolate(), zone());
 
-  builder.set_locals_count(1);
+  builder.set_locals_count(2);
   builder.set_context_count(1);
   builder.set_parameter_count(0);
-  CHECK_EQ(builder.locals_count(), 1);
+  CHECK_EQ(builder.locals_count(), 2);
   CHECK_EQ(builder.context_count(), 1);
-  CHECK_EQ(builder.fixed_register_count(), 2);
+  CHECK_EQ(builder.fixed_register_count(), 3);
 
   // Emit constant loads.
   builder.LoadLiteral(Smi::FromInt(0))
@@ -39,9 +39,16 @@ TEST_F(BytecodeArrayBuilderTest, AllBytecodesGenerated) {
       .LoadTrue()
       .LoadFalse();
 
-  // Emit accumulator transfers.
+  // Emit accumulator transfers. Stores followed by loads to the same register
+  // are not generated. Hence, a dummy instruction in between.
   Register reg(0);
-  builder.LoadAccumulatorWithRegister(reg).StoreAccumulatorInRegister(reg);
+  builder.LoadAccumulatorWithRegister(reg)
+      .LoadNull()
+      .StoreAccumulatorInRegister(reg);
+
+  // Emit register-register transfer.
+  Register other(1);
+  builder.MoveRegister(reg, other);
 
   // Emit global load / store operations.
   builder.LoadGlobal(0, 1, LanguageMode::SLOPPY, TypeofMode::NOT_INSIDE_TYPEOF)
@@ -99,7 +106,8 @@ TEST_F(BytecodeArrayBuilderTest, AllBytecodesGenerated) {
       .CreateObjectLiteral(0, 0);
 
   // Call operations.
-  builder.Call(reg, reg, 0)
+  builder.Call(reg, reg, 0, 0)
+      .Call(reg, reg, 0, 1024)
       .CallRuntime(Runtime::kIsArray, reg, 1)
       .CallJSRuntime(Context::SPREAD_ITERABLE_INDEX, reg, 1);
 

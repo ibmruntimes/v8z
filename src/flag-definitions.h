@@ -190,7 +190,7 @@ DEFINE_BOOL(legacy_const, true, "legacy semantics for const in sloppy mode")
 DEFINE_NEG_IMPLICATION(harmony, legacy_const)
 
 // Activate on ClusterFuzz.
-DEFINE_IMPLICATION(es_staging, harmony_destructuring)
+DEFINE_IMPLICATION(es_staging, harmony_destructuring_bind)
 
 // Features that are still work in progress (behind individual flags).
 #define HARMONY_INPROGRESS(V)                                         \
@@ -202,12 +202,12 @@ DEFINE_IMPLICATION(es_staging, harmony_destructuring)
   V(harmony_sharedarraybuffer, "harmony sharedarraybuffer")           \
   V(harmony_simd, "harmony simd")                                     \
   V(harmony_do_expressions, "harmony do-expressions")                 \
-  V(harmony_regexp_subclass, "harmony regexp subclassing")
+  V(harmony_regexp_subclass, "harmony regexp subclassing")            \
+  V(harmony_regexp_lookbehind, "harmony regexp lookbehind")
 
 // Features that are complete (but still behind --harmony/es-staging flag).
 #define HARMONY_STAGED(V)                                     \
-  V(harmony_default_parameters, "harmony default parameters") \
-  V(harmony_destructuring, "harmony destructuring")           \
+  V(harmony_destructuring_bind, "harmony destructuring")      \
   V(harmony_regexps, "harmony regular expression extensions") \
   V(harmony_sloppy, "harmony features in sloppy mode")        \
   V(harmony_sloppy_let, "harmony let in sloppy mode")
@@ -215,6 +215,7 @@ DEFINE_IMPLICATION(es_staging, harmony_destructuring)
 // Features that are shipping (turned on by default, but internal flag remains).
 #define HARMONY_SHIPPING(V)                                     \
   V(harmony_array_includes, "harmony Array.prototype.includes") \
+  V(harmony_default_parameters, "harmony default parameters")   \
   V(harmony_object_observe, "harmony Object.observe")           \
   V(harmony_rest_parameters, "harmony rest parameters")         \
   V(harmony_concat_spreadable, "harmony isConcatSpreadable")    \
@@ -252,7 +253,7 @@ DEFINE_IMPLICATION(harmony_sloppy_function, harmony_sloppy)
 
 // Destructuring shares too much parsing architecture with default parameters
 // to be enabled on its own.
-DEFINE_IMPLICATION(harmony_destructuring, harmony_default_parameters)
+DEFINE_IMPLICATION(harmony_destructuring_bind, harmony_default_parameters)
 
 // Flags for experimental implementation features.
 DEFINE_BOOL(compiled_keyed_generic_loads, false,
@@ -288,7 +289,6 @@ DEFINE_BOOL(string_slices, true, "use string slices")
 
 // Flags for Ignition.
 DEFINE_BOOL(ignition, false, "use ignition interpreter")
-DEFINE_IMPLICATION(ignition, vector_stores)
 DEFINE_STRING(ignition_filter, "~~", "filter for ignition interpreter")
 DEFINE_BOOL(ignition_fake_try_catch, false,
             "enable fake try-catch-finally blocks in ignition for testing")
@@ -674,7 +674,7 @@ DEFINE_INT(min_progress_during_incremental_marking_finalization, 32,
 DEFINE_INT(max_incremental_marking_finalization_rounds, 3,
            "at most try this many times to finalize incremental marking")
 DEFINE_BOOL(concurrent_sweeping, true, "use concurrent sweeping")
-DEFINE_BOOL(parallel_compaction, false, "use parallel compaction")
+DEFINE_BOOL(parallel_compaction, true, "use parallel compaction")
 DEFINE_BOOL(trace_incremental_marking, false,
             "trace progress of the incremental marking")
 DEFINE_BOOL(track_gc_object_stats, false,
@@ -711,7 +711,6 @@ DEFINE_BOOL(use_idle_notification, true,
 // ic.cc
 DEFINE_BOOL(use_ic, true, "use inline caching")
 DEFINE_BOOL(trace_ic, false, "trace inline cache state transitions")
-DEFINE_BOOL(vector_stores, true, "use vectors for store ics")
 
 // macro-assembler-ia32.cc
 DEFINE_BOOL(native_code_counters, false,
@@ -829,6 +828,7 @@ DEFINE_NEG_IMPLICATION(predictable, concurrent_recompilation)
 DEFINE_NEG_IMPLICATION(predictable, concurrent_osr)
 DEFINE_NEG_IMPLICATION(predictable, concurrent_sweeping)
 DEFINE_NEG_IMPLICATION(predictable, parallel_compaction)
+DEFINE_NEG_IMPLICATION(predictable, memory_reducer)
 
 // mark-compact.cc
 DEFINE_BOOL(force_marking_deque_overflows, false,
@@ -1076,7 +1076,7 @@ DEFINE_IMPLICATION(print_all_code, trace_codegen)
 
 DEFINE_BOOL(verify_predictable, false,
             "this mode is used for checking that V8 behaves predictably")
-DEFINE_INT(dump_allocations_digest_at_alloc, 0,
+DEFINE_INT(dump_allocations_digest_at_alloc, -1,
            "dump allocations digest each n-th allocation")
 
 

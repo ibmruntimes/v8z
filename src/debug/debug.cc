@@ -945,21 +945,22 @@ void Debug::PrepareStep(StepAction step_action,
       Handle<JSFunction> restarted_function(
           JSFunction::cast(*thread_local_.restarter_frame_function_pointer_));
       FloodWithOneShot(restarted_function);
-    } else if (location.IsCall()) {
+    } else if (location.IsStepInLocation()) {
       // Find target function on the expression stack.
       // Expression stack looks like this (top to bottom):
       // argN
       // ...
       // arg0
-      // Receiver
+      // Receiver (only present for calls, not for construct).
       // Function to call
+      int base = location.IsCall() ? 2 : 1;
       int num_expressions_without_args =
           frame->ComputeExpressionsCount() - location.CallArgumentsCount();
-      DCHECK(num_expressions_without_args >= 2);
-      Object* fun = frame->GetExpression(num_expressions_without_args - 2);
+      DCHECK(num_expressions_without_args >= base);
+      Object* fun = frame->GetExpression(num_expressions_without_args - base);
 
       // Flood the actual target of call/apply.
-      if (fun->IsJSFunction()) {
+      if (location.IsCall() && fun->IsJSFunction()) {
         Isolate* isolate = JSFunction::cast(fun)->GetIsolate();
         Code* apply = isolate->builtins()->builtin(Builtins::kFunctionApply);
         Code* call = isolate->builtins()->builtin(Builtins::kFunctionCall);
@@ -1085,7 +1086,7 @@ Handle<Object> Debug::GetSourceBreakLocations(
 
 
 // Handle stepping into a function.
-void Debug::HandleStepIn(Handle<Object> function_obj, bool is_constructor) {
+void Debug::HandleStepIn(Handle<Object> function_obj) {
   // Flood getter/setter if we either step in or step to another frame.
   bool step_frame = thread_local_.last_step_action_ == StepFrame;
   if (!StepInActive() && !step_frame) return;
@@ -1095,11 +1096,6 @@ void Debug::HandleStepIn(Handle<Object> function_obj, bool is_constructor) {
 
   StackFrameIterator it(isolate);
   it.Advance();
-  // For constructor functions skip another frame.
-  if (is_constructor) {
-    DCHECK(it.frame()->is_construct());
-    it.Advance();
-  }
   Address fp = it.frame()->fp();
 
   // Flood the function with one-shot break points if it is called from where
@@ -1311,7 +1307,7 @@ bool Debug::PrepareFunctionForBreakPoints(Handle<SharedFunctionInfo> shared) {
   {
     SharedFunctionInfo::Iterator iterator(isolate_);
     while (SharedFunctionInfo* shared = iterator.Next()) {
-      if (!shared->optimized_code_map()->IsSmi()) {
+      if (!shared->OptimizedCodeMapIsCleared()) {
         shared->ClearOptimizedCodeMap();
       }
     }
@@ -1381,6 +1377,7 @@ class SharedFunctionInfoFinder {
         target_position_(target_position) {}
 
   void NewCandidate(SharedFunctionInfo* shared, JSFunction* closure = NULL) {
+    if (!shared->IsSubjectToDebugging()) return;
     int start_position = shared->function_token_position();
     if (start_position == RelocInfo::kNoPosition) {
       start_position = shared->start_position();
@@ -1430,7 +1427,7 @@ class SharedFunctionInfoFinder {
 // cannot be compiled without context (need to find outer compilable SFI etc.)
 Handle<Object> Debug::FindSharedFunctionInfoInScript(Handle<Script> script,
                                                      int position) {
-  while (true) {
+  for (int iteration = 0;; iteration++) {
     // Go through all shared function infos associated with this script to
     // find the inner most function containing this position.
     // If there is no shared function info for this script at all, there is
@@ -1448,7 +1445,18 @@ Handle<Object> Debug::FindSharedFunctionInfoInScript(Handle<Script> script,
       shared = finder.Result();
       if (shared == NULL) break;
       // We found it if it's already compiled and has debug code.
-      if (shared->HasDebugCode()) return handle(shared);
+      if (shared->HasDebugCode()) {
+        Handle<SharedFunctionInfo> shared_handle(shared);
+        // If the iteration count is larger than 1, we had to compile the outer
+        // function in order to create this shared function info. So there can
+        // be no JSFunction referencing it. We can anticipate creating a debug
+        // info while bypassing PrepareFunctionForBreakpoints.
+        if (iteration > 1) {
+          AllowHeapAllocation allow_before_return;
+          CreateDebugInfo(shared_handle);
+        }
+        return shared_handle;
+      }
     }
     // If not, compile to reveal inner functions, if possible.
     if (shared->allows_lazy_compilation_without_context()) {
@@ -1513,6 +1521,13 @@ bool Debug::EnsureDebugInfo(Handle<SharedFunctionInfo> shared,
   shared->code()->ClearInlineCaches();
   shared->ClearTypeFeedbackInfo();
 
+  CreateDebugInfo(shared);
+
+  return true;
+}
+
+
+void Debug::CreateDebugInfo(Handle<SharedFunctionInfo> shared) {
   // Create the debug info object.
   DCHECK(shared->HasDebugCode());
   Handle<DebugInfo> debug_info = isolate_->factory()->NewDebugInfo(shared);
@@ -1521,8 +1536,6 @@ bool Debug::EnsureDebugInfo(Handle<SharedFunctionInfo> shared,
   DebugInfoListNode* node = new DebugInfoListNode(*debug_info);
   node->set_next(debug_info_list_);
   debug_info_list_ = node;
-
-  return true;
 }
 
 

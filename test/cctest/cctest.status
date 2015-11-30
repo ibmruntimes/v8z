@@ -308,6 +308,9 @@
   # BUG(v8:3154).
   'test-heap/ReleaseOverReservedPages': [PASS, FAIL],
 
+  # TODO(mips-team): Improve code-size on large RegExp's.
+  'test-heap/TestSizeOfRegExpCode':  [SKIP],
+
   # BUG(1075): Unresolved crashes on MIPS also.
   'test-serialize/Deserialize': [SKIP],
   'test-serialize/DeserializeFromSecondSerializationAndRunScript2': [SKIP],
@@ -449,6 +452,14 @@
   'test-log/EquivalenceOfLoggingAndTraversal' : [SKIP],
 
 }],  # 'system == aix and arch == ppc64'
+
+##############################################################################
+['system == aix or (arch == ppc64 and byteorder == big)', {
+
+  # Test currently broken for platforms with function desciptors
+  'test-run-machops/RunComputedCodeObject' : [SKIP],
+
+}],  # 'system == aix or (arch == ppc64 and byteorder == big)'
 
 ##############################################################################
 ['arch == ppc and simulator_run == True or arch == ppc64 and simulator_run == True', {

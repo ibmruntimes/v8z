@@ -23,6 +23,7 @@ const Register kInterpreterRegisterFileRegister = {Register::kCode_edx};
 const Register kInterpreterBytecodeOffsetRegister = {Register::kCode_ecx};
 const Register kInterpreterBytecodeArrayRegister = {Register::kCode_edi};
 const Register kJavaScriptCallArgCountRegister = {Register::kCode_eax};
+const Register kJavaScriptCallNewTargetRegister = {Register::kCode_edx};
 const Register kRuntimeCallFunctionRegister = {Register::kCode_ebx};
 const Register kRuntimeCallArgCountRegister = {Register::kCode_eax};
 
@@ -684,12 +685,11 @@ class MacroAssembler: public Assembler {
                  Register length,
                  Register scratch);
 
-  // Initialize fields with filler values.  Fields starting at |start_offset|
-  // not including end_offset are overwritten with the value in |filler|.  At
-  // the end the loop, |start_offset| takes the value of |end_offset|.
-  void InitializeFieldsWithFiller(Register start_offset,
-                                  Register end_offset,
-                                  Register filler);
+  // Initialize fields with filler values.  Fields starting at |current_address|
+  // not including |end_address| are overwritten with the value in |filler|.  At
+  // the end the loop, |current_address| takes the value of |end_address|.
+  void InitializeFieldsWithFiller(Register current_address,
+                                  Register end_address, Register filler);
 
   // ---------------------------------------------------------------------------
   // Support functions.
@@ -804,6 +804,7 @@ class MacroAssembler: public Assembler {
   void Push(const Operand& src) { push(src); }
   void Push(Immediate value) { push(value); }
   void Pop(Register dst) { pop(dst); }
+  void Pop(const Operand& dst) { pop(dst); }
   void PushReturnAddressFrom(Register src) { push(src); }
   void PopReturnAddressTo(Register dst) { pop(dst); }
 
@@ -959,8 +960,6 @@ class MacroAssembler: public Assembler {
   // Helper functions for generating invokes.
   void InvokePrologue(const ParameterCount& expected,
                       const ParameterCount& actual,
-                      Handle<Code> code_constant,
-                      const Operand& code_operand,
                       Label* done,
                       bool* definitely_mismatches,
                       InvokeFlag flag,

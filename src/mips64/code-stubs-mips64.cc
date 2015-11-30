@@ -1690,7 +1690,7 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
   __ Daddu(t1, t1, Operand(Heap::kSloppyArgumentsObjectSize));
 
   // Do the allocation of all three objects in one go.
-  __ Allocate(t1, v0, a4, t1, &runtime, TAG_OBJECT);
+  __ Allocate(t1, v0, t1, a4, &runtime, TAG_OBJECT);
 
   // v0 = address of new object(s) (tagged)
   // a2 = argument count (smi-tagged)
@@ -2423,19 +2423,16 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
 }
 
 
-static void CallStubInRecordCallTarget(MacroAssembler* masm, CodeStub* stub,
-                                       bool is_super) {
+static void CallStubInRecordCallTarget(MacroAssembler* masm, CodeStub* stub) {
   // a0 : number of arguments to the construct function
   // a2 : feedback vector
   // a3 : slot in feedback vector (Smi)
   // a1 : the function to call
-  // a4 : original constructor (for IsSuperConstructorCall)
   FrameScope scope(masm, StackFrame::INTERNAL);
-  const RegList kSavedRegs = 1 << 4 |                   // a0
-                             1 << 5 |                   // a1
-                             1 << 6 |                   // a2
-                             1 << 7 |                   // a3
-                             BoolToInt(is_super) << 8;  // a4
+  const RegList kSavedRegs = 1 << 4 |  // a0
+                             1 << 5 |  // a1
+                             1 << 6 |  // a2
+                             1 << 7;   // a3
 
 
   // Number-of-arguments register must be smi-tagged to call out.
@@ -2449,7 +2446,7 @@ static void CallStubInRecordCallTarget(MacroAssembler* masm, CodeStub* stub,
 }
 
 
-static void GenerateRecordCallTarget(MacroAssembler* masm, bool is_super) {
+static void GenerateRecordCallTarget(MacroAssembler* masm) {
   // Cache the called function in a feedback vector slot.  Cache states
   // are uninitialized, monomorphic (indicated by a JSFunction), and
   // megamorphic.
@@ -2457,7 +2454,6 @@ static void GenerateRecordCallTarget(MacroAssembler* masm, bool is_super) {
   // a1 : the function to call
   // a2 : feedback vector
   // a3 : slot in feedback vector (Smi)
-  // a4 : original constructor (for IsSuperConstructorCall)
   Label initialize, done, miss, megamorphic, not_array_function;
 
   DCHECK_EQ(*TypeFeedbackVector::MegamorphicSentinel(masm->isolate()),
@@ -2527,13 +2523,13 @@ static void GenerateRecordCallTarget(MacroAssembler* masm, bool is_super) {
   // Create an AllocationSite if we don't already have it, store it in the
   // slot.
   CreateAllocationSiteStub create_stub(masm->isolate());
-  CallStubInRecordCallTarget(masm, &create_stub, is_super);
+  CallStubInRecordCallTarget(masm, &create_stub);
   __ Branch(&done);
 
   __ bind(&not_array_function);
 
   CreateWeakCellStub weak_cell_stub(masm->isolate());
-  CallStubInRecordCallTarget(masm, &weak_cell_stub, is_super);
+  CallStubInRecordCallTarget(masm, &weak_cell_stub);
   __ bind(&done);
 }
 
@@ -2543,7 +2539,6 @@ void CallConstructStub::Generate(MacroAssembler* masm) {
   // a1 : the function to call
   // a2 : feedback vector
   // a3 : slot in feedback vector (Smi, for RecordCallTarget)
-  // a4 : original constructor (for IsSuperConstructorCall)
 
   Label non_function;
   // Check that the function is not a smi.
@@ -2552,29 +2547,23 @@ void CallConstructStub::Generate(MacroAssembler* masm) {
   __ GetObjectType(a1, a5, a5);
   __ Branch(&non_function, ne, a5, Operand(JS_FUNCTION_TYPE));
 
-  if (RecordCallTarget()) {
-    GenerateRecordCallTarget(masm, IsSuperConstructorCall());
+  GenerateRecordCallTarget(masm);
 
-    __ dsrl(at, a3, 32 - kPointerSizeLog2);
-    __ Daddu(a5, a2, at);
-    Label feedback_register_initialized;
-    // Put the AllocationSite from the feedback vector into a2, or undefined.
-    __ ld(a2, FieldMemOperand(a5, FixedArray::kHeaderSize));
-    __ ld(a5, FieldMemOperand(a2, AllocationSite::kMapOffset));
-    __ LoadRoot(at, Heap::kAllocationSiteMapRootIndex);
-    __ Branch(&feedback_register_initialized, eq, a5, Operand(at));
-    __ LoadRoot(a2, Heap::kUndefinedValueRootIndex);
-    __ bind(&feedback_register_initialized);
+  __ dsrl(at, a3, 32 - kPointerSizeLog2);
+  __ Daddu(a5, a2, at);
+  Label feedback_register_initialized;
+  // Put the AllocationSite from the feedback vector into a2, or undefined.
+  __ ld(a2, FieldMemOperand(a5, FixedArray::kHeaderSize));
+  __ ld(a5, FieldMemOperand(a2, AllocationSite::kMapOffset));
+  __ LoadRoot(at, Heap::kAllocationSiteMapRootIndex);
+  __ Branch(&feedback_register_initialized, eq, a5, Operand(at));
+  __ LoadRoot(a2, Heap::kUndefinedValueRootIndex);
+  __ bind(&feedback_register_initialized);
 
-    __ AssertUndefinedOrAllocationSite(a2, a5);
-  }
+  __ AssertUndefinedOrAllocationSite(a2, a5);
 
-  // Pass function as original constructor.
-  if (IsSuperConstructorCall()) {
-    __ mov(a3, a4);
-  } else {
-    __ mov(a3, a1);
-  }
+  // Pass function as new target.
+  __ mov(a3, a1);
 
   // Tail call to the function-specific construct stub (still in the caller
   // context at this point).
@@ -2661,7 +2650,7 @@ void CallICStub::Generate(MacroAssembler* masm) {
       FixedArray::OffsetOfElementAt(TypeFeedbackVector::kWithTypesIndex);
   const int generic_offset =
       FixedArray::OffsetOfElementAt(TypeFeedbackVector::kGenericCountIndex);
-  Label extra_checks_or_miss, call;
+  Label extra_checks_or_miss, call, call_function;
   int argc = arg_count();
   ParameterCount actual(argc);
 
@@ -2698,9 +2687,11 @@ void CallICStub::Generate(MacroAssembler* masm) {
   __ Daddu(t0, t0, Operand(Smi::FromInt(CallICNexus::kCallCountIncrement)));
   __ sd(t0, FieldMemOperand(a3, FixedArray::kHeaderSize + kPointerSize));
 
-  __ bind(&call);
-  __ li(a0, Operand(argc));
-  __ Jump(masm->isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
+  __ bind(&call_function);
+  __ Jump(masm->isolate()->builtins()->CallFunction(convert_mode()),
+          RelocInfo::CODE_TARGET, al, zero_reg, Operand(zero_reg),
+          USE_DELAY_SLOT);
+  __ li(a0, Operand(argc));  // In delay slot.
 
   __ bind(&extra_checks_or_miss);
   Label uninitialized, miss, not_allocation_site;
@@ -2741,8 +2732,13 @@ void CallICStub::Generate(MacroAssembler* masm) {
   __ sd(a4, FieldMemOperand(a2, with_types_offset));
   __ ld(a4, FieldMemOperand(a2, generic_offset));
   __ Daddu(a4, a4, Operand(Smi::FromInt(1)));
-  __ Branch(USE_DELAY_SLOT, &call);
-  __ sd(a4, FieldMemOperand(a2, generic_offset));  // In delay slot.
+  __ sd(a4, FieldMemOperand(a2, generic_offset));
+
+  __ bind(&call);
+  __ Jump(masm->isolate()->builtins()->Call(convert_mode()),
+          RelocInfo::CODE_TARGET, al, zero_reg, Operand(zero_reg),
+          USE_DELAY_SLOT);
+  __ li(a0, Operand(argc));  // In delay slot.
 
   __ bind(&uninitialized);
 
@@ -2757,6 +2753,13 @@ void CallICStub::Generate(MacroAssembler* masm) {
   // behavior on MISS.
   __ LoadGlobalFunction(Context::ARRAY_FUNCTION_INDEX, a4);
   __ Branch(&miss, eq, a1, Operand(a4));
+
+  // Make sure the function belongs to the same native context (which implies
+  // the same global object).
+  __ ld(t0, FieldMemOperand(a1, JSFunction::kContextOffset));
+  __ ld(t0, ContextOperand(t0, Context::GLOBAL_OBJECT_INDEX));
+  __ ld(t1, GlobalObjectOperand());
+  __ Branch(&miss, ne, t0, Operand(t1));
 
   // Update stats.
   __ ld(a4, FieldMemOperand(a2, with_types_offset));
@@ -2781,7 +2784,7 @@ void CallICStub::Generate(MacroAssembler* masm) {
     __ Pop(a1);
   }
 
-  __ Branch(&call);
+  __ Branch(&call_function);
 
   // We are here because tracing is on or we encountered a MISS case we can't
   // handle here.
@@ -4305,73 +4308,6 @@ void RecordWriteStub::CheckNeedsToInformIncrementalMarker(
 }
 
 
-void StoreArrayLiteralElementStub::Generate(MacroAssembler* masm) {
-  // ----------- S t a t e -------------
-  //  -- a0    : element value to store
-  //  -- a3    : element index as smi
-  //  -- sp[0] : array literal index in function as smi
-  //  -- sp[4] : array literal
-  // clobbers a1, a2, a4
-  // -----------------------------------
-
-  Label element_done;
-  Label double_elements;
-  Label smi_element;
-  Label slow_elements;
-  Label fast_elements;
-
-  // Get array literal index, array literal and its map.
-  __ ld(a4, MemOperand(sp, 0 * kPointerSize));
-  __ ld(a1, MemOperand(sp, 1 * kPointerSize));
-  __ ld(a2, FieldMemOperand(a1, JSObject::kMapOffset));
-
-  __ CheckFastElements(a2, a5, &double_elements);
-  // Check for FAST_*_SMI_ELEMENTS or FAST_*_ELEMENTS elements
-  __ JumpIfSmi(a0, &smi_element);
-  __ CheckFastSmiElements(a2, a5, &fast_elements);
-
-  // Store into the array literal requires a elements transition. Call into
-  // the runtime.
-  __ bind(&slow_elements);
-  // call.
-  __ Push(a1, a3, a0);
-  __ ld(a5, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
-  __ ld(a5, FieldMemOperand(a5, JSFunction::kLiteralsOffset));
-  __ Push(a5, a4);
-  __ TailCallRuntime(Runtime::kStoreArrayLiteralElement, 5, 1);
-
-  // Array literal has ElementsKind of FAST_*_ELEMENTS and value is an object.
-  __ bind(&fast_elements);
-  __ ld(a5, FieldMemOperand(a1, JSObject::kElementsOffset));
-  __ SmiScale(a6, a3, kPointerSizeLog2);
-  __ Daddu(a6, a5, a6);
-  __ Daddu(a6, a6, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
-  __ sd(a0, MemOperand(a6, 0));
-  // Update the write barrier for the array store.
-  __ RecordWrite(a5, a6, a0, kRAHasNotBeenSaved, kDontSaveFPRegs,
-                 EMIT_REMEMBERED_SET, OMIT_SMI_CHECK);
-  __ Ret(USE_DELAY_SLOT);
-  __ mov(v0, a0);
-
-  // Array literal has ElementsKind of FAST_*_SMI_ELEMENTS or FAST_*_ELEMENTS,
-  // and value is Smi.
-  __ bind(&smi_element);
-  __ ld(a5, FieldMemOperand(a1, JSObject::kElementsOffset));
-  __ SmiScale(a6, a3, kPointerSizeLog2);
-  __ Daddu(a6, a5, a6);
-  __ sd(a0, FieldMemOperand(a6, FixedArray::kHeaderSize));
-  __ Ret(USE_DELAY_SLOT);
-  __ mov(v0, a0);
-
-  // Array literal has ElementsKind of FAST_*_DOUBLE_ELEMENTS.
-  __ bind(&double_elements);
-  __ ld(a5, FieldMemOperand(a1, JSObject::kElementsOffset));
-  __ StoreNumberToDoubleElements(a0, a3, a5, a7, t1, &slow_elements);
-  __ Ret(USE_DELAY_SLOT);
-  __ mov(v0, a0);
-}
-
-
 void StubFailureTrampolineStub::Generate(MacroAssembler* masm) {
   CEntryStub ces(isolate(), 1, kSaveFPRegs);
   __ Call(ces.GetCode(), RelocInfo::CODE_TARGET);
@@ -5074,7 +5010,7 @@ void ArrayConstructorStub::Generate(MacroAssembler* masm) {
   //  -- a0 : argc (only if argument_count() == ANY)
   //  -- a1 : constructor
   //  -- a2 : AllocationSite or undefined
-  //  -- a3 : original constructor
+  //  -- a3 : new target
   //  -- sp[0] : last argument
   // -----------------------------------
 
@@ -5115,26 +5051,26 @@ void ArrayConstructorStub::Generate(MacroAssembler* masm) {
 
   // Subclassing.
   __ bind(&subclassing);
-  __ Push(a1);
-  __ Push(a3);
-
-  // Adjust argc.
   switch (argument_count()) {
     case ANY:
     case MORE_THAN_ONE:
-      __ li(at, Operand(2));
-      __ addu(a0, a0, at);
+      __ dsll(at, a0, kPointerSizeLog2);
+      __ Daddu(at, sp, at);
+      __ sd(a1, MemOperand(at));
+      __ li(at, Operand(3));
+      __ Daddu(a0, a0, at);
       break;
     case NONE:
-      __ li(a0, Operand(2));
-      break;
-    case ONE:
+      __ sd(a1, MemOperand(sp, 0 * kPointerSize));
       __ li(a0, Operand(3));
       break;
+    case ONE:
+      __ sd(a1, MemOperand(sp, 1 * kPointerSize));
+      __ li(a0, Operand(4));
+      break;
   }
-
-  __ JumpToExternalReference(
-      ExternalReference(Runtime::kArrayConstructorWithSubclassing, isolate()));
+  __ Push(a3, a2);
+  __ JumpToExternalReference(ExternalReference(Runtime::kNewArray, isolate()));
 }
 
 

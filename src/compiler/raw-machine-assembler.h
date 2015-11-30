@@ -56,15 +56,10 @@ class RawMachineAssembler {
 
   Isolate* isolate() const { return isolate_; }
   Graph* graph() const { return graph_; }
-  Schedule* schedule() { return schedule_; }
   Zone* zone() const { return graph()->zone(); }
   MachineOperatorBuilder* machine() { return &machine_; }
   CommonOperatorBuilder* common() { return &common_; }
   CallDescriptor* call_descriptor() const { return call_descriptor_; }
-  size_t parameter_count() const { return machine_sig()->parameter_count(); }
-  const MachineSignature* machine_sig() const {
-    return call_descriptor_->GetMachineSignature();
-  }
 
   // Finalizes the schedule and exports it to be used for code generation. Note
   // that this RawMachineAssembler becomes invalid after export.
@@ -443,6 +438,12 @@ class RawMachineAssembler {
   Node* ChangeFloat64ToUint32(Node* a) {
     return AddNode(machine()->ChangeFloat64ToUint32(), a);
   }
+  Node* TruncateFloat64ToInt64(Node* a) {
+    return AddNode(machine()->TruncateFloat64ToInt64(), a);
+  }
+  Node* TruncateFloat64ToUint64(Node* a) {
+    return AddNode(machine()->TruncateFloat64ToUint64(), a);
+  }
   Node* ChangeInt32ToInt64(Node* a) {
     return AddNode(machine()->ChangeInt32ToInt64(), a);
   }
@@ -458,8 +459,17 @@ class RawMachineAssembler {
   Node* TruncateInt64ToInt32(Node* a) {
     return AddNode(machine()->TruncateInt64ToInt32(), a);
   }
+  Node* RoundInt64ToFloat32(Node* a) {
+    return AddNode(machine()->RoundInt64ToFloat32(), a);
+  }
   Node* RoundInt64ToFloat64(Node* a) {
     return AddNode(machine()->RoundInt64ToFloat64(), a);
+  }
+  Node* RoundUint64ToFloat32(Node* a) {
+    return AddNode(machine()->RoundUint64ToFloat32(), a);
+  }
+  Node* RoundUint64ToFloat64(Node* a) {
+    return AddNode(machine()->RoundUint64ToFloat64(), a);
   }
   Node* BitcastFloat32ToInt32(Node* a) {
     return AddNode(machine()->BitcastFloat32ToInt32(), a);
@@ -476,11 +486,17 @@ class RawMachineAssembler {
   Node* Float64RoundDown(Node* a) {
     return AddNode(machine()->Float64RoundDown().op(), a);
   }
+  Node* Float64RoundUp(Node* a) {
+    return AddNode(machine()->Float64RoundUp().op(), a);
+  }
   Node* Float64RoundTruncate(Node* a) {
     return AddNode(machine()->Float64RoundTruncate().op(), a);
   }
   Node* Float64RoundTiesAway(Node* a) {
     return AddNode(machine()->Float64RoundTiesAway().op(), a);
+  }
+  Node* Float64RoundTiesEven(Node* a) {
+    return AddNode(machine()->Float64RoundTiesEven().op(), a);
   }
 
   // Float64 bit operations.
@@ -596,6 +612,12 @@ class RawMachineAssembler {
   BasicBlock* Use(Label* label);
   BasicBlock* EnsureBlock(Label* label);
   BasicBlock* CurrentBlock();
+
+  Schedule* schedule() { return schedule_; }
+  size_t parameter_count() const { return machine_sig()->parameter_count(); }
+  const MachineSignature* machine_sig() const {
+    return call_descriptor_->GetMachineSignature();
+  }
 
   Isolate* isolate_;
   Graph* graph_;

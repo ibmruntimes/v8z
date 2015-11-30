@@ -62,7 +62,6 @@ class LChunkBuilder;
   V(CallWithDescriptor)                       \
   V(CallJSFunction)                           \
   V(CallFunction)                             \
-  V(CallNew)                                  \
   V(CallNewArray)                             \
   V(CallRuntime)                              \
   V(CallStub)                                 \
@@ -2426,21 +2425,6 @@ class HCallFunction final : public HBinaryCall {
   Handle<TypeFeedbackVector> feedback_vector_;
   FeedbackVectorSlot slot_;
   ConvertReceiverMode convert_mode_;
-};
-
-
-class HCallNew final : public HBinaryCall {
- public:
-  DECLARE_INSTRUCTION_WITH_CONTEXT_FACTORY_P2(HCallNew, HValue*, int);
-
-  HValue* context() { return first(); }
-  HValue* constructor() { return second(); }
-
-  DECLARE_CONCRETE_INSTRUCTION(CallNew)
-
- private:
-  HCallNew(HValue* context, HValue* constructor, int argument_count)
-      : HBinaryCall(context, constructor, argument_count) {}
 };
 
 
@@ -6954,7 +6938,7 @@ class HStoreNamedGeneric final : public HTemplateInstruction<3> {
   Handle<TypeFeedbackVector> feedback_vector() const {
     return feedback_vector_;
   }
-  bool HasVectorAndSlot() const { return FLAG_vector_stores; }
+  bool HasVectorAndSlot() const { return true; }
   void SetVectorAndSlot(Handle<TypeFeedbackVector> vector,
                         FeedbackVectorSlot slot) {
     feedback_vector_ = vector;
@@ -7180,8 +7164,6 @@ class HStoreKeyedGeneric final : public HTemplateInstruction<4> {
     return feedback_vector_;
   }
   bool HasVectorAndSlot() const {
-    DCHECK(!(FLAG_vector_stores && initialization_state_ != MEGAMORPHIC) ||
-           !feedback_vector_.is_null());
     return !feedback_vector_.is_null();
   }
   void SetVectorAndSlot(Handle<TypeFeedbackVector> vector,

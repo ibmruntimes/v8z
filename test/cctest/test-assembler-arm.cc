@@ -25,6 +25,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+// TODO(jochen): Remove this after the setting is turned on globally.
+#define V8_IMMINENT_DEPRECATION_WARNINGS
+
 #include <iostream>  // NOLINT(readability/streams)
 
 #include "src/v8.h"
@@ -69,7 +72,8 @@ TEST(0) {
   code->Print(os);
 #endif
   F2 f = FUNCTION_CAST<F2>(code->entry());
-  int res = reinterpret_cast<int>(CALL_GENERATED_CODE(f, 3, 4, 0, 0, 0));
+  int res =
+      reinterpret_cast<int>(CALL_GENERATED_CODE(isolate, f, 3, 4, 0, 0, 0));
   ::printf("f() = %d\n", res);
   CHECK_EQ(7, res);
 }
@@ -105,7 +109,8 @@ TEST(1) {
   code->Print(os);
 #endif
   F1 f = FUNCTION_CAST<F1>(code->entry());
-  int res = reinterpret_cast<int>(CALL_GENERATED_CODE(f, 100, 0, 0, 0, 0));
+  int res =
+      reinterpret_cast<int>(CALL_GENERATED_CODE(isolate, f, 100, 0, 0, 0, 0));
   ::printf("f() = %d\n", res);
   CHECK_EQ(5050, res);
 }
@@ -150,7 +155,8 @@ TEST(2) {
   code->Print(os);
 #endif
   F1 f = FUNCTION_CAST<F1>(code->entry());
-  int res = reinterpret_cast<int>(CALL_GENERATED_CODE(f, 10, 0, 0, 0, 0));
+  int res =
+      reinterpret_cast<int>(CALL_GENERATED_CODE(isolate, f, 10, 0, 0, 0, 0));
   ::printf("f() = %d\n", res);
   CHECK_EQ(3628800, res);
 }
@@ -200,7 +206,8 @@ TEST(3) {
   t.i = 100000;
   t.c = 10;
   t.s = 1000;
-  int res = reinterpret_cast<int>(CALL_GENERATED_CODE(f, &t, 0, 0, 0, 0));
+  int res =
+      reinterpret_cast<int>(CALL_GENERATED_CODE(isolate, f, &t, 0, 0, 0, 0));
   ::printf("f() = %d\n", res);
   CHECK_EQ(101010, res);
   CHECK_EQ(100000/2, t.i);
@@ -335,7 +342,7 @@ TEST(4) {
     t.n = 123.456;
     t.x = 4.5;
     t.y = 9.0;
-    Object* dummy = CALL_GENERATED_CODE(f, &t, 0, 0, 0, 0);
+    Object* dummy = CALL_GENERATED_CODE(isolate, f, &t, 0, 0, 0, 0);
     USE(dummy);
     CHECK_EQ(-123.456, t.n);
     CHECK_EQ(2718.2818, t.m);
@@ -383,7 +390,7 @@ TEST(5) {
 #endif
     F1 f = FUNCTION_CAST<F1>(code->entry());
     int res = reinterpret_cast<int>(
-                CALL_GENERATED_CODE(f, 0xAAAAAAAA, 0, 0, 0, 0));
+        CALL_GENERATED_CODE(isolate, f, 0xAAAAAAAA, 0, 0, 0, 0));
     ::printf("f() = %d\n", res);
     CHECK_EQ(-7, res);
   }
@@ -417,7 +424,7 @@ TEST(6) {
 #endif
     F1 f = FUNCTION_CAST<F1>(code->entry());
     int res = reinterpret_cast<int>(
-                CALL_GENERATED_CODE(f, 0xFFFF, 0, 0, 0, 0));
+        CALL_GENERATED_CODE(isolate, f, 0xFFFF, 0, 0, 0, 0));
     ::printf("f() = %d\n", res);
     CHECK_EQ(382, res);
   }
@@ -490,8 +497,8 @@ static void TestRoundingMode(VCVTTypes types,
     code->Print(os);
 #endif
     F1 f = FUNCTION_CAST<F1>(code->entry());
-    int res = reinterpret_cast<int>(
-                CALL_GENERATED_CODE(f, 0, 0, 0, 0, 0));
+    int res =
+        reinterpret_cast<int>(CALL_GENERATED_CODE(isolate, f, 0, 0, 0, 0, 0));
     ::printf("res = %d\n", res);
     CHECK_EQ(expected, res);
   }
@@ -692,7 +699,7 @@ TEST(8) {
   f.g = 7.0;
   f.h = 8.0;
 
-  Object* dummy = CALL_GENERATED_CODE(fn, &d, &f, 0, 0, 0);
+  Object* dummy = CALL_GENERATED_CODE(isolate, fn, &d, &f, 0, 0, 0);
   USE(dummy);
 
   CHECK_EQ(7.7, d.a);
@@ -802,7 +809,7 @@ TEST(9) {
   f.g = 7.0;
   f.h = 8.0;
 
-  Object* dummy = CALL_GENERATED_CODE(fn, &d, &f, 0, 0, 0);
+  Object* dummy = CALL_GENERATED_CODE(isolate, fn, &d, &f, 0, 0, 0);
   USE(dummy);
 
   CHECK_EQ(7.7, d.a);
@@ -908,7 +915,7 @@ TEST(10) {
   f.g = 7.0;
   f.h = 8.0;
 
-  Object* dummy = CALL_GENERATED_CODE(fn, &d, &f, 0, 0, 0);
+  Object* dummy = CALL_GENERATED_CODE(isolate, fn, &d, &f, 0, 0, 0);
   USE(dummy);
 
   CHECK_EQ(7.7, d.a);
@@ -985,7 +992,7 @@ TEST(11) {
   code->Print(os);
 #endif
   F3 f = FUNCTION_CAST<F3>(code->entry());
-  Object* dummy = CALL_GENERATED_CODE(f, &i, 0, 0, 0, 0);
+  Object* dummy = CALL_GENERATED_CODE(isolate, f, &i, 0, 0, 0, 0);
   USE(dummy);
 
   CHECK_EQ(static_cast<int32_t>(0xabcd0001), i.a);
@@ -1119,7 +1126,7 @@ TEST(13) {
     t.x = 1.5;
     t.y = 2.75;
     t.z = 17.17;
-    Object* dummy = CALL_GENERATED_CODE(f, &t, 0, 0, 0, 0);
+    Object* dummy = CALL_GENERATED_CODE(isolate, f, &t, 0, 0, 0, 0);
     USE(dummy);
     CHECK_EQ(14.7610017472335499, t.a);
     CHECK_EQ(3.84200491244266251, t.b);
@@ -1192,7 +1199,7 @@ TEST(14) {
   t.sub_result = 0;
   t.mul_result = 0;
   t.div_result = 0;
-  Object* dummy = CALL_GENERATED_CODE(f, &t, 0, 0, 0, 0);
+  Object* dummy = CALL_GENERATED_CODE(isolate, f, &t, 0, 0, 0, 0);
   USE(dummy);
   const uint32_t kArmNanUpper32 = 0x7ff80000;
   const uint32_t kArmNanLower32 = 0x00000000;
@@ -1320,7 +1327,7 @@ TEST(15) {
     t.dstA5 = 0;
     t.dstA6 = 0;
     t.dstA7 = 0;
-    Object* dummy = CALL_GENERATED_CODE(f, &t, 0, 0, 0, 0);
+    Object* dummy = CALL_GENERATED_CODE(isolate, f, &t, 0, 0, 0, 0);
     USE(dummy);
     CHECK_EQ(0x01020304u, t.dst0);
     CHECK_EQ(0x11121314u, t.dst1);
@@ -1405,7 +1412,7 @@ TEST(16) {
   t.dst2 = 0;
   t.dst3 = 0;
   t.dst4 = 0;
-  Object* dummy = CALL_GENERATED_CODE(f, &t, 0, 0, 0, 0);
+  Object* dummy = CALL_GENERATED_CODE(isolate, f, &t, 0, 0, 0, 0);
   USE(dummy);
   CHECK_EQ(0x12130304u, t.dst0);
   CHECK_EQ(0x01021213u, t.dst1);
@@ -1435,12 +1442,12 @@ TEST(17) {
 }
 
 
-#define TEST_SDIV(expected_, dividend_, divisor_) \
-    t.dividend = dividend_; \
-    t.divisor = divisor_; \
-    t.result = 0; \
-    dummy = CALL_GENERATED_CODE(f, &t, 0, 0, 0, 0); \
-    CHECK_EQ(expected_, t.result);
+#define TEST_SDIV(expected_, dividend_, divisor_)          \
+  t.dividend = dividend_;                                  \
+  t.divisor = divisor_;                                    \
+  t.result = 0;                                            \
+  dummy = CALL_GENERATED_CODE(isolate, f, &t, 0, 0, 0, 0); \
+  CHECK_EQ(expected_, t.result);
 
 
 TEST(sdiv) {
@@ -1499,11 +1506,11 @@ TEST(sdiv) {
 #undef TEST_SDIV
 
 
-#define TEST_UDIV(expected_, dividend_, divisor_) \
-  t.dividend = dividend_;                         \
-  t.divisor = divisor_;                           \
-  t.result = 0;                                   \
-  dummy = CALL_GENERATED_CODE(f, &t, 0, 0, 0, 0); \
+#define TEST_UDIV(expected_, dividend_, divisor_)          \
+  t.dividend = dividend_;                                  \
+  t.divisor = divisor_;                                    \
+  t.result = 0;                                            \
+  dummy = CALL_GENERATED_CODE(isolate, f, &t, 0, 0, 0, 0); \
   CHECK_EQ(expected_, t.result);
 
 
@@ -1574,7 +1581,7 @@ TEST(smmla) {
   F3 f = FUNCTION_CAST<F3>(code->entry());
   for (size_t i = 0; i < 128; ++i) {
     int32_t r, x = rng->NextInt(), y = rng->NextInt(), z = rng->NextInt();
-    Object* dummy = CALL_GENERATED_CODE(f, &r, x, y, z, 0);
+    Object* dummy = CALL_GENERATED_CODE(isolate, f, &r, x, y, z, 0);
     CHECK_EQ(bits::SignedMulHighAndAdd32(x, y, z), r);
     USE(dummy);
   }
@@ -1600,7 +1607,7 @@ TEST(smmul) {
   F3 f = FUNCTION_CAST<F3>(code->entry());
   for (size_t i = 0; i < 128; ++i) {
     int32_t r, x = rng->NextInt(), y = rng->NextInt();
-    Object* dummy = CALL_GENERATED_CODE(f, &r, x, y, 0, 0);
+    Object* dummy = CALL_GENERATED_CODE(isolate, f, &r, x, y, 0, 0);
     CHECK_EQ(bits::SignedMulHigh32(x, y), r);
     USE(dummy);
   }
@@ -1626,7 +1633,7 @@ TEST(sxtb) {
   F3 f = FUNCTION_CAST<F3>(code->entry());
   for (size_t i = 0; i < 128; ++i) {
     int32_t r, x = rng->NextInt();
-    Object* dummy = CALL_GENERATED_CODE(f, &r, x, 0, 0, 0);
+    Object* dummy = CALL_GENERATED_CODE(isolate, f, &r, x, 0, 0, 0);
     CHECK_EQ(static_cast<int32_t>(static_cast<int8_t>(x)), r);
     USE(dummy);
   }
@@ -1652,7 +1659,7 @@ TEST(sxtab) {
   F3 f = FUNCTION_CAST<F3>(code->entry());
   for (size_t i = 0; i < 128; ++i) {
     int32_t r, x = rng->NextInt(), y = rng->NextInt();
-    Object* dummy = CALL_GENERATED_CODE(f, &r, x, y, 0, 0);
+    Object* dummy = CALL_GENERATED_CODE(isolate, f, &r, x, y, 0, 0);
     CHECK_EQ(static_cast<int32_t>(static_cast<int8_t>(x)) + y, r);
     USE(dummy);
   }
@@ -1678,7 +1685,7 @@ TEST(sxth) {
   F3 f = FUNCTION_CAST<F3>(code->entry());
   for (size_t i = 0; i < 128; ++i) {
     int32_t r, x = rng->NextInt();
-    Object* dummy = CALL_GENERATED_CODE(f, &r, x, 0, 0, 0);
+    Object* dummy = CALL_GENERATED_CODE(isolate, f, &r, x, 0, 0, 0);
     CHECK_EQ(static_cast<int32_t>(static_cast<int16_t>(x)), r);
     USE(dummy);
   }
@@ -1704,7 +1711,7 @@ TEST(sxtah) {
   F3 f = FUNCTION_CAST<F3>(code->entry());
   for (size_t i = 0; i < 128; ++i) {
     int32_t r, x = rng->NextInt(), y = rng->NextInt();
-    Object* dummy = CALL_GENERATED_CODE(f, &r, x, y, 0, 0);
+    Object* dummy = CALL_GENERATED_CODE(isolate, f, &r, x, y, 0, 0);
     CHECK_EQ(static_cast<int32_t>(static_cast<int16_t>(x)) + y, r);
     USE(dummy);
   }
@@ -1730,7 +1737,7 @@ TEST(uxtb) {
   F3 f = FUNCTION_CAST<F3>(code->entry());
   for (size_t i = 0; i < 128; ++i) {
     int32_t r, x = rng->NextInt();
-    Object* dummy = CALL_GENERATED_CODE(f, &r, x, 0, 0, 0);
+    Object* dummy = CALL_GENERATED_CODE(isolate, f, &r, x, 0, 0, 0);
     CHECK_EQ(static_cast<int32_t>(static_cast<uint8_t>(x)), r);
     USE(dummy);
   }
@@ -1756,7 +1763,7 @@ TEST(uxtab) {
   F3 f = FUNCTION_CAST<F3>(code->entry());
   for (size_t i = 0; i < 128; ++i) {
     int32_t r, x = rng->NextInt(), y = rng->NextInt();
-    Object* dummy = CALL_GENERATED_CODE(f, &r, x, y, 0, 0);
+    Object* dummy = CALL_GENERATED_CODE(isolate, f, &r, x, y, 0, 0);
     CHECK_EQ(static_cast<int32_t>(static_cast<uint8_t>(x)) + y, r);
     USE(dummy);
   }
@@ -1782,7 +1789,7 @@ TEST(uxth) {
   F3 f = FUNCTION_CAST<F3>(code->entry());
   for (size_t i = 0; i < 128; ++i) {
     int32_t r, x = rng->NextInt();
-    Object* dummy = CALL_GENERATED_CODE(f, &r, x, 0, 0, 0);
+    Object* dummy = CALL_GENERATED_CODE(isolate, f, &r, x, 0, 0, 0);
     CHECK_EQ(static_cast<int32_t>(static_cast<uint16_t>(x)), r);
     USE(dummy);
   }
@@ -1808,7 +1815,7 @@ TEST(uxtah) {
   F3 f = FUNCTION_CAST<F3>(code->entry());
   for (size_t i = 0; i < 128; ++i) {
     int32_t r, x = rng->NextInt(), y = rng->NextInt();
-    Object* dummy = CALL_GENERATED_CODE(f, &r, x, y, 0, 0);
+    Object* dummy = CALL_GENERATED_CODE(isolate, f, &r, x, y, 0, 0);
     CHECK_EQ(static_cast<int32_t>(static_cast<uint16_t>(x)) + y, r);
     USE(dummy);
   }
@@ -1880,7 +1887,8 @@ TEST(code_relative_offset) {
   Handle<Code> code = isolate->factory()->NewCode(
       desc, Code::ComputeFlags(Code::STUB), code_object);
   F1 f = FUNCTION_CAST<F1>(code->entry());
-  int res = reinterpret_cast<int>(CALL_GENERATED_CODE(f, 21, 0, 0, 0, 0));
+  int res =
+      reinterpret_cast<int>(CALL_GENERATED_CODE(isolate, f, 21, 0, 0, 0, 0));
   ::printf("f() = %d\n", res);
   CHECK_EQ(42, res);
 }
@@ -1958,7 +1966,7 @@ TEST(ARMv8_vrintX) {
 
 #define CHECK_VRINT(input_val, ares, nres, mres, pres, zres) \
   t.input = input_val;                                       \
-  dummy = CALL_GENERATED_CODE(f, &t, 0, 0, 0, 0);            \
+  dummy = CALL_GENERATED_CODE(isolate, f, &t, 0, 0, 0, 0);   \
   CHECK_EQ(ares, t.ar);                                      \
   CHECK_EQ(nres, t.nr);                                      \
   CHECK_EQ(mres, t.mr);                                      \
@@ -1979,7 +1987,7 @@ TEST(ARMv8_vrintX) {
     // Check NaN propagation.
     double nan = std::numeric_limits<double>::quiet_NaN();
     t.input = nan;
-    dummy = CALL_GENERATED_CODE(f, &t, 0, 0, 0, 0);
+    dummy = CALL_GENERATED_CODE(isolate, f, &t, 0, 0, 0, 0);
     CHECK_EQ(bit_cast<int64_t>(nan), bit_cast<int64_t>(t.ar));
     CHECK_EQ(bit_cast<int64_t>(nan), bit_cast<int64_t>(t.nr));
     CHECK_EQ(bit_cast<int64_t>(nan), bit_cast<int64_t>(t.mr));

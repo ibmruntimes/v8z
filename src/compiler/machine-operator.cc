@@ -34,6 +34,10 @@ std::ostream& operator<<(std::ostream& os, WriteBarrierKind kind) {
   switch (kind) {
     case kNoWriteBarrier:
       return os << "NoWriteBarrier";
+    case kMapWriteBarrier:
+      return os << "MapWriteBarrier";
+    case kPointerWriteBarrier:
+      return os << "PointerWriteBarrier";
     case kFullWriteBarrier:
       return os << "FullWriteBarrier";
   }
@@ -131,8 +135,13 @@ CheckedStoreRepresentation CheckedStoreRepresentationOf(Operator const* op) {
   V(ChangeFloat32ToFloat64, Operator::kNoProperties, 1, 0, 1)                 \
   V(ChangeFloat64ToInt32, Operator::kNoProperties, 1, 0, 1)                   \
   V(ChangeFloat64ToUint32, Operator::kNoProperties, 1, 0, 1)                  \
+  V(TruncateFloat64ToInt64, Operator::kNoProperties, 1, 0, 1)                 \
+  V(TruncateFloat64ToUint64, Operator::kNoProperties, 1, 0, 1)                \
   V(ChangeInt32ToFloat64, Operator::kNoProperties, 1, 0, 1)                   \
+  V(RoundInt64ToFloat32, Operator::kNoProperties, 1, 0, 1)                    \
   V(RoundInt64ToFloat64, Operator::kNoProperties, 1, 0, 1)                    \
+  V(RoundUint64ToFloat32, Operator::kNoProperties, 1, 0, 1)                   \
+  V(RoundUint64ToFloat64, Operator::kNoProperties, 1, 0, 1)                   \
   V(ChangeInt32ToInt64, Operator::kNoProperties, 1, 0, 1)                     \
   V(ChangeUint32ToFloat64, Operator::kNoProperties, 1, 0, 1)                  \
   V(ChangeUint32ToUint64, Operator::kNoProperties, 1, 0, 1)                   \
@@ -170,14 +179,18 @@ CheckedStoreRepresentation CheckedStoreRepresentationOf(Operator const* op) {
 
 #define PURE_OPTIONAL_OP_LIST(V)                            \
   V(Word32Ctz, Operator::kNoProperties, 1, 0, 1)            \
+  V(Word64Ctz, Operator::kNoProperties, 1, 0, 1)            \
   V(Word32Popcnt, Operator::kNoProperties, 1, 0, 1)         \
+  V(Word64Popcnt, Operator::kNoProperties, 1, 0, 1)         \
   V(Float32Max, Operator::kNoProperties, 2, 0, 1)           \
   V(Float32Min, Operator::kNoProperties, 2, 0, 1)           \
   V(Float64Max, Operator::kNoProperties, 2, 0, 1)           \
   V(Float64Min, Operator::kNoProperties, 2, 0, 1)           \
   V(Float64RoundDown, Operator::kNoProperties, 1, 0, 1)     \
+  V(Float64RoundUp, Operator::kNoProperties, 1, 0, 1)       \
   V(Float64RoundTruncate, Operator::kNoProperties, 1, 0, 1) \
-  V(Float64RoundTiesAway, Operator::kNoProperties, 1, 0, 1)
+  V(Float64RoundTiesAway, Operator::kNoProperties, 1, 0, 1) \
+  V(Float64RoundTiesEven, Operator::kNoProperties, 1, 0, 1)
 
 
 #define MACHINE_TYPE_LIST(V) \
@@ -254,6 +267,16 @@ struct MachineOperatorGlobalCache {
     Store##Type##NoWriteBarrier##Operator()                                    \
         : Store##Type##Operator(kNoWriteBarrier) {}                            \
   };                                                                           \
+  struct Store##Type##MapWriteBarrier##Operator final                          \
+      : public Store##Type##Operator {                                         \
+    Store##Type##MapWriteBarrier##Operator()                                   \
+        : Store##Type##Operator(kMapWriteBarrier) {}                           \
+  };                                                                           \
+  struct Store##Type##PointerWriteBarrier##Operator final                      \
+      : public Store##Type##Operator {                                         \
+    Store##Type##PointerWriteBarrier##Operator()                               \
+        : Store##Type##Operator(kPointerWriteBarrier) {}                       \
+  };                                                                           \
   struct Store##Type##FullWriteBarrier##Operator final                         \
       : public Store##Type##Operator {                                         \
     Store##Type##FullWriteBarrier##Operator()                                  \
@@ -267,6 +290,9 @@ struct MachineOperatorGlobalCache {
               "CheckedStore", 4, 1, 1, 0, 1, 0, k##Type) {}                    \
   };                                                                           \
   Store##Type##NoWriteBarrier##Operator kStore##Type##NoWriteBarrier;          \
+  Store##Type##MapWriteBarrier##Operator kStore##Type##MapWriteBarrier;        \
+  Store##Type##PointerWriteBarrier##Operator                                   \
+      kStore##Type##PointerWriteBarrier;                                       \
   Store##Type##FullWriteBarrier##Operator kStore##Type##FullWriteBarrier;      \
   CheckedStore##Type##Operator kCheckedStore##Type;
   MACHINE_TYPE_LIST(STORE)
@@ -330,14 +356,18 @@ const Operator* MachineOperatorBuilder::Load(LoadRepresentation rep) {
 
 const Operator* MachineOperatorBuilder::Store(StoreRepresentation rep) {
   switch (rep.machine_type()) {
-#define STORE(Type)                                      \
-  case k##Type:                                          \
-    switch (rep.write_barrier_kind()) {                  \
-      case kNoWriteBarrier:                              \
-        return &cache_.k##Store##Type##NoWriteBarrier;   \
-      case kFullWriteBarrier:                            \
-        return &cache_.k##Store##Type##FullWriteBarrier; \
-    }                                                    \
+#define STORE(Type)                                         \
+  case k##Type:                                             \
+    switch (rep.write_barrier_kind()) {                     \
+      case kNoWriteBarrier:                                 \
+        return &cache_.k##Store##Type##NoWriteBarrier;      \
+      case kMapWriteBarrier:                                \
+        return &cache_.k##Store##Type##MapWriteBarrier;     \
+      case kPointerWriteBarrier:                            \
+        return &cache_.k##Store##Type##PointerWriteBarrier; \
+      case kFullWriteBarrier:                               \
+        return &cache_.k##Store##Type##FullWriteBarrier;    \
+    }                                                       \
     break;
     MACHINE_TYPE_LIST(STORE)
 #undef STORE

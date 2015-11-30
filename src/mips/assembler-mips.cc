@@ -1367,10 +1367,12 @@ void Assembler::bgezalc(Register rt, int16_t offset) {
 
 
 void Assembler::bgezall(Register rs, int16_t offset) {
-  DCHECK(IsMipsArchVariant(kMips32r6));
+  DCHECK(!IsMipsArchVariant(kMips32r6));
   DCHECK(!(rs.is(zero_reg)));
+  BlockTrampolinePoolScope block_trampoline_pool(this);
   positions_recorder()->WriteRecordedPositions();
   GenInstrImmediate(REGIMM, rs, BGEZALL, offset);
+  BlockTrampolinePoolFor(1);  // For associated delay slot.
 }
 
 
@@ -1423,7 +1425,6 @@ void Assembler::beqc(Register rs, Register rt, int16_t offset) {
 void Assembler::beqzc(Register rs, int32_t offset) {
   DCHECK(IsMipsArchVariant(kMips32r6));
   DCHECK(!(rs.is(zero_reg)));
-  DCHECK(is_int21(offset));
   GenInstrImmediate(POP66, rs, offset, CompactBranchType::COMPACT_BRANCH);
 }
 
@@ -1442,7 +1443,6 @@ void Assembler::bnec(Register rs, Register rt, int16_t offset) {
 void Assembler::bnezc(Register rs, int32_t offset) {
   DCHECK(IsMipsArchVariant(kMips32r6));
   DCHECK(!(rs.is(zero_reg)));
-  DCHECK(is_int21(offset));
   GenInstrImmediate(POP76, rs, offset, CompactBranchType::COMPACT_BRANCH);
 }
 
@@ -1455,7 +1455,9 @@ void Assembler::j(int32_t target) {
                    (kImm26Bits + kImmFieldShift)) == 0;
   DCHECK(in_range && ((target & 3) == 0));
 #endif
+  BlockTrampolinePoolScope block_trampoline_pool(this);
   GenInstrJump(J, (target >> 2) & kImm26Mask);
+  BlockTrampolinePoolFor(1);  // For associated delay slot.
 }
 
 
@@ -1481,8 +1483,10 @@ void Assembler::jal(int32_t target) {
                    (kImm26Bits + kImmFieldShift)) == 0;
   DCHECK(in_range && ((target & 3) == 0));
 #endif
+  BlockTrampolinePoolScope block_trampoline_pool(this);
   positions_recorder()->WriteRecordedPositions();
   GenInstrJump(JAL, (target >> 2) & kImm26Mask);
+  BlockTrampolinePoolFor(1);  // For associated delay slot.
 }
 
 
@@ -1497,16 +1501,14 @@ void Assembler::jalr(Register rs, Register rd) {
 
 void Assembler::jic(Register rt, int16_t offset) {
   DCHECK(IsMipsArchVariant(kMips32r6));
-  GenInstrImmediate(POP66, zero_reg, rt, offset,
-                    CompactBranchType::COMPACT_BRANCH);
+  GenInstrImmediate(POP66, zero_reg, rt, offset);
 }
 
 
 void Assembler::jialc(Register rt, int16_t offset) {
   DCHECK(IsMipsArchVariant(kMips32r6));
   positions_recorder()->WriteRecordedPositions();
-  GenInstrImmediate(POP76, zero_reg, rt, offset,
-                    CompactBranchType::COMPACT_BRANCH);
+  GenInstrImmediate(POP76, zero_reg, rt, offset);
 }
 
 
@@ -2192,13 +2194,13 @@ void Assembler::DoubleAsTwoUInt32(double d, uint32_t* lo, uint32_t* hi) {
 
 
 void Assembler::movn_s(FPURegister fd, FPURegister fs, Register rt) {
-  DCHECK(IsMipsArchVariant(kMips32r2));
+  DCHECK(!IsMipsArchVariant(kMips32r6));
   GenInstrRegister(COP1, S, rt, fs, fd, MOVN_C);
 }
 
 
 void Assembler::movn_d(FPURegister fd, FPURegister fs, Register rt) {
-  DCHECK(IsMipsArchVariant(kMips32r2));
+  DCHECK(!IsMipsArchVariant(kMips32r6));
   GenInstrRegister(COP1, D, rt, fs, fd, MOVN_C);
 }
 
@@ -2265,19 +2267,19 @@ void Assembler::selnez_s(FPURegister fd, FPURegister fs, FPURegister ft) {
 
 
 void Assembler::movz_s(FPURegister fd, FPURegister fs, Register rt) {
-  DCHECK(IsMipsArchVariant(kMips32r2));
+  DCHECK(!IsMipsArchVariant(kMips32r6));
   GenInstrRegister(COP1, S, rt, fs, fd, MOVZ_C);
 }
 
 
 void Assembler::movz_d(FPURegister fd, FPURegister fs, Register rt) {
-  DCHECK(IsMipsArchVariant(kMips32r2));
+  DCHECK(!IsMipsArchVariant(kMips32r6));
   GenInstrRegister(COP1, D, rt, fs, fd, MOVZ_C);
 }
 
 
 void Assembler::movt_s(FPURegister fd, FPURegister fs, uint16_t cc) {
-  DCHECK(IsMipsArchVariant(kMips32r2));
+  DCHECK(!IsMipsArchVariant(kMips32r6));
   FPURegister ft;
   ft.reg_code = (cc & 0x0007) << 2 | 1;
   GenInstrRegister(COP1, S, ft, fs, fd, MOVF);
@@ -2285,7 +2287,7 @@ void Assembler::movt_s(FPURegister fd, FPURegister fs, uint16_t cc) {
 
 
 void Assembler::movt_d(FPURegister fd, FPURegister fs, uint16_t cc) {
-  DCHECK(IsMipsArchVariant(kMips32r2));
+  DCHECK(!IsMipsArchVariant(kMips32r6));
   FPURegister ft;
   ft.reg_code = (cc & 0x0007) << 2 | 1;
   GenInstrRegister(COP1, D, ft, fs, fd, MOVF);
@@ -2293,7 +2295,7 @@ void Assembler::movt_d(FPURegister fd, FPURegister fs, uint16_t cc) {
 
 
 void Assembler::movf_s(FPURegister fd, FPURegister fs, uint16_t cc) {
-  DCHECK(IsMipsArchVariant(kMips32r2));
+  DCHECK(!IsMipsArchVariant(kMips32r6));
   FPURegister ft;
   ft.reg_code = (cc & 0x0007) << 2 | 0;
   GenInstrRegister(COP1, S, ft, fs, fd, MOVF);
@@ -2301,7 +2303,7 @@ void Assembler::movf_s(FPURegister fd, FPURegister fs, uint16_t cc) {
 
 
 void Assembler::movf_d(FPURegister fd, FPURegister fs, uint16_t cc) {
-  DCHECK(IsMipsArchVariant(kMips32r2));
+  DCHECK(!IsMipsArchVariant(kMips32r6));
   FPURegister ft;
   ft.reg_code = (cc & 0x0007) << 2 | 0;
   GenInstrRegister(COP1, D, ft, fs, fd, MOVF);
@@ -2487,55 +2489,71 @@ void Assembler::rint_d(FPURegister fd, FPURegister fs) { rint(D, fd, fs); }
 
 
 void Assembler::cvt_l_s(FPURegister fd, FPURegister fs) {
-  DCHECK(IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6));
+  DCHECK((IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6)) &&
+         IsFp64Mode());
   GenInstrRegister(COP1, S, f0, fs, fd, CVT_L_S);
 }
 
 
 void Assembler::cvt_l_d(FPURegister fd, FPURegister fs) {
-  DCHECK(IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6));
+  DCHECK((IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6)) &&
+         IsFp64Mode());
   GenInstrRegister(COP1, D, f0, fs, fd, CVT_L_D);
 }
 
 
 void Assembler::trunc_l_s(FPURegister fd, FPURegister fs) {
-  DCHECK(IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6));
+  DCHECK((IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6)) &&
+         IsFp64Mode());
   GenInstrRegister(COP1, S, f0, fs, fd, TRUNC_L_S);
 }
 
 
 void Assembler::trunc_l_d(FPURegister fd, FPURegister fs) {
-  DCHECK(IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6));
+  DCHECK((IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6)) &&
+         IsFp64Mode());
   GenInstrRegister(COP1, D, f0, fs, fd, TRUNC_L_D);
 }
 
 
 void Assembler::round_l_s(FPURegister fd, FPURegister fs) {
+  DCHECK((IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6)) &&
+         IsFp64Mode());
   GenInstrRegister(COP1, S, f0, fs, fd, ROUND_L_S);
 }
 
 
 void Assembler::round_l_d(FPURegister fd, FPURegister fs) {
+  DCHECK((IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6)) &&
+         IsFp64Mode());
   GenInstrRegister(COP1, D, f0, fs, fd, ROUND_L_D);
 }
 
 
 void Assembler::floor_l_s(FPURegister fd, FPURegister fs) {
+  DCHECK((IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6)) &&
+         IsFp64Mode());
   GenInstrRegister(COP1, S, f0, fs, fd, FLOOR_L_S);
 }
 
 
 void Assembler::floor_l_d(FPURegister fd, FPURegister fs) {
+  DCHECK((IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6)) &&
+         IsFp64Mode());
   GenInstrRegister(COP1, D, f0, fs, fd, FLOOR_L_D);
 }
 
 
 void Assembler::ceil_l_s(FPURegister fd, FPURegister fs) {
+  DCHECK((IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6)) &&
+         IsFp64Mode());
   GenInstrRegister(COP1, S, f0, fs, fd, CEIL_L_S);
 }
 
 
 void Assembler::ceil_l_d(FPURegister fd, FPURegister fs) {
+  DCHECK((IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6)) &&
+         IsFp64Mode());
   GenInstrRegister(COP1, D, f0, fs, fd, CEIL_L_D);
 }
 
@@ -2630,7 +2648,8 @@ void Assembler::cvt_s_w(FPURegister fd, FPURegister fs) {
 
 
 void Assembler::cvt_s_l(FPURegister fd, FPURegister fs) {
-  DCHECK(IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6));
+  DCHECK((IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6)) &&
+         IsFp64Mode());
   GenInstrRegister(COP1, L, f0, fs, fd, CVT_S_L);
 }
 
@@ -2646,7 +2665,8 @@ void Assembler::cvt_d_w(FPURegister fd, FPURegister fs) {
 
 
 void Assembler::cvt_d_l(FPURegister fd, FPURegister fs) {
-  DCHECK(IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6));
+  DCHECK((IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6)) &&
+         IsFp64Mode());
   GenInstrRegister(COP1, L, f0, fs, fd, CVT_D_L);
 }
 
@@ -3024,129 +3044,11 @@ void Assembler::set_target_address_at(Address pc,
   *p = LUI | rt_code | ((itarget & kHiMask) >> kLuiShift);
   *(p + 1) = ORI | rt_code | (rt_code << 5) | (itarget & kImm16Mask);
 
-  // The following code is an optimization for the common case of Call()
-  // or Jump() which is load to register, and jump through register:
-  //     li(t9, address); jalr(t9)    (or jr(t9)).
-  // If the destination address is in the same 256 MB page as the call, it
-  // is faster to do a direct jal, or j, rather than jump thru register, since
-  // that lets the cpu pipeline prefetch the target address. However each
-  // time the address above is patched, we have to patch the direct jal/j
-  // instruction, as well as possibly revert to jalr/jr if we now cross a
-  // 256 MB page. Note that with the jal/j instructions, we do not need to
-  // load the register, but that code is left, since it makes it easy to
-  // revert this process. A further optimization could try replacing the
-  // li sequence with nops.
-  // This optimization can only be applied if the rt-code from instr2 is the
-  // register used for the jalr/jr. Finally, we have to skip 'jr ra', which is
-  // mips return. Occasionally this lands after an li().
-
-  Instr instr3 = instr_at(pc + 2 * kInstrSize);
-  uint32_t ipc = reinterpret_cast<uint32_t>(pc + 3 * kInstrSize);
-  bool in_range = ((ipc ^ itarget) >> (kImm26Bits + kImmFieldShift)) == 0;
-  uint32_t target_field =
-      static_cast<uint32_t>(itarget & kJumpAddrMask) >> kImmFieldShift;
-  bool patched_jump = false;
-
-#ifndef ALLOW_JAL_IN_BOUNDARY_REGION
-  // This is a workaround to the 24k core E156 bug (affect some 34k cores also).
-  // Since the excluded space is only 64KB out of 256MB (0.02 %), we will just
-  // apply this workaround for all cores so we don't have to identify the core.
-  if (in_range) {
-    // The 24k core E156 bug has some very specific requirements, we only check
-    // the most simple one: if the address of the delay slot instruction is in
-    // the first or last 32 KB of the 256 MB segment.
-    uint32_t segment_mask = ((256 * MB) - 1) ^ ((32 * KB) - 1);
-    uint32_t ipc_segment_addr = ipc & segment_mask;
-    if (ipc_segment_addr == 0 || ipc_segment_addr == segment_mask)
-      in_range = false;
-  }
-#endif
-
-  if (IsJalr(instr3)) {
-    // Try to convert JALR to JAL.
-    if (in_range && GetRt(instr2) == GetRs(instr3)) {
-      *(p + 2) = JAL | target_field;
-      patched_jump = true;
-    }
-  } else if (IsJr(instr3)) {
-    // Try to convert JR to J, skip returns (jr ra).
-    bool is_ret = static_cast<int>(GetRs(instr3)) == ra.code();
-    if (in_range && !is_ret && GetRt(instr2) == GetRs(instr3)) {
-      *(p + 2) = J | target_field;
-      patched_jump = true;
-    }
-  } else if (IsJal(instr3)) {
-    if (in_range) {
-      // We are patching an already converted JAL.
-      *(p + 2) = JAL | target_field;
-    } else {
-      // Patch JAL, but out of range, revert to JALR.
-      // JALR rs reg is the rt reg specified in the ORI instruction.
-      uint32_t rs_field = GetRt(instr2) << kRsShift;
-      uint32_t rd_field = ra.code() << kRdShift;  // Return-address (ra) reg.
-      *(p+2) = SPECIAL | rs_field | rd_field | JALR;
-    }
-    patched_jump = true;
-  } else if (IsJ(instr3)) {
-    if (in_range) {
-      // We are patching an already converted J (jump).
-      *(p + 2) = J | target_field;
-    } else {
-      // Trying patch J, but out of range, just go back to JR.
-      // JR 'rs' reg is the 'rt' reg specified in the ORI instruction (instr2).
-      uint32_t rs_field = GetRt(instr2) << kRsShift;
-      if (IsMipsArchVariant(kMips32r6)) {
-        *(p + 2) = SPECIAL | rs_field | (zero_reg.code() << kRdShift) | JALR;
-      } else {
-        *(p + 2) = SPECIAL | rs_field | JR;
-      }
-    }
-    patched_jump = true;
-  }
 
   if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
-    CpuFeatures::FlushICache(pc, (patched_jump ? 3 : 2) * sizeof(int32_t));
+    CpuFeatures::FlushICache(pc, 2 * sizeof(int32_t));
   }
 }
-
-
-void Assembler::JumpToJumpRegister(Address pc) {
-  // Address pc points to lui/ori instructions.
-  // Jump to label may follow at pc + 2 * kInstrSize.
-  uint32_t* p = reinterpret_cast<uint32_t*>(pc);
-#ifdef DEBUG
-  Instr instr1 = instr_at(pc);
-#endif
-  Instr instr2 = instr_at(pc + 1 * kInstrSize);
-  Instr instr3 = instr_at(pc + 2 * kInstrSize);
-  bool patched = false;
-
-  if (IsJal(instr3)) {
-    DCHECK(GetOpcodeField(instr1) == LUI);
-    DCHECK(GetOpcodeField(instr2) == ORI);
-
-    uint32_t rs_field = GetRt(instr2) << kRsShift;
-    uint32_t rd_field = ra.code() << kRdShift;  // Return-address (ra) reg.
-    *(p + 2) = SPECIAL | rs_field | rd_field | JALR;
-    patched = true;
-  } else if (IsJ(instr3)) {
-    DCHECK(GetOpcodeField(instr1) == LUI);
-    DCHECK(GetOpcodeField(instr2) == ORI);
-
-    uint32_t rs_field = GetRt(instr2) << kRsShift;
-    if (IsMipsArchVariant(kMips32r6)) {
-      *(p + 2) = SPECIAL | rs_field | (zero_reg.code() << kRdShift) | JALR;
-    } else {
-      *(p + 2) = SPECIAL | rs_field | JR;
-    }
-    patched = true;
-  }
-
-  if (patched) {
-    CpuFeatures::FlushICache(pc + 2, sizeof(Address));
-  }
-}
-
 
 }  // namespace internal
 }  // namespace v8

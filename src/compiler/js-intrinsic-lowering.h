@@ -46,14 +46,13 @@ class JSIntrinsicLowering final : public AdvancedReducer {
   Reduction ReduceIncrementStatsCounter(Node* node);
   Reduction ReduceIsMinusZero(Node* node);
   Reduction ReduceIsInstanceType(Node* node, InstanceType instance_type);
+  Reduction ReduceIsSpecObject(Node* node);
   Reduction ReduceIsSmi(Node* node);
   Reduction ReduceJSValueGetValue(Node* node);
   Reduction ReduceMapGetInstanceType(Node* node);
   Reduction ReduceMathClz32(Node* node);
   Reduction ReduceMathFloor(Node* node);
   Reduction ReduceMathSqrt(Node* node);
-  Reduction ReduceSeqStringGetChar(Node* node, String::Encoding encoding);
-  Reduction ReduceSeqStringSetChar(Node* node, String::Encoding encoding);
   Reduction ReduceStringGetLength(Node* node);
   Reduction ReduceValueOf(Node* node);
   Reduction ReduceFixedArrayGet(Node* node);
@@ -69,6 +68,7 @@ class JSIntrinsicLowering final : public AdvancedReducer {
   Reduction ReduceToPrimitive(Node* node);
   Reduction ReduceToString(Node* node);
   Reduction ReduceCall(Node* node);
+  Reduction ReduceTailCall(Node* node);
 
   Reduction Change(Node* node, const Operator* op);
   Reduction Change(Node* node, const Operator* op, Node* a, Node* b);

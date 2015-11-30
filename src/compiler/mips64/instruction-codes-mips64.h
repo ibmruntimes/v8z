@@ -18,6 +18,7 @@ namespace compiler {
   V(Mips64Dsub)                     \
   V(Mips64Mul)                      \
   V(Mips64MulHigh)                  \
+  V(Mips64DMulHigh)                 \
   V(Mips64MulHighU)                 \
   V(Mips64Dmul)                     \
   V(Mips64Div)                      \
@@ -30,6 +31,7 @@ namespace compiler {
   V(Mips64DmodU)                    \
   V(Mips64And)                      \
   V(Mips64Or)                       \
+  V(Mips64Nor)                      \
   V(Mips64Xor)                      \
   V(Mips64Clz)                      \
   V(Mips64Shl)                      \
@@ -69,13 +71,19 @@ namespace compiler {
   V(Mips64Float64RoundDown)         \
   V(Mips64Float64RoundTruncate)     \
   V(Mips64Float64RoundUp)           \
+  V(Mips64Float64RoundTiesEven)     \
   V(Mips64CvtSD)                    \
   V(Mips64CvtDS)                    \
   V(Mips64TruncWD)                  \
+  V(Mips64TruncLD)                  \
   V(Mips64TruncUwD)                 \
+  V(Mips64TruncUlD)                 \
   V(Mips64CvtDW)                    \
+  V(Mips64CvtSL)                    \
+  V(Mips64CvtSUl)                   \
   V(Mips64CvtDL)                    \
   V(Mips64CvtDUw)                   \
+  V(Mips64CvtDUl)                   \
   V(Mips64Lb)                       \
   V(Mips64Lbu)                      \
   V(Mips64Sb)                       \
@@ -102,8 +110,7 @@ namespace compiler {
   V(Mips64Float32Min)               \
   V(Mips64Push)                     \
   V(Mips64StoreToStackSlot)         \
-  V(Mips64StackClaim)               \
-  V(Mips64StoreWriteBarrier)
+  V(Mips64StackClaim)
 
 
 // Addressing modes represent the "shape" of inputs to an instruction.

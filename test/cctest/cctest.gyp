@@ -100,7 +100,9 @@
         'test-alloc.cc',
         'test-api.cc',
         'test-api.h',
-        'test-api-accessors.cc',
+        # TODO(epertoso): re-enable the following test after the API change is
+        # checked in.
+        # 'test-api-accessors.cc',
         'test-api-interceptors.cc',
         'test-array-list.cc',
         'test-ast.cc',
@@ -292,6 +294,11 @@
               'AdditionalOptions': ['/bigobj'],
             },
           },
+        }],
+        ['v8_target_arch=="ppc" or v8_target_arch=="ppc64"', {
+          # disable fmadd/fmsub so that expected results match generated code in
+          # RunFloat64MulAndFloat64Add1 and friends.
+          'cflags': ['-ffp-contract=off'],
         }],
         ['OS=="aix"', {
           'ldflags': [ '-Wl,-bbigtoc' ],

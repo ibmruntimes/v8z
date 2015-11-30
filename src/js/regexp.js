@@ -12,8 +12,11 @@
 var FLAG_harmony_tolength;
 var GlobalObject = global.Object;
 var GlobalRegExp = global.RegExp;
+var InternalArray = utils.InternalArray;
 var InternalPackedArray = utils.InternalPackedArray;
 var MakeTypeError;
+var matchSymbol = utils.ImportNow("match_symbol");
+var splitSymbol = utils.ImportNow("split_symbol");
 
 utils.ImportFromExperimental(function(from) {
   FLAG_harmony_tolength = from.FLAG_harmony_tolength;
@@ -41,61 +44,75 @@ var RegExpLastMatchInfo = new InternalPackedArray(
 
 // -------------------------------------------------------------------
 
-// A recursive descent parser for Patterns according to the grammar of
-// ECMA-262 15.10.1, with deviations noted below.
-function DoConstructRegExp(object, pattern, flags) {
-  // RegExp : Called as constructor; see ECMA-262, section 15.10.4.
-  if (IS_REGEXP(pattern)) {
-    if (!IS_UNDEFINED(flags)) throw MakeTypeError(kRegExpFlags);
-    flags = (REGEXP_GLOBAL(pattern) ? 'g' : '')
-        + (REGEXP_IGNORE_CASE(pattern) ? 'i' : '')
-        + (REGEXP_MULTILINE(pattern) ? 'm' : '')
-        + (REGEXP_UNICODE(pattern) ? 'u' : '')
-        + (REGEXP_STICKY(pattern) ? 'y' : '');
-    pattern = REGEXP_SOURCE(pattern);
-  }
+function IsRegExp(o) {
+  if (!IS_SPEC_OBJECT(o)) return false;
+  var is_regexp = o[matchSymbol];
+  if (!IS_UNDEFINED(is_regexp)) return TO_BOOLEAN(is_regexp);
+  return IS_REGEXP(o);
+}
 
+
+// ES6 section 21.2.3.2.2
+function RegExpInitialize(object, pattern, flags) {
   pattern = IS_UNDEFINED(pattern) ? '' : TO_STRING(pattern);
   flags = IS_UNDEFINED(flags) ? '' : TO_STRING(flags);
-
   %RegExpInitializeAndCompile(object, pattern, flags);
+  return object;
+}
+
+
+function PatternFlags(pattern) {
+  return (REGEXP_GLOBAL(pattern) ? 'g' : '') +
+         (REGEXP_IGNORE_CASE(pattern) ? 'i' : '') +
+         (REGEXP_MULTILINE(pattern) ? 'm' : '') +
+         (REGEXP_UNICODE(pattern) ? 'u' : '') +
+         (REGEXP_STICKY(pattern) ? 'y' : '');
 }
 
 
 function RegExpConstructor(pattern, flags) {
-  if (%_IsConstructCall()) {
-    DoConstructRegExp(this, pattern, flags);
-  } else {
-    // RegExp : Called as function; see ECMA-262, section 15.10.3.1.
-    if (IS_REGEXP(pattern) && IS_UNDEFINED(flags)) {
+  var newtarget = new.target;
+  var pattern_is_regexp = IsRegExp(pattern);
+
+  if (IS_UNDEFINED(newtarget)) {
+    newtarget = GlobalRegExp;
+
+    // ES6 section 21.2.3.1 step 3.b
+    if (pattern_is_regexp && IS_UNDEFINED(flags) &&
+        pattern.constructor === newtarget) {
       return pattern;
     }
-    return new GlobalRegExp(pattern, flags);
   }
+
+  if (IS_REGEXP(pattern)) {
+    if (IS_UNDEFINED(flags)) flags = PatternFlags(pattern);
+    pattern = REGEXP_SOURCE(pattern);
+
+  } else if (pattern_is_regexp) {
+    var input_pattern = pattern;
+    pattern = pattern.source;
+    if (IS_UNDEFINED(flags)) flags = input_pattern.flags;
+  }
+
+  var object = %NewObject(GlobalRegExp, newtarget);
+  return RegExpInitialize(object, pattern, flags);
 }
 
-// Deprecated RegExp.prototype.compile method.  We behave like the constructor
-// were called again.  In SpiderMonkey, this method returns the regexp object.
-// In JSC, it returns undefined.  For compatibility with JSC, we match their
-// behavior.
+
 function RegExpCompileJS(pattern, flags) {
-  // Both JSC and SpiderMonkey treat a missing pattern argument as the
-  // empty subject string, and an actual undefined value passed as the
-  // pattern as the string 'undefined'.  Note that JSC is inconsistent
-  // here, treating undefined values differently in
-  // RegExp.prototype.compile and in the constructor, where they are
-  // the empty string.  For compatibility with JSC, we match their
-  // behavior.
-  if (this == GlobalRegExp.prototype) {
-    // We don't allow recompiling RegExp.prototype.
+  if (!IS_REGEXP(this)) {
     throw MakeTypeError(kIncompatibleMethodReceiver,
-                        'RegExp.prototype.compile', this);
+                        "RegExp.prototype.compile", this);
   }
-  if (IS_UNDEFINED(pattern) && %_ArgumentsLength() != 0) {
-    DoConstructRegExp(this, 'undefined', flags);
-  } else {
-    DoConstructRegExp(this, pattern, flags);
+
+  if (IS_REGEXP(pattern)) {
+    if (!IS_UNDEFINED(flags)) throw MakeTypeError(kRegExpFlags);
+
+    flags = PatternFlags(pattern);
+    pattern = REGEXP_SOURCE(pattern);
   }
+
+  return RegExpInitialize(this, pattern, flags);
 }
 
 
@@ -268,6 +285,91 @@ function RegExpToString() {
 }
 
 
+// ES6 21.2.5.11.
+function RegExpSplit(string, limit) {
+  // TODO(yangguo): allow non-regexp receivers.
+  if (!IS_REGEXP(this)) {
+    throw MakeTypeError(kIncompatibleMethodReceiver,
+                        "RegExp.prototype.@@split", this);
+  }
+  var separator = this;
+  var subject = TO_STRING(string);
+
+  limit = (IS_UNDEFINED(limit)) ? kMaxUint32 : TO_UINT32(limit);
+  var length = subject.length;
+
+  if (limit === 0) return [];
+
+  if (length === 0) {
+    if (DoRegExpExec(separator, subject, 0, 0) !== null) return [];
+    return [subject];
+  }
+
+  var currentIndex = 0;
+  var startIndex = 0;
+  var startMatch = 0;
+  var result = new InternalArray();
+
+  outer_loop:
+  while (true) {
+    if (startIndex === length) {
+      result[result.length] = %_SubString(subject, currentIndex, length);
+      break;
+    }
+
+    var matchInfo = DoRegExpExec(separator, subject, startIndex);
+    if (matchInfo === null || length === (startMatch = matchInfo[CAPTURE0])) {
+      result[result.length] = %_SubString(subject, currentIndex, length);
+      break;
+    }
+    var endIndex = matchInfo[CAPTURE1];
+
+    // We ignore a zero-length match at the currentIndex.
+    if (startIndex === endIndex && endIndex === currentIndex) {
+      startIndex++;
+      continue;
+    }
+
+    result[result.length] = %_SubString(subject, currentIndex, startMatch);
+
+    if (result.length === limit) break;
+
+    var matchinfo_len = NUMBER_OF_CAPTURES(matchInfo) + REGEXP_FIRST_CAPTURE;
+    for (var i = REGEXP_FIRST_CAPTURE + 2; i < matchinfo_len; ) {
+      var start = matchInfo[i++];
+      var end = matchInfo[i++];
+      if (end != -1) {
+        result[result.length] = %_SubString(subject, start, end);
+      } else {
+        result[result.length] = UNDEFINED;
+      }
+      if (result.length === limit) break outer_loop;
+    }
+
+    startIndex = currentIndex = endIndex;
+  }
+
+  var array_result = [];
+  %MoveArrayContents(result, array_result);
+  return array_result;
+}
+
+
+// ES6 21.2.5.6.
+function RegExpMatch(string) {
+  if (!IS_REGEXP(this)) {
+    throw MakeTypeError(kIncompatibleMethodReceiver,
+                        "RegExp.prototype.@@match", this);
+  }
+  var subject = TO_STRING(string);
+
+  if (!REGEXP_GLOBAL(this)) return RegExpExecNoTests(this, subject, 0);
+  this.lastIndex = 0;
+  var result = %StringMatch(subject, this, RegExpLastMatchInfo);
+  return result;
+}
+
+
 // Getters for the static properties lastMatch, lastParen, leftContext, and
 // rightContext of the RegExp constructor.  The properties are computed based
 // on the captures array of the last successful match and the subject string
@@ -384,17 +486,15 @@ utils.InstallFunctions(GlobalRegExp.prototype, DONT_ENUM, [
   "exec", RegExpExecJS,
   "test", RegExpTest,
   "toString", RegExpToString,
-  "compile", RegExpCompileJS
+  "compile", RegExpCompileJS,
+  matchSymbol, RegExpMatch,
+  splitSymbol, RegExpSplit,
 ]);
 
-%DefineGetterPropertyUnchecked(GlobalRegExp.prototype, "global",
-                               RegExpGetGlobal, DONT_ENUM);
-%DefineGetterPropertyUnchecked(GlobalRegExp.prototype, "ignoreCase",
-                               RegExpGetIgnoreCase, DONT_ENUM);
-%DefineGetterPropertyUnchecked(GlobalRegExp.prototype, "multiline",
-                               RegExpGetMultiline, DONT_ENUM);
-%DefineGetterPropertyUnchecked(GlobalRegExp.prototype, "source",
-                               RegExpGetSource, DONT_ENUM);
+utils.InstallGetter(GlobalRegExp.prototype, 'global', RegExpGetGlobal);
+utils.InstallGetter(GlobalRegExp.prototype, 'ignoreCase', RegExpGetIgnoreCase);
+utils.InstallGetter(GlobalRegExp.prototype, 'multiline', RegExpGetMultiline);
+utils.InstallGetter(GlobalRegExp.prototype, 'source', RegExpGetSource);
 
 // The length of compile is 1 in SpiderMonkey.
 %FunctionSetLength(GlobalRegExp.prototype.compile, 1);
@@ -411,38 +511,36 @@ var RegExpSetInput = function(string) {
 };
 
 %OptimizeObjectForAddingMultipleProperties(GlobalRegExp, 22);
-%DefineAccessorPropertyUnchecked(GlobalRegExp, 'input', RegExpGetInput,
-                                 RegExpSetInput, DONT_DELETE);
-%DefineAccessorPropertyUnchecked(GlobalRegExp, '$_', RegExpGetInput,
-                                 RegExpSetInput, DONT_ENUM | DONT_DELETE);
+utils.InstallGetterSetter(GlobalRegExp, 'input', RegExpGetInput, RegExpSetInput,
+                          DONT_DELETE);
+utils.InstallGetterSetter(GlobalRegExp, '$_', RegExpGetInput, RegExpSetInput,
+                          DONT_ENUM | DONT_DELETE);
+
 
 var NoOpSetter = function(ignored) {};
 
 
 // Static properties set by a successful match.
-%DefineAccessorPropertyUnchecked(GlobalRegExp, 'lastMatch', RegExpGetLastMatch,
-                                 NoOpSetter, DONT_DELETE);
-%DefineAccessorPropertyUnchecked(GlobalRegExp, '$&', RegExpGetLastMatch,
-                                 NoOpSetter, DONT_ENUM | DONT_DELETE);
-%DefineAccessorPropertyUnchecked(GlobalRegExp, 'lastParen', RegExpGetLastParen,
-                                 NoOpSetter, DONT_DELETE);
-%DefineAccessorPropertyUnchecked(GlobalRegExp, '$+', RegExpGetLastParen,
-                                 NoOpSetter, DONT_ENUM | DONT_DELETE);
-%DefineAccessorPropertyUnchecked(GlobalRegExp, 'leftContext',
-                                 RegExpGetLeftContext, NoOpSetter,
-                                 DONT_DELETE);
-%DefineAccessorPropertyUnchecked(GlobalRegExp, '$`', RegExpGetLeftContext,
-                                 NoOpSetter, DONT_ENUM | DONT_DELETE);
-%DefineAccessorPropertyUnchecked(GlobalRegExp, 'rightContext',
-                                 RegExpGetRightContext, NoOpSetter,
-                                 DONT_DELETE);
-%DefineAccessorPropertyUnchecked(GlobalRegExp, "$'", RegExpGetRightContext,
-                                 NoOpSetter, DONT_ENUM | DONT_DELETE);
+utils.InstallGetterSetter(GlobalRegExp, 'lastMatch', RegExpGetLastMatch,
+                          NoOpSetter, DONT_DELETE);
+utils.InstallGetterSetter(GlobalRegExp, '$&', RegExpGetLastMatch, NoOpSetter,
+                          DONT_ENUM | DONT_DELETE);
+utils.InstallGetterSetter(GlobalRegExp, 'lastParen', RegExpGetLastParen,
+                          NoOpSetter, DONT_DELETE);
+utils.InstallGetterSetter(GlobalRegExp, '$+', RegExpGetLastParen, NoOpSetter,
+                          DONT_ENUM | DONT_DELETE);
+utils.InstallGetterSetter(GlobalRegExp, 'leftContext', RegExpGetLeftContext,
+                          NoOpSetter, DONT_DELETE);
+utils.InstallGetterSetter(GlobalRegExp, '$`', RegExpGetLeftContext, NoOpSetter,
+                          DONT_ENUM | DONT_DELETE);
+utils.InstallGetterSetter(GlobalRegExp, 'rightContext', RegExpGetRightContext,
+                          NoOpSetter, DONT_DELETE);
+utils.InstallGetterSetter(GlobalRegExp, "$'", RegExpGetRightContext, NoOpSetter,
+                          DONT_ENUM | DONT_DELETE);
 
 for (var i = 1; i < 10; ++i) {
-  %DefineAccessorPropertyUnchecked(GlobalRegExp, '$' + i,
-                                   RegExpMakeCaptureGetter(i), NoOpSetter,
-                                   DONT_DELETE);
+  utils.InstallGetterSetter(GlobalRegExp, '$' + i, RegExpMakeCaptureGetter(i),
+                            NoOpSetter, DONT_DELETE);
 }
 %ToFastProperties(GlobalRegExp);
 

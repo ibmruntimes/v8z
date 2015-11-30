@@ -1,4 +1,4 @@
-// Copyright 2011 the V8 project authors. All rights reserved.
+// Copyright 2015 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -10,7 +10,8 @@
 
 // ----------------------------------------------------------------------------
 // Imports
-
+//
+var GlobalProxy = global.Proxy;
 var GlobalFunction = global.Function;
 var GlobalObject = global.Object;
 var MakeTypeError;
@@ -23,14 +24,11 @@ utils.Import(function(from) {
 
 //----------------------------------------------------------------------------
 
-function ProxyCreate(handler, proto) {
-  if (!IS_SPEC_OBJECT(handler))
-    throw MakeTypeError(kProxyHandlerNonObject, "create")
-  if (IS_UNDEFINED(proto))
-    proto = null
-  else if (!(IS_SPEC_OBJECT(proto) || IS_NULL(proto)))
-    throw MakeTypeError(kProxyProtoNonObject)
-  return %CreateJSProxy(handler, proto)
+function ProxyCreate(target, handler) {
+  if (!%_IsConstructCall()) {
+    throw MakeTypeError(kConstructorNotFunction, "Proxy");
+  }
+  return %CreateJSProxy(target, handler);
 }
 
 function ProxyCreateFunction(handler, callTrap, constructTrap) {
@@ -50,7 +48,7 @@ function ProxyCreateFunction(handler, callTrap, constructTrap) {
     throw MakeTypeError(kProxyTrapFunctionExpected, "construct")
   }
   return %CreateJSFunctionProxy(
-    handler, callTrap, constructTrap, GlobalFunction.prototype)
+    {}, handler, callTrap, constructTrap, GlobalFunction.prototype)
 }
 
 // -------------------------------------------------------------------
@@ -182,15 +180,12 @@ function ProxyEnumerate(proxy) {
 }
 
 //-------------------------------------------------------------------
-
-var Proxy = new GlobalObject();
-%AddNamedProperty(global, "Proxy", Proxy, DONT_ENUM);
+%SetCode(GlobalProxy, ProxyCreate);
 
 //Set up non-enumerable properties of the Proxy object.
-utils.InstallFunctions(Proxy, DONT_ENUM, [
-  "create", ProxyCreate,
+utils.InstallFunctions(GlobalProxy, DONT_ENUM, [
   "createFunction", ProxyCreateFunction
-])
+]);
 
 // -------------------------------------------------------------------
 // Exports

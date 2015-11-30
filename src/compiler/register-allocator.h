@@ -532,16 +532,16 @@ class TopLevelLiveRange final : public LiveRange {
 
   AllocatedOperand GetSpillRangeOperand() const;
 
-  void SpillAtDefinition(Zone* zone, int gap_index,
-                         InstructionOperand* operand);
+  void RecordSpillLocation(Zone* zone, int gap_index,
+                           InstructionOperand* operand);
   void SetSpillOperand(InstructionOperand* operand);
   void SetSpillStartIndex(int start) {
     spill_start_index_ = Min(start, spill_start_index_);
   }
 
-  void CommitSpillsAtDefinition(InstructionSequence* sequence,
-                                const InstructionOperand& operand,
-                                bool might_be_duplicated);
+  void CommitSpillMoves(InstructionSequence* sequence,
+                        const InstructionOperand& operand,
+                        bool might_be_duplicated);
 
   // If all the children of this range are spilled in deferred blocks, and if
   // for any non-spilled child with a use position requiring a slot, that range
@@ -572,14 +572,16 @@ class TopLevelLiveRange final : public LiveRange {
                         : ++last_child_id_;
   }
 
+  int GetChildCount() const { return last_child_id_ + 1; }
+
   bool IsSpilledOnlyInDeferredBlocks() const {
     return spilled_in_deferred_blocks_;
   }
 
-  struct SpillAtDefinitionList;
+  struct SpillMoveInsertionList;
 
-  SpillAtDefinitionList* spills_at_definition() const {
-    return spills_at_definition_;
+  SpillMoveInsertionList* spill_move_insertion_locations() const {
+    return spill_move_insertion_locations_;
   }
   void set_last_child(LiveRange* range) { last_child_ = range; }
   LiveRange* last_child() const { return last_child_; }
@@ -593,6 +595,9 @@ class TopLevelLiveRange final : public LiveRange {
     splinter->set_spill_type(spill_type());
     splinter->SetSplinteredFrom(this);
   }
+
+  void MarkHasPreassignedSlot() { has_preassigned_slot_ = true; }
+  bool has_preassigned_slot() const { return has_preassigned_slot_; }
 
  private:
   void SetSplinteredFrom(TopLevelLiveRange* splinter_parent);
@@ -610,7 +615,7 @@ class TopLevelLiveRange final : public LiveRange {
     InstructionOperand* spill_operand_;
     SpillRange* spill_range_;
   };
-  SpillAtDefinitionList* spills_at_definition_;
+  SpillMoveInsertionList* spill_move_insertion_locations_;
   // TODO(mtrofin): generalize spilling after definition, currently specialized
   // just for spill in a single deferred block.
   bool spilled_in_deferred_blocks_;
@@ -618,6 +623,7 @@ class TopLevelLiveRange final : public LiveRange {
   LiveRange* last_child_;
   UsePosition* last_pos_;
   TopLevelLiveRange* splinter_;
+  bool has_preassigned_slot_;
 
   DISALLOW_COPY_AND_ASSIGN(TopLevelLiveRange);
 };
@@ -922,7 +928,7 @@ class RegisterAllocator : public ZoneObject {
 
   // Find the optimal split for ranges defined by a memory operand, e.g.
   // constants or function parameters passed on the stack.
-  void SplitAndSpillRangesDefinedByMemoryOperand();
+  void SplitAndSpillRangesDefinedByMemoryOperand(bool operands_only);
 
   // Split the given range at the given position.
   // If range starts at or after the given position then the

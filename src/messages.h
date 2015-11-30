@@ -100,7 +100,7 @@ class CallSite {
   T(CircularStructure, "Converting circular structure to JSON")                \
   T(ConstAssign, "Assignment to constant variable.")                           \
   T(ConstructorNonCallable,                                                    \
-    "Class constructors cannot be invoked without 'new'")                      \
+    "Class constructor % cannot be invoked without 'new'")                     \
   T(ConstructorNotFunction, "Constructor % requires 'new'")                    \
   T(CurrencyCode, "Currency code is required with currency style.")            \
   T(DataViewNotArrayBuffer,                                                    \
@@ -127,6 +127,7 @@ class CallSite {
     "Function has non-object prototype '%' in instanceof check")               \
   T(InvalidArgument, "invalid_argument")                                       \
   T(InvalidInOperatorUse, "Cannot use 'in' operator to search for '%' in %")   \
+  T(InvalidSimdOperation, "% is not a valid type for this SIMD operation.")    \
   T(IteratorResultNotAnObject, "Iterator result % is not an object")           \
   T(IteratorValueNotAnObject, "Iterator value % is not an entry object")       \
   T(LanguageID, "Language ID should be string or object.")                     \
@@ -182,17 +183,26 @@ class CallSite {
     "Class extends value does not have valid prototype property %")            \
   T(ProxyHandlerDeleteFailed,                                                  \
     "Proxy handler % did not return a boolean value from 'delete' trap")       \
-  T(ProxyHandlerNonObject, "Proxy.% called with non-object as handler")        \
+  T(ProxyHandlerNonObject, "Cannot create proxy with non-object as handler")   \
   T(ProxyHandlerReturned, "Proxy handler % returned % from '%' trap")          \
   T(ProxyHandlerTrapMissing, "Proxy handler % has no '%' trap")                \
   T(ProxyHandlerTrapMustBeCallable,                                            \
     "Proxy handler %0 has non-callable '%' trap")                              \
+  T(ProxyIsExtensibleViolatesInvariant,                                        \
+    "Result of trap 'isExtensible' is inconsistent with proxy's target")       \
   T(ProxyNonObjectPropNames, "Trap '%' returned non-object %")                 \
-  T(ProxyProtoNonObject, "Proxy.create called with no-object as prototype")    \
+  T(ProxyPreventExtensionsViolatesInvariant,                                   \
+    "Trap 'preventExtensions' returned true but the proxy's target is "        \
+    "extensible")                                                              \
   T(ProxyPropNotConfigurable,                                                  \
     "Proxy handler % returned non-configurable descriptor for property '%' "   \
     "from '%' trap")                                                           \
   T(ProxyRepeatedPropName, "Trap '%' returned repeated property name '%'")     \
+  T(ProxyRevoked, "Cannot perform '%' on a proxy that has been revoked")       \
+  T(ProxyTargetNotExtensible, "Proxy target is not extensible")                \
+  T(ProxyTargetNonObject, "Proxy target is non-object")                        \
+  T(ProxyTargetPropNotConfigurable,                                            \
+    "Proxy target property '%' is not configurable")                           \
   T(ProxyTrapFunctionExpected,                                                 \
     "Proxy.createFunction called with non-function for '%' trap")              \
   T(RedefineDisallowed, "Cannot redefine property: %")                         \
@@ -309,6 +319,7 @@ class CallSite {
   T(IllegalLanguageModeDirective,                                              \
     "Illegal '%' directive in function with non-simple parameter list")        \
   T(IllegalReturn, "Illegal return statement")                                 \
+  T(InvalidEscapedReservedWord, "Keyword must not contain escaped characters") \
   T(InvalidLhsInAssignment, "Invalid left-hand side in assignment")            \
   T(InvalidLhsInFor, "Invalid left-hand side in for-loop")                     \
   T(InvalidLhsInPostfixOp,                                                     \

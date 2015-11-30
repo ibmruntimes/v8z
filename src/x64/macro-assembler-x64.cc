@@ -707,8 +707,8 @@ void MacroAssembler::InvokeBuiltin(int native_context_index, InvokeFlag flag,
   // arguments match the expected number of arguments. Fake a
   // parameter count to avoid emitting code to do the check.
   ParameterCount expected(0);
-  GetBuiltinEntry(rdx, native_context_index);
-  InvokeCode(rdx, expected, expected, flag, call_wrapper);
+  GetBuiltinEntry(r8, native_context_index);
+  InvokeCode(r8, no_reg, expected, expected, flag, call_wrapper);
 }
 
 
@@ -851,6 +851,30 @@ void MacroAssembler::Cvtlsi2sd(XMMRegister dst, const Operand& src) {
 }
 
 
+void MacroAssembler::Cvtqsi2ss(XMMRegister dst, Register src) {
+  if (CpuFeatures::IsSupported(AVX)) {
+    CpuFeatureScope scope(this, AVX);
+    vxorps(dst, dst, dst);
+    vcvtqsi2ss(dst, dst, src);
+  } else {
+    xorps(dst, dst);
+    cvtqsi2ss(dst, src);
+  }
+}
+
+
+void MacroAssembler::Cvtqsi2ss(XMMRegister dst, const Operand& src) {
+  if (CpuFeatures::IsSupported(AVX)) {
+    CpuFeatureScope scope(this, AVX);
+    vxorps(dst, dst, dst);
+    vcvtqsi2ss(dst, dst, src);
+  } else {
+    xorps(dst, dst);
+    cvtqsi2ss(dst, src);
+  }
+}
+
+
 void MacroAssembler::Cvtqsi2sd(XMMRegister dst, Register src) {
   if (CpuFeatures::IsSupported(AVX)) {
     CpuFeatureScope scope(this, AVX);
@@ -872,6 +896,43 @@ void MacroAssembler::Cvtqsi2sd(XMMRegister dst, const Operand& src) {
     xorpd(dst, dst);
     cvtqsi2sd(dst, src);
   }
+}
+
+
+void MacroAssembler::Cvtqui2ss(XMMRegister dst, Register src, Register tmp) {
+  Label msb_set_src;
+  Label jmp_return;
+  testq(src, src);
+  j(sign, &msb_set_src, Label::kNear);
+  Cvtqsi2ss(dst, src);
+  jmp(&jmp_return, Label::kNear);
+  bind(&msb_set_src);
+  movq(tmp, src);
+  shrq(src, Immediate(1));
+  // Recover the least significant bit to avoid rounding errors.
+  andq(tmp, Immediate(1));
+  orq(src, tmp);
+  Cvtqsi2ss(dst, src);
+  addss(dst, dst);
+  bind(&jmp_return);
+}
+
+
+void MacroAssembler::Cvtqui2sd(XMMRegister dst, Register src, Register tmp) {
+  Label msb_set_src;
+  Label jmp_return;
+  testq(src, src);
+  j(sign, &msb_set_src, Label::kNear);
+  Cvtqsi2sd(dst, src);
+  jmp(&jmp_return, Label::kNear);
+  bind(&msb_set_src);
+  movq(tmp, src);
+  shrq(src, Immediate(1));
+  andq(tmp, Immediate(1));
+  orq(src, tmp);
+  Cvtqsi2sd(dst, src);
+  addsd(dst, dst);
+  bind(&jmp_return);
 }
 
 
@@ -3189,6 +3250,36 @@ void MacroAssembler::Lzcntq(Register dst, const Operand& src) {
 }
 
 
+void MacroAssembler::Tzcntq(Register dst, Register src) {
+  if (CpuFeatures::IsSupported(BMI1)) {
+    CpuFeatureScope scope(this, BMI1);
+    tzcntq(dst, src);
+    return;
+  }
+  Label not_zero_src;
+  bsfq(dst, src);
+  j(not_zero, &not_zero_src, Label::kNear);
+  // Define the result of tzcnt(0) separately, because bsf(0) is undefined.
+  Set(dst, 64);
+  bind(&not_zero_src);
+}
+
+
+void MacroAssembler::Tzcntq(Register dst, const Operand& src) {
+  if (CpuFeatures::IsSupported(BMI1)) {
+    CpuFeatureScope scope(this, BMI1);
+    tzcntq(dst, src);
+    return;
+  }
+  Label not_zero_src;
+  bsfq(dst, src);
+  j(not_zero, &not_zero_src, Label::kNear);
+  // Define the result of tzcnt(0) separately, because bsf(0) is undefined.
+  Set(dst, 64);
+  bind(&not_zero_src);
+}
+
+
 void MacroAssembler::Tzcntl(Register dst, Register src) {
   if (CpuFeatures::IsSupported(BMI1)) {
     CpuFeatureScope scope(this, BMI1);
@@ -3231,6 +3322,26 @@ void MacroAssembler::Popcntl(Register dst, const Operand& src) {
   if (CpuFeatures::IsSupported(POPCNT)) {
     CpuFeatureScope scope(this, POPCNT);
     popcntl(dst, src);
+    return;
+  }
+  UNREACHABLE();
+}
+
+
+void MacroAssembler::Popcntq(Register dst, Register src) {
+  if (CpuFeatures::IsSupported(POPCNT)) {
+    CpuFeatureScope scope(this, POPCNT);
+    popcntq(dst, src);
+    return;
+  }
+  UNREACHABLE();
+}
+
+
+void MacroAssembler::Popcntq(Register dst, const Operand& src) {
+  if (CpuFeatures::IsSupported(POPCNT)) {
+    CpuFeatureScope scope(this, POPCNT);
+    popcntq(dst, src);
     return;
   }
   UNREACHABLE();
@@ -3865,15 +3976,16 @@ void MacroAssembler::DebugBreak() {
 
 
 void MacroAssembler::InvokeFunction(Register function,
+                                    Register new_target,
                                     const ParameterCount& actual,
                                     InvokeFlag flag,
                                     const CallWrapper& call_wrapper) {
-  movp(rdx, FieldOperand(function, JSFunction::kSharedFunctionInfoOffset));
+  movp(rbx, FieldOperand(function, JSFunction::kSharedFunctionInfoOffset));
   LoadSharedFunctionInfoSpecialField(
-      rbx, rdx, SharedFunctionInfo::kFormalParameterCountOffset);
+      rbx, rbx, SharedFunctionInfo::kFormalParameterCountOffset);
 
   ParameterCount expected(rbx);
-  InvokeFunction(function, expected, actual, flag, call_wrapper);
+  InvokeFunction(function, new_target, expected, actual, flag, call_wrapper);
 }
 
 
@@ -3883,25 +3995,27 @@ void MacroAssembler::InvokeFunction(Handle<JSFunction> function,
                                     InvokeFlag flag,
                                     const CallWrapper& call_wrapper) {
   Move(rdi, function);
-  InvokeFunction(rdi, expected, actual, flag, call_wrapper);
+  InvokeFunction(rdi, no_reg, expected, actual, flag, call_wrapper);
 }
 
 
 void MacroAssembler::InvokeFunction(Register function,
+                                    Register new_target,
                                     const ParameterCount& expected,
                                     const ParameterCount& actual,
                                     InvokeFlag flag,
                                     const CallWrapper& call_wrapper) {
   DCHECK(function.is(rdi));
   movp(rsi, FieldOperand(function, JSFunction::kContextOffset));
-  // Advances rdx to the end of the Code object header, to the start of
+  // Advances r8 to the end of the Code object header, to the start of
   // the executable code.
-  movp(rdx, FieldOperand(rdi, JSFunction::kCodeEntryOffset));
-  InvokeCode(rdx, expected, actual, flag, call_wrapper);
+  movp(r8, FieldOperand(rdi, JSFunction::kCodeEntryOffset));
+  InvokeCode(r8, new_target, expected, actual, flag, call_wrapper);
 }
 
 
 void MacroAssembler::InvokeCode(Register code,
+                                Register new_target,
                                 const ParameterCount& expected,
                                 const ParameterCount& actual,
                                 InvokeFlag flag,
@@ -3909,12 +4023,17 @@ void MacroAssembler::InvokeCode(Register code,
   // You can't call a function without a valid frame.
   DCHECK(flag == JUMP_FUNCTION || has_frame());
 
+  // Ensure new target is passed in the correct register. Otherwise clear the
+  // appropriate register in case new target is not given.
+  DCHECK_IMPLIES(new_target.is_valid(), new_target.is(rdx));
+  if (!new_target.is_valid()) {
+    LoadRoot(rdx, Heap::kUndefinedValueRootIndex);
+  }
+
   Label done;
   bool definitely_mismatches = false;
   InvokePrologue(expected,
                  actual,
-                 Handle<Code>::null(),
-                 code,
                  &done,
                  &definitely_mismatches,
                  flag,
@@ -3936,8 +4055,6 @@ void MacroAssembler::InvokeCode(Register code,
 
 void MacroAssembler::InvokePrologue(const ParameterCount& expected,
                                     const ParameterCount& actual,
-                                    Handle<Code> code_constant,
-                                    Register code_register,
                                     Label* done,
                                     bool* definitely_mismatches,
                                     InvokeFlag flag,
@@ -3987,13 +4104,6 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
 
   if (!definitely_matches) {
     Handle<Code> adaptor = isolate()->builtins()->ArgumentsAdaptorTrampoline();
-    if (!code_constant.is_null()) {
-      Move(rdx, code_constant, RelocInfo::EMBEDDED_OBJECT);
-      addp(rdx, Immediate(Code::kHeaderSize - kHeapObjectTag));
-    } else if (!code_register.is(rdx)) {
-      movp(rdx, code_register);
-    }
-
     if (flag == CALL_FUNCTION) {
       call_wrapper.BeforeCall(CallSize(adaptor));
       Call(adaptor, RelocInfo::CODE_TARGET);
@@ -4852,16 +4962,16 @@ void MacroAssembler::CopyBytes(Register destination,
 }
 
 
-void MacroAssembler::InitializeFieldsWithFiller(Register start_offset,
-                                                Register end_offset,
+void MacroAssembler::InitializeFieldsWithFiller(Register current_address,
+                                                Register end_address,
                                                 Register filler) {
   Label loop, entry;
   jmp(&entry);
   bind(&loop);
-  movp(Operand(start_offset, 0), filler);
-  addp(start_offset, Immediate(kPointerSize));
+  movp(Operand(current_address, 0), filler);
+  addp(current_address, Immediate(kPointerSize));
   bind(&entry);
-  cmpp(start_offset, end_offset);
+  cmpp(current_address, end_address);
   j(below, &loop);
 }
 

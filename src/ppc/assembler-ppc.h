@@ -907,6 +907,7 @@ class Assembler : public AssemblerBase {
   void rotldi(Register ra, Register rs, int sh, RCBit r = LeaveRC);
   void rotrdi(Register ra, Register rs, int sh, RCBit r = LeaveRC);
   void cntlzd_(Register dst, Register src, RCBit rc = LeaveRC);
+  void popcntd(Register dst, Register src);
   void mulld(Register dst, Register src1, Register src2, OEBit o = LeaveOE,
              RCBit r = LeaveRC);
   void divd(Register dst, Register src1, Register src2, OEBit o = LeaveOE,
@@ -1049,10 +1050,20 @@ class Assembler : public AssemblerBase {
             RCBit rc = LeaveRC);
   void fcfid(const DoubleRegister frt, const DoubleRegister frb,
              RCBit rc = LeaveRC);
+  void fcfidu(const DoubleRegister frt, const DoubleRegister frb,
+              RCBit rc = LeaveRC);
+  void fcfidus(const DoubleRegister frt, const DoubleRegister frb,
+               RCBit rc = LeaveRC);
+  void fcfids(const DoubleRegister frt, const DoubleRegister frb,
+              RCBit rc = LeaveRC);
   void fctid(const DoubleRegister frt, const DoubleRegister frb,
              RCBit rc = LeaveRC);
   void fctidz(const DoubleRegister frt, const DoubleRegister frb,
               RCBit rc = LeaveRC);
+  void fctidu(const DoubleRegister frt, const DoubleRegister frb,
+              RCBit rc = LeaveRC);
+  void fctiduz(const DoubleRegister frt, const DoubleRegister frb,
+               RCBit rc = LeaveRC);
   void fsel(const DoubleRegister frt, const DoubleRegister fra,
             const DoubleRegister frc, const DoubleRegister frb,
             RCBit rc = LeaveRC);
@@ -1307,7 +1318,10 @@ class Assembler : public AssemblerBase {
   }
 
   void StartBlockTrampolinePool() { trampoline_pool_blocked_nesting_++; }
-  void EndBlockTrampolinePool() { trampoline_pool_blocked_nesting_--; }
+  void EndBlockTrampolinePool() {
+    int count = --trampoline_pool_blocked_nesting_;
+    if (count == 0) CheckTrampolinePoolQuick();
+  }
   bool is_trampoline_pool_blocked() const {
     return trampoline_pool_blocked_nesting_ > 0;
   }

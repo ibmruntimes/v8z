@@ -1499,7 +1499,7 @@ void NewSpace::ResetAllocationInfo() {
   while (it.has_next()) {
     Bitmap::Clear(it.next());
   }
-  InlineAllocationStep(old_top, allocation_info_.top());
+  InlineAllocationStep(old_top, allocation_info_.top(), nullptr, 0);
 }
 
 
@@ -1509,14 +1509,15 @@ void NewSpace::UpdateInlineAllocationLimit(int size_in_bytes) {
     Address high = to_space_.page_high();
     Address new_top = allocation_info_.top() + size_in_bytes;
     allocation_info_.set_limit(Min(new_top, high));
-  } else if (top_on_previous_step_ == 0) {
+  } else if (inline_allocation_observers_paused_ ||
+             top_on_previous_step_ == 0) {
     // Normal limit is the end of the current page.
     allocation_info_.set_limit(to_space_.page_high());
   } else {
     // Lower limit during incremental marking.
     Address high = to_space_.page_high();
     Address new_top = allocation_info_.top() + size_in_bytes;
-    Address new_limit = new_top + inline_allocation_limit_step_;
+    Address new_limit = new_top + GetNextInlineAllocationStepSize() - 1;
     allocation_info_.set_limit(Min(new_limit, high));
   }
   DCHECK_SEMISPACE_ALLOCATION_INFO(allocation_info_, to_space_);
@@ -1578,7 +1579,7 @@ bool NewSpace::EnsureAllocation(int size_in_bytes,
       return false;
     }
 
-    InlineAllocationStep(old_top, allocation_info_.top());
+    InlineAllocationStep(old_top, allocation_info_.top(), nullptr, 0);
 
     old_top = allocation_info_.top();
     high = to_space_.page_high();
@@ -1594,28 +1595,37 @@ bool NewSpace::EnsureAllocation(int size_in_bytes,
     // or because idle scavenge job wants to get a chance to post a task.
     // Set the new limit accordingly.
     Address new_top = old_top + aligned_size_in_bytes;
-    InlineAllocationStep(new_top, new_top);
+    Address soon_object = old_top + filler_size;
+    InlineAllocationStep(new_top, new_top, soon_object, size_in_bytes);
     UpdateInlineAllocationLimit(aligned_size_in_bytes);
   }
   return true;
 }
 
 
-void NewSpace::UpdateInlineAllocationLimitStep() {
-  intptr_t step = 0;
-  for (int i = 0; i < inline_allocation_observers_.length(); ++i) {
-    InlineAllocationObserver* observer = inline_allocation_observers_[i];
-    step = step ? Min(step, observer->step_size()) : observer->step_size();
-  }
-  inline_allocation_limit_step_ = step;
-  top_on_previous_step_ = step ? allocation_info_.top() : 0;
+void NewSpace::StartNextInlineAllocationStep() {
+  DCHECK(!inline_allocation_observers_paused_);
+  top_on_previous_step_ =
+      inline_allocation_observers_.length() ? allocation_info_.top() : 0;
   UpdateInlineAllocationLimit(0);
+}
+
+
+intptr_t NewSpace::GetNextInlineAllocationStepSize() {
+  intptr_t next_step = 0;
+  for (int i = 0; i < inline_allocation_observers_.length(); ++i) {
+    InlineAllocationObserver* o = inline_allocation_observers_[i];
+    next_step = next_step ? Min(next_step, o->bytes_to_next_step())
+                          : o->bytes_to_next_step();
+  }
+  DCHECK(inline_allocation_observers_.length() == 0 || next_step != 0);
+  return next_step;
 }
 
 
 void NewSpace::AddInlineAllocationObserver(InlineAllocationObserver* observer) {
   inline_allocation_observers_.Add(observer);
-  UpdateInlineAllocationLimitStep();
+  StartNextInlineAllocationStep();
 }
 
 
@@ -1625,15 +1635,33 @@ void NewSpace::RemoveInlineAllocationObserver(
   // Only used in assertion. Suppress unused variable warning.
   static_cast<void>(removed);
   DCHECK(removed);
-  UpdateInlineAllocationLimitStep();
+  StartNextInlineAllocationStep();
 }
 
 
-void NewSpace::InlineAllocationStep(Address top, Address new_top) {
+void NewSpace::PauseInlineAllocationObservers() {
+  // Do a step to account for memory allocated so far.
+  InlineAllocationStep(top(), top(), nullptr, 0);
+  inline_allocation_observers_paused_ = true;
+  top_on_previous_step_ = 0;
+  UpdateInlineAllocationLimit(0);
+}
+
+
+void NewSpace::ResumeInlineAllocationObservers() {
+  DCHECK(top_on_previous_step_ == 0);
+  inline_allocation_observers_paused_ = false;
+  StartNextInlineAllocationStep();
+}
+
+
+void NewSpace::InlineAllocationStep(Address top, Address new_top,
+                                    Address soon_object, size_t size) {
   if (top_on_previous_step_) {
     int bytes_allocated = static_cast<int>(top - top_on_previous_step_);
     for (int i = 0; i < inline_allocation_observers_.length(); ++i) {
-      inline_allocation_observers_[i]->InlineAllocationStep(bytes_allocated);
+      inline_allocation_observers_[i]->InlineAllocationStep(bytes_allocated,
+                                                            soon_object, size);
     }
     top_on_previous_step_ = new_top;
   }
@@ -2700,7 +2728,8 @@ void PagedSpace::PrepareForMarkCompact() {
 
 intptr_t PagedSpace::SizeOfObjects() {
   const intptr_t size = Size() - (limit() - top());
-  DCHECK_GE(size, 0);
+  CHECK_GE(limit(), top());
+  CHECK_GE(size, 0);
   USE(size);
   return size;
 }
@@ -3204,11 +3233,6 @@ void LargeObjectSpace::Verify() {
     Map* map = object->map();
     CHECK(map->IsMap());
     CHECK(heap()->map_space()->Contains(map));
-
-    // Double unboxing in LO space is not allowed. This would break the
-    // lookup mechanism for store and slot buffer entries which use the
-    // page header tag.
-    CHECK(object->ContentType() != HeapObjectContents::kMixedValues);
 
     // We have only code, sequential strings, external strings
     // (sequential strings that have been morphed into external

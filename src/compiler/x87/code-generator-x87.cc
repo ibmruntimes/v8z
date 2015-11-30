@@ -218,6 +218,46 @@ class OutOfLineTruncateDoubleToI final : public OutOfLineCode {
   X87Register const input_;
 };
 
+
+class OutOfLineRecordWrite final : public OutOfLineCode {
+ public:
+  OutOfLineRecordWrite(CodeGenerator* gen, Register object, Operand operand,
+                       Register value, Register scratch0, Register scratch1,
+                       RecordWriteMode mode)
+      : OutOfLineCode(gen),
+        object_(object),
+        operand_(operand),
+        value_(value),
+        scratch0_(scratch0),
+        scratch1_(scratch1),
+        mode_(mode) {}
+
+  void Generate() final {
+    if (mode_ > RecordWriteMode::kValueIsPointer) {
+      __ JumpIfSmi(value_, exit());
+    }
+    if (mode_ > RecordWriteMode::kValueIsMap) {
+      __ CheckPageFlag(value_, scratch0_,
+                       MemoryChunk::kPointersToHereAreInterestingMask, zero,
+                       exit());
+    }
+    SaveFPRegsMode const save_fp_mode =
+        frame()->DidAllocateDoubleRegisters() ? kSaveFPRegs : kDontSaveFPRegs;
+    RecordWriteStub stub(isolate(), object_, scratch0_, scratch1_,
+                         EMIT_REMEMBERED_SET, save_fp_mode);
+    __ lea(scratch1_, operand_);
+    __ CallStub(&stub);
+  }
+
+ private:
+  Register const object_;
+  Operand const operand_;
+  Register const value_;
+  Register const scratch0_;
+  Register const scratch1_;
+  RecordWriteMode const mode_;
+};
+
 }  // namespace
 
 
@@ -290,12 +330,24 @@ class OutOfLineTruncateDoubleToI final : public OutOfLineCode {
   } while (false)
 
 
-void CodeGenerator::AssembleDeconstructActivationRecord() {
+void CodeGenerator::AssembleDeconstructActivationRecord(int stack_param_delta) {
+  int sp_slot_delta = TailCallFrameStackSlotDelta(stack_param_delta);
+  if (sp_slot_delta > 0) {
+    __ add(esp, Immediate(sp_slot_delta * kPointerSize));
+  }
   CallDescriptor* descriptor = linkage()->GetIncomingDescriptor();
-  int stack_slots = frame()->GetSpillSlotCount();
-  if (descriptor->IsJSFunctionCall() || stack_slots > 0) {
-    __ mov(esp, ebp);
+  int spill_slots = frame()->GetSpillSlotCount();
+  bool has_frame = descriptor->IsJSFunctionCall() || spill_slots > 0;
+  if (has_frame) {
     __ pop(ebp);
+  }
+}
+
+
+void CodeGenerator::AssemblePrepareTailCall(int stack_param_delta) {
+  int sp_slot_delta = TailCallFrameStackSlotDelta(stack_param_delta);
+  if (sp_slot_delta < 0) {
+    __ sub(esp, Immediate(-sp_slot_delta * kPointerSize));
   }
 }
 
@@ -332,7 +384,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     }
     case kArchTailCallCodeObject: {
-      AssembleDeconstructActivationRecord();
+      int stack_param_delta = i.InputInt32(instr->InputCount() - 1);
+      AssembleDeconstructActivationRecord(stack_param_delta);
       if (HasImmediateInput(instr, 0)) {
         Handle<Code> code = Handle<Code>::cast(i.InputHeapObject(0));
         __ jmp(code, RelocInfo::CODE_TARGET);
@@ -375,7 +428,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
         __ cmp(esi, FieldOperand(func, JSFunction::kContextOffset));
         __ Assert(equal, kWrongFunctionContext);
       }
-      AssembleDeconstructActivationRecord();
+      int stack_param_delta = i.InputInt32(instr->InputCount() - 1);
+      AssembleDeconstructActivationRecord(stack_param_delta);
       __ jmp(FieldOperand(func, JSFunction::kCodeEntryOffset));
       break;
     }
@@ -389,6 +443,9 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ PrepareCallCFunction(num_parameters, i.TempRegister(0));
       break;
     }
+    case kArchPrepareTailCall:
+      AssemblePrepareTailCall(i.InputInt32(instr->InputCount() - 1));
+      break;
     case kArchCallCFunction: {
       int const num_parameters = MiscField::decode(instr->opcode());
       if (HasImmediateInput(instr, 0)) {
@@ -454,6 +511,24 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       if (!instr->InputAt(0)->IsDoubleRegister()) {
         __ fstp(0);
       }
+      break;
+    }
+    case kArchStoreWithWriteBarrier: {
+      RecordWriteMode mode =
+          static_cast<RecordWriteMode>(MiscField::decode(instr->opcode()));
+      Register object = i.InputRegister(0);
+      size_t index = 0;
+      Operand operand = i.MemoryOperand(&index);
+      Register value = i.InputRegister(index);
+      Register scratch0 = i.TempRegister(0);
+      Register scratch1 = i.TempRegister(1);
+      auto ool = new (zone()) OutOfLineRecordWrite(this, object, operand, value,
+                                                   scratch0, scratch1, mode);
+      __ mov(operand, value);
+      __ CheckPageFlag(object, scratch0,
+                       MemoryChunk::kPointersFromHereAreInterestingMask,
+                       not_zero, ool->entry());
+      __ bind(ool->exit());
       break;
     }
     case kX87Add:
@@ -1216,24 +1291,6 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
         UNREACHABLE();
       }
       break;
-    case kX87StoreWriteBarrier: {
-      Register object = i.InputRegister(0);
-      Register value = i.InputRegister(2);
-      SaveFPRegsMode mode =
-          frame()->DidAllocateDoubleRegisters() ? kSaveFPRegs : kDontSaveFPRegs;
-      if (HasImmediateInput(instr, 1)) {
-        int index = i.InputInt32(1);
-        Register scratch = i.TempRegister(1);
-        __ mov(Operand(object, index), value);
-        __ RecordWriteContextSlot(object, index, value, scratch, mode);
-      } else {
-        Register index = i.InputRegister(1);
-        __ mov(Operand(object, index, times_1, 0), value);
-        __ lea(index, Operand(object, index, times_1, 0));
-        __ RecordWrite(object, index, value, mode);
-      }
-      break;
-    }
     case kCheckedLoadInt8:
       ASSEMBLE_CHECKED_LOAD_INTEGER(movsx_b);
       break;

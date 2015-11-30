@@ -74,7 +74,8 @@ const LanguageMode kLanguageModes[] = {SLOPPY, STRICT, STRONG};
 
 class JSTypedLoweringTest : public TypedGraphTest {
  public:
-  JSTypedLoweringTest() : TypedGraphTest(3), javascript_(zone()) {}
+  JSTypedLoweringTest()
+      : TypedGraphTest(3), javascript_(zone()), deps_(isolate(), zone()) {}
   ~JSTypedLoweringTest() override {}
 
  protected:
@@ -85,7 +86,9 @@ class JSTypedLoweringTest : public TypedGraphTest {
                     &machine);
     // TODO(titzer): mock the GraphReducer here for better unit testing.
     GraphReducer graph_reducer(zone(), graph());
-    JSTypedLowering reducer(&graph_reducer, &jsgraph, zone());
+    JSTypedLowering reducer(&graph_reducer, &deps_,
+                            JSTypedLowering::kDeoptimizationEnabled, &jsgraph,
+                            zone());
     return reducer.Reduce(node);
   }
 
@@ -116,6 +119,7 @@ class JSTypedLoweringTest : public TypedGraphTest {
 
  private:
   JSOperatorBuilder javascript_;
+  CompilationDependencies deps_;
 };
 
 
@@ -975,6 +979,27 @@ TEST_F(JSTypedLoweringTest, JSAddWithString) {
 
 
 // -----------------------------------------------------------------------------
+// JSCreate
+
+
+TEST_F(JSTypedLoweringTest, JSCreate) {
+  Handle<JSFunction> function = isolate()->object_function();
+  Node* const target = Parameter(Type::Constant(function, graph()->zone()));
+  Node* const context = Parameter(Type::Any());
+  Node* const effect = graph()->start();
+  Reduction r = Reduce(graph()->NewNode(javascript()->Create(), target, target,
+                                        context, EmptyFrameState(), effect));
+  ASSERT_TRUE(r.Changed());
+  EXPECT_THAT(
+      r.replacement(),
+      IsFinishRegion(
+          IsAllocate(IsNumberConstant(function->initial_map()->instance_size()),
+                     IsBeginRegion(effect), _),
+          _));
+}
+
+
+// -----------------------------------------------------------------------------
 // JSCreateArguments
 
 
@@ -1066,22 +1091,26 @@ TEST_F(JSTypedLoweringTest, JSCreateClosure) {
 
 
 TEST_F(JSTypedLoweringTest, JSCreateLiteralArray) {
-  Node* const input0 = Parameter(0);
-  Node* const input1 = Parameter(1);
-  Node* const input2 = HeapConstant(factory()->NewFixedArray(12));
-  Node* const context = UndefinedConstant();
+  Handle<FixedArray> const constant_elements = factory()->NewFixedArray(12);
+  int const literal_flags = ArrayLiteral::kShallowElements;
+  int const literal_index = 1;
+  Node* const closure = Parameter(0);
+  Node* const context = Parameter(1);
   Node* const frame_state = EmptyFrameState();
   Node* const effect = graph()->start();
   Node* const control = graph()->start();
-  Reduction const r = Reduce(graph()->NewNode(
-      javascript()->CreateLiteralArray(ArrayLiteral::kShallowElements), input0,
-      input1, input2, context, frame_state, effect, control));
+  Reduction const r = Reduce(
+      graph()->NewNode(javascript()->CreateLiteralArray(
+                           constant_elements, literal_flags, literal_index),
+                       closure, context, frame_state, effect, control));
   ASSERT_TRUE(r.Changed());
   EXPECT_THAT(
       r.replacement(),
       IsCall(_, IsHeapConstant(
                     CodeFactory::FastCloneShallowArray(isolate()).code()),
-             input0, input1, input2, context, frame_state, effect, control));
+             closure, IsNumberConstant(literal_index),
+             IsHeapConstant(constant_elements), context, frame_state, effect,
+             control));
 }
 
 
@@ -1090,22 +1119,27 @@ TEST_F(JSTypedLoweringTest, JSCreateLiteralArray) {
 
 
 TEST_F(JSTypedLoweringTest, JSCreateLiteralObject) {
-  Node* const input0 = Parameter(0);
-  Node* const input1 = Parameter(1);
-  Node* const input2 = HeapConstant(factory()->NewFixedArray(2 * 6));
-  Node* const context = UndefinedConstant();
+  Handle<FixedArray> const constant_properties =
+      factory()->NewFixedArray(6 * 2);
+  int const literal_flags = ObjectLiteral::kShallowProperties;
+  int const literal_index = 1;
+  Node* const closure = Parameter(0);
+  Node* const context = Parameter(1);
   Node* const frame_state = EmptyFrameState();
   Node* const effect = graph()->start();
   Node* const control = graph()->start();
-  Reduction const r = Reduce(graph()->NewNode(
-      javascript()->CreateLiteralObject(ObjectLiteral::kShallowProperties),
-      input0, input1, input2, context, frame_state, effect, control));
+  Reduction const r = Reduce(
+      graph()->NewNode(javascript()->CreateLiteralObject(
+                           constant_properties, literal_flags, literal_index),
+                       closure, context, frame_state, effect, control));
   ASSERT_TRUE(r.Changed());
   EXPECT_THAT(
       r.replacement(),
       IsCall(_, IsHeapConstant(
                     CodeFactory::FastCloneShallowObject(isolate(), 6).code()),
-             input0, input1, input2, _, context, frame_state, effect, control));
+             closure, IsNumberConstant(literal_index),
+             IsHeapConstant(constant_properties), _, context, frame_state,
+             effect, control));
 }
 
 
@@ -1166,6 +1200,70 @@ TEST_F(JSTypedLoweringTest, JSCreateWithContext) {
                                             Context::MIN_CONTEXT_SLOTS)),
                                         IsBeginRegion(effect), control),
                              _));
+}
+
+
+// -----------------------------------------------------------------------------
+// JSInstanceOf
+// Test that instanceOf is reduced if and only if the right-hand side is a
+// function constant. Functional correctness is ensured elsewhere.
+
+
+TEST_F(JSTypedLoweringTest, JSInstanceOfSpecializationWithoutSmiCheck) {
+  Node* const context = Parameter(Type::Any());
+  Node* const frame_state = EmptyFrameState();
+  Node* const effect = graph()->start();
+  Node* const control = graph()->start();
+
+  // Reduce if left-hand side is known to be an object.
+  Node* instanceOf =
+      graph()->NewNode(javascript()->InstanceOf(), Parameter(Type::Object(), 0),
+                       HeapConstant(isolate()->object_function()), context,
+                       frame_state, effect, control);
+  Node* dummy = graph()->NewNode(javascript()->ToObject(), instanceOf, context,
+                                 frame_state, effect, control);
+  Reduction r = Reduce(instanceOf);
+  ASSERT_TRUE(r.Changed());
+  ASSERT_EQ(r.replacement(), dummy->InputAt(0));
+  ASSERT_NE(instanceOf, dummy->InputAt(0));
+}
+
+
+TEST_F(JSTypedLoweringTest, JSInstanceOfSpecializationWithSmiCheck) {
+  Node* const context = Parameter(Type::Any());
+  Node* const frame_state = EmptyFrameState();
+  Node* const effect = graph()->start();
+  Node* const control = graph()->start();
+
+  // Reduce if left-hand side could be a Smi.
+  Node* instanceOf =
+      graph()->NewNode(javascript()->InstanceOf(), Parameter(Type::Any(), 0),
+                       HeapConstant(isolate()->object_function()), context,
+                       frame_state, effect, control);
+  Node* dummy = graph()->NewNode(javascript()->ToObject(), instanceOf, context,
+                                 frame_state, effect, control);
+  Reduction r = Reduce(instanceOf);
+  ASSERT_TRUE(r.Changed());
+  ASSERT_EQ(r.replacement(), dummy->InputAt(0));
+  ASSERT_NE(instanceOf, dummy->InputAt(0));
+}
+
+
+TEST_F(JSTypedLoweringTest, JSInstanceOfNoSpecialization) {
+  Node* const context = Parameter(Type::Any());
+  Node* const frame_state = EmptyFrameState();
+  Node* const effect = graph()->start();
+  Node* const control = graph()->start();
+
+  // Do not reduce if right-hand side is not a function constant.
+  Node* instanceOf = graph()->NewNode(
+      javascript()->InstanceOf(), Parameter(Type::Any(), 0),
+      Parameter(Type::Any()), context, frame_state, effect, control);
+  Node* dummy = graph()->NewNode(javascript()->ToObject(), instanceOf, context,
+                                 frame_state, effect, control);
+  Reduction r = Reduce(instanceOf);
+  ASSERT_FALSE(r.Changed());
+  ASSERT_EQ(instanceOf, dummy->InputAt(0));
 }
 
 }  // namespace compiler

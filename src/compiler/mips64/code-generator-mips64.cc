@@ -213,6 +213,55 @@ class OutOfLineCeil final : public OutOfLineRound {
 };
 
 
+class OutOfLineTiesEven final : public OutOfLineRound {
+ public:
+  OutOfLineTiesEven(CodeGenerator* gen, DoubleRegister result)
+      : OutOfLineRound(gen, result) {}
+};
+
+
+class OutOfLineRecordWrite final : public OutOfLineCode {
+ public:
+  OutOfLineRecordWrite(CodeGenerator* gen, Register object, Register index,
+                       Register value, Register scratch0, Register scratch1,
+                       RecordWriteMode mode)
+      : OutOfLineCode(gen),
+        object_(object),
+        index_(index),
+        value_(value),
+        scratch0_(scratch0),
+        scratch1_(scratch1),
+        mode_(mode) {}
+
+  void Generate() final {
+    if (mode_ > RecordWriteMode::kValueIsPointer) {
+      __ JumpIfSmi(value_, exit());
+    }
+    if (mode_ > RecordWriteMode::kValueIsMap) {
+      __ CheckPageFlag(value_, scratch0_,
+                       MemoryChunk::kPointersToHereAreInterestingMask, eq,
+                       exit());
+    }
+    SaveFPRegsMode const save_fp_mode =
+        frame()->DidAllocateDoubleRegisters() ? kSaveFPRegs : kDontSaveFPRegs;
+    // TODO(turbofan): Once we get frame elision working, we need to save
+    // and restore lr properly here if the frame was elided.
+    RecordWriteStub stub(isolate(), object_, scratch0_, scratch1_,
+                         EMIT_REMEMBERED_SET, save_fp_mode);
+    __ Daddu(scratch1_, object_, index_);
+    __ CallStub(&stub);
+  }
+
+ private:
+  Register const object_;
+  Register const index_;
+  Register const value_;
+  Register const scratch0_;
+  Register const scratch1_;
+  RecordWriteMode const mode_;
+};
+
+
 Condition FlagsConditionToConditionCmp(FlagsCondition condition) {
   switch (condition) {
     case kEqual:
@@ -404,11 +453,24 @@ FPUCondition FlagsConditionToConditionCmpFPU(bool& predicate,
   } while (0)
 
 
-void CodeGenerator::AssembleDeconstructActivationRecord() {
+void CodeGenerator::AssembleDeconstructActivationRecord(int stack_param_delta) {
+  int sp_slot_delta = TailCallFrameStackSlotDelta(stack_param_delta);
+  if (sp_slot_delta > 0) {
+    __ daddiu(sp, sp, sp_slot_delta * kPointerSize);
+  }
   CallDescriptor* descriptor = linkage()->GetIncomingDescriptor();
-  int stack_slots = frame()->GetSpillSlotCount();
-  if (descriptor->IsJSFunctionCall() || stack_slots > 0) {
-    __ LeaveFrame(StackFrame::MANUAL);
+  int spill_slots = frame()->GetSpillSlotCount();
+  bool has_frame = descriptor->IsJSFunctionCall() || spill_slots > 0;
+  if (has_frame) {
+    __ Pop(ra, fp);
+  }
+}
+
+
+void CodeGenerator::AssemblePrepareTailCall(int stack_param_delta) {
+  int sp_slot_delta = TailCallFrameStackSlotDelta(stack_param_delta);
+  if (sp_slot_delta < 0) {
+    __ Dsubu(sp, sp, Operand(-sp_slot_delta * kPointerSize));
   }
 }
 
@@ -432,7 +494,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     }
     case kArchTailCallCodeObject: {
-      AssembleDeconstructActivationRecord();
+      int stack_param_delta = i.InputInt32(instr->InputCount() - 1);
+      AssembleDeconstructActivationRecord(stack_param_delta);
       if (instr->InputAt(0)->IsImmediate()) {
         __ Jump(Handle<Code>::cast(i.InputHeapObject(0)),
                 RelocInfo::CODE_TARGET);
@@ -462,7 +525,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
         __ ld(kScratchReg, FieldMemOperand(func, JSFunction::kContextOffset));
         __ Assert(eq, kWrongFunctionContext, cp, Operand(kScratchReg));
       }
-      AssembleDeconstructActivationRecord();
+      int stack_param_delta = i.InputInt32(instr->InputCount() - 1);
+      AssembleDeconstructActivationRecord(stack_param_delta);
       __ ld(at, FieldMemOperand(func, JSFunction::kCodeEntryOffset));
       __ Jump(at);
       break;
@@ -477,6 +541,9 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ PrepareCallCFunction(num_parameters, kScratchReg);
       break;
     }
+    case kArchPrepareTailCall:
+      AssemblePrepareTailCall(i.InputInt32(instr->InputCount() - 1));
+      break;
     case kArchCallCFunction: {
       int const num_parameters = MiscField::decode(instr->opcode());
       if (instr->InputAt(0)->IsImmediate()) {
@@ -518,6 +585,24 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     case kArchTruncateDoubleToI:
       __ TruncateDoubleToI(i.OutputRegister(), i.InputDoubleRegister(0));
       break;
+    case kArchStoreWithWriteBarrier: {
+      RecordWriteMode mode =
+          static_cast<RecordWriteMode>(MiscField::decode(instr->opcode()));
+      Register object = i.InputRegister(0);
+      Register index = i.InputRegister(1);
+      Register value = i.InputRegister(2);
+      Register scratch0 = i.TempRegister(0);
+      Register scratch1 = i.TempRegister(1);
+      auto ool = new (zone()) OutOfLineRecordWrite(this, object, index, value,
+                                                   scratch0, scratch1, mode);
+      __ Daddu(at, object, index);
+      __ sd(value, MemOperand(at));
+      __ CheckPageFlag(object, scratch0,
+                       MemoryChunk::kPointersFromHereAreInterestingMask, ne,
+                       ool->entry());
+      __ bind(ool->exit());
+      break;
+    }
     case kMips64Add:
       __ Addu(i.OutputRegister(), i.InputRegister(0), i.InputOperand(1));
       break;
@@ -538,6 +623,9 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     case kMips64MulHighU:
       __ Mulhu(i.OutputRegister(), i.InputRegister(0), i.InputOperand(1));
+      break;
+    case kMips64DMulHigh:
+      __ Dmulh(i.OutputRegister(), i.InputRegister(0), i.InputOperand(1));
       break;
     case kMips64Div:
       __ Div(i.OutputRegister(), i.InputRegister(0), i.InputOperand(1));
@@ -571,6 +659,9 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     case kMips64Or:
       __ Or(i.OutputRegister(), i.InputRegister(0), i.InputOperand(1));
+      break;
+    case kMips64Nor:
+      __ Nor(i.OutputRegister(), i.InputRegister(0), i.InputOperand(1));
       break;
     case kMips64Xor:
       __ Xor(i.OutputRegister(), i.InputRegister(0), i.InputOperand(1));
@@ -789,6 +880,10 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       ASSEMBLE_ROUND_DOUBLE_TO_DOUBLE(ceil_l_d, Ceil);
       break;
     }
+    case kMips64Float64RoundTiesEven: {
+      ASSEMBLE_ROUND_DOUBLE_TO_DOUBLE(round_l_d, TiesEven);
+      break;
+    }
     case kMips64Float64Max: {
       // (b < a) ? a : b
       if (kArchVariant == kMips64r6) {
@@ -857,6 +952,12 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ cvt_d_w(i.OutputDoubleRegister(), scratch);
       break;
     }
+    case kMips64CvtSL: {
+      FPURegister scratch = kScratchDoubleReg;
+      __ dmtc1(i.InputRegister(0), scratch);
+      __ cvt_s_l(i.OutputDoubleRegister(), scratch);
+      break;
+    }
     case kMips64CvtDL: {
       FPURegister scratch = kScratchDoubleReg;
       __ dmtc1(i.InputRegister(0), scratch);
@@ -864,8 +965,15 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     }
     case kMips64CvtDUw: {
-      FPURegister scratch = kScratchDoubleReg;
-      __ Cvt_d_uw(i.OutputDoubleRegister(), i.InputRegister(0), scratch);
+      __ Cvt_d_uw(i.OutputDoubleRegister(), i.InputRegister(0));
+      break;
+    }
+    case kMips64CvtDUl: {
+      __ Cvt_d_ul(i.OutputDoubleRegister(), i.InputRegister(0));
+      break;
+    }
+    case kMips64CvtSUl: {
+      __ Cvt_s_ul(i.OutputDoubleRegister(), i.InputRegister(0));
       break;
     }
     case kMips64TruncWD: {
@@ -875,10 +983,23 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ mfc1(i.OutputRegister(), scratch);
       break;
     }
+    case kMips64TruncLD: {
+      FPURegister scratch = kScratchDoubleReg;
+      // Other arches use round to zero here, so we follow.
+      __ trunc_l_d(scratch, i.InputDoubleRegister(0));
+      __ dmfc1(i.OutputRegister(), scratch);
+      break;
+    }
     case kMips64TruncUwD: {
       FPURegister scratch = kScratchDoubleReg;
       // TODO(plind): Fix wrong param order of Trunc_uw_d() macro-asm function.
       __ Trunc_uw_d(i.InputDoubleRegister(0), i.OutputRegister(), scratch);
+      break;
+    }
+    case kMips64TruncUlD: {
+      FPURegister scratch = kScratchDoubleReg;
+      // TODO(plind): Fix wrong param order of Trunc_ul_d() macro-asm function.
+      __ Trunc_ul_d(i.InputDoubleRegister(0), i.OutputRegister(), scratch);
       break;
     }
     case kMips64BitcastDL:
@@ -965,18 +1086,6 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       } else {
         __ sd(i.InputRegister(0), MemOperand(sp, i.InputInt32(1)));
       }
-      break;
-    }
-    case kMips64StoreWriteBarrier: {
-      Register object = i.InputRegister(0);
-      Register index = i.InputRegister(1);
-      Register value = i.InputRegister(2);
-      __ daddu(index, object, index);
-      __ sd(value, MemOperand(index));
-      SaveFPRegsMode mode =
-          frame()->DidAllocateDoubleRegisters() ? kSaveFPRegs : kDontSaveFPRegs;
-      RAStatus ra_status = kRAHasNotBeenSaved;
-      __ RecordWrite(object, index, value, ra_status, mode);
       break;
     }
     case kCheckedLoadInt8:

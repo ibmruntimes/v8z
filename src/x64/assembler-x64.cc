@@ -781,6 +781,24 @@ void Assembler::bsfl(Register dst, const Operand& src) {
 }
 
 
+void Assembler::bsfq(Register dst, Register src) {
+  EnsureSpace ensure_space(this);
+  emit_rex_64(dst, src);
+  emit(0x0F);
+  emit(0xBC);
+  emit_modrm(dst, src);
+}
+
+
+void Assembler::bsfq(Register dst, const Operand& src) {
+  EnsureSpace ensure_space(this);
+  emit_rex_64(dst, src);
+  emit(0x0F);
+  emit(0xBC);
+  emit_operand(dst, src);
+}
+
+
 void Assembler::call(Label* L) {
   positions_recorder()->WriteRecordedPositions();
   EnsureSpace ensure_space(this);
@@ -3141,6 +3159,28 @@ void Assembler::cvtlsi2ss(XMMRegister dst, Register src) {
   EnsureSpace ensure_space(this);
   emit(0xF3);
   emit_optional_rex_32(dst, src);
+  emit(0x0F);
+  emit(0x2A);
+  emit_sse_operand(dst, src);
+}
+
+
+void Assembler::cvtqsi2ss(XMMRegister dst, const Operand& src) {
+  DCHECK(!IsEnabled(AVX));
+  EnsureSpace ensure_space(this);
+  emit(0xF3);
+  emit_rex_64(dst, src);
+  emit(0x0F);
+  emit(0x2A);
+  emit_sse_operand(dst, src);
+}
+
+
+void Assembler::cvtqsi2ss(XMMRegister dst, Register src) {
+  DCHECK(!IsEnabled(AVX));
+  EnsureSpace ensure_space(this);
+  emit(0xF3);
+  emit_rex_64(dst, src);
   emit(0x0F);
   emit(0x2A);
   emit_sse_operand(dst, src);

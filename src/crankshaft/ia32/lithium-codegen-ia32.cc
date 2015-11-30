@@ -3232,7 +3232,8 @@ void LCodeGen::DoApplyArguments(LApplyArguments* instr) {
   SafepointGenerator safepoint_generator(
       this, pointers, Safepoint::kLazyDeopt);
   ParameterCount actual(eax);
-  __ InvokeFunction(function, actual, CALL_FUNCTION, safepoint_generator);
+  __ InvokeFunction(function, no_reg, actual, CALL_FUNCTION,
+                    safepoint_generator);
 }
 
 
@@ -3291,7 +3292,8 @@ void LCodeGen::CallKnownFunction(Handle<JSFunction> function,
     // Change context.
     __ mov(esi, FieldOperand(function_reg, JSFunction::kContextOffset));
 
-    // Always initialize eax to the number of actual arguments.
+    // Always initialize new target and number of actual arguments.
+    __ mov(edx, factory()->undefined_value());
     __ mov(eax, arity);
 
     // Invoke function directly.
@@ -3354,10 +3356,12 @@ void LCodeGen::DoCallJSFunction(LCallJSFunction* instr) {
   DCHECK(ToRegister(instr->function()).is(edi));
   DCHECK(ToRegister(instr->result()).is(eax));
 
-  __ mov(eax, instr->arity());
-
   // Change context.
   __ mov(esi, FieldOperand(edi, JSFunction::kContextOffset));
+
+  // Always initialize new target and number of actual arguments.
+  __ mov(edx, factory()->undefined_value());
+  __ mov(eax, instr->arity());
 
   bool is_self_call = false;
   if (instr->hydrogen()->function()->IsConstant()) {
@@ -3739,7 +3743,7 @@ void LCodeGen::DoInvokeFunction(LInvokeFunction* instr) {
     SafepointGenerator generator(
         this, pointers, Safepoint::kLazyDeopt);
     ParameterCount count(instr->arity());
-    __ InvokeFunction(edi, count, CALL_FUNCTION, generator);
+    __ InvokeFunction(edi, no_reg, count, CALL_FUNCTION, generator);
   } else {
     CallKnownFunction(known_function,
                       instr->hydrogen()->formal_parameter_count(),
@@ -3775,19 +3779,6 @@ void LCodeGen::DoCallFunction(LCallFunction* instr) {
     __ Set(eax, arity);
     CallCode(isolate()->builtins()->Call(mode), RelocInfo::CODE_TARGET, instr);
   }
-}
-
-
-void LCodeGen::DoCallNew(LCallNew* instr) {
-  DCHECK(ToRegister(instr->context()).is(esi));
-  DCHECK(ToRegister(instr->constructor()).is(edi));
-  DCHECK(ToRegister(instr->result()).is(eax));
-
-  // No cell in ebx for construct type feedback in optimized code
-  __ mov(ebx, isolate()->factory()->undefined_value());
-  CallConstructStub stub(isolate(), NO_CALL_CONSTRUCTOR_FLAGS);
-  __ Move(eax, Immediate(instr->arity()));
-  CallCode(stub.GetCode(), RelocInfo::CONSTRUCT_CALL, instr);
 }
 
 

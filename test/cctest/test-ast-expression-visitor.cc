@@ -2,6 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// TODO(jochen): Remove this after the setting is turned on globally.
+#define V8_IMMINENT_DEPRECATION_WARNINGS
+
 #include <stdlib.h>
 
 #include "src/v8.h"
@@ -263,6 +266,33 @@ TEST(VisitExpressions) {
       // return { geometricMean: geometricMean };
       CHECK_EXPR(ObjectLiteral, Bounds::Unbounded()) {
         CHECK_VAR(geometricMean, Bounds::Unbounded());
+      }
+    }
+  }
+  CHECK_TYPES_END
+}
+
+
+TEST(VisitConditional) {
+  v8::V8::Initialize();
+  HandleAndZoneScope handles;
+  ZoneVector<ExpressionTypeEntry> types(handles.main_zone());
+  // Check that traversing the ternary operator works.
+  const char test_function[] =
+      "function foo() {\n"
+      "  var a, b, c;\n"
+      "  var x = a ? b : c;\n"
+      "}\n";
+  CollectTypes(&handles, test_function, &types);
+  CHECK_TYPES_BEGIN {
+    CHECK_EXPR(FunctionLiteral, Bounds::Unbounded()) {
+      CHECK_EXPR(Assignment, Bounds::Unbounded()) {
+        CHECK_VAR(x, Bounds::Unbounded());
+        CHECK_EXPR(Conditional, Bounds::Unbounded()) {
+          CHECK_VAR(a, Bounds::Unbounded());
+          CHECK_VAR(b, Bounds::Unbounded());
+          CHECK_VAR(c, Bounds::Unbounded());
+        }
       }
     }
   }

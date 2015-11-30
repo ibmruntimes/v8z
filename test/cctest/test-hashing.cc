@@ -25,6 +25,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+// TODO(jochen): Remove this after the setting is turned on globally.
+#define V8_IMMINENT_DEPRECATION_WARNINGS
+
 #include <stdlib.h>
 
 #include "src/v8.h"
@@ -133,8 +136,8 @@ void check(uint32_t key) {
 
   HASH_FUNCTION hash = FUNCTION_CAST<HASH_FUNCTION>(code->entry());
 #ifdef USE_SIMULATOR
-  uint32_t codegen_hash = static_cast<uint32_t>(
-        reinterpret_cast<uintptr_t>(CALL_GENERATED_CODE(hash, 0, 0, 0, 0, 0)));
+  uint32_t codegen_hash = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(
+      CALL_GENERATED_CODE(isolate, hash, 0, 0, 0, 0, 0)));
 #else
   uint32_t codegen_hash = hash();
 #endif

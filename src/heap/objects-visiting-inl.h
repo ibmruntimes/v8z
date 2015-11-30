@@ -9,6 +9,7 @@
 #include "src/heap/objects-visiting.h"
 #include "src/ic/ic-state.h"
 #include "src/macro-assembler.h"
+#include "src/objects-body-descriptors-inl.h"
 
 namespace v8 {
 namespace internal {
@@ -63,7 +64,11 @@ void StaticNewSpaceVisitor<StaticVisitor>::Initialize() {
 
   table_.Register(kVisitSeqTwoByteString, &VisitSeqTwoByteString);
 
-  table_.Register(kVisitJSFunction, &VisitJSFunction);
+  // Don't visit code entry. We are using this visitor only during scavenges.
+  table_.Register(
+      kVisitJSFunction,
+      &FlexibleBodyVisitor<StaticVisitor, JSFunction::BodyDescriptorWeakCode,
+                           int>::Visit);
 
   table_.Register(kVisitJSArrayBuffer, &VisitJSArrayBuffer);
 
@@ -90,14 +95,14 @@ void StaticNewSpaceVisitor<StaticVisitor>::Initialize() {
 template <typename StaticVisitor>
 int StaticNewSpaceVisitor<StaticVisitor>::VisitJSArrayBuffer(
     Map* map, HeapObject* object) {
-  Heap* heap = map->GetHeap();
+  typedef FlexibleBodyVisitor<StaticVisitor, JSArrayBuffer::BodyDescriptor, int>
+      JSArrayBufferBodyVisitor;
 
-  JSArrayBuffer::JSArrayBufferIterateBody<
-      StaticNewSpaceVisitor<StaticVisitor> >(heap, object);
   if (!JSArrayBuffer::cast(object)->is_external()) {
+    Heap* heap = map->GetHeap();
     heap->array_buffer_tracker()->MarkLive(JSArrayBuffer::cast(object));
   }
-  return JSArrayBuffer::kSizeWithInternalFields;
+  return JSArrayBufferBodyVisitor::Visit(map, object);
 }
 
 
@@ -299,13 +304,6 @@ void StaticMarkingVisitor<StaticVisitor>::VisitNativeContext(
     Map* map, HeapObject* object) {
   FixedBodyVisitor<StaticVisitor, Context::MarkCompactBodyDescriptor,
                    void>::Visit(map, object);
-
-  MarkCompactCollector* collector = map->GetHeap()->mark_compact_collector();
-  for (int idx = Context::FIRST_WEAK_SLOT; idx < Context::NATIVE_CONTEXT_SLOTS;
-       ++idx) {
-    Object** slot = Context::cast(object)->RawFieldOfElementAt(idx);
-    collector->RecordSlot(object, slot, *slot);
-  }
 }
 
 
@@ -423,6 +421,8 @@ void StaticMarkingVisitor<StaticVisitor>::VisitWeakCollection(
 template <typename StaticVisitor>
 void StaticMarkingVisitor<StaticVisitor>::VisitCode(Map* map,
                                                     HeapObject* object) {
+  typedef FlexibleBodyVisitor<StaticVisitor, Code::BodyDescriptor, void>
+      CodeBodyVisitor;
   Heap* heap = map->GetHeap();
   Code* code = Code::cast(object);
   if (FLAG_age_code && !heap->isolate()->serializer_enabled()) {
@@ -435,7 +435,7 @@ void StaticMarkingVisitor<StaticVisitor>::VisitCode(Map* map,
       MarkInlinedFunctionsCode(heap, code);
     }
   }
-  code->CodeIterateBody<StaticVisitor>(heap);
+  CodeBodyVisitor::Visit(map, object);
 }
 
 
@@ -451,16 +451,16 @@ void StaticMarkingVisitor<StaticVisitor>::VisitSharedFunctionInfo(
     shared->ClearTypeFeedbackInfoAtGCTime();
   }
   if (FLAG_flush_optimized_code_cache) {
-    if (!shared->optimized_code_map()->IsSmi()) {
+    if (!shared->OptimizedCodeMapIsCleared()) {
       // Always flush the optimized code map if requested by flag.
       shared->ClearOptimizedCodeMap();
     }
   } else {
-    if (!shared->optimized_code_map()->IsSmi()) {
+    if (!shared->OptimizedCodeMapIsCleared()) {
       // Treat some references within the code map weakly by marking the
       // code map itself but not pushing it onto the marking deque. The
       // map will be processed after marking.
-      FixedArray* code_map = FixedArray::cast(shared->optimized_code_map());
+      FixedArray* code_map = shared->optimized_code_map();
       MarkOptimizedCodeMap(heap, code_map);
     }
   }
@@ -507,26 +507,23 @@ void StaticMarkingVisitor<StaticVisitor>::VisitJSFunction(Map* map,
         VisitSharedFunctionInfoWeakCode(heap, shared);
       }
       // Treat the reference to the code object weakly.
-      VisitJSFunctionWeakCode(heap, object);
+      VisitJSFunctionWeakCode(map, object);
       return;
     } else {
       // Visit all unoptimized code objects to prevent flushing them.
       StaticVisitor::MarkObject(heap, function->shared()->code());
     }
   }
-  VisitJSFunctionStrongCode(heap, object);
+  VisitJSFunctionStrongCode(map, object);
 }
 
 
 template <typename StaticVisitor>
 void StaticMarkingVisitor<StaticVisitor>::VisitJSRegExp(Map* map,
                                                         HeapObject* object) {
-  int last_property_offset =
-      JSRegExp::kSize + kPointerSize * map->GetInObjectProperties();
-  StaticVisitor::VisitPointers(
-      map->GetHeap(), object,
-      HeapObject::RawField(object, JSRegExp::kPropertiesOffset),
-      HeapObject::RawField(object, last_property_offset));
+  typedef FlexibleBodyVisitor<StaticVisitor, JSRegExp::BodyDescriptor, void>
+      JSRegExpBodyVisitor;
+  JSRegExpBodyVisitor::Visit(map, object);
 }
 
 
@@ -535,7 +532,11 @@ void StaticMarkingVisitor<StaticVisitor>::VisitJSArrayBuffer(
     Map* map, HeapObject* object) {
   Heap* heap = map->GetHeap();
 
-  JSArrayBuffer::JSArrayBufferIterateBody<StaticVisitor>(heap, object);
+  typedef FlexibleBodyVisitor<StaticVisitor, JSArrayBuffer::BodyDescriptor,
+                              void> JSArrayBufferBodyVisitor;
+
+  JSArrayBufferBodyVisitor::Visit(map, object);
+
   if (!JSArrayBuffer::cast(object)->is_external() &&
       !heap->InNewSpace(object)) {
     heap->array_buffer_tracker()->MarkLive(JSArrayBuffer::cast(object));
@@ -546,20 +547,18 @@ void StaticMarkingVisitor<StaticVisitor>::VisitJSArrayBuffer(
 template <typename StaticVisitor>
 void StaticMarkingVisitor<StaticVisitor>::VisitJSTypedArray(
     Map* map, HeapObject* object) {
-  StaticVisitor::VisitPointers(
-      map->GetHeap(), object,
-      HeapObject::RawField(object, JSTypedArray::BodyDescriptor::kStartOffset),
-      HeapObject::RawField(object, JSTypedArray::kSizeWithInternalFields));
+  typedef FlexibleBodyVisitor<StaticVisitor, JSTypedArray::BodyDescriptor, void>
+      JSTypedArrayBodyVisitor;
+  JSTypedArrayBodyVisitor::Visit(map, object);
 }
 
 
 template <typename StaticVisitor>
 void StaticMarkingVisitor<StaticVisitor>::VisitJSDataView(Map* map,
                                                           HeapObject* object) {
-  StaticVisitor::VisitPointers(
-      map->GetHeap(), object,
-      HeapObject::RawField(object, JSDataView::BodyDescriptor::kStartOffset),
-      HeapObject::RawField(object, JSDataView::kSizeWithInternalFields));
+  typedef FlexibleBodyVisitor<StaticVisitor, JSDataView::BodyDescriptor, void>
+      JSDataViewBodyVisitor;
+  JSDataViewBodyVisitor::Visit(map, object);
 }
 
 
@@ -801,105 +800,23 @@ void StaticMarkingVisitor<StaticVisitor>::VisitSharedFunctionInfoWeakCode(
 
 template <typename StaticVisitor>
 void StaticMarkingVisitor<StaticVisitor>::VisitJSFunctionStrongCode(
-    Heap* heap, HeapObject* object) {
-  Object** start_slot =
-      HeapObject::RawField(object, JSFunction::kPropertiesOffset);
-  Object** end_slot =
-      HeapObject::RawField(object, JSFunction::kCodeEntryOffset);
-  StaticVisitor::VisitPointers(heap, object, start_slot, end_slot);
-
-  VisitCodeEntry(heap, object,
-                 object->address() + JSFunction::kCodeEntryOffset);
-  STATIC_ASSERT(JSFunction::kCodeEntryOffset + kPointerSize ==
-                JSFunction::kPrototypeOrInitialMapOffset);
-
-  start_slot =
-      HeapObject::RawField(object, JSFunction::kPrototypeOrInitialMapOffset);
-  end_slot = HeapObject::RawField(object, JSFunction::kNonWeakFieldsEndOffset);
-  StaticVisitor::VisitPointers(heap, object, start_slot, end_slot);
+    Map* map, HeapObject* object) {
+  typedef FlexibleBodyVisitor<StaticVisitor,
+                              JSFunction::BodyDescriptorStrongCode,
+                              void> JSFunctionStrongCodeBodyVisitor;
+  JSFunctionStrongCodeBodyVisitor::Visit(map, object);
 }
 
 
 template <typename StaticVisitor>
 void StaticMarkingVisitor<StaticVisitor>::VisitJSFunctionWeakCode(
-    Heap* heap, HeapObject* object) {
-  Object** start_slot =
-      HeapObject::RawField(object, JSFunction::kPropertiesOffset);
-  Object** end_slot =
-      HeapObject::RawField(object, JSFunction::kCodeEntryOffset);
-  StaticVisitor::VisitPointers(heap, object, start_slot, end_slot);
-
-  // Skip visiting kCodeEntryOffset as it is treated weakly here.
-  STATIC_ASSERT(JSFunction::kCodeEntryOffset + kPointerSize ==
-                JSFunction::kPrototypeOrInitialMapOffset);
-
-  start_slot =
-      HeapObject::RawField(object, JSFunction::kPrototypeOrInitialMapOffset);
-  end_slot = HeapObject::RawField(object, JSFunction::kNonWeakFieldsEndOffset);
-  StaticVisitor::VisitPointers(heap, object, start_slot, end_slot);
+    Map* map, HeapObject* object) {
+  typedef FlexibleBodyVisitor<StaticVisitor, JSFunction::BodyDescriptorWeakCode,
+                              void> JSFunctionWeakCodeBodyVisitor;
+  JSFunctionWeakCodeBodyVisitor::Visit(map, object);
 }
 
 
-void Code::CodeIterateBody(ObjectVisitor* v) {
-  int mode_mask = RelocInfo::kCodeTargetMask |
-                  RelocInfo::ModeMask(RelocInfo::EMBEDDED_OBJECT) |
-                  RelocInfo::ModeMask(RelocInfo::CELL) |
-                  RelocInfo::ModeMask(RelocInfo::EXTERNAL_REFERENCE) |
-                  RelocInfo::ModeMask(RelocInfo::INTERNAL_REFERENCE) |
-                  RelocInfo::ModeMask(RelocInfo::INTERNAL_REFERENCE_ENCODED) |
-                  RelocInfo::ModeMask(RelocInfo::RUNTIME_ENTRY) |
-                  RelocInfo::kDebugBreakSlotMask;
-
-  // There are two places where we iterate code bodies: here and the
-  // templated CodeIterateBody (below). They should be kept in sync.
-  IteratePointer(v, kRelocationInfoOffset);
-  IteratePointer(v, kHandlerTableOffset);
-  IteratePointer(v, kDeoptimizationDataOffset);
-  IteratePointer(v, kTypeFeedbackInfoOffset);
-  IterateNextCodeLink(v, kNextCodeLinkOffset);
-
-  RelocIterator it(this, mode_mask);
-  Isolate* isolate = this->GetIsolate();
-  for (; !it.done(); it.next()) {
-    it.rinfo()->Visit(isolate, v);
-  }
-}
-
-
-template <typename StaticVisitor>
-void Code::CodeIterateBody(Heap* heap) {
-  int mode_mask = RelocInfo::kCodeTargetMask |
-                  RelocInfo::ModeMask(RelocInfo::EMBEDDED_OBJECT) |
-                  RelocInfo::ModeMask(RelocInfo::CELL) |
-                  RelocInfo::ModeMask(RelocInfo::EXTERNAL_REFERENCE) |
-                  RelocInfo::ModeMask(RelocInfo::INTERNAL_REFERENCE) |
-                  RelocInfo::ModeMask(RelocInfo::INTERNAL_REFERENCE_ENCODED) |
-                  RelocInfo::ModeMask(RelocInfo::RUNTIME_ENTRY) |
-                  RelocInfo::kDebugBreakSlotMask;
-
-  // There are two places where we iterate code bodies: here and the non-
-  // templated CodeIterateBody (above). They should be kept in sync.
-  StaticVisitor::VisitPointer(
-      heap, this,
-      reinterpret_cast<Object**>(this->address() + kRelocationInfoOffset));
-  StaticVisitor::VisitPointer(
-      heap, this,
-      reinterpret_cast<Object**>(this->address() + kHandlerTableOffset));
-  StaticVisitor::VisitPointer(
-      heap, this,
-      reinterpret_cast<Object**>(this->address() + kDeoptimizationDataOffset));
-  StaticVisitor::VisitPointer(
-      heap, this,
-      reinterpret_cast<Object**>(this->address() + kTypeFeedbackInfoOffset));
-  StaticVisitor::VisitNextCodeLink(
-      heap, reinterpret_cast<Object**>(this->address() + kNextCodeLinkOffset));
-
-
-  RelocIterator it(this, mode_mask);
-  for (; !it.done(); it.next()) {
-    it.rinfo()->template Visit<StaticVisitor>(heap);
-  }
-}
 }  // namespace internal
 }  // namespace v8
 

@@ -25,6 +25,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+// TODO(jochen): Remove this after the setting is turned on globally.
+#define V8_IMMINENT_DEPRECATION_WARNINGS
+
 #include <stdlib.h>
 
 #include "src/v8.h"
@@ -156,8 +159,9 @@ static Isolate* GetIsolateFrom(LocalContext* context) {
 int32_t RunGeneratedCodeCallWrapper(ConvertDToIFunc func,
                                     double from) {
 #ifdef USE_SIMULATOR
-  Simulator::current(Isolate::Current())->CallFP(FUNCTION_ADDR(func), from, 0.);
-  return Simulator::current(Isolate::Current())->get_register(v0.code());
+  Simulator::current(CcTest::i_isolate())
+      ->CallFP(FUNCTION_ADDR(func), from, 0.);
+  return Simulator::current(CcTest::i_isolate())->get_register(v0.code());
 #else
   return (*func)(from);
 #endif

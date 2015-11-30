@@ -113,7 +113,7 @@ class ParserBase : public Traits {
         allow_harmony_sloppy_let_(false),
         allow_harmony_rest_parameters_(false),
         allow_harmony_default_parameters_(false),
-        allow_harmony_destructuring_(false),
+        allow_harmony_destructuring_bind_(false),
         allow_strong_mode_(false),
         allow_legacy_const_(true),
         allow_harmony_do_expressions_(false) {}
@@ -129,7 +129,7 @@ class ParserBase : public Traits {
   ALLOW_ACCESSORS(harmony_sloppy_let);
   ALLOW_ACCESSORS(harmony_rest_parameters);
   ALLOW_ACCESSORS(harmony_default_parameters);
-  ALLOW_ACCESSORS(harmony_destructuring);
+  ALLOW_ACCESSORS(harmony_destructuring_bind);
   ALLOW_ACCESSORS(strong_mode);
   ALLOW_ACCESSORS(legacy_const);
   ALLOW_ACCESSORS(harmony_do_expressions);
@@ -664,9 +664,20 @@ class ParserBase : public Traits {
   IdentifierT ParseAndClassifyIdentifier(ExpressionClassifier* classifier,
                                          bool* ok);
   // Parses an identifier or a strict mode future reserved word, and indicate
-  // whether it is strict mode future reserved.
-  IdentifierT ParseIdentifierOrStrictReservedWord(bool* is_strict_reserved,
+  // whether it is strict mode future reserved. Allows passing in is_generator
+  // for the case of parsing the identifier in a function expression, where the
+  // relevant "is_generator" bit is of the function being parsed, not the
+  // containing
+  // function.
+  IdentifierT ParseIdentifierOrStrictReservedWord(bool is_generator,
+                                                  bool* is_strict_reserved,
                                                   bool* ok);
+  IdentifierT ParseIdentifierOrStrictReservedWord(bool* is_strict_reserved,
+                                                  bool* ok) {
+    return ParseIdentifierOrStrictReservedWord(this->is_generator(),
+                                               is_strict_reserved, ok);
+  }
+
   IdentifierT ParseIdentifierName(bool* ok);
   // Parses an identifier and determines whether or not it is 'get' or 'set'.
   IdentifierT ParseIdentifierNameOrGetOrSet(bool* is_get, bool* is_set,
@@ -684,6 +695,7 @@ class ParserBase : public Traits {
   ExpressionT ParseArrayLiteral(ExpressionClassifier* classifier, bool* ok);
   ExpressionT ParsePropertyName(IdentifierT* name, bool* is_get, bool* is_set,
                                 bool* is_static, bool* is_computed_name,
+                                bool* is_identifier, bool* is_escaped_keyword,
                                 ExpressionClassifier* classifier, bool* ok);
   ExpressionT ParseObjectLiteral(ExpressionClassifier* classifier, bool* ok);
   ObjectLiteralPropertyT ParsePropertyDefinition(
@@ -834,7 +846,7 @@ class ParserBase : public Traits {
   bool allow_harmony_sloppy_let_;
   bool allow_harmony_rest_parameters_;
   bool allow_harmony_default_parameters_;
-  bool allow_harmony_destructuring_;
+  bool allow_harmony_destructuring_bind_;
   bool allow_strong_mode_;
   bool allow_legacy_const_;
   bool allow_harmony_do_expressions_;
@@ -2016,6 +2028,11 @@ void ParserBase<Traits>::GetUnexpectedTokenMessage(
       *message = MessageTemplate::kUnexpectedTemplateString;
       *arg = nullptr;
       break;
+    case Token::ESCAPED_STRICT_RESERVED_WORD:
+    case Token::ESCAPED_KEYWORD:
+      *message = MessageTemplate::kInvalidEscapedReservedWord;
+      *arg = nullptr;
+      break;
     default:
       const char* name = Token::String(token);
       DCHECK(name != NULL);
@@ -2115,10 +2132,17 @@ ParserBase<Traits>::ParseAndClassifyIdentifier(ExpressionClassifier* classifier,
     return name;
   } else if (is_sloppy(language_mode()) &&
              (next == Token::FUTURE_STRICT_RESERVED_WORD ||
+              next == Token::ESCAPED_STRICT_RESERVED_WORD ||
               next == Token::LET || next == Token::STATIC ||
               (next == Token::YIELD && !is_generator()))) {
     classifier->RecordStrictModeFormalParameterError(
         scanner()->location(), MessageTemplate::kUnexpectedStrictReserved);
+    if (next == Token::ESCAPED_STRICT_RESERVED_WORD &&
+        is_strict(language_mode())) {
+      ReportUnexpectedToken(next);
+      *ok = false;
+      return Traits::EmptyIdentifier();
+    }
     if (next == Token::LET) {
       classifier->RecordLetPatternError(scanner()->location(),
                                         MessageTemplate::kLetInLexicalBinding);
@@ -2133,15 +2157,14 @@ ParserBase<Traits>::ParseAndClassifyIdentifier(ExpressionClassifier* classifier,
 
 
 template <class Traits>
-typename ParserBase<Traits>::IdentifierT ParserBase<
-    Traits>::ParseIdentifierOrStrictReservedWord(bool* is_strict_reserved,
-                                                 bool* ok) {
+typename ParserBase<Traits>::IdentifierT
+ParserBase<Traits>::ParseIdentifierOrStrictReservedWord(
+    bool is_generator, bool* is_strict_reserved, bool* ok) {
   Token::Value next = Next();
   if (next == Token::IDENTIFIER) {
     *is_strict_reserved = false;
   } else if (next == Token::FUTURE_STRICT_RESERVED_WORD || next == Token::LET ||
-             next == Token::STATIC ||
-             (next == Token::YIELD && !this->is_generator())) {
+             next == Token::STATIC || (next == Token::YIELD && !is_generator)) {
     *is_strict_reserved = true;
   } else {
     ReportUnexpectedToken(next);
@@ -2161,7 +2184,9 @@ ParserBase<Traits>::ParseIdentifierName(bool* ok) {
   Token::Value next = Next();
   if (next != Token::IDENTIFIER && next != Token::FUTURE_RESERVED_WORD &&
       next != Token::LET && next != Token::STATIC && next != Token::YIELD &&
-      next != Token::FUTURE_STRICT_RESERVED_WORD && !Token::IsKeyword(next)) {
+      next != Token::FUTURE_STRICT_RESERVED_WORD &&
+      next != Token::ESCAPED_KEYWORD &&
+      next != Token::ESCAPED_STRICT_RESERVED_WORD && !Token::IsKeyword(next)) {
     this->ReportUnexpectedToken(next);
     *ok = false;
     return Traits::EmptyIdentifier();
@@ -2278,6 +2303,7 @@ ParserBase<Traits>::ParsePrimaryExpression(ExpressionClassifier* classifier,
     case Token::LET:
     case Token::STATIC:
     case Token::YIELD:
+    case Token::ESCAPED_STRICT_RESERVED_WORD:
     case Token::FUTURE_STRICT_RESERVED_WORD: {
       // Using eval or arguments in this context is OK even in strict mode.
       IdentifierT name = ParseAndClassifyIdentifier(classifier, CHECK_OK);
@@ -2303,13 +2329,13 @@ ParserBase<Traits>::ParsePrimaryExpression(ExpressionClassifier* classifier,
       return this->ParseRegExpLiteral(false, classifier, ok);
 
     case Token::LBRACK:
-      if (!allow_harmony_destructuring()) {
+      if (!allow_harmony_destructuring_bind()) {
         BindingPatternUnexpectedToken(classifier);
       }
       return this->ParseArrayLiteral(classifier, ok);
 
     case Token::LBRACE:
-      if (!allow_harmony_destructuring()) {
+      if (!allow_harmony_destructuring_bind()) {
         BindingPatternUnexpectedToken(classifier);
       }
       return this->ParseObjectLiteral(classifier, ok);
@@ -2542,7 +2568,8 @@ typename ParserBase<Traits>::ExpressionT ParserBase<Traits>::ParseArrayLiteral(
 template <class Traits>
 typename ParserBase<Traits>::ExpressionT ParserBase<Traits>::ParsePropertyName(
     IdentifierT* name, bool* is_get, bool* is_set, bool* is_static,
-    bool* is_computed_name, ExpressionClassifier* classifier, bool* ok) {
+    bool* is_computed_name, bool* is_identifier, bool* is_escaped_keyword,
+    ExpressionClassifier* classifier, bool* ok) {
   Token::Value token = peek();
   int pos = peek_position();
 
@@ -2583,11 +2610,17 @@ typename ParserBase<Traits>::ExpressionT ParserBase<Traits>::ParsePropertyName(
       return expression;
     }
 
+    case Token::ESCAPED_KEYWORD:
+      *is_escaped_keyword = true;
+      *name = ParseIdentifierNameOrGetOrSet(is_get, is_set, CHECK_OK);
+      break;
+
     case Token::STATIC:
       *is_static = true;
 
     // Fall through.
     default:
+      *is_identifier = true;
       *name = ParseIdentifierNameOrGetOrSet(is_get, is_set, CHECK_OK);
       break;
   }
@@ -2616,13 +2649,20 @@ ParserBase<Traits>::ParsePropertyDefinition(
   Token::Value name_token = peek();
   int next_beg_pos = scanner()->peek_location().beg_pos;
   int next_end_pos = scanner()->peek_location().end_pos;
+  bool is_identifier = false;
+  bool is_escaped_keyword = false;
   ExpressionT name_expression = ParsePropertyName(
-      &name, &is_get, &is_set, &name_is_static, is_computed_name, classifier,
+      &name, &is_get, &is_set, &name_is_static, is_computed_name,
+      &is_identifier, &is_escaped_keyword, classifier,
       CHECK_OK_CUSTOM(EmptyObjectLiteralProperty));
 
   if (fni_ != nullptr && !*is_computed_name) {
     this->PushLiteralName(fni_, name);
   }
+
+  bool escaped_static =
+      is_escaped_keyword &&
+      scanner()->is_literal_contextual_keyword(CStrVector("static"));
 
   if (!in_class && !is_generator) {
     DCHECK(!is_static);
@@ -2641,8 +2681,7 @@ ParserBase<Traits>::ParsePropertyDefinition(
                                                  *is_computed_name);
     }
 
-    if (Token::IsIdentifier(name_token, language_mode(),
-                            this->is_generator()) &&
+    if ((is_identifier || is_escaped_keyword) &&
         (peek() == Token::COMMA || peek() == Token::RBRACE ||
          peek() == Token::ASSIGN)) {
       // PropertyDefinition
@@ -2651,6 +2690,14 @@ ParserBase<Traits>::ParsePropertyDefinition(
       //
       // CoverInitializedName
       //    IdentifierReference Initializer?
+      if (!Token::IsIdentifier(name_token, language_mode(),
+                               this->is_generator())) {
+        if (!escaped_static) {
+          ReportUnexpectedTokenAt(scanner()->location(), name_token);
+          *ok = false;
+          return this->EmptyObjectLiteralProperty();
+        }
+      }
       if (classifier->duplicate_finder() != nullptr &&
           scanner()->FindSymbol(classifier->duplicate_finder(), 1) != 0) {
         classifier->RecordDuplicateFormalParameterError(scanner()->location());
@@ -2683,6 +2730,11 @@ ParserBase<Traits>::ParsePropertyDefinition(
     }
   }
 
+  if (in_class && escaped_static && !is_static) {
+    ReportUnexpectedTokenAt(scanner()->location(), name_token);
+    *ok = false;
+    return this->EmptyObjectLiteralProperty();
+  }
 
   if (is_generator || peek() == Token::LPAREN) {
     // MethodDefinition
@@ -2732,8 +2784,8 @@ ParserBase<Traits>::ParsePropertyDefinition(
     name_token = peek();
 
     name_expression = ParsePropertyName(
-        &name, &dont_care, &dont_care, &dont_care, is_computed_name, classifier,
-        CHECK_OK_CUSTOM(EmptyObjectLiteralProperty));
+        &name, &dont_care, &dont_care, &dont_care, is_computed_name, &dont_care,
+        &dont_care, classifier, CHECK_OK_CUSTOM(EmptyObjectLiteralProperty));
 
     if (!*is_computed_name) {
       checker->CheckProperty(name_token, kAccessorProperty, is_static,
@@ -2975,7 +3027,8 @@ ParserBase<Traits>::ParseAssignmentExpression(bool accept_IN,
     return expression;
   }
 
-  if (!(allow_harmony_destructuring() || allow_harmony_default_parameters())) {
+  if (!(allow_harmony_destructuring_bind() ||
+        allow_harmony_default_parameters())) {
     BindingPatternUnexpectedToken(classifier);
   }
 
@@ -3013,10 +3066,8 @@ ParserBase<Traits>::ParseAssignmentExpression(bool accept_IN,
     // Check if the right hand side is a call to avoid inferring a
     // name if we're dealing with "a = function(){...}();"-like
     // expression.
-    if ((op == Token::INIT_VAR
-         || op == Token::INIT_CONST_LEGACY
-         || op == Token::ASSIGN)
-        && (!right->IsCall() && !right->IsCallNew())) {
+    if ((op == Token::INIT || op == Token::ASSIGN) &&
+        (!right->IsCall() && !right->IsCallNew())) {
       fni_->Infer();
     } else {
       fni_->RemoveLastFunction();
@@ -3286,7 +3337,8 @@ ParserBase<Traits>::ParseLeftHandSideExpression(
           return this->EmptyExpression();
         }
         int pos;
-        if (scanner()->current_token() == Token::IDENTIFIER) {
+        if (scanner()->current_token() == Token::IDENTIFIER ||
+            scanner()->current_token() == Token::SUPER) {
           // For call of an identifier we want to report position of
           // the identifier as position of the call in the stack trace.
           pos = position();
@@ -3329,8 +3381,8 @@ ParserBase<Traits>::ParseLeftHandSideExpression(
         // implicit binding assignment to the 'this' variable.
         if (is_super_call) {
           ExpressionT this_expr = this->ThisExpression(scope_, factory(), pos);
-          result = factory()->NewAssignment(Token::INIT_CONST, this_expr,
-                                            result, pos);
+          result =
+              factory()->NewAssignment(Token::INIT, this_expr, result, pos);
         }
 
         if (fni_ != NULL) fni_->RemoveLastFunction();
@@ -3455,8 +3507,8 @@ ParserBase<Traits>::ParseMemberExpression(ExpressionClassifier* classifier,
     FunctionLiteral::FunctionType function_type =
         FunctionLiteral::ANONYMOUS_EXPRESSION;
     if (peek_any_identifier()) {
-      name = ParseIdentifierOrStrictReservedWord(&is_strict_reserved_name,
-                                                 CHECK_OK);
+      name = ParseIdentifierOrStrictReservedWord(
+          is_generator, &is_strict_reserved_name, CHECK_OK);
       function_name_location = scanner()->location();
       function_type = FunctionLiteral::NAMED_EXPRESSION;
     }
@@ -3617,7 +3669,7 @@ ParserBase<Traits>::ParseStrongSuperCallExpression(
   // Explicit calls to the super constructor using super() perform an implicit
   // binding assignment to the 'this' variable.
   ExpressionT this_expr = this->ThisExpression(scope_, factory(), pos);
-  return factory()->NewAssignment(Token::INIT_CONST, this_expr, expr, pos);
+  return factory()->NewAssignment(Token::INIT, this_expr, expr, pos);
 }
 
 
@@ -3626,8 +3678,8 @@ typename ParserBase<Traits>::ExpressionT
 ParserBase<Traits>::ParseSuperExpression(bool is_new,
                                          ExpressionClassifier* classifier,
                                          bool* ok) {
-  int pos = position();
   Expect(Token::SUPER, CHECK_OK);
+  int pos = position();
 
   Scope* scope = scope_->ReceiverScope();
   FunctionKind kind = scope->function_kind();
@@ -3757,7 +3809,7 @@ void ParserBase<Traits>::ParseFormalParameter(
   if (!*ok) return;
 
   if (!Traits::IsIdentifier(pattern)) {
-    if (is_rest || !allow_harmony_destructuring()) {
+    if (is_rest || !allow_harmony_destructuring_bind()) {
       ReportUnexpectedToken(next);
       *ok = false;
       return;

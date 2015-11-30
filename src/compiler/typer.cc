@@ -54,12 +54,15 @@ Typer::Typer(Isolate* isolate, Graph* graph, Flags flags,
 
   singleton_false_ = Type::Constant(factory->false_value(), zone);
   singleton_true_ = Type::Constant(factory->true_value(), zone);
+  singleton_the_hole_ = Type::Constant(factory->the_hole_value(), zone);
   signed32ish_ = Type::Union(Type::Signed32(), truncating_to_zero, zone);
   unsigned32ish_ = Type::Union(Type::Unsigned32(), truncating_to_zero, zone);
   falsish_ = Type::Union(
       Type::Undetectable(),
-      Type::Union(Type::Union(singleton_false_, cache_.kZeroish, zone),
-                  Type::NullOrUndefined(), zone),
+      Type::Union(
+          Type::Union(Type::Union(singleton_false_, cache_.kZeroish, zone),
+                      Type::NullOrUndefined(), zone),
+          singleton_the_hole_, zone),
       zone);
   truish_ = Type::Union(
       singleton_true_,
@@ -697,6 +700,10 @@ Type* Typer::Visitor::JSStrictEqualTyper(Type* lhs, Type* rhs, Typer* t) {
       (lhs->Max() < rhs->Min() || lhs->Min() > rhs->Max())) {
     return t->singleton_false_;
   }
+  if ((lhs->Is(t->singleton_the_hole_) || rhs->Is(t->singleton_the_hole_)) &&
+      !lhs->Maybe(rhs)) {
+    return t->singleton_false_;
+  }
   if (lhs->IsConstant() && rhs->Is(lhs)) {
     // Types are equal and are inhabited only by a single semantic value,
     // which is not nan due to the earlier check.
@@ -1215,6 +1222,11 @@ Type* Typer::Visitor::TypeJSCreateArguments(Node* node) {
 }
 
 
+Type* Typer::Visitor::TypeJSCreateArray(Node* node) {
+  return Type::OtherObject();
+}
+
+
 Type* Typer::Visitor::TypeJSCreateClosure(Node* node) {
   return Type::OtherObject();
 }
@@ -1377,6 +1389,11 @@ Type* Typer::Visitor::TypeJSLoadContext(Node* node) {
 Type* Typer::Visitor::TypeJSStoreContext(Node* node) {
   UNREACHABLE();
   return nullptr;
+}
+
+
+Type* Typer::Visitor::TypeJSLoadNativeContext(Node* node) {
+  return Type::Intersect(Type::Internal(), Type::TaggedPointer(), zone());
 }
 
 
@@ -1677,6 +1694,11 @@ Type* Typer::Visitor::TypeNumberToUint32(Node* node) {
 }
 
 
+Type* Typer::Visitor::TypeNumberIsHoleNaN(Node* node) {
+  return Type::Boolean(zone());
+}
+
+
 Type* Typer::Visitor::TypePlainPrimitiveToNumber(Node* node) {
   return TypeUnaryOp(node, ToNumber);
 }
@@ -1958,6 +1980,12 @@ Type* Typer::Visitor::TypeWord64Ror(Node* node) { return Type::Internal(); }
 Type* Typer::Visitor::TypeWord64Clz(Node* node) { return Type::Internal(); }
 
 
+Type* Typer::Visitor::TypeWord64Ctz(Node* node) { return Type::Internal(); }
+
+
+Type* Typer::Visitor::TypeWord64Popcnt(Node* node) { return Type::Internal(); }
+
+
 Type* Typer::Visitor::TypeWord64Equal(Node* node) { return Type::Boolean(); }
 
 
@@ -2069,6 +2097,16 @@ Type* Typer::Visitor::TypeChangeFloat64ToUint32(Node* node) {
 }
 
 
+Type* Typer::Visitor::TypeTruncateFloat64ToInt64(Node* node) {
+  return Type::Internal();
+}
+
+
+Type* Typer::Visitor::TypeTruncateFloat64ToUint64(Node* node) {
+  return Type::Internal();
+}
+
+
 Type* Typer::Visitor::TypeChangeInt32ToFloat64(Node* node) {
   return Type::Intersect(Type::Signed32(), Type::UntaggedFloat64(), zone());
 }
@@ -2104,7 +2142,22 @@ Type* Typer::Visitor::TypeTruncateInt64ToInt32(Node* node) {
 }
 
 
+Type* Typer::Visitor::TypeRoundInt64ToFloat32(Node* node) {
+  return Type::Intersect(Type::PlainNumber(), Type::UntaggedFloat32(), zone());
+}
+
+
 Type* Typer::Visitor::TypeRoundInt64ToFloat64(Node* node) {
+  return Type::Intersect(Type::PlainNumber(), Type::UntaggedFloat64(), zone());
+}
+
+
+Type* Typer::Visitor::TypeRoundUint64ToFloat32(Node* node) {
+  return Type::Intersect(Type::PlainNumber(), Type::UntaggedFloat32(), zone());
+}
+
+
+Type* Typer::Visitor::TypeRoundUint64ToFloat64(Node* node) {
   return Type::Intersect(Type::PlainNumber(), Type::UntaggedFloat64(), zone());
 }
 
@@ -2218,6 +2271,12 @@ Type* Typer::Visitor::TypeFloat64RoundDown(Node* node) {
 }
 
 
+Type* Typer::Visitor::TypeFloat64RoundUp(Node* node) {
+  // TODO(sigurds): We could have a tighter bound here.
+  return Type::Number();
+}
+
+
 Type* Typer::Visitor::TypeFloat64RoundTruncate(Node* node) {
   // TODO(sigurds): We could have a tighter bound here.
   return Type::Number();
@@ -2225,6 +2284,12 @@ Type* Typer::Visitor::TypeFloat64RoundTruncate(Node* node) {
 
 
 Type* Typer::Visitor::TypeFloat64RoundTiesAway(Node* node) {
+  // TODO(sigurds): We could have a tighter bound here.
+  return Type::Number();
+}
+
+
+Type* Typer::Visitor::TypeFloat64RoundTiesEven(Node* node) {
   // TODO(sigurds): We could have a tighter bound here.
   return Type::Number();
 }

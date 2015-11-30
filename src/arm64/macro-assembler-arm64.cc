@@ -2354,38 +2354,35 @@ void MacroAssembler::CopyBytes(Register dst,
 }
 
 
-void MacroAssembler::FillFields(Register dst,
-                                Register field_count,
-                                Register filler) {
-  DCHECK(!dst.Is(csp));
+void MacroAssembler::InitializeFieldsWithFiller(Register current_address,
+                                                Register end_address,
+                                                Register filler) {
+  DCHECK(!current_address.Is(csp));
   UseScratchRegisterScope temps(this);
-  Register field_ptr = temps.AcquireX();
-  Register counter = temps.AcquireX();
+  Register distance_in_words = temps.AcquireX();
   Label done;
 
-  // Decrement count. If the result < zero, count was zero, and there's nothing
-  // to do. If count was one, flags are set to fail the gt condition at the end
-  // of the pairs loop.
-  Subs(counter, field_count, 1);
-  B(lt, &done);
+  // Calculate the distance. If it's <= zero then there's nothing to do.
+  Subs(distance_in_words, end_address, current_address);
+  B(le, &done);
 
   // There's at least one field to fill, so do this unconditionally.
-  Str(filler, MemOperand(dst, kPointerSize, PostIndex));
+  Str(filler, MemOperand(current_address));
 
-  // If the bottom bit of counter is set, there are an even number of fields to
-  // fill, so pull the start pointer back by one field, allowing the pairs loop
-  // to overwrite the field that was stored above.
-  And(field_ptr, counter, 1);
-  Sub(field_ptr, dst, Operand(field_ptr, LSL, kPointerSizeLog2));
+  // If the distance_in_words consists of odd number of words we advance
+  // start_address by one word, otherwise the pairs loop will ovwerite the
+  // field that was stored above.
+  And(distance_in_words, distance_in_words, kPointerSize);
+  Add(current_address, current_address, distance_in_words);
 
   // Store filler to memory in pairs.
-  Label entry, loop;
+  Label loop, entry;
   B(&entry);
   Bind(&loop);
-  Stp(filler, filler, MemOperand(field_ptr, 2 * kPointerSize, PostIndex));
-  Subs(counter, counter, 2);
+  Stp(filler, filler, MemOperand(current_address, 2 * kPointerSize, PostIndex));
   Bind(&entry);
-  B(gt, &loop);
+  Cmp(current_address, end_address);
+  B(lo, &loop);
 
   Bind(&done);
 }
@@ -2481,8 +2478,6 @@ void MacroAssembler::JumpIfNotUniqueNameInstanceType(Register type,
 
 void MacroAssembler::InvokePrologue(const ParameterCount& expected,
                                     const ParameterCount& actual,
-                                    Handle<Code> code_constant,
-                                    Register code_reg,
                                     Label* done,
                                     InvokeFlag flag,
                                     bool* definitely_mismatches,
@@ -2502,7 +2497,6 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
   // passed in registers.
   DCHECK(actual.is_immediate() || actual.reg().is(x0));
   DCHECK(expected.is_immediate() || expected.reg().is(x2));
-  DCHECK((!code_constant.is_null() && code_reg.is(no_reg)) || code_reg.is(x3));
 
   if (expected.is_immediate()) {
     DCHECK(actual.is_immediate());
@@ -2537,11 +2531,6 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
   // If the argument counts may mismatch, generate a call to the argument
   // adaptor.
   if (!definitely_matches) {
-    if (!code_constant.is_null()) {
-      Mov(x3, Operand(code_constant));
-      Add(x3, x3, Code::kHeaderSize - kHeapObjectTag);
-    }
-
     Handle<Code> adaptor =
         isolate()->builtins()->ArgumentsAdaptorTrampoline();
     if (flag == CALL_FUNCTION) {
@@ -2562,6 +2551,7 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
 
 
 void MacroAssembler::InvokeCode(Register code,
+                                Register new_target,
                                 const ParameterCount& expected,
                                 const ParameterCount& actual,
                                 InvokeFlag flag,
@@ -2569,11 +2559,17 @@ void MacroAssembler::InvokeCode(Register code,
   // You can't call a function without a valid frame.
   DCHECK(flag == JUMP_FUNCTION || has_frame());
 
-  Label done;
+  // Ensure new target is passed in the correct register. Otherwise clear the
+  // appropriate register in case new target is not given.
+  DCHECK_IMPLIES(new_target.is_valid(), new_target.is(x3));
+  if (!new_target.is_valid()) {
+    LoadRoot(x3, Heap::kUndefinedValueRootIndex);
+  }
 
+  Label done;
   bool definitely_mismatches = false;
-  InvokePrologue(expected, actual, Handle<Code>::null(), code, &done, flag,
-                 &definitely_mismatches, call_wrapper);
+  InvokePrologue(expected, actual, &done, flag, &definitely_mismatches,
+                 call_wrapper);
 
   // If we are certain that actual != expected, then we know InvokePrologue will
   // have handled the call through the argument adaptor mechanism.
@@ -2596,6 +2592,7 @@ void MacroAssembler::InvokeCode(Register code,
 
 
 void MacroAssembler::InvokeFunction(Register function,
+                                    Register new_target,
                                     const ParameterCount& actual,
                                     InvokeFlag flag,
                                     const CallWrapper& call_wrapper) {
@@ -2607,7 +2604,7 @@ void MacroAssembler::InvokeFunction(Register function,
   DCHECK(function.is(x1));
 
   Register expected_reg = x2;
-  Register code_reg = x3;
+  Register code_reg = x4;
 
   Ldr(cp, FieldMemOperand(function, JSFunction::kContextOffset));
   // The number of arguments is stored as an int32_t, and -1 is a marker
@@ -2622,7 +2619,7 @@ void MacroAssembler::InvokeFunction(Register function,
       FieldMemOperand(function, JSFunction::kCodeEntryOffset));
 
   ParameterCount expected(expected_reg);
-  InvokeCode(code_reg, expected, actual, flag, call_wrapper);
+  InvokeCode(code_reg, new_target, expected, actual, flag, call_wrapper);
 }
 
 
@@ -2638,7 +2635,7 @@ void MacroAssembler::InvokeFunction(Register function,
   // (See FullCodeGenerator::Generate().)
   DCHECK(function.Is(x1));
 
-  Register code_reg = x3;
+  Register code_reg = x4;
 
   // Set up the context.
   Ldr(cp, FieldMemOperand(function, JSFunction::kContextOffset));
@@ -2647,7 +2644,7 @@ void MacroAssembler::InvokeFunction(Register function,
   // allow recompilation to take effect without changing any of the
   // call sites.
   Ldr(code_reg, FieldMemOperand(function, JSFunction::kCodeEntryOffset));
-  InvokeCode(code_reg, expected, actual, flag, call_wrapper);
+  InvokeCode(code_reg, no_reg, expected, actual, flag, call_wrapper);
 }
 
 
@@ -3084,23 +3081,24 @@ void MacroAssembler::Allocate(int object_size,
   intptr_t limit = reinterpret_cast<intptr_t>(heap_allocation_limit.address());
   DCHECK((limit - top) == kPointerSize);
 
-  // Set up allocation top address and object size registers.
+  // Set up allocation top address and allocation limit registers.
   Register top_address = scratch1;
-  Register allocation_limit = scratch2;
+  Register alloc_limit = scratch2;
+  Register result_end = scratch3;
   Mov(top_address, Operand(heap_allocation_top));
 
   if ((flags & RESULT_CONTAINS_TOP) == 0) {
-    // Load allocation top into result and the allocation limit.
-    Ldp(result, allocation_limit, MemOperand(top_address));
+    // Load allocation top into result and allocation limit into alloc_limit.
+    Ldp(result, alloc_limit, MemOperand(top_address));
   } else {
     if (emit_debug_code()) {
       // Assert that result actually contains top on entry.
-      Ldr(scratch3, MemOperand(top_address));
-      Cmp(result, scratch3);
+      Ldr(alloc_limit, MemOperand(top_address));
+      Cmp(result, alloc_limit);
       Check(eq, kUnexpectedAllocationTop);
     }
-    // Load the allocation limit. 'result' already contains the allocation top.
-    Ldr(allocation_limit, MemOperand(top_address, limit - top));
+    // Load allocation limit. Result already contains allocation top.
+    Ldr(alloc_limit, MemOperand(top_address, limit - top));
   }
 
   // We can ignore DOUBLE_ALIGNMENT flags here because doubles and pointers have
@@ -3108,10 +3106,10 @@ void MacroAssembler::Allocate(int object_size,
   STATIC_ASSERT(kPointerAlignment == kDoubleAlignment);
 
   // Calculate new top and bail out if new space is exhausted.
-  Adds(scratch3, result, object_size);
-  Ccmp(scratch3, allocation_limit, CFlag, cc);
+  Adds(result_end, result, object_size);
+  Ccmp(result_end, alloc_limit, CFlag, cc);
   B(hi, gc_required);
-  Str(scratch3, MemOperand(top_address));
+  Str(result_end, MemOperand(top_address));
 
   // Tag the object if requested.
   if ((flags & TAG_OBJECT) != 0) {
@@ -3120,30 +3118,29 @@ void MacroAssembler::Allocate(int object_size,
 }
 
 
-void MacroAssembler::Allocate(Register object_size,
-                              Register result,
-                              Register scratch1,
-                              Register scratch2,
-                              Label* gc_required,
-                              AllocationFlags flags) {
+void MacroAssembler::Allocate(Register object_size, Register result,
+                              Register result_end, Register scratch,
+                              Label* gc_required, AllocationFlags flags) {
   if (!FLAG_inline_new) {
     if (emit_debug_code()) {
       // Trash the registers to simulate an allocation failure.
       // We apply salt to the original zap value to easily spot the values.
       Mov(result, (kDebugZapValue & ~0xffL) | 0x11L);
-      Mov(scratch1, (kDebugZapValue & ~0xffL) | 0x21L);
-      Mov(scratch2, (kDebugZapValue & ~0xffL) | 0x21L);
+      Mov(scratch, (kDebugZapValue & ~0xffL) | 0x21L);
+      Mov(result_end, (kDebugZapValue & ~0xffL) | 0x21L);
     }
     B(gc_required);
     return;
   }
 
   UseScratchRegisterScope temps(this);
-  Register scratch3 = temps.AcquireX();
+  Register scratch2 = temps.AcquireX();
 
-  DCHECK(!AreAliased(object_size, result, scratch1, scratch2, scratch3));
-  DCHECK(object_size.Is64Bits() && result.Is64Bits() &&
-         scratch1.Is64Bits() && scratch2.Is64Bits());
+  // |object_size| and |result_end| may overlap, other registers must not.
+  DCHECK(!AreAliased(object_size, result, scratch, scratch2));
+  DCHECK(!AreAliased(result_end, result, scratch, scratch2));
+  DCHECK(object_size.Is64Bits() && result.Is64Bits() && scratch.Is64Bits() &&
+         result_end.Is64Bits());
 
   // Check relative positions of allocation top and limit addresses.
   // The values must be adjacent in memory to allow the use of LDP.
@@ -3155,23 +3152,23 @@ void MacroAssembler::Allocate(Register object_size,
   intptr_t limit = reinterpret_cast<intptr_t>(heap_allocation_limit.address());
   DCHECK((limit - top) == kPointerSize);
 
-  // Set up allocation top address and object size registers.
-  Register top_address = scratch1;
-  Register allocation_limit = scratch2;
+  // Set up allocation top address and allocation limit registers.
+  Register top_address = scratch;
+  Register alloc_limit = scratch2;
   Mov(top_address, heap_allocation_top);
 
   if ((flags & RESULT_CONTAINS_TOP) == 0) {
-    // Load allocation top into result and the allocation limit.
-    Ldp(result, allocation_limit, MemOperand(top_address));
+    // Load allocation top into result and allocation limit into alloc_limit.
+    Ldp(result, alloc_limit, MemOperand(top_address));
   } else {
     if (emit_debug_code()) {
       // Assert that result actually contains top on entry.
-      Ldr(scratch3, MemOperand(top_address));
-      Cmp(result, scratch3);
+      Ldr(alloc_limit, MemOperand(top_address));
+      Cmp(result, alloc_limit);
       Check(eq, kUnexpectedAllocationTop);
     }
-    // Load the allocation limit. 'result' already contains the allocation top.
-    Ldr(allocation_limit, MemOperand(top_address, limit - top));
+    // Load allocation limit. Result already contains allocation top.
+    Ldr(alloc_limit, MemOperand(top_address, limit - top));
   }
 
   // We can ignore DOUBLE_ALIGNMENT flags here because doubles and pointers have
@@ -3180,19 +3177,19 @@ void MacroAssembler::Allocate(Register object_size,
 
   // Calculate new top and bail out if new space is exhausted
   if ((flags & SIZE_IN_WORDS) != 0) {
-    Adds(scratch3, result, Operand(object_size, LSL, kPointerSizeLog2));
+    Adds(result_end, result, Operand(object_size, LSL, kPointerSizeLog2));
   } else {
-    Adds(scratch3, result, object_size);
+    Adds(result_end, result, object_size);
   }
 
   if (emit_debug_code()) {
-    Tst(scratch3, kObjectAlignmentMask);
+    Tst(result_end, kObjectAlignmentMask);
     Check(eq, kUnalignedAllocationInNewSpace);
   }
 
-  Ccmp(scratch3, allocation_limit, CFlag, cc);
+  Ccmp(result_end, alloc_limit, CFlag, cc);
   B(hi, gc_required);
-  Str(scratch3, MemOperand(top_address));
+  Str(result_end, MemOperand(top_address));
 
   // Tag the object if requested.
   if ((flags & TAG_OBJECT) != 0) {

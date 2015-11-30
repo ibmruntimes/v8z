@@ -2094,270 +2094,273 @@ bool MacroAssembler::BranchShortHelperR6(int32_t offset, Label* L,
   // Be careful to always use shifted_branch_offset only just before the
   // branch instruction, as the location will be remember for patching the
   // target.
-  BlockTrampolinePoolScope block_trampoline_pool(this);
-  switch (cond) {
-    case cc_always:
-      bits = OffsetSize::kOffset26;
-      if (!is_near(L, bits)) return false;
-      offset = GetOffset(offset, L, bits);
-      bc(offset);
-      break;
-    case eq:
-      if (rs.code() == rt.rm_.reg_code) {
-        // Pre R6 beq is used here to make the code patchable. Otherwise bc
-        // should be used which has no condition field so is not patchable.
-        bits = OffsetSize::kOffset16;
-        if (!is_near(L, bits)) return false;
-        scratch = GetRtAsRegisterHelper(rt, scratch);
-        offset = GetOffset(offset, L, bits);
-        beq(rs, scratch, offset);
-        nop();
-      } else if (IsZero(rt)) {
-        bits = OffsetSize::kOffset21;
+  {
+    BlockTrampolinePoolScope block_trampoline_pool(this);
+    switch (cond) {
+      case cc_always:
+        bits = OffsetSize::kOffset26;
         if (!is_near(L, bits)) return false;
         offset = GetOffset(offset, L, bits);
-        beqzc(rs, offset);
-      } else {
-        // We don't want any other register but scratch clobbered.
-        bits = OffsetSize::kOffset16;
-        if (!is_near(L, bits)) return false;
-        scratch = GetRtAsRegisterHelper(rt, scratch);
-        offset = GetOffset(offset, L, bits);
-        beqc(rs, scratch, offset);
-      }
-      break;
-    case ne:
-      if (rs.code() == rt.rm_.reg_code) {
-        // Pre R6 bne is used here to make the code patchable. Otherwise we
-        // should not generate any instruction.
-        bits = OffsetSize::kOffset16;
-        if (!is_near(L, bits)) return false;
-        scratch = GetRtAsRegisterHelper(rt, scratch);
-        offset = GetOffset(offset, L, bits);
-        bne(rs, scratch, offset);
-        nop();
-      } else if (IsZero(rt)) {
-        bits = OffsetSize::kOffset21;
-        if (!is_near(L, bits)) return false;
-        offset = GetOffset(offset, L, bits);
-        bnezc(rs, offset);
-      } else {
-        // We don't want any other register but scratch clobbered.
-        bits = OffsetSize::kOffset16;
-        if (!is_near(L, bits)) return false;
-        scratch = GetRtAsRegisterHelper(rt, scratch);
-        offset = GetOffset(offset, L, bits);
-        bnec(rs, scratch, offset);
-      }
-      break;
+        bc(offset);
+        break;
+      case eq:
+        if (rs.code() == rt.rm_.reg_code) {
+          // Pre R6 beq is used here to make the code patchable. Otherwise bc
+          // should be used which has no condition field so is not patchable.
+          bits = OffsetSize::kOffset16;
+          if (!is_near(L, bits)) return false;
+          scratch = GetRtAsRegisterHelper(rt, scratch);
+          offset = GetOffset(offset, L, bits);
+          beq(rs, scratch, offset);
+          nop();
+        } else if (IsZero(rt)) {
+          bits = OffsetSize::kOffset21;
+          if (!is_near(L, bits)) return false;
+          offset = GetOffset(offset, L, bits);
+          beqzc(rs, offset);
+        } else {
+          // We don't want any other register but scratch clobbered.
+          bits = OffsetSize::kOffset16;
+          if (!is_near(L, bits)) return false;
+          scratch = GetRtAsRegisterHelper(rt, scratch);
+          offset = GetOffset(offset, L, bits);
+          beqc(rs, scratch, offset);
+        }
+        break;
+      case ne:
+        if (rs.code() == rt.rm_.reg_code) {
+          // Pre R6 bne is used here to make the code patchable. Otherwise we
+          // should not generate any instruction.
+          bits = OffsetSize::kOffset16;
+          if (!is_near(L, bits)) return false;
+          scratch = GetRtAsRegisterHelper(rt, scratch);
+          offset = GetOffset(offset, L, bits);
+          bne(rs, scratch, offset);
+          nop();
+        } else if (IsZero(rt)) {
+          bits = OffsetSize::kOffset21;
+          if (!is_near(L, bits)) return false;
+          offset = GetOffset(offset, L, bits);
+          bnezc(rs, offset);
+        } else {
+          // We don't want any other register but scratch clobbered.
+          bits = OffsetSize::kOffset16;
+          if (!is_near(L, bits)) return false;
+          scratch = GetRtAsRegisterHelper(rt, scratch);
+          offset = GetOffset(offset, L, bits);
+          bnec(rs, scratch, offset);
+        }
+        break;
 
-    // Signed comparison.
-    case greater:
-      // rs > rt
-      if (rs.code() == rt.rm_.reg_code) {
-        break;  // No code needs to be emitted.
-      } else if (rs.is(zero_reg)) {
-        bits = OffsetSize::kOffset16;
-        if (!is_near(L, bits)) return false;
-        scratch = GetRtAsRegisterHelper(rt, scratch);
-        offset = GetOffset(offset, L, bits);
-        bltzc(scratch, offset);
-      } else if (IsZero(rt)) {
-        bits = OffsetSize::kOffset16;
-        if (!is_near(L, bits)) return false;
-        offset = GetOffset(offset, L, bits);
-        bgtzc(rs, offset);
-      } else {
-        bits = OffsetSize::kOffset16;
-        if (!is_near(L, bits)) return false;
-        scratch = GetRtAsRegisterHelper(rt, scratch);
-        DCHECK(!rs.is(scratch));
-        offset = GetOffset(offset, L, bits);
-        bltc(scratch, rs, offset);
-      }
-      break;
-    case greater_equal:
-      // rs >= rt
-      if (rs.code() == rt.rm_.reg_code) {
-        bits = OffsetSize::kOffset26;
-        if (!is_near(L, bits)) return false;
-        offset = GetOffset(offset, L, bits);
-        bc(offset);
-      } else if (rs.is(zero_reg)) {
-        bits = OffsetSize::kOffset16;
-        if (!is_near(L, bits)) return false;
-        scratch = GetRtAsRegisterHelper(rt, scratch);
-        offset = GetOffset(offset, L, bits);
-        blezc(scratch, offset);
-      } else if (IsZero(rt)) {
-        bits = OffsetSize::kOffset16;
-        if (!is_near(L, bits)) return false;
-        offset = GetOffset(offset, L, bits);
-        bgezc(rs, offset);
-      } else {
-        bits = OffsetSize::kOffset16;
-        if (!is_near(L, bits)) return false;
-        scratch = GetRtAsRegisterHelper(rt, scratch);
-        DCHECK(!rs.is(scratch));
-        offset = GetOffset(offset, L, bits);
-        bgec(rs, scratch, offset);
-      }
-      break;
-    case less:
-      // rs < rt
-      if (rs.code() == rt.rm_.reg_code) {
-        break;  // No code needs to be emitted.
-      } else if (rs.is(zero_reg)) {
-        bits = OffsetSize::kOffset16;
-        if (!is_near(L, bits)) return false;
-        scratch = GetRtAsRegisterHelper(rt, scratch);
-        offset = GetOffset(offset, L, bits);
-        bgtzc(scratch, offset);
-      } else if (IsZero(rt)) {
-        bits = OffsetSize::kOffset16;
-        if (!is_near(L, bits)) return false;
-        offset = GetOffset(offset, L, bits);
-        bltzc(rs, offset);
-      } else {
-        bits = OffsetSize::kOffset16;
-        if (!is_near(L, bits)) return false;
-        scratch = GetRtAsRegisterHelper(rt, scratch);
-        DCHECK(!rs.is(scratch));
-        offset = GetOffset(offset, L, bits);
-        bltc(rs, scratch, offset);
-      }
-      break;
-    case less_equal:
-      // rs <= rt
-      if (rs.code() == rt.rm_.reg_code) {
-        bits = OffsetSize::kOffset26;
-        if (!is_near(L, bits)) return false;
-        offset = GetOffset(offset, L, bits);
-        bc(offset);
-      } else if (rs.is(zero_reg)) {
-        bits = OffsetSize::kOffset16;
-        if (!is_near(L, bits)) return false;
-        scratch = GetRtAsRegisterHelper(rt, scratch);
-        offset = GetOffset(offset, L, bits);
-        bgezc(scratch, offset);
-      } else if (IsZero(rt)) {
-        bits = OffsetSize::kOffset16;
-        if (!is_near(L, bits)) return false;
-        offset = GetOffset(offset, L, bits);
-        blezc(rs, offset);
-      } else {
-        bits = OffsetSize::kOffset16;
-        if (!is_near(L, bits)) return false;
-        scratch = GetRtAsRegisterHelper(rt, scratch);
-        DCHECK(!rs.is(scratch));
-        offset = GetOffset(offset, L, bits);
-        bgec(scratch, rs, offset);
-      }
-      break;
+      // Signed comparison.
+      case greater:
+        // rs > rt
+        if (rs.code() == rt.rm_.reg_code) {
+          break;  // No code needs to be emitted.
+        } else if (rs.is(zero_reg)) {
+          bits = OffsetSize::kOffset16;
+          if (!is_near(L, bits)) return false;
+          scratch = GetRtAsRegisterHelper(rt, scratch);
+          offset = GetOffset(offset, L, bits);
+          bltzc(scratch, offset);
+        } else if (IsZero(rt)) {
+          bits = OffsetSize::kOffset16;
+          if (!is_near(L, bits)) return false;
+          offset = GetOffset(offset, L, bits);
+          bgtzc(rs, offset);
+        } else {
+          bits = OffsetSize::kOffset16;
+          if (!is_near(L, bits)) return false;
+          scratch = GetRtAsRegisterHelper(rt, scratch);
+          DCHECK(!rs.is(scratch));
+          offset = GetOffset(offset, L, bits);
+          bltc(scratch, rs, offset);
+        }
+        break;
+      case greater_equal:
+        // rs >= rt
+        if (rs.code() == rt.rm_.reg_code) {
+          bits = OffsetSize::kOffset26;
+          if (!is_near(L, bits)) return false;
+          offset = GetOffset(offset, L, bits);
+          bc(offset);
+        } else if (rs.is(zero_reg)) {
+          bits = OffsetSize::kOffset16;
+          if (!is_near(L, bits)) return false;
+          scratch = GetRtAsRegisterHelper(rt, scratch);
+          offset = GetOffset(offset, L, bits);
+          blezc(scratch, offset);
+        } else if (IsZero(rt)) {
+          bits = OffsetSize::kOffset16;
+          if (!is_near(L, bits)) return false;
+          offset = GetOffset(offset, L, bits);
+          bgezc(rs, offset);
+        } else {
+          bits = OffsetSize::kOffset16;
+          if (!is_near(L, bits)) return false;
+          scratch = GetRtAsRegisterHelper(rt, scratch);
+          DCHECK(!rs.is(scratch));
+          offset = GetOffset(offset, L, bits);
+          bgec(rs, scratch, offset);
+        }
+        break;
+      case less:
+        // rs < rt
+        if (rs.code() == rt.rm_.reg_code) {
+          break;  // No code needs to be emitted.
+        } else if (rs.is(zero_reg)) {
+          bits = OffsetSize::kOffset16;
+          if (!is_near(L, bits)) return false;
+          scratch = GetRtAsRegisterHelper(rt, scratch);
+          offset = GetOffset(offset, L, bits);
+          bgtzc(scratch, offset);
+        } else if (IsZero(rt)) {
+          bits = OffsetSize::kOffset16;
+          if (!is_near(L, bits)) return false;
+          offset = GetOffset(offset, L, bits);
+          bltzc(rs, offset);
+        } else {
+          bits = OffsetSize::kOffset16;
+          if (!is_near(L, bits)) return false;
+          scratch = GetRtAsRegisterHelper(rt, scratch);
+          DCHECK(!rs.is(scratch));
+          offset = GetOffset(offset, L, bits);
+          bltc(rs, scratch, offset);
+        }
+        break;
+      case less_equal:
+        // rs <= rt
+        if (rs.code() == rt.rm_.reg_code) {
+          bits = OffsetSize::kOffset26;
+          if (!is_near(L, bits)) return false;
+          offset = GetOffset(offset, L, bits);
+          bc(offset);
+        } else if (rs.is(zero_reg)) {
+          bits = OffsetSize::kOffset16;
+          if (!is_near(L, bits)) return false;
+          scratch = GetRtAsRegisterHelper(rt, scratch);
+          offset = GetOffset(offset, L, bits);
+          bgezc(scratch, offset);
+        } else if (IsZero(rt)) {
+          bits = OffsetSize::kOffset16;
+          if (!is_near(L, bits)) return false;
+          offset = GetOffset(offset, L, bits);
+          blezc(rs, offset);
+        } else {
+          bits = OffsetSize::kOffset16;
+          if (!is_near(L, bits)) return false;
+          scratch = GetRtAsRegisterHelper(rt, scratch);
+          DCHECK(!rs.is(scratch));
+          offset = GetOffset(offset, L, bits);
+          bgec(scratch, rs, offset);
+        }
+        break;
 
-    // Unsigned comparison.
-    case Ugreater:
-      // rs > rt
-      if (rs.code() == rt.rm_.reg_code) {
-        break;  // No code needs to be emitted.
-      } else if (rs.is(zero_reg)) {
-        bits = OffsetSize::kOffset21;
-        if (!is_near(L, bits)) return false;
-        scratch = GetRtAsRegisterHelper(rt, scratch);
-        offset = GetOffset(offset, L, bits);
-        bnezc(scratch, offset);
-      } else if (IsZero(rt)) {
-        bits = OffsetSize::kOffset21;
-        if (!is_near(L, bits)) return false;
-        offset = GetOffset(offset, L, bits);
-        bnezc(rs, offset);
-      } else {
-        bits = OffsetSize::kOffset16;
-        if (!is_near(L, bits)) return false;
-        scratch = GetRtAsRegisterHelper(rt, scratch);
-        DCHECK(!rs.is(scratch));
-        offset = GetOffset(offset, L, bits);
-        bltuc(scratch, rs, offset);
-      }
-      break;
-    case Ugreater_equal:
-      // rs >= rt
-      if (rs.code() == rt.rm_.reg_code) {
-        bits = OffsetSize::kOffset26;
-        if (!is_near(L, bits)) return false;
-        offset = GetOffset(offset, L, bits);
-        bc(offset);
-      } else if (rs.is(zero_reg)) {
-        bits = OffsetSize::kOffset21;
-        if (!is_near(L, bits)) return false;
-        scratch = GetRtAsRegisterHelper(rt, scratch);
-        offset = GetOffset(offset, L, bits);
-        beqzc(scratch, offset);
-      } else if (IsZero(rt)) {
-        bits = OffsetSize::kOffset26;
-        if (!is_near(L, bits)) return false;
-        offset = GetOffset(offset, L, bits);
-        bc(offset);
-      } else {
-        bits = OffsetSize::kOffset16;
-        if (!is_near(L, bits)) return false;
-        scratch = GetRtAsRegisterHelper(rt, scratch);
-        DCHECK(!rs.is(scratch));
-        offset = GetOffset(offset, L, bits);
-        bgeuc(rs, scratch, offset);
-      }
-      break;
-    case Uless:
-      // rs < rt
-      if (rs.code() == rt.rm_.reg_code) {
-        break;  // No code needs to be emitted.
-      } else if (rs.is(zero_reg)) {
-        bits = OffsetSize::kOffset21;
-        if (!is_near(L, bits)) return false;
-        scratch = GetRtAsRegisterHelper(rt, scratch);
-        offset = GetOffset(offset, L, bits);
-        bnezc(scratch, offset);
-      } else if (IsZero(rt)) {
-        break;  // No code needs to be emitted.
-      } else {
-        bits = OffsetSize::kOffset16;
-        if (!is_near(L, bits)) return false;
-        scratch = GetRtAsRegisterHelper(rt, scratch);
-        DCHECK(!rs.is(scratch));
-        offset = GetOffset(offset, L, bits);
-        bltuc(rs, scratch, offset);
-      }
-      break;
-    case Uless_equal:
-      // rs <= rt
-      if (rs.code() == rt.rm_.reg_code) {
-        bits = OffsetSize::kOffset26;
-        if (!is_near(L, bits)) return false;
-        offset = GetOffset(offset, L, bits);
-        bc(offset);
-      } else if (rs.is(zero_reg)) {
-        bits = OffsetSize::kOffset26;
-        if (!is_near(L, bits)) return false;
-        scratch = GetRtAsRegisterHelper(rt, scratch);
-        offset = GetOffset(offset, L, bits);
-        bc(offset);
-      } else if (IsZero(rt)) {
-        bits = OffsetSize::kOffset21;
-        if (!is_near(L, bits)) return false;
-        offset = GetOffset(offset, L, bits);
-        beqzc(rs, offset);
-      } else {
-        bits = OffsetSize::kOffset16;
-        if (!is_near(L, bits)) return false;
-        scratch = GetRtAsRegisterHelper(rt, scratch);
-        DCHECK(!rs.is(scratch));
-        offset = GetOffset(offset, L, bits);
-        bgeuc(scratch, rs, offset);
-      }
-      break;
-    default:
-      UNREACHABLE();
+      // Unsigned comparison.
+      case Ugreater:
+        // rs > rt
+        if (rs.code() == rt.rm_.reg_code) {
+          break;  // No code needs to be emitted.
+        } else if (rs.is(zero_reg)) {
+          bits = OffsetSize::kOffset21;
+          if (!is_near(L, bits)) return false;
+          scratch = GetRtAsRegisterHelper(rt, scratch);
+          offset = GetOffset(offset, L, bits);
+          bnezc(scratch, offset);
+        } else if (IsZero(rt)) {
+          bits = OffsetSize::kOffset21;
+          if (!is_near(L, bits)) return false;
+          offset = GetOffset(offset, L, bits);
+          bnezc(rs, offset);
+        } else {
+          bits = OffsetSize::kOffset16;
+          if (!is_near(L, bits)) return false;
+          scratch = GetRtAsRegisterHelper(rt, scratch);
+          DCHECK(!rs.is(scratch));
+          offset = GetOffset(offset, L, bits);
+          bltuc(scratch, rs, offset);
+        }
+        break;
+      case Ugreater_equal:
+        // rs >= rt
+        if (rs.code() == rt.rm_.reg_code) {
+          bits = OffsetSize::kOffset26;
+          if (!is_near(L, bits)) return false;
+          offset = GetOffset(offset, L, bits);
+          bc(offset);
+        } else if (rs.is(zero_reg)) {
+          bits = OffsetSize::kOffset21;
+          if (!is_near(L, bits)) return false;
+          scratch = GetRtAsRegisterHelper(rt, scratch);
+          offset = GetOffset(offset, L, bits);
+          beqzc(scratch, offset);
+        } else if (IsZero(rt)) {
+          bits = OffsetSize::kOffset26;
+          if (!is_near(L, bits)) return false;
+          offset = GetOffset(offset, L, bits);
+          bc(offset);
+        } else {
+          bits = OffsetSize::kOffset16;
+          if (!is_near(L, bits)) return false;
+          scratch = GetRtAsRegisterHelper(rt, scratch);
+          DCHECK(!rs.is(scratch));
+          offset = GetOffset(offset, L, bits);
+          bgeuc(rs, scratch, offset);
+        }
+        break;
+      case Uless:
+        // rs < rt
+        if (rs.code() == rt.rm_.reg_code) {
+          break;  // No code needs to be emitted.
+        } else if (rs.is(zero_reg)) {
+          bits = OffsetSize::kOffset21;
+          if (!is_near(L, bits)) return false;
+          scratch = GetRtAsRegisterHelper(rt, scratch);
+          offset = GetOffset(offset, L, bits);
+          bnezc(scratch, offset);
+        } else if (IsZero(rt)) {
+          break;  // No code needs to be emitted.
+        } else {
+          bits = OffsetSize::kOffset16;
+          if (!is_near(L, bits)) return false;
+          scratch = GetRtAsRegisterHelper(rt, scratch);
+          DCHECK(!rs.is(scratch));
+          offset = GetOffset(offset, L, bits);
+          bltuc(rs, scratch, offset);
+        }
+        break;
+      case Uless_equal:
+        // rs <= rt
+        if (rs.code() == rt.rm_.reg_code) {
+          bits = OffsetSize::kOffset26;
+          if (!is_near(L, bits)) return false;
+          offset = GetOffset(offset, L, bits);
+          bc(offset);
+        } else if (rs.is(zero_reg)) {
+          bits = OffsetSize::kOffset26;
+          if (!is_near(L, bits)) return false;
+          scratch = GetRtAsRegisterHelper(rt, scratch);
+          offset = GetOffset(offset, L, bits);
+          bc(offset);
+        } else if (IsZero(rt)) {
+          bits = OffsetSize::kOffset21;
+          if (!is_near(L, bits)) return false;
+          offset = GetOffset(offset, L, bits);
+          beqzc(rs, offset);
+        } else {
+          bits = OffsetSize::kOffset16;
+          if (!is_near(L, bits)) return false;
+          scratch = GetRtAsRegisterHelper(rt, scratch);
+          DCHECK(!rs.is(scratch));
+          offset = GetOffset(offset, L, bits);
+          bgeuc(scratch, rs, offset);
+        }
+        break;
+      default:
+        UNREACHABLE();
+    }
   }
+  CheckTrampolinePoolQuick(1);
   return true;
 }
 
@@ -2374,121 +2377,122 @@ bool MacroAssembler::BranchShortHelper(int16_t offset, Label* L, Condition cond,
   // Be careful to always use shifted_branch_offset only just before the
   // branch instruction, as the location will be remember for patching the
   // target.
-  BlockTrampolinePoolScope block_trampoline_pool(this);
-  switch (cond) {
-    case cc_always:
-      offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
-      b(offset32);
-      break;
-    case eq:
-      if (IsZero(rt)) {
-        offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
-        beq(rs, zero_reg, offset32);
-      } else {
-        // We don't want any other register but scratch clobbered.
-        scratch = GetRtAsRegisterHelper(rt, scratch);
-        offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
-        beq(rs, scratch, offset32);
-      }
-      break;
-    case ne:
-      if (IsZero(rt)) {
-        offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
-        bne(rs, zero_reg, offset32);
-      } else {
-        // We don't want any other register but scratch clobbered.
-        scratch = GetRtAsRegisterHelper(rt, scratch);
-        offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
-        bne(rs, scratch, offset32);
-      }
-      break;
-
-    // Signed comparison.
-    case greater:
-      if (IsZero(rt)) {
-        offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
-        bgtz(rs, offset32);
-      } else {
-        Slt(scratch, GetRtAsRegisterHelper(rt, scratch), rs);
-        offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
-        bne(scratch, zero_reg, offset32);
-      }
-      break;
-    case greater_equal:
-      if (IsZero(rt)) {
-        offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
-        bgez(rs, offset32);
-      } else {
-        Slt(scratch, rs, rt);
-        offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
-        beq(scratch, zero_reg, offset32);
-      }
-      break;
-    case less:
-      if (IsZero(rt)) {
-        offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
-        bltz(rs, offset32);
-      } else {
-        Slt(scratch, rs, rt);
-        offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
-        bne(scratch, zero_reg, offset32);
-      }
-      break;
-    case less_equal:
-      if (IsZero(rt)) {
-        offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
-        blez(rs, offset32);
-      } else {
-        Slt(scratch, GetRtAsRegisterHelper(rt, scratch), rs);
-        offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
-        beq(scratch, zero_reg, offset32);
-      }
-      break;
-
-    // Unsigned comparison.
-    case Ugreater:
-      if (IsZero(rt)) {
-        offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
-        bne(rs, zero_reg, offset32);
-      } else {
-        Sltu(scratch, GetRtAsRegisterHelper(rt, scratch), rs);
-        offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
-        bne(scratch, zero_reg, offset32);
-      }
-      break;
-    case Ugreater_equal:
-      if (IsZero(rt)) {
+  {
+    BlockTrampolinePoolScope block_trampoline_pool(this);
+    switch (cond) {
+      case cc_always:
         offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
         b(offset32);
-      } else {
-        Sltu(scratch, rs, rt);
-        offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
-        beq(scratch, zero_reg, offset32);
-      }
-      break;
-    case Uless:
-      if (IsZero(rt)) {
-        return true;  // No code needs to be emitted.
-      } else {
-        Sltu(scratch, rs, rt);
-        offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
-        bne(scratch, zero_reg, offset32);
-      }
-      break;
-    case Uless_equal:
-      if (IsZero(rt)) {
-        offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
-        beq(rs, zero_reg, offset32);
-      } else {
-        Sltu(scratch, GetRtAsRegisterHelper(rt, scratch), rs);
-        offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
-        beq(scratch, zero_reg, offset32);
-      }
-      break;
-    default:
-      UNREACHABLE();
-  }
+        break;
+      case eq:
+        if (IsZero(rt)) {
+          offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
+          beq(rs, zero_reg, offset32);
+        } else {
+          // We don't want any other register but scratch clobbered.
+          scratch = GetRtAsRegisterHelper(rt, scratch);
+          offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
+          beq(rs, scratch, offset32);
+        }
+        break;
+      case ne:
+        if (IsZero(rt)) {
+          offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
+          bne(rs, zero_reg, offset32);
+        } else {
+          // We don't want any other register but scratch clobbered.
+          scratch = GetRtAsRegisterHelper(rt, scratch);
+          offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
+          bne(rs, scratch, offset32);
+        }
+        break;
 
+      // Signed comparison.
+      case greater:
+        if (IsZero(rt)) {
+          offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
+          bgtz(rs, offset32);
+        } else {
+          Slt(scratch, GetRtAsRegisterHelper(rt, scratch), rs);
+          offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
+          bne(scratch, zero_reg, offset32);
+        }
+        break;
+      case greater_equal:
+        if (IsZero(rt)) {
+          offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
+          bgez(rs, offset32);
+        } else {
+          Slt(scratch, rs, rt);
+          offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
+          beq(scratch, zero_reg, offset32);
+        }
+        break;
+      case less:
+        if (IsZero(rt)) {
+          offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
+          bltz(rs, offset32);
+        } else {
+          Slt(scratch, rs, rt);
+          offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
+          bne(scratch, zero_reg, offset32);
+        }
+        break;
+      case less_equal:
+        if (IsZero(rt)) {
+          offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
+          blez(rs, offset32);
+        } else {
+          Slt(scratch, GetRtAsRegisterHelper(rt, scratch), rs);
+          offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
+          beq(scratch, zero_reg, offset32);
+        }
+        break;
+
+      // Unsigned comparison.
+      case Ugreater:
+        if (IsZero(rt)) {
+          offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
+          bne(rs, zero_reg, offset32);
+        } else {
+          Sltu(scratch, GetRtAsRegisterHelper(rt, scratch), rs);
+          offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
+          bne(scratch, zero_reg, offset32);
+        }
+        break;
+      case Ugreater_equal:
+        if (IsZero(rt)) {
+          offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
+          b(offset32);
+        } else {
+          Sltu(scratch, rs, rt);
+          offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
+          beq(scratch, zero_reg, offset32);
+        }
+        break;
+      case Uless:
+        if (IsZero(rt)) {
+          return true;  // No code needs to be emitted.
+        } else {
+          Sltu(scratch, rs, rt);
+          offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
+          bne(scratch, zero_reg, offset32);
+        }
+        break;
+      case Uless_equal:
+        if (IsZero(rt)) {
+          offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
+          beq(rs, zero_reg, offset32);
+        } else {
+          Sltu(scratch, GetRtAsRegisterHelper(rt, scratch), rs);
+          offset32 = GetOffset(offset, L, OffsetSize::kOffset16);
+          beq(scratch, zero_reg, offset32);
+        }
+        break;
+      default:
+        UNREACHABLE();
+    }
+  }
   // Emit a nop in the branch delay slot if required.
   if (bdslot == PROTECT)
     nop();
@@ -3266,12 +3270,7 @@ void MacroAssembler::Allocate(int object_size,
     return;
   }
 
-  DCHECK(!result.is(scratch1));
-  DCHECK(!result.is(scratch2));
-  DCHECK(!scratch1.is(scratch2));
-  DCHECK(!scratch1.is(t9));
-  DCHECK(!scratch2.is(t9));
-  DCHECK(!result.is(t9));
+  DCHECK(!AreAliased(result, scratch1, scratch2, t9));
 
   // Make object size into bytes.
   if ((flags & SIZE_IN_WORDS) != 0) {
@@ -3287,54 +3286,52 @@ void MacroAssembler::Allocate(int object_size,
   ExternalReference allocation_limit =
       AllocationUtils::GetAllocationLimitReference(isolate(), flags);
 
-  intptr_t top   =
-      reinterpret_cast<intptr_t>(allocation_top.address());
-  intptr_t limit =
-      reinterpret_cast<intptr_t>(allocation_limit.address());
+  intptr_t top = reinterpret_cast<intptr_t>(allocation_top.address());
+  intptr_t limit = reinterpret_cast<intptr_t>(allocation_limit.address());
   DCHECK((limit - top) == kPointerSize);
 
-  // Set up allocation top address and object size registers.
-  Register topaddr = scratch1;
-  li(topaddr, Operand(allocation_top));
-
+  // Set up allocation top address and allocation limit registers.
+  Register top_address = scratch1;
   // This code stores a temporary value in t9.
+  Register alloc_limit = t9;
+  Register result_end = scratch2;
+  li(top_address, Operand(allocation_top));
+
   if ((flags & RESULT_CONTAINS_TOP) == 0) {
-    // Load allocation top into result and allocation limit into t9.
-    lw(result, MemOperand(topaddr));
-    lw(t9, MemOperand(topaddr, kPointerSize));
+    // Load allocation top into result and allocation limit into alloc_limit.
+    lw(result, MemOperand(top_address));
+    lw(alloc_limit, MemOperand(top_address, kPointerSize));
   } else {
     if (emit_debug_code()) {
-      // Assert that result actually contains top on entry. t9 is used
-      // immediately below so this use of t9 does not cause difference with
-      // respect to register content between debug and release mode.
-      lw(t9, MemOperand(topaddr));
-      Check(eq, kUnexpectedAllocationTop, result, Operand(t9));
+      // Assert that result actually contains top on entry.
+      lw(alloc_limit, MemOperand(top_address));
+      Check(eq, kUnexpectedAllocationTop, result, Operand(alloc_limit));
     }
-    // Load allocation limit into t9. Result already contains allocation top.
-    lw(t9, MemOperand(topaddr, limit - top));
+    // Load allocation limit. Result already contains allocation top.
+    lw(alloc_limit, MemOperand(top_address, limit - top));
   }
 
   if ((flags & DOUBLE_ALIGNMENT) != 0) {
     // Align the next allocation. Storing the filler map without checking top is
     // safe in new-space because the limit of the heap is aligned there.
     DCHECK(kPointerAlignment * 2 == kDoubleAlignment);
-    And(scratch2, result, Operand(kDoubleAlignmentMask));
+    And(result_end, result, Operand(kDoubleAlignmentMask));
     Label aligned;
-    Branch(&aligned, eq, scratch2, Operand(zero_reg));
+    Branch(&aligned, eq, result_end, Operand(zero_reg));
     if ((flags & PRETENURE) != 0) {
-      Branch(gc_required, Ugreater_equal, result, Operand(t9));
+      Branch(gc_required, Ugreater_equal, result, Operand(alloc_limit));
     }
-    li(scratch2, Operand(isolate()->factory()->one_pointer_filler_map()));
-    sw(scratch2, MemOperand(result));
+    li(result_end, Operand(isolate()->factory()->one_pointer_filler_map()));
+    sw(result_end, MemOperand(result));
     Addu(result, result, Operand(kDoubleSize / 2));
     bind(&aligned);
   }
 
   // Calculate new top and bail out if new space is exhausted. Use result
   // to calculate the new top.
-  Addu(scratch2, result, Operand(object_size));
-  Branch(gc_required, Ugreater, scratch2, Operand(t9));
-  sw(scratch2, MemOperand(topaddr));
+  Addu(result_end, result, Operand(object_size));
+  Branch(gc_required, Ugreater, result_end, Operand(alloc_limit));
+  sw(result_end, MemOperand(top_address));
 
   // Tag object if requested.
   if ((flags & TAG_OBJECT) != 0) {
@@ -3343,28 +3340,25 @@ void MacroAssembler::Allocate(int object_size,
 }
 
 
-void MacroAssembler::Allocate(Register object_size,
-                              Register result,
-                              Register scratch1,
-                              Register scratch2,
-                              Label* gc_required,
-                              AllocationFlags flags) {
+void MacroAssembler::Allocate(Register object_size, Register result,
+                              Register result_end, Register scratch,
+                              Label* gc_required, AllocationFlags flags) {
   if (!FLAG_inline_new) {
     if (emit_debug_code()) {
       // Trash the registers to simulate an allocation failure.
       li(result, 0x7091);
-      li(scratch1, 0x7191);
-      li(scratch2, 0x7291);
+      li(scratch, 0x7191);
+      li(result_end, 0x7291);
     }
     jmp(gc_required);
     return;
   }
 
-  DCHECK(!result.is(scratch1));
-  DCHECK(!result.is(scratch2));
-  DCHECK(!scratch1.is(scratch2));
-  DCHECK(!object_size.is(t9));
-  DCHECK(!scratch1.is(t9) && !scratch2.is(t9) && !result.is(t9));
+  // |object_size| and |result_end| may overlap if the DOUBLE_ALIGNMENT flag
+  // is not specified. Other registers must not overlap.
+  DCHECK(!AreAliased(object_size, result, scratch, t9));
+  DCHECK(!AreAliased(result_end, result, scratch, t9));
+  DCHECK((flags & DOUBLE_ALIGNMENT) == 0 || !object_size.is(result_end));
 
   // Check relative positions of allocation top and limit addresses.
   // ARM adds additional checks to make sure the ldm instruction can be
@@ -3373,45 +3367,42 @@ void MacroAssembler::Allocate(Register object_size,
       AllocationUtils::GetAllocationTopReference(isolate(), flags);
   ExternalReference allocation_limit =
       AllocationUtils::GetAllocationLimitReference(isolate(), flags);
-  intptr_t top   =
-      reinterpret_cast<intptr_t>(allocation_top.address());
-  intptr_t limit =
-      reinterpret_cast<intptr_t>(allocation_limit.address());
+  intptr_t top = reinterpret_cast<intptr_t>(allocation_top.address());
+  intptr_t limit = reinterpret_cast<intptr_t>(allocation_limit.address());
   DCHECK((limit - top) == kPointerSize);
 
-  // Set up allocation top address and object size registers.
-  Register topaddr = scratch1;
-  li(topaddr, Operand(allocation_top));
-
+  // Set up allocation top address and allocation limit registers.
+  Register top_address = scratch;
   // This code stores a temporary value in t9.
+  Register alloc_limit = t9;
+  li(top_address, Operand(allocation_top));
+
   if ((flags & RESULT_CONTAINS_TOP) == 0) {
-    // Load allocation top into result and allocation limit into t9.
-    lw(result, MemOperand(topaddr));
-    lw(t9, MemOperand(topaddr, kPointerSize));
+    // Load allocation top into result and allocation limit into alloc_limit.
+    lw(result, MemOperand(top_address));
+    lw(alloc_limit, MemOperand(top_address, kPointerSize));
   } else {
     if (emit_debug_code()) {
-      // Assert that result actually contains top on entry. t9 is used
-      // immediately below so this use of t9 does not cause difference with
-      // respect to register content between debug and release mode.
-      lw(t9, MemOperand(topaddr));
-      Check(eq, kUnexpectedAllocationTop, result, Operand(t9));
+      // Assert that result actually contains top on entry.
+      lw(alloc_limit, MemOperand(top_address));
+      Check(eq, kUnexpectedAllocationTop, result, Operand(alloc_limit));
     }
-    // Load allocation limit into t9. Result already contains allocation top.
-    lw(t9, MemOperand(topaddr, limit - top));
+    // Load allocation limit. Result already contains allocation top.
+    lw(alloc_limit, MemOperand(top_address, limit - top));
   }
 
   if ((flags & DOUBLE_ALIGNMENT) != 0) {
     // Align the next allocation. Storing the filler map without checking top is
     // safe in new-space because the limit of the heap is aligned there.
     DCHECK(kPointerAlignment * 2 == kDoubleAlignment);
-    And(scratch2, result, Operand(kDoubleAlignmentMask));
+    And(result_end, result, Operand(kDoubleAlignmentMask));
     Label aligned;
-    Branch(&aligned, eq, scratch2, Operand(zero_reg));
+    Branch(&aligned, eq, result_end, Operand(zero_reg));
     if ((flags & PRETENURE) != 0) {
-      Branch(gc_required, Ugreater_equal, result, Operand(t9));
+      Branch(gc_required, Ugreater_equal, result, Operand(alloc_limit));
     }
-    li(scratch2, Operand(isolate()->factory()->one_pointer_filler_map()));
-    sw(scratch2, MemOperand(result));
+    li(result_end, Operand(isolate()->factory()->one_pointer_filler_map()));
+    sw(result_end, MemOperand(result));
     Addu(result, result, Operand(kDoubleSize / 2));
     bind(&aligned);
   }
@@ -3420,19 +3411,19 @@ void MacroAssembler::Allocate(Register object_size,
   // to calculate the new top. Object size may be in words so a shift is
   // required to get the number of bytes.
   if ((flags & SIZE_IN_WORDS) != 0) {
-    sll(scratch2, object_size, kPointerSizeLog2);
-    Addu(scratch2, result, scratch2);
+    sll(result_end, object_size, kPointerSizeLog2);
+    Addu(result_end, result, result_end);
   } else {
-    Addu(scratch2, result, Operand(object_size));
+    Addu(result_end, result, Operand(object_size));
   }
-  Branch(gc_required, Ugreater, scratch2, Operand(t9));
+  Branch(gc_required, Ugreater, result_end, Operand(alloc_limit));
 
   // Update allocation top. result temporarily holds the new top.
   if (emit_debug_code()) {
-    And(t9, scratch2, Operand(kObjectAlignmentMask));
-    Check(eq, kUnalignedAllocationInNewSpace, t9, Operand(zero_reg));
+    And(alloc_limit, result_end, Operand(kObjectAlignmentMask));
+    Check(eq, kUnalignedAllocationInNewSpace, alloc_limit, Operand(zero_reg));
   }
-  sw(scratch2, MemOperand(topaddr));
+  sw(result_end, MemOperand(top_address));
 
   // Tag object if requested.
   if ((flags & TAG_OBJECT) != 0) {
@@ -3702,16 +3693,16 @@ void MacroAssembler::CopyBytes(Register src,
 }
 
 
-void MacroAssembler::InitializeFieldsWithFiller(Register start_offset,
-                                                Register end_offset,
+void MacroAssembler::InitializeFieldsWithFiller(Register current_address,
+                                                Register end_address,
                                                 Register filler) {
   Label loop, entry;
   Branch(&entry);
   bind(&loop);
-  sw(filler, MemOperand(start_offset));
-  Addu(start_offset, start_offset, kPointerSize);
+  sw(filler, MemOperand(current_address));
+  Addu(current_address, current_address, kPointerSize);
   bind(&entry);
-  Branch(&loop, ult, start_offset, Operand(end_offset));
+  Branch(&loop, ult, current_address, Operand(end_address));
 }
 
 
@@ -3981,8 +3972,6 @@ void MacroAssembler::MovToFloatParameters(DoubleRegister src1,
 
 void MacroAssembler::InvokePrologue(const ParameterCount& expected,
                                     const ParameterCount& actual,
-                                    Handle<Code> code_constant,
-                                    Register code_reg,
                                     Label* done,
                                     bool* definitely_mismatches,
                                     InvokeFlag flag,
@@ -4002,7 +3991,6 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
   // passed in registers.
   DCHECK(actual.is_immediate() || actual.reg().is(a0));
   DCHECK(expected.is_immediate() || expected.reg().is(a2));
-  DCHECK((!code_constant.is_null() && code_reg.is(no_reg)) || code_reg.is(a3));
 
   if (expected.is_immediate()) {
     DCHECK(actual.is_immediate());
@@ -4030,11 +4018,6 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
   }
 
   if (!definitely_matches) {
-    if (!code_constant.is_null()) {
-      li(a3, Operand(code_constant));
-      addiu(a3, a3, Code::kHeaderSize - kHeapObjectTag);
-    }
-
     Handle<Code> adaptor =
         isolate()->builtins()->ArgumentsAdaptorTrampoline();
     if (flag == CALL_FUNCTION) {
@@ -4053,6 +4036,7 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
 
 
 void MacroAssembler::InvokeCode(Register code,
+                                Register new_target,
                                 const ParameterCount& expected,
                                 const ParameterCount& actual,
                                 InvokeFlag flag,
@@ -4060,11 +4044,16 @@ void MacroAssembler::InvokeCode(Register code,
   // You can't call a function without a valid frame.
   DCHECK(flag == JUMP_FUNCTION || has_frame());
 
-  Label done;
+  // Ensure new target is passed in the correct register. Otherwise clear the
+  // appropriate register in case new target is not given.
+  DCHECK_IMPLIES(new_target.is_valid(), new_target.is(a3));
+  if (!new_target.is_valid()) {
+    LoadRoot(a3, Heap::kUndefinedValueRootIndex);
+  }
 
+  Label done;
   bool definitely_mismatches = false;
-  InvokePrologue(expected, actual, Handle<Code>::null(), code,
-                 &done, &definitely_mismatches, flag,
+  InvokePrologue(expected, actual, &done, &definitely_mismatches, flag,
                  call_wrapper);
   if (!definitely_mismatches) {
     if (flag == CALL_FUNCTION) {
@@ -4083,6 +4072,7 @@ void MacroAssembler::InvokeCode(Register code,
 
 
 void MacroAssembler::InvokeFunction(Register function,
+                                    Register new_target,
                                     const ParameterCount& actual,
                                     InvokeFlag flag,
                                     const CallWrapper& call_wrapper) {
@@ -4092,7 +4082,7 @@ void MacroAssembler::InvokeFunction(Register function,
   // Contract with called JS functions requires that function is passed in a1.
   DCHECK(function.is(a1));
   Register expected_reg = a2;
-  Register code_reg = a3;
+  Register code_reg = t0;
 
   lw(code_reg, FieldMemOperand(a1, JSFunction::kSharedFunctionInfoOffset));
   lw(cp, FieldMemOperand(a1, JSFunction::kContextOffset));
@@ -4103,7 +4093,7 @@ void MacroAssembler::InvokeFunction(Register function,
   lw(code_reg, FieldMemOperand(a1, JSFunction::kCodeEntryOffset));
 
   ParameterCount expected(expected_reg);
-  InvokeCode(code_reg, expected, actual, flag, call_wrapper);
+  InvokeCode(code_reg, new_target, expected, actual, flag, call_wrapper);
 }
 
 
@@ -4124,8 +4114,8 @@ void MacroAssembler::InvokeFunction(Register function,
   // We call indirectly through the code field in the function to
   // allow recompilation to take effect without changing any of the
   // call sites.
-  lw(a3, FieldMemOperand(a1, JSFunction::kCodeEntryOffset));
-  InvokeCode(a3, expected, actual, flag, call_wrapper);
+  lw(t0, FieldMemOperand(a1, JSFunction::kCodeEntryOffset));
+  InvokeCode(t0, no_reg, expected, actual, flag, call_wrapper);
 }
 
 

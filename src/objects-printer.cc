@@ -95,6 +95,7 @@ void HeapObject::HeapObjectPrint(std::ostream& os) {  // NOLINT
     case JS_CONTEXT_EXTENSION_OBJECT_TYPE:
     case JS_ARRAY_TYPE:
     case JS_GENERATOR_OBJECT_TYPE:
+    case JS_PROMISE_TYPE:
       JSObject::cast(this)->JSObjectPrint(os);
       break;
     case JS_REGEXP_TYPE:
@@ -733,11 +734,13 @@ void JSDate::JSDatePrint(std::ostream& os) {  // NOLINT
 
 void JSProxy::JSProxyPrint(std::ostream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "JSProxy");
-  os << " - map = " << reinterpret_cast<void*>(map()) << "\n";
-  os << " - handler = ";
-  handler()->Print(os);
+  os << " - map = " << reinterpret_cast<void*>(map());
+  os << "\n - target = ";
+  target()->ShortPrint(os);
+  os << "\n - handler = ";
+  handler()->ShortPrint(os);
   os << "\n - hash = ";
-  hash()->Print(os);
+  hash()->ShortPrint(os);
   os << "\n";
 }
 

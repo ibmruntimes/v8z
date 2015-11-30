@@ -89,79 +89,33 @@ bool CallDescriptor::HasSameReturnLocationsAs(
 }
 
 
-bool CallDescriptor::CanTailCall(const Node* node) const {
-  // Determine the number of stack parameters passed in
-  size_t stack_params = 0;
-  for (size_t i = 0; i < InputCount(); ++i) {
-    if (!GetInputLocation(i).IsRegister()) {
-      ++stack_params;
-    }
-  }
-  // Ensure the input linkage contains the stack parameters in the right order
-  size_t current_stack_param = 0;
-  for (size_t i = 0; i < InputCount(); ++i) {
-    if (!GetInputLocation(i).IsRegister()) {
-      if (GetInputLocation(i) != LinkageLocation::ForCallerFrameSlot(
-                                     static_cast<int>(current_stack_param) -
-                                     static_cast<int>(stack_params))) {
-        return false;
-      }
-      ++current_stack_param;
-    }
-  }
-  // Tail calling is currently allowed if return locations match and all
-  // parameters are either in registers or on the stack but match exactly in
-  // number and content.
+bool CallDescriptor::CanTailCall(const Node* node,
+                                 int* stack_param_delta) const {
   CallDescriptor const* other = OpParameter<CallDescriptor const*>(node);
-  if (!HasSameReturnLocationsAs(other)) return false;
   size_t current_input = 0;
   size_t other_input = 0;
-  while (true) {
-    if (other_input >= other->InputCount()) {
-      while (current_input < InputCount()) {
-        if (!GetInputLocation(current_input).IsRegister()) {
-          return false;
-        }
-        ++current_input;
+  *stack_param_delta = 0;
+  bool more_other = true;
+  bool more_this = true;
+  while (more_other || more_this) {
+    if (other_input < other->InputCount()) {
+      if (!other->GetInputLocation(other_input).IsRegister()) {
+        (*stack_param_delta)--;
       }
-      return true;
+    } else {
+      more_other = false;
     }
-    if (current_input >= InputCount()) {
-      while (other_input < other->InputCount()) {
-        if (!other->GetInputLocation(other_input).IsRegister()) {
-          return false;
-        }
-        ++other_input;
+    if (current_input < InputCount()) {
+      if (!GetInputLocation(current_input).IsRegister()) {
+        (*stack_param_delta)++;
       }
-      return true;
-    }
-    if (GetInputLocation(current_input).IsRegister()) {
-      ++current_input;
-      continue;
-    }
-    if (other->GetInputLocation(other_input).IsRegister()) {
-      ++other_input;
-      continue;
-    }
-    if (GetInputLocation(current_input) !=
-        other->GetInputLocation(other_input)) {
-      return false;
-    }
-    Node* input = node->InputAt(static_cast<int>(other_input));
-    if (input->opcode() != IrOpcode::kParameter) {
-      return false;
-    }
-    // Make sure that the parameter input passed through to the tail call
-    // corresponds to the correct stack slot.
-    size_t param_index = ParameterIndexOf(input->op());
-    if (param_index != current_input - 1) {
-      return false;
+    } else {
+      more_this = false;
     }
     ++current_input;
     ++other_input;
   }
-  UNREACHABLE();
-  return false;
+  return HasSameReturnLocationsAs(OpParameter<CallDescriptor const*>(node));
 }
 
 
@@ -205,10 +159,8 @@ FrameOffset Linkage::GetFrameOffset(int spill_slot, Frame* frame) const {
   } else {
     // No frame. Retrieve all parameters relative to stack pointer.
     DCHECK(spill_slot < 0);  // Must be a parameter.
-    int offsetSpToFp =
-        kPointerSize * (StandardFrameConstants::kFixedSlotCountAboveFp -
-                        frame->GetTotalFrameSlotCount());
-    return FrameOffset::FromStackPointer(offset - offsetSpToFp);
+    int sp_offset = offset + (frame->GetSpToFpSlotCount() * kPointerSize);
+    return FrameOffset::FromStackPointer(sp_offset);
   }
 }
 
@@ -244,6 +196,7 @@ int Linkage::FrameStateInputCount(Runtime::FunctionId function) {
     case Runtime::kInlineDefaultConstructorCallSuper:
     case Runtime::kInlineGetCallerJSFunction:
     case Runtime::kInlineGetPrototype:
+    case Runtime::kInlineIsConstructCall:
     case Runtime::kInlineRegExpExec:
     case Runtime::kInlineSubString:
     case Runtime::kInlineToInteger:
@@ -257,6 +210,7 @@ int Linkage::FrameStateInputCount(Runtime::FunctionId function) {
     case Runtime::kInlineToString:
       return 1;
     case Runtime::kInlineCall:
+    case Runtime::kInlineTailCall:
     case Runtime::kInlineDeoptimizeNow:
     case Runtime::kInlineThrowNotDateError:
       return 2;
@@ -382,9 +336,10 @@ CallDescriptor* Linkage::GetJSCallDescriptor(Zone* zone, bool is_osr,
                                              CallDescriptor::Flags flags) {
   const size_t return_count = 1;
   const size_t context_count = 1;
+  const size_t new_target_count = 1;
   const size_t num_args_count = 1;
   const size_t parameter_count =
-      js_parameter_count + num_args_count + context_count;
+      js_parameter_count + new_target_count + num_args_count + context_count;
 
   LocationSignature::Builder locations(zone, return_count, parameter_count);
   MachineSignature::Builder types(zone, return_count, parameter_count);
@@ -399,6 +354,10 @@ CallDescriptor* Linkage::GetJSCallDescriptor(Zone* zone, bool is_osr,
     locations.AddParam(LinkageLocation::ForCallerFrameSlot(spill_slot_index));
     types.AddParam(kMachAnyTagged);
   }
+
+  // Add JavaScript call new target value.
+  locations.AddParam(regloc(kJavaScriptCallNewTargetRegister));
+  types.AddParam(kMachAnyTagged);
 
   // Add JavaScript call argument count.
   locations.AddParam(regloc(kJavaScriptCallArgCountRegister));
@@ -551,8 +510,8 @@ LinkageLocation Linkage::GetOsrValueLocation(int index) const {
   if (index == kOsrContextSpillSlotIndex) {
     // Context. Use the parameter location of the context spill slot.
     // Parameter (arity + 2) is special for the context of the function frame.
-    int context_index =
-        1 + 1 + 1 + parameter_count;  // target + receiver + params + #args
+    // >> context_index = target + receiver + params + new_target + #args
+    int context_index = 1 + 1 + parameter_count + 1 + 1;
     return incoming_->GetInputLocation(context_index);
   } else if (index >= first_stack_slot) {
     // Local variable stored in this (callee) stack.
@@ -565,6 +524,28 @@ LinkageLocation Linkage::GetOsrValueLocation(int index) const {
     return incoming_->GetInputLocation(parameter_index);
   }
 }
+
+
+bool Linkage::ParameterHasSecondaryLocation(int index) const {
+  if (incoming_->kind() != CallDescriptor::kCallJSFunction) return false;
+  LinkageLocation loc = GetParameterLocation(index);
+  return (loc == regloc(kJSFunctionRegister) ||
+          loc == regloc(kContextRegister));
+}
+
+LinkageLocation Linkage::GetParameterSecondaryLocation(int index) const {
+  DCHECK(ParameterHasSecondaryLocation(index));
+  LinkageLocation loc = GetParameterLocation(index);
+
+  if (loc == regloc(kJSFunctionRegister)) {
+    return LinkageLocation::ForCalleeFrameSlot(Frame::kJSFunctionSlot);
+  } else {
+    DCHECK(loc == regloc(kContextRegister));
+    return LinkageLocation::ForCalleeFrameSlot(Frame::kContextSlot);
+  }
+}
+
+
 }  // namespace compiler
 }  // namespace internal
 }  // namespace v8

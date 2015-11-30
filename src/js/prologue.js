@@ -102,21 +102,20 @@ function InstallFunctions(object, attributes, functions) {
 
 
 // Helper function to install a getter-only accessor property.
-function InstallGetter(object, name, getter, attributes) {
+function InstallGetter(object, name, getter, attributes, prefix) {
   %CheckIsBootstrapping();
-  if (typeof attributes == "undefined") {
-    attributes = DONT_ENUM;
-  }
-  SetFunctionName(getter, name, "get");
+  if (IS_UNDEFINED(attributes)) attributes = DONT_ENUM;
+  SetFunctionName(getter, name, IS_UNDEFINED(prefix) ? "get" : prefix);
   %FunctionRemovePrototype(getter);
-  %DefineAccessorPropertyUnchecked(object, name, getter, null, attributes);
+  %DefineGetterPropertyUnchecked(object, name, getter, attributes);
   %SetNativeFlag(getter);
 }
 
 
 // Helper function to install a getter/setter accessor property.
-function InstallGetterSetter(object, name, getter, setter) {
+function InstallGetterSetter(object, name, getter, setter, attributes) {
   %CheckIsBootstrapping();
+  if (IS_UNDEFINED(attributes)) attributes = DONT_ENUM;
   SetFunctionName(getter, name, "get");
   SetFunctionName(setter, name, "set");
   %FunctionRemovePrototype(getter);
@@ -246,8 +245,6 @@ function PostExperimentals(utils) {
     imports_from_experimental(exports_container);
   }
 
-  utils.InitializeRNG();
-  utils.InitializeRNG = UNDEFINED;
   utils.CreateDoubleResultArray();
   utils.CreateDoubleResultArray = UNDEFINED;
 
@@ -263,8 +260,6 @@ function PostDebug(utils) {
     imports(exports_container);
   }
 
-  utils.InitializeRNG();
-  utils.InitializeRNG = UNDEFINED;
   utils.CreateDoubleResultArray();
   utils.CreateDoubleResultArray = UNDEFINED;
 
@@ -290,7 +285,7 @@ function InitializeBuiltinTypedArrays(utils, rng_state, rempio2result) {
 
 // -----------------------------------------------------------------------
 
-%OptimizeObjectForAddingMultipleProperties(utils, 15);
+%OptimizeObjectForAddingMultipleProperties(utils, 14);
 
 utils.Import = Import;
 utils.ImportNow = ImportNow;

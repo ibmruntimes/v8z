@@ -66,6 +66,7 @@ enum BuiltinExtraArguments {
   V(ReflectGetPrototypeOf, NO_EXTRA_ARGUMENTS)               \
   V(ReflectHas, NO_EXTRA_ARGUMENTS)                          \
   V(ReflectIsExtensible, NO_EXTRA_ARGUMENTS)                 \
+  V(ReflectOwnKeys, NO_EXTRA_ARGUMENTS)                      \
   V(ReflectPreventExtensions, NO_EXTRA_ARGUMENTS)            \
   V(ReflectSet, NO_EXTRA_ARGUMENTS)                          \
   V(ReflectSetPrototypeOf, NO_EXTRA_ARGUMENTS)               \
@@ -85,6 +86,8 @@ enum BuiltinExtraArguments {
 #define BUILTIN_LIST_A(V)                                                     \
   V(ArgumentsAdaptorTrampoline, BUILTIN, UNINITIALIZED, kNoExtraICState)      \
                                                                               \
+  V(ConstructedNonConstructable, BUILTIN, UNINITIALIZED, kNoExtraICState)     \
+                                                                              \
   V(CallFunction_ReceiverIsNullOrUndefined, BUILTIN, UNINITIALIZED,           \
     kNoExtraICState)                                                          \
   V(CallFunction_ReceiverIsNotNullOrUndefined, BUILTIN, UNINITIALIZED,        \
@@ -99,9 +102,11 @@ enum BuiltinExtraArguments {
   V(ConstructProxy, BUILTIN, UNINITIALIZED, kNoExtraICState)                  \
   V(Construct, BUILTIN, UNINITIALIZED, kNoExtraICState)                       \
                                                                               \
+  V(HandleFastApiCall, BUILTIN, UNINITIALIZED, kNoExtraICState)               \
+                                                                              \
   V(InOptimizationQueue, BUILTIN, UNINITIALIZED, kNoExtraICState)             \
   V(JSConstructStubGeneric, BUILTIN, UNINITIALIZED, kNoExtraICState)          \
-  V(JSConstructStubForDerived, BUILTIN, UNINITIALIZED, kNoExtraICState)       \
+  V(JSBuiltinsConstructStub, BUILTIN, UNINITIALIZED, kNoExtraICState)         \
   V(JSConstructStubApi, BUILTIN, UNINITIALIZED, kNoExtraICState)              \
   V(JSEntryTrampoline, BUILTIN, UNINITIALIZED, kNoExtraICState)               \
   V(JSConstructEntryTrampoline, BUILTIN, UNINITIALIZED, kNoExtraICState)      \
@@ -280,12 +285,13 @@ class Builtins {
   static void Generate_Adaptor(MacroAssembler* masm,
                                CFunctionId id,
                                BuiltinExtraArguments extra_args);
+  static void Generate_ConstructedNonConstructable(MacroAssembler* masm);
   static void Generate_CompileLazy(MacroAssembler* masm);
   static void Generate_InOptimizationQueue(MacroAssembler* masm);
   static void Generate_CompileOptimized(MacroAssembler* masm);
   static void Generate_CompileOptimizedConcurrent(MacroAssembler* masm);
   static void Generate_JSConstructStubGeneric(MacroAssembler* masm);
-  static void Generate_JSConstructStubForDerived(MacroAssembler* masm);
+  static void Generate_JSBuiltinsConstructStub(MacroAssembler* masm);
   static void Generate_JSConstructStubApi(MacroAssembler* masm);
   static void Generate_JSEntryTrampoline(MacroAssembler* masm);
   static void Generate_JSConstructEntryTrampoline(MacroAssembler* masm);
@@ -328,6 +334,8 @@ class Builtins {
   static void Generate_ConstructProxy(MacroAssembler* masm);
   // ES6 section 7.3.13 Construct (F, [argumentsList], [newTarget])
   static void Generate_Construct(MacroAssembler* masm);
+
+  static void Generate_HandleFastApiCall(MacroAssembler* masm);
 
   static void Generate_FunctionCall(MacroAssembler* masm);
   static void Generate_FunctionApply(MacroAssembler* masm);

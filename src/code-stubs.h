@@ -44,7 +44,6 @@ namespace internal {
   V(ProfileEntryHook)                       \
   V(RecordWrite)                            \
   V(RegExpExec)                             \
-  V(StoreArrayLiteralElement)               \
   V(StoreBufferOverflow)                    \
   V(StoreElement)                           \
   V(StringCompare)                          \
@@ -997,6 +996,7 @@ class CallICStub: public PlatformCodeStub {
 
  protected:
   int arg_count() const { return state().argc(); }
+  ConvertReceiverMode convert_mode() const { return state().convert_mode(); }
 
   CallICState state() const {
     return CallICState(static_cast<ExtraICState>(minor_key_));
@@ -1246,20 +1246,15 @@ class StoreTransitionHelper {
   }
 
   static Register SlotRegister() {
-    DCHECK(FLAG_vector_stores);
     return VectorStoreTransitionDescriptor::SlotRegister();
   }
 
   static Register VectorRegister() {
-    DCHECK(FLAG_vector_stores);
     return VectorStoreTransitionDescriptor::VectorRegister();
   }
 
   static Register MapRegister() {
-    if (FLAG_vector_stores) {
-      return VectorStoreTransitionDescriptor::MapRegister();
-    }
-    return StoreTransitionDescriptor::MapRegister();
+    return VectorStoreTransitionDescriptor::MapRegister();
   }
 
   static int ReceiverIndex() {
@@ -1277,7 +1272,6 @@ class StoreTransitionHelper {
   }
 
   static int VectorIndex() {
-    DCHECK(FLAG_vector_stores);
     if (HasVirtualSlotArg()) {
       return VectorStoreTransitionDescriptor::kVirtualSlotVectorIndex;
     }
@@ -1286,7 +1280,6 @@ class StoreTransitionHelper {
 
   // Some platforms don't have a slot arg.
   static bool HasVirtualSlotArg() {
-    if (!FLAG_vector_stores) return false;
     return SlotRegister().is(no_reg);
   }
 };
@@ -1972,31 +1965,10 @@ class RegExpConstructResultStub final : public HydrogenCodeStub {
 };
 
 
-class CallConstructStub: public PlatformCodeStub {
+// TODO(bmeurer/mvstanton): Turn CallConstructStub into ConstructICStub.
+class CallConstructStub final : public PlatformCodeStub {
  public:
-  CallConstructStub(Isolate* isolate, CallConstructorFlags flags)
-      : PlatformCodeStub(isolate) {
-    minor_key_ = FlagBits::encode(flags);
-  }
-
-  void FinishCode(Handle<Code> code) override {
-    code->set_has_function_cache(RecordCallTarget());
-  }
-
- private:
-  CallConstructorFlags flags() const { return FlagBits::decode(minor_key_); }
-
-  bool RecordCallTarget() const {
-    return (flags() & RECORD_CONSTRUCTOR_TARGET) != 0;
-  }
-
-  bool IsSuperConstructorCall() const {
-    return (flags() & SUPER_CONSTRUCTOR_CALL) != 0;
-  }
-
-  void PrintName(std::ostream& os) const override;  // NOLINT
-
-  class FlagBits : public BitField<CallConstructorFlags, 0, 2> {};
+  explicit CallConstructStub(Isolate* isolate) : PlatformCodeStub(isolate) {}
 
   DEFINE_CALL_INTERFACE_DESCRIPTOR(CallConstruct);
   DEFINE_PLATFORM_CODE_STUB(CallConstruct, PlatformCodeStub);
@@ -2580,10 +2552,7 @@ class StoreFastElementStub : public HydrogenCodeStub {
   }
 
   CallInterfaceDescriptor GetCallInterfaceDescriptor() const override {
-    if (FLAG_vector_stores) {
-      return VectorStoreICDescriptor(isolate());
-    }
-    return StoreDescriptor(isolate());
+    return VectorStoreICDescriptor(isolate());
   }
 
   Code::Kind GetCodeKind() const override { return Code::HANDLER; }
@@ -2834,10 +2803,7 @@ class StoreElementStub : public PlatformCodeStub {
   }
 
   CallInterfaceDescriptor GetCallInterfaceDescriptor() const override {
-    if (FLAG_vector_stores) {
-      return VectorStoreICDescriptor(isolate());
-    }
-    return StoreDescriptor(isolate());
+    return VectorStoreICDescriptor(isolate());
   }
 
   Code::Kind GetCodeKind() const override { return Code::HANDLER; }
@@ -2972,16 +2938,6 @@ class ElementsTransitionAndStoreStub : public HydrogenCodeStub {
   class IsJSArrayBits : public BitField<bool, 19, 1> {};
 
   DEFINE_HYDROGEN_CODE_STUB(ElementsTransitionAndStore, HydrogenCodeStub);
-};
-
-
-class StoreArrayLiteralElementStub : public PlatformCodeStub {
- public:
-  explicit StoreArrayLiteralElementStub(Isolate* isolate)
-      : PlatformCodeStub(isolate) { }
-
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(StoreArrayLiteralElement);
-  DEFINE_PLATFORM_CODE_STUB(StoreArrayLiteralElement, PlatformCodeStub);
 };
 
 

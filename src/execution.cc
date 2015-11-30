@@ -95,7 +95,8 @@ MUST_USE_RESULT MaybeHandle<Object> Invoke(Isolate* isolate, bool is_construct,
     if (FLAG_profile_deserialization && target->IsJSFunction()) {
       PrintDeserializedCodeInfo(Handle<JSFunction>::cast(target));
     }
-    value = CALL_GENERATED_CODE(stub_entry, orig_func, func, recv, argc, argv);
+    value = CALL_GENERATED_CODE(isolate, stub_entry, orig_func, func, recv,
+                                argc, argv);
   }
 
 #ifdef VERIFY_HEAP
@@ -457,20 +458,6 @@ MaybeHandle<Object> Execution::ToObject(Isolate* isolate, Handle<Object> obj) {
 }
 
 
-MaybeHandle<JSRegExp> Execution::NewJSRegExp(Handle<String> pattern,
-                                             Handle<String> flags) {
-  Isolate* isolate = pattern->GetIsolate();
-  Handle<JSFunction> function = Handle<JSFunction>(
-      isolate->native_context()->regexp_function());
-  Handle<Object> re_obj;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, re_obj,
-      RegExpImpl::CreateRegExpLiteral(function, pattern, flags),
-      JSRegExp);
-  return Handle<JSRegExp>::cast(re_obj);
-}
-
-
 Handle<String> Execution::GetStackTraceLine(Handle<Object> recv,
                                             Handle<JSFunction> fun,
                                             Handle<Object> pos,
@@ -497,6 +484,11 @@ void StackGuard::HandleGCInterrupt() {
 
 
 Object* StackGuard::HandleInterrupts() {
+  if (FLAG_verify_predictable) {
+    // Advance synthetic time by making a time request.
+    isolate_->heap()->MonotonicallyIncreasingTimeInMs();
+  }
+
   if (CheckAndClearInterrupt(GC_REQUEST)) {
     isolate_->heap()->HandleGCRequest();
   }

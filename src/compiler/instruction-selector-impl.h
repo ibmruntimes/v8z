@@ -72,6 +72,14 @@ class OperandGenerator {
     return Define(node, ToUnallocatedOperand(location, type, GetVReg(node)));
   }
 
+  InstructionOperand DefineAsDualLocation(Node* node,
+                                          LinkageLocation primary_location,
+                                          LinkageLocation secondary_location) {
+    return Define(node,
+                  ToDualLocationUnallocatedOperand(
+                      primary_location, secondary_location, GetVReg(node)));
+  }
+
   InstructionOperand Use(Node* node) {
     return Use(node, UnallocatedOperand(UnallocatedOperand::NONE,
                                         UnallocatedOperand::USED_AT_START,
@@ -120,9 +128,15 @@ class OperandGenerator {
                                   reg.code(), GetVReg(node)));
   }
 
-  InstructionOperand UseExplicit(Register reg) {
+  InstructionOperand UseExplicit(LinkageLocation location) {
     MachineType machine_type = InstructionSequence::DefaultRepresentation();
-    return ExplicitOperand(LocationOperand::REGISTER, machine_type, reg.code());
+    if (location.IsRegister()) {
+      return ExplicitOperand(LocationOperand::REGISTER, machine_type,
+                             location.AsRegister());
+    } else {
+      return ExplicitOperand(LocationOperand::STACK_SLOT, machine_type,
+                             location.GetLocation());
+    }
   }
 
   InstructionOperand UseImmediate(Node* node) {
@@ -132,6 +146,18 @@ class OperandGenerator {
   InstructionOperand UseLocation(Node* node, LinkageLocation location,
                                  MachineType type) {
     return Use(node, ToUnallocatedOperand(location, type, GetVReg(node)));
+  }
+
+  // Used to force gap moves from the from_location to the to_location
+  // immediately before an instruction.
+  InstructionOperand UsePointerLocation(LinkageLocation to_location,
+                                        LinkageLocation from_location) {
+    MachineType type = static_cast<MachineType>(kTypeAny | kMachPtr);
+    UnallocatedOperand casted_from_operand =
+        UnallocatedOperand::cast(TempLocation(from_location, type));
+    selector_->Emit(kArchNop, casted_from_operand);
+    return ToUnallocatedOperand(to_location, type,
+                                casted_from_operand.virtual_register());
   }
 
   InstructionOperand TempRegister() {
@@ -209,6 +235,18 @@ class OperandGenerator {
     DCHECK_EQ(operand.virtual_register(), GetVReg(node));
     selector()->MarkAsUsed(node);
     return operand;
+  }
+
+  UnallocatedOperand ToDualLocationUnallocatedOperand(
+      LinkageLocation primary_location, LinkageLocation secondary_location,
+      int virtual_register) {
+    // We only support the primary location being a register and the secondary
+    // one a slot.
+    DCHECK(primary_location.IsRegister() &&
+           secondary_location.IsCalleeFrameSlot());
+    int reg_id = primary_location.AsRegister();
+    int slot_id = secondary_location.AsCalleeFrameSlot();
+    return UnallocatedOperand(reg_id, slot_id, virtual_register);
   }
 
   UnallocatedOperand ToUnallocatedOperand(LinkageLocation location,

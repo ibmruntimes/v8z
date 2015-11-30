@@ -208,6 +208,101 @@ TEST(RunWord64Clz) {
   CHECK_EQ(63, m.Call(uint64_t(0x0000000000000001)));
   CHECK_EQ(64, m.Call(uint64_t(0x0000000000000000)));
 }
+
+
+TEST(RunWord64Ctz) {
+  RawMachineAssemblerTester<int32_t> m(kMachUint64);
+  if (!m.machine()->Word64Ctz().IsSupported()) {
+    return;
+  }
+
+  m.Return(m.AddNode(m.machine()->Word64Ctz().op(), m.Parameter(0)));
+
+  CHECK_EQ(64, m.Call(uint64_t(0x0000000000000000)));
+  CHECK_EQ(63, m.Call(uint64_t(0x8000000000000000)));
+  CHECK_EQ(62, m.Call(uint64_t(0x4000000000000000)));
+  CHECK_EQ(61, m.Call(uint64_t(0x2000000000000000)));
+  CHECK_EQ(60, m.Call(uint64_t(0x1000000000000000)));
+  CHECK_EQ(59, m.Call(uint64_t(0xa800000000000000)));
+  CHECK_EQ(58, m.Call(uint64_t(0xf400000000000000)));
+  CHECK_EQ(57, m.Call(uint64_t(0x6200000000000000)));
+  CHECK_EQ(56, m.Call(uint64_t(0x9100000000000000)));
+  CHECK_EQ(55, m.Call(uint64_t(0xcd80000000000000)));
+  CHECK_EQ(54, m.Call(uint64_t(0x0940000000000000)));
+  CHECK_EQ(53, m.Call(uint64_t(0xaf20000000000000)));
+  CHECK_EQ(52, m.Call(uint64_t(0xac10000000000000)));
+  CHECK_EQ(51, m.Call(uint64_t(0xe0b8000000000000)));
+  CHECK_EQ(50, m.Call(uint64_t(0x9ce4000000000000)));
+  CHECK_EQ(49, m.Call(uint64_t(0xc792000000000000)));
+  CHECK_EQ(48, m.Call(uint64_t(0xb8f1000000000000)));
+  CHECK_EQ(47, m.Call(uint64_t(0x3b9f800000000000)));
+  CHECK_EQ(46, m.Call(uint64_t(0xdb4c400000000000)));
+  CHECK_EQ(45, m.Call(uint64_t(0xe9a3200000000000)));
+  CHECK_EQ(44, m.Call(uint64_t(0xfca6100000000000)));
+  CHECK_EQ(43, m.Call(uint64_t(0x6c8a780000000000)));
+  CHECK_EQ(42, m.Call(uint64_t(0x8ce5a40000000000)));
+  CHECK_EQ(41, m.Call(uint64_t(0xcb7d020000000000)));
+  CHECK_EQ(40, m.Call(uint64_t(0xcb4dc10000000000)));
+  CHECK_EQ(39, m.Call(uint64_t(0xdfbec58000000000)));
+  CHECK_EQ(38, m.Call(uint64_t(0x27a9db4000000000)));
+  CHECK_EQ(37, m.Call(uint64_t(0xde3bcb2000000000)));
+  CHECK_EQ(36, m.Call(uint64_t(0xd7e8a61000000000)));
+  CHECK_EQ(35, m.Call(uint64_t(0x9afdbc8800000000)));
+  CHECK_EQ(34, m.Call(uint64_t(0x9afdbc8400000000)));
+  CHECK_EQ(33, m.Call(uint64_t(0x9afdbc8200000000)));
+  CHECK_EQ(32, m.Call(uint64_t(0x9afdbc8100000000)));
+  CHECK_EQ(31, m.Call(uint64_t(0x0000000080000000)));
+  CHECK_EQ(30, m.Call(uint64_t(0x0000000040000000)));
+  CHECK_EQ(29, m.Call(uint64_t(0x0000000020000000)));
+  CHECK_EQ(28, m.Call(uint64_t(0x0000000010000000)));
+  CHECK_EQ(27, m.Call(uint64_t(0x00000000a8000000)));
+  CHECK_EQ(26, m.Call(uint64_t(0x00000000f4000000)));
+  CHECK_EQ(25, m.Call(uint64_t(0x0000000062000000)));
+  CHECK_EQ(24, m.Call(uint64_t(0x0000000091000000)));
+  CHECK_EQ(23, m.Call(uint64_t(0x00000000cd800000)));
+  CHECK_EQ(22, m.Call(uint64_t(0x0000000009400000)));
+  CHECK_EQ(21, m.Call(uint64_t(0x00000000af200000)));
+  CHECK_EQ(20, m.Call(uint64_t(0x00000000ac100000)));
+  CHECK_EQ(19, m.Call(uint64_t(0x00000000e0b80000)));
+  CHECK_EQ(18, m.Call(uint64_t(0x000000009ce40000)));
+  CHECK_EQ(17, m.Call(uint64_t(0x00000000c7920000)));
+  CHECK_EQ(16, m.Call(uint64_t(0x00000000b8f10000)));
+  CHECK_EQ(15, m.Call(uint64_t(0x000000003b9f8000)));
+  CHECK_EQ(14, m.Call(uint64_t(0x00000000db4c4000)));
+  CHECK_EQ(13, m.Call(uint64_t(0x00000000e9a32000)));
+  CHECK_EQ(12, m.Call(uint64_t(0x00000000fca61000)));
+  CHECK_EQ(11, m.Call(uint64_t(0x000000006c8a7800)));
+  CHECK_EQ(10, m.Call(uint64_t(0x000000008ce5a400)));
+  CHECK_EQ(9, m.Call(uint64_t(0x00000000cb7d0200)));
+  CHECK_EQ(8, m.Call(uint64_t(0x00000000cb4dc100)));
+  CHECK_EQ(7, m.Call(uint64_t(0x00000000dfbec580)));
+  CHECK_EQ(6, m.Call(uint64_t(0x0000000027a9db40)));
+  CHECK_EQ(5, m.Call(uint64_t(0x00000000de3bcb20)));
+  CHECK_EQ(4, m.Call(uint64_t(0x00000000d7e8a610)));
+  CHECK_EQ(3, m.Call(uint64_t(0x000000009afdbc88)));
+  CHECK_EQ(2, m.Call(uint64_t(0x000000009afdbc84)));
+  CHECK_EQ(1, m.Call(uint64_t(0x000000009afdbc82)));
+  CHECK_EQ(0, m.Call(uint64_t(0x000000009afdbc81)));
+}
+
+
+TEST(RunWord64Popcnt) {
+  BufferedRawMachineAssemblerTester<int32_t> m(kMachUint64);
+  if (!m.machine()->Word64Popcnt().IsSupported()) {
+    return;
+  }
+
+  m.Return(m.AddNode(m.machine()->Word64Popcnt().op(), m.Parameter(0)));
+
+  CHECK_EQ(0, m.Call(uint64_t(0x0000000000000000)));
+  CHECK_EQ(1, m.Call(uint64_t(0x0000000000000001)));
+  CHECK_EQ(1, m.Call(uint64_t(0x8000000000000000)));
+  CHECK_EQ(64, m.Call(uint64_t(0xffffffffffffffff)));
+  CHECK_EQ(12, m.Call(uint64_t(0x000dc100000dc100)));
+  CHECK_EQ(18, m.Call(uint64_t(0xe00dc100e00dc100)));
+  CHECK_EQ(22, m.Call(uint64_t(0xe00dc103e00dc103)));
+  CHECK_EQ(18, m.Call(uint64_t(0x000dc107000dc107)));
+}
 #endif  // V8_TARGET_ARCH_64_BIT
 
 
@@ -5060,57 +5155,52 @@ TEST(RunFloat64RoundDown1) {
 
 
 TEST(RunFloat64RoundDown2) {
-  double input = -1.0;
-  double result = 0.0;
-  RawMachineAssemblerTester<int32_t> m;
+  BufferedRawMachineAssemblerTester<double> m(kMachFloat64);
   if (!m.machine()->Float64RoundDown().IsSupported()) return;
-  m.StoreToPointer(&result, kMachFloat64,
-                   m.Float64Sub(m.Float64Constant(-0.0),
-                                m.Float64RoundDown(m.Float64Sub(
-                                    m.Float64Constant(-0.0),
-                                    m.LoadFromPointer(&input, kMachFloat64)))));
-  m.Return(m.Int32Constant(0));
+  m.Return(m.Float64Sub(m.Float64Constant(-0.0),
+                        m.Float64RoundDown(m.Float64Sub(m.Float64Constant(-0.0),
+                                                        m.Parameter(0)))));
+
   for (size_t i = 0; i < arraysize(kValues); ++i) {
-    input = kValues[i];
-    CHECK_EQ(0, m.Call());
-    double expected = std::ceil(kValues[i]);
-    CHECK_EQ(expected, result);
+    CHECK_EQ(std::ceil(kValues[i]), m.Call(kValues[i]));
   }
 }
 
 
+TEST(RunFloat64RoundUp) {
+  BufferedRawMachineAssemblerTester<double> m(kMachFloat64);
+  if (!m.machine()->Float64RoundUp().IsSupported()) return;
+  m.Return(m.Float64RoundUp(m.Parameter(0)));
+
+  FOR_FLOAT64_INPUTS(i) { CheckDoubleEq(std::ceil(*i), m.Call(*i)); }
+}
+
+
+TEST(RunFloat64RoundTiesEven) {
+  BufferedRawMachineAssemblerTester<double> m(kMachFloat64);
+  if (!m.machine()->Float64RoundTiesEven().IsSupported()) return;
+  m.Return(m.Float64RoundTiesEven(m.Parameter(0)));
+
+  FOR_FLOAT64_INPUTS(i) { CheckDoubleEq(nearbyint(*i), m.Call(*i)); }
+}
+
+
 TEST(RunFloat64RoundTruncate) {
-  double input = -1.0;
-  double result = 0.0;
-  RawMachineAssemblerTester<int32_t> m;
+  BufferedRawMachineAssemblerTester<double> m(kMachFloat64);
   if (!m.machine()->Float64RoundTruncate().IsSupported()) return;
-  m.StoreToPointer(
-      &result, kMachFloat64,
-      m.Float64RoundTruncate(m.LoadFromPointer(&input, kMachFloat64)));
-  m.Return(m.Int32Constant(0));
+  m.Return(m.Float64RoundTruncate(m.Parameter(0)));
   for (size_t i = 0; i < arraysize(kValues); ++i) {
-    input = kValues[i];
-    CHECK_EQ(0, m.Call());
-    double expected = trunc(kValues[i]);
-    CHECK_EQ(expected, result);
+    CHECK_EQ(trunc(kValues[i]), m.Call(kValues[i]));
   }
 }
 
 
 TEST(RunFloat64RoundTiesAway) {
-  double input = -1.0;
-  double result = 0.0;
-  RawMachineAssemblerTester<int32_t> m;
+  BufferedRawMachineAssemblerTester<double> m(kMachFloat64);
   if (!m.machine()->Float64RoundTiesAway().IsSupported()) return;
-  m.StoreToPointer(
-      &result, kMachFloat64,
-      m.Float64RoundTiesAway(m.LoadFromPointer(&input, kMachFloat64)));
-  m.Return(m.Int32Constant(0));
+  m.Return(m.Float64RoundTiesAway(m.Parameter(0)));
   for (size_t i = 0; i < arraysize(kValues); ++i) {
-    input = kValues[i];
-    CHECK_EQ(0, m.Call());
-    double expected = round(kValues[i]);
-    CHECK_EQ(expected, result);
+    CHECK_EQ(round(kValues[i]), m.Call(kValues[i]));
   }
 }
 
@@ -5256,19 +5346,48 @@ TEST(RunBitcastInt64ToFloat64) {
 
 
 TEST(RunBitcastFloat64ToInt64) {
-  double input = 0;
-  int64_t output = 0;
-  RawMachineAssemblerTester<int32_t> m;
-  m.StoreToPointer(
-      &output, kMachInt64,
-      m.BitcastFloat64ToInt64(m.LoadFromPointer(&input, kMachFloat64)));
-  m.Return(m.Int32Constant(11));
-  FOR_FLOAT64_INPUTS(i) {
-    input = *i;
-    CHECK_EQ(11, m.Call());
-    double expected = bit_cast<int64_t>(input);
-    CHECK_EQ(expected, output);
+  BufferedRawMachineAssemblerTester<int64_t> m(kMachFloat64);
+
+  m.Return(m.BitcastFloat64ToInt64(m.Parameter(0)));
+  FOR_FLOAT64_INPUTS(i) { CHECK_EQ(bit_cast<int64_t>(*i), m.Call(*i)); }
+}
+
+
+TEST(RunTruncateFloat64ToInt64) {
+  BufferedRawMachineAssemblerTester<int64_t> m(kMachFloat64);
+  m.Return(m.TruncateFloat64ToInt64(m.Parameter(0)));
+
+  FOR_INT64_INPUTS(i) {
+    double input = static_cast<double>(*i);
+    CHECK_EQ(static_cast<int64_t>(input), m.Call(input));
   }
+}
+
+
+TEST(RunTruncateFloat64ToUint64) {
+  BufferedRawMachineAssemblerTester<uint64_t> m(kMachFloat64);
+  m.Return(m.TruncateFloat64ToUint64(m.Parameter(0)));
+
+  FOR_UINT64_INPUTS(j) {
+    double input = static_cast<double>(*j);
+
+    if (input < 18446744073709551616.0) {
+      CHECK_EQ(static_cast<uint64_t>(input), m.Call(input));
+    }
+  }
+
+  FOR_FLOAT64_INPUTS(i) {
+    if (*i < 18446744073709551616.0 && *i >= 0) {
+      CHECK_EQ(static_cast<uint64_t>(*i), m.Call(*i));
+    }
+  }
+}
+
+
+TEST(RunRoundInt64ToFloat32) {
+  BufferedRawMachineAssemblerTester<float> m(kMachInt64);
+  m.Return(m.RoundInt64ToFloat32(m.Parameter(0)));
+  FOR_INT64_INPUTS(i) { CHECK_EQ(static_cast<float>(*i), m.Call(*i)); }
 }
 
 
@@ -5276,6 +5395,185 @@ TEST(RunRoundInt64ToFloat64) {
   BufferedRawMachineAssemblerTester<double> m(kMachInt64);
   m.Return(m.RoundInt64ToFloat64(m.Parameter(0)));
   FOR_INT64_INPUTS(i) { CHECK_EQ(static_cast<double>(*i), m.Call(*i)); }
+}
+
+
+TEST(RunRoundUint64ToFloat64) {
+  struct {
+    uint64_t input;
+    uint64_t expected;
+  } values[] = {{0x0, 0x0},
+                {0x1, 0x3ff0000000000000},
+                {0xffffffff, 0x41efffffffe00000},
+                {0x1b09788b, 0x41bb09788b000000},
+                {0x4c5fce8, 0x419317f3a0000000},
+                {0xcc0de5bf, 0x41e981bcb7e00000},
+                {0x2, 0x4000000000000000},
+                {0x3, 0x4008000000000000},
+                {0x4, 0x4010000000000000},
+                {0x5, 0x4014000000000000},
+                {0x8, 0x4020000000000000},
+                {0x9, 0x4022000000000000},
+                {0xffffffffffffffff, 0x43f0000000000000},
+                {0xfffffffffffffffe, 0x43f0000000000000},
+                {0xfffffffffffffffd, 0x43f0000000000000},
+                {0x100000000, 0x41f0000000000000},
+                {0xffffffff00000000, 0x43efffffffe00000},
+                {0x1b09788b00000000, 0x43bb09788b000000},
+                {0x4c5fce800000000, 0x439317f3a0000000},
+                {0xcc0de5bf00000000, 0x43e981bcb7e00000},
+                {0x200000000, 0x4200000000000000},
+                {0x300000000, 0x4208000000000000},
+                {0x400000000, 0x4210000000000000},
+                {0x500000000, 0x4214000000000000},
+                {0x800000000, 0x4220000000000000},
+                {0x900000000, 0x4222000000000000},
+                {0x273a798e187937a3, 0x43c39d3cc70c3c9c},
+                {0xece3af835495a16b, 0x43ed9c75f06a92b4},
+                {0xb668ecc11223344, 0x43a6cd1d98224467},
+                {0x9e, 0x4063c00000000000},
+                {0x43, 0x4050c00000000000},
+                {0xaf73, 0x40e5ee6000000000},
+                {0x116b, 0x40b16b0000000000},
+                {0x658ecc, 0x415963b300000000},
+                {0x2b3b4c, 0x41459da600000000},
+                {0x88776655, 0x41e10eeccaa00000},
+                {0x70000000, 0x41dc000000000000},
+                {0x7200000, 0x419c800000000000},
+                {0x7fffffff, 0x41dfffffffc00000},
+                {0x56123761, 0x41d5848dd8400000},
+                {0x7fffff00, 0x41dfffffc0000000},
+                {0x761c4761eeeeeeee, 0x43dd8711d87bbbbc},
+                {0x80000000eeeeeeee, 0x43e00000001dddde},
+                {0x88888888dddddddd, 0x43e11111111bbbbc},
+                {0xa0000000dddddddd, 0x43e40000001bbbbc},
+                {0xddddddddaaaaaaaa, 0x43ebbbbbbbb55555},
+                {0xe0000000aaaaaaaa, 0x43ec000000155555},
+                {0xeeeeeeeeeeeeeeee, 0x43edddddddddddde},
+                {0xfffffffdeeeeeeee, 0x43efffffffbdddde},
+                {0xf0000000dddddddd, 0x43ee0000001bbbbc},
+                {0x7fffffdddddddd, 0x435ffffff7777777},
+                {0x3fffffaaaaaaaa, 0x434fffffd5555555},
+                {0x1fffffaaaaaaaa, 0x433fffffaaaaaaaa},
+                {0xfffff, 0x412ffffe00000000},
+                {0x7ffff, 0x411ffffc00000000},
+                {0x3ffff, 0x410ffff800000000},
+                {0x1ffff, 0x40fffff000000000},
+                {0xffff, 0x40efffe000000000},
+                {0x7fff, 0x40dfffc000000000},
+                {0x3fff, 0x40cfff8000000000},
+                {0x1fff, 0x40bfff0000000000},
+                {0xfff, 0x40affe0000000000},
+                {0x7ff, 0x409ffc0000000000},
+                {0x3ff, 0x408ff80000000000},
+                {0x1ff, 0x407ff00000000000},
+                {0x3fffffffffff, 0x42cfffffffffff80},
+                {0x1fffffffffff, 0x42bfffffffffff00},
+                {0xfffffffffff, 0x42affffffffffe00},
+                {0x7ffffffffff, 0x429ffffffffffc00},
+                {0x3ffffffffff, 0x428ffffffffff800},
+                {0x1ffffffffff, 0x427ffffffffff000},
+                {0x8000008000000000, 0x43e0000010000000},
+                {0x8000008000000001, 0x43e0000010000000},
+                {0x8000000000000400, 0x43e0000000000000},
+                {0x8000000000000401, 0x43e0000000000001}};
+
+  BufferedRawMachineAssemblerTester<double> m(kMachUint64);
+  m.Return(m.RoundUint64ToFloat64(m.Parameter(0)));
+
+  for (size_t i = 0; i < arraysize(values); i++) {
+    CHECK_EQ(bit_cast<double>(values[i].expected), m.Call(values[i].input));
+  }
+}
+
+
+TEST(RunRoundUint64ToFloat32) {
+  struct {
+    uint64_t input;
+    uint32_t expected;
+  } values[] = {{0x0, 0x0},
+                {0x1, 0x3f800000},
+                {0xffffffff, 0x4f800000},
+                {0x1b09788b, 0x4dd84bc4},
+                {0x4c5fce8, 0x4c98bf9d},
+                {0xcc0de5bf, 0x4f4c0de6},
+                {0x2, 0x40000000},
+                {0x3, 0x40400000},
+                {0x4, 0x40800000},
+                {0x5, 0x40a00000},
+                {0x8, 0x41000000},
+                {0x9, 0x41100000},
+                {0xffffffffffffffff, 0x5f800000},
+                {0xfffffffffffffffe, 0x5f800000},
+                {0xfffffffffffffffd, 0x5f800000},
+                {0x0, 0x0},
+                {0x100000000, 0x4f800000},
+                {0xffffffff00000000, 0x5f800000},
+                {0x1b09788b00000000, 0x5dd84bc4},
+                {0x4c5fce800000000, 0x5c98bf9d},
+                {0xcc0de5bf00000000, 0x5f4c0de6},
+                {0x200000000, 0x50000000},
+                {0x300000000, 0x50400000},
+                {0x400000000, 0x50800000},
+                {0x500000000, 0x50a00000},
+                {0x800000000, 0x51000000},
+                {0x900000000, 0x51100000},
+                {0x273a798e187937a3, 0x5e1ce9e6},
+                {0xece3af835495a16b, 0x5f6ce3b0},
+                {0xb668ecc11223344, 0x5d3668ed},
+                {0x9e, 0x431e0000},
+                {0x43, 0x42860000},
+                {0xaf73, 0x472f7300},
+                {0x116b, 0x458b5800},
+                {0x658ecc, 0x4acb1d98},
+                {0x2b3b4c, 0x4a2ced30},
+                {0x88776655, 0x4f087766},
+                {0x70000000, 0x4ee00000},
+                {0x7200000, 0x4ce40000},
+                {0x7fffffff, 0x4f000000},
+                {0x56123761, 0x4eac246f},
+                {0x7fffff00, 0x4efffffe},
+                {0x761c4761eeeeeeee, 0x5eec388f},
+                {0x80000000eeeeeeee, 0x5f000000},
+                {0x88888888dddddddd, 0x5f088889},
+                {0xa0000000dddddddd, 0x5f200000},
+                {0xddddddddaaaaaaaa, 0x5f5dddde},
+                {0xe0000000aaaaaaaa, 0x5f600000},
+                {0xeeeeeeeeeeeeeeee, 0x5f6eeeef},
+                {0xfffffffdeeeeeeee, 0x5f800000},
+                {0xf0000000dddddddd, 0x5f700000},
+                {0x7fffffdddddddd, 0x5b000000},
+                {0x3fffffaaaaaaaa, 0x5a7fffff},
+                {0x1fffffaaaaaaaa, 0x59fffffd},
+                {0xfffff, 0x497ffff0},
+                {0x7ffff, 0x48ffffe0},
+                {0x3ffff, 0x487fffc0},
+                {0x1ffff, 0x47ffff80},
+                {0xffff, 0x477fff00},
+                {0x7fff, 0x46fffe00},
+                {0x3fff, 0x467ffc00},
+                {0x1fff, 0x45fff800},
+                {0xfff, 0x457ff000},
+                {0x7ff, 0x44ffe000},
+                {0x3ff, 0x447fc000},
+                {0x1ff, 0x43ff8000},
+                {0x3fffffffffff, 0x56800000},
+                {0x1fffffffffff, 0x56000000},
+                {0xfffffffffff, 0x55800000},
+                {0x7ffffffffff, 0x55000000},
+                {0x3ffffffffff, 0x54800000},
+                {0x1ffffffffff, 0x54000000},
+                {0x8000008000000000, 0x5f000000},
+                {0x8000008000000001, 0x5f000001},
+                {0x8000000000000400, 0x5f000000},
+                {0x8000000000000401, 0x5f000000}};
+
+  BufferedRawMachineAssemblerTester<float> m(kMachUint64);
+  m.Return(m.RoundUint64ToFloat32(m.Parameter(0)));
+
+  for (size_t i = 0; i < arraysize(values); i++) {
+    CHECK_EQ(bit_cast<float>(values[i].expected), m.Call(values[i].input));
+  }
 }
 
 

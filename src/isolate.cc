@@ -1797,6 +1797,7 @@ Isolate::Isolate(bool enable_serializer)
 #endif
       use_counter_callback_(NULL),
       basic_block_profiler_(NULL),
+      cancelable_task_manager_(new CancelableTaskManager()),
       abort_on_uncaught_exception_callback_(NULL) {
   {
     base::LockGuard<base::Mutex> lock_guard(thread_data_table_mutex_.Pointer());
@@ -1846,7 +1847,9 @@ void Isolate::TearDown() {
   // direct pointer. We don't use Enter/Exit here to avoid
   // initializing the thread data.
   PerIsolateThreadData* saved_data = CurrentPerIsolateThreadData();
-  Isolate* saved_isolate = UncheckedCurrent();
+  DCHECK(base::NoBarrier_Load(&isolate_key_created_) == 1);
+  Isolate* saved_isolate =
+      reinterpret_cast<Isolate*>(base::Thread::GetThreadLocal(isolate_key_));
   SetIsolateThreadLocals(this, NULL);
 
   Deinit();
@@ -1920,13 +1923,10 @@ void Isolate::Deinit() {
   delete basic_block_profiler_;
   basic_block_profiler_ = NULL;
 
-  for (Cancelable* task : cancelable_tasks_) {
-    task->Cancel();
-  }
-  cancelable_tasks_.clear();
-
   heap_.TearDown();
   logger_->TearDown();
+
+  cancelable_task_manager()->CancelAndWait();
 
   delete heap_profiler_;
   heap_profiler_ = NULL;
@@ -2027,6 +2027,9 @@ Isolate::~Isolate() {
 
   delete debug_;
   debug_ = NULL;
+
+  delete cancelable_task_manager_;
+  cancelable_task_manager_ = nullptr;
 
 #if USE_SIMULATOR
   Simulator::TearDown(simulator_i_cache_, simulator_redirection_);
@@ -2242,7 +2245,7 @@ bool Isolate::Init(Deserializer* des) {
                heap_.amount_of_external_allocated_memory_at_last_global_gc_)),
            Internals::kAmountOfExternalAllocatedMemoryAtLastGlobalGCOffset);
 
-  time_millis_at_init_ = base::OS::TimeCurrentMillis();
+  time_millis_at_init_ = heap_.MonotonicallyIncreasingTimeInMs();
 
   heap_.NotifyDeserializationComplete();
 
@@ -2795,18 +2798,6 @@ void Isolate::CheckDetachedContextsAfterGC() {
     heap()->RightTrimFixedArray<Heap::CONCURRENT_TO_SWEEPER>(
         *detached_contexts, length - new_length);
   }
-}
-
-
-void Isolate::RegisterCancelableTask(Cancelable* task) {
-  cancelable_tasks_.insert(task);
-}
-
-
-void Isolate::RemoveCancelableTask(Cancelable* task) {
-  auto removed = cancelable_tasks_.erase(task);
-  USE(removed);
-  DCHECK(removed == 1);
 }
 
 

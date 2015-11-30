@@ -7,6 +7,7 @@
 #include "src/code-stubs.h"
 #include "src/conversions.h"
 #include "src/debug/debug.h"
+#include "src/objects-body-descriptors.h"
 #include "src/profiler/allocation-tracker.h"
 #include "src/profiler/heap-profiler.h"
 #include "src/profiler/heap-snapshot-generator-inl.h"
@@ -1158,8 +1159,11 @@ void V8HeapExplorer::ExtractJSObjectReferences(
     SetWeakReference(js_fun, entry,
                      "next_function_link", js_fun->next_function_link(),
                      JSFunction::kNextFunctionLinkOffset);
-    STATIC_ASSERT(JSFunction::kNextFunctionLinkOffset
-                 == JSFunction::kNonWeakFieldsEndOffset);
+    // Ensure no new weak references appeared in JSFunction.
+    STATIC_ASSERT(JSFunction::kCodeEntryOffset ==
+                  JSFunction::kNonWeakFieldsEndOffset);
+    STATIC_ASSERT(JSFunction::kCodeEntryOffset + kPointerSize ==
+                  JSFunction::kNextFunctionLinkOffset);
     STATIC_ASSERT(JSFunction::kNextFunctionLinkOffset + kPointerSize
                  == JSFunction::kSize);
   } else if (obj->IsJSGlobalObject()) {
@@ -1539,7 +1543,7 @@ void V8HeapExplorer::ExtractAllocationSiteReferences(int entry,
   // Do not visit weak_next as it is not visited by the StaticVisitor,
   // and we're not very interested in weak_next field here.
   STATIC_ASSERT(AllocationSite::kWeakNextOffset >=
-               AllocationSite::BodyDescriptor::kEndOffset);
+                AllocationSite::BodyDescriptor::kEndOffset);
 }
 
 

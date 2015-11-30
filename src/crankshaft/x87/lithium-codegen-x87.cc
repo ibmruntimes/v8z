@@ -3562,7 +3562,8 @@ void LCodeGen::CallKnownFunction(Handle<JSFunction> function,
     // Change context.
     __ mov(esi, FieldOperand(function_reg, JSFunction::kContextOffset));
 
-    // Always initialize eax to the number of actual arguments.
+    // Always initialize new target and number of actual arguments.
+    __ mov(edx, factory()->undefined_value());
     __ mov(eax, arity);
 
     // Invoke function directly.
@@ -3625,10 +3626,12 @@ void LCodeGen::DoCallJSFunction(LCallJSFunction* instr) {
   DCHECK(ToRegister(instr->function()).is(edi));
   DCHECK(ToRegister(instr->result()).is(eax));
 
-  __ mov(eax, instr->arity());
-
   // Change context.
   __ mov(esi, FieldOperand(edi, JSFunction::kContextOffset));
+
+  // Always initialize new target and number of actual arguments.
+  __ mov(edx, factory()->undefined_value());
+  __ mov(eax, instr->arity());
 
   bool is_self_call = false;
   if (instr->hydrogen()->function()->IsConstant()) {
@@ -3863,65 +3866,11 @@ void LCodeGen::DoMathFround(LMathFround* instr) {
 
 
 void LCodeGen::DoMathSqrt(LMathSqrt* instr) {
-  X87Register input = ToX87Register(instr->value());
-  X87Register result_reg = ToX87Register(instr->result());
-  Register temp_result = ToRegister(instr->temp1());
-  Register temp = ToRegister(instr->temp2());
-  Label slow, done, smi, finish;
-  DCHECK(result_reg.is(input));
-
-  // Store input into Heap number and call runtime function kMathExpRT.
-  if (FLAG_inline_new) {
-    __ AllocateHeapNumber(temp_result, temp, no_reg, &slow);
-    __ jmp(&done, Label::kNear);
-  }
-
-  // Slow case: Call the runtime system to do the number allocation.
-  __ bind(&slow);
-  {
-    // TODO(3095996): Put a valid pointer value in the stack slot where the
-    // result register is stored, as this register is in the pointer map, but
-    // contains an integer value.
-    __ Move(temp_result, Immediate(0));
-
-    // Preserve the value of all registers.
-    PushSafepointRegistersScope scope(this);
-
-    __ mov(esi, Operand(ebp, StandardFrameConstants::kContextOffset));
-    __ CallRuntimeSaveDoubles(Runtime::kAllocateHeapNumber);
-    RecordSafepointWithRegisters(
-       instr->pointer_map(), 0, Safepoint::kNoLazyDeopt);
-    __ StoreToSafepointRegisterSlot(temp_result, eax);
-  }
-  __ bind(&done);
-  X87LoadForUsage(input);
-  __ fstp_d(FieldOperand(temp_result, HeapNumber::kValueOffset));
-
-  {
-    // Preserve the value of all registers.
-    PushSafepointRegistersScope scope(this);
-
-    __ mov(esi, Operand(ebp, StandardFrameConstants::kContextOffset));
-    __ push(temp_result);
-    __ CallRuntimeSaveDoubles(Runtime::kMathSqrt);
-    RecordSafepointWithRegisters(instr->pointer_map(), 1,
-                                 Safepoint::kNoLazyDeopt);
-    __ StoreToSafepointRegisterSlot(temp_result, eax);
-  }
-  X87PrepareToWrite(result_reg);
-  // return value of MathExpRT is Smi or Heap Number.
-  __ JumpIfSmi(temp_result, &smi);
-  // Heap number(double)
-  __ fld_d(FieldOperand(temp_result, HeapNumber::kValueOffset));
-  __ jmp(&finish);
-  // SMI
-  __ bind(&smi);
-  __ SmiUntag(temp_result);
-  __ push(temp_result);
-  __ fild_s(MemOperand(esp, 0));
-  __ pop(temp_result);
-  __ bind(&finish);
-  X87CommitWrite(result_reg);
+  X87Register input_reg = ToX87Register(instr->value());
+  __ X87SetFPUCW(0x027F);
+  X87Fxch(input_reg);
+  __ fsqrt();
+  __ X87SetFPUCW(0x037F);
 }
 
 
@@ -4182,19 +4131,6 @@ void LCodeGen::DoCallFunction(LCallFunction* instr) {
     __ Set(eax, arity);
     CallCode(isolate()->builtins()->Call(mode), RelocInfo::CODE_TARGET, instr);
   }
-}
-
-
-void LCodeGen::DoCallNew(LCallNew* instr) {
-  DCHECK(ToRegister(instr->context()).is(esi));
-  DCHECK(ToRegister(instr->constructor()).is(edi));
-  DCHECK(ToRegister(instr->result()).is(eax));
-
-  // No cell in ebx for construct type feedback in optimized code
-  __ mov(ebx, isolate()->factory()->undefined_value());
-  CallConstructStub stub(isolate(), NO_CALL_CONSTRUCTOR_FLAGS);
-  __ Move(eax, Immediate(instr->arity()));
-  CallCode(stub.GetCode(), RelocInfo::CONSTRUCT_CALL, instr);
 }
 
 

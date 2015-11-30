@@ -5892,13 +5892,11 @@ void HOptimizedGraphBuilder::VisitObjectLiteral(ObjectLiteral* expr) {
     site_context.ExitScope(site, boilerplate);
   } else {
     NoObservableSideEffectsScope no_effects(this);
-    Handle<LiteralsArray> closure_literals(closure->literals(), isolate());
     Handle<FixedArray> constant_properties = expr->constant_properties();
     int literal_index = expr->literal_index();
     int flags = expr->ComputeFlags(true);
 
-    Add<HPushArguments>(Add<HConstant>(closure_literals),
-                        Add<HConstant>(literal_index),
+    Add<HPushArguments>(AddThisFunction(), Add<HConstant>(literal_index),
                         Add<HConstant>(constant_properties),
                         Add<HConstant>(flags));
 
@@ -6061,10 +6059,8 @@ void HOptimizedGraphBuilder::VisitArrayLiteral(ArrayLiteral* expr) {
     int literal_index = expr->literal_index();
     int flags = expr->ComputeFlags(true);
 
-    Add<HPushArguments>(Add<HConstant>(literals),
-                        Add<HConstant>(literal_index),
-                        Add<HConstant>(constants),
-                        Add<HConstant>(flags));
+    Add<HPushArguments>(AddThisFunction(), Add<HConstant>(literal_index),
+                        Add<HConstant>(constants), Add<HConstant>(flags));
 
     Runtime::FunctionId function_id = Runtime::kCreateArrayLiteral;
     literal = Add<HCallRuntime>(Runtime::FunctionForId(function_id), 4);
@@ -6076,8 +6072,6 @@ void HOptimizedGraphBuilder::VisitArrayLiteral(ArrayLiteral* expr) {
   // The array is expected in the bailout environment during computation
   // of the property values and is the value of the entire expression.
   Push(literal);
-  // The literal index is on the stack, too.
-  Push(Add<HConstant>(expr->literal_index()));
 
   HInstruction* elements = NULL;
 
@@ -6119,7 +6113,6 @@ void HOptimizedGraphBuilder::VisitArrayLiteral(ArrayLiteral* expr) {
     Add<HSimulate>(expr->GetIdForElement(i));
   }
 
-  Drop(1);  // array literal index
   return ast_context()->ReturnValue(Pop());
 }
 
@@ -6940,11 +6933,9 @@ void HOptimizedGraphBuilder::HandleGlobalVariableAssignment(
     HStoreNamedGeneric* instr =
         Add<HStoreNamedGeneric>(global_object, var->name(), value,
                                 function_language_mode(), PREMONOMORPHIC);
-    if (FLAG_vector_stores) {
-      Handle<TypeFeedbackVector> vector =
-          handle(current_feedback_vector(), isolate());
-      instr->SetVectorAndSlot(vector, slot);
-    }
+    Handle<TypeFeedbackVector> vector =
+        handle(current_feedback_vector(), isolate());
+    instr->SetVectorAndSlot(vector, slot);
     USE(instr);
     DCHECK(instr->HasObservableSideEffects());
     Add<HSimulate>(ast_id, REMOVABLE_SIMULATE);
@@ -7076,11 +7067,11 @@ void HOptimizedGraphBuilder::VisitAssignment(Assignment* expr) {
     Variable* var = proxy->var();
 
     if (var->mode() == CONST) {
-      if (expr->op() != Token::INIT_CONST) {
+      if (expr->op() != Token::INIT) {
         return Bailout(kNonInitializerAssignmentToConst);
       }
     } else if (var->mode() == CONST_LEGACY) {
-      if (expr->op() != Token::INIT_CONST_LEGACY) {
+      if (expr->op() != Token::INIT) {
         CHECK_ALIVE(VisitForValue(expr->value()));
         return ast_context()->ReturnValue(Pop());
       }
@@ -7154,14 +7145,13 @@ void HOptimizedGraphBuilder::VisitAssignment(Assignment* expr) {
             default:
               mode = HStoreContextSlot::kNoCheck;
           }
-        } else if (expr->op() == Token::INIT_VAR ||
-                   expr->op() == Token::INIT_LET ||
-                   expr->op() == Token::INIT_CONST) {
-          mode = HStoreContextSlot::kNoCheck;
         } else {
-          DCHECK(expr->op() == Token::INIT_CONST_LEGACY);
-
-          mode = HStoreContextSlot::kCheckIgnoreAssignment;
+          DCHECK_EQ(Token::INIT, expr->op());
+          if (var->mode() == CONST_LEGACY) {
+            mode = HStoreContextSlot::kCheckIgnoreAssignment;
+          } else {
+            mode = HStoreContextSlot::kNoCheck;
+          }
         }
 
         HValue* context = BuildContextChainWalk(var);
@@ -7274,9 +7264,8 @@ HInstruction* HOptimizedGraphBuilder::BuildNamedGeneric(
     result->SetVectorAndSlot(vector, slot);
     return result;
   } else {
-    if (FLAG_vector_stores &&
-        current_feedback_vector()->GetKind(slot) ==
-            FeedbackVectorSlotKind::KEYED_STORE_IC) {
+    if (current_feedback_vector()->GetKind(slot) ==
+        FeedbackVectorSlotKind::KEYED_STORE_IC) {
       // It's possible that a keyed store of a constant string was converted
       // to a named store. Here, at the last minute, we need to make sure to
       // use a generic Keyed Store if we are using the type vector, because
@@ -7292,11 +7281,9 @@ HInstruction* HOptimizedGraphBuilder::BuildNamedGeneric(
 
     HStoreNamedGeneric* result = New<HStoreNamedGeneric>(
         object, name, value, function_language_mode(), PREMONOMORPHIC);
-    if (FLAG_vector_stores) {
-      Handle<TypeFeedbackVector> vector =
-          handle(current_feedback_vector(), isolate());
-      result->SetVectorAndSlot(vector, slot);
-    }
+    Handle<TypeFeedbackVector> vector =
+        handle(current_feedback_vector(), isolate());
+    result->SetVectorAndSlot(vector, slot);
     return result;
   }
 }
@@ -7321,11 +7308,9 @@ HInstruction* HOptimizedGraphBuilder::BuildKeyedGeneric(
   } else {
     HStoreKeyedGeneric* result = New<HStoreKeyedGeneric>(
         object, key, value, function_language_mode(), PREMONOMORPHIC);
-    if (FLAG_vector_stores) {
-      Handle<TypeFeedbackVector> vector =
-          handle(current_feedback_vector(), isolate());
-      result->SetVectorAndSlot(vector, slot);
-    }
+    Handle<TypeFeedbackVector> vector =
+        handle(current_feedback_vector(), isolate());
+    result->SetVectorAndSlot(vector, slot);
     return result;
   }
 }
@@ -7643,7 +7628,7 @@ HValue* HOptimizedGraphBuilder::HandleKeyedElementAccess(
     if (access_type == LOAD) {
       KeyedLoadICNexus nexus(vector, slot);
       name = nexus.FindFirstName();
-    } else if (FLAG_vector_stores) {
+    } else {
       KeyedStoreICNexus nexus(vector, slot);
       name = nexus.FindFirstName();
     }
@@ -7886,7 +7871,7 @@ void HOptimizedGraphBuilder::PushLoad(Property* expr,
 void HOptimizedGraphBuilder::BuildLoad(Property* expr,
                                        BailoutId ast_id) {
   HInstruction* instr = NULL;
-  if (expr->IsStringAccess()) {
+  if (expr->IsStringAccess() && expr->GetKeyType() == ELEMENT) {
     HValue* index = Pop();
     HValue* string = Pop();
     HInstruction* char_code = BuildStringCharCodeAt(string, index);
@@ -7987,16 +7972,15 @@ HInstruction* HOptimizedGraphBuilder::NewPlainFunctionCall(HValue* fun,
 HInstruction* HOptimizedGraphBuilder::NewArgumentAdaptorCall(
     HValue* fun, HValue* context,
     int argument_count, HValue* expected_param_count) {
-  ArgumentAdaptorDescriptor descriptor(isolate());
+  HValue* new_target = graph()->GetConstantUndefined();
   HValue* arity = Add<HConstant>(argument_count - 1);
 
-  HValue* op_vals[] = { context, fun, arity, expected_param_count };
+  HValue* op_vals[] = {context, fun, new_target, arity, expected_param_count};
 
-  Handle<Code> adaptor =
-      isolate()->builtins()->ArgumentsAdaptorTrampoline();
-  HConstant* adaptor_value = Add<HConstant>(adaptor);
+  Callable callable = CodeFactory::ArgumentAdaptor(isolate());
+  HConstant* stub = Add<HConstant>(callable.code());
 
-  return New<HCallWithDescriptor>(adaptor_value, argument_count, descriptor,
+  return New<HCallWithDescriptor>(stub, argument_count, callable.descriptor(),
                                   Vector<HValue*>(op_vals, arraysize(op_vals)));
 }
 
@@ -9936,6 +9920,11 @@ void HOptimizedGraphBuilder::VisitCallNew(CallNew* expr) {
       expr->IsMonomorphic() &&
       IsAllocationInlineable(expr->target())) {
     Handle<JSFunction> constructor = expr->target();
+    DCHECK(
+        constructor->shared()->construct_stub() ==
+            isolate()->builtins()->builtin(Builtins::kJSConstructStubGeneric) ||
+        constructor->shared()->construct_stub() ==
+            isolate()->builtins()->builtin(Builtins::kJSConstructStubApi));
     HValue* check = Add<HCheckValue>(function, constructor);
 
     // Force completion of inobject slack tracking before generating
@@ -9999,18 +9988,21 @@ void HOptimizedGraphBuilder::VisitCallNew(CallNew* expr) {
       instr = prev_instr;
     } while (instr != check);
     environment()->SetExpressionStackAt(receiver_index, function);
-    HInstruction* call =
-      PreProcessCall(New<HCallNew>(function, argument_count));
-    return ast_context()->ReturnInstruction(call, expr->id());
   } else {
     // The constructor function is both an operand to the instruction and an
     // argument to the construct call.
     if (TryHandleArrayCallNew(expr, function)) return;
-
-    HInstruction* call =
-        PreProcessCall(New<HCallNew>(function, argument_count));
-    return ast_context()->ReturnInstruction(call, expr->id());
   }
+
+  HValue* arity = Add<HConstant>(argument_count - 1);
+  HValue* op_vals[] = {context(), function, function, arity};
+  Callable callable = CodeFactory::Construct(isolate());
+  HConstant* stub = Add<HConstant>(callable.code());
+  PushArgumentsFromEnvironment(argument_count);
+  HInstruction* construct =
+      New<HCallWithDescriptor>(stub, argument_count, callable.descriptor(),
+                               Vector<HValue*>(op_vals, arraysize(op_vals)));
+  return ast_context()->ReturnInstruction(construct, expr->id());
 }
 
 
@@ -11723,6 +11715,11 @@ void HOptimizedGraphBuilder::VisitSpread(Spread* expr) { UNREACHABLE(); }
 
 void HOptimizedGraphBuilder::VisitEmptyParentheses(EmptyParentheses* expr) {
   UNREACHABLE();
+}
+
+
+HValue* HOptimizedGraphBuilder::AddThisFunction() {
+  return AddInstruction(BuildThisFunction());
 }
 
 

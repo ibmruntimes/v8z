@@ -1476,6 +1476,11 @@ void Assembler::cntlzd_(Register ra, Register rs, RCBit rc) {
 }
 
 
+void Assembler::popcntd(Register ra, Register rs) {
+  emit(EXT2 | POPCNTD | rs.code() * B21 | ra.code() * B16);
+}
+
+
 void Assembler::mulld(Register dst, Register src1, Register src2, OEBit o,
                       RCBit r) {
   xo_form(EXT2 | MULLD, dst, src1, src2, o, r);
@@ -2158,6 +2163,24 @@ void Assembler::fcfid(const DoubleRegister frt, const DoubleRegister frb,
 }
 
 
+void Assembler::fcfidu(const DoubleRegister frt, const DoubleRegister frb,
+                       RCBit rc) {
+  emit(EXT4 | FCFIDU | frt.code() * B21 | frb.code() * B11 | rc);
+}
+
+
+void Assembler::fcfidus(const DoubleRegister frt, const DoubleRegister frb,
+                        RCBit rc) {
+  emit(EXT3 | FCFIDU | frt.code() * B21 | frb.code() * B11 | rc);
+}
+
+
+void Assembler::fcfids(const DoubleRegister frt, const DoubleRegister frb,
+                       RCBit rc) {
+  emit(EXT3 | FCFID | frt.code() * B21 | frb.code() * B11 | rc);
+}
+
+
 void Assembler::fctid(const DoubleRegister frt, const DoubleRegister frb,
                       RCBit rc) {
   emit(EXT4 | FCTID | frt.code() * B21 | frb.code() * B11 | rc);
@@ -2167,6 +2190,18 @@ void Assembler::fctid(const DoubleRegister frt, const DoubleRegister frb,
 void Assembler::fctidz(const DoubleRegister frt, const DoubleRegister frb,
                        RCBit rc) {
   emit(EXT4 | FCTIDZ | frt.code() * B21 | frb.code() * B11 | rc);
+}
+
+
+void Assembler::fctidu(const DoubleRegister frt, const DoubleRegister frb,
+                       RCBit rc) {
+  emit(EXT4 | FCTIDU | frt.code() * B21 | frb.code() * B11 | rc);
+}
+
+
+void Assembler::fctiduz(const DoubleRegister frt, const DoubleRegister frb,
+                        RCBit rc) {
+  emit(EXT4 | FCTIDUZ | frt.code() * B21 | frb.code() * B11 | rc);
 }
 
 

@@ -76,7 +76,7 @@ namespace compiler {
   V(Arm64TestAndBranch32)          \
   V(Arm64TestAndBranch)            \
   V(Arm64CompareAndBranch32)       \
-  V(Arm64Claim)                    \
+  V(Arm64ClaimForCallArguments)    \
   V(Arm64Poke)                     \
   V(Arm64PokePair)                 \
   V(Arm64Float32Cmp)               \
@@ -100,16 +100,22 @@ namespace compiler {
   V(Arm64Float64Neg)               \
   V(Arm64Float64Sqrt)              \
   V(Arm64Float64RoundDown)         \
+  V(Arm64Float64RoundUp)           \
   V(Arm64Float64RoundTiesAway)     \
   V(Arm64Float64RoundTruncate)     \
-  V(Arm64Float64RoundUp)           \
+  V(Arm64Float64RoundTiesEven)     \
   V(Arm64Float32ToFloat64)         \
   V(Arm64Float64ToFloat32)         \
   V(Arm64Float64ToInt32)           \
   V(Arm64Float64ToUint32)          \
+  V(Arm64Float64ToInt64)           \
+  V(Arm64Float64ToUint64)          \
   V(Arm64Int32ToFloat64)           \
+  V(Arm64Int64ToFloat32)           \
   V(Arm64Int64ToFloat64)           \
   V(Arm64Uint32ToFloat64)          \
+  V(Arm64Uint64ToFloat32)          \
+  V(Arm64Uint64ToFloat64)          \
   V(Arm64Float64ExtractLowWord32)  \
   V(Arm64Float64ExtractHighWord32) \
   V(Arm64Float64InsertLowWord32)   \
@@ -129,8 +135,7 @@ namespace compiler {
   V(Arm64LdrW)                     \
   V(Arm64StrW)                     \
   V(Arm64Ldr)                      \
-  V(Arm64Str)                      \
-  V(Arm64StoreWriteBarrier)
+  V(Arm64Str)
 
 
 // Addressing modes represent the "shape" of inputs to an instruction.

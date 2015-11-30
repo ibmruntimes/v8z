@@ -804,7 +804,7 @@ class Observer : public InlineAllocationObserver {
   explicit Observer(intptr_t step_size)
       : InlineAllocationObserver(step_size), count_(0) {}
 
-  virtual void Step(int bytes_allocated) { count_++; }
+  void Step(int bytes_allocated, Address, size_t) override { count_++; }
 
   int count() const { return count_; }
 
@@ -834,13 +834,8 @@ UNINITIALIZED_TEST(InlineAllocationObserver) {
     AllocateUnaligned(new_space, 64);
     CHECK_EQ(observer1.count(), 0);
 
-    // The observer should not get called even when we have allocated exactly
-    // 128 bytes.
+    // The observer should get called when we have allocated exactly 128 bytes.
     AllocateUnaligned(new_space, 64);
-    CHECK_EQ(observer1.count(), 0);
-
-    // The next allocation gets the notification.
-    AllocateUnaligned(new_space, 8);
     CHECK_EQ(observer1.count(), 1);
 
     // Another >128 bytes should get another notification.
@@ -851,36 +846,82 @@ UNINITIALIZED_TEST(InlineAllocationObserver) {
     AllocateUnaligned(new_space, 1024);
     CHECK_EQ(observer1.count(), 3);
 
-    // Allocating another 2048 bytes in small objects should get 12
+    // Allocating another 2048 bytes in small objects should get 16
     // notifications.
     for (int i = 0; i < 64; ++i) {
       AllocateUnaligned(new_space, 32);
     }
-    CHECK_EQ(observer1.count(), 15);
+    CHECK_EQ(observer1.count(), 19);
 
     // Multiple observers should work.
     Observer observer2(96);
     new_space->AddInlineAllocationObserver(&observer2);
 
     AllocateUnaligned(new_space, 2048);
-    CHECK_EQ(observer1.count(), 16);
+    CHECK_EQ(observer1.count(), 20);
     CHECK_EQ(observer2.count(), 1);
 
     AllocateUnaligned(new_space, 104);
-    CHECK_EQ(observer1.count(), 16);
+    CHECK_EQ(observer1.count(), 20);
     CHECK_EQ(observer2.count(), 2);
 
     // Callback should stop getting called after an observer is removed.
     new_space->RemoveInlineAllocationObserver(&observer1);
 
     AllocateUnaligned(new_space, 384);
-    CHECK_EQ(observer1.count(), 16);  // no more notifications.
+    CHECK_EQ(observer1.count(), 20);  // no more notifications.
     CHECK_EQ(observer2.count(), 3);   // this one is still active.
+
+    // Ensure that Pause/ResumeInlineAllocationObservers work correctly.
+    AllocateUnaligned(new_space, 48);
+    CHECK_EQ(observer2.count(), 3);
+    new_space->PauseInlineAllocationObservers();
+    CHECK_EQ(observer2.count(), 3);
+    AllocateUnaligned(new_space, 384);
+    CHECK_EQ(observer2.count(), 3);
+    new_space->ResumeInlineAllocationObservers();
+    CHECK_EQ(observer2.count(), 3);
+    // Coupled with the 48 bytes allocated before the pause, another 48 bytes
+    // allocated here should trigger a notification.
+    AllocateUnaligned(new_space, 48);
+    CHECK_EQ(observer2.count(), 4);
 
     new_space->RemoveInlineAllocationObserver(&observer2);
     AllocateUnaligned(new_space, 384);
-    CHECK_EQ(observer1.count(), 16);
-    CHECK_EQ(observer2.count(), 3);
+    CHECK_EQ(observer1.count(), 20);
+    CHECK_EQ(observer2.count(), 4);
+  }
+  isolate->Dispose();
+}
+
+
+UNINITIALIZED_TEST(InlineAllocationObserverCadence) {
+  v8::Isolate::CreateParams create_params;
+  create_params.array_buffer_allocator = CcTest::array_buffer_allocator();
+  v8::Isolate* isolate = v8::Isolate::New(create_params);
+  {
+    v8::Isolate::Scope isolate_scope(isolate);
+    v8::HandleScope handle_scope(isolate);
+    v8::Context::New(isolate)->Enter();
+
+    Isolate* i_isolate = reinterpret_cast<Isolate*>(isolate);
+
+    NewSpace* new_space = i_isolate->heap()->new_space();
+
+    Observer observer1(512);
+    new_space->AddInlineAllocationObserver(&observer1);
+    Observer observer2(576);
+    new_space->AddInlineAllocationObserver(&observer2);
+
+    for (int i = 0; i < 512; ++i) {
+      AllocateUnaligned(new_space, 32);
+    }
+
+    new_space->RemoveInlineAllocationObserver(&observer1);
+    new_space->RemoveInlineAllocationObserver(&observer2);
+
+    CHECK_EQ(observer1.count(), 32);
+    CHECK_EQ(observer2.count(), 28);
   }
   isolate->Dispose();
 }

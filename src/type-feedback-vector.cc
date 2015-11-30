@@ -233,13 +233,11 @@ void TypeFeedbackVector::ClearSlotsImpl(SharedFunctionInfo* shared,
           break;
         }
         case FeedbackVectorSlotKind::STORE_IC: {
-          DCHECK(FLAG_vector_stores);
           StoreICNexus nexus(this, slot);
           nexus.Clear(shared->code());
           break;
         }
         case FeedbackVectorSlotKind::KEYED_STORE_IC: {
-          DCHECK(FLAG_vector_stores);
           KeyedStoreICNexus nexus(this, slot);
           nexus.Clear(shared->code());
           break;
@@ -269,7 +267,6 @@ void TypeFeedbackVector::ClearSlotsImpl(SharedFunctionInfo* shared,
 
 // static
 void TypeFeedbackVector::ClearAllKeyedStoreICs(Isolate* isolate) {
-  DCHECK(FLAG_vector_stores);
   SharedFunctionInfo::Iterator iterator(isolate);
   SharedFunctionInfo* shared;
   while ((shared = iterator.Next())) {
@@ -293,7 +290,6 @@ void TypeFeedbackVector::ClearKeyedStoreICs(SharedFunctionInfo* shared) {
     if (kind != FeedbackVectorSlotKind::KEYED_STORE_IC) continue;
     Object* obj = Get(slot);
     if (obj != uninitialized_sentinel) {
-      DCHECK(FLAG_vector_stores);
       KeyedStoreICNexus nexus(this, slot);
       nexus.Clear(host);
     }
@@ -517,6 +513,19 @@ void CallICNexus::ConfigureMonomorphic(Handle<JSFunction> function) {
   Handle<WeakCell> new_cell = GetIsolate()->factory()->NewWeakCell(function);
   SetFeedback(*new_cell);
   SetFeedbackExtra(Smi::FromInt(kCallCountIncrement), SKIP_WRITE_BARRIER);
+}
+
+
+void CallICNexus::ConfigureMegamorphic() {
+  FeedbackNexus::ConfigureMegamorphic();
+}
+
+
+void CallICNexus::ConfigureMegamorphic(int call_count) {
+  SetFeedback(*TypeFeedbackVector::MegamorphicSentinel(GetIsolate()),
+              SKIP_WRITE_BARRIER);
+  SetFeedbackExtra(Smi::FromInt(call_count * kCallCountIncrement),
+                   SKIP_WRITE_BARRIER);
 }
 
 

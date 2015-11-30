@@ -9,6 +9,7 @@
 #include "src/debug/debug.h"
 #include "src/isolate-inl.h"
 #include "src/messages.h"
+#include "src/property-descriptor.h"
 #include "src/runtime/runtime.h"
 
 namespace v8 {
@@ -158,7 +159,10 @@ RUNTIME_FUNCTION(Runtime_GetPrototype) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 1);
   CONVERT_ARG_HANDLE_CHECKED(Object, obj, 0);
-  return *Object::GetPrototype(isolate, obj);
+  Handle<Object> prototype;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, prototype,
+                                     Object::GetPrototype(isolate, obj));
+  return *prototype;
 }
 
 
@@ -250,7 +254,8 @@ MUST_USE_RESULT static MaybeHandle<Object> GetOwnProperty(Isolate* isolate,
 //         [false, value, Writeable, Enumerable, Configurable]
 //  if args[1] is an accessor on args[0]
 //         [true, GetFunction, SetFunction, Enumerable, Configurable]
-RUNTIME_FUNCTION(Runtime_GetOwnProperty) {
+// TODO(jkummerow): Deprecated. Remove all callers and delete.
+RUNTIME_FUNCTION(Runtime_GetOwnProperty_Legacy) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 2);
   CONVERT_ARG_HANDLE_CHECKED(JSObject, obj, 0);
@@ -262,12 +267,37 @@ RUNTIME_FUNCTION(Runtime_GetOwnProperty) {
 }
 
 
+// ES6 19.1.2.6
+RUNTIME_FUNCTION(Runtime_GetOwnProperty) {
+  HandleScope scope(isolate);
+  DCHECK(args.length() == 2);
+  CONVERT_ARG_HANDLE_CHECKED(Object, object, 0);
+  CONVERT_ARG_HANDLE_CHECKED(Object, raw_name, 1);
+  // 1. Let obj be ? ToObject(O).
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, object,
+                                     Execution::ToObject(isolate, object));
+  // 2. Let key be ? ToPropertyKey(P).
+  Handle<Name> key;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, key,
+                                     Object::ToName(isolate, raw_name));
+
+  // 3. Let desc be ? obj.[[GetOwnProperty]](key).
+  PropertyDescriptor desc;
+  bool found = JSReceiver::GetOwnPropertyDescriptor(
+      isolate, Handle<JSReceiver>::cast(object), key, &desc);
+  if (isolate->has_pending_exception()) return isolate->heap()->exception();
+  // 4. Return FromPropertyDescriptor(desc).
+  if (!found) return isolate->heap()->undefined_value();
+  return *desc.ToObject(isolate);
+}
+
+
 RUNTIME_FUNCTION(Runtime_PreventExtensions) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 1);
   CONVERT_ARG_HANDLE_CHECKED(JSReceiver, obj, 0);
-  if (JSReceiver::PreventExtensions(obj, Object::THROW_ON_ERROR).IsNothing())
-    return isolate->heap()->exception();
+  MAYBE_RETURN(JSReceiver::PreventExtensions(obj, Object::THROW_ON_ERROR),
+               isolate->heap()->exception());
   return *obj;
 }
 
@@ -275,8 +305,10 @@ RUNTIME_FUNCTION(Runtime_PreventExtensions) {
 RUNTIME_FUNCTION(Runtime_IsExtensible) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 1);
-  CONVERT_ARG_HANDLE_CHECKED(JSObject, obj, 0);
-  return isolate->heap()->ToBoolean(JSObject::IsExtensible(obj));
+  CONVERT_ARG_HANDLE_CHECKED(JSReceiver, obj, 0);
+  Maybe<bool> result = JSReceiver::IsExtensible(obj);
+  MAYBE_RETURN(result, isolate->heap()->exception());
+  return isolate->heap()->ToBoolean(result.FromJust());
 }
 
 
@@ -656,6 +688,8 @@ RUNTIME_FUNCTION(Runtime_HasOwnProperty) {
     // Fast case: either the key is a real named property or it is not
     // an array index and there are no interceptors or hidden
     // prototypes.
+    // TODO(jkummerow): Make JSReceiver::HasOwnProperty fast enough to
+    // handle all cases directly (without this custom fast path).
     Maybe<bool> maybe = Nothing<bool>();
     if (key_is_array_index) {
       maybe = JSObject::HasOwnElement(js_obj, index);
@@ -757,6 +791,8 @@ RUNTIME_FUNCTION(Runtime_GetPropertyNamesFast) {
 // Return the names of the own named properties.
 // args[0]: object
 // args[1]: PropertyAttributes as int
+// TODO(cbruni/jkummerow): Use JSReceiver::GetKeys() internally, merge with
+// Runtime_GetOwnElementNames.
 RUNTIME_FUNCTION(Runtime_GetOwnPropertyNames) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 2);
@@ -973,46 +1009,24 @@ RUNTIME_FUNCTION(Runtime_AllocateHeapNumber) {
 
 
 static Object* Runtime_NewObjectHelper(Isolate* isolate,
-                                       Handle<Object> constructor,
-                                       Handle<Object> original_constructor,
+                                       Handle<JSFunction> constructor,
+                                       Handle<JSReceiver> new_target,
                                        Handle<AllocationSite> site) {
-  // If the constructor isn't a proper function we throw a type error.
-  if (!constructor->IsJSFunction()) {
-    THROW_NEW_ERROR_RETURN_FAILURE(
-        isolate, NewTypeError(MessageTemplate::kNotConstructor, constructor));
-  }
-
-  Handle<JSFunction> function = Handle<JSFunction>::cast(constructor);
-
-  CHECK(original_constructor->IsJSFunction());
-  Handle<JSFunction> original_function =
-      Handle<JSFunction>::cast(original_constructor);
-
-
-  // Check that function is a constructor.
-  if (!function->IsConstructor()) {
-    THROW_NEW_ERROR_RETURN_FAILURE(
-        isolate, NewTypeError(MessageTemplate::kNotConstructor, constructor));
-  }
-
-  Debug* debug = isolate->debug();
-  // Handle stepping into constructors if step into is active.
-  if (debug->StepInActive()) debug->HandleStepIn(function, true);
+  // TODO(verwaest): new_target could be a proxy. Read new.target.prototype in
+  // that case.
+  Handle<JSFunction> original_function = Handle<JSFunction>::cast(new_target);
 
   // The function should be compiled for the optimization hints to be
   // available.
-  Compiler::Compile(function, CLEAR_EXCEPTION);
+  Compiler::Compile(constructor, CLEAR_EXCEPTION);
 
-  JSFunction::EnsureHasInitialMap(function);
-  if (function->initial_map()->instance_type() == JS_FUNCTION_TYPE) {
-    // The 'Function' function ignores the receiver object when
-    // called using 'new' and creates a new JSFunction object that
-    // is returned.
-    return isolate->heap()->undefined_value();
-  }
+  JSFunction::EnsureHasInitialMap(constructor);
+  DCHECK_NE(JS_FUNCTION_TYPE, constructor->initial_map()->instance_type());
 
+  // TODO(verwaest): original_function could have non-instance-prototype
+  // (non-JSReceiver), requiring fallback to the intrinsicDefaultProto.
   Handle<Map> initial_map =
-      JSFunction::EnsureDerivedHasInitialMap(original_function, function);
+      JSFunction::EnsureDerivedHasInitialMap(original_function, constructor);
 
   Handle<JSObject> result =
       isolate->factory()->NewJSObjectFromMap(initial_map, NOT_TENURED, site);
@@ -1027,9 +1041,20 @@ static Object* Runtime_NewObjectHelper(Isolate* isolate,
 RUNTIME_FUNCTION(Runtime_NewObject) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 2);
-  CONVERT_ARG_HANDLE_CHECKED(Object, constructor, 0);
-  CONVERT_ARG_HANDLE_CHECKED(Object, original_constructor, 1);
-  return Runtime_NewObjectHelper(isolate, constructor, original_constructor,
+  CONVERT_ARG_HANDLE_CHECKED(JSFunction, constructor, 0);
+  CONVERT_ARG_HANDLE_CHECKED(JSReceiver, new_target, 1);
+
+  DCHECK(constructor->IsConstructor());
+
+  // If called through new, new.target can be:
+  // - a subclass of constructor,
+  // - a proxy wrapper around constructor, or
+  // - the constructor itself.
+  // If called through Reflect.construct, it's guaranteed to be a constructor by
+  // REFLECT_CONSTRUCT_PREPARE.
+  DCHECK(new_target->IsConstructor());
+
+  return Runtime_NewObjectHelper(isolate, constructor, new_target,
                                  Handle<AllocationSite>::null());
 }
 
@@ -1038,8 +1063,8 @@ RUNTIME_FUNCTION(Runtime_FinalizeInstanceSize) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 1);
 
-  CONVERT_ARG_HANDLE_CHECKED(JSFunction, function, 0);
-  function->CompleteInobjectSlackTracking();
+  CONVERT_ARG_HANDLE_CHECKED(Map, initial_map, 0);
+  initial_map->CompleteInobjectSlackTracking();
 
   return isolate->heap()->undefined_value();
 }

@@ -25,6 +25,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+// TODO(jochen): Remove this after the setting is turned on globally.
+#define V8_IMMINENT_DEPRECATION_WARNINGS
+
 #include <stdlib.h>
 #include <iostream>  // NOLINT(readability/streams)
 
@@ -62,7 +65,7 @@ static bool all_zeroes(const byte* beg, const byte* end) {
 
 TEST(CopyBytes) {
   CcTest::InitializeVM();
-  Isolate* isolate = Isolate::Current();
+  Isolate* isolate = CcTest::i_isolate();
   HandleScope handles(isolate);
 
   const int data_size = 1 * KB;
@@ -113,8 +116,8 @@ TEST(CopyBytes) {
       for (byte* dest = dest_buffer; dest < dest_buffer + fuzz; dest++) {
         memset(dest_buffer, 0, data_size);
         CHECK(dest + size < dest_buffer + data_size);
-        (void) CALL_GENERATED_CODE(f, reinterpret_cast<int>(src),
-                                      reinterpret_cast<int>(dest), size, 0, 0);
+        (void)CALL_GENERATED_CODE(isolate, f, reinterpret_cast<int>(src),
+                                  reinterpret_cast<int>(dest), size, 0, 0);
         // a0 and a1 should point at the first byte after the copied data.
         CHECK_EQ(src + size, a0_);
         CHECK_EQ(dest + size, a1_);
@@ -142,11 +145,11 @@ static void TestNaN(const char *code) {
   v8::Local<v8::Context> context = CcTest::NewContext(PRINT_EXTENSION);
   v8::Context::Scope context_scope(context);
 
-  v8::Local<v8::Script> script = v8::Script::Compile(v8_str(code));
-  v8::Local<v8::Object> result = v8::Local<v8::Object>::Cast(script->Run());
-  // Have to populate the handle manually, as it's not Cast-able.
-  i::Handle<i::JSObject> o =
-      v8::Utils::OpenHandle<v8::Object, i::JSObject>(result);
+  v8::Local<v8::Script> script =
+      v8::Script::Compile(context, v8_str(code)).ToLocalChecked();
+  v8::Local<v8::Object> result =
+      v8::Local<v8::Object>::Cast(script->Run(context).ToLocalChecked());
+  i::Handle<i::JSReceiver> o = v8::Utils::OpenHandle(*result);
   i::Handle<i::JSArray> array1(reinterpret_cast<i::JSArray*>(*o));
   i::FixedDoubleArray* a = i::FixedDoubleArray::cast(array1->elements());
   double value = a->get_scalar(0);
@@ -251,7 +254,8 @@ TEST(jump_tables4) {
 #endif
   F1 f = FUNCTION_CAST<F1>(code->entry());
   for (int i = 0; i < kNumCases; ++i) {
-    int res = reinterpret_cast<int>(CALL_GENERATED_CODE(f, i, 0, 0, 0, 0));
+    int res =
+        reinterpret_cast<int>(CALL_GENERATED_CODE(isolate, f, i, 0, 0, 0, 0));
     ::printf("f(%d) = %d\n", i, res);
     CHECK_EQ(values[i], res);
   }

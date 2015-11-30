@@ -274,8 +274,7 @@ void FullCodeGenerator::Generate() {
     __ Branch(&non_construct_frame, ne, a1,
               Operand(Smi::FromInt(StackFrame::CONSTRUCT)));
 
-    __ lw(v0,
-          MemOperand(a2, ConstructFrameConstants::kOriginalConstructorOffset));
+    __ lw(v0, MemOperand(a2, ConstructFrameConstants::kNewTargetOffset));
     __ Branch(&done);
 
     __ bind(&non_construct_frame);
@@ -1239,7 +1238,7 @@ void FullCodeGenerator::EmitSetHomeObject(Expression* initializer, int offset,
         Operand(isolate()->factory()->home_object_symbol()));
   __ lw(StoreDescriptor::ValueRegister(),
         MemOperand(sp, offset * kPointerSize));
-  if (FLAG_vector_stores) EmitLoadStoreICSlot(slot);
+  EmitLoadStoreICSlot(slot);
   CallStoreIC();
 }
 
@@ -1253,7 +1252,7 @@ void FullCodeGenerator::EmitSetHomeObjectAccumulator(Expression* initializer,
         Operand(isolate()->factory()->home_object_symbol()));
   __ lw(StoreDescriptor::ValueRegister(),
         MemOperand(sp, offset * kPointerSize));
-  if (FLAG_vector_stores) EmitLoadStoreICSlot(slot);
+  EmitLoadStoreICSlot(slot);
   CallStoreIC();
 }
 
@@ -1529,7 +1528,6 @@ void FullCodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
 
   Handle<FixedArray> constant_properties = expr->constant_properties();
   __ lw(a3, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
-  __ lw(a3, FieldMemOperand(a3, JSFunction::kLiteralsOffset));
   __ li(a2, Operand(Smi::FromInt(expr->literal_index())));
   __ li(a1, Operand(constant_properties));
   __ li(a0, Operand(Smi::FromInt(expr->ComputeFlags())));
@@ -1575,12 +1573,8 @@ void FullCodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
             DCHECK(StoreDescriptor::ValueRegister().is(a0));
             __ li(StoreDescriptor::NameRegister(), Operand(key->value()));
             __ lw(StoreDescriptor::ReceiverRegister(), MemOperand(sp));
-            if (FLAG_vector_stores) {
-              EmitLoadStoreICSlot(property->GetSlot(0));
-              CallStoreIC();
-            } else {
-              CallStoreIC(key->LiteralFeedbackId());
-            }
+            EmitLoadStoreICSlot(property->GetSlot(0));
+            CallStoreIC();
             PrepareForBailoutForId(key->id(), NO_REGISTERS);
 
             if (NeedsHomeObject(value)) {
@@ -1739,7 +1733,6 @@ void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
 
   __ mov(a0, result_register());
   __ lw(a3, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
-  __ lw(a3, FieldMemOperand(a3, JSFunction::kLiteralsOffset));
   __ li(a2, Operand(Smi::FromInt(expr->literal_index())));
   __ li(a1, Operand(constant_elements));
   if (MustCreateArrayLiteralWithRuntime(expr)) {
@@ -1769,36 +1762,18 @@ void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
 
     if (!result_saved) {
       __ push(v0);  // array literal
-      __ Push(Smi::FromInt(expr->literal_index()));
       result_saved = true;
     }
 
     VisitForAccumulatorValue(subexpr);
 
-    if (FLAG_vector_stores) {
-      __ li(StoreDescriptor::NameRegister(),
-            Operand(Smi::FromInt(array_index)));
-      __ lw(StoreDescriptor::ReceiverRegister(), MemOperand(sp, kPointerSize));
-      __ mov(StoreDescriptor::ValueRegister(), result_register());
-      EmitLoadStoreICSlot(expr->LiteralFeedbackSlot());
-      Handle<Code> ic =
-          CodeFactory::KeyedStoreIC(isolate(), language_mode()).code();
-      CallIC(ic);
-    } else if (has_fast_elements) {
-      int offset = FixedArray::kHeaderSize + (array_index * kPointerSize);
-      __ lw(t2, MemOperand(sp, kPointerSize));  // Copy of array literal.
-      __ lw(a1, FieldMemOperand(t2, JSObject::kElementsOffset));
-      __ sw(result_register(), FieldMemOperand(a1, offset));
-      // Update the write barrier for the array store.
-      __ RecordWriteField(a1, offset, result_register(), a2,
-                          kRAHasBeenSaved, kDontSaveFPRegs,
-                          EMIT_REMEMBERED_SET, INLINE_SMI_CHECK);
-    } else {
-      __ li(a3, Operand(Smi::FromInt(array_index)));
-      __ mov(a0, result_register());
-      StoreArrayLiteralElementStub stub(isolate());
-      __ CallStub(&stub);
-    }
+    __ li(StoreDescriptor::NameRegister(), Operand(Smi::FromInt(array_index)));
+    __ lw(StoreDescriptor::ReceiverRegister(), MemOperand(sp, 0));
+    __ mov(StoreDescriptor::ValueRegister(), result_register());
+    EmitLoadStoreICSlot(expr->LiteralFeedbackSlot());
+    Handle<Code> ic =
+        CodeFactory::KeyedStoreIC(isolate(), language_mode()).code();
+    CallIC(ic);
 
     PrepareForBailoutForId(expr->GetIdForElement(array_index), NO_REGISTERS);
   }
@@ -1809,7 +1784,6 @@ void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
   // (inclusive) and these elements gets appended to the array. Note that the
   // number elements an iterable produces is unknown ahead of time.
   if (array_index < length && result_saved) {
-    __ Pop();  // literal index
     __ Pop(v0);
     result_saved = false;
   }
@@ -1830,7 +1804,6 @@ void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
   }
 
   if (result_saved) {
-    __ Pop();  // literal index
     context()->PlugTOS();
   } else {
     context()->Plug(v0);
@@ -2503,7 +2476,7 @@ void FullCodeGenerator::EmitAssignment(Expression* expr,
       __ pop(StoreDescriptor::ValueRegister());  // Restore value.
       __ li(StoreDescriptor::NameRegister(),
             Operand(prop->key()->AsLiteral()->value()));
-      if (FLAG_vector_stores) EmitLoadStoreICSlot(slot);
+      EmitLoadStoreICSlot(slot);
       CallStoreIC();
       break;
     }
@@ -2551,7 +2524,7 @@ void FullCodeGenerator::EmitAssignment(Expression* expr,
       __ mov(StoreDescriptor::NameRegister(), result_register());
       __ Pop(StoreDescriptor::ValueRegister(),
              StoreDescriptor::ReceiverRegister());
-      if (FLAG_vector_stores) EmitLoadStoreICSlot(slot);
+      EmitLoadStoreICSlot(slot);
       Handle<Code> ic =
           CodeFactory::KeyedStoreIC(isolate(), language_mode()).code();
       CallIC(ic);
@@ -2582,10 +2555,10 @@ void FullCodeGenerator::EmitVariableAssignment(Variable* var, Token::Value op,
     __ mov(StoreDescriptor::ValueRegister(), result_register());
     __ li(StoreDescriptor::NameRegister(), Operand(var->name()));
     __ lw(StoreDescriptor::ReceiverRegister(), GlobalObjectOperand());
-    if (FLAG_vector_stores) EmitLoadStoreICSlot(slot);
+    EmitLoadStoreICSlot(slot);
     CallStoreIC();
 
-  } else if (var->mode() == LET && op != Token::INIT_LET) {
+  } else if (var->mode() == LET && op != Token::INIT) {
     // Non-initializing assignment to let variable needs a write barrier.
     DCHECK(!var->IsLookupSlot());
     DCHECK(var->IsStackAllocated() || var->IsContextSlot());
@@ -2601,7 +2574,7 @@ void FullCodeGenerator::EmitVariableAssignment(Variable* var, Token::Value op,
     __ bind(&assign);
     EmitStoreToStackLocalOrContextSlot(var, location);
 
-  } else if (var->mode() == CONST && op != Token::INIT_CONST) {
+  } else if (var->mode() == CONST && op != Token::INIT) {
     // Assignment to const variable needs a write barrier.
     DCHECK(!var->IsLookupSlot());
     DCHECK(var->IsStackAllocated() || var->IsContextSlot());
@@ -2616,7 +2589,7 @@ void FullCodeGenerator::EmitVariableAssignment(Variable* var, Token::Value op,
     __ bind(&const_error);
     __ CallRuntime(Runtime::kThrowConstAssignError, 0);
 
-  } else if (var->is_this() && op == Token::INIT_CONST) {
+  } else if (var->is_this() && var->mode() == CONST && op == Token::INIT) {
     // Initializing assignment to const {this} needs a write barrier.
     DCHECK(var->IsStackAllocated() || var->IsContextSlot());
     Label uninitialized_this;
@@ -2630,7 +2603,8 @@ void FullCodeGenerator::EmitVariableAssignment(Variable* var, Token::Value op,
     __ bind(&uninitialized_this);
     EmitStoreToStackLocalOrContextSlot(var, location);
 
-  } else if (!var->is_const_mode() || op == Token::INIT_CONST) {
+  } else if (!var->is_const_mode() ||
+             (var->mode() == CONST && op == Token::INIT)) {
     if (var->IsLookupSlot()) {
       // Assignment to var.
       __ li(a1, Operand(var->name()));
@@ -2642,7 +2616,7 @@ void FullCodeGenerator::EmitVariableAssignment(Variable* var, Token::Value op,
       // mode.
       DCHECK((var->IsStackAllocated() || var->IsContextSlot()));
       MemOperand location = VarOperand(var, a1);
-      if (generate_debug_code_ && op == Token::INIT_LET) {
+      if (generate_debug_code_ && var->mode() == LET && op == Token::INIT) {
         // Check for an uninitialized let binding.
         __ lw(a2, location);
         __ LoadRoot(t0, Heap::kTheHoleValueRootIndex);
@@ -2651,7 +2625,7 @@ void FullCodeGenerator::EmitVariableAssignment(Variable* var, Token::Value op,
       EmitStoreToStackLocalOrContextSlot(var, location);
     }
 
-  } else if (op == Token::INIT_CONST_LEGACY) {
+  } else if (var->mode() == CONST_LEGACY && op == Token::INIT) {
     // Const initializers need a write barrier.
     DCHECK(!var->IsParameter());  // No const parameters.
     if (var->IsLookupSlot()) {
@@ -2670,7 +2644,7 @@ void FullCodeGenerator::EmitVariableAssignment(Variable* var, Token::Value op,
     }
 
   } else {
-    DCHECK(var->mode() == CONST_LEGACY && op != Token::INIT_CONST_LEGACY);
+    DCHECK(var->mode() == CONST_LEGACY && op != Token::INIT);
     if (is_strict(language_mode())) {
       __ CallRuntime(Runtime::kThrowConstAssignError, 0);
     }
@@ -2689,12 +2663,8 @@ void FullCodeGenerator::EmitNamedPropertyAssignment(Assignment* expr) {
   __ li(StoreDescriptor::NameRegister(),
         Operand(prop->key()->AsLiteral()->value()));
   __ pop(StoreDescriptor::ReceiverRegister());
-  if (FLAG_vector_stores) {
-    EmitLoadStoreICSlot(expr->AssignmentSlot());
-    CallStoreIC();
-  } else {
-    CallStoreIC(expr->AssignmentFeedbackId());
-  }
+  EmitLoadStoreICSlot(expr->AssignmentSlot());
+  CallStoreIC();
 
   PrepareForBailoutForId(expr->AssignmentId(), TOS_REG);
   context()->Plug(v0);
@@ -2744,12 +2714,8 @@ void FullCodeGenerator::EmitKeyedPropertyAssignment(Assignment* expr) {
 
   Handle<Code> ic =
       CodeFactory::KeyedStoreIC(isolate(), language_mode()).code();
-  if (FLAG_vector_stores) {
-    EmitLoadStoreICSlot(expr->AssignmentSlot());
-    CallIC(ic);
-  } else {
-    CallIC(ic, expr->AssignmentFeedbackId());
-  }
+  EmitLoadStoreICSlot(expr->AssignmentSlot());
+  CallIC(ic);
 
   PrepareForBailoutForId(expr->AssignmentId(), TOS_REG);
   context()->Plug(v0);
@@ -3081,7 +3047,7 @@ void FullCodeGenerator::VisitCallNew(CallNew* expr) {
 
   // Call the construct call builtin that handles allocation and
   // constructor invocation.
-  SetConstructCallPosition(expr);
+  SetConstructCallPosition(expr, arg_count);
 
   // Load function and argument count into a1 and a0.
   __ li(a0, Operand(arg_count));
@@ -3091,7 +3057,7 @@ void FullCodeGenerator::VisitCallNew(CallNew* expr) {
   __ EmitLoadTypeFeedbackVector(a2);
   __ li(a3, Operand(SmiFromSlot(expr->CallNewFeedbackSlot())));
 
-  CallConstructStub stub(isolate(), RECORD_CONSTRUCTOR_TARGET);
+  CallConstructStub stub(isolate());
   __ Call(stub.GetCode(), RelocInfo::CONSTRUCT_CALL);
   PrepareForBailoutForId(expr->ReturnId(), TOS_REG);
   // Restore context register.
@@ -3117,22 +3083,17 @@ void FullCodeGenerator::EmitSuperConstructorCall(Call* expr) {
 
   // Call the construct call builtin that handles allocation and
   // constructor invocation.
-  SetConstructCallPosition(expr);
+  SetConstructCallPosition(expr, arg_count);
 
-  // Load original constructor into t0.
+  // Load new target into a3.
   VisitForAccumulatorValue(super_call_ref->new_target_var());
-  __ mov(t0, result_register());
+  __ mov(a3, result_register());
 
   // Load function and argument count into a1 and a0.
   __ li(a0, Operand(arg_count));
   __ lw(a1, MemOperand(sp, arg_count * kPointerSize));
 
-  // Record call targets in unoptimized code.
-  __ EmitLoadTypeFeedbackVector(a2);
-  __ li(a3, Operand(SmiFromSlot(expr->CallFeedbackSlot())));
-
-  CallConstructStub stub(isolate(), SUPER_CALL_RECORD_TARGET);
-  __ Call(stub.GetCode(), RelocInfo::CONSTRUCT_CALL);
+  __ Call(isolate()->builtins()->Construct(), RelocInfo::CONSTRUCT_CALL);
 
   RecordJSReturnSite(expr);
 
@@ -3870,7 +3831,11 @@ void FullCodeGenerator::EmitDefaultConstructorCallSuper(CallRuntime* expr) {
   VisitForStackValue(args->at(0));
   VisitForStackValue(args->at(1));
 
-  // Load original constructor into a3.
+  // Call the construct call builtin that handles allocation and
+  // constructor invocation.
+  SetConstructCallPosition(expr, 0);
+
+  // Load new target into a3.
   __ lw(a3, MemOperand(sp, 1 * kPointerSize));
 
   // Check if the calling frame is an arguments adaptor frame.
@@ -4620,12 +4585,8 @@ void FullCodeGenerator::VisitCountOperation(CountOperation* expr) {
       __ li(StoreDescriptor::NameRegister(),
             Operand(prop->key()->AsLiteral()->value()));
       __ pop(StoreDescriptor::ReceiverRegister());
-      if (FLAG_vector_stores) {
-        EmitLoadStoreICSlot(expr->CountSlot());
-        CallStoreIC();
-      } else {
-        CallStoreIC(expr->CountStoreFeedbackId());
-      }
+      EmitLoadStoreICSlot(expr->CountSlot());
+      CallStoreIC();
       PrepareForBailoutForId(expr->AssignmentId(), TOS_REG);
       if (expr->is_postfix()) {
         if (!context()->IsEffect()) {
@@ -4664,12 +4625,8 @@ void FullCodeGenerator::VisitCountOperation(CountOperation* expr) {
              StoreDescriptor::NameRegister());
       Handle<Code> ic =
           CodeFactory::KeyedStoreIC(isolate(), language_mode()).code();
-      if (FLAG_vector_stores) {
-        EmitLoadStoreICSlot(expr->CountSlot());
-        CallIC(ic);
-      } else {
-        CallIC(ic, expr->CountStoreFeedbackId());
-      }
+      EmitLoadStoreICSlot(expr->CountSlot());
+      CallIC(ic);
       PrepareForBailoutForId(expr->AssignmentId(), TOS_REG);
       if (expr->is_postfix()) {
         if (!context()->IsEffect()) {
@@ -4973,7 +4930,7 @@ void FullCodeGenerator::ClearPendingMessage() {
 
 
 void FullCodeGenerator::EmitLoadStoreICSlot(FeedbackVectorSlot slot) {
-  DCHECK(FLAG_vector_stores && !slot.IsInvalid());
+  DCHECK(!slot.IsInvalid());
   __ li(VectorStoreICTrampolineDescriptor::SlotRegister(),
         Operand(SmiFromSlot(slot)));
 }

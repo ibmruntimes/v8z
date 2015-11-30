@@ -25,6 +25,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+// TODO(jochen): Remove this after the setting is turned on globally.
+#define V8_IMMINENT_DEPRECATION_WARNINGS
+
 #include <stdlib.h>
 
 #include "src/v8.h"
@@ -146,7 +149,7 @@ int32_t RunGeneratedCodeCallWrapper(ConvertDToIFunc func,
       Simulator::CallArgument(from),
       Simulator::CallArgument::End()
   };
-  return static_cast<int32_t>(Simulator::current(Isolate::Current())
+  return static_cast<int32_t>(Simulator::current(CcTest::i_isolate())
                                   ->CallInt64(FUNCTION_ADDR(func), args));
 #else
   return (*func)(from);

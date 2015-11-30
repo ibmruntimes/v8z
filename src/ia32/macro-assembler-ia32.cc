@@ -1733,16 +1733,16 @@ void MacroAssembler::CopyBytes(Register source,
 }
 
 
-void MacroAssembler::InitializeFieldsWithFiller(Register start_offset,
-                                                Register end_offset,
+void MacroAssembler::InitializeFieldsWithFiller(Register current_address,
+                                                Register end_address,
                                                 Register filler) {
   Label loop, entry;
   jmp(&entry);
   bind(&loop);
-  mov(Operand(start_offset, 0), filler);
-  add(start_offset, Immediate(kPointerSize));
+  mov(Operand(current_address, 0), filler);
+  add(current_address, Immediate(kPointerSize));
   bind(&entry);
-  cmp(start_offset, end_offset);
+  cmp(current_address, end_address);
   j(below, &loop);
 }
 
@@ -1921,8 +1921,6 @@ void MacroAssembler::JumpToExternalReference(const ExternalReference& ext) {
 
 void MacroAssembler::InvokePrologue(const ParameterCount& expected,
                                     const ParameterCount& actual,
-                                    Handle<Code> code_constant,
-                                    const Operand& code_operand,
                                     Label* done,
                                     bool* definitely_mismatches,
                                     InvokeFlag flag,
@@ -1973,13 +1971,6 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
   if (!definitely_matches) {
     Handle<Code> adaptor =
         isolate()->builtins()->ArgumentsAdaptorTrampoline();
-    if (!code_constant.is_null()) {
-      mov(edx, Immediate(code_constant));
-      add(edx, Immediate(Code::kHeaderSize - kHeapObjectTag));
-    } else if (!code_operand.is_reg(edx)) {
-      mov(edx, code_operand);
-    }
-
     if (flag == CALL_FUNCTION) {
       call_wrapper.BeforeCall(CallSize(adaptor, RelocInfo::CODE_TARGET));
       call(adaptor, RelocInfo::CODE_TARGET);
@@ -1996,6 +1987,7 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
 
 
 void MacroAssembler::InvokeCode(const Operand& code,
+                                Register new_target,
                                 const ParameterCount& expected,
                                 const ParameterCount& actual,
                                 InvokeFlag flag,
@@ -2003,11 +1995,17 @@ void MacroAssembler::InvokeCode(const Operand& code,
   // You can't call a function without a valid frame.
   DCHECK(flag == JUMP_FUNCTION || has_frame());
 
+  // Ensure new target is passed in the correct register. Otherwise clear the
+  // appropriate register in case new target is not given.
+  DCHECK_IMPLIES(new_target.is_valid(), new_target.is(edx));
+  if (!new_target.is_valid()) {
+    mov(edx, isolate()->factory()->undefined_value());
+  }
+
   Label done;
   bool definitely_mismatches = false;
-  InvokePrologue(expected, actual, Handle<Code>::null(), code,
-                 &done, &definitely_mismatches, flag, Label::kNear,
-                 call_wrapper);
+  InvokePrologue(expected, actual, &done, &definitely_mismatches, flag,
+                 Label::kNear, call_wrapper);
   if (!definitely_mismatches) {
     if (flag == CALL_FUNCTION) {
       call_wrapper.BeforeCall(CallSize(code));
@@ -2023,6 +2021,7 @@ void MacroAssembler::InvokeCode(const Operand& code,
 
 
 void MacroAssembler::InvokeFunction(Register fun,
+                                    Register new_target,
                                     const ParameterCount& actual,
                                     InvokeFlag flag,
                                     const CallWrapper& call_wrapper) {
@@ -2030,13 +2029,13 @@ void MacroAssembler::InvokeFunction(Register fun,
   DCHECK(flag == JUMP_FUNCTION || has_frame());
 
   DCHECK(fun.is(edi));
-  mov(edx, FieldOperand(edi, JSFunction::kSharedFunctionInfoOffset));
+  mov(ebx, FieldOperand(edi, JSFunction::kSharedFunctionInfoOffset));
   mov(esi, FieldOperand(edi, JSFunction::kContextOffset));
-  mov(ebx, FieldOperand(edx, SharedFunctionInfo::kFormalParameterCountOffset));
+  mov(ebx, FieldOperand(ebx, SharedFunctionInfo::kFormalParameterCountOffset));
   SmiUntag(ebx);
 
   ParameterCount expected(ebx);
-  InvokeCode(FieldOperand(edi, JSFunction::kCodeEntryOffset),
+  InvokeCode(FieldOperand(edi, JSFunction::kCodeEntryOffset), new_target,
              expected, actual, flag, call_wrapper);
 }
 
@@ -2052,7 +2051,7 @@ void MacroAssembler::InvokeFunction(Register fun,
   DCHECK(fun.is(edi));
   mov(esi, FieldOperand(edi, JSFunction::kContextOffset));
 
-  InvokeCode(FieldOperand(edi, JSFunction::kCodeEntryOffset),
+  InvokeCode(FieldOperand(edi, JSFunction::kCodeEntryOffset), no_reg,
              expected, actual, flag, call_wrapper);
 }
 
@@ -2077,7 +2076,7 @@ void MacroAssembler::InvokeBuiltin(int native_context_index, InvokeFlag flag,
   // parameter count to avoid emitting code to do the check.
   ParameterCount expected(0);
   GetBuiltinFunction(edi, native_context_index);
-  InvokeCode(FieldOperand(edi, JSFunction::kCodeEntryOffset),
+  InvokeCode(FieldOperand(edi, JSFunction::kCodeEntryOffset), no_reg,
              expected, expected, flag, call_wrapper);
 }
 

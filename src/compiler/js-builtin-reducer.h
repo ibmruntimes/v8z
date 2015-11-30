@@ -26,12 +26,14 @@ class JSBuiltinReducer final : public AdvancedReducer {
   Reduction Reduce(Node* node) final;
 
  private:
+  Reduction ReduceFunctionCall(Node* node);
   Reduction ReduceMathMax(Node* node);
   Reduction ReduceMathImul(Node* node);
   Reduction ReduceMathFround(Node* node);
 
-  JSGraph* jsgraph() const { return jsgraph_; }
   Graph* graph() const;
+  JSGraph* jsgraph() const { return jsgraph_; }
+  Isolate* isolate() const;
   CommonOperatorBuilder* common() const;
   MachineOperatorBuilder* machine() const;
   SimplifiedOperatorBuilder* simplified() const;

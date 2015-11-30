@@ -1449,7 +1449,12 @@ RUNTIME_FUNCTION(Runtime_DebugGetPrototype) {
   HandleScope shs(isolate);
   DCHECK(args.length() == 1);
   CONVERT_ARG_HANDLE_CHECKED(JSObject, obj, 0);
-  return *Object::GetPrototype(isolate, obj);
+  Handle<Object> prototype;
+  // TODO(1543): Come up with a solution for clients to handle potential errors
+  // thrown by an intermediate proxy.
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, prototype,
+                                     Object::GetPrototype(isolate, obj));
+  return *prototype;
 }
 
 
@@ -1478,6 +1483,16 @@ RUNTIME_FUNCTION(Runtime_FunctionGetInferredName) {
 
   CONVERT_ARG_CHECKED(JSFunction, f, 0);
   return f->shared()->inferred_name();
+}
+
+
+RUNTIME_FUNCTION(Runtime_FunctionGetDebugName) {
+  HandleScope scope(isolate);
+  DCHECK(args.length() == 1);
+
+  CONVERT_ARG_HANDLE_CHECKED(JSFunction, f, 0);
+  Handle<Object> name = JSFunction::GetDebugName(f);
+  return *name;
 }
 
 
@@ -1732,7 +1747,7 @@ RUNTIME_FUNCTION(Runtime_DebugHandleStepIntoAccessor) {
   CONVERT_ARG_HANDLE_CHECKED(JSFunction, function, 0);
   Debug* debug = isolate->debug();
   // Handle stepping into constructors if step into is active.
-  if (debug->StepInActive()) debug->HandleStepIn(function, false);
+  if (debug->StepInActive()) debug->HandleStepIn(function);
   return *isolate->factory()->undefined_value();
 }
 

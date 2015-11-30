@@ -178,58 +178,112 @@ void InstructionSelector::VisitStore(Node* node) {
   Node* value = node->InputAt(2);
 
   StoreRepresentation store_rep = OpParameter<StoreRepresentation>(node);
+  WriteBarrierKind write_barrier_kind = store_rep.write_barrier_kind();
   MachineType rep = RepresentationOf(store_rep.machine_type());
-  if (store_rep.write_barrier_kind() == kFullWriteBarrier) {
-    DCHECK(rep == kRepTagged);
-    // TODO(dcarney): refactor RecordWrite function to take temp registers
-    //                and pass them here instead of using fixed regs
-    // TODO(dcarney): handle immediate indices.
-    InstructionOperand temps[] = {g.TempRegister(t1), g.TempRegister(t2)};
-    Emit(kMipsStoreWriteBarrier, g.NoOutput(), g.UseFixed(base, t0),
-         g.UseFixed(index, t1), g.UseFixed(value, t2), arraysize(temps), temps);
-    return;
-  }
-  DCHECK_EQ(kNoWriteBarrier, store_rep.write_barrier_kind());
 
-  ArchOpcode opcode;
-  switch (rep) {
-    case kRepFloat32:
-      opcode = kMipsSwc1;
-      break;
-    case kRepFloat64:
-      opcode = kMipsSdc1;
-      break;
-    case kRepBit:  // Fall through.
-    case kRepWord8:
-      opcode = kMipsSb;
-      break;
-    case kRepWord16:
-      opcode = kMipsSh;
-      break;
-    case kRepTagged:  // Fall through.
-    case kRepWord32:
-      opcode = kMipsSw;
-      break;
-    default:
-      UNREACHABLE();
-      return;
-  }
-
-  if (g.CanBeImmediate(index, opcode)) {
-    Emit(opcode | AddressingModeField::encode(kMode_MRI), g.NoOutput(),
-         g.UseRegister(base), g.UseImmediate(index), g.UseRegister(value));
+  // TODO(mips): I guess this could be done in a better way.
+  if (write_barrier_kind != kNoWriteBarrier) {
+    DCHECK_EQ(kRepTagged, rep);
+    InstructionOperand inputs[3];
+    size_t input_count = 0;
+    inputs[input_count++] = g.UseUniqueRegister(base);
+    inputs[input_count++] = g.UseUniqueRegister(index);
+    inputs[input_count++] = (write_barrier_kind == kMapWriteBarrier)
+                                ? g.UseRegister(value)
+                                : g.UseUniqueRegister(value);
+    RecordWriteMode record_write_mode = RecordWriteMode::kValueIsAny;
+    switch (write_barrier_kind) {
+      case kNoWriteBarrier:
+        UNREACHABLE();
+        break;
+      case kMapWriteBarrier:
+        record_write_mode = RecordWriteMode::kValueIsMap;
+        break;
+      case kPointerWriteBarrier:
+        record_write_mode = RecordWriteMode::kValueIsPointer;
+        break;
+      case kFullWriteBarrier:
+        record_write_mode = RecordWriteMode::kValueIsAny;
+        break;
+    }
+    InstructionOperand temps[] = {g.TempRegister(), g.TempRegister()};
+    size_t const temp_count = arraysize(temps);
+    InstructionCode code = kArchStoreWithWriteBarrier;
+    code |= MiscField::encode(static_cast<int>(record_write_mode));
+    Emit(code, 0, nullptr, input_count, inputs, temp_count, temps);
   } else {
-    InstructionOperand addr_reg = g.TempRegister();
-    Emit(kMipsAdd | AddressingModeField::encode(kMode_None), addr_reg,
-         g.UseRegister(index), g.UseRegister(base));
-    // Emit desired store opcode, using temp addr_reg.
-    Emit(opcode | AddressingModeField::encode(kMode_MRI), g.NoOutput(),
-         addr_reg, g.TempImmediate(0), g.UseRegister(value));
+    ArchOpcode opcode;
+    switch (rep) {
+      case kRepFloat32:
+        opcode = kMipsSwc1;
+        break;
+      case kRepFloat64:
+        opcode = kMipsSdc1;
+        break;
+      case kRepBit:  // Fall through.
+      case kRepWord8:
+        opcode = kMipsSb;
+        break;
+      case kRepWord16:
+        opcode = kMipsSh;
+        break;
+      case kRepTagged:  // Fall through.
+      case kRepWord32:
+        opcode = kMipsSw;
+        break;
+      default:
+        UNREACHABLE();
+        return;
+    }
+
+    if (g.CanBeImmediate(index, opcode)) {
+      Emit(opcode | AddressingModeField::encode(kMode_MRI), g.NoOutput(),
+           g.UseRegister(base), g.UseImmediate(index), g.UseRegister(value));
+    } else {
+      InstructionOperand addr_reg = g.TempRegister();
+      Emit(kMipsAdd | AddressingModeField::encode(kMode_None), addr_reg,
+           g.UseRegister(index), g.UseRegister(base));
+      // Emit desired store opcode, using temp addr_reg.
+      Emit(opcode | AddressingModeField::encode(kMode_MRI), g.NoOutput(),
+           addr_reg, g.TempImmediate(0), g.UseRegister(value));
+    }
   }
 }
 
 
 void InstructionSelector::VisitWord32And(Node* node) {
+  MipsOperandGenerator g(this);
+  Int32BinopMatcher m(node);
+  if (m.left().IsWord32Shr() && CanCover(node, m.left().node()) &&
+      m.right().HasValue()) {
+    uint32_t mask = m.right().Value();
+    uint32_t mask_width = base::bits::CountPopulation32(mask);
+    uint32_t mask_msb = base::bits::CountLeadingZeros32(mask);
+    if ((mask_width != 0) && (mask_msb + mask_width == 32)) {
+      // The mask must be contiguous, and occupy the least-significant bits.
+      DCHECK_EQ(0u, base::bits::CountTrailingZeros32(mask));
+
+      // Select Ext for And(Shr(x, imm), mask) where the mask is in the least
+      // significant bits.
+      Int32BinopMatcher mleft(m.left().node());
+      if (mleft.right().HasValue()) {
+        // Any shift value can match; int32 shifts use `value % 32`.
+        uint32_t lsb = mleft.right().Value() & 0x1f;
+
+        // Ext cannot extract bits past the register size, however since
+        // shifting the original value would have introduced some zeros we can
+        // still use Ext with a smaller mask and the remaining bits will be
+        // zeros.
+        if (lsb + mask_width > 32) mask_width = 32 - lsb;
+
+        Emit(kMipsExt, g.DefineAsRegister(node),
+             g.UseRegister(mleft.left().node()), g.TempImmediate(lsb),
+             g.TempImmediate(mask_width));
+        return;
+      }
+      // Other cases fall through to the normal And operation.
+    }
+  }
   VisitBinop(this, node, kMipsAnd);
 }
 
@@ -240,6 +294,18 @@ void InstructionSelector::VisitWord32Or(Node* node) {
 
 
 void InstructionSelector::VisitWord32Xor(Node* node) {
+  Int32BinopMatcher m(node);
+  if (m.left().IsWord32Or() && CanCover(node, m.left().node()) &&
+      m.right().Is(-1)) {
+    Int32BinopMatcher mleft(m.left().node());
+    if (!mleft.right().HasValue()) {
+      MipsOperandGenerator g(this);
+      Emit(kMipsNor, g.DefineAsRegister(node),
+           g.UseRegister(mleft.left().node()),
+           g.UseRegister(mleft.right().node()));
+      return;
+    }
+  }
   VisitBinop(this, node, kMipsXor);
 }
 
@@ -250,6 +316,26 @@ void InstructionSelector::VisitWord32Shl(Node* node) {
 
 
 void InstructionSelector::VisitWord32Shr(Node* node) {
+  Int32BinopMatcher m(node);
+  if (m.left().IsWord32And() && m.right().HasValue()) {
+    uint32_t lsb = m.right().Value() & 0x1f;
+    Int32BinopMatcher mleft(m.left().node());
+    if (mleft.right().HasValue()) {
+      // Select Ext for Shr(And(x, mask), imm) where the result of the mask is
+      // shifted into the least-significant bits.
+      uint32_t mask = (mleft.right().Value() >> lsb) << lsb;
+      unsigned mask_width = base::bits::CountPopulation32(mask);
+      unsigned mask_msb = base::bits::CountLeadingZeros32(mask);
+      if ((mask_msb + mask_width + lsb) == 32) {
+        MipsOperandGenerator g(this);
+        DCHECK_EQ(lsb, base::bits::CountTrailingZeros32(mask));
+        Emit(kMipsExt, g.DefineAsRegister(node),
+             g.UseRegister(mleft.left().node()), g.TempImmediate(lsb),
+             g.TempImmediate(mask_width));
+        return;
+      }
+    }
+  }
   VisitRRO(this, kMipsShr, node);
 }
 
@@ -566,6 +652,11 @@ void InstructionSelector::VisitFloat64RoundDown(Node* node) {
 }
 
 
+void InstructionSelector::VisitFloat64RoundUp(Node* node) {
+  VisitRR(this, kMipsFloat64RoundUp, node);
+}
+
+
 void InstructionSelector::VisitFloat64RoundTruncate(Node* node) {
   VisitRR(this, kMipsFloat64RoundTruncate, node);
 }
@@ -573,6 +664,11 @@ void InstructionSelector::VisitFloat64RoundTruncate(Node* node) {
 
 void InstructionSelector::VisitFloat64RoundTiesAway(Node* node) {
   UNREACHABLE();
+}
+
+
+void InstructionSelector::VisitFloat64RoundTiesEven(Node* node) {
+  VisitRR(this, kMipsFloat64RoundTiesEven, node);
 }
 
 
@@ -1080,7 +1176,9 @@ InstructionSelector::SupportedMachineOperatorFlags() {
   if ((IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6)) &&
       IsFp64Mode()) {
     flags |= MachineOperatorBuilder::kFloat64RoundDown |
-             MachineOperatorBuilder::kFloat64RoundTruncate;
+             MachineOperatorBuilder::kFloat64RoundUp |
+             MachineOperatorBuilder::kFloat64RoundTruncate |
+             MachineOperatorBuilder::kFloat64RoundTiesEven;
   }
   return flags | MachineOperatorBuilder::kFloat64Min |
          MachineOperatorBuilder::kFloat64Max |

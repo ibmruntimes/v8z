@@ -309,24 +309,6 @@ function IsInconsistentDescriptor(desc) {
 }
 
 
-// ES5 8.10.4
-function FromPropertyDescriptor(desc) {
-  if (IS_UNDEFINED(desc)) return desc;
-
-  if (IsDataDescriptor(desc)) {
-    return { value: desc.getValue(),
-             writable: desc.isWritable(),
-             enumerable: desc.isEnumerable(),
-             configurable: desc.isConfigurable() };
-  }
-  // Must be an AccessorDescriptor then. We never return a generic descriptor.
-  return { get: desc.getGet(),
-           set: desc.getSet(),
-           enumerable: desc.isEnumerable(),
-           configurable: desc.isConfigurable() };
-}
-
-
 // Harmony Proxies
 function FromGenericPropertyDescriptor(desc) {
   if (IS_UNDEFINED(desc)) return desc;
@@ -569,6 +551,8 @@ function CallTrap2(handler, name, defaultTrap, x, y) {
 
 
 // ES5 section 8.12.1.
+// TODO(jkummerow): Deprecated. Migrate all callers to
+// ObjectGetOwnPropertyDescriptor and delete this.
 function GetOwnPropertyJS(obj, v) {
   var p = TO_NAME(v);
   if (%_IsJSProxy(obj)) {
@@ -590,7 +574,7 @@ function GetOwnPropertyJS(obj, v) {
   // GetOwnProperty returns an array indexed by the constants
   // defined in macros.py.
   // If p is not a property on obj undefined is returned.
-  var props = %GetOwnProperty(TO_OBJECT(obj), p);
+  var props = %GetOwnProperty_Legacy(TO_OBJECT(obj), p);
 
   return ConvertDescriptorArrayToDescriptor(props);
 }
@@ -641,7 +625,7 @@ function DefineProxyProperty(obj, p, attributes, should_throw) {
 
 // ES5 8.12.9.
 function DefineObjectProperty(obj, p, desc, should_throw) {
-  var current_array = %GetOwnProperty(obj, TO_NAME(p));
+  var current_array = %GetOwnProperty_Legacy(obj, TO_NAME(p));
   var current = ConvertDescriptorArrayToDescriptor(current_array);
   var extensible = %IsExtensible(obj);
 
@@ -889,8 +873,7 @@ function ObjectSetPrototypeOf(obj, proto) {
 
 // ES6 section 19.1.2.6
 function ObjectGetOwnPropertyDescriptor(obj, p) {
-  var desc = GetOwnPropertyJS(TO_OBJECT(obj), p);
-  return FromPropertyDescriptor(desc);
+  return %GetOwnProperty(obj, p);
 }
 
 
@@ -1027,44 +1010,15 @@ function ObjectCreate(proto, properties) {
 
 // ES5 section 15.2.3.6.
 function ObjectDefineProperty(obj, p, attributes) {
-  // The new pure-C++ implementation doesn't support Proxies yet, nor O.o.
+  // The new pure-C++ implementation doesn't support O.o.
   // TODO(jkummerow): Implement missing features and remove fallback path.
-  if (%_IsJSProxy(obj) || %IsObserved(obj)) {
+  if (%IsObserved(obj)) {
     if (!IS_SPEC_OBJECT(obj)) {
       throw MakeTypeError(kCalledOnNonObject, "Object.defineProperty");
     }
     var name = TO_NAME(p);
-    if (%_IsJSProxy(obj)) {
-      // Clone the attributes object for protection.
-      // TODO(rossberg): not spec'ed yet, so not sure if this should involve
-      // non-own properties as it does (or non-enumerable ones, as it doesn't?).
-      var attributesClone = { __proto__: null };
-      for (var a in attributes) {
-        attributesClone[a] = attributes[a];
-      }
-      DefineProxyProperty(obj, name, attributesClone, true);
-      // The following would implement the spec as in the current proposal,
-      // but after recent comments on es-discuss, is most likely obsolete.
-      /*
-      var defineObj = FromGenericPropertyDescriptor(desc);
-      var names = ObjectGetOwnPropertyNames(attributes);
-      var standardNames =
-        {value: 0, writable: 0, get: 0, set: 0, enumerable: 0, configurable: 0};
-      for (var i = 0; i < names.length; i++) {
-        var N = names[i];
-        if (!(%HasOwnProperty(standardNames, N))) {
-          var attr = GetOwnPropertyJS(attributes, N);
-          DefineOwnProperty(descObj, N, attr, true);
-        }
-      }
-      // This is really confusing the types, but it is what the proxies spec
-      // currently requires:
-      desc = descObj;
-      */
-    } else {
-      var desc = ToPropertyDescriptor(attributes);
-      DefineOwnProperty(obj, name, desc, true);
-    }
+    var desc = ToPropertyDescriptor(attributes);
+    DefineOwnProperty(obj, name, desc, true);
     return obj;
   }
   return %ObjectDefineProperty(obj, p, attributes);
@@ -1095,9 +1049,9 @@ function GetOwnEnumerablePropertyNames(object) {
 
 // ES5 section 15.2.3.7.
 function ObjectDefineProperties(obj, properties) {
-  // The new pure-C++ implementation doesn't support Proxies yet, nor O.o.
+  // The new pure-C++ implementation doesn't support O.o.
   // TODO(jkummerow): Implement missing features and remove fallback path.
-  if (%_IsJSProxy(obj) || %_IsJSProxy(properties) || %IsObserved(obj)) {
+  if (%IsObserved(obj)) {
     if (!IS_SPEC_OBJECT(obj)) {
       throw MakeTypeError(kCalledOnNonObject, "Object.defineProperties");
     }
@@ -1116,43 +1070,12 @@ function ObjectDefineProperties(obj, properties) {
 }
 
 
-// Harmony proxies.
-function ProxyFix(obj) {
-  var handler = %GetHandler(obj);
-  var props = CallTrap0(handler, "fix", UNDEFINED);
-  if (IS_UNDEFINED(props)) {
-    throw MakeTypeError(kProxyHandlerReturned, handler, "undefined", "fix");
-  }
-
-  if (%IsJSFunctionProxy(obj)) {
-    var callTrap = %GetCallTrap(obj);
-    var constructTrap = %GetConstructTrap(obj);
-    var code = ProxyDelegateCallAndConstruct(callTrap, constructTrap);
-    %Fix(obj);  // becomes a regular function
-    %SetCode(obj, code);
-    // TODO(rossberg): What about length and other properties? Not specified.
-    // We just put in some half-reasonable defaults for now.
-    var prototype = new GlobalObject();
-    ObjectDefineProperty(prototype, "constructor",
-      {value: obj, writable: true, enumerable: false, configurable: true});
-    // TODO(v8:1530): defineProperty does not handle prototype and length.
-    %FunctionSetPrototype(obj, prototype);
-    obj.length = 0;
-  } else {
-    %Fix(obj);
-  }
-  ObjectDefineProperties(obj, props);
-}
-
-
 // ES5 section 15.2.3.8.
 function ObjectSealJS(obj) {
   if (!IS_SPEC_OBJECT(obj)) return obj;
   var isProxy = %_IsJSProxy(obj);
   if (isProxy || %HasSloppyArgumentsElements(obj) || %IsObserved(obj)) {
-    if (isProxy) {
-      ProxyFix(obj);
-    }
+    // TODO(neis): For proxies, must call preventExtensions trap first.
     var names = OwnPropertyKeys(obj);
     for (var i = 0; i < names.length; i++) {
       var name = names[i];
@@ -1180,9 +1103,7 @@ function ObjectFreezeJS(obj) {
   // objects.
   if (isProxy || %HasSloppyArgumentsElements(obj) || %IsObserved(obj) ||
       IS_STRONG(obj)) {
-    if (isProxy) {
-      ProxyFix(obj);
-    }
+    // TODO(neis): For proxies, must call preventExtensions trap first.
     var names = OwnPropertyKeys(obj);
     for (var i = 0; i < names.length; i++) {
       var name = names[i];
@@ -1206,11 +1127,7 @@ function ObjectFreezeJS(obj) {
 // ES5 section 15.2.3.10
 function ObjectPreventExtension(obj) {
   if (!IS_SPEC_OBJECT(obj)) return obj;
-  if (%_IsJSProxy(obj)) {
-    ProxyFix(obj);
-  }
-  %PreventExtensions(obj);
-  return obj;
+  return %PreventExtensions(obj);
 }
 
 
@@ -1218,7 +1135,7 @@ function ObjectPreventExtension(obj) {
 function ObjectIsSealed(obj) {
   if (!IS_SPEC_OBJECT(obj)) return true;
   if (%_IsJSProxy(obj)) {
-    return false;
+    return false;  // TODO(neis): Must call isExtensible trap and ownKeys trap.
   }
   if (%IsExtensible(obj)) {
     return false;
@@ -1239,7 +1156,7 @@ function ObjectIsSealed(obj) {
 function ObjectIsFrozen(obj) {
   if (!IS_SPEC_OBJECT(obj)) return true;
   if (%_IsJSProxy(obj)) {
-    return false;
+    return false;  // TODO(neis): Must call isExtensible trap and ownKeys trap.
   }
   if (%IsExtensible(obj)) {
     return false;
@@ -1258,9 +1175,6 @@ function ObjectIsFrozen(obj) {
 // ES5 section 15.2.3.13
 function ObjectIsExtensible(obj) {
   if (!IS_SPEC_OBJECT(obj)) return false;
-  if (%_IsJSProxy(obj)) {
-    return true;
-  }
   return %IsExtensible(obj);
 }
 
@@ -1428,11 +1342,11 @@ function NumberConstructor(x) {
   // TODO(bmeurer): Move this to toplevel.
   "use strict";
   var value = %_ArgumentsLength() == 0 ? 0 : TO_NUMBER(x);
-  if (%_IsConstructCall()) {
-    %_SetValueOf(this, value);
-  } else {
-    return value;
-  }
+  if (IS_UNDEFINED(new.target)) return value;
+
+  var result = %NewObject(GlobalNumber, new.target);
+  %_SetValueOf(result, value);
+  return result;
 }
 
 
