@@ -110,11 +110,8 @@ bool AreAliased(Register reg1, Register reg2, Register reg3 = no_reg,
 // MacroAssembler implements a collection of frequently used macros.
 class MacroAssembler : public Assembler {
  public:
-  // The isolate parameter can be NULL if the macro assembler should
-  // not use isolate-dependent functionality. In this case, it's the
-  // responsibility of the caller to never invoke such function on the
-  // macro assembler.
-  MacroAssembler(Isolate* isolate, void* buffer, int size);
+  MacroAssembler(Isolate* isolate, void* buffer, int size,
+                 CodeObjectRequired create_code_object);
 
 
   // Returns the size of a call in instructions. Note, the value returned is
@@ -433,8 +430,15 @@ class MacroAssembler : public Assembler {
 
   void LoadContext(Register dst, int context_chain_length);
 
+  // Load the global object from the current context.
+  void LoadGlobalObject(Register dst) {
+    LoadNativeContextSlot(Context::EXTENSION_INDEX, dst);
+  }
+
   // Load the global proxy from the current context.
-  void LoadGlobalProxy(Register dst);
+  void LoadGlobalProxy(Register dst) {
+    LoadNativeContextSlot(Context::GLOBAL_PROXY_INDEX, dst);
+  }
 
   // Conditionally load the cached Array transitioned map of type
   // transitioned_kind from the native context if the map in register
@@ -446,7 +450,7 @@ class MacroAssembler : public Assembler {
                                            Register scratch,
                                            Label* no_map_match);
 
-  void LoadGlobalFunction(int index, Register function);
+  void LoadNativeContextSlot(int index, Register dst);
 
   // Load the initial map from the global function. The registers
   // function and map can be the same, function is then overwritten.
@@ -554,9 +558,10 @@ class MacroAssembler : public Assembler {
   // JavaScript invokes
 
   // Invoke the JavaScript function code by either calling or jumping.
-  void InvokeCode(Register code, Register new_target,
-                  const ParameterCount& expected, const ParameterCount& actual,
-                  InvokeFlag flag, const CallWrapper& call_wrapper);
+  void InvokeFunctionCode(Register function, Register new_target,
+                          const ParameterCount& expected,
+                          const ParameterCount& actual, InvokeFlag flag,
+                          const CallWrapper& call_wrapper);
 
   // Invoke the JavaScript function in the given register. Changes the
   // current context to the context in the function before invoking.
@@ -687,9 +692,6 @@ class MacroAssembler : public Assembler {
                                    Register scratch1, Register scratch2,
                                    Register heap_number_map,
                                    Label* gc_required);
-
-  // Copies a fixed number of fields of heap objects from src to dst.
-  void CopyFields(Register dst, Register src, RegList temps, int field_count);
 
   // Copies a number of bytes from src to dst. All registers are clobbered. On
   // exit src and dst will point to the place just after where the last byte was
@@ -1002,13 +1004,6 @@ class MacroAssembler : public Assembler {
   // Invoke specified builtin JavaScript function.
   void InvokeBuiltin(int native_context_index, InvokeFlag flag,
                      const CallWrapper& call_wrapper = NullCallWrapper());
-
-  // Store the code object for the given builtin in the target register and
-  // setup the function in r1.
-  void GetBuiltinEntry(Register target, int native_context_index);
-
-  // Store the function for the given builtin in the target register.
-  void GetBuiltinFunction(Register target, int native_context_index);
 
   Handle<Object> CodeObject() {
     DCHECK(!code_object_.is_null());
@@ -1500,6 +1495,10 @@ class MacroAssembler : public Assembler {
                       bool* definitely_mismatches, InvokeFlag flag,
                       const CallWrapper& call_wrapper);
 
+  void FloodFunctionIfStepping(Register fun, Register new_target,
+                               const ParameterCount& expected,
+                               const ParameterCount& actual);
+
   void InitializeNewString(Register string, Register length,
                            Heap::RootListIndex map_index, Register scratch1,
                            Register scratch2);
@@ -1543,7 +1542,8 @@ class CodePatcher {
  public:
   enum FlushICache { FLUSH, DONT_FLUSH };
 
-  CodePatcher(byte* address, int instructions, FlushICache flush_cache = FLUSH);
+  CodePatcher(Isolate* isolate, byte* address, int instructions,
+              FlushICache flush_cache = FLUSH);
   ~CodePatcher();
 
   // Macro assembler to emit code.
@@ -1567,13 +1567,13 @@ class CodePatcher {
 // -----------------------------------------------------------------------------
 // Static helper functions.
 
-inline MemOperand ContextOperand(Register context, int index = 0) {
+inline MemOperand ContextMemOperand(Register context, int index = 0) {
   return MemOperand(context, Context::SlotOffset(index));
 }
 
 
-inline MemOperand GlobalObjectOperand() {
-  return ContextOperand(cp, Context::GLOBAL_OBJECT_INDEX);
+inline MemOperand NativeContextMemOperand() {
+  return ContextMemOperand(cp, Context::NATIVE_CONTEXT_INDEX);
 }
 
 

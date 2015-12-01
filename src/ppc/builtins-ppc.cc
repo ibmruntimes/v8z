@@ -75,31 +75,15 @@ void Builtins::Generate_Adaptor(MacroAssembler* masm, CFunctionId id,
 // Load the built-in InternalArray function from the current context.
 static void GenerateLoadInternalArrayFunction(MacroAssembler* masm,
                                               Register result) {
-  // Load the native context.
-
-  __ LoadP(result,
-           MemOperand(cp, Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
-  __ LoadP(result,
-           FieldMemOperand(result, JSGlobalObject::kNativeContextOffset));
-  // Load the InternalArray function from the native context.
-  __ LoadP(result,
-           MemOperand(result, Context::SlotOffset(
-                                  Context::INTERNAL_ARRAY_FUNCTION_INDEX)));
+  // Load the InternalArray function from the current native context.
+  __ LoadNativeContextSlot(Context::INTERNAL_ARRAY_FUNCTION_INDEX, result);
 }
 
 
 // Load the built-in Array function from the current context.
 static void GenerateLoadArrayFunction(MacroAssembler* masm, Register result) {
-  // Load the native context.
-
-  __ LoadP(result,
-           MemOperand(cp, Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
-  __ LoadP(result,
-           FieldMemOperand(result, JSGlobalObject::kNativeContextOffset));
-  // Load the Array function from the native context.
-  __ LoadP(
-      result,
-      MemOperand(result, Context::SlotOffset(Context::ARRAY_FUNCTION_INDEX)));
+  // Load the Array function from the current native context.
+  __ LoadNativeContextSlot(Context::ARRAY_FUNCTION_INDEX, result);
 }
 
 
@@ -572,7 +556,8 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       __ Call(code, RelocInfo::CODE_TARGET);
     } else {
       ParameterCount actual(r3);
-      __ InvokeFunction(r4, r6, actual, CALL_FUNCTION, NullCallWrapper());
+      __ InvokeFunction(r4, r6, actual, CALL_FUNCTION,
+                        CheckDebugStepCallWrapper());
     }
 
     // Store offset of return address for deoptimizer.
@@ -601,8 +586,8 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       __ JumpIfSmi(r3, &use_receiver);
 
       // If the type of the result (stored in its map) is less than
-      // FIRST_SPEC_OBJECT_TYPE, it is not an object in the ECMA sense.
-      __ CompareObjectType(r3, r4, r6, FIRST_SPEC_OBJECT_TYPE);
+      // FIRST_JS_RECEIVER_TYPE, it is not an object in the ECMA sense.
+      __ CompareObjectType(r3, r4, r6, FIRST_JS_RECEIVER_TYPE);
       __ bge(&exit);
 
       // Throw away the result of the constructor invocation and use the
@@ -784,6 +769,7 @@ void Builtins::Generate_JSConstructEntryTrampoline(MacroAssembler* masm) {
 //
 // The live registers are:
 //   o r4: the JS function object being called.
+//   o r6: the new target
 //   o cp: our context
 //   o pp: the caller's constant pool pointer (if enabled)
 //   o fp: the caller's frame pointer
@@ -801,6 +787,7 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   FrameScope frame_scope(masm, StackFrame::MANUAL);
   __ PushFixedFrame(r4);
   __ addi(fp, sp, Operand(StandardFrameConstants::kFixedFrameSizeFromFp));
+  __ push(r6);
 
   // Get the bytecode array from the function object and load the pointer to the
   // first entry into kInterpreterBytecodeRegister.
@@ -867,9 +854,9 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   // Load accumulator, register file, bytecode offset, dispatch table into
   // registers.
   __ LoadRoot(kInterpreterAccumulatorRegister, Heap::kUndefinedValueRootIndex);
-  __ subi(
-      kInterpreterRegisterFileRegister, fp,
-      Operand(kPointerSize + StandardFrameConstants::kFixedFrameSizeFromFp));
+  __ subi(kInterpreterRegisterFileRegister, fp,
+          Operand(2 * kPointerSize +
+                  StandardFrameConstants::kFixedFrameSizeFromFp));
   __ mov(kInterpreterBytecodeOffsetRegister,
          Operand(BytecodeArray::kHeaderSize - kHeapObjectTag));
   __ LoadRoot(kInterpreterDispatchTableRegister,
@@ -962,7 +949,7 @@ void Builtins::Generate_InterpreterPushArgsAndConstruct(MacroAssembler* masm) {
   __ bind(&skip);
 
   // Call the constructor with r3, r4, and r6 unmodified.
-  __ Jump(masm->isolate()->builtins()->Construct(), RelocInfo::CONSTRUCT_CALL);
+  __ Jump(masm->isolate()->builtins()->Construct(), RelocInfo::CODE_TARGET);
 }
 
 
@@ -1537,8 +1524,7 @@ static void Generate_ConstructHelper(MacroAssembler* masm) {
     __ LoadP(r6, MemOperand(fp, kNewTargetOffset));
 
     // Call the function.
-    __ Call(masm->isolate()->builtins()->Construct(),
-            RelocInfo::CONSTRUCT_CALL);
+    __ Call(masm->isolate()->builtins()->Construct(), RelocInfo::CODE_TARGET);
 
     // Leave internal frame.
   }
@@ -1706,10 +1692,10 @@ void Builtins::Generate_CallFunction(MacroAssembler* masm,
 #if !V8_TARGET_ARCH_PPC64
   __ SmiUntag(r5);
 #endif
-  __ LoadP(r7, FieldMemOperand(r4, JSFunction::kCodeEntryOffset));
   ParameterCount actual(r3);
   ParameterCount expected(r5);
-  __ InvokeCode(r7, no_reg, expected, actual, JUMP_FUNCTION, NullCallWrapper());
+  __ InvokeFunctionCode(r4, no_reg, expected, actual, JUMP_FUNCTION,
+                        CheckDebugStepCallWrapper());
 
   // The function is a "classConstructor", need to raise an exception.
   __ bind(&class_constructor);
@@ -1754,7 +1740,7 @@ void Builtins::Generate_Call(MacroAssembler* masm, ConvertReceiverMode mode) {
   __ ShiftLeftImm(r8, r3, Operand(kPointerSizeLog2));
   __ StorePX(r4, MemOperand(sp, r8));
   // Let the "call_as_function_delegate" take care of the rest.
-  __ LoadGlobalFunction(Context::CALL_AS_FUNCTION_DELEGATE_INDEX, r4);
+  __ LoadNativeContextSlot(Context::CALL_AS_FUNCTION_DELEGATE_INDEX, r4);
   __ Jump(masm->isolate()->builtins()->CallFunction(
               ConvertReceiverMode::kNotNullOrUndefined),
           RelocInfo::CODE_TARGET);
@@ -1774,10 +1760,9 @@ void Builtins::Generate_ConstructFunction(MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- r3 : the number of arguments (not including the receiver)
   //  -- r4 : the constructor to call (checked to be a JSFunction)
-  //  -- r6 : the new target (checked to be a JSFunction)
+  //  -- r6 : the new target (checked to be a constructor)
   // -----------------------------------
   __ AssertFunction(r4);
-  __ AssertFunction(r6);
 
   // Calling convention for function specific ConstructStubs require
   // r5 to contain either an AllocationSite or undefined.
@@ -1839,7 +1824,7 @@ void Builtins::Generate_Construct(MacroAssembler* masm) {
     __ ShiftLeftImm(r8, r3, Operand(kPointerSizeLog2));
     __ StorePX(r4, MemOperand(sp, r8));
     // Let the "call_as_constructor_delegate" take care of the rest.
-    __ LoadGlobalFunction(Context::CALL_AS_CONSTRUCTOR_DELEGATE_INDEX, r4);
+    __ LoadNativeContextSlot(Context::CALL_AS_CONSTRUCTOR_DELEGATE_INDEX, r4);
     __ Jump(masm->isolate()->builtins()->CallFunction(),
             RelocInfo::CODE_TARGET);
   }

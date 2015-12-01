@@ -2372,11 +2372,13 @@ void Simulator::DecodeTypeRegisterDRsType() {
       set_fpu_register_double(fd_reg(), -fs);
       break;
     case SQRT_D:
-      set_fpu_register_double(fd_reg(), fast_sqrt(fs));
+      lazily_initialize_fast_sqrt(isolate_);
+      set_fpu_register_double(fd_reg(), fast_sqrt(fs, isolate_));
       break;
     case RSQRT_D: {
       DCHECK(IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6));
-      double result = 1.0 / fast_sqrt(fs);
+      lazily_initialize_fast_sqrt(isolate_);
+      double result = 1.0 / fast_sqrt(fs, isolate_);
       set_fpu_register_double(fd_reg(), result);
       break;
     }
@@ -2775,11 +2777,13 @@ void Simulator::DecodeTypeRegisterSRsType() {
       set_fpu_register_float(fd_reg(), -fs);
       break;
     case SQRT_S:
-      set_fpu_register_float(fd_reg(), fast_sqrt(fs));
+      lazily_initialize_fast_sqrt(isolate_);
+      set_fpu_register_float(fd_reg(), fast_sqrt(fs, isolate_));
       break;
     case RSQRT_S: {
       DCHECK(IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6));
-      float result = 1.0 / fast_sqrt(fs);
+      lazily_initialize_fast_sqrt(isolate_);
+      float result = 1.0 / fast_sqrt(fs, isolate_);
       set_fpu_register_float(fd_reg(), result);
       break;
     }
@@ -4040,7 +4044,14 @@ void Simulator::DecodeTypeImmediate(Instruction* instr) {
       SetResult(rt_reg, rs ^ oe_imm16);
       break;
     case LUI:
-      SetResult(rt_reg, oe_imm16 << 16);
+      if (rs_reg != 0) {
+        // AUI
+        DCHECK(IsMipsArchVariant(kMips32r6));
+        SetResult(rt_reg, rs + (se_imm16 << 16));
+      } else {
+        // LUI
+        SetResult(rt_reg, oe_imm16 << 16);
+      }
       break;
     // ------------- Memory instructions.
     case LB:

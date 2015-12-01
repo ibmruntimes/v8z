@@ -405,6 +405,20 @@ TEST(Type0) {
   COMPARE(lui(v0, 0xffff),
           "3c02ffff       lui     v0, 0xffff");
 
+  if (kArchVariant == (kMips64r6)) {
+    COMPARE(aui(a0, a1, 0x1), "3ca40001       aui     a0, a1, 0x1");
+    COMPARE(aui(v0, v1, 0xffff), "3c62ffff       aui     v0, v1, 0xffff");
+
+    COMPARE(daui(a0, a1, 0x1), "74a40001       daui    a0, a1, 0x1");
+    COMPARE(daui(v0, v1, 0xffff), "7462ffff       daui    v0, v1, 0xffff");
+
+    COMPARE(dahi(a0, 0x1), "04860001       dahi    a0, 0x1");
+    COMPARE(dahi(v0, 0xffff), "0446ffff       dahi    v0, 0xffff");
+
+    COMPARE(dati(a0, 0x1), "049e0001       dati    a0, 0x1");
+    COMPARE(dati(v0, 0xffff), "045effff       dati    v0, 0xffff");
+  }
+
   COMPARE(sll(a0, a1, 0),
           "00052000       sll     a0, a1, 0");
   COMPARE(sll(s0, s1, 8),
@@ -1240,5 +1254,15 @@ TEST(CVT_DISSASM) {
   COMPARE(cvt_s_d(f22, f24), "4620c5a0       cvt.s.d f22, f24");
   COMPARE(cvt_s_w(f22, f24), "4680c5a0       cvt.s.w f22, f24");
 
+  VERIFY_RUN();
+}
+
+
+TEST(ctc1_cfc1_disasm) {
+  SET_UP();
+  COMPARE(abs_d(f10, f31), "4620fa85       abs.d   f10, f31");
+  COMPARE(ceil_w_s(f8, f31), "4600fa0e       ceil.w.s f8, f31");
+  COMPARE(ctc1(a0, FCSR), "44c4f800       ctc1    a0, FCSR");
+  COMPARE(cfc1(a0, FCSR), "4444f800       cfc1    a0, FCSR");
   VERIFY_RUN();
 }

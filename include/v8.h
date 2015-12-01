@@ -2663,10 +2663,10 @@ class V8_EXPORT Object : public Value {
   // will only be returned if the interceptor doesn't return a value.
   //
   // Note also that this only works for named properties.
-  V8_DEPRECATE_SOON("Use CreateDataProperty",
+  V8_DEPRECATE_SOON("Use CreateDataProperty / DefineOwnProperty",
                     bool ForceSet(Local<Value> key, Local<Value> value,
                                   PropertyAttribute attribs = None));
-  V8_DEPRECATE_SOON("Use CreateDataProperty",
+  V8_DEPRECATE_SOON("Use CreateDataProperty / DefineOwnProperty",
                     Maybe<bool> ForceSet(Local<Context> context,
                                          Local<Value> key, Local<Value> value,
                                          PropertyAttribute attribs = None));
@@ -2919,12 +2919,12 @@ class V8_EXPORT Object : public Value {
    */
   int GetIdentityHash();
 
-  V8_DEPRECATE_SOON("Use v8::Object::SetPrivate instead.",
-                    bool SetHiddenValue(Local<String> key, Local<Value> value));
-  V8_DEPRECATE_SOON("Use v8::Object::GetHidden instead.",
-                    Local<Value> GetHiddenValue(Local<String> key));
-  V8_DEPRECATE_SOON("Use v8::Object::DeletePrivate instead.",
-                    bool DeleteHiddenValue(Local<String> key));
+  V8_DEPRECATED("Use v8::Object::SetPrivate instead.",
+                bool SetHiddenValue(Local<String> key, Local<Value> value));
+  V8_DEPRECATED("Use v8::Object::GetPrivate instead.",
+                Local<Value> GetHiddenValue(Local<String> key));
+  V8_DEPRECATED("Use v8::Object::DeletePrivate instead.",
+                bool DeleteHiddenValue(Local<String> key));
 
   /**
    * Clone this object with a fast but shallow copy.  Values will point
@@ -3932,7 +3932,8 @@ class V8_EXPORT NumberObject : public Object {
  */
 class V8_EXPORT BooleanObject : public Object {
  public:
-  static Local<Value> New(bool value);
+  static Local<Value> New(Isolate* isolate, bool value);
+  V8_DEPRECATE_SOON("Pass an isolate", static Local<Value> New(bool value));
 
   bool ValueOf() const;
 
@@ -4583,7 +4584,7 @@ class V8_EXPORT ObjectTemplate : public Template {
   static Local<ObjectTemplate> New(
       Isolate* isolate,
       Local<FunctionTemplate> constructor = Local<FunctionTemplate>());
-  static V8_DEPRECATE_SOON("Use isolate version", Local<ObjectTemplate> New());
+  static V8_DEPRECATED("Use isolate version", Local<ObjectTemplate> New());
 
   /** Creates a new instance of this template.*/
   V8_DEPRECATE_SOON("Use maybe version", Local<Object> NewInstance());
@@ -4771,21 +4772,6 @@ class V8_EXPORT AccessorSignature : public Data {
 };
 
 
-/**
- * A utility for determining the type of objects based on the template
- * they were constructed from.
- */
-class V8_EXPORT TypeSwitch : public Data {
- public:
-  static Local<TypeSwitch> New(Local<FunctionTemplate> type);
-  static Local<TypeSwitch> New(int argc, Local<FunctionTemplate> types[]);
-  int match(Local<Value> value);
-
- private:
-  TypeSwitch();
-};
-
-
 // --- Extensions ---
 
 class V8_EXPORT ExternalOneByteStringResourceImpl
@@ -4931,7 +4917,10 @@ class V8_EXPORT Exception {
    * Will try to reconstruct the original stack trace from the exception value,
    * or capture the current stack trace if not available.
    */
-  static Local<Message> CreateMessage(Local<Value> exception);
+  static Local<Message> CreateMessage(Isolate* isolate, Local<Value> exception);
+  V8_DEPRECATE_SOON(
+      "Use version with an Isolate*",
+      static Local<Message> CreateMessage(Local<Value> exception));
 
   /**
    * Returns the original stack trace that was captured at the creation time
@@ -4996,8 +4985,10 @@ class PromiseRejectMessage {
   V8_INLINE PromiseRejectEvent GetEvent() const { return event_; }
   V8_INLINE Local<Value> GetValue() const { return value_; }
 
-  // DEPRECATED. Use v8::Exception::CreateMessage(GetValue())->GetStackTrace()
-  V8_INLINE Local<StackTrace> GetStackTrace() const { return stack_trace_; }
+  V8_DEPRECATED("Use v8::Exception::CreateMessage(GetValue())->GetStackTrace()",
+                V8_INLINE Local<StackTrace> GetStackTrace() const) {
+    return stack_trace_;
+  }
 
  private:
   Local<Promise> promise_;
@@ -6174,7 +6165,7 @@ class V8_EXPORT V8 {
    * register the same callback function two times with different
    * GCType filters.
    */
-  static V8_DEPRECATE_SOON(
+  static V8_DEPRECATED(
       "Use isolate version",
       void AddGCPrologueCallback(GCCallback callback,
                                  GCType gc_type_filter = kGCTypeAll));
@@ -6183,7 +6174,7 @@ class V8_EXPORT V8 {
    * This function removes callback which was installed by
    * AddGCPrologueCallback function.
    */
-  V8_INLINE static V8_DEPRECATE_SOON(
+  V8_INLINE static V8_DEPRECATED(
       "Use isolate version",
       void RemoveGCPrologueCallback(GCCallback callback));
 
@@ -6197,7 +6188,7 @@ class V8_EXPORT V8 {
    * register the same callback function two times with different
    * GCType filters.
    */
-  static V8_DEPRECATE_SOON(
+  static V8_DEPRECATED(
       "Use isolate version",
       void AddGCEpilogueCallback(GCCallback callback,
                                  GCType gc_type_filter = kGCTypeAll));
@@ -6206,7 +6197,7 @@ class V8_EXPORT V8 {
    * This function removes callback which was installed by
    * AddGCEpilogueCallback function.
    */
-  V8_INLINE static V8_DEPRECATE_SOON(
+  V8_INLINE static V8_DEPRECATED(
       "Use isolate version",
       void RemoveGCEpilogueCallback(GCCallback callback));
 
@@ -6308,7 +6299,7 @@ class V8_EXPORT V8 {
    * guarantee that visited objects are still alive.
    */
   V8_INLINE static V8_DEPRECATE_SOON(
-      "Use isoalte version",
+      "Use isolate version",
       void VisitExternalResources(ExternalResourceVisitor* visitor));
 
   /**

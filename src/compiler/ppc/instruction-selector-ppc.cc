@@ -927,8 +927,18 @@ void InstructionSelector::VisitChangeFloat64ToUint32(Node* node) {
 
 
 #if V8_TARGET_ARCH_PPC64
+void InstructionSelector::VisitTruncateFloat32ToInt64(Node* node) {
+  VisitRR(this, kPPC_DoubleToInt64, node);
+}
+
+
 void InstructionSelector::VisitTruncateFloat64ToInt64(Node* node) {
   VisitRR(this, kPPC_DoubleToInt64, node);
+}
+
+
+void InstructionSelector::VisitTruncateFloat32ToUint64(Node* node) {
+  VisitRR(this, kPPC_DoubleToUint64, node);
 }
 
 
@@ -1128,13 +1138,28 @@ void InstructionSelector::VisitFloat64Sqrt(Node* node) {
 }
 
 
+void InstructionSelector::VisitFloat32RoundDown(Node* node) {
+  VisitRR(this, kPPC_FloorDouble, node);
+}
+
+
 void InstructionSelector::VisitFloat64RoundDown(Node* node) {
   VisitRR(this, kPPC_FloorDouble, node);
 }
 
 
+void InstructionSelector::VisitFloat32RoundUp(Node* node) {
+  VisitRR(this, kPPC_CeilDouble, node);
+}
+
+
 void InstructionSelector::VisitFloat64RoundUp(Node* node) {
   VisitRR(this, kPPC_CeilDouble, node);
+}
+
+
+void InstructionSelector::VisitFloat32RoundTruncate(Node* node) {
+  VisitRR(this, kPPC_TruncateDouble, node);
 }
 
 
@@ -1145,6 +1170,11 @@ void InstructionSelector::VisitFloat64RoundTruncate(Node* node) {
 
 void InstructionSelector::VisitFloat64RoundTiesAway(Node* node) {
   VisitRR(this, kPPC_RoundDouble, node);
+}
+
+
+void InstructionSelector::VisitFloat32RoundTiesEven(Node* node) {
+  UNREACHABLE();
 }
 
 
@@ -1657,8 +1687,11 @@ void InstructionSelector::VisitFloat64InsertHighWord32(Node* node) {
 // static
 MachineOperatorBuilder::Flags
 InstructionSelector::SupportedMachineOperatorFlags() {
-  return MachineOperatorBuilder::kFloat64RoundDown |
+  return MachineOperatorBuilder::kFloat32RoundDown |
+         MachineOperatorBuilder::kFloat64RoundDown |
+         MachineOperatorBuilder::kFloat32RoundUp |
          MachineOperatorBuilder::kFloat64RoundUp |
+         MachineOperatorBuilder::kFloat32RoundTruncate |
          MachineOperatorBuilder::kFloat64RoundTruncate |
          MachineOperatorBuilder::kFloat64RoundTiesAway |
          MachineOperatorBuilder::kWord32Popcnt |

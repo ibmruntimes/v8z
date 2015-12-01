@@ -260,7 +260,7 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm, Label* slow,
   // Smis.  If it's not a heap number, then return equal.
   if (cond == lt || cond == gt) {
     // Call runtime on identical JSObjects.
-    __ CompareObjectType(r3, r7, r7, FIRST_SPEC_OBJECT_TYPE);
+    __ CompareObjectType(r3, r7, r7, FIRST_JS_RECEIVER_TYPE);
     __ bge(slow);
     // Call runtime on identical symbols since we need to throw a TypeError.
     __ cmpi(r7, Operand(SYMBOL_TYPE));
@@ -281,7 +281,7 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm, Label* slow,
     __ beq(&heap_number);
     // Comparing JS objects with <=, >= is complicated.
     if (cond != eq) {
-      __ cmpi(r7, Operand(FIRST_SPEC_OBJECT_TYPE));
+      __ cmpi(r7, Operand(FIRST_JS_RECEIVER_TYPE));
       __ bge(slow);
       // Call runtime on identical symbols since we need to throw a TypeError.
       __ cmpi(r7, Operand(SYMBOL_TYPE));
@@ -456,11 +456,11 @@ static void EmitStrictTwoHeapObjectCompare(MacroAssembler* masm, Register lhs,
   // If either operand is a JS object or an oddball value, then they are
   // not equal since their pointers are different.
   // There is no test for undetectability in strict equality.
-  STATIC_ASSERT(LAST_TYPE == LAST_SPEC_OBJECT_TYPE);
+  STATIC_ASSERT(LAST_TYPE == LAST_JS_RECEIVER_TYPE);
   Label first_non_object;
   // Get the type of the first operand into r5 and compare it with
-  // FIRST_SPEC_OBJECT_TYPE.
-  __ CompareObjectType(rhs, r5, r5, FIRST_SPEC_OBJECT_TYPE);
+  // FIRST_JS_RECEIVER_TYPE.
+  __ CompareObjectType(rhs, r5, r5, FIRST_JS_RECEIVER_TYPE);
   __ blt(&first_non_object);
 
   // Return non-zero (r3 is not zero)
@@ -473,7 +473,7 @@ static void EmitStrictTwoHeapObjectCompare(MacroAssembler* masm, Register lhs,
   __ cmpi(r5, Operand(ODDBALL_TYPE));
   __ beq(&return_not_equal);
 
-  __ CompareObjectType(lhs, r6, r6, FIRST_SPEC_OBJECT_TYPE);
+  __ CompareObjectType(lhs, r6, r6, FIRST_JS_RECEIVER_TYPE);
   __ bge(&return_not_equal);
 
   // Check for oddballs: true, false, null, undefined.
@@ -536,9 +536,9 @@ static void EmitCheckForInternalizedStringsOrObjects(MacroAssembler* masm,
   __ Ret();
 
   __ bind(&object_test);
-  __ cmpi(r5, Operand(FIRST_SPEC_OBJECT_TYPE));
+  __ cmpi(r5, Operand(FIRST_JS_RECEIVER_TYPE));
   __ blt(not_both_strings);
-  __ CompareObjectType(lhs, r5, r6, FIRST_SPEC_OBJECT_TYPE);
+  __ CompareObjectType(lhs, r5, r6, FIRST_JS_RECEIVER_TYPE);
   __ blt(not_both_strings);
   // If both objects are undetectable, they are equal. Otherwise, they
   // are not equal, since they are different objects and an object is not
@@ -1703,9 +1703,7 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
   const int kAliasedOffset =
       Context::SlotOffset(Context::FAST_ALIASED_ARGUMENTS_MAP_INDEX);
 
-  __ LoadP(r7,
-           MemOperand(cp, Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
-  __ LoadP(r7, FieldMemOperand(r7, JSGlobalObject::kNativeContextOffset));
+  __ LoadP(r7, NativeContextMemOperand());
   __ cmpi(r9, Operand::Zero());
   if (CpuFeatures::IsSupported(ISELECT)) {
     __ LoadP(r11, MemOperand(r7, kNormalOffset));
@@ -1920,12 +1918,7 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
               static_cast<AllocationFlags>(TAG_OBJECT | SIZE_IN_WORDS));
 
   // Get the arguments boilerplate from the current native context.
-  __ LoadP(r7,
-           MemOperand(cp, Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
-  __ LoadP(r7, FieldMemOperand(r7, JSGlobalObject::kNativeContextOffset));
-  __ LoadP(
-      r7,
-      MemOperand(r7, Context::SlotOffset(Context::STRICT_ARGUMENTS_MAP_INDEX)));
+  __ LoadNativeContextSlot(Context::STRICT_ARGUMENTS_MAP_INDEX, r7);
 
   __ StoreP(r7, FieldMemOperand(r3, JSObject::kMapOffset), r0);
   __ LoadRoot(r8, Heap::kEmptyFixedArrayRootIndex);
@@ -2475,7 +2468,7 @@ static void GenerateRecordCallTarget(MacroAssembler* masm) {
   __ bne(&miss);
 
   // Make sure the function is the Array() function
-  __ LoadGlobalFunction(Context::ARRAY_FUNCTION_INDEX, r8);
+  __ LoadNativeContextSlot(Context::ARRAY_FUNCTION_INDEX, r8);
   __ cmp(r4, r8);
   __ bne(&megamorphic);
   __ b(&done);
@@ -2499,7 +2492,7 @@ static void GenerateRecordCallTarget(MacroAssembler* masm) {
   __ bind(&initialize);
 
   // Make sure the function is the Array() function.
-  __ LoadGlobalFunction(Context::ARRAY_FUNCTION_INDEX, r8);
+  __ LoadNativeContextSlot(Context::ARRAY_FUNCTION_INDEX, r8);
   __ cmp(r4, r8);
   __ bne(&not_array_function);
 
@@ -2572,7 +2565,7 @@ void CallICStub::HandleArrayCase(MacroAssembler* masm, Label* miss) {
   // r6 - slot id
   // r5 - vector
   // r7 - allocation site (loaded from vector[slot])
-  __ LoadGlobalFunction(Context::ARRAY_FUNCTION_INDEX, r8);
+  __ LoadNativeContextSlot(Context::ARRAY_FUNCTION_INDEX, r8);
   __ cmp(r4, r8);
   __ bne(miss);
 
@@ -2699,15 +2692,14 @@ void CallICStub::Generate(MacroAssembler* masm) {
 
   // Make sure the function is not the Array() function, which requires special
   // behavior on MISS.
-  __ LoadGlobalFunction(Context::ARRAY_FUNCTION_INDEX, r7);
+  __ LoadNativeContextSlot(Context::ARRAY_FUNCTION_INDEX, r7);
   __ cmp(r4, r7);
   __ beq(&miss);
 
-  // Make sure the function belongs to the same native context (which implies
-  // the same global object).
+  // Make sure the function belongs to the same native context.
   __ LoadP(r7, FieldMemOperand(r4, JSFunction::kContextOffset));
-  __ LoadP(r7, ContextOperand(r7, Context::GLOBAL_OBJECT_INDEX));
-  __ LoadP(ip, GlobalObjectOperand());
+  __ LoadP(r7, ContextMemOperand(r7, Context::NATIVE_CONTEXT_INDEX));
+  __ LoadP(ip, NativeContextMemOperand());
   __ cmp(r7, ip);
   __ bne(&miss);
 
@@ -5142,14 +5134,14 @@ void LoadGlobalViaContextStub::Generate(MacroAssembler* masm) {
 
   // Go up the context chain to the script context.
   for (int i = 0; i < depth(); ++i) {
-    __ LoadP(result, ContextOperand(context, Context::PREVIOUS_INDEX));
+    __ LoadP(result, ContextMemOperand(context, Context::PREVIOUS_INDEX));
     context = result;
   }
 
   // Load the PropertyCell value at the specified slot.
   __ ShiftLeftImm(r0, slot, Operand(kPointerSizeLog2));
   __ add(result, context, r0);
-  __ LoadP(result, ContextOperand(result));
+  __ LoadP(result, ContextMemOperand(result));
   __ LoadP(result, FieldMemOperand(result, PropertyCell::kValueOffset));
 
   // If the result is not the_hole, return. Otherwise, handle in the runtime.
@@ -5185,14 +5177,14 @@ void StoreGlobalViaContextStub::Generate(MacroAssembler* masm) {
 
   // Go up the context chain to the script context.
   for (int i = 0; i < depth(); i++) {
-    __ LoadP(context_temp, ContextOperand(context, Context::PREVIOUS_INDEX));
+    __ LoadP(context_temp, ContextMemOperand(context, Context::PREVIOUS_INDEX));
     context = context_temp;
   }
 
   // Load the PropertyCell at the specified slot.
   __ ShiftLeftImm(r0, slot, Operand(kPointerSizeLog2));
   __ add(cell, context, r0);
-  __ LoadP(cell, ContextOperand(cell));
+  __ LoadP(cell, ContextMemOperand(cell));
 
   // Load PropertyDetails for the cell (actually only the cell_type and kind).
   __ LoadP(cell_details, FieldMemOperand(cell, PropertyCell::kDetailsOffset));

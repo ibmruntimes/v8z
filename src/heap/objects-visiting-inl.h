@@ -72,10 +72,6 @@ void StaticNewSpaceVisitor<StaticVisitor>::Initialize() {
 
   table_.Register(kVisitJSArrayBuffer, &VisitJSArrayBuffer);
 
-  table_.Register(kVisitJSTypedArray, &VisitJSTypedArray);
-
-  table_.Register(kVisitJSDataView, &VisitJSDataView);
-
   table_.Register(kVisitFreeSpace, &VisitFreeSpace);
 
   table_.Register(kVisitJSWeakCollection, &JSObjectVisitor::Visit);
@@ -103,28 +99,6 @@ int StaticNewSpaceVisitor<StaticVisitor>::VisitJSArrayBuffer(
     heap->array_buffer_tracker()->MarkLive(JSArrayBuffer::cast(object));
   }
   return JSArrayBufferBodyVisitor::Visit(map, object);
-}
-
-
-template <typename StaticVisitor>
-int StaticNewSpaceVisitor<StaticVisitor>::VisitJSTypedArray(
-    Map* map, HeapObject* object) {
-  VisitPointers(
-      map->GetHeap(), object,
-      HeapObject::RawField(object, JSTypedArray::BodyDescriptor::kStartOffset),
-      HeapObject::RawField(object, JSTypedArray::kSizeWithInternalFields));
-  return JSTypedArray::kSizeWithInternalFields;
-}
-
-
-template <typename StaticVisitor>
-int StaticNewSpaceVisitor<StaticVisitor>::VisitJSDataView(Map* map,
-                                                          HeapObject* object) {
-  VisitPointers(
-      map->GetHeap(), object,
-      HeapObject::RawField(object, JSDataView::BodyDescriptor::kStartOffset),
-      HeapObject::RawField(object, JSDataView::kSizeWithInternalFields));
-  return JSDataView::kSizeWithInternalFields;
 }
 
 
@@ -194,10 +168,6 @@ void StaticMarkingVisitor<StaticVisitor>::Initialize() {
   table_.Register(kVisitJSFunction, &VisitJSFunction);
 
   table_.Register(kVisitJSArrayBuffer, &VisitJSArrayBuffer);
-
-  table_.Register(kVisitJSTypedArray, &VisitJSTypedArray);
-
-  table_.Register(kVisitJSDataView, &VisitJSDataView);
 
   // Registration for kVisitJSRegExp is done by StaticVisitor.
 
@@ -386,6 +356,9 @@ void StaticMarkingVisitor<StaticVisitor>::VisitAllocationSite(
 template <typename StaticVisitor>
 void StaticMarkingVisitor<StaticVisitor>::VisitWeakCollection(
     Map* map, HeapObject* object) {
+  typedef FlexibleBodyVisitor<StaticVisitor,
+                              JSWeakCollection::BodyDescriptorWeak,
+                              void> JSWeakCollectionBodyVisitor;
   Heap* heap = map->GetHeap();
   JSWeakCollection* weak_collection =
       reinterpret_cast<JSWeakCollection*>(object);
@@ -398,14 +371,7 @@ void StaticMarkingVisitor<StaticVisitor>::VisitWeakCollection(
 
   // Skip visiting the backing hash table containing the mappings and the
   // pointer to the other enqueued weak collections, both are post-processed.
-  StaticVisitor::VisitPointers(
-      heap, object,
-      HeapObject::RawField(object, JSWeakCollection::kPropertiesOffset),
-      HeapObject::RawField(object, JSWeakCollection::kTableOffset));
-  STATIC_ASSERT(JSWeakCollection::kTableOffset + kPointerSize ==
-                JSWeakCollection::kNextOffset);
-  STATIC_ASSERT(JSWeakCollection::kNextOffset + kPointerSize ==
-                JSWeakCollection::kSize);
+  JSWeakCollectionBodyVisitor::Visit(map, object);
 
   // Partially initialized weak collection is enqueued, but table is ignored.
   if (!weak_collection->table()->IsHashTable()) return;
@@ -498,14 +464,6 @@ void StaticMarkingVisitor<StaticVisitor>::VisitJSFunction(Map* map,
       // non-flushable, because it is required for bailing out from
       // optimized code.
       collector->code_flusher()->AddCandidate(function);
-      // Visit shared function info immediately to avoid double checking
-      // of its flushability later. This is just an optimization because
-      // the shared function info would eventually be visited.
-      SharedFunctionInfo* shared = function->shared();
-      if (StaticVisitor::MarkObjectWithoutPush(heap, shared)) {
-        StaticVisitor::MarkObject(heap, shared->map());
-        VisitSharedFunctionInfoWeakCode(heap, shared);
-      }
       // Treat the reference to the code object weakly.
       VisitJSFunctionWeakCode(map, object);
       return;
@@ -521,9 +479,7 @@ void StaticMarkingVisitor<StaticVisitor>::VisitJSFunction(Map* map,
 template <typename StaticVisitor>
 void StaticMarkingVisitor<StaticVisitor>::VisitJSRegExp(Map* map,
                                                         HeapObject* object) {
-  typedef FlexibleBodyVisitor<StaticVisitor, JSRegExp::BodyDescriptor, void>
-      JSRegExpBodyVisitor;
-  JSRegExpBodyVisitor::Visit(map, object);
+  JSObjectVisitor::Visit(map, object);
 }
 
 
@@ -541,24 +497,6 @@ void StaticMarkingVisitor<StaticVisitor>::VisitJSArrayBuffer(
       !heap->InNewSpace(object)) {
     heap->array_buffer_tracker()->MarkLive(JSArrayBuffer::cast(object));
   }
-}
-
-
-template <typename StaticVisitor>
-void StaticMarkingVisitor<StaticVisitor>::VisitJSTypedArray(
-    Map* map, HeapObject* object) {
-  typedef FlexibleBodyVisitor<StaticVisitor, JSTypedArray::BodyDescriptor, void>
-      JSTypedArrayBodyVisitor;
-  JSTypedArrayBodyVisitor::Visit(map, object);
-}
-
-
-template <typename StaticVisitor>
-void StaticMarkingVisitor<StaticVisitor>::VisitJSDataView(Map* map,
-                                                          HeapObject* object) {
-  typedef FlexibleBodyVisitor<StaticVisitor, JSDataView::BodyDescriptor, void>
-      JSDataViewBodyVisitor;
-  JSDataViewBodyVisitor::Visit(map, object);
 }
 
 
@@ -665,11 +603,6 @@ void StaticMarkingVisitor<StaticVisitor>::MarkInlinedFunctionsCode(Heap* heap,
 }
 
 
-inline static bool HasValidNonBuiltinContext(JSFunction* function) {
-  return function->context()->IsContext() && !function->shared()->IsBuiltin();
-}
-
-
 inline static bool HasSourceCode(Heap* heap, SharedFunctionInfo* info) {
   Object* undefined = heap->undefined_value();
   return (info->script() != undefined) &&
@@ -686,11 +619,6 @@ bool StaticMarkingVisitor<StaticVisitor>::IsFlushable(Heap* heap,
   // by optimized version of function.
   MarkBit code_mark = Marking::MarkBitFrom(function->code());
   if (Marking::IsBlackOrGrey(code_mark)) {
-    return false;
-  }
-
-  // The function must have a valid context and not be a builtin.
-  if (!HasValidNonBuiltinContext(function)) {
     return false;
   }
 
@@ -748,6 +676,11 @@ bool StaticMarkingVisitor<StaticVisitor>::IsFlushable(
 
   // If this is a full script wrapped in a function we do not flush the code.
   if (shared_info->is_toplevel()) {
+    return false;
+  }
+
+  // The function must not be a builtin.
+  if (shared_info->IsBuiltin()) {
     return false;
   }
 

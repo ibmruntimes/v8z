@@ -412,6 +412,9 @@
       ],
     },
     'conditions':[
+      ['clang==0', {
+        'cflags+': ['-Wno-sign-compare',],
+      }],
       ['(clang==1 or host_clang==1) and OS!="win"', {
         # This is here so that all files get recompiled after a clang roll and
         # when turning clang on or off.
@@ -581,9 +584,11 @@
                 'cflags': [
                   '-fsanitize=memory',
                   '-fsanitize-memory-track-origins=<(msan_track_origins)',
+                  '-fPIC',
                 ],
                 'ldflags': [
                   '-fsanitize=memory',
+                  '-pie',
                 ],
                 'defines': [
                   'MEMORY_SANITIZER',

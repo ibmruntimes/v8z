@@ -42,6 +42,7 @@ class TypeCache final {
   Type* const kSingletonZero = CreateRange(0.0, 0.0);
   Type* const kSingletonOne = CreateRange(1.0, 1.0);
   Type* const kZeroOrOne = CreateRange(0.0, 1.0);
+  Type* const kZeroToThirtyOne = CreateRange(0.0, 31.0);
   Type* const kZeroToThirtyTwo = CreateRange(0.0, 32.0);
   Type* const kZeroish =
       Type::Union(kSingletonZero, Type::MinusZeroOrNaN(), zone());
@@ -52,7 +53,13 @@ class TypeCache final {
   Type* const kIntegerOrMinusZeroOrNaN =
       Type::Union(kIntegerOrMinusZero, Type::NaN(), zone());
 
+  Type* const kAdditiveSafeInteger =
+      CreateRange(-4503599627370496.0, 4503599627370496.0);
+  Type* const kSafeInteger = CreateRange(-kMaxSafeInteger, kMaxSafeInteger);
   Type* const kPositiveSafeInteger = CreateRange(0.0, kMaxSafeInteger);
+
+  Type* const kUntaggedUndefined =
+      Type::Intersect(Type::Undefined(), Type::Untagged(), zone());
 
   // Asm.js related types.
   Type* const kAsmSigned = kInt32;
@@ -61,6 +68,12 @@ class TypeCache final {
   Type* const kAsmFixnum = Type::Intersect(kAsmSigned, kAsmUnsigned, zone());
   Type* const kAsmFloat = kFloat32;
   Type* const kAsmDouble = kFloat64;
+  Type* const kAsmFloatQ = Type::Union(kAsmFloat, kUntaggedUndefined, zone());
+  Type* const kAsmDoubleQ = Type::Union(kAsmDouble, kUntaggedUndefined, zone());
+  // Not part of the Asm.js type hierarchy, but represents a part of what
+  // intish encompasses.
+  Type* const kAsmIntQ = Type::Union(kAsmInt, kUntaggedUndefined, zone());
+  Type* const kAsmFloatDoubleQ = Type::Union(kAsmFloatQ, kAsmDoubleQ, zone());
   // Asm.js size unions.
   Type* const kAsmSize8 = Type::Union(kInt8, kUint8, zone());
   Type* const kAsmSize16 = Type::Union(kInt16, kUint16, zone());
@@ -73,6 +86,11 @@ class TypeCache final {
       Type::Union(kAsmUnsigned, Type::Union(kAsmDouble, kAsmFloat, zone()),
                   zone()),
       zone());
+  Type* const kAsmIntArrayElement =
+      Type::Union(Type::Union(kInt8, kUint8, zone()),
+                  Type::Union(Type::Union(kInt16, kUint16, zone()),
+                              Type::Union(kInt32, kUint32, zone()), zone()),
+                  zone());
 
   // The FixedArray::length property always containts a smi in the range
   // [0, FixedArray::kMaxLength].
