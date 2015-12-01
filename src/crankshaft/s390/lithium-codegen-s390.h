@@ -8,12 +8,12 @@
 #ifndef V8_CRANKSHAFT_S390_LITHIUM_CODEGEN_S390_H_
 #define V8_CRANKSHAFT_S390_LITHIUM_CODEGEN_S390_H_
 
+#include "src/ast/scopes.h"
 #include "src/crankshaft/lithium-codegen.h"
 #include "src/crankshaft/s390/lithium-gap-resolver-s390.h"
 #include "src/crankshaft/s390/lithium-s390.h"
 #include "src/deoptimizer.h"
 #include "src/safepoint-table.h"
-#include "src/scopes.h"
 #include "src/utils.h"
 
 namespace v8 {

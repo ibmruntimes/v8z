@@ -459,7 +459,7 @@ void S390Debugger::Debug() {
                  reinterpret_cast<intptr_t>(cur), *cur, *cur);
           HeapObject* obj = reinterpret_cast<HeapObject*>(*cur);
           intptr_t value = *cur;
-          Heap* current_heap = sim_->ioslate_->heap();
+          Heap* current_heap = sim_->isolate_->heap();
           if ((value & 1) == 0) {
             PrintF("(smi %d)", PlatformSmiTagging::SmiToInt(obj));
           } else if (current_heap->Contains(obj)) {
@@ -3276,7 +3276,10 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
       int r1 = rreInst->R1Value();
       int r2 = rreInst->R2Value();
       double r2_val = get_double_from_d_register(r2);
-      set_d_register_from_float(r1, static_cast<float>(r2_val));
+      float fp_val = static_cast<float>(r2_val);
+      uint32_t temp = bit_cast<uint32_t, float>(fp_val);
+      set_d_register(r1, static_cast<int64_t>(temp));
+      // set_d_register_from_float(r1, static_cast<float>(r2_val));
       break;
     }
     case FIDBRA: {
@@ -3313,8 +3316,11 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
       RREInstruction* rreInstr = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rreInstr->R1Value();
       int r2 = rreInstr->R2Value();
-      float r2_val = get_float_from_d_register(r2);
-      set_d_register_from_double(r1, static_cast<double>(r2_val));
+      int64_t frs_val = get_d_register(r2);
+      int32_t frs_val_short = static_cast<int32_t>(frs_val);
+      float fp_val = bit_cast<float, int32_t>(frs_val_short);
+      double db_val = static_cast<double>(fp_val);
+      set_d_register_from_double(r1, db_val);
       break;
     }
     default: {

@@ -159,8 +159,8 @@ class RecordWriteStub : public PlatformCodeStub {
   }
 
   static void Patch(Code* stub, Mode mode) {
-    MacroAssembler masm(NULL, stub->instruction_start(),
-                        stub->instruction_size());
+    MacroAssembler masm(stub->GetIsolate(), stub->instruction_start(),
+                        stub->instruction_size(), CodeObjectRequired::kNo);
 
     // Get instruction lengths of two branches
     int32_t first_instr_length = masm.instr_length_at(0);

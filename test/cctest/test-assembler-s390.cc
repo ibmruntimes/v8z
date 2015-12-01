@@ -227,6 +227,7 @@ TEST(3) {
 }
 
 
+#if 0
 TEST(4) {
   CcTest::InitializeVM();
   Isolate* isolate = CcTest::i_isolate();
@@ -265,7 +266,7 @@ TEST(4) {
 #endif
   F2 f = FUNCTION_CAST<F2>(code->entry());
   intptr_t res = reinterpret_cast<intptr_t>(
-      CALL_GENERATED_CODE(isolate, f, &t, 0, 0, 0, 0));
+      CALL_GENERATED_CODE(isolate, f, 3, 4, 3, 0, 0));
   ::printf("f() = %" V8PRIdPTR "\n", res);
   CHECK_EQ(4, static_cast<int>(res));
 }
@@ -419,6 +420,7 @@ TEST(9) {
     reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(isolate, f, 0, 0, 0, 0, 0));
   ::printf("f() = %" V8PRIdPTR  "\n", res);
 }
+#endif
 
 
 #undef __

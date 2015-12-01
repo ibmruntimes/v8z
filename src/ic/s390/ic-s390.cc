@@ -847,7 +847,8 @@ bool CompareIC::HasInlinedSmiCode(Address address) {
 //
 // This code is paired with the JumpPatchSite class in full-codegen-s390.cc
 //
-void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
+void PatchInlinedSmiCode(Isolate* isolate, Address address,
+                         InlinedSmiCheck check) {
   Address cmp_instruction_address =
       Assembler::return_address_from_call_start(address);
 
@@ -908,7 +909,7 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
   } else {
     DCHECK(false);
   }
-  CodePatcher patcher(patch_address, patch_size);
+  CodePatcher patcher(isolate, patch_address, patch_size);
   Register reg;
   reg.reg_code = instr_at_patch & 0xf;
   if (check == ENABLE_INLINED_SMI_CHECK) {

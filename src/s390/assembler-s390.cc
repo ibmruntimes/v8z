@@ -3318,6 +3318,7 @@ void Assembler::GrowBuffer(int needed) {
 
   // Set up new buffer.
   desc.buffer = NewArray<byte>(desc.buffer_size);
+  desc.origin = this;
 
   desc.instr_size = pc_offset();
   desc.reloc_size = (buffer_ + buffer_size_) - reloc_info_writer.pos();
@@ -3406,7 +3407,7 @@ void Assembler::EmitRelocations() {
       RelocInfo::Mode rmode = it->rmode();
       Address pc = buffer_ + it->position();
       Code* code = NULL;
-      RelocInfo rinfo(pc, rmode, it->data(), code);
+      RelocInfo rinfo(isolate(), pc, rmode, it->data(), code);
 
       // Fix up internal references now that they are guaranteed to be bound.
       if (RelocInfo::IsInternalReference(rmode)) {
@@ -3417,7 +3418,7 @@ void Assembler::EmitRelocations() {
         // mov sequence
         intptr_t pos =
            reinterpret_cast<intptr_t>(target_address_at(pc, code));
-        set_target_address_at(pc, code, buffer_ + pos, SKIP_ICACHE_FLUSH);
+        set_target_address_at(isolate(), pc, code, buffer_ + pos, SKIP_ICACHE_FLUSH);
       }
 
       reloc_info_writer.Write(&rinfo);
