@@ -1374,7 +1374,10 @@ SS2_FORM(zap);
   }
 
   void StartBlockTrampolinePool() { trampoline_pool_blocked_nesting_++; }
-  void EndBlockTrampolinePool() { trampoline_pool_blocked_nesting_--; }
+  void EndBlockTrampolinePool() {
+    int count = --trampoline_pool_blocked_nesting_;
+    if (count == 0) CheckTrampolinePoolQuick();
+  }
   bool is_trampoline_pool_blocked() const {
     return trampoline_pool_blocked_nesting_ > 0;
   }

@@ -205,61 +205,83 @@ void InstructionSelector::VisitStore(Node* node) {
   Node* value = node->InputAt(2);
 
   StoreRepresentation store_rep = OpParameter<StoreRepresentation>(node);
+  WriteBarrierKind write_barrier_kind = store_rep.write_barrier_kind();
   MachineType rep = RepresentationOf(store_rep.machine_type());
-  if (store_rep.write_barrier_kind() == kFullWriteBarrier) {
-    DCHECK(rep == kRepTagged);
-    // TODO(dcarney): refactor RecordWrite function to take temp registers
-    //                and pass them here instead of using fixed regs
-    // TODO(dcarney): handle immediate indices.
-    InstructionOperand temps[] = {g.TempRegister(r8), g.TempRegister(r9)};
-    Emit(kS390_StoreWriteBarrier, g.NoOutput(), g.UseFixed(base, r7),
-         g.UseFixed(offset, r8), g.UseFixed(value, r9), arraysize(temps),
-         temps);
-    return;
-  }
-  DCHECK_EQ(kNoWriteBarrier, store_rep.write_barrier_kind());
-  ArchOpcode opcode;
-  ImmediateMode mode = kInt16Imm;
-  switch (rep) {
-    case kRepFloat32:
-      opcode = kS390_StoreFloat32;
-      break;
-    case kRepFloat64:
-      opcode = kS390_StoreDouble;
-      break;
-    case kRepBit:  // Fall through.
-    case kRepWord8:
-      opcode = kS390_StoreWord8;
-      break;
-    case kRepWord16:
-      opcode = kS390_StoreWord16;
-      break;
-#if !V8_TARGET_ARCH_S390X
-    case kRepTagged:  // Fall through.
-#endif
-    case kRepWord32:
-      opcode = kS390_StoreWord32;
-      break;
-#if V8_TARGET_ARCH_S390X
-    case kRepTagged:  // Fall through.
-    case kRepWord64:
-      opcode = kS390_StoreWord64;
-      mode = kInt16Imm_4ByteAligned;
-      break;
-#endif
-    default:
-      UNREACHABLE();
-      return;
-  }
-  if (g.CanBeImmediate(offset, mode)) {
-    Emit(opcode | AddressingModeField::encode(kMode_MRI), g.NoOutput(),
-         g.UseRegister(base), g.UseImmediate(offset), g.UseRegister(value));
-  } else if (g.CanBeImmediate(base, mode)) {
-    Emit(opcode | AddressingModeField::encode(kMode_MRI), g.NoOutput(),
-         g.UseRegister(offset), g.UseImmediate(base), g.UseRegister(value));
+
+  // TODO(s390): I guess this could be done in a better way.
+  if (write_barrier_kind != kNoWriteBarrier) {
+    DCHECK_EQ(kRepTagged, rep);
+    InstructionOperand inputs[3];
+    size_t input_count = 0;
+    inputs[input_count++] = g.UseUniqueRegister(base);
+    inputs[input_count++] = g.UseUniqueRegister(offset);
+    inputs[input_count++] = (write_barrier_kind == kMapWriteBarrier)
+                                ? g.UseRegister(value)
+                                : g.UseUniqueRegister(value);
+    RecordWriteMode record_write_mode = RecordWriteMode::kValueIsAny;
+    switch (write_barrier_kind) {
+      case kNoWriteBarrier:
+        UNREACHABLE();
+        break;
+      case kMapWriteBarrier:
+        record_write_mode = RecordWriteMode::kValueIsMap;
+        break;
+      case kPointerWriteBarrier:
+        record_write_mode = RecordWriteMode::kValueIsPointer;
+        break;
+      case kFullWriteBarrier:
+        record_write_mode = RecordWriteMode::kValueIsAny;
+        break;
+    }
+    InstructionOperand temps[] = {g.TempRegister(), g.TempRegister()};
+    size_t const temp_count = arraysize(temps);
+    InstructionCode code = kArchStoreWithWriteBarrier;
+    code |= MiscField::encode(static_cast<int>(record_write_mode));
+    Emit(code, 0, nullptr, input_count, inputs, temp_count, temps);
   } else {
-    Emit(opcode | AddressingModeField::encode(kMode_MRR), g.NoOutput(),
-         g.UseRegister(base), g.UseRegister(offset), g.UseRegister(value));
+    ArchOpcode opcode;
+    ImmediateMode mode = kInt16Imm;
+    switch (rep) {
+      case kRepFloat32:
+        opcode = kS390_StoreFloat32;
+        break;
+      case kRepFloat64:
+        opcode = kS390_StoreDouble;
+        break;
+      case kRepBit:  // Fall through.
+      case kRepWord8:
+        opcode = kS390_StoreWord8;
+        break;
+      case kRepWord16:
+        opcode = kS390_StoreWord16;
+        break;
+#if !V8_TARGET_ARCH_S390X
+      case kRepTagged:  // Fall through.
+#endif
+      case kRepWord32:
+        opcode = kS390_StoreWord32;
+        break;
+#if V8_TARGET_ARCH_S390X
+      case kRepTagged:  // Fall through.
+      case kRepWord64:
+        opcode = kS390_StoreWord64;
+        mode = kInt16Imm_4ByteAligned;
+        break;
+#endif
+      default:
+        UNREACHABLE();
+        return;
+    }
+    if (g.CanBeImmediate(offset, mode)) {
+      Emit(opcode | AddressingModeField::encode(kMode_MRI), g.NoOutput(),
+           g.UseRegister(base), g.UseImmediate(offset), g.UseRegister(value));
+    } else if (g.CanBeImmediate(base, mode)) {
+      Emit(opcode | AddressingModeField::encode(kMode_MRI), g.NoOutput(),
+           g.UseRegister(offset), g.UseImmediate(base), g.UseRegister(value));
+    } else {
+      Emit(opcode | AddressingModeField::encode(kMode_MRR), g.NoOutput(),
+           g.UseRegister(base), g.UseRegister(offset), g.UseRegister(value));
+    }
   }
 }
 
@@ -754,7 +776,21 @@ void InstructionSelector::VisitWord32Popcnt(Node* node) {
 }
 
 
+#if V8_TARGET_ARCH_S390X
+void InstructionSelector::VisitWord64Popcnt(Node* node) {
+  S390OperandGenerator g(this);
+  Emit(kS390_Popcnt64, g.DefineAsRegister(node),
+       g.UseRegister(node->InputAt(0)));
+}
+#endif
+
+
 void InstructionSelector::VisitWord32Ctz(Node* node) { UNREACHABLE(); }
+
+
+#if V8_TARGET_ARCH_S390X
+void InstructionSelector::VisitWord64Ctz(Node* node) { UNREACHABLE(); }
+#endif
 
 
 void InstructionSelector::VisitInt32Add(Node* node) {
@@ -893,6 +929,16 @@ void InstructionSelector::VisitChangeFloat64ToUint32(Node* node) {
 
 
 #if V8_TARGET_ARCH_S390X
+void InstructionSelector::VisitTruncateFloat64ToInt64(Node* node) {
+  VisitRR(this, kS390_DoubleToInt64, node);
+}
+
+
+void InstructionSelector::VisitTruncateFloat64ToUint64(Node* node) {
+  VisitRR(this, kS390_DoubleToUint64, node);
+}
+
+
 void InstructionSelector::VisitChangeInt32ToInt64(Node* node) {
   // TODO(mbrandy): inspect input to see if nop is appropriate.
   VisitRR(this, kS390_ExtendSignWord32, node);
@@ -929,8 +975,23 @@ void InstructionSelector::VisitTruncateInt64ToInt32(Node* node) {
 }
 
 
+void InstructionSelector::VisitRoundInt64ToFloat32(Node* node) {
+  VisitRR(this, kS390_Int64ToFloat32, node);
+}
+
+
 void InstructionSelector::VisitRoundInt64ToFloat64(Node* node) {
   VisitRR(this, kS390_Int64ToDouble, node);
+}
+
+
+void InstructionSelector::VisitRoundUint64ToFloat32(Node* node) {
+  VisitRR(this, kS390_Uint64ToFloat32, node);
+}
+
+
+void InstructionSelector::VisitRoundUint64ToFloat64(Node* node) {
+  VisitRR(this, kS390_Uint64ToDouble, node);
 }
 #endif
 
@@ -1074,6 +1135,11 @@ void InstructionSelector::VisitFloat64RoundDown(Node* node) {
 }
 
 
+void InstructionSelector::VisitFloat64RoundUp(Node* node) {
+  VisitRR(this, kS390_CeilDouble, node);
+}
+
+
 void InstructionSelector::VisitFloat64RoundTruncate(Node* node) {
   VisitRR(this, kS390_TruncateDouble, node);
 }
@@ -1081,6 +1147,11 @@ void InstructionSelector::VisitFloat64RoundTruncate(Node* node) {
 
 void InstructionSelector::VisitFloat64RoundTiesAway(Node* node) {
   VisitRR(this, kS390_RoundDouble, node);
+}
+
+
+void InstructionSelector::VisitFloat64RoundTiesEven(Node* node) {
+  UNREACHABLE();
 }
 
 
@@ -1589,9 +1660,11 @@ void InstructionSelector::VisitFloat64InsertHighWord32(Node* node) {
 MachineOperatorBuilder::Flags
 InstructionSelector::SupportedMachineOperatorFlags() {
   return MachineOperatorBuilder::kFloat64RoundDown |
+         MachineOperatorBuilder::kFloat64RoundUp |
          MachineOperatorBuilder::kFloat64RoundTruncate |
          MachineOperatorBuilder::kFloat64RoundTiesAway |
-         MachineOperatorBuilder::kWord32Popcnt;
+         MachineOperatorBuilder::kWord32Popcnt |
+         MachineOperatorBuilder::kWord64Popcnt;
   // We omit kWord32ShiftIsSafe as s[rl]w use 0x3f as a mask rather than 0x1f.
 }
 

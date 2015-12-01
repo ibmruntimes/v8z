@@ -187,7 +187,7 @@ void CallConstructDescriptor::InitializePlatformSpecific(
   // r3 : the function to call
   // r4 : feedback vector
   // r5 : slot in feedback vector (Smi, for RecordCallTarget)
-  // r6 : original constructor (for IsSuperConstructorCall)
+  // r6 : new target (for IsSuperConstructorCall)
   // TODO(turbofan): So far we don't gather type feedback and hence skip the
   // slot parameter, but ArrayConstructStub needs the vector to be undefined.
   Register registers[] = {r2, r3, r6, r4};
@@ -200,6 +200,16 @@ void CallTrampolineDescriptor::InitializePlatformSpecific(
   // r2 : number of arguments
   // r3 : the target to call
   Register registers[] = {r3, r2};
+  data->InitializePlatformSpecific(arraysize(registers), registers);
+}
+
+
+void ConstructTrampolineDescriptor::InitializePlatformSpecific(
+    CallInterfaceDescriptorData* data) {
+  // r2 : number of arguments
+  // r3 : the target to call
+  // r5 : the new target
+  Register registers[] = {r3, r5, r2};
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
 
@@ -341,6 +351,7 @@ void ArgumentAdaptorDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {
       r3,  // JSFunction
+      r5,  // the new target
       r2,  // actual number of arguments
       r4,  // expected number of arguments
   };
@@ -409,7 +420,7 @@ void InterpreterPushArgsAndConstructDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {
       r2,  // argument count (not including receiver)
-      r5,  // original constructor
+      r5,  // new target
       r3,  // constructor to call
       r4   // address of the first argument
   };

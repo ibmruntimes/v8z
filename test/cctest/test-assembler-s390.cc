@@ -25,6 +25,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+// TODO(jochen): Remove this after the setting is turned on globally.
+#define V8_IMMINENT_DEPRECATION_WARNINGS
+
 #include "src/v8.h"
 
 #include "src/disassembler.h"
@@ -49,7 +52,7 @@ typedef Object* (*F4)(void* p0, void* p1, int p2, int p3, int p4);
 // Simple add parameter 1 to parameter 2 and return
 TEST(0) {
   CcTest::InitializeVM();
-  Isolate* isolate = Isolate::Current();
+  Isolate* isolate = CcTest::i_isolate();
   HandleScope scope(isolate);
 
   Assembler assm(isolate, NULL, 0);
@@ -68,8 +71,8 @@ TEST(0) {
   code->Print();
 #endif
   F2 f = FUNCTION_CAST<F2>(code->entry());
-  intptr_t res =
-    reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(f, 3, 4, 0, 0, 0));
+  intptr_t res = reinterpret_cast<intptr_t>(
+      CALL_GENERATED_CODE(isolate, f, 3, 4, 0, 0, 0));
   ::printf("f() = %" V8PRIdPTR "\n", res);
   CHECK_EQ(7, static_cast<int>(res));
 }
@@ -78,7 +81,7 @@ TEST(0) {
 // Loop 100 times, adding loop counter to result
 TEST(1) {
   CcTest::InitializeVM();
-  Isolate* isolate = Isolate::Current();
+  Isolate* isolate = CcTest::i_isolate();
   HandleScope scope(isolate);
 
   Assembler assm(isolate, NULL, 0);
@@ -109,19 +112,21 @@ TEST(1) {
   code->Print();
 #endif
   F1 f = FUNCTION_CAST<F1>(code->entry());
-  intptr_t res =
-    reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(f, 100, 0, 0, 0, 0));
-  ::printf("f() = %" V8PRIdPTR  "\n", res);
+  intptr_t res = reinterpret_cast<intptr_t>(
+      CALL_GENERATED_CODE(isolate, f, 100, 0, 0, 0, 0));
+  ::printf("f() = %" V8PRIdPTR "\n", res);
   CHECK_EQ(5050, static_cast<int>(res));
 }
 
 
 TEST(2) {
   CcTest::InitializeVM();
-  Isolate* isolate = Isolate::Current();
+  Isolate* isolate = CcTest::i_isolate();
   HandleScope scope(isolate);
 
-  Assembler assm(isolate, NULL, 0);
+  // Create a function that accepts &t, and loads, manipulates, and stores
+  // the doubles and floats.
+  Assembler assm(CcTest::i_isolate(), NULL, 0);
   Label L, C;
 
 #if defined(_AIX)
@@ -160,8 +165,8 @@ TEST(2) {
   code->Print();
 #endif
   F1 f = FUNCTION_CAST<F1>(code->entry());
-  intptr_t res =
-    reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(f, 10, 0, 0, 0, 0));
+  intptr_t res = reinterpret_cast<intptr_t>(
+      CALL_GENERATED_CODE(isolate, f, 10, 0, 0, 0, 0));
   ::printf("f() = %" V8PRIdPTR "\n", res);
   CHECK_EQ(3628800, static_cast<int>(res));
 }
@@ -169,7 +174,7 @@ TEST(2) {
 
 TEST(3) {
   CcTest::InitializeVM();
-  Isolate* isolate = Isolate::Current();
+  Isolate* isolate = CcTest::i_isolate();
   HandleScope scope(isolate);
 
   Assembler assm(isolate, NULL, 0);
@@ -224,7 +229,7 @@ TEST(3) {
 
 TEST(4) {
   CcTest::InitializeVM();
-  Isolate* isolate = Isolate::Current();
+  Isolate* isolate = CcTest::i_isolate();
   HandleScope scope(isolate);
 
   Assembler assm(isolate, NULL, 0);
@@ -259,8 +264,8 @@ TEST(4) {
   code->Print();
 #endif
   F2 f = FUNCTION_CAST<F2>(code->entry());
-  intptr_t res =
-    reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(f, 3, 4, 3, 0, 0));
+  intptr_t res = reinterpret_cast<intptr_t>(
+      CALL_GENERATED_CODE(isolate, f, &t, 0, 0, 0, 0));
   ::printf("f() = %" V8PRIdPTR "\n", res);
   CHECK_EQ(4, static_cast<int>(res));
 }
@@ -269,7 +274,7 @@ TEST(4) {
 // Test ExtractBitRange
 TEST(5) {
   CcTest::InitializeVM();
-  Isolate* isolate = Isolate::Current();
+  Isolate* isolate = CcTest::i_isolate();
   HandleScope scope(isolate);
 
   MacroAssembler assm(isolate, NULL, 0);
@@ -288,7 +293,7 @@ TEST(5) {
 #endif
   F2 f = FUNCTION_CAST<F2>(code->entry());
   intptr_t res =
-    reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(f, 3, 4, 3, 0, 0));
+    reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(isolate, f, 3, 4, 3, 0, 0));
   ::printf("f() = %" V8PRIdPTR "\n", res);
   CHECK_EQ(2, static_cast<int>(res));
 }
@@ -297,7 +302,7 @@ TEST(5) {
 // Test JumpIfSmi
 TEST(6) {
   CcTest::InitializeVM();
-  Isolate* isolate = Isolate::Current();
+  Isolate* isolate = CcTest::i_isolate();
   HandleScope scope(isolate);
 
   MacroAssembler assm(isolate, NULL, 0);
@@ -322,7 +327,7 @@ TEST(6) {
 #endif
   F2 f = FUNCTION_CAST<F2>(code->entry());
   intptr_t res =
-    reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(f, 3, 4, 3, 0, 0));
+    reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(isolate, f, 3, 4, 3, 0, 0));
   ::printf("f() = %" V8PRIdPTR "\n", res);
   CHECK_EQ(1, static_cast<int>(res));
 }
@@ -331,7 +336,7 @@ TEST(6) {
 // Test fix<->floating point conversion.
 TEST(7) {
   CcTest::InitializeVM();
-  Isolate* isolate = Isolate::Current();
+  Isolate* isolate = CcTest::i_isolate();
   HandleScope scope(isolate);
 
   MacroAssembler assm(isolate, NULL, 0);
@@ -354,7 +359,7 @@ TEST(7) {
 #endif
   F2 f = FUNCTION_CAST<F2>(code->entry());
   intptr_t res =
-    reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(f, 3, 4, 3, 0, 0));
+    reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(isolate, f, 3, 4, 3, 0, 0));
   ::printf("f() = %" V8PRIdPTR "\n", res);
   CHECK_EQ(0x2468, static_cast<int>(res));
 }
@@ -363,7 +368,7 @@ TEST(7) {
 // Test DSGR
 TEST(8) {
   CcTest::InitializeVM();
-  Isolate* isolate = Isolate::Current();
+  Isolate* isolate = CcTest::i_isolate();
   HandleScope scope(isolate);
 
   MacroAssembler assm(isolate, NULL, 0);
@@ -385,7 +390,7 @@ TEST(8) {
 #endif
   F1 f = FUNCTION_CAST<F1>(code->entry());
   intptr_t res =
-    reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(f, 100, 0, 0, 0, 0));
+    reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(isolate, f, 100, 0, 0, 0, 0));
   ::printf("f() = %" V8PRIdPTR  "\n", res);
   CHECK_EQ(0, static_cast<int>(res));
 }
@@ -394,7 +399,7 @@ TEST(8) {
 // Test LZDR
 TEST(9) {
   CcTest::InitializeVM();
-  Isolate* isolate = Isolate::Current();
+  Isolate* isolate = CcTest::i_isolate();
   HandleScope scope(isolate);
 
   MacroAssembler assm(isolate, NULL, 0);
@@ -411,7 +416,7 @@ TEST(9) {
 #endif
   F1 f = FUNCTION_CAST<F1>(code->entry());
   intptr_t res =
-    reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(f, 0, 0, 0, 0, 0));
+    reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(isolate, f, 0, 0, 0, 0, 0));
   ::printf("f() = %" V8PRIdPTR  "\n", res);
 }
 

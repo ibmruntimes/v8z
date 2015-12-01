@@ -64,6 +64,7 @@ namespace compiler {
   V(S390_Cntlz32)                   \
   V(S390_Cntlz64)                   \
   V(S390_Popcnt32)                  \
+  V(S390_Popcnt64)                  \
   V(S390_Cmp32)                     \
   V(S390_Cmp64)                     \
   V(S390_CmpDouble)                 \
@@ -77,12 +78,17 @@ namespace compiler {
   V(S390_ExtendSignWord32)          \
   V(S390_Uint32ToUint64)            \
   V(S390_Int64ToInt32)              \
+  V(S390_Int64ToFloat32)            \
   V(S390_Int64ToDouble)             \
+  V(S390_Uint64ToFloat32)           \
+  V(S390_Uint64ToDouble)            \
   V(S390_Int32ToDouble)             \
   V(S390_Uint32ToDouble)            \
   V(S390_Float32ToDouble)           \
   V(S390_DoubleToInt32)             \
   V(S390_DoubleToUint32)            \
+  V(S390_DoubleToInt64)             \
+  V(S390_DoubleToUint64)            \
   V(S390_DoubleToFloat32)           \
   V(S390_DoubleExtractLowWord32)    \
   V(S390_DoubleExtractHighWord32)   \
@@ -106,8 +112,7 @@ namespace compiler {
   V(S390_StoreWord32)               \
   V(S390_StoreWord64)               \
   V(S390_StoreFloat32)              \
-  V(S390_StoreDouble)               \
-  V(S390_StoreWriteBarrier)
+  V(S390_StoreDouble)
 
 
 // Addressing modes represent the "shape" of inputs to an instruction.

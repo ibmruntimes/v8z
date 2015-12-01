@@ -665,6 +665,30 @@ void MacroAssembler::ConvertInt64ToDouble(Register src,
   MovInt64ToDouble(double_dst, src);
   // fcfid(double_dst, double_dst);
 }
+
+
+void MacroAssembler::ConvertUnsignedInt64ToFloat(Register src,
+                                                 DoubleRegister double_dst) {
+  UNIMPLEMENTED();
+  MovInt64ToDouble(double_dst, src);
+  // fcfidus(double_dst, double_dst);
+}
+
+
+void MacroAssembler::ConvertUnsignedInt64ToDouble(Register src,
+                                                  DoubleRegister double_dst) {
+  UNIMPLEMENTED();
+  MovInt64ToDouble(double_dst, src);
+  // fcfidu(double_dst, double_dst);
+}
+
+
+void MacroAssembler::ConvertInt64ToFloat(Register src,
+                                         DoubleRegister double_dst) {
+  UNIMPLEMENTED();
+  MovInt64ToDouble(double_dst, src);
+  // fcfids(double_dst, double_dst);
+}
 #endif
 
 
@@ -699,6 +723,24 @@ void MacroAssembler::ConvertDoubleToInt64(const DoubleRegister double_input,
   srlg(dst_hi, dst, Operand(32));
 #endif
 }
+
+
+#if V8_TARGET_ARCH_S390X
+void MacroAssembler::ConvertDoubleToUnsignedInt64(
+    const DoubleRegister double_input, const Register dst,
+    const DoubleRegister double_dst, FPRoundingMode rounding_mode) {
+  UNIMPLEMENTED();
+  // if (rounding_mode == kRoundToZero) {
+  //   fctiduz(double_dst, double_input);
+  // } else {
+  //   SetRoundingMode(rounding_mode);
+  //   fctidu(double_dst, double_input);
+  //   ResetRoundingMode();
+  // }
+
+  // MovDoubleToInt64(dst, double_dst);
+}
+#endif
 
 
 void MacroAssembler::StubPrologue(int prologue_offset) {
@@ -949,9 +991,7 @@ void MacroAssembler::MovFromFloatParameter(const DoubleRegister dst) {
 
 
 void MacroAssembler::InvokePrologue(const ParameterCount& expected,
-                                    const ParameterCount& actual,
-                                    Handle<Code> code_constant,
-                                    Register code_reg, Label* done,
+                                    const ParameterCount& actual, Label* done,
                                     bool* definitely_mismatches,
                                     InvokeFlag flag,
                                     const CallWrapper& call_wrapper) {
@@ -972,8 +1012,6 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
   // ARM has some sanity checks as per below, considering add them for S390
   //  DCHECK(actual.is_immediate() || actual.reg().is(r2));
   //  DCHECK(expected.is_immediate() || expected.reg().is(r4));
-  //  DCHECK((!code_constant.is_null() && code_reg.is(no_reg))
-  //          || code_reg.is(r5));
 
   if (expected.is_immediate()) {
     DCHECK(actual.is_immediate());
@@ -1005,11 +1043,6 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
   }
 
   if (!definitely_matches) {
-    if (!code_constant.is_null()) {
-      mov(r5, Operand(code_constant));
-      AddP(r5, Operand(Code::kHeaderSize - kHeapObjectTag));
-    }
-
     Handle<Code> adaptor = isolate()->builtins()->ArgumentsAdaptorTrampoline();
     if (flag == CALL_FUNCTION) {
       call_wrapper.BeforeCall(CallSize(adaptor));
@@ -1026,16 +1059,24 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
 }
 
 
-void MacroAssembler::InvokeCode(Register code, const ParameterCount& expected,
+void MacroAssembler::InvokeCode(Register code, Register new_target,
+                                const ParameterCount& expected,
                                 const ParameterCount& actual, InvokeFlag flag,
                                 const CallWrapper& call_wrapper) {
   // You can't call a function without a valid frame.
   DCHECK(flag == JUMP_FUNCTION || has_frame());
 
+  // Ensure new target is passed in the correct register. Otherwise clear the
+  // appropriate register in case new target is not given.
+  DCHECK_IMPLIES(new_target.is_valid(), new_target.is(r5));
+  if (!new_target.is_valid()) {
+    LoadRoot(r5, Heap::kUndefinedValueRootIndex);
+  }
+
   Label done;
   bool definitely_mismatches = false;
-  InvokePrologue(expected, actual, Handle<Code>::null(), code, &done,
-                 &definitely_mismatches, flag, call_wrapper);
+  InvokePrologue(expected, actual, &done, &definitely_mismatches, flag,
+                 call_wrapper);
   if (!definitely_mismatches) {
     if (flag == CALL_FUNCTION) {
       call_wrapper.BeforeCall(CallSize(code));
@@ -1053,7 +1094,8 @@ void MacroAssembler::InvokeCode(Register code, const ParameterCount& expected,
 }
 
 
-void MacroAssembler::InvokeFunction(Register fun, const ParameterCount& actual,
+void MacroAssembler::InvokeFunction(Register fun, Register new_target,
+                                    const ParameterCount& actual,
                                     InvokeFlag flag,
                                     const CallWrapper& call_wrapper) {
   // You can't call a function without a valid frame.
@@ -1074,7 +1116,7 @@ void MacroAssembler::InvokeFunction(Register fun, const ParameterCount& actual,
   LoadP(code_reg, FieldMemOperand(r3, JSFunction::kCodeEntryOffset));
 
   ParameterCount expected(expected_reg);
-  InvokeCode(code_reg, expected, actual, flag, call_wrapper);
+  InvokeCode(code_reg, new_target, expected, actual, flag, call_wrapper);
 }
 
 
@@ -1096,7 +1138,7 @@ void MacroAssembler::InvokeFunction(Register function,
   // allow recompilation to take effect without changing any of the
   // call sites.
   LoadP(ip, FieldMemOperand(r3, JSFunction::kCodeEntryOffset));
-  InvokeCode(ip, expected, actual, flag, call_wrapper);
+  InvokeCode(ip, no_reg, expected, actual, flag, call_wrapper);
 }
 
 void MacroAssembler::InvokeFunction(Handle<JSFunction> function,
@@ -1382,11 +1424,7 @@ void MacroAssembler::Allocate(int object_size, Register result,
     return;
   }
 
-  DCHECK(!result.is(scratch1));
-  DCHECK(!result.is(scratch2));
-  DCHECK(!scratch1.is(scratch2));
-  DCHECK(!scratch1.is(ip));
-  DCHECK(!scratch2.is(ip));
+  DCHECK(!AreAliased(result, scratch1, scratch2, ip));
 
   // Make object size into bytes.
   if ((flags & SIZE_IN_WORDS) != 0) {
@@ -2838,13 +2876,13 @@ void MacroAssembler::CopyBytes(Register src, Register dst, Register length,
 }
 
 
-void MacroAssembler::InitializeNFieldsWithFiller(Register start_offset,
+void MacroAssembler::InitializeNFieldsWithFiller(Register current_address,
                                                 Register count,
                                                 Register filler) {
   Label loop;
   bind(&loop);
-  StoreP(filler, MemOperand(start_offset));
-  AddP(start_offset, Operand(kPointerSize));
+  StoreP(filler, MemOperand(current_address));
+  AddP(current_address, current_address, Operand(kPointerSize));
   SubP(count, Operand(1));
   CmpP(count, Operand::Zero());
   bne(&loop);
@@ -2852,14 +2890,14 @@ void MacroAssembler::InitializeNFieldsWithFiller(Register start_offset,
 
 
 
-void MacroAssembler::InitializeFieldsWithFiller(Register start_offset,
-                                                Register end_offset,
+void MacroAssembler::InitializeFieldsWithFiller(Register current_address,
+                                                Register end_address,
                                                 Register filler) {
   Label done;
-  SubP(r0, end_offset, start_offset /*, LeaveOE, SetRC*/);
+  SubP(r0, end_offset, current_address /*, LeaveOE, SetRC*/);
   beq(&done, Label::kNear);
   ShiftRightP(r0, r0, Operand(kPointerSizeLog2));
-  InitializeNFieldsWithFiller(start_offset, r0, filler);
+  InitializeNFieldsWithFiller(current_address, r0, filler);
   bind(&done);
 }
 

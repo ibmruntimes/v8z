@@ -3568,7 +3568,8 @@ void LCodeGen::DoApplyArguments(LApplyArguments* instr) {
   // The number of arguments is stored in receiver which is r2, as expected
   // by InvokeFunction.
   ParameterCount actual(receiver);
-  __ InvokeFunction(function, actual, CALL_FUNCTION, safepoint_generator);
+  __ InvokeFunction(function, no_reg, actual, CALL_FUNCTION,
+                    safepoint_generator);
 }
 
 
@@ -3630,7 +3631,8 @@ void LCodeGen::CallKnownFunction(Handle<JSFunction> function,
     // Change context.
     __ LoadP(cp, FieldMemOperand(function_reg, JSFunction::kContextOffset));
 
-    // Always initialize r2 to the number of actual arguments.
+    // Always initialize new target and number of actual arguments.
+    __ LoadRoot(r5, Heap::kUndefinedValueRootIndex);
     __ mov(r2, Operand(arity));
 
     bool is_self_call = function.is_identical_to(info()->closure());
@@ -3999,7 +4001,7 @@ void LCodeGen::DoInvokeFunction(LInvokeFunction* instr) {
     LPointerMap* pointers = instr->pointer_map();
     SafepointGenerator generator(this, pointers, Safepoint::kLazyDeopt);
     ParameterCount count(instr->arity());
-    __ InvokeFunction(r3, count, CALL_FUNCTION, generator);
+    __ InvokeFunction(r3, no_reg, count, CALL_FUNCTION, generator);
   } else {
     CallKnownFunction(known_function,
                       instr->hydrogen()->formal_parameter_count(),
@@ -4049,10 +4051,12 @@ void LCodeGen::DoCallJSFunction(LCallJSFunction* instr) {
   DCHECK(ToRegister(instr->function()).is(r3));
   DCHECK(ToRegister(instr->result()).is(r2));
 
-  __ mov(r2, Operand(instr->arity()));
-
   // Change context.
   __ LoadP(cp, FieldMemOperand(r3, JSFunction::kContextOffset));
+
+  // Always initialize new target and number of actual arguments.
+  __ LoadRoot(r5, Heap::kUndefinedValueRootIndex);
+  __ mov(r2, Operand(instr->arity()));
 
   bool is_self_call = false;
   if (instr->hydrogen()->function()->IsConstant()) {
@@ -4100,19 +4104,6 @@ void LCodeGen::DoCallFunction(LCallFunction* instr) {
     __ mov(r2, Operand(arity));
     CallCode(isolate()->builtins()->Call(mode), RelocInfo::CODE_TARGET, instr);
   }
-}
-
-
-void LCodeGen::DoCallNew(LCallNew* instr) {
-  DCHECK(ToRegister(instr->context()).is(cp));
-  DCHECK(ToRegister(instr->constructor()).is(r3));
-  DCHECK(ToRegister(instr->result()).is(r2));
-
-  __ mov(r2, Operand(instr->arity()));
-  // No cell in r4 for construct type feedback in optimized code
-  __ LoadRoot(r4, Heap::kUndefinedValueRootIndex);
-  CallConstructStub stub(isolate(), NO_CALL_CONSTRUCTOR_FLAGS);
-  CallCode(stub.GetCode(), RelocInfo::CONSTRUCT_CALL, instr);
 }
 
 

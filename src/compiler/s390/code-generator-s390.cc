@@ -146,6 +146,48 @@ class OutOfLineLoadZero final : public OutOfLineCode {
 };
 
 
+class OutOfLineRecordWrite final : public OutOfLineCode {
+ public:
+  OutOfLineRecordWrite(CodeGenerator* gen, Register object, Register offset,
+                       Register value, Register scratch0, Register scratch1,
+                       RecordWriteMode mode)
+      : OutOfLineCode(gen),
+        object_(object),
+        offset_(offset),
+        value_(value),
+        scratch0_(scratch0),
+        scratch1_(scratch1),
+        mode_(mode) {}
+
+  void Generate() final {
+    if (mode_ > RecordWriteMode::kValueIsPointer) {
+      __ JumpIfSmi(value_, exit());
+    }
+    if (mode_ > RecordWriteMode::kValueIsMap) {
+      __ CheckPageFlag(value_, scratch0_,
+                       MemoryChunk::kPointersToHereAreInterestingMask, eq,
+                       exit());
+    }
+    SaveFPRegsMode const save_fp_mode =
+        frame()->DidAllocateDoubleRegisters() ? kSaveFPRegs : kDontSaveFPRegs;
+    // TODO(turbofan): Once we get frame elision working, we need to save
+    // and restore lr properly here if the frame was elided.
+    RecordWriteStub stub(isolate(), object_, scratch0_, scratch1_,
+                         EMIT_REMEMBERED_SET, save_fp_mode);
+    __ AddP(scratch1_, object_, offset_);
+    __ CallStub(&stub);
+  }
+
+ private:
+  Register const object_;
+  Register const offset_;
+  Register const value_;
+  Register const scratch0_;
+  Register const scratch1_;
+  RecordWriteMode const mode_;
+};
+
+
 Condition FlagsConditionToCondition(FlagsCondition condition) {
   switch (condition) {
     case kEqual:
@@ -496,25 +538,24 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
   } while (0)
 
 
-#define ASSEMBLE_STORE_WRITE_BARRIER()                                   \
-  do {                                                                   \
-  Register object = i.InputRegister(0);                                  \
-  Register index = i.InputRegister(1);                                   \
-  Register value = i.InputRegister(2);                                   \
-  __ AddP(index, object);                                                \
-  __ StoreP(value, MemOperand(index));                                   \
-  SaveFPRegsMode mode =                                                  \
-  frame()->DidAllocateDoubleRegisters() ? kSaveFPRegs : kDontSaveFPRegs; \
-  LinkRegisterStatus lr_status = kLRHasNotBeenSaved;                     \
-  __ RecordWrite(object, index, value, lr_status, mode);                 \
-  } while (0)
-
-
-void CodeGenerator::AssembleDeconstructActivationRecord() {
+void CodeGenerator::AssembleDeconstructActivationRecord(int stack_param_delta) {
+  int sp_slot_delta = TailCallFrameStackSlotDelta(stack_param_delta);
+  if (sp_slot_delta > 0) {
+    __ AddP(sp, sp, sp_slot_delta * kPointerSize);
+  }
   CallDescriptor* descriptor = linkage()->GetIncomingDescriptor();
-  int stack_slots = frame()->GetSpillSlotCount();
-  if (descriptor->IsJSFunctionCall() || stack_slots > 0) {
-    __ LeaveFrame(StackFrame::MANUAL);
+  int spill_slots = frame()->GetSpillSlotCount();
+  bool has_frame = descriptor->IsJSFunctionCall() || spill_slots > 0;
+  if (has_frame) {
+    __ Pop(r14, fp);
+  }
+}
+
+
+void CodeGenerator::AssemblePrepareTailCall(int stack_param_delta) {
+  int sp_slot_delta = TailCallFrameStackSlotDelta(stack_param_delta);
+  if (sp_slot_delta < 0) {
+    __ AddP(sp, sp, sp_slot_delta * kPointerSize);
   }
 }
 
@@ -526,6 +567,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
 
   switch (opcode) {
     case kArchCallCodeObject: {
+      v8::internal::Assembler::BlockTrampolinePoolScope block_trampoline_pool(
+          masm());
       EnsureSpaceForLazyDeopt();
       if (HasRegisterInput(instr, 0)) {
         __ AddP(ip, i.InputRegister(0),
@@ -539,7 +582,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     }
     case kArchTailCallCodeObject: {
-      AssembleDeconstructActivationRecord();
+      int stack_param_delta = i.InputInt32(instr->InputCount() - 1);
+      AssembleDeconstructActivationRecord(stack_param_delta);
       if (HasRegisterInput(instr, 0)) {
         __ AddP(ip, i.InputRegister(0),
                 Operand(Code::kHeaderSize - kHeapObjectTag));
@@ -554,6 +598,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     }
     case kArchCallJSFunction: {
+      v8::internal::Assembler::BlockTrampolinePoolScope block_trampoline_pool(
+          masm());
       EnsureSpaceForLazyDeopt();
       Register func = i.InputRegister(0);
       if (FLAG_debug_code) {
@@ -577,12 +623,15 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
         __ CmpP(cp, kScratchReg);
         __ Assert(eq, kWrongFunctionContext);
       }
-      AssembleDeconstructActivationRecord();
+      int stack_param_delta = i.InputInt32(instr->InputCount() - 1);
+      AssembleDeconstructActivationRecord(stack_param_delta);
       __ LoadP(ip, FieldMemOperand(func, JSFunction::kCodeEntryOffset));
       __ Jump(ip);
       break;
     }
     case kArchLazyBailout: {
+      v8::internal::Assembler::BlockTrampolinePoolScope block_trampoline_pool(
+          masm());
       EnsureSpaceForLazyDeopt();
       RecordCallPosition(instr);
       break;
@@ -592,6 +641,9 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ PrepareCallCFunction(num_parameters, kScratchReg);
       break;
     }
+    case kArchPrepareTailCall:
+      AssemblePrepareTailCall(i.InputInt32(instr->InputCount() - 1));
+      break;
     case kArchCallCFunction: {
       int const num_parameters = MiscField::decode(instr->opcode());
       if (instr->InputAt(0)->IsImmediate()) {
@@ -634,6 +686,23 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       // TODO(mbrandy): move slow call to stub out of line.
       __ TruncateDoubleToI(i.OutputRegister(), i.InputDoubleRegister(0));
       break;
+    case kArchStoreWithWriteBarrier: {
+      RecordWriteMode mode =
+          static_cast<RecordWriteMode>(MiscField::decode(instr->opcode()));
+      Register object = i.InputRegister(0);
+      Register offset = i.InputRegister(1);
+      Register value = i.InputRegister(2);
+      Register scratch0 = i.TempRegister(0);
+      Register scratch1 = i.TempRegister(1);
+      auto ool = new (zone()) OutOfLineRecordWrite(this, object, offset, value,
+                                                   scratch0, scratch1, mode);
+      __ StoreP(value, MemOperand(object, offset));
+      __ CheckPageFlag(object, scratch0,
+                       MemoryChunk::kPointersFromHereAreInterestingMask, ne,
+                       ool->entry());
+      __ bind(ool->exit());
+      break;
+    }
     case kS390_And:
       ASSEMBLE_BINOP(AndP, AndP);
       break;
@@ -935,6 +1004,13 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       // __ popcntw(i.OutputRegister(), i.InputRegister(0));
       // DCHECK_EQ(LeaveRC, i.OutputRCBit());
       break;
+#if V8_TARGET_ARCH_S390X
+    case kS390_Popcnt64:
+      UNIMPLEMENTED();
+      // __ popcntd(i.OutputRegister(), i.InputRegister(0));
+      // DCHECK_EQ(LeaveRC, i.OutputRCBit());
+      break;
+#endif
     case kS390_Cmp32:
       ASSEMBLE_COMPARE(Cmp32, CmpLogical32);
       break;
@@ -1022,9 +1098,26 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       // TODO(mbrandy): sign extend?
       __ Move(i.OutputRegister(), i.InputRegister(0));
       break;
+    case kS390_Int64ToFloat32:
+      UNIMPLEMENTED();
+      __ ConvertInt64ToFloat(i.InputRegister(0), i.OutputDoubleRegister());
+      // DCHECK_EQ(LeaveRC, i.OutputRCBit());
+      break;
     case kS390_Int64ToDouble:
       UNIMPLEMENTED();
       __ ConvertInt64ToDouble(i.InputRegister(0), i.OutputDoubleRegister());
+      // DCHECK_EQ(LeaveRC, i.OutputRCBit());
+      break;
+    case kS390_Uint64ToFloat32:
+      UNIMPLEMENTED();
+      __ ConvertUnsignedInt64ToFloat(i.InputRegister(0),
+                                     i.OutputDoubleRegister());
+      // DCHECK_EQ(LeaveRC, i.OutputRCBit());
+      break;
+    case kS390_Uint64ToDouble:
+      UNIMPLEMENTED();
+      __ ConvertUnsignedInt64ToDouble(i.InputRegister(0),
+                                      i.OutputDoubleRegister());
       // DCHECK_EQ(LeaveRC, i.OutputRCBit());
       break;
 #endif
@@ -1037,12 +1130,21 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     case kS390_DoubleToInt32:
     case kS390_DoubleToUint32:
+    case kS390_DoubleToInt64:
       __ ConvertDoubleToInt64(i.InputDoubleRegister(0),
 #if !V8_TARGET_ARCH_S390X
                               kScratchReg,
 #endif
                               i.OutputRegister(), kScratchDoubleReg);
       break;
+#if V8_TARGET_ARCH_S390X
+    case kS390_DoubleToUint64:
+      UNIMPLEMENTED();
+      __ ConvertDoubleToUnsignedInt64(i.InputDoubleRegister(0),
+                                      i.OutputRegister(), kScratchDoubleReg);
+      // DCHECK_EQ(LeaveRC, i.OutputRCBit());
+      break;
+#endif
     case kS390_DoubleToFloat32:
       __ ledbr(i.OutputDoubleRegister(), i.InputDoubleRegister(0));
       __ ldebr(i.OutputDoubleRegister(), i.OutputDoubleRegister());
@@ -1146,9 +1248,6 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     case kS390_StoreDouble:
       ASSEMBLE_STORE_DOUBLE();
-      break;
-    case kS390_StoreWriteBarrier:
-      ASSEMBLE_STORE_WRITE_BARRIER();
       break;
     case kCheckedLoadInt8:
       ASSEMBLE_CHECKED_LOAD_INTEGER(LoadlB);
@@ -1637,6 +1736,9 @@ void CodeGenerator::EnsureSpaceForLazyDeopt() {
   // instruction for patching the code here.
   int current_pc = masm()->pc_offset();
   if (current_pc < last_lazy_deopt_pc_ + space_needed) {
+    // Block tramoline pool emission for duration of padding.
+    v8::internal::Assembler::BlockTrampolinePoolScope block_trampoline_pool(
+        masm());
     int padding_size = last_lazy_deopt_pc_ + space_needed - current_pc;
     DCHECK_EQ(0, padding_size % 2);
     while (padding_size > 0) {

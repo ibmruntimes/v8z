@@ -62,7 +62,7 @@ namespace internal {
  *  - fp[-32] void* input_string (location of a handle containing the string).
  *  - fp[-36] success counter    (only for global regexps to count matches).
  *  - fp[-40] Offset of location before start of input (effectively character
- *            position -1). Used to initialize capture registers to a
+ *            string start - 1). Used to initialize capture registers to a
  *            non-position.
  *  - fp[-44] At start (if 1, we are starting at the start of the
  *    string, otherwise 0)
@@ -191,28 +191,19 @@ void RegExpMacroAssemblerS390::CheckCharacterGT(uc16 limit, Label* on_greater) {
 
 
 void RegExpMacroAssemblerS390::CheckAtStart(Label* on_at_start) {
-  Label not_at_start;
-  // Did we start the match at the start of the string at all?
-  __ LoadP(r2, MemOperand(frame_pointer(), kStartIndex));
-  __ CmpP(r2, Operand::Zero());
-  BranchOrBacktrack(ne, &not_at_start);
-
-  // If we did, are we still at the start of the input?
-  __ AddP(r2, current_input_offset(), end_of_input_address());
-  __ CmpP(r2, MemOperand(frame_pointer(), kInputStart));
+  __ LoadP(r3, MemOperand(frame_pointer(), kStringStartMinusOne));
+  __ AddP(r2, current_input_offset(), Operand(-char_size()));
+  __ CmpP(r2, r3);
   BranchOrBacktrack(eq, on_at_start);
-  __ bind(&not_at_start);
 }
 
 
-void RegExpMacroAssemblerS390::CheckNotAtStart(Label* on_not_at_start) {
-  // Did we start the match at the start of the string at all?
-  __ LoadP(r2, MemOperand(frame_pointer(), kStartIndex));
-  __ CmpP(r2, Operand::Zero());
-  BranchOrBacktrack(ne, on_not_at_start);
-  // If we did, are we still at the start of the input?
-  __ AddP(r2, current_input_offset(), end_of_input_address());
-  __ CmpP(r2, MemOperand(frame_pointer(), kInputStart));
+void RegExpMacroAssemblerS390::CheckNotAtStart(int cp_offset,
+                                              Label* on_not_at_start) {
+  __ LoadP(r3, MemOperand(frame_pointer(), kStringStartMinusOne));
+  __ AddP(r2, current_input_offset(),
+          Operand(-char_size() + cp_offset * char_size()));
+  __ CmpP(r2, r3);
   BranchOrBacktrack(ne, on_not_at_start);
 }
 
@@ -236,25 +227,28 @@ void RegExpMacroAssemblerS390::CheckGreedyLoop(Label* on_equal) {
 
 
 void RegExpMacroAssemblerS390::CheckNotBackReferenceIgnoreCase(
-    int start_reg, Label* on_no_match) {
+    int start_reg, bool read_backward, Label* on_no_match) {
   Label fallthrough;
   __ LoadP(r2, register_location(start_reg));  // Index of start of
                                                        // capture
   __ LoadP(r3, register_location(start_reg + 1));  // Index of end
   __ SubP(r3, r3, r2);
 
-  // The length of a capture should not be negative. This can only happen
-  // if the end of the capture is unrecorded, or at a point earlier than
-  // the start of the capture.
-  BranchOrBacktrack(lt, on_no_match);
-
-  // If length is zero, either the capture is empty or it is not participating.
-  // In either case succeed immediately.
+  // At this point, the capture registers are either both set or both cleared.
+  // If the capture length is zero, then the capture is either empty or cleared.
+  // Fall through in both cases.
   __ beq(&fallthrough);
 
   // Check that there are enough characters left in the input.
-  __ AddP(r0, r3, current_input_offset());
-  BranchOrBacktrack(gt, on_no_match);
+  if (read_backward) {
+    __ LoadP(r5, MemOperand(frame_pointer(), kStringStartMinusOne));
+    __ AddP(r5, r5, r3);
+    __ CmpP(current_input_offset(), r5);
+    BranchOrBacktrack(le, on_no_match);
+  } else {
+    __ AddP(r0, r3, current_input_offset());
+    BranchOrBacktrack(gt, on_no_match);
+  }
 
   if (mode_ == LATIN1) {
     Label success;
@@ -265,7 +259,10 @@ void RegExpMacroAssemblerS390::CheckNotBackReferenceIgnoreCase(
     // r3 - length of capture
     __ AddP(r2, end_of_input_address());
     __ AddP(r4, current_input_offset(), end_of_input_address());
-    // __ AddP(r3, r2);
+    if (read_backward) {
+      __ SubP(r4, r4, r3);  // Offset by length when matching backwards.
+    }
+    __ AddP(r3, r2);
     __ mov(r1, Operand::Zero());
 
     // r1 - Loop index
@@ -307,6 +304,13 @@ void RegExpMacroAssemblerS390::CheckNotBackReferenceIgnoreCase(
     __ bind(&success);
     // Compute new value of character position after the matched part.
     __ SubP(current_input_offset(), r4, end_of_input_address());
+    if (read_backward) {
+      __ LoadP(r2, register_location(start_reg));  // Index of start of capture
+      __ LoadP(r3,
+               register_location(start_reg + 1));  // Index of end of capture
+      __ AddP(current_input_offset(), current_input_offset(), r2);
+      __ SubP(current_input_offset(), current_input_offset(), r3);
+    }
     __ AddP(current_input_offset(), r1);
   } else {
     DCHECK(mode_ == UC16);
@@ -331,6 +335,9 @@ void RegExpMacroAssemblerS390::CheckNotBackReferenceIgnoreCase(
     __ LoadRR(r6, r3);
     // Address of current input position.
     __ AddP(r3, current_input_offset(), end_of_input_address());
+    if (read_backward) {
+      __ SubP(r3, r3, r6);
+    }
     // Isolate.
     __ mov(r5, Operand(ExternalReference::isolate_address(isolate())));
 
@@ -344,8 +351,13 @@ void RegExpMacroAssemblerS390::CheckNotBackReferenceIgnoreCase(
     // Check if function returned non-zero for success or zero for failure.
     __ CmpP(r2, Operand::Zero());
     BranchOrBacktrack(eq, on_no_match);
-    // On success, increment position by length of capture.
-    __ AddP(current_input_offset(), r6);
+
+    // On success, advance position by length of capture.
+    if (read_backward) {
+      __ SubP(current_input_offset(), current_input_offset(), r6);
+    } else {
+      __ AddP(current_input_offset(), current_input_offset(), r6);
+    }
   }
 
   __ bind(&fallthrough);
@@ -353,6 +365,7 @@ void RegExpMacroAssemblerS390::CheckNotBackReferenceIgnoreCase(
 
 
 void RegExpMacroAssemblerS390::CheckNotBackReference(int start_reg,
+                                                    bool read_backward,
                                                     Label* on_no_match) {
   Label fallthrough;
   Label success;
@@ -362,21 +375,29 @@ void RegExpMacroAssemblerS390::CheckNotBackReference(int start_reg,
   __ LoadP(r3, register_location(start_reg + 1));
   __ SubP(r3, r3, r2);  // Length to check.
 
-  // The length of a capture should not be negative. This can only happen
-  // if the end of the capture is unrecorded, or at a point earlier than
-  // the start of the capture.
-  BranchOrBacktrack(lt, on_no_match);
-
-  // Succeed on empty capture (including no capture).
+  // At this point, the capture registers are either both set or both cleared.
+  // If the capture length is zero, then the capture is either empty or cleared.
+  // Fall through in both cases.
   __ beq(&fallthrough /*, cr0*/);
 
   // Check that there are enough characters left in the input.
-  __ AddP(r0, r3, current_input_offset());
-  BranchOrBacktrack(gt, on_no_match, cr0);
+  if (read_backward) {
+    __ LoadP(r5, MemOperand(frame_pointer(), kStringStartMinusOne));
+    __ AddP(r5, r5, r3);
+    __ CmpP(current_input_offset(), r5);
+    BranchOrBacktrack(lt, on_no_match);
+  } else {
+    __ AddP(r0, r3, current_input_offset());
+    BranchOrBacktrack(gt, on_no_match, cr0);
+  }
 
-  // Compute pointers to match string and capture string
+  // r2 - offset of start of capture
+  // r3 - length of capture
   __ la(r2, MemOperand(r2, end_of_input_address()));
   __ la(r4, MemOperand(current_input_offset(), end_of_input_address()));
+  if (read_backward) {
+    __ SubP(r4, r4, r3);  // Offset by length when matching backwards.
+  }
   __ mov(r1, Operand::Zero());
   // __ AddP(r3, r2);
 
@@ -398,7 +419,14 @@ void RegExpMacroAssemblerS390::CheckNotBackReference(int start_reg,
 
   // Move current character position to position after match.
   __ SubP(current_input_offset(), r4, end_of_input_address());
+  if (read_backward) {
+    __ LoadP(r2, register_location(start_reg));  // Index of start of capture
+    __ LoadP(r3, register_location(start_reg + 1));  // Index of end of capture
+    __ AddP(current_input_offset(), current_input_offset(), r2);
+    __ SubP(current_input_offset(), current_input_offset(), r3);
+  }
   __ AddP(current_input_offset(), r1);
+
   __ bind(&fallthrough);
 }
 
@@ -708,7 +736,7 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
     }
     // Store this value in a local variable, for use when clearing
     // position registers.
-    __ StoreP(r1, MemOperand(frame_pointer(), kInputStartMinusOne));
+    __ StoreP(r1, MemOperand(frame_pointer(), kStringStartMinusOne));
 
     // Initialize code pointer register
     __ mov(code_pointer(), Operand(masm_->CodeObject()));
@@ -845,7 +873,7 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
         __ StoreP(r4, MemOperand(frame_pointer(), kRegisterOutput));
 
         // Prepare r2 to initialize registers with its value in the next run.
-        __ LoadP(r2, MemOperand(frame_pointer(), kInputStartMinusOne));
+        __ LoadP(r2, MemOperand(frame_pointer(), kStringStartMinusOne));
 
         if (global_with_zero_length_check()) {
           // Special case for zero-length matches.
@@ -982,10 +1010,13 @@ void RegExpMacroAssemblerS390::LoadCurrentCharacter(int cp_offset,
                                                    Label* on_end_of_input,
                                                    bool check_bounds,
                                                    int characters) {
-  DCHECK(cp_offset >= -1);        // ^ and \b can look behind one character.
   DCHECK(cp_offset < (1 << 30));  // Be sane! (And ensure negation works)
   if (check_bounds) {
-    CheckPosition(cp_offset + characters - 1, on_end_of_input);
+    if (cp_offset >= 0) {
+      CheckPosition(cp_offset + characters - 1, on_end_of_input);
+    } else {
+      CheckPosition(cp_offset, on_end_of_input);
+    }
   }
   LoadCurrentCharacterUnchecked(cp_offset, characters);
 }
@@ -1078,7 +1109,7 @@ void RegExpMacroAssemblerS390::WriteCurrentPositionToRegister(int reg,
 
 void RegExpMacroAssemblerS390::ClearRegisters(int reg_from, int reg_to) {
   DCHECK(reg_from <= reg_to);
-  __ LoadP(r2, MemOperand(frame_pointer(), kInputStartMinusOne));
+  __ LoadP(r2, MemOperand(frame_pointer(), kStringStartMinusOne));
   for (int reg = reg_from; reg <= reg_to; reg++) {
     __ StoreP(r2, register_location(reg));
   }
@@ -1152,8 +1183,15 @@ MemOperand RegExpMacroAssemblerS390::register_location(int register_index) {
 
 void RegExpMacroAssemblerS390::CheckPosition(int cp_offset,
                                             Label* on_outside_input) {
-  __ CmpP(current_input_offset(), Operand(-cp_offset * char_size()));
-  BranchOrBacktrack(ge, on_outside_input);
+  if (cp_offset >= 0) {
+    __ Cmpi(current_input_offset(), Operand(-cp_offset * char_size()));
+    BranchOrBacktrack(ge, on_outside_input);
+  } else {
+    __ LoadP(r3, MemOperand(frame_pointer(), kStringStartMinusOne));
+    __ AddP(r2, current_input_offset(), Operand(cp_offset * char_size()));
+    __ CmpP(r2, r3);
+    BranchOrBacktrack(le, on_outside_input);
+  }
 }
 
 
