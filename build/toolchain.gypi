@@ -310,7 +310,7 @@
           }],
           ['v8_host_byteorder=="little"', {
             'defines': [
-              'V8_TARGET_ARCH_S390_LE',
+              'V8_TARGET_ARCH_S390_X86_SIM',
             ],
           }],
           ],
