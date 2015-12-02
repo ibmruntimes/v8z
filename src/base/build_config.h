@@ -193,7 +193,11 @@
 #elif V8_TARGET_ARCH_PPC_BE
 #define V8_TARGET_BIG_ENDIAN 1
 #elif V8_TARGET_ARCH_S390
+#if V8_TARGET_ARCH_S390_LE
+#define V8_TARGET_LITTLE_ENDIAN 1
+#else
 #define V8_TARGET_BIG_ENDIAN 1
+#endif
 #else
 #error Unknown target architecture endianness
 #endif
