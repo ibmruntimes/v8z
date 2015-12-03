@@ -28,7 +28,7 @@ namespace internal {
 #define CALL_GENERATED_CODE(isolate, entry, p0, p1, p2, p3, p4) \
   (entry(p0, p1, p2, p3, p4))
 
-typedef int (*ppc_regexp_matcher)(String*, int, const byte*, const byte*, int*,
+typedef int (*s390_regexp_matcher)(String*, int, const byte*, const byte*, int*,
                                   int, Address, int, void*, Isolate*);
 
 
