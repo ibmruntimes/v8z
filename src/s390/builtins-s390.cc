@@ -359,6 +359,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // Push new.target onto the construct frame. This is stored just below the
       // receiver on the stack.
       __ SmiTag(r6, r2);
+      __ LoadAndTestP(r6, r6);
       __ Push(r4, r6, r5);
       __ PushRoot(Heap::kTheHoleValueRootIndex);
     } else {
@@ -508,6 +509,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // Retrieve smi-tagged arguments count from the stack.
       __ LoadP(r2, MemOperand(sp));
       __ SmiUntag(r2);
+      __ LoadAndTestP(r2, r2);
 
       // Push new.target onto the construct frame. This is stored just below the
       // receiver on the stack.

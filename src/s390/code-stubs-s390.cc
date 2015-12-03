@@ -1929,6 +1929,7 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
   Label add_arguments_object;
   __ bind(&try_allocate);
   __ SmiUntag(r1, r4);
+  __ LoadAndTestP(r1, r1);
   __ beq(&add_arguments_object);
   __ AddP(r1, r1, Operand(FixedArray::kHeaderSize / kPointerSize));
   __ bind(&add_arguments_object);
@@ -1956,6 +1957,7 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
   // If there are no actual arguments, we're done.
   Label done;
   __ SmiUntag(r8, r4);
+  __ LoadAndTestP(r8, r8);
   __ beq(&done);
 
   // Set up the elements pointer in the allocated arguments object and
