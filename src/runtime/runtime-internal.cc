@@ -386,44 +386,46 @@ RUNTIME_FUNCTION(Runtime_HarmonyToString) {
 }
 
 
-RUNTIME_FUNCTION(Runtime_GetTypeFeedbackVector) {
-  SealHandleScope shs(isolate);
-  DCHECK(args.length() == 1);
-  CONVERT_ARG_CHECKED(JSFunction, function, 0);
-  return function->shared()->feedback_vector();
-}
-
-
-RUNTIME_FUNCTION(Runtime_GetCallerJSFunction) {
-  SealHandleScope shs(isolate);
-  StackFrameIterator it(isolate);
-  RUNTIME_ASSERT(it.frame()->type() == StackFrame::STUB);
-  it.Advance();
-  RUNTIME_ASSERT(it.frame()->type() == StackFrame::JAVA_SCRIPT);
-  return JavaScriptFrame::cast(it.frame())->function();
-}
-
-
-RUNTIME_FUNCTION(Runtime_GetCodeStubExportsObject) {
-  HandleScope shs(isolate);
-  return isolate->heap()->code_stub_exports_object();
-}
-
-
 namespace {
+
+bool ComputeLocation(Isolate* isolate, MessageLocation* target) {
+  JavaScriptFrameIterator it(isolate);
+  if (!it.done()) {
+    JavaScriptFrame* frame = it.frame();
+    JSFunction* fun = frame->function();
+    Object* script = fun->shared()->script();
+    if (script->IsScript() &&
+        !(Script::cast(script)->source()->IsUndefined())) {
+      Handle<Script> casted_script(Script::cast(script));
+      // Compute the location from the function and the relocation info of the
+      // baseline code. For optimized code this will use the deoptimization
+      // information to get canonical location information.
+      List<FrameSummary> frames(FLAG_max_inlining_levels + 1);
+      it.frame()->Summarize(&frames);
+      FrameSummary& summary = frames.last();
+      int pos = summary.code()->SourcePosition(summary.pc());
+      *target = MessageLocation(casted_script, pos, pos + 1, handle(fun));
+      return true;
+    }
+  }
+  return false;
+}
+
 
 Handle<String> RenderCallSite(Isolate* isolate, Handle<Object> object) {
   MessageLocation location;
-  if (isolate->ComputeLocation(&location)) {
+  if (ComputeLocation(isolate, &location)) {
     Zone zone;
     base::SmartPointer<ParseInfo> info(
         location.function()->shared()->is_function()
             ? new ParseInfo(&zone, location.function())
             : new ParseInfo(&zone, location.script()));
     if (Parser::ParseStatic(info.get())) {
-      CallPrinter printer(isolate);
+      CallPrinter printer(isolate, location.function()->shared()->IsBuiltin());
       const char* string = printer.Print(info->literal(), location.start_pos());
-      return isolate->factory()->NewStringFromAsciiChecked(string);
+      if (strlen(string) > 0) {
+        return isolate->factory()->NewStringFromAsciiChecked(string);
+      }
     } else {
       isolate->clear_pending_exception();
     }

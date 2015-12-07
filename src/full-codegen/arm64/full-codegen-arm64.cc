@@ -92,6 +92,7 @@ class JumpPatchSite BASE_EMBEDDED {
 //
 // The live registers are:
 //   - x1: the JS function object being called (i.e. ourselves).
+//   - x3: the new target value
 //   - cp: our context.
 //   - fp: our caller's frame pointer.
 //   - jssp: stack pointer.
@@ -158,12 +159,12 @@ void FullCodeGenerator::Generate() {
         const int kMaxPushes = 32;
         if (locals_count >= kMaxPushes) {
           int loop_iterations = locals_count / kMaxPushes;
-          __ Mov(x3, loop_iterations);
+          __ Mov(x2, loop_iterations);
           Label loop_header;
           __ Bind(&loop_header);
           // Do pushes.
           __ PushMultipleTimes(x10 , kMaxPushes);
-          __ Subs(x3, x3, 1);
+          __ Subs(x2, x2, 1);
           __ B(ne, &loop_header);
         }
         int remaining = locals_count % kMaxPushes;
@@ -185,14 +186,24 @@ void FullCodeGenerator::Generate() {
       __ Push(x1, x10);
       __ CallRuntime(Runtime::kNewScriptContext, 2);
       PrepareForBailoutForId(BailoutId::ScriptContext(), TOS_REG);
-    } else if (slots <= FastNewContextStub::kMaximumSlots) {
-      FastNewContextStub stub(isolate(), slots);
-      __ CallStub(&stub);
-      // Result of FastNewContextStub is always in new space.
-      need_write_barrier = false;
+      // The new target value is not used, clobbering is safe.
+      DCHECK_NULL(info->scope()->new_target_var());
     } else {
-      __ Push(x1);
-      __ CallRuntime(Runtime::kNewFunctionContext, 1);
+      if (info->scope()->new_target_var() != nullptr) {
+        __ Push(x3);  // Preserve new target.
+      }
+      if (slots <= FastNewContextStub::kMaximumSlots) {
+        FastNewContextStub stub(isolate(), slots);
+        __ CallStub(&stub);
+        // Result of FastNewContextStub is always in new space.
+        need_write_barrier = false;
+      } else {
+        __ Push(x1);
+        __ CallRuntime(Runtime::kNewFunctionContext, 1);
+      }
+      if (info->scope()->new_target_var() != nullptr) {
+        __ Pop(x3);  // Restore new target.
+      }
     }
     function_in_register_x1 = false;
     // Context is returned in x0.  It replaces the context passed to us.
@@ -226,11 +237,11 @@ void FullCodeGenerator::Generate() {
       }
     }
   }
-  PrepareForBailoutForId(BailoutId::FunctionContext(), NO_REGISTERS);
 
-  // Function register is trashed in case we bailout here. But since that
-  // could happen only when we allocate a context the value of
-  // |function_in_register_x1| is correct.
+  // Register holding this function and new target are both trashed in case we
+  // bailout here. But since that can happen only when new target is not used
+  // and we allocate a context, the value of |function_in_register| is correct.
+  PrepareForBailoutForId(BailoutId::FunctionContext(), NO_REGISTERS);
 
   // Possibly set up a local binding to the this function which is used in
   // derived constructors with super calls.
@@ -244,34 +255,11 @@ void FullCodeGenerator::Generate() {
     SetVar(this_function_var, x1, x0, x2);
   }
 
+  // Possibly set up a local binding to the new target value.
   Variable* new_target_var = scope()->new_target_var();
   if (new_target_var != nullptr) {
     Comment cmnt(masm_, "[ new.target");
-    // Get the frame pointer for the calling frame.
-    __ Ldr(x2, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
-
-    Label check_frame_marker;
-    __ Ldr(x1, MemOperand(x2, StandardFrameConstants::kContextOffset));
-    __ Cmp(x1, Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR));
-    __ B(ne, &check_frame_marker);
-    __ Ldr(x2, MemOperand(x2, StandardFrameConstants::kCallerFPOffset));
-    __ Bind(&check_frame_marker);
-    __ Ldr(x1, MemOperand(x2, StandardFrameConstants::kMarkerOffset));
-    __ Cmp(x1, Smi::FromInt(StackFrame::CONSTRUCT));
-    function_in_register_x1 = false;
-
-    Label non_construct_frame, done;
-
-    __ B(ne, &non_construct_frame);
-    __ Ldr(x0, MemOperand(x2, ConstructFrameConstants::kNewTargetOffset));
-    __ B(&done);
-
-    __ Bind(&non_construct_frame);
-    __ LoadRoot(x0, Heap::kUndefinedValueRootIndex);
-
-    __ Bind(&done);
-
-    SetVar(new_target_var, x0, x2, x3);
+    SetVar(new_target_var, x3, x0, x2);
   }
 
   Variable* arguments = scope()->arguments();
@@ -674,7 +662,8 @@ void FullCodeGenerator::DoTest(Expression* condition,
                                Label* fall_through) {
   Handle<Code> ic = ToBooleanStub::GetUninitialized(isolate());
   CallIC(ic, condition->test_id());
-  __ CompareAndSplit(result_register(), 0, ne, if_true, if_false, fall_through);
+  __ CompareRoot(result_register(), Heap::kTrueValueRootIndex);
+  Split(eq, if_true, if_false, fall_through);
 }
 
 
@@ -1057,8 +1046,7 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
 
   // Check for proxies.
   Label call_runtime;
-  STATIC_ASSERT(FIRST_JS_PROXY_TYPE == FIRST_JS_RECEIVER_TYPE);
-  __ JumpIfObjectType(x0, x10, x11, LAST_JS_PROXY_TYPE, &call_runtime, le);
+  __ JumpIfObjectType(x0, x10, x11, JS_PROXY_TYPE, &call_runtime, eq);
 
   // Check cache validity in generated code. This is a fast case for
   // the JSObject::IsSimpleEnum cache validity checks. If we cannot
@@ -1116,11 +1104,10 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
 
   __ Mov(x1, Smi::FromInt(1));  // Smi indicates slow check.
   __ Peek(x10, 0);  // Get enumerated object.
-  STATIC_ASSERT(FIRST_JS_PROXY_TYPE == FIRST_JS_RECEIVER_TYPE);
-  // TODO(all): similar check was done already. Can we avoid it here?
-  __ CompareObjectType(x10, x11, x12, LAST_JS_PROXY_TYPE);
+  STATIC_ASSERT(JS_PROXY_TYPE == FIRST_JS_RECEIVER_TYPE);
+  __ CompareObjectType(x10, x11, x12, JS_PROXY_TYPE);
   DCHECK(Smi::FromInt(0) == 0);
-  __ CzeroX(x1, le);  // Zero indicates proxy.
+  __ CzeroX(x1, eq);  // Zero indicates proxy.
   __ Ldr(x2, FieldMemOperand(x0, FixedArray::kLengthOffset));
   // Smi and array, fixed array length (as smi) and initial index.
   __ Push(x1, x0, x2, xzr);
@@ -2584,7 +2571,7 @@ void FullCodeGenerator::EmitCall(Call* expr, ConvertReceiverMode mode) {
   }
 
   PrepareForBailoutForId(expr->CallId(), NO_REGISTERS);
-  SetCallPosition(expr, arg_count);
+  SetCallPosition(expr);
 
   Handle<Code> ic = CodeFactory::CallIC(isolate(), arg_count, mode).code();
   __ Mov(x3, SmiFromSlot(expr->CallFeedbackICSlot()));
@@ -2693,7 +2680,7 @@ void FullCodeGenerator::EmitPossiblyEvalCall(Call* expr) {
   PrepareForBailoutForId(expr->EvalId(), NO_REGISTERS);
 
   // Record source position for debugger.
-  SetCallPosition(expr, arg_count);
+  SetCallPosition(expr);
 
   // Call the evaluated function.
   __ Peek(x1, (arg_count + 1) * kXRegSize);
@@ -2727,7 +2714,7 @@ void FullCodeGenerator::VisitCallNew(CallNew* expr) {
 
   // Call the construct call builtin that handles allocation and
   // constructor invocation.
-  SetConstructCallPosition(expr, arg_count);
+  SetConstructCallPosition(expr);
 
   // Load function and argument count into x1 and x0.
   __ Mov(x0, arg_count);
@@ -2763,7 +2750,7 @@ void FullCodeGenerator::EmitSuperConstructorCall(Call* expr) {
 
   // Call the construct call builtin that handles allocation and
   // constructor invocation.
-  SetConstructCallPosition(expr, arg_count);
+  SetConstructCallPosition(expr);
 
   // Load new target into x3.
   VisitForAccumulatorValue(super_call_ref->new_target_var());
@@ -2976,43 +2963,7 @@ void FullCodeGenerator::EmitIsJSProxy(CallRuntime* expr) {
                          &if_false, &fall_through);
 
   __ JumpIfSmi(x0, if_false);
-  Register map = x10;
-  Register type_reg = x11;
-  __ Ldr(map, FieldMemOperand(x0, HeapObject::kMapOffset));
-  __ Ldrb(type_reg, FieldMemOperand(map, Map::kInstanceTypeOffset));
-  __ Sub(type_reg, type_reg, Operand(FIRST_JS_PROXY_TYPE));
-  __ Cmp(type_reg, Operand(LAST_JS_PROXY_TYPE - FIRST_JS_PROXY_TYPE));
-  PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
-  Split(ls, if_true, if_false, fall_through);
-
-  context()->Plug(if_true, if_false);
-}
-
-
-void FullCodeGenerator::EmitIsConstructCall(CallRuntime* expr) {
-  DCHECK(expr->arguments()->length() == 0);
-
-  Label materialize_true, materialize_false;
-  Label* if_true = NULL;
-  Label* if_false = NULL;
-  Label* fall_through = NULL;
-  context()->PrepareTest(&materialize_true, &materialize_false,
-                         &if_true, &if_false, &fall_through);
-
-  // Get the frame pointer for the calling frame.
-  __ Ldr(x2, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
-
-  // Skip the arguments adaptor frame if it exists.
-  Label check_frame_marker;
-  __ Ldr(x1, MemOperand(x2, StandardFrameConstants::kContextOffset));
-  __ Cmp(x1, Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR));
-  __ B(ne, &check_frame_marker);
-  __ Ldr(x2, MemOperand(x2, StandardFrameConstants::kCallerFPOffset));
-
-  // Check the marker in the calling frame.
-  __ Bind(&check_frame_marker);
-  __ Ldr(x1, MemOperand(x2, StandardFrameConstants::kMarkerOffset));
-  __ Cmp(x1, Smi::FromInt(StackFrame::CONSTRUCT));
+  __ CompareObjectType(x0, x10, x11, JS_PROXY_TYPE);
   PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
   Split(eq, if_true, if_false, fall_through);
 
@@ -3493,7 +3444,7 @@ void FullCodeGenerator::EmitDefaultConstructorCallSuper(CallRuntime* expr) {
 
   // Call the construct call builtin that handles allocation and
   // constructor invocation.
-  SetConstructCallPosition(expr, 0);
+  SetConstructCallPosition(expr);
 
   // Load new target into x3.
   __ Peek(x3, 1 * kPointerSize);
@@ -3858,7 +3809,7 @@ void FullCodeGenerator::EmitCallJSRuntimeFunction(CallRuntime* expr) {
   ZoneList<Expression*>* args = expr->arguments();
   int arg_count = args->length();
 
-  SetCallPosition(expr, arg_count);
+  SetCallPosition(expr);
   __ Peek(x1, (arg_count + 1) * kPointerSize);
   __ Mov(x0, arg_count);
   __ Call(isolate()->builtins()->Call(ConvertReceiverMode::kNullOrUndefined),
@@ -4619,7 +4570,7 @@ void FullCodeGenerator::VisitYield(Yield* expr) {
       CallIC(ic, TypeFeedbackId::None());
       __ Mov(x1, x0);
       __ Poke(x1, 2 * kPointerSize);
-      SetCallPosition(expr, 1);
+      SetCallPosition(expr);
       __ Mov(x0, 1);
       __ Call(
           isolate()->builtins()->Call(ConvertReceiverMode::kNotNullOrUndefined),
@@ -4640,7 +4591,8 @@ void FullCodeGenerator::VisitYield(Yield* expr) {
       // The ToBooleanStub argument (result.done) is in x0.
       Handle<Code> bool_ic = ToBooleanStub::GetUninitialized(isolate());
       CallIC(bool_ic);
-      __ Cbz(x0, &l_try);
+      __ CompareRoot(result_register(), Heap::kTrueValueRootIndex);
+      __ B(ne, &l_try);
 
       // result.value
       __ Pop(load_receiver);                                 // result

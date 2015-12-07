@@ -183,9 +183,14 @@ RUNTIME_FUNCTION(Runtime_SetPrototype) {
   DCHECK(args.length() == 2);
   CONVERT_ARG_HANDLE_CHECKED(JSReceiver, obj, 0);
   CONVERT_ARG_HANDLE_CHECKED(Object, prototype, 1);
-  MAYBE_RETURN(
-      JSReceiver::SetPrototype(obj, prototype, true, Object::THROW_ON_ERROR),
-      isolate->heap()->exception());
+  Maybe<bool> status =
+      JSReceiver::SetPrototype(obj, prototype, true, Object::THROW_ON_ERROR);
+  if (status.IsNothing()) return isolate->heap()->exception();
+  if (!status.FromJust()) {
+    THROW_NEW_ERROR_RETURN_FAILURE(
+        isolate,
+        NewTypeError(MessageTemplate::kProxySetPrototypeFailed, prototype));
+  }
   return *obj;
 }
 
@@ -209,14 +214,13 @@ MUST_USE_RESULT static MaybeHandle<Object> GetOwnProperty(Isolate* isolate,
   Heap* heap = isolate->heap();
   Factory* factory = isolate->factory();
 
-  PropertyAttributes attrs;
   // Get attributes.
   LookupIterator it = LookupIterator::PropertyOrElement(isolate, obj, name,
                                                         LookupIterator::HIDDEN);
   Maybe<PropertyAttributes> maybe = JSObject::GetPropertyAttributes(&it);
 
   if (!maybe.IsJust()) return MaybeHandle<Object>();
-  attrs = maybe.FromJust();
+  PropertyAttributes attrs = maybe.FromJust();
   if (attrs == ABSENT) return factory->undefined_value();
 
   DCHECK(!isolate->has_pending_exception());
@@ -714,6 +718,11 @@ RUNTIME_FUNCTION(Runtime_HasOwnProperty) {
     if (index < static_cast<uint32_t>(string->length())) {
       return isolate->heap()->true_value();
     }
+  } else if (object->IsJSProxy()) {
+    Maybe<bool> result =
+        JSReceiver::HasOwnProperty(Handle<JSProxy>::cast(object), key);
+    if (!result.IsJust()) return isolate->heap()->exception();
+    return isolate->heap()->ToBoolean(result.FromJust());
   }
   return isolate->heap()->false_value();
 }
@@ -746,17 +755,17 @@ RUNTIME_FUNCTION(Runtime_HasProperty) {
 }
 
 
-RUNTIME_FUNCTION(Runtime_IsPropertyEnumerable) {
+RUNTIME_FUNCTION(Runtime_PropertyIsEnumerable) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 2);
 
-  CONVERT_ARG_HANDLE_CHECKED(JSObject, object, 0);
+  CONVERT_ARG_HANDLE_CHECKED(JSReceiver, object, 0);
   CONVERT_ARG_HANDLE_CHECKED(Name, key, 1);
 
   Maybe<PropertyAttributes> maybe =
       JSReceiver::GetOwnPropertyAttributes(object, key);
   if (!maybe.IsJust()) return isolate->heap()->exception();
-  if (maybe.FromJust() == ABSENT) maybe = Just(DONT_ENUM);
+  if (maybe.FromJust() == ABSENT) return isolate->heap()->false_value();
   return isolate->heap()->ToBoolean((maybe.FromJust() & DONT_ENUM) == 0);
 }
 
@@ -777,8 +786,8 @@ RUNTIME_FUNCTION(Runtime_GetPropertyNamesFast) {
   Handle<JSReceiver> object(raw_object);
   Handle<FixedArray> content;
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-      isolate, content,
-      JSReceiver::GetKeys(object, JSReceiver::INCLUDE_PROTOS));
+      isolate, content, JSReceiver::GetKeys(object, JSReceiver::INCLUDE_PROTOS,
+                                            ENUMERABLE_STRINGS));
 
   // Test again, since cache may have been built by preceding call.
   if (object->IsSimpleEnum()) return object->map();
@@ -787,138 +796,19 @@ RUNTIME_FUNCTION(Runtime_GetPropertyNamesFast) {
 }
 
 
-// Return the names of the own named properties.
-// args[0]: object
-// args[1]: PropertyAttributes as int
-// TODO(cbruni/jkummerow): Use JSReceiver::GetKeys() internally, merge with
-// Runtime_GetOwnElementNames.
-RUNTIME_FUNCTION(Runtime_GetOwnPropertyNames) {
+RUNTIME_FUNCTION(Runtime_GetOwnPropertyKeys) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 2);
-  if (!args[0]->IsJSObject()) {
-    return isolate->heap()->undefined_value();
-  }
-  CONVERT_ARG_HANDLE_CHECKED(JSObject, object, 0);
+  CONVERT_ARG_HANDLE_CHECKED(JSReceiver, object, 0);
   CONVERT_SMI_ARG_CHECKED(filter_value, 1);
-  PropertyAttributes filter = static_cast<PropertyAttributes>(filter_value);
+  PropertyFilter filter = static_cast<PropertyFilter>(filter_value);
 
-  // Find the number of own properties for each of the objects.
-  int total_property_count = 0;
-  for (PrototypeIterator iter(isolate, object,
-                              PrototypeIterator::START_AT_RECEIVER);
-       !iter.IsAtEnd(PrototypeIterator::END_AT_NON_HIDDEN); iter.Advance()) {
-    // Casting to JSObject is fine because |object| is guaranteed to be one,
-    // and we'll only look at hidden prototypes which are never JSProxies.
-    Handle<JSObject> jsproto = PrototypeIterator::GetCurrent<JSObject>(iter);
-    total_property_count += jsproto->NumberOfOwnProperties(filter);
-  }
+  Handle<FixedArray> keys;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+      isolate, keys, JSReceiver::GetKeys(object, JSReceiver::OWN_ONLY, filter,
+                                         CONVERT_TO_STRING));
 
-  // Allocate an array with storage for all the property names.
-  Handle<FixedArray> names =
-      isolate->factory()->NewFixedArray(total_property_count);
-
-  // Get the property names.
-  int next_copy_index = 0;
-  int hidden_strings = 0;
-  Handle<Object> hidden_string = isolate->factory()->hidden_string();
-  for (PrototypeIterator iter(isolate, object,
-                              PrototypeIterator::START_AT_RECEIVER);
-       !iter.IsAtEnd(PrototypeIterator::END_AT_NON_HIDDEN); iter.Advance()) {
-    // Casting to JSObject is fine because |object| is guaranteed to be one,
-    // and we'll only look at hidden prototypes which are never JSProxies.
-    Handle<JSObject> jsproto = PrototypeIterator::GetCurrent<JSObject>(iter);
-    int own = jsproto->GetOwnPropertyNames(*names, next_copy_index, filter);
-    // Names from hidden prototypes may already have been added
-    // for inherited function template instances. Count the duplicates
-    // and stub them out; the final copy pass at the end ignores holes.
-    for (int j = next_copy_index; j < next_copy_index + own; j++) {
-      Object* name_from_hidden_proto = names->get(j);
-      if (isolate->IsInternallyUsedPropertyName(name_from_hidden_proto)) {
-        hidden_strings++;
-      } else {
-        for (int k = 0; k < next_copy_index; k++) {
-          Object* name = names->get(k);
-          if (name_from_hidden_proto == name) {
-            names->set(j, *hidden_string);
-            hidden_strings++;
-            break;
-          }
-        }
-      }
-    }
-    next_copy_index += own;
-  }
-
-  CHECK_EQ(total_property_count, next_copy_index);
-
-  if (object->IsAccessCheckNeeded() &&
-      !isolate->MayAccess(handle(isolate->context()), object)) {
-    for (int i = 0; i < total_property_count; i++) {
-      Handle<Name> name(Name::cast(names->get(i)));
-      if (name.is_identical_to(hidden_string)) continue;
-      LookupIterator it(object, name, LookupIterator::HIDDEN_SKIP_INTERCEPTOR);
-      if (!JSObject::AllCanRead(&it)) {
-        names->set(i, *hidden_string);
-        hidden_strings++;
-      }
-    }
-  }
-
-  // Filter out name of hidden properties object and
-  // hidden prototype duplicates.
-  if (hidden_strings > 0) {
-    if (hidden_strings == total_property_count) {
-      names = isolate->factory()->empty_fixed_array();
-    } else {
-      int i;
-      for (i = 0; i < total_property_count; i++) {
-        Object* name = names->get(i);
-        if (name == *hidden_string) break;
-      }
-      int dest_pos = i;
-      for (; i < total_property_count; i++) {
-        Object* name = names->get(i);
-        if (name == *hidden_string) continue;
-        names->set(dest_pos++, name);
-      }
-
-      isolate->heap()->RightTrimFixedArray<Heap::CONCURRENT_TO_SWEEPER>(
-          *names, hidden_strings);
-    }
-  }
-
-  return *isolate->factory()->NewJSArrayWithElements(names);
-}
-
-
-// Return the names of the own indexed properties.
-// args[0]: object
-RUNTIME_FUNCTION(Runtime_GetOwnElementNames) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 1);
-  if (!args[0]->IsJSObject()) {
-    return isolate->heap()->undefined_value();
-  }
-  CONVERT_ARG_HANDLE_CHECKED(JSObject, object, 0);
-
-  // TODO(cbruni): implement proper prototype lookup like in GetOwnPropertyNames
-  if (object->IsJSGlobalProxy()) {
-    // All the elements are stored on the globa_object and not directly on the
-    // global object proxy.
-    PrototypeIterator iter(isolate, object,
-                           PrototypeIterator::START_AT_PROTOTYPE);
-    if (iter.IsAtEnd(PrototypeIterator::END_AT_NON_HIDDEN)) {
-      return *isolate->factory()->NewJSArray(0);
-    }
-    // Casting to JSObject is fine because |object| is guaranteed to be one,
-    // and we'll only look at hidden prototypes which are never JSProxies.
-    object = PrototypeIterator::GetCurrent<JSObject>(iter);
-  }
-
-  int n = object->NumberOfOwnElements(NONE);
-  Handle<FixedArray> names = isolate->factory()->NewFixedArray(n);
-  object->GetOwnElementKeys(*names, NONE);
-  return *isolate->factory()->NewJSArrayWithElements(names);
+  return *isolate->factory()->NewJSArrayWithElements(keys);
 }
 
 
@@ -937,54 +827,6 @@ RUNTIME_FUNCTION(Runtime_GetInterceptorInfo) {
   if (obj->HasIndexedInterceptor()) result |= 1;
 
   return Smi::FromInt(result);
-}
-
-
-// Return property names from named interceptor.
-// args[0]: object
-RUNTIME_FUNCTION(Runtime_GetNamedInterceptorPropertyNames) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 1);
-  CONVERT_ARG_HANDLE_CHECKED(JSObject, obj, 0);
-
-  if (obj->HasNamedInterceptor()) {
-    Handle<JSObject> result;
-    if (JSObject::GetKeysForNamedInterceptor(obj, obj).ToHandle(&result)) {
-      return *result;
-    }
-  }
-  return isolate->heap()->undefined_value();
-}
-
-
-// Return element names from indexed interceptor.
-// args[0]: object
-RUNTIME_FUNCTION(Runtime_GetIndexedInterceptorElementNames) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 1);
-  CONVERT_ARG_HANDLE_CHECKED(JSObject, obj, 0);
-
-  if (obj->HasIndexedInterceptor()) {
-    Handle<JSObject> result;
-    if (JSObject::GetKeysForIndexedInterceptor(obj, obj).ToHandle(&result)) {
-      return *result;
-    }
-  }
-  return isolate->heap()->undefined_value();
-}
-
-
-RUNTIME_FUNCTION(Runtime_OwnKeys) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 1);
-  CONVERT_ARG_CHECKED(JSObject, raw_object, 0);
-  Handle<JSObject> object(raw_object);
-
-  Handle<FixedArray> contents;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-      isolate, contents, JSReceiver::GetKeys(object, JSReceiver::OWN_ONLY,
-                                             SKIP_SYMBOLS, CONVERT_TO_STRING));
-  return *isolate->factory()->NewJSArrayWithElements(contents);
 }
 
 
@@ -1011,6 +853,16 @@ static Object* Runtime_NewObjectHelper(Isolate* isolate,
                                        Handle<JSFunction> constructor,
                                        Handle<JSReceiver> new_target,
                                        Handle<AllocationSite> site) {
+  DCHECK(constructor->IsConstructor());
+
+  // If called through new, new.target can be:
+  // - a subclass of constructor,
+  // - a proxy wrapper around constructor, or
+  // - the constructor itself.
+  // If called through Reflect.construct, it's guaranteed to be a constructor by
+  // REFLECT_CONSTRUCT_PREPARE.
+  DCHECK(new_target->IsConstructor());
+
   DCHECK(!constructor->has_initial_map() ||
          constructor->initial_map()->instance_type() != JS_FUNCTION_TYPE);
 
@@ -1034,16 +886,6 @@ RUNTIME_FUNCTION(Runtime_NewObject) {
   DCHECK(args.length() == 2);
   CONVERT_ARG_HANDLE_CHECKED(JSFunction, constructor, 0);
   CONVERT_ARG_HANDLE_CHECKED(JSReceiver, new_target, 1);
-
-  DCHECK(constructor->IsConstructor());
-
-  // If called through new, new.target can be:
-  // - a subclass of constructor,
-  // - a proxy wrapper around constructor, or
-  // - the constructor itself.
-  // If called through Reflect.construct, it's guaranteed to be a constructor by
-  // REFLECT_CONSTRUCT_PREPARE.
-  DCHECK(new_target->IsConstructor());
 
   return Runtime_NewObjectHelper(isolate, constructor, new_target,
                                  Handle<AllocationSite>::null());
@@ -1529,18 +1371,20 @@ RUNTIME_FUNCTION(Runtime_InstanceOf) {
         NewTypeError(MessageTemplate::kInstanceofNonobjectProto, prototype));
   }
   // Return whether or not {prototype} is in the prototype chain of {object}.
-  return isolate->heap()->ToBoolean(
-      object->HasInPrototypeChain(isolate, *prototype));
+  Maybe<bool> result = Object::HasInPrototypeChain(isolate, object, prototype);
+  MAYBE_RETURN(result, isolate->heap()->exception());
+  return isolate->heap()->ToBoolean(result.FromJust());
 }
 
 
 RUNTIME_FUNCTION(Runtime_HasInPrototypeChain) {
-  SealHandleScope scope(isolate);
+  HandleScope scope(isolate);
   DCHECK_EQ(2, args.length());
-  CONVERT_ARG_CHECKED(Object, object, 0);
-  CONVERT_ARG_CHECKED(Object, prototype, 1);
-  return isolate->heap()->ToBoolean(
-      object->HasInPrototypeChain(isolate, prototype));
+  CONVERT_ARG_HANDLE_CHECKED(Object, object, 0);
+  CONVERT_ARG_HANDLE_CHECKED(Object, prototype, 1);
+  Maybe<bool> result = Object::HasInPrototypeChain(isolate, object, prototype);
+  MAYBE_RETURN(result, isolate->heap()->exception());
+  return isolate->heap()->ToBoolean(result.FromJust());
 }
 
 

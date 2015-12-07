@@ -448,6 +448,8 @@ ReturnType BodyDescriptorApply(InstanceType type, T1 p1, T2 p2, T3 p3) {
       return Op::template apply<FixedArray::BodyDescriptor>(p1, p2, p3);
     case FIXED_DOUBLE_ARRAY_TYPE:
       return ReturnType();
+    case TRANSITION_ARRAY_TYPE:
+      return Op::template apply<TransitionArray::BodyDescriptor>(p1, p2, p3);
     case JS_OBJECT_TYPE:
     case JS_PROMISE_TYPE:
     case JS_CONTEXT_EXTENSION_OBJECT_TYPE:
@@ -479,8 +481,6 @@ ReturnType BodyDescriptorApply(InstanceType type, T1 p1, T2 p2, T3 p3) {
       return Op::template apply<Oddball::BodyDescriptor>(p1, p2, p3);
     case JS_PROXY_TYPE:
       return Op::template apply<JSProxy::BodyDescriptor>(p1, p2, p3);
-    case JS_FUNCTION_PROXY_TYPE:
-      return Op::template apply<JSFunctionProxy::BodyDescriptor>(p1, p2, p3);
     case FOREIGN_TYPE:
       return Op::template apply<Foreign::BodyDescriptor>(p1, p2, p3);
     case MAP_TYPE:

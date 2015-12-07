@@ -377,6 +377,58 @@ TEST_F(InstructionSelectorTest, Word64ShrWithWord64AndWithImmediate) {
 }
 
 
+TEST_F(InstructionSelectorTest, Word32AndToClearBits) {
+  TRACED_FORRANGE(int32_t, shift, 1, 31) {
+    int32_t mask = ~((1 << shift) - 1);
+    StreamBuilder m(this, kMachInt32, kMachInt32);
+    m.Return(m.Word32And(m.Parameter(0), m.Int32Constant(mask)));
+    Stream s = m.Build();
+    ASSERT_EQ(1U, s.size());
+    EXPECT_EQ(kMips64Ins, s[0]->arch_opcode());
+    ASSERT_EQ(3U, s[0]->InputCount());
+    EXPECT_EQ(0, s.ToInt32(s[0]->InputAt(1)));
+    EXPECT_EQ(shift, s.ToInt32(s[0]->InputAt(2)));
+  }
+  TRACED_FORRANGE(int32_t, shift, 1, 31) {
+    int32_t mask = ~((1 << shift) - 1);
+    StreamBuilder m(this, kMachInt32, kMachInt32);
+    m.Return(m.Word32And(m.Int32Constant(mask), m.Parameter(0)));
+    Stream s = m.Build();
+    ASSERT_EQ(1U, s.size());
+    EXPECT_EQ(kMips64Ins, s[0]->arch_opcode());
+    ASSERT_EQ(3U, s[0]->InputCount());
+    EXPECT_EQ(0, s.ToInt32(s[0]->InputAt(1)));
+    EXPECT_EQ(shift, s.ToInt32(s[0]->InputAt(2)));
+  }
+}
+
+
+TEST_F(InstructionSelectorTest, Word64AndToClearBits) {
+  TRACED_FORRANGE(int32_t, shift, 1, 31) {
+    int64_t mask = ~((1 << shift) - 1);
+    StreamBuilder m(this, kMachInt64, kMachInt64);
+    m.Return(m.Word64And(m.Parameter(0), m.Int64Constant(mask)));
+    Stream s = m.Build();
+    ASSERT_EQ(1U, s.size());
+    EXPECT_EQ(kMips64Dins, s[0]->arch_opcode());
+    ASSERT_EQ(3U, s[0]->InputCount());
+    EXPECT_EQ(0, s.ToInt32(s[0]->InputAt(1)));
+    EXPECT_EQ(shift, s.ToInt32(s[0]->InputAt(2)));
+  }
+  TRACED_FORRANGE(int32_t, shift, 1, 31) {
+    int64_t mask = ~((1 << shift) - 1);
+    StreamBuilder m(this, kMachInt64, kMachInt64);
+    m.Return(m.Word64And(m.Int64Constant(mask), m.Parameter(0)));
+    Stream s = m.Build();
+    ASSERT_EQ(1U, s.size());
+    EXPECT_EQ(kMips64Dins, s[0]->arch_opcode());
+    ASSERT_EQ(3U, s[0]->InputCount());
+    EXPECT_EQ(0, s.ToInt32(s[0]->InputAt(1)));
+    EXPECT_EQ(shift, s.ToInt32(s[0]->InputAt(2)));
+  }
+}
+
+
 // ----------------------------------------------------------------------------
 // Logical instructions.
 // ----------------------------------------------------------------------------
@@ -398,6 +450,50 @@ TEST_P(InstructionSelectorLogicalTest, Parameter) {
 
 INSTANTIATE_TEST_CASE_P(InstructionSelectorTest, InstructionSelectorLogicalTest,
                         ::testing::ValuesIn(kLogicalInstructions));
+
+
+TEST_F(InstructionSelectorTest, Word64XorMinusOneWithParameter) {
+  {
+    StreamBuilder m(this, kMachInt64, kMachInt64);
+    m.Return(m.Word64Xor(m.Parameter(0), m.Int64Constant(-1)));
+    Stream s = m.Build();
+    ASSERT_EQ(1U, s.size());
+    EXPECT_EQ(kMips64Nor, s[0]->arch_opcode());
+    EXPECT_EQ(2U, s[0]->InputCount());
+    EXPECT_EQ(1U, s[0]->OutputCount());
+  }
+  {
+    StreamBuilder m(this, kMachInt64, kMachInt64);
+    m.Return(m.Word64Xor(m.Int64Constant(-1), m.Parameter(0)));
+    Stream s = m.Build();
+    ASSERT_EQ(1U, s.size());
+    EXPECT_EQ(kMips64Nor, s[0]->arch_opcode());
+    EXPECT_EQ(2U, s[0]->InputCount());
+    EXPECT_EQ(1U, s[0]->OutputCount());
+  }
+}
+
+
+TEST_F(InstructionSelectorTest, Word32XorMinusOneWithParameter) {
+  {
+    StreamBuilder m(this, kMachInt32, kMachInt32);
+    m.Return(m.Word32Xor(m.Parameter(0), m.Int32Constant(-1)));
+    Stream s = m.Build();
+    ASSERT_EQ(1U, s.size());
+    EXPECT_EQ(kMips64Nor, s[0]->arch_opcode());
+    EXPECT_EQ(2U, s[0]->InputCount());
+    EXPECT_EQ(1U, s[0]->OutputCount());
+  }
+  {
+    StreamBuilder m(this, kMachInt32, kMachInt32);
+    m.Return(m.Word32Xor(m.Int32Constant(-1), m.Parameter(0)));
+    Stream s = m.Build();
+    ASSERT_EQ(1U, s.size());
+    EXPECT_EQ(kMips64Nor, s[0]->arch_opcode());
+    EXPECT_EQ(2U, s[0]->InputCount());
+    EXPECT_EQ(1U, s[0]->OutputCount());
+  }
+}
 
 
 TEST_F(InstructionSelectorTest, Word64XorMinusOneWithWord64Or) {
@@ -522,6 +618,44 @@ TEST_F(InstructionSelectorTest, Word64AndWithImmediateWithWord64Shr) {
       int64_t actual_width = (lsb + width > 64) ? (64 - lsb) : width;
       EXPECT_EQ(actual_width, s.ToInt64(s[0]->InputAt(2)));
     }
+  }
+}
+
+
+TEST_F(InstructionSelectorTest, Word32ShlWithWord32And) {
+  TRACED_FORRANGE(int32_t, shift, 0, 30) {
+    StreamBuilder m(this, kMachInt32, kMachInt32);
+    Node* const p0 = m.Parameter(0);
+    Node* const r =
+        m.Word32Shl(m.Word32And(p0, m.Int32Constant((1 << (31 - shift)) - 1)),
+                    m.Int32Constant(shift + 1));
+    m.Return(r);
+    Stream s = m.Build();
+    ASSERT_EQ(1U, s.size());
+    EXPECT_EQ(kMips64Shl, s[0]->arch_opcode());
+    ASSERT_EQ(2U, s[0]->InputCount());
+    EXPECT_EQ(s.ToVreg(p0), s.ToVreg(s[0]->InputAt(0)));
+    ASSERT_EQ(1U, s[0]->OutputCount());
+    EXPECT_EQ(s.ToVreg(r), s.ToVreg(s[0]->Output()));
+  }
+}
+
+
+TEST_F(InstructionSelectorTest, Word64ShlWithWord64And) {
+  TRACED_FORRANGE(int32_t, shift, 0, 62) {
+    StreamBuilder m(this, kMachInt64, kMachInt64);
+    Node* const p0 = m.Parameter(0);
+    Node* const r =
+        m.Word64Shl(m.Word64And(p0, m.Int64Constant((1L << (63 - shift)) - 1)),
+                    m.Int64Constant(shift + 1));
+    m.Return(r);
+    Stream s = m.Build();
+    ASSERT_EQ(1U, s.size());
+    EXPECT_EQ(kMips64Dshl, s[0]->arch_opcode());
+    ASSERT_EQ(2U, s[0]->InputCount());
+    EXPECT_EQ(s.ToVreg(p0), s.ToVreg(s[0]->InputAt(0)));
+    ASSERT_EQ(1U, s[0]->OutputCount());
+    EXPECT_EQ(s.ToVreg(r), s.ToVreg(s[0]->Output()));
   }
 }
 

@@ -842,7 +842,11 @@ void InstructionSelector::VisitFloat64Sqrt(Node* node) {
 }
 
 
-void InstructionSelector::VisitFloat32RoundDown(Node* node) { UNIMPLEMENTED(); }
+void InstructionSelector::VisitFloat32RoundDown(Node* node) {
+  X87OperandGenerator g(this);
+  Emit(kX87Float32Round | MiscField::encode(kRoundDown),
+       g.UseFixed(node, stX_0), g.Use(node->InputAt(0)));
+}
 
 
 void InstructionSelector::VisitFloat64RoundDown(Node* node) {
@@ -852,14 +856,24 @@ void InstructionSelector::VisitFloat64RoundDown(Node* node) {
 }
 
 
-void InstructionSelector::VisitFloat32RoundUp(Node* node) { UNREACHABLE(); }
+void InstructionSelector::VisitFloat32RoundUp(Node* node) {
+  X87OperandGenerator g(this);
+  Emit(kX87Float32Round | MiscField::encode(kRoundUp), g.UseFixed(node, stX_0),
+       g.Use(node->InputAt(0)));
+}
 
 
-void InstructionSelector::VisitFloat64RoundUp(Node* node) { UNREACHABLE(); }
+void InstructionSelector::VisitFloat64RoundUp(Node* node) {
+  X87OperandGenerator g(this);
+  Emit(kX87Float64Round | MiscField::encode(kRoundUp), g.UseFixed(node, stX_0),
+       g.Use(node->InputAt(0)));
+}
 
 
 void InstructionSelector::VisitFloat32RoundTruncate(Node* node) {
-  UNREACHABLE();
+  X87OperandGenerator g(this);
+  Emit(kX87Float32Round | MiscField::encode(kRoundToZero),
+       g.UseFixed(node, stX_0), g.Use(node->InputAt(0)));
 }
 
 
@@ -876,12 +890,16 @@ void InstructionSelector::VisitFloat64RoundTiesAway(Node* node) {
 
 
 void InstructionSelector::VisitFloat32RoundTiesEven(Node* node) {
-  UNREACHABLE();
+  X87OperandGenerator g(this);
+  Emit(kX87Float32Round | MiscField::encode(kRoundToNearest),
+       g.UseFixed(node, stX_0), g.Use(node->InputAt(0)));
 }
 
 
 void InstructionSelector::VisitFloat64RoundTiesEven(Node* node) {
-  UNREACHABLE();
+  X87OperandGenerator g(this);
+  Emit(kX87Float64Round | MiscField::encode(kRoundToNearest),
+       g.UseFixed(node, stX_0), g.Use(node->InputAt(0)));
 }
 
 
@@ -1300,6 +1318,15 @@ InstructionSelector::SupportedMachineOperatorFlags() {
   if (CpuFeatures::IsSupported(POPCNT)) {
     flags |= MachineOperatorBuilder::kWord32Popcnt;
   }
+
+  flags |= MachineOperatorBuilder::kFloat32RoundDown |
+           MachineOperatorBuilder::kFloat64RoundDown |
+           MachineOperatorBuilder::kFloat32RoundUp |
+           MachineOperatorBuilder::kFloat64RoundUp |
+           MachineOperatorBuilder::kFloat32RoundTruncate |
+           MachineOperatorBuilder::kFloat64RoundTruncate |
+           MachineOperatorBuilder::kFloat32RoundTiesEven |
+           MachineOperatorBuilder::kFloat64RoundTiesEven;
   return flags;
 }
 

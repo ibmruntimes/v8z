@@ -91,7 +91,6 @@ class LCodeGen;
   V(InstructionGap)                          \
   V(Integer32ToDouble)                       \
   V(InvokeFunction)                          \
-  V(IsConstructCallAndBranch)                \
   V(IsSmiAndBranch)                          \
   V(IsStringAndBranch)                       \
   V(IsUndetectableAndBranch)                 \
@@ -1469,18 +1468,20 @@ class LInstanceOf final : public LTemplateInstruction<1, 3, 0> {
 };
 
 
-class LHasInPrototypeChainAndBranch final : public LControlInstruction<2, 1> {
+class LHasInPrototypeChainAndBranch final : public LControlInstruction<2, 2> {
  public:
   LHasInPrototypeChainAndBranch(LOperand* object, LOperand* prototype,
-                                LOperand* scratch) {
+                                LOperand* scratch1, LOperand* scratch2) {
     inputs_[0] = object;
     inputs_[1] = prototype;
-    temps_[0] = scratch;
+    temps_[0] = scratch1;
+    temps_[1] = scratch2;
   }
 
   LOperand* object() const { return inputs_[0]; }
   LOperand* prototype() const { return inputs_[1]; }
-  LOperand* scratch() const { return temps_[0]; }
+  LOperand* scratch1() const { return temps_[0]; }
+  LOperand* scratch2() const { return temps_[1]; }
 
   DECLARE_CONCRETE_INSTRUCTION(HasInPrototypeChainAndBranch,
                                "has-in-prototype-chain-and-branch")
@@ -1559,21 +1560,6 @@ class LInvokeFunction final : public LTemplateInstruction<1, 2, 0> {
   void PrintDataTo(StringStream* stream) override;
 
   int arity() const { return hydrogen()->argument_count() - 1; }
-};
-
-
-class LIsConstructCallAndBranch final : public LControlInstruction<0, 2> {
- public:
-  LIsConstructCallAndBranch(LOperand* temp1, LOperand* temp2) {
-    temps_[0] = temp1;
-    temps_[1] = temp2;
-  }
-
-  LOperand* temp1() { return temps_[0]; }
-  LOperand* temp2() { return temps_[1]; }
-
-  DECLARE_CONCRETE_INSTRUCTION(IsConstructCallAndBranch,
-                               "is-construct-call-and-branch")
 };
 
 

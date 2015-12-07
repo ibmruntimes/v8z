@@ -81,13 +81,13 @@ class MacroAssembler: public Assembler {
 
   // Compare the object in a register to a value and jump if they are equal.
   void JumpIfRoot(Register with, Heap::RootListIndex index, Label* if_equal,
-                  Label::Distance if_equal_distance = Label::kNear) {
+                  Label::Distance if_equal_distance = Label::kFar) {
     CompareRoot(with, index);
     j(equal, if_equal, if_equal_distance);
   }
   void JumpIfRoot(const Operand& with, Heap::RootListIndex index,
                   Label* if_equal,
-                  Label::Distance if_equal_distance = Label::kNear) {
+                  Label::Distance if_equal_distance = Label::kFar) {
     CompareRoot(with, index);
     j(equal, if_equal, if_equal_distance);
   }
@@ -95,13 +95,13 @@ class MacroAssembler: public Assembler {
   // Compare the object in a register to a value and jump if they are not equal.
   void JumpIfNotRoot(Register with, Heap::RootListIndex index,
                      Label* if_not_equal,
-                     Label::Distance if_not_equal_distance = Label::kNear) {
+                     Label::Distance if_not_equal_distance = Label::kFar) {
     CompareRoot(with, index);
     j(not_equal, if_not_equal, if_not_equal_distance);
   }
   void JumpIfNotRoot(const Operand& with, Heap::RootListIndex index,
                      Label* if_not_equal,
-                     Label::Distance if_not_equal_distance = Label::kNear) {
+                     Label::Distance if_not_equal_distance = Label::kFar) {
     CompareRoot(with, index);
     j(not_equal, if_not_equal, if_not_equal_distance);
   }
@@ -314,6 +314,10 @@ class MacroAssembler: public Assembler {
                           const ParameterCount& expected,
                           const ParameterCount& actual, InvokeFlag flag,
                           const CallWrapper& call_wrapper);
+
+  void FloodFunctionIfStepping(Register fun, Register new_target,
+                               const ParameterCount& expected,
+                               const ParameterCount& actual);
 
   // Invoke the JavaScript function in the given register. Changes the
   // current context to the context in the function before invoking.
@@ -896,10 +900,6 @@ class MacroAssembler: public Assembler {
                       bool* definitely_mismatches, InvokeFlag flag,
                       Label::Distance done_distance,
                       const CallWrapper& call_wrapper);
-
-  void FloodFunctionIfStepping(Register fun, Register new_target,
-                               const ParameterCount& expected,
-                               const ParameterCount& actual);
 
   void EnterExitFramePrologue();
   void EnterExitFrameEpilogue(int argc, bool save_doubles);

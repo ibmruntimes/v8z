@@ -180,6 +180,7 @@ Heap::Heap()
   set_allocation_sites_list(Smi::FromInt(0));
   set_encountered_weak_collections(Smi::FromInt(0));
   set_encountered_weak_cells(Smi::FromInt(0));
+  set_encountered_transition_arrays(Smi::FromInt(0));
   // Put a dummy entry in the remembered pages so we can find the list the
   // minidump even if there are no real unmapped pages.
   RememberUnmappedPage(NULL, false);
@@ -425,10 +426,6 @@ void Heap::GarbageCollectionPrologue() {
   {
     AllowHeapAllocation for_the_first_part_of_prologue;
     gc_count_++;
-
-    if (FLAG_flush_code) {
-      mark_compact_collector()->EnableCodeFlushing(true);
-    }
 
 #ifdef VERIFY_HEAP
     if (FLAG_verify_heap) {
@@ -765,10 +762,8 @@ void Heap::HandleGCRequest() {
       IncrementalMarking::COMPLETE_MARKING) {
     CollectAllGarbage(current_gc_flags_, "GC interrupt",
                       current_gc_callback_flags_);
-    return;
-  }
-  DCHECK(FLAG_finalize_marking_incrementally);
-  if (!incremental_marking()->finalize_marking_completed()) {
+  } else if (incremental_marking()->IsMarking() &&
+             !incremental_marking()->finalize_marking_completed()) {
     FinalizeIncrementalMarking("GC interrupt: finalize incremental marking");
   }
 }
@@ -1382,6 +1377,8 @@ void Heap::CallGCEpilogueCallbacks(GCType gc_type,
 
 
 void Heap::MarkCompact() {
+  PauseInlineAllocationObserversScope pause_observers(new_space());
+
   gc_state_ = MARK_COMPACT;
   LOG(isolate_, ResourceEvent("markcompact", "begin"));
 
@@ -1586,7 +1583,7 @@ void Heap::Scavenge() {
 
   // Bump-pointer allocations done during scavenge are not real allocations.
   // Pause the inline allocation steps.
-  new_space()->PauseInlineAllocationObservers();
+  PauseInlineAllocationObserversScope pause_observers(new_space());
 
 #ifdef VERIFY_HEAP
   if (FLAG_verify_heap) VerifyNonPointerSpacePointers(this);
@@ -1716,8 +1713,6 @@ void Heap::Scavenge() {
 
   // Set age mark.
   new_space_.set_age_mark(new_space_.top());
-
-  new_space()->ResumeInlineAllocationObservers();
 
   array_buffer_tracker()->FreeDead(true);
 
@@ -2087,6 +2082,7 @@ AllocationResult Heap::AllocateMap(InstanceType instance_type,
                    Map::Counter::encode(Map::kRetainingCounterStart);
   map->set_bit_field3(bit_field3);
   map->set_elements_kind(elements_kind);
+  map->set_new_target_is_base(true);
 
   return map;
 }
@@ -2333,6 +2329,7 @@ bool Heap::CreateInitialMaps() {
     ALLOCATE_MAP(FILLER_TYPE, kPointerSize, one_pointer_filler)
     ALLOCATE_MAP(FILLER_TYPE, 2 * kPointerSize, two_pointer_filler)
 
+    ALLOCATE_VARSIZE_MAP(TRANSITION_ARRAY_TYPE, transition_array)
 
     for (unsigned i = 0; i < arraysize(struct_table); i++) {
       const StructTable& entry = struct_table[i];
@@ -2491,6 +2488,21 @@ AllocationResult Heap::AllocateWeakCell(HeapObject* value) {
   WeakCell::cast(result)->initialize(value);
   WeakCell::cast(result)->clear_next(this);
   return result;
+}
+
+
+AllocationResult Heap::AllocateTransitionArray(int capacity) {
+  DCHECK(capacity > 0);
+  HeapObject* raw_array = nullptr;
+  {
+    AllocationResult allocation = AllocateRawFixedArray(capacity, TENURED);
+    if (!allocation.To(&raw_array)) return allocation;
+  }
+  raw_array->set_map_no_write_barrier(transition_array_map());
+  TransitionArray* array = TransitionArray::cast(raw_array);
+  array->set_length(capacity);
+  MemsetPointer(array->data_start(), undefined_value(), capacity);
+  return array;
 }
 
 
@@ -2720,9 +2732,6 @@ void Heap::CreateInitialObjects() {
 
   set_experimental_extra_natives_source_cache(
       *factory->NewFixedArray(ExperimentalExtraNatives::GetBuiltinsCount()));
-
-  set_code_stub_natives_source_cache(
-      *factory->NewFixedArray(CodeStubNatives::GetBuiltinsCount()));
 
   set_undefined_cell(*factory->NewCell(factory->undefined_value()));
 
@@ -3380,16 +3389,18 @@ void Heap::InitializeJSObjectBody(JSObject* obj, Map* map, int start_offset) {
   // Pre-allocated fields need to be initialized with undefined_value as well
   // so that object accesses before the constructor completes (e.g. in the
   // debugger) will not cause a crash.
-  Object* constructor = map->GetConstructor();
-  if (constructor->IsJSFunction() &&
-      JSFunction::cast(constructor)->IsInobjectSlackTrackingInProgress()) {
+
+  // In case of Array subclassing the |map| could already be transitioned
+  // to different elements kind from the initial map on which we track slack.
+  Map* initial_map = map->FindRootMap();
+  if (initial_map->IsInobjectSlackTrackingInProgress()) {
     // We might want to shrink the object later.
-    DCHECK_EQ(0, obj->GetInternalFieldCount());
     filler = Heap::one_pointer_filler_map();
   } else {
     filler = Heap::undefined_value();
   }
   obj->InitializeBody(map, start_offset, Heap::undefined_value(), filler);
+  initial_map->InobjectSlackTrackingStep();
 }
 
 
@@ -4018,8 +4029,7 @@ void Heap::ReduceNewSpaceSize() {
 
 
 void Heap::FinalizeIncrementalMarkingIfComplete(const char* comment) {
-  if (FLAG_finalize_marking_incrementally &&
-      incremental_marking()->IsMarking() &&
+  if (incremental_marking()->IsMarking() &&
       (incremental_marking()->IsReadyToOverApproximateWeakClosure() ||
        (!incremental_marking()->finalize_marking_completed() &&
         mark_compact_collector()->marking_deque()->IsEmpty()))) {
@@ -4036,12 +4046,11 @@ bool Heap::TryFinalizeIdleIncrementalMarking(double idle_time_in_ms) {
   size_t final_incremental_mark_compact_speed_in_bytes_per_ms =
       static_cast<size_t>(
           tracer()->FinalIncrementalMarkCompactSpeedInBytesPerMillisecond());
-  if (FLAG_finalize_marking_incrementally &&
-      (incremental_marking()->IsReadyToOverApproximateWeakClosure() ||
-       (!incremental_marking()->finalize_marking_completed() &&
-        mark_compact_collector()->marking_deque()->IsEmpty() &&
-        gc_idle_time_handler_->ShouldDoOverApproximateWeakClosure(
-            static_cast<size_t>(idle_time_in_ms))))) {
+  if (incremental_marking()->IsReadyToOverApproximateWeakClosure() ||
+      (!incremental_marking()->finalize_marking_completed() &&
+       mark_compact_collector()->marking_deque()->IsEmpty() &&
+       gc_idle_time_handler_->ShouldDoOverApproximateWeakClosure(
+           static_cast<size_t>(idle_time_in_ms)))) {
     FinalizeIncrementalMarking(
         "Idle notification: finalize incremental marking");
     return true;
@@ -4902,6 +4911,10 @@ void Heap::SetOldGenerationAllocationLimit(intptr_t old_gen_size,
     factor = kMinHeapGrowingFactor;
   }
 
+  if (FLAG_heap_growing_percent > 0) {
+    factor = 1.0 + FLAG_heap_growing_percent / 100.0;
+  }
+
   old_generation_allocation_limit_ =
       CalculateOldGenerationAllocationLimit(factor, old_gen_size);
 
@@ -5085,6 +5098,7 @@ bool Heap::CreateHeapObjects() {
 
   set_native_contexts_list(undefined_value());
   set_allocation_sites_list(undefined_value());
+
   return true;
 }
 

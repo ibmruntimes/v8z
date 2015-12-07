@@ -79,6 +79,9 @@ StaticVisitorBase::VisitorId StaticVisitorBase::GetVisitorId(
     case WEAK_CELL_TYPE:
       return kVisitWeakCell;
 
+    case TRANSITION_ARRAY_TYPE:
+      return kVisitTransitionArray;
+
     case JS_WEAK_MAP_TYPE:
     case JS_WEAK_SET_TYPE:
       return kVisitJSWeakCollection;
@@ -90,7 +93,6 @@ StaticVisitorBase::VisitorId StaticVisitorBase::GetVisitorId(
       return kVisitSharedFunctionInfo;
 
     case JS_PROXY_TYPE:
-    case JS_FUNCTION_PROXY_TYPE:
       return GetVisitorIdForSize(kVisitStruct, kVisitStructGeneric,
                                  instance_size, has_unboxed_fields);
 

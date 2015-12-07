@@ -15,40 +15,16 @@ var GlobalProxy = global.Proxy;
 var GlobalFunction = global.Function;
 var GlobalObject = global.Object;
 var MakeTypeError;
-var ToNameArray;
 
 utils.Import(function(from) {
   MakeTypeError = from.MakeTypeError;
-  ToNameArray = from.ToNameArray;
 });
 
 //----------------------------------------------------------------------------
 
-function ProxyCreate(target, handler) {
-  if (IS_UNDEFINED(new.target)) {
-    throw MakeTypeError(kConstructorNotFunction, "Proxy");
-  }
-  return %CreateJSProxy(target, handler);
-}
-
-function ProxyCreateFunction(handler, callTrap, constructTrap) {
-  if (!IS_SPEC_OBJECT(handler))
-    throw MakeTypeError(kProxyHandlerNonObject, "createFunction")
-  if (!IS_CALLABLE(callTrap))
-    throw MakeTypeError(kProxyTrapFunctionExpected, "call")
-  if (IS_UNDEFINED(constructTrap)) {
-    constructTrap = DerivedConstructTrap(callTrap)
-  } else if (IS_CALLABLE(constructTrap)) {
-    // Make sure the trap receives 'undefined' as this.
-    var construct = constructTrap
-    constructTrap = function() {
-      return %Apply(construct, UNDEFINED, arguments, 0, %_ArgumentsLength());
-    }
-  } else {
-    throw MakeTypeError(kProxyTrapFunctionExpected, "construct")
-  }
-  return %CreateJSFunctionProxy(
-    {}, handler, callTrap, constructTrap, GlobalFunction.prototype)
+function ProxyCreateRevocable(target, handler) {
+  var p = new GlobalProxy(target, handler);
+  return {proxy: p, revoke: () => %RevokeProxy(p)};
 }
 
 // -------------------------------------------------------------------
@@ -68,18 +44,6 @@ function DelegateCallAndConstruct(callTrap, constructTrap) {
   return function() {
     return %Apply(IS_UNDEFINED(new.target) ? callTrap : constructTrap,
                   this, arguments, 0, %_ArgumentsLength())
-  }
-}
-
-function DerivedGetTrap(receiver, name) {
-  var desc = this.getPropertyDescriptor(name)
-  if (IS_UNDEFINED(desc)) { return desc }
-  if ('value' in desc) {
-    return desc.value
-  } else {
-    if (IS_UNDEFINED(desc.get)) { return desc.get }
-    // The proposal says: desc.get.call(receiver)
-    return %_Call(desc.get, receiver)
   }
 }
 
@@ -134,19 +98,6 @@ function DerivedHasOwnTrap(name) {
   return !!this.getOwnPropertyDescriptor(name)
 }
 
-function DerivedKeysTrap() {
-  var names = this.getOwnPropertyNames()
-  var enumerableNames = []
-  for (var i = 0, count = 0; i < names.length; ++i) {
-    var name = names[i]
-    if (IS_SYMBOL(name)) continue
-    var desc = this.getOwnPropertyDescriptor(TO_STRING(name))
-    if (!IS_UNDEFINED(desc) && desc.enumerable) {
-      enumerableNames[count++] = names[i]
-    }
-  }
-  return enumerableNames
-}
 
 // Implements part of ES6 9.5.11 Proxy.[[Enumerate]]:
 // Call the trap, which should return an iterator, exhaust the iterator,
@@ -175,11 +126,10 @@ function ProxyEnumerate(trap, handler, target) {
 }
 
 //-------------------------------------------------------------------
-%SetCode(GlobalProxy, ProxyCreate);
 
 //Set up non-enumerable properties of the Proxy object.
 utils.InstallFunctions(GlobalProxy, DONT_ENUM, [
-  "createFunction", ProxyCreateFunction
+  "revocable", ProxyCreateRevocable
 ]);
 
 // -------------------------------------------------------------------
@@ -188,12 +138,9 @@ utils.InstallFunctions(GlobalProxy, DONT_ENUM, [
 utils.Export(function(to) {
   to.ProxyDelegateCallAndConstruct = DelegateCallAndConstruct;
   to.ProxyDerivedHasOwnTrap = DerivedHasOwnTrap;
-  to.ProxyDerivedKeysTrap = DerivedKeysTrap;
 });
 
 %InstallToContext([
-  "derived_get_trap", DerivedGetTrap,
-  "derived_set_trap", DerivedSetTrap,
   "proxy_enumerate", ProxyEnumerate,
 ]);
 

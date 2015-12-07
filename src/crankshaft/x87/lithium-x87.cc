@@ -1038,7 +1038,9 @@ LInstruction* LChunkBuilder::DoHasInPrototypeChainAndBranch(
   LOperand* object = UseRegister(instr->object());
   LOperand* prototype = UseRegister(instr->prototype());
   LOperand* temp = TempRegister();
-  return new (zone()) LHasInPrototypeChainAndBranch(object, prototype, temp);
+  LHasInPrototypeChainAndBranch* result =
+      new (zone()) LHasInPrototypeChainAndBranch(object, prototype, temp);
+  return AssignEnvironment(result);
 }
 
 
@@ -2588,12 +2590,6 @@ LInstruction* LChunkBuilder::DoTypeof(HTypeof* instr) {
 
 LInstruction* LChunkBuilder::DoTypeofIsAndBranch(HTypeofIsAndBranch* instr) {
   return new(zone()) LTypeofIsAndBranch(UseTempRegister(instr->value()));
-}
-
-
-LInstruction* LChunkBuilder::DoIsConstructCallAndBranch(
-    HIsConstructCallAndBranch* instr) {
-  return new(zone()) LIsConstructCallAndBranch(TempRegister());
 }
 
 

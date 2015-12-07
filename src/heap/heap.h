@@ -61,6 +61,7 @@ namespace internal {
   V(Map, fixed_cow_array_map, FixedCOWArrayMap)                                \
   V(Map, fixed_double_array_map, FixedDoubleArrayMap)                          \
   V(Map, weak_cell_map, WeakCellMap)                                           \
+  V(Map, transition_array_map, TransitionArrayMap)                             \
   V(Map, one_byte_string_map, OneByteStringMap)                                \
   V(Map, one_byte_internalized_string_map, OneByteInternalizedStringMap)       \
   V(Map, function_context_map, FunctionContextMap)                             \
@@ -166,7 +167,6 @@ namespace internal {
   V(FixedArray, extra_natives_source_cache, ExtraNativesSourceCache)           \
   V(FixedArray, experimental_extra_natives_source_cache,                       \
     ExperimentalExtraNativesSourceCache)                                       \
-  V(FixedArray, code_stub_natives_source_cache, CodeStubNativesSourceCache)    \
   V(Script, empty_script, EmptyScript)                                         \
   V(NameDictionary, intrinsic_function_names, IntrinsicFunctionNames)          \
   V(Cell, undefined_cell, UndefinedCell)                                       \
@@ -186,8 +186,6 @@ namespace internal {
   V(PropertyCell, array_protector, ArrayProtector)                             \
   V(PropertyCell, empty_property_cell, EmptyPropertyCell)                      \
   V(Object, weak_stack_trace_list, WeakStackTraceList)                         \
-  V(Object, code_stub_context, CodeStubContext)                                \
-  V(JSObject, code_stub_exports_object, CodeStubExportsObject)                 \
   V(Object, noscript_shared_function_infos, NoScriptSharedFunctionInfos)       \
   V(FixedArray, interpreter_table, InterpreterTable)                           \
   V(Map, bytecode_array_map, BytecodeArrayMap)                                 \
@@ -423,6 +421,7 @@ namespace internal {
   V(FixedCOWArrayMap)                   \
   V(FixedDoubleArrayMap)                \
   V(WeakCellMap)                        \
+  V(TransitionArrayMap)                 \
   V(NoInterceptorResultSentinel)        \
   V(HashTableMap)                       \
   V(OrderedHashTableMap)                \
@@ -882,6 +881,13 @@ class Heap {
   }
   Object* encountered_weak_cells() const { return encountered_weak_cells_; }
 
+  void set_encountered_transition_arrays(Object* transition_array) {
+    encountered_transition_arrays_ = transition_array;
+  }
+  Object* encountered_transition_arrays() const {
+    return encountered_transition_arrays_;
+  }
+
   // Number of mark-sweeps.
   int ms_count() const { return ms_count_; }
 
@@ -1151,14 +1157,6 @@ class Heap {
 
   void SetRootMaterializedObjects(FixedArray* objects) {
     roots_[kMaterializedObjectsRootIndex] = objects;
-  }
-
-  void SetRootCodeStubContext(Object* value) {
-    roots_[kCodeStubContextRootIndex] = value;
-  }
-
-  void SetRootCodeStubExportsObject(JSObject* value) {
-    roots_[kCodeStubExportsObjectRootIndex] = value;
   }
 
   void SetRootScriptList(Object* value) {
@@ -2095,6 +2093,8 @@ class Heap {
 
   MUST_USE_RESULT AllocationResult AllocateWeakCell(HeapObject* value);
 
+  MUST_USE_RESULT AllocationResult AllocateTransitionArray(int capacity);
+
   // Allocates a new utility object in the old generation.
   MUST_USE_RESULT AllocationResult AllocateStruct(InstanceType type);
 
@@ -2220,6 +2220,8 @@ class Heap {
   Object* encountered_weak_collections_;
 
   Object* encountered_weak_cells_;
+
+  Object* encountered_transition_arrays_;
 
   StoreBufferRebuilder store_buffer_rebuilder_;
 

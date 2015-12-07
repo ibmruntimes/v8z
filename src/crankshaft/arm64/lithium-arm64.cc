@@ -1557,8 +1557,11 @@ LInstruction* LChunkBuilder::DoHasInPrototypeChainAndBranch(
     HHasInPrototypeChainAndBranch* instr) {
   LOperand* object = UseRegister(instr->object());
   LOperand* prototype = UseRegister(instr->prototype());
-  LOperand* scratch = TempRegister();
-  return new (zone()) LHasInPrototypeChainAndBranch(object, prototype, scratch);
+  LOperand* scratch1 = TempRegister();
+  LOperand* scratch2 = TempRegister();
+  LHasInPrototypeChainAndBranch* result = new (zone())
+      LHasInPrototypeChainAndBranch(object, prototype, scratch1, scratch2);
+  return AssignEnvironment(result);
 }
 
 
@@ -1568,12 +1571,6 @@ LInstruction* LChunkBuilder::DoInvokeFunction(HInvokeFunction* instr) {
   LOperand* function = UseFixed(instr->function(), x1);
   LInvokeFunction* result = new(zone()) LInvokeFunction(context, function);
   return MarkAsCall(DefineFixed(result, x0), instr, CANNOT_DEOPTIMIZE_EAGERLY);
-}
-
-
-LInstruction* LChunkBuilder::DoIsConstructCallAndBranch(
-    HIsConstructCallAndBranch* instr) {
-  return new(zone()) LIsConstructCallAndBranch(TempRegister(), TempRegister());
 }
 
 

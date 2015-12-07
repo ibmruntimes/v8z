@@ -602,24 +602,12 @@ void FullCodeGenerator::SetExpressionAsStatementPosition(Expression* expr) {
 }
 
 
-void FullCodeGenerator::SetCallPosition(Expression* expr, int argc) {
+void FullCodeGenerator::SetCallPosition(Expression* expr) {
   if (expr->position() == RelocInfo::kNoPosition) return;
   RecordPosition(masm_, expr->position());
   if (info_->is_debug()) {
     // Always emit a debug break slot before a call.
-    DebugCodegen::GenerateSlot(masm_, RelocInfo::DEBUG_BREAK_SLOT_AT_CALL,
-                               argc);
-  }
-}
-
-
-void FullCodeGenerator::SetConstructCallPosition(Expression* expr, int argc) {
-  if (expr->position() == RelocInfo::kNoPosition) return;
-  RecordPosition(masm_, expr->position());
-  if (info_->is_debug()) {
-    // Always emit a debug break slot before a construct call.
-    DebugCodegen::GenerateSlot(
-        masm_, RelocInfo::DEBUG_BREAK_SLOT_AT_CONSTRUCT_CALL, argc);
+    DebugCodegen::GenerateSlot(masm_, RelocInfo::DEBUG_BREAK_SLOT_AT_CALL);
   }
 }
 
@@ -1496,6 +1484,12 @@ void FullCodeGenerator::VisitSpread(Spread* expr) { UNREACHABLE(); }
 
 void FullCodeGenerator::VisitEmptyParentheses(EmptyParentheses* expr) {
   UNREACHABLE();
+}
+
+
+void FullCodeGenerator::VisitRewritableAssignmentExpression(
+    RewritableAssignmentExpression* expr) {
+  Visit(expr->expression());
 }
 
 

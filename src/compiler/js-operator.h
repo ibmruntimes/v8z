@@ -5,6 +5,7 @@
 #ifndef V8_COMPILER_JS_OPERATOR_H_
 #define V8_COMPILER_JS_OPERATOR_H_
 
+#include "src/compiler/type-hints.h"
 #include "src/runtime/runtime.h"
 
 namespace v8 {
@@ -43,7 +44,11 @@ size_t hash_value(VectorSlotPair const&);
 
 
 // The ConvertReceiverMode is used as parameter by JSConvertReceiver operators.
-ConvertReceiverMode ConvertReceiverModeOf(const Operator* op);
+ConvertReceiverMode ConvertReceiverModeOf(Operator const* op);
+
+
+// The ToBooleanHints are used as parameter by JSToBoolean operators.
+ToBooleanHints ToBooleanHintsOf(Operator const* op);
 
 
 // Defines whether tail call optimization is allowed.
@@ -52,6 +57,34 @@ enum class TailCallMode : unsigned { kAllow, kDisallow };
 size_t hash_value(TailCallMode);
 
 std::ostream& operator<<(std::ostream&, TailCallMode);
+
+
+// Defines the language mode and hints for a JavaScript binary operations.
+// This is used as parameter by JSAdd, JSSubtract, etc. operators.
+class BinaryOperationParameters final {
+ public:
+  BinaryOperationParameters(LanguageMode language_mode,
+                            BinaryOperationHints hints)
+      : language_mode_(language_mode), hints_(hints) {}
+
+  LanguageMode language_mode() const { return language_mode_; }
+  BinaryOperationHints hints() const { return hints_; }
+
+ private:
+  LanguageMode const language_mode_;
+  BinaryOperationHints const hints_;
+};
+
+bool operator==(BinaryOperationParameters const&,
+                BinaryOperationParameters const&);
+bool operator!=(BinaryOperationParameters const&,
+                BinaryOperationParameters const&);
+
+size_t hash_value(BinaryOperationParameters const&);
+
+std::ostream& operator<<(std::ostream&, BinaryOperationParameters const&);
+
+BinaryOperationParameters const& BinaryOperationParametersOf(Operator const*);
 
 
 // Defines the arity and the feedback for a JavaScript constructor call. This is
@@ -446,20 +479,29 @@ class JSOperatorBuilder final : public ZoneObject {
   const Operator* GreaterThan(LanguageMode language_mode);
   const Operator* LessThanOrEqual(LanguageMode language_mode);
   const Operator* GreaterThanOrEqual(LanguageMode language_mode);
-  const Operator* BitwiseOr(LanguageMode language_mode);
-  const Operator* BitwiseXor(LanguageMode language_mode);
-  const Operator* BitwiseAnd(LanguageMode language_mode);
-  const Operator* ShiftLeft(LanguageMode language_mode);
-  const Operator* ShiftRight(LanguageMode language_mode);
-  const Operator* ShiftRightLogical(LanguageMode language_mode);
-  const Operator* Add(LanguageMode language_mode);
-  const Operator* Subtract(LanguageMode language_mode);
-  const Operator* Multiply(LanguageMode language_mode);
-  const Operator* Divide(LanguageMode language_mode);
-  const Operator* Modulus(LanguageMode language_mode);
+  const Operator* BitwiseOr(LanguageMode language_mode,
+                            BinaryOperationHints hints);
+  const Operator* BitwiseXor(LanguageMode language_mode,
+                             BinaryOperationHints hints);
+  const Operator* BitwiseAnd(LanguageMode language_mode,
+                             BinaryOperationHints hints);
+  const Operator* ShiftLeft(LanguageMode language_mode,
+                            BinaryOperationHints hints);
+  const Operator* ShiftRight(LanguageMode language_mode,
+                             BinaryOperationHints hints);
+  const Operator* ShiftRightLogical(LanguageMode language_mode,
+                                    BinaryOperationHints hints);
+  const Operator* Add(LanguageMode language_mode, BinaryOperationHints hints);
+  const Operator* Subtract(LanguageMode language_mode,
+                           BinaryOperationHints hints);
+  const Operator* Multiply(LanguageMode language_mode,
+                           BinaryOperationHints hints);
+  const Operator* Divide(LanguageMode language_mode,
+                         BinaryOperationHints hints);
+  const Operator* Modulus(LanguageMode language_mode,
+                          BinaryOperationHints hints);
 
-  const Operator* UnaryNot();
-  const Operator* ToBoolean();
+  const Operator* ToBoolean(ToBooleanHints hints);
   const Operator* ToNumber();
   const Operator* ToString();
   const Operator* ToName();

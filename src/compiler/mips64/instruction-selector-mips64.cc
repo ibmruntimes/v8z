@@ -295,6 +295,19 @@ void InstructionSelector::VisitWord32And(Node* node) {
       // Other cases fall through to the normal And operation.
     }
   }
+  if (m.right().HasValue()) {
+    uint32_t mask = m.right().Value();
+    uint32_t shift = base::bits::CountPopulation32(~mask);
+    uint32_t msb = base::bits::CountLeadingZeros32(~mask);
+    if (shift != 0 && shift != 32 && msb + shift == 32) {
+      // Insert zeros for (x >> K) << K => x & ~(2^K - 1) expression reduction
+      // and remove constant loading of inverted mask.
+      Emit(kMips64Ins, g.DefineSameAsFirst(node),
+           g.UseRegister(m.left().node()), g.TempImmediate(0),
+           g.TempImmediate(shift));
+      return;
+    }
+  }
   VisitBinop(this, node, kMips64And);
 }
 
@@ -332,6 +345,20 @@ void InstructionSelector::VisitWord64And(Node* node) {
       // Other cases fall through to the normal And operation.
     }
   }
+  if (m.right().HasValue()) {
+    uint64_t mask = m.right().Value();
+    uint32_t shift = base::bits::CountPopulation64(~mask);
+    uint32_t msb = base::bits::CountLeadingZeros64(~mask);
+    if (shift != 0 && shift < 32 && msb + shift == 64) {
+      // Insert zeros for (x >> K) << K => x & ~(2^K - 1) expression reduction
+      // and remove constant loading of inverted mask. Dins cannot insert bits
+      // past word size, so shifts smaller than 32 are covered.
+      Emit(kMips64Dins, g.DefineSameAsFirst(node),
+           g.UseRegister(m.left().node()), g.TempImmediate(0),
+           g.TempImmediate(shift));
+      return;
+    }
+  }
   VisitBinop(this, node, kMips64And);
 }
 
@@ -359,6 +386,13 @@ void InstructionSelector::VisitWord32Xor(Node* node) {
       return;
     }
   }
+  if (m.right().Is(-1)) {
+    // Use Nor for bit negation and eliminate constant loading for xori.
+    Mips64OperandGenerator g(this);
+    Emit(kMips64Nor, g.DefineAsRegister(node), g.UseRegister(m.left().node()),
+         g.TempImmediate(0));
+    return;
+  }
   VisitBinop(this, node, kMips64Xor);
 }
 
@@ -376,11 +410,44 @@ void InstructionSelector::VisitWord64Xor(Node* node) {
       return;
     }
   }
+  if (m.right().Is(-1)) {
+    // Use Nor for bit negation and eliminate constant loading for xori.
+    Mips64OperandGenerator g(this);
+    Emit(kMips64Nor, g.DefineAsRegister(node), g.UseRegister(m.left().node()),
+         g.TempImmediate(0));
+    return;
+  }
   VisitBinop(this, node, kMips64Xor);
 }
 
 
 void InstructionSelector::VisitWord32Shl(Node* node) {
+  Int32BinopMatcher m(node);
+  if (m.left().IsWord32And() && CanCover(node, m.left().node()) &&
+      m.right().IsInRange(1, 31)) {
+    Mips64OperandGenerator g(this);
+    Int32BinopMatcher mleft(m.left().node());
+    // Match Word32Shl(Word32And(x, mask), imm) to Shl where the mask is
+    // contiguous, and the shift immediate non-zero.
+    if (mleft.right().HasValue()) {
+      uint32_t mask = mleft.right().Value();
+      uint32_t mask_width = base::bits::CountPopulation32(mask);
+      uint32_t mask_msb = base::bits::CountLeadingZeros32(mask);
+      if ((mask_width != 0) && (mask_msb + mask_width == 32)) {
+        uint32_t shift = m.right().Value();
+        DCHECK_EQ(0u, base::bits::CountTrailingZeros32(mask));
+        DCHECK_NE(0u, shift);
+        if ((shift + mask_width) >= 32) {
+          // If the mask is contiguous and reaches or extends beyond the top
+          // bit, only the shift is needed.
+          Emit(kMips64Shl, g.DefineAsRegister(node),
+               g.UseRegister(mleft.left().node()),
+               g.UseImmediate(m.right().node()));
+          return;
+        }
+      }
+    }
+  }
   VisitRRO(this, kMips64Shl, node);
 }
 
@@ -426,6 +493,31 @@ void InstructionSelector::VisitWord64Shl(Node* node) {
          g.UseRegister(m.left().node()->InputAt(0)),
          g.UseImmediate(m.right().node()));
     return;
+  }
+  if (m.left().IsWord64And() && CanCover(node, m.left().node()) &&
+      m.right().IsInRange(1, 63)) {
+    // Match Word64Shl(Word64And(x, mask), imm) to Dshl where the mask is
+    // contiguous, and the shift immediate non-zero.
+    Int64BinopMatcher mleft(m.left().node());
+    if (mleft.right().HasValue()) {
+      uint64_t mask = mleft.right().Value();
+      uint32_t mask_width = base::bits::CountPopulation64(mask);
+      uint32_t mask_msb = base::bits::CountLeadingZeros64(mask);
+      if ((mask_width != 0) && (mask_msb + mask_width == 64)) {
+        uint64_t shift = m.right().Value();
+        DCHECK_EQ(0u, base::bits::CountTrailingZeros64(mask));
+        DCHECK_NE(0u, shift);
+
+        if ((shift + mask_width) >= 64) {
+          // If the mask is contiguous and reaches or extends beyond the top
+          // bit, only the shift is needed.
+          Emit(kMips64Dshl, g.DefineAsRegister(node),
+               g.UseRegister(mleft.left().node()),
+               g.UseImmediate(m.right().node()));
+          return;
+        }
+      }
+    }
   }
   VisitRRO(this, kMips64Dshl, node);
 }
@@ -1611,7 +1703,8 @@ void InstructionSelector::VisitFloat64InsertHighWord32(Node* node) {
 // static
 MachineOperatorBuilder::Flags
 InstructionSelector::SupportedMachineOperatorFlags() {
-  return MachineOperatorBuilder::kFloat64Min |
+  return MachineOperatorBuilder::kWord32ShiftIsSafe |
+         MachineOperatorBuilder::kFloat64Min |
          MachineOperatorBuilder::kFloat64Max |
          MachineOperatorBuilder::kFloat32Min |
          MachineOperatorBuilder::kFloat32Max |

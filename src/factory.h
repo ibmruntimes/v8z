@@ -295,6 +295,8 @@ class Factory final {
 
   Handle<WeakCell> NewWeakCell(Handle<HeapObject> value);
 
+  Handle<TransitionArray> NewTransitionArray(int capacity);
+
   // Allocate a tenured AllocationSite. It's payload is null.
   Handle<AllocationSite> NewAllocationSite();
 
@@ -478,13 +480,6 @@ class Factory final {
   // Allocates a Harmony proxy.
   Handle<JSProxy> NewJSProxy(Handle<JSReceiver> target,
                              Handle<JSReceiver> handler);
-
-  // Allocates a Harmony function proxy.
-  Handle<JSProxy> NewJSFunctionProxy(Handle<JSReceiver> target,
-                                     Handle<JSReceiver> handler,
-                                     Handle<JSReceiver> call_trap,
-                                     Handle<Object> construct_trap,
-                                     Handle<Object> prototype);
 
   // Reinitialize an JSGlobalProxy based on a constructor.  The object
   // must have the same size as objects allocated using the

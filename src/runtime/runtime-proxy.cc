@@ -11,42 +11,6 @@
 namespace v8 {
 namespace internal {
 
-RUNTIME_FUNCTION(Runtime_CreateJSProxy) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 2);
-  CONVERT_ARG_HANDLE_CHECKED(Object, target, 0);
-  CONVERT_ARG_HANDLE_CHECKED(Object, handler, 1);
-  if (!target->IsJSReceiver()) {
-    THROW_NEW_ERROR_RETURN_FAILURE(
-        isolate, NewTypeError(MessageTemplate::kProxyTargetNonObject));
-  }
-  if (!handler->IsJSReceiver()) {
-    THROW_NEW_ERROR_RETURN_FAILURE(
-        isolate, NewTypeError(MessageTemplate::kProxyHandlerNonObject));
-  }
-  if ((target->IsJSProxy() && JSProxy::cast(*target)->IsRevoked()) ||
-      (handler->IsJSProxy() && JSProxy::cast(*handler)->IsRevoked())) {
-    THROW_NEW_ERROR_RETURN_FAILURE(
-        isolate, NewTypeError(MessageTemplate::kProxyHandlerOrTargetRevoked));
-  }
-  return *isolate->factory()->NewJSProxy(Handle<JSReceiver>::cast(target),
-                                         Handle<JSReceiver>::cast(handler));
-}
-
-
-RUNTIME_FUNCTION(Runtime_CreateJSFunctionProxy) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 5);
-  CONVERT_ARG_HANDLE_CHECKED(JSReceiver, target, 0);
-  CONVERT_ARG_HANDLE_CHECKED(JSReceiver, handler, 1);
-  CONVERT_ARG_HANDLE_CHECKED(JSReceiver, call_trap, 2);
-  RUNTIME_ASSERT(call_trap->IsJSFunction() || call_trap->IsJSFunctionProxy());
-  CONVERT_ARG_HANDLE_CHECKED(JSFunction, construct_trap, 3);
-  CONVERT_ARG_HANDLE_CHECKED(Object, prototype, 4);
-  if (!prototype->IsJSReceiver()) prototype = isolate->factory()->null_value();
-  return *isolate->factory()->NewJSFunctionProxy(target, handler, call_trap,
-                                                 construct_trap, prototype);
-}
 
 
 RUNTIME_FUNCTION(Runtime_IsJSProxy) {
@@ -54,14 +18,6 @@ RUNTIME_FUNCTION(Runtime_IsJSProxy) {
   DCHECK(args.length() == 1);
   CONVERT_ARG_CHECKED(Object, obj, 0);
   return isolate->heap()->ToBoolean(obj->IsJSProxy());
-}
-
-
-RUNTIME_FUNCTION(Runtime_IsJSFunctionProxy) {
-  SealHandleScope shs(isolate);
-  DCHECK(args.length() == 1);
-  CONVERT_ARG_HANDLE_CHECKED(Object, obj, 0);
-  return isolate->heap()->ToBoolean(obj->IsJSFunctionProxy());
 }
 
 
@@ -73,19 +29,12 @@ RUNTIME_FUNCTION(Runtime_GetHandler) {
 }
 
 
-RUNTIME_FUNCTION(Runtime_GetCallTrap) {
-  SealHandleScope shs(isolate);
+RUNTIME_FUNCTION(Runtime_RevokeProxy) {
+  HandleScope scope(isolate);
   DCHECK(args.length() == 1);
-  CONVERT_ARG_CHECKED(JSFunctionProxy, proxy, 0);
-  return proxy->call_trap();
-}
-
-
-RUNTIME_FUNCTION(Runtime_GetConstructTrap) {
-  SealHandleScope shs(isolate);
-  DCHECK(args.length() == 1);
-  CONVERT_ARG_CHECKED(JSFunctionProxy, proxy, 0);
-  return proxy->construct_trap();
+  CONVERT_ARG_HANDLE_CHECKED(JSProxy, proxy, 0);
+  JSProxy::Revoke(proxy);
+  return isolate->heap()->undefined_value();
 }
 
 }  // namespace internal

@@ -151,6 +151,10 @@ class ParseInfo {
     context_ = Handle<Context>(*context_);
   }
 
+#ifdef DEBUG
+  bool script_is_native() { return script_->type() == Script::TYPE_NATIVE; }
+#endif  // DEBUG
+
  private:
   // Various configuration flags for parsing.
   enum Flag {
@@ -780,7 +784,8 @@ class ParserTraits {
                                        Scope* scope, AstNodeFactory* factory);
   Expression* ExpressionFromString(int pos, Scanner* scanner,
                                    AstNodeFactory* factory);
-  Expression* GetIterator(Expression* iterable, AstNodeFactory* factory);
+  Expression* GetIterator(Expression* iterable, AstNodeFactory* factory,
+                          int pos);
   ZoneList<v8::internal::Expression*>* NewExpressionList(int size, Zone* zone) {
     return new(zone) ZoneList<v8::internal::Expression*>(size, zone);
   }
@@ -894,6 +899,12 @@ class ParserTraits {
                                       ZoneList<v8::internal::Expression*>* args,
                                       int pos);
 
+  // Rewrite all DestructuringAssignments in the current FunctionState.
+  V8_INLINE void RewriteDestructuringAssignments();
+
+  V8_INLINE void QueueDestructuringAssignmentForRewriting(
+      Expression* assignment);
+
  private:
   Parser* parser_;
 };
@@ -955,10 +966,6 @@ class Parser : public ParserBase<ParserTraits> {
   bool produce_cached_parse_data() const {
     return compile_options_ == ScriptCompiler::kProduceParserCache;
   }
-  Scope* DeclarationScope(VariableMode mode) {
-    return IsLexicalVariableMode(mode)
-        ? scope_ : scope_->DeclarationScope();
-  }
 
   // All ParseXXX functions take as the last argument an *ok parameter
   // which is set to false if parsing failed; it is unchanged otherwise.
@@ -995,11 +1002,9 @@ class Parser : public ParserBase<ParserTraits> {
   struct DeclarationDescriptor {
     enum Kind { NORMAL, PARAMETER };
     Parser* parser;
-    Scope* declaration_scope;
     Scope* scope;
     Scope* hoist_scope;
     VariableMode mode;
-    bool is_const;
     bool needs_init;
     int declaration_pos;
     int initialization_pos;
@@ -1040,6 +1045,10 @@ class Parser : public ParserBase<ParserTraits> {
         const DeclarationParsingResult::Declaration* declaration,
         ZoneList<const AstRawString*>* names, bool* ok);
 
+    static void RewriteDestructuringAssignment(
+        Parser* parser, RewritableAssignmentExpression* expr, Scope* Scope,
+        bool* ok);
+
     void set_initializer_position(int pos) { initializer_position_ = pos; }
 
    private:
@@ -1051,6 +1060,16 @@ class Parser : public ParserBase<ParserTraits> {
 #undef DECLARE_VISIT
     void Visit(AstNode* node) override;
 
+    enum PatternContext {
+      BINDING,
+      INITIALIZER,
+      ASSIGNMENT,
+      ASSIGNMENT_INITIALIZER
+    };
+
+    PatternContext context() const { return context_; }
+    void set_context(PatternContext context) { context_ = context; }
+
     void RecurseIntoSubpattern(AstNode* pattern, Expression* value) {
       Expression* old_value = current_value_;
       current_value_ = value;
@@ -1058,14 +1077,29 @@ class Parser : public ParserBase<ParserTraits> {
       current_value_ = old_value;
     }
 
+    void VisitObjectLiteral(ObjectLiteral* node, Variable** temp_var);
+    void VisitArrayLiteral(ArrayLiteral* node, Variable** temp_var);
+
+    bool IsBindingContext() const { return IsBindingContext(context_); }
+    bool IsInitializerContext() const { return context_ != ASSIGNMENT; }
+    bool IsAssignmentContext() const { return IsAssignmentContext(context_); }
+    bool IsAssignmentContext(PatternContext c) const;
+    bool IsBindingContext(PatternContext c) const;
+    PatternContext SetAssignmentContextIfNeeded(Expression* node);
+    PatternContext SetInitializerContextIfNeeded(Expression* node);
+
     Variable* CreateTempVar(Expression* value = nullptr);
 
-    AstNodeFactory* factory() const { return descriptor_->parser->factory(); }
+    AstNodeFactory* factory() const { return parser_->factory(); }
     AstValueFactory* ast_value_factory() const {
-      return descriptor_->parser->ast_value_factory();
+      return parser_->ast_value_factory();
     }
-    Zone* zone() const { return descriptor_->parser->zone(); }
+    Zone* zone() const { return parser_->zone(); }
+    Scope* scope() const { return scope_; }
 
+    Scope* scope_;
+    Parser* parser_;
+    PatternContext context_;
     Expression* pattern_;
     int initializer_position_;
     Block* block_;
@@ -1214,6 +1248,11 @@ class Parser : public ParserBase<ParserTraits> {
 
   void SetLanguageMode(Scope* scope, LanguageMode mode);
   void RaiseLanguageMode(LanguageMode mode);
+
+  V8_INLINE void RewriteDestructuringAssignments();
+
+  friend class InitializerRewriter;
+  void RewriteParameterInitializer(Expression* expr, Scope* scope);
 
   Scanner scanner_;
   PreParser* reusable_preparser_;

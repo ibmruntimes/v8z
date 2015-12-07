@@ -87,10 +87,10 @@
 
   # Proxy tests rely on non ES6 version of Proxies
   # TODO(neis,cbruni): figure out which Proxy tests can be reused
+  'es6/classes-proxy' : [SKIP],
   'es6/regress/regress-cr493566': [SKIP],
   'for-in-opt': [SKIP],
   'harmony/proxies-example-membrane': [SKIP],
-  'harmony/proxies-for': [SKIP],
   'harmony/proxies-hash': [SKIP],
   'harmony/proxies-json': [SKIP],
   'harmony/proxies': [SKIP],
@@ -166,6 +166,18 @@
   'result-table-max': [PASS, NO_VARIANTS],
   # TODO(titzer): too slow in --turbo mode due to O(n^2) graph verification.
   'regress/regress-1122': [PASS, NO_VARIANTS],
+
+  # TODO(sigurds): Tests that may fail because of missing deopt support.
+  'compiler/escape-analysis-1': [PASS, NO_VARIANTS],
+  'compiler/escape-analysis-2': [PASS, NO_VARIANTS],
+  'compiler/escape-analysis-3': [PASS, NO_VARIANTS],
+  'compiler/escape-analysis-4': [PASS, NO_VARIANTS],
+  'compiler/escape-analysis-5': [PASS, NO_VARIANTS],
+  'compiler/escape-analysis-7': [PASS, NO_VARIANTS],
+  # TODO(sigurds): Tests that fail because of incomplete phi handling.
+  'compiler/escape-analysis-6': [PASS, NO_VARIANTS],
+  # TODO(sigurds): Tests that fail because of incomplete use handling (i.e. select).
+  'compiler/escape-analysis-8': [PASS, NO_VARIANTS],
 
   # Assumptions about optimization need investigation in TurboFan.
   'regress-sync-optimized-lists': [PASS, NO_VARIANTS],
@@ -415,6 +427,9 @@
 
   # BUG(v8:4016)
   'regress/regress-crbug-467047': [SKIP],
+
+  # BUG(v8:4588).
+  'random-bit-correlations': [SKIP],
 
   # Slow tests.
   'array-concat': [PASS, SLOW],
@@ -908,6 +923,7 @@
   'regress/regress-4388': [SKIP],
   'regress/regress-444805': [SKIP],
   'regress/regress-446389': [SKIP],
+  'regress/regress-447756': [SKIP],
   'regress/regress-4515': [SKIP],
   'regress/regress-4521': [SKIP],
   'regress/regress-4525': [SKIP],

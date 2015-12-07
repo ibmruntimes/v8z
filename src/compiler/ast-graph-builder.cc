@@ -15,6 +15,7 @@
 #include "src/compiler/node-properties.h"
 #include "src/compiler/operator-properties.h"
 #include "src/compiler/state-values-utils.h"
+#include "src/compiler/type-hint-analyzer.h"
 #include "src/parsing/parser.h"
 
 namespace v8 {
@@ -93,11 +94,14 @@ class AstGraphBuilder::AstValueContext final : public AstContext {
 // Context to evaluate expression for a condition value (and side effects).
 class AstGraphBuilder::AstTestContext final : public AstContext {
  public:
-  explicit AstTestContext(AstGraphBuilder* owner)
-      : AstContext(owner, Expression::kTest) {}
+  AstTestContext(AstGraphBuilder* owner, TypeFeedbackId feedback_id)
+      : AstContext(owner, Expression::kTest), feedback_id_(feedback_id) {}
   ~AstTestContext() final;
   void ProduceValue(Node* value) final;
   Node* ConsumeValue() final;
+
+ private:
+  TypeFeedbackId const feedback_id_;
 };
 
 
@@ -428,7 +432,8 @@ class AstGraphBuilder::FrameStateBeforeAndAfter {
 
 
 AstGraphBuilder::AstGraphBuilder(Zone* local_zone, CompilationInfo* info,
-                                 JSGraph* jsgraph, LoopAssignmentAnalysis* loop)
+                                 JSGraph* jsgraph, LoopAssignmentAnalysis* loop,
+                                 TypeHintAnalysis* type_hint_analysis)
     : isolate_(info->isolate()),
       local_zone_(local_zone),
       info_(info),
@@ -444,6 +449,7 @@ AstGraphBuilder::AstGraphBuilder(Zone* local_zone, CompilationInfo* info,
       input_buffer_(nullptr),
       exit_controls_(local_zone),
       loop_assignment_analysis_(loop),
+      type_hint_analysis_(type_hint_analysis),
       state_values_cache_(jsgraph),
       liveness_analyzer_(static_cast<size_t>(info->scope()->num_stack_slots()),
                          local_zone),
@@ -924,7 +930,7 @@ void AstGraphBuilder::AstValueContext::ProduceValue(Node* value) {
 
 
 void AstGraphBuilder::AstTestContext::ProduceValue(Node* value) {
-  environment()->Push(owner()->BuildToBoolean(value));
+  environment()->Push(owner()->BuildToBoolean(value, feedback_id_));
 }
 
 
@@ -1031,7 +1037,7 @@ void AstGraphBuilder::VisitForEffect(Expression* expr) {
 
 
 void AstGraphBuilder::VisitForTest(Expression* expr) {
-  AstTestContext for_condition(this);
+  AstTestContext for_condition(this, expr->test_id());
   if (!CheckStackOverflow()) {
     expr->Accept(this);
   } else {
@@ -2166,7 +2172,9 @@ void AstGraphBuilder::VisitAssignment(Assignment* expr) {
       FrameStateBeforeAndAfter states(this, expr->value()->id());
       Node* right = environment()->Pop();
       Node* left = environment()->Pop();
-      value = BuildBinaryOp(left, right, expr->binary_op());
+      value =
+          BuildBinaryOp(left, right, expr->binary_op(),
+                        expr->binary_operation()->BinaryOperationFeedbackId());
       states.AddToNode(value, expr->binary_operation()->id(),
                        OutputFrameStateCombine::Push());
     }
@@ -2725,9 +2733,10 @@ void AstGraphBuilder::VisitCountOperation(CountOperation* expr) {
   // Create node to perform +1/-1 operation.
   Node* value;
   {
+    // TODO(bmeurer): Cleanup this feedback/bailout mess!
     FrameStateBeforeAndAfter states(this, BailoutId::None());
-    value =
-        BuildBinaryOp(old_value, jsgraph()->OneConstant(), expr->binary_op());
+    value = BuildBinaryOp(old_value, jsgraph()->OneConstant(),
+                          expr->binary_op(), TypeFeedbackId::None());
     // This should never deoptimize outside strong mode because otherwise we
     // have converted to number before.
     states.AddToNode(value, is_strong(language_mode()) ? expr->ToNumberId()
@@ -2810,7 +2819,8 @@ void AstGraphBuilder::VisitBinaryOperation(BinaryOperation* expr) {
       FrameStateBeforeAndAfter states(this, expr->right()->id());
       Node* right = environment()->Pop();
       Node* left = environment()->Pop();
-      Node* value = BuildBinaryOp(left, right, expr->op());
+      Node* value = BuildBinaryOp(left, right, expr->op(),
+                                  expr->BinaryOperationFeedbackId());
       states.AddToNode(value, expr->id(), ast_context()->GetStateCombine());
       ast_context()->ProduceValue(value);
     }
@@ -3004,8 +3014,9 @@ void AstGraphBuilder::VisitTypeof(UnaryOperation* expr) {
 void AstGraphBuilder::VisitNot(UnaryOperation* expr) {
   VisitForValue(expr->expression());
   Node* operand = environment()->Pop();
-  // TODO(mstarzinger): Possible optimization when we are in effect context.
-  Node* value = NewNode(javascript()->UnaryNot(), operand);
+  Node* input = BuildToBoolean(operand, expr->expression()->test_id());
+  Node* value = NewNode(common()->Select(kMachAnyTagged), input,
+                        jsgraph()->FalseConstant(), jsgraph()->TrueConstant());
   ast_context()->ProduceValue(value);
 }
 
@@ -3022,7 +3033,7 @@ void AstGraphBuilder::VisitLogicalExpression(BinaryOperation* expr) {
   IfBuilder compare_if(this);
   VisitForValue(expr->left());
   Node* condition = environment()->Top();
-  compare_if.If(BuildToBoolean(condition));
+  compare_if.If(BuildToBoolean(condition, expr->left()->test_id()));
   compare_if.Then();
   if (is_logical_and) {
     environment()->Pop();
@@ -3054,6 +3065,12 @@ LanguageMode AstGraphBuilder::language_mode() const {
 VectorSlotPair AstGraphBuilder::CreateVectorSlotPair(
     FeedbackVectorSlot slot) const {
   return VectorSlotPair(handle(info()->shared_info()->feedback_vector()), slot);
+}
+
+
+void AstGraphBuilder::VisitRewritableAssignmentExpression(
+    RewritableAssignmentExpression* node) {
+  Visit(node->expression());
 }
 
 
@@ -3674,9 +3691,14 @@ Node* AstGraphBuilder::BuildLoadFeedbackVector() {
 }
 
 
-Node* AstGraphBuilder::BuildToBoolean(Node* input) {
+Node* AstGraphBuilder::BuildToBoolean(Node* input, TypeFeedbackId feedback_id) {
   if (Node* node = TryFastToBoolean(input)) return node;
-  return NewNode(javascript()->ToBoolean(), input);
+  ToBooleanHints hints;
+  if (!type_hint_analysis_ ||
+      !type_hint_analysis_->GetToBooleanHints(feedback_id, &hints)) {
+    hints = ToBooleanHint::kAny;
+  }
+  return NewNode(javascript()->ToBoolean(hints), input);
 }
 
 
@@ -3781,41 +3803,47 @@ Node* AstGraphBuilder::BuildThrow(Node* exception_value) {
 }
 
 
-Node* AstGraphBuilder::BuildBinaryOp(Node* left, Node* right, Token::Value op) {
+Node* AstGraphBuilder::BuildBinaryOp(Node* left, Node* right, Token::Value op,
+                                     TypeFeedbackId feedback_id) {
   const Operator* js_op;
+  BinaryOperationHints hints;
+  if (!type_hint_analysis_ ||
+      !type_hint_analysis_->GetBinaryOperationHints(feedback_id, &hints)) {
+    hints = BinaryOperationHints::Any();
+  }
   switch (op) {
     case Token::BIT_OR:
-      js_op = javascript()->BitwiseOr(language_mode());
+      js_op = javascript()->BitwiseOr(language_mode(), hints);
       break;
     case Token::BIT_AND:
-      js_op = javascript()->BitwiseAnd(language_mode());
+      js_op = javascript()->BitwiseAnd(language_mode(), hints);
       break;
     case Token::BIT_XOR:
-      js_op = javascript()->BitwiseXor(language_mode());
+      js_op = javascript()->BitwiseXor(language_mode(), hints);
       break;
     case Token::SHL:
-      js_op = javascript()->ShiftLeft(language_mode());
+      js_op = javascript()->ShiftLeft(language_mode(), hints);
       break;
     case Token::SAR:
-      js_op = javascript()->ShiftRight(language_mode());
+      js_op = javascript()->ShiftRight(language_mode(), hints);
       break;
     case Token::SHR:
-      js_op = javascript()->ShiftRightLogical(language_mode());
+      js_op = javascript()->ShiftRightLogical(language_mode(), hints);
       break;
     case Token::ADD:
-      js_op = javascript()->Add(language_mode());
+      js_op = javascript()->Add(language_mode(), hints);
       break;
     case Token::SUB:
-      js_op = javascript()->Subtract(language_mode());
+      js_op = javascript()->Subtract(language_mode(), hints);
       break;
     case Token::MUL:
-      js_op = javascript()->Multiply(language_mode());
+      js_op = javascript()->Multiply(language_mode(), hints);
       break;
     case Token::DIV:
-      js_op = javascript()->Divide(language_mode());
+      js_op = javascript()->Divide(language_mode(), hints);
       break;
     case Token::MOD:
-      js_op = javascript()->Modulus(language_mode());
+      js_op = javascript()->Modulus(language_mode(), hints);
       break;
     default:
       UNREACHABLE();
@@ -3947,7 +3975,6 @@ Node* AstGraphBuilder::TryFastToBoolean(Node* input) {
     case IrOpcode::kJSLessThanOrEqual:
     case IrOpcode::kJSGreaterThan:
     case IrOpcode::kJSGreaterThanOrEqual:
-    case IrOpcode::kJSUnaryNot:
     case IrOpcode::kJSToBoolean:
     case IrOpcode::kJSDeleteProperty:
     case IrOpcode::kJSHasProperty:

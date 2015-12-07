@@ -43,6 +43,7 @@ AsmTyper::AsmTyper(Isolate* isolate, Zone* zone, Script* script,
       root_(root),
       valid_(true),
       allow_simd_(false),
+      property_info_(NULL),
       intish_(0),
       stdlib_types_(zone),
       stdlib_heap_types_(zone),
@@ -1375,5 +1376,13 @@ void AsmTyper::VisitWithExpectation(Expression* expr, Type* expected_type,
   }
   expected_type_ = save;
 }
+
+
+void AsmTyper::VisitRewritableAssignmentExpression(
+    RewritableAssignmentExpression* expr) {
+  RECURSE(Visit(expr->expression()));
+}
+
+
 }  // namespace internal
 }  // namespace v8

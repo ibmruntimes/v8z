@@ -966,6 +966,13 @@ Handle<WeakCell> Factory::NewWeakCell(Handle<HeapObject> value) {
 }
 
 
+Handle<TransitionArray> Factory::NewTransitionArray(int capacity) {
+  CALL_HEAP_FUNCTION(isolate(),
+                     isolate()->heap()->AllocateTransitionArray(capacity),
+                     TransitionArray);
+}
+
+
 Handle<AllocationSite> Factory::NewAllocationSite() {
   Handle<Map> map = allocation_site_map();
   Handle<AllocationSite> site = New<AllocationSite>(map, OLD_SPACE);
@@ -1653,7 +1660,7 @@ Handle<JSGeneratorObject> Factory::NewJSGeneratorObject(
   DCHECK(function->shared()->is_generator());
   JSFunction::EnsureHasInitialMap(function);
   Handle<Map> map(function->initial_map());
-  DCHECK(map->instance_type() == JS_GENERATOR_OBJECT_TYPE);
+  DCHECK_EQ(JS_GENERATOR_OBJECT_TYPE, map->instance_type());
   CALL_HEAP_FUNCTION(
       isolate(),
       isolate()->heap()->AllocateJSObjectFromMap(*map),
@@ -1940,30 +1947,6 @@ Handle<JSProxy> Factory::NewJSProxy(Handle<JSReceiver> target,
   result->set_target(*target);
   result->set_handler(*handler);
   result->set_hash(*undefined_value(), SKIP_WRITE_BARRIER);
-  return result;
-}
-
-
-Handle<JSProxy> Factory::NewJSFunctionProxy(Handle<JSReceiver> target,
-                                            Handle<JSReceiver> handler,
-                                            Handle<JSReceiver> call_trap,
-                                            Handle<Object> construct_trap,
-                                            Handle<Object> prototype) {
-  // Allocate map.
-  // TODO(rossberg): Once we optimize proxies, think about a scheme to share
-  // maps. Will probably depend on the identity of the handler object, too.
-  Handle<Map> map = NewMap(JS_FUNCTION_PROXY_TYPE, JSFunctionProxy::kSize);
-  Map::SetPrototype(map, prototype);
-  map->set_is_callable();
-  map->set_is_constructor(construct_trap->IsCallable());
-
-  // Allocate the proxy object.
-  Handle<JSFunctionProxy> result = New<JSFunctionProxy>(map, NEW_SPACE);
-  result->set_target(*target);
-  result->set_handler(*handler);
-  result->set_hash(*undefined_value(), SKIP_WRITE_BARRIER);
-  result->set_call_trap(*call_trap);
-  result->set_construct_trap(*construct_trap);
   return result;
 }
 

@@ -512,9 +512,7 @@ void RelocInfoWriter::Write(const RelocInfo* rinfo) {
     if (RelocInfo::IsComment(rmode)) {
       WriteData(rinfo->data());
     } else if (RelocInfo::IsConstPool(rmode) ||
-               RelocInfo::IsVeneerPool(rmode) ||
-               RelocInfo::IsDebugBreakSlotAtCall(rmode) ||
-               RelocInfo::IsDebugBreakSlotAtConstructCall(rmode)) {
+               RelocInfo::IsVeneerPool(rmode)) {
       WriteIntData(static_cast<int>(rinfo->data()));
     }
   }
@@ -705,9 +703,7 @@ void RelocIterator::next() {
             Advance(kIntSize);
           }
         } else if (RelocInfo::IsConstPool(rmode) ||
-                   RelocInfo::IsVeneerPool(rmode) ||
-                   RelocInfo::IsDebugBreakSlotAtCall(rmode) ||
-                   RelocInfo::IsDebugBreakSlotAtConstructCall(rmode)) {
+                   RelocInfo::IsVeneerPool(rmode)) {
           if (SetMode(rmode)) {
             AdvanceReadInt();
             return;
@@ -837,8 +833,6 @@ const char* RelocInfo::RelocModeName(RelocInfo::Mode rmode) {
       return "debug break slot at return";
     case DEBUG_BREAK_SLOT_AT_CALL:
       return "debug break slot at call";
-    case DEBUG_BREAK_SLOT_AT_CONSTRUCT_CALL:
-      return "debug break slot at construct call";
     case CODE_AGE_SEQUENCE:
       return "code age sequence";
     case GENERATOR_CONTINUATION:
@@ -935,7 +929,6 @@ void RelocInfo::Verify(Isolate* isolate) {
     case DEBUG_BREAK_SLOT_AT_POSITION:
     case DEBUG_BREAK_SLOT_AT_RETURN:
     case DEBUG_BREAK_SLOT_AT_CALL:
-    case DEBUG_BREAK_SLOT_AT_CONSTRUCT_CALL:
     case GENERATOR_CONTINUATION:
     case NONE32:
     case NONE64:
@@ -952,12 +945,6 @@ void RelocInfo::Verify(Isolate* isolate) {
 #endif  // VERIFY_HEAP
 
 
-int RelocInfo::DebugBreakCallArgumentsCount(intptr_t data) {
-  return static_cast<int>(data);
-}
-
-
-// -----------------------------------------------------------------------------
 // Implementation of ExternalReference
 
 void ExternalReference::SetUp() {
@@ -1446,14 +1433,6 @@ ExternalReference ExternalReference::debug_after_break_target_address(
 }
 
 
-ExternalReference
-    ExternalReference::debug_restarter_frame_function_pointer_address(
-        Isolate* isolate) {
-  return ExternalReference(
-      isolate->debug()->restarter_frame_function_pointer_address());
-}
-
-
 ExternalReference ExternalReference::virtual_handler_register(
     Isolate* isolate) {
   return ExternalReference(isolate->virtual_handler_register_address());
@@ -1583,9 +1562,9 @@ ExternalReference ExternalReference::mod_two_doubles_operation(
 }
 
 
-ExternalReference ExternalReference::debug_last_step_action_address(
+ExternalReference ExternalReference::debug_step_in_enabled_address(
     Isolate* isolate) {
-  return ExternalReference(isolate->debug()->last_step_action_addr());
+  return ExternalReference(isolate->debug()->step_in_enabled_address());
 }
 
 
@@ -1899,11 +1878,10 @@ void Assembler::RecordGeneratorContinuation() {
 }
 
 
-void Assembler::RecordDebugBreakSlot(RelocInfo::Mode mode, int call_argc) {
+void Assembler::RecordDebugBreakSlot(RelocInfo::Mode mode) {
   EnsureSpace ensure_space(this);
   DCHECK(RelocInfo::IsDebugBreakSlot(mode));
-  intptr_t data = static_cast<intptr_t>(call_argc);
-  RecordRelocInfo(mode, data);
+  RecordRelocInfo(mode);
 }
 
 

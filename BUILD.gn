@@ -270,40 +270,6 @@ action("js2c") {
   }
 }
 
-action("js2c_code_stubs") {
-  visibility = [ ":*" ]  # Only targets in this file can depend on this.
-
-  script = "tools/js2c.py"
-
-  # The script depends on this other script, this rule causes a rebuild if it
-  # changes.
-  inputs = [ "tools/jsmin.py" ]
-
-  sources = [
-    "src/js/macros.py",
-    "src/messages.h",
-    "src/js/code-stubs.js"
-  ]
-
-  outputs = [
-    "$target_gen_dir/code-stub-libraries.cc",
-  ]
-
-  args = [
-           rebase_path("$target_gen_dir/code-stub-libraries.cc",
-                       root_build_dir),
-           "CODE_STUB",
-         ] + rebase_path(sources, root_build_dir)
-
-  if (v8_use_external_startup_data) {
-    outputs += [ "$target_gen_dir/libraries_code_stub.bin" ]
-    args += [
-      "--startup_blob",
-      rebase_path("$target_gen_dir/libraries_code_stub.bin", root_build_dir),
-    ]
-  }
-}
-
 action("js2c_experimental") {
   visibility = [ ":*" ]  # Only targets in this file can depend on this.
 
@@ -324,8 +290,7 @@ action("js2c_experimental") {
     "src/js/harmony-reflect.js",
     "src/js/harmony-object-observe.js",
     "src/js/harmony-sharedarraybuffer.js",
-    "src/js/harmony-simd.js",
-    "src/js/promise-extra.js"
+    "src/js/harmony-simd.js"
   ]
 
   outputs = [
@@ -444,7 +409,6 @@ if (v8_use_external_startup_data) {
 
     deps = [
       ":js2c",
-      ":js2c_code_stubs",
       ":js2c_experimental",
       ":js2c_extras",
       ":js2c_experimental_extras",
@@ -452,7 +416,6 @@ if (v8_use_external_startup_data) {
 
     sources = [
       "$target_gen_dir/libraries.bin",
-      "$target_gen_dir/libraries_code_stub.bin",
       "$target_gen_dir/libraries_experimental.bin",
       "$target_gen_dir/libraries_extras.bin",
       "$target_gen_dir/libraries_experimental_extras.bin",
@@ -540,7 +503,6 @@ source_set("v8_nosnapshot") {
 
   deps = [
     ":js2c",
-    ":js2c_code_stubs",
     ":js2c_experimental",
     ":js2c_extras",
     ":js2c_experimental_extras",
@@ -549,7 +511,6 @@ source_set("v8_nosnapshot") {
 
   sources = [
     "$target_gen_dir/libraries.cc",
-    "$target_gen_dir/code-stub-libraries.cc",
     "$target_gen_dir/experimental-libraries.cc",
     "$target_gen_dir/extras-libraries.cc",
     "$target_gen_dir/experimental-extras-libraries.cc",
@@ -575,7 +536,6 @@ source_set("v8_snapshot") {
 
   deps = [
     ":js2c",
-    ":js2c_code_stubs",
     ":js2c_experimental",
     ":js2c_extras",
     ":js2c_experimental_extras",
@@ -589,7 +549,6 @@ source_set("v8_snapshot") {
 
   sources = [
     "$target_gen_dir/libraries.cc",
-    "$target_gen_dir/code-stub-libraries.cc",
     "$target_gen_dir/experimental-libraries.cc",
     "$target_gen_dir/extras-libraries.cc",
     "$target_gen_dir/experimental-extras-libraries.cc",
@@ -611,7 +570,6 @@ if (v8_use_external_startup_data) {
 
     deps = [
       ":js2c",
-      ":js2c_code_stubs",
       ":js2c_experimental",
       ":js2c_extras",
       ":js2c_experimental_extras",
@@ -749,6 +707,8 @@ source_set("v8_base") {
     "src/compiler/code-generator-impl.h",
     "src/compiler/code-generator.cc",
     "src/compiler/code-generator.h",
+    "src/compiler/code-stub-assembler.cc",
+    "src/compiler/code-stub-assembler.h",
     "src/compiler/common-node-cache.cc",
     "src/compiler/common-node-cache.h",
     "src/compiler/common-operator-reducer.cc",
@@ -764,6 +724,10 @@ source_set("v8_base") {
     "src/compiler/dead-code-elimination.cc",
     "src/compiler/dead-code-elimination.h",
     "src/compiler/diamond.h",
+    "src/compiler/escape-analysis.cc",
+    "src/compiler/escape-analysis.h",
+    "src/compiler/escape-analysis-reducer.cc",
+    "src/compiler/escape-analysis-reducer.h",
     "src/compiler/frame.cc",
     "src/compiler/frame.h",
     "src/compiler/frame-elider.cc",
@@ -837,8 +801,6 @@ source_set("v8_base") {
     "src/compiler/machine-operator-reducer.h",
     "src/compiler/machine-operator.cc",
     "src/compiler/machine-operator.h",
-    "src/compiler/machine-type.cc",
-    "src/compiler/machine-type.h",
     "src/compiler/move-optimizer.cc",
     "src/compiler/move-optimizer.h",
     "src/compiler/node-aux-data.h",
@@ -890,6 +852,10 @@ source_set("v8_base") {
     "src/compiler/state-values-utils.h",
     "src/compiler/tail-call-optimization.cc",
     "src/compiler/tail-call-optimization.h",
+    "src/compiler/type-hint-analyzer.cc",
+    "src/compiler/type-hint-analyzer.h",
+    "src/compiler/type-hints.cc",
+    "src/compiler/type-hints.h",
     "src/compiler/typer.cc",
     "src/compiler/typer.h",
     "src/compiler/value-numbering-reducer.cc",
@@ -1132,6 +1098,8 @@ source_set("v8_base") {
     "src/lookup.cc",
     "src/lookup.h",
     "src/macro-assembler.h",
+    "src/machine-type.cc",
+    "src/machine-type.h",
     "src/messages.cc",
     "src/messages.h",
     "src/msan.h",

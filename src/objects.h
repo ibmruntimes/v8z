@@ -71,7 +71,6 @@
 //           - JSDate
 //         - JSMessageObject
 //       - JSProxy
-//         - JSFunctionProxy
 //     - FixedArrayBase
 //       - ByteArray
 //       - BytecodeArray
@@ -413,6 +412,7 @@ const int kStubMinorKeyBits = kSmiValueSize - kStubMajorKeyBits - 1;
   V(FIXED_DOUBLE_ARRAY_TYPE)                                    \
   V(SHARED_FUNCTION_INFO_TYPE)                                  \
   V(WEAK_CELL_TYPE)                                             \
+  V(TRANSITION_ARRAY_TYPE)                                      \
                                                                 \
   V(JS_MESSAGE_OBJECT_TYPE)                                     \
                                                                 \
@@ -440,7 +440,6 @@ const int kStubMinorKeyBits = kSmiValueSize - kStubMajorKeyBits - 1;
   V(JS_REGEXP_TYPE)                                             \
                                                                 \
   V(JS_FUNCTION_TYPE)                                           \
-  V(JS_FUNCTION_PROXY_TYPE)                                     \
   V(DEBUG_INFO_TYPE)                                            \
   V(BREAK_POINT_INFO_TYPE)
 
@@ -703,6 +702,7 @@ enum InstanceType {
   SHARED_FUNCTION_INFO_TYPE,
   CELL_TYPE,
   WEAK_CELL_TYPE,
+  TRANSITION_ARRAY_TYPE,
   PROPERTY_CELL_TYPE,
   PROTOTYPE_INFO_TYPE,
   SLOPPY_BLOCK_WITH_EVAL_CONTEXT_EXTENSION_TYPE,
@@ -711,9 +711,8 @@ enum InstanceType {
   // objects in the JS sense. The first and the last type in this range are
   // the two forms of function. This organization enables using the same
   // compares for checking the JS_RECEIVER and the NONCALLABLE_JS_OBJECT range.
-  JS_FUNCTION_PROXY_TYPE,  // FIRST_JS_RECEIVER_TYPE, FIRST_JS_PROXY_TYPE
-  JS_PROXY_TYPE,           // LAST_JS_PROXY_TYPE
-  JS_VALUE_TYPE,           // FIRST_JS_OBJECT_TYPE
+  JS_PROXY_TYPE,  // FIRST_JS_RECEIVER_TYPE
+  JS_VALUE_TYPE,  // FIRST_JS_OBJECT_TYPE
   JS_MESSAGE_OBJECT_TYPE,
   JS_DATE_TYPE,
   JS_OBJECT_TYPE,
@@ -757,16 +756,13 @@ enum InstanceType {
   // are not continuous in this enum! The enum ranges instead reflect the
   // external class names, where proxies are treated as either ordinary objects,
   // or functions.
-  FIRST_JS_RECEIVER_TYPE = JS_FUNCTION_PROXY_TYPE,
+  FIRST_JS_RECEIVER_TYPE = JS_PROXY_TYPE,
   LAST_JS_RECEIVER_TYPE = LAST_TYPE,
   // Boundaries for testing the types represented as JSObject
   FIRST_JS_OBJECT_TYPE = JS_VALUE_TYPE,
   LAST_JS_OBJECT_TYPE = LAST_TYPE,
-  // Boundaries for testing the types represented as JSProxy
-  FIRST_JS_PROXY_TYPE = JS_FUNCTION_PROXY_TYPE,
-  LAST_JS_PROXY_TYPE = JS_PROXY_TYPE,
   //
-  FIRST_NONCALLABLE_SPEC_OBJECT_TYPE = JS_PROXY_TYPE,
+  FIRST_NONCALLABLE_SPEC_OBJECT_TYPE = JS_VALUE_TYPE,
   LAST_NONCALLABLE_SPEC_OBJECT_TYPE = JS_REGEXP_TYPE,
   // Note that the types for which typeof is "function" are not continuous.
   // Define this so that we can put assertions on discrete checks.
@@ -779,6 +775,9 @@ STATIC_ASSERT(ODDBALL_TYPE == Internals::kOddballType);
 STATIC_ASSERT(FOREIGN_TYPE == Internals::kForeignType);
 
 
+std::ostream& operator<<(std::ostream& os, InstanceType instance_type);
+
+
 #define FIXED_ARRAY_SUB_INSTANCE_TYPE_LIST(V) \
   V(FAST_ELEMENTS_SUB_TYPE)                   \
   V(DICTIONARY_ELEMENTS_SUB_TYPE)             \
@@ -787,14 +786,13 @@ STATIC_ASSERT(FOREIGN_TYPE == Internals::kForeignType);
   V(MAP_CODE_CACHE_SUB_TYPE)                  \
   V(SCOPE_INFO_SUB_TYPE)                      \
   V(STRING_TABLE_SUB_TYPE)                    \
-  V(DESCRIPTOR_ARRAY_SUB_TYPE)                \
-  V(TRANSITION_ARRAY_SUB_TYPE)
+  V(DESCRIPTOR_ARRAY_SUB_TYPE)
 
 enum FixedArraySubInstanceType {
 #define DEFINE_FIXED_ARRAY_SUB_INSTANCE_TYPE(name) name,
   FIXED_ARRAY_SUB_INSTANCE_TYPE_LIST(DEFINE_FIXED_ARRAY_SUB_INSTANCE_TYPE)
 #undef DEFINE_FIXED_ARRAY_SUB_INSTANCE_TYPE
-  LAST_FIXED_ARRAY_SUB_TYPE = TRANSITION_ARRAY_SUB_TYPE
+      LAST_FIXED_ARRAY_SUB_TYPE = DESCRIPTOR_ARRAY_SUB_TYPE
 };
 
 
@@ -862,6 +860,7 @@ class StringStream;
 class TypeFeedbackInfo;
 class TypeFeedbackVector;
 class WeakCell;
+class TransitionArray;
 
 // We cannot just say "class HeapType;" if it is created from a template... =8-?
 template<class> class TypeImpl;
@@ -972,7 +971,6 @@ template <class C> inline bool Is(Object* obj);
   V(JSTypedArray)                  \
   V(JSDataView)                    \
   V(JSProxy)                       \
-  V(JSFunctionProxy)               \
   V(JSSet)                         \
   V(JSMap)                         \
   V(JSSetIterator)                 \
@@ -1054,6 +1052,9 @@ class Object {
   STRUCT_LIST(DECLARE_STRUCT_PREDICATE)
 #undef DECLARE_STRUCT_PREDICATE
 
+  // ES6, section 7.2.2 IsArray.  NOT to be confused with %_IsArray.
+  MUST_USE_RESULT static Maybe<bool> IsArray(Handle<Object> object);
+
   // ES6, section 7.2.3 IsCallable.
   INLINE(bool IsCallable() const);
 
@@ -1100,7 +1101,7 @@ class Object {
   // 1 all refer to the same property, so this helper will return true.
   inline bool KeyEquals(Object* other);
 
-  inline bool FilterKey(PropertyAttributes filter);
+  inline bool FilterKey(PropertyFilter filter);
 
   Handle<HeapType> OptimalType(Isolate* isolate, Representation representation);
 
@@ -1307,7 +1308,9 @@ class Object {
   static inline MaybeHandle<Object> GetPrototype(Isolate* isolate,
                                                  Handle<Object> receiver);
 
-  bool HasInPrototypeChain(Isolate* isolate, Object* object);
+  MUST_USE_RESULT static Maybe<bool> HasInPrototypeChain(Isolate* isolate,
+                                                         Handle<Object> object,
+                                                         Handle<Object> proto);
 
   // Returns the permanent hash code associated with this object. May return
   // undefined if not yet created.
@@ -1775,10 +1778,6 @@ enum AccessorComponent {
 };
 
 
-enum KeyFilter { SKIP_SYMBOLS, INCLUDE_SYMBOLS };
-
-enum Enumerability { RESPECT_ENUMERABILITY, IGNORE_ENUMERABILITY };
-
 enum GetKeysConversion { KEEP_NUMBERS, CONVERT_TO_STRING };
 
 
@@ -1834,9 +1833,9 @@ class JSReceiver: public HeapObject {
                                 Handle<Object> key, PropertyDescriptor* desc,
                                 ShouldThrow should_throw);
 
-  // "virtual" dispatcher to the correct [[CreateDataProperty]] implementation.
-  MUST_USE_RESULT static Maybe<bool> CreateDataProperty(LookupIterator* it,
-                                                        Handle<Object> value);
+  // ES6 7.3.4 (when passed DONT_THROW)
+  MUST_USE_RESULT static Maybe<bool> CreateDataProperty(
+      LookupIterator* it, Handle<Object> value, ShouldThrow should_throw);
 
   // ES6 9.1.6.1
   static bool OrdinaryDefineOwnProperty(Isolate* isolate,
@@ -1925,10 +1924,8 @@ class JSReceiver: public HeapObject {
   // Computes the enumerable keys for a JSObject. Used for implementing
   // "for (n in object) { }".
   MUST_USE_RESULT static MaybeHandle<FixedArray> GetKeys(
-      Handle<JSReceiver> object, KeyCollectionType type,
-      KeyFilter filter = SKIP_SYMBOLS,
-      GetKeysConversion keys_conversion = KEEP_NUMBERS,
-      Enumerability enum_policy = RESPECT_ENUMERABILITY);
+      Handle<JSReceiver> object, KeyCollectionType type, PropertyFilter filter,
+      GetKeysConversion keys_conversion = KEEP_NUMBERS);
 
  private:
   DISALLOW_IMPLICIT_CONSTRUCTORS(JSReceiver);
@@ -2225,15 +2222,6 @@ class JSObject: public JSReceiver {
   inline bool HasNamedInterceptor();
   inline bool HasIndexedInterceptor();
 
-  // Computes the enumerable keys from interceptors. Used for debug mirrors and
-  // by JSReceiver::GetKeys.
-  MUST_USE_RESULT static MaybeHandle<JSObject> GetKeysForNamedInterceptor(
-      Handle<JSObject> object,
-      Handle<JSReceiver> receiver);
-  MUST_USE_RESULT static MaybeHandle<JSObject> GetKeysForIndexedInterceptor(
-      Handle<JSObject> object,
-      Handle<JSReceiver> receiver);
-
   // Support functions for v8 api (needed for correct interceptor behavior).
   MUST_USE_RESULT static Maybe<bool> HasRealNamedProperty(
       Handle<JSObject> object, Handle<Name> name);
@@ -2256,31 +2244,25 @@ class JSObject: public JSReceiver {
 
   // Returns the number of properties on this object filtering out properties
   // with the specified attributes (ignoring interceptors).
-  int NumberOfOwnProperties(PropertyAttributes filter = NONE);
+  int NumberOfOwnProperties(PropertyFilter filter = ALL_PROPERTIES);
   // Fill in details for properties into storage starting at the specified
   // index. Returns the number of properties added.
   int GetOwnPropertyNames(FixedArray* storage, int index,
-                          PropertyAttributes filter = NONE);
+                          PropertyFilter filter = ALL_PROPERTIES);
   void CollectOwnPropertyNames(KeyAccumulator* keys,
-                               PropertyAttributes filter = NONE);
+                               PropertyFilter filter = ALL_PROPERTIES);
 
   // Returns the number of properties on this object filtering out properties
   // with the specified attributes (ignoring interceptors).
-  int NumberOfOwnElements(PropertyAttributes filter);
+  int NumberOfOwnElements(PropertyFilter filter);
   // Returns the number of enumerable elements (ignoring interceptors).
   int NumberOfEnumElements();
   // Returns the number of elements on this object filtering out elements
   // with the specified attributes (ignoring interceptors).
-  int GetOwnElementKeys(FixedArray* storage, PropertyAttributes filter);
+  int GetOwnElementKeys(FixedArray* storage, PropertyFilter filter);
   static void CollectOwnElementKeys(Handle<JSObject> object,
                                     KeyAccumulator* keys,
-                                    PropertyAttributes filter);
-  // Count and fill in the enumerable elements into storage.
-  // (storage->length() == NumberOfEnumElements()).
-  // If storage is NULL, will count the elements without adding
-  // them to any storage.
-  // Returns the number of enumerable elements.
-  int GetEnumElementKeys(FixedArray* storage);
+                                    PropertyFilter filter);
 
   static Handle<FixedArray> GetEnumPropertyKeys(Handle<JSObject> object,
                                                 bool cache_result);
@@ -3359,12 +3341,11 @@ class Dictionary: public HashTable<Derived, Shape, Key> {
 
   // Returns the number of elements in the dictionary filtering out properties
   // with the specified attributes.
-  int NumberOfElementsFilterAttributes(PropertyAttributes filter);
+  int NumberOfElementsFilterAttributes(PropertyFilter filter);
 
   // Returns the number of enumerable elements in the dictionary.
   int NumberOfEnumElements() {
-    return NumberOfElementsFilterAttributes(
-        static_cast<PropertyAttributes>(DONT_ENUM | SYMBOLIC));
+    return NumberOfElementsFilterAttributes(ENUMERABLE_STRINGS);
   }
 
   // Returns true if the dictionary contains any elements that are non-writable,
@@ -3375,12 +3356,12 @@ class Dictionary: public HashTable<Derived, Shape, Key> {
 
   // Fill in details for properties into storage.
   // Returns the number of properties added.
-  int CopyKeysTo(FixedArray* storage, int index, PropertyAttributes filter,
+  int CopyKeysTo(FixedArray* storage, int index, PropertyFilter filter,
                  SortMode sort_mode);
   // Collect the keys into the given KeyAccumulator, in ascending chronological
   // order of property creation.
   static void CollectKeysTo(Handle<Dictionary<Derived, Shape, Key> > dictionary,
-                            KeyAccumulator* keys, PropertyAttributes filter);
+                            KeyAccumulator* keys, PropertyFilter filter);
 
   // Copies enumerable keys to preallocated fixed array.
   void CopyEnumKeysTo(FixedArray* storage);
@@ -4010,6 +3991,9 @@ class ScopeInfo : public FixedArray {
   // or context-allocated?
   bool HasAllocatedReceiver();
 
+  // Does this scope declare a "new.target" binding?
+  bool HasNewTarget();
+
   // Is this scope the scope of a named function expression?
   bool HasFunctionName();
 
@@ -4218,9 +4202,10 @@ class ScopeInfo : public FixedArray {
   class ReceiverVariableField
       : public BitField<VariableAllocationInfo, DeclarationScopeField::kNext,
                         2> {};
+  class HasNewTargetField
+      : public BitField<bool, ReceiverVariableField::kNext, 1> {};
   class FunctionVariableField
-      : public BitField<VariableAllocationInfo, ReceiverVariableField::kNext,
-                        2> {};
+      : public BitField<VariableAllocationInfo, HasNewTargetField::kNext, 2> {};
   class FunctionVariableMode
       : public BitField<VariableMode, FunctionVariableField::kNext, 3> {};
   class AsmModuleField : public BitField<bool, FunctionVariableMode::kNext, 1> {
@@ -5493,7 +5478,7 @@ class Map: public HeapObject {
   class IsUnstable : public BitField<bool, 24, 1> {};
   class IsMigrationTarget : public BitField<bool, 25, 1> {};
   class IsStrong : public BitField<bool, 26, 1> {};
-  // Bit 27 is free.
+  class NewTargetIsBase : public BitField<bool, 27, 1> {};
 
   // Keep this bit field at the very end for better code in
   // Builtins::kJSConstructStubGeneric stub.
@@ -5505,6 +5490,49 @@ class Map: public HeapObject {
   static const int kSlackTrackingCounterEnd = 8;
   static const int kRetainingCounterStart = kSlackTrackingCounterEnd - 1;
   static const int kRetainingCounterEnd = 0;
+
+
+  // Inobject slack tracking is the way to reclaim unused inobject space.
+  //
+  // The instance size is initially determined by adding some slack to
+  // expected_nof_properties (to allow for a few extra properties added
+  // after the constructor). There is no guarantee that the extra space
+  // will not be wasted.
+  //
+  // Here is the algorithm to reclaim the unused inobject space:
+  // - Detect the first constructor call for this JSFunction.
+  //   When it happens enter the "in progress" state: initialize construction
+  //   counter in the initial_map.
+  // - While the tracking is in progress initialize unused properties of a new
+  //   object with one_pointer_filler_map instead of undefined_value (the "used"
+  //   part is initialized with undefined_value as usual). This way they can
+  //   be resized quickly and safely.
+  // - Once enough objects have been created  compute the 'slack'
+  //   (traverse the map transition tree starting from the
+  //   initial_map and find the lowest value of unused_property_fields).
+  // - Traverse the transition tree again and decrease the instance size
+  //   of every map. Existing objects will resize automatically (they are
+  //   filled with one_pointer_filler_map). All further allocations will
+  //   use the adjusted instance size.
+  // - SharedFunctionInfo's expected_nof_properties left unmodified since
+  //   allocations made using different closures could actually create different
+  //   kind of objects (see prototype inheritance pattern).
+  //
+  //  Important: inobject slack tracking is not attempted during the snapshot
+  //  creation.
+
+  static const int kGenerousAllocationCount =
+      kSlackTrackingCounterStart - kSlackTrackingCounterEnd + 1;
+
+  // Starts the tracking by initializing object constructions countdown counter.
+  void StartInobjectSlackTracking();
+
+  // True if the object constructions countdown counter is a range
+  // [kSlackTrackingCounterEnd, kSlackTrackingCounterStart].
+  inline bool IsInobjectSlackTrackingInProgress();
+
+  // Does the tracking step.
+  inline void InobjectSlackTrackingStep();
 
   // Completes inobject slack tracking for the transition tree starting at this
   // initial map.
@@ -5556,6 +5584,8 @@ class Map: public HeapObject {
 
   inline void set_is_strong();
   inline bool is_strong();
+  inline void set_new_target_is_base(bool value);
+  inline bool new_target_is_base();
   inline void set_is_extensible(bool value);
   inline bool is_extensible();
   inline void set_is_prototype_map(bool value);
@@ -5825,7 +5855,7 @@ class Map: public HeapObject {
   // Returns the number of properties described in instance_descriptors
   // filtering out properties with the specified attributes.
   int NumberOfDescribedProperties(DescriptorFlag which = OWN_DESCRIPTORS,
-                                  PropertyAttributes filter = NONE);
+                                  PropertyFilter filter = ALL_PROPERTIES);
 
   DECLARE_CAST(Map)
 
@@ -7224,46 +7254,8 @@ class JSFunction: public JSObject {
   // Tells whether or not the function is on the concurrent recompilation queue.
   inline bool IsInOptimizationQueue();
 
-  // Inobject slack tracking is the way to reclaim unused inobject space.
-  //
-  // The instance size is initially determined by adding some slack to
-  // expected_nof_properties (to allow for a few extra properties added
-  // after the constructor). There is no guarantee that the extra space
-  // will not be wasted.
-  //
-  // Here is the algorithm to reclaim the unused inobject space:
-  // - Detect the first constructor call for this JSFunction.
-  //   When it happens enter the "in progress" state: initialize construction
-  //   counter in the initial_map.
-  // - While the tracking is in progress create objects filled with
-  //   one_pointer_filler_map instead of undefined_value. This way they can be
-  //   resized quickly and safely.
-  // - Once enough objects have been created  compute the 'slack'
-  //   (traverse the map transition tree starting from the
-  //   initial_map and find the lowest value of unused_property_fields).
-  // - Traverse the transition tree again and decrease the instance size
-  //   of every map. Existing objects will resize automatically (they are
-  //   filled with one_pointer_filler_map). All further allocations will
-  //   use the adjusted instance size.
-  // - SharedFunctionInfo's expected_nof_properties left unmodified since
-  //   allocations made using different closures could actually create different
-  //   kind of objects (see prototype inheritance pattern).
-  //
-  //  Important: inobject slack tracking is not attempted during the snapshot
-  //  creation.
-
-  // True if the initial_map is set and the object constructions countdown
-  // counter is not zero.
-  static const int kGenerousAllocationCount =
-      Map::kSlackTrackingCounterStart - Map::kSlackTrackingCounterEnd + 1;
-  inline bool IsInobjectSlackTrackingInProgress();
-
-  // Starts the tracking.
-  // Initializes object constructions countdown counter in the initial map.
-  void StartInobjectSlackTracking();
-
-  // Completes the tracking.
-  void CompleteInobjectSlackTracking();
+  // Completes inobject slack tracking on initial map if it is active.
+  inline void CompleteInobjectSlackTrackingIfActive();
 
   // [literals_or_bindings]: Fixed array holding either
   // the materialized literals or the bindings of a bound function.
@@ -9488,7 +9480,7 @@ class JSProxy: public JSReceiver {
   // [handler]: The handler property.
   DECL_ACCESSORS(handler, Object)
   // [target]: The target property.
-  DECL_ACCESSORS(target, Object)
+  DECL_ACCESSORS(target, JSReceiver)
   // [hash]: The hash code property (undefined if not initialized yet).
   DECL_ACCESSORS(hash, Object)
 
@@ -9496,11 +9488,17 @@ class JSProxy: public JSReceiver {
 
   DECLARE_CAST(JSProxy)
 
-  bool IsRevoked();
+  INLINE(bool IsRevoked() const);
+  static void Revoke(Handle<JSProxy> proxy);
 
   // ES6 9.5.1
   static MaybeHandle<Object> GetPrototype(Handle<JSProxy> receiver);
 
+  // ES6 9.5.2
+  MUST_USE_RESULT static Maybe<bool> SetPrototype(Handle<JSProxy> proxy,
+                                                  Handle<Object> value,
+                                                  bool from_javascript,
+                                                  ShouldThrow should_throw);
   // ES6 9.5.3
   MUST_USE_RESULT static Maybe<bool> IsExtensible(Handle<JSProxy> proxy);
 
@@ -9509,7 +9507,8 @@ class JSProxy: public JSReceiver {
       Handle<JSProxy> proxy, ShouldThrow should_throw);
 
   // ES6 9.5.5
-  static bool GetOwnPropertyDescriptor(LookupIterator* it,
+  static bool GetOwnPropertyDescriptor(Isolate* isolate, Handle<JSProxy> proxy,
+                                       Handle<Name> name,
                                        PropertyDescriptor* desc);
 
   // ES6 9.5.6
@@ -9522,6 +9521,18 @@ class JSProxy: public JSReceiver {
                                                  Handle<JSProxy> proxy,
                                                  Handle<Name> name);
 
+  // ES6 9.5.8
+  MUST_USE_RESULT static MaybeHandle<Object> GetProperty(
+      Isolate* isolate, Handle<JSProxy> proxy, Handle<Name> name,
+      Handle<Object> receiver, LanguageMode language_mode);
+
+  // ES6 9.5.9
+  MUST_USE_RESULT static Maybe<bool> SetProperty(Handle<JSProxy> proxy,
+                                                 Handle<Name> name,
+                                                 Handle<Object> value,
+                                                 Handle<Object> receiver,
+                                                 LanguageMode language_mode);
+
   // ES6 9.5.10 (when passed SLOPPY)
   MUST_USE_RESULT static Maybe<bool> DeletePropertyOrElement(
       Handle<JSProxy> proxy, Handle<Name> name, LanguageMode language_mode);
@@ -9532,31 +9543,11 @@ class JSProxy: public JSReceiver {
 
   // ES6 9.5.12
   static bool OwnPropertyKeys(Isolate* isolate, Handle<JSReceiver> receiver,
-                              Handle<JSProxy> proxy, KeyFilter filter,
-                              Enumerability enum_policy,
+                              Handle<JSProxy> proxy, PropertyFilter filter,
                               KeyAccumulator* accumulator);
-
-  MUST_USE_RESULT static MaybeHandle<Object> GetPropertyWithHandler(
-      Handle<JSProxy> proxy,
-      Handle<Object> receiver,
-      Handle<Name> name);
-
-  // If the handler defines an accessor property with a setter, invoke it.
-  // If it defines an accessor property without a setter, or a data property
-  // that is read-only, fail.  In all these cases set '*done' to true.
-  // Otherwise set it to false, in which case the return value is not
-  // meaningful.
-  MUST_USE_RESULT
-  static Maybe<bool> SetPropertyViaPrototypesWithHandler(
-      Handle<JSProxy> proxy, Handle<Object> receiver, Handle<Name> name,
-      Handle<Object> value, ShouldThrow should_throw, bool* done);
 
   MUST_USE_RESULT static Maybe<PropertyAttributes> GetPropertyAttributes(
       LookupIterator* it);
-
-  MUST_USE_RESULT static Maybe<bool> SetPropertyWithHandler(
-      Handle<JSProxy> proxy, Handle<Object> receiver, Handle<Name> name,
-      Handle<Object> value, ShouldThrow should_throw);
 
   // Dispatched behavior.
   DECLARE_PRINTER(JSProxy)
@@ -9582,39 +9573,7 @@ class JSProxy: public JSReceiver {
   MUST_USE_RESULT static MaybeHandle<Object> GetTrap(Handle<JSProxy> proxy,
                                                      Handle<String> trap);
 
-  // Invoke a trap by name. If the trap does not exist on this's handler,
-  // but derived_trap is non-NULL, invoke that instead.  May cause GC.
-  MUST_USE_RESULT static MaybeHandle<Object> CallTrap(
-      Handle<JSProxy> proxy, const char* name, Handle<Object> derived_trap,
-      int argc, Handle<Object> args[]);
-
   DISALLOW_IMPLICIT_CONSTRUCTORS(JSProxy);
-};
-
-
-class JSFunctionProxy: public JSProxy {
- public:
-  // [call_trap]: The call trap.
-  DECL_ACCESSORS(call_trap, JSReceiver)
-
-  // [construct_trap]: The construct trap.
-  DECL_ACCESSORS(construct_trap, Object)
-
-  DECLARE_CAST(JSFunctionProxy)
-
-  // Dispatched behavior.
-  DECLARE_PRINTER(JSFunctionProxy)
-  DECLARE_VERIFIER(JSFunctionProxy)
-
-  // Layout description.
-  static const int kCallTrapOffset = JSProxy::kSize;
-  static const int kConstructTrapOffset = kCallTrapOffset + kPointerSize;
-  static const int kSize = kConstructTrapOffset + kPointerSize;
-
-  typedef FixedBodyDescriptor<kTargetOffset, kSize, kSize> BodyDescriptor;
-
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(JSFunctionProxy);
 };
 
 

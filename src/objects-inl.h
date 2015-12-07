@@ -134,6 +134,14 @@ bool Object::IsFixedArrayBase() const {
 }
 
 
+bool Object::IsFixedArray() const {
+  if (!IsHeapObject()) return false;
+  InstanceType instance_type = HeapObject::cast(this)->map()->instance_type();
+  return instance_type == FIXED_ARRAY_TYPE ||
+         instance_type == TRANSITION_ARRAY_TYPE;
+}
+
+
 // External objects are not extensible, so the map check is enough.
 bool Object::IsExternal() const {
   return Object::IsHeapObject() &&
@@ -280,19 +288,12 @@ bool Object::KeyEquals(Object* second) {
 }
 
 
-bool Object::FilterKey(PropertyAttributes filter) {
-  if ((filter & SYMBOLIC) && IsSymbol()) {
-    return true;
+bool Object::FilterKey(PropertyFilter filter) {
+  if (IsSymbol()) {
+    if (filter & SKIP_SYMBOLS) return true;
+    if (Symbol::cast(this)->is_private()) return true;
   }
-
-  if ((filter & PRIVATE_SYMBOL) && IsSymbol() &&
-      Symbol::cast(this)->is_private()) {
-    return true;
-  }
-
-  if ((filter & STRING) && !IsSymbol()) {
-    return true;
-  }
+  if ((filter & SKIP_STRINGS) && !IsSymbol()) return true;
 
   return false;
 }
@@ -701,7 +702,6 @@ bool Object::IsJSProxy() const {
 }
 
 
-TYPE_CHECKER(JSFunctionProxy, JS_FUNCTION_PROXY_TYPE)
 TYPE_CHECKER(JSSet, JS_SET_TYPE)
 TYPE_CHECKER(JSMap, JS_MAP_TYPE)
 TYPE_CHECKER(JSSetIterator, JS_SET_ITERATOR_TYPE)
@@ -711,9 +711,9 @@ TYPE_CHECKER(JSWeakMap, JS_WEAK_MAP_TYPE)
 TYPE_CHECKER(JSWeakSet, JS_WEAK_SET_TYPE)
 TYPE_CHECKER(JSContextExtensionObject, JS_CONTEXT_EXTENSION_OBJECT_TYPE)
 TYPE_CHECKER(Map, MAP_TYPE)
-TYPE_CHECKER(FixedArray, FIXED_ARRAY_TYPE)
 TYPE_CHECKER(FixedDoubleArray, FIXED_DOUBLE_ARRAY_TYPE)
 TYPE_CHECKER(WeakFixedArray, FIXED_ARRAY_TYPE)
+TYPE_CHECKER(TransitionArray, TRANSITION_ARRAY_TYPE)
 
 
 bool Object::IsJSWeakCollection() const {
@@ -731,11 +731,6 @@ bool Object::IsArrayList() const { return IsFixedArray(); }
 
 bool Object::IsLayoutDescriptor() const {
   return IsSmi() || IsFixedTypedArrayBase();
-}
-
-
-bool Object::IsTransitionArray() const {
-  return IsFixedArray();
 }
 
 
@@ -1197,16 +1192,10 @@ MaybeHandle<Object> Object::GetPrototype(Isolate* isolate,
       !isolate->MayAccess(context, Handle<JSObject>::cast(receiver))) {
     return isolate->factory()->null_value();
   }
-  if (receiver->IsJSProxy()) {
-    return JSProxy::GetPrototype(Handle<JSProxy>::cast(receiver));
-  }
   PrototypeIterator iter(isolate, receiver,
                          PrototypeIterator::START_AT_RECEIVER);
   do {
-    iter.AdvanceIgnoringProxies();
-    if (PrototypeIterator::GetCurrent(iter)->IsJSProxy()) {
-      return PrototypeIterator::GetCurrent(iter);
-    }
+    if (!iter.AdvanceFollowingProxies()) return MaybeHandle<Object>();
   } while (!iter.IsAtEnd(PrototypeIterator::END_AT_NON_HIDDEN));
   return PrototypeIterator::GetCurrent(iter);
 }
@@ -2400,7 +2389,7 @@ void FixedArray::set(int index, Smi* value) {
 
 void FixedArray::set(int index, Object* value) {
   DCHECK_NE(GetHeap()->fixed_cow_array_map(), map());
-  DCHECK_EQ(FIXED_ARRAY_TYPE, map()->instance_type());
+  DCHECK(IsFixedArray());
   DCHECK(index >= 0 && index < this->length());
   int offset = kHeaderSize + index * kPointerSize;
   WRITE_FIELD(this, offset, value);
@@ -3232,7 +3221,6 @@ CAST_ACCESSOR(JSArrayBufferView)
 CAST_ACCESSOR(JSDataView)
 CAST_ACCESSOR(JSDate)
 CAST_ACCESSOR(JSFunction)
-CAST_ACCESSOR(JSFunctionProxy)
 CAST_ACCESSOR(JSGeneratorObject)
 CAST_ACCESSOR(JSGlobalObject)
 CAST_ACCESSOR(JSGlobalProxy)
@@ -4450,7 +4438,8 @@ int HeapObject::SizeFromMap(Map* map) {
   if (instance_size != kVariableSizeSentinel) return instance_size;
   // Only inline the most frequent cases.
   InstanceType instance_type = map->instance_type();
-  if (instance_type == FIXED_ARRAY_TYPE) {
+  if (instance_type == FIXED_ARRAY_TYPE ||
+      instance_type == TRANSITION_ARRAY_TYPE) {
     return FixedArray::SizeFor(
         reinterpret_cast<FixedArray*>(this)->synchronized_length());
   }
@@ -4757,6 +4746,14 @@ bool Map::is_strong() {
 }
 
 
+void Map::set_new_target_is_base(bool value) {
+  set_bit_field3(NewTargetIsBase::update(bit_field3(), value));
+}
+
+
+bool Map::new_target_is_base() { return NewTargetIsBase::decode(bit_field3()); }
+
+
 void Map::set_counter(int value) {
   set_bit_field3(Counter::update(bit_field3(), value));
 }
@@ -4823,10 +4820,7 @@ bool Map::IsJSObjectMap() {
 bool Map::IsJSArrayMap() { return instance_type() == JS_ARRAY_TYPE; }
 bool Map::IsJSFunctionMap() { return instance_type() == JS_FUNCTION_TYPE; }
 bool Map::IsStringMap() { return instance_type() < FIRST_NONSTRING_TYPE; }
-bool Map::IsJSProxyMap() {
-  InstanceType type = instance_type();
-  return FIRST_JS_PROXY_TYPE <= type && type <= LAST_JS_PROXY_TYPE;
-}
+bool Map::IsJSProxyMap() { return instance_type() == JS_PROXY_TYPE; }
 bool Map::IsJSGlobalProxyMap() {
   return instance_type() == JS_GLOBAL_PROXY_TYPE;
 }
@@ -5324,8 +5318,7 @@ bool Code::IsWeakObjectInOptimizedCode(Object* object) {
   } else if (object->IsPropertyCell()) {
     object = PropertyCell::cast(object)->value();
   }
-  if (object->IsJSObject() || object->IsJSProxy()) {
-    // JSProxy is handled like JSObject because it can morph into one.
+  if (object->IsJSReceiver()) {
     return FLAG_weak_embedded_objects_in_optimized_code;
   }
   if (object->IsFixedArray()) {
@@ -6161,9 +6154,25 @@ bool JSFunction::IsInOptimizationQueue() {
 }
 
 
-bool JSFunction::IsInobjectSlackTrackingInProgress() {
-  return has_initial_map() &&
-         initial_map()->counter() >= Map::kSlackTrackingCounterEnd;
+void JSFunction::CompleteInobjectSlackTrackingIfActive() {
+  if (has_initial_map() && initial_map()->IsInobjectSlackTrackingInProgress()) {
+    initial_map()->CompleteInobjectSlackTracking();
+  }
+}
+
+
+bool Map::IsInobjectSlackTrackingInProgress() {
+  return counter() >= Map::kSlackTrackingCounterEnd;
+}
+
+
+void Map::InobjectSlackTrackingStep() {
+  if (!IsInobjectSlackTrackingInProgress()) return;
+  int counter = this->counter();
+  set_counter(counter - 1);
+  if (counter == kSlackTrackingCounterEnd) {
+    CompleteInobjectSlackTracking();
+  }
 }
 
 
@@ -6322,13 +6331,11 @@ int JSFunction::NumberOfLiterals() {
 }
 
 
-ACCESSORS(JSProxy, target, Object, kTargetOffset)
 ACCESSORS(JSProxy, handler, Object, kHandlerOffset)
+ACCESSORS(JSProxy, target, JSReceiver, kTargetOffset)
 ACCESSORS(JSProxy, hash, Object, kHashOffset)
 
-ACCESSORS(JSFunctionProxy, call_trap, JSReceiver, kCallTrapOffset)
-ACCESSORS(JSFunctionProxy, construct_trap, Object, kConstructTrapOffset)
-
+bool JSProxy::IsRevoked() const { return !handler()->IsJSReceiver(); }
 
 ACCESSORS(JSCollection, table, Object, kTableOffset)
 

@@ -19,6 +19,8 @@
 #include "src/compiler/common-operator-reducer.h"
 #include "src/compiler/control-flow-optimizer.h"
 #include "src/compiler/dead-code-elimination.h"
+#include "src/compiler/escape-analysis.h"
+#include "src/compiler/escape-analysis-reducer.h"
 #include "src/compiler/frame-elider.h"
 #include "src/compiler/graph-replay.h"
 #include "src/compiler/graph-trimmer.h"
@@ -55,6 +57,7 @@
 #include "src/compiler/simplified-operator.h"
 #include "src/compiler/simplified-operator-reducer.h"
 #include "src/compiler/tail-call-optimization.h"
+#include "src/compiler/type-hint-analyzer.h"
 #include "src/compiler/typer.h"
 #include "src/compiler/value-numbering-reducer.h"
 #include "src/compiler/verifier.h"
@@ -210,6 +213,12 @@ class PipelineData {
     loop_assignment_ = loop_assignment;
   }
 
+  TypeHintAnalysis* type_hint_analysis() const { return type_hint_analysis_; }
+  void set_type_hint_analysis(TypeHintAnalysis* type_hint_analysis) {
+    DCHECK_NULL(type_hint_analysis_);
+    type_hint_analysis_ = type_hint_analysis;
+  }
+
   Schedule* schedule() const { return schedule_; }
   void set_schedule(Schedule* schedule) {
     DCHECK(!schedule_);
@@ -234,6 +243,7 @@ class PipelineData {
     graph_zone_ = nullptr;
     graph_ = nullptr;
     loop_assignment_ = nullptr;
+    type_hint_analysis_ = nullptr;
     simplified_ = nullptr;
     machine_ = nullptr;
     common_ = nullptr;
@@ -301,6 +311,7 @@ class PipelineData {
   // TODO(dcarney): make this into a ZoneObject.
   base::SmartPointer<SourcePositionTable> source_positions_;
   LoopAssignmentAnalysis* loop_assignment_;
+  TypeHintAnalysis* type_hint_analysis_ = nullptr;
   SimplifiedOperatorBuilder* simplified_;
   MachineOperatorBuilder* machine_;
   CommonOperatorBuilder* common_;
@@ -363,8 +374,10 @@ class AstGraphBuilderWithPositions final : public AstGraphBuilder {
   AstGraphBuilderWithPositions(Zone* local_zone, CompilationInfo* info,
                                JSGraph* jsgraph,
                                LoopAssignmentAnalysis* loop_assignment,
+                               TypeHintAnalysis* type_hint_analysis,
                                SourcePositionTable* source_positions)
-      : AstGraphBuilder(local_zone, info, jsgraph, loop_assignment),
+      : AstGraphBuilder(local_zone, info, jsgraph, loop_assignment,
+                        type_hint_analysis),
         source_positions_(source_positions),
         start_position_(info->shared_info()->start_position()) {}
 
@@ -476,6 +489,18 @@ struct LoopAssignmentAnalysisPhase {
 };
 
 
+struct TypeHintAnalysisPhase {
+  static const char* phase_name() { return "type hint analysis"; }
+
+  void Run(PipelineData* data, Zone* temp_zone) {
+    TypeHintAnalyzer analyzer(data->graph_zone());
+    Handle<Code> code(data->info()->shared_info()->code(), data->isolate());
+    TypeHintAnalysis* type_hint_analysis = analyzer.Analyze(code);
+    data->set_type_hint_analysis(type_hint_analysis);
+  }
+};
+
+
 struct GraphBuilderPhase {
   static const char* phase_name() { return "graph builder"; }
 
@@ -490,7 +515,7 @@ struct GraphBuilderPhase {
     } else {
       AstGraphBuilderWithPositions graph_builder(
           temp_zone, data->info(), data->jsgraph(), data->loop_assignment(),
-          data->source_positions());
+          data->type_hint_analysis(), data->source_positions());
       succeeded = graph_builder.CreateGraph(stack_check);
     }
 
@@ -618,6 +643,22 @@ struct BranchEliminationPhase {
                                               data->common());
     AddReducer(data, &graph_reducer, &branch_condition_elimination);
     AddReducer(data, &graph_reducer, &dead_code_elimination);
+    graph_reducer.ReduceGraph();
+  }
+};
+
+
+struct EscapeAnalysisPhase {
+  static const char* phase_name() { return "escape analysis"; }
+
+  void Run(PipelineData* data, Zone* temp_zone) {
+    EscapeAnalysis escape_analysis(data->graph(), data->jsgraph()->common(),
+                                   temp_zone);
+    escape_analysis.Run();
+    JSGraphReducer graph_reducer(data->jsgraph(), temp_zone);
+    EscapeAnalysisReducer escape_reducer(&graph_reducer, data->jsgraph(),
+                                         &escape_analysis, temp_zone);
+    AddReducer(data, &graph_reducer, &escape_reducer);
     graph_reducer.ReduceGraph();
   }
 };
@@ -1074,6 +1115,10 @@ Handle<Code> Pipeline::GenerateCode() {
     Run<LoopAssignmentAnalysisPhase>();
   }
 
+  if (info()->is_typing_enabled()) {
+    Run<TypeHintAnalysisPhase>();
+  }
+
   Run<GraphBuilderPhase>();
   if (data.compilation_failed()) return Handle<Code>::null();
   RunPrintAndVerify("Initial untyped", true);
@@ -1121,6 +1166,11 @@ Handle<Code> Pipeline::GenerateCode() {
       RunPrintAndVerify("Loop peeled");
     }
 
+    if (FLAG_turbo_escape) {
+      Run<EscapeAnalysisPhase>();
+      RunPrintAndVerify("Escape Analysed");
+    }
+
     // Lower simplified operators and insert changes.
     Run<SimplifiedLoweringPhase>();
     RunPrintAndVerify("Lowered simplified");
@@ -1161,10 +1211,13 @@ Handle<Code> Pipeline::GenerateCode() {
 }
 
 
-Handle<Code> Pipeline::GenerateCodeForInterpreter(
-    Isolate* isolate, CallDescriptor* call_descriptor, Graph* graph,
-    Schedule* schedule, const char* bytecode_name) {
-  CompilationInfo info(bytecode_name, isolate, graph->zone());
+Handle<Code> Pipeline::GenerateCodeForCodeStub(Isolate* isolate,
+                                               CallDescriptor* call_descriptor,
+                                               Graph* graph, Schedule* schedule,
+                                               Code::Kind kind,
+                                               const char* code_stub_name) {
+  CompilationInfo info(code_stub_name, isolate, graph->zone());
+  info.set_output_code_kind(kind);
 
   // Construct a pipeline for scheduling and code generation.
   ZonePool zone_pool;

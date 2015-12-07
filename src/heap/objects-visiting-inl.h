@@ -44,8 +44,15 @@ void StaticNewSpaceVisitor<StaticVisitor>::Initialize() {
                                        FixedArray::BodyDescriptor, int>::Visit);
 
   table_.Register(kVisitFixedDoubleArray, &VisitFixedDoubleArray);
-  table_.Register(kVisitFixedTypedArray, &VisitFixedTypedArray);
-  table_.Register(kVisitFixedFloat64Array, &VisitFixedTypedArray);
+  table_.Register(
+      kVisitFixedTypedArray,
+      &FlexibleBodyVisitor<StaticVisitor, FixedTypedArrayBase::BodyDescriptor,
+                           int>::Visit);
+
+  table_.Register(
+      kVisitFixedFloat64Array,
+      &FlexibleBodyVisitor<StaticVisitor, FixedTypedArrayBase::BodyDescriptor,
+                           int>::Visit);
 
   table_.Register(
       kVisitNativeContext,
@@ -135,9 +142,15 @@ void StaticMarkingVisitor<StaticVisitor>::Initialize() {
 
   table_.Register(kVisitFixedDoubleArray, &DataObjectVisitor::Visit);
 
-  table_.Register(kVisitFixedTypedArray, &DataObjectVisitor::Visit);
+  table_.Register(
+      kVisitFixedTypedArray,
+      &FlexibleBodyVisitor<StaticVisitor, FixedTypedArrayBase::BodyDescriptor,
+                           void>::Visit);
 
-  table_.Register(kVisitFixedFloat64Array, &DataObjectVisitor::Visit);
+  table_.Register(
+      kVisitFixedFloat64Array,
+      &FlexibleBodyVisitor<StaticVisitor, FixedTypedArrayBase::BodyDescriptor,
+                           void>::Visit);
 
   table_.Register(kVisitNativeContext, &VisitNativeContext);
 
@@ -178,6 +191,8 @@ void StaticMarkingVisitor<StaticVisitor>::Initialize() {
   table_.Register(kVisitPropertyCell, &VisitPropertyCell);
 
   table_.Register(kVisitWeakCell, &VisitWeakCell);
+
+  table_.Register(kVisitTransitionArray, &VisitTransitionArray);
 
   table_.template RegisterSpecializations<DataObjectVisitor, kVisitDataObject,
                                           kVisitDataObjectGeneric>();
@@ -338,6 +353,25 @@ void StaticMarkingVisitor<StaticVisitor>::VisitWeakCell(Map* map,
       heap->set_encountered_weak_cells(weak_cell);
     }
   }
+}
+
+
+template <typename StaticVisitor>
+void StaticMarkingVisitor<StaticVisitor>::VisitTransitionArray(
+    Map* map, HeapObject* object) {
+  typedef FlexibleBodyVisitor<StaticVisitor, TransitionArray::BodyDescriptor,
+                              int> TransitionArrayBodyVisitor;
+  TransitionArray* array = TransitionArray::cast(object);
+  // Enqueue the array in linked list of encountered transition arrays if it is
+  // not already in the list.
+  if (array->next_link()->IsUndefined()) {
+    Heap* heap = map->GetHeap();
+    array->set_next_link(heap->encountered_transition_arrays(),
+                         UPDATE_WEAK_WRITE_BARRIER);
+    heap->set_encountered_transition_arrays(array);
+  }
+  // TODO(ulan): Move MarkTransitionArray logic here.
+  TransitionArrayBodyVisitor::Visit(map, object);
 }
 
 
@@ -681,6 +715,11 @@ bool StaticMarkingVisitor<StaticVisitor>::IsFlushable(
 
   // The function must not be a builtin.
   if (shared_info->IsBuiltin()) {
+    return false;
+  }
+
+  // Maintain debug break slots in the code.
+  if (shared_info->HasDebugCode()) {
     return false;
   }
 

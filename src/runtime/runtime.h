@@ -261,7 +261,6 @@ namespace internal {
   F(TailCall, -1 /* >= 2 */, 1)               \
   F(Apply, 5, 1)                              \
   F(ConvertReceiver, 1, 1)                    \
-  F(IsConstructCall, 0, 1)                    \
   F(IsFunction, 1, 1)
 
 
@@ -351,9 +350,6 @@ namespace internal {
   F(IS_VAR, 1, 1)                             \
   F(IncrementStatsCounter, 1, 1)              \
   F(HarmonyToString, 0, 1)                    \
-  F(GetTypeFeedbackVector, 1, 1)              \
-  F(GetCallerJSFunction, 0, 1)                \
-  F(GetCodeStubExportsObject, 0, 1)           \
   F(ThrowConstructedNonConstructable, 1, 1)   \
   F(ThrowCalledNonCallable, 1, 1)
 
@@ -381,7 +377,7 @@ namespace internal {
   F(LiveEditFunctionSetScript, 2, 1)                \
   F(LiveEditReplaceRefToNestedFunction, 3, 1)       \
   F(LiveEditPatchFunctionPositions, 2, 1)           \
-  F(LiveEditCheckAndDropActivations, 2, 1)          \
+  F(LiveEditCheckAndDropActivations, 3, 1)          \
   F(LiveEditCompareStrings, 2, 1)                   \
   F(LiveEditRestartFrame, 2, 1)
 
@@ -454,14 +450,10 @@ namespace internal {
   F(DeleteProperty_Strict, 2, 1)                     \
   F(HasOwnProperty, 2, 1)                            \
   F(HasProperty, 2, 1)                               \
-  F(IsPropertyEnumerable, 2, 1)                      \
+  F(PropertyIsEnumerable, 2, 1)                      \
   F(GetPropertyNamesFast, 1, 1)                      \
-  F(GetOwnPropertyNames, 2, 1)                       \
-  F(GetOwnElementNames, 1, 1)                        \
+  F(GetOwnPropertyKeys, 2, 1)                        \
   F(GetInterceptorInfo, 1, 1)                        \
-  F(GetNamedInterceptorPropertyNames, 1, 1)          \
-  F(GetIndexedInterceptorElementNames, 1, 1)         \
-  F(OwnKeys, 1, 1)                                   \
   F(ToFastProperties, 1, 1)                          \
   F(AllocateHeapNumber, 0, 1)                        \
   F(NewObject, 2, 1)                                 \
@@ -546,14 +538,9 @@ namespace internal {
   F(BitwiseXor_Strong, 2, 1)
 
 #define FOR_EACH_INTRINSIC_PROXY(F) \
-  F(CreateJSProxy, 2, 1)            \
-  F(CreateJSFunctionProxy, 5, 1)    \
   F(IsJSProxy, 1, 1)                \
-  F(IsJSFunctionProxy, 1, 1)        \
   F(GetHandler, 1, 1)               \
-  F(GetCallTrap, 1, 1)              \
-  F(GetConstructTrap, 1, 1)
-
+  F(RevokeProxy, 1, 1)
 
 #define FOR_EACH_INTRINSIC_REGEXP(F)           \
   F(StringReplaceGlobalRegExpWithString, 4, 1) \

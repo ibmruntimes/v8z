@@ -76,6 +76,7 @@ class StaticVisitorBase : public AllStatic {
   V(Cell)                  \
   V(PropertyCell)          \
   V(WeakCell)              \
+  V(TransitionArray)       \
   V(SharedFunctionInfo)    \
   V(JSFunction)            \
   V(JSWeakCollection)      \
@@ -247,7 +248,9 @@ class StaticNewSpaceVisitor : public StaticVisitorBase {
 
   INLINE(static void VisitPointers(Heap* heap, HeapObject* object,
                                    Object** start, Object** end)) {
-    for (Object** p = start; p < end; p++) StaticVisitor::VisitPointer(heap, p);
+    for (Object** p = start; p < end; p++) {
+      StaticVisitor::VisitPointer(heap, object, p);
+    }
   }
 
   // Although we are using the JSFunction body descriptor which does not
@@ -266,10 +269,6 @@ class StaticNewSpaceVisitor : public StaticVisitorBase {
   INLINE(static int VisitFixedDoubleArray(Map* map, HeapObject* object)) {
     int length = reinterpret_cast<FixedDoubleArray*>(object)->length();
     return FixedDoubleArray::SizeFor(length);
-  }
-
-  INLINE(static int VisitFixedTypedArray(Map* map, HeapObject* object)) {
-    return reinterpret_cast<FixedTypedArrayBase*>(object)->size();
   }
 
   INLINE(static int VisitJSObject(Map* map, HeapObject* object)) {
@@ -347,6 +346,7 @@ class StaticMarkingVisitor : public StaticVisitorBase {
 
   INLINE(static void VisitPropertyCell(Map* map, HeapObject* object));
   INLINE(static void VisitWeakCell(Map* map, HeapObject* object));
+  INLINE(static void VisitTransitionArray(Map* map, HeapObject* object));
   INLINE(static void VisitCodeEntry(Heap* heap, HeapObject* object,
                                     Address entry_address));
   INLINE(static void VisitEmbeddedPointer(Heap* heap, RelocInfo* rinfo));

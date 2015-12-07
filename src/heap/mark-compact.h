@@ -279,18 +279,11 @@ class CodeFlusher {
     ProcessJSFunctionCandidates();
   }
 
-  void EvictAllCandidates() {
-    EvictJSFunctionCandidates();
-    EvictSharedFunctionInfoCandidates();
-  }
-
   void IteratePointersToFromSpace(ObjectVisitor* v);
 
  private:
   void ProcessJSFunctionCandidates();
   void ProcessSharedFunctionInfoCandidates();
-  void EvictJSFunctionCandidates();
-  void EvictSharedFunctionInfoCandidates();
 
   static inline JSFunction** GetNextCandidateSlot(JSFunction* candidate);
   static inline JSFunction* GetNextCandidate(JSFunction* candidate);
@@ -325,6 +318,10 @@ class MarkCompactCollector {
     kKeepMarking,
     kClearMarkbits,
   };
+
+  class EvacuateNewSpaceVisitor;
+  class EvacuateOldSpaceVisitor;
+  class HeapObjectVisitor;
 
   static void Initialize();
 
@@ -371,7 +368,6 @@ class MarkCompactCollector {
 
   CodeFlusher* code_flusher() { return code_flusher_; }
   inline bool is_code_flushing_enabled() const { return code_flusher_ != NULL; }
-  void EnableCodeFlushing(bool enable);
 
   enum SweeperType {
     CONCURRENT_SWEEPING,
@@ -412,6 +408,8 @@ class MarkCompactCollector {
   void MigrateObject(HeapObject* dst, HeapObject* src, int size,
                      AllocationSpace to_old_space,
                      SlotsBuffer** evacuation_slots_buffer);
+
+  bool TryPromoteObject(HeapObject* object, int object_size);
 
   void InvalidateCode(Code* code);
 
@@ -510,14 +508,9 @@ class MarkCompactCollector {
 
  private:
   class CompactionTask;
-  class EvacuateNewSpaceVisitor;
-  class EvacuateOldSpaceVisitor;
-  class EvacuateVisitorBase;
-  class HeapObjectVisitor;
   class SweeperTask;
 
   explicit MarkCompactCollector(Heap* heap);
-  ~MarkCompactCollector();
 
   bool WillBeDeoptimized(Code* code);
   void EvictPopularEvacuationCandidate(Page* page);
@@ -684,6 +677,9 @@ class MarkCompactCollector {
   void ProcessAndClearWeakCells();
   void AbortWeakCells();
 
+  void ProcessAndClearTransitionArrays();
+  void AbortTransitionArrays();
+
   // After all reachable objects have been marked, those entries within
   // optimized code maps that became unreachable are removed, potentially
   // trimming or clearing out the entire optimized code map.
@@ -809,6 +805,7 @@ class MarkCompactCollector {
   base::Semaphore pending_compaction_tasks_semaphore_;
 
   friend class Heap;
+  friend class StoreBuffer;
 };
 
 

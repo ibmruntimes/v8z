@@ -22,9 +22,8 @@ void Builtins::Generate_Adaptor(MacroAssembler* masm,
                                 BuiltinExtraArguments extra_args) {
   // ----------- S t a t e -------------
   //  -- a0                 : number of arguments excluding receiver
-  //                          (only guaranteed when the called function
-  //                           is not marked as DontAdaptArguments)
-  //  -- a1                 : called function
+  //  -- a1                 : target
+  //  -- a3                 : new.target
   //  -- sp[0]              : last argument
   //  -- ...
   //  -- sp[8 * (argc - 1)] : first argument
@@ -32,37 +31,28 @@ void Builtins::Generate_Adaptor(MacroAssembler* masm,
   // -----------------------------------
   __ AssertFunction(a1);
 
-  // Make sure we operate in the context of the called function (for example
-  // ConstructStubs implemented in C++ will be run in the context of the caller
-  // instead of the callee, due to the way that [[Construct]] is defined for
-  // ordinary functions).
-  // TODO(bmeurer): Can we make this more robust?
-  __ ld(cp, FieldMemOperand(a1, JSFunction::kContextOffset));
-
   // Insert extra arguments.
   int num_extra_args = 0;
-  if (extra_args == NEEDS_CALLED_FUNCTION) {
-    num_extra_args = 1;
-    __ push(a1);
-  } else {
-    DCHECK(extra_args == NO_EXTRA_ARGUMENTS);
+  switch (extra_args) {
+    case BuiltinExtraArguments::kTarget:
+      __ Push(a1);
+      ++num_extra_args;
+      break;
+    case BuiltinExtraArguments::kNewTarget:
+      __ Push(a3);
+      ++num_extra_args;
+      break;
+    case BuiltinExtraArguments::kTargetAndNewTarget:
+      __ Push(a1, a3);
+      num_extra_args += 2;
+      break;
+    case BuiltinExtraArguments::kNone:
+      break;
   }
 
   // JumpToExternalReference expects a0 to contain the number of arguments
-  // including the receiver and the extra arguments.  But a0 is only valid
-  // if the called function is marked as DontAdaptArguments, otherwise we
-  // need to load the argument count from the SharedFunctionInfo.
-  Label argc, done_argc;
-  __ ld(a2, FieldMemOperand(a1, JSFunction::kSharedFunctionInfoOffset));
-  __ lw(a2,
-        FieldMemOperand(a2, SharedFunctionInfo::kFormalParameterCountOffset));
-  __ Branch(&argc, eq, a2,
-            Operand(SharedFunctionInfo::kDontAdaptArgumentsSentinel));
-  __ Daddu(a0, a2, num_extra_args + 1);
-  __ jmp(&done_argc);
-  __ bind(&argc);
+  // including the receiver and the extra arguments.
   __ Daddu(a0, a0, num_extra_args + 1);
-  __ bind(&done_argc);
 
   __ JumpToExternalReference(ExternalReference(id, masm->isolate()));
 }
@@ -390,36 +380,9 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
         __ lbu(t1, FieldMemOperand(a2, Map::kInstanceTypeOffset));
         __ Branch(&rt_call, eq, t1, Operand(JS_FUNCTION_TYPE));
 
-        if (!is_api_function) {
-          Label allocate;
-          MemOperand bit_field3 = FieldMemOperand(a2, Map::kBitField3Offset);
-          // Check if slack tracking is enabled.
-          __ lwu(a4, bit_field3);
-          __ DecodeField<Map::Counter>(a6, a4);
-          __ Branch(
-              &allocate, lt, a6,
-              Operand(static_cast<int64_t>(Map::kSlackTrackingCounterEnd)));
-          // Decrease generous allocation count.
-          __ Dsubu(a4, a4, Operand(1 << Map::Counter::kShift));
-          __ Branch(USE_DELAY_SLOT, &allocate, ne, a6,
-                    Operand(Map::kSlackTrackingCounterEnd));
-          __ sw(a4, bit_field3);  // In delay slot.
-
-          // Push the constructor, new_target and map to the stack, and
-          // the map again as an argument to the runtime call.
-          __ Push(a1, a3, a2, a2);
-          __ CallRuntime(Runtime::kFinalizeInstanceSize, 1);
-
-          __ Pop(a1, a3, a2);
-          __ li(a6, Operand(Map::kSlackTrackingCounterEnd - 1));
-
-          __ bind(&allocate);
-        }
-
         // Now allocate the JSObject on the heap.
         // a1: constructor function
         // a2: initial map
-        // a6: slack tracking counter (non-API function case)
         __ lbu(a4, FieldMemOperand(a2, Map::kInstanceSizeOffset));
         __ Allocate(a4, t0, a4, t2, &rt_call, SIZE_IN_WORDS);
 
@@ -428,9 +391,8 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
         // a1: constructor function
         // a2: initial map
         // a3: object size
-        // t0: JSObject (not tagged)
+        // t0: JSObject (not HeapObject tagged - the actual address).
         // a4: start of next object
-        // a6: slack tracking counter (non-API function case)
         __ LoadRoot(t2, Heap::kEmptyFixedArrayRootIndex);
         __ mov(t1, t0);
         STATIC_ASSERT(0 * kPointerSize == JSObject::kMapOffset);
@@ -442,19 +404,28 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
         STATIC_ASSERT(3 * kPointerSize == JSObject::kHeaderSize);
         __ Daddu(t1, t1, Operand(3 * kPointerSize));
 
-        // Fill all the in-object properties with appropriate filler.
-        // t1: First in-object property of JSObject (not tagged)
+        // Add the object tag to make the JSObject real, so that we can continue
+        // and jump into the continuation code at any time from now on.
+        __ Daddu(t0, t0, Operand(kHeapObjectTag));
 
-        // Use t3 to hold undefined, which is used in several places below.
+        // Fill all the in-object properties with appropriate filler.
+        // t0: JSObject (tagged)
+        // t1: First in-object property of JSObject (not tagged)
         __ LoadRoot(t3, Heap::kUndefinedValueRootIndex);
 
         if (!is_api_function) {
           Label no_inobject_slack_tracking;
 
+          MemOperand bit_field3 = FieldMemOperand(a2, Map::kBitField3Offset);
           // Check if slack tracking is enabled.
-          __ Branch(
-              &no_inobject_slack_tracking, lt, a6,
-              Operand(static_cast<int64_t>(Map::kSlackTrackingCounterEnd)));
+          __ lwu(t2, bit_field3);
+          __ DecodeField<Map::Counter>(a6, t2);
+          // a6: slack tracking counter
+          __ Branch(&no_inobject_slack_tracking, lt, a6,
+                    Operand(Map::kSlackTrackingCounterEnd));
+          // Decrease generous allocation count.
+          __ Dsubu(t2, t2, Operand(1 << Map::Counter::kShift));
+          __ sw(t2, bit_field3);
 
           // Allocate object with a slack.
           __ lbu(a0, FieldMemOperand(a2, Map::kUnusedPropertyFieldsOffset));
@@ -470,20 +441,32 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
           // To allow truncation fill the remaining fields with one pointer
           // filler map.
           __ LoadRoot(t3, Heap::kOnePointerFillerMapRootIndex);
+          __ InitializeFieldsWithFiller(t1, a4, t3);
+
+          // a6: slack tracking counter value before decreasing.
+          __ Branch(&allocated, ne, a6, Operand(Map::kSlackTrackingCounterEnd));
+
+          // Push the constructor, new_target and the object to the stack,
+          // and then the initial map as an argument to the runtime call.
+          __ Push(a1, a3, t0, a2);
+          __ CallRuntime(Runtime::kFinalizeInstanceSize, 1);
+          __ Pop(a1, a3, t0);
+
+          // Continue with JSObject being successfully allocated.
+          // a1: constructor function
+          // a3: new target
+          // t0: JSObject
+          __ jmp(&allocated);
 
           __ bind(&no_inobject_slack_tracking);
         }
 
         __ InitializeFieldsWithFiller(t1, a4, t3);
 
-        // Add the object tag to make the JSObject real, so that we can continue
-        // and jump into the continuation code at any time from now on.
-        __ Daddu(t0, t0, Operand(kHeapObjectTag));
-
         // Continue with JSObject being successfully allocated.
         // a1: constructor function
         // a3: new target
-        // a4: JSObject
+        // t0: JSObject
         __ jmp(&allocated);
       }
 
@@ -509,15 +492,12 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     }
     __ SmiUntag(a0);
 
-    // Push new.target onto the construct frame. This is stored just below the
-    // receiver on the stack.
     if (create_implicit_receiver) {
       // Push the allocated receiver to the stack. We need two copies
       // because we may have to return the original one and the calling
       // conventions dictate that the called function pops the receiver.
-      __ Push(a3, t0, t0);
+      __ Push(t0, t0);
     } else {
-      __ push(a3);
       __ PushRoot(Heap::kTheHoleValueRootIndex);
     }
 
@@ -532,8 +512,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     // t0: number of arguments (smi-tagged)
     // sp[0]: receiver
     // sp[1]: receiver
-    // sp[2]: new.target
-    // sp[3]: number of arguments (smi-tagged)
+    // sp[2]: number of arguments (smi-tagged)
     Label loop, entry;
     __ mov(t0, a0);
     __ jmp(&entry);
@@ -578,8 +557,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // If the result is a smi, it is *not* an object in the ECMA sense.
       // v0: result
       // sp[0]: receiver (newly allocated object)
-      // sp[1]: new.target
-      // sp[2]: number of arguments (smi-tagged)
+      // sp[1]: number of arguments (smi-tagged)
       __ JumpIfSmi(v0, &use_receiver);
 
       // If the type of the result (stored in its map) is less than
@@ -597,11 +575,10 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       __ bind(&exit);
       // v0: result
       // sp[0]: receiver (newly allocated object)
-      // sp[1]: new target
-      // sp[2]: number of arguments (smi-tagged)
-      __ ld(a1, MemOperand(sp, 2 * kPointerSize));
+      // sp[1]: number of arguments (smi-tagged)
+      __ ld(a1, MemOperand(sp, 1 * kPointerSize));
     } else {
-      __ ld(a1, MemOperand(sp, kPointerSize));
+      __ ld(a1, MemOperand(sp));
     }
 
     // Leave construct frame.
@@ -1707,13 +1684,10 @@ void Builtins::Generate_Call(MacroAssembler* masm, ConvertReceiverMode mode) {
   __ GetObjectType(a1, t1, t2);
   __ Jump(masm->isolate()->builtins()->CallFunction(mode),
           RelocInfo::CODE_TARGET, eq, t2, Operand(JS_FUNCTION_TYPE));
-  __ Branch(&non_function, ne, t2, Operand(JS_FUNCTION_PROXY_TYPE));
+  __ Branch(&non_function, ne, t2, Operand(JS_PROXY_TYPE));
 
   // 1. Call to function proxy.
-  // TODO(neis): This doesn't match the ES6 spec for [[Call]] on proxies.
-  __ ld(a1, FieldMemOperand(a1, JSFunctionProxy::kCallTrapOffset));
-  __ AssertNotSmi(a1);
-  __ Branch(&non_smi);
+  // TODO(neis): Implement [[Call]] on proxies.
 
   // 2. Call to something else, which might have a [[Call]] internal method (if
   // not we raise an exception).
@@ -1767,13 +1741,12 @@ void Builtins::Generate_ConstructFunction(MacroAssembler* masm) {
 void Builtins::Generate_ConstructProxy(MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- a0 : the number of arguments (not including the receiver)
-  //  -- a1 : the constructor to call (checked to be a JSFunctionProxy)
+  //  -- a1 : the constructor to call (checked to be a JSProxy)
   //  -- a3 : the new target (either the same as the constructor or
   //          the JSFunction on which new was invoked initially)
   // -----------------------------------
 
   // TODO(neis): This doesn't match the ES6 spec for [[Construct]] on proxies.
-  __ ld(a1, FieldMemOperand(a1, JSFunctionProxy::kConstructTrapOffset));
   __ Jump(masm->isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
 }
 
@@ -1797,7 +1770,7 @@ void Builtins::Generate_Construct(MacroAssembler* masm) {
   __ Jump(masm->isolate()->builtins()->ConstructFunction(),
           RelocInfo::CODE_TARGET, eq, t2, Operand(JS_FUNCTION_TYPE));
   __ Jump(masm->isolate()->builtins()->ConstructProxy(), RelocInfo::CODE_TARGET,
-          eq, t2, Operand(JS_FUNCTION_PROXY_TYPE));
+          eq, t2, Operand(JS_PROXY_TYPE));
 
   // Check if target has a [[Construct]] internal method.
   __ lbu(t2, FieldMemOperand(t1, Map::kBitFieldOffset));

@@ -1481,6 +1481,15 @@ void MacroAssembler::Dext(Register rt, Register rs, uint16_t pos,
 }
 
 
+void MacroAssembler::Dins(Register rt, Register rs, uint16_t pos,
+                          uint16_t size) {
+  DCHECK(pos < 32);
+  DCHECK(pos + size <= 32);
+  DCHECK(size != 0);
+  dins_(rt, rs, pos, size);
+}
+
+
 void MacroAssembler::Ins(Register rt,
                          Register rs,
                          uint16_t pos,
@@ -4261,11 +4270,11 @@ void MacroAssembler::FloodFunctionIfStepping(Register fun, Register new_target,
                                              const ParameterCount& expected,
                                              const ParameterCount& actual) {
   Label skip_flooding;
-  ExternalReference debug_step_action =
-      ExternalReference::debug_last_step_action_address(isolate());
-  li(t0, Operand(debug_step_action));
+  ExternalReference step_in_enabled =
+      ExternalReference::debug_step_in_enabled_address(isolate());
+  li(t0, Operand(step_in_enabled));
   lb(t0, MemOperand(t0));
-  Branch(&skip_flooding, ne, t0, Operand(StepIn));
+  Branch(&skip_flooding, eq, t0, Operand(zero_reg));
   {
     FrameScope frame(this,
                      has_frame() ? StackFrame::NONE : StackFrame::INTERNAL);
@@ -4888,6 +4897,9 @@ void MacroAssembler::InvokeBuiltin(int native_context_index, InvokeFlag flag,
                                    const CallWrapper& call_wrapper) {
   // You can't call a builtin without a valid frame.
   DCHECK(flag == JUMP_FUNCTION || has_frame());
+
+  // Always initialize new target.
+  LoadRoot(a3, Heap::kUndefinedValueRootIndex);
 
   LoadNativeContextSlot(native_context_index, a1);
   ld(t9, FieldMemOperand(a1, JSFunction::kCodeEntryOffset));

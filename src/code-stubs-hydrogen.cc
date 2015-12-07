@@ -1141,20 +1141,6 @@ Handle<Code> StoreTransitionStub::GenerateCode() {
 
 
 template <>
-HValue* CodeStubGraphBuilder<StringLengthStub>::BuildCodeStub() {
-  HValue* string = BuildLoadNamedField(GetParameter(0),
-      FieldIndex::ForInObjectOffset(JSValue::kValueOffset));
-  return BuildLoadNamedField(string,
-      FieldIndex::ForInObjectOffset(String::kLengthOffset));
-}
-
-
-Handle<Code> StringLengthStub::GenerateCode() {
-  return DoGenerateCode(this);
-}
-
-
-template <>
 HValue* CodeStubGraphBuilder<StoreFastElementStub>::BuildCodeStub() {
   BuildUncheckedMonomorphicElementAccess(
       GetParameter(StoreDescriptor::kReceiverIndex),
@@ -1457,9 +1443,9 @@ HValue* CodeStubGraphBuilder<BinaryOpICStub>::BuildCodeInitializedStub() {
   HValue* left = GetParameter(BinaryOpICStub::kLeft);
   HValue* right = GetParameter(BinaryOpICStub::kRight);
 
-  Type* left_type = state.GetLeftType(zone());
-  Type* right_type = state.GetRightType(zone());
-  Type* result_type = state.GetResultType(zone());
+  Type* left_type = state.GetLeftType();
+  Type* right_type = state.GetRightType();
+  Type* result_type = state.GetResultType();
 
   DCHECK(!left_type->Is(Type::None()) && !right_type->Is(Type::None()) &&
          (state.HasSideEffects() || !result_type->Is(Type::None())));
@@ -1538,9 +1524,9 @@ HValue* CodeStubGraphBuilder<BinaryOpWithAllocationSiteStub>::BuildCodeStub() {
   HValue* left = GetParameter(BinaryOpWithAllocationSiteStub::kLeft);
   HValue* right = GetParameter(BinaryOpWithAllocationSiteStub::kRight);
 
-  Type* left_type = state.GetLeftType(zone());
-  Type* right_type = state.GetRightType(zone());
-  Type* result_type = state.GetResultType(zone());
+  Type* left_type = state.GetLeftType();
+  Type* right_type = state.GetRightType();
+  Type* result_type = state.GetResultType();
   HAllocationMode allocation_mode(allocation_site);
 
   return BuildBinaryOperation(state.op(), left, right, left_type, right_type,
@@ -1719,31 +1705,13 @@ Handle<Code> StringAddStub::GenerateCode() {
 template <>
 HValue* CodeStubGraphBuilder<ToBooleanStub>::BuildCodeInitializedStub() {
   ToBooleanStub* stub = casted_stub();
-  HValue* true_value = NULL;
-  HValue* false_value = NULL;
-
-  switch (stub->mode()) {
-    case ToBooleanStub::RESULT_AS_SMI:
-      true_value = graph()->GetConstant1();
-      false_value = graph()->GetConstant0();
-      break;
-    case ToBooleanStub::RESULT_AS_ODDBALL:
-      true_value = graph()->GetConstantTrue();
-      false_value = graph()->GetConstantFalse();
-      break;
-    case ToBooleanStub::RESULT_AS_INVERSE_ODDBALL:
-      true_value = graph()->GetConstantFalse();
-      false_value = graph()->GetConstantTrue();
-      break;
-  }
-
   IfBuilder if_true(this);
   if_true.If<HBranch>(GetParameter(0), stub->types());
   if_true.Then();
-  if_true.Return(true_value);
+  if_true.Return(graph()->GetConstantTrue());
   if_true.Else();
   if_true.End();
-  return false_value;
+  return graph()->GetConstantFalse();
 }
 
 

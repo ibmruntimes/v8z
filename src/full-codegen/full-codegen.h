@@ -490,7 +490,6 @@ class FullCodeGenerator: public AstVisitor {
   F(IsTypedArray)                       \
   F(IsRegExp)                           \
   F(IsJSProxy)                          \
-  F(IsConstructCall)                    \
   F(Call)                               \
   F(DefaultConstructorCallSuper)        \
   F(ArgumentsLength)                    \
@@ -673,9 +672,12 @@ class FullCodeGenerator: public AstVisitor {
   // This is used in loop headers where we want to break for each iteration.
   void SetExpressionAsStatementPosition(Expression* expr);
 
-  void SetCallPosition(Expression* expr, int argc);
+  void SetCallPosition(Expression* expr);
 
-  void SetConstructCallPosition(Expression* expr, int argc);
+  void SetConstructCallPosition(Expression* expr) {
+    // Currently call and construct calls are treated the same wrt debugging.
+    SetCallPosition(expr);
+  }
 
   // Non-local control flow support.
   void EnterTryBlock(int handler_index, Label* handler);

@@ -7,9 +7,9 @@
 
 #include "src/base/flags.h"
 #include "src/compiler/frame.h"
-#include "src/compiler/machine-type.h"
 #include "src/compiler/operator.h"
 #include "src/frames.h"
+#include "src/machine-type.h"
 #include "src/runtime/runtime.h"
 #include "src/zone.h"
 
@@ -153,6 +153,9 @@ class CallDescriptor final : public ZoneObject {
     kHasLocalCatchHandler = 1u << 4,
     kSupportsTailCalls = 1u << 5,
     kCanUseRoots = 1u << 6,
+    // Indicates that the native stack should be used for a code object. This
+    // information is important for native calls on arm64.
+    kUseNativeStack = 1u << 7,
     kPatchableCallSiteWithNop = kPatchableCallSite | kNeedsNopAfterCall
   };
   typedef base::Flags<Flag> Flags;
@@ -218,6 +221,7 @@ class CallDescriptor final : public ZoneObject {
 
   bool NeedsFrameState() const { return flags() & kNeedsFrameState; }
   bool SupportsTailCalls() const { return flags() & kSupportsTailCalls; }
+  bool UseNativeStack() const { return flags() & kUseNativeStack; }
 
   LinkageLocation GetReturnLocation(size_t index) const {
     return location_sig_->GetReturn(index);
@@ -307,7 +311,7 @@ class Linkage : public ZoneObject {
 
   static CallDescriptor* GetRuntimeCallDescriptor(
       Zone* zone, Runtime::FunctionId function, int parameter_count,
-      Operator::Properties properties, bool needs_frame_state = true);
+      Operator::Properties properties, CallDescriptor::Flags flags);
 
   static CallDescriptor* GetLazyBailoutDescriptor(Zone* zone);
 

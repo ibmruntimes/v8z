@@ -22,9 +22,8 @@ void Builtins::Generate_Adaptor(MacroAssembler* masm,
                                 BuiltinExtraArguments extra_args) {
   // ----------- S t a t e -------------
   //  -- eax                : number of arguments excluding receiver
-  //                          (only guaranteed when the called function
-  //                           is not marked as DontAdaptArguments)
-  //  -- edi                : called function
+  //  -- edi                : target
+  //  -- edx                : new.target
   //  -- esp[0]             : return address
   //  -- esp[4]             : last argument
   //  -- ...
@@ -33,41 +32,24 @@ void Builtins::Generate_Adaptor(MacroAssembler* masm,
   // -----------------------------------
   __ AssertFunction(edi);
 
-  // Make sure we operate in the context of the called function (for example
-  // ConstructStubs implemented in C++ will be run in the context of the caller
-  // instead of the callee, due to the way that [[Construct]] is defined for
-  // ordinary functions).
-  // TODO(bmeurer): Can we make this more robust?
-  __ mov(esi, FieldOperand(edi, JSFunction::kContextOffset));
-
   // Insert extra arguments.
   int num_extra_args = 0;
-  if (extra_args == NEEDS_CALLED_FUNCTION) {
-    num_extra_args = 1;
-    Register scratch = ebx;
-    __ pop(scratch);  // Save return address.
-    __ push(edi);
-    __ push(scratch);  // Restore return address.
-  } else {
-    DCHECK(extra_args == NO_EXTRA_ARGUMENTS);
+  if (extra_args != BuiltinExtraArguments::kNone) {
+    __ PopReturnAddressTo(ecx);
+    if (extra_args & BuiltinExtraArguments::kTarget) {
+      ++num_extra_args;
+      __ Push(edi);
+    }
+    if (extra_args & BuiltinExtraArguments::kNewTarget) {
+      ++num_extra_args;
+      __ Push(edx);
+    }
+    __ PushReturnAddressFrom(ecx);
   }
 
   // JumpToExternalReference expects eax to contain the number of arguments
-  // including the receiver and the extra arguments.  But eax is only valid
-  // if the called function is marked as DontAdaptArguments, otherwise we
-  // need to load the argument count from the SharedFunctionInfo.
-  Label argc, done_argc;
-  __ mov(edx, FieldOperand(edi, JSFunction::kSharedFunctionInfoOffset));
-  __ mov(ebx,
-         FieldOperand(edx, SharedFunctionInfo::kFormalParameterCountOffset));
-  __ SmiUntag(ebx);
-  __ cmp(ebx, SharedFunctionInfo::kDontAdaptArgumentsSentinel);
-  __ j(equal, &argc, Label::kNear);
-  __ lea(eax, Operand(ebx, num_extra_args + 1));
-  __ jmp(&done_argc, Label::kNear);
-  __ bind(&argc);
+  // including the receiver and the extra arguments.
   __ add(eax, Immediate(num_extra_args + 1));
-  __ bind(&done_argc);
 
   __ JumpToExternalReference(ExternalReference(id, masm->isolate()));
 }
@@ -1570,14 +1552,11 @@ void Builtins::Generate_Call(MacroAssembler* masm, ConvertReceiverMode mode) {
   __ CmpObjectType(edi, JS_FUNCTION_TYPE, ecx);
   __ j(equal, masm->isolate()->builtins()->CallFunction(mode),
        RelocInfo::CODE_TARGET);
-  __ CmpInstanceType(ecx, JS_FUNCTION_PROXY_TYPE);
+  __ CmpInstanceType(ecx, JS_PROXY_TYPE);
   __ j(not_equal, &non_function);
 
   // 1. Call to function proxy.
-  // TODO(neis): This doesn't match the ES6 spec for [[Call]] on proxies.
-  __ mov(edi, FieldOperand(edi, JSFunctionProxy::kCallTrapOffset));
-  __ AssertNotSmi(edi);
-  __ jmp(&non_smi);
+  // TODO(neis): Implement [[Call]] on proxies.
 
   // 2. Call to something else, which might have a [[Call]] internal method (if
   // not we raise an exception).
@@ -1631,11 +1610,10 @@ void Builtins::Generate_ConstructProxy(MacroAssembler* masm) {
   //  -- eax : the number of arguments (not including the receiver)
   //  -- edx : the new target (either the same as the constructor or
   //           the JSFunction on which new was invoked initially)
-  //  -- edi : the constructor to call (checked to be a JSFunctionProxy)
+  //  -- edi : the constructor to call (checked to be a JSProxy)
   // -----------------------------------
 
   // TODO(neis): This doesn't match the ES6 spec for [[Construct]] on proxies.
-  __ mov(edi, FieldOperand(edi, JSFunctionProxy::kConstructTrapOffset));
   __ Jump(masm->isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
 }
 
@@ -1657,7 +1635,7 @@ void Builtins::Generate_Construct(MacroAssembler* masm) {
   __ CmpObjectType(edi, JS_FUNCTION_TYPE, ecx);
   __ j(equal, masm->isolate()->builtins()->ConstructFunction(),
        RelocInfo::CODE_TARGET);
-  __ CmpInstanceType(ecx, JS_FUNCTION_PROXY_TYPE);
+  __ CmpInstanceType(ecx, JS_PROXY_TYPE);
   __ j(equal, masm->isolate()->builtins()->ConstructProxy(),
        RelocInfo::CODE_TARGET);
 

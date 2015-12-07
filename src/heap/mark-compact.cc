@@ -59,7 +59,7 @@ MarkCompactCollector::MarkCompactCollector(Heap* heap)
       heap_(heap),
       marking_deque_memory_(NULL),
       marking_deque_memory_committed_(0),
-      code_flusher_(NULL),
+      code_flusher_(nullptr),
       have_code_to_deoptimize_(false),
       compacting_(false),
       sweeping_in_progress_(false),
@@ -247,6 +247,13 @@ void MarkCompactCollector::SetUp() {
   EnsureMarkingDequeIsReserved();
   EnsureMarkingDequeIsCommitted(kMinMarkingDequeSize);
   slots_buffer_allocator_ = new SlotsBufferAllocator();
+
+  if (FLAG_flush_code) {
+    code_flusher_ = new CodeFlusher(isolate());
+    if (FLAG_trace_code_flushing) {
+      PrintF("[code-flushing is now on]\n");
+    }
+  }
 }
 
 
@@ -254,6 +261,7 @@ void MarkCompactCollector::TearDown() {
   AbortCompaction();
   delete marking_deque_memory_;
   delete slots_buffer_allocator_;
+  delete code_flusher_;
 }
 
 
@@ -831,6 +839,7 @@ void MarkCompactCollector::Prepare() {
     ClearMarkbits();
     AbortWeakCollections();
     AbortWeakCells();
+    AbortTransitionArrays();
     AbortCompaction();
     was_marked_incrementally_ = false;
   }
@@ -1060,30 +1069,6 @@ void CodeFlusher::EvictCandidate(JSFunction* function) {
 }
 
 
-void CodeFlusher::EvictJSFunctionCandidates() {
-  JSFunction* candidate = jsfunction_candidates_head_;
-  JSFunction* next_candidate;
-  while (candidate != NULL) {
-    next_candidate = GetNextCandidate(candidate);
-    EvictCandidate(candidate);
-    candidate = next_candidate;
-  }
-  DCHECK(jsfunction_candidates_head_ == NULL);
-}
-
-
-void CodeFlusher::EvictSharedFunctionInfoCandidates() {
-  SharedFunctionInfo* candidate = shared_function_info_candidates_head_;
-  SharedFunctionInfo* next_candidate;
-  while (candidate != NULL) {
-    next_candidate = GetNextCandidate(candidate);
-    EvictCandidate(candidate);
-    candidate = next_candidate;
-  }
-  DCHECK(shared_function_info_candidates_head_ == NULL);
-}
-
-
 void CodeFlusher::IteratePointersToFromSpace(ObjectVisitor* v) {
   Heap* heap = isolate_->heap();
 
@@ -1095,14 +1080,6 @@ void CodeFlusher::IteratePointersToFromSpace(ObjectVisitor* v) {
     }
     candidate = GetNextCandidate(*slot);
     slot = GetNextCandidateSlot(*slot);
-  }
-}
-
-
-MarkCompactCollector::~MarkCompactCollector() {
-  if (code_flusher_ != NULL) {
-    delete code_flusher_;
-    code_flusher_ = NULL;
   }
 }
 
@@ -1556,51 +1533,18 @@ class MarkCompactCollector::HeapObjectVisitor {
 };
 
 
-class MarkCompactCollector::EvacuateVisitorBase
+class MarkCompactCollector::EvacuateNewSpaceVisitor
     : public MarkCompactCollector::HeapObjectVisitor {
  public:
-  EvacuateVisitorBase(Heap* heap, SlotsBuffer** evacuation_slots_buffer)
-      : heap_(heap), evacuation_slots_buffer_(evacuation_slots_buffer) {}
-
-  bool TryEvacuateObject(PagedSpace* target_space, HeapObject* object,
-                         HeapObject** target_object) {
-    int size = object->Size();
-    AllocationAlignment alignment = object->RequiredAlignment();
-    AllocationResult allocation = target_space->AllocateRaw(size, alignment);
-    if (allocation.To(target_object)) {
-      heap_->mark_compact_collector()->MigrateObject(
-          *target_object, object, size, target_space->identity(),
-          evacuation_slots_buffer_);
-      return true;
-    }
-    return false;
-  }
-
- protected:
-  Heap* heap_;
-  SlotsBuffer** evacuation_slots_buffer_;
-};
-
-
-class MarkCompactCollector::EvacuateNewSpaceVisitor
-    : public MarkCompactCollector::EvacuateVisitorBase {
- public:
-  explicit EvacuateNewSpaceVisitor(Heap* heap,
-                                   SlotsBuffer** evacuation_slots_buffer)
-      : EvacuateVisitorBase(heap, evacuation_slots_buffer) {}
+  explicit EvacuateNewSpaceVisitor(Heap* heap) : heap_(heap) {}
 
   virtual bool Visit(HeapObject* object) {
     Heap::UpdateAllocationSiteFeedback(object, Heap::RECORD_SCRATCHPAD_SLOT);
     int size = object->Size();
-    HeapObject* target_object = nullptr;
+
+    // TODO(hpayer): Refactor EvacuateObject and call this function instead.
     if (heap_->ShouldBePromoted(object->address(), size) &&
-        TryEvacuateObject(heap_->old_space(), object, &target_object)) {
-      // If we end up needing more special cases, we should factor this out.
-      if (V8_UNLIKELY(target_object->IsJSArrayBuffer())) {
-        heap_->array_buffer_tracker()->Promote(
-            JSArrayBuffer::cast(target_object));
-      }
-      heap_->IncrementPromotedObjectsSize(size);
+        heap_->mark_compact_collector()->TryPromoteObject(object, size)) {
       return true;
     }
 
@@ -1627,31 +1571,43 @@ class MarkCompactCollector::EvacuateNewSpaceVisitor
     heap_->IncrementSemiSpaceCopiedObjectSize(size);
     return true;
   }
+
+ private:
+  Heap* heap_;
 };
 
 
 class MarkCompactCollector::EvacuateOldSpaceVisitor
-    : public MarkCompactCollector::EvacuateVisitorBase {
+    : public MarkCompactCollector::HeapObjectVisitor {
  public:
   EvacuateOldSpaceVisitor(Heap* heap,
                           CompactionSpaceCollection* compaction_spaces,
                           SlotsBuffer** evacuation_slots_buffer)
-      : EvacuateVisitorBase(heap, evacuation_slots_buffer),
-        compaction_spaces_(compaction_spaces) {}
+      : heap_(heap),
+        compaction_spaces_(compaction_spaces),
+        evacuation_slots_buffer_(evacuation_slots_buffer) {}
 
   virtual bool Visit(HeapObject* object) {
-    CompactionSpace* target_space = compaction_spaces_->Get(
-        Page::FromAddress(object->address())->owner()->identity());
+    int size = object->Size();
+    AllocationAlignment alignment = object->RequiredAlignment();
     HeapObject* target_object = nullptr;
-    if (TryEvacuateObject(target_space, object, &target_object)) {
-      DCHECK(object->map_word().IsForwardingAddress());
-      return true;
+    AllocationSpace id =
+        Page::FromAddress(object->address())->owner()->identity();
+    AllocationResult allocation =
+        compaction_spaces_->Get(id)->AllocateRaw(size, alignment);
+    if (!allocation.To(&target_object)) {
+      return false;
     }
-    return false;
+    heap_->mark_compact_collector()->MigrateObject(
+        target_object, object, size, id, evacuation_slots_buffer_);
+    DCHECK(object->map_word().IsForwardingAddress());
+    return true;
   }
 
  private:
+  Heap* heap_;
   CompactionSpaceCollection* compaction_spaces_;
+  SlotsBuffer** evacuation_slots_buffer_;
 };
 
 
@@ -2329,14 +2285,15 @@ void MarkCompactCollector::ProcessWeakReferences() {
   ClearNonLiveReferences();
 
   ClearWeakCollections();
-
-  heap_->set_encountered_weak_cells(Smi::FromInt(0));
 }
 
 
 void MarkCompactCollector::ClearNonLiveReferences() {
   GCTracer::Scope gc_scope(heap()->tracer(),
                            GCTracer::Scope::MC_NONLIVEREFERENCES);
+
+  ProcessAndClearTransitionArrays();
+
   // Iterate over the map space, setting map transitions that go from
   // a marked map to an unmarked map to null transitions.  This action
   // is carried out only on maps of JSObjects and related subtypes.
@@ -2519,7 +2476,8 @@ void MarkCompactCollector::TrimEnumCache(Map* map,
                                          DescriptorArray* descriptors) {
   int live_enum = map->EnumLength();
   if (live_enum == kInvalidEnumCacheSentinel) {
-    live_enum = map->NumberOfDescribedProperties(OWN_DESCRIPTORS, DONT_ENUM);
+    live_enum =
+        map->NumberOfDescribedProperties(OWN_DESCRIPTORS, ENUMERABLE_STRINGS);
   }
   if (live_enum == 0) return descriptors->ClearEnumCache();
 
@@ -2652,6 +2610,31 @@ void MarkCompactCollector::AbortWeakCells() {
     weak_cell->clear_next(heap());
   }
   heap()->set_encountered_weak_cells(Smi::FromInt(0));
+}
+
+
+void MarkCompactCollector::ProcessAndClearTransitionArrays() {
+  HeapObject* undefined = heap()->undefined_value();
+  Object* obj = heap()->encountered_transition_arrays();
+  while (obj != Smi::FromInt(0)) {
+    TransitionArray* array = TransitionArray::cast(obj);
+    // TODO(ulan): move logic from ClearMapTransitions here.
+    obj = array->next_link();
+    array->set_next_link(undefined, SKIP_WRITE_BARRIER);
+  }
+  heap()->set_encountered_transition_arrays(Smi::FromInt(0));
+}
+
+
+void MarkCompactCollector::AbortTransitionArrays() {
+  HeapObject* undefined = heap()->undefined_value();
+  Object* obj = heap()->encountered_transition_arrays();
+  while (obj != Smi::FromInt(0)) {
+    TransitionArray* array = TransitionArray::cast(obj);
+    obj = array->next_link();
+    array->set_next_link(undefined, SKIP_WRITE_BARRIER);
+  }
+  heap()->set_encountered_transition_arrays(Smi::FromInt(0));
 }
 
 
@@ -3011,6 +2994,28 @@ static String* UpdateReferenceInExternalStringTableEntry(Heap* heap,
 }
 
 
+bool MarkCompactCollector::TryPromoteObject(HeapObject* object,
+                                            int object_size) {
+  OldSpace* old_space = heap()->old_space();
+
+  HeapObject* target = nullptr;
+  AllocationAlignment alignment = object->RequiredAlignment();
+  AllocationResult allocation = old_space->AllocateRaw(object_size, alignment);
+  if (allocation.To(&target)) {
+    MigrateObject(target, object, object_size, old_space->identity(),
+                  &migration_slots_buffer_);
+    // If we end up needing more special cases, we should factor this out.
+    if (V8_UNLIKELY(target->IsJSArrayBuffer())) {
+      heap()->array_buffer_tracker()->Promote(JSArrayBuffer::cast(target));
+    }
+    heap()->IncrementPromotedObjectsSize(object_size);
+    return true;
+  }
+
+  return false;
+}
+
+
 bool MarkCompactCollector::IsSlotInBlackObject(Page* p, Address slot,
                                                HeapObject** out_object) {
   Space* owner = p->owner();
@@ -3183,7 +3188,7 @@ void MarkCompactCollector::EvacuateNewSpace() {
   // new entries in the store buffer and may cause some pages to be marked
   // scan-on-scavenge.
   NewSpacePageIterator it(from_bottom, from_top);
-  EvacuateNewSpaceVisitor new_space_visitor(heap(), &migration_slots_buffer_);
+  EvacuateNewSpaceVisitor new_space_visitor(heap());
   while (it.has_next()) {
     NewSpacePage* p = it.next();
     survivors_size += p->LiveBytes();
@@ -3302,8 +3307,13 @@ void MarkCompactCollector::EvacuatePagesInParallel() {
         //   happens upon moving (which we potentially didn't do).
         // - Leave the page in the list of pages of a space since we could not
         //   fully evacuate it.
+        // - Mark them for rescanning for store buffer entries as we otherwise
+        //   might have stale store buffer entries that become "valid" again
+        //   after reusing the memory. Note that all existing store buffer
+        //   entries of such pages are filtered before rescanning.
         DCHECK(p->IsEvacuationCandidate());
         p->SetFlag(Page::COMPACTION_WAS_ABORTED);
+        p->set_scan_on_scavenge(true);
         abandoned_pages++;
         break;
       case MemoryChunk::kCompactingFinalize:
@@ -3383,6 +3393,7 @@ void MarkCompactCollector::EvacuatePages(
                   MemoryChunk::kCompactingInProgress);
         double start = heap()->MonotonicallyIncreasingTimeInMs();
         intptr_t live_bytes = p->LiveBytes();
+        AlwaysAllocateScope always_allocate(isolate());
         if (IterateLiveObjectsOnPage(p, &visitor, kClearMarkbits)) {
           p->ResetLiveBytes();
           p->parallel_compaction_state().SetValue(
@@ -3716,9 +3727,6 @@ void MarkCompactCollector::EvacuateNewSpaceAndCandidates() {
 
         // First pass on aborted pages, fixing up all live objects.
         if (p->IsFlagSet(Page::COMPACTION_WAS_ABORTED)) {
-          // Clearing the evacuation candidate flag here has the effect of
-          // stopping recording of slots for it in the following pointer
-          // update phases.
           p->ClearEvacuationCandidate();
           VisitLiveObjects(p, &updating_visitor);
         }
@@ -4079,25 +4087,6 @@ void MarkCompactCollector::ParallelSweepSpacesComplete() {
   ParallelSweepSpaceComplete(heap()->old_space());
   ParallelSweepSpaceComplete(heap()->code_space());
   ParallelSweepSpaceComplete(heap()->map_space());
-}
-
-
-void MarkCompactCollector::EnableCodeFlushing(bool enable) {
-  if (isolate()->debug()->is_active()) enable = false;
-
-  if (enable) {
-    if (code_flusher_ != NULL) return;
-    code_flusher_ = new CodeFlusher(isolate());
-  } else {
-    if (code_flusher_ == NULL) return;
-    code_flusher_->EvictAllCandidates();
-    delete code_flusher_;
-    code_flusher_ = NULL;
-  }
-
-  if (FLAG_trace_code_flushing) {
-    PrintF("[code-flushing is now %s]\n", enable ? "on" : "off");
-  }
 }
 
 

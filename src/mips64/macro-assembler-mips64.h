@@ -805,6 +805,7 @@ class MacroAssembler: public Assembler {
 
   // MIPS64 R2 instruction macro.
   void Ins(Register rt, Register rs, uint16_t pos, uint16_t size);
+  void Dins(Register rt, Register rs, uint16_t pos, uint16_t size);
   void Ext(Register rt, Register rs, uint16_t pos, uint16_t size);
   void Dext(Register rt, Register rs, uint16_t pos, uint16_t size);
 
@@ -1032,6 +1033,10 @@ class MacroAssembler: public Assembler {
                           const ParameterCount& expected,
                           const ParameterCount& actual, InvokeFlag flag,
                           const CallWrapper& call_wrapper);
+
+  void FloodFunctionIfStepping(Register fun, Register new_target,
+                               const ParameterCount& expected,
+                               const ParameterCount& actual);
 
   // Invoke the JavaScript function in the given register. Changes the
   // current context to the context in the function before invoking.
@@ -1763,10 +1768,6 @@ const Operand& rt = Operand(zero_reg), BranchDelaySlot bd = PROTECT
                       bool* definitely_mismatches,
                       InvokeFlag flag,
                       const CallWrapper& call_wrapper);
-
-  void FloodFunctionIfStepping(Register fun, Register new_target,
-                               const ParameterCount& expected,
-                               const ParameterCount& actual);
 
   void InitializeNewString(Register string,
                            Register length,

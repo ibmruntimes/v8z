@@ -104,7 +104,6 @@ class LChunkBuilder;
   V(InnerAllocatedObject)                     \
   V(InstanceOf)                               \
   V(InvokeFunction)                           \
-  V(IsConstructCallAndBranch)                 \
   V(HasInPrototypeChainAndBranch)             \
   V(IsStringAndBranch)                        \
   V(IsSmiAndBranch)                           \
@@ -4541,20 +4540,6 @@ class HStringCompareAndBranch final : public HTemplateControlInstruction<2, 3> {
 };
 
 
-class HIsConstructCallAndBranch : public HTemplateControlInstruction<2, 0> {
- public:
-  DECLARE_INSTRUCTION_FACTORY_P0(HIsConstructCallAndBranch);
-
-  Representation RequiredInputRepresentation(int index) override {
-    return Representation::None();
-  }
-
-  DECLARE_CONCRETE_INSTRUCTION(IsConstructCallAndBranch)
- private:
-  HIsConstructCallAndBranch() {}
-};
-
-
 class HHasInstanceTypeAndBranch final : public HUnaryControlInstruction {
  public:
   DECLARE_INSTRUCTION_FACTORY_P2(
@@ -5689,15 +5674,6 @@ inline bool ReceiverObjectNeedsWriteBarrier(HValue* object,
     // Stores to old space allocations require no write barriers if the value is
     // a constant provably not in new space.
     if (value->IsConstant() && HConstant::cast(value)->NotInNewSpace()) {
-      return false;
-    }
-    // Stores to old space allocations require no write barriers if the value is
-    // an old space allocation.
-    while (value->IsInnerAllocatedObject()) {
-      value = HInnerAllocatedObject::cast(value)->base_object();
-    }
-    if (value->IsAllocate() &&
-        !HAllocate::cast(value)->IsNewSpaceAllocation()) {
       return false;
     }
   }

@@ -5,6 +5,7 @@
 #include "src/compiler/raw-machine-assembler.h"
 
 #include "src/code-factory.h"
+#include "src/compiler/node-properties.h"
 #include "src/compiler/pipeline.h"
 #include "src/compiler/scheduler.h"
 
@@ -31,6 +32,7 @@ RawMachineAssembler::RawMachineAssembler(Isolate* isolate, Graph* graph,
     parameters_[i] =
         AddNode(common()->Parameter(static_cast<int>(i)), graph->start());
   }
+  graph->SetEnd(graph->NewNode(common_.End(0)));
 }
 
 
@@ -152,30 +154,10 @@ Node* RawMachineAssembler::CallNWithFrameState(CallDescriptor* desc,
 }
 
 
-Node* RawMachineAssembler::TailCallN(CallDescriptor* desc, Node* function,
-                                     Node** args) {
-  int param_count =
-      static_cast<int>(desc->GetMachineSignature()->parameter_count());
-  int input_count = param_count + 3;
-  Node** buffer = zone()->NewArray<Node*>(input_count);
-  int index = 0;
-  buffer[index++] = function;
-  for (int i = 0; i < param_count; i++) {
-    buffer[index++] = args[i];
-  }
-  buffer[index++] = graph()->start();
-  buffer[index++] = graph()->start();
-  Node* tail_call = MakeNode(common()->TailCall(desc), input_count, buffer);
-  schedule()->AddTailCall(CurrentBlock(), tail_call);
-  current_block_ = nullptr;
-  return tail_call;
-}
-
-
 Node* RawMachineAssembler::CallRuntime1(Runtime::FunctionId function,
                                         Node* arg1, Node* context) {
   CallDescriptor* descriptor = Linkage::GetRuntimeCallDescriptor(
-      zone(), function, 1, Operator::kNoProperties, false);
+      zone(), function, 1, Operator::kNoProperties, CallDescriptor::kNoFlags);
 
   Node* centry = HeapConstant(CEntryStub(isolate(), 1).GetCode());
   Node* ref = AddNode(
@@ -190,7 +172,7 @@ Node* RawMachineAssembler::CallRuntime1(Runtime::FunctionId function,
 Node* RawMachineAssembler::CallRuntime2(Runtime::FunctionId function,
                                         Node* arg1, Node* arg2, Node* context) {
   CallDescriptor* descriptor = Linkage::GetRuntimeCallDescriptor(
-      zone(), function, 2, Operator::kNoProperties, false);
+      zone(), function, 2, Operator::kNoProperties, CallDescriptor::kNoFlags);
 
   Node* centry = HeapConstant(CEntryStub(isolate(), 1).GetCode());
   Node* ref = AddNode(
@@ -206,7 +188,7 @@ Node* RawMachineAssembler::CallRuntime4(Runtime::FunctionId function,
                                         Node* arg1, Node* arg2, Node* arg3,
                                         Node* arg4, Node* context) {
   CallDescriptor* descriptor = Linkage::GetRuntimeCallDescriptor(
-      zone(), function, 4, Operator::kNoProperties, false);
+      zone(), function, 4, Operator::kNoProperties, CallDescriptor::kNoFlags);
 
   Node* centry = HeapConstant(CEntryStub(isolate(), 1).GetCode());
   Node* ref = AddNode(
@@ -215,6 +197,75 @@ Node* RawMachineAssembler::CallRuntime4(Runtime::FunctionId function,
 
   return AddNode(common()->Call(descriptor), centry, arg1, arg2, arg3, arg4,
                  ref, arity, context, graph()->start(), graph()->start());
+}
+
+
+Node* RawMachineAssembler::TailCallN(CallDescriptor* desc, Node* function,
+                                     Node** args) {
+  int param_count =
+      static_cast<int>(desc->GetMachineSignature()->parameter_count());
+  int input_count = param_count + 3;
+  Node** buffer = zone()->NewArray<Node*>(input_count);
+  int index = 0;
+  buffer[index++] = function;
+  for (int i = 0; i < param_count; i++) {
+    buffer[index++] = args[i];
+  }
+  buffer[index++] = graph()->start();
+  buffer[index++] = graph()->start();
+  Node* tail_call = MakeNode(common()->TailCall(desc), input_count, buffer);
+  NodeProperties::MergeControlToEnd(graph(), common(), tail_call);
+  schedule()->AddTailCall(CurrentBlock(), tail_call);
+  current_block_ = nullptr;
+  return tail_call;
+}
+
+
+Node* RawMachineAssembler::TailCallRuntime1(Runtime::FunctionId function,
+                                            Node* arg1, Node* context) {
+  const int kArity = 1;
+  CallDescriptor* desc = Linkage::GetRuntimeCallDescriptor(
+      zone(), function, kArity, Operator::kNoProperties,
+      CallDescriptor::kSupportsTailCalls);
+
+  Node* centry = HeapConstant(CEntryStub(isolate(), 1).GetCode());
+  Node* ref = AddNode(
+      common()->ExternalConstant(ExternalReference(function, isolate())));
+  Node* arity = Int32Constant(kArity);
+
+  Node* nodes[] = {centry,          arg1, ref, arity, context, graph()->start(),
+                   graph()->start()};
+  Node* tail_call = MakeNode(common()->TailCall(desc), arraysize(nodes), nodes);
+
+  NodeProperties::MergeControlToEnd(graph(), common(), tail_call);
+  schedule()->AddTailCall(CurrentBlock(), tail_call);
+  current_block_ = nullptr;
+  return tail_call;
+}
+
+
+Node* RawMachineAssembler::TailCallRuntime2(Runtime::FunctionId function,
+                                            Node* arg1, Node* arg2,
+                                            Node* context) {
+  const int kArity = 2;
+  CallDescriptor* desc = Linkage::GetRuntimeCallDescriptor(
+      zone(), function, kArity, Operator::kNoProperties,
+      CallDescriptor::kSupportsTailCalls);
+
+  Node* centry = HeapConstant(CEntryStub(isolate(), 1).GetCode());
+  Node* ref = AddNode(
+      common()->ExternalConstant(ExternalReference(function, isolate())));
+  Node* arity = Int32Constant(kArity);
+
+  Node* nodes[] = {
+      centry,          arg1, arg2, ref, arity, context, graph()->start(),
+      graph()->start()};
+  Node* tail_call = MakeNode(common()->TailCall(desc), arraysize(nodes), nodes);
+
+  NodeProperties::MergeControlToEnd(graph(), common(), tail_call);
+  schedule()->AddTailCall(CurrentBlock(), tail_call);
+  current_block_ = nullptr;
+  return tail_call;
 }
 
 

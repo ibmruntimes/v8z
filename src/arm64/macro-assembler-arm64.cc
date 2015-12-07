@@ -1707,6 +1707,9 @@ void MacroAssembler::InvokeBuiltin(int native_context_index, InvokeFlag flag,
   // You can't call a builtin without a valid frame.
   DCHECK(flag == JUMP_FUNCTION || has_frame());
 
+  // Always initialize new target.
+  LoadRoot(x3, Heap::kUndefinedValueRootIndex);
+
   // Get the builtin entry in x2 and setup the function object in x1.
   LoadNativeContextSlot(native_context_index, x1);
   Ldr(x2, FieldMemOperand(x1, JSFunction::kCodeEntryOffset));
@@ -2390,11 +2393,11 @@ void MacroAssembler::FloodFunctionIfStepping(Register fun, Register new_target,
                                              const ParameterCount& expected,
                                              const ParameterCount& actual) {
   Label skip_flooding;
-  ExternalReference debug_step_action =
-      ExternalReference::debug_last_step_action_address(isolate());
-  Mov(x4, Operand(debug_step_action));
+  ExternalReference step_in_enabled =
+      ExternalReference::debug_step_in_enabled_address(isolate());
+  Mov(x4, Operand(step_in_enabled));
   ldrb(x4, MemOperand(x4));
-  CompareAndBranch(x4, Operand(StepIn), ne, &skip_flooding);
+  CompareAndBranch(x4, Operand(0), eq, &skip_flooding);
   {
     FrameScope frame(this,
                      has_frame() ? StackFrame::NONE : StackFrame::INTERNAL);
@@ -2634,14 +2637,13 @@ void MacroAssembler::TruncateHeapNumberToI(Register result,
 
 
 void MacroAssembler::StubPrologue() {
-  DCHECK(StackPointer().Is(jssp));
   UseScratchRegisterScope temps(this);
   Register temp = temps.AcquireX();
   __ Mov(temp, Smi::FromInt(StackFrame::STUB));
   // Compiled stubs don't age, and so they don't need the predictable code
   // ageing sequence.
   __ Push(lr, fp, cp, temp);
-  __ Add(fp, jssp, StandardFrameConstants::kFixedFrameSizeFromFp);
+  __ Add(fp, StackPointer(), StandardFrameConstants::kFixedFrameSizeFromFp);
 }
 
 

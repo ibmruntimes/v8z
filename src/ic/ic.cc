@@ -1760,8 +1760,6 @@ Handle<Code> StoreIC::CompileHandler(LookupIterator* lookup,
           TRACE_GENERIC_IC(isolate(), "StoreIC", "setter not a function");
           break;
         }
-        // When debugging we need to go the slow path to flood the accessor.
-        if (GetSharedFunctionInfo()->HasDebugInfo()) break;
         Handle<JSFunction> function = Handle<JSFunction>::cast(setter);
         CallOptimization call_optimization(function);
         NamedStoreHandlerCompiler compiler(isolate(), receiver_map(), holder);
@@ -2801,7 +2799,7 @@ Handle<Object> ToBooleanIC::ToBoolean(Handle<Object> object) {
   bool to_boolean_value = stub.UpdateStatus(object);
   Handle<Code> code = stub.GetCode();
   set_target(*code);
-  return handle(Smi::FromInt(to_boolean_value ? 1 : 0), isolate());
+  return isolate()->factory()->ToBoolean(to_boolean_value);
 }
 
 

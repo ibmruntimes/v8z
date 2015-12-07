@@ -178,7 +178,8 @@ class CallSite {
     "Function object that's not a constructor was created with new")           \
   T(PromiseCyclic, "Chaining cycle detected for promise %")                    \
   T(PropertyDescObject, "Property description must be an object: %")           \
-  T(PropertyNotFunction, "Property '%' of object % is not a function")         \
+  T(PropertyNotFunction,                                                       \
+    "'%' returned for property '%' of object '%' is not a function")           \
   T(ProtoObjectOrNull, "Object prototype may only be an Object or null: %")    \
   T(PrototypeParentNotAnObject,                                                \
     "Class extends value does not have valid prototype property %")            \
@@ -189,9 +190,9 @@ class CallSite {
   T(ProxyHandlerReturned, "Proxy handler % returned % from '%' trap")          \
   T(ProxyHandlerTrapMissing, "Proxy handler % has no '%' trap")                \
   T(ProxyHandlerTrapMustBeCallable,                                            \
-    "Proxy handler %0 has non-callable '%' trap")                              \
-  T(ProxyIsExtensibleViolatesInvariant,                                        \
-    "Result of trap 'isExtensible' is inconsistent with proxy's target")       \
+    "Proxy handler % has non-callable '%' trap")                               \
+  T(ProxySetPrototypeFailed,                                                   \
+    "Proxy handler returned false when setting prototype '%'")                 \
   T(ProxyNonObjectPropNames, "Trap '%' returned non-object %")                 \
   T(ProxyPreventExtensionsViolatesInvariant,                                   \
     "Trap 'preventExtensions' returned true but the proxy's target is "        \
@@ -210,6 +211,8 @@ class CallSite {
   T(ProxyTrapFunctionExpected,                                                 \
     "Proxy.createFunction called with non-function for '%' trap")              \
   T(ProxyTrapResultMustInclude, "Trap result must include %.")                 \
+  T(ProxyTrapViolatesInvariant,                                                \
+    "Result of trap '%' is inconsistent with proxy's target")                  \
   T(RedefineDisallowed, "Cannot redefine property: %")                         \
   T(RedefineExternalArray,                                                     \
     "Cannot redefine a property of an object with external array elements")    \
@@ -325,6 +328,8 @@ class CallSite {
   T(IllegalReturn, "Illegal return statement")                                 \
   T(InvalidEscapedReservedWord, "Keyword must not contain escaped characters") \
   T(InvalidLhsInAssignment, "Invalid left-hand side in assignment")            \
+  T(InvalidCoverInitializedName, "Invalid shorthand property initializer")     \
+  T(InvalidDestructuringTarget, "Invalid destructuring assignment target")     \
   T(InvalidLhsInFor, "Invalid left-hand side in for-loop")                     \
   T(InvalidLhsInPostfixOp,                                                     \
     "Invalid left-hand side expression in postfix operation")                  \
@@ -345,6 +350,7 @@ class CallSite {
   T(PushPastSafeLength,                                                        \
     "Pushing % elements on an array-like of length % "                         \
     "is disallowed, as the total surpasses 2**53-1")                           \
+  T(ElementAfterRest, "Rest element must be last element in array")            \
   T(BadSetterRestParameter,                                                    \
     "Setter function argument must not be a rest parameter")                   \
   T(ParamDupe, "Duplicate parameter name not allowed in this context")         \

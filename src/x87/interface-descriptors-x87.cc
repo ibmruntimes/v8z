@@ -194,16 +194,15 @@ void CallFunctionWithFeedbackAndVectorDescriptor::InitializePlatformSpecific(
 }
 
 
-void CallConstructDescriptor::InitializePlatformSpecific(
+void ConstructDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   // eax : number of arguments
   // ebx : feedback vector
-  // ecx : new target (for IsSuperConstructorCall)
   // edx : slot in feedback vector (Smi, for RecordCallTarget)
   // edi : constructor function
   // TODO(turbofan): So far we don't gather type feedback and hence skip the
   // slot parameter, but ArrayConstructStub needs the vector to be undefined.
-  Register registers[] = {eax, edi, ecx, ebx};
+  Register registers[] = {eax, edi, edx, ebx};
   data->InitializePlatformSpecific(arraysize(registers), registers, NULL);
 }
 
@@ -393,27 +392,6 @@ void ApiAccessorDescriptor::InitializePlatformSpecific(
       ebx,  // call_data
       ecx,  // holder
       edx,  // api_function_address
-  };
-  data->InitializePlatformSpecific(arraysize(registers), registers);
-}
-
-
-void MathRoundVariantCallFromUnoptimizedCodeDescriptor::
-    InitializePlatformSpecific(CallInterfaceDescriptorData* data) {
-  Register registers[] = {
-      edi,  // math rounding function
-      edx,  // vector slot id
-  };
-  data->InitializePlatformSpecific(arraysize(registers), registers);
-}
-
-
-void MathRoundVariantCallFromOptimizedCodeDescriptor::
-    InitializePlatformSpecific(CallInterfaceDescriptorData* data) {
-  Register registers[] = {
-      edi,  // math rounding function
-      edx,  // vector slot id
-      ebx   // type vector
   };
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }

@@ -1604,8 +1604,7 @@ class V8_EXPORT StackFrame {
   /**
    * Returns the name of the resource that contains the script for the
    * function for this StackFrame or sourceURL value if the script name
-   * is undefined and its source ends with //# sourceURL=... string or
-   * deprecated //@ sourceURL=... string.
+   * is undefined and its source ends with //# sourceURL=... string.
    */
   Local<String> GetScriptNameOrSourceURL() const;
 
@@ -1737,7 +1736,8 @@ class V8_EXPORT Value : public Data {
   bool IsFunction() const;
 
   /**
-   * Returns true if this value is an array.
+   * Returns true if this value is an array. Note that it will return false for
+   * an Proxy for an array.
    */
   bool IsArray() const;
 
@@ -2996,10 +2996,11 @@ class V8_EXPORT Array : public Object {
    * Clones an element at index |index|.  Returns an empty
    * handle if cloning fails (for any reason).
    */
-  V8_DEPRECATE_SOON("Use maybe version",
-                    Local<Object> CloneElementAt(uint32_t index));
-  V8_WARN_UNUSED_RESULT MaybeLocal<Object> CloneElementAt(
-      Local<Context> context, uint32_t index);
+  V8_DEPRECATED("Cloning is not supported.",
+                Local<Object> CloneElementAt(uint32_t index));
+  V8_DEPRECATED("Cloning is not supported.",
+                MaybeLocal<Object> CloneElementAt(Local<Context> context,
+                                                  uint32_t index));
 
   /**
    * Creates a JavaScript array with the given length. If the length
@@ -3933,7 +3934,7 @@ class V8_EXPORT NumberObject : public Object {
 class V8_EXPORT BooleanObject : public Object {
  public:
   static Local<Value> New(Isolate* isolate, bool value);
-  V8_DEPRECATE_SOON("Pass an isolate", static Local<Value> New(bool value));
+  V8_DEPRECATED("Pass an isolate", static Local<Value> New(bool value));
 
   bool ValueOf() const;
 
@@ -6484,7 +6485,7 @@ class V8_EXPORT TryCatch {
    * all TryCatch blocks should be stack allocated because the memory
    * location itself is compared against JavaScript try/catch blocks.
    */
-  V8_DEPRECATE_SOON("Use isolate version", TryCatch());
+  V8_DEPRECATED("Use isolate version", TryCatch());
 
   /**
    * Creates a new try/catch block and registers it with v8.  Note that

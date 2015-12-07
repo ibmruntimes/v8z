@@ -21,6 +21,7 @@ namespace internal {
     "Arguments object value in a test context")                                \
   V(kArrayBoilerplateCreationFailed, "Array boilerplate creation failed")      \
   V(kArrayIndexConstantValueTooBig, "Array index constant value too big")      \
+  V(kAssignmentPattern, "Destructuring assignment")                            \
   V(kAssignmentToArguments, "Assignment to arguments")                         \
   V(kAssignmentToLetVariableBeforeInitialization,                              \
     "Assignment to let variable before initialization")                        \
@@ -250,6 +251,7 @@ namespace internal {
   V(kUnsupportedPhiUseOfConstVariable,                                         \
     "Unsupported phi use of const variable")                                   \
   V(kUnexpectedReturnFromThrow, "Unexpectedly returned from a throw")          \
+  V(kUnsupportedSwitchStatement, "Unsupported switch statement")               \
   V(kUnsupportedTaggedImmediate, "Unsupported tagged immediate")               \
   V(kVariableResolvedToWithContext, "Variable resolved to with context")       \
   V(kWeShouldNotHaveAnEmptyLexicalContext,                                     \

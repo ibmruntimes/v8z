@@ -82,6 +82,7 @@ class JumpPatchSite BASE_EMBEDDED {
 //
 // The live registers are:
 //   o rdi: the JS function object being called (i.e. ourselves)
+//   o rdx: the new target value
 //   o rsi: our context
 //   o rbp: our caller's frame pointer
 //   o rsp: stack pointer (pointing to return address)
@@ -136,7 +137,7 @@ void FullCodeGenerator::Generate() {
         __ CallRuntime(Runtime::kThrowStackOverflow, 0);
         __ bind(&ok);
       }
-      __ LoadRoot(rdx, Heap::kUndefinedValueRootIndex);
+      __ LoadRoot(rax, Heap::kUndefinedValueRootIndex);
       const int kMaxPushes = 32;
       if (locals_count >= kMaxPushes) {
         int loop_iterations = locals_count / kMaxPushes;
@@ -145,7 +146,7 @@ void FullCodeGenerator::Generate() {
         __ bind(&loop_header);
         // Do pushes.
         for (int i = 0; i < kMaxPushes; i++) {
-          __ Push(rdx);
+          __ Push(rax);
         }
         // Continue loop if not done.
         __ decp(rcx);
@@ -154,7 +155,7 @@ void FullCodeGenerator::Generate() {
       int remaining = locals_count % kMaxPushes;
       // Emit the remaining pushes.
       for (int i  = 0; i < remaining; i++) {
-        __ Push(rdx);
+        __ Push(rax);
       }
     }
   }
@@ -172,14 +173,24 @@ void FullCodeGenerator::Generate() {
       __ Push(info->scope()->GetScopeInfo(info->isolate()));
       __ CallRuntime(Runtime::kNewScriptContext, 2);
       PrepareForBailoutForId(BailoutId::ScriptContext(), TOS_REG);
-    } else if (slots <= FastNewContextStub::kMaximumSlots) {
-      FastNewContextStub stub(isolate(), slots);
-      __ CallStub(&stub);
-      // Result of FastNewContextStub is always in new space.
-      need_write_barrier = false;
+      // The new target value is not used, clobbering is safe.
+      DCHECK_NULL(info->scope()->new_target_var());
     } else {
-      __ Push(rdi);
-      __ CallRuntime(Runtime::kNewFunctionContext, 1);
+      if (info->scope()->new_target_var() != nullptr) {
+        __ Push(rdx);  // Preserve new target.
+      }
+      if (slots <= FastNewContextStub::kMaximumSlots) {
+        FastNewContextStub stub(isolate(), slots);
+        __ CallStub(&stub);
+        // Result of FastNewContextStub is always in new space.
+        need_write_barrier = false;
+      } else {
+        __ Push(rdi);
+        __ CallRuntime(Runtime::kNewFunctionContext, 1);
+      }
+      if (info->scope()->new_target_var() != nullptr) {
+        __ Pop(rdx);  // Restore new target.
+      }
     }
     function_in_register = false;
     // Context is returned in rax.  It replaces the context passed to us.
@@ -213,11 +224,11 @@ void FullCodeGenerator::Generate() {
       }
     }
   }
-  PrepareForBailoutForId(BailoutId::FunctionContext(), NO_REGISTERS);
 
-  // Function register is trashed in case we bailout here. But since that
-  // could happen only when we allocate a context the value of
-  // |function_in_register| is correct.
+  // Register holding this function and new target are both trashed in case we
+  // bailout here. But since that can happen only when new target is not used
+  // and we allocate a context, the value of |function_in_register| is correct.
+  PrepareForBailoutForId(BailoutId::FunctionContext(), NO_REGISTERS);
 
   // Possibly set up a local binding to the this function which is used in
   // derived constructors with super calls.
@@ -228,37 +239,14 @@ void FullCodeGenerator::Generate() {
       __ movp(rdi, Operand(rbp, JavaScriptFrameConstants::kFunctionOffset));
       // The write barrier clobbers register again, keep it marked as such.
     }
-    SetVar(this_function_var, rdi, rbx, rdx);
+    SetVar(this_function_var, rdi, rbx, rcx);
   }
 
+  // Possibly set up a local binding to the new target value.
   Variable* new_target_var = scope()->new_target_var();
   if (new_target_var != nullptr) {
     Comment cmnt(masm_, "[ new.target");
-
-    __ movp(rax, Operand(rbp, StandardFrameConstants::kCallerFPOffset));
-    Label non_adaptor_frame;
-    __ Cmp(Operand(rax, StandardFrameConstants::kContextOffset),
-           Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR));
-    __ j(not_equal, &non_adaptor_frame);
-    __ movp(rax, Operand(rax, StandardFrameConstants::kCallerFPOffset));
-
-    __ bind(&non_adaptor_frame);
-    __ Cmp(Operand(rax, StandardFrameConstants::kMarkerOffset),
-           Smi::FromInt(StackFrame::CONSTRUCT));
-
-    Label non_construct_frame, done;
-    __ j(not_equal, &non_construct_frame);
-
-    // Construct frame
-    __ movp(rax, Operand(rax, ConstructFrameConstants::kNewTargetOffset));
-    __ jmp(&done);
-
-    // Non-construct frame
-    __ bind(&non_construct_frame);
-    __ LoadRoot(rax, Heap::kUndefinedValueRootIndex);
-
-    __ bind(&done);
-    SetVar(new_target_var, rax, rbx, rdx);
+    SetVar(new_target_var, rdx, rbx, rcx);
   }
 
   // Possibly allocate an arguments object.
@@ -636,9 +624,8 @@ void FullCodeGenerator::DoTest(Expression* condition,
                                Label* fall_through) {
   Handle<Code> ic = ToBooleanStub::GetUninitialized(isolate());
   CallIC(ic, condition->test_id());
-  __ testp(result_register(), result_register());
-  // The stub returns nonzero for true.
-  Split(not_zero, if_true, if_false, fall_through);
+  __ CompareRoot(result_register(), Heap::kTrueValueRootIndex);
+  Split(equal, if_true, if_false, fall_through);
 }
 
 
@@ -1007,9 +994,8 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
 
   // Check for proxies.
   Label call_runtime;
-  STATIC_ASSERT(FIRST_JS_PROXY_TYPE == FIRST_JS_RECEIVER_TYPE);
-  __ CmpObjectType(rax, LAST_JS_PROXY_TYPE, rcx);
-  __ j(below_equal, &call_runtime);
+  __ CmpObjectType(rax, JS_PROXY_TYPE, rcx);
+  __ j(equal, &call_runtime);
 
   // Check cache validity in generated code. This is a fast case for
   // the JSObject::IsSimpleEnum cache validity checks. If we cannot
@@ -1072,8 +1058,8 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
           TypeFeedbackVector::MegamorphicSentinel(isolate()));
   __ Move(rbx, Smi::FromInt(1));  // Smi indicates slow check
   __ movp(rcx, Operand(rsp, 0 * kPointerSize));  // Get enumerated object
-  STATIC_ASSERT(FIRST_JS_PROXY_TYPE == FIRST_JS_RECEIVER_TYPE);
-  __ CmpObjectType(rcx, LAST_JS_PROXY_TYPE, rcx);
+  STATIC_ASSERT(JS_PROXY_TYPE == FIRST_JS_RECEIVER_TYPE);
+  __ CmpObjectType(rcx, JS_PROXY_TYPE, rcx);
   __ j(above, &non_proxy);
   __ Move(rbx, Smi::FromInt(0));  // Zero indicates proxy
   __ bind(&non_proxy);
@@ -1988,7 +1974,7 @@ void FullCodeGenerator::VisitYield(Yield* expr) {
       __ movp(rdi, rax);
       __ movp(Operand(rsp, 2 * kPointerSize), rdi);
 
-      SetCallPosition(expr, 1);
+      SetCallPosition(expr);
       __ Set(rax, 1);
       __ Call(
           isolate()->builtins()->Call(ConvertReceiverMode::kNotNullOrUndefined),
@@ -2007,8 +1993,8 @@ void FullCodeGenerator::VisitYield(Yield* expr) {
       CallLoadIC(NOT_INSIDE_TYPEOF);  // rax=result.done
       Handle<Code> bool_ic = ToBooleanStub::GetUninitialized(isolate());
       CallIC(bool_ic);
-      __ testp(result_register(), result_register());
-      __ j(zero, &l_try);
+      __ CompareRoot(result_register(), Heap::kTrueValueRootIndex);
+      __ j(not_equal, &l_try);
 
       // result.value
       __ Pop(load_receiver);                             // result
@@ -2747,7 +2733,7 @@ void FullCodeGenerator::EmitCall(Call* expr, ConvertReceiverMode mode) {
   }
 
   PrepareForBailoutForId(expr->CallId(), NO_REGISTERS);
-  SetCallPosition(expr, arg_count);
+  SetCallPosition(expr);
   Handle<Code> ic = CodeFactory::CallIC(isolate(), arg_count, mode).code();
   __ Move(rdx, SmiFromSlot(expr->CallFeedbackICSlot()));
   __ movp(rdi, Operand(rsp, (arg_count + 1) * kPointerSize));
@@ -2850,7 +2836,7 @@ void FullCodeGenerator::EmitPossiblyEvalCall(Call* expr) {
 
   PrepareForBailoutForId(expr->EvalId(), NO_REGISTERS);
 
-  SetCallPosition(expr, arg_count);
+  SetCallPosition(expr);
   __ movp(rdi, Operand(rsp, (arg_count + 1) * kPointerSize));
   __ Set(rax, arg_count);
   __ Call(isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
@@ -2882,7 +2868,7 @@ void FullCodeGenerator::VisitCallNew(CallNew* expr) {
 
   // Call the construct call builtin that handles allocation and
   // constructor invocation.
-  SetConstructCallPosition(expr, arg_count);
+  SetConstructCallPosition(expr);
 
   // Load function and argument count into rdi and rax.
   __ Set(rax, arg_count);
@@ -2918,7 +2904,7 @@ void FullCodeGenerator::EmitSuperConstructorCall(Call* expr) {
 
   // Call the construct call builtin that handles allocation and
   // constructor invocation.
-  SetConstructCallPosition(expr, arg_count);
+  SetConstructCallPosition(expr);
 
   // Load new target into rdx.
   VisitForAccumulatorValue(super_call_ref->new_target_var());
@@ -3132,43 +3118,9 @@ void FullCodeGenerator::EmitIsJSProxy(CallRuntime* expr) {
   context()->PrepareTest(&materialize_true, &materialize_false, &if_true,
                          &if_false, &fall_through);
 
+
   __ JumpIfSmi(rax, if_false);
-  Register map = rbx;
-  __ movp(map, FieldOperand(rax, HeapObject::kMapOffset));
-  __ CmpInstanceType(map, FIRST_JS_PROXY_TYPE);
-  __ j(less, if_false);
-  __ CmpInstanceType(map, LAST_JS_PROXY_TYPE);
-  PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
-  Split(less_equal, if_true, if_false, fall_through);
-
-  context()->Plug(if_true, if_false);
-}
-
-
-void FullCodeGenerator::EmitIsConstructCall(CallRuntime* expr) {
-  DCHECK(expr->arguments()->length() == 0);
-
-  Label materialize_true, materialize_false;
-  Label* if_true = NULL;
-  Label* if_false = NULL;
-  Label* fall_through = NULL;
-  context()->PrepareTest(&materialize_true, &materialize_false,
-                         &if_true, &if_false, &fall_through);
-
-  // Get the frame pointer for the calling frame.
-  __ movp(rax, Operand(rbp, StandardFrameConstants::kCallerFPOffset));
-
-  // Skip the arguments adaptor frame if it exists.
-  Label check_frame_marker;
-  __ Cmp(Operand(rax, StandardFrameConstants::kContextOffset),
-         Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR));
-  __ j(not_equal, &check_frame_marker);
-  __ movp(rax, Operand(rax, StandardFrameConstants::kCallerFPOffset));
-
-  // Check the marker in the calling frame.
-  __ bind(&check_frame_marker);
-  __ Cmp(Operand(rax, StandardFrameConstants::kMarkerOffset),
-         Smi::FromInt(StackFrame::CONSTRUCT));
+  __ CmpObjectType(rax, JS_PROXY_TYPE, rbx);
   PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
   Split(equal, if_true, if_false, fall_through);
 
@@ -3661,7 +3613,7 @@ void FullCodeGenerator::EmitDefaultConstructorCallSuper(CallRuntime* expr) {
 
   // Call the construct call builtin that handles allocation and
   // constructor invocation.
-  SetConstructCallPosition(expr, 0);
+  SetConstructCallPosition(expr);
 
   // Check if the calling frame is an arguments adaptor frame.
   Label adaptor_frame, args_set_up, runtime;
@@ -4080,7 +4032,7 @@ void FullCodeGenerator::EmitCallJSRuntimeFunction(CallRuntime* expr) {
   ZoneList<Expression*>* args = expr->arguments();
   int arg_count = args->length();
 
-  SetCallPosition(expr, arg_count);
+  SetCallPosition(expr);
   __ movp(rdi, Operand(rsp, (arg_count + 1) * kPointerSize));
   __ Set(rax, arg_count);
   __ Call(isolate()->builtins()->Call(ConvertReceiverMode::kNullOrUndefined),

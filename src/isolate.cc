@@ -772,14 +772,6 @@ bool Isolate::IsInternallyUsedPropertyName(Handle<Object> name) {
 }
 
 
-bool Isolate::IsInternallyUsedPropertyName(Object* name) {
-  if (name->IsSymbol()) {
-    return Symbol::cast(name)->is_private();
-  }
-  return name == heap()->hidden_string();
-}
-
-
 bool Isolate::MayAccess(Handle<Context> accessing_context,
                         Handle<JSObject> receiver) {
   DCHECK(receiver->IsJSGlobalProxy() || receiver->IsAccessCheckNeeded());
@@ -2201,12 +2193,6 @@ bool Isolate::Init(Deserializer* des) {
   // Initialize runtime profiler before deserialization, because collections may
   // occur, clearing/updating ICs.
   runtime_profiler_ = new RuntimeProfiler(this);
-
-  if (create_heap_objects) {
-    if (!bootstrapper_->CreateCodeStubContext(this)) {
-      return false;
-    }
-  }
 
   // If we are deserializing, read the state into the now-empty heap.
   if (!create_heap_objects) {
