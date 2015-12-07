@@ -1486,26 +1486,35 @@ void InstanceOfStub::Generate(MacroAssembler* masm) {
 
   // Loop through the prototype chain looking for the {function} prototype.
   // Assume true, and change to false if not found.
-  Register const object_prototype = object_map;
+  Register const object_instance_type = function_map;
   Register const null = scratch;
-  Label done, loop;
-  __ LoadRoot(r2, Heap::kTrueValueRootIndex);
+  Register const result = r2;
+  Label done, loop, proxy_case;
+  __ LoadRoot(result, Heap::kTrueValueRootIndex);
   __ LoadRoot(null, Heap::kNullValueRootIndex);
   __ bind(&loop);
-  __ LoadP(object_prototype,
-           FieldMemOperand(object_map, Map::kPrototypeOffset));
-  __ CmpP(object_prototype, function_prototype);
+  __ CompareInstanceType(object_map, object_instance_type, JS_PROXY_TYPE);
+  __ beq(&proxy_case);
+  __ LoadP(object, FieldMemOperand(object_map, Map::kPrototypeOffset));
+  __ CmpP(object, function_prototype);
   __ beq(&done);
-  __ CmpP(object_prototype, null);
-  __ LoadP(object_map,
-           FieldMemOperand(object_prototype, HeapObject::kMapOffset));
+  __ CmpP(object, null);
+  __ LoadP(object_map, FieldMemOperand(object, HeapObject::kMapOffset));
   __ bne(&loop);
-  __ LoadRoot(r2, Heap::kFalseValueRootIndex);
+  __ LoadRoot(result, Heap::kFalseValueRootIndex);
   __ bind(&done);
-  __ StoreRoot(r2, Heap::kInstanceofCacheAnswerRootIndex);
+  __ StoreRoot(result, Heap::kInstanceofCacheAnswerRootIndex);
   __ Ret();
 
-  // Slow-case: Call the runtime function.
+  // Proxy-case: Call the %HasInPrototypeChain runtime function.
+  __ bind(&proxy_case);
+  __ Push(object, function_prototype);
+  // Invalidate the instanceof cache.
+  __ LoadSmiLiteral(scratch, Smi::FromInt(0));
+  __ StoreRoot(scratch, Heap::kInstanceofCacheFunctionRootIndex);
+  __ TailCallRuntime(Runtime::kHasInPrototypeChain, 2, 1);
+
+  // Slow-case: Call the %InstanceOf runtime function.
   __ bind(&slow_case);
   __ Push(object, function);
   __ TailCallRuntime(Runtime::kInstanceOf, 2, 1);
@@ -5047,6 +5056,9 @@ void ArrayConstructorStub::Generate(MacroAssembler* masm) {
     // We should either have undefined in r4 or a valid AllocationSite
     __ AssertUndefinedOrAllocationSite(r4, r6);
   }
+
+  // Enter the context of the Array function.
+  __ LoadP(cp, FieldMemOperand(r3, JSFunction::kContextOffset));
 
   Label subclassing;
   __ CmpP(r5, r3);

@@ -1259,7 +1259,7 @@ SS2_FORM(zap);
   void RecordGeneratorContinuation();
 
   // Mark address of a debug break slot.
-  void RecordDebugBreakSlot(RelocInfo::Mode mode, int argc = 0);
+  void RecordDebugBreakSlot(RelocInfo::Mode mode);
 
   // Record the AST id of the CallIC being compiled, so that it can be placed
   // in the relocation information.

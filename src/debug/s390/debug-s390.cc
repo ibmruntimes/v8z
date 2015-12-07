@@ -27,12 +27,11 @@ void EmitDebugBreakSlot(MacroAssembler* masm) {
 }
 
 
-void DebugCodegen::GenerateSlot(MacroAssembler* masm, RelocInfo::Mode mode,
-                                int call_argc) {
+void DebugCodegen::GenerateSlot(MacroAssembler* masm, RelocInfo::Mode mode) {
   // Generate enough nop's to make space for a call instruction. Avoid emitting
   // the trampoline pool in the debug break slot code.
   Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm);
-  masm->RecordDebugBreakSlot(mode, call_argc);
+  masm->RecordDebugBreakSlot(mode);
   EmitDebugBreakSlot(masm);
 }
 
@@ -123,19 +122,7 @@ void DebugCodegen::GenerateDebugBreakStub(MacroAssembler* masm,
 }
 
 
-void DebugCodegen::GeneratePlainReturnLiveEdit(MacroAssembler* masm) {
-  __ Ret();
-}
-
-
 void DebugCodegen::GenerateFrameDropperLiveEdit(MacroAssembler* masm) {
-  ExternalReference restarter_frame_function_slot =
-      ExternalReference::debug_restarter_frame_function_pointer_address(
-          masm->isolate());
-  __ mov(ip, Operand(restarter_frame_function_slot));
-  __ LoadImmP(r3, Operand::Zero());
-  __ StoreP(r3, MemOperand(ip, 0));
-
   // Load the function pointer off of our current stack frame.
   __ LoadP(r3, MemOperand(fp, StandardFrameConstants::kConstantPoolOffset -
                                   kPointerSize));
@@ -143,8 +130,14 @@ void DebugCodegen::GenerateFrameDropperLiveEdit(MacroAssembler* masm) {
   // Pop return address and frame
   __ LeaveFrame(StackFrame::INTERNAL);
 
+  ParameterCount dummy(0);
+  __ FloodFunctionIfStepping(r3, no_reg, dummy, dummy);
+
   // Load context from the function.
   __ LoadP(cp, FieldMemOperand(r3, JSFunction::kContextOffset));
+
+  // Clear new.target as a safety measure.
+  __ LoadRoot(r5, Heap::kUndefinedValueRootIndex);
 
   // Get function code.
   __ LoadP(ip, FieldMemOperand(r3, JSFunction::kSharedFunctionInfoOffset));

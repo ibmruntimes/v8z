@@ -1063,12 +1063,12 @@ void MacroAssembler::FloodFunctionIfStepping(Register fun, Register new_target,
                                              const ParameterCount& expected,
                                              const ParameterCount& actual) {
   Label skip_flooding;
-  ExternalReference debug_step_action =
-      ExternalReference::debug_last_step_action_address(isolate());
-  mov(r6, Operand(debug_step_action));
+  ExternalReference step_in_enabled =
+      ExternalReference::debug_step_in_enabled_address(isolate());
+  mov(r6, Operand(step_in_enabled));
   LoadlB(r6, MemOperand(r6));
-  CmpP(r6, Operand(StepIn));
-  bne(&skip_flooding);
+  CmpP(r6, Operand::Zero());
+  beq(&skip_flooding);
   {
     FrameScope frame(this,
                      has_frame() ? StackFrame::NONE : StackFrame::INTERNAL);
@@ -2583,6 +2583,9 @@ void MacroAssembler::InvokeBuiltin(int native_context_index, InvokeFlag flag,
                                    const CallWrapper& call_wrapper) {
   // You can't call a builtin without a valid frame.
   DCHECK(flag == JUMP_FUNCTION || has_frame());
+
+  // Always initialize new target.
+  LoadRoot(r5, Heap::kUndefinedValueRootIndex);
 
   LoadNativeContextSlot(native_context_index, r3);
   LoadP(ip, FieldMemOperand(r3, JSFunction::kCodeEntryOffset));
