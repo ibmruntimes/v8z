@@ -742,6 +742,22 @@ void MacroAssembler::ConvertDoubleToUnsignedInt64(
 }
 #endif
 
+void MacroAssembler::MovDoubleToInt64 (
+#if !V8_TARGET_ARCH_S390X
+    Register dst_hi,
+#endif
+    Register dst, DoubleRegister src) {
+        UNIMPLEMENTED();  // Not implemented for now
+}
+
+
+void MacroAssembler::MovInt64ToDouble (
+#if !V8_TARGET_ARCH_S390X
+    Register dst_hi,
+#endif
+    DoubleRegister dst, Register src) {
+        UNIMPLEMENTED();  // Not implemented for now
+}
 
 void MacroAssembler::StubPrologue(int prologue_offset) {
   PushFixedFrame();
