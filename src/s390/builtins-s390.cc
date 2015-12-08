@@ -148,8 +148,8 @@ void Builtins::Generate_StringConstructor(MacroAssembler* masm) {
     __ beq(&no_arguments);
     __ SubP(r2, r2, Operand(1));
     __ ShiftLeftP(r2, r2, Operand(kPointerSizeLog2));
-    __ LoadP(r2, MemOperand(sp, r2));
     __ lay(sp, MemOperand(sp, r2));
+    __ LoadP(r2, MemOperand(sp));
     __ Drop(2);
   }
 
@@ -205,8 +205,8 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
     __ beq(&no_arguments);
     __ SubP(r2, r2, Operand(1));
     __ ShiftLeftP(r4, r2, Operand(kPointerSizeLog2));
-    __ LoadP(r4, MemOperand(sp, r4));
     __ lay(sp, MemOperand(sp, r4));
+    __ LoadP(r4, MemOperand(sp));
     __ Drop(2);
     __ b(&done);
     __ bind(&no_arguments);
