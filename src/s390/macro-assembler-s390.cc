@@ -3070,9 +3070,7 @@ void MacroAssembler::InitializeNFieldsWithFiller(Register current_address,
   bind(&loop);
   StoreP(filler, MemOperand(current_address));
   AddP(current_address, current_address, Operand(kPointerSize));
-  SubP(count, Operand(1));
-  CmpP(count, Operand::Zero());
-  bne(&loop);
+  BranchOnCount(r1, &loop);
 }
 
 
