@@ -1873,8 +1873,7 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
   __ lay(r5, MemOperand(r5, -kPointerSize));
   __ StoreP(r6, MemOperand(r1, kPointerSize));
   __ lay(r1, MemOperand(r1, kPointerSize));
-  __ SubP(r4, Operand(1));
-  __ bne(&parameters_loop);
+  __ BranchOnCount(r4, &arguments_loop);
   // __ bdnz(&arguments_loop);
 
   // Return.
