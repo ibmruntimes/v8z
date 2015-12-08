@@ -422,8 +422,8 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
           // Check if slack tracking is enabled.
           __ LoadlW(r2, bit_field3);
           __ DecodeField<Map::Counter>(r1, r2);
-          // r1: slack tracking counter
-          __ CmpP(r1, Operand(Map::kSlackTrackingCounterEnd));
+          // ip: slack tracking counter
+          __ CmpP(ip, Operand(Map::kSlackTrackingCounterEnd));
           __ blt(&no_inobject_slack_tracking);
           // Decrease generous allocation count.
           __ AddP(r2, r2, Operand(-(1 << Map::Counter::kShift)));
@@ -445,11 +445,8 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
           __ LoadRoot(r8, Heap::kOnePointerFillerMapRootIndex);
           __ InitializeFieldsWithFiller(r7, r9, r8);
 
-          // Re-compute r1
-          __ LoadlW(r1, bit_field3);
-          __ DecodeField<Map::Counter>(r1, r1);
-          // r1: slack tracking counter value before decreasing.
-          __ CmpP(r1, Operand(Map::kSlackTrackingCounterEnd));
+          // ip: slack tracking counter value before decreasing.
+          __ CmpP(ip, Operand(Map::kSlackTrackingCounterEnd));
           __ bne(&allocated);
 
           // Push the constructor, new_target and the object to the stack,
