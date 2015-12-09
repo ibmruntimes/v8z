@@ -227,7 +227,7 @@ void Deoptimizer::TableEntryGenerator::Generate() {
     int dst_offset = code * kDoubleSize + double_regs_offset;
     int src_offset = code * kDoubleSize + kNumberOfRegisters * kPointerSize;
     __ LoadF(d0, MemOperand(sp, src_offset));
-    __ StoreF(d0, MemOperand(r4, dst_offset));
+    __ StoreF(d0, MemOperand(r3, dst_offset));
   }
 
   // Remove the bailout id and the saved registers from the stack.
