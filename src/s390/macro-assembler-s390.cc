@@ -5586,10 +5586,10 @@ bool AreAliased(Register reg1, Register reg2, Register reg3, Register reg4,
 #endif
 
 
-CodePatcher::CodePatcher(Isolate* isolate, byte* address, int instructions,
+CodePatcher::CodePatcher(Isolate* isolate, byte* address, int size,
                          FlushICache flush_cache)
     : address_(address),
-      size_(instructions),
+      size_(size),
       masm_(isolate, address, size_ + Assembler::kGap, CodeObjectRequired::kNo),
       flush_cache_(flush_cache) {
   // Create a new macro assembler pointing to the address of the code to patch.

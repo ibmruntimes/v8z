@@ -18,11 +18,10 @@ namespace internal {
 void EmitDebugBreakSlot(MacroAssembler* masm) {
   Label check_size;
   __ bind(&check_size);
-  for (int i = 0; i < Assembler::kDebugBreakSlotInstructions * 3; i++) {
-    // 2 bytes * 3 to reserve enough space for 6 byte instructions.
+  for (int i = 0; i < Assembler::kDebugBreakSlotInstructions; i++) {
     __ nop(MacroAssembler::DEBUG_BREAK_NOP);
   }
-  DCHECK_EQ(Assembler::kDebugBreakSlotInstructions * 3,
+  DCHECK_EQ(Assembler::kDebugBreakSlotInstructions * 4,
             masm->SizeOfCodeGeneratedSince(&check_size));
 }
 
@@ -37,7 +36,7 @@ void DebugCodegen::GenerateSlot(MacroAssembler* masm, RelocInfo::Mode mode) {
 
 
 void DebugCodegen::ClearDebugBreakSlot(Isolate* isolate, Address pc) {
-  CodePatcher patcher(isolate, pc, Assembler::kDebugBreakSlotInstructions);
+  CodePatcher patcher(isolate, pc, Assembler::kDebugBreakSlotInstructions * 4);
   EmitDebugBreakSlot(patcher.masm());
 }
 
@@ -45,7 +44,7 @@ void DebugCodegen::ClearDebugBreakSlot(Isolate* isolate, Address pc) {
 void DebugCodegen::PatchDebugBreakSlot(Isolate* isolate, Address pc,
                                        Handle<Code> code) {
   DCHECK_EQ(Code::BUILTIN, code->kind());
-  CodePatcher patcher(isolate, pc, Assembler::kDebugBreakSlotInstructions);
+  CodePatcher patcher(isolate, pc, Assembler::kDebugBreakSlotInstructions * 4);
   // Patch the code changing the debug break slot code from
   //
   //   oill r3, 0
