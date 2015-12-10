@@ -977,6 +977,8 @@ static void GenerateMakeCodeYoungAgainCommon(MacroAssembler* masm) {
   __ SubP(r14, Operand(kCodeAgingSequenceLength));
   __ LoadRR(r2, r14);
 
+  __ pop(r14);
+
   // The following registers must be saved and restored when calling through to
   // the runtime:
   //   r2 - contains return address (beginning of patch sequence)
@@ -1018,6 +1020,8 @@ void Builtins::Generate_MarkCodeAsExecutedOnce(MacroAssembler* masm) {
   __ CleanseP(r14);
   __ SubP(r14, Operand(kCodeAgingSequenceLength));
   __ LoadRR(r2, r14);
+
+  __ pop(r14);
 
   // The following registers must be saved and restored when calling through to
   // the runtime:
