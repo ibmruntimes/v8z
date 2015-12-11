@@ -18,10 +18,18 @@ namespace internal {
 void EmitDebugBreakSlot(MacroAssembler* masm) {
   Label check_size;
   __ bind(&check_size);
-  for (int i = 0; i < Assembler::kDebugBreakSlotInstructions; i++) {
-    __ nop(MacroAssembler::DEBUG_BREAK_NOP);
+  //   oill r3, 0
+  //   oill r3, 0
+  __ nop(Assembler::DEBUG_BREAK_NOP);
+  __ nop(Assembler::DEBUG_BREAK_NOP);
+
+  //   lr r0, r0    64-bit only
+  //   lr r0, r0    64-bit only
+  //   lr r0, r0    64-bit only
+  for (int i = 8; i < Assembler::kDebugBreakSlotLength; i += 2) {
+    __ nop();
   }
-  DCHECK_EQ(Assembler::kDebugBreakSlotInstructions * 4,
+  DCHECK_EQ(Assembler::kDebugBreakSlotLength,
             masm->SizeOfCodeGeneratedSince(&check_size));
 }
 
@@ -36,7 +44,7 @@ void DebugCodegen::GenerateSlot(MacroAssembler* masm, RelocInfo::Mode mode) {
 
 
 void DebugCodegen::ClearDebugBreakSlot(Isolate* isolate, Address pc) {
-  CodePatcher patcher(isolate, pc, Assembler::kDebugBreakSlotInstructions * 4);
+  CodePatcher patcher(isolate, pc, Assembler::kDebugBreakSlotLength);
   EmitDebugBreakSlot(patcher.masm());
 }
 
@@ -44,7 +52,7 @@ void DebugCodegen::ClearDebugBreakSlot(Isolate* isolate, Address pc) {
 void DebugCodegen::PatchDebugBreakSlot(Isolate* isolate, Address pc,
                                        Handle<Code> code) {
   DCHECK_EQ(Code::BUILTIN, code->kind());
-  CodePatcher patcher(isolate, pc, Assembler::kDebugBreakSlotInstructions * 4);
+  CodePatcher patcher(isolate, pc, Assembler::kDebugBreakSlotLength);
   // Patch the code changing the debug break slot code from
   //
   //   oill r3, 0
