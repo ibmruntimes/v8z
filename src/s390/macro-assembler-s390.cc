@@ -5563,6 +5563,40 @@ void MacroAssembler::ClearRightImm(Register dst, Register src,
 }
 
 
+void MacroAssembler::Popcnt32(Register dst, Register src) {
+
+  DCHECK(!src.is(r0));
+  DCHECK(!dst.is(r0));
+
+  popcnt(dst, src);
+  ShiftRight(r0, dst, Operand(16));
+  ar(dst, r0);
+  ShiftRight(r0, dst, Operand(8));
+  ar(dst, r0);
+  lbr(dst, dst);
+
+}
+
+
+#ifdef V8_TARGET_ARCH_S390X
+void MacroAssembler::Popcnt64(Register dst, Register src) {
+
+  DCHECK(!src.is(r0));
+  DCHECK(!dst.is(r0));
+
+  popcnt(dst, src);
+  ShiftRightP(r0, dst, Operand(32));
+  AddP(dst, r0);
+  ShiftRightP(r0, dst, Operand(16));
+  AddP(dst, r0);
+  ShiftRightP(r0, dst, Operand(8));
+  AddP(dst, r0);
+  lbr(dst, dst);
+
+}
+#endif
+
+
 #ifdef DEBUG
 bool AreAliased(Register reg1, Register reg2, Register reg3, Register reg4,
                 Register reg5, Register reg6, Register reg7, Register reg8) {

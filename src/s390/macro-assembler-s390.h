@@ -403,6 +403,11 @@ class MacroAssembler : public Assembler {
   void XorP(Register dst, const Operand& opnd);
   void Xor(Register dst, Register src, const Operand& opnd);
   void XorP(Register dst, Register src, const Operand& opnd);
+  void Popcnt32(Register dst, Register src);
+
+#ifdef V8_TARGET_ARCH_S390X
+  void Popcnt64(Register dst, Register src);
+#endif
 
 
   void NotP(Register dst);

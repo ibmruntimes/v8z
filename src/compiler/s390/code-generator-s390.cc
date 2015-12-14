@@ -1009,8 +1009,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
 #endif
     case kS390_Popcnt32:
-      UNIMPLEMENTED();
-      // __ popcntw(i.OutputRegister(), i.InputRegister(0));
+      __ Popcnt32(i.OutputRegister(), i.InputRegister(0));
       // DCHECK_EQ(LeaveRC, i.OutputRCBit());
       break;
 #if V8_TARGET_ARCH_S390X
@@ -1200,7 +1199,6 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
 #else
       __ lbr(i.OutputRegister(), i.OutputRegister());
 #endif
-      UNIMPLEMENTED();
       // DCHECK_EQ(LeaveRC, i.OutputRCBit());
       break;
     case kS390_BitcastFloat32ToInt32:

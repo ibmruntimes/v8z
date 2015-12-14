@@ -975,7 +975,7 @@ RI1_FORM(oill);
 RR_FORM(or_z);
 RXY_FORM(oy);
 SS2_FORM(pack);
-// RRE_FORM(popcnt);
+RRE_FORM(popcnt);
 // RSY1_FORM(rll);
 // RSY1_FORM(rllg);
 RX_FORM(s);
