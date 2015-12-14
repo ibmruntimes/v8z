@@ -534,7 +534,6 @@ class Assembler : public AssemblerBase {
   // FIXED_SEQUENCE in bytes!
   static const int kDebugBreakSlotLength = kCallSequenceLength;
   static const int kPatchDebugBreakSlotReturnOffset = kCallTargetAddressOffset;
-  static const int kDebugBreakSlotInstructions = 1;
 
   // Length to patch between the start of the JS return sequence
   // from SetDebugBreakAtReturn and the address from

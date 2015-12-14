@@ -313,12 +313,12 @@ void Deoptimizer::TableEntryGenerator::Generate() {
   __ push(r8);
 
   // Restore the registers from the last output frame.
-  DCHECK(!(ip.bit() & restored_regs));
-  __ LoadRR(ip, r4);
+  DCHECK(!(r1.bit() & restored_regs));
+  __ LoadRR(r1, r4);
   for (int i = kNumberOfRegisters - 1; i >= 0; i--) {
     int offset = (i * kPointerSize) + FrameDescription::registers_offset();
     if ((restored_regs & (1 << i)) != 0) {
-      __ LoadP(ToRegister(i), MemOperand(ip, offset));
+      __ LoadP(ToRegister(i), MemOperand(r1, offset));
     }
   }
 

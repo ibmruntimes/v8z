@@ -18,13 +18,12 @@ const int kNumRegs = 16;
 
 
 // Caller-saved/arguments registers
-const RegList kJSCallerSaved = 1 << 1  |  // r1
-                               1 << 2  |  // r2  a1
+const RegList kJSCallerSaved = 1 << 2  |  // r2  a1
                                1 << 3  |  // r3  a2
                                1 << 4  |  // r4  a3
                                1 << 5;    // r5  a4
 
-const int kNumJSCallerSaved = 5;
+const int kNumJSCallerSaved = 4;
 
 // Return the code of the n-th caller-saved register available to JavaScript
 // e.g. JSCallerSavedReg(0) returns r0.code() == 0
@@ -42,24 +41,15 @@ const RegList kCalleeSaved =
   1 << 9 |   // r9 (HandleScope logic in MacroAssembler)
   1 << 10 |  // r10 (Roots register in Javascript)
   1 << 11 |  // r11 (fp in Javascript)
+  1 << 12 |  // r12 (ip in Javascript)
   1 << 13;   // r13 (cp in Javascript)
+  // 1 << 15;   // r15 (sp in Javascript)
 
-const int kNumCalleeSaved = 7;
+const int kNumCalleeSaved = 8;
 
 #ifdef V8_TARGET_ARCH_S390X
 
-const RegList kCallerSavedDoubles = 1 << 8 |   // d8
-                                    1 << 9 |   // d9
-                                    1 << 10 |  // d10
-                                    1 << 11 |  // d11
-                                    1 << 12 |  // d12
-                                    1 << 13 |  // d12
-                                    1 << 14 |  // d12
-                                    1 << 15;   // d13
-
-const int kNumCallerSavedDoubles = 8;
-
-const RegList kCalleeSavedDoubles = 1 << 0 |  // d0
+const RegList kCallerSavedDoubles = 1 << 0 |  // d0
                                     1 << 1 |  // d1
                                     1 << 2 |  // d2
                                     1 << 3 |  // d3
@@ -68,16 +58,22 @@ const RegList kCalleeSavedDoubles = 1 << 0 |  // d0
                                     1 << 6 |  // d6
                                     1 << 7;   // d7
 
+const int kNumCallerSavedDoubles = 8;
+
+const RegList kCalleeSavedDoubles = 1 << 8 |   // d8
+                                    1 << 9 |   // d9
+                                    1 << 10 |  // d10
+                                    1 << 11 |  // d11
+                                    1 << 12 |  // d12
+                                    1 << 13 |  // d12
+                                    1 << 14 |  // d12
+                                    1 << 15;   // d13
+
 const int kNumCalleeSavedDoubles = 8;
 
 #else
 
-const RegList kCallerSavedDoubles = 1 << 4 |   // d4
-                                    1 << 6;    // d6
-
-const int kNumCallerSavedDoubles = 2;
-
-const RegList kCalleeSavedDoubles = 1 << 14 |  // d14
+const RegList kCallerSavedDoubles = 1 << 14 |  // d14
                                     1 << 15 |  // d15
                                     1 << 0 |  // d0
                                     1 << 1 |  // d1
@@ -92,7 +88,12 @@ const RegList kCalleeSavedDoubles = 1 << 14 |  // d14
                                     1 << 12 |  // d10
                                     1 << 13;   // d11
 
-const int kNumCalleeSavedDoubles = 14;
+const int kNumCallerSavedDoubles = 14;
+
+const RegList kCalleeSavedDoubles = 1 << 4 |   // d4
+                                    1 << 6;    // d6
+
+const int kNumCalleeSavedDoubles = 2;
 
 #endif
 
