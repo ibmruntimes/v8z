@@ -1946,6 +1946,26 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
   SIInstruction* siInstr = reinterpret_cast<SIInstruction*>(instr);
 
   switch (op) {
+    case POPCNT_Z: {
+      int r1 = rreInst->R1Value();
+      int r2 = rreInst->R2Value();
+      int64_t r2_val = get_register(r2);
+      int64_t r1_val = 0;
+
+      uint8_t * r2_val_ptr = reinterpret_cast<uint8_t *>(&r2_val);
+      uint8_t * r1_val_ptr = reinterpret_cast<uint8_t *>(&r1_val);
+      for (int i = 0; i < 8; i ++) {
+        uint32_t x = static_cast<uint32_t>(r2_val_ptr[i]);
+#if defined(__GNUC__)
+        r1_val_ptr[i] = __builtin_popcount(x);
+#else
+#error unsupport __builtin_popcount
+#endif
+      }
+
+      set_register(r1, static_cast<uint64_t>(r1_val));
+      break;
+    }
     case LLGFR: {
       int r1 = rreInst->R1Value();
       int r2 = rreInst->R2Value();
