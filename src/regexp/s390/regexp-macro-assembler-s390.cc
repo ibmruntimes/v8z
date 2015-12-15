@@ -263,7 +263,6 @@ void RegExpMacroAssemblerS390::CheckNotBackReferenceIgnoreCase(
     if (read_backward) {
       __ SubP(r4, r4, r3);  // Offset by length when matching backwards.
     }
-    __ AddP(r3, r2);
     __ mov(r1, Operand::Zero());
 
     // r1 - Loop index
