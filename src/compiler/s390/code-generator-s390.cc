@@ -26,6 +26,7 @@ class S390OperandConverter final : public InstructionOperandConverter {
   S390OperandConverter(CodeGenerator* gen, Instruction* instr)
       : InstructionOperandConverter(gen, instr) {}
 
+  size_t OutputCount() { return instr_->OutputCount(); }
 
   bool CompareLogical() const {
     switch (instr_->flags_condition()) {
@@ -679,7 +680,9 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     case kArchDeoptimize: {
       int deopt_state_id =
           BuildTranslation(instr, -1, 0, OutputFrameStateCombine::Ignore());
-      AssembleDeoptimizerCall(deopt_state_id, Deoptimizer::EAGER);
+      Deoptimizer::BailoutType bailout_type =
+          Deoptimizer::BailoutType(MiscField::decode(instr->opcode()));
+      AssembleDeoptimizerCall(deopt_state_id, bailout_type);
       break;
     }
     case kArchRet:
@@ -1140,20 +1143,55 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     case kS390_DoubleToInt32:
     case kS390_DoubleToUint32:
-    case kS390_DoubleToInt64:
+    case kS390_DoubleToInt64: {
+#if V8_TARGET_ARCH_S390X
+      bool check_conversion =
+          (opcode == kS390_DoubleToInt64 && i.OutputCount() > 1);
+      if (check_conversion) {
+        UNIMPLEMENTED();
+        // __ mtfsb0(VXCVI);  // clear FPSCR:VXCVI bit
+      }
+#endif
       __ ConvertDoubleToInt64(i.InputDoubleRegister(0),
 #if !V8_TARGET_ARCH_S390X
                               kScratchReg,
 #endif
-                              i.OutputRegister(), kScratchDoubleReg);
-      break;
+                              i.OutputRegister(0), kScratchDoubleReg);
 #if V8_TARGET_ARCH_S390X
-    case kS390_DoubleToUint64:
+      if (check_conversion) {
+        UNIMPLEMENTED();
+        // Set 2nd output to zero if conversion fails.
+        // CRBit crbit = static_cast<CRBit>(VXCVI % CRWIDTH);
+        // __ mcrfs(cr7, VXCVI);  // extract FPSCR field containing VXCVI into cr7
+        // __ LoadImmP(i.OutputRegister(1), Operand(1));
+        // __ isel(i.OutputRegister(1), r0, i.OutputRegister(1),
+        //         v8::internal::Assembler::encode_crbit(cr7, crbit));
+      }
+#endif
+      break;
+    }
+#if V8_TARGET_ARCH_S390X
+    case kS390_DoubleToUint64: {
+      bool check_conversion = (i.OutputCount() > 1);
+      if (check_conversion) {
+        UNIMPLEMENTED();
+        // __ mtfsb0(VXCVI);  // clear FPSCR:VXCVI bit
+      }
       UNIMPLEMENTED();
       __ ConvertDoubleToUnsignedInt64(i.InputDoubleRegister(0),
-                                      i.OutputRegister(), kScratchDoubleReg);
+                                      i.OutputRegister(0), kScratchDoubleReg);
+      if (check_conversion) {
+        UNIMPLEMENTED();
+        // Set 2nd output to zero if conversion fails.
+        // CRBit crbit = static_cast<CRBit>(VXCVI % CRWIDTH);
+        // __ mcrfs(cr7, VXCVI);  // extract FPSCR field containing VXCVI into cr7
+        // __ LoadImmP(i.OutputRegister(1), Operand(1));
+        // __ isel(i.OutputRegister(1), r0, i.OutputRegister(1),
+        //         v8::internal::Assembler::encode_crbit(cr7, crbit));
+      }
       // DCHECK_EQ(LeaveRC, i.OutputRCBit());
       break;
+    }
 #endif
     case kS390_DoubleToFloat32:
       __ ledbr(i.OutputDoubleRegister(), i.InputDoubleRegister(0));
