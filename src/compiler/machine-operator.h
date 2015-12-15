@@ -208,9 +208,9 @@ class MachineOperatorBuilder final : public ZoneObject {
   const Operator* ChangeFloat64ToInt32();   // narrowing
   const Operator* ChangeFloat64ToUint32();  // narrowing
   const Operator* TruncateFloat32ToInt64();
-  const Operator* TruncateFloat64ToInt64();
+  const Operator* TryTruncateFloat64ToInt64();
   const Operator* TruncateFloat32ToUint64();
-  const Operator* TruncateFloat64ToUint64();
+  const Operator* TryTruncateFloat64ToUint64();
   const Operator* ChangeInt32ToFloat64();
   const Operator* ChangeInt32ToInt64();
   const Operator* ChangeUint32ToFloat64();

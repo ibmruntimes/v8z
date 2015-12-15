@@ -25,9 +25,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// TODO(jochen): Remove this after the setting is turned on globally.
-#define V8_IMMINENT_DEPRECATION_WARNINGS
-
 #include <iostream>  // NOLINT(readability/streams)
 
 #include "src/v8.h"
@@ -1206,7 +1203,7 @@ TEST(14) {
 #ifdef DEBUG
   const uint64_t kArmNanInt64 =
       (static_cast<uint64_t>(kArmNanUpper32) << 32) | kArmNanLower32;
-  DCHECK(kArmNanInt64 != kHoleNanInt64);
+  CHECK(kArmNanInt64 != kHoleNanInt64);
 #endif
   // With VFP2 the sign of the canonicalized Nan is undefined. So
   // we remove the sign bit for the upper tests.

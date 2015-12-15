@@ -335,7 +335,6 @@ namespace internal {
   F(CollectStackTrace, 2, 1)                  \
   F(MessageGetStartPosition, 1, 1)            \
   F(MessageGetScript, 1, 1)                   \
-  F(ErrorToStringRT, 1, 1)                    \
   F(FormatMessageString, 4, 1)                \
   F(CallSiteGetFileNameRT, 1, 1)              \
   F(CallSiteGetFunctionNameRT, 1, 1)          \
@@ -434,7 +433,9 @@ namespace internal {
   F(IsExtensible, 1, 1)                              \
   F(OptimizeObjectForAddingMultipleProperties, 2, 1) \
   F(ObjectFreeze, 1, 1)                              \
+  F(ObjectIsFrozen, 1, 1)                            \
   F(ObjectSeal, 1, 1)                                \
+  F(ObjectIsSealed, 1, 1)                            \
   F(GetProperty, 2, 1)                               \
   F(GetPropertyStrong, 2, 1)                         \
   F(KeyedGetProperty, 2, 1)                          \
@@ -537,9 +538,11 @@ namespace internal {
   F(BitwiseXor, 2, 1)                   \
   F(BitwiseXor_Strong, 2, 1)
 
-#define FOR_EACH_INTRINSIC_PROXY(F) \
-  F(IsJSProxy, 1, 1)                \
-  F(GetHandler, 1, 1)               \
+#define FOR_EACH_INTRINSIC_PROXY(F)     \
+  F(IsJSProxy, 1, 1)                    \
+  F(JSProxyCall, -1 /* >= 2 */, 1)      \
+  F(JSProxyConstruct, -1 /* >= 3 */, 1) \
+  F(GetHandler, 1, 1)                   \
   F(RevokeProxy, 1, 1)
 
 #define FOR_EACH_INTRINSIC_REGEXP(F)           \

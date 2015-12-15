@@ -126,12 +126,10 @@ enum BindingFlags {
   V(NATIVE_OBJECT_NOTIFIER_PERFORM_CHANGE, JSFunction,                        \
     native_object_notifier_perform_change)                                    \
   V(NATIVE_OBJECT_OBSERVE_INDEX, JSFunction, native_object_observe)           \
-  V(NO_SIDE_EFFECT_TO_STRING_FUN_INDEX, JSFunction,                           \
-    no_side_effect_to_string_fun)                                             \
+  V(NO_SIDE_EFFECTS_TO_STRING_FUN_INDEX, JSFunction,                          \
+    no_side_effects_to_string_fun)                                            \
   V(OBJECT_VALUE_OF, JSFunction, object_value_of)                             \
   V(OBJECT_TO_STRING, JSFunction, object_to_string)                           \
-  V(OBJECT_GET_OWN_PROPERTY_DESCROPTOR_INDEX, JSFunction,                     \
-    object_get_own_property_descriptor)                                       \
   V(OBSERVERS_BEGIN_SPLICE_INDEX, JSFunction, observers_begin_perform_splice) \
   V(OBSERVERS_END_SPLICE_INDEX, JSFunction, observers_end_perform_splice)     \
   V(OBSERVERS_ENQUEUE_SPLICE_INDEX, JSFunction, observers_enqueue_splice)     \
@@ -152,9 +150,6 @@ enum BindingFlags {
   V(SET_HAS_METHOD_INDEX, JSFunction, set_has)                                \
   V(STACK_OVERFLOW_BOILERPLATE_INDEX, JSObject, stack_overflow_boilerplate)   \
   V(SYNTAX_ERROR_FUNCTION_INDEX, JSFunction, syntax_error_function)           \
-  V(TO_COMPLETE_PROPERTY_DESCRIPTOR_INDEX, JSFunction,                        \
-    to_complete_property_descriptor)                                          \
-  V(TO_DETAIL_STRING_FUN_INDEX, JSFunction, to_detail_string_fun)             \
   V(TYPE_ERROR_FUNCTION_INDEX, JSFunction, type_error_function)               \
   V(URI_ERROR_FUNCTION_INDEX, JSFunction, uri_error_function)                 \
   NATIVE_CONTEXT_JS_BUILTINS(V)
@@ -180,6 +175,7 @@ enum BindingFlags {
   V(CALL_AS_FUNCTION_DELEGATE_INDEX, JSFunction, call_as_function_delegate)    \
   V(CONTEXT_EXTENSION_FUNCTION_INDEX, JSFunction, context_extension_function)  \
   V(DATA_VIEW_FUN_INDEX, JSFunction, data_view_fun)                            \
+  V(DATE_FUNCTION_INDEX, JSFunction, date_function)                            \
   V(ERROR_MESSAGE_FOR_CODE_GEN_FROM_STRINGS_INDEX, Object,                     \
     error_message_for_code_gen_from_strings)                                   \
   V(ERRORS_THROWN_INDEX, Smi, errors_thrown)                                   \
@@ -190,6 +186,9 @@ enum BindingFlags {
   V(FLOAT32X4_FUNCTION_INDEX, JSFunction, float32x4_function)                  \
   V(FLOAT64_ARRAY_FUN_INDEX, JSFunction, float64_array_fun)                    \
   V(FUNCTION_CACHE_INDEX, ObjectHashTable, function_cache)                     \
+  V(FUNCTION_FUNCTION_INDEX, JSFunction, function_function)                    \
+  V(GENERATOR_FUNCTION_FUNCTION_INDEX, JSFunction,                             \
+    generator_function_function)                                               \
   V(GENERATOR_OBJECT_PROTOTYPE_MAP_INDEX, Map, generator_object_prototype_map) \
   V(INITIAL_ARRAY_PROTOTYPE_INDEX, JSObject, initial_array_prototype)          \
   V(INITIAL_OBJECT_PROTOTYPE_INDEX, JSObject, initial_object_prototype)        \
@@ -208,6 +207,8 @@ enum BindingFlags {
   V(JS_OBJECT_STRONG_MAP_INDEX, Map, js_object_strong_map)                     \
   V(JS_SET_FUN_INDEX, JSFunction, js_set_fun)                                  \
   V(JS_SET_MAP_INDEX, Map, js_set_map)                                         \
+  V(JS_WEAK_MAP_FUN_INDEX, JSFunction, js_weak_map_fun)                        \
+  V(JS_WEAK_SET_FUN_INDEX, JSFunction, js_weak_set_fun)                        \
   V(MAP_CACHE_INDEX, Object, map_cache)                                        \
   V(MAP_ITERATOR_MAP_INDEX, Map, map_iterator_map)                             \
   V(STRING_ITERATOR_MAP_INDEX, Map, string_iterator_map)                       \
@@ -218,12 +219,17 @@ enum BindingFlags {
   V(OBJECT_FUNCTION_INDEX, JSFunction, object_function)                        \
   V(OBJECT_FUNCTION_PROTOTYPE_MAP_INDEX, Map, object_function_prototype_map)   \
   V(OPAQUE_REFERENCE_FUNCTION_INDEX, JSFunction, opaque_reference_function)    \
+  V(PROXY_CALLABLE_MAP_INDEX, Map, proxy_callable_map)                         \
+  V(PROXY_CONSTRUCTOR_MAP_INDEX, Map, proxy_constructor_map)                   \
   V(PROXY_FUNCTION_INDEX, JSFunction, proxy_function)                          \
+  V(PROXY_FUNCTION_MAP_INDEX, Map, proxy_function_map)                         \
+  V(PROXY_MAP_INDEX, Map, proxy_map)                                           \
   V(REGEXP_FUNCTION_INDEX, JSFunction, regexp_function)                        \
   V(REGEXP_RESULT_MAP_INDEX, Map, regexp_result_map)                           \
   V(SCRIPT_CONTEXT_TABLE_INDEX, ScriptContextTable, script_context_table)      \
   V(SCRIPT_FUNCTION_INDEX, JSFunction, script_function)                        \
   V(SECURITY_TOKEN_INDEX, Object, security_token)                              \
+  V(SELF_WEAK_CELL_INDEX, WeakCell, self_weak_cell)                            \
   V(SET_ITERATOR_MAP_INDEX, Map, set_iterator_map)                             \
   V(SHARED_ARRAY_BUFFER_FUN_INDEX, JSFunction, shared_array_buffer_fun)        \
   V(SLOPPY_ARGUMENTS_MAP_INDEX, Map, sloppy_arguments_map)                     \

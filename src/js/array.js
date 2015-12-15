@@ -12,7 +12,6 @@
 // Imports
 
 var AddIndexedProperty;
-var Delete;
 var FLAG_harmony_tolength;
 var GetIterator;
 var GetMethod;
@@ -35,7 +34,6 @@ var unscopablesSymbol = utils.ImportNow("unscopables_symbol");
 
 utils.Import(function(from) {
   AddIndexedProperty = from.AddIndexedProperty;
-  Delete = from.Delete;
   GetIterator = from.GetIterator;
   GetMethod = from.GetMethod;
   MakeTypeError = from.MakeTypeError;
@@ -490,7 +488,7 @@ function ArrayPop() {
 
   n--;
   var value = array[n];
-  Delete(array, n, true);
+  %DeleteProperty_Strict(array, n);
   array.length = n;
   return value;
 }

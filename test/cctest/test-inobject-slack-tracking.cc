@@ -99,7 +99,7 @@ static double GetDoubleFieldValue(JSObject* obj, FieldIndex field_index) {
     return obj->RawFastDoublePropertyAt(field_index);
   } else {
     Object* value = obj->RawFastPropertyAt(field_index);
-    DCHECK(value->IsMutableHeapNumber());
+    CHECK(value->IsMutableHeapNumber());
     return HeapNumber::cast(value)->value();
   }
 }
@@ -155,7 +155,8 @@ TEST(JSObjectBasic) {
   Handle<Map> initial_map(func->initial_map());
 
   // One instance created.
-  CHECK_EQ(Map::kSlackTrackingCounterStart - 1, initial_map->counter());
+  CHECK_EQ(Map::kSlackTrackingCounterStart - 1,
+           initial_map->construction_counter());
   CHECK(initial_map->IsInobjectSlackTrackingInProgress());
 
   // There must be at least some slack.
@@ -216,7 +217,8 @@ TEST(JSObjectComplex) {
   Handle<Map> initial_map(func->initial_map());
 
   // Three instances created.
-  CHECK_EQ(Map::kSlackTrackingCounterStart - 3, initial_map->counter());
+  CHECK_EQ(Map::kSlackTrackingCounterStart - 3,
+           initial_map->construction_counter());
   CHECK(initial_map->IsInobjectSlackTrackingInProgress());
 
   // There must be at least some slack.
@@ -301,7 +303,8 @@ TEST(JSGeneratorObjectBasic) {
   Handle<Map> initial_map(func->initial_map());
 
   // One instance created.
-  CHECK_EQ(Map::kSlackTrackingCounterStart - 1, initial_map->counter());
+  CHECK_EQ(Map::kSlackTrackingCounterStart - 1,
+           initial_map->construction_counter());
   CHECK(initial_map->IsInobjectSlackTrackingInProgress());
 
   // There must be at least some slack.
@@ -380,11 +383,13 @@ TEST(SubclassBasicNoBaseClassInstances) {
   Handle<Map> b_initial_map(b_func->initial_map());
 
   // Zero instances of A created.
-  CHECK_EQ(Map::kSlackTrackingCounterStart, a_initial_map->counter());
+  CHECK_EQ(Map::kSlackTrackingCounterStart,
+           a_initial_map->construction_counter());
   CHECK(a_initial_map->IsInobjectSlackTrackingInProgress());
 
   // One instance of B created.
-  CHECK_EQ(Map::kSlackTrackingCounterStart - 1, b_initial_map->counter());
+  CHECK_EQ(Map::kSlackTrackingCounterStart - 1,
+           b_initial_map->construction_counter());
   CHECK(b_initial_map->IsInobjectSlackTrackingInProgress());
 
   // There must be at least some slack.
@@ -408,7 +413,8 @@ TEST(SubclassBasicNoBaseClassInstances) {
   CHECK(!IsObjectShrinkable(*obj));
 
   // Zero instances of A created.
-  CHECK_EQ(Map::kSlackTrackingCounterStart, a_initial_map->counter());
+  CHECK_EQ(Map::kSlackTrackingCounterStart,
+           a_initial_map->construction_counter());
   CHECK(a_initial_map->IsInobjectSlackTrackingInProgress());
 
   // No slack left.
@@ -473,11 +479,13 @@ TEST(SubclassBasic) {
   Handle<Map> b_initial_map(b_func->initial_map());
 
   // One instance of a base class created.
-  CHECK_EQ(Map::kSlackTrackingCounterStart - 1, a_initial_map->counter());
+  CHECK_EQ(Map::kSlackTrackingCounterStart - 1,
+           a_initial_map->construction_counter());
   CHECK(a_initial_map->IsInobjectSlackTrackingInProgress());
 
   // One instance of a subclass created.
-  CHECK_EQ(Map::kSlackTrackingCounterStart - 1, b_initial_map->counter());
+  CHECK_EQ(Map::kSlackTrackingCounterStart - 1,
+           b_initial_map->construction_counter());
   CHECK(b_initial_map->IsInobjectSlackTrackingInProgress());
 
   // Create several base class instances to complete the tracking.
@@ -578,7 +586,7 @@ static void TestClassHierarchy(const std::vector<int>& hierarchy_desc, int n) {
     fields_count += fields_count_at_current_level;
 
     // This test is not suitable for in-object properties count overflow case.
-    DCHECK_LT(fields_count, kMaxInobjectProperties);
+    CHECK_LT(fields_count, kMaxInobjectProperties);
 
     // Create |class_name| objects and check slack tracking.
     v8::Local<v8::Script> new_script = GetNewObjectScript(class_name);
@@ -594,7 +602,8 @@ static void TestClassHierarchy(const std::vector<int>& hierarchy_desc, int n) {
     CHECK_LT(fields_count, obj->map()->GetInObjectProperties());
 
     // One instance was created.
-    CHECK_EQ(Map::kSlackTrackingCounterStart - 1, initial_map->counter());
+    CHECK_EQ(Map::kSlackTrackingCounterStart - 1,
+             initial_map->construction_counter());
     CHECK(initial_map->IsInobjectSlackTrackingInProgress());
 
     // Create several instances to complete the tracking.
@@ -691,7 +700,8 @@ TEST(InobjectPropetiesCountOverflowInSubclass) {
     CHECK_EQ(kMaxInobjectProperties, obj->map()->GetInObjectProperties());
 
     // One instance was created.
-    CHECK_EQ(Map::kSlackTrackingCounterStart - 1, initial_map->counter());
+    CHECK_EQ(Map::kSlackTrackingCounterStart - 1,
+             initial_map->construction_counter());
     CHECK(initial_map->IsInobjectSlackTrackingInProgress());
 
     // Create several instances to complete the tracking.
@@ -749,7 +759,8 @@ TEST(SlowModeSubclass) {
     CHECK(obj->map()->is_dictionary_map());
 
     // One instance was created.
-    CHECK_EQ(Map::kSlackTrackingCounterStart - 1, initial_map->counter());
+    CHECK_EQ(Map::kSlackTrackingCounterStart - 1,
+             initial_map->construction_counter());
     CHECK(initial_map->IsInobjectSlackTrackingInProgress());
 
     // Create several instances to complete the tracking.
@@ -812,7 +823,8 @@ static void TestSubclassBuiltin(const char* subclass_name,
   CHECK_EQ(instance_type, initial_map->instance_type());
 
   // One instance of a subclass created.
-  CHECK_EQ(Map::kSlackTrackingCounterStart - 1, initial_map->counter());
+  CHECK_EQ(Map::kSlackTrackingCounterStart - 1,
+           initial_map->construction_counter());
   CHECK(initial_map->IsInobjectSlackTrackingInProgress());
 
   // Create two instances in order to ensure that |obj|.o is a data field
@@ -820,7 +832,8 @@ static void TestSubclassBuiltin(const char* subclass_name,
   Handle<JSObject> obj = Run<JSObject>(new_script);
 
   // Two instances of a subclass created.
-  CHECK_EQ(Map::kSlackTrackingCounterStart - 2, initial_map->counter());
+  CHECK_EQ(Map::kSlackTrackingCounterStart - 2,
+           initial_map->construction_counter());
   CHECK(initial_map->IsInobjectSlackTrackingInProgress());
 
   // There must be at least some slack.

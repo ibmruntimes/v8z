@@ -2827,10 +2827,6 @@ void CallICStub::Generate(MacroAssembler* masm) {
   // x1 - function
   // x3 - slot id (Smi)
   // x2 - vector
-  const int with_types_offset =
-      FixedArray::OffsetOfElementAt(TypeFeedbackVector::kWithTypesIndex);
-  const int generic_offset =
-      FixedArray::OffsetOfElementAt(TypeFeedbackVector::kGenericCountIndex);
   Label extra_checks_or_miss, call, call_function;
   int argc = arg_count();
   ParameterCount actual(argc);
@@ -2908,13 +2904,6 @@ void CallICStub::Generate(MacroAssembler* masm) {
          Operand::UntagSmiAndScale(index, kPointerSizeLog2));
   __ LoadRoot(x5, Heap::kmegamorphic_symbolRootIndex);
   __ Str(x5, FieldMemOperand(x4, FixedArray::kHeaderSize));
-  // We have to update statistics for runtime profiling.
-  __ Ldr(x4, FieldMemOperand(feedback_vector, with_types_offset));
-  __ Subs(x4, x4, Operand(Smi::FromInt(1)));
-  __ Str(x4, FieldMemOperand(feedback_vector, with_types_offset));
-  __ Ldr(x4, FieldMemOperand(feedback_vector, generic_offset));
-  __ Adds(x4, x4, Operand(Smi::FromInt(1)));
-  __ Str(x4, FieldMemOperand(feedback_vector, generic_offset));
 
   __ Bind(&call);
   __ Mov(x0, argc);
@@ -2941,11 +2930,6 @@ void CallICStub::Generate(MacroAssembler* masm) {
   __ Ldr(x5, NativeContextMemOperand());
   __ Cmp(x4, x5);
   __ B(ne, &miss);
-
-  // Update stats.
-  __ Ldr(x4, FieldMemOperand(feedback_vector, with_types_offset));
-  __ Adds(x4, x4, Operand(Smi::FromInt(1)));
-  __ Str(x4, FieldMemOperand(feedback_vector, with_types_offset));
 
   // Initialize the call counter.
   __ Mov(x5, Smi::FromInt(CallICNexus::kCallCountIncrement));
@@ -3388,9 +3372,9 @@ void CompareICStub::GenerateStrings(MacroAssembler* masm) {
 }
 
 
-void CompareICStub::GenerateObjects(MacroAssembler* masm) {
-  DCHECK(state() == CompareICState::OBJECT);
-  ASM_LOCATION("CompareICStub[Objects]");
+void CompareICStub::GenerateReceivers(MacroAssembler* masm) {
+  DCHECK_EQ(CompareICState::RECEIVER, state());
+  ASM_LOCATION("CompareICStub[Receivers]");
 
   Label miss;
 
@@ -3400,10 +3384,11 @@ void CompareICStub::GenerateObjects(MacroAssembler* masm) {
 
   __ JumpIfEitherSmi(rhs, lhs, &miss);
 
-  __ JumpIfNotObjectType(rhs, x10, x10, JS_OBJECT_TYPE, &miss);
-  __ JumpIfNotObjectType(lhs, x10, x10, JS_OBJECT_TYPE, &miss);
+  STATIC_ASSERT(LAST_TYPE == LAST_JS_RECEIVER_TYPE);
+  __ JumpIfObjectType(rhs, x10, x10, FIRST_JS_RECEIVER_TYPE, &miss, lt);
+  __ JumpIfObjectType(lhs, x10, x10, FIRST_JS_RECEIVER_TYPE, &miss, lt);
 
-  DCHECK(GetCondition() == eq);
+  DCHECK_EQ(eq, GetCondition());
   __ Sub(result, rhs, lhs);
   __ Ret();
 
@@ -3412,8 +3397,8 @@ void CompareICStub::GenerateObjects(MacroAssembler* masm) {
 }
 
 
-void CompareICStub::GenerateKnownObjects(MacroAssembler* masm) {
-  ASM_LOCATION("CompareICStub[KnownObjects]");
+void CompareICStub::GenerateKnownReceivers(MacroAssembler* masm) {
+  ASM_LOCATION("CompareICStub[KnownReceivers]");
 
   Label miss;
   Handle<WeakCell> cell = Map::WeakCellForMap(known_map_);

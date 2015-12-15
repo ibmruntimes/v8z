@@ -25,9 +25,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// TODO(jochen): Remove this after the setting is turned on globally.
-#define V8_IMMINENT_DEPRECATION_WARNINGS
-
 #include <stdio.h>
 #include <cstring>
 
@@ -1602,7 +1599,7 @@ TEST_(system_nop) {
 TEST_(debug) {
   SET_UP_ASM();
 
-  DCHECK(kImmExceptionIsDebug == 0xdeb0);
+  CHECK(kImmExceptionIsDebug == 0xdeb0);
 
   // All debug codes should produce the same instruction, and the debug code
   // can be any uint32_t.

@@ -189,6 +189,7 @@ namespace internal {
   V(Object, noscript_shared_function_infos, NoScriptSharedFunctionInfos)       \
   V(FixedArray, interpreter_table, InterpreterTable)                           \
   V(Map, bytecode_array_map, BytecodeArrayMap)                                 \
+  V(WeakCell, empty_weak_cell, EmptyWeakCell)                                  \
   V(BytecodeArray, empty_bytecode_array, EmptyBytecodeArray)
 
 
@@ -291,6 +292,7 @@ namespace internal {
   V(Promise_string, "Promise")                                   \
   V(proto_string, "__proto__")                                   \
   V(prototype_string, "prototype")                               \
+  V(Proxy_string, "Proxy")                                       \
   V(query_colon_string, "(?:)")                                  \
   V(RegExp_string, "RegExp")                                     \
   V(setPrototypeOf_string, "setPrototypeOf")                     \
@@ -364,7 +366,8 @@ namespace internal {
   V(stack_trace_symbol)                     \
   V(string_iterator_iterated_string_symbol) \
   V(string_iterator_next_index_symbol)      \
-  V(uninitialized_symbol)
+  V(uninitialized_symbol)                   \
+  V(native_context_index_symbol)
 
 #define PUBLIC_SYMBOL_LIST(V)                 \
   V(has_instance_symbol, Symbol.hasInstance)  \
@@ -447,6 +450,7 @@ namespace internal {
   V(JSMessageObjectMap)                 \
   V(ForeignMap)                         \
   V(NeanderMap)                         \
+  V(EmptyWeakCell)                      \
   V(empty_string)                       \
   PRIVATE_SYMBOL_LIST(V)
 
@@ -1809,6 +1813,8 @@ class Heap {
 
   void AddToRingBuffer(const char* string);
   void GetFromRingBuffer(char* buffer);
+
+  void CompactRetainedMaps(ArrayList* retained_maps);
 
   // Attempt to over-approximate the weak closure by marking object groups and
   // implicit references from global handles, but don't atomically complete

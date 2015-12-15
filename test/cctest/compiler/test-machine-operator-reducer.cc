@@ -2,9 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// TODO(jochen): Remove this after the setting is turned on globally.
-#define V8_IMMINENT_DEPRECATION_WARNINGS
-
 #include "src/base/utils/random-number-generator.h"
 #include "src/codegen.h"
 #include "src/compiler/js-graph.h"
@@ -362,7 +359,7 @@ TEST(ReduceWord32Sar) {
 
 
 static void CheckJsShift(ReducerTester* R) {
-  DCHECK(R->machine.Word32ShiftIsSafe());
+  CHECK(R->machine.Word32ShiftIsSafe());
 
   Node* x = R->Parameter(0);
   Node* y = R->Parameter(1);

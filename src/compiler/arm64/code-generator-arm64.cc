@@ -33,6 +33,8 @@ class Arm64OperandConverter final : public InstructionOperandConverter {
     return InputDoubleRegister(index);
   }
 
+  size_t OutputCount() { return instr_->OutputCount(); }
+
   DoubleRegister OutputFloat32Register() { return OutputDoubleRegister().S(); }
 
   DoubleRegister OutputFloat64Register() { return OutputDoubleRegister(); }
@@ -592,7 +594,9 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     case kArchDeoptimize: {
       int deopt_state_id =
           BuildTranslation(instr, -1, 0, OutputFrameStateCombine::Ignore());
-      AssembleDeoptimizerCall(deopt_state_id, Deoptimizer::EAGER);
+      Deoptimizer::BailoutType bailout_type =
+          Deoptimizer::BailoutType(MiscField::decode(instr->opcode()));
+      AssembleDeoptimizerCall(deopt_state_id, bailout_type);
       break;
     }
     case kArchRet:
@@ -1037,13 +1041,24 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ Fcvtzs(i.OutputRegister64(), i.InputFloat32Register(0));
       break;
     case kArm64Float64ToInt64:
-      __ Fcvtzs(i.OutputRegister64(), i.InputDoubleRegister(0));
+      __ Fcvtzs(i.OutputRegister(0), i.InputDoubleRegister(0));
+      if (i.OutputCount() > 1) {
+        __ Cmp(i.OutputRegister(0), 1);
+        __ Ccmp(i.OutputRegister(0), -1, VFlag, vc);
+        __ Fccmp(i.InputDoubleRegister(0), i.InputDoubleRegister(0), VFlag, vc);
+        __ Cset(i.OutputRegister(1), vc);
+      }
       break;
     case kArm64Float32ToUint64:
       __ Fcvtzu(i.OutputRegister64(), i.InputFloat32Register(0));
       break;
     case kArm64Float64ToUint64:
       __ Fcvtzu(i.OutputRegister64(), i.InputDoubleRegister(0));
+      if (i.OutputCount() > 1) {
+        __ Fcmp(i.InputDoubleRegister(0), 0.0);
+        __ Ccmp(i.OutputRegister(0), -1, ZFlag, ge);
+        __ Cset(i.OutputRegister(1), ne);
+      }
       break;
     case kArm64Int32ToFloat64:
       __ Scvtf(i.OutputDoubleRegister(), i.InputRegister32(0));

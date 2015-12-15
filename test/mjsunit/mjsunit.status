@@ -87,11 +87,9 @@
 
   # Proxy tests rely on non ES6 version of Proxies
   # TODO(neis,cbruni): figure out which Proxy tests can be reused
-  'es6/classes-proxy' : [SKIP],
   'es6/regress/regress-cr493566': [SKIP],
   'for-in-opt': [SKIP],
   'harmony/proxies-example-membrane': [SKIP],
-  'harmony/proxies-hash': [SKIP],
   'harmony/proxies-json': [SKIP],
   'harmony/proxies': [SKIP],
   'harmony/proxies-symbols': [SKIP],
@@ -173,9 +171,9 @@
   'compiler/escape-analysis-3': [PASS, NO_VARIANTS],
   'compiler/escape-analysis-4': [PASS, NO_VARIANTS],
   'compiler/escape-analysis-5': [PASS, NO_VARIANTS],
-  'compiler/escape-analysis-7': [PASS, NO_VARIANTS],
-  # TODO(sigurds): Tests that fail because of incomplete phi handling.
   'compiler/escape-analysis-6': [PASS, NO_VARIANTS],
+  'compiler/escape-analysis-7': [PASS, NO_VARIANTS],
+  'compiler/escape-analysis-9': [PASS, NO_VARIANTS],
   # TODO(sigurds): Tests that fail because of incomplete use handling (i.e. select).
   'compiler/escape-analysis-8': [PASS, NO_VARIANTS],
 
@@ -1060,6 +1058,7 @@
   'regress/regress-crbug-506956': [SKIP],
   'regress/regress-crbug-505907': [SKIP],
 
+  'regress/typed-array-lifetime': [SKIP],
 }],  # ignition == True
 
 ['ignition == True and (arch == arm or arch == arm64)', {
@@ -1070,6 +1069,7 @@
   'math-floor-part3': [SKIP],
   'mul-exhaustive-part*': [SKIP],
   'regress/regress-1167': [SKIP],
+  'regress/regress-1257': [SKIP],
   'regress/regress-165637': [SKIP],
   'regress/regress-2249': [SKIP],
   'regress/regress-319722-ArrayBuffer': [SKIP],
@@ -1077,6 +1077,7 @@
   'regress/regress-542823': [SKIP],
   'regress/regress-634-debug': [SKIP],
   'regress/regress-78270': [SKIP],
+  'regress/regress-91008': [SKIP],
   'regress/regress-crbug-347903': [SKIP],
   'regress/regress-crbug-505007-1': [SKIP],
   'regress/regress-crbug-505007-2': [SKIP],

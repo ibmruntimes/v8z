@@ -2085,10 +2085,6 @@ void CallICStub::Generate(MacroAssembler* masm) {
   // edx - slot id
   // ebx - vector
   Isolate* isolate = masm->isolate();
-  const int with_types_offset =
-      FixedArray::OffsetOfElementAt(TypeFeedbackVector::kWithTypesIndex);
-  const int generic_offset =
-      FixedArray::OffsetOfElementAt(TypeFeedbackVector::kGenericCountIndex);
   Label extra_checks_or_miss, call, call_function;
   int argc = arg_count();
   ParameterCount actual(argc);
@@ -2161,9 +2157,6 @@ void CallICStub::Generate(MacroAssembler* masm) {
   __ mov(
       FieldOperand(ebx, edx, times_half_pointer_size, FixedArray::kHeaderSize),
       Immediate(TypeFeedbackVector::MegamorphicSentinel(isolate)));
-  // We have to update statistics for runtime profiling.
-  __ sub(FieldOperand(ebx, with_types_offset), Immediate(Smi::FromInt(1)));
-  __ add(FieldOperand(ebx, generic_offset), Immediate(Smi::FromInt(1)));
 
   __ bind(&call);
   __ Set(eax, argc);
@@ -2190,9 +2183,6 @@ void CallICStub::Generate(MacroAssembler* masm) {
   __ mov(ecx, ContextOperand(ecx, Context::NATIVE_CONTEXT_INDEX));
   __ cmp(ecx, NativeContextOperand());
   __ j(not_equal, &miss);
-
-  // Update stats.
-  __ add(FieldOperand(ebx, with_types_offset), Immediate(Smi::FromInt(1)));
 
   // Initialize the call counter.
   __ mov(FieldOperand(ebx, edx, times_half_pointer_size,
@@ -3624,19 +3614,20 @@ void CompareICStub::GenerateStrings(MacroAssembler* masm) {
 }
 
 
-void CompareICStub::GenerateObjects(MacroAssembler* masm) {
-  DCHECK(state() == CompareICState::OBJECT);
+void CompareICStub::GenerateReceivers(MacroAssembler* masm) {
+  DCHECK_EQ(CompareICState::RECEIVER, state());
   Label miss;
   __ mov(ecx, edx);
   __ and_(ecx, eax);
   __ JumpIfSmi(ecx, &miss, Label::kNear);
 
-  __ CmpObjectType(eax, JS_OBJECT_TYPE, ecx);
-  __ j(not_equal, &miss, Label::kNear);
-  __ CmpObjectType(edx, JS_OBJECT_TYPE, ecx);
-  __ j(not_equal, &miss, Label::kNear);
+  STATIC_ASSERT(LAST_TYPE == LAST_JS_RECEIVER_TYPE);
+  __ CmpObjectType(eax, FIRST_JS_RECEIVER_TYPE, ecx);
+  __ j(below, &miss, Label::kNear);
+  __ CmpObjectType(edx, FIRST_JS_RECEIVER_TYPE, ecx);
+  __ j(below, &miss, Label::kNear);
 
-  DCHECK(GetCondition() == equal);
+  DCHECK_EQ(equal, GetCondition());
   __ sub(eax, edx);
   __ ret(0);
 
@@ -3645,7 +3636,7 @@ void CompareICStub::GenerateObjects(MacroAssembler* masm) {
 }
 
 
-void CompareICStub::GenerateKnownObjects(MacroAssembler* masm) {
+void CompareICStub::GenerateKnownReceivers(MacroAssembler* masm) {
   Label miss;
   Handle<WeakCell> cell = Map::WeakCellForMap(known_map_);
   __ mov(ecx, edx);

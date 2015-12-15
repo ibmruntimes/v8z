@@ -1876,6 +1876,34 @@ Reduction JSTypedLowering::ReduceJSCreateWithContext(Node* node) {
 }
 
 
+Reduction JSTypedLowering::ReduceJSCreateCatchContext(Node* node) {
+  DCHECK_EQ(IrOpcode::kJSCreateCatchContext, node->opcode());
+  Handle<String> name = OpParameter<Handle<String>>(node);
+  Node* exception = NodeProperties::GetValueInput(node, 0);
+  Node* closure = NodeProperties::GetValueInput(node, 1);
+  Node* effect = NodeProperties::GetEffectInput(node);
+  Node* control = NodeProperties::GetControlInput(node);
+  Node* context = NodeProperties::GetContextInput(node);
+  Node* native_context = effect = graph()->NewNode(
+      javascript()->LoadContext(0, Context::NATIVE_CONTEXT_INDEX, true),
+      context, context, effect);
+  AllocationBuilder a(jsgraph(), effect, control);
+  STATIC_ASSERT(Context::MIN_CONTEXT_SLOTS == 4);  // Ensure fully covered.
+  a.AllocateArray(Context::MIN_CONTEXT_SLOTS + 1,
+                  factory()->catch_context_map());
+  a.Store(AccessBuilder::ForContextSlot(Context::CLOSURE_INDEX), closure);
+  a.Store(AccessBuilder::ForContextSlot(Context::PREVIOUS_INDEX), context);
+  a.Store(AccessBuilder::ForContextSlot(Context::EXTENSION_INDEX), name);
+  a.Store(AccessBuilder::ForContextSlot(Context::NATIVE_CONTEXT_INDEX),
+          native_context);
+  a.Store(AccessBuilder::ForContextSlot(Context::THROWN_OBJECT_INDEX),
+          exception);
+  RelaxControls(node);
+  a.FinishAndChange(node);
+  return Changed(node);
+}
+
+
 Reduction JSTypedLowering::ReduceJSCreateBlockContext(Node* node) {
   DCHECK_EQ(IrOpcode::kJSCreateBlockContext, node->opcode());
   Handle<ScopeInfo> scope_info = OpParameter<Handle<ScopeInfo>>(node);
@@ -1943,8 +1971,10 @@ Reduction JSTypedLowering::ReduceJSCallFunction(Node* node) {
     // See ES6 section 9.2.1 [[Call]] ( thisArgument, argumentsList ).
     if (IsClassConstructor(shared->kind())) return NoChange();
 
-    // Grab the context from the {function}.
-    Node* context = jsgraph()->Constant(handle(function->context(), isolate()));
+    // Load the context from the {target}.
+    Node* context = effect = graph()->NewNode(
+        simplified()->LoadField(AccessBuilder::ForJSFunctionContext()), target,
+        effect, control);
     NodeProperties::ReplaceContextInput(node, context);
 
     // Check if we need to convert the {receiver}.
@@ -1953,9 +1983,11 @@ Reduction JSTypedLowering::ReduceJSCallFunction(Node* node) {
       receiver = effect =
           graph()->NewNode(javascript()->ConvertReceiver(convert_mode),
                            receiver, context, frame_state, effect, control);
-      NodeProperties::ReplaceEffectInput(node, effect);
       NodeProperties::ReplaceValueInput(node, receiver, 1);
     }
+
+    // Update the effect dependency for the {node}.
+    NodeProperties::ReplaceEffectInput(node, effect);
 
     // Remove the eager bailout frame state.
     NodeProperties::RemoveFrameStateInput(node, 1);
@@ -2433,6 +2465,8 @@ Reduction JSTypedLowering::Reduce(Node* node) {
       return ReduceJSCreateFunctionContext(node);
     case IrOpcode::kJSCreateWithContext:
       return ReduceJSCreateWithContext(node);
+    case IrOpcode::kJSCreateCatchContext:
+      return ReduceJSCreateCatchContext(node);
     case IrOpcode::kJSCreateBlockContext:
       return ReduceJSCreateBlockContext(node);
     case IrOpcode::kJSCallFunction:

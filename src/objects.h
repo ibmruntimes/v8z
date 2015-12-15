@@ -1173,6 +1173,9 @@ class Object {
   MUST_USE_RESULT static MaybeHandle<Object> GetMethod(
       Handle<JSReceiver> receiver, Handle<Name> name);
 
+  // Check whether |object| is an instance of Error or NativeError.
+  static bool IsErrorObject(Isolate* isolate, Handle<Object> object);
+
   // ES6 section 12.5.6 The typeof Operator
   static Handle<String> TypeOf(Isolate* isolate, Handle<Object> object);
 
@@ -1829,45 +1832,51 @@ class JSReceiver: public HeapObject {
                                                   Handle<Object> properties);
 
   // "virtual" dispatcher to the correct [[DefineOwnProperty]] implementation.
-  static bool DefineOwnProperty(Isolate* isolate, Handle<JSReceiver> object,
-                                Handle<Object> key, PropertyDescriptor* desc,
-                                ShouldThrow should_throw);
+  MUST_USE_RESULT static Maybe<bool> DefineOwnProperty(
+      Isolate* isolate, Handle<JSReceiver> object, Handle<Object> key,
+      PropertyDescriptor* desc, ShouldThrow should_throw);
 
   // ES6 7.3.4 (when passed DONT_THROW)
   MUST_USE_RESULT static Maybe<bool> CreateDataProperty(
       LookupIterator* it, Handle<Object> value, ShouldThrow should_throw);
 
   // ES6 9.1.6.1
-  static bool OrdinaryDefineOwnProperty(Isolate* isolate,
-                                        Handle<JSObject> object,
-                                        Handle<Object> key,
-                                        PropertyDescriptor* desc,
-                                        ShouldThrow should_throw);
-  static bool OrdinaryDefineOwnProperty(LookupIterator* it,
-                                        PropertyDescriptor* desc,
-                                        ShouldThrow should_throw);
+  MUST_USE_RESULT static Maybe<bool> OrdinaryDefineOwnProperty(
+      Isolate* isolate, Handle<JSObject> object, Handle<Object> key,
+      PropertyDescriptor* desc, ShouldThrow should_throw);
+  MUST_USE_RESULT static Maybe<bool> OrdinaryDefineOwnProperty(
+      LookupIterator* it, PropertyDescriptor* desc, ShouldThrow should_throw);
   // ES6 9.1.6.2
-  static bool IsCompatiblePropertyDescriptor(Isolate* isolate, bool extensible,
-                                             PropertyDescriptor* desc,
-                                             PropertyDescriptor* current,
-                                             Handle<Name> property_name);
+  MUST_USE_RESULT static Maybe<bool> IsCompatiblePropertyDescriptor(
+      Isolate* isolate, bool extensible, PropertyDescriptor* desc,
+      PropertyDescriptor* current, Handle<Name> property_name);
   // ES6 9.1.6.3
   // |it| can be NULL in cases where the ES spec passes |undefined| as the
   // receiver. Exactly one of |it| and |property_name| must be provided.
-  static bool ValidateAndApplyPropertyDescriptor(
+  MUST_USE_RESULT static Maybe<bool> ValidateAndApplyPropertyDescriptor(
       Isolate* isolate, LookupIterator* it, bool extensible,
       PropertyDescriptor* desc, PropertyDescriptor* current,
       ShouldThrow should_throw, Handle<Name> property_name = Handle<Name>());
 
-  static bool GetOwnPropertyDescriptor(Isolate* isolate,
-                                       Handle<JSReceiver> object,
-                                       Handle<Object> key,
-                                       PropertyDescriptor* desc);
-  static bool GetOwnPropertyDescriptor(LookupIterator* it,
-                                       PropertyDescriptor* desc);
+  MUST_USE_RESULT static Maybe<bool> GetOwnPropertyDescriptor(
+      Isolate* isolate, Handle<JSReceiver> object, Handle<Object> key,
+      PropertyDescriptor* desc);
+  MUST_USE_RESULT static Maybe<bool> GetOwnPropertyDescriptor(
+      LookupIterator* it, PropertyDescriptor* desc);
 
-  // Disallow further properties to be added to the object.  This is
-  // ES6's [[PreventExtensions]] when passed DONT_THROW.
+  typedef PropertyAttributes IntegrityLevel;
+
+  // ES6 7.3.14 (when passed DONT_THROW)
+  // 'level' must be SEALED or FROZEN.
+  MUST_USE_RESULT static Maybe<bool> SetIntegrityLevel(
+      Handle<JSReceiver> object, IntegrityLevel lvl, ShouldThrow should_throw);
+
+  // ES6 7.3.15
+  // 'level' must be SEALED or FROZEN.
+  MUST_USE_RESULT static Maybe<bool> TestIntegrityLevel(
+      Handle<JSReceiver> object, IntegrityLevel lvl);
+
+  // ES6 [[PreventExtensions]] (when passed DONT_THROW)
   MUST_USE_RESULT static Maybe<bool> PreventExtensions(
       Handle<JSReceiver> object, ShouldThrow should_throw);
 
@@ -1920,6 +1929,13 @@ class JSReceiver: public HeapObject {
       Handle<JSReceiver> object);
 
   enum KeyCollectionType { OWN_ONLY, INCLUDE_PROTOS };
+
+  // ES6 [[OwnPropertyKeys]] (modulo return type)
+  MUST_USE_RESULT static MaybeHandle<FixedArray> OwnPropertyKeys(
+      Handle<JSReceiver> object) {
+    return GetKeys(object, JSReceiver::OWN_ONLY, ALL_PROPERTIES,
+                   CONVERT_TO_STRING);
+  }
 
   // Computes the enumerable keys for a JSObject. Used for implementing
   // "for (n in object) { }".
@@ -2242,24 +2258,18 @@ class JSObject: public JSReceiver {
   inline void SetInternalField(int index, Object* value);
   inline void SetInternalField(int index, Smi* value);
 
-  // Returns the number of properties on this object filtering out properties
-  // with the specified attributes (ignoring interceptors).
-  int NumberOfOwnProperties(PropertyFilter filter = ALL_PROPERTIES);
-  // Fill in details for properties into storage starting at the specified
-  // index. Returns the number of properties added.
-  int GetOwnPropertyNames(FixedArray* storage, int index,
-                          PropertyFilter filter = ALL_PROPERTIES);
   void CollectOwnPropertyNames(KeyAccumulator* keys,
                                PropertyFilter filter = ALL_PROPERTIES);
 
   // Returns the number of properties on this object filtering out properties
   // with the specified attributes (ignoring interceptors).
+  // TODO(jkummerow): Deprecated, only used by Object.observe.
   int NumberOfOwnElements(PropertyFilter filter);
-  // Returns the number of enumerable elements (ignoring interceptors).
-  int NumberOfEnumElements();
   // Returns the number of elements on this object filtering out elements
   // with the specified attributes (ignoring interceptors).
+  // TODO(jkummerow): Deprecated, only used by Object.observe.
   int GetOwnElementKeys(FixedArray* storage, PropertyFilter filter);
+
   static void CollectOwnElementKeys(Handle<JSObject> object,
                                     KeyAccumulator* keys,
                                     PropertyFilter filter);
@@ -2343,12 +2353,6 @@ class JSObject: public JSReceiver {
       Handle<JSObject> object, ShouldThrow should_throw);
 
   static bool IsExtensible(Handle<JSObject> object);
-
-  // ES5 Object.seal
-  MUST_USE_RESULT static MaybeHandle<Object> Seal(Handle<JSObject> object);
-
-  // ES5 Object.freeze
-  MUST_USE_RESULT static MaybeHandle<Object> Freeze(Handle<JSObject> object);
 
   // Called the first time an object is observed with ES7 Object.observe.
   static void SetObserved(Handle<JSObject> object);
@@ -2776,6 +2780,7 @@ class ArrayList : public FixedArray {
   inline Object** Slot(int index);
   inline void Set(int index, Object* obj);
   inline void Clear(int index, Object* undefined);
+  bool IsFull();
   DECLARE_CAST(ArrayList)
 
  private:
@@ -3341,9 +3346,11 @@ class Dictionary: public HashTable<Derived, Shape, Key> {
 
   // Returns the number of elements in the dictionary filtering out properties
   // with the specified attributes.
+  // TODO(jkummerow): Deprecated, only used by Object.observe.
   int NumberOfElementsFilterAttributes(PropertyFilter filter);
 
   // Returns the number of enumerable elements in the dictionary.
+  // TODO(jkummerow): Deprecated, only used by Object.observe.
   int NumberOfEnumElements() {
     return NumberOfElementsFilterAttributes(ENUMERABLE_STRINGS);
   }
@@ -3356,6 +3363,7 @@ class Dictionary: public HashTable<Derived, Shape, Key> {
 
   // Fill in details for properties into storage.
   // Returns the number of properties added.
+  // TODO(jkummerow): Deprecated, only used by Object.observe.
   int CopyKeysTo(FixedArray* storage, int index, PropertyFilter filter,
                  SortMode sort_mode);
   // Collect the keys into the given KeyAccumulator, in ascending chronological
@@ -5479,17 +5487,18 @@ class Map: public HeapObject {
   class IsMigrationTarget : public BitField<bool, 25, 1> {};
   class IsStrong : public BitField<bool, 26, 1> {};
   class NewTargetIsBase : public BitField<bool, 27, 1> {};
+  // Bit 28 is free.
 
   // Keep this bit field at the very end for better code in
   // Builtins::kJSConstructStubGeneric stub.
-  // This counter is used for in-object slack tracking and for map aging.
+  // This counter is used for in-object slack tracking.
   // The in-object slack tracking is considered enabled when the counter is
-  // in the range [kSlackTrackingCounterStart, kSlackTrackingCounterEnd].
-  class Counter : public BitField<int, 28, 4> {};
-  static const int kSlackTrackingCounterStart = 14;
-  static const int kSlackTrackingCounterEnd = 8;
-  static const int kRetainingCounterStart = kSlackTrackingCounterEnd - 1;
-  static const int kRetainingCounterEnd = 0;
+  // non zero.
+  class ConstructionCounter : public BitField<int, 29, 3> {};
+  static const int kSlackTrackingCounterStart = 7;
+  static const int kSlackTrackingCounterEnd = 1;
+  static const int kNoSlackTracking = 0;
+  STATIC_ASSERT(kSlackTrackingCounterStart <= ConstructionCounter::kMax);
 
 
   // Inobject slack tracking is the way to reclaim unused inobject space.
@@ -5758,8 +5767,8 @@ class Map: public HeapObject {
   inline bool is_stable();
   inline void set_migration_target(bool value);
   inline bool is_migration_target();
-  inline void set_counter(int value);
-  inline int counter();
+  inline void set_construction_counter(int value);
+  inline int construction_counter();
   inline void deprecate();
   inline bool is_deprecated();
   inline bool CanBeDeprecated();
@@ -7224,7 +7233,7 @@ class JSFunction: public JSObject {
   inline JSObject* global_proxy();
   inline Context* native_context();
 
-  static MaybeHandle<Context> GetFunctionRealm(Handle<JSFunction> function);
+  static Handle<Context> GetFunctionRealm(Handle<JSFunction> function);
 
   // [code]: The generated code object for this function.  Executed
   // when the function is invoked, e.g. foo() or new foo(). See
@@ -9453,7 +9462,7 @@ class WeakCell : public HeapObject {
 
   DECL_ACCESSORS(next, Object)
 
-  inline void clear_next(Heap* heap);
+  inline void clear_next(Object* the_hole_value);
 
   inline bool next_cleared();
 
@@ -9507,14 +9516,14 @@ class JSProxy: public JSReceiver {
       Handle<JSProxy> proxy, ShouldThrow should_throw);
 
   // ES6 9.5.5
-  static bool GetOwnPropertyDescriptor(Isolate* isolate, Handle<JSProxy> proxy,
-                                       Handle<Name> name,
-                                       PropertyDescriptor* desc);
+  MUST_USE_RESULT static Maybe<bool> GetOwnPropertyDescriptor(
+      Isolate* isolate, Handle<JSProxy> proxy, Handle<Name> name,
+      PropertyDescriptor* desc);
 
   // ES6 9.5.6
-  static bool DefineOwnProperty(Isolate* isolate, Handle<JSProxy> object,
-                                Handle<Object> key, PropertyDescriptor* desc,
-                                ShouldThrow should_throw);
+  MUST_USE_RESULT static Maybe<bool> DefineOwnProperty(
+      Isolate* isolate, Handle<JSProxy> object, Handle<Object> key,
+      PropertyDescriptor* desc, ShouldThrow should_throw);
 
   // ES6 9.5.7
   MUST_USE_RESULT static Maybe<bool> HasProperty(Isolate* isolate,
@@ -9538,13 +9547,15 @@ class JSProxy: public JSReceiver {
       Handle<JSProxy> proxy, Handle<Name> name, LanguageMode language_mode);
 
   // ES6 9.5.11
-  static bool Enumerate(Isolate* isolate, Handle<JSReceiver> receiver,
-                        Handle<JSProxy> proxy, KeyAccumulator* accumulator);
+  MUST_USE_RESULT static Maybe<bool> Enumerate(Isolate* isolate,
+                                               Handle<JSReceiver> receiver,
+                                               Handle<JSProxy> proxy,
+                                               KeyAccumulator* accumulator);
 
   // ES6 9.5.12
-  static bool OwnPropertyKeys(Isolate* isolate, Handle<JSReceiver> receiver,
-                              Handle<JSProxy> proxy, PropertyFilter filter,
-                              KeyAccumulator* accumulator);
+  MUST_USE_RESULT static Maybe<bool> OwnPropertyKeys(
+      Isolate* isolate, Handle<JSReceiver> receiver, Handle<JSProxy> proxy,
+      PropertyFilter filter, KeyAccumulator* accumulator);
 
   MUST_USE_RESULT static Maybe<PropertyAttributes> GetPropertyAttributes(
       LookupIterator* it);
@@ -9568,11 +9579,6 @@ class JSProxy: public JSReceiver {
   static Handle<Smi> GetOrCreateIdentityHash(Handle<JSProxy> proxy);
 
  private:
-  friend class JSReceiver;
-
-  MUST_USE_RESULT static MaybeHandle<Object> GetTrap(Handle<JSProxy> proxy,
-                                                     Handle<String> trap);
-
   DISALLOW_IMPLICIT_CONSTRUCTORS(JSProxy);
 };
 
@@ -10051,16 +10057,18 @@ class JSArray: public JSObject {
   static inline void SetContent(Handle<JSArray> array,
                                 Handle<FixedArrayBase> storage);
 
-  static bool DefineOwnProperty(Isolate* isolate, Handle<JSArray> o,
-                                Handle<Object> name, PropertyDescriptor* desc,
-                                ShouldThrow should_throw);
+  // ES6 9.4.2.1
+  MUST_USE_RESULT static Maybe<bool> DefineOwnProperty(
+      Isolate* isolate, Handle<JSArray> o, Handle<Object> name,
+      PropertyDescriptor* desc, ShouldThrow should_throw);
 
   static bool AnythingToArrayLength(Isolate* isolate,
                                     Handle<Object> length_object,
                                     uint32_t* output);
-  static bool ArraySetLength(Isolate* isolate, Handle<JSArray> a,
-                             PropertyDescriptor* desc,
-                             ShouldThrow should_throw);
+  MUST_USE_RESULT static Maybe<bool> ArraySetLength(Isolate* isolate,
+                                                    Handle<JSArray> a,
+                                                    PropertyDescriptor* desc,
+                                                    ShouldThrow should_throw);
 
   DECLARE_CAST(JSArray)
 

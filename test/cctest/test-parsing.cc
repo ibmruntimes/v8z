@@ -25,9 +25,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// TODO(mythria): Remove this define after this flag is turned on globally
-#define V8_IMMINENT_DEPRECATION_WARNINGS
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -706,7 +703,7 @@ TEST(Utf8CharacterStream) {
     cursor += unibrow::Utf8::Encode(buffer + cursor, i,
                                     unibrow::Utf16::kNoPreviousCharacter, true);
   }
-  DCHECK(cursor == kAllUtf8CharsSizeU);
+  CHECK(cursor == kAllUtf8CharsSizeU);
 
   i::Utf8ToUtf16CharacterStream stream(reinterpret_cast<const i::byte*>(buffer),
                                        kAllUtf8CharsSizeU);
@@ -802,8 +799,8 @@ TEST(StreamScanner) {
       i::Token::EOS,
       i::Token::ILLEGAL
   };
-  DCHECK_EQ('{', str2[19]);
-  DCHECK_EQ('}', str2[37]);
+  CHECK_EQ('{', str2[19]);
+  CHECK_EQ('}', str2[37]);
   TestStreamScanner(&stream2, expectations2, 20, 37);
 
   const char* str3 = "{}}}}";
@@ -3345,8 +3342,8 @@ TEST(SerializationOfMaybeAssignmentFlag) {
   script_scope->Initialize();
   i::Scope* s =
       i::Scope::DeserializeScopeChain(isolate, &zone, context, script_scope);
-  DCHECK(s != script_scope);
-  DCHECK(name != NULL);
+  CHECK(s != script_scope);
+  CHECK(name != NULL);
 
   // Get result from h's function context (that is f's context)
   i::Variable* var = s->Lookup(name);
@@ -3393,7 +3390,7 @@ TEST(IfArgumentsArrayAccessedThenParametersMaybeAssigned) {
   script_scope->Initialize();
   i::Scope* s =
       i::Scope::DeserializeScopeChain(isolate, &zone, context, script_scope);
-  DCHECK(s != script_scope);
+  CHECK(s != script_scope);
   const i::AstRawString* name_x = avf.GetOneByteString("x");
 
   // Get result from f's function context (that is g's outer context)

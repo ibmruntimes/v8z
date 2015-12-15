@@ -25,9 +25,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// TODO(jochen): Remove this after the setting is turned on globally.
-#define V8_IMMINENT_DEPRECATION_WARNINGS
-
 #include <stdlib.h>
 #include <utility>
 
@@ -43,7 +40,8 @@
 #include "src/macro-assembler.h"
 #include "src/snapshot/snapshot.h"
 #include "test/cctest/cctest.h"
-#include "test/cctest/heap-tester.h"
+#include "test/cctest/heap/heap-tester.h"
+#include "test/cctest/heap/utils-inl.h"
 #include "test/cctest/test-feedback-vector.h"
 
 
@@ -1867,7 +1865,7 @@ TEST(TestSizeOfRegExpCode) {
 
   // Adjust source below and this check to match
   // RegExpImple::kRegExpTooLargeToOptimize.
-  DCHECK_EQ(i::RegExpImpl::kRegExpTooLargeToOptimize, 20 * KB);
+  CHECK_EQ(i::RegExpImpl::kRegExpTooLargeToOptimize, 20 * KB);
 
   // Compile a regexp that is much larger if we are using regexp optimizations.
   CompileRun(
@@ -3471,7 +3469,7 @@ TEST(TransitionArraySimpleToFull) {
   CompileRun("o = new F;"
              "root = new F");
   root = GetByName("root");
-  DCHECK(TransitionArray::IsSimpleTransition(root->map()->raw_transitions()));
+  CHECK(TransitionArray::IsSimpleTransition(root->map()->raw_transitions()));
   AddPropertyTo(2, root, "happy");
 
   // Count number of live transitions after marking.  Note that one transition
@@ -4492,6 +4490,115 @@ TEST(Regress514122) {
 }
 
 
+TEST(OptimizedCodeMapReuseEntries) {
+  i::FLAG_flush_optimized_code_cache = false;
+  i::FLAG_allow_natives_syntax = true;
+  // BUG(v8:4598): Since TurboFan doesn't treat maps in code weakly, we can't
+  // run this test.
+  if (i::FLAG_turbo) return;
+  CcTest::InitializeVM();
+  v8::Isolate* v8_isolate = CcTest::isolate();
+  Isolate* isolate = CcTest::i_isolate();
+  Heap* heap = isolate->heap();
+  HandleScope scope(isolate);
+
+  // Create 3 contexts, allow the 2nd one to be disposed, and verify that
+  // a 4th context will re-use the weak slots in the optimized code map
+  // to hold data, rather than expanding the map.
+  v8::Local<v8::Context> c1 = v8::Context::New(v8_isolate);
+  const char* source = "function foo(x) { var l = [1]; return x+l[0]; }";
+  v8::ScriptCompiler::Source script_source(
+      v8::String::NewFromUtf8(v8_isolate, source, v8::NewStringType::kNormal)
+          .ToLocalChecked());
+  v8::Local<v8::UnboundScript> indep =
+      v8::ScriptCompiler::CompileUnboundScript(v8_isolate, &script_source)
+          .ToLocalChecked();
+  const char* toplevel = "foo(3); %OptimizeFunctionOnNextCall(foo); foo(3);";
+  // Perfrom one initial GC to enable code flushing.
+  heap->CollectAllGarbage();
+
+  c1->Enter();
+  indep->BindToCurrentContext()->Run(c1).ToLocalChecked();
+  CompileRun(toplevel);
+
+  Handle<SharedFunctionInfo> shared;
+  Handle<JSFunction> foo = Handle<JSFunction>::cast(
+      v8::Utils::OpenHandle(*v8::Local<v8::Function>::Cast(
+          CcTest::global()->Get(c1, v8_str("foo")).ToLocalChecked())));
+  CHECK(foo->shared()->is_compiled());
+  shared = handle(foo->shared());
+  c1->Exit();
+
+  {
+    HandleScope scope(isolate);
+    v8::Local<v8::Context> c2 = v8::Context::New(v8_isolate);
+    c2->Enter();
+    indep->BindToCurrentContext()->Run(c2).ToLocalChecked();
+    CompileRun(toplevel);
+    c2->Exit();
+  }
+
+  {
+    HandleScope scope(isolate);
+    v8::Local<v8::Context> c3 = v8::Context::New(v8_isolate);
+    c3->Enter();
+    indep->BindToCurrentContext()->Run(c3).ToLocalChecked();
+    CompileRun(toplevel);
+    c3->Exit();
+
+    // Now, collect garbage. Context c2 should have no roots to it, and it's
+    // entry in the optimized code map should be free for a new context.
+    for (int i = 0; i < 4; i++) {
+      heap->CollectAllGarbage();
+    }
+
+    Handle<FixedArray> optimized_code_map =
+        handle(shared->optimized_code_map());
+    // There should be 3 entries in the map.
+    CHECK_EQ(
+        3, ((optimized_code_map->length() - SharedFunctionInfo::kEntriesStart) /
+            SharedFunctionInfo::kEntryLength));
+    // But one of them (formerly for c2) should be cleared.
+    int cleared_count = 0;
+    for (int i = SharedFunctionInfo::kEntriesStart;
+         i < optimized_code_map->length();
+         i += SharedFunctionInfo::kEntryLength) {
+      cleared_count +=
+          WeakCell::cast(
+              optimized_code_map->get(i + SharedFunctionInfo::kContextOffset))
+                  ->cleared()
+              ? 1
+              : 0;
+    }
+    CHECK_EQ(1, cleared_count);
+
+    // Verify that a new context uses the cleared entry rather than creating a
+    // new
+    // optimized code map array.
+    v8::Local<v8::Context> c4 = v8::Context::New(v8_isolate);
+    c4->Enter();
+    indep->BindToCurrentContext()->Run(c4).ToLocalChecked();
+    CompileRun(toplevel);
+    c4->Exit();
+    CHECK_EQ(*optimized_code_map, shared->optimized_code_map());
+
+    // Now each entry is in use.
+    cleared_count = 0;
+    for (int i = SharedFunctionInfo::kEntriesStart;
+         i < optimized_code_map->length();
+         i += SharedFunctionInfo::kEntryLength) {
+      cleared_count +=
+          WeakCell::cast(
+              optimized_code_map->get(i + SharedFunctionInfo::kContextOffset))
+                  ->cleared()
+              ? 1
+              : 0;
+    }
+    CHECK_EQ(0, cleared_count);
+  }
+}
+
+
 TEST(Regress513496) {
   i::FLAG_flush_optimized_code_cache = false;
   i::FLAG_allow_natives_syntax = true;
@@ -4615,7 +4722,7 @@ TEST(DeferredHandles) {
   }
   // An entire block of handles has been filled.
   // Next handle would require a new block.
-  DCHECK(data->next == data->limit);
+  CHECK(data->next == data->limit);
 
   DeferredHandleScope deferred(isolate);
   DummyVisitor visitor;
@@ -4638,8 +4745,8 @@ TEST(IncrementalMarkingStepMakesBigProgressWithLargeObjects) {
   }
   // This big step should be sufficient to mark the whole array.
   marking->Step(100 * MB, IncrementalMarking::NO_GC_VIA_STACK_GUARD);
-  DCHECK(marking->IsComplete() ||
-         marking->IsReadyToOverApproximateWeakClosure());
+  CHECK(marking->IsComplete() ||
+        marking->IsReadyToOverApproximateWeakClosure());
 }
 
 
@@ -4780,7 +4887,7 @@ TEST(CellsInOptimizedCodeAreWeak) {
     heap->CollectAllGarbage();
   }
 
-  DCHECK(code->marked_for_deoptimization());
+  CHECK(code->marked_for_deoptimization());
 }
 
 
@@ -4821,7 +4928,7 @@ TEST(ObjectsInOptimizedCodeAreWeak) {
     heap->CollectAllGarbage();
   }
 
-  DCHECK(code->marked_for_deoptimization());
+  CHECK(code->marked_for_deoptimization());
 }
 
 
@@ -5510,7 +5617,7 @@ TEST(Regress357137) {
           .ToLocalChecked(),
       v8::FunctionTemplate::New(isolate, RequestInterrupt));
   v8::Local<v8::Context> context = v8::Context::New(isolate, NULL, global);
-  DCHECK(!context.IsEmpty());
+  CHECK(!context.IsEmpty());
   v8::Context::Scope cscope(context);
 
   v8::Local<v8::Value> result = CompileRun(
@@ -5816,9 +5923,11 @@ void CheckMapRetainingFor(int n) {
   Handle<WeakCell> weak_cell = AddRetainedMap(isolate, heap);
   CHECK(!weak_cell->cleared());
   for (int i = 0; i < n; i++) {
+    SimulateIncrementalMarking(heap);
     heap->CollectGarbage(OLD_SPACE);
   }
   CHECK(!weak_cell->cleared());
+  SimulateIncrementalMarking(heap);
   heap->CollectGarbage(OLD_SPACE);
   CHECK(weak_cell->cleared());
 }

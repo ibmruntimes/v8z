@@ -23,6 +23,7 @@ var callSitePositionSymbol =
     utils.ImportNow("call_site_position_symbol");
 var callSiteStrictSymbol =
     utils.ImportNow("call_site_strict_symbol");
+var FLAG_harmony_tostring;
 var Float32x4ToString;
 var formattedStackTraceSymbol =
     utils.ImportNow("formatted_stack_trace_symbol");
@@ -41,6 +42,7 @@ var StringCharAt;
 var StringIndexOf;
 var StringSubstring;
 var SymbolToString;
+var toStringTagSymbol = utils.ImportNow("to_string_tag_symbol");
 var Uint16x8ToString;
 var Uint32x4ToString;
 var Uint8x16ToString;
@@ -66,6 +68,10 @@ utils.Import(function(from) {
   Uint8x16ToString = from.Uint8x16ToString;
 });
 
+utils.ImportFromExperimental(function(from) {
+  FLAG_harmony_tostring = from.FLAG_harmony_tostring;
+});
+
 // -------------------------------------------------------------------
 
 var GlobalError;
@@ -80,11 +86,35 @@ var GlobalEvalError;
 function NoSideEffectsObjectToString() {
   if (IS_UNDEFINED(this)) return "[object Undefined]";
   if (IS_NULL(this)) return "[object Null]";
-  return "[object " + %_ClassOf(TO_OBJECT(this)) + "]";
+  var O = TO_OBJECT(this);
+  var builtinTag = %_ClassOf(O);
+  var tag;
+  if (FLAG_harmony_tostring) {
+    tag = %GetDataProperty(O, toStringTagSymbol);
+    if (!IS_STRING(tag)) {
+      tag = builtinTag;
+    }
+  } else {
+    tag = builtinTag;
+  }
+  return `[object ${tag}]`;
 }
 
+function IsErrorObject(obj) {
+  return HAS_PRIVATE(obj, stackTraceSymbol);
+}
 
-function NoSideEffectToString(obj) {
+function NoSideEffectsErrorToString() {
+  var name = %GetDataProperty(this, "name");
+  var message = %GetDataProperty(this, "message");
+  name = IS_UNDEFINED(name) ? "Error" : NoSideEffectsToString(name);
+  message = IS_UNDEFINED(message) ? "" : NoSideEffectsToString(message);
+  if (name == "") return message;
+  if (message == "") return name;
+  return `${name}: ${message}`;
+}
+
+function NoSideEffectsToString(obj) {
   if (IS_STRING(obj)) return obj;
   if (IS_NUMBER(obj)) return %_NumberToString(obj);
   if (IS_BOOLEAN(obj)) return obj ? 'true' : 'false';
@@ -113,69 +143,26 @@ function NoSideEffectToString(obj) {
       case 'bool8x16':  return %_Call(Bool8x16ToString, obj);
     }
   }
-  if (IS_OBJECT(obj)
-      && %GetDataProperty(obj, "toString") === ObjectToString) {
-    var constructor = %GetDataProperty(obj, "constructor");
-    if (typeof constructor == "function") {
-      var constructorName = constructor.name;
-      if (IS_STRING(constructorName) && constructorName !== "") {
-        return "#<" + constructorName + ">";
+
+  if (IS_SPEC_OBJECT(obj)) {
+    // When internally formatting error objects, use a side-effects-free version
+    // of Error.prototype.toString independent of the actually installed
+    // toString method.
+    if (IsErrorObject(obj) ||
+        %GetDataProperty(obj, "toString") === ErrorToString) {
+      return %_Call(NoSideEffectsErrorToString, obj);
+    }
+
+    if (%GetDataProperty(obj, "toString") === ObjectToString) {
+      var constructor = %GetDataProperty(obj, "constructor");
+      if (IS_FUNCTION(constructor)) {
+        var constructor_name = %FunctionGetName(constructor);
+        if (constructor_name != "") return `#<${constructor_name}>`;
       }
     }
-  }
-  if (CanBeSafelyTreatedAsAnErrorObject(obj)) {
-    return %_Call(ErrorToString, obj);
   }
 
   return %_Call(NoSideEffectsObjectToString, obj);
-}
-
-// To determine whether we can safely stringify an object using ErrorToString
-// without the risk of side-effects, we need to check whether the object is
-// either an instance of a native error type (via '%_ClassOf'), or has Error
-// in its prototype chain and hasn't overwritten 'toString' with something
-// strange and unusual.
-function CanBeSafelyTreatedAsAnErrorObject(obj) {
-  switch (%_ClassOf(obj)) {
-    case 'Error':
-    case 'EvalError':
-    case 'RangeError':
-    case 'ReferenceError':
-    case 'SyntaxError':
-    case 'TypeError':
-    case 'URIError':
-      return true;
-  }
-
-  var objToString = %GetDataProperty(obj, "toString");
-  return obj instanceof GlobalError && objToString === ErrorToString;
-}
-
-
-// When formatting internally created error messages, do not
-// invoke overwritten error toString methods but explicitly use
-// the error to string method. This is to avoid leaking error
-// objects between script tags in a browser setting.
-function ToStringCheckErrorObject(obj) {
-  if (CanBeSafelyTreatedAsAnErrorObject(obj)) {
-    return %_Call(ErrorToString, obj);
-  } else {
-    return TO_STRING(obj);
-  }
-}
-
-
-function ToDetailString(obj) {
-  if (obj != null && IS_OBJECT(obj) && obj.toString === ObjectToString) {
-    var constructor = obj.constructor;
-    if (typeof constructor == "function") {
-      var constructorName = constructor.name;
-      if (IS_STRING(constructorName) && constructorName !== "") {
-        return "#<" + constructorName + ">";
-      }
-    }
-  }
-  return ToStringCheckErrorObject(obj);
 }
 
 
@@ -200,9 +187,9 @@ function MakeGenericError(constructor, type, arg0, arg1, arg2) {
 
 // Helper functions; called from the runtime system.
 function FormatMessage(type, arg0, arg1, arg2) {
-  var arg0 = NoSideEffectToString(arg0);
-  var arg1 = NoSideEffectToString(arg1);
-  var arg2 = NoSideEffectToString(arg2);
+  var arg0 = NoSideEffectsToString(arg0);
+  var arg1 = NoSideEffectsToString(arg1);
+  var arg2 = NoSideEffectsToString(arg2);
   try {
     return %FormatMessageString(type, arg0, arg1, arg2);
   } catch (e) {
@@ -579,10 +566,18 @@ function GetStackTraceLine(recv, fun, pos, isGlobal) {
 // Error implementation
 
 function CallSite(receiver, fun, pos, strict_mode) {
+  if (!IS_FUNCTION(fun)) {
+    throw MakeTypeError(kCallSiteExpectsFunction, typeof fun);
+  }
+
+  if (IS_UNDEFINED(new.target)) {
+    return new CallSite(receiver, fun, pos, strict_mode);
+  }
+
   SET_PRIVATE(this, callSiteReceiverSymbol, receiver);
   SET_PRIVATE(this, callSiteFunctionSymbol, fun);
-  SET_PRIVATE(this, callSitePositionSymbol, pos);
-  SET_PRIVATE(this, callSiteStrictSymbol, strict_mode);
+  SET_PRIVATE(this, callSitePositionSymbol, TO_INT32(pos));
+  SET_PRIVATE(this, callSiteStrictSymbol, TO_BOOLEAN(strict_mode));
 }
 
 function CallSiteGetThis() {
@@ -849,20 +844,13 @@ function FormatStackTrace(obj, raw_stack) {
 
 function GetTypeName(receiver, requireConstructor) {
   if (IS_NULL_OR_UNDEFINED(receiver)) return null;
-  if (%_IsJSProxy(receiver)) {
-    return "Proxy";
-  };
-  var constructor = receiver.constructor;
-  if (!constructor) {
-    return requireConstructor ? null :
-        %_Call(NoSideEffectsObjectToString, receiver);
+  if (%_IsJSProxy(receiver)) return "Proxy";
+
+  var constructor = %GetDataProperty(TO_OBJECT(receiver), "constructor");
+  if (!IS_FUNCTION(constructor)) {
+    return requireConstructor ? null : %_Call(NoSideEffectsToString, receiver);
   }
-  var constructorName = constructor.name;
-  if (!constructorName) {
-    return requireConstructor ? null :
-        %_Call(NoSideEffectsObjectToString, receiver);
-  }
-  return constructorName;
+  return %FunctionGetName(constructor);
 }
 
 
@@ -896,7 +884,7 @@ var StackTraceGetter = function() {
 // If the receiver equals the holder, set the formatted stack trace that the
 // getter returns.
 var StackTraceSetter = function(v) {
-  if (HAS_PRIVATE(this, stackTraceSymbol)) {
+  if (IsErrorObject(this)) {
     SET_PRIVATE(this, stackTraceSymbol, UNDEFINED);
     SET_PRIVATE(this, formattedStackTraceSymbol, v);
   }
@@ -908,59 +896,45 @@ var StackTraceSetter = function(v) {
 var captureStackTrace = function() {};
 
 
-// Define special error type constructors.
-function DefineError(global, f) {
-  // Store the error function in both the global object
-  // and the runtime object. The function is fetched
-  // from the runtime object when throwing errors from
-  // within the runtime system to avoid strange side
-  // effects when overwriting the error functions from
-  // user code.
-  var name = f.name;
-  %AddNamedProperty(global, name, f, DONT_ENUM);
-  // Configure the error function.
-  if (name == 'Error') {
-    // The prototype of the Error object must itself be an error.
-    // However, it can't be an instance of the Error object because
-    // it hasn't been properly configured yet.  Instead we create a
-    // special not-a-true-error-but-close-enough object.
-    var ErrorPrototype = function() {};
-    %FunctionSetPrototype(ErrorPrototype, GlobalObject.prototype);
-    %FunctionSetInstanceClassName(ErrorPrototype, 'Error');
-    %FunctionSetPrototype(f, new ErrorPrototype());
-  } else {
-    %FunctionSetPrototype(f, new GlobalError());
-    %InternalSetPrototype(f, GlobalError);
+// Set up special error type constructors.
+function SetUpError(error_function) {
+  %FunctionSetInstanceClassName(error_function, 'Error');
+  var name = error_function.name;
+  var prototype = new GlobalObject();
+  if (name !== 'Error') {
+    %InternalSetPrototype(error_function, GlobalError);
+    %InternalSetPrototype(prototype, GlobalError.prototype);
   }
-  %FunctionSetInstanceClassName(f, 'Error');
-  %AddNamedProperty(f.prototype, 'constructor', f, DONT_ENUM);
-  %AddNamedProperty(f.prototype, 'name', name, DONT_ENUM);
-  %SetCode(f, function(m) {
-    if (!IS_UNDEFINED(new.target)) {
-      try { captureStackTrace(this, f); } catch (e) { }
-      // Define all the expected properties directly on the error
-      // object. This avoids going through getters and setters defined
-      // on prototype objects.
-      if (!IS_UNDEFINED(m)) {
-        %AddNamedProperty(this, 'message', TO_STRING(m), DONT_ENUM);
-      }
-    } else {
-      return new f(m);
+  %FunctionSetPrototype(error_function, prototype);
+
+  %AddNamedProperty(error_function.prototype, 'name', name, DONT_ENUM);
+  %AddNamedProperty(error_function.prototype, 'message', '', DONT_ENUM);
+  %AddNamedProperty(
+      error_function.prototype, 'constructor', error_function, DONT_ENUM);
+
+  %SetCode(error_function, function(m) {
+    if (IS_UNDEFINED(new.target)) return new error_function(m);
+
+    try { captureStackTrace(this, error_function); } catch (e) { }
+    // Define all the expected properties directly on the error
+    // object. This avoids going through getters and setters defined
+    // on prototype objects.
+    if (!IS_UNDEFINED(m)) {
+      %AddNamedProperty(this, 'message', TO_STRING(m), DONT_ENUM);
     }
   });
-  %SetNativeFlag(f);
-  return f;
+
+  %SetNativeFlag(error_function);
+  return error_function;
 };
 
-GlobalError = DefineError(global, function Error() { });
-GlobalEvalError = DefineError(global, function EvalError() { });
-GlobalRangeError = DefineError(global, function RangeError() { });
-GlobalReferenceError = DefineError(global, function ReferenceError() { });
-GlobalSyntaxError = DefineError(global, function SyntaxError() { });
-GlobalTypeError = DefineError(global, function TypeError() { });
-GlobalURIError = DefineError(global, function URIError() { });
-
-%AddNamedProperty(GlobalError.prototype, 'message', '', DONT_ENUM);
+GlobalError = SetUpError(global.Error);
+GlobalEvalError = SetUpError(global.EvalError);
+GlobalRangeError = SetUpError(global.RangeError);
+GlobalReferenceError = SetUpError(global.ReferenceError);
+GlobalSyntaxError = SetUpError(global.SyntaxError);
+GlobalTypeError = SetUpError(global.TypeError);
+GlobalURIError = SetUpError(global.URIError);
 
 utils.InstallFunctions(GlobalError.prototype, DONT_ENUM,
                        ['toString', ErrorToString]);
@@ -970,7 +944,15 @@ function ErrorToString() {
     throw MakeTypeError(kCalledOnNonObject, "Error.prototype.toString");
   }
 
-  return %ErrorToStringRT(this);
+  var name = this.name;
+  name = IS_UNDEFINED(name) ? "Error" : TO_STRING(name);
+
+  var message = this.message;
+  message = IS_UNDEFINED(message) ? "" : TO_STRING(message);
+
+  if (name == "") return message;
+  if (message == "") return name;
+  return `${name}: ${message}`
 }
 
 function MakeError(type, arg0, arg1, arg2) {
@@ -1011,8 +993,6 @@ captureStackTrace = function captureStackTrace(obj, cons_opt) {
 GlobalError.captureStackTrace = captureStackTrace;
 
 %InstallToContext([
-  "error_function", GlobalError,
-  "eval_error_function", GlobalEvalError,
   "get_stack_trace_line_fun", GetStackTraceLine,
   "make_error_function", MakeGenericError,
   "make_range_error", MakeRangeError,
@@ -1020,14 +1000,8 @@ GlobalError.captureStackTrace = captureStackTrace;
   "message_get_column_number", GetColumnNumber,
   "message_get_line_number", GetLineNumber,
   "message_get_source_line", GetSourceLine,
-  "no_side_effect_to_string_fun", NoSideEffectToString,
-  "range_error_function", GlobalRangeError,
-  "reference_error_function", GlobalReferenceError,
+  "no_side_effects_to_string_fun", NoSideEffectsToString,
   "stack_overflow_boilerplate", StackOverflowBoilerplate,
-  "syntax_error_function", GlobalSyntaxError,
-  "to_detail_string_fun", ToDetailString,
-  "type_error_function", GlobalTypeError,
-  "uri_error_function", GlobalURIError,
 ]);
 
 utils.Export(function(to) {

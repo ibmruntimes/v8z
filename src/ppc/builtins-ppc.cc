@@ -419,12 +419,12 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
           MemOperand bit_field3 = FieldMemOperand(r5, Map::kBitField3Offset);
           // Check if slack tracking is enabled.
           __ lwz(r3, bit_field3);
-          __ DecodeField<Map::Counter>(r11, r3);
+          __ DecodeField<Map::ConstructionCounter>(r11, r3);
           // r11: slack tracking counter
           __ cmpi(r11, Operand(Map::kSlackTrackingCounterEnd));
           __ blt(&no_inobject_slack_tracking);
           // Decrease generous allocation count.
-          __ Add(r3, r3, -(1 << Map::Counter::kShift), r0);
+          __ Add(r3, r3, -(1 << Map::ConstructionCounter::kShift), r0);
           __ stw(r3, bit_field3);
 
           // Allocate object with a slack.
@@ -1698,8 +1698,14 @@ void Builtins::Generate_Call(MacroAssembler* masm, ConvertReceiverMode mode) {
   __ cmpi(r8, Operand(JS_PROXY_TYPE));
   __ bne(&non_function);
 
-  // 1. Call to proxy.
-  // TODO(neis): Implement [[Call]] on proxies.
+  // 1. Runtime fallback for Proxy [[Call]].
+  __ Push(r4);
+  // Increase the arguments size to include the pushed function and the
+  // existing receiver on the stack.
+  __ addi(r3, r3, Operand(2));
+  // Tail-call to the runtime.
+  __ JumpToExternalReference(
+      ExternalReference(Runtime::kJSProxyCall, masm->isolate()));
 
   // 2. Call to something else, which might have a [[Call]] internal method (if
   // not we raise an exception).
@@ -1758,8 +1764,13 @@ void Builtins::Generate_ConstructProxy(MacroAssembler* masm) {
   //          the JSFunction on which new was invoked initially)
   // -----------------------------------
 
-  // TODO(neis): This doesn't match the ES6 spec for [[Construct]] on proxies.
-  __ Jump(masm->isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
+  // Call into the Runtime for Proxy [[Construct]].
+  __ Push(r4, r6);
+  // Include the pushed new_target, constructor and the receiver.
+  __ addi(r3, r3, Operand(3));
+  // Tail-call to the runtime.
+  __ JumpToExternalReference(
+      ExternalReference(Runtime::kJSProxyConstruct, masm->isolate()));
 }
 
 
@@ -1780,14 +1791,16 @@ void Builtins::Generate_Construct(MacroAssembler* masm) {
   __ CompareObjectType(r4, r7, r8, JS_FUNCTION_TYPE);
   __ Jump(masm->isolate()->builtins()->ConstructFunction(),
           RelocInfo::CODE_TARGET, eq);
-  __ cmpi(r8, Operand(JS_PROXY_TYPE));
-  __ Jump(masm->isolate()->builtins()->ConstructProxy(), RelocInfo::CODE_TARGET,
-          eq);
 
   // Check if target has a [[Construct]] internal method.
   __ lbz(r5, FieldMemOperand(r7, Map::kBitFieldOffset));
   __ TestBit(r5, Map::kIsConstructor, r0);
   __ beq(&non_constructor, cr0);
+
+  // Only dispatch to proxies after checking whether they are constructors.
+  __ cmpi(r8, Operand(JS_PROXY_TYPE));
+  __ Jump(masm->isolate()->builtins()->ConstructProxy(), RelocInfo::CODE_TARGET,
+          eq);
 
   // Called Construct on an exotic Object with a [[Construct]] internal method.
   {

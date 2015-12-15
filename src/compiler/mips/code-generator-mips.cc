@@ -299,19 +299,6 @@ Condition FlagsConditionToConditionTst(FlagsCondition condition) {
 }
 
 
-Condition FlagsConditionToConditionOvf(FlagsCondition condition) {
-  switch (condition) {
-    case kOverflow:
-      return lt;
-    case kNotOverflow:
-      return ge;
-    default:
-      break;
-  }
-  UNREACHABLE();
-  return kNoCondition;
-}
-
 FPUCondition FlagsConditionToConditionCmpFPU(bool& predicate,
                                              FlagsCondition condition) {
   switch (condition) {
@@ -590,7 +577,9 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     case kArchDeoptimize: {
       int deopt_state_id =
           BuildTranslation(instr, -1, 0, OutputFrameStateCombine::Ignore());
-      AssembleDeoptimizerCall(deopt_state_id, Deoptimizer::EAGER);
+      Deoptimizer::BailoutType bailout_type =
+          Deoptimizer::BailoutType(MiscField::decode(instr->opcode()));
+      AssembleDeoptimizerCall(deopt_state_id, bailout_type);
       break;
     }
     case kArchRet:
@@ -627,15 +616,13 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ Addu(i.OutputRegister(), i.InputRegister(0), i.InputOperand(1));
       break;
     case kMipsAddOvf:
-      __ AdduAndCheckForOverflow(i.OutputRegister(), i.InputRegister(0),
-                                 i.InputOperand(1), kCompareReg, kScratchReg);
+      // Pseudo-instruction used for overflow/branch. No opcode emitted here.
       break;
     case kMipsSub:
       __ Subu(i.OutputRegister(), i.InputRegister(0), i.InputOperand(1));
       break;
     case kMipsSubOvf:
-      __ SubuAndCheckForOverflow(i.OutputRegister(), i.InputRegister(0),
-                                 i.InputOperand(1), kCompareReg, kScratchReg);
+      // Pseudo-instruction used for overflow/branch. No opcode emitted here.
       break;
     case kMipsMul:
       __ Mul(i.OutputRegister(), i.InputRegister(0), i.InputOperand(1));
@@ -648,9 +635,19 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     case kMipsDiv:
       __ Div(i.OutputRegister(), i.InputRegister(0), i.InputOperand(1));
+      if (IsMipsArchVariant(kMips32r6)) {
+        __ selnez(i.OutputRegister(), i.InputRegister(1), i.InputRegister(0));
+      } else {
+        __ Movz(i.OutputRegister(), i.InputRegister(1), i.InputRegister(1));
+      }
       break;
     case kMipsDivU:
       __ Divu(i.OutputRegister(), i.InputRegister(0), i.InputOperand(1));
+      if (IsMipsArchVariant(kMips32r6)) {
+        __ selnez(i.OutputRegister(), i.InputRegister(1), i.InputRegister(0));
+      } else {
+        __ Movz(i.OutputRegister(), i.InputRegister(1), i.InputRegister(1));
+      }
       break;
     case kMipsMod:
       __ Mod(i.OutputRegister(), i.InputRegister(0), i.InputOperand(1));
@@ -939,6 +936,24 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ Cvt_d_uw(i.OutputDoubleRegister(), i.InputRegister(0), scratch);
       break;
     }
+    case kMipsFloorWD: {
+      FPURegister scratch = kScratchDoubleReg;
+      __ floor_w_d(scratch, i.InputDoubleRegister(0));
+      __ mfc1(i.OutputRegister(), scratch);
+      break;
+    }
+    case kMipsCeilWD: {
+      FPURegister scratch = kScratchDoubleReg;
+      __ ceil_w_d(scratch, i.InputDoubleRegister(0));
+      __ mfc1(i.OutputRegister(), scratch);
+      break;
+    }
+    case kMipsRoundWD: {
+      FPURegister scratch = kScratchDoubleReg;
+      __ round_w_d(scratch, i.InputDoubleRegister(0));
+      __ mfc1(i.OutputRegister(), scratch);
+      break;
+    }
     case kMipsTruncWD: {
       FPURegister scratch = kScratchDoubleReg;
       // Other arches use round to zero here, so we follow.
@@ -1122,11 +1137,34 @@ void CodeGenerator::AssembleArchBranch(Instruction* instr, BranchInfo* branch) {
     cc = FlagsConditionToConditionTst(branch->condition);
     __ And(at, i.InputRegister(0), i.InputOperand(1));
     __ Branch(tlabel, cc, at, Operand(zero_reg));
-  } else if (instr->arch_opcode() == kMipsAddOvf ||
-             instr->arch_opcode() == kMipsSubOvf) {
-    // kMipsAddOvf, SubOvf emit negative result to 'kCompareReg' on overflow.
-    cc = FlagsConditionToConditionOvf(branch->condition);
-    __ Branch(tlabel, cc, kCompareReg, Operand(zero_reg));
+  } else if (instr->arch_opcode() == kMipsAddOvf) {
+    switch (branch->condition) {
+      case kOverflow:
+        __ AddBranchOvf(i.OutputRegister(), i.InputRegister(0),
+                        i.InputOperand(1), tlabel, flabel);
+        break;
+      case kNotOverflow:
+        __ AddBranchOvf(i.OutputRegister(), i.InputRegister(0),
+                        i.InputOperand(1), flabel, tlabel);
+        break;
+      default:
+        UNSUPPORTED_COND(kMipsAddOvf, branch->condition);
+        break;
+    }
+  } else if (instr->arch_opcode() == kMipsSubOvf) {
+    switch (branch->condition) {
+      case kOverflow:
+        __ SubBranchOvf(i.OutputRegister(), i.InputRegister(0),
+                        i.InputOperand(1), tlabel, flabel);
+        break;
+      case kNotOverflow:
+        __ SubBranchOvf(i.OutputRegister(), i.InputRegister(0),
+                        i.InputOperand(1), flabel, tlabel);
+        break;
+      default:
+        UNSUPPORTED_COND(kMipsAddOvf, branch->condition);
+        break;
+    }
   } else if (instr->arch_opcode() == kMipsCmp) {
     cc = FlagsConditionToConditionCmp(branch->condition);
     __ Branch(tlabel, cc, i.InputRegister(0), i.InputOperand(1));
@@ -1193,13 +1231,26 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
     return;
   } else if (instr->arch_opcode() == kMipsAddOvf ||
              instr->arch_opcode() == kMipsSubOvf) {
-    // kMipsAddOvf, SubOvf emits negative result to 'kCompareReg' on overflow.
-    cc = FlagsConditionToConditionOvf(condition);
-    // Return 1 on overflow.
-    __ Slt(result, kCompareReg, Operand(zero_reg));
-    if (cc == ge)  // Invert result on not overflow.
-      __ xori(result, result, 1);
-    return;
+    Label flabel, tlabel;
+    switch (instr->arch_opcode()) {
+      case kMipsAddOvf:
+        __ AddBranchNoOvf(i.OutputRegister(), i.InputRegister(0),
+                          i.InputOperand(1), &flabel);
+
+        break;
+      case kMipsSubOvf:
+        __ SubBranchNoOvf(i.OutputRegister(), i.InputRegister(0),
+                          i.InputOperand(1), &flabel);
+        break;
+      default:
+        UNREACHABLE();
+        break;
+    }
+    __ li(result, 1);
+    __ Branch(&tlabel);
+    __ bind(&flabel);
+    __ li(result, 0);
+    __ bind(&tlabel);
   } else if (instr->arch_opcode() == kMipsCmp) {
     cc = FlagsConditionToConditionCmp(condition);
     switch (cc) {

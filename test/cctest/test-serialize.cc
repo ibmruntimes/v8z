@@ -25,9 +25,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// TODO(mythria): Remove this define after this flag is turned on globally
-#define V8_IMMINENT_DEPRECATION_WARNINGS
-
 #include <signal.h>
 
 #include <sys/stat.h>
@@ -46,6 +43,7 @@
 #include "src/snapshot/serialize.h"
 #include "src/snapshot/snapshot.h"
 #include "test/cctest/cctest.h"
+#include "test/cctest/heap/utils-inl.h"
 
 using namespace v8::internal;
 
@@ -294,7 +292,7 @@ UNINITIALIZED_TEST(PartialSerialization) {
       HandleScope scope(isolate);
       env.Reset(v8_isolate, v8::Context::New(v8_isolate));
     }
-    DCHECK(!env.IsEmpty());
+    CHECK(!env.IsEmpty());
     {
       v8::HandleScope handle_scope(v8_isolate);
       v8::Local<v8::Context>::New(v8_isolate, env)->Enter();
@@ -313,7 +311,7 @@ UNINITIALIZED_TEST(PartialSerialization) {
     {
       v8::HandleScope handle_scope(v8_isolate);
       v8::Local<v8::String> foo = v8_str("foo");
-      DCHECK(!foo.IsEmpty());
+      CHECK(!foo.IsEmpty());
       raw_foo = *(v8::Utils::OpenHandle(*foo));
     }
 
@@ -413,7 +411,7 @@ UNINITIALIZED_TEST(ContextSerialization) {
       HandleScope scope(isolate);
       env.Reset(v8_isolate, v8::Context::New(v8_isolate));
     }
-    DCHECK(!env.IsEmpty());
+    CHECK(!env.IsEmpty());
     {
       v8::HandleScope handle_scope(v8_isolate);
       v8::Local<v8::Context>::New(v8_isolate, env)->Enter();
@@ -524,7 +522,7 @@ UNINITIALIZED_TEST(CustomContextSerialization) {
       HandleScope scope(isolate);
       env.Reset(v8_isolate, v8::Context::New(v8_isolate));
     }
-    DCHECK(!env.IsEmpty());
+    CHECK(!env.IsEmpty());
     {
       v8::HandleScope handle_scope(v8_isolate);
       v8::Local<v8::Context>::New(v8_isolate, env)->Enter();
@@ -1513,7 +1511,7 @@ TEST(SerializeToplevelIsolates) {
               ->Equals(isolate2->GetCurrentContext(), v8_str("abcdef"))
               .FromJust());
   }
-  DCHECK(toplevel_test_code_event_found);
+  CHECK(toplevel_test_code_event_found);
   isolate2->Dispose();
 }
 
