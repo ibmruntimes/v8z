@@ -421,7 +421,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
           MemOperand bit_field3 = FieldMemOperand(r4, Map::kBitField3Offset);
           // Check if slack tracking is enabled.
           __ LoadlW(r2, bit_field3);
-          __ DecodeField<Map::Counter>(r1, r2);
+          __ DecodeField<Map::Counter>(ip, r2);
           // ip: slack tracking counter
           __ CmpP(ip, Operand(Map::kSlackTrackingCounterEnd));
           __ blt(&no_inobject_slack_tracking);
