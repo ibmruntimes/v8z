@@ -810,6 +810,7 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
     Label loop, no_args;
     __ LoadRoot(r5, Heap::kUndefinedValueRootIndex);
     __ ShiftRightP(r4, r4, Operand(kPointerSizeLog2));
+    __ LoadAndTestP(r4, r4);
     __ beq(&no_args);
     // __ mtctr(r4);
     __ LoadRR(r1, r4);
