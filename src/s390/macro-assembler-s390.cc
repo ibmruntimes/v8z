@@ -3322,10 +3322,10 @@ void MacroAssembler::CheckPageFlag(
   // Should be okay to remove rc
 
   if (cc == ne) {
-    bne(condition_met, Label::kNear);
+    bne(condition_met); //, Label::kNear);
   }
   if (cc == eq) {
-    beq(condition_met, Label::kNear);
+    beq(condition_met); //, Label::kNear);
   }
 }
 
