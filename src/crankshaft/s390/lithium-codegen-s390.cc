@@ -4318,10 +4318,13 @@ void LCodeGen::DoStoreKeyedExternalArray(LStoreKeyed* instr) {
         base_offset += constant_key << element_size_shift;
         if (!is_int20(base_offset)) {
           __ mov(address, Operand(base_offset));
-          base_offset = 0;
+          __ AddP(address, external_pointer);
         } else {
-          address = external_pointer;
+          __ AddP(address, external_pointer, Operand(base_offset));
         }
+        base_offset = 0;
+      } else {
+        address = external_pointer;
       }
     } else {
       __ IndexToArrayOffset(address, key, element_size_shift, key_is_smi);
