@@ -5065,8 +5065,8 @@ void ArrayConstructorStub::Generate(MacroAssembler* masm) {
   switch (argument_count()) {
     case ANY:
     case MORE_THAN_ONE:
-      __ ShiftLeftP(r0, r2, Operand(kPointerSizeLog2));
-      __ StoreP(r3, MemOperand(sp, r0));
+      __ ShiftLeftP(r1, r2, Operand(kPointerSizeLog2));
+      __ StoreP(r3, MemOperand(sp, r1));
       __ AddP(r2, r2, Operand(3));
       break;
     case NONE:
