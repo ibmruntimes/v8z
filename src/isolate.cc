@@ -135,6 +135,22 @@ Isolate::PerIsolateThreadData*
 }
 
 
+void Isolate::DiscardPerThreadDataForThisThread() {
+  int thread_id_int = base::Thread::GetThreadLocalInt(Isolate::thread_id_key_);
+  if (thread_id_int) {
+    ThreadId thread_id = ThreadId(thread_id_int);
+    DCHECK(!thread_manager_->mutex_owner_.Equals(thread_id));
+    base::LockGuard<base::Mutex> lock_guard(thread_data_table_mutex_.Pointer());
+    PerIsolateThreadData* per_thread =
+        thread_data_table_->Lookup(this, thread_id);
+    if (per_thread) {
+      DCHECK(!per_thread->thread_state_);
+      thread_data_table_->Remove(per_thread);
+    }
+  }
+}
+
+
 Isolate::PerIsolateThreadData* Isolate::FindPerThreadDataForThisThread() {
   ThreadId thread_id = ThreadId::Current();
   return FindPerThreadDataForThread(thread_id);
@@ -779,10 +795,10 @@ bool Isolate::MayAccess(Handle<Context> accessing_context,
   // Check for compatibility between the security tokens in the
   // current lexical context and the accessed object.
 
+  // During bootstrapping, callback functions are not enabled yet.
+  if (bootstrapper()->IsActive()) return true;
   {
     DisallowHeapAllocation no_gc;
-    // During bootstrapping, callback functions are not enabled yet.
-    if (bootstrapper()->IsActive()) return true;
 
     if (receiver->IsJSGlobalProxy()) {
       Object* receiver_context =
@@ -2385,18 +2401,15 @@ CodeTracer* Isolate::GetCodeTracer() {
 
 
 Map* Isolate::get_initial_js_array_map(ElementsKind kind, Strength strength) {
-  Context* native_context = context()->native_context();
-  Object* maybe_map_array = is_strong(strength)
-                                ? native_context->js_array_strong_maps()
-                                : native_context->js_array_maps();
-  if (!maybe_map_array->IsUndefined()) {
-    Object* maybe_transitioned_map =
-        FixedArray::cast(maybe_map_array)->get(kind);
-    if (!maybe_transitioned_map->IsUndefined()) {
-      return Map::cast(maybe_transitioned_map);
+  if (IsFastElementsKind(kind)) {
+    DisallowHeapAllocation no_gc;
+    Object* const initial_js_array_map = context()->native_context()->get(
+        Context::ArrayMapIndex(kind, strength));
+    if (!initial_js_array_map->IsUndefined()) {
+      return Map::cast(initial_js_array_map);
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 

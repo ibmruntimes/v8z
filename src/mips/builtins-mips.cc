@@ -771,6 +771,9 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   __ Addu(fp, sp, Operand(StandardFrameConstants::kFixedFrameSizeFromFp));
   __ Push(a3);
 
+  // Push zero for bytecode array offset.
+  __ Push(zero_reg);
+
   // Get the bytecode array from the function object and load the pointer to the
   // first entry into kInterpreterBytecodeRegister.
   __ lw(a0, FieldMemOperand(a1, JSFunction::kSharedFunctionInfoOffset));
@@ -835,9 +838,8 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
 
   // Load bytecode offset and dispatch table into registers.
   __ LoadRoot(kInterpreterAccumulatorRegister, Heap::kUndefinedValueRootIndex);
-  __ Subu(kInterpreterRegisterFileRegister, fp,
-          Operand(2 * kPointerSize +
-                  StandardFrameConstants::kFixedFrameSizeFromFp));
+  __ Addu(kInterpreterRegisterFileRegister, fp,
+          Operand(InterpreterFrameConstants::kRegisterFilePointerFromFp));
   __ li(kInterpreterBytecodeOffsetRegister,
         Operand(BytecodeArray::kHeaderSize - kHeapObjectTag));
   __ LoadRoot(kInterpreterDispatchTableRegister,
@@ -1762,8 +1764,7 @@ void Builtins::Generate_ConstructProxy(MacroAssembler* masm) {
   // -----------------------------------
 
   // Call into the Runtime for Proxy [[Construct]].
-  __ Push(a1);
-  __ Push(a3);
+  __ Push(a1, a3);
   // Include the pushed new_target, constructor and the receiver.
   __ Addu(a0, a0, Operand(3));
   // Tail-call to the runtime.
@@ -1792,9 +1793,9 @@ void Builtins::Generate_Construct(MacroAssembler* masm) {
           RelocInfo::CODE_TARGET, eq, t2, Operand(JS_FUNCTION_TYPE));
 
   // Check if target has a [[Construct]] internal method.
-  __ lbu(t2, FieldMemOperand(t1, Map::kBitFieldOffset));
-  __ And(t2, t2, Operand(1 << Map::kIsCallable));
-  __ Branch(&non_constructor, eq, t2, Operand(zero_reg));
+  __ lbu(t3, FieldMemOperand(t1, Map::kBitFieldOffset));
+  __ And(t3, t3, Operand(1 << Map::kIsCallable));
+  __ Branch(&non_constructor, eq, t3, Operand(zero_reg));
 
   // Only dispatch to proxies after checking whether they are constructors.
   __ Jump(masm->isolate()->builtins()->ConstructProxy(), RelocInfo::CODE_TARGET,

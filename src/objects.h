@@ -1,4 +1,4 @@
-// Copyright 2012 the V8 project authors. All rights reserved.
+// Copyright 2015 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -1361,6 +1361,10 @@ class Object {
 
   inline void VerifyApiCallResultType();
 
+  // ES6 19.1.3.6 Object.prototype.toString
+  MUST_USE_RESULT static MaybeHandle<String> ObjectProtoToString(
+      Isolate* isolate, Handle<Object> object);
+
   // Prints this object without details.
   void ShortPrint(FILE* out = stdout);
 
@@ -1849,7 +1853,8 @@ class JSReceiver: public HeapObject {
   // ES6 9.1.6.2
   MUST_USE_RESULT static Maybe<bool> IsCompatiblePropertyDescriptor(
       Isolate* isolate, bool extensible, PropertyDescriptor* desc,
-      PropertyDescriptor* current, Handle<Name> property_name);
+      PropertyDescriptor* current, Handle<Name> property_name,
+      ShouldThrow should_throw);
   // ES6 9.1.6.3
   // |it| can be NULL in cases where the ES spec passes |undefined| as the
   // receiver. Exactly one of |it| and |property_name| must be provided.
@@ -1887,6 +1892,10 @@ class JSReceiver: public HeapObject {
 
   // Returns the class name ([[Class]] property in the specification).
   String* class_name();
+
+  // Returns the builtin string tag used in Object.prototype.toString.
+  MUST_USE_RESULT static MaybeHandle<String> BuiltinStringTag(
+      Handle<JSReceiver> object);
 
   // Returns the constructor name (the name (possibly, inferred name) of the
   // function that was used to instantiate the object).
@@ -5819,6 +5828,11 @@ class Map: public HeapObject {
                                         ElementsKind kind,
                                         TransitionFlag flag);
 
+  static Handle<Map> AsLanguageMode(Handle<Map> initial_map,
+                                    LanguageMode language_mode,
+                                    FunctionKind kind);
+
+
   static Handle<Map> CopyForObserved(Handle<Map> map);
 
   static Handle<Map> CopyForPreventExtensions(Handle<Map> map,
@@ -6063,9 +6077,9 @@ class Map: public HeapObject {
   static void TraceAllTransitions(Map* map);
 #endif
 
-  static inline Handle<Map> CopyInstallDescriptorsForTesting(
-      Handle<Map> map, int new_descriptor, Handle<DescriptorArray> descriptors,
-      Handle<LayoutDescriptor> layout_descriptor);
+  static inline Handle<Map> AddMissingTransitionsForTesting(
+      Handle<Map> split_map, Handle<DescriptorArray> descriptors,
+      Handle<LayoutDescriptor> full_layout_descriptor);
 
  private:
   static void ConnectTransition(Handle<Map> parent, Handle<Map> child,
@@ -6076,9 +6090,13 @@ class Map: public HeapObject {
   static Handle<Map> ShareDescriptor(Handle<Map> map,
                                      Handle<DescriptorArray> descriptors,
                                      Descriptor* descriptor);
-  static Handle<Map> CopyInstallDescriptors(
-      Handle<Map> map, int new_descriptor, Handle<DescriptorArray> descriptors,
-      Handle<LayoutDescriptor> layout_descriptor);
+  static Handle<Map> AddMissingTransitions(
+      Handle<Map> map, Handle<DescriptorArray> descriptors,
+      Handle<LayoutDescriptor> full_layout_descriptor);
+  static void InstallDescriptors(
+      Handle<Map> parent_map, Handle<Map> child_map, int new_descriptor,
+      Handle<DescriptorArray> descriptors,
+      Handle<LayoutDescriptor> full_layout_descriptor);
   static Handle<Map> CopyAddDescriptor(Handle<Map> map,
                                        Descriptor* descriptor,
                                        TransitionFlag flag);
@@ -6106,10 +6124,10 @@ class Map: public HeapObject {
   inline void NotifyLeafMapLayoutChange();
 
   void DeprecateTransitionTree();
-  bool DeprecateTarget(PropertyKind kind, Name* key,
-                       PropertyAttributes attributes,
-                       DescriptorArray* new_descriptors,
-                       LayoutDescriptor* new_layout_descriptor);
+
+  void ReplaceDescriptors(DescriptorArray* new_descriptors,
+                          LayoutDescriptor* new_layout_descriptor);
+
 
   Map* FindLastMatchMap(int verbatim, int length, DescriptorArray* descriptors);
 
@@ -6511,14 +6529,19 @@ class SharedFunctionInfo: public HeapObject {
                                               Handle<Code> code);
 
   // Add a new entry to the optimized code map for context-dependent code.
-  // |code| is either a code object or an undefined value. In the latter case
-  // the entry just maps |native_context, osr_ast_id| pair to |literals| array.
-  static void AddToOptimizedCodeMap(Handle<SharedFunctionInfo> shared,
-                                    Handle<Context> native_context,
-                                    Handle<HeapObject> code,
-                                    Handle<LiteralsArray> literals,
-                                    BailoutId osr_ast_id);
+  inline static void AddToOptimizedCodeMap(Handle<SharedFunctionInfo> shared,
+                                           Handle<Context> native_context,
+                                           Handle<Code> code,
+                                           Handle<LiteralsArray> literals,
+                                           BailoutId osr_ast_id);
 
+  // We may already have cached the code, but want to store literals in the
+  // cache.
+  inline static void AddLiteralsToOptimizedCodeMap(
+      Handle<SharedFunctionInfo> shared, Handle<Context> native_context,
+      Handle<LiteralsArray> literals);
+
+ public:
   // Set up the link between shared function info and the script. The shared
   // function info is added to the list on the script.
   static void SetScript(Handle<SharedFunctionInfo> shared,
@@ -7124,6 +7147,13 @@ class SharedFunctionInfo: public HeapObject {
   // entry or a start index of the context-dependent entry.
   int SearchOptimizedCodeMapEntry(Context* native_context,
                                   BailoutId osr_ast_id);
+
+  // If code is undefined, then existing code won't be overwritten.
+  static void AddToOptimizedCodeMapInternal(Handle<SharedFunctionInfo> shared,
+                                            Handle<Context> native_context,
+                                            Handle<HeapObject> code,
+                                            Handle<LiteralsArray> literals,
+                                            BailoutId osr_ast_id);
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(SharedFunctionInfo);
 };

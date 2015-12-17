@@ -3051,6 +3051,84 @@ TEST(InterpreterAssignmentInExpressions) {
 }
 
 
+TEST(InterpreterToName) {
+  HandleAndZoneScope handles;
+  i::Isolate* isolate = handles.main_isolate();
+  i::Factory* factory = isolate->factory();
+
+  std::pair<const char*, Handle<Object>> to_name_tests[] = {
+      {"var a = 'val'; var obj = {[a] : 10}; return obj.val;",
+       factory->NewNumberFromInt(10)},
+      {"var a = 20; var obj = {[a] : 10}; return obj['20'];",
+       factory->NewNumberFromInt(10)},
+      {"var a = 20; var obj = {[a] : 10}; return obj[20];",
+       factory->NewNumberFromInt(10)},
+      {"var a = {val:23}; var obj = {[a] : 10}; return obj[a];",
+       factory->NewNumberFromInt(10)},
+      {"var a = {val:23}; var obj = {[a] : 10};\n"
+       "return obj['[object Object]'];",
+       factory->NewNumberFromInt(10)},
+      {"var a = {toString : function() { return 'x'}};\n"
+       "var obj = {[a] : 10};\n"
+       "return obj.x;",
+       factory->NewNumberFromInt(10)},
+      {"var a = {valueOf : function() { return 'x'}};\n"
+       "var obj = {[a] : 10};\n"
+       "return obj.x;",
+       factory->undefined_value()},
+      {"var a = {[Symbol.toPrimitive] : function() { return 'x'}};\n"
+       "var obj = {[a] : 10};\n"
+       "return obj.x;",
+       factory->NewNumberFromInt(10)},
+  };
+
+  for (size_t i = 0; i < arraysize(to_name_tests); i++) {
+    std::string source(
+        InterpreterTester::SourceForBody(to_name_tests[i].first));
+    InterpreterTester tester(handles.main_isolate(), source.c_str());
+    auto callable = tester.GetCallable<>();
+
+    Handle<i::Object> return_value = callable().ToHandleChecked();
+    CHECK(return_value->SameValue(*to_name_tests[i].second));
+  }
+}
+
+
+TEST(InterpreterLookupSlot) {
+  HandleAndZoneScope handles;
+  i::Isolate* isolate = handles.main_isolate();
+  i::Factory* factory = isolate->factory();
+
+  // TODO(mythria): Add more tests when we have support for eval/with.
+  const char* function_prologue = "var f;"
+                                  "var x = 1;"
+                                  "function f1() {"
+                                  "  eval(\"function t() {";
+  const char* function_epilogue = "        }; f = t;\");"
+                                  "}"
+                                  "f1();";
+
+
+  std::pair<const char*, Handle<Object>> lookup_slot[] = {
+      {"return x;", handle(Smi::FromInt(1), isolate)},
+      {"return typeof x;", factory->NewStringFromStaticChars("number")},
+      {"x = 10; return x;", handle(Smi::FromInt(10), isolate)},
+      {"'use strict'; x = 20; return x;", handle(Smi::FromInt(20), isolate)},
+  };
+
+  for (size_t i = 0; i < arraysize(lookup_slot); i++) {
+    std::string script = std::string(function_prologue) +
+                         std::string(lookup_slot[i].first) +
+                         std::string(function_epilogue);
+
+    InterpreterTester tester(handles.main_isolate(), script.c_str(), "t");
+    auto callable = tester.GetCallable<>();
+
+    Handle<i::Object> return_value = callable().ToHandleChecked();
+    CHECK(return_value->SameValue(*lookup_slot[i].second));
+  }
+}
+
 }  // namespace interpreter
 }  // namespace internal
 }  // namespace v8

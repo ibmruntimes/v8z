@@ -183,14 +183,9 @@ RUNTIME_FUNCTION(Runtime_SetPrototype) {
   DCHECK(args.length() == 2);
   CONVERT_ARG_HANDLE_CHECKED(JSReceiver, obj, 0);
   CONVERT_ARG_HANDLE_CHECKED(Object, prototype, 1);
-  Maybe<bool> status =
-      JSReceiver::SetPrototype(obj, prototype, true, Object::THROW_ON_ERROR);
-  if (status.IsNothing()) return isolate->heap()->exception();
-  if (!status.FromJust()) {
-    THROW_NEW_ERROR_RETURN_FAILURE(
-        isolate,
-        NewTypeError(MessageTemplate::kProxySetPrototypeFailed, prototype));
-  }
+  MAYBE_RETURN(
+      JSReceiver::SetPrototype(obj, prototype, true, Object::THROW_ON_ERROR),
+      isolate->heap()->exception());
   return *obj;
 }
 
@@ -676,7 +671,7 @@ static Object* HasOwnPropertyImplementation(Isolate* isolate,
   // look like they are on this object.
   PrototypeIterator iter(isolate, object);
   if (!iter.IsAtEnd() &&
-      Handle<JSObject>::cast(PrototypeIterator::GetCurrent(iter))
+      PrototypeIterator::GetCurrent<HeapObject>(iter)
           ->map()
           ->is_hidden_prototype()) {
     // TODO(verwaest): The recursion is not necessary for keys that are array
@@ -684,8 +679,7 @@ static Object* HasOwnPropertyImplementation(Isolate* isolate,
     // Casting to JSObject is fine because JSProxies are never used as
     // hidden prototypes.
     return HasOwnPropertyImplementation(
-        isolate, Handle<JSObject>::cast(PrototypeIterator::GetCurrent(iter)),
-        key);
+        isolate, PrototypeIterator::GetCurrent<JSObject>(iter), key);
   }
   RETURN_FAILURE_IF_SCHEDULED_EXCEPTION(isolate);
   return isolate->heap()->false_value();
@@ -1089,22 +1083,6 @@ RUNTIME_FUNCTION(Runtime_JSValueGetValue) {
   DCHECK(args.length() == 1);
   CONVERT_ARG_CHECKED(JSValue, obj, 0);
   return JSValue::cast(obj)->value();
-}
-
-
-RUNTIME_FUNCTION(Runtime_HeapObjectGetMap) {
-  SealHandleScope shs(isolate);
-  DCHECK(args.length() == 1);
-  CONVERT_ARG_CHECKED(HeapObject, obj, 0);
-  return obj->map();
-}
-
-
-RUNTIME_FUNCTION(Runtime_MapGetInstanceType) {
-  SealHandleScope shs(isolate);
-  DCHECK(args.length() == 1);
-  CONVERT_ARG_CHECKED(Map, map, 0);
-  return Smi::FromInt(map->instance_type());
 }
 
 

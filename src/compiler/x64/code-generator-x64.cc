@@ -692,6 +692,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       AssembleArchTableSwitch(instr);
       break;
     case kArchNop:
+    case kArchThrowTerminator:
       // don't emit code for nops.
       break;
     case kArchDeoptimize: {
@@ -1051,6 +1052,28 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       } else {
         __ Cvttss2siq(i.OutputRegister(), i.InputOperand(0));
       }
+      if (instr->OutputCount() > 1) {
+        __ Set(i.OutputRegister(1), 1);
+        Label done;
+        Label fail;
+        __ Move(kScratchDoubleReg, static_cast<float>(INT64_MIN));
+        if (instr->InputAt(0)->IsDoubleRegister()) {
+          __ Ucomiss(kScratchDoubleReg, i.InputDoubleRegister(0));
+        } else {
+          __ Ucomiss(kScratchDoubleReg, i.InputOperand(0));
+        }
+        // If the input is NaN, then the conversion fails.
+        __ j(parity_even, &fail);
+        // If the input is INT64_MIN, then the conversion succeeds.
+        __ j(equal, &done);
+        __ cmpq(i.OutputRegister(0), Immediate(1));
+        // If the conversion results in INT64_MIN, but the input was not
+        // INT64_MIN, then the conversion fails.
+        __ j(no_overflow, &done);
+        __ bind(&fail);
+        __ Set(i.OutputRegister(1), 0);
+        __ bind(&done);
+      }
       break;
     case kSSEFloat64ToInt64:
       if (instr->InputAt(0)->IsDoubleRegister()) {
@@ -1059,11 +1082,42 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
         __ Cvttsd2siq(i.OutputRegister(0), i.InputOperand(0));
       }
       if (instr->OutputCount() > 1) {
-        __ Set(i.OutputRegister(1), 0x8000000000000000);
-        __ subq(i.OutputRegister(1), i.OutputRegister(0));
+        __ Set(i.OutputRegister(1), 1);
+        Label done;
+        Label fail;
+        __ Move(kScratchDoubleReg, static_cast<double>(INT64_MIN));
+        if (instr->InputAt(0)->IsDoubleRegister()) {
+          __ Ucomisd(kScratchDoubleReg, i.InputDoubleRegister(0));
+        } else {
+          __ Ucomisd(kScratchDoubleReg, i.InputOperand(0));
+        }
+        // If the input is NaN, then the conversion fails.
+        __ j(parity_even, &fail);
+        // If the input is INT64_MIN, then the conversion succeeds.
+        __ j(equal, &done);
+        __ cmpq(i.OutputRegister(0), Immediate(1));
+        // If the conversion results in INT64_MIN, but the input was not
+        // INT64_MIN, then the conversion fails.
+        __ j(no_overflow, &done);
+        __ bind(&fail);
+        __ Set(i.OutputRegister(1), 0);
+        __ bind(&done);
       }
       break;
     case kSSEFloat32ToUint64: {
+      Label done;
+      Label success;
+      if (instr->OutputCount() > 1) {
+        __ Set(i.OutputRegister(1), 0);
+        __ xorps(kScratchDoubleReg, kScratchDoubleReg);
+
+        if (instr->InputAt(0)->IsDoubleRegister()) {
+          __ Ucomiss(kScratchDoubleReg, i.InputDoubleRegister(0));
+        } else {
+          __ Ucomiss(kScratchDoubleReg, i.InputOperand(0));
+        }
+        __ j(above, &done);
+      }
       // There does not exist a Float32ToUint64 instruction, so we have to use
       // the Float32ToInt64 instruction.
       if (instr->InputAt(0)->IsDoubleRegister()) {
@@ -1074,8 +1128,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       // Check if the result of the Float32ToInt64 conversion is positive, we
       // are already done.
       __ testq(i.OutputRegister(), i.OutputRegister());
-      Label done;
-      __ j(positive, &done);
+      __ j(positive, &success);
       // The result of the first conversion was negative, which means that the
       // input value was not within the positive int64 range. We subtract 2^64
       // and convert it again to see if it is within the uint64 range.
@@ -1095,10 +1148,27 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       // earlier.
       __ Set(kScratchRegister, 0x8000000000000000);
       __ orq(i.OutputRegister(), kScratchRegister);
+      __ bind(&success);
+      if (instr->OutputCount() > 1) {
+        __ Set(i.OutputRegister(1), 1);
+      }
       __ bind(&done);
       break;
     }
     case kSSEFloat64ToUint64: {
+      Label done;
+      Label success;
+      if (instr->OutputCount() > 1) {
+        __ Set(i.OutputRegister(1), 0);
+        __ xorps(kScratchDoubleReg, kScratchDoubleReg);
+
+        if (instr->InputAt(0)->IsDoubleRegister()) {
+          __ Ucomisd(kScratchDoubleReg, i.InputDoubleRegister(0));
+        } else {
+          __ Ucomisd(kScratchDoubleReg, i.InputOperand(0));
+        }
+        __ j(above, &done);
+      }
       // There does not exist a Float64ToUint64 instruction, so we have to use
       // the Float64ToInt64 instruction.
       if (instr->InputAt(0)->IsDoubleRegister()) {
@@ -1106,14 +1176,9 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       } else {
         __ Cvttsd2siq(i.OutputRegister(), i.InputOperand(0));
       }
-      if (instr->OutputCount() > 1) {
-        __ Set(i.OutputRegister(1), 0);
-      }
       // Check if the result of the Float64ToInt64 conversion is positive, we
       // are already done.
       __ testq(i.OutputRegister(), i.OutputRegister());
-      Label done;
-      Label success;
       __ j(positive, &success);
       // The result of the first conversion was negative, which means that the
       // input value was not within the positive int64 range. We subtract 2^64

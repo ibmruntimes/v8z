@@ -115,6 +115,9 @@ static void CheckParseEq(const char* input, const char* expected) {
   CHECK(result.error.is_null());
   std::ostringstream os;
   result.tree->Print(os, &zone);
+  if (strcmp(expected, os.str().c_str()) != 0) {
+    printf("%s | %s\n", expected, os.str().c_str());
+  }
   CHECK_EQ(0, strcmp(expected, os.str().c_str()));
 }
 
@@ -274,6 +277,7 @@ void TestRegExpParser(bool lookbehind) {
   CheckParseEq("(a)\\1", "(: (^ 'a') (<- 1))");
   CheckParseEq("(a\\1)", "(^ 'a')");
   CheckParseEq("(\\1a)", "(^ 'a')");
+  CheckParseEq("(\\2)(\\1)", "(: (^ (<- 2)) (^ (<- 1)))");
   CheckParseEq("(?=a)?a", "'a'");
   CheckParseEq("(?=a){0,10}a", "'a'");
   CheckParseEq("(?=a){1,10}a", "(: (-> + 'a') 'a')");
@@ -380,8 +384,8 @@ void TestRegExpParser(bool lookbehind) {
   CHECK_MIN_MAX("(?:ab)|cde", 2, 3);
   CHECK_MIN_MAX("(ab)", 2, 2);
   CHECK_MIN_MAX("(ab|cde)", 2, 3);
-  CHECK_MIN_MAX("(ab)\\1", 2, 4);
-  CHECK_MIN_MAX("(ab|cde)\\1", 2, 6);
+  CHECK_MIN_MAX("(ab)\\1", 2, RegExpTree::kInfinity);
+  CHECK_MIN_MAX("(ab|cde)\\1", 2, RegExpTree::kInfinity);
   CHECK_MIN_MAX("(?:ab)?", 0, 2);
   CHECK_MIN_MAX("(?:ab)*", 0, RegExpTree::kInfinity);
   CHECK_MIN_MAX("(?:ab)+", 2, RegExpTree::kInfinity);
