@@ -775,6 +775,10 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   __ AddP(fp, sp, Operand(StandardFrameConstants::kFixedFrameSizeFromFp));
   __ push(r5);
 
+  // Push zero for bytecode array offset.
+  __ LoadImmP(r2, Operand::Zero());
+  __ push(r2);
+
   // Get the bytecode array from the function object and load the pointer to the
   // first entry into kInterpreterBytecodeRegister.
   __ LoadP(r2, FieldMemOperand(r3, JSFunction::kSharedFunctionInfoOffset));
@@ -844,9 +848,8 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   // Load accumulator, register file, bytecode offset, dispatch table into
   // registers.
   __ LoadRoot(kInterpreterAccumulatorRegister, Heap::kUndefinedValueRootIndex);
-  __ SubP(kInterpreterRegisterFileRegister, fp,
-          Operand(2 * kPointerSize +
-                  StandardFrameConstants::kFixedFrameSizeFromFp));
+  __ AddP(kInterpreterRegisterFileRegister, fp,
+          Operand(InterpreterFrameConstants::kRegisterFilePointerFromFp));
   __ mov(kInterpreterBytecodeOffsetRegister,
          Operand(BytecodeArray::kHeaderSize - kHeapObjectTag));
   __ LoadRoot(kInterpreterDispatchTableRegister,

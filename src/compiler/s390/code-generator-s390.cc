@@ -675,6 +675,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       AssembleArchTableSwitch(instr);
       break;
     case kArchNop:
+    case kArchThrowTerminator:
       // don't emit code for nops.
       break;
     case kArchDeoptimize: {
@@ -1175,6 +1176,14 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       bool check_conversion = (i.OutputCount() > 1);
       if (check_conversion) {
         UNIMPLEMENTED();
+        // Set 2nd output to zero if conversion fails.
+        // We must check explicitly for negative values here since the
+        // conversion instruction rounds the input toward zero before
+        // checking for validity (otherwise, values between -1 and 0
+        // would produce incorrect results).
+        // __ LoadImmP(i.OutputRegister(1), Operand::Zero());
+        // __ fcmpu(i.InputDoubleRegister(0), kDoubleRegZero);
+        // __ blt(&done);
         // __ mtfsb0(VXCVI);  // clear FPSCR:VXCVI bit
       }
       UNIMPLEMENTED();
@@ -1182,7 +1191,6 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
                                       i.OutputRegister(0), kScratchDoubleReg);
       if (check_conversion) {
         UNIMPLEMENTED();
-        // Set 2nd output to zero if conversion fails.
         // CRBit crbit = static_cast<CRBit>(VXCVI % CRWIDTH);
         // __ mcrfs(cr7, VXCVI);  // extract FPSCR field containing VXCVI into cr7
         // __ LoadImmP(i.OutputRegister(1), Operand(1));

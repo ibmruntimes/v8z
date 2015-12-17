@@ -1391,6 +1391,7 @@
           'sources': [  ### gcmole(arch:s390) ###
             '../../src/compiler/s390/code-generator-s390.cc',
             '../../src/compiler/s390/instruction-codes-s390.h',
+            '../../src/compiler/s390/instruction-scheduler-s390.cc',
             '../../src/compiler/s390/instruction-selector-s390.cc',
             '../../src/crankshaft/s390/lithium-s390.cc',
             '../../src/crankshaft/s390/lithium-s390.h',
