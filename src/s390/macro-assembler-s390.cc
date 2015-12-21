@@ -3089,6 +3089,9 @@ void MacroAssembler::InitializeFieldsWithFiller(Register current_address,
                                                 Register end_address,
                                                 Register filler) {
   Label done;
+  DCHECK(!filler.is(r1));
+  DCHECK(!current_address.is(r1));
+  DCHECK(!end_address.is(r1));
   SubP(r1, end_address, current_address /*, LeaveOE, SetRC*/);
   beq(&done, Label::kNear);
   ShiftRightP(r1, r1, Operand(kPointerSizeLog2));
