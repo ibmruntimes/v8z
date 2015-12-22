@@ -3111,6 +3111,7 @@ void FullCodeGenerator::EmitIsSimdValue(CallRuntime* expr) {
                          &if_false, &fall_through);
 
   __ JumpIfSmi(r2, if_false);
+  __ CompareObjectType(r2, r3, r3, SIMD128_VALUE_TYPE);
   PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
   Split(eq, if_true, if_false, fall_through);
 
