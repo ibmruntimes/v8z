@@ -4281,18 +4281,16 @@ void MacroAssembler::SubP(Register dst, const MemOperand& opnd) {
 
 
 void MacroAssembler::MovIntToFloat(DoubleRegister dst, Register src) {
-  lay(sp, MemOperand(sp, -kPointerSize));
-  StoreW(src, MemOperand(sp, 0));
-  LoadShortConvertToDoubleF(dst, MemOperand(sp, 0));
-  lay(sp, MemOperand(sp, kPointerSize));
+  sllg(src, src, Operand(32));
+  ldgr(dst, src);
+  ldebr(dst, dst);
 }
 
 
 void MacroAssembler::MovFloatToInt(Register dst, DoubleRegister src) {
-  lay(sp, MemOperand(sp, -kPointerSize));
-  StoreDoubleAsFloat32(src, MemOperand(sp, 0), src);
-  LoadW(dst, MemOperand(sp, 0));
-  lay(sp, MemOperand(sp, kPointerSize));
+  ledbr(src, src);
+  lgdr(dst, src);
+  srlg(dst, dst, Operand(32));
 }
 
 
