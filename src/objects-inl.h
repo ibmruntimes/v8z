@@ -4366,7 +4366,7 @@ void JSFunction::set_code(Code* value) {
 
 #if !defined(DEBUG) &&\
     defined(V8_HOST_ARCH_S390) && defined(V8_TARGET_ARCH_S390X)
-// On GCC 4.4.0 to 4.4.6 on s390, the compiler with strict aliasing reorders the
+// On GCC 4.4.0 to 4.4.7 on s390, the compiler with strict aliasing reorders the
 // this->code() (from IsOptimized()) and set_code(code).  Using
 // --fno-strict-aliasing causes other issues, so using this as a temp
 // workaround until we find something better. This issue is fixed in GCC 4.4.7.
@@ -4374,7 +4374,7 @@ void JSFunction::set_code(Code* value) {
 // Have to add TARGET_ARCH_S390X as well, as PPC simulation on S390
 // is broken due to assembler not recognizing SRAK instructions generated
 // by GCC.  Again, need to find better workaround.
-#if (__GNUC__ == 4 && __GNUC_MINOR__ == 4 && __GNUC_PATCHLEVEL__ <= 6)
+#if (__GNUC__ == 4 && __GNUC_MINOR__ == 4)
 __attribute__((optimize("O1")))
 #endif
 #endif
