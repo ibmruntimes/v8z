@@ -115,7 +115,7 @@ TEST(TwoBytes) {
   COMPARE(lnr(r4, r1), "1141           lnr\tr4,r1");
   COMPARE(lcr(r0, r3), "1303           lcr\tr0,r3");
   COMPARE(basr(r14, r7), "0de7           basr\tr14,r7");
-  COMPARE(ldr(d4, d6), "2846           ldr\tf4,f6");
+  COMPARE(ldr(d4, d6), "2846           ldr\td4,d6");
 
   VERIFY_RUN();
 }

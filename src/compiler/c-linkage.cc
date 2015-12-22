@@ -128,7 +128,7 @@ LinkageLocation regloc(Register reg) {
 // ===========================================================================
 #define PARAM_REGISTERS r2, r3, r4, r5, r6
 #define CALLEE_SAVE_REGISTERS (                                               \
-  r6.bit() | r7.bit() | r8.bit() | r9.bit() | r10.bit() | r12.bit() | r13.bit())
+  r6.bit() | r7.bit() | r8.bit() | r9.bit() | r10.bit() | ip.bit() | r13.bit())
 #define CALLEE_SAVE_FP_REGISTERS (                                            \
   d8.bit() | d9.bit() | d10.bit() | d11.bit() | d12.bit() | d13.bit() |       \
   d14.bit() | d15.bit())
@@ -139,7 +139,7 @@ LinkageLocation regloc(Register reg) {
 // ===========================================================================
 #define PARAM_REGISTERS r2, r3, r4, r5, r6
 #define CALLEE_SAVE_REGISTERS (                                               \
-  r6.bit() | r7.bit() | r8.bit() | r9.bit() | r10.bit() | r12.bit() | r13.bit())
+  r6.bit() | r7.bit() | r8.bit() | r9.bit() | r10.bit() | ip.bit() | r13.bit())
 #define CALLEE_SAVE_FP_REGISTERS (d4.bit() | d6.bit())
 
 #else

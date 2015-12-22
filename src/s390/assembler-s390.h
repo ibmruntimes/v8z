@@ -66,7 +66,7 @@ namespace internal {
 // clang-format off
 #define GENERAL_REGISTERS(V)                              \
   V(r0)  V(r1)  V(r2)  V(r3)  V(r4)  V(r5)  V(r6)  V(r7)  \
-  V(r8)  V(r9)  V(r10) V(r11) V(r12) V(r13) V(r14) V(r15)
+  V(r8)  V(r9)  V(r10) V(fp) V(ip) V(r13) V(r14) V(sp)
 
 #define ALLOCATABLE_GENERAL_REGISTERS(V)                  \
   V(r2)  V(r3)  V(r4)  V(r5)  V(r6)  V(r7)                \
@@ -170,12 +170,12 @@ const Register no_reg = {Register::kCode_no_reg};
 const Register kLithiumScratch = r1;         // lithium scratch.
 // const Register kConstantPoolRegister = r28;  // Constant pool.
 const Register kRootRegister = r10;          // Roots array pointer.
-const Register sp = r15;
+// const Register sp = r15;
 // CP - Context Register
 const Register cp = r13;                     // JavaScript context pointer.
 // IP - Intra procedural register
-const Register ip = r12;
-const Register fp = r11;
+// const Register ip = r12;
+// const Register fp = r11;
 
 // Double word FP register.
 
