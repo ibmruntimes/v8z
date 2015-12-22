@@ -286,9 +286,9 @@ class RecordWriteStub : public PlatformCodeStub {
     return SaveFPRegsModeBits::decode(minor_key_);
   }
 
-  class ObjectBits : public BitField<int, 0, 5> {};
-  class ValueBits : public BitField<int, 5, 5> {};
-  class AddressBits : public BitField<int, 10, 5> {};
+  class ObjectBits : public BitField<int, 0, 4> {};
+  class ValueBits : public BitField<int, 4, 4> {};
+  class AddressBits : public BitField<int, 8, 4> {};
   class RememberedSetActionBits : public BitField<RememberedSetAction, 15, 1> {
   };
   class SaveFPRegsModeBits : public BitField<SaveFPRegsMode, 16, 1> {};
