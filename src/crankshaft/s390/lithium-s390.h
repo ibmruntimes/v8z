@@ -2282,9 +2282,13 @@ class LCheckInstanceType final : public LTemplateInstruction<0, 1, 0> {
 
 class LCheckMaps final : public LTemplateInstruction<0, 1, 1> {
  public:
-  explicit LCheckMaps(LOperand* value = NULL) { inputs_[0] = value; }
+  explicit LCheckMaps(LOperand* value = NULL, LOperand* temp = NULL) {
+    inputs_[0] = value;
+    temps_[0] = temp;
+  }
 
   LOperand* value() { return inputs_[0]; }
+  LOperand* temp() { return temps_[0]; }
 
   DECLARE_CONCRETE_INSTRUCTION(CheckMaps, "check-maps")
   DECLARE_HYDROGEN_ACCESSOR(CheckMaps)

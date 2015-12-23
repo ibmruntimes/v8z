@@ -5353,6 +5353,7 @@ void LCodeGen::DoCheckValue(LCheckValue* instr) {
 
 
 void LCodeGen::DoDeferredInstanceMigration(LCheckMaps* instr, Register object) {
+  Register temp = ToRegister(instr->temp());
   {
     PushSafepointRegistersScope scope(this);
     __ push(object);
@@ -5360,9 +5361,9 @@ void LCodeGen::DoDeferredInstanceMigration(LCheckMaps* instr, Register object) {
     __ CallRuntimeSaveDoubles(Runtime::kTryMigrateInstance);
     RecordSafepointWithRegisters(
         instr->pointer_map(), 1, Safepoint::kNoLazyDeopt);
-    __ StoreToSafepointRegisterSlot(r2, scratch0());
+    __ StoreToSafepointRegisterSlot(r2, temp);
   }
-  __ TestIfSmi(scratch0());
+  __ TestIfSmi(temp);
   DeoptimizeIf(eq, instr, Deoptimizer::kInstanceMigrationFailed, cr0);
 }
 
