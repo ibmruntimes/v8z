@@ -318,14 +318,14 @@ Condition FlagsConditionToCondition(FlagsCondition condition, ArchOpcode op) {
 #define ASSEMBLE_ADD_WITH_OVERFLOW32()           \
   do {                                           \
     ASSEMBLE_BINOP(AddP, AddP);                   \
-    __ TestIfInt32(i.OutputRegister(), r0, cr0); \
+    __ TestIfInt32(i.OutputRegister(), r0); \
   } while (0)
 
 
 #define ASSEMBLE_SUB_WITH_OVERFLOW32()           \
   do {                                           \
     ASSEMBLE_BINOP(SubP, SubP);                   \
-    __ TestIfInt32(i.OutputRegister(), r0, cr0); \
+    __ TestIfInt32(i.OutputRegister(), r0); \
   } while (0)
 #else
 #define ASSEMBLE_ADD_WITH_OVERFLOW32 ASSEMBLE_ADD_WITH_OVERFLOW
