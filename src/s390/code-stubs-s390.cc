@@ -705,8 +705,7 @@ void CompareICStub::GenerateGeneric(MacroAssembler* masm) {
   __ Push(lhs, rhs);
   // Figure out which native to call and setup the arguments.
   if (cc == eq) {
-    __ TailCallRuntime(strict() ? Runtime::kStrictEquals : Runtime::kEquals, 2,
-                       1);
+    __ TailCallRuntime(strict() ? Runtime::kStrictEquals : Runtime::kEquals, 2);
   } else {
     int ncr;  // NaN compare result
     if (cc == lt || cc == le) {
@@ -721,8 +720,8 @@ void CompareICStub::GenerateGeneric(MacroAssembler* masm) {
     // Call the native; it returns -1 (less), 0 (equal), or 1 (greater)
     // tagged as a small integer.
     __ TailCallRuntime(
-        is_strong(strength()) ? Runtime::kCompare_Strong : Runtime::kCompare, 3,
-        1);
+        is_strong(strength()) ? Runtime::kCompare_Strong : Runtime::kCompare,
+        3);
   }
 
   __ bind(&miss);
@@ -947,7 +946,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
   if (exponent_type() == ON_STACK) {
     // The arguments are still on the stack.
     __ bind(&call_runtime);
-    __ TailCallRuntime(Runtime::kMathPowRT, 2, 1);
+    __ TailCallRuntime(Runtime::kMathPowRT, 2);
 
     // The stub is called from non-optimized code, which expects the result
     // as heap number in exponent.
@@ -1453,15 +1452,6 @@ void InstanceOfStub::Generate(MacroAssembler* masm) {
   __ TestBit(scratch, Map::kHasNonInstancePrototype, r0);
   __ bne(&slow_case);
 
-  // Ensure that {function} is not bound.
-  Register const shared_info = scratch;
-  __ LoadP(shared_info,
-           FieldMemOperand(function, JSFunction::kSharedFunctionInfoOffset));
-  __ LoadlW(scratch, FieldMemOperand(shared_info,
-                                  SharedFunctionInfo::kCompilerHintsOffset));
-  __ TestBit(scratch, SharedFunctionInfo::kBoundBit, r0);
-  __ bne(&slow_case);
-
   // Get the "prototype" (or initial map) of the {function}.
   __ LoadP(function_prototype,
            FieldMemOperand(function, JSFunction::kPrototypeOrInitialMapOffset));
@@ -1521,12 +1511,12 @@ void InstanceOfStub::Generate(MacroAssembler* masm) {
   // Invalidate the instanceof cache.
   __ LoadSmiLiteral(scratch, Smi::FromInt(0));
   __ StoreRoot(scratch, Heap::kInstanceofCacheFunctionRootIndex);
-  __ TailCallRuntime(Runtime::kHasInPrototypeChain, 2, 1);
+  __ TailCallRuntime(Runtime::kHasInPrototypeChain, 2);
 
   // Slow-case: Call the %InstanceOf runtime function.
   __ bind(&slow_case);
   __ Push(object, function);
-  __ TailCallRuntime(Runtime::kInstanceOf, 2, 1);
+  __ TailCallRuntime(Runtime::kInstanceOf, 2);
 }
 
 void FunctionPrototypeStub::Generate(MacroAssembler* masm) {
@@ -1631,7 +1621,7 @@ void ArgumentsAccessStub::GenerateReadElement(MacroAssembler* masm) {
   // by calling the runtime system.
   __ bind(&slow);
   __ push(r3);
-  __ TailCallRuntime(Runtime::kArguments, 1, 1);
+  __ TailCallRuntime(Runtime::kArguments, 1);
 }
 
 
@@ -1659,7 +1649,7 @@ void ArgumentsAccessStub::GenerateNewSloppySlow(MacroAssembler* masm) {
 
   __ bind(&runtime);
   __ Push(r3, r5, r4);
-  __ TailCallRuntime(Runtime::kNewSloppyArguments, 3, 1);
+  __ TailCallRuntime(Runtime::kNewSloppyArguments, 3);
 }
 
 
@@ -1892,7 +1882,7 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
   // r7 = argument count (tagged)
   __ bind(&runtime);
   __ Push(r3, r5, r7);
-  __ TailCallRuntime(Runtime::kNewSloppyArguments, 3, 1);
+  __ TailCallRuntime(Runtime::kNewSloppyArguments, 3);
 }
 
 
@@ -1911,7 +1901,7 @@ void LoadIndexedInterceptorStub::Generate(MacroAssembler* masm) {
   __ Push(receiver, key);  // Receiver, key.
 
   // Perform tail call to the entry.
-  __ TailCallRuntime(Runtime::kLoadElementWithInterceptor, 2, 1);
+  __ TailCallRuntime(Runtime::kLoadElementWithInterceptor, 2);
 
   __ bind(&slow);
   PropertyAccessCompiler::TailCallBuiltin(
@@ -2011,7 +2001,33 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
   // Do the runtime call to allocate the arguments object.
   __ bind(&runtime);
   __ Push(r3, r5, r4);
-  __ TailCallRuntime(Runtime::kNewStrictArguments, 3, 1);
+  __ TailCallRuntime(Runtime::kNewStrictArguments, 3);
+}
+
+
+void RestParamAccessStub::GenerateNew(MacroAssembler* masm) {
+  // Stack layout on entry.
+  //  sp[0] : language mode
+  //  sp[4] : index of rest parameter
+  //  sp[8] : number of parameters
+  //  sp[12] : receiver displacement
+
+  Label runtime;
+  __ LoadP(r4, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
+  __ LoadP(r5, MemOperand(r4, StandardFrameConstants::kContextOffset));
+  __ CmpSmiLiteral(r5, Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR), r0);
+  __ bne(&runtime);
+
+  // Patch the arguments.length and the parameters pointer.
+  __ LoadP(r3, MemOperand(r4, ArgumentsAdaptorFrameConstants::kLengthOffset));
+  __ StoreP(r3, MemOperand(sp, 2 * kPointerSize));
+  __ SmiToPtrArrayOffset(r0, r3);
+  __ AddP(r5, r4, r0);
+  __ AddP(r5, r5, Operand(StandardFrameConstants::kCallerSPOffset));
+  __ StoreP(r5, MemOperand(sp, 3 * kPointerSize));
+
+  __ bind(&runtime);
+  __ TailCallRuntime(Runtime::kNewRestParam, 4);
 }
 
 
@@ -2020,7 +2036,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
 // time or if regexp entry in generated code is turned off runtime switch or
 // at compilation.
 #ifdef V8_INTERPRETED_REGEXP
-  __ TailCallRuntime(Runtime::kRegExpExec, 4, 1);
+  __ TailCallRuntime(Runtime::kRegExpExec, 4);
 #else  // V8_INTERPRETED_REGEXP
 
   // Stack frame on entry.
@@ -2329,7 +2345,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ beq(&runtime);
 
   // For exception, throw the exception again.
-  __ TailCallRuntime(Runtime::kRegExpExecReThrow, 4, 1);
+  __ TailCallRuntime(Runtime::kRegExpExecReThrow, 4);
 
   __ bind(&failure);
   // For failure and exception return null.
@@ -2417,7 +2433,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
 
   // Do the runtime call to execute the regexp.
   __ bind(&runtime);
-  __ TailCallRuntime(Runtime::kRegExpExec, 4, 1);
+  __ TailCallRuntime(Runtime::kRegExpExec, 4);
 
   // Deferred code for string handling.
   // (6) Not a long external string?  If yes, go to (8).
@@ -3173,7 +3189,7 @@ void SubStringStub::Generate(MacroAssembler* masm) {
 
   // Just jump to runtime to create the sub string.
   __ bind(&runtime);
-  __ TailCallRuntime(Runtime::kSubString, 3, 1);
+  __ TailCallRuntime(Runtime::kSubString, 3);
 
   __ bind(&single_char);
   // r2: original string
@@ -3216,7 +3232,7 @@ void ToNumberStub::Generate(MacroAssembler* masm) {
   __ b(r14);
   __ bind(&slow_string);
   __ push(r2);  // Push argument.
-  __ TailCallRuntime(Runtime::kStringToNumber, 1, 1);
+  __ TailCallRuntime(Runtime::kStringToNumber, 1);
   __ bind(&not_string);
 
   Label not_oddball;
@@ -3227,7 +3243,7 @@ void ToNumberStub::Generate(MacroAssembler* masm) {
   __ bind(&not_oddball);
 
   __ push(r2);  // Push argument.
-  __ TailCallRuntime(Runtime::kToNumber, 1, 1);
+  __ TailCallRuntime(Runtime::kToNumber, 1);
 }
 
 
@@ -3245,7 +3261,7 @@ void ToLengthStub::Generate(MacroAssembler* masm) {
   __ bind(&not_smi);
 
   __ push(r2);  // Push argument.
-  __ TailCallRuntime(Runtime::kToLength, 1, 1);
+  __ TailCallRuntime(Runtime::kToLength, 1);
 }
 
 
@@ -3276,7 +3292,7 @@ void ToStringStub::Generate(MacroAssembler* masm) {
   __ bind(&not_oddball);
 
   __ push(r2);  // Push argument.
-  __ TailCallRuntime(Runtime::kToString, 1, 1);
+  __ TailCallRuntime(Runtime::kToString, 1);
 
   __ bind(&done);
   __ Ret();
@@ -3422,7 +3438,7 @@ void StringCompareStub::Generate(MacroAssembler* masm) {
   // tagged as a small integer.
   __ bind(&runtime);
   __ Push(r3, r2);
-  __ TailCallRuntime(Runtime::kStringCompare, 2, 1);
+  __ TailCallRuntime(Runtime::kStringCompare, 2);
 }
 
 
@@ -3463,7 +3479,7 @@ void CompareICStub::GenerateBooleans(MacroAssembler* masm) {
   __ CheckMap(r3, r4, Heap::kBooleanMapRootIndex, &miss, DO_SMI_CHECK);
   __ CheckMap(r2, r5, Heap::kBooleanMapRootIndex, &miss, DO_SMI_CHECK);
   if (op() != Token::EQ_STRICT && is_strong(strength())) {
-    __ TailCallRuntime(Runtime::kThrowStrongModeImplicitConversion, 0, 1);
+    __ TailCallRuntime(Runtime::kThrowStrongModeImplicitConversion, 0);
   } else {
     if (!Token::IsEqualityOp(op())) {
       __ LoadP(r3, FieldMemOperand(r3, Oddball::kToNumberOffset));
@@ -3741,9 +3757,9 @@ void CompareICStub::GenerateStrings(MacroAssembler* masm) {
   __ bind(&runtime);
   __ Push(left, right);
   if (equality) {
-    __ TailCallRuntime(Runtime::kStringEquals, 2, 1);
+    __ TailCallRuntime(Runtime::kStringEquals, 2);
   } else {
-    __ TailCallRuntime(Runtime::kStringCompare, 2, 1);
+    __ TailCallRuntime(Runtime::kStringCompare, 2);
   }
 
   __ bind(&miss);
@@ -3789,7 +3805,7 @@ void CompareICStub::GenerateKnownReceivers(MacroAssembler* masm) {
     __ SubP(r2, r2, r3);
     __ Ret();
   } else if (is_strong(strength())) {
-    __ TailCallRuntime(Runtime::kThrowStrongModeImplicitConversion, 0, 1);
+    __ TailCallRuntime(Runtime::kThrowStrongModeImplicitConversion, 0);
   } else {
     if (op() == Token::LT || op() == Token::LTE) {
       __ LoadSmiLiteral(r4, Smi::FromInt(GREATER));
@@ -3797,7 +3813,7 @@ void CompareICStub::GenerateKnownReceivers(MacroAssembler* masm) {
       __ LoadSmiLiteral(r4, Smi::FromInt(LESS));
     }
     __ Push(r3, r2, r4);
-    __ TailCallRuntime(Runtime::kCompare, 3, 1);
+    __ TailCallRuntime(Runtime::kCompare, 3);
   }
 
   __ bind(&miss);
@@ -4256,11 +4272,11 @@ void RecordWriteStub::CheckNeedsToInformIncrementalMarker(
   // We need extra registers for this, so we push the object and the address
   // register temporarily.
   __ Push(regs_.object(), regs_.address());
-  __ EnsureNotWhite(regs_.scratch0(),  // The value.
-                    regs_.scratch1(),  // Scratch.
-                    regs_.object(),    // Scratch.
-                    regs_.address(),   // Scratch.
-                    &need_incremental_pop_scratch);
+  __ JumpIfWhite(regs_.scratch0(),  // The value.
+                 regs_.scratch1(),  // Scratch.
+                 regs_.object(),    // Scratch.
+                 regs_.address(),   // Scratch.
+                 &need_incremental_pop_scratch);
   __ Pop(regs_.object(), regs_.address());
 
   regs_.Restore(masm);
@@ -5193,7 +5209,7 @@ void LoadGlobalViaContextStub::Generate(MacroAssembler* masm) {
   // Fallback to runtime.
   __ SmiTag(slot);
   __ Push(slot);
-  __ TailCallRuntime(Runtime::kLoadGlobalViaContext, 1, 1);
+  __ TailCallRuntime(Runtime::kLoadGlobalViaContext, 1);
 }
 
 
@@ -5322,7 +5338,7 @@ void StoreGlobalViaContextStub::Generate(MacroAssembler* masm) {
   __ TailCallRuntime(is_strict(language_mode())
                          ? Runtime::kStoreGlobalViaContext_Strict
                          : Runtime::kStoreGlobalViaContext_Sloppy,
-                     2, 1);
+                     2);
 }
 
 
@@ -5451,7 +5467,7 @@ static void CallApiFunctionAndReturn(MacroAssembler* masm,
 
   // Re-throw by promoting a scheduled exception.
   __ bind(&promote_scheduled_exception);
-  __ TailCallRuntime(Runtime::kPromoteScheduledException, 0, 1);
+  __ TailCallRuntime(Runtime::kPromoteScheduledException, 0);
 
   // HandleScope limit has changed. Delete allocated extensions.
   __ bind(&delete_allocated_handles);

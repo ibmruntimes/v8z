@@ -189,7 +189,7 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
 };
 
 
-Condition FlagsConditionToCondition(FlagsCondition condition) {
+Condition FlagsConditionToCondition(FlagsCondition condition, ArchOpcode op) {
   switch (condition) {
     case kEqual:
       return eq;
@@ -208,17 +208,42 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
     case kUnsignedGreaterThan:
       return gt;
     case kOverflow:
+      // Overflow checked for AddP/SubP only.
+      switch (op) {
 #if V8_TARGET_ARCH_S390X
-      return ne;
-#else
-      return lt;
+        case kS390_Add:
+        case kS390_Sub:
+          return lt;
 #endif
+        case kS390_AddWithOverflow32:
+        case kS390_SubWithOverflow32:
+#if V8_TARGET_ARCH_S390X
+          return ne;
+#else
+          return lt;
+#endif
+        default:
+          break;
+      }
+      break;
     case kNotOverflow:
+      switch (op) {
 #if V8_TARGET_ARCH_S390X
-      return eq;
-#else
-      return ge;
+        case kS390_Add:
+        case kS390_Sub:
+          return ge;
 #endif
+        case kS390_AddWithOverflow32:
+        case kS390_SubWithOverflow32:
+#if V8_TARGET_ARCH_S390X
+          return eq;
+#else
+          return ge;
+#endif
+        default:
+          break;
+      }
+      break;
     default:
       break;
   }
@@ -265,13 +290,6 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
   } while (0)
 
 
-#if V8_TARGET_ARCH_S390X
-#define ASSEMBLE_ADD_WITH_OVERFLOW()             \
-  do {                                           \
-    ASSEMBLE_BINOP(AddP, AddP); \
-    __ TestIfInt32(i.OutputRegister(), r0); \
-  } while (0)
-#else
 #define ASSEMBLE_ADD_WITH_OVERFLOW()                                    \
   do {                                                                  \
     if (HasRegisterInput(instr, 1)) {                                   \
@@ -282,16 +300,8 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
                                 i.InputInt32(1), kScratchReg, r0);      \
     }                                                                   \
   } while (0)
-#endif
 
 
-#if V8_TARGET_ARCH_S390X
-#define ASSEMBLE_SUB_WITH_OVERFLOW()             \
-  do {                                           \
-    ASSEMBLE_BINOP(SubP, SubP); \
-    __ TestIfInt32(i.OutputRegister(), r0); \
-  } while (0)
-#else
 #define ASSEMBLE_SUB_WITH_OVERFLOW()                                    \
   do {                                                                  \
     if (HasRegisterInput(instr, 1)) {                                   \
@@ -302,6 +312,24 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
                                 -i.InputInt32(1), kScratchReg, r0);     \
     }                                                                   \
   } while (0)
+
+
+#if V8_TARGET_ARCH_S390X
+#define ASSEMBLE_ADD_WITH_OVERFLOW32()           \
+  do {                                           \
+    ASSEMBLE_BINOP(AddP, AddP);                   \
+    __ TestIfInt32(i.OutputRegister(), r0, cr0); \
+  } while (0)
+
+
+#define ASSEMBLE_SUB_WITH_OVERFLOW32()           \
+  do {                                           \
+    ASSEMBLE_BINOP(SubP, SubP);                   \
+    __ TestIfInt32(i.OutputRegister(), r0, cr0); \
+  } while (0)
+#else
+#define ASSEMBLE_ADD_WITH_OVERFLOW32 ASSEMBLE_ADD_WITH_OVERFLOW
+#define ASSEMBLE_SUB_WITH_OVERFLOW32 ASSEMBLE_SUB_WITH_OVERFLOW
 #endif
 
 
@@ -849,10 +877,18 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
 #endif
     case kS390_Add:
-      ASSEMBLE_BINOP(AddP, AddP);
+#if V8_TARGET_ARCH_S390X
+      if (FlagsModeField::decode(instr->opcode()) != kFlags_none) {
+        ASSEMBLE_ADD_WITH_OVERFLOW();
+      } else {
+#endif
+        ASSEMBLE_BINOP(AddP, AddP);
+#if V8_TARGET_ARCH_S390X
+      }
+#endif
       break;
     case kS390_AddWithOverflow32:
-      ASSEMBLE_ADD_WITH_OVERFLOW();
+      ASSEMBLE_ADD_WITH_OVERFLOW32();
       break;
     case kS390_AddDouble:
     // Ensure we don't clobber right/InputReg(1)
@@ -865,10 +901,18 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     }
       break;
     case kS390_Sub:
-      ASSEMBLE_BINOP(SubP, SubP);
+#if V8_TARGET_ARCH_S390X
+      if (FlagsModeField::decode(instr->opcode()) != kFlags_none) {
+        ASSEMBLE_SUB_WITH_OVERFLOW();
+      } else {
+#endif
+        ASSEMBLE_BINOP(SubP, SubP);
+#if V8_TARGET_ARCH_S390X
+      }
+#endif
       break;
     case kS390_SubWithOverflow32:
-      ASSEMBLE_SUB_WITH_OVERFLOW();
+      ASSEMBLE_SUB_WITH_OVERFLOW32();
       break;
     case kS390_SubDouble:
     // OutputDoubleReg() = i.InputDoubleRegister(0) - i.InputDoubleRegister(1)
@@ -1109,8 +1153,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ llgfr(i.OutputRegister(), i.InputRegister(0));
       break;
     case kS390_Int64ToInt32:
-      // TODO(mbrandy): sign extend?
-      __ Move(i.OutputRegister(), i.InputRegister(0));
+      // sign extend
+      __ lgfr(i.OutputRegister(), i.InputRegister(0));
       break;
     case kS390_Int64ToFloat32:
       UNIMPLEMENTED();
@@ -1376,11 +1420,7 @@ void CodeGenerator::AssembleArchBranch(Instruction* instr, BranchInfo* branch) {
   ArchOpcode op = instr->arch_opcode();
   FlagsCondition condition = branch->condition;
 
-  // Overflow checked for add/sub only.
-  DCHECK((condition != kOverflow && condition != kNotOverflow) ||
-         (op == kS390_AddWithOverflow32 || op == kS390_SubWithOverflow32));
-
-  Condition cond = FlagsConditionToCondition(condition);
+  Condition cond = FlagsConditionToCondition(condition, op);
   if (op == kS390_CmpDouble) {
     // check for unordered if necessary
     // Branching to flabel/tlabel according to what's expected by tests
@@ -1416,7 +1456,7 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
   // last output of the instruction.
   DCHECK_NE(0u, instr->OutputCount());
   Register reg = i.OutputRegister(instr->OutputCount() - 1);
-  Condition cond = FlagsConditionToCondition(condition);
+  Condition cond = FlagsConditionToCondition(condition, op);
   switch (cond) {
     case ne:
     case ge:

@@ -75,7 +75,8 @@ Register GetRegisterThatIsNotOneOf(Register reg1, Register reg2 = no_reg,
 bool AreAliased(Register reg1, Register reg2, Register reg3 = no_reg,
                 Register reg4 = no_reg, Register reg5 = no_reg,
                 Register reg6 = no_reg, Register reg7 = no_reg,
-                Register reg8 = no_reg);
+                Register reg8 = no_reg, Register reg9 = no_reg,
+                Register reg10 = no_reg);
 #endif
 
 // These exist to provide portability between 32 and 64bit
@@ -452,18 +453,10 @@ class MacroAssembler : public Assembler {
   void JumpIfBlack(Register object, Register scratch0, Register scratch1,
                    Label* on_black);
 
-  // Checks the color of an object.  If the object is already grey or black
-  // then we just fall through, since it is already live.  If it is white and
-  // we can determine that it doesn't need to be scanned, then we just mark it
-  // black and fall through.  For the rest we jump to the label so the
-  // incremental marker can fix its assumptions.
-  void EnsureNotWhite(Register object, Register scratch1, Register scratch2,
-                      Register scratch3, Label* object_is_white_and_not_data);
-
-  // Detects conservatively whether an object is data-only, i.e. it does need to
-  // be scanned by the garbage collector.
-  void JumpIfDataObject(Register value, Register scratch,
-                        Label* not_data_object);
+  // Checks the color of an object.  If the object is white we jump to the
+  // incremental marker.
+  void JumpIfWhite(Register value, Register scratch1, Register scratch2,
+                   Register scratch3, Label* value_is_white);
 
   // Notify the garbage collector that we wrote a pointer into an object.
   // |object| is the object being stored into, |value| is the object being
@@ -1240,11 +1233,10 @@ class MacroAssembler : public Assembler {
   // Like JumpToExternalReference, but also takes care of passing the number
   // of parameters.
   void TailCallExternalReference(const ExternalReference& ext,
-                                 int num_arguments, int result_size);
+                                 int num_arguments);
 
   // Convenience function: tail call a runtime routine (jump).
-  void TailCallRuntime(Runtime::FunctionId fid, int num_arguments,
-                       int result_size);
+  void TailCallRuntime(Runtime::FunctionId fid, int num_arguments);
 
   int CalculateStackPassedWords(int num_reg_arguments,
                                 int num_double_arguments);
@@ -1625,6 +1617,10 @@ class MacroAssembler : public Assembler {
   void AssertName(Register object);
 
   void AssertFunction(Register object);
+
+  // Abort execution if argument is not a JSBoundFunction,
+  // enabled via --debug-code.
+  void AssertBoundFunction(Register object);
 
   // Abort execution if argument is not undefined or an AllocationSite, enabled
   // via --debug-code.
