@@ -26,7 +26,6 @@ var ObserveBeginPerformSplice;
 var ObserveEndPerformSplice;
 var ObserveEnqueueSpliceRecord;
 var SameValue = utils.ImportNow("SameValue");
-var StringIndexOf;
 var toStringTagSymbol = utils.ImportNow("to_string_tag_symbol");
 
 utils.Import(function(from) {
@@ -37,7 +36,6 @@ utils.Import(function(from) {
   ObserveBeginPerformSplice = from.ObserveBeginPerformSplice;
   ObserveEndPerformSplice = from.ObserveEndPerformSplice;
   ObserveEnqueueSpliceRecord = from.ObserveEnqueueSpliceRecord;
-  StringIndexOf = from.StringIndexOf;
 });
 
 // ----------------------------------------------------------------------------
@@ -100,19 +98,6 @@ function GlobalParseFloat(string) {
 }
 
 
-// ES6 18.2.1 eval(x)
-function GlobalEval(x) {
-  if (!IS_STRING(x)) return x;
-
-  var global_proxy = %GlobalProxy(GlobalEval);
-
-  var f = %CompileString(x, false);
-  if (!IS_FUNCTION(f)) return f;
-
-  return %_Call(f, global_proxy);
-}
-
-
 // ----------------------------------------------------------------------------
 
 // Set up global object.
@@ -133,7 +118,6 @@ utils.InstallFunctions(global, DONT_ENUM, [
   "isFinite", GlobalIsFinite,
   "parseInt", GlobalParseInt,
   "parseFloat", GlobalParseFloat,
-  "eval", GlobalEval
 ]);
 
 
@@ -163,7 +147,7 @@ function ObjectHasOwnProperty(value) {
 
 // ES6 19.1.3.3 Object.prototype.isPrototypeOf(V)
 function ObjectIsPrototypeOf(V) {
-  if (!IS_SPEC_OBJECT(V)) return false;
+  if (!IS_RECEIVER(V)) return false;
   var O = TO_OBJECT(this);
   return %_HasInPrototypeChain(V, O);
 }
@@ -289,7 +273,7 @@ function FromGenericPropertyDescriptor(desc) {
 
 // ES6 6.2.4.5
 function ToPropertyDescriptor(obj) {
-  if (!IS_SPEC_OBJECT(obj)) throw MakeTypeError(kPropertyDescObject, obj);
+  if (!IS_RECEIVER(obj)) throw MakeTypeError(kPropertyDescObject, obj);
 
   var desc = new PropertyDescriptor();
 
@@ -500,11 +484,11 @@ function CallTrap2(handler, name, defaultTrap, x, y) {
 // ObjectGetOwnPropertyDescriptor and delete this.
 function GetOwnPropertyJS(obj, v) {
   var p = TO_NAME(v);
-  if (%_IsJSProxy(obj)) {
+  if (IS_PROXY(obj)) {
     // TODO(rossberg): adjust once there is a story for symbols vs proxies.
     if (IS_SYMBOL(v)) return UNDEFINED;
 
-    var handler = %GetHandler(obj);
+    var handler = %JSProxyGetHandler(obj);
     var descriptor = CallTrap1(
                          handler, "getOwnPropertyDescriptor", UNDEFINED, p);
     if (IS_UNDEFINED(descriptor)) return descriptor;
@@ -538,7 +522,7 @@ function DefineProxyProperty(obj, p, attributes, should_throw) {
   // TODO(rossberg): adjust once there is a story for symbols vs proxies.
   if (IS_SYMBOL(p)) return false;
 
-  var handler = %GetHandler(obj);
+  var handler = %JSProxyGetHandler(obj);
   var result = CallTrap2(handler, "defineProperty", UNDEFINED, p, attributes);
   if (!result) {
     if (should_throw) {
@@ -761,7 +745,7 @@ function DefineArrayProperty(obj, p, desc, should_throw) {
 
 // ES5 section 8.12.9, ES5 section 15.4.5.1 and Harmony proxies.
 function DefineOwnProperty(obj, p, desc, should_throw) {
-  if (%_IsJSProxy(obj)) {
+  if (IS_PROXY(obj)) {
     // TODO(rossberg): adjust once there is a story for symbols vs proxies.
     if (IS_SYMBOL(p)) return false;
 
@@ -784,11 +768,11 @@ function ObjectGetPrototypeOf(obj) {
 function ObjectSetPrototypeOf(obj, proto) {
   CHECK_OBJECT_COERCIBLE(obj, "Object.setPrototypeOf");
 
-  if (proto !== null && !IS_SPEC_OBJECT(proto)) {
+  if (proto !== null && !IS_RECEIVER(proto)) {
     throw MakeTypeError(kProtoObjectOrNull, proto);
   }
 
-  if (IS_SPEC_OBJECT(obj)) {
+  if (IS_RECEIVER(obj)) {
     %SetPrototype(obj, proto);
   }
 
@@ -809,24 +793,12 @@ function ObjectGetOwnPropertyNames(obj) {
 }
 
 
-// ES5 section 15.2.3.5.
-function ObjectCreate(proto, properties) {
-  if (!IS_SPEC_OBJECT(proto) && proto !== null) {
-    throw MakeTypeError(kProtoObjectOrNull, proto);
-  }
-  var obj = {};
-  %InternalSetPrototype(obj, proto);
-  if (!IS_UNDEFINED(properties)) ObjectDefineProperties(obj, properties);
-  return obj;
-}
-
-
 // ES5 section 15.2.3.6.
 function ObjectDefineProperty(obj, p, attributes) {
   // The new pure-C++ implementation doesn't support O.o.
   // TODO(jkummerow): Implement missing features and remove fallback path.
   if (%IsObserved(obj)) {
-    if (!IS_SPEC_OBJECT(obj)) {
+    if (!IS_RECEIVER(obj)) {
       throw MakeTypeError(kCalledOnNonObject, "Object.defineProperty");
     }
     var name = TO_NAME(p);
@@ -848,7 +820,7 @@ function ObjectDefineProperties(obj, properties) {
   // The new pure-C++ implementation doesn't support O.o.
   // TODO(jkummerow): Implement missing features and remove fallback path.
   if (%IsObserved(obj)) {
-    if (!IS_SPEC_OBJECT(obj)) {
+    if (!IS_RECEIVER(obj)) {
       throw MakeTypeError(kCalledOnNonObject, "Object.defineProperties");
     }
     var props = TO_OBJECT(properties);
@@ -868,42 +840,42 @@ function ObjectDefineProperties(obj, properties) {
 
 // ES6 19.1.2.17
 function ObjectSealJS(obj) {
-  if (!IS_SPEC_OBJECT(obj)) return obj;
+  if (!IS_RECEIVER(obj)) return obj;
   return %ObjectSeal(obj);
 }
 
 
 // ES6 19.1.2.5
 function ObjectFreezeJS(obj) {
-  if (!IS_SPEC_OBJECT(obj)) return obj;
+  if (!IS_RECEIVER(obj)) return obj;
   return %ObjectFreeze(obj);
 }
 
 
 // ES6 19.1.2.15
 function ObjectPreventExtension(obj) {
-  if (!IS_SPEC_OBJECT(obj)) return obj;
+  if (!IS_RECEIVER(obj)) return obj;
   return %PreventExtensions(obj);
 }
 
 
 // ES6 19.1.2.13
 function ObjectIsSealed(obj) {
-  if (!IS_SPEC_OBJECT(obj)) return true;
+  if (!IS_RECEIVER(obj)) return true;
   return %ObjectIsSealed(obj);
 }
 
 
 // ES6 19.1.2.12
 function ObjectIsFrozen(obj) {
-  if (!IS_SPEC_OBJECT(obj)) return true;
+  if (!IS_RECEIVER(obj)) return true;
   return %ObjectIsFrozen(obj);
 }
 
 
 // ES6 19.1.2.11
 function ObjectIsExtensible(obj) {
-  if (!IS_SPEC_OBJECT(obj)) return false;
+  if (!IS_RECEIVER(obj)) return false;
   return %IsExtensible(obj);
 }
 
@@ -918,7 +890,7 @@ function ObjectGetProto() {
 function ObjectSetProto(proto) {
   CHECK_OBJECT_COERCIBLE(this, "Object.prototype.__proto__");
 
-  if ((IS_SPEC_OBJECT(proto) || IS_NULL(proto)) && IS_SPEC_OBJECT(this)) {
+  if ((IS_RECEIVER(proto) || IS_NULL(proto)) && IS_RECEIVER(this)) {
     %SetPrototype(this, proto);
   }
 }
@@ -963,7 +935,6 @@ utils.InstallGetterSetter(GlobalObject.prototype, "__proto__", ObjectGetProto,
 utils.InstallFunctions(GlobalObject, DONT_ENUM, [
   // assign is added in bootstrapper.cc.
   "keys", ObjectKeys,
-  "create", ObjectCreate,
   "defineProperty", ObjectDefineProperty,
   "defineProperties", ObjectDefineProperties,
   "freeze", ObjectFreezeJS,
@@ -1252,168 +1223,10 @@ utils.InstallFunctions(GlobalNumber, DONT_ENUM, [
 // ----------------------------------------------------------------------------
 // Function
 
-function NativeCodeFunctionSourceString(func) {
-  var name = %FunctionGetName(func);
-  if (name) {
-    // Mimic what KJS does.
-    return 'function ' + name + '() { [native code] }';
-  }
-
-  return 'function () { [native code] }';
-}
-
-function FunctionSourceString(func) {
-  if (!IS_FUNCTION(func)) {
-    throw MakeTypeError(kNotGeneric, 'Function.prototype.toString');
-  }
-
-  if (%FunctionHidesSource(func)) {
-    return NativeCodeFunctionSourceString(func);
-  }
-
-  var classSource = %ClassGetSourceCode(func);
-  if (IS_STRING(classSource)) {
-    return classSource;
-  }
-
-  var source = %FunctionGetSourceCode(func);
-  if (!IS_STRING(source)) {
-    return NativeCodeFunctionSourceString(func);
-  }
-
-  if (%FunctionIsArrow(func)) {
-    return source;
-  }
-
-  var name = %FunctionNameShouldPrintAsAnonymous(func)
-      ? 'anonymous'
-      : %FunctionGetName(func);
-
-  var isGenerator = %FunctionIsGenerator(func);
-  var head = %FunctionIsConciseMethod(func)
-      ? (isGenerator ? '*' : '')
-      : (isGenerator ? 'function* ' : 'function ');
-  return head + name + source;
-}
-
-
-function FunctionToString() {
-  return FunctionSourceString(this);
-}
-
-
-// ES5 15.3.4.5
-// ES6 9.2.3.2 Function.prototype.bind(thisArg , ...args)
-// TODO(cbruni): check again and remove FunctionProxies section further down
-function FunctionBind(this_arg) { // Length is 1.
-  if (!IS_CALLABLE(this)) throw MakeTypeError(kFunctionBind);
-
-  var boundFunction = function () {
-    // Poison .arguments and .caller, but is otherwise not detectable.
-    "use strict";
-    // This function must not use any object literals (Object, Array, RegExp),
-    // since the literals-array is being used to store the bound data.
-    if (!IS_UNDEFINED(new.target)) {
-      return %NewObjectFromBound(boundFunction);
-    }
-    var bindings = %BoundFunctionGetBindings(boundFunction);
-
-    var argc = %_ArgumentsLength();
-    if (argc == 0) {
-      return %Apply(bindings[0], bindings[1], bindings, 2, bindings.length - 2);
-    }
-    if (bindings.length === 2) {
-      return %Apply(bindings[0], bindings[1], arguments, 0, argc);
-    }
-    var bound_argc = bindings.length - 2;
-    var argv = new InternalArray(bound_argc + argc);
-    for (var i = 0; i < bound_argc; i++) {
-      argv[i] = bindings[i + 2];
-    }
-    for (var j = 0; j < argc; j++) {
-      argv[i++] = %_Arguments(j);
-    }
-    return %Apply(bindings[0], bindings[1], argv, 0, bound_argc + argc);
-  };
-
-  var new_length = 0;
-  var old_length = this.length;
-  // FunctionProxies might provide a non-UInt32 value. If so, ignore it.
-  if ((typeof old_length === "number") &&
-      ((old_length >>> 0) === old_length)) {
-    var argc = %_ArgumentsLength();
-    if (argc > 0) argc--;  // Don't count the thisArg as parameter.
-    new_length = old_length - argc;
-    if (new_length < 0) new_length = 0;
-  }
-  // This runtime function finds any remaining arguments on the stack,
-  // so we don't pass the arguments object.
-  var result = %FunctionBindArguments(boundFunction, this,
-                                      this_arg, new_length);
-
-  var name = this.name;
-  var bound_name = IS_STRING(name) ? name : "";
-  %DefineDataPropertyUnchecked(result, "name", "bound " + bound_name,
-                               DONT_ENUM | READ_ONLY);
-
-  // We already have caller and arguments properties on functions,
-  // which are non-configurable. It therefore makes no sence to
-  // try to redefine these as defined by the spec. The spec says
-  // that bind should make these throw a TypeError if get or set
-  // is called and make them non-enumerable and non-configurable.
-  // To be consistent with our normal functions we leave this as it is.
-  // TODO(lrn): Do set these to be thrower.
-  return result;
-}
-
-
-function NewFunctionString(args, function_token) {
-  var n = args.length;
-  var p = '';
-  if (n > 1) {
-    p = TO_STRING(args[0]);
-    for (var i = 1; i < n - 1; i++) {
-      p += ',' + TO_STRING(args[i]);
-    }
-    // If the formal parameters string include ) - an illegal
-    // character - it may make the combined function expression
-    // compile. We avoid this problem by checking for this early on.
-    if (%_Call(StringIndexOf, p, ')') != -1) {
-      throw MakeSyntaxError(kParenthesisInArgString);
-    }
-    // If the formal parameters include an unbalanced block comment, the
-    // function must be rejected. Since JavaScript does not allow nested
-    // comments we can include a trailing block comment to catch this.
-    p += '\n/' + '**/';
-  }
-  var body = (n > 0) ? TO_STRING(args[n - 1]) : '';
-  return '(' + function_token + '(' + p + ') {\n' + body + '\n})';
-}
-
-
-function FunctionConstructor(arg1) {  // length == 1
-  var source = NewFunctionString(arguments, 'function');
-  var global_proxy = %GlobalProxy(FunctionConstructor);
-  // Compile the string in the constructor and not a helper so that errors
-  // appear to come from here.
-  var func = %_Call(%CompileString(source, true), global_proxy);
-  // Set name-should-print-as-anonymous flag on the ShareFunctionInfo and
-  // ensure that |func| uses correct initial map from |new.target| if
-  // it's available.
-  return %CompleteFunctionConstruction(func, GlobalFunction, new.target);
-}
-
-
 // ----------------------------------------------------------------------------
 
-%SetCode(GlobalFunction, FunctionConstructor);
 %AddNamedProperty(GlobalFunction.prototype, "constructor", GlobalFunction,
                   DONT_ENUM);
-
-utils.InstallFunctions(GlobalFunction.prototype, DONT_ENUM, [
-  "bind", FunctionBind,
-  "toString", FunctionToString
-]);
 
 // ----------------------------------------------------------------------------
 // Iterator related spec functions.
@@ -1427,7 +1240,7 @@ function GetIterator(obj, method) {
     throw MakeTypeError(kNotIterable, obj);
   }
   var iterator = %_Call(method, obj);
-  if (!IS_SPEC_OBJECT(iterator)) {
+  if (!IS_RECEIVER(iterator)) {
     throw MakeTypeError(kNotAnIterator, iterator);
   }
   return iterator;
@@ -1437,12 +1250,10 @@ function GetIterator(obj, method) {
 // Exports
 
 utils.Export(function(to) {
-  to.FunctionSourceString = FunctionSourceString;
   to.GetIterator = GetIterator;
   to.GetMethod = GetMethod;
   to.IsFinite = GlobalIsFinite;
   to.IsNaN = GlobalIsNaN;
-  to.NewFunctionString = NewFunctionString;
   to.NumberIsNaN = NumberIsNaN;
   to.ObjectDefineProperties = ObjectDefineProperties;
   to.ObjectDefineProperty = ObjectDefineProperty;
@@ -1454,7 +1265,6 @@ utils.Export(function(to) {
 });
 
 %InstallToContext([
-  "global_eval_fun", GlobalEval,
   "object_value_of", ObjectValueOf,
 ]);
 

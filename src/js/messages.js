@@ -27,7 +27,6 @@ var FLAG_harmony_tostring;
 var Float32x4ToString;
 var formattedStackTraceSymbol =
     utils.ImportNow("formatted_stack_trace_symbol");
-var FunctionSourceString
 var GlobalObject = global.Object;
 var Int16x8ToString;
 var Int32x4ToString;
@@ -53,7 +52,6 @@ utils.Import(function(from) {
   Bool32x4ToString = from.Bool32x4ToString;
   Bool8x16ToString = from.Bool8x16ToString;
   Float32x4ToString = from.Float32x4ToString;
-  FunctionSourceString = from.FunctionSourceString;
   Int16x8ToString = from.Int16x8ToString;
   Int32x4ToString = from.Int32x4ToString;
   Int8x16ToString = from.Int8x16ToString;
@@ -120,7 +118,7 @@ function NoSideEffectsToString(obj) {
   if (IS_UNDEFINED(obj)) return 'undefined';
   if (IS_NULL(obj)) return 'null';
   if (IS_FUNCTION(obj)) {
-    var str = %_Call(FunctionSourceString, obj, obj);
+    var str = %FunctionToString(obj);
     if (str.length > 128) {
       str = %_SubString(str, 0, 111) + "...<omitted>..." +
             %_SubString(str, str.length - 2, str.length);
@@ -143,7 +141,7 @@ function NoSideEffectsToString(obj) {
     }
   }
 
-  if (IS_SPEC_OBJECT(obj)) {
+  if (IS_RECEIVER(obj)) {
     // When internally formatting error objects, use a side-effects-free version
     // of Error.prototype.toString independent of the actually installed
     // toString method.
@@ -843,7 +841,7 @@ function FormatStackTrace(obj, raw_stack) {
 
 function GetTypeName(receiver, requireConstructor) {
   if (IS_NULL_OR_UNDEFINED(receiver)) return null;
-  if (%_IsJSProxy(receiver)) return "Proxy";
+  if (IS_PROXY(receiver)) return "Proxy";
 
   var constructor = %GetDataProperty(TO_OBJECT(receiver), "constructor");
   if (!IS_FUNCTION(constructor)) {
@@ -939,7 +937,7 @@ utils.InstallFunctions(GlobalError.prototype, DONT_ENUM,
                        ['toString', ErrorToString]);
 
 function ErrorToString() {
-  if (!IS_SPEC_OBJECT(this)) {
+  if (!IS_RECEIVER(this)) {
     throw MakeTypeError(kCalledOnNonObject, "Error.prototype.toString");
   }
 

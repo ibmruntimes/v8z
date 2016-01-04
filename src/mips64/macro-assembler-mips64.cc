@@ -1705,9 +1705,9 @@ void MacroAssembler::Trunc_ul_d(FPURegister fd, Register rs,
   Label simple_convert, done, fail;
   if (result.is_valid()) {
     mov(result, zero_reg);
-    Move(kDoubleRegZero, 0.0);
-    // If fd < 0 or unordered, then the conversion fails.
-    BranchF(&fail, &fail, lt, fd, kDoubleRegZero);
+    Move(scratch, -1.0);
+    // If fd =< -1 or unordered, then the conversion fails.
+    BranchF(&fail, &fail, le, fd, scratch);
   }
 
   // Load 2^63 into scratch as its double representation.
@@ -1753,9 +1753,9 @@ void MacroAssembler::Trunc_ul_s(FPURegister fd, Register rs,
   Label simple_convert, done, fail;
   if (result.is_valid()) {
     mov(result, zero_reg);
-    Move(kDoubleRegZero, 0.0);
-    // If fd < 0 or unordered, then the conversion fails.
-    BranchF32(&fail, &fail, lt, fd, kDoubleRegZero);
+    Move(scratch, -1.0f);
+    // If fd =< -1 or unordered, then the conversion fails.
+    BranchF32(&fail, &fail, le, fd, scratch);
   }
 
   // Load 2^63 into scratch as its float representation.
@@ -4039,6 +4039,7 @@ void MacroAssembler::StoreNumberToDoubleElements(Register value_reg,
                                                  Register scratch2,
                                                  Label* fail,
                                                  int elements_offset) {
+  DCHECK(!AreAliased(value_reg, key_reg, elements_reg, scratch1, scratch2));
   Label smi_value, done;
 
   // Handle smi values specially.
@@ -4060,10 +4061,9 @@ void MacroAssembler::StoreNumberToDoubleElements(Register value_reg,
   FPUCanonicalizeNaN(double_result, double_result);
 
   bind(&smi_value);
-  // scratch1 is now effective address of the double element.
   // Untag and transfer.
-  dsrl32(at, value_reg, 0);
-  mtc1(at, double_scratch);
+  dsrl32(scratch1, value_reg, 0);
+  mtc1(scratch1, double_scratch);
   cvt_d_w(double_result, double_scratch);
 
   bind(&done);
@@ -4072,6 +4072,7 @@ void MacroAssembler::StoreNumberToDoubleElements(Register value_reg,
               elements_offset));
   dsra(scratch2, key_reg, 32 - kDoubleSizeLog2);
   Daddu(scratch1, scratch1, scratch2);
+  // scratch1 is now effective address of the double element.
   sdc1(double_result, MemOperand(scratch1, 0));
 }
 
@@ -4730,6 +4731,89 @@ void MacroAssembler::DadduAndCheckForOverflow(Register dst, Register left,
 }
 
 
+static inline void BranchOvfHelper(MacroAssembler* masm, Register overflow_dst,
+                                   Label* overflow_label,
+                                   Label* no_overflow_label) {
+  DCHECK(overflow_label || no_overflow_label);
+  if (!overflow_label) {
+    DCHECK(no_overflow_label);
+    masm->Branch(no_overflow_label, ge, overflow_dst, Operand(zero_reg));
+  } else {
+    masm->Branch(overflow_label, lt, overflow_dst, Operand(zero_reg));
+    if (no_overflow_label) masm->Branch(no_overflow_label);
+  }
+}
+
+
+void MacroAssembler::DaddBranchOvf(Register dst, Register left,
+                                   const Operand& right, Label* overflow_label,
+                                   Label* no_overflow_label, Register scratch) {
+  if (right.is_reg()) {
+    DaddBranchOvf(dst, left, right.rm(), overflow_label, no_overflow_label,
+                  scratch);
+  } else {
+    Register overflow_dst = t9;
+    DCHECK(!dst.is(scratch));
+    DCHECK(!dst.is(overflow_dst));
+    DCHECK(!scratch.is(overflow_dst));
+    DCHECK(!left.is(overflow_dst));
+    li(overflow_dst, right);  // Load right.
+    if (dst.is(left)) {
+      mov(scratch, left);              // Preserve left.
+      Daddu(dst, left, overflow_dst);  // Left is overwritten.
+      xor_(scratch, dst, scratch);     // Original left.
+      xor_(overflow_dst, dst, overflow_dst);
+      and_(overflow_dst, overflow_dst, scratch);
+    } else {
+      Daddu(dst, left, overflow_dst);
+      xor_(scratch, dst, overflow_dst);
+      xor_(overflow_dst, dst, left);
+      and_(overflow_dst, scratch, overflow_dst);
+    }
+    BranchOvfHelper(this, overflow_dst, overflow_label, no_overflow_label);
+  }
+}
+
+
+void MacroAssembler::DaddBranchOvf(Register dst, Register left, Register right,
+                                   Label* overflow_label,
+                                   Label* no_overflow_label, Register scratch) {
+  Register overflow_dst = t9;
+  DCHECK(!dst.is(scratch));
+  DCHECK(!dst.is(overflow_dst));
+  DCHECK(!scratch.is(overflow_dst));
+  DCHECK(!left.is(overflow_dst));
+  DCHECK(!right.is(overflow_dst));
+  DCHECK(!left.is(scratch));
+  DCHECK(!right.is(scratch));
+
+  if (left.is(right) && dst.is(left)) {
+    mov(overflow_dst, right);
+    right = overflow_dst;
+  }
+
+  if (dst.is(left)) {
+    mov(scratch, left);           // Preserve left.
+    daddu(dst, left, right);      // Left is overwritten.
+    xor_(scratch, dst, scratch);  // Original left.
+    xor_(overflow_dst, dst, right);
+    and_(overflow_dst, overflow_dst, scratch);
+  } else if (dst.is(right)) {
+    mov(scratch, right);          // Preserve right.
+    daddu(dst, left, right);      // Right is overwritten.
+    xor_(scratch, dst, scratch);  // Original right.
+    xor_(overflow_dst, dst, left);
+    and_(overflow_dst, overflow_dst, scratch);
+  } else {
+    daddu(dst, left, right);
+    xor_(overflow_dst, dst, left);
+    xor_(scratch, dst, right);
+    and_(overflow_dst, scratch, overflow_dst);
+  }
+  BranchOvfHelper(this, overflow_dst, overflow_label, no_overflow_label);
+}
+
+
 void MacroAssembler::SubuAndCheckForOverflow(Register dst, Register left,
                                              const Operand& right,
                                              Register overflow_dst,
@@ -4861,6 +4945,83 @@ void MacroAssembler::DsubuAndCheckForOverflow(Register dst, Register left,
   }
 }
 
+
+void MacroAssembler::DsubBranchOvf(Register dst, Register left,
+                                   const Operand& right, Label* overflow_label,
+                                   Label* no_overflow_label, Register scratch) {
+  DCHECK(overflow_label || no_overflow_label);
+  if (right.is_reg()) {
+    DsubBranchOvf(dst, left, right.rm(), overflow_label, no_overflow_label,
+                  scratch);
+  } else {
+    Register overflow_dst = t9;
+    DCHECK(!dst.is(scratch));
+    DCHECK(!dst.is(overflow_dst));
+    DCHECK(!scratch.is(overflow_dst));
+    DCHECK(!left.is(overflow_dst));
+    DCHECK(!left.is(scratch));
+    li(overflow_dst, right);  // Load right.
+    if (dst.is(left)) {
+      mov(scratch, left);                         // Preserve left.
+      Dsubu(dst, left, overflow_dst);             // Left is overwritten.
+      xor_(overflow_dst, scratch, overflow_dst);  // scratch is original left.
+      xor_(scratch, dst, scratch);                // scratch is original left.
+      and_(overflow_dst, scratch, overflow_dst);
+    } else {
+      Dsubu(dst, left, overflow_dst);
+      xor_(scratch, left, overflow_dst);
+      xor_(overflow_dst, dst, left);
+      and_(overflow_dst, scratch, overflow_dst);
+    }
+    BranchOvfHelper(this, overflow_dst, overflow_label, no_overflow_label);
+  }
+}
+
+
+void MacroAssembler::DsubBranchOvf(Register dst, Register left, Register right,
+                                   Label* overflow_label,
+                                   Label* no_overflow_label, Register scratch) {
+  DCHECK(overflow_label || no_overflow_label);
+  Register overflow_dst = t9;
+  DCHECK(!dst.is(scratch));
+  DCHECK(!dst.is(overflow_dst));
+  DCHECK(!scratch.is(overflow_dst));
+  DCHECK(!overflow_dst.is(left));
+  DCHECK(!overflow_dst.is(right));
+  DCHECK(!scratch.is(left));
+  DCHECK(!scratch.is(right));
+
+  // This happens with some crankshaft code. Since Subu works fine if
+  // left == right, let's not make that restriction here.
+  if (left.is(right)) {
+    mov(dst, zero_reg);
+    if (no_overflow_label) {
+      Branch(no_overflow_label);
+    }
+  }
+
+  if (dst.is(left)) {
+    mov(scratch, left);                // Preserve left.
+    dsubu(dst, left, right);           // Left is overwritten.
+    xor_(overflow_dst, dst, scratch);  // scratch is original left.
+    xor_(scratch, scratch, right);     // scratch is original left.
+    and_(overflow_dst, scratch, overflow_dst);
+  } else if (dst.is(right)) {
+    mov(scratch, right);      // Preserve right.
+    dsubu(dst, left, right);  // Right is overwritten.
+    xor_(overflow_dst, dst, left);
+    xor_(scratch, left, scratch);  // Original right.
+    and_(overflow_dst, scratch, overflow_dst);
+  } else {
+    dsubu(dst, left, right);
+    xor_(overflow_dst, dst, left);
+    xor_(scratch, left, right);
+    and_(overflow_dst, scratch, overflow_dst);
+  }
+  BranchOvfHelper(this, overflow_dst, overflow_label, no_overflow_label);
+}
+
+
 void MacroAssembler::CallRuntime(const Runtime::Function* f, int num_arguments,
                                  SaveFPRegsMode save_doubles,
                                  BranchDelaySlot bd) {
@@ -4894,8 +5055,7 @@ void MacroAssembler::CallExternalReference(const ExternalReference& ext,
 
 
 void MacroAssembler::TailCallExternalReference(const ExternalReference& ext,
-                                               int num_arguments,
-                                               int result_size) {
+                                               int num_arguments) {
   // TODO(1236192): Most runtime routines don't need the number of
   // arguments passed in because it is constant. At some point we
   // should remove this need and make the runtime routine entry code
@@ -4906,11 +5066,8 @@ void MacroAssembler::TailCallExternalReference(const ExternalReference& ext,
 
 
 void MacroAssembler::TailCallRuntime(Runtime::FunctionId fid,
-                                     int num_arguments,
-                                     int result_size) {
-  TailCallExternalReference(ExternalReference(fid, isolate()),
-                            num_arguments,
-                            result_size);
+                                     int num_arguments) {
+  TailCallExternalReference(ExternalReference(fid, isolate()), num_arguments);
 }
 
 
@@ -5566,6 +5723,17 @@ void MacroAssembler::AssertFunction(Register object) {
 }
 
 
+void MacroAssembler::AssertBoundFunction(Register object) {
+  if (emit_debug_code()) {
+    STATIC_ASSERT(kSmiTag == 0);
+    SmiTst(object, t8);
+    Check(ne, kOperandIsASmiAndNotABoundFunction, t8, Operand(zero_reg));
+    GetObjectType(object, t8, t8);
+    Check(eq, kOperandIsNotABoundFunction, t8, Operand(JS_BOUND_FUNCTION_TYPE));
+  }
+}
+
+
 void MacroAssembler::AssertUndefinedOrAllocationSite(Register object,
                                                      Register scratch) {
   if (emit_debug_code()) {
@@ -5859,28 +6027,6 @@ void MacroAssembler::HasColor(Register object,
 }
 
 
-// Detect some, but not all, common pointer-free objects.  This is used by the
-// incremental write barrier which doesn't care about oddballs (they are always
-// marked black immediately so this code is not hit).
-void MacroAssembler::JumpIfDataObject(Register value,
-                                      Register scratch,
-                                      Label* not_data_object) {
-  DCHECK(!AreAliased(value, scratch, t8, no_reg));
-  Label is_data_object;
-  ld(scratch, FieldMemOperand(value, HeapObject::kMapOffset));
-  LoadRoot(t8, Heap::kHeapNumberMapRootIndex);
-  Branch(&is_data_object, eq, t8, Operand(scratch));
-  DCHECK(kIsIndirectStringTag == 1 && kIsIndirectStringMask == 1);
-  DCHECK(kNotStringTag == 0x80 && kIsNotStringMask == 0x80);
-  // If it's a string and it's not a cons string then it's an object containing
-  // no GC pointers.
-  lbu(scratch, FieldMemOperand(scratch, Map::kInstanceTypeOffset));
-  And(t8, scratch, Operand(kIsIndirectStringMask | kIsNotStringMask));
-  Branch(not_data_object, ne, t8, Operand(zero_reg));
-  bind(&is_data_object);
-}
-
-
 void MacroAssembler::GetMarkBits(Register addr_reg,
                                  Register bitmap_reg,
                                  Register mask_reg) {
@@ -5900,12 +6046,9 @@ void MacroAssembler::GetMarkBits(Register addr_reg,
 }
 
 
-void MacroAssembler::EnsureNotWhite(
-    Register value,
-    Register bitmap_scratch,
-    Register mask_scratch,
-    Register load_scratch,
-    Label* value_is_white_and_not_data) {
+void MacroAssembler::JumpIfWhite(Register value, Register bitmap_scratch,
+                                 Register mask_scratch, Register load_scratch,
+                                 Label* value_is_white) {
   DCHECK(!AreAliased(value, bitmap_scratch, mask_scratch, t8));
   GetMarkBits(value, bitmap_scratch, mask_scratch);
 
@@ -5914,8 +6057,6 @@ void MacroAssembler::EnsureNotWhite(
   DCHECK(strcmp(Marking::kBlackBitPattern, "10") == 0);
   DCHECK(strcmp(Marking::kGreyBitPattern, "11") == 0);
   DCHECK(strcmp(Marking::kImpossibleBitPattern, "01") == 0);
-
-  Label done;
 
   // Since both black and grey have a 1 in the first position and white does
   // not have a 1 there we only need to check one bit.
@@ -5927,93 +6068,7 @@ void MacroAssembler::EnsureNotWhite(
     lwu(load_scratch, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
   }
   And(t8, mask_scratch, load_scratch);
-  Branch(&done, ne, t8, Operand(zero_reg));
-
-  if (emit_debug_code()) {
-    // Check for impossible bit pattern.
-    Label ok;
-    // sll may overflow, making the check conservative.
-    dsll(t8, mask_scratch, 1);
-    And(t8, load_scratch, t8);
-    Branch(&ok, eq, t8, Operand(zero_reg));
-    stop("Impossible marking bit pattern");
-    bind(&ok);
-  }
-
-  // Value is white.  We check whether it is data that doesn't need scanning.
-  // Currently only checks for HeapNumber and non-cons strings.
-  Register map = load_scratch;  // Holds map while checking type.
-  Register length = load_scratch;  // Holds length of object after testing type.
-  Label is_data_object;
-
-  // Check for heap-number
-  ld(map, FieldMemOperand(value, HeapObject::kMapOffset));
-  LoadRoot(t8, Heap::kHeapNumberMapRootIndex);
-  {
-    Label skip;
-    Branch(&skip, ne, t8, Operand(map));
-    li(length, HeapNumber::kSize);
-    Branch(&is_data_object);
-    bind(&skip);
-  }
-
-  // Check for strings.
-  DCHECK(kIsIndirectStringTag == 1 && kIsIndirectStringMask == 1);
-  DCHECK(kNotStringTag == 0x80 && kIsNotStringMask == 0x80);
-  // If it's a string and it's not a cons string then it's an object containing
-  // no GC pointers.
-  Register instance_type = load_scratch;
-  lbu(instance_type, FieldMemOperand(map, Map::kInstanceTypeOffset));
-  And(t8, instance_type, Operand(kIsIndirectStringMask | kIsNotStringMask));
-  Branch(value_is_white_and_not_data, ne, t8, Operand(zero_reg));
-  // It's a non-indirect (non-cons and non-slice) string.
-  // If it's external, the length is just ExternalString::kSize.
-  // Otherwise it's String::kHeaderSize + string->length() * (1 or 2).
-  // External strings are the only ones with the kExternalStringTag bit
-  // set.
-  DCHECK_EQ(0, kSeqStringTag & kExternalStringTag);
-  DCHECK_EQ(0, kConsStringTag & kExternalStringTag);
-  And(t8, instance_type, Operand(kExternalStringTag));
-  {
-    Label skip;
-    Branch(&skip, eq, t8, Operand(zero_reg));
-    li(length, ExternalString::kSize);
-    Branch(&is_data_object);
-    bind(&skip);
-  }
-
-  // Sequential string, either Latin1 or UC16.
-  // For Latin1 (char-size of 1) we shift the smi tag away to get the length.
-  // For UC16 (char-size of 2) we just leave the smi tag in place, thereby
-  // getting the length multiplied by 2.
-  DCHECK(kOneByteStringTag == 4 && kStringEncodingMask == 4);
-  DCHECK(kSmiTag == 0 && kSmiTagSize == 1);
-  lw(t9, UntagSmiFieldMemOperand(value, String::kLengthOffset));
-  And(t8, instance_type, Operand(kStringEncodingMask));
-  {
-    Label skip;
-    Branch(&skip, ne, t8, Operand(zero_reg));
-    // Adjust length for UC16.
-    dsll(t9, t9, 1);
-    bind(&skip);
-  }
-  Daddu(length, t9, Operand(SeqString::kHeaderSize + kObjectAlignmentMask));
-  DCHECK(!length.is(t8));
-  And(length, length, Operand(~kObjectAlignmentMask));
-
-  bind(&is_data_object);
-  // Value is a data object, and it is white.  Mark it black.  Since we know
-  // that the object is white we can make it black by flipping one bit.
-  lw(t8, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
-  Or(t8, t8, Operand(mask_scratch));
-  sw(t8, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
-
-  And(bitmap_scratch, bitmap_scratch, Operand(~Page::kPageAlignmentMask));
-  lw(t8, MemOperand(bitmap_scratch, MemoryChunk::kLiveBytesOffset));
-  Addu(t8, t8, Operand(length));
-  sw(t8, MemOperand(bitmap_scratch, MemoryChunk::kLiveBytesOffset));
-
-  bind(&done);
+  Branch(value_is_white, eq, t8, Operand(zero_reg));
 }
 
 
@@ -6218,17 +6273,13 @@ void MacroAssembler::JumpIfDictionaryInPrototypeChain(
 }
 
 
-bool AreAliased(Register reg1,
-                Register reg2,
-                Register reg3,
-                Register reg4,
-                Register reg5,
-                Register reg6,
-                Register reg7,
-                Register reg8) {
-  int n_of_valid_regs = reg1.is_valid() + reg2.is_valid() +
-      reg3.is_valid() + reg4.is_valid() + reg5.is_valid() + reg6.is_valid() +
-      reg7.is_valid() + reg8.is_valid();
+bool AreAliased(Register reg1, Register reg2, Register reg3, Register reg4,
+                Register reg5, Register reg6, Register reg7, Register reg8,
+                Register reg9, Register reg10) {
+  int n_of_valid_regs = reg1.is_valid() + reg2.is_valid() + reg3.is_valid() +
+                        reg4.is_valid() + reg5.is_valid() + reg6.is_valid() +
+                        reg7.is_valid() + reg8.is_valid() + reg9.is_valid() +
+                        reg10.is_valid();
 
   RegList regs = 0;
   if (reg1.is_valid()) regs |= reg1.bit();
@@ -6239,6 +6290,8 @@ bool AreAliased(Register reg1,
   if (reg6.is_valid()) regs |= reg6.bit();
   if (reg7.is_valid()) regs |= reg7.bit();
   if (reg8.is_valid()) regs |= reg8.bit();
+  if (reg9.is_valid()) regs |= reg9.bit();
+  if (reg10.is_valid()) regs |= reg10.bit();
   int n_of_non_aliasing_regs = NumRegs(regs);
 
   return n_of_valid_regs != n_of_non_aliasing_regs;

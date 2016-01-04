@@ -1835,6 +1835,7 @@ void MacroAssembler::StoreNumberToDoubleElements(
     Register value_reg, Register key_reg, Register elements_reg,
     Register scratch1, DoubleRegister double_scratch, Label* fail,
     int elements_offset) {
+  DCHECK(!AreAliased(value_reg, key_reg, elements_reg, scratch1));
   Label smi_value, store;
 
   // Handle smi values specially.
@@ -2312,8 +2313,7 @@ void MacroAssembler::CallExternalReference(const ExternalReference& ext,
 
 
 void MacroAssembler::TailCallExternalReference(const ExternalReference& ext,
-                                               int num_arguments,
-                                               int result_size) {
+                                               int num_arguments) {
   // TODO(1236192): Most runtime routines don't need the number of
   // arguments passed in because it is constant. At some point we
   // should remove this need and make the runtime routine entry code
@@ -2323,10 +2323,9 @@ void MacroAssembler::TailCallExternalReference(const ExternalReference& ext,
 }
 
 
-void MacroAssembler::TailCallRuntime(Runtime::FunctionId fid, int num_arguments,
-                                     int result_size) {
-  TailCallExternalReference(ExternalReference(fid, isolate()), num_arguments,
-                            result_size);
+void MacroAssembler::TailCallRuntime(Runtime::FunctionId fid,
+                                     int num_arguments) {
+  TailCallExternalReference(ExternalReference(fid, isolate()), num_arguments);
 }
 
 
@@ -2642,6 +2641,19 @@ void MacroAssembler::AssertFunction(Register object) {
     CompareObjectType(object, object, object, JS_FUNCTION_TYPE);
     pop(object);
     Check(eq, kOperandIsNotAFunction);
+  }
+}
+
+
+void MacroAssembler::AssertBoundFunction(Register object) {
+  if (emit_debug_code()) {
+    STATIC_ASSERT(kSmiTag == 0);
+    TestIfSmi(object, r0);
+    Check(ne, kOperandIsASmiAndNotABoundFunction, cr0);
+    push(object);
+    CompareObjectType(object, object, object, JS_BOUND_FUNCTION_TYPE);
+    pop(object);
+    Check(eq, kOperandIsNotABoundFunction);
   }
 }
 
@@ -3203,27 +3215,6 @@ void MacroAssembler::HasColor(Register object, Register bitmap_scratch,
 }
 
 
-// Detect some, but not all, common pointer-free objects.  This is used by the
-// incremental write barrier which doesn't care about oddballs (they are always
-// marked black immediately so this code is not hit).
-void MacroAssembler::JumpIfDataObject(Register value, Register scratch,
-                                      Label* not_data_object) {
-  Label is_data_object;
-  LoadP(scratch, FieldMemOperand(value, HeapObject::kMapOffset));
-  CompareRoot(scratch, Heap::kHeapNumberMapRootIndex);
-  beq(&is_data_object);
-  DCHECK(kIsIndirectStringTag == 1 && kIsIndirectStringMask == 1);
-  DCHECK(kNotStringTag == 0x80 && kIsNotStringMask == 0x80);
-  // If it's a string and it's not a cons string then it's an object containing
-  // no GC pointers.
-  lbz(scratch, FieldMemOperand(scratch, Map::kInstanceTypeOffset));
-  STATIC_ASSERT((kIsIndirectStringMask | kIsNotStringMask) == 0x81);
-  andi(scratch, scratch, Operand(kIsIndirectStringMask | kIsNotStringMask));
-  bne(not_data_object, cr0);
-  bind(&is_data_object);
-}
-
-
 void MacroAssembler::GetMarkBits(Register addr_reg, Register bitmap_reg,
                                  Register mask_reg) {
   DCHECK(!AreAliased(addr_reg, bitmap_reg, mask_reg, no_reg));
@@ -3240,10 +3231,9 @@ void MacroAssembler::GetMarkBits(Register addr_reg, Register bitmap_reg,
 }
 
 
-void MacroAssembler::EnsureNotWhite(Register value, Register bitmap_scratch,
-                                    Register mask_scratch,
-                                    Register load_scratch,
-                                    Label* value_is_white_and_not_data) {
+void MacroAssembler::JumpIfWhite(Register value, Register bitmap_scratch,
+                                 Register mask_scratch, Register load_scratch,
+                                 Label* value_is_white) {
   DCHECK(!AreAliased(value, bitmap_scratch, mask_scratch, ip));
   GetMarkBits(value, bitmap_scratch, mask_scratch);
 
@@ -3253,104 +3243,11 @@ void MacroAssembler::EnsureNotWhite(Register value, Register bitmap_scratch,
   DCHECK(strcmp(Marking::kGreyBitPattern, "11") == 0);
   DCHECK(strcmp(Marking::kImpossibleBitPattern, "01") == 0);
 
-  Label done;
-
   // Since both black and grey have a 1 in the first position and white does
   // not have a 1 there we only need to check one bit.
   lwz(load_scratch, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
   and_(r0, mask_scratch, load_scratch, SetRC);
-  bne(&done, cr0);
-
-  if (emit_debug_code()) {
-    // Check for impossible bit pattern.
-    Label ok;
-    // LSL may overflow, making the check conservative.
-    slwi(r0, mask_scratch, Operand(1));
-    and_(r0, load_scratch, r0, SetRC);
-    beq(&ok, cr0);
-    stop("Impossible marking bit pattern");
-    bind(&ok);
-  }
-
-  // Value is white.  We check whether it is data that doesn't need scanning.
-  // Currently only checks for HeapNumber and non-cons strings.
-  Register map = load_scratch;     // Holds map while checking type.
-  Register length = load_scratch;  // Holds length of object after testing type.
-  Label is_data_object, maybe_string_object, is_string_object, is_encoded;
-#if V8_TARGET_ARCH_PPC64
-  Label length_computed;
-#endif
-
-
-  // Check for heap-number
-  LoadP(map, FieldMemOperand(value, HeapObject::kMapOffset));
-  CompareRoot(map, Heap::kHeapNumberMapRootIndex);
-  bne(&maybe_string_object);
-  li(length, Operand(HeapNumber::kSize));
-  b(&is_data_object);
-  bind(&maybe_string_object);
-
-  // Check for strings.
-  DCHECK(kIsIndirectStringTag == 1 && kIsIndirectStringMask == 1);
-  DCHECK(kNotStringTag == 0x80 && kIsNotStringMask == 0x80);
-  // If it's a string and it's not a cons string then it's an object containing
-  // no GC pointers.
-  Register instance_type = load_scratch;
-  lbz(instance_type, FieldMemOperand(map, Map::kInstanceTypeOffset));
-  andi(r0, instance_type, Operand(kIsIndirectStringMask | kIsNotStringMask));
-  bne(value_is_white_and_not_data, cr0);
-  // It's a non-indirect (non-cons and non-slice) string.
-  // If it's external, the length is just ExternalString::kSize.
-  // Otherwise it's String::kHeaderSize + string->length() * (1 or 2).
-  // External strings are the only ones with the kExternalStringTag bit
-  // set.
-  DCHECK_EQ(0, kSeqStringTag & kExternalStringTag);
-  DCHECK_EQ(0, kConsStringTag & kExternalStringTag);
-  andi(r0, instance_type, Operand(kExternalStringTag));
-  beq(&is_string_object, cr0);
-  li(length, Operand(ExternalString::kSize));
-  b(&is_data_object);
-  bind(&is_string_object);
-
-  // Sequential string, either Latin1 or UC16.
-  // For Latin1 (char-size of 1) we untag the smi to get the length.
-  // For UC16 (char-size of 2):
-  //   - (32-bit) we just leave the smi tag in place, thereby getting
-  //              the length multiplied by 2.
-  //   - (64-bit) we compute the offset in the 2-byte array
-  DCHECK(kOneByteStringTag == 4 && kStringEncodingMask == 4);
-  LoadP(ip, FieldMemOperand(value, String::kLengthOffset));
-  andi(r0, instance_type, Operand(kStringEncodingMask));
-  beq(&is_encoded, cr0);
-  SmiUntag(ip);
-#if V8_TARGET_ARCH_PPC64
-  b(&length_computed);
-#endif
-  bind(&is_encoded);
-#if V8_TARGET_ARCH_PPC64
-  SmiToShortArrayOffset(ip, ip);
-  bind(&length_computed);
-#else
-  DCHECK(kSmiShift == 1);
-#endif
-  addi(length, ip, Operand(SeqString::kHeaderSize + kObjectAlignmentMask));
-  li(r0, Operand(~kObjectAlignmentMask));
-  and_(length, length, r0);
-
-  bind(&is_data_object);
-  // Value is a data object, and it is white.  Mark it black.  Since we know
-  // that the object is white we can make it black by flipping one bit.
-  lwz(ip, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
-  orx(ip, ip, mask_scratch);
-  stw(ip, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
-
-  mov(ip, Operand(~Page::kPageAlignmentMask));
-  and_(bitmap_scratch, bitmap_scratch, ip);
-  lwz(ip, MemOperand(bitmap_scratch, MemoryChunk::kLiveBytesOffset));
-  add(ip, ip, length);
-  stw(ip, MemOperand(bitmap_scratch, MemoryChunk::kLiveBytesOffset));
-
-  bind(&done);
+  beq(value_is_white, cr0);
 }
 
 
@@ -4321,10 +4218,12 @@ void MacroAssembler::JumpIfDictionaryInPrototypeChain(Register object,
 
 #ifdef DEBUG
 bool AreAliased(Register reg1, Register reg2, Register reg3, Register reg4,
-                Register reg5, Register reg6, Register reg7, Register reg8) {
+                Register reg5, Register reg6, Register reg7, Register reg8,
+                Register reg9, Register reg10) {
   int n_of_valid_regs = reg1.is_valid() + reg2.is_valid() + reg3.is_valid() +
                         reg4.is_valid() + reg5.is_valid() + reg6.is_valid() +
-                        reg7.is_valid() + reg8.is_valid();
+                        reg7.is_valid() + reg8.is_valid() + reg9.is_valid() +
+                        reg10.is_valid();
 
   RegList regs = 0;
   if (reg1.is_valid()) regs |= reg1.bit();
@@ -4335,6 +4234,8 @@ bool AreAliased(Register reg1, Register reg2, Register reg3, Register reg4,
   if (reg6.is_valid()) regs |= reg6.bit();
   if (reg7.is_valid()) regs |= reg7.bit();
   if (reg8.is_valid()) regs |= reg8.bit();
+  if (reg9.is_valid()) regs |= reg9.bit();
+  if (reg10.is_valid()) regs |= reg10.bit();
   int n_of_non_aliasing_regs = NumRegs(regs);
 
   return n_of_valid_regs != n_of_non_aliasing_regs;

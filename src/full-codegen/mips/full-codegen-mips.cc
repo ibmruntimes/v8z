@@ -269,6 +269,28 @@ void FullCodeGenerator::Generate() {
     SetVar(new_target_var, a3, a0, a2);
   }
 
+  // Possibly allocate RestParameters
+  int rest_index;
+  Variable* rest_param = scope()->rest_parameter(&rest_index);
+  if (rest_param) {
+    Comment cmnt(masm_, "[ Allocate rest parameter array");
+
+    int num_parameters = info->scope()->num_parameters();
+    int offset = num_parameters * kPointerSize;
+
+    __ Addu(a3, fp, Operand(StandardFrameConstants::kCallerSPOffset + offset));
+    __ li(a2, Operand(Smi::FromInt(num_parameters)));
+    __ li(a1, Operand(Smi::FromInt(rest_index)));
+    __ li(a0, Operand(Smi::FromInt(language_mode())));
+    __ Push(a3, a2, a1, a0);
+    function_in_register_a1 = false;
+
+    RestParamAccessStub stub(isolate());
+    __ CallStub(&stub);
+
+    SetVar(rest_param, v0, a1, a2);
+  }
+
   Variable* arguments = scope()->arguments();
   if (arguments != NULL) {
     // Function uses arguments object.
@@ -3124,7 +3146,7 @@ void FullCodeGenerator::EmitIsFunction(CallRuntime* expr) {
   __ JumpIfSmi(v0, if_false);
   __ GetObjectType(v0, a1, a2);
   PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
-  __ Branch(if_true, eq, a2, Operand(JS_FUNCTION_TYPE));
+  __ Branch(if_true, hs, a2, Operand(FIRST_FUNCTION_TYPE));
   __ Branch(if_false);
 
   context()->Plug(if_true, if_false);
@@ -3316,22 +3338,14 @@ void FullCodeGenerator::EmitClassOf(CallRuntime* expr) {
 
   VisitForAccumulatorValue(args->at(0));
 
-  // If the object is a smi, we return null.
+  // If the object is not a JSReceiver, we return null.
   __ JumpIfSmi(v0, &null);
-
-  // Check that the object is a JS object but take special care of JS
-  // functions to make sure they have 'Function' as their class.
-  // Assume that there are only two callable types, and one of them is at
-  // either end of the type range for JS object types. Saves extra comparisons.
-  STATIC_ASSERT(NUM_OF_CALLABLE_SPEC_OBJECT_TYPES == 2);
+  STATIC_ASSERT(LAST_JS_RECEIVER_TYPE == LAST_TYPE);
   __ GetObjectType(v0, v0, a1);  // Map is now in v0.
   __ Branch(&null, lt, a1, Operand(FIRST_JS_RECEIVER_TYPE));
 
-  STATIC_ASSERT(LAST_NONCALLABLE_SPEC_OBJECT_TYPE ==
-                LAST_JS_RECEIVER_TYPE - 1);
-  __ Branch(&function, eq, a1, Operand(LAST_JS_RECEIVER_TYPE));
-  // Assume that there is no larger type.
-  STATIC_ASSERT(LAST_NONCALLABLE_SPEC_OBJECT_TYPE == LAST_TYPE - 1);
+  // Return 'Function' for JSFunction objects.
+  __ Branch(&function, eq, a1, Operand(JS_FUNCTION_TYPE));
 
   // Check if the constructor in the map is a JS function.
   Register instance_type = a2;

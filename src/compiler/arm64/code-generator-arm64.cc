@@ -657,8 +657,13 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ Frintn(i.OutputDoubleRegister(), i.InputDoubleRegister(0));
       break;
     case kArm64Add:
+      if (FlagsModeField::decode(opcode) != kFlags_none) {
+        __ Adds(i.OutputRegister(), i.InputOrZeroRegister64(0),
+                i.InputOperand2_64(1));
+      } else {
       __ Add(i.OutputRegister(), i.InputOrZeroRegister64(0),
              i.InputOperand2_64(1));
+      }
       break;
     case kArm64Add32:
       if (FlagsModeField::decode(opcode) != kFlags_none) {
@@ -800,8 +805,13 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
              i.InputOperand2_32(1));
       break;
     case kArm64Sub:
+      if (FlagsModeField::decode(opcode) != kFlags_none) {
+        __ Subs(i.OutputRegister(), i.InputOrZeroRegister64(0),
+                i.InputOperand2_64(1));
+      } else {
       __ Sub(i.OutputRegister(), i.InputOrZeroRegister64(0),
              i.InputOperand2_64(1));
+      }
       break;
     case kArm64Sub32:
       if (FlagsModeField::decode(opcode) != kFlags_none) {
@@ -1070,16 +1080,16 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     case kArm64Float32ToUint64:
       __ Fcvtzu(i.OutputRegister64(), i.InputFloat32Register(0));
       if (i.OutputCount() > 1) {
-        __ Fcmp(i.InputFloat32Register(0), 0.0);
-        __ Ccmp(i.OutputRegister(0), -1, ZFlag, ge);
+        __ Fcmp(i.InputFloat32Register(0), -1.0);
+        __ Ccmp(i.OutputRegister(0), -1, ZFlag, gt);
         __ Cset(i.OutputRegister(1), ne);
       }
       break;
     case kArm64Float64ToUint64:
       __ Fcvtzu(i.OutputRegister64(), i.InputDoubleRegister(0));
       if (i.OutputCount() > 1) {
-        __ Fcmp(i.InputDoubleRegister(0), 0.0);
-        __ Ccmp(i.OutputRegister(0), -1, ZFlag, ge);
+        __ Fcmp(i.InputDoubleRegister(0), -1.0);
+        __ Ccmp(i.OutputRegister(0), -1, ZFlag, gt);
         __ Cset(i.OutputRegister(1), ne);
       }
       break;

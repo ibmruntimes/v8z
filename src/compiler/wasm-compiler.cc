@@ -2,6 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "src/compiler/wasm-compiler.h"
+
+#include "src/isolate-inl.h"
+
+#include "src/base/platform/platform.h"
 
 #include "src/compiler/access-builder.h"
 #include "src/compiler/change-lowering.h"
@@ -21,7 +26,6 @@
 #include "src/compiler/simplified-operator.h"
 #include "src/compiler/source-position.h"
 #include "src/compiler/typer.h"
-#include "src/compiler/wasm-compiler.h"
 
 #include "src/code-factory.h"
 #include "src/code-stubs.h"
@@ -340,7 +344,8 @@ Node* WasmGraphBuilder::Merge(unsigned count, Node** controls) {
 Node* WasmGraphBuilder::Phi(wasm::LocalType type, unsigned count, Node** vals,
                             Node* control) {
   DCHECK(IrOpcode::IsMergeOpcode(control->opcode()));
-  Node** buf = Realloc(vals, count + 1);
+  Node** buf = Realloc(vals, count);
+  buf = Realloc(buf, count + 1);
   buf[count] = control;
   return graph()->NewNode(jsgraph()->common()->Phi(type, count), count + 1,
                           buf);
@@ -350,7 +355,8 @@ Node* WasmGraphBuilder::Phi(wasm::LocalType type, unsigned count, Node** vals,
 Node* WasmGraphBuilder::EffectPhi(unsigned count, Node** effects,
                                   Node* control) {
   DCHECK(IrOpcode::IsMergeOpcode(control->opcode()));
-  Node** buf = Realloc(effects, count + 1);
+  Node** buf = Realloc(effects, count);
+  buf = Realloc(buf, count + 1);
   buf[count] = control;
   return graph()->NewNode(jsgraph()->common()->EffectPhi(count), count + 1,
                           buf);
@@ -677,11 +683,9 @@ Node* WasmGraphBuilder::Unop(wasm::WasmOpcode opcode, Node* input) {
       op = m->Float64Sqrt();
       break;
     case wasm::kExprI32SConvertF64:
-      op = m->ChangeFloat64ToInt32();
-      break;
+      return BuildI32SConvertF64(input);
     case wasm::kExprI32UConvertF64:
-      op = m->ChangeFloat64ToUint32();
-      break;
+      return BuildI32UConvertF64(input);
     case wasm::kExprF32ConvertF64:
       op = m->TruncateFloat64ToFloat32();
       break;
@@ -697,20 +701,14 @@ Node* WasmGraphBuilder::Unop(wasm::WasmOpcode opcode, Node* input) {
       op = m->TruncateFloat64ToFloat32();
       break;
     case wasm::kExprF32UConvertI32:
-      op = m->ChangeUint32ToFloat64();  // TODO(titzer): two conversions
+      op = m->ChangeUint32ToFloat64();
       input = graph()->NewNode(op, input);
       op = m->TruncateFloat64ToFloat32();
       break;
     case wasm::kExprI32SConvertF32:
-      op = m->ChangeFloat32ToFloat64();  // TODO(titzer): two conversions
-      input = graph()->NewNode(op, input);
-      op = m->ChangeFloat64ToInt32();
-      break;
+      return BuildI32SConvertF32(input);
     case wasm::kExprI32UConvertF32:
-      op = m->ChangeFloat32ToFloat64();  // TODO(titzer): two conversions
-      input = graph()->NewNode(op, input);
-      op = m->ChangeFloat64ToUint32();
-      break;
+      return BuildI32UConvertF32(input);
     case wasm::kExprF64ConvertF32:
       op = m->ChangeFloat32ToFloat64();
       break;
@@ -959,7 +957,8 @@ Node* WasmGraphBuilder::Return(unsigned count, Node** vals) {
     count = 1;
   }
 
-  Node** buf = Realloc(vals, count + 2);
+  Node** buf = Realloc(vals, count);
+  buf = Realloc(buf, count + 2);
   buf[count] = *effect_;
   buf[count + 1] = *control_;
   Node* ret = graph()->NewNode(jsgraph()->common()->Return(), count + 2, vals);
@@ -1115,6 +1114,74 @@ Node* WasmGraphBuilder::BuildF64Max(Node* left, Node* right) {
       wasm::kAstF64, left,
       right_gt_left.Phi(wasm::kAstF64, right,
                         left_is_not_nan.Phi(wasm::kAstF64, right, left)));
+}
+
+
+Node* WasmGraphBuilder::BuildI32SConvertF32(Node* input) {
+  MachineOperatorBuilder* m = jsgraph()->machine();
+  // Truncation of the input value is needed for the overflow check later.
+  Node* trunc = Unop(wasm::kExprF32Trunc, input);
+  // TODO(titzer): two conversions
+  Node* f64_trunc = graph()->NewNode(m->ChangeFloat32ToFloat64(), trunc);
+  Node* result = graph()->NewNode(m->ChangeFloat64ToInt32(), f64_trunc);
+
+  // Convert the result back to f64. If we end up at a different value than the
+  // truncated input value, then there has been an overflow and we trap.
+  Node* check = Unop(wasm::kExprF64SConvertI32, result);
+  Node* overflow = Binop(wasm::kExprF64Ne, f64_trunc, check);
+  trap_->AddTrapIfTrue(kTrapFloatUnrepresentable, overflow);
+
+  return result;
+}
+
+
+Node* WasmGraphBuilder::BuildI32SConvertF64(Node* input) {
+  MachineOperatorBuilder* m = jsgraph()->machine();
+  // Truncation of the input value is needed for the overflow check later.
+  Node* trunc = Unop(wasm::kExprF64Trunc, input);
+  Node* result = graph()->NewNode(m->ChangeFloat64ToInt32(), trunc);
+
+  // Convert the result back to f64. If we end up at a different value than the
+  // truncated input value, then there has been an overflow and we trap.
+  Node* check = Unop(wasm::kExprF64SConvertI32, result);
+  Node* overflow = Binop(wasm::kExprF64Ne, trunc, check);
+  trap_->AddTrapIfTrue(kTrapFloatUnrepresentable, overflow);
+
+  return result;
+}
+
+
+Node* WasmGraphBuilder::BuildI32UConvertF32(Node* input) {
+  MachineOperatorBuilder* m = jsgraph()->machine();
+  // Truncation of the input value is needed for the overflow check later.
+  Node* trunc = Unop(wasm::kExprF32Trunc, input);
+  // TODO(titzer): two conversions
+  Node* f64_trunc = graph()->NewNode(m->ChangeFloat32ToFloat64(), trunc);
+  Node* result = graph()->NewNode(m->ChangeFloat64ToUint32(), f64_trunc);
+
+  // Convert the result back to f64. If we end up at a different value than the
+  // truncated input value, then there has been an overflow and we trap.
+  Node* check = Unop(wasm::kExprF64UConvertI32, result);
+  Node* overflow = Binop(wasm::kExprF64Ne, f64_trunc, check);
+  trap_->AddTrapIfTrue(kTrapFloatUnrepresentable, overflow);
+
+  return result;
+}
+
+
+Node* WasmGraphBuilder::BuildI32UConvertF64(Node* input) {
+  MachineOperatorBuilder* m = jsgraph()->machine();
+  // Truncation of the input value is needed for the overflow check later.
+  Node* trunc = Unop(wasm::kExprF64Trunc, input);
+  Node* result = graph()->NewNode(m->ChangeFloat64ToUint32(), trunc);
+
+  // Convert the result back to f64. If we end up at a different value than the
+  // truncated input value, then there has been an overflow and we trap.
+  Node* check = Unop(wasm::kExprF64UConvertI32, result);
+  Node* overflow = Binop(wasm::kExprF64Ne, trunc, check);
+  trap_->AddTrapIfTrue(kTrapFloatUnrepresentable, overflow);
+
+  return result;
 }
 
 
@@ -1624,7 +1691,8 @@ void WasmGraphBuilder::BoundsCheckMem(MachineType memtype, Node* index,
   ptrdiff_t size = module_->mem_end - module_->mem_start;
   byte memsize = wasm::WasmOpcodes::MemSize(memtype);
   Node* cond;
-  if (offset >= size || (offset + memsize) > size) {
+  if (static_cast<ptrdiff_t>(offset) >= size ||
+      static_cast<ptrdiff_t>(offset + memsize) > size) {
     // The access will always throw.
     cond = jsgraph()->Int32Constant(0);
   } else {
@@ -1713,11 +1781,9 @@ Node* WasmGraphBuilder::String(const char* string) {
 Graph* WasmGraphBuilder::graph() { return jsgraph()->graph(); }
 
 
-Handle<JSFunction> CompileJSToWasmWrapper(Isolate* isolate,
-                                          wasm::ModuleEnv* module,
-                                          Handle<String> name,
-                                          Handle<Code> wasm_code,
-                                          uint32_t index) {
+Handle<JSFunction> CompileJSToWasmWrapper(
+    Isolate* isolate, wasm::ModuleEnv* module, Handle<String> name,
+    Handle<Code> wasm_code, Handle<JSObject> module_object, uint32_t index) {
   wasm::WasmFunction* func = &module->module->functions->at(index);
 
   //----------------------------------------------------------------------------
@@ -1728,7 +1794,9 @@ Handle<JSFunction> CompileJSToWasmWrapper(Isolate* isolate,
   int params = static_cast<int>(func->sig->parameter_count());
   shared->set_length(params);
   shared->set_internal_formal_parameter_count(1 + params);
-  Handle<JSFunction> function = isolate->factory()->NewFunction(name);
+  Handle<JSFunction> function = isolate->factory()->NewFunction(
+      isolate->wasm_function_map(), name, MaybeHandle<Code>());
+  function->SetInternalField(0, *module_object);
   function->set_shared(*shared);
 
   //----------------------------------------------------------------------------
@@ -1788,17 +1856,15 @@ Handle<JSFunction> CompileJSToWasmWrapper(Isolate* isolate,
 #ifdef ENABLE_DISASSEMBLER
     // Disassemble the wrapper code for debugging.
     if (!code.is_null() && FLAG_print_opt_code) {
-      static const int kBufferSize = 128;
-      char buffer[kBufferSize];
+      Vector<char> buffer;
       const char* name = "";
       if (func->name_offset > 0) {
         const byte* ptr = module->module->module_start + func->name_offset;
         name = reinterpret_cast<const char*>(ptr);
       }
-      snprintf(buffer, kBufferSize, "JS->WASM function wrapper #%d:%s", index,
-               name);
+      SNPrintF(buffer, "JS->WASM function wrapper #%d:%s", index, name);
       OFStream os(stdout);
-      code->Disassemble(buffer, os);
+      code->Disassemble(buffer.start(), os);
     }
 #endif
     // Set the JSFunction's machine code.
@@ -1864,17 +1930,15 @@ Handle<Code> CompileWasmToJSWrapper(Isolate* isolate, wasm::ModuleEnv* module,
 #ifdef ENABLE_DISASSEMBLER
     // Disassemble the wrapper code for debugging.
     if (!code.is_null() && FLAG_print_opt_code) {
-      static const int kBufferSize = 128;
-      char buffer[kBufferSize];
+      Vector<char> buffer;
       const char* name = "";
       if (func->name_offset > 0) {
         const byte* ptr = module->module->module_start + func->name_offset;
         name = reinterpret_cast<const char*>(ptr);
       }
-      snprintf(buffer, kBufferSize, "WASM->JS function wrapper #%d:%s", index,
-               name);
+      SNPrintF(buffer, "WASM->JS function wrapper #%d:%s", index, name);
       OFStream os(stdout);
-      code->Disassemble(buffer, os);
+      code->Disassemble(buffer.start(), os);
     }
 #endif
   }
@@ -1927,11 +1991,10 @@ Handle<Code> CompileWasmFunction(wasm::ErrorThrower& thrower, Isolate* isolate,
       os << "Compilation failed: " << result << std::endl;
     }
     // Add the function as another context for the exception
-    const int kBufSize = 256;
-    char buffer[kBufSize];
-    snprintf(buffer, kBufSize, "Compiling WASM function #%d:%s failed:", index,
+    Vector<char> buffer;
+    SNPrintF(buffer, "Compiling WASM function #%d:%s failed:", index,
              module_env->module->GetName(function.name_offset));
-    thrower.Failed(buffer, result);
+    thrower.Failed(buffer.start(), result);
     return Handle<Code>::null();
   }
 
@@ -1946,16 +2009,15 @@ Handle<Code> CompileWasmFunction(wasm::ErrorThrower& thrower, Isolate* isolate,
 #ifdef ENABLE_DISASSEMBLER
   // Disassemble the code for debugging.
   if (!code.is_null() && FLAG_print_opt_code) {
-    static const int kBufferSize = 128;
-    char buffer[kBufferSize];
+    Vector<char> buffer;
     const char* name = "";
     if (function.name_offset > 0) {
       const byte* ptr = module_env->module->module_start + function.name_offset;
       name = reinterpret_cast<const char*>(ptr);
     }
-    snprintf(buffer, kBufferSize, "WASM function #%d:%s", index, name);
+    SNPrintF(buffer, "WASM function #%d:%s", index, name);
     OFStream os(stdout);
-    code->Disassemble(buffer, os);
+    code->Disassemble(buffer.start(), os);
   }
 #endif
   return code;

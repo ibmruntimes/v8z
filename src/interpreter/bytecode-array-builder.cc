@@ -71,6 +71,7 @@ BytecodeArrayBuilder::BytecodeArrayBuilder(Isolate* isolate, Zone* zone)
       last_block_end_(0),
       last_bytecode_start_(~0),
       exit_seen_in_block_(false),
+      unbound_jumps_(0),
       constants_map_(isolate->heap(), zone),
       constants_(zone),
       parameter_count_(-1),
@@ -78,6 +79,9 @@ BytecodeArrayBuilder::BytecodeArrayBuilder(Isolate* isolate, Zone* zone)
       context_register_count_(-1),
       temporary_register_count_(0),
       free_temporaries_(zone) {}
+
+
+BytecodeArrayBuilder::~BytecodeArrayBuilder() { DCHECK_EQ(0, unbound_jumps_); }
 
 
 void BytecodeArrayBuilder::set_locals_count(int number_of_locals) {
@@ -376,11 +380,12 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::MoveRegister(Register from,
 
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::LoadGlobal(
-    size_t name_index, int feedback_slot, LanguageMode language_mode,
+    const Handle<String> name, int feedback_slot, LanguageMode language_mode,
     TypeofMode typeof_mode) {
   // TODO(rmcilroy): Potentially store language and typeof information in an
   // operand rather than having extra bytecodes.
   Bytecode bytecode = BytecodeForLoadGlobal(language_mode, typeof_mode);
+  size_t name_index = GetConstantPoolEntry(name);
   if (FitsInIdx8Operand(name_index) && FitsInIdx8Operand(feedback_slot)) {
     Output(bytecode, static_cast<uint8_t>(name_index),
            static_cast<uint8_t>(feedback_slot));
@@ -396,8 +401,9 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::LoadGlobal(
 
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::StoreGlobal(
-    size_t name_index, int feedback_slot, LanguageMode language_mode) {
+    const Handle<String> name, int feedback_slot, LanguageMode language_mode) {
   Bytecode bytecode = BytecodeForStoreGlobal(language_mode);
+  size_t name_index = GetConstantPoolEntry(name);
   if (FitsInIdx8Operand(name_index) && FitsInIdx8Operand(feedback_slot)) {
     Output(bytecode, static_cast<uint8_t>(name_index),
            static_cast<uint8_t>(feedback_slot));
@@ -467,9 +473,10 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::StoreLookupSlot(
 
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::LoadNamedProperty(
-    Register object, size_t name_index, int feedback_slot,
+    Register object, const Handle<String> name, int feedback_slot,
     LanguageMode language_mode) {
   Bytecode bytecode = BytecodeForLoadIC(language_mode);
+  size_t name_index = GetConstantPoolEntry(name);
   if (FitsInIdx8Operand(name_index) && FitsInIdx8Operand(feedback_slot)) {
     Output(bytecode, object.ToOperand(), static_cast<uint8_t>(name_index),
            static_cast<uint8_t>(feedback_slot));
@@ -501,9 +508,10 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::LoadKeyedProperty(
 
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::StoreNamedProperty(
-    Register object, size_t name_index, int feedback_slot,
+    Register object, const Handle<String> name, int feedback_slot,
     LanguageMode language_mode) {
   Bytecode bytecode = BytecodeForStoreIC(language_mode);
+  size_t name_index = GetConstantPoolEntry(name);
   if (FitsInIdx8Operand(name_index) && FitsInIdx8Operand(feedback_slot)) {
     Output(bytecode, object.ToOperand(), static_cast<uint8_t>(name_index),
            static_cast<uint8_t>(feedback_slot));
@@ -782,6 +790,7 @@ void BytecodeArrayBuilder::PatchJump(
       UNIMPLEMENTED();
     }
   }
+  unbound_jumps_--;
 }
 
 
@@ -826,6 +835,7 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::OutputJump(Bytecode jump_bytecode,
     // that will be patched when the label is bound.
     label->set_referrer(bytecodes()->size());
     delta = 0;
+    unbound_jumps_++;
   }
 
   if (FitsInImm8Operand(delta)) {
@@ -884,21 +894,33 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::Return() {
 }
 
 
-BytecodeArrayBuilder& BytecodeArrayBuilder::ForInPrepare(Register receiver) {
-  Output(Bytecode::kForInPrepare, receiver.ToOperand());
+BytecodeArrayBuilder& BytecodeArrayBuilder::ForInPrepare(
+    Register cache_type, Register cache_array, Register cache_length) {
+  Output(Bytecode::kForInPrepare, cache_type.ToOperand(),
+         cache_array.ToOperand(), cache_length.ToOperand());
   return *this;
 }
 
 
-BytecodeArrayBuilder& BytecodeArrayBuilder::ForInNext(Register for_in_state,
+BytecodeArrayBuilder& BytecodeArrayBuilder::ForInDone(Register index,
+                                                      Register cache_length) {
+  Output(Bytecode::kForInDone, index.ToOperand(), cache_length.ToOperand());
+  return *this;
+}
+
+
+BytecodeArrayBuilder& BytecodeArrayBuilder::ForInNext(Register receiver,
+                                                      Register cache_type,
+                                                      Register cache_array,
                                                       Register index) {
-  Output(Bytecode::kForInNext, for_in_state.ToOperand(), index.ToOperand());
+  Output(Bytecode::kForInNext, receiver.ToOperand(), cache_type.ToOperand(),
+         cache_array.ToOperand(), index.ToOperand());
   return *this;
 }
 
 
-BytecodeArrayBuilder& BytecodeArrayBuilder::ForInDone(Register for_in_state) {
-  Output(Bytecode::kForInDone, for_in_state.ToOperand());
+BytecodeArrayBuilder& BytecodeArrayBuilder::ForInStep(Register index) {
+  Output(Bytecode::kForInStep, index.ToOperand());
   return *this;
 }
 
@@ -983,6 +1005,12 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::Delete(Register object,
 }
 
 
+BytecodeArrayBuilder& BytecodeArrayBuilder::DeleteLookupSlot() {
+  Output(Bytecode::kDeleteLookupSlot);
+  return *this;
+}
+
+
 size_t BytecodeArrayBuilder::GetConstantPoolEntry(Handle<Object> object) {
   // These constants shouldn't be added to the constant pool, the should use
   // specialzed bytecodes instead.
@@ -1013,6 +1041,34 @@ int BytecodeArrayBuilder::BorrowTemporaryRegister() {
     free_temporaries_.erase(pos);
     return retval;
   }
+}
+
+
+int BytecodeArrayBuilder::BorrowTemporaryRegisterNotInRange(int start_index,
+                                                            int end_index) {
+  auto index = free_temporaries_.lower_bound(start_index);
+  if (index == free_temporaries_.begin()) {
+    // If start_index is the first free register, check for a register
+    // greater than end_index.
+    index = free_temporaries_.upper_bound(end_index);
+    if (index == free_temporaries_.end()) {
+      temporary_register_count_ += 1;
+      return last_temporary_register().index();
+    }
+  } else {
+    // If there is a free register < start_index
+    index--;
+  }
+
+  int retval = *index;
+  free_temporaries_.erase(index);
+  return retval;
+}
+
+
+int BytecodeArrayBuilder::AllocateAndBorrowTemporaryRegister() {
+  temporary_register_count_ += 1;
+  return last_temporary_register().index();
 }
 
 
@@ -1444,7 +1500,21 @@ TemporaryRegisterScope::~TemporaryRegisterScope() {
 
 
 Register TemporaryRegisterScope::NewRegister() {
-  int allocated = builder_->BorrowTemporaryRegister();
+  int allocated = -1;
+  if (next_consecutive_count_ <= 0) {
+    allocated = builder_->BorrowTemporaryRegister();
+  } else {
+    allocated = builder_->BorrowTemporaryRegisterNotInRange(
+        next_consecutive_register_,
+        next_consecutive_register_ + next_consecutive_count_ - 1);
+  }
+  allocated_.push_back(allocated);
+  return Register(allocated);
+}
+
+
+Register TemporaryRegisterScope::AllocateNewRegister() {
+  int allocated = builder_->AllocateAndBorrowTemporaryRegister();
   allocated_.push_back(allocated);
   return Register(allocated);
 }

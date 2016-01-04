@@ -91,14 +91,9 @@ enum BindingFlags {
   V(SPREAD_ITERABLE_INDEX, JSFunction, spread_iterable)
 
 
-#define NATIVE_CONTEXT_JS_BUILTINS(V)                                 \
-  V(APPLY_PREPARE_BUILTIN_INDEX, JSFunction, apply_prepare_builtin)   \
-  V(CONCAT_ITERABLE_TO_ARRAY_BUILTIN_INDEX, JSFunction,               \
-    concat_iterable_to_array_builtin)                                 \
-  V(REFLECT_APPLY_PREPARE_BUILTIN_INDEX, JSFunction,                  \
-    reflect_apply_prepare_builtin)                                    \
-  V(REFLECT_CONSTRUCT_PREPARE_BUILTIN_INDEX, JSFunction,              \
-    reflect_construct_prepare_builtin)
+#define NATIVE_CONTEXT_JS_BUILTINS(V)                   \
+  V(CONCAT_ITERABLE_TO_ARRAY_BUILTIN_INDEX, JSFunction, \
+    concat_iterable_to_array_builtin)
 
 
 #define NATIVE_CONTEXT_IMPORTED_FIELDS(V)                                     \
@@ -263,6 +258,7 @@ enum BindingFlags {
     sloppy_function_without_prototype_map)                                     \
   V(SLOPPY_FUNCTION_WITH_READONLY_PROTOTYPE_MAP_INDEX, Map,                    \
     sloppy_function_with_readonly_prototype_map)                               \
+  V(WASM_FUNCTION_MAP_INDEX, Map, wasm_function_map)                           \
   V(SLOPPY_GENERATOR_FUNCTION_MAP_INDEX, Map, sloppy_generator_function_map)   \
   V(SLOW_ALIASED_ARGUMENTS_MAP_INDEX, Map, slow_aliased_arguments_map)         \
   V(STRICT_ARGUMENTS_MAP_INDEX, Map, strict_arguments_map)                     \

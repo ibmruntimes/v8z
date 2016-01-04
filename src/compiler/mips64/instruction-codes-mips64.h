@@ -14,8 +14,10 @@ namespace compiler {
 #define TARGET_ARCH_OPCODE_LIST(V)  \
   V(Mips64Add)                      \
   V(Mips64Dadd)                     \
+  V(Mips64DaddOvf)                  \
   V(Mips64Sub)                      \
   V(Mips64Dsub)                     \
+  V(Mips64DsubOvf)                  \
   V(Mips64Mul)                      \
   V(Mips64MulHigh)                  \
   V(Mips64DMulHigh)                 \
@@ -84,6 +86,10 @@ namespace compiler {
   V(Mips64RoundWD)                  \
   V(Mips64FloorWD)                  \
   V(Mips64CeilWD)                   \
+  V(Mips64TruncWS)                  \
+  V(Mips64RoundWS)                  \
+  V(Mips64FloorWS)                  \
+  V(Mips64CeilWS)                   \
   V(Mips64TruncLS)                  \
   V(Mips64TruncLD)                  \
   V(Mips64TruncUwD)                 \
@@ -91,6 +97,7 @@ namespace compiler {
   V(Mips64TruncUlD)                 \
   V(Mips64CvtDW)                    \
   V(Mips64CvtSL)                    \
+  V(Mips64CvtSW)                    \
   V(Mips64CvtSUl)                   \
   V(Mips64CvtDL)                    \
   V(Mips64CvtDUw)                   \

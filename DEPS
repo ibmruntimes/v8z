@@ -12,8 +12,7 @@ deps = {
   "v8/third_party/icu":
     Var("git_url") + "/chromium/deps/icu.git" + "@" + "8d342a405be5ae8aacb1e16f0bc31c3a4fbf26a2",
   "v8/buildtools":
-    Var("git_url") + "/chromium/buildtools.git" + "@" + "68e3c238a5ab347436762cb929316aa55ca72563",
-  # TODO(fmeawad): this dependency is not currently used. Added to allow for developement of the V8 Tracing system.
+    Var("git_url") + "/chromium/buildtools.git" + "@" + "fee7f1e849f59c3fd7bb7b2cacf876edca0572f3",
   "v8/base/trace_event/common":
     Var("git_url") + "/chromium/src/base/trace_event/common.git" + "@" + "d83d44b13d07c2fd0a40101a7deef9b93b841732",
   "v8/tools/swarming_client":
@@ -28,15 +27,15 @@ deps = {
     Var("git_url") + "/v8/deps/third_party/mozilla-tests.git" + "@" + "f6c578a10ea707b1a8ab0b88943fe5115ce2b9be",
   "v8/test/simdjs/data": Var("git_url") + "/external/github.com/tc39/ecmascript_simd.git" + "@" + "c8ef63c728283debc25891123eb00482fee4b8cd",
   "v8/test/test262/data":
-    Var("git_url") + "/external/github.com/tc39/test262.git" + "@" + "fd44cd73dfbce0b515a2474b7cd505d6176a9eb5",
+    Var("git_url") + "/external/github.com/tc39/test262.git" + "@" + "67ba34b03a46bac4254223ae25f42c7b959540f0",
   "v8/tools/clang":
-    Var("git_url") + "/chromium/src/tools/clang.git" + "@" + "6261565695263bd878edd055e81ecc5e989711d6",
+    Var("git_url") + "/chromium/src/tools/clang.git" + "@" + "d1e1de24f0e66c2f5a8b865c8ffb4042793286e9",
 }
 
 deps_os = {
   "android": {
     "v8/third_party/android_tools":
-      Var("git_url") + "/android_tools.git" + "@" + "54492f99c84cab0826a8e656efeb33a1b1bf5a04",
+      Var("git_url") + "/android_tools.git" + "@" + "f4c36ad89b2696b37d9cd7ca7d984b691888b188",
   },
   "win": {
     "v8/third_party/cygwin":

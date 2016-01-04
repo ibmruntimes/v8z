@@ -705,7 +705,9 @@ RUNTIME_FUNCTION(Runtime_HasOwnProperty) {
     // handle all cases directly (without this custom fast path).
     Maybe<bool> maybe = Nothing<bool>();
     if (key_is_array_index) {
-      maybe = JSObject::HasOwnElement(js_obj, index);
+      LookupIterator it(js_obj->GetIsolate(), js_obj, index,
+                        LookupIterator::HIDDEN);
+      maybe = JSReceiver::HasProperty(&it);
     } else {
       maybe = JSObject::HasRealNamedProperty(js_obj, key);
     }
@@ -1344,14 +1346,12 @@ RUNTIME_FUNCTION(Runtime_InstanceOf) {
   if (!object->IsJSReceiver()) {
     return isolate->heap()->false_value();
   }
-  // Check if {callable} is bound, if so, get [[BoundFunction]] from it and use
-  // that instead of {callable}.
-  if (callable->IsJSFunction()) {
-    Handle<JSFunction> function = Handle<JSFunction>::cast(callable);
-    if (function->shared()->bound()) {
-      Handle<BindingsArray> bindings(function->function_bindings(), isolate);
-      callable = handle(bindings->bound_function(), isolate);
-    }
+  // Check if {callable} is bound, if so, get [[BoundTargetFunction]] from it
+  // and use that instead of {callable}.
+  while (callable->IsJSBoundFunction()) {
+    callable =
+        handle(Handle<JSBoundFunction>::cast(callable)->bound_target_function(),
+               isolate);
   }
   DCHECK(callable->IsCallable());
   // Get the "prototype" of {callable}; raise an error if it's not a receiver.
@@ -1415,7 +1415,10 @@ RUNTIME_FUNCTION(Runtime_ObjectDefineProperties) {
   DCHECK(args.length() == 2);
   CONVERT_ARG_HANDLE_CHECKED(Object, o, 0);
   CONVERT_ARG_HANDLE_CHECKED(Object, properties, 1);
-  return JSReceiver::DefineProperties(isolate, o, properties);
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+      isolate, o, JSReceiver::DefineProperties(isolate, o, properties));
+  return *o;
 }
+
 }  // namespace internal
 }  // namespace v8

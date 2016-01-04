@@ -129,6 +129,7 @@ namespace interpreter {
   V(TypeOf, OperandType::kNone)                                                \
   V(DeletePropertyStrict, OperandType::kReg8)                                  \
   V(DeletePropertySloppy, OperandType::kReg8)                                  \
+  V(DeleteLookupSlot, OperandType::kNone)                                      \
                                                                                \
   /* Call operations */                                                        \
   V(Call, OperandType::kReg8, OperandType::kReg8, OperandType::kCount8,        \
@@ -199,9 +200,11 @@ namespace interpreter {
   V(JumpIfUndefinedConstant, OperandType::kIdx8)                               \
                                                                                \
   /* Complex flow control For..in */                                           \
-  V(ForInPrepare, OperandType::kReg8)                                          \
-  V(ForInNext, OperandType::kReg8, OperandType::kReg8)                         \
-  V(ForInDone, OperandType::kReg8)                                             \
+  V(ForInPrepare, OperandType::kReg8, OperandType::kReg8, OperandType::kReg8)  \
+  V(ForInDone, OperandType::kReg8, OperandType::kReg8)                         \
+  V(ForInNext, OperandType::kReg8, OperandType::kReg8, OperandType::kReg8,     \
+    OperandType::kReg8)                                                        \
+  V(ForInStep, OperandType::kReg8)                                             \
                                                                                \
   /* Non-local flow control */                                                 \
   V(Throw, OperandType::kNone)                                                 \

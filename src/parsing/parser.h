@@ -1077,7 +1077,9 @@ class Parser : public ParserBase<ParserTraits> {
     void RecurseIntoSubpattern(AstNode* pattern, Expression* value) {
       Expression* old_value = current_value_;
       current_value_ = value;
+      recursion_level_++;
       pattern->Accept(this);
+      recursion_level_--;
       current_value_ = old_value;
     }
 
@@ -1089,6 +1091,7 @@ class Parser : public ParserBase<ParserTraits> {
     bool IsAssignmentContext() const { return IsAssignmentContext(context_); }
     bool IsAssignmentContext(PatternContext c) const;
     bool IsBindingContext(PatternContext c) const;
+    bool IsSubPattern() const { return recursion_level_ > 1; }
     PatternContext SetAssignmentContextIfNeeded(Expression* node);
     PatternContext SetInitializerContextIfNeeded(Expression* node);
 
@@ -1110,6 +1113,7 @@ class Parser : public ParserBase<ParserTraits> {
     const DeclarationDescriptor* descriptor_;
     ZoneList<const AstRawString*>* names_;
     Expression* current_value_;
+    int recursion_level_;
     bool* ok_;
   };
 
@@ -1390,8 +1394,7 @@ void ParserTraits::AddFormalParameter(ParserFormalParameters* parameters,
                                       Expression* initializer,
                                       int initializer_end_position,
                                       bool is_rest) {
-  bool is_simple =
-      !is_rest && pattern->IsVariableProxy() && initializer == nullptr;
+  bool is_simple = pattern->IsVariableProxy() && initializer == nullptr;
   const AstRawString* name = is_simple
                                  ? pattern->AsVariableProxy()->raw_name()
                                  : parser_->ast_value_factory()->empty_string();
@@ -1407,8 +1410,10 @@ void ParserTraits::DeclareFormalParameter(
     ExpressionClassifier* classifier) {
   bool is_duplicate = false;
   bool is_simple = classifier->is_simple_parameter_list();
-  auto name = parameter.name;
-  auto mode = is_simple ? VAR : TEMPORARY;
+  auto name = is_simple || parameter.is_rest
+                  ? parameter.name
+                  : parser_->ast_value_factory()->empty_string();
+  auto mode = is_simple || parameter.is_rest ? VAR : TEMPORARY;
   if (!is_simple) scope->SetHasNonSimpleParameters();
   bool is_optional = parameter.initializer != nullptr;
   Variable* var = scope->DeclareParameter(

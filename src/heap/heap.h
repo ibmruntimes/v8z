@@ -212,9 +212,11 @@ namespace internal {
 #define INTERNALIZED_STRING_LIST(V)                              \
   V(anonymous_string, "anonymous")                               \
   V(apply_string, "apply")                                       \
+  V(assign_string, "assign")                                     \
   V(arguments_string, "arguments")                               \
   V(Arguments_string, "Arguments")                               \
   V(Array_string, "Array")                                       \
+  V(bind_string, "bind")                                         \
   V(bool16x8_string, "bool16x8")                                 \
   V(Bool16x8_string, "Bool16x8")                                 \
   V(bool32x4_string, "bool32x4")                                 \
@@ -223,8 +225,10 @@ namespace internal {
   V(Bool8x16_string, "Bool8x16")                                 \
   V(boolean_string, "boolean")                                   \
   V(Boolean_string, "Boolean")                                   \
+  V(bound__string, "bound ")                                     \
   V(byte_length_string, "byteLength")                            \
   V(byte_offset_string, "byteOffset")                            \
+  V(call_string, "call")                                         \
   V(callee_string, "callee")                                     \
   V(caller_string, "caller")                                     \
   V(cell_value_string, "%cell_value")                            \
@@ -234,6 +238,7 @@ namespace internal {
   V(configurable_string, "configurable")                         \
   V(constructor_string, "constructor")                           \
   V(construct_string, "construct")                               \
+  V(create_string, "create")                                     \
   V(Date_string, "Date")                                         \
   V(default_string, "default")                                   \
   V(defineProperty_string, "defineProperty")                     \
@@ -835,8 +840,14 @@ class Heap {
   // when introducing gaps within pages.
   void CreateFillerObjectAt(Address addr, int size);
 
+  bool CanMoveObjectStart(HeapObject* object);
+
   // Maintain consistency of live bytes during incremental marking.
   void AdjustLiveBytes(HeapObject* object, int by, InvocationMode mode);
+
+  // Trim the given array from the left. Note that this relocates the object
+  // start and hence is only valid if there is only a single reference to it.
+  FixedArrayBase* LeftTrimFixedArray(FixedArrayBase* obj, int elements_to_trim);
 
   // Trim the given array from the right.
   template<Heap::InvocationMode mode>

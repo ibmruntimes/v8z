@@ -254,6 +254,27 @@ void FullCodeGenerator::Generate() {
     SetVar(new_target_var, edx, ebx, ecx);
   }
 
+  // Possibly allocate RestParameters
+  int rest_index;
+  Variable* rest_param = scope()->rest_parameter(&rest_index);
+  if (rest_param) {
+    Comment cmnt(masm_, "[ Allocate rest parameter array");
+
+    int num_parameters = info->scope()->num_parameters();
+    int offset = num_parameters * kPointerSize;
+
+    __ lea(edx, Operand(ebp, StandardFrameConstants::kCallerSPOffset + offset));
+    __ push(edx);
+    __ push(Immediate(Smi::FromInt(num_parameters)));
+    __ push(Immediate(Smi::FromInt(rest_index)));
+    __ push(Immediate(Smi::FromInt(language_mode())));
+    function_in_register = false;
+
+    RestParamAccessStub stub(isolate());
+    __ CallStub(&stub);
+    SetVar(rest_param, eax, ebx, edx);
+  }
+
   Variable* arguments = scope()->arguments();
   if (arguments != NULL) {
     // Function uses arguments object.
@@ -3011,9 +3032,9 @@ void FullCodeGenerator::EmitIsFunction(CallRuntime* expr) {
                          &if_true, &if_false, &fall_through);
 
   __ JumpIfSmi(eax, if_false);
-  __ CmpObjectType(eax, JS_FUNCTION_TYPE, ebx);
+  __ CmpObjectType(eax, FIRST_FUNCTION_TYPE, ebx);
   PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
-  Split(equal, if_true, if_false, fall_through);
+  Split(above_equal, if_true, if_false, fall_through);
 
   context()->Plug(if_true, if_false);
 }
@@ -3203,49 +3224,40 @@ void FullCodeGenerator::EmitClassOf(CallRuntime* expr) {
 
   VisitForAccumulatorValue(args->at(0));
 
-  // If the object is a smi, we return null.
-  __ JumpIfSmi(eax, &null);
-
-  // Check that the object is a JS object but take special care of JS
-  // functions to make sure they have 'Function' as their class.
-  // Assume that there are only two callable types, and one of them is at
-  // either end of the type range for JS object types. Saves extra comparisons.
-  STATIC_ASSERT(NUM_OF_CALLABLE_SPEC_OBJECT_TYPES == 2);
+  // If the object is not a JSReceiver, we return null.
+  __ JumpIfSmi(eax, &null, Label::kNear);
+  STATIC_ASSERT(LAST_JS_RECEIVER_TYPE == LAST_TYPE);
   __ CmpObjectType(eax, FIRST_JS_RECEIVER_TYPE, eax);
-  // Map is now in eax.
-  __ j(below, &null);
+  __ j(below, &null, Label::kNear);
 
-  __ CmpInstanceType(eax, LAST_JS_RECEIVER_TYPE);
-  STATIC_ASSERT(LAST_NONCALLABLE_SPEC_OBJECT_TYPE ==
-                LAST_JS_RECEIVER_TYPE - 1);
-  __ j(equal, &function);
-  // Assume that there is no larger type.
-  STATIC_ASSERT(LAST_NONCALLABLE_SPEC_OBJECT_TYPE == LAST_TYPE - 1);
+  // Return 'Function' for JSFunction objects.
+  __ CmpInstanceType(eax, JS_FUNCTION_TYPE);
+  __ j(equal, &function, Label::kNear);
 
   // Check if the constructor in the map is a JS function.
   __ GetMapConstructor(eax, eax, ebx);
   __ CmpInstanceType(ebx, JS_FUNCTION_TYPE);
-  __ j(not_equal, &non_function_constructor);
+  __ j(not_equal, &non_function_constructor, Label::kNear);
 
   // eax now contains the constructor function. Grab the
   // instance class name from there.
   __ mov(eax, FieldOperand(eax, JSFunction::kSharedFunctionInfoOffset));
   __ mov(eax, FieldOperand(eax, SharedFunctionInfo::kInstanceClassNameOffset));
-  __ jmp(&done);
-
-  // Functions have class 'Function'.
-  __ bind(&function);
-  __ mov(eax, isolate()->factory()->Function_string());
-  __ jmp(&done);
-
-  // Objects with a non-function constructor have class 'Object'.
-  __ bind(&non_function_constructor);
-  __ mov(eax, isolate()->factory()->Object_string());
-  __ jmp(&done);
+  __ jmp(&done, Label::kNear);
 
   // Non-JS objects have class null.
   __ bind(&null);
   __ mov(eax, isolate()->factory()->null_value());
+  __ jmp(&done, Label::kNear);
+
+  // Functions have class 'Function'.
+  __ bind(&function);
+  __ mov(eax, isolate()->factory()->Function_string());
+  __ jmp(&done, Label::kNear);
+
+  // Objects with a non-function constructor have class 'Object'.
+  __ bind(&non_function_constructor);
+  __ mov(eax, isolate()->factory()->Object_string());
 
   // All done.
   __ bind(&done);

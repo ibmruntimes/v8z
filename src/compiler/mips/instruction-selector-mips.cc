@@ -132,7 +132,7 @@ void InstructionSelector::VisitLoad(Node* node) {
   Node* base = node->InputAt(0);
   Node* index = node->InputAt(1);
 
-  ArchOpcode opcode;
+  ArchOpcode opcode = kArchNop;
   switch (load_rep.representation()) {
     case MachineRepresentation::kFloat32:
       opcode = kMipsLwc1;
@@ -151,7 +151,8 @@ void InstructionSelector::VisitLoad(Node* node) {
     case MachineRepresentation::kWord32:
       opcode = kMipsLw;
       break;
-    default:
+    case MachineRepresentation::kWord64:  // Fall through.
+    case MachineRepresentation::kNone:
       UNREACHABLE();
       return;
   }
@@ -211,7 +212,7 @@ void InstructionSelector::VisitStore(Node* node) {
     code |= MiscField::encode(static_cast<int>(record_write_mode));
     Emit(code, 0, nullptr, input_count, inputs, temp_count, temps);
   } else {
-    ArchOpcode opcode;
+    ArchOpcode opcode = kArchNop;
     switch (rep) {
       case MachineRepresentation::kFloat32:
         opcode = kMipsSwc1;
@@ -230,7 +231,8 @@ void InstructionSelector::VisitStore(Node* node) {
       case MachineRepresentation::kWord32:
         opcode = kMipsSw;
         break;
-      default:
+      case MachineRepresentation::kWord64:  // Fall through.
+      case MachineRepresentation::kNone:
         UNREACHABLE();
         return;
     }
@@ -535,8 +537,40 @@ void InstructionSelector::VisitChangeFloat64ToInt32(Node* node) {
              g.UseRegister(value->InputAt(0)));
         return;
       default:
-        VisitRR(this, kMipsTruncWD, node);
+        break;
+    }
+    if (value->opcode() == IrOpcode::kChangeFloat32ToFloat64) {
+      Node* next = value->InputAt(0);
+      if (CanCover(value, next)) {
+        // Match ChangeFloat64ToInt32(ChangeFloat32ToFloat64(Float64Round##OP))
+        switch (next->opcode()) {
+          case IrOpcode::kFloat32RoundDown:
+            Emit(kMipsFloorWS, g.DefineAsRegister(node),
+                 g.UseRegister(next->InputAt(0)));
+            return;
+          case IrOpcode::kFloat32RoundUp:
+            Emit(kMipsCeilWS, g.DefineAsRegister(node),
+                 g.UseRegister(next->InputAt(0)));
+            return;
+          case IrOpcode::kFloat32RoundTiesEven:
+            Emit(kMipsRoundWS, g.DefineAsRegister(node),
+                 g.UseRegister(next->InputAt(0)));
+            return;
+          case IrOpcode::kFloat32RoundTruncate:
+            Emit(kMipsTruncWS, g.DefineAsRegister(node),
+                 g.UseRegister(next->InputAt(0)));
+            return;
+          default:
+            Emit(kMipsTruncWS, g.DefineAsRegister(node),
+                 g.UseRegister(value->InputAt(0)));
+            return;
+        }
+      } else {
+        // Match float32 -> float64 -> int32 representation change path.
+        Emit(kMipsTruncWS, g.DefineAsRegister(node),
+             g.UseRegister(value->InputAt(0)));
         return;
+      }
     }
   }
   VisitRR(this, kMipsTruncWD, node);
@@ -549,6 +583,16 @@ void InstructionSelector::VisitChangeFloat64ToUint32(Node* node) {
 
 
 void InstructionSelector::VisitTruncateFloat64ToFloat32(Node* node) {
+  MipsOperandGenerator g(this);
+  Node* value = node->InputAt(0);
+  // Match TruncateFloat64ToFloat32(ChangeInt32ToFloat64) to corresponding
+  // instruction.
+  if (CanCover(node, value) &&
+      value->opcode() == IrOpcode::kChangeInt32ToFloat64) {
+    Emit(kMipsCvtSW, g.DefineAsRegister(node),
+         g.UseRegister(value->InputAt(0)));
+    return;
+  }
   VisitRR(this, kMipsCvtSD, node);
 }
 
@@ -763,9 +807,9 @@ void InstructionSelector::VisitFloat64RoundTiesEven(Node* node) {
 }
 
 
-void InstructionSelector::EmitPrepareArguments(NodeVector* arguments,
-                                               const CallDescriptor* descriptor,
-                                               Node* node) {
+void InstructionSelector::EmitPrepareArguments(
+    ZoneVector<PushParameter>* arguments, const CallDescriptor* descriptor,
+    Node* node) {
   MipsOperandGenerator g(this);
 
   // Prepare for C function call.
@@ -776,8 +820,8 @@ void InstructionSelector::EmitPrepareArguments(NodeVector* arguments,
 
     // Poke any stack arguments.
     int slot = kCArgSlotCount;
-    for (Node* input : (*arguments)) {
-      Emit(kMipsStoreToStackSlot, g.NoOutput(), g.UseRegister(input),
+    for (PushParameter input : (*arguments)) {
+      Emit(kMipsStoreToStackSlot, g.NoOutput(), g.UseRegister(input.node()),
            g.TempImmediate(slot << kPointerSizeLog2));
       ++slot;
     }
@@ -789,8 +833,9 @@ void InstructionSelector::EmitPrepareArguments(NodeVector* arguments,
            g.TempImmediate(push_count << kPointerSizeLog2));
     }
     for (size_t n = 0; n < arguments->size(); ++n) {
-      if (Node* input = (*arguments)[n]) {
-        Emit(kMipsStoreToStackSlot, g.NoOutput(), g.UseRegister(input),
+      PushParameter input = (*arguments)[n];
+      if (input.node()) {
+        Emit(kMipsStoreToStackSlot, g.NoOutput(), g.UseRegister(input.node()),
              g.TempImmediate(n << kPointerSizeLog2));
       }
     }
@@ -807,7 +852,7 @@ void InstructionSelector::VisitCheckedLoad(Node* node) {
   Node* const buffer = node->InputAt(0);
   Node* const offset = node->InputAt(1);
   Node* const length = node->InputAt(2);
-  ArchOpcode opcode;
+  ArchOpcode opcode = kArchNop;
   switch (load_rep.representation()) {
     case MachineRepresentation::kWord8:
       opcode = load_rep.IsSigned() ? kCheckedLoadInt8 : kCheckedLoadUint8;
@@ -824,7 +869,10 @@ void InstructionSelector::VisitCheckedLoad(Node* node) {
     case MachineRepresentation::kFloat64:
       opcode = kCheckedLoadFloat64;
       break;
-    default:
+    case MachineRepresentation::kBit:     // Fall through.
+    case MachineRepresentation::kTagged:  // Fall through.
+    case MachineRepresentation::kWord64:  // Fall through.
+    case MachineRepresentation::kNone:
       UNREACHABLE();
       return;
   }
@@ -851,7 +899,7 @@ void InstructionSelector::VisitCheckedStore(Node* node) {
   Node* const offset = node->InputAt(1);
   Node* const length = node->InputAt(2);
   Node* const value = node->InputAt(3);
-  ArchOpcode opcode;
+  ArchOpcode opcode = kArchNop;
   switch (rep) {
     case MachineRepresentation::kWord8:
       opcode = kCheckedStoreWord8;

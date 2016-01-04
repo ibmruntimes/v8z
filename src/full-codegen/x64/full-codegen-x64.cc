@@ -249,6 +249,29 @@ void FullCodeGenerator::Generate() {
     SetVar(new_target_var, rdx, rbx, rcx);
   }
 
+  // Possibly allocate RestParameters
+  int rest_index;
+  Variable* rest_param = scope()->rest_parameter(&rest_index);
+  if (rest_param) {
+    Comment cmnt(masm_, "[ Allocate rest parameter array");
+
+    int num_parameters = info->scope()->num_parameters();
+    int offset = num_parameters * kPointerSize;
+
+    __ leap(rdx,
+            Operand(rbp, StandardFrameConstants::kCallerSPOffset + offset));
+    __ Push(rdx);
+    __ Push(Smi::FromInt(num_parameters));
+    __ Push(Smi::FromInt(rest_index));
+    __ Push(Smi::FromInt(language_mode()));
+    function_in_register = false;
+
+    RestParamAccessStub stub(isolate());
+    __ CallStub(&stub);
+
+    SetVar(rest_param, rax, rbx, rdx);
+  }
+
   // Possibly allocate an arguments object.
   Variable* arguments = scope()->arguments();
   if (arguments != NULL) {
@@ -2997,9 +3020,9 @@ void FullCodeGenerator::EmitIsFunction(CallRuntime* expr) {
                          &if_true, &if_false, &fall_through);
 
   __ JumpIfSmi(rax, if_false);
-  __ CmpObjectType(rax, JS_FUNCTION_TYPE, rbx);
+  __ CmpObjectType(rax, FIRST_FUNCTION_TYPE, rbx);
   PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
-  Split(equal, if_true, if_false, fall_through);
+  Split(above_equal, if_true, if_false, fall_through);
 
   context()->Plug(if_true, if_false);
 }
@@ -3190,49 +3213,40 @@ void FullCodeGenerator::EmitClassOf(CallRuntime* expr) {
 
   VisitForAccumulatorValue(args->at(0));
 
-  // If the object is a smi, we return null.
-  __ JumpIfSmi(rax, &null);
-
-  // Check that the object is a JS object but take special care of JS
-  // functions to make sure they have 'Function' as their class.
-  // Assume that there are only two callable types, and one of them is at
-  // either end of the type range for JS object types. Saves extra comparisons.
-  STATIC_ASSERT(NUM_OF_CALLABLE_SPEC_OBJECT_TYPES == 2);
+  // If the object is not a JSReceiver, we return null.
+  __ JumpIfSmi(rax, &null, Label::kNear);
+  STATIC_ASSERT(LAST_JS_RECEIVER_TYPE == LAST_TYPE);
   __ CmpObjectType(rax, FIRST_JS_RECEIVER_TYPE, rax);
-  // Map is now in rax.
-  __ j(below, &null);
+  __ j(below, &null, Label::kNear);
 
-  __ CmpInstanceType(rax, LAST_JS_RECEIVER_TYPE);
-  STATIC_ASSERT(LAST_NONCALLABLE_SPEC_OBJECT_TYPE ==
-                LAST_JS_RECEIVER_TYPE - 1);
-  __ j(equal, &function);
-  // Assume that there is no larger type.
-  STATIC_ASSERT(LAST_NONCALLABLE_SPEC_OBJECT_TYPE == LAST_TYPE - 1);
+  // Return 'Function' for JSFunction objects.
+  __ CmpInstanceType(rax, JS_FUNCTION_TYPE);
+  __ j(equal, &function, Label::kNear);
 
   // Check if the constructor in the map is a JS function.
   __ GetMapConstructor(rax, rax, rbx);
   __ CmpInstanceType(rbx, JS_FUNCTION_TYPE);
-  __ j(not_equal, &non_function_constructor);
+  __ j(not_equal, &non_function_constructor, Label::kNear);
 
   // rax now contains the constructor function. Grab the
   // instance class name from there.
   __ movp(rax, FieldOperand(rax, JSFunction::kSharedFunctionInfoOffset));
   __ movp(rax, FieldOperand(rax, SharedFunctionInfo::kInstanceClassNameOffset));
-  __ jmp(&done);
-
-  // Functions have class 'Function'.
-  __ bind(&function);
-  __ Move(rax, isolate()->factory()->Function_string());
-  __ jmp(&done);
-
-  // Objects with a non-function constructor have class 'Object'.
-  __ bind(&non_function_constructor);
-  __ Move(rax, isolate()->factory()->Object_string());
-  __ jmp(&done);
+  __ jmp(&done, Label::kNear);
 
   // Non-JS objects have class null.
   __ bind(&null);
   __ LoadRoot(rax, Heap::kNullValueRootIndex);
+  __ jmp(&done, Label::kNear);
+
+  // Functions have class 'Function'.
+  __ bind(&function);
+  __ LoadRoot(rax, Heap::kFunction_stringRootIndex);
+  __ jmp(&done, Label::kNear);
+
+  // Objects with a non-function constructor have class 'Object'.
+  __ bind(&non_function_constructor);
+  __ LoadRoot(rax, Heap::kObject_stringRootIndex);
 
   // All done.
   __ bind(&done);

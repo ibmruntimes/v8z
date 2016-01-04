@@ -12,6 +12,7 @@
 var FLAG_harmony_tolength;
 var GlobalObject = global.Object;
 var GlobalRegExp = global.RegExp;
+var GlobalRegExpPrototype;
 var InternalArray = utils.InternalArray;
 var InternalPackedArray = utils.InternalPackedArray;
 var MakeTypeError;
@@ -46,7 +47,7 @@ var RegExpLastMatchInfo = new InternalPackedArray(
 // -------------------------------------------------------------------
 
 function IsRegExp(o) {
-  if (!IS_SPEC_OBJECT(o)) return false;
+  if (!IS_RECEIVER(o)) return false;
   var is_regexp = o[matchSymbol];
   if (!IS_UNDEFINED(is_regexp)) return TO_BOOLEAN(is_regexp);
   return IS_REGEXP(o);
@@ -270,8 +271,17 @@ function TrimRegExp(regexp) {
 }
 
 
+var kRegExpPrototypeToString = 12;
+
 function RegExpToString() {
   if (!IS_REGEXP(this)) {
+    // RegExp.prototype.toString() returns '/(?:)/' as a compatibility fix;
+    // a UseCounter is incremented to track it.
+    // TODO(littledan): Remove this workaround or standardize it
+    if (this === GlobalRegExpPrototype) {
+      %IncrementUseCounter(kRegExpPrototypeToString);
+      return '/(?:)/';
+    }
     throw MakeTypeError(kIncompatibleMethodReceiver,
                         'RegExp.prototype.toString', this);
   }
@@ -491,7 +501,8 @@ function RegExpGetSource() {
 // -------------------------------------------------------------------
 
 %FunctionSetInstanceClassName(GlobalRegExp, 'RegExp');
-%FunctionSetPrototype(GlobalRegExp, new GlobalObject());
+GlobalRegExpPrototype = new GlobalObject();
+%FunctionSetPrototype(GlobalRegExp, GlobalRegExpPrototype);
 %AddNamedProperty(
     GlobalRegExp.prototype, 'constructor', GlobalRegExp, DONT_ENUM);
 %SetCode(GlobalRegExp, RegExpConstructor);

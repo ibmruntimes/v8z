@@ -94,6 +94,9 @@ class InstructionOperand {
     return this->GetCanonicalizedValue() < that.GetCanonicalizedValue();
   }
 
+  void Print(const RegisterConfiguration* config) const;
+  void Print() const;
+
  protected:
   explicit InstructionOperand(Kind kind) : value_(KindField::encode(kind)) {}
 
@@ -434,9 +437,14 @@ class LocationOperand : public InstructionOperand {
       case MachineRepresentation::kFloat64:
       case MachineRepresentation::kTagged:
         return true;
-      default:
+      case MachineRepresentation::kBit:
+      case MachineRepresentation::kWord8:
+      case MachineRepresentation::kWord16:
+      case MachineRepresentation::kNone:
         return false;
     }
+    UNREACHABLE();
+    return false;
   }
 
   static LocationOperand* cast(InstructionOperand* op) {
@@ -587,6 +595,9 @@ class MoveOperands final : public ZoneObject {
     DCHECK_IMPLIES(source_.IsInvalid(), destination_.IsInvalid());
     return source_.IsInvalid();
   }
+
+  void Print(const RegisterConfiguration* config) const;
+  void Print() const;
 
  private:
   InstructionOperand source_;
@@ -791,6 +802,9 @@ class Instruction final {
   ParallelMove* const* parallel_moves() const { return &parallel_moves_[0]; }
   ParallelMove** parallel_moves() { return &parallel_moves_[0]; }
 
+  void Print(const RegisterConfiguration* config) const;
+  void Print() const;
+
  private:
   explicit Instruction(InstructionCode opcode);
 
@@ -945,7 +959,7 @@ class FrameStateDescriptor : public ZoneObject {
   MaybeHandle<SharedFunctionInfo> shared_info() const { return shared_info_; }
   FrameStateDescriptor* outer_state() const { return outer_state_; }
   bool HasContext() const {
-    return type_ == FrameStateType::kJavaScriptFunction;
+    return FrameStateFunctionInfo::IsJSFunctionType(type_);
   }
 
   size_t GetSize(OutputFrameStateCombine combine =
@@ -1141,13 +1155,7 @@ class InstructionSequence final : public ZoneObject {
            MachineRepresentation::kTagged;
   }
   bool IsFloat(int virtual_register) const {
-    switch (GetRepresentation(virtual_register)) {
-      case MachineRepresentation::kFloat32:
-      case MachineRepresentation::kFloat64:
-        return true;
-      default:
-        return false;
-    }
+    return IsFloatingPoint(GetRepresentation(virtual_register));
   }
 
   Instruction* GetBlockStart(RpoNumber rpo) const;
@@ -1246,6 +1254,8 @@ class InstructionSequence final : public ZoneObject {
     }
     return false;
   }
+  void Print(const RegisterConfiguration* config) const;
+  void Print() const;
 
  private:
   friend std::ostream& operator<<(std::ostream& os,

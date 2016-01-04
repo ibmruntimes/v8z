@@ -2778,6 +2778,9 @@ bool Value::IsNumber() const {
 }
 
 
+bool Value::IsProxy() const { return Utils::OpenHandle(this)->IsJSProxy(); }
+
+
 #define VALUE_IS_SPECIFIC_TYPE(Type, Class)                            \
   bool Value::Is##Type() const {                                       \
     i::Handle<i::Object> obj = Utils::OpenHandle(this);                \
@@ -2880,6 +2883,12 @@ bool Value::IsMapIterator() const {
 
 bool Value::IsSetIterator() const {
   return Utils::OpenHandle(this)->IsJSSetIterator();
+}
+
+
+bool Value::IsPromise() const {
+  auto self = Utils::OpenHandle(this);
+  return i::Object::IsPromise(self);
 }
 
 
@@ -3143,6 +3152,12 @@ void v8::Promise::Resolver::CheckCast(Value* that) {
   Utils::ApiCheck(that->IsPromise(),
                   "v8::Promise::Resolver::Cast()",
                   "Could not convert to promise resolver");
+}
+
+
+void v8::Proxy::CheckCast(Value* that) {
+  Utils::ApiCheck(that->IsProxy(), "v8::Proxy::Cast()",
+                  "Could not convert to proxy");
 }
 
 
@@ -4397,13 +4412,16 @@ void Function::SetName(v8::Local<v8::String> name) {
 
 Local<Value> Function::GetName() const {
   auto self = Utils::OpenHandle(this);
-  if (!self->IsJSFunction()) {
-    return ToApiHandle<Primitive>(
-        self->GetIsolate()->factory()->undefined_value());
+  if (self->IsJSBoundFunction()) {
+    auto func = i::Handle<i::JSBoundFunction>::cast(self);
+    return Utils::ToLocal(handle(func->name(), func->GetIsolate()));
   }
-  auto func = i::Handle<i::JSFunction>::cast(self);
-  return Utils::ToLocal(i::Handle<i::Object>(func->shared()->name(),
-                                             func->GetIsolate()));
+  if (self->IsJSFunction()) {
+    auto func = i::Handle<i::JSFunction>::cast(self);
+    return Utils::ToLocal(handle(func->shared()->name(), func->GetIsolate()));
+  }
+  return ToApiHandle<Primitive>(
+      self->GetIsolate()->factory()->undefined_value());
 }
 
 
@@ -4522,18 +4540,13 @@ int Function::ScriptId() const {
 
 Local<v8::Value> Function::GetBoundFunction() const {
   auto self = Utils::OpenHandle(this);
-  if (!self->IsJSFunction()) {
-    return v8::Undefined(reinterpret_cast<v8::Isolate*>(self->GetIsolate()));
+  if (self->IsJSBoundFunction()) {
+    auto bound_function = i::Handle<i::JSBoundFunction>::cast(self);
+    auto bound_target_function = i::handle(
+        bound_function->bound_target_function(), bound_function->GetIsolate());
+    return Utils::CallableToLocal(bound_target_function);
   }
-  auto func = i::Handle<i::JSFunction>::cast(self);
-  if (!func->shared()->bound()) {
-    return v8::Undefined(reinterpret_cast<v8::Isolate*>(func->GetIsolate()));
-  }
-  i::Handle<i::BindingsArray> bound_args = i::Handle<i::BindingsArray>(
-      i::BindingsArray::cast(func->function_bindings()));
-  i::Handle<i::Object> original(bound_args->bound_function(),
-                                func->GetIsolate());
-  return Utils::CallableToLocal(i::Handle<i::JSFunction>::cast(original));
+  return v8::Undefined(reinterpret_cast<v8::Isolate*>(self->GetIsolate()));
 }
 
 
@@ -6346,12 +6359,6 @@ Local<Array> Set::AsArray() const {
 }
 
 
-bool Value::IsPromise() const {
-  auto self = Utils::OpenHandle(this);
-  return i::Object::IsPromise(self);
-}
-
-
 MaybeLocal<Promise::Resolver> Promise::Resolver::New(Local<Context> context) {
   PREPARE_FOR_EXECUTION(context, "Promise::Resolver::New", Resolver);
   i::Handle<i::Object> result;
@@ -6497,6 +6504,44 @@ bool Promise::HasHandler() {
   return i::JSReceiver::GetDataProperty(promise, key)->IsTrue();
 }
 
+
+Local<Object> Proxy::GetTarget() {
+  i::Handle<i::JSProxy> self = Utils::OpenHandle(this);
+  i::Handle<i::JSReceiver> target(self->target());
+  return Utils::ToLocal(target);
+}
+
+
+Local<Value> Proxy::GetHandler() {
+  i::Handle<i::JSProxy> self = Utils::OpenHandle(this);
+  i::Handle<i::Object> handler(self->handler(), self->GetIsolate());
+  return Utils::ToLocal(handler);
+}
+
+
+bool Proxy::IsRevoked() {
+  i::Handle<i::JSProxy> self = Utils::OpenHandle(this);
+  return self->IsRevoked();
+}
+
+
+void Proxy::Revoke() {
+  i::Handle<i::JSProxy> self = Utils::OpenHandle(this);
+  i::JSProxy::Revoke(self);
+}
+
+
+MaybeLocal<Proxy> Proxy::New(Local<Context> context, Local<Object> local_target,
+                             Local<Object> local_handler) {
+  PREPARE_FOR_EXECUTION(context, "Proxy::New", Proxy);
+  i::Handle<i::JSReceiver> target = Utils::OpenHandle(*local_target);
+  i::Handle<i::JSReceiver> handler = Utils::OpenHandle(*local_handler);
+  Local<Proxy> result;
+  has_pending_exception =
+      !ToLocal<Proxy>(i::JSProxy::New(isolate, target, handler), &result);
+  RETURN_ON_FAILED_EXECUTION(Proxy);
+  RETURN_ESCAPED(result);
+}
 
 bool v8::ArrayBuffer::IsExternal() const {
   return Utils::OpenHandle(this)->is_external();

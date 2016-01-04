@@ -59,6 +59,22 @@ FlagsCondition CommuteFlagsCondition(FlagsCondition condition) {
 }
 
 
+void InstructionOperand::Print(const RegisterConfiguration* config) const {
+  OFStream os(stdout);
+  PrintableInstructionOperand wrapper;
+  wrapper.register_configuration_ = config;
+  wrapper.op_ = *this;
+  os << wrapper << std::endl;
+}
+
+
+void InstructionOperand::Print() const {
+  const RegisterConfiguration* config =
+      RegisterConfiguration::ArchDefault(RegisterConfiguration::TURBOFAN);
+  Print(config);
+}
+
+
 std::ostream& operator<<(std::ostream& os,
                          const PrintableInstructionOperand& printable) {
   const InstructionOperand& op = printable.op_;
@@ -123,6 +139,18 @@ std::ostream& operator<<(std::ostream& os,
         os << "|E";
       }
       switch (allocated.representation()) {
+        case MachineRepresentation::kNone:
+          os << "|-";
+          break;
+        case MachineRepresentation::kBit:
+          os << "|b";
+          break;
+        case MachineRepresentation::kWord8:
+          os << "|w8";
+          break;
+        case MachineRepresentation::kWord16:
+          os << "|w16";
+          break;
         case MachineRepresentation::kWord32:
           os << "|w32";
           break;
@@ -138,9 +166,6 @@ std::ostream& operator<<(std::ostream& os,
         case MachineRepresentation::kTagged:
           os << "|t";
           break;
-        default:
-          os << "|?";
-          break;
       }
       return os << "]";
     }
@@ -149,6 +174,24 @@ std::ostream& operator<<(std::ostream& os,
   }
   UNREACHABLE();
   return os;
+}
+
+
+void MoveOperands::Print(const RegisterConfiguration* config) const {
+  OFStream os(stdout);
+  PrintableInstructionOperand wrapper;
+  wrapper.register_configuration_ = config;
+  wrapper.op_ = destination();
+  os << wrapper << " = ";
+  wrapper.op_ = source();
+  os << wrapper << std::endl;
+}
+
+
+void MoveOperands::Print() const {
+  const RegisterConfiguration* config =
+      RegisterConfiguration::ArchDefault(RegisterConfiguration::TURBOFAN);
+  Print(config);
 }
 
 
@@ -251,6 +294,22 @@ bool Instruction::AreMovesRedundant() const {
     }
   }
   return true;
+}
+
+
+void Instruction::Print(const RegisterConfiguration* config) const {
+  OFStream os(stdout);
+  PrintableInstruction wrapper;
+  wrapper.instr_ = this;
+  wrapper.register_configuration_ = config;
+  os << wrapper << std::endl;
+}
+
+
+void Instruction::Print() const {
+  const RegisterConfiguration* config =
+      RegisterConfiguration::ArchDefault(RegisterConfiguration::TURBOFAN);
+  Print(config);
 }
 
 
@@ -668,7 +727,7 @@ static MachineRepresentation FilterRepresentation(MachineRepresentation rep) {
     case MachineRepresentation::kFloat64:
     case MachineRepresentation::kTagged:
       return rep;
-    default:
+    case MachineRepresentation::kNone:
       break;
   }
   UNREACHABLE();
@@ -744,6 +803,22 @@ void InstructionSequence::SetSourcePosition(const Instruction* instr,
 }
 
 
+void InstructionSequence::Print(const RegisterConfiguration* config) const {
+  OFStream os(stdout);
+  PrintableInstructionSequence wrapper;
+  wrapper.register_configuration_ = config;
+  wrapper.sequence_ = this;
+  os << wrapper << std::endl;
+}
+
+
+void InstructionSequence::Print() const {
+  const RegisterConfiguration* config =
+      RegisterConfiguration::ArchDefault(RegisterConfiguration::TURBOFAN);
+  Print(config);
+}
+
+
 FrameStateDescriptor::FrameStateDescriptor(
     Zone* zone, FrameStateType type, BailoutId bailout_id,
     OutputFrameStateCombine state_combine, size_t parameters_count,
@@ -801,7 +876,7 @@ size_t FrameStateDescriptor::GetJSFrameCount() const {
   size_t count = 0;
   for (const FrameStateDescriptor* iter = this; iter != NULL;
        iter = iter->outer_state_) {
-    if (iter->type_ == FrameStateType::kJavaScriptFunction) {
+    if (FrameStateFunctionInfo::IsJSFunctionType(iter->type_)) {
       ++count;
     }
   }

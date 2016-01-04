@@ -641,11 +641,17 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     case kMips64Dadd:
       __ Daddu(i.OutputRegister(), i.InputRegister(0), i.InputOperand(1));
       break;
+    case kMips64DaddOvf:
+      // Pseudo-instruction used for overflow/branch. No opcode emitted here.
+      break;
     case kMips64Sub:
       __ Subu(i.OutputRegister(), i.InputRegister(0), i.InputOperand(1));
       break;
     case kMips64Dsub:
       __ Dsubu(i.OutputRegister(), i.InputRegister(0), i.InputOperand(1));
+      break;
+    case kMips64DsubOvf:
+      // Pseudo-instruction used for overflow/branch. No opcode emitted here.
       break;
     case kMips64Mul:
       __ Mul(i.OutputRegister(), i.InputRegister(0), i.InputOperand(1));
@@ -1041,6 +1047,12 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ cvt_d_w(i.OutputDoubleRegister(), scratch);
       break;
     }
+    case kMips64CvtSW: {
+      FPURegister scratch = kScratchDoubleReg;
+      __ mtc1(i.InputRegister(0), scratch);
+      __ cvt_s_w(i.OutputDoubleRegister(), scratch);
+      break;
+    }
     case kMips64CvtSL: {
       FPURegister scratch = kScratchDoubleReg;
       __ dmtc1(i.InputRegister(0), scratch);
@@ -1087,6 +1099,30 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       FPURegister scratch = kScratchDoubleReg;
       // Other arches use round to zero here, so we follow.
       __ trunc_w_d(scratch, i.InputDoubleRegister(0));
+      __ mfc1(i.OutputRegister(), scratch);
+      break;
+    }
+    case kMips64FloorWS: {
+      FPURegister scratch = kScratchDoubleReg;
+      __ floor_w_s(scratch, i.InputDoubleRegister(0));
+      __ mfc1(i.OutputRegister(), scratch);
+      break;
+    }
+    case kMips64CeilWS: {
+      FPURegister scratch = kScratchDoubleReg;
+      __ ceil_w_s(scratch, i.InputDoubleRegister(0));
+      __ mfc1(i.OutputRegister(), scratch);
+      break;
+    }
+    case kMips64RoundWS: {
+      FPURegister scratch = kScratchDoubleReg;
+      __ round_w_s(scratch, i.InputDoubleRegister(0));
+      __ mfc1(i.OutputRegister(), scratch);
+      break;
+    }
+    case kMips64TruncWS: {
+      FPURegister scratch = kScratchDoubleReg;
+      __ trunc_w_s(scratch, i.InputDoubleRegister(0));
       __ mfc1(i.OutputRegister(), scratch);
       break;
     }
@@ -1358,6 +1394,34 @@ void CodeGenerator::AssembleArchBranch(Instruction* instr, BranchInfo* branch) {
     __ dsra32(kScratchReg, i.OutputRegister(), 0);
     __ sra(at, i.OutputRegister(), 31);
     __ Branch(tlabel, cc, at, Operand(kScratchReg));
+  } else if (instr->arch_opcode() == kMips64DaddOvf) {
+    switch (branch->condition) {
+      case kOverflow:
+        __ DaddBranchOvf(i.OutputRegister(), i.InputRegister(0),
+                         i.InputOperand(1), tlabel, flabel);
+        break;
+      case kNotOverflow:
+        __ DaddBranchOvf(i.OutputRegister(), i.InputRegister(0),
+                         i.InputOperand(1), flabel, tlabel);
+        break;
+      default:
+        UNSUPPORTED_COND(kMips64DaddOvf, branch->condition);
+        break;
+    }
+  } else if (instr->arch_opcode() == kMips64DsubOvf) {
+    switch (branch->condition) {
+      case kOverflow:
+        __ DsubBranchOvf(i.OutputRegister(), i.InputRegister(0),
+                         i.InputOperand(1), tlabel, flabel);
+        break;
+      case kNotOverflow:
+        __ DsubBranchOvf(i.OutputRegister(), i.InputRegister(0),
+                         i.InputOperand(1), flabel, tlabel);
+        break;
+      default:
+        UNSUPPORTED_COND(kMips64DsubOvf, branch->condition);
+        break;
+    }
   } else if (instr->arch_opcode() == kMips64Cmp) {
     cc = FlagsConditionToConditionCmp(branch->condition);
     __ Branch(tlabel, cc, i.InputRegister(0), i.InputOperand(1));
@@ -1432,6 +1496,28 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
     if (cc == eq)  // Toggle result for not overflow.
       __ xori(result, result, 1);
     return;
+  } else if (instr->arch_opcode() == kMips64DaddOvf ||
+             instr->arch_opcode() == kMips64DsubOvf) {
+    Label flabel, tlabel;
+    switch (instr->arch_opcode()) {
+      case kMips64DaddOvf:
+        __ DaddBranchNoOvf(i.OutputRegister(), i.InputRegister(0),
+                           i.InputOperand(1), &flabel);
+
+        break;
+      case kMips64DsubOvf:
+        __ DsubBranchNoOvf(i.OutputRegister(), i.InputRegister(0),
+                           i.InputOperand(1), &flabel);
+        break;
+      default:
+        UNREACHABLE();
+        break;
+    }
+    __ li(result, 1);
+    __ Branch(&tlabel);
+    __ bind(&flabel);
+    __ li(result, 0);
+    __ bind(&tlabel);
   } else if (instr->arch_opcode() == kMips64Cmp) {
     cc = FlagsConditionToConditionCmp(condition);
     switch (cc) {

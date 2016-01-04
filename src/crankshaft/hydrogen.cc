@@ -4685,6 +4685,12 @@ void HOptimizedGraphBuilder::SetUpScope(Scope* scope) {
     environment()->Bind(scope->arguments(), graph()->GetArgumentsObject());
   }
 
+  int rest_index;
+  Variable* rest = scope->rest_parameter(&rest_index);
+  if (rest) {
+    return Bailout(kRestParameter);
+  }
+
   if (scope->this_function_var() != nullptr ||
       scope->new_target_var() != nullptr) {
     return Bailout(kSuperReference);
@@ -8359,6 +8365,14 @@ bool HOptimizedGraphBuilder::TryInline(Handle<JSFunction> target,
     TraceInline(target, caller, "target has context-allocated variables");
     return false;
   }
+
+  int rest_index;
+  Variable* rest = target_info.scope()->rest_parameter(&rest_index);
+  if (rest) {
+    TraceInline(target, caller, "target uses rest parameters");
+    return false;
+  }
+
   FunctionLiteral* function = target_info.literal();
 
   // The following conditions must be checked again after re-parsing, because
@@ -8691,7 +8705,7 @@ bool HOptimizedGraphBuilder::IsReadOnlyLengthDescriptor(
 // static
 bool HOptimizedGraphBuilder::CanInlineArrayResizeOperation(
     Handle<Map> receiver_map) {
-  return !receiver_map.is_null() &&
+  return !receiver_map.is_null() && receiver_map->prototype()->IsJSObject() &&
          receiver_map->instance_type() == JS_ARRAY_TYPE &&
          IsFastElementsKind(receiver_map->elements_kind()) &&
          !receiver_map->is_dictionary_map() && !receiver_map->is_observed() &&
@@ -12170,8 +12184,8 @@ void HOptimizedGraphBuilder::GenerateIsFunction(CallRuntime* call) {
   DCHECK(call->arguments()->length() == 1);
   CHECK_ALIVE(VisitForValue(call->arguments()->at(0)));
   HValue* value = Pop();
-  HHasInstanceTypeAndBranch* result =
-      New<HHasInstanceTypeAndBranch>(value, JS_FUNCTION_TYPE);
+  HHasInstanceTypeAndBranch* result = New<HHasInstanceTypeAndBranch>(
+      value, FIRST_FUNCTION_TYPE, LAST_FUNCTION_TYPE);
   return ast_context()->ReturnControl(result, call->id());
 }
 

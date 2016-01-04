@@ -128,7 +128,10 @@ CheckedStoreRepresentation CheckedStoreRepresentationOf(Operator const* op) {
   V(Uint32Mod, Operator::kNoProperties, 2, 1, 1)                              \
   V(Uint32MulHigh, Operator::kAssociative | Operator::kCommutative, 2, 0, 1)  \
   V(Int64Add, Operator::kAssociative | Operator::kCommutative, 2, 0, 1)       \
+  V(Int64AddWithOverflow, Operator::kAssociative | Operator::kCommutative, 2, \
+    0, 2)                                                                     \
   V(Int64Sub, Operator::kNoProperties, 2, 0, 1)                               \
+  V(Int64SubWithOverflow, Operator::kNoProperties, 2, 0, 2)                   \
   V(Int64Mul, Operator::kAssociative | Operator::kCommutative, 2, 0, 1)       \
   V(Int64Div, Operator::kNoProperties, 2, 1, 1)                               \
   V(Int64Mod, Operator::kNoProperties, 2, 1, 1)                               \
@@ -394,7 +397,8 @@ const Operator* MachineOperatorBuilder::Store(StoreRepresentation store_rep) {
     break;
     MACHINE_REPRESENTATION_LIST(STORE)
 #undef STORE
-    default:
+    case MachineRepresentation::kBit:
+    case MachineRepresentation::kNone:
       break;
   }
   UNREACHABLE();
@@ -423,7 +427,8 @@ const Operator* MachineOperatorBuilder::CheckedStore(
     return &cache_.kCheckedStore##kRep;
     MACHINE_REPRESENTATION_LIST(STORE)
 #undef STORE
-    default:
+    case MachineRepresentation::kBit:
+    case MachineRepresentation::kNone:
       break;
   }
   UNREACHABLE();

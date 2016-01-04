@@ -966,6 +966,10 @@ class MacroAssembler : public Assembler {
   // Abort execution if argument is not a JSFunction, enabled via --debug-code.
   void AssertFunction(Register object);
 
+  // Abort execution if argument is not a JSBoundFunction,
+  // enabled via --debug-code.
+  void AssertBoundFunction(Register object);
+
   // Abort execution if argument is not undefined or an AllocationSite, enabled
   // via --debug-code.
   void AssertUndefinedOrAllocationSite(Register object, Register scratch);
@@ -1097,9 +1101,7 @@ class MacroAssembler : public Assembler {
     CallRuntime(function, function->nargs, kSaveFPRegs);
   }
 
-  void TailCallRuntime(Runtime::FunctionId fid,
-                       int num_arguments,
-                       int result_size);
+  void TailCallRuntime(Runtime::FunctionId fid, int num_arguments);
 
   int ActivationFrameAlignment();
 
@@ -1123,8 +1125,7 @@ class MacroAssembler : public Assembler {
   // Like JumpToExternalReference, but also takes care of passing the number
   // of parameters.
   void TailCallExternalReference(const ExternalReference& ext,
-                                 int num_arguments,
-                                 int result_size);
+                                 int num_arguments);
   void CallExternalReference(const ExternalReference& ext,
                              int num_arguments);
 
@@ -1466,20 +1467,6 @@ class MacroAssembler : public Assembler {
   // Fall-through if the object was a string and jump on fail otherwise.
   inline void IsObjectNameType(Register object, Register type, Label* fail);
 
-  inline void IsObjectJSObjectType(Register heap_object,
-                                   Register map,
-                                   Register scratch,
-                                   Label* fail);
-
-  // Check the instance type in the given map to see if it corresponds to a
-  // JS object type. Jump to the fail label if this is not the case and fall
-  // through otherwise. However if fail label is NULL, no branch will be
-  // performed and the flag will be updated. You can test the flag for "le"
-  // condition to test if it is a valid JS object type.
-  inline void IsInstanceJSObjectType(Register map,
-                                     Register scratch,
-                                     Label* fail);
-
   // Load and check the instance type of an object for being a string.
   // Loads the type into the second argument register.
   // The object and type arguments can be the same register; in that case it
@@ -1813,23 +1800,10 @@ class MacroAssembler : public Assembler {
       PointersToHereCheck pointers_to_here_check_for_value =
           kPointersToHereMaybeInteresting);
 
-  // Checks the color of an object. If the object is already grey or black
-  // then we just fall through, since it is already live. If it is white and
-  // we can determine that it doesn't need to be scanned, then we just mark it
-  // black and fall through. For the rest we jump to the label so the
-  // incremental marker can fix its assumptions.
-  void EnsureNotWhite(Register object,
-                      Register scratch1,
-                      Register scratch2,
-                      Register scratch3,
-                      Register scratch4,
-                      Label* object_is_white_and_not_data);
-
-  // Detects conservatively whether an object is data-only, i.e. it does need to
-  // be scanned by the garbage collector.
-  void JumpIfDataObject(Register value,
-                        Register scratch,
-                        Label* not_data_object);
+  // Checks the color of an object.  If the object is white we jump to the
+  // incremental marker.
+  void JumpIfWhite(Register value, Register scratch1, Register scratch2,
+                   Register scratch3, Register scratch4, Label* value_is_white);
 
   // Helper for finding the mark bits for an address.
   // Note that the behaviour slightly differs from other architectures.

@@ -132,7 +132,7 @@ class X87OperandGenerator final : public OperandGenerator {
 void InstructionSelector::VisitLoad(Node* node) {
   LoadRepresentation load_rep = LoadRepresentationOf(node->op());
 
-  ArchOpcode opcode;
+  ArchOpcode opcode = kArchNop;
   switch (load_rep.representation()) {
     case MachineRepresentation::kFloat32:
       opcode = kX87Movss;
@@ -151,7 +151,8 @@ void InstructionSelector::VisitLoad(Node* node) {
     case MachineRepresentation::kWord32:
       opcode = kX87Movl;
       break;
-    default:
+    case MachineRepresentation::kWord64:  // Fall through.
+    case MachineRepresentation::kNone:
       UNREACHABLE();
       return;
   }
@@ -216,7 +217,7 @@ void InstructionSelector::VisitStore(Node* node) {
     code |= MiscField::encode(static_cast<int>(record_write_mode));
     Emit(code, 0, nullptr, input_count, inputs, temp_count, temps);
   } else {
-    ArchOpcode opcode;
+    ArchOpcode opcode = kArchNop;
     switch (rep) {
       case MachineRepresentation::kFloat32:
         opcode = kX87Movss;
@@ -235,7 +236,8 @@ void InstructionSelector::VisitStore(Node* node) {
       case MachineRepresentation::kWord32:
         opcode = kX87Movl;
         break;
-      default:
+      case MachineRepresentation::kWord64:  // Fall through.
+      case MachineRepresentation::kNone:
         UNREACHABLE();
         return;
     }
@@ -268,7 +270,7 @@ void InstructionSelector::VisitCheckedLoad(Node* node) {
   Node* const buffer = node->InputAt(0);
   Node* const offset = node->InputAt(1);
   Node* const length = node->InputAt(2);
-  ArchOpcode opcode;
+  ArchOpcode opcode = kArchNop;
   switch (load_rep.representation()) {
     case MachineRepresentation::kWord8:
       opcode = load_rep.IsSigned() ? kCheckedLoadInt8 : kCheckedLoadUint8;
@@ -285,7 +287,10 @@ void InstructionSelector::VisitCheckedLoad(Node* node) {
     case MachineRepresentation::kFloat64:
       opcode = kCheckedLoadFloat64;
       break;
-    default:
+    case MachineRepresentation::kBit:     // Fall through.
+    case MachineRepresentation::kTagged:  // Fall through.
+    case MachineRepresentation::kWord64:  // Fall through.
+    case MachineRepresentation::kNone:
       UNREACHABLE();
       return;
   }
@@ -311,7 +316,7 @@ void InstructionSelector::VisitCheckedStore(Node* node) {
   Node* const offset = node->InputAt(1);
   Node* const length = node->InputAt(2);
   Node* const value = node->InputAt(3);
-  ArchOpcode opcode;
+  ArchOpcode opcode = kArchNop;
   switch (rep) {
     case MachineRepresentation::kWord8:
       opcode = kCheckedStoreWord8;
@@ -328,7 +333,10 @@ void InstructionSelector::VisitCheckedStore(Node* node) {
     case MachineRepresentation::kFloat64:
       opcode = kCheckedStoreFloat64;
       break;
-    default:
+    case MachineRepresentation::kBit:     // Fall through.
+    case MachineRepresentation::kTagged:  // Fall through.
+    case MachineRepresentation::kWord64:  // Fall through.
+    case MachineRepresentation::kNone:
       UNREACHABLE();
       return;
   }
@@ -903,9 +911,9 @@ void InstructionSelector::VisitFloat64RoundTiesEven(Node* node) {
 }
 
 
-void InstructionSelector::EmitPrepareArguments(NodeVector* arguments,
-                                               const CallDescriptor* descriptor,
-                                               Node* node) {
+void InstructionSelector::EmitPrepareArguments(
+    ZoneVector<PushParameter>* arguments, const CallDescriptor* descriptor,
+    Node* node) {
   X87OperandGenerator g(this);
 
   // Prepare for C function call.
@@ -918,26 +926,27 @@ void InstructionSelector::EmitPrepareArguments(NodeVector* arguments,
 
     // Poke any stack arguments.
     for (size_t n = 0; n < arguments->size(); ++n) {
-      if (Node* input = (*arguments)[n]) {
+      PushParameter input = (*arguments)[n];
+      if (input.node()) {
         int const slot = static_cast<int>(n);
-        InstructionOperand value = g.CanBeImmediate(input)
-                                       ? g.UseImmediate(input)
-                                       : g.UseRegister(input);
+        InstructionOperand value = g.CanBeImmediate(input.node())
+                                       ? g.UseImmediate(input.node())
+                                       : g.UseRegister(input.node());
         Emit(kX87Poke | MiscField::encode(slot), g.NoOutput(), value);
       }
     }
   } else {
     // Push any stack arguments.
-    for (Node* input : base::Reversed(*arguments)) {
+    for (PushParameter input : base::Reversed(*arguments)) {
       // TODO(titzer): handle pushing double parameters.
-      if (input == nullptr) continue;
+      if (input.node() == nullptr) continue;
       InstructionOperand value =
-          g.CanBeImmediate(input)
-              ? g.UseImmediate(input)
+          g.CanBeImmediate(input.node())
+              ? g.UseImmediate(input.node())
               : IsSupported(ATOM) ||
-                        sequence()->IsFloat(GetVirtualRegister(input))
-                    ? g.UseRegister(input)
-                    : g.Use(input);
+                        sequence()->IsFloat(GetVirtualRegister(input.node()))
+                    ? g.UseRegister(input.node())
+                    : g.Use(input.node());
       Emit(kX87Push, g.NoOutput(), value);
     }
   }

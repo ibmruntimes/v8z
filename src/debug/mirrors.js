@@ -9,7 +9,6 @@
 // Imports
 
 var ErrorToString;
-var FunctionSourceString;
 var GlobalArray = global.Array;
 var IsNaN = global.isNaN;
 var JSONStringify = global.JSON.stringify;
@@ -25,7 +24,6 @@ var SymbolToString;
 
 utils.Import(function(from) {
   ErrorToString = from.ErrorToString;
-  FunctionSourceString = from.FunctionSourceString;
   MakeError = from.MakeError;
   MapEntries = from.MapEntries;
   MapIteratorNext = from.MapIteratorNext;
@@ -116,7 +114,7 @@ function ClearMirrorCache(value) {
 
 
 function ObjectIsPromise(value) {
-  return IS_SPEC_OBJECT(value) &&
+  return IS_RECEIVER(value) &&
          !IS_UNDEFINED(%DebugGetProperty(value, promiseStatusSymbol));
 }
 
@@ -938,7 +936,7 @@ FunctionMirror.prototype.source = function() {
   // Return source if function is resolved. Otherwise just fall through to
   // return undefined.
   if (this.resolved()) {
-    return FunctionSourceString(this.value_);
+    return %FunctionToString(this.value_);
   }
 };
 
