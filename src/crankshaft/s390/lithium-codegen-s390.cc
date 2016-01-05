@@ -748,20 +748,53 @@ void LCodeGen::DeoptimizeIf(Condition cond, LInstruction* instr,
     Register scratch = scratch0();
     ExternalReference count = ExternalReference::stress_deopt_count(isolate());
     Label no_deopt;
-    __ Push(r3, scratch);
+
+    // Store the condition on the stack if necessary
+    if (cond != al) {
+      Label done;
+      __ LoadImmP(scratch, Operand::Zero());
+      __ b(NegateCondition(cond), &done, Label::kNear);
+      __ LoadImmP(scratch, Operand(1));
+      __ bind(&done);
+      __ push(scratch);
+    }
+
+    Label done;
+    __ Push(r3);
     __ mov(scratch, Operand(count));
-    __ l(r3, MemOperand(scratch));
+    __ LoadW(r3, MemOperand(scratch));
     __ Sub32(r3, r3, Operand(1));
-    __ Cmp32(r3, Operand::Zero() /*, alt_cr*/);
-    __ bne(&no_deopt, Label::kNear /*, alt_cr*/);
-    __ mov(r3, Operand(FLAG_deopt_every_n_times));
-    __ st(r3, MemOperand(scratch));
-    __ Pop(r3, scratch);
+    __ Cmp32(r3, Operand::Zero());
+    __ bne(&no_deopt, Label::kNear);
+
+    __ LoadImmP(r3, Operand(FLAG_deopt_every_n_times));
+    __ StoreW(r3, MemOperand(scratch));
+    __ Pop(r3);
+
+    if (cond != al) {
+      // Clean up the stack before the deoptimizer call
+      __ pop(scratch);
+    }
 
     __ Call(entry, RelocInfo::RUNTIME_ENTRY);
+
+    __ b(&done);
+
     __ bind(&no_deopt);
-    __ l(r3, MemOperand(scratch));
-    __ Pop(r3, scratch);
+    __ StoreW(r3, MemOperand(scratch));
+    __ Pop(r3);
+
+    if (cond != al) {
+      // Clean up the stack before the deoptimizer call
+      __ pop(scratch);
+    }
+
+    __ bind(&done);
+
+    if (cond != al) {
+      cond = ne;
+      __ CmpP(scratch, Operand::Zero());
+    }
   }
 
   if (info()->ShouldTrapOnDeopt()) {
