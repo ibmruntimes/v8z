@@ -2049,8 +2049,8 @@ void Builtins::Generate_CallBoundFunction(MacroAssembler* masm) {
 
   // Patch the receiver to [[BoundThis]].
   __ LoadP(ip, FieldMemOperand(r3, JSBoundFunction::kBoundThisOffset));
-  __ ShiftLeftP(r0, r2, Operand(kPointerSizeLog2));
-  __ StoreP(ip, MemOperand(sp, r0));
+  __ ShiftLeftP(r1, r2, Operand(kPointerSizeLog2));
+  __ StoreP(ip, MemOperand(sp, r1));
 
   // Push the [[BoundArguments]] onto the stack.
   Generate_PushBoundArguments(masm);
