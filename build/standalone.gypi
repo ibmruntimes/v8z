@@ -222,6 +222,24 @@
         ],
       },
     }],
+    ['OS=="os390"', {
+      'target_defaults': {
+        'cflags': [ '-qdebug=nohook','-g','-Wc,expo','-q64','-qnortti',
+                    '-D_ISOC99_SOURCE','-D_UNIX03_SOURCE',
+                    '-D_XOPEN_SOURCE_EXTENDED=1','-D_OPEN_SYS_SOCK_IPV6',
+		    '-D_UNIX03_THREADS',
+		    '-F /MVF5/v8test/xlc.cfg',
+		    '-D__BIG_ENDIAN=4321','-D__BYTE_ORDER=__BIG_ENDIAN',
+		    '-D_OPEN_SYS_TIMED_EXT=1' ],
+        'ldflags': [ '-q64','-Wc,expo' ],
+        'conditions': [
+          [ 'component=="shared_library"', {
+            'cflags': [ '-fPIC', ],
+          }],
+        ],
+      },
+    }],
+    # 'OS=="os390"
     ['OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="solaris" \
        or OS=="netbsd" or OS=="aix"', {
       'target_defaults': {

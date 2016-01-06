@@ -1005,7 +1005,8 @@
             '../../src/compiler/x64/linkage-x64.cc',
           ],
         }],
-        ['v8_target_arch=="s390" or v8_target_arch=="s390x"', {
+        ['v8_target_arch=="s390" or v8_target_arch=="s390x" or \
+	  v8_target_arch=="mvs"', {
           'sources': [  ### gcmole(arch:s390) ###
             '../../src/s390/assembler-s390-inl.h',
             '../../src/s390/assembler-s390.cc',
@@ -1197,6 +1198,24 @@
             'sources': [
               '../../src/base/platform/platform-linux.cc',
               '../../src/base/platform/platform-posix.cc'
+            ],
+          }
+        ],
+        ['OS=="os390"', {
+            'link_settings': {
+              'conditions': [
+                ['v8_compress_startup_data=="bz2"', {
+                  'libraries': [
+                    '-lbz2',
+                  ]
+                }],
+              ],
+            },
+            'sources': [
+             '../../src/s390/semaphore_zos.cc',
+             '../../src/s390/semaphore_zos.h',
+              '../../src/platform-zos.cc',
+              '../../src/platform-posix.cc'
             ],
           }
         ],
