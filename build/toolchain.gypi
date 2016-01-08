@@ -264,11 +264,6 @@
           }],
           ],
       }],  # s390
-      ['v8_target_arch=="mvs"', {
-        'defines': [
-          'V8_TARGET_ARCH_MVS',
-        ],
-      }],  # v8_target_arch=="mvs"
       ['v8_target_arch=="ppc" or v8_target_arch=="ppc64"', {
         'defines': [
           'V8_TARGET_ARCH_PPC',

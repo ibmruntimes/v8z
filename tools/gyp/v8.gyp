@@ -1005,8 +1005,7 @@
             '../../src/compiler/x64/linkage-x64.cc',
           ],
         }],
-        ['v8_target_arch=="s390" or v8_target_arch=="s390x" or \
-	  v8_target_arch=="mvs"', {
+        ['v8_target_arch=="s390" or v8_target_arch=="s390x"', {
           'sources': [  ### gcmole(arch:s390) ###
             '../../src/s390/assembler-s390-inl.h',
             '../../src/s390/assembler-s390.cc',
