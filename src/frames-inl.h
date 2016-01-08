@@ -17,7 +17,7 @@
 #include "src/arm64/frames-arm64.h"  // NOLINT
 #elif V8_TARGET_ARCH_ARM
 #include "src/arm/frames-arm.h"  // NOLINT
-#elif V8_TARGET_ARCH_S390 || V8_TARGET_ARCH_MVS
+#elif V8_TARGET_ARCH_S390
 #include "src/s390/frames-s390.h" // NOLINT
 #elif V8_TARGET_ARCH_PPC
 #include "src/ppc/frames-ppc.h"  // NOLINT

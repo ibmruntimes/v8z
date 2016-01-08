@@ -28,7 +28,7 @@
 #include "src/mips64/constants-mips64.h"  // NOLINT
 #elif V8_TARGET_ARCH_PPC
 #include "src/ppc/constants-ppc.h"  // NOLINT
-#elif V8_TARGET_ARCH_S390 || V8_TARGET_ARCH_MVS
+#elif V8_TARGET_ARCH_S390
 #include "src/s390/constants-s390.h" // NOLINT
 #endif
 

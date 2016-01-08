@@ -71,7 +71,7 @@ const int kInvalidProtoDepth = -1;
 #include "src/ppc/assembler-ppc-inl.h"
 #include "src/code.h"                     // NOLINT, must be after assembler_*.h
 #include "src/ppc/macro-assembler-ppc.h"  // NOLINT
-#elif V8_TARGET_ARCH_S390 || V8_TARGET_ARCH_MVS
+#elif V8_TARGET_ARCH_S390
 #include "src/s390/constants-s390.h"
 #include "src/assembler.h" // NOLINT
 #include "src/s390/assembler-s390.h" // NOLINT
