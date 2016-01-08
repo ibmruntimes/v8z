@@ -318,13 +318,6 @@ class FullCodeGenerator: public AstVisitor {
              Label* if_true,
              Label* if_false,
              Label* fall_through);
-#elif V8_TARGET_ARCH_S390
-  // TODO(joransiu): Remove CRegister
-  void Split(Condition cc,
-             Label* if_true,
-             Label* if_false,
-             Label* fall_through,
-             CRegister cr = cr7);
 #elif V8_TARGET_ARCH_MIPS64
   void Split(Condition cc,
              Register lhs,

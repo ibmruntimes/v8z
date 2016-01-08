@@ -675,13 +675,13 @@ void FullCodeGenerator::DoTest(Expression* condition, Label* if_true,
 
 
 void FullCodeGenerator::Split(Condition cond, Label* if_true, Label* if_false,
-                              Label* fall_through, CRegister cr) {
+                              Label* fall_through) {
   if (if_false == fall_through) {
-    __ b(cond, if_true /*, cr*/);
+    __ b(cond, if_true);
   } else if (if_true == fall_through) {
-    __ b(NegateCondition(cond), if_false /*, cr*/);
+    __ b(NegateCondition(cond), if_false);
   } else {
-    __ b(cond, if_true /*, cr*/);
+    __ b(cond, if_true);
     __ b(if_false);
   }
 }
@@ -3091,7 +3091,7 @@ void FullCodeGenerator::EmitIsSmi(CallRuntime* expr) {
 
   PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
   __ TestIfSmi(r2);
-  Split(eq, if_true, if_false, fall_through, cr0);
+  Split(eq, if_true, if_false, fall_through);
 
   context()->Plug(if_true, if_false);
 }
@@ -3746,7 +3746,7 @@ void FullCodeGenerator::EmitHasCachedArrayIndex(CallRuntime* expr) {
   __ LoadlW(r2, FieldMemOperand(r2, String::kHashFieldOffset));
   __ AndP(r0, r2, Operand(String::kContainsCachedArrayIndexMask));
   PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
-  Split(eq, if_true, if_false, fall_through, cr0);
+  Split(eq, if_true, if_false, fall_through);
 
   context()->Plug(if_true, if_false);
 }
@@ -4559,7 +4559,7 @@ void FullCodeGenerator::EmitLiteralCompareTypeof(Expression* expr,
     __ LoadP(r2, FieldMemOperand(r2, HeapObject::kMapOffset));
     __ tm(FieldMemOperand(r2, Map::kBitFieldOffset),
           Operand(1 << Map::kIsUndetectable));
-    Split(ne, if_true, if_false, fall_through, cr0);
+    Split(ne, if_true, if_false, fall_through);
 
   } else if (String::Equals(check, factory->function_string())) {
     __ JumpIfSmi(r2, if_false);
@@ -4578,7 +4578,7 @@ void FullCodeGenerator::EmitLiteralCompareTypeof(Expression* expr,
     __ blt(if_false);
     __ tm(FieldMemOperand(r2, Map::kBitFieldOffset),
           Operand((1 << Map::kIsCallable) | (1 << Map::kIsUndetectable)));
-    Split(eq, if_true, if_false, fall_through, cr0);
+    Split(eq, if_true, if_false, fall_through);
 // clang-format off
 #define SIMD128_TYPE(TYPE, Type, type, lane_count, lane_type)   \
   } else if (String::Equals(check, factory->type##_string())) { \
