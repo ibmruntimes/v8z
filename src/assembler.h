@@ -396,7 +396,6 @@ class RelocInfo {
     INTERNAL_REFERENCE,  // An address inside the same function.
 
     // Encoded internal reference, used only on MIPS, MIPS64 and PPC.
-    // TODO(Tara): Check if this is required for s390
     INTERNAL_REFERENCE_ENCODED,
 
     // Continuation points for a generator yield.

@@ -376,8 +376,7 @@ void RelocInfo::Visit(Isolate* isolate, ObjectVisitor* visitor) {
     visitor->VisitCell(this);
   } else if (mode == RelocInfo::EXTERNAL_REFERENCE) {
     visitor->VisitExternalReference(this);
-  } else if (mode == RelocInfo::INTERNAL_REFERENCE ||
-             mode == RelocInfo::INTERNAL_REFERENCE_ENCODED) {
+  } else if (mode == RelocInfo::INTERNAL_REFERENCE) {
     visitor->VisitInternalReference(this);
   } else if (RelocInfo::IsCodeAgeSequence(mode)) {
     visitor->VisitCodeAgeSequence(this);
@@ -401,8 +400,7 @@ void RelocInfo::Visit(Heap* heap) {
     StaticVisitor::VisitCell(heap, this);
   } else if (mode == RelocInfo::EXTERNAL_REFERENCE) {
     StaticVisitor::VisitExternalReference(this);
-  } else if (mode == RelocInfo::INTERNAL_REFERENCE ||
-             mode == RelocInfo::INTERNAL_REFERENCE_ENCODED) {
+  } else if (mode == RelocInfo::INTERNAL_REFERENCE) {
     StaticVisitor::VisitInternalReference(this);
   } else if (RelocInfo::IsCodeAgeSequence(mode)) {
     StaticVisitor::VisitCodeAgeSequence(heap, this);

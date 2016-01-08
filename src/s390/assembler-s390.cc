@@ -201,8 +201,7 @@ Register ToRegister(int num) {
 // Implementation of RelocInfo
 
 const int RelocInfo::kApplyMask = RelocInfo::kCodeTargetMask |
-    1 << RelocInfo::INTERNAL_REFERENCE |
-    1 << RelocInfo::INTERNAL_REFERENCE_ENCODED;
+    1 << RelocInfo::INTERNAL_REFERENCE;
 
 
 bool RelocInfo::IsCodedSpecially() {
