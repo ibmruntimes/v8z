@@ -18,12 +18,13 @@ const int kNumRegs = 16;
 
 
 // Caller-saved/arguments registers
-const RegList kJSCallerSaved = 1 << 2  |  // r2  a1
+const RegList kJSCallerSaved = 1 << 1  |
+                               1 << 2  |  // r2  a1
                                1 << 3  |  // r3  a2
                                1 << 4  |  // r4  a3
                                1 << 5;    // r5  a4
 
-const int kNumJSCallerSaved = 4;
+const int kNumJSCallerSaved = 5;
 
 // Return the code of the n-th caller-saved register available to JavaScript
 // e.g. JSCallerSavedReg(0) returns r0.code() == 0
@@ -105,8 +106,8 @@ const int kNumSafepointRegisters = 16;
 // Define the list of registers actually saved at safepoints.
 // Note that the number of saved registers may be smaller than the reserved
 // space, i.e. kNumSafepointSavedRegisters <= kNumSafepointRegisters.
-const RegList kSafepointSavedRegisters = kJSCallerSaved | kCalleeSaved;
-const int kNumSafepointSavedRegisters = kNumJSCallerSaved + kNumCalleeSaved;
+// const RegList kSafepointSavedRegisters = kJSCallerSaved | kCalleeSaved;
+// const int kNumSafepointSavedRegisters = kNumJSCallerSaved + kNumCalleeSaved;
 
 // The following constants describe the stack frame linkage area as
 // defined by the ABI.

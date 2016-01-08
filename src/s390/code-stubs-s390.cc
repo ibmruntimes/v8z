@@ -733,8 +733,7 @@ void StoreBufferOverflowStub::Generate(MacroAssembler* masm) {
   // We don't allow a GC during a store buffer overflow so there is no need to
   // store the registers in any particular way, but we do have to store and
   // restore them.
-  __ LoadRR(r0, r14);
-  __ MultiPush(kJSCallerSaved | r0.bit());
+  __ MultiPush(kJSCallerSaved | r14.bit());
   if (save_doubles()) {
     __ MultiPushDoubles(kCallerSavedDoubles);
   }
@@ -750,8 +749,7 @@ void StoreBufferOverflowStub::Generate(MacroAssembler* masm) {
   if (save_doubles()) {
     __ MultiPopDoubles(kCallerSavedDoubles);
   }
-  __ MultiPop(kJSCallerSaved | r0.bit());
-  __ LoadRR(r14, r0);
+  __ MultiPop(kJSCallerSaved | r14.bit());
   __ Ret();
 }
 
