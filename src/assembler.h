@@ -819,11 +819,6 @@ class ExternalReference BASE_EMBEDDED {
     // Object* f(v8::internal::Arguments).
     BUILTIN_CALL,  // default
 
-#if V8_TARGET_ARCH_S390X || V8_TARGET_ARCH_PPC64
-    // Builtin call returning object pair.
-    // ObjectPair* f(v8::internal::Arguments).
-    BUILTIN_OBJECTPAIR_CALL,
-#endif
     // Builtin that takes float arguments and returns an int.
     // int f(double, double).
     BUILTIN_COMPARE_CALL,

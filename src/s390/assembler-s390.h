@@ -55,8 +55,17 @@
 
 #define ABI_PASSES_HANDLES_IN_REGS 1
 
-#define ABI_RETURNS_OBJECT_PAIRS_IN_REGS \
-  (!V8_HOST_ARCH_S390 || (V8_TARGET_LITTLE_ENDIAN))
+// ObjectPair is defined under runtime/runtime-util.h.
+// On 31-bit, ObjectPair == uint64_t.  ABI dictates long long
+//            be returned with the lower addressed half in r2
+//            and the higher addressed half in r3. (Returns in Regs)
+// On 64-bit, ObjectPair is a Struct.  ABI dictaes Structs be 
+//            returned in a storage buffer allocated by the caller,
+//            with the address of this buffer passed as a hidden
+//            argument in r2. (Does NOT return in Regs)
+// For x86 linux, ObjectPair is returned in registers.
+#define ABI_RETURNS_OBJECTPAIR_IN_REGS \
+  !(V8_HOST_ARCH_S390 && V8_TARGET_ARCH_S390X)
 
 #define INSTR_AND_DATA_CACHE_COHERENCY LWSYNC
 

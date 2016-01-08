@@ -1312,7 +1312,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       Redirection* redirection = Redirection::FromSwiInstruction(instr);
       const int kArgCount = 6;
       int arg0_regnum = 2;
-#if V8_TARGET_ARCH_S390X && !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
+#if !ABI_RETURNS_OBJECTPAIR_IN_REGS
       intptr_t result_buffer = 0;
       if (redirection->type() == ExternalReference::BUILTIN_OBJECTPAIR_CALL) {
         result_buffer = get_register(r2);
@@ -1550,7 +1550,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
             PrintF("Returned %08" V8PRIxPTR ", %08" V8PRIxPTR "\n",
                 result.x, result.y);
           }
-#if ABI_RETURNS_OBJECT_PAIRS_IN_REGS
+#if ABI_RETURNS_OBJECTPAIR_IN_REGS
           set_register(r2, result.x);
           set_register(r3, result.y);
 #else
