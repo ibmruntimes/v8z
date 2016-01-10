@@ -84,12 +84,6 @@ class FullCodeGenerator: public AstVisitor {
   static const int kCodeSizeMultiplier = 149;
 #elif V8_TARGET_ARCH_ARM64
   static const int kCodeSizeMultiplier = 220;
-#elif V8_TARGET_ARCH_S390X
-// TODO(all): Copied ARM value. Check this is sensible for S390X.
-  static const int kCodeSizeMultiplier = 200;
-#elif V8_TARGET_ARCH_S390
-// TODO(all): Copied ARM value. Check this is sensible for S390.
-  static const int kCodeSizeMultiplier = 200;
 #elif V8_TARGET_ARCH_PPC64
   static const int kCodeSizeMultiplier = 200;
 #elif V8_TARGET_ARCH_PPC
@@ -98,6 +92,12 @@ class FullCodeGenerator: public AstVisitor {
   static const int kCodeSizeMultiplier = 149;
 #elif V8_TARGET_ARCH_MIPS64
   static const int kCodeSizeMultiplier = 149;
+#elif V8_TARGET_ARCH_S390
+// TODO(joransiu): Copied PPC value. Check this is sensible for S390.
+  static const int kCodeSizeMultiplier = 200;
+#elif V8_TARGET_ARCH_S390X
+// TODO(joransiu): Copied PPC value. Check this is sensible for S390X.
+  static const int kCodeSizeMultiplier = 200;
 #else
 #error Unsupported target architecture.
 #endif
