@@ -129,17 +129,6 @@ namespace internal {
 #define CODE_STUB_LIST_ARM64(V)
 #endif
 
-// TODO(@Tara): Check if code stub list is correct and complete
-// List of code stubs only used on S390 platforms.
-#ifdef V8_TARGET_ARCH_S390
-#define CODE_STUB_LIST_S390(V)  \
-  V(DirectCEntry)              \
-  V(StoreRegistersState)       \
-  V(RestoreRegistersState)
-#else
-#define CODE_STUB_LIST_S390(V)
-#endif
-
 // List of code stubs only used on PPC platforms.
 #ifdef V8_TARGET_ARCH_PPC
 #define CODE_STUB_LIST_PPC(V) \
@@ -148,6 +137,16 @@ namespace internal {
   V(RestoreRegistersState)
 #else
 #define CODE_STUB_LIST_PPC(V)
+#endif
+
+// List of code stubs only used on S390 platforms.
+#ifdef V8_TARGET_ARCH_S390
+#define CODE_STUB_LIST_S390(V)  \
+  V(DirectCEntry)              \
+  V(StoreRegistersState)       \
+  V(RestoreRegistersState)
+#else
+#define CODE_STUB_LIST_S390(V)
 #endif
 
 // List of code stubs only used on MIPS platforms.
