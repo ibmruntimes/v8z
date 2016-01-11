@@ -408,10 +408,10 @@ void LowLevelLogger::LogCodeInfo() {
   const char arch[] = "x32";
 #elif V8_TARGET_ARCH_ARM
   const char arch[] = "arm";
-#elif V8_TARGET_ARCH_S390
-  const char arch[] = "s390";
 #elif V8_TARGET_ARCH_PPC
   const char arch[] = "ppc";
+#elif V8_TARGET_ARCH_S390
+  const char arch[] = "s390";
 #elif V8_TARGET_ARCH_MIPS
   const char arch[] = "mips";
 #elif V8_TARGET_ARCH_X87

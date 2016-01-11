@@ -490,8 +490,8 @@ void SignalHandler::HandleProfilerSignal(int signal, siginfo_t* info,
   state.fp = reinterpret_cast<Address>(ucontext->uc_mcontext.regs->gpr[PT_R31]);
 #elif V8_HOST_ARCH_S390
 #if V8_TARGET_ARCH_32_BIT
-  // 31-bit targets will have the upper bit of the PSW set, and requires
-  // masking out.
+  // 31-bit target will have bit 0 (MSB) of the PSW set to denote addressing
+  // mode.  This bit needs to be masked out to resolve actual address.
   state.pc = reinterpret_cast<Address>(ucontext->uc_mcontext.psw.addr &
                                        0x7FFFFFFF);
 #else
