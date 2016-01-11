@@ -188,7 +188,7 @@ void Builtins::Generate_StringConstructor(MacroAssembler* masm) {
   __ bind(&symbol_descriptive_string);
   {
     __ Push(r2);
-    __ TailCallRuntime(Runtime::kSymbolDescriptiveString, 1);
+    __ TailCallRuntime(Runtime::kSymbolDescriptiveString);
   }
 }
 
@@ -272,7 +272,7 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
   {
     FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
     __ Push(r4, r3, r5);  // first argument, constructor, new target
-    __ CallRuntime(Runtime::kNewObject, 2);
+    __ CallRuntime(Runtime::kNewObject);
     __ Pop(r4);
   }
   __ StoreP(r4, FieldMemOperand(r2, JSValue::kValueOffset), r0);
@@ -459,7 +459,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
           // Push the constructor, new_target and the object to the stack,
           // and then the initial map as an argument to the runtime call.
           __ Push(r3, r5, r6, r4);
-          __ CallRuntime(Runtime::kFinalizeInstanceSize, 1);
+          __ CallRuntime(Runtime::kFinalizeInstanceSize);
           __ Pop(r3, r5, r6);
 
           // Continue with JSObject being successfully allocated
@@ -489,7 +489,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // Push the constructor and new_target twice, second pair as arguments
       // to the runtime call.
       __ Push(r3, r5, r3, r5);
-      __ CallRuntime(Runtime::kNewObject, 2);
+      __ CallRuntime(Runtime::kNewObject);
       __ LoadRR(r6, r2);
       __ Pop(r3, r5);
 
@@ -624,7 +624,7 @@ void Builtins::Generate_JSBuiltinsConstructStub(MacroAssembler* masm) {
 void Builtins::Generate_ConstructedNonConstructable(MacroAssembler* masm) {
   FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
   __ push(r3);
-  __ CallRuntime(Runtime::kThrowConstructedNonConstructable, 1);
+  __ CallRuntime(Runtime::kThrowConstructedNonConstructable);
 }
 
 
@@ -653,7 +653,7 @@ static void Generate_CheckStackOverflow(MacroAssembler* masm, Register argc,
   __ bgt(&okay);  // Signed comparison.
 
   // Out of stack space.
-  __ CallRuntime(Runtime::kThrowStackOverflow, 0);
+  __ CallRuntime(Runtime::kThrowStackOverflow);
 
   __ bind(&okay);
 }
@@ -813,7 +813,7 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
     __ LoadRoot(r0, Heap::kRealStackLimitRootIndex);
     __ CmpLogicalP(r5, r0);
     __ bge(&ok);
-    __ CallRuntime(Runtime::kThrowStackOverflow, 0);
+    __ CallRuntime(Runtime::kThrowStackOverflow);
     __ bind(&ok);
 
     // If ok, push undefined as the initial value for all register file entries.
@@ -845,7 +845,7 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
     __ CmpP(sp, r0);
     __ bge(&ok);
     __ push(kInterpreterBytecodeArrayRegister);
-    __ CallRuntime(Runtime::kStackGuard, 0);
+    __ CallRuntime(Runtime::kStackGuard);
     __ pop(kInterpreterBytecodeArrayRegister);
     __ bind(&ok);
   }
@@ -963,16 +963,13 @@ static void Generate_InterpreterNotifyDeoptimizedHelper(
     // the runtime system.
     __ LoadSmiLiteral(r3, Smi::FromInt(static_cast<int>(type)));
     __ Push(kInterpreterAccumulatorRegister, r3);
-    __ CallRuntime(Runtime::kNotifyDeoptimized, 1);
+    __ CallRuntime(Runtime::kNotifyDeoptimized);
     __ pop(kInterpreterAccumulatorRegister);  // Restore accumulator register.
     // Tear down internal frame.
   }
 
-  // Drop state (we don't use these for interpreter deopts) and push PC at top
-  // of stack (to simulate initial call to bytecode handler in interpreter entry
-  // trampoline).
-  __ pop(r3);
-  __ StoreP(r3, MemOperand(sp, 0));
+  // Drop state (we don't use these for interpreter deopts).
+  __ Drop(1);
 
   // Initialize register file register and dispatch table register.
   __ AddP(kInterpreterRegisterFileRegister, fp,
@@ -1160,7 +1157,7 @@ static void Generate_NotifyStubFailureHelper(MacroAssembler* masm,
     // registers.
     __ MultiPush(kJSCallerSaved | kCalleeSaved);
     // Pass the function and deoptimization type to the runtime system.
-    __ CallRuntime(Runtime::kNotifyStubFailure, 0, save_doubles);
+    __ CallRuntime(Runtime::kNotifyStubFailure, save_doubles);
     __ MultiPop(kJSCallerSaved | kCalleeSaved);
   }
 
@@ -1186,7 +1183,7 @@ static void Generate_NotifyDeoptimizedHelper(MacroAssembler* masm,
     // Pass the function and deoptimization type to the runtime system.
     __ LoadSmiLiteral(r2, Smi::FromInt(static_cast<int>(type)));
     __ push(r2);
-    __ CallRuntime(Runtime::kNotifyDeoptimized, 1);
+    __ CallRuntime(Runtime::kNotifyDeoptimized);
   }
 
   // Get the full codegen state from the stack and untag it -> r8.
@@ -1341,7 +1338,7 @@ void Builtins::Generate_HandleFastApiCall(MacroAssembler* masm) {
   // Drop the arguments (including the receiver);
   __ AddP(r1, r1, Operand(kPointerSize));
   __ AddP(sp, sp, r1);
-  __ TailCallRuntime(Runtime::kThrowIllegalInvocation, 0);
+  __ TailCallRuntime(Runtime::kThrowIllegalInvocation);
 }
 
 
@@ -1352,7 +1349,7 @@ void Builtins::Generate_OnStackReplacement(MacroAssembler* masm) {
     FrameScope scope(masm, StackFrame::INTERNAL);
     // Pass function as argument.
     __ push(r2);
-    __ CallRuntime(Runtime::kCompileForOnStackReplacement, 1);
+    __ CallRuntime(Runtime::kCompileForOnStackReplacement);
   }
 
   // If the code object is null, just return to the unoptimized code.
@@ -1392,13 +1389,60 @@ void Builtins::Generate_OsrAfterStackCheck(MacroAssembler* masm) {
   __ bge(&ok, Label::kNear);
   {
     FrameScope scope(masm, StackFrame::INTERNAL);
-    __ CallRuntime(Runtime::kStackGuard, 0);
+    __ CallRuntime(Runtime::kStackGuard);
   }
   __ Jump(masm->isolate()->builtins()->OnStackReplacement(),
           RelocInfo::CODE_TARGET);
 
   __ bind(&ok);
   __ Ret();
+}
+
+
+// static
+void Builtins::Generate_DatePrototype_GetField(MacroAssembler* masm,
+                                               int field_index) {
+  // ----------- S t a t e -------------
+  //  -- lr    : return address
+  //  -- sp[0] : receiver
+  // -----------------------------------
+
+  // 1. Pop receiver into r2 and check that it's actually a JSDate object.
+  Label receiver_not_date;
+  {
+    __ Pop(r2);
+    __ JumpIfSmi(r2, &receiver_not_date);
+    __ CompareObjectType(r2, r3, r4, JS_DATE_TYPE);
+    __ bne(&receiver_not_date);
+  }
+
+  // 2. Load the specified date field, falling back to the runtime as necessary.
+  if (field_index == JSDate::kDateValue) {
+    __ LoadP(r2, FieldMemOperand(r2, JSDate::kValueOffset));
+  } else {
+    if (field_index < JSDate::kFirstUncachedField) {
+      Label stamp_mismatch;
+      __ mov(r3, Operand(ExternalReference::date_cache_stamp(masm->isolate())));
+      __ LoadP(r3, MemOperand(r3));
+      __ LoadP(ip, FieldMemOperand(r2, JSDate::kCacheStampOffset));
+      __ CmpP(r3, ip);
+      __ bne(&stamp_mismatch);
+      __ LoadP(r2, FieldMemOperand(
+                       r2, JSDate::kValueOffset + field_index * kPointerSize));
+      __ Ret();
+      __ bind(&stamp_mismatch);
+    }
+    FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
+    __ PrepareCallCFunction(2, r3);
+    __ LoadSmiLiteral(r3, Smi::FromInt(field_index));
+    __ CallCFunction(
+        ExternalReference::get_date_field_function(masm->isolate()), 2);
+  }
+  __ Ret();
+
+  // 3. Raise a TypeError if the receiver is not a date.
+  __ bind(&receiver_not_date);
+  __ TailCallRuntime(Runtime::kThrowNotDateError);
 }
 
 
@@ -1470,7 +1514,7 @@ void Builtins::Generate_FunctionPrototypeApply(MacroAssembler* masm) {
   __ bind(&receiver_not_callable);
   {
     __ StoreP(r3, MemOperand(sp, 0));
-    __ TailCallRuntime(Runtime::kThrowApplyNonFunction, 1);
+    __ TailCallRuntime(Runtime::kThrowApplyNonFunction);
   }
 }
 
@@ -1578,7 +1622,7 @@ void Builtins::Generate_ReflectApply(MacroAssembler* masm) {
   __ bind(&target_not_callable);
   {
     __ StoreP(r3, MemOperand(sp, 0));
-    __ TailCallRuntime(Runtime::kThrowApplyNonFunction, 1);
+    __ TailCallRuntime(Runtime::kThrowApplyNonFunction);
   }
 }
 
@@ -1649,14 +1693,14 @@ void Builtins::Generate_ReflectConstruct(MacroAssembler* masm) {
   __ bind(&target_not_constructor);
   {
     __ StoreP(r3, MemOperand(sp, 0));
-    __ TailCallRuntime(Runtime::kThrowCalledNonCallable, 1);
+    __ TailCallRuntime(Runtime::kThrowCalledNonCallable);
   }
 
   // 4c. The new.target is not a constructor, throw an appropriate TypeError.
   __ bind(&new_target_not_constructor);
   {
     __ StoreP(r5, MemOperand(sp, 0));
-    __ TailCallRuntime(Runtime::kThrowCalledNonCallable, 1);
+    __ TailCallRuntime(Runtime::kThrowCalledNonCallable);
   }
 }
 
@@ -1759,7 +1803,7 @@ void Builtins::Generate_Apply(MacroAssembler* masm) {
     {
       FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
       __ Push(r3, r5, r2);
-      __ CallRuntime(Runtime::kCreateListFromArrayLike, 1);
+      __ CallRuntime(Runtime::kCreateListFromArrayLike);
       __ Pop(r3, r5);
       __ LoadP(r4, FieldMemOperand(r2, FixedArray::kLengthOffset));
       __ SmiUntag(r4);
@@ -1810,7 +1854,7 @@ void Builtins::Generate_Apply(MacroAssembler* masm) {
     __ ShiftLeftP(r0, r4, Operand(kPointerSizeLog2));
     __ CmpP(ip, r0);  // Signed comparison.
     __ bgt(&done);
-    __ TailCallRuntime(Runtime::kThrowStackOverflow, 1);
+    __ TailCallRuntime(Runtime::kThrowStackOverflow);
     __ bind(&done);
   }
 
@@ -1950,7 +1994,7 @@ void Builtins::Generate_CallFunction(MacroAssembler* masm,
   {
     FrameAndConstantPoolScope frame(masm, StackFrame::INTERNAL);
     __ push(r3);
-    __ CallRuntime(Runtime::kThrowConstructorNonCallableError, 1);
+    __ CallRuntime(Runtime::kThrowConstructorNonCallableError);
   }
 }
 
@@ -1996,7 +2040,7 @@ void Generate_PushBoundArguments(MacroAssembler* masm) {
       {
         FrameScope scope(masm, StackFrame::MANUAL);
         __ EnterFrame(StackFrame::INTERNAL);
-        __ CallRuntime(Runtime::kThrowStackOverflow, 0);
+        __ CallRuntime(Runtime::kThrowStackOverflow);
       }
       __ bind(&done);
     }
@@ -2116,7 +2160,7 @@ void Builtins::Generate_Call(MacroAssembler* masm, ConvertReceiverMode mode) {
   {
     FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
     __ Push(r3);
-    __ CallRuntime(Runtime::kThrowCalledNonCallable, 1);
+    __ CallRuntime(Runtime::kThrowCalledNonCallable);
   }
 }
 
@@ -2324,7 +2368,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     {
       FrameScope frame(masm, StackFrame::MANUAL);
       EnterArgumentsAdaptorFrame(masm);
-      __ CallRuntime(Runtime::kThrowStrongModeTooFewArguments, 0);
+      __ CallRuntime(Runtime::kThrowStrongModeTooFewArguments);
     }
 
     __ bind(&no_strong_error);
@@ -2398,7 +2442,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
   __ bind(&stack_overflow);
   {
     FrameScope frame(masm, StackFrame::MANUAL);
-    __ CallRuntime(Runtime::kThrowStackOverflow, 0);
+    __ CallRuntime(Runtime::kThrowStackOverflow);
     __ bkpt(0);
   }
 }

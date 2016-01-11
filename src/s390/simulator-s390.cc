@@ -4613,6 +4613,9 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   set_pc(reinterpret_cast<intptr_t>(entry));
 #endif
 
+  // Put target address in ip (for JS prologue).
+  set_register(r12, get_pc());
+
   // Put down marker for end of simulation. The simulator will stop simulation
   // when the PC reaches this value. By saving the "end simulation" value into
   // the LR the simulation stops when returning to this call point.
