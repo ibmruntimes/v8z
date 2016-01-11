@@ -154,10 +154,6 @@ const char* OS::GetGCFakeMMapFile() {
 
 
 void* OS::GetRandomMmapAddr() {
-#if V8_TARGET_ARCH_S390
-  // disable on s390 for now.
-  return NULL;
-#endif
 #if V8_OS_NACL
   // TODO(bradchen): restore randomization once Native Client gets
   // smarter about using mmap address hints.
@@ -178,10 +174,13 @@ void* OS::GetRandomMmapAddr() {
   // fulfilling our placement request.
   raw_addr &= V8_UINT64_C(0x3ffffffff000);
 #elif V8_TARGET_ARCH_S390X
-  // 42 bits of virtual addressing.
-  raw_addr &= V8_UINT64_C(0x00fffffff000);
+  // Linux on Z uses bits 22-32 for Region Indexing, which translates to 42 bits
+  // of virtual addressing.  Truncate to 40 bits to allow kernel chance to
+  // fulfill request.
+  raw_addr &= V8_UINT64_C(0xfffffff000);
 #elif V8_TARGET_ARCH_S390
-  // 31 bits of virtual addressing.
+  // 31 bits of virtual addressing.  Truncate to 29 bits to allow kernel chance
+  // to fulfill request.
   raw_addr &= 0x1ffff000;
 #elif V8_TARGET_ARCH_PPC64
 #if V8_OS_AIX
