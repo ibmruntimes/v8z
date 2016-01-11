@@ -655,12 +655,12 @@ class MacroAssembler : public Assembler {
 
   void MovIntToFloat(DoubleRegister dst, Register src);
   void MovFloatToInt(Register dst, DoubleRegister src);
-  void MovDoubleToInt64 (
+  void MovDoubleToInt64(
 #if !V8_TARGET_ARCH_S390X
       Register dst_hi,
 #endif
       Register dst, DoubleRegister src);
-  void MovInt64ToDouble (
+  void MovInt64ToDouble(
 #if !V8_TARGET_ARCH_S390X
       Register dst_hi,
 #endif

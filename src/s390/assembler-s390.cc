@@ -3417,7 +3417,8 @@ void Assembler::EmitRelocations() {
         // mov sequence
         intptr_t pos =
            reinterpret_cast<intptr_t>(target_address_at(pc, code));
-        set_target_address_at(isolate(), pc, code, buffer_ + pos, SKIP_ICACHE_FLUSH);
+        set_target_address_at(isolate(), pc, code, buffer_ + pos,
+                              SKIP_ICACHE_FLUSH);
       }
 
       reloc_info_writer.Write(&rinfo);

@@ -192,6 +192,7 @@ void Builtins::Generate_StringConstructor(MacroAssembler* masm) {
   }
 }
 
+
 // static
 void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
   // ----------- S t a t e -------------
@@ -202,7 +203,7 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
   //  -- sp[(argc - n - 1) * 4] : arg[n] (zero based)
   //  -- sp[argc * 4]           : receiver
   // -----------------------------------
- 
+
   // 1. Load the first argument into r4 and get rid of the rest (including the
   // receiver).
   {
@@ -220,7 +221,7 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
     __ Drop(1);
     __ bind(&done);
   }
- 
+
   // 2. Make sure r4 is a string.
   {
     Label convert, done_convert;
@@ -466,7 +467,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
           // r5: new target
           // r6: JSObject
           __ b(&allocated);
- 
+
 
           __ bind(&no_inobject_slack_tracking);
         }
@@ -2304,7 +2305,8 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     // If the function is strong we need to throw an error.
     Label no_strong_error;
     __ LoadP(r6, FieldMemOperand(r3, JSFunction::kSharedFunctionInfoOffset));
-    __ LoadlW(r7, FieldMemOperand(r6, SharedFunctionInfo::kCompilerHintsOffset));
+    __ LoadlW(r7,
+              FieldMemOperand(r6, SharedFunctionInfo::kCompilerHintsOffset));
     __ TestBit(r7, SharedFunctionInfo::kStrongModeBit, r0);
     __ beq(&no_strong_error);
 

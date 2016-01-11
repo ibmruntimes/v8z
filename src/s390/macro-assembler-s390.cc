@@ -742,7 +742,7 @@ void MacroAssembler::ConvertDoubleToUnsignedInt64(
 }
 #endif
 
-void MacroAssembler::MovDoubleToInt64 (
+void MacroAssembler::MovDoubleToInt64(
 #if !V8_TARGET_ARCH_S390X
     Register dst_hi,
 #endif
@@ -751,13 +751,14 @@ void MacroAssembler::MovDoubleToInt64 (
 }
 
 
-void MacroAssembler::MovInt64ToDouble (
+void MacroAssembler::MovInt64ToDouble(
 #if !V8_TARGET_ARCH_S390X
     Register dst_hi,
 #endif
     DoubleRegister dst, Register src) {
         UNIMPLEMENTED();  // Not implemented for now
 }
+
 
 void MacroAssembler::StubPrologue(int prologue_offset) {
   PushFixedFrame();
@@ -3356,10 +3357,10 @@ void MacroAssembler::CheckPageFlag(
   // Should be okay to remove rc
 
   if (cc == ne) {
-    bne(condition_met); //, Label::kNear);
+    bne(condition_met);
   }
   if (cc == eq) {
-    beq(condition_met); //, Label::kNear);
+    beq(condition_met);
   }
 }
 
@@ -5462,7 +5463,6 @@ void MacroAssembler::ClearRightImm(Register dst, Register src,
 
 
 void MacroAssembler::Popcnt32(Register dst, Register src) {
-
   DCHECK(!src.is(r0));
   DCHECK(!dst.is(r0));
 
@@ -5472,13 +5472,11 @@ void MacroAssembler::Popcnt32(Register dst, Register src) {
   ShiftRight(r0, dst, Operand(8));
   ar(dst, r0);
   lbr(dst, dst);
-
 }
 
 
 #ifdef V8_TARGET_ARCH_S390X
 void MacroAssembler::Popcnt64(Register dst, Register src) {
-
   DCHECK(!src.is(r0));
   DCHECK(!dst.is(r0));
 
@@ -5490,7 +5488,6 @@ void MacroAssembler::Popcnt64(Register dst, Register src) {
   ShiftRightP(r0, dst, Operand(8));
   AddP(dst, r0);
   lbr(dst, dst);
-
 }
 #endif
 

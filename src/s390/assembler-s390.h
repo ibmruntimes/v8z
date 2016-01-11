@@ -59,7 +59,7 @@
 // On 31-bit, ObjectPair == uint64_t.  ABI dictates long long
 //            be returned with the lower addressed half in r2
 //            and the higher addressed half in r3. (Returns in Regs)
-// On 64-bit, ObjectPair is a Struct.  ABI dictaes Structs be 
+// On 64-bit, ObjectPair is a Struct.  ABI dictaes Structs be
 //            returned in a storage buffer allocated by the caller,
 //            with the address of this buffer passed as a hidden
 //            argument in r2. (Does NOT return in Regs)

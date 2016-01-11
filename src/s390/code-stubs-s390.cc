@@ -15,10 +15,10 @@
 #include "src/ic/ic.h"
 #include "src/ic/stub-cache.h"
 #include "src/isolate.h"
-#include "src/s390/code-stubs-s390.h"
 #include "src/regexp/jsregexp.h"
 #include "src/regexp/regexp-macro-assembler.h"
 #include "src/runtime/runtime.h"
+#include "src/s390/code-stubs-s390.h"
 
 namespace v8 {
 namespace internal {
@@ -1516,6 +1516,7 @@ void InstanceOfStub::Generate(MacroAssembler* masm) {
   __ Push(object, function);
   __ TailCallRuntime(Runtime::kInstanceOf, 2);
 }
+
 
 void FunctionPrototypeStub::Generate(MacroAssembler* masm) {
   Label miss;

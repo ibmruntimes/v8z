@@ -161,7 +161,7 @@ inline Atomic64 Release_Load(volatile const Atomic64* ptr) {
 
 #endif
 
-}  // namespace base 
+}  // namespace base
 }  // namespace v8
 
 #endif  // V8_ATOMICOPS_INTERNALS_S390_H_

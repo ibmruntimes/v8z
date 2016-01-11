@@ -208,8 +208,8 @@ void Deoptimizer::TableEntryGenerator::Generate() {
 
   // Copy core registers into FrameDescription::registers_[kNumRegisters].
   // DCHECK(Register::kNumRegisters == kNumberOfRegisters);
-  //__ mvc(MemOperand(r3, FrameDescription::registers_offset()), MemOperand(sp),
-  //        kNumberOfRegisters * kPointerSize);
+  // __ mvc(MemOperand(r3, FrameDescription::registers_offset()),
+  //        MemOperand(sp), kNumberOfRegisters * kPointerSize);
   // Copy core registers into FrameDescription::registers_[kNumRegisters].
   // TODO(JOHN): optimize the following code by using mvc instruction
   DCHECK(Register::kNumRegisters == kNumberOfRegisters);

@@ -388,7 +388,8 @@ TEST(8) {
 #endif
   F1 f = FUNCTION_CAST<F1>(code->entry());
   intptr_t res =
-    reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(isolate, f, 100, 0, 0, 0, 0));
+    reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(isolate, f, 100, 0,
+                                                   0, 0, 0));
   ::printf("f() = %" V8PRIdPTR  "\n", res);
   CHECK_EQ(0, static_cast<int>(res));
 }
