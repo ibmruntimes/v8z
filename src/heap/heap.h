@@ -276,6 +276,7 @@ namespace internal {
   V(int8x16_string, "int8x16")                                   \
   V(Int8x16_string, "Int8x16")                                   \
   V(isExtensible_string, "isExtensible")                         \
+  V(isView_string, "isView")                                     \
   V(KeyedLoadMonomorphic_string, "KeyedLoadMonomorphic")         \
   V(KeyedStoreMonomorphic_string, "KeyedStoreMonomorphic")       \
   V(last_index_string, "lastIndex")                              \
@@ -354,6 +355,8 @@ namespace internal {
   V(internal_error_symbol)                  \
   V(intl_impl_object_symbol)                \
   V(intl_initialized_marker_symbol)         \
+  V(intl_pattern_symbol)                    \
+  V(intl_resolved_symbol)                   \
   V(megamorphic_symbol)                     \
   V(native_context_index_symbol)            \
   V(nonexistent_symbol)                     \
@@ -378,14 +381,15 @@ namespace internal {
   V(strong_function_transition_symbol)      \
   V(uninitialized_symbol)
 
-#define PUBLIC_SYMBOL_LIST(V)                 \
-  V(has_instance_symbol, Symbol.hasInstance)  \
-  V(iterator_symbol, Symbol.iterator)         \
-  V(match_symbol, Symbol.match)               \
-  V(replace_symbol, Symbol.replace)           \
-  V(search_symbol, Symbol.search)             \
-  V(split_symbol, Symbol.split)               \
-  V(to_primitive_symbol, Symbol.toPrimitive)  \
+#define PUBLIC_SYMBOL_LIST(V)                \
+  V(has_instance_symbol, Symbol.hasInstance) \
+  V(iterator_symbol, Symbol.iterator)        \
+  V(match_symbol, Symbol.match)              \
+  V(replace_symbol, Symbol.replace)          \
+  V(search_symbol, Symbol.search)            \
+  V(species_symbol, Symbol.species)          \
+  V(split_symbol, Symbol.split)              \
+  V(to_primitive_symbol, Symbol.toPrimitive) \
   V(unscopables_symbol, Symbol.unscopables)
 
 // Well-Known Symbols are "Public" symbols, which have a bit set which causes
@@ -821,7 +825,7 @@ class Heap {
 
   // TODO(hpayer): There is still a missmatch between capacity and actual
   // committed memory size.
-  bool CanExpandOldGeneration(int size) {
+  bool CanExpandOldGeneration(int size = 0) {
     if (force_oom_) return false;
     return (CommittedOldGenerationMemory() + size) < MaxOldGenerationSize();
   }
@@ -1411,13 +1415,13 @@ class Heap {
   void UpdateSurvivalStatistics(int start_new_space_size);
 
   inline void IncrementPromotedObjectsSize(int object_size) {
-    DCHECK(object_size > 0);
+    DCHECK_GE(object_size, 0);
     promoted_objects_size_ += object_size;
   }
   inline intptr_t promoted_objects_size() { return promoted_objects_size_; }
 
   inline void IncrementSemiSpaceCopiedObjectSize(int object_size) {
-    DCHECK(object_size > 0);
+    DCHECK_GE(object_size, 0);
     semi_space_copied_object_size_ += object_size;
   }
   inline intptr_t semi_space_copied_object_size() {
@@ -1927,6 +1931,16 @@ class Heap {
   void ScheduleIdleScavengeIfNeeded(int bytes_allocated);
 
   // ===========================================================================
+  // HeapIterator helpers. =====================================================
+  // ===========================================================================
+
+  void heap_iterator_start() { heap_iterator_depth_++; }
+
+  void heap_iterator_end() { heap_iterator_depth_--; }
+
+  bool in_heap_iterator() { return heap_iterator_depth_ > 0; }
+
+  // ===========================================================================
   // Allocation methods. =======================================================
   // ===========================================================================
 
@@ -2378,6 +2392,9 @@ class Heap {
   StrongRootsList* strong_roots_list_;
 
   ArrayBufferTracker* array_buffer_tracker_;
+
+  // The depth of HeapIterator nestings.
+  int heap_iterator_depth_;
 
   // Used for testing purposes.
   bool force_oom_;

@@ -75,11 +75,11 @@ int BytecodeArrayIterator::GetCountOperand(int operand_index) const {
 
 
 int BytecodeArrayIterator::GetIndexOperand(int operand_index) const {
-  OperandSize size =
-      Bytecodes::GetOperandSize(current_bytecode(), operand_index);
-  OperandType type =
-      (size == OperandSize::kByte) ? OperandType::kIdx8 : OperandType::kIdx16;
-  uint32_t operand = GetRawOperand(operand_index, type);
+  OperandType operand_type =
+      Bytecodes::GetOperandType(current_bytecode(), operand_index);
+  DCHECK(operand_type == OperandType::kIdx8 ||
+         operand_type == OperandType::kIdx16);
+  uint32_t operand = GetRawOperand(operand_index, operand_type);
   return static_cast<int>(operand);
 }
 
@@ -88,7 +88,9 @@ Register BytecodeArrayIterator::GetRegisterOperand(int operand_index) const {
   OperandType operand_type =
       Bytecodes::GetOperandType(current_bytecode(), operand_index);
   DCHECK(operand_type == OperandType::kReg8 ||
-         operand_type == OperandType::kMaybeReg8);
+         operand_type == OperandType::kRegPair8 ||
+         operand_type == OperandType::kMaybeReg8 ||
+         operand_type == OperandType::kReg16);
   uint32_t operand = GetRawOperand(operand_index, operand_type);
   return Register::FromOperand(operand);
 }
@@ -106,7 +108,8 @@ int BytecodeArrayIterator::GetJumpTargetOffset() const {
   if (interpreter::Bytecodes::IsJumpImmediate(bytecode)) {
     int relative_offset = GetImmediateOperand(0);
     return current_offset() + relative_offset;
-  } else if (interpreter::Bytecodes::IsJumpConstant(bytecode)) {
+  } else if (interpreter::Bytecodes::IsJumpConstant(bytecode) ||
+             interpreter::Bytecodes::IsJumpConstantWide(bytecode)) {
     Smi* smi = Smi::cast(*GetConstantForIndexOperand(0));
     return current_offset() + smi->value();
   } else {

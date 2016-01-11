@@ -379,6 +379,7 @@ class Simulator {
   inline int32_t ft_reg() const { return currentInstr_->FtValue(); }
   inline int32_t fd_reg() const { return currentInstr_->FdValue(); }
   inline int32_t sa() const { return currentInstr_->SaValue(); }
+  inline int32_t lsa_sa() const { return currentInstr_->LsaSaValue(); }
 
   inline void SetResult(const int32_t rd_reg, const int64_t alu_out) {
     set_register(rd_reg, alu_out);
@@ -390,6 +391,18 @@ class Simulator {
 
   // Used for breakpoints and traps.
   void SoftwareInterrupt(Instruction* instr);
+
+  // Compact branch guard.
+  void CheckForbiddenSlot(int64_t current_pc) {
+    Instruction* instr_after_compact_branch =
+        reinterpret_cast<Instruction*>(current_pc + Instruction::kInstrSize);
+    if (instr_after_compact_branch->IsForbiddenAfterBranch()) {
+      V8_Fatal(__FILE__, __LINE__,
+               "Error: Unexpected instruction 0x%08x immediately after a "
+               "compact branch instruction.",
+               *reinterpret_cast<uint32_t*>(instr_after_compact_branch));
+    }
+  }
 
   // Stop helper functions.
   bool IsWatchpoint(uint64_t code);
@@ -413,7 +426,7 @@ class Simulator {
       return;
     }
 
-    if (instr->IsForbiddenInBranchDelay()) {
+    if (instr->IsForbiddenAfterBranch()) {
       V8_Fatal(__FILE__, __LINE__,
                "Eror:Unexpected %i opcode in a branch delay slot.",
                instr->OpcodeValue());

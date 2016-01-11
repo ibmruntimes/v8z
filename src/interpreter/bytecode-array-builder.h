@@ -5,12 +5,9 @@
 #ifndef V8_INTERPRETER_BYTECODE_ARRAY_BUILDER_H_
 #define V8_INTERPRETER_BYTECODE_ARRAY_BUILDER_H_
 
-#include <vector>
-
 #include "src/ast/ast.h"
-#include "src/identity-map.h"
 #include "src/interpreter/bytecodes.h"
-#include "src/zone.h"
+#include "src/interpreter/constant-array-builder.h"
 #include "src/zone-containers.h"
 
 namespace v8 {
@@ -21,6 +18,7 @@ class Isolate;
 namespace interpreter {
 
 class BytecodeLabel;
+class ConstantArrayBuilder;
 class Register;
 
 // TODO(rmcilroy): Unify this with CreateArgumentsParameters::Type in Turbofan
@@ -100,6 +98,7 @@ class BytecodeArrayBuilder final {
 
   // Register-register transfer.
   BytecodeArrayBuilder& MoveRegister(Register from, Register to);
+  BytecodeArrayBuilder& ExchangeRegisters(Register reg0, Register reg1);
 
   // Named load property.
   BytecodeArrayBuilder& LoadNamedProperty(Register object,
@@ -168,6 +167,14 @@ class BytecodeArrayBuilder final {
   BytecodeArrayBuilder& CallRuntime(Runtime::FunctionId function_id,
                                     Register first_arg, size_t arg_count);
 
+  // Call the runtime function with |function_id| that returns a pair of values.
+  // The first argument should be in |first_arg| and all subsequent arguments
+  // should be in registers <first_arg + 1> to <first_arg + 1 + arg_count>. The
+  // return values will be returned in <first_return> and <first_return + 1>.
+  BytecodeArrayBuilder& CallRuntimeForPair(Runtime::FunctionId function_id,
+                                           Register first_arg, size_t arg_count,
+                                           Register first_return);
+
   // Call the JS runtime function with |context_index|. The the receiver should
   // be in |receiver| and all subsequent arguments should be in registers
   // <receiver + 1> to <receiver + 1 + arg_count>.
@@ -228,6 +235,12 @@ class BytecodeArrayBuilder final {
   ZoneVector<uint8_t>* bytecodes() { return &bytecodes_; }
   const ZoneVector<uint8_t>* bytecodes() const { return &bytecodes_; }
   Isolate* isolate() const { return isolate_; }
+  ConstantArrayBuilder* constant_array_builder() {
+    return &constant_array_builder_;
+  }
+  const ConstantArrayBuilder* constant_array_builder() const {
+    return &constant_array_builder_;
+  }
 
   static Bytecode BytecodeForBinaryOperation(Token::Value op);
   static Bytecode BytecodeForCountOperation(Token::Value op);
@@ -249,12 +262,18 @@ class BytecodeArrayBuilder final {
   static bool FitsInImm8Operand(int value);
   static bool FitsInIdx16Operand(int value);
   static bool FitsInIdx16Operand(size_t value);
+  static bool FitsInReg8Operand(Register value);
+  static bool FitsInReg16Operand(Register value);
 
-  static Bytecode GetJumpWithConstantOperand(Bytecode jump_with_smi8_operand);
-  static Bytecode GetJumpWithToBoolean(Bytecode jump);
+  static Bytecode GetJumpWithConstantOperand(Bytecode jump_smi8_operand);
+  static Bytecode GetJumpWithConstantWideOperand(Bytecode jump_smi8_operand);
+  static Bytecode GetJumpWithToBoolean(Bytecode jump_smi8_operand);
+
+  Register MapRegister(Register reg);
+  Register MapRegisters(Register reg, Register args_base, int args_length = 1);
 
   template <size_t N>
-  INLINE(void Output(Bytecode bytecode, uint32_t(&oprands)[N]));
+  INLINE(void Output(Bytecode bytecode, uint32_t(&operands)[N]));
   void Output(Bytecode bytecode, uint32_t operand0, uint32_t operand1,
               uint32_t operand2, uint32_t operand3);
   void Output(Bytecode bytecode, uint32_t operand0, uint32_t operand1,
@@ -266,7 +285,11 @@ class BytecodeArrayBuilder final {
   BytecodeArrayBuilder& OutputJump(Bytecode jump_bytecode,
                                    BytecodeLabel* label);
   void PatchJump(const ZoneVector<uint8_t>::iterator& jump_target,
-                 ZoneVector<uint8_t>::iterator jump_location);
+                 const ZoneVector<uint8_t>::iterator& jump_location);
+  void PatchIndirectJumpWith8BitOperand(
+      const ZoneVector<uint8_t>::iterator& jump_location, int delta);
+  void PatchIndirectJumpWith16BitOperand(
+      const ZoneVector<uint8_t>::iterator& jump_location, int delta);
 
   void LeaveBasicBlock();
   void EnsureReturn();
@@ -278,6 +301,9 @@ class BytecodeArrayBuilder final {
   bool NeedToBooleanCast();
   bool IsRegisterInAccumulator(Register reg);
 
+  bool RegisterIsValid(Register reg) const;
+
+  // Temporary register management.
   int BorrowTemporaryRegister();
   int BorrowTemporaryRegisterNotInRange(int start_index, int end_index);
   int AllocateAndBorrowTemporaryRegister();
@@ -296,19 +322,16 @@ class BytecodeArrayBuilder final {
   Zone* zone_;
   ZoneVector<uint8_t> bytecodes_;
   bool bytecode_generated_;
+  ConstantArrayBuilder constant_array_builder_;
   size_t last_block_end_;
   size_t last_bytecode_start_;
   bool exit_seen_in_block_;
   int unbound_jumps_;
 
-  IdentityMap<size_t> constants_map_;
-  ZoneVector<Handle<Object>> constants_;
-
   int parameter_count_;
   int local_register_count_;
   int context_register_count_;
   int temporary_register_count_;
-
   ZoneSet<int> free_temporaries_;
 
   class PreviousBytecodeHelper;

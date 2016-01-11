@@ -198,18 +198,18 @@ DEFINE_IMPLICATION(es_staging, harmony_regexp_lookbehind)
 DEFINE_IMPLICATION(es_staging, move_object_start)
 
 // Features that are still work in progress (behind individual flags).
-#define HARMONY_INPROGRESS(V)                                         \
-  V(harmony_modules, "harmony modules")                               \
-  V(harmony_unicode_regexps, "harmony unicode regexps")               \
-  V(harmony_function_name, "harmony Function name inference")         \
-  V(harmony_sharedarraybuffer, "harmony sharedarraybuffer")           \
-  V(harmony_simd, "harmony simd")                                     \
-  V(harmony_do_expressions, "harmony do-expressions")                 \
-  V(harmony_regexp_subclass, "harmony regexp subclassing")
+#define HARMONY_INPROGRESS(V)                                 \
+  V(harmony_modules, "harmony modules")                       \
+  V(harmony_unicode_regexps, "harmony unicode regexps")       \
+  V(harmony_function_name, "harmony Function name inference") \
+  V(harmony_sharedarraybuffer, "harmony sharedarraybuffer")   \
+  V(harmony_simd, "harmony simd")                             \
+  V(harmony_do_expressions, "harmony do-expressions")         \
+  V(harmony_regexp_subclass, "harmony regexp subclassing")    \
+  V(harmony_species, "harmony Symbol.species")
 
 // Features that are complete (but still behind --harmony/es-staging flag).
 #define HARMONY_STAGED(V)                                                 \
-  V(harmony_destructuring_assignment, "harmony destructuring assignment") \
   V(harmony_proxies, "harmony proxies")                                   \
   V(harmony_reflect, "harmony Reflect API")                               \
   V(harmony_sloppy, "harmony features in sloppy mode")                    \
@@ -218,14 +218,15 @@ DEFINE_IMPLICATION(es_staging, move_object_start)
   V(harmony_regexp_lookbehind, "harmony regexp lookbehind")
 
 // Features that are shipping (turned on by default, but internal flag remains).
-#define HARMONY_SHIPPING(V)                                   \
-  V(harmony_default_parameters, "harmony default parameters") \
-  V(harmony_destructuring_bind, "harmony destructuring bind") \
-  V(harmony_concat_spreadable, "harmony isConcatSpreadable")  \
-  V(harmony_object_observe, "harmony Object.observe")         \
-  V(harmony_tolength, "harmony ToLength")                     \
-  V(harmony_tostring, "harmony toString")                     \
-  V(harmony_completion, "harmony completion value semantics") \
+#define HARMONY_SHIPPING(V)                                               \
+  V(harmony_default_parameters, "harmony default parameters")             \
+  V(harmony_destructuring_assignment, "harmony destructuring assignment") \
+  V(harmony_destructuring_bind, "harmony destructuring bind")             \
+  V(harmony_concat_spreadable, "harmony isConcatSpreadable")              \
+  V(harmony_object_observe, "harmony Object.observe")                     \
+  V(harmony_tolength, "harmony ToLength")                                 \
+  V(harmony_tostring, "harmony toString")                                 \
+  V(harmony_completion, "harmony completion value semantics")             \
   V(harmony_regexps, "harmony regular expression extensions")
 
 
@@ -295,7 +296,7 @@ DEFINE_BOOL(string_slices, true, "use string slices")
 
 // Flags for Ignition.
 DEFINE_BOOL(ignition, false, "use ignition interpreter")
-DEFINE_STRING(ignition_filter, "~~", "filter for ignition interpreter")
+DEFINE_STRING(ignition_filter, "*", "filter for ignition interpreter")
 DEFINE_BOOL(ignition_fake_try_catch, false,
             "enable fake try-catch-finally blocks in ignition for testing")
 DEFINE_BOOL(ignition_fallback_on_eval_and_catch, false,
@@ -703,7 +704,7 @@ DEFINE_IMPLICATION(trace_detached_contexts, track_detached_contexts)
 #ifdef VERIFY_HEAP
 DEFINE_BOOL(verify_heap, false, "verify heap pointers before and after GC")
 #endif
-DEFINE_BOOL(move_object_start, false, "enable moving of object starts")
+DEFINE_BOOL(move_object_start, true, "enable moving of object starts")
 DEFINE_BOOL(memory_reducer, true, "use memory reducer")
 DEFINE_BOOL(scavenge_reclaim_unmodified_objects, false,
             "remove unmodified and unreferenced objects")

@@ -77,6 +77,10 @@ TEST_MAP = {
     "intl",
     "unittests",
   ],
+  "ignition": [
+    "mjsunit",
+    "cctest",
+  ],
   "optimize_for_size": [
     "mjsunit",
     "cctest",

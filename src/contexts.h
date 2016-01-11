@@ -83,6 +83,11 @@ enum BindingFlags {
   V(GET_TEMPLATE_CALL_SITE_INDEX, JSFunction, get_template_call_site)     \
   V(MAKE_RANGE_ERROR_INDEX, JSFunction, make_range_error)                 \
   V(MAKE_TYPE_ERROR_INDEX, JSFunction, make_type_error)                   \
+  V(OBJECT_FREEZE, JSFunction, object_freeze)                             \
+  V(OBJECT_IS_EXTENSIBLE, JSFunction, object_is_extensible)               \
+  V(OBJECT_IS_FROZEN, JSFunction, object_is_frozen)                       \
+  V(OBJECT_IS_SEALED, JSFunction, object_is_sealed)                       \
+  V(OBJECT_KEYS, JSFunction, object_keys)                                 \
   V(REFLECT_APPLY_INDEX, JSFunction, reflect_apply)                       \
   V(REFLECT_CONSTRUCT_INDEX, JSFunction, reflect_construct)               \
   V(REFLECT_DEFINE_PROPERTY_INDEX, JSFunction, reflect_define_property)   \
@@ -105,7 +110,6 @@ enum BindingFlags {
   V(ARRAY_SLICE_INDEX, JSFunction, array_slice)                               \
   V(ARRAY_UNSHIFT_INDEX, JSFunction, array_unshift)                           \
   V(ARRAY_VALUES_ITERATOR_INDEX, JSFunction, array_values_iterator)           \
-  V(CREATE_DATE_FUN_INDEX, JSFunction, create_date_fun)                       \
   V(DERIVED_GET_TRAP_INDEX, JSFunction, derived_get_trap)                     \
   V(ERROR_FUNCTION_INDEX, JSFunction, error_function)                         \
   V(EVAL_ERROR_FUNCTION_INDEX, JSFunction, eval_error_function)               \

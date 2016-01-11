@@ -201,6 +201,28 @@ void Interpreter::DoStar(compiler::InterpreterAssembler* assembler) {
 }
 
 
+// Exchange <reg8> <reg16>
+//
+// Exchange two registers.
+void Interpreter::DoExchange(compiler::InterpreterAssembler* assembler) {
+  Node* reg0_index = __ BytecodeOperandReg(0);
+  Node* reg1_index = __ BytecodeOperandReg(1);
+  Node* reg0_value = __ LoadRegister(reg0_index);
+  Node* reg1_value = __ LoadRegister(reg1_index);
+  __ StoreRegister(reg1_value, reg0_index);
+  __ StoreRegister(reg0_value, reg1_index);
+  __ Dispatch();
+}
+
+
+// ExchangeWide <reg16> <reg16>
+//
+// Exchange two registers.
+void Interpreter::DoExchangeWide(compiler::InterpreterAssembler* assembler) {
+  return DoExchange(assembler);
+}
+
+
 // Mov <src> <dst>
 //
 // Stores the value of register <src> to register <dst>.
@@ -455,6 +477,26 @@ void Interpreter::DoLdaLookupSlotInsideTypeof(
 }
 
 
+// LdaLookupSlotWide <name_index>
+//
+// Lookup the object with the name in constant pool entry |name_index|
+// dynamically.
+void Interpreter::DoLdaLookupSlotWide(
+    compiler::InterpreterAssembler* assembler) {
+  DoLdaLookupSlot(assembler);
+}
+
+
+// LdaLookupSlotInsideTypeofWide <name_index>
+//
+// Lookup the object with the name in constant pool entry |name_index|
+// dynamically without causing a NoReferenceError.
+void Interpreter::DoLdaLookupSlotInsideTypeofWide(
+    compiler::InterpreterAssembler* assembler) {
+  DoLdaLookupSlotInsideTypeof(assembler);
+}
+
+
 void Interpreter::DoStoreLookupSlot(LanguageMode language_mode,
                                     compiler::InterpreterAssembler* assembler) {
   Node* value = __ GetAccumulator();
@@ -486,6 +528,26 @@ void Interpreter::DoStaLookupSlotSloppy(
 void Interpreter::DoStaLookupSlotStrict(
     compiler::InterpreterAssembler* assembler) {
   DoStoreLookupSlot(LanguageMode::STRICT, assembler);
+}
+
+
+// StaLookupSlotSloppyWide <name_index>
+//
+// Store the object in accumulator to the object with the name in constant
+// pool entry |name_index| in sloppy mode.
+void Interpreter::DoStaLookupSlotSloppyWide(
+    compiler::InterpreterAssembler* assembler) {
+  DoStaLookupSlotSloppy(assembler);
+}
+
+
+// StaLookupSlotStrictWide <name_index>
+//
+// Store the object in accumulator to the object with the name in constant
+// pool entry |name_index| in strict mode.
+void Interpreter::DoStaLookupSlotStrictWide(
+    compiler::InterpreterAssembler* assembler) {
+  DoStaLookupSlotStrict(assembler);
 }
 
 
@@ -1024,6 +1086,33 @@ void Interpreter::DoCallRuntime(compiler::InterpreterAssembler* assembler) {
 }
 
 
+// CallRuntimeForPair <function_id> <first_arg> <arg_count> <first_return>
+//
+// Call the runtime function |function_id| which returns a pair, with the
+// first argument in register |first_arg| and |arg_count| arguments in
+// subsequent registers. Returns the result in <first_return> and
+// <first_return + 1>
+void Interpreter::DoCallRuntimeForPair(
+    compiler::InterpreterAssembler* assembler) {
+  // Call the runtime function.
+  Node* function_id = __ BytecodeOperandIdx(0);
+  Node* first_arg_reg = __ BytecodeOperandReg(1);
+  Node* first_arg = __ RegisterLocation(first_arg_reg);
+  Node* args_count = __ BytecodeOperandCount(2);
+  Node* result_pair = __ CallRuntime(function_id, first_arg, args_count, 2);
+
+  // Store the results in <first_return> and <first_return + 1>
+  Node* first_return_reg = __ BytecodeOperandReg(3);
+  Node* second_return_reg = __ NextRegister(first_return_reg);
+  Node* result0 = __ Projection(0, result_pair);
+  Node* result1 = __ Projection(1, result_pair);
+  __ StoreRegister(result0, first_return_reg);
+  __ StoreRegister(result1, second_return_reg);
+
+  __ Dispatch();
+}
+
+
 // CallJSRuntime <context_index> <receiver> <arg_count>
 //
 // Call the JS runtime function that has the |context_index| with the receiver
@@ -1196,14 +1285,24 @@ void Interpreter::DoJump(compiler::InterpreterAssembler* assembler) {
 }
 
 
-// JumpConstant <idx>
+// JumpConstant <idx8>
 //
-// Jump by number of bytes in the Smi in the |idx| entry in the constant pool.
+// Jump by number of bytes in the Smi in the |idx8| entry in the constant pool.
 void Interpreter::DoJumpConstant(compiler::InterpreterAssembler* assembler) {
   Node* index = __ BytecodeOperandIdx(0);
   Node* constant = __ LoadConstantPoolEntry(index);
   Node* relative_jump = __ SmiUntag(constant);
   __ Jump(relative_jump);
+}
+
+
+// JumpConstantWide <idx16>
+//
+// Jump by number of bytes in the Smi in the |idx16| entry in the
+// constant pool.
+void Interpreter::DoJumpConstantWide(
+    compiler::InterpreterAssembler* assembler) {
+  DoJumpConstant(assembler);
 }
 
 
@@ -1219,9 +1318,9 @@ void Interpreter::DoJumpIfTrue(compiler::InterpreterAssembler* assembler) {
 }
 
 
-// JumpIfTrueConstant <idx>
+// JumpIfTrueConstant <idx8>
 //
-// Jump by number of bytes in the Smi in the |idx| entry in the constant pool
+// Jump by number of bytes in the Smi in the |idx8| entry in the constant pool
 // if the accumulator contains true.
 void Interpreter::DoJumpIfTrueConstant(
     compiler::InterpreterAssembler* assembler) {
@@ -1231,6 +1330,16 @@ void Interpreter::DoJumpIfTrueConstant(
   Node* relative_jump = __ SmiUntag(constant);
   Node* true_value = __ BooleanConstant(true);
   __ JumpIfWordEqual(accumulator, true_value, relative_jump);
+}
+
+
+// JumpIfTrueConstantWide <idx16>
+//
+// Jump by number of bytes in the Smi in the |idx16| entry in the constant pool
+// if the accumulator contains true.
+void Interpreter::DoJumpIfTrueConstantWide(
+    compiler::InterpreterAssembler* assembler) {
+  DoJumpIfTrueConstant(assembler);
 }
 
 
@@ -1246,9 +1355,9 @@ void Interpreter::DoJumpIfFalse(compiler::InterpreterAssembler* assembler) {
 }
 
 
-// JumpIfFalseConstant <idx>
+// JumpIfFalseConstant <idx8>
 //
-// Jump by number of bytes in the Smi in the |idx| entry in the constant pool
+// Jump by number of bytes in the Smi in the |idx8| entry in the constant pool
 // if the accumulator contains false.
 void Interpreter::DoJumpIfFalseConstant(
     compiler::InterpreterAssembler* assembler) {
@@ -1258,6 +1367,16 @@ void Interpreter::DoJumpIfFalseConstant(
   Node* relative_jump = __ SmiUntag(constant);
   Node* false_value = __ BooleanConstant(false);
   __ JumpIfWordEqual(accumulator, false_value, relative_jump);
+}
+
+
+// JumpIfFalseConstant <idx16>
+//
+// Jump by number of bytes in the Smi in the |idx16| entry in the constant pool
+// if the accumulator contains false.
+void Interpreter::DoJumpIfFalseConstantWide(
+    compiler::InterpreterAssembler* assembler) {
+  DoJumpIfFalseConstant(assembler);
 }
 
 
@@ -1276,9 +1395,9 @@ void Interpreter::DoJumpIfToBooleanTrue(
 }
 
 
-// JumpIfToBooleanTrueConstant <idx>
+// JumpIfToBooleanTrueConstant <idx8>
 //
-// Jump by number of bytes in the Smi in the |idx| entry in the constant pool
+// Jump by number of bytes in the Smi in the |idx8| entry in the constant pool
 // if the object referenced by the accumulator is true when the object is cast
 // to boolean.
 void Interpreter::DoJumpIfToBooleanTrueConstant(
@@ -1291,6 +1410,17 @@ void Interpreter::DoJumpIfToBooleanTrueConstant(
   Node* relative_jump = __ SmiUntag(constant);
   Node* true_value = __ BooleanConstant(true);
   __ JumpIfWordEqual(to_boolean_value, true_value, relative_jump);
+}
+
+
+// JumpIfToBooleanTrueConstantWide <idx16>
+//
+// Jump by number of bytes in the Smi in the |idx16| entry in the constant pool
+// if the object referenced by the accumulator is true when the object is cast
+// to boolean.
+void Interpreter::DoJumpIfToBooleanTrueConstantWide(
+    compiler::InterpreterAssembler* assembler) {
+  DoJumpIfToBooleanTrueConstant(assembler);
 }
 
 
@@ -1309,9 +1439,9 @@ void Interpreter::DoJumpIfToBooleanFalse(
 }
 
 
-// JumpIfToBooleanFalseConstant <idx>
+// JumpIfToBooleanFalseConstant <idx8>
 //
-// Jump by number of bytes in the Smi in the |idx| entry in the constant pool
+// Jump by number of bytes in the Smi in the |idx8| entry in the constant pool
 // if the object referenced by the accumulator is false when the object is cast
 // to boolean.
 void Interpreter::DoJumpIfToBooleanFalseConstant(
@@ -1327,6 +1457,17 @@ void Interpreter::DoJumpIfToBooleanFalseConstant(
 }
 
 
+// JumpIfToBooleanFalseConstantWide <idx16>
+//
+// Jump by number of bytes in the Smi in the |idx16| entry in the constant pool
+// if the object referenced by the accumulator is false when the object is cast
+// to boolean.
+void Interpreter::DoJumpIfToBooleanFalseConstantWide(
+    compiler::InterpreterAssembler* assembler) {
+  DoJumpIfToBooleanFalseConstant(assembler);
+}
+
+
 // JumpIfNull <imm8>
 //
 // Jump by number of bytes represented by an immediate operand if the object
@@ -1339,9 +1480,9 @@ void Interpreter::DoJumpIfNull(compiler::InterpreterAssembler* assembler) {
 }
 
 
-// JumpIfNullConstant <idx>
+// JumpIfNullConstant <idx8>
 //
-// Jump by number of bytes in the Smi in the |idx| entry in the constant pool
+// Jump by number of bytes in the Smi in the |idx8| entry in the constant pool
 // if the object referenced by the accumulator is the null constant.
 void Interpreter::DoJumpIfNullConstant(
     compiler::InterpreterAssembler* assembler) {
@@ -1354,7 +1495,17 @@ void Interpreter::DoJumpIfNullConstant(
 }
 
 
-// JumpIfUndefined <imm8>
+// JumpIfNullConstantWide <idx16>
+//
+// Jump by number of bytes in the Smi in the |idx16| entry in the constant pool
+// if the object referenced by the accumulator is the null constant.
+void Interpreter::DoJumpIfNullConstantWide(
+    compiler::InterpreterAssembler* assembler) {
+  DoJumpIfNullConstant(assembler);
+}
+
+
+// jumpifundefined <imm8>
 //
 // Jump by number of bytes represented by an immediate operand if the object
 // referenced by the accumulator is the undefined constant.
@@ -1367,9 +1518,9 @@ void Interpreter::DoJumpIfUndefined(compiler::InterpreterAssembler* assembler) {
 }
 
 
-// JumpIfUndefinedConstant <idx>
+// JumpIfUndefinedConstant <idx8>
 //
-// Jump by number of bytes in the Smi in the |idx| entry in the constant pool
+// Jump by number of bytes in the Smi in the |idx8| entry in the constant pool
 // if the object referenced by the accumulator is the undefined constant.
 void Interpreter::DoJumpIfUndefinedConstant(
     compiler::InterpreterAssembler* assembler) {
@@ -1380,6 +1531,16 @@ void Interpreter::DoJumpIfUndefinedConstant(
   Node* constant = __ LoadConstantPoolEntry(index);
   Node* relative_jump = __ SmiUntag(constant);
   __ JumpIfWordEqual(accumulator, undefined_value, relative_jump);
+}
+
+
+// JumpIfUndefinedConstantWide <idx16>
+//
+// Jump by number of bytes in the Smi in the |idx16| entry in the constant pool
+// if the object referenced by the accumulator is the undefined constant.
+void Interpreter::DoJumpIfUndefinedConstantWide(
+    compiler::InterpreterAssembler* assembler) {
+  DoJumpIfUndefinedConstant(assembler);
 }
 
 

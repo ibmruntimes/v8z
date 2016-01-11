@@ -3514,9 +3514,19 @@ void Simulator::DecodeTypeRegisterSPECIAL() {
       SetResult(rd_reg(), static_cast<int32_t>(alu_out));
       break;
     case SRAV:
-      alu_out = rt() >> rs();
-      SetResult(rd_reg(), static_cast<int32_t>(alu_out));
+      SetResult(rd_reg(), rt() >> rs());
       break;
+    case LSA: {
+      DCHECK(IsMipsArchVariant(kMips32r6));
+      int8_t sa = lsa_sa() + 1;
+      int32_t _rt = rt();
+      int32_t _rs = rs();
+      int32_t res = _rs << sa;
+      res += _rt;
+      DCHECK_EQ(res, (rs() << (lsa_sa() + 1)) + rt());
+      SetResult(rd_reg(), (rs() << (lsa_sa() + 1)) + rt());
+      break;
+    }
     case MFHI:  // MFHI == CLZ on R6.
       if (!IsMipsArchVariant(kMips32r6)) {
         DCHECK(sa() == 0);
@@ -4090,7 +4100,6 @@ void Simulator::DecodeTypeImmediate(Instruction* instr) {
       if (rs_reg != 0) {  // BEQZC
         BranchCompactHelper(rs == 0, 21);
       } else {  // JIC
-        CheckForbiddenSlot(get_pc());
         next_pc = rt + imm16;
       }
       break;
@@ -4098,9 +4107,7 @@ void Simulator::DecodeTypeImmediate(Instruction* instr) {
       if (rs_reg != 0) {  // BNEZC
         BranchCompactHelper(rs != 0, 21);
       } else {  // JIALC
-        int32_t current_pc = get_pc();
-        CheckForbiddenSlot(current_pc);
-        set_register(31, current_pc + Instruction::kInstrSize);
+        set_register(31, get_pc() + Instruction::kInstrSize);
         next_pc = rt + imm16;
       }
       break;

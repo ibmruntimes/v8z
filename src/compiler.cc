@@ -411,12 +411,29 @@ OptimizedCompileJob::Status OptimizedCompileJob::CreateGraph() {
   DCHECK(info()->shared_info()->has_deoptimization_support());
   DCHECK(!info()->is_first_compile());
 
-  // Check the enabling conditions for TurboFan.
+  bool optimization_disabled = info()->shared_info()->optimization_disabled();
   bool dont_crankshaft = info()->shared_info()->dont_crankshaft();
-  if (((FLAG_turbo_asm && info()->shared_info()->asm_function()) ||
-       (dont_crankshaft && strcmp(FLAG_turbo_filter, "~~") == 0) ||
-       info()->closure()->PassesFilter(FLAG_turbo_filter)) &&
-      (FLAG_turbo_osr || !info()->is_osr())) {
+
+  // Check the enabling conditions for Turbofan.
+  // 1. "use asm" code.
+  bool is_turbofanable_asm = FLAG_turbo_asm &&
+                             info()->shared_info()->asm_function() &&
+                             !optimization_disabled;
+
+  // 2. Fallback for features unsupported by Crankshaft.
+  bool is_unsupported_by_crankshaft_but_turbofanable =
+      dont_crankshaft && strcmp(FLAG_turbo_filter, "~~") == 0 &&
+      !optimization_disabled;
+
+  // 3. Explicitly enabled by the command-line filter.
+  bool passes_turbo_filter = info()->closure()->PassesFilter(FLAG_turbo_filter);
+
+  // If this is OSR request, OSR must be enabled by Turbofan.
+  bool passes_osr_test = FLAG_turbo_osr || !info()->is_osr();
+
+  if ((is_turbofanable_asm || is_unsupported_by_crankshaft_but_turbofanable ||
+       passes_turbo_filter) &&
+      passes_osr_test) {
     // Use TurboFan for the compilation.
     if (FLAG_trace_opt) {
       OFStream os(stdout);
@@ -544,6 +561,61 @@ OptimizedCompileJob::Status OptimizedCompileJob::OptimizeGraph() {
 }
 
 
+namespace {
+
+void AddWeakObjectToCodeDependency(Isolate* isolate, Handle<HeapObject> object,
+                                   Handle<Code> code) {
+  Handle<WeakCell> cell = Code::WeakCellFor(code);
+  Heap* heap = isolate->heap();
+  Handle<DependentCode> dep(heap->LookupWeakObjectToCodeDependency(object));
+  dep = DependentCode::InsertWeakCode(dep, DependentCode::kWeakCodeGroup, cell);
+  heap->AddWeakObjectToCodeDependency(object, dep);
+}
+
+
+void RegisterWeakObjectsInOptimizedCode(Handle<Code> code) {
+  // TODO(turbofan): Move this to pipeline.cc once Crankshaft dies.
+  Isolate* const isolate = code->GetIsolate();
+  DCHECK(code->is_optimized_code());
+  std::vector<Handle<Map>> maps;
+  std::vector<Handle<HeapObject>> objects;
+  {
+    DisallowHeapAllocation no_gc;
+    int const mode_mask = RelocInfo::ModeMask(RelocInfo::EMBEDDED_OBJECT) |
+                          RelocInfo::ModeMask(RelocInfo::CELL);
+    for (RelocIterator it(*code, mode_mask); !it.done(); it.next()) {
+      RelocInfo::Mode mode = it.rinfo()->rmode();
+      if (mode == RelocInfo::CELL &&
+          code->IsWeakObjectInOptimizedCode(it.rinfo()->target_cell())) {
+        objects.push_back(handle(it.rinfo()->target_cell(), isolate));
+      } else if (mode == RelocInfo::EMBEDDED_OBJECT &&
+                 code->IsWeakObjectInOptimizedCode(
+                     it.rinfo()->target_object())) {
+        Handle<HeapObject> object(HeapObject::cast(it.rinfo()->target_object()),
+                                  isolate);
+        if (object->IsMap()) {
+          maps.push_back(Handle<Map>::cast(object));
+        } else {
+          objects.push_back(object);
+        }
+      }
+    }
+  }
+  for (Handle<Map> map : maps) {
+    if (map->dependent_code()->IsEmpty(DependentCode::kWeakCodeGroup)) {
+      isolate->heap()->AddRetainedMap(map);
+    }
+    Map::AddDependentCode(map, DependentCode::kWeakCodeGroup, code);
+  }
+  for (Handle<HeapObject> object : objects) {
+    AddWeakObjectToCodeDependency(isolate, object, code);
+  }
+  code->set_can_have_weak_objects(true);
+}
+
+}  // namespace
+
+
 OptimizedCompileJob::Status OptimizedCompileJob::GenerateCode() {
   DCHECK(last_status() == SUCCEEDED);
   // TODO(turbofan): Currently everything is done in the first phase.
@@ -552,6 +624,7 @@ OptimizedCompileJob::Status OptimizedCompileJob::GenerateCode() {
     if (info()->is_deoptimization_enabled()) {
       info()->parse_info()->context()->native_context()->AddOptimizedCode(
           *info()->code());
+      RegisterWeakObjectsInOptimizedCode(info()->code());
     }
     RecordOptimizationStats();
     return last_status();
@@ -576,6 +649,7 @@ OptimizedCompileJob::Status OptimizedCompileJob::GenerateCode() {
       }
       return SetLastStatus(BAILED_OUT);
     }
+    RegisterWeakObjectsInOptimizedCode(optimized_code);
     info()->SetCode(optimized_code);
   }
   RecordOptimizationStats();

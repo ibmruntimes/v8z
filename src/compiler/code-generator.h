@@ -28,6 +28,20 @@ struct BranchInfo {
 };
 
 
+class InstructionOperandIterator {
+ public:
+  InstructionOperandIterator(Instruction* instr, size_t pos)
+      : instr_(instr), pos_(pos) {}
+
+  Instruction* instruction() const { return instr_; }
+  InstructionOperand* Advance() { return instr_->InputAt(pos_++); }
+
+ private:
+  Instruction* instr_;
+  size_t pos_;
+};
+
+
 // Generates native code for a sequence of instructions.
 class CodeGenerator final : public GapResolver::Assembler {
  public:
@@ -39,7 +53,7 @@ class CodeGenerator final : public GapResolver::Assembler {
 
   InstructionSequence* code() const { return code_; }
   FrameAccessState* frame_access_state() const { return frame_access_state_; }
-  Frame* const frame() const { return frame_access_state_->frame(); }
+  Frame* frame() const { return frame_access_state_->frame(); }
   Isolate* isolate() const { return info_->isolate(); }
   Linkage* linkage() const { return linkage_; }
 
@@ -136,9 +150,15 @@ class CodeGenerator final : public GapResolver::Assembler {
                        size_t frame_access_state_offset,
                        OutputFrameStateCombine state_combine);
   void BuildTranslationForFrameStateDescriptor(
-      FrameStateDescriptor* descriptor, Instruction* instr,
-      Translation* translation, size_t frame_access_state_offset,
-      OutputFrameStateCombine state_combine);
+      FrameStateDescriptor* descriptor, InstructionOperandIterator* iter,
+      Translation* translation, OutputFrameStateCombine state_combine);
+  void TranslateStateValueDescriptor(StateValueDescriptor* desc,
+                                     Translation* translation,
+                                     InstructionOperandIterator* iter);
+  void TranslateFrameStateDescriptorOperands(FrameStateDescriptor* desc,
+                                             InstructionOperandIterator* iter,
+                                             OutputFrameStateCombine combine,
+                                             Translation* translation);
   void AddTranslationForOperand(Translation* translation, Instruction* instr,
                                 InstructionOperand* op, MachineType type);
   void AddNopForSmiCodeInlining();

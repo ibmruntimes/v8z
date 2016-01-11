@@ -51,58 +51,76 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
 
 
 // Define list of builtins implemented in C++.
-#define BUILTIN_LIST_C(V)                              \
-  V(Illegal, kNone)                                    \
-                                                       \
-  V(EmptyFunction, kNone)                              \
-                                                       \
-  V(ArrayConcat, kNone)                                \
-  V(ArrayIsArray, kNone)                               \
-  V(ArrayPop, kNone)                                   \
-  V(ArrayPush, kNone)                                  \
-  V(ArrayShift, kNone)                                 \
-  V(ArraySlice, kNone)                                 \
-  V(ArraySplice, kNone)                                \
-  V(ArrayUnshift, kNone)                               \
-                                                       \
-  V(DateToPrimitive, kNone)                            \
-                                                       \
-  V(FunctionConstructor, kTargetAndNewTarget)          \
-  V(FunctionPrototypeBind, kNone)                      \
-  V(FunctionPrototypeToString, kNone)                  \
-                                                       \
-  V(GeneratorFunctionConstructor, kTargetAndNewTarget) \
-                                                       \
-  V(GlobalEval, kTarget)                               \
-                                                       \
-  V(ObjectAssign, kNone)                               \
-  V(ObjectCreate, kNone)                               \
-  V(ObjectProtoToString, kNone)                        \
-                                                       \
-  V(ProxyConstructor, kNone)                           \
-  V(ProxyConstructor_ConstructStub, kTarget)           \
-                                                       \
-  V(ReflectDefineProperty, kNone)                      \
-  V(ReflectDeleteProperty, kNone)                      \
-  V(ReflectGet, kNone)                                 \
-  V(ReflectGetOwnPropertyDescriptor, kNone)            \
-  V(ReflectGetPrototypeOf, kNone)                      \
-  V(ReflectHas, kNone)                                 \
-  V(ReflectIsExtensible, kNone)                        \
-  V(ReflectOwnKeys, kNone)                             \
-  V(ReflectPreventExtensions, kNone)                   \
-  V(ReflectSet, kNone)                                 \
-  V(ReflectSetPrototypeOf, kNone)                      \
-                                                       \
-  V(SymbolConstructor, kNone)                          \
-  V(SymbolConstructor_ConstructStub, kTarget)          \
-                                                       \
-  V(HandleApiCall, kTarget)                            \
-  V(HandleApiCallConstruct, kTarget)                   \
-  V(HandleApiCallAsFunction, kNone)                    \
-  V(HandleApiCallAsConstructor, kNone)                 \
-                                                       \
-  V(RestrictedFunctionPropertiesThrower, kNone)        \
+#define BUILTIN_LIST_C(V)                                      \
+  V(Illegal, kNone)                                            \
+                                                               \
+  V(EmptyFunction, kNone)                                      \
+                                                               \
+  V(ArrayConcat, kNone)                                        \
+  V(ArrayIsArray, kNone)                                       \
+  V(ArrayPop, kNone)                                           \
+  V(ArrayPush, kNone)                                          \
+  V(ArrayShift, kNone)                                         \
+  V(ArraySlice, kNone)                                         \
+  V(ArraySplice, kNone)                                        \
+  V(ArrayUnshift, kNone)                                       \
+                                                               \
+  V(ArrayBufferConstructor, kTarget)                           \
+  V(ArrayBufferConstructor_ConstructStub, kTargetAndNewTarget) \
+  V(ArrayBufferIsView, kNone)                                  \
+                                                               \
+  V(DateConstructor, kNone)                                    \
+  V(DateConstructor_ConstructStub, kTargetAndNewTarget)        \
+  V(DateNow, kNone)                                            \
+  V(DateParse, kNone)                                          \
+  V(DateUTC, kNone)                                            \
+  V(DatePrototypeToISOString, kNone)                           \
+  V(DatePrototypeToPrimitive, kNone)                           \
+  V(DatePrototypeValueOf, kNone)                               \
+                                                               \
+  V(FunctionConstructor, kTargetAndNewTarget)                  \
+  V(FunctionPrototypeBind, kNone)                              \
+  V(FunctionPrototypeToString, kNone)                          \
+                                                               \
+  V(GeneratorFunctionConstructor, kTargetAndNewTarget)         \
+                                                               \
+  V(GlobalEval, kTarget)                                       \
+                                                               \
+  V(ObjectAssign, kNone)                                       \
+  V(ObjectCreate, kNone)                                       \
+  V(ObjectFreeze, kNone)                                       \
+  V(ObjectIsExtensible, kNone)                                 \
+  V(ObjectIsFrozen, kNone)                                     \
+  V(ObjectIsSealed, kNone)                                     \
+  V(ObjectKeys, kNone)                                         \
+  V(ObjectPreventExtensions, kNone)                            \
+  V(ObjectSeal, kNone)                                         \
+  V(ObjectProtoToString, kNone)                                \
+                                                               \
+  V(ProxyConstructor, kNone)                                   \
+  V(ProxyConstructor_ConstructStub, kTarget)                   \
+                                                               \
+  V(ReflectDefineProperty, kNone)                              \
+  V(ReflectDeleteProperty, kNone)                              \
+  V(ReflectGet, kNone)                                         \
+  V(ReflectGetOwnPropertyDescriptor, kNone)                    \
+  V(ReflectGetPrototypeOf, kNone)                              \
+  V(ReflectHas, kNone)                                         \
+  V(ReflectIsExtensible, kNone)                                \
+  V(ReflectOwnKeys, kNone)                                     \
+  V(ReflectPreventExtensions, kNone)                           \
+  V(ReflectSet, kNone)                                         \
+  V(ReflectSetPrototypeOf, kNone)                              \
+                                                               \
+  V(SymbolConstructor, kNone)                                  \
+  V(SymbolConstructor_ConstructStub, kTarget)                  \
+                                                               \
+  V(HandleApiCall, kTarget)                                    \
+  V(HandleApiCallConstruct, kTarget)                           \
+  V(HandleApiCallAsFunction, kNone)                            \
+  V(HandleApiCallAsConstructor, kNone)                         \
+                                                               \
+  V(RestrictedFunctionPropertiesThrower, kNone)                \
   V(RestrictedStrictArgumentsPropertiesThrower, kNone)
 
 // Define list of builtins implemented in assembly.
@@ -179,8 +197,28 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
   V(KeyedStoreIC_Megamorphic_Strict, KEYED_STORE_IC, MEGAMORPHIC,              \
     StoreICState::kStrictModeState)                                            \
                                                                                \
+  V(DatePrototypeGetDate, BUILTIN, UNINITIALIZED, kNoExtraICState)             \
+  V(DatePrototypeGetDay, BUILTIN, UNINITIALIZED, kNoExtraICState)              \
+  V(DatePrototypeGetFullYear, BUILTIN, UNINITIALIZED, kNoExtraICState)         \
+  V(DatePrototypeGetHours, BUILTIN, UNINITIALIZED, kNoExtraICState)            \
+  V(DatePrototypeGetMilliseconds, BUILTIN, UNINITIALIZED, kNoExtraICState)     \
+  V(DatePrototypeGetMinutes, BUILTIN, UNINITIALIZED, kNoExtraICState)          \
+  V(DatePrototypeGetMonth, BUILTIN, UNINITIALIZED, kNoExtraICState)            \
+  V(DatePrototypeGetSeconds, BUILTIN, UNINITIALIZED, kNoExtraICState)          \
+  V(DatePrototypeGetTime, BUILTIN, UNINITIALIZED, kNoExtraICState)             \
+  V(DatePrototypeGetTimezoneOffset, BUILTIN, UNINITIALIZED, kNoExtraICState)   \
+  V(DatePrototypeGetUTCDate, BUILTIN, UNINITIALIZED, kNoExtraICState)          \
+  V(DatePrototypeGetUTCDay, BUILTIN, UNINITIALIZED, kNoExtraICState)           \
+  V(DatePrototypeGetUTCFullYear, BUILTIN, UNINITIALIZED, kNoExtraICState)      \
+  V(DatePrototypeGetUTCHours, BUILTIN, UNINITIALIZED, kNoExtraICState)         \
+  V(DatePrototypeGetUTCMilliseconds, BUILTIN, UNINITIALIZED, kNoExtraICState)  \
+  V(DatePrototypeGetUTCMinutes, BUILTIN, UNINITIALIZED, kNoExtraICState)       \
+  V(DatePrototypeGetUTCMonth, BUILTIN, UNINITIALIZED, kNoExtraICState)         \
+  V(DatePrototypeGetUTCSeconds, BUILTIN, UNINITIALIZED, kNoExtraICState)       \
+                                                                               \
   V(FunctionPrototypeApply, BUILTIN, UNINITIALIZED, kNoExtraICState)           \
   V(FunctionPrototypeCall, BUILTIN, UNINITIALIZED, kNoExtraICState)            \
+                                                                               \
   V(ReflectApply, BUILTIN, UNINITIALIZED, kNoExtraICState)                     \
   V(ReflectConstruct, BUILTIN, UNINITIALIZED, kNoExtraICState)                 \
                                                                                \
@@ -372,8 +410,48 @@ class Builtins {
 
   static void Generate_HandleFastApiCall(MacroAssembler* masm);
 
+  static void Generate_DatePrototype_GetField(MacroAssembler* masm,
+                                              int field_index);
+  // ES6 section 20.3.4.2 Date.prototype.getDate ( )
+  static void Generate_DatePrototypeGetDate(MacroAssembler* masm);
+  // ES6 section 20.3.4.3 Date.prototype.getDay ( )
+  static void Generate_DatePrototypeGetDay(MacroAssembler* masm);
+  // ES6 section 20.3.4.4 Date.prototype.getFullYear ( )
+  static void Generate_DatePrototypeGetFullYear(MacroAssembler* masm);
+  // ES6 section 20.3.4.5 Date.prototype.getHours ( )
+  static void Generate_DatePrototypeGetHours(MacroAssembler* masm);
+  // ES6 section 20.3.4.6 Date.prototype.getMilliseconds ( )
+  static void Generate_DatePrototypeGetMilliseconds(MacroAssembler* masm);
+  // ES6 section 20.3.4.7 Date.prototype.getMinutes ( )
+  static void Generate_DatePrototypeGetMinutes(MacroAssembler* masm);
+  // ES6 section 20.3.4.8 Date.prototype.getMonth ( )
+  static void Generate_DatePrototypeGetMonth(MacroAssembler* masm);
+  // ES6 section 20.3.4.9 Date.prototype.getSeconds ( )
+  static void Generate_DatePrototypeGetSeconds(MacroAssembler* masm);
+  // ES6 section 20.3.4.10 Date.prototype.getTime ( )
+  static void Generate_DatePrototypeGetTime(MacroAssembler* masm);
+  // ES6 section 20.3.4.11 Date.prototype.getTimezoneOffset ( )
+  static void Generate_DatePrototypeGetTimezoneOffset(MacroAssembler* masm);
+  // ES6 section 20.3.4.12 Date.prototype.getUTCDate ( )
+  static void Generate_DatePrototypeGetUTCDate(MacroAssembler* masm);
+  // ES6 section 20.3.4.13 Date.prototype.getUTCDay ( )
+  static void Generate_DatePrototypeGetUTCDay(MacroAssembler* masm);
+  // ES6 section 20.3.4.14 Date.prototype.getUTCFullYear ( )
+  static void Generate_DatePrototypeGetUTCFullYear(MacroAssembler* masm);
+  // ES6 section 20.3.4.15 Date.prototype.getUTCHours ( )
+  static void Generate_DatePrototypeGetUTCHours(MacroAssembler* masm);
+  // ES6 section 20.3.4.16 Date.prototype.getUTCMilliseconds ( )
+  static void Generate_DatePrototypeGetUTCMilliseconds(MacroAssembler* masm);
+  // ES6 section 20.3.4.17 Date.prototype.getUTCMinutes ( )
+  static void Generate_DatePrototypeGetUTCMinutes(MacroAssembler* masm);
+  // ES6 section 20.3.4.18 Date.prototype.getUTCMonth ( )
+  static void Generate_DatePrototypeGetUTCMonth(MacroAssembler* masm);
+  // ES6 section 20.3.4.19 Date.prototype.getUTCSeconds ( )
+  static void Generate_DatePrototypeGetUTCSeconds(MacroAssembler* masm);
+
   static void Generate_FunctionPrototypeApply(MacroAssembler* masm);
   static void Generate_FunctionPrototypeCall(MacroAssembler* masm);
+
   static void Generate_ReflectApply(MacroAssembler* masm);
   static void Generate_ReflectConstruct(MacroAssembler* masm);
 

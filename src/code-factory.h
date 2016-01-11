@@ -94,6 +94,7 @@ class CodeFactory final {
 
   static Callable ArgumentsAccess(Isolate* isolate, bool is_unmapped_arguments,
                                   bool has_duplicate_parameters);
+  static Callable RestArgumentsAccess(Isolate* isolate);
 
   static Callable AllocateHeapNumber(Isolate* isolate);
   static Callable AllocateMutableHeapNumber(Isolate* isolate);
@@ -109,7 +110,7 @@ class CodeFactory final {
 
   static Callable InterpreterPushArgsAndCall(Isolate* isolate);
   static Callable InterpreterPushArgsAndConstruct(Isolate* isolate);
-  static Callable InterpreterCEntry(Isolate* isolate);
+  static Callable InterpreterCEntry(Isolate* isolate, int result_size = 1);
 };
 
 }  // namespace internal

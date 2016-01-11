@@ -313,8 +313,7 @@ void LoadIC::GenerateMiss(MacroAssembler* masm) {
   LoadIC_PushArgs(masm);
 
   // Perform tail call to the entry.
-  int arg_count = 4;
-  __ TailCallRuntime(Runtime::kLoadIC_Miss, arg_count);
+  __ TailCallRuntime(Runtime::kLoadIC_Miss);
 }
 
 
@@ -327,8 +326,7 @@ void LoadIC::GenerateRuntimeGetProperty(MacroAssembler* masm,
 
   // Do tail-call to runtime routine.
   __ TailCallRuntime(is_strong(language_mode) ? Runtime::kGetPropertyStrong
-                                              : Runtime::kGetProperty,
-                     2);
+                                              : Runtime::kGetProperty);
 }
 
 
@@ -343,8 +341,7 @@ void KeyedLoadIC::GenerateMiss(MacroAssembler* masm) {
   LoadIC_PushArgs(masm);
 
   // Perform tail call to the entry.
-  int arg_count = 4;
-  __ TailCallRuntime(Runtime::kKeyedLoadIC_Miss, arg_count);
+  __ TailCallRuntime(Runtime::kKeyedLoadIC_Miss);
 }
 
 
@@ -356,8 +353,7 @@ void KeyedLoadIC::GenerateRuntimeGetProperty(MacroAssembler* masm,
 
   // Do tail-call to runtime routine.
   __ TailCallRuntime(is_strong(language_mode) ? Runtime::kKeyedGetPropertyStrong
-                                              : Runtime::kKeyedGetProperty,
-                     2);
+                                              : Runtime::kKeyedGetProperty);
 }
 
 
@@ -747,7 +743,7 @@ static void StoreIC_PushArgs(MacroAssembler* masm) {
 void KeyedStoreIC::GenerateMiss(MacroAssembler* masm) {
   StoreIC_PushArgs(masm);
 
-  __ TailCallRuntime(Runtime::kKeyedStoreIC_Miss, 5);
+  __ TailCallRuntime(Runtime::kKeyedStoreIC_Miss);
 }
 
 
@@ -773,7 +769,7 @@ void StoreIC::GenerateMiss(MacroAssembler* masm) {
   StoreIC_PushArgs(masm);
 
   // Perform tail call to the entry.
-  __ TailCallRuntime(Runtime::kStoreIC_Miss, 5);
+  __ TailCallRuntime(Runtime::kStoreIC_Miss);
 }
 
 
@@ -867,8 +863,6 @@ void PatchInlinedSmiCode(Isolate* isolate, Address address,
   Address patch_address =
       andi_instruction_address - delta * Instruction::kInstrSize;
   Instr instr_at_patch = Assembler::instr_at(patch_address);
-  Instr branch_instr =
-      Assembler::instr_at(patch_address + Instruction::kInstrSize);
   // This is patching a conditional "jump if not smi/jump if smi" site.
   // Enabling by changing from
   //   andi at, rx, 0
@@ -888,13 +882,44 @@ void PatchInlinedSmiCode(Isolate* isolate, Address address,
     DCHECK(Assembler::IsAndImmediate(instr_at_patch));
     patcher.masm()->andi(at, reg, 0);
   }
+  Instr branch_instr =
+      Assembler::instr_at(patch_address + Instruction::kInstrSize);
   DCHECK(Assembler::IsBranch(branch_instr));
-  if (Assembler::IsBeq(branch_instr)) {
-    patcher.ChangeBranchCondition(ne);
-  } else {
-    DCHECK(Assembler::IsBne(branch_instr));
-    patcher.ChangeBranchCondition(eq);
+
+  uint32_t opcode = Assembler::GetOpcodeField(branch_instr);
+  // Currently only the 'eq' and 'ne' cond values are supported and the simple
+  // branch instructions and their r6 variants (with opcode being the branch
+  // type). There are some special cases (see Assembler::IsBranch()) so
+  // extending this would be tricky.
+  DCHECK(opcode == BEQ ||    // BEQ
+         opcode == BNE ||    // BNE
+         opcode == POP10 ||  // BEQC
+         opcode == POP30 ||  // BNEC
+         opcode == POP66 ||  // BEQZC
+         opcode == POP76);   // BNEZC
+  switch (opcode) {
+    case BEQ:
+      opcode = BNE;  // change BEQ to BNE.
+      break;
+    case POP10:
+      opcode = POP30;  // change BEQC to BNEC.
+      break;
+    case POP66:
+      opcode = POP76;  // change BEQZC to BNEZC.
+      break;
+    case BNE:
+      opcode = BEQ;  // change BNE to BEQ.
+      break;
+    case POP30:
+      opcode = POP10;  // change BNEC to BEQC.
+      break;
+    case POP76:
+      opcode = POP66;  // change BNEZC to BEQZC.
+      break;
+    default:
+      UNIMPLEMENTED();
   }
+  patcher.ChangeBranchCondition(branch_instr, opcode);
 }
 }  // namespace internal
 }  // namespace v8

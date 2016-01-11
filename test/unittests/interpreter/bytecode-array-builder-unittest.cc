@@ -22,12 +22,12 @@ class BytecodeArrayBuilderTest : public TestWithIsolateAndZone {
 TEST_F(BytecodeArrayBuilderTest, AllBytecodesGenerated) {
   BytecodeArrayBuilder builder(isolate(), zone());
 
-  builder.set_locals_count(2);
+  builder.set_locals_count(200);
   builder.set_context_count(1);
   builder.set_parameter_count(0);
-  CHECK_EQ(builder.locals_count(), 2);
+  CHECK_EQ(builder.locals_count(), 200);
   CHECK_EQ(builder.context_count(), 1);
-  CHECK_EQ(builder.fixed_register_count(), 3);
+  CHECK_EQ(builder.fixed_register_count(), 201);
 
   // Emit constant loads.
   builder.LoadLiteral(Smi::FromInt(0))
@@ -49,6 +49,13 @@ TEST_F(BytecodeArrayBuilderTest, AllBytecodesGenerated) {
   // Emit register-register transfer.
   Register other(1);
   builder.MoveRegister(reg, other);
+
+  // Emit register-register exchanges.
+  Register wide(150);
+  builder.ExchangeRegisters(reg, wide);
+  builder.ExchangeRegisters(wide, reg);
+  Register wider(151);
+  builder.ExchangeRegisters(wide, wider);
 
   // Emit global load / store operations.
   Factory* factory = isolate()->factory();
@@ -102,6 +109,7 @@ TEST_F(BytecodeArrayBuilderTest, AllBytecodesGenerated) {
   builder.Call(reg, reg, 0, 0)
       .Call(reg, reg, 0, 1024)
       .CallRuntime(Runtime::kIsArray, reg, 1)
+      .CallRuntimeForPair(Runtime::kLoadLookupSlot, reg, 1, reg)
       .CallJSRuntime(Context::SPREAD_ITERABLE_INDEX, reg, 1);
 
   // Emit binary operator invocations.
@@ -233,6 +241,12 @@ TEST_F(BytecodeArrayBuilderTest, AllBytecodesGenerated) {
       .StoreNamedProperty(reg, wide_name, 0, LanguageMode::STRICT)
       .StoreKeyedProperty(reg, reg, 2056, LanguageMode::STRICT);
 
+  // Emit wide load / store lookup slots.
+  builder.LoadLookupSlot(wide_name, TypeofMode::NOT_INSIDE_TYPEOF)
+      .LoadLookupSlot(wide_name, TypeofMode::INSIDE_TYPEOF)
+      .StoreLookupSlot(wide_name, LanguageMode::SLOPPY)
+      .StoreLookupSlot(wide_name, LanguageMode::STRICT);
+
   // CreateClosureWide
   Handle<SharedFunctionInfo> shared_info2 = factory->NewSharedFunctionInfo(
       factory->NewStringFromStaticChars("function_b"), MaybeHandle<Code>(),
@@ -244,6 +258,21 @@ TEST_F(BytecodeArrayBuilderTest, AllBytecodesGenerated) {
                               0, 0)
       .CreateArrayLiteral(factory->NewFixedArray(2), 0, 0)
       .CreateObjectLiteral(factory->NewFixedArray(2), 0, 0);
+
+  // Longer jumps requiring ConstantWide operand
+  builder.Jump(&start).JumpIfNull(&start).JumpIfUndefined(&start);
+  // Perform an operation that returns boolean value to
+  // generate JumpIfTrue/False
+  builder.CompareOperation(Token::Value::EQ, reg, Strength::WEAK)
+      .JumpIfTrue(&start)
+      .CompareOperation(Token::Value::EQ, reg, Strength::WEAK)
+      .JumpIfFalse(&start);
+  // Perform an operation that returns a non-boolean operation to
+  // generate JumpIfToBooleanTrue/False.
+  builder.BinaryOperation(Token::Value::ADD, reg, Strength::WEAK)
+      .JumpIfTrue(&start)
+      .BinaryOperation(Token::Value::ADD, reg, Strength::WEAK)
+      .JumpIfFalse(&start);
 
   builder.Return();
 
@@ -677,6 +706,7 @@ TEST_F(BytecodeArrayBuilderTest, LabelAddressReuse) {
   iterator.Advance();
   CHECK(iterator.done());
 }
+
 
 }  // namespace interpreter
 }  // namespace internal

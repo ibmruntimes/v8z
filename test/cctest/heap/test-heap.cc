@@ -38,6 +38,7 @@
 #include "src/heap/memory-reducer.h"
 #include "src/ic/ic.h"
 #include "src/macro-assembler.h"
+#include "src/regexp/jsregexp.h"
 #include "src/snapshot/snapshot.h"
 #include "test/cctest/cctest.h"
 #include "test/cctest/heap/heap-tester.h"
@@ -4766,17 +4767,19 @@ TEST(CellsInOptimizedCodeAreWeak) {
     LocalContext context;
     HandleScope scope(heap->isolate());
 
-    CompileRun("bar = (function() {"
-               "  function bar() {"
-               "    return foo(1);"
-               "  };"
-               "  var foo = function(x) { with (x) { return 1 + x; } };"
-               "  bar(foo);"
-               "  bar(foo);"
-               "  bar(foo);"
-               "  %OptimizeFunctionOnNextCall(bar);"
-               "  bar(foo);"
-               "  return bar;})();");
+    CompileRun(
+        "bar = (function() {"
+        "  function bar() {"
+        "    return foo(1);"
+        "  };"
+        "  var foo = function(x) { with (x) { return 1 + x; } };"
+        "  %NeverOptimizeFunction(foo);"
+        "  bar(foo);"
+        "  bar(foo);"
+        "  bar(foo);"
+        "  %OptimizeFunctionOnNextCall(bar);"
+        "  bar(foo);"
+        "  return bar;})();");
 
     Handle<JSFunction> bar = Handle<JSFunction>::cast(v8::Utils::OpenHandle(
         *v8::Local<v8::Function>::Cast(CcTest::global()
@@ -4809,15 +4812,17 @@ TEST(ObjectsInOptimizedCodeAreWeak) {
     LocalContext context;
     HandleScope scope(heap->isolate());
 
-    CompileRun("function bar() {"
-               "  return foo(1);"
-               "};"
-               "function foo(x) { with (x) { return 1 + x; } };"
-               "bar();"
-               "bar();"
-               "bar();"
-               "%OptimizeFunctionOnNextCall(bar);"
-               "bar();");
+    CompileRun(
+        "function bar() {"
+        "  return foo(1);"
+        "};"
+        "function foo(x) { with (x) { return 1 + x; } };"
+        "%NeverOptimizeFunction(foo);"
+        "bar();"
+        "bar();"
+        "bar();"
+        "%OptimizeFunctionOnNextCall(bar);"
+        "bar();");
 
     Handle<JSFunction> bar = Handle<JSFunction>::cast(v8::Utils::OpenHandle(
         *v8::Local<v8::Function>::Cast(CcTest::global()
