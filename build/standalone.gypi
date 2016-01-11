@@ -221,8 +221,8 @@
         'fastbuild%': 1,
       }],
       ['((v8_target_arch=="ia32" or v8_target_arch=="x64" or v8_target_arch=="x87") and \
-        (OS=="linux" or OS=="mac")) or ((v8_target_arch=="s390" or \
-        v8_target_arch=="s390x" or v8_target_arch=="ppc64") and OS=="linux")', {
+        (OS=="linux" or OS=="mac")) or ((v8_target_arch=="ppc64" or \
+        v8_target_arch=="s390" or v8_target_arch=="s390x") and OS=="linux")', {
         'v8_enable_gdbjit%': 1,
       }, {
         'v8_enable_gdbjit%': 0,
@@ -232,11 +232,6 @@
         'clang%': 1,
       }, {
         'clang%': 0,
-      }],
-      ['host_arch!="ppc" and host_arch!="ppc64" and host_arch!="ppc64le" and host_arch!="s390" and host_arch!="s390x"', {
-        'host_clang%': '1',
-      }, {
-        'host_clang%': '0',
       }],
       ['asan==1 or lsan==1 or msan==1 or tsan==1', {
         'clang%': 1,
@@ -851,7 +846,6 @@
           4309, # Truncation of constant value
           4311, # Pointer truncation from 'type' to 'type'
           4312, # Conversion from 'type1' to 'type2' of greater size
-          4481, # Nonstandard extension used: override specifier 'keyword'
           4505, # Unreferenced local function has been removed
           4510, # Default constructor could not be generated
           4512, # Assignment operator could not be generated
