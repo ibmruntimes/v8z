@@ -173,12 +173,6 @@ void* OS::GetRandomMmapAddr() {
   // the hint address to 46 bits to give the kernel a fighting chance of
   // fulfilling our placement request.
   raw_addr &= V8_UINT64_C(0x3ffffffff000);
-#elif V8_TARGET_ARCH_S390X
-  // 42 bits of virtual addressing.
-  raw_addr &= V8_UINT64_C(0x00fffffff000);
-#elif V8_TARGET_ARCH_S390
-  // 31 bits of virtual addressing.
-  raw_addr &= 0x1ffff000;
 #elif V8_TARGET_ARCH_PPC64
 #if V8_OS_AIX
   // AIX: 64 bits of virtual addressing, but we limit address range to:
@@ -193,6 +187,15 @@ void* OS::GetRandomMmapAddr() {
   // Little-endian Linux: 48 bits of virtual addressing.
   raw_addr &= V8_UINT64_C(0x3ffffffff000);
 #endif
+#elif V8_TARGET_ARCH_S390X
+  // Linux on Z uses bits 22-32 for Region Indexing, which translates to 42 bits
+  // of virtual addressing.  Truncate to 40 bits to allow kernel chance to
+  // fulfill request.
+  raw_addr &= V8_UINT64_C(0xfffffff000);
+#elif V8_TARGET_ARCH_S390
+  // 31 bits of virtual addressing.  Truncate to 29 bits to allow kernel chance
+  // to fulfill request.
+  raw_addr &= 0x1ffff000;
 #else
   raw_addr &= 0x3ffff000;
 
