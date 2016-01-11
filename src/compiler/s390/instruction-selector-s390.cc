@@ -798,7 +798,8 @@ void InstructionSelector::VisitWord32Clz(Node* node) {
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitWord64Clz(Node* node) {
   S390OperandGenerator g(this);
-  Emit(kS390_Cntlz64, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)));
+  Emit(kS390_Cntlz64, g.DefineAsRegister(node),
+       g.UseRegister(node->InputAt(0)));
 }
 #endif
 
@@ -1258,8 +1259,8 @@ void InstructionSelector::VisitInt64AddWithOverflow(Node* node) {
 void InstructionSelector::VisitInt64SubWithOverflow(Node* node) {
   if (Node* ovf = NodeProperties::FindProjection(node, 1)) {
     FlagsContinuation cont(kOverflow, ovf);
-    return VisitBinop<Int64BinopMatcher>(this, node, kS390_Sub, kInt16Imm_Negate,
-                                         &cont);
+    return VisitBinop<Int64BinopMatcher>(this, node, kS390_Sub,
+                                         kInt16Imm_Negate, &cont);
   }
   FlagsContinuation cont;
   VisitBinop<Int64BinopMatcher>(this, node, kS390_Sub, kInt16Imm_Negate, &cont);
@@ -1695,8 +1696,8 @@ void InstructionSelector::EmitPrepareArguments(
       } else {
         // Skip any alignment holes in pushed nodes.
         if (input.node()) {
-          Emit(kS390_StoreToStackSlot, g.NoOutput(), g.UseRegister(input.node()),
-               g.TempImmediate(slot));
+          Emit(kS390_StoreToStackSlot, g.NoOutput(),
+               g.UseRegister(input.node()), g.TempImmediate(slot));
         }
       }
       ++slot;

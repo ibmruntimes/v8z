@@ -1124,7 +1124,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     case kS390_StoreToStackSlot: {
       int slot = i.InputInt32(1);
       if (instr->InputAt(0)->IsDoubleRegister()) {
-        __ StoreF(i.InputDoubleRegister(0), MemOperand(sp, slot * kPointerSize));
+        __ StoreF(i.InputDoubleRegister(0),
+                  MemOperand(sp, slot * kPointerSize));
       } else {
         __ StoreP(i.InputRegister(0), MemOperand(sp, slot * kPointerSize));
       }
@@ -1207,7 +1208,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
         UNIMPLEMENTED();
         // Set 2nd output to zero if conversion fails.
         // CRBit crbit = static_cast<CRBit>(VXCVI % CRWIDTH);
-        // __ mcrfs(cr7, VXCVI);  // extract FPSCR field containing VXCVI into cr7
+        // __ mcrfs(cr7, VXCVI);// extract FPSCR field containing VXCVI into cr7
         // __ LoadImmP(i.OutputRegister(1), Operand(1));
         // __ isel(i.OutputRegister(1), r0, i.OutputRegister(1),
         //         v8::internal::Assembler::encode_crbit(cr7, crbit));
@@ -1236,7 +1237,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       if (check_conversion) {
         UNIMPLEMENTED();
         // CRBit crbit = static_cast<CRBit>(VXCVI % CRWIDTH);
-        // __ mcrfs(cr7, VXCVI);  // extract FPSCR field containing VXCVI into cr7
+        // __ mcrfs(cr7, VXCVI);// extract FPSCR field containing VXCVI into cr7
         // __ LoadImmP(i.OutputRegister(1), Operand(1));
         // __ isel(i.OutputRegister(1), r0, i.OutputRegister(1),
         //         v8::internal::Assembler::encode_crbit(cr7, crbit));
@@ -1370,7 +1371,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     case kCheckedLoadWord64:
 #if V8_TARGET_ARCH_S390X
-      // TODO: port for s390
+      // TODO(all): port for s390
       ASSEMBLE_CHECKED_LOAD_INTEGER(LoadP);
 #else
       UNREACHABLE();
@@ -1393,7 +1394,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     case kCheckedStoreWord64:
 #if V8_TARGET_ARCH_S390X
-      // TODO: port for s390
+      // TODO(all): port for s390
       ASSEMBLE_CHECKED_STORE_INTEGER(StoreP);
 #else
       UNREACHABLE();

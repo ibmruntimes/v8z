@@ -74,7 +74,7 @@ void Deoptimizer::PatchCodeForDeoptimization(Isolate* isolate, Code* code) {
     int call_size_in_bytes = MacroAssembler::CallSizeNotPredictableCodeSize(
         deopt_entry, kRelocInfo_NONEPTR);
     DCHECK(call_size_in_bytes <= patch_size());
-    CodePatcher patcher(isolate, call_address, call_size_in_bytes);  // FIXME: 2ND ARG
+    CodePatcher patcher(isolate, call_address, call_size_in_bytes);
     patcher.masm()->Call(deopt_entry, kRelocInfo_NONEPTR);
     DCHECK(prev_call_address == NULL ||
            call_address >= prev_call_address + patch_size());
@@ -208,7 +208,7 @@ void Deoptimizer::TableEntryGenerator::Generate() {
 
   // Copy core registers into FrameDescription::registers_[kNumRegisters].
   // DCHECK(Register::kNumRegisters == kNumberOfRegisters);
-  // __ mvc(MemOperand(r3, FrameDescription::registers_offset()), MemOperand(sp),
+  //__ mvc(MemOperand(r3, FrameDescription::registers_offset()), MemOperand(sp),
   //        kNumberOfRegisters * kPointerSize);
   // Copy core registers into FrameDescription::registers_[kNumRegisters].
   // TODO(JOHN): optimize the following code by using mvc instruction
@@ -368,5 +368,5 @@ void FrameDescription::SetCallerConstantPool(unsigned offset, intptr_t value) {
 
 
 #undef __
-}
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8

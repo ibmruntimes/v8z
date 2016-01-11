@@ -32,7 +32,7 @@ Register StubFailureTrampolineFrame::constant_pool_pointer_register() {
 }
 
 
-}
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_TARGET_ARCH_S390

@@ -504,7 +504,8 @@ static void KeyedStoreGenerateMegamorphicHelper(
 
   if (check_map == kCheckMap) {
     __ LoadP(elements_map, FieldMemOperand(elements, HeapObject::kMapOffset));
-    __ CmpP(elements_map, Operand(masm->isolate()->factory()->fixed_array_map()));
+    __ CmpP(elements_map,
+            Operand(masm->isolate()->factory()->fixed_array_map()));
     __ bne(fast_double);
   }
 

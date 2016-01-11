@@ -38,7 +38,7 @@ typedef int (*s390_regexp_matcher)(String*, int, const byte*, const byte*, int*,
 // the return address added by the ExitFrame in native calls.
 #define CALL_GENERATED_REGEXP_CODE(isolate, entry, p0, p1, p2, p3, p4, p5, p6, \
                                    p7, p8)                                     \
-  (FUNCTION_CAST<s390_regexp_matcher>(entry)(p0, p1, p2, p3, p4, p5, p6, p7,    \
+  (FUNCTION_CAST<s390_regexp_matcher>(entry)(p0, p1, p2, p3, p4, p5, p6, p7,   \
                                             NULL, p8))
 
 // The stack limit beyond which we will throw stack overflow errors in
