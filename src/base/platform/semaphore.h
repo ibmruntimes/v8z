@@ -14,6 +14,8 @@
 #include <mach/semaphore.h>  // NOLINT
 #elif V8_OS_POSIX
 #include <semaphore.h>  // NOLINT
+#elif V8_OS_ZOS
+#include "src/s390/semaphore-zos.h"
 #endif
 
 namespace v8 {
@@ -51,7 +53,7 @@ class Semaphore V8_FINAL {
 
 #if V8_OS_MACOSX
   typedef semaphore_t NativeHandle;
-#elif V8_OS_POSIX
+#elif V8_OS_POSIX || V8_OS_ZOS
   typedef sem_t NativeHandle;
 #elif V8_OS_WIN
   typedef HANDLE NativeHandle;

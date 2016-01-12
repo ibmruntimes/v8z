@@ -53,7 +53,7 @@ class Mutex V8_FINAL {
   bool TryLock() V8_WARN_UNUSED_RESULT;
 
   // The implementation-defined native handle type.
-#if V8_OS_POSIX
+#if V8_OS_POSIX || V8_OS_ZOS
   typedef pthread_mutex_t NativeHandle;
 #elif V8_OS_WIN
   typedef CRITICAL_SECTION NativeHandle;

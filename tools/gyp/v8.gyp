@@ -1211,10 +1211,10 @@
               ],
             },
             'sources': [
-             '../../src/s390/semaphore_zos.cc',
-             '../../src/s390/semaphore_zos.h',
-              '../../src/platform-zos.cc',
-              '../../src/platform-posix.cc'
+              '../../src/s390/semaphore-zos.cc',
+              '../../src/s390/semaphore-zos.h',
+              '../../src/base/platform/platform-zos.cc',
+              '../../src/base/platform/platform-posix.cc'
             ],
           }
         ],
