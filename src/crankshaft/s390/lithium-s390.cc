@@ -1791,14 +1791,6 @@ LInstruction* LChunkBuilder::DoMapEnumLength(HMapEnumLength* instr) {
 }
 
 
-LInstruction* LChunkBuilder::DoDateField(HDateField* instr) {
-  LOperand* object = UseFixed(instr->value(), r2);
-  LDateField* result =
-      new (zone()) LDateField(object, FixedTemp(r3), instr->index());
-  return MarkAsCall(DefineFixed(result, r2), instr, CANNOT_DEOPTIMIZE_EAGERLY);
-}
-
-
 LInstruction* LChunkBuilder::DoSeqStringGetChar(HSeqStringGetChar* instr) {
   LOperand* string = UseRegisterAtStart(instr->string());
   LOperand* index = UseRegisterOrConstantAtStart(instr->index());

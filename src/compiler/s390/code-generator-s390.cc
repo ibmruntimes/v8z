@@ -89,7 +89,7 @@ class S390OperandConverter final : public InstructionOperandConverter {
   }
 
   MemOperand ToMemOperand(InstructionOperand* op) const {
-    DCHECK(op != NULL);
+    DCHECK_NOT_NULL(op);
     DCHECK(op->IsStackSlot() || op->IsDoubleStackSlot());
     FrameOffset offset = frame_access_state()->GetFrameOffset(
         AllocatedOperand::cast(op)->index());
@@ -1549,10 +1549,9 @@ void CodeGenerator::AssemblePrologue() {
     __ Push(r14, fp);
     __ LoadRR(fp, sp);
   } else if (descriptor->IsJSFunctionCall()) {
-    CompilationInfo* info = this->info();
-    __ Prologue(info->IsCodePreAgingActive());
+    __ Prologue(this->info()->GeneratePreagedPrologue(), ip);
   } else if (frame()->needs_frame()) {
-    __ StubPrologue();
+    __ StubPrologue(ip);
   } else {
     frame()->SetElidedFrameSizeInSlots(0);
   }
@@ -1640,7 +1639,7 @@ void CodeGenerator::AssembleReturn() {
 
 void CodeGenerator::AssembleMove(InstructionOperand* source,
                                  InstructionOperand* destination) {
-  S390OperandConverter g(this, NULL);
+  S390OperandConverter g(this, nullptr);
   // Dispatch on the source and destination operand kinds.  Not all
   // combinations are possible.
   if (source->IsRegister()) {
@@ -1742,7 +1741,7 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
 
 void CodeGenerator::AssembleSwap(InstructionOperand* source,
                                  InstructionOperand* destination) {
-  S390OperandConverter g(this, NULL);
+  S390OperandConverter g(this, nullptr);
   // Dispatch on the source and destination operand kinds.  Not all
   // combinations are possible.
   if (source->IsRegister()) {
