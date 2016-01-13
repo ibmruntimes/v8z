@@ -37,8 +37,8 @@ int CompilerIntrinsics::CountSetBits(uint32_t value) {
   return __builtin_popcount(value);
 }
 
-#elif defined( __IBMCPP__)
-// TODO: xlc builtin?
+#elif __IBMCPP__
+// TODO(mcornac): Replace these implementations with xlc builtins?
 int CompilerIntrinsics::CountTrailingZeros(uint32_t x) {
    int n;
 

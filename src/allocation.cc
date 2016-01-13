@@ -92,12 +92,13 @@ void* AlignedAlloc(size_t size, size_t alignment) {
   // memalign. See http://code.google.com/p/android/issues/detail?id=35391.
   ptr = memalign(alignment, size);
 #elif V8_OS_ZOS
-  // TODO: Allocate aligned memory and store the mapping from the pointer
-  // returned by this function to the pointer returned by malloc so that it
-  // can be freed later.
+  // TODO(mcornac): Allocate aligned memory and store the mapping from the
+  // pointer returned by this function to the pointer returned by malloc so that
+  // it can be freed later.
   intptr_t freeablePtr = (intptr_t)malloc(size + alignment);
   intptr_t mask = ~(intptr_t)(alignment - 1);
-  ptr = (void*)((freeablePtr + (intptr_t)(alignment - 1)) & mask);
+  ptr = reinterpret_cast<void*>
+    ((freeablePtr + (intptr_t)(alignment - 1)) & mask);
 #else
   if (posix_memalign(&ptr, alignment, size)) ptr = NULL;
 #endif
@@ -113,7 +114,7 @@ void AlignedFree(void *ptr) {
   // Using free is not correct in general, but for V8_LIBC_BIONIC it is.
   free(ptr);
 #elif V8_OS_ZOS
-  // TODO: Look up the address returned by malloc for ptr in AlignedAlloc.
+  // TODO(mcornac): Find the address returned by malloc for ptr in AlignedAlloc.
   free(ptr);
 #else
   free(ptr);

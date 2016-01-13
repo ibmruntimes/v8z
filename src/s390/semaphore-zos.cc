@@ -1,16 +1,19 @@
-// TODO: from ISL 3.14, add license here.
+// Copyright 2012 the V8 project authors. All rights reserved.
+//
+// Copyright IBM Corp. 2016. All rights reserved.
+//
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 #include "semaphore_zos.h"
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <time.h>
 
 
-void assignSemInitializeError()
-{
-    switch(errno)
-    {
+void assignSemInitializeError() {
+    switch (errno) {
         case EACCES:
                 errno = EPERM;
                 break;
@@ -24,10 +27,9 @@ void assignSemInitializeError()
     }
 }
 
-void assignSemDestroyError()
-{
-    switch(errno)
-    {
+
+void assignSemDestroyError() {
+    switch (errno) {
         case EACCES:
                 errno = EINVAL;
                 break;
@@ -41,10 +43,9 @@ void assignSemDestroyError()
     }
 }
 
-void assignSemgetError()
-{
-    switch(errno)
-    {
+
+void assignSemgetError() {
+    switch (errno) {
         case EACCES:
                 errno = EPERM;
                 break;
@@ -60,10 +61,9 @@ void assignSemgetError()
     }
 }
 
-void assignSemopErrorCode()
-{
-    switch(errno)
-    {
+
+void assignSemopErrorCode() {
+    switch (errno) {
         case EACCES:
             errno = EINVAL;
             break;
@@ -89,9 +89,9 @@ void assignSemopErrorCode()
     }
 }
 
+
 /* initsem -- called by sem_create, it gets the semaphore using semget() */
-int initsem(key_t key, int nsems)
-{
+int initsem(key_t key, int nsems) {
    int semid;
 
    semid = semget(key, nsems, IPC_CREAT | IPC_EXCL | 0666);
@@ -99,11 +99,10 @@ int initsem(key_t key, int nsems)
    if (semid == -1 && errno == EEXIST) { /* someone else got it first */
       semid = semget(key, nsems, 0); /* get the id */
       /*printf("\n Some one else got it ");*/
-      if (semid < 0)
-      {
+      if (semid < 0) {
            return semid;
       }
-   } else if(semid == -1) { /*chk for other errors here */
+   } else if (semid == -1) { /*chk for other errors here */
         return semid;
    }
 
@@ -112,9 +111,8 @@ int initsem(key_t key, int nsems)
 
 
 /* sem_initialize -- it assigns a value to the semaphore using semctl() */
-int sem_initialize(int *semid, int value)
-{
- int ret = semctl(*semid,0,SETVAL,value);
+int sem_initialize(int *semid, int value) {
+ int ret = semctl(*semid, 0, SETVAL, value);
  return ret;
 }
 
@@ -124,21 +122,18 @@ int sem_initialize(int *semid, int value)
  * it creates a semaphore using semget and then initialize it
  * it returns semid
 */
-int sem_init(int *sem,int pshared,unsigned int value)
-{
+int sem_init(int *sem, int pshared, unsigned int value) {
   key_t key;
   int ret = -1;
   key = ftok("semaphore_posix.cc", 'A');
-  
-  if((*sem = initsem(key,1)) == -1){
+
+  if ((*sem = initsem(key, 1)) == -1) {
        assignSemgetError();  /*assign err code*/
        return -1;
+  } else {
+     ret = sem_initialize(sem, value);
   }
-  else{
-     ret = sem_initialize(sem,value);
-  }
-  if(ret == -1)
-  {
+  if (ret == -1) {
      assignSemInitializeError();  /* assign errcode for semctl */
   }
   return ret;
@@ -146,40 +141,37 @@ int sem_init(int *sem,int pshared,unsigned int value)
 
 
 /* sem_destroy -- destroys the semaphore using semctl() */
-int sem_destroy(int *semid)
-{
-  int ret = semctl(*semid,0,IPC_RMID);
-  if(ret == -1)
-  {
+int sem_destroy(int *semid) {
+  int ret = semctl(*semid, 0, IPC_RMID);
+  if (ret == -1) {
     assignSemDestroyError();  /* assign err code for semctl*/
-   }
+  }
   return ret;
 }
 
 
 /* sem_wait -- it gets a lock on semaphore and implemented using semop() */
-int sem_wait(int *semid)
-{
-        struct sembuf sb;
-        sb.sem_num=0;
-        sb.sem_op=-1;
-        sb.sem_flg=0;
-        if (semop(*semid, &sb, 1) == -1) {
-           assignSemopErrorCode();
-           return -1;
-        }
-        return 0;
+int sem_wait(int *semid) {
+  struct sembuf sb;
+  sb.sem_num = 0;
+  sb.sem_op = -1;
+  sb.sem_flg = 0;
+  if (semop(*semid, &sb, 1) == -1) {
+    assignSemopErrorCode();
+    return -1;
+  }
+  return 0;
 }
 
 
-/* sem_timedwait -- it waits for a specific time-period to get a lock on semaphore. Implemented using __semop_timed() */
-int sem_timedwait(int *semid, struct timespec *ts)
-{
+/* sem_timedwait -- it waits for a specific time-period to get a lock on
+ * semaphore. Implemented using __semop_timed() */
+int sem_timedwait(int *semid, struct timespec *ts) {
         int ret;
         struct sembuf sb;
-        sb.sem_num=0;
-        sb.sem_op=-1;
-        sb.sem_flg=0;
+        sb.sem_num = 0;
+        sb.sem_op = -1;
+        sb.sem_flg = 0;
 
         ret = __semop_timed(*semid, &sb, 1, ts);
         if (ret != 0) {
@@ -189,12 +181,11 @@ int sem_timedwait(int *semid, struct timespec *ts)
 
 
 /* sem_post -- it releases lock on semaphore using semop */
-int sem_post(int *semid)
-{
+int sem_post(int *semid) {
         struct sembuf sb;
-        sb.sem_num=0;
-        sb.sem_op=1;
-        sb.sem_flg=0;
+        sb.sem_num = 0;
+        sb.sem_op = 1;
+        sb.sem_flg = 0;
         if (semop(*semid, &sb, 1) == -1) {
              assignSemopErrorCode();
              return -1;

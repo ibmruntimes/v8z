@@ -11,66 +11,66 @@
 namespace v8 {
 namespace base {
 
-// TODO: Merged from ISL 3.14.
+// TODO(mcornac): Verify function merged from ISL 3.14.
 inline bool __sync_bool_compare_and_swap(volatile Atomic32 *ptr,
                                          Atomic32 oldval,
                                          Atomic32 newval) {
-  if ( *ptr== oldval){
-    *ptr=newval;
+  if (*ptr== oldval) {
+    *ptr = newval;
     return 1;
-    }else {
+    } else {
     return 0;
   }
 }
 
-// TODO: Merged from ISL 3.14.
+// TODO(mcornac): Verify function merged from ISL 3.14.
 inline Atomic32 __sync_val_compare_and_swap(volatile Atomic32 *ptr,
                                              Atomic32 oldval,
                                              Atomic32 newval) {
   Atomic32 temp;
-  if ( *ptr== oldval){
-    temp=*ptr;
-    *ptr=newval;
+  if (*ptr == oldval) {
+    temp = *ptr;
+    *ptr = newval;
     return temp;
   } else {
     return 0;
   }
 }
 
-// TODO: Implementation.
+// TODO(mcornac): Implement.
 inline bool __sync_bool_compare_and_swap(volatile Atomic64 *ptr,
                                          Atomic32 oldval,
                                          Atomic32 newval) {
   return 0;
 }
 
-// TODO: Merged from ISL 3.14.
+// TODO(mcornac): Verify function merged from ISL 3.14.
 inline Atomic64 __sync_val_compare_and_swap(volatile Atomic64 *ptr,
                                             Atomic64 oldval,
                                             Atomic64 newval) {
   Atomic64 temp;
-  if ( *ptr== oldval){
-    temp=*ptr;
-    *ptr=newval;
+  if (*ptr == oldval) {
+    temp = *ptr;
+    *ptr = newval;
     return temp;
   } else {
     return 0;
   }
 }
 
-// TODO: Implementation.
+// TODO(mcornac): Implement.
 inline bool __sync_add_and_fetch(volatile Atomic32 *ptr,
                                  Atomic32 increment) {
   return 0;
 }
 
-// TODO: Implementation.
+// TODO(mcornac): Implement.
 inline bool __sync_add_and_fetch(volatile Atomic64 *ptr,
                                  Atomic64 increment) {
   return 0;
 }
 
-// TODO: Implementation.
+// TODO(mcornac): Implement
 inline bool __sync_synchronize() {
   return 0;
 }

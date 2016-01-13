@@ -1,8 +1,13 @@
-// TODO: from ISL 3.14, add license here.
+// Copyright 2012 the V8 project authors. All rights reserved.
+//
+// Copyright IBM Corp. 2016. All rights reserved.
+//
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
-#include <sys/sem.h>
 #include <errno.h>
 #include <pthread.h>
+#include <sys/sem.h>
 
 #if __WORDSIZE == 64
 # define __SIZEOF_SEM_T 32
@@ -12,10 +17,9 @@
 
 #define SEM_FAILED ((sem_t *) 0)
 
-typedef union
-{
+typedef union {
     char __size[__SIZEOF_SEM_T];
-      long int __align;
+      int64_t __align;
 } sem_t;
 
 int initsem(key_t key, int nsems);
@@ -24,7 +28,7 @@ int sem_create(key_t key);
 
 int sem_initialize(int *semid, int value);
 
-int sem_init(int *semid,int pshared,unsigned int value);
+int sem_init(int *semid, int pshared, unsigned int value);
 
 int sem_destroy(int *semid);
 

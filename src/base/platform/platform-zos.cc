@@ -30,29 +30,28 @@
 
 #include <pthread.h>
 #include <signal.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <sys/types.h>
 #include <stdlib.h>
+#include <sys/resource.h>
+#include <sys/time.h>
+#include <sys/types.h>
 
 // For sempahore implementation on zos
 #include <sys/sem.h>
-#include "s390/semaphore_zos.h"
 
 // Ubuntu Dapper requires memory pages to be marked as
 // executable. Otherwise, OS raises an exception when executing code
 // in that page.
-#include <sys/types.h>  // mmap & munmap
-#include <sys/mman.h>   // mmap & munmap
-#include <sys/stat.h>   // open
 #include <fcntl.h>      // open
+#include <sys/mman.h>   // mmap & munmap
+#include <sys/types.h>  // mmap & munmap
+#include <sys/stat.h>   // open
 #include <unistd.h>     // sysconf
 #if defined(__GLIBC__) && !defined(__UCLIBC__)
 #include <execinfo.h>   // backtrace, backtrace_symbols
 #endif  // defined(__GLIBC__) && !defined(__UCLIBC__)
-#include <strings.h>    // index
 #include <errno.h>
 #include <stdarg.h>
+#include <strings.h>    // index
 
 // GLibc on ARM defines mcontext_t has a typedef for 'struct sigcontext'.
 // Old versions of the C library <signal.h> didn't define the type.
@@ -65,8 +64,9 @@
 
 #include "v8.h"
 
-#include "platform-posix.h"
 #include "platform.h"
+#include "platform-posix.h"
+#include "s390/semaphore_zos.h"
 #include "v8threads.h"
 #include "vm-state-inl.h"
 
@@ -82,14 +82,14 @@
       (result)->tv_usec -= 1000000; \
     } \
   } while (0)
-#endif //timeradd
+#endif  // timeradd
 
 namespace v8 {
 namespace internal {
 
 // 0 is never a valid thread id on Linux since tids and pids share a
 // name space and pid 0 is reserved (see man 2 kill).
-static const pthread_t kNoThread =  {0,0,0,0,0,0,0,0};
+static const pthread_t kNoThread =  {0, 0, 0, 0, 0, 0, 0, 0};
 
 
 double ceiling(double x) {
