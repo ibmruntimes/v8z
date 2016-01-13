@@ -4940,6 +4940,27 @@ void MacroAssembler::AllocateOneByteSlicedString(Register result,
 }
 
 
+void MacroAssembler::AllocateJSValue(Register result, Register constructor,
+                                     Register value, Register scratch,
+                                     Label* gc_required) {
+  DCHECK(!result.is(constructor));
+  DCHECK(!result.is(scratch));
+  DCHECK(!result.is(value));
+
+  // Allocate JSValue in new space.
+  Allocate(JSValue::kSize, result, scratch, no_reg, gc_required, TAG_OBJECT);
+
+  // Initialize the JSValue.
+  LoadGlobalFunctionInitialMap(constructor, scratch);
+  movp(FieldOperand(result, HeapObject::kMapOffset), scratch);
+  LoadRoot(scratch, Heap::kEmptyFixedArrayRootIndex);
+  movp(FieldOperand(result, JSObject::kPropertiesOffset), scratch);
+  movp(FieldOperand(result, JSObject::kElementsOffset), scratch);
+  movp(FieldOperand(result, JSValue::kValueOffset), value);
+  STATIC_ASSERT(JSValue::kSize == 4 * kPointerSize);
+}
+
+
 // Copy memory, byte-by-byte, from source to destination.  Not optimized for
 // long or aligned copies.  The contents of scratch and length are destroyed.
 // Destination is incremented by length, source, length and scratch are
@@ -5286,16 +5307,13 @@ void MacroAssembler::JumpIfBlack(Register object,
                                  Label* on_black,
                                  Label::Distance on_black_distance) {
   DCHECK(!AreAliased(object, bitmap_scratch, mask_scratch, rcx));
+
   GetMarkBits(object, bitmap_scratch, mask_scratch);
 
-  DCHECK(strcmp(Marking::kBlackBitPattern, "10") == 0);
+  DCHECK(strcmp(Marking::kBlackBitPattern, "11") == 0);
   // The mask_scratch register contains a 1 at the position of the first bit
-  // and a 0 at all other positions, including the position of the second bit.
+  // and a 1 at a position of the second bit. All other positions are zero.
   movp(rcx, mask_scratch);
-  // Make rcx into a mask that covers both marking bits using the operation
-  // rcx = mask | (mask << 1).
-  leap(rcx, Operand(mask_scratch, mask_scratch, times_2, 0));
-  // Note that we are using a 4-byte aligned 8-byte load.
   andp(rcx, Operand(bitmap_scratch, MemoryChunk::kHeaderSize));
   cmpp(mask_scratch, rcx);
   j(equal, on_black, on_black_distance);
@@ -5321,7 +5339,7 @@ void MacroAssembler::GetMarkBits(Register addr_reg,
   movp(rcx, addr_reg);
   shrl(rcx, Immediate(kPointerSizeLog2));
   andp(rcx, Immediate((1 << Bitmap::kBitsPerCellLog2) - 1));
-  movl(mask_reg, Immediate(1));
+  movl(mask_reg, Immediate(3));
   shlp_cl(mask_reg);
 }
 
@@ -5334,8 +5352,8 @@ void MacroAssembler::JumpIfWhite(Register value, Register bitmap_scratch,
 
   // If the value is black or grey we don't need to do anything.
   DCHECK(strcmp(Marking::kWhiteBitPattern, "00") == 0);
-  DCHECK(strcmp(Marking::kBlackBitPattern, "10") == 0);
-  DCHECK(strcmp(Marking::kGreyBitPattern, "11") == 0);
+  DCHECK(strcmp(Marking::kBlackBitPattern, "11") == 0);
+  DCHECK(strcmp(Marking::kGreyBitPattern, "10") == 0);
   DCHECK(strcmp(Marking::kImpossibleBitPattern, "01") == 0);
 
   // Since both black and grey have a 1 in the first position and white does

@@ -403,8 +403,8 @@ class MacroAssembler : public Assembler {
 #endif
 
   // Generates function and stub prologue code.
-  void StubPrologue(int prologue_offset = 0);
-  void Prologue(bool code_pre_aging, int prologue_offset = 0);
+  void StubPrologue(Register base = no_reg, int prologue_offset = 0);
+  void Prologue(bool code_pre_aging, Register base, int prologue_offset = 0);
 
   // Enter exit frame.
   // stack_space - extra stack space, used for parameters before call to C.
@@ -689,6 +689,12 @@ class MacroAssembler : public Assembler {
                                    Register scratch1, Register scratch2,
                                    Register heap_number_map,
                                    Label* gc_required);
+
+  // Allocate and initialize a JSValue wrapper with the specified {constructor}
+  // and {value}.
+  void AllocateJSValue(Register result, Register constructor, Register value,
+                       Register scratch1, Register scratch2,
+                       Label* gc_required);
 
   // Copies a number of bytes from src to dst. All registers are clobbered. On
   // exit src and dst will point to the place just after where the last byte was

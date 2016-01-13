@@ -74,9 +74,30 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
   V(DateNow, kNone)                                            \
   V(DateParse, kNone)                                          \
   V(DateUTC, kNone)                                            \
+  V(DatePrototypeSetDate, kNone)                               \
+  V(DatePrototypeSetFullYear, kNone)                           \
+  V(DatePrototypeSetHours, kNone)                              \
+  V(DatePrototypeSetMilliseconds, kNone)                       \
+  V(DatePrototypeSetMinutes, kNone)                            \
+  V(DatePrototypeSetMonth, kNone)                              \
+  V(DatePrototypeSetSeconds, kNone)                            \
+  V(DatePrototypeSetTime, kNone)                               \
+  V(DatePrototypeSetUTCDate, kNone)                            \
+  V(DatePrototypeSetUTCFullYear, kNone)                        \
+  V(DatePrototypeSetUTCHours, kNone)                           \
+  V(DatePrototypeSetUTCMilliseconds, kNone)                    \
+  V(DatePrototypeSetUTCMinutes, kNone)                         \
+  V(DatePrototypeSetUTCMonth, kNone)                           \
+  V(DatePrototypeSetUTCSeconds, kNone)                         \
+  V(DatePrototypeToDateString, kNone)                          \
   V(DatePrototypeToISOString, kNone)                           \
   V(DatePrototypeToPrimitive, kNone)                           \
+  V(DatePrototypeToUTCString, kNone)                           \
+  V(DatePrototypeToString, kNone)                              \
+  V(DatePrototypeToTimeString, kNone)                          \
   V(DatePrototypeValueOf, kNone)                               \
+  V(DatePrototypeGetYear, kNone)                               \
+  V(DatePrototypeSetYear, kNone)                               \
                                                                \
   V(FunctionConstructor, kTargetAndNewTarget)                  \
   V(FunctionPrototypeBind, kNone)                              \
@@ -224,6 +245,9 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
                                                                                \
   V(InternalArrayCode, BUILTIN, UNINITIALIZED, kNoExtraICState)                \
   V(ArrayCode, BUILTIN, UNINITIALIZED, kNoExtraICState)                        \
+                                                                               \
+  V(NumberConstructor, BUILTIN, UNINITIALIZED, kNoExtraICState)                \
+  V(NumberConstructor_ConstructStub, BUILTIN, UNINITIALIZED, kNoExtraICState)  \
                                                                                \
   V(StringConstructor, BUILTIN, UNINITIALIZED, kNoExtraICState)                \
   V(StringConstructor_ConstructStub, BUILTIN, UNINITIALIZED, kNoExtraICState)  \
@@ -457,6 +481,11 @@ class Builtins {
 
   static void Generate_InternalArrayCode(MacroAssembler* masm);
   static void Generate_ArrayCode(MacroAssembler* masm);
+
+  // ES6 section 20.1.1.1 Number ( [ value ] ) for the [[Call]] case.
+  static void Generate_NumberConstructor(MacroAssembler* masm);
+  // ES6 section 20.1.1.1 Number ( [ value ] ) for the [[Construct]] case.
+  static void Generate_NumberConstructor_ConstructStub(MacroAssembler* masm);
 
   static void Generate_StringConstructor(MacroAssembler* masm);
   static void Generate_StringConstructor_ConstructStub(MacroAssembler* masm);

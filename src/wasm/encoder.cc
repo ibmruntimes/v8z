@@ -63,22 +63,14 @@ struct WasmFunctionBuilder::Type {
 };
 
 
-WasmFunctionBuilder::WasmFunctionBuilder(Zone* zone, const unsigned char* name,
-                                         int name_length)
+WasmFunctionBuilder::WasmFunctionBuilder(Zone* zone)
     : return_type_(kAstI32),
       locals_(zone),
       exported_(0),
       external_(0),
       body_(zone),
       local_indices_(zone),
-      name_(zone) {
-  if (name_length > 0) {
-    for (int i = 0; i < name_length; i++) {
-      name_.push_back(*(name + i));
-    }
-    name_.push_back('\0');
-  }
-}
+      name_(zone) {}
 
 
 uint16_t WasmFunctionBuilder::AddParam(LocalType type) {
@@ -152,32 +144,45 @@ void WasmFunctionBuilder::Exported(uint8_t flag) { exported_ = flag; }
 
 void WasmFunctionBuilder::External(uint8_t flag) { external_ = flag; }
 
+void WasmFunctionBuilder::SetName(const unsigned char* name, int name_length) {
+  name_.clear();
+  if (name_length > 0) {
+    for (int i = 0; i < name_length; i++) {
+      name_.push_back(*(name + i));
+    }
+    name_.push_back('\0');
+  }
+}
+
 
 WasmFunctionEncoder* WasmFunctionBuilder::Build(Zone* zone,
                                                 WasmModuleBuilder* mb) const {
   WasmFunctionEncoder* e =
       new (zone) WasmFunctionEncoder(zone, return_type_, exported_, external_);
-  auto var_index = new uint16_t[locals_.size()];
+  uint16_t* var_index = zone->NewArray<uint16_t>(locals_.size());
   IndexVars(e, var_index);
-  const byte* start = &body_[0];
-  const byte* end = start + body_.size();
-  size_t local_index = 0;
-  for (size_t i = 0; i < body_.size();) {
-    if (local_index < local_indices_.size() &&
-        i == local_indices_[local_index]) {
-      int length = 0;
-      uint32_t index;
-      ReadUnsignedLEB128Operand(start + i, end, &length, &index);
-      uint16_t new_index = var_index[index];
-      const std::vector<uint8_t>& index_vec = UnsignedLEB128From(new_index);
-      for (size_t j = 0; j < index_vec.size(); j++) {
-        e->body_.push_back(index_vec.at(j));
+  if (body_.size() > 0) {
+    // TODO(titzer): iterate over local indexes, not the bytes.
+    const byte* start = &body_[0];
+    const byte* end = start + body_.size();
+    size_t local_index = 0;
+    for (size_t i = 0; i < body_.size();) {
+      if (local_index < local_indices_.size() &&
+          i == local_indices_[local_index]) {
+        int length = 0;
+        uint32_t index;
+        ReadUnsignedLEB128Operand(start + i, end, &length, &index);
+        uint16_t new_index = var_index[index];
+        const std::vector<uint8_t>& index_vec = UnsignedLEB128From(new_index);
+        for (size_t j = 0; j < index_vec.size(); j++) {
+          e->body_.push_back(index_vec.at(j));
+        }
+        i += length;
+        local_index++;
+      } else {
+        e->body_.push_back(*(start + i));
+        i++;
       }
-      i += length;
-      local_index++;
-    } else {
-      e->body_.push_back(*(start + i));
-      i++;
     }
   }
   FunctionSig::Builder sig(zone, return_type_ == kAstStmt ? 0 : 1,
@@ -189,7 +194,6 @@ WasmFunctionEncoder* WasmFunctionBuilder::Build(Zone* zone,
     sig.AddParam(static_cast<LocalType>(e->params_[i]));
   }
   e->signature_index_ = mb->AddSignature(sig.Build());
-  delete[] var_index;
   e->name_.insert(e->name_.begin(), name_.begin(), name_.end());
   return e;
 }
@@ -295,8 +299,10 @@ void WasmFunctionEncoder::Serialize(byte* buffer, byte** header,
 
   if (!external_) {
     EmitUint16(header, static_cast<uint16_t>(body_.size()));
-    std::memcpy(*header, &body_[0], body_.size());
-    (*header) += body_.size();
+    if (body_.size() > 0) {
+      std::memcpy(*header, &body_[0], body_.size());
+      (*header) += body_.size();
+    }
   }
 }
 
@@ -344,10 +350,8 @@ WasmModuleBuilder::WasmModuleBuilder(Zone* zone)
       signature_map_(zone) {}
 
 
-uint16_t WasmModuleBuilder::AddFunction(const unsigned char* name,
-                                        int name_length) {
-  functions_.push_back(new (zone_)
-                           WasmFunctionBuilder(zone_, name, name_length));
+uint16_t WasmModuleBuilder::AddFunction() {
+  functions_.push_back(new (zone_) WasmFunctionBuilder(zone_));
   return static_cast<uint16_t>(functions_.size() - 1);
 }
 

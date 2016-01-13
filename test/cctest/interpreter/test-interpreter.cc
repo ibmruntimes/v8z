@@ -1944,7 +1944,11 @@ TEST(InterpreterContextVariables) {
   HandleAndZoneScope handles;
   i::Isolate* isolate = handles.main_isolate();
 
-  std::pair<const char*, Handle<Object>> context_vars[] = {
+  std::ostringstream unique_vars;
+  for (int i = 0; i < 250; i++) {
+    unique_vars << "var a" << i << " = 0;";
+  }
+  std::pair<std::string, Handle<Object>> context_vars[] = {
       std::make_pair("var a; (function() { a = 1; })(); return a;",
                      handle(Smi::FromInt(1), isolate)),
       std::make_pair("var a = 10; (function() { a; })(); return a;",
@@ -1959,10 +1963,14 @@ TEST(InterpreterContextVariables) {
                      "{ let b = 20; var c = function() { [a, b] };\n"
                      "  return a + b; }",
                      handle(Smi::FromInt(30), isolate)),
+      std::make_pair("'use strict';" + unique_vars.str() +
+                     "eval(); var b = 100; return b;",
+                     handle(Smi::FromInt(100), isolate)),
   };
 
   for (size_t i = 0; i < arraysize(context_vars); i++) {
-    std::string source(InterpreterTester::SourceForBody(context_vars[i].first));
+    std::string source(
+        InterpreterTester::SourceForBody(context_vars[i].first.c_str()));
     InterpreterTester tester(handles.main_isolate(), source.c_str());
     auto callable = tester.GetCallable<>();
 
@@ -2855,7 +2863,27 @@ TEST(InterpreterForIn) {
        "  }\n"
        "  return flags;\n"
        "  }",
-       0}};
+       0},
+      {"function f() {\n"
+       " var data = {x:23, y:34};\n"
+       " var result = 0;\n"
+       " var o = {};\n"
+       " var arr = [o];\n"
+       " for (arr[0].p in data)\n"      // This is to test if value is loaded
+       "  result += data[arr[0].p];\n"  // back from accumulator before storing
+       " return result;\n"              // named properties.
+       "}",
+       57},
+      {"function f() {\n"
+       " var data = {x:23, y:34};\n"
+       " var result = 0;\n"
+       " var o = {};\n"
+       " var i = 0;\n"
+       " for (o[i++] in data)\n"      // This is to test if value is loaded
+       "  result += data[o[i-1]];\n"  // back from accumulator before
+       " return result;\n"            // storing keyed properties.
+       "}",
+       57}};
 
   for (size_t i = 0; i < arraysize(for_in_samples); i++) {
     InterpreterTester tester(handles.main_isolate(), for_in_samples[i].first);
@@ -3263,6 +3291,33 @@ TEST(InterpreterLookupSlot) {
 
     Handle<i::Object> return_value = callable().ToHandleChecked();
     CHECK(return_value->SameValue(*lookup_slot[i].second));
+  }
+}
+
+
+TEST(InterpreterCallLookupSlot) {
+  HandleAndZoneScope handles;
+  i::Isolate* isolate = handles.main_isolate();
+
+  std::pair<const char*, Handle<Object>> call_lookup[] = {
+      {"g = function(){ return 2 }; eval(''); return g();",
+       handle(Smi::FromInt(2), isolate)},
+      {"g = function(){ return 2 }; eval('g = function() {return 3}');\n"
+       "return g();",
+       handle(Smi::FromInt(3), isolate)},
+      {"g = { x: function(){ return this.y }, y: 20 };\n"
+       "eval('g = { x: g.x, y: 30 }');\n"
+       "return g.x();",
+       handle(Smi::FromInt(30), isolate)},
+  };
+
+  for (size_t i = 0; i < arraysize(call_lookup); i++) {
+    std::string source(InterpreterTester::SourceForBody(call_lookup[i].first));
+    InterpreterTester tester(handles.main_isolate(), source.c_str());
+    auto callable = tester.GetCallable<>();
+
+    Handle<i::Object> return_value = callable().ToHandleChecked();
+    CHECK(return_value->SameValue(*call_lookup[i].second));
   }
 }
 

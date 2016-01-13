@@ -416,11 +416,6 @@ class ParserTraits {
   static void CheckAssigningFunctionLiteralToProperty(Expression* left,
                                                       Expression* right);
 
-  // Keep track of eval() calls since they disable all local variable
-  // optimizations. This checks if expression is an eval call, and if yes,
-  // forwards the information to scope.
-  void CheckPossibleEvalCall(Expression* expression, Scope* scope);
-
   // Determine if the expression is a variable proxy and mark it as being used
   // in an assignment or with a increment/decrement operator.
   static Expression* MarkExpressionAsAssigned(Expression* expression);
@@ -740,6 +735,8 @@ class Parser : public ParserBase<ParserTraits> {
                                    bool* ok);
   Statement* ParseNativeDeclaration(bool* ok);
   Block* ParseBlock(ZoneList<const AstRawString*>* labels, bool* ok);
+  Block* ParseBlock(ZoneList<const AstRawString*>* labels,
+                    bool finalize_block_scope, bool* ok);
   Block* ParseVariableStatement(VariableDeclarationContext var_context,
                                 ZoneList<const AstRawString*>* names,
                                 bool* ok);

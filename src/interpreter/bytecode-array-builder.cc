@@ -431,6 +431,9 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::LoadContextSlot(Register context,
   if (FitsInIdx8Operand(slot_index)) {
     Output(Bytecode::kLdaContextSlot, context.ToOperand(),
            static_cast<uint8_t>(slot_index));
+  } else if (FitsInIdx16Operand(slot_index)) {
+    Output(Bytecode::kLdaContextSlotWide, context.ToOperand(),
+           static_cast<uint16_t>(slot_index));
   } else {
     UNIMPLEMENTED();
   }
@@ -444,6 +447,9 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::StoreContextSlot(Register context,
   if (FitsInIdx8Operand(slot_index)) {
     Output(Bytecode::kStaContextSlot, context.ToOperand(),
            static_cast<uint8_t>(slot_index));
+  } else if (FitsInIdx16Operand(slot_index)) {
+    Output(Bytecode::kStaContextSlotWide, context.ToOperand(),
+           static_cast<uint16_t>(slot_index));
   } else {
     UNIMPLEMENTED();
   }
@@ -1149,12 +1155,6 @@ int BytecodeArrayBuilder::BorrowTemporaryRegisterNotInRange(int start_index,
 }
 
 
-int BytecodeArrayBuilder::AllocateAndBorrowTemporaryRegister() {
-  temporary_register_count_ += 1;
-  return last_temporary_register().index();
-}
-
-
 void BytecodeArrayBuilder::BorrowConsecutiveTemporaryRegister(int reg_index) {
   DCHECK(free_temporaries_.find(reg_index) != free_temporaries_.end());
   free_temporaries_.erase(reg_index);
@@ -1628,13 +1628,6 @@ Register TemporaryRegisterScope::NewRegister() {
         next_consecutive_register_,
         next_consecutive_register_ + next_consecutive_count_ - 1);
   }
-  allocated_.push_back(allocated);
-  return Register(allocated);
-}
-
-
-Register TemporaryRegisterScope::AllocateNewRegister() {
-  int allocated = builder_->AllocateAndBorrowTemporaryRegister();
   allocated_.push_back(allocated);
   return Register(allocated);
 }

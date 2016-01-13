@@ -230,11 +230,9 @@ class MacroAssembler: public Assembler {
   }
 
   // Check if an object has the black incremental marking color.  Also uses rcx!
-  void JumpIfBlack(Register object,
-                   Register scratch0,
-                   Register scratch1,
-                   Label* on_black,
-                   Label::Distance on_black_distance = Label::kFar);
+  void JumpIfBlack(Register object, Register bitmap_scratch,
+                   Register mask_scratch, Label* on_black,
+                   Label::Distance on_black_distance);
 
   // Checks the color of an object.  If the object is white we jump to the
   // incremental marker.
@@ -1320,6 +1318,11 @@ class MacroAssembler: public Assembler {
                             Label* gc_required);
   void AllocateOneByteSlicedString(Register result, Register scratch1,
                                    Register scratch2, Label* gc_required);
+
+  // Allocate and initialize a JSValue wrapper with the specified {constructor}
+  // and {value}.
+  void AllocateJSValue(Register result, Register constructor, Register value,
+                       Register scratch, Label* gc_required);
 
   // ---------------------------------------------------------------------------
   // Support functions.

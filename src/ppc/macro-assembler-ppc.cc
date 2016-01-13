@@ -753,20 +753,26 @@ void MacroAssembler::LoadConstantPoolPointerRegister() {
 }
 
 
-void MacroAssembler::StubPrologue(int prologue_offset) {
+void MacroAssembler::StubPrologue(Register base, int prologue_offset) {
   LoadSmiLiteral(r11, Smi::FromInt(StackFrame::STUB));
   PushFixedFrame(r11);
   // Adjust FP to point to saved FP.
   addi(fp, sp, Operand(StandardFrameConstants::kFixedFrameSizeFromFp));
   if (FLAG_enable_embedded_constant_pool) {
-    // ip contains prologue address
-    LoadConstantPoolPointerRegister(ip, -prologue_offset);
+    if (!base.is(no_reg)) {
+      // base contains prologue address
+      LoadConstantPoolPointerRegister(base, -prologue_offset);
+    } else {
+      LoadConstantPoolPointerRegister();
+    }
     set_constant_pool_available(true);
   }
 }
 
 
-void MacroAssembler::Prologue(bool code_pre_aging, int prologue_offset) {
+void MacroAssembler::Prologue(bool code_pre_aging, Register base,
+                              int prologue_offset) {
+  DCHECK(!base.is(no_reg));
   {
     PredictableCodeSizeScope predictible_code_size_scope(
         this, kNoCodeAgeSequenceLength);
@@ -796,8 +802,8 @@ void MacroAssembler::Prologue(bool code_pre_aging, int prologue_offset) {
     }
   }
   if (FLAG_enable_embedded_constant_pool) {
-    // ip contains prologue address
-    LoadConstantPoolPointerRegister(ip, -prologue_offset);
+    // base contains prologue address
+    LoadConstantPoolPointerRegister(base, -prologue_offset);
     set_constant_pool_available(true);
   }
 }
@@ -2761,6 +2767,28 @@ void MacroAssembler::AllocateHeapNumberWithValue(
 }
 
 
+void MacroAssembler::AllocateJSValue(Register result, Register constructor,
+                                     Register value, Register scratch1,
+                                     Register scratch2, Label* gc_required) {
+  DCHECK(!result.is(constructor));
+  DCHECK(!result.is(scratch1));
+  DCHECK(!result.is(scratch2));
+  DCHECK(!result.is(value));
+
+  // Allocate JSValue in new space.
+  Allocate(JSValue::kSize, result, scratch1, scratch2, gc_required, TAG_OBJECT);
+
+  // Initialize the JSValue.
+  LoadGlobalFunctionInitialMap(constructor, scratch1, scratch2);
+  StoreP(scratch1, FieldMemOperand(result, HeapObject::kMapOffset), r0);
+  LoadRoot(scratch1, Heap::kEmptyFixedArrayRootIndex);
+  StoreP(scratch1, FieldMemOperand(result, JSObject::kPropertiesOffset), r0);
+  StoreP(scratch1, FieldMemOperand(result, JSObject::kElementsOffset), r0);
+  StoreP(value, FieldMemOperand(result, JSValue::kValueOffset), r0);
+  STATIC_ASSERT(JSValue::kSize == 4 * kPointerSize);
+}
+
+
 void MacroAssembler::CopyBytes(Register src, Register dst, Register length,
                                Register scratch) {
   Label align_loop, aligned, word_loop, byte_loop, byte_loop_1, done;
@@ -3174,8 +3202,8 @@ void MacroAssembler::CheckPageFlag(
 
 void MacroAssembler::JumpIfBlack(Register object, Register scratch0,
                                  Register scratch1, Label* on_black) {
-  HasColor(object, scratch0, scratch1, on_black, 1, 0);  // kBlackBitPattern.
-  DCHECK(strcmp(Marking::kBlackBitPattern, "10") == 0);
+  HasColor(object, scratch0, scratch1, on_black, 1, 1);  // kBlackBitPattern.
+  DCHECK(strcmp(Marking::kBlackBitPattern, "11") == 0);
 }
 
 
@@ -3232,8 +3260,8 @@ void MacroAssembler::JumpIfWhite(Register value, Register bitmap_scratch,
 
   // If the value is black or grey we don't need to do anything.
   DCHECK(strcmp(Marking::kWhiteBitPattern, "00") == 0);
-  DCHECK(strcmp(Marking::kBlackBitPattern, "10") == 0);
-  DCHECK(strcmp(Marking::kGreyBitPattern, "11") == 0);
+  DCHECK(strcmp(Marking::kBlackBitPattern, "11") == 0);
+  DCHECK(strcmp(Marking::kGreyBitPattern, "10") == 0);
   DCHECK(strcmp(Marking::kImpossibleBitPattern, "01") == 0);
 
   // Since both black and grey have a 1 in the first position and white does

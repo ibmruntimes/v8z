@@ -65,7 +65,7 @@ class BytecodeGraphBuilder {
 
   // Node creation helpers
   Node* NewNode(const Operator* op, bool incomplete = false) {
-    return MakeNode(op, 0, static_cast<Node**>(NULL), incomplete);
+    return MakeNode(op, 0, static_cast<Node**>(nullptr), incomplete);
   }
 
   Node* NewNode(const Operator* op, Node* n1) {
@@ -167,6 +167,9 @@ class BytecodeGraphBuilder {
                                            int target_offset);
   void MergeEnvironmentsOfForwardBranches(int source_offset);
   void BuildLoopHeaderForBackwardBranches(int source_offset);
+
+  // Attaches a frame state to |node| for the entry to the function.
+  void PrepareEntryFrameState(Node* node);
 
   // Growth increment for the temporary buffer used to construct input lists to
   // new nodes.

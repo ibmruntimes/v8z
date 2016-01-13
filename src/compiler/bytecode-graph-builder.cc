@@ -508,6 +508,12 @@ bool BytecodeGraphBuilder::CreateGraph(bool stack_check) {
 void BytecodeGraphBuilder::CreateGraphBody(bool stack_check) {
   // TODO(oth): Review ast-graph-builder equivalent, i.e. arguments
   // object setup, this function variable if used, tracing hooks.
+
+  if (stack_check) {
+    Node* node = NewNode(javascript()->StackCheck());
+    PrepareEntryFrameState(node);
+  }
+
   VisitBytecodes();
 }
 
@@ -766,6 +772,12 @@ void BytecodeGraphBuilder::VisitLdaContextSlot(
 }
 
 
+void BytecodeGraphBuilder::VisitLdaContextSlotWide(
+    const interpreter::BytecodeArrayIterator& iterator) {
+  VisitLdaContextSlot(iterator);
+}
+
+
 void BytecodeGraphBuilder::VisitStaContextSlot(
     const interpreter::BytecodeArrayIterator& iterator) {
   // TODO(mythria): LoadContextSlots are unrolled by the required depth when
@@ -776,6 +788,12 @@ void BytecodeGraphBuilder::VisitStaContextSlot(
   Node* context = environment()->LookupRegister(iterator.GetRegisterOperand(0));
   Node* value = environment()->LookupAccumulator();
   NewNode(op, context, value);
+}
+
+
+void BytecodeGraphBuilder::VisitStaContextSlotWide(
+    const interpreter::BytecodeArrayIterator& iterator) {
+  VisitStaContextSlot(iterator);
 }
 
 
@@ -1863,6 +1881,16 @@ Node** BytecodeGraphBuilder::EnsureInputBufferSize(int size) {
 }
 
 
+void BytecodeGraphBuilder::PrepareEntryFrameState(Node* node) {
+  DCHECK_EQ(1, OperatorProperties::GetFrameStateInputCount(node->op()));
+  DCHECK_EQ(IrOpcode::kDead,
+            NodeProperties::GetFrameStateInput(node, 0)->opcode());
+  NodeProperties::ReplaceFrameStateInput(
+      node, 0, environment()->Checkpoint(BailoutId(0),
+                                         OutputFrameStateCombine::Ignore()));
+}
+
+
 Node* BytecodeGraphBuilder::MakeNode(const Operator* op, int value_input_count,
                                      Node** value_inputs, bool incomplete) {
   DCHECK_EQ(op->ValueInputCount(), value_input_count);
@@ -1875,7 +1903,7 @@ Node* BytecodeGraphBuilder::MakeNode(const Operator* op, int value_input_count,
   DCHECK_LT(op->ControlInputCount(), 2);
   DCHECK_LT(op->EffectInputCount(), 2);
 
-  Node* result = NULL;
+  Node* result = nullptr;
   if (!has_context && frame_state_count == 0 && !has_control && !has_effect) {
     result = graph()->NewNode(op, value_input_count, value_inputs, incomplete);
   } else {

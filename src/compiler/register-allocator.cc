@@ -287,10 +287,10 @@ void LiveRange::VerifyPositions() const {
   for (UsePosition* pos = first_pos_; pos != nullptr; pos = pos->next()) {
     CHECK(Start() <= pos->pos());
     CHECK(pos->pos() <= End());
-    CHECK(interval != nullptr);
+    CHECK_NOT_NULL(interval);
     while (!interval->Contains(pos->pos()) && interval->end() != pos->pos()) {
       interval = interval->next();
-      CHECK(interval != nullptr);
+      CHECK_NOT_NULL(interval);
     }
   }
 }
@@ -1919,7 +1919,10 @@ void LiveRangeBuilder::ProcessInstructions(const InstructionBlock* block,
         int out_vreg = ConstantOperand::cast(output)->virtual_register();
         live->Remove(out_vreg);
       }
-      if (block->IsHandler() && index == block_start) {
+      if (block->IsHandler() && index == block_start && output->IsAllocated() &&
+          output->IsRegister() &&
+          AllocatedOperand::cast(output)->GetRegister().is(
+              v8::internal::kReturnRegister0)) {
         // The register defined here is blocked from gap start - it is the
         // exception value.
         // TODO(mtrofin): should we explore an explicit opcode for

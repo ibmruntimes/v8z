@@ -132,7 +132,10 @@ v8::internal::wasm::WasmModuleIndex* TranslateAsmModule(i::ParseInfo* info) {
   info->set_allow_lazy_parsing(false);
   info->set_toplevel(true);
 
-  CHECK(i::Compiler::ParseAndAnalyze(info));
+  if (!i::Compiler::ParseAndAnalyze(info)) {
+    return nullptr;
+  }
+
   info->set_literal(
       info->scope()->declarations()->at(0)->AsFunctionDeclaration()->fun());
 
@@ -311,7 +314,7 @@ void WasmJs::Install(Isolate* isolate, Handle<JSGlobalObject> global) {
 
   // Bind the WASM object.
   Factory* factory = isolate->factory();
-  Handle<String> name = v8_str(isolate, "WASM");
+  Handle<String> name = v8_str(isolate, "_WASMEXP_");
   Handle<JSFunction> cons = factory->NewFunction(name);
   JSFunction::SetInstancePrototype(
       cons, Handle<Object>(global->native_context()->initial_object_prototype(),

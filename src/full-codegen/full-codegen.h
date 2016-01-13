@@ -488,7 +488,6 @@ class FullCodeGenerator: public AstVisitor {
   F(ValueOf)                            \
   F(SetValueOf)                         \
   F(IsDate)                             \
-  F(DateField)                          \
   F(StringCharFromCode)                 \
   F(StringCharAt)                       \
   F(OneByteSeqStringSetChar)            \
