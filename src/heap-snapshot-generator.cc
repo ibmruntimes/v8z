@@ -2837,6 +2837,13 @@ template<> struct ToUnsigned<8> {
   typedef uint64_t Type;
 };
 
+#if V8_OS_ZOS
+// HeapGraphEdge->Type is an enum which may be 1 byte instead of 4 in xlc.
+template<> struct ToUnsigned<1> {
+  typedef uint8_t Type;
+};
+#endif
+
 }  // namespace
 
 
