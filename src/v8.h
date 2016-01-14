@@ -46,6 +46,22 @@
 #include "src/types-inl.h"  // NOLINT
 #include "src/zone-inl.h"  // NOLINT
 
+#if V8_OS_ZOS
+#include "math.h"
+  namespace std {
+#undef isnan
+    bool isnan(double x) {
+      return __fp_isnan(x);
+    }
+#undef isinf
+    bool isinf(double x) {
+      return true;
+      // TODO(mcornac): Copy the implementation for this from xlc math.h.
+      // return isinfinite(x);
+    }
+  }
+#endif
+
 namespace v8 {
 namespace internal {
 
