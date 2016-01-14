@@ -53,6 +53,10 @@
 
 #include <fcntl.h>
 #include <unistd.h>
+#if V8_OS_ZOS
+// xlC defines cds in stdlib.h.
+#undef cds
+#endif
 #include "src/assembler.h"
 #include "src/s390/constants-s390.h"
 #include "src/serialize.h"
