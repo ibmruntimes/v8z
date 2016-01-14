@@ -72,8 +72,8 @@
 #include "unicode/uversion.h"
 #endif
 
-#ifndef _STLP_VENDOR_CSTD
-// STLPort doesn't import fpclassify and isless into the std namespace.
+#if !defined(_STLP_VENDOR_CSTD) && !defined(V8_OS_ZOS)
+// STLPort and xlC do not import fpclassify and isless into the std namespace.
 using std::fpclassify;
 using std::isless;
 #endif
