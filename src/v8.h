@@ -59,6 +59,11 @@
       // TODO(mcornac): Copy the implementation for this from xlc math.h.
       // return isinfinite(x);
     }
+#undef isfinite
+    bool isfinite(double x) {
+      // TODO(mcornac):
+      return false;
+    }
   }
 #endif
 
