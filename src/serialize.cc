@@ -1811,13 +1811,15 @@ ScriptData* CodeSerializer::Serialize(Isolate* isolate,
   // Serialize code object.
   List<byte> payload;
   ListSnapshotSink list_sink(&payload);
-  CodeSerializer cs(isolate, &list_sink, *source);
+  // TODO(mcornac): What is wrong with using the name cs here with xlc?
+  CodeSerializer cs1(isolate, &list_sink, *source);
   DisallowHeapAllocation no_gc;
   Object** location = Handle<Object>::cast(info).location();
-  cs.VisitPointer(location);
-  cs.Pad();
 
-  SerializedCodeData data(&payload, &cs);
+  cs1.VisitPointer(location);
+  cs1.Pad();
+
+  SerializedCodeData data(&payload, &cs1);
   return data.GetScriptData();
 }
 
