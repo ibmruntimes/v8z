@@ -12,6 +12,12 @@
 #define snprintf sprintf_s
 #endif
 
+#ifndef V8_OS_ZOS
+// xlC does not import isnan or isinf into the std namespace.
+using std::isnan;
+using std::isinf;
+#endif
+
 namespace v8 {
 namespace internal {
 
@@ -65,8 +71,8 @@ OStream& OStream::operator<<(unsigned long long x) {  // NOLINT(runtime/int)
 
 
 OStream& OStream::operator<<(double x) {
-  if (std::isinf(x)) return *this << (x < 0 ? "-inf" : "inf");
-  if (std::isnan(x)) return *this << "nan";
+  if (isinf(x)) return *this << (x < 0 ? "-inf" : "inf");
+  if (isnan(x)) return *this << "nan";
   return print("%g", x);
 }
 
