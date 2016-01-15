@@ -14587,6 +14587,7 @@ template class Dictionary<UnseededNumberDictionary,
                           UnseededNumberDictionaryShape,
                           uint32_t>;
 
+#ifndef V8_OS_ZOS
 template Handle<SeededNumberDictionary>
 Dictionary<SeededNumberDictionary, SeededNumberDictionaryShape, uint32_t>::
     New(Isolate*, int at_least_space_for, PretenureFlag pretenure);
@@ -14705,7 +14706,7 @@ int Dictionary<NameDictionary, NameDictionaryShape, Handle<Name> >::
 template
 int HashTable<SeededNumberDictionary, SeededNumberDictionaryShape, uint32_t>::
     FindEntry(uint32_t);
-
+#endif
 
 Handle<Object> JSObject::PrepareSlowElementsForSort(
     Handle<JSObject> object, uint32_t limit) {
