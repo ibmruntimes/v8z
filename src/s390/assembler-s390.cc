@@ -60,6 +60,9 @@ static unsigned CpuFeaturesImpliedByCompiler() {
 
 // This function uses types in elf.h
 static bool supportsSTFLE() {
+#if V8_OS_ZOS
+  return false;
+#else
 #if V8_HOST_ARCH_S390
   static bool read_tried = false;
   static uint32_t auxv_hwcap = 0;
@@ -112,6 +115,7 @@ static bool supportsSTFLE() {
   // STFLE is not available on non-s390 hosts
   return false;
 #endif
+#endif
 }
 
 
@@ -130,7 +134,7 @@ void CpuFeatures::ProbeImpl(bool cross_compile) {
 
   // Need to define host, as we are generating inlined S390 assembly to test
   // for facilities.
-#if V8_HOST_ARCH_S390
+#if V8_HOST_ARCH_S390 && !defined(V8_OS_ZOS)
   if (performSTFLE) {
      // STFLE D(B) requires:
      //    GPR0 to specify # of double words to update minus 1.
