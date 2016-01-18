@@ -62,13 +62,12 @@
 
 #undef MAP_TYPE
 
-#include "v8.h"
+#include "src/v8.h"
 
-#include "platform.h"
-#include "platform-posix.h"
-#include "s390/semaphore_zos.h"
-#include "v8threads.h"
-#include "vm-state-inl.h"
+#include "src/base/platform/platform.h"
+#include "src/s390/semaphore-zos.h"
+#include "src/v8threads.h"
+#include "src/vm-state-inl.h"
 
 #define MAP_FAILED ((void *)-1L)
 

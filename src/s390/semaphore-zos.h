@@ -6,6 +6,7 @@
 // found in the LICENSE file.
 
 #include <errno.h>
+#include <inttypes.h>
 #include <pthread.h>
 #include <sys/sem.h>
 
@@ -18,8 +19,8 @@
 #define SEM_FAILED ((sem_t *) 0)
 
 typedef union {
-    char __size[__SIZEOF_SEM_T];
-      int64_t __align;
+  char __size[__SIZEOF_SEM_T];
+  int64_t __align;
 } sem_t;
 
 int initsem(key_t key, int nsems);
