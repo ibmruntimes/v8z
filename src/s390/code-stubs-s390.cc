@@ -3855,7 +3855,7 @@ void DirectCEntryStub::GenerateCall(MacroAssembler* masm, Register target) {
   __ LoadP(target, MemOperand(target, 0));  // Instruction address
 #else
   // ip needs to be set for DirectCEentryStub::Generate, and also
-  // for ABI_TOC_ADDRESSABILITY_VIA_IP.
+  // for ABI_CALL_VIA_IP.
   __ Move(ip, target);
 #endif
 
