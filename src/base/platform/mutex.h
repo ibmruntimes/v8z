@@ -11,7 +11,7 @@
 #endif
 #include "src/base/logging.h"
 
-#if V8_OS_POSIX
+#if V8_OS_POSIX || V8_OS_ZOS
 #include <pthread.h>  // NOLINT
 #endif
 
