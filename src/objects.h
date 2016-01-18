@@ -32,6 +32,7 @@
 #include "src/s390/constants-s390.h" // NOLINT
 #endif
 
+#undef index
 
 //
 // Most object types in the V8 JavaScript are described in this file.
