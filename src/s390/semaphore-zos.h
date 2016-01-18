@@ -5,6 +5,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#ifndef V8_S390_SEMAPHORE_ZOS_H_
+#define V8_S390_SEMAPHORE_ZOS_H_
+
 #include <errno.h>
 #include <inttypes.h>
 #include <pthread.h>
@@ -40,3 +43,5 @@ int sem_trywait(int *semid);
 int sem_post(int *semid);
 
 int sem_timedwait(int *semid, struct timespec *timeout);
+
+#endif  // V8_S390_SEMAPHORE_ZOS_H_
