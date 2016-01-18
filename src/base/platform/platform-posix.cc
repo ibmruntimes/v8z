@@ -20,7 +20,7 @@
 #include <sys/mman.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
-#if !defined(_AIX)
+#if !defined(_AIX) && !defined(V8_OS_ZOS)
 #include <sys/syscall.h>
 #endif
 #include <sys/time.h>
