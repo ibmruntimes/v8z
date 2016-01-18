@@ -1,9 +1,8 @@
-// Copyright 2014 the V8 project authors. All rights reserved.
+// Copyright 2016 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 // This file is an internal atomic implementation, use atomicops.h instead.
-//
 
 #ifndef V8_ATOMICOPS_INTERNALS_S390_H_
 #define V8_ATOMICOPS_INTERNALS_S390_H_
@@ -57,9 +56,7 @@ inline void NoBarrier_Store(volatile Atomic32* ptr, Atomic32 value) {
 }
 
 inline void MemoryBarrier() {
-  // gcc built-in
   __sync_synchronize();
-  // __asm__ __volatile__("sync" : : : "memory");
 }
 
 inline void Acquire_Store(volatile Atomic32* ptr, Atomic32 value) {
