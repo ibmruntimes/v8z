@@ -317,7 +317,7 @@ dirx = $(call unreplace_spaces,$(dir $(call replace_spaces,$1)))
 # We write to a dep file on the side first and then rename at the end
 # so we can't end up with a broken dep file.
 depfile = $(depsdir)/$(call replace_spaces,$@).d
-DEPFLAGS = -M -MF $(depfile).raw
+DEPFLAGS = -qmakedep -MF $(depfile).raw
 
 # We have to fixup the deps output in a few ways.
 # (1) the file output should mention the proper .o file.
