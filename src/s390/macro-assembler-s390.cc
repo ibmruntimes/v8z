@@ -659,10 +659,10 @@ void MacroAssembler::ConvertIntToFloat(const DoubleRegister dst,
 
 
 #if V8_TARGET_ARCH_S390X
+// note (bcleung): see Zpoop, pg 19-18 for possible functions to implement these.
 void MacroAssembler::ConvertInt64ToDouble(Register src,
                                           DoubleRegister double_dst) {
-  UNIMPLEMENTED();
-  MovInt64ToDouble(double_dst, src);
+  cdgbr(double_dst, src);
   // fcfid(double_dst, double_dst);
 }
 
@@ -677,8 +677,7 @@ void MacroAssembler::ConvertUnsignedInt64ToFloat(Register src,
 
 void MacroAssembler::ConvertUnsignedInt64ToDouble(Register src,
                                                   DoubleRegister double_dst) {
-  UNIMPLEMENTED();
-  MovInt64ToDouble(double_dst, src);
+  cdlgbr(Condition(0), Condition(0), double_dst, src);
   // fcfidu(double_dst, double_dst);
 }
 

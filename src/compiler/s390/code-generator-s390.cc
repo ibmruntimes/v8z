@@ -1163,7 +1163,6 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       // DCHECK_EQ(LeaveRC, i.OutputRCBit());
       break;
     case kS390_Int64ToDouble:
-      UNIMPLEMENTED();
       __ ConvertInt64ToDouble(i.InputRegister(0), i.OutputDoubleRegister());
       // DCHECK_EQ(LeaveRC, i.OutputRCBit());
       break;
@@ -1174,7 +1173,6 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       // DCHECK_EQ(LeaveRC, i.OutputRCBit());
       break;
     case kS390_Uint64ToDouble:
-      UNIMPLEMENTED();
       __ ConvertUnsignedInt64ToDouble(i.InputRegister(0),
                                       i.OutputDoubleRegister());
       // DCHECK_EQ(LeaveRC, i.OutputRCBit());
