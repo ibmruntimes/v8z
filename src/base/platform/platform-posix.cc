@@ -20,9 +20,6 @@
 #include <sys/mman.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
-#if !defined(_AIX) && !defined(V8_OS_ZOS)
-#include <sys/syscall.h>
-#endif
 #include <sys/time.h>
 #include <sys/types.h>
 #if defined(__linux__)
@@ -53,8 +50,16 @@
 #include "src/base/platform/time.h"
 #include "src/base/utils/random-number-generator.h"
 
+#if !defined(_AIX) && !defined(V8_OS_ZOS)
+#include <sys/syscall.h>
+#endif
+
 #ifdef V8_FAST_TLS_SUPPORTED
 #include "src/base/atomicops.h"
+#endif
+
+#ifndef V8_OS_ZOS
+using std::isnan;
 #endif
 
 namespace v8 {
@@ -63,7 +68,12 @@ namespace base {
 namespace {
 
 // 0 is never a valid thread id.
-const pthread_t kNoThread = (pthread_t) 0;
+#if V8_OS_ZOS
+  // TODO(mcornac):
+  const pthread_t kNoThread = {0, 0, 0, 0, 0, 0, 0, 0};
+#else
+  const pthread_t kNoThread = (pthread_t) 0;
+#endif
 
 bool g_hard_abort = false;
 
@@ -73,7 +83,12 @@ const char* g_gc_fake_mmap = NULL;
 
 
 int OS::NumberOfProcessorsOnline() {
+#if V8_OS_ZOS
+  // TODO(mcornac):
+  return 0;
+#else
   return static_cast<int>(sysconf(_SC_NPROCESSORS_ONLN));
+#endif
 }
 
 
@@ -139,6 +154,9 @@ uint64_t OS::TotalPhysicalMemory() {
   }
   // convert Kb to bytes.
   return static_cast<uint64_t>(realMem) * 1024;
+#elif V8_OS_ZOS
+  // TODO(mcornac):
+  return 0;
 #else
   intptr_t pages = sysconf(_SC_PHYS_PAGES);
   intptr_t page_size = sysconf(_SC_PAGESIZE);
@@ -332,8 +350,12 @@ void OS::DebugBreak() {
 #elif V8_HOST_ARCH_MIPS64
   asm("break");
 #elif V8_HOST_ARCH_S390
+#if V8_OS_ZOS
+  // TODO(mcornac):
+#else
   // Software breakpoint instruction is 0x0001
   asm volatile(".word 0x0001");
+#endif
 #elif V8_HOST_ARCH_PPC
   asm("twge 2,2");
 #elif V8_HOST_ARCH_IA32
@@ -374,6 +396,9 @@ int OS::GetCurrentThreadId() {
   return static_cast<int>(syscall(__NR_gettid));
 #elif V8_OS_AIX
   return static_cast<int>(thread_self());
+#elif V8_OS_ZOS
+  // TODO(mcornac):
+  return 0;
 #else
   return static_cast<int>(syscall(SYS_gettid));
 #endif  // defined(ANDROID)
@@ -418,7 +443,7 @@ void OS::ClearTimezoneCache(TimezoneCache* cache) {
 
 
 double OS::DaylightSavingsOffset(double time, TimezoneCache*) {
-  if (std::isnan(time)) return nan_value();
+  if (isnan(time)) return nan_value();
   time_t tv = static_cast<time_t>(std::floor(time/msPerSecond));
   struct tm* t = localtime(&tv);
   if (NULL == t) return nan_value();
@@ -680,6 +705,9 @@ static Thread::LocalStorageKey PthreadKeyToLocalKey(pthread_key_t pthread_key) {
   STATIC_ASSERT(sizeof(Thread::LocalStorageKey) == sizeof(pthread_key_t));
   intptr_t ptr_key = reinterpret_cast<intptr_t>(pthread_key);
   return static_cast<Thread::LocalStorageKey>(ptr_key);
+#elif V8_OS_ZOS
+  // TODO(mcornac):
+  return static_cast<Thread::LocalStorageKey>(0);
 #else
   return static_cast<Thread::LocalStorageKey>(pthread_key);
 #endif
@@ -691,6 +719,9 @@ static pthread_key_t LocalKeyToPthreadKey(Thread::LocalStorageKey local_key) {
   STATIC_ASSERT(sizeof(Thread::LocalStorageKey) == sizeof(pthread_key_t));
   intptr_t ptr_key = static_cast<intptr_t>(local_key);
   return reinterpret_cast<pthread_key_t>(ptr_key);
+#elif V8_OS_ZOS
+  // TODO(mcornac):
+  return {0, 0, 0, 0, 0, 0, 0, 0};
 #else
   return static_cast<pthread_key_t>(local_key);
 #endif

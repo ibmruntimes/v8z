@@ -312,7 +312,7 @@ class OS {
  private:
   static const int msPerSecond = 1000;
 
-#if V8_OS_POSIX
+#if V8_OS_POSIX || V8_OS_ZOS
   static const char* GetGCFakeMMapFile();
 #endif
 

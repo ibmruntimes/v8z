@@ -256,7 +256,7 @@ void OS::SignalCodeMovingGC() {
   // by the kernel and allows us to synchronize V8 code log and the
   // kernel log.
   int size = sysconf(_SC_PAGESIZE);
-  FILE* f = NULL; 
+  FILE* f = NULL;
   if (f == NULL) {
     OS::PrintError("Failed to open %s\n", "");
     OS::Abort();
