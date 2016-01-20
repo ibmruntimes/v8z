@@ -659,7 +659,6 @@ void MacroAssembler::ConvertIntToFloat(const DoubleRegister dst,
 
 
 #if V8_TARGET_ARCH_S390X
-// note (bcleung): see Zpoop, pg 19-18 for possible functions to implement these.
 void MacroAssembler::ConvertInt64ToDouble(Register src,
                                           DoubleRegister double_dst) {
   cdgbr(double_dst, src);
