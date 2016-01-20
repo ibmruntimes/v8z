@@ -13,10 +13,12 @@
 #if V8_OS_MACOSX
 #include <mach/semaphore.h>  // NOLINT
 #elif V8_OS_POSIX
-#include <semaphore.h>  // NOLINT
-#elif V8_OS_ZOS
+#if V8_OS_ZOS
 #include "src/s390/semaphore-zos.h"
-#endif
+#else
+#include <semaphore.h>  // NOLINT
+#endif  // V8_OS_ZOS
+#endif  // V8_OS_POSIX
 
 namespace v8 {
 namespace base {
