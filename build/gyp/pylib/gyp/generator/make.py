@@ -349,7 +349,7 @@ sed -e "s|^$(notdir $@)|$@|" $(depfile).raw >> $(depfile)
 # We remove slashes and replace spaces with new lines;
 # remove blank lines;
 # delete the first line and append a colon to the remaining lines.
-sed -e 's|\\||' -e 'y| |\n|' $(depfile).raw |\
+sed -e 's|\\||' -e 'y| |\|' $(depfile).raw |\
   grep -v '^$$'                             |\
   sed -e 1d -e 's|$$|:|'                     \
     >> $(depfile)
