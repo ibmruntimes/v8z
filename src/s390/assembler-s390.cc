@@ -38,7 +38,10 @@
 
 #if V8_TARGET_ARCH_S390
 
-#include <elf.h>
+#if V8_HOST_ARCH_S390
+#include <elf.h>  // Required for auxv checks for STFLE support
+#endif
+
 #include "src/base/bits.h"
 #include "src/base/cpu.h"
 #include "src/s390/assembler-s390-inl.h"
@@ -55,7 +58,6 @@ static unsigned CpuFeaturesImpliedByCompiler() {
 }
 
 
-// This function uses types in elf.h
 static bool supportsSTFLE() {
 #if V8_HOST_ARCH_S390
   static bool read_tried = false;
