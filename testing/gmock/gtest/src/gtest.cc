@@ -78,6 +78,7 @@
 
 // On z/OS we additionally need strings.h for strcasecmp.
 # include <strings.h>  // NOLINT
+# undef index
 
 #elif GTEST_OS_WINDOWS_MOBILE  // We are on Windows CE.
 

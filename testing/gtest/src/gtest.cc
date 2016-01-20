@@ -63,6 +63,7 @@
 # include <sched.h>  // NOLINT
 // Declares vsnprintf().  This header is not available on Windows.
 # include <strings.h>  // NOLINT
+# undef index
 # include <sys/mman.h>  // NOLINT
 # include <sys/time.h>  // NOLINT
 # include <unistd.h>  // NOLINT

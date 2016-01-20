@@ -19,6 +19,7 @@
 #include <fcntl.h>      // open
 #include <stdarg.h>
 #include <strings.h>    // index
+#undef index
 #include <sys/mman.h>   // mmap & munmap
 #include <sys/stat.h>   // open
 #include <sys/types.h>  // mmap & munmap
