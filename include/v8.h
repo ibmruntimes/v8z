@@ -830,7 +830,7 @@ class V8_EXPORT HandleScope {
   HandleScope(const HandleScope&);
   void operator=(const HandleScope&);
   void* operator new(size_t size);
-  void operator delete(void*, size_t);
+  void operator delete(void*, size_t) {}
 
   internal::Isolate* isolate_;
   internal::Object** prev_next_;
