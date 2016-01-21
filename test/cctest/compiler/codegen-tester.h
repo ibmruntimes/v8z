@@ -557,7 +557,7 @@ static inline void CheckDoubleEq(volatile double x, volatile double y) {
     } ux, uy;
     ux.d = x;
     uy.d = y;
-    int abs_diff = (ux.i > uy.i) ? (ux.i - uy.i) : (uy.i - ux.i);
+    int64_t abs_diff = (ux.i > uy.i) ? (ux.i - uy.i) : (uy.i - ux.i);
     CHECK_LE(abs_diff, 2);
   }
 }
