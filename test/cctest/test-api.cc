@@ -4822,7 +4822,7 @@ THREADED_TEST(ConversionException) {
   CheckUncle(&try_catch);
 
   double number_value = obj->NumberValue();
-  CHECK_NE(0, std::isnan(number_value));
+  CHECK_NE(0, isnan(number_value));
   CheckUncle(&try_catch);
 
   int64_t integer_value = obj->IntegerValue();
@@ -18104,7 +18104,7 @@ static uint64_t DoubleToBits(double value) {
 
 static double DoubleToDateTime(double input) {
   double date_limit = 864e13;
-  if (std::isnan(input) || input < -date_limit || input > date_limit) {
+  if (isnan(input) || input < -date_limit || input > date_limit) {
     return v8::base::OS::nan_value();
   }
   return (input < 0) ? -(std::floor(-input)) : std::floor(input);
@@ -18167,7 +18167,7 @@ THREADED_TEST(QuietSignalingNaNs) {
     // Check that Number::New preserves non-NaNs and quiets SNaNs.
     v8::Handle<v8::Value> number = v8::Number::New(isolate, test_value);
     double stored_number = number->NumberValue();
-    if (!std::isnan(test_value)) {
+    if (!isnan(test_value)) {
       CHECK_EQ(test_value, stored_number);
     } else {
       uint64_t stored_bits = DoubleToBits(stored_number);
@@ -18188,7 +18188,7 @@ THREADED_TEST(QuietSignalingNaNs) {
         v8::Date::New(isolate, test_value);
     double expected_stored_date = DoubleToDateTime(test_value);
     double stored_date = date->NumberValue();
-    if (!std::isnan(expected_stored_date)) {
+    if (!isnan(expected_stored_date)) {
       CHECK_EQ(expected_stored_date, stored_date);
     } else {
       uint64_t stored_bits = DoubleToBits(stored_date);

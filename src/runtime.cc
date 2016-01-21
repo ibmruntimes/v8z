@@ -4631,10 +4631,10 @@ RUNTIME_FUNCTION(Runtime_NumberToRadixString) {
 
   // Slow case.
   CONVERT_DOUBLE_ARG_CHECKED(value, 0);
-  if (std::isnan(value)) {
+  if (isnan(value)) {
     return isolate->heap()->nan_string();
   }
-  if (std::isinf(value)) {
+  if (isinf(value)) {
     if (value < 0) {
       return isolate->heap()->minus_infinity_string();
     }
@@ -7466,8 +7466,8 @@ RUNTIME_FUNCTION(Runtime_NumberEquals) {
 
   CONVERT_DOUBLE_ARG_CHECKED(x, 0);
   CONVERT_DOUBLE_ARG_CHECKED(y, 1);
-  if (std::isnan(x)) return Smi::FromInt(NOT_EQUAL);
-  if (std::isnan(y)) return Smi::FromInt(NOT_EQUAL);
+  if (isnan(x)) return Smi::FromInt(NOT_EQUAL);
+  if (isnan(y)) return Smi::FromInt(NOT_EQUAL);
   if (x == y) return Smi::FromInt(EQUAL);
   Object* result;
   if ((fpclassify(x) == FP_ZERO) && (fpclassify(y) == FP_ZERO)) {
@@ -7504,7 +7504,7 @@ RUNTIME_FUNCTION(Runtime_NumberCompare) {
   CONVERT_DOUBLE_ARG_CHECKED(x, 0);
   CONVERT_DOUBLE_ARG_CHECKED(y, 1);
   CONVERT_ARG_HANDLE_CHECKED(Object, uncomparable_result, 2)
-  if (std::isnan(x) || std::isnan(y)) return *uncomparable_result;
+  if (isnan(x) || isnan(y)) return *uncomparable_result;
   if (x == y) return Smi::FromInt(EQUAL);
   if (isless(x, y)) return Smi::FromInt(LESS);
   return Smi::FromInt(GREATER);
@@ -7728,7 +7728,7 @@ RUNTIME_FUNCTION(Runtime_MathAtan2) {
   CONVERT_DOUBLE_ARG_CHECKED(x, 0);
   CONVERT_DOUBLE_ARG_CHECKED(y, 1);
   double result;
-  if (std::isinf(x) && std::isinf(y)) {
+  if (isinf(x) && isinf(y)) {
     // Make sure that the result in case of two infinite arguments
     // is a multiple of Pi / 4. The sign of the result is determined
     // by the first argument (x) and the sign of the second argument
@@ -7782,7 +7782,7 @@ RUNTIME_FUNCTION(Runtime_MathPowSlow) {
 
   CONVERT_DOUBLE_ARG_CHECKED(y, 1);
   double result = power_helper(x, y);
-  if (std::isnan(result)) return isolate->heap()->nan_value();
+  if (isnan(result)) return isolate->heap()->nan_value();
   return *isolate->factory()->NewNumber(result);
 }
 
@@ -7800,7 +7800,7 @@ RUNTIME_FUNCTION(Runtime_MathPowRT) {
     return Smi::FromInt(1);
   } else {
     double result = power_double_double(x, y);
-    if (std::isnan(result)) return isolate->heap()->nan_value();
+    if (isnan(result)) return isolate->heap()->nan_value();
     return *isolate->factory()->NewNumber(result);
   }
 }
@@ -7894,7 +7894,7 @@ RUNTIME_FUNCTION(Runtime_DateSetValue) {
 
   Handle<Object> value;;
   bool is_value_nan = false;
-  if (std::isnan(time)) {
+  if (isnan(time)) {
     value = isolate->factory()->nan_value();
     is_value_nan = true;
   } else if (!is_utc &&
@@ -15311,7 +15311,7 @@ RUNTIME_FUNCTION(RuntimeReference_StringCharAt) {
   DCHECK(args.length() == 2);
   if (!args[0]->IsString()) return Smi::FromInt(0);
   if (!args[1]->IsNumber()) return Smi::FromInt(0);
-  if (std::isinf(args.number_at(1))) return isolate->heap()->empty_string();
+  if (isinf(args.number_at(1))) return isolate->heap()->empty_string();
   Object* code = __RT_impl_Runtime_StringCharCodeAtRT(args, isolate);
   if (code->IsNaN()) return isolate->heap()->empty_string();
   return __RT_impl_Runtime_CharFromCode(Arguments(1, &code), isolate);
@@ -15439,7 +15439,7 @@ RUNTIME_FUNCTION(RuntimeReference_StringCharCodeAt) {
   DCHECK(args.length() == 2);
   if (!args[0]->IsString()) return isolate->heap()->undefined_value();
   if (!args[1]->IsNumber()) return isolate->heap()->undefined_value();
-  if (std::isinf(args.number_at(1))) return isolate->heap()->nan_value();
+  if (isinf(args.number_at(1))) return isolate->heap()->nan_value();
   return __RT_impl_Runtime_StringCharCodeAtRT(args, isolate);
 }
 

@@ -1090,7 +1090,7 @@ bool Object::IsNaN() const {
 #if V8_OS_ZOS
   return this->IsHeapNumber() && isnan(HeapNumber::cast(this)->value());
 #else
-  return this->IsHeapNumber() && std::isnan(HeapNumber::cast(this)->value());
+  return this->IsHeapNumber() && isnan(HeapNumber::cast(this)->value());
 #endif
 }
 
@@ -2270,7 +2270,7 @@ void FixedDoubleArray::set(int index, double value) {
 #if V8_OS_ZOS
   if (isnan(value)) value = canonical_not_the_hole_nan_as_double();
 #else
-  if (std::isnan(value)) value = canonical_not_the_hole_nan_as_double();
+  if (isnan(value)) value = canonical_not_the_hole_nan_as_double();
 #endif
   WRITE_DOUBLE_FIELD(this, offset, value);
 }

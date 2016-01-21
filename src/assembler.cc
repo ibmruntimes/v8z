@@ -102,6 +102,7 @@
 #endif  // Target architecture.
 #endif  // V8_INTERPRETED_REGEXP
 
+
 namespace v8 {
 namespace internal {
 
@@ -1431,11 +1432,11 @@ double power_helper(double x, double y) {
     return power_double_int(x, y_int);  // Returns 1 if exponent is 0.
   }
   if (y == 0.5) {
-    return (std::isinf(x)) ? V8_INFINITY
+    return (isinf(x)) ? V8_INFINITY
                            : fast_sqrt(x + 0.0);  // Convert -0 to +0.
   }
   if (y == -0.5) {
-    return (std::isinf(x)) ? 0 : 1.0 / fast_sqrt(x + 0.0);  // Convert -0 to +0.
+    return (isinf(x)) ? 0 : 1.0 / fast_sqrt(x + 0.0);  // Convert -0 to +0.
   }
   return power_double_double(x, y);
 }
@@ -1465,7 +1466,7 @@ double power_double_double(double x, double y) {
     (!defined(__MINGW64_VERSION_RC) || __MINGW64_VERSION_RC < 1)
   // MinGW64 has a custom implementation for pow.  This handles certain
   // special cases that are different.
-  if ((x == 0.0 || std::isinf(x)) && std::isfinite(y)) {
+  if ((x == 0.0 || isinf(x)) && isfinite(y)) {
     double f;
     if (std::modf(y, &f) != 0.0) {
       return ((x == 0.0) ^ (y > 0)) ? V8_INFINITY : 0;
@@ -1481,7 +1482,7 @@ double power_double_double(double x, double y) {
 #elif V8_OS_AIX
   // AIX has a custom implementation for pow.  This handles certain
   // special cases that are different.
-  if ((x == 0.0 || std::isinf(x)) && y != 0.0 && std::isfinite(y)) {
+  if ((x == 0.0 || isinf(x)) && y != 0.0 && isfinite(y)) {
     double f;
     double result = ((x == 0.0) ^ (y > 0)) ? V8_INFINITY : 0;
     /* retain sign if odd integer exponent */
@@ -1497,7 +1498,7 @@ double power_double_double(double x, double y) {
 
   // The checks for special cases can be dropped in ia32 because it has already
   // been done in generated code before bailing out here.
-  if (std::isnan(y) || ((x == 1 || x == -1) && std::isinf(y))) {
+  if (isnan(y) || ((x == 1 || x == -1) && isinf(y))) {
     return base::OS::nan_value();
   }
   return std::pow(x, y);

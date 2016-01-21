@@ -2970,7 +2970,7 @@ bool Value::StrictEquals(Handle<Value> that) const {
     double x = obj->Number();
     double y = other->Number();
     // Must check explicitly for NaN:s on Windows, but -0 works fine.
-    return x == y && !std::isnan(x) && !std::isnan(y);
+    return x == y && !isnan(x) && !isnan(y);
   } else if (*obj == *other) {  // Also covers Booleans.
     return true;
   } else if (obj->IsSmi()) {
@@ -5659,7 +5659,7 @@ Local<v8::Value> v8::Date::New(Isolate* isolate, double time) {
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   EnsureInitializedForIsolate(i_isolate, "v8::Date::New()");
   LOG_API(i_isolate, "Date::New");
-  if (std::isnan(time)) {
+  if (isnan(time)) {
     // Introduce only canonical NaN value into the VM, to avoid signaling NaNs.
     time = base::OS::nan_value();
   }
@@ -6219,7 +6219,7 @@ Local<Private> v8::Private::ForApi(Isolate* isolate, Local<String> name) {
 Local<Number> v8::Number::New(Isolate* isolate, double value) {
   i::Isolate* internal_isolate = reinterpret_cast<i::Isolate*>(isolate);
   DCHECK(internal_isolate->IsInitialized());
-  if (std::isnan(value)) {
+  if (isnan(value)) {
     // Introduce only canonical NaN value into the VM, to avoid signaling NaNs.
     value = base::OS::nan_value();
   }

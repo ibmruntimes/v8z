@@ -46,25 +46,11 @@
 #include "src/types-inl.h"  // NOLINT
 #include "src/zone-inl.h"  // NOLINT
 
-#if V8_OS_ZOS
-#include "math.h"
-  namespace std {
-#undef isnan
-    bool isnan(double x) {
-      return __fp_isnan(x);
-    }
-#undef isinf
-    bool isinf(double x) {
-      return true;
-      // TODO(mcornac): Copy the implementation for this from xlc math.h.
-      // return isinfinite(x);
-    }
-#undef isfinite
-    bool isfinite(double x) {
-      // TODO(mcornac):
-      return false;
-    }
-  }
+#ifndef V8_OS_ZOS
+// xlC does not import isnan, isinf or isfinite into the std namespace.
+using std::isnan;
+using std::isinf;
+using std::isfinite;
 #endif
 
 namespace v8 {

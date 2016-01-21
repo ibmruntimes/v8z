@@ -12,12 +12,6 @@
 #define snprintf sprintf_s
 #endif
 
-#ifndef V8_OS_ZOS
-// xlC does not import isnan or isinf into the std namespace.
-using std::isnan;
-using std::isinf;
-#endif
-
 namespace v8 {
 namespace internal {
 

@@ -923,7 +923,7 @@ bool Object::SameValue(Object* other) {
     double other_value = other->Number();
     bool equal = this_value == other_value;
     // SameValue(NaN, NaN) is true.
-    if (!equal) return std::isnan(this_value) && std::isnan(other_value);
+    if (!equal) return isnan(this_value) && isnan(other_value);
     // SameValue(0.0, -0.0) is false.
     return (this_value != 0) || ((1 / this_value) == (1 / other_value));
   }
@@ -944,7 +944,7 @@ bool Object::SameValueZero(Object* other) {
     double other_value = other->Number();
     // +0 == -0 is true
     return this_value == other_value
-        || (std::isnan(this_value) && std::isnan(other_value));
+        || (isnan(this_value) && isnan(other_value));
   }
   if (IsString() && other->IsString()) {
     return String::cast(this)->Equals(String::cast(other));
@@ -16719,7 +16719,7 @@ Object* JSDate::DoGetField(FieldIndex index) {
   }
 
   double time = value()->Number();
-  if (std::isnan(time)) return GetIsolate()->heap()->nan_value();
+  if (isnan(time)) return GetIsolate()->heap()->nan_value();
 
   int64_t local_time_ms = date_cache->ToLocal(static_cast<int64_t>(time));
   int days = DateCache::DaysFromTime(local_time_ms);
@@ -16738,7 +16738,7 @@ Object* JSDate::GetUTCField(FieldIndex index,
                             DateCache* date_cache) {
   DCHECK(index >= kFirstUTCField);
 
-  if (std::isnan(value)) return GetIsolate()->heap()->nan_value();
+  if (isnan(value)) return GetIsolate()->heap()->nan_value();
 
   int64_t time_ms = static_cast<int64_t>(value);
 

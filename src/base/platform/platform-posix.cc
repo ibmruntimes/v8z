@@ -58,10 +58,6 @@
 #include "src/base/atomicops.h"
 #endif
 
-#ifndef V8_OS_ZOS
-using std::isnan;
-#endif
-
 namespace v8 {
 namespace base {
 
