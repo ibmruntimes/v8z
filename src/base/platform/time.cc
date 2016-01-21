@@ -555,6 +555,9 @@ TimeTicks TimeTicks::HighResolutionNow() {
   DCHECK_EQ(0, result);
   USE(result);
   ticks = (tv.tv_sec * Time::kMicrosecondsPerSecond + tv.tv_usec);
+#elif V8_OS_ZOS
+  // TODO(mcornac):
+  ticks = 0;
 #elif V8_OS_POSIX
   struct timespec ts;
   int result = clock_gettime(CLOCK_MONOTONIC, &ts);
