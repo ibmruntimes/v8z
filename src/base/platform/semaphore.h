@@ -18,7 +18,7 @@
 #else
 #include <semaphore.h>  // NOLINT
 #endif  // V8_OS_ZOS
-#endif  // V8_OS_POSIX
+#endif  // V8_OS_MACOSX
 
 namespace v8 {
 namespace base {
