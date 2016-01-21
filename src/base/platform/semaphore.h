@@ -55,8 +55,12 @@ class Semaphore V8_FINAL {
 
 #if V8_OS_MACOSX
   typedef semaphore_t NativeHandle;
-#elif V8_OS_POSIX || V8_OS_ZOS
+#elif V8_OS_POSIX 
+  #ifdef V8_OS_ZOS
+  typedef int NativeHandle;
+  #else
   typedef sem_t NativeHandle;
+  #endif
 #elif V8_OS_WIN
   typedef HANDLE NativeHandle;
 #endif
