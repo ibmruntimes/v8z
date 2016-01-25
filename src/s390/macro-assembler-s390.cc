@@ -3410,6 +3410,7 @@ void MacroAssembler::HasColor(Register object, Register bitmap_scratch,
   // Shift left 1
   // May need to load the next cell
   sll(mask_scratch, Operand(1)/*, SetRC*/);
+  LoadAndTest32(mask_scratch, mask_scratch);
   beq(&word_boundary, Label::kNear);
   // Test the second bit
   AndP(r0, ip, mask_scratch/*, SetRC*/);  // Should be okay to remove rc
