@@ -3001,6 +3001,14 @@ void Assembler::lzdr(DoubleRegister r1) {
 }
 
 
+// Add Register-Register (LB)
+void Assembler::aebr(DoubleRegister r1, DoubleRegister r2) {
+  rre_form(AEBR,
+           Register::from_code(r1.code()),
+           Register::from_code(r2.code()));
+}
+
+
 // Add Register-Storage (LB)
 void Assembler::adb(DoubleRegister r1, const MemOperand& opnd) {
   rxe_form(ADB,
@@ -3012,6 +3020,14 @@ void Assembler::adb(DoubleRegister r1, const MemOperand& opnd) {
 // Add Register-Register (LB)
 void Assembler::adbr(DoubleRegister r1, DoubleRegister r2) {
   rre_form(ADBR,
+           Register::from_code(r1.code()),
+           Register::from_code(r2.code()));
+}
+
+
+// Compare Register-Register (LB)
+void Assembler::cebr(DoubleRegister r1, DoubleRegister r2) {
+  rre_form(CEBR,
            Register::from_code(r1.code()),
            Register::from_code(r2.code()));
 }
@@ -3032,6 +3048,14 @@ void Assembler::cdbr(DoubleRegister r1, DoubleRegister r2) {
 }
 
 
+// Divide Register-Register (LB)
+void Assembler::debr(DoubleRegister r1, DoubleRegister r2) {
+  rre_form(DEBR,
+           Register::from_code(r1.code()),
+           Register::from_code(r2.code()));
+}
+
+
 // Divide Register-Storage (LB)
 void Assembler::ddb(DoubleRegister r1, const MemOperand& opnd) {
   rxe_form(DDB, Register::from_code(r1.code()),
@@ -3047,6 +3071,14 @@ void Assembler::ddbr(DoubleRegister r1, DoubleRegister r2) {
 }
 
 
+// Multiply Register-Register (LB)
+void Assembler::meebr(DoubleRegister r1, DoubleRegister r2) {
+  rre_form(MEEBR,
+           Register::from_code(r1.code()),
+           Register::from_code(r2.code()));
+}
+
+
 // Multiply Register-Storage (LB)
 void Assembler::mdb(DoubleRegister r1, const MemOperand& opnd) {
   rxe_form(MDB, Register::from_code(r1.code()),
@@ -3057,6 +3089,14 @@ void Assembler::mdb(DoubleRegister r1, const MemOperand& opnd) {
 // Multiply Register-Register (LB)
 void Assembler::mdbr(DoubleRegister r1, DoubleRegister r2) {
   rre_form(MDBR,
+           Register::from_code(r1.code()),
+           Register::from_code(r2.code()));
+}
+
+
+// Subtract Register-Register (LB)
+void Assembler::sebr(DoubleRegister r1, DoubleRegister r2) {
+  rre_form(SEBR,
            Register::from_code(r1.code()),
            Register::from_code(r2.code()));
 }
@@ -3081,6 +3121,14 @@ void Assembler::sdbr(DoubleRegister r1, DoubleRegister r2) {
 void Assembler::sqdb(DoubleRegister r1, const MemOperand& opnd) {
   rxe_form(SQDB, Register::from_code(r1.code()),
            opnd.rx(), opnd.rb(), opnd.offset());
+}
+
+
+// Square Root Register-Register (LB)
+void Assembler::sqebr(DoubleRegister r1, DoubleRegister r2) {
+  rre_form(SQEBR,
+           Register::from_code(r1.code()),
+           Register::from_code(r2.code()));
 }
 
 
@@ -3111,6 +3159,14 @@ void Assembler::ldebr(DoubleRegister r1, DoubleRegister r2) {
 // Load Complement Register-Register (LB)
 void Assembler::lcdbr(DoubleRegister r1, DoubleRegister r2) {
   rre_form(LCDBR,
+           Register::from_code(r1.code()),
+           Register::from_code(r2.code()));
+}
+
+
+// Load Positive Register-Register (LB)
+void Assembler::lpebr(DoubleRegister r1, DoubleRegister r2) {
+  rre_form(LPEBR,
            Register::from_code(r1.code()),
            Register::from_code(r2.code()));
 }
@@ -3182,6 +3238,12 @@ void Assembler::ldr(DoubleRegister r1, DoubleRegister r2) {
 }
 
 
+// Convert to Fixed point (64<-S)
+void Assembler::cgebr(Condition m, Register r1, DoubleRegister r2) {
+  rrfe_form(CGEBR, m, Condition(0), r1, Register::from_code(r2.code()));
+}
+
+
 // Convert to Fixed point (64<-L)
 void Assembler::cgdbr(Condition m, Register r1, DoubleRegister r2) {
   rrfe_form(CGDBR, m, Condition(0), r1, Register::from_code(r2.code()));
@@ -3230,14 +3292,6 @@ void Assembler::clfdbr(Condition m3, Condition m4,
 
 
 // Convert from Fixed Logical (L<-64)
-void Assembler::celgbr(Condition m3, Condition m4,
-                       DoubleRegister r1, Register r2) {
-  rrfe_form(CELGBR, Condition(0), Condition(0),
-            Register::from_code(r1.code()), r2);
-}
-
-
-// Convert from Fixed Logical (L<-64)
 void Assembler::cdlgbr(Condition m3, Condition m4,
                        DoubleRegister r1, Register r2) {
   rrfe_form(CDLGBR, Condition(0), Condition(0),
@@ -3259,6 +3313,14 @@ void Assembler::cefbr(DoubleRegister r1, Register r2) {
 }
 
 
+// Convert from Fixed Logical (S<-64)
+void Assembler::celgbr(Condition m3, Condition m4,
+                       DoubleRegister r1, Register r2) {
+  rrfe_form(CELGBR, Condition(0), Condition(0),
+            Register::from_code(r1.code()), r2);
+}
+
+
 // Convert to Fixed point (32<-S)
 void Assembler::cfebr(Register r1, DoubleRegister r2) {
   rre_form(CFDBR, r1, Register::from_code(r2.code()));
@@ -3269,6 +3331,15 @@ void Assembler::cfebr(Register r1, DoubleRegister r2) {
 void Assembler::ldeb(DoubleRegister d1, const MemOperand& opnd) {
   rxe_form(LDEB, Register::from_code(d1.code()), opnd.rx(), opnd.rb(),
            opnd.offset());
+}
+
+
+// Load FP Integer
+void Assembler::fiebra(DoubleRegister d1, DoubleRegister d2, FIDBRA_MASK3 m3) {
+  rrf2_form(FIEBRA << 16 |
+      m3 * B12 |
+      d1.code() * B4 |
+      d2.code());
 }
 
 

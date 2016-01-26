@@ -32,19 +32,23 @@ namespace compiler {
   V(S390_RotLeftAndClearRight64)    \
   V(S390_Add)                       \
   V(S390_AddWithOverflow32)         \
+  V(S390_AddFloat)                  \
   V(S390_AddDouble)                 \
   V(S390_Sub)                       \
   V(S390_SubWithOverflow32)         \
+  V(S390_SubFloat)                  \
   V(S390_SubDouble)                 \
   V(S390_Mul32)                     \
   V(S390_Mul64)                     \
   V(S390_MulHigh32)                 \
   V(S390_MulHighU32)                \
+  V(S390_MulFloat)                  \
   V(S390_MulDouble)                 \
   V(S390_Div32)                     \
   V(S390_Div64)                     \
   V(S390_DivU32)                    \
   V(S390_DivU64)                    \
+  V(S390_DivFloat)                  \
   V(S390_DivDouble)                 \
   V(S390_Mod32)                     \
   V(S390_Mod64)                     \
@@ -53,6 +57,11 @@ namespace compiler {
   V(S390_ModDouble)                 \
   V(S390_Neg)                       \
   V(S390_NegDouble)                 \
+  V(S390_SqrtFloat)                 \
+  V(S390_FloorFloat)                \
+  V(S390_CeilFloat)                 \
+  V(S390_TruncateFloat)             \
+  V(S390_AbsFloat)                  \
   V(S390_SqrtDouble)                \
   V(S390_FloorDouble)               \
   V(S390_CeilDouble)                \
@@ -67,6 +76,7 @@ namespace compiler {
   V(S390_Popcnt64)                  \
   V(S390_Cmp32)                     \
   V(S390_Cmp64)                     \
+  V(S390_CmpFloat)                  \
   V(S390_CmpDouble)                 \
   V(S390_Tst32)                     \
   V(S390_Tst64)                     \
@@ -85,6 +95,9 @@ namespace compiler {
   V(S390_Int32ToFloat32)            \
   V(S390_Int32ToDouble)             \
   V(S390_Uint32ToDouble)            \
+  V(S390_Float32ToInt64)            \
+  V(S390_Float32ToInt32)             \
+  V(S390_Float32ToUint32)            \
   V(S390_Float32ToDouble)           \
   V(S390_DoubleToInt32)             \
   V(S390_DoubleToUint32)            \

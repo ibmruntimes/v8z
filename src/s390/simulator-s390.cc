@@ -3014,6 +3014,7 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
     case CDBR:
     case CDFBR:
     case CDGBR:
+    case CEGBR:
     case CFDBR:
     case CGDBR:
     case SQDBR:

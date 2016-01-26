@@ -729,6 +729,7 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case CDFBR: Format(instr, "cdfbr\t'f5,'m2,'r6"); break;
       case CFEBR: Format(instr, "cfebr\t'r5,'m2,'f6"); break;
       case CEFBR: Format(instr, "cefbr\t'f5,'m2,'r6"); break;
+      case CGEBR: Format(instr, "cgebr\t'r5,'m2,'f6"); break;
       case CGDBR: Format(instr, "cgdbr\t'r5,'m2,'f6"); break;
       case CEGBR: Format(instr, "cegbr\t'f5,'m2,'r6"); break;
       case CDGBR: Format(instr, "cdgbr\t'f5,'m2,'r6"); break;
@@ -737,6 +738,10 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case CELGBR: Format(instr, "celgbr\t'f5,'m2,'r6"); break;
       case CLFDBR: Format(instr, "clfdbr\t'r5,'m2,'f6"); break;
       case CLGDBR: Format(instr, "clgdbr\t'r5,'m2,'f6"); break;
+      case AEBR: Format(instr, "aebr\t'f5,'f6"); break;
+      case SEBR: Format(instr, "sebr\t'f5,'f6"); break;
+      case MEEBR: Format(instr, "meebr\t'f5,'f6"); break;
+      case DEBR: Format(instr, "debr\t'f5,'f6"); break;
       case ADBR: Format(instr, "adbr\t'f5,'f6"); break;
       case SDBR: Format(instr, "sdbr\t'f5,'f6"); break;
       case MDBR: Format(instr, "mdbr\t'f5,'f6"); break;

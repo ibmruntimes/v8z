@@ -970,7 +970,7 @@ void InstructionSelector::VisitChangeFloat64ToUint32(Node* node) {
 
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitTryTruncateFloat32ToInt64(Node* node) {
-  VisitTryTruncateDouble(this, kS390_DoubleToInt64, node);
+  VisitTryTruncateDouble(this, kS390_Float32ToInt64, node);
 }
 
 
@@ -1019,7 +1019,7 @@ void InstructionSelector::VisitTruncateFloat64ToInt32(Node* node) {
 
 
 void InstructionSelector::VisitTruncateFloat32ToInt32(Node* node) {
-  return VisitRR(this, kS390_DoubleToInt32, node);
+  return VisitRR(this, kS390_Float32ToInt32, node);
 }
 
 
@@ -1076,7 +1076,7 @@ void InstructionSelector::VisitBitcastInt64ToFloat64(Node* node) {
 
 
 void InstructionSelector::VisitFloat32Add(Node* node) {
-  VisitRRR(this, kS390_AddDouble, node);
+  VisitRRR(this, kS390_AddFloat, node);
 }
 
 
@@ -1094,7 +1094,7 @@ void InstructionSelector::VisitFloat32Sub(Node* node) {
          g.UseRegister(m.right().node()));
     return;
   }
-  VisitRRR(this, kS390_SubDouble, node);
+  VisitRRR(this, kS390_SubFloat, node);
 }
 
 
@@ -1125,7 +1125,7 @@ void InstructionSelector::VisitFloat64Sub(Node* node) {
 
 
 void InstructionSelector::VisitFloat32Mul(Node* node) {
-  VisitRRR(this, kS390_MulDouble, node);
+  VisitRRR(this, kS390_MulFloat, node);
 }
 
 
@@ -1136,7 +1136,7 @@ void InstructionSelector::VisitFloat64Mul(Node* node) {
 
 
 void InstructionSelector::VisitFloat32Div(Node* node) {
-  VisitRRR(this, kS390_DivDouble, node);
+  VisitRRR(this, kS390_DivFloat, node);
 }
 
 
@@ -1166,7 +1166,7 @@ void InstructionSelector::VisitFloat64Min(Node* node) { UNREACHABLE(); }
 
 
 void InstructionSelector::VisitFloat32Abs(Node* node) {
-  VisitRR(this, kS390_AbsDouble, node);
+  VisitRR(this, kS390_AbsFloat, node);
 }
 
 
@@ -1176,7 +1176,7 @@ void InstructionSelector::VisitFloat64Abs(Node* node) {
 
 
 void InstructionSelector::VisitFloat32Sqrt(Node* node) {
-  VisitRR(this, kS390_SqrtDouble, node);
+  VisitRR(this, kS390_SqrtFloat, node);
 }
 
 
@@ -1186,7 +1186,7 @@ void InstructionSelector::VisitFloat64Sqrt(Node* node) {
 
 
 void InstructionSelector::VisitFloat32RoundDown(Node* node) {
-  VisitRR(this, kS390_FloorDouble, node);
+  VisitRR(this, kS390_FloorFloat, node);
 }
 
 
@@ -1196,7 +1196,7 @@ void InstructionSelector::VisitFloat64RoundDown(Node* node) {
 
 
 void InstructionSelector::VisitFloat32RoundUp(Node* node) {
-  VisitRR(this, kS390_CeilDouble, node);
+  VisitRR(this, kS390_CeilFloat, node);
 }
 
 
@@ -1206,7 +1206,7 @@ void InstructionSelector::VisitFloat64RoundUp(Node* node) {
 
 
 void InstructionSelector::VisitFloat32RoundTruncate(Node* node) {
-  VisitRR(this, kS390_TruncateDouble, node);
+  VisitRR(this, kS390_TruncateFloat, node);
 }
 
 
@@ -1356,7 +1356,7 @@ void VisitFloat32Compare(InstructionSelector* selector, Node* node,
   S390OperandGenerator g(selector);
   Node* left = node->InputAt(0);
   Node* right = node->InputAt(1);
-  VisitCompare(selector, kS390_CmpDouble, g.UseRegister(left),
+  VisitCompare(selector, kS390_CmpFloat, g.UseRegister(left),
                g.UseRegister(right), cont);
 }
 

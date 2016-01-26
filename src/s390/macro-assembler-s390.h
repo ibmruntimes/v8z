@@ -662,6 +662,15 @@ class MacroAssembler : public Assembler {
   void MovInt64ToDouble(DoubleRegister dst, Register src);
   // Converts the double_input to an integer.  Note that, upon return,
   // the contents of double_dst will also hold the fixed point representation.
+  void ConvertFloat32ToInt64(const DoubleRegister double_input,
+#if !V8_TARGET_ARCH_S390X
+                            const Register dst_hi,
+#endif
+                            const Register dst, const DoubleRegister double_dst,
+                            FPRoundingMode rounding_mode = kRoundToZero);
+
+  // Converts the double_input to an integer.  Note that, upon return,
+  // the contents of double_dst will also hold the fixed point representation.
   void ConvertDoubleToInt64(const DoubleRegister double_input,
 #if !V8_TARGET_ARCH_S390X
                             const Register dst_hi,
@@ -746,6 +755,9 @@ class MacroAssembler : public Assembler {
   void LoadDoubleLiteral(DoubleRegister result, double value, Register scratch);
   void LoadDoubleLiteral(DoubleRegister result,
       uint64_t value, Register scratch);
+
+  void LoadFloat32Literal(DoubleRegister result, float value,
+      Register scratch);
 
   void StoreW(Register src, const MemOperand& mem,
                  Register scratch = no_reg);
@@ -1124,6 +1136,14 @@ class MacroAssembler : public Assembler {
   void TryInt32Floor(Register result, DoubleRegister double_input,
                      Register input_high, Register scratch,
                      DoubleRegister double_scratch, Label* done, Label* exact);
+
+  // Perform ceiling of float in input_register and store in double_output.
+  void FloatCeiling32(DoubleRegister double_output, DoubleRegister double_input,
+                      Register scratch);
+
+  // Perform floor of float in input_register and store in double_output.
+  void FloatFloor32(DoubleRegister double_output, DoubleRegister double_input,
+                    Register scratch);
 
   // Perform ceiling of double in input_register and store in double_output.
   void FloatCeiling64(DoubleRegister double_output, DoubleRegister double_input,

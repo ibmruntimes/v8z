@@ -34,19 +34,23 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kS390_RotLeftAndClearRight64:
     case kS390_Add:
     case kS390_AddWithOverflow32:
+    case kS390_AddFloat:
     case kS390_AddDouble:
     case kS390_Sub:
     case kS390_SubWithOverflow32:
+    case kS390_SubFloat:
     case kS390_SubDouble:
     case kS390_Mul32:
     case kS390_Mul64:
     case kS390_MulHigh32:
     case kS390_MulHighU32:
+    case kS390_MulFloat:
     case kS390_MulDouble:
     case kS390_Div32:
     case kS390_Div64:
     case kS390_DivU32:
     case kS390_DivU64:
+    case kS390_DivFloat:
     case kS390_DivDouble:
     case kS390_Mod32:
     case kS390_Mod64:
@@ -55,6 +59,11 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kS390_ModDouble:
     case kS390_Neg:
     case kS390_NegDouble:
+    case kS390_SqrtFloat:
+    case kS390_FloorFloat:
+    case kS390_CeilFloat:
+    case kS390_TruncateFloat:
+    case kS390_AbsFloat:
     case kS390_SqrtDouble:
     case kS390_FloorDouble:
     case kS390_CeilDouble:
@@ -69,6 +78,7 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kS390_Popcnt64:
     case kS390_Cmp32:
     case kS390_Cmp64:
+    case kS390_CmpFloat:
     case kS390_CmpDouble:
     case kS390_Tst32:
     case kS390_Tst64:
@@ -84,9 +94,12 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kS390_Int32ToFloat32:
     case kS390_Int32ToDouble:
     case kS390_Uint32ToDouble:
+    case kS390_Float32ToInt32:
+    case kS390_Float32ToUint32:
     case kS390_Float32ToDouble:
     case kS390_DoubleToInt32:
     case kS390_DoubleToUint32:
+    case kS390_Float32ToInt64:
     case kS390_DoubleToInt64:
     case kS390_DoubleToUint64:
     case kS390_DoubleToFloat32:

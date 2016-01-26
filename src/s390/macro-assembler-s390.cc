@@ -655,7 +655,6 @@ void MacroAssembler::ConvertIntToFloat(const DoubleRegister dst,
                                        const Register src,
                                        const Register int_scratch) {
   cefbr(dst, src);
-  ldebr(dst, dst);
 }
 
 
@@ -670,7 +669,7 @@ void MacroAssembler::ConvertInt64ToDouble(Register src,
 void MacroAssembler::ConvertUnsignedInt64ToFloat(Register src,
                                                  DoubleRegister double_dst) {
   celgbr(Condition(0), Condition(0), double_dst, src);
-  ldebr(double_dst, double_dst);
+  // fcfidus(double_dst, double_dst);
 }
 
 
@@ -684,9 +683,42 @@ void MacroAssembler::ConvertUnsignedInt64ToDouble(Register src,
 void MacroAssembler::ConvertInt64ToFloat(Register src,
                                          DoubleRegister double_dst) {
   cegbr(double_dst, src);
-  ldebr(double_dst, double_dst);
+  // fcfids(double_dst, double_dst);
 }
 #endif
+
+
+void MacroAssembler::ConvertFloat32ToInt64(const DoubleRegister double_input,
+#if !V8_TARGET_ARCH_S390X
+					  const Register dst_hi,
+#endif
+					  const Register dst,
+					  const DoubleRegister double_dst,
+					  FPRoundingMode rounding_mode) {
+  Condition m = Condition(0);
+  switch (rounding_mode) {
+    case kRoundToZero:
+      m = Condition(5);
+      break;
+    case kRoundToNearest:
+      UNIMPLEMENTED();
+      break;
+    case kRoundToPlusInf:
+      m = Condition(6);
+      break;
+    case kRoundToMinusInf:
+      m = Condition(7);
+      break;
+    default:
+      UNIMPLEMENTED();
+      break;
+  }
+  cgebr(m, dst, double_input);
+  ldgr(double_dst, dst);
+#if !V8_TARGET_ARCH_S390X
+  srlg(dst_hi, dst, Operand(32));
+#endif
+}
 
 
 void MacroAssembler::ConvertDoubleToInt64(const DoubleRegister double_input,
@@ -2360,6 +2392,85 @@ void MacroAssembler::TryInt32Floor(Register result, DoubleRegister double_input,
   b(done);
 
   bind(&exception);
+}
+
+
+void MacroAssembler::FloatCeiling32(DoubleRegister double_output,
+     DoubleRegister double_input, Register scratch) {
+  Label not_zero, no_nan_inf, done, do_ceil;
+  Register scratch2 = r0;
+
+  // Move high word into scratch
+  StoreF(double_input, MemOperand(sp, -kDoubleSize));
+  LoadlW(scratch, MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
+
+  // Test for NaN/Inf which results in NaN/Inf respectively
+  static const uint32_t float32ExponentMask = 0x7f800000u;
+  ExtractBitMask(scratch2, scratch, float32ExponentMask);
+  CmpLogical32(scratch2, Operand(0xff));
+  bne(&no_nan_inf, Label::kNear);
+  Move(double_output, double_input);
+  b(&done);
+  bind(&no_nan_inf);
+
+  // Test for double_input in (-1, -0) which results in -0
+  LoadFloat32Literal(d0, -1.0, scratch2);
+  cebr(double_input, d0);
+  ble(&do_ceil, Label::kNear);
+  Cmp32(scratch, Operand::Zero());
+  bgt(&do_ceil, Label::kNear);
+  bne(&not_zero, Label::kNear);
+
+  // double_input = +/- 0 which results in +/- 0 respectively
+  Move(double_output, double_input);
+  b(&done);
+  bind(&not_zero);
+
+  // double_output = -0
+  llihf(scratch2, Operand(0x80000000));
+  ldgr(double_output, scratch2);
+  b(&done);
+  bind(&do_ceil);
+
+  // Regular case
+  // cgdbr(Condition(6), scratch, double_input);
+  // cdfbr(double_output, scratch);
+  fiebra(double_output, double_input, FIDBRA_ROUND_TOWARD_POS_INF);
+  bind(&done);
+}
+
+
+void MacroAssembler::FloatFloor32(DoubleRegister double_output,
+    DoubleRegister double_input, Register scratch) {
+  Label not_zero, no_nan_inf, done, do_floor;
+  Register scratch2 = r0;
+
+  // Move high word into scratch
+  StoreF(double_input, MemOperand(sp, -kDoubleSize));
+  LoadlW(scratch, MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
+
+  // Test for NaN/Inf which results in NaN/Inf respectively
+  static const uint32_t float32ExponentMask = 0x7f800000u;
+  ExtractBitMask(scratch2, scratch, float32ExponentMask);
+  CmpLogical32(scratch2, Operand(0xff));
+  bne(&no_nan_inf, Label::kNear);
+  Move(double_output, double_input);
+  b(&done);
+  bind(&no_nan_inf);
+
+  // Test for double_input=+/- 0 which results in +/- 0 respectively
+  LoadFloat32Literal(d0, 0.0, scratch2);
+  cebr(double_input, d0);
+  bne(&do_floor, Label::kNear);
+  Move(double_output, double_input);
+  b(&done);
+  bind(&do_floor);
+
+  // Regular case
+  // cgdbr(Condition(7), scratch, double_input);
+  // cdfbr(double_output, scratch);
+  fiebra(double_output, double_input, FIDBRA_ROUND_TOWARD_NEG_INF);
+  bind(&done);
 }
 
 
@@ -4177,12 +4288,10 @@ void MacroAssembler::SubP(Register dst, const MemOperand& opnd) {
 void MacroAssembler::MovIntToFloat(DoubleRegister dst, Register src) {
   sllg(src, src, Operand(32));
   ldgr(dst, src);
-  ldebr(dst, dst);
 }
 
 
 void MacroAssembler::MovFloatToInt(Register dst, DoubleRegister src) {
-  ledbr(src, src);
   lgdr(dst, src);
   srlg(dst, dst, Operand(32));
 }
@@ -4841,6 +4950,19 @@ void MacroAssembler::LoadDoubleLiteral(DoubleRegister result,
                                        Register scratch) {
   uint64_t int_val = bit_cast<uint64_t, double>(value);
   LoadDoubleLiteral(result, int_val, scratch);
+}
+
+
+void MacroAssembler::LoadFloat32Literal(DoubleRegister result,
+                                       float value,
+                                       Register scratch) {
+  uint32_t hi_32 = bit_cast<uint32_t>(value);
+  uint32_t lo_32 = 0;
+
+  // Load the 64-bit value into a GPR, then transfer it to FPR via LDGR
+  iihf(scratch, Operand(hi_32));
+  iilf(scratch, Operand(lo_32));
+  ldgr(result, scratch);
 }
 
 
