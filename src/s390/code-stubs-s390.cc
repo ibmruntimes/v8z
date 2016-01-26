@@ -1048,13 +1048,14 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // Need at least one extra slot for return address location.
   int arg_stack_space = 1;
 
-#if !ABI_RETURNS_OBJECTPAIR_IN_REGS
   // Pass buffer for return value on stack if necessary
-  if (result_size() > 1) {
-    DCHECK_EQ(2, result_size());
-    arg_stack_space += 2;
+  bool needs_return_buffer =
+      result_size() > 2 ||
+      (result_size() == 2 && !ABI_RETURNS_OBJECT_PAIRS_IN_REGS);
+  if (needs_return_buffer) {
+    arg_stack_space += result_size();
   }
-#endif
+
 #if V8_TARGET_ARCH_S390X
   // 64-bit linux pass Argument object by reference not value
   arg_stack_space += 2;
@@ -1072,8 +1073,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // Result returned in registers or stack, depending on result size and ABI.
 
   Register isolate_reg = r4;
-#if !ABI_RETURNS_OBJECTPAIR_IN_REGS
-  if (result_size() > 1) {
+  if (needs_return_buffer) {
     // The return value is 16-byte non-scalar value.
     // Use frame storage reserved by calling function to pass return
     // buffer as implicit first argument in R2.  Shfit original parameters
@@ -1083,7 +1083,6 @@ void CEntryStub::Generate(MacroAssembler* masm) {
     __ la(r2, MemOperand(sp, (kStackFrameExtraParamSlot + 1) * kPointerSize));
     isolate_reg = r5;
   }
-#endif
   // Call C built-in.
   __ mov(isolate_reg, Operand(ExternalReference::isolate_address(isolate())));
 
@@ -1107,13 +1106,12 @@ void CEntryStub::Generate(MacroAssembler* masm) {
     // __ la(sp, MemOperand(sp, +kCalleeRegisterSaveAreaSize));
   }
 
-#if !ABI_RETURNS_OBJECTPAIR_IN_REGS
   // If return value is on the stack, pop it to registers.
-  if (result_size() > 1) {
+  if (needs_return_buffer) {
+    if (result_size() > 2) __ LoadP(r4, MemOperand(r2, 2 * kPointerSize));
     __ LoadP(r3, MemOperand(r2, kPointerSize));
     __ LoadP(r2, MemOperand(r2));
   }
-#endif
 
   // Check result for exception sentinel.
   Label exception_returned;
