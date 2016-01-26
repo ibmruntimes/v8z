@@ -16,6 +16,7 @@ namespace internal {
 // Give alias names to registers for calling conventions.
 const Register kReturnRegister0 = {Register::kCode_r2};
 const Register kReturnRegister1 = {Register::kCode_r3};
+const Register kReturnRegister2 = {Register::kCode_r4};
 const Register kJSFunctionRegister = {Register::kCode_r3};
 const Register kContextRegister = {Register::kCode_r13};
 const Register kInterpreterAccumulatorRegister = {Register::kCode_r2};
@@ -198,7 +199,9 @@ class MacroAssembler : public Assembler {
             TypeFeedbackId ast_id = TypeFeedbackId::None(),
             Condition cond = al);
   void Ret() { b(r14); }
-  void Ret(Condition cond) { UNIMPLEMENTED(); }
+  void Ret(Condition cond) {
+    b(cond, r14);
+  }
 
   // Emit code to discard a non-negative number of pointer-sized elements
   // from the stack, clobbering only the sp register.
@@ -1288,10 +1291,6 @@ class MacroAssembler : public Assembler {
   // Jump to a runtime routine.
   void JumpToExternalReference(const ExternalReference& builtin);
 
-  // Invoke specified builtin JavaScript function.
-  void InvokeBuiltin(int native_context_index, InvokeFlag flag,
-                     const CallWrapper& call_wrapper = NullCallWrapper());
-
   Handle<Object> CodeObject() {
     DCHECK(!code_object_.is_null());
     return code_object_;
@@ -1728,9 +1727,9 @@ class MacroAssembler : public Assembler {
   // Returns the pc offset at which the frame ends.
   int LeaveFrame(StackFrame::Type type, int stack_adjustment = 0);
 
-  // Expects object in r0 and returns map with validated enum cache
-  // in r0.  Assumes that any other register can be used as a scratch.
-  void CheckEnumCache(Register null_value, Label* call_runtime);
+  // Expects object in r2 and returns map with validated enum cache
+  // in r2.  Assumes that any other register can be used as a scratch.
+  void CheckEnumCache(Label* call_runtime);
 
   // AllocationMemento support. Arrays may have an associated
   // AllocationMemento object that can be checked for in order to pretransition

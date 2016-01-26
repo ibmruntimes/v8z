@@ -2295,16 +2295,6 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // Locate the code entry and call it.
   __ AddP(code, Operand(Code::kHeaderSize - kHeapObjectTag));
 
-
-#if ABI_USES_FUNCTION_DESCRIPTORS && defined(USE_SIMULATOR)
-  // Even Simulated AIX/S390X Linux uses a function descriptor for the
-  // RegExp routine.  Extract the instruction address here since
-  // DirectCEntryStub::GenerateCall will not do it for calls out to
-  // what it thinks is C code compiled for the simulator/host
-  // platform.
-  __ LoadP(code, MemOperand(code, 0));  // Instruction address
-#endif
-
   DirectCEntryStub stub(isolate());
   stub.GenerateCall(masm, code);
 
@@ -3291,6 +3281,37 @@ void ToStringStub::Generate(MacroAssembler* masm) {
 
   __ bind(&done);
   __ Ret();
+}
+
+
+void ToNameStub::Generate(MacroAssembler* masm) {
+  // The ToName stub takes one argument in r2.
+  Label is_number;
+  __ JumpIfSmi(r2, &is_number);
+
+  STATIC_ASSERT(FIRST_NAME_TYPE == FIRST_TYPE);
+  __ CompareObjectType(r2, r3, r3, LAST_NAME_TYPE);
+  // r2: receiver
+  // r3: receiver instance type
+  __ Ret(le);
+
+  Label not_heap_number;
+  __ CmpP(r3, Operand(HEAP_NUMBER_TYPE));
+  __ bne(&not_heap_number);
+  __ bind(&is_number);
+  NumberToStringStub stub(isolate());
+  __ TailCallStub(&stub);
+  __ bind(&not_heap_number);
+
+  Label not_oddball;
+  __ CmpP(r3, Operand(ODDBALL_TYPE));
+  __ bne(&not_oddball);
+  __ LoadP(r2, FieldMemOperand(r2, Oddball::kToStringOffset));
+  __ Ret();
+  __ bind(&not_oddball);
+
+  __ push(r2);  // Push argument.
+  __ TailCallRuntime(Runtime::kToName);
 }
 
 
@@ -5630,17 +5651,24 @@ void CallApiAccessorStub::Generate(MacroAssembler* masm) {
 
 void CallApiGetterStub::Generate(MacroAssembler* masm) {
   // ----------- S t a t e -------------
-  //  -- sp[0]                  : name
-  //  -- sp[4 - kArgsLength*4]  : PropertyCallbackArguments object
+  //  -- sp[0]                        : name
+  //  -- sp[4 .. (4 + kArgsLength*4)] : v8::PropertyCallbackInfo::args_
   //  -- ...
-  //  -- r4                     : api_function_address
+  //  -- r4                           : api_function_address
   // -----------------------------------
 
   Register api_function_address = ApiGetterDescriptor::function_address();
+  int arg0Slot = 0;
+  int accessorInfoSlot = 0;
+  int apiStackSpace = 0;
   DCHECK(api_function_address.is(r4));
 
-  __ LoadRR(r2, sp);  // r0 = Handle<Name>
-  __ AddP(r3, r2, Operand(1 * kPointerSize));  // r3 = PCA
+  // v8::PropertyCallbackInfo::args_ array and name handle.
+  const int kStackUnwindSpace = PropertyCallbackArguments::kArgsLength + 1;
+
+  // Load address of v8::PropertyAccessorInfo::args_ array and name handle.
+  __ LoadRR(r2, sp);                               // r2 = Handle<Name>
+  __ AddP(r3, r2, Operand(1 * kPointerSize));  // r3 = v8::PCI::args_
 
 // If ABI passes Handles (pointer-sized struct) in a register:
 //
@@ -5654,37 +5682,38 @@ void CallApiGetterStub::Generate(MacroAssembler* masm) {
 //    [0] space for DirectCEntryStub's LR save
 //    [1] copy of Handle (first arg)
 //    [2] AccessorInfo&
-#if ABI_PASSES_HANDLES_IN_REGS
-  const int kAccessorInfoSlot = kStackFrameExtraParamSlot + 1;
-  const int kApiStackSpace = 2;
-#else
-  const int kArg0Slot = kStackFrameExtraParamSlot + 1;
-  const int kAccessorInfoSlot = kArg0Slot + 1;
-  const int kApiStackSpace = 3;
-#endif
+  if (ABI_PASSES_HANDLES_IN_REGS) {
+    accessorInfoSlot = kStackFrameExtraParamSlot + 1;
+    apiStackSpace = 2;
+  } else {
+    arg0Slot = kStackFrameExtraParamSlot + 1;
+    accessorInfoSlot = arg0Slot + 1;
+    apiStackSpace = 3;
+  }
 
   FrameScope frame_scope(masm, StackFrame::MANUAL);
-  __ EnterExitFrame(false, kApiStackSpace);
+  __ EnterExitFrame(false, apiStackSpace);
 
-#if !ABI_PASSES_HANDLES_IN_REGS
-  // pass 1st arg by reference
-  __ StoreP(r2, MemOperand(sp, kArg0Slot * kPointerSize));
-  __ AddP(r2, sp, Operand(kArg0Slot * kPointerSize));
-#endif
+  if (!ABI_PASSES_HANDLES_IN_REGS) {
+    // pass 1st arg by reference
+    __ StoreP(r2, MemOperand(sp, arg0Slot * kPointerSize));
+    __ AddP(r2, sp, Operand(arg0Slot * kPointerSize));
+  }
 
-  // Create PropertyAccessorInfo instance on the stack above the exit frame with
-  // r3 (internal::Object** args_) as the data.
-  __ StoreP(r3, MemOperand(sp, kAccessorInfoSlot * kPointerSize));
-  // r3 = AccessorInfo&
-  __ AddP(r3, sp, Operand(kAccessorInfoSlot * kPointerSize));
-
-  const int kStackUnwindSpace = PropertyCallbackArguments::kArgsLength + 1;
+  // Create v8::PropertyCallbackInfo object on the stack and initialize
+  // it's args_ field.
+  __ StoreP(r3, MemOperand(sp, accessorInfoSlot * kPointerSize));
+  __ AddP(r3, sp, Operand(accessorInfoSlot * kPointerSize));
+  // r3 = v8::PropertyCallbackInfo&
 
   ExternalReference thunk_ref =
       ExternalReference::invoke_accessor_getter_callback(isolate());
+
+  // +3 is to skip prolog, return address and name handle.
+  MemOperand return_value_operand(
+      fp, (PropertyCallbackArguments::kReturnValueOffset + 3) * kPointerSize);
   CallApiFunctionAndReturn(masm, api_function_address, thunk_ref,
-                           kStackUnwindSpace, NULL,
-                           MemOperand(fp, 6 * kPointerSize), NULL);
+                           kStackUnwindSpace, NULL, return_value_operand, NULL);
 }
 
 

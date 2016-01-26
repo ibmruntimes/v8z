@@ -943,6 +943,11 @@ void InstructionSelector::VisitChangeFloat32ToFloat64(Node* node) {
 }
 
 
+void InstructionSelector::VisitRoundInt32ToFloat32(Node* node) {
+  VisitRR(this, kS390_Int32ToFloat32, node);
+}
+
+
 void InstructionSelector::VisitChangeInt32ToFloat64(Node* node) {
   VisitRR(this, kS390_Int32ToDouble, node);
 }
@@ -1010,6 +1015,11 @@ void InstructionSelector::VisitTruncateFloat64ToInt32(Node* node) {
       return VisitRR(this, kS390_DoubleToInt32, node);
   }
   UNREACHABLE();
+}
+
+
+void InstructionSelector::VisitTruncateFloat32ToInt32(Node* node) {
+  return VisitRR(this, kS390_DoubleToInt32, node);
 }
 
 

@@ -82,6 +82,7 @@ namespace compiler {
   V(S390_Int64ToDouble)             \
   V(S390_Uint64ToFloat32)           \
   V(S390_Uint64ToDouble)            \
+  V(S390_Int32ToFloat32)            \
   V(S390_Int32ToDouble)             \
   V(S390_Uint32ToDouble)            \
   V(S390_Float32ToDouble)           \

@@ -64,8 +64,12 @@
 //            with the address of this buffer passed as a hidden
 //            argument in r2. (Does NOT return in Regs)
 // For x86 linux, ObjectPair is returned in registers.
-#define ABI_RETURNS_OBJECTPAIR_IN_REGS \
-  !(V8_HOST_ARCH_S390 && V8_TARGET_ARCH_S390X)
+#if !(V8_HOST_ARCH_S390 && V8_TARGET_ARCH_S390X)
+#define ABI_RETURNS_OBJECT_PAIRS_IN_REGS 0
+#else
+#define ABI_RETURNS_OBJECT_PAIRS_IN_REGS 1
+#endif
+  
 
 #define ABI_CALL_VIA_IP 1
 
@@ -1291,7 +1295,7 @@ SS2_FORM(zap);
 
   // Record a deoptimization reason that can be used by a log or cpu profiler.
   // Use --trace-deopt to enable.
-  void RecordDeoptReason(const int reason, const SourcePosition position);
+  void RecordDeoptReason(const int reason, int raw_position);
 
   // Writes a single byte or word of data in the code stream.  Used
   // for inline tables, e.g., jump-tables.

@@ -1876,13 +1876,6 @@ void LCodeGen::DoConstantT(LConstantT* instr) {
 }
 
 
-void LCodeGen::DoMapEnumLength(LMapEnumLength* instr) {
-  Register result = ToRegister(instr->result());
-  Register map = ToRegister(instr->value());
-  __ EnumLength(result, map);
-}
-
-
 MemOperand LCodeGen::BuildSeqStringOperand(Register string, LOperand* index,
                                            String::Encoding encoding) {
   if (index->IsConstantOperand()) {
@@ -2391,7 +2384,7 @@ void LCodeGen::DoCompareNumericAndBranch(LCompareNumericAndBranch* instr) {
     // We can statically evaluate the comparison.
     double left_val = ToDouble(LConstantOperand::cast(left));
     double right_val = ToDouble(LConstantOperand::cast(right));
-    int next_block = EvalComparison(instr->op(), left_val, right_val)
+    int next_block = Token::EvalComparison(instr->op(), left_val, right_val)
                          ? instr->TrueDestination(chunk_)
                          : instr->FalseDestination(chunk_);
     EmitGoto(next_block);
@@ -5835,17 +5828,8 @@ void LCodeGen::DoOsrEntry(LOsrEntry* instr) {
 
 
 void LCodeGen::DoForInPrepareMap(LForInPrepareMap* instr) {
-  __ TestIfSmi(r2);
-  DeoptimizeIf(eq, instr, Deoptimizer::kSmi, cr0);
-
-  STATIC_ASSERT(JS_PROXY_TYPE == FIRST_JS_RECEIVER_TYPE);
-  __ CompareObjectType(r2, r3, r3, JS_PROXY_TYPE);
-  DeoptimizeIf(le, instr, Deoptimizer::kWrongInstanceType);
-
   Label use_cache, call_runtime;
-  Register null_value = r7;
-  __ LoadRoot(null_value, Heap::kNullValueRootIndex);
-  __ CheckEnumCache(null_value, &call_runtime);
+  __ CheckEnumCache(&call_runtime);
 
   __ LoadP(r2, FieldMemOperand(r2, HeapObject::kMapOffset));
   __ b(&use_cache);
@@ -5853,11 +5837,7 @@ void LCodeGen::DoForInPrepareMap(LForInPrepareMap* instr) {
   // Get the set of properties to enumerate.
   __ bind(&call_runtime);
   __ push(r2);
-  CallRuntime(Runtime::kGetPropertyNamesFast, instr);
-
-  __ LoadP(r3, FieldMemOperand(r2, HeapObject::kMapOffset));
-  __ CompareRoot(r3, Heap::kMetaMapRootIndex);
-  DeoptimizeIf(ne, instr, Deoptimizer::kWrongMap);
+  CallRuntime(Runtime::kForInEnumerate, instr);
   __ bind(&use_cache);
 }
 

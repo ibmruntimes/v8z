@@ -81,6 +81,7 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kS390_Int64ToDouble:
     case kS390_Uint64ToFloat32:
     case kS390_Uint64ToDouble:
+    case kS390_Int32ToFloat32:
     case kS390_Int32ToDouble:
     case kS390_Uint32ToDouble:
     case kS390_Float32ToDouble:
