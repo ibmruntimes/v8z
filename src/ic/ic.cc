@@ -21,6 +21,7 @@
 #include "src/macro-assembler.h"
 #include "src/prototype.h"
 #include "src/runtime/runtime.h"
+#include "src/runtime/runtime-utils.h"
 
 namespace v8 {
 namespace internal {
@@ -976,12 +977,10 @@ bool IsCompatibleReceiver(LookupIterator* lookup, Handle<Map> receiver_map) {
   DCHECK(lookup->state() == LookupIterator::ACCESSOR);
   Isolate* isolate = lookup->isolate();
   Handle<Object> accessors = lookup->GetAccessors();
-  if (accessors->IsExecutableAccessorInfo()) {
-    Handle<ExecutableAccessorInfo> info =
-        Handle<ExecutableAccessorInfo>::cast(accessors);
+  if (accessors->IsAccessorInfo()) {
+    Handle<AccessorInfo> info = Handle<AccessorInfo>::cast(accessors);
     if (info->getter() != NULL &&
-        !ExecutableAccessorInfo::IsCompatibleReceiverMap(isolate, info,
-                                                         receiver_map)) {
+        !AccessorInfo::IsCompatibleReceiverMap(isolate, info, receiver_map)) {
       return false;
     }
   } else if (accessors->IsAccessorPair()) {
@@ -1169,12 +1168,10 @@ Handle<Code> LoadIC::CompileHandler(LookupIterator* lookup,
       }
 
       Handle<Object> accessors = lookup->GetAccessors();
-      if (accessors->IsExecutableAccessorInfo()) {
-        Handle<ExecutableAccessorInfo> info =
-            Handle<ExecutableAccessorInfo>::cast(accessors);
+      if (accessors->IsAccessorInfo()) {
+        Handle<AccessorInfo> info = Handle<AccessorInfo>::cast(accessors);
         if (v8::ToCData<Address>(info->getter()) == 0) break;
-        if (!ExecutableAccessorInfo::IsCompatibleReceiverMap(isolate(), info,
-                                                             map)) {
+        if (!AccessorInfo::IsCompatibleReceiverMap(isolate(), info, map)) {
           // This case should be already handled in LoadIC::UpdateCaches.
           UNREACHABLE();
           break;
@@ -1733,9 +1730,8 @@ Handle<Code> StoreIC::CompileHandler(LookupIterator* lookup,
         break;
       }
       Handle<Object> accessors = lookup->GetAccessors();
-      if (accessors->IsExecutableAccessorInfo()) {
-        Handle<ExecutableAccessorInfo> info =
-            Handle<ExecutableAccessorInfo>::cast(accessors);
+      if (accessors->IsAccessorInfo()) {
+        Handle<AccessorInfo> info = Handle<AccessorInfo>::cast(accessors);
         if (v8::ToCData<Address>(info->setter()) == 0) {
           TRACE_GENERIC_IC(isolate(), "StoreIC", "setter == 0");
           break;
@@ -1746,13 +1742,14 @@ Handle<Code> StoreIC::CompileHandler(LookupIterator* lookup,
                            "special data property in prototype chain");
           break;
         }
-        if (!ExecutableAccessorInfo::IsCompatibleReceiverMap(isolate(), info,
-                                                             receiver_map())) {
+        if (!AccessorInfo::IsCompatibleReceiverMap(isolate(), info,
+                                                   receiver_map())) {
           TRACE_GENERIC_IC(isolate(), "StoreIC", "incompatible receiver type");
           break;
         }
         NamedStoreHandlerCompiler compiler(isolate(), receiver_map(), holder);
-        return compiler.CompileStoreCallback(receiver, lookup->name(), info);
+        return compiler.CompileStoreCallback(receiver, lookup->name(), info,
+                                             language_mode());
       } else if (accessors->IsAccessorPair()) {
         Handle<Object> setter(Handle<AccessorPair>::cast(accessors)->setter(),
                               isolate());
@@ -2818,13 +2815,13 @@ RUNTIME_FUNCTION(Runtime_StoreCallbackProperty) {
   Handle<HeapObject> callback_or_cell = args.at<HeapObject>(2);
   Handle<Name> name = args.at<Name>(3);
   Handle<Object> value = args.at<Object>(4);
+  CONVERT_LANGUAGE_MODE_ARG_CHECKED(language_mode, 5);
   HandleScope scope(isolate);
 
-  Handle<ExecutableAccessorInfo> callback(
+  Handle<AccessorInfo> callback(
       callback_or_cell->IsWeakCell()
-          ? ExecutableAccessorInfo::cast(
-                WeakCell::cast(*callback_or_cell)->value())
-          : ExecutableAccessorInfo::cast(*callback_or_cell));
+          ? AccessorInfo::cast(WeakCell::cast(*callback_or_cell)->value())
+          : AccessorInfo::cast(*callback_or_cell));
 
   DCHECK(callback->IsCompatibleReceiver(*receiver));
 
@@ -2834,8 +2831,10 @@ RUNTIME_FUNCTION(Runtime_StoreCallbackProperty) {
   DCHECK(fun != NULL);
 
   LOG(isolate, ApiNamedPropertyAccess("store", *receiver, *name));
+  Object::ShouldThrow should_throw =
+      is_sloppy(language_mode) ? Object::DONT_THROW : Object::THROW_ON_ERROR;
   PropertyCallbackArguments custom_args(isolate, callback->data(), *receiver,
-                                        *holder);
+                                        *holder, should_throw);
   custom_args.Call(fun, v8::Utils::ToLocal(name), v8::Utils::ToLocal(value));
   RETURN_FAILURE_IF_SCHEDULED_EXCEPTION(isolate);
   return *value;

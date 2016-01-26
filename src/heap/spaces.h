@@ -20,6 +20,7 @@ namespace v8 {
 namespace internal {
 
 class CompactionSpaceCollection;
+class InlineAllocationObserver;
 class Isolate;
 
 // -----------------------------------------------------------------------------
@@ -307,10 +308,6 @@ class MemoryChunk {
     NEVER_EVACUATE,  // May contain immortal immutables.
     POPULAR_PAGE,    // Slots buffer of this page overflowed on the previous GC.
 
-    // WAS_SWEPT indicates that marking bits have been cleared by the sweeper,
-    // otherwise marking bits are still intact.
-    WAS_SWEPT,
-
     // Large objects can have a progress bar in their page header. These object
     // are scanned in increments and will be kept black while being scanned.
     // Even if the mutator writes to them they will be kept black and a white
@@ -352,16 +349,14 @@ class MemoryChunk {
   };
 
   // |kSweepingDone|: The page state when sweeping is complete or sweeping must
-  //   not be performed on that page.
-  // |kSweepingFinalize|: A sweeper thread is done sweeping this page and will
-  //   not touch the page memory anymore.
-  // |kSweepingInProgress|: This page is currently swept by a sweeper thread.
+  //   not be performed on that page. Sweeper threads that are done with their
+  //   work will set this value and not touch the page anymore.
   // |kSweepingPending|: This page is ready for parallel sweeping.
-  enum ParallelSweepingState {
+  // |kSweepingInProgress|: This page is currently swept by a sweeper thread.
+  enum ConcurrentSweepingState {
     kSweepingDone,
-    kSweepingFinalize,
+    kSweepingPending,
     kSweepingInProgress,
-    kSweepingPending
   };
 
   // Every n write barrier invocations we go to runtime even though
@@ -396,7 +391,7 @@ class MemoryChunk {
       + 2 * kPointerSize          // base::VirtualMemory reservation_
       + kPointerSize              // Address owner_
       + kPointerSize              // Heap* heap_
-      + kIntSize;                 // int store_buffer_counter_
+      + kIntSize;                 // int progress_bar_
 
   static const size_t kSlotsBufferOffset =
       kLiveBytesOffset + kIntSize;  // int live_byte_count_
@@ -408,7 +403,6 @@ class MemoryChunk {
   static const size_t kMinHeaderSize =
       kWriteBarrierCounterOffset +
       kIntptrSize         // intptr_t write_barrier_counter_
-      + kIntSize          // int progress_bar_
       + kPointerSize      // AtomicValue high_water_mark_
       + kPointerSize      // base::Mutex* mutex_
       + kPointerSize      // base::AtomicWord parallel_sweeping_
@@ -420,7 +414,7 @@ class MemoryChunk {
   // We add some more space to the computed header size to amount for missing
   // alignment requirements in our computation.
   // Try to get kHeaderSize properly aligned on 32-bit and 64-bit machines.
-  static const size_t kHeaderSize = kMinHeaderSize + kIntSize;
+  static const size_t kHeaderSize = kMinHeaderSize;
 
   static const int kBodyOffset =
       CODE_POINTER_ALIGN(kHeaderSize + Bitmap::kSize);
@@ -519,11 +513,6 @@ class MemoryChunk {
   }
   inline void set_scan_on_scavenge(bool scan);
 
-  int store_buffer_counter() { return store_buffer_counter_; }
-  void set_store_buffer_counter(int counter) {
-    store_buffer_counter_ = counter;
-  }
-
   bool Contains(Address addr) {
     return addr >= area_start() && addr < area_end();
   }
@@ -561,8 +550,8 @@ class MemoryChunk {
   // Return all current flags.
   intptr_t GetFlags() { return flags_; }
 
-  AtomicValue<ParallelSweepingState>& parallel_sweeping_state() {
-    return parallel_sweeping_;
+  AtomicValue<ConcurrentSweepingState>& concurrent_sweeping_state() {
+    return concurrent_sweeping_;
   }
 
   AtomicValue<ParallelCompactingState>& parallel_compaction_state() {
@@ -572,19 +561,6 @@ class MemoryChunk {
   bool TryLock() { return mutex_->TryLock(); }
 
   base::Mutex* mutex() { return mutex_; }
-
-  // WaitUntilSweepingCompleted only works when concurrent sweeping is in
-  // progress. In particular, when we know that right before this call a
-  // sweeper thread was sweeping this page.
-  void WaitUntilSweepingCompleted() {
-    mutex_->Lock();
-    mutex_->Unlock();
-    DCHECK(SweepingCompleted());
-  }
-
-  bool SweepingCompleted() {
-    return parallel_sweeping_state().Value() <= kSweepingFinalize;
-  }
 
   // Manage live byte count (count of bytes known to be live,
   // because they are marked black).
@@ -751,23 +727,20 @@ class MemoryChunk {
   // in a fixed array.
   Address owner_;
   Heap* heap_;
-  // Used by the store buffer to keep track of which pages to mark scan-on-
-  // scavenge.
-  int store_buffer_counter_;
+  // Used by the incremental marker to keep track of the scanning progress in
+  // large objects that have a progress bar and are scanned in increments.
+  int progress_bar_;
   // Count of bytes marked black on page.
   int live_byte_count_;
   SlotsBuffer* slots_buffer_;
   SkipList* skip_list_;
   intptr_t write_barrier_counter_;
-  // Used by the incremental marker to keep track of the scanning progress in
-  // large objects that have a progress bar and are scanned in increments.
-  int progress_bar_;
   // Assuming the initial allocation on a page is sequential,
   // count highest number of bytes ever allocated on the page.
   AtomicValue<intptr_t> high_water_mark_;
 
   base::Mutex* mutex_;
-  AtomicValue<ParallelSweepingState> parallel_sweeping_;
+  AtomicValue<ConcurrentSweepingState> concurrent_sweeping_;
   AtomicValue<ParallelCompactingState> parallel_compaction_;
 
   // PagedSpace free-list statistics.
@@ -873,9 +846,18 @@ class Page : public MemoryChunk {
 
   void InitializeAsAnchor(PagedSpace* owner);
 
-  bool WasSwept() { return IsFlagSet(WAS_SWEPT); }
-  void SetWasSwept() { SetFlag(WAS_SWEPT); }
-  void ClearWasSwept() { ClearFlag(WAS_SWEPT); }
+  // WaitUntilSweepingCompleted only works when concurrent sweeping is in
+  // progress. In particular, when we know that right before this call a
+  // sweeper thread was sweeping this page.
+  void WaitUntilSweepingCompleted() {
+    mutex_->Lock();
+    mutex_->Unlock();
+    DCHECK(SweepingDone());
+  }
+
+  bool SweepingDone() {
+    return concurrent_sweeping_state().Value() == kSweepingDone;
+  }
 
   void ResetFreeListStatistics();
 
@@ -2085,7 +2067,7 @@ class PagedSpace : public Space {
   void IncreaseCapacity(int size);
 
   // Releases an unused page and shrinks the space.
-  void ReleasePage(Page* page);
+  void ReleasePage(Page* page, bool evict_free_list_items);
 
   // The dummy page that anchors the linked list of pages.
   Page* anchor() { return &anchor_; }
@@ -2112,22 +2094,11 @@ class PagedSpace : public Space {
   static void ResetCodeStatistics(Isolate* isolate);
 #endif
 
-  // Evacuation candidates are swept by evacuator.  Needs to return a valid
-  // result before _and_ after evacuation has finished.
-  static bool ShouldBeSweptBySweeperThreads(Page* p) {
-    return !p->IsEvacuationCandidate() &&
-           !p->IsFlagSet(Page::RESCAN_ON_EVACUATION) && !p->WasSwept();
-  }
-
   // This function tries to steal size_in_bytes memory from the sweeper threads
   // free-lists. If it does not succeed stealing enough memory, it will wait
   // for the sweeper threads to finish sweeping.
   // It returns true when sweeping is completed and false otherwise.
   bool EnsureSweeperProgress(intptr_t size_in_bytes);
-
-  void set_end_of_unswept_pages(Page* page) { end_of_unswept_pages_ = page; }
-
-  Page* end_of_unswept_pages() { return end_of_unswept_pages_; }
 
   Page* FirstPage() { return anchor_.next_page(); }
   Page* LastPage() { return anchor_.prev_page(); }
@@ -2211,11 +2182,6 @@ class PagedSpace : public Space {
 
   // Normal allocation information.
   AllocationInfo allocation_info_;
-
-  // The sweeper threads iterate over the list of pointer and data space pages
-  // and sweep these pages concurrently. They will stop sweeping after the
-  // end_of_unswept_pages_ page.
-  Page* end_of_unswept_pages_;
 
   // Mutex guarding any concurrent access to the space.
   base::Mutex space_mutex_;
@@ -2576,54 +2542,6 @@ class NewSpacePageIterator BASE_EMBEDDED {
   NewSpacePage* last_page_;
 };
 
-// -----------------------------------------------------------------------------
-// Allows observation of inline allocation in the new space.
-class InlineAllocationObserver {
- public:
-  explicit InlineAllocationObserver(intptr_t step_size)
-      : step_size_(step_size), bytes_to_next_step_(step_size) {
-    DCHECK(step_size >= kPointerSize);
-  }
-  virtual ~InlineAllocationObserver() {}
-
- private:
-  intptr_t step_size() const { return step_size_; }
-  intptr_t bytes_to_next_step() const { return bytes_to_next_step_; }
-
-  // Pure virtual method provided by the subclasses that gets called when at
-  // least step_size bytes have been allocated. soon_object is the address just
-  // allocated (but not yet initialized.) size is the size of the object as
-  // requested (i.e. w/o the alignment fillers). Some complexities to be aware
-  // of:
-  // 1) soon_object will be nullptr in cases where we end up observing an
-  //    allocation that happens to be a filler space (e.g. page boundaries.)
-  // 2) size is the requested size at the time of allocation. Right-trimming
-  //    may change the object size dynamically.
-  // 3) soon_object may actually be the first object in an allocation-folding
-  //    group. In such a case size is the size of the group rather than the
-  //    first object.
-  virtual void Step(int bytes_allocated, Address soon_object, size_t size) = 0;
-
-  // Called each time the new space does an inline allocation step. This may be
-  // more frequently than the step_size we are monitoring (e.g. when there are
-  // multiple observers, or when page or space boundary is encountered.)
-  void InlineAllocationStep(int bytes_allocated, Address soon_object,
-                            size_t size) {
-    bytes_to_next_step_ -= bytes_allocated;
-    if (bytes_to_next_step_ <= 0) {
-      Step(static_cast<int>(step_size_ - bytes_to_next_step_), soon_object,
-           size);
-      bytes_to_next_step_ = step_size_;
-    }
-  }
-
-  intptr_t step_size_;
-  intptr_t bytes_to_next_step_;
-
-  friend class NewSpace;
-
-  DISALLOW_COPY_AND_ASSIGN(InlineAllocationObserver);
-};
 
 // -----------------------------------------------------------------------------
 // The young generation space.

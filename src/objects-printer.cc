@@ -371,6 +371,7 @@ void JSObject::PrintElements(std::ostream& os) {  // NOLINT
 #undef PRINT_ELEMENTS
 
     case DICTIONARY_ELEMENTS:
+      os << "\n - elements: ";
       elements()->Print(os);
       break;
     case FAST_SLOPPY_ARGUMENTS_ELEMENTS:
@@ -966,9 +967,8 @@ void Foreign::ForeignPrint(std::ostream& os) {  // NOLINT
 }
 
 
-void ExecutableAccessorInfo::ExecutableAccessorInfoPrint(
-    std::ostream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "ExecutableAccessorInfo");
+void AccessorInfo::AccessorInfoPrint(std::ostream& os) {  // NOLINT
+  HeapObject::PrintHeader(os, "AccessorInfo");
   os << "\n - name: " << Brief(name());
   os << "\n - flag: " << flag();
   os << "\n - getter: " << Brief(getter());

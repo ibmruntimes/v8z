@@ -2015,16 +2015,22 @@ void CEntryStub::Generate(MacroAssembler* masm) {
 
   ProfileEntryHookStub::MaybeCallEntryHook(masm);
 
+  // Reserve space on the stack for the three arguments passed to the call. If
+  // result size is greater than can be returned in registers, also reserve
+  // space for the hidden argument for the result location, and space for the
+  // result itself.
+  int arg_stack_space = result_size() < 3 ? 3 : 4 + result_size();
+
   // Enter the exit frame that transitions from JavaScript to C++.
   if (argv_in_register()) {
     DCHECK(!save_doubles());
-    __ EnterApiExitFrame(3);
+    __ EnterApiExitFrame(arg_stack_space);
 
     // Move argc and argv into the correct registers.
     __ mov(esi, ecx);
     __ mov(edi, eax);
   } else {
-    __ EnterExitFrame(save_doubles());
+    __ EnterExitFrame(arg_stack_space, save_doubles());
   }
 
   // ebx: pointer to C function  (C callee-saved)
@@ -2039,14 +2045,36 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   if (FLAG_debug_code) {
     __ CheckStackAlignment();
   }
-
   // Call C function.
-  __ mov(Operand(esp, 0 * kPointerSize), edi);  // argc.
-  __ mov(Operand(esp, 1 * kPointerSize), esi);  // argv.
-  __ mov(Operand(esp, 2 * kPointerSize),
-         Immediate(ExternalReference::isolate_address(isolate())));
+  if (result_size() <= 2) {
+    __ mov(Operand(esp, 0 * kPointerSize), edi);  // argc.
+    __ mov(Operand(esp, 1 * kPointerSize), esi);  // argv.
+    __ mov(Operand(esp, 2 * kPointerSize),
+           Immediate(ExternalReference::isolate_address(isolate())));
+  } else {
+    DCHECK_EQ(3, result_size());
+    // Pass a pointer to the result location as the first argument.
+    __ lea(eax, Operand(esp, 4 * kPointerSize));
+    __ mov(Operand(esp, 0 * kPointerSize), eax);
+    __ mov(Operand(esp, 1 * kPointerSize), edi);  // argc.
+    __ mov(Operand(esp, 2 * kPointerSize), esi);  // argv.
+    __ mov(Operand(esp, 3 * kPointerSize),
+           Immediate(ExternalReference::isolate_address(isolate())));
+  }
   __ call(ebx);
-  // Result is in eax or edx:eax - do not destroy these registers!
+
+  if (result_size() > 2) {
+    DCHECK_EQ(3, result_size());
+#ifndef _WIN32
+    // Restore the "hidden" argument on the stack which was popped by caller.
+    __ sub(esp, Immediate(kPointerSize));
+#endif
+    // Read result values stored on stack. Result is stored above the arguments.
+    __ mov(kReturnRegister0, Operand(esp, 4 * kPointerSize));
+    __ mov(kReturnRegister1, Operand(esp, 5 * kPointerSize));
+    __ mov(kReturnRegister2, Operand(esp, 6 * kPointerSize));
+  }
+  // Result is in eax, edx:eax or edi:edx:eax - do not destroy these registers!
 
   // Check result for exception sentinel.
   Label exception_returned;
@@ -2837,6 +2865,42 @@ void ToStringStub::Generate(MacroAssembler* masm) {
   __ push(eax);  // Push argument.
   __ push(ecx);  // Push return address.
   __ TailCallRuntime(Runtime::kToString);
+}
+
+
+void ToNameStub::Generate(MacroAssembler* masm) {
+  // The ToName stub takes one argument in eax.
+  Label is_number;
+  __ JumpIfSmi(eax, &is_number, Label::kNear);
+
+  Label not_name;
+  STATIC_ASSERT(FIRST_NAME_TYPE == FIRST_TYPE);
+  __ CmpObjectType(eax, LAST_NAME_TYPE, edi);
+  // eax: receiver
+  // edi: receiver map
+  __ j(above, &not_name, Label::kNear);
+  __ Ret();
+  __ bind(&not_name);
+
+  Label not_heap_number;
+  __ CompareMap(eax, masm->isolate()->factory()->heap_number_map());
+  __ j(not_equal, &not_heap_number, Label::kNear);
+  __ bind(&is_number);
+  NumberToStringStub stub(isolate());
+  __ TailCallStub(&stub);
+  __ bind(&not_heap_number);
+
+  Label not_oddball;
+  __ CmpInstanceType(edi, ODDBALL_TYPE);
+  __ j(not_equal, &not_oddball, Label::kNear);
+  __ mov(eax, FieldOperand(eax, Oddball::kToStringOffset));
+  __ Ret();
+  __ bind(&not_oddball);
+
+  __ pop(ecx);   // Pop return address.
+  __ push(eax);  // Push argument.
+  __ push(ecx);  // Push return address.
+  __ TailCallRuntime(Runtime::kToName);
 }
 
 
@@ -5316,38 +5380,50 @@ void CallApiAccessorStub::Generate(MacroAssembler* masm) {
 
 void CallApiGetterStub::Generate(MacroAssembler* masm) {
   // ----------- S t a t e -------------
-  //  -- esp[0]                  : return address
-  //  -- esp[4]                  : name
-  //  -- esp[8 - kArgsLength*4]  : PropertyCallbackArguments object
+  //  -- esp[0]                        : return address
+  //  -- esp[4]                        : name
+  //  -- esp[8 .. (8 + kArgsLength*4)] : v8::PropertyCallbackInfo::args_
   //  -- ...
-  //  -- edx                    : api_function_address
+  //  -- edx                           : api_function_address
   // -----------------------------------
   DCHECK(edx.is(ApiGetterDescriptor::function_address()));
 
-  // array for v8::Arguments::values_, handler for name and pointer
-  // to the values (it considered as smi in GC).
-  const int kStackSpace = PropertyCallbackArguments::kArgsLength + 2;
-  // Allocate space for opional callback address parameter in case
-  // CPU profiler is active.
-  const int kApiArgc = 2 + 1;
+  // v8::PropertyCallbackInfo::args_ array and name handle.
+  const int kStackUnwindSpace = PropertyCallbackArguments::kArgsLength + 1;
+
+  // Allocate v8::PropertyCallbackInfo object, arguments for callback and
+  // space for optional callback address parameter (in case CPU profiler is
+  // active) in non-GCed stack space.
+  const int kApiArgc = 3 + 1;
 
   Register api_function_address = edx;
   Register scratch = ebx;
 
-  // load address of name
-  __ lea(scratch, Operand(esp, 1 * kPointerSize));
+  // Load address of v8::PropertyAccessorInfo::args_ array.
+  __ lea(scratch, Operand(esp, 2 * kPointerSize));
 
   PrepareCallApiFunction(masm, kApiArgc);
+  // Create v8::PropertyCallbackInfo object on the stack and initialize
+  // it's args_ field.
+  Operand info_object = ApiParameterOperand(3);
+  __ mov(info_object, scratch);
+
+  __ sub(scratch, Immediate(kPointerSize));
   __ mov(ApiParameterOperand(0), scratch);  // name.
-  __ add(scratch, Immediate(kPointerSize));
+  __ lea(scratch, info_object);
   __ mov(ApiParameterOperand(1), scratch);  // arguments pointer.
+  // Reserve space for optional callback address parameter.
+  Operand thunk_last_arg = ApiParameterOperand(2);
 
   ExternalReference thunk_ref =
       ExternalReference::invoke_accessor_getter_callback(isolate());
 
+  // +3 is to skip prolog, return address and name handle.
+  Operand return_value_operand(
+      ebp, (PropertyCallbackArguments::kReturnValueOffset + 3) * kPointerSize);
   CallApiFunctionAndReturn(masm, api_function_address, thunk_ref,
-                           ApiParameterOperand(2), kStackSpace, nullptr,
-                           Operand(ebp, 7 * kPointerSize), NULL);
+                           thunk_last_arg, kStackUnwindSpace, nullptr,
+                           return_value_operand, NULL);
 }
 
 

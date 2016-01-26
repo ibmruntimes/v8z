@@ -35,7 +35,7 @@ HeapObjectIterator::HeapObjectIterator(Page* page) {
          owner == page->heap()->code_space());
   Initialize(reinterpret_cast<PagedSpace*>(owner), page->area_start(),
              page->area_end(), kOnePageOnly);
-  DCHECK(page->WasSwept() || page->SweepingCompleted());
+  DCHECK(page->SweepingDone());
 }
 
 
@@ -66,7 +66,7 @@ bool HeapObjectIterator::AdvanceToNextPage() {
       cur_page);
   cur_addr_ = cur_page->area_start();
   cur_end_ = cur_page->area_end();
-  DCHECK(cur_page->WasSwept() || cur_page->SweepingCompleted());
+  DCHECK(cur_page->SweepingDone());
   return true;
 }
 
@@ -469,7 +469,7 @@ MemoryChunk* MemoryChunk::Initialize(Heap* heap, Address base, size_t size,
   chunk->write_barrier_counter_ = kWriteBarrierCounterGranularity;
   chunk->progress_bar_ = 0;
   chunk->high_water_mark_.SetValue(static_cast<intptr_t>(area_start - base));
-  chunk->parallel_sweeping_state().SetValue(kSweepingDone);
+  chunk->concurrent_sweeping_state().SetValue(kSweepingDone);
   chunk->parallel_compaction_state().SetValue(kCompactingDone);
   chunk->mutex_ = NULL;
   chunk->available_in_small_free_list_ = 0;
@@ -480,7 +480,6 @@ MemoryChunk* MemoryChunk::Initialize(Heap* heap, Address base, size_t size,
   chunk->ResetLiveBytes();
   Bitmap::Clear(chunk);
   chunk->initialize_scan_on_scavenge(false);
-  chunk->SetFlag(WAS_SWEPT);
   chunk->set_next_chunk(nullptr);
   chunk->set_prev_chunk(nullptr);
 
@@ -923,7 +922,7 @@ bool MemoryAllocator::CommitExecutableMemory(base::VirtualMemory* vm,
 
 void MemoryChunk::IncrementLiveBytesFromMutator(HeapObject* object, int by) {
   MemoryChunk* chunk = MemoryChunk::FromAddress(object->address());
-  if (!chunk->InNewSpace() && !static_cast<Page*>(chunk)->WasSwept()) {
+  if (!chunk->InNewSpace() && !static_cast<Page*>(chunk)->SweepingDone()) {
     static_cast<PagedSpace*>(chunk->owner())->Allocate(by);
   }
   chunk->IncrementLiveBytes(by);
@@ -952,9 +951,7 @@ STATIC_ASSERT(static_cast<ObjectSpace>(1 << AllocationSpace::MAP_SPACE) ==
 
 PagedSpace::PagedSpace(Heap* heap, AllocationSpace space,
                        Executability executable)
-    : Space(heap, space, executable),
-      free_list_(this),
-      end_of_unswept_pages_(NULL) {
+    : Space(heap, space, executable), free_list_(this) {
   area_size_ = MemoryAllocator::PageAreaSize(space);
   accounting_stats_.Clear();
 
@@ -1109,8 +1106,6 @@ void PagedSpace::MergeCompactionSpace(CompactionSpace* other) {
   DCHECK(other->top() == nullptr);
   DCHECK(other->limit() == nullptr);
 
-  DCHECK(other->end_of_unswept_pages_ == nullptr);
-
   AccountCommitted(other->CommittedMemory());
 
   // Move over pages.
@@ -1229,11 +1224,11 @@ void PagedSpace::IncreaseCapacity(int size) {
 }
 
 
-void PagedSpace::ReleasePage(Page* page) {
+void PagedSpace::ReleasePage(Page* page, bool evict_free_list_items) {
   DCHECK(page->LiveBytes() == 0);
   DCHECK(AreaSize() == page->area_size());
 
-  if (page->WasSwept()) {
+  if (evict_free_list_items) {
     intptr_t size = free_list_.EvictFreeListItems(page);
     accounting_stats_.AllocateBytes(size);
     DCHECK_EQ(AreaSize(), static_cast<int>(size));
@@ -1279,7 +1274,7 @@ void PagedSpace::Verify(ObjectVisitor* visitor) {
     if (page == Page::FromAllocationTop(allocation_info_.top())) {
       allocation_pointer_found_in_space = true;
     }
-    CHECK(page->WasSwept());
+    CHECK(page->SweepingDone());
     HeapObjectIterator it(page);
     Address end_of_previous_object = page->area_start();
     Address top = page->area_end();
@@ -2837,6 +2832,8 @@ HeapObject* CompactionSpace::SweepAndRetryAllocation(int size_in_bytes) {
 
 
 HeapObject* PagedSpace::SlowAllocateRaw(int size_in_bytes) {
+  const int kMaxPagesToSweep = 1;
+
   // Allocation in this space has failed.
 
   MarkCompactCollector* collector = heap()->mark_compact_collector();
@@ -2851,10 +2848,13 @@ HeapObject* PagedSpace::SlowAllocateRaw(int size_in_bytes) {
     if (object != NULL) return object;
 
     // If sweeping is still in progress try to sweep pages on the main thread.
-    collector->SweepInParallel(heap()->paged_space(identity()), size_in_bytes);
+    int max_freed = collector->SweepInParallel(heap()->paged_space(identity()),
+                                               size_in_bytes, kMaxPagesToSweep);
     RefillFreeList();
-    object = free_list_.Allocate(size_in_bytes);
-    if (object != nullptr) return object;
+    if (max_freed >= size_in_bytes) {
+      object = free_list_.Allocate(size_in_bytes);
+      if (object != nullptr) return object;
+    }
   }
 
   // Free list allocation failed and there is no next page.  Fail if we have

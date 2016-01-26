@@ -553,9 +553,7 @@ void JSBoundFunction::JSBoundFunctionVerify() {
   VerifyObjectField(kBoundThisOffset);
   VerifyObjectField(kBoundTargetFunctionOffset);
   VerifyObjectField(kBoundArgumentsOffset);
-  VerifyObjectField(kCreationContextOffset);
   CHECK(bound_target_function()->IsCallable());
-  CHECK(creation_context()->IsNativeContext());
   CHECK(IsCallable());
   CHECK_EQ(IsConstructor(), bound_target_function()->IsConstructor());
 }
@@ -911,12 +909,6 @@ void PrototypeInfo::PrototypeInfoVerify() {
 }
 
 
-void AccessorInfo::AccessorInfoVerify() {
-  VerifyPointer(name());
-  VerifyPointer(expected_receiver_type());
-}
-
-
 void SloppyBlockWithEvalContextExtension::
     SloppyBlockWithEvalContextExtensionVerify() {
   CHECK(IsSloppyBlockWithEvalContextExtension());
@@ -925,9 +917,10 @@ void SloppyBlockWithEvalContextExtension::
 }
 
 
-void ExecutableAccessorInfo::ExecutableAccessorInfoVerify() {
-  CHECK(IsExecutableAccessorInfo());
-  AccessorInfoVerify();
+void AccessorInfo::AccessorInfoVerify() {
+  CHECK(IsAccessorInfo());
+  VerifyPointer(name());
+  VerifyPointer(expected_receiver_type());
   VerifyPointer(getter());
   VerifyPointer(setter());
   VerifyPointer(data());

@@ -150,9 +150,6 @@ bool Object::IsExternal() const {
 }
 
 
-bool Object::IsAccessorInfo() const { return IsExecutableAccessorInfo(); }
-
-
 TYPE_CHECKER(HeapNumber, HEAP_NUMBER_TYPE)
 TYPE_CHECKER(MutableHeapNumber, MUTABLE_HEAP_NUMBER_TYPE)
 TYPE_CHECKER(Symbol, SYMBOL_TYPE)
@@ -3181,7 +3178,6 @@ void SeededNumberDictionary::set_requires_slow_elements() {
 // Cast operations
 
 
-CAST_ACCESSOR(AccessorInfo)
 CAST_ACCESSOR(ArrayList)
 CAST_ACCESSOR(Bool16x8)
 CAST_ACCESSOR(Bool32x4)
@@ -4054,6 +4050,9 @@ int BytecodeArray::parameter_count() const {
 
 
 ACCESSORS(BytecodeArray, constant_pool, FixedArray, kConstantPoolOffset)
+ACCESSORS(BytecodeArray, handler_table, FixedArray, kHandlerTableOffset)
+ACCESSORS(BytecodeArray, source_position_table, FixedArray,
+          kSourcePositionTableOffset)
 
 
 Address BytecodeArray::GetFirstBytecodeAddress() {
@@ -4470,8 +4469,12 @@ bool Map::has_non_instance_prototype() {
 }
 
 
-void Map::set_is_constructor() {
-  set_bit_field(bit_field() | (1 << kIsConstructor));
+void Map::set_is_constructor(bool value) {
+  if (value) {
+    set_bit_field(bit_field() | (1 << kIsConstructor));
+  } else {
+    set_bit_field(bit_field() & ~(1 << kIsConstructor));
+  }
 }
 
 
@@ -5458,7 +5461,6 @@ ACCESSORS(JSBoundFunction, bound_target_function, JSReceiver,
           kBoundTargetFunctionOffset)
 ACCESSORS(JSBoundFunction, bound_this, Object, kBoundThisOffset)
 ACCESSORS(JSBoundFunction, bound_arguments, FixedArray, kBoundArgumentsOffset)
-ACCESSORS(JSBoundFunction, creation_context, Context, kCreationContextOffset)
 
 ACCESSORS(JSFunction, shared, SharedFunctionInfo, kSharedFunctionInfoOffset)
 ACCESSORS(JSFunction, literals, LiteralsArray, kLiteralsOffset)
@@ -5475,9 +5477,9 @@ SMI_ACCESSORS(AccessorInfo, flag, kFlagOffset)
 ACCESSORS(AccessorInfo, expected_receiver_type, Object,
           kExpectedReceiverTypeOffset)
 
-ACCESSORS(ExecutableAccessorInfo, getter, Object, kGetterOffset)
-ACCESSORS(ExecutableAccessorInfo, setter, Object, kSetterOffset)
-ACCESSORS(ExecutableAccessorInfo, data, Object, kDataOffset)
+ACCESSORS(AccessorInfo, getter, Object, kGetterOffset)
+ACCESSORS(AccessorInfo, setter, Object, kSetterOffset)
+ACCESSORS(AccessorInfo, data, Object, kDataOffset)
 
 ACCESSORS(Box, value, Object, kValueOffset)
 
@@ -7067,7 +7069,13 @@ MaybeHandle<Object> Object::GetPropertyOrElement(Handle<JSReceiver> holder,
 
 void JSReceiver::initialize_properties() {
   DCHECK(!GetHeap()->InNewSpace(GetHeap()->empty_fixed_array()));
-  WRITE_FIELD(this, kPropertiesOffset, GetHeap()->empty_fixed_array());
+  DCHECK(!GetHeap()->InNewSpace(GetHeap()->empty_properties_dictionary()));
+  if (map()->is_dictionary_map()) {
+    WRITE_FIELD(this, kPropertiesOffset,
+                GetHeap()->empty_properties_dictionary());
+  } else {
+    WRITE_FIELD(this, kPropertiesOffset, GetHeap()->empty_fixed_array());
+  }
 }
 
 

@@ -193,19 +193,24 @@ class JSArrayBuffer::BodyDescriptor final : public BodyDescriptorBase {
 class BytecodeArray::BodyDescriptor final : public BodyDescriptorBase {
  public:
   static bool IsValidSlot(HeapObject* obj, int offset) {
-    return offset == kConstantPoolOffset;
+    return offset >= kConstantPoolOffset &&
+           offset <= kSourcePositionTableOffset;
   }
 
   template <typename ObjectVisitor>
   static inline void IterateBody(HeapObject* obj, int object_size,
                                  ObjectVisitor* v) {
     IteratePointer(obj, kConstantPoolOffset, v);
+    IteratePointer(obj, kHandlerTableOffset, v);
+    IteratePointer(obj, kSourcePositionTableOffset, v);
   }
 
   template <typename StaticVisitor>
   static inline void IterateBody(HeapObject* obj, int object_size) {
     Heap* heap = obj->GetHeap();
     IteratePointer<StaticVisitor>(heap, obj, kConstantPoolOffset);
+    IteratePointer<StaticVisitor>(heap, obj, kHandlerTableOffset);
+    IteratePointer<StaticVisitor>(heap, obj, kSourcePositionTableOffset);
   }
 
   static inline int SizeOf(Map* map, HeapObject* obj) {

@@ -115,6 +115,10 @@ const Register ToStringDescriptor::ReceiverRegister() { return r0; }
 
 
 // static
+const Register ToNameDescriptor::ReceiverRegister() { return r0; }
+
+
+// static
 const Register ToObjectDescriptor::ReceiverRegister() { return r0; }
 
 
@@ -163,13 +167,6 @@ void CreateAllocationSiteDescriptor::InitializePlatformSpecific(
 void CreateWeakCellDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {r2, r3, r1};
-  data->InitializePlatformSpecific(arraysize(registers), registers);
-}
-
-
-void StoreArrayLiteralElementDescriptor::InitializePlatformSpecific(
-    CallInterfaceDescriptorData* data) {
-  Register registers[] = {r3, r0};
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
 

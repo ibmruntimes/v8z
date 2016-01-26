@@ -1411,8 +1411,7 @@ void LCodeGen::DoMulI(LMulI* instr) {
           if (constant < 0)  __ Subu(result, zero_reg, result);
         } else if (base::bits::IsPowerOfTwo32(constant_abs - 1)) {
           int32_t shift = WhichPowerOf2(constant_abs - 1);
-          __ sll(scratch, left, shift);
-          __ Addu(result, scratch, left);
+          __ Lsa(result, left, left, shift);
           // Correct the sign of the result if the constant is negative.
           if (constant < 0)  __ Subu(result, zero_reg, result);
         } else if (base::bits::IsPowerOfTwo32(constant_abs + 1)) {
@@ -1649,13 +1648,6 @@ void LCodeGen::DoConstantT(LConstantT* instr) {
   Handle<Object> object = instr->value(isolate());
   AllowDeferredHandleDereference smi_check;
   __ li(ToRegister(instr->result()), object);
-}
-
-
-void LCodeGen::DoMapEnumLength(LMapEnumLength* instr) {
-  Register result = ToRegister(instr->result());
-  Register map = ToRegister(instr->value());
-  __ EnumLength(result, map);
 }
 
 
@@ -2159,8 +2151,9 @@ void LCodeGen::DoCompareNumericAndBranch(LCompareNumericAndBranch* instr) {
     // We can statically evaluate the comparison.
     double left_val = ToDouble(LConstantOperand::cast(left));
     double right_val = ToDouble(LConstantOperand::cast(right));
-    int next_block = EvalComparison(instr->op(), left_val, right_val) ?
-        instr->TrueDestination(chunk_) : instr->FalseDestination(chunk_);
+    int next_block = Token::EvalComparison(instr->op(), left_val, right_val)
+                         ? instr->TrueDestination(chunk_)
+                         : instr->FalseDestination(chunk_);
     EmitGoto(next_block);
   } else {
     if (instr->is_double()) {
@@ -2577,8 +2570,7 @@ void LCodeGen::DoReturn(LReturn* instr) {
     Register reg = ToRegister(instr->parameter_count());
     // The argument count parameter is a smi
     __ SmiUntag(reg);
-    __ sll(at, reg, kPointerSizeLog2);
-    __ Addu(sp, sp, at);
+    __ Lsa(sp, sp, reg, kPointerSizeLog2);
   }
 
   __ Jump(ra);
@@ -2780,8 +2772,7 @@ void LCodeGen::DoAccessArgumentsAt(LAccessArgumentsAt* instr) {
       Register index = ToRegister(instr->index());
       __ li(at, Operand(const_length + 1));
       __ Subu(result, at, index);
-      __ sll(at, result, kPointerSizeLog2);
-      __ Addu(at, arguments, at);
+      __ Lsa(at, arguments, result, kPointerSizeLog2);
       __ lw(result, MemOperand(at));
     }
   } else if (instr->index()->IsConstantOperand()) {
@@ -2790,12 +2781,10 @@ void LCodeGen::DoAccessArgumentsAt(LAccessArgumentsAt* instr) {
     int loc = const_index - 1;
     if (loc != 0) {
       __ Subu(result, length, Operand(loc));
-      __ sll(at, result, kPointerSizeLog2);
-      __ Addu(at, arguments, at);
+      __ Lsa(at, arguments, result, kPointerSizeLog2);
       __ lw(result, MemOperand(at));
     } else {
-      __ sll(at, length, kPointerSizeLog2);
-      __ Addu(at, arguments, at);
+      __ Lsa(at, arguments, length, kPointerSizeLog2);
       __ lw(result, MemOperand(at));
     }
   } else {
@@ -2803,8 +2792,7 @@ void LCodeGen::DoAccessArgumentsAt(LAccessArgumentsAt* instr) {
     Register index = ToRegister(instr->index());
     __ Subu(result, length, index);
     __ Addu(result, result, 1);
-    __ sll(at, result, kPointerSizeLog2);
-    __ Addu(at, arguments, at);
+    __ Lsa(at, arguments, result, kPointerSizeLog2);
     __ lw(result, MemOperand(at));
   }
 }
@@ -2913,8 +2901,7 @@ void LCodeGen::DoLoadKeyedFixedDoubleArray(LLoadKeyed* instr) {
     key = ToRegister(instr->key());
     int shift_size = (instr->hydrogen()->key()->representation().IsSmi())
         ? (element_size_shift - kSmiTagSize) : element_size_shift;
-    __ sll(at, key, shift_size);
-    __ Addu(scratch, scratch, at);
+    __ Lsa(scratch, scratch, key, shift_size);
   }
 
   __ ldc1(result, MemOperand(scratch));
@@ -2945,11 +2932,9 @@ void LCodeGen::DoLoadKeyedFixedArray(LLoadKeyed* instr) {
     // during bound check elimination with the index argument to the bounds
     // check, which can be tagged, so that case must be handled here, too.
     if (instr->hydrogen()->key()->representation().IsSmi()) {
-      __ sll(scratch, key, kPointerSizeLog2 - kSmiTagSize);
-      __ addu(scratch, elements, scratch);
+      __ Lsa(scratch, elements, key, kPointerSizeLog2 - kSmiTagSize);
     } else {
-      __ sll(scratch, key, kPointerSizeLog2);
-      __ addu(scratch, elements, scratch);
+      __ Lsa(scratch, elements, key, kPointerSizeLog2);
     }
   }
   __ lw(result, MemOperand(store_base, offset));
@@ -3944,8 +3929,7 @@ void LCodeGen::DoStoreKeyedExternalArray(LStoreKeyed* instr) {
         address = external_pointer;
       }
     } else {
-      __ sll(address, key, shift_size);
-      __ Addu(address, external_pointer, address);
+      __ Lsa(address, external_pointer, key, shift_size);
     }
 
     if (elements_kind == FLOAT32_ELEMENTS) {
@@ -4062,11 +4046,9 @@ void LCodeGen::DoStoreKeyedFixedArray(LStoreKeyed* instr) {
     // during bound check elimination with the index argument to the bounds
     // check, which can be tagged, so that case must be handled here, too.
     if (instr->hydrogen()->key()->representation().IsSmi()) {
-      __ sll(scratch, key, kPointerSizeLog2 - kSmiTagSize);
-      __ addu(scratch, elements, scratch);
+      __ Lsa(scratch, elements, key, kPointerSizeLog2 - kSmiTagSize);
     } else {
-      __ sll(scratch, key, kPointerSizeLog2);
-      __ addu(scratch, elements, scratch);
+      __ Lsa(scratch, elements, key, kPointerSizeLog2);
     }
   }
   __ sw(value, MemOperand(store_base, offset));
@@ -4353,8 +4335,7 @@ void LCodeGen::DoStringCharFromCode(LStringCharFromCode* instr) {
   __ Branch(deferred->entry(), hi,
             char_code, Operand(String::kMaxOneByteCharCode));
   __ LoadRoot(result, Heap::kSingleCharacterStringCacheRootIndex);
-  __ sll(scratch, char_code, kPointerSizeLog2);
-  __ Addu(result, result, scratch);
+  __ Lsa(result, result, char_code, kPointerSizeLog2);
   __ lw(result, FieldMemOperand(result, FixedArray::kHeaderSize));
   __ LoadRoot(scratch, Heap::kUndefinedValueRootIndex);
   __ Branch(deferred->entry(), eq, result, Operand(scratch));
@@ -5482,19 +5463,10 @@ void LCodeGen::DoOsrEntry(LOsrEntry* instr) {
 void LCodeGen::DoForInPrepareMap(LForInPrepareMap* instr) {
   Register result = ToRegister(instr->result());
   Register object = ToRegister(instr->object());
-  __ And(at, object, kSmiTagMask);
-  DeoptimizeIf(eq, instr, Deoptimizer::kSmi, at, Operand(zero_reg));
-
-  STATIC_ASSERT(JS_PROXY_TYPE == FIRST_JS_RECEIVER_TYPE);
-  __ GetObjectType(object, a1, a1);
-  DeoptimizeIf(le, instr, Deoptimizer::kNotAJavaScriptObject, a1,
-               Operand(JS_PROXY_TYPE));
 
   Label use_cache, call_runtime;
   DCHECK(object.is(a0));
-  Register null_value = t1;
-  __ LoadRoot(null_value, Heap::kNullValueRootIndex);
-  __ CheckEnumCache(null_value, &call_runtime);
+  __ CheckEnumCache(&call_runtime);
 
   __ lw(result, FieldMemOperand(object, HeapObject::kMapOffset));
   __ Branch(&use_cache);
@@ -5502,12 +5474,7 @@ void LCodeGen::DoForInPrepareMap(LForInPrepareMap* instr) {
   // Get the set of properties to enumerate.
   __ bind(&call_runtime);
   __ push(object);
-  CallRuntime(Runtime::kGetPropertyNamesFast, instr);
-
-  __ lw(a1, FieldMemOperand(v0, HeapObject::kMapOffset));
-  DCHECK(result.is(v0));
-  __ LoadRoot(at, Heap::kMetaMapRootIndex);
-  DeoptimizeIf(ne, instr, Deoptimizer::kWrongMap, a1, Operand(at));
+  CallRuntime(Runtime::kForInEnumerate, instr);
   __ bind(&use_cache);
 }
 

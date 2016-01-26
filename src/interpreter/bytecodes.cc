@@ -232,6 +232,23 @@ bool Bytecodes::IsJumpOrReturn(Bytecode bytecode) {
 }
 
 
+namespace {
+static Register DecodeRegister(const uint8_t* operand_start,
+                               OperandType operand_type) {
+  switch (Bytecodes::SizeOfOperand(operand_type)) {
+    case OperandSize::kByte:
+      return Register::FromOperand(*operand_start);
+    case OperandSize::kShort:
+      return Register::FromWideOperand(ReadUnalignedUInt16(operand_start));
+    case OperandSize::kNone: {
+      UNREACHABLE();
+    }
+  }
+  return Register();
+}
+}  // namespace
+
+
 // static
 std::ostream& Bytecodes::Decode(std::ostream& os, const uint8_t* bytecode_start,
                                 int parameter_count) {
@@ -257,10 +274,10 @@ std::ostream& Bytecodes::Decode(std::ostream& os, const uint8_t* bytecode_start,
     const uint8_t* operand_start =
         &bytecode_start[GetOperandOffset(bytecode, i)];
     switch (op_type) {
-      case interpreter::OperandType::kCount8:
+      case interpreter::OperandType::kRegCount8:
         os << "#" << static_cast<unsigned int>(*operand_start);
         break;
-      case interpreter::OperandType::kCount16:
+      case interpreter::OperandType::kRegCount16:
         os << '#' << ReadUnalignedUInt16(operand_start);
         break;
       case interpreter::OperandType::kIdx8:
@@ -272,10 +289,12 @@ std::ostream& Bytecodes::Decode(std::ostream& os, const uint8_t* bytecode_start,
       case interpreter::OperandType::kImm8:
         os << "#" << static_cast<int>(static_cast<int8_t>(*operand_start));
         break;
+      case interpreter::OperandType::kMaybeReg8:
+      case interpreter::OperandType::kMaybeReg16:
       case interpreter::OperandType::kReg8:
-      case interpreter::OperandType::kMaybeReg8: {
-        Register reg = Register::FromOperand(*operand_start);
-        if (reg.is_function_context()) {
+      case interpreter::OperandType::kReg16: {
+        Register reg = DecodeRegister(operand_start, op_type);
+        if (reg.is_current_context()) {
           os << "<context>";
         } else if (reg.is_function_closure()) {
           os << "<closure>";
@@ -293,26 +312,18 @@ std::ostream& Bytecodes::Decode(std::ostream& os, const uint8_t* bytecode_start,
         }
         break;
       }
-      case interpreter::OperandType::kRegPair8: {
-        Register reg = Register::FromOperand(*operand_start);
+      case interpreter::OperandType::kRegPair8:
+      case interpreter::OperandType::kRegTriple8:
+      case interpreter::OperandType::kRegPair16:
+      case interpreter::OperandType::kRegTriple16: {
+        Register reg = DecodeRegister(operand_start, op_type);
+        int range = op_type == interpreter::OperandType::kRegPair8 ? 1 : 2;
         if (reg.is_parameter()) {
           int parameter_index = reg.ToParameterIndex(parameter_count);
-          DCHECK_NE(parameter_index, 0);
-          os << "a" << parameter_index - 1 << "-" << parameter_index;
+          DCHECK_GT(parameter_index, 0);
+          os << "a" << parameter_index - range << "-" << parameter_index;
         } else {
-          os << "r" << reg.index() << "-" << reg.index() + 1;
-        }
-        break;
-      }
-      case interpreter::OperandType::kReg16: {
-        Register reg =
-            Register::FromWideOperand(ReadUnalignedUInt16(operand_start));
-        if (reg.is_parameter()) {
-          int parameter_index = reg.ToParameterIndex(parameter_count);
-          DCHECK_NE(parameter_index, 0);
-          os << "a" << parameter_index - 1;
-        } else {
-          os << "r" << reg.index();
+          os << "r" << reg.index() << "-" << reg.index() + range;
         }
         break;
       }
@@ -347,7 +358,7 @@ static const int kLastParamRegisterIndex =
     -InterpreterFrameConstants::kLastParamFromRegisterPointer / kPointerSize;
 static const int kFunctionClosureRegisterIndex =
     -InterpreterFrameConstants::kFunctionFromRegisterPointer / kPointerSize;
-static const int kFunctionContextRegisterIndex =
+static const int kCurrentContextRegisterIndex =
     -InterpreterFrameConstants::kContextFromRegisterPointer / kPointerSize;
 static const int kNewTargetRegisterIndex =
     -InterpreterFrameConstants::kNewTargetFromRegisterPointer / kPointerSize;
@@ -386,13 +397,13 @@ bool Register::is_function_closure() const {
 }
 
 
-Register Register::function_context() {
-  return Register(kFunctionContextRegisterIndex);
+Register Register::current_context() {
+  return Register(kCurrentContextRegisterIndex);
 }
 
 
-bool Register::is_function_context() const {
-  return index() == kFunctionContextRegisterIndex;
+bool Register::is_current_context() const {
+  return index() == kCurrentContextRegisterIndex;
 }
 
 
@@ -428,6 +439,16 @@ uint16_t Register::ToWideOperand() const {
 
 Register Register::FromWideOperand(uint16_t operand) {
   return Register(-static_cast<int16_t>(operand));
+}
+
+
+uint32_t Register::ToRawOperand() const {
+  return static_cast<uint32_t>(-index_);
+}
+
+
+Register Register::FromRawOperand(uint32_t operand) {
+  return Register(-static_cast<int32_t>(operand));
 }
 
 

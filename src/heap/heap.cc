@@ -2752,6 +2752,11 @@ void Heap::CreateInitialObjects() {
   Runtime::InitializeIntrinsicFunctionNames(isolate(), intrinsic_names);
   set_intrinsic_function_names(*intrinsic_names);
 
+  Handle<NameDictionary> empty_properties_dictionary =
+      NameDictionary::New(isolate(), 0, TENURED);
+  empty_properties_dictionary->SetRequiresCopyOnCapacityChange();
+  set_empty_properties_dictionary(*empty_properties_dictionary);
+
   set_number_string_cache(
       *factory->NewFixedArray(kInitialNumberStringCacheSize * 2, TENURED));
 
@@ -3051,6 +3056,8 @@ AllocationResult Heap::AllocateBytecodeArray(int length,
   instance->set_frame_size(frame_size);
   instance->set_parameter_count(parameter_count);
   instance->set_constant_pool(constant_pool);
+  instance->set_handler_table(empty_fixed_array());
+  instance->set_source_position_table(empty_fixed_array());
   CopyBytes(instance->GetFirstBytecodeAddress(), raw_bytecodes, length);
 
   return result;
@@ -3093,7 +3100,7 @@ bool Heap::CanMoveObjectStart(HeapObject* object) {
   // (3) the page was already concurrently swept. This case is an optimization
   // for concurrent sweeping. The WasSwept predicate for concurrently swept
   // pages is set after sweeping all pages.
-  return !InOldSpace(address) || page->WasSwept() || page->SweepingCompleted();
+  return !InOldSpace(address) || page->SweepingDone();
 }
 
 

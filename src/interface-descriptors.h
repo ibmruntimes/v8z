@@ -28,6 +28,7 @@ class PlatformInterfaceDescriptor;
   V(ToNumber)                                 \
   V(ToLength)                                 \
   V(ToString)                                 \
+  V(ToName)                                   \
   V(ToObject)                                 \
   V(NumberToString)                           \
   V(Typeof)                                   \
@@ -69,7 +70,6 @@ class PlatformInterfaceDescriptor;
   V(ArgumentsAccessRead)                      \
   V(ArgumentsAccessNew)                       \
   V(RestParamAccess)                          \
-  V(StoreArrayLiteralElement)                 \
   V(LoadGlobalViaContext)                     \
   V(StoreGlobalViaContext)                    \
   V(MathPowTagged)                            \
@@ -406,6 +406,16 @@ class ToStringDescriptor : public CallInterfaceDescriptor {
 };
 
 
+class ToNameDescriptor : public CallInterfaceDescriptor {
+ public:
+  enum ParameterIndices { kReceiverIndex };
+
+  DECLARE_DESCRIPTOR(ToNameDescriptor, CallInterfaceDescriptor)
+
+  static const Register ReceiverRegister();
+};
+
+
 class ToObjectDescriptor : public CallInterfaceDescriptor {
  public:
   enum ParameterIndices { kReceiverIndex };
@@ -719,13 +729,6 @@ class RestParamAccessDescriptor : public CallInterfaceDescriptor {
   static const Register parameter_count();
   static const Register parameter_pointer();
   static const Register rest_parameter_index();
-};
-
-
-class StoreArrayLiteralElementDescriptor : public CallInterfaceDescriptor {
- public:
-  DECLARE_DESCRIPTOR(StoreArrayLiteralElementDescriptor,
-                     CallInterfaceDescriptor)
 };
 
 

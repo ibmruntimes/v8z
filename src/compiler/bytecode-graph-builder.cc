@@ -155,8 +155,8 @@ Node* BytecodeGraphBuilder::Environment::LookupAccumulator() const {
 
 Node* BytecodeGraphBuilder::Environment::LookupRegister(
     interpreter::Register the_register) const {
-  if (the_register.is_function_context()) {
-    return builder()->GetFunctionContext();
+  if (the_register.is_current_context()) {
+    return Context();
   } else if (the_register.is_function_closure()) {
     return builder()->GetFunctionClosure();
   } else if (the_register.is_new_target()) {
@@ -630,17 +630,9 @@ void BytecodeGraphBuilder::VisitMov(
 }
 
 
-void BytecodeGraphBuilder::VisitExchange(
+void BytecodeGraphBuilder::VisitMovWide(
     const interpreter::BytecodeArrayIterator& iterator) {
-  environment()->ExchangeRegisters(iterator.GetRegisterOperand(0),
-                                   iterator.GetRegisterOperand(1));
-}
-
-
-void BytecodeGraphBuilder::VisitExchangeWide(
-    const interpreter::BytecodeArrayIterator& iterator) {
-  environment()->ExchangeRegisters(iterator.GetRegisterOperand(0),
-                                   iterator.GetRegisterOperand(1));
+  VisitMov(iterator);
 }
 
 
@@ -829,7 +821,7 @@ void BytecodeGraphBuilder::BuildStaLookupSlot(
   Node* value = environment()->LookupAccumulator();
   Node* name = jsgraph()->Constant(iterator.GetConstantForIndexOperand(0));
   Node* language = jsgraph()->Constant(language_mode);
-  const Operator* op = javascript()->CallRuntime(Runtime::kStoreLookupSlot, 4);
+  const Operator* op = javascript()->CallRuntime(Runtime::kStoreLookupSlot);
   Node* store = NewNode(op, value, environment()->Context(), name, language);
   environment()->BindAccumulator(store, &states);
 }
@@ -1042,9 +1034,10 @@ void BytecodeGraphBuilder::VisitKeyedStoreICStrictWide(
 
 void BytecodeGraphBuilder::VisitPushContext(
     const interpreter::BytecodeArrayIterator& iterator) {
-  Node* context = environment()->LookupAccumulator();
-  environment()->BindRegister(iterator.GetRegisterOperand(0), context);
-  environment()->SetContext(context);
+  Node* new_context = environment()->LookupAccumulator();
+  environment()->BindRegister(iterator.GetRegisterOperand(0),
+                              environment()->Context());
+  environment()->SetContext(new_context);
 }
 
 
@@ -1223,7 +1216,7 @@ void BytecodeGraphBuilder::VisitCallWide(
 }
 
 
-void BytecodeGraphBuilder::VisitCallJSRuntime(
+void BytecodeGraphBuilder::BuildCallJSRuntime(
     const interpreter::BytecodeArrayIterator& iterator) {
   FrameStateBeforeAndAfter states(this, iterator);
   Node* callee = BuildLoadNativeContextField(iterator.GetIndexOperand(0));
@@ -1235,6 +1228,18 @@ void BytecodeGraphBuilder::VisitCallJSRuntime(
       javascript()->CallFunction(arg_count + 2, language_mode());
   Node* value = ProcessCallArguments(call, callee, receiver, arg_count + 2);
   environment()->BindAccumulator(value, &states);
+}
+
+
+void BytecodeGraphBuilder::VisitCallJSRuntime(
+    const interpreter::BytecodeArrayIterator& iterator) {
+  BuildCallJSRuntime(iterator);
+}
+
+
+void BytecodeGraphBuilder::VisitCallJSRuntimeWide(
+    const interpreter::BytecodeArrayIterator& iterator) {
+  BuildCallJSRuntime(iterator);
 }
 
 
@@ -1252,7 +1257,7 @@ Node* BytecodeGraphBuilder::ProcessCallRuntimeArguments(
 }
 
 
-void BytecodeGraphBuilder::VisitCallRuntime(
+void BytecodeGraphBuilder::BuildCallRuntime(
     const interpreter::BytecodeArrayIterator& iterator) {
   FrameStateBeforeAndAfter states(this, iterator);
   Runtime::FunctionId functionId =
@@ -1267,7 +1272,19 @@ void BytecodeGraphBuilder::VisitCallRuntime(
 }
 
 
-void BytecodeGraphBuilder::VisitCallRuntimeForPair(
+void BytecodeGraphBuilder::VisitCallRuntime(
+    const interpreter::BytecodeArrayIterator& iterator) {
+  BuildCallRuntime(iterator);
+}
+
+
+void BytecodeGraphBuilder::VisitCallRuntimeWide(
+    const interpreter::BytecodeArrayIterator& iterator) {
+  BuildCallRuntime(iterator);
+}
+
+
+void BytecodeGraphBuilder::BuildCallRuntimeForPair(
     const interpreter::BytecodeArrayIterator& iterator) {
   FrameStateBeforeAndAfter states(this, iterator);
   Runtime::FunctionId functionId =
@@ -1280,6 +1297,18 @@ void BytecodeGraphBuilder::VisitCallRuntimeForPair(
   const Operator* call = javascript()->CallRuntime(functionId, arg_count);
   Node* return_pair = ProcessCallRuntimeArguments(call, first_arg, arg_count);
   environment()->BindRegistersToProjections(first_return, return_pair, &states);
+}
+
+
+void BytecodeGraphBuilder::VisitCallRuntimeForPair(
+    const interpreter::BytecodeArrayIterator& iterator) {
+  BuildCallRuntimeForPair(iterator);
+}
+
+
+void BytecodeGraphBuilder::VisitCallRuntimeForPairWide(
+    const interpreter::BytecodeArrayIterator& iterator) {
+  BuildCallRuntimeForPair(iterator);
 }
 
 
@@ -1300,7 +1329,7 @@ Node* BytecodeGraphBuilder::ProcessCallNewArguments(
 }
 
 
-void BytecodeGraphBuilder::VisitNew(
+void BytecodeGraphBuilder::BuildCallConstruct(
     const interpreter::BytecodeArrayIterator& iterator) {
   FrameStateBeforeAndAfter states(this, iterator);
   interpreter::Register callee = iterator.GetRegisterOperand(0);
@@ -1315,13 +1344,36 @@ void BytecodeGraphBuilder::VisitNew(
 }
 
 
+void BytecodeGraphBuilder::VisitNew(
+    const interpreter::BytecodeArrayIterator& iterator) {
+  BuildCallConstruct(iterator);
+}
+
+
+void BytecodeGraphBuilder::VisitNewWide(
+    const interpreter::BytecodeArrayIterator& iterator) {
+  BuildCallConstruct(iterator);
+}
+
+
 void BytecodeGraphBuilder::VisitThrow(
     const interpreter::BytecodeArrayIterator& iterator) {
   FrameStateBeforeAndAfter states(this, iterator);
   Node* value = environment()->LookupAccumulator();
   // TODO(mythria): Change to Runtime::kThrow when we have deoptimization
   // information support in the interpreter.
-  NewNode(javascript()->CallRuntime(Runtime::kReThrow, 1), value);
+  NewNode(javascript()->CallRuntime(Runtime::kReThrow), value);
+  Node* control = NewNode(common()->Throw(), value);
+  environment()->RecordAfterState(control, &states);
+  UpdateControlDependencyToLeaveFunction(control);
+}
+
+
+void BytecodeGraphBuilder::VisitReThrow(
+    const interpreter::BytecodeArrayIterator& iterator) {
+  FrameStateBeforeAndAfter states(this, iterator);
+  Node* value = environment()->LookupAccumulator();
+  NewNode(javascript()->CallRuntime(Runtime::kReThrow), value);
   Node* control = NewNode(common()->Throw(), value);
   environment()->RecordAfterState(control, &states);
   UpdateControlDependencyToLeaveFunction(control);
@@ -1485,7 +1537,7 @@ void BytecodeGraphBuilder::VisitDeleteLookupSlot(
     const interpreter::BytecodeArrayIterator& iterator) {
   FrameStateBeforeAndAfter states(this, iterator);
   Node* name = environment()->LookupAccumulator();
-  const Operator* op = javascript()->CallRuntime(Runtime::kDeleteLookupSlot, 2);
+  const Operator* op = javascript()->CallRuntime(Runtime::kDeleteLookupSlot);
   Node* result = NewNode(op, environment()->Context(), name);
   environment()->BindAccumulator(result, &states);
 }
@@ -1722,21 +1774,25 @@ void BytecodeGraphBuilder::VisitReturn(
 }
 
 
+void BytecodeGraphBuilder::BuildForInPrepare(
+    const interpreter::BytecodeArrayIterator& iterator) {
+  FrameStateBeforeAndAfter states(this, iterator);
+  Node* receiver = environment()->LookupAccumulator();
+  Node* prepare = NewNode(javascript()->ForInPrepare(), receiver);
+  environment()->BindRegistersToProjections(iterator.GetRegisterOperand(0),
+                                            prepare, &states);
+}
+
+
 void BytecodeGraphBuilder::VisitForInPrepare(
     const interpreter::BytecodeArrayIterator& iterator) {
-  Node* prepare = nullptr;
-  {
-    FrameStateBeforeAndAfter states(this, iterator);
-    Node* receiver = environment()->LookupAccumulator();
-    prepare = NewNode(javascript()->ForInPrepare(), receiver);
-    environment()->RecordAfterState(prepare, &states);
-  }
-  // Project cache_type, cache_array, cache_length into register
-  // operands 1, 2, 3.
-  for (int i = 0; i < 3; i++) {
-    environment()->BindRegister(iterator.GetRegisterOperand(i),
-                                NewNode(common()->Projection(i), prepare));
-  }
+  BuildForInPrepare(iterator);
+}
+
+
+void BytecodeGraphBuilder::VisitForInPrepareWide(
+    const interpreter::BytecodeArrayIterator& iterator) {
+  BuildForInPrepare(iterator);
 }
 
 
@@ -1751,19 +1807,33 @@ void BytecodeGraphBuilder::VisitForInDone(
 }
 
 
-void BytecodeGraphBuilder::VisitForInNext(
+void BytecodeGraphBuilder::BuildForInNext(
     const interpreter::BytecodeArrayIterator& iterator) {
   FrameStateBeforeAndAfter states(this, iterator);
   Node* receiver =
       environment()->LookupRegister(iterator.GetRegisterOperand(0));
-  Node* cache_type =
-      environment()->LookupRegister(iterator.GetRegisterOperand(1));
-  Node* cache_array =
-      environment()->LookupRegister(iterator.GetRegisterOperand(2));
-  Node* index = environment()->LookupRegister(iterator.GetRegisterOperand(3));
+  Node* index = environment()->LookupRegister(iterator.GetRegisterOperand(1));
+  int catch_reg_pair_index = iterator.GetRegisterOperand(2).index();
+  Node* cache_type = environment()->LookupRegister(
+      interpreter::Register(catch_reg_pair_index));
+  Node* cache_array = environment()->LookupRegister(
+      interpreter::Register(catch_reg_pair_index + 1));
+
   Node* value = NewNode(javascript()->ForInNext(), receiver, cache_array,
                         cache_type, index);
   environment()->BindAccumulator(value, &states);
+}
+
+
+void BytecodeGraphBuilder::VisitForInNext(
+    const interpreter::BytecodeArrayIterator& iterator) {
+  BuildForInNext(iterator);
+}
+
+
+void BytecodeGraphBuilder::VisitForInNextWide(
+    const interpreter::BytecodeArrayIterator& iterator) {
+  BuildForInNext(iterator);
 }
 
 

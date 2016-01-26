@@ -196,6 +196,13 @@ class AstNode: public ZoneObject {
   virtual NodeType node_type() const = 0;
   int position() const { return position_; }
 
+#ifdef DEBUG
+  void PrettyPrint(Isolate* isolate);
+  void PrettyPrint();
+  void PrintAst(Isolate* isolate);
+  void PrintAst();
+#endif  // DEBUG
+
   // Type testing & conversion functions overridden by concrete subclasses.
 #define DECLARE_NODE_FUNCTIONS(type) \
   bool Is##type() const { return node_type() == AstNode::k##type; } \
@@ -857,9 +864,9 @@ class ForInStatement final : public ForEachStatement {
 
   static int num_ids() { return parent_num_ids() + 6; }
   BailoutId BodyId() const { return BailoutId(local_id(0)); }
-  BailoutId PrepareId() const { return BailoutId(local_id(1)); }
-  BailoutId EnumId() const { return BailoutId(local_id(2)); }
-  BailoutId ToObjectId() const { return BailoutId(local_id(3)); }
+  BailoutId EnumId() const { return BailoutId(local_id(1)); }
+  BailoutId ToObjectId() const { return BailoutId(local_id(2)); }
+  BailoutId PrepareId() const { return BailoutId(local_id(3)); }
   BailoutId FilterId() const { return BailoutId(local_id(4)); }
   BailoutId AssignmentId() const { return BailoutId(local_id(5)); }
   BailoutId ContinueId() const override { return EntryId(); }

@@ -1104,16 +1104,24 @@ void CEntryStub::Generate(MacroAssembler* masm) {
     __ Sub(temp_argv, temp_argv, 1 * kPointerSize);
   }
 
-  // Enter the exit frame. Reserve three slots to preserve x21-x23 callee-saved
-  // registers.
+  // Reserve three slots to preserve x21-x23 callee-saved registers. If the
+  // result size is too large to be returned in registers then also reserve
+  // space for the return value.
+  int extra_stack_space = 3 + (result_size() <= 2 ? 0 : result_size());
+  // Enter the exit frame.
   FrameScope scope(masm, StackFrame::MANUAL);
-  __ EnterExitFrame(save_doubles(), x10, 3);
+  __ EnterExitFrame(save_doubles(), x10, extra_stack_space);
   DCHECK(csp.Is(__ StackPointer()));
 
   // Poke callee-saved registers into reserved space.
   __ Poke(argv, 1 * kPointerSize);
   __ Poke(argc, 2 * kPointerSize);
   __ Poke(target, 3 * kPointerSize);
+
+  if (result_size() > 2) {
+    // Save the location of the return value into x8 for call.
+    __ Add(x8, __ StackPointer(), Operand(4 * kPointerSize));
+  }
 
   // We normally only keep tagged values in callee-saved registers, as they
   // could be pushed onto the stack by called stubs and functions, and on the
@@ -1184,7 +1192,18 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   __ Blr(target);
   __ Bind(&return_location);
 
-  //  x0    result      The return code from the call.
+  if (result_size() > 2) {
+    DCHECK_EQ(3, result_size());
+    // Read result values stored on stack.
+    __ Ldr(x0, MemOperand(__ StackPointer(), 4 * kPointerSize));
+    __ Ldr(x1, MemOperand(__ StackPointer(), 5 * kPointerSize));
+    __ Ldr(x2, MemOperand(__ StackPointer(), 6 * kPointerSize));
+  }
+  // Result returned in x0, x1:x0 or x2:x1:x0 - do not destroy these registers!
+
+  //  x0    result0      The return code from the call.
+  //  x1    result1      For calls which return ObjectPair or ObjectTriple.
+  //  x2    result2      For calls which return ObjectTriple.
   //  x21   argv
   //  x22   argc
   //  x23   target
@@ -3859,6 +3878,39 @@ void ToStringStub::Generate(MacroAssembler* masm) {
 }
 
 
+void ToNameStub::Generate(MacroAssembler* masm) {
+  // The ToName stub takes one argument in x0.
+  Label is_number;
+  __ JumpIfSmi(x0, &is_number);
+
+  Label not_name;
+  STATIC_ASSERT(FIRST_NAME_TYPE == FIRST_TYPE);
+  __ JumpIfObjectType(x0, x1, x1, LAST_NAME_TYPE, &not_name, hi);
+  // x0: receiver
+  // x1: receiver instance type
+  __ Ret();
+  __ Bind(&not_name);
+
+  Label not_heap_number;
+  __ Cmp(x1, HEAP_NUMBER_TYPE);
+  __ B(ne, &not_heap_number);
+  __ Bind(&is_number);
+  NumberToStringStub stub(isolate());
+  __ TailCallStub(&stub);
+  __ Bind(&not_heap_number);
+
+  Label not_oddball;
+  __ Cmp(x1, ODDBALL_TYPE);
+  __ B(ne, &not_oddball);
+  __ Ldr(x0, FieldMemOperand(x0, Oddball::kToStringOffset));
+  __ Ret();
+  __ Bind(&not_oddball);
+
+  __ Push(x0);  // Push argument.
+  __ TailCallRuntime(Runtime::kToName);
+}
+
+
 void StringHelper::GenerateFlatOneByteStringEquals(
     MacroAssembler* masm, Register left, Register right, Register scratch1,
     Register scratch2, Register scratch3) {
@@ -5798,17 +5850,21 @@ void CallApiAccessorStub::Generate(MacroAssembler* masm) {
 
 void CallApiGetterStub::Generate(MacroAssembler* masm) {
   // ----------- S t a t e -------------
-  //  -- sp[0]                  : name
-  //  -- sp[8 - kArgsLength*8]  : PropertyCallbackArguments object
+  //  -- sp[0]                         : name
+  //  -- sp[8 .. (8 + kArgsLength*8)]  : v8::PropertyCallbackInfo::args_
   //  -- ...
-  //  -- x2                     : api_function_address
+  //  -- x2                            : api_function_address
   // -----------------------------------
 
   Register api_function_address = ApiGetterDescriptor::function_address();
   DCHECK(api_function_address.is(x2));
 
+  // v8::PropertyCallbackInfo::args_ array and name handle.
+  const int kStackUnwindSpace = PropertyCallbackArguments::kArgsLength + 1;
+
+  // Load address of v8::PropertyAccessorInfo::args_ array and name handle.
   __ Mov(x0, masm->StackPointer());  // x0 = Handle<Name>
-  __ Add(x1, x0, 1 * kPointerSize);  // x1 = PCA
+  __ Add(x1, x0, 1 * kPointerSize);  // x1 = v8::PCI::args_
 
   const int kApiStackSpace = 1;
 
@@ -5819,20 +5875,22 @@ void CallApiGetterStub::Generate(MacroAssembler* masm) {
   FrameScope frame_scope(masm, StackFrame::MANUAL);
   __ EnterExitFrame(false, x10, kApiStackSpace + kCallApiFunctionSpillSpace);
 
-  // Create PropertyAccessorInfo instance on the stack above the exit frame with
-  // x1 (internal::Object** args_) as the data.
+  // Create v8::PropertyCallbackInfo object on the stack and initialize
+  // it's args_ field.
   __ Poke(x1, 1 * kPointerSize);
-  __ Add(x1, masm->StackPointer(), 1 * kPointerSize);  // x1 = AccessorInfo&
-
-  const int kStackUnwindSpace = PropertyCallbackArguments::kArgsLength + 1;
+  __ Add(x1, masm->StackPointer(), 1 * kPointerSize);
+  // x1 = v8::PropertyCallbackInfo&
 
   ExternalReference thunk_ref =
       ExternalReference::invoke_accessor_getter_callback(isolate());
 
   const int spill_offset = 1 + kApiStackSpace;
+  // +3 is to skip prolog, return address and name handle.
+  MemOperand return_value_operand(
+      fp, (PropertyCallbackArguments::kReturnValueOffset + 3) * kPointerSize);
   CallApiFunctionAndReturn(masm, api_function_address, thunk_ref,
                            kStackUnwindSpace, NULL, spill_offset,
-                           MemOperand(fp, 6 * kPointerSize), NULL);
+                           return_value_operand, NULL);
 }
 
 

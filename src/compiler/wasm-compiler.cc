@@ -696,9 +696,7 @@ Node* WasmGraphBuilder::Unop(wasm::WasmOpcode opcode, Node* input) {
       op = m->ChangeUint32ToFloat64();
       break;
     case wasm::kExprF32SConvertI32:
-      op = m->ChangeInt32ToFloat64();  // TODO(titzer): two conversions
-      input = graph()->NewNode(op, input);
-      op = m->TruncateFloat64ToFloat32();
+      op = m->RoundInt32ToFloat32();
       break;
     case wasm::kExprF32UConvertI32:
       op = m->ChangeUint32ToFloat64();
@@ -758,11 +756,10 @@ Node* WasmGraphBuilder::Unop(wasm::WasmOpcode opcode, Node* input) {
     case wasm::kExprF32Trunc: {
       if (m->Float32RoundTruncate().IsSupported()) {
         op = m->Float32RoundTruncate().op();
-        break;
       } else {
-        op = UnsupportedOpcode(opcode);
-        break;
+        return BuildF32Trunc(input);
       }
+      break;
     }
     case wasm::kExprF32NearestInt: {
       if (m->Float32RoundTiesEven().IsSupported()) {
@@ -1121,14 +1118,12 @@ Node* WasmGraphBuilder::BuildI32SConvertF32(Node* input) {
   MachineOperatorBuilder* m = jsgraph()->machine();
   // Truncation of the input value is needed for the overflow check later.
   Node* trunc = Unop(wasm::kExprF32Trunc, input);
-  // TODO(titzer): two conversions
-  Node* f64_trunc = graph()->NewNode(m->ChangeFloat32ToFloat64(), trunc);
-  Node* result = graph()->NewNode(m->ChangeFloat64ToInt32(), f64_trunc);
+  Node* result = graph()->NewNode(m->TruncateFloat32ToInt32(), trunc);
 
   // Convert the result back to f64. If we end up at a different value than the
   // truncated input value, then there has been an overflow and we trap.
-  Node* check = Unop(wasm::kExprF64SConvertI32, result);
-  Node* overflow = Binop(wasm::kExprF64Ne, f64_trunc, check);
+  Node* check = Unop(wasm::kExprF32SConvertI32, result);
+  Node* overflow = Binop(wasm::kExprF32Ne, trunc, check);
   trap_->AddTrapIfTrue(kTrapFloatUnrepresentable, overflow);
 
   return result;
@@ -1137,6 +1132,10 @@ Node* WasmGraphBuilder::BuildI32SConvertF32(Node* input) {
 
 Node* WasmGraphBuilder::BuildI32SConvertF64(Node* input) {
   MachineOperatorBuilder* m = jsgraph()->machine();
+  if (module_ && module_->asm_js) {
+    return graph()->NewNode(
+        m->TruncateFloat64ToInt32(TruncationMode::kJavaScript), input);
+  }
   // Truncation of the input value is needed for the overflow check later.
   Node* trunc = Unop(wasm::kExprF64Trunc, input);
   Node* result = graph()->NewNode(m->ChangeFloat64ToInt32(), trunc);
@@ -1171,6 +1170,10 @@ Node* WasmGraphBuilder::BuildI32UConvertF32(Node* input) {
 
 Node* WasmGraphBuilder::BuildI32UConvertF64(Node* input) {
   MachineOperatorBuilder* m = jsgraph()->machine();
+  if (module_ && module_->asm_js) {
+    return graph()->NewNode(
+        m->TruncateFloat64ToInt32(TruncationMode::kJavaScript), input);
+  }
   // Truncation of the input value is needed for the overflow check later.
   Node* trunc = Unop(wasm::kExprF64Trunc, input);
   Node* result = graph()->NewNode(m->ChangeFloat64ToUint32(), trunc);
@@ -1358,6 +1361,73 @@ Node* WasmGraphBuilder::BuildI64Popcnt(Node* input) {
                        jsgraph()->Int64Constant(0x00000000ffffffff)));
 
   return result;
+}
+
+
+Node* WasmGraphBuilder::BuildF32Trunc(Node* input) {
+  //  int32_t int_input = bitftoi(input);
+  //  int32_t exponent = int_input & 0x7f800000;
+  //  if (exponent >= ((23 + 127) << 23)) {
+  //    if (input != input) {
+  //      return bititof(int_input | (1 << 22));
+  //    }
+  //    return input;
+  //  }
+  //  int32_t sign = int_input & 0x80000000;
+  //  if (exponent < (127 << 23)) {
+  //    return bititof(sign);
+  //  }
+  //  int32_t mantissa = int_input & 0x007fffff;
+  //  int32_t shift = (127 + 23) - (exponent >> 23);
+  //  int32_t new_mantissa = (mantissa >> shift) << shift;
+  //  int32_t result = new_mantissa | exponent | sign;
+  //  return bititof(result);
+
+  Node* int_input = Unop(wasm::kExprI32ReinterpretF32, input);
+  Node* exponent =
+      Binop(wasm::kExprI32And, int_input, jsgraph()->Int32Constant(0x7f800000));
+
+  Node* sign =
+      Binop(wasm::kExprI32And, int_input, jsgraph()->Int32Constant(0x80000000));
+
+  Node* result_out_of_range = int_input;
+
+  Node* result_nan =
+      Binop(wasm::kExprI32Ior, int_input, jsgraph()->Int32Constant(1 << 22));
+
+  Node* result_zero = sign;
+
+  Node* mantissa =
+      Binop(wasm::kExprI32And, int_input, jsgraph()->Int32Constant(0x007fffff));
+  Node* shift =
+      Binop(wasm::kExprI32Sub, jsgraph()->Int32Constant(23 + 127),
+            Binop(wasm::kExprI32ShrU, exponent, jsgraph()->Int32Constant(23)));
+  Node* new_mantissa = Binop(wasm::kExprI32Shl,
+                             Binop(wasm::kExprI32ShrU, mantissa, shift), shift);
+  Node* result_truncate =
+      Binop(wasm::kExprI32Ior, Binop(wasm::kExprI32Ior, new_mantissa, exponent),
+            sign);
+
+  Diamond is_zero(
+      graph(), jsgraph()->common(),
+      Binop(wasm::kExprI32LtU, exponent, jsgraph()->Int32Constant(127 << 23)));
+
+  Node* result_within_range =
+      is_zero.Phi(wasm::kAstI32, result_zero, result_truncate);
+
+  Diamond input_nan(graph(), jsgraph()->common(),
+                    Binop(wasm::kExprF32Ne, input, input));
+  Node* result_exponent_geq_23 =
+      input_nan.Phi(wasm::kAstI32, result_nan, result_out_of_range);
+
+  Diamond exponent_geq_23(graph(), jsgraph()->common(),
+                          Binop(wasm::kExprI32GeU, exponent,
+                                jsgraph()->Int32Constant((23 + 127) << 23)));
+
+  Node* result = exponent_geq_23.Phi(wasm::kAstI32, result_exponent_geq_23,
+                                     result_within_range);
+
+  return Unop(wasm::kExprF32ReinterpretI32, result);
 }
 
 
@@ -1849,9 +1919,9 @@ Handle<JSFunction> CompileJSToWasmWrapper(
         module->GetFunctionSignature(index)->parameter_count());
     CallDescriptor* incoming = Linkage::GetJSCallDescriptor(
         &zone, false, params + 1, CallDescriptor::kNoFlags);
-    CompilationInfo info("js-to-wasm", isolate, &zone);
     // TODO(titzer): this is technically a WASM wrapper, not a wasm function.
-    info.set_output_code_kind(Code::WASM_FUNCTION);
+    Code::Flags flags = Code::ComputeFlags(Code::WASM_FUNCTION);
+    CompilationInfo info("js-to-wasm", isolate, &zone, flags);
     Handle<Code> code =
         Pipeline::GenerateCodeForTesting(&info, incoming, &graph, nullptr);
 
@@ -1924,9 +1994,9 @@ Handle<Code> CompileWasmToJSWrapper(Isolate* isolate, wasm::ModuleEnv* module,
 
     // Schedule and compile to machine code.
     CallDescriptor* incoming = module->GetWasmCallDescriptor(&zone, func->sig);
-    CompilationInfo info("wasm-to-js", isolate, &zone);
     // TODO(titzer): this is technically a WASM wrapper, not a wasm function.
-    info.set_output_code_kind(Code::WASM_FUNCTION);
+    Code::Flags flags = Code::ComputeFlags(Code::WASM_FUNCTION);
+    CompilationInfo info("wasm-to-js", isolate, &zone, flags);
     code = Pipeline::GenerateCodeForTesting(&info, incoming, &graph, nullptr);
 
 #ifdef ENABLE_DISASSEMBLER
@@ -2003,8 +2073,8 @@ Handle<Code> CompileWasmFunction(wasm::ErrorThrower& thrower, Isolate* isolate,
   // Run the compiler pipeline to generate machine code.
   CallDescriptor* descriptor = const_cast<CallDescriptor*>(
       module_env->GetWasmCallDescriptor(&zone, function.sig));
-  CompilationInfo info("wasm", isolate, &zone);
-  info.set_output_code_kind(Code::WASM_FUNCTION);
+  Code::Flags flags = Code::ComputeFlags(Code::WASM_FUNCTION);
+  CompilationInfo info("wasm", isolate, &zone, flags);
   Handle<Code> code =
       Pipeline::GenerateCodeForTesting(&info, descriptor, &graph);
 

@@ -5,6 +5,7 @@
 #include "src/base/platform/elapsed-timer.h"
 #include "src/signature.h"
 
+#include "src/bit-vector.h"
 #include "src/flags.h"
 #include "src/handles.h"
 #include "src/zone-containers.h"
@@ -97,13 +98,111 @@ struct IfEnv {
 #define BUILD0(func) (build() ? builder_->func() : nullptr)
 
 
+// Generic Wasm bytecode decoder with utilities for decoding operands,
+// lengths, etc.
+class WasmDecoder : public Decoder {
+ public:
+  WasmDecoder() : Decoder(nullptr, nullptr), function_env_(nullptr) {}
+
+ protected:
+  FunctionEnv* function_env_;
+
+  void Reset(FunctionEnv* function_env, const byte* start, const byte* end) {
+    Decoder::Reset(start, end);
+    function_env_ = function_env;
+  }
+
+  // Load an operand at [pc + 1].
+  template <typename V>
+  V Operand(const byte* pc) {
+    if ((limit_ - pc) < static_cast<int>(1 + sizeof(V))) {
+      const char* msg = "Expected operand following opcode";
+      switch (sizeof(V)) {
+        case 1:
+          msg = "Expected 1-byte operand following opcode";
+          break;
+        case 2:
+          msg = "Expected 2-byte operand following opcode";
+          break;
+        case 4:
+          msg = "Expected 4-byte operand following opcode";
+          break;
+        default:
+          break;
+      }
+      error(pc, msg);
+      return -1;
+    }
+    return *reinterpret_cast<const V*>(pc + 1);
+  }
+
+  LocalType LocalOperand(const byte* pc, uint32_t* index, int* length) {
+    *index = UnsignedLEB128Operand(pc, length);
+    if (function_env_->IsValidLocal(*index)) {
+      return function_env_->GetLocalType(*index);
+    }
+    error(pc, "invalid local variable index");
+    return kAstStmt;
+  }
+
+  LocalType GlobalOperand(const byte* pc, uint32_t* index, int* length) {
+    *index = UnsignedLEB128Operand(pc, length);
+    if (function_env_->module->IsValidGlobal(*index)) {
+      return WasmOpcodes::LocalTypeFor(
+          function_env_->module->GetGlobalType(*index));
+    }
+    error(pc, "invalid global variable index");
+    return kAstStmt;
+  }
+
+  FunctionSig* FunctionSigOperand(const byte* pc, uint32_t* index,
+                                  int* length) {
+    *index = UnsignedLEB128Operand(pc, length);
+    if (function_env_->module->IsValidFunction(*index)) {
+      return function_env_->module->GetFunctionSignature(*index);
+    }
+    error(pc, "invalid function index");
+    return nullptr;
+  }
+
+  FunctionSig* SigOperand(const byte* pc, uint32_t* index, int* length) {
+    *index = UnsignedLEB128Operand(pc, length);
+    if (function_env_->module->IsValidSignature(*index)) {
+      return function_env_->module->GetSignature(*index);
+    }
+    error(pc, "invalid signature index");
+    return nullptr;
+  }
+
+  uint32_t UnsignedLEB128Operand(const byte* pc, int* length) {
+    uint32_t result = 0;
+    ReadUnsignedLEB128ErrorCode error_code =
+        ReadUnsignedLEB128Operand(pc + 1, limit_, length, &result);
+    if (error_code == kInvalidLEB128) error(pc, "invalid LEB128 varint");
+    if (error_code == kMissingLEB128) error(pc, "expected LEB128 varint");
+    (*length)++;
+    return result;
+  }
+
+  void MemoryAccessOperand(const byte* pc, int* length, uint32_t* offset) {
+    byte bitfield = Operand<uint8_t>(pc);
+    if (MemoryAccess::OffsetField::decode(bitfield)) {
+      *offset = UnsignedLEB128Operand(pc + 1, length);
+      (*length)++;  // to account for the memory access byte
+    } else {
+      *offset = 0;
+      *length = 2;
+    }
+  }
+};
+
+
 // A shift-reduce-parser strategy for decoding Wasm code that uses an explicit
 // shift-reduce strategy with multiple internal stacks.
-class LR_WasmDecoder : public Decoder {
+class LR_WasmDecoder : public WasmDecoder {
  public:
   LR_WasmDecoder(Zone* zone, TFBuilder* builder)
-      : Decoder(nullptr, nullptr),
-        zone_(zone),
+      : zone_(zone),
         builder_(builder),
         trees_(zone),
         stack_(zone),
@@ -127,8 +226,7 @@ class LR_WasmDecoder : public Decoder {
     }
 
     base_ = base;
-    Reset(pc, end);
-    function_env_ = function_env;
+    Reset(function_env, pc, end);
 
     InitSsaEnv();
     DecodeFunctionBody();
@@ -151,15 +249,20 @@ class LR_WasmDecoder : public Decoder {
     }
 
     if (ok()) {
+      if (FLAG_trace_wasm_ast) {
+        PrintAst(function_env, pc, end);
+      }
       if (FLAG_trace_wasm_decode_time) {
         double ms = decode_timer.Elapsed().InMillisecondsF();
-        PrintF(" - decoding took %0.3f ms\n", ms);
+        PrintF("wasm-decode ok (%0.3f ms)\n\n", ms);
+      } else {
+        TRACE("wasm-decode ok\n\n");
       }
-      TRACE("wasm-decode ok\n\n");
     } else {
       TRACE("wasm-error module+%-6d func+%d: %s\n\n", baserel(error_pc_),
             startrel(error_pc_), error_msg_.get());
     }
+
     return toResult(tree);
   }
 
@@ -172,7 +275,6 @@ class LR_WasmDecoder : public Decoder {
   TreeResult result_;
 
   SsaEnv* ssa_env_;
-  FunctionEnv* function_env_;
 
   ZoneVector<Tree*> trees_;
   ZoneVector<Production> stack_;
@@ -1286,92 +1388,9 @@ class LR_WasmDecoder : public Decoder {
     return result;
   }
 
-  // Load an operand at [pc + 1].
-  template <typename V>
-  V Operand(const byte* pc) {
-    if ((limit_ - pc) < static_cast<int>(1 + sizeof(V))) {
-      const char* msg = "Expected operand following opcode";
-      switch (sizeof(V)) {
-        case 1:
-          msg = "Expected 1-byte operand following opcode";
-          break;
-        case 2:
-          msg = "Expected 2-byte operand following opcode";
-          break;
-        case 4:
-          msg = "Expected 4-byte operand following opcode";
-          break;
-        default:
-          break;
-      }
-      error(pc, msg);
-      return -1;
-    }
-    return *reinterpret_cast<const V*>(pc + 1);
-  }
-
   int EnvironmentCount() {
     if (builder_) return static_cast<int>(function_env_->GetLocalCount());
     return 0;  // if we aren't building a graph, don't bother with SSA renaming.
-  }
-
-  LocalType LocalOperand(const byte* pc, uint32_t* index, int* length) {
-    *index = UnsignedLEB128Operand(pc, length);
-    if (function_env_->IsValidLocal(*index)) {
-      return function_env_->GetLocalType(*index);
-    }
-    error(pc, "invalid local variable index");
-    return kAstStmt;
-  }
-
-  LocalType GlobalOperand(const byte* pc, uint32_t* index, int* length) {
-    *index = UnsignedLEB128Operand(pc, length);
-    if (function_env_->module->IsValidGlobal(*index)) {
-      return WasmOpcodes::LocalTypeFor(
-          function_env_->module->GetGlobalType(*index));
-    }
-    error(pc, "invalid global variable index");
-    return kAstStmt;
-  }
-
-  FunctionSig* FunctionSigOperand(const byte* pc, uint32_t* index,
-                                  int* length) {
-    *index = UnsignedLEB128Operand(pc, length);
-    if (function_env_->module->IsValidFunction(*index)) {
-      return function_env_->module->GetFunctionSignature(*index);
-    }
-    error(pc, "invalid function index");
-    return nullptr;
-  }
-
-  FunctionSig* SigOperand(const byte* pc, uint32_t* index, int* length) {
-    *index = UnsignedLEB128Operand(pc, length);
-    if (function_env_->module->IsValidSignature(*index)) {
-      return function_env_->module->GetSignature(*index);
-    }
-    error(pc, "invalid signature index");
-    return nullptr;
-  }
-
-  uint32_t UnsignedLEB128Operand(const byte* pc, int* length) {
-    uint32_t result = 0;
-    ReadUnsignedLEB128ErrorCode error_code =
-        ReadUnsignedLEB128Operand(pc + 1, limit_, length, &result);
-    if (error_code == kInvalidLEB128) error(pc, "invalid LEB128 varint");
-    if (error_code == kMissingLEB128) error(pc, "expected LEB128 varint");
-    (*length)++;
-    return result;
-  }
-
-  void MemoryAccessOperand(const byte* pc, int* length, uint32_t* offset) {
-    byte bitfield = Operand<uint8_t>(pc);
-    if (MemoryAccess::OffsetField::decode(bitfield)) {
-      *offset = UnsignedLEB128Operand(pc + 1, length);
-      (*length)++;  // to account for the memory access byte
-    } else {
-      *offset = 0;
-      *length = 2;
-    }
   }
 
   virtual void onFirstError() {
@@ -1471,13 +1490,24 @@ ReadUnsignedLEB128ErrorCode ReadUnsignedLEB128Operand(const byte* pc,
 }
 
 
+// TODO(titzer): move this into WasmDecoder and bounds check accesses.
 int OpcodeLength(const byte* pc) {
   switch (static_cast<WasmOpcode>(*pc)) {
 #define DECLARE_OPCODE_CASE(name, opcode, sig) case kExpr##name:
     FOREACH_LOAD_MEM_OPCODE(DECLARE_OPCODE_CASE)
     FOREACH_STORE_MEM_OPCODE(DECLARE_OPCODE_CASE)
 #undef DECLARE_OPCODE_CASE
-
+    {
+      // Loads and stores have an optional offset.
+      byte bitfield = pc[1];
+      if (MemoryAccess::OffsetField::decode(bitfield)) {
+        int length;
+        uint32_t result = 0;
+        ReadUnsignedLEB128Operand(pc + 2, pc + 7, &length, &result);
+        return 2 + length;
+      }
+      return 2;
+    }
     case kExprI8Const:
     case kExprBlock:
     case kExprLoop:
@@ -1512,6 +1542,7 @@ int OpcodeLength(const byte* pc) {
 }
 
 
+// TODO(titzer): move this into WasmDecoder and bounds check accesses.
 int OpcodeArity(FunctionEnv* env, const byte* pc) {
 #define DECLARE_ARITY(name, ...)                          \
   static const LocalType kTypes_##name[] = {__VA_ARGS__}; \
@@ -1578,6 +1609,101 @@ int OpcodeArity(FunctionEnv* env, const byte* pc) {
   UNREACHABLE();
   return 0;
 }
+
+
+
+void PrintAst(FunctionEnv* env, const byte* start, const byte* end) {
+  const byte* pc = start;
+  std::vector<int> arity_stack;
+  while (pc < end) {
+    int arity = OpcodeArity(env, pc);
+    size_t length = OpcodeLength(pc);
+
+    for (auto arity : arity_stack) {
+      printf("  ");
+      USE(arity);
+    }
+
+    WasmOpcode opcode = static_cast<WasmOpcode>(*pc);
+    printf("k%s,", WasmOpcodes::OpcodeName(opcode));
+
+    for (size_t i = 1; i < length; i++) {
+      printf(" 0x%02x,", pc[i]);
+    }
+    pc += length;
+    printf("\n");
+
+    arity_stack.push_back(arity);
+    while (arity_stack.back() == 0) {
+      arity_stack.pop_back();
+      if (arity_stack.empty()) break;
+      arity_stack.back()--;
+    }
+  }
+}
+
+
+// Analyzes loop bodies for static assignments to locals, which helps in
+// reducing the number of phis introduced at loop headers.
+class LoopAssignmentAnalyzer : public WasmDecoder {
+ public:
+  LoopAssignmentAnalyzer(Zone* zone, FunctionEnv* function_env) : zone_(zone) {
+    function_env_ = function_env;
+  }
+
+  BitVector* Analyze(const byte* pc, const byte* limit) {
+    Decoder::Reset(pc, limit);
+    if (pc_ >= limit_) return nullptr;
+    if (*pc_ != kExprLoop) return nullptr;
+
+    BitVector* assigned =
+        new (zone_) BitVector(function_env_->total_locals, zone_);
+    // Keep a stack to model the nesting of expressions.
+    std::vector<int> arity_stack;
+    arity_stack.push_back(OpcodeArity(function_env_, pc_));
+    pc_ += OpcodeLength(pc_);
+
+    // Iteratively process all AST nodes nested inside the loop.
+    while (pc_ < limit_) {
+      WasmOpcode opcode = static_cast<WasmOpcode>(*pc_);
+      int arity = 0;
+      int length = 1;
+      if (opcode == kExprSetLocal) {
+        uint32_t index;
+        LocalOperand(pc_, &index, &length);
+        if (assigned->length() > 0 &&
+            static_cast<int>(index) < assigned->length()) {
+          // Unverified code might have an out-of-bounds index.
+          assigned->Add(index);
+        }
+        arity = 1;
+      } else {
+        arity = OpcodeArity(function_env_, pc_);
+        length = OpcodeLength(pc_);
+      }
+
+      pc_ += length;
+      arity_stack.push_back(arity);
+      while (arity_stack.back() == 0) {
+        arity_stack.pop_back();
+        if (arity_stack.empty()) return assigned;  // reached end of loop
+        arity_stack.back()--;
+      }
+    }
+    return assigned;
+  }
+
+ private:
+  Zone* zone_;
+};
+
+
+BitVector* AnalyzeLoopAssignmentForTesting(Zone* zone, FunctionEnv* env,
+                                           const byte* start, const byte* end) {
+  LoopAssignmentAnalyzer analyzer(zone, env);
+  return analyzer.Analyze(start, end);
+}
+
 }  // namespace wasm
 }  // namespace internal
 }  // namespace v8

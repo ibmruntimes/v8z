@@ -868,10 +868,9 @@ Handle<AliasedArgumentsEntry> Factory::NewAliasedArgumentsEntry(
 }
 
 
-Handle<ExecutableAccessorInfo> Factory::NewExecutableAccessorInfo() {
-  Handle<ExecutableAccessorInfo> info =
-      Handle<ExecutableAccessorInfo>::cast(
-          NewStruct(EXECUTABLE_ACCESSOR_INFO_TYPE));
+Handle<AccessorInfo> Factory::NewAccessorInfo() {
+  Handle<AccessorInfo> info =
+      Handle<AccessorInfo>::cast(NewStruct(ACCESSOR_INFO_TYPE));
   info->set_flag(0);  // Must clear the flag, it was initialized as undefined.
   return info;
 }
@@ -2001,7 +2000,6 @@ MaybeHandle<JSBoundFunction> Factory::NewJSBoundFunction(
   result->set_bound_target_function(*target_function);
   result->set_bound_this(*bound_this);
   result->set_bound_arguments(*bound_arguments);
-  result->set_creation_context(*isolate()->native_context());
   result->set_length(Smi::FromInt(0));
   result->set_name(*undefined_value(), SKIP_WRITE_BARRIER);
   return result;

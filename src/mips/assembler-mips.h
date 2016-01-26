@@ -1035,7 +1035,7 @@ class Assembler : public AssemblerBase {
 
   // Record a deoptimization reason that can be used by a log or cpu profiler.
   // Use --trace-deopt to enable.
-  void RecordDeoptReason(const int reason, const SourcePosition position);
+  void RecordDeoptReason(const int reason, int raw_position);
 
 
   static int RelocateInternalReference(RelocInfo::Mode rmode, byte* pc,
@@ -1204,6 +1204,12 @@ class Assembler : public AssemblerBase {
 
   bool is_buffer_growth_blocked() const {
     return block_buffer_growth_;
+  }
+
+  void EmitForbiddenSlotInstruction() {
+    if (IsPrevInstrCompactBranch()) {
+      nop();
+    }
   }
 
   inline void CheckTrampolinePoolQuick(int extra_instructions = 0);

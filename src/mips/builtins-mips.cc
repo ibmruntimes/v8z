@@ -157,8 +157,7 @@ void Builtins::Generate_NumberConstructor(MacroAssembler* masm) {
   {
     __ Branch(USE_DELAY_SLOT, &no_arguments, eq, a0, Operand(zero_reg));
     __ Subu(a0, a0, Operand(1));
-    __ sll(a0, a0, kPointerSizeLog2);
-    __ Addu(sp, a0, sp);
+    __ Lsa(sp, sp, a0, kPointerSizeLog2);
     __ lw(a0, MemOperand(sp));
     __ Drop(2);
   }
@@ -194,8 +193,7 @@ void Builtins::Generate_NumberConstructor_ConstructStub(MacroAssembler* masm) {
     Label no_arguments, done;
     __ Branch(USE_DELAY_SLOT, &no_arguments, eq, a0, Operand(zero_reg));
     __ Subu(a0, a0, Operand(1));
-    __ sll(a0, a0, kPointerSizeLog2);
-    __ Addu(sp, a0, sp);
+    __ Lsa(sp, sp, a0, kPointerSizeLog2);
     __ lw(a0, MemOperand(sp));
     __ Drop(2);
     __ jmp(&done);
@@ -259,8 +257,7 @@ void Builtins::Generate_StringConstructor(MacroAssembler* masm) {
   {
     __ Branch(USE_DELAY_SLOT, &no_arguments, eq, a0, Operand(zero_reg));
     __ Subu(a0, a0, Operand(1));
-    __ sll(a0, a0, kPointerSizeLog2);
-    __ Addu(sp, a0, sp);
+    __ Lsa(sp, sp, a0, kPointerSizeLog2);
     __ lw(a0, MemOperand(sp));
     __ Drop(2);
   }
@@ -322,8 +319,7 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
     Label no_arguments, done;
     __ Branch(USE_DELAY_SLOT, &no_arguments, eq, a0, Operand(zero_reg));
     __ Subu(a0, a0, Operand(1));
-    __ sll(a0, a0, kPointerSizeLog2);
-    __ Addu(sp, a0, sp);
+    __ Lsa(sp, sp, a0, kPointerSizeLog2);
     __ lw(a0, MemOperand(sp));
     __ Drop(2);
     __ jmp(&done);
@@ -425,7 +421,8 @@ void Builtins::Generate_InOptimizationQueue(MacroAssembler* masm) {
 
 static void Generate_JSConstructStubHelper(MacroAssembler* masm,
                                            bool is_api_function,
-                                           bool create_implicit_receiver) {
+                                           bool create_implicit_receiver,
+                                           bool check_derived_construct) {
   // ----------- S t a t e -------------
   //  -- a0     : number of arguments
   //  -- a1     : constructor function
@@ -617,8 +614,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     __ SmiTag(t4, a0);
     __ jmp(&entry);
     __ bind(&loop);
-    __ sll(t0, t4, kPointerSizeLog2 - kSmiTagSize);
-    __ Addu(t0, a2, Operand(t0));
+    __ Lsa(t0, a2, t4, kPointerSizeLog2 - kSmiTagSize);
     __ lw(t1, MemOperand(t0));
     __ push(t1);
     __ bind(&entry);
@@ -684,8 +680,20 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     // Leave construct frame.
   }
 
-  __ sll(t0, a1, kPointerSizeLog2 - 1);
-  __ Addu(sp, sp, t0);
+  // ES6 9.2.2. Step 13+
+  // Check that the result is not a Smi, indicating that the constructor result
+  // from a derived class is neither undefined nor an Object.
+  if (check_derived_construct) {
+    Label dont_throw;
+    __ JumpIfNotSmi(v0, &dont_throw);
+    {
+      FrameScope scope(masm, StackFrame::INTERNAL);
+      __ CallRuntime(Runtime::kThrowDerivedConstructorReturnedNonObject);
+    }
+    __ bind(&dont_throw);
+  }
+
+  __ Lsa(sp, sp, a1, kPointerSizeLog2 - 1);
   __ Addu(sp, sp, kPointerSize);
   if (create_implicit_receiver) {
     __ IncrementCounter(isolate->counters()->constructed_objects(), 1, a1, a2);
@@ -695,17 +703,23 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
 
 
 void Builtins::Generate_JSConstructStubGeneric(MacroAssembler* masm) {
-  Generate_JSConstructStubHelper(masm, false, true);
+  Generate_JSConstructStubHelper(masm, false, true, false);
 }
 
 
 void Builtins::Generate_JSConstructStubApi(MacroAssembler* masm) {
-  Generate_JSConstructStubHelper(masm, true, true);
+  Generate_JSConstructStubHelper(masm, true, true, false);
 }
 
 
 void Builtins::Generate_JSBuiltinsConstructStub(MacroAssembler* masm) {
-  Generate_JSConstructStubHelper(masm, false, false);
+  Generate_JSConstructStubHelper(masm, false, false, false);
+}
+
+
+void Builtins::Generate_JSBuiltinsConstructStubForDerived(
+    MacroAssembler* masm) {
+  Generate_JSConstructStubHelper(masm, false, false, true);
 }
 
 
@@ -787,8 +801,7 @@ static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
     // a3: argc
     // s0: argv, i.e. points to first arg
     Label loop, entry;
-    __ sll(t0, a3, kPointerSizeLog2);
-    __ addu(t2, s0, t0);
+    __ Lsa(t2, s0, a3, kPointerSizeLog2);
     __ b(&entry);
     __ nop();   // Branch delay slot nop.
     // t2 points past last arg.
@@ -945,8 +958,7 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   __ Addu(a0, kInterpreterBytecodeArrayRegister,
           kInterpreterBytecodeOffsetRegister);
   __ lbu(a0, MemOperand(a0));
-  __ sll(at, a0, kPointerSizeLog2);
-  __ Addu(at, kInterpreterDispatchTableRegister, at);
+  __ Lsa(at, kInterpreterDispatchTableRegister, a0, kPointerSizeLog2);
   __ lw(at, MemOperand(at));
   // TODO(rmcilroy): Make dispatch table point to code entrys to avoid untagging
   // and header removal.
@@ -1036,25 +1048,7 @@ void Builtins::Generate_InterpreterPushArgsAndConstruct(MacroAssembler* masm) {
 }
 
 
-static void Generate_InterpreterNotifyDeoptimizedHelper(
-    MacroAssembler* masm, Deoptimizer::BailoutType type) {
-  // Enter an internal frame.
-  {
-    FrameScope scope(masm, StackFrame::INTERNAL);
-    __ push(kInterpreterAccumulatorRegister);  // Save accumulator register.
-
-    // Pass the deoptimization type to the runtime system.
-    __ li(a1, Operand(Smi::FromInt(static_cast<int>(type))));
-    __ push(a1);
-    __ CallRuntime(Runtime::kNotifyDeoptimized);
-
-    __ pop(kInterpreterAccumulatorRegister);  // Restore accumulator register.
-    // Tear down internal frame.
-  }
-
-  // Drop state (we don't use this for interpreter deopts).
-  __ Drop(1);
-
+static void Generate_EnterBytecodeDispatch(MacroAssembler* masm) {
   // Initialize register file register and dispatch table register.
   __ Addu(kInterpreterRegisterFileRegister, fp,
           Operand(InterpreterFrameConstants::kRegisterFilePointerFromFp));
@@ -1064,8 +1058,6 @@ static void Generate_InterpreterNotifyDeoptimizedHelper(
           Operand(FixedArray::kHeaderSize - kHeapObjectTag));
 
   // Get the context from the frame.
-  // TODO(rmcilroy): Update interpreter frame to expect current context at the
-  // context slot instead of the function context.
   __ lw(kContextRegister,
         MemOperand(kInterpreterRegisterFileRegister,
                    InterpreterFrameConstants::kContextFromRegisterPointer));
@@ -1099,11 +1091,34 @@ static void Generate_InterpreterNotifyDeoptimizedHelper(
   __ Addu(a1, kInterpreterBytecodeArrayRegister,
           kInterpreterBytecodeOffsetRegister);
   __ lbu(a1, MemOperand(a1));
-  __ sll(a1, a1, kPointerSizeLog2);
-  __ Addu(a1, kInterpreterDispatchTableRegister, a1);
+  __ Lsa(a1, kInterpreterDispatchTableRegister, a1, kPointerSizeLog2);
   __ lw(a1, MemOperand(a1));
   __ Addu(a1, a1, Operand(Code::kHeaderSize - kHeapObjectTag));
   __ Jump(a1);
+}
+
+
+static void Generate_InterpreterNotifyDeoptimizedHelper(
+    MacroAssembler* masm, Deoptimizer::BailoutType type) {
+  // Enter an internal frame.
+  {
+    FrameScope scope(masm, StackFrame::INTERNAL);
+    __ push(kInterpreterAccumulatorRegister);  // Save accumulator register.
+
+    // Pass the deoptimization type to the runtime system.
+    __ li(a1, Operand(Smi::FromInt(static_cast<int>(type))));
+    __ push(a1);
+    __ CallRuntime(Runtime::kNotifyDeoptimized);
+
+    __ pop(kInterpreterAccumulatorRegister);  // Restore accumulator register.
+    // Tear down internal frame.
+  }
+
+  // Drop state (we don't use this for interpreter deopts).
+  __ Drop(1);
+
+  // Enter the bytecode dispatch.
+  Generate_EnterBytecodeDispatch(masm);
 }
 
 
@@ -1119,6 +1134,17 @@ void Builtins::Generate_InterpreterNotifySoftDeoptimized(MacroAssembler* masm) {
 
 void Builtins::Generate_InterpreterNotifyLazyDeoptimized(MacroAssembler* masm) {
   Generate_InterpreterNotifyDeoptimizedHelper(masm, Deoptimizer::LAZY);
+}
+
+
+void Builtins::Generate_InterpreterEnterExceptionHandler(MacroAssembler* masm) {
+  // Set the address of the interpreter entry trampoline as a return address.
+  // This simulates the initial call to bytecode handlers in interpreter entry
+  // trampoline. The return will never actually be taken, but our stack walker
+  // uses this address to determine whether a frame is interpreted.
+  __ li(ra, Operand(masm->isolate()->builtins()->InterpreterEntryTrampoline()));
+
+  Generate_EnterBytecodeDispatch(masm);
 }
 
 
@@ -1387,8 +1413,7 @@ void Builtins::Generate_HandleFastApiCall(MacroAssembler* masm) {
 
   // Do the compatible receiver check.
   Label receiver_check_failed;
-  __ sll(at, a0, kPointerSizeLog2);
-  __ Addu(t8, sp, at);
+  __ Lsa(t8, sp, a0, kPointerSizeLog2);
   __ lw(t0, MemOperand(t8));
   CompatibleReceiverCheck(masm, t0, t1, &receiver_check_failed);
 
@@ -1522,6 +1547,7 @@ void Builtins::Generate_FunctionPrototypeApply(MacroAssembler* masm) {
     Register scratch = t0;
     __ LoadRoot(a2, Heap::kUndefinedValueRootIndex);
     __ mov(a3, a2);
+    // Lsa() cannot be used hare as scratch value used later.
     __ sll(scratch, a0, kPointerSizeLog2);
     __ Addu(a0, sp, Operand(scratch));
     __ lw(a1, MemOperand(a0));  // receiver
@@ -1592,8 +1618,7 @@ void Builtins::Generate_FunctionPrototypeCall(MacroAssembler* masm) {
 
   // 2. Get the function to call (passed as receiver) from the stack.
   // a0: actual number of arguments
-  __ sll(at, a0, kPointerSizeLog2);
-  __ addu(at, sp, at);
+  __ Lsa(at, sp, a0, kPointerSizeLog2);
   __ lw(a1, MemOperand(at));
 
   // 3. Shift arguments and return address one slot down on the stack
@@ -1604,8 +1629,7 @@ void Builtins::Generate_FunctionPrototypeCall(MacroAssembler* masm) {
   {
     Label loop;
     // Calculate the copy start address (destination). Copy end address is sp.
-    __ sll(at, a0, kPointerSizeLog2);
-    __ addu(a2, sp, at);
+    __ Lsa(a2, sp, a0, kPointerSizeLog2);
 
     __ bind(&loop);
     __ lw(at, MemOperand(a2, -kPointerSize));
@@ -1705,6 +1729,7 @@ void Builtins::Generate_ReflectConstruct(MacroAssembler* masm) {
     Register scratch = t0;
     __ LoadRoot(a1, Heap::kUndefinedValueRootIndex);
     __ mov(a2, a1);
+    // Lsa() cannot be used hare as scratch value used later.
     __ sll(scratch, a0, kPointerSizeLog2);
     __ Addu(a0, sp, Operand(scratch));
     __ sw(a2, MemOperand(a0));  // receiver
@@ -1806,8 +1831,7 @@ static void LeaveArgumentsAdaptorFrame(MacroAssembler* masm) {
                              kPointerSize)));
   __ mov(sp, fp);
   __ MultiPop(fp.bit() | ra.bit());
-  __ sll(t0, a1, kPointerSizeLog2 - kSmiTagSize);
-  __ Addu(sp, sp, t0);
+  __ Lsa(sp, sp, a1, kPointerSizeLog2 - kSmiTagSize);
   // Adjust for the receiver.
   __ Addu(sp, sp, Operand(kPointerSize));
 }
@@ -1915,8 +1939,7 @@ void Builtins::Generate_Apply(MacroAssembler* masm) {
     Label done, loop;
     __ bind(&loop);
     __ Branch(&done, eq, t0, Operand(a2));
-    __ sll(at, t0, kPointerSizeLog2);
-    __ Addu(at, a0, at);
+    __ Lsa(at, a0, t0, kPointerSizeLog2);
     __ lw(at, FieldMemOperand(at, FixedArray::kHeaderSize));
     __ Push(at);
     __ Addu(t0, t0, Operand(1));
@@ -1979,8 +2002,7 @@ void Builtins::Generate_CallFunction(MacroAssembler* masm,
       __ LoadGlobalProxy(a3);
     } else {
       Label convert_to_object, convert_receiver;
-      __ sll(at, a0, kPointerSizeLog2);
-      __ addu(at, sp, at);
+      __ Lsa(at, sp, a0, kPointerSizeLog2);
       __ lw(a3, MemOperand(at));
       __ JumpIfSmi(a3, &convert_to_object);
       STATIC_ASSERT(LAST_JS_RECEIVER_TYPE == LAST_TYPE);
@@ -2016,8 +2038,7 @@ void Builtins::Generate_CallFunction(MacroAssembler* masm,
       __ lw(a2, FieldMemOperand(a1, JSFunction::kSharedFunctionInfoOffset));
       __ bind(&convert_receiver);
     }
-    __ sll(at, a0, kPointerSizeLog2);
-    __ addu(at, sp, at);
+    __ Lsa(at, sp, a0, kPointerSizeLog2);
     __ sw(a3, MemOperand(at));
   }
   __ bind(&done_convert);
@@ -2058,8 +2079,7 @@ void Builtins::Generate_CallBoundFunction(MacroAssembler* masm) {
   // Patch the receiver to [[BoundThis]].
   {
     __ lw(at, FieldMemOperand(a1, JSBoundFunction::kBoundThisOffset));
-    __ sll(t0, a0, kPointerSizeLog2);
-    __ addu(t0, t0, sp);
+    __ Lsa(t0, sp, a0, kPointerSizeLog2);
     __ sw(at, MemOperand(t0));
   }
 
@@ -2100,11 +2120,9 @@ void Builtins::Generate_CallBoundFunction(MacroAssembler* masm) {
     __ mov(t1, zero_reg);
     __ bind(&loop);
     __ Branch(&done_loop, gt, t1, Operand(a0));
-    __ sll(t2, t0, kPointerSizeLog2);
-    __ addu(t2, t2, sp);
+    __ Lsa(t2, sp, t0, kPointerSizeLog2);
     __ lw(at, MemOperand(t2));
-    __ sll(t2, t1, kPointerSizeLog2);
-    __ addu(t2, t2, sp);
+    __ Lsa(t2, sp, t1, kPointerSizeLog2);
     __ sw(at, MemOperand(t2));
     __ Addu(t0, t0, Operand(1));
     __ Addu(t1, t1, Operand(1));
@@ -2121,11 +2139,9 @@ void Builtins::Generate_CallBoundFunction(MacroAssembler* masm) {
     __ bind(&loop);
     __ Subu(t0, t0, Operand(1));
     __ Branch(&done_loop, lt, t0, Operand(zero_reg));
-    __ sll(t1, t0, kPointerSizeLog2);
-    __ addu(t1, t1, a2);
+    __ Lsa(t1, a2, t0, kPointerSizeLog2);
     __ lw(at, MemOperand(t1));
-    __ sll(t1, a0, kPointerSizeLog2);
-    __ addu(t1, t1, sp);
+    __ Lsa(t1, sp, a0, kPointerSizeLog2);
     __ sw(at, MemOperand(t1));
     __ Addu(a0, a0, Operand(1));
     __ Branch(&loop);
@@ -2176,8 +2192,7 @@ void Builtins::Generate_Call(MacroAssembler* masm, ConvertReceiverMode mode) {
   __ And(t1, t1, Operand(1 << Map::kIsCallable));
   __ Branch(&non_callable, eq, t1, Operand(zero_reg));
   // Overwrite the original receiver with the (original) target.
-  __ sll(at, a0, kPointerSizeLog2);
-  __ addu(at, sp, at);
+  __ Lsa(at, sp, a0, kPointerSizeLog2);
   __ sw(a1, MemOperand(at));
   // Let the "call_as_function_delegate" take care of the rest.
   __ LoadNativeContextSlot(Context::CALL_AS_FUNCTION_DELEGATE_INDEX, a1);
@@ -2264,11 +2279,9 @@ void Builtins::Generate_ConstructBoundFunction(MacroAssembler* masm) {
     __ mov(t1, zero_reg);
     __ bind(&loop);
     __ Branch(&done_loop, ge, t1, Operand(a0));
-    __ sll(t2, t0, kPointerSizeLog2);
-    __ addu(t2, t2, sp);
+    __ Lsa(t2, sp, t0, kPointerSizeLog2);
     __ lw(at, MemOperand(t2));
-    __ sll(t2, t1, kPointerSizeLog2);
-    __ addu(t2, t2, sp);
+    __ Lsa(t2, sp, t1, kPointerSizeLog2);
     __ sw(at, MemOperand(t2));
     __ Addu(t0, t0, Operand(1));
     __ Addu(t1, t1, Operand(1));
@@ -2285,11 +2298,9 @@ void Builtins::Generate_ConstructBoundFunction(MacroAssembler* masm) {
     __ bind(&loop);
     __ Subu(t0, t0, Operand(1));
     __ Branch(&done_loop, lt, t0, Operand(zero_reg));
-    __ sll(t1, t0, kPointerSizeLog2);
-    __ addu(t1, t1, a2);
+    __ Lsa(t1, a2, t0, kPointerSizeLog2);
     __ lw(at, MemOperand(t1));
-    __ sll(t1, a0, kPointerSizeLog2);
-    __ addu(t1, t1, sp);
+    __ Lsa(t1, sp, a0, kPointerSizeLog2);
     __ sw(at, MemOperand(t1));
     __ Addu(a0, a0, Operand(1));
     __ Branch(&loop);
@@ -2368,8 +2379,7 @@ void Builtins::Generate_Construct(MacroAssembler* masm) {
   // Called Construct on an exotic Object with a [[Construct]] internal method.
   {
     // Overwrite the original receiver with the (original) target.
-    __ sll(at, a0, kPointerSizeLog2);
-    __ addu(at, sp, at);
+    __ Lsa(at, sp, a0, kPointerSizeLog2);
     __ sw(a1, MemOperand(at));
     // Let the "call_as_constructor_delegate" take care of the rest.
     __ LoadNativeContextSlot(Context::CALL_AS_CONSTRUCTOR_DELEGATE_INDEX, a1);
@@ -2412,8 +2422,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     ArgumentAdaptorStackCheck(masm, &stack_overflow);
 
     // Calculate copy start address into a0 and copy end address into t1.
-    __ sll(a0, a0, kPointerSizeLog2 - kSmiTagSize);
-    __ Addu(a0, fp, a0);
+    __ Lsa(a0, fp, a0, kPointerSizeLog2 - kSmiTagSize);
     // Adjust for return address and receiver.
     __ Addu(a0, a0, Operand(2 * kPointerSize));
     // Compute copy end address.
@@ -2468,8 +2477,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     // a1: function
     // a2: expected number of arguments
     // a3: new target (passed through to callee)
-    __ sll(a0, a0, kPointerSizeLog2 - kSmiTagSize);
-    __ Addu(a0, fp, a0);
+    __ Lsa(a0, fp, a0, kPointerSizeLog2 - kSmiTagSize);
     // Adjust for return address and receiver.
     __ Addu(a0, a0, Operand(2 * kPointerSize));
     // Compute copy end address. Also adjust for return address.

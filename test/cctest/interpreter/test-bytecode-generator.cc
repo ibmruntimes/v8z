@@ -24,8 +24,6 @@ class BytecodeGeneratorHelper {
 
   BytecodeGeneratorHelper() {
     i::FLAG_ignition = true;
-    i::FLAG_ignition_fake_try_catch = true;
-    i::FLAG_ignition_fallback_on_eval_and_catch = false;
     i::FLAG_ignition_filter = StrDup(kFunctionName);
     i::FLAG_always_opt = false;
     i::FLAG_allow_natives_syntax = true;
@@ -94,6 +92,7 @@ class BytecodeGeneratorHelper {
 #define B(x) static_cast<uint8_t>(Bytecode::k##x)
 #define U8(x) static_cast<uint8_t>((x) & 0xff)
 #define R(x) static_cast<uint8_t>(-(x) & 0xff)
+#define R16(x) U16(-(x))
 #define A(x, n) R(helper.kLastParamIndex - (n) + 1 + (x))
 #define THIS(n) A(0, n)
 #if defined(V8_TARGET_LITTLE_ENDIAN)
@@ -160,6 +159,12 @@ struct ExpectedSnippet {
   const uint8_t bytecode[2048];
   int constant_count;
   T constants[C];
+  int handler_count;
+  struct {
+    int start;
+    int end;
+    int handler;
+  } handlers[C];
 };
 
 
@@ -202,6 +207,24 @@ static void CheckBytecodeArrayEqual(const ExpectedSnippet<T, C>& expected,
     CHECK_EQ(expected.constant_count, actual->constant_pool()->length());
     for (int i = 0; i < expected.constant_count; i++) {
       CheckConstant(expected.constants[i], actual->constant_pool()->get(i));
+    }
+  }
+  if (expected.handler_count == 0) {
+    CHECK_EQ(CcTest::heap()->empty_fixed_array(), actual->handler_table());
+  } else {
+    static const int kHTSize = 4;     // see HandlerTable::kRangeEntrySize
+    static const int kHTStart = 0;    // see HandlerTable::kRangeStartIndex
+    static const int kHTEnd = 1;      // see HandlerTable::kRangeEndIndex
+    static const int kHTHandler = 2;  // see HandlerTable::kRangeHandlerIndex
+    HandlerTable* table = HandlerTable::cast(actual->handler_table());
+    CHECK_EQ(expected.handler_count * kHTSize, table->length());
+    for (int i = 0; i < expected.handler_count; i++) {
+      int start = Smi::cast(table->get(i * kHTSize + kHTStart))->value();
+      int end = Smi::cast(table->get(i * kHTSize + kHTEnd))->value();
+      int handler = Smi::cast(table->get(i * kHTSize + kHTHandler))->value();
+      CHECK_EQ(expected.handlers[i].start, start);
+      CHECK_EQ(expected.handlers[i].end, end);
+      CHECK_EQ(expected.handlers[i].handler, handler >> 1);
     }
   }
 
@@ -1440,7 +1463,7 @@ TEST(PropertyCall) {
        " return a.func(); }\nf(" FUNC_ARG ")",
        2 * kPointerSize,
        2,
-       1044,
+       1046,
        {
            B(Ldar), A(1, 2),                                               //
            B(Star), R(0),                                                  //
@@ -1453,7 +1476,7 @@ TEST(PropertyCall) {
            B(Star), R(1),                                                  //
            B(LoadICSloppyWide), R(1), U16(0), U16(wide_idx + 4),           //
            B(Star), R(0),                                                  //
-           B(CallWide), R(0), R(1), U16(0), U16(wide_idx + 2),             //
+           B(CallWide), R16(0), R16(1), U16(0), U16(wide_idx + 2),         //
            B(Return),                                                      //
        },
        1,
@@ -2188,7 +2211,10 @@ TEST(BreakableBlocks) {
   InitializedHandleScope handle_scope;
   BytecodeGeneratorHelper helper;
 
-  ExpectedSnippet<int> snippets[] = {
+  int closure = Register::function_closure().index();
+  int context = Register::current_context().index();
+
+  ExpectedSnippet<InstanceType> snippets[] = {
       {"var x = 0;\n"
        "label: {\n"
        "  x = x + 1;\n"
@@ -2266,6 +2292,87 @@ TEST(BreakableBlocks) {
            B(Ldar), R(0),           //
            B(Return),               //
        }},
+      {"outer: {\n"
+       "  let y = 10;"
+       "  function f() { return y; }\n"
+       "  break outer;\n"
+       "}\n",
+       5 * kPointerSize,
+       1,
+       39,
+       {
+           B(LdaConstant), U8(0),                                         //
+           B(Star), R(3),                                                 //
+           B(Ldar), R(closure),                                           //
+           B(Star), R(4),                                                 //
+           B(CallRuntime), U16(Runtime::kPushBlockContext), R(3), U8(2),  //
+           B(PushContext), R(2),                                          //
+           B(LdaTheHole),                                                 //
+           B(StaContextSlot), R(context), U8(4),                          //
+           B(CreateClosure), U8(1), U8(0),                                //
+           B(Star), R(0),                                                 //
+           B(LdaSmi8), U8(10),                                            //
+           B(StaContextSlot), R(context), U8(4),                          //
+           B(Ldar), R(0),                                                 //
+           B(Star), R(1),                                                 //
+           B(Jump), U8(2),                                                //
+           B(PopContext), R(2),                                           //
+           B(LdaUndefined),                                               //
+           B(Return),                                                     //
+       },
+       2,
+       {InstanceType::FIXED_ARRAY_TYPE,
+        InstanceType::SHARED_FUNCTION_INFO_TYPE}},
+      {"let x = 1;\n"
+       "outer: {\n"
+       "  inner: {\n"
+       "   let y = 2;\n"
+       "    function f() { return x + y; }\n"
+       "    if (y) break outer;\n"
+       "    y = 3;\n"
+       "  }\n"
+       "}\n"
+       "x = 4;",
+       6 * kPointerSize,
+       1,
+       72,
+       {
+           B(CallRuntime), U16(Runtime::kNewFunctionContext), R(closure),  //
+                           U8(1),                                          //
+           B(PushContext), R(2),                                           //
+           B(LdaTheHole),                                                  //
+           B(StaContextSlot), R(context), U8(4),                           //
+           B(LdaSmi8), U8(1),                                              //
+           B(StaContextSlot), R(context), U8(4),                           //
+           B(LdaConstant), U8(0),                                          //
+           B(Star), R(4),                                                  //
+           B(Ldar), R(closure),                                            //
+           B(Star), R(5),                                                  //
+           B(CallRuntime), U16(Runtime::kPushBlockContext), R(4), U8(2),   //
+           B(PushContext), R(3),                                           //
+           B(LdaTheHole),                                                  //
+           B(StaContextSlot), R(context), U8(4),                           //
+           B(CreateClosure), U8(1), U8(0),                                 //
+           B(Star), R(0),                                                  //
+           B(LdaSmi8), U8(2),                                              //
+           B(StaContextSlot), R(context), U8(4),                           //
+           B(Ldar), R(0),                                                  //
+           B(Star), R(1),                                                  //
+           B(LdaContextSlot), R(context), U8(4),                           //
+           B(JumpIfToBooleanFalse), U8(6),                                 //
+           B(PopContext), R(3),                                            //
+           B(Jump), U8(9),                                                 //
+           B(LdaSmi8), U8(3),                                              //
+           B(StaContextSlot), R(context), U8(4),                           //
+           B(PopContext), R(3),                                            //
+           B(LdaSmi8), U8(4),                                              //
+           B(StaContextSlot), R(context), U8(4),                           //
+           B(LdaUndefined),                                                //
+           B(Return),                                                      //
+        },
+        2,
+        {InstanceType::FIXED_ARRAY_TYPE,
+         InstanceType::SHARED_FUNCTION_INFO_TYPE}},
   };
 
   for (size_t i = 0; i < arraysize(snippets); i++) {
@@ -2280,7 +2387,10 @@ TEST(BasicLoops) {
   InitializedHandleScope handle_scope;
   BytecodeGeneratorHelper helper;
 
-  ExpectedSnippet<int> snippets[] = {
+  int closure = Register::function_closure().index();
+  int context = Register::current_context().index();
+
+  ExpectedSnippet<InstanceType> snippets[] = {
       {"var x = 0;\n"
        "while (false) { x = 99; break; continue; }\n"
        "return x;",
@@ -2892,6 +3002,54 @@ TEST(BasicLoops) {
            B(Return),              //
        },
        0},
+      {"var a = 0;\n"
+       "while (a) {\n"
+       "  { \n"
+        "   let z = 1;\n"
+        "   function f() { z = 2; }\n"
+        "   if (z) continue;\n"
+        "   z++;\n"
+        "  }\n"
+        "}\n",
+        6 * kPointerSize,
+        1,
+        65,
+        {
+            B(LdaZero),                                                    //
+            B(Star), R(1),                                                 //
+            B(Ldar), R(1),                                                 //
+            B(JumpIfToBooleanFalse), U8(58),                               //
+            B(LdaConstant), U8(0),                                         //
+            B(Star), R(4),                                                 //
+            B(Ldar), R(closure),                                           //
+            B(Star), R(5),                                                 //
+            B(CallRuntime), U16(Runtime::kPushBlockContext), R(4), U8(2),  //
+            B(PushContext), R(3),                                          //
+            B(LdaTheHole),                                                 //
+            B(StaContextSlot), R(context), U8(4),                          //
+            B(CreateClosure), U8(1), U8(0),                                //
+            B(Star), R(0),                                                 //
+            B(LdaSmi8), U8(1),                                             //
+            B(StaContextSlot), R(context), U8(4),                          //
+            B(Ldar), R(0),                                                 //
+            B(Star), R(2),                                                 //
+            B(LdaContextSlot), R(context), U8(4),                          //
+            B(JumpIfToBooleanFalse), U8(6),                                //
+            B(PopContext), R(3),                                           //
+            B(Jump), U8(-44),                                              //
+            B(LdaContextSlot), R(context), U8(4),                          //
+            B(ToNumber),                                                   //
+            B(Star), R(4),                                                 //
+            B(Inc),                                                        //
+            B(StaContextSlot), R(context), U8(4),                          //
+            B(PopContext), R(3),                                           //
+            B(Jump), U8(-58),                                              //
+            B(LdaUndefined),                                               //
+            B(Return),                                                     //
+        },
+        2,
+        {InstanceType::FIXED_ARRAY_TYPE,
+         InstanceType::SHARED_FUNCTION_INFO_TYPE}},
   };
 
   for (size_t i = 0; i < arraysize(snippets); i++) {
@@ -3194,63 +3352,59 @@ TEST(Delete) {
   int deep_elements_flags =
       ObjectLiteral::kFastElements | ObjectLiteral::kDisableMementos;
   int closure = Register::function_closure().index();
+  int context = Register::current_context().index();
   int first_context_slot = Context::MIN_CONTEXT_SLOTS;
 
   ExpectedSnippet<InstanceType> snippets[] = {
       {"var a = {x:13, y:14}; return delete a.x;",
        2 * kPointerSize,
        1,
-       13,
-       {
-           B(CreateObjectLiteral), U8(0), U8(0), U8(deep_elements_flags),  //
-           B(Star), R(0),                                                  //
-           B(Star), R(1),                                                  //
-           B(LdaConstant), U8(1),                                          //
-           B(DeletePropertySloppy), R(1),                                  //
-           B(Return)
-       },
+       15,
+       {B(CreateObjectLiteral), U8(0), U8(0), U8(deep_elements_flags),  //
+        B(Star), R(1),                                                  //
+        B(Star), R(0),                                                  //
+        B(Star), R(1),                                                  //
+        B(LdaConstant), U8(1),                                          //
+        B(DeletePropertySloppy), R(1),                                  //
+        B(Return)},
        2,
        {InstanceType::FIXED_ARRAY_TYPE,
         InstanceType::ONE_BYTE_INTERNALIZED_STRING_TYPE}},
       {"'use strict'; var a = {x:13, y:14}; return delete a.x;",
        2 * kPointerSize,
        1,
-       13,
-       {
-           B(CreateObjectLiteral), U8(0), U8(0), U8(deep_elements_flags),  //
-           B(Star), R(0),                                                  //
-           B(Star), R(1),                                                  //
-           B(LdaConstant), U8(1),                                          //
-           B(DeletePropertyStrict), R(1),                                  //
-           B(Return)
-       },
+       15,
+       {B(CreateObjectLiteral), U8(0), U8(0), U8(deep_elements_flags),  //
+        B(Star), R(1),                                                  //
+        B(Star), R(0),                                                  //
+        B(Star), R(1),                                                  //
+        B(LdaConstant), U8(1),                                          //
+        B(DeletePropertyStrict), R(1),                                  //
+        B(Return)},
        2,
        {InstanceType::FIXED_ARRAY_TYPE,
         InstanceType::ONE_BYTE_INTERNALIZED_STRING_TYPE}},
       {"var a = {1:13, 2:14}; return delete a[2];",
        2 * kPointerSize,
        1,
-       13,
-       {
-           B(CreateObjectLiteral), U8(0), U8(0), U8(deep_elements_flags),  //
-           B(Star), R(0),                                                  //
-           B(Star), R(1),                                                  //
-           B(LdaSmi8), U8(2),                                              //
-           B(DeletePropertySloppy), R(1),                                  //
-           B(Return)
-       },
+       15,
+       {B(CreateObjectLiteral), U8(0), U8(0), U8(deep_elements_flags),  //
+        B(Star), R(1),                                                  //
+        B(Star), R(0),                                                  //
+        B(Star), R(1),                                                  //
+        B(LdaSmi8), U8(2),                                              //
+        B(DeletePropertySloppy), R(1),                                  //
+        B(Return)},
        1,
        {InstanceType::FIXED_ARRAY_TYPE}},
       {"var a = 10; return delete a;",
        1 * kPointerSize,
        1,
        6,
-       {
-           B(LdaSmi8), U8(10),  //
-           B(Star), R(0),       //
-           B(LdaFalse),         //
-           B(Return)
-        },
+       {B(LdaSmi8), U8(10),  //
+        B(Star), R(0),       //
+        B(LdaFalse),         //
+        B(Return)},
        0},
       {"'use strict';"
        "var a = {1:10};"
@@ -3258,20 +3412,19 @@ TEST(Delete) {
        "return delete a[1];",
        2 * kPointerSize,
        1,
-       27,
-       {
-           B(CallRuntime), U16(Runtime::kNewFunctionContext),              //
-                            R(closure), U8(1),                             //
-           B(PushContext), R(0),                                           //
-           B(CreateObjectLiteral), U8(0), U8(0), U8(deep_elements_flags),  //
-           B(StaContextSlot), R(0), U8(first_context_slot),                //
-           B(CreateClosure), U8(1), U8(0),                                 //
-           B(LdaContextSlot), R(0), U8(first_context_slot),                //
-           B(Star), R(1),                                                  //
-           B(LdaSmi8), U8(1),                                              //
-           B(DeletePropertyStrict), R(1),                                  //
-           B(Return)
-       },
+       29,
+       {B(CallRuntime), U16(Runtime::kNewFunctionContext),              //
+        R(closure), U8(1),                                              //
+        B(PushContext), R(0),                                           //
+        B(CreateObjectLiteral), U8(0), U8(0), U8(deep_elements_flags),  //
+        B(Star), R(1),                                                  //
+        B(StaContextSlot), R(context), U8(first_context_slot),          //
+        B(CreateClosure), U8(1), U8(0),                                 //
+        B(LdaContextSlot), R(context), U8(first_context_slot),          //
+        B(Star), R(1),                                                  //
+        B(LdaSmi8), U8(1),                                              //
+        B(DeletePropertyStrict), R(1),                                  //
+        B(Return)},
        2,
        {InstanceType::FIXED_ARRAY_TYPE,
         InstanceType::SHARED_FUNCTION_INFO_TYPE}},
@@ -3279,10 +3432,8 @@ TEST(Delete) {
        0 * kPointerSize,
        1,
        2,
-       {
-           B(LdaTrue),  //
-           B(Return)
-       },
+       {B(LdaTrue),  //
+        B(Return)},
        0},
   };
 
@@ -3299,7 +3450,7 @@ TEST(GlobalDelete) {
   BytecodeGeneratorHelper helper;
   Zone zone;
 
-  int context = Register::function_context().index();
+  int context = Register::current_context().index();
   int native_context_index = Context::NATIVE_CONTEXT_INDEX;
   int global_context_index = Context::EXTENSION_INDEX;
   FeedbackVectorSpec feedback_spec(&zone);
@@ -3684,21 +3835,23 @@ TEST(ObjectLiterals) {
       ObjectLiteral::kFastElements | ObjectLiteral::kDisableMementos;
   ExpectedSnippet<InstanceType> snippets[] = {
       {"return { };",
-       0,
+       kPointerSize,
        1,
-       5,
+       7,
        {
            B(CreateObjectLiteral), U8(0), U8(0), U8(simple_flags),  //
+           B(Star), R(0),                                           //
            B(Return)                                                //
        },
        1,
        {InstanceType::FIXED_ARRAY_TYPE}},
       {"return { name: 'string', val: 9.2 };",
-       0,
+       kPointerSize,
        1,
-       5,
+       7,
        {
            B(CreateObjectLiteral), U8(0), U8(0), U8(deep_elements_flags),  //
+           B(Star), R(0),                                                  //
            B(Return)                                                       //
        },
        1,
@@ -3753,8 +3906,7 @@ TEST(ObjectLiterals) {
            B(Return),                                                      //
        },
        3,
-       {InstanceType::FIXED_ARRAY_TYPE,
-        InstanceType::SHARED_FUNCTION_INFO_TYPE,
+       {InstanceType::FIXED_ARRAY_TYPE, InstanceType::SHARED_FUNCTION_INFO_TYPE,
         InstanceType::ONE_BYTE_INTERNALIZED_STRING_TYPE}},
       {"return { func(a) { return a; } };",
        1 * kPointerSize,
@@ -3769,26 +3921,26 @@ TEST(ObjectLiterals) {
            B(Return),                                                      //
        },
        3,
-       {InstanceType::FIXED_ARRAY_TYPE,
-        InstanceType::SHARED_FUNCTION_INFO_TYPE,
+       {InstanceType::FIXED_ARRAY_TYPE, InstanceType::SHARED_FUNCTION_INFO_TYPE,
         InstanceType::ONE_BYTE_INTERNALIZED_STRING_TYPE}},
       {"return { get a() { return 2; } };",
-       5 * kPointerSize,
+       6 * kPointerSize,
        1,
-       29,
+       32,
        {
            B(CreateObjectLiteral), U8(0), U8(0), U8(deep_elements_flags),   //
            B(Star), R(0),                                                   //
+           B(Mov), R(0), R(1),                                              //
            B(LdaConstant), U8(1),                                           //
-           B(Star), R(1),                                                   //
-           B(CreateClosure), U8(2), U8(0),                                  //
            B(Star), R(2),                                                   //
-           B(LdaNull),                                                      //
+           B(CreateClosure), U8(2), U8(0),                                  //
            B(Star), R(3),                                                   //
-           B(LdaZero),                                                      //
+           B(LdaNull),                                                      //
            B(Star), R(4),                                                   //
+           B(LdaZero),                                                      //
+           B(Star), R(5),                                                   //
            B(CallRuntime), U16(Runtime::kDefineAccessorPropertyUnchecked),  //
-                           R(0), U8(5),                                     //
+           R(1), U8(5),                                                     //
            B(Ldar), R(0),                                                   //
            B(Return),                                                       //
        },
@@ -3797,22 +3949,23 @@ TEST(ObjectLiterals) {
         InstanceType::ONE_BYTE_INTERNALIZED_STRING_TYPE,
         InstanceType::SHARED_FUNCTION_INFO_TYPE}},
       {"return { get a() { return this.x; }, set a(val) { this.x = val } };",
-       5 * kPointerSize,
+       6 * kPointerSize,
        1,
-       31,
+       34,
        {
            B(CreateObjectLiteral), U8(0), U8(0), U8(deep_elements_flags),   //
            B(Star), R(0),                                                   //
+           B(Mov), R(0), R(1),                                              //
            B(LdaConstant), U8(1),                                           //
-           B(Star), R(1),                                                   //
-           B(CreateClosure), U8(2), U8(0),                                  //
            B(Star), R(2),                                                   //
-           B(CreateClosure), U8(3), U8(0),                                  //
+           B(CreateClosure), U8(2), U8(0),                                  //
            B(Star), R(3),                                                   //
-           B(LdaZero),                                                      //
+           B(CreateClosure), U8(3), U8(0),                                  //
            B(Star), R(4),                                                   //
+           B(LdaZero),                                                      //
+           B(Star), R(5),                                                   //
            B(CallRuntime), U16(Runtime::kDefineAccessorPropertyUnchecked),  //
-                           R(0), U8(5),                                     //
+           R(1), U8(5),                                                     //
            B(Ldar), R(0),                                                   //
            B(Return),                                                       //
        },
@@ -3822,22 +3975,23 @@ TEST(ObjectLiterals) {
         InstanceType::SHARED_FUNCTION_INFO_TYPE,
         InstanceType::SHARED_FUNCTION_INFO_TYPE}},
       {"return { set b(val) { this.y = val } };",
-       5 * kPointerSize,
+       6 * kPointerSize,
        1,
-       29,
+       32,
        {
            B(CreateObjectLiteral), U8(0), U8(0), U8(deep_elements_flags),   //
            B(Star), R(0),                                                   //
+           B(Mov), R(0), R(1),                                              //
            B(LdaConstant), U8(1),                                           //
-           B(Star), R(1),                                                   //
-           B(LdaNull),                                                      //
            B(Star), R(2),                                                   //
-           B(CreateClosure), U8(2), U8(0),                                  //
+           B(LdaNull),                                                      //
            B(Star), R(3),                                                   //
-           B(LdaZero),                                                      //
+           B(CreateClosure), U8(2), U8(0),                                  //
            B(Star), R(4),                                                   //
+           B(LdaZero),                                                      //
+           B(Star), R(5),                                                   //
            B(CallRuntime), U16(Runtime::kDefineAccessorPropertyUnchecked),  //
-                           R(0), U8(5),                                     //
+           R(1), U8(5),                                                     //
            B(Ldar), R(0),                                                   //
            B(Return),                                                       //
        },
@@ -3846,58 +4000,61 @@ TEST(ObjectLiterals) {
         InstanceType::ONE_BYTE_INTERNALIZED_STRING_TYPE,
         InstanceType::SHARED_FUNCTION_INFO_TYPE}},
       {"var a = 1; return { 1: a };",
-       5 * kPointerSize,
+       6 * kPointerSize,
        1,
-       29,
+       32,
        {
            B(LdaSmi8), U8(1),                                              //
            B(Star), R(0),                                                  //
            B(CreateObjectLiteral), U8(0), U8(0), U8(deep_elements_flags),  //
            B(Star), R(1),                                                  //
+           B(Mov), R(1), R(2),                                             //
            B(LdaSmi8), U8(1),                                              //
-           B(Star), R(2),                                                  //
-           B(Ldar), R(0),                                                  //
            B(Star), R(3),                                                  //
-           B(LdaZero),                                                     //
+           B(Ldar), R(0),                                                  //
            B(Star), R(4),                                                  //
-           B(CallRuntime), U16(Runtime::kSetProperty), R(1), U8(4),        //
+           B(LdaZero),                                                     //
+           B(Star), R(5),                                                  //
+           B(CallRuntime), U16(Runtime::kSetProperty), R(2), U8(4),        //
            B(Ldar), R(1),                                                  //
            B(Return),                                                      //
        },
        1,
        {InstanceType::FIXED_ARRAY_TYPE}},
       {"return { __proto__: null }",
-       2 * kPointerSize,
+       3 * kPointerSize,
        1,
-       17,
+       20,
        {
            B(CreateObjectLiteral), U8(0), U8(0), U8(simple_flags),            //
            B(Star), R(0),                                                     //
-           B(LdaNull), B(Star), R(1),                                         //
-           B(CallRuntime), U16(Runtime::kInternalSetPrototype), R(0), U8(2),  //
+           B(Mov), R(0), R(1),                                                //
+           B(LdaNull), B(Star), R(2),                                         //
+           B(CallRuntime), U16(Runtime::kInternalSetPrototype), R(1), U8(2),  //
            B(Ldar), R(0),                                                     //
            B(Return),                                                         //
        },
        1,
        {InstanceType::FIXED_ARRAY_TYPE}},
       {"var a = 'test'; return { [a]: 1 }",
-       5 * kPointerSize,
+       6 * kPointerSize,
        1,
-       30,
+       33,
        {
            B(LdaConstant), U8(0),                                             //
            B(Star), R(0),                                                     //
            B(CreateObjectLiteral), U8(1), U8(0), U8(simple_flags),            //
            B(Star), R(1),                                                     //
+           B(Mov), R(1), R(2),                                                //
            B(Ldar), R(0),                                                     //
            B(ToName),                                                         //
-           B(Star), R(2),                                                     //
-           B(LdaSmi8), U8(1),                                                 //
            B(Star), R(3),                                                     //
-           B(LdaZero),                                                        //
+           B(LdaSmi8), U8(1),                                                 //
            B(Star), R(4),                                                     //
-           B(CallRuntime), U16(Runtime::kDefineDataPropertyUnchecked), R(1),  //
-                           U8(4),                                             //
+           B(LdaZero),                                                        //
+           B(Star), R(5),                                                     //
+           B(CallRuntime), U16(Runtime::kDefineDataPropertyUnchecked), R(2),  //
+           U8(4),                                                             //
            B(Ldar), R(1),                                                     //
            B(Return),                                                         //
        },
@@ -3905,9 +4062,9 @@ TEST(ObjectLiterals) {
        {InstanceType::ONE_BYTE_INTERNALIZED_STRING_TYPE,
         InstanceType::FIXED_ARRAY_TYPE}},
       {"var a = 'test'; return { val: a, [a]: 1 }",
-       5 * kPointerSize,
+       6 * kPointerSize,
        1,
-       36,
+       39,
        {
            B(LdaConstant), U8(0),                                             //
            B(Star), R(0),                                                     //
@@ -3915,15 +4072,16 @@ TEST(ObjectLiterals) {
            B(Star), R(1),                                                     //
            B(Ldar), R(0),                                                     //
            B(StoreICSloppy), R(1), U8(2), U8(vector->GetIndex(slot1)),        //
+           B(Mov), R(1), R(2),                                                //
            B(Ldar), R(0),                                                     //
            B(ToName),                                                         //
-           B(Star), R(2),                                                     //
-           B(LdaSmi8), U8(1),                                                 //
            B(Star), R(3),                                                     //
-           B(LdaZero),                                                        //
+           B(LdaSmi8), U8(1),                                                 //
            B(Star), R(4),                                                     //
-           B(CallRuntime), U16(Runtime::kDefineDataPropertyUnchecked), R(1),  //
-                           U8(4),                                             //
+           B(LdaZero),                                                        //
+           B(Star), R(5),                                                     //
+           B(CallRuntime), U16(Runtime::kDefineDataPropertyUnchecked), R(2),  //
+           U8(4),                                                             //
            B(Ldar), R(1),                                                     //
            B(Return),                                                         //
        },
@@ -3932,26 +4090,29 @@ TEST(ObjectLiterals) {
         InstanceType::FIXED_ARRAY_TYPE,
         InstanceType::ONE_BYTE_INTERNALIZED_STRING_TYPE}},
       {"var a = 'test'; return { [a]: 1, __proto__: {} }",
-       5 * kPointerSize,
+       6 * kPointerSize,
        1,
-       41,
+       49,
        {
            B(LdaConstant), U8(0),                                             //
            B(Star), R(0),                                                     //
            B(CreateObjectLiteral), U8(1), U8(1), U8(simple_flags),            //
            B(Star), R(1),                                                     //
+           B(Mov), R(1), R(2),                                                //
            B(Ldar), R(0),                                                     //
            B(ToName),                                                         //
-           B(Star), R(2),                                                     //
-           B(LdaSmi8), U8(1),                                                 //
            B(Star), R(3),                                                     //
-           B(LdaZero),                                                        //
+           B(LdaSmi8), U8(1),                                                 //
            B(Star), R(4),                                                     //
-           B(CallRuntime), U16(Runtime::kDefineDataPropertyUnchecked), R(1),  //
-                           U8(4),                                             //
+           B(LdaZero),                                                        //
+           B(Star), R(5),                                                     //
+           B(CallRuntime), U16(Runtime::kDefineDataPropertyUnchecked), R(2),  //
+           U8(4),                                                             //
+           B(Mov), R(1), R(2),                                                //
            B(CreateObjectLiteral), U8(1), U8(0), U8(13),                      //
-           B(Star), R(2),                                                     //
-           B(CallRuntime), U16(Runtime::kInternalSetPrototype), R(1), U8(2),  //
+           B(Star), R(4),                                                     //
+           B(Star), R(3),                                                     //
+           B(CallRuntime), U16(Runtime::kInternalSetPrototype), R(2), U8(2),  //
            B(Ldar), R(1),                                                     //
            B(Return),                                                         //
        },
@@ -3959,39 +4120,42 @@ TEST(ObjectLiterals) {
        {InstanceType::ONE_BYTE_INTERNALIZED_STRING_TYPE,
         InstanceType::FIXED_ARRAY_TYPE}},
       {"var n = 'name'; return { [n]: 'val', get a() { }, set a(b) {} };",
-       5 * kPointerSize,
+       6 * kPointerSize,
        1,
-       64,
+       73,
        {
            B(LdaConstant), U8(0),                                             //
            B(Star), R(0),                                                     //
            B(CreateObjectLiteral), U8(1), U8(0), U8(simple_flags),            //
            B(Star), R(1),                                                     //
+           B(Mov), R(1), R(2),                                                //
            B(Ldar), R(0),                                                     //
            B(ToName),                                                         //
-           B(Star), R(2),                                                     //
+           B(Star), R(3),                                                     //
            B(LdaConstant), U8(2),                                             //
-           B(Star), R(3),                                                     //
-           B(LdaZero),                                                        //
            B(Star), R(4),                                                     //
-           B(CallRuntime), U16(Runtime::kDefineDataPropertyUnchecked), R(1),  //
-                           U8(4),                                             //
+           B(LdaZero),                                                        //
+           B(Star), R(5),                                                     //
+           B(CallRuntime), U16(Runtime::kDefineDataPropertyUnchecked), R(2),  //
+           U8(4),                                                             //
+           B(Mov), R(1), R(2),                                                //
            B(LdaConstant), U8(3),                                             //
-           B(Star), R(2),                                                     //
+           B(Star), R(3),                                                     //
            B(CreateClosure), U8(4), U8(0),                                    //
-           B(Star), R(3),                                                     //
-           B(LdaZero),                                                        //
            B(Star), R(4),                                                     //
+           B(LdaZero),                                                        //
+           B(Star), R(5),                                                     //
            B(CallRuntime), U16(Runtime::kDefineGetterPropertyUnchecked),      //
-                           R(1), U8(4),                                       //
+           R(2), U8(4),                                                       //
+           B(Mov), R(1), R(2),                                                //
            B(LdaConstant), U8(3),                                             //
-           B(Star), R(2),                                                     //
-           B(CreateClosure), U8(5), U8(0),                                    //
            B(Star), R(3),                                                     //
-           B(LdaZero),                                                        //
+           B(CreateClosure), U8(5), U8(0),                                    //
            B(Star), R(4),                                                     //
+           B(LdaZero),                                                        //
+           B(Star), R(5),                                                     //
            B(CallRuntime), U16(Runtime::kDefineSetterPropertyUnchecked),      //
-                           R(1), U8(4),                                       //
+           R(2), U8(4),                                                       //
            B(Ldar), R(1),                                                     //
            B(Return),                                                         //
        },
@@ -4024,16 +4188,18 @@ TEST(ObjectLiteralsWide) {
   ExpectedSnippet<InstanceType, 257> snippets[] = {
       {"var a;" REPEAT_256(SPACE,
                            "a = 1.23;") "return { name: 'string', val: 9.2 };",
-       1 * kPointerSize,
+       2 * kPointerSize,
        1,
-       1031,
+       1033,
        {
-           REPEAT_256(COMMA,                                     //
-             B(LdaConstant), U8(wide_idx++),                     //
-             B(Star), R(0)),                                     //
-           B(CreateObjectLiteralWide), U16(256), U16(0),         //
-                                       U8(deep_elements_flags),  //
-           B(Return)                                             //
+           REPEAT_256(COMMA,                           //
+                      B(LdaConstant), U8(wide_idx++),  //
+                      B(Star), R(0)),                  //
+           B(CreateObjectLiteralWide),
+           U16(256), U16(0),         //
+           U8(deep_elements_flags),  //
+           B(Star), R(1),            //
+           B(Return)                 //
        },
        257,
        {REPEAT_256(COMMA, InstanceType::HEAP_NUMBER_TYPE),
@@ -4101,17 +4267,70 @@ TEST(TryCatch) {
   InitializedHandleScope handle_scope;
   BytecodeGeneratorHelper helper;
 
-  // TODO(rmcilroy): modify tests when we have real try catch support.
-  ExpectedSnippet<int> snippets[] = {
+  int closure = Register::function_closure().index();
+
+  ExpectedSnippet<const char*> snippets[] = {
       {"try { return 1; } catch(e) { return 2; }",
-       kPointerSize,
+       5 * kPointerSize,
        1,
-       3,
+       27,
        {
-           B(LdaSmi8), U8(1),  //
-           B(Return),          //
+           B(LdaSmi8), U8(1),                                             //
+           B(Return),                                                     //
+           B(Star), R(3),                                                 //
+           B(LdaConstant), U8(0),                                         //
+           B(Star), R(2),                                                 //
+           B(Ldar), R(closure),                                           //
+           B(Star), R(4),                                                 //
+           B(CallRuntime), U16(Runtime::kPushCatchContext), R(2), U8(3),  //
+           B(PushContext), R(0),                                          //
+           B(LdaSmi8), U8(2),                                             //
+           B(PopContext), R(0),                                     //
+           B(Return),                                                     //
+           // TODO(mstarzinger): Potential optimization, elide next bytes.
+           B(LdaUndefined),  //
+           B(Return),        //
        },
-       0},
+       1,
+       {"e"},
+       1,
+       {{0, 3, 3}}},
+      {"var a; try { a = 1 } catch(e1) {}; try { a = 2 } catch(e2) { a = 3 }",
+       6 * kPointerSize,
+       1,
+       56,
+       {
+           B(LdaSmi8), U8(1),                                             //
+           B(Star), R(0),                                                 //
+           B(Jump), U8(21),                                               //
+           B(Star), R(4),                                                 //
+           B(LdaConstant), U8(0),                                         //
+           B(Star), R(3),                                                 //
+           B(Ldar), R(closure),                                           //
+           B(Star), R(5),                                                 //
+           B(CallRuntime), U16(Runtime::kPushCatchContext), R(3), U8(3),  //
+           B(PushContext), R(1),                                          //
+           B(PopContext), R(1),                                           //
+           B(LdaSmi8), U8(2),                                             //
+           B(Star), R(0),                                                 //
+           B(Jump), U8(25),                                               //
+           B(Star), R(4),                                                 //
+           B(LdaConstant), U8(1),                                         //
+           B(Star), R(3),                                                 //
+           B(Ldar), R(closure),                                           //
+           B(Star), R(5),                                                 //
+           B(CallRuntime), U16(Runtime::kPushCatchContext), R(3), U8(3),  //
+           B(PushContext), R(1),                                          //
+           B(LdaSmi8), U8(3),                                             //
+           B(Star), R(0),                                                 //
+           B(PopContext), R(1),                                           //
+           B(LdaUndefined),                                               //
+           B(Return),                                                     //
+       },
+       2,
+       {"e1", "e2"},
+       2,
+       {{0, 4, 6}, {25, 29, 31}}},
   };
 
   for (size_t i = 0; i < arraysize(snippets); i++) {
@@ -4126,38 +4345,132 @@ TEST(TryFinally) {
   InitializedHandleScope handle_scope;
   BytecodeGeneratorHelper helper;
 
-  // TODO(rmcilroy): modify tests when we have real try finally support.
-  ExpectedSnippet<int> snippets[] = {
+  int closure = Register::function_closure().index();
+
+  ExpectedSnippet<const char*> snippets[] = {
       {"var a = 1; try { a = 2; } finally { a = 3; }",
-       kPointerSize,
+       4 * kPointerSize,
        1,
-       14,
+       35,
        {
-           B(LdaSmi8), U8(1),  //
-           B(Star), R(0),      //
-           B(LdaSmi8), U8(2),  //
-           B(Star), R(0),      //
-           B(LdaSmi8), U8(3),  //
-           B(Star), R(0),      //
-           B(LdaUndefined),    //
-           B(Return),          //
+           B(LdaSmi8), U8(1),         //
+           B(Star), R(0),             //
+           B(LdaSmi8), U8(2),         //
+           B(Star), R(0),             //
+           B(LdaSmi8), U8(-1),        //
+           B(Star), R(1),             //
+           B(Jump), U8(7),            //
+           B(Star), R(2),             //
+           B(LdaZero),                //
+           B(Star), R(1),             //
+           B(LdaSmi8), U8(3),         //
+           B(Star), R(0),             //
+           B(LdaZero),                //
+           B(TestEqualStrict), R(1),  //
+           B(JumpIfTrue), U8(4),      //
+           B(Jump), U8(5),            //
+           B(Ldar), R(2),             //
+           B(ReThrow),                //
+           B(LdaUndefined),           //
+           B(Return),                 //
        },
-       0},
+       0,
+       {},
+       1,
+       {{4, 8, 14}}},
       {"var a = 1; try { a = 2; } catch(e) { a = 20 } finally { a = 3; }",
-       2 * kPointerSize,
+       9 * kPointerSize,
        1,
-       14,
+       60,
        {
-           B(LdaSmi8), U8(1),  //
-           B(Star), R(0),      //
-           B(LdaSmi8), U8(2),  //
-           B(Star), R(0),      //
-           B(LdaSmi8), U8(3),  //
-           B(Star), R(0),      //
-           B(LdaUndefined),    //
-           B(Return),          //
+           B(LdaSmi8), U8(1),                                             //
+           B(Star), R(0),                                                 //
+           B(LdaSmi8), U8(2),                                             //
+           B(Star), R(0),                                                 //
+           B(Jump), U8(25),                                               //
+           B(Star), R(7),                                                 //
+           B(LdaConstant), U8(0),                                         //
+           B(Star), R(6),                                                 //
+           B(Ldar), R(closure),                                           //
+           B(Star), R(8),                                                 //
+           B(CallRuntime), U16(Runtime::kPushCatchContext), R(6), U8(3),  //
+           B(PushContext), R(1),                                          //
+           B(LdaSmi8), U8(20),                                            //
+           B(Star), R(0),                                                 //
+           B(PopContext), R(1),                                           //
+           B(LdaSmi8), U8(-1),                                            //
+           B(Star), R(2),                                                 //
+           B(Jump), U8(7),                                                //
+           B(Star), R(3),                                                 //
+           B(LdaZero),                                                    //
+           B(Star), R(2),                                                 //
+           B(LdaSmi8), U8(3),                                             //
+           B(Star), R(0),                                                 //
+           B(LdaZero),                                                    //
+           B(TestEqualStrict), R(2),                                      //
+           B(JumpIfTrue), U8(4),                                          //
+           B(Jump), U8(5),                                                //
+           B(Ldar), R(3),                                                 //
+           B(ReThrow),                                                    //
+           B(LdaUndefined),                                               //
+           B(Return),                                                     //
        },
-       0},
+       1,
+       {"e"},
+       2,
+       {{4, 33, 39}, {4, 8, 10}}},
+      {"var a; try {"
+       "  try { a = 1 } catch(e) { a = 2 }"
+       "} catch(e) { a = 20 } finally { a = 3; }",
+       10 * kPointerSize,
+       1,
+       81,
+       {
+           B(LdaSmi8), U8(1),                                             //
+           B(Star), R(0),                                                 //
+           B(Jump), U8(25),                                               //
+           B(Star), R(8),                                                 //
+           B(LdaConstant), U8(0),                                         //
+           B(Star), R(7),                                                 //
+           B(Ldar), R(closure),                                           //
+           B(Star), R(9),                                                 //
+           B(CallRuntime), U16(Runtime::kPushCatchContext), R(7), U8(3),  //
+           B(PushContext), R(1),                                          //
+           B(LdaSmi8), U8(2),                                             //
+           B(Star), R(0),                                                 //
+           B(PopContext), R(1),                                           //
+           B(Jump), U8(25),                                               //
+           B(Star), R(7),                                                 //
+           B(LdaConstant), U8(0),                                         //
+           B(Star), R(6),                                                 //
+           B(Ldar), R(closure),                                           //
+           B(Star), R(8),                                                 //
+           B(CallRuntime), U16(Runtime::kPushCatchContext), R(6), U8(3),  //
+           B(PushContext), R(1),                                          //
+           B(LdaSmi8), U8(20),                                            //
+           B(Star), R(0),                                                 //
+           B(PopContext), R(1),                                           //
+           B(LdaSmi8), U8(-1),                                            //
+           B(Star), R(2),                                                 //
+           B(Jump), U8(7),                                                //
+           B(Star), R(3),                                                 //
+           B(LdaZero),                                                    //
+           B(Star), R(2),                                                 //
+           B(LdaSmi8), U8(3),                                             //
+           B(Star), R(0),                                                 //
+           B(LdaZero),                                                    //
+           B(TestEqualStrict), R(2),                                      //
+           B(JumpIfTrue), U8(4),                                          //
+           B(Jump), U8(5),                                                //
+           B(Ldar), R(3),                                                 //
+           B(ReThrow),                                                    //
+           B(LdaUndefined),                                               //
+           B(Return),                                                     //
+       },
+       1,
+       {"e"},
+       3,
+       {{0, 54, 60}, {0, 29, 31}, {0, 4, 6}}},
   };
 
   for (size_t i = 0; i < arraysize(snippets); i++) {
@@ -4172,7 +4485,6 @@ TEST(Throw) {
   InitializedHandleScope handle_scope;
   BytecodeGeneratorHelper helper;
 
-  // TODO(rmcilroy): modify tests when we have real try catch support.
   ExpectedSnippet<const char*> snippets[] = {
       {"throw 1;",
        0,
@@ -4309,6 +4621,7 @@ TEST(ContextVariables) {
       i::NewTypeFeedbackVector(helper.isolate(), &feedback_spec);
 
   int closure = Register::function_closure().index();
+  int context = Register::current_context().index();
   int new_target = Register::new_target().index();
   int first_context_slot = Context::MIN_CONTEXT_SLOTS;
 
@@ -4337,13 +4650,13 @@ TEST(ContextVariables) {
        1,
        16,
        {
-           B(CallRuntime), U16(Runtime::kNewFunctionContext),  //
-                           R(closure), U8(1),                  //
-           B(PushContext), R(0),                               //
-           B(LdaSmi8), U8(1),                                  //
-           B(StaContextSlot), R(0), U8(first_context_slot),    //
-           B(CreateClosure), U8(0), U8(0),                     //
-           B(Return),                                          //
+           B(CallRuntime), U16(Runtime::kNewFunctionContext),        //
+                           R(closure), U8(1),                        //
+           B(PushContext), R(0),                                     //
+           B(LdaSmi8), U8(1),                                        //
+           B(StaContextSlot), R(context), U8(first_context_slot),    //
+           B(CreateClosure), U8(0), U8(0),                           //
+           B(Return),                                                //
        },
        1,
        {InstanceType::SHARED_FUNCTION_INFO_TYPE}},
@@ -4352,15 +4665,15 @@ TEST(ContextVariables) {
        1,
        21,
        {
-           B(CallRuntime), U16(Runtime::kNewFunctionContext),    //
-                           R(closure), U8(1),                    //
-           B(PushContext), R(0),                                 //
-           B(LdaSmi8), U8(1),                                    //
-           B(StaContextSlot), R(0), U8(first_context_slot),      //
-           B(LdaSmi8), U8(2),                                    //
-           B(StaContextSlot), R(0), U8(first_context_slot + 1),  //
-           B(CreateClosure), U8(0), U8(0),                       //
-           B(Return),                                            //
+           B(CallRuntime), U16(Runtime::kNewFunctionContext),          //
+                           R(closure), U8(1),                          //
+           B(PushContext), R(0),                                       //
+           B(LdaSmi8), U8(1),                                          //
+           B(StaContextSlot), R(context), U8(first_context_slot),      //
+           B(LdaSmi8), U8(2),                                          //
+           B(StaContextSlot), R(context), U8(first_context_slot + 1),  //
+           B(CreateClosure), U8(0), U8(0),                             //
+           B(Return),                                                  //
        },
        1,
        {InstanceType::SHARED_FUNCTION_INFO_TYPE}},
@@ -4377,7 +4690,7 @@ TEST(ContextVariables) {
            B(CreateClosure), U8(0), U8(0),                          //
            B(Star), R(1),                                           //
            B(Call), R(1), R(2), U8(0), U8(vector->GetIndex(slot)),  //
-           B(LdaContextSlot), R(0), U8(first_context_slot),         //
+           B(LdaContextSlot), R(context), U8(first_context_slot),   //
            B(Return),                                               //
        },
        1,
@@ -4385,15 +4698,15 @@ TEST(ContextVariables) {
       {"'use strict'; let a = 1; { let b = 2; return function() { a + b; }; }",
        4 * kPointerSize,
        1,
-       44,
+       46,
        {
            B(CallRuntime), U16(Runtime::kNewFunctionContext),             //
                            R(closure), U8(1),                             //
            B(PushContext), R(0),                                          //
            B(LdaTheHole),                                                 //
-           B(StaContextSlot), R(0), U8(first_context_slot),               //
+           B(StaContextSlot), R(context), U8(first_context_slot),         //
            B(LdaSmi8), U8(1),                                             //
-           B(StaContextSlot), R(0), U8(first_context_slot),               //
+           B(StaContextSlot), R(context), U8(first_context_slot),         //
            B(LdaConstant), U8(0),                                         //
            B(Star), R(2),                                                 //
            B(Ldar), R(closure),                                           //
@@ -4401,10 +4714,11 @@ TEST(ContextVariables) {
            B(CallRuntime), U16(Runtime::kPushBlockContext), R(2), U8(2),  //
            B(PushContext), R(1),                                          //
            B(LdaTheHole),                                                 //
-           B(StaContextSlot), R(1), U8(first_context_slot),               //
+           B(StaContextSlot), R(context), U8(first_context_slot),         //
            B(LdaSmi8), U8(2),                                             //
-           B(StaContextSlot), R(1), U8(first_context_slot),               //
+           B(StaContextSlot), R(context), U8(first_context_slot),         //
            B(CreateClosure), U8(1), U8(0),                                //
+           B(PopContext), R(0),                                           //
            B(Return),                                                     //
        },
        2,
@@ -4423,22 +4737,22 @@ TEST(ContextVariables) {
                            U8(1),                                          //
            B(PushContext), R(0),                                           //
            B(Ldar), THIS(1),                                               //
-           B(StaContextSlot), R(0), U8(first_context_slot),                //
+           B(StaContextSlot), R(context), U8(first_context_slot),          //
            B(CreateUnmappedArguments),                                     //
-           B(StaContextSlot), R(0), U8(first_context_slot + 1),            //
+           B(StaContextSlot), R(context), U8(first_context_slot + 1),      //
            B(Ldar), R(new_target),                                         //
-           B(StaContextSlot), R(0), U8(first_context_slot + 2),            //
+           B(StaContextSlot), R(context), U8(first_context_slot + 2),      //
            REPEAT_249(COMMA,                                               //
                       B(LdaZero),                                          //
-                      B(StaContextSlot), R(0), U8(wide_slot++)),           //
+                      B(StaContextSlot), R(context), U8(wide_slot++)),     //
            B(LdaUndefined),                                                //
            B(Star), R(2),                                                  //
            B(LdaGlobalStrict), U8(0), U8(1),                               //
            B(Star), R(1),                                                  //
            B(Call), R(1), R(2), U8(0), U8(0),                              //
            B(LdaSmi8), U8(100),                                            //
-           B(StaContextSlotWide), R(0), U16(256),                          //
-           B(LdaContextSlotWide), R(0), U16(256),                          //
+           B(StaContextSlotWide), R(context), U16(256),                    //
+           B(LdaContextSlotWide), R(context), U16(256),                    //
            B(Return),                                                      //
        },
        1,
@@ -4458,6 +4772,7 @@ TEST(ContextParameters) {
   BytecodeGeneratorHelper helper;
 
   int closure = Register::function_closure().index();
+  int context = Register::current_context().index();
   int first_context_slot = Context::MIN_CONTEXT_SLOTS;
 
   ExpectedSnippet<InstanceType> snippets[] = {
@@ -4466,13 +4781,13 @@ TEST(ContextParameters) {
        2,
        16,
        {
-           B(CallRuntime), U16(Runtime::kNewFunctionContext),  //
-                           R(closure), U8(1),                  //
-           B(PushContext), R(0),                               //
-           B(Ldar), R(helper.kLastParamIndex),                 //
-           B(StaContextSlot), R(0), U8(first_context_slot),    //
-           B(CreateClosure), U8(0), U8(0),                     //
-           B(Return),                                          //
+           B(CallRuntime), U16(Runtime::kNewFunctionContext),        //
+                           R(closure), U8(1),                        //
+           B(PushContext), R(0),                                     //
+           B(Ldar), R(helper.kLastParamIndex),                       //
+           B(StaContextSlot), R(context), U8(first_context_slot),    //
+           B(CreateClosure), U8(0), U8(0),                           //
+           B(Return),                                                //
        },
        1,
        {InstanceType::SHARED_FUNCTION_INFO_TYPE}},
@@ -4481,15 +4796,15 @@ TEST(ContextParameters) {
        2,
        21,
        {
-           B(CallRuntime), U16(Runtime::kNewFunctionContext),  //
-                           R(closure), U8(1),                  //
-           B(PushContext), R(1),                               //
-           B(Ldar), R(helper.kLastParamIndex),                 //
-           B(StaContextSlot), R(1), U8(first_context_slot),    //
-           B(CreateClosure), U8(0), U8(0),                     //
-           B(Star), R(0),                                      //
-           B(LdaContextSlot), R(1), U8(first_context_slot),    //
-           B(Return),                                          //
+           B(CallRuntime), U16(Runtime::kNewFunctionContext),        //
+                           R(closure), U8(1),                        //
+           B(PushContext), R(1),                                     //
+           B(Ldar), R(helper.kLastParamIndex),                       //
+           B(StaContextSlot), R(context), U8(first_context_slot),    //
+           B(CreateClosure), U8(0), U8(0),                           //
+           B(Star), R(0),                                            //
+           B(LdaContextSlot), R(context), U8(first_context_slot),    //
+           B(Return),                                                //
        },
        1,
        {InstanceType::SHARED_FUNCTION_INFO_TYPE}},
@@ -4498,15 +4813,15 @@ TEST(ContextParameters) {
        5,
        21,
        {
-           B(CallRuntime), U16(Runtime::kNewFunctionContext),    //
-                           R(closure), U8(1),                    //
-           B(PushContext), R(0),                                 //
-           B(Ldar), R(helper.kLastParamIndex - 3),               //
-           B(StaContextSlot), R(0), U8(first_context_slot + 1),  //
-           B(Ldar), R(helper.kLastParamIndex -1),                //
-           B(StaContextSlot), R(0), U8(first_context_slot),      //
-           B(CreateClosure), U8(0), U8(0),                       //
-           B(Return),                                            //
+           B(CallRuntime), U16(Runtime::kNewFunctionContext),          //
+                           R(closure), U8(1),                          //
+           B(PushContext), R(0),                                       //
+           B(Ldar), R(helper.kLastParamIndex - 3),                     //
+           B(StaContextSlot), R(context), U8(first_context_slot + 1),  //
+           B(Ldar), R(helper.kLastParamIndex -1),                      //
+           B(StaContextSlot), R(context), U8(first_context_slot),      //
+           B(CreateClosure), U8(0), U8(0),                             //
+           B(Return),                                                  //
        },
        1,
        {InstanceType::SHARED_FUNCTION_INFO_TYPE}},
@@ -4515,13 +4830,13 @@ TEST(ContextParameters) {
        1,
        16,
        {
-           B(CallRuntime), U16(Runtime::kNewFunctionContext),  //
-                           R(closure), U8(1),                  //
-           B(PushContext), R(0),                               //
-           B(Ldar), R(helper.kLastParamIndex),                 //
-           B(StaContextSlot), R(0), U8(first_context_slot),    //
-           B(CreateClosure), U8(0), U8(0),                     //
-           B(Return),                                          //
+           B(CallRuntime), U16(Runtime::kNewFunctionContext),      //
+                           R(closure), U8(1),                      //
+           B(PushContext), R(0),                                   //
+           B(Ldar), R(helper.kLastParamIndex),                     //
+           B(StaContextSlot), R(context), U8(first_context_slot),  //
+           B(CreateClosure), U8(0), U8(0),                         //
+           B(Return),                                              //
        },
        1,
        {InstanceType::SHARED_FUNCTION_INFO_TYPE}},
@@ -4539,7 +4854,7 @@ TEST(OuterContextVariables) {
   InitializedHandleScope handle_scope;
   BytecodeGeneratorHelper helper;
 
-  int context = Register::function_context().index();
+  int context = Register::current_context().index();
   int first_context_slot = Context::MIN_CONTEXT_SLOTS;
 
   ExpectedSnippet<InstanceType> snippets[] = {
@@ -4615,6 +4930,7 @@ TEST(CountOperators) {
       i::NewTypeFeedbackVector(helper.isolate(), &store_feedback_spec);
 
   int closure = Register::function_closure().index();
+  int context = Register::current_context().index();
   int first_context_slot = Context::MIN_CONTEXT_SLOTS;
 
   int object_literal_flags =
@@ -4678,9 +4994,10 @@ TEST(CountOperators) {
       {"var a = { val: 1 }; return a.val++;",
        3 * kPointerSize,
        1,
-       23,
+       25,
        {
            B(CreateObjectLiteral), U8(0), U8(0), U8(object_literal_flags),  //
+           B(Star), R(1),                                                   //
            B(Star), R(0),                                                   //
            B(Star), R(1),                                                   //
            B(LoadICSloppy), R(1), U8(1), U8(vector->GetIndex(slot1)),       //
@@ -4697,9 +5014,10 @@ TEST(CountOperators) {
       {"var a = { val: 1 }; return --a.val;",
        2 * kPointerSize,
        1,
-       19,
+       21,
        {
            B(CreateObjectLiteral), U8(0), U8(0), U8(object_literal_flags),  //
+           B(Star), R(1),                                                   //
            B(Star), R(0),                                                   //
            B(Star), R(1),                                                   //
            B(LoadICSloppy), R(1), U8(1), U8(vector->GetIndex(slot1)),       //
@@ -4714,11 +5032,12 @@ TEST(CountOperators) {
       {"var name = 'var'; var a = { val: 1 }; return a[name]--;",
        5 * kPointerSize,
        1,
-       30,
+       32,
        {
            B(LdaConstant), U8(0),                                           //
            B(Star), R(0),                                                   //
            B(CreateObjectLiteral), U8(1), U8(0), U8(object_literal_flags),  //
+           B(Star), R(2),                                                   //
            B(Star), R(1),                                                   //
            B(Star), R(2),                                                   //
            B(Ldar), R(0),                                                   //
@@ -4737,11 +5056,12 @@ TEST(CountOperators) {
       {"var name = 'var'; var a = { val: 1 }; return ++a[name];",
        4 * kPointerSize,
        1,
-       26,
+       28,
        {
            B(LdaConstant), U8(0),                                           //
            B(Star), R(0),                                                   //
            B(CreateObjectLiteral), U8(1), U8(0), U8(object_literal_flags),  //
+           B(Star), R(2),                                                   //
            B(Star), R(1),                                                   //
            B(Star), R(2),                                                   //
            B(Ldar), R(0),                                                   //
@@ -4761,16 +5081,16 @@ TEST(CountOperators) {
        26,
        {
            B(CallRuntime), U16(Runtime::kNewFunctionContext), R(closure),  //
-                           U8(1),                                          //
+           U8(1),                                                          //
            B(PushContext), R(1),                                           //
            B(LdaSmi8), U8(1),                                              //
-           B(StaContextSlot), R(1), U8(first_context_slot),                //
+           B(StaContextSlot), R(context), U8(first_context_slot),          //
            B(CreateClosure), U8(0), U8(0),                                 //
            B(Star), R(0),                                                  //
-           B(LdaContextSlot), R(1), U8(first_context_slot),                //
+           B(LdaContextSlot), R(context), U8(first_context_slot),          //
            B(ToNumber),                                                    //
            B(Inc),                                                         //
-           B(StaContextSlot), R(1), U8(first_context_slot),                //
+           B(StaContextSlot), R(context), U8(first_context_slot),          //
            B(Return),                                                      //
        },
        1,
@@ -4781,17 +5101,17 @@ TEST(CountOperators) {
        30,
        {
            B(CallRuntime), U16(Runtime::kNewFunctionContext), R(closure),  //
-                           U8(1),                                          //
+           U8(1),                                                          //
            B(PushContext), R(1),                                           //
            B(LdaSmi8), U8(1),                                              //
-           B(StaContextSlot), R(1), U8(first_context_slot),                //
+           B(StaContextSlot), R(context), U8(first_context_slot),          //
            B(CreateClosure), U8(0), U8(0),                                 //
            B(Star), R(0),                                                  //
-           B(LdaContextSlot), R(1), U8(first_context_slot),                //
+           B(LdaContextSlot), R(context), U8(first_context_slot),          //
            B(ToNumber),                                                    //
            B(Star), R(2),                                                  //
            B(Dec),                                                         //
-           B(StaContextSlot), R(1), U8(first_context_slot),                //
+           B(StaContextSlot), R(context), U8(first_context_slot),          //
            B(Ldar), R(2),                                                  //
            B(Return),                                                      //
        },
@@ -4802,20 +5122,20 @@ TEST(CountOperators) {
        1,
        27,
        {
-           B(LdaSmi8), U8(1),                                              //
-           B(Star), R(0),                                                  //
-           B(CreateArrayLiteral), U8(0), U8(0), U8(array_literal_flags),   //
-           B(Star), R(1),                                                  //
-           B(Star), R(2),                                                  //
-           B(Ldar), R(0),                                                  //
-           B(ToNumber),                                                    //
-           B(Star), R(3),                                                  //
-           B(Inc),                                                         //
-           B(Star), R(0),                                                  //
-           B(LdaSmi8), U8(2),                                              //
-           B(KeyedStoreICSloppy), R(2), R(3),                              //
-                                  U8(store_vector->GetIndex(store_slot)),  //
-           B(Return),                                                      //
+           B(LdaSmi8), U8(1),                                             //
+           B(Star), R(0),                                                 //
+           B(CreateArrayLiteral), U8(0), U8(0), U8(array_literal_flags),  //
+           B(Star), R(1),                                                 //
+           B(Star), R(2),                                                 //
+           B(Ldar), R(0),                                                 //
+           B(ToNumber),                                                   //
+           B(Star), R(3),                                                 //
+           B(Inc),                                                        //
+           B(Star), R(0),                                                 //
+           B(LdaSmi8), U8(2),                                             //
+           B(KeyedStoreICSloppy), R(2), R(3),                             //
+           U8(store_vector->GetIndex(store_slot)),                        //
+           B(Return),                                                     //
        },
        1,
        {InstanceType::FIXED_ARRAY_TYPE}},
@@ -4915,6 +5235,7 @@ TEST(CompoundExpressions) {
   Zone zone;
 
   int closure = Register::function_closure().index();
+  int context = Register::current_context().index();
   int first_context_slot = Context::MIN_CONTEXT_SLOTS;
 
   FeedbackVectorSpec feedback_spec(&zone);
@@ -4958,9 +5279,10 @@ TEST(CompoundExpressions) {
       {"var a = { val: 2 }; a.name *= 2;",
        3 * kPointerSize,
        1,
-       24,
+       26,
        {
            B(CreateObjectLiteral), U8(0), U8(0), U8(object_literal_flags),  //
+           B(Star), R(1),                                                   //
            B(Star), R(0),                                                   //
            B(Star), R(1),                                                   //
            B(LoadICSloppy), R(1), U8(1), U8(vector->GetIndex(slot1)),       //
@@ -4977,9 +5299,10 @@ TEST(CompoundExpressions) {
       {"var a = { 1: 2 }; a[1] ^= 2;",
        4 * kPointerSize,
        1,
-       27,
+       29,
        {
            B(CreateObjectLiteral), U8(0), U8(0), U8(object_literal_flags),  //
+           B(Star), R(1),                                                   //
            B(Star), R(0),                                                   //
            B(Star), R(1),                                                   //
            B(LdaSmi8), U8(1),                                               //
@@ -5000,16 +5323,16 @@ TEST(CompoundExpressions) {
        29,
        {
            B(CallRuntime), U16(Runtime::kNewFunctionContext), R(closure),  //
-                           U8(1),                                          //
+           U8(1),                                                          //
            B(PushContext), R(0),                                           //
            B(LdaSmi8), U8(1),                                              //
-           B(StaContextSlot), R(0), U8(first_context_slot),                //
+           B(StaContextSlot), R(context), U8(first_context_slot),          //
            B(CreateClosure), U8(0), U8(0),                                 //
-           B(LdaContextSlot), R(0), U8(first_context_slot),                //
+           B(LdaContextSlot), R(context), U8(first_context_slot),          //
            B(Star), R(1),                                                  //
            B(LdaSmi8), U8(24),                                             //
            B(BitwiseOr), R(1),                                             //
-           B(StaContextSlot), R(0), U8(first_context_slot),                //
+           B(StaContextSlot), R(context), U8(first_context_slot),          //
            B(LdaUndefined),                                                //
            B(Return),                                                      //
        },
@@ -5082,6 +5405,7 @@ TEST(CreateArguments) {
   Zone zone;
 
   int closure = Register::function_closure().index();
+  int context = Register::current_context().index();
   int first_context_slot = Context::MIN_CONTEXT_SLOTS;
 
   FeedbackVectorSpec feedback_spec(&zone);
@@ -5130,7 +5454,7 @@ TEST(CreateArguments) {
                            U8(1),                                          //
            B(PushContext), R(1),                                           //
            B(Ldar), R(BytecodeGeneratorHelper::kLastParamIndex),           //
-           B(StaContextSlot), R(1), U8(first_context_slot),                //
+           B(StaContextSlot), R(context), U8(first_context_slot),          //
            B(CreateMappedArguments),                                       //
            B(Star), R(0),                                                  //
            B(Star), R(2),                                                  //
@@ -5147,11 +5471,11 @@ TEST(CreateArguments) {
                            U8(1),                                          //
            B(PushContext), R(1),                                           //
            B(Ldar), R(BytecodeGeneratorHelper::kLastParamIndex - 2),       //
-           B(StaContextSlot), R(1), U8(first_context_slot + 2),            //
+           B(StaContextSlot), R(context), U8(first_context_slot + 2),      //
            B(Ldar), R(BytecodeGeneratorHelper::kLastParamIndex - 1),       //
-           B(StaContextSlot), R(1), U8(first_context_slot + 1),            //
+           B(StaContextSlot), R(context), U8(first_context_slot + 1),      //
            B(Ldar), R(BytecodeGeneratorHelper::kLastParamIndex),           //
-           B(StaContextSlot), R(1), U8(first_context_slot),                //
+           B(StaContextSlot), R(context), U8(first_context_slot),          //
            B(CreateMappedArguments),                                       //
            B(Star), R(0),                                                  //
            B(Return),                                                      //
@@ -5249,30 +5573,30 @@ TEST(ForIn) {
        "for (var p in x) { return p; }",
        8 * kPointerSize,
        1,
-       45,
+       42,
        {
-           B(LdaConstant), U8(0),                 //
-           B(Star), R(1),                         //
-           B(JumpIfUndefined), U8(39),            //
-           B(JumpIfNull), U8(37),                 //
-           B(ToObject),                           //
-           B(JumpIfNull), U8(34),                 //
-           B(Star), R(3),                         //
-           B(ForInPrepare), R(4), R(5), R(6),     //
-           B(LdaZero),                            //
-           B(Star), R(7),                         //
-           B(ForInDone), R(7), R(6),              //
-           B(JumpIfTrue), U8(20),                 //
-           B(ForInNext), R(3), R(4), R(5), R(7),  //
-           B(JumpIfUndefined), U8(7),             //
-           B(Star), R(0),                         //
-           B(Star), R(2),                         //
-           B(Return),                             //
-           B(ForInStep), R(7),                    //
-           B(Star), R(7),                         //
-           B(Jump), U8(-21),                      //
-           B(LdaUndefined),                       //
-           B(Return),                             //
+           B(LdaConstant), U8(0),           //
+           B(Star), R(1),                   //
+           B(JumpIfUndefined), U8(36),      //
+           B(JumpIfNull), U8(34),           //
+           B(ToObject),                     //
+           B(JumpIfNull), U8(31),           //
+           B(Star), R(3),                   //
+           B(ForInPrepare), R(4),           //
+           B(LdaZero),                      //
+           B(Star), R(7),                   //
+           B(ForInDone), R(7), R(6),        //
+           B(JumpIfTrue), U8(19),           //
+           B(ForInNext), R(3), R(7), R(4),  //
+           B(JumpIfUndefined), U8(7),       //
+           B(Star), R(0),                   //
+           B(Star), R(2),                   //
+           B(Return),                       //
+           B(ForInStep), R(7),              //
+           B(Star), R(7),                   //
+           B(Jump), U8(-20),                //
+           B(LdaUndefined),                 //
+           B(Return),                       //
        },
        1,
        {InstanceType::ONE_BYTE_INTERNALIZED_STRING_TYPE}},
@@ -5280,22 +5604,22 @@ TEST(ForIn) {
        "for (var p in [1,2,3]) { x += p; }",
        9 * kPointerSize,
        1,
-       57,
+       54,
        {
            B(LdaZero),                                  //
            B(Star), R(1),                               //
            B(CreateArrayLiteral), U8(0), U8(0), U8(3),  //
-           B(JumpIfUndefined), U8(48),                  //
-           B(JumpIfNull), U8(46),                       //
-           B(ToObject),                                 //
+           B(JumpIfUndefined), U8(45),                  //
            B(JumpIfNull), U8(43),                       //
+           B(ToObject),                                 //
+           B(JumpIfNull), U8(40),                       //
            B(Star), R(3),                               //
-           B(ForInPrepare), R(4), R(5), R(6),           //
+           B(ForInPrepare), R(4),                       //
            B(LdaZero),                                  //
            B(Star), R(7),                               //
            B(ForInDone), R(7), R(6),                    //
-           B(JumpIfTrue), U8(29),                       //
-           B(ForInNext), R(3), R(4), R(5), R(7),        //
+           B(JumpIfTrue), U8(28),                       //
+           B(ForInNext), R(3), R(7), R(4),              //
            B(JumpIfUndefined), U8(16),                  //
            B(Star), R(0),                               //
            B(Star), R(2),                               //
@@ -5306,7 +5630,7 @@ TEST(ForIn) {
            B(Star), R(1),                               //
            B(ForInStep), R(7),                          //
            B(Star), R(7),                               //
-           B(Jump), U8(-30),                            //
+           B(Jump), U8(-29),                            //
            B(LdaUndefined),                             //
            B(Return),                                   //
        },
@@ -5319,22 +5643,23 @@ TEST(ForIn) {
        "}",
        8 * kPointerSize,
        1,
-       94,
+       93,
        {
            B(CreateObjectLiteral), U8(0), U8(0), U8(deep_elements_flags),  //
+           B(Star), R(1),                                                  //
            B(Star), R(0),                                                  //
            B(CreateArrayLiteral), U8(1), U8(1), U8(simple_flags),          //
-           B(JumpIfUndefined), U8(82),                                     //
-           B(JumpIfNull), U8(80),                                          //
-           B(ToObject),                                                    //
+           B(JumpIfUndefined), U8(79),                                     //
            B(JumpIfNull), U8(77),                                          //
+           B(ToObject),                                                    //
+           B(JumpIfNull), U8(74),                                          //
            B(Star), R(1),                                                  //
-           B(ForInPrepare), R(2), R(3), R(4),                              //
+           B(ForInPrepare), R(2),                                          //
            B(LdaZero),                                                     //
            B(Star), R(5),                                                  //
            B(ForInDone), R(5), R(4),                                       //
-           B(JumpIfTrue), U8(63),                                          //
-           B(ForInNext), R(1), R(2), R(3), R(5),                           //
+           B(JumpIfTrue), U8(62),                                          //
+           B(ForInNext), R(1), R(5), R(2),                                 //
            B(JumpIfUndefined), U8(50),                                     //
            B(Star), R(6),                                                  //
            B(Ldar), R(0),                                                  //
@@ -5359,7 +5684,7 @@ TEST(ForIn) {
            B(Jump), U8(8),                                                 //
            B(ForInStep), R(5),                                             //
            B(Star), R(5),                                                  //
-           B(Jump), U8(-64),                                               //
+           B(Jump), U8(-63),                                               //
            B(LdaUndefined),                                                //
            B(Return),                                                      //
        },
@@ -5370,22 +5695,22 @@ TEST(ForIn) {
        "for (x[0] in [1,2,3]) { return x[3]; }",
        9 * kPointerSize,
        1,
-       71,
+       68,
        {
            B(CreateArrayLiteral), U8(0), U8(0), U8(simple_flags),           //
            B(Star), R(0),                                                   //
            B(CreateArrayLiteral), U8(1), U8(1), U8(simple_flags),           //
-           B(JumpIfUndefined), U8(59),                                      //
-           B(JumpIfNull), U8(57),                                           //
-           B(ToObject),                                                     //
+           B(JumpIfUndefined), U8(56),                                      //
            B(JumpIfNull), U8(54),                                           //
+           B(ToObject),                                                     //
+           B(JumpIfNull), U8(51),                                           //
            B(Star), R(1),                                                   //
-           B(ForInPrepare), R(2), R(3), R(4),                               //
+           B(ForInPrepare), R(2),                                           //
            B(LdaZero),                                                      //
            B(Star), R(5),                                                   //
            B(ForInDone), R(5), R(4),                                        //
-           B(JumpIfTrue), U8(40),                                           //
-           B(ForInNext), R(1), R(2), R(3), R(5),                            //
+           B(JumpIfTrue), U8(39),                                           //
+           B(ForInNext), R(1), R(5), R(2),                                  //
            B(JumpIfUndefined), U8(27),                                      //
            B(Star), R(6),                                                   //
            B(Ldar), R(0),                                                   //
@@ -5401,12 +5726,249 @@ TEST(ForIn) {
            B(Return),                                                       //
            B(ForInStep), R(5),                                              //
            B(Star), R(5),                                                   //
-           B(Jump), U8(-41),                                                //
+           B(Jump), U8(-40),                                                //
            B(LdaUndefined),                                                 //
            B(Return),                                                       //
        },
        2,
        {InstanceType::FIXED_ARRAY_TYPE, InstanceType::FIXED_ARRAY_TYPE}},
+  };
+
+  for (size_t i = 0; i < arraysize(snippets); i++) {
+    Handle<BytecodeArray> bytecode_array =
+        helper.MakeBytecodeForFunctionBody(snippets[i].code_snippet);
+    CheckBytecodeArrayEqual(snippets[i], bytecode_array);
+  }
+}
+
+
+TEST(ForOf) {
+  InitializedHandleScope handle_scope;
+  BytecodeGeneratorHelper helper;
+  Zone zone;
+
+  int array_literal_flags =
+      ArrayLiteral::kDisableMementos | ArrayLiteral::kShallowElements;
+  int object_literal_flags =
+      ObjectLiteral::kFastElements | ObjectLiteral::kDisableMementos;
+
+  FeedbackVectorSpec feedback_spec(&zone);
+  FeedbackVectorSlot slot1 = feedback_spec.AddCallICSlot();
+  FeedbackVectorSlot slot2 = feedback_spec.AddKeyedLoadICSlot();
+  FeedbackVectorSlot slot3 = feedback_spec.AddCallICSlot();
+  FeedbackVectorSlot slot4 = feedback_spec.AddLoadICSlot();
+  FeedbackVectorSlot slot5 = feedback_spec.AddLoadICSlot();
+  FeedbackVectorSlot slot6 = feedback_spec.AddLoadICSlot();
+  FeedbackVectorSlot slot7 = feedback_spec.AddStoreICSlot();
+  FeedbackVectorSlot slot8 = feedback_spec.AddLoadICSlot();
+  Handle<i::TypeFeedbackVector> vector =
+      i::NewTypeFeedbackVector(helper.isolate(), &feedback_spec);
+
+  ExpectedSnippet<InstanceType, 8> snippets[] = {
+      {"for (var p of [0, 1, 2]) {}",
+       7 * kPointerSize,
+       1,
+       82,
+       {
+           B(CreateArrayLiteral), U8(0), U8(0), U8(array_literal_flags),    //
+           B(Star), R(5),                                                   //
+           B(LdaConstant), U8(1),                                           //
+           B(KeyedLoadICSloppy), R(5), U8(vector->GetIndex(slot2)),         //
+           B(Star), R(4),                                                   //
+           B(Call), R(4), R(5), U8(0), U8(vector->GetIndex(slot1)),         //
+           B(Star), R(1),                                                   //
+           B(Ldar), R(1),                                                   //
+           B(Star), R(6),                                                   //
+           B(LoadICSloppy), R(6), U8(2), U8(vector->GetIndex(slot4)),       //
+           B(Star), R(5),                                                   //
+           B(Call), R(5), R(6), U8(0), U8(vector->GetIndex(slot3)),         //
+           B(Star), R(2),                                                   //
+           B(Star), R(4),                                                   //
+           B(CallRuntime), U16(Runtime::kInlineIsJSReceiver), R(4), U8(1),  //
+           B(LogicalNot),                                                   //
+           B(JumpIfFalse), U8(11),                                          //
+           B(Ldar), R(2),                                                   //
+           B(Star), R(4),                                                   //
+           B(CallRuntime), U16(Runtime::kThrowIteratorResultNotAnObject),   //
+                           R(4), U8(1),                                     //
+           B(Ldar), R(2),                                                   //
+           B(Star), R(4),                                                   //
+           B(LoadICSloppy), R(4), U8(3), U8(vector->GetIndex(slot5)),       //
+           B(JumpIfToBooleanTrue), U8(16),                                  //
+           B(Ldar), R(2),                                                   //
+           B(Star), R(4),                                                   //
+           B(LoadICSloppy), R(4), U8(4), U8(vector->GetIndex(slot6)),       //
+           B(Star), R(0),                                                   //
+           B(Star), R(3),                                                   //
+           B(Jump), U8(-58),                                                //
+           B(LdaUndefined),                                                 //
+           B(Return),                                                       //
+       },
+       5,
+       {InstanceType::FIXED_ARRAY_TYPE, InstanceType::SYMBOL_TYPE,
+        InstanceType::ONE_BYTE_INTERNALIZED_STRING_TYPE,
+        InstanceType::ONE_BYTE_INTERNALIZED_STRING_TYPE,
+        InstanceType::ONE_BYTE_INTERNALIZED_STRING_TYPE}},
+      {"var x = 'potatoes';\n"
+       "for (var p of x) { return p; }",
+       8 * kPointerSize,
+       1,
+       81,
+       {
+           B(LdaConstant), U8(0),                                           //
+           B(Star), R(3),                                                   //
+           B(Star), R(6),                                                   //
+           B(LdaConstant), U8(1),                                           //
+           B(KeyedLoadICSloppy), R(6), U8(vector->GetIndex(slot2)),         //
+           B(Star), R(5),                                                   //
+           B(Call), R(5), R(6), U8(0), U8(vector->GetIndex(slot1)),         //
+           B(Star), R(1),                                                   //
+           B(Ldar), R(1),                                                   //
+           B(Star), R(7),                                                   //
+           B(LoadICSloppy), R(7), U8(2), U8(vector->GetIndex(slot4)),       //
+           B(Star), R(6),                                                   //
+           B(Call), R(6), R(7), U8(0), U8(vector->GetIndex(slot3)),         //
+           B(Star), R(2),                                                   //
+           B(Star), R(5),                                                   //
+           B(CallRuntime), U16(Runtime::kInlineIsJSReceiver), R(5), U8(1),  //
+           B(LogicalNot),                                                   //
+           B(JumpIfFalse), U8(11),                                          //
+           B(Ldar), R(2),                                                   //
+           B(Star), R(5),                                                   //
+           B(CallRuntime), U16(Runtime::kThrowIteratorResultNotAnObject),   //
+                           R(5), U8(1),                                     //
+           B(Ldar), R(2),                                                   //
+           B(Star), R(5),                                                   //
+           B(LoadICSloppy), R(5), U8(3), U8(vector->GetIndex(slot5)),       //
+           B(JumpIfToBooleanTrue), U8(15),                                  //
+           B(Ldar), R(2),                                                   //
+           B(Star), R(5),                                                   //
+           B(LoadICSloppy), R(5), U8(4), U8(vector->GetIndex(slot6)),       //
+           B(Star), R(0),                                                   //
+           B(Star), R(4),                                                   //
+           B(Return),                                                       //
+           B(LdaUndefined),                                                 //
+           B(Return),                                                       //
+       },
+       5,
+       {InstanceType::ONE_BYTE_INTERNALIZED_STRING_TYPE,
+        InstanceType::SYMBOL_TYPE,
+        InstanceType::ONE_BYTE_INTERNALIZED_STRING_TYPE,
+        InstanceType::ONE_BYTE_INTERNALIZED_STRING_TYPE,
+        InstanceType::ONE_BYTE_INTERNALIZED_STRING_TYPE}},
+      {"for (var x of [10, 20, 30]) {\n"
+       "  if (x == 10) continue;\n"
+       "  if (x == 20) break;\n"
+       "}",
+       7 * kPointerSize,
+       1,
+       104,
+       {
+           B(CreateArrayLiteral), U8(0), U8(0), U8(array_literal_flags),    //
+           B(Star), R(5),                                                   //
+           B(LdaConstant), U8(1),                                           //
+           B(KeyedLoadICSloppy), R(5), U8(vector->GetIndex(slot2)),         //
+           B(Star), R(4),                                                   //
+           B(Call), R(4), R(5), U8(0), U8(vector->GetIndex(slot1)),         //
+           B(Star), R(1),                                                   //
+           B(Ldar), R(1),                                                   //
+           B(Star), R(6),                                                   //
+           B(LoadICSloppy), R(6), U8(2), U8(vector->GetIndex(slot4)),       //
+           B(Star), R(5),                                                   //
+           B(Call), R(5), R(6), U8(0), U8(vector->GetIndex(slot3)),         //
+           B(Star), R(2),                                                   //
+           B(Star), R(4),                                                   //
+           B(CallRuntime), U16(Runtime::kInlineIsJSReceiver), R(4), U8(1),  //
+           B(LogicalNot),                                                   //
+           B(JumpIfFalse), U8(11),                                          //
+           B(Ldar), R(2),                                                   //
+           B(Star), R(4),                                                   //
+           B(CallRuntime), U16(Runtime::kThrowIteratorResultNotAnObject),   //
+                           R(4), U8(1),                                     //
+           B(Ldar), R(2),                                                   //
+           B(Star), R(4),                                                   //
+           B(LoadICSloppy), R(4), U8(3), U8(vector->GetIndex(slot5)),       //
+           B(JumpIfToBooleanTrue), U8(38),                                  //
+           B(Ldar), R(2),                                                   //
+           B(Star), R(4),                                                   //
+           B(LoadICSloppy), R(4), U8(4), U8(vector->GetIndex(slot6)),       //
+           B(Star), R(0),                                                   //
+           B(Star), R(3),                                                   //
+           B(Star), R(4),                                                   //
+           B(LdaSmi8), U8(10),                                              //
+           B(TestEqual), R(4),                                              //
+           B(JumpIfFalse), U8(4),                                           //
+           B(Jump), U8(-66),                                                //
+           B(Ldar), R(3),                                                   //
+           B(Star), R(4),                                                   //
+           B(LdaSmi8), U8(20),                                              //
+           B(TestEqual), R(4),                                              //
+           B(JumpIfFalse), U8(4),                                           //
+           B(Jump), U8(4),                                                  //
+           B(Jump), U8(-80),                                                //
+           B(LdaUndefined),                                                 //
+           B(Return),                                                       //
+       },
+       5,
+       {InstanceType::FIXED_ARRAY_TYPE, InstanceType::SYMBOL_TYPE,
+        InstanceType::ONE_BYTE_INTERNALIZED_STRING_TYPE,
+        InstanceType::ONE_BYTE_INTERNALIZED_STRING_TYPE,
+        InstanceType::ONE_BYTE_INTERNALIZED_STRING_TYPE}},
+      {"var x = { 'a': 1, 'b': 2 };\n"
+       "for (x['a'] of [1,2,3]) { return x['a']; }",
+       6 * kPointerSize,
+       1,
+       101,
+       {
+           B(CreateObjectLiteral), U8(0), U8(0), U8(object_literal_flags),  //
+           B(Star), R(3),                                                   //
+           B(Star), R(2),                                                   //
+           B(CreateArrayLiteral), U8(1), U8(1), U8(array_literal_flags),    //
+           B(Star), R(4),                                                   //
+           B(LdaConstant), U8(2),                                           //
+           B(KeyedLoadICSloppy), R(4), U8(vector->GetIndex(slot2)),         //
+           B(Star), R(3),                                                   //
+           B(Call), R(3), R(4), U8(0), U8(vector->GetIndex(slot1)),         //
+           B(Star), R(0),                                                   //
+           B(Ldar), R(0),                                                   //
+           B(Star), R(5),                                                   //
+           B(LoadICSloppy), R(5), U8(3), U8(vector->GetIndex(slot4)),       //
+           B(Star), R(4),                                                   //
+           B(Call), R(4), R(5), U8(0), U8(vector->GetIndex(slot3)),         //
+           B(Star), R(1),                                                   //
+           B(Star), R(3),                                                   //
+           B(CallRuntime), U16(Runtime::kInlineIsJSReceiver), R(3), U8(1),  //
+           B(LogicalNot),                                                   //
+           B(JumpIfFalse), U8(11),                                          //
+           B(Ldar), R(1),                                                   //
+           B(Star), R(3),                                                   //
+           B(CallRuntime), U16(Runtime::kThrowIteratorResultNotAnObject),   //
+                           R(3), U8(1),                                     //
+           B(Ldar), R(1),                                                   //
+           B(Star), R(3),                                                   //
+           B(LoadICSloppy), R(3), U8(4), U8(vector->GetIndex(slot5)),       //
+           B(JumpIfToBooleanTrue), U8(27),                                  //
+           B(Ldar), R(2),                                                   //
+           B(Star), R(3),                                                   //
+           B(Ldar), R(1),                                                   //
+           B(Star), R(4),                                                   //
+           B(LoadICSloppy), R(4), U8(5), U8(vector->GetIndex(slot6)),       //
+           B(StoreICSloppy), R(3), U8(6), U8(vector->GetIndex(slot7)),      //
+           B(Ldar), R(2),                                                   //
+           B(Star), R(3),                                                   //
+           B(LoadICSloppy), R(3), U8(6), U8(vector->GetIndex(slot8)),       //
+           B(Return),                                                       //
+           B(LdaUndefined),                                                 //
+           B(Return),                                                       //
+       },
+       7,
+       {InstanceType::FIXED_ARRAY_TYPE,
+        InstanceType::FIXED_ARRAY_TYPE,
+        InstanceType::SYMBOL_TYPE,
+        InstanceType::ONE_BYTE_INTERNALIZED_STRING_TYPE,
+        InstanceType::ONE_BYTE_INTERNALIZED_STRING_TYPE,
+        InstanceType::ONE_BYTE_INTERNALIZED_STRING_TYPE,
+        InstanceType::ONE_BYTE_INTERNALIZED_STRING_TYPE}},
   };
 
   for (size_t i = 0; i < arraysize(snippets); i++) {
@@ -6233,7 +6795,7 @@ TEST(Eval) {
   Zone zone;
 
   int closure = Register::function_closure().index();
-  int context = Register::function_context().index();
+  int context = Register::current_context().index();
   int new_target = Register::new_target().index();
 
   int first_context_slot = Context::MIN_CONTEXT_SLOTS;
@@ -6244,34 +6806,34 @@ TEST(Eval) {
        1,
        67,
        {
-           B(CallRuntime), U16(Runtime::kNewFunctionContext), R(closure),     //
-                           U8(1),                                             //
-           B(PushContext), R(0),                                              //
-           B(Ldar), THIS(1),                                                  //
-           B(StaContextSlot), R(0), U8(first_context_slot),                   //
-           B(CreateMappedArguments),                                          //
-           B(StaContextSlot), R(0), U8(first_context_slot + 1),               //
-           B(Ldar), R(new_target),                                            //
-           B(StaContextSlot), R(0), U8(first_context_slot + 2),               //
-           B(Mov), R(context), R(3),                                          //
-           B(LdaConstant), U8(0),                                             //
-           B(Star), R(4),                                                     //
-           B(CallRuntimeForPair), U16(Runtime::kLoadLookupSlot),              //
-                                  R(3), U8(2), R(1),                          //
-           B(LdaConstant), U8(1),                                             //
-           B(Star), R(3),                                                     //
-           B(Mov), R(1), R(4),                                                //
-           B(Mov), R(3), R(5),                                                //
-           B(Mov), R(closure), R(6),                                          //
-           B(LdaZero),                                                        //
-           B(Star), R(7),                                                     //
-           B(LdaSmi8), U8(10),                                                //
-           B(Star), R(8),                                                     //
-           B(CallRuntime), U16(Runtime::kResolvePossiblyDirectEval), R(4),    //
-                           U8(5),                                             //
-           B(Star), R(1),                                                     //
-           B(Call), R(1), R(2), U8(1), U8(0),                                 //
-           B(Return),                                                         //
+           B(CallRuntime), U16(Runtime::kNewFunctionContext), R(closure),   //
+                           U8(1),                                           //
+           B(PushContext), R(0),                                            //
+           B(Ldar), THIS(1),                                                //
+           B(StaContextSlot), R(context), U8(first_context_slot),           //
+           B(CreateMappedArguments),                                        //
+           B(StaContextSlot), R(context), U8(first_context_slot + 1),       //
+           B(Ldar), R(new_target),                                          //
+           B(StaContextSlot), R(context), U8(first_context_slot + 2),       //
+           B(Mov), R(context), R(3),                                        //
+           B(LdaConstant), U8(0),                                           //
+           B(Star), R(4),                                                   //
+           B(CallRuntimeForPair), U16(Runtime::kLoadLookupSlot),            //
+                                  R(3), U8(2), R(1),                        //
+           B(LdaConstant), U8(1),                                           //
+           B(Star), R(3),                                                   //
+           B(Mov), R(1), R(4),                                              //
+           B(Mov), R(3), R(5),                                              //
+           B(Mov), R(closure), R(6),                                        //
+           B(LdaZero),                                                      //
+           B(Star), R(7),                                                   //
+           B(LdaSmi8), U8(10),                                              //
+           B(Star), R(8),                                                   //
+           B(CallRuntime), U16(Runtime::kResolvePossiblyDirectEval), R(4),  //
+                           U8(5),                                           //
+           B(Star), R(1),                                                   //
+           B(Call), R(1), R(2), U8(1), U8(0),                               //
+           B(Return),                                                       //
        },
        2,
        {"eval", "1;"}},
@@ -6290,8 +6852,8 @@ TEST(LookupSlot) {
   BytecodeGeneratorHelper helper;
 
   int closure = Register::function_closure().index();
+  int context = Register::current_context().index();
   int first_context_slot = Context::MIN_CONTEXT_SLOTS;
-  int context = Register::function_context().index();
   int new_target = Register::new_target().index();
 
   ExpectedSnippet<const char*> snippets[] = {
@@ -6300,73 +6862,73 @@ TEST(LookupSlot) {
        1,
        69,
        {
-           B(CallRuntime), U16(Runtime::kNewFunctionContext), R(closure),     //
-                           U8(1),                                             //
-           B(PushContext), R(0),                                              //
-           B(Ldar), THIS(1),                                                  //
-           B(StaContextSlot), R(0), U8(first_context_slot),                   //
-           B(CreateMappedArguments),                                          //
-           B(StaContextSlot), R(0), U8(first_context_slot + 1),               //
-           B(Ldar), R(new_target),                                            //
-           B(StaContextSlot), R(0), U8(first_context_slot + 2),               //
-           B(Mov), R(context), R(3),                                          //
-           B(LdaConstant), U8(0),                                             //
-           B(Star), R(4),                                                     //
-           B(CallRuntimeForPair), U16(Runtime::kLoadLookupSlot),              //
-                                  R(3), U8(2), R(1),                          //
-           B(LdaConstant), U8(1),                                             //
-           B(Star), R(3),                                                     //
-           B(Mov), R(1), R(4),                                                //
-           B(Mov), R(3), R(5),                                                //
-           B(Mov), R(closure), R(6),                                          //
-           B(LdaZero),                                                        //
-           B(Star), R(7),                                                     //
-           B(LdaSmi8), U8(10),                                                //
-           B(Star), R(8),                                                     //
-           B(CallRuntime), U16(Runtime::kResolvePossiblyDirectEval), R(4),    //
-                           U8(5),                                             //
-           B(Star), R(1),                                                     //
-           B(Call), R(1), R(2), U8(1), U8(0),                                 //
-           B(LdaLookupSlot), U8(2),                                           //
-           B(Return),                                                         //
+           B(CallRuntime), U16(Runtime::kNewFunctionContext), R(closure),   //
+                           U8(1),                                           //
+           B(PushContext), R(0),                                            //
+           B(Ldar), THIS(1),                                                //
+           B(StaContextSlot), R(context), U8(first_context_slot),           //
+           B(CreateMappedArguments),                                        //
+           B(StaContextSlot), R(context), U8(first_context_slot + 1),       //
+           B(Ldar), R(new_target),                                          //
+           B(StaContextSlot), R(context), U8(first_context_slot + 2),       //
+           B(Mov), R(context), R(3),                                        //
+           B(LdaConstant), U8(0),                                           //
+           B(Star), R(4),                                                   //
+           B(CallRuntimeForPair), U16(Runtime::kLoadLookupSlot),            //
+                                  R(3), U8(2), R(1),                        //
+           B(LdaConstant), U8(1),                                           //
+           B(Star), R(3),                                                   //
+           B(Mov), R(1), R(4),                                              //
+           B(Mov), R(3), R(5),                                              //
+           B(Mov), R(closure), R(6),                                        //
+           B(LdaZero),                                                      //
+           B(Star), R(7),                                                   //
+           B(LdaSmi8), U8(10),                                              //
+           B(Star), R(8),                                                   //
+           B(CallRuntime), U16(Runtime::kResolvePossiblyDirectEval), R(4),  //
+                           U8(5),                                           //
+           B(Star), R(1),                                                   //
+           B(Call), R(1), R(2), U8(1), U8(0),                               //
+           B(LdaLookupSlot), U8(2),                                         //
+           B(Return),                                                       //
        },
        3,
        {"eval", "var x = 10;", "x"}},
       {"eval('var x = 10;'); return typeof x;",
-        9 * kPointerSize,
-        1,
-        70,
-        {
-           B(CallRuntime), U16(Runtime::kNewFunctionContext), R(closure),     //
-                           U8(1),                                             //
-           B(PushContext), R(0),                                              //
-           B(Ldar), THIS(1),                                                  //
-           B(StaContextSlot), R(0), U8(first_context_slot),                   //
-           B(CreateMappedArguments),                                          //
-           B(StaContextSlot), R(0), U8(first_context_slot + 1),               //
-           B(Ldar), R(new_target),                                            //
-           B(StaContextSlot), R(0), U8(first_context_slot + 2),               //
-           B(Mov), R(context), R(3),                                          //
-           B(LdaConstant), U8(0),                                             //
-           B(Star), R(4),                                                     //
-           B(CallRuntimeForPair), U16(Runtime::kLoadLookupSlot),              //
-                                  R(3), U8(2), R(1),                          //
-           B(LdaConstant), U8(1),                                             //
-           B(Star), R(3),                                                     //
-           B(Mov), R(1), R(4),                                                //
-           B(Mov), R(3), R(5),                                                //
-           B(Mov), R(closure), R(6),                                          //
-           B(LdaZero),                                                        //
-           B(Star), R(7),                                                     //
-           B(LdaSmi8), U8(10),                                                //
-           B(Star), R(8),                                                     //
-           B(CallRuntime), U16(Runtime::kResolvePossiblyDirectEval), R(4),    //
-                           U8(5),                                             //
-           B(Star), R(1),                                                     //
-           B(Call), R(1), R(2), U8(1), U8(0),                                 //
-           B(LdaLookupSlotInsideTypeof), U8(2),                               //
-           B(TypeOf),                                                         //
-           B(Return),                                                         //
+       9 * kPointerSize,
+       1,
+       70,
+       {
+           B(CallRuntime), U16(Runtime::kNewFunctionContext), R(closure),   //
+                           U8(1),                                           //
+           B(PushContext), R(0),                                            //
+           B(Ldar), THIS(1),                                                //
+           B(StaContextSlot), R(context), U8(first_context_slot),           //
+           B(CreateMappedArguments),                                        //
+           B(StaContextSlot), R(context), U8(first_context_slot + 1),       //
+           B(Ldar), R(new_target),                                          //
+           B(StaContextSlot), R(context), U8(first_context_slot + 2),       //
+           B(Mov), R(context), R(3),                                        //
+           B(LdaConstant), U8(0),                                           //
+           B(Star), R(4),                                                   //
+           B(CallRuntimeForPair), U16(Runtime::kLoadLookupSlot),            //
+                                  R(3), U8(2), R(1),                        //
+           B(LdaConstant), U8(1),                                           //
+           B(Star), R(3),                                                   //
+           B(Mov), R(1), R(4),                                              //
+           B(Mov), R(3), R(5),                                              //
+           B(Mov), R(closure), R(6),                                        //
+           B(LdaZero),                                                      //
+           B(Star), R(7),                                                   //
+           B(LdaSmi8), U8(10),                                              //
+           B(Star), R(8),                                                   //
+           B(CallRuntime), U16(Runtime::kResolvePossiblyDirectEval), R(4),  //
+                           U8(5),                                           //
+           B(Star), R(1),                                                   //
+           B(Call), R(1), R(2), U8(1), U8(0),                               //
+           B(LdaLookupSlotInsideTypeof), U8(2),                             //
+           B(TypeOf),                                                       //
+           B(Return),                                                       //
        },
        3,
        {"eval", "var x = 10;", "x"}},
@@ -6375,36 +6937,36 @@ TEST(LookupSlot) {
        1,
        71,
        {
-           B(CallRuntime), U16(Runtime::kNewFunctionContext), R(closure),     //
-                           U8(1),                                             //
-           B(PushContext), R(0),                                              //
-           B(Ldar), THIS(1),                                                  //
-           B(StaContextSlot), R(0), U8(first_context_slot),                   //
-           B(CreateMappedArguments),                                          //
-           B(StaContextSlot), R(0), U8(first_context_slot + 1),               //
-           B(Ldar), R(new_target),                                            //
-           B(StaContextSlot), R(0), U8(first_context_slot + 2),               //
-           B(LdaSmi8), U8(20),                                                //
-           B(StaLookupSlotSloppy), U8(0),                                     //
-           B(Mov), R(context), R(3),                                          //
-           B(LdaConstant), U8(1),                                             //
-           B(Star), R(4),                                                     //
-           B(CallRuntimeForPair), U16(Runtime::kLoadLookupSlot),              //
-                                  R(3), U8(2), R(1),                          //
-           B(LdaConstant), U8(2),                                             //
-           B(Star), R(3),                                                     //
-           B(Mov), R(1), R(4),                                                //
-           B(Mov), R(3), R(5),                                                //
-           B(Mov), R(closure), R(6),                                          //
-           B(LdaZero),                                                        //
-           B(Star), R(7),                                                     //
-           B(LdaSmi8), U8(10),                                                //
-           B(Star), R(8),                                                     //
-           B(CallRuntime), U16(Runtime::kResolvePossiblyDirectEval), R(4),    //
-                           U8(5),                                             //
-           B(Star), R(1),                                                     //
-           B(Call), R(1), R(2), U8(1), U8(0),                                 //
-           B(Return),                                                         //
+           B(CallRuntime), U16(Runtime::kNewFunctionContext), R(closure),   //
+                           U8(1),                                           //
+           B(PushContext), R(0),                                            //
+           B(Ldar), THIS(1),                                                //
+           B(StaContextSlot), R(context), U8(first_context_slot),           //
+           B(CreateMappedArguments),                                        //
+           B(StaContextSlot), R(context), U8(first_context_slot + 1),       //
+           B(Ldar), R(new_target),                                          //
+           B(StaContextSlot), R(context), U8(first_context_slot + 2),       //
+           B(LdaSmi8), U8(20),                                              //
+           B(StaLookupSlotSloppy), U8(0),                                   //
+           B(Mov), R(context), R(3),                                        //
+           B(LdaConstant), U8(1),                                           //
+           B(Star), R(4),                                                   //
+           B(CallRuntimeForPair), U16(Runtime::kLoadLookupSlot),            //
+                                  R(3), U8(2), R(1),                        //
+           B(LdaConstant), U8(2),                                           //
+           B(Star), R(3),                                                   //
+           B(Mov), R(1), R(4),                                              //
+           B(Mov), R(3), R(5),                                              //
+           B(Mov), R(closure), R(6),                                        //
+           B(LdaZero),                                                      //
+           B(Star), R(7),                                                   //
+           B(LdaSmi8), U8(10),                                              //
+           B(Star), R(8),                                                   //
+           B(CallRuntime), U16(Runtime::kResolvePossiblyDirectEval), R(4),  //
+                           U8(5),                                           //
+           B(Star), R(1),                                                   //
+           B(Call), R(1), R(2), U8(1), U8(0),                               //
+           B(Return),                                                       //
        },
        3,
        {"x", "eval", ""}},
@@ -6432,7 +6994,7 @@ TEST(CallLookupSlot) {
       i::NewTypeFeedbackVector(helper.isolate(), &feedback_spec);
 
   int closure = Register::function_closure().index();
-  int context = Register::function_context().index();
+  int context = Register::current_context().index();
   int new_target = Register::new_target().index();
 
   ExpectedSnippet<InstanceType> snippets[] = {
@@ -6445,11 +7007,11 @@ TEST(CallLookupSlot) {
                            U8(1),                                           //
            B(PushContext), R(0),                                            //
            B(Ldar), THIS(1),                                                //
-           B(StaContextSlot), R(0), U8(4),                                  //
+           B(StaContextSlot), R(context), U8(4),                            //
            B(CreateMappedArguments),                                        //
-           B(StaContextSlot), R(0), U8(5),                                  //
+           B(StaContextSlot), R(context), U8(5),                            //
            B(Ldar), R(new_target),                                          //
-           B(StaContextSlot), R(0), U8(6),                                  //
+           B(StaContextSlot), R(context), U8(6),                            //
            B(CreateClosure), U8(0), U8(0),                                  //
            B(StaLookupSlotSloppy), U8(1),                                   //
            B(Mov), R(context), R(3),                                        //
@@ -6492,6 +7054,8 @@ TEST(CallLookupSlot) {
   }
 }
 
+
+// TODO(mythria): tests for variable/function declaration in lookup slots.
 
 TEST(LookupSlotInEval) {
   InitializedHandleScope handle_scope;
@@ -6557,10 +7121,8 @@ TEST(LookupSlotInEval) {
     std::string script = std::string(function_prologue) +
                          std::string(snippets[i].code_snippet) +
                          std::string(function_epilogue);
-    // TODO(mythria): use * as filter when function declarations are supported
-    // inside eval.
     Handle<BytecodeArray> bytecode_array =
-        helper.MakeBytecode(script.c_str(), "t", "f");
+        helper.MakeBytecode(script.c_str(), "*", "f");
     CheckBytecodeArrayEqual(snippets[i], bytecode_array);
   }
 }
@@ -6654,10 +7216,8 @@ TEST(LookupSlotWideInEval) {
     std::string script = std::string(function_prologue) +
                          std::string(snippets[i].code_snippet) +
                          std::string(function_epilogue);
-    // TODO(mythria): use * as filter when function declarations are supported
-    // inside eval.
     Handle<BytecodeArray> bytecode_array =
-        helper.MakeBytecode(script.c_str(), "t", "f");
+        helper.MakeBytecode(script.c_str(), "*", "f");
     CheckBytecodeArrayEqual(snippets[i], bytecode_array);
   }
 }
@@ -6717,7 +7277,7 @@ TEST(DeleteLookupSlotInEval) {
                          std::string(snippets[i].code_snippet) +
                          std::string(function_epilogue);
     Handle<BytecodeArray> bytecode_array =
-        helper.MakeBytecode(script.c_str(), "t", "f");
+        helper.MakeBytecode(script.c_str(), "*", "f");
     CheckBytecodeArrayEqual(snippets[i], bytecode_array);
   }
 }

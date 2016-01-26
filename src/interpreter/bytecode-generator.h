@@ -32,6 +32,9 @@ class BytecodeGenerator final : public AstVisitor {
   class ControlScope;
   class ControlScopeForBreakable;
   class ControlScopeForIteration;
+  class ControlScopeForTopLevel;
+  class ControlScopeForTryCatch;
+  class ControlScopeForTryFinally;
   class ExpressionResultScope;
   class EffectResultScope;
   class AccumulatorResultScope;
@@ -39,7 +42,6 @@ class BytecodeGenerator final : public AstVisitor {
   class RegisterAllocationScope;
 
   void MakeBytecodeBody();
-  Register NextContextRegister() const;
 
   DEFINE_AST_VISITOR_SUBCLASS_MEMBERS();
 
@@ -79,7 +81,9 @@ class BytecodeGenerator final : public AstVisitor {
   void VisitNewTargetVariable(Variable* variable);
   void VisitNewLocalFunctionContext();
   void VisitBuildLocalActivationContext();
+  void VisitBlockDeclarationsAndStatements(Block* stmt);
   void VisitNewLocalBlockContext(Scope* scope);
+  void VisitNewLocalCatchContext(Variable* variable);
   void VisitFunctionClosureForContext();
   void VisitSetHomeObject(Register value, Register home_object,
                           ObjectLiteralProperty* property, int slot_number = 0);
@@ -87,6 +91,9 @@ class BytecodeGenerator final : public AstVisitor {
                                   ObjectLiteralProperty* property,
                                   Register value_out);
   void VisitForInAssignment(Expression* expr, FeedbackVectorSlot slot);
+
+  // Visit a statement and switch scopes, the context is in the accumulator.
+  void VisitInScope(Statement* stmt, Scope* scope);
 
   // Visitors for obtaining expression result in the accumulator, in a
   // register, or just getting the effect.

@@ -1545,10 +1545,10 @@ TEST(Run_Wasm_LoadMemI32_offset) {
 }
 
 
-// TODO(titzer): Fix for mips and re-enable.
 #if !V8_TARGET_ARCH_MIPS && !V8_TARGET_ARCH_MIPS64
 
-TEST(Run_Wasm_LoadMemI32_const_oob) {
+TEST(Run_Wasm_LoadMemI32_const_oob_misaligned) {
+  // TODO(titzer): Fix misaligned accesses on MIPS and re-enable.
   TestingModule module;
   const int kMemSize = 12;
   module.AddMemoryElems<byte>(kMemSize);
@@ -1572,6 +1572,30 @@ TEST(Run_Wasm_LoadMemI32_const_oob) {
 }
 
 #endif
+
+
+TEST(Run_Wasm_LoadMemI32_const_oob) {
+  TestingModule module;
+  const int kMemSize = 24;
+  module.AddMemoryElems<byte>(kMemSize);
+
+  for (int offset = 0; offset < kMemSize + 5; offset += 4) {
+    for (int index = 0; index < kMemSize + 5; index += 4) {
+      WasmRunner<int32_t> r;
+      r.env()->module = &module;
+      module.RandomizeMemory();
+
+      BUILD(r,
+            WASM_LOAD_MEM_OFFSET(MachineType::Int32(), offset, WASM_I8(index)));
+
+      if ((offset + index) <= (kMemSize - sizeof(int32_t))) {
+        CHECK_EQ(module.raw_val_at<int32_t>(offset + index), r.Call());
+      } else {
+        CHECK_TRAP(r.Call());
+      }
+    }
+  }
+}
 
 
 TEST(Run_Wasm_StoreMemI32_offset) {
@@ -2813,19 +2837,17 @@ TEST(Run_Wasm_LoadStoreI64_sx) {
 
 
 TEST(Run_Wasm_SimpleCallIndirect) {
-  Isolate* isolate = CcTest::InitIsolateOnce();
-
   WasmRunner<int32_t> r(MachineType::Int32());
   TestSignatures sigs;
   TestingModule module;
   r.env()->module = &module;
   WasmFunctionCompiler t1(sigs.i_ii());
   BUILD(t1, WASM_I32_ADD(WASM_GET_LOCAL(0), WASM_GET_LOCAL(1)));
-  t1.CompileAndAdd(&module);
+  t1.CompileAndAdd(&module, /*sig_index*/ 1);
 
   WasmFunctionCompiler t2(sigs.i_ii());
   BUILD(t2, WASM_I32_SUB(WASM_GET_LOCAL(0), WASM_GET_LOCAL(1)));
-  t2.CompileAndAdd(&module);
+  t2.CompileAndAdd(&module, /*sig_index*/ 1);
 
   // Signature table.
   module.AddSignature(sigs.f_ff());
@@ -2833,18 +2855,9 @@ TEST(Run_Wasm_SimpleCallIndirect) {
   module.AddSignature(sigs.d_dd());
 
   // Function table.
-  int table_size = 2;
-  module.module->function_table = new std::vector<uint16_t>;
-  module.module->function_table->push_back(0);
-  module.module->function_table->push_back(1);
-
-  // Function table.
-  Handle<FixedArray> fixed = isolate->factory()->NewFixedArray(2 * table_size);
-  fixed->set(0, Smi::FromInt(1));
-  fixed->set(1, Smi::FromInt(1));
-  fixed->set(2, *module.function_code->at(0));
-  fixed->set(3, *module.function_code->at(1));
-  module.function_table = fixed;
+  int table[] = {0, 1};
+  module.AddIndirectFunctionTable(table, 2);
+  module.PopulateIndirectFunctionTable();
 
   // Builder the caller function.
   BUILD(r, WASM_CALL_INDIRECT(1, WASM_GET_LOCAL(0), WASM_I8(66), WASM_I8(22)));
@@ -2856,8 +2869,6 @@ TEST(Run_Wasm_SimpleCallIndirect) {
 
 
 TEST(Run_Wasm_MultipleCallIndirect) {
-  Isolate* isolate = CcTest::InitIsolateOnce();
-
   WasmRunner<int32_t> r(MachineType::Int32(), MachineType::Int32(),
                         MachineType::Int32());
   TestSignatures sigs;
@@ -2865,11 +2876,11 @@ TEST(Run_Wasm_MultipleCallIndirect) {
   r.env()->module = &module;
   WasmFunctionCompiler t1(sigs.i_ii());
   BUILD(t1, WASM_I32_ADD(WASM_GET_LOCAL(0), WASM_GET_LOCAL(1)));
-  t1.CompileAndAdd(&module);
+  t1.CompileAndAdd(&module, /*sig_index*/ 1);
 
   WasmFunctionCompiler t2(sigs.i_ii());
   BUILD(t2, WASM_I32_SUB(WASM_GET_LOCAL(0), WASM_GET_LOCAL(1)));
-  t2.CompileAndAdd(&module);
+  t2.CompileAndAdd(&module, /*sig_index*/ 1);
 
   // Signature table.
   module.AddSignature(sigs.f_ff());
@@ -2877,18 +2888,9 @@ TEST(Run_Wasm_MultipleCallIndirect) {
   module.AddSignature(sigs.d_dd());
 
   // Function table.
-  int table_size = 2;
-  module.module->function_table = new std::vector<uint16_t>;
-  module.module->function_table->push_back(0);
-  module.module->function_table->push_back(1);
-
-  // Function table.
-  Handle<FixedArray> fixed = isolate->factory()->NewFixedArray(2 * table_size);
-  fixed->set(0, Smi::FromInt(1));
-  fixed->set(1, Smi::FromInt(1));
-  fixed->set(2, *module.function_code->at(0));
-  fixed->set(3, *module.function_code->at(1));
-  module.function_table = fixed;
+  int table[] = {0, 1};
+  module.AddIndirectFunctionTable(table, 2);
+  module.PopulateIndirectFunctionTable();
 
   // Builder the caller function.
   BUILD(r,
@@ -2909,6 +2911,14 @@ TEST(Run_Wasm_MultipleCallIndirect) {
 }
 
 
+TEST(Run_Wasm_F32Trunc) {
+  WasmRunner<float> r(MachineType::Float32());
+  BUILD(r, WASM_F32_TRUNC(WASM_GET_LOCAL(0)));
+
+  FOR_FLOAT32_INPUTS(i) { CheckFloatEq(trunc(*i), r.Call(*i)); }
+}
+
+
 // TODO(titzer): Fix for nosee4 and re-enable.
 #if 0
 
@@ -2925,14 +2935,6 @@ TEST(Run_Wasm_F32Ceil) {
   BUILD(r, WASM_F32_CEIL(WASM_GET_LOCAL(0)));
 
   FOR_FLOAT32_INPUTS(i) { CheckFloatEq(ceil(*i), r.Call(*i)); }
-}
-
-
-TEST(Run_Wasm_F32Trunc) {
-  WasmRunner<float> r(MachineType::Float32());
-  BUILD(r, WASM_F32_TRUNC(WASM_GET_LOCAL(0)));
-
-  FOR_FLOAT32_INPUTS(i) { CheckFloatEq(trunc(*i), r.Call(*i)); }
 }
 
 
@@ -3251,4 +3253,49 @@ TEST(Run_Wasm_F32CopySign) {
   }
 }
 
+
 #endif
+
+
+void CompileCallIndirectMany(LocalType param) {
+  // Make sure we don't run out of registers when compiling indirect calls
+  // with many many parameters.
+  TestSignatures sigs;
+  for (byte num_params = 0; num_params < 40; num_params++) {
+    Zone zone;
+    HandleScope scope(CcTest::InitIsolateOnce());
+    TestingModule module;
+    FunctionSig* sig = sigs.many(&zone, kAstStmt, param, num_params);
+
+    module.AddSignature(sig);
+    module.AddSignature(sig);
+    module.AddIndirectFunctionTable(nullptr, 0);
+
+    WasmFunctionCompiler t(sig);
+    t.env.module = &module;
+
+    std::vector<byte> code;
+    ADD_CODE(code, kExprCallIndirect, 1);
+    ADD_CODE(code, kExprI8Const, 0);
+    for (byte p = 0; p < num_params; p++) {
+      ADD_CODE(code, kExprGetLocal, p);
+    }
+
+    t.Build(&code[0], &code[0] + code.size());
+    t.Compile(&module);
+  }
+}
+
+
+TEST(Compile_Wasm_CallIndirect_Many_i32) { CompileCallIndirectMany(kAstI32); }
+
+
+#if WASM_64
+TEST(Compile_Wasm_CallIndirect_Many_i64) { CompileCallIndirectMany(kAstI64); }
+#endif
+
+
+TEST(Compile_Wasm_CallIndirect_Many_f32) { CompileCallIndirectMany(kAstF32); }
+
+
+TEST(Compile_Wasm_CallIndirect_Many_f64) { CompileCallIndirectMany(kAstF64); }

@@ -136,7 +136,6 @@
 //     - Struct
 //       - Box
 //       - AccessorInfo
-//         - ExecutableAccessorInfo
 //       - AccessorPair
 //       - AccessCheckInfo
 //       - InterceptorInfo
@@ -386,9 +385,7 @@ const int kStubMinorKeyBits = kSmiValueSize - kStubMajorKeyBits - 1;
                                                                 \
   V(FILLER_TYPE)                                                \
                                                                 \
-  V(DECLARED_ACCESSOR_DESCRIPTOR_TYPE)                          \
-  V(DECLARED_ACCESSOR_INFO_TYPE)                                \
-  V(EXECUTABLE_ACCESSOR_INFO_TYPE)                              \
+  V(ACCESSOR_INFO_TYPE)                                         \
   V(ACCESSOR_PAIR_TYPE)                                         \
   V(ACCESS_CHECK_INFO_TYPE)                                     \
   V(INTERCEPTOR_INFO_TYPE)                                      \
@@ -507,8 +504,7 @@ const int kStubMinorKeyBits = kSmiValueSize - kStubMajorKeyBits - 1;
 // manually.
 #define STRUCT_LIST(V)                                                       \
   V(BOX, Box, box)                                                           \
-  V(EXECUTABLE_ACCESSOR_INFO, ExecutableAccessorInfo,                        \
-    executable_accessor_info)                                                \
+  V(ACCESSOR_INFO, AccessorInfo, accessor_info)                              \
   V(ACCESSOR_PAIR, AccessorPair, accessor_pair)                              \
   V(ACCESS_CHECK_INFO, AccessCheckInfo, access_check_info)                   \
   V(INTERCEPTOR_INFO, InterceptorInfo, interceptor_info)                     \
@@ -678,9 +674,7 @@ enum InstanceType {
   FILLER_TYPE,  // LAST_DATA_TYPE
 
   // Structs.
-  DECLARED_ACCESSOR_DESCRIPTOR_TYPE,
-  DECLARED_ACCESSOR_INFO_TYPE,
-  EXECUTABLE_ACCESSOR_INFO_TYPE,
+  ACCESSOR_INFO_TYPE,
   ACCESSOR_PAIR_TYPE,
   ACCESS_CHECK_INFO_TYPE,
   INTERCEPTOR_INFO_TYPE,
@@ -1045,7 +1039,6 @@ class Object {
 
   INLINE(bool IsFixedArrayBase() const);
   INLINE(bool IsExternal() const);
-  INLINE(bool IsAccessorInfo() const);
 
   INLINE(bool IsStruct() const);
 #define DECLARE_STRUCT_PREDICATE(NAME, Name, name) \
@@ -1137,8 +1130,8 @@ class Object {
 
   // Convert to a JSObject if needed.
   // native_context is used when creating wrapper object.
-  static inline MaybeHandle<JSReceiver> ToObject(Isolate* isolate,
-                                                 Handle<Object> object);
+  MUST_USE_RESULT static inline MaybeHandle<JSReceiver> ToObject(
+      Isolate* isolate, Handle<Object> object);
   MUST_USE_RESULT static MaybeHandle<JSReceiver> ToObject(
       Isolate* isolate, Handle<Object> object, Handle<Context> context);
 
@@ -1813,6 +1806,10 @@ class JSReceiver: public HeapObject {
   // Gets slow properties for non-global objects.
   inline NameDictionary* property_dictionary();
 
+  // Deletes an existing named property in a normalized object.
+  static void DeleteNormalizedProperty(Handle<JSReceiver> object,
+                                       Handle<Name> name, int entry);
+
   DECLARE_CAST(JSReceiver)
 
   // ES6 section 7.1.1 ToPrimitive
@@ -2071,30 +2068,30 @@ class JSObject: public JSReceiver {
                                                    uint32_t limit);
 
   MUST_USE_RESULT static Maybe<bool> SetPropertyWithInterceptor(
-      LookupIterator* it, Handle<Object> value);
+      LookupIterator* it, ShouldThrow should_throw, Handle<Object> value);
 
   // SetLocalPropertyIgnoreAttributes converts callbacks to fields. We need to
-  // grant an exemption to ExecutableAccessor callbacks in some cases.
-  enum ExecutableAccessorInfoHandling { DEFAULT_HANDLING, DONT_FORCE_FIELD };
+  // grant an exemption to AccessorInfo callbacks in some cases.
+  enum AccessorInfoHandling { DEFAULT_HANDLING, DONT_FORCE_FIELD };
 
   MUST_USE_RESULT static MaybeHandle<Object> DefineOwnPropertyIgnoreAttributes(
       LookupIterator* it, Handle<Object> value, PropertyAttributes attributes,
-      ExecutableAccessorInfoHandling handling = DEFAULT_HANDLING);
+      AccessorInfoHandling handling = DEFAULT_HANDLING);
 
   MUST_USE_RESULT static Maybe<bool> DefineOwnPropertyIgnoreAttributes(
       LookupIterator* it, Handle<Object> value, PropertyAttributes attributes,
       ShouldThrow should_throw,
-      ExecutableAccessorInfoHandling handling = DEFAULT_HANDLING);
+      AccessorInfoHandling handling = DEFAULT_HANDLING);
 
   MUST_USE_RESULT static MaybeHandle<Object> SetOwnPropertyIgnoreAttributes(
       Handle<JSObject> object, Handle<Name> name, Handle<Object> value,
       PropertyAttributes attributes,
-      ExecutableAccessorInfoHandling handling = DEFAULT_HANDLING);
+      AccessorInfoHandling handling = DEFAULT_HANDLING);
 
   MUST_USE_RESULT static MaybeHandle<Object> SetOwnElementIgnoreAttributes(
       Handle<JSObject> object, uint32_t index, Handle<Object> value,
       PropertyAttributes attributes,
-      ExecutableAccessorInfoHandling handling = DEFAULT_HANDLING);
+      AccessorInfoHandling handling = DEFAULT_HANDLING);
 
   // Equivalent to one of the above depending on whether |name| can be converted
   // to an array index.
@@ -2102,7 +2099,7 @@ class JSObject: public JSReceiver {
   DefinePropertyOrElementIgnoreAttributes(
       Handle<JSObject> object, Handle<Name> name, Handle<Object> value,
       PropertyAttributes attributes = NONE,
-      ExecutableAccessorInfoHandling handling = DEFAULT_HANDLING);
+      AccessorInfoHandling handling = DEFAULT_HANDLING);
 
   // Adds or reconfigures a property to attributes NONE. It will fail when it
   // cannot.
@@ -2496,10 +2493,6 @@ class JSObject: public JSReceiver {
   // Gets the number of currently used elements.
   int GetFastElementsUsage();
 
-  // Deletes an existing named property in a normalized object.
-  static void DeleteNormalizedProperty(Handle<JSObject> object,
-                                       Handle<Name> name, int entry);
-
   static bool AllCanRead(LookupIterator* it);
   static bool AllCanWrite(LookupIterator* it);
 
@@ -2526,7 +2519,7 @@ class JSObject: public JSReceiver {
                               PropertyAttributes attributes);
 
   MUST_USE_RESULT static Maybe<bool> DeletePropertyWithInterceptor(
-      LookupIterator* it);
+      LookupIterator* it, ShouldThrow should_throw);
 
   bool ReferencesObjectFromElements(FixedArray* elements,
                                     ElementsKind kind,
@@ -2565,6 +2558,52 @@ class JSObject: public JSReceiver {
       ShouldThrow should_throw);
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(JSObject);
+};
+
+
+// JSAccessorPropertyDescriptor is just a JSObject with a specific initial
+// map. This initial map adds in-object properties for "get", "set",
+// "enumerable" and "configurable" properties, as assigned by the
+// FromPropertyDescriptor function for regular accessor properties.
+class JSAccessorPropertyDescriptor: public JSObject {
+ public:
+  // Offsets of object fields.
+  static const int kGetOffset = JSObject::kHeaderSize;
+  static const int kSetOffset = kGetOffset + kPointerSize;
+  static const int kEnumerableOffset = kSetOffset + kPointerSize;
+  static const int kConfigurableOffset = kEnumerableOffset + kPointerSize;
+  static const int kSize = kConfigurableOffset + kPointerSize;
+  // Indices of in-object properties.
+  static const int kGetIndex = 0;
+  static const int kSetIndex = 1;
+  static const int kEnumerableIndex = 2;
+  static const int kConfigurableIndex = 3;
+
+ private:
+  DISALLOW_IMPLICIT_CONSTRUCTORS(JSAccessorPropertyDescriptor);
+};
+
+
+// JSDataPropertyDescriptor is just a JSObject with a specific initial map.
+// This initial map adds in-object properties for "value", "writable",
+// "enumerable" and "configurable" properties, as assigned by the
+// FromPropertyDescriptor function for regular data properties.
+class JSDataPropertyDescriptor: public JSObject {
+ public:
+  // Offsets of object fields.
+  static const int kValueOffset = JSObject::kHeaderSize;
+  static const int kWritableOffset = kValueOffset + kPointerSize;
+  static const int kEnumerableOffset = kWritableOffset + kPointerSize;
+  static const int kConfigurableOffset = kEnumerableOffset + kPointerSize;
+  static const int kSize = kConfigurableOffset + kPointerSize;
+  // Indices of in-object properties.
+  static const int kValueIndex = 0;
+  static const int kWritableIndex = 1;
+  static const int kEnumerableIndex = 2;
+  static const int kConfigurableIndex = 3;
+
+ private:
+  DISALLOW_IMPLICIT_CONSTRUCTORS(JSDataPropertyDescriptor);
 };
 
 
@@ -3223,6 +3262,9 @@ class HashTable : public HashTableBase {
       Key key,
       PretenureFlag pretenure = NOT_TENURED);
 
+  // Returns true if this table has sufficient capacity for adding n elements.
+  bool HasSufficientCapacity(int n);
+
   // Sets the capacity of the hash table.
   void SetCapacity(int capacity) {
     // To scale a computed hash code to fit within the hash table, we
@@ -3421,6 +3463,9 @@ class Dictionary: public HashTable<Derived, Shape, Key> {
       Isolate* isolate,
       int at_least_space_for,
       PretenureFlag pretenure = NOT_TENURED);
+
+  // Ensures that a new dictionary is created when the capacity is checked.
+  void SetRequiresCopyOnCapacityChange();
 
   // Ensure enough space for n additional elements.
   static Handle<Derived> EnsureCapacity(Handle<Derived> obj, int n, Key key);
@@ -4376,6 +4421,13 @@ class BytecodeArray : public FixedArrayBase {
   // Accessors for the constant pool.
   DECL_ACCESSORS(constant_pool, FixedArray)
 
+  // Accessors for handler table containing offsets of exception handlers.
+  DECL_ACCESSORS(handler_table, FixedArray)
+
+  // Accessors for source position table containing mappings between byte code
+  // offset and source position.
+  DECL_ACCESSORS(source_position_table, FixedArray)
+
   DECLARE_CAST(BytecodeArray)
 
   // Dispatched behavior.
@@ -4390,7 +4442,10 @@ class BytecodeArray : public FixedArrayBase {
   static const int kFrameSizeOffset = FixedArrayBase::kHeaderSize;
   static const int kParameterSizeOffset = kFrameSizeOffset + kIntSize;
   static const int kConstantPoolOffset = kParameterSizeOffset + kIntSize;
-  static const int kHeaderSize = kConstantPoolOffset + kPointerSize;
+  static const int kHandlerTableOffset = kConstantPoolOffset + kPointerSize;
+  static const int kSourcePositionTableOffset =
+      kHandlerTableOffset + kPointerSize;
+  static const int kHeaderSize = kSourcePositionTableOffset + kPointerSize;
 
   static const int kAlignedSize = OBJECT_POINTER_ALIGN(kHeaderSize);
 
@@ -4649,7 +4704,7 @@ class DeoptimizationOutputData: public FixedArray {
 
   DECLARE_CAST(DeoptimizationOutputData)
 
-#if defined(OBJECT_PRINT) || defined(ENABLE_DISASSEMBLER)
+#ifdef ENABLE_DISASSEMBLER
   void DeoptimizationOutputDataPrint(std::ostream& os);  // NOLINT
 #endif
 };
@@ -4727,7 +4782,7 @@ class HandlerTable : public FixedArray {
 
   DECLARE_CAST(HandlerTable)
 
-#if defined(OBJECT_PRINT) || defined(ENABLE_DISASSEMBLER)
+#ifdef ENABLE_DISASSEMBLER
   void HandlerTableRangePrint(std::ostream& os);   // NOLINT
   void HandlerTableReturnPrint(std::ostream& os);  // NOLINT
 #endif
@@ -5547,7 +5602,7 @@ class Map: public HeapObject {
 
   // Tells whether the instance has a [[Construct]] internal method.
   // This property is implemented according to ES6, section 7.2.4.
-  inline void set_is_constructor();
+  inline void set_is_constructor(bool value);
   inline bool is_constructor() const;
 
   // Tells whether the instance with this map should be ignored by the
@@ -7240,12 +7295,6 @@ class JSBoundFunction : public JSObject {
   // arguments to any call to the wrapped function.
   DECL_ACCESSORS(bound_arguments, FixedArray)
 
-  // [creation_context]: The native context in which the function was bound.
-  // TODO(bmeurer, verwaest): Can we (mis)use (unused) constructor field in
-  // the Map instead of putting this into the object? Only required for
-  // JSReceiver::GetCreationContext() anyway.
-  DECL_ACCESSORS(creation_context, Context)
-
   static MaybeHandle<Context> GetFunctionRealm(
       Handle<JSBoundFunction> function);
 
@@ -7263,9 +7312,7 @@ class JSBoundFunction : public JSObject {
   static const int kBoundTargetFunctionOffset = JSObject::kHeaderSize;
   static const int kBoundThisOffset = kBoundTargetFunctionOffset + kPointerSize;
   static const int kBoundArgumentsOffset = kBoundThisOffset + kPointerSize;
-  static const int kCreationContextOffset =
-      kBoundArgumentsOffset + kPointerSize;
-  static const int kLengthOffset = kCreationContextOffset + kPointerSize;
+  static const int kLengthOffset = kBoundArgumentsOffset + kPointerSize;
   static const int kNameOffset = kLengthOffset + kPointerSize;
   static const int kSize = kNameOffset + kPointerSize;
 
@@ -8832,6 +8879,7 @@ class String: public Name {
   static const uint32_t kMaxOneByteCharCodeU = unibrow::Latin1::kMaxChar;
   static const int kMaxUtf16CodeUnit = 0xffff;
   static const uint32_t kMaxUtf16CodeUnitU = kMaxUtf16CodeUnit;
+  static const uc32 kMaxCodePoint = 0x10ffff;
 
   // Value of hash field containing computed hash equal to zero.
   static const int kEmptyStringHash = kIsNotArrayIndexMask;
@@ -9645,6 +9693,11 @@ class JSProxy: public JSReceiver {
   static Handle<Smi> GetOrCreateIdentityHash(Handle<JSProxy> proxy);
 
  private:
+  static Maybe<bool> AddPrivateProperty(Isolate* isolate, Handle<JSProxy> proxy,
+                                        Handle<Symbol> private_name,
+                                        PropertyDescriptor* desc,
+                                        ShouldThrow should_throw);
+
   DISALLOW_IMPLICIT_CONSTRUCTORS(JSProxy);
 };
 
@@ -10186,11 +10239,26 @@ class JSRegExpResult: public JSArray {
 };
 
 
+// An accessor must have a getter, but can have no setter.
+//
+// When setting a property, V8 searches accessors in prototypes.
+// If an accessor was found and it does not have a setter,
+// the request is ignored.
+//
+// If the accessor in the prototype has the READ_ONLY property attribute, then
+// a new value is added to the derived object when the property is set.
+// This shadows the accessor in the prototype.
 class AccessorInfo: public Struct {
  public:
   DECL_ACCESSORS(name, Object)
   DECL_INT_ACCESSORS(flag)
   DECL_ACCESSORS(expected_receiver_type, Object)
+  DECL_ACCESSORS(getter, Object)
+  DECL_ACCESSORS(setter, Object)
+  DECL_ACCESSORS(data, Object)
+
+  // Dispatched behavior.
+  DECLARE_PRINTER(AccessorInfo)
 
   inline bool all_can_read();
   inline void set_all_can_read(bool value);
@@ -10224,7 +10292,11 @@ class AccessorInfo: public Struct {
   static const int kNameOffset = HeapObject::kHeaderSize;
   static const int kFlagOffset = kNameOffset + kPointerSize;
   static const int kExpectedReceiverTypeOffset = kFlagOffset + kPointerSize;
-  static const int kSize = kExpectedReceiverTypeOffset + kPointerSize;
+  static const int kGetterOffset = kExpectedReceiverTypeOffset + kPointerSize;
+  static const int kSetterOffset = kGetterOffset + kPointerSize;
+  static const int kDataOffset = kSetterOffset + kPointerSize;
+  static const int kSize = kDataOffset + kPointerSize;
+
 
  private:
   inline bool HasExpectedReceiverType();
@@ -10236,39 +10308,6 @@ class AccessorInfo: public Struct {
   class AttributesField : public BitField<PropertyAttributes, 3, 3> {};
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(AccessorInfo);
-};
-
-
-// An accessor must have a getter, but can have no setter.
-//
-// When setting a property, V8 searches accessors in prototypes.
-// If an accessor was found and it does not have a setter,
-// the request is ignored.
-//
-// If the accessor in the prototype has the READ_ONLY property attribute, then
-// a new value is added to the derived object when the property is set.
-// This shadows the accessor in the prototype.
-class ExecutableAccessorInfo: public AccessorInfo {
- public:
-  DECL_ACCESSORS(getter, Object)
-  DECL_ACCESSORS(setter, Object)
-  DECL_ACCESSORS(data, Object)
-
-  DECLARE_CAST(ExecutableAccessorInfo)
-
-  // Dispatched behavior.
-  DECLARE_PRINTER(ExecutableAccessorInfo)
-  DECLARE_VERIFIER(ExecutableAccessorInfo)
-
-  static const int kGetterOffset = AccessorInfo::kSize;
-  static const int kSetterOffset = kGetterOffset + kPointerSize;
-  static const int kDataOffset = kSetterOffset + kPointerSize;
-  static const int kSize = kDataOffset + kPointerSize;
-
-  static void ClearSetter(Handle<ExecutableAccessorInfo> info);
-
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(ExecutableAccessorInfo);
 };
 
 

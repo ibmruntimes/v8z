@@ -2360,8 +2360,9 @@ void LCodeGen::DoCompareNumericAndBranch(LCompareNumericAndBranch* instr) {
     // We can statically evaluate the comparison.
     double left_val = ToDouble(LConstantOperand::cast(left));
     double right_val = ToDouble(LConstantOperand::cast(right));
-    int next_block = EvalComparison(instr->op(), left_val, right_val) ?
-        instr->TrueDestination(chunk_) : instr->FalseDestination(chunk_);
+    int next_block = Token::EvalComparison(instr->op(), left_val, right_val)
+                         ? instr->TrueDestination(chunk_)
+                         : instr->FalseDestination(chunk_);
     EmitGoto(next_block);
   } else {
     if (instr->is_double()) {
@@ -2715,20 +2716,12 @@ void LCodeGen::DoForInCacheArray(LForInCacheArray* instr) {
 
 void LCodeGen::DoForInPrepareMap(LForInPrepareMap* instr) {
   Register object = ToRegister(instr->object());
-  Register null_value = x5;
 
   DCHECK(instr->IsMarkedAsCall());
   DCHECK(object.Is(x0));
 
-  DeoptimizeIfSmi(object, instr, Deoptimizer::kSmi);
-
-  STATIC_ASSERT(JS_PROXY_TYPE == FIRST_JS_RECEIVER_TYPE);
-  __ CompareObjectType(object, x1, x1, JS_PROXY_TYPE);
-  DeoptimizeIf(le, instr, Deoptimizer::kNotAJavaScriptObject);
-
   Label use_cache, call_runtime;
-  __ LoadRoot(null_value, Heap::kNullValueRootIndex);
-  __ CheckEnumCache(object, null_value, x1, x2, x3, x4, &call_runtime);
+  __ CheckEnumCache(object, x5, x1, x2, x3, x4, &call_runtime);
 
   __ Ldr(object, FieldMemOperand(object, HeapObject::kMapOffset));
   __ B(&use_cache);
@@ -2736,12 +2729,7 @@ void LCodeGen::DoForInPrepareMap(LForInPrepareMap* instr) {
   // Get the set of properties to enumerate.
   __ Bind(&call_runtime);
   __ Push(object);
-  CallRuntime(Runtime::kGetPropertyNamesFast, instr);
-
-  __ Ldr(x1, FieldMemOperand(object, HeapObject::kMapOffset));
-  DeoptimizeIfNotRoot(x1, Heap::kMetaMapRootIndex, instr,
-                      Deoptimizer::kWrongMap);
-
+  CallRuntime(Runtime::kForInEnumerate, instr);
   __ Bind(&use_cache);
 }
 
@@ -3414,13 +3402,6 @@ void LCodeGen::DoLoadNamedGeneric(LLoadNamedGeneric* instr) {
 void LCodeGen::DoLoadRoot(LLoadRoot* instr) {
   Register result = ToRegister(instr->result());
   __ LoadRoot(result, instr->index());
-}
-
-
-void LCodeGen::DoMapEnumLength(LMapEnumLength* instr) {
-  Register result = ToRegister(instr->result());
-  Register map = ToRegister(instr->value());
-  __ EnumLengthSmi(result, map);
 }
 
 

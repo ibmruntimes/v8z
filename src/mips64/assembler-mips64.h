@@ -1092,7 +1092,7 @@ class Assembler : public AssemblerBase {
 
   // Record a deoptimization reason that can be used by a log or cpu profiler.
   // Use --trace-deopt to enable.
-  void RecordDeoptReason(const int reason, const SourcePosition position);
+  void RecordDeoptReason(const int reason, int raw_position);
 
   static int RelocateInternalReference(RelocInfo::Mode rmode, byte* pc,
                                        intptr_t pc_delta);
@@ -1272,7 +1272,6 @@ class Assembler : public AssemblerBase {
   void EmitForbiddenSlotInstruction() {
     if (IsPrevInstrCompactBranch()) {
       nop();
-      ClearCompactBranchState();
     }
   }
 

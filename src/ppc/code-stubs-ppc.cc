@@ -1055,14 +1055,13 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // Need at least one extra slot for return address location.
   int arg_stack_space = 1;
 
-// PPC LINUX ABI:
-#if !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
   // Pass buffer for return value on stack if necessary
-  if (result_size() > 1) {
-    DCHECK_EQ(2, result_size());
-    arg_stack_space += 2;
+  bool needs_return_buffer =
+      result_size() > 2 ||
+      (result_size() == 2 && !ABI_RETURNS_OBJECT_PAIRS_IN_REGS);
+  if (needs_return_buffer) {
+    arg_stack_space += result_size();
   }
-#endif
 
   __ EnterExitFrame(save_doubles(), arg_stack_space);
 
@@ -1076,9 +1075,8 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // Result returned in registers or stack, depending on result size and ABI.
 
   Register isolate_reg = r5;
-#if !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
-  if (result_size() > 1) {
-    // The return value is 16-byte non-scalar value.
+  if (needs_return_buffer) {
+    // The return value is a non-scalar value.
     // Use frame storage reserved by calling function to pass return
     // buffer as implicit first argument.
     __ mr(r5, r4);
@@ -1086,21 +1084,20 @@ void CEntryStub::Generate(MacroAssembler* masm) {
     __ addi(r3, sp, Operand((kStackFrameExtraParamSlot + 1) * kPointerSize));
     isolate_reg = r6;
   }
-#endif
 
   // Call C built-in.
   __ mov(isolate_reg, Operand(ExternalReference::isolate_address(isolate())));
 
   Register target = r15;
-#if ABI_USES_FUNCTION_DESCRIPTORS && !defined(USE_SIMULATOR)
-  // Native AIX/PPC64 Linux use a function descriptor.
-  __ LoadP(ToRegister(ABI_TOC_REGISTER), MemOperand(r15, kPointerSize));
-  __ LoadP(ip, MemOperand(r15, 0));  // Instruction address
-  target = ip;
-#elif ABI_CALL_VIA_IP
-  __ Move(ip, r15);
-  target = ip;
-#endif
+  if (ABI_USES_FUNCTION_DESCRIPTORS) {
+    // AIX/PPC64BE Linux use a function descriptor.
+    __ LoadP(ToRegister(ABI_TOC_REGISTER), MemOperand(r15, kPointerSize));
+    __ LoadP(ip, MemOperand(r15, 0));  // Instruction address
+    target = ip;
+  } else if (ABI_CALL_VIA_IP) {
+    __ Move(ip, r15);
+    target = ip;
+  }
 
   // To let the GC traverse the return address of the exit frames, we need to
   // know where the return address is. The CEntryStub is unmovable, so
@@ -1112,13 +1109,12 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   __ Call(target);
   __ bind(&after_call);
 
-#if !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
   // If return value is on the stack, pop it to registers.
-  if (result_size() > 1) {
+  if (needs_return_buffer) {
+    if (result_size() > 2) __ LoadP(r5, MemOperand(r3, 2 * kPointerSize));
     __ LoadP(r4, MemOperand(r3, kPointerSize));
     __ LoadP(r3, MemOperand(r3));
   }
-#endif
 
   // Check result for exception sentinel.
   Label exception_returned;
@@ -1132,9 +1128,9 @@ void CEntryStub::Generate(MacroAssembler* masm) {
     ExternalReference pending_exception_address(
         Isolate::kPendingExceptionAddress, isolate());
 
-    __ mov(r5, Operand(pending_exception_address));
-    __ LoadP(r5, MemOperand(r5));
-    __ CompareRoot(r5, Heap::kTheHoleValueRootIndex);
+    __ mov(r6, Operand(pending_exception_address));
+    __ LoadP(r6, MemOperand(r6));
+    __ CompareRoot(r6, Heap::kTheHoleValueRootIndex);
     // Cannot use check here as it attempts to generate call into runtime.
     __ beq(&okay);
     __ stop("Unexpected pending exception");
@@ -2255,16 +2251,6 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // Locate the code entry and call it.
   __ addi(code, code, Operand(Code::kHeaderSize - kHeapObjectTag));
 
-
-#if ABI_USES_FUNCTION_DESCRIPTORS && defined(USE_SIMULATOR)
-  // Even Simulated AIX/PPC64 Linux uses a function descriptor for the
-  // RegExp routine.  Extract the instruction address here since
-  // DirectCEntryStub::GenerateCall will not do it for calls out to
-  // what it thinks is C code compiled for the simulator/host
-  // platform.
-  __ LoadP(code, MemOperand(code, 0));  // Instruction address
-#endif
-
   DirectCEntryStub stub(isolate());
   stub.GenerateCall(masm, code);
 
@@ -3246,6 +3232,37 @@ void ToStringStub::Generate(MacroAssembler* masm) {
 }
 
 
+void ToNameStub::Generate(MacroAssembler* masm) {
+  // The ToName stub takes one argument in r3.
+  Label is_number;
+  __ JumpIfSmi(r3, &is_number);
+
+  STATIC_ASSERT(FIRST_NAME_TYPE == FIRST_TYPE);
+  __ CompareObjectType(r3, r4, r4, LAST_NAME_TYPE);
+  // r3: receiver
+  // r4: receiver instance type
+  __ Ret(le);
+
+  Label not_heap_number;
+  __ cmpi(r4, Operand(HEAP_NUMBER_TYPE));
+  __ bne(&not_heap_number);
+  __ bind(&is_number);
+  NumberToStringStub stub(isolate());
+  __ TailCallStub(&stub);
+  __ bind(&not_heap_number);
+
+  Label not_oddball;
+  __ cmpi(r4, Operand(ODDBALL_TYPE));
+  __ bne(&not_oddball);
+  __ LoadP(r3, FieldMemOperand(r3, Oddball::kToStringOffset));
+  __ Ret();
+  __ bind(&not_oddball);
+
+  __ push(r3);  // Push argument.
+  __ TailCallRuntime(Runtime::kToName);
+}
+
+
 void StringHelper::GenerateFlatOneByteStringEquals(MacroAssembler* masm,
                                                    Register left,
                                                    Register right,
@@ -3820,15 +3837,15 @@ void DirectCEntryStub::Generate(MacroAssembler* masm) {
 
 
 void DirectCEntryStub::GenerateCall(MacroAssembler* masm, Register target) {
-#if ABI_USES_FUNCTION_DESCRIPTORS && !defined(USE_SIMULATOR)
-  // Native AIX/PPC64 Linux use a function descriptor.
-  __ LoadP(ToRegister(ABI_TOC_REGISTER), MemOperand(target, kPointerSize));
-  __ LoadP(ip, MemOperand(target, 0));  // Instruction address
-#else
-  // ip needs to be set for DirectCEentryStub::Generate, and also
-  // for ABI_CALL_VIA_IP.
-  __ Move(ip, target);
-#endif
+  if (ABI_USES_FUNCTION_DESCRIPTORS) {
+    // AIX/PPC64BE Linux use a function descriptor.
+    __ LoadP(ToRegister(ABI_TOC_REGISTER), MemOperand(target, kPointerSize));
+    __ LoadP(ip, MemOperand(target, 0));  // Instruction address
+  } else {
+    // ip needs to be set for DirectCEentryStub::Generate, and also
+    // for ABI_CALL_VIA_IP.
+    __ Move(ip, target);
+  }
 
   intptr_t code = reinterpret_cast<intptr_t>(GetCode().location());
   __ mov(r0, Operand(code, RelocInfo::CODE_TARGET));
@@ -4791,34 +4808,32 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
 #if !defined(USE_SIMULATOR)
   uintptr_t entry_hook =
       reinterpret_cast<uintptr_t>(isolate()->function_entry_hook());
+#else
+  // Under the simulator we need to indirect the entry hook through a
+  // trampoline function at a known address.
+  ApiFunction dispatcher(FUNCTION_ADDR(EntryHookTrampoline));
+  ExternalReference entry_hook = ExternalReference(
+      &dispatcher, ExternalReference::BUILTIN_CALL, isolate());
+
+  // It additionally takes an isolate as a third parameter
+  __ mov(r5, Operand(ExternalReference::isolate_address(isolate())));
+#endif
+
   __ mov(ip, Operand(entry_hook));
 
-#if ABI_USES_FUNCTION_DESCRIPTORS
-  // Function descriptor
-  __ LoadP(ToRegister(ABI_TOC_REGISTER), MemOperand(ip, kPointerSize));
-  __ LoadP(ip, MemOperand(ip, 0));
-#elif ABI_CALL_VIA_IP
-// ip set above, so nothing to do.
-#endif
+  if (ABI_USES_FUNCTION_DESCRIPTORS) {
+    __ LoadP(ToRegister(ABI_TOC_REGISTER), MemOperand(ip, kPointerSize));
+    __ LoadP(ip, MemOperand(ip, 0));
+  }
+  // ip set above, so nothing more to do for ABI_CALL_VIA_IP.
 
   // PPC LINUX ABI:
   __ li(r0, Operand::Zero());
   __ StorePU(r0, MemOperand(sp, -kNumRequiredStackFrameSlots * kPointerSize));
-#else
-  // Under the simulator we need to indirect the entry hook through a
-  // trampoline function at a known address.
-  // It additionally takes an isolate as a third parameter
-  __ mov(r5, Operand(ExternalReference::isolate_address(isolate())));
 
-  ApiFunction dispatcher(FUNCTION_ADDR(EntryHookTrampoline));
-  __ mov(ip, Operand(ExternalReference(
-                 &dispatcher, ExternalReference::BUILTIN_CALL, isolate())));
-#endif
   __ Call(ip);
 
-#if !defined(USE_SIMULATOR)
   __ addi(sp, sp, Operand(kNumRequiredStackFrameSlots * kPointerSize));
-#endif
 
   // Restore the stack pointer if needed.
   if (frame_alignment > kPointerSize) {
@@ -5601,17 +5616,24 @@ void CallApiAccessorStub::Generate(MacroAssembler* masm) {
 
 void CallApiGetterStub::Generate(MacroAssembler* masm) {
   // ----------- S t a t e -------------
-  //  -- sp[0]                  : name
-  //  -- sp[4 - kArgsLength*4]  : PropertyCallbackArguments object
+  //  -- sp[0]                        : name
+  //  -- sp[4 .. (4 + kArgsLength*4)] : v8::PropertyCallbackInfo::args_
   //  -- ...
-  //  -- r5                     : api_function_address
+  //  -- r5                           : api_function_address
   // -----------------------------------
 
   Register api_function_address = ApiGetterDescriptor::function_address();
+  int arg0Slot = 0;
+  int accessorInfoSlot = 0;
+  int apiStackSpace = 0;
   DCHECK(api_function_address.is(r5));
 
-  __ mr(r3, sp);                               // r0 = Handle<Name>
-  __ addi(r4, r3, Operand(1 * kPointerSize));  // r4 = PCA
+  // v8::PropertyCallbackInfo::args_ array and name handle.
+  const int kStackUnwindSpace = PropertyCallbackArguments::kArgsLength + 1;
+
+  // Load address of v8::PropertyAccessorInfo::args_ array and name handle.
+  __ mr(r3, sp);                               // r3 = Handle<Name>
+  __ addi(r4, r3, Operand(1 * kPointerSize));  // r4 = v8::PCI::args_
 
 // If ABI passes Handles (pointer-sized struct) in a register:
 //
@@ -5625,37 +5647,38 @@ void CallApiGetterStub::Generate(MacroAssembler* masm) {
 //    [0] space for DirectCEntryStub's LR save
 //    [1] copy of Handle (first arg)
 //    [2] AccessorInfo&
-#if ABI_PASSES_HANDLES_IN_REGS
-  const int kAccessorInfoSlot = kStackFrameExtraParamSlot + 1;
-  const int kApiStackSpace = 2;
-#else
-  const int kArg0Slot = kStackFrameExtraParamSlot + 1;
-  const int kAccessorInfoSlot = kArg0Slot + 1;
-  const int kApiStackSpace = 3;
-#endif
+  if (ABI_PASSES_HANDLES_IN_REGS) {
+    accessorInfoSlot = kStackFrameExtraParamSlot + 1;
+    apiStackSpace = 2;
+  } else {
+    arg0Slot = kStackFrameExtraParamSlot + 1;
+    accessorInfoSlot = arg0Slot + 1;
+    apiStackSpace = 3;
+  }
 
   FrameScope frame_scope(masm, StackFrame::MANUAL);
-  __ EnterExitFrame(false, kApiStackSpace);
+  __ EnterExitFrame(false, apiStackSpace);
 
-#if !ABI_PASSES_HANDLES_IN_REGS
-  // pass 1st arg by reference
-  __ StoreP(r3, MemOperand(sp, kArg0Slot * kPointerSize));
-  __ addi(r3, sp, Operand(kArg0Slot * kPointerSize));
-#endif
+  if (!ABI_PASSES_HANDLES_IN_REGS) {
+    // pass 1st arg by reference
+    __ StoreP(r3, MemOperand(sp, arg0Slot * kPointerSize));
+    __ addi(r3, sp, Operand(arg0Slot * kPointerSize));
+  }
 
-  // Create PropertyAccessorInfo instance on the stack above the exit frame with
-  // r4 (internal::Object** args_) as the data.
-  __ StoreP(r4, MemOperand(sp, kAccessorInfoSlot * kPointerSize));
-  // r4 = AccessorInfo&
-  __ addi(r4, sp, Operand(kAccessorInfoSlot * kPointerSize));
-
-  const int kStackUnwindSpace = PropertyCallbackArguments::kArgsLength + 1;
+  // Create v8::PropertyCallbackInfo object on the stack and initialize
+  // it's args_ field.
+  __ StoreP(r4, MemOperand(sp, accessorInfoSlot * kPointerSize));
+  __ addi(r4, sp, Operand(accessorInfoSlot * kPointerSize));
+  // r4 = v8::PropertyCallbackInfo&
 
   ExternalReference thunk_ref =
       ExternalReference::invoke_accessor_getter_callback(isolate());
+
+  // +3 is to skip prolog, return address and name handle.
+  MemOperand return_value_operand(
+      fp, (PropertyCallbackArguments::kReturnValueOffset + 3) * kPointerSize);
   CallApiFunctionAndReturn(masm, api_function_address, thunk_ref,
-                           kStackUnwindSpace, NULL,
-                           MemOperand(fp, 6 * kPointerSize), NULL);
+                           kStackUnwindSpace, NULL, return_value_operand, NULL);
 }
 
 

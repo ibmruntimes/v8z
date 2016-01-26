@@ -116,6 +116,10 @@ const Register ToStringDescriptor::ReceiverRegister() { return x0; }
 
 
 // static
+const Register ToNameDescriptor::ReceiverRegister() { return x0; }
+
+
+// static
 const Register ToObjectDescriptor::ReceiverRegister() { return x0; }
 
 
@@ -181,13 +185,6 @@ void CreateWeakCellDescriptor::InitializePlatformSpecific(
   // x3: call feedback slot
   // x1: tagged value to put in the weak cell
   Register registers[] = {x2, x3, x1};
-  data->InitializePlatformSpecific(arraysize(registers), registers);
-}
-
-
-void StoreArrayLiteralElementDescriptor::InitializePlatformSpecific(
-    CallInterfaceDescriptorData* data) {
-  Register registers[] = {x3, x0};
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
 

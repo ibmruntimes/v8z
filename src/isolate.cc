@@ -1116,6 +1116,26 @@ Object* Isolate::UnwindAndFindHandler() {
       }
     }
 
+    // For interpreted frame we perform a range lookup in the handler table.
+    if (frame->is_interpreted() && catchable_by_js) {
+      InterpretedFrame* js_frame = static_cast<InterpretedFrame*>(frame);
+      int stack_slots = 0;  // Will contain stack slot count of frame.
+      offset = js_frame->LookupExceptionHandlerInTable(&stack_slots, NULL);
+      if (offset >= 0) {
+        // Patch the bytecode offset in the interpreted frame to reflect the
+        // position of the exception handler. The special builtin below will
+        // take care of continuing to dispatch at that position.
+        js_frame->PatchBytecodeOffset(static_cast<int>(offset));
+        offset = 0;
+
+        // Gather information from the frame.
+        code = *builtins()->InterpreterEnterExceptionHandler();
+        handler_sp = frame->sp();
+        handler_fp = frame->fp();
+        break;
+      }
+    }
+
     // For JavaScript frames we perform a range lookup in the handler table.
     if (frame->is_java_script() && catchable_by_js) {
       JavaScriptFrame* js_frame = static_cast<JavaScriptFrame*>(frame);
@@ -1919,13 +1939,14 @@ void Isolate::Deinit() {
   delete basic_block_profiler_;
   basic_block_profiler_ = NULL;
 
+  delete heap_profiler_;
+  heap_profiler_ = NULL;
+
   heap_.TearDown();
   logger_->TearDown();
 
   cancelable_task_manager()->CancelAndWait();
 
-  delete heap_profiler_;
-  heap_profiler_ = NULL;
   delete cpu_profiler_;
   cpu_profiler_ = NULL;
 
@@ -2376,6 +2397,11 @@ void Isolate::DumpAndResetCompilationStats() {
   turbo_statistics_ = nullptr;
   delete hstatistics_;
   hstatistics_ = nullptr;
+  if (FLAG_runtime_call_stats) {
+    OFStream os(stdout);
+    runtime_state()->runtime_call_stats()->Print(os);
+    runtime_state()->runtime_call_stats()->Reset();
+  }
 }
 
 

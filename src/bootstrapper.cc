@@ -483,7 +483,7 @@ void Genesis::SetFunctionInstanceDescriptor(Handle<Map> map,
 Handle<Map> Genesis::CreateSloppyFunctionMap(FunctionMode function_mode) {
   Handle<Map> map = factory()->NewMap(JS_FUNCTION_TYPE, JSFunction::kSize);
   SetFunctionInstanceDescriptor(map, function_mode);
-  if (IsFunctionModeWithPrototype(function_mode)) map->set_is_constructor();
+  map->set_is_constructor(IsFunctionModeWithPrototype(function_mode));
   map->set_is_callable();
   return map;
 }
@@ -715,7 +715,7 @@ Handle<Map> Genesis::CreateStrictFunctionMap(
     FunctionMode function_mode, Handle<JSFunction> empty_function) {
   Handle<Map> map = factory()->NewMap(JS_FUNCTION_TYPE, JSFunction::kSize);
   SetStrictFunctionInstanceDescriptor(map, function_mode);
-  if (IsFunctionModeWithPrototype(function_mode)) map->set_is_constructor();
+  map->set_is_constructor(IsFunctionModeWithPrototype(function_mode));
   map->set_is_callable();
   Map::SetPrototype(map, empty_function);
   return map;
@@ -726,7 +726,7 @@ Handle<Map> Genesis::CreateStrongFunctionMap(
     Handle<JSFunction> empty_function, bool is_constructor) {
   Handle<Map> map = factory()->NewMap(JS_FUNCTION_TYPE, JSFunction::kSize);
   SetStrongFunctionInstanceDescriptor(map);
-  if (is_constructor) map->set_is_constructor();
+  map->set_is_constructor(is_constructor);
   Map::SetPrototype(map, empty_function);
   map->set_is_callable();
   map->set_is_extensible(is_constructor);
@@ -789,6 +789,7 @@ void Genesis::CreateIteratorMaps() {
   // Generator functions do not have "caller" or "arguments" accessors.
   Handle<Map> sloppy_generator_function_map =
       Map::Copy(strict_function_map, "SloppyGeneratorFunction");
+  sloppy_generator_function_map->set_is_constructor(false);
   Map::SetPrototype(sloppy_generator_function_map,
                     generator_function_prototype);
   native_context()->set_sloppy_generator_function_map(
@@ -796,6 +797,7 @@ void Genesis::CreateIteratorMaps() {
 
   Handle<Map> strict_generator_function_map =
       Map::Copy(strict_function_map, "StrictGeneratorFunction");
+  strict_generator_function_map->set_is_constructor(false);
   Map::SetPrototype(strict_generator_function_map,
                     generator_function_prototype);
   native_context()->set_strict_generator_function_map(
@@ -804,6 +806,7 @@ void Genesis::CreateIteratorMaps() {
   Handle<Map> strong_function_map(native_context()->strong_function_map());
   Handle<Map> strong_generator_function_map =
       Map::Copy(strong_function_map, "StrongGeneratorFunction");
+  strong_generator_function_map->set_is_constructor(false);
   Map::SetPrototype(strong_generator_function_map,
                     generator_function_prototype);
   native_context()->set_strong_generator_function_map(
@@ -1095,6 +1098,10 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
     Handle<JSFunction> object_freeze = SimpleInstallFunction(
         object_function, "freeze", Builtins::kObjectFreeze, 1, false);
     native_context()->set_object_freeze(*object_freeze);
+    SimpleInstallFunction(object_function, "getOwnPropertyNames",
+                          Builtins::kObjectGetOwnPropertyNames, 1, false);
+    SimpleInstallFunction(object_function, "getOwnPropertySymbols",
+                          Builtins::kObjectGetOwnPropertySymbols, 1, false);
     Handle<JSFunction> object_is_extensible =
         SimpleInstallFunction(object_function, "isExtensible",
                               Builtins::kObjectIsExtensible, 1, false);
@@ -1250,14 +1257,20 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
 
   {
     // --- S y m b o l ---
-    Handle<JSFunction> symbol_fun = InstallFunction(
-        global, "Symbol", JS_VALUE_TYPE, JSValue::kSize,
-        isolate->initial_object_prototype(), Builtins::kSymbolConstructor);
+    Handle<JSObject> prototype =
+        factory->NewJSObject(isolate->object_function(), TENURED);
+    Handle<JSFunction> symbol_fun =
+        InstallFunction(global, "Symbol", JS_VALUE_TYPE, JSValue::kSize,
+                        prototype, Builtins::kSymbolConstructor);
     symbol_fun->shared()->set_construct_stub(
         *isolate->builtins()->SymbolConstructor_ConstructStub());
     symbol_fun->shared()->set_length(1);
     symbol_fun->shared()->DontAdaptArguments();
     native_context()->set_symbol_function(*symbol_fun);
+
+    // Install the "constructor" property on the {prototype}.
+    JSObject::AddProperty(prototype, factory->constructor_string(), symbol_fun,
+                          DONT_ENUM);
   }
 
   {  // --- D a t e ---
@@ -1618,7 +1631,7 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
     native_context()->set_bound_function_without_constructor_map(*map);
 
     map = Map::Copy(map, "IsConstructor");
-    map->set_is_constructor();
+    map->set_is_constructor(true);
     native_context()->set_bound_function_with_constructor_map(*map);
   }
 
@@ -2438,6 +2451,22 @@ void Genesis::InitializeGlobal_harmony_simd() {
 }
 
 
+void Genesis::InitializeGlobal_harmony_object_values_entries() {
+  if (!FLAG_harmony_object_values_entries) return;
+
+  Handle<JSGlobalObject> global(
+      JSGlobalObject::cast(native_context()->global_object()));
+  Isolate* isolate = global->GetIsolate();
+  Factory* factory = isolate->factory();
+
+  Handle<JSFunction> object_function = isolate->object_function();
+  SimpleInstallFunction(object_function, factory->entries_string(),
+                        Builtins::kObjectEntries, 1, false);
+  SimpleInstallFunction(object_function, factory->values_string(),
+                        Builtins::kObjectValues, 1, false);
+}
+
+
 void Genesis::InstallJSProxyMaps() {
   // Allocate the different maps for all Proxy types.
   // Next to the default proxy, we need maps indicating callable and
@@ -2445,11 +2474,12 @@ void Genesis::InstallJSProxyMaps() {
 
   Handle<Map> proxy_function_map =
       Map::Copy(isolate()->sloppy_function_without_prototype_map(), "Proxy");
-  proxy_function_map->set_is_constructor();
+  proxy_function_map->set_is_constructor(true);
   native_context()->set_proxy_function_map(*proxy_function_map);
 
   Handle<Map> proxy_map =
       factory()->NewMap(JS_PROXY_TYPE, JSProxy::kSize, FAST_ELEMENTS);
+  proxy_map->set_dictionary_map(true);
   native_context()->set_proxy_map(*proxy_map);
 
   Handle<Map> proxy_callable_map = Map::Copy(proxy_map, "callable Proxy");
@@ -2459,7 +2489,7 @@ void Genesis::InstallJSProxyMaps() {
 
   Handle<Map> proxy_constructor_map =
       Map::Copy(proxy_callable_map, "constructor Proxy");
-  proxy_constructor_map->set_is_constructor();
+  proxy_constructor_map->set_is_constructor(true);
   native_context()->set_proxy_constructor_map(*proxy_constructor_map);
 }
 
@@ -2716,6 +2746,89 @@ bool Genesis::InstallNatives(ContextType context_type) {
 
   InstallBuiltinFunctionIds();
 
+  // Create a map for accessor property descriptors (a variant of JSObject
+  // that predefines four properties get, set, configurable and enumerable).
+  {
+    // AccessorPropertyDescriptor initial map.
+    Handle<Map> map =
+        factory()->NewMap(JS_OBJECT_TYPE, JSAccessorPropertyDescriptor::kSize);
+    // Create the descriptor array for the property descriptor object.
+    Map::EnsureDescriptorSlack(map, 4);
+
+    {  // get
+      DataDescriptor d(factory()->get_string(),
+                       JSAccessorPropertyDescriptor::kGetIndex, NONE,
+                       Representation::Tagged());
+      map->AppendDescriptor(&d);
+    }
+    {  // set
+      DataDescriptor d(factory()->set_string(),
+                       JSAccessorPropertyDescriptor::kSetIndex, NONE,
+                       Representation::Tagged());
+      map->AppendDescriptor(&d);
+    }
+    {  // enumerable
+      DataDescriptor d(factory()->enumerable_string(),
+                       JSAccessorPropertyDescriptor::kEnumerableIndex, NONE,
+                       Representation::Tagged());
+      map->AppendDescriptor(&d);
+    }
+    {  // configurable
+      DataDescriptor d(factory()->configurable_string(),
+                       JSAccessorPropertyDescriptor::kConfigurableIndex, NONE,
+                       Representation::Tagged());
+      map->AppendDescriptor(&d);
+    }
+
+    Map::SetPrototype(map, isolate()->initial_object_prototype());
+    map->SetInObjectProperties(4);
+    map->set_unused_property_fields(0);
+
+    native_context()->set_accessor_property_descriptor_map(*map);
+  }
+
+  // Create a map for data property descriptors (a variant of JSObject
+  // that predefines four properties value, writable, configurable and
+  // enumerable).
+  {
+    // DataPropertyDescriptor initial map.
+    Handle<Map> map =
+        factory()->NewMap(JS_OBJECT_TYPE, JSDataPropertyDescriptor::kSize);
+    // Create the descriptor array for the property descriptor object.
+    Map::EnsureDescriptorSlack(map, 4);
+
+    {  // value
+      DataDescriptor d(factory()->value_string(),
+                       JSDataPropertyDescriptor::kValueIndex, NONE,
+                       Representation::Tagged());
+      map->AppendDescriptor(&d);
+    }
+    {  // writable
+      DataDescriptor d(factory()->writable_string(),
+                       JSDataPropertyDescriptor::kWritableIndex, NONE,
+                       Representation::Tagged());
+      map->AppendDescriptor(&d);
+    }
+    {  // enumerable
+      DataDescriptor d(factory()->enumerable_string(),
+                       JSDataPropertyDescriptor::kEnumerableIndex, NONE,
+                       Representation::Tagged());
+      map->AppendDescriptor(&d);
+    }
+    {  // configurable
+      DataDescriptor d(factory()->configurable_string(),
+                       JSDataPropertyDescriptor::kConfigurableIndex, NONE,
+                       Representation::Tagged());
+      map->AppendDescriptor(&d);
+    }
+
+    Map::SetPrototype(map, isolate()->initial_object_prototype());
+    map->SetInObjectProperties(4);
+    map->set_unused_property_fields(0);
+
+    native_context()->set_data_property_descriptor_map(*map);
+  }
+
   // Create a constructor for RegExp results (a variant of Array that
   // predefines the two properties index and match).
   {
@@ -2843,6 +2956,7 @@ bool Genesis::InstallExperimentalNatives() {
   static const char* harmony_function_name_natives[] = {nullptr};
   static const char* promise_extra_natives[] = {"native promise-extra.js",
                                                 nullptr};
+  static const char* harmony_object_values_entries_natives[] = {nullptr};
 
   for (int i = ExperimentalNatives::GetDebuggerCount();
        i < ExperimentalNatives::GetBuiltinsCount(); i++) {

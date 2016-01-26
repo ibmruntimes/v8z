@@ -428,13 +428,20 @@ void Verifier::Visitor::Check(Node* node) {
       }
       break;
     }
-    case IrOpcode::kFrameState:
+    case IrOpcode::kFrameState: {
       // TODO(jarin): what are the constraints on these?
       CHECK_EQ(5, value_count);
       CHECK_EQ(0, control_count);
       CHECK_EQ(0, effect_count);
       CHECK_EQ(6, input_count);
+      for (int i = 0; i < 3; ++i) {
+        CHECK(NodeProperties::GetValueInput(node, i)->opcode() ==
+                  IrOpcode::kStateValues ||
+              NodeProperties::GetValueInput(node, i)->opcode() ==
+                  IrOpcode::kTypedStateValues);
+      }
       break;
+    }
     case IrOpcode::kStateValues:
     case IrOpcode::kObjectState:
     case IrOpcode::kTypedStateValues:
@@ -907,6 +914,7 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kFloat64LessThan:
     case IrOpcode::kFloat64LessThanOrEqual:
     case IrOpcode::kTruncateInt64ToInt32:
+    case IrOpcode::kRoundInt32ToFloat32:
     case IrOpcode::kRoundInt64ToFloat32:
     case IrOpcode::kRoundInt64ToFloat64:
     case IrOpcode::kRoundUint64ToFloat64:
@@ -924,6 +932,7 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kChangeFloat32ToFloat64:
     case IrOpcode::kChangeFloat64ToInt32:
     case IrOpcode::kChangeFloat64ToUint32:
+    case IrOpcode::kTruncateFloat32ToInt32:
     case IrOpcode::kTryTruncateFloat32ToInt64:
     case IrOpcode::kTryTruncateFloat64ToInt64:
     case IrOpcode::kTryTruncateFloat32ToUint64:

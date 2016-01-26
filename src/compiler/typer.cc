@@ -650,7 +650,12 @@ Type* Typer::Visitor::TypeCall(Node* node) { return Type::Any(); }
 
 
 Type* Typer::Visitor::TypeProjection(Node* node) {
-  // TODO(titzer): use the output type of the input to determine the bounds.
+  Type* const type = Operand(node, 0);
+  if (type->Is(Type::None())) return Type::None();
+  int const index = static_cast<int>(ProjectionIndexOf(node->op()));
+  if (type->IsTuple() && index < type->AsTuple()->Arity()) {
+    return type->AsTuple()->Element(index);
+  }
   return Type::Any();
 }
 
@@ -1613,8 +1618,13 @@ Type* Typer::Visitor::TypeJSForInNext(Node* node) {
 
 
 Type* Typer::Visitor::TypeJSForInPrepare(Node* node) {
-  // TODO(bmeurer): Return a tuple type here.
-  return Type::Any();
+  STATIC_ASSERT(Map::EnumLengthBits::kMax <= FixedArray::kMaxLength);
+  Factory* const f = isolate()->factory();
+  Type* const cache_type = Type::Union(
+      typer_->cache_.kSmi, Type::Class(f->meta_map(), zone()), zone());
+  Type* const cache_array = Type::Class(f->fixed_array_map(), zone());
+  Type* const cache_length = typer_->cache_.kFixedArrayLengthType;
+  return Type::Tuple(cache_type, cache_array, cache_length, zone());
 }
 
 
@@ -2145,6 +2155,11 @@ Type* Typer::Visitor::TypeChangeFloat64ToUint32(Node* node) {
 }
 
 
+Type* Typer::Visitor::TypeTruncateFloat32ToInt32(Node* node) {
+  return Type::Intersect(Type::Signed32(), Type::UntaggedIntegral32(), zone());
+}
+
+
 Type* Typer::Visitor::TypeTryTruncateFloat32ToInt64(Node* node) {
   return Type::Internal();
 }
@@ -2197,6 +2212,11 @@ Type* Typer::Visitor::TypeTruncateFloat64ToInt32(Node* node) {
 
 Type* Typer::Visitor::TypeTruncateInt64ToInt32(Node* node) {
   return Type::Intersect(Type::Signed32(), Type::UntaggedIntegral32(), zone());
+}
+
+
+Type* Typer::Visitor::TypeRoundInt32ToFloat32(Node* node) {
+  return Type::Intersect(Type::PlainNumber(), Type::UntaggedFloat32(), zone());
 }
 
 

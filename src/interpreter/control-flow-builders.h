@@ -144,6 +144,47 @@ class SwitchBuilder final : public BreakableControlFlowBuilder {
   ZoneVector<BytecodeLabel> case_sites_;
 };
 
+
+// A class to help with co-ordinating control flow in try-catch statements.
+class TryCatchBuilder final : public ControlFlowBuilder {
+ public:
+  explicit TryCatchBuilder(BytecodeArrayBuilder* builder)
+      : ControlFlowBuilder(builder), handler_id_(builder->NewHandlerEntry()) {}
+
+  void BeginTry(Register context);
+  void EndTry();
+  void EndCatch();
+
+ private:
+  int handler_id_;
+  BytecodeLabel handler_;
+  BytecodeLabel exit_;
+};
+
+
+// A class to help with co-ordinating control flow in try-finally statements.
+class TryFinallyBuilder final : public ControlFlowBuilder {
+ public:
+  explicit TryFinallyBuilder(BytecodeArrayBuilder* builder)
+      : ControlFlowBuilder(builder),
+        handler_id_(builder->NewHandlerEntry()),
+        finalization_sites_(builder->zone()) {}
+
+  void BeginTry(Register context);
+  void LeaveTry();
+  void EndTry();
+  void BeginHandler();
+  void BeginFinally();
+  void EndFinally();
+
+ private:
+  int handler_id_;
+  BytecodeLabel handler_;
+
+  // Unbound labels that identify jumps to the finally block in the code.
+  ZoneVector<BytecodeLabel> finalization_sites_;
+};
+
 }  // namespace interpreter
 }  // namespace internal
 }  // namespace v8

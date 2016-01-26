@@ -65,8 +65,6 @@ class InterpreterTester {
         bytecode_(bytecode),
         feedback_vector_(feedback_vector) {
     i::FLAG_ignition = true;
-    i::FLAG_ignition_fake_try_catch = true;
-    i::FLAG_ignition_fallback_on_eval_and_catch = false;
     i::FLAG_always_opt = false;
     // Set ignition filter flag via SetFlagsFromString to avoid double-free
     // (or potential leak with StrDup() based on ownership confusion).
@@ -358,117 +356,6 @@ TEST(InterpreterLoadStoreRegisters) {
     auto callable = tester.GetCallable<>();
     Handle<Object> return_val = callable().ToHandleChecked();
     CHECK(return_val.is_identical_to(true_value));
-  }
-}
-
-
-TEST(InterpreterExchangeRegisters) {
-  for (int locals_count = 2; locals_count < 300; locals_count += 126) {
-    HandleAndZoneScope handles;
-    for (int exchanges = 1; exchanges < 4; exchanges++) {
-      BytecodeArrayBuilder builder(handles.main_isolate(), handles.main_zone());
-      builder.set_locals_count(locals_count);
-      builder.set_context_count(0);
-      builder.set_parameter_count(0);
-
-      Register r0(0);
-      Register r1(locals_count - 1);
-      builder.LoadTrue();
-      builder.StoreAccumulatorInRegister(r0);
-      builder.ExchangeRegisters(r0, r1);
-      builder.LoadFalse();
-      builder.StoreAccumulatorInRegister(r0);
-
-      bool expected = false;
-      for (int i = 0; i < exchanges; i++) {
-        builder.ExchangeRegisters(r0, r1);
-        expected = !expected;
-      }
-      builder.LoadAccumulatorWithRegister(r0);
-      builder.Return();
-      Handle<BytecodeArray> bytecode_array = builder.ToBytecodeArray();
-      InterpreterTester tester(handles.main_isolate(), bytecode_array);
-      auto callable = tester.GetCallable<>();
-      Handle<Object> return_val = callable().ToHandleChecked();
-      Handle<Object> expected_val =
-          handles.main_isolate()->factory()->ToBoolean(expected);
-      CHECK(return_val.is_identical_to(expected_val));
-    }
-  }
-}
-
-
-TEST(InterpreterExchangeRegistersWithParameter) {
-  for (int locals_count = 2; locals_count < 300; locals_count += 126) {
-    HandleAndZoneScope handles;
-    for (int exchanges = 1; exchanges < 4; exchanges++) {
-      BytecodeArrayBuilder builder(handles.main_isolate(), handles.main_zone());
-      builder.set_locals_count(locals_count);
-      builder.set_context_count(0);
-      builder.set_parameter_count(3);
-
-      Register r0 = Register::FromParameterIndex(2, 3);
-      Register r1(locals_count - 1);
-      builder.LoadTrue();
-      builder.StoreAccumulatorInRegister(r0);
-      builder.ExchangeRegisters(r0, r1);
-      builder.LoadFalse();
-      builder.StoreAccumulatorInRegister(r0);
-
-      bool expected = false;
-      for (int i = 0; i < exchanges; i++) {
-        builder.ExchangeRegisters(r0, r1);
-        expected = !expected;
-      }
-      builder.LoadAccumulatorWithRegister(r0);
-      builder.Return();
-      Handle<BytecodeArray> bytecode_array = builder.ToBytecodeArray();
-      InterpreterTester tester(handles.main_isolate(), bytecode_array);
-      auto callable = tester.GetCallable<>();
-      Handle<Object> return_val = callable().ToHandleChecked();
-      Handle<Object> expected_val =
-          handles.main_isolate()->factory()->ToBoolean(expected);
-      CHECK(return_val.is_identical_to(expected_val));
-    }
-  }
-}
-
-
-TEST(InterpreterExchangeWideRegisters) {
-  for (int locals_count = 3; locals_count < 300; locals_count += 126) {
-    HandleAndZoneScope handles;
-    for (int exchanges = 0; exchanges < 7; exchanges++) {
-      BytecodeArrayBuilder builder(handles.main_isolate(), handles.main_zone());
-      builder.set_locals_count(locals_count);
-      builder.set_context_count(0);
-      builder.set_parameter_count(0);
-
-      Register r0(0);
-      Register r1(locals_count - 1);
-      Register r2(locals_count - 2);
-      builder.LoadLiteral(Smi::FromInt(200));
-      builder.StoreAccumulatorInRegister(r0);
-      builder.ExchangeRegisters(r0, r1);
-      builder.LoadLiteral(Smi::FromInt(100));
-      builder.StoreAccumulatorInRegister(r0);
-      builder.ExchangeRegisters(r0, r2);
-      builder.LoadLiteral(Smi::FromInt(0));
-      builder.StoreAccumulatorInRegister(r0);
-      for (int i = 0; i < exchanges; i++) {
-        builder.ExchangeRegisters(r1, r2);
-        builder.ExchangeRegisters(r0, r1);
-      }
-      builder.LoadAccumulatorWithRegister(r0);
-      builder.Return();
-      Handle<BytecodeArray> bytecode_array = builder.ToBytecodeArray();
-      InterpreterTester tester(handles.main_isolate(), bytecode_array);
-      auto callable = tester.GetCallable<>();
-      Handle<Object> return_val = callable().ToHandleChecked();
-      Handle<Object> expected_val =
-          handles.main_isolate()->factory()->NewNumberFromInt(100 *
-                                                              (exchanges % 3));
-      CHECK(return_val.is_identical_to(expected_val));
-    }
   }
 }
 
@@ -2133,29 +2020,76 @@ TEST(InterpreterLogicalAnd) {
 
 TEST(InterpreterTryCatch) {
   HandleAndZoneScope handles;
+  i::Isolate* isolate = handles.main_isolate();
 
-  // TODO(rmcilroy): modify tests when we have real try catch support.
-  std::string source(InterpreterTester::SourceForBody(
-      "var a = 1; try { a = a + 1; } catch(e) { a = a + 2; }; return a;"));
-  InterpreterTester tester(handles.main_isolate(), source.c_str());
-  auto callable = tester.GetCallable<>();
+  std::pair<const char*, Handle<Object>> catches[] = {
+      std::make_pair("var a = 1; try { a = 2 } catch(e) { a = 3 }; return a;",
+                     handle(Smi::FromInt(2), isolate)),
+      std::make_pair("var a; try { undef.x } catch(e) { a = 2 }; return a;",
+                     handle(Smi::FromInt(2), isolate)),
+      std::make_pair("var a; try { throw 1 } catch(e) { a = e + 2 }; return a;",
+                     handle(Smi::FromInt(3), isolate)),
+      std::make_pair("var a; try { throw 1 } catch(e) { a = e + 2 };"
+                     "       try { throw a } catch(e) { a = e + 3 }; return a;",
+                     handle(Smi::FromInt(6), isolate)),
+  };
 
-  Handle<Object> return_val = callable().ToHandleChecked();
-  CHECK_EQ(Smi::cast(*return_val), Smi::FromInt(2));
+  for (size_t i = 0; i < arraysize(catches); i++) {
+    std::string source(InterpreterTester::SourceForBody(catches[i].first));
+    InterpreterTester tester(handles.main_isolate(), source.c_str());
+    auto callable = tester.GetCallable<>();
+
+    Handle<i::Object> return_value = callable().ToHandleChecked();
+    CHECK(return_value->SameValue(*catches[i].second));
+  }
 }
 
 
 TEST(InterpreterTryFinally) {
   HandleAndZoneScope handles;
+  i::Isolate* isolate = handles.main_isolate();
+  i::Factory* factory = isolate->factory();
 
-  // TODO(rmcilroy): modify tests when we have real try finally support.
-  std::string source(InterpreterTester::SourceForBody(
-      "var a = 1; try { a = a + 1; } finally { a = a + 2; }; return a;"));
-  InterpreterTester tester(handles.main_isolate(), source.c_str());
-  auto callable = tester.GetCallable<>();
+  std::pair<const char*, Handle<Object>> finallies[] = {
+      std::make_pair(
+          "var a = 1; try { a = a + 1; } finally { a = a + 2; }; return a;",
+          factory->NewStringFromStaticChars("R4")),
+      std::make_pair(
+          "var a = 1; try { a = 2; return 23; } finally { a = 3 }; return a;",
+          factory->NewStringFromStaticChars("R23")),
+      std::make_pair(
+          "var a = 1; try { a = 2; throw 23; } finally { a = 3 }; return a;",
+          factory->NewStringFromStaticChars("E23")),
+      std::make_pair(
+          "var a = 1; try { a = 2; throw 23; } finally { return a; };",
+          factory->NewStringFromStaticChars("R2")),
+      std::make_pair(
+          "var a = 1; try { a = 2; throw 23; } finally { throw 42; };",
+          factory->NewStringFromStaticChars("E42")),
+      std::make_pair("var a = 1; for (var i = 10; i < 20; i += 5) {"
+                     "  try { a = 2; break; } finally { a = 3; }"
+                     "} return a + i;",
+                     factory->NewStringFromStaticChars("R13")),
+      std::make_pair("var a = 1; for (var i = 10; i < 20; i += 5) {"
+                     "  try { a = 2; continue; } finally { a = 3; }"
+                     "} return a + i;",
+                     factory->NewStringFromStaticChars("R23")),
+      std::make_pair("var a = 1; try { a = 2;"
+                     "  try { a = 3; throw 23; } finally { a = 4; }"
+                     "} catch(e) { a = a + e; } return a;",
+                     factory->NewStringFromStaticChars("R27")),
+  };
 
-  Handle<Object> return_val = callable().ToHandleChecked();
-  CHECK_EQ(Smi::cast(*return_val), Smi::FromInt(4));
+  const char* try_wrapper =
+      "(function() { try { return 'R' + f() } catch(e) { return 'E' + e }})()";
+
+  for (size_t i = 0; i < arraysize(finallies); i++) {
+    std::string source(InterpreterTester::SourceForBody(finallies[i].first));
+    InterpreterTester tester(handles.main_isolate(), source.c_str());
+    tester.GetCallable<>();
+    Handle<Object> wrapped = v8::Utils::OpenHandle(*CompileRun(try_wrapper));
+    CHECK(wrapped->SameValue(*finallies[i].second));
+  }
 }
 
 
@@ -2164,7 +2098,6 @@ TEST(InterpreterThrow) {
   i::Isolate* isolate = handles.main_isolate();
   i::Factory* factory = isolate->factory();
 
-  // TODO(rmcilroy): modify tests when we have real try catch support.
   std::pair<const char*, Handle<Object>> throws[] = {
       std::make_pair("throw undefined;\n",
                      factory->undefined_value()),
@@ -2907,6 +2840,116 @@ TEST(InterpreterForIn) {
 }
 
 
+TEST(InterpreterForOf) {
+  HandleAndZoneScope handles;
+  i::Isolate* isolate = handles.main_isolate();
+  i::Factory* factory = isolate->factory();
+
+  std::pair<const char*, Handle<Object>> for_of[] = {
+      {"function f() {\n"
+       "  var r = 0;\n"
+       "  for (var a of [0,6,7,9]) { r += a; }\n"
+       "  return r;\n"
+       "}",
+       handle(Smi::FromInt(22), isolate)},
+      {"function f() {\n"
+       "  var r = '';\n"
+       "  for (var a of 'foobar') { r = a + r; }\n"
+       "  return r;\n"
+       "}",
+       factory->NewStringFromStaticChars("raboof")},
+      {"function f() {\n"
+       "  var a = [1, 2, 3];\n"
+       "  a.name = 4;\n"
+       "  var r = 0;\n"
+       "  for (var x of a) { r += x; }\n"
+       "  return r;\n"
+       "}",
+       handle(Smi::FromInt(6), isolate)},
+      {"function f() {\n"
+       "  var r = '';\n"
+       "  var data = [1, 2, 3]; \n"
+       "  for (a of data) { delete data[0]; r += a; } return r; }",
+       factory->NewStringFromStaticChars("123")},
+      {"function f() {\n"
+       "  var r = '';\n"
+       "  var data = [1, 2, 3]; \n"
+       "  for (a of data) { delete data[2]; r += a; } return r; }",
+       factory->NewStringFromStaticChars("12undefined")},
+      {"function f() {\n"
+       "  var r = '';\n"
+       "  var data = [1, 2, 3]; \n"
+       "  for (a of data) { delete data; r += a; } return r; }",
+       factory->NewStringFromStaticChars("123")},
+      {"function f() {\n"
+       "  var r = '';\n"
+       "  var input = 'foobar';\n"
+       "  for (var a of input) {\n"
+       "    if (a == 'b') break;\n"
+       "    r += a;\n"
+       "  }\n"
+       "  return r;\n"
+       "}",
+       factory->NewStringFromStaticChars("foo")},
+      {"function f() {\n"
+       "  var r = '';\n"
+       "  var input = 'foobar';\n"
+       "  for (var a of input) {\n"
+       "    if (a == 'b') continue;\n"
+       "    r += a;\n"
+       "  }\n"
+       "  return r;\n"
+       "}",
+       factory->NewStringFromStaticChars("fooar")},
+      {"function f() {\n"
+       "  var r = '';\n"
+       "  var data = [1, 2, 3, 4]; \n"
+       "  for (a of data) { data[2] = 567; r += a; }\n"
+       "  return r;\n"
+       "}",
+       factory->NewStringFromStaticChars("125674")},
+      {"function f() {\n"
+       "  var r = '';\n"
+       "  var data = [1, 2, 3, 4]; \n"
+       "  for (a of data) { data[4] = 567; r += a; }\n"
+       "  return r;\n"
+       "}",
+       factory->NewStringFromStaticChars("1234567")},
+      {"function f() {\n"
+       "  var r = '';\n"
+       "  var data = [1, 2, 3, 4]; \n"
+       "  for (a of data) { data[5] = 567; r += a; }\n"
+       "  return r;\n"
+       "}",
+       factory->NewStringFromStaticChars("1234undefined567")},
+      {"function f() {\n"
+       "  var r = '';\n"
+       "  var obj = new Object();\n"
+       "  obj[Symbol.iterator] = function() { return {\n"
+       "    index: 3,\n"
+       "    data: ['a', 'b', 'c', 'd'],"
+       "    next: function() {"
+       "      return {"
+       "        done: this.index == -1,\n"
+       "        value: this.index < 0 ? undefined : this.data[this.index--]\n"
+       "      }\n"
+       "    }\n"
+       "    }}\n"
+       "  for (a of obj) { r += a }\n"
+       "  return r;\n"
+       "}",
+       factory->NewStringFromStaticChars("dcba")},
+  };
+
+  for (size_t i = 0; i < arraysize(for_of); i++) {
+    InterpreterTester tester(handles.main_isolate(), for_of[i].first);
+    auto callable = tester.GetCallable<>();
+    Handle<Object> return_val = callable().ToHandleChecked();
+    CHECK(return_val->SameValue(*for_of[i].second));
+  }
+}
+
+
 TEST(InterpreterSwitch) {
   HandleAndZoneScope handles;
   i::Isolate* isolate = handles.main_isolate();
@@ -3559,6 +3602,81 @@ TEST(InterpreterEvalGlobal) {
 
     Handle<i::Object> return_value = callable().ToHandleChecked();
     CHECK(return_value->SameValue(*eval_global[i].second));
+  }
+}
+
+
+TEST(InterpreterEvalVariableDecl) {
+  HandleAndZoneScope handles;
+  i::Isolate* isolate = handles.main_isolate();
+  i::Factory* factory = isolate->factory();
+
+  std::pair<const char*, Handle<Object>> eval_global[] = {
+      {"function f() { eval('var x = 10; x++;'); return x; }",
+       handle(Smi::FromInt(11), isolate)},
+      {"function f() { var x = 20; eval('var x = 10; x++;'); return x; }",
+       handle(Smi::FromInt(11), isolate)},
+      {"function f() {"
+       " var x = 20;"
+       " eval('\"use strict\"; var x = 10; x++;');"
+       " return x; }",
+       handle(Smi::FromInt(20), isolate)},
+      {"function f() {"
+       " var y = 30;"
+       " eval('var x = {1:20}; x[2]=y;');"
+       " return x[2]; }",
+       handle(Smi::FromInt(30), isolate)},
+      {"function f() {"
+       " eval('var x = {name:\"test\"};');"
+       " return x.name; }",
+       factory->NewStringFromStaticChars("test")},
+      {"function f() {"
+       "  eval('var x = [{name:\"test\"}, {type:\"cc\"}];');"
+       "  return x[1].type+x[0].name; }",
+       factory->NewStringFromStaticChars("cctest")},
+      {"function f() {\n"
+       " var x = 3;\n"
+       " var get_eval_x;\n"
+       " eval('\"use strict\"; "
+       "      var x = 20; "
+       "      get_eval_x = function func() {return x;};');\n"
+       " return get_eval_x() + x;\n"
+       "}",
+       handle(Smi::FromInt(23), isolate)},
+      // TODO(mythria): Add tests with const declarations.
+  };
+
+  for (size_t i = 0; i < arraysize(eval_global); i++) {
+    InterpreterTester tester(handles.main_isolate(), eval_global[i].first, "*");
+    auto callable = tester.GetCallable<>();
+
+    Handle<i::Object> return_value = callable().ToHandleChecked();
+    CHECK(return_value->SameValue(*eval_global[i].second));
+  }
+}
+
+
+TEST(InterpreterEvalFunctionDecl) {
+  HandleAndZoneScope handles;
+  i::Isolate* isolate = handles.main_isolate();
+
+  std::pair<const char*, Handle<Object>> eval_func_decl[] = {
+      {"function f() {\n"
+       " var x = 3;\n"
+       " eval('var x = 20;"
+       "       function get_x() {return x;};');\n"
+       " return get_x() + x;\n"
+       "}",
+       handle(Smi::FromInt(40), isolate)},
+  };
+
+  for (size_t i = 0; i < arraysize(eval_func_decl); i++) {
+    InterpreterTester tester(handles.main_isolate(), eval_func_decl[i].first,
+                             "*");
+    auto callable = tester.GetCallable<>();
+
+    Handle<i::Object> return_value = callable().ToHandleChecked();
+    CHECK(return_value->SameValue(*eval_func_decl[i].second));
   }
 }
 
