@@ -226,6 +226,7 @@
       'target_defaults': {
         'cflags': [ '-qdebug=nohook','-g','-Wc,expo','-q64','-qnortti',
                     '-qlanglvl=extended',
+                    '-qenum=4',
                     '-D_ISOC99_SOURCE','-D_UNIX03_SOURCE',
                     '-D_XOPEN_SOURCE_EXTENDED=1','-D_OPEN_SYS_SOCK_IPV6',
                     '-D_UNIX03_THREADS',
