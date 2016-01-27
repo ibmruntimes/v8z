@@ -655,6 +655,7 @@ void MacroAssembler::ConvertIntToFloat(const DoubleRegister dst,
                                        const Register src,
                                        const Register int_scratch) {
   cefbr(dst, src);
+  ldebr(dst, dst);
 }
 
 
