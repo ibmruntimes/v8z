@@ -64,7 +64,7 @@
 //            with the address of this buffer passed as a hidden
 //            argument in r2. (Does NOT return in Regs)
 // For x86 linux, ObjectPair is returned in registers.
-#if !(V8_HOST_ARCH_S390 && V8_TARGET_ARCH_S390X)
+#if V8_TARGET_ARCH_S390X
 #define ABI_RETURNS_OBJECT_PAIRS_IN_REGS 0
 #else
 #define ABI_RETURNS_OBJECT_PAIRS_IN_REGS 1
