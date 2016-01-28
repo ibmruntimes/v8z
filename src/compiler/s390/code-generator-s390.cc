@@ -869,11 +869,15 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       }
       break;
     case kS390_RotLeftAndClearRight64:
-//     __ rldicr(i.OutputRegister(), i.InputRegister(0), i.InputInt32(1),
-//               63 - i.InputInt32(2), i.OutputRCBit());  == sldi
-      UNIMPLEMENTED();  // Confirm this sllg is correct
-//      __ sllg(i.OutputRegister(), i.InputRegister(0), i.InputInt32(1),
-//              63 - i.InputInt32(2));
+      if (CpuFeatures::IsSupported(GENERAL_INSTR_EXT)) {
+        int shiftAmount = i.InputInt32(1);
+        int endBit = 63 - i.InputInt32(2);
+        int startBit = 0;
+        __ risbg(i.OutputRegister(), i.InputRegister(0), Operand(startBit),
+            Operand(endBit), Operand(shiftAmount), true);
+      } else {
+        UNIMPLEMENTED();
+      }
       break;
 #endif
     case kS390_Add:
