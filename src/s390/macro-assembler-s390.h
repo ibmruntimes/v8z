@@ -658,16 +658,8 @@ class MacroAssembler : public Assembler {
 
   void MovIntToFloat(DoubleRegister dst, Register src);
   void MovFloatToInt(Register dst, DoubleRegister src);
-  void MovDoubleToInt64(
-#if !V8_TARGET_ARCH_S390X
-      Register dst_hi,
-#endif
-      Register dst, DoubleRegister src);
-  void MovInt64ToDouble(
-#if !V8_TARGET_ARCH_S390X
-      Register dst_hi,
-#endif
-      DoubleRegister dst, Register src);
+  void MovDoubleToInt64(Register dst, DoubleRegister src);
+  void MovInt64ToDouble(DoubleRegister dst, Register src);
   // Converts the double_input to an integer.  Note that, upon return,
   // the contents of double_dst will also hold the fixed point representation.
   void ConvertDoubleToInt64(const DoubleRegister double_input,

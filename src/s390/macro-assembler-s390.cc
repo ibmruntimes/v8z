@@ -669,9 +669,8 @@ void MacroAssembler::ConvertInt64ToDouble(Register src,
 
 void MacroAssembler::ConvertUnsignedInt64ToFloat(Register src,
                                                  DoubleRegister double_dst) {
-  UNIMPLEMENTED();
-  MovInt64ToDouble(double_dst, src);
-  // fcfidus(double_dst, double_dst);
+  celgbr(Condition(0), Condition(0), double_dst, src);
+  ldebr(double_dst, double_dst);
 }
 
 
@@ -684,9 +683,8 @@ void MacroAssembler::ConvertUnsignedInt64ToDouble(Register src,
 
 void MacroAssembler::ConvertInt64ToFloat(Register src,
                                          DoubleRegister double_dst) {
-  UNIMPLEMENTED();
-  MovInt64ToDouble(double_dst, src);
-  // fcfids(double_dst, double_dst);
+  cegbr(double_dst, src);
+  ldebr(double_dst, double_dst);
 }
 #endif
 
@@ -742,20 +740,14 @@ void MacroAssembler::ConvertDoubleToUnsignedInt64(
 #endif
 
 void MacroAssembler::MovDoubleToInt64(
-#if !V8_TARGET_ARCH_S390X
-    Register dst_hi,
-#endif
     Register dst, DoubleRegister src) {
-        UNIMPLEMENTED();  // Not implemented for now
+  lgdr(dst, src);
 }
 
 
 void MacroAssembler::MovInt64ToDouble(
-#if !V8_TARGET_ARCH_S390X
-    Register dst_hi,
-#endif
     DoubleRegister dst, Register src) {
-        UNIMPLEMENTED();  // Not implemented for now
+  ldgr(dst, src);
 }
 
 
