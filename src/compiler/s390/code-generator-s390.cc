@@ -1158,7 +1158,6 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ lgfr(i.OutputRegister(), i.InputRegister(0));
       break;
     case kS390_Int64ToFloat32:
-      UNIMPLEMENTED();
       __ ConvertInt64ToFloat(i.InputRegister(0), i.OutputDoubleRegister());
       // DCHECK_EQ(LeaveRC, i.OutputRCBit());
       break;
@@ -1167,7 +1166,6 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       // DCHECK_EQ(LeaveRC, i.OutputRCBit());
       break;
     case kS390_Uint64ToFloat32:
-      UNIMPLEMENTED();
       __ ConvertUnsignedInt64ToFloat(i.InputRegister(0),
                                      i.OutputDoubleRegister());
       // DCHECK_EQ(LeaveRC, i.OutputRCBit());
