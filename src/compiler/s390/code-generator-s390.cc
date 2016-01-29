@@ -1284,9 +1284,21 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     }
     case kS390_Float32ToInt32:
-    case kS390_Float32ToUint32:
       UNIMPLEMENTED();
       break;
+    case kS390_Float32ToUint32: {
+      bool check_conversion = (i.OutputCount() > 1);
+      __ ConvertFloat32ToUnsignedInt32(i.InputDoubleRegister(0),
+                                      i.OutputRegister(0), kScratchDoubleReg);
+      if (check_conversion) {
+        Label conversion_done;
+        __ LoadImmP(i.OutputRegister(1), Operand::Zero());
+        __ b(Condition(1), &conversion_done);  // special case
+        __ LoadImmP(i.OutputRegister(1), Operand(1));
+        __ bind(&conversion_done);
+      }
+      break;
+    }
 #if V8_TARGET_ARCH_S390X
     case kS390_Float32ToUint64: {
       bool check_conversion = (i.OutputCount() > 1);
@@ -1306,10 +1318,6 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
 #if V8_TARGET_ARCH_S390X
       bool check_conversion =
           (opcode == kS390_Float32ToInt64 && i.OutputCount() > 1);
-      if (check_conversion) {
-        UNIMPLEMENTED();
-        // __ mtfsb0(VXCVI);  // clear FPSCR:VXCVI bit
-      }
 #endif
       __ ConvertFloat32ToInt64(i.InputDoubleRegister(0),
 #if !V8_TARGET_ARCH_S390X
@@ -1318,13 +1326,11 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
                               i.OutputRegister(0), kScratchDoubleReg);
 #if V8_TARGET_ARCH_S390X
       if (check_conversion) {
-        UNIMPLEMENTED();
-        // Set 2nd output to zero if conversion fails.
-        // CRBit crbit = static_cast<CRBit>(VXCVI % CRWIDTH);
-        // __ mcrfs(cr7, VXCVI);// extract FPSCR field containing VXCVI into cr7
-        // __ LoadImmP(i.OutputRegister(1), Operand(1));
-        // __ isel(i.OutputRegister(1), r0, i.OutputRegister(1),
-        //         v8::internal::Assembler::encode_crbit(cr7, crbit));
+        Label conversion_done;
+        __ LoadImmP(i.OutputRegister(1), Operand::Zero());
+        __ b(Condition(1), &conversion_done);  // special case
+        __ LoadImmP(i.OutputRegister(1), Operand(1));
+        __ bind(&conversion_done);
       }
 #endif
       break;

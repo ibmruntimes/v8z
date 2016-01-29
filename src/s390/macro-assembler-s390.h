@@ -678,6 +678,10 @@ class MacroAssembler : public Assembler {
                             const Register dst, const DoubleRegister double_dst,
                             FPRoundingMode rounding_mode = kRoundToZero);
 
+  void ConvertFloat32ToUnsignedInt32(
+      const DoubleRegister double_input, const Register dst,
+      const DoubleRegister double_dst,
+      FPRoundingMode rounding_mode = kRoundToZero);
 #if V8_TARGET_ARCH_S390X
   // Converts the double_input to an unsigned integer.  Note that, upon return,
   // the contents of double_dst will also hold the fixed point representation.
