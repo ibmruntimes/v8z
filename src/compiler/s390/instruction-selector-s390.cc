@@ -980,7 +980,7 @@ void InstructionSelector::VisitTryTruncateFloat64ToInt64(Node* node) {
 
 
 void InstructionSelector::VisitTryTruncateFloat32ToUint64(Node* node) {
-  VisitTryTruncateDouble(this, kS390_DoubleToUint64, node);
+  VisitTryTruncateDouble(this, kS390_Float32ToUint64, node);
 }
 
 

@@ -685,6 +685,10 @@ class MacroAssembler : public Assembler {
       const DoubleRegister double_input, const Register dst,
       const DoubleRegister double_dst,
       FPRoundingMode rounding_mode = kRoundToZero);
+  void ConvertFloat32ToUnsignedInt64(
+      const DoubleRegister double_input, const Register dst,
+      const DoubleRegister double_dst,
+      FPRoundingMode rounding_mode = kRoundToZero);
 #endif
 
   // Generates function and stub prologue code.

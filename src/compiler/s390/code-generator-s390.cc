@@ -1285,6 +1285,23 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     }
     case kS390_Float32ToInt32:
     case kS390_Float32ToUint32:
+      UNIMPLEMENTED();
+      break;
+#if V8_TARGET_ARCH_S390X
+    case kS390_Float32ToUint64: {
+      bool check_conversion = (i.OutputCount() > 1);
+      __ ConvertFloat32ToUnsignedInt64(i.InputDoubleRegister(0),
+                                      i.OutputRegister(0), kScratchDoubleReg);
+      if (check_conversion) {
+        Label conversion_done;
+        __ LoadImmP(i.OutputRegister(1), Operand::Zero());
+        __ b(Condition(1), &conversion_done);  // special case
+        __ LoadImmP(i.OutputRegister(1), Operand(1));
+        __ bind(&conversion_done);
+      }
+      break;
+    }
+#endif
     case kS390_Float32ToInt64: {
 #if V8_TARGET_ARCH_S390X
       bool check_conversion =

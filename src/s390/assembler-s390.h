@@ -1182,6 +1182,8 @@ SS2_FORM(zap);
               Register fixReg, DoubleRegister fltReg);
   void clgdbr(Condition m3, Condition m4,
               Register fixReg, DoubleRegister fltReg);
+  void clgebr(Condition m3, Condition m4,
+              Register fixReg, DoubleRegister fltReg);
 
   // float type conversion
   void cfebr(Register fixReg, DoubleRegister fltReg);
