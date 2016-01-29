@@ -1131,7 +1131,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
 #if V8_TARGET_ARCH_S390X
     case kS390_Popcnt64:
-      UNIMPLEMENTED();
+      __ Popcnt64(i.OutputRegister(), i.InputRegister(0));
       // __ popcntd(i.OutputRegister(), i.InputRegister(0));
       // DCHECK_EQ(LeaveRC, i.OutputRCBit());
       break;
