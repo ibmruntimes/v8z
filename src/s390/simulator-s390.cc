@@ -3008,38 +3008,59 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
 
   switch (op) {
     case ADBR:
+    case AEBR:
     case SDBR:
+    case SEBR:
     case MDBR:
+    case MEEBR:
     case MADBR:
     case DDBR:
+    case DEBR:
     case CDBR:
+    case CEBR:
     case CDFBR:
     case CDGBR:
     case CEGBR:
     case CFDBR:
     case CGDBR:
     case SQDBR:
+    case SQEBR:
     case CFEBR:
     case CEFBR:
     case LCDBR:
-    case LPDBR: {
+    case LPDBR:
+    case LPEBR: {
       RREInstruction* rreInstr = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rreInstr->R1Value();
       int r2 = rreInstr->R2Value();
       double r1_val = get_double_from_d_register(r1);
       double r2_val = get_double_from_d_register(r2);
+      float fr1_val = get_float_from_d_register(r1);
+      float fr2_val = get_float_from_d_register(r2);
         if (op == ADBR) {
           r1_val += r2_val;
           set_d_register_from_double(r1, r1_val);
           SetS390ConditionCode<double>(r1_val, 0);
+        } else if (op == AEBR) {
+          fr1_val += fr2_val;
+          set_d_register_from_float(r1, fr1_val);
+          SetS390ConditionCode<float>(fr1_val, 0);
         } else if (op == SDBR) {
           r1_val -= r2_val;
           set_d_register_from_double(r1, r1_val);
           SetS390ConditionCode<double>(r1_val, 0);
+        } else if (op == SEBR) {
+          fr1_val -= fr2_val;
+          set_d_register_from_float(r1, fr1_val);
+          SetS390ConditionCode<float>(fr1_val, 0);
         } else if (op == MDBR) {
           r1_val *= r2_val;
           set_d_register_from_double(r1, r1_val);
           SetS390ConditionCode<double>(r1_val, 0);
+        } else if (op == MEEBR) {
+          fr1_val *= fr2_val;
+          set_d_register_from_float(r1, fr1_val);
+          SetS390ConditionCode<float>(fr1_val, 0);
         } else if (op == MADBR) {
           RRDInstruction* rrdInstr = reinterpret_cast<RRDInstruction*>(instr);
           int r1 = rrdInstr->R1Value();
@@ -3055,25 +3076,39 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
           r1_val /= r2_val;
           set_d_register_from_double(r1, r1_val);
           SetS390ConditionCode<double>(r1_val, 0);
+        } else if (op == DEBR) {
+          fr1_val /= fr2_val;
+          set_d_register_from_float(r1, fr1_val);
+          SetS390ConditionCode<float>(fr1_val, 0);
         } else if (op == CDBR) {
           if (isNaN(r1_val) || isNaN(r2_val)) {
             condition_reg_ = CC_OF;
           } else {
             SetS390ConditionCode<double>(r1_val, r2_val);
           }
+        } else if (op == CEBR) {
+          if (isNaN(r1_val) || isNaN(r2_val)) {
+            condition_reg_ = CC_OF;
+          } else {
+            SetS390ConditionCode<float>(r1_val, r2_val);
+          }
         } else if (op == CDGBR) {
           int64_t r2_val = get_register(r2);
           double r1_val = static_cast<double>(r2_val);
           set_d_register_from_double(r1, r1_val);
+        } else if (op == CEGBR) {
+          int64_t fr2_val = get_register(r2);
+          float fr1_val = static_cast<float>(fr2_val);
+          set_d_register_from_float(r1, fr1_val);
         } else if (op == CDFBR) {
           // TODO(ALANLI): actually we need to set rounding mode
           int32_t r2_val = get_low_register<int32_t>(r2);
           double r1_val = static_cast<double>(r2_val);
           set_d_register_from_double(r1, r1_val);
         } else if (op == CEFBR) {
-          int32_t r2_val = get_low_register<int32_t>(r2);
-          float r1_val = static_cast<float>(r2_val);
-          set_d_register_from_float(r1, r1_val);
+          int32_t fr2_val = get_low_register<int32_t>(r2);
+          float fr1_val = static_cast<float>(fr2_val);
+          set_d_register_from_float(r1, fr1_val);
         } else if (op == CFDBR) {
           int mask_val = rreInstr->M3Value();
           int32_t r1_val = 0;
@@ -3215,6 +3250,9 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
         } else if (op == SQDBR) {
           r1_val = std::sqrt(r2_val);
           set_d_register_from_double(r1, r1_val);
+        } else if (op == SQEBR) {
+          r1_val = std::sqrt(r2_val);
+          set_d_register_from_float(r1, r1_val);
         } else if (op == CFEBR) {
           UNIMPLEMENTED();
         } else if (op == LCDBR) {
@@ -3239,6 +3277,16 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
           } else {
             condition_reg_ = CC_GT;
           }
+        } else if (op == LPEBR) {
+          fr1_val = std::fabs(fr2_val);
+          set_d_register_from_float(r1, fr1_val);
+          if (fr2_val != fr2_val) {  // input is NaN
+            condition_reg_ = CC_OF;
+          } else if (fr2_val == 0) {
+            condition_reg_ = CC_EQ;
+          } else {
+            condition_reg_ = CC_GT;
+          }
         } else {
           UNREACHABLE();
         }
@@ -3246,6 +3294,7 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
     }
     case CDLFBR:
     case CDLGBR:
+    case CELGBR:
     case CLFDBR:
     case CLGDBR: {
       // TODO(AlanLi): create different behavior for different masks.
@@ -3261,6 +3310,10 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
         uint64_t r2_val = get_low_register<uint64_t>(r2);
         double r1_val = static_cast<double>(r2_val);
         set_d_register_from_double(r1, r1_val);
+      } else if (op == CELGBR) {
+        uint64_t r2_val = get_low_register<uint64_t>(r2);
+        float r1_val = static_cast<float>(r2_val);
+        set_d_register_from_float(r1, r1_val);
       } else if (op == CLFDBR) {
         double r2_val = get_double_from_d_register(r2);
         uint32_t r1_val = static_cast<uint32_t>(r1);
@@ -3361,6 +3414,32 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
           break;
         case Assembler::FIDBRA_ROUND_TOWARD_NEG_INF:
           set_d_register_from_double(r1, std::floor(r2_val));
+          break;
+        default:
+          UNIMPLEMENTED();
+          break;
+      }
+      break;
+    }
+    case FIEBRA: {
+      RRFInstruction* rrfInst = reinterpret_cast<RRFInstruction*>(instr);
+      int r1 = rrfInst->R1Value();
+      int r2 = rrfInst->R2Value();
+      int m3 = rrfInst->M3Value();
+      float r2_val = get_float_from_d_register(r2);
+      DCHECK(rrfInst->M4Value() == 0);
+      switch (m3) {
+        case Assembler::FIDBRA_ROUND_TO_NEAREST_AWAY_FROM_0:
+          set_d_register_from_float(r1, std::round(r2_val));
+          break;
+        case Assembler::FIDBRA_ROUND_TOWARD_0:
+          set_d_register_from_float(r1, std::trunc(r2_val));
+          break;
+        case Assembler::FIDBRA_ROUND_TOWARD_POS_INF:
+          set_d_register_from_float(r1, std::ceil(r2_val));
+          break;
+        case Assembler::FIDBRA_ROUND_TOWARD_NEG_INF:
+          set_d_register_from_float(r1, std::floor(r2_val));
           break;
         default:
           UNIMPLEMENTED();
