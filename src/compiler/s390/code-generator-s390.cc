@@ -518,8 +518,7 @@ Condition FlagsConditionToCondition(FlagsCondition condition, ArchOpcode op) {
     }                                                       \
     __ bge(&done);                                          \
     DoubleRegister value = i.InputDoubleRegister(3);        \
-    __ StoreShortF(value, operand                 \
-            );                             \
+    __ StoreShortF(value, operand);                         \
     __ bind(&done);                                         \
   } while (0)
 

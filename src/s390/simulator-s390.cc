@@ -15,10 +15,10 @@
 #include "src/base/bits.h"
 #include "src/codegen.h"
 #include "src/disasm.h"
+#include "src/runtime/runtime-utils.h"
 #include "src/s390/constants-s390.h"
 #include "src/s390/frames-s390.h"
 #include "src/s390/simulator-s390.h"
-#include "src/runtime/runtime-utils.h"
 #if defined(USE_SIMULATOR)
 
 // Only build the simulator if not compiling for real s390 hardware.
@@ -1550,7 +1550,8 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
 //         DCHECK(redirection->type() == ExternalReference::BUILTIN_CALL);
 //         SimulatorRuntimeCall target =
 //             reinterpret_cast<SimulatorRuntimeCall>(external);
-//         int64_t result = target(arg[0], arg[1], arg[2], arg[3], arg[4], arg[5]);
+//         int64_t result = target(arg[0], arg[1], arg[2], arg[3], arg[4],
+//                                 arg[5]);
 //         int32_t lo_res = static_cast<int32_t>(result);
 //         int32_t hi_res = static_cast<int32_t>(result >> 32);
 // #if !V8_TARGET_LITTLE_ENDIAN

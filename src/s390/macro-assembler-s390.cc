@@ -690,11 +690,11 @@ void MacroAssembler::ConvertInt64ToFloat(Register src,
 
 void MacroAssembler::ConvertFloat32ToInt64(const DoubleRegister double_input,
 #if !V8_TARGET_ARCH_S390X
-					  const Register dst_hi,
+                                           const Register dst_hi,
 #endif
-					  const Register dst,
-					  const DoubleRegister double_dst,
-					  FPRoundingMode rounding_mode) {
+                                           const Register dst,
+                                           const DoubleRegister double_dst,
+                                           FPRoundingMode rounding_mode) {
   Condition m = Condition(0);
   switch (rounding_mode) {
     case kRoundToZero:
