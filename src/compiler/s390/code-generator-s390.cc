@@ -1283,9 +1283,19 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
 #endif
       break;
     }
-    case kS390_Float32ToInt32:
-      UNIMPLEMENTED();
+    case kS390_Float32ToInt32: {
+      bool check_conversion = (i.OutputCount() > 1);
+      __ ConvertFloat32ToInt32(i.InputDoubleRegister(0),
+                                      i.OutputRegister(0), kScratchDoubleReg);
+      if (check_conversion) {
+        Label conversion_done;
+        __ LoadImmP(i.OutputRegister(1), Operand::Zero());
+        __ b(Condition(1), &conversion_done);  // special case
+        __ LoadImmP(i.OutputRegister(1), Operand(1));
+        __ bind(&conversion_done);
+      }
       break;
+    }
     case kS390_Float32ToUint32: {
       bool check_conversion = (i.OutputCount() > 1);
       __ ConvertFloat32ToUnsignedInt32(i.InputDoubleRegister(0),

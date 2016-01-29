@@ -678,6 +678,10 @@ class MacroAssembler : public Assembler {
                             const Register dst, const DoubleRegister double_dst,
                             FPRoundingMode rounding_mode = kRoundToZero);
 
+  void ConvertFloat32ToInt32(
+      const DoubleRegister double_input, const Register dst,
+      const DoubleRegister double_dst,
+      FPRoundingMode rounding_mode = kRoundToZero);
   void ConvertFloat32ToUnsignedInt32(
       const DoubleRegister double_input, const Register dst,
       const DoubleRegister double_dst,

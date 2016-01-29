@@ -870,7 +870,6 @@ RRE_FORM(cdr);
 RXE_FORM(cdb);
 RXE_FORM(ceb);
 RRE_FORM(cefbr);
-RRF2_FORM(cfebr);
 RIL1_FORM(cfi);
 RXY_FORM(cg);
 RIL1_FORM(cgfi);
@@ -1188,7 +1187,7 @@ SS2_FORM(zap);
               Register fixReg, DoubleRegister fltReg);
 
   // float type conversion
-  void cfebr(Register fixReg, DoubleRegister fltReg);
+  void cfebr(Condition m3, Register fixReg, DoubleRegister fltReg);
   void cefbr(DoubleRegister fltReg, Register fixReg);
   void cebr(DoubleRegister r1, DoubleRegister r2);
   void cdb(DoubleRegister r1, const MemOperand& opnd);

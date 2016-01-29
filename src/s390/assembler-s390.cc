@@ -1721,7 +1721,6 @@ RX_FORM_EMIT(bc, BC)
 RR_FORM_EMIT(bctr, BCTR)
 RXE_FORM_EMIT(ceb, CEB)
 RRE_FORM_EMIT(cefbr, CEFBR)
-RRF2_FORM_EMIT(cfebr, CFEBR)
 RIL1_FORM_EMIT(cgfi, CGFI)
 RX_FORM_EMIT(d, D)
 RXY_FORM_EMIT(dl, DL)
@@ -3350,8 +3349,8 @@ void Assembler::cefbr(DoubleRegister r1, Register r2) {
 
 
 // Convert to Fixed point (32<-S)
-void Assembler::cfebr(Register r1, DoubleRegister r2) {
-  rre_form(CFDBR, r1, Register::from_code(r2.code()));
+void Assembler::cfebr(Condition m3, Register r1, DoubleRegister r2) {
+  rrfe_form(CFEBR, m3, Condition(0), r1, Register::from_code(r2.code()));
 }
 
 

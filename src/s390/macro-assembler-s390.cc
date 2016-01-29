@@ -754,6 +754,33 @@ void MacroAssembler::ConvertDoubleToInt64(const DoubleRegister double_input,
 }
 
 
+void MacroAssembler::ConvertFloat32ToInt32(
+    const DoubleRegister double_input, const Register dst,
+    const DoubleRegister double_dst, FPRoundingMode rounding_mode) {
+
+  Condition m = Condition(0);
+  switch (rounding_mode) {
+    case kRoundToZero:
+      m = Condition(5);
+      break;
+    case kRoundToNearest:
+      UNIMPLEMENTED();
+      break;
+    case kRoundToPlusInf:
+      m = Condition(6);
+      break;
+    case kRoundToMinusInf:
+      m = Condition(7);
+      break;
+    default:
+      UNIMPLEMENTED();
+      break;
+  }
+  cfebr(m, dst, double_input);
+  ldgr(double_dst, dst);
+}
+
+
 void MacroAssembler::ConvertFloat32ToUnsignedInt32(
     const DoubleRegister double_input, const Register dst,
     const DoubleRegister double_dst, FPRoundingMode rounding_mode) {
