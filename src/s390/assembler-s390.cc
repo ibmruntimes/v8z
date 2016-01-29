@@ -3278,7 +3278,8 @@ void Assembler::cdfbr(DoubleRegister r1, Register r2) {
 // Convert to Fixed Logical (64<-L)
 void Assembler::clgdbr(Condition m3, Condition m4,
                        Register r1, DoubleRegister r2) {
-  rrfe_form(CLGDBR, Condition(0), Condition(0),
+  DCHECK_EQ(m4, Condition(0));
+  rrfe_form(CLGDBR, m3, m4,
             r1, Register::from_code(r2.code()));
 }
 
@@ -3286,14 +3287,28 @@ void Assembler::clgdbr(Condition m3, Condition m4,
 // Convert to Fixed Logical (32<-L)
 void Assembler::clfdbr(Condition m3, Condition m4,
                        Register r1, DoubleRegister r2) {
+  DCHECK_EQ(m3, Condition(0));
+  DCHECK_EQ(m4, Condition(0));
   rrfe_form(CLFDBR, Condition(0), Condition(0),
             r1, Register::from_code(r2.code()));
 }
 
 
 // Convert from Fixed Logical (L<-64)
+void Assembler::celgbr(Condition m3, Condition m4,
+                       DoubleRegister r1, Register r2) {
+  DCHECK_EQ(m3, Condition(0));
+  DCHECK_EQ(m4, Condition(0));
+  rrfe_form(CELGBR, Condition(0), Condition(0),
+            Register::from_code(r1.code()), r2);
+}
+
+
+// Convert from Fixed Logical (L<-64)
 void Assembler::cdlgbr(Condition m3, Condition m4,
                        DoubleRegister r1, Register r2) {
+  DCHECK_EQ(m3, Condition(0));
+  DCHECK_EQ(m4, Condition(0));
   rrfe_form(CDLGBR, Condition(0), Condition(0),
             Register::from_code(r1.code()), r2);
 }
@@ -3302,6 +3317,8 @@ void Assembler::cdlgbr(Condition m3, Condition m4,
 // Convert from Fixed Logical (L<-32)
 void Assembler::cdlfbr(Condition m3, Condition m4,
                        DoubleRegister r1, Register r2) {
+  DCHECK_EQ(m3, Condition(0));
+  DCHECK_EQ(m4, Condition(0));
   rrfe_form(CDLFBR, Condition(0), Condition(0),
             Register::from_code(r1.code()), r2);
 }

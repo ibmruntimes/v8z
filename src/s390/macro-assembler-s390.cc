@@ -758,16 +758,27 @@ void MacroAssembler::ConvertDoubleToInt64(const DoubleRegister double_input,
 void MacroAssembler::ConvertDoubleToUnsignedInt64(
     const DoubleRegister double_input, const Register dst,
     const DoubleRegister double_dst, FPRoundingMode rounding_mode) {
-  UNIMPLEMENTED();
-  // if (rounding_mode == kRoundToZero) {
-  //   fctiduz(double_dst, double_input);
-  // } else {
-  //   SetRoundingMode(rounding_mode);
-  //   fctidu(double_dst, double_input);
-  //   ResetRoundingMode();
-  // }
-
-  // MovDoubleToInt64(dst, double_dst);
+  
+  Condition m = Condition(0);
+  switch (rounding_mode) {
+    case kRoundToZero:
+      m = Condition(5);
+      break;
+    case kRoundToNearest:
+      UNIMPLEMENTED();
+      break;
+    case kRoundToPlusInf:
+      m = Condition(6);
+      break;
+    case kRoundToMinusInf:
+      m = Condition(7);
+      break;
+    default:
+      UNIMPLEMENTED();
+      break;
+  }
+  clgdbr(m, Condition(0), dst, double_input);
+  ldgr(double_dst, dst);
 }
 #endif
 
