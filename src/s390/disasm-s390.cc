@@ -691,6 +691,8 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case ALRK: Format(instr, "alrk\t'r5,'r6,'r3"); break;
       case ALGRK: Format(instr, "algrk\t'r5,'r6,'r3"); break;
       case SLGR: Format(instr, "slgr\t'r5,'r6"); break;
+      case DLR: Format(instr, "dlr\t'r1,'r2"); break;
+      case DLGR: Format(instr, "dlgr\t'r5,'r6"); break;
       case SLRK: Format(instr, "slrk\t'r5,'r6,'r3"); break;
       case SLGRK: Format(instr, "slgrk\t'r5,'r6,'r3"); break;
       case LHR: Format(instr, "lhr\t'r5,'r6"); break;
@@ -751,6 +753,7 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       case LCDBR: Format(instr, "lcdbr\t'f5,'f6"); break;
       case STH:   Format(instr, "sth\t'r1,'d1('r2d,'r3)"); break;
       case SRDA: Format(instr, "srda\t'r1,'d1"); break;
+      case SRDL: Format(instr, "srdl\t'r1,'d1"); break;
       case MADBR: Format(instr, "madbr\t'f3,'f5,'f6"); break;
       case MSDBR: Format(instr, "msdbr\t'f3,'f5,'f6"); break;
       case FLOGR: Format(instr, "flogr\t'r5,'r6"); break;

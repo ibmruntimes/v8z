@@ -890,6 +890,7 @@ RXE_FORM(ddb);
 RRE_FORM(ddbr);
 RXY_FORM(dl);
 RRE_FORM(dlr);
+RRE_FORM(dlgr);
 SS2_FORM(dp);
 RR_FORM(dr);
 RRE_FORM(dsgr);
