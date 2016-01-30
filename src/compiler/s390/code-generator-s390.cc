@@ -1106,23 +1106,18 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     case kS390_NegDouble:
       ASSEMBLE_FLOAT_UNOP(lcdbr);
       break;
-    case kS390_Cntlz32:
-      {
-       Label done;
+    case kS390_Cntlz32: {
        __ llgfr(i.OutputRegister(), i.InputRegister(0));
        __ flogr(r0, i.OutputRegister());
        __ LoadRR(i.OutputRegister(), r0);
-       __ CmpP(r0, Operand::Zero());
-       __ beq(&done, Label::kNear);
        __ SubP(i.OutputRegister(), Operand(32));
-       __ bind(&done);
       }
       break;
 #if V8_TARGET_ARCH_S390X
-    case kS390_Cntlz64:
-      UNIMPLEMENTED();
-      // __ cntlzd_(i.OutputRegister(), i.InputRegister(0));
-      // DCHECK_EQ(LeaveRC, i.OutputRCBit());
+    case kS390_Cntlz64: {
+       __ flogr(r0, i.InputRegister(0));
+       __ LoadRR(i.OutputRegister(), r0);
+      }
       break;
 #endif
     case kS390_Popcnt32:
