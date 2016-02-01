@@ -4,8 +4,8 @@
 
 // This file is an internal atomic implementation, use atomicops.h instead.
 
-#ifndef V8_ATOMICOPS_INTERNALS_S390_H_
-#define V8_ATOMICOPS_INTERNALS_S390_H_
+#ifndef V8_BASE_ATOMICOPS_INTERNALS_S390_H_
+#define V8_BASE_ATOMICOPS_INTERNALS_S390_H_
 
 namespace v8 {
 namespace base {
@@ -13,7 +13,7 @@ namespace base {
 inline Atomic32 NoBarrier_CompareAndSwap(volatile Atomic32* ptr,
                                          Atomic32 old_value,
                                          Atomic32 new_value) {
-  return(__sync_val_compare_and_swap( ptr, old_value, new_value));
+  return (__sync_val_compare_and_swap(ptr, old_value, new_value));
 }
 
 inline Atomic32 NoBarrier_AtomicExchange(volatile Atomic32* ptr,
@@ -36,14 +36,12 @@ inline Atomic32 Barrier_AtomicIncrement(volatile Atomic32* ptr,
 }
 
 inline Atomic32 Acquire_CompareAndSwap(volatile Atomic32* ptr,
-                                       Atomic32 old_value,
-                                       Atomic32 new_value) {
+                                       Atomic32 old_value, Atomic32 new_value) {
   return NoBarrier_CompareAndSwap(ptr, old_value, new_value);
 }
 
 inline Atomic32 Release_CompareAndSwap(volatile Atomic32* ptr,
-                                       Atomic32 old_value,
-                                       Atomic32 new_value) {
+                                       Atomic32 old_value, Atomic32 new_value) {
   return NoBarrier_CompareAndSwap(ptr, old_value, new_value);
 }
 
@@ -55,9 +53,7 @@ inline void NoBarrier_Store(volatile Atomic32* ptr, Atomic32 value) {
   *ptr = value;
 }
 
-inline void MemoryBarrier() {
-  __sync_synchronize();
-}
+inline void MemoryBarrier() { __sync_synchronize(); }
 
 inline void Acquire_Store(volatile Atomic32* ptr, Atomic32 value) {
   *ptr = value;
@@ -69,13 +65,9 @@ inline void Release_Store(volatile Atomic32* ptr, Atomic32 value) {
   *ptr = value;
 }
 
-inline Atomic8 NoBarrier_Load(volatile const Atomic8* ptr) {
-  return *ptr;
-}
+inline Atomic8 NoBarrier_Load(volatile const Atomic8* ptr) { return *ptr; }
 
-inline Atomic32 NoBarrier_Load(volatile const Atomic32* ptr) {
-  return *ptr;
-}
+inline Atomic32 NoBarrier_Load(volatile const Atomic32* ptr) { return *ptr; }
 
 inline Atomic32 Acquire_Load(volatile const Atomic32* ptr) {
   Atomic32 value = *ptr;
@@ -92,7 +84,7 @@ inline Atomic32 Release_Load(volatile const Atomic32* ptr) {
 inline Atomic64 NoBarrier_CompareAndSwap(volatile Atomic64* ptr,
                                          Atomic64 old_value,
                                          Atomic64 new_value) {
-  return(__sync_val_compare_and_swap( ptr, old_value, new_value));
+  return (__sync_val_compare_and_swap(ptr, old_value, new_value));
 }
 
 inline Atomic64 NoBarrier_AtomicExchange(volatile Atomic64* ptr,
@@ -116,14 +108,12 @@ inline Atomic64 Barrier_AtomicIncrement(volatile Atomic64* ptr,
 
 
 inline Atomic64 Acquire_CompareAndSwap(volatile Atomic64* ptr,
-                                       Atomic64 old_value,
-                                       Atomic64 new_value) {
+                                       Atomic64 old_value, Atomic64 new_value) {
   return NoBarrier_CompareAndSwap(ptr, old_value, new_value);
 }
 
 inline Atomic64 Release_CompareAndSwap(volatile Atomic64* ptr,
-                                       Atomic64 old_value,
-                                       Atomic64 new_value) {
+                                       Atomic64 old_value, Atomic64 new_value) {
   return NoBarrier_CompareAndSwap(ptr, old_value, new_value);
 }
 
@@ -141,9 +131,7 @@ inline void Release_Store(volatile Atomic64* ptr, Atomic64 value) {
   *ptr = value;
 }
 
-inline Atomic64 NoBarrier_Load(volatile const Atomic64* ptr) {
-  return *ptr;
-}
+inline Atomic64 NoBarrier_Load(volatile const Atomic64* ptr) { return *ptr; }
 
 inline Atomic64 Acquire_Load(volatile const Atomic64* ptr) {
   Atomic64 value = *ptr;
@@ -161,4 +149,4 @@ inline Atomic64 Release_Load(volatile const Atomic64* ptr) {
 }  // namespace base
 }  // namespace v8
 
-#endif  // V8_ATOMICOPS_INTERNALS_S390_H_
+#endif  // V8_BASE_ATOMICOPS_INTERNALS_S390_H_

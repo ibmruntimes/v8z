@@ -5379,9 +5379,11 @@ void HOptimizedGraphBuilder::BuildForInBody(ForInStatement* stmt,
   // Reload the values to ensure we have up-to-date values inside of the loop.
   // This is relevant especially for OSR where the values don't come from the
   // computation above, but from the OSR entry block.
-  enumerable = environment()->ExpressionStackAt(4);
   HValue* index = environment()->ExpressionStackAt(0);
   HValue* limit = environment()->ExpressionStackAt(1);
+  HValue* array = environment()->ExpressionStackAt(2);
+  HValue* type = environment()->ExpressionStackAt(3);
+  enumerable = environment()->ExpressionStackAt(4);
 
   // Check that we still have more keys.
   HCompareNumericAndBranch* compare_index =
@@ -5401,32 +5403,67 @@ void HOptimizedGraphBuilder::BuildForInBody(ForInStatement* stmt,
 
   set_current_block(loop_body);
 
-  HValue* key =
-      Add<HLoadKeyed>(environment()->ExpressionStackAt(2),  // Enum cache.
-                      index, index, nullptr, FAST_ELEMENTS);
+  // Compute the next enumerated value.
+  HValue* key = Add<HLoadKeyed>(array, index, index, nullptr, FAST_ELEMENTS);
 
+  HBasicBlock* continue_block = nullptr;
   if (fast) {
-    // Check if the expected map still matches that of the enumerable.
-    // If not just deoptimize.
-    Add<HCheckMapValue>(enumerable, environment()->ExpressionStackAt(3));
-    Bind(each_var, key);
-  } else {
-    Add<HPushArguments>(enumerable, key);
-    Runtime::FunctionId function_id = Runtime::kForInFilter;
-    key = Add<HCallRuntime>(Runtime::FunctionForId(function_id), 2);
-    Push(key);
+    // Check if expected map still matches that of the enumerable.
+    Add<HCheckMapValue>(enumerable, type);
     Add<HSimulate>(stmt->FilterId());
+  } else {
+    // We need the continue block here to be able to skip over invalidated keys.
+    continue_block = graph()->CreateBasicBlock();
+
+    // We cannot use the IfBuilder here, since we need to be able to jump
+    // over the loop body in case of undefined result from %ForInFilter,
+    // and the poor soul that is the IfBuilder get's really confused about
+    // such "advanced control flow requirements".
+    HBasicBlock* if_fast = graph()->CreateBasicBlock();
+    HBasicBlock* if_slow = graph()->CreateBasicBlock();
+    HBasicBlock* if_slow_pass = graph()->CreateBasicBlock();
+    HBasicBlock* if_slow_skip = graph()->CreateBasicBlock();
+    HBasicBlock* if_join = graph()->CreateBasicBlock();
+
+    // Check if expected map still matches that of the enumerable.
+    HValue* enumerable_map =
+        Add<HLoadNamedField>(enumerable, nullptr, HObjectAccess::ForMap());
+    FinishCurrentBlock(
+        New<HCompareObjectEqAndBranch>(enumerable_map, type, if_fast, if_slow));
+    set_current_block(if_fast);
+    {
+      // The enum cache for enumerable is still valid, no need to check key.
+      Push(key);
+      Goto(if_join);
+    }
+    set_current_block(if_slow);
+    {
+      // Check if key is still valid for enumerable.
+      Add<HPushArguments>(enumerable, key);
+      Runtime::FunctionId function_id = Runtime::kForInFilter;
+      Push(Add<HCallRuntime>(Runtime::FunctionForId(function_id), 2));
+      Add<HSimulate>(stmt->FilterId());
+      FinishCurrentBlock(New<HCompareObjectEqAndBranch>(
+          Top(), graph()->GetConstantUndefined(), if_slow_skip, if_slow_pass));
+    }
+    set_current_block(if_slow_pass);
+    { Goto(if_join); }
+    set_current_block(if_slow_skip);
+    {
+      // The key is no longer valid for enumerable, skip it.
+      Drop(1);
+      Goto(continue_block);
+    }
+    if_join->SetJoinId(stmt->FilterId());
+    set_current_block(if_join);
     key = Pop();
-    Bind(each_var, key);
-    IfBuilder if_undefined(this);
-    if_undefined.If<HCompareObjectEqAndBranch>(key,
-                                               graph()->GetConstantUndefined());
-    if_undefined.ThenDeopt(Deoptimizer::kUndefined);
-    if_undefined.End();
-    Add<HSimulate>(stmt->AssignmentId());
   }
 
+  Bind(each_var, key);
+  Add<HSimulate>(stmt->AssignmentId());
+
   BreakAndContinueInfo break_info(stmt, scope(), 5);
+  break_info.set_continue_block(continue_block);
   {
     BreakAndContinueScope push(&break_info, this);
     CHECK_BAILOUT(VisitLoopBody(stmt, loop_entry));
@@ -5660,7 +5697,7 @@ void HOptimizedGraphBuilder::VisitVariableProxy(VariableProxy* expr) {
           Handle<Context> script_context = ScriptContextTable::GetContext(
               script_contexts, lookup.context_index);
           Handle<Object> current_value =
-              FixedArray::get(script_context, lookup.slot_index);
+              FixedArray::get(*script_context, lookup.slot_index, isolate());
 
           // If the values is not the hole, it will stay initialized,
           // so no need to generate a check.
@@ -6362,35 +6399,24 @@ bool HOptimizedGraphBuilder::PropertyAccessInfo::LoadFieldMaps(
   field_type_ = HType::Tagged();
 
   // Figure out the field type from the accessor map.
-  Handle<HeapType> field_type = GetFieldTypeFromMap(map);
+  Handle<FieldType> field_type = GetFieldTypeFromMap(map);
 
   // Collect the (stable) maps from the field type.
-  int num_field_maps = field_type->NumClasses();
-  if (num_field_maps > 0) {
+  if (field_type->IsClass()) {
     DCHECK(access_.representation().IsHeapObject());
-    field_maps_.Reserve(num_field_maps, zone());
-    HeapType::Iterator<Map> it = field_type->Classes();
-    while (!it.Done()) {
-      Handle<Map> field_map = it.Current();
-      if (!field_map->is_stable()) {
-        field_maps_.Clear();
-        break;
-      }
+    Handle<Map> field_map = field_type->AsClass();
+    if (field_map->is_stable()) {
       field_maps_.Add(field_map, zone());
-      it.Advance();
     }
   }
 
   if (field_maps_.is_empty()) {
     // Store is not safe if the field map was cleared.
-    return IsLoad() || !field_type->Is(HeapType::None());
+    return IsLoad() || !field_type->IsNone();
   }
 
-  field_maps_.Sort();
-  DCHECK_EQ(num_field_maps, field_maps_.length());
-
-  // Determine field HType from field HeapType.
-  field_type_ = HType::FromType<HeapType>(field_type);
+  // Determine field HType from field type.
+  field_type_ = HType::FromFieldType(field_type, zone());
   DCHECK(field_type_.IsHeapObject());
 
   // Add dependency on the map that introduced the field.
@@ -6597,7 +6623,8 @@ HValue* HOptimizedGraphBuilder::BuildMonomorphicAccess(
       HValue* function = Add<HConstant>(info->accessor());
       PushArgumentsFromEnvironment(argument_count);
       return New<HCallFunction>(function, argument_count,
-                                ConvertReceiverMode::kNotNullOrUndefined);
+                                ConvertReceiverMode::kNotNullOrUndefined,
+                                TailCallMode::kDisallow);
     } else if (FLAG_inline_accessors && can_inline_accessor) {
       bool success = info->IsLoad()
           ? TryInlineGetter(info->accessor(), info->map(), ast_id, return_id)
@@ -6866,7 +6893,7 @@ void HOptimizedGraphBuilder::HandleGlobalVariableAssignment(
           ScriptContextTable::GetContext(script_contexts, lookup.context_index);
 
       Handle<Object> current_value =
-          FixedArray::get(script_context, lookup.slot_index);
+          FixedArray::get(*script_context, lookup.slot_index, isolate());
 
       // If the values is not the hole, it will stay initialized,
       // so no need to generate a check.
@@ -7390,8 +7417,8 @@ HInstruction* HOptimizedGraphBuilder::BuildMonomorphicElementAccess(
 
 
 static bool CanInlineElementAccess(Handle<Map> map) {
-  return map->IsJSObjectMap() && !map->has_dictionary_elements() &&
-         !map->has_sloppy_arguments_elements() &&
+  return map->IsJSObjectMap() &&
+         (map->has_fast_elements() || map->has_fixed_typed_array_elements()) &&
          !map->has_indexed_interceptor() && !map->is_access_check_needed();
 }
 
@@ -8172,7 +8199,8 @@ void HOptimizedGraphBuilder::HandlePolymorphicCallNamed(Call* expr,
       HInstruction* call =
           needs_wrapping ? NewUncasted<HCallFunction>(
                                function, argument_count,
-                               ConvertReceiverMode::kNotNullOrUndefined)
+                               ConvertReceiverMode::kNotNullOrUndefined,
+                               expr->tail_call_mode())
                          : BuildCallConstantFunction(target, argument_count);
       PushArgumentsFromEnvironment(argument_count);
       AddInstruction(call);
@@ -8203,7 +8231,8 @@ void HOptimizedGraphBuilder::HandlePolymorphicCallNamed(Call* expr,
     CHECK_ALIVE(VisitExpressions(expr->arguments()));
 
     HInstruction* call = New<HCallFunction>(
-        function, argument_count, ConvertReceiverMode::kNotNullOrUndefined);
+        function, argument_count, ConvertReceiverMode::kNotNullOrUndefined,
+        expr->tail_call_mode());
 
     PushArgumentsFromEnvironment(argument_count);
 
@@ -9730,7 +9759,8 @@ void HOptimizedGraphBuilder::VisitCall(Call* expr) {
         // TODO(verwaest): Support creation of value wrappers directly in
         // HWrapReceiver.
         call = New<HCallFunction>(function, argument_count,
-                                  ConvertReceiverMode::kNotNullOrUndefined);
+                                  ConvertReceiverMode::kNotNullOrUndefined,
+                                  expr->tail_call_mode());
       } else if (TryInlineCall(expr)) {
         return;
       } else {
@@ -9754,7 +9784,8 @@ void HOptimizedGraphBuilder::VisitCall(Call* expr) {
 
       CHECK_ALIVE(VisitExpressions(expr->arguments(), arguments_flag));
       call = New<HCallFunction>(function, argument_count,
-                                ConvertReceiverMode::kNotNullOrUndefined);
+                                ConvertReceiverMode::kNotNullOrUndefined,
+                                expr->tail_call_mode());
     }
     PushArgumentsFromEnvironment(argument_count);
 
@@ -9805,7 +9836,8 @@ void HOptimizedGraphBuilder::VisitCall(Call* expr) {
     } else {
       PushArgumentsFromEnvironment(argument_count);
       HCallFunction* call_function = New<HCallFunction>(
-          function, argument_count, ConvertReceiverMode::kNullOrUndefined);
+          function, argument_count, ConvertReceiverMode::kNullOrUndefined,
+          expr->tail_call_mode());
       call = call_function;
       if (expr->is_uninitialized() &&
           expr->IsUsingCallFeedbackICSlot(isolate())) {

@@ -212,19 +212,12 @@ static void CheckBytecodeArrayEqual(const ExpectedSnippet<T, C>& expected,
   if (expected.handler_count == 0) {
     CHECK_EQ(CcTest::heap()->empty_fixed_array(), actual->handler_table());
   } else {
-    static const int kHTSize = 4;     // see HandlerTable::kRangeEntrySize
-    static const int kHTStart = 0;    // see HandlerTable::kRangeStartIndex
-    static const int kHTEnd = 1;      // see HandlerTable::kRangeEndIndex
-    static const int kHTHandler = 2;  // see HandlerTable::kRangeHandlerIndex
     HandlerTable* table = HandlerTable::cast(actual->handler_table());
-    CHECK_EQ(expected.handler_count * kHTSize, table->length());
+    CHECK_EQ(expected.handler_count, table->NumberOfRangeEntries());
     for (int i = 0; i < expected.handler_count; i++) {
-      int start = Smi::cast(table->get(i * kHTSize + kHTStart))->value();
-      int end = Smi::cast(table->get(i * kHTSize + kHTEnd))->value();
-      int handler = Smi::cast(table->get(i * kHTSize + kHTHandler))->value();
-      CHECK_EQ(expected.handlers[i].start, start);
-      CHECK_EQ(expected.handlers[i].end, end);
-      CHECK_EQ(expected.handlers[i].handler, handler >> 1);
+      CHECK_EQ(expected.handlers[i].start, table->GetRangeStart(i));
+      CHECK_EQ(expected.handlers[i].end, table->GetRangeEnd(i));
+      CHECK_EQ(expected.handlers[i].handler, table->GetRangeHandler(i));
     }
   }
 
@@ -1458,9 +1451,8 @@ TEST(PropertyCall) {
        1,
        {"func"}},
       {"function f(a) {\n"
-       " a.func;\n"
-       REPEAT_127(SPACE, " a.func;\n")
-       " return a.func(); }\nf(" FUNC_ARG ")",
+       " a.func;\n" REPEAT_127(
+           SPACE, " a.func;\n") " return a.func(); }\nf(" FUNC_ARG ")",
        2 * kPointerSize,
        2,
        1046,
@@ -1472,12 +1464,13 @@ TEST(PropertyCall) {
                       B(Ldar), A(1, 2),                                    //
                       B(Star), R(0),                                       //
                       B(LoadICSloppy), R(0), U8(0), U8((wide_idx += 2))),  //
-           B(Ldar), A(1, 2),                                               //
-           B(Star), R(1),                                                  //
-           B(LoadICSloppyWide), R(1), U16(0), U16(wide_idx + 4),           //
-           B(Star), R(0),                                                  //
-           B(CallWide), R16(0), R16(1), U16(0), U16(wide_idx + 2),         //
-           B(Return),                                                      //
+           B(Ldar),
+           A(1, 2),                                                 //
+           B(Star), R(1),                                           //
+           B(LoadICSloppyWide), R(1), U16(0), U16(wide_idx + 4),    //
+           B(Star), R(0),                                           //
+           B(CallWide), R16(0), R16(1), U16(0), U16(wide_idx + 2),  //
+           B(Return),                                               //
        },
        1,
        {"func"}},
@@ -7280,6 +7273,294 @@ TEST(DeleteLookupSlotInEval) {
         helper.MakeBytecode(script.c_str(), "*", "f");
     CheckBytecodeArrayEqual(snippets[i], bytecode_array);
   }
+}
+
+TEST(WideRegisters) {
+  InitializedHandleScope handle_scope;
+  BytecodeGeneratorHelper helper;
+
+  // Prepare prologue that creates frame for lots of registers.
+  std::ostringstream os;
+  for (size_t i = 0; i < 157; ++i) {
+    os << "var x" << i << ";\n";
+  }
+  std::string prologue(os.str());
+
+  ExpectedSnippet<int> snippets[] = {
+      {"x0 = x127;\n"
+       "return x0;\n",
+       161 * kPointerSize,
+       1,
+       10,
+       {
+           B(MovWide), R16(131), R16(125),  //
+           B(Ldar), R(125),                 //
+           B(Star), R(0),                   //
+           B(Return),                       //
+       }},
+      {"x127 = x126;\n"
+       "return x127;\n",
+       161 * kPointerSize,
+       1,
+       22,
+       {
+           B(MovWide), R16(130), R16(125),  //
+           B(Ldar), R(125),                 //
+           B(Star), R(125),                 //
+           B(MovWide), R16(125), R16(131),  //
+           B(MovWide), R16(131), R16(125),  //
+           B(Ldar), R(125),                 //
+           B(Return),                       //
+       }},
+      {"if (x2 > 3) { return x129; }\n"
+       "return x128;\n",
+       162 * kPointerSize,
+       1,
+       36,
+       {
+           B(Ldar), R(2),                   //
+           B(Star), R(125),                 //
+           B(MovWide), R16(125), R16(161),  //
+           B(LdaSmi8), U8(3),               //
+           B(MovWide), R16(161), R16(125),  //
+           B(TestGreaterThan), R(125),      //
+           B(JumpIfFalse), U8(10),          //
+           B(MovWide), R16(133), R16(125),  //
+           B(Ldar), R(125),                 //
+           B(Return),                       //
+           B(MovWide), R16(132), R16(125),  //
+           B(Ldar), R(125),                 //
+           B(Return),                       //
+       }},
+      {"var x0 = 0;\n"
+       "if (x129 == 3) { var x129 = x0; }\n"
+       "if (x2 > 3) { return x0; }\n"
+       "return x129;\n",
+       162 * kPointerSize,
+       1,
+       68,
+       {
+           B(LdaZero),                      //
+           B(Star), R(0),                   //
+           B(MovWide), R16(133), R16(125),  //
+           B(Ldar), R(125),                 //
+           B(Star), R(125),                 //
+           B(MovWide), R16(125), R16(161),  //
+           B(LdaSmi8), U8(3),               //
+           B(MovWide), R16(161), R16(125),  //
+           B(TestEqual), R(125),            //
+           B(JumpIfFalse), U8(11),          //
+           B(Ldar), R(0),                   //
+           B(Star), R(125),                 //
+           B(MovWide), R16(125), R16(133),  //
+           B(Ldar), R(2),                   //
+           B(Star), R(125),                 //
+           B(MovWide), R16(125), R16(161),  //
+           B(LdaSmi8), U8(3),               //
+           B(MovWide), R16(161), R16(125),  //
+           B(TestGreaterThan), R(125),      //
+           B(JumpIfFalse), U8(5),           //
+           B(Ldar), R(0),                   //
+           B(Return),                       //
+           B(MovWide), R16(133), R16(125),  //
+           B(Ldar), R(125),                 //
+           B(Return),                       //
+       }},
+      {"var x0 = 0;\n"
+       "var x1 = 0;\n"
+       "for (x128 = 0; x128 < 64; x128++) {"
+       "  x1 += x128;"
+       "}"
+       "return x128;\n",
+       162 * kPointerSize,
+       1,
+       97,
+       {
+           B(LdaZero),                      //
+           B(Star), R(0),                   //
+           B(LdaZero),                      //
+           B(Star), R(1),                   //
+           B(LdaZero),                      //
+           B(Star), R(125),                 //
+           B(MovWide), R16(125), R16(132),  //
+           B(MovWide), R16(132), R16(125),  //
+           B(Ldar), R(125),                 //
+           B(Star), R(125),                 //
+           B(MovWide), R16(125), R16(161),  //
+           B(LdaSmi8), U8(64),              //
+           B(MovWide), R16(161), R16(125),  //
+           B(TestLessThan), R(125),         //
+           B(JumpIfFalse), U8(52),          //
+           B(Ldar), R(1),                   //
+           B(Star), R(125),                 //
+           B(MovWide), R16(125), R16(161),  //
+           B(MovWide), R16(132), R16(125),  //
+           B(Ldar), R(125),                 //
+           B(MovWide), R16(161), R16(125),  //
+           B(Add), R(125),                  //
+           B(Star), R(1),                   //
+           B(MovWide), R16(132), R16(125),  //
+           B(Ldar), R(125),                 //
+           B(ToNumber),                     //
+           B(Star), R(125),                 //
+           B(MovWide), R16(125), R16(161),  //
+           B(Inc),                          //
+           B(Star), R(125),                 //
+           B(MovWide), R16(125), R16(132),  //
+           B(Jump), U8(-73),                //
+           B(MovWide), R16(132), R16(125),  //
+           B(Ldar), R(125),                 //
+           B(Return),                       //
+       }},
+      {"var x0 = 1234;\n"
+       "var x1 = 0;\n"
+       "for (x128 in x0) {"
+       "  x1 += x128;"
+       "}"
+       "return x1;\n",
+       167 * kPointerSize,
+       1,
+       109,
+       {
+           B(LdaConstant), U8(0),                           //
+           B(Star), R(0),                                   //
+           B(LdaZero),                                      //
+           B(Star), R(1),                                   //
+           B(Ldar), R(0),                                   //
+           B(JumpIfUndefined), U8(97),                      //
+           B(JumpIfNull), U8(95),                           //
+           B(ToObject),                                     //
+           B(JumpIfNull), U8(92),                           //
+           B(Star), R(125),                                 //
+           B(MovWide), R16(125), R16(161),                  //
+           B(ForInPrepareWide), R16(162),                   //
+           B(LdaZero),                                      //
+           B(Star), R(125),                                 //
+           B(MovWide), R16(125), R16(165),                  //
+           B(MovWide), R16(165), R16(125),                  //
+           B(MovWide), R16(164), R16(126),                  //
+           B(ForInDone), R(125), R(126),                    //
+           B(JumpIfTrue), U8(59),                           //
+           B(ForInNextWide), R16(161), R16(165), R16(162),  //
+           B(JumpIfUndefined), U8(34),                      //
+           B(Star), R(125),                                 //
+           B(MovWide), R16(125), R16(132),                  //
+           B(Ldar), R(1),                                   //
+           B(Star), R(125),                                 //
+           B(MovWide), R16(125), R16(166),                  //
+           B(MovWide), R16(132), R16(125),                  //
+           B(Ldar), R(125),                                 //
+           B(MovWide), R16(166), R16(125),                  //
+           B(Add), R(125),                                  //
+           B(Star), R(1),                                   //
+           B(MovWide), R16(165), R16(125),                  //
+           B(ForInStep), R(125),                            //
+           B(Star), R(125),                                 //
+           B(MovWide), R16(125), R16(165),                  //
+           B(Jump), U8(-70),                                //
+           B(Ldar), R(1),                                   //
+           B(Return),                                       //
+       },
+       1,
+       {1234}},
+      {"x0 = %Add(x64, x63);\n"
+       "x1 = %Add(x27, x143);\n"
+       "%TheHole();\n"
+       "return x1;\n",
+       163 * kPointerSize,
+       1,
+       65,
+       {
+           B(Ldar), R(64),                                           //
+           B(Star), R(125),                                          //
+           B(MovWide), R16(125), R16(161),                           //
+           B(Ldar), R(63),                                           //
+           B(Star), R(125),                                          //
+           B(MovWide), R16(125), R16(162),                           //
+           B(CallRuntimeWide), U16(Runtime::kAdd), R16(161), U8(2),  //
+           B(Star), R(0),                                            //
+           B(Ldar), R(27),                                           //
+           B(Star), R(125),                                          //
+           B(MovWide), R16(125), R16(161),                           //
+           B(MovWide), R16(147), R16(125),                           //
+           B(Ldar), R(125),                                          //
+           B(Star), R(125),                                          //
+           B(MovWide), R16(125), R16(162),                           //
+           B(CallRuntimeWide), U16(Runtime::kAdd), R16(161), U8(2),  //
+           B(Star), R(1),                                            //
+           B(CallRuntime), U16(Runtime::kTheHole), R(0), U8(0),      //
+           B(Ldar), R(1),                                            //
+           B(Return),                                                //
+       }}};
+
+  for (size_t i = 0; i < arraysize(snippets); ++i) {
+    std::string body = prologue + snippets[i].code_snippet;
+    Handle<BytecodeArray> bytecode_array =
+        helper.MakeBytecodeForFunctionBody(body.c_str());
+    CheckBytecodeArrayEqual(snippets[i], bytecode_array);
+  }
+}
+
+TEST(DoExpression) {
+  bool old_flag = FLAG_harmony_do_expressions;
+  FLAG_harmony_do_expressions = true;
+
+  InitializedHandleScope handle_scope;
+  BytecodeGeneratorHelper helper;
+
+  ExpectedSnippet<const char*> snippets[] = {
+      {"var a = do { }; return a;",
+       2 * kPointerSize,
+       1,
+       5,
+       {
+           B(Ldar), R(0),  //
+           B(Star), R(1),  //
+           B(Return)       //
+       },
+       0},
+      {"var a = do { var x = 100; }; return a;",
+       3 * kPointerSize,
+       1,
+       10,
+       {
+           B(LdaSmi8), U8(100),  //
+           B(Star), R(1),        //
+           B(LdaUndefined),      //
+           B(Star), R(0),        //
+           B(Star), R(2),        //
+           B(Return)             //
+       },
+       0},
+      {"while(true) { var a = 10; a = do { ++a; break; }; a = 20; }",
+       2 * kPointerSize,
+       1,
+       24,
+       {
+           B(LdaSmi8),      U8(10),   //
+           B(Star),         R(1),     //
+           B(ToNumber),               //
+           B(Inc),                    //
+           B(Star),         R(1),     //
+           B(Star),         R(0),     //
+           B(Jump),         U8(12),   //
+           B(Ldar),         R(0),     //
+           B(Star),         R(1),     //
+           B(LdaSmi8),      U8(20),   //
+           B(Star),         R(1),     //
+           B(Jump),         U8(-20),  //
+           B(LdaUndefined),           //
+           B(Return),                 //
+       },
+       0},
+  };
+
+  for (size_t i = 0; i < arraysize(snippets); i++) {
+    Handle<BytecodeArray> bytecode_array =
+        helper.MakeBytecodeForFunctionBody(snippets[i].code_snippet);
+    CheckBytecodeArrayEqual(snippets[i], bytecode_array);
+  }
+  FLAG_harmony_do_expressions = old_flag;
 }
 
 }  // namespace interpreter

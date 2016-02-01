@@ -33,9 +33,6 @@
   'intl402/11.2.3_b': [FAIL],
   'intl402/12.2.3_b': [FAIL],
 
-  # Unicode canonicalization is not available with i18n turned off.
-  'built-ins/String/prototype/localeCompare/15.5.4.9_CE': [['no_i18n', SKIP]],
-
   ###################### NEEDS INVESTIGATION #######################
 
   # Possibly same cause as S8.5_A2.1, below: floating-point tests.
@@ -105,15 +102,6 @@
   'built-ins/WeakMap/iterator-item-second-entry-returns-abrupt': [FAIL],
   'built-ins/WeakMap/iterator-items-are-not-object-close-iterator': [FAIL],
   'built-ins/WeakSet/iterator-close-after-add-failure': [FAIL],
-
-  # https://code.google.com/p/v8/issues/detail?id=4119
-  'built-ins/RegExp/call_with_non_regexp_same_constructor': [FAIL],
-  'built-ins/RegExp/from-regexp-like-short-circuit': [FAIL],
-  'built-ins/RegExp/from-regexp-like': [FAIL],
-  'built-ins/RegExp/from-regexp-like-flag-override': [FAIL],
-  'built-ins/RegExp/from-regexp-like-get-source-err': [FAIL],
-  'built-ins/RegExp/from-regexp-like-get-flags-err': [FAIL],
-  'built-ins/RegExp/from-regexp-like-get-ctor-err': [FAIL],
 
   # https://code.google.com/p/v8/issues/detail?id=4348
   'built-ins/String/prototype/Symbol.iterator/this-val-non-obj-coercible': [FAIL],
@@ -195,17 +183,11 @@
   'language/expressions/assignment/S11.13.1_A6*': [FAIL],
 
   # https://code.google.com/p/v8/issues/detail?id=3699
-  'built-ins/Proxy/revocable/revocation-function-name': [FAIL],
   'language/expressions/assignment/destructuring/array-elem-init-fn-name-arrow': [FAIL],
   'language/expressions/assignment/destructuring/array-elem-init-fn-name-class': [FAIL],
   'language/expressions/assignment/destructuring/array-elem-init-fn-name-cover': [FAIL],
   'language/expressions/assignment/destructuring/array-elem-init-fn-name-fn': [FAIL],
   'language/expressions/assignment/destructuring/array-elem-init-fn-name-gen': [FAIL],
-  'language/expressions/assignment/destructuring/obj-id-init-fn-name-arrow': [FAIL],
-  'language/expressions/assignment/destructuring/obj-id-init-fn-name-class': [FAIL],
-  'language/expressions/assignment/destructuring/obj-id-init-fn-name-cover': [FAIL],
-  'language/expressions/assignment/destructuring/obj-id-init-fn-name-fn': [FAIL],
-  'language/expressions/assignment/destructuring/obj-id-init-fn-name-gen': [FAIL],
   'language/expressions/assignment/destructuring/obj-prop-elem-init-fn-name-arrow': [FAIL],
   'language/expressions/assignment/destructuring/obj-prop-elem-init-fn-name-class': [FAIL],
   'language/expressions/assignment/destructuring/obj-prop-elem-init-fn-name-cover': [FAIL],
@@ -216,13 +198,7 @@
   'language/expressions/assignment/fn-name-cover': [FAIL],
   'language/expressions/assignment/fn-name-fn': [FAIL],
   'language/expressions/assignment/fn-name-gen': [FAIL],
-  'language/expressions/assignment/fn-name-lhs-cover': [FAIL],
-  'language/expressions/assignment/fn-name-lhs-member': [FAIL],
-  'language/expressions/class/name': [FAIL],
-  'language/expressions/function/name': [FAIL],
   'language/expressions/generators/implicit-name': [FAIL],
-  'language/expressions/generators/name': [FAIL],
-  'language/expressions/generators/name-property-descriptor': [FAIL],
   'language/expressions/object/fn-name-accessor-get': [FAIL],
   'language/expressions/object/fn-name-accessor-set': [FAIL],
   'language/expressions/object/fn-name-arrow': [FAIL],
@@ -230,8 +206,6 @@
   'language/expressions/object/fn-name-cover': [FAIL],
   'language/expressions/object/fn-name-fn': [FAIL],
   'language/expressions/object/fn-name-gen': [FAIL],
-  'language/expressions/object/fn-name-lhs-cover': [FAIL],
-  'language/expressions/object/fn-name-lhs-member': [FAIL],
   'language/expressions/object/method-definition/fn-name-accessor-get': [FAIL],
   'language/expressions/object/method-definition/fn-name-accessor-set': [FAIL],
   'language/expressions/object/method-definition/fn-name-arrow': [FAIL],
@@ -260,6 +234,25 @@
   'language/statements/variable/fn-name-fn': [FAIL],
   'language/statements/variable/fn-name-gen': [FAIL],
 
+  # https://code.google.com/p/v8/issues/detail?id=3761
+  'language/expressions/object/method-definition/generator-name-prop-symbol': [FAIL],
+  'language/expressions/object/method-definition/name-name-prop-symbol': [FAIL],
+
+  # https://bugs.chromium.org/p/v8/issues/detail?id=4709
+  'built-ins/Proxy/revocable/revocation-function-name': [FAIL],
+  'language/expressions/assignment/fn-name-lhs-cover': [FAIL],
+  'language/expressions/assignment/fn-name-lhs-member': [FAIL],
+  'language/expressions/class/name': [FAIL],
+  'language/expressions/function/name': [FAIL],
+  'language/expressions/generators/name': [FAIL],
+
+  # https://bugs.chromium.org/p/v8/issues/detail?id=4710
+  'language/expressions/assignment/destructuring/obj-id-init-fn-name-arrow': [FAIL],
+  'language/expressions/assignment/destructuring/obj-id-init-fn-name-class': [FAIL],
+  'language/expressions/assignment/destructuring/obj-id-init-fn-name-cover': [FAIL],
+  'language/expressions/assignment/destructuring/obj-id-init-fn-name-fn': [FAIL],
+  'language/expressions/assignment/destructuring/obj-id-init-fn-name-gen': [FAIL],
+
   # https://code.google.com/p/v8/issues/detail?id=4251
   'language/expressions/postfix-increment/S11.3.1_A5_T1': [FAIL],
   'language/expressions/postfix-increment/S11.3.1_A5_T2': [FAIL],
@@ -272,30 +265,6 @@
 
   # https://code.google.com/p/v8/issues/detail?id=4253
   'language/asi/S7.9_A5.7_T1': [PASS, FAIL_OK],
-
-  # https://code.google.com/p/v8/issues/detail?id=3761
-  'language/expressions/object/method-definition/generator-name-prop-symbol': [FAIL],
-  'language/expressions/object/method-definition/name-name-prop-symbol': [FAIL],
-
-  # https://code.google.com/p/v8/issues/detail?id=2952
-  'built-ins/RegExp/prototype/exec/u-lastindex-adv': [FAIL],
-  'built-ins/RegExp/prototype/exec/u-captured-value': [FAIL],
-  'built-ins/RegExp/prototype/exec/u-lastindex-value': [FAIL],
-  'built-ins/RegExp/prototype/test/u-captured-value': [FAIL],
-  'built-ins/RegExp/prototype/test/u-lastindex-adv': [FAIL],
-  'built-ins/RegExp/prototype/test/u-lastindex-value': [FAIL],
-  'built-ins/RegExp/prototype/unicode/this-regexp': [FAIL],
-  'built-ins/RegExp/unicode_identity_escape': [FAIL],
-  'language/literals/regexp/u-unicode-esc': [FAIL],
-  'language/literals/regexp/u-surrogate-pairs': [FAIL],
-  'language/literals/regexp/u-case-mapping': [FAIL],
-  'language/literals/regexp/u-astral': [FAIL],
-  'built-ins/RegExp/valid-flags-y': [FAIL],
-  'built-ins/RegExp/prototype/unicode/length': [FAIL],
-  'built-ins/RegExp/prototype/unicode/name': [FAIL],
-  'built-ins/RegExp/prototype/unicode/prop-desc': [FAIL],
-  'built-ins/RegExp/prototype/unicode/this-invald-obj': [FAIL],
-  'built-ins/RegExp/prototype/unicode/this-non-obj': [FAIL],
 
    # https://code.google.com/p/v8/issues/detail?id=4602
   'built-ins/RegExp/prototype/exec/get-sticky-coerce': [FAIL],
@@ -311,36 +280,19 @@
   # happens to be thrown for some other reason (e.g,
   # built-ins/RegExp/prototype/Symbol.match/builtin-failure-set-lastindex-err)
   'built-ins/RegExp/prototype/Symbol.match/*': [SKIP],
-  'built-ins/Symbol/match/prop-desc': [FAIL],
   'built-ins/String/prototype/endsWith/return-abrupt-from-searchstring-regexp-test': [FAIL],
   'built-ins/String/prototype/includes/return-abrupt-from-searchstring-regexp-test': [FAIL],
   'built-ins/String/prototype/startsWith/return-abrupt-from-searchstring-regexp-test': [FAIL],
-  'built-ins/String/prototype/match/cstm-matcher-get-err': [FAIL],
   'built-ins/String/prototype/match/invoke-builtin-match': [FAIL],
-  'built-ins/String/prototype/match/cstm-matcher-invocation': [FAIL],
 
   # https://code.google.com/p/v8/issues/detail?id=4343
   'built-ins/RegExp/prototype/Symbol.replace/*': [SKIP],
-  'built-ins/Symbol/replace/prop-desc': [FAIL],
-  'built-ins/String/prototype/replace/cstm-replace-get-err': [FAIL],
-  'built-ins/String/prototype/replace/cstm-replace-invocation': [FAIL],
 
   # https://code.google.com/p/v8/issues/detail?id=4344
   'built-ins/RegExp/prototype/Symbol.search/*': [SKIP],
-  'built-ins/Symbol/search/prop-desc': [FAIL],
-  'built-ins/String/prototype/search/cstm-search-get-err': [FAIL],
-  'built-ins/String/prototype/search/invoke-builtin-search-searcher-undef': [FAIL],
-  'built-ins/String/prototype/search/cstm-search-invocation': [FAIL],
-  'built-ins/String/prototype/search/invoke-builtin-search': [FAIL],
 
   # https://code.google.com/p/v8/issues/detail?id=4345
   'built-ins/RegExp/prototype/Symbol.split/*': [SKIP],
-  'built-ins/Symbol/split/prop-desc': [FAIL],
-  'built-ins/String/prototype/split/cstm-split-invocation': [FAIL],
-  'built-ins/String/prototype/split/cstm-split-get-err': [FAIL],
-
-  # https://code.google.com/p/v8/issues/detail?id=4346
-  'built-ins/RegExp/prototype/flags/u': [FAIL],
 
   # https://code.google.com/p/v8/issues/detail?id=4360
   'intl402/Collator/10.1.1_1': [FAIL],
@@ -485,9 +437,6 @@
   'built-ins/Array/prototype/indexOf/15.4.4.14-5-9': [FAIL],
   'built-ins/Array/prototype/lastIndexOf/15.4.4.15-5-9': [FAIL],
 
-  # https://github.com/tc39/test262/issues/436
-  'built-ins/RegExp/call_with_regexp_match_falsy': [FAIL],
-
   ############################ SKIPPED TESTS #############################
 
   # These tests take a looong time to run.
@@ -533,12 +482,18 @@
   'intl402/NumberFormat/prototype/format/11.3.2_TRP': [SKIP],
 }],  # system == macos
 
-['no_i18n == True and mode == debug', {
+['no_i18n == True', {
+  # Unicode canonicalization is not available with i18n turned off.
+  'built-ins/String/prototype/localeCompare/15.5.4.9_CE': [SKIP],
+
+  # Unicode regexp case mapping is not available with i18n turned off.
+  'language/literals/regexp/u-case-mapping': [SKIP],
+
   # BUG(v8:4437).
   'built-ins/String/prototype/normalize/return-normalized-string': [SKIP],
   'built-ins/String/prototype/normalize/return-normalized-string-from-coerced-form': [SKIP],
   'built-ins/String/prototype/normalize/return-normalized-string-using-default-parameter': [SKIP],
-}],  # no_i18n == True and mode == debug
+}],  # no_i18n == True
 
 
 ['arch == arm or arch == mipsel or arch == mips or arch == arm64 or arch == mips64 or arch == mips64el', {

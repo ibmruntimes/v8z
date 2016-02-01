@@ -846,6 +846,7 @@ TYPE_CHECKER(JSValue, JS_VALUE_TYPE)
 TYPE_CHECKER(JSDate, JS_DATE_TYPE)
 TYPE_CHECKER(JSMessageObject, JS_MESSAGE_OBJECT_TYPE)
 
+bool Object::IsAbstractCode() const { return IsBytecodeArray() || IsCode(); }
 
 bool Object::IsStringWrapper() const {
   return IsJSValue() && JSValue::cast(this)->value()->IsString();
@@ -1855,6 +1856,9 @@ AllocationSite* AllocationMemento::GetAllocationSite() {
   return AllocationSite::cast(allocation_site());
 }
 
+Address AllocationMemento::GetAllocationSiteUnchecked() {
+  return reinterpret_cast<Address>(allocation_site());
+}
 
 void JSObject::EnsureCanContainHeapObjectElements(Handle<JSObject> object) {
   JSObject::ValidateElements(object);
@@ -1950,7 +1954,8 @@ void JSObject::SetMapAndElements(Handle<JSObject> object,
                                  Handle<FixedArrayBase> value) {
   JSObject::MigrateToMap(object, new_map);
   DCHECK((object->map()->has_fast_smi_or_object_elements() ||
-          (*value == object->GetHeap()->empty_fixed_array())) ==
+          (*value == object->GetHeap()->empty_fixed_array()) ||
+          object->map()->has_fast_string_wrapper_elements()) ==
          (value->map() == object->GetHeap()->fixed_array_map() ||
           value->map() == object->GetHeap()->fixed_cow_array_map()));
   DCHECK((*value == object->GetHeap()->empty_fixed_array()) ||
@@ -2332,19 +2337,6 @@ bool Object::ToArrayIndex(uint32_t* index) {
 }
 
 
-bool Object::IsStringObjectWithCharacterAt(uint32_t index) {
-  if (!this->IsJSValue()) return false;
-
-  JSValue* js_value = JSValue::cast(this);
-  if (!js_value->value()->IsString()) return false;
-
-  String* str = String::cast(js_value->value());
-  if (index >= static_cast<uint32_t>(str->length())) return false;
-
-  return true;
-}
-
-
 void Object::VerifyApiCallResultType() {
 #if DEBUG
   if (!(IsSmi() || IsString() || IsSymbol() || IsJSReceiver() ||
@@ -2361,9 +2353,8 @@ Object* FixedArray::get(int index) const {
   return READ_FIELD(this, kHeaderSize + index * kPointerSize);
 }
 
-
-Handle<Object> FixedArray::get(Handle<FixedArray> array, int index) {
-  return handle(array->get(index), array->GetIsolate());
+Handle<Object> FixedArray::get(FixedArray* array, int index, Isolate* isolate) {
+  return handle(array->get(index), isolate);
 }
 
 
@@ -2408,13 +2399,12 @@ uint64_t FixedDoubleArray::get_representation(int index) {
   return READ_UINT64_FIELD(this, offset);
 }
 
-
-Handle<Object> FixedDoubleArray::get(Handle<FixedDoubleArray> array,
-                                     int index) {
+Handle<Object> FixedDoubleArray::get(FixedDoubleArray* array, int index,
+                                     Isolate* isolate) {
   if (array->is_the_hole(index)) {
-    return array->GetIsolate()->factory()->the_hole_value();
+    return isolate->factory()->the_hole_value();
   } else {
-    return array->GetIsolate()->factory()->NewNumber(array->get_scalar(index));
+    return isolate->factory()->NewNumber(array->get_scalar(index));
   }
 }
 
@@ -2871,8 +2861,7 @@ void Map::SetEnumLength(int length) {
 
 
 FixedArrayBase* Map::GetInitialElements() {
-  if (has_fast_smi_or_object_elements() ||
-      has_fast_double_elements()) {
+  if (has_fast_elements() || has_fast_string_wrapper_elements()) {
     DCHECK(!GetHeap()->InNewSpace(GetHeap()->empty_fixed_array()));
     return GetHeap()->empty_fixed_array();
   } else if (has_fixed_typed_array_elements()) {
@@ -2973,15 +2962,14 @@ int DescriptorArray::GetFieldIndex(int descriptor_number) {
   return GetDetails(descriptor_number).field_index();
 }
 
-
-HeapType* DescriptorArray::GetFieldType(int descriptor_number) {
+FieldType* DescriptorArray::GetFieldType(int descriptor_number) {
   DCHECK(GetDetails(descriptor_number).location() == kField);
   Object* value = GetValue(descriptor_number);
   if (value->IsWeakCell()) {
-    if (WeakCell::cast(value)->cleared()) return HeapType::None();
+    if (WeakCell::cast(value)->cleared()) return FieldType::None();
     value = WeakCell::cast(value)->value();
   }
-  return HeapType::cast(value);
+  return FieldType::cast(value);
 }
 
 
@@ -3177,7 +3165,7 @@ void SeededNumberDictionary::set_requires_slow_elements() {
 // ------------------------------------
 // Cast operations
 
-
+CAST_ACCESSOR(AbstractCode)
 CAST_ACCESSOR(ArrayList)
 CAST_ACCESSOR(Bool16x8)
 CAST_ACCESSOR(Bool32x4)
@@ -3414,6 +3402,18 @@ int LiteralsArray::literals_count() const {
   return length() - kFirstLiteralIndex;
 }
 
+int HandlerTable::GetRangeStart(int index) const {
+  return Smi::cast(get(index * kRangeEntrySize + kRangeStartIndex))->value();
+}
+
+int HandlerTable::GetRangeEnd(int index) const {
+  return Smi::cast(get(index * kRangeEntrySize + kRangeEndIndex))->value();
+}
+
+int HandlerTable::GetRangeHandler(int index) const {
+  return HandlerOffsetField::decode(
+      Smi::cast(get(index * kRangeEntrySize + kRangeHandlerIndex))->value());
+}
 
 void HandlerTable::SetRangeStart(int index, int value) {
   set(index * kRangeEntrySize + kRangeStartIndex, Smi::FromInt(value));
@@ -3450,6 +3450,9 @@ void HandlerTable::SetReturnHandler(int index, int offset,
   set(index * kReturnEntrySize + kReturnHandlerIndex, Smi::FromInt(value));
 }
 
+int HandlerTable::NumberOfRangeEntries() const {
+  return length() / kRangeEntrySize;
+}
 
 #define MAKE_STRUCT_CAST(NAME, Name, name) CAST_ACCESSOR(Name)
   STRUCT_LIST(MAKE_STRUCT_CAST)
@@ -4218,11 +4221,9 @@ double FixedTypedArray<Float64ArrayTraits>::from_double(double value) {
   return value;
 }
 
-
 template <class Traits>
-Handle<Object> FixedTypedArray<Traits>::get(
-    Handle<FixedTypedArray<Traits> > array,
-    int index) {
+Handle<Object> FixedTypedArray<Traits>::get(FixedTypedArray<Traits>* array,
+                                            int index) {
   return Traits::ToHandle(array->GetIsolate(), array->get_scalar(index));
 }
 
@@ -4599,6 +4600,10 @@ bool Map::has_sloppy_arguments_elements() {
   return IsSloppyArgumentsElements(elements_kind());
 }
 
+bool Map::has_fast_string_wrapper_elements() {
+  return elements_kind() == FAST_STRING_WRAPPER_ELEMENTS;
+}
+
 bool Map::has_fixed_typed_array_elements() {
   return IsFixedTypedArrayElementsKind(elements_kind());
 }
@@ -4899,6 +4904,13 @@ inline bool Code::is_interpreter_entry_trampoline() {
   Handle<Code> interpreter_entry =
       GetIsolate()->builtins()->InterpreterEntryTrampoline();
   return interpreter_entry.location() != nullptr && *interpreter_entry == this;
+}
+
+inline bool Code::is_interpreter_enter_bytecode_dispatch() {
+  Handle<Code> interpreter_handler =
+      GetIsolate()->builtins()->InterpreterEnterBytecodeDispatch();
+  return interpreter_handler.location() != nullptr &&
+         *interpreter_handler == this;
 }
 
 inline void Code::set_is_crankshafted(bool value) {
@@ -5277,6 +5289,10 @@ class Code::FindAndReplacePattern {
   friend class Code;
 };
 
+Code* AbstractCode::GetCode() { return Code::cast(this); }
+BytecodeArray* AbstractCode::GetBytecodeArray() {
+  return BytecodeArray::cast(this);
+}
 
 Object* Map::prototype() const {
   return READ_FIELD(this, kPrototypeOffset);
@@ -5606,7 +5622,7 @@ ACCESSORS(DebugInfo, shared, SharedFunctionInfo, kSharedFunctionInfoIndex)
 ACCESSORS(DebugInfo, code, Code, kCodeIndex)
 ACCESSORS(DebugInfo, break_points, FixedArray, kBreakPointsStateIndex)
 
-SMI_ACCESSORS(BreakPointInfo, code_position, kCodePositionIndex)
+SMI_ACCESSORS(BreakPointInfo, code_offset, kCodeOffsetIndex)
 SMI_ACCESSORS(BreakPointInfo, source_position, kSourcePositionIndex)
 SMI_ACCESSORS(BreakPointInfo, statement_position, kStatementPositionIndex)
 ACCESSORS(BreakPointInfo, break_point_objects, Object, kBreakPointObjectsIndex)
@@ -6300,6 +6316,7 @@ void Foreign::set_foreign_address(Address value) {
 ACCESSORS(JSGeneratorObject, function, JSFunction, kFunctionOffset)
 ACCESSORS(JSGeneratorObject, context, Context, kContextOffset)
 ACCESSORS(JSGeneratorObject, receiver, Object, kReceiverOffset)
+ACCESSORS(JSGeneratorObject, input, Object, kInputOffset)
 SMI_ACCESSORS(JSGeneratorObject, continuation, kContinuationOffset)
 ACCESSORS(JSGeneratorObject, operand_stack, FixedArray, kOperandStackOffset)
 
@@ -6722,6 +6739,17 @@ bool JSObject::HasSloppyArgumentsElements() {
   return IsSloppyArgumentsElements(GetElementsKind());
 }
 
+bool JSObject::HasStringWrapperElements() {
+  return IsStringWrapperElementsKind(GetElementsKind());
+}
+
+bool JSObject::HasFastStringWrapperElements() {
+  return GetElementsKind() == FAST_STRING_WRAPPER_ELEMENTS;
+}
+
+bool JSObject::HasSlowStringWrapperElements() {
+  return GetElementsKind() == SLOW_STRING_WRAPPER_ELEMENTS;
+}
 
 bool JSObject::HasFixedTypedArrayElements() {
   HeapObject* array = elements();
@@ -6762,7 +6790,7 @@ GlobalDictionary* JSObject::global_dictionary() {
 
 
 SeededNumberDictionary* JSObject::element_dictionary() {
-  DCHECK(HasDictionaryElements());
+  DCHECK(HasDictionaryElements() || HasSlowStringWrapperElements());
   return SeededNumberDictionary::cast(elements());
 }
 

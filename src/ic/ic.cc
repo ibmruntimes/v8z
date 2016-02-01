@@ -686,9 +686,9 @@ MaybeHandle<Object> LoadIC::Load(Handle<Object> object, Handle<Name> name) {
     ScriptContextTable::LookupResult lookup_result;
     if (ScriptContextTable::Lookup(script_contexts, str_name, &lookup_result)) {
       Handle<Object> result =
-          FixedArray::get(ScriptContextTable::GetContext(
+          FixedArray::get(*ScriptContextTable::GetContext(
                               script_contexts, lookup_result.context_index),
-                          lookup_result.slot_index);
+                          lookup_result.slot_index, isolate());
       if (*result == *isolate()->factory()->the_hole_value()) {
         // Do not install stubs and stay pre-monomorphic for
         // uninitialized accesses.
@@ -1375,7 +1375,8 @@ MaybeHandle<Object> KeyedLoadIC::Load(Handle<Object> object,
     ASSIGN_RETURN_ON_EXCEPTION(isolate(), load_handle,
                                LoadIC::Load(object, Handle<Name>::cast(key)),
                                Object);
-  } else if (FLAG_use_ic && !object->IsAccessCheckNeeded()) {
+  } else if (FLAG_use_ic && !object->IsAccessCheckNeeded() &&
+             !object->IsJSValue()) {
     if (object->IsJSObject() || (object->IsString() && key->IsNumber())) {
       Handle<HeapObject> receiver = Handle<HeapObject>::cast(object);
       if (object->IsString() || key->IsSmi()) stub = LoadElementStub(receiver);
@@ -1507,7 +1508,7 @@ MaybeHandle<Object> StoreIC::Store(Handle<Object> object, Handle<Name> name,
       }
 
       Handle<Object> previous_value =
-          FixedArray::get(script_context, lookup_result.slot_index);
+          FixedArray::get(*script_context, lookup_result.slot_index, isolate());
 
       if (*previous_value == *isolate()->factory()->the_hole_value()) {
         // Do not install stubs and stay pre-monomorphic for
@@ -1561,18 +1562,18 @@ MaybeHandle<Object> StoreIC::Store(Handle<Object> object, Handle<Name> name,
   return value;
 }
 
-
 Handle<Code> CallIC::initialize_stub(Isolate* isolate, int argc,
-                                     ConvertReceiverMode mode) {
-  CallICTrampolineStub stub(isolate, CallICState(argc, mode));
+                                     ConvertReceiverMode mode,
+                                     TailCallMode tail_call_mode) {
+  CallICTrampolineStub stub(isolate, CallICState(argc, mode, tail_call_mode));
   Handle<Code> code = stub.GetCode();
   return code;
 }
 
-
 Handle<Code> CallIC::initialize_stub_in_optimized_code(
-    Isolate* isolate, int argc, ConvertReceiverMode mode) {
-  CallICStub stub(isolate, CallICState(argc, mode));
+    Isolate* isolate, int argc, ConvertReceiverMode mode,
+    TailCallMode tail_call_mode) {
+  CallICStub stub(isolate, CallICState(argc, mode, tail_call_mode));
   Handle<Code> code = stub.GetCode();
   return code;
 }
@@ -1797,9 +1798,8 @@ Handle<Code> StoreIC::CompileHandler(LookupIterator* lookup,
         bool use_stub = true;
         if (lookup->representation().IsHeapObject()) {
           // Only use a generic stub if no types need to be tracked.
-          Handle<HeapType> field_type = lookup->GetFieldType();
-          HeapType::Iterator<Map> it = field_type->Classes();
-          use_stub = it.Done();
+          Handle<FieldType> field_type = lookup->GetFieldType();
+          use_stub = !field_type->IsClass();
         }
         if (use_stub) {
           StoreFieldStub stub(isolate(), lookup->GetFieldIndex(),

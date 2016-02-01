@@ -263,6 +263,14 @@ function NAMEConstructor(arg1, arg2, arg3) {
   }
 }
 
+// TODO(littledan): Remove this performance workaround BUG(chromium:579905)
+function NAME_GetLength() {
+  if (!(%_ClassOf(this) === 'NAME')) {
+    throw MakeTypeError(kIncompatibleMethodReceiver, "NAME.length", this);
+  }
+  return %_TypedArrayGetLength(this);
+}
+
 function NAMESubArray(begin, end) {
   var beginInt = TO_INTEGER(begin);
   if (!IS_UNDEFINED(end)) {
@@ -452,6 +460,7 @@ function TypedArraySet(obj, offset) {
       return;
   }
 }
+%FunctionSetLength(TypedArraySet, 1);
 
 function TypedArrayGetToStringTag() {
   if (!%_IsTypedArray(this)) return;
@@ -829,6 +838,9 @@ macro SETUP_TYPED_ARRAY(ARRAY_ID, NAME, ELEMENT_SIZE)
   %AddNamedProperty(GlobalNAME.prototype,
                     "BYTES_PER_ELEMENT", ELEMENT_SIZE,
                     READ_ONLY | DONT_ENUM | DONT_DELETE);
+  // TODO(littledan): Remove this performance workaround BUG(chromium:579905)
+  utils.InstallGetter(GlobalNAME.prototype, "length", NAME_GetLength,
+                      DONT_ENUM | DONT_DELETE);
 endmacro
 
 TYPED_ARRAYS(SETUP_TYPED_ARRAY)
@@ -910,6 +922,7 @@ function DataViewGetTYPENAMEJS(offset, little_endian) {
   offset = ToPositiveInteger(offset, kInvalidDataViewAccessorOffset);
   return %DataViewGetTYPENAME(this, offset, !!little_endian);
 }
+%FunctionSetLength(DataViewGetTYPENAMEJS, 1);
 
 function DataViewSetTYPENAMEJS(offset, value, little_endian) {
   if (!IS_DATAVIEW(this)) {
@@ -920,6 +933,7 @@ function DataViewSetTYPENAMEJS(offset, value, little_endian) {
   offset = ToPositiveInteger(offset, kInvalidDataViewAccessorOffset);
   %DataViewSetTYPENAME(this, offset, TO_NUMBER(value), !!little_endian);
 }
+%FunctionSetLength(DataViewSetTYPENAMEJS, 2);
 endmacro
 
 DATA_VIEW_TYPES(DATA_VIEW_GETTER_SETTER)

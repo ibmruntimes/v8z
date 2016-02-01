@@ -209,7 +209,6 @@ namespace internal {
   F(ForInNext, 4, 1)                \
   F(ForInStep, 1, 1)
 
-
 #define FOR_EACH_INTRINSIC_INTERPRETER(F) \
   F(InterpreterEquals, 2, 1)              \
   F(InterpreterNotEquals, 2, 1)           \
@@ -222,8 +221,9 @@ namespace internal {
   F(InterpreterToBoolean, 1, 1)           \
   F(InterpreterLogicalNot, 1, 1)          \
   F(InterpreterTypeOf, 1, 1)              \
-  F(InterpreterNewClosure, 2, 1)
-
+  F(InterpreterNewClosure, 2, 1)          \
+  F(InterpreterTraceBytecodeEntry, 3, 1)  \
+  F(InterpreterTraceBytecodeExit, 3, 1)
 
 #define FOR_EACH_INTRINSIC_FUNCTION(F)     \
   F(FunctionGetName, 1, 1)                 \
@@ -258,6 +258,7 @@ namespace internal {
   F(GeneratorGetFunction, 1, 1)         \
   F(GeneratorGetContext, 1, 1)          \
   F(GeneratorGetReceiver, 1, 1)         \
+  F(GeneratorGetInput, 1, 1)            \
   F(GeneratorGetContinuation, 1, 1)     \
   F(GeneratorGetSourcePosition, 1, 1)   \
   F(GeneratorNext, 2, 1)                \

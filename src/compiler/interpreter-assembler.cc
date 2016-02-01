@@ -24,7 +24,6 @@ namespace v8 {
 namespace internal {
 namespace compiler {
 
-
 InterpreterAssembler::InterpreterAssembler(Isolate* isolate, Zone* zone,
                                            interpreter::Bytecode bytecode)
     : bytecode_(bytecode),
@@ -35,12 +34,13 @@ InterpreterAssembler::InterpreterAssembler(Isolate* isolate, Zone* zone,
           InstructionSelector::SupportedMachineOperatorFlags())),
       accumulator_(
           raw_assembler_->Parameter(Linkage::kInterpreterAccumulatorParameter)),
-      bytecode_offset_(raw_assembler_->Parameter(
-          Linkage::kInterpreterBytecodeOffsetParameter)),
       context_(
           raw_assembler_->Parameter(Linkage::kInterpreterContextParameter)),
-      code_generated_(false) {}
-
+      code_generated_(false) {
+  if (FLAG_trace_ignition) {
+    TraceBytecode(Runtime::kInterpreterTraceBytecodeEntry);
+  }
+}
 
 InterpreterAssembler::~InterpreterAssembler() {}
 
@@ -85,9 +85,10 @@ void InterpreterAssembler::SetContext(Node* value) {
   context_ = value;
 }
 
-
-Node* InterpreterAssembler::BytecodeOffset() { return bytecode_offset_; }
-
+Node* InterpreterAssembler::BytecodeOffset() {
+  return raw_assembler_->Parameter(
+      Linkage::kInterpreterBytecodeOffsetParameter);
+}
 
 Node* InterpreterAssembler::RegisterFileRawPointer() {
   return raw_assembler_->Parameter(Linkage::kInterpreterRegisterFileParameter);
@@ -305,31 +306,18 @@ Node* InterpreterAssembler::BytecodeOperandIdx(int operand_index) {
 
 
 Node* InterpreterAssembler::BytecodeOperandReg(int operand_index) {
-  switch (interpreter::Bytecodes::GetOperandType(bytecode_, operand_index)) {
-    case interpreter::OperandType::kMaybeReg8:
-    case interpreter::OperandType::kReg8:
-    case interpreter::OperandType::kRegPair8:
-    case interpreter::OperandType::kRegTriple8:
-      DCHECK_EQ(
-          interpreter::OperandSize::kByte,
-          interpreter::Bytecodes::GetOperandSize(bytecode_, operand_index));
+  interpreter::OperandType operand_type =
+      interpreter::Bytecodes::GetOperandType(bytecode_, operand_index);
+  if (interpreter::Bytecodes::IsRegisterOperandType(operand_type)) {
+    interpreter::OperandSize operand_size =
+        interpreter::Bytecodes::SizeOfOperand(operand_type);
+    if (operand_size == interpreter::OperandSize::kByte) {
       return BytecodeOperandSignExtended(operand_index);
-    case interpreter::OperandType::kMaybeReg16:
-    case interpreter::OperandType::kReg16:
-    case interpreter::OperandType::kRegPair16:
-    case interpreter::OperandType::kRegTriple16:
-      DCHECK_EQ(
-          interpreter::OperandSize::kShort,
-          interpreter::Bytecodes::GetOperandSize(bytecode_, operand_index));
+    } else if (operand_size == interpreter::OperandSize::kShort) {
       return BytecodeOperandShortSignExtended(operand_index);
-    case interpreter::OperandType::kNone:
-    case interpreter::OperandType::kIdx8:
-    case interpreter::OperandType::kIdx16:
-    case interpreter::OperandType::kImm8:
-    case interpreter::OperandType::kRegCount8:
-    case interpreter::OperandType::kRegCount16:
-      UNREACHABLE();
+    }
   }
+  UNREACHABLE();
   return nullptr;
 }
 
@@ -477,15 +465,8 @@ Node* InterpreterAssembler::CallConstruct(Node* new_target, Node* constructor,
 
 
 void InterpreterAssembler::CallPrologue() {
-  StoreRegister(SmiTag(bytecode_offset_),
+  StoreRegister(SmiTag(BytecodeOffset()),
                 InterpreterFrameConstants::kBytecodeOffsetFromRegisterPointer);
-}
-
-
-void InterpreterAssembler::CallEpilogue() {
-  // Restore the bytecode offset from the stack frame.
-  bytecode_offset_ = SmiUntag(LoadRegister(
-      InterpreterFrameConstants::kBytecodeOffsetFromRegisterPointer));
 }
 
 
@@ -504,7 +485,6 @@ Node* InterpreterAssembler::CallN(CallDescriptor* descriptor, Node* code_target,
                         kUnexpectedStackPointer);
   }
 
-  CallEpilogue();
   return return_val;
 }
 
@@ -607,7 +587,6 @@ Node* InterpreterAssembler::CallRuntime(Runtime::FunctionId function_id,
   CallPrologue();
   Node* return_val =
       raw_assembler_->CallRuntime1(function_id, arg1, GetContext());
-  CallEpilogue();
   return return_val;
 }
 
@@ -617,10 +596,16 @@ Node* InterpreterAssembler::CallRuntime(Runtime::FunctionId function_id,
   CallPrologue();
   Node* return_val =
       raw_assembler_->CallRuntime2(function_id, arg1, arg2, GetContext());
-  CallEpilogue();
   return return_val;
 }
 
+Node* InterpreterAssembler::CallRuntime(Runtime::FunctionId function_id,
+                                        Node* arg1, Node* arg2, Node* arg3) {
+  CallPrologue();
+  Node* return_val =
+      raw_assembler_->CallRuntime3(function_id, arg1, arg2, arg3, GetContext());
+  return return_val;
+}
 
 Node* InterpreterAssembler::CallRuntime(Runtime::FunctionId function_id,
                                         Node* arg1, Node* arg2, Node* arg3,
@@ -628,12 +613,15 @@ Node* InterpreterAssembler::CallRuntime(Runtime::FunctionId function_id,
   CallPrologue();
   Node* return_val = raw_assembler_->CallRuntime4(function_id, arg1, arg2, arg3,
                                                   arg4, GetContext());
-  CallEpilogue();
   return return_val;
 }
 
 
 void InterpreterAssembler::Return() {
+  if (FLAG_trace_ignition) {
+    TraceBytecode(Runtime::kInterpreterTraceBytecodeExit);
+  }
+
   Node* exit_trampoline_code_object =
       HeapConstant(isolate()->builtins()->InterpreterExitTrampoline());
   // If the order of the parameters you need to change the call signature below.
@@ -663,9 +651,7 @@ Node* InterpreterAssembler::Advance(Node* delta) {
   return raw_assembler_->IntPtrAdd(BytecodeOffset(), delta);
 }
 
-
 void InterpreterAssembler::Jump(Node* delta) { DispatchTo(Advance(delta)); }
-
 
 void InterpreterAssembler::JumpIfWordEqual(Node* lhs, Node* rhs, Node* delta) {
   RawMachineLabel match, no_match;
@@ -684,6 +670,9 @@ void InterpreterAssembler::Dispatch() {
 
 
 void InterpreterAssembler::DispatchTo(Node* new_bytecode_offset) {
+  if (FLAG_trace_ignition) {
+    TraceBytecode(Runtime::kInterpreterTraceBytecodeExit);
+  }
   Node* target_bytecode = raw_assembler_->Load(
       MachineType::Uint8(), BytecodeArrayTaggedPointer(), new_bytecode_offset);
 
@@ -729,6 +718,10 @@ void InterpreterAssembler::AbortIfWordNotEqual(Node* lhs, Node* rhs,
   raw_assembler_->Bind(&match);
 }
 
+void InterpreterAssembler::TraceBytecode(Runtime::FunctionId function_id) {
+  CallRuntime(function_id, BytecodeArrayTaggedPointer(),
+              SmiTag(BytecodeOffset()), GetAccumulator());
+}
 
 // static
 bool InterpreterAssembler::TargetSupportsUnalignedAccess() {

@@ -643,6 +643,19 @@ Expression* ParserTraits::NewTargetExpression(Scope* scope,
 }
 
 
+Expression* ParserTraits::FunctionSentExpression(Scope* scope,
+                                                 AstNodeFactory* factory,
+                                                 int pos) {
+  // We desugar function.sent into %GeneratorGetInput(generator).
+  Zone* zone = parser_->zone();
+  ZoneList<Expression*>* args = new (zone) ZoneList<Expression*>(1, zone);
+  VariableProxy* generator = factory->NewVariableProxy(
+      parser_->function_state_->generator_object_variable());
+  args->Add(generator, zone);
+  return factory->NewCallRuntime(Runtime::kGeneratorGetInput, args, pos);
+}
+
+
 Expression* ParserTraits::DefaultConstructor(bool call_super, Scope* scope,
                                              int pos, int end_pos,
                                              LanguageMode mode) {
@@ -2807,7 +2820,10 @@ Statement* Parser::ParseReturnStatement(bool* ok) {
           is_object_conditional, pos);
     }
 
-    return_value->MarkTail();
+    // ES6 14.6.1 Static Semantics: IsInTailPosition
+    if (FLAG_harmony_tailcalls && !is_sloppy(language_mode())) {
+      return_value->MarkTail();
+    }
   }
   ExpectSemicolon(CHECK_OK);
 
@@ -4655,35 +4671,72 @@ ZoneList<Statement*>* Parser::ParseEagerFunctionBody(
   {
     BlockState block_state(&scope_, inner_scope);
 
-    // For generators, allocate and yield an iterator on function entry.
     if (IsGeneratorFunction(kind)) {
-      ZoneList<Expression*>* arguments =
-          new(zone()) ZoneList<Expression*>(0, zone());
-      CallRuntime* allocation = factory()->NewCallRuntime(
-          Runtime::kCreateJSGeneratorObject, arguments, pos);
-      VariableProxy* init_proxy = factory()->NewVariableProxy(
-          function_state_->generator_object_variable());
-      Assignment* assignment = factory()->NewAssignment(
-          Token::INIT, init_proxy, allocation, RelocInfo::kNoPosition);
-      VariableProxy* get_proxy = factory()->NewVariableProxy(
-          function_state_->generator_object_variable());
-      Yield* yield = factory()->NewYield(
-          get_proxy, assignment, Yield::kInitial, RelocInfo::kNoPosition);
-      body->Add(factory()->NewExpressionStatement(
-          yield, RelocInfo::kNoPosition), zone());
-    }
+      // We produce:
+      //
+      // try { InitialYield; ...body...; FinalYield }
+      // finally { %GeneratorClose(generator) }
+      //
+      // - InitialYield yields the actual generator object.
+      // - FinalYield yields {value: foo, done: true} where foo is the
+      //   completion value of body.  (This is needed here in case the body
+      //   falls through without an explicit return.)
+      // - Any return statement inside the body will be converted into a similar
+      //   FinalYield.
+      // - If the generator terminates for whatever reason, we must close it.
+      //   Hence the finally clause.
 
-    ParseStatementList(body, Token::RBRACE, CHECK_OK);
+      Block* try_block =
+          factory()->NewBlock(nullptr, 3, false, RelocInfo::kNoPosition);
 
-    if (IsGeneratorFunction(kind)) {
+      {
+        ZoneList<Expression*>* arguments =
+            new (zone()) ZoneList<Expression*>(0, zone());
+        CallRuntime* allocation = factory()->NewCallRuntime(
+            Runtime::kCreateJSGeneratorObject, arguments, pos);
+        VariableProxy* init_proxy = factory()->NewVariableProxy(
+            function_state_->generator_object_variable());
+        Assignment* assignment = factory()->NewAssignment(
+            Token::INIT, init_proxy, allocation, RelocInfo::kNoPosition);
+        VariableProxy* get_proxy = factory()->NewVariableProxy(
+            function_state_->generator_object_variable());
+        Yield* yield = factory()->NewYield(
+            get_proxy, assignment, Yield::kInitial, RelocInfo::kNoPosition);
+        try_block->statements()->Add(
+            factory()->NewExpressionStatement(yield, RelocInfo::kNoPosition),
+            zone());
+      }
+
+      ParseStatementList(try_block->statements(), Token::RBRACE, CHECK_OK);
+
       VariableProxy* get_proxy = factory()->NewVariableProxy(
           function_state_->generator_object_variable());
       Expression* undefined =
           factory()->NewUndefinedLiteral(RelocInfo::kNoPosition);
       Yield* yield = factory()->NewYield(get_proxy, undefined, Yield::kFinal,
                                          RelocInfo::kNoPosition);
-      body->Add(factory()->NewExpressionStatement(
-          yield, RelocInfo::kNoPosition), zone());
+      try_block->statements()->Add(
+          factory()->NewExpressionStatement(yield, RelocInfo::kNoPosition),
+          zone());
+
+      Block* finally_block =
+          factory()->NewBlock(nullptr, 1, false, RelocInfo::kNoPosition);
+      ZoneList<Expression*>* args =
+          new (zone()) ZoneList<Expression*>(1, zone());
+      VariableProxy* call_proxy = factory()->NewVariableProxy(
+          function_state_->generator_object_variable());
+      args->Add(call_proxy, zone());
+      Expression* call = factory()->NewCallRuntime(
+          Runtime::kGeneratorClose, args, RelocInfo::kNoPosition);
+      finally_block->statements()->Add(
+          factory()->NewExpressionStatement(call, RelocInfo::kNoPosition),
+          zone());
+
+      body->Add(factory()->NewTryFinallyStatement(try_block, finally_block,
+                                                  RelocInfo::kNoPosition),
+                zone());
+    } else {
+      ParseStatementList(body, Token::RBRACE, CHECK_OK);
     }
 
     if (IsSubclassConstructor(kind)) {
@@ -5106,6 +5159,12 @@ void Parser::Internalize(Isolate* isolate, Handle<Script> script, bool error) {
        ++feature) {
     for (int i = 0; i < use_counts_[feature]; ++i) {
       isolate->CountUsage(v8::Isolate::UseCounterFeature(feature));
+    }
+  }
+  if (scanner_.FoundHtmlComment()) {
+    isolate->CountUsage(v8::Isolate::kHtmlComment);
+    if (script->line_offset() == 0 && script->column_offset() == 0) {
+      isolate->CountUsage(v8::Isolate::kHtmlCommentInExternalScript);
     }
   }
   isolate->counters()->total_preparse_skipped()->Increment(

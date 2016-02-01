@@ -1002,6 +1002,34 @@ TEST(Run_Wasm_BrIf_strict) {
   FOR_INT32_INPUTS(i) { CHECK_EQ(99, r.Call(*i)); }
 }
 
+TEST(Run_Wasm_TableSwitch0a) {
+  WasmRunner<int32_t> r(MachineType::Int32());
+  BUILD(r, WASM_BLOCK(2, WASM_TABLESWITCH_OP(0, 1, WASM_CASE_BR(0)),
+                      WASM_TABLESWITCH_BODY0(WASM_GET_LOCAL(0)), WASM_I8(91)));
+  FOR_INT32_INPUTS(i) { CHECK_EQ(91, r.Call(*i)); }
+}
+
+TEST(Run_Wasm_TableSwitch0b) {
+  WasmRunner<int32_t> r(MachineType::Int32());
+  BUILD(r, WASM_BLOCK(
+               2, WASM_TABLESWITCH_OP(0, 2, WASM_CASE_BR(0), WASM_CASE_BR(0)),
+               WASM_TABLESWITCH_BODY0(WASM_GET_LOCAL(0)), WASM_I8(92)));
+  FOR_INT32_INPUTS(i) { CHECK_EQ(92, r.Call(*i)); }
+}
+
+TEST(Run_Wasm_TableSwitch0c) {
+  WasmRunner<int32_t> r(MachineType::Int32());
+  BUILD(r,
+        WASM_BLOCK(2, WASM_BLOCK(2, WASM_TABLESWITCH_OP(0, 2, WASM_CASE_BR(0),
+                                                        WASM_CASE_BR(1)),
+                                 WASM_TABLESWITCH_BODY0(WASM_GET_LOCAL(0)),
+                                 WASM_RETURN(WASM_I8(76))),
+                   WASM_I8(77)));
+  FOR_INT32_INPUTS(i) {
+    int32_t expected = *i == 0 ? 76 : 77;
+    CHECK_EQ(expected, r.Call(*i));
+  }
+}
 
 TEST(Run_Wasm_TableSwitch1) {
   WasmRunner<int32_t> r(MachineType::Int32());
@@ -2350,9 +2378,6 @@ TEST(Run_WasmCallEmpty) {
 }
 
 
-// TODO(tizer): Fix on arm and reenable.
-#if !V8_TARGET_ARCH_ARM && !V8_TARGET_ARCH_ARM64
-
 TEST(Run_WasmCallF32StackParameter) {
   // Build the target function.
   LocalType param_types[20];
@@ -2403,8 +2428,6 @@ TEST(Run_WasmCallF64StackParameter) {
   float result = r.Call();
   CHECK_EQ(256.5, result);
 }
-
-#endif
 
 
 TEST(Run_WasmCallVoid) {
@@ -2910,6 +2933,27 @@ TEST(Run_Wasm_MultipleCallIndirect) {
   CHECK_TRAP(r.Call(2, 1, 0));
 }
 
+TEST(Run_Wasm_CallIndirect_NoTable) {
+  WasmRunner<int32_t> r(MachineType::Int32());
+  TestSignatures sigs;
+  TestingModule module;
+  r.env()->module = &module;
+  // One function.
+  WasmFunctionCompiler t1(sigs.i_ii());
+  BUILD(t1, WASM_I32_ADD(WASM_GET_LOCAL(0), WASM_GET_LOCAL(1)));
+  t1.CompileAndAdd(&module, /*sig_index*/ 1);
+
+  // Signature table.
+  module.AddSignature(sigs.f_ff());
+  module.AddSignature(sigs.i_ii());
+
+  // Builder the caller function.
+  BUILD(r, WASM_CALL_INDIRECT(1, WASM_GET_LOCAL(0), WASM_I8(66), WASM_I8(22)));
+
+  CHECK_TRAP(r.Call(0));
+  CHECK_TRAP(r.Call(1));
+  CHECK_TRAP(r.Call(2));
+}
 
 TEST(Run_Wasm_F32Trunc) {
   WasmRunner<float> r(MachineType::Float32());

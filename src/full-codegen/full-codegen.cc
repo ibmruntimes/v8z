@@ -143,13 +143,11 @@ int FullCodeGenerator::NewHandlerTableEntry() {
 
 bool FullCodeGenerator::MustCreateObjectLiteralWithRuntime(
     ObjectLiteral* expr) const {
-  int literal_flags = expr->ComputeFlags();
   // FastCloneShallowObjectStub doesn't copy elements, and object literals don't
   // support copy-on-write (COW) elements for now.
   // TODO(mvstanton): make object literals support COW elements.
-  return masm()->serializer_enabled() ||
-         literal_flags != ObjectLiteral::kShallowProperties ||
-         literal_flags != ObjectLiteral::kFastElements ||
+  return masm()->serializer_enabled() || !expr->fast_elements() ||
+         !expr->has_shallow_properties() ||
          expr->properties_count() >
              FastCloneShallowObjectStub::kMaximumClonedProperties;
 }
@@ -1348,35 +1346,8 @@ void FullCodeGenerator::VisitClassLiteral(ClassLiteral* lit) {
 void FullCodeGenerator::VisitNativeFunctionLiteral(
     NativeFunctionLiteral* expr) {
   Comment cmnt(masm_, "[ NativeFunctionLiteral");
-
-  v8::Isolate* v8_isolate = reinterpret_cast<v8::Isolate*>(isolate());
-
-  // Compute the function template for the native function.
-  Handle<String> name = expr->name();
-  v8::Local<v8::FunctionTemplate> fun_template =
-      expr->extension()->GetNativeFunctionTemplate(v8_isolate,
-                                                   v8::Utils::ToLocal(name));
-  DCHECK(!fun_template.IsEmpty());
-
-  // Instantiate the function and create a shared function info from it.
-  Handle<JSFunction> fun = Handle<JSFunction>::cast(Utils::OpenHandle(
-      *fun_template->GetFunction(v8_isolate->GetCurrentContext())
-           .ToLocalChecked()));
-  const int literals = fun->NumberOfLiterals();
-  Handle<Code> code = Handle<Code>(fun->shared()->code());
-  Handle<Code> construct_stub = Handle<Code>(fun->shared()->construct_stub());
   Handle<SharedFunctionInfo> shared =
-      isolate()->factory()->NewSharedFunctionInfo(
-          name, literals, FunctionKind::kNormalFunction, code,
-          Handle<ScopeInfo>(fun->shared()->scope_info()),
-          Handle<TypeFeedbackVector>(fun->shared()->feedback_vector()));
-  shared->set_construct_stub(*construct_stub);
-
-  // Copy the function data to the shared function info.
-  shared->set_function_data(fun->shared()->function_data());
-  int parameters = fun->shared()->internal_formal_parameter_count();
-  shared->set_internal_formal_parameter_count(parameters);
-
+      Compiler::GetSharedFunctionInfoForNative(expr->extension(), expr->name());
   EmitNewClosure(shared, false);
 }
 
@@ -1425,7 +1396,9 @@ void FullCodeGenerator::VisitCall(Call* expr) {
   expr->return_is_recorded_ = false;
 #endif
 
-  Comment cmnt(masm_, "[ Call");
+  Comment cmnt(masm_, (expr->tail_call_mode() == TailCallMode::kAllow)
+                          ? "[ TailCall"
+                          : "[ Call");
   Expression* callee = expr->expression();
   Call::CallType call_type = expr->GetCallType(isolate());
 

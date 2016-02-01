@@ -40,7 +40,6 @@ const Alias EscapeStatusAnalysis::kNotReachable =
 const Alias EscapeStatusAnalysis::kUntrackable =
     std::numeric_limits<Alias>::max() - 1;
 
-
 class VirtualObject : public ZoneObject {
  public:
   enum Status {
@@ -142,9 +141,7 @@ class VirtualObject : public ZoneObject {
   DISALLOW_COPY_AND_ASSIGN(VirtualObject);
 };
 
-
 DEFINE_OPERATORS_FOR_FLAGS(VirtualObject::StatusFlags)
-
 
 bool VirtualObject::UpdateFrom(const VirtualObject& other) {
   bool changed = status_ != other.status_;
@@ -163,11 +160,20 @@ bool VirtualObject::UpdateFrom(const VirtualObject& other) {
   return changed;
 }
 
-
 class VirtualState : public ZoneObject {
  public:
-  VirtualState(Node* owner, Zone* zone, size_t size);
-  VirtualState(Node* owner, const VirtualState& states);
+  VirtualState(Node* owner, Zone* zone, size_t size)
+      : info_(size, nullptr, zone), owner_(owner) {}
+
+  VirtualState(Node* owner, const VirtualState& state)
+      : info_(state.info_.size(), nullptr, state.info_.get_allocator().zone()),
+        owner_(owner) {
+    for (size_t i = 0; i < info_.size(); ++i) {
+      if (state.info_[i]) {
+        info_[i] = state.info_[i];
+      }
+    }
+  }
 
   VirtualObject* VirtualObjectFromAlias(size_t alias);
   VirtualObject* GetOrCreateTrackedVirtualObject(Alias alias, NodeId id,
@@ -193,7 +199,6 @@ class VirtualState : public ZoneObject {
 
   DISALLOW_COPY_AND_ASSIGN(VirtualState);
 };
-
 
 class MergeCache : public ZoneObject {
  public:
@@ -224,7 +229,6 @@ class MergeCache : public ZoneObject {
   DISALLOW_COPY_AND_ASSIGN(MergeCache);
 };
 
-
 size_t MergeCache::LoadVirtualObjectsFromStatesFor(Alias alias) {
   objects_.clear();
   DCHECK_GT(states_.size(), 0u);
@@ -238,7 +242,6 @@ size_t MergeCache::LoadVirtualObjectsFromStatesFor(Alias alias) {
   return min;
 }
 
-
 void MergeCache::LoadVirtualObjectsForFieldsFrom(
     VirtualState* state, const ZoneVector<Alias>& aliases) {
   objects_.clear();
@@ -251,7 +254,6 @@ void MergeCache::LoadVirtualObjectsForFieldsFrom(
     }
   }
 }
-
 
 Node* MergeCache::GetFields(size_t pos) {
   fields_.clear();
@@ -271,22 +273,6 @@ Node* MergeCache::GetFields(size_t pos) {
   return rep;
 }
 
-
-VirtualState::VirtualState(Node* owner, Zone* zone, size_t size)
-    : info_(size, nullptr, zone), owner_(owner) {}
-
-
-VirtualState::VirtualState(Node* owner, const VirtualState& state)
-    : info_(state.info_.size(), nullptr, state.info_.get_allocator().zone()),
-      owner_(owner) {
-  for (size_t i = 0; i < info_.size(); ++i) {
-    if (state.info_[i]) {
-      info_[i] = state.info_[i];
-    }
-  }
-}
-
-
 VirtualObject* VirtualState::Copy(VirtualObject* obj, Alias alias) {
   if (obj->owner() == this) return obj;
   VirtualObject* new_obj =
@@ -298,11 +284,9 @@ VirtualObject* VirtualState::Copy(VirtualObject* obj, Alias alias) {
   return new_obj;
 }
 
-
 VirtualObject* VirtualState::VirtualObjectFromAlias(size_t alias) {
   return info_[alias];
 }
-
 
 VirtualObject* VirtualState::GetOrCreateTrackedVirtualObject(
     Alias alias, NodeId id, size_t field_number, bool initialized, Zone* zone,
@@ -317,11 +301,9 @@ VirtualObject* VirtualState::GetOrCreateTrackedVirtualObject(
   return obj;
 }
 
-
 void VirtualState::SetVirtualObject(Alias alias, VirtualObject* obj) {
   info_[alias] = obj;
 }
-
 
 bool VirtualState::UpdateFrom(VirtualState* from, Zone* zone) {
   if (from == this) return false;
@@ -346,7 +328,6 @@ bool VirtualState::UpdateFrom(VirtualState* from, Zone* zone) {
   return false;
 }
 
-
 namespace {
 
 bool IsEquivalentPhi(Node* node1, Node* node2) {
@@ -365,7 +346,6 @@ bool IsEquivalentPhi(Node* node1, Node* node2) {
   return true;
 }
 
-
 bool IsEquivalentPhi(Node* phi, ZoneVector<Node*>& inputs) {
   if (phi->opcode() != IrOpcode::kPhi) return false;
   if (phi->op()->ValueInputCount() != inputs.size()) {
@@ -382,7 +362,6 @@ bool IsEquivalentPhi(Node* phi, ZoneVector<Node*>& inputs) {
 
 }  // namespace
 
-
 Node* EscapeAnalysis::GetReplacementIfSame(ZoneVector<VirtualObject*>& objs) {
   Node* rep = GetReplacement(objs.front()->id());
   for (VirtualObject* obj : objs) {
@@ -392,7 +371,6 @@ Node* EscapeAnalysis::GetReplacementIfSame(ZoneVector<VirtualObject*>& objs) {
   }
   return rep;
 }
-
 
 bool VirtualState::MergeFrom(MergeCache* cache, Zone* zone, Graph* graph,
                              CommonOperatorBuilder* common, Node* control,
@@ -487,7 +465,6 @@ bool VirtualState::MergeFrom(MergeCache* cache, Zone* zone, Graph* graph,
   return changed;
 }
 
-
 EscapeStatusAnalysis::EscapeStatusAnalysis(EscapeAnalysis* object_analysis,
                                            Graph* graph, Zone* zone)
     : stack_(zone),
@@ -499,35 +476,28 @@ EscapeStatusAnalysis::EscapeStatusAnalysis(EscapeAnalysis* object_analysis,
       status_stack_(zone),
       aliases_(zone) {}
 
-
 EscapeStatusAnalysis::~EscapeStatusAnalysis() {}
-
 
 bool EscapeStatusAnalysis::HasEntry(Node* node) {
   return status_[node->id()] & (kTracked | kEscaped);
 }
 
-
 bool EscapeStatusAnalysis::IsVirtual(Node* node) {
   return IsVirtual(node->id());
 }
-
 
 bool EscapeStatusAnalysis::IsVirtual(NodeId id) {
   return (status_[id] & kTracked) && !(status_[id] & kEscaped);
 }
 
-
 bool EscapeStatusAnalysis::IsEscaped(Node* node) {
   return status_[node->id()] & kEscaped;
 }
-
 
 bool EscapeStatusAnalysis::IsAllocation(Node* node) {
   return node->opcode() == IrOpcode::kAllocate ||
          node->opcode() == IrOpcode::kFinishRegion;
 }
-
 
 bool EscapeStatusAnalysis::SetEscaped(Node* node) {
   bool changed = !(status_[node->id()] & kEscaped);
@@ -535,6 +505,17 @@ bool EscapeStatusAnalysis::SetEscaped(Node* node) {
   return changed;
 }
 
+bool EscapeStatusAnalysis::IsInQueue(NodeId id) {
+  return status_[id] & kInQueue;
+}
+
+void EscapeStatusAnalysis::SetInQueue(NodeId id, bool on_stack) {
+  if (on_stack) {
+    status_[id] |= kInQueue;
+  } else {
+    status_[id] &= ~kInQueue;
+  }
+}
 
 void EscapeStatusAnalysis::ResizeStatusVector() {
   if (status_.size() <= graph()->NodeCount()) {
@@ -542,9 +523,7 @@ void EscapeStatusAnalysis::ResizeStatusVector() {
   }
 }
 
-
 size_t EscapeStatusAnalysis::GetStatusVectorSize() { return status_.size(); }
-
 
 void EscapeStatusAnalysis::RunStatusAnalysis() {
   ResizeStatusVector();
@@ -557,7 +536,6 @@ void EscapeStatusAnalysis::RunStatusAnalysis() {
   }
 }
 
-
 void EscapeStatusAnalysis::EnqueueForStatusAnalysis(Node* node) {
   DCHECK_NOT_NULL(node);
   if (!(status_[node->id()] & kOnStack)) {
@@ -565,7 +543,6 @@ void EscapeStatusAnalysis::EnqueueForStatusAnalysis(Node* node) {
     status_[node->id()] |= kOnStack;
   }
 }
-
 
 void EscapeStatusAnalysis::RevisitInputs(Node* node) {
   for (Edge edge : node->input_edges()) {
@@ -577,7 +554,6 @@ void EscapeStatusAnalysis::RevisitInputs(Node* node) {
   }
 }
 
-
 void EscapeStatusAnalysis::RevisitUses(Node* node) {
   for (Edge edge : node->use_edges()) {
     Node* use = edge.from();
@@ -587,7 +563,6 @@ void EscapeStatusAnalysis::RevisitUses(Node* node) {
     }
   }
 }
-
 
 void EscapeStatusAnalysis::Process(Node* node) {
   switch (node->opcode()) {
@@ -629,7 +604,6 @@ void EscapeStatusAnalysis::Process(Node* node) {
   }
 }
 
-
 bool EscapeStatusAnalysis::IsAllocationPhi(Node* node) {
   for (Edge edge : node->input_edges()) {
     Node* input = edge.to();
@@ -639,7 +613,6 @@ bool EscapeStatusAnalysis::IsAllocationPhi(Node* node) {
   }
   return true;
 }
-
 
 void EscapeStatusAnalysis::ProcessStoreField(Node* node) {
   DCHECK_EQ(node->opcode(), IrOpcode::kStoreField);
@@ -653,7 +626,6 @@ void EscapeStatusAnalysis::ProcessStoreField(Node* node) {
   }
 }
 
-
 void EscapeStatusAnalysis::ProcessStoreElement(Node* node) {
   DCHECK_EQ(node->opcode(), IrOpcode::kStoreElement);
   Node* to = NodeProperties::GetValueInput(node, 0);
@@ -665,7 +637,6 @@ void EscapeStatusAnalysis::ProcessStoreElement(Node* node) {
           val->id(), val->op()->mnemonic(), to->id());
   }
 }
-
 
 void EscapeStatusAnalysis::ProcessAllocate(Node* node) {
   DCHECK_EQ(node->opcode(), IrOpcode::kAllocate);
@@ -690,7 +661,6 @@ void EscapeStatusAnalysis::ProcessAllocate(Node* node) {
     RevisitUses(node);
   }
 }
-
 
 bool EscapeStatusAnalysis::CheckUsesForEscape(Node* uses, Node* rep,
                                               bool phi_escaping) {
@@ -762,7 +732,6 @@ bool EscapeStatusAnalysis::CheckUsesForEscape(Node* uses, Node* rep,
   return false;
 }
 
-
 void EscapeStatusAnalysis::ProcessFinishRegion(Node* node) {
   DCHECK_EQ(node->opcode(), IrOpcode::kFinishRegion);
   if (!HasEntry(node)) {
@@ -774,7 +743,6 @@ void EscapeStatusAnalysis::ProcessFinishRegion(Node* node) {
   }
 }
 
-
 void EscapeStatusAnalysis::DebugPrint() {
   for (NodeId id = 0; id < status_.size(); id++) {
     if (status_[id] & kTracked) {
@@ -784,7 +752,6 @@ void EscapeStatusAnalysis::DebugPrint() {
   }
 }
 
-
 EscapeAnalysis::EscapeAnalysis(Graph* graph, CommonOperatorBuilder* common,
                                Zone* zone)
     : status_analysis_(this, graph, zone),
@@ -793,9 +760,7 @@ EscapeAnalysis::EscapeAnalysis(Graph* graph, CommonOperatorBuilder* common,
       replacements_(zone),
       cache_(new (zone) MergeCache(zone)) {}
 
-
 EscapeAnalysis::~EscapeAnalysis() {}
-
 
 void EscapeAnalysis::Run() {
   replacements_.resize(graph()->NodeCount());
@@ -805,7 +770,6 @@ void EscapeAnalysis::Run() {
   RunObjectAnalysis();
   status_analysis_.RunStatusAnalysis();
 }
-
 
 void EscapeStatusAnalysis::AssignAliases() {
   stack_.reserve(graph()->NodeCount() * 0.2);
@@ -867,7 +831,6 @@ void EscapeStatusAnalysis::AssignAliases() {
   TRACE("\n");
 }
 
-
 bool EscapeStatusAnalysis::IsNotReachable(Node* node) {
   if (node->id() >= aliases_.size()) {
     return false;
@@ -875,13 +838,15 @@ bool EscapeStatusAnalysis::IsNotReachable(Node* node) {
   return aliases_[node->id()] == kNotReachable;
 }
 
-
 void EscapeAnalysis::RunObjectAnalysis() {
   virtual_states_.resize(graph()->NodeCount());
-  stack().push_back(graph()->start());
-  while (!stack().empty()) {
-    Node* node = stack().back();
-    stack().pop_back();
+  ZoneDeque<Node*> queue(zone());
+  queue.push_back(graph()->start());
+  ZoneVector<Node*> danglers(zone());
+  while (!queue.empty()) {
+    Node* node = queue.back();
+    queue.pop_back();
+    status_analysis_.SetInQueue(node->id(), false);
     if (Process(node)) {
       for (Edge edge : node->use_edges()) {
         Node* use = edge.from();
@@ -889,27 +854,30 @@ void EscapeAnalysis::RunObjectAnalysis() {
           continue;
         }
         if (NodeProperties::IsEffectEdge(edge)) {
-          if ((use->opcode() != IrOpcode::kLoadField &&
-               use->opcode() != IrOpcode::kLoadElement) ||
-              !IsDanglingEffectNode(use)) {
-            stack().push_back(use);
+          // Iteration order: depth first, but delay phis.
+          // We need DFS do avoid some duplication of VirtualStates and
+          // VirtualObjects, and we want to delay phis to improve performance.
+          if (use->opcode() == IrOpcode::kEffectPhi) {
+            if (!status_analysis_.IsInQueue(use->id())) {
+              queue.push_front(use);
+            }
+          } else if ((use->opcode() != IrOpcode::kLoadField &&
+                      use->opcode() != IrOpcode::kLoadElement) ||
+                     !IsDanglingEffectNode(use)) {
+            if (!status_analysis_.IsInQueue(use->id())) {
+              status_analysis_.SetInQueue(use->id(), true);
+              queue.push_back(use);
+            }
+          } else {
+            danglers.push_back(use);
           }
         }
       }
-      // First process loads: dangling loads are a problem otherwise.
-      for (Edge edge : node->use_edges()) {
-        Node* use = edge.from();
-        if (IsNotReachable(use)) {
-          continue;
-        }
-        if (NodeProperties::IsEffectEdge(edge)) {
-          if ((use->opcode() == IrOpcode::kLoadField ||
-               use->opcode() == IrOpcode::kLoadElement) &&
-              IsDanglingEffectNode(use)) {
-            stack().push_back(use);
-          }
-        }
-      }
+      // Danglers need to be processed immediately, even if they are
+      // on the stack. Since they do not have effect outputs,
+      // we don't have to track whether they are on the stack.
+      queue.insert(queue.end(), danglers.begin(), danglers.end());
+      danglers.clear();
     }
   }
 #ifdef DEBUG
@@ -919,15 +887,14 @@ void EscapeAnalysis::RunObjectAnalysis() {
 #endif
 }
 
-
 bool EscapeStatusAnalysis::IsDanglingEffectNode(Node* node) {
   if (status_[node->id()] & kDanglingComputed) {
     return status_[node->id()] & kDangling;
   }
-  if (node->op()->EffectInputCount() == 0) return false;
-  if (node->op()->EffectOutputCount() == 0) return false;
-  if (node->op()->EffectInputCount() == 1 &&
-      NodeProperties::GetEffectInput(node)->opcode() == IrOpcode::kStart) {
+  if (node->op()->EffectInputCount() == 0 ||
+      node->op()->EffectOutputCount() == 0 ||
+      (node->op()->EffectInputCount() == 1 &&
+       NodeProperties::GetEffectInput(node)->opcode() == IrOpcode::kStart)) {
     // The start node is used as sentinel for nodes that are in general
     // effectful, but of which an analysis has determined that they do not
     // produce effects in this instance. We don't consider these nodes dangling.
@@ -946,7 +913,6 @@ bool EscapeStatusAnalysis::IsDanglingEffectNode(Node* node) {
   return true;
 }
 
-
 bool EscapeStatusAnalysis::IsEffectBranchPoint(Node* node) {
   if (status_[node->id()] & kBranchPointComputed) {
     return status_[node->id()] & kBranchPoint;
@@ -956,10 +922,10 @@ bool EscapeStatusAnalysis::IsEffectBranchPoint(Node* node) {
     Node* use = edge.from();
     if (aliases_[use->id()] == kNotReachable) continue;
     if (NodeProperties::IsEffectEdge(edge)) {
-      if ((node->opcode() == IrOpcode::kLoadField ||
-           node->opcode() == IrOpcode::kLoadElement ||
-           node->opcode() == IrOpcode::kLoad) &&
-          IsDanglingEffectNode(node))
+      if ((use->opcode() == IrOpcode::kLoadField ||
+           use->opcode() == IrOpcode::kLoadElement ||
+           use->opcode() == IrOpcode::kLoad) &&
+          IsDanglingEffectNode(use))
         continue;
       if (++count > 1) {
         status_[node->id()] |= kBranchPointComputed | kBranchPoint;
@@ -970,7 +936,6 @@ bool EscapeStatusAnalysis::IsEffectBranchPoint(Node* node) {
   status_[node->id()] |= kBranchPointComputed;
   return false;
 }
-
 
 bool EscapeAnalysis::Process(Node* node) {
   switch (node->opcode()) {
@@ -1011,7 +976,6 @@ bool EscapeAnalysis::Process(Node* node) {
   return true;
 }
 
-
 void EscapeAnalysis::ProcessAllocationUsers(Node* node) {
   for (Edge edge : node->input_edges()) {
     Node* input = edge.to();
@@ -1045,7 +1009,6 @@ void EscapeAnalysis::ProcessAllocationUsers(Node* node) {
   }
 }
 
-
 VirtualState* EscapeAnalysis::CopyForModificationAt(VirtualState* state,
                                                     Node* node) {
   if (state->owner() != node) {
@@ -1059,7 +1022,6 @@ VirtualState* EscapeAnalysis::CopyForModificationAt(VirtualState* state,
   return state;
 }
 
-
 VirtualObject* EscapeAnalysis::CopyForModificationAt(VirtualObject* obj,
                                                      VirtualState* state,
                                                      Node* node) {
@@ -1069,7 +1031,6 @@ VirtualObject* EscapeAnalysis::CopyForModificationAt(VirtualObject* obj,
   }
   return obj;
 }
-
 
 void EscapeAnalysis::ForwardVirtualState(Node* node) {
   DCHECK_EQ(node->op()->EffectInputCount(), 1);
@@ -1083,15 +1044,6 @@ void EscapeAnalysis::ForwardVirtualState(Node* node) {
   }
 #endif  // DEBUG
   Node* effect = NodeProperties::GetEffectInput(node);
-  // Break the cycle for effect phis.
-  if (effect->opcode() == IrOpcode::kEffectPhi &&
-      virtual_states_[effect->id()] == nullptr) {
-    VirtualState* state =
-        new (zone()) VirtualState(effect, zone(), AliasCount());
-    virtual_states_[effect->id()] = state;
-    TRACE("Effect Phi #%d got new virtual state %p.\n", effect->id(),
-          static_cast<void*>(virtual_states_[effect->id()]));
-  }
   DCHECK_NOT_NULL(virtual_states_[effect->id()]);
   if (virtual_states_[node->id()]) {
     virtual_states_[node->id()]->UpdateFrom(virtual_states_[effect->id()],
@@ -1112,13 +1064,11 @@ void EscapeAnalysis::ForwardVirtualState(Node* node) {
   }
 }
 
-
 void EscapeAnalysis::ProcessStart(Node* node) {
   DCHECK_EQ(node->opcode(), IrOpcode::kStart);
   virtual_states_[node->id()] =
       new (zone()) VirtualState(node, zone(), AliasCount());
 }
-
 
 bool EscapeAnalysis::ProcessEffectPhi(Node* node) {
   DCHECK_EQ(node->opcode(), IrOpcode::kEffectPhi);
@@ -1171,7 +1121,6 @@ bool EscapeAnalysis::ProcessEffectPhi(Node* node) {
   return changed;
 }
 
-
 void EscapeAnalysis::ProcessAllocation(Node* node) {
   DCHECK_EQ(node->opcode(), IrOpcode::kAllocate);
   ForwardVirtualState(node);
@@ -1183,7 +1132,9 @@ void EscapeAnalysis::ProcessAllocation(Node* node) {
     return;
   }
 
-  state = CopyForModificationAt(state, node);
+  if (state->owner()->opcode() == IrOpcode::kEffectPhi) {
+    state = CopyForModificationAt(state, node);
+  }
 
   NumberMatcher size(node->InputAt(0));
   DCHECK(node->InputAt(0)->opcode() != IrOpcode::kInt32Constant &&
@@ -1191,15 +1142,14 @@ void EscapeAnalysis::ProcessAllocation(Node* node) {
          node->InputAt(0)->opcode() != IrOpcode::kFloat32Constant &&
          node->InputAt(0)->opcode() != IrOpcode::kFloat64Constant);
   if (size.HasValue()) {
-    state->SetVirtualObject(
-        alias, new (zone()) VirtualObject(node->id(), state, zone(),
-                                          size.Value() / kPointerSize, false));
+    VirtualObject* obj = new (zone()) VirtualObject(
+        node->id(), state, zone(), size.Value() / kPointerSize, false);
+    state->SetVirtualObject(alias, obj);
   } else {
     state->SetVirtualObject(
         alias, new (zone()) VirtualObject(node->id(), state, zone()));
   }
 }
-
 
 void EscapeAnalysis::ProcessFinishRegion(Node* node) {
   DCHECK_EQ(node->opcode(), IrOpcode::kFinishRegion);
@@ -1213,24 +1163,20 @@ void EscapeAnalysis::ProcessFinishRegion(Node* node) {
   }
 }
 
-
 Node* EscapeAnalysis::replacement(NodeId id) {
   if (id >= replacements_.size()) return nullptr;
   return replacements_[id];
 }
 
-
 Node* EscapeAnalysis::replacement(Node* node) {
   return replacement(node->id());
 }
-
 
 bool EscapeAnalysis::SetReplacement(Node* node, Node* rep) {
   bool changed = replacements_[node->id()] != rep;
   replacements_[node->id()] = rep;
   return changed;
 }
-
 
 bool EscapeAnalysis::UpdateReplacement(VirtualState* state, Node* node,
                                        Node* rep) {
@@ -1246,7 +1192,6 @@ bool EscapeAnalysis::UpdateReplacement(VirtualState* state, Node* node,
   return false;
 }
 
-
 Node* EscapeAnalysis::ResolveReplacement(Node* node) {
   while (replacement(node)) {
     node = replacement(node);
@@ -1254,11 +1199,9 @@ Node* EscapeAnalysis::ResolveReplacement(Node* node) {
   return node;
 }
 
-
 Node* EscapeAnalysis::GetReplacement(Node* node) {
   return GetReplacement(node->id());
 }
-
 
 Node* EscapeAnalysis::GetReplacement(NodeId id) {
   Node* node = nullptr;
@@ -1269,14 +1212,12 @@ Node* EscapeAnalysis::GetReplacement(NodeId id) {
   return node;
 }
 
-
 bool EscapeAnalysis::IsVirtual(Node* node) {
   if (node->id() >= status_analysis_.GetStatusVectorSize()) {
     return false;
   }
   return status_analysis_.IsVirtual(node);
 }
-
 
 bool EscapeAnalysis::IsEscaped(Node* node) {
   if (node->id() >= status_analysis_.GetStatusVectorSize()) {
@@ -1285,11 +1226,9 @@ bool EscapeAnalysis::IsEscaped(Node* node) {
   return status_analysis_.IsEscaped(node);
 }
 
-
 bool EscapeAnalysis::SetEscaped(Node* node) {
   return status_analysis_.SetEscaped(node);
 }
-
 
 VirtualObject* EscapeAnalysis::GetVirtualObject(Node* at, NodeId id) {
   if (VirtualState* states = virtual_states_[at->id()]) {
@@ -1298,12 +1237,10 @@ VirtualObject* EscapeAnalysis::GetVirtualObject(Node* at, NodeId id) {
   return nullptr;
 }
 
-
 VirtualObject* EscapeAnalysis::ResolveVirtualObject(VirtualState* state,
                                                     Node* node) {
   return GetVirtualObject(state, ResolveReplacement(node));
 }
-
 
 bool EscapeAnalysis::CompareVirtualObjects(Node* left, Node* right) {
   DCHECK(IsVirtual(left) && IsVirtual(right));
@@ -1315,12 +1252,10 @@ bool EscapeAnalysis::CompareVirtualObjects(Node* left, Node* right) {
   return false;
 }
 
-
 int EscapeAnalysis::OffsetFromAccess(Node* node) {
   DCHECK(OpParameter<FieldAccess>(node).offset % kPointerSize == 0);
   return OpParameter<FieldAccess>(node).offset / kPointerSize;
 }
-
 
 void EscapeAnalysis::ProcessLoadFromPhi(int offset, Node* from, Node* node,
                                         VirtualState* state) {
@@ -1358,7 +1293,6 @@ void EscapeAnalysis::ProcessLoadFromPhi(int offset, Node* from, Node* node,
   }
 }
 
-
 void EscapeAnalysis::ProcessLoadField(Node* node) {
   DCHECK_EQ(node->opcode(), IrOpcode::kLoadField);
   ForwardVirtualState(node);
@@ -1385,7 +1319,6 @@ void EscapeAnalysis::ProcessLoadField(Node* node) {
     UpdateReplacement(state, node, nullptr);
   }
 }
-
 
 void EscapeAnalysis::ProcessLoadElement(Node* node) {
   DCHECK_EQ(node->opcode(), IrOpcode::kLoadElement);
@@ -1436,7 +1369,6 @@ void EscapeAnalysis::ProcessLoadElement(Node* node) {
   }
 }
 
-
 void EscapeAnalysis::ProcessStoreField(Node* node) {
   DCHECK_EQ(node->opcode(), IrOpcode::kStoreField);
   ForwardVirtualState(node);
@@ -1453,7 +1385,6 @@ void EscapeAnalysis::ProcessStoreField(Node* node) {
     }
   }
 }
-
 
 void EscapeAnalysis::ProcessStoreElement(Node* node) {
   DCHECK_EQ(node->opcode(), IrOpcode::kStoreElement);
@@ -1501,7 +1432,6 @@ void EscapeAnalysis::ProcessStoreElement(Node* node) {
   }
 }
 
-
 Node* EscapeAnalysis::GetOrCreateObjectState(Node* effect, Node* node) {
   if ((node->opcode() == IrOpcode::kFinishRegion ||
        node->opcode() == IrOpcode::kAllocate) &&
@@ -1544,7 +1474,6 @@ Node* EscapeAnalysis::GetOrCreateObjectState(Node* effect, Node* node) {
   return nullptr;
 }
 
-
 void EscapeAnalysis::DebugPrintObject(VirtualObject* object, Alias alias) {
   PrintF("  Alias @%d: Object #%d with %zu fields\n", alias, object->id(),
          object->field_count());
@@ -1555,7 +1484,6 @@ void EscapeAnalysis::DebugPrintObject(VirtualObject* object, Alias alias) {
   }
 }
 
-
 void EscapeAnalysis::DebugPrintState(VirtualState* state) {
   PrintF("Dumping virtual state %p\n", static_cast<void*>(state));
   for (Alias alias = 0; alias < AliasCount(); ++alias) {
@@ -1564,7 +1492,6 @@ void EscapeAnalysis::DebugPrintState(VirtualState* state) {
     }
   }
 }
-
 
 void EscapeAnalysis::DebugPrint() {
   ZoneVector<VirtualState*> object_states(zone());
@@ -1581,7 +1508,6 @@ void EscapeAnalysis::DebugPrint() {
   }
 }
 
-
 VirtualObject* EscapeAnalysis::GetVirtualObject(VirtualState* state,
                                                 Node* node) {
   if (node->id() >= status_analysis_.GetAliasMap().size()) return nullptr;
@@ -1589,7 +1515,6 @@ VirtualObject* EscapeAnalysis::GetVirtualObject(VirtualState* state,
   if (alias >= state->size()) return nullptr;
   return state->VirtualObjectFromAlias(alias);
 }
-
 
 bool EscapeAnalysis::ExistsVirtualAllocate() {
   for (size_t id = 0; id < status_analysis_.GetAliasMap().size(); ++id) {

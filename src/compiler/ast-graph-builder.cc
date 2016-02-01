@@ -2477,8 +2477,9 @@ void AstGraphBuilder::VisitCall(Call* expr) {
 
   // Create node to perform the function call.
   VectorSlotPair feedback = CreateVectorSlotPair(expr->CallFeedbackICSlot());
-  const Operator* call = javascript()->CallFunction(
-      args->length() + 2, language_mode(), feedback, receiver_hint);
+  const Operator* call =
+      javascript()->CallFunction(args->length() + 2, language_mode(), feedback,
+                                 receiver_hint, expr->tail_call_mode());
   FrameStateBeforeAndAfter states(this, expr->CallId());
   Node* value = ProcessArguments(call, args->length() + 2);
   environment()->Push(value->InputAt(0));  // The callee passed to the call.
@@ -2725,7 +2726,7 @@ void AstGraphBuilder::VisitCountOperation(CountOperation* expr) {
     // TODO(bmeurer): Cleanup this feedback/bailout mess!
     FrameStateBeforeAndAfter states(this, BailoutId::None());
     value = BuildBinaryOp(old_value, jsgraph()->OneConstant(),
-                          expr->binary_op(), TypeFeedbackId::None());
+                          expr->binary_op(), expr->CountBinOpFeedbackId());
     // This should never deoptimize outside strong mode because otherwise we
     // have converted to number before.
     states.AddToNode(value, is_strong(language_mode()) ? expr->ToNumberId()

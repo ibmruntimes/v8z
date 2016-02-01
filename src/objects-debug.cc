@@ -298,9 +298,9 @@ void JSObject::JSObjectVerify() {
         if (value->IsUninitialized()) continue;
         if (r.IsSmi()) DCHECK(value->IsSmi());
         if (r.IsHeapObject()) DCHECK(value->IsHeapObject());
-        HeapType* field_type = descriptors->GetFieldType(i);
-        bool type_is_none = field_type->Is(HeapType::None());
-        bool type_is_any = HeapType::Any()->Is(field_type);
+        FieldType* field_type = descriptors->GetFieldType(i);
+        bool type_is_none = field_type->IsNone();
+        bool type_is_any = field_type->IsAny();
         if (r.IsNone()) {
           CHECK(type_is_none);
         } else if (!type_is_any && !(type_is_none && r.IsHeapObject())) {
@@ -318,7 +318,8 @@ void JSObject::JSObjectVerify() {
   // pointer may point to a one pointer filler map.
   if (ElementsAreSafeToExamine()) {
     CHECK_EQ((map()->has_fast_smi_or_object_elements() ||
-              (elements() == GetHeap()->empty_fixed_array())),
+              (elements() == GetHeap()->empty_fixed_array()) ||
+              HasFastStringWrapperElements()),
              (elements()->map() == GetHeap()->fixed_array_map() ||
               elements()->map() == GetHeap()->fixed_cow_array_map()));
     CHECK(map()->has_fast_object_elements() == HasFastObjectElements());
@@ -1069,7 +1070,8 @@ void JSObject::IncrementSpillStatistics(SpillInformation* info) {
     case FAST_HOLEY_DOUBLE_ELEMENTS:
     case FAST_DOUBLE_ELEMENTS:
     case FAST_HOLEY_ELEMENTS:
-    case FAST_ELEMENTS: {
+    case FAST_ELEMENTS:
+    case FAST_STRING_WRAPPER_ELEMENTS: {
       info->number_of_objects_with_fast_elements_++;
       int holes = 0;
       FixedArray* e = FixedArray::cast(elements());
@@ -1093,7 +1095,8 @@ void JSObject::IncrementSpillStatistics(SpillInformation* info) {
       info->number_of_fast_used_elements_ += e->length();
       break;
     }
-    case DICTIONARY_ELEMENTS: {
+    case DICTIONARY_ELEMENTS:
+    case SLOW_STRING_WRAPPER_ELEMENTS: {
       SeededNumberDictionary* dict = element_dictionary();
       info->number_of_slow_used_elements_ += dict->NumberOfElements();
       info->number_of_slow_unused_elements_ +=
@@ -1102,6 +1105,7 @@ void JSObject::IncrementSpillStatistics(SpillInformation* info) {
     }
     case FAST_SLOPPY_ARGUMENTS_ELEMENTS:
     case SLOW_SLOPPY_ARGUMENTS_ELEMENTS:
+    case NO_ELEMENTS:
       break;
   }
 }

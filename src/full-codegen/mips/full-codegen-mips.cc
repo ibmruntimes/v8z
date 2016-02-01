@@ -1114,9 +1114,9 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   // We got a fixed array in register v0. Iterate through that.
   __ bind(&fixed_array);
 
+  int const vector_index = SmiFromSlot(slot)->value();
   __ EmitLoadTypeFeedbackVector(a1);
   __ li(a2, Operand(TypeFeedbackVector::MegamorphicSentinel(isolate())));
-  int vector_index = SmiFromSlot(slot)->value();
   __ sw(a2, FieldMemOperand(a1, FixedArray::OffsetOfElementAt(vector_index)));
 
   __ li(a1, Operand(Smi::FromInt(1)));  // Smi(1) indicates slow check
@@ -1152,6 +1152,16 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   __ lw(a1, MemOperand(sp, 4 * kPointerSize));
   __ lw(t0, FieldMemOperand(a1, HeapObject::kMapOffset));
   __ Branch(&update_each, eq, t0, Operand(a2));
+
+  // We might get here from TurboFan or Crankshaft when something in the
+  // for-in loop body deopts and only now notice in fullcodegen, that we
+  // can now longer use the enum cache, i.e. left fast mode. So better record
+  // this information here, in case we later OSR back into this loop or
+  // reoptimize the whole function w/o rerunning the loop with the slow
+  // mode object in fullcodegen (which would result in a deopt loop).
+  __ EmitLoadTypeFeedbackVector(a0);
+  __ li(a2, Operand(TypeFeedbackVector::MegamorphicSentinel(isolate())));
+  __ sw(a2, FieldMemOperand(a0, FixedArray::OffsetOfElementAt(vector_index)));
 
   // Convert the entry to a string or (smi) 0 if it isn't a property
   // any more. If the property has been removed while iterating, we
@@ -1955,10 +1965,6 @@ void FullCodeGenerator::VisitYield(Yield* expr) {
     }
 
     case Yield::kFinal: {
-      VisitForAccumulatorValue(expr->generator_object());
-      __ li(a1, Operand(Smi::FromInt(JSGeneratorObject::kGeneratorClosed)));
-      __ sw(a1, FieldMemOperand(result_register(),
-                                JSGeneratorObject::kContinuationOffset));
       // Pop value from top-of-stack slot, box result into result register.
       EmitCreateIteratorResult(true);
       EmitUnwindBeforeReturn();
@@ -2090,6 +2096,13 @@ void FullCodeGenerator::EmitGeneratorResume(Expression *generator,
   VisitForStackValue(generator);
   VisitForAccumulatorValue(value);
   __ pop(a1);
+
+  // Store input value into generator object.
+  __ sw(result_register(),
+        FieldMemOperand(a1, JSGeneratorObject::kInputOffset));
+  __ mov(a2, result_register());
+  __ RecordWriteField(a1, JSGeneratorObject::kInputOffset, a2, a3,
+                      kRAHasBeenSaved, kDontSaveFPRegs);
 
   // Load suspended function and context.
   __ lw(cp, FieldMemOperand(a1, JSGeneratorObject::kContextOffset));
@@ -2860,7 +2873,9 @@ void FullCodeGenerator::EmitCall(Call* expr, ConvertReceiverMode mode) {
   PrepareForBailoutForId(expr->CallId(), NO_REGISTERS);
   // Record source position of the IC call.
   SetCallPosition(expr);
-  Handle<Code> ic = CodeFactory::CallIC(isolate(), arg_count, mode).code();
+  Handle<Code> ic =
+      CodeFactory::CallIC(isolate(), arg_count, mode, expr->tail_call_mode())
+          .code();
   __ li(a3, Operand(SmiFromSlot(expr->CallFeedbackICSlot())));
   __ lw(a1, MemOperand(sp, (arg_count + 1) * kPointerSize));
   // Don't assign a type feedback id to the IC, since type feedback is provided

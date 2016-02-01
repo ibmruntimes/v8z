@@ -938,6 +938,7 @@ class CallICStub: public PlatformCodeStub {
  protected:
   int arg_count() const { return state().argc(); }
   ConvertReceiverMode convert_mode() const { return state().convert_mode(); }
+  TailCallMode tail_call_mode() const { return state().tail_call_mode(); }
 
   CallICState state() const {
     return CallICState(static_cast<ExtraICState>(minor_key_));
@@ -2738,6 +2739,9 @@ class StoreElementStub : public PlatformCodeStub {
   StoreElementStub(Isolate* isolate, ElementsKind elements_kind,
                    KeyedAccessStoreMode mode)
       : PlatformCodeStub(isolate) {
+    // TODO(jkummerow): Rename this stub to StoreSlowElementStub,
+    // drop elements_kind parameter.
+    DCHECK_EQ(DICTIONARY_ELEMENTS, elements_kind);
     minor_key_ = ElementsKindBits::encode(elements_kind) |
                  CommonStoreModeBits::encode(mode);
   }

@@ -121,15 +121,15 @@ StackFrame* StackFrameIteratorBase::SingletonFor(StackFrame::Type type,
 
 StackFrame* StackFrameIteratorBase::SingletonFor(StackFrame::Type type) {
 #define FRAME_TYPE_CASE(type, field) \
-  case StackFrame::type: result = &field##_; break;
+  case StackFrame::type:             \
+    return &field##_;
 
-  StackFrame* result = NULL;
   switch (type) {
     case StackFrame::NONE: return NULL;
     STACK_FRAME_TYPE_LIST(FRAME_TYPE_CASE)
     default: break;
   }
-  return result;
+  return NULL;
 
 #undef FRAME_TYPE_CASE
 }
@@ -234,7 +234,7 @@ SafeStackFrameIterator::SafeStackFrameIterator(
   }
   if (SingletonFor(type) == NULL) return;
   frame_ = SingletonFor(type, &state);
-  if (frame_ == NULL) return;
+  DCHECK(frame_);
 
   Advance();
 
@@ -272,8 +272,12 @@ void SafeStackFrameIterator::AdvanceOneFrame() {
   // Advance to the previous frame.
   StackFrame::State state;
   StackFrame::Type type = frame_->GetCallerState(&state);
+  if (SingletonFor(type) == NULL) {
+    frame_ = NULL;
+    return;
+  }
   frame_ = SingletonFor(type, &state);
-  if (frame_ == NULL) return;
+  DCHECK(frame_);
 
   // Check that we have actually moved to the previous frame in the stack.
   if (frame_->sp() < last_sp || frame_->fp() < last_fp) {
@@ -446,7 +450,8 @@ StackFrame::Type StackFrame::ComputeType(const StackFrameIteratorBase* iterator,
             return ARGUMENTS_ADAPTOR;
           } else {
             // The interpreter entry trampoline has a non-SMI marker.
-            DCHECK(code_obj->is_interpreter_entry_trampoline());
+            DCHECK(code_obj->is_interpreter_entry_trampoline() ||
+                   code_obj->is_interpreter_enter_bytecode_dispatch());
             return INTERPRETED;
           }
         }
@@ -796,12 +801,10 @@ void JavaScriptFrame::GetFunctions(List<JSFunction*>* functions) const {
 
 void JavaScriptFrame::Summarize(List<FrameSummary>* functions) {
   DCHECK(functions->length() == 0);
-  Code* code_pointer = LookupCode();
-  int offset = static_cast<int>(pc() - code_pointer->address());
-  FrameSummary summary(receiver(),
-                       function(),
-                       code_pointer,
-                       offset,
+  Code* code = LookupCode();
+  int offset = static_cast<int>(pc() - code->instruction_start());
+  AbstractCode* abstract_code = AbstractCode::cast(code);
+  FrameSummary summary(receiver(), function(), abstract_code, offset,
                        IsConstructor());
   functions->Add(summary);
 }
@@ -826,7 +829,7 @@ void JavaScriptFrame::PrintFunctionAndOffset(JSFunction* function, Code* code,
   PrintF(file, "+%d", code_offset);
   if (print_line_number) {
     SharedFunctionInfo* shared = function->shared();
-    int source_pos = code->SourcePosition(pc);
+    int source_pos = code->SourcePosition(code_offset);
     Object* maybe_script = shared->script();
     if (maybe_script->IsScript()) {
       Script* script = Script::cast(maybe_script);
@@ -896,15 +899,14 @@ void JavaScriptFrame::RestoreOperandStack(FixedArray* store) {
   }
 }
 
-
-FrameSummary::FrameSummary(Object* receiver, JSFunction* function, Code* code,
-                           int offset, bool is_constructor)
+FrameSummary::FrameSummary(Object* receiver, JSFunction* function,
+                           AbstractCode* abstract_code, int code_offset,
+                           bool is_constructor)
     : receiver_(receiver, function->GetIsolate()),
       function_(function),
-      code_(code),
-      offset_(offset),
+      abstract_code_(abstract_code),
+      code_offset_(code_offset),
       is_constructor_(is_constructor) {}
-
 
 void FrameSummary::Print() {
   PrintF("receiver: ");
@@ -912,10 +914,15 @@ void FrameSummary::Print() {
   PrintF("\nfunction: ");
   function_->shared()->DebugName()->ShortPrint();
   PrintF("\ncode: ");
-  code_->ShortPrint();
-  if (code_->kind() == Code::FUNCTION) PrintF(" NON-OPT");
-  if (code_->kind() == Code::OPTIMIZED_FUNCTION) PrintF(" OPT");
-  PrintF("\npc: %d\n", offset_);
+  abstract_code_->ShortPrint();
+  if (abstract_code_->IsCode()) {
+    Code* code = abstract_code_->GetCode();
+    if (code->kind() == Code::FUNCTION) PrintF(" UNOPT ");
+    if (code->kind() == Code::OPTIMIZED_FUNCTION) PrintF(" OPT ");
+  } else {
+    PrintF(" BYTECODE ");
+  }
+  PrintF("\npc: %d\n", code_offset_);
 }
 
 
@@ -994,24 +1001,26 @@ void OptimizedFrame::Summarize(List<FrameSummary>* frames) {
         receiver = isolate()->heap()->undefined_value();
       }
 
-      Code* const code = shared_info->code();
+      AbstractCode* abstract_code;
 
-      unsigned pc_offset;
+      unsigned code_offset;
       if (frame_opcode == Translation::JS_FRAME) {
+        Code* code = shared_info->code();
         DeoptimizationOutputData* const output_data =
             DeoptimizationOutputData::cast(code->deoptimization_data());
         unsigned const entry =
             Deoptimizer::GetOutputInfo(output_data, ast_id, shared_info);
-        pc_offset =
-            FullCodeGenerator::PcField::decode(entry) + Code::kHeaderSize;
-        DCHECK_NE(0U, pc_offset);
+        code_offset = FullCodeGenerator::PcField::decode(entry);
+        abstract_code = AbstractCode::cast(code);
       } else {
         // TODO(rmcilroy): Modify FrameSummary to enable us to summarize
         // based on the BytecodeArray and bytecode offset.
         DCHECK_EQ(frame_opcode, Translation::INTERPRETED_FRAME);
-        pc_offset = 0;
+        code_offset = 0;
+        abstract_code = AbstractCode::cast(shared_info->bytecode_array());
       }
-      FrameSummary summary(receiver, function, code, pc_offset, is_constructor);
+      FrameSummary summary(receiver, function, abstract_code, code_offset,
+                           is_constructor);
       frames->Add(summary);
       is_constructor = false;
     } else if (frame_opcode == Translation::CONSTRUCT_STUB_FRAME) {
@@ -1154,6 +1163,14 @@ void InterpretedFrame::PatchBytecodeOffset(int new_offset) {
   SetExpression(index, Smi::FromInt(raw_offset));
 }
 
+void InterpretedFrame::Summarize(List<FrameSummary>* functions) {
+  DCHECK(functions->length() == 0);
+  AbstractCode* abstract_code =
+      AbstractCode::cast(function()->shared()->bytecode_array());
+  FrameSummary summary(receiver(), function(), abstract_code,
+                       GetBytecodeOffset(), IsConstructor());
+  functions->Add(summary);
+}
 
 int ArgumentsAdaptorFrame::GetNumberOfIncomingArguments() const {
   return Smi::cast(GetExpression(0))->value();
@@ -1239,7 +1256,8 @@ void JavaScriptFrame::Print(StringStream* accumulator,
     Address pc = this->pc();
     if (code != NULL && code->kind() == Code::FUNCTION &&
         pc >= code->instruction_start() && pc < code->instruction_end()) {
-      int source_pos = code->SourcePosition(pc);
+      int offset = static_cast<int>(pc - code->instruction_start());
+      int source_pos = code->SourcePosition(offset);
       int line = script->GetLineNumber(source_pos) + 1;
       accumulator->Add(":%d", line);
     } else {

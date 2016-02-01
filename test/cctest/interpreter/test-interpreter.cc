@@ -1477,7 +1477,7 @@ TEST(InterpreterTestIn) {
   i::Factory* factory = handles.main_isolate()->factory();
   // Allocate an array
   Handle<i::JSArray> array =
-      factory->NewJSArray(i::ElementsKind::FAST_SMI_ELEMENTS);
+      factory->NewJSArray(0, i::ElementsKind::FAST_SMI_ELEMENTS);
   // Check for these properties on the array object
   const char* properties[] = {"length", "fuzzle", "x", "0"};
   for (size_t i = 0; i < arraysize(properties); i++) {
@@ -2631,211 +2631,191 @@ TEST(InterpreterBasicLoops) {
 
 
 TEST(InterpreterForIn) {
-  HandleAndZoneScope handles;
-
   std::pair<const char*, int> for_in_samples[] = {
-      {"function f() {\n"
-       "  var r = -1;\n"
-       "  for (var a in null) { r = a; }\n"
-       "  return r;\n"
-       "}",
+      {"var r = -1;\n"
+       "for (var a in null) { r = a; }\n"
+       "return r;\n",
        -1},
-      {"function f() {\n"
-       "  var r = -1;\n"
-       "  for (var a in undefined) { r = a; }\n"
-       "  return r;\n"
-       "}",
+      {"var r = -1;\n"
+       "for (var a in undefined) { r = a; }\n"
+       "return r;\n",
        -1},
-      {"function f() {\n"
-       "  var r = 0;\n"
-       "  for (var a in [0,6,7,9]) { r = r + (1 << a); }\n"
-       "  return r;\n"
-       "}",
+      {"var r = 0;\n"
+       "for (var a in [0,6,7,9]) { r = r + (1 << a); }\n"
+       "return r;\n",
        0xf},
-      {"function f() {\n"
-       "  var r = 0;\n"
-       "  for (var a in [0,6,7,9]) { r = r + (1 << a); }\n"
-       "  var r = 0;\n"
-       "  for (var a in [0,6,7,9]) { r = r + (1 << a); }\n"
-       "  return r;\n"
-       "}",
-       0xf},
-      {"function f() {\n"
-       "  var r = 0;\n"
-       "  for (var a in 'foobar') { r = r + (1 << a); }\n"
-       "  return r;\n"
-       "}",
-       0x3f},
-      {"function f() {\n"
-       "  var r = 0;\n"
-       "  for (var a in {1:0, 10:1, 100:2, 1000:3}) {\n"
-       "    r = r + Number(a);\n"
-       "   }\n"
-       "   return r;\n"
-       "}",
-       1111},
-      {"function f() {\n"
-       "  var r = 0;\n"
-       "  var data = {1:0, 10:1, 100:2, 1000:3};\n"
-       "  for (var a in data) {\n"
-       "    if (a == 1) delete data[1];\n"
-       "    r = r + Number(a);\n"
-       "   }\n"
-       "   return r;\n"
-       "}",
-       1111},
-      {"function f() {\n"
-       "  var r = 0;\n"
-       "  var data = {1:0, 10:1, 100:2, 1000:3};\n"
-       "  for (var a in data) {\n"
-       "    if (a == 10) delete data[100];\n"
-       "    r = r + Number(a);\n"
-       "   }\n"
-       "   return r;\n"
-       "}",
-       1011},
-      {"function f() {\n"
-       "  var r = 0;\n"
-       "  var data = {1:0, 10:1, 100:2, 1000:3};\n"
-       "  for (var a in data) {\n"
-       "    if (a == 10) data[10000] = 4;\n"
-       "    r = r + Number(a);\n"
-       "   }\n"
-       "   return r;\n"
-       "}",
-       1111},
-      {"function f() {\n"
-       "  var r = 0;\n"
-       "  var input = 'foobar';\n"
-       "  for (var a in input) {\n"
-       "    if (input[a] == 'b') break;\n"
-       "    r = r + (1 << a);\n"
-       "  }\n"
-       "  return r;\n"
-       "}",
-       0x7},
-      {"function f() {\n"
+      {"var r = 0;\n"
+       "for (var a in [0,6,7,9]) { r = r + (1 << a); }\n"
        "var r = 0;\n"
+       "for (var a in [0,6,7,9]) { r = r + (1 << a); }\n"
+       "return r;\n",
+       0xf},
+      {"var r = 0;\n"
+       "for (var a in 'foobar') { r = r + (1 << a); }\n"
+       "return r;\n",
+       0x3f},
+      {"var r = 0;\n"
+       "for (var a in {1:0, 10:1, 100:2, 1000:3}) {\n"
+       "  r = r + Number(a);\n"
+       " }\n"
+       " return r;\n",
+       1111},
+      {"var r = 0;\n"
+       "var data = {1:0, 10:1, 100:2, 1000:3};\n"
+       "for (var a in data) {\n"
+       "  if (a == 1) delete data[1];\n"
+       "  r = r + Number(a);\n"
+       " }\n"
+       " return r;\n",
+       1111},
+      {"var r = 0;\n"
+       "var data = {1:0, 10:1, 100:2, 1000:3};\n"
+       "for (var a in data) {\n"
+       "  if (a == 10) delete data[100];\n"
+       "  r = r + Number(a);\n"
+       " }\n"
+       " return r;\n",
+       1011},
+      {"var r = 0;\n"
+       "var data = {1:0, 10:1, 100:2, 1000:3};\n"
+       "for (var a in data) {\n"
+       "  if (a == 10) data[10000] = 4;\n"
+       "  r = r + Number(a);\n"
+       " }\n"
+       " return r;\n",
+       1111},
+      {"var r = 0;\n"
        "var input = 'foobar';\n"
        "for (var a in input) {\n"
-       "   if (input[a] == 'b') continue;\n"
-       "   r = r + (1 << a);\n"
+       "  if (input[a] == 'b') break;\n"
+       "  r = r + (1 << a);\n"
        "}\n"
-       "return r;\n"
-       "}",
+       "return r;\n",
+       0x7},
+      {"var r = 0;\n"
+       "var input = 'foobar';\n"
+       "for (var a in input) {\n"
+       " if (input[a] == 'b') continue;\n"
+       " r = r + (1 << a);\n"
+       "}\n"
+       "return r;\n",
        0x37},
-      {"function f() {\n"
-       "  var r = 0;\n"
-       "  var data = {1:0, 10:1, 100:2, 1000:3};\n"
-       "  for (var a in data) {\n"
-       "    if (a == 10) {\n"
-       "       data[10000] = 4;\n"
-       "    }\n"
-       "    r = r + Number(a);\n"
+      {"var r = 0;\n"
+       "var data = {1:0, 10:1, 100:2, 1000:3};\n"
+       "for (var a in data) {\n"
+       "  if (a == 10) {\n"
+       "     data[10000] = 4;\n"
        "  }\n"
-       "  return r;\n"
-       "}",
+       "  r = r + Number(a);\n"
+       "}\n"
+       "return r;\n",
        1111},
-      {"function f() {\n"
-       "  var r = [ 3 ];\n"
-       "  var data = {1:0, 10:1, 100:2, 1000:3};\n"
-       "  for (r[10] in data) {\n"
-       "  }\n"
-       "  return Number(r[10]);\n"
-       "}",
+      {"var r = [ 3 ];\n"
+       "var data = {1:0, 10:1, 100:2, 1000:3};\n"
+       "for (r[10] in data) {\n"
+       "}\n"
+       "return Number(r[10]);\n",
        1000},
-      {"function f() {\n"
-       "  var r = [ 3 ];\n"
-       "  var data = {1:0, 10:1, 100:2, 1000:3};\n"
-       "  for (r['100'] in data) {\n"
-       "  }\n"
-       "  return Number(r['100']);\n"
-       "}",
+      {"var r = [ 3 ];\n"
+       "var data = {1:0, 10:1, 100:2, 1000:3};\n"
+       "for (r['100'] in data) {\n"
+       "}\n"
+       "return Number(r['100']);\n",
        1000},
-      {"function f() {\n"
-       "  var obj = {}\n"
-       "  var descObj = new Boolean(false);\n"
-       "  var accessed = 0;\n"
-       "  descObj.enumerable = true;\n"
-       "  Object.defineProperties(obj, { prop:descObj });\n"
-       "  for (var p in obj) {\n"
-       "    if (p === 'prop') { accessed = 1; }\n"
-       "  }\n"
-       "  return accessed;"
-       "}",
+      {"var obj = {}\n"
+       "var descObj = new Boolean(false);\n"
+       "var accessed = 0;\n"
+       "descObj.enumerable = true;\n"
+       "Object.defineProperties(obj, { prop:descObj });\n"
+       "for (var p in obj) {\n"
+       "  if (p === 'prop') { accessed = 1; }\n"
+       "}\n"
+       "return accessed;",
        1},
-      {"function f() {\n"
-       "  var appointment = {};\n"
-       "  Object.defineProperty(appointment, 'startTime', {\n"
-       "      value: 1001,\n"
-       "      writable: false,\n"
-       "      enumerable: false,\n"
-       "      configurable: true\n"
-       "  });\n"
-       "  Object.defineProperty(appointment, 'name', {\n"
-       "      value: 'NAME',\n"
-       "      writable: false,\n"
-       "      enumerable: false,\n"
-       "      configurable: true\n"
-       "  });\n"
-       "  var meeting = Object.create(appointment);\n"
-       "  Object.defineProperty(meeting, 'conferenceCall', {\n"
-       "      value: 'In-person meeting',\n"
-       "      writable: false,\n"
-       "      enumerable: false,\n"
-       "      configurable: true\n"
-       "  });\n"
+      {"var appointment = {};\n"
+       "Object.defineProperty(appointment, 'startTime', {\n"
+       "    value: 1001,\n"
+       "    writable: false,\n"
+       "    enumerable: false,\n"
+       "    configurable: true\n"
+       "});\n"
+       "Object.defineProperty(appointment, 'name', {\n"
+       "    value: 'NAME',\n"
+       "    writable: false,\n"
+       "    enumerable: false,\n"
+       "    configurable: true\n"
+       "});\n"
+       "var meeting = Object.create(appointment);\n"
+       "Object.defineProperty(meeting, 'conferenceCall', {\n"
+       "    value: 'In-person meeting',\n"
+       "    writable: false,\n"
+       "    enumerable: false,\n"
+       "    configurable: true\n"
+       "});\n"
        "\n"
-       "  var teamMeeting = Object.create(meeting);\n"
+       "var teamMeeting = Object.create(meeting);\n"
        "\n"
-       "  var flags = 0;\n"
-       "  for (var p in teamMeeting) {\n"
-       "      if (p === 'startTime') {\n"
-       "          flags |= 1;\n"
-       "      }\n"
-       "      if (p === 'name') {\n"
-       "          flags |= 2;\n"
-       "      }\n"
-       "      if (p === 'conferenceCall') {\n"
-       "          flags |= 4;\n"
-       "      }\n"
-       "  }\n"
+       "var flags = 0;\n"
+       "for (var p in teamMeeting) {\n"
+       "    if (p === 'startTime') {\n"
+       "        flags |= 1;\n"
+       "    }\n"
+       "    if (p === 'name') {\n"
+       "        flags |= 2;\n"
+       "    }\n"
+       "    if (p === 'conferenceCall') {\n"
+       "        flags |= 4;\n"
+       "    }\n"
+       "}\n"
        "\n"
-       "  var hasOwnProperty = !teamMeeting.hasOwnProperty('name') &&\n"
-       "      !teamMeeting.hasOwnProperty('startTime') &&\n"
-       "      !teamMeeting.hasOwnProperty('conferenceCall');\n"
-       "  if (!hasOwnProperty) {\n"
-       "      flags |= 8;\n"
-       "  }\n"
-       "  return flags;\n"
-       "  }",
+       "var hasOwnProperty = !teamMeeting.hasOwnProperty('name') &&\n"
+       "    !teamMeeting.hasOwnProperty('startTime') &&\n"
+       "    !teamMeeting.hasOwnProperty('conferenceCall');\n"
+       "if (!hasOwnProperty) {\n"
+       "    flags |= 8;\n"
+       "}\n"
+       "return flags;\n",
        0},
-      {"function f() {\n"
-       " var data = {x:23, y:34};\n"
+      {"var data = {x:23, y:34};\n"
        " var result = 0;\n"
-       " var o = {};\n"
-       " var arr = [o];\n"
-       " for (arr[0].p in data)\n"      // This is to test if value is loaded
+       "var o = {};\n"
+       "var arr = [o];\n"
+       "for (arr[0].p in data)\n"       // This is to test if value is loaded
        "  result += data[arr[0].p];\n"  // back from accumulator before storing
-       " return result;\n"              // named properties.
-       "}",
+       "return result;\n",              // named properties.
        57},
-      {"function f() {\n"
-       " var data = {x:23, y:34};\n"
-       " var result = 0;\n"
-       " var o = {};\n"
-       " var i = 0;\n"
-       " for (o[i++] in data)\n"      // This is to test if value is loaded
+      {"var data = {x:23, y:34};\n"
+       "var result = 0;\n"
+       "var o = {};\n"
+       "var i = 0;\n"
+       "for (o[i++] in data)\n"       // This is to test if value is loaded
        "  result += data[o[i-1]];\n"  // back from accumulator before
-       " return result;\n"            // storing keyed properties.
-       "}",
+       "return result;\n",            // storing keyed properties.
        57}};
 
-  for (size_t i = 0; i < arraysize(for_in_samples); i++) {
-    InterpreterTester tester(handles.main_isolate(), for_in_samples[i].first);
-    auto callable = tester.GetCallable<>();
-    Handle<Object> return_val = callable().ToHandleChecked();
-    CHECK_EQ(Handle<Smi>::cast(return_val)->value(), for_in_samples[i].second);
+  // Two passes are made for this test. On the first, 8-bit register
+  // operands are employed, and on the 16-bit register operands are
+  // used.
+  for (int pass = 0; pass < 2; pass++) {
+    HandleAndZoneScope handles;
+    std::ostringstream wide_os;
+    if (pass == 1) {
+      for (int i = 0; i < 200; i++) {
+        wide_os << "var local" << i << " = 0;\n";
+      }
+    }
+
+    for (size_t i = 0; i < arraysize(for_in_samples); i++) {
+      std::ostringstream body_os;
+      body_os << wide_os.str() << for_in_samples[i].first;
+      std::string body(body_os.str());
+      std::string function = InterpreterTester::SourceForBody(body.c_str());
+      InterpreterTester tester(handles.main_isolate(), function.c_str());
+      auto callable = tester.GetCallable<>();
+      Handle<Object> return_val = callable().ToHandleChecked();
+      CHECK_EQ(Handle<Smi>::cast(return_val)->value(),
+               for_in_samples[i].second);
+    }
   }
 }
 
@@ -3678,6 +3658,180 @@ TEST(InterpreterEvalFunctionDecl) {
     Handle<i::Object> return_value = callable().ToHandleChecked();
     CHECK(return_value->SameValue(*eval_func_decl[i].second));
   }
+}
+
+TEST(InterpreterWideRegisterArithmetic) {
+  HandleAndZoneScope handles;
+  i::Isolate* isolate = handles.main_isolate();
+
+  static const size_t kMaxRegisterForTest = 150;
+  std::ostringstream os;
+  os << "function " << InterpreterTester::function_name() << "(arg) {\n";
+  os << "  var retval = -77;\n";
+  for (size_t i = 0; i < kMaxRegisterForTest; i++) {
+    os << "  var x" << i << " = " << i << ";\n";
+  }
+  for (size_t i = 0; i < kMaxRegisterForTest / 2; i++) {
+    size_t j = kMaxRegisterForTest - i - 1;
+    os << "  var tmp = x" << j << ";\n";
+    os << "  var x" << j << " = x" << i << ";\n";
+    os << "  var x" << i << " = tmp;\n";
+  }
+  for (size_t i = 0; i < kMaxRegisterForTest / 2; i++) {
+    size_t j = kMaxRegisterForTest - i - 1;
+    os << "  var tmp = x" << j << ";\n";
+    os << "  var x" << j << " = x" << i << ";\n";
+    os << "  var x" << i << " = tmp;\n";
+  }
+  for (size_t i = 0; i < kMaxRegisterForTest; i++) {
+    os << "  if (arg == " << i << ") {\n"  //
+       << "    retval = x" << i << ";\n"   //
+       << "  }\n";                         //
+  }
+  os << "  return retval;\n";
+  os << "}\n";
+
+  std::string source = os.str();
+  InterpreterTester tester(handles.main_isolate(), source.c_str());
+  auto callable = tester.GetCallable<Handle<Object>>();
+  for (size_t i = 0; i < kMaxRegisterForTest; i++) {
+    Handle<Object> arg = handle(Smi::FromInt(static_cast<int>(i)), isolate);
+    Handle<Object> return_value = callable(arg).ToHandleChecked();
+    CHECK(return_value->SameValue(*arg));
+  }
+}
+
+TEST(InterpreterCallWideRegisters) {
+  static const int kPeriod = 25;
+  static const int kLength = 512;
+  static const int kStartChar = 65;
+
+  for (int pass = 0; pass < 3; pass += 1) {
+    std::ostringstream os;
+    for (int i = 0; i < pass * 97; i += 1) {
+      os << "var x" << i << " = " << i << "\n";
+    }
+    os << "return String.fromCharCode(";
+    os << kStartChar;
+    for (int i = 1; i < kLength; i += 1) {
+      os << "," << kStartChar + (i % kPeriod);
+    }
+    os << ");";
+    std::string source = InterpreterTester::SourceForBody(os.str().c_str());
+    HandleAndZoneScope handles;
+    InterpreterTester tester(handles.main_isolate(), source.c_str());
+    auto callable = tester.GetCallable();
+    Handle<Object> return_val = callable().ToHandleChecked();
+    Handle<String> return_string = Handle<String>::cast(return_val);
+    CHECK_EQ(return_string->length(), kLength);
+    for (int i = 0; i < kLength; i += 1) {
+      CHECK_EQ(return_string->Get(i), 65 + (i % kPeriod));
+    }
+  }
+}
+
+TEST(InterpreterWideParametersPickOne) {
+  static const int kParameterCount = 130;
+  for (int parameter = 0; parameter < 10; parameter++) {
+    HandleAndZoneScope handles;
+    i::Isolate* isolate = handles.main_isolate();
+    std::ostringstream os;
+    os << "function " << InterpreterTester::function_name() << "(arg) {\n";
+    os << "  function selector(i";
+    for (int i = 0; i < kParameterCount; i++) {
+      os << ","
+         << "a" << i;
+    }
+    os << ") {\n";
+    os << "  return a" << parameter << ";\n";
+    os << "  };\n";
+    os << "  return selector(arg";
+    for (int i = 0; i < kParameterCount; i++) {
+      os << "," << i;
+    }
+    os << ");";
+    os << "}\n";
+
+    std::string source = os.str();
+    InterpreterTester tester(handles.main_isolate(), source.c_str(), "*");
+    auto callable = tester.GetCallable<Handle<Object>>();
+    Handle<Object> arg = handle(Smi::FromInt(0xaa55), isolate);
+    Handle<Object> return_value = callable(arg).ToHandleChecked();
+    Handle<Smi> actual = Handle<Smi>::cast(return_value);
+    CHECK_EQ(actual->value(), parameter);
+  }
+}
+
+TEST(InterpreterWideParametersSummation) {
+  static int kParameterCount = 200;
+  static int kBaseValue = 17000;
+  HandleAndZoneScope handles;
+  i::Isolate* isolate = handles.main_isolate();
+  std::ostringstream os;
+  os << "function " << InterpreterTester::function_name() << "(arg) {\n";
+  os << "  function summation(i";
+  for (int i = 0; i < kParameterCount; i++) {
+    os << ","
+       << "a" << i;
+  }
+  os << ") {\n";
+  os << "    var sum = " << kBaseValue << ";\n";
+  os << "    switch(i) {\n";
+  for (int i = 0; i < kParameterCount; i++) {
+    int j = kParameterCount - i - 1;
+    os << "      case " << j << ": sum += a" << j << ";\n";
+  }
+  os << "  }\n";
+  os << "    return sum;\n";
+  os << "  };\n";
+  os << "  return summation(arg";
+  for (int i = 0; i < kParameterCount; i++) {
+    os << "," << i;
+  }
+  os << ");";
+  os << "}\n";
+
+  std::string source = os.str();
+  InterpreterTester tester(handles.main_isolate(), source.c_str(), "*");
+  auto callable = tester.GetCallable<Handle<Object>>();
+  for (int i = 0; i < kParameterCount; i++) {
+    Handle<Object> arg = handle(Smi::FromInt(i), isolate);
+    Handle<Object> return_value = callable(arg).ToHandleChecked();
+    int expected = kBaseValue + i * (i + 1) / 2;
+    Handle<Smi> actual = Handle<Smi>::cast(return_value);
+    CHECK_EQ(actual->value(), expected);
+  }
+}
+
+TEST(InterpreterDoExpression) {
+  bool old_flag = FLAG_harmony_do_expressions;
+  FLAG_harmony_do_expressions = true;
+
+  HandleAndZoneScope handles;
+  i::Isolate* isolate = handles.main_isolate();
+  Factory* factory = isolate->factory();
+
+  std::pair<const char*, Handle<Object>> do_expr[] = {
+      {"var a = do {}; return a;", factory->undefined_value()},
+      {"var a = do { var x = 100; }; return a;", factory->undefined_value()},
+      {"var a = do { var x = 100; }; return a;", factory->undefined_value()},
+      {"var a = do { var x = 100; x++; }; return a;",
+       handle(Smi::FromInt(100), isolate)},
+      {"var i = 0; for (; i < 5;) { i = do { if (i == 3) { break; }; i + 1; }};"
+       "return i;",
+       handle(Smi::FromInt(3), isolate)},
+  };
+
+  for (size_t i = 0; i < arraysize(do_expr); i++) {
+    std::string source(InterpreterTester::SourceForBody(do_expr[i].first));
+    InterpreterTester tester(handles.main_isolate(), source.c_str());
+    auto callable = tester.GetCallable<>();
+
+    Handle<i::Object> return_value = callable().ToHandleChecked();
+    CHECK(return_value->SameValue(*do_expr[i].second));
+  }
+
+  FLAG_harmony_do_expressions = old_flag;
 }
 
 }  // namespace interpreter

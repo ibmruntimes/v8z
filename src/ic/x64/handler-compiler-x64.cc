@@ -395,8 +395,7 @@ void NamedStoreHandlerCompiler::GenerateConstantCheck(Register map_reg,
   __ j(not_equal, miss_label);
 }
 
-
-void NamedStoreHandlerCompiler::GenerateFieldTypeChecks(HeapType* field_type,
+void NamedStoreHandlerCompiler::GenerateFieldTypeChecks(FieldType* field_type,
                                                         Register value_reg,
                                                         Label* miss_label) {
   Register map_reg = scratch1();
@@ -404,20 +403,12 @@ void NamedStoreHandlerCompiler::GenerateFieldTypeChecks(HeapType* field_type,
   DCHECK(!value_reg.is(map_reg));
   DCHECK(!value_reg.is(scratch));
   __ JumpIfSmi(value_reg, miss_label);
-  HeapType::Iterator<Map> it = field_type->Classes();
-  if (!it.Done()) {
+  if (field_type->IsClass()) {
     Label do_store;
     __ movp(map_reg, FieldOperand(value_reg, HeapObject::kMapOffset));
-    while (true) {
-      __ CmpWeakValue(map_reg, Map::WeakCellForMap(it.Current()), scratch);
-      it.Advance();
-      if (it.Done()) {
-        __ j(not_equal, miss_label);
-        break;
-      }
-      __ j(equal, &do_store, Label::kNear);
-    }
-    __ bind(&do_store);
+    __ CmpWeakValue(map_reg, Map::WeakCellForMap(field_type->AsClass()),
+                    scratch);
+    __ j(not_equal, miss_label);
   }
 }
 

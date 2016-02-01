@@ -1211,14 +1211,15 @@ void Deoptimizer::DoComputeInterpretedFrame(int frame_index) {
   value_iterator++;
 
   Builtins* builtins = isolate_->builtins();
-  Code* trampoline = builtins->builtin(Builtins::kInterpreterEntryTrampoline);
-  output_frame->SetPc(reinterpret_cast<intptr_t>(trampoline->entry()));
+  Code* dispatch_builtin =
+      builtins->builtin(Builtins::kInterpreterEnterBytecodeDispatch);
+  output_frame->SetPc(reinterpret_cast<intptr_t>(dispatch_builtin->entry()));
   output_frame->SetState(0);
 
   // Update constant pool.
   if (FLAG_enable_embedded_constant_pool) {
     intptr_t constant_pool_value =
-        reinterpret_cast<intptr_t>(trampoline->constant_pool());
+        reinterpret_cast<intptr_t>(dispatch_builtin->constant_pool());
     output_frame->SetConstantPool(constant_pool_value);
     if (is_topmost) {
       Register constant_pool_reg =
@@ -2507,7 +2508,8 @@ DeoptimizedFrameInfo::DeoptimizedFrameInfo(Deoptimizer* deoptimizer,
   // Get the source position using the unoptimized code.
   Address pc = reinterpret_cast<Address>(output_frame->GetPc());
   Code* code = Code::cast(deoptimizer->isolate()->FindCodeObject(pc));
-  source_position_ = code->SourcePosition(pc);
+  int offset = static_cast<int>(pc - code->instruction_start());
+  source_position_ = code->SourcePosition(offset);
 
   for (int i = 0; i < expression_count_; i++) {
     Object* value = output_frame->GetExpression(i);

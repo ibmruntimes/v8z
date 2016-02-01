@@ -129,6 +129,7 @@
 //     - Cell
 //     - PropertyCell
 //     - Code
+//     - AbstractCode, a wrapper around Code or BytecodeArray
 //     - Map
 //     - Oddball
 //     - Foreign
@@ -842,6 +843,7 @@ class KeyAccumulator;
 class LayoutDescriptor;
 class LiteralsArray;
 class LookupIterator;
+class FieldType;
 class ObjectHashTable;
 class ObjectVisitor;
 class PropertyCell;
@@ -853,11 +855,6 @@ class TypeFeedbackInfo;
 class TypeFeedbackVector;
 class WeakCell;
 class TransitionArray;
-
-// We cannot just say "class HeapType;" if it is created from a template... =8-?
-template<class> class TypeImpl;
-struct HeapTypeConfig;
-typedef TypeImpl<HeapTypeConfig> HeapType;
 
 
 // A template-ized version of the IsXXX functions.
@@ -949,6 +946,7 @@ template <class C> inline bool Is(Object* obj);
   V(JSBoundFunction)               \
   V(JSFunction)                    \
   V(Code)                          \
+  V(AbstractCode)                  \
   V(Oddball)                       \
   V(SharedFunctionInfo)            \
   V(JSValue)                       \
@@ -1100,7 +1098,8 @@ class Object {
 
   inline bool FilterKey(PropertyFilter filter);
 
-  Handle<HeapType> OptimalType(Isolate* isolate, Representation representation);
+  Handle<FieldType> OptimalType(Isolate* isolate,
+                                Representation representation);
 
   inline static Handle<Object> NewStorageFor(Isolate* isolate,
                                              Handle<Object> object,
@@ -1353,10 +1352,6 @@ class Object {
   // output parameter if it succeeds. Equivalent to ToArrayLength, but does not
   // allow kMaxUInt32.
   inline bool ToArrayIndex(uint32_t* index);
-
-  // Returns true if this is a JSValue containing a string and the index is
-  // < the length of the string.  Used to implement [] on strings.
-  inline bool IsStringObjectWithCharacterAt(uint32_t index);
 
   DECLARE_VERIFIER(Object)
 #ifdef VERIFY_HEAP
@@ -2033,6 +2028,7 @@ class JSObject: public JSReceiver {
   // ElementsKind.
   inline bool HasFastHoleyElements();
   inline bool HasSloppyArgumentsElements();
+  inline bool HasStringWrapperElements();
   inline bool HasDictionaryElements();
 
   inline bool HasFixedTypedArrayElements();
@@ -2050,6 +2046,8 @@ class JSObject: public JSReceiver {
 
   inline bool HasFastArgumentsElements();
   inline bool HasSlowArgumentsElements();
+  inline bool HasFastStringWrapperElements();
+  inline bool HasSlowStringWrapperElements();
   inline SeededNumberDictionary* element_dictionary();  // Gets slow elements.
 
   // Requires: HasFastElements().
@@ -2637,7 +2635,8 @@ class FixedArray: public FixedArrayBase {
  public:
   // Setter and getter for elements.
   inline Object* get(int index) const;
-  static inline Handle<Object> get(Handle<FixedArray> array, int index);
+  static inline Handle<Object> get(FixedArray* array, int index,
+                                   Isolate* isolate);
   // Setter that uses write barrier.
   inline void set(int index, Object* value);
   inline bool is_the_hole(int index);
@@ -2724,7 +2723,8 @@ class FixedDoubleArray: public FixedArrayBase {
   // Setter and getter for elements.
   inline double get_scalar(int index);
   inline uint64_t get_representation(int index);
-  static inline Handle<Object> get(Handle<FixedDoubleArray> array, int index);
+  static inline Handle<Object> get(FixedDoubleArray* array, int index,
+                                   Isolate* isolate);
   inline void set(int index, double value);
   inline void set_the_hole(int index);
 
@@ -2919,7 +2919,7 @@ class DescriptorArray: public FixedArray {
   inline PropertyDetails GetDetails(int descriptor_number);
   inline PropertyType GetType(int descriptor_number);
   inline int GetFieldIndex(int descriptor_number);
-  inline HeapType* GetFieldType(int descriptor_number);
+  inline FieldType* GetFieldType(int descriptor_number);
   inline Object* GetConstant(int descriptor_number);
   inline Object* GetCallbacksObject(int descriptor_number);
   inline AccessorDescriptor* GetCallbacks(int descriptor_number);
@@ -4433,6 +4433,10 @@ class BytecodeArray : public FixedArrayBase {
   // Dispatched behavior.
   inline int BytecodeArraySize();
 
+  inline int instruction_size();
+
+  int SourcePosition(int offset);
+
   DECLARE_PRINTER(BytecodeArray)
   DECLARE_VERIFIER(BytecodeArray)
 
@@ -4446,8 +4450,6 @@ class BytecodeArray : public FixedArrayBase {
   static const int kSourcePositionTableOffset =
       kHandlerTableOffset + kPointerSize;
   static const int kHeaderSize = kSourcePositionTableOffset + kPointerSize;
-
-  static const int kAlignedSize = OBJECT_POINTER_ALIGN(kHeaderSize);
 
   // Maximal memory consumption for a single BytecodeArray.
   static const int kMaxSize = 512 * MB;
@@ -4560,7 +4562,7 @@ class FixedTypedArray: public FixedTypedArrayBase {
   DECLARE_CAST(FixedTypedArray<Traits>)
 
   inline ElementType get_scalar(int index);
-  static inline Handle<Object> get(Handle<FixedTypedArray> array, int index);
+  static inline Handle<Object> get(FixedTypedArray* array, int index);
   inline void set(int index, ElementType value);
 
   static inline ElementType from_int(int value);
@@ -4760,13 +4762,18 @@ class HandlerTable : public FixedArray {
   // undecidable it is merely an approximation (e.g. useful for debugger).
   enum CatchPrediction { UNCAUGHT, CAUGHT };
 
-  // Accessors for handler table based on ranges.
+  // Getters for handler table based on ranges.
+  inline int GetRangeStart(int index) const;
+  inline int GetRangeEnd(int index) const;
+  inline int GetRangeHandler(int index) const;
+
+  // Setters for handler table based on ranges.
   inline void SetRangeStart(int index, int value);
   inline void SetRangeEnd(int index, int value);
   inline void SetRangeHandler(int index, int offset, CatchPrediction pred);
   inline void SetRangeDepth(int index, int value);
 
-  // Accessors for handler table based on return addresses.
+  // Setters for handler table based on return addresses.
   inline void SetReturnOffset(int index, int value);
   inline void SetReturnHandler(int index, int offset, CatchPrediction pred);
 
@@ -4775,6 +4782,9 @@ class HandlerTable : public FixedArray {
 
   // Lookup handler in a table based on return addresses.
   int LookupReturn(int pc_offset, CatchPrediction* prediction);
+
+  // Returns the number of entries in the table.
+  inline int NumberOfRangeEntries() const;
 
   // Returns the required length of the underlying fixed array.
   static int LengthForRange(int entries) { return entries * kRangeEntrySize; }
@@ -4948,7 +4958,6 @@ class Code: public HeapObject {
   inline bool is_to_boolean_ic_stub();
   inline bool is_keyed_stub();
   inline bool is_optimized_code();
-  inline bool is_interpreter_entry_trampoline();
   inline bool embeds_maps_weakly();
 
   inline bool IsCodeStubOrIC();
@@ -4956,6 +4965,10 @@ class Code: public HeapObject {
 
   inline void set_raw_kind_specific_flags1(int value);
   inline void set_raw_kind_specific_flags2(int value);
+
+  // Testers for interpreter builtins.
+  inline bool is_interpreter_entry_trampoline();
+  inline bool is_interpreter_enter_bytecode_dispatch();
 
   // [is_crankshafted]: For kind STUB or ICs, tells whether or not a code
   // object was generated by either the hydrogen or the TurboFan optimizing
@@ -5147,8 +5160,8 @@ class Code: public HeapObject {
   inline int ExecutableSize();
 
   // Locating source position.
-  int SourcePosition(Address pc);
-  int SourceStatementPosition(Address pc);
+  int SourcePosition(int code_offset);
+  int SourceStatementPosition(int code_offset);
 
   DECLARE_CAST(Code)
 
@@ -5345,6 +5358,14 @@ class Code: public HeapObject {
   DISALLOW_IMPLICIT_CONSTRUCTORS(Code);
 };
 
+class AbstractCode : public HeapObject {
+ public:
+  int SourcePosition(int offset);
+
+  DECLARE_CAST(AbstractCode)
+  inline Code* GetCode();
+  inline BytecodeArray* GetBytecodeArray();
+};
 
 // Dependent code is a singly linked list of fixed arrays. Each array contains
 // code objects in weak cells for one dependent group. The suffix of the array
@@ -5657,6 +5678,7 @@ class Map: public HeapObject {
   inline bool has_fast_double_elements();
   inline bool has_fast_elements();
   inline bool has_sloppy_arguments_elements();
+  inline bool has_fast_string_wrapper_elements();
   inline bool has_fixed_typed_array_elements();
   inline bool has_dictionary_elements();
 
@@ -5707,17 +5729,17 @@ class Map: public HeapObject {
                               int* old_number_of_fields);
   // TODO(ishell): moveit!
   static Handle<Map> GeneralizeAllFieldRepresentations(Handle<Map> map);
-  MUST_USE_RESULT static Handle<HeapType> GeneralizeFieldType(
-      Representation rep1, Handle<HeapType> type1, Representation rep2,
-      Handle<HeapType> type2, Isolate* isolate);
+  MUST_USE_RESULT static Handle<FieldType> GeneralizeFieldType(
+      Representation rep1, Handle<FieldType> type1, Representation rep2,
+      Handle<FieldType> type2, Isolate* isolate);
   static void GeneralizeFieldType(Handle<Map> map, int modify_index,
                                   Representation new_representation,
-                                  Handle<HeapType> new_field_type);
+                                  Handle<FieldType> new_field_type);
   static Handle<Map> ReconfigureProperty(Handle<Map> map, int modify_index,
                                          PropertyKind new_kind,
                                          PropertyAttributes new_attributes,
                                          Representation new_representation,
-                                         Handle<HeapType> new_field_type,
+                                         Handle<FieldType> new_field_type,
                                          StoreMode store_mode);
   static Handle<Map> CopyGeneralizeAllRepresentations(
       Handle<Map> map, int modify_index, StoreMode store_mode,
@@ -5839,11 +5861,8 @@ class Map: public HeapObject {
                                           TransitionFlag flag);
 
   MUST_USE_RESULT static MaybeHandle<Map> CopyWithField(
-      Handle<Map> map,
-      Handle<Name> name,
-      Handle<HeapType> type,
-      PropertyAttributes attributes,
-      Representation representation,
+      Handle<Map> map, Handle<Name> name, Handle<FieldType> type,
+      PropertyAttributes attributes, Representation representation,
       TransitionFlag flag);
 
   MUST_USE_RESULT static MaybeHandle<Map> CopyWithConstant(
@@ -6177,16 +6196,14 @@ class Map: public HeapObject {
 
   void PrintReconfiguration(FILE* file, int modify_index, PropertyKind kind,
                             PropertyAttributes attributes);
-  void PrintGeneralization(FILE* file,
-                           const char* reason,
-                           int modify_index,
-                           int split,
-                           int descriptors,
-                           bool constant_to_field,
+  void PrintGeneralization(FILE* file, const char* reason, int modify_index,
+                           int split, int descriptors, bool constant_to_field,
                            Representation old_representation,
                            Representation new_representation,
-                           HeapType* old_field_type,
-                           HeapType* new_field_type);
+                           MaybeHandle<FieldType> old_field_type,
+                           MaybeHandle<Object> old_value,
+                           MaybeHandle<FieldType> new_field_type,
+                           MaybeHandle<Object> new_value);
 
   static const int kFastPropertiesSoftLimit = 12;
   static const int kMaxFastProperties = 128;
@@ -6386,17 +6403,17 @@ class Script: public Struct {
   // resource is accessible. Otherwise, always return true.
   inline bool HasValidSource();
 
-  // Convert code position into column number.
-  static int GetColumnNumber(Handle<Script> script, int code_pos);
+  // Convert code offset into column number.
+  static int GetColumnNumber(Handle<Script> script, int code_offset);
 
-  // Convert code position into (zero-based) line number.
+  // Convert code offset into (zero-based) line number.
   // The non-handlified version does not allocate, but may be much slower.
-  static int GetLineNumber(Handle<Script> script, int code_pos);
+  static int GetLineNumber(Handle<Script> script, int code_offset);
   int GetLineNumber(int code_pos);
 
   static Handle<Object> GetNameOrSourceURL(Handle<Script> script);
 
-  // Init line_ends array with code positions of line ends inside script source.
+  // Init line_ends array with source code positions of line ends.
   static void InitLineEnds(Handle<Script> script);
 
   // Get the JS object wrapping the given script; create it if none exists.
@@ -6532,6 +6549,7 @@ class SharedFunctionInfo: public HeapObject {
 
   // [code]: Function code.
   DECL_ACCESSORS(code, Code)
+
   inline void ReplaceCode(Code* code);
 
   // [optimized_code_map]: Map from native context to optimized code
@@ -7210,6 +7228,9 @@ class JSGeneratorObject: public JSObject {
   // [receiver]: The receiver of the suspended computation.
   DECL_ACCESSORS(receiver, Object)
 
+  // [input]: The most recent input value.
+  DECL_ACCESSORS(input, Object)
+
   // [continuation]: Offset into code of continuation.
   //
   // A positive offset indicates a suspended generator.  The special
@@ -7238,7 +7259,8 @@ class JSGeneratorObject: public JSObject {
   static const int kFunctionOffset = JSObject::kHeaderSize;
   static const int kContextOffset = kFunctionOffset + kPointerSize;
   static const int kReceiverOffset = kContextOffset + kPointerSize;
-  static const int kContinuationOffset = kReceiverOffset + kPointerSize;
+  static const int kInputOffset = kReceiverOffset + kPointerSize;
+  static const int kContinuationOffset = kInputOffset + kPointerSize;
   static const int kOperandStackOffset = kContinuationOffset + kPointerSize;
   static const int kSize = kOperandStackOffset + kPointerSize;
 
@@ -8296,6 +8318,7 @@ class AllocationMemento: public Struct {
 
   inline bool IsValid();
   inline AllocationSite* GetAllocationSite();
+  inline Address GetAllocationSiteUnchecked();
 
   DECLARE_PRINTER(AllocationMemento)
   DECLARE_VERIFIER(AllocationMemento)
@@ -10579,20 +10602,19 @@ class DebugInfo: public Struct {
   // Fixed array holding status information for each active break point.
   DECL_ACCESSORS(break_points, FixedArray)
 
-  // Check if there is a break point at a code position.
-  bool HasBreakPoint(int code_position);
-  // Get the break point info object for a code position.
-  Object* GetBreakPointInfo(int code_position);
+  // Check if there is a break point at a code offset.
+  bool HasBreakPoint(int code_offset);
+  // Get the break point info object for a code offset.
+  Object* GetBreakPointInfo(int code_offset);
   // Clear a break point.
-  static void ClearBreakPoint(Handle<DebugInfo> debug_info,
-                              int code_position,
+  static void ClearBreakPoint(Handle<DebugInfo> debug_info, int code_offset,
                               Handle<Object> break_point_object);
   // Set a break point.
-  static void SetBreakPoint(Handle<DebugInfo> debug_info, int code_position,
+  static void SetBreakPoint(Handle<DebugInfo> debug_info, int code_offset,
                             int source_position, int statement_position,
                             Handle<Object> break_point_object);
-  // Get the break point objects for a code position.
-  Handle<Object> GetBreakPointObjects(int code_position);
+  // Get the break point objects for a code offset.
+  Handle<Object> GetBreakPointObjects(int code_offset);
   // Find the break point info holding this break point object.
   static Handle<Object> FindBreakPointInfo(Handle<DebugInfo> debug_info,
                                            Handle<Object> break_point_object);
@@ -10615,8 +10637,8 @@ class DebugInfo: public Struct {
  private:
   static const int kNoBreakPointInfo = -1;
 
-  // Lookup the index in the break_points array for a code position.
-  int GetBreakPointInfoIndex(int code_position);
+  // Lookup the index in the break_points array for a code offset.
+  int GetBreakPointInfoIndex(int code_offset);
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(DebugInfo);
 };
@@ -10627,8 +10649,8 @@ class DebugInfo: public Struct {
 // position with one or more break points.
 class BreakPointInfo: public Struct {
  public:
-  // The position in the code for the break point.
-  DECL_INT_ACCESSORS(code_position)
+  // The code offset for the break point.
+  DECL_INT_ACCESSORS(code_offset)
   // The position in the source for the break position.
   DECL_INT_ACCESSORS(source_position)
   // The position in the source for the last statement before this break
@@ -10646,7 +10668,7 @@ class BreakPointInfo: public Struct {
   // Check if break point info has this break point object.
   static bool HasBreakPointObject(Handle<BreakPointInfo> info,
                                   Handle<Object> break_point_object);
-  // Get the number of break points for this code position.
+  // Get the number of break points for this code offset.
   int GetBreakPointCount();
 
   DECLARE_CAST(BreakPointInfo)
@@ -10655,8 +10677,8 @@ class BreakPointInfo: public Struct {
   DECLARE_PRINTER(BreakPointInfo)
   DECLARE_VERIFIER(BreakPointInfo)
 
-  static const int kCodePositionIndex = Struct::kHeaderSize;
-  static const int kSourcePositionIndex = kCodePositionIndex + kPointerSize;
+  static const int kCodeOffsetIndex = Struct::kHeaderSize;
+  static const int kSourcePositionIndex = kCodeOffsetIndex + kPointerSize;
   static const int kStatementPositionIndex =
       kSourcePositionIndex + kPointerSize;
   static const int kBreakPointObjectsIndex =

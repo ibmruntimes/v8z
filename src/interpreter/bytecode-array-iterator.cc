@@ -47,14 +47,14 @@ uint32_t BytecodeArrayIterator::GetRawOperand(int operand_index,
       bytecode_array()->GetFirstBytecodeAddress() + bytecode_offset_ +
       Bytecodes::GetOperandOffset(current_bytecode(), operand_index);
   switch (Bytecodes::SizeOfOperand(operand_type)) {
-    default:
-    case OperandSize::kNone:
-      UNREACHABLE();
     case OperandSize::kByte:
       return static_cast<uint32_t>(*operand_start);
     case OperandSize::kShort:
       return ReadUnalignedUInt16(operand_start);
+    case OperandSize::kNone:
+      UNREACHABLE();
   }
+  return 0;
 }
 
 
@@ -87,11 +87,7 @@ int BytecodeArrayIterator::GetIndexOperand(int operand_index) const {
 Register BytecodeArrayIterator::GetRegisterOperand(int operand_index) const {
   OperandType operand_type =
       Bytecodes::GetOperandType(current_bytecode(), operand_index);
-  DCHECK(operand_type == OperandType::kReg8 ||
-         operand_type == OperandType::kRegPair8 ||
-         operand_type == OperandType::kRegTriple8 ||
-         operand_type == OperandType::kMaybeReg8 ||
-         operand_type == OperandType::kReg16);
+  DCHECK(Bytecodes::IsRegisterOperandType(operand_type));
   uint32_t operand = GetRawOperand(operand_index, operand_type);
   switch (Bytecodes::GetOperandSize(current_bytecode(), operand_index)) {
     case OperandSize::kByte:
@@ -104,11 +100,42 @@ Register BytecodeArrayIterator::GetRegisterOperand(int operand_index) const {
   return Register();
 }
 
+int BytecodeArrayIterator::GetRegisterOperandRange(int operand_index) const {
+  interpreter::OperandType operand_type =
+      Bytecodes::GetOperandType(current_bytecode(), operand_index);
+  DCHECK(Bytecodes::IsRegisterOperandType(operand_type));
+  switch (operand_type) {
+    case OperandType::kRegPair8:
+    case OperandType::kRegPair16:
+    case OperandType::kRegOutPair8:
+    case OperandType::kRegOutPair16:
+      return 2;
+    case OperandType::kRegOutTriple8:
+    case OperandType::kRegOutTriple16:
+      return 3;
+    default: {
+      if (operand_index + 1 !=
+          Bytecodes::NumberOfOperands(current_bytecode())) {
+        // TODO(oth): Ensure all bytecodes specify the full range of registers
+        // with kRegCount (currently Call/CallJSRuntime are off by one due to
+        // reciever.
+        OperandType next_operand_type =
+            Bytecodes::GetOperandType(current_bytecode(), operand_index + 1);
+        if (next_operand_type == OperandType::kRegCount8 ||
+            next_operand_type == OperandType::kRegCount16) {
+          return GetCountOperand(operand_index + 1);
+        }
+      }
+      return 1;
+    }
+  }
+}
 
 Handle<Object> BytecodeArrayIterator::GetConstantForIndexOperand(
     int operand_index) const {
-  Handle<FixedArray> constants = handle(bytecode_array()->constant_pool());
-  return FixedArray::get(constants, GetIndexOperand(operand_index));
+  return FixedArray::get(bytecode_array()->constant_pool(),
+                         GetIndexOperand(operand_index),
+                         bytecode_array()->GetIsolate());
 }
 
 

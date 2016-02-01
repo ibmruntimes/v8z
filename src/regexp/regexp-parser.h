@@ -106,11 +106,12 @@ class RegExpBuilder : public ZoneObject {
   // following quantifier
   void AddEmpty();
   void AddCharacterClass(RegExpCharacterClass* cc);
+  void AddCharacterClassForDesugaring(uc32 c);
   void AddAtom(RegExpTree* tree);
   void AddTerm(RegExpTree* tree);
   void AddAssertion(RegExpTree* tree);
   void NewAlternative();  // '|'
-  void AddQuantifierToAtom(int min, int max,
+  bool AddQuantifierToAtom(int min, int max,
                            RegExpQuantifier::QuantifierType type);
   RegExpTree* ToRegExp();
 
@@ -122,8 +123,11 @@ class RegExpBuilder : public ZoneObject {
   void FlushCharacters();
   void FlushText();
   void FlushTerms();
+  bool NeedsDesugaringForUnicode(RegExpCharacterClass* cc);
+  bool NeedsDesugaringForIgnoreCase(uc32 c);
   Zone* zone() const { return zone_; }
   bool unicode() const { return (flags_ & JSRegExp::kUnicode) != 0; }
+  bool ignore_case() const { return (flags_ & JSRegExp::kIgnoreCase) != 0; }
 
   Zone* zone_;
   bool pending_empty_;
@@ -194,7 +198,7 @@ class RegExpParser BASE_EMBEDDED {
   bool unicode() const { return (flags_ & JSRegExp::kUnicode) != 0; }
   bool multiline() const { return (flags_ & JSRegExp::kMultiline) != 0; }
 
-  static bool IsSyntaxCharacter(uc32 c);
+  static bool IsSyntaxCharacterOrSlash(uc32 c);
 
   static const int kMaxCaptures = 1 << 16;
   static const uc32 kEndMarker = (1 << 21);

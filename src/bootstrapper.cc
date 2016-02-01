@@ -1241,6 +1241,7 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
 
     Handle<Map> string_map =
         Handle<Map>(native_context()->string_function()->initial_map());
+    string_map->set_elements_kind(FAST_STRING_WRAPPER_ELEMENTS);
     Map::EnsureDescriptorSlack(string_map, 1);
 
     PropertyAttributes attribs = static_cast<PropertyAttributes>(
@@ -1517,9 +1518,11 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
         cons,
         Handle<Object>(native_context()->initial_object_prototype(), isolate));
     cons->shared()->set_instance_class_name(*name);
-    Handle<JSObject> json_object = factory->NewJSObject(cons, TENURED);
-    DCHECK(json_object->IsJSObject());
-    JSObject::AddProperty(global, name, json_object, DONT_ENUM);
+    Handle<JSObject> math = factory->NewJSObject(cons, TENURED);
+    DCHECK(math->IsJSObject());
+    JSObject::AddProperty(global, name, math, DONT_ENUM);
+    SimpleInstallFunction(math, "max", Builtins::kMathMax, 2, false);
+    SimpleInstallFunction(math, "min", Builtins::kMathMin, 2, false);
   }
 
   {  // -- A r r a y B u f f e r
@@ -2317,8 +2320,9 @@ EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_tolength)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_do_expressions)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_regexp_lookbehind)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_function_name)
+EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_function_sent)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(promise_extra)
-
+EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_tailcalls)
 
 void InstallPublicSymbol(Factory* factory, Handle<Context> native_context,
                          const char* name, Handle<Symbol> value) {
@@ -2934,6 +2938,7 @@ bool Genesis::InstallExperimentalNatives() {
   static const char* harmony_sloppy_let_natives[] = {nullptr};
   static const char* harmony_species_natives[] = {"native harmony-species.js",
                                                   nullptr};
+  static const char* harmony_tailcalls_natives[] = {nullptr};
   static const char* harmony_unicode_regexps_natives[] = {
       "native harmony-unicode-regexps.js", nullptr};
   static const char* harmony_default_parameters_natives[] = {nullptr};
@@ -2954,6 +2959,7 @@ bool Genesis::InstallExperimentalNatives() {
   static const char* harmony_regexp_subclass_natives[] = {nullptr};
   static const char* harmony_regexp_lookbehind_natives[] = {nullptr};
   static const char* harmony_function_name_natives[] = {nullptr};
+  static const char* harmony_function_sent_natives[] = {nullptr};
   static const char* promise_extra_natives[] = {"native promise-extra.js",
                                                 nullptr};
   static const char* harmony_object_values_entries_natives[] = {nullptr};

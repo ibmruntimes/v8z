@@ -2390,32 +2390,13 @@ void LCodeGen::DoCompareMinusZeroAndBranch(LCompareMinusZeroAndBranch* instr) {
     DoubleRegister value = ToDoubleRegister(instr->value());
     __ fcmpu(value, kDoubleRegZero);
     EmitFalseBranch(instr, ne);
-#if V8_TARGET_ARCH_PPC64
-    __ MovDoubleToInt64(scratch, value);
-#else
-    __ MovDoubleHighToInt(scratch, value);
-#endif
-    __ cmpi(scratch, Operand::Zero());
+    __ TestDoubleSign(value, scratch);
     EmitBranch(instr, lt);
   } else {
     Register value = ToRegister(instr->value());
     __ CheckMap(value, scratch, Heap::kHeapNumberMapRootIndex,
                 instr->FalseLabel(chunk()), DO_SMI_CHECK);
-#if V8_TARGET_ARCH_PPC64
-    __ LoadP(scratch, FieldMemOperand(value, HeapNumber::kValueOffset));
-    __ li(ip, Operand(1));
-    __ rotrdi(ip, ip, 1);  // ip = 0x80000000_00000000
-    __ cmp(scratch, ip);
-#else
-    __ lwz(scratch, FieldMemOperand(value, HeapNumber::kExponentOffset));
-    __ lwz(ip, FieldMemOperand(value, HeapNumber::kMantissaOffset));
-    Label skip;
-    __ lis(r0, Operand(SIGN_EXT_IMM16(0x8000)));
-    __ cmp(scratch, r0);
-    __ bne(&skip);
-    __ cmpi(ip, Operand::Zero());
-    __ bind(&skip);
-#endif
+    __ TestHeapNumberIsMinusZero(value, scratch, ip);
     EmitBranch(instr, eq);
   }
 }
@@ -3086,6 +3067,9 @@ void LCodeGen::DoLoadKeyedExternalArray(LLoadKeyed* instr) {
       case DICTIONARY_ELEMENTS:
       case FAST_SLOPPY_ARGUMENTS_ELEMENTS:
       case SLOW_SLOPPY_ARGUMENTS_ELEMENTS:
+      case FAST_STRING_WRAPPER_ELEMENTS:
+      case SLOW_STRING_WRAPPER_ELEMENTS:
+      case NO_ELEMENTS:
         UNREACHABLE();
         break;
     }
@@ -3700,13 +3684,8 @@ void LCodeGen::DoMathRound(LMathRound* instr) {
   // If the input is +0.5, the result is 1.
   __ bgt(&convert);  // Out of [-0.5, +0.5].
   if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
-#if V8_TARGET_ARCH_PPC64
-    __ MovDoubleToInt64(scratch1, input);
-#else
-    __ MovDoubleHighToInt(scratch1, input);
-#endif
-    __ cmpi(scratch1, Operand::Zero());
-    // [-0.5, -0].
+    // [-0.5, -0] (negative) yields minus zero.
+    __ TestDoubleSign(input, scratch1);
     DeoptimizeIf(lt, instr, Deoptimizer::kMinusZero);
   }
   __ fcmpu(input, dot_five);
@@ -3927,31 +3906,35 @@ void LCodeGen::DoCallJSFunction(LCallJSFunction* instr) {
 
 
 void LCodeGen::DoCallFunction(LCallFunction* instr) {
+  HCallFunction* hinstr = instr->hydrogen();
   DCHECK(ToRegister(instr->context()).is(cp));
   DCHECK(ToRegister(instr->function()).is(r4));
   DCHECK(ToRegister(instr->result()).is(r3));
 
   int arity = instr->arity();
-  ConvertReceiverMode mode = instr->hydrogen()->convert_mode();
-  if (instr->hydrogen()->HasVectorAndSlot()) {
+  ConvertReceiverMode mode = hinstr->convert_mode();
+  TailCallMode tail_call_mode = hinstr->tail_call_mode();
+  if (hinstr->HasVectorAndSlot()) {
     Register slot_register = ToRegister(instr->temp_slot());
     Register vector_register = ToRegister(instr->temp_vector());
     DCHECK(slot_register.is(r6));
     DCHECK(vector_register.is(r5));
 
     AllowDeferredHandleDereference vector_structure_check;
-    Handle<TypeFeedbackVector> vector = instr->hydrogen()->feedback_vector();
-    int index = vector->GetIndex(instr->hydrogen()->slot());
+    Handle<TypeFeedbackVector> vector = hinstr->feedback_vector();
+    int index = vector->GetIndex(hinstr->slot());
 
     __ Move(vector_register, vector);
     __ LoadSmiLiteral(slot_register, Smi::FromInt(index));
 
-    Handle<Code> ic =
-        CodeFactory::CallICInOptimizedCode(isolate(), arity, mode).code();
+    Handle<Code> ic = CodeFactory::CallICInOptimizedCode(isolate(), arity, mode,
+                                                         tail_call_mode)
+                          .code();
     CallCode(ic, RelocInfo::CODE_TARGET, instr);
   } else {
     __ mov(r3, Operand(arity));
-    CallCode(isolate()->builtins()->Call(mode), RelocInfo::CODE_TARGET, instr);
+    CallCode(isolate()->builtins()->Call(mode, tail_call_mode),
+             RelocInfo::CODE_TARGET, instr);
   }
 }
 
@@ -4271,6 +4254,9 @@ void LCodeGen::DoStoreKeyedExternalArray(LStoreKeyed* instr) {
       case DICTIONARY_ELEMENTS:
       case FAST_SLOPPY_ARGUMENTS_ELEMENTS:
       case SLOW_SLOPPY_ARGUMENTS_ELEMENTS:
+      case FAST_STRING_WRAPPER_ELEMENTS:
+      case SLOW_STRING_WRAPPER_ELEMENTS:
+      case NO_ELEMENTS:
         UNREACHABLE();
         break;
     }
@@ -4916,17 +4902,7 @@ void LCodeGen::EmitNumberUntagD(LNumberUntagD* instr, Register input_reg,
     // load heap number
     __ lfd(result_reg, FieldMemOperand(input_reg, HeapNumber::kValueOffset));
     if (deoptimize_on_minus_zero) {
-#if V8_TARGET_ARCH_PPC64
-      __ MovDoubleToInt64(scratch, result_reg);
-      // rotate left by one for simple compare.
-      __ rldicl(scratch, scratch, 1, 0);
-      __ cmpi(scratch, Operand(1));
-#else
-      __ MovDoubleToInt64(scratch, ip, result_reg);
-      __ cmpi(ip, Operand::Zero());
-      __ bne(&done);
-      __ Cmpi(scratch, Operand(HeapNumber::kSignMask), r0);
-#endif
+      __ TestDoubleIsMinusZero(result_reg, scratch, ip);
       DeoptimizeIf(eq, instr, Deoptimizer::kMinusZero);
     }
     __ b(&done);
@@ -5015,10 +4991,7 @@ void LCodeGen::DoDeferredTaggedToI(LTaggedToI* instr) {
     if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
       __ cmpi(input_reg, Operand::Zero());
       __ bne(&done);
-      __ lwz(scratch1,
-             FieldMemOperand(scratch2, HeapNumber::kValueOffset +
-                                           Register::kExponentOffset));
-      __ cmpwi(scratch1, Operand::Zero());
+      __ TestHeapNumberSign(scratch2, scratch1);
       DeoptimizeIf(lt, instr, Deoptimizer::kMinusZero);
     }
   }
@@ -5093,12 +5066,7 @@ void LCodeGen::DoDoubleToI(LDoubleToI* instr) {
       Label done;
       __ cmpi(result_reg, Operand::Zero());
       __ bne(&done);
-#if V8_TARGET_ARCH_PPC64
-      __ MovDoubleToInt64(scratch1, double_input);
-#else
-      __ MovDoubleHighToInt(scratch1, double_input);
-#endif
-      __ cmpi(scratch1, Operand::Zero());
+      __ TestDoubleSign(double_input, scratch1);
       DeoptimizeIf(lt, instr, Deoptimizer::kMinusZero);
       __ bind(&done);
     }
@@ -5123,12 +5091,7 @@ void LCodeGen::DoDoubleToSmi(LDoubleToSmi* instr) {
       Label done;
       __ cmpi(result_reg, Operand::Zero());
       __ bne(&done);
-#if V8_TARGET_ARCH_PPC64
-      __ MovDoubleToInt64(scratch1, double_input);
-#else
-      __ MovDoubleHighToInt(scratch1, double_input);
-#endif
-      __ cmpi(scratch1, Operand::Zero());
+      __ TestDoubleSign(double_input, scratch1);
       DeoptimizeIf(lt, instr, Deoptimizer::kMinusZero);
       __ bind(&done);
     }
