@@ -582,8 +582,7 @@ void CodeGenerator::AssemblePrepareTailCall(int stack_param_delta) {
     frame_access_state()->IncreaseSPDelta(-sp_slot_delta);
   }
   if (frame()->needs_frame()) {
-    __ LoadP(r14, MemOperand(fp, StandardFrameConstants::kCallerPCOffset));
-    __ LoadP(fp, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
+    __ RestoreFrameStateForTailCall();
   }
   frame_access_state()->SetFrameAccessToSP();
 }
@@ -741,6 +740,13 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
                        MemoryChunk::kPointersFromHereAreInterestingMask, ne,
                        ool->entry());
       __ bind(ool->exit());
+      break;
+    }
+    case kArchStackSlot: {
+      FrameOffset offset =
+          frame_access_state()->GetFrameOffset(i.InputInt32(0));
+      __ AddP(i.OutputRegister(), offset.from_stack_pointer() ? sp : fp,
+              Operand(offset.offset()));
       break;
     }
     case kS390_And:

@@ -1088,9 +1088,9 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   // We got a fixed array in register r2. Iterate through that.
   __ bind(&fixed_array);
 
+  int const vector_index = SmiFromSlot(slot)->value();
   __ EmitLoadTypeFeedbackVector(r3);
   __ mov(r4, Operand(TypeFeedbackVector::MegamorphicSentinel(isolate())));
-  int vector_index = SmiFromSlot(slot)->value();
   __ StoreP(
       r4, FieldMemOperand(r3, FixedArray::OffsetOfElementAt(vector_index)), r0);
   __ LoadSmiLiteral(r3, Smi::FromInt(1));  // Smi(1) indicates slow check
@@ -1128,6 +1128,17 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   __ LoadP(r6, FieldMemOperand(r3, HeapObject::kMapOffset));
   __ CmpP(r6, r4);
   __ beq(&update_each);
+
+  // We might get here from TurboFan or Crankshaft when something in the
+  // for-in loop body deopts and only now notice in fullcodegen, that we
+  // can now longer use the enum cache, i.e. left fast mode. So better record
+  // this information here, in case we later OSR back into this loop or
+  // reoptimize the whole function w/o rerunning the loop with the slow
+  // mode object in fullcodegen (which would result in a deopt loop).
+  __ EmitLoadTypeFeedbackVector(r2);
+  __ mov(r4, Operand(TypeFeedbackVector::MegamorphicSentinel(isolate())));
+  __ StoreP(
+      r4, FieldMemOperand(r2, FixedArray::OffsetOfElementAt(vector_index)), r0);
 
   // Convert the entry to a string or (smi) 0 if it isn't a property
   // any more. If the property has been removed while iterating, we
@@ -1925,10 +1936,6 @@ void FullCodeGenerator::VisitYield(Yield* expr) {
     }
 
     case Yield::kFinal: {
-      VisitForAccumulatorValue(expr->generator_object());
-      __ LoadSmiLiteral(r3, Smi::FromInt(JSGeneratorObject::kGeneratorClosed));
-      __ StoreP(r3, FieldMemOperand(result_register(),
-                                    JSGeneratorObject::kContinuationOffset));
       // Pop value from top-of-stack slot, box result into result register.
       EmitCreateIteratorResult(true);
       EmitUnwindBeforeReturn();
@@ -2056,6 +2063,13 @@ void FullCodeGenerator::EmitGeneratorResume(
   VisitForStackValue(generator);
   VisitForAccumulatorValue(value);
   __ pop(r3);
+
+  // Store input value into generator object.
+  __ StoreP(result_register(),
+            FieldMemOperand(r3, JSGeneratorObject::kInputOffset), r0);
+  __ LoadRR(r4, result_register());
+  __ RecordWriteField(r3, JSGeneratorObject::kInputOffset, r4, r5,
+                      kLRHasBeenSaved, kDontSaveFPRegs);
 
   // Load suspended function and context.
   __ LoadP(cp, FieldMemOperand(r3, JSGeneratorObject::kContextOffset));
@@ -2867,7 +2881,9 @@ void FullCodeGenerator::EmitCall(Call* expr, ConvertReceiverMode mode) {
 
   PrepareForBailoutForId(expr->CallId(), NO_REGISTERS);
   SetCallPosition(expr);
-  Handle<Code> ic = CodeFactory::CallIC(isolate(), arg_count, mode).code();
+  Handle<Code> ic =
+      CodeFactory::CallIC(isolate(), arg_count, mode, expr->tail_call_mode())
+          .code();
   __ LoadSmiLiteral(r5, SmiFromSlot(expr->CallFeedbackICSlot()));
   __ LoadP(r3, MemOperand(sp, (arg_count + 1) * kPointerSize), r0);
   // Don't assign a type feedback id to the IC, since type feedback is provided
@@ -3170,21 +3186,22 @@ void FullCodeGenerator::EmitIsMinusZero(CallRuntime* expr) {
                          &if_false, &fall_through);
 
   __ CheckMap(r2, r3, Heap::kHeapNumberMapRootIndex, if_false, DO_SMI_CHECK);
-#if V8_TARGET_ARCH_S390X
-  __ LoadP(r3, FieldMemOperand(r2, HeapNumber::kValueOffset));
-  __ llihf(r4, Operand(0x80000000));  // r4 = 0x80000000_00000000
-  __ CmpP(r3, r4);
-#else
-  __ LoadlW(r4, FieldMemOperand(r2, HeapNumber::kExponentOffset));
-  __ LoadlW(r3, FieldMemOperand(r2, HeapNumber::kMantissaOffset));
-  Label skip;
-  __ iilf(r0, Operand(0x80000000));
-  __ CmpP(r4, r0);
-  __ bne(&skip, Label::kNear);
-  __ CmpP(r3, Operand::Zero());
-  __ bind(&skip);
-#endif
+// #if V8_TARGET_ARCH_S390X
+//   __ LoadP(r3, FieldMemOperand(r2, HeapNumber::kValueOffset));
+//   __ llihf(r4, Operand(0x80000000));  // r4 = 0x80000000_00000000
+//   __ CmpP(r3, r4);
+// #else
+//   __ LoadlW(r4, FieldMemOperand(r2, HeapNumber::kExponentOffset));
+//   __ LoadlW(r3, FieldMemOperand(r2, HeapNumber::kMantissaOffset));
+//   Label skip;
+//   __ iilf(r0, Operand(0x80000000));
+//   __ CmpP(r4, r0);
+//   __ bne(&skip, Label::kNear);
+//   __ CmpP(r3, Operand::Zero());
+//   __ bind(&skip);
+// #endif
 
+  __ TestHeapNumberIsMinusZero(r2, r3, r4);
   PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
   Split(eq, if_true, if_false, fall_through);
 

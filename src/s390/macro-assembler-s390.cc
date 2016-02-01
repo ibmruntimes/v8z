@@ -178,6 +178,10 @@ void MacroAssembler::Drop(int count) {
   }
 }
 
+void MacroAssembler::Drop(Register count, Register scratch) {
+  ShiftLeftP(scratch, count, Operand(kPointerSizeLog2));
+  AddP(sp, sp, scratch);
+}
 
 void MacroAssembler::Call(Label* target) { b(r14, target); }
 
@@ -552,6 +556,17 @@ void MacroAssembler::PopFixedFrame(Register marker_reg) {
   }
 }
 
+void MacroAssembler::RestoreFrameStateForTailCall() {
+  // if (FLAG_enable_embedded_constant_pool) {
+  //   LoadP(kConstantPoolRegister,
+  //         MemOperand(fp, StandardFrameConstants::kConstantPoolOffset));
+  //   set_constant_pool_available(false);
+  // }
+  DCHECK(!FLAG_enable_embedded_constant_pool);
+  LoadP(r14, MemOperand(fp, StandardFrameConstants::kCallerPCOffset));
+  LoadP(fp, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
+}
+ 
 const RegList MacroAssembler::kSafepointSavedRegisters = Register::kAllocatable;
 const int MacroAssembler::kNumSafepointSavedRegisters =
     Register::kNumAllocatable;
@@ -2414,6 +2429,48 @@ void MacroAssembler::TestDoubleIsInt32(DoubleRegister double_input,
   TryDoubleToInt32Exact(scratch1, double_input, scratch2, double_scratch);
 }
 
+void MacroAssembler::TestDoubleIsMinusZero(DoubleRegister input,
+                                           Register scratch1,
+                                           Register scratch2) {
+  Label done;
+  lgdr(scratch1, input);
+  srlg(scratch2, scratch1, Operand(32));
+
+  CmpP(scratch2, Operand::Zero());
+  bne(&done, Label::kNear);
+  CmpP(scratch1, Operand(HeapNumber::kSignMask));
+  bind(&done);
+}
+
+void MacroAssembler::TestHeapNumberIsMinusZero(Register input,
+                                               Register scratch1,
+                                               Register scratch2) {
+#if V8_TARGET_ARCH_S390X
+  LoadP(scratch1, FieldMemOperand(input, HeapNumber::kValueOffset));
+  llihf(scratch2, Operand(0x80000000));  // scratch2 = 0x80000000_00000000
+  CmpP(scratch1, scratch2);
+#else
+  LoadlW(scratch1, FieldMemOperand(input, HeapNumber::kExponentOffset));
+  LoadlW(scratch2, FieldMemOperand(input, HeapNumber::kMantissaOffset));
+  Label skip;
+  CmpP(scratch1, Operand(0x80000000));
+  bne(&skip, Label::kNear);
+  CmpP(scratch2, Operand::Zero());
+  bind(&skip);
+#endif
+}
+
+void MacroAssembler::TestDoubleSign(DoubleRegister input, Register scratch) {
+  stdy(input, MemOperand(sp, -kDoubleSize));
+  LoadlW(scratch, MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
+  Cmp32(scratch, Operand::Zero());
+}
+
+void MacroAssembler::TestHeapNumberSign(Register input, Register scratch) {
+  LoadlW(scratch, FieldMemOperand(input, HeapNumber::kValueOffset +
+                                             Register::kExponentOffset));
+  Cmp32(scratch, Operand::Zero());
+}
 
 void MacroAssembler::TryDoubleToInt32Exact(Register result,
                                            DoubleRegister double_input,
