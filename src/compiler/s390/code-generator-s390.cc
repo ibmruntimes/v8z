@@ -771,6 +771,9 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       } else {
         ASSEMBLE_BINOP(ShiftLeft, ShiftLeft);
       }
+#if V8_TARGET_ARCH_S390X
+      __ lgfr(i.OutputRegister(0), i.OutputRegister(0));
+#endif
       break;
 #if V8_TARGET_ARCH_S390X
     case kS390_ShiftLeft64:
@@ -788,6 +791,9 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       } else {
         ASSEMBLE_BINOP(ShiftRight, ShiftRight);
       }
+#if V8_TARGET_ARCH_S390X
+      __ lgfr(i.OutputRegister(0), i.OutputRegister(0));
+#endif
       break;
 #if V8_TARGET_ARCH_S390X
     case kS390_ShiftRight64:
