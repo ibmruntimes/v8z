@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Platform-specific code for Linux goes here. For the POSIX-compatible
+// Platform-specific code for zOS/Unix goes here. For the POSIX-compatible
 // parts, the implementation is in platform-posix.cc.
 
 #include <pthread.h>
@@ -45,6 +45,7 @@
 #include "src/base/platform/platform.h"
 #include "src/s390/semaphore-zos.h"
 
+#define MAP_FAILED ((void *)-1L) 
 
 namespace v8 {
 namespace base {
@@ -121,8 +122,11 @@ void* OS::Allocate(const size_t requested,
   const size_t msize = RoundUp(requested, AllocateAlignment());
   int prot = PROT_READ | PROT_WRITE | (is_executable ? PROT_EXEC : 0);
   void* addr = OS::GetRandomMmapAddr();
-  void* mbase = mmap(addr, msize, prot, MAP_PRIVATE, -1, 0);
+  int fd = open("/dev/zero/",O_RDWR);  
+  if (fd == -1) return NULL;
+  void* mbase = mmap(addr, msize, prot, MAP_PRIVATE, fd, 0);
   *allocated = msize;
+  close(fd);
   return mbase;
 }
 
@@ -279,8 +283,8 @@ void OS::SignalCodeMovingGC() {
 }
 
 
+static int kMmapFd = -1;
 // Constants used for mmap.
-static const int kMmapFd = -1;
 static const int kMmapFdOffset = 0;
 
 
@@ -294,6 +298,11 @@ VirtualMemory::VirtualMemory(size_t size)
 VirtualMemory::VirtualMemory(size_t size, size_t alignment)
     : address_(NULL), size_(0) {
   DCHECK(IsAligned(alignment, static_cast<intptr_t>(OS::AllocateAlignment())));
+  kMmapFd = open("/dev/zero/", O_RDWR);
+
+  //Todo(muntasir) Need an assert here
+  if(kMmapFd == -1) return;
+
   size_t request_size = RoundUp(size + alignment,
                                 static_cast<intptr_t>(OS::AllocateAlignment()));
   void* reservation = mmap(OS::GetRandomMmapAddr(),
@@ -330,6 +339,7 @@ VirtualMemory::VirtualMemory(size_t size, size_t alignment)
 #if defined(LEAK_SANITIZER)
   __lsan_register_root_region(address_, size_);
 #endif
+  close(kMmapFd);
 }
 
 
@@ -370,13 +380,14 @@ bool VirtualMemory::Guard(void* address) {
 
 
 void* VirtualMemory::ReserveRegion(size_t size) {
+  kMmapFd = open("/dev/zero", O_RDWR);
   void* result = mmap(OS::GetRandomMmapAddr(),
                       size,
                       PROT_NONE,
                       MAP_PRIVATE,
                       kMmapFd,
                       kMmapFdOffset);
-
+  close(kMmapFd);
 #if defined(LEAK_SANITIZER)
   __lsan_register_root_region(result, size);
 #endif
@@ -392,18 +403,29 @@ bool VirtualMemory::CommitRegion(void* base, size_t size, bool is_executable) {
 #else
   int prot = PROT_READ | PROT_WRITE | (is_executable ? PROT_EXEC : 0);
 #endif
-  return true;
+  kMmapFd = open ("/dev/zero", O_RDWR);
+  bool map_success = (MAP_FAILED == mmap(base,
+                                         size,
+                                         prot,
+                                         MAP_PRIVATE | MAP_FIXED,
+                                         kMmapFd,
+                                         kMmapFdOffset));
+  close(kMmapFd);
+  return map_success;
 }
 
 
 bool VirtualMemory::UncommitRegion(void* base, size_t size) {
-  mmap(base,
-              size,
-              PROT_NONE,
-              MAP_PRIVATE | MAP_FIXED,
-              kMmapFd,
-              kMmapFdOffset);
-  return true;
+ kMmapFd = open("/dev/zero", O_RDWR);
+ bool map_success = (MAP_FAILED !=  mmap(base,
+                         size,
+                         PROT_NONE,
+                         MAP_PRIVATE | MAP_FIXED,
+                         kMmapFd,
+                         kMmapFdOffset)); 
+     
+ close(kMmapFd);
+ return map_success;
 }
 
 
