@@ -641,7 +641,7 @@ void MacroAssembler::ConvertIntToDouble(Register src,
 void MacroAssembler::ConvertUnsignedIntToDouble(Register src,
                                                 DoubleRegister double_dst) {
   if (CpuFeatures::IsSupported(FLOATING_POINT_EXT)) {
-    cdlfbr(Condition(5), Condition(5), double_dst, src);
+    cdlfbr(Condition(5), Condition(0), double_dst, src);
   } else {
     // zero-extend src
     llgfr(src, src);
