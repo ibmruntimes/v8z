@@ -267,13 +267,19 @@ class CppLintProcessor(SourceFileProcessor):
     command = [sys.executable, cpplint, '--filter', filt]
 
     commands = join([command + [file] for file in files])
-    count = multiprocessing.cpu_count()
-    pool = multiprocessing.Pool(count)
-    try:
-      results = pool.map_async(CppLintWorker, commands).get(999999)
-    except KeyboardInterrupt:
-      print "\nCaught KeyboardInterrupt, terminating workers."
-      sys.exit(1)
+
+    results = []
+    if sys.platform.startswith('os390'):
+      for cmd in commands:
+        results.append(CppLintWorker(cmd))
+    else:
+      count = multiprocessing.cpu_count()
+      pool = multiprocessing.Pool(count)
+      try:
+        results = pool.map_async(CppLintWorker, commands).get(999999)
+      except KeyboardInterrupt:
+        print "\nCaught KeyboardInterrupt, terminating workers."
+        sys.exit(1)
 
     for i in range(len(files)):
       if results[i] > 0:
