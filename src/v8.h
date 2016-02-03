@@ -51,6 +51,7 @@
 using std::isnan;
 using std::isinf;
 using std::isfinite;
+using std::signbit;
 #endif
 
 namespace v8 {
