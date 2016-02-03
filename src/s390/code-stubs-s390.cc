@@ -3559,7 +3559,7 @@ void CEntryStub::GenerateCore(MacroAssembler* masm,
   // PPC LINUX ABI:
   // The #if below used to be !USE_SIMULATOR but needed
   // to change to support nativesim=true builds
-#if defined(V8_HOST_ARCH_S39064) || defined(V8_HOST_ARCH_S390)
+#if defined(V8_HOST_ARCH_S390)
   // Call C built-in on native hardware.
 
 #if defined(V8_TARGET_ARCH_S390X)
@@ -3744,7 +3744,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // PPC LINUX ABI:
   // The #if immediately below was !USE_SIMULATOR, but needed
   // to change to support nativesim=true builds
-#if defined(V8_HOST_ARCH_S39064) || defined(V8_HOST_ARCH_S390)
+#if defined(V8_HOST_ARCH_S390)
 
 #if defined(V8_TARGET_ARCH_S390X) && !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
   // Pass buffer for return value on stack if necessary
@@ -3842,7 +3842,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
 #endif
 
   // saving floating point registers
-#if defined(V8_HOST_ARCH_S39064)
+#if defined(V8_TARGET_ARCH_S390X)
   // 64bit ABI requires f8 to f15 be saved
   __ lay(sp, MemOperand(sp, -8 * kDoubleSize));
   __ std(d8, MemOperand(sp));
@@ -4019,7 +4019,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   __ la(sp, MemOperand(sp, 10 * kPointerSize));
 
   // saving floating point registers
-#if defined(V8_HOST_ARCH_S39064)
+#if defined(V8_TARGET_ARCH_S390X)
   // 64bit ABI requires f8 to f15 be saved
   __ ld(d8, MemOperand(sp));
   __ ld(d9, MemOperand(sp, 1 * kDoubleSize));
