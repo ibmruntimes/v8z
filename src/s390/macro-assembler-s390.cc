@@ -566,7 +566,7 @@ void MacroAssembler::RestoreFrameStateForTailCall() {
   LoadP(r14, MemOperand(fp, StandardFrameConstants::kCallerPCOffset));
   LoadP(fp, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
 }
- 
+
 const RegList MacroAssembler::kSafepointSavedRegisters = Register::kAllocatable;
 const int MacroAssembler::kNumSafepointSavedRegisters =
     Register::kNumAllocatable;
@@ -854,7 +854,6 @@ void MacroAssembler::ConvertFloat32ToUnsignedInt64(
 void MacroAssembler::ConvertDoubleToUnsignedInt64(
     const DoubleRegister double_input, const Register dst,
     const DoubleRegister double_dst, FPRoundingMode rounding_mode) {
-  
   Condition m = Condition(0);
   switch (rounding_mode) {
     case kRoundToZero:
