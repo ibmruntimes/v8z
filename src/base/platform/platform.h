@@ -427,8 +427,11 @@ class VirtualMemory {
 class Thread {
  public:
   // Opaque data type for thread-local storage keys.
+#if defined(V8_OS_ZOS)
+  typedef pthread_key_t LocalStorageKey;
+#else  
   typedef int32_t LocalStorageKey;
-
+#endif
   class Options {
    public:
     Options() : name_("v8:<unknown>"), stack_size_(0) {}

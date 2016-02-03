@@ -706,9 +706,6 @@ static Thread::LocalStorageKey PthreadKeyToLocalKey(pthread_key_t pthread_key) {
   STATIC_ASSERT(sizeof(Thread::LocalStorageKey) == sizeof(pthread_key_t));
   intptr_t ptr_key = reinterpret_cast<intptr_t>(pthread_key);
   return static_cast<Thread::LocalStorageKey>(ptr_key);
-#elif V8_OS_ZOS
-  // TODO(mcornac):
-  return static_cast<Thread::LocalStorageKey>(0);
 #else
   return static_cast<Thread::LocalStorageKey>(pthread_key);
 #endif
@@ -720,9 +717,6 @@ static pthread_key_t LocalKeyToPthreadKey(Thread::LocalStorageKey local_key) {
   STATIC_ASSERT(sizeof(Thread::LocalStorageKey) == sizeof(pthread_key_t));
   intptr_t ptr_key = static_cast<intptr_t>(local_key);
   return reinterpret_cast<pthread_key_t>(ptr_key);
-#elif V8_OS_ZOS
-  // TODO(mcornac):
-  return {0, 0, 0, 0, 0, 0, 0, 0};
 #else
   return static_cast<pthread_key_t>(local_key);
 #endif
