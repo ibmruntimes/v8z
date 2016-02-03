@@ -674,28 +674,24 @@ void MacroAssembler::ConvertIntToFloat(const DoubleRegister dst,
 void MacroAssembler::ConvertInt64ToDouble(Register src,
                                           DoubleRegister double_dst) {
   cdgbr(double_dst, src);
-  // fcfid(double_dst, double_dst);
 }
 
 
 void MacroAssembler::ConvertUnsignedInt64ToFloat(Register src,
                                                  DoubleRegister double_dst) {
   celgbr(Condition(0), Condition(0), double_dst, src);
-  // fcfidus(double_dst, double_dst);
 }
 
 
 void MacroAssembler::ConvertUnsignedInt64ToDouble(Register src,
                                                   DoubleRegister double_dst) {
   cdlgbr(Condition(0), Condition(0), double_dst, src);
-  // fcfidu(double_dst, double_dst);
 }
 
 
 void MacroAssembler::ConvertInt64ToFloat(Register src,
                                          DoubleRegister double_dst) {
   cegbr(double_dst, src);
-  // fcfids(double_dst, double_dst);
 }
 #endif
 
@@ -891,15 +887,6 @@ void MacroAssembler::StubPrologue(Register base, int prologue_offset) {
   Push(Smi::FromInt(StackFrame::STUB));
   // Adjust FP to point to saved FP.
   la(fp, MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
-  // if (FLAG_enable_embedded_constant_pool) {
-  //   if (!base.is(no_reg)) {
-  //     // base contains prologue address
-  //     LoadConstantPoolPointerRegister(base, -prologue_offset);
-  //   } else {
-  //     LoadConstantPoolPointerRegister();
-  //   }
-  //   set_constant_pool_available(true);
-  // }
 }
 
 
@@ -1014,7 +1001,8 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   // all of the pushes that have happened inside of V8
   // since we were called from C code
 
-  // replicate ARM frame - TODO make this more closely follow S390 ABI
+  // replicate ARM frame
+  // TODO(joransiu): make this more closely follow S390 ABI
 
 
   CleanseP(r14);
@@ -1607,95 +1595,6 @@ void MacroAssembler::LoadFromNumberDictionary(Label* miss, Register elements,
 }
 
 
-#if 0
-void MacroAssembler::Allocate(int object_size, Register result,
-                              Register scratch1, Register scratch2,
-                              Label* gc_required, AllocationFlags flags) {
-  DCHECK(object_size <= Page::kMaxRegularHeapObjectSize);
-  if (!FLAG_inline_new) {
-    if (emit_debug_code()) {
-      // Trash the registers to simulate an allocation failure.
-      LoadImmP(result, Operand(0x7091));
-      LoadImmP(scratch1, Operand(0x7191));
-      LoadImmP(scratch2, Operand(0x7291));
-    }
-    b(gc_required);
-    return;
-  }
-
-  DCHECK(!AreAliased(result, scratch1, scratch2, ip));
-
-  // Make object size into bytes.
-  if ((flags & SIZE_IN_WORDS) != 0) {
-    object_size *= kPointerSize;
-  }
-  DCHECK_EQ(0, static_cast<int>(object_size & kObjectAlignmentMask));
-
-  // Check relative positions of allocation top and limit addresses.
-  ExternalReference allocation_top =
-      AllocationUtils::GetAllocationTopReference(isolate(), flags);
-  ExternalReference allocation_limit =
-      AllocationUtils::GetAllocationLimitReference(isolate(), flags);
-  intptr_t top = reinterpret_cast<intptr_t>(allocation_top.address());
-  intptr_t limit = reinterpret_cast<intptr_t>(allocation_limit.address());
-  DCHECK((limit - top) == kPointerSize);
-
-  // Set up allocation top address and object size registers.
-  Register topaddr = scratch1;
-  mov(topaddr, Operand(allocation_top));
-
-  intptr_t limitOffset = 0;
-  if ((flags & RESULT_CONTAINS_TOP) == 0) {
-    // Load allocation top into result
-    LoadP(result, MemOperand(topaddr));
-    limitOffset = kPointerSize;
-  } else {
-    if (emit_debug_code()) {
-      // Assert that result actually contains top on entry.
-      CmpP(result, MemOperand(topaddr));
-      Check(eq, kUnexpectedAllocationTop);
-    }
-    // Result already contains allocation top.
-    limitOffset = limit - top;
-  }
-  MemOperand limitMemOperand = MemOperand(topaddr, limitOffset);
-
-  if ((flags & DOUBLE_ALIGNMENT) != 0) {
-    // Align the next allocation. Storing the filler map without checking top is
-    // safe in new-space because the limit of the heap is aligned there.
-#if V8_TARGET_ARCH_S390X
-    STATIC_ASSERT(kPointerAlignment == kDoubleAlignment);
-#else
-    STATIC_ASSERT(kPointerAlignment * 2 == kDoubleAlignment);
-    AndP(scratch2, result, Operand(kDoubleAlignmentMask));
-    Label aligned;
-    beq(&aligned, Label::kNear);
-    if ((flags & PRETENURE) != 0) {
-      CmpLogicalP(result, limitMemOperand);
-      bge(gc_required);
-    }
-    mov(scratch2, Operand(isolate()->factory()->one_pointer_filler_map()));
-    StoreW(scratch2, MemOperand(result));
-    la(result, MemOperand(result, kDoubleSize / 2));
-    bind(&aligned);
-#endif
-  }
-
-  // Calculate new top and bail out if new space is exhausted. Use result
-  // to calculate the new top.
-  AddP(scratch2, result, Operand(object_size));
-  b(Condition(CC_OF), gc_required);  // Detect overflow
-  CmpLogicalP(scratch2, limitMemOperand);
-  bgt(gc_required);
-  StoreP(scratch2, MemOperand(topaddr));
-
-  // Tag object if requested.
-  if ((flags & TAG_OBJECT) != 0) {
-    la(result, MemOperand(result, kHeapObjectTag));
-  }
-}
-#endif
-
 void MacroAssembler::Allocate(int object_size, Register result,
                               Register scratch1, Register scratch2,
                               Label* gc_required, AllocationFlags flags) {
@@ -1793,109 +1692,6 @@ void MacroAssembler::Allocate(int object_size, Register result,
     AddP(result, result, Operand(kHeapObjectTag));
   }
 }
-
-
-#if 0
-void MacroAssembler::Allocate(Register object_size, Register result,
-                              Register scratch1, Register scratch2,
-                              Label* gc_required, AllocationFlags flags) {
-  if (!FLAG_inline_new) {
-    if (emit_debug_code()) {
-      // Trash the registers to simulate an allocation failure.
-      LoadImmP(result, Operand(0x7091));
-      LoadImmP(scratch1, Operand(0x7191));
-      LoadImmP(scratch2, Operand(0x7291));
-    }
-    b(gc_required);
-    return;
-  }
-
-  // Assert that the register arguments are different and that none of
-  // them are ip. ip is used explicitly in the code generated below.
-  DCHECK(!result.is(scratch1));
-  DCHECK(!result.is(scratch2));
-  DCHECK(!scratch1.is(scratch2));
-  DCHECK(!object_size.is(ip));
-  DCHECK(!result.is(ip));
-  DCHECK(!scratch1.is(ip));
-  DCHECK(!scratch2.is(ip));
-
-  // Check relative positions of allocation top and limit addresses.
-  ExternalReference allocation_top =
-      AllocationUtils::GetAllocationTopReference(isolate(), flags);
-  ExternalReference allocation_limit =
-      AllocationUtils::GetAllocationLimitReference(isolate(), flags);
-  intptr_t top = reinterpret_cast<intptr_t>(allocation_top.address());
-  intptr_t limit = reinterpret_cast<intptr_t>(allocation_limit.address());
-  DCHECK((limit - top) == kPointerSize);
-
-  // Set up allocation top address.
-  Register topaddr = scratch1;
-  mov(topaddr, Operand(allocation_top));
-
-  intptr_t limitOffset = 0;
-  if ((flags & RESULT_CONTAINS_TOP) == 0) {
-    // Load allocation top into result and allocation limit into ip.
-    LoadP(result, MemOperand(topaddr));
-    limitOffset = kPointerSize;
-  } else {
-    if (emit_debug_code()) {
-      // Assert that result actually contains top on entry.
-      CmpP(result, MemOperand(topaddr));
-      Check(eq, kUnexpectedAllocationTop);
-    }
-    // Result already contains allocation top.
-    limitOffset = limit - top;
-  }
-  MemOperand limitMemOperand = MemOperand(topaddr, limitOffset);
-
-  if ((flags & DOUBLE_ALIGNMENT) != 0) {
-    // Align the next allocation. Storing the filler map without checking top is
-    // safe in new-space because the limit of the heap is aligned there.
-#if V8_TARGET_ARCH_S390X
-    STATIC_ASSERT(kPointerAlignment == kDoubleAlignment);
-#else
-    STATIC_ASSERT(kPointerAlignment * 2 == kDoubleAlignment);
-    AndP(scratch2, result, Operand(kDoubleAlignmentMask));
-    Label aligned;
-    beq(&aligned, Label::kNear);
-    if ((flags & PRETENURE) != 0) {
-      CmpLogicalP(result, limitMemOperand);
-      bge(gc_required);
-    }
-    mov(scratch2, Operand(isolate()->factory()->one_pointer_filler_map()));
-    StoreW(scratch2, MemOperand(result));
-    la(result, MemOperand(result, kDoubleSize / 2));
-    bind(&aligned);
-#endif
-  }
-
-  // Calculate new top and bail out if new space is exhausted. Use result
-  // to calculate the new top. Object size may be in words so a shift is
-  // required to get the number of bytes.
-  if ((flags & SIZE_IN_WORDS) != 0) {
-    ShiftLeftP(scratch2, object_size, Operand(kPointerSizeLog2));
-    AddP(scratch2, result);
-  } else {
-    AddP(scratch2, result, object_size);
-  }
-  b(Condition(CC_OF), gc_required);
-  CmpLogicalP(scratch2, limitMemOperand);
-  bgt(gc_required);
-
-  // Update allocation top. result temporarily holds the new top.
-  if (emit_debug_code()) {
-    AndP(r0, scratch2, Operand(kObjectAlignmentMask));
-    Check(eq, kUnalignedAllocationInNewSpace);
-  }
-  StoreP(scratch2, MemOperand(topaddr));
-
-  // Tag object if requested.
-  if ((flags & TAG_OBJECT) != 0) {
-    la(result, MemOperand(result, kHeapObjectTag));
-  }
-}
-#endif
 
 
 void MacroAssembler::Allocate(Register object_size, Register result,
