@@ -45,7 +45,7 @@
 #include "src/base/platform/platform.h"
 #include "src/s390/semaphore-zos.h"
 
-#define MAP_FAILED ((void *)-1L) 
+#define MAP_FAILED ((void *)-1L)
 
 namespace v8 {
 namespace base {
@@ -122,7 +122,7 @@ void* OS::Allocate(const size_t requested,
   const size_t msize = RoundUp(requested, AllocateAlignment());
   int prot = PROT_READ | PROT_WRITE | (is_executable ? PROT_EXEC : 0);
   void* addr = OS::GetRandomMmapAddr();
-  int fd = open("/dev/zero/",O_RDWR);  
+  int fd = open("/dev/zero/", O_RDWR);
   if (fd == -1) return NULL;
   void* mbase = mmap(addr, msize, prot, MAP_PRIVATE, fd, 0);
   *allocated = msize;
@@ -300,8 +300,8 @@ VirtualMemory::VirtualMemory(size_t size, size_t alignment)
   DCHECK(IsAligned(alignment, static_cast<intptr_t>(OS::AllocateAlignment())));
   kMmapFd = open("/dev/zero/", O_RDWR);
 
-  //Todo(muntasir) Need an assert here
-  if(kMmapFd == -1) return;
+  // Todo(muntasir) Need an assert here
+  if (kMmapFd == -1) return;
 
   size_t request_size = RoundUp(size + alignment,
                                 static_cast<intptr_t>(OS::AllocateAlignment()));
@@ -403,7 +403,7 @@ bool VirtualMemory::CommitRegion(void* base, size_t size, bool is_executable) {
 #else
   int prot = PROT_READ | PROT_WRITE | (is_executable ? PROT_EXEC : 0);
 #endif
-  kMmapFd = open ("/dev/zero", O_RDWR);
+  kMmapFd = open("/dev/zero", O_RDWR);
   bool map_success = (MAP_FAILED == mmap(base,
                                          size,
                                          prot,
@@ -422,8 +422,8 @@ bool VirtualMemory::UncommitRegion(void* base, size_t size) {
                          PROT_NONE,
                          MAP_PRIVATE | MAP_FIXED,
                          kMmapFd,
-                         kMmapFdOffset)); 
-     
+                         kMmapFdOffset));
+
  close(kMmapFd);
  return map_success;
 }
