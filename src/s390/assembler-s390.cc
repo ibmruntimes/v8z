@@ -269,13 +269,7 @@ Assembler::Assembler(Isolate* isolate, void* buffer, int buffer_size)
       positions_recorder_(this) {
   reloc_info_writer.Reposition(buffer_ + buffer_size_, pc_);
 
-  no_trampoline_pool_before_ = 0;
-  trampoline_pool_blocked_nesting_ = 0;
-  next_trampoline_check_ = kMaxInt;
-  internal_trampoline_exception_ = false;
   last_bound_pos_ = 0;
-  trampoline_emitted_ = FLAG_force_long_branches;
-  tracked_branch_count_ = 0;
   ClearRecordedAstId();
   relocations_.reserve(128);
 }
@@ -460,10 +454,6 @@ void Assembler::bind_to(Label* L, int pos) {
     target_at_put(fixup_pos, pos, &is_branch);
   }
   L->bind_to(pos);
-
-  if (!trampoline_emitted_ && is_branch) {
-    UntrackBranch();
-  }
 
   // Keep track of the last bound label so we don't eliminate any instructions
   // before a bound label.
@@ -2028,39 +2018,6 @@ void Assembler::EnsureSpaceFor(int space_needed) {
 }
 
 
-/*
-// TODO(JOHN): might not work
-void Assembler::mov_label_offset(Register dst, Label* label) {
-  if (label->is_bound()) {
-    int target = label->pos();
-    mov(dst, Operand(target + Code::kHeaderSize - kHeapObjectTag));
-  } else {
-    bool is_linked = label->is_linked();
-    // Emit the link to the label in the code stream followed by extra
-    // nop instructions.
-    DCHECK(dst.is(r3));  // target_at_put assumes r3 for now
-    int link = is_linked ? label->pos() - pc_offset(): 0;
-    label->link_to(pc_offset());
-
-    if (!is_linked && !trampoline_emitted_) {
-      unbound_labels_count_++;
-      next_buffer_check_ -= kTrampolineSlotsSize;
-    }
-
-    // When the label is bound, these instructions will be patched
-    // with a 2 instruction mov sequence that will load the
-    // destination register with the position of the label from the
-    // beginning of the code.
-    //
-    // When the label gets bound: target_at extracts the link and
-    // target_at_put patches the instructions.
-    BlockTrampolinePoolScope block_trampoline_pool(this);
-    emit(link);
-    nop();
-  }
-}
-*/
-
 // Load Register-Register (64)
 void Assembler::lgr(Register r1, Register r2) {
   rre_form(LGR, r1, r2);
@@ -3510,40 +3467,6 @@ void Assembler::EmitRelocations() {
     }
 
     reloc_info_writer.Finish();
-}
-
-
-void Assembler::CheckTrampolinePool() {
-  // Some small sequences of instructions must not be broken up by the
-  // insertion of a trampoline pool; such sequences are protected by setting
-  // either trampoline_pool_blocked_nesting_ or no_trampoline_pool_before_,
-  // which are both checked here. Also, recursive calls to CheckTrampolinePool
-  // are blocked by trampoline_pool_blocked_nesting_.
-  if (trampoline_pool_blocked_nesting_ > 0) return;
-  if (pc_offset() < no_trampoline_pool_before_) {
-    next_trampoline_check_ = no_trampoline_pool_before_;
-    return;
-  }
-
-  DCHECK(!trampoline_emitted_);
-  if (tracked_branch_count_ > 0) {
-    int pool_start = pc_offset();
-    Label after_pool;
-
-    // As we are only going to emit trampoline once, we need to prevent any
-    // further emission.
-    trampoline_emitted_ = true;
-    next_trampoline_check_ = kMaxInt;
-
-    // First we emit jump, then we emit trampoline pool.
-    b(&after_pool);
-    for (int i = tracked_branch_count_; i > 0; i--) {
-      b(&after_pool);
-    }
-    bind(&after_pool);
-
-    trampoline_ = Trampoline(pool_start, tracked_branch_count_);
-  }
 }
 
 

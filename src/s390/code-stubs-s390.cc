@@ -1092,7 +1092,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // know where the return address is. The CEntryStub is unmovable, so
   // we can store the address on the stack to be able to find it again and
   // we never have to restore it, because it will not change.
-  { Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm);
+  {
     Label return_label;
     __ larl(r14, &return_label);  // Generate the return addr of call later.
     __ StoreP(r14, MemOperand(sp, kStackFrameRASlot * kPointerSize));

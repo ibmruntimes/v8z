@@ -77,7 +77,6 @@ int MacroAssembler::CallSize(Register target) { return 2; }  // BASR
 
 
 void MacroAssembler::Call(Register target) {
-  BlockTrampolinePoolScope block_trampoline_pool(this);
   Label start;
   bind(&start);
 
@@ -127,7 +126,6 @@ int MacroAssembler::CallSizeNotPredictableCodeSize(Address target,
 
 void MacroAssembler::Call(Address target, RelocInfo::Mode rmode,
                           Condition cond) {
-  BlockTrampolinePoolScope block_trampoline_pool(this);
   DCHECK(cond == al);
 
 #ifdef DEBUG
@@ -157,7 +155,6 @@ int MacroAssembler::CallSize(Handle<Code> code, RelocInfo::Mode rmode,
 
 void MacroAssembler::Call(Handle<Code> code, RelocInfo::Mode rmode,
                           TypeFeedbackId ast_id, Condition cond) {
-  BlockTrampolinePoolScope block_trampoline_pool(this);
   DCHECK(RelocInfo::IsCodeTarget(rmode) && cond == al);
 
 #ifdef DEBUG
@@ -912,7 +909,6 @@ void MacroAssembler::Prologue(bool code_pre_aging, Register base,
   {
     PredictableCodeSizeScope predictible_code_size_scope(
         this, kNoCodeAgeSequenceLength);
-    Assembler::BlockTrampolinePoolScope block_trampoline_pool(this);
     // The following instructions must remain together and unmodified
     // for code aging to work properly.
     if (code_pre_aging) {
@@ -3982,7 +3978,6 @@ void MacroAssembler::JumpIfDictionaryInPrototypeChain(Register object,
 
 
 void MacroAssembler::mov(Register dst, const Operand& src) {
-  BlockTrampolinePoolScope block_trampoline_pool(this);
   if (src.rmode_ != kRelocInfo_NONEPTR) {
     // some form of relocation needed
     RecordRelocInfo(src.rmode_, src.imm_);

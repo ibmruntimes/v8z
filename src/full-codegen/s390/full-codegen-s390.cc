@@ -42,7 +42,6 @@ class JumpPatchSite BASE_EMBEDDED {
   // the inlined smi code.
   void EmitJumpIfNotSmi(Register reg, Label* target) {
     DCHECK(!patch_site_.is_bound() && !info_emitted_);
-    Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm_);
     __ bind(&patch_site_);
     __ CmpP(reg, reg);
     // Emit the Nop to make bigger place for patching on 31-bit
@@ -56,7 +55,6 @@ class JumpPatchSite BASE_EMBEDDED {
   // When initially emitting this ensure that a jump is never generated to skip
   // the inlined smi code.
   void EmitJumpIfSmi(Register reg, Label* target) {
-    Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm_);
     DCHECK(!patch_site_.is_bound() && !info_emitted_);
     __ bind(&patch_site_);
     __ CmpP(reg, reg);
@@ -417,7 +415,6 @@ void FullCodeGenerator::EmitBackEdgeBookkeeping(IterationStatement* stmt,
   int weight = Min(kMaxBackEdgeWeight, Max(1, distance / kCodeSizeMultiplier));
   EmitProfilingCounterDecrement(weight);
   {
-    Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm_);
     // BackEdgeTable::PatchAt manipulates this sequence.
     __ bge(&ok, Label::kNear);
     __ Call(isolate()->builtins()->InterruptCheck(), RelocInfo::CODE_TARGET);
@@ -471,7 +468,6 @@ void FullCodeGenerator::EmitReturnSequence() {
     // Make sure that the constant pool is not emitted inside of the return
     // sequence.
     {
-      Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm_);
       // Here we use masm_-> instead of the __ macro to avoid the code coverage
       // tool from instrumenting as we rely on the code size here.
       int32_t arg_count = info_->scope()->num_parameters() + 1;

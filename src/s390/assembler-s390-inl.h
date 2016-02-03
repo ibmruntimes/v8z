@@ -441,36 +441,6 @@ void Assembler::CheckBuffer() {
   }
 }
 
-void Assembler::TrackBranch() {
-  DCHECK(!trampoline_emitted_);
-  int count = tracked_branch_count_++;
-  if (count == 0) {
-    // We leave space (kMaxBlockTrampolineSectionSize)
-    // for BlockTrampolinePoolScope buffer.
-    next_trampoline_check_ =
-        pc_offset() + kMaxCondBranchReach - kMaxBlockTrampolineSectionSize;
-  } else {
-    next_trampoline_check_ -= kTrampolineSlotsSize;
-  }
-}
-
-void Assembler::UntrackBranch() {
-  DCHECK(!trampoline_emitted_);
-  DCHECK(tracked_branch_count_ > 0);
-  int count = --tracked_branch_count_;
-  if (count == 0) {
-    // Reset
-    next_trampoline_check_ = kMaxInt;
-  } else {
-    next_trampoline_check_ += kTrampolineSlotsSize;
-  }
-}
-
-void Assembler::CheckTrampolinePoolQuick() {
-  if (pc_offset() >= next_trampoline_check_) {
-    CheckTrampolinePool();
-  }
-}
 int32_t Assembler::emit_code_target(Handle<Code> target,
                                     RelocInfo::Mode rmode,
                                     TypeFeedbackId ast_id) {
@@ -503,7 +473,6 @@ void Assembler::emit2bytes(uint16_t x) {
 #endif
     *reinterpret_cast<uint16_t*>(pc_) = x;
     pc_ += 2;
-    CheckTrampolinePoolQuick();
 }
 
 void Assembler::emit4bytes(uint32_t x) {
@@ -517,7 +486,6 @@ void Assembler::emit4bytes(uint32_t x) {
 #endif
     *reinterpret_cast<uint32_t*>(pc_) = x;
     pc_ += 4;
-    CheckTrampolinePoolQuick();
 }
 
 void Assembler::emit6bytes(uint64_t x) {

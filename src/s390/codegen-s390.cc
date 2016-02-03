@@ -674,7 +674,6 @@ void Code::PatchPlatformCodeAge(Isolate* isolate, byte* sequence, Code::Age age,
     // FIXED_SEQUENCE
     Code* stub = GetCodeAgeStub(isolate, age, parity);
     CodePatcher patcher(isolate, sequence, young_length);
-    Assembler::BlockTrampolinePoolScope block_trampoline_pool(patcher.masm());
     intptr_t target = reinterpret_cast<intptr_t>(stub->instruction_start());
     // We need to push lr on stack so that GenerateMakeCodeYoungAgainCommon
     // knows where to pick up the return address

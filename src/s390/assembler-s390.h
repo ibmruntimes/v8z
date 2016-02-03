@@ -446,9 +446,6 @@ class Assembler : public AssemblerBase {
   // Returns the branch offset to the given label from the current code position
   // Links the label to the current position if it is still unbound
   int branch_offset(Label* L) {
-    if (L->is_unused() && !trampoline_emitted_) {
-      TrackBranch();
-    }
     return link(L) - pc_offset();
   }
 
@@ -1260,20 +1257,6 @@ SS2_FORM(zap);
     return pc_offset() - label->pos();
   }
 
-  // Class for scoping postponing the trampoline pool generation.
-  class BlockTrampolinePoolScope {
-   public:
-    explicit BlockTrampolinePoolScope(Assembler* assem) : assem_(assem) {
-      assem_->StartBlockTrampolinePool();
-    }
-    ~BlockTrampolinePoolScope() { assem_->EndBlockTrampolinePool(); }
-
-   private:
-    Assembler* assem_;
-
-    DISALLOW_IMPLICIT_CONSTRUCTORS(BlockTrampolinePoolScope);
-  };
-
   // Debugging
 
   // Mark generator continuation.
@@ -1355,10 +1338,6 @@ SS2_FORM(zap);
   static bool IsRlwinm(Instr instr);
   static bool IsNop(SixByteInstr instr, int type = NON_MARKING_NOP);
 
-  // Postpone the generation of the trampoline pool for the specified number of
-  // instructions.
-  void CheckTrampolinePool();
-
   // The code currently calls CheckBuffer() too often. This has the side
   // effect of randomly growing the buffer in the middle of multi-instruction
   // sequences.
@@ -1390,25 +1369,6 @@ SS2_FORM(zap);
   // Record reloc info for current pc_
   void RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data = 0);
 
-  // Block the emission of the trampoline pool before pc_offset.
-  void BlockTrampolinePoolBefore(int pc_offset) {
-    if (no_trampoline_pool_before_ < pc_offset)
-      no_trampoline_pool_before_ = pc_offset;
-  }
-
-  void StartBlockTrampolinePool() { trampoline_pool_blocked_nesting_++; }
-  void EndBlockTrampolinePool() {
-    int count = --trampoline_pool_blocked_nesting_;
-    if (count == 0) CheckTrampolinePoolQuick();
-  }
-  bool is_trampoline_pool_blocked() const {
-    return trampoline_pool_blocked_nesting_ > 0;
-  }
-
-  bool has_exception() const { return internal_trampoline_exception_; }
-
-  bool is_trampoline_emitted() const { return trampoline_emitted_; }
-
  private:
   // Code generation
   // The relocation writer's position is at least kGap bytes below the end of
@@ -1416,15 +1376,6 @@ SS2_FORM(zap);
   // not have to check for overflow. The same is true for writes of large
   // relocation info entries.
   static const int kGap = 32;
-
-  // Repeated checking whether the trampoline pool should be emitted is rather
-  // expensive. By default we only check again once a number of instructions
-  // has been generated.
-  int next_trampoline_check_;  // pc offset of next buffer check.
-
-  // Emission of the trampoline pool may be blocked in some code sequences.
-  int trampoline_pool_blocked_nesting_;  // Block emission if this is not zero.
-  int no_trampoline_pool_before_;  // Block emission before this pc offset.
 
   // Relocation info generation
   // Each relocation is encoded as a variable size value
@@ -1574,64 +1525,15 @@ SS2_FORM(zap);
   inline void rrfe_form(Opcode op, Condition m3, Condition m4, Register r1,
                         Register r2);
 
-  inline void CheckTrampolinePoolQuick();
-
   // Labels
   void print(Label* L);
   int  max_reach_from(int pos);
   void bind_to(Label* L, int pos);
   void next(Label* L);
 
-  class Trampoline {
-   public:
-    Trampoline() {
-      next_slot_ = 0;
-      free_slot_count_ = 0;
-    }
-    Trampoline(int start, int slot_count) {
-      next_slot_ = start;
-      free_slot_count_ = slot_count;
-    }
-    int take_slot() {
-      int trampoline_slot = kInvalidSlotPos;
-      if (free_slot_count_ <= 0) {
-        // We have run out of space on trampolines.
-        // Make sure we fail in debug mode, so we become aware of each case
-        // when this happens.
-        DCHECK(0);
-        // Internal exception will be caught.
-      } else {
-        trampoline_slot = next_slot_;
-        free_slot_count_--;
-        next_slot_ += kTrampolineSlotsSize;
-      }
-      return trampoline_slot;
-    }
-
-   private:
-    int next_slot_;
-    int free_slot_count_;
-  };
-
-  int tracked_branch_count_;
-  // If trampoline is emitted, generated code is becoming large. As
-  // this is already a slow case which can possibly break our code
-  // generation for the extreme case, we use this information to
-  // trigger different mode of branch instruction generation, where we
-  // no longer use a single branch instruction.
-  bool trampoline_emitted_;
-  static const int kTrampolineSlotsSize = kInstrSize;
-  static const int kMaxCondBranchReach = (1 << (16 - 1)) - 1;
-  static const int kMaxBlockTrampolineSectionSize = 64 * kInstrSize;
-  static const int kInvalidSlotPos = -1;
-
-  Trampoline trampoline_;
-  bool internal_trampoline_exception_;
-
   friend class RegExpMacroAssemblerS390;
   friend class RelocInfo;
   friend class CodePatcher;
-  friend class BlockTrampolinePoolScope;
 
   List< Handle<Code> > code_targets_;
 

@@ -35,9 +35,7 @@ void EmitDebugBreakSlot(MacroAssembler* masm) {
 
 
 void DebugCodegen::GenerateSlot(MacroAssembler* masm, RelocInfo::Mode mode) {
-  // Generate enough nop's to make space for a call instruction. Avoid emitting
-  // the trampoline pool in the debug break slot code.
-  Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm);
+  // Generate enough nop's to make space for a call instruction.
   masm->RecordDebugBreakSlot(mode);
   EmitDebugBreakSlot(masm);
 }
@@ -70,8 +68,6 @@ void DebugCodegen::PatchDebugBreakSlot(Isolate* isolate, Address pc,
   //   iihf r14, <high 32-bits address>    6-bytes
   //   iilf r14, <lower 32-bits address>   6-bytes
   //   basr r14, r14         2-bytes
-// printf("SetDebugBreakAtSlot: pc=%08x\n", (unsigned int)rinfo()->pc());
-  Assembler::BlockTrampolinePoolScope block_trampoline_pool(patcher.masm());
   patcher.masm()->mov(
       v8::internal::r14,
       Operand(reinterpret_cast<intptr_t>(code->entry())));
