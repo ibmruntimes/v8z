@@ -81,7 +81,7 @@ const char* g_gc_fake_mmap = NULL;
 int OS::NumberOfProcessorsOnline() {
 #if V8_OS_ZOS
   // TODO(mcornac):
-  return 0;
+  return 1;
 #else
   return static_cast<int>(sysconf(_SC_NPROCESSORS_ONLN));
 #endif
@@ -386,18 +386,23 @@ int OS::GetCurrentProcessId() {
   return static_cast<int>(getpid());
 }
 
-
+#if defined(V8_OS_ZOS) 
+pthread_t OS::GetCurrentThreadId() {
+#else
 int OS::GetCurrentThreadId() {
+#endif
+
 #if defined(ANDROID)
   return static_cast<int>(syscall(__NR_gettid));
 #elif V8_OS_AIX
   return static_cast<int>(thread_self());
 #elif V8_OS_ZOS
   // TODO(mcornac):
-  return 0;
+  return pthread_self();
 #else
   return static_cast<int>(syscall(SYS_gettid));
 #endif  // defined(ANDROID)
+
 }
 
 

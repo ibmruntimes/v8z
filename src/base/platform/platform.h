@@ -307,7 +307,11 @@ class OS {
 
   static int GetCurrentProcessId();
 
-  static int GetCurrentThreadId();
+#if defined(V8_OS_ZOS) 
+  static pthread_t GetCurrentThreadId();
+#else
+  static int  GetCurrentThreadId();
+#endif
 
  private:
   static const int msPerSecond = 1000;
