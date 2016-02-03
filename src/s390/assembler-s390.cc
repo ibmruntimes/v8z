@@ -57,7 +57,8 @@ static unsigned CpuFeaturesImpliedByCompiler() {
   return answer;
 }
 
-
+// Check whether Store Facility STFLE instruction is available on the platform.
+// Instruction returns a bit vector of the enabled hardware facilities.
 static bool supportsSTFLE() {
 #if V8_HOST_ARCH_S390
   static bool read_tried = false;
@@ -188,6 +189,9 @@ void CpuFeatures::PrintTarget() {
 
 void CpuFeatures::PrintFeatures() {
   printf("FPU=%d\n", CpuFeatures::IsSupported(FPU));
+  printf("FPU_EXT=%d\n", CpuFeatures::IsSupported(FLOATING_POINT_EXT));
+  printf("GENERAL_INSTR=%d\n", CpuFeatures::IsSupported(GENERAL_INSTR_EXT));
+  printf("DISTINCT_OPS=%d\n", CpuFeatures::IsSupported(DISTINCT_OPS));
 }
 
 
@@ -202,9 +206,8 @@ Register ToRegister(int num) {
 // -----------------------------------------------------------------------------
 // Implementation of RelocInfo
 
-const int RelocInfo::kApplyMask = RelocInfo::kCodeTargetMask |
-    1 << RelocInfo::INTERNAL_REFERENCE;
-
+const int RelocInfo::kApplyMask =
+    RelocInfo::kCodeTargetMask | 1 << RelocInfo::INTERNAL_REFERENCE;
 
 bool RelocInfo::IsCodedSpecially() {
   // The deserializer needs to know whether a pointer is specially
@@ -292,7 +295,6 @@ void Assembler::GetCode(CodeDesc* desc) {
 
 void Assembler::Align(int m) {
   DCHECK(m >= 4 && base::bits::IsPowerOfTwo32(m));
-  // DCHECK((pc_offset() & (kInstrSize - 1)) == 0);
   while ((pc_offset() & (m - 1)) != 0) {
     nop(0);
   }
@@ -343,12 +345,6 @@ bool Assembler::Is32BitLoadIntoIP(SixByteInstr instr) {
 }
 #endif
 
-bool Assembler::IsCmpRegister(Instr instr) {
-  // @TODO Re-enable this properly
-  DCHECK(false);
-  return Instruction::S390OpcodeValue(reinterpret_cast<byte*>(&instr)) == CR;
-}
-
 
 // Labels refer to positions in the (to be) generated code.
 // There are bound, linked, and unused labels.
@@ -363,6 +359,9 @@ bool Assembler::IsCmpRegister(Instr instr) {
 // The link chain is terminated by a negative code position (must be aligned)
 const int kEndOfChain = -4;
 
+// Returns the target address of the relative instructions, typically
+// of the form: pos + imm (where immediate is in # of halfwords for
+// BR* and LARL).
 int Assembler::target_at(int pos)  {
   SixByteInstr instr = instr_at(pos);
   // check which type of branch this is 16 or 26 bit offset
@@ -378,7 +377,8 @@ int Assembler::target_at(int pos)  {
       || LARL == opcode || BRASL == opcode) {
     int32_t imm32 = static_cast<int32_t>(
         instr & (static_cast<uint64_t>(0xffffffff)));
-    imm32 <<= 1;   // BRCL immediate is in # of halfwords
+    if (LLILF != opcode)
+      imm32 <<= 1;  // BR* + LARL treat immediate in # of halfwords
     if (imm32 == 0)
       return kEndOfChain;
     return pos + imm32;
@@ -389,7 +389,7 @@ int Assembler::target_at(int pos)  {
   return -1;
 }
 
-
+// Update the target address of the current relative instruction.
 void Assembler::target_at_put(int pos, int target_pos, bool* is_branch) {
   SixByteInstr instr = instr_at(pos);
   Opcode opcode = Instruction::S390OpcodeValue(buffer_ + pos);
@@ -409,7 +409,7 @@ void Assembler::target_at_put(int pos, int target_pos, bool* is_branch) {
     instr_at_put<FourByteInstr>(pos, instr | (imm16 >> 1));
     return;
   } else if (BRCL == opcode || LARL == opcode || BRASL == opcode) {
-    // BRCL / LARL
+    // Immediate is in # of halfwords
     int32_t imm32 = target_pos - pos;
     instr &= (~static_cast<uint64_t>(0xffffffff));
     instr_at_put<SixByteInstr>(pos, instr | (imm32 >> 1));
@@ -426,7 +426,7 @@ void Assembler::target_at_put(int pos, int target_pos, bool* is_branch) {
   DCHECK(false);
 }
 
-
+// Returns the maximum number of bits given instruction can address.
 int Assembler::max_reach_from(int pos) {
   Opcode opcode = Instruction::S390OpcodeValue(buffer_ + pos);
 
@@ -448,7 +448,6 @@ int Assembler::max_reach_from(int pos) {
 
 void Assembler::bind_to(Label* L, int pos) {
   DCHECK(0 <= pos && pos <= pc_offset());  // must have a valid binding position
-  // int32_t trampoline_pos = kInvalidSlotPos;
   bool is_branch = false;
   while (L->is_linked()) {
     int fixup_pos = L->pos();
@@ -457,17 +456,8 @@ void Assembler::bind_to(Label* L, int pos) {
     int maxReach = max_reach_from(fixup_pos);
 #endif
     next(L);  // call next before overwriting link with target at fixup_pos
-    // if (is_intn(offset, maxReach) == false) {
-      // if (trampoline_pos == kInvalidSlotPos) {
-        // trampoline_pos = get_trampoline_entry();
-        // CHECK(trampoline_pos != kInvalidSlotPos);
-        // target_at_put(trampoline_pos, pos);
-      // }
-      // target_at_put(fixup_pos, trampoline_pos);
-    // } else {
-      DCHECK(is_intn(offset, maxReach));
-      target_at_put(fixup_pos, pos, &is_branch);
-    // }
+    DCHECK(is_intn(offset, maxReach));
+    target_at_put(fixup_pos, pos, &is_branch);
   }
   L->bind_to(pos);
 
@@ -507,21 +497,6 @@ bool Assembler::is_near(Label* L, Condition cond) {
   int offset = L->pos() - pc_offset();
 
   return is_intn(offset, maxReach);
-}
-
-
-// Returns the next free trampoline entry.
-int32_t Assembler::get_trampoline_entry() {
-  int32_t trampoline_entry = kInvalidSlotPos;
-
-  if (!internal_trampoline_exception_) {
-    trampoline_entry = trampoline_.take_slot();
-
-    if (kInvalidSlotPos == trampoline_entry) {
-      internal_trampoline_exception_ = true;
-    }
-  }
-  return trampoline_entry;
 }
 
 
@@ -565,8 +540,6 @@ void Assembler::load_label_offset(Register r1, Label* L) {
     L->link_to(pc_offset());
 
     constant = target_pos - pc_offset();
-    // DCHECK(is_int31(constant));
-    // instr_at_put(at_offset, constant);
   }
   llilf(r1, Operand(constant));
 }
@@ -1773,8 +1746,6 @@ RIL1_FORM_EMIT(oilf, OILF)
 RI1_FORM_EMIT(oill, OILL)
 SS2_FORM_EMIT(pack, PACK)
 RRE_FORM_EMIT(popcnt, POPCNT_Z)
-// RSY1_FORM_EMIT(rll, RLL)
-// RSY1_FORM_EMIT(rllg, RLLG)
 S_FORM_EMIT(sal, SAL)
 RRE_FORM_EMIT(sar, SAR)
 RXY_FORM_EMIT(sgf, SGF)

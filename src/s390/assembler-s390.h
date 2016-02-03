@@ -32,7 +32,7 @@
 
 // The original source code covered by the above license above has been
 // modified significantly by Google Inc.
-// Copyright 2015 the V8 project authors. All rights reserved.
+// Copyright 2016 the V8 project authors. All rights reserved.
 
 // A light-weight S390 Assembler
 // Generates user mode instructions for the S390 architecture
@@ -181,18 +181,10 @@ GENERAL_REGISTERS(DECLARE_REGISTER)
 #undef DECLARE_REGISTER
 const Register no_reg = {Register::kCode_no_reg};
 
-// Aliases
+// Register aliases
 const Register kLithiumScratch = r1;         // lithium scratch.
-// const Register kConstantPoolRegister = r28;  // Constant pool.
 const Register kRootRegister = r10;          // Roots array pointer.
-// const Register sp = r15;
-// CP - Context Register
 const Register cp = r13;                     // JavaScript context pointer.
-// IP - Intra procedural register
-// const Register ip = r12;
-// const Register fp = r11;
-
-// Double word FP register.
 
 // Double word FP register.
 struct DoubleRegister {
@@ -1621,7 +1613,6 @@ SS2_FORM(zap);
     int free_slot_count_;
   };
 
-  int32_t get_trampoline_entry();
   int tracked_branch_count_;
   // If trampoline is emitted, generated code is becoming large. As
   // this is already a slow case which can possibly break our code
