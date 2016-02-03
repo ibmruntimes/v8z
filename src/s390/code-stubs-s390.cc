@@ -1455,7 +1455,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   ProfileEntryHookStub::MaybeCallEntryHook(masm);
 
   // saving floating point registers
-#if V8_HOST_ARCH_S390X
+#if V8_TARGET_ARCH_S390X
   // 64bit ABI requires f8 to f15 be saved
   __ lay(sp, MemOperand(sp, -8 * kDoubleSize));
   __ std(d8, MemOperand(sp));
@@ -1631,7 +1631,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   __ la(sp, MemOperand(sp, 10 * kPointerSize));
 
   // saving floating point registers
-#if V8_HOST_ARCH_S390X
+#if V8_TARGET_ARCH_S390X
   // 64bit ABI requires f8 to f15 be saved
   __ ld(d8, MemOperand(sp));
   __ ld(d9, MemOperand(sp, 1 * kDoubleSize));
