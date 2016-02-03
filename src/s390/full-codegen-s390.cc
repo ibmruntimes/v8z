@@ -5564,6 +5564,7 @@ BackEdgeTable::BackEdgeState BackEdgeTable::GetBackEdgeState(
 
   // Expect BRC to be patched to NOP branch.
   // i.e. BRC 0x0, +XXXX (0xA704XXXX)
+  USE(kOSRBranchInstruction);
   DCHECK(kOSRBranchInstruction == br_instr);
 
   if (interrupt_address == isolate->builtins()->OnStackReplacement()->entry()) {
