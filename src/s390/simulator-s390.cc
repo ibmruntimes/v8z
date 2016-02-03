@@ -3113,9 +3113,9 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
             case ROUND_TO_NEAREST_WITH_TIES_TO_EVEN: {
               double ceil_val = std::ceil(r2_val);
               double floor_val = std::floor(r2_val);
-              if (abs(r2_val - floor_val) > abs(r2_val - ceil_val)) {
+              if (std::abs(r2_val - floor_val) > std::abs(r2_val - ceil_val)) {
                 r1_val = static_cast<int64_t>(ceil_val);
-              } else if (abs(r2_val - floor_val) < abs(r2_val - ceil_val)) {
+              } else if (std::abs(r2_val - floor_val) < std::abs(r2_val - ceil_val)) {
                 r1_val = static_cast<int64_t>(floor_val);
               } else {  // check which one is even:
                 int64_t c_v = static_cast<int64_t>(ceil_val);
@@ -3278,10 +3278,10 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
       DCHECK(rrfInst->M4Value() == 0);
       switch (m3) {
         case Assembler::FIDBRA_ROUND_TO_NEAREST_AWAY_FROM_0:
-          set_d_register_from_double(r1, std::round(r2_val));
+          set_d_register_from_double(r1, round(r2_val));
           break;
         case Assembler::FIDBRA_ROUND_TOWARD_0:
-          set_d_register_from_double(r1, std::trunc(r2_val));
+          set_d_register_from_double(r1, trunc(r2_val));
           break;
         case Assembler::FIDBRA_ROUND_TOWARD_POS_INF:
           set_d_register_from_double(r1, std::ceil(r2_val));
