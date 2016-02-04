@@ -638,7 +638,9 @@ static void* ThreadEntry(void* arg) {
   // one).
   { LockGuard<Mutex> lock_guard(&thread->data()->thread_creation_mutex_); }
   SetThreadName(thread->name());
+#ifndef V8_OS_ZOS  
   DCHECK(thread->data()->thread_ != kNoThread);
+#endif   
   thread->NotifyStartedAndRun();
   return NULL;
 }
@@ -677,7 +679,9 @@ void Thread::Start() {
   DCHECK_EQ(0, result);
   result = pthread_attr_destroy(&attr);
   DCHECK_EQ(0, result);
+#ifndef V8_OS_ZOS  
   DCHECK(data_->thread_ != kNoThread);
+#endif  
   USE(result);
 }
 
