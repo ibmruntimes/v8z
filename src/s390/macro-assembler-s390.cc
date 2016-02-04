@@ -2223,14 +2223,19 @@ void MacroAssembler::TestDoubleIsInt32(DoubleRegister double_input,
 void MacroAssembler::TestDoubleIsMinusZero(DoubleRegister input,
                                            Register scratch1,
                                            Register scratch2) {
-  Label done;
   lgdr(scratch1, input);
-  srlg(scratch2, scratch1, Operand(32));
-
-  CmpP(scratch2, Operand::Zero());
+#if V8_TARGET_ARCH_S390X
+  llihf(scratch2, Operand(0x80000000));  // scratch2 = 0x80000000_00000000
+  CmpP(scratch1, scratch2);
+#else
+  Label done;
+  CmpP(scratch1, Operand::Zero());
   bne(&done, Label::kNear);
+
+  srlg(scratch1, scratch1, Operand(32));
   CmpP(scratch1, Operand(HeapNumber::kSignMask));
   bind(&done);
+#endif
 }
 
 void MacroAssembler::TestHeapNumberIsMinusZero(Register input,
