@@ -15,10 +15,10 @@ namespace base {
 inline bool __sync_bool_compare_and_swap(volatile Atomic32 *ptr,
                                          Atomic32 oldval,
                                          Atomic32 newval) {
-  if (*ptr== oldval) {
+  if (*ptr == oldval) {
     *ptr = newval;
     return 1;
-    } else {
+  } else {
     return 0;
   }
 }
@@ -27,47 +27,54 @@ inline bool __sync_bool_compare_and_swap(volatile Atomic32 *ptr,
 inline Atomic32 __sync_val_compare_and_swap(volatile Atomic32 *ptr,
                                              Atomic32 oldval,
                                              Atomic32 newval) {
-  Atomic32 temp;
+  Atomic32 tmp;
   if (*ptr == oldval) {
-    temp = *ptr;
+    tmp = *ptr;
     *ptr = newval;
-    return temp;
+    return tmp;
   } else {
     return 0;
   }
 }
 
 // TODO(mcornac): Implement.
+inline Atomic32 __sync_add_and_fetch(volatile Atomic32 *ptr, Atomic32 value) {
+  Atomic32 tmp = *ptr;
+  *ptr = tmp + value;
+  return tmp;
+}
+
+// TODO(mcornac): Implement.
 inline bool __sync_bool_compare_and_swap(volatile Atomic64 *ptr,
-                                         Atomic32 oldval,
-                                         Atomic32 newval) {
-  return 0;
+                                         Atomic64 oldval,
+                                         Atomic64 newval) {
+  if (*ptr == oldval) {
+    *ptr = newval;
+    return 1;
+  } else {
+    return 0;
+  }
 }
 
 // TODO(mcornac): Verify function merged from ISL 3.14.
 inline Atomic64 __sync_val_compare_and_swap(volatile Atomic64 *ptr,
                                             Atomic64 oldval,
                                             Atomic64 newval) {
-  Atomic64 temp;
+  Atomic64 tmp;
   if (*ptr == oldval) {
-    temp = *ptr;
+    tmp = *ptr;
     *ptr = newval;
-    return temp;
+    return tmp;
   } else {
     return 0;
   }
 }
 
 // TODO(mcornac): Implement.
-inline bool __sync_add_and_fetch(volatile Atomic32 *ptr,
-                                 Atomic32 increment) {
-  return 0;
-}
-
-// TODO(mcornac): Implement.
-inline bool __sync_add_and_fetch(volatile Atomic64 *ptr,
-                                 Atomic64 increment) {
-  return 0;
+inline bool __sync_add_and_fetch(volatile Atomic64 *ptr, Atomic64 value) {
+  Atomic64 tmp = *ptr;
+  *ptr = tmp + value;
+  return tmp;
 }
 
 // TODO(mcornac): Implement
