@@ -93,6 +93,7 @@ bool OS::ArmUsingHardFloat() {
 
 #endif  // def __arm__
 
+static const char * mmap_file  = "/tmp/zero";
 
 const char* OS::LocalTimezone(double time, TimezoneCache* cache) {
   if (isnan(time)) return "";
@@ -121,12 +122,19 @@ void* OS::Allocate(const size_t requested,
                    bool is_executable) {
   const size_t msize = RoundUp(requested, AllocateAlignment());
   int prot = PROT_READ | PROT_WRITE | (is_executable ? PROT_EXEC : 0);
-  void* addr = OS::GetRandomMmapAddr();
-  int fd = open("/dev/zero/", O_RDWR);
-  if (fd == -1) return NULL;
-  void* mbase = mmap(addr, msize, prot, MAP_PRIVATE, fd, 0);
+  void * mbase = (void *)malloc(sizeof(char) * msize);
+
+/* void* addr = OS::GetRandomMmapAddr();
+  int fd = open(mmap_file, O_RDWR);
+  DCHECK_NE(fd,-1);
+  void* mbase = mmap(NULL, msize, prot, MAP_PRIVATE, fd, 0);
+  if (mbase == MAP_FAILED)
+     {
+     perror("Could not map file\n");
+     }
+ close(fd);
+*/
   *allocated = msize;
-  close(fd);
   return mbase;
 }
 
@@ -283,7 +291,7 @@ void OS::SignalCodeMovingGC() {
 }
 
 
-static int kMmapFd = -1;
+static const int kMmapFd = -1;
 // Constants used for mmap.
 static const int kMmapFdOffset = 0;
 
@@ -298,18 +306,18 @@ VirtualMemory::VirtualMemory(size_t size)
 VirtualMemory::VirtualMemory(size_t size, size_t alignment)
     : address_(NULL), size_(0) {
   DCHECK(IsAligned(alignment, static_cast<intptr_t>(OS::AllocateAlignment())));
-  kMmapFd = open("/dev/zero/", O_RDWR);
+  
+  int fd = open(mmap_file, O_RDWR);
 
   // Todo(muntasir) Need an assert here
-  if (kMmapFd == -1) return;
-
+  DCHECK_NE(fd,kMmapFd);
   size_t request_size = RoundUp(size + alignment,
                                 static_cast<intptr_t>(OS::AllocateAlignment()));
   void* reservation = mmap(OS::GetRandomMmapAddr(),
                            request_size,
                            PROT_NONE,
                            MAP_PRIVATE,
-                           kMmapFd,
+                           fd,
                            kMmapFdOffset);
 
   uint8_t* base = static_cast<uint8_t*>(reservation);
@@ -339,7 +347,7 @@ VirtualMemory::VirtualMemory(size_t size, size_t alignment)
 #if defined(LEAK_SANITIZER)
   __lsan_register_root_region(address_, size_);
 #endif
-  close(kMmapFd);
+  close(fd);
 }
 
 
@@ -380,14 +388,15 @@ bool VirtualMemory::Guard(void* address) {
 
 
 void* VirtualMemory::ReserveRegion(size_t size) {
-  kMmapFd = open("/dev/zero", O_RDWR);
+  int fd = open(mmap_file, O_RDWR);
+  DCHECK_NE(fd,kMmapFd);
   void* result = mmap(OS::GetRandomMmapAddr(),
                       size,
                       PROT_NONE,
                       MAP_PRIVATE,
-                      kMmapFd,
+                      fd,
                       kMmapFdOffset);
-  close(kMmapFd);
+  close(fd);
 #if defined(LEAK_SANITIZER)
   __lsan_register_root_region(result, size);
 #endif
@@ -403,29 +412,39 @@ bool VirtualMemory::CommitRegion(void* base, size_t size, bool is_executable) {
 #else
   int prot = PROT_READ | PROT_WRITE | (is_executable ? PROT_EXEC : 0);
 #endif
-  kMmapFd = open("/dev/zero", O_RDWR);
-  bool map_success = (MAP_FAILED == mmap(base,
+  bool map_success = (0 == mprotect(base,
+                                    size,
+                                    prot));
+  /*
+  int fd = open(mmap_file, O_RDWR);
+  DCHECK_NE(fd,kMmapFd);
+  bool map_success = (MAP_FAILED != mmap(base,
                                          size,
                                          prot,
                                          MAP_PRIVATE | MAP_FIXED,
-                                         kMmapFd,
+                                         fd,
                                          kMmapFdOffset));
-  close(kMmapFd);
+                                         
+  close(fd);
+  */
   return map_success;
 }
 
 
 bool VirtualMemory::UncommitRegion(void* base, size_t size) {
- kMmapFd = open("/dev/zero", O_RDWR);
+ /*
+ int fd = open(mmap_file, O_RDWR);
+ DCHECK_NE(fd,kMmapFd);
  bool map_success = (MAP_FAILED !=  mmap(base,
                          size,
                          PROT_NONE,
                          MAP_PRIVATE | MAP_FIXED,
-                         kMmapFd,
+                         fd,
                          kMmapFdOffset));
 
- close(kMmapFd);
- return map_success;
+ close(fd);
+ */
+ return (0 == mprotect(base,size,PROT_NONE));
 }
 
 
