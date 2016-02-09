@@ -1951,9 +1951,24 @@ void LCodeGen::DoRSubI(LRSubI* instr) {
   DCHECK(!instr->hydrogen()->CheckFlag(HValue::kCanOverflow) &&
          right->IsConstantOperand());
 
+#if V8_TARGET_ARCH_S390X
+  // The overflow detection needs to be tested on the lower 32-bits.
+  // As a result, on 64-bit, we need to force 32-bit arithmetic operations
+  // to set the CC overflow bit properly.  The result is then sign-extended.
+  bool checkOverflow = instr->hydrogen()->CheckFlag(HValue::kCanOverflow);
+#else
+  bool checkOverflow = true;
+#endif
+
   Operand right_operand = ToOperand(right);
   __ mov(r0, right_operand);
-  __ SubP(ToRegister(result), r0, ToRegister(left));
+
+  if (!checkOverflow) {
+    __ SubP_ExtendSrc(ToRegister(result), r0,
+                        ToRegister(left));
+  } else {
+    __ Sub32(ToRegister(result), r0, ToRegister(left));
+  }
 }
 
 
