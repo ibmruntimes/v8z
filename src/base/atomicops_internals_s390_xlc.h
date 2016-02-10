@@ -8,79 +8,69 @@
 #ifndef V8_ATOMICOPS_INTERNALS_S390_XLC_H_
 #define V8_ATOMICOPS_INTERNALS_S390_XLC_H_
 
+#include <stdlib.h>
+
 namespace v8 {
 namespace base {
 
-// TODO(mcornac): Verify function merged from ISL 3.14.
 inline bool __sync_bool_compare_and_swap(volatile Atomic32 *ptr,
                                          Atomic32 oldval,
-                                         Atomic32 newval) {
-  if (*ptr == oldval) {
-    *ptr = newval;
-    return 1;
-  } else {
-    return 0;
-  }
+                                         Atomic32 newval)
+{
+  return !__cs1((void*)&oldval, (void*)ptr, (void*)&newval);
 }
 
-// TODO(mcornac): Verify function merged from ISL 3.14.
 inline Atomic32 __sync_val_compare_and_swap(volatile Atomic32 *ptr,
-                                             Atomic32 oldval,
-                                             Atomic32 newval) {
-  Atomic32 tmp;
-  if (*ptr == oldval) {
-    tmp = *ptr;
-    *ptr = newval;
-    return tmp;
-  } else {
-    return 0;
-  }
+                                            Atomic32 oldval,
+                                            Atomic32 newval)
+{
+  Atomic32 tmp = *ptr;
+  __cs1((void*)&oldval, (void*)ptr, (void*)&newval);
+  return tmp;
 }
 
-// TODO(mcornac): Implement.
-inline Atomic32 __sync_add_and_fetch(volatile Atomic32 *ptr, Atomic32 value) {
-  Atomic32 tmp = *ptr;
-  *ptr = tmp + value;
+inline Atomic32 __sync_add_and_fetch(volatile Atomic32 *ptr, Atomic32 value)
+{
+  Atomic32 tmp, old;
+  do
+  {
+    old = *ptr;
+    tmp = old + value;
+  } while (__cs1((void*)&old, (void*)ptr, (void*)&tmp));
   return tmp;
 }
 
 #ifdef V8_TARGET_ARCH_S390X
-// TODO(mcornac): Implement.
 inline bool __sync_bool_compare_and_swap(volatile Atomic64 *ptr,
                                          Atomic64 oldval,
-                                         Atomic64 newval) {
-  if (*ptr == oldval) {
-    *ptr = newval;
-    return 1;
-  } else {
-    return 0;
-  }
+                                         Atomic64 newval)
+{
+  return !__cs1((void*)&oldval, (void*)ptr, (void*)&newval);
 }
 
-// TODO(mcornac): Verify function merged from ISL 3.14.
 inline Atomic64 __sync_val_compare_and_swap(volatile Atomic64 *ptr,
                                             Atomic64 oldval,
-                                            Atomic64 newval) {
-  Atomic64 tmp;
-  if (*ptr == oldval) {
-    tmp = *ptr;
-    *ptr = newval;
-    return tmp;
-  } else {
-    return 0;
-  }
+                                            Atomic64 newval)
+{
+  Atomic64 tmp = *ptr;
+  __cs1((void*)&oldval, (void*)ptr, (void*)&newval);
+  return tmp;
 }
 
-// TODO(mcornac): Implement.
-inline bool __sync_add_and_fetch(volatile Atomic64 *ptr, Atomic64 value) {
-  Atomic64 tmp = *ptr;
-  *ptr = tmp + value;
+inline bool __sync_add_and_fetch(volatile Atomic64 *ptr, Atomic64 value)
+{
+  Atomic64 tmp, old;
+  do
+  {
+    old = *ptr;
+    tmp = old + value;
+  } while (__cs1((void*)&old, (void*)ptr, (void*)&tmp));
   return tmp;
 }
 #endif
 
-// TODO(mcornac): Implement
-inline bool __sync_synchronize() {
+inline bool __sync_synchronize()
+{
   return 0;
 }
 
