@@ -2975,6 +2975,7 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
 #endif
       break;
     }
+    case LGHR:
     case LHR: {
       RREInstruction* rrinst = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rrinst->R1Value();
@@ -3021,6 +3022,7 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
     case CDFBR:
     case CDGBR:
     case CEGBR:
+    case CGEBR:
     case CFDBR:
     case CGDBR:
     case SQDBR:
@@ -3247,6 +3249,63 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
             default: UNREACHABLE();
           }
           set_register(r1, r1_val);
+        } else if (op == CGEBR) {
+          int mask_val = rreInstr->M3Value();
+          int64_t r1_val = 0;
+
+          float r2_fval;
+          // can't reinterpret_cast double to float - need to memcpy
+          memcpy(&r2_fval, &r2_val, sizeof(r2_val));
+
+          if (r2_fval == 0.0)
+            condition_reg_ = 8;
+          else if (r2_fval < 0.0)
+            condition_reg_ = 4;
+          else if (r2_fval > 0.0)
+            condition_reg_ = 2;
+          else
+            condition_reg_ = 1;
+
+          switch (mask_val) {
+            case CURRENT_ROUNDING_MODE:
+            case ROUND_TO_NEAREST_WITH_TIES_AWAY_FROM_0:
+            case ROUND_TO_PREPARE_FOR_SHORTER_PRECISION: {
+              UNIMPLEMENTED();
+              break;
+            }
+            case ROUND_TO_NEAREST_WITH_TIES_TO_EVEN: {
+              float ceil_val = std::ceil(r2_fval);
+              float floor_val = std::floor(r2_fval);
+              if (std::abs(r2_fval - floor_val) > std::abs(r2_fval - ceil_val)) {
+                r1_val = static_cast<int64_t>(ceil_val);
+              } else if (std::abs(r2_fval - floor_val) <
+                         std::abs(r2_fval - ceil_val)) {
+                r1_val = static_cast<int64_t>(floor_val);
+              } else {  // check which one is even:
+                int64_t c_v = static_cast<int64_t>(ceil_val);
+                int64_t f_v = static_cast<int64_t>(floor_val);
+                if (f_v % 2 == 0)
+                  r1_val = f_v;
+                else
+                  r1_val = c_v;
+              }
+              break;
+            }
+            case ROUND_TOWARD_0: {
+              r1_val = static_cast<int64_t>(r2_fval);
+              break;
+            }
+            case ROUND_TOWARD_PLUS_INFINITE: {
+              r1_val = static_cast<int64_t>(std::ceil(r2_fval));
+              break;
+            }
+            case ROUND_TOWARD_MINUS_INFINITE: {
+              r1_val = static_cast<int64_t>(std::floor(r2_fval));
+              break;
+            }
+            default: UNREACHABLE();
+          }
+          set_register(r1, r1_val);
         } else if (op == SQDBR) {
           r1_val = std::sqrt(r2_val);
           set_d_register_from_double(r1, r1_val);
@@ -3254,7 +3313,94 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
           r1_val = std::sqrt(r2_val);
           set_d_register_from_float(r1, r1_val);
         } else if (op == CFEBR) {
-          UNIMPLEMENTED();
+          int mask_val = rreInstr->M3Value();
+          int32_t r1_val = 0;
+
+          float r2_fval;
+          // can't reinterpret_cast double to float - need to memcpy
+          memcpy(&r2_fval, &r2_val, sizeof(r2_val));
+
+          if (r2_fval == 0.0)
+            condition_reg_ = 8;
+          else if (r2_fval < 0.0)
+            condition_reg_ = 4;
+          else if (r2_fval > 0.0)
+            condition_reg_ = 2;
+          else
+            condition_reg_ = 1;
+
+          switch (mask_val) {
+            case CURRENT_ROUNDING_MODE:
+            case ROUND_TO_PREPARE_FOR_SHORTER_PRECISION: {
+              r1_val = static_cast<int32_t>(r2_fval);
+              break;
+            }
+            case ROUND_TO_NEAREST_WITH_TIES_AWAY_FROM_0: {
+              float ceil_val = std::ceil(r2_fval);
+              float floor_val = std::floor(r2_fval);
+              float sub_val1 = std::fabs(r2_fval - floor_val);
+              float sub_val2 = std::fabs(r2_fval - ceil_val);
+              if (sub_val1 > sub_val2) {
+                r1_val = static_cast<int32_t>(ceil_val);
+              } else if (sub_val1 < sub_val2) {
+                r1_val = static_cast<int32_t>(floor_val);
+              } else {  // round away from zero:
+                if (r2_fval > 0.0) {
+                  r1_val = static_cast<int32_t>(ceil_val);
+                } else {
+                  r1_val = static_cast<int32_t>(floor_val);
+                }
+              }
+              break;
+            }
+            case ROUND_TO_NEAREST_WITH_TIES_TO_EVEN: {
+              float ceil_val = std::ceil(r2_fval);
+              float floor_val = std::floor(r2_fval);
+              float sub_val1 = std::fabs(r2_fval - floor_val);
+              float sub_val2 = std::fabs(r2_fval - ceil_val);
+              if (sub_val1 > sub_val2) {
+                r1_val = static_cast<int32_t>(ceil_val);
+              } else if (sub_val1 < sub_val2) {
+                r1_val = static_cast<int32_t>(floor_val);
+              } else {  // check which one is even:
+                int32_t c_v = static_cast<int32_t>(ceil_val);
+                int32_t f_v = static_cast<int32_t>(floor_val);
+                if (f_v % 2 == 0)
+                  r1_val = f_v;
+                else
+                  r1_val = c_v;
+              }
+              break;
+            }
+            case ROUND_TOWARD_0: {
+              // check for overflow, cast r2_fval to 64bit integer
+              // then check value within the range of INT_MIN and INT_MAX
+              // and set condition code accordingly
+              int64_t temp = static_cast<int64_t>(r2_fval);
+              if (temp < INT_MIN || temp > INT_MAX) {
+                condition_reg_ = CC_OF;
+              }
+              r1_val = static_cast<int32_t>(r2_fval);
+              break;
+            }
+            case ROUND_TOWARD_PLUS_INFINITE: {
+              r1_val = static_cast<int32_t>(std::ceil(r2_fval));
+              break;
+            }
+            case ROUND_TOWARD_MINUS_INFINITE: {
+              // check for overflow, cast r2_fval to 64bit integer
+              // then check value within the range of INT_MIN and INT_MAX
+              // and set condition code accordingly
+              int64_t temp = static_cast<int64_t>(std::floor(r2_fval));
+              if (temp < INT_MIN || temp > INT_MAX) {
+                condition_reg_ = CC_OF;
+              }
+              r1_val = static_cast<int32_t>(std::floor(r2_fval));
+              break;
+            }
+            default: UNREACHABLE();
+          }
+          set_low_register(r1, r1_val);
         } else if (op == LCDBR) {
           r1_val = -r2_val;
           set_d_register_from_double(r1, r1_val);
@@ -3296,7 +3442,8 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
     case CDLGBR:
     case CELGBR:
     case CLFDBR:
-    case CLGDBR: {
+    case CLGDBR:
+    case CLGEBR: {
       // TODO(AlanLi): create different behavior for different masks.
       // need to instantiate RRFInstruciton actually.
       RREInstruction *rreInstr = reinterpret_cast<RREInstruction*>(instr);
@@ -3321,6 +3468,11 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
         SetS390ConditionCode<double>(r2_val, 0);
       } else if (op == CLGDBR) {
         double r2_val = get_double_from_d_register(r2);
+        uint64_t r1_val = static_cast<uint64_t>(r1);
+        set_register(r1, r1_val);
+        SetS390ConditionCode<double>(r2_val, 0);
+      } else if (op == CLGEBR) {
+        float r2_val = get_float_from_d_register(r2);
         uint64_t r1_val = static_cast<uint64_t>(r1);
         set_register(r1, r1_val);
         SetS390ConditionCode<double>(r2_val, 0);
