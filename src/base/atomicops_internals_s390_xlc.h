@@ -71,7 +71,12 @@ inline bool __sync_add_and_fetch(volatile Atomic64 *ptr, Atomic64 value)
 
 inline bool __sync_synchronize()
 {
-  return 0;
+  // Use this pragma around the asm string to counteract -qascii option to xlc.
+  #pragma convert("ibm-1047")
+  // Emit a "bcr 14,0" instruction to acheive serialization of the CPU.
+  __asm__ __volatile__ (" bcr 14,0");
+  #pragma convert(pop)
+  return true;
 }
 
 } }  // namespace v8::base
