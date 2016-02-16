@@ -591,7 +591,8 @@ void MipsDebugger::Debug() {
           HeapObject* obj = reinterpret_cast<HeapObject*>(*cur);
           int value = *cur;
           Heap* current_heap = sim_->isolate_->heap();
-          if (((value & 1) == 0) || current_heap->Contains(obj)) {
+          if (((value & 1) == 0) ||
+              current_heap->ContainsSlow(obj->address())) {
             PrintF(" (");
             if ((value & 1) == 0) {
               PrintF("smi %d", value / 2);
@@ -2347,6 +2348,91 @@ void Simulator::SignalException(Exception e) {
            static_cast<int>(e));
 }
 
+// Min/Max template functions for Double and Single arguments.
+
+template <typename T>
+static T FPAbs(T a);
+
+template <>
+double FPAbs<double>(double a) {
+  return fabs(a);
+}
+
+template <>
+float FPAbs<float>(float a) {
+  return fabsf(a);
+}
+
+template <typename T>
+static bool FPUProcessNaNsAndZeros(T a, T b, MaxMinKind kind, T& result) {
+  if (std::isnan(a) && std::isnan(b)) {
+    result = a;
+  } else if (std::isnan(a)) {
+    result = b;
+  } else if (std::isnan(b)) {
+    result = a;
+  } else if (b == a) {
+    // Handle -0.0 == 0.0 case.
+    // std::signbit() returns int 0 or 1 so substracting MaxMinKind::kMax
+    // negates the result.
+    result = std::signbit(b) - static_cast<int>(kind) ? b : a;
+  } else {
+    return false;
+  }
+  return true;
+}
+
+template <typename T>
+static T FPUMin(T a, T b) {
+  T result;
+  if (FPUProcessNaNsAndZeros(a, b, MaxMinKind::kMin, result)) {
+    return result;
+  } else {
+    return b < a ? b : a;
+  }
+}
+
+template <typename T>
+static T FPUMax(T a, T b) {
+  T result;
+  if (FPUProcessNaNsAndZeros(a, b, MaxMinKind::kMax, result)) {
+    return result;
+  } else {
+    return b > a ? b : a;
+  }
+}
+
+template <typename T>
+static T FPUMinA(T a, T b) {
+  T result;
+  if (!FPUProcessNaNsAndZeros(a, b, MaxMinKind::kMin, result)) {
+    if (FPAbs(a) < FPAbs(b)) {
+      result = a;
+    } else if (FPAbs(b) < FPAbs(a)) {
+      result = b;
+    } else {
+      result = a < b ? a : b;
+    }
+  }
+  return result;
+}
+
+template <typename T>
+static T FPUMaxA(T a, T b) {
+  T result;
+  if (!FPUProcessNaNsAndZeros(a, b, MaxMinKind::kMin, result)) {
+    if (FPAbs(a) > FPAbs(b)) {
+      result = a;
+    } else if (FPAbs(b) > FPAbs(a)) {
+      result = b;
+    } else {
+      result = a > b ? a : b;
+    }
+  }
+  return result;
+}
+
+// Handle execution based on instruction types.
 
 void Simulator::DecodeTypeRegisterDRsType() {
   double ft, fs, fd;
@@ -2442,72 +2528,19 @@ void Simulator::DecodeTypeRegisterDRsType() {
     }
     case MIN:
       DCHECK(IsMipsArchVariant(kMips32r6));
-      fs = get_fpu_register_double(fs_reg());
-      if (std::isnan(fs) && std::isnan(ft)) {
-        set_fpu_register_double(fd_reg(), fs);
-      } else if (std::isnan(fs) && !std::isnan(ft)) {
-        set_fpu_register_double(fd_reg(), ft);
-      } else if (!std::isnan(fs) && std::isnan(ft)) {
-        set_fpu_register_double(fd_reg(), fs);
-      } else {
-        set_fpu_register_double(fd_reg(), (fs >= ft) ? ft : fs);
-      }
-      break;
-    case MINA:
-      DCHECK(IsMipsArchVariant(kMips32r6));
-      fs = get_fpu_register_double(fs_reg());
-      if (std::isnan(fs) && std::isnan(ft)) {
-        set_fpu_register_double(fd_reg(), fs);
-      } else if (std::isnan(fs) && !std::isnan(ft)) {
-        set_fpu_register_double(fd_reg(), ft);
-      } else if (!std::isnan(fs) && std::isnan(ft)) {
-        set_fpu_register_double(fd_reg(), fs);
-      } else {
-        double result;
-        if (fabs(fs) > fabs(ft)) {
-          result = ft;
-        } else if (fabs(fs) < fabs(ft)) {
-          result = fs;
-        } else {
-          result = (fs < ft ? fs : ft);
-        }
-        set_fpu_register_double(fd_reg(), result);
-      }
-      break;
-    case MAXA:
-      DCHECK(IsMipsArchVariant(kMips32r6));
-      fs = get_fpu_register_double(fs_reg());
-      if (std::isnan(fs) && std::isnan(ft)) {
-        set_fpu_register_double(fd_reg(), fs);
-      } else if (std::isnan(fs) && !std::isnan(ft)) {
-        set_fpu_register_double(fd_reg(), ft);
-      } else if (!std::isnan(fs) && std::isnan(ft)) {
-        set_fpu_register_double(fd_reg(), fs);
-      } else {
-        double result;
-        if (fabs(fs) < fabs(ft)) {
-          result = ft;
-        } else if (fabs(fs) > fabs(ft)) {
-          result = fs;
-        } else {
-          result = (fs > ft ? fs : ft);
-        }
-        set_fpu_register_double(fd_reg(), result);
-      }
+      set_fpu_register_double(fd_reg(), FPUMin(ft, fs));
       break;
     case MAX:
       DCHECK(IsMipsArchVariant(kMips32r6));
-      fs = get_fpu_register_double(fs_reg());
-      if (std::isnan(fs) && std::isnan(ft)) {
-        set_fpu_register_double(fd_reg(), fs);
-      } else if (std::isnan(fs) && !std::isnan(ft)) {
-        set_fpu_register_double(fd_reg(), ft);
-      } else if (!std::isnan(fs) && std::isnan(ft)) {
-        set_fpu_register_double(fd_reg(), fs);
-      } else {
-        set_fpu_register_double(fd_reg(), (fs <= ft) ? ft : fs);
-      }
+      set_fpu_register_double(fd_reg(), FPUMax(ft, fs));
       break;
+    case MINA:
+      DCHECK(IsMipsArchVariant(kMips32r6));
+      set_fpu_register_double(fd_reg(), FPUMinA(ft, fs));
+      break;
+    case MAXA:
+      DCHECK(IsMipsArchVariant(kMips32r6));
+      set_fpu_register_double(fd_reg(), FPUMaxA(ft, fs));
       break;
     case ADD_D:
       set_fpu_register_double(fd_reg(), fs + ft);
@@ -3193,71 +3226,19 @@ void Simulator::DecodeTypeRegisterSRsType() {
     }
     case MIN:
       DCHECK(IsMipsArchVariant(kMips32r6));
-      fs = get_fpu_register_float(fs_reg());
-      if (std::isnan(fs) && std::isnan(ft)) {
-        set_fpu_register_float(fd_reg(), fs);
-      } else if (std::isnan(fs) && !std::isnan(ft)) {
-        set_fpu_register_float(fd_reg(), ft);
-      } else if (!std::isnan(fs) && std::isnan(ft)) {
-        set_fpu_register_float(fd_reg(), fs);
-      } else {
-        set_fpu_register_float(fd_reg(), (fs >= ft) ? ft : fs);
-      }
+      set_fpu_register_float(fd_reg(), FPUMin(ft, fs));
       break;
     case MAX:
       DCHECK(IsMipsArchVariant(kMips32r6));
-      fs = get_fpu_register_float(fs_reg());
-      if (std::isnan(fs) && std::isnan(ft)) {
-        set_fpu_register_float(fd_reg(), fs);
-      } else if (std::isnan(fs) && !std::isnan(ft)) {
-        set_fpu_register_float(fd_reg(), ft);
-      } else if (!std::isnan(fs) && std::isnan(ft)) {
-        set_fpu_register_float(fd_reg(), fs);
-      } else {
-        set_fpu_register_float(fd_reg(), (fs <= ft) ? ft : fs);
-      }
+      set_fpu_register_float(fd_reg(), FPUMax(ft, fs));
       break;
     case MINA:
       DCHECK(IsMipsArchVariant(kMips32r6));
-      fs = get_fpu_register_float(fs_reg());
-      if (std::isnan(fs) && std::isnan(ft)) {
-        set_fpu_register_float(fd_reg(), fs);
-      } else if (std::isnan(fs) && !std::isnan(ft)) {
-        set_fpu_register_float(fd_reg(), ft);
-      } else if (!std::isnan(fs) && std::isnan(ft)) {
-        set_fpu_register_float(fd_reg(), fs);
-      } else {
-        float result;
-        if (fabs(fs) > fabs(ft)) {
-          result = ft;
-        } else if (fabs(fs) < fabs(ft)) {
-          result = fs;
-        } else {
-          result = (fs < ft ? fs : ft);
-        }
-        set_fpu_register_float(fd_reg(), result);
-      }
+      set_fpu_register_float(fd_reg(), FPUMinA(ft, fs));
       break;
     case MAXA:
       DCHECK(IsMipsArchVariant(kMips32r6));
-      fs = get_fpu_register_float(fs_reg());
-      if (std::isnan(fs) && std::isnan(ft)) {
-        set_fpu_register_float(fd_reg(), fs);
-      } else if (std::isnan(fs) && !std::isnan(ft)) {
-        set_fpu_register_float(fd_reg(), ft);
-      } else if (!std::isnan(fs) && std::isnan(ft)) {
-        set_fpu_register_float(fd_reg(), fs);
-      } else {
-        float result;
-        if (fabs(fs) < fabs(ft)) {
-          result = ft;
-        } else if (fabs(fs) > fabs(ft)) {
-          result = fs;
-        } else {
-          result = (fs > ft ? fs : ft);
-        }
-        set_fpu_register_float(fd_reg(), result);
-      }
+      set_fpu_register_float(fd_reg(), FPUMaxA(ft, fs));
       break;
     case CVT_L_S: {
       if (IsFp64Mode()) {
@@ -3406,7 +3387,11 @@ void Simulator::DecodeTypeRegisterCOP1() {
       set_register(rt_reg(), get_fpu_register_word(fs_reg()));
       break;
     case MFHC1:
-      set_register(rt_reg(), get_fpu_register_hi_word(fs_reg()));
+      if (IsFp64Mode()) {
+        set_register(rt_reg(), get_fpu_register_hi_word(fs_reg()));
+      } else {
+        set_register(rt_reg(), get_fpu_register_word(fs_reg() + 1));
+      }
       break;
     case CTC1: {
       // At the moment only FCSR is supported.
@@ -3426,7 +3411,11 @@ void Simulator::DecodeTypeRegisterCOP1() {
       set_fpu_register_word(fs_reg(), registers_[rt_reg()]);
       break;
     case MTHC1:
-      set_fpu_register_hi_word(fs_reg(), registers_[rt_reg()]);
+      if (IsFp64Mode()) {
+        set_fpu_register_hi_word(fs_reg(), registers_[rt_reg()]);
+      } else {
+        set_fpu_register_word(fs_reg() + 1, registers_[rt_reg()]);
+      }
       break;
     case S: {
       DecodeTypeRegisterSRsType();

@@ -391,7 +391,7 @@ void Builtins::Generate_JSConstructStubGeneric(MacroAssembler* masm) {
 
 
 void Builtins::Generate_JSConstructStubApi(MacroAssembler* masm) {
-  Generate_JSConstructStubHelper(masm, true, true, false);
+  Generate_JSConstructStubHelper(masm, true, false, false);
 }
 
 
@@ -546,6 +546,10 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   __ push(edi);  // Callee's JS function.
   __ push(edx);  // Callee's new target.
 
+  // Push dispatch table pointer.
+  __ mov(eax, Immediate(ExternalReference::interpreter_dispatch_table_address(
+                  masm->isolate())));
+  __ push(eax);
   // Push zero for bytecode array offset.
   __ push(Immediate(0));
 
@@ -598,21 +602,7 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   // fullcodegen's prologue:
   //  - Support profiler (specifically profiling_counter).
   //  - Call ProfileEntryHookStub when isolate has a function_entry_hook.
-  //  - Allow simulator stop operations if FLAG_stop_at is set.
   //  - Code aging of the BytecodeArray object.
-
-  // Perform stack guard check.
-  {
-    Label ok;
-    ExternalReference stack_limit =
-        ExternalReference::address_of_stack_limit(masm->isolate());
-    __ cmp(esp, Operand::StaticVariable(stack_limit));
-    __ j(above_equal, &ok);
-    __ push(kInterpreterBytecodeArrayRegister);
-    __ CallRuntime(Runtime::kStackGuard);
-    __ pop(kInterpreterBytecodeArrayRegister);
-    __ bind(&ok);
-  }
 
   // Load accumulator, register file, bytecode offset, dispatch table into
   // registers.
@@ -622,10 +612,7 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
          Immediate(InterpreterFrameConstants::kRegisterFilePointerFromFp));
   __ mov(kInterpreterBytecodeOffsetRegister,
          Immediate(BytecodeArray::kHeaderSize - kHeapObjectTag));
-  // Since the dispatch table root might be set after builtins are generated,
-  // load directly from the roots table.
-  __ LoadRoot(ebx, Heap::kInterpreterTableRootIndex);
-  __ add(ebx, Immediate(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ mov(ebx, Operand(ebp, InterpreterFrameConstants::kDispatchTableFromFp));
 
   // Push dispatch table as a stack located parameter to the bytecode handler.
   DCHECK_EQ(-1, kInterpreterDispatchTableSpillSlot);
@@ -787,8 +774,8 @@ static void Generate_EnterBytecodeDispatch(MacroAssembler* masm) {
   __ SmiUntag(kInterpreterBytecodeOffsetRegister);
 
   // Push dispatch table as a stack located parameter to the bytecode handler.
-  __ LoadRoot(ebx, Heap::kInterpreterTableRootIndex);
-  __ add(ebx, Immediate(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ mov(ebx, Immediate(ExternalReference::interpreter_dispatch_table_address(
+                  masm->isolate())));
   DCHECK_EQ(-1, kInterpreterDispatchTableSpillSlot);
   __ Pop(esi);
   __ Push(ebx);
@@ -1414,6 +1401,140 @@ void Builtins::Generate_ArrayCode(MacroAssembler* masm) {
   __ TailCallStub(&stub);
 }
 
+
+// static
+void Builtins::Generate_MathMaxMin(MacroAssembler* masm, MathMaxMinKind kind) {
+  // ----------- S t a t e -------------
+  //  -- eax                 : number of arguments
+  //  -- esp[0]              : return address
+  //  -- esp[(argc - n) * 8] : arg[n] (zero-based)
+  //  -- esp[(argc + 1) * 8] : receiver
+  // -----------------------------------
+  Condition const cc = (kind == MathMaxMinKind::kMin) ? below : above;
+  Heap::RootListIndex const root_index =
+      (kind == MathMaxMinKind::kMin) ? Heap::kInfinityValueRootIndex
+                                     : Heap::kMinusInfinityValueRootIndex;
+  const int reg_sel = (kind == MathMaxMinKind::kMin) ? 1 : 0;
+
+  // Load the accumulator with the default return value (either -Infinity or
+  // +Infinity), with the tagged value in edx and the double value in stx_0.
+  __ LoadRoot(edx, root_index);
+  __ fld_d(FieldOperand(edx, HeapNumber::kValueOffset));
+  __ Move(ecx, eax);
+
+  Label done_loop, loop;
+  __ bind(&loop);
+  {
+    // Check if all parameters done.
+    __ test(ecx, ecx);
+    __ j(zero, &done_loop);
+
+    // Load the next parameter tagged value into ebx.
+    __ mov(ebx, Operand(esp, ecx, times_pointer_size, 0));
+
+    // Load the double value of the parameter into stx_1, maybe converting the
+    // parameter to a number first using the ToNumberStub if necessary.
+    Label convert, convert_smi, convert_number, done_convert;
+    __ bind(&convert);
+    __ JumpIfSmi(ebx, &convert_smi);
+    __ JumpIfRoot(FieldOperand(ebx, HeapObject::kMapOffset),
+                  Heap::kHeapNumberMapRootIndex, &convert_number);
+    {
+      // Parameter is not a Number, use the ToNumberStub to convert it.
+      FrameScope scope(masm, StackFrame::INTERNAL);
+      __ SmiTag(eax);
+      __ SmiTag(ecx);
+      __ Push(eax);
+      __ Push(ecx);
+      __ Push(edx);
+      __ mov(eax, ebx);
+      ToNumberStub stub(masm->isolate());
+      __ CallStub(&stub);
+      __ mov(ebx, eax);
+      __ Pop(edx);
+      __ Pop(ecx);
+      __ Pop(eax);
+      {
+        // Restore the double accumulator value (stX_0).
+        Label restore_smi, done_restore;
+        __ JumpIfSmi(edx, &restore_smi, Label::kNear);
+        __ fld_d(FieldOperand(edx, HeapNumber::kValueOffset));
+        __ jmp(&done_restore, Label::kNear);
+        __ bind(&restore_smi);
+        __ SmiUntag(edx);
+        __ push(edx);
+        __ fild_s(Operand(esp, 0));
+        __ pop(edx);
+        __ SmiTag(edx);
+        __ bind(&done_restore);
+      }
+      __ SmiUntag(ecx);
+      __ SmiUntag(eax);
+    }
+    __ jmp(&convert);
+    __ bind(&convert_number);
+    // Load another value into stx_1
+    __ fld_d(FieldOperand(ebx, HeapNumber::kValueOffset));
+    __ fxch();
+    __ jmp(&done_convert, Label::kNear);
+    __ bind(&convert_smi);
+    __ SmiUntag(ebx);
+    __ push(ebx);
+    __ fild_s(Operand(esp, 0));
+    __ pop(ebx);
+    __ fxch();
+    __ SmiTag(ebx);
+    __ bind(&done_convert);
+
+    // Perform the actual comparison with the accumulator value on the left hand
+    // side (stx_0) and the next parameter value on the right hand side (stx_1).
+    Label compare_equal, compare_nan, compare_swap, done_compare;
+
+    // Duplicates the 2 float data for FCmp
+    __ fld(1);
+    __ fld(1);
+    __ FCmp();
+    __ j(parity_even, &compare_nan, Label::kNear);
+    __ j(cc, &done_compare, Label::kNear);
+    __ j(equal, &compare_equal, Label::kNear);
+
+    // Result is on the right hand side(stx_0).
+    __ bind(&compare_swap);
+    __ fxch();
+    __ mov(edx, ebx);
+    __ jmp(&done_compare, Label::kNear);
+
+    // At least one side is NaN, which means that the result will be NaN too.
+    __ bind(&compare_nan);
+    // Set the result on the right hand side (stx_0) to nan
+    __ fstp(0);
+    __ LoadRoot(edx, Heap::kNanValueRootIndex);
+    __ fld_d(FieldOperand(edx, HeapNumber::kValueOffset));
+    __ jmp(&done_compare, Label::kNear);
+
+    // Left and right hand side are equal, check for -0 vs. +0.
+    __ bind(&compare_equal);
+    // Check the sign of the value in reg_sel
+    __ fld(reg_sel);
+    __ FXamSign();
+    __ j(not_zero, &compare_swap);
+
+    __ bind(&done_compare);
+    // The right result is on the right hand side(stx_0)
+    // and can remove the useless stx_1 now.
+    __ fxch();
+    __ fstp(0);
+    __ dec(ecx);
+    __ jmp(&loop);
+  }
+
+  __ bind(&done_loop);
+  __ PopReturnAddressTo(ecx);
+  __ lea(esp, Operand(esp, eax, times_pointer_size, kPointerSize));
+  __ PushReturnAddressFrom(ecx);
+  __ mov(eax, edx);
+  __ Ret();
+}
 
 // static
 void Builtins::Generate_NumberConstructor(MacroAssembler* masm) {
@@ -2570,14 +2691,12 @@ static void CompatibleReceiverCheck(MacroAssembler* masm, Register receiver,
   // Load the next prototype.
   __ bind(&next_prototype);
   __ mov(receiver, FieldOperand(receiver, HeapObject::kMapOffset));
-  __ mov(receiver, FieldOperand(receiver, Map::kPrototypeOffset));
-  // End if the prototype is null or not hidden.
-  __ CompareRoot(receiver, Heap::kNullValueRootIndex);
-  __ j(equal, receiver_check_failed);
-  __ mov(scratch0, FieldOperand(receiver, HeapObject::kMapOffset));
-  __ test(FieldOperand(scratch0, Map::kBitField3Offset),
-          Immediate(Map::IsHiddenPrototype::kMask));
+  __ test(FieldOperand(receiver, Map::kBitField3Offset),
+          Immediate(Map::HasHiddenPrototype::kMask));
   __ j(zero, receiver_check_failed);
+
+  __ mov(receiver, FieldOperand(receiver, Map::kPrototypeOffset));
+  __ mov(scratch0, FieldOperand(receiver, HeapObject::kMapOffset));
   // Iterate.
   __ jmp(&prototype_loop_start, Label::kNear);
 

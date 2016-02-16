@@ -986,17 +986,24 @@ bool IsCompatibleReceiver(LookupIterator* lookup, Handle<Map> receiver_map) {
   } else if (accessors->IsAccessorPair()) {
     Handle<Object> getter(Handle<AccessorPair>::cast(accessors)->getter(),
                           isolate);
+    if (!getter->IsJSFunction() && !getter->IsFunctionTemplateInfo())
+      return false;
     Handle<JSObject> holder = lookup->GetHolder<JSObject>();
     Handle<Object> receiver = lookup->GetReceiver();
-    if (getter->IsJSFunction() && holder->HasFastProperties()) {
-      Handle<JSFunction> function = Handle<JSFunction>::cast(getter);
-      if (receiver->IsJSObject() || function->shared()->IsBuiltin() ||
-          !is_sloppy(function->shared()->language_mode())) {
-        CallOptimization call_optimization(function);
-        if (call_optimization.is_simple_api_call() &&
-            !call_optimization.IsCompatibleReceiverMap(receiver_map, holder)) {
+    if (holder->HasFastProperties()) {
+      if (getter->IsJSFunction()) {
+        Handle<JSFunction> function = Handle<JSFunction>::cast(getter);
+        if (!receiver->IsJSObject() && !function->shared()->IsBuiltin() &&
+            is_sloppy(function->shared()->language_mode())) {
+          // Calling sloppy non-builtins with a value as the receiver
+          // requires boxing.
           return false;
         }
+      }
+      CallOptimization call_optimization(getter);
+      if (call_optimization.is_simple_api_call() &&
+          !call_optimization.IsCompatibleReceiverMap(receiver_map, holder)) {
+        return false;
       }
     }
   }
@@ -1167,48 +1174,39 @@ Handle<Code> LoadIC::CompileHandler(LookupIterator* lookup,
         return stub.GetCode();
       }
 
-      Handle<Object> accessors = lookup->GetAccessors();
-      if (accessors->IsAccessorInfo()) {
-        Handle<AccessorInfo> info = Handle<AccessorInfo>::cast(accessors);
-        if (v8::ToCData<Address>(info->getter()) == 0) break;
-        if (!AccessorInfo::IsCompatibleReceiverMap(isolate(), info, map)) {
-          // This case should be already handled in LoadIC::UpdateCaches.
-          UNREACHABLE();
-          break;
-        }
-        if (!holder->HasFastProperties()) break;
-        NamedLoadHandlerCompiler compiler(isolate(), map, holder, cache_holder);
-        return compiler.CompileLoadCallback(lookup->name(), info);
-      }
-      if (accessors->IsAccessorPair()) {
-        Handle<Object> getter(Handle<AccessorPair>::cast(accessors)->getter(),
-                              isolate());
-        if (!getter->IsJSFunction()) break;
-        if (!holder->HasFastProperties()) break;
-        // When debugging we need to go the slow path to flood the accessor.
-        if (GetSharedFunctionInfo()->HasDebugInfo()) break;
-        Handle<JSFunction> function = Handle<JSFunction>::cast(getter);
-        if (!receiver->IsJSObject() && !function->shared()->IsBuiltin() &&
-            is_sloppy(function->shared()->language_mode())) {
-          // Calling sloppy non-builtins with a value as the receiver
-          // requires boxing.
-          break;
-        }
-        CallOptimization call_optimization(function);
-        NamedLoadHandlerCompiler compiler(isolate(), map, holder, cache_holder);
-        if (call_optimization.is_simple_api_call()) {
-          if (call_optimization.IsCompatibleReceiver(receiver, holder)) {
+      if (IsCompatibleReceiver(lookup, map)) {
+        Handle<Object> accessors = lookup->GetAccessors();
+        if (accessors->IsAccessorPair()) {
+          if (!holder->HasFastProperties()) break;
+          // When debugging we need to go the slow path to flood the accessor.
+          if (GetSharedFunctionInfo()->HasDebugInfo()) break;
+          Handle<Object> getter(Handle<AccessorPair>::cast(accessors)->getter(),
+                                isolate());
+          CallOptimization call_optimization(getter);
+          NamedLoadHandlerCompiler compiler(isolate(), map, holder,
+                                            cache_holder);
+          if (call_optimization.is_simple_api_call()) {
             return compiler.CompileLoadCallback(
                 lookup->name(), call_optimization, lookup->GetAccessorIndex());
-          } else {
+          }
+          int expected_arguments = Handle<JSFunction>::cast(getter)
+                                       ->shared()
+                                       ->internal_formal_parameter_count();
+          return compiler.CompileLoadViaGetter(
+              lookup->name(), lookup->GetAccessorIndex(), expected_arguments);
+        } else if (accessors->IsAccessorInfo()) {
+          Handle<AccessorInfo> info = Handle<AccessorInfo>::cast(accessors);
+          if (v8::ToCData<Address>(info->getter()) == 0) break;
+          if (!AccessorInfo::IsCompatibleReceiverMap(isolate(), info, map)) {
             // This case should be already handled in LoadIC::UpdateCaches.
             UNREACHABLE();
+            break;
           }
+          if (!holder->HasFastProperties()) break;
+          NamedLoadHandlerCompiler compiler(isolate(), map, holder,
+                                            cache_holder);
+          return compiler.CompileLoadCallback(lookup->name(), info);
         }
-        int expected_arguments =
-            function->shared()->internal_formal_parameter_count();
-        return compiler.CompileLoadViaGetter(
-            lookup->name(), lookup->GetAccessorIndex(), expected_arguments);
       }
       break;
     }
@@ -1449,8 +1447,9 @@ bool StoreIC::LookupForWrite(LookupIterator* it, Handle<Object> value,
         }
 
         // Receiver != holder.
-        PrototypeIterator iter(it->isolate(), receiver);
         if (receiver->IsJSGlobalProxy()) {
+          PrototypeIterator iter(it->isolate(),
+                                 Handle<JSGlobalProxy>::cast(receiver));
           return it->GetHolder<Object>().is_identical_to(
               PrototypeIterator::GetCurrent(iter));
         }
@@ -2737,15 +2736,6 @@ void CompareNilIC::Clear(Address address, Code* target, Address constant_pool) {
 }
 
 
-Handle<Object> CompareNilIC::DoCompareNilSlow(Isolate* isolate, NilValue nil,
-                                              Handle<Object> object) {
-  if (object->IsNull() || object->IsUndefined()) {
-    return isolate->factory()->true_value();
-  }
-  return isolate->factory()->ToBoolean(object->IsUndetectableObject());
-}
-
-
 Handle<Object> CompareNilIC::CompareNil(Handle<Object> object) {
   ExtraICState extra_ic_state = target()->extra_ic_state();
 
@@ -2756,8 +2746,6 @@ Handle<Object> CompareNilIC::CompareNil(Handle<Object> object) {
   bool already_monomorphic = stub.IsMonomorphic();
 
   stub.UpdateStatus(object);
-
-  NilValue nil = stub.nil_value();
 
   // Find or create the specialized stub to support the new set of types.
   Handle<Code> code;
@@ -2770,7 +2758,7 @@ Handle<Object> CompareNilIC::CompareNil(Handle<Object> object) {
     code = stub.GetCode();
   }
   set_target(*code);
-  return DoCompareNilSlow(isolate(), nil, object);
+  return isolate()->factory()->ToBoolean(object->IsUndetectableObject());
 }
 
 
@@ -2913,9 +2901,10 @@ RUNTIME_FUNCTION(Runtime_StorePropertyWithInterceptor) {
   Handle<Object> value = args.at<Object>(2);
 #ifdef DEBUG
   PrototypeIterator iter(isolate, receiver,
-                         PrototypeIterator::START_AT_RECEIVER);
+                         PrototypeIterator::START_AT_RECEIVER,
+                         PrototypeIterator::END_AT_NON_HIDDEN);
   bool found = false;
-  for (; !iter.IsAtEnd(PrototypeIterator::END_AT_NON_HIDDEN); iter.Advance()) {
+  for (; !iter.IsAtEnd(); iter.Advance()) {
     Handle<Object> current = PrototypeIterator::GetCurrent(iter);
     if (current->IsJSObject() &&
         Handle<JSObject>::cast(current)->HasNamedInterceptor()) {

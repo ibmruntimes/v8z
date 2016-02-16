@@ -35,9 +35,12 @@ class RawMachineAssemblerTester : public HandleAndZoneScope,
             Linkage::GetSimplifiedCDescriptor(
                 main_zone(),
                 CSignature::New(main_zone(), MachineTypeForC<ReturnType>(), p0,
-                                p1, p2, p3, p4)),
+                                p1, p2, p3, p4),
+                true),
             MachineType::PointerRepresentation(),
             InstructionSelector::SupportedMachineOperatorFlags()) {}
+
+  virtual ~RawMachineAssemblerTester() {}
 
   void CheckNumber(double expected, Object* number) {
     CHECK(this->isolate()->factory()->NewNumber(expected)->SameValue(number));
@@ -85,6 +88,7 @@ class BufferedRawMachineAssemblerTester
       : BufferedRawMachineAssemblerTester(ComputeParameterCount(p0, p1, p2, p3),
                                           p0, p1, p2, p3) {}
 
+  virtual byte* Generate() { return RawMachineAssemblerTester::Generate(); }
 
   // The BufferedRawMachineAssemblerTester does not pass parameters directly
   // to the constructed IR graph. Instead it passes a pointer to the parameter
@@ -244,6 +248,8 @@ class BufferedRawMachineAssemblerTester<void>
                               : Load(p3, RawMachineAssembler::Parameter(3));
   }
 
+  virtual byte* Generate() { return RawMachineAssemblerTester::Generate(); }
+
   // The BufferedRawMachineAssemblerTester does not pass parameters directly
   // to the constructed IR graph. Instead it passes a pointer to the parameter
   // to the IR graph, and adds Load nodes to the IR graph to load the
@@ -395,7 +401,6 @@ class Uint32BinopTester : public BinopTester<uint32_t, USE_RETURN_REGISTER> {
 
 // A helper class for testing code sequences that take two float parameters and
 // return a float value.
-// TODO(titzer): figure out how to return floats correctly on ia32.
 class Float32BinopTester : public BinopTester<float, USE_RESULT_BUFFER> {
  public:
   explicit Float32BinopTester(RawMachineAssemblerTester<int32_t>* tester)
@@ -405,7 +410,6 @@ class Float32BinopTester : public BinopTester<float, USE_RESULT_BUFFER> {
 
 // A helper class for testing code sequences that take two double parameters and
 // return a double value.
-// TODO(titzer): figure out how to return doubles correctly on ia32.
 class Float64BinopTester : public BinopTester<double, USE_RESULT_BUFFER> {
  public:
   explicit Float64BinopTester(RawMachineAssemblerTester<int32_t>* tester)
@@ -522,7 +526,8 @@ class BinopGen {
 // and run the generated code to ensure it produces the correct results.
 class Int32BinopInputShapeTester {
  public:
-  explicit Int32BinopInputShapeTester(BinopGen<int32_t>* g) : gen(g) {}
+  explicit Int32BinopInputShapeTester(BinopGen<int32_t>* g)
+      : gen(g), input_a(0), input_b(0) {}
 
   void TestAllInputShapes();
 

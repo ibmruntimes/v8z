@@ -69,7 +69,7 @@ macro IS_BOOLEAN_WRAPPER(arg)   = (%_ClassOf(arg) === 'Boolean');
 macro IS_DATAVIEW(arg)          = (%_ClassOf(arg) === 'DataView');
 macro IS_DATE(arg)              = (%_IsDate(arg));
 macro IS_ERROR(arg)             = (%_ClassOf(arg) === 'Error');
-macro IS_FUNCTION(arg)          = (%_IsFunction(arg));
+macro IS_FUNCTION(arg)          = (%IsFunction(arg));
 macro IS_GENERATOR(arg)         = (%_ClassOf(arg) === 'Generator');
 macro IS_GLOBAL(arg)            = (%_ClassOf(arg) === 'global');
 macro IS_MAP(arg)               = (%_ClassOf(arg) === 'Map');
@@ -114,8 +114,6 @@ macro TO_INTEGER_MAP_MINUS_ZERO(arg) = (%_IsSmi(%IS_VAR(arg)) ? arg : %NumberToI
 macro TO_INT32(arg) = ((arg) | 0);
 macro TO_UINT32(arg) = ((arg) >>> 0);
 macro TO_LENGTH(arg) = (%_ToLength(arg));
-macro TO_LENGTH_OR_UINT32(arg) = (FLAG_harmony_tolength ? TO_LENGTH(arg) : TO_UINT32(arg));
-macro TO_LENGTH_OR_INTEGER(arg) = (FLAG_harmony_tolength ? TO_LENGTH(arg) : TO_INTEGER(arg));
 macro TO_STRING(arg) = (%_ToString(arg));
 macro TO_NUMBER(arg) = (%_ToNumber(arg));
 macro TO_OBJECT(arg) = (%_ToObject(arg));

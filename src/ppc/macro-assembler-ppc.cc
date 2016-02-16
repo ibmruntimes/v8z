@@ -302,13 +302,10 @@ void MacroAssembler::StoreRoot(Register source, Heap::RootListIndex index,
 
 void MacroAssembler::InNewSpace(Register object, Register scratch,
                                 Condition cond, Label* branch) {
-  // N.B. scratch may be same register as object
   DCHECK(cond == eq || cond == ne);
-  mov(r0, Operand(ExternalReference::new_space_mask(isolate())));
-  and_(scratch, object, r0);
-  mov(r0, Operand(ExternalReference::new_space_start(isolate())));
-  cmp(scratch, r0);
-  b(cond, branch);
+  const int mask =
+      (1 << MemoryChunk::IN_FROM_SPACE) | (1 << MemoryChunk::IN_TO_SPACE);
+  CheckPageFlag(object, scratch, mask, cond, branch);
 }
 
 
@@ -487,6 +484,68 @@ void MacroAssembler::RecordWrite(
   }
 }
 
+void MacroAssembler::RecordWriteCodeEntryField(Register js_function,
+                                               Register code_entry,
+                                               Register scratch) {
+  const int offset = JSFunction::kCodeEntryOffset;
+
+  // Since a code entry (value) is always in old space, we don't need to update
+  // remembered set. If incremental marking is off, there is nothing for us to
+  // do.
+  if (!FLAG_incremental_marking) return;
+
+  DCHECK(js_function.is(r4));
+  DCHECK(code_entry.is(r7));
+  DCHECK(scratch.is(r8));
+  AssertNotSmi(js_function);
+
+  if (emit_debug_code()) {
+    addi(scratch, js_function, Operand(offset - kHeapObjectTag));
+    LoadP(ip, MemOperand(scratch));
+    cmp(ip, code_entry);
+    Check(eq, kWrongAddressOrValuePassedToRecordWrite);
+  }
+
+  // First, check if a write barrier is even needed. The tests below
+  // catch stores of Smis and stores into young gen.
+  Label done;
+
+  CheckPageFlag(code_entry, scratch,
+                MemoryChunk::kPointersToHereAreInterestingMask, eq, &done);
+  CheckPageFlag(js_function, scratch,
+                MemoryChunk::kPointersFromHereAreInterestingMask, eq, &done);
+
+  const Register dst = scratch;
+  addi(dst, js_function, Operand(offset - kHeapObjectTag));
+
+  // Save caller-saved registers.  js_function and code_entry are in the
+  // caller-saved register list.
+  DCHECK(kJSCallerSaved & js_function.bit());
+  DCHECK(kJSCallerSaved & code_entry.bit());
+  mflr(r0);
+  MultiPush(kJSCallerSaved | r0.bit());
+
+  int argument_count = 3;
+  PrepareCallCFunction(argument_count, code_entry);
+
+  mr(r3, js_function);
+  mr(r4, dst);
+  mov(r5, Operand(ExternalReference::isolate_address(isolate())));
+
+  {
+    AllowExternalCallThatCantCauseGC scope(this);
+    CallCFunction(
+        ExternalReference::incremental_marking_record_write_code_entry_function(
+            isolate()),
+        argument_count);
+  }
+
+  // Restore caller-saved registers (including js_function and code_entry).
+  MultiPop(kJSCallerSaved | r0.bit());
+  mtlr(r0);
+
+  bind(&done);
+}
 
 void MacroAssembler::RememberedSetHelper(Register object,  // For debug tests.
                                          Register address, Register scratch,
@@ -654,28 +713,27 @@ void MacroAssembler::CanonicalizeNaN(const DoubleRegister dst,
   fsub(dst, src, kDoubleRegZero);
 }
 
-
-void MacroAssembler::ConvertIntToDouble(Register src,
-                                        DoubleRegister double_dst) {
-  MovIntToDouble(double_dst, src, r0);
-  fcfid(double_dst, double_dst);
+void MacroAssembler::ConvertIntToDouble(Register src, DoubleRegister dst) {
+  MovIntToDouble(dst, src, r0);
+  fcfid(dst, dst);
 }
-
 
 void MacroAssembler::ConvertUnsignedIntToDouble(Register src,
-                                                DoubleRegister double_dst) {
-  MovUnsignedIntToDouble(double_dst, src, r0);
-  fcfid(double_dst, double_dst);
+                                                DoubleRegister dst) {
+  MovUnsignedIntToDouble(dst, src, r0);
+  fcfid(dst, dst);
 }
 
-
-void MacroAssembler::ConvertIntToFloat(const DoubleRegister dst,
-                                       const Register src,
-                                       const Register int_scratch) {
-  MovIntToDouble(dst, src, int_scratch);
+void MacroAssembler::ConvertIntToFloat(Register src, DoubleRegister dst) {
+  MovIntToDouble(dst, src, r0);
   fcfids(dst, dst);
 }
 
+void MacroAssembler::ConvertUnsignedIntToFloat(Register src,
+                                               DoubleRegister dst) {
+  MovUnsignedIntToDouble(dst, src, r0);
+  fcfids(dst, dst);
+}
 
 #if V8_TARGET_ARCH_PPC64
 void MacroAssembler::ConvertInt64ToDouble(Register src,
@@ -2146,25 +2204,6 @@ void MacroAssembler::TestDoubleIsMinusZero(DoubleRegister input,
 #endif
 }
 
-void MacroAssembler::TestHeapNumberIsMinusZero(Register input,
-                                               Register scratch1,
-                                               Register scratch2) {
-#if V8_TARGET_ARCH_PPC64
-  LoadP(scratch1, FieldMemOperand(input, HeapNumber::kValueOffset));
-  rotldi(scratch1, scratch1, 1);
-  cmpi(scratch1, Operand(1));
-#else
-  lwz(scratch1, FieldMemOperand(input, HeapNumber::kExponentOffset));
-  lwz(scratch2, FieldMemOperand(input, HeapNumber::kMantissaOffset));
-  Label done;
-  cmpi(scratch2, Operand::Zero());
-  bne(&done);
-  lis(scratch2, Operand(SIGN_EXT_IMM16(0x8000)));
-  cmp(scratch1, scratch2);
-  bind(&done);
-#endif
-}
-
 void MacroAssembler::TestDoubleSign(DoubleRegister input, Register scratch) {
 #if V8_TARGET_ARCH_PPC64
   MovDoubleToInt64(scratch, input);
@@ -3170,41 +3209,6 @@ void MacroAssembler::CallCFunctionHelper(Register function,
   } else {
     addi(sp, sp, Operand(stack_space * kPointerSize));
   }
-}
-
-
-void MacroAssembler::FlushICache(Register address, size_t size,
-                                 Register scratch) {
-  if (CpuFeatures::IsSupported(INSTR_AND_DATA_CACHE_COHERENCY)) {
-    sync();
-    icbi(r0, address);
-    isync();
-    return;
-  }
-
-  Label done;
-
-  dcbf(r0, address);
-  sync();
-  icbi(r0, address);
-  isync();
-
-  // This code handles ranges which cross a single cacheline boundary.
-  // scratch is last cacheline which intersects range.
-  const int kCacheLineSizeLog2 = WhichPowerOf2(CpuFeatures::cache_line_size());
-
-  DCHECK(size > 0 && size <= (size_t)(1 << kCacheLineSizeLog2));
-  addi(scratch, address, Operand(size - 1));
-  ClearRightImm(scratch, scratch, Operand(kCacheLineSizeLog2));
-  cmpl(scratch, address);
-  ble(&done);
-
-  dcbf(r0, scratch);
-  sync();
-  icbi(r0, scratch);
-  isync();
-
-  bind(&done);
 }
 
 

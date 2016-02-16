@@ -459,9 +459,7 @@ void CompareNilICStub::UpdateStatus(Handle<Object> object) {
     state.Add(NULL_TYPE);
   } else if (object->IsUndefined()) {
     state.Add(UNDEFINED);
-  } else if (object->IsUndetectableObject() ||
-             object->IsOddball() ||
-             !object->IsHeapObject()) {
+  } else if (object->IsUndetectableObject() || object->IsSmi()) {
     state.RemoveAll();
     state.Add(GENERIC);
   } else if (IsMonomorphic()) {
@@ -555,18 +553,17 @@ std::ostream& operator<<(std::ostream& os, const CompareNilICStub::State& s) {
 
 Type* CompareNilICStub::GetType(Zone* zone, Handle<Map> map) {
   State state = this->state();
-  if (state.Contains(CompareNilICStub::GENERIC)) return Type::Any(zone);
+  if (state.Contains(CompareNilICStub::GENERIC)) return Type::Any();
 
-  Type* result = Type::None(zone);
+  Type* result = Type::None();
   if (state.Contains(CompareNilICStub::UNDEFINED)) {
-    result = Type::Union(result, Type::Undefined(zone), zone);
+    result = Type::Union(result, Type::Undefined(), zone);
   }
   if (state.Contains(CompareNilICStub::NULL_TYPE)) {
-    result = Type::Union(result, Type::Null(zone), zone);
+    result = Type::Union(result, Type::Null(), zone);
   }
   if (state.Contains(CompareNilICStub::MONOMORPHIC_MAP)) {
-    Type* type =
-        map.is_null() ? Type::Detectable(zone) : Type::Class(map, zone);
+    Type* type = map.is_null() ? Type::Detectable() : Type::Class(map, zone);
     result = Type::Union(result, type, zone);
   }
 
@@ -576,8 +573,7 @@ Type* CompareNilICStub::GetType(Zone* zone, Handle<Map> map) {
 
 Type* CompareNilICStub::GetInputType(Zone* zone, Handle<Map> map) {
   Type* output_type = GetType(zone, map);
-  Type* nil_type =
-      nil_value() == kNullValue ? Type::Null(zone) : Type::Undefined(zone);
+  Type* nil_type = nil_value() == kNullValue ? Type::Null() : Type::Undefined();
   return Type::Union(output_type, nil_type, zone);
 }
 
@@ -824,22 +820,13 @@ void StoreFastElementStub::GenerateAheadOfTime(Isolate* isolate) {
 }
 
 
-void RestParamAccessStub::Generate(MacroAssembler* masm) { GenerateNew(masm); }
-
-
 void ArgumentsAccessStub::Generate(MacroAssembler* masm) {
   switch (type()) {
-    case READ_ELEMENT:
-      GenerateReadElement(masm);
-      break;
     case NEW_SLOPPY_FAST:
       GenerateNewSloppyFast(masm);
       break;
     case NEW_SLOPPY_SLOW:
       GenerateNewSloppySlow(masm);
-      break;
-    case NEW_STRICT:
-      GenerateNewStrict(masm);
       break;
   }
 }
@@ -848,25 +835,14 @@ void ArgumentsAccessStub::Generate(MacroAssembler* masm) {
 void ArgumentsAccessStub::PrintName(std::ostream& os) const {  // NOLINT
   os << "ArgumentsAccessStub_";
   switch (type()) {
-    case READ_ELEMENT:
-      os << "ReadElement";
-      break;
     case NEW_SLOPPY_FAST:
       os << "NewSloppyFast";
       break;
     case NEW_SLOPPY_SLOW:
       os << "NewSloppySlow";
       break;
-    case NEW_STRICT:
-      os << "NewStrict";
-      break;
   }
   return;
-}
-
-
-void RestParamAccessStub::PrintName(std::ostream& os) const {  // NOLINT
-  os << "RestParamAccessStub_";
 }
 
 
@@ -950,9 +926,9 @@ bool ToBooleanStub::Types::UpdateStatus(Handle<Object> object) {
     Add(SPEC_OBJECT);
     return !object->IsUndetectableObject();
   } else if (object->IsString()) {
+    DCHECK(!object->IsUndetectableObject());
     Add(STRING);
-    return !object->IsUndetectableObject() &&
-        String::cast(*object)->length() != 0;
+    return String::cast(*object)->length() != 0;
   } else if (object->IsSymbol()) {
     Add(SYMBOL);
     return true;

@@ -487,7 +487,6 @@ void MathPowStub::Generate(MacroAssembler* masm) {
   __ Cvtlsi2sd(double_exponent, exponent);
 
   // Returning or bailing out.
-  Counters* counters = isolate()->counters();
   if (exponent_type() == ON_STACK) {
     // The arguments are still on the stack.
     __ bind(&call_runtime);
@@ -498,7 +497,6 @@ void MathPowStub::Generate(MacroAssembler* masm) {
     __ bind(&done);
     __ AllocateHeapNumber(rax, rcx, &call_runtime);
     __ Movsd(FieldOperand(rax, HeapNumber::kValueOffset), double_result);
-    __ IncrementCounter(counters->math_pow(), 1);
     __ ret(2 * kPointerSize);
   } else {
     __ bind(&call_runtime);
@@ -515,7 +513,6 @@ void MathPowStub::Generate(MacroAssembler* masm) {
     __ Movsd(double_result, xmm0);
 
     __ bind(&done);
-    __ IncrementCounter(counters->math_pow(), 1);
     __ ret(0);
   }
 }
@@ -534,64 +531,6 @@ void FunctionPrototypeStub::Generate(MacroAssembler* masm) {
   __ bind(&miss);
   PropertyAccessCompiler::TailCallBuiltin(
       masm, PropertyAccessCompiler::MissBuiltin(Code::LOAD_IC));
-}
-
-
-void ArgumentsAccessStub::GenerateReadElement(MacroAssembler* masm) {
-  // The key is in rdx and the parameter count is in rax.
-  DCHECK(rdx.is(ArgumentsAccessReadDescriptor::index()));
-  DCHECK(rax.is(ArgumentsAccessReadDescriptor::parameter_count()));
-
-  // Check that the key is a smi.
-  Label slow;
-  __ JumpIfNotSmi(rdx, &slow);
-
-  // Check if the calling frame is an arguments adaptor frame.  We look at the
-  // context offset, and if the frame is not a regular one, then we find a
-  // Smi instead of the context.  We can't use SmiCompare here, because that
-  // only works for comparing two smis.
-  Label adaptor;
-  __ movp(rbx, Operand(rbp, StandardFrameConstants::kCallerFPOffset));
-  __ Cmp(Operand(rbx, StandardFrameConstants::kContextOffset),
-         Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR));
-  __ j(equal, &adaptor);
-
-  // Check index against formal parameters count limit passed in
-  // through register rax. Use unsigned comparison to get negative
-  // check for free.
-  __ cmpp(rdx, rax);
-  __ j(above_equal, &slow);
-
-  // Read the argument from the stack and return it.
-  __ SmiSub(rax, rax, rdx);
-  __ SmiToInteger32(rax, rax);
-  StackArgumentsAccessor args(rbp, rax, ARGUMENTS_DONT_CONTAIN_RECEIVER);
-  __ movp(rax, args.GetArgumentOperand(0));
-  __ Ret();
-
-  // Arguments adaptor case: Check index against actual arguments
-  // limit found in the arguments adaptor frame. Use unsigned
-  // comparison to get negative check for free.
-  __ bind(&adaptor);
-  __ movp(rcx, Operand(rbx, ArgumentsAdaptorFrameConstants::kLengthOffset));
-  __ cmpp(rdx, rcx);
-  __ j(above_equal, &slow);
-
-  // Read the argument from the stack and return it.
-  __ SmiSub(rcx, rcx, rdx);
-  __ SmiToInteger32(rcx, rcx);
-  StackArgumentsAccessor adaptor_args(rbx, rcx,
-                                      ARGUMENTS_DONT_CONTAIN_RECEIVER);
-  __ movp(rax, adaptor_args.GetArgumentOperand(0));
-  __ Ret();
-
-  // Slow-case: Handle non-smi or out-of-bounds access to arguments
-  // by calling the runtime system.
-  __ bind(&slow);
-  __ PopReturnAddressTo(rbx);
-  __ Push(rdx);
-  __ PushReturnAddressFrom(rbx);
-  __ TailCallRuntime(Runtime::kArguments);
 }
 
 
@@ -654,7 +593,7 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
   __ leap(r8, Operand(r8, r11, times_pointer_size, FixedArray::kHeaderSize));
 
   // 3. Arguments object.
-  __ addp(r8, Immediate(Heap::kSloppyArgumentsObjectSize));
+  __ addp(r8, Immediate(JSSloppyArgumentsObject::kSize));
 
   // Do the allocation of all three objects in one go.
   __ Allocate(r8, rax, r9, no_reg, &runtime, TAG_OBJECT);
@@ -686,24 +625,18 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
   __ movp(FieldOperand(rax, JSObject::kElementsOffset), kScratchRegister);
 
   // Set up the callee in-object property.
-  STATIC_ASSERT(Heap::kArgumentsCalleeIndex == 1);
   __ AssertNotSmi(rdi);
-  __ movp(FieldOperand(rax, JSObject::kHeaderSize +
-                                Heap::kArgumentsCalleeIndex * kPointerSize),
-          rdi);
+  __ movp(FieldOperand(rax, JSSloppyArgumentsObject::kCalleeOffset), rdi);
 
   // Use the length (smi tagged) and set that as an in-object property too.
   // Note: r11 is tagged from here on.
-  STATIC_ASSERT(Heap::kArgumentsLengthIndex == 0);
   __ Integer32ToSmi(r11, r11);
-  __ movp(FieldOperand(rax, JSObject::kHeaderSize +
-                                Heap::kArgumentsLengthIndex * kPointerSize),
-          r11);
+  __ movp(FieldOperand(rax, JSSloppyArgumentsObject::kLengthOffset), r11);
 
   // Set up the elements pointer in the allocated arguments object.
   // If we allocated a parameter map, rdi will point there, otherwise to the
   // backing store.
-  __ leap(rdi, Operand(rax, Heap::kSloppyArgumentsObjectSize));
+  __ leap(rdi, Operand(rax, JSSloppyArgumentsObject::kSize));
   __ movp(FieldOperand(rax, JSObject::kElementsOffset), rdi);
 
   // rax = address of new object (tagged)
@@ -841,36 +774,6 @@ void ArgumentsAccessStub::GenerateNewSloppySlow(MacroAssembler* masm) {
 }
 
 
-void RestParamAccessStub::GenerateNew(MacroAssembler* masm) {
-  // rcx : number of parameters (tagged)
-  // rdx : parameters pointer
-  // rbx : rest parameter index (tagged)
-  // rsp[0] : return address
-
-  // Check if the calling frame is an arguments adaptor frame.
-  Label runtime;
-  __ movp(r8, Operand(rbp, StandardFrameConstants::kCallerFPOffset));
-  __ movp(rax, Operand(r8, StandardFrameConstants::kContextOffset));
-  __ Cmp(rax, Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR));
-  __ j(not_equal, &runtime);
-
-  // Patch the arguments.length and the parameters pointer.
-  StackArgumentsAccessor args(rsp, 4, ARGUMENTS_DONT_CONTAIN_RECEIVER);
-  __ movp(rcx, Operand(r8, ArgumentsAdaptorFrameConstants::kLengthOffset));
-  __ SmiToInteger64(rax, rcx);
-  __ leap(rdx, Operand(r8, rax, times_pointer_size,
-                       StandardFrameConstants::kCallerSPOffset));
-
-  __ bind(&runtime);
-  __ PopReturnAddressTo(rax);
-  __ Push(rcx);  // Push number of parameters.
-  __ Push(rdx);  // Push parameters pointer.
-  __ Push(rbx);  // Push rest parameter index.
-  __ PushReturnAddressFrom(rax);
-  __ TailCallRuntime(Runtime::kNewRestParam);
-}
-
-
 void LoadIndexedInterceptorStub::Generate(MacroAssembler* masm) {
   // Return address is on the stack.
   Label slow;
@@ -929,103 +832,6 @@ void LoadIndexedStringStub::Generate(MacroAssembler* masm) {
   __ bind(&miss);
   PropertyAccessCompiler::TailCallBuiltin(
       masm, PropertyAccessCompiler::MissBuiltin(Code::KEYED_LOAD_IC));
-}
-
-
-void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
-  // rcx : number of parameters (tagged)
-  // rdx : parameters pointer
-  // rdi : function
-  // rsp[0] : return address
-
-  DCHECK(rdi.is(ArgumentsAccessNewDescriptor::function()));
-  DCHECK(rcx.is(ArgumentsAccessNewDescriptor::parameter_count()));
-  DCHECK(rdx.is(ArgumentsAccessNewDescriptor::parameter_pointer()));
-
-  // Check if the calling frame is an arguments adaptor frame.
-  Label adaptor_frame, try_allocate, runtime;
-  __ movp(rbx, Operand(rbp, StandardFrameConstants::kCallerFPOffset));
-  __ movp(rax, Operand(rbx, StandardFrameConstants::kContextOffset));
-  __ Cmp(rax, Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR));
-  __ j(equal, &adaptor_frame);
-
-  // Get the length from the frame.
-  __ SmiToInteger64(rax, rcx);
-  __ jmp(&try_allocate);
-
-  // Patch the arguments.length and the parameters pointer.
-  __ bind(&adaptor_frame);
-  __ movp(rcx, Operand(rbx, ArgumentsAdaptorFrameConstants::kLengthOffset));
-  __ SmiToInteger64(rax, rcx);
-  __ leap(rdx, Operand(rbx, rax, times_pointer_size,
-                       StandardFrameConstants::kCallerSPOffset));
-
-  // Try the new space allocation. Start out with computing the size of
-  // the arguments object and the elements array.
-  Label add_arguments_object;
-  __ bind(&try_allocate);
-  __ testp(rax, rax);
-  __ j(zero, &add_arguments_object, Label::kNear);
-  __ leap(rax, Operand(rax, times_pointer_size, FixedArray::kHeaderSize));
-  __ bind(&add_arguments_object);
-  __ addp(rax, Immediate(Heap::kStrictArgumentsObjectSize));
-
-  // Do the allocation of both objects in one go.
-  __ Allocate(rax, rax, rbx, no_reg, &runtime, TAG_OBJECT);
-
-  // Get the arguments map from the current native context.
-  __ movp(rdi, NativeContextOperand());
-  __ movp(rdi, ContextOperand(rdi, Context::STRICT_ARGUMENTS_MAP_INDEX));
-
-  __ movp(FieldOperand(rax, JSObject::kMapOffset), rdi);
-  __ LoadRoot(kScratchRegister, Heap::kEmptyFixedArrayRootIndex);
-  __ movp(FieldOperand(rax, JSObject::kPropertiesOffset), kScratchRegister);
-  __ movp(FieldOperand(rax, JSObject::kElementsOffset), kScratchRegister);
-
-  // Get the length (smi tagged) and set that as an in-object property too.
-  STATIC_ASSERT(Heap::kArgumentsLengthIndex == 0);
-  __ movp(FieldOperand(rax, JSObject::kHeaderSize +
-                       Heap::kArgumentsLengthIndex * kPointerSize),
-          rcx);
-
-  // If there are no actual arguments, we're done.
-  Label done;
-  __ testp(rcx, rcx);
-  __ j(zero, &done);
-
-  // Set up the elements pointer in the allocated arguments object and
-  // initialize the header in the elements fixed array.
-  __ leap(rdi, Operand(rax, Heap::kStrictArgumentsObjectSize));
-  __ movp(FieldOperand(rax, JSObject::kElementsOffset), rdi);
-  __ LoadRoot(kScratchRegister, Heap::kFixedArrayMapRootIndex);
-  __ movp(FieldOperand(rdi, FixedArray::kMapOffset), kScratchRegister);
-  __ movp(FieldOperand(rdi, FixedArray::kLengthOffset), rcx);
-
-  // Untag the length for the loop below.
-  __ SmiToInteger64(rcx, rcx);
-
-  // Copy the fixed array slots.
-  Label loop;
-  __ bind(&loop);
-  __ movp(rbx, Operand(rdx, -1 * kPointerSize));  // Skip receiver.
-  __ movp(FieldOperand(rdi, FixedArray::kHeaderSize), rbx);
-  __ addp(rdi, Immediate(kPointerSize));
-  __ subp(rdx, Immediate(kPointerSize));
-  __ decp(rcx);
-  __ j(not_zero, &loop);
-
-  // Return.
-  __ bind(&done);
-  __ ret(0);
-
-  // Do the runtime call to allocate the arguments object.
-  __ bind(&runtime);
-  __ PopReturnAddressTo(rax);
-  __ Push(rdi);  // Push function.
-  __ Push(rdx);  // Push parameters pointer.
-  __ Push(rcx);  // Push parameter count.
-  __ PushReturnAddressFrom(rax);
-  __ TailCallRuntime(Runtime::kNewStrictArguments);
 }
 
 
@@ -1728,7 +1534,7 @@ void CompareICStub::GenerateGeneric(MacroAssembler* masm) {
     // Not strict equality.  Objects are unequal if
     // they are both JSObjects and not undetectable,
     // and their pointers are different.
-    Label return_unequal;
+    Label return_unequal, undetectable;
     // At most one is a smi, so we can test for smi by adding the two.
     // A smi plus a heap object has the low bit set, a heap object plus
     // a heap object has the low bit clear.
@@ -1737,22 +1543,30 @@ void CompareICStub::GenerateGeneric(MacroAssembler* masm) {
     __ leap(rcx, Operand(rax, rdx, times_1, 0));
     __ testb(rcx, Immediate(kSmiTagMask));
     __ j(not_zero, &runtime_call, Label::kNear);
-    __ CmpObjectType(rax, FIRST_JS_RECEIVER_TYPE, rbx);
-    __ j(below, &runtime_call, Label::kNear);
-    __ CmpObjectType(rdx, FIRST_JS_RECEIVER_TYPE, rcx);
-    __ j(below, &runtime_call, Label::kNear);
+
+    __ movp(rbx, FieldOperand(rax, HeapObject::kMapOffset));
+    __ movp(rcx, FieldOperand(rdx, HeapObject::kMapOffset));
     __ testb(FieldOperand(rbx, Map::kBitFieldOffset),
              Immediate(1 << Map::kIsUndetectable));
-    __ j(zero, &return_unequal, Label::kNear);
+    __ j(not_zero, &undetectable);
     __ testb(FieldOperand(rcx, Map::kBitFieldOffset),
              Immediate(1 << Map::kIsUndetectable));
-    __ j(zero, &return_unequal, Label::kNear);
-    // The objects are both undetectable, so they both compare as the value
-    // undefined, and are equal.
-    __ Set(rax, EQUAL);
+    __ j(not_zero, &return_unequal);
+
+    __ CmpInstanceType(rbx, FIRST_JS_RECEIVER_TYPE);
+    __ j(below, &runtime_call, Label::kNear);
+    __ CmpInstanceType(rcx, FIRST_JS_RECEIVER_TYPE);
+    __ j(below, &runtime_call, Label::kNear);
+
     __ bind(&return_unequal);
-    // Return non-equal by returning the non-zero object pointer in rax,
-    // or return equal if we fell through to here.
+    // Return non-equal by returning the non-zero object pointer in rax.
+    __ ret(0);
+
+    __ bind(&undetectable);
+    __ testb(FieldOperand(rcx, Map::kBitFieldOffset),
+             Immediate(1 << Map::kIsUndetectable));
+    __ j(zero, &return_unequal);
+    __ Set(rax, EQUAL);
     __ ret(0);
   }
   __ bind(&runtime_call);
@@ -3957,11 +3771,8 @@ void RecordWriteStub::GenerateIncremental(MacroAssembler* masm, Mode mode) {
                            regs_.scratch0(),
                            &dont_need_remembered_set);
 
-    __ CheckPageFlag(regs_.object(),
-                     regs_.scratch0(),
-                     1 << MemoryChunk::SCAN_ON_SCAVENGE,
-                     not_zero,
-                     &dont_need_remembered_set);
+    __ JumpIfInNewSpace(regs_.object(), regs_.scratch0(),
+                        &dont_need_remembered_set);
 
     // First notify the incremental marker if necessary, then update the
     // remembered set.
@@ -4911,6 +4722,275 @@ void InternalArrayConstructorStub::Generate(MacroAssembler* masm) {
 }
 
 
+void FastNewRestParameterStub::Generate(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  //  -- rdi    : function
+  //  -- rsi    : context
+  //  -- rbp    : frame pointer
+  //  -- rsp[0] : return address
+  // -----------------------------------
+  __ AssertFunction(rdi);
+
+  // For Ignition we need to skip all possible handler/stub frames until
+  // we reach the JavaScript frame for the function (similar to what the
+  // runtime fallback implementation does). So make rdx point to that
+  // JavaScript frame.
+  {
+    Label loop, loop_entry;
+    __ movp(rdx, rbp);
+    __ jmp(&loop_entry, Label::kNear);
+    __ bind(&loop);
+    __ movp(rdx, Operand(rdx, StandardFrameConstants::kCallerFPOffset));
+    __ bind(&loop_entry);
+    __ cmpp(rdi, Operand(rdx, StandardFrameConstants::kMarkerOffset));
+    __ j(not_equal, &loop);
+  }
+
+  // Check if we have rest parameters (only possible if we have an
+  // arguments adaptor frame below the function frame).
+  Label no_rest_parameters;
+  __ movp(rbx, Operand(rdx, StandardFrameConstants::kCallerFPOffset));
+  __ Cmp(Operand(rbx, StandardFrameConstants::kContextOffset),
+         Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR));
+  __ j(not_equal, &no_rest_parameters, Label::kNear);
+
+  // Check if the arguments adaptor frame contains more arguments than
+  // specified by the function's internal formal parameter count.
+  Label rest_parameters;
+  __ movp(rcx, FieldOperand(rdi, JSFunction::kSharedFunctionInfoOffset));
+  __ LoadSharedFunctionInfoSpecialField(
+      rcx, rcx, SharedFunctionInfo::kFormalParameterCountOffset);
+  __ SmiToInteger32(
+      rax, Operand(rbx, ArgumentsAdaptorFrameConstants::kLengthOffset));
+  __ subl(rax, rcx);
+  __ j(greater, &rest_parameters);
+
+  // Return an empty rest parameter array.
+  __ bind(&no_rest_parameters);
+  {
+    // ----------- S t a t e -------------
+    //  -- rsi    : context
+    //  -- rsp[0] : return address
+    // -----------------------------------
+
+    // Allocate an empty rest parameter array.
+    Label allocate, done_allocate;
+    __ Allocate(JSArray::kSize, rax, rdx, rcx, &allocate, TAG_OBJECT);
+    __ bind(&done_allocate);
+
+    // Setup the rest parameter array in rax.
+    __ LoadNativeContextSlot(Context::JS_ARRAY_FAST_ELEMENTS_MAP_INDEX, rcx);
+    __ movp(FieldOperand(rax, JSArray::kMapOffset), rcx);
+    __ LoadRoot(rcx, Heap::kEmptyFixedArrayRootIndex);
+    __ movp(FieldOperand(rax, JSArray::kPropertiesOffset), rcx);
+    __ movp(FieldOperand(rax, JSArray::kElementsOffset), rcx);
+    __ movp(FieldOperand(rax, JSArray::kLengthOffset), Immediate(0));
+    STATIC_ASSERT(JSArray::kSize == 4 * kPointerSize);
+    __ Ret();
+
+    // Fall back to %AllocateInNewSpace.
+    __ bind(&allocate);
+    {
+      FrameScope scope(masm, StackFrame::INTERNAL);
+      __ Push(Smi::FromInt(JSArray::kSize));
+      __ CallRuntime(Runtime::kAllocateInNewSpace);
+    }
+    __ jmp(&done_allocate);
+  }
+
+  __ bind(&rest_parameters);
+  {
+    // Compute the pointer to the first rest parameter (skippping the receiver).
+    __ leap(rbx, Operand(rbx, rax, times_pointer_size,
+                         StandardFrameConstants::kCallerSPOffset -
+                             1 * kPointerSize));
+
+    // ----------- S t a t e -------------
+    //  -- rsi    : context
+    //  -- rax    : number of rest parameters
+    //  -- rbx    : pointer to first rest parameters
+    //  -- rsp[0] : return address
+    // -----------------------------------
+
+    // Allocate space for the rest parameter array plus the backing store.
+    Label allocate, done_allocate;
+    __ leal(rcx, Operand(rax, times_pointer_size,
+                         JSArray::kSize + FixedArray::kHeaderSize));
+    __ Allocate(rcx, rdx, rdi, no_reg, &allocate, TAG_OBJECT);
+    __ bind(&done_allocate);
+
+    // Compute the arguments.length in rdi.
+    __ Integer32ToSmi(rdi, rax);
+
+    // Setup the elements array in rdx.
+    __ LoadRoot(rcx, Heap::kFixedArrayMapRootIndex);
+    __ movp(FieldOperand(rdx, FixedArray::kMapOffset), rcx);
+    __ movp(FieldOperand(rdx, FixedArray::kLengthOffset), rdi);
+    {
+      Label loop, done_loop;
+      __ Set(rcx, 0);
+      __ bind(&loop);
+      __ cmpl(rcx, rax);
+      __ j(equal, &done_loop, Label::kNear);
+      __ movp(kScratchRegister, Operand(rbx, 0 * kPointerSize));
+      __ movp(
+          FieldOperand(rdx, rcx, times_pointer_size, FixedArray::kHeaderSize),
+          kScratchRegister);
+      __ subp(rbx, Immediate(1 * kPointerSize));
+      __ addl(rcx, Immediate(1));
+      __ jmp(&loop);
+      __ bind(&done_loop);
+    }
+
+    // Setup the rest parameter array in rax.
+    __ leap(rax,
+            Operand(rdx, rax, times_pointer_size, FixedArray::kHeaderSize));
+    __ LoadNativeContextSlot(Context::JS_ARRAY_FAST_ELEMENTS_MAP_INDEX, rcx);
+    __ movp(FieldOperand(rax, JSArray::kMapOffset), rcx);
+    __ LoadRoot(rcx, Heap::kEmptyFixedArrayRootIndex);
+    __ movp(FieldOperand(rax, JSArray::kPropertiesOffset), rcx);
+    __ movp(FieldOperand(rax, JSArray::kElementsOffset), rdx);
+    __ movp(FieldOperand(rax, JSArray::kLengthOffset), rdi);
+    STATIC_ASSERT(JSArray::kSize == 4 * kPointerSize);
+    __ Ret();
+
+    // Fall back to %AllocateInNewSpace.
+    __ bind(&allocate);
+    {
+      FrameScope scope(masm, StackFrame::INTERNAL);
+      __ Integer32ToSmi(rax, rax);
+      __ Integer32ToSmi(rcx, rcx);
+      __ Push(rax);
+      __ Push(rbx);
+      __ Push(rcx);
+      __ CallRuntime(Runtime::kAllocateInNewSpace);
+      __ movp(rdx, rax);
+      __ Pop(rbx);
+      __ Pop(rax);
+      __ SmiToInteger32(rax, rax);
+    }
+    __ jmp(&done_allocate);
+  }
+}
+
+
+void FastNewStrictArgumentsStub::Generate(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  //  -- rdi    : function
+  //  -- rsi    : context
+  //  -- rbp    : frame pointer
+  //  -- rsp[0] : return address
+  // -----------------------------------
+  __ AssertFunction(rdi);
+
+  // For Ignition we need to skip all possible handler/stub frames until
+  // we reach the JavaScript frame for the function (similar to what the
+  // runtime fallback implementation does). So make rdx point to that
+  // JavaScript frame.
+  {
+    Label loop, loop_entry;
+    __ movp(rdx, rbp);
+    __ jmp(&loop_entry, Label::kNear);
+    __ bind(&loop);
+    __ movp(rdx, Operand(rdx, StandardFrameConstants::kCallerFPOffset));
+    __ bind(&loop_entry);
+    __ cmpp(rdi, Operand(rdx, StandardFrameConstants::kMarkerOffset));
+    __ j(not_equal, &loop);
+  }
+
+  // Check if we have an arguments adaptor frame below the function frame.
+  Label arguments_adaptor, arguments_done;
+  __ movp(rbx, Operand(rdx, StandardFrameConstants::kCallerFPOffset));
+  __ Cmp(Operand(rbx, StandardFrameConstants::kContextOffset),
+         Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR));
+  __ j(equal, &arguments_adaptor, Label::kNear);
+  {
+    __ movp(rax, FieldOperand(rdi, JSFunction::kSharedFunctionInfoOffset));
+    __ LoadSharedFunctionInfoSpecialField(
+        rax, rax, SharedFunctionInfo::kFormalParameterCountOffset);
+    __ leap(rbx, Operand(rdx, rax, times_pointer_size,
+                         StandardFrameConstants::kCallerSPOffset -
+                             1 * kPointerSize));
+  }
+  __ jmp(&arguments_done, Label::kNear);
+  __ bind(&arguments_adaptor);
+  {
+    __ SmiToInteger32(
+        rax, Operand(rbx, ArgumentsAdaptorFrameConstants::kLengthOffset));
+    __ leap(rbx, Operand(rbx, rax, times_pointer_size,
+                         StandardFrameConstants::kCallerSPOffset -
+                             1 * kPointerSize));
+  }
+  __ bind(&arguments_done);
+
+  // ----------- S t a t e -------------
+  //  -- rax    : number of arguments
+  //  -- rbx    : pointer to the first argument
+  //  -- rsi    : context
+  //  -- rsp[0] : return address
+  // -----------------------------------
+
+  // Allocate space for the strict arguments object plus the backing store.
+  Label allocate, done_allocate;
+  __ leal(rcx, Operand(rax, times_pointer_size, JSStrictArgumentsObject::kSize +
+                                                    FixedArray::kHeaderSize));
+  __ Allocate(rcx, rdx, rdi, no_reg, &allocate, TAG_OBJECT);
+  __ bind(&done_allocate);
+
+  // Compute the arguments.length in rdi.
+  __ Integer32ToSmi(rdi, rax);
+
+  // Setup the elements array in rdx.
+  __ LoadRoot(rcx, Heap::kFixedArrayMapRootIndex);
+  __ movp(FieldOperand(rdx, FixedArray::kMapOffset), rcx);
+  __ movp(FieldOperand(rdx, FixedArray::kLengthOffset), rdi);
+  {
+    Label loop, done_loop;
+    __ Set(rcx, 0);
+    __ bind(&loop);
+    __ cmpl(rcx, rax);
+    __ j(equal, &done_loop, Label::kNear);
+    __ movp(kScratchRegister, Operand(rbx, 0 * kPointerSize));
+    __ movp(
+        FieldOperand(rdx, rcx, times_pointer_size, FixedArray::kHeaderSize),
+        kScratchRegister);
+    __ subp(rbx, Immediate(1 * kPointerSize));
+    __ addl(rcx, Immediate(1));
+    __ jmp(&loop);
+    __ bind(&done_loop);
+  }
+
+  // Setup the strict arguments object in rax.
+  __ leap(rax,
+          Operand(rdx, rax, times_pointer_size, FixedArray::kHeaderSize));
+  __ LoadNativeContextSlot(Context::STRICT_ARGUMENTS_MAP_INDEX, rcx);
+  __ movp(FieldOperand(rax, JSStrictArgumentsObject::kMapOffset), rcx);
+  __ LoadRoot(rcx, Heap::kEmptyFixedArrayRootIndex);
+  __ movp(FieldOperand(rax, JSStrictArgumentsObject::kPropertiesOffset), rcx);
+  __ movp(FieldOperand(rax, JSStrictArgumentsObject::kElementsOffset), rdx);
+  __ movp(FieldOperand(rax, JSStrictArgumentsObject::kLengthOffset), rdi);
+  STATIC_ASSERT(JSStrictArgumentsObject::kSize == 4 * kPointerSize);
+  __ Ret();
+
+  // Fall back to %AllocateInNewSpace.
+  __ bind(&allocate);
+  {
+    FrameScope scope(masm, StackFrame::INTERNAL);
+    __ Integer32ToSmi(rax, rax);
+    __ Integer32ToSmi(rcx, rcx);
+    __ Push(rax);
+    __ Push(rbx);
+    __ Push(rcx);
+    __ CallRuntime(Runtime::kAllocateInNewSpace);
+    __ movp(rdx, rax);
+    __ Pop(rbx);
+    __ Pop(rax);
+    __ SmiToInteger32(rax, rax);
+  }
+  __ jmp(&done_allocate);
+}
+
+
 void LoadGlobalViaContextStub::Generate(MacroAssembler* masm) {
   Register context_reg = rsi;
   Register slot_reg = rbx;
@@ -5249,11 +5329,10 @@ static void CallApiFunctionAndReturn(MacroAssembler* masm,
   __ jmp(&leave_exit_frame);
 }
 
-
 static void CallApiFunctionStubHelper(MacroAssembler* masm,
                                       const ParameterCount& argc,
                                       bool return_first_arg,
-                                      bool call_data_undefined) {
+                                      bool call_data_undefined, bool is_lazy) {
   // ----------- S t a t e -------------
   //  -- rdi                 : callee
   //  -- rbx                 : call_data
@@ -5316,8 +5395,10 @@ static void CallApiFunctionStubHelper(MacroAssembler* masm,
   // Push return address back on stack.
   __ PushReturnAddressFrom(return_address);
 
-  // load context from callee
-  __ movp(context, FieldOperand(callee, JSFunction::kContextOffset));
+  if (!is_lazy) {
+    // load context from callee
+    __ movp(context, FieldOperand(callee, JSFunction::kContextOffset));
+  }
 
   // Allocate the v8::Arguments structure in the arguments' space since
   // it's not controlled by GC.
@@ -5390,7 +5471,7 @@ static void CallApiFunctionStubHelper(MacroAssembler* masm,
 void CallApiFunctionStub::Generate(MacroAssembler* masm) {
   bool call_data_undefined = this->call_data_undefined();
   CallApiFunctionStubHelper(masm, ParameterCount(rax), false,
-                            call_data_undefined);
+                            call_data_undefined, false);
 }
 
 
@@ -5398,8 +5479,9 @@ void CallApiAccessorStub::Generate(MacroAssembler* masm) {
   bool is_store = this->is_store();
   int argc = this->argc();
   bool call_data_undefined = this->call_data_undefined();
+  bool is_lazy = this->is_lazy();
   CallApiFunctionStubHelper(masm, ParameterCount(argc), is_store,
-                            call_data_undefined);
+                            call_data_undefined, is_lazy);
 }
 
 

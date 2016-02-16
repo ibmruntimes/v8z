@@ -510,45 +510,55 @@ static void EmitCheckForTwoHeapNumbers(MacroAssembler* masm,
 
 // Fast negative check for internalized-to-internalized equality.
 static void EmitCheckForInternalizedStringsOrObjects(MacroAssembler* masm,
-                                                     Register lhs,
-                                                     Register rhs,
+                                                     Register lhs, Register rhs,
                                                      Label* possible_strings,
-                                                     Label* not_both_strings) {
+                                                     Label* runtime_call) {
   DCHECK((lhs.is(a0) && rhs.is(a1)) ||
          (lhs.is(a1) && rhs.is(a0)));
 
   // a2 is object type of rhs.
-  Label object_test;
+  Label object_test, return_unequal, undetectable;
   STATIC_ASSERT(kInternalizedTag == 0 && kStringTag == 0);
   __ And(at, a2, Operand(kIsNotStringMask));
   __ Branch(&object_test, ne, at, Operand(zero_reg));
   __ And(at, a2, Operand(kIsNotInternalizedMask));
   __ Branch(possible_strings, ne, at, Operand(zero_reg));
   __ GetObjectType(rhs, a3, a3);
-  __ Branch(not_both_strings, ge, a3, Operand(FIRST_NONSTRING_TYPE));
+  __ Branch(runtime_call, ge, a3, Operand(FIRST_NONSTRING_TYPE));
   __ And(at, a3, Operand(kIsNotInternalizedMask));
   __ Branch(possible_strings, ne, at, Operand(zero_reg));
 
-  // Both are internalized strings. We already checked they weren't the same
-  // pointer so they are not equal.
+  // Both are internalized. We already checked they weren't the same pointer so
+  // they are not equal. Return non-equal by returning the non-zero object
+  // pointer in v0.
   __ Ret(USE_DELAY_SLOT);
-  __ li(v0, Operand(1));   // Non-zero indicates not equal.
+  __ mov(v0, a0);  // In delay slot.
 
   __ bind(&object_test);
-  __ Branch(not_both_strings, lt, a2, Operand(FIRST_JS_RECEIVER_TYPE));
-  __ GetObjectType(rhs, a2, a3);
-  __ Branch(not_both_strings, lt, a3, Operand(FIRST_JS_RECEIVER_TYPE));
+  __ ld(a2, FieldMemOperand(lhs, HeapObject::kMapOffset));
+  __ ld(a3, FieldMemOperand(rhs, HeapObject::kMapOffset));
+  __ lbu(t0, FieldMemOperand(a2, Map::kBitFieldOffset));
+  __ lbu(t1, FieldMemOperand(a3, Map::kBitFieldOffset));
+  __ And(at, t0, Operand(1 << Map::kIsUndetectable));
+  __ Branch(&undetectable, ne, at, Operand(zero_reg));
+  __ And(at, t1, Operand(1 << Map::kIsUndetectable));
+  __ Branch(&return_unequal, ne, at, Operand(zero_reg));
 
-  // If both objects are undetectable, they are equal.  Otherwise, they
-  // are not equal, since they are different objects and an object is not
-  // equal to undefined.
-  __ ld(a3, FieldMemOperand(lhs, HeapObject::kMapOffset));
-  __ lbu(a2, FieldMemOperand(a2, Map::kBitFieldOffset));
-  __ lbu(a3, FieldMemOperand(a3, Map::kBitFieldOffset));
-  __ and_(a0, a2, a3);
-  __ And(a0, a0, Operand(1 << Map::kIsUndetectable));
+  __ GetInstanceType(a2, a2);
+  __ Branch(runtime_call, lt, a2, Operand(FIRST_JS_RECEIVER_TYPE));
+  __ GetInstanceType(a3, a3);
+  __ Branch(runtime_call, lt, a3, Operand(FIRST_JS_RECEIVER_TYPE));
+
+  __ bind(&return_unequal);
+  // Return non-equal by returning the non-zero object pointer in v0.
   __ Ret(USE_DELAY_SLOT);
-  __ xori(v0, a0, 1 << Map::kIsUndetectable);
+  __ mov(v0, a0);  // In delay slot.
+
+  __ bind(&undetectable);
+  __ And(at, t1, Operand(1 << Map::kIsUndetectable));
+  __ Branch(&return_unequal, eq, at, Operand(zero_reg));
+  __ Ret(USE_DELAY_SLOT);
+  __ li(v0, Operand(EQUAL));  // In delay slot.
 }
 
 
@@ -971,7 +981,6 @@ void MathPowStub::Generate(MacroAssembler* masm) {
   __ cvt_d_w(double_exponent, single_scratch);
 
   // Returning or bailing out.
-  Counters* counters = isolate()->counters();
   if (exponent_type() == ON_STACK) {
     // The arguments are still on the stack.
     __ bind(&call_runtime);
@@ -985,7 +994,6 @@ void MathPowStub::Generate(MacroAssembler* masm) {
     __ sdc1(double_result,
             FieldMemOperand(heapnumber, HeapNumber::kValueOffset));
     DCHECK(heapnumber.is(v0));
-    __ IncrementCounter(counters->math_pow(), 1, scratch, scratch2);
     __ DropAndRet(2);
   } else {
     __ push(ra);
@@ -1001,7 +1009,6 @@ void MathPowStub::Generate(MacroAssembler* masm) {
     __ MovFromFloatResult(double_result);
 
     __ bind(&done);
-    __ IncrementCounter(counters->math_pow(), 1, scratch, scratch2);
     __ Ret();
   }
 }
@@ -1123,20 +1130,21 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // we can store the address on the stack to be able to find it again and
   // we never have to restore it, because it will not change.
   { Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm);
-    // This branch-and-link sequence is needed to find the current PC on mips,
-    // saved to the ra register.
-    // Use masm-> here instead of the double-underscore macro since extra
-    // coverage code can interfere with the proper calculation of ra.
+    int kNumInstructionsToJump = 4;
     Label find_ra;
-    __ bal(&find_ra);  // bal exposes branch delay slot.
-    __ nop();
-    __ bind(&find_ra);
-
     // Adjust the value in ra to point to the correct return location, 2nd
     // instruction past the real call into C code (the jalr(t9)), and push it.
     // This is the return address of the exit frame.
-    const int kNumInstructionsToJump = 5;
-    __ Daddu(ra, ra, kNumInstructionsToJump * kInt32Size);
+    if (kArchVariant >= kMips64r6) {
+      __ addiupc(ra, kNumInstructionsToJump + 1);
+    } else {
+      // This branch-and-link sequence is needed to find the current PC on mips
+      // before r6, saved to the ra register.
+      __ bal(&find_ra);  // bal exposes branch delay slot.
+      __ Daddu(ra, ra, kNumInstructionsToJump * Instruction::kInstrSize);
+    }
+    __ bind(&find_ra);
+
     // This spot was reserved in EnterExitFrame.
     __ sd(ra, MemOperand(sp, result_stack_size));
     // Stack space reservation moved to the branch delay slot below.
@@ -1579,61 +1587,6 @@ void FunctionPrototypeStub::Generate(MacroAssembler* masm) {
 }
 
 
-void ArgumentsAccessStub::GenerateReadElement(MacroAssembler* masm) {
-  // The displacement is the offset of the last parameter (if any)
-  // relative to the frame pointer.
-  const int kDisplacement =
-      StandardFrameConstants::kCallerSPOffset - kPointerSize;
-  DCHECK(a1.is(ArgumentsAccessReadDescriptor::index()));
-  DCHECK(a0.is(ArgumentsAccessReadDescriptor::parameter_count()));
-
-  // Check that the key is a smiGenerateReadElement.
-  Label slow;
-  __ JumpIfNotSmi(a1, &slow);
-
-  // Check if the calling frame is an arguments adaptor frame.
-  Label adaptor;
-  __ ld(a2, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
-  __ ld(a3, MemOperand(a2, StandardFrameConstants::kContextOffset));
-  __ Branch(&adaptor,
-            eq,
-            a3,
-            Operand(Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR)));
-
-  // Check index (a1) against formal parameters count limit passed in
-  // through register a0. Use unsigned comparison to get negative
-  // check for free.
-  __ Branch(&slow, hs, a1, Operand(a0));
-
-  // Read the argument from the stack and return it.
-  __ dsubu(a3, a0, a1);
-  __ SmiScale(a7, a3, kPointerSizeLog2);
-  __ Daddu(a3, fp, Operand(a7));
-  __ Ret(USE_DELAY_SLOT);
-  __ ld(v0, MemOperand(a3, kDisplacement));
-
-  // Arguments adaptor case: Check index (a1) against actual arguments
-  // limit found in the arguments adaptor frame. Use unsigned
-  // comparison to get negative check for free.
-  __ bind(&adaptor);
-  __ ld(a0, MemOperand(a2, ArgumentsAdaptorFrameConstants::kLengthOffset));
-  __ Branch(&slow, Ugreater_equal, a1, Operand(a0));
-
-  // Read the argument from the adaptor frame and return it.
-  __ dsubu(a3, a0, a1);
-  __ SmiScale(a7, a3, kPointerSizeLog2);
-  __ Daddu(a3, a2, Operand(a7));
-  __ Ret(USE_DELAY_SLOT);
-  __ ld(v0, MemOperand(a3, kDisplacement));
-
-  // Slow-case: Handle non-smi or out-of-bounds access to arguments
-  // by calling the runtime system.
-  __ bind(&slow);
-  __ push(a1);
-  __ TailCallRuntime(Runtime::kArguments);
-}
-
-
 void ArgumentsAccessStub::GenerateNewSloppySlow(MacroAssembler* masm) {
   // a1 : function
   // a2 : number of parameters (tagged)
@@ -1721,7 +1674,7 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
   __ Daddu(t1, t1, Operand(FixedArray::kHeaderSize));
 
   // 3. Arguments object.
-  __ Daddu(t1, t1, Operand(Heap::kSloppyArgumentsObjectSize));
+  __ Daddu(t1, t1, Operand(JSSloppyArgumentsObject::kSize));
 
   // Do the allocation of all three objects in one go.
   __ Allocate(t1, v0, t1, a4, &runtime, TAG_OBJECT);
@@ -1754,23 +1707,17 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
   __ sd(t1, FieldMemOperand(v0, JSObject::kElementsOffset));
 
   // Set up the callee in-object property.
-  STATIC_ASSERT(Heap::kArgumentsCalleeIndex == 1);
   __ AssertNotSmi(a1);
-  const int kCalleeOffset = JSObject::kHeaderSize +
-      Heap::kArgumentsCalleeIndex * kPointerSize;
-  __ sd(a1, FieldMemOperand(v0, kCalleeOffset));
+  __ sd(a1, FieldMemOperand(v0, JSSloppyArgumentsObject::kCalleeOffset));
 
   // Use the length (smi tagged) and set that as an in-object property too.
   __ AssertSmi(a5);
-  STATIC_ASSERT(Heap::kArgumentsLengthIndex == 0);
-  const int kLengthOffset = JSObject::kHeaderSize +
-      Heap::kArgumentsLengthIndex * kPointerSize;
-  __ sd(a5, FieldMemOperand(v0, kLengthOffset));
+  __ sd(a5, FieldMemOperand(v0, JSSloppyArgumentsObject::kLengthOffset));
 
   // Set up the elements pointer in the allocated arguments object.
   // If we allocated a parameter map, a4 will point there, otherwise
   // it will point to the backing store.
-  __ Daddu(a4, v0, Operand(Heap::kSloppyArgumentsObjectSize));
+  __ Daddu(a4, v0, Operand(JSSloppyArgumentsObject::kSize));
   __ sd(a4, FieldMemOperand(v0, JSObject::kElementsOffset));
 
   // v0 = address of new object (tagged)
@@ -1836,7 +1783,7 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
   __ Branch(&parameters_loop, ne, a5, Operand(Smi::FromInt(0)));
 
   // Restore t1 = argument count (tagged).
-  __ ld(a5, FieldMemOperand(v0, kLengthOffset));
+  __ ld(a5, FieldMemOperand(v0, JSSloppyArgumentsObject::kLengthOffset));
 
   __ bind(&skip_parameter_map);
   // v0 = address of new object (tagged)
@@ -1896,122 +1843,6 @@ void LoadIndexedInterceptorStub::Generate(MacroAssembler* masm) {
   __ bind(&slow);
   PropertyAccessCompiler::TailCallBuiltin(
       masm, PropertyAccessCompiler::MissBuiltin(Code::KEYED_LOAD_IC));
-}
-
-
-void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
-  // a1 : function
-  // a2 : number of parameters (tagged)
-  // a3 : parameters pointer
-
-  DCHECK(a1.is(ArgumentsAccessNewDescriptor::function()));
-  DCHECK(a2.is(ArgumentsAccessNewDescriptor::parameter_count()));
-  DCHECK(a3.is(ArgumentsAccessNewDescriptor::parameter_pointer()));
-
-  // Check if the calling frame is an arguments adaptor frame.
-  Label try_allocate, runtime;
-  __ ld(a4, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
-  __ ld(a0, MemOperand(a4, StandardFrameConstants::kContextOffset));
-  __ Branch(&try_allocate, ne, a0,
-            Operand(Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR)));
-
-  // Patch the arguments.length and the parameters pointer.
-  __ ld(a2, MemOperand(a4, ArgumentsAdaptorFrameConstants::kLengthOffset));
-  __ SmiScale(at, a2, kPointerSizeLog2);
-  __ Daddu(a4, a4, Operand(at));
-  __ Daddu(a3, a4, Operand(StandardFrameConstants::kCallerSPOffset));
-
-  // Try the new space allocation. Start out with computing the size
-  // of the arguments object and the elements array in words.
-  Label add_arguments_object;
-  __ bind(&try_allocate);
-  __ SmiUntag(t1, a2);
-  __ Branch(&add_arguments_object, eq, a2, Operand(zero_reg));
-
-  __ Daddu(t1, t1, Operand(FixedArray::kHeaderSize / kPointerSize));
-  __ bind(&add_arguments_object);
-  __ Daddu(t1, t1, Operand(Heap::kStrictArgumentsObjectSize / kPointerSize));
-
-  // Do the allocation of both objects in one go.
-  __ Allocate(t1, v0, a4, a5, &runtime,
-              static_cast<AllocationFlags>(TAG_OBJECT | SIZE_IN_WORDS));
-
-  // Get the arguments boilerplate from the current native context.
-  __ LoadNativeContextSlot(Context::STRICT_ARGUMENTS_MAP_INDEX, a4);
-
-  __ sd(a4, FieldMemOperand(v0, JSObject::kMapOffset));
-  __ LoadRoot(a5, Heap::kEmptyFixedArrayRootIndex);
-  __ sd(a5, FieldMemOperand(v0, JSObject::kPropertiesOffset));
-  __ sd(a5, FieldMemOperand(v0, JSObject::kElementsOffset));
-
-  // Get the length (smi tagged) and set that as an in-object property too.
-  STATIC_ASSERT(Heap::kArgumentsLengthIndex == 0);
-  __ AssertSmi(a2);
-  __ sd(a2,
-        FieldMemOperand(v0, JSObject::kHeaderSize +
-                                Heap::kArgumentsLengthIndex * kPointerSize));
-
-  Label done;
-  __ Branch(&done, eq, a2, Operand(zero_reg));
-
-  // Set up the elements pointer in the allocated arguments object and
-  // initialize the header in the elements fixed array.
-  __ Daddu(a4, v0, Operand(Heap::kStrictArgumentsObjectSize));
-  __ sd(a4, FieldMemOperand(v0, JSObject::kElementsOffset));
-  __ LoadRoot(a5, Heap::kFixedArrayMapRootIndex);
-  __ sd(a5, FieldMemOperand(a4, FixedArray::kMapOffset));
-  __ sd(a2, FieldMemOperand(a4, FixedArray::kLengthOffset));
-  __ SmiUntag(a2);
-
-  // Copy the fixed array slots.
-  Label loop;
-  // Set up a4 to point to the first array slot.
-  __ Daddu(a4, a4, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
-  __ bind(&loop);
-  // Pre-decrement a3 with kPointerSize on each iteration.
-  // Pre-decrement in order to skip receiver.
-  __ Daddu(a3, a3, Operand(-kPointerSize));
-  __ ld(a5, MemOperand(a3));
-  // Post-increment a4 with kPointerSize on each iteration.
-  __ sd(a5, MemOperand(a4));
-  __ Daddu(a4, a4, Operand(kPointerSize));
-  __ Dsubu(a2, a2, Operand(1));
-  __ Branch(&loop, ne, a2, Operand(zero_reg));
-
-  // Return.
-  __ bind(&done);
-  __ Ret();
-
-  // Do the runtime call to allocate the arguments object.
-  __ bind(&runtime);
-  __ Push(a1, a3, a2);
-  __ TailCallRuntime(Runtime::kNewStrictArguments);
-}
-
-
-void RestParamAccessStub::GenerateNew(MacroAssembler* masm) {
-  // a2 : number of parameters (tagged)
-  // a3 : parameters pointer
-  // a4 : rest parameter index (tagged)
-  // Check if the calling frame is an arguments adaptor frame.
-
-  Label runtime;
-  __ ld(a0, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
-  __ ld(a5, MemOperand(a0, StandardFrameConstants::kContextOffset));
-  __ Branch(&runtime, ne, a5,
-            Operand(Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR)));
-
-  // Patch the arguments.length and the parameters pointer.
-  __ ld(a2, MemOperand(a0, ArgumentsAdaptorFrameConstants::kLengthOffset));
-  __ SmiScale(at, a2, kPointerSizeLog2);
-
-  __ Daddu(a3, a0, Operand(at));
-  __ Daddu(a3, a3, Operand(StandardFrameConstants::kCallerSPOffset));
-
-  // Do the runtime call to allocate the arguments object.
-  __ bind(&runtime);
-  __ Push(a2, a3, a4);
-  __ TailCallRuntime(Runtime::kNewRestParam);
 }
 
 
@@ -4206,11 +4037,8 @@ void RecordWriteStub::GenerateIncremental(MacroAssembler* masm, Mode mode) {
                            regs_.scratch0(),
                            &dont_need_remembered_set);
 
-    __ CheckPageFlag(regs_.object(),
-                     regs_.scratch0(),
-                     1 << MemoryChunk::SCAN_ON_SCAVENGE,
-                     ne,
-                     &dont_need_remembered_set);
+    __ JumpIfInNewSpace(regs_.object(), regs_.scratch0(),
+                        &dont_need_remembered_set);
 
     // First notify the incremental marker if necessary, then update the
     // remembered set.
@@ -5184,6 +5012,262 @@ void InternalArrayConstructorStub::Generate(MacroAssembler* masm) {
 }
 
 
+void FastNewRestParameterStub::Generate(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  //  -- a1 : function
+  //  -- cp : context
+  //  -- fp : frame pointer
+  //  -- ra : return address
+  // -----------------------------------
+  __ AssertFunction(a1);
+
+  // For Ignition we need to skip all possible handler/stub frames until
+  // we reach the JavaScript frame for the function (similar to what the
+  // runtime fallback implementation does). So make a2 point to that
+  // JavaScript frame.
+  {
+    Label loop, loop_entry;
+    __ Branch(USE_DELAY_SLOT, &loop_entry);
+    __ mov(a2, fp);  // In delay slot.
+    __ bind(&loop);
+    __ ld(a2, MemOperand(a2, StandardFrameConstants::kCallerFPOffset));
+    __ bind(&loop_entry);
+    __ ld(a3, MemOperand(a2, StandardFrameConstants::kMarkerOffset));
+    __ Branch(&loop, ne, a1, Operand(a3));
+  }
+
+  // Check if we have rest parameters (only possible if we have an
+  // arguments adaptor frame below the function frame).
+  Label no_rest_parameters;
+  __ ld(a2, MemOperand(a2, StandardFrameConstants::kCallerFPOffset));
+  __ ld(a3, MemOperand(a2, StandardFrameConstants::kContextOffset));
+  __ Branch(&no_rest_parameters, ne, a3,
+            Operand(Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR)));
+
+  // Check if the arguments adaptor frame contains more arguments than
+  // specified by the function's internal formal parameter count.
+  Label rest_parameters;
+  __ SmiLoadUntag(
+      a0, MemOperand(a2, ArgumentsAdaptorFrameConstants::kLengthOffset));
+  __ ld(a1, FieldMemOperand(a1, JSFunction::kSharedFunctionInfoOffset));
+  __ lw(a1,
+        FieldMemOperand(a1, SharedFunctionInfo::kFormalParameterCountOffset));
+  __ Dsubu(a0, a0, Operand(a1));
+  __ Branch(&rest_parameters, gt, a0, Operand(zero_reg));
+
+  // Return an empty rest parameter array.
+  __ bind(&no_rest_parameters);
+  {
+    // ----------- S t a t e -------------
+    //  -- cp : context
+    //  -- ra : return address
+    // -----------------------------------
+
+    // Allocate an empty rest parameter array.
+    Label allocate, done_allocate;
+    __ Allocate(JSArray::kSize, v0, a0, a1, &allocate, TAG_OBJECT);
+    __ bind(&done_allocate);
+
+    // Setup the rest parameter array in v0.
+    __ LoadNativeContextSlot(Context::JS_ARRAY_FAST_ELEMENTS_MAP_INDEX, a1);
+    __ sd(a1, FieldMemOperand(v0, JSArray::kMapOffset));
+    __ LoadRoot(a1, Heap::kEmptyFixedArrayRootIndex);
+    __ sd(a1, FieldMemOperand(v0, JSArray::kPropertiesOffset));
+    __ sd(a1, FieldMemOperand(v0, JSArray::kElementsOffset));
+    __ Move(a1, Smi::FromInt(0));
+    __ Ret(USE_DELAY_SLOT);
+    __ sd(a1, FieldMemOperand(v0, JSArray::kLengthOffset));  // In delay slot
+    STATIC_ASSERT(JSArray::kSize == 4 * kPointerSize);
+
+    // Fall back to %AllocateInNewSpace.
+    __ bind(&allocate);
+    {
+      FrameScope scope(masm, StackFrame::INTERNAL);
+      __ Push(Smi::FromInt(JSArray::kSize));
+      __ CallRuntime(Runtime::kAllocateInNewSpace);
+    }
+    __ jmp(&done_allocate);
+  }
+
+  __ bind(&rest_parameters);
+  {
+    // Compute the pointer to the first rest parameter (skippping the receiver).
+    __ Dlsa(a2, a2, a0, kPointerSizeLog2);
+    __ Daddu(a2, a2, Operand(StandardFrameConstants::kCallerSPOffset -
+                             1 * kPointerSize));
+
+    // ----------- S t a t e -------------
+    //  -- cp : context
+    //  -- a0 : number of rest parameters
+    //  -- a2 : pointer to first rest parameters
+    //  -- ra : return address
+    // -----------------------------------
+
+    // Allocate space for the rest parameter array plus the backing store.
+    Label allocate, done_allocate;
+    __ li(a1, Operand(JSArray::kSize + FixedArray::kHeaderSize));
+    __ Dlsa(a1, a1, a0, kPointerSizeLog2);
+    __ Allocate(a1, v0, a3, a4, &allocate, TAG_OBJECT);
+    __ bind(&done_allocate);
+
+    // Compute arguments.length in a4.
+    __ SmiTag(a4, a0);
+
+    // Setup the elements array in v0.
+    __ LoadRoot(at, Heap::kFixedArrayMapRootIndex);
+    __ sd(at, FieldMemOperand(v0, FixedArray::kMapOffset));
+    __ sd(a4, FieldMemOperand(v0, FixedArray::kLengthOffset));
+    __ Daddu(a3, v0, Operand(FixedArray::kHeaderSize));
+    {
+      Label loop, done_loop;
+      __ Dlsa(a1, a3, a0, kPointerSizeLog2);
+      __ bind(&loop);
+      __ Branch(&done_loop, eq, a1, Operand(a3));
+      __ ld(at, MemOperand(a2, 0 * kPointerSize));
+      __ sd(at, FieldMemOperand(a3, 0 * kPointerSize));
+      __ Dsubu(a2, a2, Operand(1 * kPointerSize));
+      __ Daddu(a3, a3, Operand(1 * kPointerSize));
+      __ b(&loop);
+      __ bind(&done_loop);
+    }
+
+    // Setup the rest parameter array in a3.
+    __ LoadNativeContextSlot(Context::JS_ARRAY_FAST_ELEMENTS_MAP_INDEX, at);
+    __ sd(at, FieldMemOperand(a3, JSArray::kMapOffset));
+    __ LoadRoot(at, Heap::kEmptyFixedArrayRootIndex);
+    __ sd(at, FieldMemOperand(a3, JSArray::kPropertiesOffset));
+    __ sd(v0, FieldMemOperand(a3, JSArray::kElementsOffset));
+    __ sd(a4, FieldMemOperand(a3, JSArray::kLengthOffset));
+    STATIC_ASSERT(JSArray::kSize == 4 * kPointerSize);
+    __ Ret(USE_DELAY_SLOT);
+    __ mov(v0, a3);  // In delay slot
+
+    // Fall back to %AllocateInNewSpace.
+    __ bind(&allocate);
+    {
+      FrameScope scope(masm, StackFrame::INTERNAL);
+      __ SmiTag(a0);
+      __ SmiTag(a1);
+      __ Push(a0, a2, a1);
+      __ CallRuntime(Runtime::kAllocateInNewSpace);
+      __ Pop(a0, a2);
+      __ SmiUntag(a0);
+    }
+    __ jmp(&done_allocate);
+  }
+}
+
+
+void FastNewStrictArgumentsStub::Generate(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  //  -- a1 : function
+  //  -- cp : context
+  //  -- fp : frame pointer
+  //  -- ra : return address
+  // -----------------------------------
+  __ AssertFunction(a1);
+
+  // For Ignition we need to skip all possible handler/stub frames until
+  // we reach the JavaScript frame for the function (similar to what the
+  // runtime fallback implementation does). So make a2 point to that
+  // JavaScript frame.
+  {
+    Label loop, loop_entry;
+    __ Branch(USE_DELAY_SLOT, &loop_entry);
+    __ mov(a2, fp);  // In delay slot.
+    __ bind(&loop);
+    __ ld(a2, MemOperand(a2, StandardFrameConstants::kCallerFPOffset));
+    __ bind(&loop_entry);
+    __ ld(a3, MemOperand(a2, StandardFrameConstants::kMarkerOffset));
+    __ Branch(&loop, ne, a1, Operand(a3));
+  }
+
+  // Check if we have an arguments adaptor frame below the function frame.
+  Label arguments_adaptor, arguments_done;
+  __ ld(a3, MemOperand(a2, StandardFrameConstants::kCallerFPOffset));
+  __ ld(a0, MemOperand(a3, StandardFrameConstants::kContextOffset));
+  __ Branch(&arguments_adaptor, eq, a0,
+            Operand(Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR)));
+  {
+    __ ld(a1, FieldMemOperand(a1, JSFunction::kSharedFunctionInfoOffset));
+    __ ld(a0,
+          FieldMemOperand(a1, SharedFunctionInfo::kFormalParameterCountOffset));
+    __ Dlsa(a2, a2, a0, kPointerSizeLog2);
+    __ Daddu(a2, a2, Operand(StandardFrameConstants::kCallerSPOffset -
+                             1 * kPointerSize));
+  }
+  __ Branch(&arguments_done);
+  __ bind(&arguments_adaptor);
+  {
+    __ SmiLoadUntag(
+        a0, MemOperand(a2, ArgumentsAdaptorFrameConstants::kLengthOffset));
+    __ Dlsa(a2, a3, a0, kPointerSizeLog2);
+    __ Daddu(a2, a2, Operand(StandardFrameConstants::kCallerSPOffset -
+                             1 * kPointerSize));
+  }
+  __ bind(&arguments_done);
+
+  // ----------- S t a t e -------------
+  //  -- cp : context
+  //  -- a0 : number of rest parameters
+  //  -- a2 : pointer to first rest parameters
+  //  -- ra : return address
+  // -----------------------------------
+
+  // Allocate space for the rest parameter array plus the backing store.
+  Label allocate, done_allocate;
+  __ li(a1, Operand(JSStrictArgumentsObject::kSize + FixedArray::kHeaderSize));
+  __ Dlsa(a1, a1, a0, kPointerSizeLog2);
+  __ Allocate(a1, v0, a3, a4, &allocate, TAG_OBJECT);
+  __ bind(&done_allocate);
+
+  // Compute arguments.length in a4.
+  __ SmiTag(a4, a0);
+
+  // Setup the elements array in v0.
+  __ LoadRoot(at, Heap::kFixedArrayMapRootIndex);
+  __ sd(at, FieldMemOperand(v0, FixedArray::kMapOffset));
+  __ sd(a4, FieldMemOperand(v0, FixedArray::kLengthOffset));
+  __ Daddu(a3, v0, Operand(FixedArray::kHeaderSize));
+  {
+    Label loop, done_loop;
+    __ Dlsa(a1, a3, a0, kPointerSizeLog2);
+    __ bind(&loop);
+    __ Branch(&done_loop, eq, a1, Operand(a3));
+    __ ld(at, MemOperand(a2, 0 * kPointerSize));
+    __ sd(at, FieldMemOperand(a3, 0 * kPointerSize));
+    __ Dsubu(a2, a2, Operand(1 * kPointerSize));
+    __ Daddu(a3, a3, Operand(1 * kPointerSize));
+    __ b(&loop);
+    __ bind(&done_loop);
+  }
+
+  // Setup the rest parameter array in a3.
+  __ LoadNativeContextSlot(Context::JS_ARRAY_FAST_ELEMENTS_MAP_INDEX, at);
+  __ sd(at, FieldMemOperand(a3, JSStrictArgumentsObject::kMapOffset));
+  __ LoadRoot(at, Heap::kEmptyFixedArrayRootIndex);
+  __ sd(at, FieldMemOperand(a3, JSStrictArgumentsObject::kPropertiesOffset));
+  __ sd(v0, FieldMemOperand(a3, JSStrictArgumentsObject::kElementsOffset));
+  __ sd(a4, FieldMemOperand(a3, JSStrictArgumentsObject::kLengthOffset));
+  STATIC_ASSERT(JSStrictArgumentsObject::kSize == 4 * kPointerSize);
+  __ Ret(USE_DELAY_SLOT);
+  __ mov(v0, a3);  // In delay slot
+
+  // Fall back to %AllocateInNewSpace.
+  __ bind(&allocate);
+  {
+    FrameScope scope(masm, StackFrame::INTERNAL);
+    __ SmiTag(a0);
+    __ SmiTag(a1);
+    __ Push(a0, a2, a1);
+    __ CallRuntime(Runtime::kAllocateInNewSpace);
+    __ Pop(a0, a2);
+    __ SmiUntag(a0);
+  }
+  __ jmp(&done_allocate);
+}
+
+
 void LoadGlobalViaContextStub::Generate(MacroAssembler* masm) {
   Register context_reg = cp;
   Register slot_reg = a2;
@@ -5463,11 +5547,10 @@ static void CallApiFunctionAndReturn(
   __ jmp(&leave_exit_frame);
 }
 
-
 static void CallApiFunctionStubHelper(MacroAssembler* masm,
                                       const ParameterCount& argc,
                                       bool return_first_arg,
-                                      bool call_data_undefined) {
+                                      bool call_data_undefined, bool is_lazy) {
   // ----------- S t a t e -------------
   //  -- a0                  : callee
   //  -- a4                  : call_data
@@ -5503,8 +5586,10 @@ static void CallApiFunctionStubHelper(MacroAssembler* masm,
 
   // Save context, callee and call data.
   __ Push(context, callee, call_data);
-  // Load context from callee.
-  __ ld(context, FieldMemOperand(callee, JSFunction::kContextOffset));
+  if (!is_lazy) {
+    // Load context from callee.
+    __ ld(context, FieldMemOperand(callee, JSFunction::kContextOffset));
+  }
 
   Register scratch = call_data;
   if (!call_data_undefined) {
@@ -5589,7 +5674,7 @@ static void CallApiFunctionStubHelper(MacroAssembler* masm,
 void CallApiFunctionStub::Generate(MacroAssembler* masm) {
   bool call_data_undefined = this->call_data_undefined();
   CallApiFunctionStubHelper(masm, ParameterCount(a3), false,
-                            call_data_undefined);
+                            call_data_undefined, false);
 }
 
 
@@ -5597,8 +5682,9 @@ void CallApiAccessorStub::Generate(MacroAssembler* masm) {
   bool is_store = this->is_store();
   int argc = this->argc();
   bool call_data_undefined = this->call_data_undefined();
+  bool is_lazy = this->is_lazy();
   CallApiFunctionStubHelper(masm, ParameterCount(argc), is_store,
-                            call_data_undefined);
+                            call_data_undefined, is_lazy);
 }
 
 

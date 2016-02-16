@@ -70,6 +70,7 @@ class BytecodeGraphTester {
     i::FLAG_ignition = true;
     i::FLAG_always_opt = false;
     i::FLAG_allow_natives_syntax = true;
+    i::FLAG_loop_assignment_analysis = false;
     // Set ignition filter flag via SetFlagsFromString to avoid double-free
     // (or potential leak with StrDup() based on ownership confusion).
     ScopedVector<char> ignition_filter(64);
@@ -118,13 +119,13 @@ class BytecodeGraphTester {
         Handle<JSFunction>::cast(v8::Utils::OpenHandle(*api_function));
     CHECK(function->shared()->HasBytecodeArray());
 
+    // TODO(mstarzinger): We should be able to prime CompilationInfo without
+    // having to instantiate a ParseInfo first. Fix this!
     ParseInfo parse_info(zone_, function);
 
     CompilationInfo compilation_info(&parse_info);
-    compilation_info.SetOptimizing(BailoutId::None(), Handle<Code>());
+    compilation_info.SetOptimizing();
     compilation_info.MarkAsDeoptimizationEnabled();
-    // TODO(mythria): Remove this step once parse_info is not needed.
-    CHECK(Compiler::ParseAndAnalyze(&parse_info));
     compiler::Pipeline pipeline(&compilation_info);
     Handle<Code> code = pipeline.GenerateCode();
     function->ReplaceCode(*code);
@@ -1418,9 +1419,8 @@ TEST(BytecodeGraphBuilderTryCatch) {
   Zone* zone = scope.main_zone();
 
   ExpectedSnippet<0> snippets[] = {
-      // TODO(mstarzinger): Fix cases where nothing throws.
-      // {"var a = 1; try { a = 2 } catch(e) { a = 3 }; return a;",
-      //  {handle(Smi::FromInt(2), isolate)}},
+      {"var a = 1; try { a = 2 } catch(e) { a = 3 }; return a;",
+       {handle(Smi::FromInt(2), isolate)}},
       {"var a; try { undef.x } catch(e) { a = 2 }; return a;",
        {handle(Smi::FromInt(2), isolate)}},
       {"var a; try { throw 1 } catch(e) { a = e + 2 }; return a;",
@@ -1451,23 +1451,22 @@ TEST(BytecodeGraphBuilderTryFinally1) {
   ExpectedSnippet<0> snippets[] = {
       {"var a = 1; try { a = a + 1; } finally { a = a + 2; }; return a;",
        {handle(Smi::FromInt(4), isolate)}},
-      // TODO(mstarzinger): Fix cases where nothing throws.
-      // {"var a = 1; try { a = 2; return 23; } finally { a = 3 }; return a;",
-      //  {handle(Smi::FromInt(23), isolate)}},
+      {"var a = 1; try { a = 2; return 23; } finally { a = 3 }; return a;",
+       {handle(Smi::FromInt(23), isolate)}},
       {"var a = 1; try { a = 2; throw 23; } finally { return a; };",
        {handle(Smi::FromInt(2), isolate)}},
-      // {"var a = 1; for (var i = 10; i < 20; i += 5) {"
-      //  "  try { a = 2; break; } finally { a = 3; }"
-      //  "} return a + i;",
-      //  {handle(Smi::FromInt(13), isolate)}},
-      // {"var a = 1; for (var i = 10; i < 20; i += 5) {"
-      //  "  try { a = 2; continue; } finally { a = 3; }"
-      //  "} return a + i;",
-      //  {handle(Smi::FromInt(23), isolate)}},
-      // {"var a = 1; try { a = 2;"
-      //  "  try { a = 3; throw 23; } finally { a = 4; }"
-      //  "} catch(e) { a = a + e; } return a;",
-      //  {handle(Smi::FromInt(27), isolate)}},
+      {"var a = 1; for (var i = 10; i < 20; i += 5) {"
+       "  try { a = 2; break; } finally { a = 3; }"
+       "} return a + i;",
+       {handle(Smi::FromInt(13), isolate)}},
+      {"var a = 1; for (var i = 10; i < 20; i += 5) {"
+       "  try { a = 2; continue; } finally { a = 3; }"
+       "} return a + i;",
+       {handle(Smi::FromInt(23), isolate)}},
+      {"var a = 1; try { a = 2;"
+       "  try { a = 3; throw 23; } finally { a = 4; }"
+       "} catch(e) { a = a + e; } return a;",
+       {handle(Smi::FromInt(27), isolate)}},
   };
 
   size_t num_snippets = sizeof(snippets) / sizeof(snippets[0]);
@@ -1681,6 +1680,10 @@ TEST(BytecodeGraphBuilderCreateArgumentsNoParameters) {
        {factory->undefined_value()}},
       {"function f(a) {'use strict'; return arguments[0];}",
        {factory->undefined_value()}},
+      {"function f(...restArgs) {return restArgs[0];}",
+       {factory->undefined_value()}},
+      {"function f(a, ...restArgs) {return restArgs[0];}",
+       {factory->undefined_value()}},
   };
 
   size_t num_snippets = sizeof(snippets) / sizeof(snippets[0]);
@@ -1743,6 +1746,49 @@ TEST(BytecodeGraphBuilderCreateArguments) {
   }
 }
 
+TEST(BytecodeGraphBuilderCreateRestArguments) {
+  HandleAndZoneScope scope;
+  Isolate* isolate = scope.main_isolate();
+  Zone* zone = scope.main_zone();
+  Factory* factory = isolate->factory();
+
+  ExpectedSnippet<3> snippets[] = {
+      {"function f(...restArgs) {return restArgs[0];}",
+       {factory->NewNumberFromInt(1), factory->NewNumberFromInt(1),
+        factory->NewNumberFromInt(2), factory->NewNumberFromInt(3)}},
+      {"function f(a, b, ...restArgs) {return restArgs[0];}",
+       {factory->NewNumberFromInt(3), factory->NewNumberFromInt(1),
+        factory->NewNumberFromInt(2), factory->NewNumberFromInt(3)}},
+      {"function f(a, b, ...restArgs) {return arguments[2];}",
+       {factory->NewNumberFromInt(3), factory->NewNumberFromInt(1),
+        factory->NewNumberFromInt(2), factory->NewNumberFromInt(3)}},
+      {"function f(a, ...restArgs) { return restArgs[2];}",
+       {factory->undefined_value(), factory->NewNumberFromInt(1),
+        factory->NewNumberFromInt(2), factory->NewNumberFromInt(3)}},
+      {"function f(a, ...restArgs) { return arguments[0] + restArgs[1];}",
+       {factory->NewNumberFromInt(4), factory->NewNumberFromInt(1),
+        factory->NewNumberFromInt(2), factory->NewNumberFromInt(3)}},
+      {"function inline_func(a, ...restArgs) { return restArgs[0] }"
+       "function f(a, b, c) {return inline_func(b, c) + arguments[0];}",
+       {factory->NewNumberFromInt(31), factory->NewNumberFromInt(1),
+        factory->NewNumberFromInt(2), factory->NewNumberFromInt(30)}},
+  };
+
+  size_t num_snippets = sizeof(snippets) / sizeof(snippets[0]);
+  for (size_t i = 0; i < num_snippets; i++) {
+    ScopedVector<char> script(1024);
+    SNPrintF(script, "%s\n%s();", snippets[i].code_snippet, kFunctionName);
+
+    BytecodeGraphTester tester(isolate, zone, script.start());
+    auto callable =
+        tester.GetCallable<Handle<Object>, Handle<Object>, Handle<Object>>();
+    Handle<Object> return_value =
+        callable(snippets[i].parameter(0), snippets[i].parameter(1),
+                 snippets[i].parameter(2))
+            .ToHandleChecked();
+    CHECK(return_value->SameValue(*snippets[i].return_value()));
+  }
+}
 
 TEST(BytecodeGraphBuilderRegExpLiterals) {
   HandleAndZoneScope scope;
@@ -2561,8 +2607,6 @@ TEST(BytecodeGraphBuilderForOf) {
 
 
 TEST(JumpWithConstantsAndWideConstants) {
-  HandleAndZoneScope scope;
-  auto isolate = scope.main_isolate();
   const int kStep = 19;
   int start = 7;
   for (int constants = start; constants < 256 + 3 * kStep; constants += kStep) {
@@ -2587,6 +2631,9 @@ TEST(JumpWithConstantsAndWideConstants) {
     script_os << "}\n";
     script_os << kFunctionName << "(0);\n";
     std::string script(script_os.str());
+
+    HandleAndZoneScope scope;
+    auto isolate = scope.main_isolate();
     auto factory = isolate->factory();
     auto zone = scope.main_zone();
     for (int a = 0; a < 3; a++) {
@@ -2603,7 +2650,6 @@ TEST(JumpWithConstantsAndWideConstants) {
 TEST(BytecodeGraphBuilderDoExpressions) {
   bool old_flag = FLAG_harmony_do_expressions;
   FLAG_harmony_do_expressions = true;
-
   HandleAndZoneScope scope;
   Isolate* isolate = scope.main_isolate();
   Zone* zone = scope.main_zone();
@@ -2631,6 +2677,334 @@ TEST(BytecodeGraphBuilderDoExpressions) {
   }
 
   FLAG_harmony_do_expressions = old_flag;
+}
+
+TEST(BytecodeGraphBuilderWithStatement) {
+  HandleAndZoneScope scope;
+  Isolate* isolate = scope.main_isolate();
+  Zone* zone = scope.main_zone();
+
+  ExpectedSnippet<0> snippets[] = {
+      {"with({x:42}) return x;", {handle(Smi::FromInt(42), isolate)}},
+      {"with({}) { var y = 10; return y;}",
+       {handle(Smi::FromInt(10), isolate)}},
+      {"var y = {x:42};"
+       " function inner() {"
+       "   var x = 20;"
+       "   with(y) return x;"
+       "}"
+       "return inner();",
+       {handle(Smi::FromInt(42), isolate)}},
+      {"var y = {x:42};"
+       " function inner(o) {"
+       "   var x = 20;"
+       "   with(o) return x;"
+       "}"
+       "return inner(y);",
+       {handle(Smi::FromInt(42), isolate)}},
+  };
+
+  for (size_t i = 0; i < arraysize(snippets); i++) {
+    ScopedVector<char> script(1024);
+    SNPrintF(script, "function %s() { %s }\n%s();", kFunctionName,
+             snippets[i].code_snippet, kFunctionName);
+
+    BytecodeGraphTester tester(isolate, zone, script.start());
+    auto callable = tester.GetCallable<>();
+    Handle<Object> return_value = callable().ToHandleChecked();
+    CHECK(return_value->SameValue(*snippets[i].return_value()));
+  }
+}
+
+TEST(BytecodeGraphBuilderConstDeclaration) {
+  HandleAndZoneScope scope;
+  Isolate* isolate = scope.main_isolate();
+  Zone* zone = scope.main_zone();
+  Factory* factory = isolate->factory();
+
+  ExpectedSnippet<0> snippets[] = {
+      {"const x = 3; return x;", {handle(Smi::FromInt(3), isolate)}},
+      {"let x = 10; x = x + 20; return x;",
+       {handle(Smi::FromInt(30), isolate)}},
+      {"let x = 10; x = 20; return x;", {handle(Smi::FromInt(20), isolate)}},
+      {"let x; x = 20; return x;", {handle(Smi::FromInt(20), isolate)}},
+      {"let x; return x;", {factory->undefined_value()}},
+      {"var x = 10; { let x = 30; } return x;",
+       {handle(Smi::FromInt(10), isolate)}},
+      {"let x = 10; { let x = 20; } return x;",
+       {handle(Smi::FromInt(10), isolate)}},
+      {"var x = 10; eval('let x = 20;'); return x;",
+       {handle(Smi::FromInt(10), isolate)}},
+      {"var x = 10; eval('const x = 20;'); return x;",
+       {handle(Smi::FromInt(10), isolate)}},
+      {"var x = 10; { const x = 20; } return x;",
+       {handle(Smi::FromInt(10), isolate)}},
+      {"var x = 10; { const x = 20; return x;} return -1;",
+       {handle(Smi::FromInt(20), isolate)}},
+      {"var a = 10;\n"
+       "for (var i = 0; i < 10; ++i) {\n"
+       " const x = i;\n"  // const declarations are block scoped.
+       " a = a + x;\n"
+       "}\n"
+       "return a;\n",
+       {handle(Smi::FromInt(55), isolate)}},
+  };
+
+  // Tests for sloppy mode.
+  for (size_t i = 0; i < arraysize(snippets); i++) {
+    ScopedVector<char> script(1024);
+    SNPrintF(script, "function %s() { %s }\n%s();", kFunctionName,
+             snippets[i].code_snippet, kFunctionName);
+
+    BytecodeGraphTester tester(isolate, zone, script.start());
+    auto callable = tester.GetCallable<>();
+    Handle<Object> return_value = callable().ToHandleChecked();
+    CHECK(return_value->SameValue(*snippets[i].return_value()));
+  }
+
+  // Tests for strict mode.
+  for (size_t i = 0; i < arraysize(snippets); i++) {
+    ScopedVector<char> script(1024);
+    SNPrintF(script, "function %s() {'use strict'; %s }\n%s();", kFunctionName,
+             snippets[i].code_snippet, kFunctionName);
+
+    BytecodeGraphTester tester(isolate, zone, script.start());
+    auto callable = tester.GetCallable<>();
+    Handle<Object> return_value = callable().ToHandleChecked();
+    CHECK(return_value->SameValue(*snippets[i].return_value()));
+  }
+}
+
+TEST(BytecodeGraphBuilderConstDeclarationLookupSlots) {
+  HandleAndZoneScope scope;
+  Isolate* isolate = scope.main_isolate();
+  Zone* zone = scope.main_zone();
+  Factory* factory = isolate->factory();
+
+  ExpectedSnippet<0> snippets[] = {
+      {"const x = 3; function f1() {return x;}; return x;",
+       {handle(Smi::FromInt(3), isolate)}},
+      {"let x = 10; x = x + 20; function f1() {return x;}; return x;",
+       {handle(Smi::FromInt(30), isolate)}},
+      {"let x; x = 20; function f1() {return x;}; return x;",
+       {handle(Smi::FromInt(20), isolate)}},
+      {"let x; function f1() {return x;}; return x;",
+       {factory->undefined_value()}},
+  };
+
+  // Tests for sloppy mode.
+  for (size_t i = 0; i < arraysize(snippets); i++) {
+    ScopedVector<char> script(1024);
+    SNPrintF(script, "function %s() { %s }\n%s();", kFunctionName,
+             snippets[i].code_snippet, kFunctionName);
+
+    BytecodeGraphTester tester(isolate, zone, script.start());
+    auto callable = tester.GetCallable<>();
+    Handle<Object> return_value = callable().ToHandleChecked();
+    CHECK(return_value->SameValue(*snippets[i].return_value()));
+  }
+
+  // Tests for strict mode.
+  for (size_t i = 0; i < arraysize(snippets); i++) {
+    ScopedVector<char> script(1024);
+    SNPrintF(script, "function %s() {'use strict'; %s }\n%s();", kFunctionName,
+             snippets[i].code_snippet, kFunctionName);
+
+    BytecodeGraphTester tester(isolate, zone, script.start());
+    auto callable = tester.GetCallable<>();
+    Handle<Object> return_value = callable().ToHandleChecked();
+    CHECK(return_value->SameValue(*snippets[i].return_value()));
+  }
+}
+
+TEST(BytecodeGraphBuilderConstInLookupContextChain) {
+  HandleAndZoneScope scope;
+  Isolate* isolate = scope.main_isolate();
+  Zone* zone = scope.main_zone();
+
+  const char* prologue =
+      "function OuterMost() {\n"
+      "  const outerConst = 10;\n"
+      "  let outerLet = 20;\n"
+      "  function Outer() {\n"
+      "    function Inner() {\n"
+      "      this.innerFunc = function() { ";
+  const char* epilogue =
+      "      }\n"
+      "    }\n"
+      "    this.getInnerFunc ="
+      "         function() {return new Inner().innerFunc;}\n"
+      "  }\n"
+      "  this.getOuterFunc ="
+      "     function() {return new Outer().getInnerFunc();}"
+      "}\n"
+      "var f = new OuterMost().getOuterFunc();\n"
+      "f();\n";
+
+  // Tests for let / constant.
+  ExpectedSnippet<0> const_decl[] = {
+      {"return outerConst;", {handle(Smi::FromInt(10), isolate)}},
+      {"return outerLet;", {handle(Smi::FromInt(20), isolate)}},
+      {"outerLet = 30; return outerLet;", {handle(Smi::FromInt(30), isolate)}},
+      {"var outerLet = 40; return outerLet;",
+       {handle(Smi::FromInt(40), isolate)}},
+      {"var outerConst = 50; return outerConst;",
+       {handle(Smi::FromInt(50), isolate)}},
+      {"try { outerConst = 30 } catch(e) { return -1; }",
+       {handle(Smi::FromInt(-1), isolate)}}};
+
+  for (size_t i = 0; i < arraysize(const_decl); i++) {
+    ScopedVector<char> script(1024);
+    SNPrintF(script, "%s %s %s", prologue, const_decl[i].code_snippet,
+             epilogue);
+
+    BytecodeGraphTester tester(isolate, zone, script.start(), "*");
+    auto callable = tester.GetCallable<>();
+    Handle<Object> return_value = callable().ToHandleChecked();
+    CHECK(return_value->SameValue(*const_decl[i].return_value()));
+  }
+
+  // Tests for Legacy constant.
+  bool old_flag_legacy_const = FLAG_legacy_const;
+  FLAG_legacy_const = true;
+
+  ExpectedSnippet<0> legacy_const_decl[] = {
+      {"return outerConst = 23;", {handle(Smi::FromInt(23), isolate)}},
+      {"outerConst = 30; return outerConst;",
+       {handle(Smi::FromInt(10), isolate)}},
+  };
+
+  for (size_t i = 0; i < arraysize(legacy_const_decl); i++) {
+    ScopedVector<char> script(1024);
+    SNPrintF(script, "%s %s %s", prologue, legacy_const_decl[i].code_snippet,
+             epilogue);
+
+    BytecodeGraphTester tester(isolate, zone, script.start(), "*");
+    auto callable = tester.GetCallable<>();
+    Handle<Object> return_value = callable().ToHandleChecked();
+    CHECK(return_value->SameValue(*legacy_const_decl[i].return_value()));
+  }
+
+  FLAG_legacy_const = old_flag_legacy_const;
+}
+
+TEST(BytecodeGraphBuilderIllegalConstDeclaration) {
+  HandleAndZoneScope scope;
+  Isolate* isolate = scope.main_isolate();
+  Zone* zone = scope.main_zone();
+
+  ExpectedSnippet<0, const char*> illegal_const_decl[] = {
+      {"const x = x = 10 + 3; return x;",
+       {"Uncaught ReferenceError: x is not defined"}},
+      {"const x = 10; x = 20; return x;",
+       {"Uncaught TypeError: Assignment to constant variable."}},
+      {"const x = 10; { x = 20; } return x;",
+       {"Uncaught TypeError: Assignment to constant variable."}},
+      {"const x = 10; eval('x = 20;'); return x;",
+       {"Uncaught TypeError: Assignment to constant variable."}},
+      {"let x = x + 10; return x;",
+       {"Uncaught ReferenceError: x is not defined"}},
+      {"'use strict'; (function f1() { f1 = 123; })() ",
+       {"Uncaught TypeError: Assignment to constant variable."}},
+  };
+
+  // Tests for sloppy mode.
+  for (size_t i = 0; i < arraysize(illegal_const_decl); i++) {
+    ScopedVector<char> script(1024);
+    SNPrintF(script, "function %s() { %s }\n%s();", kFunctionName,
+             illegal_const_decl[i].code_snippet, kFunctionName);
+
+    BytecodeGraphTester tester(isolate, zone, script.start());
+    v8::Local<v8::String> message = tester.CheckThrowsReturnMessage()->Get();
+    v8::Local<v8::String> expected_string =
+        v8_str(illegal_const_decl[i].return_value());
+    CHECK(
+        message->Equals(CcTest::isolate()->GetCurrentContext(), expected_string)
+            .FromJust());
+  }
+
+  // Tests for strict mode.
+  for (size_t i = 0; i < arraysize(illegal_const_decl); i++) {
+    ScopedVector<char> script(1024);
+    SNPrintF(script, "function %s() {'use strict'; %s }\n%s();", kFunctionName,
+             illegal_const_decl[i].code_snippet, kFunctionName);
+
+    BytecodeGraphTester tester(isolate, zone, script.start());
+    v8::Local<v8::String> message = tester.CheckThrowsReturnMessage()->Get();
+    v8::Local<v8::String> expected_string =
+        v8_str(illegal_const_decl[i].return_value());
+    CHECK(
+        message->Equals(CcTest::isolate()->GetCurrentContext(), expected_string)
+            .FromJust());
+  }
+}
+
+TEST(BytecodeGraphBuilderLegacyConstDeclaration) {
+  bool old_flag_legacy_const = FLAG_legacy_const;
+  FLAG_legacy_const = true;
+
+  HandleAndZoneScope scope;
+  Isolate* isolate = scope.main_isolate();
+  Zone* zone = scope.main_zone();
+
+  ExpectedSnippet<0> snippets[] = {
+      {"const x = (x = 10) + 3; return x;",
+       {handle(Smi::FromInt(13), isolate)}},
+      {"const x = 10; x = 20; return x;", {handle(Smi::FromInt(10), isolate)}},
+      {"var a = 10;\n"
+       "for (var i = 0; i < 10; ++i) {\n"
+       " const x = i;\n"  // Legacy constants are not block scoped.
+       " a = a + x;\n"
+       "}\n"
+       "return a;\n",
+       {handle(Smi::FromInt(10), isolate)}},
+      {"const x = 20; eval('x = 10;'); return x;",
+       {handle(Smi::FromInt(20), isolate)}},
+  };
+
+  for (size_t i = 0; i < arraysize(snippets); i++) {
+    ScopedVector<char> script(1024);
+    SNPrintF(script, "function %s() { %s }\n%s();", kFunctionName,
+             snippets[i].code_snippet, kFunctionName);
+
+    BytecodeGraphTester tester(isolate, zone, script.start());
+    auto callable = tester.GetCallable<>();
+    Handle<Object> return_value = callable().ToHandleChecked();
+    CHECK(return_value->SameValue(*snippets[i].return_value()));
+  }
+
+  FLAG_legacy_const = old_flag_legacy_const;
+}
+
+TEST(BytecodeGraphBuilderDebuggerStatement) {
+  FLAG_expose_debug_as = "debug";
+  HandleAndZoneScope scope;
+  Isolate* isolate = scope.main_isolate();
+  Zone* zone = scope.main_zone();
+
+  ExpectedSnippet<0> snippet = {
+      "var Debug = debug.Debug;"
+      "var count = 0;"
+      "function f() {"
+      "  debugger;"
+      "}"
+      "function listener(event) {"
+      "  if (event == Debug.DebugEvent.Break) count++;"
+      "}"
+      "Debug.setListener(listener);"
+      "f();"
+      "Debug.setListener(null);"
+      "return count;",
+      {handle(Smi::FromInt(1), isolate)}};
+
+  ScopedVector<char> script(1024);
+  SNPrintF(script, "function %s() { %s }\n%s();", kFunctionName,
+           snippet.code_snippet, kFunctionName);
+
+  BytecodeGraphTester tester(isolate, zone, script.start());
+  auto callable = tester.GetCallable<>();
+  Handle<Object> return_value = callable().ToHandleChecked();
+  CHECK(return_value->SameValue(*snippet.return_value()));
 }
 
 }  // namespace compiler

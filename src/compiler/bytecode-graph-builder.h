@@ -23,13 +23,12 @@ class BytecodeGraphBuilder {
                        JSGraph* jsgraph);
 
   // Creates a graph by visiting bytecodes.
-  bool CreateGraph(bool stack_check = true);
+  bool CreateGraph();
 
  private:
   class Environment;
   class FrameStateBeforeAndAfter;
 
-  void CreateGraphBody(bool stack_check);
   void VisitBytecodes();
 
   // Get or create the node that represents the outer function closure.
@@ -40,13 +39,6 @@ class BytecodeGraphBuilder {
 
   // Get or create the node that represents the incoming new target value.
   Node* GetNewTarget();
-
-  // Builder for accessing a (potentially immutable) object field.
-  Node* BuildLoadObjectField(Node* object, int offset);
-  Node* BuildLoadImmutableObjectField(Node* object, int offset);
-
-  // Builder for accessing type feedback vector.
-  Node* BuildLoadFeedbackVector();
 
   // Builder for loading the a native context field.
   Node* BuildLoadNativeContextField(int index);
@@ -107,9 +99,6 @@ class BytecodeGraphBuilder {
   Node* MakeNode(const Operator* op, int value_input_count, Node** value_inputs,
                  bool incomplete);
 
-  // Helper to indicate a node exits the function body.
-  void UpdateControlDependencyToLeaveFunction(Node* exit);
-
   Node** EnsureInputBufferSize(int size);
 
   Node* ProcessCallArguments(const Operator* call_op, Node* callee,
@@ -125,13 +114,13 @@ class BytecodeGraphBuilder {
   void BuildCreateRegExpLiteral();
   void BuildCreateArrayLiteral();
   void BuildCreateObjectLiteral();
-  void BuildCreateArguments(CreateArgumentsParameters::Type type);
+  void BuildCreateArguments(CreateArgumentsType type);
   void BuildLoadGlobal(TypeofMode typeof_mode);
-  void BuildStoreGlobal();
+  void BuildStoreGlobal(LanguageMode language_mode);
   void BuildNamedLoad();
   void BuildKeyedLoad();
-  void BuildNamedStore();
-  void BuildKeyedStore();
+  void BuildNamedStore(LanguageMode language_mode);
+  void BuildKeyedStore(LanguageMode language_mode);
   void BuildLdaLookupSlot(TypeofMode typeof_mode);
   void BuildStaLookupSlot(LanguageMode language_mode);
   void BuildCall();
@@ -139,44 +128,49 @@ class BytecodeGraphBuilder {
   void BuildCallRuntime();
   void BuildCallRuntimeForPair();
   void BuildCallConstruct();
+  void BuildThrow();
   void BuildBinaryOp(const Operator* op);
   void BuildCompareOp(const Operator* op);
-  void BuildDelete();
-  void BuildCastOperator(const Operator* js_op);
+  void BuildDelete(LanguageMode language_mode);
+  void BuildCastOperator(const Operator* op);
   void BuildForInPrepare();
   void BuildForInNext();
 
   // Control flow plumbing.
-  void BuildJump(int source_offset, int target_offset);
   void BuildJump();
   void BuildConditionalJump(Node* condition);
   void BuildJumpIfEqual(Node* comperand);
   void BuildJumpIfToBooleanEqual(Node* boolean_comperand);
+  void BuildJumpIfNotHole();
 
-  // Constructing merge and loop headers.
-  void MergeEnvironmentsOfBackwardBranches(int source_offset,
-                                           int target_offset);
-  void MergeEnvironmentsOfForwardBranches(int source_offset);
-  void BuildLoopHeaderForBackwardBranches(int source_offset);
+  // Simulates control flow by forward-propagating environments.
+  void MergeIntoSuccessorEnvironment(int target_offset);
+  void BuildLoopHeaderEnvironment(int current_offset);
+  void SwitchToMergeEnvironment(int current_offset);
+
+  // Simulates control flow that exits the function body.
+  void MergeControlToLeaveFunction(Node* exit);
 
   // Simulates entry and exit of exception handlers.
   void EnterAndExitExceptionHandlers(int current_offset);
 
-  // Attaches a frame state to |node| for the entry to the function.
-  void PrepareEntryFrameState(Node* node);
-
   // Growth increment for the temporary buffer used to construct input lists to
   // new nodes.
   static const int kInputBufferSizeIncrement = 64;
+
+  // The catch prediction from the handler table is reused.
+  typedef HandlerTable::CatchPrediction CatchPrediction;
 
   // An abstract representation for an exception handler that is being
   // entered and exited while the graph builder is iterating over the
   // underlying bytecode. The exception handlers within the bytecode are
   // well scoped, hence will form a stack during iteration.
   struct ExceptionHandler {
-    int start_offset_;    // Start offset of the handled area in the bytecode.
-    int end_offset_;      // End offset of the handled area in the bytecode.
-    int handler_offset_;  // Handler entry offset within the bytecode.
+    int start_offset_;      // Start offset of the handled area in the bytecode.
+    int end_offset_;        // End offset of the handled area in the bytecode.
+    int handler_offset_;    // Handler entry offset within the bytecode.
+    int context_register_;  // Index of register holding handler context.
+    CatchPrediction pred_;  // Prediction of whether handler is catching.
   };
 
   // Field accessors
@@ -215,7 +209,7 @@ class BytecodeGraphBuilder {
     return branch_analysis_;
   }
 
-  void set_branch_analysis(BytecodeBranchAnalysis* branch_analysis) {
+  void set_branch_analysis(const BytecodeBranchAnalysis* branch_analysis) {
     branch_analysis_ = branch_analysis;
   }
 
@@ -230,16 +224,13 @@ class BytecodeGraphBuilder {
   Handle<HandlerTable> exception_handler_table_;
   const FrameStateFunctionInfo* frame_state_function_info_;
   const interpreter::BytecodeArrayIterator* bytecode_iterator_;
-  BytecodeBranchAnalysis* branch_analysis_;  // TODO(mstarzinger): Make const.
+  const BytecodeBranchAnalysis* branch_analysis_;
   Environment* environment_;
 
-  // Merge environments are snapshots of the environment at a particular
-  // bytecode offset to be merged into a later environment.
+  // Merge environments are snapshots of the environment at points where the
+  // control flow merges. This models a forward data flow propagation of all
+  // values from all predecessors of the merge in question.
   ZoneMap<int, Environment*> merge_environments_;
-
-  // Loop header environments are environments created for bytecodes
-  // where it is known there are back branches, ie a loop header.
-  ZoneMap<int, Environment*> loop_header_environments_;
 
   // Exception handlers currently entered by the iteration.
   ZoneStack<ExceptionHandler> exception_handlers_;

@@ -8,13 +8,13 @@ vars = {
 
 deps = {
   "v8/build/gyp":
-    Var("git_url") + "/external/gyp.git" + "@" + "aa0301be5a241c2972f90ce2a08097b63c916390",
+    Var("git_url") + "/external/gyp.git" + "@" + "5170bfd38fe79bd5b16aa7f6c5439fb90a37ae66",
   "v8/third_party/icu":
-    Var("git_url") + "/chromium/deps/icu.git" + "@" + "8d342a405be5ae8aacb1e16f0bc31c3a4fbf26a2",
+    Var("git_url") + "/chromium/deps/icu.git" + "@" + "8f91ea3a7e0413df3312204058da856058a8099b",
   "v8/buildtools":
-    Var("git_url") + "/chromium/buildtools.git" + "@" + "be55b9ad86a4a5f760895984f93f76038e08e29e",
+    Var("git_url") + "/chromium/buildtools.git" + "@" + "ef3e530703353ba8ad094694ba7c156daddbddeb",
   "v8/base/trace_event/common":
-    Var("git_url") + "/chromium/src/base/trace_event/common.git" + "@" + "d83d44b13d07c2fd0a40101a7deef9b93b841732",
+    Var("git_url") + "/chromium/src/base/trace_event/common.git" + "@" + "4b09207e447ae5bd34643b4c6321bee7b76d35f9",
   "v8/tools/swarming_client":
     Var('git_url') + '/external/swarming.client.git' + '@' + "0b908f18767c8304dc089454bc1c91755d21f1f5",
   "v8/testing/gtest":
@@ -27,9 +27,9 @@ deps = {
     Var("git_url") + "/v8/deps/third_party/mozilla-tests.git" + "@" + "f6c578a10ea707b1a8ab0b88943fe5115ce2b9be",
   "v8/test/simdjs/data": Var("git_url") + "/external/github.com/tc39/ecmascript_simd.git" + "@" + "c8ef63c728283debc25891123eb00482fee4b8cd",
   "v8/test/test262/data":
-    Var("git_url") + "/external/github.com/tc39/test262.git" + "@" + "67ba34b03a46bac4254223ae25f42c7b959540f0",
+    Var("git_url") + "/external/github.com/tc39/test262.git" + "@" + "738a24b109f3fa71be44d5c3701d73141d494510",
   "v8/tools/clang":
-    Var("git_url") + "/chromium/src/tools/clang.git" + "@" + "2b2edb2dbbc5818f98972eeefd756cdcd69aa6f3",
+    Var("git_url") + "/chromium/src/tools/clang.git" + "@" + "fa731f3e12b54c519e08c0fe9b26cf12274df20c",
 }
 
 deps_os = {
@@ -134,6 +134,40 @@ hooks = [
                 '--no_auth',
                 '--bucket', 'chromium-luci',
                 '-d', 'v8/tools/luci-go/linux64',
+    ],
+  },
+  # Pull GN using checked-in hashes.
+  {
+    "name": "gn_win",
+    "pattern": ".",
+    "action": [ "download_from_google_storage",
+                "--no_resume",
+                "--platform=win32",
+                "--no_auth",
+                "--bucket", "chromium-gn",
+                "-s", "v8/buildtools/win/gn.exe.sha1",
+    ],
+  },
+  {
+    "name": "gn_mac",
+    "pattern": ".",
+    "action": [ "download_from_google_storage",
+                "--no_resume",
+                "--platform=darwin",
+                "--no_auth",
+                "--bucket", "chromium-gn",
+                "-s", "v8/buildtools/mac/gn.sha1",
+    ],
+  },
+  {
+    "name": "gn_linux",
+    "pattern": ".",
+    "action": [ "download_from_google_storage",
+                "--no_resume",
+                "--platform=linux*",
+                "--no_auth",
+                "--bucket", "chromium-gn",
+                "-s", "v8/buildtools/linux64/gn.sha1",
     ],
   },
   {

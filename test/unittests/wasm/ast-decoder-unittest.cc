@@ -35,6 +35,8 @@ static const WasmOpcode kInt32BinopOpcodes[] = {
     kExprI32Shl,  kExprI32ShrU, kExprI32ShrS, kExprI32Eq,   kExprI32LtS,
     kExprI32LeS,  kExprI32LtU,  kExprI32LeU};
 
+#define WASM_BRV_IF_ZERO(depth, val) \
+  kExprBrIf, static_cast<byte>(depth), val, WASM_ZERO
 
 #define EXPECT_VERIFIES(env, x) Verify(kSuccess, env, x, x + arraysize(x))
 
@@ -87,10 +89,10 @@ class WasmDecoderTest : public TestWithZone {
   static void init_env(FunctionEnv* env, FunctionSig* sig) {
     env->module = nullptr;
     env->sig = sig;
-    env->local_int32_count = 0;
-    env->local_int64_count = 0;
-    env->local_float32_count = 0;
-    env->local_float64_count = 0;
+    env->local_i32_count = 0;
+    env->local_i64_count = 0;
+    env->local_f32_count = 0;
+    env->local_f64_count = 0;
     env->SumLocals();
   }
 
@@ -179,9 +181,9 @@ static FunctionEnv CreateInt32FunctionEnv(FunctionSig* sig, int count) {
   FunctionEnv env;
   env.module = nullptr;
   env.sig = sig;
-  env.local_int32_count = count;
-  env.local_float64_count = 0;
-  env.local_float32_count = 0;
+  env.local_i32_count = count;
+  env.local_f64_count = 0;
+  env.local_f32_count = 0;
   env.total_locals = static_cast<unsigned>(count + sig->parameter_count());
   return env;
 }
@@ -333,7 +335,7 @@ TEST_F(WasmDecoderTest, GetLocal_off_end) {
 
 
 TEST_F(WasmDecoderTest, GetLocal_varint) {
-  env_i_i.local_int32_count = 1000000000;
+  env_i_i.local_i32_count = 1000000000;
   env_i_i.total_locals += 1000000000;
 
   {
@@ -1550,19 +1552,18 @@ TEST_F(WasmDecoderTest, BreakNesting3) {
 
 TEST_F(WasmDecoderTest, BreaksWithMultipleTypes) {
   EXPECT_FAILURE_INLINE(
-      &env_i_i,
-      WASM_BLOCK(2, WASM_BRV_IF(0, WASM_ZERO, WASM_I8(7)), WASM_F32(7.7)));
+      &env_i_i, WASM_BLOCK(2, WASM_BRV_IF_ZERO(0, WASM_I8(7)), WASM_F32(7.7)));
+
   EXPECT_FAILURE_INLINE(&env_i_i,
-                        WASM_BLOCK(2, WASM_BRV_IF(0, WASM_ZERO, WASM_I8(7)),
-                                   WASM_BRV_IF(0, WASM_ZERO, WASM_F32(7.7))));
+                        WASM_BLOCK(2, WASM_BRV_IF_ZERO(0, WASM_I8(7)),
+                                   WASM_BRV_IF_ZERO(0, WASM_F32(7.7))));
   EXPECT_FAILURE_INLINE(&env_i_i,
-                        WASM_BLOCK(3, WASM_BRV_IF(0, WASM_ZERO, WASM_I8(8)),
-                                   WASM_BRV_IF(0, WASM_ZERO, WASM_I8(0)),
-                                   WASM_BRV_IF(0, WASM_ZERO, WASM_F32(7.7))));
-  EXPECT_FAILURE_INLINE(&env_i_i,
-                        WASM_BLOCK(3, WASM_BRV_IF(0, WASM_ZERO, WASM_I8(9)),
-                                   WASM_BRV_IF(0, WASM_ZERO, WASM_F32(7.7)),
-                                   WASM_BRV_IF(0, WASM_ZERO, WASM_I8(11))));
+                        WASM_BLOCK(3, WASM_BRV_IF_ZERO(0, WASM_I8(8)),
+                                   WASM_BRV_IF_ZERO(0, WASM_I8(0)),
+                                   WASM_BRV_IF_ZERO(0, WASM_F32(7.7))));
+  EXPECT_FAILURE_INLINE(&env_i_i, WASM_BLOCK(3, WASM_BRV_IF_ZERO(0, WASM_I8(9)),
+                                             WASM_BRV_IF_ZERO(0, WASM_F32(7.7)),
+                                             WASM_BRV_IF_ZERO(0, WASM_I8(11))));
 }
 
 
@@ -1625,10 +1626,9 @@ TEST_F(WasmDecoderTest, ExprBreak_TypeCheckAll) {
   byte code1[] = {WASM_BLOCK(2,
                              WASM_IF(WASM_ZERO, WASM_BRV(0, WASM_GET_LOCAL(0))),
                              WASM_GET_LOCAL(1))};
-  byte code2[] = {WASM_BLOCK(
-      2, WASM_IF(WASM_ZERO, WASM_BRV_IF(0, WASM_ZERO, WASM_GET_LOCAL(0))),
-      WASM_GET_LOCAL(1))};
-
+  byte code2[] = {
+      WASM_BLOCK(2, WASM_IF(WASM_ZERO, WASM_BRV_IF_ZERO(0, WASM_GET_LOCAL(0))),
+                 WASM_GET_LOCAL(1))};
 
   for (size_t i = 0; i < arraysize(kLocalTypes); i++) {
     for (size_t j = 0; j < arraysize(kLocalTypes); j++) {
@@ -1678,37 +1678,42 @@ TEST_F(WasmDecoderTest, ExprBr_Unify) {
   }
 }
 
-
-TEST_F(WasmDecoderTest, ExprBrIf_type) {
-  EXPECT_VERIFIES_INLINE(
-      &env_i_i,
-      WASM_BLOCK(2, WASM_BRV_IF(0, WASM_GET_LOCAL(0), WASM_GET_LOCAL(0)),
-                 WASM_GET_LOCAL(0)));
-  EXPECT_FAILURE_INLINE(
-      &env_d_dd,
-      WASM_BLOCK(2, WASM_BRV_IF(0, WASM_GET_LOCAL(0), WASM_GET_LOCAL(0)),
-                 WASM_GET_LOCAL(0)));
-
+TEST_F(WasmDecoderTest, ExprBrIf_cond_type) {
   FunctionEnv env;
+  byte code[] = {
+      WASM_BLOCK(1, WASM_BRV_IF(0, WASM_GET_LOCAL(0), WASM_GET_LOCAL(1)))};
   for (size_t i = 0; i < arraysize(kLocalTypes); i++) {
-    LocalType type = kLocalTypes[i];
-    LocalType storage[] = {kAstI32, kAstI32, type};
-    FunctionSig sig(1, 2, storage);
-    init_env(&env, &sig);  // (i32, X) -> i32
+    for (size_t j = 0; j < arraysize(kLocalTypes); j++) {
+      LocalType types[] = {kLocalTypes[i], kLocalTypes[j]};
+      FunctionSig sig(0, 2, types);
+      init_env(&env, &sig);
 
-    byte code1[] = {
-        WASM_BLOCK(2, WASM_BRV_IF(0, WASM_GET_LOCAL(0), WASM_GET_LOCAL(1)),
-                   WASM_GET_LOCAL(0))};
+      if (types[1] == kAstI32) {
+        EXPECT_VERIFIES(&env, code);
+      } else {
+        EXPECT_FAILURE(&env, code);
+      }
+    }
+  }
+}
 
-    byte code2[] = {
-        WASM_BLOCK(2, WASM_BRV_IF(0, WASM_GET_LOCAL(1), WASM_GET_LOCAL(0)),
-                   WASM_GET_LOCAL(0))};
-    if (type == kAstI32) {
-      EXPECT_VERIFIES(&env, code1);
-      EXPECT_VERIFIES(&env, code2);
-    } else {
-      EXPECT_FAILURE(&env, code1);
-      EXPECT_FAILURE(&env, code2);
+TEST_F(WasmDecoderTest, ExprBrIf_val_type) {
+  FunctionEnv env;
+  byte code[] = {
+      WASM_BLOCK(2, WASM_BRV_IF(0, WASM_GET_LOCAL(1), WASM_GET_LOCAL(2)),
+                 WASM_GET_LOCAL(0))};
+  for (size_t i = 0; i < arraysize(kLocalTypes); i++) {
+    for (size_t j = 0; j < arraysize(kLocalTypes); j++) {
+      LocalType types[] = {kLocalTypes[i], kLocalTypes[i], kLocalTypes[j],
+                           kAstI32};
+      FunctionSig sig(1, 3, types);
+      init_env(&env, &sig);
+
+      if (i == j) {
+        EXPECT_VERIFIES(&env, code);
+      } else {
+        EXPECT_FAILURE(&env, code);
+      }
     }
   }
 }
@@ -1724,13 +1729,10 @@ TEST_F(WasmDecoderTest, ExprBrIf_Unify) {
       FunctionSig sig(1, 2, storage);
       init_env(&env, &sig);  // (i32, X) -> i32
 
-      byte code1[] = {
-          WASM_BLOCK(2, WASM_BRV_IF(0, WASM_ZERO, WASM_GET_LOCAL(which)),
-                     WASM_GET_LOCAL(which ^ 1))};
-      byte code2[] = {
-          WASM_LOOP(2, WASM_BRV_IF(1, WASM_ZERO, WASM_GET_LOCAL(which)),
-                    WASM_GET_LOCAL(which ^ 1))};
-
+      byte code1[] = {WASM_BLOCK(2, WASM_BRV_IF_ZERO(0, WASM_GET_LOCAL(which)),
+                                 WASM_GET_LOCAL(which ^ 1))};
+      byte code2[] = {WASM_LOOP(2, WASM_BRV_IF_ZERO(1, WASM_GET_LOCAL(which)),
+                                WASM_GET_LOCAL(which ^ 1))};
 
       if (type == kAstI32) {
         EXPECT_VERIFIES(&env, code1);
@@ -1891,8 +1893,51 @@ TEST_F(WasmDecoderTest, ExprBreakNesting1) {
 
 TEST_F(WasmDecoderTest, Select) {
   EXPECT_VERIFIES_INLINE(
+      &env_i_i, WASM_SELECT(WASM_GET_LOCAL(0), WASM_GET_LOCAL(0), WASM_ZERO));
+  EXPECT_VERIFIES_INLINE(&env_f_ff,
+                         WASM_SELECT(WASM_F32(0.0), WASM_F32(0.0), WASM_ZERO));
+  EXPECT_VERIFIES_INLINE(&env_d_dd,
+                         WASM_SELECT(WASM_F64(0.0), WASM_F64(0.0), WASM_ZERO));
+  EXPECT_VERIFIES_INLINE(&env_l_l,
+                         WASM_SELECT(WASM_I64(0), WASM_I64(0), WASM_ZERO));
+}
+
+TEST_F(WasmDecoderTest, Select_fail1) {
+  EXPECT_FAILURE_INLINE(&env_i_i, WASM_SELECT(WASM_F32(0.0), WASM_GET_LOCAL(0),
+                                              WASM_GET_LOCAL(0)));
+  EXPECT_FAILURE_INLINE(&env_i_i, WASM_SELECT(WASM_GET_LOCAL(0), WASM_F32(0.0),
+                                              WASM_GET_LOCAL(0)));
+  EXPECT_FAILURE_INLINE(
       &env_i_i,
-      WASM_SELECT(WASM_GET_LOCAL(0), WASM_GET_LOCAL(0), WASM_GET_LOCAL(0)));
+      WASM_SELECT(WASM_GET_LOCAL(0), WASM_GET_LOCAL(0), WASM_F32(0.0)));
+}
+
+TEST_F(WasmDecoderTest, Select_fail2) {
+  for (size_t i = 0; i < arraysize(kLocalTypes); i++) {
+    LocalType type = kLocalTypes[i];
+    if (type == kAstI32) continue;
+
+    LocalType types[] = {type, kAstI32, type};
+    FunctionSig sig(1, 2, types);
+    FunctionEnv env;
+    init_env(&env, &sig);
+
+    EXPECT_VERIFIES_INLINE(
+        &env,
+        WASM_SELECT(WASM_GET_LOCAL(1), WASM_GET_LOCAL(1), WASM_GET_LOCAL(0)));
+
+    EXPECT_FAILURE_INLINE(
+        &env,
+        WASM_SELECT(WASM_GET_LOCAL(1), WASM_GET_LOCAL(0), WASM_GET_LOCAL(0)));
+
+    EXPECT_FAILURE_INLINE(
+        &env,
+        WASM_SELECT(WASM_GET_LOCAL(0), WASM_GET_LOCAL(1), WASM_GET_LOCAL(0)));
+
+    EXPECT_FAILURE_INLINE(
+        &env,
+        WASM_SELECT(WASM_GET_LOCAL(0), WASM_GET_LOCAL(0), WASM_GET_LOCAL(1)));
+  }
 }
 
 
@@ -1913,13 +1958,11 @@ class WasmOpcodeLengthTest : public TestWithZone {
   WasmOpcodeLengthTest() : TestWithZone() {}
 };
 
-
-#define EXPECT_LENGTH(expected, opcode)                          \
-  {                                                              \
-    static const byte code[] = {opcode, 0, 0, 0, 0, 0, 0, 0, 0}; \
-    EXPECT_EQ(expected, OpcodeLength(code));                     \
+#define EXPECT_LENGTH(expected, opcode)                           \
+  {                                                               \
+    static const byte code[] = {opcode, 0, 0, 0, 0, 0, 0, 0, 0};  \
+    EXPECT_EQ(expected, OpcodeLength(code, code + sizeof(code))); \
   }
-
 
 TEST_F(WasmOpcodeLengthTest, Statements) {
   EXPECT_LENGTH(1, kExprNop);
@@ -1961,11 +2004,11 @@ TEST_F(WasmOpcodeLengthTest, VariableLength) {
   byte size5[] = {kExprLoadGlobal, 1 | 0x80, 2 | 0x80, 3 | 0x80, 4};
   byte size6[] = {kExprLoadGlobal, 1 | 0x80, 2 | 0x80, 3 | 0x80, 4 | 0x80, 5};
 
-  EXPECT_EQ(2, OpcodeLength(size2));
-  EXPECT_EQ(3, OpcodeLength(size3));
-  EXPECT_EQ(4, OpcodeLength(size4));
-  EXPECT_EQ(5, OpcodeLength(size5));
-  EXPECT_EQ(6, OpcodeLength(size6));
+  EXPECT_EQ(2, OpcodeLength(size2, size2 + sizeof(size2)));
+  EXPECT_EQ(3, OpcodeLength(size3, size3 + sizeof(size3)));
+  EXPECT_EQ(4, OpcodeLength(size4, size4 + sizeof(size4)));
+  EXPECT_EQ(5, OpcodeLength(size5, size5 + sizeof(size5)));
+  EXPECT_EQ(6, OpcodeLength(size6, size6 + sizeof(size6)));
 }
 
 
@@ -2130,13 +2173,11 @@ class WasmOpcodeArityTest : public TestWithZone {
   WasmOpcodeArityTest() : TestWithZone() {}
 };
 
-
-#define EXPECT_ARITY(expected, ...)               \
-  {                                               \
-    static const byte code[] = {__VA_ARGS__};     \
-    EXPECT_EQ(expected, OpcodeArity(&env, code)); \
+#define EXPECT_ARITY(expected, ...)                                    \
+  {                                                                    \
+    static const byte code[] = {__VA_ARGS__};                          \
+    EXPECT_EQ(expected, OpcodeArity(&env, code, code + sizeof(code))); \
   }
-
 
 TEST_F(WasmOpcodeArityTest, Control) {
   FunctionEnv env;

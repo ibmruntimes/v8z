@@ -18,6 +18,7 @@
 #include "src/conversions-inl.h"
 #include "src/factory.h"
 #include "src/field-index-inl.h"
+#include "src/handles-inl.h"
 #include "src/heap/heap-inl.h"
 #include "src/heap/heap.h"
 #include "src/isolate.h"
@@ -28,7 +29,6 @@
 #include "src/prototype.h"
 #include "src/transitions-inl.h"
 #include "src/type-feedback-vector-inl.h"
-#include "src/types-inl.h"
 #include "src/v8memory.h"
 
 namespace v8 {
@@ -710,7 +710,6 @@ TYPE_CHECKER(JSSet, JS_SET_TYPE)
 TYPE_CHECKER(JSMap, JS_MAP_TYPE)
 TYPE_CHECKER(JSSetIterator, JS_SET_ITERATOR_TYPE)
 TYPE_CHECKER(JSMapIterator, JS_MAP_ITERATOR_TYPE)
-TYPE_CHECKER(JSIteratorResult, JS_ITERATOR_RESULT_TYPE)
 TYPE_CHECKER(JSWeakMap, JS_WEAK_MAP_TYPE)
 TYPE_CHECKER(JSWeakSet, JS_WEAK_SET_TYPE)
 TYPE_CHECKER(JSContextExtensionObject, JS_CONTEXT_EXTENSION_OBJECT_TYPE)
@@ -1144,8 +1143,8 @@ bool Object::FitsRepresentation(Representation representation) {
 // static
 MaybeHandle<JSReceiver> Object::ToObject(Isolate* isolate,
                                          Handle<Object> object) {
-  return ToObject(
-      isolate, object, handle(isolate->context()->native_context(), isolate));
+  if (object->IsJSReceiver()) return Handle<JSReceiver>::cast(object);
+  return ToObject(isolate, object, isolate->native_context());
 }
 
 
@@ -1187,16 +1186,16 @@ MaybeHandle<Object> Object::SetElement(Isolate* isolate, Handle<Object> object,
   return value;
 }
 
-
-MaybeHandle<Object> Object::GetPrototype(Isolate* isolate,
-                                         Handle<Object> receiver) {
+MaybeHandle<Object> JSReceiver::GetPrototype(Isolate* isolate,
+                                             Handle<JSReceiver> receiver) {
   // We don't expect access checks to be needed on JSProxy objects.
   DCHECK(!receiver->IsAccessCheckNeeded() || receiver->IsJSObject());
   PrototypeIterator iter(isolate, receiver,
-                         PrototypeIterator::START_AT_RECEIVER);
+                         PrototypeIterator::START_AT_RECEIVER,
+                         PrototypeIterator::END_AT_NON_HIDDEN);
   do {
     if (!iter.AdvanceFollowingProxies()) return MaybeHandle<Object>();
-  } while (!iter.IsAtEnd(PrototypeIterator::END_AT_NON_HIDDEN));
+  } while (!iter.IsAtEnd());
   return PrototypeIterator::GetCurrent(iter);
 }
 
@@ -1239,12 +1238,10 @@ MaybeHandle<Object> Object::GetProperty(Isolate* isolate, Handle<Object> object,
       reinterpret_cast<base::AtomicWord*>(FIELD_ADDR(p, offset)), \
       reinterpret_cast<base::AtomicWord>(value));
 
-#define WRITE_BARRIER(heap, object, offset, value)                      \
-  heap->incremental_marking()->RecordWrite(                             \
-      object, HeapObject::RawField(object, offset), value);             \
-  if (heap->InNewSpace(value)) {                                        \
-    heap->RecordWrite(object->address(), offset);                       \
-  }
+#define WRITE_BARRIER(heap, object, offset, value)          \
+  heap->incremental_marking()->RecordWrite(                 \
+      object, HeapObject::RawField(object, offset), value); \
+  heap->RecordWrite(object, offset, value);
 
 #define CONDITIONAL_WRITE_BARRIER(heap, object, offset, value, mode) \
   if (mode != SKIP_WRITE_BARRIER) {                                  \
@@ -1252,9 +1249,7 @@ MaybeHandle<Object> Object::GetProperty(Isolate* isolate, Handle<Object> object,
       heap->incremental_marking()->RecordWrite(                      \
           object, HeapObject::RawField(object, offset), value);      \
     }                                                                \
-    if (heap->InNewSpace(value)) {                                   \
-      heap->RecordWrite(object->address(), offset);                  \
-    }                                                                \
+    heap->RecordWrite(object, offset, value);                        \
   }
 
 #define READ_DOUBLE_FIELD(p, offset) \
@@ -1388,8 +1383,9 @@ void HeapObject::VerifySmiField(int offset) {
 
 
 Heap* HeapObject::GetHeap() const {
-  Heap* heap =
-      MemoryChunk::FromAddress(reinterpret_cast<const byte*>(this))->heap();
+  Heap* heap = MemoryChunk::FromAddress(
+                   reinterpret_cast<Address>(const_cast<HeapObject*>(this)))
+                   ->heap();
   SLOW_DCHECK(heap != NULL);
   return heap;
 }
@@ -2042,9 +2038,7 @@ void WeakCell::initialize(HeapObject* val) {
   // We just have to execute the generational barrier here because we never
   // mark through a weak cell and collect evacuation candidates when we process
   // all weak cells.
-  if (heap->InNewSpace(val)) {
-    heap->RecordWrite(address(), kValueOffset);
-  }
+  heap->RecordWrite(this, kValueOffset, val);
 }
 
 
@@ -2112,8 +2106,6 @@ int JSObject::GetHeaderSize(InstanceType type) {
       return JSSetIterator::kSize;
     case JS_MAP_ITERATOR_TYPE:
       return JSMapIterator::kSize;
-    case JS_ITERATOR_RESULT_TYPE:
-      return JSIteratorResult::kSize;
     case JS_WEAK_MAP_TYPE:
       return JSWeakMap::kSize;
     case JS_WEAK_SET_TYPE:
@@ -2375,7 +2367,8 @@ void FixedArray::set(int index, Smi* value) {
 void FixedArray::set(int index, Object* value) {
   DCHECK_NE(GetHeap()->fixed_cow_array_map(), map());
   DCHECK(IsFixedArray());
-  DCHECK(index >= 0 && index < this->length());
+  DCHECK_GE(index, 0);
+  DCHECK_LT(index, this->length());
   int offset = kHeaderSize + index * kPointerSize;
   WRITE_FIELD(this, offset, value);
   WRITE_BARRIER(GetHeap(), this, offset, value);
@@ -3216,7 +3209,6 @@ CAST_ACCESSOR(JSReceiver)
 CAST_ACCESSOR(JSRegExp)
 CAST_ACCESSOR(JSSet)
 CAST_ACCESSOR(JSSetIterator)
-CAST_ACCESSOR(JSIteratorResult)
 CAST_ACCESSOR(JSTypedArray)
 CAST_ACCESSOR(JSValue)
 CAST_ACCESSOR(JSWeakMap)
@@ -3415,6 +3407,16 @@ int HandlerTable::GetRangeHandler(int index) const {
       Smi::cast(get(index * kRangeEntrySize + kRangeHandlerIndex))->value());
 }
 
+int HandlerTable::GetRangeData(int index) const {
+  return Smi::cast(get(index * kRangeEntrySize + kRangeDataIndex))->value();
+}
+
+HandlerTable::CatchPrediction HandlerTable::GetRangePrediction(
+    int index) const {
+  return HandlerPredictionField::decode(
+      Smi::cast(get(index * kRangeEntrySize + kRangeHandlerIndex))->value());
+}
+
 void HandlerTable::SetRangeStart(int index, int value) {
   set(index * kRangeEntrySize + kRangeStartIndex, Smi::FromInt(value));
 }
@@ -3432,9 +3434,8 @@ void HandlerTable::SetRangeHandler(int index, int offset,
   set(index * kRangeEntrySize + kRangeHandlerIndex, Smi::FromInt(value));
 }
 
-
-void HandlerTable::SetRangeDepth(int index, int value) {
-  set(index * kRangeEntrySize + kRangeDepthIndex, Smi::FromInt(value));
+void HandlerTable::SetRangeData(int index, int value) {
+  set(index * kRangeEntrySize + kRangeDataIndex, Smi::FromInt(value));
 }
 
 
@@ -4483,14 +4484,12 @@ bool Map::is_constructor() const {
   return ((1 << kIsConstructor) & bit_field()) != 0;
 }
 
-
-void Map::set_is_hidden_prototype() {
-  set_bit_field3(IsHiddenPrototype::update(bit_field3(), true));
+void Map::set_has_hidden_prototype(bool value) {
+  set_bit_field3(HasHiddenPrototype::update(bit_field3(), value));
 }
 
-
-bool Map::is_hidden_prototype() const {
-  return IsHiddenPrototype::decode(bit_field3());
+bool Map::has_hidden_prototype() const {
+  return HasHiddenPrototype::decode(bit_field3());
 }
 
 
@@ -5289,7 +5288,16 @@ class Code::FindAndReplacePattern {
   friend class Code;
 };
 
+int AbstractCode::Size() {
+  if (IsCode()) {
+    return GetCode()->instruction_size();
+  } else {
+    return GetBytecodeArray()->length();
+  }
+}
+
 Code* AbstractCode::GetCode() { return Code::cast(this); }
+
 BytecodeArray* AbstractCode::GetBytecodeArray() {
   return BytecodeArray::cast(this);
 }
@@ -5533,11 +5541,11 @@ ACCESSORS(CallHandlerInfo, data, Object, kDataOffset)
 ACCESSORS(CallHandlerInfo, fast_handler, Object, kFastHandlerOffset)
 
 ACCESSORS(TemplateInfo, tag, Object, kTagOffset)
+ACCESSORS(TemplateInfo, serial_number, Object, kSerialNumberOffset)
 SMI_ACCESSORS(TemplateInfo, number_of_properties, kNumberOfProperties)
 ACCESSORS(TemplateInfo, property_list, Object, kPropertyListOffset)
 ACCESSORS(TemplateInfo, property_accessors, Object, kPropertyAccessorsOffset)
 
-ACCESSORS(FunctionTemplateInfo, serial_number, Object, kSerialNumberOffset)
 ACCESSORS(FunctionTemplateInfo, call_code, Object, kCallCodeOffset)
 ACCESSORS(FunctionTemplateInfo, prototype_template, Object,
           kPrototypeTemplateOffset)
@@ -5619,7 +5627,7 @@ void Script::set_origin_options(ScriptOriginOptions origin_options) {
 
 
 ACCESSORS(DebugInfo, shared, SharedFunctionInfo, kSharedFunctionInfoIndex)
-ACCESSORS(DebugInfo, code, Code, kCodeIndex)
+ACCESSORS(DebugInfo, abstract_code, AbstractCode, kAbstractCodeIndex)
 ACCESSORS(DebugInfo, break_points, FixedArray, kBreakPointsStateIndex)
 
 SMI_ACCESSORS(BreakPointInfo, code_offset, kCodeOffsetIndex)
@@ -5946,7 +5954,8 @@ DebugInfo* SharedFunctionInfo::GetDebugInfo() {
 
 
 bool SharedFunctionInfo::HasDebugCode() {
-  return code()->kind() == Code::FUNCTION && code()->has_debug_break_slots();
+  return HasBytecodeArray() ||
+         (code()->kind() == Code::FUNCTION && code()->has_debug_break_slots());
 }
 
 
@@ -7084,10 +7093,9 @@ MaybeHandle<Object> Object::GetPropertyOrElement(Handle<Object> object,
   return GetProperty(&it, language_mode);
 }
 
-
-MaybeHandle<Object> Object::GetPropertyOrElement(Handle<JSReceiver> holder,
+MaybeHandle<Object> Object::GetPropertyOrElement(Handle<Object> receiver,
                                                  Handle<Name> name,
-                                                 Handle<Object> receiver,
+                                                 Handle<JSReceiver> holder,
                                                  LanguageMode language_mode) {
   LookupIterator it = LookupIterator::PropertyOrElement(
       name->GetIsolate(), receiver, name, holder);
@@ -7734,10 +7742,6 @@ Object* JSMapIterator::CurrentValue() {
   DCHECK(!value->IsTheHole());
   return value;
 }
-
-
-ACCESSORS(JSIteratorResult, done, Object, kDoneOffset)
-ACCESSORS(JSIteratorResult, value, Object, kValueOffset)
 
 
 String::SubStringRange::SubStringRange(String* string, int first, int length)

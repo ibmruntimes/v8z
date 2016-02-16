@@ -359,10 +359,6 @@ bool Heap::InNewSpace(Object* object) {
   return result;
 }
 
-
-bool Heap::InNewSpace(Address address) { return new_space_.Contains(address); }
-
-
 bool Heap::InFromSpace(Object* object) {
   return new_space_.FromSpaceContains(object);
 }
@@ -372,14 +368,15 @@ bool Heap::InToSpace(Object* object) {
   return new_space_.ToSpaceContains(object);
 }
 
+bool Heap::InOldSpace(Object* object) { return old_space_->Contains(object); }
 
-bool Heap::InOldSpace(Address address) { return old_space_->Contains(address); }
-
-
-bool Heap::InOldSpace(Object* object) {
-  return InOldSpace(reinterpret_cast<Address>(object));
+bool Heap::InNewSpaceSlow(Address address) {
+  return new_space_.ContainsSlow(address);
 }
 
+bool Heap::InOldSpaceSlow(Address address) {
+  return old_space_->ContainsSlow(address);
+}
 
 bool Heap::OldGenerationAllocationLimitReached() {
   if (!incremental_marking()->IsStopped()) return false;
@@ -394,18 +391,11 @@ bool Heap::ShouldBePromoted(Address old_address, int object_size) {
          (!page->ContainsLimit(age_mark) || old_address < age_mark);
 }
 
-
-void Heap::RecordWrite(Address address, int offset) {
-  if (!InNewSpace(address)) store_buffer_.Mark(address + offset);
-}
-
-
-void Heap::RecordWrites(Address address, int start, int len) {
-  if (!InNewSpace(address)) {
-    for (int i = 0; i < len; i++) {
-      store_buffer_.Mark(address + start + i * kPointerSize);
-    }
+void Heap::RecordWrite(Object* object, int offset, Object* o) {
+  if (!InNewSpace(o) || !object->IsHeapObject() || InNewSpace(object)) {
+    return;
   }
+  store_buffer_.Mark(HeapObject::cast(object)->address() + offset);
 }
 
 
@@ -515,7 +505,7 @@ AllocationMemento* Heap::FindAllocationMemento(HeapObject* object) {
   return nullptr;
 }
 
-
+template <Heap::UpdateAllocationSiteMode mode>
 void Heap::UpdateAllocationSite(HeapObject* object,
                                 HashMap* pretenuring_feedback) {
   DCHECK(InFromSpace(object));
@@ -525,7 +515,8 @@ void Heap::UpdateAllocationSite(HeapObject* object,
   AllocationMemento* memento_candidate = FindAllocationMemento<kForGC>(object);
   if (memento_candidate == nullptr) return;
 
-  if (pretenuring_feedback == global_pretenuring_feedback_) {
+  if (mode == kGlobal) {
+    DCHECK_EQ(pretenuring_feedback, global_pretenuring_feedback_);
     // Entering global pretenuring feedback is only used in the scavenger, where
     // we are allowed to actually touch the allocation site.
     if (!memento_candidate->IsValid()) return;
@@ -538,6 +529,8 @@ void Heap::UpdateAllocationSite(HeapObject* object,
                                                    ObjectHash(site->address()));
     }
   } else {
+    DCHECK_EQ(mode, kCached);
+    DCHECK_NE(pretenuring_feedback, global_pretenuring_feedback_);
     // Entering cached feedback is used in the parallel case. We are not allowed
     // to dereference the allocation site and rather have to postpone all checks
     // till actually merging the data.

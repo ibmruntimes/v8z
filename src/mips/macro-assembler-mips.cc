@@ -159,9 +159,9 @@ void MacroAssembler::InNewSpace(Register object,
                                 Condition cc,
                                 Label* branch) {
   DCHECK(cc == eq || cc == ne);
-  And(scratch, object, Operand(ExternalReference::new_space_mask(isolate())));
-  Branch(branch, cc, scratch,
-         Operand(ExternalReference::new_space_start(isolate())));
+  const int mask =
+      1 << MemoryChunk::IN_FROM_SPACE | 1 << MemoryChunk::IN_TO_SPACE;
+  CheckPageFlag(object, scratch, mask, cc, branch);
 }
 
 
@@ -369,6 +369,67 @@ void MacroAssembler::RecordWrite(
   }
 }
 
+void MacroAssembler::RecordWriteCodeEntryField(Register js_function,
+                                               Register code_entry,
+                                               Register scratch) {
+  const int offset = JSFunction::kCodeEntryOffset;
+
+  // Since a code entry (value) is always in old space, we don't need to update
+  // remembered set. If incremental marking is off, there is nothing for us to
+  // do.
+  if (!FLAG_incremental_marking) return;
+
+  DCHECK(js_function.is(a1));
+  DCHECK(code_entry.is(t0));
+  DCHECK(scratch.is(t1));
+  AssertNotSmi(js_function);
+
+  if (emit_debug_code()) {
+    Addu(scratch, js_function, Operand(offset - kHeapObjectTag));
+    lw(at, MemOperand(scratch));
+    Assert(eq, kWrongAddressOrValuePassedToRecordWrite, at,
+           Operand(code_entry));
+  }
+
+  // First, check if a write barrier is even needed. The tests below
+  // catch stores of Smis and stores into young gen.
+  Label done;
+
+  CheckPageFlag(code_entry, scratch,
+                MemoryChunk::kPointersToHereAreInterestingMask, eq, &done);
+  CheckPageFlag(js_function, scratch,
+                MemoryChunk::kPointersFromHereAreInterestingMask, eq, &done);
+
+  const Register dst = scratch;
+  Addu(dst, js_function, Operand(offset - kHeapObjectTag));
+
+  // Save caller-saved registers. js_function and code_entry are in the
+  // caller-saved register list.
+  DCHECK(kJSCallerSaved & js_function.bit());
+  DCHECK(kJSCallerSaved & code_entry.bit());
+  MultiPush(kJSCallerSaved | ra.bit());
+
+  int argument_count = 3;
+
+  PrepareCallCFunction(argument_count, 0, code_entry);
+
+  mov(a0, js_function);
+  mov(a1, dst);
+  li(a2, Operand(ExternalReference::isolate_address(isolate())));
+
+  {
+    AllowExternalCallThatCantCauseGC scope(this);
+    CallCFunction(
+        ExternalReference::incremental_marking_record_write_code_entry_function(
+            isolate()),
+        argument_count);
+  }
+
+  // Restore caller-saved registers.
+  MultiPop(kJSCallerSaved | ra.bit());
+
+  bind(&done);
+}
 
 void MacroAssembler::RememberedSetHelper(Register object,  // For debug tests.
                                          Register address,
@@ -1396,19 +1457,23 @@ void MacroAssembler::Trunc_uw_d(FPURegister fd,
 
 
 void MacroAssembler::Mthc1(Register rt, FPURegister fs) {
-  if (IsFp64Mode()) {
-    mthc1(rt, fs);
-  } else {
+  if (IsFp32Mode()) {
     mtc1(rt, fs.high());
+  } else {
+    DCHECK(IsFp64Mode() || IsFpxxMode());
+    DCHECK(IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6));
+    mthc1(rt, fs);
   }
 }
 
 
 void MacroAssembler::Mfhc1(Register rt, FPURegister fs) {
-  if (IsFp64Mode()) {
-    mfhc1(rt, fs);
-  } else {
+  if (IsFp32Mode()) {
     mfc1(rt, fs.high());
+  } else {
+    DCHECK(IsFp64Mode() || IsFpxxMode());
+    DCHECK(IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6));
+    mfhc1(rt, fs);
   }
 }
 
@@ -1614,13 +1679,15 @@ void MacroAssembler::BranchShortF(SecondaryField sizeField, Label* target,
 
 
 void MacroAssembler::FmoveLow(FPURegister dst, Register src_low) {
-  if (IsFp64Mode()) {
+  if (IsFp32Mode()) {
+    mtc1(src_low, dst);
+  } else {
+    DCHECK(IsFp64Mode() || IsFpxxMode());
+    DCHECK(IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6));
     DCHECK(!src_low.is(at));
     mfhc1(at, dst);
     mtc1(src_low, dst);
     mthc1(at, dst);
-  } else {
-    mtc1(src_low, dst);
   }
 }
 
@@ -3266,7 +3333,7 @@ void MacroAssembler::Allocate(int object_size,
     return;
   }
 
-  DCHECK(!AreAliased(result, scratch1, scratch2, t9));
+  DCHECK(!AreAliased(result, scratch1, scratch2, t9, at));
 
   // Make object size into bytes.
   if ((flags & SIZE_IN_WORDS) != 0) {
@@ -3352,8 +3419,8 @@ void MacroAssembler::Allocate(Register object_size, Register result,
 
   // |object_size| and |result_end| may overlap if the DOUBLE_ALIGNMENT flag
   // is not specified. Other registers must not overlap.
-  DCHECK(!AreAliased(object_size, result, scratch, t9));
-  DCHECK(!AreAliased(result_end, result, scratch, t9));
+  DCHECK(!AreAliased(object_size, result, scratch, t9, at));
+  DCHECK(!AreAliased(result_end, result, scratch, t9, at));
   DCHECK((flags & DOUBLE_ALIGNMENT) == 0 || !object_size.is(result_end));
 
   // Check relative positions of allocation top and limit addresses.

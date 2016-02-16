@@ -4907,7 +4907,7 @@ UnicodeRangeSplitter::UnicodeRangeSplitter(Zone* zone,
                   kLeadSurrogates, zone_);
   table_.AddRange(CharacterRange(kTrailSurrogateStart, kTrailSurrogateEnd),
                   kTrailSurrogates, zone_);
-  table_.AddRange(CharacterRange(kTrailSurrogateEnd, kNonBmpStart - 1),
+  table_.AddRange(CharacterRange(kTrailSurrogateEnd + 1, kNonBmpStart - 1),
                   kBmpCodePoints, zone_);
   table_.AddRange(CharacterRange(kNonBmpStart, kNonBmpEnd), kNonBmpCodePoints,
                   zone_);
@@ -5087,34 +5087,18 @@ void AddLoneTrailSurrogates(RegExpCompiler* compiler, ChoiceNode* result,
   result->AddAlternative(GuardedAlternative(match));
 }
 
-
-void AddUnanchoredAdvance(RegExpCompiler* compiler, ChoiceNode* result,
-                          RegExpNode* on_success) {
+RegExpNode* UnanchoredAdvance(RegExpCompiler* compiler,
+                              RegExpNode* on_success) {
   // This implements ES2015 21.2.5.2.3, AdvanceStringIndex.
   DCHECK(!compiler->read_backward());
   Zone* zone = compiler->zone();
-  // Advancing can either consume a BMP character or a trail surrogate.
-  ZoneList<CharacterRange>* bmp_and_trail =
-      new (zone) ZoneList<CharacterRange>(2, zone);
-  bmp_and_trail->Add(CharacterRange::Range(0, kLeadSurrogateStart - 1), zone);
-  bmp_and_trail->Add(
-      CharacterRange::Range(kLeadSurrogateEnd + 1, kNonBmpStart - 1), zone);
-  result->AddAlternative(GuardedAlternative(TextNode::CreateForCharacterRanges(
-      zone, bmp_and_trail, false, on_success)));
-
-  // Or it could consume a lead optionally followed by a trail surrogate.
-  ZoneList<CharacterRange>* lead_surrogates = CharacterRange::List(
-      zone, CharacterRange::Range(kLeadSurrogateStart, kLeadSurrogateEnd));
-  ZoneList<CharacterRange>* trail_surrogates = CharacterRange::List(
-      zone, CharacterRange::Range(kTrailSurrogateStart, kTrailSurrogateEnd));
-  ChoiceNode* optional_trail = new (zone) ChoiceNode(2, zone);
-  optional_trail->AddAlternative(
-      GuardedAlternative(TextNode::CreateForCharacterRanges(
-          zone, trail_surrogates, false, on_success)));
-  optional_trail->AddAlternative(GuardedAlternative(on_success));
-  RegExpNode* optional_pair = TextNode::CreateForCharacterRanges(
-      zone, lead_surrogates, false, optional_trail);
-  result->AddAlternative(GuardedAlternative(optional_pair));
+  // Advance any character. If the character happens to be a lead surrogate and
+  // we advanced into the middle of a surrogate pair, it will work out, as
+  // nothing will match from there. We will have to advance again, consuming
+  // the associated trail surrogate.
+  ZoneList<CharacterRange>* range = CharacterRange::List(
+      zone, CharacterRange::Range(0, String::kMaxUtf16CodeUnit));
+  return TextNode::CreateForCharacterRanges(zone, range, false, on_success);
 }
 
 
@@ -5176,17 +5160,17 @@ RegExpNode* RegExpCharacterClass::ToNode(RegExpCompiler* compiler,
       // No matches possible.
       return new (zone) EndNode(EndNode::BACKTRACK, zone);
     }
-    ChoiceNode* result = new (zone) ChoiceNode(2, zone);
     if (standard_type() == '*') {
-      AddUnanchoredAdvance(compiler, result, on_success);
+      return UnanchoredAdvance(compiler, on_success);
     } else {
+      ChoiceNode* result = new (zone) ChoiceNode(2, zone);
       UnicodeRangeSplitter splitter(zone, ranges);
       AddBmpCharacters(compiler, result, on_success, &splitter);
       AddNonBmpSurrogatePairs(compiler, result, on_success, &splitter);
       AddLoneLeadSurrogates(compiler, result, on_success, &splitter);
       AddLoneTrailSurrogates(compiler, result, on_success, &splitter);
+      return result;
     }
-    return result;
   } else {
     return new (zone) TextNode(this, compiler->read_backward(), on_success);
   }
@@ -5906,57 +5890,57 @@ void CharacterRange::AddCaseEquivalents(Isolate* isolate, Zone* zone,
     }
     unibrow::uchar chars[unibrow::Ecma262UnCanonicalize::kMaxWidth];
     if (top == bottom) {
-    // If this is a singleton we just expand the one character.
-    int length = isolate->jsregexp_uncanonicalize()->get(bottom, '\0', chars);
-    for (int i = 0; i < length; i++) {
-      uc32 chr = chars[i];
-      if (chr != bottom) {
-        ranges->Add(CharacterRange::Singleton(chars[i]), zone);
-      }
-    }
-  } else {
-    // If this is a range we expand the characters block by block,
-    // expanding contiguous subranges (blocks) one at a time.
-    // The approach is as follows.  For a given start character we
-    // look up the remainder of the block that contains it (represented
-    // by the end point), for instance we find 'z' if the character
-    // is 'c'.  A block is characterized by the property
-    // that all characters uncanonicalize in the same way, except that
-    // each entry in the result is incremented by the distance from the first
-    // element.  So a-z is a block because 'a' uncanonicalizes to ['a', 'A'] and
-    // the k'th letter uncanonicalizes to ['a' + k, 'A' + k].
-    // Once we've found the end point we look up its uncanonicalization
-    // and produce a range for each element.  For instance for [c-f]
-    // we look up ['z', 'Z'] and produce [c-f] and [C-F].  We then only
-    // add a range if it is not already contained in the input, so [c-f]
-    // will be skipped but [C-F] will be added.  If this range is not
-    // completely contained in a block we do this for all the blocks
-    // covered by the range (handling characters that is not in a block
-    // as a "singleton block").
-    unibrow::uchar range[unibrow::Ecma262UnCanonicalize::kMaxWidth];
-    int pos = bottom;
-    while (pos <= top) {
-      int length = isolate->jsregexp_canonrange()->get(pos, '\0', range);
-      uc32 block_end;
-      if (length == 0) {
-        block_end = pos;
-      } else {
-        DCHECK_EQ(1, length);
-        block_end = range[0];
-      }
-      int end = (block_end > top) ? top : block_end;
-      length = isolate->jsregexp_uncanonicalize()->get(block_end, '\0', range);
+      // If this is a singleton we just expand the one character.
+      int length = isolate->jsregexp_uncanonicalize()->get(bottom, '\0', chars);
       for (int i = 0; i < length; i++) {
-        uc32 c = range[i];
-        uc32 range_from = c - (block_end - pos);
-        uc32 range_to = c - (block_end - end);
-        if (!(bottom <= range_from && range_to <= top)) {
-          ranges->Add(CharacterRange(range_from, range_to), zone);
+        uc32 chr = chars[i];
+        if (chr != bottom) {
+          ranges->Add(CharacterRange::Singleton(chars[i]), zone);
         }
       }
-      pos = end + 1;
+    } else {
+      // If this is a range we expand the characters block by block, expanding
+      // contiguous subranges (blocks) one at a time.  The approach is as
+      // follows.  For a given start character we look up the remainder of the
+      // block that contains it (represented by the end point), for instance we
+      // find 'z' if the character is 'c'.  A block is characterized by the
+      // property that all characters uncanonicalize in the same way, except
+      // that each entry in the result is incremented by the distance from the
+      // first element.  So a-z is a block because 'a' uncanonicalizes to ['a',
+      // 'A'] and the k'th letter uncanonicalizes to ['a' + k, 'A' + k].  Once
+      // we've found the end point we look up its uncanonicalization and
+      // produce a range for each element.  For instance for [c-f] we look up
+      // ['z', 'Z'] and produce [c-f] and [C-F].  We then only add a range if
+      // it is not already contained in the input, so [c-f] will be skipped but
+      // [C-F] will be added.  If this range is not completely contained in a
+      // block we do this for all the blocks covered by the range (handling
+      // characters that is not in a block as a "singleton block").
+      unibrow::uchar equivalents[unibrow::Ecma262UnCanonicalize::kMaxWidth];
+      int pos = bottom;
+      while (pos <= top) {
+        int length =
+            isolate->jsregexp_canonrange()->get(pos, '\0', equivalents);
+        uc32 block_end;
+        if (length == 0) {
+          block_end = pos;
+        } else {
+          DCHECK_EQ(1, length);
+          block_end = equivalents[0];
+        }
+        int end = (block_end > top) ? top : block_end;
+        length = isolate->jsregexp_uncanonicalize()->get(block_end, '\0',
+                                                         equivalents);
+        for (int i = 0; i < length; i++) {
+          uc32 c = equivalents[i];
+          uc32 range_from = c - (block_end - pos);
+          uc32 range_to = c - (block_end - end);
+          if (!(bottom <= range_from && range_to <= top)) {
+            ranges->Add(CharacterRange(range_from, range_to), zone);
+          }
+        }
+        pos = end + 1;
+      }
     }
-  }
   }
 }
 

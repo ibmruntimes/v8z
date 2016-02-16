@@ -4135,6 +4135,31 @@ TEST(RunTruncateFloat32ToInt32) {
 }
 
 
+TEST(RunTruncateFloat32ToUint32) {
+  BufferedRawMachineAssemblerTester<uint32_t> m(MachineType::Float32());
+  m.Return(m.TruncateFloat32ToUint32(m.Parameter(0)));
+  {
+    FOR_UINT32_INPUTS(i) {
+      float input = static_cast<float>(*i);
+      // This condition on 'input' is required because
+      // static_cast<float>(std::numeric_limits<uint32_t>::max()) results in a
+      // value outside uint32 range.
+      if (input < static_cast<float>(std::numeric_limits<uint32_t>::max())) {
+        CHECK_EQ(static_cast<uint32_t>(input), m.Call(input));
+      }
+    }
+  }
+  {
+    FOR_FLOAT32_INPUTS(i) {
+      if (*i <= static_cast<float>(std::numeric_limits<uint32_t>::max()) &&
+          *i >= static_cast<float>(std::numeric_limits<uint32_t>::min())) {
+        CheckFloatEq(static_cast<uint32_t>(*i), m.Call(*i));
+      }
+    }
+  }
+}
+
+
 TEST(RunChangeFloat64ToInt32_A) {
   BufferedRawMachineAssemblerTester<int32_t> m;
   double magic = 11.1;
@@ -5588,6 +5613,79 @@ TEST(RunCallCFunction8) {
 }
 #endif  // USE_SIMULATOR
 
+template <typename T>
+void TestExternalReferenceFunction(
+    BufferedRawMachineAssemblerTester<int32_t>* m, ExternalReference ref,
+    T (*comparison)(T)) {
+  T parameter;
+
+  Node* function = m->ExternalConstant(ref);
+  m->CallCFunction1(MachineType::Pointer(), MachineType::Pointer(), function,
+                    m->PointerConstant(&parameter));
+  m->Return(m->Int32Constant(4356));
+  FOR_FLOAT64_INPUTS(i) {
+    parameter = *i;
+    m->Call();
+    CheckDoubleEq(comparison(*i), parameter);
+  }
+}
+
+TEST(RunCallExternalReferenceF32Trunc) {
+  BufferedRawMachineAssemblerTester<int32_t> m;
+  ExternalReference ref =
+      ExternalReference::f32_trunc_wrapper_function(m.isolate());
+  TestExternalReferenceFunction<float>(&m, ref, truncf);
+}
+
+TEST(RunCallExternalReferenceF32Floor) {
+  BufferedRawMachineAssemblerTester<int32_t> m;
+  ExternalReference ref =
+      ExternalReference::f32_floor_wrapper_function(m.isolate());
+  TestExternalReferenceFunction<float>(&m, ref, floorf);
+}
+
+TEST(RunCallExternalReferenceF32Ceil) {
+  BufferedRawMachineAssemblerTester<int32_t> m;
+  ExternalReference ref =
+      ExternalReference::f32_ceil_wrapper_function(m.isolate());
+  TestExternalReferenceFunction<float>(&m, ref, ceilf);
+}
+
+TEST(RunCallExternalReferenceF32RoundTiesEven) {
+  BufferedRawMachineAssemblerTester<int32_t> m;
+  ExternalReference ref =
+      ExternalReference::f32_nearest_int_wrapper_function(m.isolate());
+  TestExternalReferenceFunction<float>(&m, ref, nearbyintf);
+}
+
+TEST(RunCallExternalReferenceF64Trunc) {
+  BufferedRawMachineAssemblerTester<int32_t> m;
+  ExternalReference ref =
+      ExternalReference::f64_trunc_wrapper_function(m.isolate());
+  TestExternalReferenceFunction<double>(&m, ref, trunc);
+}
+
+TEST(RunCallExternalReferenceF64Floor) {
+  BufferedRawMachineAssemblerTester<int32_t> m;
+  ExternalReference ref =
+      ExternalReference::f64_floor_wrapper_function(m.isolate());
+  TestExternalReferenceFunction<double>(&m, ref, floor);
+}
+
+TEST(RunCallExternalReferenceF64Ceil) {
+  BufferedRawMachineAssemblerTester<int32_t> m;
+  ExternalReference ref =
+      ExternalReference::f64_ceil_wrapper_function(m.isolate());
+  TestExternalReferenceFunction<double>(&m, ref, ceil);
+}
+
+TEST(RunCallExternalReferenceF64RoundTiesEven) {
+  BufferedRawMachineAssemblerTester<int32_t> m;
+  ExternalReference ref =
+      ExternalReference::f64_nearest_int_wrapper_function(m.isolate());
+  TestExternalReferenceFunction<double>(&m, ref, nearbyint);
+}
+
 #if V8_TARGET_ARCH_64_BIT
 // TODO(titzer): run int64 tests on all platforms when supported.
 TEST(RunCheckedLoadInt64) {
@@ -6015,7 +6113,17 @@ TEST(RunBitcastFloat32ToInt32) {
 TEST(RunRoundInt32ToFloat32) {
   BufferedRawMachineAssemblerTester<float> m(MachineType::Int32());
   m.Return(m.RoundInt32ToFloat32(m.Parameter(0)));
-  FOR_INT32_INPUTS(i) { CHECK_EQ(static_cast<float>(*i), m.Call(*i)); }
+  FOR_INT32_INPUTS(i) {
+    volatile float expected = static_cast<float>(*i);
+    CHECK_EQ(expected, m.Call(*i));
+  }
+}
+
+
+TEST(RunRoundUint32ToFloat32) {
+  BufferedRawMachineAssemblerTester<float> m(MachineType::Uint32());
+  m.Return(m.RoundUint32ToFloat32(m.Parameter(0)));
+  FOR_UINT32_INPUTS(i) { CHECK_EQ(static_cast<float>(*i), m.Call(*i)); }
 }
 
 

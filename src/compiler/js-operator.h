@@ -213,30 +213,6 @@ std::ostream& operator<<(std::ostream&, ContextAccess const&);
 ContextAccess const& ContextAccessOf(Operator const*);
 
 
-// Defines the name for a dynamic variable lookup. This is used as a parameter
-// by JSLoadDynamic and JSStoreDynamic operators.
-class DynamicAccess final {
- public:
-  DynamicAccess(const Handle<String>& name, TypeofMode typeof_mode);
-
-  const Handle<String>& name() const { return name_; }
-  TypeofMode typeof_mode() const { return typeof_mode_; }
-
- private:
-  const Handle<String> name_;
-  const TypeofMode typeof_mode_;
-};
-
-size_t hash_value(DynamicAccess const&);
-
-bool operator==(DynamicAccess const&, DynamicAccess const&);
-bool operator!=(DynamicAccess const&, DynamicAccess const&);
-
-std::ostream& operator<<(std::ostream&, DynamicAccess const&);
-
-DynamicAccess const& DynamicAccessOf(Operator const*);
-
-
 // Defines the property of an object for a named access. This is
 // used as a parameter by the JSLoadNamed and JSStoreNamed operators.
 class NamedAccess final {
@@ -348,33 +324,8 @@ std::ostream& operator<<(std::ostream&, PropertyAccess const&);
 PropertyAccess const& PropertyAccessOf(const Operator* op);
 
 
-// Defines specifics about arguments object or rest parameter creation. This is
-// used as a parameter by JSCreateArguments operators.
-class CreateArgumentsParameters final {
- public:
-  enum Type { kMappedArguments, kUnmappedArguments, kRestArray };
-  CreateArgumentsParameters(Type type, int start_index)
-      : type_(type), start_index_(start_index) {}
-
-  Type type() const { return type_; }
-  int start_index() const { return start_index_; }
-
- private:
-  const Type type_;
-  const int start_index_;
-};
-
-bool operator==(CreateArgumentsParameters const&,
-                CreateArgumentsParameters const&);
-bool operator!=(CreateArgumentsParameters const&,
-                CreateArgumentsParameters const&);
-
-size_t hash_value(CreateArgumentsParameters const&);
-
-std::ostream& operator<<(std::ostream&, CreateArgumentsParameters const&);
-
-const CreateArgumentsParameters& CreateArgumentsParametersOf(
-    const Operator* op);
+// CreateArgumentsType is used as parameter to JSCreateArguments nodes.
+CreateArgumentsType const& CreateArgumentsTypeOf(const Operator* op);
 
 
 // Defines shared information for the array that should be created. This is
@@ -501,8 +452,7 @@ class JSOperatorBuilder final : public ZoneObject {
   const Operator* Yield();
 
   const Operator* Create();
-  const Operator* CreateArguments(CreateArgumentsParameters::Type type,
-                                  int start_index);
+  const Operator* CreateArguments(CreateArgumentsType type);
   const Operator* CreateArray(size_t arity, Handle<AllocationSite> site);
   const Operator* CreateClosure(Handle<SharedFunctionInfo> shared_info,
                                 PretenureFlag pretenure);
@@ -549,9 +499,6 @@ class JSOperatorBuilder final : public ZoneObject {
 
   const Operator* LoadContext(size_t depth, size_t index, bool immutable);
   const Operator* StoreContext(size_t depth, size_t index);
-
-  const Operator* LoadDynamic(const Handle<String>& name,
-                              TypeofMode typeof_mode);
 
   const Operator* TypeOf();
   const Operator* InstanceOf();

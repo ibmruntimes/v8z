@@ -613,7 +613,6 @@ void MathPowStub::Generate(MacroAssembler* masm) {
   __ Cvtsi2sd(double_exponent, exponent);
 
   // Returning or bailing out.
-  Counters* counters = isolate()->counters();
   if (exponent_type() == ON_STACK) {
     // The arguments are still on the stack.
     __ bind(&call_runtime);
@@ -624,7 +623,6 @@ void MathPowStub::Generate(MacroAssembler* masm) {
     __ bind(&done);
     __ AllocateHeapNumber(eax, scratch, base, &call_runtime);
     __ movsd(FieldOperand(eax, HeapNumber::kValueOffset), double_result);
-    __ IncrementCounter(counters->math_pow(), 1);
     __ ret(2 * kPointerSize);
   } else {
     __ bind(&call_runtime);
@@ -644,7 +642,6 @@ void MathPowStub::Generate(MacroAssembler* masm) {
     __ add(esp, Immediate(kDoubleSize));
 
     __ bind(&done);
-    __ IncrementCounter(counters->math_pow(), 1);
     __ ret(0);
   }
 }
@@ -727,67 +724,6 @@ void LoadIndexedStringStub::Generate(MacroAssembler* masm) {
   __ bind(&miss);
   PropertyAccessCompiler::TailCallBuiltin(
       masm, PropertyAccessCompiler::MissBuiltin(Code::KEYED_LOAD_IC));
-}
-
-
-void ArgumentsAccessStub::GenerateReadElement(MacroAssembler* masm) {
-  // The key is in edx and the parameter count is in eax.
-  DCHECK(edx.is(ArgumentsAccessReadDescriptor::index()));
-  DCHECK(eax.is(ArgumentsAccessReadDescriptor::parameter_count()));
-
-  // The displacement is used for skipping the frame pointer on the
-  // stack. It is the offset of the last parameter (if any) relative
-  // to the frame pointer.
-  static const int kDisplacement = 1 * kPointerSize;
-
-  // Check that the key is a smi.
-  Label slow;
-  __ JumpIfNotSmi(edx, &slow, Label::kNear);
-
-  // Check if the calling frame is an arguments adaptor frame.
-  Label adaptor;
-  __ mov(ebx, Operand(ebp, StandardFrameConstants::kCallerFPOffset));
-  __ mov(ecx, Operand(ebx, StandardFrameConstants::kContextOffset));
-  __ cmp(ecx, Immediate(Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR)));
-  __ j(equal, &adaptor, Label::kNear);
-
-  // Check index against formal parameters count limit passed in
-  // through register eax. Use unsigned comparison to get negative
-  // check for free.
-  __ cmp(edx, eax);
-  __ j(above_equal, &slow, Label::kNear);
-
-  // Read the argument from the stack and return it.
-  STATIC_ASSERT(kSmiTagSize == 1);
-  STATIC_ASSERT(kSmiTag == 0);  // Shifting code depends on these.
-  __ lea(ebx, Operand(ebp, eax, times_2, 0));
-  __ neg(edx);
-  __ mov(eax, Operand(ebx, edx, times_2, kDisplacement));
-  __ ret(0);
-
-  // Arguments adaptor case: Check index against actual arguments
-  // limit found in the arguments adaptor frame. Use unsigned
-  // comparison to get negative check for free.
-  __ bind(&adaptor);
-  __ mov(ecx, Operand(ebx, ArgumentsAdaptorFrameConstants::kLengthOffset));
-  __ cmp(edx, ecx);
-  __ j(above_equal, &slow, Label::kNear);
-
-  // Read the argument from the stack and return it.
-  STATIC_ASSERT(kSmiTagSize == 1);
-  STATIC_ASSERT(kSmiTag == 0);  // Shifting code depends on these.
-  __ lea(ebx, Operand(ebx, ecx, times_2, 0));
-  __ neg(edx);
-  __ mov(eax, Operand(ebx, edx, times_2, kDisplacement));
-  __ ret(0);
-
-  // Slow-case: Handle non-smi or out-of-bounds access to arguments
-  // by calling the runtime system.
-  __ bind(&slow);
-  __ pop(ebx);  // Return address.
-  __ push(edx);
-  __ push(ebx);
-  __ TailCallRuntime(Runtime::kArguments);
 }
 
 
@@ -880,7 +816,7 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
   __ lea(ebx, Operand(ebx, ecx, times_2, FixedArray::kHeaderSize));
 
   // 3. Arguments object.
-  __ add(ebx, Immediate(Heap::kSloppyArgumentsObjectSize));
+  __ add(ebx, Immediate(JSSloppyArgumentsObject::kSize));
 
   // Do the allocation of all three objects in one go.
   __ Allocate(ebx, eax, edi, no_reg, &runtime, TAG_OBJECT);
@@ -921,24 +857,19 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
          masm->isolate()->factory()->empty_fixed_array());
 
   // Set up the callee in-object property.
-  STATIC_ASSERT(Heap::kArgumentsCalleeIndex == 1);
+  STATIC_ASSERT(JSSloppyArgumentsObject::kCalleeIndex == 1);
   __ mov(edi, Operand(esp, 1 * kPointerSize));
   __ AssertNotSmi(edi);
-  __ mov(FieldOperand(eax, JSObject::kHeaderSize +
-                               Heap::kArgumentsCalleeIndex * kPointerSize),
-         edi);
+  __ mov(FieldOperand(eax, JSSloppyArgumentsObject::kCalleeOffset), edi);
 
   // Use the length (smi tagged) and set that as an in-object property too.
   __ AssertSmi(ecx);
-  STATIC_ASSERT(Heap::kArgumentsLengthIndex == 0);
-  __ mov(FieldOperand(eax, JSObject::kHeaderSize +
-                      Heap::kArgumentsLengthIndex * kPointerSize),
-         ecx);
+  __ mov(FieldOperand(eax, JSSloppyArgumentsObject::kLengthOffset), ecx);
 
   // Set up the elements pointer in the allocated arguments object.
   // If we allocated a parameter map, edi will point there, otherwise to the
   // backing store.
-  __ lea(edi, Operand(eax, Heap::kSloppyArgumentsObjectSize));
+  __ lea(edi, Operand(eax, JSSloppyArgumentsObject::kSize));
   __ mov(FieldOperand(eax, JSObject::kElementsOffset), edi);
 
   // eax = address of new object (tagged)
@@ -1055,128 +986,6 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
   __ push(ecx);  // Push parameter count.
   __ push(eax);  // Push return address.
   __ TailCallRuntime(Runtime::kNewSloppyArguments);
-}
-
-
-void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
-  // ecx : number of parameters (tagged)
-  // edx : parameters pointer
-  // edi : function
-  // esp[0] : return address
-
-  DCHECK(edi.is(ArgumentsAccessNewDescriptor::function()));
-  DCHECK(ecx.is(ArgumentsAccessNewDescriptor::parameter_count()));
-  DCHECK(edx.is(ArgumentsAccessNewDescriptor::parameter_pointer()));
-
-  // Check if the calling frame is an arguments adaptor frame.
-  Label try_allocate, runtime;
-  __ mov(ebx, Operand(ebp, StandardFrameConstants::kCallerFPOffset));
-  __ mov(eax, Operand(ebx, StandardFrameConstants::kContextOffset));
-  __ cmp(eax, Immediate(Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR)));
-  __ j(not_equal, &try_allocate, Label::kNear);
-
-  // Patch the arguments.length and the parameters pointer.
-  __ mov(ecx, Operand(ebx, ArgumentsAdaptorFrameConstants::kLengthOffset));
-  __ lea(edx,
-         Operand(ebx, ecx, times_2, StandardFrameConstants::kCallerSPOffset));
-
-  // Try the new space allocation. Start out with computing the size of
-  // the arguments object and the elements array.
-  Label add_arguments_object;
-  __ bind(&try_allocate);
-  __ mov(eax, ecx);
-  __ test(eax, eax);
-  __ j(zero, &add_arguments_object, Label::kNear);
-  __ lea(eax, Operand(eax, times_2, FixedArray::kHeaderSize));
-  __ bind(&add_arguments_object);
-  __ add(eax, Immediate(Heap::kStrictArgumentsObjectSize));
-
-  // Do the allocation of both objects in one go.
-  __ Allocate(eax, eax, ebx, no_reg, &runtime, TAG_OBJECT);
-
-  // Get the arguments map from the current native context.
-  __ mov(edi, NativeContextOperand());
-  __ mov(edi, ContextOperand(edi, Context::STRICT_ARGUMENTS_MAP_INDEX));
-
-  __ mov(FieldOperand(eax, JSObject::kMapOffset), edi);
-  __ mov(FieldOperand(eax, JSObject::kPropertiesOffset),
-         masm->isolate()->factory()->empty_fixed_array());
-  __ mov(FieldOperand(eax, JSObject::kElementsOffset),
-         masm->isolate()->factory()->empty_fixed_array());
-
-  // Get the length (smi tagged) and set that as an in-object property too.
-  STATIC_ASSERT(Heap::kArgumentsLengthIndex == 0);
-  __ AssertSmi(ecx);
-  __ mov(FieldOperand(eax, JSObject::kHeaderSize +
-                      Heap::kArgumentsLengthIndex * kPointerSize),
-         ecx);
-
-  // If there are no actual arguments, we're done.
-  Label done;
-  __ test(ecx, ecx);
-  __ j(zero, &done, Label::kNear);
-
-  // Set up the elements pointer in the allocated arguments object and
-  // initialize the header in the elements fixed array.
-  __ lea(edi, Operand(eax, Heap::kStrictArgumentsObjectSize));
-  __ mov(FieldOperand(eax, JSObject::kElementsOffset), edi);
-  __ mov(FieldOperand(edi, FixedArray::kMapOffset),
-         Immediate(isolate()->factory()->fixed_array_map()));
-  __ mov(FieldOperand(edi, FixedArray::kLengthOffset), ecx);
-
-  // Untag the length for the loop below.
-  __ SmiUntag(ecx);
-
-  // Copy the fixed array slots.
-  Label loop;
-  __ bind(&loop);
-  __ mov(ebx, Operand(edx, -1 * kPointerSize));  // Skip receiver.
-  __ mov(FieldOperand(edi, FixedArray::kHeaderSize), ebx);
-  __ add(edi, Immediate(kPointerSize));
-  __ sub(edx, Immediate(kPointerSize));
-  __ dec(ecx);
-  __ j(not_zero, &loop);
-
-  // Return.
-  __ bind(&done);
-  __ ret(0);
-
-  // Do the runtime call to allocate the arguments object.
-  __ bind(&runtime);
-  __ pop(eax);   // Pop return address.
-  __ push(edi);  // Push function.
-  __ push(edx);  // Push parameters pointer.
-  __ push(ecx);  // Push parameter count.
-  __ push(eax);  // Push return address.
-  __ TailCallRuntime(Runtime::kNewStrictArguments);
-}
-
-
-void RestParamAccessStub::GenerateNew(MacroAssembler* masm) {
-  // ecx : number of parameters (tagged)
-  // edx : parameters pointer
-  // ebx : rest parameter index (tagged)
-  // esp[0] : return address
-
-  // Check if the calling frame is an arguments adaptor frame.
-  Label runtime;
-  __ mov(edi, Operand(ebp, StandardFrameConstants::kCallerFPOffset));
-  __ mov(eax, Operand(edi, StandardFrameConstants::kContextOffset));
-  __ cmp(eax, Immediate(Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR)));
-  __ j(not_equal, &runtime);
-
-  // Patch the arguments.length and the parameters pointer.
-  __ mov(ecx, Operand(edi, ArgumentsAdaptorFrameConstants::kLengthOffset));
-  __ lea(edx,
-         Operand(edi, ecx, times_2, StandardFrameConstants::kCallerSPOffset));
-
-  __ bind(&runtime);
-  __ pop(eax);   // Save return address.
-  __ push(ecx);  // Push number of parameters.
-  __ push(edx);  // Push parameters pointer.
-  __ push(ebx);  // Push rest parameter index.
-  __ push(eax);  // Push return address.
-  __ TailCallRuntime(Runtime::kNewRestParam);
 }
 
 
@@ -1868,7 +1677,7 @@ void CompareICStub::GenerateGeneric(MacroAssembler* masm) {
     // Non-strict equality.  Objects are unequal if
     // they are both JSObjects and not undetectable,
     // and their pointers are different.
-    Label return_unequal;
+    Label return_unequal, undetectable;
     // At most one is a smi, so we can test for smi by adding the two.
     // A smi plus a heap object has the low bit set, a heap object plus
     // a heap object has the low bit clear.
@@ -1877,26 +1686,32 @@ void CompareICStub::GenerateGeneric(MacroAssembler* masm) {
     __ lea(ecx, Operand(eax, edx, times_1, 0));
     __ test(ecx, Immediate(kSmiTagMask));
     __ j(not_zero, &runtime_call, Label::kNear);
-    __ CmpObjectType(eax, FIRST_JS_RECEIVER_TYPE, ecx);
+
+    __ mov(ecx, FieldOperand(eax, HeapObject::kMapOffset));
+    __ mov(ebx, FieldOperand(edx, HeapObject::kMapOffset));
+
+    __ test_b(FieldOperand(ebx, Map::kBitFieldOffset),
+              1 << Map::kIsUndetectable);
+    __ j(not_zero, &undetectable, Label::kNear);
+    __ test_b(FieldOperand(ecx, Map::kBitFieldOffset),
+              1 << Map::kIsUndetectable);
+    __ j(not_zero, &return_unequal, Label::kNear);
+
+    __ CmpInstanceType(ebx, FIRST_JS_RECEIVER_TYPE);
     __ j(below, &runtime_call, Label::kNear);
-    __ CmpObjectType(edx, FIRST_JS_RECEIVER_TYPE, ebx);
+    __ CmpInstanceType(ecx, FIRST_JS_RECEIVER_TYPE);
     __ j(below, &runtime_call, Label::kNear);
-    // We do not bail out after this point.  Both are JSObjects, and
-    // they are equal if and only if both are undetectable.
-    // The and of the undetectable flags is 1 if and only if they are equal.
+
+    __ bind(&return_unequal);
+    // Return non-equal by returning the non-zero object pointer in eax.
+    __ ret(0);  // eax, edx were pushed
+
+    __ bind(&undetectable);
     __ test_b(FieldOperand(ecx, Map::kBitFieldOffset),
               1 << Map::kIsUndetectable);
     __ j(zero, &return_unequal, Label::kNear);
-    __ test_b(FieldOperand(ebx, Map::kBitFieldOffset),
-              1 << Map::kIsUndetectable);
-    __ j(zero, &return_unequal, Label::kNear);
-    // The objects are both undetectable, so they both compare as the value
-    // undefined, and are equal.
     __ Move(eax, Immediate(EQUAL));
-    __ bind(&return_unequal);
-    // Return non-equal by returning the non-zero object pointer in eax,
-    // or return equal if we fell through to here.
-    __ ret(0);  // rax, rdx were pushed
+    __ ret(0);  // eax, edx were pushed
   }
   __ bind(&runtime_call);
 
@@ -4050,11 +3865,8 @@ void RecordWriteStub::GenerateIncremental(MacroAssembler* masm, Mode mode) {
                            regs_.scratch0(),
                            &dont_need_remembered_set);
 
-    __ CheckPageFlag(regs_.object(),
-                     regs_.scratch0(),
-                     1 << MemoryChunk::SCAN_ON_SCAVENGE,
-                     not_zero,
-                     &dont_need_remembered_set);
+    __ JumpIfInNewSpace(regs_.object(), regs_.scratch0(),
+                        &dont_need_remembered_set);
 
     // First notify the incremental marker if necessary, then update the
     // remembered set.
@@ -5198,6 +5010,266 @@ void InternalArrayConstructorStub::Generate(MacroAssembler* masm) {
 }
 
 
+void FastNewRestParameterStub::Generate(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  //  -- edi    : function
+  //  -- esi    : context
+  //  -- ebp    : frame pointer
+  //  -- esp[0] : return address
+  // -----------------------------------
+  __ AssertFunction(edi);
+
+  // For Ignition we need to skip all possible handler/stub frames until
+  // we reach the JavaScript frame for the function (similar to what the
+  // runtime fallback implementation does). So make edx point to that
+  // JavaScript frame.
+  {
+    Label loop, loop_entry;
+    __ mov(edx, ebp);
+    __ jmp(&loop_entry, Label::kNear);
+    __ bind(&loop);
+    __ mov(edx, Operand(edx, StandardFrameConstants::kCallerFPOffset));
+    __ bind(&loop_entry);
+    __ cmp(edi, Operand(edx, StandardFrameConstants::kMarkerOffset));
+    __ j(not_equal, &loop);
+  }
+
+  // Check if we have rest parameters (only possible if we have an
+  // arguments adaptor frame below the function frame).
+  Label no_rest_parameters;
+  __ mov(ebx, Operand(edx, StandardFrameConstants::kCallerFPOffset));
+  __ cmp(Operand(ebx, StandardFrameConstants::kContextOffset),
+         Immediate(Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR)));
+  __ j(not_equal, &no_rest_parameters, Label::kNear);
+
+  // Check if the arguments adaptor frame contains more arguments than
+  // specified by the function's internal formal parameter count.
+  Label rest_parameters;
+  __ mov(ecx, FieldOperand(edi, JSFunction::kSharedFunctionInfoOffset));
+  __ mov(eax, Operand(ebx, ArgumentsAdaptorFrameConstants::kLengthOffset));
+  __ sub(eax,
+         FieldOperand(ecx, SharedFunctionInfo::kFormalParameterCountOffset));
+  __ j(greater, &rest_parameters);
+
+  // Return an empty rest parameter array.
+  __ bind(&no_rest_parameters);
+  {
+    // ----------- S t a t e -------------
+    //  -- esi    : context
+    //  -- esp[0] : return address
+    // -----------------------------------
+
+    // Allocate an empty rest parameter array.
+    Label allocate, done_allocate;
+    __ Allocate(JSArray::kSize, eax, edx, ecx, &allocate, TAG_OBJECT);
+    __ bind(&done_allocate);
+
+    // Setup the rest parameter array in rax.
+    __ LoadGlobalFunction(Context::JS_ARRAY_FAST_ELEMENTS_MAP_INDEX, ecx);
+    __ mov(FieldOperand(eax, JSArray::kMapOffset), ecx);
+    __ mov(ecx, isolate()->factory()->empty_fixed_array());
+    __ mov(FieldOperand(eax, JSArray::kPropertiesOffset), ecx);
+    __ mov(FieldOperand(eax, JSArray::kElementsOffset), ecx);
+    __ mov(FieldOperand(eax, JSArray::kLengthOffset),
+           Immediate(Smi::FromInt(0)));
+    STATIC_ASSERT(JSArray::kSize == 4 * kPointerSize);
+    __ Ret();
+
+    // Fall back to %AllocateInNewSpace.
+    __ bind(&allocate);
+    {
+      FrameScope scope(masm, StackFrame::INTERNAL);
+      __ Push(Smi::FromInt(JSArray::kSize));
+      __ CallRuntime(Runtime::kAllocateInNewSpace);
+    }
+    __ jmp(&done_allocate);
+  }
+
+  __ bind(&rest_parameters);
+  {
+    // Compute the pointer to the first rest parameter (skippping the receiver).
+    __ lea(ebx,
+           Operand(ebx, eax, times_half_pointer_size,
+                   StandardFrameConstants::kCallerSPOffset - 1 * kPointerSize));
+
+    // ----------- S t a t e -------------
+    //  -- esi    : context
+    //  -- eax    : number of rest parameters (tagged)
+    //  -- ebx    : pointer to first rest parameters
+    //  -- esp[0] : return address
+    // -----------------------------------
+
+    // Allocate space for the rest parameter array plus the backing store.
+    Label allocate, done_allocate;
+    __ lea(ecx, Operand(eax, times_half_pointer_size,
+                        JSArray::kSize + FixedArray::kHeaderSize));
+    __ Allocate(ecx, edx, edi, no_reg, &allocate, TAG_OBJECT);
+    __ bind(&done_allocate);
+
+    // Setup the elements array in edx.
+    __ mov(FieldOperand(edx, FixedArray::kMapOffset),
+           isolate()->factory()->fixed_array_map());
+    __ mov(FieldOperand(edx, FixedArray::kLengthOffset), eax);
+    {
+      Label loop, done_loop;
+      __ Move(ecx, Smi::FromInt(0));
+      __ bind(&loop);
+      __ cmp(ecx, eax);
+      __ j(equal, &done_loop, Label::kNear);
+      __ mov(edi, Operand(ebx, 0 * kPointerSize));
+      __ mov(FieldOperand(edx, ecx, times_half_pointer_size,
+                          FixedArray::kHeaderSize),
+             edi);
+      __ sub(ebx, Immediate(1 * kPointerSize));
+      __ add(ecx, Immediate(Smi::FromInt(1)));
+      __ jmp(&loop);
+      __ bind(&done_loop);
+    }
+
+    // Setup the rest parameter array in edi.
+    __ lea(edi,
+           Operand(edx, eax, times_half_pointer_size, FixedArray::kHeaderSize));
+    __ LoadGlobalFunction(Context::JS_ARRAY_FAST_ELEMENTS_MAP_INDEX, ecx);
+    __ mov(FieldOperand(edi, JSArray::kMapOffset), ecx);
+    __ mov(FieldOperand(edi, JSArray::kPropertiesOffset),
+           isolate()->factory()->empty_fixed_array());
+    __ mov(FieldOperand(edi, JSArray::kElementsOffset), edx);
+    __ mov(FieldOperand(edi, JSArray::kLengthOffset), eax);
+    STATIC_ASSERT(JSArray::kSize == 4 * kPointerSize);
+    __ mov(eax, edi);
+    __ Ret();
+
+    // Fall back to %AllocateInNewSpace.
+    __ bind(&allocate);
+    {
+      FrameScope scope(masm, StackFrame::INTERNAL);
+      __ SmiTag(ecx);
+      __ Push(eax);
+      __ Push(ebx);
+      __ Push(ecx);
+      __ CallRuntime(Runtime::kAllocateInNewSpace);
+      __ mov(edx, eax);
+      __ Pop(ebx);
+      __ Pop(eax);
+    }
+    __ jmp(&done_allocate);
+  }
+}
+
+
+void FastNewStrictArgumentsStub::Generate(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  //  -- edi    : function
+  //  -- esi    : context
+  //  -- ebp    : frame pointer
+  //  -- esp[0] : return address
+  // -----------------------------------
+  __ AssertFunction(edi);
+
+  // For Ignition we need to skip all possible handler/stub frames until
+  // we reach the JavaScript frame for the function (similar to what the
+  // runtime fallback implementation does). So make edx point to that
+  // JavaScript frame.
+  {
+    Label loop, loop_entry;
+    __ mov(edx, ebp);
+    __ jmp(&loop_entry, Label::kNear);
+    __ bind(&loop);
+    __ mov(edx, Operand(edx, StandardFrameConstants::kCallerFPOffset));
+    __ bind(&loop_entry);
+    __ cmp(edi, Operand(edx, StandardFrameConstants::kMarkerOffset));
+    __ j(not_equal, &loop);
+  }
+
+  // Check if we have an arguments adaptor frame below the function frame.
+  Label arguments_adaptor, arguments_done;
+  __ mov(ebx, Operand(edx, StandardFrameConstants::kCallerFPOffset));
+  __ cmp(Operand(ebx, StandardFrameConstants::kContextOffset),
+         Immediate(Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR)));
+  __ j(equal, &arguments_adaptor, Label::kNear);
+  {
+    __ mov(eax, FieldOperand(edi, JSFunction::kSharedFunctionInfoOffset));
+    __ mov(eax,
+           FieldOperand(eax, SharedFunctionInfo::kFormalParameterCountOffset));
+    __ lea(ebx,
+           Operand(edx, eax, times_half_pointer_size,
+                   StandardFrameConstants::kCallerSPOffset - 1 * kPointerSize));
+  }
+  __ jmp(&arguments_done, Label::kNear);
+  __ bind(&arguments_adaptor);
+  {
+    __ mov(eax, Operand(ebx, ArgumentsAdaptorFrameConstants::kLengthOffset));
+    __ lea(ebx,
+           Operand(ebx, eax, times_half_pointer_size,
+                   StandardFrameConstants::kCallerSPOffset - 1 * kPointerSize));
+  }
+  __ bind(&arguments_done);
+
+  // ----------- S t a t e -------------
+  //  -- eax    : number of arguments (tagged)
+  //  -- ebx    : pointer to the first argument
+  //  -- esi    : context
+  //  -- esp[0] : return address
+  // -----------------------------------
+
+  // Allocate space for the strict arguments object plus the backing store.
+  Label allocate, done_allocate;
+  __ lea(ecx,
+         Operand(eax, times_half_pointer_size,
+                 JSStrictArgumentsObject::kSize + FixedArray::kHeaderSize));
+  __ Allocate(ecx, edx, edi, no_reg, &allocate, TAG_OBJECT);
+  __ bind(&done_allocate);
+
+  // Setup the elements array in edx.
+  __ mov(FieldOperand(edx, FixedArray::kMapOffset),
+         isolate()->factory()->fixed_array_map());
+  __ mov(FieldOperand(edx, FixedArray::kLengthOffset), eax);
+  {
+    Label loop, done_loop;
+    __ Move(ecx, Smi::FromInt(0));
+    __ bind(&loop);
+    __ cmp(ecx, eax);
+    __ j(equal, &done_loop, Label::kNear);
+    __ mov(edi, Operand(ebx, 0 * kPointerSize));
+    __ mov(FieldOperand(edx, ecx, times_half_pointer_size,
+                        FixedArray::kHeaderSize),
+           edi);
+    __ sub(ebx, Immediate(1 * kPointerSize));
+    __ add(ecx, Immediate(Smi::FromInt(1)));
+    __ jmp(&loop);
+    __ bind(&done_loop);
+  }
+
+  // Setup the rest parameter array in edi.
+  __ lea(edi,
+         Operand(edx, eax, times_half_pointer_size, FixedArray::kHeaderSize));
+  __ LoadGlobalFunction(Context::STRICT_ARGUMENTS_MAP_INDEX, ecx);
+  __ mov(FieldOperand(edi, JSStrictArgumentsObject::kMapOffset), ecx);
+  __ mov(FieldOperand(edi, JSStrictArgumentsObject::kPropertiesOffset),
+         isolate()->factory()->empty_fixed_array());
+  __ mov(FieldOperand(edi, JSStrictArgumentsObject::kElementsOffset), edx);
+  __ mov(FieldOperand(edi, JSStrictArgumentsObject::kLengthOffset), eax);
+  STATIC_ASSERT(JSStrictArgumentsObject::kSize == 4 * kPointerSize);
+  __ mov(eax, edi);
+  __ Ret();
+
+  // Fall back to %AllocateInNewSpace.
+  __ bind(&allocate);
+  {
+    FrameScope scope(masm, StackFrame::INTERNAL);
+    __ SmiTag(ecx);
+    __ Push(eax);
+    __ Push(ebx);
+    __ Push(ecx);
+    __ CallRuntime(Runtime::kAllocateInNewSpace);
+    __ mov(edx, eax);
+    __ Pop(ebx);
+    __ Pop(eax);
+  }
+  __ jmp(&done_allocate);
+}
+
+
 void LoadGlobalViaContextStub::Generate(MacroAssembler* masm) {
   Register context_reg = esi;
   Register slot_reg = ebx;
@@ -5535,11 +5607,10 @@ static void CallApiFunctionAndReturn(MacroAssembler* masm,
   __ jmp(&leave_exit_frame);
 }
 
-
 static void CallApiFunctionStubHelper(MacroAssembler* masm,
                                       const ParameterCount& argc,
                                       bool return_first_arg,
-                                      bool call_data_undefined) {
+                                      bool call_data_undefined, bool is_lazy) {
   // ----------- S t a t e -------------
   //  -- edi                 : callee
   //  -- ebx                 : call_data
@@ -5613,8 +5684,10 @@ static void CallApiFunctionStubHelper(MacroAssembler* masm,
   // push return address
   __ push(return_address);
 
-  // load context from callee
-  __ mov(context, FieldOperand(callee, JSFunction::kContextOffset));
+  if (!is_lazy) {
+    // load context from callee
+    __ mov(context, FieldOperand(callee, JSFunction::kContextOffset));
+  }
 
   // API function gets reference to the v8::Arguments. If CPU profiler
   // is enabled wrapper function will be called and we need to pass
@@ -5686,7 +5759,7 @@ static void CallApiFunctionStubHelper(MacroAssembler* masm,
 void CallApiFunctionStub::Generate(MacroAssembler* masm) {
   bool call_data_undefined = this->call_data_undefined();
   CallApiFunctionStubHelper(masm, ParameterCount(eax), false,
-                            call_data_undefined);
+                            call_data_undefined, false);
 }
 
 
@@ -5694,8 +5767,9 @@ void CallApiAccessorStub::Generate(MacroAssembler* masm) {
   bool is_store = this->is_store();
   int argc = this->argc();
   bool call_data_undefined = this->call_data_undefined();
+  bool is_lazy = this->is_lazy();
   CallApiFunctionStubHelper(masm, ParameterCount(argc), is_store,
-                            call_data_undefined);
+                            call_data_undefined, is_lazy);
 }
 
 

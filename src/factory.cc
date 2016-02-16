@@ -1041,6 +1041,13 @@ Handle<FixedArray> Factory::CopyFixedArrayAndGrow(Handle<FixedArray> array,
                      FixedArray);
 }
 
+Handle<FixedArray> Factory::CopyFixedArrayUpTo(Handle<FixedArray> array,
+                                               int new_len,
+                                               PretenureFlag pretenure) {
+  CALL_HEAP_FUNCTION(isolate(), isolate()->heap()->CopyFixedArrayUpTo(
+                                    *array, new_len, pretenure),
+                     FixedArray);
+}
 
 Handle<FixedArray> Factory::CopyFixedArray(Handle<FixedArray> array) {
   CALL_HEAP_FUNCTION(isolate(),
@@ -1737,16 +1744,6 @@ Handle<JSSetIterator> Factory::NewJSSetIterator() {
 }
 
 
-Handle<JSIteratorResult> Factory::NewJSIteratorResult(Handle<Object> value,
-                                                      Handle<Object> done) {
-  Handle<JSIteratorResult> result = Handle<JSIteratorResult>::cast(
-      NewJSObjectFromMap(isolate()->iterator_result_map()));
-  result->set_value(*value);
-  result->set_done(*done);
-  return result;
-}
-
-
 namespace {
 
 ElementsKind GetExternalArrayElementsKind(ExternalArrayType type) {
@@ -1966,9 +1963,9 @@ MaybeHandle<JSBoundFunction> Factory::NewJSBoundFunction(
 
   // Determine the prototype of the {target_function}.
   Handle<Object> prototype;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate(), prototype,
-                             Object::GetPrototype(isolate(), target_function),
-                             JSBoundFunction);
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate(), prototype,
+      JSReceiver::GetPrototype(isolate(), target_function), JSBoundFunction);
 
   // Create the [[BoundArguments]] for the result.
   Handle<FixedArray> bound_arguments;
@@ -2122,6 +2119,10 @@ Handle<JSMessageObject> Factory::NewJSMessageObject(
 
 Handle<SharedFunctionInfo> Factory::NewSharedFunctionInfo(
     Handle<String> name, MaybeHandle<Code> maybe_code, bool is_constructor) {
+  // Function names are assumed to be flat elsewhere. Must flatten before
+  // allocating SharedFunctionInfo to avoid GC seeing the uninitialized SFI.
+  name = String::Flatten(name, TENURED);
+
   Handle<Map> map = shared_function_info_map();
   Handle<SharedFunctionInfo> share = New<SharedFunctionInfo>(map, OLD_SPACE);
 
@@ -2259,7 +2260,11 @@ Handle<DebugInfo> Factory::NewDebugInfo(Handle<SharedFunctionInfo> shared) {
   Handle<DebugInfo> debug_info =
       Handle<DebugInfo>::cast(NewStruct(DEBUG_INFO_TYPE));
   debug_info->set_shared(*shared);
-  debug_info->set_code(shared->code());
+  if (shared->HasBytecodeArray()) {
+    debug_info->set_abstract_code(AbstractCode::cast(shared->bytecode_array()));
+  } else {
+    debug_info->set_abstract_code(AbstractCode::cast(shared->code()));
+  }
   debug_info->set_break_points(*break_points);
 
   // Link debug info to function.

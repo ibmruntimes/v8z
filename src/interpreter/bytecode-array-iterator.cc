@@ -63,8 +63,7 @@ int8_t BytecodeArrayIterator::GetImmediateOperand(int operand_index) const {
   return static_cast<int8_t>(operand);
 }
 
-
-int BytecodeArrayIterator::GetCountOperand(int operand_index) const {
+int BytecodeArrayIterator::GetRegisterCountOperand(int operand_index) const {
   OperandSize size =
       Bytecodes::GetOperandSize(current_bytecode(), operand_index);
   OperandType type = (size == OperandSize::kByte) ? OperandType::kRegCount8
@@ -89,15 +88,27 @@ Register BytecodeArrayIterator::GetRegisterOperand(int operand_index) const {
       Bytecodes::GetOperandType(current_bytecode(), operand_index);
   DCHECK(Bytecodes::IsRegisterOperandType(operand_type));
   uint32_t operand = GetRawOperand(operand_index, operand_type);
+  Register reg;
   switch (Bytecodes::GetOperandSize(current_bytecode(), operand_index)) {
     case OperandSize::kByte:
-      return Register::FromOperand(static_cast<uint8_t>(operand));
+      reg = Register::FromOperand(static_cast<uint8_t>(operand));
+      break;
     case OperandSize::kShort:
-      return Register::FromWideOperand(static_cast<uint16_t>(operand));
+      reg = Register::FromWideOperand(static_cast<uint16_t>(operand));
+      break;
     case OperandSize::kNone:
       UNREACHABLE();
+      reg = Register::invalid_value();
+      break;
   }
-  return Register();
+  DCHECK_GE(reg.index(),
+            Register::FromParameterIndex(0, bytecode_array()->parameter_count())
+                .index());
+  DCHECK(reg.index() < bytecode_array()->register_count() ||
+         (reg.index() == 0 &&
+          Bytecodes::IsMaybeRegisterOperandType(
+              Bytecodes::GetOperandType(current_bytecode(), operand_index))));
+  return reg;
 }
 
 int BytecodeArrayIterator::GetRegisterOperandRange(int operand_index) const {
@@ -116,14 +127,10 @@ int BytecodeArrayIterator::GetRegisterOperandRange(int operand_index) const {
     default: {
       if (operand_index + 1 !=
           Bytecodes::NumberOfOperands(current_bytecode())) {
-        // TODO(oth): Ensure all bytecodes specify the full range of registers
-        // with kRegCount (currently Call/CallJSRuntime are off by one due to
-        // reciever.
         OperandType next_operand_type =
             Bytecodes::GetOperandType(current_bytecode(), operand_index + 1);
-        if (next_operand_type == OperandType::kRegCount8 ||
-            next_operand_type == OperandType::kRegCount16) {
-          return GetCountOperand(operand_index + 1);
+        if (Bytecodes::IsRegisterCountOperandType(next_operand_type)) {
+          return GetRegisterCountOperand(operand_index + 1);
         }
       }
       return 1;

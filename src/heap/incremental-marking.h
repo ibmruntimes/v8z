@@ -154,6 +154,9 @@ class IncrementalMarking {
   static void RecordWriteFromCode(HeapObject* obj, Object** slot,
                                   Isolate* isolate);
 
+  static void RecordWriteOfCodeEntryFromCode(JSFunction* host, Object** slot,
+                                             Isolate* isolate);
+
   // Record a slot for compaction.  Returns false for objects that are
   // guaranteed to be rescanned or not guaranteed to survive.
   //
@@ -216,10 +219,10 @@ class IncrementalMarking {
   }
 
  private:
-  class Observer : public InlineAllocationObserver {
+  class Observer : public AllocationObserver {
    public:
     Observer(IncrementalMarking& incremental_marking, intptr_t step_size)
-        : InlineAllocationObserver(step_size),
+        : AllocationObserver(step_size),
           incremental_marking_(incremental_marking) {}
 
     void Step(int bytes_allocated, Address, size_t) override {

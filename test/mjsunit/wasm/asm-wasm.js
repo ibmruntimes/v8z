@@ -15,7 +15,8 @@ function EmptyTest() {
   return {caller: caller};
 }
 
-assertEquals(11, _WASMEXP_.asmCompileRun(EmptyTest.toString()));
+assertEquals(11, _WASMEXP_.instantiateModuleFromAsm(
+      EmptyTest.toString()).caller());
 
 
 function IntTest() {
@@ -25,7 +26,7 @@ function IntTest() {
     b = b|0;
     var c = (b + 1)|0
     var d = 3.0;
-    var e = d | 0;  // double conversion
+    var e = ~~d;  // double conversion
     return (a + c + 1)|0;
   }
 
@@ -36,7 +37,8 @@ function IntTest() {
   return {caller: caller};
 }
 
-assertEquals(101, _WASMEXP_.asmCompileRun(IntTest.toString()));
+assertEquals(101, _WASMEXP_.instantiateModuleFromAsm(
+      IntTest.toString()).caller());
 
 
 function Float64Test() {
@@ -61,7 +63,8 @@ function Float64Test() {
   return {caller: caller};
 }
 
-assertEquals(1, _WASMEXP_.asmCompileRun(Float64Test.toString()));
+assertEquals(1, _WASMEXP_.instantiateModuleFromAsm(
+      Float64Test.toString()).caller());
 
 
 function BadModule() {
@@ -81,7 +84,7 @@ function BadModule() {
 }
 
 assertThrows(function() {
-  _WASMEXP_.asmCompileRun(BadModule.toString())
+  _WASMEXP_.instantiateModuleFromAsm(BadModule.toString()).caller();
 });
 
 
@@ -102,7 +105,8 @@ function TestReturnInBlock() {
   return {caller: caller};
 }
 
-assertEquals(1, _WASMEXP_.asmCompileRun(TestReturnInBlock.toString()));
+assertEquals(1, _WASMEXP_.instantiateModuleFromAsm(
+      TestReturnInBlock.toString()).caller());
 
 
 function TestWhileSimple() {
@@ -119,7 +123,8 @@ function TestWhileSimple() {
   return {caller: caller};
 }
 
-assertEquals(5, _WASMEXP_.asmCompileRun(TestWhileSimple.toString()));
+assertEquals(5, _WASMEXP_.instantiateModuleFromAsm(
+      TestWhileSimple.toString()).caller());
 
 
 function TestWhileWithoutBraces() {
@@ -135,7 +140,8 @@ function TestWhileWithoutBraces() {
   return {caller: caller};
 }
 
-assertEquals(4, _WASMEXP_.asmCompileRun(TestWhileWithoutBraces.toString()));
+assertEquals(4, _WASMEXP_.instantiateModuleFromAsm(
+      TestWhileWithoutBraces.toString()).caller());
 
 
 function TestReturnInWhile() {
@@ -153,7 +159,8 @@ function TestReturnInWhile() {
   return {caller: caller};
 }
 
-assertEquals(6, _WASMEXP_.asmCompileRun(TestReturnInWhile.toString()));
+assertEquals(6, _WASMEXP_.instantiateModuleFromAsm(
+      TestReturnInWhile.toString()).caller());
 
 
 function TestReturnInWhileWithoutBraces() {
@@ -170,7 +177,8 @@ function TestReturnInWhileWithoutBraces() {
 }
 
 assertEquals(
-    7, _WASMEXP_.asmCompileRun(TestReturnInWhileWithoutBraces.toString()));
+    7, _WASMEXP_.instantiateModuleFromAsm(
+      TestReturnInWhileWithoutBraces.toString()).caller());
 
 
 function TestBreakInWhile() {
@@ -186,7 +194,8 @@ function TestBreakInWhile() {
   return {caller: caller};
 }
 
-assertEquals(8, _WASMEXP_.asmCompileRun(TestBreakInWhile.toString()));
+assertEquals(8, _WASMEXP_.instantiateModuleFromAsm(
+      TestBreakInWhile.toString()).caller());
 
 
 function TestBreakInNestedWhile() {
@@ -209,7 +218,8 @@ function TestBreakInNestedWhile() {
   return {caller: caller};
 }
 
-assertEquals(9, _WASMEXP_.asmCompileRun(TestBreakInNestedWhile.toString()));
+assertEquals(9, _WASMEXP_.instantiateModuleFromAsm(
+      TestBreakInNestedWhile.toString()).caller());
 
 
 function TestBreakInBlock() {
@@ -230,7 +240,8 @@ function TestBreakInBlock() {
   return {caller: caller};
 }
 
-assertEquals(10, _WASMEXP_.asmCompileRun(TestBreakInBlock.toString()));
+assertEquals(10, _WASMEXP_.instantiateModuleFromAsm(
+      TestBreakInBlock.toString()).caller());
 
 
 function TestBreakInNamedWhile() {
@@ -250,7 +261,8 @@ function TestBreakInNamedWhile() {
   return {caller: caller};
 }
 
-assertEquals(11, _WASMEXP_.asmCompileRun(TestBreakInNamedWhile.toString()));
+assertEquals(11, _WASMEXP_.instantiateModuleFromAsm(
+      TestBreakInNamedWhile.toString()).caller());
 
 
 function TestContinue() {
@@ -272,7 +284,8 @@ function TestContinue() {
   return {caller: caller};
 }
 
-assertEquals(-5, _WASMEXP_.asmCompileRun(TestContinue.toString()));
+assertEquals(-5, _WASMEXP_.instantiateModuleFromAsm(
+      TestContinue.toString()).caller());
 
 
 function TestContinueInNamedWhile() {
@@ -299,7 +312,8 @@ function TestContinueInNamedWhile() {
   return {caller: caller};
 }
 
-assertEquals(20, _WASMEXP_.asmCompileRun(TestContinueInNamedWhile.toString()));
+assertEquals(20, _WASMEXP_.instantiateModuleFromAsm(
+      TestContinueInNamedWhile.toString()).caller());
 
 
 function TestNot() {
@@ -313,7 +327,8 @@ function TestNot() {
   return {caller:caller};
 }
 
-assertEquals(1, _WASMEXP_.asmCompileRun(TestNot.toString()));
+assertEquals(1, _WASMEXP_.instantiateModuleFromAsm(
+      TestNot.toString()).caller());
 
 
 function TestNotEquals() {
@@ -330,7 +345,8 @@ function TestNotEquals() {
   return {caller:caller};
 }
 
-assertEquals(21, _WASMEXP_.asmCompileRun(TestNotEquals.toString()));
+assertEquals(21, _WASMEXP_.instantiateModuleFromAsm(
+      TestNotEquals.toString()).caller());
 
 
 function TestUnsignedComparison() {
@@ -347,7 +363,8 @@ function TestUnsignedComparison() {
   return {caller:caller};
 }
 
-assertEquals(22, _WASMEXP_.asmCompileRun(TestUnsignedComparison.toString()));
+assertEquals(22, _WASMEXP_.instantiateModuleFromAsm(
+      TestUnsignedComparison.toString()).caller());
 
 
 function TestMixedAdd() {
@@ -369,7 +386,8 @@ function TestMixedAdd() {
   return {caller:caller};
 }
 
-assertEquals(23, _WASMEXP_.asmCompileRun(TestMixedAdd.toString()));
+assertEquals(23, _WASMEXP_.instantiateModuleFromAsm(
+      TestMixedAdd.toString()).caller());
 
 
 function TestInt32HeapAccess(stdlib, foreign, buffer) {
@@ -388,7 +406,8 @@ function TestInt32HeapAccess(stdlib, foreign, buffer) {
   return {caller: caller};
 }
 
-assertEquals(7, _WASMEXP_.asmCompileRun(TestInt32HeapAccess.toString()));
+assertEquals(7, _WASMEXP_.instantiateModuleFromAsm(
+      TestInt32HeapAccess.toString()).caller());
 
 
 function TestInt32HeapAccessExternal() {
@@ -423,7 +442,7 @@ function TestHeapAccessIntTypes() {
     module.__init__();
     assertEquals(7, module.caller());
     assertEquals(7, memory_view[2]);
-    assertEquals(7, _WASMEXP_.asmCompileRun(code));
+    assertEquals(7, _WASMEXP_.instantiateModuleFromAsm(code).caller());
   }
 }
 
@@ -452,7 +471,8 @@ function TestFloatHeapAccess(stdlib, foreign, buffer) {
   return {caller: caller};
 }
 
-assertEquals(1, _WASMEXP_.asmCompileRun(TestFloatHeapAccess.toString()));
+assertEquals(1, _WASMEXP_.instantiateModuleFromAsm(
+      TestFloatHeapAccess.toString()).caller());
 
 
 function TestFloatHeapAccessExternal() {
@@ -482,7 +502,8 @@ function TestConvertI32() {
   return {caller:caller};
 }
 
-assertEquals(24, _WASMEXP_.asmCompileRun(TestConvertI32.toString()));
+assertEquals(24, _WASMEXP_.instantiateModuleFromAsm(
+      TestConvertI32.toString()).caller());
 
 
 function TestConvertF64FromInt() {
@@ -499,7 +520,8 @@ function TestConvertF64FromInt() {
   return {caller:caller};
 }
 
-assertEquals(25, _WASMEXP_.asmCompileRun(TestConvertF64FromInt.toString()));
+assertEquals(25, _WASMEXP_.instantiateModuleFromAsm(
+      TestConvertF64FromInt.toString()).caller());
 
 
 function TestConvertF64FromUnsigned() {
@@ -518,7 +540,8 @@ function TestConvertF64FromUnsigned() {
   return {caller:caller};
 }
 
-assertEquals(26, _WASMEXP_.asmCompileRun(TestConvertF64FromUnsigned.toString()));
+assertEquals(26, _WASMEXP_.instantiateModuleFromAsm(
+      TestConvertF64FromUnsigned.toString()).caller());
 
 
 function TestModInt() {
@@ -533,7 +556,8 @@ function TestModInt() {
   return {caller:caller};
 }
 
-assertEquals(-27, _WASMEXP_.asmCompileRun(TestModInt.toString()));
+assertEquals(-27, _WASMEXP_.instantiateModuleFromAsm(
+      TestModInt.toString()).caller());
 
 
 function TestModUnsignedInt() {
@@ -548,7 +572,8 @@ function TestModUnsignedInt() {
   return {caller:caller};
 }
 
-assertEquals(8, _WASMEXP_.asmCompileRun(TestModUnsignedInt.toString()));
+assertEquals(8, _WASMEXP_.instantiateModuleFromAsm(
+      TestModUnsignedInt.toString()).caller());
 
 
 function TestModDouble() {
@@ -566,7 +591,8 @@ function TestModDouble() {
   return {caller:caller};
 }
 
-assertEquals(28, _WASMEXP_.asmCompileRun(TestModDouble.toString()));
+assertEquals(28, _WASMEXP_.instantiateModuleFromAsm(
+      TestModDouble.toString()).caller());
 
 
 /*
@@ -587,7 +613,8 @@ function TestModDoubleNegative() {
   return {caller:caller};
 }
 
-assertEquals(28, _WASMEXP_.asmCompileRun(TestModDoubleNegative.toString()));
+assertEquals(28, _WASMEXP_.instantiateModuleFromAsm(
+      TestModDoubleNegative.toString()).caller());
 */
 
 
@@ -648,7 +675,8 @@ function TestForLoop() {
   return {caller:caller};
 }
 
-assertEquals(54, _WASMEXP_.asmCompileRun(TestForLoop.toString()));
+assertEquals(54, _WASMEXP_.instantiateModuleFromAsm(
+      TestForLoop.toString()).caller());
 
 
 function TestForLoopWithoutInit() {
@@ -666,7 +694,8 @@ function TestForLoopWithoutInit() {
   return {caller:caller};
 }
 
-assertEquals(100, _WASMEXP_.asmCompileRun(TestForLoopWithoutInit.toString()));
+assertEquals(100, _WASMEXP_.instantiateModuleFromAsm(
+      TestForLoopWithoutInit.toString()).caller());
 
 
 function TestForLoopWithoutCondition() {
@@ -687,7 +716,8 @@ function TestForLoopWithoutCondition() {
   return {caller:caller};
 }
 
-assertEquals(66, _WASMEXP_.asmCompileRun(TestForLoopWithoutCondition.toString()));
+assertEquals(66, _WASMEXP_.instantiateModuleFromAsm(
+      TestForLoopWithoutCondition.toString()).caller());
 
 
 function TestForLoopWithoutNext() {
@@ -704,7 +734,8 @@ function TestForLoopWithoutNext() {
   return {caller:caller};
 }
 
-assertEquals(41, _WASMEXP_.asmCompileRun(TestForLoopWithoutNext.toString()));
+assertEquals(41, _WASMEXP_.instantiateModuleFromAsm(
+      TestForLoopWithoutNext.toString()).caller());
 
 
 function TestForLoopWithoutBody() {
@@ -720,7 +751,8 @@ function TestForLoopWithoutBody() {
   return {caller:caller};
 }
 
-assertEquals(45, _WASMEXP_.asmCompileRun(TestForLoopWithoutBody.toString()));
+assertEquals(45, _WASMEXP_.instantiateModuleFromAsm(
+      TestForLoopWithoutBody.toString()).caller());
 
 
 function TestDoWhile() {
@@ -739,7 +771,8 @@ function TestDoWhile() {
   return {caller:caller};
 }
 
-assertEquals(84, _WASMEXP_.asmCompileRun(TestDoWhile.toString()));
+assertEquals(84, _WASMEXP_.instantiateModuleFromAsm(
+      TestDoWhile.toString()).caller());
 
 
 function TestConditional() {
@@ -753,7 +786,8 @@ function TestConditional() {
   return {caller:caller};
 }
 
-assertEquals(41, _WASMEXP_.asmCompileRun(TestConditional.toString()));
+assertEquals(41, _WASMEXP_.instantiateModuleFromAsm(
+      TestConditional.toString()).caller());
 
 
 function TestSwitch() {
@@ -781,7 +815,8 @@ function TestSwitch() {
   return {caller:caller};
 }
 
-assertEquals(23, _WASMEXP_.asmCompileRun(TestSwitch.toString()));
+assertEquals(23, _WASMEXP_.instantiateModuleFromAsm(
+      TestSwitch.toString()).caller());
 
 
 function TestSwitchFallthrough() {
@@ -803,7 +838,8 @@ function TestSwitchFallthrough() {
   return {caller:caller};
 }
 
-assertEquals(42, _WASMEXP_.asmCompileRun(TestSwitchFallthrough.toString()));
+assertEquals(42, _WASMEXP_.instantiateModuleFromAsm(
+      TestSwitchFallthrough.toString()).caller());
 
 
 function TestNestedSwitch() {
@@ -829,7 +865,8 @@ function TestNestedSwitch() {
   return {caller:caller};
 }
 
-assertEquals(43, _WASMEXP_.asmCompileRun(TestNestedSwitch.toString()));
+assertEquals(43, _WASMEXP_.instantiateModuleFromAsm(
+      TestNestedSwitch.toString()).caller());
 
 
 function TestInitFunctionWithNoGlobals() {
@@ -876,8 +913,8 @@ function TestFunctionTableSingleFunction() {
   return {caller:caller};
 }
 
-assertEquals(71,
-    _WASMEXP_.asmCompileRun(TestFunctionTableSingleFunction.toString()));
+assertEquals(71, _WASMEXP_.instantiateModuleFromAsm(
+      TestFunctionTableSingleFunction.toString()).caller());
 
 
 function TestFunctionTableMultipleFunctions() {
@@ -907,8 +944,8 @@ function TestFunctionTableMultipleFunctions() {
   return {caller:caller};
 }
 
-assertEquals(73,
-    _WASMEXP_.asmCompileRun(TestFunctionTableMultipleFunctions.toString()));
+assertEquals(73, _WASMEXP_.instantiateModuleFromAsm(
+      TestFunctionTableMultipleFunctions.toString()).caller());
 
 
 function TestFunctionTable() {
@@ -958,3 +995,178 @@ assertEquals(9, module.caller(0, 2, 54, 45));
 assertEquals(99, module.caller(0, 3, 54, 45));
 assertEquals(23, module.caller(0, 4, 12, 11));
 assertEquals(31, module.caller(1, 0, 30, 11));
+
+
+function TestForeignFunctions() {
+  function AsmModule(stdlib, foreign, buffer) {
+    "use asm";
+
+    var setVal = foreign.setVal;
+    var getVal = foreign.getVal;
+
+    function caller(initial_value, new_value) {
+      initial_value = initial_value|0;
+      new_value = new_value|0;
+      if ((getVal()|0) == (initial_value|0)) {
+        setVal(new_value|0);
+        return getVal()|0;
+      }
+      return 0;
+    }
+
+    return {caller:caller};
+  }
+
+  function ffi(initial_val) {
+    var val = initial_val;
+
+    function getVal() {
+      return val;
+    }
+
+    function setVal(new_val) {
+      val = new_val;
+    }
+
+    return {getVal:getVal, setVal:setVal};
+  }
+
+  var foreign = new ffi(23);
+
+  var module = _WASMEXP_.instantiateModuleFromAsm(AsmModule.toString(),
+                                                  foreign, null);
+
+  module.__init__();
+  assertEquals(103, module.caller(23, 103));
+}
+
+TestForeignFunctions();
+
+function TestForeignFunctionMultipleUse() {
+  function AsmModule(stdlib, foreign, buffer) {
+    "use asm";
+
+    var getVal = foreign.getVal;
+
+    function caller(int_val, double_val) {
+      int_val = int_val|0;
+      double_val = +double_val;
+      if ((getVal()|0) == (int_val|0)) {
+        if ((+getVal()) == (+double_val)) {
+          return 89;
+        }
+      }
+      return 0;
+    }
+
+    return {caller:caller};
+  }
+
+  function ffi() {
+    function getVal() {
+      return 83.25;
+    }
+
+    return {getVal:getVal};
+  }
+
+  var foreign = new ffi();
+
+  var module = _WASMEXP_.instantiateModuleFromAsm(AsmModule.toString(),
+                                                  foreign, null);
+
+  module.__init__();
+  assertEquals(89, module.caller(83, 83.25));
+}
+
+TestForeignFunctionMultipleUse();
+
+
+function TestForeignVariables() {
+  function AsmModule(stdlib, foreign, buffer) {
+    "use asm";
+
+    var i1 = foreign.foo | 0;
+    var f1 = +foreign.bar;
+    var i2 = foreign.baz | 0;
+    var f2 = +foreign.baz;
+
+    function geti1() {
+      return i1|0;
+    }
+
+    function getf1() {
+      return +f1;
+    }
+
+    function geti2() {
+      return i2|0;
+    }
+
+    function getf2() {
+      return +f2;
+    }
+
+    return {geti1:geti1, getf1:getf1, geti2:geti2, getf2:getf2};
+  }
+
+  function TestCase(env, i1, f1, i2, f2) {
+    var module = _WASMEXP_.instantiateModuleFromAsm(
+        AsmModule.toString(), env);
+    module.__init__();
+    assertEquals(i1, module.geti1());
+    assertEquals(f1, module.getf1());
+    assertEquals(i2, module.geti2());
+    assertEquals(f2, module.getf2());
+  }
+
+  // Check normal operation.
+  TestCase({foo: 123, bar: 234.5, baz: 345.7}, 123, 234.5, 345, 345.7);
+  // Check partial operation.
+  TestCase({baz: 345.7}, 0, NaN, 345, 345.7);
+  // Check that undefined values are converted to proper defaults.
+  TestCase({qux: 999}, 0, NaN, 0, NaN);
+  // Check that an undefined ffi is ok.
+  TestCase(undefined, 0, NaN, 0, NaN);
+  // Check that true values are converted properly.
+  TestCase({foo: true, bar: true, baz: true}, 1, 1.0, 1, 1.0);
+  // Check that false values are converted properly.
+  TestCase({foo: false, bar: false, baz: false}, 0, 0, 0, 0);
+  // Check that null values are converted properly.
+  TestCase({foo: null, bar: null, baz: null}, 0, 0, 0, 0);
+  // Check that string values are converted properly.
+  TestCase({foo: 'hi', bar: 'there', baz: 'dude'}, 0, NaN, 0, NaN);
+  TestCase({foo: '0xff', bar: '234', baz: '456.1'}, 255, 234, 456, 456.1, 456);
+  // Check that Date values are converted properly.
+  TestCase({foo: new Date(123), bar: new Date(456),
+            baz: new Date(789)}, 123, 456, 789, 789);
+  // Check that list values are converted properly.
+  TestCase({foo: [], bar: [], baz: []}, 0, 0, 0, 0);
+  // Check that object values are converted properly.
+  TestCase({foo: {}, bar: {}, baz: {}}, 0, NaN, 0, NaN);
+  // Check that getter object values are converted properly.
+  var o = {
+    get foo() {
+      return 123.4;
+    }
+  };
+  TestCase({foo: o.foo, bar: o.foo, baz: o.foo}, 123, 123.4, 123, 123.4);
+  // Check that getter object values are converted properly.
+  var o = {
+    get baz() {
+      return 123.4;
+    }
+  };
+  TestCase(o, 0, NaN, 123, 123.4);
+  // Check that objects with valueOf are converted properly.
+  var o = {
+    valueOf: function() { return 99; }
+  };
+  TestCase({foo: o, bar: o, baz: o}, 99, 99, 99, 99);
+  // Check that function values are converted properly.
+  TestCase({foo: TestCase, bar: TestCase, qux: TestCase}, 0, NaN, 0, NaN);
+  // Check that a missing ffi object is safe.
+  TestCase(undefined, 0, NaN, 0, NaN);
+}
+
+TestForeignVariables();

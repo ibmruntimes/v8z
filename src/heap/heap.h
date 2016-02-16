@@ -188,11 +188,8 @@ namespace internal {
   V(PropertyCell, empty_property_cell, EmptyPropertyCell)                      \
   V(Object, weak_stack_trace_list, WeakStackTraceList)                         \
   V(Object, noscript_shared_function_infos, NoScriptSharedFunctionInfos)       \
-  V(FixedArray, interpreter_table, InterpreterTable)                           \
   V(Map, bytecode_array_map, BytecodeArrayMap)                                 \
-  V(WeakCell, empty_weak_cell, EmptyWeakCell)                                  \
-  V(BytecodeArray, empty_bytecode_array, EmptyBytecodeArray)
-
+  V(WeakCell, empty_weak_cell, EmptyWeakCell)
 
 // Entries in this list are limited to Smis and are not visited during GC.
 #define SMI_ROOT_LIST(V)                                                   \
@@ -254,7 +251,6 @@ namespace internal {
   V(OrderedHashTableMap)                \
   V(EmptyFixedArray)                    \
   V(EmptyByteArray)                     \
-  V(EmptyBytecodeArray)                 \
   V(EmptyDescriptorArray)               \
   V(ArgumentsMarker)                    \
   V(SymbolMap)                          \
@@ -279,6 +275,7 @@ namespace internal {
   PRIVATE_SYMBOL_LIST(V)
 
 // Forward declarations.
+class AllocationObserver;
 class ArrayBufferTracker;
 class GCIdleTimeAction;
 class GCIdleTimeHandler;
@@ -287,7 +284,6 @@ class GCTracer;
 class HeapObjectsFilter;
 class HeapStats;
 class HistogramTimer;
-class InlineAllocationObserver;
 class Isolate;
 class MemoryReducer;
 class ObjectStats;
@@ -442,17 +438,17 @@ class Heap {
     kSmiRootsStart = kStringTableRootIndex + 1
   };
 
+  enum FindMementoMode { kForRuntime, kForGC };
+
+  enum HeapState { NOT_IN_GC, SCAVENGE, MARK_COMPACT };
+
   // Indicates whether live bytes adjustment is triggered
   // - from within the GC code before sweeping started (SEQUENTIAL_TO_SWEEPER),
   // - or from within GC (CONCURRENT_TO_SWEEPER),
   // - or mutator code (CONCURRENT_TO_SWEEPER).
   enum InvocationMode { SEQUENTIAL_TO_SWEEPER, CONCURRENT_TO_SWEEPER };
 
-  enum PretenuringFeedbackInsertionMode { kCached, kGlobal };
-
-  enum FindMementoMode { kForRuntime, kForGC };
-
-  enum HeapState { NOT_IN_GC, SCAVENGE, MARK_COMPACT };
+  enum UpdateAllocationSiteMode { kGlobal, kCached };
 
   // Taking this lock prevents the GC from entering a phase that relocates
   // object references.
@@ -522,20 +518,6 @@ class Heap {
   static const double kMaxHeapGrowingFactorMemoryConstrained;
   static const double kMaxHeapGrowingFactorIdle;
   static const double kTargetMutatorUtilization;
-
-  // Sloppy mode arguments object size.
-  static const int kSloppyArgumentsObjectSize =
-      JSObject::kHeaderSize + 2 * kPointerSize;
-
-  // Strict mode arguments has no callee so it is smaller.
-  static const int kStrictArgumentsObjectSize =
-      JSObject::kHeaderSize + 1 * kPointerSize;
-
-  // Indicies for direct access into argument objects.
-  static const int kArgumentsLengthIndex = 0;
-
-  // callee is only valid in sloppy mode.
-  static const int kArgumentsCalleeIndex = 1;
 
   static const int kNoGCFlags = 0;
   static const int kReduceMemoryFootprintMask = 1;
@@ -674,20 +656,6 @@ class Heap {
   // Notify the heap that a context has been disposed.
   int NotifyContextDisposed(bool dependant_context);
 
-  inline void increment_scan_on_scavenge_pages() {
-    scan_on_scavenge_pages_++;
-    if (FLAG_gc_verbose) {
-      PrintF("Scan-on-scavenge pages: %d\n", scan_on_scavenge_pages_);
-    }
-  }
-
-  inline void decrement_scan_on_scavenge_pages() {
-    scan_on_scavenge_pages_--;
-    if (FLAG_gc_verbose) {
-      PrintF("Scan-on-scavenge pages: %d\n", scan_on_scavenge_pages_);
-    }
-  }
-
   void set_native_contexts_list(Object* object) {
     native_contexts_list_ = object;
   }
@@ -787,7 +755,6 @@ class Heap {
   inline bool OldGenerationAllocationLimitReached();
 
   void QueueMemoryChunkForFree(MemoryChunk* chunk);
-  void FilterStoreBufferEntriesOnAboutToBeFreedPages();
   void FreeQueuedChunks(MemoryChunk* list_head);
   void FreeQueuedChunks();
   void WaitUntilUnmappingOfFreeChunksCompleted();
@@ -889,7 +856,6 @@ class Heap {
   // address with the mask will result in the start address of the new space
   // for all addresses in either semispace.
   Address NewSpaceStart() { return new_space_.start(); }
-  uintptr_t NewSpaceMask() { return new_space_.mask(); }
   Address NewSpaceTop() { return new_space_.top(); }
 
   NewSpace* new_space() { return &new_space_; }
@@ -1085,15 +1051,14 @@ class Heap {
   // Store buffer API. =========================================================
   // ===========================================================================
 
-  // Write barrier support for address[offset] = o.
-  INLINE(void RecordWrite(Address address, int offset));
-
-  // Write barrier support for address[start : start + len[ = o.
-  INLINE(void RecordWrites(Address address, int start, int len));
+  // Write barrier support for object[offset] = o;
+  inline void RecordWrite(Object* object, int offset, Object* o);
 
   Address* store_buffer_top_address() {
     return reinterpret_cast<Address*>(&roots_[kStoreBufferTopRootIndex]);
   }
+
+  void ClearRecordedSlot(HeapObject* object, Object** slot);
 
   // ===========================================================================
   // Incremental marking API. ==================================================
@@ -1133,24 +1098,26 @@ class Heap {
 
   // Returns whether the object resides in new space.
   inline bool InNewSpace(Object* object);
-  inline bool InNewSpace(Address address);
-  inline bool InNewSpacePage(Address address);
   inline bool InFromSpace(Object* object);
   inline bool InToSpace(Object* object);
 
   // Returns whether the object resides in old space.
-  inline bool InOldSpace(Address address);
   inline bool InOldSpace(Object* object);
 
   // Checks whether an address/object in the heap (including auxiliary
   // area and unused area).
-  bool Contains(Address addr);
   bool Contains(HeapObject* value);
 
   // Checks whether an address/object in a space.
   // Currently used by tests, serialization and heap verification only.
-  bool InSpace(Address addr, AllocationSpace space);
   bool InSpace(HeapObject* value, AllocationSpace space);
+
+  // Slow methods that can be used for verification as they can also be used
+  // with off-heap Addresses.
+  bool ContainsSlow(Address addr);
+  bool InSpaceSlow(Address addr, AllocationSpace space);
+  inline bool InNewSpaceSlow(Address address);
+  inline bool InOldSpaceSlow(Address address);
 
   // ===========================================================================
   // Object statistics tracking. ===============================================
@@ -1361,6 +1328,7 @@ class Heap {
   // the corresponding allocation site is immediately updated and an entry
   // in the hash map is created. Otherwise the entry (including a the count
   // value) is cached on the local pretenuring feedback.
+  template <UpdateAllocationSiteMode mode>
   inline void UpdateAllocationSite(HeapObject* object,
                                    HashMap* pretenuring_feedback);
 
@@ -1497,9 +1465,6 @@ class Heap {
 
   static String* UpdateNewSpaceReferenceInExternalStringTableEntry(
       Heap* heap, Object** pointer);
-
-  static void ScavengeStoreBufferCallback(Heap* heap, MemoryChunk* page,
-                                          StoreBufferEvent event);
 
   // Selects the proper allocation space based on the pretenuring decision.
   static AllocationSpace SelectSpace(PretenureFlag pretenure) {
@@ -1898,6 +1863,11 @@ class Heap {
   MUST_USE_RESULT AllocationResult
   CopyFixedArrayAndGrow(FixedArray* src, int grow_by, PretenureFlag pretenure);
 
+  // Make a copy of src, also grow the copy, and return the copy.
+  MUST_USE_RESULT AllocationResult CopyFixedArrayUpTo(FixedArray* src,
+                                                      int new_len,
+                                                      PretenureFlag pretenure);
+
   // Make a copy of src, set the map, and return the copy.
   MUST_USE_RESULT AllocationResult
       CopyFixedArrayWithMap(FixedArray* src, Map* map);
@@ -2015,8 +1985,6 @@ class Heap {
 
   int global_ic_age_;
 
-  int scan_on_scavenge_pages_;
-
   NewSpace new_space_;
   OldSpace* old_space_;
   OldSpace* code_space_;
@@ -2083,8 +2051,6 @@ class Heap {
   Object* encountered_weak_cells_;
 
   Object* encountered_transition_arrays_;
-
-  StoreBufferRebuilder store_buffer_rebuilder_;
 
   List<GCCallbackPair> gc_epilogue_callbacks_;
   List<GCCallbackPair> gc_prologue_callbacks_;
@@ -2153,7 +2119,7 @@ class Heap {
 
   ScavengeJob* scavenge_job_;
 
-  InlineAllocationObserver* idle_scavenge_observer_;
+  AllocationObserver* idle_scavenge_observer_;
 
   // These two counters are monotomically increasing and never reset.
   size_t full_codegen_bytes_generated_;
@@ -2606,20 +2572,19 @@ class PathTracer : public ObjectVisitor {
 #endif  // DEBUG
 
 // -----------------------------------------------------------------------------
-// Allows observation of inline allocation in the new space.
-class InlineAllocationObserver {
+// Allows observation of allocations.
+class AllocationObserver {
  public:
-  explicit InlineAllocationObserver(intptr_t step_size)
+  explicit AllocationObserver(intptr_t step_size)
       : step_size_(step_size), bytes_to_next_step_(step_size) {
     DCHECK(step_size >= kPointerSize);
   }
-  virtual ~InlineAllocationObserver() {}
+  virtual ~AllocationObserver() {}
 
-  // Called each time the new space does an inline allocation step. This may be
+  // Called each time the observed space does an allocation step. This may be
   // more frequently than the step_size we are monitoring (e.g. when there are
   // multiple observers, or when page or space boundary is encountered.)
-  void InlineAllocationStep(int bytes_allocated, Address soon_object,
-                            size_t size) {
+  void AllocationStep(int bytes_allocated, Address soon_object, size_t size) {
     bytes_to_next_step_ -= bytes_allocated;
     if (bytes_to_next_step_ <= 0) {
       Step(static_cast<int>(step_size_ - bytes_to_next_step_), soon_object,
@@ -2654,8 +2619,10 @@ class InlineAllocationObserver {
   intptr_t bytes_to_next_step_;
 
  private:
+  friend class LargeObjectSpace;
   friend class NewSpace;
-  DISALLOW_COPY_AND_ASSIGN(InlineAllocationObserver);
+  friend class PagedSpace;
+  DISALLOW_COPY_AND_ASSIGN(AllocationObserver);
 };
 
 }  // namespace internal

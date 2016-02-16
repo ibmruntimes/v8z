@@ -220,7 +220,7 @@ class MacroAssembler: public Assembler {
   void JumpIfNotInNewSpace(Register object,
                            Register scratch,
                            Label* branch) {
-    InNewSpace(object, scratch, ne, branch);
+    InNewSpace(object, scratch, eq, branch);
   }
 
   // Check if object is in new space.  Jumps if the object is in new space.
@@ -228,7 +228,7 @@ class MacroAssembler: public Assembler {
   void JumpIfInNewSpace(Register object,
                         Register scratch,
                         Label* branch) {
-    InNewSpace(object, scratch, eq, branch);
+    InNewSpace(object, scratch, ne, branch);
   }
 
   // Check if an object has a given incremental marking color.
@@ -289,6 +289,11 @@ class MacroAssembler: public Assembler {
                      smi_check,
                      pointers_to_here_check_for_value);
   }
+
+  // Notify the garbage collector that we wrote a code entry into a
+  // JSFunction. Only scratch is clobbered by the operation.
+  void RecordWriteCodeEntryField(Register js_function, Register code_entry,
+                                 Register scratch);
 
   void RecordWriteForMap(
       Register object,

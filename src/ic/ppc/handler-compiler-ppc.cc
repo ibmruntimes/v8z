@@ -284,12 +284,17 @@ void PropertyHandlerCompiler::GenerateApiAccessorCall(
     call_data_undefined = true;
     __ LoadRoot(data, Heap::kUndefinedValueRootIndex);
   } else {
-    __ LoadP(data,
-             FieldMemOperand(callee, JSFunction::kSharedFunctionInfoOffset));
-    __ LoadP(data,
-             FieldMemOperand(data, SharedFunctionInfo::kFunctionDataOffset));
-    __ LoadP(data,
-             FieldMemOperand(data, FunctionTemplateInfo::kCallCodeOffset));
+    if (optimization.is_constant_call()) {
+      __ LoadP(data,
+               FieldMemOperand(callee, JSFunction::kSharedFunctionInfoOffset));
+      __ LoadP(data,
+               FieldMemOperand(data, SharedFunctionInfo::kFunctionDataOffset));
+      __ LoadP(data,
+               FieldMemOperand(data, FunctionTemplateInfo::kCallCodeOffset));
+    } else {
+      __ LoadP(data,
+               FieldMemOperand(callee, FunctionTemplateInfo::kCallCodeOffset));
+    }
     __ LoadP(data, FieldMemOperand(data, CallHandlerInfo::kDataOffset));
   }
 
@@ -308,7 +313,8 @@ void PropertyHandlerCompiler::GenerateApiAccessorCall(
   __ mov(api_function_address, Operand(ref));
 
   // Jump to stub.
-  CallApiAccessorStub stub(isolate, is_store, call_data_undefined);
+  CallApiAccessorStub stub(isolate, is_store, call_data_undefined,
+                           !optimization.is_constant_call());
   __ TailCallStub(&stub);
 }
 
@@ -769,7 +775,7 @@ Handle<Code> NamedLoadHandlerCompiler::CompileLoadGlobal(
   }
 
   Counters* counters = isolate()->counters();
-  __ IncrementCounter(counters->named_load_global_stub(), 1, r4, r6);
+  __ IncrementCounter(counters->ic_named_load_global_stub(), 1, r4, r6);
   if (IC::ICUseVector(kind())) {
     DiscardVectorAndSlot();
   }

@@ -8,7 +8,7 @@
 #include "src/compiler/node-properties.h"
 #include "src/compiler/operator-properties.h"
 #include "src/compiler/verifier.h"
-#include "src/types-inl.h"
+#include "src/handles-inl.h"
 
 namespace v8 {
 namespace internal {
@@ -123,6 +123,7 @@ bool NodeProperties::IsControlEdge(Edge edge) {
 
 // static
 bool NodeProperties::IsExceptionalCall(Node* node) {
+  if (node->op()->HasProperty(Operator::kNoThrow)) return false;
   for (Edge const edge : node->use_edges()) {
     if (!NodeProperties::IsControlEdge(edge)) continue;
     if (edge.from()->opcode() == IrOpcode::kIfException) return true;

@@ -185,7 +185,8 @@ enum BindingFlags {
   V(FLOAT32_ARRAY_FUN_INDEX, JSFunction, float32_array_fun)                    \
   V(FLOAT32X4_FUNCTION_INDEX, JSFunction, float32x4_function)                  \
   V(FLOAT64_ARRAY_FUN_INDEX, JSFunction, float64_array_fun)                    \
-  V(FUNCTION_CACHE_INDEX, ObjectHashTable, function_cache)                     \
+  V(TEMPLATE_INSTANTIATIONS_CACHE_INDEX, ObjectHashTable,                      \
+    template_instantiations_cache)                                             \
   V(FUNCTION_FUNCTION_INDEX, JSFunction, function_function)                    \
   V(GENERATOR_FUNCTION_FUNCTION_INDEX, JSFunction,                             \
     generator_function_function)                                               \
@@ -449,6 +450,9 @@ class Context: public FixedArray {
   // may be the context itself.
   Context* declaration_context();
   bool is_declaration_context();
+
+  // Get the next closure's context on the context chain.
+  Context* closure_context();
 
   // Returns a JSGlobalProxy object or null.
   JSObject* global_proxy();

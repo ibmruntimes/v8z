@@ -128,7 +128,6 @@
 #define JS_CONTEXT_OP_LIST(V) \
   V(JSLoadContext)            \
   V(JSStoreContext)           \
-  V(JSLoadDynamic)            \
   V(JSCreateFunctionContext)  \
   V(JSCreateCatchContext)     \
   V(JSCreateWithContext)      \
@@ -202,6 +201,7 @@
   V(StoreBuffer)                   \
   V(StoreElement)                  \
   V(ObjectIsNumber)                \
+  V(ObjectIsReceiver)              \
   V(ObjectIsSmi)
 
 // Opcodes for Machine-level operators.
@@ -272,6 +272,7 @@
   V(ChangeFloat64ToInt32)       \
   V(ChangeFloat64ToUint32)      \
   V(TruncateFloat32ToInt32)     \
+  V(TruncateFloat32ToUint32)    \
   V(TryTruncateFloat32ToInt64)  \
   V(TryTruncateFloat64ToInt64)  \
   V(TryTruncateFloat32ToUint64) \
@@ -286,6 +287,7 @@
   V(RoundInt32ToFloat32)        \
   V(RoundInt64ToFloat32)        \
   V(RoundInt64ToFloat64)        \
+  V(RoundUint32ToFloat32)       \
   V(RoundUint64ToFloat32)       \
   V(RoundUint64ToFloat64)       \
   V(BitcastFloat32ToInt32)      \

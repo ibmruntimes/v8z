@@ -82,7 +82,7 @@ static unsigned CpuFeaturesImpliedByCompiler() {
 
 void CpuFeatures::ProbeImpl(bool cross_compile) {
   supported_ |= CpuFeaturesImpliedByCompiler();
-  cache_line_size_ = 64;
+  dcache_line_size_ = 64;
 
   // Only use statically determined features for cross compile (snapshot).
   if (cross_compile) return;
@@ -137,7 +137,7 @@ void CpuFeatures::ProbeImpl(bool cross_compile) {
   if (cpu.implementer() == base::CPU::ARM &&
       (cpu.part() == base::CPU::ARM_CORTEX_A5 ||
        cpu.part() == base::CPU::ARM_CORTEX_A9)) {
-    cache_line_size_ = 32;
+    dcache_line_size_ = 32;
   }
 
   if (FLAG_enable_32dregs && cpu.has_vfp3_d32()) supported_ |= 1u << VFP32DREGS;
@@ -2923,9 +2923,21 @@ void Assembler::vcvt_f64_u32(const DwVfpRegister dst,
 }
 
 
+void Assembler::vcvt_f32_u32(const SwVfpRegister dst, const SwVfpRegister src,
+                             VFPConversionMode mode, const Condition cond) {
+  emit(EncodeVCVT(F32, dst.code(), U32, src.code(), mode, cond));
+}
+
+
 void Assembler::vcvt_s32_f32(const SwVfpRegister dst, const SwVfpRegister src,
                              VFPConversionMode mode, const Condition cond) {
   emit(EncodeVCVT(S32, dst.code(), F32, src.code(), mode, cond));
+}
+
+
+void Assembler::vcvt_u32_f32(const SwVfpRegister dst, const SwVfpRegister src,
+                             VFPConversionMode mode, const Condition cond) {
+  emit(EncodeVCVT(U32, dst.code(), F32, src.code(), mode, cond));
 }
 
 

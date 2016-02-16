@@ -54,8 +54,6 @@ ExternalReferenceTable::ExternalReferenceTable(Isolate* isolate) {
       "StackGuard::address_of_real_jslimit()");
   Add(ExternalReference::new_space_start(isolate).address(),
       "Heap::NewSpaceStart()");
-  Add(ExternalReference::new_space_mask(isolate).address(),
-      "Heap::NewSpaceMask()");
   Add(ExternalReference::new_space_allocation_limit_address(isolate).address(),
       "Heap::NewSpaceAllocationLimitAddress()");
   Add(ExternalReference::new_space_allocation_top_address(isolate).address(),
@@ -82,6 +80,8 @@ ExternalReferenceTable::ExternalReferenceTable(Isolate* isolate) {
   Add(ExternalReference::address_of_one_half().address(),
       "LDoubleConstant::one_half");
   Add(ExternalReference::isolate_address(isolate).address(), "isolate");
+  Add(ExternalReference::interpreter_dispatch_table_address(isolate).address(),
+      "Interpreter::dispatch_table_address");
   Add(ExternalReference::address_of_negative_infinity().address(),
       "LDoubleConstant::negative_infinity");
   Add(ExternalReference::power_double_double_function(isolate).address(),
@@ -119,6 +119,22 @@ ExternalReferenceTable::ExternalReferenceTable(Isolate* isolate) {
       "InvokeFunctionCallback");
   Add(ExternalReference::invoke_accessor_getter_callback(isolate).address(),
       "InvokeAccessorGetterCallback");
+  Add(ExternalReference::f32_trunc_wrapper_function(isolate).address(),
+      "f32_trunc_wrapper");
+  Add(ExternalReference::f32_floor_wrapper_function(isolate).address(),
+      "f32_floor_wrapper");
+  Add(ExternalReference::f32_ceil_wrapper_function(isolate).address(),
+      "f32_ceil_wrapper");
+  Add(ExternalReference::f32_nearest_int_wrapper_function(isolate).address(),
+      "f32_nearest_int_wrapper");
+  Add(ExternalReference::f64_trunc_wrapper_function(isolate).address(),
+      "f64_trunc_wrapper");
+  Add(ExternalReference::f64_floor_wrapper_function(isolate).address(),
+      "f64_floor_wrapper");
+  Add(ExternalReference::f64_ceil_wrapper_function(isolate).address(),
+      "f64_ceil_wrapper");
+  Add(ExternalReference::f64_nearest_int_wrapper_function(isolate).address(),
+      "f64_nearest_int_wrapper");
   Add(ExternalReference::log_enter_external_function(isolate).address(),
       "Logger::EnterExternal");
   Add(ExternalReference::log_leave_external_function(isolate).address(),
@@ -304,6 +320,10 @@ ExternalReferenceTable::ExternalReferenceTable(Isolate* isolate) {
   Add(ExternalReference::incremental_marking_record_write_function(isolate)
           .address(),
       "IncrementalMarking::RecordWrite");
+  Add(ExternalReference::incremental_marking_record_write_code_entry_function(
+          isolate)
+          .address(),
+      "IncrementalMarking::RecordWriteOfCodeEntryFromCode");
   Add(ExternalReference::store_buffer_overflow_function(isolate).address(),
       "StoreBuffer::StoreBufferOverflow");
 
@@ -627,6 +647,10 @@ void Deserializer::VisitPointers(Object** start, Object** end) {
   ReadData(start, end, NEW_SPACE, NULL);
 }
 
+void Deserializer::Synchronize(VisitorSynchronization::SyncTag tag) {
+  static const byte expected = kSynchronize;
+  CHECK_EQ(expected, source_.Get());
+}
 
 void Deserializer::DeserializeDeferredObjects() {
   for (int code = source_.Get(); code != kSynchronize; code = source_.Get()) {
@@ -990,9 +1014,11 @@ bool Deserializer::ReadData(Object** current, Object** limit, int source_space,
     }                                                                          \
     if (emit_write_barrier && write_barrier_needed) {                          \
       Address current_address = reinterpret_cast<Address>(current);            \
+      SLOW_DCHECK(isolate->heap()->ContainsSlow(current_object_address));      \
       isolate->heap()->RecordWrite(                                            \
-          current_object_address,                                              \
-          static_cast<int>(current_address - current_object_address));         \
+          HeapObject::FromAddress(current_object_address),                     \
+          static_cast<int>(current_address - current_object_address),          \
+          *reinterpret_cast<Object**>(current_address));                       \
     }                                                                          \
     if (!current_was_incremented) {                                            \
       current++;                                                               \
@@ -1226,11 +1252,13 @@ bool Deserializer::ReadData(Object** current, Object** limit, int source_space,
         int index = data & kHotObjectMask;
         Object* hot_object = hot_objects_.Get(index);
         UnalignedCopy(current, &hot_object);
-        if (write_barrier_needed && isolate->heap()->InNewSpace(hot_object)) {
+        if (write_barrier_needed) {
           Address current_address = reinterpret_cast<Address>(current);
+          SLOW_DCHECK(isolate->heap()->ContainsSlow(current_object_address));
           isolate->heap()->RecordWrite(
-              current_object_address,
-              static_cast<int>(current_address - current_object_address));
+              HeapObject::FromAddress(current_object_address),
+              static_cast<int>(current_address - current_object_address),
+              hot_object);
         }
         current++;
         break;
@@ -1663,9 +1691,10 @@ bool Serializer::SerializeKnownObject(HeapObject* obj, HowToCode how_to_code,
   return false;
 }
 
-
 StartupSerializer::StartupSerializer(Isolate* isolate, SnapshotByteSink* sink)
-    : Serializer(isolate, sink), root_index_wave_front_(0) {
+    : Serializer(isolate, sink),
+      root_index_wave_front_(0),
+      serializing_builtins_(false) {
   // Clear the cache of objects used by the partial snapshot.  After the
   // strong roots have been serialized we can create a partial snapshot
   // which will repopulate the cache with objects needed by that partial
@@ -1679,17 +1708,30 @@ void StartupSerializer::SerializeObject(HeapObject* obj, HowToCode how_to_code,
                                         WhereToPoint where_to_point, int skip) {
   DCHECK(!obj->IsJSFunction());
 
-  int root_index = root_index_map_.Lookup(obj);
-  // We can only encode roots as such if it has already been serialized.
-  // That applies to root indices below the wave front.
-  if (root_index != RootIndexMap::kInvalidRootIndex &&
-      root_index < root_index_wave_front_) {
-    PutRoot(root_index, obj, how_to_code, where_to_point, skip);
-    return;
+  if (obj->IsCode()) {
+    Code* code = Code::cast(obj);
+    // If the function code is compiled (either as native code or bytecode),
+    // replace it with lazy-compile builtin. Only exception is when we are
+    // serializing the canonical interpreter-entry-trampoline builtin.
+    if (code->kind() == Code::FUNCTION ||
+        (!serializing_builtins_ && code->is_interpreter_entry_trampoline())) {
+      obj = isolate()->builtins()->builtin(Builtins::kCompileLazy);
+    }
+  } else if (obj->IsBytecodeArray()) {
+    obj = isolate()->heap()->undefined_value();
   }
 
-  if (obj->IsCode() && Code::cast(obj)->kind() == Code::FUNCTION) {
-    obj = isolate()->builtins()->builtin(Builtins::kCompileLazy);
+  int root_index = root_index_map_.Lookup(obj);
+  bool is_immortal_immovable_root = false;
+  // We can only encode roots as such if it has already been serialized.
+  // That applies to root indices below the wave front.
+  if (root_index != RootIndexMap::kInvalidRootIndex) {
+    if (root_index < root_index_wave_front_) {
+      PutRoot(root_index, obj, how_to_code, where_to_point, skip);
+      return;
+    } else {
+      is_immortal_immovable_root = Heap::RootIsImmortalImmovable(root_index);
+    }
   }
 
   if (SerializeKnownObject(obj, how_to_code, where_to_point, skip)) return;
@@ -1700,6 +1742,14 @@ void StartupSerializer::SerializeObject(HeapObject* obj, HowToCode how_to_code,
   ObjectSerializer object_serializer(this, obj, sink_, how_to_code,
                                      where_to_point);
   object_serializer.Serialize();
+
+  if (is_immortal_immovable_root) {
+    // Make sure that the immortal immovable root has been included in the first
+    // chunk of its reserved space , so that it is deserialized onto the first
+    // page of its space and stays immortal immovable.
+    BackReference ref = back_reference_map_.Lookup(obj);
+    CHECK(ref.is_valid() && ref.chunk_index() == 0);
+  }
 }
 
 
@@ -1716,6 +1766,12 @@ void StartupSerializer::SerializeWeakReferencesAndDeferred() {
   Pad();
 }
 
+void StartupSerializer::Synchronize(VisitorSynchronization::SyncTag tag) {
+  // We expect the builtins tag after builtins have been serialized.
+  DCHECK(!serializing_builtins_ || tag == VisitorSynchronization::kBuiltins);
+  serializing_builtins_ = (tag == VisitorSynchronization::kHandleScope);
+  sink_->Put(kSynchronize, "Synchronize");
+}
 
 void Serializer::PutRoot(int root_index,
                          HeapObject* object,

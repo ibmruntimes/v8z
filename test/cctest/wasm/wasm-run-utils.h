@@ -12,6 +12,7 @@
 #include "src/base/utils/random-number-generator.h"
 
 #include "src/compiler/graph-visualizer.h"
+#include "src/compiler/int64-lowering.h"
 #include "src/compiler/js-graph.h"
 #include "src/compiler/wasm-compiler.h"
 
@@ -50,10 +51,10 @@ using namespace v8::internal::wasm;
 inline void init_env(FunctionEnv* env, FunctionSig* sig) {
   env->module = nullptr;
   env->sig = sig;
-  env->local_int32_count = 0;
-  env->local_int64_count = 0;
-  env->local_float32_count = 0;
-  env->local_float64_count = 0;
+  env->local_i32_count = 0;
+  env->local_i64_count = 0;
+  env->local_f32_count = 0;
+  env->local_f64_count = 0;
   env->SumLocals();
 }
 
@@ -196,7 +197,7 @@ class TestingModule : public ModuleEnv {
  private:
   WasmModuleInstance instance_;
   uint32_t global_offset;
-  byte global_data[kMaxGlobalsSize];  // preallocated global data.
+  V8_ALIGNED(8) byte global_data[kMaxGlobalsSize];  // preallocated global data.
 
   WasmGlobal* AddGlobal(MachineType mem_type) {
     AllocModule();
@@ -236,6 +237,7 @@ inline void TestBuildingGraph(Zone* zone, JSGraph* jsgraph, FunctionEnv* env,
     str << ", msg = " << result.error_msg.get();
     FATAL(str.str().c_str());
   }
+  builder.Int64LoweringForTesting();
   if (FLAG_trace_turbo_graph) {
     OFStream os(stdout);
     os << AsRPO(*jsgraph->graph());

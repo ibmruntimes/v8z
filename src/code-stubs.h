@@ -44,7 +44,6 @@ namespace internal {
   V(MathPow)                                \
   V(ProfileEntryHook)                       \
   V(RecordWrite)                            \
-  V(RestParamAccess)                        \
   V(RegExpExec)                             \
   V(StoreBufferOverflow)                    \
   V(StoreElement)                           \
@@ -78,6 +77,8 @@ namespace internal {
   V(FastCloneShallowObject)                 \
   V(FastNewClosure)                         \
   V(FastNewContext)                         \
+  V(FastNewRestParameter)                   \
+  V(FastNewStrictArguments)               \
   V(GrowArrayElements)                      \
   V(InternalArrayNArgumentsConstructor)     \
   V(InternalArrayNoArgumentConstructor)     \
@@ -735,6 +736,34 @@ class FastNewContextStub final : public HydrogenCodeStub {
 
   DEFINE_CALL_INTERFACE_DESCRIPTOR(FastNewContext);
   DEFINE_HYDROGEN_CODE_STUB(FastNewContext, HydrogenCodeStub);
+};
+
+
+// TODO(turbofan): This stub should be possible to write in TurboFan
+// using the CodeStubAssembler very soon in a way that is as efficient
+// and easy as the current handwritten version, which is partly a copy
+// of the strict arguments object materialization code.
+class FastNewRestParameterStub final : public PlatformCodeStub {
+ public:
+  explicit FastNewRestParameterStub(Isolate* isolate)
+      : PlatformCodeStub(isolate) {}
+
+  DEFINE_CALL_INTERFACE_DESCRIPTOR(FastNewRestParameter);
+  DEFINE_PLATFORM_CODE_STUB(FastNewRestParameter, PlatformCodeStub);
+};
+
+
+// TODO(turbofan): This stub should be possible to write in TurboFan
+// using the CodeStubAssembler very soon in a way that is as efficient
+// and easy as the current handwritten version, which is partly a copy
+// of the strict arguments object materialization code.
+class FastNewStrictArgumentsStub final : public PlatformCodeStub {
+ public:
+  explicit FastNewStrictArgumentsStub(Isolate* isolate)
+      : PlatformCodeStub(isolate) {}
+
+  DEFINE_CALL_INTERFACE_DESCRIPTOR(FastNewStrictArguments);
+  DEFINE_PLATFORM_CODE_STUB(FastNewStrictArguments, PlatformCodeStub);
 };
 
 
@@ -1402,11 +1431,13 @@ class CallApiFunctionStub : public PlatformCodeStub {
 
 class CallApiAccessorStub : public PlatformCodeStub {
  public:
-  CallApiAccessorStub(Isolate* isolate, bool is_store, bool call_data_undefined)
+  CallApiAccessorStub(Isolate* isolate, bool is_store, bool call_data_undefined,
+                      bool is_lazy)
       : PlatformCodeStub(isolate) {
     minor_key_ = IsStoreBits::encode(is_store) |
                  CallDataUndefinedBits::encode(call_data_undefined) |
-                 ArgumentBits::encode(is_store ? 1 : 0);
+                 ArgumentBits::encode(is_store ? 1 : 0) |
+                 IsLazyAccessorBits::encode(is_lazy);
   }
 
  protected:
@@ -1421,6 +1452,7 @@ class CallApiAccessorStub : public PlatformCodeStub {
 
  private:
   bool is_store() const { return IsStoreBits::decode(minor_key_); }
+  bool is_lazy() const { return IsLazyAccessorBits::decode(minor_key_); }
   bool call_data_undefined() const {
     return CallDataUndefinedBits::decode(minor_key_);
   }
@@ -1429,6 +1461,7 @@ class CallApiAccessorStub : public PlatformCodeStub {
   class IsStoreBits: public BitField<bool, 0, 1> {};
   class CallDataUndefinedBits: public BitField<bool, 1, 1> {};
   class ArgumentBits : public BitField<int, 2, kArgBits> {};
+  class IsLazyAccessorBits : public BitField<bool, 3 + kArgBits, 1> {};
 
   DEFINE_CALL_INTERFACE_DESCRIPTOR(ApiAccessor);
   DEFINE_PLATFORM_CODE_STUB(CallApiAccessor, PlatformCodeStub);
@@ -1823,10 +1856,8 @@ class JSEntryStub : public PlatformCodeStub {
 class ArgumentsAccessStub: public PlatformCodeStub {
  public:
   enum Type {
-    READ_ELEMENT,
     NEW_SLOPPY_FAST,
     NEW_SLOPPY_SLOW,
-    NEW_STRICT
   };
 
   ArgumentsAccessStub(Isolate* isolate, Type type) : PlatformCodeStub(isolate) {
@@ -1834,17 +1865,11 @@ class ArgumentsAccessStub: public PlatformCodeStub {
   }
 
   CallInterfaceDescriptor GetCallInterfaceDescriptor() const override {
-    if (type() == READ_ELEMENT) {
-      return ArgumentsAccessReadDescriptor(isolate());
-    } else {
-      return ArgumentsAccessNewDescriptor(isolate());
-    }
+    return ArgumentsAccessNewDescriptor(isolate());
   }
 
-  static Type ComputeType(bool is_unmapped, bool has_duplicate_parameters) {
-    if (is_unmapped) {
-      return Type::NEW_STRICT;
-    } else if (has_duplicate_parameters) {
+  static Type ComputeType(bool has_duplicate_parameters) {
+    if (has_duplicate_parameters) {
       return Type::NEW_SLOPPY_SLOW;
     } else {
       return Type::NEW_SLOPPY_FAST;
@@ -1854,30 +1879,14 @@ class ArgumentsAccessStub: public PlatformCodeStub {
  private:
   Type type() const { return TypeBits::decode(minor_key_); }
 
-  void GenerateReadElement(MacroAssembler* masm);
-  void GenerateNewStrict(MacroAssembler* masm);
   void GenerateNewSloppyFast(MacroAssembler* masm);
   void GenerateNewSloppySlow(MacroAssembler* masm);
 
   void PrintName(std::ostream& os) const override;  // NOLINT
 
-  class TypeBits : public BitField<Type, 0, 2> {};
+  class TypeBits : public BitField<Type, 0, 1> {};
 
   DEFINE_PLATFORM_CODE_STUB(ArgumentsAccess, PlatformCodeStub);
-};
-
-
-class RestParamAccessStub : public PlatformCodeStub {
- public:
-  explicit RestParamAccessStub(Isolate* isolate) : PlatformCodeStub(isolate) {}
-
- private:
-  void GenerateNew(MacroAssembler* masm);
-
-  void PrintName(std::ostream& os) const override;  // NOLINT
-
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(RestParamAccess);
-  DEFINE_PLATFORM_CODE_STUB(RestParamAccess, PlatformCodeStub);
 };
 
 

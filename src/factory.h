@@ -323,6 +323,9 @@ class Factory final {
       Handle<FixedArray> array, int grow_by,
       PretenureFlag pretenure = NOT_TENURED);
 
+  Handle<FixedArray> CopyFixedArrayUpTo(Handle<FixedArray> array, int new_len,
+                                        PretenureFlag pretenure = NOT_TENURED);
+
   Handle<FixedArray> CopyFixedArray(Handle<FixedArray> array);
 
   // This method expects a COW array in new space, and creates a copy
@@ -468,11 +471,6 @@ class Factory final {
   // TODO(aandrey): Maybe these should take table, index and kind arguments.
   Handle<JSMapIterator> NewJSMapIterator();
   Handle<JSSetIterator> NewJSSetIterator();
-
-  // Creates a new JSIteratorResult object with the arguments {value} and
-  // {done}.  Implemented according to ES6 section 7.4.7 CreateIterResultObject.
-  Handle<JSIteratorResult> NewJSIteratorResult(Handle<Object> value,
-                                               Handle<Object> done);
 
   // Allocates a bound function.
   MaybeHandle<JSBoundFunction> NewJSBoundFunction(

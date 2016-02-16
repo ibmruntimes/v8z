@@ -1574,10 +1574,9 @@ void MacroAssembler::InNewSpace(Register object,
                                 Label* branch) {
   DCHECK(cond == eq || cond == ne);
   UseScratchRegisterScope temps(this);
-  Register temp = temps.AcquireX();
-  And(temp, object, ExternalReference::new_space_mask(isolate()));
-  Cmp(temp, ExternalReference::new_space_start(isolate()));
-  B(cond, branch);
+  const int mask =
+      (1 << MemoryChunk::IN_FROM_SPACE) | (1 << MemoryChunk::IN_TO_SPACE);
+  CheckPageFlag(object, temps.AcquireSameSizeAs(object), mask, cond, branch);
 }
 
 
@@ -1677,6 +1676,15 @@ void MacroAssembler::AssertPositiveOrZero(Register value) {
   }
 }
 
+void MacroAssembler::AssertNumber(Register value) {
+  if (emit_debug_code()) {
+    Label done;
+    JumpIfSmi(value, &done);
+    JumpIfHeapNumber(value, &done);
+    Abort(kOperandIsNotANumber);
+    Bind(&done);
+  }
+}
 
 void MacroAssembler::CallStub(CodeStub* stub, TypeFeedbackId ast_id) {
   DCHECK(AllowThisStubCall(stub));  // Stub calls are not allowed in some stubs.
@@ -3809,6 +3817,65 @@ void MacroAssembler::LoadFromNumberDictionary(Label* miss,
   Ldr(result, FieldMemOperand(scratch2, kValueOffset));
 }
 
+void MacroAssembler::RecordWriteCodeEntryField(Register js_function,
+                                               Register code_entry,
+                                               Register scratch) {
+  const int offset = JSFunction::kCodeEntryOffset;
+
+  // Since a code entry (value) is always in old space, we don't need to update
+  // remembered set. If incremental marking is off, there is nothing for us to
+  // do.
+  if (!FLAG_incremental_marking) return;
+
+  DCHECK(js_function.is(x1));
+  DCHECK(code_entry.is(x7));
+  DCHECK(scratch.is(x5));
+  AssertNotSmi(js_function);
+
+  if (emit_debug_code()) {
+    UseScratchRegisterScope temps(this);
+    Register temp = temps.AcquireX();
+    Add(scratch, js_function, offset - kHeapObjectTag);
+    Ldr(temp, MemOperand(scratch));
+    Cmp(temp, code_entry);
+    Check(eq, kWrongAddressOrValuePassedToRecordWrite);
+  }
+
+  // First, check if a write barrier is even needed. The tests below
+  // catch stores of Smis and stores into young gen.
+  Label done;
+
+  CheckPageFlagClear(code_entry, scratch,
+                     MemoryChunk::kPointersToHereAreInterestingMask, &done);
+  CheckPageFlagClear(js_function, scratch,
+                     MemoryChunk::kPointersFromHereAreInterestingMask, &done);
+
+  const Register dst = scratch;
+  Add(dst, js_function, offset - kHeapObjectTag);
+
+  // Save caller-saved registers.Both input registers (x1 and x7) are caller
+  // saved, so there is no need to push them.
+  PushCPURegList(kCallerSaved);
+
+  int argument_count = 3;
+
+  Mov(x0, js_function);
+  Mov(x1, dst);
+  Mov(x2, ExternalReference::isolate_address(isolate()));
+
+  {
+    AllowExternalCallThatCantCauseGC scope(this);
+    CallCFunction(
+        ExternalReference::incremental_marking_record_write_code_entry_function(
+            isolate()),
+        argument_count);
+  }
+
+  // Restore caller-saved registers.
+  PopCPURegList(kCallerSaved);
+
+  Bind(&done);
+}
 
 void MacroAssembler::RememberedSetHelper(Register object,  // For debug tests.
                                          Register address,
@@ -3923,6 +3990,17 @@ int MacroAssembler::SafepointRegisterStackIndex(int reg_code) {
   }
 }
 
+void MacroAssembler::CheckPageFlag(const Register& object,
+                                   const Register& scratch, int mask,
+                                   Condition cc, Label* condition_met) {
+  And(scratch, object, ~Page::kPageAlignmentMask);
+  Ldr(scratch, MemOperand(scratch, MemoryChunk::kFlagsOffset));
+  if (cc == eq) {
+    TestAndBranchIfAnySet(scratch, mask, condition_met);
+  } else {
+    TestAndBranchIfAllClear(scratch, mask, condition_met);
+  }
+}
 
 void MacroAssembler::CheckPageFlagSet(const Register& object,
                                       const Register& scratch,

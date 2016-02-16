@@ -60,27 +60,6 @@ void Builtins::Generate_Adaptor(MacroAssembler* masm,
 }
 
 
-static void CallRuntimePassFunction(
-    MacroAssembler* masm, Runtime::FunctionId function_id) {
-  // ----------- S t a t e -------------
-  //  -- rdx : new target (preserved for callee)
-  //  -- rdi : target function (preserved for callee)
-  // -----------------------------------
-
-  FrameScope scope(masm, StackFrame::INTERNAL);
-  // Push a copy of the target function and the new target.
-  __ Push(rdi);
-  __ Push(rdx);
-  // Function is also the parameter to the runtime call.
-  __ Push(rdi);
-
-  __ CallRuntime(function_id, 1);
-  // Restore target function and new target.
-  __ Pop(rdx);
-  __ Pop(rdi);
-}
-
-
 static void GenerateTailCallToSharedCode(MacroAssembler* masm) {
   __ movp(kScratchRegister,
           FieldOperand(rdi, JSFunction::kSharedFunctionInfoOffset));
@@ -90,10 +69,35 @@ static void GenerateTailCallToSharedCode(MacroAssembler* masm) {
   __ jmp(kScratchRegister);
 }
 
+static void GenerateTailCallToReturnedCode(MacroAssembler* masm,
+                                           Runtime::FunctionId function_id) {
+  // ----------- S t a t e -------------
+  //  -- rax : argument count (preserved for callee)
+  //  -- rdx : new target (preserved for callee)
+  //  -- rdi : target function (preserved for callee)
+  // -----------------------------------
+  {
+    FrameScope scope(masm, StackFrame::INTERNAL);
+    // Push the number of arguments to the callee.
+    __ Integer32ToSmi(rax, rax);
+    __ Push(rax);
+    // Push a copy of the target function and the new target.
+    __ Push(rdi);
+    __ Push(rdx);
+    // Function is also the parameter to the runtime call.
+    __ Push(rdi);
 
-static void GenerateTailCallToReturnedCode(MacroAssembler* masm) {
-  __ leap(rax, FieldOperand(rax, Code::kHeaderSize));
-  __ jmp(rax);
+    __ CallRuntime(function_id, 1);
+    __ movp(rbx, rax);
+
+    // Restore target function and new target.
+    __ Pop(rdx);
+    __ Pop(rdi);
+    __ Pop(rax);
+    __ SmiToInteger32(rax, rax);
+  }
+  __ leap(rbx, FieldOperand(rbx, Code::kHeaderSize));
+  __ jmp(rbx);
 }
 
 
@@ -107,8 +111,7 @@ void Builtins::Generate_InOptimizationQueue(MacroAssembler* masm) {
   __ CompareRoot(rsp, Heap::kStackLimitRootIndex);
   __ j(above_equal, &ok);
 
-  CallRuntimePassFunction(masm, Runtime::kTryInstallOptimizedCode);
-  GenerateTailCallToReturnedCode(masm);
+  GenerateTailCallToReturnedCode(masm, Runtime::kTryInstallOptimizedCode);
 
   __ bind(&ok);
   GenerateTailCallToSharedCode(masm);
@@ -390,7 +393,7 @@ void Builtins::Generate_JSConstructStubGeneric(MacroAssembler* masm) {
 
 
 void Builtins::Generate_JSConstructStubApi(MacroAssembler* masm) {
-  Generate_JSConstructStubHelper(masm, true, true, false);
+  Generate_JSConstructStubHelper(masm, true, false, false);
 }
 
 
@@ -617,6 +620,10 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   __ Push(rdi);  // Callee's JS function.
   __ Push(rdx);  // Callee's new target.
 
+  // Push dispatch table pointer.
+  __ Move(rax, ExternalReference::interpreter_dispatch_table_address(
+                   masm->isolate()));
+  __ Push(rax);
   // Push zero for bytecode array offset.
   __ Push(Immediate(0));
 
@@ -667,19 +674,7 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   // fullcodegen's prologue:
   //  - Support profiler (specifically profiling_counter).
   //  - Call ProfileEntryHookStub when isolate has a function_entry_hook.
-  //  - Allow simulator stop operations if FLAG_stop_at is set.
   //  - Code aging of the BytecodeArray object.
-
-  // Perform stack guard check.
-  {
-    Label ok;
-    __ CompareRoot(rsp, Heap::kStackLimitRootIndex);
-    __ j(above_equal, &ok, Label::kNear);
-    __ Push(kInterpreterBytecodeArrayRegister);
-    __ CallRuntime(Runtime::kStackGuard);
-    __ Pop(kInterpreterBytecodeArrayRegister);
-    __ bind(&ok);
-  }
 
   // Load accumulator, register file, bytecode offset, dispatch table into
   // registers.
@@ -689,10 +684,8 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
           Immediate(InterpreterFrameConstants::kRegisterFilePointerFromFp));
   __ movp(kInterpreterBytecodeOffsetRegister,
           Immediate(BytecodeArray::kHeaderSize - kHeapObjectTag));
-  __ LoadRoot(kInterpreterDispatchTableRegister,
-              Heap::kInterpreterTableRootIndex);
-  __ addp(kInterpreterDispatchTableRegister,
-          Immediate(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ movp(kInterpreterDispatchTableRegister,
+          Operand(rbp, InterpreterFrameConstants::kDispatchTableFromFp));
 
   // Dispatch to the first bytecode handler for the function.
   __ movzxbp(rbx, Operand(kInterpreterBytecodeArrayRegister,
@@ -816,10 +809,9 @@ static void Generate_EnterBytecodeDispatch(MacroAssembler* masm) {
   __ movp(kInterpreterRegisterFileRegister, rbp);
   __ addp(kInterpreterRegisterFileRegister,
           Immediate(InterpreterFrameConstants::kRegisterFilePointerFromFp));
-  __ LoadRoot(kInterpreterDispatchTableRegister,
-              Heap::kInterpreterTableRootIndex);
-  __ addp(kInterpreterDispatchTableRegister,
-          Immediate(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ Move(
+      kInterpreterDispatchTableRegister,
+      ExternalReference::interpreter_dispatch_table_address(masm->isolate()));
 
   // Get the context from the frame.
   __ movp(kContextRegister,
@@ -914,20 +906,18 @@ void Builtins::Generate_InterpreterEnterBytecodeDispatch(MacroAssembler* masm) {
 
 
 void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
-  CallRuntimePassFunction(masm, Runtime::kCompileLazy);
-  GenerateTailCallToReturnedCode(masm);
+  GenerateTailCallToReturnedCode(masm, Runtime::kCompileLazy);
 }
 
 
 void Builtins::Generate_CompileOptimized(MacroAssembler* masm) {
-  CallRuntimePassFunction(masm, Runtime::kCompileOptimized_NotConcurrent);
-  GenerateTailCallToReturnedCode(masm);
+  GenerateTailCallToReturnedCode(masm,
+                                 Runtime::kCompileOptimized_NotConcurrent);
 }
 
 
 void Builtins::Generate_CompileOptimizedConcurrent(MacroAssembler* masm) {
-  CallRuntimePassFunction(masm, Runtime::kCompileOptimized_Concurrent);
-  GenerateTailCallToReturnedCode(masm);
+  GenerateTailCallToReturnedCode(masm, Runtime::kCompileOptimized_Concurrent);
 }
 
 
@@ -2081,9 +2071,7 @@ void Builtins::Generate_Apply(MacroAssembler* masm) {
 
     // Try to create the list from an arguments object.
     __ bind(&create_arguments);
-    __ movp(rbx,
-            FieldOperand(rax, JSObject::kHeaderSize +
-                                  Heap::kArgumentsLengthIndex * kPointerSize));
+    __ movp(rbx, FieldOperand(rax, JSArgumentsObject::kLengthOffset));
     __ movp(rcx, FieldOperand(rax, JSObject::kElementsOffset));
     __ cmpp(rbx, FieldOperand(rcx, FixedArray::kLengthOffset));
     __ j(not_equal, &create_runtime);
@@ -2754,14 +2742,11 @@ static void CompatibleReceiverCheck(MacroAssembler* masm, Register receiver,
 
   // Load the next prototype.
   __ bind(&next_prototype);
-  __ movp(receiver, FieldOperand(map, Map::kPrototypeOffset));
-  // End if the prototype is null or not hidden.
-  __ CompareRoot(receiver, Heap::kNullValueRootIndex);
-  __ j(equal, receiver_check_failed);
-  __ movp(map, FieldOperand(receiver, HeapObject::kMapOffset));
   __ testq(FieldOperand(map, Map::kBitField3Offset),
-           Immediate(Map::IsHiddenPrototype::kMask));
+           Immediate(Map::HasHiddenPrototype::kMask));
   __ j(zero, receiver_check_failed);
+  __ movp(receiver, FieldOperand(map, Map::kPrototypeOffset));
+  __ movp(map, FieldOperand(receiver, HeapObject::kMapOffset));
   // Iterate.
   __ jmp(&prototype_loop_start, Label::kNear);
 

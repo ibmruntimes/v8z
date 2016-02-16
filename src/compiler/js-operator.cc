@@ -199,38 +199,6 @@ ContextAccess const& ContextAccessOf(Operator const* op) {
 }
 
 
-DynamicAccess::DynamicAccess(const Handle<String>& name, TypeofMode typeof_mode)
-    : name_(name), typeof_mode_(typeof_mode) {}
-
-
-bool operator==(DynamicAccess const& lhs, DynamicAccess const& rhs) {
-  UNIMPLEMENTED();
-  return true;
-}
-
-
-bool operator!=(DynamicAccess const& lhs, DynamicAccess const& rhs) {
-  return !(lhs == rhs);
-}
-
-
-size_t hash_value(DynamicAccess const& access) {
-  UNIMPLEMENTED();
-  return 0;
-}
-
-
-std::ostream& operator<<(std::ostream& os, DynamicAccess const& access) {
-  return os << Brief(*access.name()) << ", " << access.typeof_mode();
-}
-
-
-DynamicAccess const& DynamicAccessOf(Operator const* op) {
-  DCHECK_EQ(IrOpcode::kJSLoadDynamic, op->opcode());
-  return OpParameter<DynamicAccess>(op);
-}
-
-
 bool operator==(NamedAccess const& lhs, NamedAccess const& rhs) {
   return lhs.name().location() == rhs.name().location() &&
          lhs.language_mode() == rhs.language_mode() &&
@@ -350,32 +318,9 @@ const StoreGlobalParameters& StoreGlobalParametersOf(const Operator* op) {
 }
 
 
-bool operator==(CreateArgumentsParameters const& lhs,
-                CreateArgumentsParameters const& rhs) {
-  return lhs.type() == rhs.type() && lhs.start_index() == rhs.start_index();
-}
-
-
-bool operator!=(CreateArgumentsParameters const& lhs,
-                CreateArgumentsParameters const& rhs) {
-  return !(lhs == rhs);
-}
-
-
-size_t hash_value(CreateArgumentsParameters const& p) {
-  return base::hash_combine(p.type(), p.start_index());
-}
-
-
-std::ostream& operator<<(std::ostream& os, CreateArgumentsParameters const& p) {
-  return os << p.type() << ", " << p.start_index();
-}
-
-
-const CreateArgumentsParameters& CreateArgumentsParametersOf(
-    const Operator* op) {
+CreateArgumentsType const& CreateArgumentsTypeOf(const Operator* op) {
   DCHECK_EQ(IrOpcode::kJSCreateArguments, op->opcode());
-  return OpParameter<CreateArgumentsParameters>(op);
+  return OpParameter<CreateArgumentsType>(op);
 }
 
 
@@ -877,26 +822,12 @@ const Operator* JSOperatorBuilder::StoreContext(size_t depth, size_t index) {
 }
 
 
-const Operator* JSOperatorBuilder::LoadDynamic(const Handle<String>& name,
-                                               TypeofMode typeof_mode) {
-  DynamicAccess access(name, typeof_mode);
-  return new (zone()) Operator1<DynamicAccess>(           // --
-      IrOpcode::kJSLoadDynamic, Operator::kNoProperties,  // opcode
-      "JSLoadDynamic",                                    // name
-      2, 1, 1, 1, 1, 2,                                   // counts
-      access);                                            // parameter
-}
-
-
-const Operator* JSOperatorBuilder::CreateArguments(
-    CreateArgumentsParameters::Type type, int start_index) {
-  DCHECK_IMPLIES(start_index, type == CreateArgumentsParameters::kRestArray);
-  CreateArgumentsParameters parameters(type, start_index);
-  return new (zone()) Operator1<CreateArgumentsParameters>(  // --
-      IrOpcode::kJSCreateArguments, Operator::kNoThrow,      // opcode
-      "JSCreateArguments",                                   // name
-      1, 1, 1, 1, 1, 0,                                      // counts
-      parameters);                                           // parameter
+const Operator* JSOperatorBuilder::CreateArguments(CreateArgumentsType type) {
+  return new (zone()) Operator1<CreateArgumentsType>(    // --
+      IrOpcode::kJSCreateArguments, Operator::kNoThrow,  // opcode
+      "JSCreateArguments",                               // name
+      1, 1, 1, 1, 1, 0,                                  // counts
+      type);                                             // parameter
 }
 
 

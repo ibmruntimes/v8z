@@ -150,9 +150,6 @@ void HeapObject::HeapObjectVerify() {
     case JS_MAP_ITERATOR_TYPE:
       JSMapIterator::cast(this)->JSMapIteratorVerify();
       break;
-    case JS_ITERATOR_RESULT_TYPE:
-      JSIteratorResult::cast(this)->JSIteratorResultVerify();
-      break;
     case JS_WEAK_MAP_TYPE:
       JSWeakMap::cast(this)->JSWeakMapVerify();
       break;
@@ -764,14 +761,6 @@ void JSMapIterator::JSMapIteratorVerify() {
 }
 
 
-void JSIteratorResult::JSIteratorResultVerify() {
-  CHECK(IsJSIteratorResult());
-  JSObjectVerify();
-  VerifyPointer(done());
-  VerifyPointer(value());
-}
-
-
 void JSWeakMap::JSWeakMapVerify() {
   CHECK(IsJSWeakMap());
   JSObjectVerify();
@@ -1032,7 +1021,7 @@ void NormalizedMapCache::NormalizedMapCacheVerify() {
 void DebugInfo::DebugInfoVerify() {
   CHECK(IsDebugInfo());
   VerifyPointer(shared());
-  VerifyPointer(code());
+  VerifyPointer(abstract_code());
   VerifyPointer(break_points());
 }
 

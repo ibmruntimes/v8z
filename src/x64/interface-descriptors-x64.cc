@@ -54,18 +54,9 @@ const Register StringCompareDescriptor::LeftRegister() { return rdx; }
 const Register StringCompareDescriptor::RightRegister() { return rax; }
 
 
-const Register ArgumentsAccessReadDescriptor::index() { return rdx; }
-const Register ArgumentsAccessReadDescriptor::parameter_count() { return rax; }
-
-
 const Register ArgumentsAccessNewDescriptor::function() { return rdi; }
 const Register ArgumentsAccessNewDescriptor::parameter_count() { return rcx; }
 const Register ArgumentsAccessNewDescriptor::parameter_pointer() { return rdx; }
-
-
-const Register RestParamAccessDescriptor::parameter_count() { return rcx; }
-const Register RestParamAccessDescriptor::parameter_pointer() { return rdx; }
-const Register RestParamAccessDescriptor::rest_parameter_index() { return rbx; }
 
 
 const Register ApiGetterDescriptor::function_address() { return r8; }
@@ -91,6 +82,19 @@ void FastNewClosureDescriptor::InitializePlatformSpecific(
 
 
 void FastNewContextDescriptor::InitializePlatformSpecific(
+    CallInterfaceDescriptorData* data) {
+  Register registers[] = {rdi};
+  data->InitializePlatformSpecific(arraysize(registers), registers);
+}
+
+
+void FastNewRestParameterDescriptor::InitializePlatformSpecific(
+    CallInterfaceDescriptorData* data) {
+  Register registers[] = {rdi};
+  data->InitializePlatformSpecific(arraysize(registers), registers);
+}
+
+void FastNewStrictArgumentsDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {rdi};
   data->InitializePlatformSpecific(arraysize(registers), registers);
@@ -403,6 +407,14 @@ void ApiAccessorDescriptor::InitializePlatformSpecific(
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
 
+void InterpreterDispatchDescriptor::InitializePlatformSpecific(
+    CallInterfaceDescriptorData* data) {
+  Register registers[] = {
+      kInterpreterAccumulatorRegister, kInterpreterRegisterFileRegister,
+      kInterpreterBytecodeOffsetRegister, kInterpreterBytecodeArrayRegister,
+      kInterpreterDispatchTableRegister};
+  data->InitializePlatformSpecific(arraysize(registers), registers);
+}
 
 void InterpreterPushArgsAndCallDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
@@ -414,7 +426,6 @@ void InterpreterPushArgsAndCallDescriptor::InitializePlatformSpecific(
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
 
-
 void InterpreterPushArgsAndConstructDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {
@@ -425,7 +436,6 @@ void InterpreterPushArgsAndConstructDescriptor::InitializePlatformSpecific(
   };
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
-
 
 void InterpreterCEntryDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {

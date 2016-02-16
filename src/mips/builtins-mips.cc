@@ -469,25 +469,6 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
   __ sw(a0, FieldMemOperand(v0, JSValue::kValueOffset));  // In delay slot
 }
 
-
-static void CallRuntimePassFunction(
-    MacroAssembler* masm, Runtime::FunctionId function_id) {
-  // ----------- S t a t e -------------
-  //  -- a1 : target function (preserved for callee)
-  //  -- a3 : new target (preserved for callee)
-  // -----------------------------------
-
-  FrameScope scope(masm, StackFrame::INTERNAL);
-  // Push a copy of the target function and the new target.
-  // Push function as parameter to the runtime call.
-  __ Push(a1, a3, a1);
-
-  __ CallRuntime(function_id, 1);
-  // Restore target function and new target.
-  __ Pop(a1, a3);
-}
-
-
 static void GenerateTailCallToSharedCode(MacroAssembler* masm) {
   __ lw(a2, FieldMemOperand(a1, JSFunction::kSharedFunctionInfoOffset));
   __ lw(a2, FieldMemOperand(a2, SharedFunctionInfo::kCodeOffset));
@@ -495,8 +476,27 @@ static void GenerateTailCallToSharedCode(MacroAssembler* masm) {
   __ Jump(at);
 }
 
+static void GenerateTailCallToReturnedCode(MacroAssembler* masm,
+                                           Runtime::FunctionId function_id) {
+  // ----------- S t a t e -------------
+  //  -- a0 : argument count (preserved for callee)
+  //  -- a1 : target function (preserved for callee)
+  //  -- a3 : new target (preserved for callee)
+  // -----------------------------------
+  {
+    FrameScope scope(masm, StackFrame::INTERNAL);
+    // Push a copy of the target function and the new target.
+    // Push function as parameter to the runtime call.
+    __ SmiTag(a0);
+    __ Push(a0, a1, a3, a1);
 
-static void GenerateTailCallToReturnedCode(MacroAssembler* masm) {
+    __ CallRuntime(function_id, 1);
+
+    // Restore target function and new target.
+    __ Pop(a0, a1, a3);
+    __ SmiUntag(a0);
+  }
+
   __ Addu(at, v0, Operand(Code::kHeaderSize - kHeapObjectTag));
   __ Jump(at);
 }
@@ -512,8 +512,7 @@ void Builtins::Generate_InOptimizationQueue(MacroAssembler* masm) {
   __ LoadRoot(t0, Heap::kStackLimitRootIndex);
   __ Branch(&ok, hs, sp, Operand(t0));
 
-  CallRuntimePassFunction(masm, Runtime::kTryInstallOptimizedCode);
-  GenerateTailCallToReturnedCode(masm);
+  GenerateTailCallToReturnedCode(masm, Runtime::kTryInstallOptimizedCode);
 
   __ bind(&ok);
   GenerateTailCallToSharedCode(masm);
@@ -809,7 +808,7 @@ void Builtins::Generate_JSConstructStubGeneric(MacroAssembler* masm) {
 
 
 void Builtins::Generate_JSConstructStubApi(MacroAssembler* masm) {
-  Generate_JSConstructStubHelper(masm, true, true, false);
+  Generate_JSConstructStubHelper(masm, true, false, false);
 }
 
 
@@ -975,10 +974,11 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
 
   __ Push(ra, fp, cp, a1);
   __ Addu(fp, sp, Operand(StandardFrameConstants::kFixedFrameSizeFromFp));
-  __ Push(a3);
 
-  // Push zero for bytecode array offset.
-  __ Push(zero_reg);
+  // Push new.target, dispatch table pointer and zero for bytecode array offset.
+  __ li(a0, Operand(ExternalReference::interpreter_dispatch_table_address(
+                masm->isolate())));
+  __ Push(a3, a0, zero_reg);
 
   // Get the bytecode array from the function object and load the pointer to the
   // first entry into kInterpreterBytecodeRegister.
@@ -1028,19 +1028,7 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   // fullcodegen's prologue:
   //  - Support profiler (specifically profiling_counter).
   //  - Call ProfileEntryHookStub when isolate has a function_entry_hook.
-  //  - Allow simulator stop operations if FLAG_stop_at is set.
   //  - Code aging of the BytecodeArray object.
-
-  // Perform stack guard check.
-  {
-    Label ok;
-    __ LoadRoot(at, Heap::kStackLimitRootIndex);
-    __ Branch(&ok, hs, sp, Operand(at));
-    __ push(kInterpreterBytecodeArrayRegister);
-    __ CallRuntime(Runtime::kStackGuard);
-    __ pop(kInterpreterBytecodeArrayRegister);
-    __ bind(&ok);
-  }
 
   // Load bytecode offset and dispatch table into registers.
   __ LoadRoot(kInterpreterAccumulatorRegister, Heap::kUndefinedValueRootIndex);
@@ -1048,10 +1036,8 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
           Operand(InterpreterFrameConstants::kRegisterFilePointerFromFp));
   __ li(kInterpreterBytecodeOffsetRegister,
         Operand(BytecodeArray::kHeaderSize - kHeapObjectTag));
-  __ LoadRoot(kInterpreterDispatchTableRegister,
-              Heap::kInterpreterTableRootIndex);
-  __ Addu(kInterpreterDispatchTableRegister, kInterpreterDispatchTableRegister,
-          Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ lw(kInterpreterDispatchTableRegister,
+        MemOperand(fp, InterpreterFrameConstants::kDispatchTableFromFp));
 
   // Dispatch to the first bytecode handler for the function.
   __ Addu(a0, kInterpreterBytecodeArrayRegister,
@@ -1154,10 +1140,9 @@ static void Generate_EnterBytecodeDispatch(MacroAssembler* masm) {
   // Initialize register file register and dispatch table register.
   __ Addu(kInterpreterRegisterFileRegister, fp,
           Operand(InterpreterFrameConstants::kRegisterFilePointerFromFp));
-  __ LoadRoot(kInterpreterDispatchTableRegister,
-              Heap::kInterpreterTableRootIndex);
-  __ Addu(kInterpreterDispatchTableRegister, kInterpreterDispatchTableRegister,
-          Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ li(kInterpreterDispatchTableRegister,
+        Operand(ExternalReference::interpreter_dispatch_table_address(
+            masm->isolate())));
 
   // Get the context from the frame.
   __ lw(kContextRegister,
@@ -1250,20 +1235,18 @@ void Builtins::Generate_InterpreterEnterBytecodeDispatch(MacroAssembler* masm) {
 
 
 void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
-  CallRuntimePassFunction(masm, Runtime::kCompileLazy);
-  GenerateTailCallToReturnedCode(masm);
+  GenerateTailCallToReturnedCode(masm, Runtime::kCompileLazy);
 }
 
 
 void Builtins::Generate_CompileOptimized(MacroAssembler* masm) {
-  CallRuntimePassFunction(masm, Runtime::kCompileOptimized_NotConcurrent);
-  GenerateTailCallToReturnedCode(masm);
+  GenerateTailCallToReturnedCode(masm,
+                                 Runtime::kCompileOptimized_NotConcurrent);
 }
 
 
 void Builtins::Generate_CompileOptimizedConcurrent(MacroAssembler* masm) {
-  CallRuntimePassFunction(masm, Runtime::kCompileOptimized_Concurrent);
-  GenerateTailCallToReturnedCode(masm);
+  GenerateTailCallToReturnedCode(masm, Runtime::kCompileOptimized_Concurrent);
 }
 
 
@@ -1483,13 +1466,11 @@ static void CompatibleReceiverCheck(MacroAssembler* masm, Register receiver,
 
   // Load the next prototype and iterate.
   __ bind(&next_prototype);
-  __ lw(receiver, FieldMemOperand(map, Map::kPrototypeOffset));
-  // End if the prototype is null or not hidden.
-  __ JumpIfRoot(receiver, Heap::kNullValueRootIndex, receiver_check_failed);
-  __ lw(map, FieldMemOperand(receiver, HeapObject::kMapOffset));
   __ lw(scratch, FieldMemOperand(map, Map::kBitField3Offset));
-  __ DecodeField<Map::IsHiddenPrototype>(scratch);
+  __ DecodeField<Map::HasHiddenPrototype>(scratch);
   __ Branch(receiver_check_failed, eq, scratch, Operand(zero_reg));
+  __ lw(receiver, FieldMemOperand(map, Map::kPrototypeOffset));
+  __ lw(map, FieldMemOperand(receiver, HeapObject::kMapOffset));
 
   __ Branch(&prototype_loop_start);
 
@@ -1984,9 +1965,7 @@ void Builtins::Generate_Apply(MacroAssembler* masm) {
 
     // Try to create the list from an arguments object.
     __ bind(&create_arguments);
-    __ lw(a2,
-          FieldMemOperand(a0, JSObject::kHeaderSize +
-                                  Heap::kArgumentsLengthIndex * kPointerSize));
+    __ lw(a2, FieldMemOperand(a0, JSArgumentsObject::kLengthOffset));
     __ lw(t0, FieldMemOperand(a0, JSObject::kElementsOffset));
     __ lw(at, FieldMemOperand(t0, FixedArray::kLengthOffset));
     __ Branch(&create_runtime, ne, a2, Operand(at));

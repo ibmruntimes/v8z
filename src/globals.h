@@ -532,7 +532,7 @@ enum VisitMode {
 };
 
 // Flag indicating whether code is built into the VM (one of the natives files).
-enum NativesFlag { NOT_NATIVES_CODE, NATIVES_CODE };
+enum NativesFlag { NOT_NATIVES_CODE, EXTENSION_CODE, NATIVES_CODE };
 
 // JavaScript defines two kinds of 'nil'.
 enum NilValue { kNullValue, kUndefinedValue };
@@ -772,6 +772,30 @@ inline std::ostream& operator<<(std::ostream& os, TailCallMode mode) {
       return os << "ALLOW_TAIL_CALLS";
     case TailCallMode::kDisallow:
       return os << "DISALLOW_TAIL_CALLS";
+  }
+  UNREACHABLE();
+  return os;
+}
+
+// Defines specifics about arguments object or rest parameter creation.
+enum class CreateArgumentsType : uint8_t {
+  kMappedArguments,
+  kUnmappedArguments,
+  kRestParameter
+};
+
+inline size_t hash_value(CreateArgumentsType type) {
+  return bit_cast<uint8_t>(type);
+}
+
+inline std::ostream& operator<<(std::ostream& os, CreateArgumentsType type) {
+  switch (type) {
+    case CreateArgumentsType::kMappedArguments:
+      return os << "MAPPED_ARGUMENTS";
+    case CreateArgumentsType::kUnmappedArguments:
+      return os << "UNMAPPED_ARGUMENTS";
+    case CreateArgumentsType::kRestParameter:
+      return os << "REST_PARAMETER";
   }
   UNREACHABLE();
   return os;

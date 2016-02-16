@@ -281,8 +281,9 @@ void ClassLiteral::AssignFeedbackVectorSlots(Isolate* isolate,
                                              FeedbackVectorSlotCache* cache) {
   // This logic that computes the number of slots needed for vector store
   // ICs must mirror FullCodeGenerator::VisitClassLiteral.
+  prototype_slot_ = spec->AddLoadICSlot();
   if (NeedsProxySlot()) {
-    slot_ = spec->AddStoreICSlot();
+    proxy_slot_ = spec->AddStoreICSlot();
   }
 
   for (int i = 0; i < properties()->length(); i++) {
@@ -819,14 +820,12 @@ void AstVisitor::VisitExpressions(ZoneList<Expression*>* expressions) {
   }
 }
 
-
 CaseClause::CaseClause(Zone* zone, Expression* label,
                        ZoneList<Statement*>* statements, int pos)
     : Expression(zone, pos),
       label_(label),
       statements_(statements),
-      compare_type_(Type::None(zone)) {}
-
+      compare_type_(Type::None()) {}
 
 uint32_t Literal::Hash() {
   return raw_value()->IsString()

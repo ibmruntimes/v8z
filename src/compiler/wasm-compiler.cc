@@ -15,6 +15,7 @@
 #include "src/compiler/graph.h"
 #include "src/compiler/graph-visualizer.h"
 #include "src/compiler/instruction-selector.h"
+#include "src/compiler/int64-lowering.h"
 #include "src/compiler/js-generic-lowering.h"
 #include "src/compiler/js-graph.h"
 #include "src/compiler/js-operator.h"
@@ -481,6 +482,9 @@ Node* WasmGraphBuilder::Binop(wasm::WasmOpcode opcode, Node* left,
       op = m->Uint32LessThanOrEqual();
       std::swap(left, right);
       break;
+    case wasm::kExprI64And:
+      op = m->Word64And();
+      break;
 #if WASM_64
     // Opcodes only supported on 64-bit platforms.
     // TODO(titzer): query the machine operator builder here instead of #ifdef.
@@ -531,9 +535,6 @@ Node* WasmGraphBuilder::Binop(wasm::WasmOpcode opcode, Node* left,
       op = m->Uint64Mod();
       return graph()->NewNode(op, left, right,
                               trap_->ZeroCheck64(kTrapRemByZero, right));
-    case wasm::kExprI64And:
-      op = m->Word64And();
-      break;
     case wasm::kExprI64Ior:
       op = m->Word64Or();
       break;
@@ -705,9 +706,7 @@ Node* WasmGraphBuilder::Unop(wasm::WasmOpcode opcode, Node* input) {
       op = m->RoundInt32ToFloat32();
       break;
     case wasm::kExprF32UConvertI32:
-      op = m->ChangeUint32ToFloat64();
-      input = graph()->NewNode(op, input);
-      op = m->TruncateFloat64ToFloat32();
+      op = m->RoundUint32ToFloat32();
       break;
     case wasm::kExprI32SConvertF32:
       return BuildI32SConvertF32(input);
@@ -742,83 +741,53 @@ Node* WasmGraphBuilder::Unop(wasm::WasmOpcode opcode, Node* input) {
       }
     }
     case wasm::kExprF32Floor: {
-      if (m->Float32RoundDown().IsSupported()) {
-        op = m->Float32RoundDown().op();
-        break;
-      } else {
-        op = UnsupportedOpcode(opcode);
-        break;
-      }
+      if (!m->Float32RoundDown().IsSupported()) return BuildF32Floor(input);
+      op = m->Float32RoundDown().op();
+      break;
     }
     case wasm::kExprF32Ceil: {
-      if (m->Float32RoundUp().IsSupported()) {
-        op = m->Float32RoundUp().op();
-        break;
-      } else {
-        op = UnsupportedOpcode(opcode);
-        break;
-      }
+      if (!m->Float32RoundUp().IsSupported()) return BuildF32Ceil(input);
+      op = m->Float32RoundUp().op();
+      break;
     }
     case wasm::kExprF32Trunc: {
-      if (m->Float32RoundTruncate().IsSupported()) {
-        op = m->Float32RoundTruncate().op();
-      } else {
-        return BuildF32Trunc(input);
-      }
+      if (!m->Float32RoundTruncate().IsSupported()) return BuildF32Trunc(input);
+      op = m->Float32RoundTruncate().op();
       break;
     }
     case wasm::kExprF32NearestInt: {
-      if (m->Float32RoundTiesEven().IsSupported()) {
-        op = m->Float32RoundTiesEven().op();
-        break;
-      } else {
-        op = UnsupportedOpcode(opcode);
-        break;
-      }
+      if (!m->Float32RoundTiesEven().IsSupported())
+        return BuildF32NearestInt(input);
+      op = m->Float32RoundTiesEven().op();
+      break;
     }
     case wasm::kExprF64Floor: {
-      if (m->Float64RoundDown().IsSupported()) {
-        op = m->Float64RoundDown().op();
-        break;
-      } else {
-        op = UnsupportedOpcode(opcode);
-        break;
-      }
+      if (!m->Float64RoundDown().IsSupported()) return BuildF64Floor(input);
+      op = m->Float64RoundDown().op();
+      break;
     }
     case wasm::kExprF64Ceil: {
-      if (m->Float64RoundUp().IsSupported()) {
-        op = m->Float64RoundUp().op();
-        break;
-      } else {
-        op = UnsupportedOpcode(opcode);
-        break;
-      }
+      if (!m->Float64RoundUp().IsSupported()) return BuildF64Ceil(input);
+      op = m->Float64RoundUp().op();
+      break;
     }
     case wasm::kExprF64Trunc: {
-      if (m->Float64RoundTruncate().IsSupported()) {
-        op = m->Float64RoundTruncate().op();
-        break;
-      } else {
-        op = UnsupportedOpcode(opcode);
-        break;
-      }
+      if (!m->Float64RoundTruncate().IsSupported()) return BuildF64Trunc(input);
+      op = m->Float64RoundTruncate().op();
+      break;
     }
     case wasm::kExprF64NearestInt: {
-      if (m->Float64RoundTiesEven().IsSupported()) {
-        op = m->Float64RoundTiesEven().op();
-        break;
-      } else {
-        op = UnsupportedOpcode(opcode);
-        break;
-      }
+      if (!m->Float64RoundTiesEven().IsSupported())
+        return BuildF64NearestInt(input);
+      op = m->Float64RoundTiesEven().op();
+      break;
     }
-
-#if WASM_64
-    // Opcodes only supported on 64-bit platforms.
-    // TODO(titzer): query the machine operator builder here instead of #ifdef.
     case wasm::kExprI32ConvertI64:
       op = m->TruncateInt64ToInt32();
       break;
+#if WASM_64
+    // Opcodes only supported on 64-bit platforms.
+    // TODO(titzer): query the machine operator builder here instead of #ifdef.
     case wasm::kExprI64SConvertI32:
       op = m->ChangeInt32ToInt64();
       break;
@@ -1064,8 +1033,12 @@ Node* WasmGraphBuilder::BuildF32Min(Node* left, Node* right) {
 
   return left_le_right.Phi(
       wasm::kAstF32, left,
-      right_lt_left.Phi(wasm::kAstF32, right,
-                        left_is_not_nan.Phi(wasm::kAstF32, right, left)));
+      right_lt_left.Phi(
+          wasm::kAstF32, right,
+          left_is_not_nan.Phi(
+              wasm::kAstF32,
+              Binop(wasm::kExprF32Mul, right, Float32Constant(1.0)),
+              Binop(wasm::kExprF32Mul, left, Float32Constant(1.0)))));
 }
 
 
@@ -1081,8 +1054,12 @@ Node* WasmGraphBuilder::BuildF32Max(Node* left, Node* right) {
 
   return left_ge_right.Phi(
       wasm::kAstF32, left,
-      right_gt_left.Phi(wasm::kAstF32, right,
-                        left_is_not_nan.Phi(wasm::kAstF32, right, left)));
+      right_gt_left.Phi(
+          wasm::kAstF32, right,
+          left_is_not_nan.Phi(
+              wasm::kAstF32,
+              Binop(wasm::kExprF32Mul, right, Float32Constant(1.0)),
+              Binop(wasm::kExprF32Mul, left, Float32Constant(1.0)))));
 }
 
 
@@ -1098,8 +1075,12 @@ Node* WasmGraphBuilder::BuildF64Min(Node* left, Node* right) {
 
   return left_le_right.Phi(
       wasm::kAstF64, left,
-      right_lt_left.Phi(wasm::kAstF64, right,
-                        left_is_not_nan.Phi(wasm::kAstF64, right, left)));
+      right_lt_left.Phi(
+          wasm::kAstF64, right,
+          left_is_not_nan.Phi(
+              wasm::kAstF64,
+              Binop(wasm::kExprF64Mul, right, Float64Constant(1.0)),
+              Binop(wasm::kExprF64Mul, left, Float64Constant(1.0)))));
 }
 
 
@@ -1115,8 +1096,12 @@ Node* WasmGraphBuilder::BuildF64Max(Node* left, Node* right) {
 
   return left_ge_right.Phi(
       wasm::kAstF64, left,
-      right_gt_left.Phi(wasm::kAstF64, right,
-                        left_is_not_nan.Phi(wasm::kAstF64, right, left)));
+      right_gt_left.Phi(
+          wasm::kAstF64, right,
+          left_is_not_nan.Phi(
+              wasm::kAstF64,
+              Binop(wasm::kExprF64Mul, right, Float64Constant(1.0)),
+              Binop(wasm::kExprF64Mul, left, Float64Constant(1.0)))));
 }
 
 
@@ -1160,14 +1145,12 @@ Node* WasmGraphBuilder::BuildI32UConvertF32(Node* input) {
   MachineOperatorBuilder* m = jsgraph()->machine();
   // Truncation of the input value is needed for the overflow check later.
   Node* trunc = Unop(wasm::kExprF32Trunc, input);
-  // TODO(titzer): two conversions
-  Node* f64_trunc = graph()->NewNode(m->ChangeFloat32ToFloat64(), trunc);
-  Node* result = graph()->NewNode(m->ChangeFloat64ToUint32(), f64_trunc);
+  Node* result = graph()->NewNode(m->TruncateFloat32ToUint32(), trunc);
 
-  // Convert the result back to f64. If we end up at a different value than the
+  // Convert the result back to f32. If we end up at a different value than the
   // truncated input value, then there has been an overflow and we trap.
-  Node* check = Unop(wasm::kExprF64UConvertI32, result);
-  Node* overflow = Binop(wasm::kExprF64Ne, f64_trunc, check);
+  Node* check = Unop(wasm::kExprF32UConvertI32, result);
+  Node* overflow = Binop(wasm::kExprF32Ne, trunc, check);
   trap_->AddTrapIfTrue(kTrapFloatUnrepresentable, overflow);
 
   return result;
@@ -1369,73 +1352,117 @@ Node* WasmGraphBuilder::BuildI64Popcnt(Node* input) {
   return result;
 }
 
-
 Node* WasmGraphBuilder::BuildF32Trunc(Node* input) {
-  //  int32_t int_input = bitftoi(input);
-  //  int32_t exponent = int_input & 0x7f800000;
-  //  if (exponent >= ((23 + 127) << 23)) {
-  //    if (input != input) {
-  //      return bititof(int_input | (1 << 22));
-  //    }
-  //    return input;
-  //  }
-  //  int32_t sign = int_input & 0x80000000;
-  //  if (exponent < (127 << 23)) {
-  //    return bititof(sign);
-  //  }
-  //  int32_t mantissa = int_input & 0x007fffff;
-  //  int32_t shift = (127 + 23) - (exponent >> 23);
-  //  int32_t new_mantissa = (mantissa >> shift) << shift;
-  //  int32_t result = new_mantissa | exponent | sign;
-  //  return bititof(result);
-
-  Node* int_input = Unop(wasm::kExprI32ReinterpretF32, input);
-  Node* exponent =
-      Binop(wasm::kExprI32And, int_input, jsgraph()->Int32Constant(0x7f800000));
-
-  Node* sign =
-      Binop(wasm::kExprI32And, int_input, jsgraph()->Int32Constant(0x80000000));
-
-  Node* result_out_of_range = int_input;
-
-  Node* result_nan =
-      Binop(wasm::kExprI32Ior, int_input, jsgraph()->Int32Constant(1 << 22));
-
-  Node* result_zero = sign;
-
-  Node* mantissa =
-      Binop(wasm::kExprI32And, int_input, jsgraph()->Int32Constant(0x007fffff));
-  Node* shift =
-      Binop(wasm::kExprI32Sub, jsgraph()->Int32Constant(23 + 127),
-            Binop(wasm::kExprI32ShrU, exponent, jsgraph()->Int32Constant(23)));
-  Node* new_mantissa = Binop(wasm::kExprI32Shl,
-                             Binop(wasm::kExprI32ShrU, mantissa, shift), shift);
-  Node* result_truncate =
-      Binop(wasm::kExprI32Ior, Binop(wasm::kExprI32Ior, new_mantissa, exponent),
-            sign);
-
-  Diamond is_zero(
-      graph(), jsgraph()->common(),
-      Binop(wasm::kExprI32LtU, exponent, jsgraph()->Int32Constant(127 << 23)));
-
-  Node* result_within_range =
-      is_zero.Phi(wasm::kAstI32, result_zero, result_truncate);
-
-  Diamond input_nan(graph(), jsgraph()->common(),
-                    Binop(wasm::kExprF32Ne, input, input));
-  Node* result_exponent_geq_23 =
-      input_nan.Phi(wasm::kAstI32, result_nan, result_out_of_range);
-
-  Diamond exponent_geq_23(graph(), jsgraph()->common(),
-                          Binop(wasm::kExprI32GeU, exponent,
-                                jsgraph()->Int32Constant((23 + 127) << 23)));
-
-  Node* result = exponent_geq_23.Phi(wasm::kAstI32, result_exponent_geq_23,
-                                     result_within_range);
-
-  return Unop(wasm::kExprF32ReinterpretI32, result);
+  MachineType type = MachineType::Float32();
+  ExternalReference ref =
+      ExternalReference::f32_trunc_wrapper_function(jsgraph()->isolate());
+  return BuildRoundingInstruction(input, ref, type);
 }
 
+Node* WasmGraphBuilder::BuildF32Floor(Node* input) {
+  MachineType type = MachineType::Float32();
+  ExternalReference ref =
+      ExternalReference::f32_floor_wrapper_function(jsgraph()->isolate());
+  return BuildRoundingInstruction(input, ref, type);
+}
+
+Node* WasmGraphBuilder::BuildF32Ceil(Node* input) {
+  MachineType type = MachineType::Float32();
+  ExternalReference ref =
+      ExternalReference::f32_ceil_wrapper_function(jsgraph()->isolate());
+  return BuildRoundingInstruction(input, ref, type);
+}
+
+Node* WasmGraphBuilder::BuildF32NearestInt(Node* input) {
+  MachineType type = MachineType::Float32();
+  ExternalReference ref =
+      ExternalReference::f32_nearest_int_wrapper_function(jsgraph()->isolate());
+  return BuildRoundingInstruction(input, ref, type);
+}
+
+Node* WasmGraphBuilder::BuildF64Trunc(Node* input) {
+  MachineType type = MachineType::Float64();
+  ExternalReference ref =
+      ExternalReference::f64_trunc_wrapper_function(jsgraph()->isolate());
+  return BuildRoundingInstruction(input, ref, type);
+}
+
+Node* WasmGraphBuilder::BuildF64Floor(Node* input) {
+  MachineType type = MachineType::Float64();
+  ExternalReference ref =
+      ExternalReference::f64_floor_wrapper_function(jsgraph()->isolate());
+  return BuildRoundingInstruction(input, ref, type);
+}
+
+Node* WasmGraphBuilder::BuildF64Ceil(Node* input) {
+  MachineType type = MachineType::Float64();
+  ExternalReference ref =
+      ExternalReference::f64_ceil_wrapper_function(jsgraph()->isolate());
+  return BuildRoundingInstruction(input, ref, type);
+}
+
+Node* WasmGraphBuilder::BuildF64NearestInt(Node* input) {
+  MachineType type = MachineType::Float64();
+  ExternalReference ref =
+      ExternalReference::f64_nearest_int_wrapper_function(jsgraph()->isolate());
+  return BuildRoundingInstruction(input, ref, type);
+}
+
+Node* WasmGraphBuilder::BuildRoundingInstruction(Node* input,
+                                                 ExternalReference ref,
+                                                 MachineType type) {
+  // We do truncation by calling a C function which calculates the truncation
+  // for us. The input is passed to the C function as a double* to avoid double
+  // parameters. For this we reserve a slot on the stack, store the parameter in
+  // that slot, pass a pointer to the slot to the C function, and after calling
+  // the C function we collect the return value from the stack slot.
+
+  Node* stack_slot_param =
+      graph()->NewNode(jsgraph()->machine()->StackSlot(type.representation()));
+
+  const Operator* store_op = jsgraph()->machine()->Store(
+      StoreRepresentation(type.representation(), kNoWriteBarrier));
+  *effect_ =
+      graph()->NewNode(store_op, stack_slot_param, jsgraph()->Int32Constant(0),
+                       input, *effect_, *control_);
+
+  Signature<MachineType>::Builder sig_builder(jsgraph()->zone(), 0, 1);
+  sig_builder.AddParam(MachineType::Pointer());
+  Node* function = graph()->NewNode(jsgraph()->common()->ExternalConstant(ref));
+
+  Node* args[] = {function, stack_slot_param};
+
+  BuildCCall(sig_builder.Build(), args);
+
+  const Operator* load_op = jsgraph()->machine()->Load(type);
+
+  Node* load =
+      graph()->NewNode(load_op, stack_slot_param, jsgraph()->Int32Constant(0),
+                       *effect_, *control_);
+  *effect_ = load;
+  return load;
+}
+
+Node* WasmGraphBuilder::BuildCCall(MachineSignature* sig, Node** args) {
+  const size_t params = sig->parameter_count();
+  const size_t extra = 2;  // effect and control inputs.
+  const size_t count = 1 + params + extra;
+
+  // Reallocate the buffer to make space for extra inputs.
+  args = Realloc(args, count);
+
+  // Add effect and control inputs.
+  args[params + 1] = *effect_;
+  args[params + 2] = *control_;
+
+  CallDescriptor* desc =
+      Linkage::GetSimplifiedCDescriptor(jsgraph()->zone(), sig);
+
+  const Operator* op = jsgraph()->common()->Call(desc);
+  Node* call = graph()->NewNode(op, static_cast<int>(count), args);
+  *effect_ = call;
+  return call;
+}
 
 Node* WasmGraphBuilder::BuildWasmCall(wasm::FunctionSig* sig, Node** args) {
   const size_t params = sig->parameter_count();
@@ -1873,6 +1900,13 @@ Node* WasmGraphBuilder::String(const char* string) {
 
 Graph* WasmGraphBuilder::graph() { return jsgraph()->graph(); }
 
+void WasmGraphBuilder::Int64LoweringForTesting() {
+#if !WASM_64
+  Int64Lowering r(jsgraph()->graph(), jsgraph()->machine(), jsgraph()->common(),
+                  jsgraph()->zone());
+  r.ReduceGraph();
+#endif
+}
 
 static void RecordFunctionCompilation(Logger::LogEventsAndTags tag,
                                       CompilationInfo* info,
@@ -1894,7 +1928,6 @@ static void RecordFunctionCompilation(Logger::LogEventsAndTags tag,
             CodeCreateEvent(tag, *code, *shared, info, *script_str, 0, 0));
   }
 }
-
 
 Handle<JSFunction> CompileJSToWasmWrapper(
     Isolate* isolate, wasm::ModuleEnv* module, Handle<String> name,
@@ -2054,10 +2087,10 @@ Handle<Code> CompileWasmFunction(wasm::ErrorThrower& thrower, Isolate* isolate,
   wasm::FunctionEnv env;
   env.module = module_env;
   env.sig = function.sig;
-  env.local_int32_count = function.local_int32_count;
-  env.local_int64_count = function.local_int64_count;
-  env.local_float32_count = function.local_float32_count;
-  env.local_float64_count = function.local_float64_count;
+  env.local_i32_count = function.local_i32_count;
+  env.local_i64_count = function.local_i64_count;
+  env.local_f32_count = function.local_f32_count;
+  env.local_f64_count = function.local_f64_count;
   env.SumLocals();
 
   // Create a TF graph during decoding.
@@ -2104,6 +2137,7 @@ Handle<Code> CompileWasmFunction(wasm::ErrorThrower& thrower, Isolate* isolate,
     func_name = buffer.start();
   }
   CompilationInfo info(func_name, isolate, &zone, flags);
+
   Handle<Code> code =
       Pipeline::GenerateCodeForTesting(&info, descriptor, &graph);
   if (debugging) {

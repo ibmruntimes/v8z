@@ -99,34 +99,8 @@ void VerifyFunction(const v8::FunctionCallbackInfo<v8::Value>& args) {
   if (result.val) delete result.val;
 }
 
-
-void CompileRun(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  HandleScope scope(args.GetIsolate());
-  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(args.GetIsolate());
-  ErrorThrower thrower(isolate, "WASM.compileRun()");
-
-  RawBuffer buffer = GetRawBufferArgument(thrower, args);
-  if (thrower.error()) return;
-
-  // Decode and pre-verify the functions before compiling and running.
-  i::Zone zone;
-  internal::wasm::ModuleResult result = internal::wasm::DecodeWasmModule(
-      isolate, &zone, buffer.start, buffer.end, true, false);
-
-  if (result.failed()) {
-    thrower.Failed("", result);
-  } else {
-    // Success. Compile and run!
-    int32_t retval = i::wasm::CompileAndRunWasmModule(isolate, result.val);
-    args.GetReturnValue().Set(retval);
-  }
-
-  if (result.val) delete result.val;
-}
-
-
-v8::internal::wasm::WasmModuleIndex* TranslateAsmModule(i::ParseInfo* info,
-                                                        ErrorThrower* thrower) {
+v8::internal::wasm::WasmModuleIndex* TranslateAsmModule(
+    i::ParseInfo* info, i::Handle<i::Object> foreign, ErrorThrower* thrower) {
   info->set_global();
   info->set_lazy(false);
   info->set_allow_lazy_parsing(false);
@@ -141,46 +115,18 @@ v8::internal::wasm::WasmModuleIndex* TranslateAsmModule(i::ParseInfo* info,
 
   v8::internal::AsmTyper typer(info->isolate(), info->zone(), *(info->script()),
                                info->literal());
+  if (i::FLAG_enable_simd_asmjs) {
+    typer.set_allow_simd(true);
+  }
   if (!typer.Validate()) {
     thrower->Error("Asm.js validation failed: %s", typer.error_message());
     return nullptr;
   }
 
   auto module = v8::internal::wasm::AsmWasmBuilder(
-                    info->isolate(), info->zone(), info->literal())
+                    info->isolate(), info->zone(), info->literal(), foreign)
                     .Run();
   return module;
-}
-
-
-void AsmCompileRun(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  HandleScope scope(args.GetIsolate());
-  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(args.GetIsolate());
-  ErrorThrower thrower(isolate, "WASM.asmCompileRun()");
-
-  if (args.Length() != 1) {
-    thrower.Error("Invalid argument count");
-    return;
-  }
-  if (!args[0]->IsString()) {
-    thrower.Error("Asm module text should be a string");
-    return;
-  }
-
-  i::Factory* factory = isolate->factory();
-  i::Zone zone;
-  Local<String> source = Local<String>::Cast(args[0]);
-  i::Handle<i::Script> script = factory->NewScript(Utils::OpenHandle(*source));
-  i::ParseInfo info(&zone, script);
-
-  auto module = TranslateAsmModule(&info, &thrower);
-  if (module == nullptr) {
-    return;
-  }
-
-  int32_t result = v8::internal::wasm::CompileAndRunWasmModule(
-      isolate, module->Begin(), module->End(), true);
-  args.GetReturnValue().Set(result);
 }
 
 
@@ -242,7 +188,13 @@ void InstantiateModuleFromAsm(const v8::FunctionCallbackInfo<v8::Value>& args) {
   i::Handle<i::Script> script = factory->NewScript(Utils::OpenHandle(*source));
   i::ParseInfo info(&zone, script);
 
-  auto module = TranslateAsmModule(&info, &thrower);
+  i::Handle<i::Object> foreign;
+  if (args.Length() > 1 && args[1]->IsObject()) {
+    Local<Object> local_foreign = Local<Object>::Cast(args[1]);
+    foreign = v8::Utils::OpenHandle(*local_foreign);
+  }
+
+  auto module = TranslateAsmModule(&info, foreign, &thrower);
   if (module == nullptr) {
     return;
   }
@@ -309,11 +261,9 @@ void WasmJs::Install(Isolate* isolate, Handle<JSGlobalObject> global) {
   JSObject::AddProperty(global, name, wasm_object, attributes);
 
   // Install functions on the WASM object.
-  InstallFunc(isolate, wasm_object, "instantiateModule", InstantiateModule);
   InstallFunc(isolate, wasm_object, "verifyModule", VerifyModule);
   InstallFunc(isolate, wasm_object, "verifyFunction", VerifyFunction);
-  InstallFunc(isolate, wasm_object, "compileRun", CompileRun);
-  InstallFunc(isolate, wasm_object, "asmCompileRun", AsmCompileRun);
+  InstallFunc(isolate, wasm_object, "instantiateModule", InstantiateModule);
   InstallFunc(isolate, wasm_object, "instantiateModuleFromAsm",
               InstantiateModuleFromAsm);
 }

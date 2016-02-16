@@ -373,7 +373,6 @@ void LCodeGen::DoCallFunction(LCallFunction* instr) {
 
   int arity = instr->arity();
   ConvertReceiverMode mode = hinstr->convert_mode();
-  TailCallMode tail_call_mode = hinstr->tail_call_mode();
   if (hinstr->HasVectorAndSlot()) {
     Register slot_register = ToRegister(instr->temp_slot());
     Register vector_register = ToRegister(instr->temp_vector());
@@ -387,14 +386,12 @@ void LCodeGen::DoCallFunction(LCallFunction* instr) {
     __ Mov(vector_register, vector);
     __ Mov(slot_register, Operand(Smi::FromInt(index)));
 
-    Handle<Code> ic = CodeFactory::CallICInOptimizedCode(isolate(), arity, mode,
-                                                         tail_call_mode)
-                          .code();
+    Handle<Code> ic =
+        CodeFactory::CallICInOptimizedCode(isolate(), arity, mode).code();
     CallCode(ic, RelocInfo::CODE_TARGET, instr);
   } else {
     __ Mov(x0, arity);
-    CallCode(isolate()->builtins()->Call(mode, tail_call_mode),
-             RelocInfo::CODE_TARGET, instr);
+    CallCode(isolate()->builtins()->Call(mode), RelocInfo::CODE_TARGET, instr);
   }
   RecordPushedArgumentsDelta(hinstr->argument_delta());
 }
@@ -609,13 +606,6 @@ bool LCodeGen::GeneratePrologue() {
 
   if (info()->IsOptimizing()) {
     ProfileEntryHookStub::MaybeCallEntryHook(masm_);
-
-#ifdef DEBUG
-    if (strlen(FLAG_stop_at) > 0 &&
-        info()->literal()->name()->IsUtf8EqualTo(CStrVector(FLAG_stop_at))) {
-      __ Debug("stop-at", __LINE__, BREAK);
-    }
-#endif
   }
 
   DCHECK(__ StackPointer().Is(jssp));
@@ -2331,24 +2321,6 @@ void LCodeGen::DoCmpMapAndBranch(LCmpMapAndBranch* instr) {
 
   __ Ldr(map, FieldMemOperand(value, HeapObject::kMapOffset));
   EmitCompareAndBranch(instr, eq, map, Operand(instr->map()));
-}
-
-
-void LCodeGen::DoCompareMinusZeroAndBranch(LCompareMinusZeroAndBranch* instr) {
-  Representation rep = instr->hydrogen()->value()->representation();
-  DCHECK(!rep.IsInteger32());
-  Register scratch = ToRegister(instr->temp());
-
-  if (rep.IsDouble()) {
-    __ JumpIfMinusZero(ToDoubleRegister(instr->value()),
-                       instr->TrueLabel(chunk()));
-  } else {
-    Register value = ToRegister(instr->value());
-    __ JumpIfNotHeapNumber(value, instr->FalseLabel(chunk()), DO_SMI_CHECK);
-    __ Ldr(scratch, FieldMemOperand(value, HeapNumber::kValueOffset));
-    __ JumpIfMinusZero(scratch, instr->TrueLabel(chunk()));
-  }
-  EmitGoto(instr->FalseDestination(chunk()));
 }
 
 
@@ -5569,7 +5541,7 @@ void LCodeGen::DoTypeofIsAndBranch(LTypeofIsAndBranch* instr) {
     DCHECK(instr->temp1() != NULL);
     Register scratch = ToRegister(instr->temp1());
 
-    __ JumpIfRoot(value, Heap::kUndefinedValueRootIndex, true_label);
+    __ JumpIfRoot(value, Heap::kNullValueRootIndex, false_label);
     __ JumpIfSmi(value, false_label);
     // Check for undetectable objects and jump to the true branch in this case.
     __ Ldr(scratch, FieldMemOperand(value, HeapObject::kMapOffset));

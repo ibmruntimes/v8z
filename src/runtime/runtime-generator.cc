@@ -36,7 +36,7 @@ RUNTIME_FUNCTION(Runtime_CreateJSGeneratorObject) {
 
 RUNTIME_FUNCTION(Runtime_SuspendJSGeneratorObject) {
   HandleScope handle_scope(isolate);
-  DCHECK(args.length() == 1 || args.length() == 2);
+  DCHECK(args.length() == 1);
   CONVERT_ARG_HANDLE_CHECKED(JSGeneratorObject, generator_object, 0);
 
   JavaScriptFrameIterator stack_iterator(isolate);
@@ -54,18 +54,6 @@ RUNTIME_FUNCTION(Runtime_SuspendJSGeneratorObject) {
   int operands_count = frame->ComputeOperandsCount();
   DCHECK_GE(operands_count, 1 + args.length());
   operands_count -= 1 + args.length();
-
-  // Second argument indicates that we need to patch the handler table because
-  // a delegating yield introduced a try-catch statement at expression level,
-  // hence the operand count was off when we statically computed it.
-  // TODO(mstarzinger): This special case disappears with do-expressions.
-  if (args.length() == 2) {
-    CONVERT_SMI_ARG_CHECKED(handler_index, 1);
-    Handle<Code> code(frame->unchecked_code());
-    Handle<HandlerTable> table(HandlerTable::cast(code->handler_table()));
-    int handler_depth = operands_count - TryBlockConstant::kElementCount;
-    table->SetRangeDepth(handler_index, handler_depth);
-  }
 
   if (operands_count == 0) {
     // Although it's semantically harmless to call this function with an
@@ -87,9 +75,9 @@ RUNTIME_FUNCTION(Runtime_SuspendJSGeneratorObject) {
 // called if the suspended activation had operands on the stack, stack handlers
 // needing rewinding, or if the resume should throw an exception.  The fast path
 // is handled directly in FullCodeGenerator::EmitGeneratorResume(), which is
-// inlined into GeneratorNext and GeneratorThrow.  EmitGeneratorResumeResume is
-// called in any case, as it needs to reconstruct the stack frame and make space
-// for arguments and operands.
+// inlined into GeneratorNext, GeneratorReturn, and GeneratorThrow.
+// EmitGeneratorResume is called in any case, as it needs to reconstruct the
+// stack frame and make space for arguments and operands.
 RUNTIME_FUNCTION(Runtime_ResumeJSGeneratorObject) {
   SealHandleScope shs(isolate);
   DCHECK(args.length() == 3);
@@ -125,7 +113,10 @@ RUNTIME_FUNCTION(Runtime_ResumeJSGeneratorObject) {
   JSGeneratorObject::ResumeMode resume_mode =
       static_cast<JSGeneratorObject::ResumeMode>(resume_mode_int);
   switch (resume_mode) {
+    // Note: this looks like NEXT and RETURN are the same but RETURN receives
+    // special treatment in the generator code (to which we return here).
     case JSGeneratorObject::NEXT:
+    case JSGeneratorObject::RETURN:
       return value;
     case JSGeneratorObject::THROW:
       return isolate->Throw(value);
@@ -213,15 +204,25 @@ RUNTIME_FUNCTION(Runtime_GeneratorGetSourcePosition) {
 }
 
 
+// Optimization for the following three functions is disabled in
+// js/generator.js and compiler/ast-graph-builder.cc.
+
+
 RUNTIME_FUNCTION(Runtime_GeneratorNext) {
-  UNREACHABLE();  // Optimization disabled in SetUpGenerators().
-  return NULL;
+  UNREACHABLE();
+  return nullptr;
+}
+
+
+RUNTIME_FUNCTION(Runtime_GeneratorReturn) {
+  UNREACHABLE();
+  return nullptr;
 }
 
 
 RUNTIME_FUNCTION(Runtime_GeneratorThrow) {
-  UNREACHABLE();  // Optimization disabled in SetUpGenerators().
-  return NULL;
+  UNREACHABLE();
+  return nullptr;
 }
 }  // namespace internal
 }  // namespace v8

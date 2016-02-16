@@ -10,7 +10,6 @@
 // Imports
 
 var ExpandReplacement;
-var FLAG_harmony_tolength;
 var GlobalObject = global.Object;
 var GlobalRegExp = global.RegExp;
 var GlobalRegExpPrototype;
@@ -21,10 +20,6 @@ var matchSymbol = utils.ImportNow("match_symbol");
 var replaceSymbol = utils.ImportNow("replace_symbol");
 var searchSymbol = utils.ImportNow("search_symbol");
 var splitSymbol = utils.ImportNow("split_symbol");
-
-utils.ImportFromExperimental(function(from) {
-  FLAG_harmony_tolength = from.FLAG_harmony_tolength;
-});
 
 utils.Import(function(from) {
   ExpandReplacement = from.ExpandReplacement;
@@ -176,7 +171,7 @@ function RegExpExecJS(string) {
 
   // Conversion is required by the ES2015 specification (RegExpBuiltinExec
   // algorithm, step 4) even if the value is discarded for non-global RegExps.
-  var i = TO_LENGTH_OR_INTEGER(lastIndex);
+  var i = TO_LENGTH(lastIndex);
 
   var updateLastIndex = REGEXP_GLOBAL(this) || REGEXP_STICKY(this);
   if (updateLastIndex) {
@@ -223,7 +218,7 @@ function RegExpTest(string) {
 
   // Conversion is required by the ES2015 specification (RegExpBuiltinExec
   // algorithm, step 4) even if the value is discarded for non-global RegExps.
-  var i = TO_LENGTH_OR_INTEGER(lastIndex);
+  var i = TO_LENGTH(lastIndex);
 
   if (REGEXP_GLOBAL(this) || REGEXP_STICKY(this)) {
     if (i < 0 || i > string.length) {
@@ -262,7 +257,7 @@ function RegExpTest(string) {
 }
 
 function TrimRegExp(regexp) {
-  if (!%_ObjectEquals(regexp_key, regexp)) {
+  if (regexp_key !== regexp) {
     regexp_key = regexp;
     regexp_val =
       new GlobalRegExp(
@@ -283,8 +278,11 @@ function RegExpToString() {
       %IncrementUseCounter(kRegExpPrototypeToString);
       return '/(?:)/';
     }
-    throw MakeTypeError(kIncompatibleMethodReceiver,
-                        'RegExp.prototype.toString', this);
+    if (!IS_RECEIVER(this)) {
+      throw MakeTypeError(
+          kIncompatibleMethodReceiver, 'RegExp.prototype.toString', this);
+    }
+    return '/' + TO_STRING(this.source) + '/' + TO_STRING(this.flags);
   }
   var result = '/' + REGEXP_SOURCE(this) + '/';
   if (REGEXP_GLOBAL(this)) result += 'g';
@@ -293,6 +291,15 @@ function RegExpToString() {
   if (REGEXP_UNICODE(this)) result += 'u';
   if (REGEXP_STICKY(this)) result += 'y';
   return result;
+}
+
+
+function AtSurrogatePair(subject, index) {
+  if (index + 1 >= subject.length) return false;
+  var first = %_StringCharCodeAt(subject, index);
+  if (first < 0xD800 || first > 0xDBFF) return false;
+  var second = %_StringCharCodeAt(subject, index + 1);
+  return second >= 0xDC00 || second <= 0xDFFF;
 }
 
 
@@ -337,7 +344,11 @@ function RegExpSplit(string, limit) {
 
     // We ignore a zero-length match at the currentIndex.
     if (startIndex === endIndex && endIndex === currentIndex) {
-      startIndex++;
+      if (REGEXP_UNICODE(this) && AtSurrogatePair(subject, startIndex)) {
+        startIndex += 2;
+      } else {
+        startIndex++;
+      }
       continue;
     }
 

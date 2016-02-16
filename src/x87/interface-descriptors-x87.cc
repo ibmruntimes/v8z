@@ -59,10 +59,6 @@ const Register StringCompareDescriptor::LeftRegister() { return edx; }
 const Register StringCompareDescriptor::RightRegister() { return eax; }
 
 
-const Register ArgumentsAccessReadDescriptor::index() { return edx; }
-const Register ArgumentsAccessReadDescriptor::parameter_count() { return eax; }
-
-
 const Register ArgumentsAccessNewDescriptor::function() { return edi; }
 const Register ArgumentsAccessNewDescriptor::parameter_count() { return ecx; }
 const Register ArgumentsAccessNewDescriptor::parameter_pointer() { return edx; }
@@ -410,6 +406,14 @@ void ApiAccessorDescriptor::InitializePlatformSpecific(
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
 
+void InterpreterDispatchDescriptor::InitializePlatformSpecific(
+    CallInterfaceDescriptorData* data) {
+  Register registers[] = {
+      kInterpreterAccumulatorRegister, kInterpreterRegisterFileRegister,
+      kInterpreterBytecodeOffsetRegister, kInterpreterBytecodeArrayRegister,
+      kInterpreterDispatchTableRegister};
+  data->InitializePlatformSpecific(arraysize(registers), registers);
+}
 
 void InterpreterPushArgsAndCallDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
@@ -421,7 +425,6 @@ void InterpreterPushArgsAndCallDescriptor::InitializePlatformSpecific(
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
 
-
 void InterpreterPushArgsAndConstructDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {
@@ -432,7 +435,6 @@ void InterpreterPushArgsAndConstructDescriptor::InitializePlatformSpecific(
   };
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
-
 
 void InterpreterCEntryDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {

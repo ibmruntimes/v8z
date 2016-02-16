@@ -432,7 +432,10 @@ class WeakCallbackInfo {
     return internal_fields_[1];
   }
 
-  bool IsFirstPass() const { return callback_ != nullptr; }
+  V8_DEPRECATED("Not realiable once SetSecondPassCallback() was used.",
+                bool IsFirstPass() const) {
+    return callback_ != nullptr;
+  }
 
   // When first called, the embedder MUST Reset() the Global which triggered the
   // callback. The Global itself is unusable for anything else. No v8 other api
@@ -1607,7 +1610,8 @@ class V8_EXPORT StackFrame {
   /**
    * Returns the name of the resource that contains the script for the
    * function for this StackFrame or sourceURL value if the script name
-   * is undefined and its source ends with //# sourceURL=... string.
+   * is undefined and its source ends with //# sourceURL=... string or
+   * deprecated //@ sourceURL=... string.
    */
   Local<String> GetScriptNameOrSourceURL() const;
 
@@ -4322,8 +4326,10 @@ enum AccessType {
  * object.
  */
 typedef bool (*AccessCheckCallback)(Local<Context> accessing_context,
-                                    Local<Object> accessed_object);
-
+                                    Local<Object> accessed_object,
+                                    Local<Value> data);
+typedef bool (*DeprecatedAccessCheckCallback)(Local<Context> accessing_context,
+                                              Local<Object> accessed_object);
 
 /**
  * Returns true if cross-context access should be allowed to the named
@@ -4753,6 +4759,10 @@ class V8_EXPORT ObjectTemplate : public Template {
    */
   void SetAccessCheckCallback(AccessCheckCallback callback,
                               Local<Value> data = Local<Value>());
+  V8_DEPRECATE_SOON(
+      "Use SetAccessCheckCallback with new AccessCheckCallback signature.",
+      void SetAccessCheckCallback(DeprecatedAccessCheckCallback callback,
+                                  Local<Value> data = Local<Value>()));
 
   V8_DEPRECATED(
       "Use SetAccessCheckCallback instead",
@@ -5457,6 +5467,8 @@ class V8_EXPORT Isolate {
     kPromiseDefer = 19,
     kHtmlCommentInExternalScript = 20,
     kHtmlComment = 21,
+    kSloppyModeBlockScopedFunctionRedefinition = 22,
+    kForInInitializer = 23,
     kUseCounterFeatureCount  // This enum value must be last.
   };
 

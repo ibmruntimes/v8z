@@ -158,10 +158,10 @@ MaybeHandle<Object> Runtime::SetObjectProperty(Isolate* isolate,
 RUNTIME_FUNCTION(Runtime_GetPrototype) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 1);
-  CONVERT_ARG_HANDLE_CHECKED(Object, obj, 0);
+  CONVERT_ARG_HANDLE_CHECKED(JSReceiver, obj, 0);
   Handle<Object> prototype;
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, prototype,
-                                     Object::GetPrototype(isolate, obj));
+                                     JSReceiver::GetPrototype(isolate, obj));
   return *prototype;
 }
 
@@ -230,8 +230,10 @@ MUST_USE_RESULT static MaybeHandle<Object> GetOwnProperty(Isolate* isolate,
   if (is_accessor_pair) {
     Handle<AccessorPair> accessors =
         Handle<AccessorPair>::cast(it.GetAccessors());
-    Handle<Object> getter(accessors->GetComponent(ACCESSOR_GETTER), isolate);
-    Handle<Object> setter(accessors->GetComponent(ACCESSOR_SETTER), isolate);
+    Handle<Object> getter =
+        AccessorPair::GetComponent(accessors, ACCESSOR_GETTER);
+    Handle<Object> setter =
+        AccessorPair::GetComponent(accessors, ACCESSOR_SETTER);
     elms->set(GETTER_INDEX, *getter);
     elms->set(SETTER_INDEX, *setter);
   } else {
@@ -263,31 +265,6 @@ RUNTIME_FUNCTION(Runtime_GetOwnProperty_Legacy) {
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, result,
                                      GetOwnProperty(isolate, obj, name));
   return *result;
-}
-
-
-// ES6 19.1.2.6
-RUNTIME_FUNCTION(Runtime_GetOwnProperty) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 2);
-  CONVERT_ARG_HANDLE_CHECKED(Object, object, 0);
-  CONVERT_ARG_HANDLE_CHECKED(Object, raw_name, 1);
-  // 1. Let obj be ? ToObject(O).
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, object,
-                                     Object::ToObject(isolate, object));
-  // 2. Let key be ? ToPropertyKey(P).
-  Handle<Name> key;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, key,
-                                     Object::ToName(isolate, raw_name));
-
-  // 3. Let desc be ? obj.[[GetOwnProperty]](key).
-  PropertyDescriptor desc;
-  Maybe<bool> found = JSReceiver::GetOwnPropertyDescriptor(
-      isolate, Handle<JSReceiver>::cast(object), key, &desc);
-  MAYBE_RETURN(found, isolate->heap()->exception());
-  // 4. Return FromPropertyDescriptor(desc).
-  if (!found.FromJust()) return isolate->heap()->undefined_value();
-  return *desc.ToObject(isolate);
 }
 
 
@@ -601,11 +578,10 @@ static Object* HasOwnPropertyImplementation(Isolate* isolate,
   // Handle hidden prototypes.  If there's a hidden prototype above this thing
   // then we have to check it for properties, because they are supposed to
   // look like they are on this object.
-  PrototypeIterator iter(isolate, object);
-  if (!iter.IsAtEnd() &&
-      PrototypeIterator::GetCurrent<HeapObject>(iter)
-          ->map()
-          ->is_hidden_prototype()) {
+  if (object->map()->has_hidden_prototype()) {
+    PrototypeIterator iter(isolate, object);
+    DCHECK(!iter.IsAtEnd());
+
     // TODO(verwaest): The recursion is not necessary for keys that are array
     // indices. Removing this.
     // Casting to JSObject is fine because JSProxies are never used as
@@ -650,7 +626,7 @@ RUNTIME_FUNCTION(Runtime_HasOwnProperty) {
     }
     Map* map = js_obj->map();
     if (!key_is_array_index && !map->has_named_interceptor() &&
-        !HeapObject::cast(map->prototype())->map()->is_hidden_prototype()) {
+        !map->has_hidden_prototype()) {
       return isolate->heap()->false_value();
     }
     // Slow case.
@@ -723,8 +699,8 @@ RUNTIME_FUNCTION(Runtime_GetOwnPropertyKeys) {
 
   Handle<FixedArray> keys;
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-      isolate, keys, JSReceiver::GetKeys(object, JSReceiver::OWN_ONLY, filter,
-                                         CONVERT_TO_STRING));
+      isolate, keys,
+      JSReceiver::GetKeys(object, OWN_ONLY, filter, CONVERT_TO_STRING));
 
   return *isolate->factory()->NewJSArrayWithElements(keys);
 }
@@ -915,6 +891,30 @@ RUNTIME_FUNCTION(Runtime_DefineDataPropertyUnchecked) {
   return *result;
 }
 
+RUNTIME_FUNCTION(Runtime_DefineDataPropertyInLiteral) {
+  HandleScope scope(isolate);
+  DCHECK(args.length() == 5);
+  CONVERT_ARG_HANDLE_CHECKED(JSObject, object, 0);
+  CONVERT_ARG_HANDLE_CHECKED(Name, name, 1);
+  CONVERT_ARG_HANDLE_CHECKED(Object, value, 2);
+  CONVERT_PROPERTY_ATTRIBUTES_CHECKED(attrs, 3);
+  CONVERT_SMI_ARG_CHECKED(set_function_name, 4);
+
+  if (FLAG_harmony_function_name && set_function_name) {
+    DCHECK(value->IsJSFunction());
+    JSFunction::SetName(Handle<JSFunction>::cast(value), name,
+                        isolate->factory()->empty_string());
+  }
+
+  LookupIterator it = LookupIterator::PropertyOrElement(isolate, object, name,
+                                                        LookupIterator::OWN);
+  // Cannot fail since this should only be called when
+  // creating an object literal.
+  CHECK(JSObject::DefineOwnPropertyIgnoreAttributes(&it, value, attrs,
+                                                    Object::DONT_THROW)
+            .IsJust());
+  return *object;
+}
 
 // Return property without being observable by accessors or interceptors.
 RUNTIME_FUNCTION(Runtime_GetDataProperty) {
@@ -963,15 +963,6 @@ RUNTIME_FUNCTION(Runtime_JSValueGetValue) {
 }
 
 
-RUNTIME_FUNCTION(Runtime_ObjectEquals) {
-  SealHandleScope shs(isolate);
-  DCHECK(args.length() == 2);
-  CONVERT_ARG_CHECKED(Object, obj1, 0);
-  CONVERT_ARG_CHECKED(Object, obj2, 1);
-  return isolate->heap()->ToBoolean(obj1 == obj2);
-}
-
-
 RUNTIME_FUNCTION(Runtime_IsJSReceiver) {
   SealHandleScope shs(isolate);
   DCHECK(args.length() == 1);
@@ -1006,6 +997,11 @@ RUNTIME_FUNCTION(Runtime_DefineGetterPropertyUnchecked) {
   CONVERT_ARG_HANDLE_CHECKED(JSFunction, getter, 2);
   CONVERT_PROPERTY_ATTRIBUTES_CHECKED(attrs, 3);
 
+  if (FLAG_harmony_function_name &&
+      String::cast(getter->shared()->name())->length() == 0) {
+    JSFunction::SetName(getter, name, isolate->factory()->get_string());
+  }
+
   RETURN_FAILURE_ON_EXCEPTION(
       isolate,
       JSObject::DefineAccessor(object, name, getter,
@@ -1021,6 +1017,11 @@ RUNTIME_FUNCTION(Runtime_DefineSetterPropertyUnchecked) {
   CONVERT_ARG_HANDLE_CHECKED(Name, name, 1);
   CONVERT_ARG_HANDLE_CHECKED(JSFunction, setter, 2);
   CONVERT_PROPERTY_ATTRIBUTES_CHECKED(attrs, 3);
+
+  if (FLAG_harmony_function_name &&
+      String::cast(setter->shared()->name())->length() == 0) {
+    JSFunction::SetName(setter, name, isolate->factory()->set_string());
+  }
 
   RETURN_FAILURE_ON_EXCEPTION(
       isolate,
@@ -1238,7 +1239,9 @@ RUNTIME_FUNCTION(Runtime_InstanceOf) {
         NewTypeError(MessageTemplate::kInstanceofNonobjectProto, prototype));
   }
   // Return whether or not {prototype} is in the prototype chain of {object}.
-  Maybe<bool> result = Object::HasInPrototypeChain(isolate, object, prototype);
+  Handle<JSReceiver> receiver = Handle<JSReceiver>::cast(object);
+  Maybe<bool> result =
+      JSReceiver::HasInPrototypeChain(isolate, receiver, prototype);
   MAYBE_RETURN(result, isolate->heap()->exception());
   return isolate->heap()->ToBoolean(result.FromJust());
 }
@@ -1247,9 +1250,10 @@ RUNTIME_FUNCTION(Runtime_InstanceOf) {
 RUNTIME_FUNCTION(Runtime_HasInPrototypeChain) {
   HandleScope scope(isolate);
   DCHECK_EQ(2, args.length());
-  CONVERT_ARG_HANDLE_CHECKED(Object, object, 0);
+  CONVERT_ARG_HANDLE_CHECKED(JSReceiver, object, 0);
   CONVERT_ARG_HANDLE_CHECKED(Object, prototype, 1);
-  Maybe<bool> result = Object::HasInPrototypeChain(isolate, object, prototype);
+  Maybe<bool> result =
+      JSReceiver::HasInPrototypeChain(isolate, object, prototype);
   MAYBE_RETURN(result, isolate->heap()->exception());
   return isolate->heap()->ToBoolean(result.FromJust());
 }
@@ -1261,7 +1265,11 @@ RUNTIME_FUNCTION(Runtime_CreateIterResultObject) {
   DCHECK_EQ(2, args.length());
   CONVERT_ARG_HANDLE_CHECKED(Object, value, 0);
   CONVERT_ARG_HANDLE_CHECKED(Object, done, 1);
-  return *isolate->factory()->NewJSIteratorResult(value, done);
+  Handle<JSObject> result =
+      isolate->factory()->NewJSObjectFromMap(isolate->iterator_result_map());
+  result->InObjectPropertyAtPut(JSIteratorResult::kValueIndex, *value);
+  result->InObjectPropertyAtPut(JSIteratorResult::kDoneIndex, *done);
+  return *result;
 }
 
 

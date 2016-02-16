@@ -122,7 +122,7 @@ Handle<Map> LookupIterator::GetReceiverMap() const {
 
 Handle<JSObject> LookupIterator::GetStoreTarget() const {
   if (receiver_->IsJSGlobalProxy()) {
-    PrototypeIterator iter(isolate(), receiver_);
+    PrototypeIterator iter(isolate(), Handle<JSGlobalProxy>::cast(receiver_));
     if (iter.IsAtEnd()) return Handle<JSGlobalProxy>::cast(receiver_);
     return PrototypeIterator::GetCurrent<JSGlobalObject>(iter);
   }
@@ -292,6 +292,7 @@ void LookupIterator::Delete() {
       JSObject::ReoptimizeIfPrototype(Handle<JSObject>::cast(holder));
     }
   }
+  state_ = NOT_FOUND;
 }
 
 
@@ -390,23 +391,21 @@ void LookupIterator::TransitionToAccessorPair(Handle<Object> pair,
 
 bool LookupIterator::HolderIsReceiverOrHiddenPrototype() const {
   DCHECK(has_property_ || state_ == INTERCEPTOR || state_ == JSPROXY);
-  return InternalHolderIsReceiverOrHiddenPrototype();
-}
-
-bool LookupIterator::InternalHolderIsReceiverOrHiddenPrototype() const {
   // Optimization that only works if configuration_ is not mutable.
   if (!check_prototype_chain()) return true;
   DisallowHeapAllocation no_gc;
   if (!receiver_->IsJSReceiver()) return false;
   JSReceiver* current = JSReceiver::cast(*receiver_);
-  JSReceiver* holder = *holder_;
-  if (current == holder) return true;
-  if (!holder->map()->is_hidden_prototype()) return false;
+  JSReceiver* object = *holder_;
+  if (current == object) return true;
+  if (!current->map()->has_hidden_prototype()) return false;
   // JSProxy do not occur as hidden prototypes.
   if (current->IsJSProxy()) return false;
-  PrototypeIterator iter(isolate(), current);
-  while (!iter.IsAtEnd(PrototypeIterator::END_AT_NON_HIDDEN)) {
-    if (iter.GetCurrent<JSReceiver>() == holder) return true;
+  PrototypeIterator iter(isolate(), current,
+                         PrototypeIterator::START_AT_PROTOTYPE,
+                         PrototypeIterator::END_AT_NON_HIDDEN);
+  while (!iter.IsAtEnd()) {
+    if (iter.GetCurrent<JSReceiver>() == object) return true;
     iter.Advance();
   }
   return false;
@@ -522,30 +521,6 @@ void LookupIterator::WriteDataValue(Handle<Object> value) {
 }
 
 
-bool LookupIterator::IsIntegerIndexedExotic(JSReceiver* holder) {
-  DCHECK(exotic_index_state_ != ExoticIndexState::kNotExotic);
-  if (exotic_index_state_ == ExoticIndexState::kExotic) return true;
-  if (!InternalHolderIsReceiverOrHiddenPrototype()) {
-    exotic_index_state_ = ExoticIndexState::kNotExotic;
-    return false;
-  }
-  DCHECK(exotic_index_state_ == ExoticIndexState::kUninitialized);
-  bool result = false;
-  // Compute and cache result.
-  if (IsElement()) {
-    result = index_ >= JSTypedArray::cast(holder)->length_value();
-  } else if (name()->IsString()) {
-    Handle<String> name_string = Handle<String>::cast(name());
-    if (name_string->length() != 0) {
-      result = IsSpecialIndex(isolate_->unicode_cache(), *name_string);
-    }
-  }
-  exotic_index_state_ =
-      result ? ExoticIndexState::kExotic : ExoticIndexState::kNotExotic;
-  return result;
-}
-
-
 void LookupIterator::InternalizeName() {
   if (name_->IsUniqueName()) return;
   name_ = factory()->InternalizeString(Handle<String>::cast(name_));
@@ -580,21 +555,30 @@ JSReceiver* LookupIterator::NextHolder(Map* map) {
   DisallowHeapAllocation no_gc;
   if (!map->prototype()->IsJSReceiver()) return NULL;
 
-  JSReceiver* next = JSReceiver::cast(map->prototype());
-  DCHECK(!next->map()->IsJSGlobalObjectMap() ||
-         next->map()->is_hidden_prototype());
+  DCHECK(!map->IsJSGlobalProxyMap() || map->has_hidden_prototype());
 
   if (!check_prototype_chain() &&
-      !(check_hidden() && next->map()->is_hidden_prototype()) &&
+      !(check_hidden() && map->has_hidden_prototype()) &&
       // Always lookup behind the JSGlobalProxy into the JSGlobalObject, even
       // when not checking other hidden prototypes.
       !map->IsJSGlobalProxyMap()) {
     return NULL;
   }
 
-  return next;
+  return JSReceiver::cast(map->prototype());
 }
 
+LookupIterator::State LookupIterator::NotFound(JSReceiver* const holder) const {
+  DCHECK(!IsElement());
+  if (!holder->IsJSTypedArray() || !name_->IsString()) return NOT_FOUND;
+
+  Handle<String> name_string = Handle<String>::cast(name_);
+  if (name_string->length() == 0) return NOT_FOUND;
+
+  return IsSpecialIndex(isolate_->unicode_cache(), *name_string)
+             ? INTEGER_INDEXED_EXOTIC
+             : NOT_FOUND;
+}
 
 LookupIterator::State LookupIterator::LookupInHolder(Map* const map,
                                                      JSReceiver* const holder) {
@@ -629,19 +613,13 @@ LookupIterator::State LookupIterator::LookupInHolder(Map* const map,
         FixedArrayBase* backing_store = js_object->elements();
         number_ = accessor->GetEntryForIndex(js_object, backing_store, index_);
         if (number_ == kMaxUInt32) {
-          if (*receiver_ == Object::cast(holder) && holder->IsJSTypedArray()) {
-            return INTEGER_INDEXED_EXOTIC;
-          }
-          return NOT_FOUND;
+          return holder->IsJSTypedArray() ? INTEGER_INDEXED_EXOTIC : NOT_FOUND;
         }
         property_details_ = accessor->GetDetails(js_object, number_);
-      } else if (exotic_index_state_ != ExoticIndexState::kNotExotic &&
-                 holder->IsJSTypedArray() && IsIntegerIndexedExotic(holder)) {
-        return INTEGER_INDEXED_EXOTIC;
       } else if (!map->is_dictionary_map()) {
         DescriptorArray* descriptors = map->instance_descriptors();
         int number = descriptors->SearchWithCache(*name_, map);
-        if (number == DescriptorArray::kNotFound) return NOT_FOUND;
+        if (number == DescriptorArray::kNotFound) return NotFound(holder);
         number_ = static_cast<uint32_t>(number);
         property_details_ = descriptors->GetDetails(number_);
       } else if (map->IsJSGlobalObjectMap()) {
@@ -656,7 +634,7 @@ LookupIterator::State LookupIterator::LookupInHolder(Map* const map,
       } else {
         NameDictionary* dict = holder->property_dictionary();
         int number = dict->FindEntry(name_);
-        if (number == NameDictionary::kNotFound) return NOT_FOUND;
+        if (number == NameDictionary::kNotFound) return NotFound(holder);
         number_ = static_cast<uint32_t>(number);
         property_details_ = dict->DetailsAt(number_);
       }

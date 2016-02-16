@@ -3712,6 +3712,8 @@ TEST(ErrorsArrowFormalParameters) {
 TEST(ErrorsArrowFunctions) {
   // Tests that parser and preparser generate the same kind of errors
   // on invalid arrow function syntax.
+
+  // clang-format off
   const char* context_data[][2] = {
     {"", ";"},
     {"v = ", ";"},
@@ -3812,8 +3814,14 @@ TEST(ErrorsArrowFunctions) {
     "(c, a.b) => {}",
     "(a['b'], c) => {}",
     "(c, a['b']) => {}",
+
+    // crbug.com/582626
+    "(...rest - a) => b",
+    "(a, ...b - 10) => b",
+
     NULL
   };
+  // clang-format on
 
   // The test is quite slow, so run it with a reduced set of flags.
   static const ParserFlag flags[] = {kAllowLazy};
@@ -6704,6 +6712,9 @@ TEST(StrongModeFreeVariablesNotDeclared) {
   }
 }
 
+static const ParserFlag kAllDestructuringFlags[] = {
+    kAllowHarmonyDestructuring, kAllowHarmonyDestructuringAssignment,
+    kAllowHarmonyDefaultParameters};
 
 TEST(DestructuringPositiveTests) {
   i::FLAG_harmony_destructuring_bind = true;
@@ -6761,6 +6772,8 @@ TEST(DestructuringPositiveTests) {
   static const ParserFlag always_flags[] = {kAllowHarmonyDestructuring};
   RunParserSyncTest(context_data, data, kSuccess, NULL, 0, always_flags,
                     arraysize(always_flags));
+  RunParserSyncTest(context_data, data, kSuccess, NULL, 0,
+                    kAllDestructuringFlags, arraysize(kAllDestructuringFlags));
 }
 
 
@@ -6838,6 +6851,10 @@ TEST(DestructuringNegativeTests) {
         "[...rest,...rest1]",
         "[a,b,...rest,...rest1]",
         "[a,,..rest,...rest1]",
+        "[x, y, ...z = 1]",
+        "[...z = 1]",
+        "[x, y, ...[z] = [1]]",
+        "[...[z] = [1]]",
         "{ x : 3 }",
         "{ x : 'foo' }",
         "{ x : /foo/ }",
@@ -6850,6 +6867,9 @@ TEST(DestructuringNegativeTests) {
     // clang-format on
     RunParserSyncTest(context_data, data, kError, NULL, 0, always_flags,
                       arraysize(always_flags));
+    RunParserSyncTest(context_data, data, kError, NULL, 0,
+                      kAllDestructuringFlags,
+                      arraysize(kAllDestructuringFlags));
   }
 
   {  // All modes.
@@ -6870,6 +6890,9 @@ TEST(DestructuringNegativeTests) {
     // clang-format on
     RunParserSyncTest(context_data, data, kError, NULL, 0, always_flags,
                       arraysize(always_flags));
+    RunParserSyncTest(context_data, data, kError, NULL, 0,
+                      kAllDestructuringFlags,
+                      arraysize(kAllDestructuringFlags));
   }
 
   {  // Strict mode.
@@ -6890,6 +6913,9 @@ TEST(DestructuringNegativeTests) {
     // clang-format on
     RunParserSyncTest(context_data, data, kError, NULL, 0, always_flags,
                       arraysize(always_flags));
+    RunParserSyncTest(context_data, data, kError, NULL, 0,
+                      kAllDestructuringFlags,
+                      arraysize(kAllDestructuringFlags));
   }
 
   {  // 'yield' in generators.
@@ -6908,6 +6934,9 @@ TEST(DestructuringNegativeTests) {
     // clang-format on
     RunParserSyncTest(context_data, data, kError, NULL, 0, always_flags,
                       arraysize(always_flags));
+    RunParserSyncTest(context_data, data, kError, NULL, 0,
+                      kAllDestructuringFlags,
+                      arraysize(kAllDestructuringFlags));
   }
 
   { // Declaration-specific errors
@@ -7194,6 +7223,8 @@ TEST(DestructuringAssignmentNegativeTests) {
     "[...x,]",
     "[x, y, ...z = 1]",
     "[...z = 1]",
+    "[x, y, ...[z] = [1]]",
+    "[...[z] = [1]]",
 
     // v8:4657
     "({ x: x4, x: (x+=1e4) })",
@@ -7444,14 +7475,7 @@ TEST(DefaultParametersYieldInInitializers) {
     "x, y=f(yield)",
     "{x=f(yield)}",
     "[x=f(yield)]",
-    NULL
-  };
 
-  // TODO(wingo): These aren't really destructuring assignment patterns; we're
-  // just splitting them for now until the parser gets support for arrow
-  // function arguments that look like destructuring assignments.  When that
-  // happens we should unify destructuring_assignment_data and parameter_data.
-  const char* destructuring_assignment_data[] = {
     "{x}=yield",
     "[x]=yield",
 
@@ -7470,26 +7494,16 @@ TEST(DefaultParametersYieldInInitializers) {
 
   RunParserSyncTest(sloppy_function_context_data, parameter_data, kSuccess,
                     NULL, 0, always_flags, arraysize(always_flags));
-  RunParserSyncTest(sloppy_function_context_data, destructuring_assignment_data,
-                    kSuccess, NULL, 0, always_flags, arraysize(always_flags));
   RunParserSyncTest(sloppy_arrow_context_data, parameter_data, kSuccess, NULL,
                     0, always_flags, arraysize(always_flags));
-  RunParserSyncTest(sloppy_arrow_context_data, destructuring_assignment_data,
-                    kSuccess, NULL, 0, always_flags, arraysize(always_flags));
 
   RunParserSyncTest(strict_function_context_data, parameter_data, kError, NULL,
                     0, always_flags, arraysize(always_flags));
-  RunParserSyncTest(strict_function_context_data, destructuring_assignment_data,
-                    kError, NULL, 0, always_flags, arraysize(always_flags));
   RunParserSyncTest(strict_arrow_context_data, parameter_data, kError, NULL, 0,
                     always_flags, arraysize(always_flags));
-  RunParserSyncTest(strict_arrow_context_data, destructuring_assignment_data,
-                    kError, NULL, 0, always_flags, arraysize(always_flags));
 
   RunParserSyncTest(generator_context_data, parameter_data, kError, NULL, 0,
                     always_flags, arraysize(always_flags));
-  RunParserSyncTest(generator_context_data, destructuring_assignment_data,
-                    kError, NULL, 0, always_flags, arraysize(always_flags));
 }
 
 
@@ -7976,9 +7990,20 @@ TEST(EscapedKeywords) {
 
 
 TEST(MiscSyntaxErrors) {
+  // clang-format off
   const char* context_data[][2] = {
-      {"'use strict'", ""}, {"", ""}, {NULL, NULL}};
-  const char* error_data[] = {"for (();;) {}", NULL};
+    { "'use strict'", "" },
+    { "", "" },
+    { NULL, NULL }
+  };
+  const char* error_data[] = {
+    "for (();;) {}",
+
+    // crbug.com/582626
+    "{ NaN ,chA((evarA=new t ( l = !.0[((... co -a0([1]))=> greturnkf",
+    NULL
+  };
+  // clang-format on
 
   RunParserSyncTest(context_data, error_data, kError, NULL, 0, NULL, 0);
 }

@@ -327,7 +327,6 @@ void FloatingPointHelper::CheckFloatOperands(MacroAssembler* masm,
 void MathPowStub::Generate(MacroAssembler* masm) {
   const Register base = edx;
   const Register scratch = ecx;
-  Counters* counters = isolate()->counters();
   Label call_runtime;
 
   // We will call runtime helper function directly.
@@ -340,7 +339,6 @@ void MathPowStub::Generate(MacroAssembler* masm) {
     // as heap number in exponent.
     __ AllocateHeapNumber(eax, scratch, base, &call_runtime);
     __ fstp_d(FieldOperand(eax, HeapNumber::kValueOffset));
-    __ IncrementCounter(counters->math_pow(), 1);
     __ ret(2 * kPointerSize);
   } else {
     // Currently it's only called from full-compiler and exponent type is
@@ -428,67 +426,6 @@ void LoadIndexedStringStub::Generate(MacroAssembler* masm) {
   __ bind(&miss);
   PropertyAccessCompiler::TailCallBuiltin(
       masm, PropertyAccessCompiler::MissBuiltin(Code::KEYED_LOAD_IC));
-}
-
-
-void ArgumentsAccessStub::GenerateReadElement(MacroAssembler* masm) {
-  // The key is in edx and the parameter count is in eax.
-  DCHECK(edx.is(ArgumentsAccessReadDescriptor::index()));
-  DCHECK(eax.is(ArgumentsAccessReadDescriptor::parameter_count()));
-
-  // The displacement is used for skipping the frame pointer on the
-  // stack. It is the offset of the last parameter (if any) relative
-  // to the frame pointer.
-  static const int kDisplacement = 1 * kPointerSize;
-
-  // Check that the key is a smi.
-  Label slow;
-  __ JumpIfNotSmi(edx, &slow, Label::kNear);
-
-  // Check if the calling frame is an arguments adaptor frame.
-  Label adaptor;
-  __ mov(ebx, Operand(ebp, StandardFrameConstants::kCallerFPOffset));
-  __ mov(ecx, Operand(ebx, StandardFrameConstants::kContextOffset));
-  __ cmp(ecx, Immediate(Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR)));
-  __ j(equal, &adaptor, Label::kNear);
-
-  // Check index against formal parameters count limit passed in
-  // through register eax. Use unsigned comparison to get negative
-  // check for free.
-  __ cmp(edx, eax);
-  __ j(above_equal, &slow, Label::kNear);
-
-  // Read the argument from the stack and return it.
-  STATIC_ASSERT(kSmiTagSize == 1);
-  STATIC_ASSERT(kSmiTag == 0);  // Shifting code depends on these.
-  __ lea(ebx, Operand(ebp, eax, times_2, 0));
-  __ neg(edx);
-  __ mov(eax, Operand(ebx, edx, times_2, kDisplacement));
-  __ ret(0);
-
-  // Arguments adaptor case: Check index against actual arguments
-  // limit found in the arguments adaptor frame. Use unsigned
-  // comparison to get negative check for free.
-  __ bind(&adaptor);
-  __ mov(ecx, Operand(ebx, ArgumentsAdaptorFrameConstants::kLengthOffset));
-  __ cmp(edx, ecx);
-  __ j(above_equal, &slow, Label::kNear);
-
-  // Read the argument from the stack and return it.
-  STATIC_ASSERT(kSmiTagSize == 1);
-  STATIC_ASSERT(kSmiTag == 0);  // Shifting code depends on these.
-  __ lea(ebx, Operand(ebx, ecx, times_2, 0));
-  __ neg(edx);
-  __ mov(eax, Operand(ebx, edx, times_2, kDisplacement));
-  __ ret(0);
-
-  // Slow-case: Handle non-smi or out-of-bounds access to arguments
-  // by calling the runtime system.
-  __ bind(&slow);
-  __ pop(ebx);  // Return address.
-  __ push(edx);
-  __ push(ebx);
-  __ TailCallRuntime(Runtime::kArguments);
 }
 
 
@@ -1575,7 +1512,7 @@ void CompareICStub::GenerateGeneric(MacroAssembler* masm) {
     // Non-strict equality.  Objects are unequal if
     // they are both JSObjects and not undetectable,
     // and their pointers are different.
-    Label return_unequal;
+    Label return_unequal, undetectable;
     // At most one is a smi, so we can test for smi by adding the two.
     // A smi plus a heap object has the low bit set, a heap object plus
     // a heap object has the low bit clear.
@@ -1584,26 +1521,32 @@ void CompareICStub::GenerateGeneric(MacroAssembler* masm) {
     __ lea(ecx, Operand(eax, edx, times_1, 0));
     __ test(ecx, Immediate(kSmiTagMask));
     __ j(not_zero, &runtime_call, Label::kNear);
-    __ CmpObjectType(eax, FIRST_JS_RECEIVER_TYPE, ecx);
+
+    __ mov(ecx, FieldOperand(eax, HeapObject::kMapOffset));
+    __ mov(ebx, FieldOperand(edx, HeapObject::kMapOffset));
+
+    __ test_b(FieldOperand(ebx, Map::kBitFieldOffset),
+              1 << Map::kIsUndetectable);
+    __ j(not_zero, &undetectable, Label::kNear);
+    __ test_b(FieldOperand(ecx, Map::kBitFieldOffset),
+              1 << Map::kIsUndetectable);
+    __ j(not_zero, &return_unequal, Label::kNear);
+
+    __ CmpInstanceType(ebx, FIRST_JS_RECEIVER_TYPE);
     __ j(below, &runtime_call, Label::kNear);
-    __ CmpObjectType(edx, FIRST_JS_RECEIVER_TYPE, ebx);
+    __ CmpInstanceType(ecx, FIRST_JS_RECEIVER_TYPE);
     __ j(below, &runtime_call, Label::kNear);
-    // We do not bail out after this point.  Both are JSObjects, and
-    // they are equal if and only if both are undetectable.
-    // The and of the undetectable flags is 1 if and only if they are equal.
+
+    __ bind(&return_unequal);
+    // Return non-equal by returning the non-zero object pointer in eax.
+    __ ret(0);  // eax, edx were pushed
+
+    __ bind(&undetectable);
     __ test_b(FieldOperand(ecx, Map::kBitFieldOffset),
               1 << Map::kIsUndetectable);
     __ j(zero, &return_unequal, Label::kNear);
-    __ test_b(FieldOperand(ebx, Map::kBitFieldOffset),
-              1 << Map::kIsUndetectable);
-    __ j(zero, &return_unequal, Label::kNear);
-    // The objects are both undetectable, so they both compare as the value
-    // undefined, and are equal.
     __ Move(eax, Immediate(EQUAL));
-    __ bind(&return_unequal);
-    // Return non-equal by returning the non-zero object pointer in eax,
-    // or return equal if we fell through to here.
-    __ ret(0);  // rax, rdx were pushed
+    __ ret(0);  // eax, edx were pushed
   }
   __ bind(&runtime_call);
 
@@ -3730,11 +3673,8 @@ void RecordWriteStub::GenerateIncremental(MacroAssembler* masm, Mode mode) {
                            regs_.scratch0(),
                            &dont_need_remembered_set);
 
-    __ CheckPageFlag(regs_.object(),
-                     regs_.scratch0(),
-                     1 << MemoryChunk::SCAN_ON_SCAVENGE,
-                     not_zero,
-                     &dont_need_remembered_set);
+    __ JumpIfInNewSpace(regs_.object(), regs_.scratch0(),
+                        &dont_need_remembered_set);
 
     // First notify the incremental marker if necessary, then update the
     // remembered set.
@@ -5215,11 +5155,10 @@ static void CallApiFunctionAndReturn(MacroAssembler* masm,
   __ jmp(&leave_exit_frame);
 }
 
-
 static void CallApiFunctionStubHelper(MacroAssembler* masm,
                                       const ParameterCount& argc,
                                       bool return_first_arg,
-                                      bool call_data_undefined) {
+                                      bool call_data_undefined, bool is_lazy) {
   // ----------- S t a t e -------------
   //  -- edi                 : callee
   //  -- ebx                 : call_data
@@ -5293,8 +5232,10 @@ static void CallApiFunctionStubHelper(MacroAssembler* masm,
   // push return address
   __ push(return_address);
 
-  // load context from callee
-  __ mov(context, FieldOperand(callee, JSFunction::kContextOffset));
+  if (!is_lazy) {
+    // load context from callee
+    __ mov(context, FieldOperand(callee, JSFunction::kContextOffset));
+  }
 
   // API function gets reference to the v8::Arguments. If CPU profiler
   // is enabled wrapper function will be called and we need to pass
@@ -5366,7 +5307,7 @@ static void CallApiFunctionStubHelper(MacroAssembler* masm,
 void CallApiFunctionStub::Generate(MacroAssembler* masm) {
   bool call_data_undefined = this->call_data_undefined();
   CallApiFunctionStubHelper(masm, ParameterCount(eax), false,
-                            call_data_undefined);
+                            call_data_undefined, false);
 }
 
 
@@ -5374,8 +5315,9 @@ void CallApiAccessorStub::Generate(MacroAssembler* masm) {
   bool is_store = this->is_store();
   int argc = this->argc();
   bool call_data_undefined = this->call_data_undefined();
+  bool is_lazy = this->is_lazy();
   CallApiFunctionStubHelper(masm, ParameterCount(argc), is_store,
-                            call_data_undefined);
+                            call_data_undefined, is_lazy);
 }
 
 

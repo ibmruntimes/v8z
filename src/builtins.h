@@ -102,6 +102,7 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
   V(FunctionConstructor, kTargetAndNewTarget)                  \
   V(FunctionPrototypeBind, kNone)                              \
   V(FunctionPrototypeToString, kNone)                          \
+  V(FunctionHasInstance, kNone)                                \
                                                                \
   V(GeneratorFunctionConstructor, kTargetAndNewTarget)         \
                                                                \
@@ -110,6 +111,7 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
   V(ObjectAssign, kNone)                                       \
   V(ObjectCreate, kNone)                                       \
   V(ObjectFreeze, kNone)                                       \
+  V(ObjectGetOwnPropertyDescriptor, kNone)                     \
   V(ObjectGetOwnPropertyNames, kNone)                          \
   V(ObjectGetOwnPropertySymbols, kNone)                        \
   V(ObjectIsExtensible, kNone)                                 \
@@ -118,6 +120,7 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
   V(ObjectKeys, kNone)                                         \
   V(ObjectValues, kNone)                                       \
   V(ObjectEntries, kNone)                                      \
+  V(ObjectGetOwnPropertyDescriptors, kNone)                    \
   V(ObjectPreventExtensions, kNone)                            \
   V(ObjectSeal, kNone)                                         \
   V(ObjectProtoToString, kNone)                                \
@@ -383,7 +386,7 @@ class Builtins {
   bool is_initialized() const { return initialized_; }
 
   MUST_USE_RESULT static MaybeHandle<Object> InvokeApiFunction(
-      Handle<JSFunction> function, Handle<Object> receiver, int argc,
+      Handle<HeapObject> function, Handle<Object> receiver, int argc,
       Handle<Object> args[]);
 
  private:

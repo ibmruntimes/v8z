@@ -20,10 +20,10 @@ namespace v8 {
 namespace internal {
 
 class AllocationInfo;
+class AllocationObserver;
 class CompactionSpace;
 class CompactionSpaceCollection;
 class FreeList;
-class InlineAllocationObserver;
 class Isolate;
 class MemoryAllocator;
 class MemoryChunk;
@@ -31,6 +31,7 @@ class PagedSpace;
 class SemiSpace;
 class SkipList;
 class SlotsBuffer;
+class SlotSet;
 class Space;
 
 // -----------------------------------------------------------------------------
@@ -296,10 +297,8 @@ class MemoryChunk {
  public:
   enum MemoryChunkFlags {
     IS_EXECUTABLE,
-    ABOUT_TO_BE_FREED,
     POINTERS_TO_HERE_ARE_INTERESTING,
     POINTERS_FROM_HERE_ARE_INTERESTING,
-    SCAN_ON_SCAVENGE,
     IN_FROM_SPACE,  // Mutually exclusive with IN_TO_SPACE.
     IN_TO_SPACE,    // All pages in new space has one of these two set.
     NEW_SPACE_BELOW_AGE_MARK,
@@ -320,7 +319,7 @@ class MemoryChunk {
     // candidates selection cycle.
     FORCE_EVACUATION_CANDIDATE_FOR_TESTING,
 
-    // This flag is inteded to be used for testing.
+    // This flag is intended to be used for testing.
     NEVER_ALLOCATE_ON_PAGE,
 
     // The memory chunk is already logically freed, however the actual freeing
@@ -398,6 +397,7 @@ class MemoryChunk {
 
   static const size_t kWriteBarrierCounterOffset =
       kSlotsBufferOffset + kPointerSize  // SlotsBuffer* slots_buffer_;
+      + kPointerSize                     // SlotSet* old_to_new_slots_;
       + kPointerSize;                    // SkipList* skip_list_;
 
   static const size_t kMinHeaderSize =
@@ -429,29 +429,16 @@ class MemoryChunk {
 
   static const int kFlagsOffset = kPointerSize;
 
-  static void IncrementLiveBytesFromMutator(HeapObject* object, int by);
+  static inline void IncrementLiveBytesFromMutator(HeapObject* object, int by);
+  static inline void IncrementLiveBytesFromGC(HeapObject* object, int by);
 
   // Only works if the pointer is in the first kPageSize of the MemoryChunk.
   static MemoryChunk* FromAddress(Address a) {
     return reinterpret_cast<MemoryChunk*>(OffsetFrom(a) & ~kAlignmentMask);
   }
 
-  static const MemoryChunk* FromAddress(const byte* a) {
-    return reinterpret_cast<const MemoryChunk*>(OffsetFrom(a) &
-                                                ~kAlignmentMask);
-  }
-
-  static void IncrementLiveBytesFromGC(HeapObject* object, int by) {
-    MemoryChunk::FromAddress(object->address())->IncrementLiveBytes(by);
-  }
-
   // Only works for addresses in pointer spaces, not data or code spaces.
   static inline MemoryChunk* FromAnyPointerAddress(Heap* heap, Address addr);
-
-  static inline uint32_t FastAddressToMarkbitIndex(Address addr) {
-    const intptr_t offset = reinterpret_cast<intptr_t>(addr) & kAlignmentMask;
-    return static_cast<uint32_t>(offset) >> kPointerSizeLog2;
-  }
 
   static inline void UpdateHighWaterMark(Address mark) {
     if (mark == nullptr) return;
@@ -471,84 +458,17 @@ class MemoryChunk {
 
   bool is_valid() { return address() != NULL; }
 
-  MemoryChunk* next_chunk() { return next_chunk_.Value(); }
-
-  MemoryChunk* prev_chunk() { return prev_chunk_.Value(); }
-
-  void set_next_chunk(MemoryChunk* next) { next_chunk_.SetValue(next); }
-
-  void set_prev_chunk(MemoryChunk* prev) { prev_chunk_.SetValue(prev); }
-
-  Space* owner() const {
-    if ((reinterpret_cast<intptr_t>(owner_) & kPageHeaderTagMask) ==
-        kPageHeaderTag) {
-      return reinterpret_cast<Space*>(reinterpret_cast<intptr_t>(owner_) -
-                                      kPageHeaderTag);
-    } else {
-      return NULL;
-    }
-  }
-
-  void set_owner(Space* space) {
-    DCHECK((reinterpret_cast<intptr_t>(space) & kPageHeaderTagMask) == 0);
-    owner_ = reinterpret_cast<Address>(space) + kPageHeaderTag;
-    DCHECK((reinterpret_cast<intptr_t>(owner_) & kPageHeaderTagMask) ==
-           kPageHeaderTag);
-  }
-
-  base::VirtualMemory* reserved_memory() { return &reservation_; }
-
-  void set_reserved_memory(base::VirtualMemory* reservation) {
-    DCHECK_NOT_NULL(reservation);
-    reservation_.TakeControl(reservation);
-  }
-
-  bool scan_on_scavenge() { return IsFlagSet(SCAN_ON_SCAVENGE); }
-  void initialize_scan_on_scavenge(bool scan) {
-    if (scan) {
-      SetFlag(SCAN_ON_SCAVENGE);
-    } else {
-      ClearFlag(SCAN_ON_SCAVENGE);
-    }
-  }
-  inline void set_scan_on_scavenge(bool scan);
+  base::Mutex* mutex() { return mutex_; }
 
   bool Contains(Address addr) {
     return addr >= area_start() && addr < area_end();
   }
 
-  // Checks whether addr can be a limit of addresses in this page.
-  // It's a limit if it's in the page, or if it's just after the
-  // last byte of the page.
+  // Checks whether |addr| can be a limit of addresses in this page. It's a
+  // limit if it's in the page, or if it's just after the last byte of the page.
   bool ContainsLimit(Address addr) {
     return addr >= area_start() && addr <= area_end();
   }
-
-  void SetFlag(int flag) { flags_ |= static_cast<uintptr_t>(1) << flag; }
-
-  void ClearFlag(int flag) { flags_ &= ~(static_cast<uintptr_t>(1) << flag); }
-
-  void SetFlagTo(int flag, bool value) {
-    if (value) {
-      SetFlag(flag);
-    } else {
-      ClearFlag(flag);
-    }
-  }
-
-  bool IsFlagSet(int flag) {
-    return (flags_ & (static_cast<uintptr_t>(1) << flag)) != 0;
-  }
-
-  // Set or clear multiple flags at a time. The flags in the mask
-  // are set to the value in "flags", the rest retain the current value
-  // in flags_.
-  void SetFlags(intptr_t flags, intptr_t mask) {
-    flags_ = (flags_ & ~mask) | (flags & mask);
-  }
-
-  // Return all current flags.
-  intptr_t GetFlags() { return flags_; }
 
   AtomicValue<ConcurrentSweepingState>& concurrent_sweeping_state() {
     return concurrent_sweeping_;
@@ -558,39 +478,18 @@ class MemoryChunk {
     return parallel_compaction_;
   }
 
-  bool TryLock() { return mutex_->TryLock(); }
-
-  base::Mutex* mutex() { return mutex_; }
-
-  // Manage live byte count (count of bytes known to be live,
-  // because they are marked black).
-  void ResetLiveBytes() {
-    if (FLAG_gc_verbose) {
-      PrintF("ResetLiveBytes:%p:%x->0\n", static_cast<void*>(this),
-             live_byte_count_);
-    }
-    live_byte_count_ = 0;
-  }
-
-  void IncrementLiveBytes(int by) {
-    if (FLAG_gc_verbose) {
-      printf("UpdateLiveBytes:%p:%x%c=%x->%x\n", static_cast<void*>(this),
-             live_byte_count_, ((by < 0) ? '-' : '+'), ((by < 0) ? -by : by),
-             live_byte_count_ + by);
-    }
-    live_byte_count_ += by;
-    DCHECK_GE(live_byte_count_, 0);
-    DCHECK_LE(static_cast<unsigned>(live_byte_count_), size_);
-  }
+  // Manage live byte count, i.e., count of bytes in black objects.
+  inline void ResetLiveBytes();
+  inline void IncrementLiveBytes(int by);
 
   int LiveBytes() {
-    DCHECK_LE(static_cast<unsigned>(live_byte_count_), size_);
+    DCHECK_LE(static_cast<size_t>(live_byte_count_), size_);
     return live_byte_count_;
   }
 
   void SetLiveBytes(int live_bytes) {
     DCHECK_GE(live_bytes, 0);
-    DCHECK_LE(static_cast<unsigned>(live_bytes), size_);
+    DCHECK_LE(static_cast<size_t>(live_bytes), size_);
     live_byte_count_ = live_bytes;
   }
 
@@ -601,6 +500,32 @@ class MemoryChunk {
   void set_write_barrier_counter(int counter) {
     write_barrier_counter_ = counter;
   }
+
+  size_t size() const { return size_; }
+
+  inline Heap* heap() const { return heap_; }
+
+  inline SkipList* skip_list() { return skip_list_; }
+
+  inline void set_skip_list(SkipList* skip_list) { skip_list_ = skip_list; }
+
+  inline SlotsBuffer* slots_buffer() { return slots_buffer_; }
+
+  inline SlotsBuffer** slots_buffer_address() { return &slots_buffer_; }
+
+  inline SlotSet* old_to_new_slots() { return old_to_new_slots_; }
+
+  void AllocateOldToNewSlots();
+  void ReleaseOldToNewSlots();
+
+  Address area_start() { return area_start_; }
+  Address area_end() { return area_end_; }
+  int area_size() { return static_cast<int>(area_end() - area_start()); }
+
+  bool CommitArea(size_t requested);
+
+  // Approximate amount of physical memory committed for this chunk.
+  size_t CommittedPhysicalMemory() { return high_water_mark_.Value(); }
 
   int progress_bar() {
     DCHECK(IsFlagSet(HAS_PROGRESS_BAR));
@@ -619,34 +544,9 @@ class MemoryChunk {
     }
   }
 
-  size_t size() const { return size_; }
-
-  void set_size(size_t size) { size_ = size; }
-
-  void SetArea(Address area_start, Address area_end) {
-    area_start_ = area_start;
-    area_end_ = area_end;
-  }
-
-  Executability executable() {
-    return IsFlagSet(IS_EXECUTABLE) ? EXECUTABLE : NOT_EXECUTABLE;
-  }
-
-  bool InNewSpace() {
-    return (flags_ & ((1 << IN_FROM_SPACE) | (1 << IN_TO_SPACE))) != 0;
-  }
-
-  bool InToSpace() { return IsFlagSet(IN_TO_SPACE); }
-
-  bool InFromSpace() { return IsFlagSet(IN_FROM_SPACE); }
-
-  // Markbits support
-
   inline Bitmap* markbits() {
     return Bitmap::FromAddress(address() + kHeaderSize);
   }
-
-  void PrintMarkbits() { markbits()->Print(); }
 
   inline uint32_t AddressToMarkbitIndex(Address addr) {
     return static_cast<uint32_t>(addr - this->address()) >> kPointerSizeLog2;
@@ -656,10 +556,24 @@ class MemoryChunk {
     return this->address() + (index << kPointerSizeLog2);
   }
 
-  void InsertAfter(MemoryChunk* other);
-  void Unlink();
+  void PrintMarkbits() { markbits()->Print(); }
 
-  inline Heap* heap() const { return heap_; }
+  void SetFlag(int flag) { flags_ |= static_cast<uintptr_t>(1) << flag; }
+
+  void ClearFlag(int flag) { flags_ &= ~(static_cast<uintptr_t>(1) << flag); }
+
+  bool IsFlagSet(int flag) {
+    return (flags_ & (static_cast<uintptr_t>(1) << flag)) != 0;
+  }
+
+  // Set or clear multiple flags at a time. The flags in the mask are set to
+  // the value in "flags", the rest retain the current value in |flags_|.
+  void SetFlags(intptr_t flags, intptr_t mask) {
+    flags_ = (flags_ & ~mask) | (flags & mask);
+  }
+
+  // Return all current flags.
+  intptr_t GetFlags() { return flags_; }
 
   bool NeverEvacuate() { return IsFlagSet(NEVER_EVACUATE); }
 
@@ -674,21 +588,9 @@ class MemoryChunk {
     return !IsEvacuationCandidate() && !IsFlagSet(NEVER_ALLOCATE_ON_PAGE);
   }
 
-  bool ShouldSkipEvacuationSlotRecording() {
-    return (flags_ & kSkipEvacuationSlotsRecordingMask) != 0;
-  }
-
-  inline SkipList* skip_list() { return skip_list_; }
-
-  inline void set_skip_list(SkipList* skip_list) { skip_list_ = skip_list; }
-
-  inline SlotsBuffer* slots_buffer() { return slots_buffer_; }
-
-  inline SlotsBuffer** slots_buffer_address() { return &slots_buffer_; }
-
   void MarkEvacuationCandidate() {
     DCHECK(!IsFlagSet(NEVER_EVACUATE));
-    DCHECK(slots_buffer_ == NULL);
+    DCHECK_NULL(slots_buffer_);
     SetFlag(EVACUATION_CANDIDATE);
   }
 
@@ -697,21 +599,60 @@ class MemoryChunk {
     ClearFlag(EVACUATION_CANDIDATE);
   }
 
-  Address area_start() { return area_start_; }
-  Address area_end() { return area_end_; }
-  int area_size() { return static_cast<int>(area_end() - area_start()); }
-  bool CommitArea(size_t requested);
+  bool ShouldSkipEvacuationSlotRecording() {
+    return (flags_ & kSkipEvacuationSlotsRecordingMask) != 0;
+  }
 
-  // Approximate amount of physical memory committed for this chunk.
-  size_t CommittedPhysicalMemory() { return high_water_mark_.Value(); }
+  Executability executable() {
+    return IsFlagSet(IS_EXECUTABLE) ? EXECUTABLE : NOT_EXECUTABLE;
+  }
 
-  // Should be called when memory chunk is about to be freed.
-  void ReleaseAllocatedMemory();
+  bool InNewSpace() {
+    return (flags_ & ((1 << IN_FROM_SPACE) | (1 << IN_TO_SPACE))) != 0;
+  }
+
+  bool InToSpace() { return IsFlagSet(IN_TO_SPACE); }
+
+  bool InFromSpace() { return IsFlagSet(IN_FROM_SPACE); }
+
+  MemoryChunk* next_chunk() { return next_chunk_.Value(); }
+
+  MemoryChunk* prev_chunk() { return prev_chunk_.Value(); }
+
+  void set_next_chunk(MemoryChunk* next) { next_chunk_.SetValue(next); }
+
+  void set_prev_chunk(MemoryChunk* prev) { prev_chunk_.SetValue(prev); }
+
+  Space* owner() const {
+    if ((reinterpret_cast<intptr_t>(owner_) & kPageHeaderTagMask) ==
+        kPageHeaderTag) {
+      return reinterpret_cast<Space*>(reinterpret_cast<intptr_t>(owner_) -
+                                      kPageHeaderTag);
+    } else {
+      return nullptr;
+    }
+  }
+
+  void set_owner(Space* space) {
+    DCHECK((reinterpret_cast<intptr_t>(space) & kPageHeaderTagMask) == 0);
+    owner_ = reinterpret_cast<Address>(space) + kPageHeaderTag;
+    DCHECK((reinterpret_cast<intptr_t>(owner_) & kPageHeaderTagMask) ==
+           kPageHeaderTag);
+  }
+
+  void InsertAfter(MemoryChunk* other);
+  void Unlink();
 
  protected:
   static MemoryChunk* Initialize(Heap* heap, Address base, size_t size,
                                  Address area_start, Address area_end,
-                                 Executability executable, Space* owner);
+                                 Executability executable, Space* owner,
+                                 base::VirtualMemory* reservation);
+
+  // Should be called when memory chunk is about to be freed.
+  void ReleaseAllocatedMemory();
+
+  base::VirtualMemory* reserved_memory() { return &reservation_; }
 
   size_t size_;
   intptr_t flags_;
@@ -722,24 +663,38 @@ class MemoryChunk {
 
   // If the chunk needs to remember its memory reservation, it is stored here.
   base::VirtualMemory reservation_;
+
   // The identity of the owning space.  This is tagged as a failure pointer, but
   // no failure can be in an object, so this can be distinguished from any entry
   // in a fixed array.
   Address owner_;
+
   Heap* heap_;
+
   // Used by the incremental marker to keep track of the scanning progress in
   // large objects that have a progress bar and are scanned in increments.
   int progress_bar_;
+
   // Count of bytes marked black on page.
   int live_byte_count_;
+
   SlotsBuffer* slots_buffer_;
+
+  // A single slot set for small pages (of size kPageSize) or an array of slot
+  // set for large pages. In the latter case the number of entries in the array
+  // is ceil(size() / kPageSize).
+  SlotSet* old_to_new_slots_;
+
   SkipList* skip_list_;
+
   intptr_t write_barrier_counter_;
+
   // Assuming the initial allocation on a page is sequential,
   // count highest number of bytes ever allocated on the page.
   AtomicValue<intptr_t> high_water_mark_;
 
   base::Mutex* mutex_;
+
   AtomicValue<ConcurrentSweepingState> concurrent_sweeping_;
   AtomicValue<ParallelCompactingState> parallel_compaction_;
 
@@ -947,7 +902,9 @@ class LargePage : public MemoryChunk {
 class Space : public Malloced {
  public:
   Space(Heap* heap, AllocationSpace id, Executability executable)
-      : heap_(heap),
+      : allocation_observers_(new List<AllocationObserver*>()),
+        allocation_observers_paused_(false),
+        heap_(heap),
         id_(id),
         executable_(executable),
         committed_(0),
@@ -962,6 +919,26 @@ class Space : public Malloced {
 
   // Identity used in error reporting.
   AllocationSpace identity() { return id_; }
+
+  virtual void AddAllocationObserver(AllocationObserver* observer) {
+    allocation_observers_->Add(observer);
+  }
+
+  virtual void RemoveAllocationObserver(AllocationObserver* observer) {
+    bool removed = allocation_observers_->RemoveElement(observer);
+    USE(removed);
+    DCHECK(removed);
+  }
+
+  virtual void PauseAllocationObservers() {
+    allocation_observers_paused_ = true;
+  }
+
+  virtual void ResumeAllocationObservers() {
+    allocation_observers_paused_ = false;
+  }
+
+  void AllocationStep(Address soon_object, int size);
 
   // Return the total amount committed memory for this space, i.e., allocatable
   // memory and page headers.
@@ -1008,6 +985,9 @@ class Space : public Malloced {
     committed_ -= bytes;
     DCHECK_GE(committed_, 0);
   }
+
+  v8::base::SmartPointer<List<AllocationObserver*>> allocation_observers_;
+  bool allocation_observers_paused_;
 
  private:
   Heap* heap_;
@@ -1941,10 +1921,8 @@ class PagedSpace : public Space {
 
   // Checks whether an object/address is in this space.
   inline bool Contains(Address a);
-  inline bool Contains(HeapObject* o);
-  // Unlike Contains() methods it is safe to call this one even for addresses
-  // of unmapped memory.
-  bool ContainsSafe(Address addr);
+  inline bool Contains(Object* o);
+  bool ContainsSlow(Address addr);
 
   // Given an address occupied by a live object, return that object if it is
   // in this space, or a Smi if it is not.  The implementation iterates over
@@ -2119,17 +2097,12 @@ class PagedSpace : public Space {
   // e.g., removes its bump pointer area and resets statistics.
   void MergeCompactionSpace(CompactionSpace* other);
 
-  void DivideUponCompactionSpaces(CompactionSpaceCollection** other, int num,
-                                  intptr_t limit = kCompactionMemoryWanted);
-
   // Refills the free list from the corresponding free list filled by the
   // sweeper.
   virtual void RefillFreeList();
 
  protected:
   void AddMemory(Address start, intptr_t size);
-
-  FreeSpace* TryRemoveMemory(intptr_t size_in_bytes);
 
   void MoveOverFreeMemory(PagedSpace* other);
 
@@ -2238,8 +2211,7 @@ class NewSpacePage : public MemoryChunk {
   // flipping semispaces.
   static const intptr_t kCopyOnFlipFlagsMask =
       (1 << MemoryChunk::POINTERS_TO_HERE_ARE_INTERESTING) |
-      (1 << MemoryChunk::POINTERS_FROM_HERE_ARE_INTERESTING) |
-      (1 << MemoryChunk::SCAN_ON_SCAVENGE);
+      (1 << MemoryChunk::POINTERS_FROM_HERE_ARE_INTERESTING);
 
   static const int kAreaSize = Page::kAllocatableMemory;
 
@@ -2326,17 +2298,17 @@ class SemiSpace : public Space {
         minimum_capacity_(0),
         start_(nullptr),
         age_mark_(nullptr),
-        address_mask_(0),
-        object_mask_(0),
-        object_expected_(0),
         committed_(false),
         id_(semispace),
         anchor_(this),
         current_page_(nullptr) {}
 
+  inline bool Contains(HeapObject* o);
+  inline bool Contains(Object* o);
+  inline bool ContainsSlow(Address a);
+
   // Creates a space in the young generation. The constructor does not
-  // allocate memory from the OS.  A SemiSpace is given a contiguous chunk of
-  // memory of size {initial_capacity} when set up.
+  // allocate memory from the OS.
   void SetUp(Address start, int initial_capacity, int maximum_capacity);
 
   // Tear down the space.  Heap memory was not allocated by the space, so it
@@ -2384,19 +2356,6 @@ class SemiSpace : public Space {
   // Age mark accessors.
   Address age_mark() { return age_mark_; }
   void set_age_mark(Address mark);
-
-  // True if the address is in the address range of this semispace (not
-  // necessarily below the allocation pointer).
-  bool Contains(Address a) {
-    return (reinterpret_cast<uintptr_t>(a) & address_mask_) ==
-           reinterpret_cast<uintptr_t>(start_);
-  }
-
-  // True if the object is a heap object in the address range of this
-  // semispace (not necessarily below the allocation pointer).
-  bool Contains(Object* o) {
-    return (reinterpret_cast<uintptr_t>(o) & object_mask_) == object_expected_;
-  }
 
   bool is_committed() { return committed_; }
   bool Commit();
@@ -2456,9 +2415,8 @@ class SemiSpace : public Space {
     current_capacity_ = new_capacity;
   }
 
-  // Flips the semispace between being from-space and to-space. Copies the flags
-  // into the masked positions on all pages in the space.
-  void FlipPages(intptr_t flags, intptr_t flag_mask);
+  // Copies the flags into the masked positions on all pages in the space.
+  void FixPagesFlags(intptr_t flags, intptr_t flag_mask);
 
   // The currently committed space capacity.
   int current_capacity_;
@@ -2473,11 +2431,6 @@ class SemiSpace : public Space {
   Address start_;
   // Used to govern object promotion during mark-compact collection.
   Address age_mark_;
-
-  // Masks and comparison values to test for containment in this semispace.
-  uintptr_t address_mask_;
-  uintptr_t object_mask_;
-  uintptr_t object_expected_;
 
   bool committed_;
   SemiSpaceId id_;
@@ -2557,8 +2510,11 @@ class NewSpace : public Space {
         to_space_(heap, kToSpace),
         from_space_(heap, kFromSpace),
         reservation_(),
-        top_on_previous_step_(0),
-        inline_allocation_observers_paused_(false) {}
+        top_on_previous_step_(0) {}
+
+  inline bool Contains(HeapObject* o);
+  inline bool ContainsSlow(Address a);
+  inline bool Contains(Object* o);
 
   // Sets up the new space using the given chunk.
   bool SetUp(int reserved_semispace_size_, int max_semi_space_size);
@@ -2581,18 +2537,6 @@ class NewSpace : public Space {
 
   // Shrink the capacity of the semispaces.
   void Shrink();
-
-  // True if the address or object lies in the address range of either
-  // semispace (not necessarily below the allocation pointer).
-  bool Contains(Address a) {
-    return (reinterpret_cast<uintptr_t>(a) & address_mask_) ==
-           reinterpret_cast<uintptr_t>(start_);
-  }
-
-  bool Contains(Object* o) {
-    Address a = reinterpret_cast<Address>(o);
-    return (reinterpret_cast<uintptr_t>(a) & object_mask_) == object_expected_;
-  }
 
   // Return the allocated bytes in the active semispace.
   intptr_t Size() override {
@@ -2692,18 +2636,6 @@ class NewSpace : public Space {
   // The start address of the space and a bit mask. Anding an address in the
   // new space with the mask will result in the start address.
   Address start() { return start_; }
-  uintptr_t mask() { return address_mask_; }
-
-  INLINE(uint32_t AddressToMarkbitIndex(Address addr)) {
-    DCHECK(Contains(addr));
-    DCHECK(IsAligned(OffsetFrom(addr), kPointerSize) ||
-           IsAligned(OffsetFrom(addr) - 1, kPointerSize));
-    return static_cast<uint32_t>(addr - start_) >> kPointerSizeLog2;
-  }
-
-  INLINE(Address MarkbitIndexToAddress(uint32_t index)) {
-    return reinterpret_cast<Address>(index << kPointerSizeLog2);
-  }
 
   // The allocation top and limit address.
   Address* allocation_top_address() { return allocation_info_.top_address(); }
@@ -2728,21 +2660,25 @@ class NewSpace : public Space {
   // Reset the allocation pointer to the beginning of the active semispace.
   void ResetAllocationInfo();
 
+  // When inline allocation stepping is active, either because of incremental
+  // marking, idle scavenge, or allocation statistics gathering, we 'interrupt'
+  // inline allocation every once in a while. This is done by setting
+  // allocation_info_.limit to be lower than the actual limit and and increasing
+  // it in steps to guarantee that the observers are notified periodically.
   void UpdateInlineAllocationLimit(int size_in_bytes);
-
-  // Allows observation of inline allocation. The observer->Step() method gets
-  // called after every step_size bytes have been allocated (approximately).
-  // This works by adjusting the allocation limit to a lower value and adjusting
-  // it after each step.
-  void AddInlineAllocationObserver(InlineAllocationObserver* observer);
-
-  // Removes a previously installed observer.
-  void RemoveInlineAllocationObserver(InlineAllocationObserver* observer);
 
   void DisableInlineAllocationSteps() {
     top_on_previous_step_ = 0;
     UpdateInlineAllocationLimit(0);
   }
+
+  // Allows observation of inline allocation. The observer->Step() method gets
+  // called after every step_size bytes have been allocated (approximately).
+  // This works by adjusting the allocation limit to a lower value and adjusting
+  // it after each step.
+  void AddAllocationObserver(AllocationObserver* observer) override;
+
+  void RemoveAllocationObserver(AllocationObserver* observer) override;
 
   // Get the extent of the inactive semispace (for use as a marking stack,
   // or to zap it). Notice: space-addresses are not necessarily on the
@@ -2756,18 +2692,10 @@ class NewSpace : public Space {
   Address ToSpaceStart() { return to_space_.space_start(); }
   Address ToSpaceEnd() { return to_space_.space_end(); }
 
-  inline bool ToSpaceContains(Address address) {
-    return to_space_.Contains(address);
-  }
-  inline bool FromSpaceContains(Address address) {
-    return from_space_.Contains(address);
-  }
-
-  // True if the object is a heap object in the address range of the
-  // respective semispace (not necessarily below the allocation pointer of the
-  // semispace).
-  inline bool ToSpaceContains(Object* o) { return to_space_.Contains(o); }
-  inline bool FromSpaceContains(Object* o) { return from_space_.Contains(o); }
+  inline bool ToSpaceContainsSlow(Address a);
+  inline bool FromSpaceContainsSlow(Address a);
+  inline bool ToSpaceContains(Object* o);
+  inline bool FromSpaceContains(Object* o);
 
   // Try to switch the active semispace to a new, empty, page.
   // Returns false if this isn't possible or reasonable (i.e., there
@@ -2814,6 +2742,9 @@ class NewSpace : public Space {
 
   SemiSpace* active_space() { return &to_space_; }
 
+  void PauseAllocationObservers() override;
+  void ResumeAllocationObservers() override;
+
  private:
   // Update allocation info to match the current to-space page.
   void UpdateAllocationInfo();
@@ -2831,22 +2762,12 @@ class NewSpace : public Space {
 
   // Start address and bit mask for containment testing.
   Address start_;
-  uintptr_t address_mask_;
-  uintptr_t object_mask_;
-  uintptr_t object_expected_;
 
   // Allocation pointer and limit for normal allocation and allocation during
   // mark-compact collection.
   AllocationInfo allocation_info_;
 
-  // When inline allocation stepping is active, either because of incremental
-  // marking or because of idle scavenge, we 'interrupt' inline allocation every
-  // once in a while. This is done by setting allocation_info_.limit to be lower
-  // than the actual limit and and increasing it in steps to guarantee that the
-  // observers are notified periodically.
-  List<InlineAllocationObserver*> inline_allocation_observers_;
   Address top_on_previous_step_;
-  bool inline_allocation_observers_paused_;
 
   HistogramInfo* allocated_histogram_;
   HistogramInfo* promoted_histogram_;
@@ -2863,26 +2784,18 @@ class NewSpace : public Space {
                             size_t size);
   intptr_t GetNextInlineAllocationStepSize();
   void StartNextInlineAllocationStep();
-  void PauseInlineAllocationObservers();
-  void ResumeInlineAllocationObservers();
 
-  friend class PauseInlineAllocationObserversScope;
   friend class SemiSpaceIterator;
 };
 
-class PauseInlineAllocationObserversScope {
+class PauseAllocationObserversScope {
  public:
-  explicit PauseInlineAllocationObserversScope(NewSpace* new_space)
-      : new_space_(new_space) {
-    new_space_->PauseInlineAllocationObservers();
-  }
-  ~PauseInlineAllocationObserversScope() {
-    new_space_->ResumeInlineAllocationObservers();
-  }
+  explicit PauseAllocationObserversScope(Heap* heap);
+  ~PauseAllocationObserversScope();
 
  private:
-  NewSpace* new_space_;
-  DISALLOW_COPY_AND_ASSIGN(PauseInlineAllocationObserversScope);
+  Heap* heap_;
+  DISALLOW_COPY_AND_ASSIGN(PauseAllocationObserversScope);
 };
 
 // -----------------------------------------------------------------------------
@@ -2892,12 +2805,6 @@ class CompactionSpace : public PagedSpace {
  public:
   CompactionSpace(Heap* heap, AllocationSpace id, Executability executable)
       : PagedSpace(heap, id, executable) {}
-
-  // Adds external memory starting at {start} of {size_in_bytes} to the space.
-  void AddExternalMemory(Address start, int size_in_bytes) {
-    IncreaseCapacity(size_in_bytes);
-    Free(start, size_in_bytes);
-  }
 
   bool is_local() override { return true; }
 
@@ -3052,7 +2959,9 @@ class LargeObjectSpace : public Space {
 
   // Checks whether a heap object is in this space; O(1).
   bool Contains(HeapObject* obj);
-  bool Contains(Address address);
+  // Checks whether an address is in the object area in this space. Iterates
+  // all objects in the space. May be slow.
+  bool ContainsSlow(Address addr) { return FindObject(addr)->IsHeapObject(); }
 
   // Checks whether the space is empty.
   bool IsEmpty() { return first_page_ == NULL; }
@@ -3068,9 +2977,6 @@ class LargeObjectSpace : public Space {
   void ReportStatistics();
   void CollectCodeStatistics();
 #endif
-  // Checks whether an address is in the object area in this space.  It
-  // iterates all objects in the space. May be slow.
-  bool SlowContains(Address addr) { return FindObject(addr)->IsHeapObject(); }
 
  private:
   // The head of the linked list of large object chunks.

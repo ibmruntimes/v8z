@@ -279,9 +279,12 @@ void CompilationInfo::LogDeoptCallPosition(int pc_offset, int inlining_id) {
 
 
 base::SmartArrayPointer<char> CompilationInfo::GetDebugName() const {
-  if (parse_info()) {
+  if (parse_info() && parse_info()->literal()) {
     AllowHandleDereference allow_deref;
     return parse_info()->literal()->debug_name()->ToCString();
+  }
+  if (parse_info() && !parse_info()->shared_info().is_null()) {
+    return parse_info()->shared_info()->DebugName()->ToCString();
   }
   const char* str = debug_name_ ? debug_name_ : "unknown";
   size_t len = strlen(str) + 1;
@@ -727,7 +730,6 @@ static void RecordFunctionCompilation(Logger::LogEventsAndTags tag,
   }
 }
 
-
 static bool CompileUnoptimizedCode(CompilationInfo* info) {
   DCHECK(AllowCompilation::IsAllowed(info->isolate()));
   if (!Compiler::Analyze(info->parse_info()) ||
@@ -756,13 +758,39 @@ static bool UseIgnition(CompilationInfo* info) {
   return info->closure()->PassesFilter(FLAG_ignition_filter);
 }
 
+static int CodeAndMetadataSize(CompilationInfo* info) {
+  int size = 0;
+  if (info->has_bytecode_array()) {
+    Handle<BytecodeArray> bytecode_array = info->bytecode_array();
+    size += bytecode_array->BytecodeArraySize();
+    size += bytecode_array->constant_pool()->Size();
+    size += bytecode_array->handler_table()->Size();
+    size += bytecode_array->source_position_table()->Size();
+  } else {
+    Handle<Code> code = info->code();
+    size += code->CodeSize();
+    size += code->relocation_info()->Size();
+    size += code->deoptimization_data()->Size();
+    size += code->handler_table()->Size();
+  }
+  return size;
+}
+
 
 static bool GenerateBaselineCode(CompilationInfo* info) {
+  bool success;
   if (FLAG_ignition && UseIgnition(info)) {
-    return interpreter::Interpreter::MakeBytecode(info);
+    success = interpreter::Interpreter::MakeBytecode(info);
   } else {
-    return FullCodeGenerator::MakeCode(info);
+    success = FullCodeGenerator::MakeCode(info);
   }
+  if (success) {
+    Isolate* isolate = info->isolate();
+    Counters* counters = isolate->counters();
+    counters->total_baseline_code_size()->Increment(CodeAndMetadataSize(info));
+    counters->total_baseline_compile_count()->Increment(1);
+  }
+  return success;
 }
 
 
@@ -996,7 +1024,7 @@ MaybeHandle<Code> Compiler::GetLazyCode(Handle<JSFunction> function) {
     VMState<COMPILER> state(isolate);
     PostponeInterruptsScope postpone(isolate);
 
-    info.SetOptimizing(BailoutId::None(), handle(function->shared()->code()));
+    info.SetOptimizing();
 
     if (GetOptimizedCodeNow(&info)) {
       DCHECK(function->shared()->is_compiled());
@@ -1446,6 +1474,9 @@ Handle<SharedFunctionInfo> Compiler::CompileScript(
     if (natives == NATIVES_CODE) {
       script->set_type(Script::TYPE_NATIVE);
       script->set_hide_source(true);
+    } else if (natives == EXTENSION_CODE) {
+      script->set_type(Script::TYPE_EXTENSION);
+      script->set_hide_source(true);
     }
     if (!script_name.is_null()) {
       script->set_name(*script_name);
@@ -1740,7 +1771,7 @@ MaybeHandle<Code> Compiler::GetOptimizedCode(Handle<JSFunction> function,
   DCHECK(!isolate->has_pending_exception());
   PostponeInterruptsScope postpone(isolate);
 
-  info->SetOptimizing(osr_ast_id, current_code);
+  info->SetOptimizingForOsr(osr_ast_id, current_code);
 
   if (mode == CONCURRENT) {
     if (GetOptimizedCodeLater(info.get())) {
@@ -1756,8 +1787,8 @@ MaybeHandle<Code> Compiler::GetOptimizedCode(Handle<JSFunction> function,
   return MaybeHandle<Code>();
 }
 
-
-Handle<Code> Compiler::GetConcurrentlyOptimizedCode(OptimizedCompileJob* job) {
+MaybeHandle<Code> Compiler::GetConcurrentlyOptimizedCode(
+    OptimizedCompileJob* job) {
   // Take ownership of compilation info.  Deleting compilation info
   // also tears down the zone and the recompile job.
   base::SmartPointer<CompilationInfo> info(job->info());
@@ -1802,7 +1833,7 @@ Handle<Code> Compiler::GetConcurrentlyOptimizedCode(OptimizedCompileJob* job) {
     info->closure()->ShortPrint();
     PrintF(" because: %s]\n", GetBailoutReason(info->bailout_reason()));
   }
-  return Handle<Code>::null();
+  return MaybeHandle<Code>();
 }
 
 

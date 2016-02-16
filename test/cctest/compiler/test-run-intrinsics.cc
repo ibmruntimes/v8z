@@ -104,18 +104,6 @@ TEST(IsFunction) {
 }
 
 
-TEST(IsMinusZero) {
-  FunctionTester T("(function(a) { return %_IsMinusZero(a); })", flags);
-
-  T.CheckFalse(T.Val(1));
-  T.CheckFalse(T.Val(1.1));
-  T.CheckTrue(T.Val(-0.0));
-  T.CheckFalse(T.Val(-2));
-  T.CheckFalse(T.Val(-2.3));
-  T.CheckFalse(T.undefined());
-}
-
-
 TEST(IsRegExp) {
   FunctionTester T("(function(a) { return %_IsRegExp(a); })", flags);
 
@@ -145,19 +133,6 @@ TEST(IsSmi) {
   T.CheckFalse(T.Val(-0.0));
   T.CheckTrue(T.Val(-2));
   T.CheckFalse(T.Val(-2.3));
-}
-
-
-TEST(ObjectEquals) {
-  FunctionTester T("(function(a,b) { return %_ObjectEquals(a,b); })", flags);
-  CompileRun("var o = {}");
-
-  T.CheckTrue(T.NewObject("(o)"), T.NewObject("(o)"));
-  T.CheckTrue(T.Val("internal"), T.Val("internal"));
-  T.CheckTrue(T.true_value(), T.true_value());
-  T.CheckFalse(T.true_value(), T.false_value());
-  T.CheckFalse(T.NewObject("({})"), T.NewObject("({})"));
-  T.CheckFalse(T.Val("a"), T.Val("b"));
 }
 
 

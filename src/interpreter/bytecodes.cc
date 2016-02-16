@@ -195,6 +195,7 @@ bool Bytecodes::IsConditionalJumpImmediate(Bytecode bytecode) {
          bytecode == Bytecode::kJumpIfFalse ||
          bytecode == Bytecode::kJumpIfToBooleanTrue ||
          bytecode == Bytecode::kJumpIfToBooleanFalse ||
+         bytecode == Bytecode::kJumpIfNotHole ||
          bytecode == Bytecode::kJumpIfNull ||
          bytecode == Bytecode::kJumpIfUndefined;
 }
@@ -206,6 +207,7 @@ bool Bytecodes::IsConditionalJumpConstant(Bytecode bytecode) {
          bytecode == Bytecode::kJumpIfFalseConstant ||
          bytecode == Bytecode::kJumpIfToBooleanTrueConstant ||
          bytecode == Bytecode::kJumpIfToBooleanFalseConstant ||
+         bytecode == Bytecode::kJumpIfNotHoleConstant ||
          bytecode == Bytecode::kJumpIfNullConstant ||
          bytecode == Bytecode::kJumpIfUndefinedConstant;
 }
@@ -217,6 +219,7 @@ bool Bytecodes::IsConditionalJumpConstantWide(Bytecode bytecode) {
          bytecode == Bytecode::kJumpIfFalseConstantWide ||
          bytecode == Bytecode::kJumpIfToBooleanTrueConstantWide ||
          bytecode == Bytecode::kJumpIfToBooleanFalseConstantWide ||
+         bytecode == Bytecode::kJumpIfNotHoleConstantWide ||
          bytecode == Bytecode::kJumpIfNullConstantWide ||
          bytecode == Bytecode::kJumpIfUndefinedConstantWide;
 }
@@ -258,8 +261,37 @@ bool Bytecodes::IsJump(Bytecode bytecode) {
 
 
 // static
+bool Bytecodes::IsCallOrNew(Bytecode bytecode) {
+  return bytecode == Bytecode::kCall || bytecode == Bytecode::kNew ||
+         bytecode == Bytecode::kCallWide || bytecode == Bytecode::kNewWide;
+}
+
+// static
 bool Bytecodes::IsJumpOrReturn(Bytecode bytecode) {
   return bytecode == Bytecode::kReturn || IsJump(bytecode);
+}
+
+// static
+bool Bytecodes::IsIndexOperandType(OperandType operand_type) {
+  return operand_type == OperandType::kIdx8 ||
+         operand_type == OperandType::kIdx16;
+}
+
+// static
+bool Bytecodes::IsImmediateOperandType(OperandType operand_type) {
+  return operand_type == OperandType::kImm8;
+}
+
+// static
+bool Bytecodes::IsRegisterCountOperandType(OperandType operand_type) {
+  return (operand_type == OperandType::kRegCount8 ||
+          operand_type == OperandType::kRegCount16);
+}
+
+// static
+bool Bytecodes::IsMaybeRegisterOperandType(OperandType operand_type) {
+  return (operand_type == OperandType::kMaybeReg8 ||
+          operand_type == OperandType::kMaybeReg16);
 }
 
 // static

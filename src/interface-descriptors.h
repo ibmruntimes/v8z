@@ -25,6 +25,8 @@ class PlatformInterfaceDescriptor;
   V(LoadWithVector)                           \
   V(FastNewClosure)                           \
   V(FastNewContext)                           \
+  V(FastNewRestParameter)                     \
+  V(FastNewStrictArguments)                 \
   V(ToNumber)                                 \
   V(ToLength)                                 \
   V(ToString)                                 \
@@ -67,19 +69,17 @@ class PlatformInterfaceDescriptor;
   V(ApiFunction)                              \
   V(ApiAccessor)                              \
   V(ApiGetter)                                \
-  V(ArgumentsAccessRead)                      \
   V(ArgumentsAccessNew)                       \
-  V(RestParamAccess)                          \
   V(LoadGlobalViaContext)                     \
   V(StoreGlobalViaContext)                    \
   V(MathPowTagged)                            \
   V(MathPowInteger)                           \
   V(ContextOnly)                              \
   V(GrowArrayElements)                        \
+  V(InterpreterDispatch)                      \
   V(InterpreterPushArgsAndCall)               \
   V(InterpreterPushArgsAndConstruct)          \
   V(InterpreterCEntry)
-
 
 class CallInterfaceDescriptorData {
  public:
@@ -89,7 +89,7 @@ class CallInterfaceDescriptorData {
   // A copy of the passed in registers and param_representations is made
   // and owned by the CallInterfaceDescriptorData.
 
-  void InitializePlatformIndependent(Type::FunctionType* function_type) {
+  void InitializePlatformIndependent(FunctionType* function_type) {
     function_type_ = function_type;
   }
 
@@ -112,7 +112,7 @@ class CallInterfaceDescriptorData {
     return platform_specific_descriptor_;
   }
 
-  Type::FunctionType* function_type() const { return function_type_; }
+  FunctionType* function_type() const { return function_type_; }
 
  private:
   int register_param_count_;
@@ -124,7 +124,7 @@ class CallInterfaceDescriptorData {
   base::SmartArrayPointer<Register> register_params_;
 
   // Specifies types for parameters and return
-  Type::FunctionType* function_type_;
+  FunctionType* function_type_;
 
   PlatformInterfaceDescriptor* platform_specific_descriptor_;
 
@@ -175,21 +175,19 @@ class CallInterfaceDescriptor {
     return data()->platform_specific_descriptor();
   }
 
-  Type::FunctionType* GetFunctionType() const {
-    return data()->function_type();
-  }
+  FunctionType* GetFunctionType() const { return data()->function_type(); }
 
   static const Register ContextRegister();
 
   const char* DebugName(Isolate* isolate) const;
 
-  static Type::FunctionType* BuildDefaultFunctionType(Isolate* isolate,
-                                                      int paramater_count);
+  static FunctionType* BuildDefaultFunctionType(Isolate* isolate,
+                                                int paramater_count);
 
  protected:
   const CallInterfaceDescriptorData* data() const { return data_; }
 
-  virtual Type::FunctionType* BuildCallInterfaceDescriptorFunctionType(
+  virtual FunctionType* BuildCallInterfaceDescriptorFunctionType(
       Isolate* isolate, int register_param_count) {
     return BuildDefaultFunctionType(isolate, register_param_count);
   }
@@ -202,9 +200,8 @@ class CallInterfaceDescriptor {
     if (!data()->IsInitialized()) {
       CallInterfaceDescriptorData* d = isolate->call_descriptor_data(key);
       InitializePlatformSpecific(d);
-      Type::FunctionType* function_type =
-          BuildCallInterfaceDescriptorFunctionType(isolate,
-                                                   d->register_param_count());
+      FunctionType* function_type = BuildCallInterfaceDescriptorFunctionType(
+          isolate, d->register_param_count());
       d->InitializePlatformIndependent(function_type);
     }
   }
@@ -226,15 +223,13 @@ class CallInterfaceDescriptor {
  public:                                                                       \
   static inline CallDescriptors::Key key();
 
-
 #define DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(name, base) \
   DECLARE_DESCRIPTOR(name, base)                                 \
  protected:                                                      \
-  Type::FunctionType* BuildCallInterfaceDescriptorFunctionType(  \
+  FunctionType* BuildCallInterfaceDescriptorFunctionType(        \
       Isolate* isolate, int register_param_count) override;      \
                                                                  \
  public:
-
 
 class VoidDescriptor : public CallInterfaceDescriptor {
  public:
@@ -377,6 +372,17 @@ class FastNewClosureDescriptor : public CallInterfaceDescriptor {
 class FastNewContextDescriptor : public CallInterfaceDescriptor {
  public:
   DECLARE_DESCRIPTOR(FastNewContextDescriptor, CallInterfaceDescriptor)
+};
+
+class FastNewRestParameterDescriptor : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR(FastNewRestParameterDescriptor, CallInterfaceDescriptor)
+};
+
+class FastNewStrictArgumentsDescriptor : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR(FastNewStrictArgumentsDescriptor,
+                     CallInterfaceDescriptor)
 };
 
 
@@ -702,15 +708,6 @@ class ApiGetterDescriptor : public CallInterfaceDescriptor {
 };
 
 
-class ArgumentsAccessReadDescriptor : public CallInterfaceDescriptor {
- public:
-  DECLARE_DESCRIPTOR(ArgumentsAccessReadDescriptor, CallInterfaceDescriptor)
-
-  static const Register index();
-  static const Register parameter_count();
-};
-
-
 class ArgumentsAccessNewDescriptor : public CallInterfaceDescriptor {
  public:
   DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(ArgumentsAccessNewDescriptor,
@@ -719,16 +716,6 @@ class ArgumentsAccessNewDescriptor : public CallInterfaceDescriptor {
   static const Register function();
   static const Register parameter_count();
   static const Register parameter_pointer();
-};
-
-
-class RestParamAccessDescriptor : public CallInterfaceDescriptor {
- public:
-  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(RestParamAccessDescriptor,
-                                               CallInterfaceDescriptor)
-  static const Register parameter_count();
-  static const Register parameter_pointer();
-  static const Register rest_parameter_index();
 };
 
 
@@ -763,6 +750,18 @@ class GrowArrayElementsDescriptor : public CallInterfaceDescriptor {
   static const Register KeyRegister();
 };
 
+class InterpreterDispatchDescriptor  : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(InterpreterDispatchDescriptor,
+                                               CallInterfaceDescriptor)
+
+  static const int kAccumulatorParameter = 0;
+  static const int kRegisterFileParameter = 1;
+  static const int kBytecodeOffsetParameter = 2;
+  static const int kBytecodeArrayParameter = 3;
+  static const int kDispatchTableParameter = 4;
+  static const int kContextParameter = 5;
+};
 
 class InterpreterPushArgsAndCallDescriptor : public CallInterfaceDescriptor {
  public:
@@ -783,7 +782,6 @@ class InterpreterCEntryDescriptor : public CallInterfaceDescriptor {
  public:
   DECLARE_DESCRIPTOR(InterpreterCEntryDescriptor, CallInterfaceDescriptor)
 };
-
 
 #undef DECLARE_DESCRIPTOR
 

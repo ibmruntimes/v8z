@@ -203,40 +203,39 @@ DEFINE_IMPLICATION(es_staging, harmony_regexp_lookbehind)
 DEFINE_IMPLICATION(es_staging, move_object_start)
 
 // Features that are still work in progress (behind individual flags).
-#define HARMONY_INPROGRESS(V)                                 \
-  V(harmony_modules, "harmony modules")                       \
-  V(harmony_function_name, "harmony Function name inference") \
-  V(harmony_function_sent, "harmony function.sent")           \
-  V(harmony_sharedarraybuffer, "harmony sharedarraybuffer")   \
-  V(harmony_simd, "harmony simd")                             \
-  V(harmony_do_expressions, "harmony do-expressions")         \
-  V(harmony_tailcalls, "harmony tail calls")                  \
-  V(harmony_species, "harmony Symbol.species")                \
-  V(harmony_object_values_entries, "harmony Object.values / Object.entries")
+#define HARMONY_INPROGRESS(V)                                                \
+  V(harmony_modules, "harmony modules")                                      \
+  V(harmony_function_sent, "harmony function.sent")                          \
+  V(harmony_sharedarraybuffer, "harmony sharedarraybuffer")                  \
+  V(harmony_simd, "harmony simd")                                            \
+  V(harmony_do_expressions, "harmony do-expressions")                        \
+  V(harmony_tailcalls, "harmony tail calls")                                 \
+  V(harmony_object_values_entries, "harmony Object.values / Object.entries") \
+  V(harmony_object_own_property_descriptors,                                 \
+    "harmony Object.getOwnPropertyDescriptors()")                            \
+  V(harmony_regexp_property, "harmony unicode regexp property classes")
 
 // Features that are complete (but still behind --harmony/es-staging flag).
-#define HARMONY_STAGED(V)                                   \
-  V(harmony_regexp_lookbehind, "harmony regexp lookbehind") \
-  V(harmony_unicode_regexps, "harmony unicode regexps")     \
-  V(harmony_regexp_subclass, "harmony regexp subclassing")
+#define HARMONY_STAGED(V)                                     \
+  V(harmony_function_name, "harmony Function name inference") \
+  V(harmony_regexp_lookbehind, "harmony regexp lookbehind")   \
+  V(harmony_species, "harmony Symbol.species")
 
 // Features that are shipping (turned on by default, but internal flag remains).
 #define HARMONY_SHIPPING(V)                                               \
   V(harmony_default_parameters, "harmony default parameters")             \
   V(harmony_destructuring_assignment, "harmony destructuring assignment") \
   V(harmony_destructuring_bind, "harmony destructuring bind")             \
-  V(harmony_concat_spreadable, "harmony isConcatSpreadable")              \
   V(harmony_object_observe, "harmony Object.observe")                     \
-  V(harmony_tolength, "harmony ToLength")                                 \
   V(harmony_tostring, "harmony toString")                                 \
-  V(harmony_completion, "harmony completion value semantics")             \
   V(harmony_regexps, "harmony regular expression extensions")             \
+  V(harmony_unicode_regexps, "harmony unicode regexps")                   \
   V(harmony_sloppy, "harmony features in sloppy mode")                    \
   V(harmony_sloppy_let, "harmony let in sloppy mode")                     \
   V(harmony_sloppy_function, "harmony sloppy function block scoping")     \
   V(harmony_proxies, "harmony proxies")                                   \
-  V(harmony_reflect, "harmony Reflect API")
-
+  V(harmony_reflect, "harmony Reflect API")                               \
+  V(harmony_regexp_subclass, "harmony regexp subclassing")
 
 // Once a shipping feature has proved stable in the wild, it will be dropped
 // from HARMONY_SHIPPING, all occurrences of the FLAG_ variable are removed,
@@ -463,7 +462,6 @@ DEFINE_BOOL(turbo_verify_allocation, DEBUG_BOOL,
 DEFINE_BOOL(turbo_move_optimization, true, "optimize gap moves in TurboFan")
 DEFINE_BOOL(turbo_jt, true, "enable jump threading in TurboFan")
 DEFINE_BOOL(turbo_osr, true, "enable OSR in TurboFan")
-DEFINE_BOOL(turbo_try_finally, false, "enable try-finally support in TurboFan")
 DEFINE_BOOL(turbo_stress_loop_peeling, false,
             "stress loop peeling optimization")
 DEFINE_BOOL(turbo_cf_optimization, true, "optimize control flow in TurboFan")
@@ -471,7 +469,6 @@ DEFINE_BOOL(turbo_frame_elision, true, "elide frames in TurboFan")
 DEFINE_BOOL(turbo_cache_shared_code, true, "cache context-independent code")
 DEFINE_BOOL(turbo_preserve_shared_code, false, "keep context-independent code")
 DEFINE_BOOL(turbo_escape, false, "enable escape analysis")
-DEFINE_BOOL(trace_turbo_escape, false, "enable tracing in escape analysis")
 DEFINE_BOOL(turbo_instruction_scheduling, false,
             "enable instruction scheduling in TurboFan")
 
@@ -484,6 +481,8 @@ DEFINE_BOOL(trace_wasm_ast, false, "dump AST after WASM decode")
 DEFINE_BOOL(wasm_break_on_decoder_error, false,
             "debug break when wasm decoder encounters an error")
 
+DEFINE_BOOL(enable_simd_asmjs, false, "enable SIMD.js in asm.js stdlib")
+
 DEFINE_INT(typed_array_max_size_in_heap, 64,
            "threshold for in-heap typed array")
 
@@ -492,7 +491,7 @@ DEFINE_INT(frame_count, 1, "number of stack frames inspected by the profiler")
 // 0x1800 fits in the immediate field of an ARM instruction.
 DEFINE_INT(interrupt_budget, 0x1800,
            "execution budget before interrupt is triggered")
-DEFINE_INT(type_info_threshold, 25,
+DEFINE_INT(type_info_threshold, 24,
            "percentage of ICs that must have type info to allow optimization")
 DEFINE_INT(generic_ic_threshold, 30,
            "max percentage of megamorphic/generic ICs to allow optimization")
@@ -935,7 +934,6 @@ DEFINE_BOOL(print_builtin_source, false,
             "pretty print source code for builtins")
 DEFINE_BOOL(print_ast, false, "print source AST")
 DEFINE_BOOL(print_builtin_ast, false, "print source AST for builtins")
-DEFINE_STRING(stop_at, "", "function name where to insert a breakpoint")
 DEFINE_BOOL(trap_on_abort, false, "replace aborts by breakpoints")
 
 // compiler.cc
@@ -957,6 +955,7 @@ DEFINE_BOOL(print_global_handles, false, "report global handles after GC")
 // TurboFan debug-only flags.
 DEFINE_BOOL(print_turbo_replay, false,
             "print C++ code to recreate TurboFan graphs")
+DEFINE_BOOL(trace_turbo_escape, false, "enable tracing in escape analysis")
 
 // objects.cc
 DEFINE_BOOL(trace_normalization, false,
@@ -969,6 +968,8 @@ DEFINE_BOOL(trace_lazy, false, "trace lazy compilation")
 DEFINE_BOOL(collect_heap_spill_statistics, false,
             "report heap spill statistics along with heap_stats "
             "(requires heap_stats)")
+DEFINE_BOOL(trace_live_bytes, false,
+            "trace incrementing and resetting of live bytes")
 
 DEFINE_BOOL(trace_isolates, false, "trace isolate state changes")
 

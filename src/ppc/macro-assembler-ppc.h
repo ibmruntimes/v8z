@@ -163,6 +163,7 @@ class MacroAssembler : public Assembler {
   }
 
   // Register move. May do nothing if the registers are identical.
+  void Move(Register dst, Smi* smi) { LoadSmiLiteral(dst, smi); }
   void Move(Register dst, Handle<Object> value);
   void Move(Register dst, Register src, Condition cond = al);
   void Move(DoubleRegister dst, DoubleRegister src);
@@ -202,13 +203,13 @@ class MacroAssembler : public Assembler {
   // Check if object is in new space.  Jumps if the object is not in new space.
   // The register scratch can be object itself, but scratch will be clobbered.
   void JumpIfNotInNewSpace(Register object, Register scratch, Label* branch) {
-    InNewSpace(object, scratch, ne, branch);
+    InNewSpace(object, scratch, eq, branch);
   }
 
   // Check if object is in new space.  Jumps if the object is in new space.
   // The register scratch can be object itself, but it will be clobbered.
   void JumpIfInNewSpace(Register object, Register scratch, Label* branch) {
-    InNewSpace(object, scratch, eq, branch);
+    InNewSpace(object, scratch, ne, branch);
   }
 
   // Check if an object has a given incremental marking color.
@@ -249,6 +250,11 @@ class MacroAssembler : public Assembler {
                      lr_status, save_fp, remembered_set_action, smi_check,
                      pointers_to_here_check_for_value);
   }
+
+  // Notify the garbage collector that we wrote a code entry into a
+  // JSFunction. Only scratch is clobbered by the operation.
+  void RecordWriteCodeEntryField(Register js_function, Register code_entry,
+                                 Register scratch);
 
   void RecordWriteForMap(Register object, Register map, Register dst,
                          LinkRegisterStatus lr_status, SaveFPRegsMode save_fp);
@@ -370,18 +376,20 @@ class MacroAssembler : public Assembler {
   }
 
   // Converts the integer (untagged smi) in |src| to a double, storing
-  // the result to |double_dst|
-  void ConvertIntToDouble(Register src, DoubleRegister double_dst);
+  // the result to |dst|
+  void ConvertIntToDouble(Register src, DoubleRegister dst);
 
   // Converts the unsigned integer (untagged smi) in |src| to
-  // a double, storing the result to |double_dst|
-  void ConvertUnsignedIntToDouble(Register src, DoubleRegister double_dst);
+  // a double, storing the result to |dst|
+  void ConvertUnsignedIntToDouble(Register src, DoubleRegister dst);
 
   // Converts the integer (untagged smi) in |src| to
   // a float, storing the result in |dst|
-  // Warning: The value in |int_scrach| will be changed in the process!
-  void ConvertIntToFloat(const DoubleRegister dst, const Register src,
-                         const Register int_scratch);
+  void ConvertIntToFloat(Register src, DoubleRegister dst);
+
+  // Converts the unsigned integer (untagged smi) in |src| to
+  // a float, storing the result in |dst|
+  void ConvertUnsignedIntToFloat(Register src, DoubleRegister dst);
 
 #if V8_TARGET_ARCH_PPC64
   void ConvertInt64ToFloat(Register src, DoubleRegister double_dst);
@@ -868,8 +876,6 @@ class MacroAssembler : public Assembler {
   // CR_EQ in cr7 holds the result.
   void TestDoubleIsMinusZero(DoubleRegister input, Register scratch1,
                              Register scratch2);
-  void TestHeapNumberIsMinusZero(Register input, Register scratch1,
-                                 Register scratch2);
 
   // Check the sign of a double.
   // CR_LT in cr7 holds the result.

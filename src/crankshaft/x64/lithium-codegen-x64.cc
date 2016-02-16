@@ -118,13 +118,6 @@ bool LCodeGen::GeneratePrologue() {
 
   if (info()->IsOptimizing()) {
     ProfileEntryHookStub::MaybeCallEntryHook(masm_);
-
-#ifdef DEBUG
-    if (strlen(FLAG_stop_at) > 0 &&
-        info_->literal()->name()->IsUtf8EqualTo(CStrVector(FLAG_stop_at))) {
-      __ int3();
-    }
-#endif
   }
 
   info()->set_prologue_offset(masm_->pc_offset());
@@ -2290,33 +2283,6 @@ void LCodeGen::DoCmpHoleAndBranch(LCmpHoleAndBranch* instr) {
 }
 
 
-void LCodeGen::DoCompareMinusZeroAndBranch(LCompareMinusZeroAndBranch* instr) {
-  Representation rep = instr->hydrogen()->value()->representation();
-  DCHECK(!rep.IsInteger32());
-
-  if (rep.IsDouble()) {
-    XMMRegister value = ToDoubleRegister(instr->value());
-    XMMRegister xmm_scratch = double_scratch0();
-    __ Xorpd(xmm_scratch, xmm_scratch);
-    __ Ucomisd(xmm_scratch, value);
-    EmitFalseBranch(instr, not_equal);
-    __ Movmskpd(kScratchRegister, value);
-    __ testl(kScratchRegister, Immediate(1));
-    EmitBranch(instr, not_zero);
-  } else {
-    Register value = ToRegister(instr->value());
-    Handle<Map> map = masm()->isolate()->factory()->heap_number_map();
-    __ CheckMap(value, map, instr->FalseLabel(chunk()), DO_SMI_CHECK);
-    __ cmpl(FieldOperand(value, HeapNumber::kExponentOffset),
-            Immediate(0x1));
-    EmitFalseBranch(instr, no_overflow);
-    __ cmpl(FieldOperand(value, HeapNumber::kMantissaOffset),
-            Immediate(0x00000000));
-    EmitBranch(instr, equal);
-  }
-}
-
-
 Condition LCodeGen::EmitIsString(Register input,
                                  Register temp1,
                                  Label* is_not_string,
@@ -3745,7 +3711,6 @@ void LCodeGen::DoCallFunction(LCallFunction* instr) {
   int arity = instr->arity();
 
   ConvertReceiverMode mode = hinstr->convert_mode();
-  TailCallMode tail_call_mode = hinstr->tail_call_mode();
   if (hinstr->HasVectorAndSlot()) {
     Register slot_register = ToRegister(instr->temp_slot());
     Register vector_register = ToRegister(instr->temp_vector());
@@ -3759,14 +3724,12 @@ void LCodeGen::DoCallFunction(LCallFunction* instr) {
     __ Move(vector_register, vector);
     __ Move(slot_register, Smi::FromInt(index));
 
-    Handle<Code> ic = CodeFactory::CallICInOptimizedCode(isolate(), arity, mode,
-                                                         tail_call_mode)
-                          .code();
+    Handle<Code> ic =
+        CodeFactory::CallICInOptimizedCode(isolate(), arity, mode).code();
     CallCode(ic, RelocInfo::CODE_TARGET, instr);
   } else {
     __ Set(rax, arity);
-    CallCode(isolate()->builtins()->Call(mode, tail_call_mode),
-             RelocInfo::CODE_TARGET, instr);
+    CallCode(isolate()->builtins()->Call(mode), RelocInfo::CODE_TARGET, instr);
   }
 }
 
@@ -5353,8 +5316,8 @@ Condition LCodeGen::EmitTypeofIs(LTypeofIsAndBranch* instr, Register input) {
     final_branch_condition = equal;
 
   } else if (String::Equals(type_name, factory->undefined_string())) {
-    __ CompareRoot(input, Heap::kUndefinedValueRootIndex);
-    __ j(equal, true_label, true_distance);
+    __ CompareRoot(input, Heap::kNullValueRootIndex);
+    __ j(equal, false_label, false_distance);
     __ JumpIfSmi(input, false_label, false_distance);
     // Check for undetectable objects => true.
     __ movp(input, FieldOperand(input, HeapObject::kMapOffset));

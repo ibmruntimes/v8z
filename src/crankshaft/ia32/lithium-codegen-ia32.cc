@@ -131,13 +131,6 @@ bool LCodeGen::GeneratePrologue() {
   if (info()->IsOptimizing()) {
     ProfileEntryHookStub::MaybeCallEntryHook(masm_);
 
-#ifdef DEBUG
-    if (strlen(FLAG_stop_at) > 0 &&
-        info_->literal()->name()->IsUtf8EqualTo(CStrVector(FLAG_stop_at))) {
-      __ int3();
-    }
-#endif
-
     if (support_aligned_spilled_doubles_ && dynamic_frame_alignment_) {
       // Move state of dynamic frame alignment into edx.
       __ Move(edx, Immediate(kNoAlignmentPadding));
@@ -2224,34 +2217,6 @@ void LCodeGen::DoCmpHoleAndBranch(LCmpHoleAndBranch* instr) {
 }
 
 
-void LCodeGen::DoCompareMinusZeroAndBranch(LCompareMinusZeroAndBranch* instr) {
-  Representation rep = instr->hydrogen()->value()->representation();
-  DCHECK(!rep.IsInteger32());
-  Register scratch = ToRegister(instr->temp());
-
-  if (rep.IsDouble()) {
-    XMMRegister value = ToDoubleRegister(instr->value());
-    XMMRegister xmm_scratch = double_scratch0();
-    __ xorps(xmm_scratch, xmm_scratch);
-    __ ucomisd(xmm_scratch, value);
-    EmitFalseBranch(instr, not_equal);
-    __ movmskpd(scratch, value);
-    __ test(scratch, Immediate(1));
-    EmitBranch(instr, not_zero);
-  } else {
-    Register value = ToRegister(instr->value());
-    Handle<Map> map = masm()->isolate()->factory()->heap_number_map();
-    __ CheckMap(value, map, instr->FalseLabel(chunk()), DO_SMI_CHECK);
-    __ cmp(FieldOperand(value, HeapNumber::kExponentOffset),
-           Immediate(0x1));
-    EmitFalseBranch(instr, no_overflow);
-    __ cmp(FieldOperand(value, HeapNumber::kMantissaOffset),
-           Immediate(0x00000000));
-    EmitBranch(instr, equal);
-  }
-}
-
-
 Condition LCodeGen::EmitIsString(Register input,
                                  Register temp1,
                                  Label* is_not_string,
@@ -3661,7 +3626,6 @@ void LCodeGen::DoCallFunction(LCallFunction* instr) {
 
   int arity = instr->arity();
   ConvertReceiverMode mode = hinstr->convert_mode();
-  TailCallMode tail_call_mode = hinstr->tail_call_mode();
   if (hinstr->HasVectorAndSlot()) {
     Register slot_register = ToRegister(instr->temp_slot());
     Register vector_register = ToRegister(instr->temp_vector());
@@ -3675,14 +3639,12 @@ void LCodeGen::DoCallFunction(LCallFunction* instr) {
     __ mov(vector_register, vector);
     __ mov(slot_register, Immediate(Smi::FromInt(index)));
 
-    Handle<Code> ic = CodeFactory::CallICInOptimizedCode(isolate(), arity, mode,
-                                                         tail_call_mode)
-                          .code();
+    Handle<Code> ic =
+        CodeFactory::CallICInOptimizedCode(isolate(), arity, mode).code();
     CallCode(ic, RelocInfo::CODE_TARGET, instr);
   } else {
     __ Set(eax, arity);
-    CallCode(isolate()->builtins()->Call(mode, tail_call_mode),
-             RelocInfo::CODE_TARGET, instr);
+    CallCode(isolate()->builtins()->Call(mode), RelocInfo::CODE_TARGET, instr);
   }
 }
 
@@ -5159,8 +5121,8 @@ Condition LCodeGen::EmitTypeofIs(LTypeofIsAndBranch* instr, Register input) {
     final_branch_condition = equal;
 
   } else if (String::Equals(type_name, factory()->undefined_string())) {
-    __ cmp(input, factory()->undefined_value());
-    __ j(equal, true_label, true_distance);
+    __ cmp(input, factory()->null_value());
+    __ j(equal, false_label, false_distance);
     __ JumpIfSmi(input, false_label, false_distance);
     // Check for undetectable objects => true.
     __ mov(input, FieldOperand(input, HeapObject::kMapOffset));

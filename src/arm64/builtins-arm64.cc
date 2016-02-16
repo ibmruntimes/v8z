@@ -147,18 +147,17 @@ void Builtins::Generate_MathMaxMin(MacroAssembler* masm, MathMaxMinKind kind) {
   // -----------------------------------
   ASM_LOCATION("Builtins::Generate_MathMaxMin");
 
-  Condition const cc_done = (kind == MathMaxMinKind::kMin) ? mi : gt;
-  Condition const cc_swap = (kind == MathMaxMinKind::kMin) ? gt : mi;
   Heap::RootListIndex const root_index =
       (kind == MathMaxMinKind::kMin) ? Heap::kInfinityValueRootIndex
                                      : Heap::kMinusInfinityValueRootIndex;
-  DoubleRegister const reg = (kind == MathMaxMinKind::kMin) ? d2 : d1;
 
   // Load the accumulator with the default return value (either -Infinity or
   // +Infinity), with the tagged value in x1 and the double value in d1.
   __ LoadRoot(x1, root_index);
   __ Ldr(d1, FieldMemOperand(x1, HeapNumber::kValueOffset));
-  __ Mov(x4, x0);
+
+  // Remember how many slots to drop (including the receiver).
+  __ Add(x4, x0, 1);
 
   Label done_loop, loop;
   __ Bind(&loop);
@@ -172,11 +171,9 @@ void Builtins::Generate_MathMaxMin(MacroAssembler* masm, MathMaxMinKind kind) {
 
     // Load the double value of the parameter into d2, maybe converting the
     // parameter to a number first using the ToNumberStub if necessary.
-    Label convert, convert_smi, convert_number, done_convert;
-    __ Bind(&convert);
+    Label convert_smi, convert_number, done_convert;
     __ JumpIfSmi(x2, &convert_smi);
-    __ Ldr(x3, FieldMemOperand(x2, HeapObject::kMapOffset));
-    __ JumpIfRoot(x3, Heap::kHeapNumberMapRootIndex, &convert_number);
+    __ JumpIfHeapNumber(x2, &convert_number);
     {
       // Parameter is not a Number, use the ToNumberStub to convert it.
       FrameScope scope(masm, StackFrame::INTERNAL);
@@ -190,54 +187,44 @@ void Builtins::Generate_MathMaxMin(MacroAssembler* masm, MathMaxMinKind kind) {
       __ Pop(x4, x1, x0);
       {
         // Restore the double accumulator value (d1).
-        Label restore_smi, done_restore;
-        __ JumpIfSmi(x1, &restore_smi);
+        Label done_restore;
+        __ SmiUntagToDouble(d1, x1, kSpeculativeUntag);
+        __ JumpIfSmi(x1, &done_restore);
         __ Ldr(d1, FieldMemOperand(x1, HeapNumber::kValueOffset));
-        __ B(&done_restore);
-        __ Bind(&restore_smi);
-        __ SmiUntagToDouble(d1, x1);
-        __ bind(&done_restore);
+        __ Bind(&done_restore);
       }
       __ SmiUntag(x4);
       __ SmiUntag(x0);
     }
-    __ B(&convert);
+    __ AssertNumber(x2);
+    __ JumpIfSmi(x2, &convert_smi);
+
     __ Bind(&convert_number);
     __ Ldr(d2, FieldMemOperand(x2, HeapNumber::kValueOffset));
     __ B(&done_convert);
+
     __ Bind(&convert_smi);
     __ SmiUntagToDouble(d2, x2);
     __ Bind(&done_convert);
 
-    // Perform the actual comparison with the accumulator value on the left hand
-    // side (d1) and the next parameter value on the right hand side (d2).
-    Label compare_nan, compare_swap;
-    __ Fcmp(d1, d2);
-    __ B(cc_done, &loop);
-    __ B(cc_swap, &compare_swap);
-    __ B(vs, &compare_nan);
-
-    // Left and right hand side are equal, check for -0 vs. +0.
-    __ Fmov(x3, reg);
-    __ TestAndBranchIfAllClear(x3, V8_INT64_C(0x8000000000000000), &loop);
-
-    // Result is on the right hand side.
-    __ Bind(&compare_swap);
-    __ Fmov(d1, d2);
-    __ Mov(x1, x2);
-    __ B(&loop);
-
-    // At least one side is NaN, which means that the result will be NaN too.
-    __ Bind(&compare_nan);
-    __ LoadRoot(x1, Heap::kNanValueRootIndex);
-    __ Ldr(d1, FieldMemOperand(x1, HeapNumber::kValueOffset));
+    // We can use a single fmin/fmax for the operation itself, but we then need
+    // to work out which HeapNumber (or smi) the result came from.
+    __ Fmov(x11, d1);
+    if (kind == MathMaxMinKind::kMin) {
+      __ Fmin(d1, d1, d2);
+    } else {
+      DCHECK(kind == MathMaxMinKind::kMax);
+      __ Fmax(d1, d1, d2);
+    }
+    __ Fmov(x10, d1);
+    __ Cmp(x10, x11);
+    __ Csel(x1, x1, x2, eq);
     __ B(&loop);
   }
 
   __ Bind(&done_loop);
   __ Mov(x0, x1);
   __ Drop(x4);
-  __ Drop(1);
   __ Ret();
 }
 
@@ -468,26 +455,6 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
   __ Ret();
 }
 
-
-static void CallRuntimePassFunction(MacroAssembler* masm,
-                                    Runtime::FunctionId function_id) {
-  // ----------- S t a t e -------------
-  //  -- x1 : target function (preserved for callee)
-  //  -- x3 : new target (preserved for callee)
-  // -----------------------------------
-
-  FrameScope scope(masm, StackFrame::INTERNAL);
-  // Push a copy of the target function and the new target.
-  // Push another copy as a parameter to the runtime call.
-  __ Push(x1, x3, x1);
-
-  __ CallRuntime(function_id, 1);
-
-  // Restore target function and new target.
-  __ Pop(x3, x1);
-}
-
-
 static void GenerateTailCallToSharedCode(MacroAssembler* masm) {
   __ Ldr(x2, FieldMemOperand(x1, JSFunction::kSharedFunctionInfoOffset));
   __ Ldr(x2, FieldMemOperand(x2, SharedFunctionInfo::kCodeOffset));
@@ -495,10 +462,30 @@ static void GenerateTailCallToSharedCode(MacroAssembler* masm) {
   __ Br(x2);
 }
 
+static void GenerateTailCallToReturnedCode(MacroAssembler* masm,
+                                           Runtime::FunctionId function_id) {
+  // ----------- S t a t e -------------
+  //  -- x0 : argument count (preserved for callee)
+  //  -- x1 : target function (preserved for callee)
+  //  -- x3 : new target (preserved for callee)
+  // -----------------------------------
+  {
+    FrameScope scope(masm, StackFrame::INTERNAL);
+    // Push a copy of the target function and the new target.
+    // Push another copy as a parameter to the runtime call.
+    __ SmiTag(x0);
+    __ Push(x0, x1, x3, x1);
 
-static void GenerateTailCallToReturnedCode(MacroAssembler* masm) {
-  __ Add(x0, x0, Code::kHeaderSize - kHeapObjectTag);
-  __ Br(x0);
+    __ CallRuntime(function_id, 1);
+    __ Move(x2, x0);
+
+    // Restore target function and new target.
+    __ Pop(x3, x1, x0);
+    __ SmiUntag(x0);
+  }
+
+  __ Add(x2, x2, Code::kHeaderSize - kHeapObjectTag);
+  __ Br(x2);
 }
 
 
@@ -512,8 +499,7 @@ void Builtins::Generate_InOptimizationQueue(MacroAssembler* masm) {
   __ CompareRoot(masm->StackPointer(), Heap::kStackLimitRootIndex);
   __ B(hs, &ok);
 
-  CallRuntimePassFunction(masm, Runtime::kTryInstallOptimizedCode);
-  GenerateTailCallToReturnedCode(masm);
+  GenerateTailCallToReturnedCode(masm, Runtime::kTryInstallOptimizedCode);
 
   __ Bind(&ok);
   GenerateTailCallToSharedCode(masm);
@@ -830,7 +816,7 @@ void Builtins::Generate_JSConstructStubGeneric(MacroAssembler* masm) {
 
 
 void Builtins::Generate_JSConstructStubApi(MacroAssembler* masm) {
-  Generate_JSConstructStubHelper(masm, true, true, false);
+  Generate_JSConstructStubHelper(masm, true, false, false);
 }
 
 
@@ -1010,11 +996,12 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   FrameScope frame_scope(masm, StackFrame::MANUAL);
   __ Push(lr, fp, cp, x1);
   __ Add(fp, jssp, StandardFrameConstants::kFixedFrameSizeFromFp);
-  __ Push(x3);
 
-  // Push zero for bytecode array offset.
+  // Push dispatch table pointer.
   __ Mov(x0, Operand(0));
-  __ Push(x0);
+  __ Mov(x2, Operand(ExternalReference::interpreter_dispatch_table_address(
+                 masm->isolate())));
+  __ Push(x3, x2, x0);
 
   // Get the bytecode array from the function object and load the pointer to the
   // first entry into kInterpreterBytecodeRegister.
@@ -1062,19 +1049,7 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   // fullcodegen's prologue:
   //  - Support profiler (specifically profiling_counter).
   //  - Call ProfileEntryHookStub when isolate has a function_entry_hook.
-  //  - Allow simulator stop operations if FLAG_stop_at is set.
   //  - Code aging of the BytecodeArray object.
-
-  // Perform stack guard check.
-  {
-    Label ok;
-    __ CompareRoot(jssp, Heap::kStackLimitRootIndex);
-    __ B(hs, &ok);
-    __ Push(kInterpreterBytecodeArrayRegister);
-    __ CallRuntime(Runtime::kStackGuard);
-    __ Pop(kInterpreterBytecodeArrayRegister);
-    __ Bind(&ok);
-  }
 
   // Load accumulator, register file, bytecode offset, dispatch table into
   // registers.
@@ -1083,10 +1058,8 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
          Operand(InterpreterFrameConstants::kRegisterFilePointerFromFp));
   __ Mov(kInterpreterBytecodeOffsetRegister,
          Operand(BytecodeArray::kHeaderSize - kHeapObjectTag));
-  __ LoadRoot(kInterpreterDispatchTableRegister,
-              Heap::kInterpreterTableRootIndex);
-  __ Add(kInterpreterDispatchTableRegister, kInterpreterDispatchTableRegister,
-         Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ Ldr(kInterpreterDispatchTableRegister,
+         MemOperand(fp, InterpreterFrameConstants::kDispatchTableFromFp));
 
   // Dispatch to the first bytecode handler for the function.
   __ Ldrb(x1, MemOperand(kInterpreterBytecodeArrayRegister,
@@ -1127,10 +1100,9 @@ static void Generate_EnterBytecodeDispatch(MacroAssembler* masm) {
   // Initialize register file register and dispatch table register.
   __ Add(kInterpreterRegisterFileRegister, fp,
          Operand(InterpreterFrameConstants::kRegisterFilePointerFromFp));
-  __ LoadRoot(kInterpreterDispatchTableRegister,
-              Heap::kInterpreterTableRootIndex);
-  __ Add(kInterpreterDispatchTableRegister, kInterpreterDispatchTableRegister,
-         Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ Mov(kInterpreterDispatchTableRegister,
+         Operand(ExternalReference::interpreter_dispatch_table_address(
+             masm->isolate())));
 
   // Get the context from the frame.
   __ Ldr(kContextRegister,
@@ -1221,20 +1193,18 @@ void Builtins::Generate_InterpreterEnterBytecodeDispatch(MacroAssembler* masm) {
 
 
 void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
-  CallRuntimePassFunction(masm, Runtime::kCompileLazy);
-  GenerateTailCallToReturnedCode(masm);
+  GenerateTailCallToReturnedCode(masm, Runtime::kCompileLazy);
 }
 
 
 void Builtins::Generate_CompileOptimized(MacroAssembler* masm) {
-  CallRuntimePassFunction(masm, Runtime::kCompileOptimized_NotConcurrent);
-  GenerateTailCallToReturnedCode(masm);
+  GenerateTailCallToReturnedCode(masm,
+                                 Runtime::kCompileOptimized_NotConcurrent);
 }
 
 
 void Builtins::Generate_CompileOptimizedConcurrent(MacroAssembler* masm) {
-  CallRuntimePassFunction(masm, Runtime::kCompileOptimized_Concurrent);
-  GenerateTailCallToReturnedCode(masm);
+  GenerateTailCallToReturnedCode(masm, Runtime::kCompileOptimized_Concurrent);
 }
 
 
@@ -1460,14 +1430,11 @@ static void CompatibleReceiverCheck(MacroAssembler* masm, Register receiver,
 
   // Load the next prototype.
   __ Bind(&next_prototype);
-  __ Ldr(receiver, FieldMemOperand(map, Map::kPrototypeOffset));
-  // End if the prototype is null or not hidden.
-  __ CompareRoot(receiver, Heap::kNullValueRootIndex);
-  __ B(eq, receiver_check_failed);
-  __ Ldr(map, FieldMemOperand(receiver, HeapObject::kMapOffset));
   __ Ldr(x16, FieldMemOperand(map, Map::kBitField3Offset));
-  __ Tst(x16, Operand(Map::IsHiddenPrototype::kMask));
+  __ Tst(x16, Operand(Map::HasHiddenPrototype::kMask));
   __ B(eq, receiver_check_failed);
+  __ Ldr(receiver, FieldMemOperand(map, Map::kPrototypeOffset));
+  __ Ldr(map, FieldMemOperand(receiver, HeapObject::kMapOffset));
   // Iterate.
   __ B(&prototype_loop_start);
 
@@ -2007,10 +1974,8 @@ void Builtins::Generate_Apply(MacroAssembler* masm) {
 
     // Try to create the list from an arguments object.
     __ Bind(&create_arguments);
-    __ Ldrsw(len, UntagSmiFieldMemOperand(
-                      arguments_list,
-                      JSObject::kHeaderSize +
-                          Heap::kArgumentsLengthIndex * kPointerSize));
+    __ Ldrsw(len, UntagSmiFieldMemOperand(arguments_list,
+                                          JSArgumentsObject::kLengthOffset));
     __ Ldr(x10, FieldMemOperand(arguments_list, JSObject::kElementsOffset));
     __ Ldrsw(x11, UntagSmiFieldMemOperand(x10, FixedArray::kLengthOffset));
     __ CompareAndBranch(len, x11, ne, &create_runtime);

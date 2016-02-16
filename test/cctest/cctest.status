@@ -71,20 +71,9 @@
   # This tests API threading, no point in running several variants.
   'test-api/Threading*': [PASS, NO_VARIANTS],
 
-  # The cpu profiler tests are notoriously flaky.
-  # BUG(2999). (test/cpu-profiler/CollectCpuProfile)
-  # BUG(3287). (test-cpu-profiler/SampleWhenFrameIsNotSetup)
-  'test-cpu-profiler/CollectCpuProfile': [SKIP],
-  'test-cpu-profiler/CollectCpuProfileSamples': [SKIP],
-  'test-cpu-profiler/FunctionApplySample': [SKIP],
-  'test-cpu-profiler/FunctionCallSample': [SKIP],
-  'test-cpu-profiler/SampleWhenFrameIsNotSetup': [SKIP],
-  'test-cpu-profiler/HotDeoptNoFrameEntry': [SKIP],
-  'test-cpu-profiler/BoundFunctionCall': [SKIP],
+  # BUG(2999). The cpu profiler tests are notoriously flaky.
   'test-cpu-profiler/CpuProfileDeepStack': [SKIP],
-  'test-cpu-profiler/JsNativeJsSample': [SKIP],
-  'test-cpu-profiler/JsNativeJsRuntimeJsSample': [SKIP],
-  'test-cpu-profiler/JsNative1JsNative2JsSample': [SKIP],
+  'test-cpu-profiler/HotDeoptNoFrameEntry': [SKIP],
 
   # BUG(3525). Test crashes flakily.
   'test-debug/RecursiveBreakpoints': [PASS, FLAKY],
@@ -256,8 +245,11 @@
 ##############################################################################
 ['byteorder == big', {
   # TODO(mips-team): Fix Wasm for big-endian.
+  'test-run-wasm-module/Run_WasmModule_CallAdd': [SKIP],
   'test-run-wasm-module/Run_WasmModule_CallAdd_rev': [SKIP],
+  'test-run-wasm-module/Run_WasmModule_CallMain_recursive': [SKIP],
   'test-run-wasm-module/Run_WasmModule_ReadLoadedDataSegment': [SKIP],
+  'test-run-wasm-module/Run_WasmModule_Return114': [SKIP],
   'test-run-wasm-module/Run_WasmModule_CheckMemoryIsZero': [SKIP],
   'test-run-wasm-module/Run_WasmModule_Global': [SKIP],
   'test-run-wasm/Run_WasmInt32*': [SKIP],
@@ -503,93 +495,171 @@
 }],  # 'arch == ppc64 and simulator_run == True'
 
 ['ignition == True', {
-  'test-api/*' : [SKIP],
-  'test-cpu-profiler/*' : [SKIP],
+  # TODO(yangguo,4690): Enable debugger support for Ignition.
   'test-debug/*' : [SKIP],
-  'test-func-name-inference/*' : [SKIP],
-  'test-inobject-slack-tracking/*' : [SKIP],
-  'test-serialize/*' : [SKIP],
 
-  # TODO(mstarzinger,4674): Message object is not properly cleared.
-  'test-heap/MessageObjectLeak': [FAIL],
+  # TODO(yangguo,4690): Required DebuggerStatement support.
+  'test-profile-generator/BailoutReason': [FAIL],
 
-  # TODO(mstarzinger,4674): Support exception handlers in BytecodeGraphBuilder.
-  'test-run-deopt/DeoptExceptionHandlerCatch': [FAIL],
+  # TODO(rmcilroy,4680): Check failed: toplevel_test_code_event_found.
+  'test-serialize/SerializeToplevelIsolates': [FAIL],
 
-  # TODO(mstarzinger,4674): Bug in control flow modeling. Investigate and fix.
-  'test-run-jsexceptions/ThrowMessageIndirectly': [FAIL],
+  # TODO(rmcilroy,4682): Requires support for classes.
+  'test-inobject-slack-tracking/SubclassBasicNoBaseClassInstancesNoInlineNew': [FAIL],
+  'test-inobject-slack-tracking/SubclassBasicNoBaseClassInstances': [FAIL],
+  'test-inobject-slack-tracking/LongSubclassChain2': [FAIL],
+  'test-inobject-slack-tracking/LongSubclassChain1': [FAIL],
+  'test-inobject-slack-tracking/LongSubclassChain3': [FAIL],
+  'test-inobject-slack-tracking/SubclassBasicNoInlineNew': [FAIL],
+  'test-inobject-slack-tracking/InobjectPropetiesCountOverflowInSubclass': [FAIL],
+  'test-inobject-slack-tracking/SlowModeSubclass': [FAIL],
+  'test-inobject-slack-tracking/SubclassObjectBuiltin': [FAIL],
+  'test-inobject-slack-tracking/SubclassObjectBuiltinNoInlineNew': [FAIL],
+  'test-inobject-slack-tracking/SubclassFunctionBuiltin': [FAIL],
+  'test-inobject-slack-tracking/SubclassBasic': [FAIL],
+  'test-inobject-slack-tracking/SubclassFunctionBuiltinNoInlineNew': [FAIL],
+  'test-inobject-slack-tracking/SubclassNumberBuiltin': [FAIL],
+  'test-inobject-slack-tracking/SubclassBooleanBuiltinNoInlineNew': [FAIL],
+  'test-inobject-slack-tracking/SubclassErrorBuiltinNoInlineNew': [FAIL],
+  'test-inobject-slack-tracking/SubclassErrorBuiltin': [FAIL],
+  'test-inobject-slack-tracking/SubclassStringBuiltin': [FAIL],
+  'test-inobject-slack-tracking/SubclassDateBuiltin': [FAIL],
+  'test-inobject-slack-tracking/SubclassRegExpBuiltin': [FAIL],
+  'test-inobject-slack-tracking/SubclassStringBuiltinNoInlineNew': [FAIL],
+  'test-inobject-slack-tracking/SubclassBooleanBuiltin': [FAIL],
+  'test-inobject-slack-tracking/SubclassDateBuiltinNoInlineNew': [FAIL],
+  'test-inobject-slack-tracking/SubclassArrayBuiltin': [FAIL],
+  'test-inobject-slack-tracking/SubclassRegExpBuiltinNoInlineNew': [FAIL],
+  'test-inobject-slack-tracking/SubclassNumberBuiltinNoInlineNew': [FAIL],
+  'test-inobject-slack-tracking/SubclassArrayBuiltinNoInlineNew': [FAIL],
+  'test-inobject-slack-tracking/SubclassTypedArrayBuiltin': [FAIL],
+  'test-inobject-slack-tracking/SubclassTypedArrayBuiltinNoInlineNew': [FAIL],
+  'test-inobject-slack-tracking/SubclassCollectionBuiltin': [FAIL],
+  'test-inobject-slack-tracking/SubclassCollectionBuiltinNoInlineNew': [FAIL],
+  'test-inobject-slack-tracking/SubclassArrayBufferBuiltin': [FAIL],
+  'test-inobject-slack-tracking/SubclassArrayBufferBuiltinNoInlineNew': [FAIL],
+  'test-inobject-slack-tracking/SubclassPromiseBuiltinNoInlineNew': [FAIL],
+  'test-inobject-slack-tracking/SubclassPromiseBuiltin': [FAIL],
+  'test-api/Regress470113': [FAIL],
+  'test-api/SubclassGetConstructorName': [FAIL],
 
-  'test-api-interceptors/InterceptorCallICInvalidatedConstantFunctionViaGlobal': [SKIP],
-  'test-api-interceptors/InterceptorLoadICInvalidatedCallbackViaGlobal': [SKIP],
-  'test-api-interceptors/InterceptorLoadICInvalidatedFieldViaGlobal': [SKIP],
-  'test-compiler/FeedbackVectorPreservedAcrossRecompiles': [SKIP],
-  'test-compiler/FeedbackVectorUnaffectedByScopeChanges': [SKIP],
-  'test-compiler/OptimizedCodeSharing2': [SKIP],
-  'test-compiler/OptimizedCodeSharing3': [SKIP],
-  'test-decls/CrossScriptDynamicLookup': [SKIP],
-  'test-decls/CrossScriptReferences_Simple2': [SKIP],
-  'test-decls/Regress425510': [SKIP],
-  'test-feedback-vector/VectorCallICStates': [SKIP],
-  'test-heap/CanonicalSharedFunctionInfo': [SKIP],
-  'test-heap/CellsInOptimizedCodeAreWeak': [SKIP],
-  'test-heap/CompilationCacheCachingBehavior': [SKIP],
-  'test-heap/IncrementalMarkingClearsMonomorphicConstructor': [SKIP],
-  'test-heap/IncrementalMarkingPreservesMonomorphicCallIC': [SKIP],
-  'test-heap/IncrementalMarkingPreservesMonomorphicConstructor': [SKIP],
-  'test-heap/NoWeakHashTableLeakWithIncrementalMarking': [SKIP],
-  'test-heap-profiler/HeapSnapshotSimd': [SKIP],
-  'test-heap/OptimizedAllocationAlwaysInNewSpace': [SKIP],
-  'test-heap/Regress169209': [SKIP],
-  'test-heap/Regress357137': [SKIP],
-  'test-heap/TestCodeFlushingIncrementalAbort': [SKIP],
-  'test-heap/TestCodeFlushingIncrementalScavenge': [SKIP],
-  'test-heap/TestCodeFlushingIncremental': [SKIP],
-  'test-heap/TestCodeFlushingPreAged': [SKIP],
-  'test-heap/TestCodeFlushing': [SKIP],
-  'test-heap/WeakFunctionInConstructor': [SKIP],
-  'test-lockers/IsolateLockingStress': [SKIP],
-  'test-lockers/SeparateIsolatesLocksNonexclusive': [SKIP],
-  'test-log-stack-tracer/CFromJSStackTrace': [SKIP],
-  'test-log-stack-tracer/PureJSStackTrace': [SKIP],
-  'test-parsing/DestructuringNegativeTests': [SKIP],
-  'test-parsing/StrongModeFreeVariablesDeclaredByLanguage': [SKIP],
-  'test-parsing/StrongModeFreeVariablesDeclaredByPreviousScript': [SKIP],
-  'test-parsing/StrongModeFreeVariablesDeclaredInGlobalPrototype': [SKIP],
-  'test-profile-generator/BailoutReason': [SKIP],
-  'test-profile-generator/LineNumber': [SKIP],
-  'test-profile-generator/ProfileNodeScriptId': [SKIP],
-  'test-profile-generator/RecordStackTraceAtStartProfiling': [SKIP],
-  'test-run-inlining/InlineTwice': [SKIP],
-  'test-run-jscalls/LookupCall': [SKIP],
-  'test-run-jsexceptions/ThrowMessageDirectly': [SKIP],
-  'test-run-jsexceptions/ThrowMessagePosition': [SKIP],
-  'test-run-jsobjects/ArgumentsRest': [SKIP],
-  'test-run-jsops/ClassLiteral': [SKIP],
-  'test-run-jsops/LookupLoad': [SKIP],
-  'test-run-jsops/LookupStore': [SKIP],
-  'test-run-variables/ContextInitializeVariables': [SKIP],
-  'test-run-variables/ContextLoadVariables': [SKIP],
-  'test-run-variables/ContextStoreVariables': [SKIP],
-  'test-run-variables/StackInitializeVariables': [SKIP],
-  'test-run-variables/StackLoadVariables': [SKIP],
-  'test-run-variables/StackStoreVariables': [SKIP],
-  'test-sampler-api/StackFramesConsistent': [SKIP],
-  'test-thread-termination/TerminateAndReenterFromThreadItself': [SKIP],
-  'test-thread-termination/TerminateCancelTerminateFromThreadItself': [SKIP],
-  'test-thread-termination/TerminateFromOtherThreadWhileMicrotaskRunning': [SKIP],
-  'test-thread-termination/TerminateOnlyV8ThreadFromOtherThread': [SKIP],
-  'test-thread-termination/TerminateOnlyV8ThreadFromThreadItself': [SKIP],
-  'test-thread-termination/TerminateOnlyV8ThreadFromThreadItselfNoLoop': [SKIP],
-  'test-thread-termination/TerminationInInnerTryCall': [SKIP],
-  'test-unscopables-hidden-prototype/Unscopables': [SKIP],
+  # BUG(4333). Function name inferrer does not work for ES6 clases.
+  'test-func-name-inference/UpperCaseClass': [TIMEOUT],
+  'test-func-name-inference/LowerCaseClass': [TIMEOUT],
+
+  # TODO(rmcilroy,4681): Requires support for generators.
+  'test-inobject-slack-tracking/JSGeneratorObjectBasic': [FAIL],
+  'test-inobject-slack-tracking/JSGeneratorObjectBasicNoInlineNew': [FAIL],
+  'test-api/IsGeneratorFunctionOrObject': [FAIL],
+
+  # TODO(rmcilroy,4680): Strong mode failures.
+  'test-parsing/StrongModeFreeVariablesDeclaredByLanguage': [FAIL],
+  'test-parsing/StrongModeFreeVariablesDeclaredInGlobalPrototype': [FAIL],
+  'test-parsing/StrongModeFreeVariablesDeclaredByPreviousScript': [FAIL],
+  'test-api/StrongModeAccessCheckBlocked': [FAIL],
+  'test-api/AccessorShouldThrowOnError': [FAIL],
+  'test-api/InterceptorShouldThrowOnError': [FAIL],
+  'test-api/StrongModeAccessCheckAllowed': [FAIL],
+
+  # TODO(rmcilroy,4680): The function_data field should be a BytecodeArray on interpreter entry
+  'test-api/SetFunctionEntryHook': [FAIL],
+
+  # TODO(rmcilroy,4680): Check failed: !function->shared()->is_compiled() || function->IsOptimized().
+  'test-heap/TestCodeFlushingPreAged': [FAIL],
+  'test-heap/TestCodeFlushingIncrementalScavenge': [FAIL],
+  'test-heap/TestCodeFlushing': [FAIL],
+  'test-heap/TestCodeFlushingIncremental': [FAIL],
+
+  # TODO(rmcilroy,4680): Check failed: fun1->IsOptimized() || !CcTest::i_isolate()->use_crankshaft().
+  'test-compiler/OptimizedCodeSharing2': [FAIL],
+  'test-compiler/OptimizedCodeSharing3': [FAIL],
+
+  # TODO(rmcilroy,4689): Stack trace line number failures.
+  'test-run-jsexceptions/ThrowMessagePosition': [FAIL],
+  'test-api/TryCatchMixedNesting': [PASS, FAIL],
+
+  # TODO(rmcilroy,4680): Exception message assert failure.
+  'test-api/CallICFastApi_SimpleSignature_Miss2WithProfiler': [PASS, FAIL],
+  'test-api/InterceptorCallICFastApi_SimpleSignature_Miss3WithProfiler': [PASS, FAIL],
+
+  # TODO(rmcilroy,4680): Test assert errors.
+  'test-cpu-profiler/CodeEvents': [FAIL],
+  'test-cpu-profiler/TickEvents': [FAIL],
+  'test-cpu-profiler/BoundFunctionCall': [FAIL],
+  'test-cpu-profiler/CollectCpuProfile': [FAIL],
+  'test-cpu-profiler/CollectSampleAPI': [FAIL],
+  'test-cpu-profiler/CpuProfileDeepStack': [FAIL],
+  'test-cpu-profiler/FunctionApplySample': [FAIL],
+  'test-cpu-profiler/FunctionCallSample': [FAIL],
+  'test-cpu-profiler/FunctionDetails': [FAIL],
+  'test-cpu-profiler/HotDeoptNoFrameEntry': [FAIL],
+  'test-cpu-profiler/JsNative1JsNative2JsSample': [FAIL],
+  'test-cpu-profiler/JsNativeJsRuntimeJsSample': [FAIL],
+  'test-cpu-profiler/JsNativeJsRuntimeJsSampleMultiple': [FAIL],
+  'test-cpu-profiler/JsNativeJsSample': [FAIL],
+  'test-cpu-profiler/NativeMethodUninitializedIC': [FAIL],
+  'test-cpu-profiler/NativeMethodMonomorphicIC': [FAIL],
+  'test-cpu-profiler/NativeAccessorUninitializedIC': [FAIL],
+  'test-cpu-profiler/NativeAccessorMonomorphicIC': [FAIL],
+  'test-cpu-profiler/SampleWhenFrameIsNotSetup': [FAIL],
+  'test-sampler-api/StackFramesConsistent': [FAIL],
+  'test-profile-generator/LineNumber': [FAIL],
+  'test-profile-generator/ProfileNodeScriptId': [FAIL],
+  'test-profile-generator/RecordStackTraceAtStartProfiling': [FAIL],
+  'test-feedback-vector/VectorCallICStates': [FAIL],
+  'test-compiler/FeedbackVectorPreservedAcrossRecompiles': [FAIL],
+  'test-api/PromiseRejectCallback': [FAIL],
+  'test-api/SetJitCodeEventHandler': [FAIL],
+  'test-heap/WeakFunctionInConstructor': [FAIL],
+  'test-heap/Regress169209': [FAIL],
+  'test-heap/IncrementalMarkingClearsMonomorphicConstructor': [FAIL],
+  'test-heap/IncrementalMarkingPreservesMonomorphicConstructor': [FAIL],
+  'test-heap/IncrementalMarkingPreservesMonomorphicCallIC': [FAIL],
+  'test-heap/CompilationCacheCachingBehavior': [FAIL],
+  'test-heap/CellsInOptimizedCodeAreWeak': [FAIL],
+  'test-run-inlining/InlineTwice': [FAIL],
+
+  # TODO(rmcilroy,4680): Fail on some bot configurations.
+  'test-heap/CanonicalSharedFunctionInfo': [PASS, FAIL],
+  'test-heap/TestCodeFlushingIncrementalAbort': [PASS, FAIL],
+  'test-cpu-profiler/SourceLocation': [PASS, FAIL],
+  'test-serialize/SerializeInternalReference': [PASS, FAIL],
 }],  # ignition == True
 
+['ignition == True and mode == debug and arch == x64', {
+  # TODO(rmcilroy,4680): Flaky failures.
+  'test-api/CallAsFunction': [PASS, FAIL],
+  'test-api/ConstructorForObject': [PASS, FAIL],
+  'test-api/Regress528': [PASS, FAIL],
+}],
+
+['ignition == True and arch == x64', {
+  # TODO(rmcilroy,4680): The function_data field should be a BytecodeArray on interpreter entry
+  'test-serialize/PerIsolateSnapshotBlobsOutdatedContextWithOverflow': [PASS, ['mode == debug', FAIL]],
+  'test-serialize/PerIsolateSnapshotBlobsWithLocker': [PASS, ['mode == debug', FAIL]],
+  'test-serialize/SnapshotBlobsStackOverflow': [PASS, ['mode == debug', FAIL]],
+  'test-serialize/PerIsolateSnapshotBlobs': [PASS, ['mode == debug', FAIL]],
+  'test-serialize/SerializationMemoryStats': [PASS, ['mode == debug', FAIL]],
+
+  # TODO(rmcilroy,4680): Test assert errors.
+  'test-heap-profiler/HeapSnapshotSimd': [PASS, ['mode == debug', FAIL]],
+  'test-api/InitializeDefaultIsolateOnSecondaryThread1': [PASS, ['mode == debug', FAIL]],
+}],
+
 ['ignition == True and arch == arm64', {
-  'test-decls/CrossScriptReferencesHarmony': [SKIP],
-  'test-js-arm64-variables/lookup_slots': [SKIP],
-  'test-spaces/SizeOfFirstPageIsLargeEnough': [SKIP],
-  'test-heap/AddInstructionChangesNewSpacePromotion': [SKIP],
-  'test-heap/Regress538257': [SKIP],
+  # TODO(rmcilroy,4680): Arm64 specific crashes.
+  'test-api/ExternalWrap': [SKIP],
+  'test-heap/NoWeakHashTableLeakWithIncrementalMarking': [SKIP],
+
+  # TODO(rmcilroy,4680): Arm64 flakes.
+  'test-serialize/SerializeInternalReference': [PASS, FAIL],
+  'test-spaces/SizeOfFirstPageIsLargeEnough': [PASS, FAIL],
+  'test-api/InitializeDefaultIsolateOnSecondaryThread1': [PASS, FAIL],
+  'test-api/FastReturnValuesWithProfiler': [PASS, FAIL],
+  'test-heap/Regress538257': [PASS, FAIL],
+  'test-heap/AddInstructionChangesNewSpacePromotion': [PASS, FAIL],
+  'test-decls/CrossScriptReferencesHarmony': [PASS, FAIL],
+  'test-lockers/IsolateNestedLocking': [PASS, FAIL],
 }],  # ignition == True and arch == arm64
 
 ]

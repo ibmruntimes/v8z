@@ -4327,6 +4327,22 @@ TEST(DisableBreak) {
   CheckDebuggerUnloaded(env->GetIsolate());
 }
 
+TEST(DisableDebuggerStatement) {
+  DebugLocalContext env;
+  v8::HandleScope scope(env->GetIsolate());
+
+  // Register a debug event listener which sets the break flag and counts.
+  v8::Debug::SetDebugEventListener(env->GetIsolate(), DebugEventCounter);
+  CompileRun("debugger;");
+  CHECK_EQ(1, break_point_hit_count);
+
+  // Check that we ignore debugger statement when breakpoints aren't active.
+  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(env->GetIsolate());
+  isolate->debug()->set_break_points_active(false);
+  CompileRun("debugger;");
+  CHECK_EQ(1, break_point_hit_count);
+}
+
 static const char* kSimpleExtensionSource =
   "(function Foo() {"
   "  return 4;"
@@ -7301,7 +7317,7 @@ static void DebugEventBreakWithOptimizedStack(
         CHECK(argument_name->Equals(context, v8_str(isolate, "count"))
                   .FromJust());
         // Get the value of the first argument in frame i. If the
-        // funtion is optimized the value will be undefined, otherwise
+        // function is optimized the value will be undefined, otherwise
         // the value will be '1 - i'.
         //
         // TODO(3141533): We should be able to get the real value for
@@ -7977,4 +7993,82 @@ TEST(NoInterruptsInDebugListener) {
   DebugLocalContext env;
   v8::Debug::SetDebugEventListener(env->GetIsolate(), NoInterruptsOnDebugEvent);
   CompileRun("void(0);");
+}
+
+class TestBreakLocation : public i::BreakLocation {
+ public:
+  using i::BreakLocation::GetIterator;
+  using i::BreakLocation::Iterator;
+};
+
+TEST(BreakLocationIterator) {
+  DebugLocalContext env;
+  v8::Isolate* isolate = env->GetIsolate();
+  i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  v8::HandleScope scope(isolate);
+
+  v8::Local<v8::Value> result = CompileRun(
+      "function f() {\n"
+      "  debugger;   \n"
+      "  f();        \n"
+      "  debugger;   \n"
+      "}             \n"
+      "f");
+  Handle<i::Object> function_obj = v8::Utils::OpenHandle(*result);
+  Handle<i::JSFunction> function = Handle<i::JSFunction>::cast(function_obj);
+  Handle<i::SharedFunctionInfo> shared(function->shared());
+
+  EnableDebugger(isolate);
+  CHECK(i_isolate->debug()->EnsureDebugInfo(shared, function));
+
+  Handle<i::DebugInfo> debug_info(shared->GetDebugInfo());
+  int code_size = debug_info->abstract_code()->Size();
+
+  bool found_return = false;
+  bool found_call = false;
+  bool found_debugger = false;
+
+  // Test public interface.
+  for (int i = 0; i < code_size; i++) {
+    i::BreakLocation location = i::BreakLocation::FromCodeOffset(debug_info, i);
+    if (location.IsCall()) found_call = true;
+    if (location.IsReturn()) found_return = true;
+    if (location.IsDebuggerStatement()) found_debugger = true;
+  }
+  CHECK(found_call);
+  CHECK(found_return);
+  CHECK(found_debugger);
+
+  // Test underlying implementation.
+  TestBreakLocation::Iterator* iterator =
+      TestBreakLocation::GetIterator(debug_info, i::ALL_BREAK_LOCATIONS);
+  CHECK(iterator->GetBreakLocation().IsDebuggerStatement());
+  CHECK_EQ(7, iterator->GetBreakLocation().position());
+  iterator->Next();
+  CHECK(iterator->GetBreakLocation().IsDebugBreakSlot());
+  CHECK_EQ(22, iterator->GetBreakLocation().position());
+  iterator->Next();
+  CHECK(iterator->GetBreakLocation().IsCall());
+  CHECK_EQ(22, iterator->GetBreakLocation().position());
+  iterator->Next();
+  CHECK(iterator->GetBreakLocation().IsDebuggerStatement());
+  CHECK_EQ(37, iterator->GetBreakLocation().position());
+  iterator->Next();
+  CHECK(iterator->GetBreakLocation().IsReturn());
+  CHECK_EQ(50, iterator->GetBreakLocation().position());
+  iterator->Next();
+  CHECK(iterator->Done());
+  delete iterator;
+
+  iterator = TestBreakLocation::GetIterator(debug_info, i::CALLS_AND_RETURNS);
+  CHECK(iterator->GetBreakLocation().IsCall());
+  CHECK_EQ(22, iterator->GetBreakLocation().position());
+  iterator->Next();
+  CHECK(iterator->GetBreakLocation().IsReturn());
+  CHECK_EQ(50, iterator->GetBreakLocation().position());
+  iterator->Next();
+  CHECK(iterator->Done());
+  delete iterator;
+
+  DisableDebugger(isolate);
 }
