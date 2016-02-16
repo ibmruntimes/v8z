@@ -726,7 +726,7 @@ void MacroAssembler::ConvertIntToFloat(Register src, DoubleRegister dst) {
 
 void MacroAssembler::ConvertUnsignedIntToFloat(Register src,
                                                DoubleRegister dst) {
-  celfbr(dst, src);
+  celfbr(Condition(0), Condition(0), dst, src);
 }
 
 
