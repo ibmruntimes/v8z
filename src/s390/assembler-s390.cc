@@ -3252,6 +3252,16 @@ void Assembler::celgbr(Condition m3, Condition m4,
 }
 
 
+// Convert from Fixed Logical (F32<-32)
+void Assembler::celfbr(Condition m3, Condition m4,
+                       DoubleRegister r1, Register r2) {
+  DCHECK_EQ(m3, Condition(0));
+  DCHECK_EQ(m4, Condition(0));
+  rrfe_form(CELFBR, Condition(0), Condition(0),
+            Register::from_code(r1.code()), r2);
+}
+
+
 // Convert from Fixed Logical (L<-64)
 void Assembler::cdlgbr(Condition m3, Condition m4,
                        DoubleRegister r1, Register r2) {

@@ -1167,6 +1167,8 @@ SS2_FORM(zap);
               DoubleRegister fltReg, Register fixReg);
   void celgbr(Condition m3, Condition m4,
               DoubleRegister fltReg, Register fixReg);
+  void celfbr(Condition m3, Condition m4,
+              DoubleRegister fltReg, Register fixReg);
   void clfdbr(Condition m3, Condition m4,
               Register fixReg, DoubleRegister fltReg);
   void clfebr(Condition m3, Condition m4,
