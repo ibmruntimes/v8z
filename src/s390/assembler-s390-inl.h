@@ -196,8 +196,8 @@ void RelocInfo::set_target_object(Object* target,
                                    icache_flush_mode);
   if (write_barrier_mode == UPDATE_WRITE_BARRIER && host() != NULL &&
       target->IsHeapObject()) {
-    host()->GetHeap()->incremental_marking()->RecordWrite(
-        host(), &Memory::Object_at(pc_), HeapObject::cast(target));
+    host()->GetHeap()->incremental_marking()->RecordWriteIntoCode(
+        host(), this, HeapObject::cast(target));
   }
 }
 
@@ -324,44 +324,6 @@ void RelocInfo::WipeOut() {
   } else {
     Assembler::set_target_address_at(isolate_, pc_, host_, NULL);
   }
-}
-
-
-bool RelocInfo::IsPatchedReturnSequence() {
-  //
-  // The patched return sequence is defined by
-  // BreakLocation::SetDebugBreakAtReturn()
-  // FIXED_SEQUENCE
-
-  bool patched_return = true;
-#if V8_TARGET_ARCH_S390X
-  Opcode instr0 =
-      Instruction::S390OpcodeValue(reinterpret_cast<const byte*>(pc_));
-  Opcode instr1 =
-      Instruction::S390OpcodeValue(reinterpret_cast<const byte*>(pc_+6));
-  Opcode basr =
-      Instruction::S390OpcodeValue(reinterpret_cast<const byte*>(pc_ + 12));
-  Opcode bkpt =
-      Instruction::S390OpcodeValue(reinterpret_cast<const byte*>(pc_ + 14));
-  patched_return = (IIHF == instr0);
-#else
-  Opcode instr1 =
-      Instruction::S390OpcodeValue(reinterpret_cast<const byte*>(pc_));
-  Opcode basr =
-      Instruction::S390OpcodeValue(reinterpret_cast<const byte*>(pc_ + 6));
-  Opcode bkpt =
-      Instruction::S390OpcodeValue(reinterpret_cast<const byte*>(pc_ + 8));
-#endif
-  patched_return =
-      patched_return && (IILF == instr1) && (BASR == basr) && (BKPT == bkpt);
-
-  return patched_return;
-}
-
-
-bool RelocInfo::IsPatchedDebugBreakSlotSequence() {
-  SixByteInstr current_instr = Assembler::instr_at(pc_);
-  return !Assembler::IsNop(current_instr, Assembler::DEBUG_BREAK_NOP);
 }
 
 

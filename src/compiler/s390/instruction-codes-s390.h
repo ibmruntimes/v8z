@@ -94,6 +94,7 @@ namespace compiler {
   V(S390_Uint64ToDouble)            \
   V(S390_Int32ToFloat32)            \
   V(S390_Int32ToDouble)             \
+  V(S390_Uint32ToFloat32)           \
   V(S390_Uint32ToDouble)            \
   V(S390_Float32ToInt64)            \
   V(S390_Float32ToUint64)           \
@@ -128,7 +129,6 @@ namespace compiler {
   V(S390_StoreWord64)               \
   V(S390_StoreFloat32)              \
   V(S390_StoreDouble)
-
 
 // Addressing modes represent the "shape" of inputs to an instruction.
 // Many instructions support multiple addressing modes. Addressing modes

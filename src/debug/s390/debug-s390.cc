@@ -74,6 +74,10 @@ void DebugCodegen::PatchDebugBreakSlot(Isolate* isolate, Address pc,
   patcher.masm()->basr(v8::internal::r14, v8::internal::r14);
 }
 
+bool DebugCodegen::DebugBreakSlotIsPatched(Address pc) {
+  Instr current_instr = Assembler::instr_at(pc);
+  return !Assembler::IsNop(current_instr, Assembler::DEBUG_BREAK_NOP);
+}
 
 void DebugCodegen::GenerateDebugBreakStub(MacroAssembler* masm,
                                           DebugBreakCallHelperMode mode) {

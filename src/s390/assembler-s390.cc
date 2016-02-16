@@ -117,7 +117,7 @@ static bool supportsSTFLE() {
 
 void CpuFeatures::ProbeImpl(bool cross_compile) {
   supported_ |= CpuFeaturesImpliedByCompiler();
-  cache_line_size_ = 256;
+  icache_line_size_ = 256;
 
   // Only use statically determined features for cross compile (snapshot).
   if (cross_compile) return;
@@ -171,6 +171,10 @@ void CpuFeatures::ProbeImpl(bool cross_compile) {
   USE(performSTFLE);  // To avoid assert
 #endif
   supported_ |= (1u << FPU);
+
+  if (cpu.icache_line_size() != base::CPU::UNKNOWN_CACHE_LINE_SIZE) {
+    icache_line_size_ = cpu.icache_line_size();
+  }
 }
 
 

@@ -1255,12 +1255,15 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
 #endif
     case kS390_Int32ToFloat32:
-      __ ConvertIntToFloat(i.OutputDoubleRegister(), i.InputRegister(0),
-                           kScratchReg);
+      __ ConvertIntToFloat(i.InputRegister(0), i.OutputDoubleRegister());
       // DCHECK_EQ(LeaveRC, i.OutputRCBit());
       break;
     case kS390_Int32ToDouble:
       __ ConvertIntToDouble(i.InputRegister(0), i.OutputDoubleRegister());
+      break;
+    case kS390_Uint32ToFloat32:
+      __ ConvertUnsignedIntToFloat(i.InputRegister(0),
+                                   i.OutputDoubleRegister());
       break;
     case kS390_Uint32ToDouble:
       __ ConvertUnsignedIntToDouble(i.InputRegister(0),

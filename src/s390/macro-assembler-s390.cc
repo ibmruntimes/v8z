@@ -313,14 +313,11 @@ void MacroAssembler::StoreRoot(Register source, Heap::RootListIndex index,
 
 void MacroAssembler::InNewSpace(Register object, Register scratch,
                                 Condition cond, Label* branch) {
-  // N.B. scratch may be same register as object
   DCHECK(cond == eq || cond == ne);
   // TODO(joransiu): check if we can merge mov Operand into AndP.
-  mov(r0, Operand(ExternalReference::new_space_mask(isolate())));
-
-  AndP(scratch, object, r0);
-  CmpP(scratch, Operand(ExternalReference::new_space_start(isolate())));
-  b(cond, branch);
+  const int mask =
+      (1 << MemoryChunk::IN_FROM_SPACE) | (1 << MemoryChunk::IN_TO_SPACE);
+  CheckPageFlag(object, scratch, mask, cond, branch);
 }
 
 
@@ -492,6 +489,66 @@ void MacroAssembler::RecordWrite(
   }
 }
 
+void MacroAssembler::RecordWriteCodeEntryField(Register js_function,
+                                               Register code_entry,
+                                               Register scratch) {
+  const int offset = JSFunction::kCodeEntryOffset;
+
+  // Since a code entry (value) is always in old space, we don't need to update
+  // remembered set. If incremental marking is off, there is nothing for us to
+  // do.
+  if (!FLAG_incremental_marking) return;
+
+  DCHECK(js_function.is(r3));
+  DCHECK(code_entry.is(r6));
+  DCHECK(scratch.is(r7));
+  AssertNotSmi(js_function);
+
+  if (emit_debug_code()) {
+    AddP(scratch, js_function, Operand(offset - kHeapObjectTag));
+    LoadP(ip, MemOperand(scratch));
+    CmpP(ip, code_entry);
+    Check(eq, kWrongAddressOrValuePassedToRecordWrite);
+  }
+
+  // First, check if a write barrier is even needed. The tests below
+  // catch stores of Smis and stores into young gen.
+  Label done;
+
+  CheckPageFlag(code_entry, scratch,
+                MemoryChunk::kPointersToHereAreInterestingMask, eq, &done);
+  CheckPageFlag(js_function, scratch,
+                MemoryChunk::kPointersFromHereAreInterestingMask, eq, &done);
+
+  const Register dst = scratch;
+  AddP(dst, js_function, Operand(offset - kHeapObjectTag));
+
+  // Save caller-saved registers.  js_function and code_entry are in the
+  // caller-saved register list.
+  DCHECK(kJSCallerSaved & js_function.bit());
+  DCHECK(kJSCallerSaved & code_entry.bit());
+  MultiPush(kJSCallerSaved | r14.bit());
+
+  int argument_count = 3;
+  PrepareCallCFunction(argument_count, code_entry);
+
+  LoadRR(r2, js_function);
+  LoadRR(r3, dst);
+  mov(r4, Operand(ExternalReference::isolate_address(isolate())));
+
+  {
+    AllowExternalCallThatCantCauseGC scope(this);
+    CallCFunction(
+        ExternalReference::incremental_marking_record_write_code_entry_function(
+            isolate()),
+        argument_count);
+  }
+
+  // Restore caller-saved registers (including js_function and code_entry).
+  MultiPop(kJSCallerSaved | r14.bit());
+
+  bind(&done);
+}
 
 void MacroAssembler::RememberedSetHelper(Register object,  // For debug tests.
                                          Register address, Register scratch,
@@ -644,29 +701,32 @@ void MacroAssembler::CanonicalizeNaN(const DoubleRegister dst,
 }
 
 
-void MacroAssembler::ConvertIntToDouble(Register src,
-                                        DoubleRegister double_dst) {
-  cdfbr(double_dst, src);
+void MacroAssembler::ConvertIntToDouble(Register src, DoubleRegister dst) {
+  cdfbr(dst, src);
 }
 
 
 void MacroAssembler::ConvertUnsignedIntToDouble(Register src,
-                                                DoubleRegister double_dst) {
+                                                DoubleRegister dst) {
   if (CpuFeatures::IsSupported(FLOATING_POINT_EXT)) {
-    cdlfbr(Condition(5), Condition(0), double_dst, src);
+    cdlfbr(Condition(5), Condition(0), dst, src);
   } else {
     // zero-extend src
     llgfr(src, src);
     // convert to double
-    cdgbr(double_dst, src);
+    cdgbr(dst, src);
   }
 }
 
 
-void MacroAssembler::ConvertIntToFloat(const DoubleRegister dst,
-                                       const Register src,
-                                       const Register int_scratch) {
+void MacroAssembler::ConvertIntToFloat(Register src, DoubleRegister dst) {
   cefbr(dst, src);
+}
+
+
+void MacroAssembler::ConvertUnsignedIntToFloat(Register src,
+                                               DoubleRegister dst) {
+  celfbr(dst, src);
 }
 
 
@@ -2238,23 +2298,6 @@ void MacroAssembler::TestDoubleIsMinusZero(DoubleRegister input,
 #endif
 }
 
-void MacroAssembler::TestHeapNumberIsMinusZero(Register input,
-                                               Register scratch1,
-                                               Register scratch2) {
-#if V8_TARGET_ARCH_S390X
-  LoadP(scratch1, FieldMemOperand(input, HeapNumber::kValueOffset));
-  llihf(scratch2, Operand(0x80000000));  // scratch2 = 0x80000000_00000000
-  CmpP(scratch1, scratch2);
-#else
-  LoadlW(scratch1, FieldMemOperand(input, HeapNumber::kExponentOffset));
-  LoadlW(scratch2, FieldMemOperand(input, HeapNumber::kMantissaOffset));
-  Label skip;
-  CmpP(scratch1, Operand(0x80000000));
-  bne(&skip, Label::kNear);
-  CmpP(scratch2, Operand::Zero());
-  bind(&skip);
-#endif
-}
 
 void MacroAssembler::TestDoubleSign(DoubleRegister input, Register scratch) {
   stdy(input, MemOperand(sp, -kDoubleSize));
@@ -3364,13 +3407,6 @@ void MacroAssembler::CallCFunctionHelper(Register function,
   } else {
     la(sp, MemOperand(sp, stack_space * kPointerSize));
   }
-}
-
-
-void MacroAssembler::FlushICache(Register address, size_t size,
-                                 Register scratch) {
-  // S390 memory model does not require us to flush icache
-  return;
 }
 
 
