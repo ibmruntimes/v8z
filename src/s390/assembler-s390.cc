@@ -172,9 +172,6 @@ void CpuFeatures::ProbeImpl(bool cross_compile) {
 #endif
   supported_ |= (1u << FPU);
 
-  if (cpu.icache_line_size() != base::CPU::UNKNOWN_CACHE_LINE_SIZE) {
-    icache_line_size_ = cpu.icache_line_size();
-  }
 }
 
 

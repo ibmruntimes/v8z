@@ -5243,15 +5243,15 @@ void FastNewStrictArgumentsStub::Generate(MacroAssembler* masm) {
           Operand(FixedArray::kHeaderSize - kHeapObjectTag - kPointerSize));
   {
     Label loop, done_loop;
-    __ SmiUntag(r1, r2, SetRC);
+    __ SmiUntag(r1, r2);
     __ LoadAndTestP(r1, r1);
     __ beq(&done_loop);
     // __ mtctr(r0);
     __ bind(&loop);
     __ lay(r4, MemOperand(r4, -kPointerSize));
-    __ LoadPU(ip, MemOperand(r4));
+    __ LoadP(ip, MemOperand(r4));
     __ la(r6, MemOperand(r6, kPointerSize));
-    __ StorePU(ip, MemOperand(r6));
+    __ StoreP(ip, MemOperand(r6));
     //__ bdnz(&loop);
     __ BranchOnCount(r1, &loop);
     __ bind(&done_loop);
