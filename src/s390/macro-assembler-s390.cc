@@ -2447,8 +2447,7 @@ void MacroAssembler::FloatFloor32(DoubleRegister double_output,
   bind(&no_nan_inf);
 
   // Test for double_input=+/- 0 which results in +/- 0 respectively
-  LoadFloat32Literal(d0, 0.0, scratch2);
-  cebr(double_input, d0);
+  ltebr(double_input, double_input);
   bne(&do_floor, Label::kNear);
   Move(double_output, double_input);
   b(&done);

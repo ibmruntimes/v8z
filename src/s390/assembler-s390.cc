@@ -3168,6 +3168,12 @@ void Assembler::ldr(DoubleRegister r1, DoubleRegister r2) {
 
 
 // Load And Test Register-Register (L)
+void Assembler::ltebr(DoubleRegister r1, DoubleRegister r2) {
+  rre_form(LTEBR, r1, r2);
+}
+
+
+// Load And Test Register-Register (L)
 void Assembler::ltdbr(DoubleRegister r1, DoubleRegister r2) {
   rre_form(LTDBR, r1, r2);
 }
