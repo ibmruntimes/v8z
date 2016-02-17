@@ -2071,6 +2071,15 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       set_d_register_from_double(r1, 0.0);
       break;
     }
+    case LTDBR: {
+      RREInstruction* rreinst = reinterpret_cast<RREInstruction*>(instr);
+      int r1 = rreinst->R1Value();
+      int r2 = rreinst->R2Value();
+      int64_t r2_val = get_d_register(r2);
+      SetS390ConditionCode<double>(bit_cast<double, int64_t>(r2_val), 0.0);
+      set_d_register(r1, r2_val);
+      break;
+    }
     case CGR: {
       // Compare (64)
       int64_t r1_val = get_register(rreInst->R1Value());
