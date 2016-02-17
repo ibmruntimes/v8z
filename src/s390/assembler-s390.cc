@@ -3344,9 +3344,9 @@ void Assembler::msdbr(DoubleRegister d1, DoubleRegister d3, DoubleRegister d2) {
 bool Assembler::IsNop(SixByteInstr instr, int type) {
   DCHECK((0 == type) || (DEBUG_BREAK_NOP == type));
   if (DEBUG_BREAK_NOP == type) {
-    return (instr == 0xa53b0000);   // oill r3, 0
+    return ((instr & 0xffffffff) == 0xa53b0000);   // oill r3, 0
   }
-  return (instr == 0x1800);   // lr r0,r0
+  return ((instr & 0xffff) == 0x1800);   // lr r0,r0
 }
 
 
