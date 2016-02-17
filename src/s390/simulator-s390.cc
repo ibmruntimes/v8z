@@ -2768,6 +2768,22 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
       set_low_register(r1 + 1, low_bits);
       break;
     }
+    case DLGR: {
+      RREInstruction* rreinst = reinterpret_cast<RREInstruction*>(instr);
+      int r1 = rreinst->R1Value();
+      int r2 = rreinst->R2Value();
+      uint64_t r1_val = static_cast<uint64_t>(r1);
+      uint64_t r2_val = static_cast<uint64_t>(r2);
+      DCHECK(r1 % 2 == 0);
+      unsigned __int128 dividend = static_cast<unsigned __int128>(r1_val) << 64;
+      dividend += static_cast<uint64_t>(r1 + 1);
+      uint64_t remainder = dividend % r2_val;
+      uint64_t quotient = dividend / r2_val;
+      r1_val = remainder;
+      set_register(r1, remainder);
+      set_register(r1+1, quotient);
+      break;
+    }
     case DLR: {
       RREInstruction* rreinst = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rreinst->R1Value();
