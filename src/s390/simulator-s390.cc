@@ -3289,9 +3289,14 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
           int mask_val = rreInstr->M3Value();
           int64_t r1_val = 0;
 
-          float r2_fval;
-          // can't reinterpret_cast double to float - need to memcpy
-          memcpy(&r2_fval, &r2_val, sizeof(r2_val));
+          union{
+            double d;
+            float f;
+          } r2value;
+
+          r2value.d = r2_val;
+
+          float r2_fval = r2value.f;
 
           if (r2_fval == 0.0)
             condition_reg_ = 8;
