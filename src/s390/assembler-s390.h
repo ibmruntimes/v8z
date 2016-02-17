@@ -1145,6 +1145,7 @@ SS2_FORM(zap);
   void le_z(DoubleRegister r1, const MemOperand& opnd);
   void ley(DoubleRegister r1, const MemOperand& opnd);
   void ldr(DoubleRegister r1, DoubleRegister r2);
+  void ltdbr(DoubleRegister r1, DoubleRegister r2);
   void std(DoubleRegister r1, const MemOperand& opnd);
   void stdy(DoubleRegister r1, const MemOperand& opnd);
   void ste(DoubleRegister r1, const MemOperand& opnd);

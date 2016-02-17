@@ -3167,6 +3167,12 @@ void Assembler::ldr(DoubleRegister r1, DoubleRegister r2) {
 }
 
 
+// Load And Test Register-Register (L)
+void Assembler::ltdbr(DoubleRegister r1, DoubleRegister r2) {
+  rre_form(LTDBR, r1, r2);
+}
+
+
 // Convert to Fixed point (64<-S)
 void Assembler::cgebr(Condition m, Register r1, DoubleRegister r2) {
   rrfe_form(CGEBR, m, Condition(0), r1, Register::from_code(r2.code()));
