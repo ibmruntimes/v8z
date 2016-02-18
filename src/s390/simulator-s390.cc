@@ -2009,7 +2009,9 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       int r1 = rreInst->R1Value();
       int r2 = rreInst->R2Value();
       int32_t r2_val = get_low_register<int32_t>(r2);
-      set_register(r1, static_cast<uint64_t>(r2_val));
+      uint64_t r2_finalval = (static_cast<uint64_t>(r2_val)
+        & 0x00000000ffffffff);
+      set_register(r1, r2_finalval);
       break;
     }
     case EX: {
