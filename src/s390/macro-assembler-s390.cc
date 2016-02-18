@@ -2384,7 +2384,8 @@ void MacroAssembler::TryInt32Floor(Register result, DoubleRegister double_input,
 
 
 void MacroAssembler::FloatCeiling32(DoubleRegister double_output,
-     DoubleRegister double_input, Register scratch) {
+     DoubleRegister double_input, Register scratch,
+     DoubleRegister double_scratch) {
   Label not_zero, no_nan_inf, done, do_ceil;
   Register scratch2 = r0;
 
@@ -2402,8 +2403,8 @@ void MacroAssembler::FloatCeiling32(DoubleRegister double_output,
   bind(&no_nan_inf);
 
   // Test for double_input in (-1, -0) which results in -0
-  LoadFloat32Literal(d0, -1.0, scratch2);
-  cebr(double_input, d0);
+  LoadFloat32Literal(double_scratch, -1.0, scratch2);
+  cebr(double_input, double_scratch);
   ble(&do_ceil, Label::kNear);
   Cmp32(scratch, Operand::Zero());
   bgt(&do_ceil, Label::kNear);
@@ -2462,7 +2463,8 @@ void MacroAssembler::FloatFloor32(DoubleRegister double_output,
 
 
 void MacroAssembler::FloatCeiling64(DoubleRegister double_output,
-     DoubleRegister double_input, Register scratch) {
+     DoubleRegister double_input, Register scratch,
+     DoubleRegister double_scratch) {
   Label not_zero, no_nan_inf, done, do_ceil;
   Register scratch2 = r0;
 
@@ -2479,8 +2481,8 @@ void MacroAssembler::FloatCeiling64(DoubleRegister double_output,
   bind(&no_nan_inf);
 
   // Test for double_input in (-1, -0) which results in -0
-  LoadDoubleLiteral(d0, -1.0, scratch2);
-  cdbr(double_input, d0);
+  LoadDoubleLiteral(double_scratch, -1.0, scratch2);
+  cdbr(double_input, double_scratch);
   ble(&do_ceil, Label::kNear);
   Cmp32(scratch, Operand::Zero());
   bgt(&do_ceil, Label::kNear);

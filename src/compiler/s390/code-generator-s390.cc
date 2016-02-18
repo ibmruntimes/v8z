@@ -1071,7 +1071,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     case kS390_CeilFloat:
       __ FloatCeiling32(i.OutputDoubleRegister(),
                         i.InputDoubleRegister(0),
-                        kScratchReg);
+                        kScratchReg, kScratchDoubleReg);
       break;
     case kS390_TruncateFloat:
       __ fiebra(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
@@ -1104,7 +1104,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     case kS390_CeilDouble:
       __ FloatCeiling64(i.OutputDoubleRegister(),
                         i.InputDoubleRegister(0),
-                        kScratchReg);
+                        kScratchReg, kScratchDoubleReg);
       break;
     case kS390_TruncateDouble:
       __ fidbra(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
