@@ -289,7 +289,7 @@ void S390Debugger::Debug() {
         // If at a breakpoint, proceed past it.
         if ((reinterpret_cast<Instruction*>(sim_->get_pc()))
                 ->InstructionBits() == 0x7d821008) {
-          sim_->set_pc(sim_->get_pc() + Instruction::kInstrSize);
+          sim_->set_pc(sim_->get_pc() + 4);
         } else {
           sim_->ExecuteInstruction(
               reinterpret_cast<Instruction*>(sim_->get_pc()));
@@ -313,7 +313,7 @@ void S390Debugger::Debug() {
         // If at a breakpoint, proceed past it.
         if ((reinterpret_cast<Instruction*>(sim_->get_pc()))
                 ->InstructionBits() == 0x7d821008) {
-          sim_->set_pc(sim_->get_pc() + Instruction::kInstrSize);
+          sim_->set_pc(sim_->get_pc() + 4);
         } else {
           // Execute the one instruction we broke at with breakpoints disabled.
           sim_->ExecuteInstruction(
@@ -480,11 +480,11 @@ void S390Debugger::Debug() {
 
         byte* prev = NULL;
         byte* cur = NULL;
-        byte* end = NULL;
+        // Default number of instructions to disassemble.
+        int32_t numInstructions = 10;
 
         if (argc == 1) {
           cur = reinterpret_cast<byte*>(sim_->get_pc());
-          end = cur + (10 * Instruction::kInstrSize);
         } else if (argc == 2) {
           int regnum = Registers::Number(arg1);
           if (regnum != kNoRegister || strncmp(arg1, "0x", 2) == 0) {
@@ -492,8 +492,6 @@ void S390Debugger::Debug() {
             intptr_t value;
             if (GetValue(arg1, &value)) {
               cur = reinterpret_cast<byte*>(value);
-              // Disassemble 10 instructions at <arg1>.
-              end = cur + (10 * Instruction::kInstrSize);
             }
           } else {
             // The argument is the number of instructions.
@@ -501,7 +499,7 @@ void S390Debugger::Debug() {
             if (GetValue(arg1, &value)) {
               cur = reinterpret_cast<byte*>(sim_->get_pc());
               // Disassemble <arg1> instructions.
-              end = cur + (value * Instruction::kInstrSize);
+              numInstructions = static_cast<int32_t>(value);
             }
           }
         } else {
@@ -509,15 +507,17 @@ void S390Debugger::Debug() {
           intptr_t value2;
           if (GetValue(arg1, &value1) && GetValue(arg2, &value2)) {
             cur = reinterpret_cast<byte*>(value1);
-            end = cur + (value2 * Instruction::kInstrSize);
+            // Disassemble <arg2> instructions.
+            numInstructions = static_cast<int32_t>(value2);
           }
         }
 
-        while (cur < end) {
+        while (numInstructions > 0) {
           prev = cur;
           cur += dasm.InstructionDecode(buffer, cur);
           PrintF("  0x%08" V8PRIxPTR "  %s\n",
                  reinterpret_cast<intptr_t>(prev), buffer.start());
+          numInstructions--;
         }
       } else if (strcmp(cmd, "gdb") == 0) {
         PrintF("relinquishing control to gdb\n");
@@ -3291,7 +3291,7 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
           int mask_val = rreInstr->M3Value();
           int64_t r1_val = 0;
 
-          union{
+          union {
             double d;
             float f;
           } r2value;
@@ -3319,7 +3319,8 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
             case ROUND_TO_NEAREST_WITH_TIES_TO_EVEN: {
               float ceil_val = std::ceil(r2_fval);
               float floor_val = std::floor(r2_fval);
-              if (std::abs(r2_fval - floor_val) > std::abs(r2_fval - ceil_val)) {
+              if (std::abs(r2_fval - floor_val) >
+                  std::abs(r2_fval - ceil_val)) {
                 r1_val = static_cast<int64_t>(ceil_val);
               } else if (std::abs(r2_fval - floor_val) <
                          std::abs(r2_fval - ceil_val)) {
@@ -3359,7 +3360,7 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
           int mask_val = rreInstr->M3Value();
           int32_t r1_val = 0;
 
-          union{
+          union {
             double d;
             float f;
           } r2value;
