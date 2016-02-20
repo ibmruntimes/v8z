@@ -3630,10 +3630,10 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
       DCHECK(rrfInst->M4Value() == 0);
       switch (m3) {
         case Assembler::FIDBRA_ROUND_TO_NEAREST_AWAY_FROM_0:
-          set_d_register_from_float(r1, std::round(r2_val));
+          set_d_register_from_float(r1, round(r2_val));
           break;
         case Assembler::FIDBRA_ROUND_TOWARD_0:
-          set_d_register_from_float(r1, std::trunc(r2_val));
+          set_d_register_from_float(r1, trunc(r2_val));
           break;
         case Assembler::FIDBRA_ROUND_TOWARD_POS_INF:
           set_d_register_from_float(r1, std::ceil(r2_val));
