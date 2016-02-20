@@ -5246,13 +5246,11 @@ void FastNewStrictArgumentsStub::Generate(MacroAssembler* masm) {
     __ SmiUntag(r1, r2);
     __ LoadAndTestP(r1, r1);
     __ beq(&done_loop);
-    // __ mtctr(r0);
     __ bind(&loop);
     __ lay(r4, MemOperand(r4, -kPointerSize));
     __ LoadP(ip, MemOperand(r4));
     __ la(r6, MemOperand(r6, kPointerSize));
     __ StoreP(ip, MemOperand(r6));
-    //__ bdnz(&loop);
     __ BranchOnCount(r1, &loop);
     __ bind(&done_loop);
     __ AddP(r6, r6, Operand(kPointerSize));
