@@ -1325,8 +1325,6 @@ SS2_FORM(zap);
   static Condition GetCondition(Instr instr);
 
   static bool IsBranch(Instr instr);
-  static Register GetRA(Instr instr);
-  static Register GetRB(Instr instr);
 #if V8_TARGET_ARCH_S390X
   static bool Is64BitLoadIntoIP(SixByteInstr instr1, SixByteInstr instr2);
 #else

@@ -311,20 +311,6 @@ Condition Assembler::GetCondition(Instr instr) {
 }
 
 
-Register Assembler::GetRA(Instr instr) {
-  Register reg;
-  reg.reg_code = Instruction::RAValue(instr);
-  return reg;
-}
-
-
-Register Assembler::GetRB(Instr instr) {
-  Register reg;
-  reg.reg_code = Instruction::RBValue(instr);
-  return reg;
-}
-
-
 #if V8_TARGET_ARCH_S390X
 // This code assumes a FIXED_SEQUENCE for 64bit loads (iihf/iilf)
 bool Assembler::Is64BitLoadIntoIP(SixByteInstr instr1, SixByteInstr instr2) {

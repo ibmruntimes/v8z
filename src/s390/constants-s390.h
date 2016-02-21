@@ -1010,16 +1010,16 @@ enum CRBit { CR_LT = 0, CR_GT = 1, CR_EQ = 2, CR_SO = 3, CR_FU = 3 };
 // -----------------------------------------------------------------------------
 // Supervisor Call (svc) specific support.
 
-// Special Software Interrupt codes when used in the presence of the PPC
+// Special Software Interrupt codes when used in the presence of the S390
 // simulator.
-// svc (formerly swi) provides a 24bit immediate value. Use bits 22:0 for
-// standard SoftwareInterrupCode. Bit 23 is reserved for the stop feature.
+// SVC provides a 24bit immediate value. Use bits 22:0 for standard
+// SoftwareInterrupCode. Bit 23 is reserved for the stop feature.
 enum SoftwareInterruptCodes {
-  // transition to C code
+  // Transition to C code
   kCallRtRedirected = 0x0010,
-  // break point
+  // Breakpoint
   kBreakpoint = 0x0000,
-  // stop
+  // Stop
   kStopCode = 1 << 23
 };
 const uint32_t kStopCodeMask = kStopCode - 1;
@@ -1337,24 +1337,6 @@ class Instruction {
     return static_cast<Opcode>(-1);
   }
 
-  // PowerPC
-  inline int RSValue() const { return Bits(25, 21); }
-  inline int RTValue() const { return Bits(25, 21); }
-  inline int RAValue() const { return Bits(20, 16); }
-  DECLARE_STATIC_ACCESSOR(RAValue);
-  inline int RBValue() const { return Bits(15, 11); }
-  DECLARE_STATIC_ACCESSOR(RBValue);
-  inline int RCValue() const { return Bits(10, 6); }
-  DECLARE_STATIC_ACCESSOR(RCValue);
-  // end PowerPC
-
-  inline int OpcodeValue() const {
-    return static_cast<Opcode>(Bits(31, 26));  // PowerPC
-  }
-  inline Opcode OpcodeField() const {
-    return static_cast<Opcode>(BitField(24, 21));
-  }
-
   // Fields used in Software interrupt instructions
   inline SoftwareInterruptCodes SvcValue() const {
     return static_cast<SoftwareInterruptCodes>(Bits<FourByteInstr, int>(15, 0));
@@ -1367,7 +1349,6 @@ class Instruction {
   static Instruction* At(byte* pc) {
     return reinterpret_cast<Instruction*>(pc);
   }
-
 
  private:
   // We need to prevent the creation of instances of class Instruction.

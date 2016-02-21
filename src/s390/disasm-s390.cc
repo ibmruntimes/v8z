@@ -66,7 +66,6 @@ class Decoder {
   // Printing of common values.
   void PrintRegister(int reg);
   void PrintDRegister(int reg);
-  int FormatFPRegister(Instruction* instr, const char* format);
   void PrintSoftwareInterrupt(SoftwareInterruptCodes svc);
 
   // Handle formatting of instructions and their options.
@@ -151,20 +150,7 @@ void Decoder::PrintSoftwareInterrupt(SoftwareInterruptCodes svc) {
 int Decoder::FormatRegister(Instruction* instr, const char* format) {
   DCHECK(format[0] == 'r');
 
-  if ((format[1] == 't') || (format[1] == 's')) {  // 'rt & 'rs register
-    int reg = instr->RTValue();
-    PrintRegister(reg);
-    return 2;
-  } else if (format[1] == 'a') {  // 'ra: RA register
-    int reg = instr->RAValue();
-    PrintRegister(reg);
-    return 2;
-  } else if (format[1] == 'b') {  // 'rb: RB register
-    int reg = instr->RBValue();
-    PrintRegister(reg);
-    return 2;
-  // S390 specific instructions, and they can be refactored
-  } else if (format[1] == '1') {  // 'r1: register resides in bit 8-11
+  if (format[1] == '1') {  // 'r1: register resides in bit 8-11
     RRInstruction* rrinstr = reinterpret_cast<RRInstruction*>(instr);
     int reg = rrinstr->R1Value();
     PrintRegister(reg);
@@ -250,31 +236,6 @@ int Decoder::FormatFloatingRegister(Instruction* instr, const char* format) {
 }
 
 
-// Handle all FP register based formatting in this function to reduce the
-// complexity of FormatOption.
-int Decoder::FormatFPRegister(Instruction* instr, const char* format) {
-  DCHECK(format[0] == 'D');
-
-  int retval = 2;
-  int reg = -1;
-  if (format[1] == 't') {
-    reg = instr->RTValue();
-  } else if (format[1] == 'a') {
-    reg = instr->RAValue();
-  } else if (format[1] == 'b') {
-    reg = instr->RBValue();
-  } else if (format[1] == 'c') {
-    reg = instr->RCValue();
-  } else {
-    UNREACHABLE();
-  }
-
-  PrintDRegister(reg);
-
-  return retval;
-}
-
-
 // FormatOption takes a formatting string and interprets it based on
 // the current instructions. The format string points to the first
 // character of the option string (the option escape has already been
@@ -301,9 +262,6 @@ int Decoder::FormatOption(Instruction* instr, const char* format) {
     }
     case 'f': {
       return FormatFloatingRegister(instr, format);
-    }
-    case 'D': {
-      return FormatFPRegister(instr, format);
     }
     case 'i': {  // int16
       return FormatImmediate(instr, format);
