@@ -113,10 +113,10 @@ bool LCodeGen::GeneratePrologue() {
   int prologue_offset = masm_->pc_offset();
 
   if (prologue_offset) {
-    // Prologue logic requires it's starting address in ip and the
-    // corresponding offset from the function entry.
-    prologue_offset += Instruction::kInstrSize;
-    __ AddP(ip, ip, Operand(prologue_offset));
+    // Prologue logic requires its starting address in ip and the
+    // corresponding offset from the function entry.  Need to add
+    // 4 bytes for the size of AHI/AGHI that AddP expands into.
+    __ AddP(ip, ip, Operand(prologue_offset + sizeof(FourByteInstr)));
   }
   info()->set_prologue_offset(prologue_offset);
   if (NeedsEagerFrame()) {
@@ -286,13 +286,14 @@ bool LCodeGen::GenerateDeferredCode() {
 
 bool LCodeGen::GenerateJumpTable() {
   // Check that the jump table is accessible from everywhere in the function
-  // code, i.e. that offsets to the table can be encoded in the 24bit signed
-  // immediate of a branch instruction.
+  // code, i.e. that offsets in halfworld to the table can be encoded in the
+  // 32-bit signed immediate of a branch instruction.
   // To simplify we consider the code size from the first instruction to the
   // end of the jump table. We also don't consider the pc load delta.
   // Each entry in the jump table generates one instruction and inlines one
   // 32bit data after it.
-  if (!is_int24((masm()->pc_offset() / Assembler::kInstrSize) +
+  // TODO(joransiu): Fix the following int24 check condition.
+  if (!is_int24(masm()->pc_offset() +
                 jump_table_.length() * 7)) {
     Abort(kGeneratedCodeIsTooLarge);
   }

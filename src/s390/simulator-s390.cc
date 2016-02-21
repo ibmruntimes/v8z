@@ -90,7 +90,7 @@ void S390Debugger::Stop(Instruction* instr) {
   uint32_t code = instr->SvcValue() & kStopCodeMask;
   // Retrieve the encoded address, which comes just after this stop.
   char** msg_address =
-      reinterpret_cast<char**>(sim_->get_pc() + Instruction::kInstrSize);
+      reinterpret_cast<char**>(sim_->get_pc() + sizeof(FourByteInstr));
   char* msg = *msg_address;
   DCHECK(msg != NULL);
 
@@ -108,7 +108,7 @@ void S390Debugger::Stop(Instruction* instr) {
     instr->SetInstructionBits(kNopInstr);
     reinterpret_cast<Instruction*>(msg_address)->SetInstructionBits(kNopInstr);
   }
-  sim_->set_pc(sim_->get_pc() + Instruction::kInstrSize + kPointerSize);
+  sim_->set_pc(sim_->get_pc() + sizeof(FourByteInstr) + kPointerSize);
 }
 
 
@@ -123,7 +123,7 @@ void S390Debugger::Stop(Instruction* instr) {
   uint32_t code = instr->SvcValue() & kStopCodeMask;
   // Retrieve the encoded address, which comes just after this stop.
   char* msg =
-      *reinterpret_cast<char**>(sim_->get_pc() + Instruction::kInstrSize);
+      *reinterpret_cast<char**>(sim_->get_pc() + sizeof(FourByteInstr));
   // Update this stop description.
   if (sim_->isWatchedStop(code) && !sim_->watched_stops_[code].desc) {
     sim_->watched_stops_[code].desc = msg;
@@ -134,7 +134,7 @@ void S390Debugger::Stop(Instruction* instr) {
   } else {
     PrintF("Simulator hit %s\n", msg);
   }
-  sim_->set_pc(sim_->get_pc() + Instruction::kInstrSize + kPointerSize);
+  sim_->set_pc(sim_->get_pc() + sizeof(FourByteInstr) + kPointerSize);
   Debug();
 }
 #endif
@@ -289,7 +289,7 @@ void S390Debugger::Debug() {
         // If at a breakpoint, proceed past it.
         if ((reinterpret_cast<Instruction*>(sim_->get_pc()))
                 ->InstructionBits() == 0x7d821008) {
-          sim_->set_pc(sim_->get_pc() + 4);
+          sim_->set_pc(sim_->get_pc() + sizeof(FourByteInstr));
         } else {
           sim_->ExecuteInstruction(
               reinterpret_cast<Instruction*>(sim_->get_pc()));
@@ -313,7 +313,7 @@ void S390Debugger::Debug() {
         // If at a breakpoint, proceed past it.
         if ((reinterpret_cast<Instruction*>(sim_->get_pc()))
                 ->InstructionBits() == 0x7d821008) {
-          sim_->set_pc(sim_->get_pc() + 4);
+          sim_->set_pc(sim_->get_pc() + sizeof(FourByteInstr));
         } else {
           // Execute the one instruction we broke at with breakpoints disabled.
           sim_->ExecuteInstruction(
@@ -545,10 +545,10 @@ void S390Debugger::Debug() {
       } else if (strcmp(cmd, "stop") == 0) {
         intptr_t value;
         intptr_t stop_pc =
-            sim_->get_pc() - (Instruction::kInstrSize + kPointerSize);
+            sim_->get_pc() - (sizeof(FourByteInstr) + kPointerSize);
         Instruction* stop_instr = reinterpret_cast<Instruction*>(stop_pc);
         Instruction* msg_address =
-            reinterpret_cast<Instruction*>(stop_pc + Instruction::kInstrSize);
+            reinterpret_cast<Instruction*>(stop_pc + sizeof(FourByteInstr));
         if ((argc == 2) && (strcmp(arg1, "unstop") == 0)) {
           // Remove the current stop.
           if (sim_->isStopInstruction(stop_instr)) {
@@ -764,7 +764,7 @@ void Simulator::CheckICache(v8::internal::HashMap* i_cache,
   if (cache_hit) {
     // Check that the data in memory matches the contents of the I-cache.
     CHECK_EQ(memcmp(reinterpret_cast<void*>(instr),
-             cache_page->CachedData(offset), Instruction::kInstrSize), 0);
+             cache_page->CachedData(offset), sizeof(FourByteInstr)), 0);
   } else {
     // Cache miss.  Load memory into the cache.
     memcpy(cached_line, line, CachePage::kLineLength);
@@ -861,7 +861,7 @@ class Redirection {
     next_ = isolate->simulator_redirection();
     Simulator::current(isolate)->FlushICache(
         isolate->simulator_i_cache(),
-        reinterpret_cast<void*>(&swi_instruction_), Instruction::kInstrSize);
+        reinterpret_cast<void*>(&swi_instruction_), sizeof(FourByteInstr));
     isolate->set_simulator_redirection(this);
     if (ABI_USES_FUNCTION_DESCRIPTORS) {
       function_descriptor_[0] = reinterpret_cast<intptr_t>(&swi_instruction_);
@@ -1627,7 +1627,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
           S390Debugger dbg(this);
           dbg.Stop(instr);
         } else {
-          set_pc(get_pc() + Instruction::kInstrSize + kPointerSize);
+          set_pc(get_pc() + sizeof(FourByteInstr) + kPointerSize);
         }
       } else {
         // This is not a valid svc code.
@@ -2153,15 +2153,19 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       break;
     }
     case BRAS: {
+      // Branch Relative and Save
       RILInstruction* rilInstr = reinterpret_cast<RILInstruction*>(instr);
       int r1 = rilInstr->R1Value();
       intptr_t d2 = rilInstr->I2Value();
       intptr_t pc = get_pc();
-      set_register(r1, pc + 4);  // save next instruction to register
-      set_pc(pc + d2 * 2);    // update register
+      // Set PC of next instruction to register
+      set_register(r1, pc + sizeof(FourByteInstr));
+      // Update PC to branch target
+      set_pc(pc + d2 * 2);
       break;
     }
     case BRC: {
+      // Branch Relative on Condition
       RIInstruction* riinst = reinterpret_cast<RIInstruction*>(instr);
       int m1 = riinst->M1Value();
       if (TestConditionCode((Condition)m1)) {

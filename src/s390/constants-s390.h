@@ -1086,8 +1086,6 @@ const Instr rtCallRedirInstr = TRAP4;
 //
 class Instruction {
  public:
-  enum { kInstrSize = 4, kInstrSizeLog2 = 2, kPCReadOffset = 8 };
-
   // S390 Opcode Format Types
   //   Based on the first byte of the opcode, we can determine how to extract
   //   the entire opcode of the instruction.  The various favours include:
