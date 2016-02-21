@@ -32,7 +32,7 @@ namespace internal {
 #define SScanF sscanf  // NOLINT
 
 // The S390Debugger class is used by the simulator while debugging simulated
-// PowerPC code.
+// z/Architecture code.
 class S390Debugger {
  public:
   explicit S390Debugger(Simulator* sim) : sim_(sim) {}
@@ -814,10 +814,7 @@ Simulator::Simulator(Isolate* isolate) : isolate_(isolate) {
     registers_[i] = 0;
   }
   condition_reg_ = 0;
-  fp_condition_reg_ = 0;
   special_reg_pc_ = 0;
-  special_reg_lr_ = 0;
-  special_reg_ctr_ = 0;
 
   // Initializing FP registers.
   for (int i = 0; i < kNumFPRs; i++) {
@@ -1305,7 +1302,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       bool uses_result_buffer =
           redirection->type() == ExternalReference::BUILTIN_CALL_TRIPLE ||
           (redirection->type() == ExternalReference::BUILTIN_CALL_PAIR &&
-           !ABI_RETURNS_OBJECT_PAIRS_IN_REGS);
+           !ABI_RETURNS_OBJECTPAIR_IN_REGS);
       if (uses_result_buffer) {
         result_buffer = get_register(r2);
         arg0_regnum++;
@@ -1527,7 +1524,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
             if (::v8::internal::FLAG_trace_sim) {
               PrintF("Returned {%08" V8PRIxPTR ", %08" V8PRIxPTR "}\n", x, y);
             }
-            if (ABI_RETURNS_OBJECT_PAIRS_IN_REGS) {
+            if (ABI_RETURNS_OBJECTPAIR_IN_REGS) {
               set_register(r2, x);
               set_register(r3, y);
             } else {
@@ -1580,9 +1577,9 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
 //           set_register(r2, result);
 //         } else {
 //           DCHECK(redirection->type() ==
-//               ExternalReference::BUILTIN_OBJECTPAIR_CALL);
-//           SimulatorRuntimeObjectPairCall target =
-//             reinterpret_cast<SimulatorRuntimeObjectPairCall>(external);
+//               ExternalReference::BUILTIN_CALL_PAIR);
+//           SimulatorRuntimePairCall target =
+//             reinterpret_cast<SimulatorRuntimePairCall>(external);
 //           ObjectPair result = target(arg[0], arg[1], arg[2], arg[3],
 //               arg[4], arg[5]);
 //           if (::v8::internal::FLAG_trace_sim) {

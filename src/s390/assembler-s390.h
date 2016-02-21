@@ -65,9 +65,9 @@
 //            argument in r2. (Does NOT return in Regs)
 // For x86 linux, ObjectPair is returned in registers.
 #if V8_TARGET_ARCH_S390X
-#define ABI_RETURNS_OBJECT_PAIRS_IN_REGS 0
+#define ABI_RETURNS_OBJECTPAIR_IN_REGS 0
 #else
-#define ABI_RETURNS_OBJECT_PAIRS_IN_REGS 1
+#define ABI_RETURNS_OBJECTPAIR_IN_REGS 1
 #endif
 
 

@@ -374,18 +374,15 @@ class Simulator {
   void CallInternal(byte* entry, int reg_arg_count = 3);
 
   // Architecture state.
-  // On z9 and higher, and supported Linux on System z platforms, all registers
+  // On z9 and higher and supported Linux on z Systems platforms, all registers
   // are 64-bit, even in 31-bit mode.
   uint64_t registers_[kNumGPRs];
-  // condition register. In s390, the last 4 bits are used.
-  int32_t condition_reg_;
-  int32_t fp_condition_reg_;  // PowerPC
-  intptr_t special_reg_lr_;  // PowerPC
-  intptr_t special_reg_pc_;  // PowerPC
-  intptr_t special_reg_ctr_;  // PowerPC
-  int32_t special_reg_xer_;  // PowerPC
-
   int64_t fp_registers_[kNumFPRs];
+
+  // Condition Code register. In S390, the last 4 bits are used.
+  int32_t condition_reg_;
+  // Special register to track PC.
+  intptr_t special_reg_pc_;
 
   // Simulator support.
   char* stack_;
