@@ -111,6 +111,43 @@ class StackHandler BASE_EMBEDDED {
   V(CONSTRUCT, ConstructFrame)                           \
   V(ARGUMENTS_ADAPTOR, ArgumentsAdaptorFrame)
 
+// Every pointer in a frame has a slot id. On 32-bit platforms, doubles consume
+// two slots.
+//
+// Stack slot indices >= 0 access the callee stack with slot 0 corresponding to
+// the callee's saved return address and 1 corresponding to the saved frame
+// pointer. Some frames have additional information stored in the fixed header,
+// for example JSFunctions store the function context and marker in the fixed
+// header, with slot index 2 corresponding to the current function context and 3
+// corresponding to the frame marker/JSFunction.
+//
+//  slot      JS frame
+//       +-----------------+--------------------------------
+//  -n-1 |   parameter 0   |                            ^
+//       |- - - - - - - - -|                            |
+//  -n   |                 |                          Caller
+//  ...  |       ...       |                       frame slots
+//  -2   |  parameter n-1  |                       (slot < 0)
+//       |- - - - - - - - -|                            |
+//  -1   |   parameter n   |                            v
+//  -----+-----------------+--------------------------------
+//   0   |   return addr   |   ^                        ^
+//       |- - - - - - - - -|   |                        |
+//   1   | saved frame ptr | Fixed                      |
+//       |- - - - - - - - -| Header <-- frame ptr       |
+//   2   | [Constant Pool] |   |                        |
+//       |- - - - - - - - -|   |                        |
+// 2+cp  |     Context     |   |   if a constant pool   |
+//       |- - - - - - - - -|   |    is used, cp = 1,    |
+// 3+cp  |JSFunction/Marker|   v   otherwise, cp = 0    |
+//       +-----------------+----                        |
+// 4+cp  |                 |   ^                      Callee
+//       |- - - - - - - - -|   |                   frame slots
+//  ...  |                 | Frame slots           (slot >= 0)
+//       |- - - - - - - - -|   |                        |
+//       |                 |   v                        |
+//  -----+-----------------+----- <-- stack ptr -------------
+//
 
 class StandardFrameConstants : public AllStatic {
  public:
@@ -185,28 +222,40 @@ class InterpreterFrameConstants : public AllStatic {
   // FP-relative.
   static const int kNewTargetFromFp =
       -StandardFrameConstants::kFixedFrameSizeFromFp - 1 * kPointerSize;
-  static const int kDispatchTableFromFp =
+  static const int kBytecodeArrayFromFp =
       -StandardFrameConstants::kFixedFrameSizeFromFp - 2 * kPointerSize;
   static const int kBytecodeOffsetFromFp =
       -StandardFrameConstants::kFixedFrameSizeFromFp - 3 * kPointerSize;
   static const int kRegisterFilePointerFromFp =
       -StandardFrameConstants::kFixedFrameSizeFromFp - 4 * kPointerSize;
 
+  static const int kExpressionsOffset = kRegisterFilePointerFromFp;
+
   // Expression index for {StandardFrame::GetExpressionAddress}.
-  static const int kBytecodeOffsetExpressionIndex = 2;
-  static const int kRegisterFileExpressionIndex = 3;
+  static const int kBytecodeArrayExpressionIndex = -2;
+  static const int kBytecodeOffsetExpressionIndex = -1;
+  static const int kRegisterFileExpressionIndex = 0;
 
   // Register file pointer relative.
   static const int kLastParamFromRegisterPointer =
       StandardFrameConstants::kFixedFrameSize + 4 * kPointerSize;
 
   static const int kBytecodeOffsetFromRegisterPointer = 1 * kPointerSize;
-  static const int kDispatchTableFromRegisterPointer = 2 * kPointerSize;
+  static const int kBytecodeArrayFromRegisterPointer = 2 * kPointerSize;
   static const int kNewTargetFromRegisterPointer = 3 * kPointerSize;
   static const int kFunctionFromRegisterPointer = 4 * kPointerSize;
   static const int kContextFromRegisterPointer = 5 * kPointerSize;
 };
 
+inline static int FPOffsetToFrameSlot(int frame_offset) {
+  return StandardFrameConstants::kFixedSlotCountAboveFp - 1 -
+         frame_offset / kPointerSize;
+}
+
+inline static int FrameSlotToFPOffset(int slot) {
+  return (StandardFrameConstants::kFixedSlotCountAboveFp - 1 - slot) *
+         kPointerSize;
+}
 
 // Abstract base class for all stack frames.
 class StackFrame BASE_EMBEDDED {
@@ -497,7 +546,6 @@ class StandardFrame: public StackFrame {
   inline Object* GetExpression(int index) const;
   inline void SetExpression(int index, Object* value);
   int ComputeExpressionsCount() const;
-  static Object* GetExpression(Address fp, int index);
 
   void SetCallerFp(Address caller_fp) override;
 
@@ -528,8 +576,7 @@ class StandardFrame: public StackFrame {
   void IterateExpressions(ObjectVisitor* v) const;
 
   // Returns the address of the n'th expression stack element.
-  Address GetExpressionAddress(int n) const;
-  static Address GetExpressionAddress(Address fp, int n);
+  virtual Address GetExpressionAddress(int n) const;
 
   // Determines if the standard frame for the given frame pointer is
   // an arguments adaptor frame.
@@ -728,9 +775,6 @@ class InterpretedFrame : public JavaScriptFrame {
  public:
   Type type() const override { return INTERPRETED; }
 
-  // GC support.
-  void Iterate(ObjectVisitor* v) const override;
-
   // Lookup exception handler for current {pc}, returns -1 if none found.
   int LookupExceptionHandlerInTable(
       int* data, HandlerTable::CatchPrediction* prediction) override;
@@ -742,12 +786,12 @@ class InterpretedFrame : public JavaScriptFrame {
   // unwinding to continue execution at a different bytecode offset.
   void PatchBytecodeOffset(int new_offset);
 
-  // Returns the current dispatch table pointer.
-  Address GetDispatchTable() const;
+  // Returns the frame's current bytecode array.
+  Object* GetBytecodeArray() const;
 
-  // Updates the current dispatch table pointer with |dispatch_table|. Used by
-  // the debugger to swap execution onto the debugger dispatch table.
-  void PatchDispatchTable(Address dispatch_table);
+  // Updates the frame's BytecodeArray with |bytecode_array|. Used by the
+  // debugger to swap execution onto a BytecodeArray patched with breakpoints.
+  void PatchBytecodeArray(Object* bytecode_array);
 
   // Access to the interpreter register file for this frame.
   Object* GetInterpreterRegister(int register_index) const;
@@ -757,6 +801,8 @@ class InterpretedFrame : public JavaScriptFrame {
 
  protected:
   inline explicit InterpretedFrame(StackFrameIteratorBase* iterator);
+
+  Address GetExpressionAddress(int n) const override;
 
  private:
   friend class StackFrameIteratorBase;
@@ -781,6 +827,8 @@ class ArgumentsAdaptorFrame: public JavaScriptFrame {
   // Printing support.
   void Print(StringStream* accumulator, PrintMode mode,
              int index) const override;
+
+  static int GetLength(Address fp);
 
  protected:
   inline explicit ArgumentsAdaptorFrame(StackFrameIteratorBase* iterator);

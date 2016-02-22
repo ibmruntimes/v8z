@@ -11,6 +11,7 @@
 #include "src/codegen.h"
 #include "src/conversions.h"
 #include "src/execution.h"
+#include "src/field-type.h"
 #include "src/frames-inl.h"
 #include "src/ic/call-optimization.h"
 #include "src/ic/handler-compiler.h"
@@ -22,6 +23,7 @@
 #include "src/prototype.h"
 #include "src/runtime/runtime.h"
 #include "src/runtime/runtime-utils.h"
+#include "src/tracing/trace-event.h"
 
 namespace v8 {
 namespace internal {
@@ -546,8 +548,7 @@ void CompareIC::Clear(Isolate* isolate, Address address, Code* target,
   CompareICStub stub(target->stub_key(), isolate);
   // Only clear CompareICs that can retain objects.
   if (stub.state() != CompareICState::KNOWN_RECEIVER) return;
-  SetTargetAtAddress(address,
-                     GetRawUninitialized(isolate, stub.op(), stub.strength()),
+  SetTargetAtAddress(address, GetRawUninitialized(isolate, stub.op()),
                      constant_pool);
   PatchInlinedSmiCode(isolate, address, DISABLE_INLINED_SMI_CHECK);
 }
@@ -559,9 +560,7 @@ Handle<Code> KeyedLoadIC::ChooseMegamorphicStub(Isolate* isolate,
   if (FLAG_compiled_keyed_generic_loads) {
     return KeyedLoadGenericStub(isolate, LoadICState(extra_state)).GetCode();
   } else {
-    return is_strong(LoadICState::GetLanguageMode(extra_state))
-               ? isolate->builtins()->KeyedLoadIC_Megamorphic_Strong()
-               : isolate->builtins()->KeyedLoadIC_Megamorphic();
+    return isolate->builtins()->KeyedLoadIC_Megamorphic();
   }
 }
 
@@ -668,9 +667,9 @@ MaybeHandle<Object> LoadIC::Load(Handle<Object> object, Handle<Name> name) {
       TRACE_GENERIC_IC(isolate(), "LoadIC", "name as array index");
     }
     Handle<Object> result;
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate(), result,
-        Object::GetElement(isolate(), object, index, language_mode()), Object);
+    ASSIGN_RETURN_ON_EXCEPTION(isolate(), result,
+                               Object::GetElement(isolate(), object, index),
+                               Object);
     return result;
   }
 
@@ -714,8 +713,8 @@ MaybeHandle<Object> LoadIC::Load(Handle<Object> object, Handle<Name> name) {
     // Get the property.
     Handle<Object> result;
 
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate(), result, Object::GetProperty(&it, language_mode()), Object);
+    ASSIGN_RETURN_ON_EXCEPTION(isolate(), result, Object::GetProperty(&it),
+                               Object);
     if (it.IsFound()) {
       return result;
     } else if (!ShouldThrowReferenceError(object)) {
@@ -900,9 +899,7 @@ Handle<Code> KeyedLoadIC::initialize_stub_in_optimized_code(
   if (initialization_state != MEGAMORPHIC) {
     return KeyedLoadICStub(isolate, LoadICState(extra_state)).GetCode();
   }
-  return is_strong(LoadICState::GetLanguageMode(extra_state))
-             ? isolate->builtins()->KeyedLoadIC_Megamorphic_Strong()
-             : isolate->builtins()->KeyedLoadIC_Megamorphic();
+  return isolate->builtins()->KeyedLoadIC_Megamorphic();
 }
 
 
@@ -1025,7 +1022,7 @@ void LoadIC::UpdateCaches(LookupIterator* lookup) {
       lookup->state() == LookupIterator::ACCESS_CHECK) {
     code = slow_stub();
   } else if (!lookup->IsFound()) {
-    if (kind() == Code::LOAD_IC && !is_strong(language_mode())) {
+    if (kind() == Code::LOAD_IC) {
       code = NamedLoadHandlerCompiler::ComputeLoadNonexistent(lookup->name(),
                                                               receiver_map());
       // TODO(jkummerow/verwaest): Introduce a builtin that handles this case.
@@ -1232,9 +1229,7 @@ Handle<Code> LoadIC::CompileHandler(LookupIterator* lookup,
         // property must be found in the object for the stub to be
         // applicable.
         if (!receiver_is_holder) break;
-        return is_strong(language_mode())
-                   ? isolate()->builtins()->LoadIC_Normal_Strong()
-                   : isolate()->builtins()->LoadIC_Normal();
+        return isolate()->builtins()->LoadIC_Normal();
       }
 
       // -------------- Fields --------------
@@ -1344,8 +1339,7 @@ Handle<Code> KeyedLoadIC::LoadElementStub(Handle<HeapObject> receiver) {
 
   CodeHandleList handlers(target_receiver_maps.length());
   ElementHandlerCompiler compiler(isolate());
-  compiler.CompileElementHandlers(&target_receiver_maps, &handlers,
-                                  language_mode());
+  compiler.CompileElementHandlers(&target_receiver_maps, &handlers);
   ConfigureVectorState(Handle<Name>::null(), &target_receiver_maps, &handlers);
   return null_handle;
 }
@@ -1356,8 +1350,7 @@ MaybeHandle<Object> KeyedLoadIC::Load(Handle<Object> object,
   if (MigrateDeprecated(object)) {
     Handle<Object> result;
     ASSIGN_RETURN_ON_EXCEPTION(
-        isolate(), result,
-        Runtime::GetObjectProperty(isolate(), object, key, language_mode()),
+        isolate(), result, Runtime::GetObjectProperty(isolate(), object, key),
         Object);
     return result;
   }
@@ -1395,10 +1388,9 @@ MaybeHandle<Object> KeyedLoadIC::Load(Handle<Object> object,
   if (!load_handle.is_null()) return load_handle;
 
   Handle<Object> result;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate(), result,
-      Runtime::GetObjectProperty(isolate(), object, key, language_mode()),
-      Object);
+  ASSIGN_RETURN_ON_EXCEPTION(isolate(), result,
+                             Runtime::GetObjectProperty(isolate(), object, key),
+                             Object);
   return result;
 }
 
@@ -1406,9 +1398,10 @@ MaybeHandle<Object> KeyedLoadIC::Load(Handle<Object> object,
 bool StoreIC::LookupForWrite(LookupIterator* it, Handle<Object> value,
                              JSReceiver::StoreFromKeyed store_mode) {
   // Disable ICs for non-JSObjects for now.
-  Handle<Object> receiver = it->GetReceiver();
-  if (!receiver->IsJSObject()) return false;
-  DCHECK(!Handle<JSObject>::cast(receiver)->map()->is_deprecated());
+  Handle<Object> object = it->GetReceiver();
+  if (!object->IsJSObject()) return false;
+  Handle<JSObject> receiver = Handle<JSObject>::cast(object);
+  DCHECK(!receiver->map()->is_deprecated());
 
   for (; it->IsFound(); it->Next()) {
     switch (it->state()) {
@@ -1448,21 +1441,23 @@ bool StoreIC::LookupForWrite(LookupIterator* it, Handle<Object> value,
 
         // Receiver != holder.
         if (receiver->IsJSGlobalProxy()) {
-          PrototypeIterator iter(it->isolate(),
-                                 Handle<JSGlobalProxy>::cast(receiver));
+          PrototypeIterator iter(it->isolate(), receiver);
           return it->GetHolder<Object>().is_identical_to(
               PrototypeIterator::GetCurrent(iter));
         }
 
         if (it->HolderIsReceiverOrHiddenPrototype()) return false;
 
-        it->PrepareTransitionToDataProperty(value, NONE, store_mode);
+        if (it->ExtendingNonExtensible(receiver)) return false;
+        it->PrepareTransitionToDataProperty(receiver, value, NONE, store_mode);
         return it->IsCacheableTransition();
       }
     }
   }
 
-  it->PrepareTransitionToDataProperty(value, NONE, store_mode);
+  receiver = it->GetStoreTarget();
+  if (it->ExtendingNonExtensible(receiver)) return false;
+  it->PrepareTransitionToDataProperty(receiver, value, NONE, store_mode);
   return it->IsCacheableTransition();
 }
 
@@ -1690,8 +1685,7 @@ Handle<Code> StoreIC::CompileHandler(LookupIterator* lookup,
   // This is currently guaranteed by checks in StoreIC::Store.
   Handle<JSObject> receiver = Handle<JSObject>::cast(lookup->GetReceiver());
   Handle<JSObject> holder = lookup->GetHolder<JSObject>();
-  DCHECK(!receiver->IsAccessCheckNeeded() ||
-         isolate()->IsInternallyUsedPropertyName(lookup->name()));
+  DCHECK(!receiver->IsAccessCheckNeeded() || lookup->name()->IsPrivate());
 
   switch (lookup->state()) {
     case LookupIterator::TRANSITION: {
@@ -2216,6 +2210,7 @@ void CallIC::HandleMiss(Handle<Object> function) {
 // Used from ic-<arch>.cc.
 RUNTIME_FUNCTION(Runtime_CallIC_Miss) {
   TimerEventScope<TimerEventIcMiss> timer(isolate);
+  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8"), "V8.IcMiss");
   HandleScope scope(isolate);
   DCHECK(args.length() == 3);
   Handle<Object> function = args.at<Object>(0);
@@ -2232,6 +2227,7 @@ RUNTIME_FUNCTION(Runtime_CallIC_Miss) {
 // Used from ic-<arch>.cc.
 RUNTIME_FUNCTION(Runtime_LoadIC_Miss) {
   TimerEventScope<TimerEventIcMiss> timer(isolate);
+  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8"), "V8.IcMiss");
   HandleScope scope(isolate);
   Handle<Object> receiver = args.at<Object>(0);
   Handle<Name> key = args.at<Name>(1);
@@ -2264,6 +2260,7 @@ RUNTIME_FUNCTION(Runtime_LoadIC_Miss) {
 // Used from ic-<arch>.cc
 RUNTIME_FUNCTION(Runtime_KeyedLoadIC_Miss) {
   TimerEventScope<TimerEventIcMiss> timer(isolate);
+  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8"), "V8.IcMiss");
   HandleScope scope(isolate);
   Handle<Object> receiver = args.at<Object>(0);
   Handle<Object> key = args.at<Object>(1);
@@ -2283,6 +2280,7 @@ RUNTIME_FUNCTION(Runtime_KeyedLoadIC_Miss) {
 
 RUNTIME_FUNCTION(Runtime_KeyedLoadIC_MissFromStubFailure) {
   TimerEventScope<TimerEventIcMiss> timer(isolate);
+  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8"), "V8.IcMiss");
   HandleScope scope(isolate);
   Handle<Object> receiver = args.at<Object>(0);
   Handle<Object> key = args.at<Object>(1);
@@ -2304,6 +2302,7 @@ RUNTIME_FUNCTION(Runtime_KeyedLoadIC_MissFromStubFailure) {
 // Used from ic-<arch>.cc.
 RUNTIME_FUNCTION(Runtime_StoreIC_Miss) {
   TimerEventScope<TimerEventIcMiss> timer(isolate);
+  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8"), "V8.IcMiss");
   HandleScope scope(isolate);
   Handle<Object> receiver = args.at<Object>(0);
   Handle<Name> key = args.at<Name>(1);
@@ -2335,6 +2334,7 @@ RUNTIME_FUNCTION(Runtime_StoreIC_Miss) {
 
 RUNTIME_FUNCTION(Runtime_StoreIC_MissFromStubFailure) {
   TimerEventScope<TimerEventIcMiss> timer(isolate);
+  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8"), "V8.IcMiss");
   HandleScope scope(isolate);
   Handle<Object> receiver = args.at<Object>(0);
   Handle<Name> key = args.at<Name>(1);
@@ -2387,6 +2387,7 @@ RUNTIME_FUNCTION(Runtime_StoreIC_MissFromStubFailure) {
 // Used from ic-<arch>.cc.
 RUNTIME_FUNCTION(Runtime_KeyedStoreIC_Miss) {
   TimerEventScope<TimerEventIcMiss> timer(isolate);
+  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8"), "V8.IcMiss");
   HandleScope scope(isolate);
   Handle<Object> receiver = args.at<Object>(0);
   Handle<Object> key = args.at<Object>(1);
@@ -2408,6 +2409,7 @@ RUNTIME_FUNCTION(Runtime_KeyedStoreIC_Miss) {
 
 RUNTIME_FUNCTION(Runtime_KeyedStoreIC_MissFromStubFailure) {
   TimerEventScope<TimerEventIcMiss> timer(isolate);
+  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8"), "V8.IcMiss");
   HandleScope scope(isolate);
   Handle<Object> receiver = args.at<Object>(0);
   Handle<Object> key = args.at<Object>(1);
@@ -2465,6 +2467,7 @@ RUNTIME_FUNCTION(Runtime_KeyedStoreIC_Slow) {
 
 RUNTIME_FUNCTION(Runtime_ElementsTransitionAndStoreIC_Miss) {
   TimerEventScope<TimerEventIcMiss> timer(isolate);
+  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8"), "V8.IcMiss");
   HandleScope scope(isolate);
   // Length == 5 or 6, depending on whether the vector slot
   // is passed in a virtual register or not.
@@ -2500,60 +2503,52 @@ MaybeHandle<Object> BinaryOpIC::Transition(
     default:
       UNREACHABLE();
     case Token::ADD:
-      ASSIGN_RETURN_ON_EXCEPTION(
-          isolate(), result,
-          Object::Add(isolate(), left, right, state.strength()), Object);
+      ASSIGN_RETURN_ON_EXCEPTION(isolate(), result,
+                                 Object::Add(isolate(), left, right), Object);
       break;
     case Token::SUB:
       ASSIGN_RETURN_ON_EXCEPTION(
-          isolate(), result,
-          Object::Subtract(isolate(), left, right, state.strength()), Object);
+          isolate(), result, Object::Subtract(isolate(), left, right), Object);
       break;
     case Token::MUL:
       ASSIGN_RETURN_ON_EXCEPTION(
-          isolate(), result,
-          Object::Multiply(isolate(), left, right, state.strength()), Object);
+          isolate(), result, Object::Multiply(isolate(), left, right), Object);
       break;
     case Token::DIV:
       ASSIGN_RETURN_ON_EXCEPTION(
-          isolate(), result,
-          Object::Divide(isolate(), left, right, state.strength()), Object);
+          isolate(), result, Object::Divide(isolate(), left, right), Object);
       break;
     case Token::MOD:
       ASSIGN_RETURN_ON_EXCEPTION(
-          isolate(), result,
-          Object::Modulus(isolate(), left, right, state.strength()), Object);
+          isolate(), result, Object::Modulus(isolate(), left, right), Object);
       break;
     case Token::BIT_OR:
       ASSIGN_RETURN_ON_EXCEPTION(
-          isolate(), result,
-          Object::BitwiseOr(isolate(), left, right, state.strength()), Object);
+          isolate(), result, Object::BitwiseOr(isolate(), left, right), Object);
       break;
     case Token::BIT_AND:
-      ASSIGN_RETURN_ON_EXCEPTION(
-          isolate(), result,
-          Object::BitwiseAnd(isolate(), left, right, state.strength()), Object);
+      ASSIGN_RETURN_ON_EXCEPTION(isolate(), result,
+                                 Object::BitwiseAnd(isolate(), left, right),
+                                 Object);
       break;
     case Token::BIT_XOR:
-      ASSIGN_RETURN_ON_EXCEPTION(
-          isolate(), result,
-          Object::BitwiseXor(isolate(), left, right, state.strength()), Object);
+      ASSIGN_RETURN_ON_EXCEPTION(isolate(), result,
+                                 Object::BitwiseXor(isolate(), left, right),
+                                 Object);
       break;
     case Token::SAR:
-      ASSIGN_RETURN_ON_EXCEPTION(
-          isolate(), result,
-          Object::ShiftRight(isolate(), left, right, state.strength()), Object);
+      ASSIGN_RETURN_ON_EXCEPTION(isolate(), result,
+                                 Object::ShiftRight(isolate(), left, right),
+                                 Object);
       break;
     case Token::SHR:
       ASSIGN_RETURN_ON_EXCEPTION(
-          isolate(), result,
-          Object::ShiftRightLogical(isolate(), left, right, state.strength()),
+          isolate(), result, Object::ShiftRightLogical(isolate(), left, right),
           Object);
       break;
     case Token::SHL:
       ASSIGN_RETURN_ON_EXCEPTION(
-          isolate(), result,
-          Object::ShiftLeft(isolate(), left, right, state.strength()), Object);
+          isolate(), result, Object::ShiftLeft(isolate(), left, right), Object);
       break;
   }
 
@@ -2620,6 +2615,7 @@ MaybeHandle<Object> BinaryOpIC::Transition(
 
 RUNTIME_FUNCTION(Runtime_BinaryOpIC_Miss) {
   TimerEventScope<TimerEventIcMiss> timer(isolate);
+  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8"), "V8.IcMiss");
   HandleScope scope(isolate);
   DCHECK_EQ(2, args.length());
   Handle<Object> left = args.at<Object>(BinaryOpICStub::kLeft);
@@ -2635,6 +2631,7 @@ RUNTIME_FUNCTION(Runtime_BinaryOpIC_Miss) {
 
 RUNTIME_FUNCTION(Runtime_BinaryOpIC_MissWithAllocationSite) {
   TimerEventScope<TimerEventIcMiss> timer(isolate);
+  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8"), "V8.IcMiss");
   HandleScope scope(isolate);
   DCHECK_EQ(3, args.length());
   Handle<AllocationSite> allocation_site =
@@ -2649,10 +2646,8 @@ RUNTIME_FUNCTION(Runtime_BinaryOpIC_MissWithAllocationSite) {
   return *result;
 }
 
-
-Code* CompareIC::GetRawUninitialized(Isolate* isolate, Token::Value op,
-                                     Strength strength) {
-  CompareICStub stub(isolate, op, strength, CompareICState::UNINITIALIZED,
+Code* CompareIC::GetRawUninitialized(Isolate* isolate, Token::Value op) {
+  CompareICStub stub(isolate, op, CompareICState::UNINITIALIZED,
                      CompareICState::UNINITIALIZED,
                      CompareICState::UNINITIALIZED);
   Code* code = NULL;
@@ -2660,10 +2655,8 @@ Code* CompareIC::GetRawUninitialized(Isolate* isolate, Token::Value op,
   return code;
 }
 
-
-Handle<Code> CompareIC::GetUninitialized(Isolate* isolate, Token::Value op,
-                                         Strength strength) {
-  CompareICStub stub(isolate, op, strength, CompareICState::UNINITIALIZED,
+Handle<Code> CompareIC::GetUninitialized(Isolate* isolate, Token::Value op) {
+  CompareICStub stub(isolate, op, CompareICState::UNINITIALIZED,
                      CompareICState::UNINITIALIZED,
                      CompareICState::UNINITIALIZED);
   return stub.GetCode();
@@ -2680,8 +2673,7 @@ Code* CompareIC::UpdateCaches(Handle<Object> x, Handle<Object> y) {
   CompareICState::State state = CompareICState::TargetState(
       old_stub.state(), old_stub.left(), old_stub.right(), op_,
       HasInlinedSmiCode(address()), x, y);
-  CompareICStub stub(isolate(), op_, old_stub.strength(), new_left, new_right,
-                     state);
+  CompareICStub stub(isolate(), op_, new_left, new_right, state);
   if (state == CompareICState::KNOWN_RECEIVER) {
     stub.set_known_map(
         Handle<Map>(Handle<JSReceiver>::cast(x)->map(), isolate()));
@@ -2714,6 +2706,7 @@ Code* CompareIC::UpdateCaches(Handle<Object> x, Handle<Object> y) {
 // Used from CompareICStub::GenerateMiss in code-stubs-<arch>.cc.
 RUNTIME_FUNCTION(Runtime_CompareIC_Miss) {
   TimerEventScope<TimerEventIcMiss> timer(isolate);
+  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8"), "V8.IcMiss");
   HandleScope scope(isolate);
   DCHECK(args.length() == 3);
   CompareIC ic(isolate, static_cast<Token::Value>(args.smi_at(2)));
@@ -2764,6 +2757,7 @@ Handle<Object> CompareNilIC::CompareNil(Handle<Object> object) {
 
 RUNTIME_FUNCTION(Runtime_CompareNilIC_Miss) {
   TimerEventScope<TimerEventIcMiss> timer(isolate);
+  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8"), "V8.IcMiss");
   HandleScope scope(isolate);
   Handle<Object> object = args.at<Object>(0);
   CompareNilIC ic(isolate);
@@ -2789,6 +2783,7 @@ Handle<Object> ToBooleanIC::ToBoolean(Handle<Object> object) {
 
 RUNTIME_FUNCTION(Runtime_ToBooleanIC_Miss) {
   TimerEventScope<TimerEventIcMiss> timer(isolate);
+  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8"), "V8.IcMiss");
   DCHECK(args.length() == 1);
   HandleScope scope(isolate);
   Handle<Object> object = args.at<Object>(0);
@@ -2929,17 +2924,15 @@ RUNTIME_FUNCTION(Runtime_LoadElementWithInterceptor) {
   DCHECK(args.smi_at(1) >= 0);
   uint32_t index = args.smi_at(1);
   Handle<Object> result;
-  // TODO(conradw): Investigate strong mode semantics for this.
-  LanguageMode language_mode = SLOPPY;
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-      isolate, result,
-      Object::GetElement(isolate, receiver, index, language_mode));
+      isolate, result, Object::GetElement(isolate, receiver, index));
   return *result;
 }
 
 
 RUNTIME_FUNCTION(Runtime_LoadIC_MissFromStubFailure) {
   TimerEventScope<TimerEventIcMiss> timer(isolate);
+  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8"), "V8.IcMiss");
   HandleScope scope(isolate);
   Handle<Object> receiver = args.at<Object>(0);
   Handle<Name> key = args.at<Name>(1);

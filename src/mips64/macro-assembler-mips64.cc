@@ -1376,39 +1376,71 @@ void MacroAssembler::li(Register rd, Operand j, LiFlags mode) {
         ori(rd, rd, (j.imm64_ & kImm16Mask));
       }
     } else {
-      if (is_int48(j.imm64_)) {
-        if ((j.imm64_ >> 32) & kImm16Mask) {
-          lui(rd, (j.imm64_ >> 32) & kImm16Mask);
-          if ((j.imm64_ >> 16) & kImm16Mask) {
-            ori(rd, rd, (j.imm64_ >> 16) & kImm16Mask);
-          }
-        } else {
-          ori(rd, zero_reg, (j.imm64_ >> 16) & kImm16Mask);
+      if (kArchVariant == kMips64r6) {
+        int64_t imm = j.imm64_;
+        bool lui_emited = false;
+        if (((imm >> kLuiShift) & kImm16Mask) != 0) {
+          lui(rd, (imm >> kLuiShift) & kImm16Mask);
+          lui_emited = true;
         }
-        dsll(rd, rd, 16);
-        if (j.imm64_ & kImm16Mask) {
-          ori(rd, rd, j.imm64_ & kImm16Mask);
+        if ((imm & kImm16Mask) != 0) {
+          ori(rd, rd, (imm & kImm16Mask));
+        } else if (!lui_emited) {
+          or_(rd, zero_reg, zero_reg);
+        }
+        if ((imm >> 31) & 0x1) {
+          imm = (imm >> 32) + 1;
+        } else {
+          imm = imm >> 32;
+        }
+        if (imm & kImm16Mask) {
+          dahi(rd, imm & kImm16Mask);
+        }
+        if (!is_int48(j.imm64_)) {
+          if ((imm >> 15) & 0x1) {
+            imm = (imm >> 16) + 1;
+          } else {
+            imm = imm >> 16;
+          }
+          if (imm & kImm16Mask) {
+            dati(rd, imm & kImm16Mask);
+          }
         }
       } else {
-        lui(rd, (j.imm64_ >> 48) & kImm16Mask);
-        if ((j.imm64_ >> 32) & kImm16Mask) {
-          ori(rd, rd, (j.imm64_ >> 32) & kImm16Mask);
-        }
-        if ((j.imm64_ >> 16) & kImm16Mask) {
-          dsll(rd, rd, 16);
-          ori(rd, rd, (j.imm64_ >> 16) & kImm16Mask);
-          if (j.imm64_ & kImm16Mask) {
-            dsll(rd, rd, 16);
-            ori(rd, rd, j.imm64_ & kImm16Mask);
+        if (is_int48(j.imm64_)) {
+          if ((j.imm64_ >> 32) & kImm16Mask) {
+            lui(rd, (j.imm64_ >> 32) & kImm16Mask);
+            if ((j.imm64_ >> 16) & kImm16Mask) {
+              ori(rd, rd, (j.imm64_ >> 16) & kImm16Mask);
+            }
           } else {
-            dsll(rd, rd, 16);
+            ori(rd, zero_reg, (j.imm64_ >> 16) & kImm16Mask);
+          }
+          dsll(rd, rd, 16);
+          if (j.imm64_ & kImm16Mask) {
+            ori(rd, rd, j.imm64_ & kImm16Mask);
           }
         } else {
-          if (j.imm64_ & kImm16Mask) {
-            dsll32(rd, rd, 0);
-            ori(rd, rd, j.imm64_ & kImm16Mask);
+          lui(rd, (j.imm64_ >> 48) & kImm16Mask);
+          if ((j.imm64_ >> 32) & kImm16Mask) {
+            ori(rd, rd, (j.imm64_ >> 32) & kImm16Mask);
+          }
+          if ((j.imm64_ >> 16) & kImm16Mask) {
+            dsll(rd, rd, 16);
+            ori(rd, rd, (j.imm64_ >> 16) & kImm16Mask);
+            if (j.imm64_ & kImm16Mask) {
+              dsll(rd, rd, 16);
+              ori(rd, rd, j.imm64_ & kImm16Mask);
+            } else {
+              dsll(rd, rd, 16);
+            }
           } else {
-            dsll32(rd, rd, 0);
+            if (j.imm64_ & kImm16Mask) {
+              dsll32(rd, rd, 0);
+              ori(rd, rd, j.imm64_ & kImm16Mask);
+            } else {
+              dsll32(rd, rd, 0);
+            }
           }
         }
       }
@@ -1427,12 +1459,32 @@ void MacroAssembler::li(Register rd, Operand j, LiFlags mode) {
     dsll(rd, rd, 16);
     ori(rd, rd, j.imm64_ & kImm16Mask);
   } else {
-    lui(rd, (j.imm64_ >> 48) & kImm16Mask);
-    ori(rd, rd, (j.imm64_ >> 32) & kImm16Mask);
-    dsll(rd, rd, 16);
-    ori(rd, rd, (j.imm64_ >> 16) & kImm16Mask);
-    dsll(rd, rd, 16);
-    ori(rd, rd, j.imm64_ & kImm16Mask);
+    if (kArchVariant == kMips64r6) {
+      int64_t imm = j.imm64_;
+      lui(rd, (imm >> kLuiShift) & kImm16Mask);
+      if (imm & kImm16Mask) {
+        ori(rd, rd, (imm & kImm16Mask));
+      }
+      if ((imm >> 31) & 0x1) {
+        imm = (imm >> 32) + 1;
+      } else {
+        imm = imm >> 32;
+      }
+      dahi(rd, imm & kImm16Mask);
+      if ((imm >> 15) & 0x1) {
+        imm = (imm >> 16) + 1;
+      } else {
+        imm = imm >> 16;
+      }
+      dati(rd, imm & kImm16Mask);
+    } else {
+      lui(rd, (j.imm64_ >> 48) & kImm16Mask);
+      ori(rd, rd, (j.imm64_ >> 32) & kImm16Mask);
+      dsll(rd, rd, 16);
+      ori(rd, rd, (j.imm64_ >> 16) & kImm16Mask);
+      dsll(rd, rd, 16);
+      ori(rd, rd, j.imm64_ & kImm16Mask);
+    }
   }
 }
 
@@ -1652,6 +1704,22 @@ void MacroAssembler::Cvt_d_ul(FPURegister fd, Register rs) {
   bind(&conversion_done);
 }
 
+void MacroAssembler::Cvt_s_uw(FPURegister fd, FPURegister fs) {
+  // Move the data from fs to t8.
+  mfc1(t8, fs);
+  Cvt_s_uw(fd, t8);
+}
+
+void MacroAssembler::Cvt_s_uw(FPURegister fd, Register rs) {
+  // Convert rs to a FP value in fd.
+  DCHECK(!rs.is(t9));
+  DCHECK(!rs.is(at));
+
+  // Zero extend int32 in rs.
+  Dext(t9, rs, 0, 32);
+  dmtc1(t9, fd);
+  cvt_s_l(fd, fd);
+}
 
 void MacroAssembler::Cvt_s_ul(FPURegister fd, FPURegister fs) {
   // Move the data from fs to t8.
@@ -1728,6 +1796,12 @@ void MacroAssembler::Trunc_uw_d(FPURegister fd,
   mtc1(t8, fd);
 }
 
+void MacroAssembler::Trunc_uw_s(FPURegister fd, FPURegister fs,
+                                FPURegister scratch) {
+  Trunc_uw_s(fs, t8, scratch);
+  mtc1(t8, fd);
+}
+
 void MacroAssembler::Trunc_ul_d(FPURegister fd, FPURegister fs,
                                 FPURegister scratch, Register result) {
   Trunc_ul_d(fs, t8, scratch, result);
@@ -1794,6 +1868,35 @@ void MacroAssembler::Trunc_uw_d(FPURegister fd,
   bind(&done);
 }
 
+void MacroAssembler::Trunc_uw_s(FPURegister fd, Register rs,
+                                FPURegister scratch) {
+  DCHECK(!fd.is(scratch));
+  DCHECK(!rs.is(at));
+
+  // Load 2^31 into scratch as its float representation.
+  li(at, 0x4F000000);
+  mtc1(at, scratch);
+  // Test if scratch > fd.
+  // If fd < 2^31 we can convert it normally.
+  Label simple_convert;
+  BranchF32(&simple_convert, NULL, lt, fd, scratch);
+
+  // First we subtract 2^31 from fd, then trunc it to rs
+  // and add 2^31 to rs.
+  sub_s(scratch, fd, scratch);
+  trunc_w_s(scratch, scratch);
+  mfc1(rs, scratch);
+  Or(rs, rs, 1 << 31);
+
+  Label done;
+  Branch(&done);
+  // Simple conversion.
+  bind(&simple_convert);
+  trunc_w_s(scratch, fd);
+  mfc1(rs, scratch);
+
+  bind(&done);
+}
 
 void MacroAssembler::Trunc_ul_d(FPURegister fd, Register rs,
                                 FPURegister scratch, Register result) {
@@ -5918,6 +6021,17 @@ void MacroAssembler::AssertBoundFunction(Register object) {
     Check(ne, kOperandIsASmiAndNotABoundFunction, t8, Operand(zero_reg));
     GetObjectType(object, t8, t8);
     Check(eq, kOperandIsNotABoundFunction, t8, Operand(JS_BOUND_FUNCTION_TYPE));
+  }
+}
+
+
+void MacroAssembler::AssertReceiver(Register object) {
+  if (emit_debug_code()) {
+    STATIC_ASSERT(kSmiTag == 0);
+    SmiTst(object, t8);
+    Check(ne, kOperandIsASmiAndNotAReceiver, t8, Operand(zero_reg));
+    GetObjectType(object, t8, t8);
+    Check(ge, kOperandIsNotAReceiver, t8, Operand(FIRST_JS_RECEIVER_TYPE));
   }
 }
 

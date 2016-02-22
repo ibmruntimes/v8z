@@ -276,7 +276,7 @@ MaybeHandle<Code> CodeStub::GetCode(Isolate* isolate, uint32_t key) {
 void BinaryOpICStub::GenerateAheadOfTime(Isolate* isolate) {
   // Generate the uninitialized versions of the stub.
   for (int op = Token::BIT_OR; op <= Token::MOD; ++op) {
-    BinaryOpICStub stub(isolate, static_cast<Token::Value>(op), Strength::WEAK);
+    BinaryOpICStub stub(isolate, static_cast<Token::Value>(op));
     stub.GetCode();
   }
 
@@ -601,9 +601,7 @@ void LoadDictionaryElementStub::InitializeDescriptor(
 void KeyedLoadGenericStub::InitializeDescriptor(
     CodeStubDescriptor* descriptor) {
   descriptor->Initialize(
-      Runtime::FunctionForId(is_strong(language_mode())
-                                 ? Runtime::kKeyedGetPropertyStrong
-                                 : Runtime::kKeyedGetProperty)->entry);
+      Runtime::FunctionForId(Runtime::kKeyedGetProperty)->entry);
 }
 
 
@@ -817,32 +815,6 @@ void StoreFastElementStub::GenerateAheadOfTime(Isolate* isolate) {
     StoreFastElementStub(isolate, true, kind, STORE_AND_GROW_NO_TRANSITION)
         .GetCode();
   }
-}
-
-
-void ArgumentsAccessStub::Generate(MacroAssembler* masm) {
-  switch (type()) {
-    case NEW_SLOPPY_FAST:
-      GenerateNewSloppyFast(masm);
-      break;
-    case NEW_SLOPPY_SLOW:
-      GenerateNewSloppySlow(masm);
-      break;
-  }
-}
-
-
-void ArgumentsAccessStub::PrintName(std::ostream& os) const {  // NOLINT
-  os << "ArgumentsAccessStub_";
-  switch (type()) {
-    case NEW_SLOPPY_FAST:
-      os << "NewSloppyFast";
-      break;
-    case NEW_SLOPPY_SLOW:
-      os << "NewSloppySlow";
-      break;
-  }
-  return;
 }
 
 

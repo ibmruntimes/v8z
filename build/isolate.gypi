@@ -71,6 +71,8 @@
         '--config-variable', 'OS=<(OS)',
         '--config-variable', 'asan=<(asan)',
         '--config-variable', 'cfi_vptr=<(cfi_vptr)',
+        '--config-variable', 'gcmole=<(gcmole)',
+        '--config-variable', 'has_valgrind=<(has_valgrind)',
         '--config-variable', 'icu_use_data_file_flag=0',
         '--config-variable', 'msan=<(msan)',
         '--config-variable', 'tsan=<(tsan)',

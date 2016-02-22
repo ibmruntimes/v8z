@@ -9,6 +9,7 @@
 #include "src/compiler/gap-resolver.h"
 #include "src/compiler/node-matchers.h"
 #include "src/compiler/osr.h"
+#include "src/frames.h"
 #include "src/ia32/assembler-ia32.h"
 #include "src/ia32/frames-ia32.h"
 #include "src/ia32/macro-assembler-ia32.h"
@@ -56,7 +57,7 @@ class IA32OperandConverter : public InstructionOperandConverter {
 
   Operand ToMaterializableOperand(int materializable_offset) {
     FrameOffset offset = frame_access_state()->GetFrameOffset(
-        Frame::FPOffsetToSlot(materializable_offset));
+        FPOffsetToFrameSlot(materializable_offset));
     return Operand(offset.from_stack_pointer() ? esp : ebp, offset.offset());
   }
 
@@ -241,15 +242,16 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
     if (mode_ > RecordWriteMode::kValueIsPointer) {
       __ JumpIfSmi(value_, exit());
     }
-    if (mode_ > RecordWriteMode::kValueIsMap) {
-      __ CheckPageFlag(value_, scratch0_,
-                       MemoryChunk::kPointersToHereAreInterestingMask, zero,
-                       exit());
-    }
+    __ CheckPageFlag(value_, scratch0_,
+                     MemoryChunk::kPointersToHereAreInterestingMask, zero,
+                     exit());
+    RememberedSetAction const remembered_set_action =
+        mode_ > RecordWriteMode::kValueIsMap ? EMIT_REMEMBERED_SET
+                                             : OMIT_REMEMBERED_SET;
     SaveFPRegsMode const save_fp_mode =
         frame()->DidAllocateDoubleRegisters() ? kSaveFPRegs : kDontSaveFPRegs;
     RecordWriteStub stub(isolate(), object_, scratch0_, scratch1_,
-                         EMIT_REMEMBERED_SET, save_fp_mode);
+                         remembered_set_action, save_fp_mode);
     __ lea(scratch1_, operand_);
     __ CallStub(&stub);
   }
@@ -413,11 +415,6 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       frame_access_state()->ClearSPDelta();
       break;
     }
-    case kArchLazyBailout: {
-      EnsureSpaceForLazyDeopt();
-      RecordCallPosition(instr);
-      break;
-    }
     case kArchPrepareCallCFunction: {
       // Frame alignment requires using FP-relative frame addressing.
       frame_access_state()->SetFrameAccessToFP();
@@ -470,6 +467,13 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     case kArchFramePointer:
       __ mov(i.OutputRegister(), ebp);
+      break;
+    case kArchParentFramePointer:
+      if (frame_access_state()->frame()->needs_frame()) {
+        __ mov(i.OutputRegister(), Operand(ebp, 0));
+      } else {
+        __ mov(i.OutputRegister(), ebp);
+      }
       break;
     case kArchTruncateDoubleToI: {
       auto result = i.OutputRegister();
@@ -526,17 +530,37 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       }
       break;
     case kIA32Cmp:
-      if (HasImmediateInput(instr, 1)) {
-        __ cmp(i.InputOperand(0), i.InputImmediate(1));
+      if (AddressingModeField::decode(instr->opcode()) != kMode_None) {
+        size_t index = 0;
+        Operand operand = i.MemoryOperand(&index);
+        if (HasImmediateInput(instr, index)) {
+          __ cmp(operand, i.InputImmediate(index));
+        } else {
+          __ cmp(operand, i.InputRegister(index));
+        }
       } else {
-        __ cmp(i.InputRegister(0), i.InputOperand(1));
+        if (HasImmediateInput(instr, 1)) {
+          __ cmp(i.InputOperand(0), i.InputImmediate(1));
+        } else {
+          __ cmp(i.InputRegister(0), i.InputOperand(1));
+        }
       }
       break;
     case kIA32Test:
-      if (HasImmediateInput(instr, 1)) {
-        __ test(i.InputOperand(0), i.InputImmediate(1));
+      if (AddressingModeField::decode(instr->opcode()) != kMode_None) {
+        size_t index = 0;
+        Operand operand = i.MemoryOperand(&index);
+        if (HasImmediateInput(instr, index)) {
+          __ test(operand, i.InputImmediate(index));
+        } else {
+          __ test(i.InputRegister(index), operand);
+        }
       } else {
-        __ test(i.InputRegister(0), i.InputOperand(1));
+        if (HasImmediateInput(instr, 1)) {
+          __ test(i.InputOperand(0), i.InputImmediate(1));
+        } else {
+          __ test(i.InputRegister(0), i.InputOperand(1));
+        }
       }
       break;
     case kIA32Imul:
@@ -1478,8 +1502,6 @@ void CodeGenerator::AssemblePrologue() {
     // remaining stack slots.
     if (FLAG_code_comments) __ RecordComment("-- OSR entrypoint --");
     osr_pc_offset_ = __ pc_offset();
-    // TODO(titzer): cannot address target function == local #-1
-    __ mov(edi, Operand(ebp, JavaScriptFrameConstants::kFunctionOffset));
     stack_shrink_slots -= OsrHelper(info()).UnoptimizedFrameSlots();
   }
 

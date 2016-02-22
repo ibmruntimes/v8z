@@ -331,8 +331,9 @@ void Builtins::Generate_NumberConstructor_ConstructStub(MacroAssembler* masm) {
   __ bind(&new_object);
   {
     FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
-    __ Push(r5, r4, r6);  // first argument, constructor, new target
-    __ CallRuntime(Runtime::kNewObject);
+    __ Push(r5);  // first argument
+    FastNewObjectStub stub(masm->isolate());
+    __ CallStub(&stub);
     __ Pop(r5);
   }
   __ StoreP(r5, FieldMemOperand(r3, JSValue::kValueOffset), r0);
@@ -460,8 +461,9 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
   __ bind(&new_object);
   {
     FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
-    __ Push(r5, r4, r6);  // first argument, constructor, new target
-    __ CallRuntime(Runtime::kNewObject);
+    __ Push(r5);  // first argument
+    FastNewObjectStub stub(masm->isolate());
+    __ CallStub(&stub);
     __ Pop(r5);
   }
   __ StoreP(r5, FieldMemOperand(r3, JSValue::kValueOffset), r0);
@@ -551,142 +553,18 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       __ SmiTag(r3);
       __ Push(r5, r3);
 
-      // Try to allocate the object without transitioning into C code. If any of
-      // the preconditions is not met, the code bails out to the runtime call.
-      Label rt_call, allocated;
-      if (FLAG_inline_new) {
-        // Verify that the new target is a JSFunction.
-        __ CompareObjectType(r6, r8, r7, JS_FUNCTION_TYPE);
-        __ bne(&rt_call);
-
-        // Load the initial map and verify that it is in fact a map.
-        // r6: new target
-        __ LoadP(r5,
-                 FieldMemOperand(r6, JSFunction::kPrototypeOrInitialMapOffset));
-        __ JumpIfSmi(r5, &rt_call);
-        __ CompareObjectType(r5, r8, r7, MAP_TYPE);
-        __ bne(&rt_call);
-
-        // Fall back to runtime if the expected base constructor and base
-        // constructor differ.
-        __ LoadP(r8, FieldMemOperand(r5, Map::kConstructorOrBackPointerOffset));
-        __ cmp(r4, r8);
-        __ bne(&rt_call);
-
-        // Check that the constructor is not constructing a JSFunction (see
-        // comments in Runtime_NewObject in runtime.cc). In which case the
-        // initial map's instance type would be JS_FUNCTION_TYPE.
-        // r4: constructor function
-        // r5: initial map
-        // r6: new target
-        __ CompareInstanceType(r5, r8, JS_FUNCTION_TYPE);
-        __ beq(&rt_call);
-
-        // Now allocate the JSObject on the heap.
-        // r4: constructor function
-        // r5: initial map
-        // r6: new target
-        __ lbz(r10, FieldMemOperand(r5, Map::kInstanceSizeOffset));
-
-        __ Allocate(r10, r7, r10, r9, &rt_call, SIZE_IN_WORDS);
-
-        // Allocated the JSObject, now initialize the fields. Map is set to
-        // initial map and properties and elements are set to empty fixed array.
-        // r4: constructor function
-        // r5: initial map
-        // r6: new target
-        // r7: JSObject (not HeapObject tagged - the actual address).
-        // r10: start of next object
-        __ LoadRoot(r9, Heap::kEmptyFixedArrayRootIndex);
-        __ StoreP(r5, MemOperand(r7, JSObject::kMapOffset));
-        __ StoreP(r9, MemOperand(r7, JSObject::kPropertiesOffset));
-        __ StoreP(r9, MemOperand(r7, JSObject::kElementsOffset));
-        __ addi(r8, r7, Operand(JSObject::kElementsOffset + kPointerSize));
-
-        // Add the object tag to make the JSObject real, so that we can continue
-        // and jump into the continuation code at any time from now on.
-        __ addi(r7, r7, Operand(kHeapObjectTag));
-
-        // Fill all the in-object properties with the appropriate filler.
-        // r7: JSObject (tagged)
-        // r8: First in-object property of JSObject (not tagged)
-        __ LoadRoot(r9, Heap::kUndefinedValueRootIndex);
-
-        if (!is_api_function) {
-          Label no_inobject_slack_tracking;
-
-          MemOperand bit_field3 = FieldMemOperand(r5, Map::kBitField3Offset);
-          // Check if slack tracking is enabled.
-          __ lwz(r3, bit_field3);
-          __ DecodeField<Map::ConstructionCounter>(r11, r3);
-          // r11: slack tracking counter
-          __ cmpi(r11, Operand(Map::kSlackTrackingCounterEnd));
-          __ blt(&no_inobject_slack_tracking);
-          // Decrease generous allocation count.
-          __ Add(r3, r3, -(1 << Map::ConstructionCounter::kShift), r0);
-          __ stw(r3, bit_field3);
-
-          // Allocate object with a slack.
-          __ lbz(r3, FieldMemOperand(r5, Map::kUnusedPropertyFieldsOffset));
-          __ ShiftLeftImm(r3, r3, Operand(kPointerSizeLog2));
-          __ sub(r3, r10, r3);
-          // r3: offset of first field after pre-allocated fields
-          if (FLAG_debug_code) {
-            __ cmp(r8, r3);
-            __ Assert(le, kUnexpectedNumberOfPreAllocatedPropertyFields);
-          }
-          __ InitializeFieldsWithFiller(r8, r3, r9);
-
-          // To allow truncation fill the remaining fields with one pointer
-          // filler map.
-          __ LoadRoot(r9, Heap::kOnePointerFillerMapRootIndex);
-          __ InitializeFieldsWithFiller(r8, r10, r9);
-
-          // r11: slack tracking counter value before decreasing.
-          __ cmpi(r11, Operand(Map::kSlackTrackingCounterEnd));
-          __ bne(&allocated);
-
-          // Push the constructor, new_target and the object to the stack,
-          // and then the initial map as an argument to the runtime call.
-          __ Push(r4, r6, r7, r5);
-          __ CallRuntime(Runtime::kFinalizeInstanceSize);
-          __ Pop(r4, r6, r7);
-
-          // Continue with JSObject being successfully allocated
-          // r4: constructor function
-          // r6: new target
-          // r7: JSObject
-          __ b(&allocated);
-
-          __ bind(&no_inobject_slack_tracking);
-        }
-
-        __ InitializeFieldsWithFiller(r8, r10, r9);
-
-        // Continue with JSObject being successfully allocated
-        // r4: constructor function
-        // r6: new target
-        // r7: JSObject
-        __ b(&allocated);
-      }
-
-      // Allocate the new receiver object using the runtime call.
-      // r4: constructor function
-      // r6: new target
-      __ bind(&rt_call);
-
-      // Push the constructor and new_target twice, second pair as arguments
-      // to the runtime call.
-      __ Push(r4, r6, r4, r6);
-      __ CallRuntime(Runtime::kNewObject);
+      // Allocate the new receiver object.
+      __ Push(r4, r6);
+      FastNewObjectStub stub(masm->isolate());
+      __ CallStub(&stub);
       __ mr(r7, r3);
       __ Pop(r4, r6);
 
-      // Receiver for constructor call allocated.
-      // r4: constructor function
-      // r6: new target
-      // r7: JSObject
-      __ bind(&allocated);
+      // ----------- S t a t e -------------
+      //  -- r4: constructor function
+      //  -- r6: new target
+      //  -- r7: newly allocated object
+      // -----------------------------------
 
       // Retrieve smi-tagged arguments count from the stack.
       __ LoadP(r3, MemOperand(sp));
@@ -978,12 +856,6 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   __ PushFixedFrame(r4);
   __ addi(fp, sp, Operand(StandardFrameConstants::kFixedFrameSizeFromFp));
 
-  // Push new.target, dispatch table pointer and zero for bytecode array offset.
-  __ li(r3, Operand::Zero());
-  __ mov(r5, Operand(ExternalReference::interpreter_dispatch_table_address(
-                 masm->isolate())));
-  __ Push(r6, r5, r3);
-
   // Get the bytecode array from the function object and load the pointer to the
   // first entry into kInterpreterBytecodeRegister.
   __ LoadP(r3, FieldMemOperand(r4, JSFunction::kSharedFunctionInfoOffset));
@@ -998,6 +870,10 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
                          BYTECODE_ARRAY_TYPE);
     __ Assert(eq, kFunctionDataShouldBeBytecodeArrayOnInterpreterEntry);
   }
+
+  // Push new.target, bytecode array and zero for bytecode array offset.
+  __ li(r3, Operand::Zero());
+  __ Push(r6, kInterpreterBytecodeArrayRegister, r3);
 
   // Allocate the local and temporary register file on the stack.
   {
@@ -1029,7 +905,6 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
 
   // TODO(rmcilroy): List of things not currently dealt with here but done in
   // fullcodegen's prologue:
-  //  - Support profiler (specifically profiling_counter).
   //  - Call ProfileEntryHookStub when isolate has a function_entry_hook.
   //  - Code aging of the BytecodeArray object.
 
@@ -1040,8 +915,9 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
           Operand(InterpreterFrameConstants::kRegisterFilePointerFromFp));
   __ mov(kInterpreterBytecodeOffsetRegister,
          Operand(BytecodeArray::kHeaderSize - kHeapObjectTag));
-  __ LoadP(kInterpreterDispatchTableRegister,
-           MemOperand(fp, InterpreterFrameConstants::kDispatchTableFromFp));
+  __ mov(kInterpreterDispatchTableRegister,
+         Operand(ExternalReference::interpreter_dispatch_table_address(
+             masm->isolate())));
 
   // Dispatch to the first bytecode handler for the function.
   __ lbzx(r4, MemOperand(kInterpreterBytecodeArrayRegister,
@@ -1091,7 +967,8 @@ static void Generate_InterpreterPushArgs(MacroAssembler* masm, Register index,
 
 
 // static
-void Builtins::Generate_InterpreterPushArgsAndCall(MacroAssembler* masm) {
+void Builtins::Generate_InterpreterPushArgsAndCallImpl(
+    MacroAssembler* masm, TailCallMode tail_call_mode) {
   // ----------- S t a t e -------------
   //  -- r3 : the number of arguments (not including the receiver)
   //  -- r5 : the address of the first argument to be pushed. Subsequent
@@ -1107,7 +984,9 @@ void Builtins::Generate_InterpreterPushArgsAndCall(MacroAssembler* masm) {
   Generate_InterpreterPushArgs(masm, r5, r6, r7);
 
   // Call the target.
-  __ Jump(masm->isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
+  __ Jump(masm->isolate()->builtins()->Call(ConvertReceiverMode::kAny,
+                                            tail_call_mode),
+          RelocInfo::CODE_TARGET);
 }
 
 
@@ -1150,12 +1029,10 @@ static void Generate_EnterBytecodeDispatch(MacroAssembler* masm) {
                       InterpreterFrameConstants::kContextFromRegisterPointer));
 
   // Get the bytecode array pointer from the frame.
-  __ LoadP(r4,
-           MemOperand(kInterpreterRegisterFileRegister,
-                      InterpreterFrameConstants::kFunctionFromRegisterPointer));
-  __ LoadP(r4, FieldMemOperand(r4, JSFunction::kSharedFunctionInfoOffset));
-  __ LoadP(kInterpreterBytecodeArrayRegister,
-           FieldMemOperand(r4, SharedFunctionInfo::kFunctionDataOffset));
+  __ LoadP(
+      kInterpreterBytecodeArrayRegister,
+      MemOperand(kInterpreterRegisterFileRegister,
+                 InterpreterFrameConstants::kBytecodeArrayFromRegisterPointer));
 
   if (FLAG_debug_code) {
     // Check function data field is actually a BytecodeArray object.
@@ -1188,17 +1065,18 @@ static void Generate_InterpreterNotifyDeoptimizedHelper(
   // Enter an internal frame.
   {
     FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
-    // Save accumulator register and pass the deoptimization type to
-    // the runtime system.
+
+    // Pass the deoptimization type to the runtime system.
     __ LoadSmiLiteral(r4, Smi::FromInt(static_cast<int>(type)));
-    __ Push(kInterpreterAccumulatorRegister, r4);
+    __ Push(r4);
     __ CallRuntime(Runtime::kNotifyDeoptimized);
-    __ pop(kInterpreterAccumulatorRegister);  // Restore accumulator register.
     // Tear down internal frame.
   }
 
-  // Drop state (we don't use these for interpreter deopts).
+  // Drop state (we don't use these for interpreter deopts) and and pop the
+  // accumulator value into the accumulator register.
   __ Drop(1);
+  __ Pop(kInterpreterAccumulatorRegister);
 
   // Enter the bytecode dispatch.
   Generate_EnterBytecodeDispatch(masm);
@@ -2107,6 +1985,16 @@ void PrepareForTailCall(MacroAssembler* masm, Register args_reg,
   __ lbz(scratch1, MemOperand(scratch1));
   __ cmpi(scratch1, Operand::Zero());
   __ bne(&done);
+
+  // Drop possible interpreter handler/stub frame.
+  {
+    Label no_interpreter_frame;
+    __ LoadP(scratch3, MemOperand(fp, StandardFrameConstants::kMarkerOffset));
+    __ CmpSmiLiteral(scratch3, Smi::FromInt(StackFrame::STUB), r0);
+    __ bne(&no_interpreter_frame);
+    __ LoadP(fp, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
+    __ bind(&no_interpreter_frame);
+  }
 
   // Check if next frame is an arguments adaptor frame.
   Label no_arguments_adaptor, formal_parameter_count_loaded;

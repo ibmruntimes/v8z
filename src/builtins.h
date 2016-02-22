@@ -69,6 +69,14 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
   V(ArrayBufferConstructor_ConstructStub, kTargetAndNewTarget) \
   V(ArrayBufferIsView, kNone)                                  \
                                                                \
+  V(BooleanConstructor, kNone)                                 \
+  V(BooleanConstructor_ConstructStub, kTargetAndNewTarget)     \
+  V(BooleanPrototypeToString, kNone)                           \
+  V(BooleanPrototypeValueOf, kNone)                            \
+                                                               \
+  V(DataViewConstructor, kNone)                                \
+  V(DataViewConstructor_ConstructStub, kTargetAndNewTarget)    \
+                                                               \
   V(DateConstructor, kNone)                                    \
   V(DateConstructor_ConstructStub, kTargetAndNewTarget)        \
   V(DateNow, kNone)                                            \
@@ -114,6 +122,7 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
   V(ObjectGetOwnPropertyDescriptor, kNone)                     \
   V(ObjectGetOwnPropertyNames, kNone)                          \
   V(ObjectGetOwnPropertySymbols, kNone)                        \
+  V(ObjectIs, kNone)                                           \
   V(ObjectIsExtensible, kNone)                                 \
   V(ObjectIsFrozen, kNone)                                     \
   V(ObjectIsSealed, kNone)                                     \
@@ -208,6 +217,7 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
   V(InterpreterEntryTrampoline, BUILTIN, UNINITIALIZED, kNoExtraICState)       \
   V(InterpreterExitTrampoline, BUILTIN, UNINITIALIZED, kNoExtraICState)        \
   V(InterpreterPushArgsAndCall, BUILTIN, UNINITIALIZED, kNoExtraICState)       \
+  V(InterpreterPushArgsAndTailCall, BUILTIN, UNINITIALIZED, kNoExtraICState)   \
   V(InterpreterPushArgsAndConstruct, BUILTIN, UNINITIALIZED, kNoExtraICState)  \
   V(InterpreterNotifyDeoptimized, BUILTIN, UNINITIALIZED, kNoExtraICState)     \
   V(InterpreterNotifySoftDeoptimized, BUILTIN, UNINITIALIZED, kNoExtraICState) \
@@ -220,9 +230,6 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
   V(KeyedStoreIC_Miss, BUILTIN, UNINITIALIZED, kNoExtraICState)                \
   V(LoadIC_Getter_ForDeopt, LOAD_IC, MONOMORPHIC, kNoExtraICState)             \
   V(KeyedLoadIC_Megamorphic, KEYED_LOAD_IC, MEGAMORPHIC, kNoExtraICState)      \
-                                                                               \
-  V(KeyedLoadIC_Megamorphic_Strong, KEYED_LOAD_IC, MEGAMORPHIC,                \
-    LoadICState::kStrongModeState)                                             \
                                                                                \
   V(StoreIC_Setter_ForDeopt, STORE_IC, MONOMORPHIC,                            \
     StoreICState::kStrictModeState)                                            \
@@ -289,13 +296,10 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
 // Define list of builtin handlers implemented in assembly.
 #define BUILTIN_LIST_H(V)                    \
   V(LoadIC_Slow,             LOAD_IC)        \
-  V(LoadIC_Slow_Strong,      LOAD_IC)        \
   V(KeyedLoadIC_Slow,        KEYED_LOAD_IC)  \
-  V(KeyedLoadIC_Slow_Strong, KEYED_LOAD_IC)  \
   V(StoreIC_Slow,            STORE_IC)       \
   V(KeyedStoreIC_Slow,       KEYED_STORE_IC) \
   V(LoadIC_Normal,           LOAD_IC)        \
-  V(LoadIC_Normal_Strong,    LOAD_IC)        \
   V(StoreIC_Normal,          STORE_IC)
 
 // Define list of builtins used by the debugger implemented in assembly.
@@ -362,6 +366,7 @@ class Builtins {
   Handle<Code> Call(ConvertReceiverMode = ConvertReceiverMode::kAny,
                     TailCallMode tail_call_mode = TailCallMode::kDisallow);
   Handle<Code> CallBoundFunction(TailCallMode tail_call_mode);
+  Handle<Code> InterpreterPushArgsAndCall(TailCallMode tail_call_mode);
 
   Code* builtin(Name name) {
     // Code::cast cannot be used here since we access builtins
@@ -577,7 +582,15 @@ class Builtins {
 
   static void Generate_InterpreterEntryTrampoline(MacroAssembler* masm);
   static void Generate_InterpreterExitTrampoline(MacroAssembler* masm);
-  static void Generate_InterpreterPushArgsAndCall(MacroAssembler* masm);
+  static void Generate_InterpreterPushArgsAndCall(MacroAssembler* masm) {
+    return Generate_InterpreterPushArgsAndCallImpl(masm,
+                                                   TailCallMode::kDisallow);
+  }
+  static void Generate_InterpreterPushArgsAndTailCall(MacroAssembler* masm) {
+    return Generate_InterpreterPushArgsAndCallImpl(masm, TailCallMode::kAllow);
+  }
+  static void Generate_InterpreterPushArgsAndCallImpl(
+      MacroAssembler* masm, TailCallMode tail_call_mode);
   static void Generate_InterpreterPushArgsAndConstruct(MacroAssembler* masm);
   static void Generate_InterpreterNotifyDeoptimized(MacroAssembler* masm);
   static void Generate_InterpreterNotifySoftDeoptimized(MacroAssembler* masm);

@@ -30,11 +30,13 @@ enum WasmSectionDeclCode {
   kDeclGlobals = 0x03,
   kDeclDataSegments = 0x04,
   kDeclFunctionTable = 0x05,
-  kDeclWLL = 0x11,
   kDeclEnd = 0x06,
+  kDeclStartFunction = 0x07,
+  kDeclImportTable = 0x08,
+  kDeclWLL = 0x11,
 };
 
-static const int kMaxModuleSectionCode = 6;
+static const int kMaxModuleSectionCode = 0x11;
 
 enum WasmFunctionDeclBit {
   kDeclFunctionName = 0x01,
@@ -48,9 +50,10 @@ static const size_t kDeclMemorySize = 3;
 static const size_t kDeclGlobalSize = 6;
 static const size_t kDeclDataSegmentSize = 13;
 
-// Static representation of a wasm function.
+// Static representation of a WASM function.
 struct WasmFunction {
   FunctionSig* sig;      // signature of the function.
+  uint32_t func_index;   // index into the function table.
   uint16_t sig_index;    // index into the signature table.
   uint32_t name_offset;  // offset in the module bytes of the name, if any.
   uint32_t code_start_offset;    // offset in the module bytes of code start.
@@ -63,7 +66,13 @@ struct WasmFunction {
   bool external;  // true if this function is externally supplied.
 };
 
-struct ModuleEnv;  // forward declaration of decoder interface.
+// Static representation of an imported WASM function.
+struct WasmImport {
+  FunctionSig* sig;               // signature of the function.
+  uint16_t sig_index;             // index into the signature table.
+  uint32_t module_name_offset;    // offset in module bytes of the module name.
+  uint32_t function_name_offset;  // offset in module bytes of the import name.
+};
 
 // Static representation of a wasm global variable.
 struct WasmGlobal {
@@ -93,25 +102,27 @@ struct WasmModule {
   uint8_t max_mem_size_log2;  // maximum size of the memory (log base 2).
   bool mem_export;            // true if the memory is exported.
   bool mem_external;          // true if the memory is external.
+  int start_function_index;   // start function, if any.
 
   std::vector<WasmGlobal>* globals;             // globals in this module.
   std::vector<FunctionSig*>* signatures;        // signatures in this module.
   std::vector<WasmFunction>* functions;         // functions in this module.
   std::vector<WasmDataSegment>* data_segments;  // data segments in this module.
   std::vector<uint16_t>* function_table;        // function table.
+  std::vector<WasmImport>* import_table;        // import table.
 
   WasmModule();
   ~WasmModule();
 
   // Get a pointer to a string stored in the module bytes representing a name.
-  const char* GetName(uint32_t offset) {
+  const char* GetName(uint32_t offset) const {
     if (offset == 0) return "<?>";  // no name.
     CHECK(BoundsCheck(offset, offset + 1));
     return reinterpret_cast<const char*>(module_start + offset);
   }
 
   // Checks the given offset range is contained within the module bytes.
-  bool BoundsCheck(uint32_t start, uint32_t end) {
+  bool BoundsCheck(uint32_t start, uint32_t end) const {
     size_t size = module_end - module_start;
     return start < size && end < size;
   }
@@ -131,6 +142,7 @@ struct WasmModuleInstance {
   Handle<JSArrayBuffer> globals_buffer;  // Handle to array buffer of globals.
   Handle<FixedArray> function_table;     // indirect function table.
   std::vector<Handle<Code>>* function_code;  // code objects for each function.
+  std::vector<Handle<Code>>* import_code;   // code objects for each import.
   // -- raw memory ------------------------------------------------------------
   byte* mem_start;  // start of linear memory.
   size_t mem_size;  // size of the linear memory.
@@ -167,6 +179,9 @@ struct ModuleEnv {
   bool IsValidSignature(uint32_t index) {
     return module && index < module->signatures->size();
   }
+  bool IsValidImport(uint32_t index) {
+    return module && index < module->import_table->size();
+  }
   MachineType GetGlobalType(uint32_t index) {
     DCHECK(IsValidGlobal(index));
     return module->globals->at(index).type;
@@ -174,6 +189,10 @@ struct ModuleEnv {
   FunctionSig* GetFunctionSignature(uint32_t index) {
     DCHECK(IsValidFunction(index));
     return module->functions->at(index).sig;
+  }
+  FunctionSig* GetImportSignature(uint32_t index) {
+    DCHECK(IsValidImport(index));
+    return module->import_table->at(index).sig;
   }
   FunctionSig* GetSignature(uint32_t index) {
     DCHECK(IsValidSignature(index));
@@ -185,14 +204,26 @@ struct ModuleEnv {
   }
 
   Handle<Code> GetFunctionCode(uint32_t index);
+  Handle<Code> GetImportCode(uint32_t index);
   Handle<FixedArray> GetFunctionTable();
 
   compiler::CallDescriptor* GetWasmCallDescriptor(Zone* zone, FunctionSig* sig);
+  static compiler::CallDescriptor* GetI32WasmCallDescriptor(
+      Zone* zone, compiler::CallDescriptor* descriptor);
   compiler::CallDescriptor* GetCallDescriptor(Zone* zone, uint32_t index);
+};
+
+// A helper for printing out the names of functions.
+struct WasmFunctionName {
+  const WasmFunction* function_;
+  const WasmModule* module_;
+  WasmFunctionName(const WasmFunction* function, const ModuleEnv* menv)
+      : function_(function), module_(menv ? menv->module : nullptr) {}
 };
 
 std::ostream& operator<<(std::ostream& os, const WasmModule& module);
 std::ostream& operator<<(std::ostream& os, const WasmFunction& function);
+std::ostream& operator<<(std::ostream& os, const WasmFunctionName& name);
 
 typedef Result<WasmModule*> ModuleResult;
 typedef Result<WasmFunction*> FunctionResult;
@@ -205,6 +236,7 @@ int32_t CompileAndRunWasmModule(Isolate* isolate, const byte* module_start,
 // For testing. Decode, verify, and run the last exported function in the
 // given decoded module.
 int32_t CompileAndRunWasmModule(Isolate* isolate, WasmModule* module);
+
 }  // namespace wasm
 }  // namespace internal
 }  // namespace v8

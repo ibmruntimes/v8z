@@ -60,6 +60,21 @@ namespace interpreter {
   NON_REGISTER_OPERAND_TYPE_LIST(V) \
   REGISTER_OPERAND_TYPE_LIST(V)
 
+// Define one debug break bytecode for each operands size.
+#define DEBUG_BREAK_BYTECODE_LIST(V)                                           \
+  V(DebugBreak0, OperandType::kNone)                                           \
+  V(DebugBreak1, OperandType::kReg8)                                           \
+  V(DebugBreak2, OperandType::kReg16)                                          \
+  V(DebugBreak3, OperandType::kReg16, OperandType::kReg8)                      \
+  V(DebugBreak4, OperandType::kReg16, OperandType::kReg16)                     \
+  V(DebugBreak5, OperandType::kReg16, OperandType::kReg16, OperandType::kReg8) \
+  V(DebugBreak6, OperandType::kReg16, OperandType::kReg16,                     \
+    OperandType::kReg16)                                                       \
+  V(DebugBreak7, OperandType::kReg16, OperandType::kReg16,                     \
+    OperandType::kReg16, OperandType::kReg8)                                   \
+  V(DebugBreak8, OperandType::kReg16, OperandType::kReg16,                     \
+    OperandType::kReg16, OperandType::kReg16)
+
 // The list of bytecodes which are interpreted by the interpreter.
 #define BYTECODE_LIST(V)                                                       \
                                                                                \
@@ -75,14 +90,10 @@ namespace interpreter {
   V(LdaConstantWide, OperandType::kIdx16)                                      \
                                                                                \
   /* Globals */                                                                \
-  V(LdaGlobalSloppy, OperandType::kIdx8, OperandType::kIdx8)                   \
-  V(LdaGlobalStrict, OperandType::kIdx8, OperandType::kIdx8)                   \
-  V(LdaGlobalInsideTypeofSloppy, OperandType::kIdx8, OperandType::kIdx8)       \
-  V(LdaGlobalInsideTypeofStrict, OperandType::kIdx8, OperandType::kIdx8)       \
-  V(LdaGlobalSloppyWide, OperandType::kIdx16, OperandType::kIdx16)             \
-  V(LdaGlobalStrictWide, OperandType::kIdx16, OperandType::kIdx16)             \
-  V(LdaGlobalInsideTypeofSloppyWide, OperandType::kIdx16, OperandType::kIdx16) \
-  V(LdaGlobalInsideTypeofStrictWide, OperandType::kIdx16, OperandType::kIdx16) \
+  V(LdaGlobal, OperandType::kIdx8, OperandType::kIdx8)                         \
+  V(LdaGlobalInsideTypeof, OperandType::kIdx8, OperandType::kIdx8)             \
+  V(LdaGlobalWide, OperandType::kIdx16, OperandType::kIdx16)                   \
+  V(LdaGlobalInsideTypeofWide, OperandType::kIdx16, OperandType::kIdx16)       \
   V(StaGlobalSloppy, OperandType::kIdx8, OperandType::kIdx8)                   \
   V(StaGlobalStrict, OperandType::kIdx8, OperandType::kIdx8)                   \
   V(StaGlobalSloppyWide, OperandType::kIdx16, OperandType::kIdx16)             \
@@ -115,16 +126,10 @@ namespace interpreter {
   V(MovWide, OperandType::kReg16, OperandType::kRegOut16)                      \
                                                                                \
   /* LoadIC operations */                                                      \
-  V(LoadICSloppy, OperandType::kReg8, OperandType::kIdx8, OperandType::kIdx8)  \
-  V(LoadICStrict, OperandType::kReg8, OperandType::kIdx8, OperandType::kIdx8)  \
-  V(KeyedLoadICSloppy, OperandType::kReg8, OperandType::kIdx8)                 \
-  V(KeyedLoadICStrict, OperandType::kReg8, OperandType::kIdx8)                 \
-  V(LoadICSloppyWide, OperandType::kReg8, OperandType::kIdx16,                 \
-    OperandType::kIdx16)                                                       \
-  V(LoadICStrictWide, OperandType::kReg8, OperandType::kIdx16,                 \
-    OperandType::kIdx16)                                                       \
-  V(KeyedLoadICSloppyWide, OperandType::kReg8, OperandType::kIdx16)            \
-  V(KeyedLoadICStrictWide, OperandType::kReg8, OperandType::kIdx16)            \
+  V(LoadIC, OperandType::kReg8, OperandType::kIdx8, OperandType::kIdx8)        \
+  V(KeyedLoadIC, OperandType::kReg8, OperandType::kIdx8)                       \
+  V(LoadICWide, OperandType::kReg8, OperandType::kIdx16, OperandType::kIdx16)  \
+  V(KeyedLoadICWide, OperandType::kReg8, OperandType::kIdx16)                  \
                                                                                \
   /* StoreIC operations */                                                     \
   V(StoreICSloppy, OperandType::kReg8, OperandType::kIdx8, OperandType::kIdx8) \
@@ -167,6 +172,10 @@ namespace interpreter {
   V(Call, OperandType::kReg8, OperandType::kReg8, OperandType::kRegCount8,     \
     OperandType::kIdx8)                                                        \
   V(CallWide, OperandType::kReg16, OperandType::kReg16,                        \
+    OperandType::kRegCount16, OperandType::kIdx16)                             \
+  V(TailCall, OperandType::kReg8, OperandType::kReg8, OperandType::kRegCount8, \
+    OperandType::kIdx8)                                                        \
+  V(TailCallWide, OperandType::kReg16, OperandType::kReg16,                    \
     OperandType::kRegCount16, OperandType::kIdx16)                             \
   V(CallRuntime, OperandType::kIdx16, OperandType::kMaybeReg8,                 \
     OperandType::kRegCount8)                                                   \
@@ -270,7 +279,8 @@ namespace interpreter {
   V(Return, OperandType::kNone)                                                \
                                                                                \
   /* Debugger */                                                               \
-  V(Debugger, OperandType::kNone)
+  V(Debugger, OperandType::kNone)                                              \
+  DEBUG_BREAK_BYTECODE_LIST(V)
 
 // Enumeration of the size classes of operand types used by bytecodes.
 enum class OperandSize : uint8_t {
@@ -421,6 +431,9 @@ class Bytecodes {
   // |bytecode|.
   static int GetRegisterOperandBitmap(Bytecode bytecode);
 
+  // Returns a debug break bytecode with a matching operand size.
+  static Bytecode GetDebugBreak(Bytecode bytecode);
+
   // Returns the size of the bytecode including its operands.
   static int Size(Bytecode bytecode);
 
@@ -464,6 +477,9 @@ class Bytecodes {
 
   // Returns true if the bytecode is a call or a constructor call.
   static bool IsCallOrNew(Bytecode bytecode);
+
+  // Returns true if the bytecode is a debug break.
+  static bool IsDebugBreak(Bytecode bytecode);
 
   // Returns true if |operand_type| is a register index operand (kIdx8/kIdx16).
   static bool IsIndexOperandType(OperandType operand_type);

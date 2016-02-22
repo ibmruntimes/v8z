@@ -211,13 +211,6 @@ Handle<String> Factory::InternalizeUtf8String(Vector<const char> string) {
 }
 
 
-// Internalized strings are created in the old generation (data space).
-Handle<String> Factory::InternalizeString(Handle<String> string) {
-  if (string->IsInternalizedString()) return string;
-  return StringTable::LookupString(isolate(), string);
-}
-
-
 Handle<String> Factory::InternalizeOneByteString(Vector<const uint8_t> string) {
   OneByteStringKey key(string, isolate()->heap()->HashSeed());
   return InternalizeStringWithKey(&key);
@@ -240,12 +233,6 @@ Handle<String> Factory::InternalizeTwoByteString(Vector<const uc16> string) {
 template<class StringTableKey>
 Handle<String> Factory::InternalizeStringWithKey(StringTableKey* key) {
   return StringTable::LookupKey(isolate(), key);
-}
-
-
-Handle<Name> Factory::InternalizeName(Handle<Name> name) {
-  if (name->IsUniqueName()) return name;
-  return InternalizeString(Handle<String>::cast(name));
 }
 
 
@@ -1494,6 +1481,12 @@ Handle<Code> Factory::CopyCode(Handle<Code> code, Vector<byte> reloc_info) {
                      Code);
 }
 
+Handle<BytecodeArray> Factory::CopyBytecodeArray(
+    Handle<BytecodeArray> bytecode_array) {
+  CALL_HEAP_FUNCTION(isolate(),
+                     isolate()->heap()->CopyBytecodeArray(*bytecode_array),
+                     BytecodeArray);
+}
 
 Handle<JSObject> Factory::NewJSObject(Handle<JSFunction> constructor,
                                       PretenureFlag pretenure) {
@@ -2142,7 +2135,7 @@ Handle<SharedFunctionInfo> Factory::NewSharedFunctionInfo(
   share->set_instance_class_name(*Object_string());
   share->set_function_data(*undefined_value(), SKIP_WRITE_BARRIER);
   share->set_script(*undefined_value(), SKIP_WRITE_BARRIER);
-  share->set_debug_info(*undefined_value(), SKIP_WRITE_BARRIER);
+  share->set_debug_info(DebugInfo::uninitialized(), SKIP_WRITE_BARRIER);
   share->set_inferred_name(*empty_string(), SKIP_WRITE_BARRIER);
   StaticFeedbackVectorSpec empty_spec;
   Handle<TypeFeedbackMetadata> feedback_metadata =
@@ -2261,7 +2254,10 @@ Handle<DebugInfo> Factory::NewDebugInfo(Handle<SharedFunctionInfo> shared) {
       Handle<DebugInfo>::cast(NewStruct(DEBUG_INFO_TYPE));
   debug_info->set_shared(*shared);
   if (shared->HasBytecodeArray()) {
-    debug_info->set_abstract_code(AbstractCode::cast(shared->bytecode_array()));
+    // Create a copy for debugging.
+    Handle<BytecodeArray> original(shared->bytecode_array(), isolate());
+    Handle<BytecodeArray> copy = CopyBytecodeArray(original);
+    debug_info->set_abstract_code(AbstractCode::cast(*copy));
   } else {
     debug_info->set_abstract_code(AbstractCode::cast(shared->code()));
   }

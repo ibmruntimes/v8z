@@ -76,6 +76,12 @@ class LinkageLocation {
                               kPointerSize);
   }
 
+  static LinkageLocation ForSavedCallerMarker() {
+    return ForCalleeFrameSlot((StandardFrameConstants::kCallerPCOffset -
+                               StandardFrameConstants::kMarkerOffset) /
+                              kPointerSize);
+  }
+
   static LinkageLocation ConvertToTailCallerLocation(
       LinkageLocation caller_location, int stack_param_delta) {
     if (!caller_location.IsRegister()) {
@@ -140,8 +146,7 @@ class CallDescriptor final : public ZoneObject {
   enum Kind {
     kCallCodeObject,  // target is a Code object
     kCallJSFunction,  // target is a JSFunction object
-    kCallAddress,     // target is a machine pointer
-    kLazyBailout      // the call is no-op, only used for lazy bailout
+    kCallAddress      // target is a machine pointer
   };
 
   enum Flag {
@@ -318,8 +323,6 @@ class Linkage : public ZoneObject {
   static CallDescriptor* GetRuntimeCallDescriptor(
       Zone* zone, Runtime::FunctionId function, int parameter_count,
       Operator::Properties properties, CallDescriptor::Flags flags);
-
-  static CallDescriptor* GetLazyBailoutDescriptor(Zone* zone);
 
   static CallDescriptor* GetStubCallDescriptor(
       Isolate* isolate, Zone* zone, const CallInterfaceDescriptor& descriptor,

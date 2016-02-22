@@ -94,6 +94,7 @@ class CallSite {
   T(ArrayFunctionsOnSealed, "Cannot add/remove sealed array elements")         \
   T(ArrayNotSubclassable, "Subclassing Arrays is not currently supported.")    \
   T(CalledNonCallable, "% is not a function")                                  \
+  T(CalledNonCallableInstanceOf, "right-hand side is not a function")          \
   T(CalledOnNonObject, "% called on non-object")                               \
   T(CalledOnNullOrUndefined, "% called on null or undefined")                  \
   T(CallSiteExpectsFunction,                                                   \
@@ -294,6 +295,7 @@ class CallSite {
   T(RestrictedFunctionProperties,                                              \
     "'caller' and 'arguments' are restricted function properties and cannot "  \
     "be accessed in this context.")                                            \
+  T(ReturnMethodNotCallable, "The iterator's 'return' method is not callable") \
   T(StaticPrototype, "Classes may not have static property named prototype")   \
   T(StrictCannotAssign, "Cannot assign to read only '%' in strict mode")       \
   T(StrictDeleteProperty, "Cannot delete property '%' of %")                   \
@@ -334,8 +336,6 @@ class CallSite {
   T(StrongSuperCallMissing,                                                    \
     "In strong mode, invoking the super constructor in a subclass is "         \
     "required")                                                                \
-  T(StrongUnboundGlobal,                                                       \
-    "In strong mode, using an undeclared global variable '%' is not allowed")  \
   T(UnsupportedSuper, "Unsupported reference to 'super'")                      \
   /* RangeError */                                                             \
   T(DateRange, "Provided date is not in valid range.")                         \
@@ -397,6 +397,7 @@ class CallSite {
     "Illegal '%' directive in function with non-simple parameter list")        \
   T(IllegalReturn, "Illegal return statement")                                 \
   T(InvalidEscapedReservedWord, "Keyword must not contain escaped characters") \
+  T(InvalidEscapedMetaProperty, "'%' must not contain escaped characters")     \
   T(InvalidLhsInAssignment, "Invalid left-hand side in assignment")            \
   T(InvalidCoverInitializedName, "Invalid shorthand property initializer")     \
   T(InvalidDestructuringTarget, "Invalid destructuring assignment target")     \
@@ -486,8 +487,6 @@ class CallSite {
     "with 'break', 'continue', 'return' or 'throw'")                           \
   T(StrongUndefined,                                                           \
     "In strong mode, binding or assigning to 'undefined' is deprecated")       \
-  T(StrongUseBeforeDeclaration,                                                \
-    "In strong mode, declaring variable '%' before its use is required")       \
   T(StrongVar,                                                                 \
     "In strong mode, 'var' is deprecated, use 'let' or 'const' instead")       \
   T(TemplateOctalLiteral,                                                      \
@@ -518,6 +517,8 @@ class CallSite {
   T(UnterminatedRegExp, "Invalid regular expression: missing /")               \
   T(UnterminatedTemplate, "Unterminated template literal")                     \
   T(UnterminatedTemplateExpr, "Missing } in template expression")              \
+  T(FoundNonCallableHasInstance, "Found non-callable @@hasInstance")           \
+  T(NonObjectInInstanceOfCheck, "Expecting an object in instanceof check")     \
   /* EvalError */                                                              \
   T(CodeGenFromStrings, "%")                                                   \
   /* URIError */                                                               \

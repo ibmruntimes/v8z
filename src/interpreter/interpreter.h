@@ -33,8 +33,14 @@ class Interpreter {
   // Initializes the interpreter dispatch table.
   void Initialize();
 
+  // Returns the interrupt budget which should be used for the profiler counter.
+  static int InterruptBudget();
+
   // Generate bytecode for |info|.
   static bool MakeBytecode(CompilationInfo* info);
+
+  // Return bytecode handler for |bytecode|.
+  Code* GetBytecodeHandler(Bytecode bytecode);
 
   // GC support.
   void IterateDispatchTable(ObjectVisitor* v);
@@ -86,7 +92,7 @@ class Interpreter {
   void DoKeyedStoreIC(Callable ic, InterpreterAssembler* assembler);
 
   // Generates code to perform a JS call.
-  void DoJSCall(InterpreterAssembler* assembler);
+  void DoJSCall(InterpreterAssembler* assembler, TailCallMode tail_call_mode);
 
   // Generates code to perform a runtime call.
   void DoCallRuntimeCommon(InterpreterAssembler* assembler);
@@ -121,7 +127,7 @@ class Interpreter {
   static const int kDispatchTableSize = static_cast<int>(Bytecode::kLast) + 1;
 
   Isolate* isolate_;
-  Object* dispatch_table_[kDispatchTableSize];
+  Code* dispatch_table_[kDispatchTableSize];
 
   DISALLOW_COPY_AND_ASSIGN(Interpreter);
 };

@@ -37,16 +37,28 @@ void Interpreter::Initialize() {
     Do##Name(&assembler);                                               \
     Handle<Code> code = assembler.GenerateCode();                       \
     TraceCodegen(code, #Name);                                          \
-    int index = static_cast<int>(Bytecode::k##Name);                    \
-    dispatch_table_[index] = *code;                                     \
+    dispatch_table_[Bytecodes::ToByte(Bytecode::k##Name)] = *code;      \
   }
   BYTECODE_LIST(GENERATE_CODE)
 #undef GENERATE_CODE
 }
 
+Code* Interpreter::GetBytecodeHandler(Bytecode bytecode) {
+  DCHECK(IsDispatchTableInitialized());
+  return dispatch_table_[Bytecodes::ToByte(bytecode)];
+}
+
 void Interpreter::IterateDispatchTable(ObjectVisitor* v) {
-  v->VisitPointers(&dispatch_table_[0],
-                   &dispatch_table_[0] + kDispatchTableSize);
+  v->VisitPointers(
+      reinterpret_cast<Object**>(&dispatch_table_[0]),
+      reinterpret_cast<Object**>(&dispatch_table_[0] + kDispatchTableSize));
+}
+
+// static
+int Interpreter::InterruptBudget() {
+  // TODO(ignition): Tune code size multiplier.
+  const int kCodeSizeMultiplier = 32;
+  return FLAG_interrupt_budget * kCodeSizeMultiplier;
 }
 
 bool Interpreter::MakeBytecode(CompilationInfo* info) {
@@ -263,97 +275,46 @@ void Interpreter::DoLoadGlobal(Callable ic, InterpreterAssembler* assembler) {
   __ Dispatch();
 }
 
-
-// LdaGlobalSloppy <name_index> <slot>
+// LdaGlobal <name_index> <slot>
 //
 // Load the global with name in constant pool entry <name_index> into the
-// accumulator using FeedBackVector slot <slot> in sloppy mode.
-void Interpreter::DoLdaGlobalSloppy(InterpreterAssembler* assembler) {
+// accumulator using FeedBackVector slot <slot> outside of a typeof.
+void Interpreter::DoLdaGlobal(InterpreterAssembler* assembler) {
   Callable ic = CodeFactory::LoadICInOptimizedCode(isolate_, NOT_INSIDE_TYPEOF,
-                                                   SLOPPY, UNINITIALIZED);
+                                                   UNINITIALIZED);
   DoLoadGlobal(ic, assembler);
 }
 
-
-// LdaGlobalSloppy <name_index> <slot>
+// LdaGlobalInsideTypeof <name_index> <slot>
 //
 // Load the global with name in constant pool entry <name_index> into the
-// accumulator using FeedBackVector slot <slot> in strict mode.
-void Interpreter::DoLdaGlobalStrict(InterpreterAssembler* assembler) {
+// accumulator using FeedBackVector slot <slot> inside of a typeof.
+void Interpreter::DoLdaGlobalInsideTypeof(InterpreterAssembler* assembler) {
+  Callable ic = CodeFactory::LoadICInOptimizedCode(isolate_, INSIDE_TYPEOF,
+                                                   UNINITIALIZED);
+  DoLoadGlobal(ic, assembler);
+}
+
+// LdaGlobalWide <name_index> <slot>
+//
+// Load the global with name in constant pool entry <name_index> into the
+// accumulator using FeedBackVector slot <slot> outside of a typeof.
+void Interpreter::DoLdaGlobalWide(InterpreterAssembler* assembler) {
   Callable ic = CodeFactory::LoadICInOptimizedCode(isolate_, NOT_INSIDE_TYPEOF,
-                                                   STRICT, UNINITIALIZED);
+                                                   UNINITIALIZED);
   DoLoadGlobal(ic, assembler);
 }
 
-
-// LdaGlobalInsideTypeofSloppy <name_index> <slot>
+// LdaGlobalInsideTypeofWide <name_index> <slot>
 //
 // Load the global with name in constant pool entry <name_index> into the
-// accumulator using FeedBackVector slot <slot> in sloppy mode.
-void Interpreter::DoLdaGlobalInsideTypeofSloppy(
-    InterpreterAssembler* assembler) {
+// accumulator using FeedBackVector slot <slot> inside of a typeof.
+void Interpreter::DoLdaGlobalInsideTypeofWide(InterpreterAssembler* assembler) {
   Callable ic = CodeFactory::LoadICInOptimizedCode(isolate_, INSIDE_TYPEOF,
-                                                   SLOPPY, UNINITIALIZED);
+                                                   UNINITIALIZED);
   DoLoadGlobal(ic, assembler);
 }
 
-
-// LdaGlobalInsideTypeofStrict <name_index> <slot>
-//
-// Load the global with name in constant pool entry <name_index> into the
-// accumulator using FeedBackVector slot <slot> in strict mode.
-void Interpreter::DoLdaGlobalInsideTypeofStrict(
-    InterpreterAssembler* assembler) {
-  Callable ic = CodeFactory::LoadICInOptimizedCode(isolate_, INSIDE_TYPEOF,
-                                                   STRICT, UNINITIALIZED);
-  DoLoadGlobal(ic, assembler);
-}
-
-
-// LdaGlobalSloppyWide <name_index> <slot>
-//
-// Load the global with name in constant pool entry <name_index> into the
-// accumulator using FeedBackVector slot <slot> in sloppy mode.
-void Interpreter::DoLdaGlobalSloppyWide(InterpreterAssembler* assembler) {
-  Callable ic = CodeFactory::LoadICInOptimizedCode(isolate_, NOT_INSIDE_TYPEOF,
-                                                   SLOPPY, UNINITIALIZED);
-  DoLoadGlobal(ic, assembler);
-}
-
-
-// LdaGlobalSloppyWide <name_index> <slot>
-//
-// Load the global with name in constant pool entry <name_index> into the
-// accumulator using FeedBackVector slot <slot> in strict mode.
-void Interpreter::DoLdaGlobalStrictWide(InterpreterAssembler* assembler) {
-  Callable ic = CodeFactory::LoadICInOptimizedCode(isolate_, NOT_INSIDE_TYPEOF,
-                                                   STRICT, UNINITIALIZED);
-  DoLoadGlobal(ic, assembler);
-}
-
-
-// LdaGlobalInsideTypeofSloppyWide <name_index> <slot>
-//
-// Load the global with name in constant pool entry <name_index> into the
-// accumulator using FeedBackVector slot <slot> in sloppy mode.
-void Interpreter::DoLdaGlobalInsideTypeofSloppyWide(
-    InterpreterAssembler* assembler) {
-  Callable ic = CodeFactory::LoadICInOptimizedCode(isolate_, INSIDE_TYPEOF,
-                                                   SLOPPY, UNINITIALIZED);
-  DoLoadGlobal(ic, assembler);
-}
-
-
-// LdaGlobalInsideTypeofSloppyWide <name_index> <slot>
-//
-// Load the global with name in constant pool entry <name_index> into the
-// accumulator using FeedBackVector slot <slot> in strict mode.
-void Interpreter::DoLdaGlobalInsideTypeofStrictWide(
-    InterpreterAssembler* assembler) {
-  Callable ic = CodeFactory::LoadICInOptimizedCode(isolate_, INSIDE_TYPEOF,
-                                                   STRICT, UNINITIALIZED);
-  DoLoadGlobal(ic, assembler);
-}
 
 void Interpreter::DoStoreGlobal(Callable ic, InterpreterAssembler* assembler) {
   // Get the global object.
@@ -575,49 +536,26 @@ void Interpreter::DoLoadIC(Callable ic, InterpreterAssembler* assembler) {
   __ Dispatch();
 }
 
-
-// LoadICSloppy <object> <name_index> <slot>
+// LoadIC <object> <name_index> <slot>
 //
-// Calls the sloppy mode LoadIC at FeedBackVector slot <slot> for <object> and
-// the name at constant pool entry <name_index>.
-void Interpreter::DoLoadICSloppy(InterpreterAssembler* assembler) {
+// Calls the LoadIC at FeedBackVector slot <slot> for <object> and the name at
+// constant pool entry <name_index>.
+void Interpreter::DoLoadIC(InterpreterAssembler* assembler) {
   Callable ic = CodeFactory::LoadICInOptimizedCode(isolate_, NOT_INSIDE_TYPEOF,
-                                                   SLOPPY, UNINITIALIZED);
+                                                   UNINITIALIZED);
   DoLoadIC(ic, assembler);
 }
 
-
-// LoadICStrict <object> <name_index> <slot>
+// LoadICWide <object> <name_index> <slot>
 //
-// Calls the sloppy mode LoadIC at FeedBackVector slot <slot> for <object> and
-// the name at constant pool entry <name_index>.
-void Interpreter::DoLoadICStrict(InterpreterAssembler* assembler) {
+// Calls the LoadIC at FeedBackVector slot <slot> for <object> and the name at
+// constant pool entry <name_index>.
+void Interpreter::DoLoadICWide(InterpreterAssembler* assembler) {
   Callable ic = CodeFactory::LoadICInOptimizedCode(isolate_, NOT_INSIDE_TYPEOF,
-                                                   STRICT, UNINITIALIZED);
+                                                   UNINITIALIZED);
   DoLoadIC(ic, assembler);
 }
 
-
-// LoadICSloppyWide <object> <name_index> <slot>
-//
-// Calls the sloppy mode LoadIC at FeedBackVector slot <slot> for <object> and
-// the name at constant pool entry <name_index>.
-void Interpreter::DoLoadICSloppyWide(InterpreterAssembler* assembler) {
-  Callable ic = CodeFactory::LoadICInOptimizedCode(isolate_, NOT_INSIDE_TYPEOF,
-                                                   SLOPPY, UNINITIALIZED);
-  DoLoadIC(ic, assembler);
-}
-
-
-// LoadICStrictWide <object> <name_index> <slot>
-//
-// Calls the sloppy mode LoadIC at FeedBackVector slot <slot> for <object> and
-// the name at constant pool entry <name_index>.
-void Interpreter::DoLoadICStrictWide(InterpreterAssembler* assembler) {
-  Callable ic = CodeFactory::LoadICInOptimizedCode(isolate_, NOT_INSIDE_TYPEOF,
-                                                   STRICT, UNINITIALIZED);
-  DoLoadIC(ic, assembler);
-}
 
 void Interpreter::DoKeyedLoadIC(Callable ic, InterpreterAssembler* assembler) {
   Node* code_target = __ HeapConstant(ic.code());
@@ -634,49 +572,26 @@ void Interpreter::DoKeyedLoadIC(Callable ic, InterpreterAssembler* assembler) {
   __ Dispatch();
 }
 
-
-// KeyedLoadICSloppy <object> <slot>
+// KeyedLoadIC <object> <slot>
 //
-// Calls the sloppy mode KeyedLoadIC at FeedBackVector slot <slot> for <object>
-// and the key in the accumulator.
-void Interpreter::DoKeyedLoadICSloppy(InterpreterAssembler* assembler) {
+// Calls the KeyedLoadIC at FeedBackVector slot <slot> for <object> and the key
+// in the accumulator.
+void Interpreter::DoKeyedLoadIC(InterpreterAssembler* assembler) {
   Callable ic =
-      CodeFactory::KeyedLoadICInOptimizedCode(isolate_, SLOPPY, UNINITIALIZED);
+      CodeFactory::KeyedLoadICInOptimizedCode(isolate_, UNINITIALIZED);
   DoKeyedLoadIC(ic, assembler);
 }
 
-
-// KeyedLoadICStrict <object> <slot>
+// KeyedLoadICWide <object> <slot>
 //
-// Calls the strict mode KeyedLoadIC at FeedBackVector slot <slot> for <object>
-// and the key in the accumulator.
-void Interpreter::DoKeyedLoadICStrict(InterpreterAssembler* assembler) {
+// Calls the KeyedLoadIC at FeedBackVector slot <slot> for <object> and the key
+// in the accumulator.
+void Interpreter::DoKeyedLoadICWide(InterpreterAssembler* assembler) {
   Callable ic =
-      CodeFactory::KeyedLoadICInOptimizedCode(isolate_, STRICT, UNINITIALIZED);
+      CodeFactory::KeyedLoadICInOptimizedCode(isolate_, UNINITIALIZED);
   DoKeyedLoadIC(ic, assembler);
 }
 
-
-// KeyedLoadICSloppyWide <object> <slot>
-//
-// Calls the sloppy mode KeyedLoadIC at FeedBackVector slot <slot> for <object>
-// and the key in the accumulator.
-void Interpreter::DoKeyedLoadICSloppyWide(InterpreterAssembler* assembler) {
-  Callable ic =
-      CodeFactory::KeyedLoadICInOptimizedCode(isolate_, SLOPPY, UNINITIALIZED);
-  DoKeyedLoadIC(ic, assembler);
-}
-
-
-// KeyedLoadICStrictWide <object> <slot>
-//
-// Calls the strict mode KeyedLoadIC at FeedBackVector slot <slot> for <object>
-// and the key in the accumulator.
-void Interpreter::DoKeyedLoadICStrictWide(InterpreterAssembler* assembler) {
-  Callable ic =
-      CodeFactory::KeyedLoadICInOptimizedCode(isolate_, STRICT, UNINITIALIZED);
-  DoKeyedLoadIC(ic, assembler);
-}
 
 void Interpreter::DoStoreIC(Callable ic, InterpreterAssembler* assembler) {
   Node* code_target = __ HeapConstant(ic.code());
@@ -1019,8 +934,8 @@ void Interpreter::DoDeletePropertySloppy(InterpreterAssembler* assembler) {
   DoDelete(Runtime::kDeleteProperty_Sloppy, assembler);
 }
 
-
-void Interpreter::DoJSCall(InterpreterAssembler* assembler) {
+void Interpreter::DoJSCall(InterpreterAssembler* assembler,
+                           TailCallMode tail_call_mode) {
   Node* function_reg = __ BytecodeOperandReg(0);
   Node* function = __ LoadRegister(function_reg);
   Node* receiver_reg = __ BytecodeOperandReg(1);
@@ -1030,7 +945,8 @@ void Interpreter::DoJSCall(InterpreterAssembler* assembler) {
   Node* args_count = __ Int32Sub(receiver_args_count, receiver_count);
   Node* context = __ GetContext();
   // TODO(rmcilroy): Use the call type feedback slot to call via CallStub.
-  Node* result = __ CallJS(function, context, receiver_arg, args_count);
+  Node* result =
+      __ CallJS(function, context, receiver_arg, args_count, tail_call_mode);
   __ SetAccumulator(result);
   __ Dispatch();
 }
@@ -1041,7 +957,7 @@ void Interpreter::DoJSCall(InterpreterAssembler* assembler) {
 // Call a JSfunction or Callable in |callable| with the |receiver| and
 // |arg_count| arguments in subsequent registers.
 void Interpreter::DoCall(InterpreterAssembler* assembler) {
-  DoJSCall(assembler);
+  DoJSCall(assembler, TailCallMode::kDisallow);
 }
 
 
@@ -1050,7 +966,23 @@ void Interpreter::DoCall(InterpreterAssembler* assembler) {
 // Call a JSfunction or Callable in |callable| with the |receiver| and
 // |arg_count| arguments in subsequent registers.
 void Interpreter::DoCallWide(InterpreterAssembler* assembler) {
-  DoJSCall(assembler);
+  DoJSCall(assembler, TailCallMode::kDisallow);
+}
+
+// TailCall <callable> <receiver> <arg_count>
+//
+// Tail call a JSfunction or Callable in |callable| with the |receiver| and
+// |arg_count| arguments in subsequent registers.
+void Interpreter::DoTailCall(InterpreterAssembler* assembler) {
+  DoJSCall(assembler, TailCallMode::kAllow);
+}
+
+// TailCallWide <callable> <receiver> <arg_count>
+//
+// Tail call a JSfunction or Callable in |callable| with the |receiver| and
+// |arg_count| arguments in subsequent registers.
+void Interpreter::DoTailCallWide(InterpreterAssembler* assembler) {
+  DoJSCall(assembler, TailCallMode::kAllow);
 }
 
 void Interpreter::DoCallRuntimeCommon(InterpreterAssembler* assembler) {
@@ -1141,7 +1073,8 @@ void Interpreter::DoCallJSRuntimeCommon(InterpreterAssembler* assembler) {
   Node* function = __ LoadContextSlot(native_context, context_index);
 
   // Call the function.
-  Node* result = __ CallJS(function, context, first_arg, args_count);
+  Node* result = __ CallJS(function, context, first_arg, args_count,
+                           TailCallMode::kDisallow);
   __ SetAccumulator(result);
   __ Dispatch();
 }
@@ -1166,14 +1099,15 @@ void Interpreter::DoCallJSRuntimeWide(InterpreterAssembler* assembler) {
 
 void Interpreter::DoCallConstruct(InterpreterAssembler* assembler) {
   Callable ic = CodeFactory::InterpreterPushArgsAndConstruct(isolate_);
+  Node* new_target = __ GetAccumulator();
   Node* constructor_reg = __ BytecodeOperandReg(0);
   Node* constructor = __ LoadRegister(constructor_reg);
   Node* first_arg_reg = __ BytecodeOperandReg(1);
   Node* first_arg = __ RegisterLocation(first_arg_reg);
   Node* args_count = __ BytecodeOperandCount(2);
   Node* context = __ GetContext();
-  Node* result = __ CallConstruct(constructor, context, constructor, first_arg,
-                                  args_count);
+  Node* result =
+      __ CallConstruct(constructor, context, new_target, first_arg, args_count);
   __ SetAccumulator(result);
   __ Dispatch();
 }
@@ -1183,6 +1117,7 @@ void Interpreter::DoCallConstruct(InterpreterAssembler* assembler) {
 //
 // Call operator new with |constructor| and the first argument in
 // register |first_arg| and |arg_count| arguments in subsequent
+// registers. The new.target is in the accumulator.
 //
 void Interpreter::DoNew(InterpreterAssembler* assembler) {
   DoCallConstruct(assembler);
@@ -1193,6 +1128,7 @@ void Interpreter::DoNew(InterpreterAssembler* assembler) {
 //
 // Call operator new with |constructor| and the first argument in
 // register |first_arg| and |arg_count| arguments in subsequent
+// registers. The new.target is in the accumulator.
 //
 void Interpreter::DoNewWide(InterpreterAssembler* assembler) {
   DoCallConstruct(assembler);
@@ -1797,6 +1733,18 @@ void Interpreter::DoDebugger(InterpreterAssembler* assembler) {
   __ CallRuntime(Runtime::kHandleDebuggerStatement, context);
   __ Dispatch();
 }
+
+// DebugBreak
+//
+// Call runtime to handle a debug break.
+#define DEBUG_BREAK(Name, ...)                                              \
+  void Interpreter::Do##Name(InterpreterAssembler* assembler) {             \
+    Node* context = __ GetContext();                                        \
+    Node* original_handler = __ CallRuntime(Runtime::kDebugBreak, context); \
+    __ DispatchToBytecodeHandler(original_handler);                         \
+  }
+DEBUG_BREAK_BYTECODE_LIST(DEBUG_BREAK);
+#undef DEBUG_BREAK
 
 // ForInPrepare <cache_info_triple>
 //

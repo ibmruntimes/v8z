@@ -35,12 +35,12 @@ namespace compiler {
 // Compiles a single function, producing a code object.
 Handle<Code> CompileWasmFunction(wasm::ErrorThrower& thrower, Isolate* isolate,
                                  wasm::ModuleEnv* module_env,
-                                 const wasm::WasmFunction& function, int index);
+                                 const wasm::WasmFunction& function);
 
 // Wraps a JS function, producing a code object that can be called from WASM.
 Handle<Code> CompileWasmToJSWrapper(Isolate* isolate, wasm::ModuleEnv* module,
                                     Handle<JSFunction> function,
-                                    uint32_t index);
+                                    wasm::FunctionSig* sig, const char* name);
 
 // Wraps a given wasm code object, producing a JSFunction that can be called
 // from JavaScript.
@@ -100,6 +100,7 @@ class WasmGraphBuilder {
   Node* Unreachable();
 
   Node* CallDirect(uint32_t index, Node** args);
+  Node* CallImport(uint32_t index, Node** args);
   Node* CallIndirect(uint32_t index, Node** args);
   void BuildJSToWasmWrapper(Handle<Code> wasm_code, wasm::FunctionSig* sig);
   void BuildWasmToJSWrapper(Handle<JSFunction> function,

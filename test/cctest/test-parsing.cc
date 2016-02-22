@@ -1500,7 +1500,6 @@ i::Handle<i::String> FormatMessage(i::Vector<unsigned> data) {
   return i::MessageTemplate::FormatMessage(isolate, message, arg_object);
 }
 
-
 enum ParserFlag {
   kAllowLazy,
   kAllowNatives,
@@ -1511,9 +1510,9 @@ enum ParserFlag {
   kAllowHarmonyDestructuringAssignment,
   kAllowHarmonyNewTarget,
   kAllowStrongMode,
-  kNoLegacyConst
+  kNoLegacyConst,
+  kAllowHarmonyFunctionSent
 };
-
 
 enum ParserSyncTestResult {
   kSuccessOrError,
@@ -1536,6 +1535,8 @@ void SetParserFlags(i::ParserBase<Traits>* parser,
       flags.Contains(kAllowHarmonyDestructuringAssignment));
   parser->set_allow_strong_mode(flags.Contains(kAllowStrongMode));
   parser->set_allow_legacy_const(!flags.Contains(kNoLegacyConst));
+  parser->set_allow_harmony_function_sent(
+      flags.Contains(kAllowHarmonyFunctionSent));
 }
 
 
@@ -6657,61 +6658,6 @@ TEST(StrongModeFreeVariablesDeclaredInGlobalPrototype) {
 }
 
 
-TEST(StrongModeFreeVariablesNotDeclared) {
-  i::FLAG_strong_mode = true;
-  v8::V8::Initialize();
-  v8::HandleScope scope(CcTest::isolate());
-  v8::Context::Scope context_scope(v8::Context::New(CcTest::isolate()));
-  v8::TryCatch try_catch(CcTest::isolate());
-
-  // Test that referencing unintroduced variables in sloppy mode is ok.
-  const char* script1 =
-      "if (false) {            \n"
-      "  not_there1;           \n"
-      "}                       \n";
-  CompileRun(v8_str(script1));
-  CHECK(!try_catch.HasCaught());
-
-  // But not in strong mode.
-  {
-    const char* script2 =
-        "\"use strong\";         \n"
-        "if (false) {            \n"
-        "  not_there2;           \n"
-        "}                       \n";
-    v8::TryCatch try_catch2(CcTest::isolate());
-    v8_compile(v8_str(script2));
-    CHECK(try_catch2.HasCaught());
-    v8::String::Utf8Value exception(try_catch2.Exception());
-    CHECK_EQ(0,
-             strcmp(
-                 "ReferenceError: In strong mode, using an undeclared global "
-                 "variable 'not_there2' is not allowed",
-                 *exception));
-  }
-
-  // Check that the variable reference is detected inside a strong function too,
-  // even if the script scope is not strong.
-  {
-    const char* script3 =
-        "(function not_lazy() {  \n"
-        "  \"use strong\";       \n"
-        "  if (false) {          \n"
-        "    not_there3;         \n"
-        "  }                     \n"
-        "})();                   \n";
-    v8::TryCatch try_catch2(CcTest::isolate());
-    v8_compile(v8_str(script3));
-    CHECK(try_catch2.HasCaught());
-    v8::String::Utf8Value exception(try_catch2.Exception());
-    CHECK_EQ(0,
-             strcmp(
-                 "ReferenceError: In strong mode, using an undeclared global "
-                 "variable 'not_there3' is not allowed",
-                 *exception));
-  }
-}
-
 static const ParserFlag kAllDestructuringFlags[] = {
     kAllowHarmonyDestructuring, kAllowHarmonyDestructuringAssignment,
     kAllowHarmonyDefaultParameters};
@@ -8006,4 +7952,39 @@ TEST(MiscSyntaxErrors) {
   // clang-format on
 
   RunParserSyncTest(context_data, error_data, kError, NULL, 0, NULL, 0);
+}
+
+TEST(FunctionSentErrors) {
+  // clang-format off
+  const char* context_data[][2] = {
+    { "'use strict'", "" },
+    { "", "" },
+    { NULL, NULL }
+  };
+  const char* error_data[] = {
+    "var x = function.sent",
+    "function* g() { yield function.s\\u0065nt; }",
+    NULL
+  };
+  // clang-format on
+
+  static const ParserFlag always_flags[] = {kAllowHarmonyFunctionSent};
+  RunParserSyncTest(context_data, error_data, kError, always_flags,
+                    arraysize(always_flags));
+}
+
+TEST(NewTargetErrors) {
+  // clang-format off
+  const char* context_data[][2] = {
+    { "'use strict'", "" },
+    { "", "" },
+    { NULL, NULL }
+  };
+  const char* error_data[] = {
+    "var x = new.target",
+    "function f() { return new.t\\u0061rget; }",
+    NULL
+  };
+  // clang-format on
+  RunParserSyncTest(context_data, error_data, kError);
 }

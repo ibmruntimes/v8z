@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 // Flags: --stack-size=100 --harmony --harmony-reflect --harmony-regexps
-// Flags: --harmony-simd --strong-mode
+// Flags: --harmony-simd
 
 function test(f, expected, type) {
   try {
@@ -150,7 +150,7 @@ TypeError);
 // kInstanceofFunctionExpected
 test(function() {
   1 instanceof 1;
-}, "Expecting a function in instanceof check, but got 1", TypeError);
+}, "Expecting an object in instanceof check", TypeError);
 
 // kInstanceofNonobjectProto
 test(function() {
@@ -304,12 +304,6 @@ test(function() {
   "use strict";
   (1).a = 1;
 }, "Cannot create property 'a' on number '1'", TypeError);
-
-// kStrongImplicitCast
-test(function() {
-  "use strong";
-  "a" + 1;
-}, "In strong mode, implicit conversions are deprecated", TypeError);
 
 // kSymbolToString
 test(function() {

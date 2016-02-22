@@ -1,4 +1,4 @@
-// Copyright 2014 the V8 project authors. All rights reserved.
+// Copyright 2016 the V8 project authors. All rights reserved.
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -26,17 +26,16 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // Flags: --allow-natives-syntax
+//
+// Tests that Turbofan correctly materializes values which are in the
+// interpreters accumulator during deopt.
 
-function g(x, y) {
-  return y;
+var global = 3;
+function f(a) {
+  // This will trigger a deopt since global was previously a SMI, with the
+  // accumulator holding an unboxed double which needs materialized.
+  global = %_MathSqrt(a);
 }
-
-function f(deopt) {
-  return g(%_SetValueOf(1, 1), deopt + 0);
-}
-
-f(0);
-f(0);
-f(0);
 %OptimizeFunctionOnNextCall(f);
-assertEquals("result0", f("result"));
+f(0.25);
+assertEquals(0.5, global);

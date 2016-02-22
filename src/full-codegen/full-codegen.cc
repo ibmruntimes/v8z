@@ -17,6 +17,7 @@
 #include "src/isolate-inl.h"
 #include "src/macro-assembler.h"
 #include "src/snapshot/snapshot.h"
+#include "src/tracing/trace-event.h"
 
 namespace v8 {
 namespace internal {
@@ -27,6 +28,7 @@ bool FullCodeGenerator::MakeCode(CompilationInfo* info) {
   Isolate* isolate = info->isolate();
 
   TimerEventScope<TimerEventCompileFullCode> timer(info->isolate());
+  TRACE_EVENT0("v8", "V8.CompileFullCode");
 
   // Ensure that the feedback vector is large enough.
   info->EnsureFeedbackVector();
@@ -163,14 +165,7 @@ bool FullCodeGenerator::MustCreateArrayLiteralWithRuntime(
 
 void FullCodeGenerator::Initialize() {
   InitializeAstVisitor(info_->isolate());
-  // The generation of debug code must match between the snapshot code and the
-  // code that is generated later.  This is assumed by the debugger when it is
-  // calculating PC offsets after generating a debug version of code.  Therefore
-  // we disable the production of debug code in the full compiler if we are
-  // either generating a snapshot or we booted from a snapshot.
-  generate_debug_code_ = FLAG_debug_code && !masm_->serializer_enabled() &&
-                         !info_->isolate()->snapshot_available();
-  masm_->set_emit_debug_code(generate_debug_code_);
+  masm_->set_emit_debug_code(FLAG_debug_code);
   masm_->set_predictable_code_size(true);
 }
 
@@ -181,10 +176,8 @@ void FullCodeGenerator::PrepareForBailout(Expression* node, State state) {
 
 
 void FullCodeGenerator::CallLoadIC(TypeofMode typeof_mode,
-                                   LanguageMode language_mode,
                                    TypeFeedbackId id) {
-  Handle<Code> ic =
-      CodeFactory::LoadIC(isolate(), typeof_mode, language_mode).code();
+  Handle<Code> ic = CodeFactory::LoadIC(isolate(), typeof_mode).code();
   CallIC(ic, id);
 }
 
@@ -1168,7 +1161,6 @@ void FullCodeGenerator::VisitTryCatchStatement(TryCatchStatement* stmt) {
   Label try_entry, handler_entry, exit;
   __ jmp(&try_entry);
   __ bind(&handler_entry);
-  PrepareForBailoutForId(stmt->HandlerId(), NO_REGISTERS);
   ClearPendingMessage();
 
   // Exception handler code, the exception is in the result register.
@@ -1237,7 +1229,6 @@ void FullCodeGenerator::VisitTryFinallyStatement(TryFinallyStatement* stmt) {
   // Jump to try-handler setup and try-block code.
   __ jmp(&try_entry);
   __ bind(&handler_entry);
-  PrepareForBailoutForId(stmt->HandlerId(), NO_REGISTERS);
 
   // Exception handler code.  This code is only executed when an exception
   // is thrown.  Record the continuation and jump to the finally block.
@@ -1509,8 +1500,7 @@ void FullCodeGenerator::VisitEmptyParentheses(EmptyParentheses* expr) {
 }
 
 
-void FullCodeGenerator::VisitRewritableAssignmentExpression(
-    RewritableAssignmentExpression* expr) {
+void FullCodeGenerator::VisitRewritableExpression(RewritableExpression* expr) {
   Visit(expr->expression());
 }
 

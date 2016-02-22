@@ -56,11 +56,6 @@ const Register StringCompareDescriptor::LeftRegister() { return r1; }
 const Register StringCompareDescriptor::RightRegister() { return r0; }
 
 
-const Register ArgumentsAccessNewDescriptor::function() { return r1; }
-const Register ArgumentsAccessNewDescriptor::parameter_count() { return r2; }
-const Register ArgumentsAccessNewDescriptor::parameter_pointer() { return r3; }
-
-
 const Register ApiGetterDescriptor::function_address() { return r2; }
 
 
@@ -89,8 +84,20 @@ void FastNewContextDescriptor::InitializePlatformSpecific(
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
 
+void FastNewObjectDescriptor::InitializePlatformSpecific(
+    CallInterfaceDescriptorData* data) {
+  Register registers[] = {r1, r3};
+  data->InitializePlatformSpecific(arraysize(registers), registers);
+}
 
 void FastNewRestParameterDescriptor::InitializePlatformSpecific(
+    CallInterfaceDescriptorData* data) {
+  Register registers[] = {r1};
+  data->InitializePlatformSpecific(arraysize(registers), registers);
+}
+
+
+void FastNewSloppyArgumentsDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {r1};
   data->InitializePlatformSpecific(arraysize(registers), registers);

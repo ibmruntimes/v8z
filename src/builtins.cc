@@ -251,6 +251,9 @@ MUST_USE_RESULT
 inline MaybeHandle<FixedArrayBase> EnsureJSArrayWithWritableFastElements(
     Isolate* isolate, Handle<Object> receiver, Arguments* args,
     int first_added_arg) {
+  // We explicitly add a HandleScope to avoid creating several copies of the
+  // same handle which would otherwise cause issue when left-trimming later-on.
+  HandleScope scope(isolate);
   if (!receiver->IsJSArray()) return MaybeHandle<FixedArrayBase>();
   Handle<JSArray> array = Handle<JSArray>::cast(receiver);
   // If there may be elements accessors in the prototype chain, the fast path
@@ -264,12 +267,18 @@ inline MaybeHandle<FixedArrayBase> EnsureJSArrayWithWritableFastElements(
   Handle<FixedArrayBase> elms(array->elements(), isolate);
   Map* map = elms->map();
   if (map == heap->fixed_array_map()) {
-    if (args == NULL || array->HasFastObjectElements()) return elms;
+    if (args == NULL || array->HasFastObjectElements()) {
+      return scope.CloseAndEscape(elms);
+    }
   } else if (map == heap->fixed_cow_array_map()) {
     elms = JSObject::EnsureWritableFastElements(array);
-    if (args == NULL || array->HasFastObjectElements()) return elms;
+    if (args == NULL || array->HasFastObjectElements()) {
+      return scope.CloseAndEscape(elms);
+    }
   } else if (map == heap->fixed_double_array_map()) {
-    if (args == NULL) return elms;
+    if (args == NULL) {
+      return scope.CloseAndEscape(elms);
+    }
   } else {
     return MaybeHandle<FixedArrayBase>();
   }
@@ -283,7 +292,9 @@ inline MaybeHandle<FixedArrayBase> EnsureJSArrayWithWritableFastElements(
   // Need to ensure that the arguments passed in args can be contained in
   // the array.
   int args_length = args->length();
-  if (first_added_arg >= args_length) return handle(array->elements(), isolate);
+  if (first_added_arg >= args_length) {
+    return scope.CloseAndEscape(elms);
+  }
 
   ElementsKind origin_kind = array->map()->elements_kind();
   DCHECK(!IsFastObjectElementsKind(origin_kind));
@@ -306,9 +317,9 @@ inline MaybeHandle<FixedArrayBase> EnsureJSArrayWithWritableFastElements(
   }
   if (target_kind != origin_kind) {
     JSObject::TransitionElementsKind(array, target_kind);
-    return handle(array->elements(), isolate);
+    elms = handle(array->elements(), isolate);
   }
-  return elms;
+  return scope.CloseAndEscape(elms);
 }
 
 
@@ -1598,11 +1609,13 @@ MUST_USE_RESULT Maybe<bool> FastAssign(Handle<JSReceiver> to,
   Handle<DescriptorArray> descriptors(map->instance_descriptors(), isolate);
   int length = map->NumberOfOwnDescriptors();
 
+  bool stable = true;
+
   for (int i = 0; i < length; i++) {
     Handle<Name> next_key(descriptors->GetKey(i), isolate);
     Handle<Object> prop_value;
     // Directly decode from the descriptor array if |from| did not change shape.
-    if (from->map() == *map) {
+    if (stable) {
       PropertyDetails details = descriptors->GetDetails(i);
       if (!details.IsEnumerable()) continue;
       if (details.kind() == kData) {
@@ -1614,9 +1627,10 @@ MUST_USE_RESULT Maybe<bool> FastAssign(Handle<JSReceiver> to,
           prop_value = JSObject::FastPropertyAt(from, representation, index);
         }
       } else {
-        ASSIGN_RETURN_ON_EXCEPTION_VALUE(
-            isolate, prop_value, Object::GetProperty(from, next_key, STRICT),
-            Nothing<bool>());
+        ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, prop_value,
+                                         Object::GetProperty(from, next_key),
+                                         Nothing<bool>());
+        stable = from->map() == *map;
       }
     } else {
       // If the map did change, do a slower lookup. We are still guaranteed that
@@ -1626,16 +1640,15 @@ MUST_USE_RESULT Maybe<bool> FastAssign(Handle<JSReceiver> to,
       DCHECK(it.state() == LookupIterator::DATA ||
              it.state() == LookupIterator::ACCESSOR);
       if (!it.IsEnumerable()) continue;
-      ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, prop_value,
-                                       Object::GetProperty(&it, STRICT),
-                                       Nothing<bool>());
+      ASSIGN_RETURN_ON_EXCEPTION_VALUE(
+          isolate, prop_value, Object::GetProperty(&it), Nothing<bool>());
     }
-    Handle<Object> status;
-    ASSIGN_RETURN_ON_EXCEPTION_VALUE(
-        isolate, status,
-        Object::SetProperty(to, next_key, prop_value, STRICT,
-                            Object::CERTAINLY_NOT_STORE_FROM_KEYED),
-        Nothing<bool>());
+    LookupIterator it(to, next_key);
+    bool call_to_js = it.IsFound() && it.state() != LookupIterator::DATA;
+    Maybe<bool> result = Object::SetProperty(
+        &it, prop_value, STRICT, Object::CERTAINLY_NOT_STORE_FROM_KEYED);
+    if (result.IsNothing()) return result;
+    if (stable && call_to_js) stable = from->map() == *map;
   }
 
   return Just(true);
@@ -1687,7 +1700,7 @@ BUILTIN(ObjectAssign) {
         Handle<Object> prop_value;
         ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
             isolate, prop_value,
-            Runtime::GetObjectProperty(isolate, from, next_key, STRICT));
+            Runtime::GetObjectProperty(isolate, from, next_key));
         // 4c ii 2. Let status be ? Set(to, nextKey, propValue, true).
         Handle<Object> status;
         ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
@@ -1800,6 +1813,16 @@ BUILTIN(ObjectGetOwnPropertyNames) {
 // ES6 section 19.1.2.8 Object.getOwnPropertySymbols ( O )
 BUILTIN(ObjectGetOwnPropertySymbols) {
   return GetOwnPropertyKeys(isolate, args, SKIP_STRINGS);
+}
+
+
+// ES#sec-object.is Object.is ( value1, value2 )
+BUILTIN(ObjectIs) {
+  SealHandleScope shs(isolate);
+  DCHECK_EQ(3, args.length());
+  Handle<Object> value1 = args.at<Object>(1);
+  Handle<Object> value2 = args.at<Object>(2);
+  return isolate->heap()->ToBoolean(value1->SameValue(*value2));
 }
 
 
@@ -2302,6 +2325,180 @@ BUILTIN(ReflectSetPrototypeOf) {
       Handle<JSReceiver>::cast(target), proto, true, Object::DONT_THROW);
   MAYBE_RETURN(result, isolate->heap()->exception());
   return *isolate->factory()->ToBoolean(result.FromJust());
+}
+
+
+// -----------------------------------------------------------------------------
+// ES6 section 19.3 Boolean Objects
+
+
+// ES6 section 19.3.1.1 Boolean ( value ) for the [[Call]] case.
+BUILTIN(BooleanConstructor) {
+  HandleScope scope(isolate);
+  Handle<Object> value = args.atOrUndefined(isolate, 1);
+  return isolate->heap()->ToBoolean(value->BooleanValue());
+}
+
+
+// ES6 section 19.3.1.1 Boolean ( value ) for the [[Construct]] case.
+BUILTIN(BooleanConstructor_ConstructStub) {
+  HandleScope scope(isolate);
+  Handle<Object> value = args.atOrUndefined(isolate, 1);
+  Handle<JSFunction> target = args.target<JSFunction>();
+  Handle<JSReceiver> new_target = Handle<JSReceiver>::cast(args.new_target());
+  DCHECK(*target == target->native_context()->boolean_function());
+  Handle<JSObject> result;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, result,
+                                     JSObject::New(target, new_target));
+  Handle<JSValue>::cast(result)->set_value(
+      isolate->heap()->ToBoolean(value->BooleanValue()));
+  return *result;
+}
+
+
+// ES6 section 19.3.3.2 Boolean.prototype.toString ( )
+BUILTIN(BooleanPrototypeToString) {
+  HandleScope scope(isolate);
+  Handle<Object> receiver = args.receiver();
+  if (receiver->IsJSValue()) {
+    receiver = handle(Handle<JSValue>::cast(receiver)->value(), isolate);
+  }
+  if (!receiver->IsBoolean()) {
+    THROW_NEW_ERROR_RETURN_FAILURE(
+        isolate, NewTypeError(MessageTemplate::kNotGeneric,
+                              isolate->factory()->NewStringFromAsciiChecked(
+                                  "Boolean.prototype.toString")));
+  }
+  return Handle<Oddball>::cast(receiver)->to_string();
+}
+
+
+// ES6 section 19.3.3.3 Boolean.prototype.valueOf ( )
+BUILTIN(BooleanPrototypeValueOf) {
+  HandleScope scope(isolate);
+  Handle<Object> receiver = args.receiver();
+  if (receiver->IsJSValue()) {
+    receiver = handle(Handle<JSValue>::cast(receiver)->value(), isolate);
+  }
+  if (!receiver->IsBoolean()) {
+    THROW_NEW_ERROR_RETURN_FAILURE(
+        isolate, NewTypeError(MessageTemplate::kNotGeneric,
+                              isolate->factory()->NewStringFromAsciiChecked(
+                                  "Boolean.prototype.valueOf")));
+  }
+  return *receiver;
+}
+
+
+// -----------------------------------------------------------------------------
+// ES6 section 24.2 DataView Objects
+
+
+// ES6 section 24.2.2 The DataView Constructor for the [[Call]] case.
+BUILTIN(DataViewConstructor) {
+  HandleScope scope(isolate);
+  THROW_NEW_ERROR_RETURN_FAILURE(
+      isolate,
+      NewTypeError(MessageTemplate::kConstructorNotFunction,
+                   isolate->factory()->NewStringFromAsciiChecked("DataView")));
+}
+
+
+// ES6 section 24.2.2 The DataView Constructor for the [[Construct]] case.
+BUILTIN(DataViewConstructor_ConstructStub) {
+  HandleScope scope(isolate);
+  Handle<JSFunction> target = args.target<JSFunction>();
+  Handle<JSReceiver> new_target = Handle<JSReceiver>::cast(args.new_target());
+  Handle<Object> buffer = args.atOrUndefined(isolate, 1);
+  Handle<Object> byte_offset = args.atOrUndefined(isolate, 2);
+  Handle<Object> byte_length = args.atOrUndefined(isolate, 3);
+
+  // 2. If Type(buffer) is not Object, throw a TypeError exception.
+  // 3. If buffer does not have an [[ArrayBufferData]] internal slot, throw a
+  //    TypeError exception.
+  if (!buffer->IsJSArrayBuffer()) {
+    THROW_NEW_ERROR_RETURN_FAILURE(
+        isolate, NewTypeError(MessageTemplate::kDataViewNotArrayBuffer));
+  }
+  Handle<JSArrayBuffer> array_buffer = Handle<JSArrayBuffer>::cast(buffer);
+
+  // 4. Let numberOffset be ? ToNumber(byteOffset).
+  Handle<Object> number_offset;
+  if (byte_offset->IsUndefined()) {
+    // We intentionally violate the specification at this point to allow
+    // for new DataView(buffer) invocations to be equivalent to the full
+    // new DataView(buffer, 0) invocation.
+    number_offset = handle(Smi::FromInt(0), isolate);
+  } else {
+    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, number_offset,
+                                       Object::ToNumber(byte_offset));
+  }
+
+  // 5. Let offset be ToInteger(numberOffset).
+  Handle<Object> offset;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, offset,
+                                     Object::ToInteger(isolate, number_offset));
+
+  // 6. If numberOffset ≠ offset or offset < 0, throw a RangeError exception.
+  if (number_offset->Number() != offset->Number() || offset->Number() < 0.0) {
+    THROW_NEW_ERROR_RETURN_FAILURE(
+        isolate, NewRangeError(MessageTemplate::kInvalidDataViewOffset));
+  }
+
+  // 7. If IsDetachedBuffer(buffer) is true, throw a TypeError exception.
+  // We currently violate the specification at this point.
+
+  // 8. Let bufferByteLength be the value of buffer's [[ArrayBufferByteLength]]
+  // internal slot.
+  double const buffer_byte_length = array_buffer->byte_length()->Number();
+
+  // 9. If offset > bufferByteLength, throw a RangeError exception
+  if (offset->Number() > buffer_byte_length) {
+    THROW_NEW_ERROR_RETURN_FAILURE(
+        isolate, NewRangeError(MessageTemplate::kInvalidDataViewOffset));
+  }
+
+  Handle<Object> view_byte_length;
+  if (byte_length->IsUndefined()) {
+    // 10. If byteLength is undefined, then
+    //       a. Let viewByteLength be bufferByteLength - offset.
+    view_byte_length =
+        isolate->factory()->NewNumber(buffer_byte_length - offset->Number());
+  } else {
+    // 11. Else,
+    //       a. Let viewByteLength be ? ToLength(byteLength).
+    //       b. If offset+viewByteLength > bufferByteLength, throw a RangeError
+    //          exception
+    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+        isolate, view_byte_length, Object::ToLength(isolate, byte_length));
+    if (offset->Number() + view_byte_length->Number() > buffer_byte_length) {
+      THROW_NEW_ERROR_RETURN_FAILURE(
+          isolate, NewRangeError(MessageTemplate::kInvalidDataViewLength));
+    }
+  }
+
+  // 12. Let O be ? OrdinaryCreateFromConstructor(NewTarget,
+  //     "%DataViewPrototype%", «[[DataView]], [[ViewedArrayBuffer]],
+  //     [[ByteLength]], [[ByteOffset]]»).
+  // 13. Set O's [[DataView]] internal slot to true.
+  Handle<JSObject> result;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, result,
+                                     JSObject::New(target, new_target));
+  for (int i = 0; i < ArrayBufferView::kInternalFieldCount; ++i) {
+    Handle<JSDataView>::cast(result)->SetInternalField(i, Smi::FromInt(0));
+  }
+
+  // 14. Set O's [[ViewedArrayBuffer]] internal slot to buffer.
+  Handle<JSDataView>::cast(result)->set_buffer(*array_buffer);
+
+  // 15. Set O's [[ByteLength]] internal slot to viewByteLength.
+  Handle<JSDataView>::cast(result)->set_byte_length(*view_byte_length);
+
+  // 16. Set O's [[ByteOffset]] internal slot to offset.
+  Handle<JSDataView>::cast(result)->set_byte_offset(*offset);
+
+  // 17. Return O.
+  return *result;
 }
 
 
@@ -3646,22 +3843,20 @@ BUILTIN(ArrayBufferConstructor_ConstructStub) {
     THROW_NEW_ERROR_RETURN_FAILURE(
         isolate, NewRangeError(MessageTemplate::kInvalidArrayBufferLength));
   }
-  Handle<Map> initial_map;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-      isolate, initial_map,
-      JSFunction::GetDerivedMap(isolate, target, new_target));
+  Handle<JSObject> result;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, result,
+                                     JSObject::New(target, new_target));
   size_t byte_length;
   if (!TryNumberToSize(isolate, *number_length, &byte_length)) {
     THROW_NEW_ERROR_RETURN_FAILURE(
         isolate, NewRangeError(MessageTemplate::kInvalidArrayBufferLength));
   }
-  Handle<JSArrayBuffer> result = Handle<JSArrayBuffer>::cast(
-      isolate->factory()->NewJSObjectFromMap(initial_map));
   SharedFlag shared_flag =
       (*target == target->native_context()->array_buffer_fun())
           ? SharedFlag::kNotShared
           : SharedFlag::kShared;
-  if (!JSArrayBuffer::SetupAllocatingData(result, isolate, byte_length, true,
+  if (!JSArrayBuffer::SetupAllocatingData(Handle<JSArrayBuffer>::cast(result),
+                                          isolate, byte_length, true,
                                           shared_flag)) {
     THROW_NEW_ERROR_RETURN_FAILURE(
         isolate, NewRangeError(MessageTemplate::kArrayBufferAllocationFailed));
@@ -3905,6 +4100,16 @@ Handle<Code> Builtins::CallBoundFunction(TailCallMode tail_call_mode) {
   return Handle<Code>::null();
 }
 
+Handle<Code> Builtins::InterpreterPushArgsAndCall(TailCallMode tail_call_mode) {
+  switch (tail_call_mode) {
+    case TailCallMode::kDisallow:
+      return InterpreterPushArgsAndCall();
+    case TailCallMode::kAllow:
+      return InterpreterPushArgsAndTailCall();
+  }
+  UNREACHABLE();
+  return Handle<Code>::null();
+}
 
 namespace {
 
@@ -4034,12 +4239,7 @@ static void Generate_LoadIC_Miss(MacroAssembler* masm) {
 
 
 static void Generate_LoadIC_Normal(MacroAssembler* masm) {
-  LoadIC::GenerateNormal(masm, SLOPPY);
-}
-
-
-static void Generate_LoadIC_Normal_Strong(MacroAssembler* masm) {
-  LoadIC::GenerateNormal(masm, STRONG);
+  LoadIC::GenerateNormal(masm);
 }
 
 
@@ -4049,22 +4249,12 @@ static void Generate_LoadIC_Getter_ForDeopt(MacroAssembler* masm) {
 
 
 static void Generate_LoadIC_Slow(MacroAssembler* masm) {
-  LoadIC::GenerateRuntimeGetProperty(masm, SLOPPY);
-}
-
-
-static void Generate_LoadIC_Slow_Strong(MacroAssembler* masm) {
-  LoadIC::GenerateRuntimeGetProperty(masm, STRONG);
+  LoadIC::GenerateRuntimeGetProperty(masm);
 }
 
 
 static void Generate_KeyedLoadIC_Slow(MacroAssembler* masm) {
-  KeyedLoadIC::GenerateRuntimeGetProperty(masm, SLOPPY);
-}
-
-
-static void Generate_KeyedLoadIC_Slow_Strong(MacroAssembler* masm) {
-  KeyedLoadIC::GenerateRuntimeGetProperty(masm, STRONG);
+  KeyedLoadIC::GenerateRuntimeGetProperty(masm);
 }
 
 
@@ -4074,12 +4264,7 @@ static void Generate_KeyedLoadIC_Miss(MacroAssembler* masm) {
 
 
 static void Generate_KeyedLoadIC_Megamorphic(MacroAssembler* masm) {
-  KeyedLoadIC::GenerateMegamorphic(masm, SLOPPY);
-}
-
-
-static void Generate_KeyedLoadIC_Megamorphic_Strong(MacroAssembler* masm) {
-  KeyedLoadIC::GenerateMegamorphic(masm, STRONG);
+  KeyedLoadIC::GenerateMegamorphic(masm);
 }
 
 

@@ -151,7 +151,8 @@ void InstructionSelector::VisitLoad(Node* node) {
     case MachineRepresentation::kWord32:
       opcode = kMipsLw;
       break;
-    case MachineRepresentation::kWord64:  // Fall through.
+    case MachineRepresentation::kWord64:   // Fall through.
+    case MachineRepresentation::kSimd128:  // Fall through.
     case MachineRepresentation::kNone:
       UNREACHABLE();
       return;
@@ -231,7 +232,8 @@ void InstructionSelector::VisitStore(Node* node) {
       case MachineRepresentation::kWord32:
         opcode = kMipsSw;
         break;
-      case MachineRepresentation::kWord64:  // Fall through.
+      case MachineRepresentation::kWord64:   // Fall through.
+      case MachineRepresentation::kSimd128:  // Fall through.
       case MachineRepresentation::kNone:
         UNREACHABLE();
         return;
@@ -401,6 +403,9 @@ void InstructionSelector::VisitWord32Clz(Node* node) {
 }
 
 
+void InstructionSelector::VisitWord32ReverseBits(Node* node) { UNREACHABLE(); }
+
+
 void InstructionSelector::VisitWord32Ctz(Node* node) {
   MipsOperandGenerator g(this);
   Emit(kMipsCtz, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)));
@@ -515,7 +520,7 @@ void InstructionSelector::VisitRoundInt32ToFloat32(Node* node) {
 
 
 void InstructionSelector::VisitRoundUint32ToFloat32(Node* node) {
-  UNIMPLEMENTED();
+  VisitRR(this, kMipsCvtSUw, node);
 }
 
 
@@ -535,7 +540,7 @@ void InstructionSelector::VisitTruncateFloat32ToInt32(Node* node) {
 
 
 void InstructionSelector::VisitTruncateFloat32ToUint32(Node* node) {
-  UNIMPLEMENTED();
+  VisitRR(this, kMipsTruncUwS, node);
 }
 
 
@@ -895,9 +900,10 @@ void InstructionSelector::VisitCheckedLoad(Node* node) {
     case MachineRepresentation::kFloat64:
       opcode = kCheckedLoadFloat64;
       break;
-    case MachineRepresentation::kBit:     // Fall through.
-    case MachineRepresentation::kTagged:  // Fall through.
-    case MachineRepresentation::kWord64:  // Fall through.
+    case MachineRepresentation::kBit:      // Fall through.
+    case MachineRepresentation::kTagged:   // Fall through.
+    case MachineRepresentation::kWord64:   // Fall through.
+    case MachineRepresentation::kSimd128:  // Fall through.
     case MachineRepresentation::kNone:
       UNREACHABLE();
       return;

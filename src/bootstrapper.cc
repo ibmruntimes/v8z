@@ -825,7 +825,7 @@ static void ReplaceAccessors(Handle<Map> map,
                              PropertyAttributes attributes,
                              Handle<AccessorPair> accessor_pair) {
   DescriptorArray* descriptors = map->instance_descriptors();
-  int idx = descriptors->SearchWithCache(*name, *map);
+  int idx = descriptors->SearchWithCache(map->GetIsolate(), *name, *map);
   AccessorConstantDescriptor descriptor(name, accessor_pair, attributes);
   descriptors->Replace(idx, &descriptor);
 }
@@ -1103,6 +1103,7 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
                           Builtins::kObjectGetOwnPropertyNames, 1, false);
     SimpleInstallFunction(object_function, "getOwnPropertySymbols",
                           Builtins::kObjectGetOwnPropertySymbols, 1, false);
+    SimpleInstallFunction(object_function, "is", Builtins::kObjectIs, 2, true);
     Handle<JSFunction> object_is_extensible =
         SimpleInstallFunction(object_function, "isExtensible",
                               Builtins::kObjectIsExtensible, 1, false);
@@ -1160,6 +1161,9 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
 
     // Set the length for the function to satisfy ECMA-262.
     has_instance->shared()->set_length(1);
+
+    // Install in the native context
+    native_context()->set_ordinary_has_instance(*has_instance);
 
     // Install the "constructor" property on the %FunctionPrototype%.
     JSObject::AddProperty(prototype, factory->constructor_string(),
@@ -1237,9 +1241,29 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
     Handle<JSFunction> boolean_fun =
         InstallFunction(global, "Boolean", JS_VALUE_TYPE, JSValue::kSize,
                         isolate->initial_object_prototype(),
-                        Builtins::kIllegal);
+                        Builtins::kBooleanConstructor);
+    boolean_fun->shared()->DontAdaptArguments();
+    boolean_fun->shared()->set_construct_stub(
+        *isolate->builtins()->BooleanConstructor_ConstructStub());
+    boolean_fun->shared()->set_length(1);
     InstallWithIntrinsicDefaultProto(isolate, boolean_fun,
                                      Context::BOOLEAN_FUNCTION_INDEX);
+
+    // Create the %BooleanPrototype%
+    Handle<JSValue> prototype =
+        Handle<JSValue>::cast(factory->NewJSObject(boolean_fun, TENURED));
+    prototype->set_value(isolate->heap()->false_value());
+    Accessors::FunctionSetPrototype(boolean_fun, prototype).Assert();
+
+    // Install the "constructor" property on the {prototype}.
+    JSObject::AddProperty(prototype, factory->constructor_string(), boolean_fun,
+                          DONT_ENUM);
+
+    // Install the Boolean.prototype methods.
+    SimpleInstallFunction(prototype, "toString",
+                          Builtins::kBooleanPrototypeToString, 0, false);
+    SimpleInstallFunction(prototype, "valueOf",
+                          Builtins::kBooleanPrototypeValueOf, 0, false);
   }
 
   {  // --- S t r i n g ---
@@ -1318,12 +1342,13 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
                           Builtins::kDatePrototypeToDateString, 0, false);
     SimpleInstallFunction(prototype, "toTimeString",
                           Builtins::kDatePrototypeToTimeString, 0, false);
-    SimpleInstallFunction(prototype, "toGMTString",
-                          Builtins::kDatePrototypeToUTCString, 0, false);
     SimpleInstallFunction(prototype, "toISOString",
                           Builtins::kDatePrototypeToISOString, 0, false);
-    SimpleInstallFunction(prototype, "toUTCString",
-                          Builtins::kDatePrototypeToUTCString, 0, false);
+    Handle<JSFunction> to_utc_string =
+        SimpleInstallFunction(prototype, "toUTCString",
+                              Builtins::kDatePrototypeToUTCString, 0, false);
+    InstallFunction(prototype, to_utc_string,
+                    factory->InternalizeUtf8String("toGMTString"), DONT_ENUM);
     SimpleInstallFunction(prototype, "getDate", Builtins::kDatePrototypeGetDate,
                           0, true);
     SimpleInstallFunction(prototype, "setDate", Builtins::kDatePrototypeSetDate,
@@ -1557,16 +1582,16 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
     TYPED_ARRAYS(INSTALL_TYPED_ARRAY)
 #undef INSTALL_TYPED_ARRAY
 
-    Handle<JSFunction> data_view_fun =
-        InstallFunction(
-            global, "DataView", JS_DATA_VIEW_TYPE,
-            JSDataView::kSizeWithInternalFields,
-            isolate->initial_object_prototype(),
-            Builtins::kIllegal);
+    Handle<JSFunction> data_view_fun = InstallFunction(
+        global, "DataView", JS_DATA_VIEW_TYPE,
+        JSDataView::kSizeWithInternalFields,
+        isolate->initial_object_prototype(), Builtins::kDataViewConstructor);
     InstallWithIntrinsicDefaultProto(isolate, data_view_fun,
                                      Context::DATA_VIEW_FUN_INDEX);
     data_view_fun->shared()->set_construct_stub(
-        *isolate->builtins()->JSBuiltinsConstructStub());
+        *isolate->builtins()->DataViewConstructor_ConstructStub());
+    data_view_fun->shared()->set_length(3);
+    data_view_fun->shared()->DontAdaptArguments();
   }
 
   {  // -- M a p
@@ -2329,12 +2354,14 @@ EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_object_observe)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_regexps)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_unicode_regexps)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_do_expressions)
+EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_iterator_close)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_regexp_lookbehind)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_regexp_property)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_function_name)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_function_sent)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(promise_extra)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_tailcalls)
+EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_instanceof)
 
 void InstallPublicSymbol(Factory* factory, Handle<Context> native_context,
                          const char* name, Handle<Symbol> value) {
@@ -2882,7 +2909,7 @@ bool Genesis::InstallNatives(GlobalContextType context_type) {
           array_function->initial_map()->instance_descriptors());
       Handle<String> length = factory()->length_string();
       int old = array_descriptors->SearchWithCache(
-          *length, array_function->initial_map());
+          isolate(), *length, array_function->initial_map());
       DCHECK(old != DescriptorArray::kNotFound);
       AccessorConstantDescriptor desc(
           length, handle(array_descriptors->GetValue(old), isolate()),
@@ -2954,6 +2981,7 @@ bool Genesis::InstallExperimentalNatives() {
   static const char* harmony_regexps_natives[] = {"native harmony-regexp.js",
                                                   nullptr};
   static const char* harmony_tostring_natives[] = {nullptr};
+  static const char* harmony_iterator_close_natives[] = {nullptr};
   static const char* harmony_sloppy_natives[] = {nullptr};
   static const char* harmony_sloppy_function_natives[] = {nullptr};
   static const char* harmony_sloppy_let_natives[] = {nullptr};
@@ -2976,6 +3004,7 @@ bool Genesis::InstallExperimentalNatives() {
   static const char* harmony_do_expressions_natives[] = {nullptr};
   static const char* harmony_regexp_subclass_natives[] = {nullptr};
   static const char* harmony_regexp_lookbehind_natives[] = {nullptr};
+  static const char* harmony_instanceof_natives[] = {nullptr};
   static const char* harmony_regexp_property_natives[] = {nullptr};
   static const char* harmony_function_name_natives[] = {nullptr};
   static const char* harmony_function_sent_natives[] = {nullptr};

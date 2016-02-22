@@ -34,6 +34,7 @@ InstructionSelector::InstructionSelector(
       instructions_(zone),
       defined_(node_count, false, zone),
       used_(node_count, false, zone),
+      effect_level_(node_count, 0, zone),
       virtual_registers_(node_count,
                          InstructionOperand::kInvalidVirtualRegister, zone),
       scheduler_(nullptr),
@@ -218,9 +219,10 @@ Instruction* InstructionSelector::Emit(Instruction* instr) {
 
 bool InstructionSelector::CanCover(Node* user, Node* node) const {
   return node->OwnedBy(user) &&
-         schedule()->block(node) == schedule()->block(user);
+         schedule()->block(node) == schedule()->block(user) &&
+         (node->op()->HasProperty(Operator::kPure) ||
+          GetEffectLevel(node) == GetEffectLevel(user));
 }
-
 
 int InstructionSelector::GetVirtualRegister(const Node* node) {
   DCHECK_NOT_NULL(node);
@@ -280,6 +282,19 @@ void InstructionSelector::MarkAsUsed(Node* node) {
   used_[id] = true;
 }
 
+int InstructionSelector::GetEffectLevel(Node* node) const {
+  DCHECK_NOT_NULL(node);
+  size_t const id = node->id();
+  DCHECK_LT(id, effect_level_.size());
+  return effect_level_[id];
+}
+
+void InstructionSelector::SetEffectLevel(Node* node, int effect_level) {
+  DCHECK_NOT_NULL(node);
+  size_t const id = node->id();
+  DCHECK_LT(id, effect_level_.size());
+  effect_level_[id] = effect_level;
+}
 
 void InstructionSelector::MarkAsRepresentation(MachineRepresentation rep,
                                                const InstructionOperand& op) {
@@ -568,10 +583,6 @@ void InstructionSelector::InitializeCallBuffer(Node* call, CallBuffer* buffer,
           g.UseLocation(callee, buffer->descriptor->GetInputLocation(0),
                         buffer->descriptor->GetInputType(0).representation()));
       break;
-    case CallDescriptor::kLazyBailout:
-      // The target is ignored, but we still need to pass a value here.
-      buffer->instruction_args.push_back(g.UseImmediate(callee));
-      break;
   }
   DCHECK_EQ(1u, buffer->instruction_args.size());
 
@@ -582,12 +593,28 @@ void InstructionSelector::InitializeCallBuffer(Node* call, CallBuffer* buffer,
   size_t frame_state_entries = 0;
   USE(frame_state_entries);  // frame_state_entries is only used for debug.
   if (buffer->frame_state_descriptor != nullptr) {
+    Node* frame_state =
+        call->InputAt(static_cast<int>(buffer->descriptor->InputCount()));
+
+    // If it was a syntactic tail call we need to drop the current frame and
+    // an arguments adaptor frame on top of it (if the latter is present).
+    if (buffer->descriptor->SupportsTailCalls()) {
+      frame_state = NodeProperties::GetFrameStateInput(frame_state, 0);
+      buffer->frame_state_descriptor =
+          buffer->frame_state_descriptor->outer_state();
+
+      if (buffer->frame_state_descriptor != nullptr &&
+          buffer->frame_state_descriptor->type() ==
+              FrameStateType::kArgumentsAdaptor) {
+        frame_state = NodeProperties::GetFrameStateInput(frame_state, 0);
+        buffer->frame_state_descriptor =
+            buffer->frame_state_descriptor->outer_state();
+      }
+    }
+
     InstructionSequence::StateId state_id =
         sequence()->AddFrameStateDescriptor(buffer->frame_state_descriptor);
     buffer->instruction_args.push_back(g.TempImmediate(state_id.ToInt()));
-
-    Node* frame_state =
-        call->InputAt(static_cast<int>(buffer->descriptor->InputCount()));
 
     StateObjectDeduplicator deduplicator(instruction_zone());
 
@@ -656,6 +683,16 @@ void InstructionSelector::VisitBlock(BasicBlock* block) {
   DCHECK(!current_block_);
   current_block_ = block;
   int current_block_end = static_cast<int>(instructions_.size());
+
+  int effect_level = 0;
+  for (Node* const node : *block) {
+    if (node->opcode() == IrOpcode::kStore ||
+        node->opcode() == IrOpcode::kCheckedStore ||
+        node->opcode() == IrOpcode::kCall) {
+      ++effect_level;
+    }
+    SetEffectLevel(node, effect_level);
+  }
 
   // Generate code for the block control "top down", but schedule the code
   // "bottom up".
@@ -867,6 +904,8 @@ void InstructionSelector::VisitNode(Node* node) {
       return MarkAsWord32(node), VisitWord32Clz(node);
     case IrOpcode::kWord32Ctz:
       return MarkAsWord32(node), VisitWord32Ctz(node);
+    case IrOpcode::kWord32ReverseBits:
+      return MarkAsWord32(node), VisitWord32ReverseBits(node);
     case IrOpcode::kWord32Popcnt:
       return MarkAsWord32(node), VisitWord32Popcnt(node);
     case IrOpcode::kWord64Popcnt:
@@ -889,6 +928,8 @@ void InstructionSelector::VisitNode(Node* node) {
       return MarkAsWord64(node), VisitWord64Clz(node);
     case IrOpcode::kWord64Ctz:
       return MarkAsWord64(node), VisitWord64Ctz(node);
+    case IrOpcode::kWord64ReverseBits:
+      return MarkAsWord64(node), VisitWord64ReverseBits(node);
     case IrOpcode::kWord64Equal:
       return VisitWord64Equal(node);
     case IrOpcode::kInt32Add:
@@ -1077,6 +1118,8 @@ void InstructionSelector::VisitNode(Node* node) {
       return VisitLoadStackPointer(node);
     case IrOpcode::kLoadFramePointer:
       return VisitLoadFramePointer(node);
+    case IrOpcode::kLoadParentFramePointer:
+      return VisitLoadParentFramePointer(node);
     case IrOpcode::kCheckedLoad: {
       MachineRepresentation rep =
           CheckedLoadRepresentationOf(node->op()).representation();
@@ -1101,9 +1144,14 @@ void InstructionSelector::VisitLoadStackPointer(Node* node) {
 
 void InstructionSelector::VisitLoadFramePointer(Node* node) {
   OperandGenerator g(this);
+  frame_->MarkNeedsFrame();
   Emit(kArchFramePointer, g.DefineAsRegister(node));
 }
 
+void InstructionSelector::VisitLoadParentFramePointer(Node* node) {
+  OperandGenerator g(this);
+  Emit(kArchParentFramePointer, g.DefineAsRegister(node));
+}
 
 void InstructionSelector::EmitTableSwitch(const SwitchInfo& sw,
                                           InstructionOperand& index_operand) {
@@ -1177,6 +1225,11 @@ void InstructionSelector::VisitWord64Clz(Node* node) { UNIMPLEMENTED(); }
 
 
 void InstructionSelector::VisitWord64Ctz(Node* node) { UNIMPLEMENTED(); }
+
+
+void InstructionSelector::VisitWord64ReverseBits(Node* node) {
+  UNIMPLEMENTED();
+}
 
 
 void InstructionSelector::VisitWord64Popcnt(Node* node) { UNIMPLEMENTED(); }
@@ -1451,9 +1504,6 @@ void InstructionSelector::VisitCall(Node* node, BasicBlock* handler) {
       break;
     case CallDescriptor::kCallJSFunction:
       opcode = kArchCallJSFunction | MiscField::encode(flags);
-      break;
-    case CallDescriptor::kLazyBailout:
-      opcode = kArchLazyBailout | MiscField::encode(flags);
       break;
   }
 

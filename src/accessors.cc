@@ -32,6 +32,7 @@ Handle<AccessorInfo> Accessors::MakeAccessor(
   info->set_all_can_read(false);
   info->set_all_can_write(false);
   info->set_is_special_data_property(true);
+  name = factory->InternalizeName(name);
   info->set_name(*name);
   Handle<Object> get = v8::FromCData(isolate, getter);
   if (setter == nullptr) setter = &ReconfigureToDataProperty;
@@ -82,6 +83,7 @@ bool Accessors::IsJSObjectFieldAccessor(Handle<Map> map, Handle<Name> name,
 bool Accessors::IsJSArrayBufferViewFieldAccessor(Handle<Map> map,
                                                  Handle<Name> name,
                                                  int* object_offset) {
+  DCHECK(name->IsUniqueName());
   Isolate* isolate = name->GetIsolate();
 
   switch (map->instance_type()) {
@@ -99,7 +101,7 @@ bool Accessors::IsJSArrayBufferViewFieldAccessor(Handle<Map> map,
 
       // Check if the property is overridden on the instance.
       DescriptorArray* descriptors = map->instance_descriptors();
-      int descriptor = descriptors->SearchWithCache(*name, *map);
+      int descriptor = descriptors->SearchWithCache(isolate, *name, *map);
       if (descriptor != DescriptorArray::kNotFound) return false;
 
       Handle<Object> proto = Handle<Object>(map->prototype(), isolate);
@@ -142,8 +144,7 @@ MUST_USE_RESULT static MaybeHandle<Object> ReplaceAccessorWithDataProperty(
   Handle<Object> old_value;
   bool is_observed = observe && receiver->map()->is_observed();
   if (is_observed) {
-    MaybeHandle<Object> maybe_old =
-        Object::GetPropertyWithAccessor(&it, SLOPPY);
+    MaybeHandle<Object> maybe_old = Object::GetPropertyWithAccessor(&it);
     if (!maybe_old.ToHandle(&old_value)) return maybe_old;
   }
 

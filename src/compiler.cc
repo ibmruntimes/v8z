@@ -421,10 +421,14 @@ OptimizedCompileJob::Status OptimizedCompileJob::CreateGraph() {
     if (info()->shared_info()->asm_function()) {
       if (info()->osr_frame()) info()->MarkAsFrameSpecializing();
       info()->MarkAsFunctionContextSpecializing();
-    } else if (info()->has_global_object() &&
-               FLAG_native_context_specialization) {
-      info()->MarkAsNativeContextSpecializing();
-      info()->MarkAsTypingEnabled();
+    } else {
+      if (!FLAG_always_opt) {
+        info()->MarkAsBailoutOnUninitialized();
+      }
+      if (FLAG_native_context_specialization) {
+        info()->MarkAsNativeContextSpecializing();
+        info()->MarkAsTypingEnabled();
+      }
     }
     if (!info()->shared_info()->asm_function() ||
         FLAG_turbo_asm_deoptimization) {
@@ -927,10 +931,13 @@ bool Compiler::ParseAndAnalyze(ParseInfo* info) {
 static bool GetOptimizedCodeNow(CompilationInfo* info) {
   Isolate* isolate = info->isolate();
   CanonicalHandleScope canonical(isolate);
+  TimerEventScope<TimerEventOptimizeCode> optimize_code_timer(isolate);
+  TRACE_EVENT0("v8", "V8.OptimizeCode");
 
   if (!Compiler::ParseAndAnalyze(info->parse_info())) return false;
 
   TimerEventScope<TimerEventRecompileSynchronous> timer(isolate);
+  TRACE_EVENT0("v8", "V8.RecompileSynchronous");
 
   OptimizedCompileJob job(info);
   if (job.CreateGraph() != OptimizedCompileJob::SUCCEEDED ||
@@ -956,6 +963,8 @@ static bool GetOptimizedCodeNow(CompilationInfo* info) {
 static bool GetOptimizedCodeLater(CompilationInfo* info) {
   Isolate* isolate = info->isolate();
   CanonicalHandleScope canonical(isolate);
+  TimerEventScope<TimerEventOptimizeCode> optimize_code_timer(isolate);
+  TRACE_EVENT0("v8", "V8.OptimizeCode");
 
   if (!isolate->optimizing_compile_dispatcher()->IsQueueAvailable()) {
     if (FLAG_trace_concurrent_recompilation) {
@@ -974,6 +983,7 @@ static bool GetOptimizedCodeLater(CompilationInfo* info) {
   info->parse_info()->ReopenHandlesInNewHandleScope();
 
   TimerEventScope<TimerEventRecompileSynchronous> timer(info->isolate());
+  TRACE_EVENT0("v8", "V8.RecompileSynchronous");
 
   OptimizedCompileJob* job = new (info->zone()) OptimizedCompileJob(info);
   OptimizedCompileJob::Status status = job->CreateGraph();
@@ -1013,6 +1023,8 @@ MaybeHandle<Code> Compiler::GetLazyCode(Handle<JSFunction> function) {
   Isolate* isolate = function->GetIsolate();
   DCHECK(!isolate->has_pending_exception());
   DCHECK(!function->is_compiled());
+  TimerEventScope<TimerEventCompileCode> compile_timer(isolate);
+  TRACE_EVENT0("v8", "V8.CompileCode");
   AggregatedHistogramTimerScope timer(isolate->counters()->compile_lazy());
   // If the debugger is active, do not compile with turbofan unless we can
   // deopt from turbofan code.
@@ -1220,6 +1232,8 @@ void Compiler::CompileForLiveEdit(Handle<Script> script) {
 
 static Handle<SharedFunctionInfo> CompileToplevel(CompilationInfo* info) {
   Isolate* isolate = info->isolate();
+  TimerEventScope<TimerEventCompileCode> timer(isolate);
+  TRACE_EVENT0("v8", "V8.CompileCode");
   PostponeInterruptsScope postpone(isolate);
   DCHECK(!isolate->native_context().is_null());
   ParseInfo* parse_info = info->parse_info();
@@ -1279,6 +1293,7 @@ static Handle<SharedFunctionInfo> CompileToplevel(CompilationInfo* info) {
           ? info->isolate()->counters()->compile_eval()
           : info->isolate()->counters()->compile();
     HistogramTimerScope timer(rate);
+    TRACE_EVENT0("v8", info->is_eval() ? "V8.CompileEval" : "V8.Compile");
 
     // Compile the code.
     if (!CompileBaselineCode(info)) {
@@ -1449,6 +1464,7 @@ Handle<SharedFunctionInfo> Compiler::CompileScript(
         !isolate->debug()->is_loaded()) {
       // Then check cached code provided by embedder.
       HistogramTimerScope timer(isolate->counters()->compile_deserialize());
+      TRACE_EVENT0("v8", "V8.CompileDeserialize");
       Handle<SharedFunctionInfo> result;
       if (CodeSerializer::Deserialize(isolate, *cached_data, source)
               .ToHandle(&result)) {
@@ -1517,6 +1533,7 @@ Handle<SharedFunctionInfo> Compiler::CompileScript(
           compile_options == ScriptCompiler::kProduceCodeCache) {
         HistogramTimerScope histogram_timer(
             isolate->counters()->compile_serialize());
+        TRACE_EVENT0("v8", "V8.CompileSerialize");
         *cached_data = CodeSerializer::Serialize(isolate, result, source);
         if (FLAG_profile_deserialization) {
           PrintF("[Compiling and serializing took %0.3f ms]\n",
@@ -1617,6 +1634,8 @@ Handle<SharedFunctionInfo> Compiler::GetSharedFunctionInfo(
   bool lazy = FLAG_lazy && allow_lazy && !literal->should_eager_compile();
 
   // Generate code
+  TimerEventScope<TimerEventCompileCode> timer(isolate);
+  TRACE_EVENT0("v8", "V8.CompileCode");
   Handle<ScopeInfo> scope_info;
   if (lazy) {
     Handle<Code> code = isolate->builtins()->CompileLazy();
@@ -1796,6 +1815,7 @@ MaybeHandle<Code> Compiler::GetConcurrentlyOptimizedCode(
 
   VMState<COMPILER> state(isolate);
   TimerEventScope<TimerEventRecompileSynchronous> timer(info->isolate());
+  TRACE_EVENT0("v8", "V8.RecompileSynchronous");
 
   Handle<SharedFunctionInfo> shared = info->shared_info();
   shared->code()->set_profiler_ticks(0);

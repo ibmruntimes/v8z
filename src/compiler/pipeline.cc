@@ -30,7 +30,6 @@
 #include "src/compiler/instruction-selector.h"
 #include "src/compiler/js-builtin-reducer.h"
 #include "src/compiler/js-call-reducer.h"
-#include "src/compiler/js-context-relaxation.h"
 #include "src/compiler/js-context-specialization.h"
 #include "src/compiler/js-create-lowering.h"
 #include "src/compiler/js-frame-specialization.h"
@@ -555,12 +554,17 @@ struct InliningPhase {
     JSGlobalObjectSpecialization global_object_specialization(
         &graph_reducer, data->jsgraph(), data->native_context(),
         data->info()->dependencies());
+    JSNativeContextSpecialization::Flags flags =
+        JSNativeContextSpecialization::kNoFlags;
+    if (data->info()->is_bailout_on_uninitialized()) {
+      flags |= JSNativeContextSpecialization::kBailoutOnUninitialized;
+    }
+    if (data->info()->is_deoptimization_enabled()) {
+      flags |= JSNativeContextSpecialization::kDeoptimizationEnabled;
+    }
     JSNativeContextSpecialization native_context_specialization(
-        &graph_reducer, data->jsgraph(),
-        data->info()->is_deoptimization_enabled()
-            ? JSNativeContextSpecialization::kDeoptimizationEnabled
-            : JSNativeContextSpecialization::kNoFlags,
-        data->native_context(), data->info()->dependencies(), temp_zone);
+        &graph_reducer, data->jsgraph(), flags, data->native_context(),
+        data->info()->dependencies(), temp_zone);
     JSInliningHeuristic inlining(&graph_reducer,
                                  data->info()->is_inlining_enabled()
                                      ? JSInliningHeuristic::kGeneralInlining
@@ -613,8 +617,13 @@ struct TypedLoweringPhase {
                                               data->common());
     LoadElimination load_elimination(&graph_reducer);
     JSBuiltinReducer builtin_reducer(&graph_reducer, data->jsgraph());
+    MaybeHandle<LiteralsArray> literals_array =
+        data->info()->is_native_context_specializing()
+            ? handle(data->info()->closure()->literals(), data->isolate())
+            : MaybeHandle<LiteralsArray>();
     JSCreateLowering create_lowering(
-        &graph_reducer, data->info()->dependencies(), data->jsgraph());
+        &graph_reducer, data->info()->dependencies(), data->jsgraph(),
+        literals_array, temp_zone);
     JSTypedLowering::Flags typed_lowering_flags = JSTypedLowering::kNoFlags;
     if (data->info()->is_deoptimization_enabled()) {
       typed_lowering_flags |= JSTypedLowering::kDeoptimizationEnabled;
@@ -783,7 +792,6 @@ struct GenericLoweringPhase {
 
   void Run(PipelineData* data, Zone* temp_zone) {
     JSGraphReducer graph_reducer(data->jsgraph(), temp_zone);
-    JSContextRelaxation context_relaxing;
     DeadCodeElimination dead_code_elimination(&graph_reducer, data->graph(),
                                               data->common());
     CommonOperatorReducer common_reducer(&graph_reducer, data->graph(),
@@ -793,7 +801,6 @@ struct GenericLoweringPhase {
     SelectLowering select_lowering(data->jsgraph()->graph(),
                                    data->jsgraph()->common());
     TailCallOptimization tco(data->common(), data->graph());
-    AddReducer(data, &graph_reducer, &context_relaxing);
     AddReducer(data, &graph_reducer, &dead_code_elimination);
     AddReducer(data, &graph_reducer, &common_reducer);
     AddReducer(data, &graph_reducer, &generic_lowering);
@@ -1496,6 +1503,8 @@ void Pipeline::AllocateRegisters(const RegisterConfiguration* config,
 
   data->DeleteRegisterAllocationZone();
 }
+
+Isolate* Pipeline::isolate() const { return info()->isolate(); }
 
 }  // namespace compiler
 }  // namespace internal

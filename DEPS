@@ -8,9 +8,9 @@ vars = {
 
 deps = {
   "v8/build/gyp":
-    Var("git_url") + "/external/gyp.git" + "@" + "5170bfd38fe79bd5b16aa7f6c5439fb90a37ae66",
+    Var("git_url") + "/external/gyp.git" + "@" + "ed163ce233f76a950dce1751ac851dbe4b1c00cc",
   "v8/third_party/icu":
-    Var("git_url") + "/chromium/deps/icu.git" + "@" + "8f91ea3a7e0413df3312204058da856058a8099b",
+    Var("git_url") + "/chromium/deps/icu.git" + "@" + "e466f6ac8f60bb9697af4a91c6911c6fc4aec95f",
   "v8/buildtools":
     Var("git_url") + "/chromium/buildtools.git" + "@" + "ef3e530703353ba8ad094694ba7c156daddbddeb",
   "v8/base/trace_event/common":
@@ -29,7 +29,7 @@ deps = {
   "v8/test/test262/data":
     Var("git_url") + "/external/github.com/tc39/test262.git" + "@" + "738a24b109f3fa71be44d5c3701d73141d494510",
   "v8/tools/clang":
-    Var("git_url") + "/chromium/src/tools/clang.git" + "@" + "fa731f3e12b54c519e08c0fe9b26cf12274df20c",
+    Var("git_url") + "/chromium/src/tools/clang.git" + "@" + "a8adb78c8eda9bddb2aa9c51f3fee60296de1ad4",
 }
 
 deps_os = {
@@ -100,6 +100,22 @@ hooks = [
                 "--no_auth",
                 "--bucket", "chromium-clang-format",
                 "-s", "v8/buildtools/linux64/clang-format.sha1",
+    ],
+  },
+  {
+    'name': 'gcmole',
+    'pattern': '.',
+    'action': [
+        'python',
+        'v8/tools/gcmole/download_gcmole_tools.py',
+    ],
+  },
+  {
+    'name': 'jsfunfuzz',
+    'pattern': '.',
+    'action': [
+        'python',
+        'v8/tools/jsfunfuzz/download_jsfunfuzz.py',
     ],
   },
   # Pull luci-go binaries (isolate, swarming) using checked-in hashes.

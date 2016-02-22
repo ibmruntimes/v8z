@@ -32,16 +32,13 @@ class Callable final BASE_EMBEDDED {
 class CodeFactory final {
  public:
   // Initial states for ICs.
-  static Callable LoadIC(Isolate* isolate, TypeofMode typeof_mode,
-                         LanguageMode language_mode);
+  static Callable LoadIC(Isolate* isolate, TypeofMode typeof_mode);
   static Callable LoadICInOptimizedCode(Isolate* isolate,
                                         TypeofMode typeof_mode,
-                                        LanguageMode language_mode,
                                         InlineCacheState initialization_state);
-  static Callable KeyedLoadIC(Isolate* isolate, LanguageMode language_mode);
+  static Callable KeyedLoadIC(Isolate* isolate);
   static Callable KeyedLoadICInOptimizedCode(
-      Isolate* isolate, LanguageMode language_mode,
-      InlineCacheState initialization_state);
+      Isolate* isolate, InlineCacheState initialization_state);
   static Callable CallIC(Isolate* isolate, int argc,
                          ConvertReceiverMode mode = ConvertReceiverMode::kAny,
                          TailCallMode tail_call_mode = TailCallMode::kDisallow);
@@ -57,12 +54,10 @@ class CodeFactory final {
       Isolate* isolate, LanguageMode mode,
       InlineCacheState initialization_state);
 
-  static Callable CompareIC(Isolate* isolate, Token::Value op,
-                            Strength strength);
+  static Callable CompareIC(Isolate* isolate, Token::Value op);
   static Callable CompareNilIC(Isolate* isolate, NilValue nil_value);
 
-  static Callable BinaryOpIC(Isolate* isolate, Token::Value op,
-                             Strength strength);
+  static Callable BinaryOpIC(Isolate* isolate, Token::Value op);
 
   // Code stubs. Add methods here as needed to reduce dependency on
   // code-stubs.h.
@@ -94,11 +89,10 @@ class CodeFactory final {
   static Callable FastNewContext(Isolate* isolate, int slot_count);
   static Callable FastNewClosure(Isolate* isolate, LanguageMode language_mode,
                                  FunctionKind kind);
+  static Callable FastNewObject(Isolate* isolate);
   static Callable FastNewRestParameter(Isolate* isolate);
+  static Callable FastNewSloppyArguments(Isolate* isolate);
   static Callable FastNewStrictArguments(Isolate* isolate);
-
-  static Callable ArgumentsAccess(Isolate* isolate,
-                                  bool has_duplicate_parameters);
 
   static Callable AllocateHeapNumber(Isolate* isolate);
   static Callable AllocateMutableHeapNumber(Isolate* isolate);
@@ -112,7 +106,8 @@ class CodeFactory final {
   static Callable Construct(Isolate* isolate);
   static Callable ConstructFunction(Isolate* isolate);
 
-  static Callable InterpreterPushArgsAndCall(Isolate* isolate);
+  static Callable InterpreterPushArgsAndCall(Isolate* isolate,
+                                             TailCallMode tail_call_mode);
   static Callable InterpreterPushArgsAndConstruct(Isolate* isolate);
   static Callable InterpreterCEntry(Isolate* isolate, int result_size = 1);
 };

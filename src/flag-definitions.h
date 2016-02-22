@@ -201,14 +201,17 @@ DEFINE_NEG_IMPLICATION(harmony, promise_extra)
 // Activate on ClusterFuzz.
 DEFINE_IMPLICATION(es_staging, harmony_regexp_lookbehind)
 DEFINE_IMPLICATION(es_staging, move_object_start)
+DEFINE_IMPLICATION(es_staging, harmony_tailcalls)
 
 // Features that are still work in progress (behind individual flags).
 #define HARMONY_INPROGRESS(V)                                                \
+  V(harmony_object_observe, "harmony Object.observe")                        \
   V(harmony_modules, "harmony modules")                                      \
   V(harmony_function_sent, "harmony function.sent")                          \
   V(harmony_sharedarraybuffer, "harmony sharedarraybuffer")                  \
   V(harmony_simd, "harmony simd")                                            \
   V(harmony_do_expressions, "harmony do-expressions")                        \
+  V(harmony_iterator_close, "harmony iterator finalization")                 \
   V(harmony_tailcalls, "harmony tail calls")                                 \
   V(harmony_object_values_entries, "harmony Object.values / Object.entries") \
   V(harmony_object_own_property_descriptors,                                 \
@@ -219,14 +222,14 @@ DEFINE_IMPLICATION(es_staging, move_object_start)
 #define HARMONY_STAGED(V)                                     \
   V(harmony_function_name, "harmony Function name inference") \
   V(harmony_regexp_lookbehind, "harmony regexp lookbehind")   \
-  V(harmony_species, "harmony Symbol.species")
+  V(harmony_species, "harmony Symbol.species")                \
+  V(harmony_instanceof, "harmony instanceof support")
 
 // Features that are shipping (turned on by default, but internal flag remains).
 #define HARMONY_SHIPPING(V)                                               \
   V(harmony_default_parameters, "harmony default parameters")             \
   V(harmony_destructuring_assignment, "harmony destructuring assignment") \
   V(harmony_destructuring_bind, "harmony destructuring bind")             \
-  V(harmony_object_observe, "harmony Object.observe")                     \
   V(harmony_tostring, "harmony toString")                                 \
   V(harmony_regexps, "harmony regular expression extensions")             \
   V(harmony_unicode_regexps, "harmony unicode regexps")                   \
@@ -332,7 +335,7 @@ DEFINE_INT(max_inlined_nodes_cumulative, 400,
            "maximum cumulative number of AST nodes considered for inlining")
 DEFINE_BOOL(loop_invariant_code_motion, true, "loop invariant code motion")
 DEFINE_BOOL(fast_math, true, "faster (but maybe less accurate) math functions")
-DEFINE_BOOL(collect_megamorphic_maps_from_stub_cache, true,
+DEFINE_BOOL(collect_megamorphic_maps_from_stub_cache, false,
             "crankshaft harvests type feedback from stub cache")
 DEFINE_BOOL(hydrogen_stats, false, "print statistics for hydrogen")
 DEFINE_BOOL(trace_check_elimination, false, "trace check elimination phase")
@@ -420,7 +423,6 @@ DEFINE_BOOL(omit_map_checks_for_leaf_maps, true,
 DEFINE_BOOL(turbo, false, "enable TurboFan compiler")
 DEFINE_IMPLICATION(turbo, turbo_asm_deoptimization)
 DEFINE_IMPLICATION(turbo, turbo_inlining)
-DEFINE_IMPLICATION(turbo, turbo_escape)
 DEFINE_BOOL(turbo_shipping, true, "enable TurboFan compiler on subset")
 DEFINE_BOOL(turbo_greedy_regalloc, false, "use the greedy register allocator")
 DEFINE_BOOL(turbo_sp_frame_access, false,
@@ -471,6 +473,8 @@ DEFINE_BOOL(turbo_preserve_shared_code, false, "keep context-independent code")
 DEFINE_BOOL(turbo_escape, false, "enable escape analysis")
 DEFINE_BOOL(turbo_instruction_scheduling, false,
             "enable instruction scheduling in TurboFan")
+DEFINE_BOOL(turbo_stress_instruction_scheduling, false,
+            "randomly schedule instructions to stress dependency tracking")
 
 // Flags for native WebAssembly.
 DEFINE_BOOL(expose_wasm, false, "expose WASM interface to JavaScript")
@@ -483,6 +487,10 @@ DEFINE_BOOL(wasm_break_on_decoder_error, false,
 
 DEFINE_BOOL(enable_simd_asmjs, false, "enable SIMD.js in asm.js stdlib")
 
+DEFINE_BOOL(dump_asmjs_wasm, false, "dump Asm.js to WASM module bytes")
+DEFINE_STRING(asmjs_wasm_dumpfile, "asmjs.wasm",
+              "file to dump asm wasm conversion result to")
+
 DEFINE_INT(typed_array_max_size_in_heap, 64,
            "threshold for in-heap typed array")
 
@@ -491,7 +499,7 @@ DEFINE_INT(frame_count, 1, "number of stack frames inspected by the profiler")
 // 0x1800 fits in the immediate field of an ARM instruction.
 DEFINE_INT(interrupt_budget, 0x1800,
            "execution budget before interrupt is triggered")
-DEFINE_INT(type_info_threshold, 24,
+DEFINE_INT(type_info_threshold, 25,
            "percentage of ICs that must have type info to allow optimization")
 DEFINE_INT(generic_ic_threshold, 30,
            "max percentage of megamorphic/generic ICs to allow optimization")

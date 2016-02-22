@@ -54,6 +54,7 @@ class ModuleDecoder : public Decoder {
     module->functions = new std::vector<WasmFunction>();
     module->data_segments = new std::vector<WasmDataSegment>();
     module->function_table = new std::vector<uint16_t>();
+    module->import_table = new std::vector<WasmImport>();
 
     bool sections[kMaxModuleSectionCode];
     memset(sections, 0, sizeof(sections));
@@ -111,7 +112,7 @@ class ModuleDecoder : public Decoder {
                   static_cast<int>(pc_ - start_));
 
             module->functions->push_back(
-                {nullptr, 0, 0, 0, 0, 0, 0, false, false});
+                {nullptr, i, 0, 0, 0, 0, 0, 0, false, false});
             WasmFunction* function = &module->functions->back();
             DecodeFunctionInModule(module, function, false);
           }
@@ -177,6 +178,59 @@ class ModuleDecoder : public Decoder {
               break;
             }
             module->function_table->push_back(index);
+          }
+          break;
+        }
+        case kDeclStartFunction: {
+          // Declares a start function for a module.
+          CheckForPreviousSection(sections, kDeclFunctions, true);
+          if (module->start_function_index >= 0) {
+            error("start function already declared");
+            break;
+          }
+          int length;
+          const byte* before = pc_;
+          uint32_t index = consume_u32v(&length, "start function index");
+          if (index >= module->functions->size()) {
+            error(before, "invalid start function index");
+            break;
+          }
+          module->start_function_index = static_cast<int>(index);
+          FunctionSig* sig =
+              module->signatures->at(module->functions->at(index).sig_index);
+          if (sig->parameter_count() > 0) {
+            error(before, "invalid start function: non-zero parameter count");
+            break;
+          }
+          break;
+        }
+        case kDeclImportTable: {
+          // Declares an import table.
+          CheckForPreviousSection(sections, kDeclSignatures, true);
+          int length;
+          uint32_t import_table_count =
+              consume_u32v(&length, "import table count");
+          module->import_table->reserve(SafeReserve(import_table_count));
+          // Decode import table.
+          for (uint32_t i = 0; i < import_table_count; i++) {
+            if (failed()) break;
+            TRACE("DecodeImportTable[%d] module+%d\n", i,
+                  static_cast<int>(pc_ - start_));
+
+            module->import_table->push_back({nullptr, 0, 0});
+            WasmImport* import = &module->import_table->back();
+
+            const byte* sigpos = pc_;
+            import->sig_index = consume_u16("signature index");
+
+            if (import->sig_index >= module->signatures->size()) {
+              error(sigpos, "invalid signature index");
+            } else {
+              import->sig = module->signatures->at(import->sig_index);
+            }
+            import->module_name_offset = consume_string("import module name");
+            import->function_name_offset =
+                consume_string("import function name");
           }
           break;
         }
@@ -377,12 +431,9 @@ class ModuleDecoder : public Decoder {
   void VerifyFunctionBody(uint32_t func_num, ModuleEnv* menv,
                           WasmFunction* function) {
     if (FLAG_trace_wasm_decode_time) {
-      // TODO(titzer): clean me up a bit.
       OFStream os(stdout);
-      os << "Verifying WASM function:";
-      if (function->name_offset > 0) {
-        os << menv->module->GetName(function->name_offset);
-      }
+      os << "Verifying WASM function " << WasmFunctionName(function, menv)
+         << std::endl;
       os << std::endl;
     }
     FunctionEnv fenv;
@@ -400,8 +451,7 @@ class ModuleDecoder : public Decoder {
     if (result.failed()) {
       // Wrap the error message from the function decoder.
       std::ostringstream str;
-      str << "in function #" << func_num << ": ";
-      // TODO(titzer): add function name for the user?
+      str << "in function " << WasmFunctionName(function, menv) << ": ";
       str << result;
       std::string strval = str.str();
       const char* raw = strval.c_str();

@@ -159,6 +159,7 @@ void InstructionSelector::VisitLoad(Node* node) {
     case MachineRepresentation::kWord64:
       opcode = kMips64Ld;
       break;
+    case MachineRepresentation::kSimd128:  // Fall through.
     case MachineRepresentation::kNone:
       UNREACHABLE();
       return;
@@ -241,6 +242,7 @@ void InstructionSelector::VisitStore(Node* node) {
       case MachineRepresentation::kWord64:
         opcode = kMips64Sd;
         break;
+      case MachineRepresentation::kSimd128:  // Fall through.
       case MachineRepresentation::kNone:
         UNREACHABLE();
         return;
@@ -562,6 +564,12 @@ void InstructionSelector::VisitWord32Clz(Node* node) {
 }
 
 
+void InstructionSelector::VisitWord32ReverseBits(Node* node) { UNREACHABLE(); }
+
+
+void InstructionSelector::VisitWord64ReverseBits(Node* node) { UNREACHABLE(); }
+
+
 void InstructionSelector::VisitWord32Ctz(Node* node) {
   Mips64OperandGenerator g(this);
   Emit(kMips64Ctz, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)));
@@ -822,7 +830,7 @@ void InstructionSelector::VisitRoundInt32ToFloat32(Node* node) {
 
 
 void InstructionSelector::VisitRoundUint32ToFloat32(Node* node) {
-  UNIMPLEMENTED();
+  VisitRR(this, kMips64CvtSUw, node);
 }
 
 
@@ -842,7 +850,7 @@ void InstructionSelector::VisitTruncateFloat32ToInt32(Node* node) {
 
 
 void InstructionSelector::VisitTruncateFloat32ToUint32(Node* node) {
-  UNIMPLEMENTED();
+  VisitRR(this, kMips64TruncUwS, node);
 }
 
 
@@ -1341,6 +1349,7 @@ void InstructionSelector::VisitCheckedLoad(Node* node) {
       break;
     case MachineRepresentation::kBit:
     case MachineRepresentation::kTagged:
+    case MachineRepresentation::kSimd128:
     case MachineRepresentation::kNone:
       UNREACHABLE();
       return;
@@ -1390,6 +1399,7 @@ void InstructionSelector::VisitCheckedStore(Node* node) {
       break;
     case MachineRepresentation::kBit:
     case MachineRepresentation::kTagged:
+    case MachineRepresentation::kSimd128:
     case MachineRepresentation::kNone:
       UNREACHABLE();
       return;

@@ -36,10 +36,10 @@ AST_NODE_LIST(DECL_ACCEPT)
 
 #ifdef DEBUG
 
-void AstNode::PrintAst() { PrintAst(Isolate::Current()); }
+void AstNode::Print() { Print(Isolate::Current()); }
 
 
-void AstNode::PrintAst(Isolate* isolate) {
+void AstNode::Print(Isolate* isolate) {
   AstPrinter::PrintOut(isolate, this);
 }
 
@@ -275,6 +275,12 @@ ObjectLiteralProperty::ObjectLiteralProperty(AstValueFactory* ast_value_factory,
   }
 }
 
+bool ObjectLiteralProperty::NeedsSetFunctionName() const {
+  return is_computed_name_ &&
+         (value_->IsAnonymousFunctionDefinition() ||
+          (value_->IsFunctionLiteral() &&
+           IsConciseMethod(value_->AsFunctionLiteral()->kind())));
+}
 
 void ClassLiteral::AssignFeedbackVectorSlots(Isolate* isolate,
                                              FeedbackVectorSpec* spec,

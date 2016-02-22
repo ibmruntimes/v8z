@@ -132,6 +132,16 @@ struct FunctionIndexOperand {
   }
 };
 
+struct ImportIndexOperand {
+  uint32_t index;
+  FunctionSig* sig;
+  int length;
+  inline ImportIndexOperand(Decoder* decoder, const byte* pc) {
+    index = decoder->checked_read_u32v(pc, 1, &length, "import index");
+    sig = nullptr;
+  }
+};
+
 struct TableSwitchOperand {
   uint32_t case_count;
   uint32_t table_count;
@@ -219,9 +229,9 @@ struct FunctionEnv {
         UNREACHABLE();
     }
     total_locals += count;
-    DCHECK(total_locals ==
-           (sig->parameter_count() + local_i32_count + local_i64_count +
-            local_f32_count + local_f64_count));
+    DCHECK_EQ(total_locals,
+              (sig->parameter_count() + local_i32_count + local_i64_count +
+               local_f32_count + local_f64_count));
   }
 
   void SumLocals() {

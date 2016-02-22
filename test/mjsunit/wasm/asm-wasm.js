@@ -1042,6 +1042,7 @@ function TestForeignFunctions() {
 
 TestForeignFunctions();
 
+
 function TestForeignFunctionMultipleUse() {
   function AsmModule(stdlib, foreign, buffer) {
     "use asm";
@@ -1170,3 +1171,145 @@ function TestForeignVariables() {
 }
 
 TestForeignVariables();
+
+
+(function() {
+  function TestByteHeapAccessCompat(stdlib, foreign, buffer) {
+    "use asm";
+
+    var HEAP8 = new stdlib.Uint8Array(buffer);
+    var HEAP32 = new stdlib.Int32Array(buffer);
+
+    function store(i, v) {
+      i = i | 0;
+      v = v | 0;
+      HEAP32[i >> 2] = v;
+    }
+
+    function storeb(i, v) {
+      i = i | 0;
+      v = v | 0;
+      HEAP8[i | 0] = v;
+    }
+
+    function load(i) {
+      i = i | 0;
+      return HEAP8[i] | 0;
+    }
+
+    function iload(i) {
+      i = i | 0;
+      return HEAP8[HEAP32[i >> 2] | 0] | 0;
+    }
+
+    return {load: load, iload: iload, store: store, storeb: storeb};
+  }
+
+  var m = _WASMEXP_.instantiateModuleFromAsm(
+      TestByteHeapAccessCompat.toString());
+  m.store(0, 20);
+  m.store(4, 21);
+  m.store(8, 22);
+  m.storeb(20, 123);
+  m.storeb(21, 42);
+  m.storeb(22, 77);
+  assertEquals(123, m.load(20));
+  assertEquals(42, m.load(21));
+  assertEquals(77, m.load(22));
+  assertEquals(123, m.iload(0));
+  assertEquals(42, m.iload(4));
+  assertEquals(77, m.iload(8));
+})();
+
+
+(function TestGlobalBlock() {
+  function Module(stdlib, foreign, buffer) {
+    "use asm";
+
+    var x = foreign.x | 0, y = foreign.y | 0;
+
+    function test() {
+      return (x + y) | 0;
+    }
+
+    return {test: test};
+  }
+
+  var m = _WASMEXP_.instantiateModuleFromAsm(
+      Module.toString(), { x: 4, y: 11 });
+  m.__init__();
+  assertEquals(15, m.test());
+})();
+
+
+(function TestComma() {
+  function CommaModule() {
+    "use asm";
+
+    function ifunc(a, b) {
+      a = +a;
+      b = b | 0;
+      return (a, b) | 0;
+    }
+
+    function dfunc(a, b) {
+      a = a | 0;
+      b = +b;
+      return +(a, b);
+    }
+
+    return {ifunc: ifunc, dfunc: dfunc};
+  }
+
+  var m = _WASMEXP_.instantiateModuleFromAsm(CommaModule.toString());
+  assertEquals(123, m.ifunc(456.7, 123));
+  assertEquals(123.4, m.dfunc(456, 123.4));
+})();
+
+
+(function TestOr() {
+  function Module() {
+    "use asm";
+    function func() {
+      var x = 1;
+      var y = 2;
+      return (x | y) | 0;
+    }
+    return {func: func};
+  }
+
+  var m = _WASMEXP_.instantiateModuleFromAsm(Module.toString());
+  assertEquals(3, m.func());
+})();
+
+
+(function TestAnd() {
+  function Module() {
+    "use asm";
+    function func() {
+      var x = 3;
+      var y = 2;
+      return (x & y) | 0;
+    }
+    return {func: func};
+  }
+
+  var m = _WASMEXP_.instantiateModuleFromAsm(Module.toString());
+  assertEquals(2, m.func());
+})();
+
+
+(function TestXor() {
+  function Module() {
+    "use asm";
+    function func() {
+      var x = 3;
+      var y = 2;
+      return (x ^ y) | 0;
+    }
+    return {func: func};
+  }
+
+  var m = _WASMEXP_.instantiateModuleFromAsm(Module.toString());
+  assertEquals(1, m.func());
+})();

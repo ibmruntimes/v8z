@@ -21,7 +21,6 @@ namespace internal {
 // List of code stubs used on all platforms.
 #define CODE_STUB_LIST_ALL_PLATFORMS(V)     \
   /* PlatformCodeStubs */                   \
-  V(ArgumentsAccess)                        \
   V(ArrayConstructor)                       \
   V(BinaryOpICWithAllocationSite)           \
   V(CallApiFunction)                        \
@@ -77,8 +76,10 @@ namespace internal {
   V(FastCloneShallowObject)                 \
   V(FastNewClosure)                         \
   V(FastNewContext)                         \
+  V(FastNewObject)                          \
   V(FastNewRestParameter)                   \
-  V(FastNewStrictArguments)               \
+  V(FastNewSloppyArguments)                 \
+  V(FastNewStrictArguments)                 \
   V(GrowArrayElements)                      \
   V(InternalArrayNArgumentsConstructor)     \
   V(InternalArrayNoArgumentConstructor)     \
@@ -739,6 +740,15 @@ class FastNewContextStub final : public HydrogenCodeStub {
 };
 
 
+class FastNewObjectStub final : public PlatformCodeStub {
+ public:
+  explicit FastNewObjectStub(Isolate* isolate) : PlatformCodeStub(isolate) {}
+
+  DEFINE_CALL_INTERFACE_DESCRIPTOR(FastNewObject);
+  DEFINE_PLATFORM_CODE_STUB(FastNewObject, PlatformCodeStub);
+};
+
+
 // TODO(turbofan): This stub should be possible to write in TurboFan
 // using the CodeStubAssembler very soon in a way that is as efficient
 // and easy as the current handwritten version, which is partly a copy
@@ -755,8 +765,20 @@ class FastNewRestParameterStub final : public PlatformCodeStub {
 
 // TODO(turbofan): This stub should be possible to write in TurboFan
 // using the CodeStubAssembler very soon in a way that is as efficient
-// and easy as the current handwritten version, which is partly a copy
-// of the strict arguments object materialization code.
+// and easy as the current handwritten version.
+class FastNewSloppyArgumentsStub final : public PlatformCodeStub {
+ public:
+  explicit FastNewSloppyArgumentsStub(Isolate* isolate)
+      : PlatformCodeStub(isolate) {}
+
+  DEFINE_CALL_INTERFACE_DESCRIPTOR(FastNewSloppyArguments);
+  DEFINE_PLATFORM_CODE_STUB(FastNewSloppyArguments, PlatformCodeStub);
+};
+
+
+// TODO(turbofan): This stub should be possible to write in TurboFan
+// using the CodeStubAssembler very soon in a way that is as efficient
+// and easy as the current handwritten version.
 class FastNewStrictArgumentsStub final : public PlatformCodeStub {
  public:
   explicit FastNewStrictArgumentsStub(Isolate* isolate)
@@ -1497,9 +1519,9 @@ class CallApiGetterStub : public PlatformCodeStub {
 
 class BinaryOpICStub : public HydrogenCodeStub {
  public:
-  BinaryOpICStub(Isolate* isolate, Token::Value op, Strength strength)
+  BinaryOpICStub(Isolate* isolate, Token::Value op)
       : HydrogenCodeStub(isolate, UNINITIALIZED) {
-    BinaryOpICState state(isolate, op, strength);
+    BinaryOpICState state(isolate, op);
     set_sub_minor_key(state.GetExtraICState());
   }
 
@@ -1580,9 +1602,8 @@ class BinaryOpICWithAllocationSiteStub final : public PlatformCodeStub {
 
 class BinaryOpWithAllocationSiteStub final : public BinaryOpICStub {
  public:
-  BinaryOpWithAllocationSiteStub(Isolate* isolate, Token::Value op,
-                                 Strength strength)
-      : BinaryOpICStub(isolate, op, strength) {}
+  BinaryOpWithAllocationSiteStub(Isolate* isolate, Token::Value op)
+      : BinaryOpICStub(isolate, op) {}
 
   BinaryOpWithAllocationSiteStub(Isolate* isolate, const BinaryOpICState& state)
       : BinaryOpICStub(isolate, state) {}
@@ -1633,13 +1654,11 @@ class StringAddStub final : public HydrogenCodeStub {
 
 class CompareICStub : public PlatformCodeStub {
  public:
-  CompareICStub(Isolate* isolate, Token::Value op, Strength strength,
-                CompareICState::State left, CompareICState::State right,
-                CompareICState::State state)
+  CompareICStub(Isolate* isolate, Token::Value op, CompareICState::State left,
+                CompareICState::State right, CompareICState::State state)
       : PlatformCodeStub(isolate) {
     DCHECK(Token::IsCompareOp(op));
     minor_key_ = OpBits::encode(op - Token::EQ) |
-                 StrengthBits::encode(is_strong(strength)) |
                  LeftStateBits::encode(left) | RightStateBits::encode(right) |
                  StateBits::encode(state);
   }
@@ -1650,10 +1669,6 @@ class CompareICStub : public PlatformCodeStub {
 
   Token::Value op() const {
     return static_cast<Token::Value>(Token::EQ + OpBits::decode(minor_key_));
-  }
-
-  Strength strength() const {
-    return StrengthBits::decode(minor_key_) ? Strength::STRONG : Strength::WEAK;
   }
 
   CompareICState::State left() const {
@@ -1688,10 +1703,9 @@ class CompareICStub : public PlatformCodeStub {
   }
 
   class OpBits : public BitField<int, 0, 3> {};
-  class StrengthBits : public BitField<bool, 3, 1> {};
-  class LeftStateBits : public BitField<CompareICState::State, 4, 4> {};
-  class RightStateBits : public BitField<CompareICState::State, 8, 4> {};
-  class StateBits : public BitField<CompareICState::State, 12, 4> {};
+  class LeftStateBits : public BitField<CompareICState::State, 3, 4> {};
+  class RightStateBits : public BitField<CompareICState::State, 7, 4> {};
+  class StateBits : public BitField<CompareICState::State, 11, 4> {};
 
   Handle<Map> known_map_;
 
@@ -1850,43 +1864,6 @@ class JSEntryStub : public PlatformCodeStub {
 
   DEFINE_NULL_CALL_INTERFACE_DESCRIPTOR();
   DEFINE_PLATFORM_CODE_STUB(JSEntry, PlatformCodeStub);
-};
-
-
-class ArgumentsAccessStub: public PlatformCodeStub {
- public:
-  enum Type {
-    NEW_SLOPPY_FAST,
-    NEW_SLOPPY_SLOW,
-  };
-
-  ArgumentsAccessStub(Isolate* isolate, Type type) : PlatformCodeStub(isolate) {
-    minor_key_ = TypeBits::encode(type);
-  }
-
-  CallInterfaceDescriptor GetCallInterfaceDescriptor() const override {
-    return ArgumentsAccessNewDescriptor(isolate());
-  }
-
-  static Type ComputeType(bool has_duplicate_parameters) {
-    if (has_duplicate_parameters) {
-      return Type::NEW_SLOPPY_SLOW;
-    } else {
-      return Type::NEW_SLOPPY_FAST;
-    }
-  }
-
- private:
-  Type type() const { return TypeBits::decode(minor_key_); }
-
-  void GenerateNewSloppyFast(MacroAssembler* masm);
-  void GenerateNewSloppySlow(MacroAssembler* masm);
-
-  void PrintName(std::ostream& os) const override;  // NOLINT
-
-  class TypeBits : public BitField<Type, 0, 1> {};
-
-  DEFINE_PLATFORM_CODE_STUB(ArgumentsAccess, PlatformCodeStub);
 };
 
 
@@ -2120,10 +2097,6 @@ class LoadDictionaryElementStub : public HydrogenCodeStub {
     return LoadWithVectorDescriptor(isolate());
   }
 
-  LanguageMode language_mode() const {
-    return LoadICState::GetLanguageMode(MinorKey());
-  }
-
   DEFINE_HYDROGEN_CODE_STUB(LoadDictionaryElement, HydrogenCodeStub);
 };
 
@@ -2137,10 +2110,6 @@ class KeyedLoadGenericStub : public HydrogenCodeStub {
 
   Code::Kind GetCodeKind() const override { return Code::KEYED_LOAD_IC; }
   InlineCacheState GetICState() const override { return GENERIC; }
-
-  LanguageMode language_mode() const {
-    return LoadICState::GetLanguageMode(MinorKey());
-  }
 
   DEFINE_CALL_INTERFACE_DESCRIPTOR(Load);
 

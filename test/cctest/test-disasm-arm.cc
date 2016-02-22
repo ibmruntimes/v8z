@@ -362,6 +362,7 @@ TEST(Type3) {
   SET_UP();
 
   if (CpuFeatures::IsSupported(ARMv7)) {
+    CpuFeatureScope scope(&assm, ARMv7);
     COMPARE(ubfx(r0, r1, 5, 10),
             "e7e902d1       ubfx r0, r1, #5, #10");
     COMPARE(ubfx(r1, r0, 5, 10),
@@ -437,6 +438,9 @@ TEST(Type3) {
     COMPARE(uxth(r3, r4, 8), "e6ff3474       uxth r3, r4, ror #8");
 
     COMPARE(uxtah(r3, r4, r5, 24), "e6f43c75       uxtah r3, r4, r5, ror #24");
+
+    COMPARE(rbit(r1, r2), "e6ff1f32       rbit r1, r2");
+    COMPARE(rbit(r10, ip), "e6ffaf3c       rbit r10, ip");
   }
 
   COMPARE(smmla(r0, r1, r2, r3), "e7503211       smmla r0, r1, r2, r3");
@@ -1023,6 +1027,48 @@ TEST(LoadStore) {
             "f5d1f000       pld [r1]");
     COMPARE(pld(MemOperand(r2, 128)),
             "f5d2f080       pld [r2, #+128]");
+  }
+
+  VERIFY_RUN();
+}
+
+
+TEST(Barrier) {
+  SET_UP();
+
+  if (CpuFeatures::IsSupported(ARMv7)) {
+    CpuFeatureScope scope(&assm, ARMv7);
+
+    COMPARE(dmb(OSHLD),
+            "f57ff051       dmb oshld");
+    COMPARE(dmb(OSHST),
+            "f57ff052       dmb oshst");
+    COMPARE(dmb(OSH),
+            "f57ff053       dmb osh");
+    COMPARE(dmb(NSHLD),
+            "f57ff055       dmb nshld");
+    COMPARE(dmb(NSHST),
+            "f57ff056       dmb nshst");
+    COMPARE(dmb(NSH),
+            "f57ff057       dmb nsh");
+    COMPARE(dmb(ISHLD),
+            "f57ff059       dmb ishld");
+    COMPARE(dmb(ISHST),
+            "f57ff05a       dmb ishst");
+    COMPARE(dmb(ISH),
+            "f57ff05b       dmb ish");
+    COMPARE(dmb(LD),
+            "f57ff05d       dmb ld");
+    COMPARE(dmb(ST),
+            "f57ff05e       dmb st");
+    COMPARE(dmb(SY),
+            "f57ff05f       dmb sy");
+
+    COMPARE(dsb(ISH),
+            "f57ff04b       dsb ish");
+
+    COMPARE(isb(ISH),
+            "f57ff06b       isb ish");
   }
 
   VERIFY_RUN();

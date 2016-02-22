@@ -1529,8 +1529,14 @@ Type* Typer::Visitor::JSCallFunctionTyper(Type* fun, Typer* t) {
         case kMathClz32:
           return t->cache_.kZeroToThirtyTwo;
         // String functions.
+        case kStringCharCodeAt:
+          return Type::Union(Type::Range(0, kMaxUInt16, t->zone()), Type::NaN(),
+                             t->zone());
         case kStringCharAt:
+        case kStringConcat:
         case kStringFromCharCode:
+        case kStringToLowerCase:
+        case kStringToUpperCase:
           return Type::String();
         // Array functions.
         case kArrayIndexOf:
@@ -1580,6 +1586,7 @@ Type* Typer::Visitor::TypeJSCallRuntime(Node* node) {
     case Runtime::kInlineRegExpConstructResult:
       return Type::OtherObject();
     case Runtime::kInlineSubString:
+    case Runtime::kInlineStringCharFromCode:
       return Type::String();
     case Runtime::kInlineToInteger:
       return TypeUnaryOp(node, ToInteger);
@@ -1960,6 +1967,11 @@ Type* Typer::Visitor::TypeWord32Clz(Node* node) { return Type::Integral32(); }
 Type* Typer::Visitor::TypeWord32Ctz(Node* node) { return Type::Integral32(); }
 
 
+Type* Typer::Visitor::TypeWord32ReverseBits(Node* node) {
+  return Type::Integral32();
+}
+
+
 Type* Typer::Visitor::TypeWord32Popcnt(Node* node) {
   return Type::Integral32();
 }
@@ -1990,6 +2002,11 @@ Type* Typer::Visitor::TypeWord64Clz(Node* node) { return Type::Internal(); }
 
 
 Type* Typer::Visitor::TypeWord64Ctz(Node* node) { return Type::Internal(); }
+
+
+Type* Typer::Visitor::TypeWord64ReverseBits(Node* node) {
+  return Type::Internal();
+}
 
 
 Type* Typer::Visitor::TypeWord64Popcnt(Node* node) { return Type::Internal(); }
@@ -2398,6 +2415,9 @@ Type* Typer::Visitor::TypeLoadFramePointer(Node* node) {
   return Type::Internal();
 }
 
+Type* Typer::Visitor::TypeLoadParentFramePointer(Node* node) {
+  return Type::Internal();
+}
 
 Type* Typer::Visitor::TypeCheckedLoad(Node* node) { return Type::Any(); }
 

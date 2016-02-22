@@ -91,6 +91,8 @@
         'expression-type-collector.h',
         'interpreter/test-bytecode-generator.cc',
         'interpreter/test-interpreter.cc',
+        'interpreter/bytecode-expectations-printer.cc',
+        'interpreter/bytecode-expectations-printer.h',
         'gay-fixed.cc',
         'gay-precision.cc',
         'gay-shortest.cc',
@@ -376,7 +378,9 @@
         '../..',
       ],
       'sources': [
-        '../../test/cctest/interpreter/generate-bytecode-expectations.cc',
+        'interpreter/bytecode-expectations-printer.cc',
+        'interpreter/bytecode-expectations-printer.h',
+        'interpreter/generate-bytecode-expectations.cc',
       ],
     },
   ],
@@ -384,10 +388,23 @@
     ['test_isolation_mode != "noop"', {
       'targets': [
         {
-          'target_name': 'cctest_run',
+          'target_name': 'cctest_exe_run',
           'type': 'none',
           'dependencies': [
             'cctest',
+          ],
+          'includes': [
+            '../../build/isolate.gypi',
+          ],
+          'sources': [
+            'cctest_exe.isolate',
+          ],
+        },
+        {
+          'target_name': 'cctest_run',
+          'type': 'none',
+          'dependencies': [
+            'cctest_exe_run',
           ],
           'includes': [
             '../../build/isolate.gypi',

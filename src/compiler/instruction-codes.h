@@ -49,7 +49,6 @@ enum class RecordWriteMode { kValueIsMap, kValueIsPointer, kValueIsAny };
   V(ArchPrepareCallCFunction)      \
   V(ArchCallCFunction)             \
   V(ArchPrepareTailCall)           \
-  V(ArchLazyBailout)               \
   V(ArchJmp)                       \
   V(ArchLookupSwitch)              \
   V(ArchTableSwitch)               \
@@ -59,6 +58,7 @@ enum class RecordWriteMode { kValueIsMap, kValueIsPointer, kValueIsAny };
   V(ArchRet)                       \
   V(ArchStackPointer)              \
   V(ArchFramePointer)              \
+  V(ArchParentFramePointer)        \
   V(ArchTruncateDoubleToI)         \
   V(ArchStoreWithWriteBarrier)     \
   V(CheckedLoadInt8)               \

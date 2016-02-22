@@ -334,15 +334,15 @@ void LAccessArgumentsAt::PrintDataTo(StringStream* stream) {
 int LPlatformChunk::GetNextSpillIndex(RegisterKind kind) {
   if (kind == DOUBLE_REGISTERS && kDoubleSize == 2 * kPointerSize) {
     // Skip a slot if for a double-width slot for x32 port.
-    spill_slot_count_++;
+    current_frame_slots_++;
     // The spill slot's address is at rbp - (index + 1) * kPointerSize -
     // StandardFrameConstants::kFixedFrameSizeFromFp. kFixedFrameSizeFromFp is
     // 2 * kPointerSize, if rbp is aligned at 8-byte boundary, the below "|= 1"
     // will make sure the spilled doubles are aligned at 8-byte boundary.
     // TODO(haitao): make sure rbp is aligned at 8-byte boundary for x32 port.
-    spill_slot_count_ |= 1;
+    current_frame_slots_ |= 1;
   }
-  return spill_slot_count_++;
+  return current_frame_slots_++;
 }
 
 
@@ -2501,15 +2501,9 @@ LInstruction* LChunkBuilder::DoUnknownOSRValue(HUnknownOSRValue* instr) {
       Retry(kTooManySpillSlotsNeededForOSR);
       spill_index = 0;
     }
+    spill_index += StandardFrameConstants::kFixedSlotCount;
   }
   return DefineAsSpilled(new(zone()) LUnknownOSRValue, spill_index);
-}
-
-
-LInstruction* LChunkBuilder::DoCallStub(HCallStub* instr) {
-  LOperand* context = UseFixed(instr->context(), rsi);
-  LCallStub* result = new(zone()) LCallStub(context);
-  return MarkAsCall(DefineFixed(result, rax), instr);
 }
 
 
@@ -2660,16 +2654,6 @@ LInstruction* LChunkBuilder::DoLoadFieldByIndex(HLoadFieldByIndex* instr) {
 LInstruction* LChunkBuilder::DoStoreFrameContext(HStoreFrameContext* instr) {
   LOperand* context = UseRegisterAtStart(instr->context());
   return new(zone()) LStoreFrameContext(context);
-}
-
-
-LInstruction* LChunkBuilder::DoAllocateBlockContext(
-    HAllocateBlockContext* instr) {
-  LOperand* context = UseFixed(instr->context(), rsi);
-  LOperand* function = UseRegisterAtStart(instr->function());
-  LAllocateBlockContext* result =
-      new(zone()) LAllocateBlockContext(context, function);
-  return MarkAsCall(DefineFixed(result, rsi), instr);
 }
 
 

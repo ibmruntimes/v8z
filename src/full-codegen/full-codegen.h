@@ -532,19 +532,15 @@ class FullCodeGenerator: public AstVisitor {
   F(IsJSProxy)                          \
   F(Call)                               \
   F(ValueOf)                            \
-  F(SetValueOf)                         \
-  F(IsDate)                             \
   F(StringCharFromCode)                 \
   F(StringCharAt)                       \
   F(OneByteSeqStringSetChar)            \
   F(TwoByteSeqStringSetChar)            \
   F(IsJSReceiver)                       \
-  F(IsSimdValue)                        \
   F(MathPow)                            \
   F(HasCachedArrayIndex)                \
   F(GetCachedArrayIndex)                \
   F(GetSuperConstructor)                \
-  F(FastOneByteArrayJoin)               \
   F(GeneratorNext)                      \
   F(GeneratorReturn)                    \
   F(GeneratorThrow)                     \
@@ -683,7 +679,7 @@ class FullCodeGenerator: public AstVisitor {
               TypeFeedbackId id = TypeFeedbackId::None());
 
   // Inside typeof reference errors are never thrown.
-  void CallLoadIC(TypeofMode typeof_mode, LanguageMode language_mode = SLOPPY,
+  void CallLoadIC(TypeofMode typeof_mode,
                   TypeFeedbackId id = TypeFeedbackId::None());
   void CallStoreIC(TypeFeedbackId id = TypeFeedbackId::None());
 
@@ -1006,7 +1002,6 @@ class FullCodeGenerator: public AstVisitor {
   ZoneVector<HandlerTableEntry> handler_table_;
   int ic_total_count_;
   Handle<Cell> profiling_counter_;
-  bool generate_debug_code_;
 
   friend class NestedStatement;
 

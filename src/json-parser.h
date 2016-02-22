@@ -9,11 +9,11 @@
 #include "src/conversions.h"
 #include "src/debug/debug.h"
 #include "src/factory.h"
+#include "src/field-type.h"
 #include "src/messages.h"
 #include "src/parsing/scanner.h"
 #include "src/parsing/token.h"
 #include "src/transitions.h"
-#include "src/types.h"
 
 namespace v8 {
 namespace internal {
@@ -128,7 +128,9 @@ class JsonParser BASE_EMBEDDED {
   }
 
   Handle<String> ParseJsonInternalizedString() {
-    return ScanJsonString<true>();
+    Handle<String> result = ScanJsonString<true>();
+    if (result.is_null()) return result;
+    return factory()->InternalizeString(result);
   }
 
   template <bool is_internalized>

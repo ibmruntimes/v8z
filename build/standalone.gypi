@@ -110,6 +110,9 @@
       'use_goma%': 0,
       'gomadir%': '',
 
+      # Check if valgrind directories are present.
+      'has_valgrind%': '<!pymod_do_main(has_valgrind)',
+
       'conditions': [
         # Set default gomadir.
         ['OS=="win"', {
@@ -166,6 +169,7 @@
     'test_isolation_mode%': '<(test_isolation_mode)',
     'fastbuild%': '<(fastbuild)',
     'coverage%': '<(coverage)',
+    'has_valgrind%': '<(has_valgrind)',
 
     # Add a simple extras solely for the purpose of the cctests
     'v8_extra_library_files': ['../test/cctest/test-extra.js'],
@@ -375,6 +379,9 @@
     # fpxx - compatibility mode, it chooses fp32 or fp64 depending on runtime
     #        detection
     'mips_fpu_mode%': 'fp32',
+
+    # Indicates if gcmole tools are downloaded by a hook.
+    'gcmole%': 0,
   },
   'target_defaults': {
     'variables': {
@@ -728,8 +735,7 @@
             'cflags': [ '-fPIC', ],
           }],
           [ 'coverage==1', {
-            'cflags!': [ '-O3', '-O2', '-O1', ],
-            'cflags': [ '-fprofile-arcs', '-ftest-coverage', '-O0'],
+            'cflags': [ '-fprofile-arcs', '-ftest-coverage'],
             'ldflags': [ '-fprofile-arcs'],
           }],
         ],

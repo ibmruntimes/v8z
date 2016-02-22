@@ -335,6 +335,9 @@ class ParserTraits {
 
     typedef v8::internal::AstProperties AstProperties;
 
+    typedef v8::internal::ExpressionClassifier<ParserTraits>
+        ExpressionClassifier;
+
     // Return types for traversing functions.
     typedef const AstRawString* Identifier;
     typedef v8::internal::Expression* Expression;
@@ -461,6 +464,8 @@ class ParserTraits {
                             MessageTemplate::Template message,
                             const AstRawString* arg, int pos);
 
+  Statement* FinalizeForOfStatement(ForOfStatement* loop, int pos);
+
   // Reporting errors.
   void ReportMessageAt(Scanner::Location source_location,
                        MessageTemplate::Template message,
@@ -547,7 +552,7 @@ class ParserTraits {
                                     int initializer_end_position, bool is_rest);
   V8_INLINE void DeclareFormalParameter(
       Scope* scope, const ParserFormalParameters::Parameter& parameter,
-      ExpressionClassifier* classifier);
+      Type::ExpressionClassifier* classifier);
   void ParseArrowFunctionFormalParameters(ParserFormalParameters* parameters,
                                           Expression* params,
                                           const Scanner::Location& params_loc,
@@ -567,7 +572,6 @@ class ParserTraits {
       const AstRawString* name, Scanner::Location function_name_location,
       FunctionNameValidity function_name_validity, FunctionKind kind,
       int function_token_position, FunctionLiteral::FunctionType type,
-      FunctionLiteral::ArityRestriction arity_restriction,
       LanguageMode language_mode, bool* ok);
   V8_INLINE void SkipLazyFunctionBody(
       int* materialized_literal_count, int* expected_property_count, bool* ok,
@@ -642,6 +646,7 @@ class ParserTraits {
 
   V8_INLINE void QueueDestructuringAssignmentForRewriting(
       Expression* assignment);
+  V8_INLINE void QueueNonPatternForRewriting(Expression* expr);
 
   void SetFunctionNameFromPropertyName(ObjectLiteralProperty* property,
                                        const AstRawString* name);
@@ -650,20 +655,28 @@ class ParserTraits {
                                         Expression* identifier);
 
   // Rewrite expressions that are not used as patterns
-  V8_INLINE Expression* RewriteNonPattern(
-      Expression* expr, const ExpressionClassifier* classifier, bool* ok);
-  V8_INLINE ObjectLiteralProperty* RewriteNonPatternObjectLiteralProperty(
-      ObjectLiteralProperty* property, const ExpressionClassifier* classifier,
-      bool* ok);
+  V8_INLINE void RewriteNonPattern(Type::ExpressionClassifier* classifier,
+                                   bool* ok);
+
+  V8_INLINE Zone* zone() const;
+
+  V8_INLINE ZoneList<Expression*>* GetNonPatternList() const;
 
   Expression* RewriteYieldStar(
       Expression* generator, Expression* expression, int pos);
 
+  Expression* RewriteInstanceof(Expression* lhs, Expression* rhs, int pos);
+
  private:
   Parser* parser_;
 
-  void BuildIteratorClose(ZoneList<Statement*>* statements, Variable* iterator,
-                          Maybe<Variable*> input, Maybe<Variable*> output);
+  void BuildIteratorClose(
+      ZoneList<Statement*>* statements, Variable* iterator,
+      Expression* input, Variable* output);
+  void BuildIteratorCloseForCompletion(
+      ZoneList<Statement*>* statements, Variable* iterator,
+      Variable* body_threw);
+  Statement* CheckCallable(Variable* var, Expression* error);
 };
 
 
@@ -807,8 +820,9 @@ class Parser : public ParserBase<ParserTraits> {
         const DeclarationParsingResult::Declaration* declaration,
         ZoneList<const AstRawString*>* names, bool* ok);
 
-    static void RewriteDestructuringAssignment(
-        Parser* parser, RewritableAssignmentExpression* expr, Scope* Scope);
+    static void RewriteDestructuringAssignment(Parser* parser,
+                                               RewritableExpression* expr,
+                                               Scope* Scope);
 
     static Expression* RewriteDestructuringAssignment(Parser* parser,
                                                       Assignment* assignment,
@@ -878,10 +892,10 @@ class Parser : public ParserBase<ParserTraits> {
     bool* ok_;
   };
 
-
-  void ParseVariableDeclarations(VariableDeclarationContext var_context,
-                                 DeclarationParsingResult* parsing_result,
-                                 bool* ok);
+  Block* ParseVariableDeclarations(VariableDeclarationContext var_context,
+                                   DeclarationParsingResult* parsing_result,
+                                   ZoneList<const AstRawString*>* names,
+                                   bool* ok);
   Statement* ParseExpressionOrLabelledStatement(
       ZoneList<const AstRawString*>* labels, bool* ok);
   IfStatement* ParseIfStatement(ZoneList<const AstRawString*>* labels,
@@ -928,7 +942,6 @@ class Parser : public ParserBase<ParserTraits> {
       const AstRawString* name, Scanner::Location function_name_location,
       FunctionNameValidity function_name_validity, FunctionKind kind,
       int function_token_position, FunctionLiteral::FunctionType type,
-      FunctionLiteral::ArityRestriction arity_restriction,
       LanguageMode language_mode, bool* ok);
 
 
@@ -1025,11 +1038,7 @@ class Parser : public ParserBase<ParserTraits> {
   friend class NonPatternRewriter;
   V8_INLINE Expression* RewriteSpreads(ArrayLiteral* lit);
 
-  V8_INLINE Expression* RewriteNonPattern(
-      Expression* expr, const ExpressionClassifier* classifier, bool* ok);
-  V8_INLINE ObjectLiteralProperty* RewriteNonPatternObjectLiteralProperty(
-      ObjectLiteralProperty* property, const ExpressionClassifier* classifier,
-      bool* ok);
+  V8_INLINE void RewriteNonPattern(ExpressionClassifier* classifier, bool* ok);
 
   friend class InitializerRewriter;
   void RewriteParameterInitializer(Expression* expr, Scope* scope);
@@ -1180,7 +1189,7 @@ void ParserTraits::AddFormalParameter(ParserFormalParameters* parameters,
 
 void ParserTraits::DeclareFormalParameter(
     Scope* scope, const ParserFormalParameters::Parameter& parameter,
-    ExpressionClassifier* classifier) {
+    Type::ExpressionClassifier* classifier) {
   bool is_duplicate = false;
   bool is_simple = classifier->is_simple_parameter_list();
   auto name = is_simple || parameter.is_rest
