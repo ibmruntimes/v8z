@@ -300,6 +300,10 @@ class Simulator {
   bool DecodeFourByte(Instruction* instr);
   bool DecodeFourByteArithmetic(Instruction *instr);
   bool DecodeFourByteFloatingPoint(Instruction* instr);
+  void DecodeFourByteFloatingPointIntConversion(Instruction* instr);
+  void DecodeFourByteFloatingPointRound(Instruction* instr);
+
+
   bool DecodeSixByte(Instruction* instr);
   bool DecodeSixByteArithmetic(Instruction *instr);
   bool S390InstructionDecode(Instruction *instr);
