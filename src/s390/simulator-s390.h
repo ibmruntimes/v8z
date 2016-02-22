@@ -168,7 +168,23 @@ class Simulator {
 
   void set_d_register_from_float(int dreg, const float f) {
     DCHECK(dreg >= 0 && dreg < kNumFPRs);
-    *bit_cast<float*>(&fp_registers_[dreg]) = f;
+
+    union{
+            double d;
+            uint64_t i64;
+    } setvalue;
+
+    //memcpy the float to high part of double
+    memcpy(&setvalue.d, &f, sizeof(f));
+
+    union{
+            double d;
+            uint64_t i64;
+    } finalval;
+    finalval.i64 = setvalue.i64 << 32;
+
+
+    *bit_cast<double*>(&fp_registers_[dreg]) = finalval.d;
     // float* f_addr = reinterpret_cast<float*>(&fp_registers_[dreg]);
     // *f_addr = f;
   }
@@ -177,7 +193,17 @@ class Simulator {
     DCHECK(dreg >= 0 && dreg < kNumFPRs);
     // float* f_addr = reinterpret_cast<float*>(&fp_registers_[dreg]);
     // return *f_addr;
-    return *bit_cast<float*>(&fp_registers_[dreg]);
+    union{
+            double d;
+            uint64_t i64;
+    } register_value;
+
+
+    register_value.d = *bit_cast<double*>(&fp_registers_[dreg]);
+    float finalval = 0.0;
+    memcpy(&finalval, &register_value.i64, sizeof(finalval));
+    return finalval;
+
   }
 
   // Special case of set_register and get_register to access the raw PC value.
