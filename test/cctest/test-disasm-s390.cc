@@ -97,7 +97,6 @@ if (failure) {                                                        \
 TEST(TwoBytes) {
   SET_UP();
 
-  COMPARE(svc(Operand(7)), "0a07           svc\t7");
   COMPARE(ar(r3, r10), "1a3a           ar\tr3,r10");
   COMPARE(sr(r8, ip), "1b8c           sr\tr8,ip");
   COMPARE(mr_z(r0, r6), "1c06           mr\tr0,r6");

@@ -190,7 +190,6 @@ TEST(3) {
   __ ngr(r14, r13);
   __ xgr(r14, r13);
 
-  __ svc(Operand(123));
   __ ahi(r13, Operand(123));
   __ aghi(r13, Operand(123));
   __ stm(r1, r2, MemOperand(r3, r0, 123));
