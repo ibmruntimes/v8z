@@ -588,64 +588,6 @@ void Assembler::nop(int type) {
 }
 
 
-// I format <insn> i
-//    +--------+---------+
-//    | OpCode |    i    |
-//    +--------+---------+
-//    0        8        15
-//
-#define I_FORM_EMIT(name, op)\
-void Assembler::name(const Operand& i) {\
-    i_form(op, i);\
-}
-
-
-void Assembler::i_form(Opcode op, const Operand& i) {
-    DCHECK(is_uint8(i.imm_));
-    DCHECK(is_uint8(op));
-    emit2bytes(op << 8 | i.imm_);
-}
-
-
-// E format <insn>
-//    +------------------+
-//    |      OpCode      |
-//    +------------------+
-//    0                 15
-//
-#define E_FORM_EMIT(name, op)\
-void Assembler::name() {\
-    e_form(op);\
-}
-
-
-void Assembler::e_form(Opcode op) {
-    DCHECK(is_uint16(op));
-    emit2bytes(op);
-}
-
-
-// IE format: <insn> i1, i2
-//    +--------+---------+--------+----+----+
-//    |      OpCode      |////////| I1 | I2 |
-//    +--------+---------+--------+----+----+
-//    0        8         16      24   28   31
-#define IE_FORM_EMIT(name, op)\
-void Assembler::name(const Operand& i1, const Operand& i2) {\
-    ie_form(op, i1, i2);\
-}
-
-
-void Assembler::ie_form(Opcode op, const Operand& i1, const Operand& i2) {
-    DCHECK(is_uint16(op));
-    DCHECK(is_uint4(i1.imm_));
-    DCHECK(is_uint4(i2.imm_));
-    emit4bytes((op << 16) |
-               ((i1.imm_ & 0xf) * B4) |
-               (i2.imm_ & 0xf));
-}
-
-
 // RR format: <insn> R1,R2
 //    +--------+----+----+
 //    | OpCode | R1 | R2 |
@@ -1631,9 +1573,7 @@ RIL1_FORM_EMIT(cgfi, CGFI)
 SS1_FORM_EMIT(ed, ED)
 RX_FORM_EMIT(ex, EX)
 RRE_FORM_EMIT(flogr, FLOGR)
-RSY1_FORM_EMIT(lang, LANG)
 RIL1_FORM_EMIT(larl, LARL)
-RSY1_FORM_EMIT(lax, LAX)
 RRE_FORM_EMIT(lcgr, LCGR)
 RR_FORM_EMIT(lcr, LCR)
 RX_FORM_EMIT(le_z, LE)
@@ -1662,17 +1602,11 @@ RI1_FORM_EMIT(nill, NILL)
 RIL1_FORM_EMIT(oihf, OIHF)
 RIL1_FORM_EMIT(oilf, OILF)
 RI1_FORM_EMIT(oill, OILL)
-SS2_FORM_EMIT(pack, PACK)
 RRE_FORM_EMIT(popcnt, POPCNT_Z)
-S_FORM_EMIT(sal, SAL)
-RRE_FORM_EMIT(sar, SAR)
-RXY_FORM_EMIT(sgf, SGF)
-RRE_FORM_EMIT(sgfr, SGFR)
 RIL1_FORM_EMIT(slfi, SLFI)
 RXY_FORM_EMIT(slgf, SLGF)
 RIL1_FORM_EMIT(slgfi, SLGFI)
 RXY_FORM_EMIT(strv, STRV)
-I_FORM_EMIT(svc, SVC)
 RI1_FORM_EMIT(tmll, TMLL)
 SS1_FORM_EMIT(tr, TR)
 S_FORM_EMIT(ts, TS)
@@ -1995,9 +1929,21 @@ void Assembler::sg(Register r1, const MemOperand& opnd) {
 }
 
 
+// Subtract Register-Storage (64<-32)
+void Assembler::sgf(Register r1, const MemOperand& opnd) {
+  rxy_form(SGF, r1, opnd.rx(), opnd.rb(), opnd.offset());
+}
+
+
 // Subtract Register (64)
 void Assembler::sgr(Register r1, Register r2) {
   rre_form(SGR, r1, r2);
+}
+
+
+// Subtract Register (64<-32)
+void Assembler::sgfr(Register r1, Register r2) {
+  rre_form(SGFR, r1, r2);
 }
 
 
@@ -2334,6 +2280,15 @@ void Assembler::xgr(Register r1, Register r2) {
 // XOR Register-Register-Register (64)
 void Assembler::xgrk(Register r1, Register r2, Register r3) {
   rrf1_form(XGRK, r1, r2, r3);
+}
+
+
+// XOR Storage-Storage
+void Assembler::xc(const MemOperand& opnd1, const MemOperand& opnd2,
+                    Length length) {
+    ss_form(XC, length-1, opnd1.getBaseRegister(),
+         opnd1.getDisplacement(), opnd2.getBaseRegister(),
+         opnd2.getDisplacement());
 }
 
 
@@ -2965,15 +2920,6 @@ void Assembler::mvc(const MemOperand& opnd1, const MemOperand& opnd2,
 void Assembler::clc(const MemOperand& opnd1, const MemOperand& opnd2,
                     Length length) {
     ss_form(CLC, length-1, opnd1.getBaseRegister(),
-         opnd1.getDisplacement(), opnd2.getBaseRegister(),
-         opnd2.getDisplacement());
-}
-
-
-// Exclusive Or - mem to mem operation
-void Assembler::xc(const MemOperand& opnd1, const MemOperand& opnd2,
-                    Length length) {
-    ss_form(XC, length-1, opnd1.getBaseRegister(),
          opnd1.getDisplacement(), opnd2.getBaseRegister(),
          opnd2.getDisplacement());
 }

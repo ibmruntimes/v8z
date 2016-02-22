@@ -646,12 +646,6 @@ class Assembler : public AssemblerBase {
   void jump(Handle<Code> target, RelocInfo::Mode rmode, Condition cond);
 
   // S390 instruction generation
-#define E_FORM(name)\
-void name()
-
-#define IE_FORM(name)\
-void name(const Operand& i1, const Operand& i2)
-
 #define I_FORM(name)\
 void name(const Operand& i)
 
@@ -846,9 +840,7 @@ RIL1_FORM(iilf);
 RI1_FORM(iilh);
 RI1_FORM(iill);
 RX_FORM(l);
-RSY1_FORM(lang);
 RIL1_FORM(larl);
-RSY1_FORM(lax);
 RXY_FORM(lb);
 RRE_FORM(lbr);
 RRE_FORM(lcgr);
@@ -892,14 +884,9 @@ RI1_FORM(nill);
 RIL1_FORM(oihf);
 RIL1_FORM(oilf);
 RI1_FORM(oill);
-SS2_FORM(pack);
 RRE_FORM(popcnt);
-S_FORM(sal);
-RRE_FORM(sar);
 RXE_FORM(sdb);
 RRE_FORM(sdbr);
-RXY_FORM(sgf);
-RRE_FORM(sgfr);
 RIL1_FORM(slfi);
 RXY_FORM(slgf);
 RIL1_FORM(slgfi);
@@ -907,11 +894,9 @@ RS1_FORM(srdl);
 RX_FORM(ste);
 RXY_FORM(stey);
 RXY_FORM(strv);
-I_FORM(svc);
 RI1_FORM(tmll);
 SS1_FORM(tr);
 S_FORM(ts);
-SS1_FORM(xc);
 RIL1_FORM(xihf);
 RIL1_FORM(xilf);
 
@@ -1079,7 +1064,9 @@ RIL1_FORM(xilf);
 
   // 64-bit Subtract Instructions
   void sg(Register r1, const MemOperand& opnd);
+  void sgf(Register r1, const MemOperand& opnd);
   void sgr(Register r1, Register r2);
+  void sgfr(Register r1, Register r2);
   void sgrk(Register r1, Register r2, Register r3);
 
   // 32-bit Subtract Logical Instructions
@@ -1146,6 +1133,8 @@ RIL1_FORM(xilf);
   void xg(Register r1, const MemOperand& opnd);
   void xgr(Register r1, Register r2);
   void xgrk(Register r1, Register r2, Register r3);
+  void xc(const MemOperand& opnd1, const MemOperand& opnd2,
+          Length length);
 
   // Bitwise GPR <-> FPR Conversion Instructions
   void lgdr(Register r1, DoubleRegister f2);
@@ -1412,9 +1401,6 @@ RIL1_FORM(xilf);
   inline void emit6bytes(uint64_t x);
 
   // Helpers to emit binary encoding for various instruction formats.
-  inline void i_form(Opcode op, const Operand& i);
-  inline void e_form(Opcode op);
-  inline void ie_form(Opcode op, const Operand& i1, const Operand& i2);
 
   inline void rr_form(Opcode op, Register r1, Register r2);
   inline void rr_form(Opcode op, DoubleRegister r1, DoubleRegister r2);
