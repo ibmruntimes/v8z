@@ -32,10 +32,10 @@
 
 // The original source code covered by the above license above has been
 // modified significantly by Google Inc.
-// Copyright 2016 the V8 project authors. All rights reserved.
+// Copyright 2014 the V8 project authors. All rights reserved.
 
 // A light-weight S390 Assembler
-// Generates user mode instructions for the S390 architecture
+// Generates user mode instructions for z/Architecture
 
 #ifndef V8_S390_ASSEMBLER_S390_H_
 #define V8_S390_ASSEMBLER_S390_H_
@@ -371,8 +371,8 @@ class MemOperand BASE_EMBEDDED {
 
  private:
   Register baseRegister;     // base
-  int32_t offset_;  // offset
-  Register indexRegister;     // index
+  Register indexRegister;    // index
+  int32_t offset_;           // offset
 
   friend class Assembler;
 };
@@ -393,6 +393,7 @@ class DeferredRelocInfo {
   RelocInfo::Mode rmode_;
   intptr_t data_;
 };
+
 
 class Assembler : public AssemblerBase {
  public:
@@ -605,12 +606,6 @@ class Assembler : public AssemblerBase {
   void bunordered(Register r) { b(unordered, r); }
   void bordered(Register r)   { b(ordered, r);   }
 
-  // S390 native instructions
-  // Indirect Conditional Branch via register
-  void bcr(Condition m, Register target);
-
-  // Conditional Branch Relative Long
-  void brcl(Condition m, const Operand& opnd, bool isCodeTarget = false);
   // ---------------------------------------------------------------------------
   // Code generation
 
@@ -649,12 +644,6 @@ class Assembler : public AssemblerBase {
   void call(Handle<Code> target, RelocInfo::Mode rmode,
             TypeFeedbackId ast_id = TypeFeedbackId::None());
   void jump(Handle<Code> target, RelocInfo::Mode rmode, Condition cond);
-
-  void mvc(const MemOperand& opnd1, const MemOperand& opnd2, uint32_t length);
-  void asi(const MemOperand&, const Operand&);
-  void agsi(const MemOperand&, const Operand&);
-
-  // Data-processing instructions
 
   // S390 instruction generation
 #define E_FORM(name)\
@@ -818,38 +807,8 @@ void name(Register r3, Register b1, Disp d1, \
 void name(Register r3, const MemOperand& opnd1, const MemOperand& opnd2)
 
 // S390 instruction sets
-RX_FORM(a);
-RXE_FORM(adb);
-RRE_FORM(adbr);
-RIL1_FORM(afi);
-RXY_FORM(ag);
-RXY_FORM(agf);
-RIL1_FORM(agfi);
-RRE_FORM(agfr);
-RI1_FORM(aghi);
-RRE_FORM(agr);
-RX_FORM(ah);
-RI1_FORM(ahi);
-RXY_FORM(ahy);
-RX_FORM(al_z);
-RIL1_FORM(alfi);
-RXY_FORM(alg);
-RIL1_FORM(algfi);
-RRE_FORM(algr);
-RR_FORM(alr);
-RXY_FORM(aly);
-SS2_FORM(ap);
-RR_FORM(ar);
-RXY_FORM(ay);
-RX_FORM(bal);
-RR_FORM(basr);
 RX_FORM(bc);
-RX_FORM(bct);
-RXY_FORM(bctg);
 RR_FORM(bctr);
-RI1_FORM(bras);
-RIL1_FORM(brasl);
-RI2_FORM(brc);
 RX_FORM(c);
 RX_FORM(cd);
 RRE_FORM(cdr);
@@ -871,15 +830,8 @@ RIL1_FORM(clgfi);
 RXY_FORM(cly);
 RR_FORM(cr_z);
 RXY_FORM(cy);
-RX_FORM(d);
 RXE_FORM(ddb);
 RRE_FORM(ddbr);
-RXY_FORM(dl);
-RRE_FORM(dlr);
-RRE_FORM(dlgr);
-SS2_FORM(dp);
-RR_FORM(dr);
-RRE_FORM(dsgr);
 SS1_FORM(ed);
 RRE_FORM(epair);
 RX_FORM(ex);
@@ -907,18 +859,11 @@ RXY_FORM(lg);
 RXY_FORM(lgb);
 RRE_FORM(lgbr);
 RXY_FORM(lgf);
-RRE_FORM(lgfr);
 RXY_FORM(lgh);
-RI1_FORM(lghi);
-RRE_FORM(lghr);
-RRE_FORM(lgr);
 RX_FORM(lh);
-RRE_FORM(lhr);
 RXY_FORM(lhy);
 RXY_FORM(llgf);
-RRE_FORM(llgfr);
 RXY_FORM(llgh);
-RRE_FORM(llghr);
 RXY_FORM(llh);
 RRE_FORM(llhr);
 RIL1_FORM(llihf);
@@ -926,103 +871,67 @@ RIL1_FORM(llilf);
 RRE_FORM(lngr);
 RR_FORM(lnr);
 RSY1_FORM(loc);
-RR_FORM(lr);
 RXY_FORM(lrv);
 RXY_FORM(lrvh);
 RRE_FORM(ltgfr);
 RRE_FORM(ltgr);
 RR_FORM(ltr);
 RXY_FORM(ly);
-RX_FORM(m);
 RXE_FORM(mdb);
 RRE_FORM(mdbr);
-RI1_FORM(mghi);
-RX_FORM(mh);
-RI1_FORM(mhi);
-RXY_FORM(mhy);
-RXY_FORM(ml);
-RXY_FORM(mlg);
-RRE_FORM(mlgr);
-RRE_FORM(mlr);
-RR_FORM(mr_z);
-RX_FORM(ms);
-RIL1_FORM(msfi);
-RXY_FORM(msg);
-RIL1_FORM(msgfi);
-RRE_FORM(msgr);
-RRE_FORM(msr);
-RXY_FORM(msy);
 SS4_FORM(mvck);
 SSF_FORM(mvcos);
 SS4_FORM(mvcs);
 SS1_FORM(mvn);
-RX_FORM(n);
 SS1_FORM(nc);
-RXY_FORM(ng);
-RRE_FORM(ngr);
 SI_FORM(ni);
 RIL1_FORM(nihf);
 RIL1_FORM(nilf);
 RI1_FORM(nilh);
 RI1_FORM(nill);
-RR_FORM(nr);
-RXY_FORM(ny);
-RX_FORM(o);
-RXY_FORM(og);
-RRE_FORM(ogr);
 RIL1_FORM(oihf);
 RIL1_FORM(oilf);
 RI1_FORM(oill);
-RR_FORM(or_z);
-RXY_FORM(oy);
 SS2_FORM(pack);
 RRE_FORM(popcnt);
-// RSY1_FORM(rll);
-// RSY1_FORM(rllg);
-RX_FORM(s);
 S_FORM(sal);
 RRE_FORM(sar);
 RXE_FORM(sdb);
 RRE_FORM(sdbr);
-RXY_FORM(sg);
 RXY_FORM(sgf);
 RRE_FORM(sgfr);
-RRE_FORM(sgr);
-RX_FORM(sh);
-RXY_FORM(shy);
-RX_FORM(sl);
 RIL1_FORM(slfi);
-RXY_FORM(slg);
 RXY_FORM(slgf);
 RIL1_FORM(slgfi);
-RRE_FORM(slgr);
-RR_FORM(slr);
-RXY_FORM(sly);
-RR_FORM(sr);
 RS1_FORM(srdl);
 RX_FORM(ste);
 RXY_FORM(stey);
 RXY_FORM(strv);
 I_FORM(svc);
-RXY_FORM(sy);
 RI1_FORM(tmll);
-RSL_FORM(tp);
 SS1_FORM(tr);
 S_FORM(ts);
-RX_FORM(x);
 SS1_FORM(xc);
-RXY_FORM(xg);
-RRE_FORM(xgr);
 RIL1_FORM(xihf);
 RIL1_FORM(xilf);
-RR_FORM(xr);
-RXY_FORM(xy);
-SS2_FORM(zap);
 
 
   // Load Address Instructions
   void la(Register r1, const MemOperand& src);
   void lay(Register r1, const MemOperand& src);
+
+  // Load Immediate Instructions
+  void lhi(Register dst, const Operand& imm);
+  void lghi(Register dst, const Operand& imm);
+
+  // Load Register-Register Instructions
+  void lr(Register r1, Register r2);
+  void lhr(Register r1, Register r2);
+  void lgr(Register r1, Register r2);
+  void lghr(Register r1, Register r2);
+  void lgfr(Register r1, Register r2);
+  void llgfr(Register r1, Register r2);
+  void llghr(Register r1, Register r2);
 
   // Load Instructions
   void lt_z(Register r1, const MemOperand& src);
@@ -1038,15 +947,18 @@ SS2_FORM(zap);
   void lmg(Register r1, Register r2, const MemOperand& src);
 
   // Store Instructions
+  void st(Register dst, const MemOperand& src);
+  void stc(Register dst, const MemOperand& src);
+  void stcy(Register dst, const MemOperand& src);
+  void stg(Register rs, const MemOperand &src);
+  void sth(Register dst, const MemOperand& src);
+  void sthy(Register dst, const MemOperand& src);
+  void sty(Register dst, const MemOperand& src);
+
+  // Store Multiple Instructions
   void stm(Register r1, Register r2, const MemOperand& src);
   void stmy(Register r1, Register r2, const MemOperand& src);
   void stmg(Register r1, Register r2, const MemOperand& src);
-  void st(Register dst, const MemOperand& src);
-  void sty(Register dst, const MemOperand& src);
-  void sth(Register dst, const MemOperand& src);
-  void sthy(Register dst, const MemOperand& src);
-  void stc(Register dst, const MemOperand& src);
-  void stcy(Register dst, const MemOperand& src);
 
   // Compare Instructions
   void cr(Register r1, Register r2);
@@ -1060,7 +972,7 @@ SS2_FORM(zap);
   void tm(const MemOperand& mem, const Operand& imm);
   void tmy(const MemOperand& mem, const Operand& imm);
 
-  // Rotate Instruction
+  // Rotate Instructions
   void rll(Register r1, Register r3, Register opnd);
   void rll(Register r1, Register r3, const Operand& opnd);
   void rll(Register r1, Register r3, Register r2, const Operand& opnd);
@@ -1068,7 +980,7 @@ SS2_FORM(zap);
   void rllg(Register r1, Register r3, const Register opnd);
   void rllg(Register r1, Register r3, Register r2, const Operand& opnd);
 
-  // Shift Instruction (32)
+  // Shift Instructions (32)
   void sll(Register r1, Register opnd);
   void sll(Register r1, const Operand& opnd);
   void sllk(Register r1, Register r3, Register opnd);
@@ -1085,11 +997,6 @@ SS2_FORM(zap);
   void sla(Register r1, const Operand& opnd);
   void slak(Register r1, Register r3, Register opnd);
   void slak(Register r1, Register r3, const Operand& opnd);
-
-  // Data-processing instructions
-
-  void sub(Register dst, Register src1, Register src2,
-           OEBit s = LeaveOE, RCBit r = LeaveRC);
 
   // Shift Instructions (64)
   void sllg(Register r1, Register r3, const Operand& opnd);
@@ -1111,32 +1018,140 @@ SS2_FORM(zap);
               const Operand& endBit, const Operand& shiftAmt,
               bool zeroBits = true);
 
-  // Arithmetic Instructions
+  // Move Character (Mem to Mem)
+  void mvc(const MemOperand& opnd1, const MemOperand& opnd2, uint32_t length);
+
+  // Branch Instructions
+  void basr(Register r1, Register r2);
+  void bcr(Condition m, Register target);
+  void bct(Register r, const MemOperand& opnd);
+  void bctg(Register r, const MemOperand& opnd);
+  void bras(Register r, const Operand& opnd);
+  void brasl(Register r, const Operand& opnd);
+  void brc(Condition c, const Operand& opnd);
+  void brcl(Condition m, const Operand& opnd, bool isCodeTarget = false);
+  void brct(Register r1, const Operand& opnd);
+  void brctg(Register r1, const Operand& opnd);
+
+  // 32-bit Add Instructions
+  void a(Register r1, const MemOperand& opnd);
+  void ay(Register r1, const MemOperand& opnd);
+  void afi(Register r1, const Operand& opnd);
+  void ah(Register r1, const MemOperand& opnd);
+  void ahy(Register r1, const MemOperand& opnd);
+  void ahi(Register r1, const Operand& opnd);
   void ahik(Register r1, Register r3, const Operand& opnd);
+  void ar(Register r1, Register r2);
   void ark(Register r1, Register r2, Register r3);
-  void alrk(Register r1, Register r2, Register r3);
+  void asi(const MemOperand&, const Operand&);
+
+  // 64-bit Add Instructions
+  void ag(Register r1, const MemOperand& opnd);
+  void agf(Register r1, const MemOperand& opnd);
+  void agfi(Register r1, const Operand& opnd);
+  void agfr(Register r1, Register r2);
+  void aghi(Register r1, const Operand& opnd);
   void aghik(Register r1, Register r3, const Operand& opnd);
+  void agr(Register r1, Register r2);
   void agrk(Register r1, Register r2, Register r3);
+  void agsi(const MemOperand&, const Operand&);
+
+  // 32-bit Add Logical Instructions
+  void al_z(Register r1, const MemOperand& opnd);
+  void aly(Register r1, const MemOperand& opnd);
+  void alfi(Register r1, const Operand& opnd);
+  void alr(Register r1, Register r2);
+  void alrk(Register r1, Register r2, Register r3);
+
+  // 64-bit Add Logical Instructions
+  void alg(Register r1, const MemOperand& opnd);
+  void algfi(Register r1, const Operand& opnd);
+  void algr(Register r1, Register r2);
   void algrk(Register r1, Register r2, Register r3);
+
+  // 32-bit Subtract Instructions
+  void s(Register r1, const MemOperand& opnd);
+  void sy(Register r1, const MemOperand& opnd);
+  void sh(Register r1, const MemOperand& opnd);
+  void shy(Register r1, const MemOperand& opnd);
+  void sr(Register r1, Register r2);
   void srk(Register r1, Register r2, Register r3);
-  void slrk(Register r1, Register r2, Register r3);
+
+  // 64-bit Subtract Instructions
+  void sg(Register r1, const MemOperand& opnd);
+  void sgr(Register r1, Register r2);
   void sgrk(Register r1, Register r2, Register r3);
+
+  // 32-bit Subtract Logical Instructions
+  void sl(Register r1, const MemOperand& opnd);
+  void sly(Register r1, const MemOperand& opnd);
+  void slr(Register r1, Register r2);
+  void slrk(Register r1, Register r2, Register r3);
+
+  // 64-bit Subtract Logical Instructions
+  void slg(Register r1, const MemOperand& opnd);
+  void slgr(Register r1, Register r2);
   void slgrk(Register r1, Register r2, Register r3);
 
-  // Bitwise Instructions
+  // 32-bit Multiply Instructions
+  void m(Register r1, const MemOperand& opnd);
+  void mr_z(Register r1, Register r2);
+  void ml(Register r1, const MemOperand& opnd);
+  void mlr(Register r1, Register r2);
+  void ms(Register r1, const MemOperand& opnd);
+  void msy(Register r1, const MemOperand& opnd);
+  void msfi(Register r1, const Operand& opnd);
+  void msr(Register r1, Register r2);
+  void mh(Register r1, const MemOperand& opnd);
+  void mhy(Register r1, const MemOperand& opnd);
+  void mhi(Register r1, const Operand& opnd);
+
+  // 64-bit Multiply Instructions
+  void mlg(Register r1, const MemOperand& opnd);
+  void mlgr(Register r1, Register r2);
+  void mghi(Register r1, const Operand& opnd);
+  void msgfi(Register r1, const Operand& opnd);
+  void msg(Register r1, const MemOperand& opnd);
+  void msgr(Register r1, Register r2);
+
+  // 32-bit Divide Instructions
+  void d(Register r1, const MemOperand& opnd);
+  void dr(Register r1, Register r2);
+  void dl(Register r1, const MemOperand& opnd);
+  void dlr(Register r1, Register r2);
+
+  // 64-bit Divide Instructions
+  void dlgr(Register r1, Register r2);
+  void dsgr(Register r1, Register r2);
+
+  // Bitwise Instructions (AND / OR / XOR)
+  void n(Register r1, const MemOperand& opnd);
+  void ny(Register r1, const MemOperand& opnd);
+  void nr(Register r1, Register r2);
   void nrk(Register r1, Register r2, Register r3);
+  void ng(Register r1, const MemOperand& opnd);
+  void ngr(Register r1, Register r2);
   void ngrk(Register r1, Register r2, Register r3);
+  void o(Register r1, const MemOperand& opnd);
+  void oy(Register r1, const MemOperand& opnd);
+  void or_z(Register r1, Register r2);
   void ork(Register r1, Register r2, Register r3);
+  void og(Register r1, const MemOperand& opnd);
+  void ogr(Register r1, Register r2);
   void ogrk(Register r1, Register r2, Register r3);
+  void x(Register r1, const MemOperand& opnd);
+  void xy(Register r1, const MemOperand& opnd);
+  void xr(Register r1, Register r2);
   void xrk(Register r1, Register r2, Register r3);
+  void xg(Register r1, const MemOperand& opnd);
+  void xgr(Register r1, Register r2);
   void xgrk(Register r1, Register r2, Register r3);
 
-
-  // GPR <-> FPR conversions
+  // Bitwise GPR <-> FPR Conversion Instructions
   void lgdr(Register r1, DoubleRegister f2);
   void ldgr(DoubleRegister f1, Register r2);
 
-  // floating point instructions
+  // Floating Point Load / Store Instructions
   void ld(DoubleRegister r1, const MemOperand& opnd);
   void ldy(DoubleRegister r1, const MemOperand& opnd);
   void le_z(DoubleRegister r1, const MemOperand& opnd);
@@ -1149,17 +1164,13 @@ SS2_FORM(zap);
   void ste(DoubleRegister r1, const MemOperand& opnd);
   void stey(DoubleRegister r1, const MemOperand& opnd);
 
+  // Floating Point Load Rounded/Positive Instructions
   void ledbr(DoubleRegister r1, DoubleRegister r2);
   void ldebr(DoubleRegister r1, DoubleRegister r2);
   void lpebr(DoubleRegister r1,  DoubleRegister r2);
   void lpdbr(DoubleRegister r1,  DoubleRegister r2);
-  // double type conversion
-  void cfdbr(Condition m, Register fixReg, DoubleRegister fltReg);
-  void cdfbr(DoubleRegister fltReg, Register fixReg);
-  void cgebr(Condition m, Register fixReg, DoubleRegister fltReg);
-  void cgdbr(Condition m, Register fixReg, DoubleRegister fltReg);
-  void cegbr(DoubleRegister fltReg, Register fixReg);
-  void cdgbr(DoubleRegister fltReg, Register fixReg);
+
+  // Floating <-> Fixed Point Conversion Instructions
   void cdlfbr(Condition m3, Condition m4,
               DoubleRegister fltReg, Register fixReg);
   void cdlgbr(Condition m3, Condition m4,
@@ -1176,13 +1187,21 @@ SS2_FORM(zap);
               Register fixReg, DoubleRegister fltReg);
   void clgebr(Condition m3, Condition m4,
               Register fixReg, DoubleRegister fltReg);
-
-  // float type conversion
+  void cfdbr(Condition m, Register fixReg, DoubleRegister fltReg);
+  void cdfbr(DoubleRegister fltReg, Register fixReg);
+  void cgebr(Condition m, Register fixReg, DoubleRegister fltReg);
+  void cgdbr(Condition m, Register fixReg, DoubleRegister fltReg);
+  void cegbr(DoubleRegister fltReg, Register fixReg);
+  void cdgbr(DoubleRegister fltReg, Register fixReg);
   void cfebr(Condition m3, Register fixReg, DoubleRegister fltReg);
   void cefbr(DoubleRegister fltReg, Register fixReg);
+
+  // Floating Point Compare Instructions
   void cebr(DoubleRegister r1, DoubleRegister r2);
   void cdb(DoubleRegister r1, const MemOperand& opnd);
   void cdbr(DoubleRegister r1, DoubleRegister r2);
+
+  // Floating Point Arithmetic Instructions
   void aebr(DoubleRegister r1, DoubleRegister r2);
   void adb(DoubleRegister r1, const MemOperand& opnd);
   void adbr(DoubleRegister r1, DoubleRegister r2);
@@ -1198,7 +1217,6 @@ SS2_FORM(zap);
   void ddbr(DoubleRegister r1, DoubleRegister r2);
   void madbr(DoubleRegister r1, DoubleRegister r2, DoubleRegister r3);
   void msdbr(DoubleRegister r1, DoubleRegister r2, DoubleRegister r3);
-
   void sqebr(DoubleRegister r1, DoubleRegister r2);
   void sqdb(DoubleRegister r1, const MemOperand& opnd);
   void sqdbr(DoubleRegister r1, DoubleRegister r2);
@@ -1216,17 +1234,12 @@ SS2_FORM(zap);
   void fiebra(DoubleRegister d1, DoubleRegister d2, FIDBRA_MASK3 m3);
   void fidbra(DoubleRegister d1, DoubleRegister d2, FIDBRA_MASK3 m3);
 
-  // Branch Instructions
-  void brct(Register r1, const Operand& opnd);
-  void brctg(Register r1, const Operand& opnd);
 
   // Move integer
   void mvhi(const MemOperand& opnd1, const Operand& i2);
   void mvghi(const MemOperand& opnd1, const Operand& i2);
 
-  void lhi(Register dst, const Operand& imm);
 
-  void stg(Register rs, const MemOperand &src);
 
   // Exception-generating instructions and debugging support
   void stop(const char* msg,
@@ -1334,7 +1347,6 @@ SS2_FORM(zap);
 
   static bool IsCmpRegister(Instr instr);
   static bool IsCmpImmediate(Instr instr);
-  static bool IsRlwinm(Instr instr);
   static bool IsNop(SixByteInstr instr, int type = NON_MARKING_NOP);
 
   // The code currently calls CheckBuffer() too often. This has the side
@@ -1393,136 +1405,104 @@ SS2_FORM(zap);
 
   inline int32_t emit_code_target(Handle<Code> target, RelocInfo::Mode rmode,
                      TypeFeedbackId ast_id = TypeFeedbackId::None());
-  // S390 emitting helpers
+
+  // Helpers to emit binary encoding of 2/4/6 byte instructions.
   inline void emit2bytes(uint16_t x);
   inline void emit4bytes(uint32_t x);
   inline void emit6bytes(uint64_t x);
 
+  // Helpers to emit binary encoding for various instruction formats.
   inline void i_form(Opcode op, const Operand& i);
   inline void e_form(Opcode op);
   inline void ie_form(Opcode op, const Operand& i1, const Operand& i2);
+
   inline void rr_form(Opcode op, Register r1, Register r2);
   inline void rr_form(Opcode op, DoubleRegister r1, DoubleRegister r2);
   inline void rr_form(Opcode op, Condition m1, Register r2);
-
   inline void rr2_form(uint8_t op, Condition m1, Register r2);
-  inline void rx_form(Opcode op,
-                     Register r1,
-                     Register x2,
-                     Register b2,
-                     Disp d2);
-  inline void rx_form(Opcode op, DoubleRegister r1,
-                      Register x2, Register b2, Disp d2);
 
+  inline void rx_form(Opcode op, Register r1, Register x2, Register b2,
+                      Disp d2);
+  inline void rx_form(Opcode op, DoubleRegister r1, Register x2, Register b2,
+                      Disp d2);
 
-// RI1 format: <insn> R1,I2
-//    +--------+----+----+------------------+
-//    | OpCode | R1 |OpCd|        I2        |
-//    +--------+----+----+------------------+
-//    0        8    12   16                31
   inline void ri_form(Opcode op, Register r1, const Operand& i2);
-// RI2 format: <insn> M1,I2
-//    +--------+----+----+------------------+
-//    | OpCode | M1 |OpCd|        I2        |
-//    +--------+----+----+------------------+
-//    0        8    12   16                31
   inline void ri_form(Opcode op, Condition m1, const Operand& i2);
+
   inline void rie_form(Opcode op, Register r1, Register r3,
                      const Operand& i2);
   inline void rie_f_form(Opcode op, Register r1, Register r2, const Operand &i3,
                      const Operand& i4, const Operand& i5);
+
   inline void ril_form(Opcode op, Register r1, const Operand& i2);
   inline void ril_form(Opcode op, Condition m1, const Operand& i2);
+
+  inline void ris_form(Opcode op, Register r1, Condition m3, Register b4,
+                       Disp d4, const Operand& i2);
+
+  inline void rrd_form(Opcode op, Register r1, Register r3,
+                       Register r2);
+
   inline void rre_form(Opcode op, Register r1, Register r2);
   inline void rre_form(Opcode op, DoubleRegister r1,
                        DoubleRegister r2);
-  inline void rrd_form(Opcode op, Register r1, Register r3,
-                       Register r2);
-// RS format: <insn> R1,M3,D2(B2)
-//     +--------+----+----+----+-------------+
-//     | OpCode | R1 | M3 | B2 |     D2      |
-//     +--------+----+----+----+-------------+
-//     0        8    12   16   20           31
-//
-  inline void rs_form(Opcode op,
-                        Register r1,
-                        Condition m3,
-                        Register b2,
-                        const Disp d2);
-// RS format: <insn> R1,R3,D2(B2)
-//    +--------+----+----+----+-------------+
-//    | OpCode | R1 | R3 | B2 |     D2      |
-//    +--------+----+----+----+-------------+
-//    0        8    12   16   20           31
-//
-  inline void rs_form(Opcode op,
-                        Register r1,
-                        Register r3,
-                        Register b2,
-                        const Disp d2);
 
-  inline void rsi_form(Opcode op, Register r1, Register r3, const Operand& i2);
-  inline void rsl_form(Opcode op, Length l1, Register b2, Disp d2);
-
-// RSY format: <insn> R1,R3,D2(B2)
-//     +--------+----+----+----+-------------+--------+--------+
-//     | OpCode | R1 | R3 | B2 |    DL2      |  DH2   | OpCode |
-//     +--------+----+----+----+-------------+--------+--------+
-//     0        8    12   16   20            32       40      47
-  inline void rsy_form(Opcode op,
-                        Register r1,
-                        Register r3,
-                        Register b2,
-                        const Disp d2);
-
-// RSY format: <insn> R1,M3,D2(B2)
-//     +--------+----+----+----+-------------+--------+--------+
-//     | OpCode | R1 | M3 | B2 |    DL2      |  DH2   | OpCode |
-//     +--------+----+----+----+-------------+--------+--------+
-//     0        8    12   16   20            32       40      47
-  inline void rsy_form(Opcode op,
-                        Register r1,
-                        Condition m3,
-                        Register b2,
-                        const Disp d2);
-
-  inline void rxe_form(Opcode op, Register r1, Register x2, Register b2,
-                     Disp d2);
-  inline void rxy_form(Opcode op, Register r1, Register x2, Register b2,
-                     Disp d2);
-  inline void rxy_form(Opcode op, DoubleRegister r1, Register x2,
-                       Register b2, Disp d2);
-  inline void rrs_form(Opcode op, Register r1, Register r2, Register b4,
-                     Disp d4, Condition m3);
-  inline void ris_form(Opcode op, Register r1, Condition m3, Register b4, \
-                     Disp d4, const Operand& i2);
-  inline void s_form(Opcode op, Register b1, Disp d2);
-  inline void si_form(Opcode op, const Operand& i2, Register b1,
-                     Disp d1);
-  inline void siy_form(Opcode op, const Operand& i2, Register b1, \
-                     Disp d1);
-  inline void sil_form(Opcode op, Register b1, Disp d1,
-                     const Operand& i2);
-  inline void rxf_form(Opcode op, Register r1, Register r3, Register b2, \
-                     Register x2, Disp d2);
-  inline void ss_form(Opcode op, Length l, Register b1, Disp d1, \
-                     Register b2, Disp d2);
-  inline void ss_form(Opcode op, Length l1, Length l2, Register b1,
-                     Disp d1, Register b2, Disp d2);
-  inline void ss_form(Opcode op, Length l1, const Operand& i3, Register b1,
-                     Disp d1, Register b2, Disp d2);
-  inline void ss_form(Opcode op, Register r1, Register r2, Register b1,
-                     Disp d1, Register b2, Disp d2);
-  inline void sse_form(Opcode op, Register b1, Disp d1, Register b2,
-                     Disp d2);
-  inline void ssf_form(Opcode op, Register r3, Register b1, Disp d1,
-                     Register b2, Disp d2);
   inline void rrf1_form(Opcode op, Register r1, Register r2, Register r3);
   inline void rrf1_form(uint32_t x);
   inline void rrf2_form(uint32_t x);
   inline void rrf3_form(uint32_t x);
   inline void rrfe_form(Opcode op, Condition m3, Condition m4, Register r1,
                         Register r2);
+
+  inline void rrs_form(Opcode op, Register r1, Register r2, Register b4,
+                       Disp d4, Condition m3);
+
+  inline void rs_form(Opcode op, Register r1, Condition m3, Register b2,
+                      const Disp d2);
+  inline void rs_form(Opcode op, Register r1, Register r3, Register b2,
+                      const Disp d2);
+
+  inline void rsi_form(Opcode op, Register r1, Register r3, const Operand& i2);
+  inline void rsl_form(Opcode op, Length l1, Register b2, Disp d2);
+
+  inline void rsy_form(Opcode op, Register r1, Register r3, Register b2,
+                       const Disp d2);
+  inline void rsy_form(Opcode op, Register r1, Condition m3, Register b2,
+                       const Disp d2);
+
+  inline void rxe_form(Opcode op, Register r1, Register x2, Register b2,
+                       Disp d2);
+
+  inline void rxf_form(Opcode op, Register r1, Register r3, Register b2,
+                       Register x2, Disp d2);
+
+  inline void rxy_form(Opcode op, Register r1, Register x2, Register b2,
+                     Disp d2);
+  inline void rxy_form(Opcode op, DoubleRegister r1, Register x2,
+                       Register b2, Disp d2);
+
+  inline void s_form(Opcode op, Register b1, Disp d2);
+
+  inline void si_form(Opcode op, const Operand& i2, Register b1,
+                     Disp d1);
+  inline void siy_form(Opcode op, const Operand& i2, Register b1,
+                       Disp d1);
+
+  inline void sil_form(Opcode op, Register b1, Disp d1,
+                       const Operand& i2);
+
+  inline void ss_form(Opcode op, Length l, Register b1, Disp d1,
+                      Register b2, Disp d2);
+  inline void ss_form(Opcode op, Length l1, Length l2, Register b1,
+                      Disp d1, Register b2, Disp d2);
+  inline void ss_form(Opcode op, Length l1, const Operand& i3, Register b1,
+                      Disp d1, Register b2, Disp d2);
+  inline void ss_form(Opcode op, Register r1, Register r2, Register b1,
+                      Disp d1, Register b2, Disp d2);
+  inline void sse_form(Opcode op, Register b1, Disp d1, Register b2,
+                       Disp d2);
+  inline void ssf_form(Opcode op, Register r3, Register b1, Disp d1,
+                       Register b2, Disp d2);
 
   // Labels
   void print(Label* L);
