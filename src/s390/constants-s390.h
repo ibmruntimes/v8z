@@ -1046,20 +1046,6 @@ enum CheckForInexactConversion {
 
 // -----------------------------------------------------------------------------
 // Specific instructions, constants, and masks.
-// These constants are declared in assembler-arm.cc, as they use named registers
-// and other constants.
-
-
-// Add(sp, sp, 4) instruction (aka Pop())
-extern const Instr kPopInstruction;
-
-// str(r, MemOperand(sp, 4, NegPreIndex), al) instruction (aka push(r))
-// register r is not encoded.
-extern const Instr kPushRegPattern;
-
-// ldr(r, MemOperand(sp, 4, PostIndex), al) instruction (aka pop(r))
-// register r is not encoded.
-extern const Instr kPopRegPattern;
 
 // use TRAP4 to indicate redirection call for simulation mode
 const Instr rtCallRedirInstr = TRAP4;
@@ -1067,20 +1053,8 @@ const Instr rtCallRedirInstr = TRAP4;
 // -----------------------------------------------------------------------------
 // Instruction abstraction.
 
-
-// The class Instruction enables access to individual fields defined in the PPC
-// architecture instruction set encoding.
-// Note that the Assembler uses typedef int32_t Instr.
-//
-// Example: Test whether the instruction at ptr does set the condition code
-// bits.
-//
-// bool InstructionSetsConditionCodes(byte* ptr) {
-//   Instruction* instr = Instruction::At(ptr);
-//   int type = instr->TypeValue();
-//   return ((type == 0) || (type == 1)) && instr->HasS();
-// }
-//
+// The class Instruction enables access to individual fields defined in the
+// z/Architecture instruction set encoding.
 class Instruction {
  public:
   // S390 Opcode Format Types

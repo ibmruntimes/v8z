@@ -4966,10 +4966,10 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   if (base::OS::ActivationFrameAlignment() != 0) {
     entry_stack &= -base::OS::ActivationFrameAlignment();
   }
+
   // Store remaining arguments on stack, from low to high memory.
-  // +2 is a hack for the LR slot + old SP on PPC
   intptr_t* stack_argument = reinterpret_cast<intptr_t*>(entry_stack +
-    kCalleeRegisterSaveAreaSize);
+                                           kCalleeRegisterSaveAreaSize);
   for (int i = 0; i < stack_arg_count; i++) {
     intptr_t value = va_arg(parameters, intptr_t);
     stack_argument[i] = value;

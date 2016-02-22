@@ -890,14 +890,15 @@ const char* NameConverter::NameOfCPURegister(int reg) const {
 }
 
 const char* NameConverter::NameOfByteCPURegister(int reg) const {
-  UNREACHABLE();  // s390 does not have the concept of a byte register
+  UNREACHABLE();  // S390 does not have the concept of a byte register
   return "nobytereg";
 }
 
 
 const char* NameConverter::NameOfXMMRegister(int reg) const {
-  UNREACHABLE();  // s390 does not have any XMM registers
-                  // Perhaps update for VRs?? (PPC too)
+  // S390 does not have XMM register
+  // TODO(joransiu): Consider update this for Vector Regs
+  UNREACHABLE();
   return "noxmmreg";
 }
 
@@ -924,7 +925,7 @@ int Disassembler::InstructionDecode(v8::internal::Vector<char> buffer,
 }
 
 
-// The PPC assembler does not currently use constant pools.
+// The S390 assembler does not currently use constant pools.
 int Disassembler::ConstantPoolSizeAt(byte* instruction) { return -1; }
 
 

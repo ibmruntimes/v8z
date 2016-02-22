@@ -493,9 +493,9 @@ class Assembler : public AssemblerBase {
       Isolate* isolate, Address pc, Address target,
       RelocInfo::Mode mode = RelocInfo::INTERNAL_REFERENCE);
 
-  // Here we are patching the address in the LUI/ORI instruction pair.
+  // Here we are patching the address in the IIHF/IILF instruction pair.
   // These values are used in the serialization process and must be zero for
-  // PPC platform, as Code, Embedded Object or External-reference pointers
+  // S390 platform, as Code, Embedded Object or External-reference pointers
   // are split across two consecutive instructions and don't exist separately
   // in the code, so the serializer should not step forwards in memory after
   // a target is resolved and written.
@@ -503,9 +503,9 @@ class Assembler : public AssemblerBase {
 
   // Number of bytes for instructions used to store pointer sized constant.
 #if V8_TARGET_ARCH_S390X
-  static const int kBytesForPtrConstant = 12;  // iihf + iilf
+  static const int kBytesForPtrConstant = 12;  // IIHF + IILF
 #else
-  static const int kBytesForPtrConstant = 6;   // iilf
+  static const int kBytesForPtrConstant = 6;   // IILF
 #endif
 
   // Distance between the instruction referring to the address of the call
@@ -1271,7 +1271,6 @@ RIL1_FORM(xilf);
   // Record the AST id of the CallIC being compiled, so that it can be placed
   // in the relocation information.
   void SetRecordedAstId(TypeFeedbackId ast_id) {
-// PPC - this shouldn't be failing roohack   DCHECK(recorded_ast_id_.IsNone());
     recorded_ast_id_ = ast_id;
   }
 
