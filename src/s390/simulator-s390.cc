@@ -1747,10 +1747,6 @@ bool Simulator::DecodeTwoByte(Instruction* instr) {
 
   switch (op) {
     // RR format instructions
-    case SVC: {
-      UNIMPLEMENTED();
-      return true;
-    }
     case AR:
     case SR:
     case MR:

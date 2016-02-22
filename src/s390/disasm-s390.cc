@@ -545,7 +545,6 @@ bool Decoder::DecodeTwoByte(Instruction* instr) {
 
   Opcode opcode = instr->S390OpcodeValue();
   switch (opcode) {
-      case SVC: Format(instr, "svc\t'i3"); break;
       case AR: Format(instr, "ar\t'r1,'r2"); break;
       case SR: Format(instr, "sr\t'r1,'r2"); break;
       case MR: Format(instr, "mr\t'r1,'r2"); break;
