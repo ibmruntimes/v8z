@@ -3239,7 +3239,6 @@ void Simulator::DecodeFourByteFloatingPointRound(Instruction* instr) {
     break;
     }
     case CGEBR: {
-
     int mask_val = rreInstr->M3Value();
     int64_t r1_val = 0;
 
@@ -3305,7 +3304,6 @@ void Simulator::DecodeFourByteFloatingPointRound(Instruction* instr) {
     break;
     }
     case CFEBR: {
-
     int mask_val = rreInstr->M3Value();
     int32_t r1_val = 0;
 
