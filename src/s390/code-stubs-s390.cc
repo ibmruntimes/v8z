@@ -5185,8 +5185,8 @@ void FastNewSloppyArgumentsStub::Generate(MacroAssembler* masm) {
   // r9 = temporary scratch (a.o., for address calculation)
   // ip = the hole value
   __ SmiUntag(r7);
-  __ push(r3);
-  __ LoadRR(r3, r7);
+  __ push(r4);
+  __ LoadRR(r4, r7);
   __ ShiftLeftP(r7, r7, Operand(kPointerSizeLog2));
   __ AddP(r9, r3, r7);
   __ AddP(r7, r6, r7);
@@ -5199,8 +5199,8 @@ void FastNewSloppyArgumentsStub::Generate(MacroAssembler* masm) {
   __ StoreP(ip, MemOperand(r9, -kPointerSize));
   __ lay(r9, MemOperand(r9, -kPointerSize));
   __ AddSmiLiteral(r1, r1, Smi::FromInt(1), r0);
-  __ BranchOnCount(r3, &parameters_loop);
-  __ pop(r3);
+  __ BranchOnCount(r4, &parameters_loop);
+  __ pop(r4);
 
   // Restore r7 = argument count (tagged).
   __ LoadP(r7, FieldMemOperand(r2, JSSloppyArgumentsObject::kLengthOffset));
