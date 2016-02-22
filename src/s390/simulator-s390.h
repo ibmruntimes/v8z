@@ -1,10 +1,6 @@
-// Copyright 2012 the V8 project authors. All rights reserved.
-//
-// Copyright IBM Corp. 2012, 2015. All rights reserved.
-//
+// Copyright 2014 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-
 
 // Declares a Simulator for S390 instructions if we are not generating a native
 // S390 binary. This Simulator allows us to run and debug S390 code generation
