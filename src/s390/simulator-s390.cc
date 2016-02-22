@@ -3045,6 +3045,7 @@ void Simulator::DecodeFourByteFloatingPointIntConversion(Instruction* instr) {
     case CELGBR:
     case CLFDBR:
     case CLGDBR:
+    case CELFBR:
     case CLGEBR: {
       RREInstruction *rreInstr = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rreInstr->R1Value();
@@ -3053,6 +3054,10 @@ void Simulator::DecodeFourByteFloatingPointIntConversion(Instruction* instr) {
         uint32_t r2_val = get_low_register<uint32_t>(r2);
         double r1_val = static_cast<double>(r2_val);
         set_d_register_from_double(r1, r1_val);
+      } else if (op == CELFBR) {
+        uint32_t r2_val = get_low_register<uint32_t>(r2);
+        float r1_val = static_cast<float>(r2_val);
+        set_d_register_from_float(r1, r1_val);
       } else if (op == CDLGBR) {
         uint64_t r2_val = get_register(r2);
         double r1_val = static_cast<double>(r2_val);
@@ -3565,6 +3570,7 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
     case CDLGBR:
     case CELGBR:
     case CLFDBR:
+    case CELFBR:
     case CLGDBR:
     case CLGEBR: {
       DecodeFourByteFloatingPointIntConversion(instr);
