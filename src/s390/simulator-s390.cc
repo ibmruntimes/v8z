@@ -2769,6 +2769,7 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
       break;
     }
     case DLGR: {
+#ifdef V8_TARGET_ARCH_S390X
       RREInstruction* rreinst = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rreinst->R1Value();
       int r2 = rreinst->R2Value();
@@ -2782,6 +2783,9 @@ bool Simulator::DecodeFourByteArithmetic(Instruction* instr) {
       r1_val = remainder;
       set_register(r1, remainder);
       set_register(r1+1, quotient);
+#else
+      UNREACHABLE();
+#endif
       break;
     }
     case DLR: {
