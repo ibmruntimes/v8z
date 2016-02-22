@@ -220,7 +220,7 @@ void MacroAssembler::Move(DoubleRegister dst, DoubleRegister src) {
 
 
 void MacroAssembler::InsertDoubleLow(DoubleRegister dst, Register src) {
-  StoreF(dst, MemOperand(sp, -kDoubleSize));
+  StoreDouble(dst, MemOperand(sp, -kDoubleSize));
 #if V8_TARGET_LITTLE_ENDIAN
   StoreW(src, MemOperand(sp, -kDoubleSize));
 #else
@@ -231,7 +231,7 @@ void MacroAssembler::InsertDoubleLow(DoubleRegister dst, Register src) {
 
 
 void MacroAssembler::InsertDoubleHigh(DoubleRegister dst, Register src) {
-  StoreF(dst, MemOperand(sp, -kDoubleSize));
+  StoreDouble(dst, MemOperand(sp, -kDoubleSize));
 #if V8_TARGET_LITTLE_ENDIAN
   StoreW(src, MemOperand(sp, -kDoubleSize / 2));
 #else
@@ -277,7 +277,7 @@ void MacroAssembler::MultiPushDoubles(RegList dregs, Register location) {
     if ((dregs & (1 << i)) != 0) {
       DoubleRegister dreg = DoubleRegister::from_code(i);
       stack_offset -= kDoubleSize;
-      StoreF(dreg, MemOperand(location, stack_offset));
+      StoreDouble(dreg, MemOperand(location, stack_offset));
     }
   }
 }
@@ -289,7 +289,7 @@ void MacroAssembler::MultiPopDoubles(RegList dregs, Register location) {
   for (int16_t i = 0; i < DoubleRegister::kNumRegisters; i++) {
     if ((dregs & (1 << i)) != 0) {
       DoubleRegister dreg = DoubleRegister::from_code(i);
-      LoadF(dreg, MemOperand(location, stack_offset));
+      LoadDouble(dreg, MemOperand(location, stack_offset));
       stack_offset += kDoubleSize;
     }
   }
@@ -2027,7 +2027,8 @@ void MacroAssembler::StoreNumberToDoubleElements(
   CheckMap(value_reg, scratch1, isolate()->factory()->heap_number_map(), fail,
            DONT_DO_SMI_CHECK);
 
-  LoadF(double_scratch, FieldMemOperand(value_reg, HeapNumber::kValueOffset));
+  LoadDouble(double_scratch,
+             FieldMemOperand(value_reg, HeapNumber::kValueOffset));
   // Force a canonical NaN.
   CanonicalizeNaN(double_scratch);
   b(&store);
@@ -2037,7 +2038,7 @@ void MacroAssembler::StoreNumberToDoubleElements(
 
   bind(&store);
   SmiToDoubleArrayOffset(scratch1, key_reg);
-  StoreF(double_scratch, FieldMemOperand(elements_reg, scratch1,
+  StoreDouble(double_scratch, FieldMemOperand(elements_reg, scratch1,
          FixedDoubleArray::kHeaderSize - elements_offset));
 }
 
@@ -2346,7 +2347,7 @@ void MacroAssembler::TryInt32Floor(Register result, DoubleRegister double_input,
   Label exception;
 
   // Move high word into input_high
-  StoreF(double_input, MemOperand(sp, -kDoubleSize));
+  StoreDouble(double_input, MemOperand(sp, -kDoubleSize));
   lay(sp, MemOperand(sp, -kDoubleSize));
   LoadlW(input_high, MemOperand(sp, Register::kExponentOffset));
   la(sp, MemOperand(sp, kDoubleSize));
@@ -2389,7 +2390,7 @@ void MacroAssembler::FloatCeiling32(DoubleRegister double_output,
   Register scratch2 = r0;
 
   // Move high word into scratch
-  StoreF(double_input, MemOperand(sp, -kDoubleSize));
+  StoreDouble(double_input, MemOperand(sp, -kDoubleSize));
   LoadlW(scratch, MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
 
   // Test for NaN/Inf which results in NaN/Inf respectively
@@ -2434,7 +2435,7 @@ void MacroAssembler::FloatFloor32(DoubleRegister double_output,
   Register scratch2 = r0;
 
   // Move high word into scratch
-  StoreF(double_input, MemOperand(sp, -kDoubleSize));
+  StoreDouble(double_input, MemOperand(sp, -kDoubleSize));
   LoadlW(scratch, MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
 
   // Test for NaN/Inf which results in NaN/Inf respectively
@@ -2468,7 +2469,7 @@ void MacroAssembler::FloatCeiling64(DoubleRegister double_output,
   Register scratch2 = r0;
 
   // Move high word into scratch
-  StoreF(double_input, MemOperand(sp, -kDoubleSize));
+  StoreDouble(double_input, MemOperand(sp, -kDoubleSize));
   LoadlW(scratch, MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
 
   // Test for NaN/Inf which results in NaN/Inf respectively
@@ -2512,7 +2513,7 @@ void MacroAssembler::FloatFloor64(DoubleRegister double_output,
   Register scratch2 = r0;
 
   // Move high word into scratch
-  StoreF(double_input, MemOperand(sp, -kDoubleSize));
+  StoreDouble(double_input, MemOperand(sp, -kDoubleSize));
   LoadlW(scratch, MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
 
   // Test for NaN/Inf which results in NaN/Inf respectively
@@ -2570,7 +2571,7 @@ void MacroAssembler::TruncateDoubleToI(Register result,
   // If we fell through then inline version didn't succeed - call stub instead.
   push(r14);
   // Put input on stack.
-  StoreF(double_input, MemOperand(sp, -kDoubleSize));
+  StoreDouble(double_input, MemOperand(sp, -kDoubleSize));
   lay(sp, MemOperand(sp, -kDoubleSize));
 
   DoubleToIStub stub(isolate(), sp, result, 0, true, true);
@@ -2588,7 +2589,7 @@ void MacroAssembler::TruncateHeapNumberToI(Register result, Register object) {
   DoubleRegister double_scratch = kScratchDoubleReg;
   DCHECK(!result.is(object));
 
-  LoadF(double_scratch, FieldMemOperand(object, HeapNumber::kValueOffset));
+  LoadDouble(double_scratch, FieldMemOperand(object, HeapNumber::kValueOffset));
   TryInlineTruncateDoubleToI(result, double_scratch, &done);
 
   // If we fell through then inline version didn't succeed - call stub instead.
@@ -3118,7 +3119,7 @@ void MacroAssembler::AllocateHeapNumberWithValue(
     Register result, DoubleRegister value, Register scratch1, Register scratch2,
     Register heap_number_map, Label* gc_required) {
   AllocateHeapNumber(result, scratch1, scratch2, heap_number_map, gc_required);
-  StoreF(value, FieldMemOperand(result, HeapNumber::kValueOffset));
+  StoreDouble(value, FieldMemOperand(result, HeapNumber::kValueOffset));
 }
 
 
@@ -5264,7 +5265,8 @@ void MacroAssembler::LoadAndTestP(Register dst, const MemOperand& mem) {
 }
 
 
-void MacroAssembler::LoadF(DoubleRegister dst, const MemOperand& mem) {
+// Load Double Precision (64-bit) Floating Point number from memory
+void MacroAssembler::LoadDouble(DoubleRegister dst, const MemOperand& mem) {
   // for 32bit and 64bit we all use 64bit floating point regs
   if (is_uint12(mem.offset())) {
     ld(dst, mem);
@@ -5274,7 +5276,8 @@ void MacroAssembler::LoadF(DoubleRegister dst, const MemOperand& mem) {
 }
 
 
-void MacroAssembler::LoadShortF(DoubleRegister dst, const MemOperand& mem) {
+// Load Single Precision (32-bit) Floating Point number from memory
+void MacroAssembler::LoadFloat32(DoubleRegister dst, const MemOperand& mem) {
   if (is_uint12(mem.offset())) {
     le_z(dst, mem);
   } else {
@@ -5284,15 +5287,17 @@ void MacroAssembler::LoadShortF(DoubleRegister dst, const MemOperand& mem) {
 }
 
 
-void MacroAssembler::LoadShortConvertToDoubleF(DoubleRegister dst,
+// Load Single Precision (32-bit) Floating Point number from memory,
+// and convert to Double Precision (64-bit)
+void MacroAssembler::LoadFloat32ConvertToDouble(DoubleRegister dst,
                                                 const MemOperand& mem) {
-  LoadShortF(dst, mem);
+  LoadFloat32(dst, mem);
   ldebr(dst, dst);
 }
 
 
-void MacroAssembler::StoreF(DoubleRegister dst, const MemOperand& mem) {
-  // for 32bit and 64bit we all use 64bit floating point regs
+// Store Double Precision (64-bit) Floating Point number to memory
+void MacroAssembler::StoreDouble(DoubleRegister dst, const MemOperand& mem) {
   if (is_uint12(mem.offset())) {
     std(dst, mem);
   } else {
@@ -5301,8 +5306,8 @@ void MacroAssembler::StoreF(DoubleRegister dst, const MemOperand& mem) {
 }
 
 
-void MacroAssembler::StoreShortF(DoubleRegister src, const MemOperand& mem) {
-  // for 32bit and 64bit we all use 64bit floating point regs
+// Store Single Precision (32-bit) Floating Point number to memory
+void MacroAssembler::StoreFloat32(DoubleRegister src, const MemOperand& mem) {
   if (is_uint12(mem.offset())) {
     ste(src, mem);
   } else {
@@ -5311,11 +5316,13 @@ void MacroAssembler::StoreShortF(DoubleRegister src, const MemOperand& mem) {
 }
 
 
+// Convert Double precision (64-bit) to Single Precision (32-bit)
+// and store resulting Float32 to memory
 void MacroAssembler::StoreDoubleAsFloat32(DoubleRegister src,
                                           const MemOperand& mem,
                                           DoubleRegister scratch) {
   ledbr(scratch, src);
-  StoreShortF(scratch, mem);
+  StoreFloat32(scratch, mem);
 }
 
 

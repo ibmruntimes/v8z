@@ -154,7 +154,7 @@ void Builtins::Generate_MathMaxMin(MacroAssembler* masm, MathMaxMinKind kind) {
   // Load the accumulator with the default return value (either -Infinity or
   // +Infinity), with the tagged value in r3 and the double value in d1.
   __ LoadRoot(r3, root_index);
-  __ LoadF(d1, FieldMemOperand(r3, HeapNumber::kValueOffset));
+  __ LoadDouble(d1, FieldMemOperand(r3, HeapNumber::kValueOffset));
 
   // Setup state for loop
   // r4: address of arg[0] + kPointerSize
@@ -195,13 +195,13 @@ void Builtins::Generate_MathMaxMin(MacroAssembler* masm, MathMaxMinKind kind) {
         Label done_restore;
         __ SmiToDouble(d1, r3);
         __ JumpIfSmi(r3, &done_restore);
-        __ LoadF(d1, FieldMemOperand(r3, HeapNumber::kValueOffset));
+        __ LoadDouble(d1, FieldMemOperand(r3, HeapNumber::kValueOffset));
         __ bind(&done_restore);
       }
     }
     __ b(&convert);
     __ bind(&convert_number);
-    __ LoadF(d2, FieldMemOperand(r2, HeapNumber::kValueOffset));
+    __ LoadDouble(d2, FieldMemOperand(r2, HeapNumber::kValueOffset));
     __ b(&done_convert);
     __ bind(&convert_smi);
     __ SmiToDouble(d2, r2);
@@ -229,7 +229,7 @@ void Builtins::Generate_MathMaxMin(MacroAssembler* masm, MathMaxMinKind kind) {
     // We still need to visit the rest of the arguments.
     __ bind(&compare_nan);
     __ LoadRoot(r3, Heap::kNanValueRootIndex);
-    __ LoadF(d1, FieldMemOperand(r3, HeapNumber::kValueOffset));
+    __ LoadDouble(d1, FieldMemOperand(r3, HeapNumber::kValueOffset));
     __ b(&loop);
   }
 

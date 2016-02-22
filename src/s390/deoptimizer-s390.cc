@@ -157,7 +157,7 @@ void Deoptimizer::TableEntryGenerator::Generate() {
     int code = config->GetAllocatableDoubleCode(i);
     const DoubleRegister dreg = DoubleRegister::from_code(code);
     int offset = code * kDoubleSize;
-    __ StoreF(dreg, MemOperand(sp, offset));
+    __ StoreDouble(dreg, MemOperand(sp, offset));
   }
 
   // Push all GPRs onto the stack
@@ -225,8 +225,9 @@ void Deoptimizer::TableEntryGenerator::Generate() {
     int code = config->GetAllocatableDoubleCode(i);
     int dst_offset = code * kDoubleSize + double_regs_offset;
     int src_offset = code * kDoubleSize + kNumberOfRegisters * kPointerSize;
-    __ LoadF(d0, MemOperand(sp, src_offset));
-    __ StoreF(d0, MemOperand(r3, dst_offset));
+    // TODO(joransiu): MVC opportunity
+    __ LoadDouble(d0, MemOperand(sp, src_offset));
+    __ StoreDouble(d0, MemOperand(r3, dst_offset));
   }
 
   // Remove the bailout id and the saved registers from the stack.

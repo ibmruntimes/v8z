@@ -2320,7 +2320,8 @@ void LCodeGen::DoBranch(LBranch* instr) {
         Label not_heap_number;
         __ CompareRoot(map, Heap::kHeapNumberMapRootIndex);
         __ bne(&not_heap_number, Label::kNear);
-        __ LoadF(dbl_scratch, FieldMemOperand(reg, HeapNumber::kValueOffset));
+        __ LoadDouble(dbl_scratch,
+                      FieldMemOperand(reg, HeapNumber::kValueOffset));
         __ lzdr(kDoubleRegZero);
         __ cdbr(dbl_scratch, kDoubleRegZero);
         __ bunordered(instr->FalseLabel(chunk_));  // NaN -> false.
@@ -4282,10 +4283,10 @@ void LCodeGen::DoStoreKeyedExternalArray(LStoreKeyed* instr) {
     }
     if (elements_kind == FLOAT32_ELEMENTS) {
       __ ledbr(double_scratch0(), value);
-      __ StoreShortF(double_scratch0(),
+      __ StoreFloat32(double_scratch0(),
                 MemOperand(address, base_offset));
     } else {  // Storing doubles, not floats.
-      __ StoreF(value, MemOperand(address, base_offset));
+      __ StoreDouble(value, MemOperand(address, base_offset));
     }
   } else {
     Register value(ToRegister(instr->value()));
@@ -4877,7 +4878,7 @@ void LCodeGen::DoDeferredNumberTagIU(LInstruction* instr, LOperand* value,
   // Done. Put the value in dbl_scratch into the value of the allocated heap
   // number.
   __ bind(&done);
-  __ StoreF(dbl_scratch, FieldMemOperand(dst, HeapNumber::kValueOffset));
+  __ StoreDouble(dbl_scratch, FieldMemOperand(dst, HeapNumber::kValueOffset));
 }
 
 
@@ -4907,7 +4908,7 @@ void LCodeGen::DoNumberTagD(LNumberTagD* instr) {
     __ b(deferred->entry());
   }
   __ bind(deferred->exit());
-  __ StoreF(input_reg, FieldMemOperand(reg, HeapNumber::kValueOffset));
+  __ StoreDouble(input_reg, FieldMemOperand(reg, HeapNumber::kValueOffset));
 }
 
 

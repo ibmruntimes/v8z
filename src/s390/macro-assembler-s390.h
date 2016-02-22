@@ -333,7 +333,6 @@ class MacroAssembler : public Assembler {
   // Compare Logical Byte (CLI/CLIY)
   void CmpLogicalByte(const MemOperand& mem, const Operand& imm);
 
-  // and 32bit
   // Load 32bit
   void Load(Register dst, const MemOperand& opnd);
   void Load(Register dst, const Operand& opnd);
@@ -344,9 +343,6 @@ class MacroAssembler : public Assembler {
   void LoadB(Register dst, const MemOperand& opnd);
   void LoadlB(Register dst, const MemOperand& opnd);
 
-  void LoadF(DoubleRegister dst, const MemOperand& opnd);
-  void LoadShortF(DoubleRegister dst, const MemOperand& opnd);
-  void LoadShortConvertToDoubleF(DoubleRegister dst, const MemOperand& mem);
 
   // Load And Test
   void LoadAndTest32(Register dst, Register src);
@@ -356,9 +352,14 @@ class MacroAssembler : public Assembler {
   void LoadAndTest32(Register dst, const MemOperand& opnd);
   void LoadAndTestP(Register dst, const MemOperand& opnd);
 
-  // Store
-  void StoreF(DoubleRegister dst, const MemOperand& opnd);
-  void StoreShortF(DoubleRegister dst, const MemOperand& opnd);
+  // Load Floating Point
+  void LoadDouble(DoubleRegister dst, const MemOperand& opnd);
+  void LoadFloat32(DoubleRegister dst, const MemOperand& opnd);
+  void LoadFloat32ConvertToDouble(DoubleRegister dst, const MemOperand& mem);
+
+  // Store Floating Point
+  void StoreDouble(DoubleRegister dst, const MemOperand& opnd);
+  void StoreFloat32(DoubleRegister dst, const MemOperand& opnd);
   void StoreDoubleAsFloat32(DoubleRegister src, const MemOperand& mem,
                                           DoubleRegister scratch);
 

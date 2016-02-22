@@ -434,7 +434,7 @@ Condition FlagsConditionToCondition(FlagsCondition condition, ArchOpcode op) {
     AddressingMode mode = kMode_None;                    \
     MemOperand operand = i.MemoryOperand(&mode, &index); \
     DoubleRegister value = i.InputDoubleRegister(index); \
-    __ StoreShortF(value, operand);             \
+    __ StoreFloat32(value, operand);             \
   } while (0)
 
 
@@ -444,7 +444,7 @@ Condition FlagsConditionToCondition(FlagsCondition condition, ArchOpcode op) {
     AddressingMode mode = kMode_None;                    \
     MemOperand operand = i.MemoryOperand(&mode, &index); \
     DoubleRegister value = i.InputDoubleRegister(index); \
-    __ StoreF(value, operand);                           \
+    __ StoreDouble(value, operand);                           \
   } while (0)
 
 
@@ -518,7 +518,7 @@ Condition FlagsConditionToCondition(FlagsCondition condition, ArchOpcode op) {
     }                                                       \
     __ bge(&done);                                          \
     DoubleRegister value = i.InputDoubleRegister(3);        \
-    __ StoreShortF(value, operand);                         \
+    __ StoreFloat32(value, operand);                         \
     __ bind(&done);                                         \
   } while (0)
 
@@ -540,7 +540,7 @@ Condition FlagsConditionToCondition(FlagsCondition condition, ArchOpcode op) {
     }                                                       \
     __ bge(&done);                                          \
     DoubleRegister value = i.InputDoubleRegister(3);        \
-    __ StoreF(value, operand);                              \
+    __ StoreDouble(value, operand);                              \
     __ bind(&done);                                         \
   } while (0)
 
@@ -1178,7 +1178,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
 #endif
     case kS390_Push:
       if (instr->InputAt(0)->IsDoubleRegister()) {
-        __ StoreF(i.InputDoubleRegister(0), MemOperand(sp, -kDoubleSize));
+        __ StoreDouble(i.InputDoubleRegister(0), MemOperand(sp, -kDoubleSize));
         __ lay(sp, MemOperand(sp, -kDoubleSize));
         frame_access_state()->IncreaseSPDelta(kDoubleSize / kPointerSize);
       } else {
@@ -1190,7 +1190,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     case kS390_PushFrame: {
       int num_slots = i.InputInt32(1);
       if (instr->InputAt(0)->IsDoubleRegister()) {
-        __ StoreF(i.InputDoubleRegister(0),
+        __ StoreDouble(i.InputDoubleRegister(0),
                  MemOperand(sp, -num_slots * kPointerSize));
       } else {
         __ StoreP(i.InputRegister(0),
@@ -1202,7 +1202,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     case kS390_StoreToStackSlot: {
       int slot = i.InputInt32(1);
       if (instr->InputAt(0)->IsDoubleRegister()) {
-        __ StoreF(i.InputDoubleRegister(0),
+        __ StoreDouble(i.InputDoubleRegister(0),
                   MemOperand(sp, slot * kPointerSize));
       } else {
         __ StoreP(i.InputRegister(0), MemOperand(sp, slot * kPointerSize));
@@ -1449,10 +1449,10 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
 #endif
     case kS390_LoadFloat32:
-      ASSEMBLE_LOAD_FLOAT(LoadShortF);
+      ASSEMBLE_LOAD_FLOAT(LoadFloat32);
       break;
     case kS390_LoadDouble:
-      ASSEMBLE_LOAD_FLOAT(LoadF);
+      ASSEMBLE_LOAD_FLOAT(LoadDouble);
       break;
     case kS390_StoreWord8:
       ASSEMBLE_STORE_INTEGER(StoreByte);
@@ -1503,10 +1503,10 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
 #endif
       break;
     case kCheckedLoadFloat32:
-      ASSEMBLE_CHECKED_LOAD_FLOAT(LoadShortF, 32);
+      ASSEMBLE_CHECKED_LOAD_FLOAT(LoadFloat32, 32);
       break;
     case kCheckedLoadFloat64:
-      ASSEMBLE_CHECKED_LOAD_FLOAT(LoadF, 64);
+      ASSEMBLE_CHECKED_LOAD_FLOAT(LoadDouble, 64);
       break;
     case kCheckedStoreWord8:
       ASSEMBLE_CHECKED_STORE_INTEGER(StoreByte);
@@ -1846,7 +1846,7 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
       }
 
       if (destination->IsDoubleStackSlot()) {
-        __ StoreF(dst, g.ToMemOperand(destination));
+        __ StoreDouble(dst, g.ToMemOperand(destination));
       }
     }
   } else if (source->IsDoubleRegister()) {
@@ -1856,17 +1856,17 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
       __ Move(dst, src);
     } else {
       DCHECK(destination->IsDoubleStackSlot());
-      __ StoreF(src, g.ToMemOperand(destination));
+      __ StoreDouble(src, g.ToMemOperand(destination));
     }
   } else if (source->IsDoubleStackSlot()) {
     DCHECK(destination->IsDoubleRegister() || destination->IsDoubleStackSlot());
     MemOperand src = g.ToMemOperand(source);
     if (destination->IsDoubleRegister()) {
-      __ LoadF(g.ToDoubleRegister(destination), src);
+      __ LoadDouble(g.ToDoubleRegister(destination), src);
     } else {
       DoubleRegister temp = kScratchDoubleReg;
-      __ LoadF(temp, src);
-      __ StoreF(temp, g.ToMemOperand(destination));
+      __ LoadDouble(temp, src);
+      __ StoreDouble(temp, g.ToMemOperand(destination));
     }
   } else {
     UNREACHABLE();
@@ -1921,8 +1921,8 @@ void CodeGenerator::AssembleSwap(InstructionOperand* source,
       DCHECK(destination->IsDoubleStackSlot());
       MemOperand dst = g.ToMemOperand(destination);
       __ ldr(temp, src);
-      __ LoadF(src, dst);
-      __ StoreF(temp, dst);
+      __ LoadDouble(src, dst);
+      __ StoreDouble(temp, dst);
     }
 #if !V8_TARGET_ARCH_S390X
   } else if (source->IsDoubleStackSlot()) {
@@ -1931,10 +1931,11 @@ void CodeGenerator::AssembleSwap(InstructionOperand* source,
     DoubleRegister temp_1 = d0;
     MemOperand src = g.ToMemOperand(source);
     MemOperand dst = g.ToMemOperand(destination);
-    __ LoadF(temp_0, src);
-    __ LoadF(temp_1, dst);
-    __ StoreF(temp_0, dst);
-    __ StoreF(temp_1, src);
+    // TODO(joransiu): MVC opportunity
+    __ LoadDouble(temp_0, src);
+    __ LoadDouble(temp_1, dst);
+    __ StoreDouble(temp_0, dst);
+    __ StoreDouble(temp_1, src);
 #endif
   } else {
     // No other combinations are possible.

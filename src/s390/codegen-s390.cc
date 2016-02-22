@@ -250,7 +250,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
 
   // Normal smi, convert to double and store.
   __ ConvertIntToDouble(r14, d0);
-  __ StoreF(d0, MemOperand(r9, 0));
+  __ StoreDouble(d0, MemOperand(r9, 0));
   __ la(r9, MemOperand(r9, 8));
 
   __ b(&entry, Label::kNear);
@@ -554,18 +554,18 @@ void MathExpGenerator::EmitMathExp(MacroAssembler* masm, DoubleRegister input,
 
   __ mov(temp3, Operand(ExternalReference::math_exp_constants(0)));
 
-  __ LoadF(double_scratch1, ExpConstant(0, temp3));
+  __ LoadDouble(double_scratch1, ExpConstant(0, temp3));
   __ cdbr(double_scratch1, input);
   __ ldr(result, input);
   __ bunordered(&done, Label::kNear);
   __ bge(&zero, Label::kNear);
 
-  __ LoadF(double_scratch2, ExpConstant(1, temp3));
+  __ LoadDouble(double_scratch2, ExpConstant(1, temp3));
   __ cdbr(input, double_scratch2);
   __ bge(&infinity, Label::kNear);
 
-  __ LoadF(double_scratch1, ExpConstant(3, temp3));
-  __ LoadF(result, ExpConstant(4, temp3));
+  __ LoadDouble(double_scratch1, ExpConstant(3, temp3));
+  __ LoadDouble(result, ExpConstant(4, temp3));
   // @TODO(Tara): verify madbr for correctness and use here instead of mdbr,adbr
   __ mdbr(double_scratch1, input);
   __ adbr(double_scratch1, result);
@@ -575,18 +575,18 @@ void MathExpGenerator::EmitMathExp(MacroAssembler* masm, DoubleRegister input,
   __ nihf(temp2, Operand::Zero());
 
   __ sdbr(double_scratch1, result);
-  __ LoadF(result, ExpConstant(6, temp3));
-  __ LoadF(double_scratch2, ExpConstant(5, temp3));
+  __ LoadDouble(result, ExpConstant(6, temp3));
+  __ LoadDouble(double_scratch2, ExpConstant(5, temp3));
   __ mdbr(double_scratch1, double_scratch2);
   __ sdbr(double_scratch1, input);
   __ sdbr(result, double_scratch1);
   __ ldr(double_scratch2, double_scratch1);
   __ mdbr(double_scratch2, double_scratch2);
   __ mdbr(result, double_scratch2);
-  __ LoadF(double_scratch2, ExpConstant(7, temp3));
+  __ LoadDouble(double_scratch2, ExpConstant(7, temp3));
   __ mdbr(result, double_scratch2);
   __ sdbr(result, double_scratch1);
-  __ LoadF(double_scratch2, ExpConstant(8, temp3));
+  __ LoadDouble(double_scratch2, ExpConstant(8, temp3));
   __ adbr(result, double_scratch2);
   __ ShiftRight(temp1, temp2, Operand(11));
   __ AndP(temp2, Operand(0x7ff));
@@ -610,7 +610,7 @@ void MathExpGenerator::EmitMathExp(MacroAssembler* masm, DoubleRegister input,
   __ b(&done, Label::kNear);
 
   __ bind(&infinity);
-  __ LoadF(result, ExpConstant(2, temp3));
+  __ LoadDouble(result, ExpConstant(2, temp3));
 
   __ bind(&done);
 }

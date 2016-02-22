@@ -146,7 +146,7 @@ void DoubleToIStub::Generate(MacroAssembler* masm) {
 
   if (!skip_fastpath()) {
     // Load double input.
-    __ LoadF(double_scratch, MemOperand(input_reg, double_offset));
+    __ LoadDouble(double_scratch, MemOperand(input_reg, double_offset));
 
     // Do fast-path convert from double to int.
     __ ConvertDoubleToInt64(double_scratch,
@@ -410,7 +410,7 @@ static void EmitSmiNonsmiComparison(MacroAssembler* masm, Register lhs,
   // Convert lhs to a double in d7.
   __ SmiToDouble(d7, lhs);
   // Load the double from rhs, tagged HeapNumber r2, to d6.
-  __ LoadF(d6, FieldMemOperand(rhs, HeapNumber::kValueOffset));
+  __ LoadDouble(d6, FieldMemOperand(rhs, HeapNumber::kValueOffset));
 
   // We now have both loaded as doubles but we can skip the lhs nan check
   // since it's a smi.
@@ -438,7 +438,7 @@ static void EmitSmiNonsmiComparison(MacroAssembler* masm, Register lhs,
 
   // Rhs is a smi, lhs is a heap number.
   // Load the double from lhs, tagged HeapNumber r3, to d7.
-  __ LoadF(d7, FieldMemOperand(lhs, HeapNumber::kValueOffset));
+  __ LoadDouble(d7, FieldMemOperand(lhs, HeapNumber::kValueOffset));
   // Convert rhs to a double in d6.
   __ SmiToDouble(d6, rhs);
   // Fall through to both_loaded_as_doubles.
@@ -502,8 +502,8 @@ static void EmitCheckForTwoHeapNumbers(MacroAssembler* masm,
 
   // Both are heap numbers.  Load them up then jump to the code we have
   // for that.
-  __ LoadF(d6, FieldMemOperand(rhs, HeapNumber::kValueOffset));
-  __ LoadF(d7, FieldMemOperand(lhs, HeapNumber::kValueOffset));
+  __ LoadDouble(d6, FieldMemOperand(rhs, HeapNumber::kValueOffset));
+  __ LoadDouble(d7, FieldMemOperand(lhs, HeapNumber::kValueOffset));
 
   __ b(both_loaded_as_doubles);
 }
@@ -800,7 +800,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
     __ CmpP(scratch, heapnumbermap);
     __ bne(&call_runtime);
 
-    __ LoadF(double_base, FieldMemOperand(base, HeapNumber::kValueOffset));
+    __ LoadDouble(double_base, FieldMemOperand(base, HeapNumber::kValueOffset));
     __ b(&unpack_exponent, Label::kNear);
 
     __ bind(&base_is_smi);
@@ -812,13 +812,13 @@ void MathPowStub::Generate(MacroAssembler* masm) {
     __ CmpP(scratch, heapnumbermap);
     __ bne(&call_runtime);
 
-    __ LoadF(double_exponent,
+    __ LoadDouble(double_exponent,
            FieldMemOperand(exponent, HeapNumber::kValueOffset));
   } else if (exponent_type() == TAGGED) {
     // Base is already in double_base.
     __ UntagAndJumpIfSmi(scratch, exponent, &int_exponent);
 
-    __ LoadF(double_exponent,
+    __ LoadDouble(double_exponent,
            FieldMemOperand(exponent, HeapNumber::kValueOffset));
   }
 
@@ -955,7 +955,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
     __ bind(&done);
     __ AllocateHeapNumber(heapnumber, scratch, scratch2, heapnumbermap,
                           &call_runtime);
-    __ StoreF(double_result,
+    __ StoreDouble(double_result,
             FieldMemOperand(heapnumber, HeapNumber::kValueOffset));
     DCHECK(heapnumber.is(r2));
     __ Ret(2);
@@ -3379,7 +3379,7 @@ void CompareICStub::GenerateNumbers(MacroAssembler* masm) {
   __ JumpIfSmi(r2, &right_smi);
   __ CheckMap(r2, r4, Heap::kHeapNumberMapRootIndex, &maybe_undefined1,
               DONT_DO_SMI_CHECK);
-  __ LoadF(d1, FieldMemOperand(r2, HeapNumber::kValueOffset));
+  __ LoadDouble(d1, FieldMemOperand(r2, HeapNumber::kValueOffset));
   __ b(&left);
   __ bind(&right_smi);
   __ SmiToDouble(d1, r2);
@@ -3388,7 +3388,7 @@ void CompareICStub::GenerateNumbers(MacroAssembler* masm) {
   __ JumpIfSmi(r3, &left_smi);
   __ CheckMap(r3, r4, Heap::kHeapNumberMapRootIndex, &maybe_undefined2,
               DONT_DO_SMI_CHECK);
-  __ LoadF(d0, FieldMemOperand(r3, HeapNumber::kValueOffset));
+  __ LoadDouble(d0, FieldMemOperand(r3, HeapNumber::kValueOffset));
   __ b(&done);
   __ bind(&left_smi);
   __ SmiToDouble(d0, r3);
