@@ -135,7 +135,7 @@ TEST(FourBytes) {
 #else
   COMPARE(ahi(r3, Operand(9)),
           "a73a0009       ahi\tr3,9");
-  COMPARE(lhi(r7, Operand(0)),
+  COMPARE(lhi(r7, Operand::Zero()),
           "a7780000       lhi\tr7,0");
   COMPARE(mhi(r8, Operand(3)),
           "a78c0003       mhi\tr8,3");

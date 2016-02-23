@@ -70,7 +70,7 @@ TEST(0) {
   F2 f = FUNCTION_CAST<F2>(code->entry());
   intptr_t res = reinterpret_cast<intptr_t>(
       CALL_GENERATED_CODE(isolate, f, 3, 4, 0, 0, 0));
-  ::printf("f() = %" V8PRIdPTR "\n", res);
+  ::printf("f() = %" V8PRIxPTR "\n", res);
   CHECK_EQ(7, static_cast<int>(res));
 }
 
@@ -111,7 +111,7 @@ TEST(1) {
   F1 f = FUNCTION_CAST<F1>(code->entry());
   intptr_t res = reinterpret_cast<intptr_t>(
       CALL_GENERATED_CODE(isolate, f, 100, 0, 0, 0, 0));
-  ::printf("f() = %" V8PRIdPTR "\n", res);
+  ::printf("f() = %" V8PRIxPTR "\n", res);
   CHECK_EQ(5050, static_cast<int>(res));
 }
 
@@ -164,7 +164,7 @@ TEST(2) {
   F1 f = FUNCTION_CAST<F1>(code->entry());
   intptr_t res = reinterpret_cast<intptr_t>(
       CALL_GENERATED_CODE(isolate, f, 10, 0, 0, 0, 0));
-  ::printf("f() = %" V8PRIdPTR "\n", res);
+  ::printf("f() = %" V8PRIxPTR "\n", res);
   CHECK_EQ(3628800, static_cast<int>(res));
 }
 
