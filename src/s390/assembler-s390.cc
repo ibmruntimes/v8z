@@ -1573,17 +1573,13 @@ RIL1_FORM_EMIT(cgfi, CGFI)
 SS1_FORM_EMIT(ed, ED)
 RX_FORM_EMIT(ex, EX)
 RRE_FORM_EMIT(flogr, FLOGR)
-RIL1_FORM_EMIT(larl, LARL)
 RRE_FORM_EMIT(lcgr, LCGR)
 RR_FORM_EMIT(lcr, LCR)
 RX_FORM_EMIT(le_z, LE)
 RXY_FORM_EMIT(ley, LEY)
 RXY_FORM_EMIT(lgf, LGF)
 RX_FORM_EMIT(lh, LH)
-RRE_FORM_EMIT(lhr, LHR)
 RXY_FORM_EMIT(lhy, LHY)
-RXY_FORM_EMIT(llgf, LLGF)
-RRE_FORM_EMIT(llgfr, LLGFR)
 RIL1_FORM_EMIT(llihf, LLIHF)
 RIL1_FORM_EMIT(llilf, LLILF)
 RRE_FORM_EMIT(lngr, LNGR)
@@ -1591,7 +1587,6 @@ RR_FORM_EMIT(lnr, LNR)
 RSY1_FORM_EMIT(loc, LOC)
 RXY_FORM_EMIT(lrv, LRV)
 RXY_FORM_EMIT(lrvh, LRVH)
-RRE_FORM_EMIT(ltgfr, LTGFR)
 SS1_FORM_EMIT(mvn, MVN)
 SS1_FORM_EMIT(nc, NC)
 SI_FORM_EMIT(ni, NI)
@@ -1612,6 +1607,175 @@ SS1_FORM_EMIT(tr, TR)
 S_FORM_EMIT(ts, TS)
 RIL1_FORM_EMIT(xihf, XIHF)
 RIL1_FORM_EMIT(xilf, XILF)
+
+
+// -------------------------
+// Load Address Instructions
+// -------------------------
+// Load Address Register-Storage
+void Assembler::la(Register r1, const MemOperand& opnd) {
+  rx_form(LA, r1, opnd.rx(), opnd.rb(), opnd.offset());
+}
+
+
+// Load Address Register-Storage
+void Assembler::lay(Register r1, const MemOperand& opnd) {
+  rxy_form(LAY, r1, opnd.rx(), opnd.rb(), opnd.offset());
+}
+
+
+// Load Address Relative Long
+void Assembler::larl(Register r1, const Operand& opnd) {
+  ril_form(LARL, r1, opnd);
+}
+
+// Load Address Relative Long
+void Assembler::larl(Register r1, Label *l) {
+  larl(r1, Operand(branch_offset(l)));
+}
+
+// ---------------------------
+// Load Immediate Instructions
+// ---------------------------
+// Load Halfword Immediate (32)
+void Assembler::lhi(Register dst, const Operand& imm) {
+  ri_form(LHI, dst, imm);
+}
+
+
+// Load Halfword Immediate (64)
+void Assembler::lghi(Register r1, const Operand& i2) {
+  ri_form(LGHI, r1, i2);
+}
+
+// --------------------------
+// Load Register Instructions
+// --------------------------
+// Load Register-Register (32)
+void Assembler::lr(Register r1, Register r2) {
+  rr_form(LR, r1, r2);
+}
+
+
+// Load Register-Register (64)
+void Assembler::lgr(Register r1, Register r2) {
+  rre_form(LGR, r1, r2);
+}
+
+
+// Load halfword Register-Register (32)
+void Assembler::lhr(Register r1, Register r2) {
+  rre_form(LHR, r1, r2);
+}
+
+
+// Load halfword Register-Register (64)
+void Assembler::lghr(Register r1, Register r2) {
+  rre_form(LGHR, r1, r2);
+}
+
+
+// Load Sign Extended Register-Register (64<-32)
+void Assembler::lgfr(Register r1, Register r2) {
+  rre_form(LGFR, r1, r2);
+}
+
+
+// Load Byte Register-Register (32)
+void Assembler::lbr(Register r1, Register r2) {
+  rre_form(LBR, r1, r2);
+}
+
+
+// Load Byte Register-Register (64)
+void Assembler::lgbr(Register r1, Register r2) {
+  rre_form(LGBR, r1, r2);
+}
+
+
+// --------------------------
+// Load And Test Instructions
+// --------------------------
+// Load and Test Register-Storage (32)
+void Assembler::lt_z(Register r1, const MemOperand& opnd) {
+  rxy_form(LT, r1, opnd.rx(), opnd.rb(), opnd.offset());
+}
+
+
+// Load and Test Register-Storage (64)
+void Assembler::ltg(Register r1, const MemOperand& opnd) {
+  rxy_form(LTG, r1, opnd.rx(), opnd.rb(), opnd.offset());
+}
+
+
+// Load and Test Register-Register (32)
+void Assembler::ltr(Register r1, Register r2) {
+  rr_form(LTR, r1, r2);
+}
+
+
+// Load and Test Register-Register (64)
+void Assembler::ltgr(Register r1, Register r2) {
+  rre_form(LTGR, r1, r2);
+}
+
+
+// Load and Test Register-Register (64<-32)
+void Assembler::ltgfr(Register r1, Register r2) {
+  rre_form(LTGFR, r1, r2);
+}
+
+
+// -------------------------
+// Load Logical Instructions
+// -------------------------
+// Load Logical Character (32) - loads a byte and zero ext.
+void Assembler::llc(Register r1, const MemOperand& opnd) {
+  rxy_form(LLC, r1, opnd.rx(), opnd.rb(), opnd.offset());
+}
+
+
+// Load Logical Character (64) - loads a byte and zero ext.
+void Assembler::llgc(Register r1, const MemOperand& opnd) {
+  rxy_form(LLGC, r1, opnd.rx(), opnd.rb(), opnd.offset());
+}
+
+
+// Load Logical halfword Register-Storage (64<-32)
+void Assembler::llgf(Register r1, const MemOperand& opnd) {
+  rxy_form(LLGF, r1, opnd.rx(), opnd.rb(), opnd.offset());
+}
+
+
+// Load Logical Register-Register (64<-32)
+void Assembler::llgfr(Register r1, Register r2) {
+  rre_form(LLGFR, r1, r2);
+}
+
+
+// Load Logical halfword Register-Storage (32)
+void Assembler::llh(Register r1, const MemOperand& opnd) {
+  rxy_form(LLH, r1, opnd.rx(), opnd.rb(), opnd.offset());
+}
+
+
+// Load Logical halfword Register-Storage (64)
+void Assembler::llgh(Register r1, const MemOperand& opnd) {
+  rxy_form(LLGH, r1, opnd.rx(), opnd.rb(), opnd.offset());
+}
+
+
+// Load Logical halfword Register-Register (32)
+void Assembler::llhr(Register r1, Register r2) {
+  rre_form(LLHR, r1, r2);
+}
+
+
+// Load Logical halfword Register-Register (64)
+void Assembler::llghr(Register r1, Register r2) {
+  rre_form(LLGHR, r1, r2);
+}
+
 
 // -------------------
 // Branch Instructions
@@ -2307,12 +2471,6 @@ void Assembler::ldgr(DoubleRegister f1, Register r2) {
 }
 
 
-// Load Register-Register (32)
-void Assembler::lr(Register r1, Register r2) {
-  rr_form(LR, r1, r2);
-}
-
-
 void Assembler::EnsureSpaceFor(int space_needed) {
   if (buffer_space() <= (kGap + space_needed)) {
     GrowBuffer(space_needed);
@@ -2320,45 +2478,9 @@ void Assembler::EnsureSpaceFor(int space_needed) {
 }
 
 
-// Load Register-Register (64)
-void Assembler::lgr(Register r1, Register r2) {
-  rre_form(LGR, r1, r2);
-}
-
-
 // Load Halfword Register-Storage (64)
 void Assembler::lgh(Register r1, const MemOperand& opnd) {
   rxy_form(LGH, r1, opnd.rx(), opnd.rb(), opnd.offset());
-}
-
-
-// Load halfword Register-Register (64)
-void Assembler::lghr(Register r1, Register r2) {
-  rre_form(LGHR, r1, r2);
-}
-
-
-// Load and Test Register-Storage (32)
-void Assembler::lt_z(Register r1, const MemOperand& opnd) {
-  rxy_form(LT, r1, opnd.rx(), opnd.rb(), opnd.offset());
-}
-
-
-// Load and Test Register-Storage (64)
-void Assembler::ltg(Register r1, const MemOperand& opnd) {
-  rxy_form(LTG, r1, opnd.rx(), opnd.rb(), opnd.offset());
-}
-
-
-// Load and Test Register-Register (32)
-void Assembler::ltr(Register r1, Register r2) {
-  rr_form(LTR, r1, r2);
-}
-
-
-// Load and Test Register-Register (64)
-void Assembler::ltgr(Register r1, Register r2) {
-  rre_form(LTGR, r1, r2);
 }
 
 
@@ -2380,93 +2502,15 @@ void Assembler::lg(Register r1, const MemOperand& opnd) {
 }
 
 
-// Load Halfword Immediate (32)
-void Assembler::lhi(Register dst, const Operand& imm) {
-  ri_form(LHI, dst, imm);
-}
-
-
-// Load Halfword Immediate (64)
-void Assembler::lghi(Register r1, const Operand& i2) {
-  ri_form(LGHI, r1, i2);
-}
-
-
-// Load Logical halfword Register-Storage (32)
-void Assembler::llh(Register r1, const MemOperand& opnd) {
-  rxy_form(LLH, r1, opnd.rx(), opnd.rb(), opnd.offset());
-}
-
-
-// Load Logical halfword Register-Storage (64)
-void Assembler::llgh(Register r1, const MemOperand& opnd) {
-  rxy_form(LLGH, r1, opnd.rx(), opnd.rb(), opnd.offset());
-}
-
-
-// Load Logical Character (32) - loads a byte and zero ext.
-void Assembler::llc(Register r1, const MemOperand& opnd) {
-  rxy_form(LLC, r1, opnd.rx(), opnd.rb(), opnd.offset());
-}
-
-
-// Load Logical Character (64) - loads a byte and zero ext.
-void Assembler::llgc(Register r1, const MemOperand& opnd) {
-  rxy_form(LLGC, r1, opnd.rx(), opnd.rb(), opnd.offset());
-}
-
-
-// Load Address Register-Storage
-void Assembler::la(Register r1, const MemOperand& opnd) {
-  rx_form(LA, r1, opnd.rx(), opnd.rb(), opnd.offset());
-}
-
-
-// Load Address Register-Storage
-void Assembler::lay(Register r1, const MemOperand& opnd) {
-  rxy_form(LAY, r1, opnd.rx(), opnd.rb(), opnd.offset());
-}
-
-
 // Load Byte Register-Storage (32)
 void Assembler::lb(Register r1, const MemOperand& opnd) {
   rxy_form(LB, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 
-// Load Byte Register-Register (32)
-void Assembler::lbr(Register r1, Register r2) {
-  rre_form(LBR, r1, r2);
-}
-
-
 // Load Byte Register-Storage (64)
 void Assembler::lgb(Register r1, const MemOperand& opnd) {
   rxy_form(LGB, r1, opnd.rx(), opnd.rb(), opnd.offset());
-}
-
-
-// Load Byte Register-Register (64)
-void Assembler::lgbr(Register r1, Register r2) {
-  rre_form(LGBR, r1, r2);
-}
-
-
-// Load Logical halfword Register-Register (32)
-void Assembler::llhr(Register r1, Register r2) {
-  rre_form(LLHR, r1, r2);
-}
-
-
-// Load Logical halfword Register-Register (64)
-void Assembler::llghr(Register r1, Register r2) {
-  rre_form(LLGHR, r1, r2);
-}
-
-
-// Load 64<-32 sign extended
-void Assembler::lgfr(Register r1, Register r2) {
-  rre_form(LGFR, r1, r2);
 }
 
 

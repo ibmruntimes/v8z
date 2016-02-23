@@ -639,11 +639,6 @@ class Assembler : public AssemblerBase {
     basr(r14, r1);
   }
 
-  // Load address relative long.
-  void larl(Register r, Label *l) {
-    larl(r, Operand(branch_offset(l)));
-  }
-
   void call(Handle<Code> target, RelocInfo::Mode rmode,
             TypeFeedbackId ast_id = TypeFeedbackId::None());
   void jump(Handle<Code> target, RelocInfo::Mode rmode, Condition cond);
@@ -843,24 +838,17 @@ RIL1_FORM(iilf);
 RI1_FORM(iilh);
 RI1_FORM(iill);
 RX_FORM(l);
-RIL1_FORM(larl);
 RXY_FORM(lb);
-RRE_FORM(lbr);
 RRE_FORM(lcgr);
 RR_FORM(lcr);
 RX_FORM(le_z);
 RXY_FORM(ley);
 RXY_FORM(lg);
 RXY_FORM(lgb);
-RRE_FORM(lgbr);
 RXY_FORM(lgf);
 RXY_FORM(lgh);
 RX_FORM(lh);
 RXY_FORM(lhy);
-RXY_FORM(llgf);
-RXY_FORM(llgh);
-RXY_FORM(llh);
-RRE_FORM(llhr);
 RIL1_FORM(llihf);
 RIL1_FORM(llilf);
 RRE_FORM(lngr);
@@ -868,9 +856,6 @@ RR_FORM(lnr);
 RSY1_FORM(loc);
 RXY_FORM(lrv);
 RXY_FORM(lrvh);
-RRE_FORM(ltgfr);
-RRE_FORM(ltgr);
-RR_FORM(ltr);
 RXY_FORM(ly);
 RXE_FORM(mdb);
 RRE_FORM(mdbr);
@@ -907,6 +892,8 @@ RIL1_FORM(xilf);
   // Load Address Instructions
   void la(Register r1, const MemOperand& src);
   void lay(Register r1, const MemOperand& src);
+  void larl(Register r1, const Operand& opnd);
+  void larl(Register r, Label *l);
 
   // Load Immediate Instructions
   void lhi(Register dst, const Operand& imm);
@@ -914,20 +901,29 @@ RIL1_FORM(xilf);
 
   // Load Register-Register Instructions
   void lr(Register r1, Register r2);
-  void lhr(Register r1, Register r2);
   void lgr(Register r1, Register r2);
+  void lhr(Register r1, Register r2);
   void lghr(Register r1, Register r2);
   void lgfr(Register r1, Register r2);
-  void llgfr(Register r1, Register r2);
-  void llghr(Register r1, Register r2);
+  void lbr(Register r1, Register r2);
+  void lgbr(Register r1, Register r2);
 
-  // Load Instructions
+  // Load And Test Instructions
   void lt_z(Register r1, const MemOperand& src);
   void ltg(Register r1, const MemOperand& src);
+  void ltr(Register r1, Register r2);
+  void ltgr(Register r1, Register r2);
+  void ltgfr(Register r1, Register r2);
 
-  // Load Logical Byte Instructions (aka. chars)
+  // Load Logical Instructions
   void llc(Register r1, const MemOperand& src);
   void llgc(Register r1, const MemOperand& src);
+  void llgf(Register r1, const MemOperand& src);
+  void llgfr(Register r1, Register r2);
+  void llh(Register r1, const MemOperand& src);
+  void llgh(Register r1, const MemOperand& src);
+  void llhr(Register r1, Register r2);
+  void llghr(Register r1, Register r2);
 
   // Load Multiple Instructions
   void lm(Register r1, Register r2, const MemOperand& src);
