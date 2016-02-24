@@ -2669,6 +2669,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
 
 
 #undef __
+
 }  // namespace internal
 }  // namespace v8
 

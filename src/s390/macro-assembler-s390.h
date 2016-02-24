@@ -363,7 +363,6 @@ class MacroAssembler : public Assembler {
   void StoreDoubleAsFloat32(DoubleRegister src, const MemOperand& mem,
                                           DoubleRegister scratch);
 
-  // void XorP(Register dst, Register src, const Operand& opnd);
   void Branch(Condition c, const Operand& opnd);
   void BranchOnCount(Register r1, Label *l);
 

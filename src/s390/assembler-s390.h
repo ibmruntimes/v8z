@@ -1509,6 +1509,7 @@ class EnsureSpace BASE_EMBEDDED {
  public:
   explicit EnsureSpace(Assembler* assembler) { assembler->CheckBuffer(); }
 };
+
 }  // namespace internal
 }  // namespace v8
 

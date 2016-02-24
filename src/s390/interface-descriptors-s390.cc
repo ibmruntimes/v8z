@@ -451,6 +451,7 @@ void InterpreterCEntryDescriptor::InitializePlatformSpecific(
   };
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
+
 }  // namespace internal
 }  // namespace v8
 

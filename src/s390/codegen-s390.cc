@@ -695,6 +695,7 @@ void Code::PatchPlatformCodeAge(Isolate* isolate, byte* sequence, Code::Age age,
     }
   }
 }
+
 }  // namespace internal
 }  // namespace v8
 

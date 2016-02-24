@@ -341,5 +341,6 @@ void FrameDescription::SetCallerConstantPool(unsigned offset, intptr_t value) {
 
 
 #undef __
+
 }  // namespace internal
 }  // namespace v8

@@ -5092,6 +5092,7 @@ uintptr_t Simulator::PopAddress() {
   set_register(sp, current_sp + sizeof(uintptr_t));
   return address;
 }
+
 }  // namespace internal
 }  // namespace v8
 

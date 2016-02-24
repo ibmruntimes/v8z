@@ -494,6 +494,7 @@ class FloatingPointHelper : public AllStatic {
                          Register scratch2,
                          Label* not_number);
 };
+
 }  // namespace internal
 }  // namespace v8
 

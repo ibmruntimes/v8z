@@ -47,6 +47,7 @@ int Registers::Number(const char* name) {
   // No register with the requested name found.
   return kNoRegister;
 }
+
 }  // namespace internal
 }  // namespace v8
 

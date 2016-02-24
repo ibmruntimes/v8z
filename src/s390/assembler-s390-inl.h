@@ -613,6 +613,7 @@ void Assembler::set_target_address_at(Isolate* isolate, Address pc,
   if (!patched)
     UNREACHABLE();
 }
+
 }  // namespace internal
 }  // namespace v8
 

@@ -5878,6 +5878,7 @@ void CallApiGetterStub::Generate(MacroAssembler* masm) {
 
 
 #undef __
+
 }  // namespace internal
 }  // namespace v8
 

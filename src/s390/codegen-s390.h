@@ -38,6 +38,7 @@ class MathExpGenerator : public AllStatic {
  private:
   DISALLOW_COPY_AND_ASSIGN(MathExpGenerator);
 };
+
 }  // namespace internal
 }  // namespace v8
 

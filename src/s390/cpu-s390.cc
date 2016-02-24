@@ -29,6 +29,7 @@ void CpuFeatures::FlushICache(void* buffer, size_t size) {
   Simulator::FlushICache(Isolate::Current()->simulator_i_cache(), buffer, size);
 #endif  // USE_SIMULATOR
 }
+
 }  // namespace internal
 }  // namespace v8
 
