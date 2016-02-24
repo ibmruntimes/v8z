@@ -55,7 +55,6 @@ enum TaggingMode {
   DONT_TAG_RESULT
 };
 
-
 enum RememberedSetAction { EMIT_REMEMBERED_SET, OMIT_REMEMBERED_SET };
 enum SmiCheck { INLINE_SMI_CHECK, OMIT_SMI_CHECK };
 enum PointersToHereCheck {
@@ -64,13 +63,11 @@ enum PointersToHereCheck {
 };
 enum LinkRegisterStatus { kLRHasNotBeenSaved, kLRHasBeenSaved };
 
-
 Register GetRegisterThatIsNotOneOf(Register reg1, Register reg2 = no_reg,
                                    Register reg3 = no_reg,
                                    Register reg4 = no_reg,
                                    Register reg5 = no_reg,
                                    Register reg6 = no_reg);
-
 
 #ifdef DEBUG
 bool AreAliased(Register reg1, Register reg2, Register reg3 = no_reg,
@@ -167,13 +164,11 @@ bool AreAliased(Register reg1, Register reg2, Register reg3 = no_reg,
 
 #endif
 
-
 // MacroAssembler implements a collection of frequently used macros.
 class MacroAssembler : public Assembler {
  public:
   MacroAssembler(Isolate* isolate, void* buffer, int size,
                  CodeObjectRequired create_code_object);
-
 
   // Returns the size of a call in instructions.
   static int CallSize(Register target);
@@ -199,9 +194,7 @@ class MacroAssembler : public Assembler {
             TypeFeedbackId ast_id = TypeFeedbackId::None(),
             Condition cond = al);
   void Ret() { b(r14); }
-  void Ret(Condition cond) {
-    b(cond, r14);
-  }
+  void Ret(Condition cond) { b(cond, r14); }
 
   // Emit code to discard a non-negative number of pointer-sized elements
   // from the stack, clobbering only the sp register.
@@ -237,8 +230,7 @@ class MacroAssembler : public Assembler {
   void MultiPopDoubles(RegList dregs, Register location = sp);
 
   // Load an object from the root table.
-  void LoadRoot(Register destination,
-                Heap::RootListIndex index,
+  void LoadRoot(Register destination, Heap::RootListIndex index,
                 Condition cond = al);
   // Store an object to the root table.
   void StoreRoot(Register source, Heap::RootListIndex index,
@@ -336,13 +328,10 @@ class MacroAssembler : public Assembler {
   // Load 32bit
   void Load(Register dst, const MemOperand& opnd);
   void Load(Register dst, const Operand& opnd);
-  void LoadW(Register dst, const MemOperand& opnd,
-             Register scratch = no_reg);
-  void LoadlW(Register dst, const MemOperand& opnd,
-              Register scratch = no_reg);
+  void LoadW(Register dst, const MemOperand& opnd, Register scratch = no_reg);
+  void LoadlW(Register dst, const MemOperand& opnd, Register scratch = no_reg);
   void LoadB(Register dst, const MemOperand& opnd);
   void LoadlB(Register dst, const MemOperand& opnd);
-
 
   // Load And Test
   void LoadAndTest32(Register dst, Register src);
@@ -361,10 +350,10 @@ class MacroAssembler : public Assembler {
   void StoreDouble(DoubleRegister dst, const MemOperand& opnd);
   void StoreFloat32(DoubleRegister dst, const MemOperand& opnd);
   void StoreDoubleAsFloat32(DoubleRegister src, const MemOperand& mem,
-                                          DoubleRegister scratch);
+                            DoubleRegister scratch);
 
   void Branch(Condition c, const Operand& opnd);
-  void BranchOnCount(Register r1, Label *l);
+  void BranchOnCount(Register r1, Label* l);
 
   // Shifts
   void ShiftLeft(Register dst, Register src, Register val);
@@ -414,7 +403,6 @@ class MacroAssembler : public Assembler {
 #ifdef V8_TARGET_ARCH_S390X
   void Popcnt64(Register dst, Register src);
 #endif
-
 
   void NotP(Register dst);
 
@@ -519,9 +507,7 @@ class MacroAssembler : public Assembler {
     la(sp, MemOperand(sp, kPointerSize));
   }
 
-  void pop() {
-    la(sp, MemOperand(sp, kPointerSize));
-  }
+  void pop() { la(sp, MemOperand(sp, kPointerSize)); }
 
   void Push(Register src) { push(src); }
 
@@ -602,10 +588,7 @@ class MacroAssembler : public Assembler {
   }
 
   // Pop five registers.  Pops rightmost register first (from lower address).
-  void Pop(Register src1,
-           Register src2,
-           Register src3,
-           Register src4,
+  void Pop(Register src1, Register src2, Register src3, Register src4,
            Register src5) {
     LoadP(src5, MemOperand(sp, 0));
     LoadP(src4, MemOperand(sp, kPointerSize));
@@ -677,10 +660,11 @@ class MacroAssembler : public Assembler {
   // the contents of double_dst will also hold the fixed point representation.
   void ConvertFloat32ToInt64(const DoubleRegister double_input,
 #if !V8_TARGET_ARCH_S390X
-                            const Register dst_hi,
+                             const Register dst_hi,
 #endif
-                            const Register dst, const DoubleRegister double_dst,
-                            FPRoundingMode rounding_mode = kRoundToZero);
+                             const Register dst,
+                             const DoubleRegister double_dst,
+                             FPRoundingMode rounding_mode = kRoundToZero);
 
   // Converts the double_input to an integer.  Note that, upon return,
   // the contents of double_dst will also hold the fixed point representation.
@@ -691,10 +675,10 @@ class MacroAssembler : public Assembler {
                             const Register dst, const DoubleRegister double_dst,
                             FPRoundingMode rounding_mode = kRoundToZero);
 
-  void ConvertFloat32ToInt32(
-      const DoubleRegister double_input, const Register dst,
-      const DoubleRegister double_dst,
-      FPRoundingMode rounding_mode = kRoundToZero);
+  void ConvertFloat32ToInt32(const DoubleRegister double_input,
+                             const Register dst,
+                             const DoubleRegister double_dst,
+                             FPRoundingMode rounding_mode = kRoundToZero);
   void ConvertFloat32ToUnsignedInt32(
       const DoubleRegister double_input, const Register dst,
       const DoubleRegister double_dst,
@@ -757,14 +741,14 @@ class MacroAssembler : public Assembler {
 
   // Load the initial map from the global function. The registers
   // function and map can be the same, function is then overwritten.
-  void LoadGlobalFunctionInitialMap(Register function,
-                                    Register map,
+  void LoadGlobalFunctionInitialMap(Register function, Register map,
                                     Register scratch);
 
   void InitializeRootRegister() {
     ExternalReference roots_array_start =
         ExternalReference::roots_array_start(isolate());
-    mov(kRootRegister, Operand(roots_array_start)); }
+    mov(kRootRegister, Operand(roots_array_start));
+  }
 
   // ----------------------------------------------------------------
   // new S390 macro-assembler interfaces that are slightly higher level
@@ -778,20 +762,18 @@ class MacroAssembler : public Assembler {
 
   // load a literal double value <value> to FPR <result>
   void LoadDoubleLiteral(DoubleRegister result, double value, Register scratch);
-  void LoadDoubleLiteral(DoubleRegister result,
-      uint64_t value, Register scratch);
+  void LoadDoubleLiteral(DoubleRegister result, uint64_t value,
+                         Register scratch);
 
-  void LoadFloat32Literal(DoubleRegister result, float value,
-      Register scratch);
+  void LoadFloat32Literal(DoubleRegister result, float value, Register scratch);
 
-  void StoreW(Register src, const MemOperand& mem,
-                 Register scratch = no_reg);
+  void StoreW(Register src, const MemOperand& mem, Register scratch = no_reg);
 
   void LoadHalfWordP(Register dst, const MemOperand& mem,
-                    Register scratch = no_reg);
+                     Register scratch = no_reg);
 
   void StoreHalfWord(Register src, const MemOperand& mem,
-                    Register scratch = r0);
+                     Register scratch = r0);
   void StoreByte(Register src, const MemOperand& mem, Register scratch = r0);
 
   void LoadRepresentation(Register dst, const MemOperand& mem, Representation r,
@@ -896,7 +878,6 @@ class MacroAssembler : public Assembler {
                                 Register result, Register t0, Register t1,
                                 Register t2);
 
-
   inline void MarkCode(NopMarkerTypes type) { nop(type); }
 
   // Check if the given instruction is a 'type' marker.
@@ -907,7 +888,6 @@ class MacroAssembler : public Assembler {
     DCHECK((FIRST_IC_MARKER <= type) && (type < LAST_CODE_MARKER));
     return IsNop(instr, type);
   }
-
 
   static inline int GetCodeMarker(Instr instr) {
     int dst_reg_offset = 12;
@@ -928,7 +908,6 @@ class MacroAssembler : public Assembler {
            ((FIRST_IC_MARKER <= type) && (type < LAST_CODE_MARKER)));
     return type;
   }
-
 
   // ---------------------------------------------------------------------------
   // Allocation support
@@ -1033,7 +1012,6 @@ class MacroAssembler : public Assembler {
   // sets the flags and leaves the object type in the type_reg register.
   void CompareInstanceType(Register map, Register type_reg, InstanceType type);
 
-
   // Check if a map for a JSObject indicates that the object has fast elements.
   // Jump to the specified label if it does not.
   void CheckFastElements(Register map, Register scratch, Label* fail);
@@ -1072,10 +1050,8 @@ class MacroAssembler : public Assembler {
   void CheckMap(Register obj, Register scratch, Handle<Map> map, Label* fail,
                 SmiCheckType smi_check_type);
 
-
   void CheckMap(Register obj, Register scratch, Heap::RootListIndex index,
                 Label* fail, SmiCheckType smi_check_type);
-
 
   // Check if the map of an object is equal to a specified weak map and branch
   // to a specified target if equal. Skip the smi check if not required
@@ -1127,7 +1103,6 @@ class MacroAssembler : public Assembler {
     return eq;
   }
 
-
   // Picks out an array index from the hash field.
   // Register use:
   //   hash - holds the index's hash. Clobbered.
@@ -1142,7 +1117,6 @@ class MacroAssembler : public Assembler {
   // scratch1 can be the same register as smi in which case smi will hold the
   // untagged value afterwards.
   void SmiToDouble(DoubleRegister value, Register smi);
-
 
   // Check if a double can be exactly represented as a signed 32-bit integer.
   // CR_EQ in cr7 is set if true.
@@ -1215,7 +1189,6 @@ class MacroAssembler : public Assembler {
                          Register heap_number_map, Register scratch1,
                          Label* not_int32);
 
-
   // Overflow handling functions.
   // Usage: call the appropriate arithmetic function and then call one of the
   // flow control functions with the corresponding label.
@@ -1234,13 +1207,9 @@ class MacroAssembler : public Assembler {
   void SubAndCheckForOverflow(Register dst, Register left, Register right,
                               Register overflow_dst, Register scratch = r0);
 
-  void BranchOnOverflow(Label* label) {
-    blt(label /*, cr0*/);
-  }
+  void BranchOnOverflow(Label* label) { blt(label /*, cr0*/); }
 
-  void BranchOnNoOverflow(Label* label) {
-    bge(label /*, cr0*/);
-  }
+  void BranchOnNoOverflow(Label* label) { bge(label /*, cr0*/); }
 
   void RetOnOverflow(void) {
     Label label;
@@ -1343,7 +1312,6 @@ class MacroAssembler : public Assembler {
     return code_object_;
   }
 
-
   // Emit code for a truncating division by a constant. The dividend register is
   // unchanged and ip gets clobbered. Dividend and result must be different.
   void TruncatingDiv(Register result, Register dividend, int32_t divisor);
@@ -1357,7 +1325,6 @@ class MacroAssembler : public Assembler {
                         Register scratch2);
   void DecrementCounter(StatsCounter* counter, int value, Register scratch1,
                         Register scratch2);
-
 
   // ---------------------------------------------------------------------------
   // Debugging
@@ -1387,8 +1354,7 @@ class MacroAssembler : public Assembler {
   // control continues at the label not_power_of_two. If reg is a power of two
   // the register scratch contains the value of (reg - 1) when control falls
   // through.
-  void JumpIfNotPowerOfTwoOrZero(Register reg,
-                                 Register scratch,
+  void JumpIfNotPowerOfTwoOrZero(Register reg, Register scratch,
                                  Label* not_power_of_two_or_zero);
   // Check whether the value of reg is a power of two and not zero.
   // Control falls through if it is, with scratch containing the mask
@@ -1408,23 +1374,23 @@ class MacroAssembler : public Assembler {
 
   // Extract consecutive bits (defined by rangeStart - rangeEnd) from src
   // and place them into the least significant bits of dst.
-  inline void ExtractBitRange(Register dst, Register src,
-                              int rangeStart, int rangeEnd) {
+  inline void ExtractBitRange(Register dst, Register src, int rangeStart,
+                              int rangeEnd) {
     DCHECK(rangeStart >= rangeEnd && rangeStart < kBitsPerPointer);
 
     // Try to use RISBG if possible.
     if (CpuFeatures::IsSupported(GENERAL_INSTR_EXT)) {
       int shiftAmount = (64 - rangeEnd) % 64;  // Convert to shift left.
-      int endBit = 63;                     // End is always LSB after shifting.
+      int endBit = 63;  // End is always LSB after shifting.
       int startBit = 63 - rangeStart + rangeEnd;
       risbg(dst, src, Operand(startBit), Operand(endBit), Operand(shiftAmount),
             true);
     } else {
-      if (rangeEnd > 0)             // Don't need to shift if rangeEnd is zero.
+      if (rangeEnd > 0)  // Don't need to shift if rangeEnd is zero.
         ShiftRightP(dst, src, Operand(rangeEnd));
-      else if (!dst.is(src))        // If we didn't shift, we might need to copy
+      else if (!dst.is(src))  // If we didn't shift, we might need to copy
         LoadRR(dst, src);
-      int width  = rangeStart - rangeEnd + 1;
+      int width = rangeStart - rangeEnd + 1;
 #if V8_TARGET_ARCH_S390X
       uint64_t mask = (static_cast<uint64_t>(1) << width) - 1;
       nihf(dst, Operand(mask >> 32));
@@ -1489,9 +1455,7 @@ class MacroAssembler : public Assembler {
   // Smi utilities
 
   // Shift left by kSmiShift
-  void SmiTag(Register reg) {
-    SmiTag(reg, reg);
-  }
+  void SmiTag(Register reg) { SmiTag(reg, reg); }
   void SmiTag(Register dst, Register src) {
     ShiftLeftP(dst, src, Operand(kSmiShift));
   }
@@ -1523,9 +1487,7 @@ class MacroAssembler : public Assembler {
     bne(not_smi_label /*, cr0*/);
   }
 
-  void SmiUntag(Register reg) {
-    SmiUntag(reg, reg);
-  }
+  void SmiUntag(Register reg) { SmiUntag(reg, reg); }
 
   void SmiUntag(Register dst, Register src) {
     ShiftRightArithP(dst, src, Operand(kSmiShift));
@@ -1541,9 +1503,7 @@ class MacroAssembler : public Assembler {
 #endif
   }
 
-  void SmiToByteArrayOffset(Register dst, Register src) {
-    SmiUntag(dst, src);
-  }
+  void SmiToByteArrayOffset(Register dst, Register src) { SmiUntag(dst, src); }
 
   void SmiToShortArrayOffset(Register dst, Register src) {
 #if V8_TARGET_ARCH_S390X
@@ -1606,9 +1566,7 @@ class MacroAssembler : public Assembler {
   // Souce and destination can be the same register.
   void UntagAndJumpIfNotSmi(Register dst, Register src, Label* non_smi_case);
 
-  inline void TestIfSmi(Register value) {
-    tmll(value, Operand(1));
-  }
+  inline void TestIfSmi(Register value) { tmll(value, Operand(1)); }
 
   inline void TestIfPositiveSmi(Register value, Register scratch) {
     STATIC_ASSERT((kSmiTagMask | kSmiSignMask) ==
@@ -1686,7 +1644,6 @@ class MacroAssembler : public Assembler {
   // enabled via --debug-code.
   void AssertIsRoot(Register reg, Heap::RootListIndex index);
 
-
   // ---------------------------------------------------------------------------
   // HeapNumber utilities
 
@@ -1739,24 +1696,23 @@ class MacroAssembler : public Assembler {
   void ClampDoubleToUint8(Register result_reg, DoubleRegister input_reg,
                           DoubleRegister temp_double_reg);
 
-
   void LoadInstanceDescriptors(Register map, Register descriptors);
   void EnumLength(Register dst, Register map);
   void NumberOfOwnDescriptors(Register dst, Register map);
   void LoadAccessor(Register dst, Register holder, int accessor_index,
                     AccessorComponent accessor);
 
-  template<typename Field>
+  template <typename Field>
   void DecodeField(Register dst, Register src) {
     ExtractBitRange(dst, src, Field::kShift + Field::kSize - 1, Field::kShift);
   }
 
-  template<typename Field>
+  template <typename Field>
   void DecodeField(Register reg) {
     DecodeField<Field>(reg, reg);
   }
 
-  template<typename Field>
+  template <typename Field>
   void DecodeFieldToSmi(Register dst, Register src) {
     // TODO(joransiu): Optimize into single instruction
     DecodeField<Field>(dst, src);
@@ -1853,7 +1809,6 @@ class MacroAssembler : public Assembler {
   friend class StandardFrame;
 };
 
-
 // The code patcher is used to patch (typically) small parts of code e.g. for
 // debugging and other types of instrumentation. When using the code patcher
 // the exact number of bytes specified must be emitted. It is not legal to emit
@@ -1877,7 +1832,6 @@ class CodePatcher {
   FlushICache flush_cache_;  // Whether to flush the I cache after patching.
 };
 
-
 // -----------------------------------------------------------------------------
 // Static helper functions.
 
@@ -1885,11 +1839,9 @@ inline MemOperand ContextMemOperand(Register context, int index = 0) {
   return MemOperand(context, Context::SlotOffset(index));
 }
 
-
 inline MemOperand NativeContextMemOperand() {
   return ContextMemOperand(cp, Context::NATIVE_CONTEXT_INDEX);
 }
-
 
 #ifdef GENERATED_CODE_COVERAGE
 #define CODE_COVERAGE_STRINGIFY(x) #x

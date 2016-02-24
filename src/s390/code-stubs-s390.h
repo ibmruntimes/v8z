@@ -5,15 +5,12 @@
 #ifndef V8_S390_CODE_STUBS_S390_H_
 #define V8_S390_CODE_STUBS_S390_H_
 
-
 #include "src/s390/frames-s390.h"
 
 namespace v8 {
 namespace internal {
 
-
 void ArrayNativeCode(MacroAssembler* masm, Label* call_generic_code);
-
 
 class StringHelper : public AllStatic {
  public:
@@ -49,18 +46,17 @@ class StringHelper : public AllStatic {
   DISALLOW_IMPLICIT_CONSTRUCTORS(StringHelper);
 };
 
-
 class StoreRegistersStateStub : public PlatformCodeStub {
  public:
   explicit StoreRegistersStateStub(Isolate* isolate)
       : PlatformCodeStub(isolate) {}
 
   static void GenerateAheadOfTime(Isolate* isolate);
+
  private:
   DEFINE_NULL_CALL_INTERFACE_DESCRIPTOR();
   DEFINE_PLATFORM_CODE_STUB(StoreRegistersState, PlatformCodeStub);
 };
-
 
 class RestoreRegistersStateStub : public PlatformCodeStub {
  public:
@@ -68,11 +64,11 @@ class RestoreRegistersStateStub : public PlatformCodeStub {
       : PlatformCodeStub(isolate) {}
 
   static void GenerateAheadOfTime(Isolate* isolate);
+
  private:
   DEFINE_NULL_CALL_INTERFACE_DESCRIPTOR();
   DEFINE_PLATFORM_CODE_STUB(RestoreRegistersState, PlatformCodeStub);
 };
-
 
 class RecordWriteStub : public PlatformCodeStub {
  public:
@@ -105,35 +101,35 @@ class RecordWriteStub : public PlatformCodeStub {
     if (instrLen == 4) {
       // BRC - Branch Mask @ Bits 23-20
       FourByteInstr updatedMask = static_cast<FourByteInstr>(c) << 20;
-      masm->instr_at_put<FourByteInstr>(pos,
-                    (masm->instr_at(pos) & ~kFourByteBrCondMask) | updatedMask);
+      masm->instr_at_put<FourByteInstr>(
+          pos, (masm->instr_at(pos) & ~kFourByteBrCondMask) | updatedMask);
     } else {
       // BRCL - Branch Mask @ Bits 39-36
       SixByteInstr updatedMask = static_cast<SixByteInstr>(c) << 36;
-      masm->instr_at_put<SixByteInstr>(pos,
-                     (masm->instr_at(pos) & ~kSixByteBrCondMask) | updatedMask);
+      masm->instr_at_put<SixByteInstr>(
+          pos, (masm->instr_at(pos) & ~kSixByteBrCondMask) | updatedMask);
     }
   }
 
   static bool isBranchNop(SixByteInstr instr, int instrLength) {
     if ((4 == instrLength && 0 == (instr & kFourByteBrCondMask)) ||
         // BRC - Check for 0x0 mask condition.
-        (6 == instrLength && 0 == (instr & kSixByteBrCondMask)))  {
-        // BRCL - Check for 0x0 mask condition
+        (6 == instrLength && 0 == (instr & kSixByteBrCondMask))) {
+      // BRCL - Check for 0x0 mask condition
       return true;
     }
     return false;
   }
 
   static Mode GetMode(Code* stub) {
-    int32_t first_instr_length = Instruction::InstructionLength(
-                                                     stub->instruction_start());
+    int32_t first_instr_length =
+        Instruction::InstructionLength(stub->instruction_start());
     int32_t second_instr_length = Instruction::InstructionLength(
-                                stub->instruction_start() + first_instr_length);
+        stub->instruction_start() + first_instr_length);
 
     uint64_t first_instr = Assembler::instr_at(stub->instruction_start());
-    uint64_t second_instr = Assembler::instr_at(stub->instruction_start() +
-                                                first_instr_length);
+    uint64_t second_instr =
+        Assembler::instr_at(stub->instruction_start() + first_instr_length);
 
     DCHECK(first_instr_length == 4 || first_instr_length == 6);
     DCHECK(second_instr_length == 4 || second_instr_length == 6);
@@ -142,8 +138,7 @@ class RecordWriteStub : public PlatformCodeStub {
     bool isSecondInstrNOP = isBranchNop(second_instr, second_instr_length);
 
     // STORE_BUFFER_ONLY has NOP on both branches
-    if (isSecondInstrNOP && isFirstInstrNOP)
-      return STORE_BUFFER_ONLY;
+    if (isSecondInstrNOP && isFirstInstrNOP) return STORE_BUFFER_ONLY;
     // INCREMENTAL_COMPACTION has NOP on second branch.
     else if (isFirstInstrNOP && !isSecondInstrNOP)
       return INCREMENTAL_COMPACTION;
@@ -181,8 +176,7 @@ class RecordWriteStub : public PlatformCodeStub {
         break;
     }
     DCHECK(GetMode(stub) == mode);
-    Assembler::FlushICache(stub->GetIsolate(),
-                           stub->instruction_start(),
+    Assembler::FlushICache(stub->GetIsolate(), stub->instruction_start(),
                            first_instr_length + second_instr_length);
   }
 
@@ -296,7 +290,6 @@ class RecordWriteStub : public PlatformCodeStub {
   DISALLOW_COPY_AND_ASSIGN(RecordWriteStub);
 };
 
-
 // Trampoline stub to call into native code. To call safely into native code
 // in the presence of compacting GC (which can move code objects) we need to
 // keep the code which called into native pinned in the memory. Currently the
@@ -313,7 +306,6 @@ class DirectCEntryStub : public PlatformCodeStub {
   DEFINE_NULL_CALL_INTERFACE_DESCRIPTOR();
   DEFINE_PLATFORM_CODE_STUB(DirectCEntry, PlatformCodeStub);
 };
-
 
 class NameDictionaryLookupStub : public PlatformCodeStub {
  public:
@@ -355,22 +347,16 @@ class NameDictionaryLookupStub : public PlatformCodeStub {
   DEFINE_PLATFORM_CODE_STUB(NameDictionaryLookup, PlatformCodeStub);
 };
 
-
 class FloatingPointHelper : public AllStatic {
  public:
-  enum Destination {
-    kFPRegisters,
-    kCoreRegisters
-  };
-
+  enum Destination { kFPRegisters, kCoreRegisters };
 
   // Loads smis from r0 and r1 (right and left in binary operations) into
   // floating point registers. Depending on the destination the values ends up
   // either d7 and d6 or in r2/r3 and r0/r1 respectively. If the destination is
   // floating point registers VFP3 must be supported. If core registers are
   // requested when VFP3 is supported d6 and d7 will be scratched.
-  static void LoadSmis(MacroAssembler* masm,
-                       Register scratch1,
+  static void LoadSmis(MacroAssembler* masm, Register scratch1,
                        Register scratch2);
 
   // Loads objects from r0 and r1 (right and left in binary operations) into
@@ -380,41 +366,33 @@ class FloatingPointHelper : public AllStatic {
   // requested when VFP3 is supported d6 and d7 will still be scratched. If
   // either r0 or r1 is not a number (not smi and not heap number object) the
   // not_number label is jumped to with r0 and r1 intact.
-  static void LoadOperands(MacroAssembler* masm,
-                           Register heap_number_map,
-                           Register scratch1,
-                           Register scratch2,
+  static void LoadOperands(MacroAssembler* masm, Register heap_number_map,
+                           Register scratch1, Register scratch2,
                            Label* not_number);
 
   // Convert the smi or heap number in object to an int32 using the rules
   // for ToInt32 as described in ECMAScript 9.5.: the value is truncated
   // and brought into the range -2^31 .. +2^31 - 1.
-  static void ConvertNumberToInt32(MacroAssembler* masm,
-                                   Register object,
-                                   Register dst,
-                                   Register heap_number_map,
-                                   Register scratch1,
-                                   Register scratch2,
+  static void ConvertNumberToInt32(MacroAssembler* masm, Register object,
+                                   Register dst, Register heap_number_map,
+                                   Register scratch1, Register scratch2,
                                    Register scratch3,
                                    DoubleRegister double_scratch,
                                    Label* not_int32);
 
   // Converts the integer (untagged smi) in |src| to a double, storing
   // the result to |double_dst|
-  static void ConvertIntToDouble(MacroAssembler* masm,
-                                 Register src,
+  static void ConvertIntToDouble(MacroAssembler* masm, Register src,
                                  DoubleRegister double_dst);
 
   // Converts the unsigned integer (untagged smi) in |src| to
   // a double, storing the result to |double_dst|
-  static void ConvertUnsignedIntToDouble(MacroAssembler* masm,
-                                         Register src,
+  static void ConvertUnsignedIntToDouble(MacroAssembler* masm, Register src,
                                          DoubleRegister double_dst);
 
   // Converts the integer (untagged smi) in |src| to
   // a float, storing the result in |dst|
-  static void ConvertIntToFloat(MacroAssembler* masm,
-                                const DoubleRegister dst,
+  static void ConvertIntToFloat(MacroAssembler* masm, const DoubleRegister dst,
                                 const Register src);
 
   // Load the number from object into double_dst in the double format.
@@ -422,13 +400,11 @@ class FloatingPointHelper : public AllStatic {
   // by a 32-bit integer.
   // Floating point value in the 32-bit integer range that are not exact integer
   // won't be loaded.
-  static void LoadNumberAsInt32Double(MacroAssembler* masm,
-                                      Register object,
+  static void LoadNumberAsInt32Double(MacroAssembler* masm, Register object,
                                       DoubleRegister double_dst,
                                       DoubleRegister double_scratch,
                                       Register heap_number_map,
-                                      Register scratch1,
-                                      Register scratch2,
+                                      Register scratch1, Register scratch2,
                                       Label* not_int32);
 
   // Loads the number from object into dst as a 32-bit integer.
@@ -437,12 +413,9 @@ class FloatingPointHelper : public AllStatic {
   // Floating point value in the 32-bit integer range that are not exact integer
   // won't be converted.
   // scratch3 is not used when VFP3 is supported.
-  static void LoadNumberAsInt32(MacroAssembler* masm,
-                                Register object,
-                                Register dst,
-                                Register heap_number_map,
-                                Register scratch1,
-                                Register scratch2,
+  static void LoadNumberAsInt32(MacroAssembler* masm, Register object,
+                                Register dst, Register heap_number_map,
+                                Register scratch1, Register scratch2,
                                 Register scratch3,
                                 DoubleRegister double_scratch0,
                                 DoubleRegister double_scratch1,
@@ -462,12 +435,9 @@ class FloatingPointHelper : public AllStatic {
   // - dst: 32 higher bits of the mantissa. (mantissa[51:20])
   // - src2: contains 1.
   // - other registers are clobbered.
-  static void DoubleIs32BitInteger(MacroAssembler* masm,
-                                   Register src1,
-                                   Register src2,
-                                   Register dst,
-                                   Register scratch,
-                                   Label* not_int32);
+  static void DoubleIs32BitInteger(MacroAssembler* masm, Register src1,
+                                   Register src2, Register dst,
+                                   Register scratch, Label* not_int32);
 
   // Generates code to call a C function to do a double operation using core
   // registers. (Used when VFP3 is not supported.)
@@ -480,18 +450,14 @@ class FloatingPointHelper : public AllStatic {
   // r1: Left value (sign, exponent, top of mantissa).
   // r2: Right value (least significant part of mantissa).
   // r3: Right value (sign, exponent, top of mantissa).
-  static void CallCCodeForDoubleOperation(MacroAssembler* masm,
-                                          Token::Value op,
+  static void CallCCodeForDoubleOperation(MacroAssembler* masm, Token::Value op,
                                           Register heap_number_result,
                                           Register scratch);
 
  private:
-  static void LoadNumber(MacroAssembler* masm,
-                         Register object,
-                         DoubleRegister dst,
-                         Register heap_number_map,
-                         Register scratch1,
-                         Register scratch2,
+  static void LoadNumber(MacroAssembler* masm, Register object,
+                         DoubleRegister dst, Register heap_number_map,
+                         Register scratch1, Register scratch2,
                          Label* not_number);
 };
 

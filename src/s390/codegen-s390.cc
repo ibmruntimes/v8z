@@ -13,18 +13,15 @@
 namespace v8 {
 namespace internal {
 
-
 #define __ masm.
-
 
 #if defined(USE_SIMULATOR)
 byte* fast_exp_s390_machine_code = nullptr;
 double fast_exp_simulator(double x, Isolate* isolate) {
-  return Simulator::current(isolate)
-      ->CallFPReturnsDouble(fast_exp_s390_machine_code, x, 0);
+  return Simulator::current(isolate)->CallFPReturnsDouble(
+      fast_exp_s390_machine_code, x, 0);
 }
 #endif
-
 
 UnaryMathFunctionWithIsolate CreateExpFunction(Isolate* isolate) {
   size_t actual_size;
@@ -68,7 +65,6 @@ UnaryMathFunctionWithIsolate CreateExpFunction(Isolate* isolate) {
 #endif
 }
 
-
 UnaryMathFunctionWithIsolate CreateSqrtFunction(Isolate* isolate) {
 #if defined(USE_SIMULATOR)
   return nullptr;
@@ -98,7 +94,6 @@ UnaryMathFunctionWithIsolate CreateSqrtFunction(Isolate* isolate) {
 
 #undef __
 
-
 // -------------------------------------------------------------------------
 // Platform-specific RuntimeCallHelper functions.
 
@@ -108,13 +103,11 @@ void StubRuntimeCallHelper::BeforeCall(MacroAssembler* masm) const {
   masm->set_has_frame(true);
 }
 
-
 void StubRuntimeCallHelper::AfterCall(MacroAssembler* masm) const {
   masm->LeaveFrame(StackFrame::INTERNAL);
   DCHECK(masm->has_frame());
   masm->set_has_frame(false);
 }
-
 
 // -------------------------------------------------------------------------
 // Code generators
@@ -140,7 +133,6 @@ void ElementsTransitionGenerator::GenerateMapChangeElementsTransition(
                       kLRHasNotBeenSaved, kDontSaveFPRegs, EMIT_REMEMBERED_SET,
                       OMIT_SMI_CHECK);
 }
-
 
 void ElementsTransitionGenerator::GenerateSmiToDouble(
     MacroAssembler* masm, Register receiver, Register key, Register value,
@@ -188,24 +180,14 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   __ StoreP(scratch2, MemOperand(array, HeapObject::kMapOffset));
 
   __ StoreP(target_map, FieldMemOperand(receiver, HeapObject::kMapOffset));
-  __ RecordWriteField(receiver,
-                      HeapObject::kMapOffset,
-                      target_map,
-                      scratch2,
-                      kLRHasBeenSaved,
-                      kDontSaveFPRegs,
-                      OMIT_REMEMBERED_SET,
+  __ RecordWriteField(receiver, HeapObject::kMapOffset, target_map, scratch2,
+                      kLRHasBeenSaved, kDontSaveFPRegs, OMIT_REMEMBERED_SET,
                       OMIT_SMI_CHECK);
   // Replace receiver's backing store with newly created FixedDoubleArray.
   __ AddP(scratch1, array, Operand(kHeapObjectTag));
   __ StoreP(scratch1, FieldMemOperand(receiver, JSObject::kElementsOffset));
-  __ RecordWriteField(receiver,
-                      JSObject::kElementsOffset,
-                      scratch1,
-                      scratch2,
-                      kLRHasBeenSaved,
-                      kDontSaveFPRegs,
-                      EMIT_REMEMBERED_SET,
+  __ RecordWriteField(receiver, JSObject::kElementsOffset, scratch1, scratch2,
+                      kLRHasBeenSaved, kDontSaveFPRegs, EMIT_REMEMBERED_SET,
                       OMIT_SMI_CHECK);
 
   // Prepare for conversion loop.
@@ -279,7 +261,6 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
   __ bind(&done);
 }
 
-
 void ElementsTransitionGenerator::GenerateDoubleToObject(
     MacroAssembler* masm, Register receiver, Register key, Register value,
     Register target_map, AllocationSiteMode mode, Label* fail) {
@@ -338,7 +319,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
 
   Label initialization_loop, loop_done;
   __ ShiftRightP(r0, length, Operand(kPointerSizeLog2));
-  __ beq(&loop_done, Label::kNear/*, cr0*/);
+  __ beq(&loop_done, Label::kNear /*, cr0*/);
 
   // Allocating heap numbers in the loop below can fail and cause a jump to
   // gc_required. We can't leave a partly initialized FixedArray behind,
@@ -390,8 +371,8 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   Register heap_number = receiver;
   Register scratch2 = value;
   __ AllocateHeapNumber(heap_number, scratch2, r1, heap_number_map,
-                         &gc_required);
-  // heap_number: new heap number
+                        &gc_required);
+// heap_number: new heap number
 #if V8_TARGET_ARCH_S390X
   __ lg(scratch2, MemOperand(src_elements, -kDoubleSize));
   // subtract tag for std
@@ -431,7 +412,6 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
                       OMIT_SMI_CHECK);
 }
 
-
 // assume ip can be used as a scratch register below
 void StringCharLoadGenerator::Generate(MacroAssembler* masm, Register string,
                                        Register index, Register result,
@@ -444,14 +424,14 @@ void StringCharLoadGenerator::Generate(MacroAssembler* masm, Register string,
   Label check_sequential;
   __ mov(r0, Operand(kIsIndirectStringMask));
   __ AndP(r0, result);
-  __ beq(&check_sequential, Label::kNear/*, cr0*/);
+  __ beq(&check_sequential, Label::kNear /*, cr0*/);
 
   // Dispatch on the indirect string shape: slice or cons.
   Label cons_string;
   __ mov(ip, Operand(kSlicedNotConsMask));
   __ LoadRR(r0, result);
-  __ AndP(r0, ip/*, SetRC*/);  // Should be okay to remove RC
-  __ beq(&cons_string , Label::kNear/*, cr0*/);
+  __ AndP(r0, ip /*, SetRC*/);  // Should be okay to remove RC
+  __ beq(&cons_string, Label::kNear /*, cr0*/);
 
   // Handle slices.
   Label indirect_string_loaded;
@@ -525,11 +505,9 @@ void StringCharLoadGenerator::Generate(MacroAssembler* masm, Register string,
   __ bind(&done);
 }
 
-
 static MemOperand ExpConstant(int index, Register base) {
   return MemOperand(base, index * kDoubleSize);
 }
-
 
 void MathExpGenerator::EmitMathExp(MacroAssembler* masm, DoubleRegister input,
                                    DoubleRegister result,
@@ -618,7 +596,6 @@ void MathExpGenerator::EmitMathExp(MacroAssembler* masm, DoubleRegister input,
 
 #undef __
 
-
 CodeAgingHelper::CodeAgingHelper(Isolate* isolate) {
   USE(isolate);
   DCHECK(young_sequence_.length() == kNoCodeAgeSequenceLength);
@@ -626,15 +603,14 @@ CodeAgingHelper::CodeAgingHelper(Isolate* isolate) {
   // to avoid overloading the stack in stress conditions.
   // DONT_FLUSH is used because the CodeAgingHelper is initialized early in
   // the process, before ARM simulator ICache is setup.
-  base::SmartPointer<CodePatcher> patcher(new CodePatcher(
-      isolate, young_sequence_.start(), young_sequence_.length(),
-      CodePatcher::DONT_FLUSH));
+  base::SmartPointer<CodePatcher> patcher(
+      new CodePatcher(isolate, young_sequence_.start(),
+                      young_sequence_.length(), CodePatcher::DONT_FLUSH));
   PredictableCodeSizeScope scope(patcher->masm(), young_sequence_.length());
   patcher->masm()->PushFixedFrame(r3);
-  patcher->masm()->la(fp,
-           MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
+  patcher->masm()->la(
+      fp, MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
 }
-
 
 #ifdef DEBUG
 bool CodeAgingHelper::IsOld(byte* candidate) const {
@@ -642,13 +618,11 @@ bool CodeAgingHelper::IsOld(byte* candidate) const {
 }
 #endif
 
-
 bool Code::IsYoungSequence(Isolate* isolate, byte* sequence) {
   bool result = isolate->code_aging_helper()->IsYoung(sequence);
   DCHECK(result || isolate->code_aging_helper()->IsOld(sequence));
   return result;
 }
-
 
 void Code::GetCodeAgeAndParity(Isolate* isolate, byte* sequence, Age* age,
                                MarkingParity* parity) {
@@ -663,7 +637,6 @@ void Code::GetCodeAgeAndParity(Isolate* isolate, byte* sequence, Age* age,
     GetCodeAgeAndParity(stub, age, parity);
   }
 }
-
 
 void Code::PatchPlatformCodeAge(Isolate* isolate, byte* sequence, Code::Age age,
                                 MarkingParity parity) {
@@ -687,11 +660,11 @@ void Code::PatchPlatformCodeAge(Isolate* isolate, byte* sequence, Code::Age age,
     patcher.masm()->Push(r14);
     patcher.masm()->mov(r2, Operand(target));
     patcher.masm()->Call(r2);
-    for (int i = 0;
-         i < kNoCodeAgeSequenceLength - kCodeAgingSequenceLength; i += 2) {
+    for (int i = 0; i < kNoCodeAgeSequenceLength - kCodeAgingSequenceLength;
+         i += 2) {
       // TODO(joransiu): Create nop function to pad
       //       (kNoCodeAgeSequenceLength - kCodeAgingSequenceLength) bytes.
-      patcher.masm()->nop();   // 2-byte nops().
+      patcher.masm()->nop();  // 2-byte nops().
     }
   }
 }

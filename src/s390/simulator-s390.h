@@ -25,8 +25,7 @@ namespace internal {
   (entry(p0, p1, p2, p3, p4))
 
 typedef int (*s390_regexp_matcher)(String*, int, const byte*, const byte*, int*,
-                                  int, Address, int, void*, Isolate*);
-
+                                   int, Address, int, void*, Isolate*);
 
 // Call the generated regexp code directly. The code at the entry address
 // should act as a function matching the type ppc_regexp_matcher.
@@ -35,7 +34,7 @@ typedef int (*s390_regexp_matcher)(String*, int, const byte*, const byte*, int*,
 #define CALL_GENERATED_REGEXP_CODE(isolate, entry, p0, p1, p2, p3, p4, p5, p6, \
                                    p7, p8)                                     \
   (FUNCTION_CAST<s390_regexp_matcher>(entry)(p0, p1, p2, p3, p4, p5, p6, p7,   \
-                                            NULL, p8))
+                                             NULL, p8))
 
 // The stack limit beyond which we will throw stack overflow errors in
 // generated code. Because generated code on s390 uses the C stack, we
@@ -89,16 +88,13 @@ class CachePage {
     return &validity_map_[offset >> kLineShift];
   }
 
-  char* CachedData(int offset) {
-    return &data_[offset];
-  }
+  char* CachedData(int offset) { return &data_[offset]; }
 
  private:
-  char data_[kPageSize];   // The cached data.
+  char data_[kPageSize];  // The cached data.
   static const int kValidityMapSize = kPageSize >> kLineShift;
   char validity_map_[kValidityMapSize];  // One byte per line.
 };
-
 
 class Simulator {
  public:
@@ -127,8 +123,22 @@ class Simulator {
     ra = r14,
     sp = r15,  // name aliases
     kNumGPRs = 16,
-    d0 = 0, d1, d2, d3, d4, d5, d6, d7,
-    d8, d9, d10, d11, d12, d13, d14, d15,
+    d0 = 0,
+    d1,
+    d2,
+    d3,
+    d4,
+    d5,
+    d6,
+    d7,
+    d8,
+    d9,
+    d10,
+    d11,
+    d12,
+    d13,
+    d14,
+    d15,
     kNumFPRs = 16
   };
 
@@ -142,8 +152,10 @@ class Simulator {
   // Accessors for register state.
   void set_register(int reg, uint64_t value);
   uint64_t get_register(int reg) const;
-  template<typename T> T get_low_register(int reg) const;
-  template<typename T> T get_high_register(int reg) const;
+  template <typename T>
+  T get_low_register(int reg) const;
+  template <typename T>
+  T get_high_register(int reg) const;
   void set_low_register(int reg, uint32_t value);
   void set_high_register(int reg, uint32_t value);
 
@@ -296,37 +308,33 @@ class Simulator {
   void Trace(Instruction* instr);
   bool DecodeTwoByte(Instruction* instr);
   bool DecodeFourByte(Instruction* instr);
-  bool DecodeFourByteArithmetic(Instruction *instr);
+  bool DecodeFourByteArithmetic(Instruction* instr);
   bool DecodeFourByteFloatingPoint(Instruction* instr);
   void DecodeFourByteFloatingPointIntConversion(Instruction* instr);
   void DecodeFourByteFloatingPointRound(Instruction* instr);
 
-
   bool DecodeSixByte(Instruction* instr);
-  bool DecodeSixByteArithmetic(Instruction *instr);
-  bool S390InstructionDecode(Instruction *instr);
+  bool DecodeSixByteArithmetic(Instruction* instr);
+  bool S390InstructionDecode(Instruction* instr);
 
   template <typename T>
   void SetS390ConditionCode(T lhs, T rhs) {
     condition_reg_ = 0;
     if (lhs == rhs) {
       condition_reg_ |= CC_EQ;
-    } else if (lhs <  rhs) {
+    } else if (lhs < rhs) {
       condition_reg_ |= CC_LT;
-    } else if (lhs >  rhs) {
+    } else if (lhs > rhs) {
       condition_reg_ |= CC_GT;
     }
 
     // We get down here only for floating point
     // comparisons and the values are unordered
     // i.e. NaN
-    if (condition_reg_ == 0)
-      condition_reg_ = unordered;
+    if (condition_reg_ == 0) condition_reg_ = unordered;
   }
 
-  bool isNaN(double value) {
-    return (value != value);
-  }
+  bool isNaN(double value) { return (value != value); }
 
   // Set the condition code for bitwise operations
   // CC0 is set if value == 0.
@@ -348,8 +356,7 @@ class Simulator {
 
   bool TestConditionCode(Condition mask) {
     // Check for unconditional branch
-    if (mask == 0xf)
-      return true;
+    if (mask == 0xf) return true;
 
     return (condition_reg_ & mask) != 0;
   }
@@ -423,7 +430,6 @@ class Simulator {
   void DebugStart();
 };
 
-
 // When running with the simulator transition into simulated execution at this
 // point.
 #define CALL_GENERATED_CODE(isolate, entry, p0, p1, p2, p3, p4)          \
@@ -437,7 +443,6 @@ class Simulator {
                                     (intptr_t)p2, (intptr_t)p3, (intptr_t)p4,  \
                                     (intptr_t)p5, (intptr_t)p6, (intptr_t)p7,  \
                                     (intptr_t)NULL, (intptr_t)p8)
-
 
 // The simulator has its own stack. Thus it has a different stack limit from
 // the C-based native code.  The JS-based limit normally points near the end of
@@ -460,6 +465,7 @@ class SimulatorStack : public v8::internal::AllStatic {
     Simulator::current(isolate)->PopAddress();
   }
 };
+
 }  // namespace internal
 }  // namespace v8
 

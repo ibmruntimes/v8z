@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/codegen.h"
 #include "src/deoptimizer.h"
+#include "src/codegen.h"
 #include "src/full-codegen/full-codegen.h"
 #include "src/register-configuration.h"
 #include "src/safepoint-table.h"
@@ -23,12 +23,10 @@ int Deoptimizer::patch_size() {
   return kCallInstructionSize;
 }
 
-
 void Deoptimizer::EnsureRelocSpaceForLazyDeoptimization(Handle<Code> code) {
   // Empty because there is no need for relocation information for the code
   // patching in Deoptimizer::PatchCodeForDeoptimization below.
 }
-
 
 void Deoptimizer::PatchCodeForDeoptimization(Isolate* isolate, Code* code) {
   Address code_start_address = code->instruction_start();
@@ -85,7 +83,6 @@ void Deoptimizer::PatchCodeForDeoptimization(Isolate* isolate, Code* code) {
   }
 }
 
-
 void Deoptimizer::SetPlatformCompiledStubRegisters(
     FrameDescription* output_frame, CodeStubDescriptor* descriptor) {
   ApiFunction function(descriptor->deoptimization_handler());
@@ -95,7 +92,6 @@ void Deoptimizer::SetPlatformCompiledStubRegisters(
   output_frame->SetRegister(r2.code(), params);
   output_frame->SetRegister(r3.code(), handler);
 }
-
 
 void Deoptimizer::CopyDoubleRegisters(FrameDescription* output_frame) {
   for (int i = 0; i < DoubleRegister::kNumRegisters; ++i) {
@@ -108,7 +104,6 @@ bool Deoptimizer::HasAlignmentPadding(SharedFunctionInfo* shared) {
   // There is no dynamic alignment padding on S390 in the input frame.
   return false;
 }
-
 
 #define __ masm()->
 
@@ -137,7 +132,7 @@ void Deoptimizer::TableEntryGenerator::Generate() {
 
   // Push all GPRs onto the stack
   __ lay(sp, MemOperand(sp, -kNumberOfRegisters * kPointerSize));
-  __ StoreMultipleP(r0, sp, MemOperand(sp));   // Save all 16 registers
+  __ StoreMultipleP(r0, sp, MemOperand(sp));  // Save all 16 registers
 
   __ mov(ip, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate())));
   __ StoreP(fp, MemOperand(ip));
@@ -304,7 +299,6 @@ void Deoptimizer::TableEntryGenerator::Generate() {
   __ stop("Unreachable.");
 }
 
-
 void Deoptimizer::TableEntryGenerator::GeneratePrologue() {
   // Create a sequence of deoptimization entries. Note that any
   // registers may be still live.
@@ -323,22 +317,18 @@ void Deoptimizer::TableEntryGenerator::GeneratePrologue() {
   __ StoreP(ip, MemOperand(sp));
 }
 
-
 void FrameDescription::SetCallerPc(unsigned offset, intptr_t value) {
   SetFrameSlot(offset, value);
 }
-
 
 void FrameDescription::SetCallerFp(unsigned offset, intptr_t value) {
   SetFrameSlot(offset, value);
 }
 
-
 void FrameDescription::SetCallerConstantPool(unsigned offset, intptr_t value) {
   // No out-of-line constant pool support.
   UNREACHABLE();
 }
-
 
 #undef __
 

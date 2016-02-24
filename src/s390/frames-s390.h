@@ -8,18 +8,15 @@
 namespace v8 {
 namespace internal {
 
-
 // Register list in load/store instructions
 // Note that the bit values must match those used in actual instruction encoding
 const int kNumRegs = 16;
 
-
 // Caller-saved/arguments registers
-const RegList kJSCallerSaved = 1 << 1  |
-                               1 << 2  |  // r2  a1
-                               1 << 3  |  // r3  a2
-                               1 << 4  |  // r4  a3
-                               1 << 5;    // r5  a4
+const RegList kJSCallerSaved = 1 << 1 | 1 << 2 |  // r2  a1
+                               1 << 3 |           // r3  a2
+                               1 << 4 |           // r4  a3
+                               1 << 5;            // r5  a4
 
 const int kNumJSCallerSaved = 5;
 
@@ -27,21 +24,20 @@ const int kNumJSCallerSaved = 5;
 // e.g. JSCallerSavedReg(0) returns r0.code() == 0
 int JSCallerSavedCode(int n);
 
-
 // Callee-saved registers preserved when switching from C to JavaScript
 const RegList kCalleeSaved =
-  1 << 6 |   // r6 (argument passing in CEntryStub)
-             //    (HandleScope logic in MacroAssembler)
-  1 << 7 |   // r7 (argument passing in CEntryStub)
-             //    (HandleScope logic in MacroAssembler)
-  1 << 8 |   // r8 (argument passing in CEntryStub)
-             //    (HandleScope logic in MacroAssembler)
-  1 << 9 |   // r9 (HandleScope logic in MacroAssembler)
-  1 << 10 |  // r10 (Roots register in Javascript)
-  1 << 11 |  // r11 (fp in Javascript)
-  1 << 12 |  // r12 (ip in Javascript)
-  1 << 13;   // r13 (cp in Javascript)
-  // 1 << 15;   // r15 (sp in Javascript)
+    1 << 6 |   // r6 (argument passing in CEntryStub)
+               //    (HandleScope logic in MacroAssembler)
+    1 << 7 |   // r7 (argument passing in CEntryStub)
+               //    (HandleScope logic in MacroAssembler)
+    1 << 8 |   // r8 (argument passing in CEntryStub)
+               //    (HandleScope logic in MacroAssembler)
+    1 << 9 |   // r9 (HandleScope logic in MacroAssembler)
+    1 << 10 |  // r10 (Roots register in Javascript)
+    1 << 11 |  // r11 (fp in Javascript)
+    1 << 12 |  // r12 (ip in Javascript)
+    1 << 13;   // r13 (cp in Javascript)
+// 1 << 15;   // r15 (sp in Javascript)
 
 const int kNumCalleeSaved = 8;
 
@@ -73,14 +69,14 @@ const int kNumCalleeSavedDoubles = 8;
 
 const RegList kCallerSavedDoubles = 1 << 14 |  // d14
                                     1 << 15 |  // d15
-                                    1 << 0 |  // d0
-                                    1 << 1 |  // d1
-                                    1 << 2 |  // d2
-                                    1 << 3 |  // d3
-                                    1 << 5 |  // d5
-                                    1 << 7 |  // d7
-                                    1 << 8 |  // d8
-                                    1 << 9 |  // d9
+                                    1 << 0 |   // d0
+                                    1 << 1 |   // d1
+                                    1 << 2 |   // d2
+                                    1 << 3 |   // d3
+                                    1 << 5 |   // d5
+                                    1 << 7 |   // d7
+                                    1 << 8 |   // d8
+                                    1 << 9 |   // d9
                                     1 << 10 |  // d10
                                     1 << 11 |  // d10
                                     1 << 12 |  // d10
@@ -88,8 +84,8 @@ const RegList kCallerSavedDoubles = 1 << 14 |  // d14
 
 const int kNumCallerSavedDoubles = 14;
 
-const RegList kCalleeSavedDoubles = 1 << 4 |   // d4
-                                    1 << 6;    // d6
+const RegList kCalleeSavedDoubles = 1 << 4 |  // d4
+                                    1 << 6;   // d6
 
 const int kNumCalleeSavedDoubles = 2;
 
@@ -153,13 +149,11 @@ const int kCalleeRegisterSaveAreaSize = 0;
 
 // ----------------------------------------------------
 
-
 class EntryFrameConstants : public AllStatic {
  public:
   static const int kCallerFPOffset =
       -(StandardFrameConstants::kFixedFrameSizeFromFp + kPointerSize);
 };
-
 
 class ExitFrameConstants : public AllStatic {
  public:
@@ -178,7 +172,6 @@ class ExitFrameConstants : public AllStatic {
   static const int kCallerSPDisplacement = 2 * kPointerSize;
 };
 
-
 class JavaScriptFrameConstants : public AllStatic {
  public:
   // FP-relative.
@@ -190,7 +183,6 @@ class JavaScriptFrameConstants : public AllStatic {
   static const int kParam0Offset = -2 * kPointerSize;
   static const int kReceiverOffset = -1 * kPointerSize;
 };
-
 
 }  // namespace internal
 }  // namespace v8

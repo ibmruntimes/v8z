@@ -70,7 +70,6 @@
 #define ABI_RETURNS_OBJECTPAIR_IN_REGS 1
 #endif
 
-
 #define ABI_CALL_VIA_IP 1
 
 #define INSTR_AND_DATA_CACHE_COHERENCY LWSYNC
@@ -129,12 +128,12 @@ struct Register {
 
 #define REGISTER_COUNT(R) 1 +
   static const int kNumAllocatable =
-      ALLOCATABLE_GENERAL_REGISTERS(REGISTER_COUNT)0;
+      ALLOCATABLE_GENERAL_REGISTERS(REGISTER_COUNT) 0;
 #undef REGISTER_COUNT
 
 #define REGISTER_BIT(R) 1 << kCode_##R |
   static const RegList kAllocatable =
-      ALLOCATABLE_GENERAL_REGISTERS(REGISTER_BIT)0;
+      ALLOCATABLE_GENERAL_REGISTERS(REGISTER_BIT) 0;
 #undef REGISTER_BIT
 
   static Register from_code(int code) {
@@ -182,9 +181,9 @@ GENERAL_REGISTERS(DECLARE_REGISTER)
 const Register no_reg = {Register::kCode_no_reg};
 
 // Register aliases
-const Register kLithiumScratch = r1;         // lithium scratch.
-const Register kRootRegister = r10;          // Roots array pointer.
-const Register cp = r13;                     // JavaScript context pointer.
+const Register kLithiumScratch = r1;  // lithium scratch.
+const Register kRootRegister = r10;   // Roots array pointer.
+const Register cp = r13;              // JavaScript context pointer.
 
 // Double word FP register.
 struct DoubleRegister {
@@ -222,7 +221,6 @@ struct DoubleRegister {
   int reg_code;
 };
 
-
 typedef DoubleRegister DoubleRegister;
 
 #define DECLARE_REGISTER(R) \
@@ -255,7 +253,6 @@ struct CRegister {
   // Unfortunately we can't make this private in a struct.
   int reg_code;
 };
-
 
 const CRegister no_creg = {-1};
 
@@ -294,7 +291,7 @@ typedef uint8_t Length;
 
 struct Mask {
   uint8_t mask;
-  uint8_t value() {return mask;}
+  uint8_t value() { return mask; }
   static Mask from_value(uint8_t input) {
     DCHECK(input <= 0x0F);
     Mask m = {input};
@@ -352,9 +349,7 @@ class MemOperand BASE_EMBEDDED {
   explicit MemOperand(Register rx, Disp offset = 0);
   explicit MemOperand(Register rx, Register rb, Disp offset = 0);
 
-  int32_t offset() const {
-    return offset_;
-  }
+  int32_t offset() const { return offset_; }
   uint32_t getDisplacement() const { return offset(); }
 
   // Base register
@@ -373,13 +368,12 @@ class MemOperand BASE_EMBEDDED {
   Register getIndexRegister() const { return rx(); }
 
  private:
-  Register baseRegister;     // base
-  Register indexRegister;    // index
-  int32_t offset_;           // offset
+  Register baseRegister;   // base
+  Register indexRegister;  // index
+  int32_t offset_;         // offset
 
   friend class Assembler;
 };
-
 
 class DeferredRelocInfo {
  public:
@@ -396,7 +390,6 @@ class DeferredRelocInfo {
   RelocInfo::Mode rmode_;
   intptr_t data_;
 };
-
 
 class Assembler : public AssemblerBase {
  public:
@@ -449,9 +442,7 @@ class Assembler : public AssemblerBase {
 
   // Returns the branch offset to the given label from the current code position
   // Links the label to the current position if it is still unbound
-  int branch_offset(Label* L) {
-    return link(L) - pc_offset();
-  }
+  int branch_offset(Label* L) { return link(L) - pc_offset(); }
 
   // Puts a labels target address at the given position.
   // The high 8 bits are set to zero.
@@ -459,8 +450,7 @@ class Assembler : public AssemblerBase {
   void load_label_offset(Register r1, Label* L);
 
   // Read/Modify the code target address in the branch/call instruction at pc.
-  INLINE(static Address target_address_at(Address pc,
-                                          Address constant_pool));
+  INLINE(static Address target_address_at(Address pc, Address constant_pool));
   INLINE(static void set_target_address_at(
       Isolate* isolate, Address pc, Address constant_pool, Address target,
       ICacheFlushMode icache_flush_mode = FLUSH_ICACHE_IF_NEEDED));
@@ -504,11 +494,11 @@ class Assembler : public AssemblerBase {
   // a target is resolved and written.
   static const int kSpecialTargetSize = 0;
 
-  // Number of bytes for instructions used to store pointer sized constant.
+// Number of bytes for instructions used to store pointer sized constant.
 #if V8_TARGET_ARCH_S390X
   static const int kBytesForPtrConstant = 12;  // IIHF + IILF
 #else
-  static const int kBytesForPtrConstant = 6;   // IILF
+  static const int kBytesForPtrConstant = 6;  // IILF
 #endif
 
   // Distance between the instruction referring to the address of the call
@@ -519,16 +509,15 @@ class Assembler : public AssemblerBase {
   // Patch will be appiled to other FIXED_SEQUENCE call
   static const int kCallTargetAddressOffset = 6;
 
-  // The length of FIXED_SEQUENCE call
-  // iihf    r8, <address_hi>  // <64-bit only>
-  // iilf    r8, <address_lo>
-  // basr    r14, r8
+// The length of FIXED_SEQUENCE call
+// iihf    r8, <address_hi>  // <64-bit only>
+// iilf    r8, <address_lo>
+// basr    r14, r8
 #if V8_TARGET_ARCH_S390X
   static const int kCallSequenceLength = 14;
 #else
   static const int kCallSequenceLength = 8;
 #endif
-
 
   // This is the length of the BreakLocationIterator::SetDebugBreakAtReturn()
   // code patch FIXED_SEQUENCE in bytes!
@@ -583,18 +572,20 @@ class Assembler : public AssemblerBase {
     b(cond, l, Label::kNear);
   }
   // Helpers for conditional branch to Label
-  void beq(Label * l, Label::Distance dist = Label::kFar) { b(eq, l, dist); }
-  void bne(Label * l, Label::Distance dist = Label::kFar) { b(ne, l, dist); }
-  void blt(Label * l, Label::Distance dist = Label::kFar) { b(lt, l, dist); }
-  void ble(Label * l, Label::Distance dist = Label::kFar) { b(le, l, dist); }
-  void bgt(Label * l, Label::Distance dist = Label::kFar) { b(gt, l, dist); }
-  void bge(Label * l, Label::Distance dist = Label::kFar) { b(ge, l, dist); }
-  void b(Label * l, Label::Distance dist = Label::kFar)   { b(al, l, dist); }
-  void jmp(Label * l, Label::Distance dist = Label::kFar) { b(al, l, dist); }
+  void beq(Label* l, Label::Distance dist = Label::kFar) { b(eq, l, dist); }
+  void bne(Label* l, Label::Distance dist = Label::kFar) { b(ne, l, dist); }
+  void blt(Label* l, Label::Distance dist = Label::kFar) { b(lt, l, dist); }
+  void ble(Label* l, Label::Distance dist = Label::kFar) { b(le, l, dist); }
+  void bgt(Label* l, Label::Distance dist = Label::kFar) { b(gt, l, dist); }
+  void bge(Label* l, Label::Distance dist = Label::kFar) { b(ge, l, dist); }
+  void b(Label* l, Label::Distance dist = Label::kFar) { b(al, l, dist); }
+  void jmp(Label* l, Label::Distance dist = Label::kFar) { b(al, l, dist); }
   void bunordered(Label* l, Label::Distance dist = Label::kFar) {
-                                                     b(unordered, l, dist); }
+    b(unordered, l, dist);
+  }
   void bordered(Label* l, Label::Distance dist = Label::kFar) {
-                                                       b(ordered, l, dist); }
+    b(ordered, l, dist);
+  }
 
   // Helpers for conditional indirect branch off register
   void b(Condition cond, Register r) { bcr(cond, r); }
@@ -604,10 +595,10 @@ class Assembler : public AssemblerBase {
   void ble(Register r) { b(le, r); }
   void bgt(Register r) { b(gt, r); }
   void bge(Register r) { b(ge, r); }
-  void b(Register r)   { b(al, r); }
+  void b(Register r) { b(al, r); }
   void jmp(Register r) { b(al, r); }
   void bunordered(Register r) { b(unordered, r); }
-  void bordered(Register r)   { b(ordered, r);   }
+  void bordered(Register r) { b(ordered, r); }
 
   // ---------------------------------------------------------------------------
   // Code generation
@@ -643,232 +634,208 @@ class Assembler : public AssemblerBase {
             TypeFeedbackId ast_id = TypeFeedbackId::None());
   void jump(Handle<Code> target, RelocInfo::Mode rmode, Condition cond);
 
-  // S390 instruction generation
-#define I_FORM(name)\
-void name(const Operand& i)
+// S390 instruction generation
+#define I_FORM(name) void name(const Operand& i)
 
-#define RR_FORM(name)\
-void name(Register r1, Register r2)
+#define RR_FORM(name) void name(Register r1, Register r2)
 
-#define RR2_FORM(name)\
-void name(Condition m1, Register r2)
+#define RR2_FORM(name) void name(Condition m1, Register r2)
 
-#define RX_FORM(name)\
-void name(Register r1, Register x2, Register b2, \
-                 Disp d2);\
-void name(Register r1, const MemOperand& opnd)
+#define RX_FORM(name)                                        \
+  void name(Register r1, Register x2, Register b2, Disp d2); \
+  void name(Register r1, const MemOperand& opnd)
 
-#define RI1_FORM(name)\
-void name(Register r,  const Operand& i)
+#define RI1_FORM(name) void name(Register r, const Operand& i)
 
-#define RI2_FORM(name)\
-void name(Condition m, const Operand& i)
+#define RI2_FORM(name) void name(Condition m, const Operand& i)
 
-#define RIE_FORM(name)\
-void name(Register r1, Register R3, const Operand& i)
+#define RIE_FORM(name) void name(Register r1, Register R3, const Operand& i)
 
-#define RIE_F_FORM(name)\
-void name(Register r1, Register r2, const Operand &i3, \
-                     const Operand& i4, const Operand& i5)
+#define RIE_F_FORM(name)                                                    \
+  void name(Register r1, Register r2, const Operand& i3, const Operand& i4, \
+            const Operand& i5)
 
-#define RIL1_FORM(name)\
-void name(Register r1, const Operand& i2)
+#define RIL1_FORM(name) void name(Register r1, const Operand& i2)
 
-#define RIL2_FORM(name)\
-void name(Condition m1, const Operand& i2)
+#define RIL2_FORM(name) void name(Condition m1, const Operand& i2)
 
-#define RXE_FORM(name)\
-void name(Register r1, const MemOperand& opnd);\
-void name(Register r1, Register b2, Register x2, \
-          Disp d2)
+#define RXE_FORM(name)                            \
+  void name(Register r1, const MemOperand& opnd); \
+  void name(Register r1, Register b2, Register x2, Disp d2)
 
-#define RXF_FORM(name)\
-void name(Register r1, Register r3, const MemOperand& opnd);\
-void name(Register r1, Register r3, Register b2, \
-                 Register x2, Disp d2)
+#define RXF_FORM(name)                                         \
+  void name(Register r1, Register r3, const MemOperand& opnd); \
+  void name(Register r1, Register r3, Register b2, Register x2, Disp d2)
 
-#define RXY_FORM(name)\
-void name(Register r1, Register x2, Register b2, \
-                 Disp d2);\
-void name(Register r1, const MemOperand& opnd)
+#define RXY_FORM(name)                                       \
+  void name(Register r1, Register x2, Register b2, Disp d2); \
+  void name(Register r1, const MemOperand& opnd)
 
-#define RSI_FORM(name)\
-void name(Register r1, Register r3, const Operand& i)
+#define RSI_FORM(name) void name(Register r1, Register r3, const Operand& i)
 
-#define RIS_FORM(name)\
-void name(Register r1, Condition m3, Register b4, \
-          Disp d4, const Operand& i2);\
-void name(Register r1, const Operand& i2, Condition m3, \
-          const MemOperand& opnd)
+#define RIS_FORM(name)                                       \
+  void name(Register r1, Condition m3, Register b4, Disp d4, \
+            const Operand& i2);                              \
+  void name(Register r1, const Operand& i2, Condition m3,    \
+            const MemOperand& opnd)
 
-#define SI_FORM(name)\
-void name(const MemOperand& opnd, const Operand& i);\
-void name(const Operand& i2, Register b1, Disp d1)
+#define SI_FORM(name)                                  \
+  void name(const MemOperand& opnd, const Operand& i); \
+  void name(const Operand& i2, Register b1, Disp d1)
 
-#define SIL_FORM(name)\
-void name(Register b1, Disp d1, const Operand& i2);\
-void name(const MemOperand& opnd, const Operand& i2)
+#define SIL_FORM(name)                                \
+  void name(Register b1, Disp d1, const Operand& i2); \
+  void name(const MemOperand& opnd, const Operand& i2)
 
-#define RRE_FORM(name)\
-void name(Register r1, Register r2)
+#define RRE_FORM(name) void name(Register r1, Register r2)
 
-#define RRF1_FORM(name)\
-void name(Register r1, Register r2, Register r3)
+#define RRF1_FORM(name) void name(Register r1, Register r2, Register r3)
 
-#define RRF2_FORM(name)\
-void name(Condition m1, Register r1, Register r2)
+#define RRF2_FORM(name) void name(Condition m1, Register r1, Register r2)
 
-#define RRF3_FORM(name)\
-void name(Register r3, Condition m4, Register r1, Register r2)
+#define RRF3_FORM(name) \
+  void name(Register r3, Condition m4, Register r1, Register r2)
 
-#define RS1_FORM(name)\
-void name(Register r1, Register r3, const MemOperand& opnd);\
-void name(Register r1, Register r3, Register b2, Disp d2)
+#define RS1_FORM(name)                                         \
+  void name(Register r1, Register r3, const MemOperand& opnd); \
+  void name(Register r1, Register r3, Register b2, Disp d2)
 
-#define RS2_FORM(name)\
-void name(Register r1, Condition m3, const MemOperand& opnd);\
-void name(Register r1, Condition m3, Register b2, Disp d2)
+#define RS2_FORM(name)                                          \
+  void name(Register r1, Condition m3, const MemOperand& opnd); \
+  void name(Register r1, Condition m3, Register b2, Disp d2)
 
-#define RSE_FORM(name)\
-void name(Register r1, Register r3, const MemOperand& opnd);\
-void name(Register r1, Register r3, Register b2, Disp d2)
+#define RSE_FORM(name)                                         \
+  void name(Register r1, Register r3, const MemOperand& opnd); \
+  void name(Register r1, Register r3, Register b2, Disp d2)
 
-#define RSL_FORM(name)\
-void name(Length l, Register b2, Disp d2);\
-void name(const MemOperand& opnd)
+#define RSL_FORM(name)                       \
+  void name(Length l, Register b2, Disp d2); \
+  void name(const MemOperand& opnd)
 
-#define RSY1_FORM(name)\
-void name(Register r1, Register r3, Register b2, Disp d2);\
-void name(Register r1, Register r3, const MemOperand& opnd)
+#define RSY1_FORM(name)                                      \
+  void name(Register r1, Register r3, Register b2, Disp d2); \
+  void name(Register r1, Register r3, const MemOperand& opnd)
 
-#define RSY2_FORM(name)\
-void name(Register r1, Condition m3, Register b2, Disp d2);\
-void name(Register r1, Condition m3, const MemOperand& opnd)
+#define RSY2_FORM(name)                                       \
+  void name(Register r1, Condition m3, Register b2, Disp d2); \
+  void name(Register r1, Condition m3, const MemOperand& opnd)
 
-#define RRD_FORM(name)\
-void name(Register r1, Register r3, Register r2)
+#define RRD_FORM(name) void name(Register r1, Register r3, Register r2)
 
-#define RRS_FORM(name)\
-void name(Register r1, Register r2, Register b4, \
-          Disp d4, Condition m3);\
-void name(Register r1, Register r2, Condition m3, \
-          const MemOperand& opnd)
+#define RRS_FORM(name)                                                     \
+  void name(Register r1, Register r2, Register b4, Disp d4, Condition m3); \
+  void name(Register r1, Register r2, Condition m3, const MemOperand& opnd)
 
-#define S_FORM(name)\
-void name(Register b2, Disp d2);\
-void name(const MemOperand& opnd)
+#define S_FORM(name)               \
+  void name(Register b2, Disp d2); \
+  void name(const MemOperand& opnd)
 
-#define SIY_FORM(name)\
-void name(const Operand& i2, Register b1, Disp d1);\
-void name(const MemOperand& opnd, const Operand& i)
+#define SIY_FORM(name)                                \
+  void name(const Operand& i2, Register b1, Disp d1); \
+  void name(const MemOperand& opnd, const Operand& i)
 
-#define SS1_FORM(name)\
-void name(Register b1, Disp d1, \
-          Register b3, Disp d2, Length length);\
-void name(const MemOperand& opnd1, const MemOperand& opnd2, Length length)
+#define SS1_FORM(name)                                                  \
+  void name(Register b1, Disp d1, Register b3, Disp d2, Length length); \
+  void name(const MemOperand& opnd1, const MemOperand& opnd2, Length length)
 
-#define SS2_FORM(name)\
-void name(const MemOperand& opnd1, const MemOperand& opnd2, \
-          Length length1, Length length2);\
-void name(Register b1, \
-          Disp d1, Register b2, Disp d2, Length l1, Length l2)
+#define SS2_FORM(name)                                                        \
+  void name(const MemOperand& opnd1, const MemOperand& opnd2, Length length1, \
+            Length length2);                                                  \
+  void name(Register b1, Disp d1, Register b2, Disp d2, Length l1, Length l2)
 
-#define SS3_FORM(name)\
-void name(const MemOperand& opnd1, const MemOperand& opnd2, Length length);\
-void name(const Operand& i3, Register b1, \
-          Disp d1, Register b2, Disp d2, Length l1)
+#define SS3_FORM(name)                                                        \
+  void name(const MemOperand& opnd1, const MemOperand& opnd2, Length length); \
+  void name(const Operand& i3, Register b1, Disp d1, Register b2, Disp d2,    \
+            Length l1)
 
-#define SS4_FORM(name)\
-void name(const MemOperand& opnd1, const MemOperand& opnd2);\
-void name(Register r1, Register r3, Register b1, \
-          Disp d1, Register b2, Disp d2)
+#define SS4_FORM(name)                                                   \
+  void name(const MemOperand& opnd1, const MemOperand& opnd2);           \
+  void name(Register r1, Register r3, Register b1, Disp d1, Register b2, \
+            Disp d2)
 
-#define SS5_FORM(name)\
-void name(const MemOperand& opnd1, const MemOperand& opnd2);\
-void name(Register r1, Register r3, Register b3, \
-          Disp d2, Register b4, Disp d4)
+#define SS5_FORM(name)                                                   \
+  void name(const MemOperand& opnd1, const MemOperand& opnd2);           \
+  void name(Register r1, Register r3, Register b3, Disp d2, Register b4, \
+            Disp d4)
 
-#define SSE_FORM(name)\
-void name(Register b1, Disp d1, \
-          Register b2, Disp d2);\
-void name(const MemOperand& opnd1, const MemOperand& opnd2)
+#define SSE_FORM(name)                                   \
+  void name(Register b1, Disp d1, Register b2, Disp d2); \
+  void name(const MemOperand& opnd1, const MemOperand& opnd2)
 
-#define SSF_FORM(name)\
-void name(Register r3, Register b1, Disp d1, \
-          Register b2, Disp d2);\
-void name(Register r3, const MemOperand& opnd1, const MemOperand& opnd2)
+#define SSF_FORM(name)                                                \
+  void name(Register r3, Register b1, Disp d1, Register b2, Disp d2); \
+  void name(Register r3, const MemOperand& opnd1, const MemOperand& opnd2)
 
-// S390 instruction sets
-RX_FORM(bc);
-RR_FORM(bctr);
-RX_FORM(cd);
-RRE_FORM(cdr);
-RXE_FORM(cdb);
-RXE_FORM(ceb);
-RRE_FORM(cefbr);
-RXE_FORM(ddb);
-RRE_FORM(ddbr);
-SS1_FORM(ed);
-RRE_FORM(epair);
-RX_FORM(ex);
-RRF2_FORM(fidbr);
-RRE_FORM(flogr);
-RX_FORM(ic_z);
-RXY_FORM(icy);
-RIL1_FORM(iihf);
-RI1_FORM(iihh);
-RI1_FORM(iihl);
-RIL1_FORM(iilf);
-RI1_FORM(iilh);
-RI1_FORM(iill);
-RRE_FORM(lcgr);
-RR_FORM(lcr);
-RX_FORM(le_z);
-RXY_FORM(ley);
-RIL1_FORM(llihf);
-RIL1_FORM(llilf);
-RRE_FORM(lngr);
-RR_FORM(lnr);
-RSY1_FORM(loc);
-RXY_FORM(lrv);
-RXY_FORM(lrvh);
-RXE_FORM(mdb);
-RRE_FORM(mdbr);
-SS4_FORM(mvck);
-SSF_FORM(mvcos);
-SS4_FORM(mvcs);
-SS1_FORM(mvn);
-SS1_FORM(nc);
-SI_FORM(ni);
-RIL1_FORM(nihf);
-RIL1_FORM(nilf);
-RI1_FORM(nilh);
-RI1_FORM(nill);
-RIL1_FORM(oihf);
-RIL1_FORM(oilf);
-RI1_FORM(oill);
-RRE_FORM(popcnt);
-RXE_FORM(sdb);
-RRE_FORM(sdbr);
-RIL1_FORM(slfi);
-RXY_FORM(slgf);
-RIL1_FORM(slgfi);
-RS1_FORM(srdl);
-RX_FORM(ste);
-RXY_FORM(stey);
-RXY_FORM(strv);
-RI1_FORM(tmll);
-SS1_FORM(tr);
-S_FORM(ts);
-RIL1_FORM(xihf);
-RIL1_FORM(xilf);
-
+  // S390 instruction sets
+  RX_FORM(bc);
+  RR_FORM(bctr);
+  RX_FORM(cd);
+  RRE_FORM(cdr);
+  RXE_FORM(cdb);
+  RXE_FORM(ceb);
+  RRE_FORM(cefbr);
+  RXE_FORM(ddb);
+  RRE_FORM(ddbr);
+  SS1_FORM(ed);
+  RRE_FORM(epair);
+  RX_FORM(ex);
+  RRF2_FORM(fidbr);
+  RRE_FORM(flogr);
+  RX_FORM(ic_z);
+  RXY_FORM(icy);
+  RIL1_FORM(iihf);
+  RI1_FORM(iihh);
+  RI1_FORM(iihl);
+  RIL1_FORM(iilf);
+  RI1_FORM(iilh);
+  RI1_FORM(iill);
+  RRE_FORM(lcgr);
+  RR_FORM(lcr);
+  RX_FORM(le_z);
+  RXY_FORM(ley);
+  RIL1_FORM(llihf);
+  RIL1_FORM(llilf);
+  RRE_FORM(lngr);
+  RR_FORM(lnr);
+  RSY1_FORM(loc);
+  RXY_FORM(lrv);
+  RXY_FORM(lrvh);
+  RXE_FORM(mdb);
+  RRE_FORM(mdbr);
+  SS4_FORM(mvck);
+  SSF_FORM(mvcos);
+  SS4_FORM(mvcs);
+  SS1_FORM(mvn);
+  SS1_FORM(nc);
+  SI_FORM(ni);
+  RIL1_FORM(nihf);
+  RIL1_FORM(nilf);
+  RI1_FORM(nilh);
+  RI1_FORM(nill);
+  RIL1_FORM(oihf);
+  RIL1_FORM(oilf);
+  RI1_FORM(oill);
+  RRE_FORM(popcnt);
+  RXE_FORM(sdb);
+  RRE_FORM(sdbr);
+  RIL1_FORM(slfi);
+  RXY_FORM(slgf);
+  RIL1_FORM(slgfi);
+  RS1_FORM(srdl);
+  RX_FORM(ste);
+  RXY_FORM(stey);
+  RXY_FORM(strv);
+  RI1_FORM(tmll);
+  SS1_FORM(tr);
+  S_FORM(ts);
+  RIL1_FORM(xihf);
+  RIL1_FORM(xilf);
 
   // Load Address Instructions
   void la(Register r, const MemOperand& opnd);
   void lay(Register r, const MemOperand& opnd);
   void larl(Register r1, const Operand& opnd);
-  void larl(Register r, Label *l);
+  void larl(Register r, Label* l);
 
   // Load Instructions
   void lb(Register r, const MemOperand& src);
@@ -916,7 +883,7 @@ RIL1_FORM(xilf);
   void st(Register r, const MemOperand& src);
   void stc(Register r, const MemOperand& src);
   void stcy(Register r, const MemOperand& src);
-  void stg(Register r, const MemOperand &src);
+  void stg(Register r, const MemOperand& src);
   void sth(Register r, const MemOperand& src);
   void sthy(Register r, const MemOperand& src);
   void sty(Register r, const MemOperand& src);
@@ -1131,8 +1098,7 @@ RIL1_FORM(xilf);
   void xg(Register r1, const MemOperand& opnd);
   void xgr(Register r1, Register r2);
   void xgrk(Register r1, Register r2, Register r3);
-  void xc(const MemOperand& opnd1, const MemOperand& opnd2,
-          Length length);
+  void xc(const MemOperand& opnd1, const MemOperand& opnd2, Length length);
 
   // Bitwise GPR <-> FPR Conversion Instructions
   void lgdr(Register r1, DoubleRegister f2);
@@ -1154,26 +1120,26 @@ RIL1_FORM(xilf);
   // Floating Point Load Rounded/Positive Instructions
   void ledbr(DoubleRegister r1, DoubleRegister r2);
   void ldebr(DoubleRegister r1, DoubleRegister r2);
-  void lpebr(DoubleRegister r1,  DoubleRegister r2);
-  void lpdbr(DoubleRegister r1,  DoubleRegister r2);
+  void lpebr(DoubleRegister r1, DoubleRegister r2);
+  void lpdbr(DoubleRegister r1, DoubleRegister r2);
 
   // Floating <-> Fixed Point Conversion Instructions
-  void cdlfbr(Condition m3, Condition m4,
-              DoubleRegister fltReg, Register fixReg);
-  void cdlgbr(Condition m3, Condition m4,
-              DoubleRegister fltReg, Register fixReg);
-  void celgbr(Condition m3, Condition m4,
-              DoubleRegister fltReg, Register fixReg);
-  void celfbr(Condition m3, Condition m4,
-              DoubleRegister fltReg, Register fixReg);
-  void clfdbr(Condition m3, Condition m4,
-              Register fixReg, DoubleRegister fltReg);
-  void clfebr(Condition m3, Condition m4,
-              Register fixReg, DoubleRegister fltReg);
-  void clgdbr(Condition m3, Condition m4,
-              Register fixReg, DoubleRegister fltReg);
-  void clgebr(Condition m3, Condition m4,
-              Register fixReg, DoubleRegister fltReg);
+  void cdlfbr(Condition m3, Condition m4, DoubleRegister fltReg,
+              Register fixReg);
+  void cdlgbr(Condition m3, Condition m4, DoubleRegister fltReg,
+              Register fixReg);
+  void celgbr(Condition m3, Condition m4, DoubleRegister fltReg,
+              Register fixReg);
+  void celfbr(Condition m3, Condition m4, DoubleRegister fltReg,
+              Register fixReg);
+  void clfdbr(Condition m3, Condition m4, Register fixReg,
+              DoubleRegister fltReg);
+  void clfebr(Condition m3, Condition m4, Register fixReg,
+              DoubleRegister fltReg);
+  void clgdbr(Condition m3, Condition m4, Register fixReg,
+              DoubleRegister fltReg);
+  void clgebr(Condition m3, Condition m4, Register fixReg,
+              DoubleRegister fltReg);
   void cfdbr(Condition m, Register fixReg, DoubleRegister fltReg);
   void cdfbr(DoubleRegister fltReg, Register fixReg);
   void cgebr(Condition m, Register fixReg, DoubleRegister fltReg);
@@ -1221,18 +1187,13 @@ RIL1_FORM(xilf);
   void fiebra(DoubleRegister d1, DoubleRegister d2, FIDBRA_MASK3 m3);
   void fidbra(DoubleRegister d1, DoubleRegister d2, FIDBRA_MASK3 m3);
 
-
   // Move integer
   void mvhi(const MemOperand& opnd1, const Operand& i2);
   void mvghi(const MemOperand& opnd1, const Operand& i2);
 
-
-
   // Exception-generating instructions and debugging support
-  void stop(const char* msg,
-            Condition cond = al,
-            int32_t code = kDefaultStopCode,
-            CRegister cr = cr7);
+  void stop(const char* msg, Condition cond = al,
+            int32_t code = kDefaultStopCode, CRegister cr = cr7);
 
   void bkpt(uint32_t imm16);  // v5 and above
 
@@ -1251,7 +1212,7 @@ RIL1_FORM(xilf);
     FIRST_IC_MARKER = PROPERTY_ACCESS_INLINED
   };
 
-  void nop(int type = 0);   // 0 is the default non-marking type.
+  void nop(int type = 0);  // 0 is the default non-marking type.
 
   // Check the code size generated from label to here.
   int SizeOfCodeGeneratedSince(Label* label) {
@@ -1268,9 +1229,7 @@ RIL1_FORM(xilf);
 
   // Record the AST id of the CallIC being compiled, so that it can be placed
   // in the relocation information.
-  void SetRecordedAstId(TypeFeedbackId ast_id) {
-    recorded_ast_id_ = ast_id;
-  }
+  void SetRecordedAstId(TypeFeedbackId ast_id) { recorded_ast_id_ = ast_id; }
 
   TypeFeedbackId RecordedAstId() {
     // roohack - another issue??? DCHECK(!recorded_ast_id_.IsNone());
@@ -1307,7 +1266,7 @@ RIL1_FORM(xilf);
   SixByteInstr instr_at(int pos) {
     return Instruction::InstructionBits(buffer_ + pos);
   }
-  template<typename T>
+  template <typename T>
   void instr_at_put(int pos, T instr) {
     Instruction::SetInstructionBits<T>(buffer_ + pos, instr);
   }
@@ -1329,7 +1288,6 @@ RIL1_FORM(xilf);
 #else
   static bool Is32BitLoadIntoIP(SixByteInstr instr);
 #endif
-
 
   static bool IsCmpRegister(Instr instr);
   static bool IsCmpImmediate(Instr instr);
@@ -1389,8 +1347,9 @@ RIL1_FORM(xilf);
   inline void TrackBranch();
   inline void UntrackBranch();
 
-  inline int32_t emit_code_target(Handle<Code> target, RelocInfo::Mode rmode,
-                     TypeFeedbackId ast_id = TypeFeedbackId::None());
+  inline int32_t emit_code_target(
+      Handle<Code> target, RelocInfo::Mode rmode,
+      TypeFeedbackId ast_id = TypeFeedbackId::None());
 
   // Helpers to emit binary encoding of 2/4/6 byte instructions.
   inline void emit2bytes(uint16_t x);
@@ -1412,10 +1371,9 @@ RIL1_FORM(xilf);
   inline void ri_form(Opcode op, Register r1, const Operand& i2);
   inline void ri_form(Opcode op, Condition m1, const Operand& i2);
 
-  inline void rie_form(Opcode op, Register r1, Register r3,
-                     const Operand& i2);
-  inline void rie_f_form(Opcode op, Register r1, Register r2, const Operand &i3,
-                     const Operand& i4, const Operand& i5);
+  inline void rie_form(Opcode op, Register r1, Register r3, const Operand& i2);
+  inline void rie_f_form(Opcode op, Register r1, Register r2, const Operand& i3,
+                         const Operand& i4, const Operand& i5);
 
   inline void ril_form(Opcode op, Register r1, const Operand& i2);
   inline void ril_form(Opcode op, Condition m1, const Operand& i2);
@@ -1423,12 +1381,10 @@ RIL1_FORM(xilf);
   inline void ris_form(Opcode op, Register r1, Condition m3, Register b4,
                        Disp d4, const Operand& i2);
 
-  inline void rrd_form(Opcode op, Register r1, Register r3,
-                       Register r2);
+  inline void rrd_form(Opcode op, Register r1, Register r3, Register r2);
 
   inline void rre_form(Opcode op, Register r1, Register r2);
-  inline void rre_form(Opcode op, DoubleRegister r1,
-                       DoubleRegister r2);
+  inline void rre_form(Opcode op, DoubleRegister r1, DoubleRegister r2);
 
   inline void rrf1_form(Opcode op, Register r1, Register r2, Register r3);
   inline void rrf1_form(uint32_t x);
@@ -1460,36 +1416,32 @@ RIL1_FORM(xilf);
                        Register x2, Disp d2);
 
   inline void rxy_form(Opcode op, Register r1, Register x2, Register b2,
-                     Disp d2);
-  inline void rxy_form(Opcode op, DoubleRegister r1, Register x2,
-                       Register b2, Disp d2);
+                       Disp d2);
+  inline void rxy_form(Opcode op, DoubleRegister r1, Register x2, Register b2,
+                       Disp d2);
 
   inline void s_form(Opcode op, Register b1, Disp d2);
 
-  inline void si_form(Opcode op, const Operand& i2, Register b1,
-                     Disp d1);
-  inline void siy_form(Opcode op, const Operand& i2, Register b1,
-                       Disp d1);
+  inline void si_form(Opcode op, const Operand& i2, Register b1, Disp d1);
+  inline void siy_form(Opcode op, const Operand& i2, Register b1, Disp d1);
 
-  inline void sil_form(Opcode op, Register b1, Disp d1,
-                       const Operand& i2);
+  inline void sil_form(Opcode op, Register b1, Disp d1, const Operand& i2);
 
-  inline void ss_form(Opcode op, Length l, Register b1, Disp d1,
+  inline void ss_form(Opcode op, Length l, Register b1, Disp d1, Register b2,
+                      Disp d2);
+  inline void ss_form(Opcode op, Length l1, Length l2, Register b1, Disp d1,
                       Register b2, Disp d2);
-  inline void ss_form(Opcode op, Length l1, Length l2, Register b1,
-                      Disp d1, Register b2, Disp d2);
   inline void ss_form(Opcode op, Length l1, const Operand& i3, Register b1,
                       Disp d1, Register b2, Disp d2);
-  inline void ss_form(Opcode op, Register r1, Register r2, Register b1,
-                      Disp d1, Register b2, Disp d2);
-  inline void sse_form(Opcode op, Register b1, Disp d1, Register b2,
-                       Disp d2);
+  inline void ss_form(Opcode op, Register r1, Register r2, Register b1, Disp d1,
+                      Register b2, Disp d2);
+  inline void sse_form(Opcode op, Register b1, Disp d1, Register b2, Disp d2);
   inline void ssf_form(Opcode op, Register r3, Register b1, Disp d1,
                        Register b2, Disp d2);
 
   // Labels
   void print(Label* L);
-  int  max_reach_from(int pos);
+  int max_reach_from(int pos);
   void bind_to(Label* L, int pos);
   void next(Label* L);
 
@@ -1497,13 +1449,12 @@ RIL1_FORM(xilf);
   friend class RelocInfo;
   friend class CodePatcher;
 
-  List< Handle<Code> > code_targets_;
+  List<Handle<Code> > code_targets_;
 
   PositionsRecorder positions_recorder_;
   friend class PositionsRecorder;
   friend class EnsureSpace;
 };
-
 
 class EnsureSpace BASE_EMBEDDED {
  public:

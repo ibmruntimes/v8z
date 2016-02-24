@@ -6,23 +6,18 @@
 
 #include "src/s390/constants-s390.h"
 
-
 namespace v8 {
 namespace internal {
 
 // These register names are defined in a way to match the native disassembler
 // formatting. See for example the command "objdump -d <binary file>".
 const char* Registers::names_[kNumRegisters] = {
-  "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7",
-  "r8", "r9", "r10", "fp", "ip", "r13", "r14", "sp"
-};
-
+    "r0", "r1", "r2",  "r3", "r4", "r5",  "r6",  "r7",
+    "r8", "r9", "r10", "fp", "ip", "r13", "r14", "sp"};
 
 const char* DoubleRegisters::names_[kNumDoubleRegisters] = {
-    "f0", "f1", "f2", "f3", "f4", "f5", "f6", "f7",
-    "f8", "f9", "f10", "f11", "f12", "f13", "f14", "f15"
-};
-
+    "f0", "f1", "f2",  "f3",  "f4",  "f5",  "f6",  "f7",
+    "f8", "f9", "f10", "f11", "f12", "f13", "f14", "f15"};
 
 int DoubleRegisters::Number(const char* name) {
   for (int i = 0; i < kNumDoubleRegisters; i++) {
@@ -34,7 +29,6 @@ int DoubleRegisters::Number(const char* name) {
   // No register with the requested name found.
   return kNoRegister;
 }
-
 
 int Registers::Number(const char* name) {
   // Look through the canonical names.
