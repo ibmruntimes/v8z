@@ -801,27 +801,11 @@ void name(Register r3, const MemOperand& opnd1, const MemOperand& opnd2)
 // S390 instruction sets
 RX_FORM(bc);
 RR_FORM(bctr);
-RX_FORM(c);
 RX_FORM(cd);
 RRE_FORM(cdr);
 RXE_FORM(cdb);
 RXE_FORM(ceb);
 RRE_FORM(cefbr);
-RIL1_FORM(cfi);
-RXY_FORM(cg);
-RIL1_FORM(cgfi);
-RI1_FORM(cghi);
-RX_FORM(ch);
-RI1_FORM(chi);
-RXY_FORM(chy);
-RX_FORM(cl);
-SS1_FORM(clc);
-RIL1_FORM(clfi);
-RXY_FORM(clg);
-RIL1_FORM(clgfi);
-RXY_FORM(cly);
-RR_FORM(cr_z);
-RXY_FORM(cy);
 RXE_FORM(ddb);
 RRE_FORM(ddbr);
 SS1_FORM(ed);
@@ -837,18 +821,10 @@ RI1_FORM(iihl);
 RIL1_FORM(iilf);
 RI1_FORM(iilh);
 RI1_FORM(iill);
-RX_FORM(l);
-RXY_FORM(lb);
 RRE_FORM(lcgr);
 RR_FORM(lcr);
 RX_FORM(le_z);
 RXY_FORM(ley);
-RXY_FORM(lg);
-RXY_FORM(lgb);
-RXY_FORM(lgf);
-RXY_FORM(lgh);
-RX_FORM(lh);
-RXY_FORM(lhy);
 RIL1_FORM(llihf);
 RIL1_FORM(llilf);
 RRE_FORM(lngr);
@@ -856,7 +832,6 @@ RR_FORM(lnr);
 RSY1_FORM(loc);
 RXY_FORM(lrv);
 RXY_FORM(lrvh);
-RXY_FORM(ly);
 RXE_FORM(mdb);
 RRE_FORM(mdbr);
 SS4_FORM(mvck);
@@ -890,38 +865,45 @@ RIL1_FORM(xilf);
 
 
   // Load Address Instructions
-  void la(Register r1, const MemOperand& src);
-  void lay(Register r1, const MemOperand& src);
+  void la(Register r, const MemOperand& opnd);
+  void lay(Register r, const MemOperand& opnd);
   void larl(Register r1, const Operand& opnd);
   void larl(Register r, Label *l);
 
-  // Load Immediate Instructions
-  void lhi(Register dst, const Operand& imm);
-  void lghi(Register dst, const Operand& imm);
-
-  // Load Register-Register Instructions
-  void lr(Register r1, Register r2);
-  void lgr(Register r1, Register r2);
-  void lhr(Register r1, Register r2);
-  void lghr(Register r1, Register r2);
-  void lgfr(Register r1, Register r2);
+  // Load Instructions
+  void lb(Register r, const MemOperand& src);
   void lbr(Register r1, Register r2);
+  void lgb(Register r, const MemOperand& src);
   void lgbr(Register r1, Register r2);
+  void lh(Register r, const MemOperand& src);
+  void lhy(Register r, const MemOperand& src);
+  void lhr(Register r1, Register r2);
+  void lgh(Register r, const MemOperand& src);
+  void lghr(Register r1, Register r2);
+  void l(Register r, const MemOperand& src);
+  void ly(Register r, const MemOperand& src);
+  void lr(Register r1, Register r2);
+  void lg(Register r, const MemOperand& src);
+  void lgr(Register r1, Register r2);
+  void lgf(Register r, const MemOperand& src);
+  void lgfr(Register r1, Register r2);
+  void lhi(Register r, const Operand& imm);
+  void lghi(Register r, const Operand& imm);
 
   // Load And Test Instructions
-  void lt_z(Register r1, const MemOperand& src);
-  void ltg(Register r1, const MemOperand& src);
+  void lt_z(Register r, const MemOperand& src);
+  void ltg(Register r, const MemOperand& src);
   void ltr(Register r1, Register r2);
   void ltgr(Register r1, Register r2);
   void ltgfr(Register r1, Register r2);
 
   // Load Logical Instructions
-  void llc(Register r1, const MemOperand& src);
-  void llgc(Register r1, const MemOperand& src);
-  void llgf(Register r1, const MemOperand& src);
+  void llc(Register r, const MemOperand& src);
+  void llgc(Register r, const MemOperand& src);
+  void llgf(Register r, const MemOperand& src);
   void llgfr(Register r1, Register r2);
-  void llh(Register r1, const MemOperand& src);
-  void llgh(Register r1, const MemOperand& src);
+  void llh(Register r, const MemOperand& src);
+  void llgh(Register r, const MemOperand& src);
   void llhr(Register r1, Register r2);
   void llghr(Register r1, Register r2);
 
@@ -931,13 +913,13 @@ RIL1_FORM(xilf);
   void lmg(Register r1, Register r2, const MemOperand& src);
 
   // Store Instructions
-  void st(Register dst, const MemOperand& src);
-  void stc(Register dst, const MemOperand& src);
-  void stcy(Register dst, const MemOperand& src);
-  void stg(Register rs, const MemOperand &src);
-  void sth(Register dst, const MemOperand& src);
-  void sthy(Register dst, const MemOperand& src);
-  void sty(Register dst, const MemOperand& src);
+  void st(Register r, const MemOperand& src);
+  void stc(Register r, const MemOperand& src);
+  void stcy(Register r, const MemOperand& src);
+  void stg(Register r, const MemOperand &src);
+  void sth(Register r, const MemOperand& src);
+  void sthy(Register r, const MemOperand& src);
+  void sty(Register r, const MemOperand& src);
 
   // Store Multiple Instructions
   void stm(Register r1, Register r2, const MemOperand& src);
@@ -945,12 +927,29 @@ RIL1_FORM(xilf);
   void stmg(Register r1, Register r2, const MemOperand& src);
 
   // Compare Instructions
-  void cr(Register r1, Register r2);
+  void c(Register r, const MemOperand& opnd);
+  void cy(Register r, const MemOperand& opnd);
+  void cr_z(Register r1, Register r2);
+  void cg(Register r, const MemOperand& opnd);
   void cgr(Register r1, Register r2);
+  void ch(Register r, const MemOperand& opnd);
+  void chy(Register r, const MemOperand& opnd);
+  void chi(Register r, const Operand& opnd);
+  void cghi(Register r, const Operand& opnd);
+  void cfi(Register r, const Operand& opnd);
+  void cgfi(Register r, const Operand& opnd);
+
+  // Compare Logical Instructions
+  void cl(Register r, const MemOperand& opnd);
+  void cly(Register r, const MemOperand& opnd);
   void clr(Register r1, Register r2);
+  void clg(Register r, const MemOperand& opnd);
   void clgr(Register r1, Register r2);
+  void clfi(Register r, const Operand& opnd);
+  void clgfi(Register r, const Operand& opnd);
   void cli(const MemOperand& mem, const Operand& imm);
   void cliy(const MemOperand& mem, const Operand& imm);
+  void clc(const MemOperand& opnd1, const MemOperand& opnd2, Length length);
 
   // Test Under Mask Instructions
   void tm(const MemOperand& mem, const Operand& imm);

@@ -1569,7 +1569,6 @@ RX_FORM_EMIT(bc, BC)
 RR_FORM_EMIT(bctr, BCTR)
 RXE_FORM_EMIT(ceb, CEB)
 RRE_FORM_EMIT(cefbr, CEFBR)
-RIL1_FORM_EMIT(cgfi, CGFI)
 SS1_FORM_EMIT(ed, ED)
 RX_FORM_EMIT(ex, EX)
 RRE_FORM_EMIT(flogr, FLOGR)
@@ -1577,9 +1576,6 @@ RRE_FORM_EMIT(lcgr, LCGR)
 RR_FORM_EMIT(lcr, LCR)
 RX_FORM_EMIT(le_z, LE)
 RXY_FORM_EMIT(ley, LEY)
-RXY_FORM_EMIT(lgf, LGF)
-RX_FORM_EMIT(lh, LH)
-RXY_FORM_EMIT(lhy, LHY)
 RIL1_FORM_EMIT(llihf, LLIHF)
 RIL1_FORM_EMIT(llilf, LLILF)
 RRE_FORM_EMIT(lngr, LNGR)
@@ -1634,26 +1630,84 @@ void Assembler::larl(Register r1, Label *l) {
   larl(r1, Operand(branch_offset(l)));
 }
 
-// ---------------------------
-// Load Immediate Instructions
-// ---------------------------
-// Load Halfword Immediate (32)
-void Assembler::lhi(Register dst, const Operand& imm) {
-  ri_form(LHI, dst, imm);
+// -----------------
+// Load Instructions
+// -----------------
+// Load Byte Register-Storage (32<-8)
+void Assembler::lb(Register r, const MemOperand& src) {
+  rxy_form(LB, r, src.rx(), src.rb(), src.offset());
 }
 
 
-// Load Halfword Immediate (64)
-void Assembler::lghi(Register r1, const Operand& i2) {
-  ri_form(LGHI, r1, i2);
+// Load Byte Register-Register (32<-8)
+void Assembler::lbr(Register r1, Register r2) {
+  rre_form(LBR, r1, r2);
 }
 
-// --------------------------
-// Load Register Instructions
-// --------------------------
+
+// Load Byte Register-Storage (64<-8)
+void Assembler::lgb(Register r, const MemOperand& src) {
+  rxy_form(LGB, r, src.rx(), src.rb(), src.offset());
+}
+
+
+// Load Byte Register-Register (64<-8)
+void Assembler::lgbr(Register r1, Register r2) {
+  rre_form(LGBR, r1, r2);
+}
+
+
+// Load Halfword Register-Storage (32<-16)
+void Assembler::lh(Register r, const MemOperand& src) {
+  rx_form(LH, r, src.rx(), src.rb(), src.offset());
+}
+
+
+// Load Halfword Register-Storage (32<-16)
+void Assembler::lhy(Register r, const MemOperand& src) {
+  rxy_form(LHY, r, src.rx(), src.rb(), src.offset());
+}
+
+
+// Load Halfword Register-Register (32<-16)
+void Assembler::lhr(Register r1, Register r2) {
+  rre_form(LHR, r1, r2);
+}
+
+
+// Load Halfword Register-Storage (64<-16)
+void Assembler::lgh(Register r, const MemOperand& src) {
+  rxy_form(LGH, r, src.rx(), src.rb(), src.offset());
+}
+
+
+// Load Halfword Register-Register (64<-16)
+void Assembler::lghr(Register r1, Register r2) {
+  rre_form(LGHR, r1, r2);
+}
+
+
+// Load Register-Storage (32)
+void Assembler::l(Register r, const MemOperand& src) {
+  rx_form(L, r, src.rx(), src.rb(), src.offset());
+}
+
+
+// Load Register-Storage (32)
+void Assembler::ly(Register r, const MemOperand& src) {
+  rxy_form(LY, r, src.rx(), src.rb(), src.offset());
+}
+
+
 // Load Register-Register (32)
 void Assembler::lr(Register r1, Register r2) {
   rr_form(LR, r1, r2);
+}
+
+
+// Load Register-Storage (64)
+void Assembler::lg(Register r, const MemOperand& src) {
+  rxy_form(LG, r, src.rx(), src.rb(), src.offset());
 }
 
 
@@ -1663,15 +1717,9 @@ void Assembler::lgr(Register r1, Register r2) {
 }
 
 
-// Load halfword Register-Register (32)
-void Assembler::lhr(Register r1, Register r2) {
-  rre_form(LHR, r1, r2);
-}
-
-
-// Load halfword Register-Register (64)
-void Assembler::lghr(Register r1, Register r2) {
-  rre_form(LGHR, r1, r2);
+// Load Register-Storage (64<-32)
+void Assembler::lgf(Register r, const MemOperand& src) {
+  rxy_form(LGF, r, src.rx(), src.rb(), src.offset());
 }
 
 
@@ -1681,15 +1729,15 @@ void Assembler::lgfr(Register r1, Register r2) {
 }
 
 
-// Load Byte Register-Register (32)
-void Assembler::lbr(Register r1, Register r2) {
-  rre_form(LBR, r1, r2);
+// Load Halfword Immediate (32)
+void Assembler::lhi(Register r, const Operand& imm) {
+  ri_form(LHI, r, imm);
 }
 
 
-// Load Byte Register-Register (64)
-void Assembler::lgbr(Register r1, Register r2) {
-  rre_form(LGBR, r1, r2);
+// Load Halfword Immediate (64)
+void Assembler::lghi(Register r, const Operand& imm) {
+  ri_form(LGHI, r, imm);
 }
 
 
@@ -1856,6 +1904,197 @@ void Assembler::brctg(Register r1, const Operand& imm) {
   Operand halfwordOp = Operand(numHalfwords);
   halfwordOp.setBits(16);
   ri_form(BRCTG, r1, halfwordOp);
+}
+
+
+// --------------------
+// Compare Instructions
+// --------------------
+// Compare Register-Storage (32)
+void Assembler::c(Register r, const MemOperand& opnd) {
+  rx_form(C, r, opnd.rx(), opnd.rb(), opnd.offset());
+}
+
+
+// Compare Register-Storage (32)
+void Assembler::cy(Register r, const MemOperand& opnd) {
+  rxy_form(CY, r, opnd.rx(), opnd.rb(), opnd.offset());
+}
+
+
+// Compare Register-Register (32)
+void Assembler::cr_z(Register r1, Register r2) {
+  rr_form(CR, r1, r2);
+}
+
+
+// Compare Register-Storage (64)
+void Assembler::cg(Register r, const MemOperand& opnd) {
+  rxy_form(CG, r, opnd.rx(), opnd.rb(), opnd.offset());
+}
+
+
+// Compare Register-Register (64)
+void Assembler::cgr(Register r1, Register r2) {
+  rre_form(CGR, r1, r2);
+}
+
+
+// Compare Halfword Register-Storage (32)
+void Assembler::ch(Register r, const MemOperand& opnd) {
+  rx_form(CH, r, opnd.rx(), opnd.rb(), opnd.offset());
+}
+
+
+// Compare Halfword Register-Storage (32)
+void Assembler::chy(Register r, const MemOperand& opnd) {
+  rxy_form(CHY, r, opnd.rx(), opnd.rb(), opnd.offset());
+}
+
+
+// Compare Halfword Immediate (32)
+void Assembler::chi(Register r, const Operand& opnd) {
+  ri_form(CHI, r, opnd);
+}
+
+
+// Compare Halfword Immediate (64)
+void Assembler::cghi(Register r, const Operand& opnd) {
+  ri_form(CGHI, r, opnd);
+}
+
+
+// Compare Immediate (32)
+void Assembler::cfi(Register r, const Operand& opnd) {
+  ril_form(CFI, r, opnd);
+}
+
+
+// Compare Immediate (64)
+void Assembler::cgfi(Register r, const Operand& opnd) {
+  ril_form(CGFI, r, opnd);
+}
+
+
+// ----------------------------
+// Compare Logical Instructions
+// ----------------------------
+// Compare Logical Register-Storage (32)
+void Assembler::cl(Register r, const MemOperand& opnd) {
+  rx_form(CL, r, opnd.rx(), opnd.rb(), opnd.offset());
+}
+
+
+// Compare Logical Register-Storage (32)
+void Assembler::cly(Register r, const MemOperand& opnd) {
+  rxy_form(CLY, r, opnd.rx(), opnd.rb(), opnd.offset());
+}
+
+
+// Compare Logical Register-Register (32)
+void Assembler::clr(Register r1, Register r2) {
+  rr_form(CLR, r1, r2);
+}
+
+
+// Compare Logical Register-Storage (64)
+void Assembler::clg(Register r, const MemOperand& opnd) {
+  rxy_form(CLG, r, opnd.rx(), opnd.rb(), opnd.offset());
+}
+
+
+// Compare Logical Register-Register (64)
+void Assembler::clgr(Register r1, Register r2) {
+  rre_form(CLGR, r1, r2);
+}
+
+
+// Compare Logical Immediate (32)
+void Assembler::clfi(Register r1, const Operand& i2) {
+  ril_form(CLFI, r1, i2);
+}
+
+
+// Compare Logical Immediate (64<32)
+void Assembler::clgfi(Register r1, const Operand& i2) {
+  ril_form(CLGFI, r1, i2);
+}
+
+
+// Compare Immediate (Mem - Imm) (8)
+void Assembler::cli(const MemOperand& opnd, const Operand& imm) {
+  si_form(CLI, imm, opnd.rb(), opnd.offset());
+}
+
+
+// Compare Immediate (Mem - Imm) (8)
+void Assembler::cliy(const MemOperand& opnd, const Operand& imm) {
+  siy_form(CLIY, imm, opnd.rb(), opnd.offset());
+}
+
+
+// Compare logical - mem to mem operation
+void Assembler::clc(const MemOperand& opnd1, const MemOperand& opnd2,
+                    Length length) {
+  ss_form(CLC, length-1, opnd1.getBaseRegister(),
+          opnd1.getDisplacement(), opnd2.getBaseRegister(),
+         opnd2.getDisplacement());
+}
+
+
+// ----------------------------
+// Test Under Mask Instructions
+// ----------------------------
+// Test Under Mask (Mem - Imm) (8)
+void Assembler::tm(const MemOperand& opnd, const Operand& imm) {
+  si_form(TM, imm, opnd.rb(), opnd.offset());
+}
+
+
+// Test Under Mask (Mem - Imm) (8)
+void Assembler::tmy(const MemOperand& opnd, const Operand& imm) {
+  siy_form(TMY, imm, opnd.rb(), opnd.offset());
+}
+
+
+// -------------------------------
+// Rotate and Insert Selected Bits
+// -------------------------------
+// Rotate-And-Insert-Selected-Bits
+void Assembler::risbg(Register dst, Register src, const Operand& startBit,
+                      const Operand& endBit, const Operand& shiftAmt,
+                      bool zeroBits) {
+  // High tag the top bit of I4/EndBit to zero out any unselected bits
+  if (zeroBits)
+    rie_f_form(RISBG, dst, src, startBit, Operand(endBit.imm_ | 0x80),
+               shiftAmt);
+  else
+    rie_f_form(RISBG, dst, src, startBit, endBit, shiftAmt);
+}
+
+
+// Rotate-And-Insert-Selected-Bits
+void Assembler::risbgn(Register dst, Register src, const Operand& startBit,
+                       const Operand& endBit, const Operand& shiftAmt,
+                       bool zeroBits) {
+  // High tag the top bit of I4/EndBit to zero out any unselected bits
+  if (zeroBits)
+    rie_f_form(RISBGN, dst, src, startBit, Operand(endBit.imm_ | 0x80),
+               shiftAmt);
+  else
+    rie_f_form(RISBGN, dst, src, startBit, endBit, shiftAmt);
+}
+
+
+// ---------------------------
+// Move Character Instructions
+// ---------------------------
+// Move charactor - mem to mem operation
+void Assembler::mvc(const MemOperand& opnd1, const MemOperand& opnd2,
+                    uint32_t length) {
+    ss_form(MVC, length-1, opnd1.getBaseRegister(),
+         opnd1.getDisplacement(), opnd2.getBaseRegister(),
+         opnd2.getDisplacement());
 }
 
 
@@ -2478,42 +2717,6 @@ void Assembler::EnsureSpaceFor(int space_needed) {
 }
 
 
-// Load Halfword Register-Storage (64)
-void Assembler::lgh(Register r1, const MemOperand& opnd) {
-  rxy_form(LGH, r1, opnd.rx(), opnd.rb(), opnd.offset());
-}
-
-
-// Load (32)
-void Assembler::l(Register r1, const MemOperand& opnd) {
-  rx_form(L, r1, opnd.rx(), opnd.rb(), opnd.offset());
-}
-
-
-// Load (32)
-void Assembler::ly(Register r1, const MemOperand& opnd) {
-  rxy_form(LY, r1, opnd.rx(), opnd.rb(), opnd.offset());
-}
-
-
-// Load (64)
-void Assembler::lg(Register r1, const MemOperand& opnd) {
-  rxy_form(LG, r1, opnd.rx(), opnd.rb(), opnd.offset());
-}
-
-
-// Load Byte Register-Storage (32)
-void Assembler::lb(Register r1, const MemOperand& opnd) {
-  rxy_form(LB, r1, opnd.rx(), opnd.rb(), opnd.offset());
-}
-
-
-// Load Byte Register-Storage (64)
-void Assembler::lgb(Register r1, const MemOperand& opnd) {
-  rxy_form(LGB, r1, opnd.rx(), opnd.rb(), opnd.offset());
-}
-
-
 // Rotate Left Single Logical (32)
 void Assembler::rll(Register r1, Register r3, Register opnd) {
   DCHECK(!opnd.is(r0));
@@ -2723,159 +2926,6 @@ void Assembler::srdl(Register r1, const Operand& opnd) {
 }
 
 
-// Rotate-And-Insert-Selected-Bits
-void Assembler::risbg(Register dst, Register src, const Operand& startBit,
-                      const Operand& endBit, const Operand& shiftAmt,
-                      bool zeroBits) {
-  // High tag the top bit of I4/EndBit to zero out any unselected bits
-  if (zeroBits)
-    rie_f_form(RISBG, dst, src, startBit, Operand(endBit.imm_ | 0x80),
-               shiftAmt);
-  else
-    rie_f_form(RISBG, dst, src, startBit, endBit, shiftAmt);
-}
-
-
-// Rotate-And-Insert-Selected-Bits
-void Assembler::risbgn(Register dst, Register src, const Operand& startBit,
-                       const Operand& endBit, const Operand& shiftAmt,
-                       bool zeroBits) {
-  // High tag the top bit of I4/EndBit to zero out any unselected bits
-  if (zeroBits)
-    rie_f_form(RISBGN, dst, src, startBit, Operand(endBit.imm_ | 0x80),
-               shiftAmt);
-  else
-    rie_f_form(RISBGN, dst, src, startBit, endBit, shiftAmt);
-}
-
-
-// Compare Halfword Immediate (32)
-void Assembler::chi(Register r1, const Operand& i2) {
-  ri_form(CHI, r1, i2);
-}
-
-
-// Compare Halfword Register-Storage (32)
-void Assembler::ch(Register r1, const MemOperand& opnd) {
-  rx_form(CH, r1, opnd.rx(), opnd.rb(), opnd.offset());
-}
-
-
-// Compare Halfword Register-Storage (32)
-void Assembler::chy(Register r1, const MemOperand& opnd) {
-  rxy_form(CHY, r1, opnd.rx(), opnd.rb(), opnd.offset());
-}
-
-
-// Compare Halfword Immediate (64)
-void Assembler::cghi(Register r1, const Operand& i2) {
-  ri_form(CGHI, r1, i2);
-}
-
-
-// Compare Logical Immediate (64<32)
-void Assembler::clgfi(Register r1, const Operand& i2) {
-  ril_form(CLGFI, r1, i2);
-}
-
-
-// Compare Logical Immediate (32)
-void Assembler::clfi(Register r1, const Operand& i2) {
-  ril_form(CLFI, r1, i2);
-}
-
-
-// Compare Logical Register-Register (64)
-void Assembler::clgr(Register r1, Register r2) {
-  rre_form(CLGR, r1, r2);
-}
-
-
-// Compare Logical Register-Register (32)
-void Assembler::clr(Register r1, Register r2) {
-  rr_form(CLR, r1, r2);
-}
-
-
-// Compare Logical Register-Storage (32)
-void Assembler::cl(Register r, const MemOperand& opnd) {
-  rx_form(CL, r, opnd.rx(), opnd.rb(), opnd.offset());
-}
-
-
-// Compare Logical Register-Storage (32)
-void Assembler::cly(Register r, const MemOperand& opnd) {
-  rxy_form(CLY, r, opnd.rx(), opnd.rb(), opnd.offset());
-}
-
-
-// Compare Logical Register-Storage (64)
-void Assembler::clg(Register r, const MemOperand& opnd) {
-  rxy_form(CLG, r, opnd.rx(), opnd.rb(), opnd.offset());
-}
-
-
-// Compare Register-Storage (32)
-void Assembler::c(Register r, const MemOperand& opnd) {
-  rx_form(C, r, opnd.rx(), opnd.rb(), opnd.offset());
-}
-
-
-// Compare Register-Storage (32)
-void Assembler::cy(Register r, const MemOperand& opnd) {
-  rxy_form(CY, r, opnd.rx(), opnd.rb(), opnd.offset());
-}
-
-
-// Compare Register-Storage (64)
-void Assembler::cg(Register r, const MemOperand& opnd) {
-  rxy_form(CG, r, opnd.rx(), opnd.rb(), opnd.offset());
-}
-
-
-// Compare Register-Register (32)
-void Assembler::cr_z(Register r1, Register r2) {
-  rr_form(CR, r1, r2);
-}
-
-
-// Compare Register-Register (64)
-void Assembler::cgr(Register r1, Register r2) {
-  rre_form(CGR, r1, r2);
-}
-
-
-// Compare Immediate (64)
-void Assembler::cfi(Register r, const Operand& opnd) {
-  ril_form(CFI, r, opnd);
-}
-
-
-// Compare Immediate (Mem - Imm) (8)
-void Assembler::cli(const MemOperand& opnd, const Operand& imm) {
-  si_form(CLI, imm, opnd.rb(), opnd.offset());
-}
-
-
-// Compare Immediate (Mem - Imm) (8)
-void Assembler::cliy(const MemOperand& opnd, const Operand& imm) {
-  siy_form(CLIY, imm, opnd.rb(), opnd.offset());
-}
-
-
-// Test Under Mask (Mem - Imm) (8)
-void Assembler::tm(const MemOperand& opnd, const Operand& imm) {
-  si_form(TM, imm, opnd.rb(), opnd.offset());
-}
-
-
-// Test Under Mask (Mem - Imm) (8)
-void Assembler::tmy(const MemOperand& opnd, const Operand& imm) {
-  siy_form(TMY, imm, opnd.rb(), opnd.offset());
-}
-
-
-
 void Assembler::call(Handle<Code> target,
                      RelocInfo::Mode rmode,
                      TypeFeedbackId ast_id) {
@@ -2948,24 +2998,6 @@ void Assembler::lmy(Register r1, Register r2, const MemOperand& src) {
 // 64-bit Load Multiple - long displacement (20-bits signed)
 void Assembler::lmg(Register r1, Register r2, const MemOperand& src) {
   rsy_form(LMG, r1, r2, src.rb(), src.offset());
-}
-
-
-// Move charactor - mem to mem operation
-void Assembler::mvc(const MemOperand& opnd1, const MemOperand& opnd2,
-                    uint32_t length) {
-    ss_form(MVC, length-1, opnd1.getBaseRegister(),
-         opnd1.getDisplacement(), opnd2.getBaseRegister(),
-         opnd2.getDisplacement());
-}
-
-
-// Compare logical - mem to mem operation
-void Assembler::clc(const MemOperand& opnd1, const MemOperand& opnd2,
-                    Length length) {
-    ss_form(CLC, length-1, opnd1.getBaseRegister(),
-         opnd1.getDisplacement(), opnd2.getBaseRegister(),
-         opnd2.getDisplacement());
 }
 
 
@@ -3225,59 +3257,59 @@ void Assembler::lpdbr(DoubleRegister r1, DoubleRegister r2) {
 }
 
 
-// Store (L)
+// Store Double (64)
 void Assembler::std(DoubleRegister r1, const MemOperand& opnd) {
   rx_form(STD, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 
-// Store (L)
+// Store Double (64)
 void Assembler::stdy(DoubleRegister r1, const MemOperand& opnd) {
   rxy_form(STDY, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 
-// Store (S)
+// Store Float (32)
 void Assembler::ste(DoubleRegister r1, const MemOperand& opnd) {
   rx_form(STE, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 
-// Store (S)
+// Store Float (32)
 void Assembler::stey(DoubleRegister r1, const MemOperand& opnd) {
   rxy_form(STEY, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 
-// Load (L)
+// Load Double (64)
 void Assembler::ld(DoubleRegister r1, const MemOperand& opnd) {
   DCHECK(is_uint12(opnd.offset()));
   rx_form(LD, r1, opnd.rx(), opnd.rb(), opnd.offset() & 0xfff);
 }
 
 
-// Load (L)
+// Load Double (64)
 void Assembler::ldy(DoubleRegister r1, const MemOperand& opnd) {
   DCHECK(is_int20(opnd.offset()));
   rxy_form(LDY, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 
-// Load (S)
+// Load Float (32)
 void Assembler::le_z(DoubleRegister r1, const MemOperand& opnd) {
     DCHECK(is_uint12(opnd.offset()));
     rx_form(LE, r1, opnd.rx(), opnd.rb(), opnd.offset() & 0xfff);
 }
 
 
-// Load (S)
+// Load Float (32)
 void Assembler::ley(DoubleRegister r1, const MemOperand& opnd) {
   DCHECK(is_int20(opnd.offset()));
   rxy_form(LEY, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 
-// Load Register-Register (L)
+// Load Double Register-Register (64)
 void Assembler::ldr(DoubleRegister r1, DoubleRegister r2) {
   rr_form(LDR, r1, r2);
 }
@@ -3331,7 +3363,6 @@ void Assembler::cdfbr(DoubleRegister r1, Register r2) {
 }
 
 
-// TODO(AlanLi): check condition code
 // Convert to Fixed Logical (64<-L)
 void Assembler::clgdbr(Condition m3, Condition m4,
                        Register r1, DoubleRegister r2) {
