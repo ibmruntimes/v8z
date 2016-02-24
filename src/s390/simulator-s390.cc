@@ -3245,15 +3245,6 @@ void Simulator::DecodeFourByteFloatingPointRound(Instruction* instr) {
     int mask_val = rreInstr->M3Value();
     int64_t r1_val = 0;
 
-//    union {
-//      double d;
-//      float f;
-//    } r2value;
-//
-//    r2value.d = r2_val;
-//
-//    float r2_fval = r2value.f;
-
     if (r2_fval == 0.0)
       condition_reg_ = 8;
     else if (r2_fval < 0.0)
@@ -3309,15 +3300,6 @@ void Simulator::DecodeFourByteFloatingPointRound(Instruction* instr) {
     case CFEBR: {
     int mask_val = rreInstr->M3Value();
     int32_t r1_val = 0;
-
-//    union {
-//      double d;
-//      float f;
-//    } r2value;
-//
-//    r2value.d = r2_val;
-//
-//    float r2_fval = r2value.f;
 
     if (r2_fval == 0.0)
       condition_reg_ = 8;
@@ -3640,8 +3622,6 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
       int r1 = rreInst->R1Value();
       int r2 = rreInst->R2Value();
       double r2_val = get_double_from_d_register(r2);
-//      uint32_t temp = bit_cast<uint32_t, float>(fp_val);
-//      set_d_register(r1, static_cast<int64_t>(temp));
       set_d_register_from_float32(r1, static_cast<float>(r2_val));
       break;
     }
