@@ -93,7 +93,50 @@ bool OS::ArmUsingHardFloat() {
 
 #endif  // def __arm__
 
-static const char * mmap_file  = "/tmp/zero";
+
+#define asm __asm__ volatile
+
+static void * anon_mmap(void * addr, size_t len){
+   int retcode; 
+   char * p;
+#pragma convert ("ibm-1047")  
+#if defined(__64BIT__)
+  __asm(" SYSSTATE ARCHLVL=2,AMODE64=YES\n"
+        " STORAGE OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES\n"
+        " LGR %0,1\n"
+        " LGR %1,15\n"
+        :"=r"(p),"=r"(retcode): "r"(len): "r0","r1","r14","r15");
+#else  
+  __asm(" SYSSTATE ARCHLVL=2\n"
+        " STORAGE OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES\n"
+        " LR %0,1\n"          
+        " LR %1,15\n"
+        :"=r"(p),"=r"(retcode): "r"(len): "r0","r1","r14","r15");
+#endif
+#pragma convert(pop)
+   return (retcode == 0) ? p : MAP_FAILED; 
+}
+
+
+static int anon_munmap(void * addr, size_t len){
+   int retcode;
+#pragma convert ("ibm-1047")  
+#if defined (__64BIT__)
+  __asm(" SYSSTATE ARCHLVL=2,AMODE64=YES\n"
+          " STORAGE RELEASE,LENGTH=(%2),ADDR=(%1),COND=YES\n"
+          " LGR %0,15\n"
+          :"=r"(retcode): "r"(addr), "r"(len) : "r0","r1","r14","r15");
+#else
+  __asm(" SYSSTATE ARCHLVL=2\n"
+          " STORAGE RELEASE,LENGTH=(%2),ADDR=(%1),COND=YES\n"
+          " LR %0,15\n"
+          :"=r"(retcode): "r"(addr), "r"(len) : "r0","r1","r14","r15");
+#endif   
+#pragma convert(pop)
+   return retcode;
+}
+
+
 
 const char* OS::LocalTimezone(double time, TimezoneCache* cache) {
   if (isnan(time)) return "";
@@ -122,18 +165,8 @@ void* OS::Allocate(const size_t requested,
                    bool is_executable) {
   const size_t msize = RoundUp(requested, AllocateAlignment());
   int prot = PROT_READ | PROT_WRITE | (is_executable ? PROT_EXEC : 0);
-  void * mbase = (void *)malloc(sizeof(char) * msize);
-
-/* void* addr = OS::GetRandomMmapAddr();
-  int fd = open(mmap_file, O_RDWR);
-  DCHECK_NE(fd,-1);
-  void* mbase = mmap(NULL, msize, prot, MAP_PRIVATE, fd, 0);
-  if (mbase == MAP_FAILED)
-     {
-     perror("Could not map file\n");
-     }
- close(fd);
-*/
+  void * mbase = (void *)anon_mmap(OS::GetRandomMmapAddr(),
+                                    sizeof(char) * msize);
   *allocated = msize;
   return mbase;
 }
@@ -295,7 +328,6 @@ static const int kMmapFd = -1;
 // Constants used for mmap.
 static const int kMmapFdOffset = 0;
 
-
 VirtualMemory::VirtualMemory() : address_(NULL), size_(0) { }
 
 
@@ -307,19 +339,14 @@ VirtualMemory::VirtualMemory(size_t size, size_t alignment)
     : address_(NULL), size_(0) {
   DCHECK(IsAligned(alignment, static_cast<intptr_t>(OS::AllocateAlignment())));
   
-  int fd = open(mmap_file, O_RDWR);
-
-  // Todo(muntasir) Need an assert here
-  DCHECK_NE(fd,kMmapFd);
   size_t request_size = RoundUp(size + alignment,
                                 static_cast<intptr_t>(OS::AllocateAlignment()));
-  void* reservation = mmap(OS::GetRandomMmapAddr(),
-                           request_size,
-                           PROT_NONE,
-                           MAP_PRIVATE,
-                           fd,
-                           kMmapFdOffset);
-
+  
+  void* reservation = anon_mmap(OS::GetRandomMmapAddr(),
+                           request_size);
+  
+  DCHECK_NE(reservation,MAP_FAILED);
+  
   uint8_t* base = static_cast<uint8_t*>(reservation);
   uint8_t* aligned_base = RoundUp(base, alignment);
   DCHECK_LE(base, aligned_base);
@@ -347,7 +374,6 @@ VirtualMemory::VirtualMemory(size_t size, size_t alignment)
 #if defined(LEAK_SANITIZER)
   __lsan_register_root_region(address_, size_);
 #endif
-  close(fd);
 }
 
 
@@ -388,15 +414,11 @@ bool VirtualMemory::Guard(void* address) {
 
 
 void* VirtualMemory::ReserveRegion(size_t size) {
-  int fd = open(mmap_file, O_RDWR);
-  DCHECK_NE(fd,kMmapFd);
-  void* result = mmap(OS::GetRandomMmapAddr(),
-                      size,
-                      PROT_NONE,
-                      MAP_PRIVATE,
-                      fd,
-                      kMmapFdOffset);
-  close(fd);
+  
+  void* result = anon_mmap(OS::GetRandomMmapAddr(),
+                      size);
+  
+  DCHECK_NE(result,MAP_FAILED); 
 #if defined(LEAK_SANITIZER)
   __lsan_register_root_region(result, size);
 #endif
@@ -405,46 +427,20 @@ void* VirtualMemory::ReserveRegion(size_t size) {
 
 
 bool VirtualMemory::CommitRegion(void* base, size_t size, bool is_executable) {
-#if defined(__native_client__)
-  // The Native Client port of V8 uses an interpreter,
-  // so code pages don't need PROT_EXEC.
-  int prot = PROT_READ | PROT_WRITE;
-#else
-  int prot = PROT_READ | PROT_WRITE | (is_executable ? PROT_EXEC : 0);
-#endif
-  bool map_success = (0 == mprotect(base,
-                                    size,
-                                    prot));
-  /*
-  int fd = open(mmap_file, O_RDWR);
-  DCHECK_NE(fd,kMmapFd);
-  bool map_success = (MAP_FAILED != mmap(base,
-                                         size,
-                                         prot,
-                                         MAP_PRIVATE | MAP_FIXED,
-                                         fd,
-                                         kMmapFdOffset));
-                                         
-  close(fd);
-  */
-  return map_success;
+ /*mprotect can not be called on pages allocated with
+   STORAGE OBTAIN, for now we will leave this operation as a 
+   NOP..might need to use CHANGEKEY macro to implement something
+   akin to mprotect in the future*/
+   return true;
 }
 
 
 bool VirtualMemory::UncommitRegion(void* base, size_t size) {
- /*
- int fd = open(mmap_file, O_RDWR);
- DCHECK_NE(fd,kMmapFd);
- bool map_success = (MAP_FAILED !=  mmap(base,
-                         size,
-                         PROT_NONE,
-                         MAP_PRIVATE | MAP_FIXED,
-                         fd,
-                         kMmapFdOffset));
-
- close(fd);
- */
- return (0 == mprotect(base,size,PROT_NONE));
+ /*mprotect can not be called on pages allocated with
+   STORAGE OBTAIN, for now we will leave this operation as a 
+   NOP..might need to use CHANGEKEY macro to implement something
+   akin to mprotect in the future*/
+   return true;
 }
 
 
@@ -452,7 +448,7 @@ bool VirtualMemory::ReleaseRegion(void* base, size_t size) {
 #if defined(LEAK_SANITIZER)
   __lsan_unregister_root_region(base, size);
 #endif
-  return munmap(base, size) == 0;
+  return anon_munmap(base, size) == 0;
 }
 
 
