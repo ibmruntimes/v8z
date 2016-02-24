@@ -579,7 +579,7 @@ void Assembler::nop(int type) {
       lr(r0, r0);
       break;
     case DEBUG_BREAK_NOP:
-      // TODO(johnyan): Use a better NOP break
+      // TODO(john.yan): Use a better NOP break
       oill(r3, Operand::Zero());
       break;
     default:

@@ -1059,11 +1059,6 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   // This is an opportunity to build a frame to wrap
   // all of the pushes that have happened inside of V8
   // since we were called from C code
-
-  // replicate ARM frame
-  // TODO(joransiu): make this more closely follow S390 ABI
-
-
   CleanseP(r14);
   Push(r14, fp);
   LoadRR(fp, sp);
@@ -2704,7 +2699,7 @@ void MacroAssembler::IncrementCounter(StatsCounter* counter, int value,
   DCHECK(value > 0 && is_int8(value));
   if (FLAG_native_code_counters && counter->Enabled()) {
     mov(scratch1, Operand(ExternalReference(counter)));
-    // @TODO(JOHN): can be optimized by asi()
+    // @TODO(john.yan): can be optimized by asi()
     LoadW(scratch2, MemOperand(scratch1));
     AddP(scratch2, Operand(value));
     StoreW(scratch2, MemOperand(scratch1));
@@ -2717,7 +2712,7 @@ void MacroAssembler::DecrementCounter(StatsCounter* counter, int value,
   DCHECK(value > 0 && is_int8(value));
   if (FLAG_native_code_counters && counter->Enabled()) {
     mov(scratch1, Operand(ExternalReference(counter)));
-    // @TODO(JOHN): can be optimized by asi()
+    // @TODO(john.yan): can be optimized by asi()
     LoadW(scratch2, MemOperand(scratch1));
     AddP(scratch2, Operand(-value));
     StoreW(scratch2, MemOperand(scratch1));
@@ -3179,7 +3174,8 @@ void MacroAssembler::CopyBytes(Register src, Register dst, Register length,
   CmpP(length, Operand::Zero());
   beq(&done);
 
-  // TODO(JOHN): The full optimized version with unknown problem.
+  // TODO(john.yan): More optimal version is to use MVC
+  // Sequence below has some undiagnosed issue.
   /*
   b(scratch, &fake_call);  // use brasl to Save mvc addr to scratch
   mvc(MemOperand(dst), MemOperand(src), 1);
@@ -3695,10 +3691,6 @@ void MacroAssembler::CheckEnumCache(Label* call_runtime) {
 // Some usages of this intend for a FIXED_SEQUENCE to be used
 // @TODO - break this dependency so we can optimize mov() in general
 // and only use the generic version when we require a fixed sequence
-
-// New MacroAssembler Interfaces from Power
-// TODO(Zen): Not sure if we need this
-
 void MacroAssembler::LoadRepresentation(Register dst, const MemOperand& mem,
                                         Representation r, Register scratch) {
   DCHECK(!r.IsDouble());
@@ -5678,7 +5670,6 @@ void MacroAssembler::TruncatingDiv(Register result, Register dividend,
   ShiftRightArithP(result, result, Operand(32));
 
 #else
-  // TODO(JOHN): Not sure if we need to save r1 value here
   lay(sp, MemOperand(sp, -kPointerSize));
   StoreP(r1, MemOperand(sp));
 

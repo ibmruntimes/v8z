@@ -266,7 +266,6 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
 #if V8_TARGET_ARCH_S390X
   __ stg(hole_int64, MemOperand(r9, 0));
 #else
-  // TODO(joransiu): Check if this works
   __ StoreW(hole_upper, MemOperand(r9, Register::kExponentOffset));
   __ StoreW(hole_lower, MemOperand(r9, Register::kMantissaOffset));
 #endif
@@ -566,7 +565,9 @@ void MathExpGenerator::EmitMathExp(MacroAssembler* masm, DoubleRegister input,
 
   __ LoadDouble(double_scratch1, ExpConstant(3, temp3));
   __ LoadDouble(result, ExpConstant(4, temp3));
-  // @TODO(Tara): verify madbr for correctness and use here instead of mdbr,adbr
+
+  // Do not generate madbr, as intermediate result are not
+  // rounded properly
   __ mdbr(double_scratch1, input);
   __ adbr(double_scratch1, result);
 

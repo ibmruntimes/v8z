@@ -466,7 +466,7 @@ static void EmitStrictTwoHeapObjectCompare(MacroAssembler* masm, Register lhs,
   STATIC_ASSERT(kInternalizedTag == 0 && kStringTag == 0);
   __ OrP(r4, r4, r5);
   __ AndP(r0, r4, Operand(kIsNotStringMask | kIsNotInternalizedMask));
-  __ beq(&return_not_equal/*, cr0*/);
+  __ beq(&return_not_equal);
 }
 
 
@@ -507,15 +507,15 @@ static void EmitCheckForInternalizedStringsOrObjects(MacroAssembler* masm,
   STATIC_ASSERT(kInternalizedTag == 0 && kStringTag == 0);
   __ mov(r0, Operand(kIsNotStringMask));
   __ AndP(r0, r4);
-  __ bne(&object_test /*, cr0*/, Label::kNear);
+  __ bne(&object_test, Label::kNear);
   __ mov(r0, Operand(kIsNotInternalizedMask));
   __ AndP(r0, r4);
-  __ bne(possible_strings /*, cr0*/);
+  __ bne(possible_strings);
   __ CompareObjectType(lhs, r5, r5, FIRST_NONSTRING_TYPE);
   __ bge(runtime_call);
   __ mov(r0, Operand(kIsNotInternalizedMask));
   __ AndP(r0, r5);
-  __ bne(possible_strings /*, cr0*/);
+  __ bne(possible_strings);
 
   // Both are internalized. We already checked they weren't the same pointer so
   // they are not equal. Return non-equal by returning the non-zero object
@@ -900,11 +900,11 @@ void MathPowStub::Generate(MacroAssembler* masm) {
   __ bind(&while_true);
   __ mov(scratch2, Operand(1));
   __ AndP(scratch2, scratch);
-  __ beq(&no_carry /*, cr0*/, Label::kNear);
+  __ beq(&no_carry, Label::kNear);
   __ mdbr(double_result, double_scratch);
   __ bind(&no_carry);
   __ ShiftRightArithP(scratch, scratch, Operand(1));
-  __ beq(&loop_end /*, cr0*/, Label::kNear);
+  __ beq(&loop_end, Label::kNear);
   __ mdbr(double_scratch, double_scratch);
   __ b(&while_true);
   __ bind(&loop_end);
@@ -1722,7 +1722,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // The underlying external string is never a short external string.
   STATIC_ASSERT(ExternalString::kMaxShortLength < ConsString::kMinLength);
   STATIC_ASSERT(ExternalString::kMaxShortLength < SlicedString::kMinLength);
-  __ bne(&external_string/*, cr0*/);  // Go to (7).
+  __ bne(&external_string);  // Go to (7).
 
   // (5) Sequential string.  Load regexp code according to encoding.
   __ bind(&seq_string);
@@ -1742,7 +1742,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   STATIC_ASSERT(kTwoByteStringTag == 0);
   STATIC_ASSERT(kStringEncodingMask == 4);
   __ ExtractBitMask(r5, r2, kStringEncodingMask, SetRC);
-  __ beq(&encoding_type_UC16 /*, cr0*/, Label::kNear);
+  __ beq(&encoding_type_UC16, Label::kNear);
   __ LoadP(code,
            FieldMemOperand(regexp_data, JSRegExp::kDataOneByteCodeOffset));
   __ b(&br_over, Label::kNear);
@@ -1997,7 +1997,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   STATIC_ASSERT(kNotStringTag != 0 && kShortExternalStringTag != 0);
   __ mov(r0, Operand(kIsNotStringMask | kShortExternalStringMask));
   __ AndP(r0, r3);
-  __ bne(&runtime/*, cr0*/);
+  __ bne(&runtime);
 
   // (9) Sliced string.  Replace subject with parent.  Go to (4).
   // Load offset into ip and replace subject string with parent.
@@ -2349,7 +2349,7 @@ void StringCharCodeAtGenerator::GenerateFast(MacroAssembler* masm) {
     // If the receiver is not a string trigger the non-string case.
     __ mov(r0, Operand(kIsNotStringMask));
     __ AndP(r0, result_);
-    __ bne(receiver_not_string_ /*, cr0*/);
+    __ bne(receiver_not_string_);
   }
 
   // If the index is non-smi trigger the non-smi case.
@@ -2540,7 +2540,7 @@ void SubStringStub::Generate(MacroAssembler* masm) {
   // Both r4 and r5 are untagged integers.
 
   // We want to bailout to runtime here if From is negative.
-  __ blt(&runtime /*, cr0*/);  // From < 0.
+  __ blt(&runtime);  // From < 0.
 
   __ CmpLogicalP(r5, r4);
   __ bgt(&runtime);  // Fail if from > to.
@@ -2550,7 +2550,7 @@ void SubStringStub::Generate(MacroAssembler* masm) {
   __ LoadP(r2, MemOperand(sp, kStringOffset));
   __ JumpIfSmi(r2, &runtime);
   Condition is_string = masm->IsObjectStringType(r2, r3);
-  __ b(NegateCondition(is_string), &runtime /*, cr0*/);
+  __ b(NegateCondition(is_string), &runtime);
 
   Label single_char;
   __ CmpP(r4, Operand(1));
@@ -2581,11 +2581,11 @@ void SubStringStub::Generate(MacroAssembler* masm) {
   STATIC_ASSERT(kIsIndirectStringMask != 0);
   __ mov(r0, Operand(kIsIndirectStringMask));
   __ AndP(r0, r3);
-  __ beq(&seq_or_external_string /*, cr0*/);
+  __ beq(&seq_or_external_string);
 
   __ mov(r0, Operand(kSlicedNotConsMask));
   __ AndP(r0, r3);
-  __ bne(&sliced_string /*, cr0*/);
+  __ bne(&sliced_string);
   // Cons string.  Check whether it is flat, then fetch first part.
   __ LoadP(r7, FieldMemOperand(r2, ConsString::kSecondOffset));
   __ CompareRoot(r7, Heap::kempty_stringRootIndex);
@@ -2632,7 +2632,7 @@ void SubStringStub::Generate(MacroAssembler* masm) {
     STATIC_ASSERT((kStringEncodingMask & kTwoByteStringTag) == 0);
     __ mov(r0, Operand(kStringEncodingMask));
     __ AndP(r0, r3);
-    __ beq(&two_byte_slice /*, cr0*/);
+    __ beq(&two_byte_slice);
     __ AllocateOneByteSlicedString(r2, r4, r8, r9, &runtime);
     __ b(&set_slice_header);
     __ bind(&two_byte_slice);
@@ -2655,14 +2655,14 @@ void SubStringStub::Generate(MacroAssembler* masm) {
   STATIC_ASSERT(kSeqStringTag == 0);
   __ mov(r0, Operand(kExternalStringTag));
   __ AndP(r0, r3);
-  __ beq(&sequential_string /*, cr0*/);
+  __ beq(&sequential_string);
 
   // Handle external string.
   // Rule out short external strings.
   STATIC_ASSERT(kShortExternalStringTag != 0);
   __ mov(r0, Operand(kShortExternalStringTag));
   __ AndP(r0, r3);
-  __ bne(&runtime /*, cr0*/);
+  __ bne(&runtime);
   __ LoadP(r7, FieldMemOperand(r7, ExternalString::kResourceDataOffset));
   // r7 already points to the first character of underlying string.
   __ b(&allocate_result);
@@ -2677,7 +2677,7 @@ void SubStringStub::Generate(MacroAssembler* masm) {
   STATIC_ASSERT((kOneByteStringTag & kStringEncodingMask) != 0);
   __ mov(r0, Operand(kStringEncodingMask));
   __ AndP(r0, r3);
-  __ beq(&two_byte_sequential /*, cr0*/);
+  __ beq(&two_byte_sequential);
 
   // Allocate and copy the resulting one-byte string.
   __ AllocateOneByteString(r2, r4, r6, r8, r9, &runtime);
@@ -3184,7 +3184,7 @@ void CompareICStub::GenerateInternalizedStrings(MacroAssembler* masm) {
   STATIC_ASSERT(kInternalizedTag == 0 && kStringTag == 0);
   __ OrP(tmp1, tmp1, tmp2);
   __ AndP(r0, tmp1, Operand(kIsNotStringMask | kIsNotInternalizedMask));
-  __ bne(&miss/*, cr0*/);
+  __ bne(&miss);
 
   // Internalized strings are compared by identity.
   __ CmpP(left, right);
@@ -3269,8 +3269,7 @@ void CompareICStub::GenerateStrings(MacroAssembler* masm) {
   STATIC_ASSERT(kNotStringTag != 0);
   __ OrP(tmp3, tmp1, tmp2);
   __ AndP(r0, tmp3, Operand(kIsNotStringMask));
-  __ bne(&miss /*, cr0*/);
-  // TODO(JOHN): might be a problem b/c cr0 is not set
+  __ bne(&miss);
 
   // Fast check for identical strings.
   __ CmpP(left, right);
@@ -3291,7 +3290,7 @@ void CompareICStub::GenerateStrings(MacroAssembler* masm) {
     STATIC_ASSERT(kInternalizedTag == 0);
     __ OrP(tmp3, tmp1, tmp2);
     __ AndP(r0, tmp3, Operand(kIsNotInternalizedMask));
-    __ bne(&is_symbol/*, cr0*/);
+    __ bne(&is_symbol);
     // Make sure r2 is non-zero. At this point input operands are
     // guaranteed to be non-zero.
     DCHECK(right.is(r2));
@@ -4472,7 +4471,7 @@ static void CreateArrayDispatchOneArgument(MacroAssembler* masm,
 
     // is the low bit set? If so, we are holey and that is good.
     __ AndP(r0, r5, Operand(1));
-    __ bne(&normal_sequence/*, cr0*/);
+    __ bne(&normal_sequence);
   }
 
   // look at the first argument

@@ -3046,8 +3046,6 @@ void Simulator::DecodeFourByteFloatingPointIntConversion(Instruction* instr) {
     case CLFDBR:
     case CLGDBR:
     case CLGEBR: {
-      // TODO(AlanLi): create different behavior for different masks.
-      // need to instantiate RRFInstruciton actually.
       RREInstruction *rreInstr = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rreInstr->R1Value();
       int r2 = rreInstr->R2Value();
@@ -3505,7 +3503,6 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
           float fr1_val = static_cast<float>(fr2_val);
           set_d_register_from_float(r1, fr1_val);
         } else if (op == CDFBR) {
-          // TODO(ALANLI): actually we need to set rounding mode
           int32_t r2_val = get_low_register<int32_t>(r2);
           double r1_val = static_cast<double>(r2_val);
           set_d_register_from_double(r1, r1_val);
@@ -4430,7 +4427,7 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
     case NY:
     case OY:
     case XY:
-    case CY: {  // @TODO(Alanli): set overflow
+    case CY: {
       RXYInstruction* rxyInstr = reinterpret_cast<RXYInstruction*>(instr);
       int r1 = rxyInstr->R1Value();
       int x2 = rxyInstr->X2Value();
@@ -4562,7 +4559,7 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
     }
     case ALY:
     case SLY:
-    case CLY: {  // @TODO(AlanLi): ALY and SLY needs to set condition code.
+    case CLY: {
       RXYInstruction* rxyInstr = reinterpret_cast<RXYInstruction*>(instr);
       int r1 = rxyInstr->R1Value();
       int x2 = rxyInstr->X2Value();
@@ -4682,7 +4679,7 @@ bool Simulator::DecodeSixByteArithmetic(Instruction *instr) {
       break;
     }
     case ALGFI:
-    case SLGFI: {  // TODO(ALANLI): add carry
+    case SLGFI: {
 #ifndef V8_TARGET_ARCH_S390X
     // should only be called on 64bit
       DCHECK(false);
