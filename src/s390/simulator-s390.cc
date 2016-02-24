@@ -153,7 +153,7 @@ double S390Debugger::GetFPDoubleRegisterValue(int regnum) {
 
 
 float S390Debugger::GetFPFloatRegisterValue(int regnum) {
-  return sim_->get_float_from_d_register(regnum);
+  return sim_->get_float32_from_d_register(regnum);
 }
 
 
@@ -2068,7 +2068,7 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       int r1 = rreinst->R1Value();
       int r2 = rreinst->R2Value();
       int64_t r2_val = get_d_register(r2);
-      float fr2_val = get_float_from_d_register(r2);
+      float fr2_val = get_float32_from_d_register(r2);
       SetS390ConditionCode<float>(fr2_val, 0.0);
       set_d_register(r1, r2_val);
       break;
@@ -2312,7 +2312,7 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
         set_d_register(r1, dbl_val);
       } else if (op == LE) {
         float float_val = *reinterpret_cast<float*>(addr);
-        set_d_register_from_float(r1, float_val);
+        set_d_register_from_float32(r1, float_val);
       }
       break;
     }
@@ -3057,7 +3057,7 @@ void Simulator::DecodeFourByteFloatingPointIntConversion(Instruction* instr) {
       } else if (op == CELFBR) {
         uint32_t r2_val = get_low_register<uint32_t>(r2);
         float r1_val = static_cast<float>(r2_val);
-        set_d_register_from_float(r1, r1_val);
+        set_d_register_from_float32(r1, r1_val);
       } else if (op == CDLGBR) {
         uint64_t r2_val = get_register(r2);
         double r1_val = static_cast<double>(r2_val);
@@ -3065,7 +3065,7 @@ void Simulator::DecodeFourByteFloatingPointIntConversion(Instruction* instr) {
       } else if (op == CELGBR) {
         uint64_t r2_val = get_register(r2);
         float r1_val = static_cast<float>(r2_val);
-        set_d_register_from_float(r1, r1_val);
+        set_d_register_from_float32(r1, r1_val);
       } else if (op == CLFDBR) {
         double r2_val = get_double_from_d_register(r2);
         uint32_t r1_val = static_cast<uint32_t>(r2_val);
@@ -3077,7 +3077,7 @@ void Simulator::DecodeFourByteFloatingPointIntConversion(Instruction* instr) {
         set_register(r1, r1_val);
         SetS390ConditionCode<double>(r2_val, 0);
       } else if (op == CLGEBR) {
-        float r2_val = get_float_from_d_register(r2);
+        float r2_val = get_float32_from_d_register(r2);
         uint64_t r1_val = static_cast<uint64_t>(r2_val);
         set_register(r1, r1_val);
         SetS390ConditionCode<double>(r2_val, 0);
@@ -3095,6 +3095,8 @@ void Simulator::DecodeFourByteFloatingPointRound(Instruction* instr) {
   int r1 = rreInstr->R1Value();
   int r2 = rreInstr->R2Value();
   double r2_val = get_double_from_d_register(r2);
+  float r2_fval = get_float32_from_d_register(r2);
+
 
   switch (op) {
     case CFDBR: {
@@ -3243,14 +3245,14 @@ void Simulator::DecodeFourByteFloatingPointRound(Instruction* instr) {
     int mask_val = rreInstr->M3Value();
     int64_t r1_val = 0;
 
-    union {
-      double d;
-      float f;
-    } r2value;
-
-    r2value.d = r2_val;
-
-    float r2_fval = r2value.f;
+//    union {
+//      double d;
+//      float f;
+//    } r2value;
+//
+//    r2value.d = r2_val;
+//
+//    float r2_fval = r2value.f;
 
     if (r2_fval == 0.0)
       condition_reg_ = 8;
@@ -3308,14 +3310,14 @@ void Simulator::DecodeFourByteFloatingPointRound(Instruction* instr) {
     int mask_val = rreInstr->M3Value();
     int32_t r1_val = 0;
 
-    union {
-      double d;
-      float f;
-    } r2value;
-
-    r2value.d = r2_val;
-
-    float r2_fval = r2value.f;
+//    union {
+//      double d;
+//      float f;
+//    } r2value;
+//
+//    r2value.d = r2_val;
+//
+//    float r2_fval = r2value.f;
 
     if (r2_fval == 0.0)
       condition_reg_ = 8;
@@ -3442,15 +3444,15 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
       int r2 = rreInstr->R2Value();
       double r1_val = get_double_from_d_register(r1);
       double r2_val = get_double_from_d_register(r2);
-      float fr1_val = get_float_from_d_register(r1);
-      float fr2_val = get_float_from_d_register(r2);
+      float fr1_val = get_float32_from_d_register(r1);
+      float fr2_val = get_float32_from_d_register(r2);
         if (op == ADBR) {
           r1_val += r2_val;
           set_d_register_from_double(r1, r1_val);
           SetS390ConditionCode<double>(r1_val, 0);
         } else if (op == AEBR) {
           fr1_val += fr2_val;
-          set_d_register_from_float(r1, fr1_val);
+          set_d_register_from_float32(r1, fr1_val);
           SetS390ConditionCode<float>(fr1_val, 0);
         } else if (op == SDBR) {
           r1_val -= r2_val;
@@ -3458,7 +3460,7 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
           SetS390ConditionCode<double>(r1_val, 0);
         } else if (op == SEBR) {
           fr1_val -= fr2_val;
-          set_d_register_from_float(r1, fr1_val);
+          set_d_register_from_float32(r1, fr1_val);
           SetS390ConditionCode<float>(fr1_val, 0);
         } else if (op == MDBR) {
           r1_val *= r2_val;
@@ -3466,7 +3468,7 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
           SetS390ConditionCode<double>(r1_val, 0);
         } else if (op == MEEBR) {
           fr1_val *= fr2_val;
-          set_d_register_from_float(r1, fr1_val);
+          set_d_register_from_float32(r1, fr1_val);
           SetS390ConditionCode<float>(fr1_val, 0);
         } else if (op == MADBR) {
           RRDInstruction* rrdInstr = reinterpret_cast<RRDInstruction*>(instr);
@@ -3485,7 +3487,7 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
           SetS390ConditionCode<double>(r1_val, 0);
         } else if (op == DEBR) {
           fr1_val /= fr2_val;
-          set_d_register_from_float(r1, fr1_val);
+          set_d_register_from_float32(r1, fr1_val);
           SetS390ConditionCode<float>(fr1_val, 0);
         } else if (op == CDBR) {
           if (isNaN(r1_val) || isNaN(r2_val)) {
@@ -3506,7 +3508,7 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
         } else if (op == CEGBR) {
           int64_t fr2_val = get_register(r2);
           float fr1_val = static_cast<float>(fr2_val);
-          set_d_register_from_float(r1, fr1_val);
+          set_d_register_from_float32(r1, fr1_val);
         } else if (op == CDFBR) {
           int32_t r2_val = get_low_register<int32_t>(r2);
           double r1_val = static_cast<double>(r2_val);
@@ -3514,7 +3516,7 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
         } else if (op == CEFBR) {
           int32_t fr2_val = get_low_register<int32_t>(r2);
           float fr1_val = static_cast<float>(fr2_val);
-          set_d_register_from_float(r1, fr1_val);
+          set_d_register_from_float32(r1, fr1_val);
         } else if (op == CFDBR) {
           DecodeFourByteFloatingPointRound(instr);
         } else if (op == CGDBR) {
@@ -3526,7 +3528,7 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
           set_d_register_from_double(r1, r1_val);
         } else if (op == SQEBR) {
           r1_val = std::sqrt(r2_val);
-          set_d_register_from_float(r1, r1_val);
+          set_d_register_from_float32(r1, r1_val);
         } else if (op == CFEBR) {
           DecodeFourByteFloatingPointRound(instr);
         } else if (op == LCDBR) {
@@ -3553,7 +3555,7 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
           }
         } else if (op == LPEBR) {
           fr1_val = std::fabs(fr2_val);
-          set_d_register_from_float(r1, fr1_val);
+          set_d_register_from_float32(r1, fr1_val);
           if (fr2_val != fr2_val) {  // input is NaN
             condition_reg_ = CC_OF;
           } else if (fr2_val == 0) {
@@ -3638,10 +3640,9 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
       int r1 = rreInst->R1Value();
       int r2 = rreInst->R2Value();
       double r2_val = get_double_from_d_register(r2);
-      float fp_val = static_cast<float>(r2_val);
-      uint32_t temp = bit_cast<uint32_t, float>(fp_val);
-      set_d_register(r1, static_cast<int64_t>(temp));
-      // set_d_register_from_float(r1, static_cast<float>(r2_val));
+//      uint32_t temp = bit_cast<uint32_t, float>(fp_val);
+//      set_d_register(r1, static_cast<int64_t>(temp));
+      set_d_register_from_float32(r1, static_cast<float>(r2_val));
       break;
     }
     case FIDBRA: {
@@ -3675,20 +3676,20 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
       int r1 = rrfInst->R1Value();
       int r2 = rrfInst->R2Value();
       int m3 = rrfInst->M3Value();
-      float r2_val = get_float_from_d_register(r2);
+      float r2_val = get_float32_from_d_register(r2);
       DCHECK(rrfInst->M4Value() == 0);
       switch (m3) {
         case Assembler::FIDBRA_ROUND_TO_NEAREST_AWAY_FROM_0:
-          set_d_register_from_float(r1, round(r2_val));
+          set_d_register_from_float32(r1, round(r2_val));
           break;
         case Assembler::FIDBRA_ROUND_TOWARD_0:
-          set_d_register_from_float(r1, trunc(r2_val));
+          set_d_register_from_float32(r1, trunc(r2_val));
           break;
         case Assembler::FIDBRA_ROUND_TOWARD_POS_INF:
-          set_d_register_from_float(r1, std::ceil(r2_val));
+          set_d_register_from_float32(r1, std::ceil(r2_val));
           break;
         case Assembler::FIDBRA_ROUND_TOWARD_NEG_INF:
-          set_d_register_from_float(r1, std::floor(r2_val));
+          set_d_register_from_float32(r1, std::floor(r2_val));
           break;
         default:
           UNIMPLEMENTED();
@@ -3704,9 +3705,7 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
       RREInstruction* rreInstr = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rreInstr->R1Value();
       int r2 = rreInstr->R2Value();
-      int64_t frs_val = get_d_register(r2);
-      int32_t frs_val_short = static_cast<int32_t>(frs_val);
-      float fp_val = bit_cast<float, int32_t>(frs_val_short);
+      float fp_val = get_float32_from_d_register(r2);
       double db_val = static_cast<double>(fp_val);
       set_d_register_from_double(r1, db_val);
       break;
@@ -4141,8 +4140,8 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
         int64_t frs_val = get_d_register(r1) >> 32;
         WriteW(addr, static_cast<int32_t>(frs_val), instr);
       } else if (op == LEY) {
-        uint32_t float_val = *reinterpret_cast<uint32_t*>(addr);
-        set_d_register(r1, static_cast<uint64_t>(float_val));
+        float float_val = *reinterpret_cast<float*>(addr);
+        set_d_register_from_float32(r1, float_val);
       } else if (op == STY) {
         uint32_t value = get_low_register<uint32_t>(r1);
         WriteW(addr, value, instr);
