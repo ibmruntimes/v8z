@@ -140,10 +140,16 @@
     'default_configuration': 'Debug',
     'configurations': {
       'DebugBaseCommon': {
-        'cflags': [ '-g', '-O0' ],
+        'cflags': [ '-g' ],
         'conditions': [
           [ 'OS=="aix"', {
             'cflags': [ '-gxcoff' ],
+          }],
+          [ 'OS=="os390"', {
+            'cflags': [ '-o noopt' ],
+          }],
+          [ 'OS!="os390"', {
+            'cflags': [ '-O0' ],
           }],
         ],
       },
