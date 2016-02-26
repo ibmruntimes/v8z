@@ -5570,7 +5570,7 @@ static void CallApiFunctionStubHelper(MacroAssembler* masm,
   STATIC_ASSERT(FCA::kHolderIndex == 0);
   STATIC_ASSERT(FCA::kArgsLength == 7);
 
-  DCHECK(argc.is_immediate() || r2.is(argc.reg()));
+  DCHECK(argc.is_immediate() || r5.is(argc.reg()));
 
   // context save
   __ push(context);
@@ -5674,7 +5674,7 @@ static void CallApiFunctionStubHelper(MacroAssembler* masm,
 
 void CallApiFunctionStub::Generate(MacroAssembler* masm) {
   bool call_data_undefined = this->call_data_undefined();
-  CallApiFunctionStubHelper(masm, ParameterCount(r6), false,
+  CallApiFunctionStubHelper(masm, ParameterCount(r5), false,
                             call_data_undefined, false);
 }
 
