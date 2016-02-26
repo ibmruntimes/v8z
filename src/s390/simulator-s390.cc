@@ -2999,17 +2999,17 @@ void Simulator::DecodeFourByteFloatingPointIntConversion(Instruction* instr) {
         double r2_val = get_double_from_d_register(r2);
         uint32_t r1_val = static_cast<uint32_t>(r2_val);
         set_low_register(r1, r1_val);
-        SetS390ConditionCode<double>(r2_val, 0);
+        SetS390ConvertConditionCode<double>(r2_val, r1_val, UINT32_MAX);
       } else if (op == CLGDBR) {
         double r2_val = get_double_from_d_register(r2);
         uint64_t r1_val = static_cast<uint64_t>(r2_val);
         set_register(r1, r1_val);
-        SetS390ConditionCode<double>(r2_val, 0);
+        SetS390ConvertConditionCode<double>(r2_val, r1_val, UINT64_MAX);
       } else if (op == CLGEBR) {
         float r2_val = get_float32_from_d_register(r2);
         uint64_t r1_val = static_cast<uint64_t>(r2_val);
         set_register(r1, r1_val);
-        SetS390ConditionCode<double>(r2_val, 0);
+        SetS390ConvertConditionCode<double>(r2_val, r1_val, UINT64_MAX);
       }
       break;
     }
@@ -3031,14 +3031,7 @@ void Simulator::DecodeFourByteFloatingPointRound(Instruction* instr) {
       int mask_val = rreInstr->M3Value();
       int32_t r1_val = 0;
 
-      if (r2_val == 0.0)
-        condition_reg_ = 8;
-      else if (r2_val < 0.0)
-        condition_reg_ = 4;
-      else if (r2_val > 0.0)
-        condition_reg_ = 2;
-      else
-        condition_reg_ = 1;
+      SetS390RoundConditionCode(r2_val, INT32_MAX, INT32_MIN);
 
       switch (mask_val) {
         case CURRENT_ROUNDING_MODE:
@@ -3119,14 +3112,7 @@ void Simulator::DecodeFourByteFloatingPointRound(Instruction* instr) {
       int mask_val = rreInstr->M3Value();
       int64_t r1_val = 0;
 
-      if (r2_val == 0.0)
-        condition_reg_ = 8;
-      else if (r2_val < 0.0)
-        condition_reg_ = 4;
-      else if (r2_val > 0.0)
-        condition_reg_ = 2;
-      else
-        condition_reg_ = 1;
+      SetS390RoundConditionCode(r2_val, INT64_MAX, INT64_MIN);
 
       switch (mask_val) {
         case CURRENT_ROUNDING_MODE:
@@ -3175,14 +3161,7 @@ void Simulator::DecodeFourByteFloatingPointRound(Instruction* instr) {
       int mask_val = rreInstr->M3Value();
       int64_t r1_val = 0;
 
-      if (r2_fval == 0.0)
-        condition_reg_ = 8;
-      else if (r2_fval < 0.0)
-        condition_reg_ = 4;
-      else if (r2_fval > 0.0)
-        condition_reg_ = 2;
-      else
-        condition_reg_ = 1;
+      SetS390RoundConditionCode(r2_fval, INT64_MAX, INT64_MIN);
 
       switch (mask_val) {
         case CURRENT_ROUNDING_MODE:
@@ -3231,14 +3210,7 @@ void Simulator::DecodeFourByteFloatingPointRound(Instruction* instr) {
       int mask_val = rreInstr->M3Value();
       int32_t r1_val = 0;
 
-      if (r2_fval == 0.0)
-        condition_reg_ = 8;
-      else if (r2_fval < 0.0)
-        condition_reg_ = 4;
-      else if (r2_fval > 0.0)
-        condition_reg_ = 2;
-      else
-        condition_reg_ = 1;
+      SetS390RoundConditionCode(r2_fval, INT32_MAX, INT32_MIN);
 
       switch (mask_val) {
         case CURRENT_ROUNDING_MODE:
