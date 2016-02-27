@@ -342,6 +342,7 @@ void KeyedLoadIC::GenerateMiss(MacroAssembler* masm) {
   __ TailCallRuntime(Runtime::kKeyedLoadIC_Miss);
 }
 
+
 void KeyedLoadIC::GenerateRuntimeGetProperty(MacroAssembler* masm) {
   // The return address is in lr.
 
@@ -350,6 +351,7 @@ void KeyedLoadIC::GenerateRuntimeGetProperty(MacroAssembler* masm) {
   // Do tail-call to runtime routine.
   __ TailCallRuntime(Runtime::kKeyedGetProperty);
 }
+
 
 void KeyedLoadIC::GenerateMegamorphic(MacroAssembler* masm) {
   // The return address is in lr.
