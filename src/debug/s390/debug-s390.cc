@@ -67,17 +67,19 @@ void DebugCodegen::PatchDebugBreakSlot(Isolate* isolate, Address pc,
   //
   //   iihf r14, <high 32-bits address>    6-bytes
   //   iilf r14, <lower 32-bits address>   6-bytes
-  //   basr r14, r14         2-bytes
+  //   basr r14, r14                       2-bytes
   patcher.masm()->mov(
       v8::internal::r14,
       Operand(reinterpret_cast<intptr_t>(code->entry())));
   patcher.masm()->basr(v8::internal::r14, v8::internal::r14);
 }
 
+
 bool DebugCodegen::DebugBreakSlotIsPatched(Address pc) {
   Instr current_instr = Assembler::instr_at(pc);
   return !Assembler::IsNop(current_instr, Assembler::DEBUG_BREAK_NOP);
 }
+
 
 void DebugCodegen::GenerateDebugBreakStub(MacroAssembler* masm,
                                           DebugBreakCallHelperMode mode) {
