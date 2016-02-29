@@ -16,7 +16,6 @@ namespace internal {
 
 #define __ ACCESS_MASM(masm)
 
-
 void NamedLoadHandlerCompiler::GenerateLoadViaGetter(
     MacroAssembler* masm, Handle<Map> map, Register receiver, Register holder,
     int accessor_index, int expected_arguments, Register scratch) {
@@ -55,7 +54,6 @@ void NamedLoadHandlerCompiler::GenerateLoadViaGetter(
   }
   __ Ret();
 }
-
 
 void NamedStoreHandlerCompiler::GenerateStoreViaSetter(
     MacroAssembler* masm, Handle<Map> map, Register receiver, Register holder,
@@ -101,26 +99,22 @@ void NamedStoreHandlerCompiler::GenerateStoreViaSetter(
   __ Ret();
 }
 
-
 void PropertyHandlerCompiler::PushVectorAndSlot(Register vector,
                                                 Register slot) {
   MacroAssembler* masm = this->masm();
   __ Push(vector, slot);
 }
 
-
 void PropertyHandlerCompiler::PopVectorAndSlot(Register vector, Register slot) {
   MacroAssembler* masm = this->masm();
   __ Pop(vector, slot);
 }
-
 
 void PropertyHandlerCompiler::DiscardVectorAndSlot() {
   MacroAssembler* masm = this->masm();
   // Remove vector and slot.
   __ la(sp, MemOperand(sp, 2 * kPointerSize));
 }
-
 
 void PropertyHandlerCompiler::GenerateDictionaryNegativeLookup(
     MacroAssembler* masm, Label* miss_label, Register receiver,
@@ -160,13 +154,11 @@ void PropertyHandlerCompiler::GenerateDictionaryNegativeLookup(
   // Restore the temporarily used register.
   __ LoadP(properties, FieldMemOperand(receiver, JSObject::kPropertiesOffset));
 
-
   NameDictionaryLookupStub::GenerateNegativeLookup(
       masm, miss_label, &done, receiver, properties, name, scratch1);
   __ bind(&done);
   __ DecrementCounter(counters->negative_lookups_miss(), 1, scratch0, scratch1);
 }
-
 
 void NamedLoadHandlerCompiler::GenerateDirectLoadGlobalFunctionPrototype(
     MacroAssembler* masm, int index, Register result, Label* miss) {
@@ -178,7 +170,6 @@ void NamedLoadHandlerCompiler::GenerateDirectLoadGlobalFunctionPrototype(
   __ LoadP(result, FieldMemOperand(result, Map::kPrototypeOffset));
 }
 
-
 void NamedLoadHandlerCompiler::GenerateLoadFunctionPrototype(
     MacroAssembler* masm, Register receiver, Register scratch1,
     Register scratch2, Label* miss_label) {
@@ -186,7 +177,6 @@ void NamedLoadHandlerCompiler::GenerateLoadFunctionPrototype(
   __ LoadRR(r2, scratch1);
   __ Ret();
 }
-
 
 // Generate code to check that a global property cell is empty. Create
 // the property cell at compilation time if no cell exists for the
@@ -203,7 +193,6 @@ void PropertyHandlerCompiler::GenerateCheckPropertyCell(
   __ bne(miss);
 }
 
-
 static void PushInterceptorArguments(MacroAssembler* masm, Register receiver,
                                      Register holder, Register name,
                                      Handle<JSObject> holder_obj) {
@@ -216,7 +205,6 @@ static void PushInterceptorArguments(MacroAssembler* masm, Register receiver,
   __ Push(holder);
 }
 
-
 static void CompileCallLoadPropertyWithInterceptor(
     MacroAssembler* masm, Register receiver, Register holder, Register name,
     Handle<JSObject> holder_obj, Runtime::FunctionId id) {
@@ -225,7 +213,6 @@ static void CompileCallLoadPropertyWithInterceptor(
   PushInterceptorArguments(masm, receiver, holder, name, holder_obj);
   __ CallRuntime(id);
 }
-
 
 // Generate call to api function.
 void PropertyHandlerCompiler::GenerateApiAccessorCall(
@@ -318,14 +305,12 @@ void PropertyHandlerCompiler::GenerateApiAccessorCall(
   __ TailCallStub(&stub);
 }
 
-
 static void StoreIC_PushArgs(MacroAssembler* masm) {
   __ Push(StoreDescriptor::ReceiverRegister(), StoreDescriptor::NameRegister(),
           StoreDescriptor::ValueRegister(),
           VectorStoreICDescriptor::SlotRegister(),
           VectorStoreICDescriptor::VectorRegister());
 }
-
 
 void NamedStoreHandlerCompiler::GenerateSlow(MacroAssembler* masm) {
   StoreIC_PushArgs(masm);
@@ -335,7 +320,6 @@ void NamedStoreHandlerCompiler::GenerateSlow(MacroAssembler* masm) {
   __ TailCallRuntime(Runtime::kStoreIC_Slow);
 }
 
-
 void ElementHandlerCompiler::GenerateStoreSlow(MacroAssembler* masm) {
   StoreIC_PushArgs(masm);
 
@@ -344,10 +328,8 @@ void ElementHandlerCompiler::GenerateStoreSlow(MacroAssembler* masm) {
   __ TailCallRuntime(Runtime::kKeyedStoreIC_Slow);
 }
 
-
 #undef __
 #define __ ACCESS_MASM(masm())
-
 
 void NamedStoreHandlerCompiler::GenerateRestoreName(Label* label,
                                                     Handle<Name> name) {
@@ -357,17 +339,14 @@ void NamedStoreHandlerCompiler::GenerateRestoreName(Label* label,
   }
 }
 
-
 void NamedStoreHandlerCompiler::GenerateRestoreName(Handle<Name> name) {
   __ mov(this->name(), Operand(name));
 }
-
 
 void NamedStoreHandlerCompiler::RearrangeVectorAndSlot(
     Register current_map, Register destination_map) {
   DCHECK(false);  // Not implemented.
 }
-
 
 void NamedStoreHandlerCompiler::GenerateRestoreMap(Handle<Map> transition,
                                                    Register map_reg,
@@ -383,7 +362,6 @@ void NamedStoreHandlerCompiler::GenerateRestoreMap(Handle<Map> transition,
   }
 }
 
-
 void NamedStoreHandlerCompiler::GenerateConstantCheck(Register map_reg,
                                                       int descriptor,
                                                       Register value_reg,
@@ -394,7 +372,7 @@ void NamedStoreHandlerCompiler::GenerateConstantCheck(Register map_reg,
   DCHECK(!value_reg.is(scratch));
   __ LoadInstanceDescriptors(map_reg, scratch);
   __ CmpP(value_reg, FieldMemOperand(
-                        scratch, DescriptorArray::GetValueOffset(descriptor)));
+                         scratch, DescriptorArray::GetValueOffset(descriptor)));
   __ bne(miss_label);
 }
 
@@ -413,7 +391,6 @@ void NamedStoreHandlerCompiler::GenerateFieldTypeChecks(FieldType* field_type,
     __ bne(miss_label);
   }
 }
-
 
 Register PropertyHandlerCompiler::CheckPrototypes(
     Register object_reg, Register holder_reg, Register scratch1,
@@ -551,7 +528,6 @@ Register PropertyHandlerCompiler::CheckPrototypes(
   return return_holder ? reg : no_reg;
 }
 
-
 void NamedLoadHandlerCompiler::FrontendFooter(Handle<Name> name, Label* miss) {
   if (!miss->is_unused()) {
     Label success;
@@ -566,7 +542,6 @@ void NamedLoadHandlerCompiler::FrontendFooter(Handle<Name> name, Label* miss) {
   }
 }
 
-
 void NamedStoreHandlerCompiler::FrontendFooter(Handle<Name> name, Label* miss) {
   if (!miss->is_unused()) {
     Label success;
@@ -578,13 +553,11 @@ void NamedStoreHandlerCompiler::FrontendFooter(Handle<Name> name, Label* miss) {
   }
 }
 
-
 void NamedLoadHandlerCompiler::GenerateLoadConstant(Handle<Object> value) {
   // Return the constant value.
   __ Move(r2, value);
   __ Ret();
 }
-
 
 void NamedLoadHandlerCompiler::GenerateLoadCallback(
     Register reg, Handle<AccessorInfo> callback) {
@@ -634,7 +607,6 @@ void NamedLoadHandlerCompiler::GenerateLoadCallback(
   CallApiGetterStub stub(isolate());
   __ TailCallStub(&stub);
 }
-
 
 void NamedLoadHandlerCompiler::GenerateLoadInterceptorWithFollowup(
     LookupIterator* it, Register holder_reg) {
@@ -694,7 +666,6 @@ void NamedLoadHandlerCompiler::GenerateLoadInterceptorWithFollowup(
   GenerateLoadPostInterceptor(it, holder_reg);
 }
 
-
 void NamedLoadHandlerCompiler::GenerateLoadInterceptor(Register holder_reg) {
   // Call the runtime system to load the interceptor.
   DCHECK(holder()->HasNamedInterceptor());
@@ -704,7 +675,6 @@ void NamedLoadHandlerCompiler::GenerateLoadInterceptor(Register holder_reg) {
 
   __ TailCallRuntime(Runtime::kLoadPropertyWithInterceptor);
 }
-
 
 Handle<Code> NamedStoreHandlerCompiler::CompileStoreCallback(
     Handle<JSObject> object, Handle<Name> name, Handle<AccessorInfo> callback,
@@ -733,7 +703,6 @@ Handle<Code> NamedStoreHandlerCompiler::CompileStoreCallback(
   return GetCode(kind(), Code::FAST, name);
 }
 
-
 Handle<Code> NamedStoreHandlerCompiler::CompileStoreInterceptor(
     Handle<Name> name) {
   __ Push(receiver(), this->name(), value());
@@ -745,11 +714,9 @@ Handle<Code> NamedStoreHandlerCompiler::CompileStoreInterceptor(
   return GetCode(kind(), Code::FAST, name);
 }
 
-
 Register NamedStoreHandlerCompiler::value() {
   return StoreDescriptor::ValueRegister();
 }
-
 
 Handle<Code> NamedLoadHandlerCompiler::CompileLoadGlobal(
     Handle<PropertyCell> cell, Handle<Name> name, bool is_configurable) {
@@ -783,7 +750,6 @@ Handle<Code> NamedLoadHandlerCompiler::CompileLoadGlobal(
   // Return the generated code.
   return GetCode(kind(), Code::NORMAL, name);
 }
-
 
 #undef __
 }  // namespace internal

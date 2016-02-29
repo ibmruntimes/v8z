@@ -4,21 +4,19 @@
 
 #if V8_TARGET_ARCH_S390
 
-#include "src/codegen.h"
 #include "src/ic/ic.h"
+#include "src/codegen.h"
 #include "src/ic/ic-compiler.h"
 #include "src/ic/stub-cache.h"
 
 namespace v8 {
 namespace internal {
 
-
 // ----------------------------------------------------------------------------
 // Static IC stub generators.
 //
 
 #define __ ACCESS_MASM(masm)
-
 
 static void GenerateGlobalInstanceTypeCheck(MacroAssembler* masm, Register type,
                                             Label* global_object) {
@@ -29,7 +27,6 @@ static void GenerateGlobalInstanceTypeCheck(MacroAssembler* masm, Register type,
   __ CmpP(type, Operand(JS_GLOBAL_PROXY_TYPE));
   __ beq(global_object);
 }
-
 
 // Helper function used from LoadIC GenerateNormal.
 //
@@ -68,7 +65,7 @@ static void GenerateDictionaryLoad(MacroAssembler* masm, Label* miss,
   __ LoadP(scratch1, FieldMemOperand(scratch2, kDetailsOffset));
   __ LoadRR(r0, scratch2);
   __ LoadSmiLiteral(scratch2, Smi::FromInt(PropertyDetails::TypeField::kMask));
-  __ AndP(scratch2, scratch1/*, SetRC*/);
+  __ AndP(scratch2, scratch1 /*, SetRC*/);
   // Should be okay to remove RC
   __ bne(miss /*, cr0*/);
   __ LoadRR(scratch2, r0);
@@ -77,7 +74,6 @@ static void GenerateDictionaryLoad(MacroAssembler* masm, Label* miss,
   __ LoadP(result,
            FieldMemOperand(scratch2, kElementsStartOffset + 1 * kPointerSize));
 }
-
 
 // Helper function used from StoreIC::GenerateNormal.
 //
@@ -117,7 +113,7 @@ static void GenerateDictionaryStore(MacroAssembler* masm, Label* miss,
   __ LoadP(scratch1, FieldMemOperand(scratch2, kDetailsOffset));
   __ LoadRR(r0, scratch2);
   __ LoadSmiLiteral(scratch2, Smi::FromInt(kTypeAndReadOnlyMask));
-  __ AndP(scratch2, scratch1/*, SetRC*/);  // Should be OK to remove RC
+  __ AndP(scratch2, scratch1 /*, SetRC*/);  // Should be OK to remove RC
   __ bne(miss /*, cr0*/);
   __ LoadRR(scratch2, r0);
 
@@ -131,7 +127,6 @@ static void GenerateDictionaryStore(MacroAssembler* masm, Label* miss,
   __ RecordWrite(elements, scratch2, scratch1, kLRHasNotBeenSaved,
                  kDontSaveFPRegs);
 }
-
 
 // Checks the receiver for special cases (value type, slow case bits).
 // Falls through for regular JS object.
@@ -147,7 +142,7 @@ static void GenerateKeyedLoadReceiverCheck(MacroAssembler* masm,
   __ LoadlB(scratch, FieldMemOperand(map, Map::kBitFieldOffset));
   DCHECK(((1 << Map::kIsAccessCheckNeeded) | (1 << interceptor_bit)) < 0x8000);
   __ mov(r0,
-          Operand((1 << Map::kIsAccessCheckNeeded) | (1 << interceptor_bit)));
+         Operand((1 << Map::kIsAccessCheckNeeded) | (1 << interceptor_bit)));
   __ AndP(r0, scratch);
   __ bne(slow /*, cr0*/);
   // Check that the object is some kind of JS object EXCEPT JS Value type.
@@ -159,7 +154,6 @@ static void GenerateKeyedLoadReceiverCheck(MacroAssembler* masm,
   __ CmpP(scratch, Operand(JS_OBJECT_TYPE));
   __ blt(slow);
 }
-
 
 // Loads an indexed element from a fast case array.
 static void GenerateFastArrayLoad(MacroAssembler* masm, Register receiver,
@@ -228,7 +222,7 @@ static void GenerateFastArrayLoad(MacroAssembler* masm, Register receiver,
   __ bind(&in_bounds);
   // Fast case: Do the load.
   __ AddP(scratch1, elements,
-                    Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+          Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   // The key is a smi.
   __ SmiToPtrArrayOffset(scratch2, key);
   __ LoadP(scratch2, MemOperand(scratch2, scratch1));
@@ -238,7 +232,6 @@ static void GenerateFastArrayLoad(MacroAssembler* masm, Register receiver,
   __ LoadRR(result, scratch2);
   __ bind(&done);
 }
-
 
 // Checks whether a key is an array index string or a unique name.
 // Falls through if a key is a unique name.
@@ -288,10 +281,8 @@ void LoadIC::GenerateNormal(MacroAssembler* masm) {
   GenerateRuntimeGetProperty(masm);
 }
 
-
 // A register that isn't one of the parameters to the load ic.
 static const Register LoadIC_TempRegister() { return r5; }
-
 
 static void LoadIC_PushArgs(MacroAssembler* masm) {
   Register receiver = LoadDescriptor::ReceiverRegister();
@@ -301,7 +292,6 @@ static void LoadIC_PushArgs(MacroAssembler* masm) {
 
   __ Push(receiver, name, slot, vector);
 }
-
 
 void LoadIC::GenerateMiss(MacroAssembler* masm) {
   // The return address is in lr.
@@ -327,7 +317,6 @@ void LoadIC::GenerateRuntimeGetProperty(MacroAssembler* masm) {
   __ TailCallRuntime(Runtime::kGetProperty);
 }
 
-
 void KeyedLoadIC::GenerateMiss(MacroAssembler* masm) {
   // The return address is in lr.
   Isolate* isolate = masm->isolate();
@@ -342,7 +331,6 @@ void KeyedLoadIC::GenerateMiss(MacroAssembler* masm) {
   __ TailCallRuntime(Runtime::kKeyedLoadIC_Miss);
 }
 
-
 void KeyedLoadIC::GenerateRuntimeGetProperty(MacroAssembler* masm) {
   // The return address is in lr.
 
@@ -351,7 +339,6 @@ void KeyedLoadIC::GenerateRuntimeGetProperty(MacroAssembler* masm) {
   // Do tail-call to runtime routine.
   __ TailCallRuntime(Runtime::kKeyedGetProperty);
 }
-
 
 void KeyedLoadIC::GenerateMegamorphic(MacroAssembler* masm) {
   // The return address is in lr.
@@ -414,7 +401,6 @@ void KeyedLoadIC::GenerateMegamorphic(MacroAssembler* masm) {
   __ CompareRoot(r6, Heap::kHashTableMapRootIndex);
   __ beq(&probe_dictionary);
 
-
   // The handlers in the stub cache expect a vector and slot. Since we won't
   // change the IC from any downstream misses, a dummy vector can be used.
   Register vector = LoadWithVectorDescriptor::VectorRegister();
@@ -429,8 +415,8 @@ void KeyedLoadIC::GenerateMegamorphic(MacroAssembler* masm) {
 
   Code::Flags flags = Code::RemoveTypeAndHolderFromFlags(
       Code::ComputeHandlerFlags(Code::LOAD_IC));
-  masm->isolate()->stub_cache()->GenerateProbe(masm,
-      Code::KEYED_LOAD_IC, flags, receiver, key, r6, r7, r8, r9);
+  masm->isolate()->stub_cache()->GenerateProbe(masm, Code::KEYED_LOAD_IC, flags,
+                                               receiver, key, r6, r7, r8, r9);
   // Cache miss.
   GenerateMiss(masm);
 
@@ -453,7 +439,6 @@ void KeyedLoadIC::GenerateMegamorphic(MacroAssembler* masm) {
   __ b(&index_smi);
 }
 
-
 static void StoreIC_PushArgs(MacroAssembler* masm) {
   __ Push(StoreDescriptor::ReceiverRegister(), StoreDescriptor::NameRegister(),
           StoreDescriptor::ValueRegister(),
@@ -461,13 +446,11 @@ static void StoreIC_PushArgs(MacroAssembler* masm) {
           VectorStoreICDescriptor::VectorRegister());
 }
 
-
 void KeyedStoreIC::GenerateMiss(MacroAssembler* masm) {
   StoreIC_PushArgs(masm);
 
   __ TailCallRuntime(Runtime::kKeyedStoreIC_Miss);
 }
-
 
 static void KeyedStoreGenerateMegamorphicHelper(
     MacroAssembler* masm, Label* fast_object, Label* fast_double, Label* slow,
@@ -613,7 +596,6 @@ static void KeyedStoreGenerateMegamorphicHelper(
   __ b(&finish_object_store);
 }
 
-
 void KeyedStoreIC::GenerateMegamorphic(MacroAssembler* masm,
                                        LanguageMode language_mode) {
   // ---------- S t a t e --------------
@@ -739,7 +721,6 @@ void KeyedStoreIC::GenerateMegamorphic(MacroAssembler* masm,
   GenerateMiss(masm);
 }
 
-
 void StoreIC::GenerateMegamorphic(MacroAssembler* masm) {
   Register receiver = StoreDescriptor::ReceiverRegister();
   Register name = StoreDescriptor::NameRegister();
@@ -758,14 +739,12 @@ void StoreIC::GenerateMegamorphic(MacroAssembler* masm) {
   GenerateMiss(masm);
 }
 
-
 void StoreIC::GenerateMiss(MacroAssembler* masm) {
   StoreIC_PushArgs(masm);
 
   // Perform tail call to the entry.
   __ TailCallRuntime(Runtime::kStoreIC_Miss);
 }
-
 
 void StoreIC::GenerateNormal(MacroAssembler* masm) {
   Label miss;
@@ -791,9 +770,7 @@ void StoreIC::GenerateNormal(MacroAssembler* masm) {
   GenerateMiss(masm);
 }
 
-
 #undef __
-
 
 Condition CompareIC::ComputeCondition(Token::Value op) {
   switch (op) {
@@ -814,7 +791,6 @@ Condition CompareIC::ComputeCondition(Token::Value op) {
   }
 }
 
-
 bool CompareIC::HasInlinedSmiCode(Address address) {
   // The address of the instruction following the call.
   Address cmp_instruction_address =
@@ -824,7 +800,6 @@ bool CompareIC::HasInlinedSmiCode(Address address) {
   // was inlined.
   return (Instruction::S390OpcodeValue(cmp_instruction_address) == CHI);
 }
-
 
 //
 // This code is paired with the JumpPatchSite class in full-codegen-s390.cc
@@ -874,7 +849,7 @@ void PatchInlinedSmiCode(Isolate* isolate, Address address,
   Address branch_address = patch_address + kPatchAreaSizeNoBranch;
 
   Instr instr_at_patch = Assembler::instr_at(patch_address);
-  SixByteInstr  branch_instr = Assembler::instr_at(branch_address);
+  SixByteInstr branch_instr = Assembler::instr_at(branch_address);
 
   // This is patching a conditional "jump if not smi/jump if smi" site.
   // Enabling by changing from
@@ -897,7 +872,7 @@ void PatchInlinedSmiCode(Isolate* isolate, Address address,
   if (check == ENABLE_INLINED_SMI_CHECK) {
     // DCHECK(Assembler::IsCmpRegister(instr_at_patch));
     // DCHECK_EQ(Assembler::GetRA(instr_at_patch).code(),
-              // Assembler::GetRB(instr_at_patch).code());
+    // Assembler::GetRB(instr_at_patch).code());
     patcher.masm()->TestIfSmi(reg);
   } else {
     // Emit the Nop to make bigger place for patching
@@ -925,7 +900,6 @@ void PatchInlinedSmiCode(Isolate* isolate, Address address,
     DCHECK(false);
   }
 }
-
 
 }  // namespace internal
 }  // namespace v8

@@ -12,7 +12,6 @@ namespace internal {
 
 #define __ ACCESS_MASM(masm)
 
-
 void PropertyICCompiler::GenerateRuntimeSetProperty(
     MacroAssembler* masm, LanguageMode language_mode) {
   __ mov(r0, Operand(Smi::FromInt(language_mode)));
@@ -22,7 +21,6 @@ void PropertyICCompiler::GenerateRuntimeSetProperty(
   // Do tail-call to runtime routine.
   __ TailCallRuntime(Runtime::kSetProperty);
 }
-
 
 #undef __
 }  // namespace internal

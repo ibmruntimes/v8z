@@ -14,7 +14,6 @@ namespace internal {
 
 #define __ ACCESS_MASM(masm)
 
-
 void EmitDebugBreakSlot(MacroAssembler* masm) {
   Label check_size;
   __ bind(&check_size);
@@ -33,19 +32,16 @@ void EmitDebugBreakSlot(MacroAssembler* masm) {
             masm->SizeOfCodeGeneratedSince(&check_size));
 }
 
-
 void DebugCodegen::GenerateSlot(MacroAssembler* masm, RelocInfo::Mode mode) {
   // Generate enough nop's to make space for a call instruction.
   masm->RecordDebugBreakSlot(mode);
   EmitDebugBreakSlot(masm);
 }
 
-
 void DebugCodegen::ClearDebugBreakSlot(Isolate* isolate, Address pc) {
   CodePatcher patcher(isolate, pc, Assembler::kDebugBreakSlotLength);
   EmitDebugBreakSlot(patcher.masm());
 }
-
 
 void DebugCodegen::PatchDebugBreakSlot(Isolate* isolate, Address pc,
                                        Handle<Code> code) {
@@ -68,18 +64,15 @@ void DebugCodegen::PatchDebugBreakSlot(Isolate* isolate, Address pc,
   //   iihf r14, <high 32-bits address>    6-bytes
   //   iilf r14, <lower 32-bits address>   6-bytes
   //   basr r14, r14                       2-bytes
-  patcher.masm()->mov(
-      v8::internal::r14,
-      Operand(reinterpret_cast<intptr_t>(code->entry())));
+  patcher.masm()->mov(v8::internal::r14,
+                      Operand(reinterpret_cast<intptr_t>(code->entry())));
   patcher.masm()->basr(v8::internal::r14, v8::internal::r14);
 }
-
 
 bool DebugCodegen::DebugBreakSlotIsPatched(Address pc) {
   Instr current_instr = Assembler::instr_at(pc);
   return !Assembler::IsNop(current_instr, Assembler::DEBUG_BREAK_NOP);
 }
-
 
 void DebugCodegen::GenerateDebugBreakStub(MacroAssembler* masm,
                                           DebugBreakCallHelperMode mode) {
@@ -130,7 +123,6 @@ void DebugCodegen::GenerateDebugBreakStub(MacroAssembler* masm,
   __ JumpToJSEntry(ip);
 }
 
-
 void DebugCodegen::GenerateFrameDropperLiveEdit(MacroAssembler* masm) {
   // Load the function pointer off of our current stack frame.
   __ LoadP(r3, MemOperand(fp, StandardFrameConstants::kConstantPoolOffset -
@@ -156,7 +148,6 @@ void DebugCodegen::GenerateFrameDropperLiveEdit(MacroAssembler* masm) {
   // Re-run JSFunction, r3 is function, cp is context.
   __ Jump(ip);
 }
-
 
 const bool LiveEdit::kFrameDropperSupported = true;
 

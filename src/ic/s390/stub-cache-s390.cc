@@ -4,16 +4,15 @@
 
 #if V8_TARGET_ARCH_S390
 
+#include "src/ic/stub-cache.h"
 #include "src/codegen.h"
 #include "src/ic/ic.h"
-#include "src/ic/stub-cache.h"
 #include "src/interface-descriptors.h"
 
 namespace v8 {
 namespace internal {
 
 #define __ ACCESS_MASM(masm)
-
 
 static void ProbeTable(Isolate* isolate, MacroAssembler* masm,
                        Code::Kind ic_kind, Code::Flags flags,
@@ -51,7 +50,7 @@ static void ProbeTable(Isolate* isolate, MacroAssembler* masm,
 #if V8_TARGET_ARCH_S390X
   DCHECK(kPointerSizeLog2 > StubCache::kCacheIndexShift);
   __ ShiftLeftP(offset_scratch, offset_scratch,
-                  Operand(kPointerSizeLog2 - StubCache::kCacheIndexShift));
+                Operand(kPointerSizeLog2 - StubCache::kCacheIndexShift));
 #else
   DCHECK(kPointerSizeLog2 == StubCache::kCacheIndexShift);
 #endif
@@ -97,7 +96,6 @@ static void ProbeTable(Isolate* isolate, MacroAssembler* masm,
   // Miss: fall through.
   __ bind(&miss);
 }
-
 
 void StubCache::GenerateProbe(MacroAssembler* masm, Code::Kind ic_kind,
                               Code::Flags flags, Register receiver,
@@ -181,7 +179,6 @@ void StubCache::GenerateProbe(MacroAssembler* masm, Code::Kind ic_kind,
   __ IncrementCounter(counters->megamorphic_stub_cache_misses(), 1, extra2,
                       extra3);
 }
-
 
 #undef __
 }  // namespace internal

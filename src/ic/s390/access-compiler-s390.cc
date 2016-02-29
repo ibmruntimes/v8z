@@ -13,12 +13,10 @@ namespace internal {
 
 #define __ ACCESS_MASM(masm)
 
-
 void PropertyAccessCompiler::GenerateTailCall(MacroAssembler* masm,
                                               Handle<Code> code) {
   __ Jump(code, RelocInfo::CODE_TARGET);
 }
-
 
 Register* PropertyAccessCompiler::load_calling_convention() {
   // receiver, name, scratch1, scratch2, scratch3, scratch4.
@@ -28,7 +26,6 @@ Register* PropertyAccessCompiler::load_calling_convention() {
   return registers;
 }
 
-
 Register* PropertyAccessCompiler::store_calling_convention() {
   // receiver, name, scratch1, scratch2, scratch3.
   Register receiver = StoreDescriptor::ReceiverRegister();
@@ -36,7 +33,6 @@ Register* PropertyAccessCompiler::store_calling_convention() {
   static Register registers[] = {receiver, name, r5, r6, r7};
   return registers;
 }
-
 
 #undef __
 }  // namespace internal
