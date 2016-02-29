@@ -485,6 +485,83 @@ Node* WasmGraphBuilder::Binop(wasm::WasmOpcode opcode, Node* left,
     case wasm::kExprI64And:
       op = m->Word64And();
       break;
+    // todo(ahaas): I added a list of missing instructions here to make merging
+    // easier when I do them one by one.
+    // kExprI64Add:
+    // kExprI64Sub:
+    // kExprI64Mul:
+    // kExprI64DivS:
+    // kExprI64DivU:
+    // kExprI64RemS:
+    // kExprI64RemU:
+    // kExprI64And:
+    // kExprI64Ior:
+    case wasm::kExprI64Ior:
+      op = m->Word64Or();
+      break;
+// kExprI64Xor:
+    case wasm::kExprI64Xor:
+      op = m->Word64Xor();
+      break;
+// kExprI64Shl:
+// kExprI64ShrU:
+// kExprI64ShrS:
+// kExprI64Eq:
+    case wasm::kExprI64Eq:
+      op = m->Word64Equal();
+      break;
+// kExprI64Ne:
+    case wasm::kExprI64Ne:
+      return Invert(Binop(wasm::kExprI64Eq, left, right));
+// kExprI64LtS:
+    case wasm::kExprI64LtS:
+      op = m->Int64LessThan();
+      break;
+    case wasm::kExprI64LeS:
+      op = m->Int64LessThanOrEqual();
+      break;
+    case wasm::kExprI64LtU:
+      op = m->Uint64LessThan();
+      break;
+    case wasm::kExprI64LeU:
+      op = m->Uint64LessThanOrEqual();
+      break;
+    case wasm::kExprI64GtS:
+      op = m->Int64LessThan();
+      std::swap(left, right);
+      break;
+    case wasm::kExprI64GeS:
+      op = m->Int64LessThanOrEqual();
+      std::swap(left, right);
+      break;
+    case wasm::kExprI64GtU:
+      op = m->Uint64LessThan();
+      std::swap(left, right);
+      break;
+    case wasm::kExprI64GeU:
+      op = m->Uint64LessThanOrEqual();
+      std::swap(left, right);
+      break;
+
+// kExprI32ConvertI64:
+// kExprI64SConvertI32:
+// kExprI64UConvertI32:
+
+// kExprF64ReinterpretI64:
+// kExprI64ReinterpretF64:
+
+// kExprI64Clz:
+// kExprI64Ctz:
+// kExprI64Popcnt:
+
+// kExprF32SConvertI64:
+// kExprF32UConvertI64:
+// kExprF64SConvertI64:
+// kExprF64UConvertI64:
+// kExprI64SConvertF32:
+// kExprI64SConvertF64:
+// kExprI64UConvertF32:
+// kExprI64UConvertF64:
 #if WASM_64
     // Opcodes only supported on 64-bit platforms.
     // TODO(titzer): query the machine operator builder here instead of #ifdef.
@@ -535,12 +612,6 @@ Node* WasmGraphBuilder::Binop(wasm::WasmOpcode opcode, Node* left,
       op = m->Uint64Mod();
       return graph()->NewNode(op, left, right,
                               trap_->ZeroCheck64(kTrapRemByZero, right));
-    case wasm::kExprI64Ior:
-      op = m->Word64Or();
-      break;
-    case wasm::kExprI64Xor:
-      op = m->Word64Xor();
-      break;
     case wasm::kExprI64Shl:
       op = m->Word64Shl();
       break;
@@ -549,39 +620,6 @@ Node* WasmGraphBuilder::Binop(wasm::WasmOpcode opcode, Node* left,
       break;
     case wasm::kExprI64ShrS:
       op = m->Word64Sar();
-      break;
-    case wasm::kExprI64Eq:
-      op = m->Word64Equal();
-      break;
-    case wasm::kExprI64Ne:
-      return Invert(Binop(wasm::kExprI64Eq, left, right));
-    case wasm::kExprI64LtS:
-      op = m->Int64LessThan();
-      break;
-    case wasm::kExprI64LeS:
-      op = m->Int64LessThanOrEqual();
-      break;
-    case wasm::kExprI64LtU:
-      op = m->Uint64LessThan();
-      break;
-    case wasm::kExprI64LeU:
-      op = m->Uint64LessThanOrEqual();
-      break;
-    case wasm::kExprI64GtS:
-      op = m->Int64LessThan();
-      std::swap(left, right);
-      break;
-    case wasm::kExprI64GeS:
-      op = m->Int64LessThanOrEqual();
-      std::swap(left, right);
-      break;
-    case wasm::kExprI64GtU:
-      op = m->Uint64LessThan();
-      std::swap(left, right);
-      break;
-    case wasm::kExprI64GeU:
-      op = m->Uint64LessThanOrEqual();
-      std::swap(left, right);
       break;
 #endif
 
@@ -1485,7 +1523,7 @@ Node* WasmGraphBuilder::BuildWasmCall(wasm::FunctionSig* sig, Node** args) {
   args[params + 2] = *control_;
 
   CallDescriptor* descriptor =
-      module_->GetWasmCallDescriptor(jsgraph()->zone(), sig);
+      wasm::ModuleEnv::GetWasmCallDescriptor(jsgraph()->zone(), sig);
   const Operator* op = jsgraph()->common()->Call(descriptor);
   Node* call = graph()->NewNode(op, static_cast<int>(count), args);
 
@@ -1673,7 +1711,8 @@ void WasmGraphBuilder::BuildJSToWasmWrapper(Handle<Code> wasm_code,
   args[pos++] = *control_;
 
   // Call the WASM code.
-  CallDescriptor* desc = module_->GetWasmCallDescriptor(jsgraph()->zone(), sig);
+  CallDescriptor* desc =
+      wasm::ModuleEnv::GetWasmCallDescriptor(jsgraph()->zone(), sig);
   Node* call = graph()->NewNode(jsgraph()->common()->Call(desc), count, args);
   Node* jsval =
       ToJS(call, context,
@@ -1943,8 +1982,8 @@ static void RecordFunctionCompilation(Logger::LogEventsAndTags tag,
     Handle<Code> code = info->code();
     Handle<SharedFunctionInfo> shared =
         isolate->factory()->NewSharedFunctionInfo(name_str, code, false);
-    PROFILE(isolate,
-            CodeCreateEvent(tag, *code, *shared, info, *script_str, 0, 0));
+    PROFILE(isolate, CodeCreateEvent(tag, AbstractCode::cast(*code), *shared,
+                                     info, *script_str, 0, 0));
   }
 }
 
@@ -2092,7 +2131,8 @@ Handle<Code> CompileWasmToJSWrapper(Isolate* isolate, wasm::ModuleEnv* module,
     }
 
     // Schedule and compile to machine code.
-    CallDescriptor* incoming = module->GetWasmCallDescriptor(&zone, sig);
+    CallDescriptor* incoming =
+        wasm::ModuleEnv::GetWasmCallDescriptor(&zone, sig);
     // TODO(titzer): this is technically a WASM wrapper, not a wasm function.
     Code::Flags flags = Code::ComputeFlags(Code::WASM_FUNCTION);
     bool debugging =
@@ -2174,7 +2214,7 @@ Handle<Code> CompileWasmFunction(wasm::ErrorThrower& thrower, Isolate* isolate,
 
   // Run the compiler pipeline to generate machine code.
   CallDescriptor* descriptor =
-      module_env->GetWasmCallDescriptor(&zone, function.sig);
+      wasm::ModuleEnv::GetWasmCallDescriptor(&zone, function.sig);
   if (kPointerSize == 4) {
     descriptor = module_env->GetI32WasmCallDescriptor(&zone, descriptor);
   }

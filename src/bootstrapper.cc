@@ -1180,7 +1180,7 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
                         isolate->initial_object_prototype(),
                         Builtins::kArrayCode);
     array_function->shared()->DontAdaptArguments();
-    array_function->shared()->set_function_data(Smi::FromInt(kArrayCode));
+    array_function->shared()->set_builtin_function_id(kArrayCode);
 
     // This seems a bit hackish, but we need to make sure Array.length
     // is 1.
@@ -1560,6 +1560,11 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
     Handle<JSObject> math = factory->NewJSObject(cons, TENURED);
     DCHECK(math->IsJSObject());
     JSObject::AddProperty(global, name, math, DONT_ENUM);
+    SimpleInstallFunction(math, "acos", Builtins::kMathAcos, 1, true);
+    SimpleInstallFunction(math, "asin", Builtins::kMathAsin, 1, true);
+    SimpleInstallFunction(math, "atan", Builtins::kMathAtan, 1, true);
+    SimpleInstallFunction(math, "fround", Builtins::kMathFround, 1, true);
+    SimpleInstallFunction(math, "imul", Builtins::kMathImul, 2, true);
     SimpleInstallFunction(math, "max", Builtins::kMathMax, 2, false);
     SimpleInstallFunction(math, "min", Builtins::kMathMin, 2, false);
   }
@@ -2082,24 +2087,6 @@ void Bootstrapper::ExportFromRuntime(Isolate* isolate,
 #undef EXPORT_PUBLIC_SYMBOL
 
   {
-    Handle<JSFunction> apply = InstallFunction(
-        container, "reflect_apply", JS_OBJECT_TYPE, JSObject::kHeaderSize,
-        MaybeHandle<JSObject>(), Builtins::kReflectApply);
-    apply->shared()->DontAdaptArguments();
-    apply->shared()->set_length(3);
-    native_context->set_reflect_apply(*apply);
-  }
-
-  {
-    Handle<JSFunction> construct = InstallFunction(
-        container, "reflect_construct", JS_OBJECT_TYPE, JSObject::kHeaderSize,
-        MaybeHandle<JSObject>(), Builtins::kReflectConstruct);
-    construct->shared()->DontAdaptArguments();
-    construct->shared()->set_length(2);
-    native_context->set_reflect_construct(*construct);
-  }
-
-  {
     Handle<JSFunction> to_string = InstallFunction(
         container, "object_to_string", JS_OBJECT_TYPE, JSObject::kHeaderSize,
         MaybeHandle<JSObject>(), Builtins::kObjectProtoToString);
@@ -2413,6 +2400,15 @@ void Genesis::InitializeGlobal_harmony_reflect() {
                            Builtins::kReflectDeleteProperty, 2, true);
   native_context()->set_reflect_delete_property(*delete_property);
 
+  Handle<JSFunction> apply = SimpleCreateFunction(
+      isolate(), factory->apply_string(), Builtins::kReflectApply, 3, false);
+  native_context()->set_reflect_apply(*apply);
+
+  Handle<JSFunction> construct =
+      SimpleCreateFunction(isolate(), factory->construct_string(),
+                           Builtins::kReflectConstruct, 2, false);
+  native_context()->set_reflect_construct(*construct);
+
   if (!FLAG_harmony_reflect) return;
 
   Handle<JSGlobalObject> global(JSGlobalObject::cast(
@@ -2424,6 +2420,8 @@ void Genesis::InitializeGlobal_harmony_reflect() {
 
   InstallFunction(reflect, define_property, factory->defineProperty_string());
   InstallFunction(reflect, delete_property, factory->deleteProperty_string());
+  InstallFunction(reflect, apply, factory->apply_string());
+  InstallFunction(reflect, construct, factory->construct_string());
 
   SimpleInstallFunction(reflect, factory->get_string(),
                         Builtins::kReflectGet, 2, false);
@@ -2715,9 +2713,8 @@ bool Genesis::InstallNatives(GlobalContextType context_type) {
 
   if (!CallUtilsFunction(isolate(), "PostNatives")) return false;
 
-  auto template_instantiations_cache =
-      ObjectHashTable::New(isolate(), ApiNatives::kInitialFunctionCacheSize,
-                           USE_CUSTOM_MINIMUM_CAPACITY);
+  auto template_instantiations_cache = UnseededNumberDictionary::New(
+      isolate(), ApiNatives::kInitialFunctionCacheSize);
   native_context()->set_template_instantiations_cache(
       *template_instantiations_cache);
 
@@ -3084,7 +3081,7 @@ static void InstallBuiltinFunctionId(Handle<JSObject> holder,
   Handle<Object> function_object =
       Object::GetProperty(isolate, holder, function_name).ToHandleChecked();
   Handle<JSFunction> function = Handle<JSFunction>::cast(function_object);
-  function->shared()->set_function_data(Smi::FromInt(id));
+  function->shared()->set_builtin_function_id(id);
 }
 
 

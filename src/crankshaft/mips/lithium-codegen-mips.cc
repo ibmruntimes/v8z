@@ -3596,56 +3596,6 @@ void LCodeGen::DoCallWithDescriptor(LCallWithDescriptor* instr) {
 }
 
 
-void LCodeGen::DoCallJSFunction(LCallJSFunction* instr) {
-  DCHECK(ToRegister(instr->function()).is(a1));
-  DCHECK(ToRegister(instr->result()).is(v0));
-
-  // Change context.
-  __ lw(cp, FieldMemOperand(a1, JSFunction::kContextOffset));
-
-  // Always initialize new target and number of actual arguments.
-  __ LoadRoot(a3, Heap::kUndefinedValueRootIndex);
-  __ li(a0, Operand(instr->arity()));
-
-  // Load the code entry address
-  __ lw(at, FieldMemOperand(a1, JSFunction::kCodeEntryOffset));
-  __ Call(at);
-
-  RecordSafepointWithLazyDeopt(instr, RECORD_SIMPLE_SAFEPOINT);
-}
-
-
-void LCodeGen::DoCallFunction(LCallFunction* instr) {
-  HCallFunction* hinstr = instr->hydrogen();
-  DCHECK(ToRegister(instr->context()).is(cp));
-  DCHECK(ToRegister(instr->function()).is(a1));
-  DCHECK(ToRegister(instr->result()).is(v0));
-
-  int arity = instr->arity();
-  ConvertReceiverMode mode = hinstr->convert_mode();
-  if (hinstr->HasVectorAndSlot()) {
-    Register slot_register = ToRegister(instr->temp_slot());
-    Register vector_register = ToRegister(instr->temp_vector());
-    DCHECK(slot_register.is(a3));
-    DCHECK(vector_register.is(a2));
-
-    AllowDeferredHandleDereference vector_structure_check;
-    Handle<TypeFeedbackVector> vector = hinstr->feedback_vector();
-    int index = vector->GetIndex(hinstr->slot());
-
-    __ li(vector_register, vector);
-    __ li(slot_register, Operand(Smi::FromInt(index)));
-
-    Handle<Code> ic =
-        CodeFactory::CallICInOptimizedCode(isolate(), arity, mode).code();
-    CallCode(ic, RelocInfo::CODE_TARGET, instr);
-  } else {
-    __ li(a0, Operand(arity));
-    CallCode(isolate()->builtins()->Call(mode), RelocInfo::CODE_TARGET, instr);
-  }
-}
-
-
 void LCodeGen::DoCallNewArray(LCallNewArray* instr) {
   DCHECK(ToRegister(instr->context()).is(cp));
   DCHECK(ToRegister(instr->constructor()).is(a1));

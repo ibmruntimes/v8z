@@ -862,6 +862,12 @@ class RepresentationSelector {
       case IrOpcode::kHeapConstant:
         return VisitLeaf(node, NodeOutputInfo::AnyTagged());
 
+      case IrOpcode::kDeoptimizeIf:
+      case IrOpcode::kDeoptimizeUnless:
+        ProcessInput(node, 0, UseInfo::Bool());
+        ProcessInput(node, 1, UseInfo::AnyTagged());
+        ProcessRemainingInputs(node, 2);
+        break;
       case IrOpcode::kBranch:
         ProcessInput(node, 0, UseInfo::Bool());
         EnqueueInput(node, NodeProperties::FirstControlIndex(node));
@@ -1193,10 +1199,18 @@ class RepresentationSelector {
                   NodeOutputInfo(access.machine_type().representation(),
                                  NodeProperties::GetType(node));
             } else {
+              if (access.machine_type().representation() !=
+                  MachineRepresentation::kFloat64) {
+                // TODO(bmeurer): See comment on abort_compilation_.
+                if (lower()) lowering->abort_compilation_ = true;
+              }
               output_info = NodeOutputInfo::Float64();
             }
           }
         } else {
+          // TODO(bmeurer): See comment on abort_compilation_.
+          if (lower()) lowering->abort_compilation_ = true;
+
           // If undefined is not truncated away, we need to have the tagged
           // representation.
           output_info = NodeOutputInfo::AnyTagged();

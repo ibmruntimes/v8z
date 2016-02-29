@@ -2042,8 +2042,7 @@ class JSObject: public JSReceiver {
   inline SeededNumberDictionary* element_dictionary();  // Gets slow elements.
 
   // Requires: HasFastElements().
-  static Handle<FixedArray> EnsureWritableFastElements(
-      Handle<JSObject> object);
+  static void EnsureWritableFastElements(Handle<JSObject> object);
 
   // Collects elements starting at index 0.
   // Undefined values are placed after non-undefined values.
@@ -4464,7 +4463,7 @@ class BytecodeArray : public FixedArrayBase {
 
   // Accessors for source position table containing mappings between byte code
   // offset and source position.
-  DECL_ACCESSORS(source_position_table, FixedArray)
+  DECL_ACCESSORS(source_position_table, ByteArray)
 
   DECLARE_CAST(BytecodeArray)
 
@@ -5004,6 +5003,7 @@ class Code: public HeapObject {
   inline bool is_to_boolean_ic_stub();
   inline bool is_keyed_stub();
   inline bool is_optimized_code();
+  inline bool is_wasm_code();
   inline bool embeds_maps_weakly();
 
   inline bool IsCodeStubOrIC();
@@ -5406,11 +5406,37 @@ class Code: public HeapObject {
 
 class AbstractCode : public HeapObject {
  public:
+  // All code kinds and INTERPRETED_FUNCTION.
+  enum Kind {
+#define DEFINE_CODE_KIND_ENUM(name) name,
+    CODE_KIND_LIST(DEFINE_CODE_KIND_ENUM)
+#undef DEFINE_CODE_KIND_ENUM
+        INTERPRETED_FUNCTION,
+  };
+
   int SourcePosition(int offset);
   int SourceStatementPosition(int offset);
 
+  // Returns the address of the first instruction.
+  inline Address instruction_start();
+
+  // Returns the address right after the last instruction.
+  inline Address instruction_end();
+
+  // Returns the of the code instructions.
+  inline int instruction_size();
+
+  // Returns true if pc is inside this object's instructions.
+  inline bool contains(byte* pc);
+
+  // Returns the AbstractCode::Kind of the code.
+  inline Kind kind();
+
+  // Calculate the size of the code object to report for log events. This takes
+  // the layout of the code object into account.
+  inline int ExecutableSize();
+
   DECLARE_CAST(AbstractCode)
-  inline int Size();
   inline Code* GetCode();
   inline BytecodeArray* GetBytecodeArray();
 };
@@ -6608,6 +6634,10 @@ class SharedFunctionInfo: public HeapObject {
   // [code]: Function code.
   DECL_ACCESSORS(code, Code)
 
+  // Get the abstract code associated with the function, which will either be
+  // a Code object or a BytecodeArray.
+  inline AbstractCode* abstract_code();
+
   inline void ReplaceCode(Code* code);
 
   // [optimized_code_map]: Map from native context to optimized code
@@ -6732,10 +6762,14 @@ class SharedFunctionInfo: public HeapObject {
 
   inline bool IsApiFunction();
   inline FunctionTemplateInfo* get_api_func_data();
+  inline void set_api_func_data(FunctionTemplateInfo* data);
   inline bool HasBuiltinFunctionId();
   inline BuiltinFunctionId builtin_function_id();
+  inline void set_builtin_function_id(BuiltinFunctionId id);
   inline bool HasBytecodeArray();
   inline BytecodeArray* bytecode_array();
+  inline void set_bytecode_array(BytecodeArray* bytecode);
+  inline void ClearBytecodeArray();
 
   // [script info]: Script from which the function originates.
   DECL_ACCESSORS(script, Object)
@@ -7439,6 +7473,10 @@ class JSFunction: public JSObject {
   inline void set_code(Code* code);
   inline void set_code_no_write_barrier(Code* code);
   inline void ReplaceCode(Code* code);
+
+  // Get the abstract code associated with the function, which will either be
+  // a Code object or a BytecodeArray.
+  inline AbstractCode* abstract_code();
 
   // Tells whether this function inlines the given shared function info.
   bool Inlines(SharedFunctionInfo* candidate);
@@ -9748,12 +9786,6 @@ class JSProxy: public JSReceiver {
   // ES6 9.5.10 (when passed SLOPPY)
   MUST_USE_RESULT static Maybe<bool> DeletePropertyOrElement(
       Handle<JSProxy> proxy, Handle<Name> name, LanguageMode language_mode);
-
-  // ES6 9.5.11
-  MUST_USE_RESULT static Maybe<bool> Enumerate(Isolate* isolate,
-                                               Handle<JSReceiver> receiver,
-                                               Handle<JSProxy> proxy,
-                                               KeyAccumulator* accumulator);
 
   // ES6 9.5.12
   MUST_USE_RESULT static Maybe<bool> OwnPropertyKeys(

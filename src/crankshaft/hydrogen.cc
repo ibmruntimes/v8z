@@ -3655,7 +3655,6 @@ HGraph::HGraph(CompilationInfo* info, CallInterfaceDescriptor descriptor)
       info_(info),
       descriptor_(descriptor),
       zone_(info->zone()),
-      is_recursive_(false),
       use_optimistic_licm_(false),
       depends_on_empty_array_proto_elements_(false),
       type_change_checksum_(0),
@@ -6057,9 +6056,8 @@ void HOptimizedGraphBuilder::VisitArrayLiteral(ArrayLiteral* expr) {
     Handle<Object> raw_boilerplate;
     ASSIGN_RETURN_ON_EXCEPTION_VALUE(
         isolate(), raw_boilerplate,
-        Runtime::CreateArrayLiteralBoilerplate(
-            isolate(), literals, expr->constant_elements(),
-            is_strong(function_language_mode())),
+        Runtime::CreateArrayLiteralBoilerplate(isolate(), literals,
+                                               expr->constant_elements()),
         Bailout(kArrayBoilerplateCreationFailed));
 
     boilerplate_object = Handle<JSObject>::cast(raw_boilerplate);
@@ -6629,8 +6627,8 @@ HValue* HOptimizedGraphBuilder::BuildMonomorphicAccess(
         info->NeedsWrappingFor(Handle<JSFunction>::cast(info->accessor()))) {
       HValue* function = Add<HConstant>(info->accessor());
       PushArgumentsFromEnvironment(argument_count);
-      return New<HCallFunction>(function, argument_count,
-                                ConvertReceiverMode::kNotNullOrUndefined);
+      return NewCallFunction(function, argument_count,
+                             ConvertReceiverMode::kNotNullOrUndefined);
     } else if (FLAG_inline_accessors && can_inline_accessor) {
       bool success = info->IsLoad()
           ? TryInlineGetter(info->accessor(), info->map(), ast_id, return_id)
@@ -6644,8 +6642,8 @@ HValue* HOptimizedGraphBuilder::BuildMonomorphicAccess(
       Bailout(kInliningBailedOut);
       return nullptr;
     }
-    return BuildCallConstantFunction(Handle<JSFunction>::cast(info->accessor()),
-                                     argument_count);
+    return NewCallConstantFunction(Handle<JSFunction>::cast(info->accessor()),
+                                   argument_count);
   }
 
   DCHECK(info->IsDataConstant());
@@ -8043,56 +8041,41 @@ void HOptimizedGraphBuilder::AddCheckPrototypeMaps(Handle<JSObject> holder,
   }
 }
 
-
-HInstruction* HOptimizedGraphBuilder::NewPlainFunctionCall(HValue* fun,
-                                                           int argument_count) {
-  return New<HCallJSFunction>(fun, argument_count);
-}
-
-
-HInstruction* HOptimizedGraphBuilder::NewArgumentAdaptorCall(
-    HValue* fun, HValue* context,
-    int argument_count, HValue* expected_param_count) {
-  HValue* new_target = graph()->GetConstantUndefined();
+HInstruction* HOptimizedGraphBuilder::NewCallFunction(
+    HValue* function, int argument_count, ConvertReceiverMode convert_mode) {
   HValue* arity = Add<HConstant>(argument_count - 1);
 
-  HValue* op_vals[] = {context, fun, new_target, arity, expected_param_count};
+  HValue* op_vals[] = {context(), function, arity};
 
-  Callable callable = CodeFactory::ArgumentAdaptor(isolate());
+  Callable callable = CodeFactory::Call(isolate(), convert_mode);
   HConstant* stub = Add<HConstant>(callable.code());
 
   return New<HCallWithDescriptor>(stub, argument_count, callable.descriptor(),
                                   Vector<HValue*>(op_vals, arraysize(op_vals)));
 }
 
-
-HInstruction* HOptimizedGraphBuilder::BuildCallConstantFunction(
-    Handle<JSFunction> jsfun, int argument_count) {
-  HValue* target = Add<HConstant>(jsfun);
-  // For constant functions, we try to avoid calling the
-  // argument adaptor and instead call the function directly
-  int formal_parameter_count =
-      jsfun->shared()->internal_formal_parameter_count();
-  bool dont_adapt_arguments =
-      (formal_parameter_count ==
-       SharedFunctionInfo::kDontAdaptArgumentsSentinel);
+HInstruction* HOptimizedGraphBuilder::NewCallFunctionViaIC(
+    HValue* function, int argument_count, ConvertReceiverMode convert_mode,
+    FeedbackVectorSlot slot) {
   int arity = argument_count - 1;
-  bool can_invoke_directly =
-      dont_adapt_arguments || formal_parameter_count == arity;
-  if (can_invoke_directly) {
-    if (jsfun.is_identical_to(current_info()->closure())) {
-      graph()->MarkRecursive();
-    }
-    return NewPlainFunctionCall(target, argument_count);
-  } else {
-    HValue* param_count_value = Add<HConstant>(formal_parameter_count);
-    HValue* context = Add<HLoadNamedField>(
-        target, nullptr, HObjectAccess::ForFunctionContextPointer());
-    return NewArgumentAdaptorCall(target, context,
-        argument_count, param_count_value);
-  }
-  UNREACHABLE();
-  return NULL;
+  Handle<TypeFeedbackVector> vector(current_feedback_vector(), isolate());
+  HValue* index_val = Add<HConstant>(vector->GetIndex(slot));
+  HValue* vector_val = Add<HConstant>(vector);
+
+  HValue* op_vals[] = {context(), function, index_val, vector_val};
+
+  Callable callable = CodeFactory::CallICInOptimizedCode(
+      isolate(), arity, ConvertReceiverMode::kNullOrUndefined);
+  HConstant* stub = Add<HConstant>(callable.code());
+
+  return New<HCallWithDescriptor>(stub, argument_count, callable.descriptor(),
+                                  Vector<HValue*>(op_vals, arraysize(op_vals)));
+}
+
+HInstruction* HOptimizedGraphBuilder::NewCallConstantFunction(
+    Handle<JSFunction> function, int argument_count) {
+  HValue* target = Add<HConstant>(function);
+  return New<HInvokeFunction>(target, function, argument_count);
 }
 
 
@@ -8234,14 +8217,14 @@ void HOptimizedGraphBuilder::HandlePolymorphicCallNamed(Call* expr,
       if (HasStackOverflow()) return;
     } else {
       // Since HWrapReceiver currently cannot actually wrap numbers and strings,
-      // use the regular CallFunctionStub for method calls to wrap the receiver.
+      // use the regular call builtin for method calls to wrap the receiver.
       // TODO(verwaest): Support creation of value wrappers directly in
       // HWrapReceiver.
       HInstruction* call =
-          needs_wrapping ? NewUncasted<HCallFunction>(
-                               function, argument_count,
-                               ConvertReceiverMode::kNotNullOrUndefined)
-                         : BuildCallConstantFunction(target, argument_count);
+          needs_wrapping
+              ? NewCallFunction(function, argument_count,
+                                ConvertReceiverMode::kNotNullOrUndefined)
+              : NewCallConstantFunction(target, argument_count);
       PushArgumentsFromEnvironment(argument_count);
       AddInstruction(call);
       Drop(1);  // Drop the function.
@@ -8270,7 +8253,7 @@ void HOptimizedGraphBuilder::HandlePolymorphicCallNamed(Call* expr,
     environment()->SetExpressionStackAt(0, receiver);
     CHECK_ALIVE(VisitExpressions(expr->arguments()));
 
-    HInstruction* call = New<HCallFunction>(
+    HInstruction* call = NewCallFunction(
         function, argument_count, ConvertReceiverMode::kNotNullOrUndefined);
 
     PushArgumentsFromEnvironment(argument_count);
@@ -8845,6 +8828,9 @@ bool HOptimizedGraphBuilder::TryInlineBuiltinMethodCall(
       if (argument_count == 2) {
         HValue* argument = Pop();
         Drop(2);  // Receiver and function.
+        argument = AddUncasted<HForceRepresentation>(
+            argument, Representation::Integer32());
+        argument->SetFlag(HValue::kTruncatingToInt32);
         HInstruction* result = NewUncasted<HStringCharFromCode>(argument);
         ast_context()->ReturnInstruction(result, expr->id());
         return true;
@@ -9057,7 +9043,7 @@ bool HOptimizedGraphBuilder::TryInlineBuiltinMethodCall(
 
       Drop(args_count_no_receiver);
       HValue* receiver = Pop();
-      HValue* function = Pop();
+      Drop(1);  // Function.
       HValue* result;
 
       {
@@ -9133,7 +9119,7 @@ bool HOptimizedGraphBuilder::TryInlineBuiltinMethodCall(
           if_inline.Else();
           {
             Add<HPushArguments>(receiver);
-            result = Add<HCallJSFunction>(function, 1);
+            result = AddInstruction(NewCallConstantFunction(function, 1));
             if (!ast_context()->IsEffect()) Push(result);
           }
           if_inline.End();
@@ -9801,16 +9787,16 @@ void HOptimizedGraphBuilder::VisitCall(Call* expr) {
       // Wrap the receiver if necessary.
       if (NeedsWrapping(maps->first(), known_function)) {
         // Since HWrapReceiver currently cannot actually wrap numbers and
-        // strings, use the regular CallFunctionStub for method calls to wrap
+        // strings, use the regular call builtin for method calls to wrap
         // the receiver.
         // TODO(verwaest): Support creation of value wrappers directly in
         // HWrapReceiver.
-        call = New<HCallFunction>(function, argument_count,
-                                  ConvertReceiverMode::kNotNullOrUndefined);
+        call = NewCallFunction(function, argument_count,
+                               ConvertReceiverMode::kNotNullOrUndefined);
       } else if (TryInlineCall(expr)) {
         return;
       } else {
-        call = BuildCallConstantFunction(known_function, argument_count);
+        call = NewCallConstantFunction(known_function, argument_count);
       }
 
     } else {
@@ -9829,8 +9815,8 @@ void HOptimizedGraphBuilder::VisitCall(Call* expr) {
       Push(receiver);
 
       CHECK_ALIVE(VisitExpressions(expr->arguments(), arguments_flag));
-      call = New<HCallFunction>(function, argument_count,
-                                ConvertReceiverMode::kNotNullOrUndefined);
+      call = NewCallFunction(function, argument_count,
+                             ConvertReceiverMode::kNotNullOrUndefined);
     }
     PushArgumentsFromEnvironment(argument_count);
 
@@ -9877,20 +9863,19 @@ void HOptimizedGraphBuilder::VisitCall(Call* expr) {
       if (TryInlineCall(expr)) return;
 
       PushArgumentsFromEnvironment(argument_count);
-      call = BuildCallConstantFunction(expr->target(), argument_count);
+      call = NewCallConstantFunction(expr->target(), argument_count);
     } else {
       PushArgumentsFromEnvironment(argument_count);
-      HCallFunction* call_function = New<HCallFunction>(
-          function, argument_count, ConvertReceiverMode::kNullOrUndefined);
-      call = call_function;
       if (expr->is_uninitialized() &&
           expr->IsUsingCallFeedbackICSlot(isolate())) {
         // We've never seen this call before, so let's have Crankshaft learn
         // through the type vector.
-        Handle<TypeFeedbackVector> vector =
-            handle(current_feedback_vector(), isolate());
-        FeedbackVectorSlot slot = expr->CallFeedbackICSlot();
-        call_function->SetVectorAndSlot(vector, slot);
+        call = NewCallFunctionViaIC(function, argument_count,
+                                    ConvertReceiverMode::kNullOrUndefined,
+                                    expr->CallFeedbackICSlot());
+      } else {
+        call = NewCallFunction(function, argument_count,
+                               ConvertReceiverMode::kNullOrUndefined);
       }
     }
   }

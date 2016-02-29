@@ -3263,39 +3263,6 @@ void LCodeGen::DoCallWithDescriptor(LCallWithDescriptor* instr) {
 }
 
 
-void LCodeGen::DoCallJSFunction(LCallJSFunction* instr) {
-  DCHECK(ToRegister(instr->function()).is(rdi));
-  DCHECK(ToRegister(instr->result()).is(rax));
-
-  // Change context.
-  __ movp(rsi, FieldOperand(rdi, JSFunction::kContextOffset));
-
-  // Always initialize new target and number of actual arguments.
-  __ LoadRoot(rdx, Heap::kUndefinedValueRootIndex);
-  __ Set(rax, instr->arity());
-
-  LPointerMap* pointers = instr->pointer_map();
-  SafepointGenerator generator(this, pointers, Safepoint::kLazyDeopt);
-
-  bool is_self_call = false;
-  if (instr->hydrogen()->function()->IsConstant()) {
-    Handle<JSFunction> jsfun = Handle<JSFunction>::null();
-    HConstant* fun_const = HConstant::cast(instr->hydrogen()->function());
-    jsfun = Handle<JSFunction>::cast(fun_const->handle(isolate()));
-    is_self_call = jsfun.is_identical_to(info()->closure());
-  }
-
-  if (is_self_call) {
-    __ CallSelf();
-  } else {
-    Operand target = FieldOperand(rdi, JSFunction::kCodeEntryOffset);
-    generator.BeforeCall(__ CallSize(target));
-    __ Call(target);
-  }
-  generator.AfterCall();
-}
-
-
 void LCodeGen::DoDeferredMathAbsTaggedHeapNumber(LMathAbs* instr) {
   Register input_reg = ToRegister(instr->value());
   __ CompareRoot(FieldOperand(input_reg, HeapObject::kMapOffset),
@@ -3670,38 +3637,6 @@ void LCodeGen::DoInvokeFunction(LInvokeFunction* instr) {
     CallKnownFunction(known_function,
                       instr->hydrogen()->formal_parameter_count(),
                       instr->arity(), instr);
-  }
-}
-
-
-void LCodeGen::DoCallFunction(LCallFunction* instr) {
-  HCallFunction* hinstr = instr->hydrogen();
-  DCHECK(ToRegister(instr->context()).is(rsi));
-  DCHECK(ToRegister(instr->function()).is(rdi));
-  DCHECK(ToRegister(instr->result()).is(rax));
-
-  int arity = instr->arity();
-
-  ConvertReceiverMode mode = hinstr->convert_mode();
-  if (hinstr->HasVectorAndSlot()) {
-    Register slot_register = ToRegister(instr->temp_slot());
-    Register vector_register = ToRegister(instr->temp_vector());
-    DCHECK(slot_register.is(rdx));
-    DCHECK(vector_register.is(rbx));
-
-    AllowDeferredHandleDereference vector_structure_check;
-    Handle<TypeFeedbackVector> vector = hinstr->feedback_vector();
-    int index = vector->GetIndex(hinstr->slot());
-
-    __ Move(vector_register, vector);
-    __ Move(slot_register, Smi::FromInt(index));
-
-    Handle<Code> ic =
-        CodeFactory::CallICInOptimizedCode(isolate(), arity, mode).code();
-    CallCode(ic, RelocInfo::CODE_TARGET, instr);
-  } else {
-    __ Set(rax, arity);
-    CallCode(isolate()->builtins()->Call(mode), RelocInfo::CODE_TARGET, instr);
   }
 }
 

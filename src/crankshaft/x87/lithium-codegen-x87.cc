@@ -3465,35 +3465,6 @@ void LCodeGen::DoCallWithDescriptor(LCallWithDescriptor* instr) {
 }
 
 
-void LCodeGen::DoCallJSFunction(LCallJSFunction* instr) {
-  DCHECK(ToRegister(instr->function()).is(edi));
-  DCHECK(ToRegister(instr->result()).is(eax));
-
-  // Change context.
-  __ mov(esi, FieldOperand(edi, JSFunction::kContextOffset));
-
-  // Always initialize new target and number of actual arguments.
-  __ mov(edx, factory()->undefined_value());
-  __ mov(eax, instr->arity());
-
-  bool is_self_call = false;
-  if (instr->hydrogen()->function()->IsConstant()) {
-    HConstant* fun_const = HConstant::cast(instr->hydrogen()->function());
-    Handle<JSFunction> jsfun =
-      Handle<JSFunction>::cast(fun_const->handle(isolate()));
-    is_self_call = jsfun.is_identical_to(info()->closure());
-  }
-
-  if (is_self_call) {
-    __ CallSelf();
-  } else {
-    __ call(FieldOperand(edi, JSFunction::kCodeEntryOffset));
-  }
-
-  RecordSafepointWithLazyDeopt(instr, RECORD_SIMPLE_SAFEPOINT);
-}
-
-
 void LCodeGen::DoDeferredMathAbsTaggedHeapNumber(LMathAbs* instr) {
   Register input_reg = ToRegister(instr->value());
   __ cmp(FieldOperand(input_reg, HeapObject::kMapOffset),
@@ -3943,37 +3914,6 @@ void LCodeGen::DoInvokeFunction(LInvokeFunction* instr) {
     CallKnownFunction(known_function,
                       instr->hydrogen()->formal_parameter_count(),
                       instr->arity(), instr);
-  }
-}
-
-
-void LCodeGen::DoCallFunction(LCallFunction* instr) {
-  HCallFunction* hinstr = instr->hydrogen();
-  DCHECK(ToRegister(instr->context()).is(esi));
-  DCHECK(ToRegister(instr->function()).is(edi));
-  DCHECK(ToRegister(instr->result()).is(eax));
-
-  int arity = instr->arity();
-  ConvertReceiverMode mode = hinstr->convert_mode();
-  if (hinstr->HasVectorAndSlot()) {
-    Register slot_register = ToRegister(instr->temp_slot());
-    Register vector_register = ToRegister(instr->temp_vector());
-    DCHECK(slot_register.is(edx));
-    DCHECK(vector_register.is(ebx));
-
-    AllowDeferredHandleDereference vector_structure_check;
-    Handle<TypeFeedbackVector> vector = hinstr->feedback_vector();
-    int index = vector->GetIndex(hinstr->slot());
-
-    __ mov(vector_register, vector);
-    __ mov(slot_register, Immediate(Smi::FromInt(index)));
-
-    Handle<Code> ic =
-        CodeFactory::CallICInOptimizedCode(isolate(), arity, mode).code();
-    CallCode(ic, RelocInfo::CODE_TARGET, instr);
-  } else {
-    __ Set(eax, arity);
-    CallCode(isolate()->builtins()->Call(mode), RelocInfo::CODE_TARGET, instr);
   }
 }
 

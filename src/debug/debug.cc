@@ -171,8 +171,9 @@ BreakLocation BreakLocation::CodeIterator::GetBreakLocation() {
 BreakLocation::BytecodeArrayIterator::BytecodeArrayIterator(
     Handle<DebugInfo> debug_info, BreakLocatorType type)
     : Iterator(debug_info),
-      source_position_iterator_(
-          debug_info->abstract_code()->GetBytecodeArray()),
+      source_position_iterator_(debug_info->abstract_code()
+                                    ->GetBytecodeArray()
+                                    ->source_position_table()),
       break_locator_type_(type),
       start_position_(debug_info->shared()->start_position()) {
   if (!Done()) Next();
@@ -1240,12 +1241,17 @@ class RedirectActiveFunctions : public ThreadVisitor {
     for (JavaScriptFrameIterator it(isolate, top); !it.done(); it.Advance()) {
       JavaScriptFrame* frame = it.frame();
       JSFunction* function = frame->function();
-      if (frame->is_interpreted()) {
-        // TODO(yangguo): replace dispatch table for activated frames.
-        continue;
-      }
       if (frame->is_optimized()) continue;
       if (!function->Inlines(shared_)) continue;
+
+      if (frame->is_interpreted()) {
+        InterpretedFrame* interpreted_frame =
+            reinterpret_cast<InterpretedFrame*>(frame);
+        BytecodeArray* debug_copy =
+            shared_->GetDebugInfo()->abstract_code()->GetBytecodeArray();
+        interpreted_frame->PatchBytecodeArray(debug_copy);
+        continue;
+      }
 
       Code* frame_code = frame->LookupCode();
       DCHECK(frame_code->kind() == Code::FUNCTION);
@@ -1304,11 +1310,15 @@ bool Debug::PrepareFunctionForBreakPoints(Handle<SharedFunctionInfo> shared) {
   // Make sure we abort incremental marking.
   isolate_->heap()->CollectAllGarbage(Heap::kMakeHeapIterableMask,
                                       "prepare for break points");
+  bool is_interpreted = shared->HasBytecodeArray();
 
   {
+    // TODO(yangguo): with bytecode, we still walk the heap to find all
+    // optimized code for the function to deoptimize. We can probably be
+    // smarter here and avoid the heap walk.
     HeapIterator iterator(isolate_->heap());
     HeapObject* obj;
-    bool include_generators = shared->is_generator();
+    bool include_generators = !is_interpreted && shared->is_generator();
 
     while ((obj = iterator.next())) {
       if (obj->IsJSFunction()) {
@@ -1317,6 +1327,7 @@ bool Debug::PrepareFunctionForBreakPoints(Handle<SharedFunctionInfo> shared) {
         if (function->code()->kind() == Code::OPTIMIZED_FUNCTION) {
           Deoptimizer::DeoptimizeFunction(function);
         }
+        if (is_interpreted) continue;
         if (function->shared() == *shared) functions.Add(handle(function));
       } else if (include_generators && obj->IsJSGeneratorObject()) {
         JSGeneratorObject* generator_obj = JSGeneratorObject::cast(obj);
@@ -1332,7 +1343,12 @@ bool Debug::PrepareFunctionForBreakPoints(Handle<SharedFunctionInfo> shared) {
     }
   }
 
-  if (!shared->HasDebugCode()) {
+  // We do not need to replace code to debug bytecode.
+  DCHECK(!is_interpreted || functions.length() == 0);
+  DCHECK(!is_interpreted || suspended_generators.length() == 0);
+
+  // We do not need to recompile to debug bytecode.
+  if (!is_interpreted && !shared->HasDebugCode()) {
     DCHECK(functions.length() > 0);
     if (!Compiler::CompileDebugCode(functions.first())) return false;
   }
@@ -1503,10 +1519,16 @@ bool Debug::EnsureDebugInfo(Handle<SharedFunctionInfo> shared,
     return false;
   }
 
-  if (!PrepareFunctionForBreakPoints(shared)) return false;
-
-  CreateDebugInfo(shared);
-
+  if (shared->HasBytecodeArray()) {
+    // To prepare bytecode for debugging, we already need to have the debug
+    // info (containing the debug copy) upfront, but since we do not recompile,
+    // preparing for break points cannot fail.
+    CreateDebugInfo(shared);
+    CHECK(PrepareFunctionForBreakPoints(shared));
+  } else {
+    if (!PrepareFunctionForBreakPoints(shared)) return false;
+    CreateDebugInfo(shared);
+  }
   return true;
 }
 
@@ -1830,6 +1852,10 @@ void Debug::OnDebugBreak(Handle<Object> break_points_hit, bool auto_continue) {
   AssertDebugContext();
   // Bail out if there is no listener for this event
   if (ignore_events()) return;
+
+#ifdef DEBUG
+  PrintBreakLocation();
+#endif  // DEBUG
 
   HandleScope scope(isolate_);
   // Create the event data object.
@@ -2292,6 +2318,44 @@ void Debug::ProcessDebugMessages(bool debug_command_only) {
   OnDebugBreak(isolate_->factory()->undefined_value(), debug_command_only);
 }
 
+#ifdef DEBUG
+void Debug::PrintBreakLocation() {
+  if (!FLAG_print_break_location) return;
+  HandleScope scope(isolate_);
+  JavaScriptFrameIterator iterator(isolate_);
+  if (iterator.done()) return;
+  JavaScriptFrame* frame = iterator.frame();
+  FrameSummary summary = GetFirstFrameSummary(frame);
+  int source_position =
+      summary.abstract_code()->SourcePosition(summary.code_offset());
+  Handle<Object> script_obj(summary.function()->shared()->script(), isolate_);
+  PrintF("[debug] break in function '");
+  summary.function()->PrintName();
+  PrintF("'.\n");
+  if (script_obj->IsScript()) {
+    Handle<Script> script = Handle<Script>::cast(script_obj);
+    Handle<String> source(String::cast(script->source()));
+    Script::InitLineEnds(script);
+    int line = Script::GetLineNumber(script, source_position);
+    int column = Script::GetColumnNumber(script, source_position);
+    Handle<FixedArray> line_ends(FixedArray::cast(script->line_ends()));
+    int line_start =
+        line == 0 ? 0 : Smi::cast(line_ends->get(line - 1))->value() + 1;
+    int line_end = Smi::cast(line_ends->get(line))->value();
+    DisallowHeapAllocation no_gc;
+    String::FlatContent content = source->GetFlatContent();
+    if (content.IsOneByte()) {
+      PrintF("[debug] %.*s\n", line_end - line_start,
+             content.ToOneByteVector().start() + line_start);
+      PrintF("[debug] ");
+      for (int i = 0; i < column; i++) PrintF(" ");
+      PrintF("^\n");
+    } else {
+      PrintF("[debug] at line %d column %d\n", line, column);
+    }
+  }
+}
+#endif  // DEBUG
 
 DebugScope::DebugScope(Debug* debug)
     : debug_(debug),

@@ -498,12 +498,30 @@
 
 }],  # 'arch == ppc64 and simulator_run == True'
 
+##############################################################################
 ['ignition == True', {
-  # TODO(yangguo,4690): Enable debugger support for Ignition.
-  'test-debug/*' : [SKIP],
-
-  # TODO(yangguo,4690): Required DebuggerStatement support.
-  'test-profile-generator/BailoutReason': [FAIL],
+  # TODO(yangguo,4690): Test failures in debugger tests.
+  'test-debug/DebugStepLocals': [FAIL],
+  'test-debug/DebugStepKeyedLoadLoop': [FAIL],
+  'test-debug/DebugStepKeyedStoreLoop': [FAIL],
+  'test-debug/DebugStepIf': [FAIL],
+  'test-debug/DebugStepNamedLoadLoop': [FAIL],
+  'test-debug/DebugStepDeclarations': [FAIL],
+  'test-debug/BreakPointConstructCallWithGC': [PASS, FAIL],
+  'test-debug/DebugStepNamedStoreLoop': [FAIL],
+  'test-debug/DebugStepLinearMixedICs': [FAIL],
+  'test-debug/DebugStepSwitch': [FAIL],
+  'test-debug/DebugStepWhile': [FAIL],
+  'test-debug/DebugStepFor': [FAIL],
+  'test-debug/DebugStepForContinue': [FAIL],
+  'test-debug/DebugStepForIn': [FAIL],
+  'test-debug/DebugStepDoWhile': [FAIL],
+  'test-debug/DebugConditional': [FAIL],
+  'test-debug/DebugStepForBreak': [FAIL],
+  'test-debug/DebugStepWith': [FAIL],
+  'test-debug/DebugStepFunctionApply': [FAIL],
+  'test-debug/StepInOutBranch': [FAIL],
+  'test-debug/DebugStepFunctionCall': [FAIL],
 
   # TODO(rmcilroy,4680): Check failed: toplevel_test_code_event_found.
   'test-serialize/SerializeToplevelIsolates': [FAIL],
@@ -517,16 +535,8 @@
   'test-inobject-slack-tracking/JSGeneratorObjectBasicNoInlineNew': [FAIL],
   'test-api/IsGeneratorFunctionOrObject': [FAIL],
 
-  # TODO(rmcilroy,4680): Strong mode failures.
-  'test-api/AccessorShouldThrowOnError': [FAIL],
-  'test-api/InterceptorShouldThrowOnError': [FAIL],
-
   # TODO(rmcilroy,4680): The function_data field should be a BytecodeArray on interpreter entry
   'test-api/SetFunctionEntryHook': [FAIL],
-
-  # TODO(rmcilroy,4680): Fail on shared_function_data()->IsUndefined in
-  #compiler.cc
-  'test-heap/CanonicalSharedFunctionInfo': [PASS, ['mode == debug or dcheck_always_on == True', FAIL]],
 
   # TODO(rmcilroy,4680): Check failed: !function->shared()->is_compiled() || function->IsOptimized().
   'test-heap/TestCodeFlushingPreAged': [FAIL],
@@ -544,33 +554,9 @@
   'test-api/TryCatchMixedNesting': [FAIL],
 
   # TODO(rmcilroy,4680): Test assert errors.
-  'test-cpu-profiler/CodeEvents': [FAIL],
-  'test-cpu-profiler/TickEvents': [FAIL],
-  'test-cpu-profiler/BoundFunctionCall': [FAIL],
-  'test-cpu-profiler/CollectCpuProfile': [FAIL],
-  'test-cpu-profiler/CollectSampleAPI': [FAIL],
-  'test-cpu-profiler/CpuProfileDeepStack': [FAIL],
-  'test-cpu-profiler/FunctionApplySample': [FAIL],
-  'test-cpu-profiler/FunctionCallSample': [FAIL],
-  'test-cpu-profiler/FunctionDetails': [FAIL],
-  'test-cpu-profiler/HotDeoptNoFrameEntry': [FAIL],
-  'test-cpu-profiler/JsNative1JsNative2JsSample': [FAIL],
-  'test-cpu-profiler/JsNativeJsRuntimeJsSample': [FAIL],
-  'test-cpu-profiler/JsNativeJsRuntimeJsSampleMultiple': [FAIL],
-  'test-cpu-profiler/JsNativeJsSample': [FAIL],
-  'test-cpu-profiler/NativeMethodUninitializedIC': [FAIL],
-  'test-cpu-profiler/NativeMethodMonomorphicIC': [FAIL],
-  'test-cpu-profiler/NativeAccessorUninitializedIC': [FAIL],
-  'test-cpu-profiler/NativeAccessorMonomorphicIC': [FAIL],
-  'test-cpu-profiler/SampleWhenFrameIsNotSetup': [FAIL],
-  'test-sampler-api/StackFramesConsistent': [FAIL],
-  'test-profile-generator/LineNumber': [FAIL],
-  'test-profile-generator/ProfileNodeScriptId': [FAIL],
-  'test-profile-generator/RecordStackTraceAtStartProfiling': [FAIL],
   'test-feedback-vector/VectorCallICStates': [FAIL],
   'test-compiler/FeedbackVectorPreservedAcrossRecompiles': [FAIL],
   'test-api/PromiseRejectCallback': [FAIL],
-  'test-api/SetJitCodeEventHandler': [FAIL],
   'test-heap/WeakFunctionInConstructor': [FAIL],
   'test-heap/Regress169209': [FAIL],
   'test-heap/IncrementalMarkingClearsMonomorphicConstructor': [FAIL],
@@ -581,18 +567,5 @@
   'test-run-inlining/InlineTwice': [FAIL],
   'test-serialize/SerializeInternalReference': [FAIL, ['arch == arm or arch == arm64', PASS]],
 }],  # ignition == True
-
-['ignition == True and arch == x64', {
-  # TODO(rmcilroy,4680): The function_data field should be a BytecodeArray on interpreter entry
-  'test-serialize/PerIsolateSnapshotBlobsOutdatedContextWithOverflow': [PASS, ['mode == debug', FAIL]],
-  'test-serialize/PerIsolateSnapshotBlobsWithLocker': [PASS, ['mode == debug', FAIL]],
-  'test-serialize/SnapshotBlobsStackOverflow': [PASS, ['mode == debug', FAIL]],
-  'test-serialize/PerIsolateSnapshotBlobs': [PASS, ['mode == debug', FAIL]],
-  'test-serialize/SerializationMemoryStats': [PASS, ['mode == debug', FAIL]],
-
-  # TODO(rmcilroy,4680): Test assert errors.
-  'test-heap-profiler/HeapSnapshotSimd': [PASS, ['mode == debug', FAIL]],
-  'test-api/InitializeDefaultIsolateOnSecondaryThread1': [PASS, ['mode == debug', FAIL]],
-}],
 
 ]
