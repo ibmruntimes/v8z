@@ -1309,8 +1309,8 @@ void InstructionSelector::VisitInt64AddWithOverflow(Node* node) {
 void InstructionSelector::VisitInt64SubWithOverflow(Node* node) {
   if (Node* ovf = NodeProperties::FindProjection(node, 1)) {
     FlagsContinuation cont = FlagsContinuation::ForSet(kOverflow, ovf);
-    return VisitBinop<Int64BinopMatcher>(this, node, kS390_Sub, kInt16Imm_Negate,
-                                         &cont);
+    return VisitBinop<Int64BinopMatcher>(this, node, kS390_Sub,
+                                         kInt16Imm_Negate, &cont);
   }
   FlagsContinuation cont;
   VisitBinop<Int64BinopMatcher>(this, node, kS390_Sub, kInt16Imm_Negate, &cont);
