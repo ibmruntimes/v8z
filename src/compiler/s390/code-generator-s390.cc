@@ -1703,6 +1703,9 @@ void CodeGenerator::AssembleDeoptimizerCall(
     int deoptimization_id, Deoptimizer::BailoutType bailout_type) {
   Address deopt_entry = Deoptimizer::GetDeoptimizationEntry(
       isolate(), deoptimization_id, bailout_type);
+  // TODO(turbofan): We should be able to generate better code by sharing the
+  // actual final call site and just bl'ing to it here, similar to what we do
+  // in the lithium backend.
   __ Call(deopt_entry, RelocInfo::RUNTIME_ENTRY);
 }
 
