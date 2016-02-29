@@ -24,9 +24,8 @@ inline Atomic32 __sync_val_compare_and_swap(volatile Atomic32 *ptr,
                                             Atomic32 oldval,
                                             Atomic32 newval)
 {
-  Atomic32 tmp = *ptr;
   __cs1((void*)&oldval, (void*)ptr, (void*)&newval);
-  return tmp;
+  return oldval;
 }
 
 inline Atomic32 __sync_add_and_fetch(volatile Atomic32 *ptr, Atomic32 value)
@@ -52,9 +51,8 @@ inline Atomic64 __sync_val_compare_and_swap(volatile Atomic64 *ptr,
                                             Atomic64 oldval,
                                             Atomic64 newval)
 {
-  Atomic64 tmp = *ptr;
   __cs1((void*)&oldval, (void*)ptr, (void*)&newval);
-  return tmp;
+  return oldval;
 }
 
 inline bool __sync_add_and_fetch(volatile Atomic64 *ptr, Atomic64 value)
