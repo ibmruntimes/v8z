@@ -2975,7 +2975,8 @@ void Simulator::DecodeFourByteFloatingPointIntConversion(Instruction* instr) {
     case CLFDBR:
     case CLGDBR:
     case CELFBR:
-    case CLGEBR: {
+    case CLGEBR:
+    case CLFEBR: {
       RREInstruction* rreInstr = reinterpret_cast<RREInstruction*>(instr);
       int r1 = rreInstr->R1Value();
       int r2 = rreInstr->R2Value();
@@ -2997,6 +2998,11 @@ void Simulator::DecodeFourByteFloatingPointIntConversion(Instruction* instr) {
         set_d_register_from_float32(r1, r1_val);
       } else if (op == CLFDBR) {
         double r2_val = get_double_from_d_register(r2);
+        uint32_t r1_val = static_cast<uint32_t>(r2_val);
+        set_low_register(r1, r1_val);
+        SetS390ConvertConditionCode<double>(r2_val, r1_val, UINT32_MAX);
+      } else if (op == CLFEBR) {
+        float r2_val = get_float32_from_d_register(r2);
         uint32_t r1_val = static_cast<uint32_t>(r2_val);
         set_low_register(r1, r1_val);
         SetS390ConvertConditionCode<double>(r2_val, r1_val, UINT32_MAX);
@@ -3459,7 +3465,8 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
     case CLFDBR:
     case CELFBR:
     case CLGDBR:
-    case CLGEBR: {
+    case CLGEBR:
+    case CLFEBR: {
       DecodeFourByteFloatingPointIntConversion(instr);
       break;
     }
