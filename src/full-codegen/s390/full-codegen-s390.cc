@@ -156,7 +156,7 @@ void FullCodeGenerator::Generate() {
         Label loop_header;
         __ bind(&loop_header);
         // Do pushes.
-        // TODO(joransiu): Consider using MVC
+        // TODO(joransiu): Use MVC for better performance
         __ lay(sp, MemOperand(sp, -kMaxPushes * kPointerSize));
         for (int i = 0; i < kMaxPushes; i++) {
           __ StoreP(ip, MemOperand(sp, i * kPointerSize));
@@ -166,7 +166,7 @@ void FullCodeGenerator::Generate() {
       }
       int remaining = locals_count % kMaxPushes;
       // Emit the remaining pushes.
-      // TODO(joransiu): Consider using MVC
+      // TODO(joransiu): Use MVC for better performance
       if (remaining > 0) {
         __ lay(sp, MemOperand(sp, -remaining * kPointerSize));
       for (int i = 0; i < remaining; i++) {
@@ -264,8 +264,6 @@ void FullCodeGenerator::Generate() {
     Comment cmnt(masm_, "[ new.target");
     SetVar(new_target_var, r5, r2, r4);
   }
-
-// @TODO ---- VERIFY THE REGS BELOW to see if they work on S390!!!
 
   // Possibly allocate RestParameters
   int rest_index;
@@ -2135,8 +2133,6 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
       __ lr(ip, scratch2);  // 32 bit load
       __ sra(ip, Operand(31));
       __ cr_z(ip, scratch1);  // 32 bit compare
-      // TODO(JOHN): The above 3 instr expended from 31-bit TestIfInt32
-      // __ TestIfInt32(scratch2, scratch1, ip);
       __ bne(&stub_call);
 #else
       __ SmiUntag(ip, right);
