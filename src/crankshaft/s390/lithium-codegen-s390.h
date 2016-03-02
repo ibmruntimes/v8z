@@ -242,12 +242,11 @@ class LCodeGen : public LCodeGenBase {
 
   // EmitBranch expects to be the last instruction of a block.
   template <class InstrType>
-  void EmitBranch(InstrType instr, Condition condition, CRegister cr = cr7);
+  void EmitBranch(InstrType instr, Condition condition);
   template <class InstrType>
-  void EmitTrueBranch(InstrType instr, Condition condition, CRegister cr = cr7);
+  void EmitTrueBranch(InstrType instr, Condition condition);
   template <class InstrType>
-  void EmitFalseBranch(InstrType instr, Condition condition,
-                       CRegister cr = cr7);
+  void EmitFalseBranch(InstrType instr, Condition condition);
   void EmitNumberUntagD(LNumberUntagD* instr, Register input,
                         DoubleRegister result, NumberUntagDMode mode);
 

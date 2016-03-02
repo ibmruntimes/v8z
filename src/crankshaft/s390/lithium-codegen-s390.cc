@@ -2125,7 +2125,7 @@ void LCodeGen::DoArithmeticT(LArithmeticT* instr) {
 
 
 template <class InstrType>
-void LCodeGen::EmitBranch(InstrType instr, Condition cond, CRegister cr) {
+void LCodeGen::EmitBranch(InstrType instr, Condition cond) {
   int left_block = instr->TrueDestination(chunk_);
   int right_block = instr->FalseDestination(chunk_);
 
@@ -2145,17 +2145,16 @@ void LCodeGen::EmitBranch(InstrType instr, Condition cond, CRegister cr) {
 
 
 template <class InstrType>
-void LCodeGen::EmitTrueBranch(InstrType instr, Condition cond, CRegister cr) {
+void LCodeGen::EmitTrueBranch(InstrType instr, Condition cond) {
   int true_block = instr->TrueDestination(chunk_);
   __ b(cond, chunk_->GetAssemblyLabel(true_block));
 }
 
 
 template <class InstrType>
-void LCodeGen::EmitFalseBranch(InstrType instr, Condition cond, CRegister cr) {
+void LCodeGen::EmitFalseBranch(InstrType instr, Condition cond) {
   int false_block = instr->FalseDestination(chunk_);
-  // TODO(joransiu) : Cleanup unused CRegister cr
-  __ b(cond, chunk_->GetAssemblyLabel(false_block) /*, cr*/);
+  __ b(cond, chunk_->GetAssemblyLabel(false_block));
 }
 
 
@@ -2184,7 +2183,7 @@ void LCodeGen::DoBranch(LBranch* instr) {
     // Test the double value. Zero and NaN are false.
     Condition lt_gt = static_cast<Condition>(lt | gt);
 
-    EmitBranch(instr, lt_gt, cr0);
+    EmitBranch(instr, lt_gt);
   } else {
     DCHECK(r.IsTagged());
     Register reg = ToRegister(instr->value());
@@ -2207,7 +2206,7 @@ void LCodeGen::DoBranch(LBranch* instr) {
       __ lzdr(kDoubleRegZero);
       __ cdbr(dbl_scratch, kDoubleRegZero);
       Condition lt_gt = static_cast<Condition>(lt | gt);
-      EmitBranch(instr, lt_gt, cr0);
+      EmitBranch(instr, lt_gt);
     } else if (type.IsString()) {
       DCHECK(!info()->IsStub());
       __ LoadP(ip, FieldMemOperand(reg, String::kLengthOffset));
@@ -2492,7 +2491,7 @@ void LCodeGen::DoIsStringAndBranch(LIsStringAndBranch* instr) {
 void LCodeGen::DoIsSmiAndBranch(LIsSmiAndBranch* instr) {
   Register input_reg = EmitLoadRegister(instr->value(), ip);
   __ TestIfSmi(input_reg);
-  EmitBranch(instr, eq, cr0);
+  EmitBranch(instr, eq);
 }
 
 
@@ -2506,7 +2505,7 @@ void LCodeGen::DoIsUndetectableAndBranch(LIsUndetectableAndBranch* instr) {
   __ LoadP(temp, FieldMemOperand(input, HeapObject::kMapOffset));
   __ tm(FieldMemOperand(temp, Map::kBitFieldOffset),
         Operand(1 << Map::kIsUndetectable));
-  EmitBranch(instr, ne, cr0);
+  EmitBranch(instr, ne);
 }
 
 
@@ -2595,7 +2594,7 @@ void LCodeGen::DoHasCachedArrayIndexAndBranch(
   __ LoadlW(scratch, FieldMemOperand(input, String::kHashFieldOffset));
   __ mov(r0, Operand(String::kContainsCachedArrayIndexMask));
   __ AndP(r0, scratch);
-  EmitBranch(instr, eq, cr0);
+  EmitBranch(instr, eq);
 }
 
 
