@@ -10,7 +10,6 @@ namespace compiler {
 
 bool InstructionScheduler::SchedulerSupported() { return true; }
 
-
 int InstructionScheduler::GetTargetInstructionFlags(
     const Instruction* instr) const {
   switch (instr->arch_opcode()) {
@@ -138,7 +137,7 @@ int InstructionScheduler::GetTargetInstructionFlags(
       return kHasSideEffect;
 
 #define CASE(Name) case k##Name:
-    COMMON_ARCH_OPCODE_LIST(CASE)
+      COMMON_ARCH_OPCODE_LIST(CASE)
 #undef CASE
       // Already covered in architecture independent code.
       UNREACHABLE();
@@ -147,7 +146,6 @@ int InstructionScheduler::GetTargetInstructionFlags(
   UNREACHABLE();
   return kNoOpcodeFlags;
 }
-
 
 int InstructionScheduler::GetInstructionLatency(const Instruction* instr) {
   // TODO(all): Add instruction cost modeling.

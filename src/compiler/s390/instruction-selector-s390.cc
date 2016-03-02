@@ -22,7 +22,6 @@ enum ImmediateMode {
   kNoImmediate
 };
 
-
 // Adds S390-specific methods for generating operands.
 class S390OperandGenerator final : public OperandGenerator {
  public:
@@ -68,7 +67,6 @@ class S390OperandGenerator final : public OperandGenerator {
   }
 };
 
-
 namespace {
 
 void VisitRR(InstructionSelector* selector, ArchOpcode opcode, Node* node) {
@@ -77,14 +75,12 @@ void VisitRR(InstructionSelector* selector, ArchOpcode opcode, Node* node) {
                  g.UseRegister(node->InputAt(0)));
 }
 
-
 void VisitRRR(InstructionSelector* selector, ArchOpcode opcode, Node* node) {
   S390OperandGenerator g(selector);
   selector->Emit(opcode, g.DefineAsRegister(node),
                  g.UseRegister(node->InputAt(0)),
                  g.UseRegister(node->InputAt(1)));
 }
-
 
 void VisitRRO(InstructionSelector* selector, ArchOpcode opcode, Node* node,
               ImmediateMode operand_mode) {
@@ -93,7 +89,6 @@ void VisitRRO(InstructionSelector* selector, ArchOpcode opcode, Node* node,
                  g.UseRegister(node->InputAt(0)),
                  g.UseOperand(node->InputAt(1), operand_mode));
 }
-
 
 #if V8_TARGET_ARCH_S390X
 void VisitTryTruncateDouble(InstructionSelector* selector, ArchOpcode opcode,
@@ -112,7 +107,6 @@ void VisitTryTruncateDouble(InstructionSelector* selector, ArchOpcode opcode,
   selector->Emit(opcode, output_count, outputs, 1, inputs);
 }
 #endif
-
 
 // Shared routine for multiple binary operations.
 template <typename Matcher>
@@ -153,7 +147,6 @@ void VisitBinop(InstructionSelector* selector, Node* node,
   }
 }
 
-
 // Shared routine for multiple binary operations.
 template <typename Matcher>
 void VisitBinop(InstructionSelector* selector, Node* node, ArchOpcode opcode,
@@ -163,7 +156,6 @@ void VisitBinop(InstructionSelector* selector, Node* node, ArchOpcode opcode,
 }
 
 }  // namespace
-
 
 void InstructionSelector::VisitLoad(Node* node) {
   LoadRepresentation load_rep = LoadRepresentationOf(node->op());
@@ -203,7 +195,7 @@ void InstructionSelector::VisitLoad(Node* node) {
       mode = kInt16Imm_4ByteAligned;
       break;
 #else
-    case MachineRepresentation::kWord64:  // Fall through.
+    case MachineRepresentation::kWord64:    // Fall through.
 #endif
     case MachineRepresentation::kSimd128:  // Fall through.
     case MachineRepresentation::kNone:
@@ -221,7 +213,6 @@ void InstructionSelector::VisitLoad(Node* node) {
          g.DefineAsRegister(node), g.UseRegister(base), g.UseRegister(offset));
   }
 }
-
 
 void InstructionSelector::VisitStore(Node* node) {
   S390OperandGenerator g(this);
@@ -326,7 +317,6 @@ void InstructionSelector::VisitStore(Node* node) {
   }
 }
 
-
 void InstructionSelector::VisitCheckedLoad(Node* node) {
   CheckedLoadRepresentation load_rep = CheckedLoadRepresentationOf(node->op());
   S390OperandGenerator g(this);
@@ -370,7 +360,6 @@ void InstructionSelector::VisitCheckedLoad(Node* node) {
        g.DefineAsRegister(node), g.UseRegister(base), g.UseRegister(offset),
        g.UseOperand(length, kInt16Imm_Unsigned));
 }
-
 
 void InstructionSelector::VisitCheckedStore(Node* node) {
   MachineRepresentation rep = CheckedStoreRepresentationOf(node->op());
@@ -416,7 +405,6 @@ void InstructionSelector::VisitCheckedStore(Node* node) {
        g.UseRegister(base), g.UseRegister(offset),
        g.UseOperand(length, kInt16Imm_Unsigned), g.UseRegister(value));
 }
-
 
 template <typename Matcher>
 static void VisitLogical(InstructionSelector* selector, Node* node, Matcher* m,
@@ -464,7 +452,6 @@ static void VisitLogical(InstructionSelector* selector, Node* node, Matcher* m,
   VisitBinop<Matcher>(selector, node, opcode, imm_mode);
 }
 
-
 static inline bool IsContiguousMask32(uint32_t value, int* mb, int* me) {
   int mask_width = base::bits::CountPopulation32(value);
   int mask_msb = base::bits::CountLeadingZeros32(value);
@@ -475,7 +462,6 @@ static inline bool IsContiguousMask32(uint32_t value, int* mb, int* me) {
   *me = mask_lsb;
   return true;
 }
-
 
 #if V8_TARGET_ARCH_S390X
 static inline bool IsContiguousMask64(uint64_t value, int* mb, int* me) {
@@ -490,8 +476,6 @@ static inline bool IsContiguousMask64(uint64_t value, int* mb, int* me) {
 }
 #endif
 
-
-// TODO(mbrandy): Absorb rotate-right into rlwinm?
 void InstructionSelector::VisitWord32And(Node* node) {
   S390OperandGenerator g(this);
   Int32BinopMatcher m(node);
@@ -502,7 +486,6 @@ void InstructionSelector::VisitWord32And(Node* node) {
     Node* left = m.left().node();
     if ((m.left().IsWord32Shr() || m.left().IsWord32Shl()) &&
         CanCover(node, left)) {
-      // Try to absorb left/right shift into rlwinm
       Int32BinopMatcher mleft(m.left().node());
       if (mleft.right().IsInRange(0, 31)) {
         left = mleft.left().node();
@@ -520,7 +503,7 @@ void InstructionSelector::VisitWord32And(Node* node) {
     if (mb >= me) {
       Emit(kS390_RotLeftAndMask32, g.DefineAsRegister(node),
            g.UseRegister(left), g.TempImmediate(sh), g.TempImmediate(mb),
-             g.TempImmediate(me));
+           g.TempImmediate(me));
       return;
     }
   }
@@ -529,9 +512,7 @@ void InstructionSelector::VisitWord32And(Node* node) {
       CanCover(node, m.right().node()), kInt16Imm_Unsigned);
 }
 
-
 #if V8_TARGET_ARCH_S390X
-// TODO(mbrandy): Absorb rotate-right into rldic?
 void InstructionSelector::VisitWord64And(Node* node) {
   S390OperandGenerator g(this);
   Int64BinopMatcher m(node);
@@ -542,7 +523,6 @@ void InstructionSelector::VisitWord64And(Node* node) {
     Node* left = m.left().node();
     if ((m.left().IsWord64Shr() || m.left().IsWord64Shl()) &&
         CanCover(node, left)) {
-      // Try to absorb left/right shift into rldic
       Int64BinopMatcher mleft(m.left().node());
       if (mleft.right().IsInRange(0, 63)) {
         left = mleft.left().node();
@@ -587,14 +567,12 @@ void InstructionSelector::VisitWord64And(Node* node) {
 }
 #endif
 
-
 void InstructionSelector::VisitWord32Or(Node* node) {
   Int32BinopMatcher m(node);
   VisitLogical<Int32BinopMatcher>(
       this, node, &m, kS390_Or, CanCover(node, m.left().node()),
       CanCover(node, m.right().node()), kInt16Imm_Unsigned);
 }
-
 
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitWord64Or(Node* node) {
@@ -605,7 +583,6 @@ void InstructionSelector::VisitWord64Or(Node* node) {
 }
 #endif
 
-
 void InstructionSelector::VisitWord32Xor(Node* node) {
   S390OperandGenerator g(this);
   Int32BinopMatcher m(node);
@@ -615,7 +592,6 @@ void InstructionSelector::VisitWord32Xor(Node* node) {
     VisitBinop<Int32BinopMatcher>(this, node, kS390_Xor, kInt16Imm_Unsigned);
   }
 }
-
 
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitWord64Xor(Node* node) {
@@ -629,12 +605,10 @@ void InstructionSelector::VisitWord64Xor(Node* node) {
 }
 #endif
 
-
 void InstructionSelector::VisitWord32Shl(Node* node) {
   S390OperandGenerator g(this);
   Int32BinopMatcher m(node);
   if (m.left().IsWord32And() && m.right().IsInRange(0, 31)) {
-    // Try to absorb logical-and into rlwinm
     Int32BinopMatcher mleft(m.left().node());
     int sh = m.right().Value();
     int mb;
@@ -654,14 +628,12 @@ void InstructionSelector::VisitWord32Shl(Node* node) {
   VisitRRO(this, kS390_ShiftLeft32, node, kShift32Imm);
 }
 
-
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitWord64Shl(Node* node) {
   S390OperandGenerator g(this);
   Int64BinopMatcher m(node);
   // TODO(mbrandy): eliminate left sign extension if right >= 32
   if (m.left().IsWord64And() && m.right().IsInRange(0, 63)) {
-    // Try to absorb logical-and into rldic
     Int64BinopMatcher mleft(m.left().node());
     int sh = m.right().Value();
     int mb;
@@ -700,12 +672,10 @@ void InstructionSelector::VisitWord64Shl(Node* node) {
 }
 #endif
 
-
 void InstructionSelector::VisitWord32Shr(Node* node) {
   S390OperandGenerator g(this);
   Int32BinopMatcher m(node);
   if (m.left().IsWord32And() && m.right().IsInRange(0, 31)) {
-    // Try to absorb logical-and into rlwinm
     Int32BinopMatcher mleft(m.left().node());
     int sh = m.right().Value();
     int mb;
@@ -726,13 +696,11 @@ void InstructionSelector::VisitWord32Shr(Node* node) {
   VisitRRO(this, kS390_ShiftRight32, node, kShift32Imm);
 }
 
-
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitWord64Shr(Node* node) {
   S390OperandGenerator g(this);
   Int64BinopMatcher m(node);
   if (m.left().IsWord64And() && m.right().IsInRange(0, 63)) {
-    // Try to absorb logical-and into rldic
     Int64BinopMatcher mleft(m.left().node());
     int sh = m.right().Value();
     int mb;
@@ -768,7 +736,6 @@ void InstructionSelector::VisitWord64Shr(Node* node) {
 }
 #endif
 
-
 void InstructionSelector::VisitWord32Sar(Node* node) {
   S390OperandGenerator g(this);
   Int32BinopMatcher m(node);
@@ -788,34 +755,27 @@ void InstructionSelector::VisitWord32Sar(Node* node) {
   VisitRRO(this, kS390_ShiftRightAlg32, node, kShift32Imm);
 }
 
-
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitWord64Sar(Node* node) {
   VisitRRO(this, kS390_ShiftRightAlg64, node, kShift64Imm);
 }
 #endif
 
-
-// TODO(mbrandy): Absorb logical-and into rlwinm?
 void InstructionSelector::VisitWord32Ror(Node* node) {
   VisitRRO(this, kS390_RotRight32, node, kShift32Imm);
 }
 
-
 #if V8_TARGET_ARCH_S390X
-// TODO(mbrandy): Absorb logical-and into rldic?
 void InstructionSelector::VisitWord64Ror(Node* node) {
   VisitRRO(this, kS390_RotRight64, node, kShift64Imm);
 }
 #endif
 
-
 void InstructionSelector::VisitWord32Clz(Node* node) {
   S390OperandGenerator g(this);
   Emit(kS390_Cntlz32, g.DefineAsRegister(node),
-      g.UseRegister(node->InputAt(0)));
+       g.UseRegister(node->InputAt(0)));
 }
-
 
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitWord64Clz(Node* node) {
@@ -825,13 +785,11 @@ void InstructionSelector::VisitWord64Clz(Node* node) {
 }
 #endif
 
-
 void InstructionSelector::VisitWord32Popcnt(Node* node) {
   S390OperandGenerator g(this);
   Emit(kS390_Popcnt32, g.DefineAsRegister(node),
        g.UseRegister(node->InputAt(0)));
 }
-
 
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitWord64Popcnt(Node* node) {
@@ -841,34 +799,27 @@ void InstructionSelector::VisitWord64Popcnt(Node* node) {
 }
 #endif
 
-
 void InstructionSelector::VisitWord32Ctz(Node* node) { UNREACHABLE(); }
-
 
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitWord64Ctz(Node* node) { UNREACHABLE(); }
 #endif
 
-
 void InstructionSelector::VisitWord32ReverseBits(Node* node) { UNREACHABLE(); }
-
 
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitWord64ReverseBits(Node* node) { UNREACHABLE(); }
 #endif
 
-
 void InstructionSelector::VisitInt32Add(Node* node) {
   VisitBinop<Int32BinopMatcher>(this, node, kS390_Add, kInt16Imm);
 }
-
 
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitInt64Add(Node* node) {
   VisitBinop<Int64BinopMatcher>(this, node, kS390_Add, kInt16Imm);
 }
 #endif
-
 
 void InstructionSelector::VisitInt32Sub(Node* node) {
   S390OperandGenerator g(this);
@@ -879,7 +830,6 @@ void InstructionSelector::VisitInt32Sub(Node* node) {
     VisitBinop<Int32BinopMatcher>(this, node, kS390_Sub, kInt16Imm_Negate);
   }
 }
-
 
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitInt64Sub(Node* node) {
@@ -893,11 +843,9 @@ void InstructionSelector::VisitInt64Sub(Node* node) {
 }
 #endif
 
-
 void InstructionSelector::VisitInt32Mul(Node* node) {
   VisitRRR(this, kS390_Mul32, node);
 }
-
 
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitInt64Mul(Node* node) {
@@ -905,13 +853,11 @@ void InstructionSelector::VisitInt64Mul(Node* node) {
 }
 #endif
 
-
 void InstructionSelector::VisitInt32MulHigh(Node* node) {
   S390OperandGenerator g(this);
   Emit(kS390_MulHigh32, g.DefineAsRegister(node),
        g.UseRegister(node->InputAt(0)), g.UseRegister(node->InputAt(1)));
 }
-
 
 void InstructionSelector::VisitUint32MulHigh(Node* node) {
   S390OperandGenerator g(this);
@@ -919,11 +865,9 @@ void InstructionSelector::VisitUint32MulHigh(Node* node) {
        g.UseRegister(node->InputAt(0)), g.UseRegister(node->InputAt(1)));
 }
 
-
 void InstructionSelector::VisitInt32Div(Node* node) {
   VisitRRR(this, kS390_Div32, node);
 }
-
 
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitInt64Div(Node* node) {
@@ -931,11 +875,9 @@ void InstructionSelector::VisitInt64Div(Node* node) {
 }
 #endif
 
-
 void InstructionSelector::VisitUint32Div(Node* node) {
   VisitRRR(this, kS390_DivU32, node);
 }
-
 
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitUint64Div(Node* node) {
@@ -943,11 +885,9 @@ void InstructionSelector::VisitUint64Div(Node* node) {
 }
 #endif
 
-
 void InstructionSelector::VisitInt32Mod(Node* node) {
   VisitRRR(this, kS390_Mod32, node);
 }
-
 
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitInt64Mod(Node* node) {
@@ -955,11 +895,9 @@ void InstructionSelector::VisitInt64Mod(Node* node) {
 }
 #endif
 
-
 void InstructionSelector::VisitUint32Mod(Node* node) {
   VisitRRR(this, kS390_ModU32, node);
 }
-
 
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitUint64Mod(Node* node) {
@@ -967,68 +905,55 @@ void InstructionSelector::VisitUint64Mod(Node* node) {
 }
 #endif
 
-
 void InstructionSelector::VisitChangeFloat32ToFloat64(Node* node) {
   VisitRR(this, kS390_Float32ToDouble, node);
 }
-
 
 void InstructionSelector::VisitRoundInt32ToFloat32(Node* node) {
   VisitRR(this, kS390_Int32ToFloat32, node);
 }
 
-
 void InstructionSelector::VisitRoundUint32ToFloat32(Node* node) {
   VisitRR(this, kS390_Uint32ToFloat32, node);
 }
-
 
 void InstructionSelector::VisitChangeInt32ToFloat64(Node* node) {
   VisitRR(this, kS390_Int32ToDouble, node);
 }
 
-
 void InstructionSelector::VisitChangeUint32ToFloat64(Node* node) {
   VisitRR(this, kS390_Uint32ToDouble, node);
 }
-
 
 void InstructionSelector::VisitChangeFloat64ToInt32(Node* node) {
   VisitRR(this, kS390_DoubleToInt32, node);
 }
 
-
 void InstructionSelector::VisitChangeFloat64ToUint32(Node* node) {
   VisitRR(this, kS390_DoubleToUint32, node);
 }
-
 
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitTryTruncateFloat32ToInt64(Node* node) {
   VisitTryTruncateDouble(this, kS390_Float32ToInt64, node);
 }
 
-
 void InstructionSelector::VisitTryTruncateFloat64ToInt64(Node* node) {
   VisitTryTruncateDouble(this, kS390_DoubleToInt64, node);
 }
-
 
 void InstructionSelector::VisitTryTruncateFloat32ToUint64(Node* node) {
   VisitTryTruncateDouble(this, kS390_Float32ToUint64, node);
 }
 
-
 void InstructionSelector::VisitTryTruncateFloat64ToUint64(Node* node) {
   VisitTryTruncateDouble(this, kS390_DoubleToUint64, node);
 }
-
 
 void InstructionSelector::VisitChangeInt32ToInt64(Node* node) {
   // TODO(mbrandy): inspect input to see if nop is appropriate.
   VisitRR(this, kS390_ExtendSignWord32, node);
 }
-
 
 void InstructionSelector::VisitChangeUint32ToUint64(Node* node) {
   // TODO(mbrandy): inspect input to see if nop is appropriate.
@@ -1036,11 +961,9 @@ void InstructionSelector::VisitChangeUint32ToUint64(Node* node) {
 }
 #endif
 
-
 void InstructionSelector::VisitTruncateFloat64ToFloat32(Node* node) {
   VisitRR(this, kS390_DoubleToFloat32, node);
 }
-
 
 void InstructionSelector::VisitTruncateFloat64ToInt32(Node* node) {
   switch (TruncationModeOf(node->op())) {
@@ -1052,16 +975,13 @@ void InstructionSelector::VisitTruncateFloat64ToInt32(Node* node) {
   UNREACHABLE();
 }
 
-
 void InstructionSelector::VisitTruncateFloat32ToInt32(Node* node) {
   VisitRR(this, kS390_Float32ToInt32, node);
 }
 
-
 void InstructionSelector::VisitTruncateFloat32ToUint32(Node* node) {
   VisitRR(this, kS390_Float32ToUint32, node);
 }
-
 
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitTruncateInt64ToInt32(Node* node) {
@@ -1069,32 +989,26 @@ void InstructionSelector::VisitTruncateInt64ToInt32(Node* node) {
   VisitRR(this, kS390_Int64ToInt32, node);
 }
 
-
 void InstructionSelector::VisitRoundInt64ToFloat32(Node* node) {
   VisitRR(this, kS390_Int64ToFloat32, node);
 }
-
 
 void InstructionSelector::VisitRoundInt64ToFloat64(Node* node) {
   VisitRR(this, kS390_Int64ToDouble, node);
 }
 
-
 void InstructionSelector::VisitRoundUint64ToFloat32(Node* node) {
   VisitRR(this, kS390_Uint64ToFloat32, node);
 }
-
 
 void InstructionSelector::VisitRoundUint64ToFloat64(Node* node) {
   VisitRR(this, kS390_Uint64ToDouble, node);
 }
 #endif
 
-
 void InstructionSelector::VisitBitcastFloat32ToInt32(Node* node) {
   VisitRR(this, kS390_BitcastFloat32ToInt32, node);
 }
-
 
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitBitcastFloat64ToInt64(Node* node) {
@@ -1102,11 +1016,9 @@ void InstructionSelector::VisitBitcastFloat64ToInt64(Node* node) {
 }
 #endif
 
-
 void InstructionSelector::VisitBitcastInt32ToFloat32(Node* node) {
   VisitRR(this, kS390_BitcastInt32ToFloat32, node);
 }
-
 
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitBitcastInt64ToFloat64(Node* node) {
@@ -1114,17 +1026,14 @@ void InstructionSelector::VisitBitcastInt64ToFloat64(Node* node) {
 }
 #endif
 
-
 void InstructionSelector::VisitFloat32Add(Node* node) {
   VisitRRR(this, kS390_AddFloat, node);
 }
-
 
 void InstructionSelector::VisitFloat64Add(Node* node) {
   // TODO(mbrandy): detect multiply-add
   VisitRRR(this, kS390_AddDouble, node);
 }
-
 
 void InstructionSelector::VisitFloat32Sub(Node* node) {
   S390OperandGenerator g(this);
@@ -1136,7 +1045,6 @@ void InstructionSelector::VisitFloat32Sub(Node* node) {
   }
   VisitRRR(this, kS390_SubFloat, node);
 }
-
 
 void InstructionSelector::VisitFloat64Sub(Node* node) {
   // TODO(mbrandy): detect multiply-subtract
@@ -1163,112 +1071,89 @@ void InstructionSelector::VisitFloat64Sub(Node* node) {
   VisitRRR(this, kS390_SubDouble, node);
 }
 
-
 void InstructionSelector::VisitFloat32Mul(Node* node) {
   VisitRRR(this, kS390_MulFloat, node);
 }
-
 
 void InstructionSelector::VisitFloat64Mul(Node* node) {
   // TODO(mbrandy): detect negate
   VisitRRR(this, kS390_MulDouble, node);
 }
 
-
 void InstructionSelector::VisitFloat32Div(Node* node) {
   VisitRRR(this, kS390_DivFloat, node);
 }
-
 
 void InstructionSelector::VisitFloat64Div(Node* node) {
   VisitRRR(this, kS390_DivDouble, node);
 }
 
-
 void InstructionSelector::VisitFloat64Mod(Node* node) {
   S390OperandGenerator g(this);
   Emit(kS390_ModDouble, g.DefineAsFixed(node, d1),
-       g.UseFixed(node->InputAt(0), d1),
-       g.UseFixed(node->InputAt(1), d2))->MarkAsCall();
+       g.UseFixed(node->InputAt(0), d1), g.UseFixed(node->InputAt(1), d2))
+      ->MarkAsCall();
 }
-
 
 void InstructionSelector::VisitFloat32Max(Node* node) { UNREACHABLE(); }
 
-
 void InstructionSelector::VisitFloat64Max(Node* node) { UNREACHABLE(); }
-
 
 void InstructionSelector::VisitFloat32Min(Node* node) { UNREACHABLE(); }
 
-
 void InstructionSelector::VisitFloat64Min(Node* node) { UNREACHABLE(); }
-
 
 void InstructionSelector::VisitFloat32Abs(Node* node) {
   VisitRR(this, kS390_AbsFloat, node);
 }
 
-
 void InstructionSelector::VisitFloat64Abs(Node* node) {
   VisitRR(this, kS390_AbsDouble, node);
 }
-
 
 void InstructionSelector::VisitFloat32Sqrt(Node* node) {
   VisitRR(this, kS390_SqrtFloat, node);
 }
 
-
 void InstructionSelector::VisitFloat64Sqrt(Node* node) {
   VisitRR(this, kS390_SqrtDouble, node);
 }
-
 
 void InstructionSelector::VisitFloat32RoundDown(Node* node) {
   VisitRR(this, kS390_FloorFloat, node);
 }
 
-
 void InstructionSelector::VisitFloat64RoundDown(Node* node) {
   VisitRR(this, kS390_FloorDouble, node);
 }
-
 
 void InstructionSelector::VisitFloat32RoundUp(Node* node) {
   VisitRR(this, kS390_CeilFloat, node);
 }
 
-
 void InstructionSelector::VisitFloat64RoundUp(Node* node) {
   VisitRR(this, kS390_CeilDouble, node);
 }
-
 
 void InstructionSelector::VisitFloat32RoundTruncate(Node* node) {
   VisitRR(this, kS390_TruncateFloat, node);
 }
 
-
 void InstructionSelector::VisitFloat64RoundTruncate(Node* node) {
   VisitRR(this, kS390_TruncateDouble, node);
 }
-
 
 void InstructionSelector::VisitFloat64RoundTiesAway(Node* node) {
   VisitRR(this, kS390_RoundDouble, node);
 }
 
-
 void InstructionSelector::VisitFloat32RoundTiesEven(Node* node) {
   UNREACHABLE();
 }
 
-
 void InstructionSelector::VisitFloat64RoundTiesEven(Node* node) {
   UNREACHABLE();
 }
-
 
 void InstructionSelector::VisitInt32AddWithOverflow(Node* node) {
   if (Node* ovf = NodeProperties::FindProjection(node, 1)) {
@@ -1281,7 +1166,6 @@ void InstructionSelector::VisitInt32AddWithOverflow(Node* node) {
                                 &cont);
 }
 
-
 void InstructionSelector::VisitInt32SubWithOverflow(Node* node) {
   if (Node* ovf = NodeProperties::FindProjection(node, 1)) {
     FlagsContinuation cont = FlagsContinuation::ForSet(kOverflow, ovf);
@@ -1292,7 +1176,6 @@ void InstructionSelector::VisitInt32SubWithOverflow(Node* node) {
   VisitBinop<Int32BinopMatcher>(this, node, kS390_SubWithOverflow32,
                                 kInt16Imm_Negate, &cont);
 }
-
 
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitInt64AddWithOverflow(Node* node) {
@@ -1305,7 +1188,6 @@ void InstructionSelector::VisitInt64AddWithOverflow(Node* node) {
   VisitBinop<Int64BinopMatcher>(this, node, kS390_Add, kInt16Imm, &cont);
 }
 
-
 void InstructionSelector::VisitInt64SubWithOverflow(Node* node) {
   if (Node* ovf = NodeProperties::FindProjection(node, 1)) {
     FlagsContinuation cont = FlagsContinuation::ForSet(kOverflow, ovf);
@@ -1316,7 +1198,6 @@ void InstructionSelector::VisitInt64SubWithOverflow(Node* node) {
   VisitBinop<Int64BinopMatcher>(this, node, kS390_Sub, kInt16Imm_Negate, &cont);
 }
 #endif
-
 
 static bool CompareLogical(FlagsContinuation* cont) {
   switch (cont->condition()) {
@@ -1331,7 +1212,6 @@ static bool CompareLogical(FlagsContinuation* cont) {
   UNREACHABLE();
   return false;
 }
-
 
 namespace {
 
@@ -1352,7 +1232,6 @@ void VisitCompare(InstructionSelector* selector, InstructionCode opcode,
     selector->Emit(opcode, g.DefineAsRegister(cont->result()), left, right);
   }
 }
-
 
 // Shared routine for multiple word compare operations.
 void VisitWordCompare(InstructionSelector* selector, Node* node,
@@ -1376,13 +1255,11 @@ void VisitWordCompare(InstructionSelector* selector, Node* node,
   }
 }
 
-
 void VisitWord32Compare(InstructionSelector* selector, Node* node,
                         FlagsContinuation* cont) {
   ImmediateMode mode = (CompareLogical(cont) ? kInt16Imm_Unsigned : kInt16Imm);
   VisitWordCompare(selector, node, kS390_Cmp32, cont, false, mode);
 }
-
 
 #if V8_TARGET_ARCH_S390X
 void VisitWord64Compare(InstructionSelector* selector, Node* node,
@@ -1391,7 +1268,6 @@ void VisitWord64Compare(InstructionSelector* selector, Node* node,
   VisitWordCompare(selector, node, kS390_Cmp64, cont, false, mode);
 }
 #endif
-
 
 // Shared routine for multiple float32 compare operations.
 void VisitFloat32Compare(InstructionSelector* selector, Node* node,
@@ -1403,7 +1279,6 @@ void VisitFloat32Compare(InstructionSelector* selector, Node* node,
                g.UseRegister(right), cont);
 }
 
-
 // Shared routine for multiple float64 compare operations.
 void VisitFloat64Compare(InstructionSelector* selector, Node* node,
                          FlagsContinuation* cont) {
@@ -1413,7 +1288,6 @@ void VisitFloat64Compare(InstructionSelector* selector, Node* node,
   VisitCompare(selector, kS390_CmpDouble, g.UseRegister(left),
                g.UseRegister(right), cont);
 }
-
 
 // Shared routine for word comparisons against zero.
 void VisitWordCompareZero(InstructionSelector* selector, Node* user,
@@ -1522,7 +1396,6 @@ void VisitWordCompareZero(InstructionSelector* selector, Node* user,
       case IrOpcode::kInt32Sub:
         return VisitWord32Compare(selector, value, cont);
       case IrOpcode::kWord32And:
-        // TODO(mbandy): opportunity for rlwinm?
         return VisitWordCompare(selector, value, kS390_Tst32, cont, true,
                                 kInt16Imm_Unsigned);
 // TODO(mbrandy): Handle?
@@ -1537,7 +1410,6 @@ void VisitWordCompareZero(InstructionSelector* selector, Node* user,
       case IrOpcode::kInt64Sub:
         return VisitWord64Compare(selector, value, cont);
       case IrOpcode::kWord64And:
-        // TODO(mbandy): opportunity for rldic?
         return VisitWordCompare(selector, value, kS390_Tst64, cont, true,
                                 kInt16Imm_Unsigned);
 // TODO(mbrandy): Handle?
@@ -1561,12 +1433,10 @@ void VisitWordCompareZero(InstructionSelector* selector, Node* user,
                cont);
 }
 
-
 void VisitWord32CompareZero(InstructionSelector* selector, Node* user,
                             Node* value, FlagsContinuation* cont) {
   VisitWordCompareZero(selector, user, value, kS390_Cmp32, cont);
 }
-
 
 #if V8_TARGET_ARCH_S390X
 void VisitWord64CompareZero(InstructionSelector* selector, Node* user,
@@ -1576,7 +1446,6 @@ void VisitWord64CompareZero(InstructionSelector* selector, Node* user,
 #endif
 
 }  // namespace
-
 
 void InstructionSelector::VisitBranch(Node* branch, BasicBlock* tbranch,
                                       BasicBlock* fbranch) {
@@ -1623,7 +1492,6 @@ void InstructionSelector::VisitSwitch(Node* node, const SwitchInfo& sw) {
   return EmitLookupSwitch(sw, value_operand);
 }
 
-
 void InstructionSelector::VisitWord32Equal(Node* const node) {
   FlagsContinuation cont = FlagsContinuation::ForSet(kEqual, node);
   Int32BinopMatcher m(node);
@@ -1633,12 +1501,10 @@ void InstructionSelector::VisitWord32Equal(Node* const node) {
   VisitWord32Compare(this, node, &cont);
 }
 
-
 void InstructionSelector::VisitInt32LessThan(Node* node) {
   FlagsContinuation cont = FlagsContinuation::ForSet(kSignedLessThan, node);
   VisitWord32Compare(this, node, &cont);
 }
-
 
 void InstructionSelector::VisitInt32LessThanOrEqual(Node* node) {
   FlagsContinuation cont =
@@ -1646,19 +1512,16 @@ void InstructionSelector::VisitInt32LessThanOrEqual(Node* node) {
   VisitWord32Compare(this, node, &cont);
 }
 
-
 void InstructionSelector::VisitUint32LessThan(Node* node) {
   FlagsContinuation cont = FlagsContinuation::ForSet(kUnsignedLessThan, node);
   VisitWord32Compare(this, node, &cont);
 }
-
 
 void InstructionSelector::VisitUint32LessThanOrEqual(Node* node) {
   FlagsContinuation cont =
       FlagsContinuation::ForSet(kUnsignedLessThanOrEqual, node);
   VisitWord32Compare(this, node, &cont);
 }
-
 
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitWord64Equal(Node* const node) {
@@ -1670,12 +1533,10 @@ void InstructionSelector::VisitWord64Equal(Node* const node) {
   VisitWord64Compare(this, node, &cont);
 }
 
-
 void InstructionSelector::VisitInt64LessThan(Node* node) {
   FlagsContinuation cont = FlagsContinuation::ForSet(kSignedLessThan, node);
   VisitWord64Compare(this, node, &cont);
 }
-
 
 void InstructionSelector::VisitInt64LessThanOrEqual(Node* node) {
   FlagsContinuation cont =
@@ -1683,12 +1544,10 @@ void InstructionSelector::VisitInt64LessThanOrEqual(Node* node) {
   VisitWord64Compare(this, node, &cont);
 }
 
-
 void InstructionSelector::VisitUint64LessThan(Node* node) {
   FlagsContinuation cont = FlagsContinuation::ForSet(kUnsignedLessThan, node);
   VisitWord64Compare(this, node, &cont);
 }
-
 
 void InstructionSelector::VisitUint64LessThanOrEqual(Node* node) {
   FlagsContinuation cont =
@@ -1697,18 +1556,15 @@ void InstructionSelector::VisitUint64LessThanOrEqual(Node* node) {
 }
 #endif
 
-
 void InstructionSelector::VisitFloat32Equal(Node* node) {
   FlagsContinuation cont = FlagsContinuation::ForSet(kEqual, node);
   VisitFloat32Compare(this, node, &cont);
 }
 
-
 void InstructionSelector::VisitFloat32LessThan(Node* node) {
   FlagsContinuation cont = FlagsContinuation::ForSet(kUnsignedLessThan, node);
   VisitFloat32Compare(this, node, &cont);
 }
-
 
 void InstructionSelector::VisitFloat32LessThanOrEqual(Node* node) {
   FlagsContinuation cont =
@@ -1716,25 +1572,21 @@ void InstructionSelector::VisitFloat32LessThanOrEqual(Node* node) {
   VisitFloat32Compare(this, node, &cont);
 }
 
-
 void InstructionSelector::VisitFloat64Equal(Node* node) {
   FlagsContinuation cont = FlagsContinuation::ForSet(kEqual, node);
   VisitFloat64Compare(this, node, &cont);
 }
-
 
 void InstructionSelector::VisitFloat64LessThan(Node* node) {
   FlagsContinuation cont = FlagsContinuation::ForSet(kUnsignedLessThan, node);
   VisitFloat64Compare(this, node, &cont);
 }
 
-
 void InstructionSelector::VisitFloat64LessThanOrEqual(Node* node) {
   FlagsContinuation cont =
       FlagsContinuation::ForSet(kUnsignedLessThanOrEqual, node);
   VisitFloat64Compare(this, node, &cont);
 }
-
 
 void InstructionSelector::EmitPrepareArguments(
     ZoneVector<PushParameter>* arguments, const CallDescriptor* descriptor,
@@ -1775,9 +1627,7 @@ void InstructionSelector::EmitPrepareArguments(
   }
 }
 
-
 bool InstructionSelector::IsTailCallAddressImmediate() { return false; }
-
 
 void InstructionSelector::VisitFloat64ExtractLowWord32(Node* node) {
   S390OperandGenerator g(this);
@@ -1785,13 +1635,11 @@ void InstructionSelector::VisitFloat64ExtractLowWord32(Node* node) {
        g.UseRegister(node->InputAt(0)));
 }
 
-
 void InstructionSelector::VisitFloat64ExtractHighWord32(Node* node) {
   S390OperandGenerator g(this);
   Emit(kS390_DoubleExtractHighWord32, g.DefineAsRegister(node),
        g.UseRegister(node->InputAt(0)));
 }
-
 
 void InstructionSelector::VisitFloat64InsertLowWord32(Node* node) {
   S390OperandGenerator g(this);
@@ -1808,7 +1656,6 @@ void InstructionSelector::VisitFloat64InsertLowWord32(Node* node) {
        g.UseRegister(left), g.UseRegister(right));
 }
 
-
 void InstructionSelector::VisitFloat64InsertHighWord32(Node* node) {
   S390OperandGenerator g(this);
   Node* left = node->InputAt(0);
@@ -1824,7 +1671,6 @@ void InstructionSelector::VisitFloat64InsertHighWord32(Node* node) {
        g.UseRegister(left), g.UseRegister(right));
 }
 
-
 // static
 MachineOperatorBuilder::Flags
 InstructionSelector::SupportedMachineOperatorFlags() {
@@ -1837,7 +1683,6 @@ InstructionSelector::SupportedMachineOperatorFlags() {
          MachineOperatorBuilder::kFloat64RoundTiesAway |
          MachineOperatorBuilder::kWord32Popcnt |
          MachineOperatorBuilder::kWord64Popcnt;
-  // We omit kWord32ShiftIsSafe as s[rl]w use 0x3f as a mask rather than 0x1f.
 }
 
 }  // namespace compiler
