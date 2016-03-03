@@ -2157,7 +2157,11 @@ void LCodeGen::DoMathMinMax(LMathMinMax* instr) {
       // For min we want logical-or of sign bit: -(-L + -R)
       __ lcdbr(left_reg, left_reg);
       __ ldr(result_reg, left_reg);
-      __ sdbr(result_reg, right_reg);
+      if (left_reg.is(right_reg)) {
+        __ adbr(result_reg, right_reg);
+      } else {
+        __ sdbr(result_reg, right_reg);
+      }
       __ lcdbr(result_reg, result_reg);
     } else {
       // For max we want logical-and of sign bit: (L + R)
