@@ -1376,8 +1376,8 @@ LInstruction* LChunkBuilder::DoMathMinMax(HMathMinMax* instr) {
     ASSERT(instr->representation().IsDouble());
     ASSERT(instr->left()->representation().IsDouble());
     ASSERT(instr->right()->representation().IsDouble());
-    left = UseRegisterAtStart(instr->left());
-    right = UseRegisterAtStart(instr->right());
+    left = UseRegister(instr->left());
+    right = UseRegister(instr->right());
   }
   return DefineAsRegister(new(zone()) LMathMinMax(left, right));
 }
