@@ -5328,14 +5328,14 @@ void LCodeGen::DoConstructDouble(LConstructDouble* instr) {
   Register lo_reg = ToRegister(instr->lo());
   DoubleRegister result_reg = ToDoubleRegister(instr->result());
   // TODO(joransiu): Construct with ldgr
-#if V8_TARGET_LITTLE_ENDIAN
-  __ StoreW(hi_reg, MemOperand(sp, -kDoubleSize / 2));
-  __ StoreW(lo_reg, MemOperand(sp, -kDoubleSize));
-#else
-  __ StoreW(lo_reg, MemOperand(sp, -kDoubleSize / 2));
-  __ StoreW(hi_reg, MemOperand(sp, -kDoubleSize));
-#endif
-  __ ldy(result_reg, MemOperand(sp, -kDoubleSize));
+  Register scratch = scratch0();
+
+  // Combine hi_reg:lo_reg into a single 64-bit register.
+  __ sllg(scratch, hi_reg, Operand(32));
+  __ lr(scratch, lo_reg);
+
+  // Bitwise convert from GPR to FPR
+  __ ldgr(result_reg, scratch);
 }
 
 
