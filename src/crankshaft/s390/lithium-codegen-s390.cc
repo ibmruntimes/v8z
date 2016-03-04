@@ -1691,9 +1691,7 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
         if (shift_count != 0) {
 #if V8_TARGET_ARCH_S390X
           if (instr->hydrogen_value()->representation().IsSmi()) {
-            // TODO(joransiu): Fix proper Z equivalent to sldi
-            DCHECK(0);
-            // __ sldi(result, left, Operand(shift_count));
+            __ ShiftLeftP(result, left, Operand(shift_count));
 #else
           if (instr->hydrogen_value()->representation().IsSmi() &&
               instr->can_deopt()) {
