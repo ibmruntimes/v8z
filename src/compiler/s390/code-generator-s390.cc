@@ -1383,8 +1383,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ InsertDoubleHigh(i.OutputDoubleRegister(), i.InputRegister(1));
       break;
     case kS390_DoubleConstruct:
-      // TODO(john.yan): this can cause problem when interrupting,
-      //                 use greg->freg instruction
+// TODO(john.yan): this can cause problem when interrupting,
+//                 use greg->freg instruction
 #if V8_TARGET_LITTLE_ENDIAN
       __ StoreW(i.InputRegister(0), MemOperand(sp, -kDoubleSize / 2));
       __ StoreW(i.InputRegister(1), MemOperand(sp, -kDoubleSize));
@@ -1518,7 +1518,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       UNREACHABLE();
       break;
   }
-}
+}  // NOLINT(readability/fn_size)
 
 // Assembles branches after an instruction.
 void CodeGenerator::AssembleArchBranch(Instruction* instr, BranchInfo* branch) {

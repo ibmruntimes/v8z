@@ -184,7 +184,7 @@ void InstructionSelector::VisitLoad(Node* node) {
     case MachineRepresentation::kWord32:
       opcode = kS390_LoadWordS32;
 #if V8_TARGET_ARCH_S390X
-      // TODO(mbrandy): this applies to signed loads only (lwa)
+      // TODO(john.yan): Remove this mode since s390 do not has this restriction
       mode = kInt16Imm_4ByteAligned;
 #endif
       break;
