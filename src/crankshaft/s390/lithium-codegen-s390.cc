@@ -290,9 +290,8 @@ bool LCodeGen::GenerateJumpTable() {
   // end of the jump table. We also don't consider the pc load delta.
   // Each entry in the jump table generates one instruction and inlines one
   // 32bit data after it.
-  // TODO(joransiu): Fix the following int24 check condition.
-  if (!is_int24(masm()->pc_offset() +
-                jump_table_.length() * 7)) {
+  // TODO(joransiu): The Int24 condition can likely be relaxed for S390
+  if (!is_int24(masm()->pc_offset() + jump_table_.length() * 7)) {
     Abort(kGeneratedCodeIsTooLarge);
   }
 
@@ -1113,8 +1112,6 @@ void LCodeGen::DoDivByConstI(LDivByConstI* instr) {
   if (divisor < 0) __ LoadComplementRR(result, result);
 
   if (!hdiv->CheckFlag(HInstruction::kAllUsesTruncatingToInt32)) {
-    // DCHECK(0);
-  // TODO(joransiu): Port this sequence properly to Z.
     Register scratch = scratch0();
     __ mov(ip, Operand(divisor));
     __ Mul(scratch, result, ip);
@@ -1331,11 +1328,6 @@ void LCodeGen::DoFlooringDivI(LFlooringDivI* instr) {
   __ dr(r0, divisor);     // R0:R1 = R1 / divisor - R0 remainder - R1 quotient
 
   __ lr(result, r1);  // Move quotient to result register
-
-  // TODO(joransiu) : Fix sequence to Z instructions.
-  // DCHECK(0);
-//  __ divw(result, dividend, divisor, SetOE, SetRC);
-
 
   Label done;
   Register scratch = scratch0();
@@ -3609,8 +3601,7 @@ void LCodeGen::EmitMathAbs(LMathAbs* instr) {
   __ CmpP(input, Operand::Zero());
   __ Move(result, input);
   __ bge(&done, Label::kNear);
-  __ LoadComplementRR(result, result/*, SetOE, SetRC*/);
-  // TODO(john): might be a problem removing SetOE here.
+  __ LoadComplementRR(result, result);
   // Deoptimize on overflow.
   DeoptimizeIf(overflow, instr, Deoptimizer::kOverflow, cr0);
   __ bind(&done);
@@ -3851,8 +3842,6 @@ void LCodeGen::DoMathClz32(LMathClz32* instr) {
   Register input = ToRegister(instr->value());
   Register result = ToRegister(instr->result());
   Label done;
-  // TODO(joransiu) : Figure out proper sequence for Z.
-  // TODO(john): not sure how flogr behave in 31 bit mode
   __ llgfr(result, input);
   __ flogr(r0, result);
   __ LoadRR(result, r0);
@@ -5069,11 +5058,6 @@ void LCodeGen::DoDoubleToI(LDoubleToI* instr) {
       Label done;
       __ CmpP(result_reg, Operand::Zero());
       __ bne(&done, Label::kNear);
-      // TODO(joransiu): Use move double to int.
-      // __ stdy(double_input, MemOperand(sp, -kDoubleSize));
-      // __ LoadlW(scratch1,
-      //           MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
-      // __ Cmp32(scratch1, Operand::Zero());
       __ TestDoubleSign(double_input, scratch1);
       DeoptimizeIf(lt, instr, Deoptimizer::kMinusZero);
       __ bind(&done);
@@ -5099,7 +5083,6 @@ void LCodeGen::DoDoubleToSmi(LDoubleToSmi* instr) {
       Label done;
       __ CmpP(result_reg, Operand::Zero());
       __ bne(&done, Label::kNear);
-      // TODO(joransiu): Use move double to int.
       __ TestDoubleSign(double_input, scratch1);
       DeoptimizeIf(lt, instr, Deoptimizer::kMinusZero);
       __ bind(&done);
