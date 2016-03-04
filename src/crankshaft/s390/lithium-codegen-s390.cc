@@ -2444,9 +2444,9 @@ void LCodeGen::DoCmpHoleAndBranch(LCmpHoleAndBranch* instr) {
   EmitFalseBranch(instr, ordered);
 
   Register scratch = scratch0();
-  // TODO(joransiu): Use double to int instruction instead.
-  __ stdy(input_reg, MemOperand(sp, -kDoubleSize));
-  __ LoadlW(scratch, MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
+  // Convert to GPR and examine the upper 32 bits
+  __ lgdr(scratch, input_reg);
+  __ srlg(scratch, scratch, Operand(32));
   __ Cmp32(scratch, Operand(kHoleNanUpper32));
   EmitBranch(instr, eq);
 }
