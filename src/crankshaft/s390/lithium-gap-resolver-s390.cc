@@ -18,7 +18,6 @@ LGapResolver::LGapResolver(LCodeGen* owner)
       in_cycle_(false),
       saved_destination_(NULL) {}
 
-
 void LGapResolver::Resolve(LParallelMove* parallel_move) {
   DCHECK(moves_.is_empty());
   // Build up a worklist of moves.
@@ -49,7 +48,6 @@ void LGapResolver::Resolve(LParallelMove* parallel_move) {
   moves_.Rewind(0);
 }
 
-
 void LGapResolver::BuildInitialMoveList(LParallelMove* parallel_move) {
   // Perform a linear sweep of the moves to add them to the initial list of
   // moves to perform, ignoring any move that is redundant (the source is
@@ -62,7 +60,6 @@ void LGapResolver::BuildInitialMoveList(LParallelMove* parallel_move) {
   }
   Verify();
 }
-
 
 void LGapResolver::PerformMove(int index) {
   // Each call to this function performs a move and deletes it from the move
@@ -121,7 +118,6 @@ void LGapResolver::PerformMove(int index) {
   EmitMove(index);
 }
 
-
 void LGapResolver::Verify() {
 #ifdef ENABLE_SLOW_DCHECKS
   // No operand should be the destination for more than one move.
@@ -160,7 +156,6 @@ void LGapResolver::BreakCycle(int index) {
   moves_[index].Eliminate();
 }
 
-
 void LGapResolver::RestoreValue() {
   DCHECK(in_cycle_);
   DCHECK(saved_destination_ != NULL);
@@ -181,7 +176,6 @@ void LGapResolver::RestoreValue() {
   in_cycle_ = false;
   saved_destination_ = NULL;
 }
-
 
 void LGapResolver::EmitMove(int index) {
   LOperand* source = moves_[index].source();
@@ -280,7 +274,6 @@ void LGapResolver::EmitMove(int index) {
 
   moves_[index].Eliminate();
 }
-
 
 #undef __
 }  // namespace internal

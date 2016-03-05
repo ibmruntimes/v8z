@@ -34,7 +34,6 @@ class LCodeGen : public LCodeGenBase {
     PopulateDeoptimizationLiteralsWithInlinedFunctions();
   }
 
-
   int LookupDestination(int block_id) const {
     return chunk()->LookupDestination(block_id);
   }
@@ -45,7 +44,7 @@ class LCodeGen : public LCodeGenBase {
 
   bool NeedsEagerFrame() const {
     return HasAllocatedStackSlots() || info()->is_non_deferred_calling() ||
-        !info()->IsStub() || info()->requires_frame();
+           !info()->IsStub() || info()->requires_frame();
   }
   bool NeedsDeferredFrame() const {
     return !NeedsEagerFrame() && info()->is_deferred_calling();
@@ -122,9 +121,9 @@ class LCodeGen : public LCodeGenBase {
   // Emit frame translation commands for an environment.
   void WriteTranslation(LEnvironment* environment, Translation* translation);
 
-  // Declare methods that deal with the individual node types.
+// Declare methods that deal with the individual node types.
 #define DECLARE_DO(type) void Do##type(L##type* node);
-    LITHIUM_CONCRETE_INSTRUCTION_LIST(DECLARE_DO)
+  LITHIUM_CONCRETE_INSTRUCTION_LIST(DECLARE_DO)
 #undef DECLARE_DO
 
  private:
@@ -297,7 +296,7 @@ class LCodeGen : public LCodeGenBase {
   class PushSafepointRegistersScope final BASE_EMBEDDED {
    public:
     explicit PushSafepointRegistersScope(LCodeGen* codegen)
-      : codegen_(codegen) {
+        : codegen_(codegen) {
       DCHECK(codegen_->info()->is_calling());
       DCHECK(codegen_->expected_safepoint_kind_ == Safepoint::kSimple);
       codegen_->expected_safepoint_kind_ = Safepoint::kWithRegisters;
@@ -321,7 +320,6 @@ class LCodeGen : public LCodeGenBase {
   friend class SafepointGenerator;
   DISALLOW_COPY_AND_ASSIGN(LCodeGen);
 };
-
 
 class LDeferredCode : public ZoneObject {
  public:
