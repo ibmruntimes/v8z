@@ -908,9 +908,7 @@ bool HeapObject::IsJSGlobalProxy() const {
 
 TYPE_CHECKER(JSGlobalObject, JS_GLOBAL_OBJECT_TYPE)
 
-bool HeapObject::IsUndetectableObject() const {
-  return map()->is_undetectable();
-}
+bool HeapObject::IsUndetectable() const { return map()->is_undetectable(); }
 
 bool HeapObject::IsAccessCheckNeeded() const {
   if (IsJSGlobalProxy()) {
@@ -1003,6 +1001,24 @@ bool Object::FitsRepresentation(Representation representation) {
   return true;
 }
 
+bool Object::ToUint32(uint32_t* value) {
+  if (IsSmi()) {
+    int num = Smi::cast(this)->value();
+    if (num < 0) return false;
+    *value = static_cast<uint32_t>(num);
+    return true;
+  }
+  if (IsHeapNumber()) {
+    double num = HeapNumber::cast(this)->value();
+    if (num < 0) return false;
+    uint32_t uint_value = FastD2UI(num);
+    if (FastUI2D(uint_value) == num) {
+      *value = uint_value;
+      return true;
+    }
+  }
+  return false;
+}
 
 // static
 MaybeHandle<JSReceiver> Object::ToObject(Isolate* isolate,
@@ -1011,6 +1027,12 @@ MaybeHandle<JSReceiver> Object::ToObject(Isolate* isolate,
   return ToObject(isolate, object, isolate->native_context());
 }
 
+
+// static
+MaybeHandle<Name> Object::ToName(Isolate* isolate, Handle<Object> input) {
+  if (input->IsName()) return Handle<Name>::cast(input);
+  return ConvertToName(isolate, input);
+}
 
 // static
 MaybeHandle<Object> Object::ToPrimitive(Handle<Object> input,
@@ -1027,15 +1049,24 @@ bool Object::HasSpecificClassOf(String* name) {
 MaybeHandle<Object> Object::GetProperty(Handle<Object> object,
                                         Handle<Name> name) {
   LookupIterator it(object, name);
+  if (!it.IsFound()) return it.factory()->undefined_value();
   return GetProperty(&it);
 }
 
 MaybeHandle<Object> Object::GetElement(Isolate* isolate, Handle<Object> object,
                                        uint32_t index) {
   LookupIterator it(isolate, object, index);
+  if (!it.IsFound()) return it.factory()->undefined_value();
   return GetProperty(&it);
 }
 
+Handle<Object> JSReceiver::GetDataProperty(Handle<JSReceiver> object,
+                                           Handle<Name> name) {
+  LookupIterator it(object, name,
+                    LookupIterator::PROTOTYPE_CHAIN_SKIP_INTERCEPTOR);
+  if (!it.IsFound()) return it.factory()->undefined_value();
+  return GetDataProperty(&it);
+}
 
 MaybeHandle<Object> Object::SetElement(Isolate* isolate, Handle<Object> object,
                                        uint32_t index, Handle<Object> value,
@@ -1847,6 +1878,7 @@ InterceptorInfo* JSObject::GetIndexedInterceptor() {
 
 ACCESSORS(Oddball, to_string, String, kToStringOffset)
 ACCESSORS(Oddball, to_number, Object, kToNumberOffset)
+ACCESSORS(Oddball, to_boolean, Oddball, kToBooleanOffset)
 ACCESSORS(Oddball, type_of, String, kTypeOfOffset)
 
 
@@ -1936,6 +1968,8 @@ int JSObject::GetHeaderSize(InstanceType type) {
   // field operations considerably on average.
   if (type == JS_OBJECT_TYPE) return JSObject::kHeaderSize;
   switch (type) {
+    case JS_SPECIAL_API_OBJECT_TYPE:
+      return JSObject::kHeaderSize;
     case JS_GENERATOR_OBJECT_TYPE:
       return JSGeneratorObject::kSize;
     case JS_MODULE_TYPE:
@@ -4513,16 +4547,6 @@ bool Map::is_migration_target() {
 }
 
 
-void Map::set_is_strong() {
-  set_bit_field3(IsStrong::update(bit_field3(), true));
-}
-
-
-bool Map::is_strong() {
-  return IsStrong::decode(bit_field3());
-}
-
-
 void Map::set_new_target_is_base(bool value) {
   set_bit_field3(NewTargetIsBase::update(bit_field3(), value));
 }
@@ -4689,8 +4713,7 @@ bool Code::IsCodeStubOrIC() {
   return kind() == STUB || kind() == HANDLER || kind() == LOAD_IC ||
          kind() == KEYED_LOAD_IC || kind() == CALL_IC || kind() == STORE_IC ||
          kind() == KEYED_STORE_IC || kind() == BINARY_OP_IC ||
-         kind() == COMPARE_IC || kind() == COMPARE_NIL_IC ||
-         kind() == TO_BOOLEAN_IC;
+         kind() == COMPARE_IC || kind() == TO_BOOLEAN_IC;
 }
 
 
@@ -4721,7 +4744,6 @@ ExtraICState Code::extra_ic_state() {
 Code::StubType Code::type() {
   return ExtractTypeFromFlags(flags());
 }
-
 
 // For initialization.
 void Code::set_raw_kind_specific_flags1(int value) {
@@ -4980,7 +5002,6 @@ bool Code::is_keyed_store_stub() { return kind() == KEYED_STORE_IC; }
 bool Code::is_call_stub() { return kind() == CALL_IC; }
 bool Code::is_binary_op_stub() { return kind() == BINARY_OP_IC; }
 bool Code::is_compare_ic_stub() { return kind() == COMPARE_IC; }
-bool Code::is_compare_nil_ic_stub() { return kind() == COMPARE_NIL_IC; }
 bool Code::is_to_boolean_ic_stub() { return kind() == TO_BOOLEAN_IC; }
 bool Code::is_optimized_code() { return kind() == OPTIMIZED_FUNCTION; }
 bool Code::is_wasm_code() { return kind() == WASM_FUNCTION; }
@@ -4988,7 +5009,7 @@ bool Code::is_wasm_code() { return kind() == WASM_FUNCTION; }
 bool Code::embeds_maps_weakly() {
   Kind k = kind();
   return (k == LOAD_IC || k == STORE_IC || k == KEYED_LOAD_IC ||
-          k == KEYED_STORE_IC || k == COMPARE_NIL_IC) &&
+          k == KEYED_STORE_IC) &&
          ic_state() == MONOMORPHIC;
 }
 
@@ -5004,19 +5025,16 @@ Address Code::constant_pool() {
   return constant_pool;
 }
 
-
 Code::Flags Code::ComputeFlags(Kind kind, InlineCacheState ic_state,
                                ExtraICState extra_ic_state, StubType type,
                                CacheHolderFlag holder) {
   // Compute the bit mask.
-  unsigned int bits = KindField::encode(kind)
-      | ICStateField::encode(ic_state)
-      | TypeField::encode(type)
-      | ExtraICStateField::encode(extra_ic_state)
-      | CacheHolderField::encode(holder);
+  unsigned int bits = KindField::encode(kind) | ICStateField::encode(ic_state) |
+                      TypeField::encode(type) |
+                      ExtraICStateField::encode(extra_ic_state) |
+                      CacheHolderField::encode(holder);
   return static_cast<Flags>(bits);
 }
-
 
 Code::Flags Code::ComputeMonomorphicFlags(Kind kind,
                                           ExtraICState extra_ic_state,
@@ -5050,7 +5068,6 @@ ExtraICState Code::ExtractExtraICStateFromFlags(Flags flags) {
 Code::StubType Code::ExtractTypeFromFlags(Flags flags) {
   return TypeField::decode(flags);
 }
-
 
 CacheHolderFlag Code::ExtractCacheHolderFromFlags(Flags flags) {
   return CacheHolderField::decode(flags);
@@ -6003,26 +6020,6 @@ bool SharedFunctionInfo::IsSubjectToDebugging() { return !IsBuiltin(); }
 
 bool SharedFunctionInfo::OptimizedCodeMapIsCleared() const {
   return optimized_code_map() == GetHeap()->cleared_optimized_code_map();
-}
-
-
-// static
-void SharedFunctionInfo::AddToOptimizedCodeMap(
-    Handle<SharedFunctionInfo> shared, Handle<Context> native_context,
-    Handle<Code> code, Handle<LiteralsArray> literals, BailoutId osr_ast_id) {
-  AddToOptimizedCodeMapInternal(shared, native_context, code, literals,
-                                osr_ast_id);
-}
-
-
-// static
-void SharedFunctionInfo::AddLiteralsToOptimizedCodeMap(
-    Handle<SharedFunctionInfo> shared, Handle<Context> native_context,
-    Handle<LiteralsArray> literals) {
-  Isolate* isolate = shared->GetIsolate();
-  Handle<Oddball> undefined = isolate->factory()->undefined_value();
-  AddToOptimizedCodeMapInternal(shared, native_context, undefined, literals,
-                                BailoutId::None());
 }
 
 
@@ -7122,11 +7119,12 @@ Handle<Smi> JSReceiver::GetOrCreateIdentityHash(Handle<JSReceiver> object) {
       : JSObject::GetOrCreateIdentityHash(Handle<JSObject>::cast(object));
 }
 
-
-Object* JSReceiver::GetIdentityHash() {
-  return IsJSProxy()
-      ? JSProxy::cast(this)->GetIdentityHash()
-      : JSObject::cast(this)->GetIdentityHash();
+Handle<Object> JSReceiver::GetIdentityHash(Isolate* isolate,
+                                           Handle<JSReceiver> receiver) {
+  return receiver->IsJSProxy() ? JSProxy::GetIdentityHash(
+                                     isolate, Handle<JSProxy>::cast(receiver))
+                               : JSObject::GetIdentityHash(
+                                     isolate, Handle<JSObject>::cast(receiver));
 }
 
 

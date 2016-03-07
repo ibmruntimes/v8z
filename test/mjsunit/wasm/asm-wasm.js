@@ -415,7 +415,6 @@ function TestInt32HeapAccessExternal() {
   var memory_int32 = new Int32Array(memory);
   var module = _WASMEXP_.instantiateModuleFromAsm(
       TestInt32HeapAccess.toString(), null, memory);
-  module.__init__();
   assertEquals(7, module.caller());
   assertEquals(7, memory_int32[2]);
 }
@@ -439,7 +438,6 @@ function TestHeapAccessIntTypes() {
     var memory = new ArrayBuffer(1024);
     var memory_view = new types[i][0](memory);
     var module = _WASMEXP_.instantiateModuleFromAsm(code, null, memory);
-    module.__init__();
     assertEquals(7, module.caller());
     assertEquals(7, memory_view[2]);
     assertEquals(7, _WASMEXP_.instantiateModuleFromAsm(code).caller());
@@ -480,7 +478,6 @@ function TestFloatHeapAccessExternal() {
   var memory_float64 = new Float64Array(memory);
   var module = _WASMEXP_.instantiateModuleFromAsm(
       TestFloatHeapAccess.toString(), null, memory);
-  module.__init__();
   assertEquals(1, module.caller());
   assertEquals(9.0, memory_float64[1]);
 }
@@ -656,7 +653,6 @@ function TestGlobalsWithInit() {
 }
 
 var module = _WASMEXP_.instantiateModuleFromAsm(TestGlobalsWithInit.toString());
-module.__init__();
 assertEquals(77.5, module.add());
 
 
@@ -879,7 +875,6 @@ function TestInitFunctionWithNoGlobals() {
 
 var module = _WASMEXP_.instantiateModuleFromAsm(
     TestInitFunctionWithNoGlobals.toString());
-module.__init__();
 assertEquals(51, module.caller());
 
 
@@ -893,7 +888,6 @@ function TestExportNameDifferentFromFunctionName() {
 
 var module = _WASMEXP_.instantiateModuleFromAsm(
     TestExportNameDifferentFromFunctionName.toString());
-module.__init__();
 assertEquals(55, module.alt_caller());
 
 
@@ -988,7 +982,6 @@ function TestFunctionTable() {
 }
 
 var module = _WASMEXP_.instantiateModuleFromAsm(TestFunctionTable.toString());
-module.__init__();
 assertEquals(55, module.caller(0, 0, 33, 22));
 assertEquals(11, module.caller(0, 1, 33, 22));
 assertEquals(9, module.caller(0, 2, 54, 45));
@@ -1036,7 +1029,6 @@ function TestForeignFunctions() {
   var module = _WASMEXP_.instantiateModuleFromAsm(AsmModule.toString(),
                                                   foreign, null);
 
-  module.__init__();
   assertEquals(103, module.caller(23, 103));
 }
 
@@ -1076,7 +1068,6 @@ function TestForeignFunctionMultipleUse() {
   var module = _WASMEXP_.instantiateModuleFromAsm(AsmModule.toString(),
                                                   foreign, null);
 
-  module.__init__();
   assertEquals(89, module.caller(83, 83.25));
 }
 
@@ -1114,7 +1105,6 @@ function TestForeignVariables() {
   function TestCase(env, i1, f1, i2, f2) {
     var module = _WASMEXP_.instantiateModuleFromAsm(
         AsmModule.toString(), env);
-    module.__init__();
     assertEquals(i1, module.geti1());
     assertEquals(f1, module.getf1());
     assertEquals(i2, module.geti2());
@@ -1237,7 +1227,6 @@ TestForeignVariables();
 
   var m = _WASMEXP_.instantiateModuleFromAsm(
       Module.toString(), { x: 4, y: 11 });
-  m.__init__();
   assertEquals(15, m.test());
 })();
 
@@ -1312,6 +1301,13 @@ TestForeignVariables();
   function Module(stdlib) {
     "use asm";
 
+    var StdlibMathCeil = stdlib.Math.ceil;
+    var StdlibMathFloor = stdlib.Math.floor;
+    var StdlibMathSqrt = stdlib.Math.sqrt;
+    var StdlibMathAbs = stdlib.Math.abs;
+    var StdlibMathMin = stdlib.Math.min;
+    var StdlibMathMax = stdlib.Math.max;
+
     var StdlibMathAcos = stdlib.Math.acos;
     var StdlibMathAsin = stdlib.Math.asin;
     var StdlibMathAtan = stdlib.Math.atan;
@@ -1320,20 +1316,26 @@ TestForeignVariables();
     var StdlibMathTan = stdlib.Math.tan;
     var StdlibMathExp = stdlib.Math.exp;
     var StdlibMathLog = stdlib.Math.log;
-    var StdlibMathCeil = stdlib.Math.ceil;
-    var StdlibMathFloor = stdlib.Math.floor;
-    var StdlibMathSqrt = stdlib.Math.sqrt;
-    var StdlibMathAbs = stdlib.Math.abs;
-    var StdlibMathMin = stdlib.Math.min;
-    var StdlibMathMax = stdlib.Math.max;
+
     var StdlibMathAtan2 = stdlib.Math.atan2;
     var StdlibMathPow = stdlib.Math.pow;
     var StdlibMathImul = stdlib.Math.imul;
+
     var fround = stdlib.Math.fround;
 
+    function deltaEqual(x, y) {
+      x = +x;
+      y = +y;
+      var t = 0.0;
+      t = x - y;
+      if (t < 0.0) {
+        t = t * -1.0;
+      }
+      return (t < 1.0e-13) | 0;
+    }
+
     function caller() {
-      // TODO(bradnelson): Test transendentals when implemented.
-      if (StdlibMathSqrt(123.0) != 11.090536506409418) return 0;
+      if (!deltaEqual(StdlibMathSqrt(123.0), 11.090536506409418)) return 0;
       if (StdlibMathSqrt(fround(256.0)) != fround(16.0)) return 0;
       if (StdlibMathCeil(123.7) != 124.0) return 0;
       if (StdlibMathCeil(fround(123.7)) != fround(124.0)) return 0;
@@ -1347,7 +1349,20 @@ TestForeignVariables();
       if (StdlibMathMax(123.4, 1236.4) != 1236.4) return 0;
       if (StdlibMathMax(fround(123.4), fround(1236.4))
           != fround(1236.4)) return 0;
+
+      if (!deltaEqual(StdlibMathAcos(0.1), 1.4706289056333368)) return 0;
+      if (!deltaEqual(StdlibMathAsin(0.2), 0.2013579207903308)) return 0;
+      if (!deltaEqual(StdlibMathAtan(0.2), 0.19739555984988078)) return 0;
+      if (!deltaEqual(StdlibMathCos(0.2), 0.9800665778412416)) return 0;
+      if (!deltaEqual(StdlibMathSin(0.2), 0.19866933079506122)) return 0;
+      if (!deltaEqual(StdlibMathTan(0.2), 0.20271003550867250)) return 0;
+      if (!deltaEqual(StdlibMathExp(0.2), 1.2214027581601699)) return 0;
+      if (!deltaEqual(StdlibMathLog(0.2), -1.6094379124341003)) return 0;
+
       if (StdlibMathImul(6, 7) != 42) return 0;
+      if (!deltaEqual(StdlibMathAtan2(6.0, 7.0), 0.7086262721276703)) return 0;
+      if (StdlibMathPow(6.0, 7.0) != 279936.0) return 0;
+
       return 1;
     }
 
@@ -1442,6 +1457,24 @@ TestForeignVariables();
   var m = _WASMEXP_.instantiateModuleFromAsm(Module.toString());
   assertEquals(3, m.func());
 });  // TODO(bradnelson): Enable when Math.fround implementation lands.
+
+
+(function TestDoubleToFloatAssignment() {
+  function Module(stdlib, foreign, heap) {
+    "use asm";
+    var HEAPF32 = new stdlib.Float32Array(heap);
+    var fround = stdlib.Math.fround;
+    function func() {
+      var a = 1.23;
+      HEAPF32[0] = a;
+      return +HEAPF32[0];
+    }
+    return {func: func};
+  }
+
+  var m = _WASMEXP_.instantiateModuleFromAsm(Module.toString());
+  assertEquals(1.23, m.func());
+});
 
 
 (function TestIntegerMultiplyBothWays() {
@@ -1539,4 +1572,19 @@ TestForeignVariables();
 
   var m = _WASMEXP_.instantiateModuleFromAsm(Module.toString());
   assertEquals(0, m.func());
+})();
+
+(function TestOutOfBoundsConversion() {
+  function asmModule($a,$b,$c){'use asm';
+    function aaa() {
+      var f = 0.0;
+      var a = 0;
+      f = 5616315000.000001;
+      a = ~~f >>>0;
+      return a | 0;
+    }
+    return { main : aaa };
+  }
+  var wasm = _WASMEXP_.instantiateModuleFromAsm(asmModule.toString());
+  assertEquals(1321347704, wasm.main());
 })();

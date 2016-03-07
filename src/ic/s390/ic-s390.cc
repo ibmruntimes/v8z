@@ -65,9 +65,8 @@ static void GenerateDictionaryLoad(MacroAssembler* masm, Label* miss,
   __ LoadP(scratch1, FieldMemOperand(scratch2, kDetailsOffset));
   __ LoadRR(r0, scratch2);
   __ LoadSmiLiteral(scratch2, Smi::FromInt(PropertyDetails::TypeField::kMask));
-  __ AndP(scratch2, scratch1 /*, SetRC*/);
-  // Should be okay to remove RC
-  __ bne(miss /*, cr0*/);
+  __ AndP(scratch2, scratch1);
+  __ bne(miss);
   __ LoadRR(scratch2, r0);
 
   // Get the value at the masked, scaled index and return.
@@ -113,7 +112,7 @@ static void GenerateDictionaryStore(MacroAssembler* masm, Label* miss,
   __ LoadP(scratch1, FieldMemOperand(scratch2, kDetailsOffset));
   __ LoadRR(r0, scratch2);
   __ LoadSmiLiteral(scratch2, Smi::FromInt(kTypeAndReadOnlyMask));
-  __ AndP(scratch2, scratch1 /*, SetRC*/);  // Should be OK to remove RC
+  __ AndP(scratch2, scratch1);
   __ bne(miss /*, cr0*/);
   __ LoadRR(scratch2, r0);
 
@@ -852,12 +851,6 @@ void PatchInlinedSmiCode(Isolate* isolate, Address address,
   SixByteInstr branch_instr = Assembler::instr_at(branch_address);
 
   // This is patching a conditional "jump if not smi/jump if smi" site.
-  // Enabling by changing from
-  //   cmp cr0, rx, rx
-  // to
-  //  rlwinm(r0, value, 0, 31, 31, SetRC);
-  //  bc(label, BT/BF, 2)
-  // and vice-versa to be disabled again.
   size_t patch_size = 0;
   if (Instruction::S390OpcodeValue(branch_address) == BRC) {
     patch_size = kPatchAreaSizeNoBranch + 4;
@@ -870,13 +863,10 @@ void PatchInlinedSmiCode(Isolate* isolate, Address address,
   Register reg;
   reg.reg_code = instr_at_patch & 0xf;
   if (check == ENABLE_INLINED_SMI_CHECK) {
-    // DCHECK(Assembler::IsCmpRegister(instr_at_patch));
-    // DCHECK_EQ(Assembler::GetRA(instr_at_patch).code(),
-    // Assembler::GetRB(instr_at_patch).code());
     patcher.masm()->TestIfSmi(reg);
   } else {
-    // Emit the Nop to make bigger place for patching
-    // (replaced by lr + nill)
+    // Emit the NOP to ensure sufficient place for patching
+    // (replaced by LR + NILL)
     DCHECK(check == DISABLE_INLINED_SMI_CHECK);
     patcher.masm()->CmpP(reg, reg);
 #ifndef V8_TARGET_ARCH_S390X

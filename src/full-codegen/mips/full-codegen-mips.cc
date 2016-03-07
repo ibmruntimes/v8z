@@ -306,9 +306,7 @@ void FullCodeGenerator::Generate() {
   // Visit the declarations and body unless there is an illegal
   // redeclaration.
   if (scope()->HasIllegalRedeclaration()) {
-    Comment cmnt(masm_, "[ Declarations");
-    VisitForEffect(scope()->GetIllegalRedeclaration());
-
+    EmitIllegalRedeclaration();
   } else {
     PrepareForBailoutForId(BailoutId::FunctionEntry(), NO_REGISTERS);
     { Comment cmnt(masm_, "[ Declarations");
@@ -527,7 +525,7 @@ void FullCodeGenerator::TestContext::Plug(Handle<Object> lit) const {
                                           true,
                                           true_label_,
                                           false_label_);
-  DCHECK(lit->IsNull() || lit->IsUndefined() || !lit->IsUndetectableObject());
+  DCHECK(lit->IsNull() || lit->IsUndefined() || !lit->IsUndetectable());
   if (lit->IsUndefined() || lit->IsNull() || lit->IsFalse()) {
     if (false_label_ != fall_through_) __ Branch(false_label_);
   } else if (lit->IsTrue() || lit->IsJSObject()) {
@@ -637,7 +635,7 @@ void FullCodeGenerator::DoTest(Expression* condition,
                                Label* if_false,
                                Label* fall_through) {
   __ mov(a0, result_register());
-  Handle<Code> ic = ToBooleanStub::GetUninitialized(isolate());
+  Handle<Code> ic = ToBooleanICStub::GetUninitialized(isolate());
   CallIC(ic, condition->test_id());
   __ LoadRoot(at, Heap::kTrueValueRootIndex);
   Split(eq, result_register(), Operand(at), if_true, if_false, fall_through);
@@ -1072,11 +1070,6 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   // We got a fixed array in register v0. Iterate through that.
   __ bind(&fixed_array);
 
-  int const vector_index = SmiFromSlot(slot)->value();
-  __ EmitLoadTypeFeedbackVector(a1);
-  __ li(a2, Operand(TypeFeedbackVector::MegamorphicSentinel(isolate())));
-  __ sw(a2, FieldMemOperand(a1, FixedArray::OffsetOfElementAt(vector_index)));
-
   __ li(a1, Operand(Smi::FromInt(1)));  // Smi(1) indicates slow check
   __ Push(a1, v0);  // Smi and array
   __ lw(a1, FieldMemOperand(v0, FixedArray::kLengthOffset));
@@ -1111,12 +1104,8 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   __ lw(t0, FieldMemOperand(a1, HeapObject::kMapOffset));
   __ Branch(&update_each, eq, t0, Operand(a2));
 
-  // We might get here from TurboFan or Crankshaft when something in the
-  // for-in loop body deopts and only now notice in fullcodegen, that we
-  // can now longer use the enum cache, i.e. left fast mode. So better record
-  // this information here, in case we later OSR back into this loop or
-  // reoptimize the whole function w/o rerunning the loop with the slow
-  // mode object in fullcodegen (which would result in a deopt loop).
+  // We need to filter the key, record slow-path here.
+  int const vector_index = SmiFromSlot(slot)->value();
   __ EmitLoadTypeFeedbackVector(a0);
   __ li(a2, Operand(TypeFeedbackVector::MegamorphicSentinel(isolate())));
   __ sw(a2, FieldMemOperand(a0, FixedArray::OffsetOfElementAt(vector_index)));
@@ -1857,62 +1846,41 @@ void FullCodeGenerator::VisitYield(Yield* expr) {
   // this.  It stays on the stack while we update the iterator.
   VisitForStackValue(expr->expression());
 
-  switch (expr->yield_kind()) {
-    case Yield::kSuspend:
-      // Pop value from top-of-stack slot; box result into result register.
-      EmitCreateIteratorResult(false);
-      PushOperand(result_register());
-      // Fall through.
-    case Yield::kInitial: {
-      Label suspend, continuation, post_runtime, resume;
+  Label suspend, continuation, post_runtime, resume;
 
-      __ jmp(&suspend);
-      __ bind(&continuation);
-      // When we arrive here, the stack top is the resume mode and
-      // result_register() holds the input value (the argument given to the
-      // respective resume operation).
-      __ RecordGeneratorContinuation();
-      __ pop(a1);
-      __ Branch(&resume, ne, a1,
-                Operand(Smi::FromInt(JSGeneratorObject::RETURN)));
-      __ push(result_register());
-      EmitCreateIteratorResult(true);
-      EmitUnwindAndReturn();
+  __ jmp(&suspend);
+  __ bind(&continuation);
+  // When we arrive here, the stack top is the resume mode and
+  // result_register() holds the input value (the argument given to the
+  // respective resume operation).
+  __ RecordGeneratorContinuation();
+  __ pop(a1);
+  __ Branch(&resume, ne, a1, Operand(Smi::FromInt(JSGeneratorObject::RETURN)));
+  __ push(result_register());
+  EmitCreateIteratorResult(true);
+  EmitUnwindAndReturn();
 
-      __ bind(&suspend);
-      OperandStackDepthIncrement(1);  // Not popped on this path.
-      VisitForAccumulatorValue(expr->generator_object());
-      DCHECK(continuation.pos() > 0 && Smi::IsValid(continuation.pos()));
-      __ li(a1, Operand(Smi::FromInt(continuation.pos())));
-      __ sw(a1, FieldMemOperand(v0, JSGeneratorObject::kContinuationOffset));
-      __ sw(cp, FieldMemOperand(v0, JSGeneratorObject::kContextOffset));
-      __ mov(a1, cp);
-      __ RecordWriteField(v0, JSGeneratorObject::kContextOffset, a1, a2,
-                          kRAHasBeenSaved, kDontSaveFPRegs);
-      __ Addu(a1, fp, Operand(StandardFrameConstants::kExpressionsOffset));
-      __ Branch(&post_runtime, eq, sp, Operand(a1));
-      __ push(v0);  // generator object
-      __ CallRuntime(Runtime::kSuspendJSGeneratorObject, 1);
-      __ lw(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
-      __ bind(&post_runtime);
-      PopOperand(result_register());
-      EmitReturnSequence();
+  __ bind(&suspend);
+  OperandStackDepthIncrement(1);  // Not popped on this path.
+  VisitForAccumulatorValue(expr->generator_object());
+  DCHECK(continuation.pos() > 0 && Smi::IsValid(continuation.pos()));
+  __ li(a1, Operand(Smi::FromInt(continuation.pos())));
+  __ sw(a1, FieldMemOperand(v0, JSGeneratorObject::kContinuationOffset));
+  __ sw(cp, FieldMemOperand(v0, JSGeneratorObject::kContextOffset));
+  __ mov(a1, cp);
+  __ RecordWriteField(v0, JSGeneratorObject::kContextOffset, a1, a2,
+                      kRAHasBeenSaved, kDontSaveFPRegs);
+  __ Addu(a1, fp, Operand(StandardFrameConstants::kExpressionsOffset));
+  __ Branch(&post_runtime, eq, sp, Operand(a1));
+  __ push(v0);  // generator object
+  __ CallRuntime(Runtime::kSuspendJSGeneratorObject, 1);
+  __ lw(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
+  __ bind(&post_runtime);
+  PopOperand(result_register());
+  EmitReturnSequence();
 
-      __ bind(&resume);
-      context()->Plug(result_register());
-      break;
-    }
-
-    case Yield::kFinal: {
-      // Pop value from top-of-stack slot, box result into result register.
-      EmitCreateIteratorResult(true);
-      EmitUnwindAndReturn();
-      break;
-    }
-
-    case Yield::kDelegating:
-      UNREACHABLE();
-  }
+  __ bind(&resume);
+  context()->Plug(result_register());
 }
 
 
@@ -4004,18 +3972,18 @@ void FullCodeGenerator::EmitLiteralCompareNil(CompareOperation* expr,
 
   VisitForAccumulatorValue(sub_expr);
   PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
-  __ mov(a0, result_register());
   if (expr->op() == Token::EQ_STRICT) {
     Heap::RootListIndex nil_value = nil == kNullValue ?
         Heap::kNullValueRootIndex :
         Heap::kUndefinedValueRootIndex;
     __ LoadRoot(a1, nil_value);
-    Split(eq, a0, Operand(a1), if_true, if_false, fall_through);
-  } else {
-    Handle<Code> ic = CompareNilICStub::GetUninitialized(isolate(), nil);
-    CallIC(ic, expr->CompareOperationFeedbackId());
-    __ LoadRoot(a1, Heap::kTrueValueRootIndex);
     Split(eq, v0, Operand(a1), if_true, if_false, fall_through);
+  } else {
+    __ JumpIfSmi(v0, if_false);
+    __ lw(v0, FieldMemOperand(v0, HeapObject::kMapOffset));
+    __ lbu(a1, FieldMemOperand(v0, Map::kBitFieldOffset));
+    __ And(a1, a1, Operand(1 << Map::kIsUndetectable));
+    Split(ne, a1, Operand(zero_reg), if_true, if_false, fall_through);
   }
   context()->Plug(if_true, if_false);
 }
@@ -4105,12 +4073,6 @@ void FullCodeGenerator::ClearPendingMessage() {
   __ sw(a1, MemOperand(at));
 }
 
-
-void FullCodeGenerator::EmitLoadStoreICSlot(FeedbackVectorSlot slot) {
-  DCHECK(!slot.IsInvalid());
-  __ li(VectorStoreICTrampolineDescriptor::SlotRegister(),
-        Operand(SmiFromSlot(slot)));
-}
 
 void FullCodeGenerator::DeferredCommands::EmitCommands() {
   DCHECK(!result_register().is(a1));

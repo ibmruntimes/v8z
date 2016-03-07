@@ -139,7 +139,6 @@ TEST_F(BytecodeArrayBuilderTest, AllBytecodesGenerated) {
   builder.CompareOperation(Token::Value::EQ, reg)
       .CompareOperation(Token::Value::NE, reg)
       .CompareOperation(Token::Value::EQ_STRICT, reg)
-      .CompareOperation(Token::Value::NE_STRICT, reg)
       .CompareOperation(Token::Value::LT, reg)
       .CompareOperation(Token::Value::GT, reg)
       .CompareOperation(Token::Value::LTE, reg)
@@ -205,11 +204,11 @@ TEST_F(BytecodeArrayBuilderTest, AllBytecodesGenerated) {
 
   builder.ForInPrepare(reg)
       .ForInDone(reg, reg)
-      .ForInNext(reg, reg, reg)
+      .ForInNext(reg, reg, reg, 1)
       .ForInStep(reg);
   builder.ForInPrepare(wide)
       .ForInDone(reg, other)
-      .ForInNext(wide, wide, wide)
+      .ForInNext(wide, wide, wide, 1024)
       .ForInStep(reg);
 
   // Wide constant pool loads

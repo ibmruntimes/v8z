@@ -6,15 +6,15 @@
 
 load("test/mjsunit/wasm/wasm-constants.js");
 
-var kMemSize = 4096;
+var kMemSize = 65536;
 
 function genModule(memory) {
   var kBodySize = 27;
-  var kNameMainOffset = 28 + kBodySize + 1;
+  var kNameMainOffset = kHeaderSize + 28 + kBodySize + 1;
 
-  var data = bytes(
+  var data = bytesWithHeader(
     kDeclMemory,
-    12, 12, 1,                  // memory
+    1, 1, 1,                    // memory
     // -- signatures
     kDeclSignatures, 1,
     1, kAstI32, kAstI32,        // int->int
@@ -133,11 +133,11 @@ testOuterMemorySurvivalAcrossGc();
 
 function testOOBThrows() {
   var kBodySize = 8;
-  var kNameMainOffset = 29 + kBodySize + 1;
+  var kNameMainOffset = kHeaderSize + 29 + kBodySize + 1;
 
-  var data = bytes(
+  var data = bytesWithHeader(
     kDeclMemory,
-    12, 12, 1,                     // memory = 4KB
+    1, 1, 1,                       // memory = 64KB
     // -- signatures
     kDeclSignatures, 1,
     2, kAstI32, kAstI32, kAstI32,  // int->int
@@ -166,13 +166,13 @@ function testOOBThrows() {
   function read() { return module.geti(0, offset); }
   function write() { return module.geti(offset, 0); }
 
-  for (offset = 0; offset < 4092; offset++) {
+  for (offset = 0; offset < 65533; offset++) {
     assertEquals(0, read());
     assertEquals(0, write());
   }
 
 
-  for (offset = 4093; offset < 4124; offset++) {
+  for (offset = 65534; offset < 66536; offset++) {
     assertTraps(kTrapMemOutOfBounds, read);
     assertTraps(kTrapMemOutOfBounds, write);
   }

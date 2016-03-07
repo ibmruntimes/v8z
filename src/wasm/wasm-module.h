@@ -22,21 +22,31 @@ namespace wasm {
 const size_t kMaxModuleSize = 1024 * 1024 * 1024;
 const size_t kMaxFunctionSize = 128 * 1024;
 const size_t kMaxStringSize = 256;
+const uint32_t kWasmMagic = 0x6d736100;
+const uint32_t kWasmVersion = 0x0a;
 
-enum WasmSectionDeclCode {
-  kDeclMemory = 0x00,
-  kDeclSignatures = 0x01,
-  kDeclFunctions = 0x02,
-  kDeclGlobals = 0x03,
-  kDeclDataSegments = 0x04,
-  kDeclFunctionTable = 0x05,
-  kDeclEnd = 0x06,
-  kDeclStartFunction = 0x07,
-  kDeclImportTable = 0x08,
-  kDeclWLL = 0x11,
+// WebAssembly sections are named as strings in the binary format, but
+// internally V8 uses an enum to handle them.
+//
+// Entries have the form F(enumerator, string).
+#define FOR_EACH_WASM_SECTION_TYPE(F)     \
+  F(kDeclMemory, "memory")                \
+  F(kDeclSignatures, "signatures")        \
+  F(kDeclFunctions, "functions")          \
+  F(kDeclGlobals, "globals")              \
+  F(kDeclDataSegments, "data_segments")   \
+  F(kDeclFunctionTable, "function_table") \
+  F(kDeclEnd, "end")                      \
+  F(kDeclStartFunction, "start_function") \
+  F(kDeclImportTable, "import_table")     \
+  F(kDeclExportTable, "export_table")
+
+enum WasmSectionDeclCode : uint32_t {
+#define F(enumerator, string) enumerator,
+  FOR_EACH_WASM_SECTION_TYPE(F)
+#undef F
+      kMaxModuleSectionCode
 };
-
-static const int kMaxModuleSectionCode = 0x11;
 
 enum WasmFunctionDeclBit {
   kDeclFunctionName = 0x01,
@@ -74,6 +84,12 @@ struct WasmImport {
   uint32_t function_name_offset;  // offset in module bytes of the import name.
 };
 
+// Static representation of an exported WASM function.
+struct WasmExport {
+  uint16_t func_index;   // index into the function table.
+  uint32_t name_offset;  // offset in module bytes of the name to export.
+};
+
 // Static representation of a wasm global variable.
 struct WasmGlobal {
   uint32_t name_offset;  // offset in the module bytes of the name, if any.
@@ -90,29 +106,33 @@ struct WasmDataSegment {
   bool init;               // true if loaded upon instantiation.
 };
 
+enum ModuleOrigin { kWasmOrigin, kAsmJsOrigin };
+
 // Static representation of a module.
 struct WasmModule {
-  static const uint8_t kMinMemSize = 12;  // Minimum memory size = 4kb
-  static const uint8_t kMaxMemSize = 30;  // Maximum memory size = 1gb
+  static const uint32_t kPageSize = 0x10000;    // Page size, 64kb.
+  static const uint32_t kMinMemPages = 1;       // Minimum memory size = 64kb
+  static const uint32_t kMaxMemPages = 16384;   // Maximum memory size =  1gb
 
   Isolate* shared_isolate;    // isolate for storing shared code.
   const byte* module_start;   // starting address for the module bytes.
   const byte* module_end;     // end address for the module bytes.
-  uint8_t min_mem_size_log2;  // minimum size of the memory (log base 2).
-  uint8_t max_mem_size_log2;  // maximum size of the memory (log base 2).
+  uint32_t min_mem_pages;     // minimum size of the memory in 64k pages.
+  uint32_t max_mem_pages;     // maximum size of the memory in 64k pages.
   bool mem_export;            // true if the memory is exported.
   bool mem_external;          // true if the memory is external.
   int start_function_index;   // start function, if any.
+  ModuleOrigin origin;        // origin of the module
 
-  std::vector<WasmGlobal>* globals;             // globals in this module.
-  std::vector<FunctionSig*>* signatures;        // signatures in this module.
-  std::vector<WasmFunction>* functions;         // functions in this module.
-  std::vector<WasmDataSegment>* data_segments;  // data segments in this module.
-  std::vector<uint16_t>* function_table;        // function table.
-  std::vector<WasmImport>* import_table;        // import table.
+  std::vector<WasmGlobal> globals;             // globals in this module.
+  std::vector<FunctionSig*> signatures;        // signatures in this module.
+  std::vector<WasmFunction> functions;         // functions in this module.
+  std::vector<WasmDataSegment> data_segments;  // data segments in this module.
+  std::vector<uint16_t> function_table;        // function table.
+  std::vector<WasmImport> import_table;        // import table.
+  std::vector<WasmExport> export_table;        // export table.
 
   WasmModule();
-  ~WasmModule();
 
   // Get a pointer to a string stored in the module bytes representing a name.
   const char* GetName(uint32_t offset) const {
@@ -141,8 +161,8 @@ struct WasmModuleInstance {
   Handle<JSArrayBuffer> mem_buffer;      // Handle to array buffer of memory.
   Handle<JSArrayBuffer> globals_buffer;  // Handle to array buffer of globals.
   Handle<FixedArray> function_table;     // indirect function table.
-  std::vector<Handle<Code>>* function_code;  // code objects for each function.
-  std::vector<Handle<Code>>* import_code;   // code objects for each import.
+  std::vector<Handle<Code>> function_code;  // code objects for each function.
+  std::vector<Handle<Code>> import_code;    // code objects for each import.
   // -- raw memory ------------------------------------------------------------
   byte* mem_start;  // start of linear memory.
   size_t mem_size;  // size of the linear memory.
@@ -152,7 +172,6 @@ struct WasmModuleInstance {
 
   explicit WasmModuleInstance(WasmModule* m)
       : module(m),
-        function_code(nullptr),
         mem_start(nullptr),
         mem_size(0),
         globals_start(nullptr),
@@ -168,40 +187,41 @@ struct ModuleEnv {
   WasmModule* module;
   WasmModuleInstance* instance;
   WasmLinker* linker;
-  bool asm_js;  // true if the module originated from asm.js.
+  ModuleOrigin origin;
 
   bool IsValidGlobal(uint32_t index) {
-    return module && index < module->globals->size();
+    return module && index < module->globals.size();
   }
   bool IsValidFunction(uint32_t index) {
-    return module && index < module->functions->size();
+    return module && index < module->functions.size();
   }
   bool IsValidSignature(uint32_t index) {
-    return module && index < module->signatures->size();
+    return module && index < module->signatures.size();
   }
   bool IsValidImport(uint32_t index) {
-    return module && index < module->import_table->size();
+    return module && index < module->import_table.size();
   }
   MachineType GetGlobalType(uint32_t index) {
     DCHECK(IsValidGlobal(index));
-    return module->globals->at(index).type;
+    return module->globals[index].type;
   }
   FunctionSig* GetFunctionSignature(uint32_t index) {
     DCHECK(IsValidFunction(index));
-    return module->functions->at(index).sig;
+    return module->functions[index].sig;
   }
   FunctionSig* GetImportSignature(uint32_t index) {
     DCHECK(IsValidImport(index));
-    return module->import_table->at(index).sig;
+    return module->import_table[index].sig;
   }
   FunctionSig* GetSignature(uint32_t index) {
     DCHECK(IsValidSignature(index));
-    return module->signatures->at(index);
+    return module->signatures[index];
   }
   size_t FunctionTableSize() {
-    return module && module->function_table ? module->function_table->size()
-                                            : 0;
+    return module ? module->function_table.size() : 0;
   }
+
+  bool asm_js() { return origin == kAsmJsOrigin; }
 
   Handle<Code> GetFunctionCode(uint32_t index);
   Handle<Code> GetImportCode(uint32_t index);

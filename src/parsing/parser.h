@@ -444,6 +444,8 @@ class ParserTraits {
   Expression* BuildUnaryExpression(Expression* expression, Token::Value op,
                                    int pos, AstNodeFactory* factory);
 
+  Expression* BuildIteratorResult(Expression* value, bool done);
+
   // Generate AST node that throws a ReferenceError with the given type.
   Expression* NewThrowReferenceError(MessageTemplate::Template message,
                                      int pos);
@@ -670,9 +672,8 @@ class ParserTraits {
  private:
   Parser* parser_;
 
-  void BuildIteratorClose(
-      ZoneList<Statement*>* statements, Variable* iterator,
-      Expression* input, Variable* output);
+  void BuildIteratorClose(ZoneList<Statement*>* statements, Variable* iterator,
+                          Maybe<Variable*> input, Variable* output);
   void BuildIteratorCloseForCompletion(
       ZoneList<Statement*>* statements, Variable* iterator,
       Variable* body_threw);
@@ -920,6 +921,14 @@ class Parser : public ParserBase<ParserTraits> {
   class CollectExpressionsInTailPositionToListScope;
   TryStatement* ParseTryStatement(bool* ok);
   DebuggerStatement* ParseDebuggerStatement(bool* ok);
+  // Parse a SubStatement in strict mode, or with an extra block scope in
+  // sloppy mode to handle
+  // ES#sec-functiondeclarations-in-ifstatement-statement-clauses
+  // The legacy parameter indicates whether function declarations are
+  // banned by the ES2015 specification in this location, and they are being
+  // permitted here to match previous V8 behavior.
+  Statement* ParseScopedStatement(ZoneList<const AstRawString*>* labels,
+                                  bool legacy, bool* ok);
 
   // !%_IsJSReceiver(result = iterator.next()) &&
   //     %ThrowIteratorResultNotAnObject(result)

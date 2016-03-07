@@ -851,7 +851,6 @@ void FullCodeGenerator::VisitForTypeofValue(Expression* expr) {
 void FullCodeGenerator::VisitBlock(Block* stmt) {
   Comment cmnt(masm_, "[ Block");
   NestedBlock nested_block(this, stmt);
-  SetStatementPosition(stmt);
 
   {
     EnterBlockScopeIfNeeded block_scope_state(
@@ -985,6 +984,13 @@ void FullCodeGenerator::EmitBreak(Statement* target) {
   __ jmp(current->AsBreakable()->break_label());
 }
 
+void FullCodeGenerator::EmitIllegalRedeclaration() {
+  Comment cmnt(masm_, "[ Declarations");
+  Expression* illegal = scope()->GetIllegalRedeclaration();
+  SetExpressionAsStatementPosition(illegal);
+  VisitForEffect(illegal);
+}
+
 void FullCodeGenerator::VisitBreakStatement(BreakStatement* stmt) {
   Comment cmnt(masm_, "[ BreakStatement");
   SetStatementPosition(stmt);
@@ -1076,6 +1082,10 @@ void FullCodeGenerator::EmitPropertyKey(ObjectLiteralProperty* property,
   PushOperand(result_register());
 }
 
+void FullCodeGenerator::EmitLoadStoreICSlot(FeedbackVectorSlot slot) {
+  DCHECK(!slot.IsInvalid());
+  __ Move(VectorStoreICTrampolineDescriptor::SlotRegister(), SmiFromSlot(slot));
+}
 
 void FullCodeGenerator::VisitReturnStatement(ReturnStatement* stmt) {
   Comment cmnt(masm_, "[ ReturnStatement");

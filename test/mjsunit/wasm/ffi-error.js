@@ -8,12 +8,12 @@ load("test/mjsunit/wasm/wasm-constants.js");
 
 function testCallFFI(ffi) {
   var kBodySize = 6;
-  var kNameAddOffset = 28 + kBodySize + 1;
+  var kNameAddOffset = kHeaderSize + 28 + kBodySize + 1;
   var kNameMainOffset = kNameAddOffset + 4;
 
-  var data = bytes(
+  var data = bytesWithHeader(
     kDeclMemory,
-    12, 12, 1,                  // memory
+    1, 1, 1,                    // memory
     // -- signatures
     kDeclSignatures, 1,
     2, kAstI32, kAstF64, kAstF64, // (f64,f64)->int

@@ -1185,36 +1185,6 @@ Handle<Code> TransitionElementsKindStub::GenerateCode() {
 
 
 template <>
-HValue* CodeStubGraphBuilder<AllocateHeapNumberStub>::BuildCodeStub() {
-  HValue* result =
-      Add<HAllocate>(Add<HConstant>(HeapNumber::kSize), HType::HeapNumber(),
-                     NOT_TENURED, HEAP_NUMBER_TYPE);
-  AddStoreMapConstant(result, isolate()->factory()->heap_number_map());
-  return result;
-}
-
-
-Handle<Code> AllocateHeapNumberStub::GenerateCode() {
-  return DoGenerateCode(this);
-}
-
-
-template <>
-HValue* CodeStubGraphBuilder<AllocateMutableHeapNumberStub>::BuildCodeStub() {
-  HValue* result =
-      Add<HAllocate>(Add<HConstant>(HeapNumber::kSize), HType::HeapObject(),
-                     NOT_TENURED, MUTABLE_HEAP_NUMBER_TYPE);
-  AddStoreMapConstant(result, isolate()->factory()->mutable_heap_number_map());
-  return result;
-}
-
-
-Handle<Code> AllocateMutableHeapNumberStub::GenerateCode() {
-  return DoGenerateCode(this);
-}
-
-
-template <>
 HValue* CodeStubGraphBuilder<AllocateInNewSpaceStub>::BuildCodeStub() {
   HValue* result = Add<HAllocate>(GetParameter(0), HType::Tagged(), NOT_TENURED,
                                   JS_OBJECT_TYPE);
@@ -1414,31 +1384,6 @@ HValue* CodeStubGraphBuilder<InternalArrayNArgumentsConstructorStub>::
 
 
 Handle<Code> InternalArrayNArgumentsConstructorStub::GenerateCode() {
-  return DoGenerateCode(this);
-}
-
-
-template <>
-HValue* CodeStubGraphBuilder<CompareNilICStub>::BuildCodeInitializedStub() {
-  Isolate* isolate = graph()->isolate();
-  CompareNilICStub* stub = casted_stub();
-  HIfContinuation continuation;
-  Handle<Map> sentinel_map(isolate->heap()->meta_map());
-  Type* type = stub->GetType(zone(), sentinel_map);
-  BuildCompareNil(GetParameter(0), type, &continuation, kEmbedMapsViaWeakCells);
-  IfBuilder if_nil(this, &continuation);
-  if_nil.Then();
-  if (continuation.IsFalseReachable()) {
-    if_nil.Else();
-    if_nil.Return(graph()->GetConstantFalse());
-  }
-  if_nil.End();
-  return continuation.IsTrueReachable() ? graph()->GetConstantTrue()
-                                        : graph()->GetConstantUndefined();
-}
-
-
-Handle<Code> CompareNilICStub::GenerateCode() {
   return DoGenerateCode(this);
 }
 
@@ -1706,10 +1651,9 @@ Handle<Code> StringAddStub::GenerateCode() {
   return DoGenerateCode(this);
 }
 
-
 template <>
-HValue* CodeStubGraphBuilder<ToBooleanStub>::BuildCodeInitializedStub() {
-  ToBooleanStub* stub = casted_stub();
+HValue* CodeStubGraphBuilder<ToBooleanICStub>::BuildCodeInitializedStub() {
+  ToBooleanICStub* stub = casted_stub();
   IfBuilder if_true(this);
   if_true.If<HBranch>(GetParameter(0), stub->types());
   if_true.Then();
@@ -1719,11 +1663,7 @@ HValue* CodeStubGraphBuilder<ToBooleanStub>::BuildCodeInitializedStub() {
   return graph()->GetConstantFalse();
 }
 
-
-Handle<Code> ToBooleanStub::GenerateCode() {
-  return DoGenerateCode(this);
-}
-
+Handle<Code> ToBooleanICStub::GenerateCode() { return DoGenerateCode(this); }
 
 template <>
 HValue* CodeStubGraphBuilder<StoreGlobalStub>::BuildCodeInitializedStub() {

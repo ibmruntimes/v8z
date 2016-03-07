@@ -36,6 +36,7 @@ void TestModule(WasmModuleIndex* module, int32_t expected_result) {
 // A raw test that skips the WasmModuleBuilder.
 TEST(Run_WasmModule_CallAdd_rev) {
   static const byte data[] = {
+      WASM_MODULE_HEADER,
       // sig#0 ------------------------------------------
       kDeclSignatures, 2, 0, kLocalI32,    // void -> int
       2, kLocalI32, kLocalI32, kLocalI32,  // int,int -> int
@@ -140,12 +141,12 @@ TEST(Run_WasmModule_CheckMemoryIsZero) {
   byte code[] = {WASM_BLOCK(
       2,
       WASM_WHILE(
-          WASM_I32_LTS(WASM_GET_LOCAL(localIndex), WASM_I32(kCheckSize)),
+          WASM_I32_LTS(WASM_GET_LOCAL(localIndex), WASM_I32V_3(kCheckSize)),
           WASM_IF_ELSE(
               WASM_LOAD_MEM(MachineType::Int32(), WASM_GET_LOCAL(localIndex)),
               WASM_BRV(2, WASM_I8(-1)), WASM_INC_LOCAL_BY(localIndex, 4))),
       WASM_I8(11))};
-  uint32_t local_indices[] = {7, 19, 25, 28};
+  uint32_t local_indices[] = {7, 18, 24, 27};
   f->EmitCode(code, sizeof(code), local_indices, sizeof(local_indices) / 4);
   WasmModuleWriter* writer = builder->Build(&zone);
   TestModule(writer->WriteTo(&zone), 11);
@@ -196,8 +197,8 @@ TEST(Run_WasmModule_Global) {
   f = builder->FunctionAt(f2_index);
   f->ReturnType(kAstI32);
   f->Exported(1);
-  byte code2[] = {WASM_STORE_GLOBAL(global1, WASM_I32(56)),
-                  WASM_STORE_GLOBAL(global2, WASM_I32(41)),
+  byte code2[] = {WASM_STORE_GLOBAL(global1, WASM_I32V_1(56)),
+                  WASM_STORE_GLOBAL(global2, WASM_I32V_1(41)),
                   WASM_RETURN(WASM_CALL_FUNCTION0(f1_index))};
   f->EmitCode(code2, sizeof(code2));
   WasmModuleWriter* writer = builder->Build(&zone);

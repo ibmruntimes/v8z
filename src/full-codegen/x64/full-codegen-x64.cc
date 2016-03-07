@@ -287,9 +287,7 @@ void FullCodeGenerator::Generate() {
   // Visit the declarations and body unless there is an illegal
   // redeclaration.
   if (scope()->HasIllegalRedeclaration()) {
-    Comment cmnt(masm_, "[ Declarations");
-    VisitForEffect(scope()->GetIllegalRedeclaration());
-
+    EmitIllegalRedeclaration();
   } else {
     PrepareForBailoutForId(BailoutId::FunctionEntry(), NO_REGISTERS);
     { Comment cmnt(masm_, "[ Declarations");
@@ -500,7 +498,7 @@ void FullCodeGenerator::TestContext::Plug(Handle<Object> lit) const {
                                           true,
                                           true_label_,
                                           false_label_);
-  DCHECK(lit->IsNull() || lit->IsUndefined() || !lit->IsUndetectableObject());
+  DCHECK(lit->IsNull() || lit->IsUndefined() || !lit->IsUndetectable());
   if (lit->IsUndefined() || lit->IsNull() || lit->IsFalse()) {
     if (false_label_ != fall_through_) __ jmp(false_label_);
   } else if (lit->IsTrue() || lit->IsJSObject()) {
@@ -606,7 +604,7 @@ void FullCodeGenerator::DoTest(Expression* condition,
                                Label* if_true,
                                Label* if_false,
                                Label* fall_through) {
-  Handle<Code> ic = ToBooleanStub::GetUninitialized(isolate());
+  Handle<Code> ic = ToBooleanICStub::GetUninitialized(isolate());
   CallIC(ic, condition->test_id());
   __ CompareRoot(result_register(), Heap::kTrueValueRootIndex);
   Split(equal, if_true, if_false, fall_through);
@@ -1029,11 +1027,6 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   // We got a fixed array in register rax. Iterate through that.
   __ bind(&fixed_array);
 
-  // No need for a write barrier, we are storing a Smi in the feedback vector.
-  int const vector_index = SmiFromSlot(slot)->value();
-  __ EmitLoadTypeFeedbackVector(rbx);
-  __ Move(FieldOperand(rbx, FixedArray::OffsetOfElementAt(vector_index)),
-          TypeFeedbackVector::MegamorphicSentinel(isolate()));
   __ movp(rcx, Operand(rsp, 0 * kPointerSize));  // Get enumerated object
   __ Push(Smi::FromInt(1));                      // Smi(1) indicates slow check
   __ Push(rax);  // Array
@@ -1069,12 +1062,8 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   __ cmpp(rdx, FieldOperand(rcx, HeapObject::kMapOffset));
   __ j(equal, &update_each, Label::kNear);
 
-  // We might get here from TurboFan or Crankshaft when something in the
-  // for-in loop body deopts and only now notice in fullcodegen, that we
-  // can now longer use the enum cache, i.e. left fast mode. So better record
-  // this information here, in case we later OSR back into this loop or
-  // reoptimize the whole function w/o rerunning the loop with the slow
-  // mode object in fullcodegen (which would result in a deopt loop).
+  // We need to filter the key, record slow-path here.
+  int const vector_index = SmiFromSlot(slot)->value();
   __ EmitLoadTypeFeedbackVector(rdx);
   __ Move(FieldOperand(rdx, FixedArray::OffsetOfElementAt(vector_index)),
           TypeFeedbackVector::MegamorphicSentinel(isolate()));
@@ -1798,65 +1787,45 @@ void FullCodeGenerator::VisitYield(Yield* expr) {
   // this.  It stays on the stack while we update the iterator.
   VisitForStackValue(expr->expression());
 
-  switch (expr->yield_kind()) {
-    case Yield::kSuspend:
-      // Pop value from top-of-stack slot; box result into result register.
-      EmitCreateIteratorResult(false);
-      PushOperand(result_register());
-      // Fall through.
-    case Yield::kInitial: {
-      Label suspend, continuation, post_runtime, resume;
+  Label suspend, continuation, post_runtime, resume;
 
-      __ jmp(&suspend);
-      __ bind(&continuation);
-      // When we arrive here, the stack top is the resume mode and
-      // result_register() holds the input value (the argument given to the
-      // respective resume operation).
-      __ RecordGeneratorContinuation();
-      __ Pop(rbx);
-      __ SmiCompare(rbx, Smi::FromInt(JSGeneratorObject::RETURN));
-      __ j(not_equal, &resume);
-      __ Push(result_register());
-      EmitCreateIteratorResult(true);
-      EmitUnwindAndReturn();
+  __ jmp(&suspend);
+  __ bind(&continuation);
+  // When we arrive here, the stack top is the resume mode and
+  // result_register() holds the input value (the argument given to the
+  // respective resume operation).
+  __ RecordGeneratorContinuation();
+  __ Pop(rbx);
+  __ SmiCompare(rbx, Smi::FromInt(JSGeneratorObject::RETURN));
+  __ j(not_equal, &resume);
+  __ Push(result_register());
+  EmitCreateIteratorResult(true);
+  EmitUnwindAndReturn();
 
-      __ bind(&suspend);
-      OperandStackDepthIncrement(1);  // Not popped on this path.
-      VisitForAccumulatorValue(expr->generator_object());
-      DCHECK(continuation.pos() > 0 && Smi::IsValid(continuation.pos()));
-      __ Move(FieldOperand(rax, JSGeneratorObject::kContinuationOffset),
-              Smi::FromInt(continuation.pos()));
-      __ movp(FieldOperand(rax, JSGeneratorObject::kContextOffset), rsi);
-      __ movp(rcx, rsi);
-      __ RecordWriteField(rax, JSGeneratorObject::kContextOffset, rcx, rdx,
-                          kDontSaveFPRegs);
-      __ leap(rbx, Operand(rbp, StandardFrameConstants::kExpressionsOffset));
-      __ cmpp(rsp, rbx);
-      __ j(equal, &post_runtime);
-      __ Push(rax);  // generator object
-      __ CallRuntime(Runtime::kSuspendJSGeneratorObject, 1);
-      __ movp(context_register(),
-              Operand(rbp, StandardFrameConstants::kContextOffset));
-      __ bind(&post_runtime);
+  __ bind(&suspend);
+  OperandStackDepthIncrement(1);  // Not popped on this path.
+  VisitForAccumulatorValue(expr->generator_object());
+  DCHECK(continuation.pos() > 0 && Smi::IsValid(continuation.pos()));
+  __ Move(FieldOperand(rax, JSGeneratorObject::kContinuationOffset),
+          Smi::FromInt(continuation.pos()));
+  __ movp(FieldOperand(rax, JSGeneratorObject::kContextOffset), rsi);
+  __ movp(rcx, rsi);
+  __ RecordWriteField(rax, JSGeneratorObject::kContextOffset, rcx, rdx,
+                      kDontSaveFPRegs);
+  __ leap(rbx, Operand(rbp, StandardFrameConstants::kExpressionsOffset));
+  __ cmpp(rsp, rbx);
+  __ j(equal, &post_runtime);
+  __ Push(rax);  // generator object
+  __ CallRuntime(Runtime::kSuspendJSGeneratorObject, 1);
+  __ movp(context_register(),
+          Operand(rbp, StandardFrameConstants::kContextOffset));
+  __ bind(&post_runtime);
 
-      PopOperand(result_register());
-      EmitReturnSequence();
+  PopOperand(result_register());
+  EmitReturnSequence();
 
-      __ bind(&resume);
-      context()->Plug(result_register());
-      break;
-    }
-
-    case Yield::kFinal: {
-      // Pop value from top-of-stack slot, box result into result register.
-      EmitCreateIteratorResult(true);
-      EmitUnwindAndReturn();
-      break;
-    }
-
-    case Yield::kDelegating:
-      UNREACHABLE();
-  }
+  __ bind(&resume);
+  context()->Plug(result_register());
 }
 
 
@@ -3878,10 +3847,11 @@ void FullCodeGenerator::EmitLiteralCompareNil(CompareOperation* expr,
     __ CompareRoot(rax, nil_value);
     Split(equal, if_true, if_false, fall_through);
   } else {
-    Handle<Code> ic = CompareNilICStub::GetUninitialized(isolate(), nil);
-    CallIC(ic, expr->CompareOperationFeedbackId());
-    __ CompareRoot(rax, Heap::kTrueValueRootIndex);
-    Split(equal, if_true, if_false, fall_through);
+    __ JumpIfSmi(rax, if_false);
+    __ movp(rax, FieldOperand(rax, HeapObject::kMapOffset));
+    __ testb(FieldOperand(rax, Map::kBitFieldOffset),
+             Immediate(1 << Map::kIsUndetectable));
+    Split(not_zero, if_true, if_false, fall_through);
   }
   context()->Plug(if_true, if_false);
 }
@@ -3970,11 +3940,6 @@ void FullCodeGenerator::ClearPendingMessage() {
   __ Store(pending_message_obj, rdx);
 }
 
-
-void FullCodeGenerator::EmitLoadStoreICSlot(FeedbackVectorSlot slot) {
-  DCHECK(!slot.IsInvalid());
-  __ Move(VectorStoreICTrampolineDescriptor::SlotRegister(), SmiFromSlot(slot));
-}
 
 void FullCodeGenerator::DeferredCommands::EmitCommands() {
   __ Pop(result_register());  // Restore the accumulator.
