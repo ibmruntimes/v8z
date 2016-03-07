@@ -6,13 +6,12 @@
 #define V8_S390_REGEXP_MACRO_ASSEMBLER_S390_H_
 
 #include "src/macro-assembler.h"
-#include "src/s390/assembler-s390.h"
 #include "src/s390/assembler-s390-inl.h"
+#include "src/s390/assembler-s390.h"
 #include "src/s390/frames-s390.h"
 
 namespace v8 {
 namespace internal {
-
 
 #ifndef V8_INTERPRETED_REGEXP
 class RegExpMacroAssemblerS390 : public NativeRegExpMacroAssembler {
@@ -96,8 +95,8 @@ class RegExpMacroAssemblerS390 : public NativeRegExpMacroAssembler {
   // Return address (stored from link register, read into pc on return).
   // static const int kReturnAddress = kStoredRegisters + 7 * kPointerSize;
   // FIXME: broken in 64 bit
-  static const int kCallerFrame = kStoredRegisters +
-    kCalleeRegisterSaveAreaSize;
+  static const int kCallerFrame =
+      kStoredRegisters + kCalleeRegisterSaveAreaSize;
   // Stack parameters placed by caller.
   static const int kCaptureArraySize = kCallerFrame;
   static const int kStackAreaBase = kCallerFrame + kPointerSize;
@@ -135,7 +134,6 @@ class RegExpMacroAssemblerS390 : public NativeRegExpMacroAssembler {
   // Check whether we are exceeding the stack limit on the backtrack stack.
   void CheckStackLimit();
   void CallCFunctionUsingStub(ExternalReference function, int num_arguments);
-
 
   // Generate a call to CheckStackGuardState.
   void CallCheckStackGuardState(Register scratch);
@@ -212,7 +210,7 @@ class RegExpMacroAssemblerS390 : public NativeRegExpMacroAssembler {
 
 // Set of non-volatile registers saved/restored by generated regexp code.
 const RegList kRegExpCalleeSaved =
-  1 <<  6 | 1 <<  7 | 1 <<  8 | 1 <<  9 | 1 <<  10 | 1 <<  11 | 1 <<  13;
+    1 << 6 | 1 << 7 | 1 << 8 | 1 << 9 | 1 << 10 | 1 << 11 | 1 << 13;
 
 #endif  // V8_INTERPRETED_REGEXP
 }  // namespace internal

@@ -6706,8 +6706,8 @@ RegExpEngine::CompilationResult RegExpEngine::Compile(
   RegExpMacroAssemblerARM64 macro_assembler(isolate, zone, mode,
                                             (data->capture_count + 1) * 2);
 #elif V8_TARGET_ARCH_S390
-    RegExpMacroAssemblerS390 macro_assembler(isolate, zone, mode,
-                                             (data->capture_count + 1) * 2);
+  RegExpMacroAssemblerS390 macro_assembler(isolate, zone, mode,
+                                           (data->capture_count + 1) * 2);
 
 #elif V8_TARGET_ARCH_PPC
   RegExpMacroAssemblerPPC macro_assembler(isolate, zone, mode,
