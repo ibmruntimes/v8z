@@ -92,9 +92,6 @@ class RegExpMacroAssemblerS390 : public NativeRegExpMacroAssembler {
   // Above the frame pointer - Stored registers and stack passed parameters.
   // Register 6-15(sp)
   static const int kStoredRegisters = kFramePointer;
-  // Return address (stored from link register, read into pc on return).
-  // static const int kReturnAddress = kStoredRegisters + 7 * kPointerSize;
-  // FIXME: broken in 64 bit
   static const int kCallerFrame =
       kStoredRegisters + kCalleeRegisterSaveAreaSize;
   // Stack parameters placed by caller.

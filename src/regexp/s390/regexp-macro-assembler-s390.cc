@@ -33,7 +33,7 @@ namespace internal {
  * - r10: End of input (points to byte after last character in input).
  * - r11: Frame pointer. Used to access arguments, local variables and
  *         RegExp registers.
- * - r12_p: IP register, used by assembler. Very volatile.
+ * - r12: IP register, used by assembler. Very volatile.
  * - r15/sp : Points to tip of C stack.
  *
  * The remaining registers are free for computations.
@@ -371,7 +371,7 @@ void RegExpMacroAssemblerS390::CheckNotBackReference(int start_reg,
   // At this point, the capture registers are either both set or both cleared.
   // If the capture length is zero, then the capture is either empty or cleared.
   // Fall through in both cases.
-  __ beq(&fallthrough /*, cr0*/);
+  __ beq(&fallthrough);
 
   // Check that there are enough characters left in the input.
   if (read_backward) {
@@ -782,7 +782,7 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
       __ lay(r2, MemOperand(r2, num_saved_registers_ * kIntSize));
       for (int i = 0; i < num_saved_registers_;) {
         if (false && i < num_saved_registers_ - 4) {
-          // TODO(john): Can be optimized by SIMD instructions
+          // TODO(john.yan): Can be optimized by SIMD instructions
           __ LoadMultipleP(r3, r6, register_location(i + 3));
           if (mode_ == UC16) {
             __ ShiftRightArithP(r3, r3, Operand(1));
@@ -1152,17 +1152,17 @@ void RegExpMacroAssemblerS390::BranchOrBacktrack(Condition condition, Label* to,
     return;
   }
   if (to == NULL) {
-    __ b(condition, &backtrack_label_ /*, cr*/);
+    __ b(condition, &backtrack_label_);
     return;
   }
-  __ b(condition, to /*, cr*/);
+  __ b(condition, to);
 }
 
 void RegExpMacroAssemblerS390::SafeCall(Label* to, Condition cond,
                                         CRegister cr) {
   Label skip;
   __ b(NegateCondition(cond), &skip);
-  __ b(r14, to /*, cr*/ /*, SetLK*/);
+  __ b(r14, to);
   __ bind(&skip);
 }
 
@@ -1218,16 +1218,11 @@ void RegExpMacroAssemblerS390::CallCFunctionUsingStub(
   // Must pass all arguments in registers. The stub pushes on the stack.
   DCHECK(num_arguments <= 8);
   __ mov(code_pointer(), Operand(function));
-  // RegExpCEntryStub stub;
-  // __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
   Label ret;
   __ larl(r14, &ret);
   __ StoreP(r14, MemOperand(sp, kStackFrameRASlot * kPointerSize));
   __ b(code_pointer());
   __ bind(&ret);
-  // __ CallStub(&stub);
-  // __ Call(code_pointer());
-  // __ la(sp, MemOperand(sp, kCalleeRegisterSaveAreaSize));
   if (base::OS::ActivationFrameAlignment() > kPointerSize) {
     __ LoadP(sp, MemOperand(sp, (kNumRequiredStackFrameSlots * kPointerSize)));
   } else {
