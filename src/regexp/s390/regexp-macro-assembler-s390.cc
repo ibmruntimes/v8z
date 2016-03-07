@@ -209,7 +209,6 @@ void RegExpMacroAssemblerS390::CheckGreedyLoop(Label* on_equal) {
   __ bne(&backtrack_non_equal);
   __ AddP(backtrack_stackpointer(), Operand(kPointerSize));
 
-  // __ CmpP(current_input_offset(), r2);
   BranchOrBacktrack(al, on_equal);
   __ bind(&backtrack_non_equal);
 }
@@ -392,7 +391,6 @@ void RegExpMacroAssemblerS390::CheckNotBackReference(int start_reg,
     __ SubP(r4, r4, r3);  // Offset by length when matching backwards.
   }
   __ mov(r1, Operand::Zero());
-  // __ AddP(r3, r2);
 
   Label loop;
   __ bind(&loop);
@@ -571,8 +569,6 @@ bool RegExpMacroAssemblerS390::CheckSpecialCharacterClass(uc16 type,
       }
       ExternalReference map = ExternalReference::re_word_character_map();
       __ mov(r2, Operand(map));
-      //    __ CmpLogicalByte(MemOperand(r2, current_character()),
-      //    Operand::Zero());
       __ LoadlB(r2, MemOperand(r2, current_character()));
       __ CmpLogicalP(r2, Operand::Zero());
       BranchOrBacktrack(eq, on_no_match);
