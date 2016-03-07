@@ -2917,41 +2917,6 @@ void StringHelper::GenerateOneByteCharsCompareLoop(
   __ bne(&loop);
 }
 
-void StringCompareStub::Generate(MacroAssembler* masm) {
-  // ----------- S t a t e -------------
-  //  -- r3    : left
-  //  -- r2    : right
-  //  -- r14   : return address
-  // -----------------------------------
-  __ AssertString(r3);
-  __ AssertString(r2);
-
-  Label not_same;
-  __ CmpP(r2, r3);
-  __ bne(&not_same);
-  __ LoadSmiLiteral(r2, Smi::FromInt(EQUAL));
-  __ IncrementCounter(isolate()->counters()->string_compare_native(), 1, r3,
-                      r4);
-  __ Ret();
-
-  __ bind(&not_same);
-
-  // Check that both objects are sequential one-byte strings.
-  Label runtime;
-  __ JumpIfNotBothSequentialOneByteStrings(r3, r2, r4, r5, &runtime);
-
-  // Compare flat one-byte strings natively.
-  __ IncrementCounter(isolate()->counters()->string_compare_native(), 1, r4,
-                      r5);
-  StringHelper::GenerateCompareFlatOneByteStrings(masm, r3, r2, r4, r5, r6);
-
-  // Call the runtime; it returns -1 (less), 0 (equal), or 1 (greater)
-  // tagged as a small integer.
-  __ bind(&runtime);
-  __ Push(r3, r2);
-  __ TailCallRuntime(Runtime::kStringCompare);
-}
-
 void BinaryOpICWithAllocationSiteStub::Generate(MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- r3    : left
@@ -3254,10 +3219,17 @@ void CompareICStub::GenerateStrings(MacroAssembler* masm) {
 
   // Handle more complex cases in runtime.
   __ bind(&runtime);
-  __ Push(left, right);
   if (equality) {
-    __ TailCallRuntime(Runtime::kStringEquals);
+    {
+      FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
+      __ Push(left, right);
+      __ CallRuntime(Runtime::kStringEqual);
+    }
+    __ LoadRoot(r3, Heap::kTrueValueRootIndex);
+    __ SubP(r2, r2, r3);
+    __ Ret();
   } else {
+    __ Push(left, right);
     __ TailCallRuntime(Runtime::kStringCompare);
   }
 

@@ -2288,6 +2288,12 @@ void Builtins::Generate_Call(MacroAssembler* masm, ConvertReceiverMode mode,
   __ CmpP(r7, Operand(JS_BOUND_FUNCTION_TYPE));
   __ Jump(masm->isolate()->builtins()->CallBoundFunction(tail_call_mode),
           RelocInfo::CODE_TARGET, eq);
+
+  // Check if target has a [[Call]] internal method.
+  __ LoadlB(r6, FieldMemOperand(r6, Map::kBitFieldOffset));
+  __ TestBit(r6, Map::kIsCallable);
+  __ beq(&non_callable);
+
   __ CmpP(r7, Operand(JS_PROXY_TYPE));
   __ bne(&non_function);
 
@@ -2308,10 +2314,6 @@ void Builtins::Generate_Call(MacroAssembler* masm, ConvertReceiverMode mode,
   // 2. Call to something else, which might have a [[Call]] internal method (if
   // not we raise an exception).
   __ bind(&non_function);
-  // Check if target has a [[Call]] internal method.
-  __ LoadlB(r6, FieldMemOperand(r6, Map::kBitFieldOffset));
-  __ TestBit(r6, Map::kIsCallable, r0);
-  __ beq(&non_callable);
   // Overwrite the original receiver the (original) target.
   __ ShiftLeftP(r7, r2, Operand(kPointerSizeLog2));
   __ StoreP(r3, MemOperand(sp, r7));

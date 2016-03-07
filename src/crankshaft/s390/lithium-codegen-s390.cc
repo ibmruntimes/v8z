@@ -2108,29 +2108,30 @@ void LCodeGen::DoBranch(LBranch* instr) {
       __ CmpP(ip, Operand::Zero());
       EmitBranch(instr, ne);
     } else {
-      ToBooleanStub::Types expected = instr->hydrogen()->expected_input_types();
+      ToBooleanICStub::Types expected =
+          instr->hydrogen()->expected_input_types();
       // Avoid deopts in the case where we've never executed this path before.
-      if (expected.IsEmpty()) expected = ToBooleanStub::Types::Generic();
+      if (expected.IsEmpty()) expected = ToBooleanICStub::Types::Generic();
 
-      if (expected.Contains(ToBooleanStub::UNDEFINED)) {
+      if (expected.Contains(ToBooleanICStub::UNDEFINED)) {
         // undefined -> false.
         __ CompareRoot(reg, Heap::kUndefinedValueRootIndex);
         __ beq(instr->FalseLabel(chunk_));
       }
-      if (expected.Contains(ToBooleanStub::BOOLEAN)) {
+      if (expected.Contains(ToBooleanICStub::BOOLEAN)) {
         // Boolean -> its value.
         __ CompareRoot(reg, Heap::kTrueValueRootIndex);
         __ beq(instr->TrueLabel(chunk_));
         __ CompareRoot(reg, Heap::kFalseValueRootIndex);
         __ beq(instr->FalseLabel(chunk_));
       }
-      if (expected.Contains(ToBooleanStub::NULL_TYPE)) {
+      if (expected.Contains(ToBooleanICStub::NULL_TYPE)) {
         // 'null' -> false.
         __ CompareRoot(reg, Heap::kNullValueRootIndex);
         __ beq(instr->FalseLabel(chunk_));
       }
 
-      if (expected.Contains(ToBooleanStub::SMI)) {
+      if (expected.Contains(ToBooleanICStub::SMI)) {
         // Smis: 0 -> false, all other -> true.
         __ CmpP(reg, Operand::Zero());
         __ beq(instr->FalseLabel(chunk_));
@@ -2153,13 +2154,13 @@ void LCodeGen::DoBranch(LBranch* instr) {
         }
       }
 
-      if (expected.Contains(ToBooleanStub::SPEC_OBJECT)) {
+      if (expected.Contains(ToBooleanICStub::SPEC_OBJECT)) {
         // spec object -> true.
         __ CompareInstanceType(map, ip, FIRST_JS_RECEIVER_TYPE);
         __ bge(instr->TrueLabel(chunk_));
       }
 
-      if (expected.Contains(ToBooleanStub::STRING)) {
+      if (expected.Contains(ToBooleanICStub::STRING)) {
         // String value -> false iff empty.
         Label not_string;
         __ CompareInstanceType(map, ip, FIRST_NONSTRING_TYPE);
@@ -2171,20 +2172,20 @@ void LCodeGen::DoBranch(LBranch* instr) {
         __ bind(&not_string);
       }
 
-      if (expected.Contains(ToBooleanStub::SYMBOL)) {
+      if (expected.Contains(ToBooleanICStub::SYMBOL)) {
         // Symbol value -> true.
         __ CompareInstanceType(map, ip, SYMBOL_TYPE);
         __ beq(instr->TrueLabel(chunk_));
       }
 
-      if (expected.Contains(ToBooleanStub::SIMD_VALUE)) {
+      if (expected.Contains(ToBooleanICStub::SIMD_VALUE)) {
         // SIMD value -> true.
         Label not_simd;
         __ CompareInstanceType(map, ip, SIMD128_VALUE_TYPE);
         __ beq(instr->TrueLabel(chunk_));
       }
 
-      if (expected.Contains(ToBooleanStub::HEAP_NUMBER)) {
+      if (expected.Contains(ToBooleanICStub::HEAP_NUMBER)) {
         // heap number -> false iff +0, -0, or NaN.
         Label not_heap_number;
         __ CompareRoot(map, Heap::kHeapNumberMapRootIndex);
@@ -2417,11 +2418,10 @@ void LCodeGen::DoStringCompareAndBranch(LStringCompareAndBranch* instr) {
   DCHECK(ToRegister(instr->left()).is(r3));
   DCHECK(ToRegister(instr->right()).is(r2));
 
-  Handle<Code> code = CodeFactory::StringCompare(isolate()).code();
+  Handle<Code> code = CodeFactory::StringCompare(isolate(), instr->op()).code();
   CallCode(code, RelocInfo::CODE_TARGET, instr);
-  __ CmpP(r2, Operand::Zero());
-
-  EmitBranch(instr, ComputeCompareCondition(instr->op()));
+  __ CompareRoot(r2, Heap::kTrueValueRootIndex);
+  EmitBranch(instr, eq);
 }
 
 static InstanceType TestType(HHasInstanceTypeAndBranch* instr) {
