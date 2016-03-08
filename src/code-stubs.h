@@ -153,16 +153,6 @@ namespace internal {
 #define CODE_STUB_LIST_PPC(V)
 #endif
 
-// List of code stubs only used on S390 platforms.
-#ifdef V8_TARGET_ARCH_S390
-#define CODE_STUB_LIST_S390(V)  \
-  V(DirectCEntry)              \
-  V(StoreRegistersState)       \
-  V(RestoreRegistersState)
-#else
-#define CODE_STUB_LIST_S390(V)
-#endif
-
 // List of code stubs only used on MIPS platforms.
 #if V8_TARGET_ARCH_MIPS
 #define CODE_STUB_LIST_MIPS(V) \
@@ -176,6 +166,16 @@ namespace internal {
   V(StoreRegistersState)
 #else
 #define CODE_STUB_LIST_MIPS(V)
+#endif
+
+// List of code stubs only used on S390 platforms.
+#ifdef V8_TARGET_ARCH_S390
+#define CODE_STUB_LIST_S390(V) \
+  V(DirectCEntry)              \
+  V(StoreRegistersState)       \
+  V(RestoreRegistersState)
+#else
+#define CODE_STUB_LIST_S390(V)
 #endif
 
 // Combined list of code stubs.
@@ -599,14 +599,14 @@ class RuntimeCallHelper {
 #include "src/arm64/code-stubs-arm64.h"
 #elif V8_TARGET_ARCH_ARM
 #include "src/arm/code-stubs-arm.h"
-#elif V8_TARGET_ARCH_S390
-#include "src/s390/code-stubs-s390.h"
 #elif V8_TARGET_ARCH_PPC
 #include "src/ppc/code-stubs-ppc.h"
 #elif V8_TARGET_ARCH_MIPS
 #include "src/mips/code-stubs-mips.h"
 #elif V8_TARGET_ARCH_MIPS64
 #include "src/mips64/code-stubs-mips64.h"
+#elif V8_TARGET_ARCH_S390
+#include "src/s390/code-stubs-s390.h"
 #elif V8_TARGET_ARCH_X87
 #include "src/x87/code-stubs-x87.h"
 #else

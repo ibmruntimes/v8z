@@ -498,7 +498,7 @@ void SignalHandler::HandleProfilerSignal(int signal, siginfo_t* info,
                                        0x7FFFFFFF);
 #else
   state.pc = reinterpret_cast<Address>(ucontext->uc_mcontext.psw.addr);
-#endif
+#endif // V8_TARGET_ARCH_32_BIT
   state.sp = reinterpret_cast<Address>(ucontext->uc_mcontext.gregs[15]);
   state.fp = reinterpret_cast<Address>(ucontext->uc_mcontext.gregs[11]);
 #endif  // V8_HOST_ARCH_*

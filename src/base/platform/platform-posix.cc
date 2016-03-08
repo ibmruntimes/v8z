@@ -253,9 +253,6 @@ void OS::DebugBreak() {
   asm("break");
 #elif V8_HOST_ARCH_MIPS64
   asm("break");
-#elif V8_HOST_ARCH_S390
-  // Software breakpoint instruction is 0x0001
-  asm volatile(".word 0x0001");
 #elif V8_HOST_ARCH_PPC
   asm("twge 2,2");
 #elif V8_HOST_ARCH_IA32
@@ -266,6 +263,9 @@ void OS::DebugBreak() {
 #endif  // V8_OS_NACL
 #elif V8_HOST_ARCH_X64
   asm("int $3");
+#elif V8_HOST_ARCH_S390
+  // Software breakpoint instruction is 0x0001
+  asm volatile(".word 0x0001");
 #else
 #error Unsupported host architecture.
 #endif

@@ -71,14 +71,14 @@
 #include "src/arm64/assembler-arm64-inl.h"  // NOLINT
 #elif V8_TARGET_ARCH_ARM
 #include "src/arm/assembler-arm-inl.h"  // NOLINT
-#elif V8_TARGET_ARCH_S390
-#include "s390/assembler-s390-inl.h"
 #elif V8_TARGET_ARCH_PPC
 #include "src/ppc/assembler-ppc-inl.h"  // NOLINT
 #elif V8_TARGET_ARCH_MIPS
 #include "src/mips/assembler-mips-inl.h"  // NOLINT
 #elif V8_TARGET_ARCH_MIPS64
 #include "src/mips64/assembler-mips64-inl.h"  // NOLINT
+#elif V8_TARGET_ARCH_S390
+#include "src/s390/assembler-s390-inl.h"  // NOLINT
 #elif V8_TARGET_ARCH_X87
 #include "src/x87/assembler-x87-inl.h"  // NOLINT
 #else
@@ -97,12 +97,12 @@
 #include "src/regexp/arm/regexp-macro-assembler-arm.h"  // NOLINT
 #elif V8_TARGET_ARCH_PPC
 #include "src/regexp/ppc/regexp-macro-assembler-ppc.h"  // NOLINT
-#elif V8_TARGET_ARCH_S390
-#include "src/regexp/s390/regexp-macro-assembler-s390.h"
 #elif V8_TARGET_ARCH_MIPS
 #include "src/regexp/mips/regexp-macro-assembler-mips.h"  // NOLINT
 #elif V8_TARGET_ARCH_MIPS64
 #include "src/regexp/mips64/regexp-macro-assembler-mips64.h"  // NOLINT
+#elif V8_TARGET_ARCH_S390
+#include "src/regexp/s390/regexp-macro-assembler-s390.h"  // NOLINT
 #elif V8_TARGET_ARCH_X87
 #include "src/regexp/x87/regexp-macro-assembler-x87.h"  // NOLINT
 #else  // Unknown architecture.
@@ -1496,14 +1496,14 @@ ExternalReference ExternalReference::re_check_stack_guard_state(
   function = FUNCTION_ADDR(RegExpMacroAssemblerARM64::CheckStackGuardState);
 #elif V8_TARGET_ARCH_ARM
   function = FUNCTION_ADDR(RegExpMacroAssemblerARM::CheckStackGuardState);
-#elif V8_TARGET_ARCH_S390
-  function = FUNCTION_ADDR(RegExpMacroAssemblerS390::CheckStackGuardState);
 #elif V8_TARGET_ARCH_PPC
   function = FUNCTION_ADDR(RegExpMacroAssemblerPPC::CheckStackGuardState);
 #elif V8_TARGET_ARCH_MIPS
   function = FUNCTION_ADDR(RegExpMacroAssemblerMIPS::CheckStackGuardState);
 #elif V8_TARGET_ARCH_MIPS64
   function = FUNCTION_ADDR(RegExpMacroAssemblerMIPS::CheckStackGuardState);
+#elif V8_TARGET_ARCH_S390
+  function = FUNCTION_ADDR(RegExpMacroAssemblerS390::CheckStackGuardState);
 #elif V8_TARGET_ARCH_X87
   function = FUNCTION_ADDR(RegExpMacroAssemblerX87::CheckStackGuardState);
 #else

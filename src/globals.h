@@ -50,9 +50,6 @@ namespace internal {
 #if (V8_TARGET_ARCH_ARM && !V8_HOST_ARCH_ARM)
 #define USE_SIMULATOR 1
 #endif
-#if (V8_TARGET_ARCH_S390 && !V8_HOST_ARCH_S390)
-#define USE_SIMULATOR 1
-#endif
 #if (V8_TARGET_ARCH_PPC && !V8_HOST_ARCH_PPC)
 #define USE_SIMULATOR 1
 #endif
@@ -60,6 +57,9 @@ namespace internal {
 #define USE_SIMULATOR 1
 #endif
 #if (V8_TARGET_ARCH_MIPS64 && !V8_HOST_ARCH_MIPS64)
+#define USE_SIMULATOR 1
+#endif
+#if (V8_TARGET_ARCH_S390 && !V8_HOST_ARCH_S390)
 #define USE_SIMULATOR 1
 #endif
 #endif
