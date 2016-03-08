@@ -6,7 +6,7 @@
 #define V8_S390_REGEXP_MACRO_ASSEMBLER_S390_H_
 
 #include "src/macro-assembler.h"
-#include "src/s390/assembler-s390-inl.h"
+#include "src/regexp/regexp-macro-assembler.h"
 #include "src/s390/assembler-s390.h"
 #include "src/s390/frames-s390.h"
 
