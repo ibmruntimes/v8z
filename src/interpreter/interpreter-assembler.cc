@@ -528,10 +528,10 @@ void InterpreterAssembler::TraceBytecode(Runtime::FunctionId function_id) {
 bool InterpreterAssembler::TargetSupportsUnalignedAccess() {
 #if V8_TARGET_ARCH_MIPS || V8_TARGET_ARCH_MIPS64
   return false;
-#elif V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_ARM64 || V8_TARGET_ARCH_PPC \
-      || V8_TARGET_ARCH_S390
+#elif V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_ARM64 || V8_TARGET_ARCH_PPC
   return CpuFeatures::IsSupported(UNALIGNED_ACCESSES);
-#elif V8_TARGET_ARCH_IA32 || V8_TARGET_ARCH_X64 || V8_TARGET_ARCH_X87
+#elif V8_TARGET_ARCH_IA32 || V8_TARGET_ARCH_X64 || V8_TARGET_ARCH_X87 || \
+      V8_TARGET_ARCH_S390
   return true;
 #else
 #error "Unknown Architecture"
