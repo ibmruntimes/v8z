@@ -59,7 +59,6 @@ class JavaScriptMinifier(object):
     self.in_comment = False
     self.map = {}
     self.nesting = 0
-
   def LookAtIdentifier(self, m):
     """Records identifiers or keywords that we see in use.
 
@@ -128,10 +127,25 @@ class JavaScriptMinifier(object):
 
   def CharFromNumber(self, number):
     """A single-digit base-52 encoding using a-zA-Z."""
-    if number < 26:
-      return chr(number + 97)
-    number -= 26
-    return chr(number + 65)
+    if ord('a') == 97:
+      if number < 26:
+        return chr(number + 97)
+      number -= 26
+      return chr(number + 65)
+    else:
+      if number < 9:
+        return chr(number + 129)
+      elif number >= 9 and number < 18:
+        return chr((number%9) + 145)
+      else:
+        return chr((number%9) + 162)
+      number -= 26
+      if number < 9:
+        return chr(number + 193)
+      elif number >= 9 and number < 18:
+        return chr((number%9) + 209)
+      else:
+        return chr((number%9) + 226)
 
   def FindNewName(self, var_name):
     """Finds a new 1-character or 2-character name for a variable.
@@ -209,6 +223,7 @@ class JavaScriptMinifier(object):
           line = line[m.end():]
           self.in_comment = False
         else:
+          new_lines.append("")
           new_lines.append("")
           continue
 
