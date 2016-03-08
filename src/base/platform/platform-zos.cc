@@ -136,7 +136,10 @@ static int anon_munmap(void * addr, size_t len){
    return retcode;
 }
 
-
+void OS::ConvertToASCII(char * str) {
+  size_t length =  __e2a_s(str);
+  DCHECK_NE(length, -1);
+}
 
 const char* OS::LocalTimezone(double time, TimezoneCache* cache) {
   if (isnan(time)) return "";
