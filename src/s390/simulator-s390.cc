@@ -3849,6 +3849,7 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       break;
     }
     case SLLG:
+    case RLLG:
     case SRLG: {
       // For SLLG/SRLG, the 64-bit third operand is shifted the number
       // of bits specified by the second-operand address, and the result is
@@ -3869,6 +3870,9 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
         alu_out = r3_val << shiftBits;
       } else if (op == SRLG) {
         alu_out = r3_val >> shiftBits;
+      } else if (op == RLLG) {
+        uint64_t rotateBits = r3_val >> (64 - shiftBits);
+        alu_out = (r3_val << shiftBits) | (rotateBits);
       } else {
         UNREACHABLE();
       }
