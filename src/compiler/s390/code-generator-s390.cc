@@ -872,8 +872,10 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       } else {
           int shiftAmount = i.InputInt32(1);
           __ rllg(i.OutputRegister(), i.InputRegister(0), Operand(shiftAmount));
-          __ sllg(i.OutputRegister(), i.OutputRegister(), Operand(i.InputInt32(2) - 1));
-          __ srlg(i.OutputRegister(), i.OutputRegister(), Operand(i.InputInt32(2) - 1));
+          __ sllg(i.OutputRegister(), i.OutputRegister(),
+             Operand(i.InputInt32(2) - 1));
+          __ srlg(i.OutputRegister(), i.OutputRegister(),
+             Operand(i.InputInt32(2) - 1));
       }
       break;
     case kS390_RotLeftAndClearRight64:
