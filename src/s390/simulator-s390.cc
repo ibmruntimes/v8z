@@ -3115,7 +3115,8 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
               double floor_val = std::floor(r2_val);
               if (std::abs(r2_val - floor_val) > std::abs(r2_val - ceil_val)) {
                 r1_val = static_cast<int64_t>(ceil_val);
-              } else if (std::abs(r2_val - floor_val) < std::abs(r2_val - ceil_val)) {
+              } else if (std::abs(r2_val - floor_val) <
+                         std::abs(r2_val - ceil_val)) {
                 r1_val = static_cast<int64_t>(floor_val);
               } else {  // check which one is even:
                 int64_t c_v = static_cast<int64_t>(ceil_val);
