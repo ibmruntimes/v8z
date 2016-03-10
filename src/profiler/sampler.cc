@@ -340,10 +340,10 @@ class SimulatorHelper {
     if (!simulator_->has_bad_pc()) {
       state->pc = reinterpret_cast<Address>(simulator_->get_pc());
     }
-    state->sp = reinterpret_cast<Address>(simulator_->get_register(
-        Simulator::sp));
-    state->fp = reinterpret_cast<Address>(simulator_->get_register(
-        Simulator::fp));
+    state->sp =
+        reinterpret_cast<Address>(simulator_->get_register(Simulator::sp));
+    state->fp =
+        reinterpret_cast<Address>(simulator_->get_register(Simulator::fp));
 #endif
   }
 
@@ -494,8 +494,8 @@ void SignalHandler::HandleProfilerSignal(int signal, siginfo_t* info,
 #if V8_TARGET_ARCH_32_BIT
   // 31-bit target will have bit 0 (MSB) of the PSW set to denote addressing
   // mode.  This bit needs to be masked out to resolve actual address.
-  state.pc = reinterpret_cast<Address>(ucontext->uc_mcontext.psw.addr &
-                                       0x7FFFFFFF);
+  state.pc =
+      reinterpret_cast<Address>(ucontext->uc_mcontext.psw.addr & 0x7FFFFFFF);
 #else
   state.pc = reinterpret_cast<Address>(ucontext->uc_mcontext.psw.addr);
 #endif  // V8_TARGET_ARCH_32_BIT

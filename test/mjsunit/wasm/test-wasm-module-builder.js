@@ -17,7 +17,7 @@ var debug = false;
         .exportAs("blarg");
 
     var buffer = module.toBuffer(debug);
-    var instance = _WASMEXP_.instantiateModule(buffer);
+    var instance = Wasm.instantiateModule(buffer);
     assertEquals(11, instance.exports.blarg());
 })();
 
@@ -29,7 +29,7 @@ var debug = false;
         .exportAs("main");
 
     var buffer = module.toBuffer(debug);
-    var instance = _WASMEXP_.instantiateModule(buffer, {print: print});
+    var instance = Wasm.instantiateModule(buffer, {print: print});
     print("should print 13! ");
     instance.exports.main();
 })();
@@ -42,9 +42,32 @@ var debug = false;
         .exportAs("main");
 
     var buffer = module.toBuffer(debug);
-    var instance = _WASMEXP_.instantiateModule(buffer);
+    var instance = Wasm.instantiateModule(buffer);
     assertEquals(19, instance.exports.main(19));
     assertEquals(27777, instance.exports.main(27777));
+})();
+
+(function LocalsTest2() {
+    // TODO(titzer): i64 only works on 64-bit platforms.
+    var types = [
+      {locals: {i32_count: 1}, type: kAstI32},
+//      {locals: {i64_count: 1}, type: kAstI64},
+      {locals: {f32_count: 1}, type: kAstF32},
+      {locals: {f64_count: 1}, type: kAstF64},
+    ];
+
+    for (p of types) {
+      var module = new WasmModuleBuilder();
+      module.addFunction(undefined, [p.type, p.type])
+        .addLocals(p.locals)
+        .addBody([kExprSetLocal, 1, kExprGetLocal, 0])
+        .exportAs("main");
+
+      var buffer = module.toBuffer(debug);
+      var instance = Wasm.instantiateModule(buffer);
+      assertEquals(19, instance.exports.main(19));
+      assertEquals(27777, instance.exports.main(27777));
+    }
 })();
 
 (function CallTest() {
@@ -80,11 +103,51 @@ var debug = false;
     var module = new WasmModuleBuilder();
     module.addMemory(1, 1, false);
     module.addFunction("load", [kAstI32, kAstI32])
-        .addBody([kExprI32LoadMem, 0, kExprGetLocal, 0])
+        .addBody([kExprI32LoadMem, 0, 0, kExprGetLocal, 0])
         .exportAs("load");
     module.addDataSegment(0, [9, 9, 9, 9], true);
 
     var buffer = module.toBuffer(debug);
-    var instance = _WASMEXP_.instantiateModule(buffer);
+    var instance = Wasm.instantiateModule(buffer);
     assertEquals(151587081, instance.exports.load(0));
+})();
+
+
+(function BasicTestWithUint8Array() {
+    var module = new WasmModuleBuilder();
+    module.addMemory(1, 2, false);
+    module.addFunction("foo", [kAstI32])
+        .addBody([kExprI8Const, 17])
+        .exportAs("blarg");
+
+    var buffer = module.toBuffer(debug);
+    var array = new Uint8Array(buffer);
+    var instance = Wasm.instantiateModule(array);
+    assertEquals(17, instance.exports.blarg());
+
+    var kPad = 5;
+    var buffer2 = new ArrayBuffer(kPad + buffer.byteLength + kPad);
+    var whole = new Uint8Array(buffer2);
+    for (var i = 0; i < whole.byteLength; i++) {
+      whole[i] = 0xff;
+    }
+    var array2 = new Uint8Array(buffer2, kPad, buffer.byteLength);
+    for (var i = 0; i < array2.byteLength; i++) {
+      array2[i] = array[i];
+    }
+    var instance = Wasm.instantiateModule(array2);
+    assertEquals(17, instance.exports.blarg());
+})();
+
+(function ImportTestTwoLevel() {
+    var module = new WasmModuleBuilder();
+    var index = module.addImportWithModule("mod", "print", [kAstStmt, kAstI32]);
+    module.addFunction("foo", [kAstStmt])
+        .addBody([kExprCallImport, index, kExprI8Const, 19])
+        .exportAs("main");
+
+    var buffer = module.toBuffer(debug);
+    var instance = Wasm.instantiateModule(buffer, {mod: {print: print}});
+    print("should print 19! ");
+    instance.exports.main();
 })();

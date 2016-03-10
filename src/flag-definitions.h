@@ -177,12 +177,6 @@ DEFINE_BOOL(experimental_extras, false,
 
 // Flags for language modes and experimental language features.
 DEFINE_BOOL(use_strict, false, "enforce strict mode")
-DEFINE_BOOL(use_strong, false, "enforce strong mode")
-DEFINE_IMPLICATION(use_strong, use_strict)
-
-DEFINE_BOOL(strong_mode, false, "experimental strong language mode")
-DEFINE_IMPLICATION(use_strong, strong_mode)
-DEFINE_BOOL(strong_this, true, "don't allow 'this' to escape from constructors")
 
 DEFINE_BOOL(es_staging, false,
             "enable test-worthy harmony features (for internal use only)")
@@ -212,17 +206,18 @@ DEFINE_IMPLICATION(es_staging, harmony_tailcalls)
   V(harmony_simd, "harmony simd")                                       \
   V(harmony_do_expressions, "harmony do-expressions")                   \
   V(harmony_tailcalls, "harmony tail calls")                            \
-  V(harmony_regexp_property, "harmony unicode regexp property classes") \
-  V(harmony_restrictive_declarations,                                   \
-    "harmony limitations on sloppy mode function declarations")
+  V(harmony_regexp_property, "harmony unicode regexp property classes")
 
 // Features that are complete (but still behind --harmony/es-staging flag).
 #define HARMONY_STAGED(V)                                                    \
+  V(harmony_array_prototype_values, "harmony Array.prototype.values")        \
   V(harmony_regexp_lookbehind, "harmony regexp lookbehind")                  \
   V(harmony_instanceof, "harmony instanceof support")                        \
   V(harmony_object_values_entries, "harmony Object.values / Object.entries") \
   V(harmony_object_own_property_descriptors,                                 \
-    "harmony Object.getOwnPropertyDescriptors()")
+    "harmony Object.getOwnPropertyDescriptors()")                            \
+  V(harmony_restrictive_declarations,                                        \
+    "harmony limitations on sloppy mode function declarations")
 
 // Features that are shipping (turned on by default, but internal flag remains).
 #define HARMONY_SHIPPING(V)                                               \
@@ -414,8 +409,6 @@ DEFINE_INT(concurrent_recompilation_delay, 0,
            "artificial compilation delay in ms")
 DEFINE_BOOL(block_concurrent_recompilation, false,
             "block queued jobs until released")
-DEFINE_BOOL(concurrent_osr, false, "concurrent on-stack replacement")
-DEFINE_IMPLICATION(concurrent_osr, concurrent_recompilation)
 
 DEFINE_BOOL(omit_map_checks_for_leaf_maps, true,
             "do not emit check maps for constant values that have a leaf map, "
@@ -479,6 +472,7 @@ DEFINE_BOOL(turbo_stress_instruction_scheduling, false,
 
 // Flags for native WebAssembly.
 DEFINE_BOOL(expose_wasm, false, "expose WASM interface to JavaScript")
+DEFINE_BOOL(trace_wasm_encoder, false, "trace encoding of wasm code")
 DEFINE_BOOL(trace_wasm_decoder, false, "trace decoding of wasm code")
 DEFINE_BOOL(trace_wasm_decode_time, false, "trace decoding time of wasm code")
 DEFINE_BOOL(trace_wasm_compiler, false, "trace compiling of wasm code")
@@ -703,6 +697,8 @@ DEFINE_INT(max_incremental_marking_finalization_rounds, 3,
            "at most try this many times to finalize incremental marking")
 DEFINE_BOOL(concurrent_sweeping, true, "use concurrent sweeping")
 DEFINE_BOOL(parallel_compaction, true, "use parallel compaction")
+DEFINE_BOOL(parallel_pointer_update, false,
+            "use parallel pointer update during compaction")
 DEFINE_BOOL(trace_incremental_marking, false,
             "trace progress of the incremental marking")
 DEFINE_BOOL(track_gc_object_stats, false,
@@ -729,6 +725,9 @@ DEFINE_INT(heap_growing_percent, 0,
 DEFINE_INT(histogram_interval, 600000,
            "time interval in ms for aggregating memory histograms")
 
+// global-handles.cc
+DEFINE_BOOL(trace_object_groups, false,
+            "print object groups detected during each garbage collection")
 
 // heap-snapshot-generator.cc
 DEFINE_BOOL(heap_profiler_trace_objects, false,
@@ -778,6 +777,7 @@ DEFINE_BOOL(eliminate_prototype_chain_checks, true,
             "Collapse prototype chain checks into single-cell checks")
 DEFINE_IMPLICATION(eliminate_prototype_chain_checks, track_prototype_users)
 DEFINE_BOOL(use_verbose_printer, true, "allows verbose printing")
+DEFINE_BOOL(trace_for_in_enumerate, false, "Trace for-in enumerate slow-paths")
 #if TRACE_MAPS
 DEFINE_BOOL(trace_maps, false, "trace map creation")
 #endif
@@ -864,7 +864,6 @@ DEFINE_BOOL(profile_hydrogen_code_stub_compilation, false,
 
 DEFINE_BOOL(predictable, false, "enable predictable mode")
 DEFINE_NEG_IMPLICATION(predictable, concurrent_recompilation)
-DEFINE_NEG_IMPLICATION(predictable, concurrent_osr)
 DEFINE_NEG_IMPLICATION(predictable, concurrent_sweeping)
 DEFINE_NEG_IMPLICATION(predictable, parallel_compaction)
 DEFINE_NEG_IMPLICATION(predictable, memory_reducer)

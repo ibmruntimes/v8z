@@ -453,10 +453,6 @@ void Heap::GarbageCollectionPrologue() {
   ReportStatisticsBeforeGC();
 #endif  // DEBUG
 
-  if (isolate()->concurrent_osr_enabled()) {
-    isolate()->optimizing_compile_dispatcher()->AgeBufferedOsrJobs();
-  }
-
   if (new_space_.IsAtMaximumCapacity()) {
     maximum_size_scavenges_++;
   } else {
@@ -895,7 +891,7 @@ void Heap::CollectAllAvailableGarbage(const char* gc_reason) {
   const int kMinNumberOfAttempts = 2;
   for (int attempt = 0; attempt < kMaxNumberOfAttempts; attempt++) {
     if (!CollectGarbage(MARK_COMPACTOR, gc_reason, NULL,
-                        v8::kGCCallbackFlagForced) &&
+                        v8::kGCCallbackFlagCollectAllAvailableGarbage) &&
         attempt + 1 >= kMinNumberOfAttempts) {
       break;
     }
@@ -1044,7 +1040,8 @@ bool Heap::CollectGarbage(GarbageCollector collector, const char* gc_reason,
   }
 
   if (collector == MARK_COMPACTOR &&
-      (gc_callback_flags & kGCCallbackFlagForced) != 0) {
+      (gc_callback_flags & (kGCCallbackFlagForced |
+                            kGCCallbackFlagCollectAllAvailableGarbage)) != 0) {
     isolate()->CountUsage(v8::Isolate::kForcedGC);
   }
 
@@ -1400,6 +1397,10 @@ void Heap::CallGCPrologueCallbacks(GCType gc_type, GCCallbackFlags flags) {
         gc_prologue_callbacks_[i].callback(isolate, gc_type, flags);
       }
     }
+  }
+  if (FLAG_trace_object_groups && (gc_type == kGCTypeIncrementalMarking ||
+                                   gc_type == kGCTypeMarkSweepCompact)) {
+    isolate_->global_handles()->PrintObjectGroups();
   }
 }
 
@@ -1851,6 +1852,10 @@ void Heap::ProcessAllocationSites(WeakObjectRetainer* retainer) {
   set_allocation_sites_list(allocation_site_obj);
 }
 
+void Heap::ProcessWeakListRoots(WeakObjectRetainer* retainer) {
+  set_native_contexts_list(retainer->RetainAs(native_contexts_list()));
+  set_allocation_sites_list(retainer->RetainAs(allocation_sites_list()));
+}
 
 void Heap::ResetAllAllocationSitesDependentCode(PretenureFlag flag) {
   DisallowHeapAllocation no_allocation_scope;

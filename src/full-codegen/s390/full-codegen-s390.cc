@@ -3940,7 +3940,6 @@ void FullCodeGenerator::ClearPendingMessage() {
   __ StoreP(r3, MemOperand(ip));
 }
 
-
 void FullCodeGenerator::DeferredCommands::EmitCommands() {
   DCHECK(!result_register().is(r3));
   // Restore the accumulator (r2) and token (r3).

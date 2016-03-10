@@ -499,8 +499,6 @@ Node* WasmGraphBuilder::Binop(wasm::WasmOpcode opcode, Node* left,
     // kExprI64DivU:
     // kExprI64RemS:
     // kExprI64RemU:
-    // kExprI64And:
-    // kExprI64Ior:
     case wasm::kExprI64Ior:
       op = m->Word64Or();
       break;
@@ -509,9 +507,18 @@ Node* WasmGraphBuilder::Binop(wasm::WasmOpcode opcode, Node* left,
       op = m->Word64Xor();
       break;
 // kExprI64Shl:
-// kExprI64ShrU:
-// kExprI64ShrS:
-// kExprI64Eq:
+    case wasm::kExprI64Shl:
+      op = m->Word64Shl();
+      break;
+    // kExprI64ShrU:
+    case wasm::kExprI64ShrU:
+      op = m->Word64Shr();
+      break;
+    // kExprI64ShrS:
+    case wasm::kExprI64ShrS:
+      op = m->Word64Sar();
+      break;
+    // kExprI64Eq:
     case wasm::kExprI64Eq:
       op = m->Word64Equal();
       break;
@@ -598,15 +605,6 @@ Node* WasmGraphBuilder::Binop(wasm::WasmOpcode opcode, Node* left,
       op = m->Uint64Mod();
       return graph()->NewNode(op, left, right,
                               trap_->ZeroCheck64(kTrapRemByZero, right));
-    case wasm::kExprI64Shl:
-      op = m->Word64Shl();
-      break;
-    case wasm::kExprI64ShrU:
-      op = m->Word64Shr();
-      break;
-    case wasm::kExprI64ShrS:
-      op = m->Word64Sar();
-      break;
     case wasm::kExprI64Ror:
       op = m->Word64Ror();
       break;
@@ -848,13 +846,18 @@ Node* WasmGraphBuilder::Unop(wasm::WasmOpcode opcode, Node* input) {
     case wasm::kExprF64Log: {
       return BuildF64Log(input);
     }
+    // kExprI32ConvertI64:
     case wasm::kExprI32ConvertI64:
       op = m->TruncateInt64ToInt32();
       break;
-
-    // kExprI32ConvertI64:
     // kExprI64SConvertI32:
+    case wasm::kExprI64SConvertI32:
+      op = m->ChangeInt32ToInt64();
+      break;
     // kExprI64UConvertI32:
+    case wasm::kExprI64UConvertI32:
+      op = m->ChangeUint32ToUint64();
+      break;
     // kExprF64ReinterpretI64:
     // kExprI64ReinterpretF64:
     // kExprI64Clz:
@@ -862,28 +865,28 @@ Node* WasmGraphBuilder::Unop(wasm::WasmOpcode opcode, Node* input) {
     // kExprI64Popcnt:
     // kExprF32SConvertI64:
     case wasm::kExprF32SConvertI64:
-      if (kPointerSize == 4) {
+      if (m->Is32()) {
         return BuildF32SConvertI64(input);
       }
       op = m->RoundInt64ToFloat32();
       break;
     // kExprF32UConvertI64:
     case wasm::kExprF32UConvertI64:
-      if (kPointerSize == 4) {
+      if (m->Is32()) {
         return BuildF32UConvertI64(input);
       }
       op = m->RoundUint64ToFloat32();
       break;
     // kExprF64SConvertI64:
     case wasm::kExprF64SConvertI64:
-      if (kPointerSize == 4) {
+      if (m->Is32()) {
         return BuildF64SConvertI64(input);
       }
       op = m->RoundInt64ToFloat64();
       break;
     // kExprF64UConvertI64:
     case wasm::kExprF64UConvertI64:
-      if (kPointerSize == 4) {
+      if (m->Is32()) {
         return BuildF64UConvertI64(input);
       }
       op = m->RoundUint64ToFloat64();
@@ -895,12 +898,6 @@ Node* WasmGraphBuilder::Unop(wasm::WasmOpcode opcode, Node* input) {
 #if WASM_64
     // Opcodes only supported on 64-bit platforms.
     // TODO(titzer): query the machine operator builder here instead of #ifdef.
-    case wasm::kExprI64SConvertI32:
-      op = m->ChangeInt32ToInt64();
-      break;
-    case wasm::kExprI64UConvertI32:
-      op = m->ChangeUint32ToUint64();
-      break;
     case wasm::kExprI64SConvertF32: {
       Node* trunc = graph()->NewNode(m->TryTruncateFloat32ToInt64(), input);
       Node* result =
@@ -2196,7 +2193,7 @@ Node* WasmGraphBuilder::String(const char* string) {
 Graph* WasmGraphBuilder::graph() { return jsgraph()->graph(); }
 
 void WasmGraphBuilder::Int64LoweringForTesting() {
-  if (kPointerSize == 4) {
+  if (jsgraph()->machine()->Is32()) {
     Int64Lowering r(jsgraph()->graph(), jsgraph()->machine(),
                     jsgraph()->common(), jsgraph()->zone(),
                     function_signature_);
@@ -2207,12 +2204,13 @@ void WasmGraphBuilder::Int64LoweringForTesting() {
 static void RecordFunctionCompilation(Logger::LogEventsAndTags tag,
                                       CompilationInfo* info,
                                       const char* message, uint32_t index,
-                                      const char* func_name) {
+                                      wasm::WasmName func_name) {
   Isolate* isolate = info->isolate();
   if (isolate->logger()->is_logging_code_events() ||
       isolate->cpu_profiler()->is_profiling()) {
     ScopedVector<char> buffer(128);
-    SNPrintF(buffer, "%s#%d:%s", message, index, func_name);
+    SNPrintF(buffer, "%s#%d:%.*s", message, index, func_name.length,
+             func_name.name);
     Handle<String> name_str =
         isolate->factory()->NewStringFromAsciiChecked(buffer.start());
     Handle<String> script_str =
@@ -2315,8 +2313,9 @@ Handle<JSFunction> CompileJSToWasmWrapper(
       buffer.Dispose();
     }
 
-    RecordFunctionCompilation(Logger::FUNCTION_TAG, &info, "js-to-wasm", index,
-                              module->module->GetName(func->name_offset));
+    RecordFunctionCompilation(
+        Logger::FUNCTION_TAG, &info, "js-to-wasm", index,
+        module->module->GetName(func->name_offset, func->name_length));
     // Set the JSFunction's machine code.
     function->set_code(*code);
   }
@@ -2325,7 +2324,9 @@ Handle<JSFunction> CompileJSToWasmWrapper(
 
 Handle<Code> CompileWasmToJSWrapper(Isolate* isolate, wasm::ModuleEnv* module,
                                     Handle<JSFunction> function,
-                                    wasm::FunctionSig* sig, const char* name) {
+                                    wasm::FunctionSig* sig,
+                                    wasm::WasmName module_name,
+                                    wasm::WasmName function_name) {
   //----------------------------------------------------------------------------
   // Create the Graph
   //----------------------------------------------------------------------------
@@ -2393,7 +2394,7 @@ Handle<Code> CompileWasmToJSWrapper(Isolate* isolate, wasm::ModuleEnv* module,
     }
 
     RecordFunctionCompilation(Logger::FUNCTION_TAG, &info, "wasm-to-js", 0,
-                              name);
+                              module_name);
   }
   return code;
 }
@@ -2409,15 +2410,6 @@ Handle<Code> CompileWasmFunction(wasm::ErrorThrower& thrower, Isolate* isolate,
        << wasm::WasmFunctionName(&function, module_env) << std::endl;
     os << std::endl;
   }
-  // Initialize the function environment for decoding.
-  wasm::FunctionEnv env;
-  env.module = module_env;
-  env.sig = function.sig;
-  env.local_i32_count = function.local_i32_count;
-  env.local_i64_count = function.local_i64_count;
-  env.local_f32_count = function.local_f32_count;
-  env.local_f64_count = function.local_f64_count;
-  env.SumLocals();
 
   // Create a TF graph during decoding.
   Zone zone;
@@ -2428,11 +2420,11 @@ Handle<Code> CompileWasmFunction(wasm::ErrorThrower& thrower, Isolate* isolate,
       InstructionSelector::SupportedMachineOperatorFlags());
   JSGraph jsgraph(isolate, &graph, &common, nullptr, nullptr, &machine);
   WasmGraphBuilder builder(&zone, &jsgraph, function.sig);
-  wasm::TreeResult result = wasm::BuildTFGraph(
-      &builder, &env,                                                 // --
-      module_env->module->module_start,                               // --
-      module_env->module->module_start + function.code_start_offset,  // --
-      module_env->module->module_start + function.code_end_offset);   // --
+  wasm::FunctionBody body = {
+      module_env, function.sig, module_env->module->module_start,
+      module_env->module->module_start + function.code_start_offset,
+      module_env->module->module_start + function.code_end_offset};
+  wasm::TreeResult result = wasm::BuildTFGraph(&builder, body);
 
   if (result.failed()) {
     if (FLAG_trace_wasm_compiler) {
@@ -2441,9 +2433,10 @@ Handle<Code> CompileWasmFunction(wasm::ErrorThrower& thrower, Isolate* isolate,
     }
     // Add the function as another context for the exception
     ScopedVector<char> buffer(128);
-    SNPrintF(buffer, "Compiling WASM function #%d:%s failed:",
-             function.func_index,
-             module_env->module->GetName(function.name_offset));
+    wasm::WasmName name =
+        module_env->module->GetName(function.name_offset, function.name_length);
+    SNPrintF(buffer, "Compiling WASM function #%d:%.*s failed:",
+             function.func_index, name.length, name.name);
     thrower.Failed(buffer.start(), result);
     return Handle<Code>::null();
   }
@@ -2451,7 +2444,7 @@ Handle<Code> CompileWasmFunction(wasm::ErrorThrower& thrower, Isolate* isolate,
   // Run the compiler pipeline to generate machine code.
   CallDescriptor* descriptor =
       wasm::ModuleEnv::GetWasmCallDescriptor(&zone, function.sig);
-  if (kPointerSize == 4) {
+  if (machine.Is32()) {
     descriptor = module_env->GetI32WasmCallDescriptor(&zone, descriptor);
   }
   Code::Flags flags = Code::ComputeFlags(Code::WASM_FUNCTION);
@@ -2466,8 +2459,10 @@ Handle<Code> CompileWasmFunction(wasm::ErrorThrower& thrower, Isolate* isolate,
   Vector<char> buffer;
   if (debugging) {
     buffer = Vector<char>::New(128);
-    SNPrintF(buffer, "WASM_function_#%d:%s", function.func_index,
-             module_env->module->GetName(function.name_offset));
+    wasm::WasmName name =
+        module_env->module->GetName(function.name_offset, function.name_length);
+    SNPrintF(buffer, "WASM_function_#%d:%.*s", function.func_index, name.length,
+             name.name);
     func_name = buffer.start();
   }
   CompilationInfo info(func_name, isolate, &zone, flags);
@@ -2478,9 +2473,10 @@ Handle<Code> CompileWasmFunction(wasm::ErrorThrower& thrower, Isolate* isolate,
     buffer.Dispose();
   }
   if (!code.is_null()) {
-    RecordFunctionCompilation(
-        Logger::FUNCTION_TAG, &info, "WASM_function", function.func_index,
-        module_env->module->GetName(function.name_offset));
+    RecordFunctionCompilation(Logger::FUNCTION_TAG, &info, "WASM_function",
+                              function.func_index,
+                              module_env->module->GetName(
+                                  function.name_offset, function.name_length));
   }
 
   return code;

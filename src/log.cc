@@ -13,6 +13,8 @@
 #include "src/code-stubs.h"
 #include "src/deoptimizer.h"
 #include "src/global-handles.h"
+#include "src/interpreter/bytecodes.h"
+#include "src/interpreter/interpreter.h"
 #include "src/log-inl.h"
 #include "src/log-utils.h"
 #include "src/macro-assembler.h"
@@ -919,7 +921,7 @@ void LogRegExpSource(Handle<JSRegExp> regexp, Isolate* isolate,
   //      (re.global?"g":"") + (re.ignorecase?"i":"") + (re.multiline?"m":"")
 
   Handle<Object> source =
-      Object::GetProperty(isolate, regexp, "source").ToHandleChecked();
+      JSReceiver::GetProperty(isolate, regexp, "source").ToHandleChecked();
   if (!source->IsString()) {
     msg->Append("no source");
     return;
@@ -938,19 +940,19 @@ void LogRegExpSource(Handle<JSRegExp> regexp, Isolate* isolate,
 
   // global flag
   Handle<Object> global =
-      Object::GetProperty(isolate, regexp, "global").ToHandleChecked();
+      JSReceiver::GetProperty(isolate, regexp, "global").ToHandleChecked();
   if (global->IsTrue()) {
     msg->Append('g');
   }
   // ignorecase flag
   Handle<Object> ignorecase =
-      Object::GetProperty(isolate, regexp, "ignoreCase").ToHandleChecked();
+      JSReceiver::GetProperty(isolate, regexp, "ignoreCase").ToHandleChecked();
   if (ignorecase->IsTrue()) {
     msg->Append('i');
   }
   // multiline flag
   Handle<Object> multiline =
-      Object::GetProperty(isolate, regexp, "multiline").ToHandleChecked();
+      JSReceiver::GetProperty(isolate, regexp, "multiline").ToHandleChecked();
   if (multiline->IsTrue()) {
     msg->Append('m');
   }
@@ -1527,6 +1529,8 @@ void Logger::LogCodeObject(Object* object) {
     case AbstractCode::INTERPRETED_FUNCTION:
     case AbstractCode::OPTIMIZED_FUNCTION:
       return;  // We log this later using LogCompiledFunctions.
+    case AbstractCode::BYTECODE_HANDLER:
+      return;  // We log it later by walking the dispatch table.
     case AbstractCode::BINARY_OP_IC:    // fall through
     case AbstractCode::COMPARE_IC:      // fall through
     case AbstractCode::TO_BOOLEAN_IC:   // fall through
@@ -1597,6 +1601,18 @@ void Logger::LogCodeObjects() {
   for (HeapObject* obj = iterator.next(); obj != NULL; obj = iterator.next()) {
     if (obj->IsCode()) LogCodeObject(obj);
     if (obj->IsBytecodeArray()) LogCodeObject(obj);
+  }
+}
+
+void Logger::LogBytecodeHandlers() {
+  if (!FLAG_ignition) return;
+
+  const int last_index = static_cast<int>(interpreter::Bytecode::kLast);
+  for (int index = 0; index <= last_index; ++index) {
+    interpreter::Bytecode bytecode = interpreter::Bytecodes::FromByte(index);
+    Code* code = isolate_->interpreter()->GetBytecodeHandler(bytecode);
+    CodeCreateEvent(Logger::BYTECODE_HANDLER_TAG, AbstractCode::cast(code),
+                    interpreter::Bytecodes::ToString(bytecode));
   }
 }
 
