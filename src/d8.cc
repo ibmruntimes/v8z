@@ -79,14 +79,7 @@ class ShellArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
     void* data = AllocateUninitialized(length);
     return data == NULL ? data : memset(data, 0, length);
   }
-  virtual void* AllocateUninitialized(size_t length) {
-#if defined(V8_TARGET_ARCH_S390) && !defined(V8_TARGET_ARCH_S390X)
-    return length < 2Lu * 1024Lu * 1024Lu * 1024Lu ?
-             malloc(length) : NULL;
-#else
-    return malloc(length);
-#endif
-  }
+  virtual void* AllocateUninitialized(size_t length) { return malloc(length); }
   virtual void Free(void* data, size_t) { free(data); }
 };
 
