@@ -477,7 +477,9 @@ static void EmitCheckForTwoHeapNumbers(MacroAssembler* masm, Register lhs,
   __ b(both_loaded_as_doubles);
 }
 
-// Fast negative check for internalized-to-internalized equality.
+// Fast negative check for internalized-to-internalized equality or receiver
+// equality. Also handles the undetectable receiver to null/undefined
+// comparison.
 static void EmitCheckForInternalizedStringsOrObjects(MacroAssembler* masm,
                                                      Register lhs, Register rhs,
                                                      Label* possible_strings,
@@ -485,7 +487,7 @@ static void EmitCheckForInternalizedStringsOrObjects(MacroAssembler* masm,
   DCHECK((lhs.is(r2) && rhs.is(r3)) || (lhs.is(r3) && rhs.is(r2)));
 
   // r4 is object type of rhs.
-  Label object_test, return_unequal, undetectable;
+  Label object_test, return_equal, return_unequal, undetectable;
   STATIC_ASSERT(kInternalizedTag == 0 && kStringTag == 0);
   __ mov(r0, Operand(kIsNotStringMask));
   __ AndP(r0, r4);
@@ -526,6 +528,16 @@ static void EmitCheckForInternalizedStringsOrObjects(MacroAssembler* masm,
   __ bind(&undetectable);
   __ AndP(r0, r7, Operand(1 << Map::kIsUndetectable));
   __ beq(&return_unequal);
+
+  // If both sides are JSReceivers, then the result is false according to
+  // the HTML specification, which says that only comparisons with null or
+  // undefined are affected by special casing for document.all.
+  __ CompareInstanceType(r4, r4, ODDBALL_TYPE);
+  __ beq(&return_equal);
+  __ CompareInstanceType(r5, r5, ODDBALL_TYPE);
+  __ bne(&return_unequal);
+
+  __ bind(&return_equal);
   __ LoadImmP(r2, Operand(EQUAL));
   __ Ret();
 }
@@ -3754,7 +3766,7 @@ void StubFailureTrampolineStub::Generate(MacroAssembler* masm) {
   CEntryStub ces(isolate(), 1, kSaveFPRegs);
   __ Call(ces.GetCode(), RelocInfo::CODE_TARGET);
   int parameter_count_offset =
-      StubFailureTrampolineFrame::kCallerStackParameterCountFrameOffset;
+      StubFailureTrampolineFrameConstants::kArgumentsLengthOffset;
   __ LoadP(r3, MemOperand(fp, parameter_count_offset));
   if (function_mode() == JS_FUNCTION_STUB_MODE) {
     __ AddP(r3, Operand(1));
@@ -4746,7 +4758,7 @@ void FastNewRestParameterStub::Generate(MacroAssembler* masm) {
     __ bind(&loop);
     __ LoadP(r4, MemOperand(r4, StandardFrameConstants::kCallerFPOffset));
     __ bind(&loop_entry);
-    __ LoadP(ip, MemOperand(r4, StandardFrameConstants::kMarkerOffset));
+    __ LoadP(ip, MemOperand(r4, StandardFrameConstants::kFunctionOffset));
     __ CmpP(ip, r3);
     __ bne(&loop);
   }
@@ -4755,7 +4767,7 @@ void FastNewRestParameterStub::Generate(MacroAssembler* masm) {
   // arguments adaptor frame below the function frame).
   Label no_rest_parameters;
   __ LoadP(r4, MemOperand(r4, StandardFrameConstants::kCallerFPOffset));
-  __ LoadP(ip, MemOperand(r4, StandardFrameConstants::kContextOffset));
+  __ LoadP(ip, MemOperand(r4, CommonFrameConstants::kContextOrFrameTypeOffset));
   __ CmpSmiLiteral(ip, Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR), r0);
   __ bne(&no_rest_parameters);
 
@@ -4903,7 +4915,7 @@ void FastNewSloppyArgumentsStub::Generate(MacroAssembler* masm) {
   // Check if the calling frame is an arguments adaptor frame.
   Label adaptor_frame, try_allocate, runtime;
   __ LoadP(r6, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
-  __ LoadP(r2, MemOperand(r6, StandardFrameConstants::kContextOffset));
+  __ LoadP(r2, MemOperand(r6, CommonFrameConstants::kContextOrFrameTypeOffset));
   __ CmpSmiLiteral(r2, Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR), r0);
   __ beq(&adaptor_frame);
 
@@ -5130,7 +5142,7 @@ void FastNewStrictArgumentsStub::Generate(MacroAssembler* masm) {
     __ bind(&loop);
     __ LoadP(r4, MemOperand(r4, StandardFrameConstants::kCallerFPOffset));
     __ bind(&loop_entry);
-    __ LoadP(ip, MemOperand(r4, StandardFrameConstants::kMarkerOffset));
+    __ LoadP(ip, MemOperand(r4, StandardFrameConstants::kFunctionOffset));
     __ CmpP(ip, r3);
     __ bne(&loop);
   }
@@ -5138,7 +5150,7 @@ void FastNewStrictArgumentsStub::Generate(MacroAssembler* masm) {
   // Check if we have an arguments adaptor frame below the function frame.
   Label arguments_adaptor, arguments_done;
   __ LoadP(r5, MemOperand(r4, StandardFrameConstants::kCallerFPOffset));
-  __ LoadP(ip, MemOperand(r5, StandardFrameConstants::kContextOffset));
+  __ LoadP(ip, MemOperand(r5, CommonFrameConstants::kContextOrFrameTypeOffset));
   __ CmpSmiLiteral(ip, Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR), r0);
   __ beq(&arguments_adaptor);
   {
@@ -5547,11 +5559,9 @@ void CallApiCallbackStub::Generate(MacroAssembler* masm) {
   STATIC_ASSERT(FCA::kHolderIndex == 0);
   STATIC_ASSERT(FCA::kArgsLength == 7);
 
-  DCHECK(argc.is_immediate() || r5.is(argc.reg()));
-
   // context save
   __ push(context);
-  if (!is_lazy) {
+  if (!is_lazy()) {
     // load context from callee
     __ LoadP(context, FieldMemOperand(callee, JSFunction::kContextOffset));
   }
@@ -5632,21 +5642,6 @@ void CallApiCallbackStub::Generate(MacroAssembler* masm) {
   CallApiFunctionAndReturn(masm, api_function_address, thunk_ref, stack_space,
                            stack_space_operand, return_value_operand,
                            &context_restore_operand);
-}
-
-void CallApiFunctionStub::Generate(MacroAssembler* masm) {
-  bool call_data_undefined = this->call_data_undefined();
-  CallApiFunctionStubHelper(masm, ParameterCount(r5), false,
-                            call_data_undefined, false);
-}
-
-void CallApiAccessorStub::Generate(MacroAssembler* masm) {
-  bool is_store = this->is_store();
-  int argc = this->argc();
-  bool call_data_undefined = this->call_data_undefined();
-  bool is_lazy = this->is_lazy();
-  CallApiFunctionStubHelper(masm, ParameterCount(argc), is_store,
-                            call_data_undefined, is_lazy);
 }
 
 void CallApiGetterStub::Generate(MacroAssembler* masm) {

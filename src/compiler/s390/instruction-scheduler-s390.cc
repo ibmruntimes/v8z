@@ -24,6 +24,7 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kS390_ShiftRight64:
     case kS390_ShiftRightAlg32:
     case kS390_ShiftRightAlg64:
+    case kS390_PairShiftLeft:
     case kS390_RotRight32:
     case kS390_RotRight64:
     case kS390_Not:

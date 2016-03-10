@@ -23,6 +23,7 @@ namespace compiler {
   V(S390_ShiftRight64)             \
   V(S390_ShiftRightAlg32)          \
   V(S390_ShiftRightAlg64)          \
+  V(S390_PairShiftLeft)            \
   V(S390_RotRight32)               \
   V(S390_RotRight64)               \
   V(S390_Not)                      \

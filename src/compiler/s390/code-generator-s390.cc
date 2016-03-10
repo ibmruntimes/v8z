@@ -577,6 +577,31 @@ void CodeGenerator::AssemblePrepareTailCall(int stack_param_delta) {
   frame_access_state()->SetFrameAccessToSP();
 }
 
+void CodeGenerator::AssemblePopArgumentsAdaptorFrame(Register args_reg,
+                                                     Register scratch1,
+                                                     Register scratch2,
+                                                     Register scratch3) {
+  DCHECK(!AreAliased(args_reg, scratch1, scratch2, scratch3));
+  Label done;
+
+  // Check if current frame is an arguments adaptor frame.
+  __ LoadP(scratch1, MemOperand(fp, StandardFrameConstants::kContextOffset));
+  __ CmpSmiLiteral(scratch1, Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR), r0);
+  __ bne(&done);
+
+  // Load arguments count from current arguments adaptor frame (note, it
+  // does not include receiver).
+  Register caller_args_count_reg = scratch1;
+  __ LoadP(caller_args_count_reg,
+           MemOperand(fp, ArgumentsAdaptorFrameConstants::kLengthOffset));
+  __ SmiUntag(caller_args_count_reg);
+
+  ParameterCount callee_args_count(args_reg);
+  __ PrepareForTailCall(callee_args_count, caller_args_count_reg, scratch2,
+                        scratch3);
+  __ bind(&done);
+}
+
 // Assembles an instruction after register allocation, producing machine code.
 void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
   S390OperandConverter i(this, instr);
@@ -597,9 +622,15 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       frame_access_state()->ClearSPDelta();
       break;
     }
+    case kArchTailCallCodeObjectFromJSFunction:
     case kArchTailCallCodeObject: {
       int stack_param_delta = i.InputInt32(instr->InputCount() - 1);
       AssembleDeconstructActivationRecord(stack_param_delta);
+      if (opcode == kArchTailCallCodeObjectFromJSFunction) {
+        AssemblePopArgumentsAdaptorFrame(kJavaScriptCallArgCountRegister,
+                                         i.TempRegister(0), i.TempRegister(1),
+                                         i.TempRegister(2));
+      }
       if (HasRegisterInput(instr, 0)) {
         __ AddP(ip, i.InputRegister(0),
                 Operand(Code::kHeaderSize - kHeapObjectTag));
@@ -630,6 +661,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       frame_access_state()->ClearSPDelta();
       break;
     }
+    case kArchTailCallJSFunctionFromJSFunction:
     case kArchTailCallJSFunction: {
       Register func = i.InputRegister(0);
       if (FLAG_debug_code) {
@@ -641,6 +673,11 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       }
       int stack_param_delta = i.InputInt32(instr->InputCount() - 1);
       AssembleDeconstructActivationRecord(stack_param_delta);
+      if (opcode == kArchTailCallJSFunctionFromJSFunction) {
+        AssemblePopArgumentsAdaptorFrame(kJavaScriptCallArgCountRegister,
+                                         i.TempRegister(0), i.TempRegister(1),
+                                         i.TempRegister(2));
+      }
       __ LoadP(ip, FieldMemOperand(func, JSFunction::kCodeEntryOffset));
       __ Jump(ip);
       frame_access_state()->ClearSPDelta();
@@ -819,6 +856,19 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
 #if V8_TARGET_ARCH_S390X
     case kS390_ShiftRightAlg64:
       ASSEMBLE_BINOP(srag, srag);
+      break;
+#endif
+#if !V8_TARGET_ARCH_S390X
+    case kS390_PairShiftLeft:
+      if (instr->InputAt(2)->IsImmediate()) {
+        __ PairShiftLeft(i.OutputRegister(0), i.OutputRegister(1),
+                         i.InputRegister(0), i.InputRegister(1),
+                         i.InputInt32(2));
+      } else {
+        __ PairShiftLeft(i.OutputRegister(0), i.OutputRegister(1),
+                         i.InputRegister(0), i.InputRegister(1), kScratchReg,
+                         i.InputRegister(2));
+      }
       break;
 #endif
     case kS390_RotRight32:
@@ -1654,17 +1704,21 @@ void CodeGenerator::AssembleDeoptimizerCall(
 void CodeGenerator::AssemblePrologue() {
   CallDescriptor* descriptor = linkage()->GetIncomingDescriptor();
 
-  if (descriptor->IsCFunctionCall()) {
-    __ Push(r14, fp);
-    __ LoadRR(fp, sp);
-  } else if (descriptor->IsJSFunctionCall()) {
-    __ Prologue(this->info()->GeneratePreagedPrologue(), ip);
-  } else if (frame()->needs_frame()) {
-    if (!ABI_CALL_VIA_IP && info()->output_code_kind() == Code::WASM_FUNCTION) {
-      // TODO(mbrandy): Restrict only to the wasm wrapper case.
-      __ StubPrologue();
+  if (frame()->needs_frame()) {
+    if (descriptor->IsCFunctionCall()) {
+      __ Push(r14, fp);
+      __ LoadRR(fp, sp);
+    } else if (descriptor->IsJSFunctionCall()) {
+      __ Prologue(this->info()->GeneratePreagedPrologue(), ip);
     } else {
-      __ StubPrologue(ip);
+      StackFrame::Type type = info()->GetOutputStackFrameType();
+      if (!ABI_CALL_VIA_IP &&
+          info()->output_code_kind() == Code::WASM_FUNCTION) {
+        // TODO(mbrandy): Restrict only to the wasm wrapper case.
+        __ StubPrologue(type);
+      } else {
+        __ StubPrologue(type, ip);
+      }
     }
   } else {
     frame()->SetElidedFrameSizeInSlots(0);

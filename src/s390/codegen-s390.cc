@@ -609,9 +609,7 @@ CodeAgingHelper::CodeAgingHelper(Isolate* isolate) {
       new CodePatcher(isolate, young_sequence_.start(),
                       young_sequence_.length(), CodePatcher::DONT_FLUSH));
   PredictableCodeSizeScope scope(patcher->masm(), young_sequence_.length());
-  patcher->masm()->PushFixedFrame(r3);
-  patcher->masm()->la(
-      fp, MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
+  patcher->masm()->PushStandardFrame(r3);
 }
 
 #ifdef DEBUG

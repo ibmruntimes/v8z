@@ -1518,13 +1518,6 @@ void FullCodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
     }
   }
 
-  if (expr->has_function()) {
-    DCHECK(result_saved);
-    __ LoadP(r2, MemOperand(sp));
-    __ push(r2);
-    __ CallRuntime(Runtime::kToFastProperties);
-  }
-
   if (result_saved) {
     context()->PlugTOS();
   } else {
@@ -1862,9 +1855,7 @@ void FullCodeGenerator::EmitGeneratorResume(
   // fp = caller's frame pointer.
   // cp = callee's context,
   // r6 = callee's JS function.
-  __ PushFixedFrame(r6);
-  // Adjust FP to point to saved FP.
-  __ lay(fp, MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
+  __ PushStandardFrame(r6);
 
   // Load the operand stack size.
   __ LoadP(r5, FieldMemOperand(r3, JSGeneratorObject::kOperandStackOffset));
@@ -3998,7 +3989,6 @@ void BackEdgeTable::PatchAt(Code* unoptimized_code, Address pc,
       break;
     }
     case ON_STACK_REPLACEMENT:
-    case OSR_AFTER_STACK_CHECK:
       //  <decrement profiling counter>
       //         brc   0x0, <ok>            ;;  patched to NOP BRC
       //         brasrl    r14, <interrupt stub address>
@@ -4021,8 +4011,10 @@ BackEdgeTable::BackEdgeState BackEdgeTable::GetBackEdgeState(
     Isolate* isolate, Code* unoptimized_code, Address pc) {
   Address call_address = Assembler::target_address_from_return_address(pc);
   Address branch_address = call_address - 4;
+#ifdef DEBUG
   Address interrupt_address =
       Assembler::target_address_at(call_address, unoptimized_code);
+#endif
 
   DCHECK(BRC == Instruction::S390OpcodeValue(branch_address));
   // For interrupt, we expect a branch greater than or equal
@@ -4039,13 +4031,9 @@ BackEdgeTable::BackEdgeState BackEdgeTable::GetBackEdgeState(
   USE(kOSRBranchInstruction);
   DCHECK(kOSRBranchInstruction == br_instr);
 
-  if (interrupt_address == isolate->builtins()->OnStackReplacement()->entry()) {
-    return ON_STACK_REPLACEMENT;
-  }
-
   DCHECK(interrupt_address ==
-         isolate->builtins()->OsrAfterStackCheck()->entry());
-  return OSR_AFTER_STACK_CHECK;
+         isolate->builtins()->OnStackReplacement()->entry());
+  return ON_STACK_REPLACEMENT;
 }
 
 }  // namespace internal
