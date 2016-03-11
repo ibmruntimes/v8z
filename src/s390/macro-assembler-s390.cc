@@ -581,6 +581,7 @@ void MacroAssembler::PopCommonFrame(Register marker_reg) {
 
 void MacroAssembler::PushStandardFrame(Register function_reg) {
   int fp_delta = 0;
+  CleanseP(r14);
   if (function_reg.is_valid()) {
     Push(r14, fp, cp, function_reg);
     fp_delta = 2;
