@@ -1056,7 +1056,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   LoadSmiLiteral(ip, Smi::FromInt(StackFrame::EXIT));
   PushCommonFrame(ip);
   // Reserve room for saved entry sp and code object.
-  lay(sp, MemOperand(sp, -ExitFrameConstants::kFixedFrameSizeFromFp));
+  lay(sp, MemOperand(fp, -ExitFrameConstants::kFixedFrameSizeFromFp));
 
   if (emit_debug_code()) {
     StoreP(MemOperand(fp, ExitFrameConstants::kSPOffset), Operand::Zero(), r1);
