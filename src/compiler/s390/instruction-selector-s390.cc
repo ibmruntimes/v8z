@@ -694,12 +694,6 @@ void InstructionSelector::VisitWord32Shr(Node* node) {
   VisitRRO(this, kS390_ShiftRight32, node, kShift32Imm);
 }
 
-#if !V8_TARGET_ARCH_S390X
-void InstructionSelector::VisitWord32PairShr(Node* node) { UNIMPLEMENTED(); }
-
-void InstructionSelector::VisitWord32PairSar(Node* node) { UNIMPLEMENTED(); }
-#endif
-
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitWord64Shr(Node* node) {
   S390OperandGenerator g(this);
@@ -760,8 +754,9 @@ void InstructionSelector::VisitWord32Sar(Node* node) {
 }
 
 #if !V8_TARGET_ARCH_S390X
-void InstructionSelector::VisitWord32PairShl(Node* node) {
-  S390OperandGenerator g(this);
+void VisitPairShift(InstructionSelector* selector, ArchOpcode opcode,
+                    Node* node) {
+  S390OperandGenerator g(selector);
   Int32Matcher m(node->InputAt(2));
   InstructionOperand shift_operand;
   if (m.HasValue()) {
@@ -778,7 +773,19 @@ void InstructionSelector::VisitWord32PairShl(Node* node) {
       g.DefineSameAsFirst(node),
       g.DefineAsRegister(NodeProperties::FindProjection(node, 1))};
 
-  Emit(kS390_PairShiftLeft, 2, outputs, 3, inputs);
+  selector->Emit(opcode, 2, outputs, 3, inputs);
+}
+
+void InstructionSelector::VisitWord32PairShl(Node* node) {
+  VisitPairShift(this, kS390_ShiftLeftPair, node);
+}
+
+void InstructionSelector::VisitWord32PairShr(Node* node) {
+  VisitPairShift(this, kS390_ShiftRightPair, node);
+}
+
+void InstructionSelector::VisitWord32PairSar(Node* node) {
+  VisitPairShift(this, kS390_ShiftRightAlgPair, node);
 }
 #endif
 
@@ -846,6 +853,10 @@ void InstructionSelector::VisitInt32Add(Node* node) {
 void InstructionSelector::VisitInt64Add(Node* node) {
   VisitBinop<Int64BinopMatcher>(this, node, kS390_Add, kInt16Imm);
 }
+#endif
+
+#if !V8_TARGET_ARCH_S390X
+void InstructionSelector::VisitInt32PairAdd(Node* node) { UNIMPLEMENTED(); }
 #endif
 
 void InstructionSelector::VisitInt32Sub(Node* node) {

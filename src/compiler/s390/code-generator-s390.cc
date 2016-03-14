@@ -92,7 +92,7 @@ class S390OperandConverter final : public InstructionOperandConverter {
     return SlotToMemOperand(AllocatedOperand::cast(op)->index());
   }
 
-  MemOperand SlotToMemOperand(int slot) {
+  MemOperand SlotToMemOperand(int slot) const {
     FrameOffset offset = frame_access_state()->GetFrameOffset(slot);
     return MemOperand(offset.from_stack_pointer() ? sp : fp, offset.offset());
   }
@@ -862,15 +862,37 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
 #endif
 #if !V8_TARGET_ARCH_S390X
-    case kS390_PairShiftLeft:
+    case kS390_ShiftLeftPair:
       if (instr->InputAt(2)->IsImmediate()) {
-        __ PairShiftLeft(i.OutputRegister(0), i.OutputRegister(1),
+        __ ShiftLeftPair(i.OutputRegister(0), i.OutputRegister(1),
                          i.InputRegister(0), i.InputRegister(1),
                          i.InputInt32(2));
       } else {
-        __ PairShiftLeft(i.OutputRegister(0), i.OutputRegister(1),
+        __ ShiftLeftPair(i.OutputRegister(0), i.OutputRegister(1),
                          i.InputRegister(0), i.InputRegister(1), kScratchReg,
                          i.InputRegister(2));
+      }
+      break;
+    case kS390_ShiftRightPair:
+      if (instr->InputAt(2)->IsImmediate()) {
+        __ ShiftRightPair(i.OutputRegister(0), i.OutputRegister(1),
+                          i.InputRegister(0), i.InputRegister(1),
+                          i.InputInt32(2));
+      } else {
+        __ ShiftRightPair(i.OutputRegister(0), i.OutputRegister(1),
+                          i.InputRegister(0), i.InputRegister(1), kScratchReg,
+                          i.InputRegister(2));
+      }
+      break;
+    case kS390_ShiftRightAlgPair:
+      if (instr->InputAt(2)->IsImmediate()) {
+        __ ShiftRightAlgPair(i.OutputRegister(0), i.OutputRegister(1),
+                             i.InputRegister(0), i.InputRegister(1),
+                             i.InputInt32(2));
+      } else {
+        __ ShiftRightAlgPair(i.OutputRegister(0), i.OutputRegister(1),
+                             i.InputRegister(0), i.InputRegister(1),
+                             kScratchReg, i.InputRegister(2));
       }
       break;
 #endif

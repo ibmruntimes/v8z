@@ -695,10 +695,18 @@ class MacroAssembler : public Assembler {
 #endif
 
 #if !V8_TARGET_ARCH_S390X
-  void PairShiftLeft(Register dst_low, Register dst_high, Register src_low,
+  void ShiftLeftPair(Register dst_low, Register dst_high, Register src_low,
                      Register src_high, Register scratch, Register shift);
-  void PairShiftLeft(Register dst_low, Register dst_high, Register src_low,
+  void ShiftLeftPair(Register dst_low, Register dst_high, Register src_low,
                      Register src_high, uint32_t shift);
+  void ShiftRightPair(Register dst_low, Register dst_high, Register src_low,
+                      Register src_high, Register scratch, Register shift);
+  void ShiftRightPair(Register dst_low, Register dst_high, Register src_low,
+                      Register src_high, uint32_t shift);
+  void ShiftRightAlgPair(Register dst_low, Register dst_high, Register src_low,
+                         Register src_high, Register scratch, Register shift);
+  void ShiftRightAlgPair(Register dst_low, Register dst_high, Register src_low,
+                         Register src_high, uint32_t shift);
 #endif
 
   // Generates function and stub prologue code.
