@@ -270,13 +270,6 @@ inline void USE(T) { }
 #endif
 #endif
 
-// Fix for difference in size_t and int for s390
-#if V8_HOST_ARCH_S390 && !V8_HOST_ARCH_64_BIT
-# define V8_SIZET_PREFIX "z"
-#else
-# define V8_SIZET_PREFIX ""
-#endif
-
 #define V8PRIxPTR V8_PTR_PREFIX "x"
 #define V8PRIdPTR V8_PTR_PREFIX "d"
 #define V8PRIuPTR V8_PTR_PREFIX "u"
