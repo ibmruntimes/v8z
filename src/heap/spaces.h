@@ -201,6 +201,8 @@ class Bitmap {
 
   static inline void Clear(MemoryChunk* chunk);
 
+  static inline void SetAllBits(MemoryChunk* chunk);
+
   static void PrintWord(uint32_t word, uint32_t himask = 0) {
     for (uint32_t mask = 1; mask != 0; mask <<= 1) {
       if ((mask & himask) != 0) PrintF("[");
@@ -300,15 +302,18 @@ class MemoryChunk {
     IN_TO_SPACE,    // All pages in new space has one of these two set.
     NEW_SPACE_BELOW_AGE_MARK,
     EVACUATION_CANDIDATE,
-    RESCAN_ON_EVACUATION,
     NEVER_EVACUATE,  // May contain immortal immutables.
-    POPULAR_PAGE,    // Slots buffer of this page overflowed on the previous GC.
 
     // Large objects can have a progress bar in their page header. These object
     // are scanned in increments and will be kept black while being scanned.
     // Even if the mutator writes to them they will be kept black and a white
     // to grey transition is performed in the value.
     HAS_PROGRESS_BAR,
+
+    // A black page has all mark bits set to 1 (black). A black page currently
+    // cannot be iterated because it is not swept. Moreover live bytes are also
+    // not updated.
+    BLACK_PAGE,
 
     // This flag is intended to be used for testing. Works only when both
     // FLAG_stress_compaction and FLAG_manual_evacuation_candidates_selection
@@ -329,19 +334,6 @@ class MemoryChunk {
 
     // Last flag, keep at bottom.
     NUM_MEMORY_CHUNK_FLAGS
-  };
-
-  // |kCompactionDone|: Initial compaction state of a |MemoryChunk|.
-  // |kCompactingInProgress|:  Parallel compaction is currently in progress.
-  // |kCompactingFinalize|: Parallel compaction is done but the chunk needs to
-  //   be finalized.
-  // |kCompactingAborted|: Parallel compaction has been aborted, which should
-  //   for now only happen in OOM scenarios.
-  enum ParallelCompactingState {
-    kCompactingDone,
-    kCompactingInProgress,
-    kCompactingFinalize,
-    kCompactingAborted,
   };
 
   // |kSweepingDone|: The page state when sweeping is complete or sweeping must
@@ -369,8 +361,7 @@ class MemoryChunk {
   static const int kEvacuationCandidateMask = 1 << EVACUATION_CANDIDATE;
 
   static const int kSkipEvacuationSlotsRecordingMask =
-      (1 << EVACUATION_CANDIDATE) | (1 << RESCAN_ON_EVACUATION) |
-      (1 << IN_FROM_SPACE) | (1 << IN_TO_SPACE);
+      (1 << EVACUATION_CANDIDATE) | (1 << IN_FROM_SPACE) | (1 << IN_TO_SPACE);
 
   static const intptr_t kAlignment =
       (static_cast<uintptr_t>(1) << kPageSizeBits);
@@ -403,8 +394,7 @@ class MemoryChunk {
       kIntptrSize         // intptr_t write_barrier_counter_
       + kPointerSize      // AtomicValue high_water_mark_
       + kPointerSize      // base::Mutex* mutex_
-      + kPointerSize      // base::AtomicWord parallel_sweeping_
-      + kPointerSize      // AtomicValue parallel_compaction_
+      + kPointerSize      // base::AtomicWord concurrent_sweeping_
       + 2 * kPointerSize  // AtomicNumber free-list statistics
       + kPointerSize      // AtomicValue next_chunk_
       + kPointerSize;     // AtomicValue prev_chunk_
@@ -471,20 +461,18 @@ class MemoryChunk {
     return concurrent_sweeping_;
   }
 
-  AtomicValue<ParallelCompactingState>& parallel_compaction_state() {
-    return parallel_compaction_;
-  }
-
   // Manage live byte count, i.e., count of bytes in black objects.
   inline void ResetLiveBytes();
   inline void IncrementLiveBytes(int by);
 
   int LiveBytes() {
-    DCHECK_LE(static_cast<size_t>(live_byte_count_), size_);
+    DCHECK_LE(static_cast<unsigned>(live_byte_count_), size_);
+    DCHECK(!IsFlagSet(BLACK_PAGE) || live_byte_count_ == 0);
     return live_byte_count_;
   }
 
   void SetLiveBytes(int live_bytes) {
+    if (IsFlagSet(BLACK_PAGE)) return;
     DCHECK_GE(live_bytes, 0);
     DCHECK_LE(static_cast<size_t>(live_bytes), size_);
     live_byte_count_ = live_bytes;
@@ -701,7 +689,6 @@ class MemoryChunk {
   base::Mutex* mutex_;
 
   AtomicValue<ConcurrentSweepingState> concurrent_sweeping_;
-  AtomicValue<ParallelCompactingState> parallel_compaction_;
 
   // PagedSpace free-list statistics.
   AtomicNumber<intptr_t> available_in_free_list_;
@@ -2162,6 +2149,7 @@ class PagedSpace : public Space {
   // Mutex guarding any concurrent access to the space.
   base::Mutex space_mutex_;
 
+  friend class IncrementalMarking;
   friend class MarkCompactCollector;
   friend class PageIterator;
 

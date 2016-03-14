@@ -104,8 +104,11 @@ class PPCOperandConverter final : public InstructionOperandConverter {
   MemOperand ToMemOperand(InstructionOperand* op) const {
     DCHECK_NOT_NULL(op);
     DCHECK(op->IsStackSlot() || op->IsDoubleStackSlot());
-    FrameOffset offset = frame_access_state()->GetFrameOffset(
-        AllocatedOperand::cast(op)->index());
+    return SlotToMemOperand(AllocatedOperand::cast(op)->index());
+  }
+
+  MemOperand SlotToMemOperand(int slot) const {
+    FrameOffset offset = frame_access_state()->GetFrameOffset(slot);
     return MemOperand(offset.from_stack_pointer() ? sp : fp, offset.offset());
   }
 };
@@ -966,15 +969,37 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
 #endif
 #if !V8_TARGET_ARCH_PPC64
-    case kPPC_PairShiftLeft:
+    case kPPC_ShiftLeftPair:
       if (instr->InputAt(2)->IsImmediate()) {
-        __ PairShiftLeft(i.OutputRegister(0), i.OutputRegister(1),
+        __ ShiftLeftPair(i.OutputRegister(0), i.OutputRegister(1),
                          i.InputRegister(0), i.InputRegister(1),
                          i.InputInt32(2));
       } else {
-        __ PairShiftLeft(i.OutputRegister(0), i.OutputRegister(1),
+        __ ShiftLeftPair(i.OutputRegister(0), i.OutputRegister(1),
                          i.InputRegister(0), i.InputRegister(1), kScratchReg,
                          i.InputRegister(2));
+      }
+      break;
+    case kPPC_ShiftRightPair:
+      if (instr->InputAt(2)->IsImmediate()) {
+        __ ShiftRightPair(i.OutputRegister(0), i.OutputRegister(1),
+                          i.InputRegister(0), i.InputRegister(1),
+                          i.InputInt32(2));
+      } else {
+        __ ShiftRightPair(i.OutputRegister(0), i.OutputRegister(1),
+                          i.InputRegister(0), i.InputRegister(1), kScratchReg,
+                          i.InputRegister(2));
+      }
+      break;
+    case kPPC_ShiftRightAlgPair:
+      if (instr->InputAt(2)->IsImmediate()) {
+        __ ShiftRightAlgPair(i.OutputRegister(0), i.OutputRegister(1),
+                             i.InputRegister(0), i.InputRegister(1),
+                             i.InputInt32(2));
+      } else {
+        __ ShiftRightAlgPair(i.OutputRegister(0), i.OutputRegister(1),
+                             i.InputRegister(0), i.InputRegister(1),
+                             kScratchReg, i.InputRegister(2));
       }
       break;
 #endif
@@ -1810,9 +1835,9 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
         case Constant::kHeapObject: {
           Handle<HeapObject> src_object = src.ToHeapObject();
           Heap::RootListIndex index;
-          int offset;
-          if (IsMaterializableFromFrame(src_object, &offset)) {
-            __ LoadP(dst, MemOperand(fp, offset));
+          int slot;
+          if (IsMaterializableFromFrame(src_object, &slot)) {
+            __ LoadP(dst, g.SlotToMemOperand(slot));
           } else if (IsMaterializableFromRoot(src_object, &index)) {
             __ LoadRoot(dst, index);
           } else {

@@ -89,10 +89,6 @@
   'harmony/module-resolution': [SKIP],
   'harmony/regress/regress-343928': [SKIP],
 
-  # Proxy tests rely on non ES6 version of Proxies
-  # TODO(neis,cbruni): figure out which Proxy tests can be reused
-  'harmony/proxies-example-membrane': [SKIP],
-
   # Issue 3660: Replacing activated TurboFan frames by unoptimized code does
   # not work, but we expect it to not crash.
   'debug-step-turbofan': [PASS, FAIL],
@@ -302,8 +298,7 @@
   'harmony/unicode-regexp-ignore-case': [PASS, ['no_i18n == True', FAIL]],
   'harmony/unicode-regexp-ignore-case-noi18n': [FAIL, ['no_i18n == True', PASS]],
   # desugaring regexp property class relies on ICU.
-  'harmony/regexp-property-general-category': [PASS, ['no_i18n == True', FAIL]],
-  'harmony/regexp-property-script-category': [PASS, ['no_i18n == True', FAIL]],
+  'harmony/regexp-property-*': [PASS, ['no_i18n == True', FAIL]],
 }],  # ALWAYS
 
 ['novfp3 == True', {
@@ -783,7 +778,6 @@
   'regress/regress-crbug-119800': [FAIL],
   'regress/regress-opt-after-debug-deopt': [FAIL],
   'regress/regress-crbug-568477-2': [FAIL],
-  'debug-stepin-accessor-ic': [FAIL],
 
    # TODO(rmcilroy,4765): assertion failures in LiveEdit tests.
   'debug-liveedit-restart-frame': [FAIL],

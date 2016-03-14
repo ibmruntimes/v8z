@@ -43,7 +43,7 @@ void GCIdleTimeHeapState::Print() {
   PrintF("contexts_disposed=%d ", contexts_disposed);
   PrintF("contexts_disposal_rate=%f ", contexts_disposal_rate);
   PrintF("size_of_objects=%" V8_SIZET_PREFIX V8_PTR_PREFIX "d ",
-                             size_of_objects);
+         size_of_objects);
   PrintF("incremental_marking_stopped=%d ", incremental_marking_stopped);
 }
 

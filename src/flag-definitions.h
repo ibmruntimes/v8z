@@ -221,12 +221,8 @@ DEFINE_IMPLICATION(es_staging, harmony_tailcalls)
 
 // Features that are shipping (turned on by default, but internal flag remains).
 #define HARMONY_SHIPPING(V)                                               \
-  V(harmony_default_parameters, "harmony default parameters")             \
-  V(harmony_destructuring_assignment, "harmony destructuring assignment") \
-  V(harmony_destructuring_bind, "harmony destructuring bind")             \
   V(harmony_function_name, "harmony Function name inference")             \
   V(harmony_iterator_close, "harmony iterator finalization")              \
-  V(harmony_tostring, "harmony toString")                                 \
   V(harmony_regexps, "harmony regular expression extensions")             \
   V(harmony_unicode_regexps, "harmony unicode regexps")                   \
   V(harmony_sloppy, "harmony features in sloppy mode")                    \
@@ -264,10 +260,6 @@ HARMONY_SHIPPING(FLAG_SHIPPING_FEATURES)
 // Feature dependencies.
 DEFINE_IMPLICATION(harmony_sloppy_let, harmony_sloppy)
 DEFINE_IMPLICATION(harmony_sloppy_function, harmony_sloppy)
-
-// Destructuring shares too much parsing architecture with default parameters
-// to be enabled on its own.
-DEFINE_IMPLICATION(harmony_destructuring_bind, harmony_default_parameters)
 
 // Flags for experimental implementation features.
 DEFINE_BOOL(compiled_keyed_generic_loads, false,
@@ -479,6 +471,8 @@ DEFINE_BOOL(trace_wasm_compiler, false, "trace compiling of wasm code")
 DEFINE_BOOL(trace_wasm_ast, false, "dump AST after WASM decode")
 DEFINE_BOOL(wasm_break_on_decoder_error, false,
             "debug break when wasm decoder encounters an error")
+DEFINE_BOOL(wasm_loop_assignment_analysis, false,
+            "perform loop assignment analysis for WASM")
 
 DEFINE_BOOL(enable_simd_asmjs, false, "enable SIMD.js in asm.js stdlib")
 
@@ -695,6 +689,7 @@ DEFINE_INT(min_progress_during_incremental_marking_finalization, 32,
            "least this many unmarked objects")
 DEFINE_INT(max_incremental_marking_finalization_rounds, 3,
            "at most try this many times to finalize incremental marking")
+DEFINE_BOOL(black_allocation, false, "use black allocation")
 DEFINE_BOOL(concurrent_sweeping, true, "use concurrent sweeping")
 DEFINE_BOOL(parallel_compaction, true, "use parallel compaction")
 DEFINE_BOOL(parallel_pointer_update, false,

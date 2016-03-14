@@ -35,7 +35,6 @@ namespace internal {
   F(FinishArrayPrototypeSetup, 1, 1) \
   F(SpecialArrayFunctions, 0, 1)     \
   F(TransitionElementsKind, 2, 1)    \
-  F(PushIfAbsent, 2, 1)              \
   F(RemoveArrayHoles, 2, 1)          \
   F(MoveArrayContents, 2, 1)         \
   F(EstimateNumberOfElements, 1, 1)  \
@@ -156,7 +155,6 @@ namespace internal {
   F(GetFrameCount, 1, 1)                       \
   F(GetFrameDetails, 2, 1)                     \
   F(GetScopeCount, 2, 1)                       \
-  F(GetStepInPositions, 2, 1)                  \
   F(GetScopeDetails, 4, 1)                     \
   F(GetAllScopesDetails, 4, 1)                 \
   F(GetFunctionScopeCount, 1, 1)               \
