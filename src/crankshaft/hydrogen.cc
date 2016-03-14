@@ -54,8 +54,6 @@
 #include "src/crankshaft/arm/lithium-codegen-arm.h"  // NOLINT
 #elif V8_TARGET_ARCH_PPC
 #include "src/crankshaft/ppc/lithium-codegen-ppc.h"  // NOLINT
-#elif V8_TARGET_ARCH_S390
-#include "src/crankshaft/s390/lithium-codegen-s390.h" // NOLINT
 #elif V8_TARGET_ARCH_MIPS
 #include "src/crankshaft/mips/lithium-codegen-mips.h"  // NOLINT
 #elif V8_TARGET_ARCH_MIPS64

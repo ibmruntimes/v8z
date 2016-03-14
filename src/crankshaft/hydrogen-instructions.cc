@@ -21,8 +21,6 @@
 #include "src/crankshaft/arm/lithium-arm.h"  // NOLINT
 #elif V8_TARGET_ARCH_PPC
 #include "src/crankshaft/ppc/lithium-ppc.h"  // NOLINT
-#elif V8_TARGET_ARCH_S390
-#include "src/crankshaft/s390/lithium-s390.h" // NOLINT
 #elif V8_TARGET_ARCH_MIPS
 #include "src/crankshaft/mips/lithium-mips.h"  // NOLINT
 #elif V8_TARGET_ARCH_MIPS64
