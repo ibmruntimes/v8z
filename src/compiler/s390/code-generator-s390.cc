@@ -930,16 +930,14 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
         __ risbg(i.OutputRegister(), i.OutputRegister(), Operand(startBit),
                  Operand(endBit), Operand::Zero(), true);
       } else {
-          int shiftAmount = i.InputInt32(1);
-          int clearBitLeft = 63 - i.InputInt32(2);
-          int clearBitRight = i.InputInt32(3);
-          __ rll(i.OutputRegister(), i.InputRegister(0), Operand(shiftAmount));
-          __ sllg(i.OutputRegister(), i.OutputRegister(),
-             Operand(clearBitLeft));
-          __ srlg(i.OutputRegister(), i.OutputRegister(),
-             Operand((clearBitLeft + clearBitRight)));
-          __ sllg(i.OutputRegister(), i.OutputRegister(),
-             Operand(clearBitRight));
+        int shiftAmount = i.InputInt32(1);
+        int clearBitLeft = 63 - i.InputInt32(2);
+        int clearBitRight = i.InputInt32(3);
+        __ rll(i.OutputRegister(), i.InputRegister(0), Operand(shiftAmount));
+        __ sllg(i.OutputRegister(), i.OutputRegister(), Operand(clearBitLeft));
+        __ srlg(i.OutputRegister(), i.OutputRegister(),
+                Operand((clearBitLeft + clearBitRight)));
+        __ sllg(i.OutputRegister(), i.OutputRegister(), Operand(clearBitRight));
       }
       break;
 #if V8_TARGET_ARCH_S390X
@@ -954,13 +952,11 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
         __ risbg(i.OutputRegister(), i.InputRegister(0), Operand(startBit),
                  Operand(endBit), Operand(shiftAmount), true);
       } else {
-          int shiftAmount = i.InputInt32(1);
-          int clearBit = 63 - i.InputInt32(2);
-          __ rllg(i.OutputRegister(), i.InputRegister(0), Operand(shiftAmount));
-          __ sllg(i.OutputRegister(), i.OutputRegister(),
-             Operand(clearBit));
-          __ srlg(i.OutputRegister(), i.OutputRegister(),
-             Operand(clearBit));
+        int shiftAmount = i.InputInt32(1);
+        int clearBit = 63 - i.InputInt32(2);
+        __ rllg(i.OutputRegister(), i.InputRegister(0), Operand(shiftAmount));
+        __ sllg(i.OutputRegister(), i.OutputRegister(), Operand(clearBit));
+        __ srlg(i.OutputRegister(), i.OutputRegister(), Operand(clearBit));
       }
       break;
     case kS390_RotLeftAndClearRight64:
@@ -971,13 +967,11 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
         __ risbg(i.OutputRegister(), i.InputRegister(0), Operand(startBit),
                  Operand(endBit), Operand(shiftAmount), true);
       } else {
-          int shiftAmount = i.InputInt32(1);
-          int clearBit = i.InputInt32(2);
-          __ rllg(i.OutputRegister(), i.InputRegister(0), Operand(shiftAmount));
-          __ srlg(i.OutputRegister(), i.OutputRegister(),
-             Operand(clearBit));
-          __ sllg(i.OutputRegister(), i.OutputRegister(),
-             Operand(clearBit));
+        int shiftAmount = i.InputInt32(1);
+        int clearBit = i.InputInt32(2);
+        __ rllg(i.OutputRegister(), i.InputRegister(0), Operand(shiftAmount));
+        __ srlg(i.OutputRegister(), i.OutputRegister(), Operand(clearBit));
+        __ sllg(i.OutputRegister(), i.OutputRegister(), Operand(clearBit));
       }
       break;
 #endif
