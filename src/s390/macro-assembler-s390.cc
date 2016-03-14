@@ -1053,8 +1053,8 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   // all of the pushes that have happened inside of V8
   // since we were called from C code
   CleanseP(r14);
-  LoadSmiLiteral(ip, Smi::FromInt(StackFrame::EXIT));
-  PushCommonFrame(ip);
+  LoadSmiLiteral(r1, Smi::FromInt(StackFrame::EXIT));
+  PushCommonFrame(r1);
   // Reserve room for saved entry sp and code object.
   lay(sp, MemOperand(fp, -ExitFrameConstants::kFixedFrameSizeFromFp));
 
