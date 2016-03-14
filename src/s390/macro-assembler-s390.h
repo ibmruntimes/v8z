@@ -703,10 +703,11 @@ class MacroAssembler : public Assembler {
                       Register src_high, Register scratch, Register shift);
   void ShiftRightPair(Register dst_low, Register dst_high, Register src_low,
                       Register src_high, uint32_t shift);
-  void ShiftRightArithPair(Register dst_low, Register dst_high, Register src_low,
-                         Register src_high, Register scratch, Register shift);
-  void ShiftRightArithPair(Register dst_low, Register dst_high, Register src_low,
-                         Register src_high, uint32_t shift);
+  void ShiftRightArithPair(Register dst_low, Register dst_high,
+                           Register src_low, Register src_high,
+                           Register scratch, Register shift);
+  void ShiftRightArithPair(Register dst_low, Register dst_high,
+                           Register src_low, Register src_high, uint32_t shift);
 #endif
 
   // Generates function and stub prologue code.

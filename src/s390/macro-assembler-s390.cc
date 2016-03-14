@@ -924,16 +924,16 @@ void MacroAssembler::ShiftRightPair(Register dst_low, Register dst_high,
 }
 
 void MacroAssembler::ShiftRightArithPair(Register dst_low, Register dst_high,
-                                       Register src_low, Register src_high,
-                                       Register scratch, Register shift) {
+                                         Register src_low, Register src_high,
+                                         Register scratch, Register shift) {
   DCHECK(!AreAliased(dst_low, src_high, shift));
   DCHECK(!AreAliased(dst_high, src_low, shift));
   UNIMPLEMENTED();
 }
 
 void MacroAssembler::ShiftRightArithPair(Register dst_low, Register dst_high,
-                                       Register src_low, Register src_high,
-                                       uint32_t shift) {
+                                         Register src_low, Register src_high,
+                                         uint32_t shift) {
   DCHECK(!AreAliased(dst_low, src_high));
   DCHECK(!AreAliased(dst_high, src_low));
   UNIMPLEMENTED();
