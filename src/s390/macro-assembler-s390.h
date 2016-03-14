@@ -703,9 +703,9 @@ class MacroAssembler : public Assembler {
                       Register src_high, Register scratch, Register shift);
   void ShiftRightPair(Register dst_low, Register dst_high, Register src_low,
                       Register src_high, uint32_t shift);
-  void ShiftRightAlgPair(Register dst_low, Register dst_high, Register src_low,
+  void ShiftRightArithPair(Register dst_low, Register dst_high, Register src_low,
                          Register src_high, Register scratch, Register shift);
-  void ShiftRightAlgPair(Register dst_low, Register dst_high, Register src_low,
+  void ShiftRightArithPair(Register dst_low, Register dst_high, Register src_low,
                          Register src_high, uint32_t shift);
 #endif
 

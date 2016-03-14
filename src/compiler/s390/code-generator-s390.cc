@@ -843,7 +843,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       ASSEMBLE_BINOP(srlg, srlg);
       break;
 #endif
-    case kS390_ShiftRightAlg32:
+    case kS390_ShiftRightArith32:
       if (HasRegisterInput(instr, 1)) {
         if (i.OutputRegister().is(i.InputRegister(1))) {
           __ LoadRR(kScratchReg, i.InputRegister(1));
@@ -857,7 +857,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       }
       break;
 #if V8_TARGET_ARCH_S390X
-    case kS390_ShiftRightAlg64:
+    case kS390_ShiftRightArith64:
       ASSEMBLE_BINOP(srag, srag);
       break;
 #endif
@@ -884,15 +884,15 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
                           i.InputRegister(2));
       }
       break;
-    case kS390_ShiftRightAlgPair:
+    case kS390_ShiftRightArithPair:
       if (instr->InputAt(2)->IsImmediate()) {
-        __ ShiftRightAlgPair(i.OutputRegister(0), i.OutputRegister(1),
-                             i.InputRegister(0), i.InputRegister(1),
-                             i.InputInt32(2));
+        __ ShiftRightArithPair(i.OutputRegister(0), i.OutputRegister(1),
+                               i.InputRegister(0), i.InputRegister(1),
+                               i.InputInt32(2));
       } else {
-        __ ShiftRightAlgPair(i.OutputRegister(0), i.OutputRegister(1),
-                             i.InputRegister(0), i.InputRegister(1),
-                             kScratchReg, i.InputRegister(2));
+        __ ShiftRightArithPair(i.OutputRegister(0), i.OutputRegister(1),
+                               i.InputRegister(0), i.InputRegister(1),
+                               kScratchReg, i.InputRegister(2));
       }
       break;
 #endif

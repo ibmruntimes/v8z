@@ -895,23 +895,6 @@ void MacroAssembler::ShiftLeftPair(Register dst_low, Register dst_high,
   DCHECK(!AreAliased(dst_low, src_high, shift));
   DCHECK(!AreAliased(dst_high, src_low, shift));
   UNIMPLEMENTED();
-  Label less_than_32;
-  Label done;
-  CmpP(shift, Operand(32));
-  blt(&less_than_32);
-  // If shift >= 32
-  AndP(scratch, shift, Operand(0x1f));
-  // slw(dst_high, src_low, scratch);
-  LoadImmP(dst_low, Operand::Zero());
-  b(&done);
-  bind(&less_than_32);
-  // If shift < 32
-  // subfic(scratch, shift, Operand(32));
-  // slw(dst_high, src_high, shift);
-  // srw(scratch, src_low, scratch);
-  // orx(dst_high, dst_high, scratch);
-  // slw(dst_low, src_low, shift);
-  bind(&done);
 }
 
 void MacroAssembler::ShiftLeftPair(Register dst_low, Register dst_high,
@@ -922,18 +905,6 @@ void MacroAssembler::ShiftLeftPair(Register dst_low, Register dst_high,
   UNIMPLEMENTED();
   Label less_than_32;
   Label done;
-  // if (shift >= 32) {
-  //   shift &= 0x1f;
-  //   slwi(dst_high, src_low, Operand(shift));
-  //   LoadImmP(dst_low, Operand::Zero());
-  // } else if (shift == 0) {
-  //   Move(dst_low, src_low);
-  //   Move(dst_high, src_high);
-  // } else {
-  //   slwi(dst_high, src_high, Operand(shift));
-  //   rlwimi(dst_high, src_low, shift, 32 - shift, 31);
-  //   slwi(dst_low, src_low, Operand(shift));
-  // }
 }
 
 void MacroAssembler::ShiftRightPair(Register dst_low, Register dst_high,
@@ -942,23 +913,6 @@ void MacroAssembler::ShiftRightPair(Register dst_low, Register dst_high,
   DCHECK(!AreAliased(dst_low, src_high, shift));
   DCHECK(!AreAliased(dst_high, src_low, shift));
   UNIMPLEMENTED();
-  // Label less_than_32;
-  // Label done;
-  // CmpP(shift, Operand(32));
-  // blt(&less_than_32);
-  // // If shift >= 32
-  // AndP(scratch, shift, Operand(0x1f));
-  // srw(dst_low, src_high, scratch);
-  // LoadImmP(dst_high, Operand::Zero());
-  // b(&done);
-  // bind(&less_than_32);
-  // // If shift < 32
-  // subfic(scratch, shift, Operand(32));
-  // srw(dst_low, src_low, shift);
-  // slw(scratch, src_high, scratch);
-  // orx(dst_low, dst_low, scratch);
-  // srw(dst_high, src_high, shift);
-  // bind(&done);
 }
 
 void MacroAssembler::ShiftRightPair(Register dst_low, Register dst_high,
@@ -967,63 +921,22 @@ void MacroAssembler::ShiftRightPair(Register dst_low, Register dst_high,
   DCHECK(!AreAliased(dst_low, src_high));
   DCHECK(!AreAliased(dst_high, src_low));
   UNIMPLEMENTED();
-  // if (shift >= 32) {
-  //   shift &= 0x1f;
-  //   srwi(dst_low, src_high, Operand(shift));
-  //   LoadImmP(dst_high, Operand::Zero());
-  // } else if (shift == 0) {
-  //   Move(dst_low, src_low);
-  //   Move(dst_high, src_high);
-  // } else {
-  //   srwi(dst_low, src_low, Operand(shift));
-  //   rlwimi(dst_low, src_high, 32 - shift, 0, shift - 1);
-  //   srwi(dst_high, src_high, Operand(shift));
-  // }
 }
 
-void MacroAssembler::ShiftRightAlgPair(Register dst_low, Register dst_high,
+void MacroAssembler::ShiftRightArithPair(Register dst_low, Register dst_high,
                                        Register src_low, Register src_high,
                                        Register scratch, Register shift) {
   DCHECK(!AreAliased(dst_low, src_high, shift));
   DCHECK(!AreAliased(dst_high, src_low, shift));
   UNIMPLEMENTED();
-  // Label less_than_32;
-  // Label done;
-  // CmpP(shift, Operand(32));
-  // blt(&less_than_32);
-  // // If shift >= 32
-  // AndP(scratch, shift, Operand(0x1f));
-  // sraw(dst_low, src_high, scratch);
-  // srawi(dst_high, src_high, 31);
-  // b(&done);
-  // bind(&less_than_32);
-  // // If shift < 32
-  // subfic(scratch, shift, Operand(32));
-  // srw(dst_low, src_low, shift);
-  // slw(scratch, src_high, scratch);
-  // orx(dst_low, dst_low, scratch);
-  // sraw(dst_high, src_high, shift);
-  // bind(&done);
 }
 
-void MacroAssembler::ShiftRightAlgPair(Register dst_low, Register dst_high,
+void MacroAssembler::ShiftRightArithPair(Register dst_low, Register dst_high,
                                        Register src_low, Register src_high,
                                        uint32_t shift) {
   DCHECK(!AreAliased(dst_low, src_high));
   DCHECK(!AreAliased(dst_high, src_low));
   UNIMPLEMENTED();
-  // if (shift >= 32) {
-  //   shift &= 0x1f;
-  //   srawi(dst_low, src_high, shift);
-  //   srawi(dst_high, src_high, 31);
-  // } else if (shift == 0) {
-  //   Move(dst_low, src_low);
-  //   Move(dst_high, src_high);
-  // } else {
-  //   srwi(dst_low, src_low, Operand(shift));
-  //   rlwimi(dst_low, src_high, 32 - shift, 0, shift - 1);
-  //   srawi(dst_high, src_high, shift);
-  // }
 }
 #endif
 
