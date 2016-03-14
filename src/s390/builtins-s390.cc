@@ -1970,10 +1970,9 @@ void PrepareForTailCall(MacroAssembler* masm, Register args_reg,
            MemOperand(fp, ArgumentsAdaptorFrameConstants::kFunctionOffset));
   __ LoadP(scratch1,
            FieldMemOperand(scratch1, JSFunction::kSharedFunctionInfoOffset));
-  __ LoadW(
-      caller_args_count_reg,
-      FieldMemOperand(scratch1,
-                      SharedFunctionInfo::kFormalParameterCountOffset));
+  __ LoadW(caller_args_count_reg,
+           FieldMemOperand(scratch1,
+                           SharedFunctionInfo::kFormalParameterCountOffset));
 #if !V8_TARGET_ARCH_S390X
   __ SmiUntag(caller_args_count_reg);
 #endif
