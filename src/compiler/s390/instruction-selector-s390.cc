@@ -750,7 +750,7 @@ void InstructionSelector::VisitWord32Sar(Node* node) {
       return;
     }
   }
-  VisitRRO(this, kS390_ShiftRightAlg32, node, kShift32Imm);
+  VisitRRO(this, kS390_ShiftRightArith32, node, kShift32Imm);
 }
 
 #if !V8_TARGET_ARCH_S390X
@@ -785,13 +785,13 @@ void InstructionSelector::VisitWord32PairShr(Node* node) {
 }
 
 void InstructionSelector::VisitWord32PairSar(Node* node) {
-  VisitPairShift(this, kS390_ShiftRightAlgPair, node);
+  VisitPairShift(this, kS390_ShiftRightArithPair, node);
 }
 #endif
 
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitWord64Sar(Node* node) {
-  VisitRRO(this, kS390_ShiftRightAlg64, node, kShift64Imm);
+  VisitRRO(this, kS390_ShiftRightArith64, node, kShift64Imm);
 }
 #endif
 
