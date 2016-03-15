@@ -509,12 +509,6 @@
 
 ##############################################################################
 ['ignition == True', {
-  # TODO(yangguo,4690): Test failures in debugger tests.
-  'test-debug/DebugStepNamedLoadLoop': [FAIL],
-  'test-debug/DebugStepForIn': [FAIL],
-  'test-debug/DebugStepDoWhile': [FAIL],
-  'test-debug/DebugConditional': [FAIL],
-
   # BUG(4333). Function name inferrer does not work for ES6 clases.
   'test-func-name-inference/UpperCaseClass': [TIMEOUT],
   'test-func-name-inference/LowerCaseClass': [TIMEOUT],
@@ -555,10 +549,11 @@
 
   # TODO(mythria,4680): Incorrect column number on eval.
   'test-api/PromiseRejectCallback': [FAIL],
-
-  # TODO(rmcilroy,4680): Test assert errors.
-  'test-run-inlining/InlineTwice': [FAIL],
-
 }],  # ignition == True
+
+['ignition == True and msan', {
+  # TODO(rmcilroy,4680): Uninitialized memory.
+  'test-debug/*': [SKIP],
+}],  # ignition == True and msan
 
 ]

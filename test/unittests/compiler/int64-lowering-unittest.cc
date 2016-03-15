@@ -29,7 +29,9 @@ namespace compiler {
 class Int64LoweringTest : public GraphTest {
  public:
   Int64LoweringTest()
-      : GraphTest(), machine_(zone(), MachineRepresentation::kWord32) {
+      : GraphTest(),
+        machine_(zone(), MachineRepresentation::kWord32,
+                 MachineOperatorBuilder::Flag::kAllOptionalOps) {
     value_[0] = 0x1234567890abcdef;
     value_[1] = 0x1edcba098765432f;
     value_[2] = 0x1133557799886644;
@@ -489,11 +491,98 @@ TEST_F(Int64LoweringTest, I64UConvertI32_2) {
                         start(), start()));
 }
 // kExprF64ReinterpretI64:
-// kExprI64ReinterpretF64:
+TEST_F(Int64LoweringTest, F64ReinterpretI64) {
+  LowerGraph(graph()->NewNode(machine()->BitcastInt64ToFloat64(),
+                              Int64Constant(value(0))),
+             MachineRepresentation::kFloat64);
 
+  Capture<Node*> stack_slot_capture;
+  Matcher<Node*> stack_slot_matcher =
+      IsStackSlot(MachineRepresentation::kWord64);
+
+  Capture<Node*> store_capture;
+  Matcher<Node*> store_matcher =
+      IsStore(StoreRepresentation(MachineRepresentation::kWord32,
+                                  WriteBarrierKind::kNoWriteBarrier),
+              AllOf(CaptureEq(&stack_slot_capture), stack_slot_matcher),
+              IsInt32Constant(0), IsInt32Constant(low_word_value(0)),
+              IsStore(StoreRepresentation(MachineRepresentation::kWord32,
+                                          WriteBarrierKind::kNoWriteBarrier),
+                      AllOf(CaptureEq(&stack_slot_capture), stack_slot_matcher),
+                      IsInt32Constant(4), IsInt32Constant(high_word_value(0)),
+                      start(), start()),
+              start());
+
+  EXPECT_THAT(
+      graph()->end()->InputAt(1),
+      IsReturn(IsLoad(MachineType::Float64(),
+                      AllOf(CaptureEq(&stack_slot_capture), stack_slot_matcher),
+                      IsInt32Constant(0),
+                      AllOf(CaptureEq(&store_capture), store_matcher), start()),
+               start(), start()));
+}
+// kExprI64ReinterpretF64:
+TEST_F(Int64LoweringTest, I64ReinterpretF64) {
+  LowerGraph(graph()->NewNode(machine()->BitcastFloat64ToInt64(),
+                              Float64Constant(bit_cast<double>(value(0)))),
+             MachineRepresentation::kWord64);
+
+  Capture<Node*> stack_slot;
+  Matcher<Node*> stack_slot_matcher =
+      IsStackSlot(MachineRepresentation::kWord64);
+
+  Capture<Node*> store;
+  Matcher<Node*> store_matcher = IsStore(
+      StoreRepresentation(MachineRepresentation::kFloat64,
+                          WriteBarrierKind::kNoWriteBarrier),
+      AllOf(CaptureEq(&stack_slot), stack_slot_matcher), IsInt32Constant(0),
+      IsFloat64Constant(bit_cast<double>(value(0))), start(), start());
+
+  EXPECT_THAT(
+      graph()->end()->InputAt(1),
+      IsReturn2(IsLoad(MachineType::Int32(),
+                       AllOf(CaptureEq(&stack_slot), stack_slot_matcher),
+                       IsInt32Constant(0),
+                       AllOf(CaptureEq(&store), store_matcher), start()),
+                IsLoad(MachineType::Int32(),
+                       AllOf(CaptureEq(&stack_slot), stack_slot_matcher),
+                       IsInt32Constant(0x4),
+                       AllOf(CaptureEq(&store), store_matcher), start()),
+                start(), start()));
+}
 // kExprI64Clz:
 // kExprI64Ctz:
 // kExprI64Popcnt:
+
+TEST_F(Int64LoweringTest, Dfs) {
+  Node* common = Int64Constant(value(0));
+  LowerGraph(graph()->NewNode(machine()->Word64And(), common,
+                              graph()->NewNode(machine()->Word64And(), common,
+                                               Int64Constant(value(1)))),
+             MachineRepresentation::kWord64);
+
+  EXPECT_THAT(
+      graph()->end()->InputAt(1),
+      IsReturn2(IsWord32And(IsInt32Constant(low_word_value(0)),
+                            IsWord32And(IsInt32Constant(low_word_value(0)),
+                                        IsInt32Constant(low_word_value(1)))),
+                IsWord32And(IsInt32Constant(high_word_value(0)),
+                            IsWord32And(IsInt32Constant(high_word_value(0)),
+                                        IsInt32Constant(high_word_value(1)))),
+                start(), start()));
+}
+
+TEST_F(Int64LoweringTest, I64Popcnt) {
+  LowerGraph(graph()->NewNode(machine()->Word64PopcntPlaceholder(),
+                              Int64Constant(value(0))),
+             MachineRepresentation::kWord64);
+
+  EXPECT_THAT(
+      graph()->end()->InputAt(1),
+      IsReturn2(IsInt32Add(IsWord32Popcnt(IsInt32Constant(low_word_value(0))),
+                           IsWord32Popcnt(IsInt32Constant(high_word_value(0)))),
+                IsInt32Constant(0), start(), start()));
+}
 }  // namespace compiler
 }  // namespace internal
 }  // namespace v8
