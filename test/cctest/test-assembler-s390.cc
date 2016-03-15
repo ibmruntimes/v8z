@@ -36,13 +36,11 @@
 
 using namespace v8::internal;
 
-
 // Define these function prototypes to match JSEntryFunction in execution.cc.
 typedef Object* (*F1)(int x, int p1, int p2, int p3, int p4);
 typedef Object* (*F2)(int x, int y, int p2, int p3, int p4);
 typedef Object* (*F3)(void* p0, int p1, int p2, int p3, int p4);
 typedef Object* (*F4)(void* p0, void* p1, int p2, int p3, int p4);
-
 
 #define __ assm.
 
@@ -73,7 +71,6 @@ TEST(0) {
   ::printf("f() = %" V8PRIxPTR "\n", res);
   CHECK_EQ(7, static_cast<int>(res));
 }
-
 
 // Loop 100 times, adding loop counter to result
 TEST(1) {
@@ -115,7 +112,6 @@ TEST(1) {
   CHECK_EQ(5050, static_cast<int>(res));
 }
 
-
 TEST(2) {
   CcTest::InitializeVM();
   Isolate* isolate = CcTest::i_isolate();
@@ -135,8 +131,8 @@ TEST(2) {
   __ b(&C);
 
   __ bind(&L);
-  __ lr(r5, r2);   // Set up muliplicant in R4:R5
-  __ mr_z(r4, r3);   // this is actually R4:R5 = R5 * R2
+  __ lr(r5, r2);    // Set up muliplicant in R4:R5
+  __ mr_z(r4, r3);  // this is actually R4:R5 = R5 * R2
   __ lr(r2, r5);
   __ ahi(r3, Operand(-1 & 0xFFFF));
 
@@ -167,7 +163,6 @@ TEST(2) {
   ::printf("f() = %" V8PRIxPTR "\n", res);
   CHECK_EQ(3628800, static_cast<int>(res));
 }
-
 
 TEST(3) {
   CcTest::InitializeVM();
@@ -206,7 +201,7 @@ TEST(3) {
   __ mvc(MemOperand(r0, 123), MemOperand(r4, 567), 89);
   __ sll(r13, Operand(10));
 
-  v8::internal::byte * bufPos = assm.buffer_pos();
+  v8::internal::byte* bufPos = assm.buffer_pos();
   ::printf("buffer position = %p", bufPos);
   ::fflush(stdout);
   // OS::DebugBreak();
@@ -221,7 +216,6 @@ TEST(3) {
   USE(code);
   ::exit(0);
 }
-
 
 #if 0
 TEST(4) {
@@ -418,6 +412,5 @@ TEST(9) {
   ::printf("f() = %" V8PRIdPTR  "\n", res);
 }
 #endif
-
 
 #undef __
