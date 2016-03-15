@@ -1643,10 +1643,6 @@ void Simulator::PrintStopInfo(uint32_t code) {
 #define CheckOverflowForIntAdd(src1, src2) \
   (((src1) ^ (src2)) < 0 ? false : ((((src1) + (src2)) ^ (src1)) < 0))
 
-// Method for checking overflow on signed subtraction:
-//#define CheckOverflowForIntSub(src1, src2) 
-//  (((src1 - src2) < src1) != (src2 > 0))
-
 // Method for checking overflow on unsigned addtion
 #define CheckOverflowForUIntAdd(src1, src2) \
   ((src1) + (src2) < (src1) || (src1) + (src2) < (src2))
@@ -1670,10 +1666,12 @@ void Simulator::PrintStopInfo(uint32_t code) {
 #if defined (__clang__)
 #pragma clang optimize off
 #endif
-int32_t Simulator::CheckOverflowForIntSub(int32_t src1, int32_t src2)
-{
+int32_t Simulator::CheckOverflowForIntSub(int32_t src1, int32_t src2) {
   return (((src1 - src2) < src1) != (src2 > 0));
 }
+#if defined (__clang__)
+#pragma clang optimize on
+#endif
 
 // S390 Decode and simulate helpers
 bool Simulator::DecodeTwoByte(Instruction* instr) {
