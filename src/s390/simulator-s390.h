@@ -258,7 +258,8 @@ class Simulator {
   // Helper functions to set the conditional flags in the architecture state.
   bool CarryFrom(int32_t left, int32_t right, int32_t carry = 0);
   bool BorrowFrom(int32_t left, int32_t right);
-  bool OverflowFrom(int32_t alu_out, int32_t left, int32_t right,
+  template <typename T1>
+  inline bool OverflowFrom(T1 alu_out, T1 left, T1 right,
                     bool addition);
 
   // Helper functions to decode common "addressing" modes
@@ -306,7 +307,6 @@ class Simulator {
 
   // S390
   void Trace(Instruction* instr);
-  int32_t CheckOverflowForIntSub(int32_t src1, int32_t src2);
   bool DecodeTwoByte(Instruction* instr);
   bool DecodeFourByte(Instruction* instr);
   bool DecodeFourByteArithmetic(Instruction* instr);
