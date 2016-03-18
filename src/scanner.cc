@@ -78,9 +78,271 @@ uc32 Scanner::ScanHexNumber(int expected_length) {
   return x;
 }
 
+#if defined(V8_OS_ZOS)
+static uint32_t max_token_index = 0xff;
 
-// Ensure that tokens can be stored in a byte.
-STATIC_ASSERT(Token::NUM_TOKENS <= 0x100);
+// Table of one-character tokens, by character (0x00..0x7f only).
+static const byte one_char_tokens[] = {
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,      
+  Token::ILLEGAL,     
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,        
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,        
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::LPAREN,       //0x4d (
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::RPAREN,     // 0x5d )
+  Token::SEMICOLON,  // 0x5e ;
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::COMMA,       // 0x6b ,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::CONDITIONAL, // 0x6f ?
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::COLON,      // 0x7a :
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,          
+  Token::ILLEGAL,     
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::BIT_NOT,   // 0xa1 ~
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::LBRACK,   // 0xba [
+  Token::RBRACK,   // 0xab ]
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::LBRACE,   // 0xc0 {
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::RBRACE,   // 0xd0 }
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL
+};
+
+#else
+static uint32_t max_token_index = 0x7f;
 
 // Table of one-character tokens, by character (0x00..0x7f only).
 static const byte one_char_tokens[] = {
@@ -213,13 +475,18 @@ static const byte one_char_tokens[] = {
   Token::BIT_NOT,      // 0x7e
   Token::ILLEGAL
 };
+#endif
 
+// Ensure that tokens can be stored in a byte.
+STATIC_ASSERT(Token::NUM_TOKENS <= 0x100);
 
 Token::Value Scanner::Next() {
   current_ = next_;
   has_line_terminator_before_next_ = false;
   has_multiline_comment_before_next_ = false;
-  if (static_cast<unsigned>(c0_) <= 0x7f) {
+  
+  if (static_cast<unsigned>(c0_) <= max_token_index) {
+    
     Token::Value token = static_cast<Token::Value>(one_char_tokens[c0_]);
     if (token != Token::ILLEGAL) {
       int pos = source_pos();
@@ -228,6 +495,7 @@ Token::Value Scanner::Next() {
       next_.location.end_pos = pos + 1;
       Advance();
       return current_.token;
+    
     }
   }
   Scan();
@@ -650,7 +918,7 @@ void Scanner::Scan() {
     // Continue scanning for tokens as long as we're just skipping
     // whitespace.
   } while (token == Token::WHITESPACE);
-
+  
   next_.location.end_pos = source_pos();
   next_.token = token;
 }

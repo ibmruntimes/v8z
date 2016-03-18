@@ -17,6 +17,8 @@
 namespace v8 {
 namespace internal {
 
+static const char kZeroASCII = 0x30;
+
 // 2^53 = 9007199254740992.
 // Any integer with at most 15 decimal digits will hence fit into a double
 // (which has a 53bit significand) without loss of precision.
@@ -72,7 +74,7 @@ static const int kMaxSignificantDecimalDigits = 780;
 
 static Vector<const char> TrimLeadingZeros(Vector<const char> buffer) {
   for (int i = 0; i < buffer.length(); i++) {
-    if (buffer[i] != '0') {
+    if (buffer[i] != kZeroASCII) {
       return buffer.SubVector(i, buffer.length());
     }
   }
@@ -82,7 +84,7 @@ static Vector<const char> TrimLeadingZeros(Vector<const char> buffer) {
 
 static Vector<const char> TrimTrailingZeros(Vector<const char> buffer) {
   for (int i = buffer.length() - 1; i >= 0; --i) {
-    if (buffer[i] != '0') {
+    if (buffer[i] != kZeroASCII) {
       return buffer.SubVector(0, i + 1);
     }
   }
@@ -99,7 +101,7 @@ static void TrimToMaxSignificantDigits(Vector<const char> buffer,
   }
   // The input buffer has been trimmed. Therefore the last digit must be
   // different from '0'.
-  DCHECK(buffer[buffer.length() - 1] != '0');
+  DCHECK(buffer[buffer.length() - 1] != kZeroASCII);
   // Set the last digit to be non-zero. This is sufficient to guarantee
   // correct rounding.
   significant_buffer[kMaxSignificantDecimalDigits - 1] = '1';
@@ -118,7 +120,7 @@ static uint64_t ReadUint64(Vector<const char> buffer,
   uint64_t result = 0;
   int i = 0;
   while (i < buffer.length() && result <= (kMaxUint64 / 10 - 1)) {
-    int digit = buffer[i++] - '0';
+    int digit = buffer[i++] - kZeroASCII;
     DCHECK(0 <= digit && digit <= 9);
     result = 10 * result + digit;
   }
@@ -141,7 +143,7 @@ static void ReadDiyFp(Vector<const char> buffer,
     *remaining_decimals = 0;
   } else {
     // Round the significand.
-    if (buffer[read_digits] >= '5') {
+    if (buffer[read_digits] >= (kZeroASCII+5)) {
       significand++;
     }
     // Compute the binary exponent.
