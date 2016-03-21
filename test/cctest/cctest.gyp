@@ -307,7 +307,8 @@
             },
           },
         }],
-        ['v8_target_arch=="ppc" or v8_target_arch=="ppc64"', {
+        ['v8_target_arch=="ppc" or v8_target_arch=="ppc64" \
+          or v8_target_arch=="s390" or v8_target_arch=="s390x"', {
           # disable fmadd/fmsub so that expected results match generated code in
           # RunFloat64MulAndFloat64Add1 and friends.
           'cflags': ['-ffp-contract=off'],
