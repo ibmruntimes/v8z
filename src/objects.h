@@ -8924,10 +8924,14 @@ class StringHasher {
   inline void AddCharacters(const Char* chars, int len);
 
  private:
+  
+   
   // Add a character to the hash.
-  inline void AddCharacter(uint16_t c);
+  template<typename Char>
+  inline void AddCharacter(Char c);
   // Update index. Returns true if string is still an index.
-  inline bool UpdateIndex(uint16_t c);
+  template<typename Char>
+  inline bool UpdateIndex(Char c);
 
   int length_;
   uint32_t raw_running_hash_;

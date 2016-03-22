@@ -6561,16 +6561,24 @@ uint32_t StringHasher::GetHashCore(uint32_t running_hash) {
   return running_hash;
 }
 
-
-void StringHasher::AddCharacter(uint16_t c) {
+template <typename Char>
+void StringHasher::AddCharacter(Char c) {
   // Use the Jenkins one-at-a-time hash function to update the hash
   // for the given character.
+  if(sizeof(Char) == 1){
+      c = ebcdic2ascii(c);
+  }
   raw_running_hash_ = AddCharacterCore(raw_running_hash_, c);
 }
 
-
-bool StringHasher::UpdateIndex(uint16_t c) {
+template <typename Char>
+bool StringHasher::UpdateIndex(Char c) {
   DCHECK(is_array_index_);
+  
+  if (sizeof(Char) == 1){
+      c = ebcdic2ascii(c);
+  }
+
   if (c < '0' || c > '9') {
     is_array_index_ = false;
     return false;
@@ -6590,7 +6598,6 @@ bool StringHasher::UpdateIndex(uint16_t c) {
   array_index_ = array_index_ * 10 + d;
   return true;
 }
-
 
 template<typename Char>
 inline void StringHasher::AddCharacters(const Char* chars, int length) {
