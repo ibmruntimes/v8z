@@ -800,7 +800,8 @@ void Deserializer::ReadObject(int space_number,
   bool is_codespace = (space_number == CODE_SPACE);
   DCHECK(obj->IsCode() == is_codespace);
 #endif
-#if V8_TARGET_ARCH_PPC && \
+// TODO(mcornac):
+#if (V8_TARGET_ARCH_PPC || V8_OS_ZOS) && \
     (ABI_USES_FUNCTION_DESCRIPTORS || V8_OOL_CONSTANT_POOL)
   // If we're on a platform that uses function descriptors
   // these jump tables make use of RelocInfo::INTERNAL_REFERENCE.

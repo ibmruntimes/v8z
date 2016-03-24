@@ -1341,7 +1341,14 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // Call C built-in.
   __ mov(isolate_reg, Operand(ExternalReference::isolate_address(isolate())));
 
+#if ABI_USES_FUNCTION_DESCRIPTORS && !defined(USE_SIMULATOR)
+  // TODO(mcornac): Native z/OS uses a function descriptor.
+  __ LoadP(ToRegister(ABI_TOC_REGISTER), MemOperand(r7, kPointerSize));
+  __ LoadP(r0, MemOperand(r7, 0));  // Instruction address
+  Register target = r0;
+#else
   Register target = r7;
+#endif
 
   // To let the GC traverse the return address of the exit frames, we need to
   // know where the return address is. The CEntryStub is unmovable, so
@@ -1447,12 +1454,31 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
 
   Label invoke, handler_entry, exit;
 
+  // __ function_descriptor();
+
   // Called from C
 #if ABI_USES_FUNCTION_DESCRIPTORS
   __ function_descriptor();
 #endif
 
   ProfileEntryHookStub::MaybeCallEntryHook(masm);
+
+#if V8_OS_ZOS
+  // TODO(mcornac): Verify when we start executing generated code on z/OS.
+  // XPLINK uses r4 as the stack pointer and has a biased stack.
+  // Store r4-r15 in the save area at r4+2048.
+  __ StoreMultipleP(r4, sp, MemOperand(r4, 2048 - 12 * kPointerSize));
+  // Load the real start of the stack frame into sp.
+  __ lay(sp, MemOperand(r4, 2048 - 12 * kPointerSize));
+
+  // Expecting paramters in r2-r6. XPLINK uses r1-r3 for the first three
+  // parameters and also places them starting at r4+2112 on the biased stack.
+  __ LoadP(r5, MemOperand(r4, 2112 + 64 + 3 * kPointerSize));
+  __ LoadP(r6, MemOperand(r4, 2112 + 64 + 4 * kPointerSize));
+  __ LoadRR(r4, r3);
+  __ LoadRR(r3, r2);
+  __ LoadRR(r2, r1);
+#endif // V8_OS_ZOS
 
   // saving floating point registers
 #if V8_HOST_ARCH_S390X
@@ -1474,6 +1500,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   __ std(d6, MemOperand(sp, kDoubleSize));
 #endif
 
+#if !V8_OS_ZOS
   // zLinux ABI
   //    Incoming parameters:
   //          r2: code entry
@@ -1486,8 +1513,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   //    sp/r15 as well in a single STM/STMG
   __ lay(sp, MemOperand(sp, -10 * kPointerSize));
   __ StoreMultipleP(r6, sp, MemOperand(sp, 0));
-
-
+#endif
 
 //  int offset_to_argv = kPointerSize * 22; // matches (22*4) above
 //  __ LoadlW(r7, MemOperand(sp, offset_to_argv));
@@ -1627,8 +1653,10 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
 #endif
 
   // Reload callee-saved preserved regs, return address reg (r14) and sp
+#if !V8_OS_ZOS
   __ LoadMultipleP(r6, sp, MemOperand(sp, 0));
   __ la(sp, MemOperand(sp, 10 * kPointerSize));
+#endif
 
   // saving floating point registers
 #if V8_HOST_ARCH_S390X
@@ -1650,7 +1678,13 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   __ la(sp, MemOperand(sp, 2 * kDoubleSize));
 #endif
 
+#if V8_OS_ZOS
+  __ LoadMultipleP(r4, sp, MemOperand(sp, 0));
+
+  __ b(r7);
+#else
   __ b(r14);
+#endif
 }
 
 
