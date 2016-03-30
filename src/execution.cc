@@ -82,13 +82,20 @@ MUST_USE_RESULT static MaybeHandle<Object> Invoke(
     SealHandleScope shs(isolate);
     JSEntryFunction stub_entry = FUNCTION_CAST<JSEntryFunction>(code->entry());
 
+    intptr_t** fdd = new intptr_t*[2];
+    fdd[0] = (intptr_t*)stub_entry;
+    fdd[1] = (intptr_t*)stub_entry;
+
+    JSEntryFunction fd = (JSEntryFunction) fdd;
+
     // Call the function through the right JS entry stub.
     byte* function_entry = function->code()->entry();
     JSFunction* func = *function;
     Object* recv = *receiver;
     Object*** argv = reinterpret_cast<Object***>(args);
-    value =
-        CALL_GENERATED_CODE(stub_entry, function_entry, func, recv, argc, argv);
+    value = fd(function_entry, func, recv, argc, argv);
+//    value =
+//        CALL_GENERATED_CODE(stub_entry, function_entry, func, recv, argc, argv);
   }
 
 #ifdef VERIFY_HEAP
