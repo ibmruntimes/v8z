@@ -779,7 +779,7 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       Format(instr, "slgr\t'r5,'r6");
       break;
     case DLR:
-      Format(instr, "dlr\t'r1,'r2");
+      Format(instr, "dlr\t'r5,'r6");
       break;
     case DLGR:
       Format(instr, "dlgr\t'r5,'r6");
