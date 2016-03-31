@@ -3581,7 +3581,23 @@ void LCodeGen::DoLoadKeyedFixedArray(LLoadKeyed* instr) {
     if (hinstr->key()->representation().IsSmi()) {
       __ SmiToPtrArrayOffset(scratch, key);
     } else {
-      __ ShiftLeftP(scratch, key, Operand(kPointerSizeLog2));
+     if (instr->hydrogen()->IsDehoisted() ||
+         !CpuFeatures::IsSupported(GENERAL_INSTR_EXT)) {
+#if V8_TARGET_ARCH_S390X
+        // If array access is dehoisted, the key, being an int32, can contain
+        // a negative value, as needs to be sign-extended to 64-bit for
+        // memory access.
+        __ lgfr(key, key);
+#endif
+        __ ShiftLeftP(scratch, key, Operand(kPointerSizeLog2));
+      } else {
+        // Small optimization to reduce pathlength.  After Bounds Check,
+        // the key is guaranteed to be non-negative.  Leverage RISBG,
+        // which also performs zero-extension.
+        __ risbg(scratch, key, Operand(32 - kPointerSizeLog2),
+                 Operand(63 - kPointerSizeLog2), Operand(kPointerSizeLog2),
+                 true);
+      }
     }
   }
 
