@@ -1343,8 +1343,8 @@ void CEntryStub::Generate(MacroAssembler* masm) {
 
 #if ABI_USES_FUNCTION_DESCRIPTORS && !defined(USE_SIMULATOR)
   // TODO(mcornac): Native z/OS uses a function descriptor.
-  __ LoadP(ToRegister(ABI_TOC_REGISTER), MemOperand(r7, kPointerSize));
-  __ LoadP(r0, MemOperand(r7, 0));  // Instruction address
+  //__ LoadP(ToRegister(ABI_TOC_REGISTER), MemOperand(r7, kPointerSize));
+  __ LoadP(r0, MemOperand(r7, kPointerSize));  // Instruction address
   Register target = r0;
 #else
   Register target = r7;
@@ -4246,8 +4246,8 @@ void DirectCEntryStub::GenerateCall(MacroAssembler* masm,
                                     Register target) {
 #if ABI_USES_FUNCTION_DESCRIPTORS && !defined(USE_SIMULATOR)
   // Native AIX/S390X Linux use a function descriptor.
-  __ LoadP(ToRegister(ABI_TOC_REGISTER), MemOperand(target, kPointerSize));
-  __ LoadP(target, MemOperand(target, 0));  // Instruction address
+  //__ LoadP(ToRegister(ABI_TOC_REGISTER), MemOperand(target, kPointerSize));
+  __ LoadP(target, MemOperand(target, kPointerSize));  // Instruction address
 #else
   // ip needs to be set for DirectCEentryStub::Generate, and also
   // for ABI_TOC_ADDRESSABILITY_VIA_IP.
@@ -4867,8 +4867,8 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
 
 #if ABI_USES_FUNCTION_DESCRIPTORS
   // Function descriptor
-  __ LoadP(ToRegister(ABI_TOC_REGISTER), MemOperand(ip, kPointerSize));
-  __ LoadP(ip, MemOperand(ip, 0));
+  // __ LoadP(ToRegister(ABI_TOC_REGISTER), MemOperand(ip, kPointerSize));
+  __ LoadP(ip, MemOperand(ip, kPointerSize));
   // ip already set.
 #endif
 #endif

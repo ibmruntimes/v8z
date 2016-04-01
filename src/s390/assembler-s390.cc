@@ -3825,9 +3825,12 @@ void Assembler::GrowBuffer() {
   reloc_info_writer.Reposition(reloc_info_writer.pos() + rc_delta,
                                reloc_info_writer.last_pc() + pc_delta);
 
-  // None of our relocation types are pc relative pointing outside the code
-  // buffer nor pc absolute pointing inside the code buffer, so there is no need
-  // to relocate any emitted relocation entries.
+  for (RelocIterator it(desc); !it.done(); it.next()) {
+    RelocInfo::Mode rmode = it.rinfo()->rmode();
+    if (rmode == RelocInfo::INTERNAL_REFERENCE) {
+      RelocateInternalReference(it.rinfo()->pc(), pc_delta, 0);
+    }
+  }
 }
 
 
@@ -3947,6 +3950,45 @@ Handle<ConstantPoolArray> Assembler::NewConstantPool(Isolate* isolate) {
 void Assembler::PopulateConstantPool(ConstantPoolArray* constant_pool) {
   // No out-of-line constant pool support.
   DCHECK(!FLAG_enable_ool_constant_pool);
+}
+
+void Assembler::function_descriptor(){
+  DCHECK(pc_offset() == 0);
+  RecordRelocInfo(RelocInfo::INTERNAL_REFERENCE);
+  emit_ptr(0);
+  emit_ptr(reinterpret_cast<uintptr_t>(pc_) + kPointerSize);
+}
+
+void Assembler::RelocateInternalReference(Address pc,
+                                          intptr_t delta,
+                                          Address code_start,
+                                          ICacheFlushMode icache_flush_mode) {
+  DCHECK(delta || code_start);
+#if ABI_USES_FUNCTION_DESCRIPTORS
+  uintptr_t *fd = reinterpret_cast<uintptr_t*>(pc);
+  if (fd[0] == 0) {
+    // Function descriptor
+    if (delta) {
+      fd[1] += delta;
+    } else {
+      fd[1] = reinterpret_cast<uintptr_t>(code_start) + (2* kPointerSize);
+    }
+    return;
+  }
+#endif
+/* Todo: investigate if this is needed for zOS 
+  Address constant_pool = NULL;
+  if (delta) {
+    code_start = target_address_at(pc, constant_pool) + delta;
+  }
+  set_target_address_at(pc, constant_pool, code_start, icache_flush_mode);
+*/
+}
+
+
+int Assembler::DecodeInternalReference(Vector<char> buffer, Address pc) {
+/*Todo: decode function descriptors*/
+  return 0;
 }
 
 } }  // namespace v8::internal

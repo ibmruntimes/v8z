@@ -61,7 +61,7 @@
 #include "src/s390/constants-s390.h"
 #include "src/serialize.h"
 
-#define ABI_USES_FUNCTION_DESCRIPTORS 0
+#define ABI_USES_FUNCTION_DESCRIPTORS V8_OS_ZOS 
 
 #define ABI_PASSES_HANDLES_IN_REGS 1
 
@@ -1833,6 +1833,16 @@ SS2_FORM(zap);
 
   // Generate the constant pool for the generated code.
   void PopulateConstantPool(ConstantPoolArray* constant_pool);
+
+  //Generate function descirptor for z/OS
+  void function_descriptor();
+
+  static void RelocateInternalReference(Address pc, intptr_t delta,
+                                        Address code_start,
+                                        ICacheFlushMode icache_flush_mode =
+                                            FLUSH_ICACHE_IF_NEEDED);
+ 
+  static int DecodeInternalReference(Vector<char> buffer, Address pc);
 
  public:
   byte* buffer_pos() const { return buffer_; }
