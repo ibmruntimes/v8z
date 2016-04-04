@@ -1288,7 +1288,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
 
   ProfileEntryHookStub::MaybeCallEntryHook(masm);
 
-  __ LoadRR(r9, r3);
+  __ LoadRR(r7, r3);
 
   // Compute the argv pointer.
   __ ShiftLeftP(r3, r2, Operand(kPointerSizeLog2));
@@ -1322,10 +1322,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   __ LoadRR(r10, r3);
   // r2, r8: number of arguments including receiver  (C callee-saved)
   // r3, r10: pointer to the first argument
-  // r9: pointer to builtin function  (C callee-saved)
-
-
-
+  // r7: pointer to builtin function  (C callee-saved)
 
   // Result returned in registers or stack, depending on result size and ABI.
 
@@ -1344,6 +1341,8 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // Call C built-in.
   __ mov(isolate_reg, Operand(ExternalReference::isolate_address(isolate())));
 
+
+#if V8_OS_ZOS
   // TODO(mcornac): Move params from r2-r6 to r1-r3.
   __ LoadRR(r1, r2);
   __ LoadRR(r2, r3);
@@ -1356,31 +1355,20 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   __ StoreP(r3, MemOperand(sp, 72));
   __ StoreP(r5, MemOperand(sp, 76));
 
-
   // TODO(mcornac): fn descriptor.
   // Load environment from slot 0 of fn desc.
-  __ LoadP(r5, MemOperand(r9));
+  __ LoadP(r5, MemOperand(r7));
   // It will be read from r4+2056.
   __ StoreP(r5, MemOperand(sp, kPointerSize));
   // Load function pointer from slot 1 of fn desc.
-  __ LoadP(r9, MemOperand(r9, kPointerSize));
+  __ LoadP(r9, MemOperand(r7, kPointerSize));
   Register target = r9;
-
-  // TODO(mcornac): Store fp (r11). Not necessary... callee saved.
-  // __ StoreP(fp, MemOperand(sp, 7 * kPointerSize));
 
   // TODO(mcornac):
   __ lay(sp, MemOperand(sp, 80));
-
-
-//#if ABI_USES_FUNCTION_DESCRIPTORS && !defined(USE_SIMULATOR)
-//  // TODO(mcornac): Native z/OS uses a function descriptor.
-//  __ LoadP(ToRegister(ABI_TOC_REGISTER), MemOperand(r7, kPointerSize));
-//  __ LoadP(r0, MemOperand(r7, 0));  // Instruction address
-//  Register target = r0;
-//#else
-//  Register target = r7;
-//#endif
+#else
+  Register target = r7;
+#endif
 
   // To let the GC traverse the return address of the exit frames, we need to
   // know where the return address is. The CEntryStub is unmovable, so
@@ -1391,36 +1379,33 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // instructions so add another 4 to pc to get the return address.
   { Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm);
     Label return_label;
+#if V8_OS_ZOS
     // TODO(mcornac): XPLINK uses r7 for return address.
      __ larl(r7, &return_label);  // Generate the return addr of call later.
     // TODO(mcornac): why do I have to -2?
     __ lay(r7, MemOperand(r7, -2));
     __ StoreP(r7, MemOperand(sp, -80 + 3 * kPointerSize));
-
+#else
+    __ larl(r14, &return_label);  // Generate the return addr of call later.
+    __ StoreP(r14, MemOperand(sp, kStackFrameRASlot * kPointerSize));
+#endif
 
     // zLinux ABI requires caller's frame to have sufficient space for callee
     // preserved regsiter save area.
     // __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
     __ positions_recorder()->WriteRecordedPositions();
 
-
+#if V8_OS_ZOS
     // TODO(mcornac): Move sp to r4.
     __ lay(r4, MemOperand(sp, -2048 - 80));
-
+#endif
 
     __ b(target);
     __ bind(&return_label);
+    __ la(sp, MemOperand(sp, +kCalleeRegisterSaveAreaSize));
   }
 
-  // TODO(mcornac): Restore fp. r11 is callee saved so this isn't necessary.
-  // __ LoadP(fp, MemOperand(sp, -80 + 7 * kPointerSize));
-
-  // TODO(mcornac): Move stack pointer (r4+2048 from XPLINK to sp for JS).
-  // Actually, r15 should be restored correctly so this isn't needed.
-  // __ lay(sp, MemOperand(r4, 2048+80));
-
-  // __ la(sp, MemOperand(sp, +kCalleeRegisterSaveAreaSize));
-
+#if V8_OS_ZOS
   // TODO(mcornac): r8 and r10 were used to store argc and argv on z/OS instead
   // of r6 and r8 since r6 was needed for environment pointer.
   __ LoadRR(r6, r8);
@@ -1434,6 +1419,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
 //    __ LoadRR(r2, r1);
 //    __ LoadRR(r3, r2);
 //  }
+#endif
 
   // roohack - do we need to (re)set FPU state?
 
