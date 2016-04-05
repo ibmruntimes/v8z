@@ -284,7 +284,7 @@
 
 # define V8_HAS___FORCEINLINE 1
 
-// TODO(mcornac): Should we be defining xlc for this instead of z/OS?
+// TODO(mcornac): Should we check if xlc compiler instead of z/OS?
 #elif defined(V8_OS_ZOS)
 # define V8_HAS___ALIGNOF__ 1
 # define V8_HAS_ATTRIBUTE_ALIGNED 1

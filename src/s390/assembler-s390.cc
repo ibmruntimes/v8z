@@ -3825,12 +3825,17 @@ void Assembler::GrowBuffer() {
   reloc_info_writer.Reposition(reloc_info_writer.pos() + rc_delta,
                                reloc_info_writer.last_pc() + pc_delta);
 
+#ifdef V8_OS_ZOS
   for (RelocIterator it(desc); !it.done(); it.next()) {
     RelocInfo::Mode rmode = it.rinfo()->rmode();
     if (rmode == RelocInfo::INTERNAL_REFERENCE) {
       RelocateInternalReference(it.rinfo()->pc(), pc_delta, 0);
     }
   }
+#endif
+  // On s390 Linux none of our relocation types are pc relative pointing outside
+  // the code buffer nor pc absolute pointing inside the code buffer, so there
+  // is no need to relocate any emitted relocation entries.
 }
 
 
@@ -3952,6 +3957,7 @@ void Assembler::PopulateConstantPool(ConstantPoolArray* constant_pool) {
   DCHECK(!FLAG_enable_ool_constant_pool);
 }
 
+#ifdef V8_OS_ZOS
 void Assembler::function_descriptor(){
   DCHECK(pc_offset() == 0);
   RecordRelocInfo(RelocInfo::INTERNAL_REFERENCE);
@@ -3990,6 +3996,7 @@ int Assembler::DecodeInternalReference(Vector<char> buffer, Address pc) {
 /*Todo: decode function descriptors*/
   return 0;
 }
+#endif  // V8_OS_ZOS
 
 } }  // namespace v8::internal
 #endif  // V8_TARGET_ARCH_S390

@@ -5164,7 +5164,7 @@ class V8_EXPORT TryCatch {
   TryCatch(const TryCatch&);
   void operator=(const TryCatch&);
   void* operator new(size_t size);
-  void operator delete(void*, size_t){};
+  void operator delete(void*, size_t) {};
 
   v8::internal::Isolate* isolate_;
   v8::TryCatch* next_;

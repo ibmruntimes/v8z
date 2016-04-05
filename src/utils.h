@@ -174,7 +174,7 @@ template<> struct make_unsigned<int64_t> {
   typedef uint64_t type;
 };
 
-
+#if V8_OS_ZOS
 inline const uint8_t& ebcdic2ascii(const char letter) {
   static const uint8_t e2a[256] = {
  	       0,  1,  2,  3,156,  9,134,127,151,141,142, 11, 12, 13, 14, 15,
@@ -196,6 +196,7 @@ inline const uint8_t& ebcdic2ascii(const char letter) {
   };
   return e2a[letter];
 };
+#endif
 
 // ----------------------------------------------------------------------------
 // BitField is a help template for encoding and decode bitfield with

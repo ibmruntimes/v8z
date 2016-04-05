@@ -776,7 +776,11 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
 bool Decoder::DecodeSixByte(Instruction* instr) {
   // Print the Instruction bits.
   out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_,
+#ifdef V8_OS_ZOS
                                   "%012   ",
+#else
+                                  "%012" PRIx64 "   ",
+#endif
                                   instr->InstructionBits<SixByteInstr>());
 
   Opcode opcode = instr->S390OpcodeValue();

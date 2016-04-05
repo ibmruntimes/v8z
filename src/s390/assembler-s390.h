@@ -1834,6 +1834,7 @@ SS2_FORM(zap);
   // Generate the constant pool for the generated code.
   void PopulateConstantPool(ConstantPoolArray* constant_pool);
 
+#ifdef V8_OS_ZOS
   //Generate function descirptor for z/OS
   void function_descriptor();
 
@@ -1843,6 +1844,7 @@ SS2_FORM(zap);
                                             FLUSH_ICACHE_IF_NEEDED);
  
   static int DecodeInternalReference(Vector<char> buffer, Address pc);
+#endif
 
  public:
   byte* buffer_pos() const { return buffer_; }

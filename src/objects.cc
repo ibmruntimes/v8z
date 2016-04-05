@@ -9495,9 +9495,15 @@ uint32_t StringHasher::ComputeUtf8Hash(Vector<const char> chars,
   int vector_length = chars.length();
   // Handle some edge cases
   if (vector_length <= 1) {
+#ifdef V8_OS_ZOS
     DCHECK(vector_length == 0 ||
-               ebcdic2ascii(chars[0]) <=
+           ebcdic2ascii(chars[0]) <=
                unibrow::Utf8::kMaxOneByteChar);
+#else
+    DCHECK(vector_length == 0 ||
+           static_cast<uint8_t>(chars.start()[0]) <=
+               unibrow::Utf8::kMaxOneByteChar);
+#endif
     *utf16_length_out = vector_length;
     return HashSequentialString(chars.start(), vector_length, seed);
   }

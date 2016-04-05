@@ -17,7 +17,9 @@
 namespace v8 {
 namespace internal {
 
+#ifdef V8_OS_ZOS
 static const char kZeroASCII = 0x30;
+#endif
 
 // 2^53 = 9007199254740992.
 // Any integer with at most 15 decimal digits will hence fit into a double
@@ -74,7 +76,11 @@ static const int kMaxSignificantDecimalDigits = 780;
 
 static Vector<const char> TrimLeadingZeros(Vector<const char> buffer) {
   for (int i = 0; i < buffer.length(); i++) {
+#ifdef V8_OS_ZOS
     if (ebcdic2ascii(buffer[i]) != kZeroASCII) {
+#else
+    if (buffer[i] != '0') {
+#endif
       return buffer.SubVector(i, buffer.length());
     }
   }
@@ -84,7 +90,11 @@ static Vector<const char> TrimLeadingZeros(Vector<const char> buffer) {
 
 static Vector<const char> TrimTrailingZeros(Vector<const char> buffer) {
   for (int i = buffer.length() - 1; i >= 0; --i) {
+#ifdef V8_OS_ZOS
     if (ebcdic2ascii(buffer[i]) != kZeroASCII) {
+#else
+    if (buffer[i] != '0') {
+#endif
       return buffer.SubVector(0, i + 1);
     }
   }
@@ -101,7 +111,11 @@ static void TrimToMaxSignificantDigits(Vector<const char> buffer,
   }
   // The input buffer has been trimmed. Therefore the last digit must be
   // different from '0'.
+#ifdef V8_OS_ZOS
   DCHECK(ebcdic2ascii(buffer[buffer.length() - 1]) != kZeroASCII);
+#else
+  DCHECK(buffer[buffer.length() - 1] != '0');
+#endif
   // Set the last digit to be non-zero. This is sufficient to guarantee
   // correct rounding.
   significant_buffer[kMaxSignificantDecimalDigits - 1] = '1';
@@ -120,8 +134,11 @@ static uint64_t ReadUint64(Vector<const char> buffer,
   uint64_t result = 0;
   int i = 0;
   while (i < buffer.length() && result <= (kMaxUint64 / 10 - 1)) {
-    int digit = ebcdic2ascii(buffer[i++]);
-    digit = digit - kZeroASCII;
+#ifdef V8_OS_ZOS
+    int digit = ebcdic2ascii(buffer[i++]) - kZeroASCII;
+#else
+    int digit = buffer[i++] - '0';
+#endif
     DCHECK(0 <= digit && digit <= 9);
     result = 10 * result + digit;
   }
@@ -144,7 +161,11 @@ static void ReadDiyFp(Vector<const char> buffer,
     *remaining_decimals = 0;
   } else {
     // Round the significand.
+#ifdef V8_OS_ZOS
     if (ebcdic2ascii(buffer[read_digits]) >= (kZeroASCII+5)) {
+#else
+    if (buffer[read_digits] >= '5') {
+#endif
       significand++;
     }
     // Compute the binary exponent.

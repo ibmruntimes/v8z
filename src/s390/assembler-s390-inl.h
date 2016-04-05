@@ -55,10 +55,14 @@ bool CpuFeatures::SupportsCrankshaft() { return true; }
 
 
 void RelocInfo::apply(intptr_t delta, ICacheFlushMode icache_flush_mode) {
+#ifdef V8_OS_ZOS
   if (RelocInfo::IsInternalReference(rmode_)) {
     // absolute code pointer inside code object moves with the code object.
     Assembler::RelocateInternalReference(pc_, delta, 0, icache_flush_mode);
   }
+#endif
+  // We do not use pc relative addressing on S390 Linux, so there is
+  // nothing else to do.
 }
 
 

@@ -34,8 +34,6 @@
 import os, re, sys, string
 import optparse
 import jsmin
-if not (sys.platform.startswith('os390')):
-  import bz2
 import textwrap
 
 

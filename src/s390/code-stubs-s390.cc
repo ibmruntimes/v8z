@@ -1318,11 +1318,19 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   __ EnterExitFrame(save_doubles_, arg_stack_space);
 
   // Store a copy of argc, argv in callee-saved registers for later.
+#ifdef V8_OS_ZOS
   __ LoadRR(r8, r2);
   __ LoadRR(r10, r3);
   // r2, r8: number of arguments including receiver  (C callee-saved)
   // r3, r10: pointer to the first argument
   // r7: pointer to builtin function  (C callee-saved)
+#else
+  __ LoadRR(r6, r2);
+  __ LoadRR(r8, r3);
+  // r2, r6: number of arguments including receiver  (C callee-saved)
+  // r3, r8: pointer to the first argument
+  // r7: pointer to builtin function  (C callee-saved)
+#endif
 
   // Result returned in registers or stack, depending on result size and ABI.
 
@@ -1402,7 +1410,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
 
     __ b(target);
     __ bind(&return_label);
-    __ la(sp, MemOperand(sp, +kCalleeRegisterSaveAreaSize));
+    // __ la(sp, MemOperand(sp, +kCalleeRegisterSaveAreaSize));
   }
 
 #if V8_OS_ZOS
@@ -1503,8 +1511,6 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   // r6: argv
 
   Label invoke, handler_entry, exit;
-
-  // __ function_descriptor();
 
   // Called from C
 #if ABI_USES_FUNCTION_DESCRIPTORS

@@ -1087,11 +1087,7 @@ double Object::Number() {
 
 
 bool Object::IsNaN() const {
-#if V8_OS_ZOS
   return this->IsHeapNumber() && isnan(HeapNumber::cast(this)->value());
-#else
-  return this->IsHeapNumber() && isnan(HeapNumber::cast(this)->value());
-#endif
 }
 
 
@@ -2267,11 +2263,7 @@ void FixedDoubleArray::set(int index, double value) {
   DCHECK(map() != GetHeap()->fixed_cow_array_map() &&
          map() != GetHeap()->fixed_array_map());
   int offset = kHeaderSize + index * kDoubleSize;
-#if V8_OS_ZOS
   if (isnan(value)) value = canonical_not_the_hole_nan_as_double();
-#else
-  if (isnan(value)) value = canonical_not_the_hole_nan_as_double();
-#endif
   WRITE_DOUBLE_FIELD(this, offset, value);
 }
 
@@ -6565,19 +6557,24 @@ template <typename Char>
 void StringHasher::AddCharacter(Char c) {
   // Use the Jenkins one-at-a-time hash function to update the hash
   // for the given character.
-  if(sizeof(Char) == 1){
+#if V8_OS_ZOS
+  if (sizeof(Char) == 1) {
       c = ebcdic2ascii(c);
   }
+#endif
+
   raw_running_hash_ = AddCharacterCore(raw_running_hash_, c);
 }
 
 template <typename Char>
 bool StringHasher::UpdateIndex(Char c) {
   DCHECK(is_array_index_);
-  
-  if (sizeof(Char) == 1){
+
+#if V8_OS_ZOS
+  if (sizeof(Char) == 1) {
       c = ebcdic2ascii(c);
   }
+#endif
 
   if (c < '0' || c > '9') {
     is_array_index_ = false;

@@ -413,7 +413,8 @@ $(OUT_MAKEFILES): $(GYPFILES) $(ENVFILE)
 	$(eval V8_TARGET_ARCH:=$(subst .,,$(suffix $(basename $@))))
 	PYTHONPATH="$(shell pwd)/tools/generate_shim_headers:$(shell pwd)/build:$(PYTHONPATH):$(shell pwd)/build/gyp/pylib:$(PYTHONPATH)" \
 	GYP_GENERATORS=make \
-	build/gyp/gyp --no-parallel \
+	build/gyp/gyp $(if $(findstring xlc,$(CXX)), \
+	              --no-parallel) \
 	              --generator-output="$(OUTDIR)" build/all.gyp \
 	              -Ibuild/standalone.gypi --depth=. \
 	              -Dv8_target_arch=$(V8_TARGET_ARCH) \
@@ -425,7 +426,8 @@ $(OUT_MAKEFILES): $(GYPFILES) $(ENVFILE)
 $(OUTDIR)/Makefile.native: $(GYPFILES) $(ENVFILE)
 	PYTHONPATH="$(shell pwd)/tools/generate_shim_headers:$(shell pwd)/build:$(PYTHONPATH):$(shell pwd)/build/gyp/pylib:$(PYTHONPATH)" \
 	GYP_GENERATORS=make \
-	build/gyp/gyp --no-parallel \
+	build/gyp/gyp $(if $(findstring xlc,$(CXX)), \
+	              --no-parallel) \
 	              --generator-output="$(OUTDIR)" build/all.gyp \
 	              -Ibuild/standalone.gypi --depth=. -S.native $(GYPFLAGS)
 

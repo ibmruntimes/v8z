@@ -105,15 +105,15 @@ whitespace/todo
 
 LINT_OUTPUT_PATTERN = re.compile(r'^.+[:(]\d+[:)]|^Done processing')
 
+if sys.platform.startswith('os390'):
+  class CppLintThread(threading.Thread):
+    def __init__(self, target, *args):
+      self._target = target
+      self._args = args
+      threading.Thread.__init__(self)
 
-class CppLintThread(threading.Thread):
-  def __init__(self, target, *args):
-    self._target = target
-    self._args = args
-    threading.Thread.__init__(self)
-
-  def run(self):
-    self._result = self._target(*self._args)
+    def run(self):
+      self._result = self._target(*self._args)
 
 def CppLintWorker(command):
   try:
@@ -298,7 +298,7 @@ class CppLintProcessor(SourceFileProcessor):
         results = pool.map_async(CppLintWorker, commands).get(999999)
     except KeyboardInterrupt:
       print "\nCaught KeyboardInterrupt, terminating workers."
-      rys.exit(1)
+      sys.exit(1)
 
     for i in range(len(files)):
       if results[i] > 0:
