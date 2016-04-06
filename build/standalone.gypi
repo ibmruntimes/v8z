@@ -235,7 +235,7 @@
                     '-qenum=4',
                     '-qasm',
                     '-qasmlib=sys1.maclib:sys1.modgen',
-		    '-D_ISOC99_SOURCE','-D_UNIX03_SOURCE',
+                    '-D_ISOC99_SOURCE','-D_UNIX03_SOURCE',
                     '-D_XOPEN_SOURCE_EXTENDED=1','-D_OPEN_SYS_SOCK_IPV6',
                     '-D_UNIX03_THREADS',
                     '-D__BIG_ENDIAN=4321','-D__BYTE_ORDER=__BIG_ENDIAN',

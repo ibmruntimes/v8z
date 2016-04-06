@@ -202,7 +202,6 @@ void OS::Free(void* address, const size_t size) {
   USE(result);
   DCHECK(result == 0);
 #endif
-
 }
 
 
@@ -407,7 +406,6 @@ int OS::GetCurrentThreadId() {
 #else
   return static_cast<int>(syscall(SYS_gettid));
 #endif  // defined(ANDROID)
-
 }
 
 
@@ -688,7 +686,7 @@ void Thread::Start() {
 #ifndef V8_OS_ZOS
   // TODO(muntasir): FIXME
   DCHECK(data_->thread_ != kNoThread);
-#endif  
+#endif
   USE(result);
 }
 

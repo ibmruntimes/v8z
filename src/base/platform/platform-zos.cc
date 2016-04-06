@@ -96,31 +96,31 @@ bool OS::ArmUsingHardFloat() {
 
 #define asm __asm__ volatile
 
-static void * anon_mmap(void * addr, size_t len){
-   int retcode; 
+static void * anon_mmap(void * addr, size_t len) {
+   int retcode;
    char * p;
-#pragma convert ("ibm-1047")  
+#pragma convert("ibm-1047")
 #if defined(__64BIT__)
   __asm(" SYSSTATE ARCHLVL=2,AMODE64=YES\n"
         " STORAGE OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES\n"
         " LGR %0,1\n"
         " LGR %1,15\n"
         :"=r"(p),"=r"(retcode): "r"(len): "r0","r1","r14","r15");
-#else  
+#else
   __asm(" SYSSTATE ARCHLVL=2\n"
         " STORAGE OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES\n"
-        " LR %0,1\n"          
+        " LR %0,1\n"
         " LR %1,15\n"
         :"=r"(p),"=r"(retcode): "r"(len): "r0","r1","r14","r15");
 #endif
 #pragma convert(pop)
-   return (retcode == 0) ? p : MAP_FAILED; 
+   return (retcode == 0) ? p : MAP_FAILED;
 }
 
 
-static int anon_munmap(void * addr, size_t len){
+static int anon_munmap(void * addr, size_t len) {
    int retcode;
-#pragma convert ("ibm-1047")  
+#pragma convert("ibm-1047")
 #if defined (__64BIT__)
   __asm(" SYSSTATE ARCHLVL=2,AMODE64=YES\n"
           " STORAGE RELEASE,LENGTH=(%2),ADDR=(%1),COND=YES\n"
@@ -131,15 +131,17 @@ static int anon_munmap(void * addr, size_t len){
           " STORAGE RELEASE,LENGTH=(%2),ADDR=(%1),COND=YES\n"
           " LR %0,15\n"
           :"=r"(retcode): "r"(addr), "r"(len) : "r0","r1","r14","r15");
-#endif   
+#endif
 #pragma convert(pop)
    return retcode;
 }
+
 
 void OS::ConvertToASCII(char * str) {
   size_t length =  __e2a_s(str);
   DCHECK_NE(length, -1);
 }
+
 
 const char* OS::LocalTimezone(double time, TimezoneCache* cache) {
   if (isnan(time)) return "";
@@ -168,8 +170,8 @@ void* OS::Allocate(const size_t requested,
                    bool is_executable) {
   const size_t msize = RoundUp(requested, AllocateAlignment());
   int prot = PROT_READ | PROT_WRITE | (is_executable ? PROT_EXEC : 0);
-  void * mbase = (void *)anon_mmap(OS::GetRandomMmapAddr(),
-                                    sizeof(char) * msize);
+  void * mbase = static_cast<void*>(anon_mmap(OS::GetRandomMmapAddr(),
+                                    sizeof(char) * msize));
   *allocated = msize;
   return mbase;
 }
@@ -341,15 +343,15 @@ VirtualMemory::VirtualMemory(size_t size)
 VirtualMemory::VirtualMemory(size_t size, size_t alignment)
     : address_(NULL), size_(0) {
   DCHECK(IsAligned(alignment, static_cast<intptr_t>(OS::AllocateAlignment())));
-  
+
   size_t request_size = RoundUp(size + alignment,
                                 static_cast<intptr_t>(OS::AllocateAlignment()));
-  
+
   void* reservation = anon_mmap(OS::GetRandomMmapAddr(),
                            request_size);
-  
-  DCHECK_NE(reservation,MAP_FAILED);
-  
+
+  DCHECK_NE(reservation, MAP_FAILED);
+
   uint8_t* base = static_cast<uint8_t*>(reservation);
   uint8_t* aligned_base = RoundUp(base, alignment);
   DCHECK_LE(base, aligned_base);
@@ -417,11 +419,10 @@ bool VirtualMemory::Guard(void* address) {
 
 
 void* VirtualMemory::ReserveRegion(size_t size) {
-  
   void* result = anon_mmap(OS::GetRandomMmapAddr(),
                       size);
-  
-  DCHECK_NE(result,MAP_FAILED); 
+
+  DCHECK_NE(result, MAP_FAILED);
 #if defined(LEAK_SANITIZER)
   __lsan_register_root_region(result, size);
 #endif
@@ -431,7 +432,7 @@ void* VirtualMemory::ReserveRegion(size_t size) {
 
 bool VirtualMemory::CommitRegion(void* base, size_t size, bool is_executable) {
  /*mprotect can not be called on pages allocated with
-   STORAGE OBTAIN, for now we will leave this operation as a 
+   STORAGE OBTAIN, for now we will leave this operation as a
    NOP..might need to use CHANGEKEY macro to implement something
    akin to mprotect in the future*/
    return true;
@@ -440,7 +441,7 @@ bool VirtualMemory::CommitRegion(void* base, size_t size, bool is_executable) {
 
 bool VirtualMemory::UncommitRegion(void* base, size_t size) {
  /*mprotect can not be called on pages allocated with
-   STORAGE OBTAIN, for now we will leave this operation as a 
+   STORAGE OBTAIN, for now we will leave this operation as a
    NOP..might need to use CHANGEKEY macro to implement something
    akin to mprotect in the future*/
    return true;

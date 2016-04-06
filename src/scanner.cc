@@ -123,25 +123,6 @@ static const byte one_char_tokens[] = {
   Token::ILLEGAL,
   Token::ILLEGAL,
   Token::ILLEGAL,
-  Token::ILLEGAL,      
-  Token::ILLEGAL,     
-  Token::ILLEGAL,
-  Token::ILLEGAL,
-  Token::ILLEGAL,        
-  Token::ILLEGAL,
-  Token::ILLEGAL,
-  Token::ILLEGAL,
-  Token::ILLEGAL,
-  Token::ILLEGAL,
-  Token::ILLEGAL,
-  Token::ILLEGAL,
-  Token::ILLEGAL,
-  Token::ILLEGAL,
-  Token::ILLEGAL,
-  Token::ILLEGAL,
-  Token::ILLEGAL,
-  Token::ILLEGAL,
-  Token::ILLEGAL,        
   Token::ILLEGAL,
   Token::ILLEGAL,
   Token::ILLEGAL,
@@ -160,7 +141,26 @@ static const byte one_char_tokens[] = {
   Token::ILLEGAL,
   Token::ILLEGAL,
   Token::ILLEGAL,
-  Token::LPAREN,       //0x4d (
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::LPAREN,       // 0x4d (
   Token::ILLEGAL,
   Token::ILLEGAL,
   Token::ILLEGAL,
@@ -190,26 +190,26 @@ static const byte one_char_tokens[] = {
   Token::ILLEGAL,
   Token::ILLEGAL,
   Token::ILLEGAL,
-  Token::COMMA,       // 0x6b ,
+  Token::COMMA,        // 0x6b ,
   Token::ILLEGAL,
   Token::ILLEGAL,
   Token::ILLEGAL,
-  Token::CONDITIONAL, // 0x6f ?
-  Token::ILLEGAL,
-  Token::ILLEGAL,
-  Token::ILLEGAL,
-  Token::ILLEGAL,
+  Token::CONDITIONAL,  // 0x6f ?
   Token::ILLEGAL,
   Token::ILLEGAL,
   Token::ILLEGAL,
   Token::ILLEGAL,
   Token::ILLEGAL,
   Token::ILLEGAL,
-  Token::COLON,      // 0x7a :
   Token::ILLEGAL,
   Token::ILLEGAL,
-  Token::ILLEGAL,          
-  Token::ILLEGAL,     
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::COLON,        // 0x7a :
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
+  Token::ILLEGAL,
   Token::ILLEGAL,
   Token::ILLEGAL,
   Token::ILLEGAL,
@@ -484,9 +484,8 @@ Token::Value Scanner::Next() {
   current_ = next_;
   has_line_terminator_before_next_ = false;
   has_multiline_comment_before_next_ = false;
-  
+
   if (static_cast<unsigned>(c0_) <= max_token_index) {
-    
     Token::Value token = static_cast<Token::Value>(one_char_tokens[c0_]);
     if (token != Token::ILLEGAL) {
       int pos = source_pos();
@@ -495,7 +494,6 @@ Token::Value Scanner::Next() {
       next_.location.end_pos = pos + 1;
       Advance();
       return current_.token;
-    
     }
   }
   Scan();
@@ -918,7 +916,7 @@ void Scanner::Scan() {
     // Continue scanning for tokens as long as we're just skipping
     // whitespace.
   } while (token == Token::WHITESPACE);
-  
+
   next_.location.end_pos = source_pos();
   next_.token = token;
 }

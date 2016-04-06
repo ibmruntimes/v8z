@@ -307,11 +307,11 @@ class OS {
 
   static int GetCurrentProcessId();
 
-#if defined(V8_OS_ZOS) 
+#if defined(V8_OS_ZOS)
   static pthread_t GetCurrentThreadId();
-  
-  //On zOS the default character encoding is in EBCDIC, this utility function
-  //  //will convert strings to ASCII
+
+  // On zOS the default character encoding is in EBCDIC, this utility function
+  // will convert strings to ASCII.
   static void ConvertToASCII(char * str);
 #else
   static int  GetCurrentThreadId();
@@ -433,7 +433,7 @@ class Thread {
   // Opaque data type for thread-local storage keys.
 #if defined(V8_OS_ZOS)
   typedef pthread_key_t LocalStorageKey;
-#else  
+#else
   typedef int32_t LocalStorageKey;
 #endif
   class Options {

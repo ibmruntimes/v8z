@@ -8924,8 +8924,6 @@ class StringHasher {
   inline void AddCharacters(const Char* chars, int len);
 
  private:
-  
-   
   // Add a character to the hash.
   template<typename Char>
   inline void AddCharacter(Char c);

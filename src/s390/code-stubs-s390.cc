@@ -1534,7 +1534,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   __ LoadRR(r4, r3);
   __ LoadRR(r3, r2);
   __ LoadRR(r2, r1);
-#endif // V8_OS_ZOS
+#endif  // V8_OS_ZOS
 
   // saving floating point registers
 #if V8_HOST_ARCH_S390X
@@ -4302,7 +4302,7 @@ void DirectCEntryStub::GenerateCall(MacroAssembler* masm,
                                     Register target) {
 #if ABI_USES_FUNCTION_DESCRIPTORS && !defined(USE_SIMULATOR)
   // Native AIX/S390X Linux use a function descriptor.
-  //__ LoadP(ToRegister(ABI_TOC_REGISTER), MemOperand(target, kPointerSize));
+  // __ LoadP(ToRegister(ABI_TOC_REGISTER), MemOperand(target, kPointerSize));
   __ LoadP(target, MemOperand(target, kPointerSize));  // Instruction address
 #else
   // ip needs to be set for DirectCEentryStub::Generate, and also

@@ -96,13 +96,13 @@ void* AlignedAlloc(size_t size, size_t alignment) {
   // Allocate aligned memory plus extra space just before it to store the
   // pointer returned by malloc so that the whole thing can be freed.
   intptr_t freeablePtr = (intptr_t)malloc(size + alignment + sizeof(intptr_t));
-  if (freeablePtr != NULL)
-  {
-    ptr = (void*)(freeablePtr + sizeof(intptr_t));
+  if (freeablePtr != NULL) {
+    ptr = reinterpret_cast<void*>(freeablePtr + sizeof(intptr_t));
     intptr_t mask = ~(intptr_t)(alignment - 1);
     ptr = reinterpret_cast<void*>
       (((intptr_t)ptr + (intptr_t)(alignment - 1)) & mask);
-    *(intptr_t*)((intptr_t)ptr - sizeof(intptr_t)) = freeablePtr;
+    *reinterpret_cast<intptr_t*>(
+        reinterpret_cast<intptr_t>(ptr) - sizeof(intptr_t)) = freeablePtr;
   }
 #else
   if (posix_memalign(&ptr, alignment, size)) ptr = NULL;
@@ -122,7 +122,8 @@ void AlignedFree(void *ptr) {
   // TODO(mcornac): Verify functionality.
   // The original ptr returned by malloc was stored before ptr.
   // Retreive it to call free.
-  free((void*)*(intptr_t*)((intptr_t)ptr - sizeof(intptr_t)));
+  free(reinterpret_cast<void*>(*reinterpret_cast<intptr_t*>(
+          reinterpret_cast<intptr_t>(ptr) - sizeof(intptr_t))));
 #else
   free(ptr);
 #endif

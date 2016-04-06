@@ -3958,7 +3958,7 @@ void Assembler::PopulateConstantPool(ConstantPoolArray* constant_pool) {
 }
 
 #ifdef V8_OS_ZOS
-void Assembler::function_descriptor(){
+void Assembler::function_descriptor() {
   DCHECK(pc_offset() == 0);
   RecordRelocInfo(RelocInfo::INTERNAL_REFERENCE);
   emit_ptr(0);
@@ -3982,7 +3982,7 @@ void Assembler::RelocateInternalReference(Address pc,
     return;
   }
 #endif
-/* Todo: investigate if this is needed for zOS 
+/* Todo: investigate if this is needed for zOS
   Address constant_pool = NULL;
   if (delta) {
     code_start = target_address_at(pc, constant_pool) + delta;
