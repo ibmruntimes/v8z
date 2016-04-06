@@ -4958,9 +4958,8 @@ void HOptimizedGraphBuilder::VisitReturnStatement(ReturnStatement* stmt) {
     // will always evaluate to true, in a value context the return value needs
     // to be a JSObject.
     if (context->IsTest()) {
-      TestContext* test = TestContext::cast(context);
       CHECK_ALIVE(VisitForEffect(stmt->expression()));
-      Goto(test->if_true(), state);
+      context->ReturnValue(graph()->GetConstantTrue());
     } else if (context->IsEffect()) {
       CHECK_ALIVE(VisitForEffect(stmt->expression()));
       Goto(function_return(), state);
@@ -8620,7 +8619,7 @@ bool HOptimizedGraphBuilder::TryInline(Handle<JSFunction> target,
       // return value will always evaluate to true, in a value context the
       // return value is the newly allocated receiver.
       if (call_context()->IsTest()) {
-        Goto(inlined_test_context()->if_true(), state);
+        inlined_test_context()->ReturnValue(graph()->GetConstantTrue());
       } else if (call_context()->IsEffect()) {
         Goto(function_return(), state);
       } else {
@@ -8643,7 +8642,7 @@ bool HOptimizedGraphBuilder::TryInline(Handle<JSFunction> target,
       // Falling off the end of a normal inlined function. This basically means
       // returning undefined.
       if (call_context()->IsTest()) {
-        Goto(inlined_test_context()->if_false(), state);
+        inlined_test_context()->ReturnValue(graph()->GetConstantFalse());
       } else if (call_context()->IsEffect()) {
         Goto(function_return(), state);
       } else {
