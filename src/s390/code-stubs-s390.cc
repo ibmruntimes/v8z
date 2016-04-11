@@ -1529,8 +1529,8 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
 
   // Expecting paramters in r2-r6. XPLINK uses r1-r3 for the first three
   // parameters and also places them starting at r4+2112 on the biased stack.
-  __ LoadP(r5, MemOperand(r4, 2112 + 64 + 3 * kPointerSize));
-  __ LoadP(r6, MemOperand(r4, 2112 + 64 + 4 * kPointerSize));
+  __ LoadP(r5, MemOperand(r4, 2048 + (16 * kPointerSize)  + (3 * kPointerSize)));
+  __ LoadP(r6, MemOperand(r4, 2048 + (16 * kPointerSize)  + (4 * kPointerSize)));
   __ LoadRR(r4, r3);
   __ LoadRR(r3, r2);
   __ LoadRR(r2, r1);

@@ -842,10 +842,15 @@ Simulator::Simulator(Isolate* isolate) : isolate_(isolate) {
     fp_registers_[i] = 0.0;
   }
 
-  // The sp is initialized to point to the bottom (high address) of the
-  // allocated stack area. To be safe in potential stack underflows we leave
-  // some buffer below.
+// The sp is initialized to point to the bottom (high address) of the
+// allocated stack area. To be safe in potential stack underflows we leave
+// some buffer below.
+#ifdef V8_OS_ZOS
+  registers_[r4] = reinterpret_cast<intptr_t>(stack_) + stack_size - 2048 - 64;
+#else
   registers_[sp] = reinterpret_cast<intptr_t>(stack_) + stack_size - 64;
+#endif  
+  
   InitializeCoverage();
 
   last_debugger_input_ = NULL;
@@ -4370,9 +4375,8 @@ void Simulator::Execute() {
 void Simulator::CallInternal(byte *entry, int reg_arg_count) {
   // Prepare to execute the code at entry
 #if ABI_USES_FUNCTION_DESCRIPTORS
-  // entry point is in the second slot of a z/OS function descriptor
-  // zLinux does not use function descriptors
-  set_pc(*(reinterpret_cast<intptr_t *>(entry + kPointerSize)));
+  // entry is the function descriptor
+  set_pc(*(reinterpret_cast<intptr_t *>(entry+kPointerSize)));
 #else
   // entry is the instruction address
   set_pc(reinterpret_cast<intptr_t>(entry));
@@ -4452,6 +4456,15 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   va_start(parameters, argument_count);
   // Set up arguments
 
+#ifdef V8_OS_ZOS
+  // First 3 arguments passed in registers r1-r3
+  int reg_arg_count   = (argument_count > 3) ? 3 : argument_count;
+  int stack_arg_count = argument_count - reg_arg_count;
+  for (int i = 0; i < reg_arg_count; i++) {
+      intptr_t value = va_arg(parameters, intptr_t);
+      set_register(i + 1, value);
+  }
+#else
   // First 5 arguments passed in registers r2-r6.
   int reg_arg_count   = (argument_count > 5) ? 5 : argument_count;
   int stack_arg_count = argument_count - reg_arg_count;
@@ -4459,32 +4472,48 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
       intptr_t value = va_arg(parameters, intptr_t);
       set_register(i + 2, value);
   }
+#endif
 
-  // Remaining arguments passed on stack.
+#ifdef V8_OS_ZOS
+  // Remaining arguments passed on stack.  
+  int64_t original_stack = get_register(r4);
+  // Compute position of stack on entry to generated code.
+  intptr_t entry_stack = (original_stack + 2048 -
+                          ((16 * kPointerSize) + //callee save area + debug_area + arg area prefix
+                          (stack_arg_count * sizeof(intptr_t))));
+#else
+  // Remaining arguments passed on stack.  
   int64_t original_stack = get_register(sp);
   // Compute position of stack on entry to generated code.
   intptr_t entry_stack = (original_stack -
                           (kCalleeRegisterSaveAreaSize +
                            stack_arg_count * sizeof(intptr_t)));
+#endif  
+  
   if (base::OS::ActivationFrameAlignment() != 0) {
     entry_stack &= -base::OS::ActivationFrameAlignment();
   }
   // Store remaining arguments on stack, from low to high memory.
-  // +2 is a hack for the LR slot + old SP on PPC
+#ifdef V8_OS_ZOS
+  intptr_t* stack_argument = reinterpret_cast<intptr_t*>(entry_stack +
+          (16 * kPointerSize));
+#else
   intptr_t* stack_argument = reinterpret_cast<intptr_t*>(entry_stack +
     kCalleeRegisterSaveAreaSize);
+#endif
+  
   for (int i = 0; i < stack_arg_count; i++) {
     intptr_t value = va_arg(parameters, intptr_t);
     stack_argument[i] = value;
   }
+  
   va_end(parameters);
   set_register(sp, entry_stack);
 
   // Prepare to execute the code at entry
 #if ABI_USES_FUNCTION_DESCRIPTORS
-  // entry point is in the second slot of a z/OS function descriptor
-  // zLinux does not use function descriptors
-  set_pc(*(reinterpret_cast<intptr_t *>(entry + kPointerSize)));
+  // entry is the function descriptor
+  set_pc(*(reinterpret_cast<intptr_t *>(entry+kPointerSize)));
 #else
   // entry is the instruction address
   set_pc(reinterpret_cast<intptr_t>(entry));
