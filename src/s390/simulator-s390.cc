@@ -4370,8 +4370,9 @@ void Simulator::Execute() {
 void Simulator::CallInternal(byte *entry, int reg_arg_count) {
   // Prepare to execute the code at entry
 #if ABI_USES_FUNCTION_DESCRIPTORS
-  // entry is the function descriptor
-  set_pc(*(reinterpret_cast<intptr_t *>(entry)));
+  // entry point is in the second slot of a z/OS function descriptor
+  // zLinux does not use function descriptors
+  set_pc(*(reinterpret_cast<intptr_t *>(entry + kPointerSize)));
 #else
   // entry is the instruction address
   set_pc(reinterpret_cast<intptr_t>(entry));
@@ -4481,8 +4482,9 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
 
   // Prepare to execute the code at entry
 #if ABI_USES_FUNCTION_DESCRIPTORS
-  // entry is the function descriptor
-  set_pc(*(reinterpret_cast<intptr_t *>(entry)));
+  // entry point is in the second slot of a z/OS function descriptor
+  // zLinux does not use function descriptors
+  set_pc(*(reinterpret_cast<intptr_t *>(entry + kPointerSize)));
 #else
   // entry is the instruction address
   set_pc(reinterpret_cast<intptr_t>(entry));
