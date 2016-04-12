@@ -849,8 +849,8 @@ Simulator::Simulator(Isolate* isolate) : isolate_(isolate) {
   registers_[r4] = reinterpret_cast<intptr_t>(stack_) + stack_size - 2048 - 64;
 #else
   registers_[sp] = reinterpret_cast<intptr_t>(stack_) + stack_size - 64;
-#endif  
-  
+#endif
+ 
   InitializeCoverage();
 
   last_debugger_input_ = NULL;
@@ -1285,7 +1285,13 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
            & (::v8::internal::FLAG_sim_stack_alignment - 1)) == 0;
       Redirection* redirection = Redirection::FromSwiInstruction(instr);
       const int kArgCount = 6;
+#ifdef V8_OS_ZOS
+      const int regArgCount = 3;
+      int arg0_regnum = 1;
+#else      
+      const int regArgCount = 5;
       int arg0_regnum = 2;
+#endif
 #if V8_TARGET_ARCH_S390X && !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
       intptr_t result_buffer = 0;
       if (redirection->type() == ExternalReference::BUILTIN_OBJECTPAIR_CALL) {
@@ -1294,11 +1300,17 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       }
 #endif
       intptr_t arg[kArgCount];
-      for (int i = 0; i < kArgCount-1; i++) {
+      for (int i = 0; i < regArgCount; i++) {
         arg[i] = get_register(arg0_regnum + i);
       }
       intptr_t* stack_pointer = reinterpret_cast<intptr_t*>(get_register(sp));
+#ifdef V8_OS_ZOS
+      //Todo(muntasir), need to initialize this properly
+      arg[4] = 0xdeadbeef;
+      arg[5] = 0xdeadbeef;
+#else      
       arg[5] = stack_pointer[kCalleeRegisterSaveAreaSize / kPointerSize];
+#endif      
       bool fp_call =
          (redirection->type() == ExternalReference::BUILTIN_FP_FP_CALL) ||
          (redirection->type() == ExternalReference::BUILTIN_COMPARE_CALL) ||
@@ -1542,8 +1554,16 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
         }
 #endif
       }
+#ifdef V8_OS_ZOS
+      //Todo(muntasir):In CEntryStub we subtract 2 bytes from the return addr
+      //prior to saving it, fixing this up here, need to investigate why we
+      //are doing this in CEntryStub prior to removing this
+      int64_t saved_lr = get_register(r7) + 2;
+#else
       int64_t saved_lr = *reinterpret_cast<intptr_t*>(get_register(sp)
                              + kStackFrameRASlot * kPointerSize);
+#endif
+
 #if (!V8_TARGET_ARCH_S390X && V8_HOST_ARCH_S390)
       // On zLinux-31, the saved_lr might be tagged with a high bit of 1.
       // Cleanse it before proceeding with simulation.
@@ -4475,21 +4495,22 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
 #endif
 
 #ifdef V8_OS_ZOS
-  // Remaining arguments passed on stack.  
+  // Remaining arguments passed on stack.
   int64_t original_stack = get_register(r4);
   // Compute position of stack on entry to generated code.
+  // callee save area + debug_area + arg_area_prefix = 16 * kPointerSize
   intptr_t entry_stack = (original_stack + 2048 -
-                          ((16 * kPointerSize) + //callee save area + debug_area + arg area prefix
+                          ((16 * kPointerSize) +
                           (stack_arg_count * sizeof(intptr_t))));
 #else
-  // Remaining arguments passed on stack.  
+  // Remaining arguments passed on stack.
   int64_t original_stack = get_register(sp);
   // Compute position of stack on entry to generated code.
   intptr_t entry_stack = (original_stack -
                           (kCalleeRegisterSaveAreaSize +
                            stack_arg_count * sizeof(intptr_t)));
-#endif  
-  
+#endif
+
   if (base::OS::ActivationFrameAlignment() != 0) {
     entry_stack &= -base::OS::ActivationFrameAlignment();
   }
@@ -4501,7 +4522,7 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   intptr_t* stack_argument = reinterpret_cast<intptr_t*>(entry_stack +
     kCalleeRegisterSaveAreaSize);
 #endif
-  
+
   for (int i = 0; i < stack_arg_count; i++) {
     intptr_t value = va_arg(parameters, intptr_t);
     stack_argument[i] = value;

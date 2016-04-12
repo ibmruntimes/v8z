@@ -1368,10 +1368,13 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   __ LoadP(r5, MemOperand(r7));
   // It will be read from r4+2056.
   __ StoreP(r5, MemOperand(sp, kPointerSize));
+#if !defined(USE_SIMULATOR)
   // Load function pointer from slot 1 of fn desc.
   __ LoadP(r9, MemOperand(r7, kPointerSize));
+#else  
+  __ LoadRR(r9, r7);
+#endif
   Register target = r9;
-
   // TODO(mcornac):
   __ lay(sp, MemOperand(sp, 80));
 #else
@@ -1529,8 +1532,9 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
 
   // Expecting paramters in r2-r6. XPLINK uses r1-r3 for the first three
   // parameters and also places them starting at r4+2112 on the biased stack.
-  __ LoadP(r5, MemOperand(r4, 2048 + (16 * kPointerSize)  + (3 * kPointerSize)));
-  __ LoadP(r6, MemOperand(r4, 2048 + (16 * kPointerSize)  + (4 * kPointerSize)));
+  __ LoadP(r5, MemOperand(r4, 2048 + (19 * kPointerSize));
+  __ LoadP(r6, MemOperand(r4, 2048 + (20 * kPointerSize));
+  
   __ LoadRR(r4, r3);
   __ LoadRR(r3, r2);
   __ LoadRR(r2, r1);
