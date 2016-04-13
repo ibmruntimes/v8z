@@ -850,7 +850,7 @@ Simulator::Simulator(Isolate* isolate) : isolate_(isolate) {
 #else
   registers_[sp] = reinterpret_cast<intptr_t>(stack_) + stack_size - 64;
 #endif
- 
+
   InitializeCoverage();
 
   last_debugger_input_ = NULL;
@@ -1288,7 +1288,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
 #ifdef V8_OS_ZOS
       const int regArgCount = 3;
       int arg0_regnum = 1;
-#else      
+#else
       const int regArgCount = 5;
       int arg0_regnum = 2;
 #endif
@@ -1305,12 +1305,12 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       }
       intptr_t* stack_pointer = reinterpret_cast<intptr_t*>(get_register(sp));
 #ifdef V8_OS_ZOS
-      //Todo(muntasir), need to initialize this properly
+      // Todo(muntasir), need to initialize this properly
       arg[4] = 0xdeadbeef;
       arg[5] = 0xdeadbeef;
-#else      
+#else
       arg[5] = stack_pointer[kCalleeRegisterSaveAreaSize / kPointerSize];
-#endif      
+#endif
       bool fp_call =
          (redirection->type() == ExternalReference::BUILTIN_FP_FP_CALL) ||
          (redirection->type() == ExternalReference::BUILTIN_COMPARE_CALL) ||
@@ -1555,9 +1555,9 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
 #endif
       }
 #ifdef V8_OS_ZOS
-      //Todo(muntasir):In CEntryStub we subtract 2 bytes from the return addr
-      //prior to saving it, fixing this up here, need to investigate why we
-      //are doing this in CEntryStub prior to removing this
+      // Todo(muntasir):In CEntryStub we subtract 2 bytes from the return addr
+      // prior to saving it, fixing this up here, need to investigate why we
+      // are doing this in CEntryStub prior to removing this
       int64_t saved_lr = get_register(r7) + 2;
 #else
       int64_t saved_lr = *reinterpret_cast<intptr_t*>(get_register(sp)
@@ -4527,7 +4527,7 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
     intptr_t value = va_arg(parameters, intptr_t);
     stack_argument[i] = value;
   }
-  
+
   va_end(parameters);
   set_register(sp, entry_stack);
 
