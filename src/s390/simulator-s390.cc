@@ -1288,10 +1288,13 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
 #ifdef V8_OS_ZOS
       const int regArgCount = 3;
       int arg0_regnum = 1;
+      int result_reg = r3;
 #else
       const int regArgCount = 5;
       int arg0_regnum = 2;
+      int result_reg = r2;
 #endif
+
 #if V8_TARGET_ARCH_S390X && !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
       intptr_t result_buffer = 0;
       if (redirection->type() == ExternalReference::BUILTIN_OBJECTPAIR_CALL) {
@@ -1532,7 +1535,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
           if (::v8::internal::FLAG_trace_sim) {
             PrintF("Returned %08" V8PRIxPTR "\n", result);
           }
-          set_register(r2, result);
+          set_register(result_reg, result);
         } else {
           DCHECK(redirection->type() ==
                  ExternalReference::BUILTIN_OBJECTPAIR_CALL);

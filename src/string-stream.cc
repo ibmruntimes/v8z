@@ -299,9 +299,11 @@ bool StringStream::Put(String* str, int start, int end) {
   StringCharacterStream stream(str, &op, start);
   for (int i = start; i < end && stream.HasMore(); i++) {
     uint16_t c = stream.GetNext();
+#ifndef V8_OS_ZOS
     if (c >= 127 || c < 32) {
       c = '?';
     }
+#endif
     if (!Put(static_cast<char>(c))) {
       return false;  // Output was truncated.
     }
