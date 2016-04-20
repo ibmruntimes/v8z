@@ -33,6 +33,21 @@ int JSCallerSavedCode(int n);
 
 
 // Callee-saved registers preserved when switching from C to JavaScript
+/*
+#if V8_OS_ZOS
+const RegList kCalleeSaved =
+  1 << 8 |
+  1 << 9 |
+  1 << 10 |
+  1 << 11 |
+  1 << 12 |
+  1 << 13 |
+  1 << 14 |
+  1 << 15;
+
+const int kNumCalleeSaved = 8;
+#else
+*/
 const RegList kCalleeSaved =
   1 << 6 |   // r6 (argument passing in CEntryStub)
              //    (HandleScope logic in MacroAssembler)
@@ -46,6 +61,7 @@ const RegList kCalleeSaved =
   1 << 13;   // r13 (cp in Javascript)
 
 const int kNumCalleeSaved = 7;
+// #endif
 
 // Number of registers for which space is reserved in safepoints. Must be a
 // multiple of 8.
@@ -61,7 +77,25 @@ const int kNumSafepointSavedRegisters = kNumJSCallerSaved + kNumCalleeSaved;
 // The following constants describe the stack frame linkage area as
 // defined by the ABI.
 
-#if V8_TARGET_ARCH_S390X
+#if V8_OS_ZOS
+// [0] Back chain (r4)
+// [1] Environment (r5)
+// [2] Entry Point (r6)
+// [3] Return Address (r7)
+// [4] GPR 8
+// [5] GPR 9
+// ...
+// [11] GPR 15
+// [12-13] Reserved
+// [14] Debug Area
+// [15] Argument Area Prefix
+// [16-19] Parameters
+const int kNumRequiredStackFrameSlots = 20;
+const int kStackFrameRASlot = 3;
+const int kStackFrameSPSlot = 0;
+const int kStackFrameExtraParamSlot = 19;
+const int kStackPointerBias = 2048;
+#elif V8_TARGET_ARCH_S390X
 // [0] Back Chain
 // [1] Reserved for compiler use
 // [2] GPR 2

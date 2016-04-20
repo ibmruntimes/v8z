@@ -1319,11 +1319,12 @@ void CEntryStub::Generate(MacroAssembler* masm) {
 
   // Store a copy of argc, argv in callee-saved registers for later.
 #ifdef V8_OS_ZOS
-  __ LoadRR(r8, r2);
+  __ LoadRR(r9, r2);
   __ LoadRR(r10, r3);
-  // r2, r8: number of arguments including receiver  (C callee-saved)
+  // r2, r9: number of arguments including receiver  (C callee-saved)
   // r3, r10: pointer to the first argument
-  // r7: pointer to builtin function  (C callee-saved)
+  // r7: pointer to builtin function descriptor (C callee-saved)
+  // r8: pointer to builtin function (C callee-saved)
 #else
   __ LoadRR(r6, r2);
   __ LoadRR(r8, r3);
@@ -1356,30 +1357,26 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   __ LoadRR(r2, r3);
   __ LoadRR(r3, r4);
 
-  // TODO(mcornac): put params on stack.
-  __ lay(sp, MemOperand(sp, -80));
-  __ StoreP(r1, MemOperand(sp, 64));
-  __ StoreP(r2, MemOperand(sp, 68));
-  __ StoreP(r3, MemOperand(sp, 72));
-  __ StoreP(r5, MemOperand(sp, 76));
+  // TODO(mcornac): Allocate an XPLINK stack frame.
+  __ lay(sp, MemOperand(sp, -kNumRequiredStackFrameSlots * kPointerSize));
+  // Put remaining params on stack.
+  __ StoreP(r5, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize));
 
   // TODO(mcornac): fn descriptor.
   // Load environment from slot 0 of fn desc.
   __ LoadP(r5, MemOperand(r7));
-  // It will be read from r4+2056.
+  // It will be read from r4+2048+kPointerSize.
   __ StoreP(r5, MemOperand(sp, kPointerSize));
 #if !defined(USE_SIMULATOR)
   // Load function pointer from slot 1 of fn desc.
-  __ LoadP(r9, MemOperand(r7, kPointerSize));
+  __ LoadP(r8, MemOperand(r7, kPointerSize));
 #else
-  __ LoadRR(r9, r7);
-#endif
-  Register target = r9;
-  // TODO(mcornac):
-  __ lay(sp, MemOperand(sp, 80));
+  __ LoadRR(r8, r7);
+#endif  // USE_SIMULATOR
+  Register target = r8;
 #else
   Register target = r7;
-#endif
+#endif   // V8_OS_ZOS
 
   // To let the GC traverse the return address of the exit frames, we need to
   // know where the return address is. The CEntryStub is unmovable, so
@@ -1390,16 +1387,18 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // instructions so add another 4 to pc to get the return address.
   { Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm);
     Label return_label;
+
 #if V8_OS_ZOS
-    // TODO(mcornac): XPLINK uses r7 for return address.
-     __ larl(r7, &return_label);  // Generate the return addr of call later.
-    // TODO(mcornac): why do I have to -2?
-    __ lay(r7, MemOperand(r7, -2));
-    __ StoreP(r7, MemOperand(sp, -80 + 3 * kPointerSize));
+    Register ra = r7;
 #else
-    __ larl(r14, &return_label);  // Generate the return addr of call later.
-    __ StoreP(r14, MemOperand(sp, kStackFrameRASlot * kPointerSize));
+    Register ra = r14;
 #endif
+    __ larl(ra, &return_label);  // Generate the return addr of call later.
+#if V8_OS_ZOS
+    // TODO(mcornac): why do I have to -2?
+    __ lay(ra, MemOperand(ra, -2));
+#endif
+    __ StoreP(ra, MemOperand(sp, kStackFrameRASlot * kPointerSize));
 
     // zLinux ABI requires caller's frame to have sufficient space for callee
     // preserved regsiter save area.
@@ -1407,8 +1406,8 @@ void CEntryStub::Generate(MacroAssembler* masm) {
     __ positions_recorder()->WriteRecordedPositions();
 
 #if V8_OS_ZOS
-    // TODO(mcornac): Move sp to r4.
-    __ lay(r4, MemOperand(sp, -2048 - 80));
+    // Load the biased stack pointer into r4 before calling native code.
+    __ lay(r4, MemOperand(sp, -kStackPointerBias));
 #endif
 
     __ b(target);
@@ -1417,9 +1416,9 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   }
 
 #if V8_OS_ZOS
-  // TODO(mcornac): r8 and r10 were used to store argc and argv on z/OS instead
-  // of r6 and r8 since r6 was needed for environment pointer.
-  __ LoadRR(r6, r8);
+  // TODO(mcornac): r9 and r10 are used to store argc and argv on z/OS instead
+  // of r6 and r8 since r6 is not callee saved.
+  __ LoadRR(r6, r9);
   __ LoadRR(r8, r10);
 
   // TODO(mcornac): XPLINK returns one value in r3, extended value in r1-r2.
@@ -1526,14 +1525,15 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   // TODO(mcornac): Verify when we start executing generated code on z/OS.
   // XPLINK uses r4 as the stack pointer and has a biased stack.
   // Store r4-r15 in the save area at r4+2048.
-  __ StoreMultipleP(r4, sp, MemOperand(r4, 2048 - 12 * kPointerSize));
+  // __ StoreMultipleP(r4, sp, MemOperand(r4, 2048 - 12 * kPointerSize));
   // Load the real start of the stack frame into sp.
-  __ lay(sp, MemOperand(r4, 2048 - 12 * kPointerSize));
+  // __ lay(sp, MemOperand(r4, 2048 - 12 * kPointerSize));
+  __ lay(sp, MemOperand(r4, 2048));
 
   // Expecting paramters in r2-r6. XPLINK uses r1-r3 for the first three
   // parameters and also places them starting at r4+2112 on the biased stack.
-  __ LoadP(r5, MemOperand(r4, 2048 + (19 * kPointerSize)));
-  __ LoadP(r6, MemOperand(r4, 2048 + (20 * kPointerSize)));
+  // __ LoadP(r5, MemOperand(r4, 2048 + (19 * kPointerSize)));
+  // __ LoadP(r6, MemOperand(r4, 2048 + (20 * kPointerSize)));
 
   __ LoadRR(r4, r3);
   __ LoadRR(r3, r2);
@@ -1560,7 +1560,6 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   __ std(d6, MemOperand(sp, kDoubleSize));
 #endif
 
-#if !V8_OS_ZOS
   // zLinux ABI
   //    Incoming parameters:
   //          r2: code entry
@@ -1573,7 +1572,6 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   //    sp/r15 as well in a single STM/STMG
   __ lay(sp, MemOperand(sp, -10 * kPointerSize));
   __ StoreMultipleP(r6, sp, MemOperand(sp, 0));
-#endif
 
 //  int offset_to_argv = kPointerSize * 22; // matches (22*4) above
 //  __ LoadlW(r7, MemOperand(sp, offset_to_argv));
