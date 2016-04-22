@@ -2604,7 +2604,6 @@ void FullCodeGenerator::EmitCallWithLoadIC(Call* expr) {
     // Push undefined as receiver. This is patched in the method prologue if it
     // is a sloppy mode method.
     __ LoadRoot(r1, Heap::kUndefinedValueRootIndex);
-    __ push(r1);
     PushOperand(r1);
     convert_mode = ConvertReceiverMode::kNullOrUndefined;
   } else {
@@ -2616,7 +2615,6 @@ void FullCodeGenerator::EmitCallWithLoadIC(Call* expr) {
     PrepareForBailoutForId(callee->AsProperty()->LoadId(), TOS_REG);
     // Push the target function under the receiver.
     __ LoadP(r1, MemOperand(sp, 0));
-    __ push(r1);
     PushOperand(r1);
     __ StoreP(r2, MemOperand(sp, kPointerSize));
     convert_mode = ConvertReceiverMode::kNotNullOrUndefined;
