@@ -9337,7 +9337,7 @@ bool String::IsUtf8EqualTo(Vector<const char> str, bool allow_prefix_match) {
       if (Get(i++) != unibrow::Utf16::LeadSurrogate(r)) return false;
       if (Get(i) != unibrow::Utf16::TrailSurrogate(r)) return false;
     } else {
-      if (Get(i) != r) return false;
+      if (ebcdic2ascii(Get(i)) != r) return false;
     }
     utf8_data += cursor;
     remaining_in_str -= cursor;

@@ -1420,6 +1420,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // of r6 and r8 since r6 is not callee saved.
   __ LoadRR(r6, r9);
   __ LoadRR(r8, r10);
+  __ InitializeRootRegister(); // Rematerializing the root address in r10
 
   // TODO(mcornac): XPLINK returns one value in r3, extended value in r1-r2.
   if (result_size_ == 1) {
