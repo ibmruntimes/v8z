@@ -1712,10 +1712,8 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
 #endif
 
   // Reload callee-saved preserved regs, return address reg (r14) and sp
-#if !V8_OS_ZOS
   __ LoadMultipleP(r6, sp, MemOperand(sp, 0));
   __ la(sp, MemOperand(sp, 10 * kPointerSize));
-#endif
 
   // saving floating point registers
 #if V8_HOST_ARCH_S390X
@@ -1738,12 +1736,11 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
 #endif
 
 #if V8_OS_ZOS
-  __ LoadMultipleP(r4, sp, MemOperand(sp, 0));
+  __ lay(r4, MemOperand(sp, -2048));
+  __ LoadRR(r3, r2);
 
-  __ b(r7);
-#else
-  __ b(r14);
 #endif
+  __ b(r14);
 }
 
 

@@ -4528,7 +4528,7 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   int64_t original_stack = get_register(r4);
   // Compute position of stack on entry to generated code.
   // callee save area + debug_area + arg_area_prefix = 16 * kPointerSize
-  intptr_t entry_stack = (original_stack + 2048 -
+  intptr_t entry_stack = (original_stack -
                           ((16 * kPointerSize) +
                           (stack_arg_count * sizeof(intptr_t))));
 #else
@@ -4558,7 +4558,11 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   }
 
   va_end(parameters);
+#if V8_OS_ZOS
+  set_register(r4, entry_stack);
+#else
   set_register(sp, entry_stack);
+#endif
 
   // Prepare to execute the code at entry
 #if ABI_USES_FUNCTION_DESCRIPTORS
@@ -4615,8 +4619,13 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   set_register(r12, r12_val);
   set_register(r13, r13_val);
   // Pop stack passed arguments.
+#if V8_OS_ZOS
+  CHECK_EQ(entry_stack, get_register(r4));
+  set_register(r4, original_stack);
+#else
   CHECK_EQ(entry_stack, get_register(sp));
   set_register(sp, original_stack);
+#endif
 
   // Return value register
   intptr_t result = get_register(r2);
