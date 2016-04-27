@@ -5410,14 +5410,16 @@ void LCodeGen::DoDoubleBits(LDoubleBits* instr) {
   DoubleRegister value_reg = ToDoubleRegister(instr->value());
   Register result_reg = ToRegister(instr->result());
   // TODO(joransiu): Use non-memory version.
-  __ stdy(value_reg, MemOperand(sp, -kDoubleSize));
+  __ lay(sp, MemOperand(sp, -kDoubleSize));
+  __ stdy(value_reg, MemOperand(sp));
   if (instr->hydrogen()->bits() == HDoubleBits::HIGH) {
     __ LoadlW(result_reg,
-              MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
+              MemOperand(sp, Register::kExponentOffset));
   } else {
     __ LoadlW(result_reg,
-              MemOperand(sp, -kDoubleSize + Register::kMantissaOffset));
+              MemOperand(sp, Register::kMantissaOffset));
   }
+  __ la(sp, MemOperand(sp, kDoubleSize));
 }
 
 

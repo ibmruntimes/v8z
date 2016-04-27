@@ -2514,6 +2514,7 @@ void Assembler::mvghi(const MemOperand& opnd1, const Operand& i2) {
 
 // Store Register (64)
 void Assembler::stg(Register src, const MemOperand& dst) {
+  CHECK(!(dst.rb().code() == 15 && dst.offset() < 0));
   rxy_form(STG, src, dst.rx(), dst.rb(), dst.offset());
 }
 
@@ -2711,6 +2712,7 @@ void Assembler::std(DoubleRegister r1, const MemOperand& opnd) {
 
 // Store Double (64)
 void Assembler::stdy(DoubleRegister r1, const MemOperand& opnd) {
+  CHECK(!(opnd.rb().code() == 15 && opnd.offset() < 0));
   rxy_form(STDY, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
@@ -2721,6 +2723,7 @@ void Assembler::ste(DoubleRegister r1, const MemOperand& opnd) {
 
 // Store Float (32)
 void Assembler::stey(DoubleRegister r1, const MemOperand& opnd) {
+  CHECK(!(opnd.rb().code() == 15 && opnd.offset() < 0));
   rxy_form(STEY, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 

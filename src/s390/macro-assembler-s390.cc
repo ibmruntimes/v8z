@@ -199,23 +199,27 @@ void MacroAssembler::Move(DoubleRegister dst, DoubleRegister src) {
 }
 
 void MacroAssembler::InsertDoubleLow(DoubleRegister dst, Register src) {
-  StoreDouble(dst, MemOperand(sp, -kDoubleSize));
+  lay(sp, MemOperand(sp, -kDoubleSize));
+  StoreDouble(dst, MemOperand(sp));
 #if V8_TARGET_LITTLE_ENDIAN
-  StoreW(src, MemOperand(sp, -kDoubleSize));
+  StoreW(src, MemOperand(sp));
 #else
-  StoreW(src, MemOperand(sp, -kDoubleSize / 2));
+  StoreW(src, MemOperand(sp, kDoubleSize / 2));
 #endif
-  ldy(dst, MemOperand(sp, -kDoubleSize));
+  ldy(dst, MemOperand(sp));
+  la(sp, MemOperand(sp, kDoubleSize));
 }
 
 void MacroAssembler::InsertDoubleHigh(DoubleRegister dst, Register src) {
-  StoreDouble(dst, MemOperand(sp, -kDoubleSize));
+  lay(sp, MemOperand(sp, -kDoubleSize));
+  StoreDouble(dst, MemOperand(sp));
 #if V8_TARGET_LITTLE_ENDIAN
-  StoreW(src, MemOperand(sp, -kDoubleSize / 2));
+  StoreW(src, MemOperand(sp, kDoubleSize / 2));
 #else
-  StoreW(src, MemOperand(sp, -kDoubleSize));
+  StoreW(src, MemOperand(sp));
 #endif
-  ldy(dst, MemOperand(sp, -kDoubleSize));
+  ldy(dst, MemOperand(sp));
+  la(sp, MemOperand(sp, kDoubleSize));
 }
 
 void MacroAssembler::MultiPush(RegList regs, Register location) {
@@ -1027,9 +1031,9 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
     ClearRightImm(sp, sp, Operand(3));  // equivalent to &= -8
   }
 
-  StoreP(MemOperand(sp, -kNumRequiredStackFrameSlots * kPointerSize),
-         Operand::Zero(), r0);
   lay(sp, MemOperand(sp, -kNumRequiredStackFrameSlots * kPointerSize));
+  StoreP(MemOperand(sp),
+         Operand::Zero(), r0);
   // Set the exit frame sp value to point just before the return address
   // location.
   lay(r1, MemOperand(sp, kStackFrameSPSlot * kPointerSize));
@@ -2169,8 +2173,10 @@ void MacroAssembler::TestDoubleIsMinusZero(DoubleRegister input,
 }
 
 void MacroAssembler::TestDoubleSign(DoubleRegister input, Register scratch) {
-  stdy(input, MemOperand(sp, -kDoubleSize));
-  LoadlW(scratch, MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
+  lay(sp, MemOperand(sp, -kDoubleSize));
+  stdy(input, MemOperand(sp));
+  LoadlW(scratch, MemOperand(sp, Register::kExponentOffset));
+  la(sp, MemOperand(sp, kDoubleSize));
   Cmp32(scratch, Operand::Zero());
 }
 
@@ -2216,8 +2222,8 @@ void MacroAssembler::TryInt32Floor(Register result, DoubleRegister double_input,
   Label exception;
 
   // Move high word into input_high
-  StoreDouble(double_input, MemOperand(sp, -kDoubleSize));
   lay(sp, MemOperand(sp, -kDoubleSize));
+  StoreDouble(double_input, MemOperand(sp));
   LoadlW(input_high, MemOperand(sp, Register::kExponentOffset));
   la(sp, MemOperand(sp, kDoubleSize));
 
@@ -2283,8 +2289,8 @@ void MacroAssembler::TruncateDoubleToI(Register result,
   // If we fell through then inline version didn't succeed - call stub instead.
   push(r14);
   // Put input on stack.
-  StoreDouble(double_input, MemOperand(sp, -kDoubleSize));
   lay(sp, MemOperand(sp, -kDoubleSize));
+  StoreDouble(double_input, MemOperand(sp));
 
   DoubleToIStub stub(isolate(), sp, result, 0, true, true);
   CallStub(&stub);

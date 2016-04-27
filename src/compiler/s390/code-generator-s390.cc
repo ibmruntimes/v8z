@@ -1222,8 +1222,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
 #endif
     case kS390_Push:
       if (instr->InputAt(0)->IsDoubleRegister()) {
-        __ StoreDouble(i.InputDoubleRegister(0), MemOperand(sp, -kDoubleSize));
         __ lay(sp, MemOperand(sp, -kDoubleSize));
+        __ StoreDouble(i.InputDoubleRegister(0), MemOperand(sp));
         frame_access_state()->IncreaseSPDelta(kDoubleSize / kPointerSize);
       } else {
         __ Push(i.InputRegister(0));
@@ -1233,14 +1233,14 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     case kS390_PushFrame: {
       int num_slots = i.InputInt32(1);
+      __ lay(sp, MemOperand(sp, -num_slots * kPointerSize));
       if (instr->InputAt(0)->IsDoubleRegister()) {
         __ StoreDouble(i.InputDoubleRegister(0),
-                 MemOperand(sp, -num_slots * kPointerSize));
+                 MemOperand(sp));
       } else {
         __ StoreP(i.InputRegister(0),
-                  MemOperand(sp, -num_slots * kPointerSize));
+                  MemOperand(sp));
       }
-      __ lay(sp, MemOperand(sp, -num_slots * kPointerSize));
       break;
     }
     case kS390_StoreToStackSlot: {
@@ -1425,15 +1425,19 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     case kS390_DoubleExtractLowWord32:
      // __ MovDoubleLowToInt(i.OutputRegister(), i.InputDoubleRegister(0));
-      __ stdy(i.InputDoubleRegister(0), MemOperand(sp, -kDoubleSize));
+      __ lay(sp, MemOperand(sp, -kDoubleSize));
+      __ stdy(i.InputDoubleRegister(0), MemOperand(sp));
       __ LoadlW(i.OutputRegister(),
-                  MemOperand(sp, -kDoubleSize + Register::kMantissaOffset));
+                  MemOperand(sp, Register::kMantissaOffset));
+      __ la(sp, MemOperand(sp, kDoubleSize));
       break;
     case kS390_DoubleExtractHighWord32:
      // __ MovDoubleHighToInt(i.OutputRegister(), i.InputDoubleRegister(0));
-      __ stdy(i.InputDoubleRegister(0), MemOperand(sp, -kDoubleSize));
+      __ lay(sp, MemOperand(sp, -kDoubleSize));
+      __ stdy(i.InputDoubleRegister(0), MemOperand(sp));
       __ LoadlW(i.OutputRegister(),
-                 MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
+                 MemOperand(sp, Register::kExponentOffset));
+      __ la(sp, MemOperand(sp, kDoubleSize));
       break;
     case kS390_DoubleInsertLowWord32:
       __ InsertDoubleLow(i.OutputDoubleRegister(), i.InputRegister(1));
@@ -1443,14 +1447,16 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     case kS390_DoubleConstruct:
     // TODO(Tara): Use ldgr
+      __ lay(sp, MemOperand(sp, -kDoubleSize));
     #if V8_TARGET_LITTLE_ENDIAN
-      __ StoreW(i.InputRegister(0), MemOperand(sp, -kDoubleSize / 2));
-      __ StoreW(i.InputRegister(1), MemOperand(sp, -kDoubleSize));
+      __ StoreW(i.InputRegister(0), MemOperand(sp, kDoubleSize / 2));
+      __ StoreW(i.InputRegister(1), MemOperand(sp));
     #else
-      __ StoreW(i.InputRegister(1), MemOperand(sp, -kDoubleSize / 2));
-      __ StoreW(i.InputRegister(0), MemOperand(sp, -kDoubleSize));
+      __ StoreW(i.InputRegister(1), MemOperand(sp, kDoubleSize / 2));
+      __ StoreW(i.InputRegister(0), MemOperand(sp));
     #endif
-      __ ldy(i.OutputDoubleRegister(), MemOperand(sp, -kDoubleSize));
+      __ ldy(i.OutputDoubleRegister(), MemOperand(sp));
+      __ la(sp, MemOperand(sp, kDoubleSize));
       break;
     case kS390_LoadWordS8:
       ASSEMBLE_LOAD_INTEGER(LoadlB);
