@@ -4444,8 +4444,11 @@ void Simulator::CallInternal(byte *entry, int reg_arg_count) {
   // Put down marker for end of simulation. The simulator will stop simulation
   // when the PC reaches this value. By saving the "end simulation" value into
   // the LR the simulation stops when returning to this call point.
+#ifndef V8_OS_ZOS
+  registers_[7] = end_sim_pc;
+#else
   registers_[14] = end_sim_pc;
-
+#endif
 
 
   // Set up the non-volatile registers with a known value. To be able to check
@@ -4492,7 +4495,11 @@ void Simulator::CallInternal(byte *entry, int reg_arg_count) {
 intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   // Remember the values of non-volatile registers.
   int64_t r6_val = get_register(r6);
+#ifndef V8_OS_ZOS
   int64_t r7_val = get_register(r7);
+#else
+  int64_t r14_val = get_register(r14);
+#endif
   int64_t r8_val = get_register(r8);
   int64_t r9_val = get_register(r9);
   int64_t r10_val = get_register(r10);
@@ -4528,9 +4535,7 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   int64_t original_stack = get_register(r4);
   // Compute position of stack on entry to generated code.
   // callee save area + debug_area + arg_area_prefix = 16 * kPointerSize
-  intptr_t entry_stack = (original_stack -
-                          ((16 * kPointerSize) +
-                          (stack_arg_count * sizeof(intptr_t))));
+  intptr_t entry_stack = original_stack;
 #else
   // Remaining arguments passed on stack.
   int64_t original_stack = get_register(sp);
@@ -4546,7 +4551,7 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   // Store remaining arguments on stack, from low to high memory.
 #ifdef V8_OS_ZOS
   intptr_t* stack_argument = reinterpret_cast<intptr_t*>(entry_stack +
-          (16 * kPointerSize));
+          (12 * kPointerSize));
 #else
   intptr_t* stack_argument = reinterpret_cast<intptr_t*>(entry_stack +
     kCalleeRegisterSaveAreaSize);
@@ -4558,11 +4563,7 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   }
 
   va_end(parameters);
-#if V8_OS_ZOS
-  set_register(r4, entry_stack);
-#else
   set_register(sp, entry_stack);
-#endif
 
   // Prepare to execute the code at entry
 #if ABI_USES_FUNCTION_DESCRIPTORS
@@ -4576,8 +4577,11 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   // Put down marker for end of simulation. The simulator will stop simulation
   // when the PC reaches this value. By saving the "end simulation" value into
   // the LR the simulation stops when returning to this call point.
+#ifdef V8_OS_ZOS
+  registers_[7] = end_sim_pc;
+#else
   registers_[14] = end_sim_pc;
-
+#endif
 
 
   // Set up the non-volatile registers with a known value. To be able to check
@@ -4586,7 +4590,12 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   if (reg_arg_count < 5) {
     set_register(r6, callee_saved_value);
   }
+
+#ifndef V8_OS_ZOS
   set_register(r7, callee_saved_value);
+#else
+  set_register(r14, callee_saved_value);
+#endif
   set_register(r8, callee_saved_value);
   set_register(r9, callee_saved_value);
   set_register(r10, callee_saved_value);
@@ -4601,7 +4610,11 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   if (reg_arg_count < 5) {
     CHECK_EQ(callee_saved_value, get_register(r6));
   }
+#ifndef V8_OS_ZOS
   CHECK_EQ(callee_saved_value, get_register(r7));
+#else
+  CHECK_EQ(callee_saved_value, get_register(r14));
+#endif
   CHECK_EQ(callee_saved_value, get_register(r8));
   CHECK_EQ(callee_saved_value, get_register(r9));
   CHECK_EQ(callee_saved_value, get_register(r10));
@@ -4611,7 +4624,11 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
 
   // Restore non-volatile registers with the original value.
   set_register(r6, r6_val);
+#ifndef V8_OS_ZOS
   set_register(r7, r7_val);
+#else
+  set_register(r14, r14_val);
+#endif
   set_register(r8, r8_val);
   set_register(r9, r9_val);
   set_register(r10, r10_val);
@@ -4619,13 +4636,8 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   set_register(r12, r12_val);
   set_register(r13, r13_val);
   // Pop stack passed arguments.
-#if V8_OS_ZOS
-  CHECK_EQ(entry_stack, get_register(r4));
-  set_register(r4, original_stack);
-#else
   CHECK_EQ(entry_stack, get_register(sp));
   set_register(sp, original_stack);
-#endif
 
   // Return value register
   intptr_t result = get_register(r2);

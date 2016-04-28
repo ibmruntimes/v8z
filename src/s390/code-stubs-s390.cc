@@ -1412,7 +1412,6 @@ void CEntryStub::Generate(MacroAssembler* masm) {
 
     __ b(target);
     __ bind(&return_label);
-    // __ la(sp, MemOperand(sp, +kCalleeRegisterSaveAreaSize));
   }
 
 #if V8_OS_ZOS
@@ -1420,7 +1419,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // of r6 and r8 since r6 is not callee saved.
   __ LoadRR(r6, r9);
   __ LoadRR(r8, r10);
-  __ InitializeRootRegister(); // Rematerializing the root address in r10
+  __ InitializeRootRegister();  // Rematerializing the root address in r10
 
   // TODO(mcornac): XPLINK returns one value in r3, extended value in r1-r2.
   if (result_size_ == 1) {
@@ -1523,14 +1522,9 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   ProfileEntryHookStub::MaybeCallEntryHook(masm);
 
 #if V8_OS_ZOS
-  // TODO(mcornac): Verify when we start executing generated code on z/OS.
-  // XPLINK uses r4 as the stack pointer and has a biased stack.
-  // Store r4-r15 in the save area at r4+2048.
-  // __ StoreMultipleP(r4, sp, MemOperand(r4, 2048 - 12 * kPointerSize));
-  // Load the real start of the stack frame into sp.
-  // __ lay(sp, MemOperand(r4, 2048 - 12 * kPointerSize));
-  __ lay(sp, MemOperand(r4, 2048));
-
+  __ LoadRR(sp, r4);
+  __ lay(sp, MemOperand(sp, -12 * kPointerSize));
+  __ StoreMultipleP(r4, sp, MemOperand(sp, 0));
   // Expecting paramters in r2-r6. XPLINK uses r1-r3 for the first three
   // parameters and also places them starting at r4+2112 on the biased stack.
   // __ LoadP(r5, MemOperand(r4, 2048 + (19 * kPointerSize)));
@@ -1561,6 +1555,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   __ std(d6, MemOperand(sp, kDoubleSize));
 #endif
 
+#if !V8_OS_ZOS
   // zLinux ABI
   //    Incoming parameters:
   //          r2: code entry
@@ -1573,6 +1568,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   //    sp/r15 as well in a single STM/STMG
   __ lay(sp, MemOperand(sp, -10 * kPointerSize));
   __ StoreMultipleP(r6, sp, MemOperand(sp, 0));
+#endif
 
 //  int offset_to_argv = kPointerSize * 22; // matches (22*4) above
 //  __ LoadlW(r7, MemOperand(sp, offset_to_argv));
@@ -1712,8 +1708,10 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
 #endif
 
   // Reload callee-saved preserved regs, return address reg (r14) and sp
+#if !V8_OS_ZOS
   __ LoadMultipleP(r6, sp, MemOperand(sp, 0));
   __ la(sp, MemOperand(sp, 10 * kPointerSize));
+#endif
 
   // saving floating point registers
 #if V8_HOST_ARCH_S390X
@@ -1736,11 +1734,13 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
 #endif
 
 #if V8_OS_ZOS
-  __ lay(r4, MemOperand(sp, -2048));
   __ LoadRR(r3, r2);
-
-#endif
+  __ LoadMultipleP(r4, sp, MemOperand(sp, 0));
+  __ lay(sp, MemOperand(sp, 12 * kPointerSize));
+  __ b(r7);
+#else
   __ b(r14);
+#endif
 }
 
 
