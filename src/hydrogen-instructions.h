@@ -1495,13 +1495,18 @@ class HCompareMap V8_FINAL : public HUnaryControlInstruction {
   virtual OStream& PrintDataTo(OStream& os) const V8_OVERRIDE;  // NOLINT
 
   static const int kNoKnownSuccessorIndex = -1;
-  int known_successor_index() const { return known_successor_index_; }
-  void set_known_successor_index(int known_successor_index) {
-    known_successor_index_ = known_successor_index;
+  int known_successor_index() const {
+    return KnownSuccessorIndexField::decode(bit_field_) -
+           kInternalKnownSuccessorOffset;
+  }
+  void set_known_successor_index(int index) {
+    DCHECK(index >= 0 - kInternalKnownSuccessorOffset);
+    bit_field_ = KnownSuccessorIndexField::update(
+        bit_field_, index + kInternalKnownSuccessorOffset);
   }
 
   Unique<Map> map() const { return map_; }
-  bool map_is_stable() const { return map_is_stable_; }
+  bool map_is_stable() const { return MapIsStableField::decode(bit_field_); }
 
   virtual Representation RequiredInputRepresentation(int index) V8_OVERRIDE {
     return Representation::Tagged();
@@ -1518,14 +1523,22 @@ class HCompareMap V8_FINAL : public HUnaryControlInstruction {
               HBasicBlock* true_target = NULL,
               HBasicBlock* false_target = NULL)
       : HUnaryControlInstruction(value, true_target, false_target),
-        known_successor_index_(kNoKnownSuccessorIndex),
-        map_is_stable_(map->is_stable()),
+        bit_field_(KnownSuccessorIndexField::encode(
+                       kNoKnownSuccessorIndex + kInternalKnownSuccessorOffset) |
+                   MapIsStableField::encode(map->is_stable())),
         map_(Unique<Map>::CreateImmovable(map)) {
     set_representation(Representation::Tagged());
   }
 
-  int known_successor_index_ : 31;
-  bool map_is_stable_ : 1;
+  // BitFields can only store unsigned values, so use an offset.
+  // Adding kInternalKnownSuccessorOffset must yield an unsigned value.
+  static const int kInternalKnownSuccessorOffset = 1;
+  STATIC_ASSERT(kNoKnownSuccessorIndex + kInternalKnownSuccessorOffset >= 0);
+
+  class KnownSuccessorIndexField : public BitField<int, 0, 31> {};
+  class MapIsStableField : public BitField<bool, 31, 1> {};
+
+  uint32_t bit_field_;
   Unique<Map> map_;
 };
 
