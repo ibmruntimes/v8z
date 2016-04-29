@@ -337,7 +337,9 @@ class SimulatorHelper {
     state->fp =
         reinterpret_cast<Address>(simulator_->get_register(Simulator::fp));
 #elif V8_TARGET_ARCH_S390
-    state->pc = reinterpret_cast<Address>(simulator_->get_pc());
+    if (!simulator_->has_bad_pc()) {
+      state->pc = reinterpret_cast<Address>(simulator_->get_pc());
+    }
     state->sp = reinterpret_cast<Address>(simulator_->get_register(
         Simulator::sp));
     state->fp = reinterpret_cast<Address>(simulator_->get_register(
