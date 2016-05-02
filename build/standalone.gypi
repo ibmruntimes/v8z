@@ -232,7 +232,7 @@
       'target_defaults': {
         'cflags': [ '-qdebug=nohook','-g','-Wc,expo','-q64','-qnortti',
                     '-qlanglvl=extended',
-                    '-qenum=4',
+                    '-qenum=4', '-qbitfield=signed',
                     '-qasm',
                     '-qasmlib=sys1.maclib:sys1.modgen',
                     '-D_ISOC99_SOURCE','-D_UNIX03_SOURCE',
