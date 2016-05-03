@@ -325,18 +325,14 @@ void S390Debugger::Debug() {
             }
           } else {
             // Otherwise treat it as the mnemonic of the opcode to stop at.
-            char bufferCopy[256];
+            char mnemonic[256];
             while (!sim_->has_bad_pc()) {
               dasm.InstructionDecode(buffer,
                                     reinterpret_cast<byte*>(sim_->get_pc()));
-              snprintf(bufferCopy, sizeof(bufferCopy), buffer.start());
-              char* mnemonic = strtok(bufferCopy, "\t ");
-              bool match = !strcmp(arg1, mnemonic);
-              while (mnemonic != NULL && !match) {
-                mnemonic = strtok(NULL, "\t ");
-                match = !strcmp(arg1, mnemonic);
-              }
-              if (match) break;
+              char* mnemonicStart = buffer.start();
+              while (*mnemonicStart != 0 && *mnemonicStart != ' ') mnemonicStart++;
+              SScanF(mnemonicStart, "%s", mnemonic);
+              if (!strcmp(arg1, mnemonic)) break;
 
               PrintF("  0x%08" V8PRIxPTR "  %s\n", sim_->get_pc(),
                     buffer.start());
