@@ -802,7 +802,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     case kS390_ShiftLeft32:
       if (HasRegisterInput(instr, 1)) {
-        if (i.OutputRegister().is(i.InputRegister(1))) {
+        if (i.OutputRegister().is(i.InputRegister(1)) &&
+            !CpuFeatures::IsSupported(DISTINCT_OPS)) {
           __ LoadRR(kScratchReg, i.InputRegister(1));
           __ ShiftLeft(i.OutputRegister(), i.InputRegister(0), kScratchReg);
         } else {
@@ -811,9 +812,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       } else {
         ASSEMBLE_BINOP(ShiftLeft, ShiftLeft);
       }
-#if V8_TARGET_ARCH_S390X
-      __ lgfr(i.OutputRegister(0), i.OutputRegister(0));
-#endif
+      __ LoadlW(i.OutputRegister(0), i.OutputRegister(0));
       break;
 #if V8_TARGET_ARCH_S390X
     case kS390_ShiftLeft64:
@@ -822,18 +821,17 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
 #endif
     case kS390_ShiftRight32:
       if (HasRegisterInput(instr, 1)) {
-          if (i.OutputRegister().is(i.InputRegister(1))) {
-            __ LoadRR(kScratchReg, i.InputRegister(1));
-            __ ShiftRight(i.OutputRegister(), i.InputRegister(0), kScratchReg);
-          } else {
-            ASSEMBLE_BINOP(ShiftRight, ShiftRight);
-          }
+        if (i.OutputRegister().is(i.InputRegister(1)) &&
+            !CpuFeatures::IsSupported(DISTINCT_OPS)) {
+          __ LoadRR(kScratchReg, i.InputRegister(1));
+          __ ShiftRight(i.OutputRegister(), i.InputRegister(0), kScratchReg);
+        } else {
+          ASSEMBLE_BINOP(ShiftRight, ShiftRight);
+        }
       } else {
         ASSEMBLE_BINOP(ShiftRight, ShiftRight);
       }
-#if V8_TARGET_ARCH_S390X
-      __ lgfr(i.OutputRegister(0), i.OutputRegister(0));
-#endif
+      __ LoadlW(i.OutputRegister(0), i.OutputRegister(0));
       break;
 #if V8_TARGET_ARCH_S390X
     case kS390_ShiftRight64:
@@ -842,7 +840,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
 #endif
     case kS390_ShiftRightAlg32:
       if (HasRegisterInput(instr, 1)) {
-        if (i.OutputRegister().is(i.InputRegister(1))) {
+        if (i.OutputRegister().is(i.InputRegister(1)) &&
+            !CpuFeatures::IsSupported(DISTINCT_OPS)) {
           __ LoadRR(kScratchReg, i.InputRegister(1));
           __ ShiftRightArith(i.OutputRegister(), i.InputRegister(0),
               kScratchReg);
@@ -852,6 +851,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       } else {
         ASSEMBLE_BINOP(ShiftRightArith, ShiftRightArith);
       }
+      __ LoadlW(i.OutputRegister(), i.OutputRegister());
       break;
 #if V8_TARGET_ARCH_S390X
     case kS390_ShiftRightAlg64:
@@ -1007,12 +1007,12 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     case kS390_MulHigh32:
       __ LoadRR(r1, i.InputRegister(0));
       __ mr_z(r0, i.InputRegister(1));
-      __ LoadRR(i.OutputRegister(), r0);
+      __ LoadW(i.OutputRegister(), r0);
       break;
     case kS390_MulHighU32:
       __ LoadRR(r1, i.InputRegister(0));
       __ mlr(r0, i.InputRegister(1));
-      __ LoadRR(i.OutputRegister(), r0);
+      __ LoadW(i.OutputRegister(), r0);
       break;
     case kS390_MulFloat:
       // Ensure we don't clobber right
@@ -1045,7 +1045,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ LoadRR(r0, i.InputRegister(0));
       __ srda(r0, Operand(32));
       __ dr(r0, i.InputRegister(1));
-      __ ltr(i.OutputRegister(), r1);
+      __ LoadAndTestP_ExtendSrc(i.OutputRegister(),
+                                r1);  // Copy R1: Quotient to output
       break;
 #if V8_TARGET_ARCH_S390X
     case kS390_DivU64:
@@ -1059,7 +1060,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ LoadRR(r0, i.InputRegister(0));
       __ srdl(r0, Operand(32));
       __ dlr(r0, i.InputRegister(1));  // R0:R1: Dividend
-      __ ltr(i.OutputRegister(), r1);  // Copy R1: Quotient to output
+      __ LoadlW(i.OutputRegister(), r1);  // Copy R1: Quotient to output
+      __ LoadAndTestP_ExtendSrc(r1, r1);
       break;
 
     case kS390_DivFloat:
@@ -1206,10 +1208,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       } else {
         __ AndP(r0, i.InputRegister(0), i.InputImmediate(1));
       }
-#if V8_TARGET_ARCH_S390X
-      __ lgfr(r0, r0);
-      __ LoadAndTestP(r0, r0);
-#endif
+      __ LoadAndTestP_ExtendSrc(r0, r0);
       break;
 #if V8_TARGET_ARCH_S390X
     case kS390_Tst64:
