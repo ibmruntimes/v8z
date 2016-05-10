@@ -1357,16 +1357,9 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   __ LoadRR(r2, r3);
   __ LoadRR(r3, r4);
 
-  // TODO(mcornac): Allocate an XPLINK stack frame.
-  __ lay(sp, MemOperand(sp, -kNumRequiredStackFrameSlots * kPointerSize));
-  // Put remaining params on stack.
-  __ StoreP(r5, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize));
-
   // TODO(mcornac): fn descriptor.
   // Load environment from slot 0 of fn desc.
   __ LoadP(r5, MemOperand(r7));
-  // It will be read from r4+2048+kPointerSize.
-  __ StoreP(r5, MemOperand(sp, kPointerSize));
 #if !defined(USE_SIMULATOR)
   // Load function pointer from slot 1 of fn desc.
   __ LoadP(r8, MemOperand(r7, kPointerSize));
@@ -1397,9 +1390,10 @@ void CEntryStub::Generate(MacroAssembler* masm) {
 #if V8_OS_ZOS
     // TODO(mcornac): why do I have to -2?
     __ lay(ra, MemOperand(ra, -2));
-#endif
+    __ StoreP(ra, MemOperand(sp, -1 * kPCOnStackSize));
+#else
     __ StoreP(ra, MemOperand(sp, kStackFrameRASlot * kPointerSize));
-
+#endif
     // zLinux ABI requires caller's frame to have sufficient space for callee
     // preserved regsiter save area.
     // __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));

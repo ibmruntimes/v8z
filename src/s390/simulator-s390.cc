@@ -330,7 +330,8 @@ void S390Debugger::Debug() {
               dasm.InstructionDecode(buffer,
                                     reinterpret_cast<byte*>(sim_->get_pc()));
               char* mnemonicStart = buffer.start();
-              while (*mnemonicStart != 0 && *mnemonicStart != ' ') mnemonicStart++;
+              while (*mnemonicStart != 0 && *mnemonicStart != ' ')
+                mnemonicStart++;
               SScanF(mnemonicStart, "%s", mnemonic);
               if (!strcmp(arg1, mnemonic)) break;
 
