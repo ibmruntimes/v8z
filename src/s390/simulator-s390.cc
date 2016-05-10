@@ -2392,12 +2392,14 @@ bool Simulator::DecodeFourByte(Instruction* instr) {
       break;
     }
     case TRAP4: {
+#ifndef V8_OS_ZOS
       // whack the space of the caller allocated stack
       int64_t sp_addr = get_register(sp);
       for (int i = 0; i < kCalleeRegisterSaveAreaSize / kPointerSize; ++i) {
         // we dont want to whack the RA (r14)
         if (i != 14) (reinterpret_cast<intptr_t*>(sp_addr))[i] = 0xdeadbabe;
       }
+#endif
       SoftwareInterrupt(instr);
       break;
     }
