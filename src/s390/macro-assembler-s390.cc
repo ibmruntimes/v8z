@@ -877,6 +877,9 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   lay(r1, MemOperand(sp, kStackFrameSPSlot * kPointerSize));
   StoreP(r1, MemOperand(fp, ExitFrameConstants::kSPOffset));
 #else
+  // On zLinux the callee would push the fp to the stack but with XPLINK the
+  // callee buys its own save area so we must do it here.
+  StoreP(fp, MemOperand(fp, ExitFrameConstants::kCallerFPOffset));
   StoreP(sp, MemOperand(fp, ExitFrameConstants::kSPOffset));
 #endif
 }
