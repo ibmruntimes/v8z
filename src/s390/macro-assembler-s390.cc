@@ -775,11 +775,11 @@ int MacroAssembler::LeaveFrame(StackFrame::Type type,
   // Drop the execution stack down to the frame pointer and restore
   // the caller frame pointer and return address.
   LoadP(r14, MemOperand(fp, StandardFrameConstants::kCallerPCOffset));
-  LoadP(ip, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
-  int frame_ends = pc_offset();
-  lay(sp, MemOperand(fp,
+  lay(r1, MemOperand(fp,
       StandardFrameConstants::kCallerSPOffset + stack_adjustment));
-  LoadRR(fp, ip);
+  LoadP(fp, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
+  LoadRR(sp, r1);
+  int frame_ends = pc_offset();
   return frame_ends;
 }
 
