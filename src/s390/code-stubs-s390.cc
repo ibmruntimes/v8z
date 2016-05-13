@@ -1390,7 +1390,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
 #if V8_OS_ZOS
     // TODO(mcornac): why do I have to -2?
     __ lay(ra, MemOperand(ra, -2));
-    __ StoreP(ra, MemOperand(sp, -1 * kPCOnStackSize));
+    __ StoreP(ra, MemOperand(sp, kStackFrameRASlot * kPointerSize));
 #else
     __ StoreP(ra, MemOperand(sp, kStackFrameRASlot * kPointerSize));
 #endif
@@ -1400,8 +1400,11 @@ void CEntryStub::Generate(MacroAssembler* masm) {
     __ positions_recorder()->WriteRecordedPositions();
 
 #if V8_OS_ZOS
-    // Load the biased stack pointer into r4 before calling native code.
-    __ lay(r4, MemOperand(sp, -kStackPointerBias));
+    // Load the biased stack pointer into r4 before calling native code
+    // Stack Pointer Bias = Xplink Bias(2048) + SaveArea(12 ptrs +
+    // Reserved(2ptrs) + Debug Area(1ptr) +
+    // + Arg Area Prefix(1ptr) + Argument Area(2 ptrs).
+     __ lay(r4, MemOperand(sp, -(kStackPointerBias + 18*kPointerSize)));
 #endif
 
     __ b(target);

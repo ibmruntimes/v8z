@@ -76,22 +76,13 @@ const int kNumSafepointSavedRegisters = kNumJSCallerSaved + kNumCalleeSaved;
 // defined by the ABI.
 
 #if V8_OS_ZOS
-// [0] Back chain (r4)
-// [1] Environment (r5)
-// [2] Entry Point (r6)
-// [3] Return Address (r7)
-// [4] GPR 8
-// [5] GPR 9
-// ...
-// [11] GPR 15
-// [12-13] Reserved
-// [14] Debug Area
-// [15] Argument Area Prefix
-// [16-19] Parameters
-const int kNumRequiredStackFrameSlots = 20;
-const int kStackFrameRASlot = 3;
-const int kStackFrameSPSlot = 0;
-const int kStackFrameExtraParamSlot = 19;
+// [0] Return Address
+// [1] SP Slot
+// [2] Extra Param Slot
+const int kNumRequiredStackFrameSlots = 3;
+const int kStackFrameSPSlot = 1;
+const int kStackFrameRASlot = kStackFrameSPSlot-1;
+const int kStackFrameExtraParamSlot = 3;
 const int kStackPointerBias = 2048;
 #elif V8_TARGET_ARCH_S390X
 // [0] Back Chain

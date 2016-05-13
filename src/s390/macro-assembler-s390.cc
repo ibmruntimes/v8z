@@ -868,7 +868,6 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
     DCHECK(frame_alignment == 8);
     ClearRightImm(sp, sp, Operand(3));  // equivalent to &= -8
   }
-#ifndef V8_OS_ZOS
   StoreP(MemOperand(sp, -kNumRequiredStackFrameSlots * kPointerSize),
          Operand::Zero(), r0);
   lay(sp, MemOperand(sp, -kNumRequiredStackFrameSlots * kPointerSize));
@@ -876,9 +875,6 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   // location.
   lay(r1, MemOperand(sp, kStackFrameSPSlot * kPointerSize));
   StoreP(r1, MemOperand(fp, ExitFrameConstants::kSPOffset));
-#else
-  StoreP(sp, MemOperand(fp, ExitFrameConstants::kSPOffset));
-#endif
 }
 
 
