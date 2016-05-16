@@ -120,6 +120,12 @@ struct Register {
   static int ToAllocationIndex(Register reg) {
     int index;
     int code = reg.code();
+#ifdef V8_OS_ZOS
+    if (code == 15) {
+      return 2;
+    }
+    DCHECK(code != 4);
+#endif
     if (code == kAllocatableContext) {
       // Context is the last index
       index = NumAllocatableRegisters() - 1;
@@ -133,9 +139,13 @@ struct Register {
 
   static Register FromAllocationIndex(int index) {
     DCHECK(index >= 0 && index < kMaxNumAllocatableRegisters);
-    return index == kMaxNumAllocatableRegisters - 1 ?
-      from_code(kAllocatableContext) :  // Last index is always 'cp' register.
-      from_code(index + kAllocatableRangeBegin);  // r0-r1 are skipped
+    // Last index is always 'cp' register.
+    if (index == kMaxNumAllocatableRegisters - 1)
+      return from_code(kAllocatableContext);
+#if V8_OS_ZOS
+    if (index == 2) return from_code(15);
+#endif
+    return from_code(index + kAllocatableRangeBegin);  // r0-r1 are skipped
   }
 
   static const char* AllocationIndexToString(int index) {
@@ -182,7 +192,11 @@ const int kRegister_r0_Code  =  0;  // general scratch
 const int kRegister_r1_Code  =  1;
 const int kRegister_r2_Code  =  2;
 const int kRegister_r3_Code  =  3;
+#if V8_OS_ZOS
+const int kRegister_r4_Code  =  15;
+#else
 const int kRegister_r4_Code  =  4;
+#endif
 const int kRegister_r5_Code  =  5;
 const int kRegister_r6_Code  =  6;
 const int kRegister_r7_Code  =  7;
@@ -193,7 +207,11 @@ const int kRegister_fp_Code  =  11;  // frame pointer
 const int kRegister_r12_Code  =  12;  // ip (general scratch)
 const int kRegister_r13_Code  =  13;
 const int kRegister_r14_Code  =  14;
+#if V8_OS_ZOS
+const int kRegister_sp_Code  =  4;  // stack pointer
+#else
 const int kRegister_sp_Code  =  15;  // stack pointer
+#endif
 
 const Register no_reg = { kRegister_no_reg_Code };
 
