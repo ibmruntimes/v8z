@@ -1349,7 +1349,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       // TODO(mcornac): If this is necessary we must find the right slot.
       // Pushing to slot 0 overwrites important data on stack.
 #ifdef V8_OS_ZOS
-      intptr_t* ra_slot = reinterpret_cast<intptr_t*>(get_register(r4)
+      intptr_t* ra_slot = reinterpret_cast<intptr_t*>(get_register(sp)
          + 2048 + 3 * kPointerSize);
       *ra_slot = get_register(r7);
 #else
