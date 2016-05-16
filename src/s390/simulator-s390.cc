@@ -868,11 +868,7 @@ Simulator::Simulator(Isolate* isolate) : isolate_(isolate) {
 // The sp is initialized to point to the bottom (high address) of the
 // allocated stack area. To be safe in potential stack underflows we leave
 // some buffer below.
-#ifdef V8_OS_ZOS
-  registers_[r4] = reinterpret_cast<intptr_t>(stack_) + stack_size - 64;
-#else
   registers_[sp] = reinterpret_cast<intptr_t>(stack_) + stack_size - 64;
-#endif
 
   InitializeCoverage();
 
@@ -4588,17 +4584,15 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
     set_register(i + reg_arg_start, value);
   }
 
-#ifdef V8_OS_ZOS
   // Remaining arguments passed on stack.
-  int64_t original_stack = get_register(r4);
+  int64_t original_stack = get_register(sp);
+#ifdef V8_OS_ZOS
   // Compute position of stack on entry to generated code.
   // callee save area + debug_area + arg_area_prefix = 16 * kPointerSize
   intptr_t entry_stack = original_stack -
                          (19 * kPointerSize +
                           stack_arg_count * sizeof(intptr_t));
 #else
-  // Remaining arguments passed on stack.
-  int64_t original_stack = get_register(sp);
   // Compute position of stack on entry to generated code.
   intptr_t entry_stack = (original_stack -
                           (kCalleeRegisterSaveAreaSize +
