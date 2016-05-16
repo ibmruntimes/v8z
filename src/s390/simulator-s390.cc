@@ -1304,7 +1304,11 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       // Check if stack is aligned. Error if not aligned is reported below to
       // include information on the function called.
       bool stack_aligned =
+#ifdef V8_OS_ZOS
+          (get_register(r4)
+#else
           (get_register(sp)
+#endif
            & (::v8::internal::FLAG_sim_stack_alignment - 1)) == 0;
       Redirection* redirection = Redirection::FromSwiInstruction(instr);
       const int kArgCount = 6;
@@ -1346,8 +1350,10 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
          (redirection->type() == ExternalReference::BUILTIN_FP_INT_CALL);
 
       // Place the return address on the stack, making the call GC safe.
+#ifndef V8_OS_ZOS  // Different frame on z/OS.
       *reinterpret_cast<intptr_t*>(get_register(sp)
           + kStackFrameRASlot * kPointerSize) = get_register(r14);
+#endif
 
       intptr_t external =
           reinterpret_cast<intptr_t>(redirection->external_function());

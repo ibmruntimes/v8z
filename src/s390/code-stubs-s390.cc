@@ -1309,8 +1309,8 @@ void CEntryStub::Generate(MacroAssembler* masm) {
     arg_stack_space += 2;
   }
 #endif
-#if V8_TARGET_ARCH_S390X
 
+#if V8_TARGET_ARCH_S390X
   // 64-bit linux pass Argument object by reference not value
   arg_stack_space += 2;
 #endif
@@ -1403,8 +1403,8 @@ void CEntryStub::Generate(MacroAssembler* masm) {
     // Load the biased stack pointer into r4 before calling native code
     // Stack Pointer Bias = Xplink Bias(2048) + SaveArea(12 ptrs +
     // Reserved(2ptrs) + Debug Area(1ptr) +
-    // + Arg Area Prefix(1ptr) + Argument Area(3 ptrs).
-     __ lay(r4, MemOperand(sp, -(kStackPointerBias + 19*kPointerSize)));
+    // Arg Area Prefix(1ptr) + Argument Area(3 ptrs).
+    __ lay(sp, MemOperand(sp, - 19 * kPointerSize));
 #endif
 
     __ b(target);
@@ -1519,9 +1519,8 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   ProfileEntryHookStub::MaybeCallEntryHook(masm);
 
 #if V8_OS_ZOS
-  __ LoadRR(sp, r4);
   __ lay(sp, MemOperand(sp, -12 * kPointerSize));
-  __ StoreMultipleP(r4, sp, MemOperand(sp, 0));
+  __ StoreMultipleP(sp, r4, MemOperand(sp, 0));
   // Expecting paramters in r2-r6. XPLINK uses r1-r3 for the first three
   // parameters and also places them starting at r4+2112 on the biased stack.
   // Explicitly load argc and argv from stack back into r5/r6 respectively.
@@ -1733,7 +1732,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
 
 #if V8_OS_ZOS
   __ LoadRR(r3, r2);
-  __ LoadMultipleP(r4, sp, MemOperand(sp, 0));
+  __ LoadMultipleP(sp, r4, MemOperand(sp, 0));
   __ lay(sp, MemOperand(sp, 12 * kPointerSize));
   __ b(r7);
 #else
