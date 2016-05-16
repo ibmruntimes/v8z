@@ -22,7 +22,11 @@ const RegList kJSCallerSaved =
   1 << 1  |  // r1
   1 << 2  |  // r2  a1
   1 << 3  |  // r3  a2
+#if V8_OS_ZOS
+  1 << 15 |  // r15 and r4 trade places on z/OS.
+#else
   1 << 4  |  // r4  a3
+#endif
   1 << 5;    // r5  a4
 
 const int kNumJSCallerSaved = 5;
