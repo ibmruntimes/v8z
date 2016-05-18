@@ -99,6 +99,7 @@ const int kNumRequiredStackFrameSlots = 20;
 const int kStackFrameRASlot = 14;
 const int kStackFrameSPSlot = 15;
 const int kStackFrameExtraParamSlot = 20;
+const int kStackPointerBias = 0;
 #else
 // [0] Back Chain
 // [1] Reserved for compiler use
@@ -114,6 +115,7 @@ const int kNumRequiredStackFrameSlots = 24;
 const int kStackFrameRASlot = 14;
 const int kStackFrameSPSlot = 15;
 const int kStackFrameExtraParamSlot = 24;
+const int kStackPointerBias = 0;
 #endif
 
 // zLinux ABI requires caller frames to include sufficient space for

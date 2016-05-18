@@ -3404,6 +3404,11 @@ static const int kRegisterPassedArguments = 5;
 int MacroAssembler::CalculateStackPassedWords(int num_reg_arguments,
                                               int num_double_arguments) {
   int stack_passed_words = 0;
+#ifdef V8_OS_ZOS
+  //XPLINK Linkage reserves space for arguments on the stack
+  //even when passing them via registers
+  stack_passed_words = num_reg_arguments + num_double_arguments;
+#else
   if (num_double_arguments > DoubleRegister::kNumRegisters) {
       stack_passed_words +=
         2 * (num_double_arguments - DoubleRegister::kNumRegisters);
@@ -3412,6 +3417,7 @@ int MacroAssembler::CalculateStackPassedWords(int num_reg_arguments,
   if (num_reg_arguments > kRegisterPassedArguments) {
     stack_passed_words += num_reg_arguments - kRegisterPassedArguments;
   }
+#endif  
   return stack_passed_words;
 }
 
@@ -3462,19 +3468,26 @@ void MacroAssembler::PrepareCallCFunction(int num_reg_arguments,
   int frame_alignment = ActivationFrameAlignment();
   int stack_passed_arguments = CalculateStackPassedWords(
       num_reg_arguments, num_double_arguments);
+#ifdef V8_OS_ZOS
+  Register c_sp   = r4; //stack pointer in C/C++
+  int stack_space = 16; //save area + debug area + reserved space
+  LoadRR(c_sp , sp);
+#else
   int stack_space = kNumRequiredStackFrameSlots;
+  Register c_sp   = sp;  
+#endif
   if (frame_alignment > kPointerSize) {
     // Make stack end at alignment and make room for stack arguments
     // -- preserving original value of sp.
-    LoadRR(scratch, sp);
-    lay(sp, MemOperand(sp, -(stack_passed_arguments + 1) * kPointerSize));
+    LoadRR(scratch, c_sp);
+    lay(c_sp, MemOperand(c_sp, -(stack_passed_arguments + 1) * kPointerSize));
     DCHECK(IsPowerOf2(frame_alignment));
-    ClearRightImm(sp, sp, Operand(WhichPowerOf2(frame_alignment)));
-    StoreP(scratch, MemOperand(sp, (stack_passed_arguments) * kPointerSize));
+    ClearRightImm(c_sp, c_sp, Operand(WhichPowerOf2(frame_alignment)));
+    StoreP(scratch, MemOperand(c_sp, (stack_passed_arguments) * kPointerSize));
   } else {
     stack_space += stack_passed_arguments;
   }
-  lay(sp, MemOperand(sp, -(stack_space) * kPointerSize));
+  lay(c_sp, MemOperand(c_sp, -((stack_space * kPointerSize) + kStackPointerBias)));
 }
 
 
@@ -3542,11 +3555,10 @@ void MacroAssembler::CallCFunctionHelper(Register function,
   // allow preemption, so the return address in the link register
   // stays correct.
 #if ABI_USES_FUNCTION_DESCRIPTORS && !defined(USE_SIMULATOR)
-  // AIX uses a function descriptor. When calling C code be aware
+  // z/OS uses a function descriptor. When calling C code be aware
   // of this descriptor and pick up values from it
-  // LoadP(ToRegister(ABI_TOC_REGISTER), MemOperand(function, kPointerSize));
-  LoadP(ip, MemOperand(function, kPointerSize));
-  Register dest = ip;
+  LoadMultipleP(r5, r6, MemOperand(function,0));
+  Register dest = r6;
 #elif ABI_TOC_ADDRESSABILITY_VIA_IP
   Move(ip, function);
   Register dest = ip;
@@ -3555,7 +3567,9 @@ void MacroAssembler::CallCFunctionHelper(Register function,
 #endif
 
   Call(dest);
-
+  //Javascript stack pointer will be restored by the callee's
+  //epilogue
+#ifndef V8_OS_ZOS
   int stack_passed_arguments = CalculateStackPassedWords(
       num_reg_arguments, num_double_arguments);
   int stack_space = kNumRequiredStackFrameSlots + stack_passed_arguments;
@@ -3565,6 +3579,7 @@ void MacroAssembler::CallCFunctionHelper(Register function,
   } else {
     la(sp, MemOperand(sp, stack_space * kPointerSize));
   }
+#endif
 }
 
 
