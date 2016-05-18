@@ -9,7 +9,6 @@ Do this part on a Linux on Z machine since there is no git or svn on z/OS.
 git clone https://github.com/ibmruntimes/v8z
 cd v8z
 git checkout 3.28-zos
-make dependencies
 cd ..
 scp -r v8z user@machine:path
 ```
@@ -17,6 +16,9 @@ Do this part on the z/OS machine where you copied the repo. Ensure that xlc 2.2,
 Make 4.1 and Python 2.7 are set up correctly.
 ```
 export GYP_DEFINES="OS=os390 target_arch=s390x v8_target_arch=s390x"
+export CXX=xlc
+export CXX_host=$CXX
+export LINK=$CXX
 cd v8z
 ```
 
