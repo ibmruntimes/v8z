@@ -226,6 +226,24 @@ cmd_solink_module = $(LINK.$(TOOLSET)) -shared $(GYP_LDFLAGS) $(LDFLAGS.$(TOOLSE
 """
 
 
+LINK_COMMANDS_ZOS = """\
+quiet_cmd_alink = AR($(TOOLSET)) $@
+cmd_alink = rm -f $@ && $(AR.$(TOOLSET)) crs $@ $(filter %.o,$^)
+
+quiet_cmd_alink_thin = AR($(TOOLSET)) $@
+cmd_alink_thin = rm -f $@ && $(AR.$(TOOLSET)) crsT $@ $(filter %.o,$^)
+
+quiet_cmd_link = LINK($(TOOLSET)) $@
+cmd_link = $(LINK.$(TOOLSET)) $(GYP_LDFLAGS) $(LDFLAGS.$(TOOLSET)) -o $@ $(LD_INPUTS) $(LIBS)
+
+quiet_cmd_solink = SOLINK($(TOOLSET)) $@
+cmd_solink = $(LINK.$(TOOLSET)) -shared $(GYP_LDFLAGS) $(LDFLAGS.$(TOOLSET)) -Wl,-soname=$(@F) -o $@ -Wl,--whole-a
+
+quiet_cmd_solink_module = SOLINK_MODULE($(TOOLSET)) $@
+cmd_solink_module = $(LINK.$(TOOLSET)) -shared $(GYP_LDFLAGS) $(LDFLAGS.$(TOOLSET)) -Wl,-soname=$(@F) -o $@ -Wl,--
+"""
+
+
 # Header of toplevel Makefile.
 # This should go into the build tree, but it's easier to keep it here for now.
 SHARED_HEADER = ("""\
@@ -317,7 +335,12 @@ dirx = $(call unreplace_spaces,$(dir $(call replace_spaces,$1)))
 # We write to a dep file on the side first and then rename at the end
 # so we can't end up with a broken dep file.
 depfile = $(depsdir)/$(call replace_spaces,$@).d
-DEPFLAGS = -MMD -MF $(depfile).raw
+
+""" + \
+("DEPFLAGS = -qmakedep -MF $(depfile).raw" if \
+sys.platform.startswith("os390") else \
+"DEPFLAGS = -MMD -MF $(depfile).raw") \
++ """ \
 
 # We have to fixup the deps output in a few ways.
 # (1) the file output should mention the proper .o file.
@@ -349,7 +372,11 @@ sed -e "s|^$(notdir $@)|$@|" $(depfile).raw >> $(depfile)
 # We remove slashes and replace spaces with new lines;
 # remove blank lines;
 # delete the first line and append a colon to the remaining lines.
-sed -e 's|\\||' -e 'y| |\n|' $(depfile).raw |\
+""" +
+("sed -e 's|\\\\||' -e 'y| |\\|' $(depfile).raw |\\" \
+if sys.platform.startswith("os390") \
+else "sed -e 's|\\\\||' -e 'y| |\\n|' $(depfile).raw |\\") +
+r"""
   grep -v '^$$'                             |\
   sed -e 1d -e 's|$$|:|'                     \
     >> $(depfile)
@@ -2018,6 +2045,10 @@ def GenerateOutput(target_list, target_dicts, data, params):
         'link_commands': LINK_COMMANDS_AIX,
         'flock': './gyp-flock-tool flock',
         'flock_index': 2,
+    })
+  elif sys.platform.startswith('os390'):
+    header_params.update({
+        'link_commands': LINK_COMMANDS_ZOS
     })
 
   header_params.update({
