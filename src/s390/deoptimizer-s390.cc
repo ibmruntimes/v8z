@@ -192,6 +192,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   __ LoadImmP(r3, Operand(type()));  // bailout type,
 #endif
 
+  __ mov(r7, Operand(ExternalReference::isolate_address(isolate())));
 #ifdef V8_OS_ZOS
   // XPLINK linkage requires the remaining args
   // to be passed on the stack
@@ -201,7 +202,6 @@ void Deoptimizer::EntryGenerator::Generate() {
   // r5: code address or 0 already loaded.
   // r6: Fp-to-sp delta.
   // Parm6: isolate is passed on the stack.
-  __ mov(r7, Operand(ExternalReference::isolate_address(isolate())));
   __ StoreP(r7, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize));
 #endif
 
