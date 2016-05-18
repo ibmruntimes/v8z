@@ -63,6 +63,7 @@
 # include <sched.h>  // NOLINT
 // Declares vsnprintf().  This header is not available on Windows.
 # include <strings.h>  // NOLINT
+# undef index
 # include <sys/mman.h>  // NOLINT
 # include <sys/time.h>  // NOLINT
 # include <unistd.h>  // NOLINT
@@ -3511,6 +3512,9 @@ std::string FormatEpochTimeInMillisAsIso8601(TimeInMillis ms) {
 #ifdef _MSC_VER
   if (localtime_s(&time_struct, &seconds) != 0)
     return "";  // Invalid ms value
+#elif __MVS__
+  // TODO(mcornac):
+  return "";
 #else
   if (localtime_r(&seconds, &time_struct) == NULL)
     return "";  // Invalid ms value

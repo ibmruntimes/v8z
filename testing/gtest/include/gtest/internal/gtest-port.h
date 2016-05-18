@@ -428,6 +428,7 @@ struct _RTL_CRITICAL_SECTION;
 // mentioned above.
 # include <unistd.h>
 # include <strings.h>
+#undef index  // zOS hackery to reset #def index in strings.h
 #endif  // GTEST_OS_WINDOWS
 
 #if GTEST_OS_LINUX_ANDROID
