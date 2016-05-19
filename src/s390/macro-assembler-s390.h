@@ -33,6 +33,45 @@ inline MemOperand RootMemOperand(Heap::RootListIndex index) {
   return MemOperand(kRootRegister, index << kPointerSizeLog2);
 }
 
+// Generate a MemOperand for loading a field from the stack.
+// This is useful since z/OS uses a biased stack while zLinux does not.
+inline MemOperand StackMemOperand(Register rx, Register rb, int offset) {
+#if V8_OS_ZOS
+  // TODO(mcornac): Need to check range of offset?
+  return MemOperand(rx, rb, offset + 2048);
+#else
+  return MemOperand(rx, rb, offset);
+#endif
+}
+
+// Generate a MemOperand for loading a field from the stack.
+// This is useful since z/OS uses a biased stack while zLinux does not.
+inline MemOperand StackMemOperand(Register object, Register offset) {
+#if V8_OS_ZOS
+  // TODO(mcornac): Need to check range of offset?
+  return MemOperand(object, offset, 2048);
+#else
+  return MemOperand(object, offset);
+#endif
+}
+
+// Generate a MemOperand for loading a field from the stack.
+// This is useful since z/OS uses a biased stack while zLinux does not.
+inline MemOperand StackMemOperand(Register object, int offset) {
+#if V8_OS_ZOS
+  // TODO(mcornac): Need to check range of offset?
+  return MemOperand(object, offset + 2048);
+#else
+  return MemOperand(object, offset);
+#endif
+}
+
+// Generate a MemOperand for loading a field from the stack.
+// This is useful since z/OS uses a biased stack while zLinux does not.
+inline MemOperand StackMemOperand(Register object) {
+  return StackMemOperand(object, 0);
+}
+
 // Flags used for AllocateHeapNumber
 enum TaggingMode {
   // Tag the result.
@@ -536,11 +575,11 @@ class MacroAssembler: public Assembler {
 
   void push(Register src) {
     lay(sp, MemOperand(sp, -kPointerSize));
-    StoreP(src, MemOperand(sp));
+    StoreP(src, StackMemOperand(sp));
   }
 
   void pop(Register dst) {
-    LoadP(dst, MemOperand(sp));
+    LoadP(dst, StackMemOperand(sp));
     la(sp, MemOperand(sp, kPointerSize));
   }
 
@@ -557,16 +596,16 @@ class MacroAssembler: public Assembler {
   // Push two registers.  Pushes leftmost register first (to highest address).
   void Push(Register src1, Register src2) {
     lay(sp, MemOperand(sp, -kPointerSize * 2));
-    StoreP(src1, MemOperand(sp, kPointerSize));
-    StoreP(src2, MemOperand(sp, 0));
+    StoreP(src1, StackMemOperand(sp, kPointerSize));
+    StoreP(src2, StackMemOperand(sp, 0));
   }
 
   // Push three registers.  Pushes leftmost register first (to highest address).
   void Push(Register src1, Register src2, Register src3) {
     lay(sp, MemOperand(sp, -kPointerSize * 3));
-    StoreP(src1, MemOperand(sp, kPointerSize * 2));
-    StoreP(src2, MemOperand(sp, kPointerSize));
-    StoreP(src3, MemOperand(sp, 0));
+    StoreP(src1, StackMemOperand(sp, kPointerSize * 2));
+    StoreP(src2, StackMemOperand(sp, kPointerSize));
+    StoreP(src3, StackMemOperand(sp, 0));
   }
 
   // Push four registers.  Pushes leftmost register first (to highest address).
@@ -575,10 +614,10 @@ class MacroAssembler: public Assembler {
             Register src3,
             Register src4) {
     lay(sp, MemOperand(sp, -kPointerSize * 4));
-    StoreP(src1, MemOperand(sp, kPointerSize * 3));
-    StoreP(src2, MemOperand(sp, kPointerSize * 2));
-    StoreP(src3, MemOperand(sp, kPointerSize));
-    StoreP(src4, MemOperand(sp, 0));
+    StoreP(src1, StackMemOperand(sp, kPointerSize * 3));
+    StoreP(src2, StackMemOperand(sp, kPointerSize * 2));
+    StoreP(src3, StackMemOperand(sp, kPointerSize));
+    StoreP(src4, StackMemOperand(sp, 0));
   }
 
   // Push five registers.  Pushes leftmost register first (to highest address).
@@ -599,27 +638,27 @@ class MacroAssembler: public Assembler {
     DCHECK(!src4.is(src5));
 
     lay(sp, MemOperand(sp, -kPointerSize * 5));
-    StoreP(src1, MemOperand(sp, kPointerSize * 4));
-    StoreP(src2, MemOperand(sp, kPointerSize * 3));
-    StoreP(src3, MemOperand(sp, kPointerSize * 2));
-    StoreP(src4, MemOperand(sp, kPointerSize));
-    StoreP(src5, MemOperand(sp, 0));
+    StoreP(src1, StackMemOperand(sp, kPointerSize * 4));
+    StoreP(src2, StackMemOperand(sp, kPointerSize * 3));
+    StoreP(src3, StackMemOperand(sp, kPointerSize * 2));
+    StoreP(src4, StackMemOperand(sp, kPointerSize));
+    StoreP(src5, StackMemOperand(sp, 0));
   }
 
   void Pop(Register dst) { pop(dst); }
 
   // Pop two registers. Pops rightmost register first (from lower address).
   void Pop(Register src1, Register src2) {
-    LoadP(src2, MemOperand(sp, 0));
-    LoadP(src1, MemOperand(sp, kPointerSize));
+    LoadP(src2, StackMemOperand(sp, 0));
+    LoadP(src1, StackMemOperand(sp, kPointerSize));
     la(sp, MemOperand(sp, 2 * kPointerSize));
   }
 
   // Pop three registers.  Pops rightmost register first (from lower address).
   void Pop(Register src1, Register src2, Register src3) {
-    LoadP(src3, MemOperand(sp, 0));
-    LoadP(src2, MemOperand(sp, kPointerSize));
-    LoadP(src1, MemOperand(sp, 2 * kPointerSize));
+    LoadP(src3, StackMemOperand(sp, 0));
+    LoadP(src2, StackMemOperand(sp, kPointerSize));
+    LoadP(src1, StackMemOperand(sp, 2 * kPointerSize));
     la(sp, MemOperand(sp, 3 * kPointerSize));
   }
 
@@ -628,10 +667,10 @@ class MacroAssembler: public Assembler {
            Register src2,
            Register src3,
            Register src4) {
-    LoadP(src4, MemOperand(sp, 0));
-    LoadP(src3, MemOperand(sp, kPointerSize));
-    LoadP(src2, MemOperand(sp, 2 * kPointerSize));
-    LoadP(src1, MemOperand(sp, 3 * kPointerSize));
+    LoadP(src4, StackMemOperand(sp, 0));
+    LoadP(src3, StackMemOperand(sp, kPointerSize));
+    LoadP(src2, StackMemOperand(sp, 2 * kPointerSize));
+    LoadP(src1, StackMemOperand(sp, 3 * kPointerSize));
     la(sp, MemOperand(sp, 4 * kPointerSize));
   }
 
@@ -641,11 +680,11 @@ class MacroAssembler: public Assembler {
            Register src3,
            Register src4,
            Register src5) {
-    LoadP(src5, MemOperand(sp, 0));
-    LoadP(src4, MemOperand(sp, kPointerSize));
-    LoadP(src3, MemOperand(sp, 2 * kPointerSize));
-    LoadP(src2, MemOperand(sp, 3 * kPointerSize));
-    LoadP(src1, MemOperand(sp, 4 * kPointerSize));
+    LoadP(src5, StackMemOperand(sp, 0));
+    LoadP(src4, StackMemOperand(sp, kPointerSize));
+    LoadP(src3, StackMemOperand(sp, 2 * kPointerSize));
+    LoadP(src2, StackMemOperand(sp, 3 * kPointerSize));
+    LoadP(src1, StackMemOperand(sp, 4 * kPointerSize));
     la(sp, MemOperand(sp, 5 * kPointerSize));
   }
 

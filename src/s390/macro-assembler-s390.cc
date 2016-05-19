@@ -277,7 +277,7 @@ void MacroAssembler::MultiPush(RegList regs) {
   for (int16_t i = kNumRegisters - 1; i >= 0; i--) {
     if ((regs & (1 << i)) != 0) {
       stack_offset -= kPointerSize;
-      StoreP(ToRegister(i), MemOperand(sp, stack_offset));
+      StoreP(ToRegister(i), StackMemOperand(sp, stack_offset));
     }
   }
 }
@@ -288,7 +288,7 @@ void MacroAssembler::MultiPop(RegList regs) {
 
   for (int16_t i = 0; i < kNumRegisters; i++) {
     if ((regs & (1 << i)) != 0) {
-      LoadP(ToRegister(i), MemOperand(sp, stack_offset));
+      LoadP(ToRegister(i), StackMemOperand(sp, stack_offset));
       stack_offset += kPointerSize;
     }
   }
@@ -633,7 +633,8 @@ int MacroAssembler::SafepointRegisterStackIndex(int reg_code) {
 
 
 MemOperand MacroAssembler::SafepointRegisterSlot(Register reg) {
-  return MemOperand(sp, SafepointRegisterStackIndex(reg.code()) * kPointerSize);
+  return StackMemOperand(sp,
+      SafepointRegisterStackIndex(reg.code()) * kPointerSize);
 }
 
 
@@ -641,7 +642,7 @@ MemOperand MacroAssembler::SafepointRegistersAndDoublesSlot(Register reg) {
   // General purpose registers are pushed last on the stack.
   int doubles_size = DoubleRegister::NumAllocatableRegisters() * kDoubleSize;
   int register_offset = SafepointRegisterStackIndex(reg.code()) * kPointerSize;
-  return MemOperand(sp, doubles_size + register_offset);
+  return StackMemOperand(sp, doubles_size + register_offset);
 }
 
 void MacroAssembler::CanonicalizeNaN(const DoubleRegister dst,
@@ -794,10 +795,10 @@ int MacroAssembler::LeaveFrame(StackFrame::Type type,
                                int stack_adjustment) {
   // Drop the execution stack down to the frame pointer and restore
   // the caller frame pointer and return address.
-  LoadP(r14, MemOperand(fp, StandardFrameConstants::kCallerPCOffset));
+  LoadP(r14, StackMemOperand(fp, StandardFrameConstants::kCallerPCOffset));
   lay(r1, MemOperand(fp,
       StandardFrameConstants::kCallerSPOffset + stack_adjustment));
-  LoadP(fp, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
+  LoadP(fp, StackMemOperand(fp, StandardFrameConstants::kCallerFPOffset));
   LoadRR(sp, r1);
   int frame_ends = pc_offset();
   return frame_ends;
@@ -841,11 +842,11 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   lay(sp, MemOperand(sp, - ExitFrameConstants::kFrameSize));
 
   if (emit_debug_code()) {
-    StoreP(MemOperand(fp, ExitFrameConstants::kSPOffset),
+    StoreP(StackMemOperand(fp, ExitFrameConstants::kSPOffset),
            Operand::Zero(), r1);
   }
   mov(r1, Operand(CodeObject()));
-  StoreP(r1, MemOperand(fp, ExitFrameConstants::kCodeOffset));
+  StoreP(r1, StackMemOperand(fp, ExitFrameConstants::kCodeOffset));
 
   // Save the frame pointer and the context in top.
   mov(r1, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate())));
@@ -888,13 +889,13 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
     DCHECK(frame_alignment == 8);
     ClearRightImm(sp, sp, Operand(3));  // equivalent to &= -8
   }
-  StoreP(MemOperand(sp, -kNumRequiredStackFrameSlots * kPointerSize),
+  StoreP(StackMemOperand(sp, -kNumRequiredStackFrameSlots * kPointerSize),
          Operand::Zero(), r0);
   lay(sp, MemOperand(sp, -kNumRequiredStackFrameSlots * kPointerSize));
   // Set the exit frame sp value to point just before the return address
   // location.
   lay(r1, MemOperand(sp, kStackFrameSPSlot * kPointerSize));
-  StoreP(r1, MemOperand(fp, ExitFrameConstants::kSPOffset));
+  StoreP(r1, StackMemOperand(fp, ExitFrameConstants::kSPOffset));
 }
 
 
@@ -1253,23 +1254,24 @@ void MacroAssembler::PushTryHandler(StackHandler::Kind kind,
     LoadImmP(r8, Operand::Zero());  // NULL frame pointer.
     // @TODO Potential Bug here as r10 is roots register.
     LoadSmiLiteral(r9, Smi::FromInt(0));    // Indicates no context.
-    StoreMultipleP(r7, r9, MemOperand(sp, StackHandlerConstants::kStateOffset));
+    StoreMultipleP(r7, r9,
+                   StackMemOperand(sp, StackHandlerConstants::kStateOffset));
   } else {
     // still not sure if fp is right
-    StoreP(fp, MemOperand(sp, StackHandlerConstants::kFPOffset));
-    StoreP(cp, MemOperand(sp, StackHandlerConstants::kContextOffset));
+    StoreP(fp, StackMemOperand(sp, StackHandlerConstants::kFPOffset));
+    StoreP(cp, StackMemOperand(sp, StackHandlerConstants::kContextOffset));
     LoadIntLiteral(r7, state);
-    StoreP(r7, MemOperand(sp, StackHandlerConstants::kStateOffset));
+    StoreP(r7, StackMemOperand(sp, StackHandlerConstants::kStateOffset));
   }
   mov(r7, Operand(CodeObject()));
-  StoreP(r7, MemOperand(sp, StackHandlerConstants::kCodeOffset));
+  StoreP(r7, StackMemOperand(sp, StackHandlerConstants::kCodeOffset));
 }
 
 
 void MacroAssembler::PopTryHandler() {
   STATIC_ASSERT(StackHandlerConstants::kNextOffset == 0);
   // Pop the Next Handler into r3 and store it into Handler Address reference.
-  LoadP(r3, MemOperand(sp, StackHandlerConstants::kNextOffset));
+  LoadP(r3, StackMemOperand(sp, StackHandlerConstants::kNextOffset));
   mov(ip, Operand(ExternalReference(Isolate::kHandlerAddress, isolate())));
   // Restore previous stack frame.
   lay(sp, MemOperand(sp, StackHandlerConstants::kSize));
@@ -1331,7 +1333,7 @@ void MacroAssembler::Throw(Register value) {
   // or cp.
   CmpP(cp, Operand::Zero());
   beq(&skip, Label::kNear);
-  StoreP(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
+  StoreP(cp, StackMemOperand(fp, StandardFrameConstants::kContextOffset));
   bind(&skip);
 
   JumpToHandlerEntry();
@@ -1359,18 +1361,18 @@ void MacroAssembler::ThrowUncatchable(Register value) {
   Label fetch_next, check_kind;
   b(&check_kind, Label::kNear);
   bind(&fetch_next);
-  LoadP(sp, MemOperand(sp, StackHandlerConstants::kNextOffset));
+  LoadP(sp, StackMemOperand(sp, StackHandlerConstants::kNextOffset));
 
   bind(&check_kind);
   STATIC_ASSERT(StackHandler::JS_ENTRY == 0);
-  LoadP(r4, MemOperand(sp, StackHandlerConstants::kStateOffset));
+  LoadP(r4, StackMemOperand(sp, StackHandlerConstants::kStateOffset));
   mov(r0, Operand(StackHandler::KindField::kMask));
   AndP(r0, r4);
   bne(&fetch_next /*, cr0*/);
 
   // Set the top handler address to next handler past the top ENTRY handler.
   pop(r4);
-  StoreP(r4, MemOperand(r5));
+  StoreP(r4, StackMemOperand(r5));
   // Get the code object (r3) and state (r4).  Clear the context and frame
   // pointer (0 was saved in the handler).
   pop(r3);
@@ -1392,7 +1394,7 @@ void MacroAssembler::CheckAccessGlobalProxy(Register holder_reg,
   DCHECK(!scratch.is(ip));
 
   // Load current lexical context from the stack frame.
-  LoadP(scratch, MemOperand(fp, StandardFrameConstants::kContextOffset));
+  LoadP(scratch, StackMemOperand(fp, StandardFrameConstants::kContextOffset));
   // In debug mode, make sure the lexical context is set.
 #ifdef DEBUG
   CmpP(scratch, Operand::Zero());
@@ -2559,7 +2561,7 @@ void MacroAssembler::TruncateDoubleToI(Register result,
   // If we fell through then inline version didn't succeed - call stub instead.
   push(r14);
   // Put input on stack.
-  StoreF(double_input, MemOperand(sp, -kDoubleSize));
+  StoreF(double_input, StackMemOperand(sp, -kDoubleSize));
   lay(sp, MemOperand(sp, -kDoubleSize));
 
   DoubleToIStub stub(isolate(), sp, result, 0, true, true);
@@ -3365,7 +3367,7 @@ void MacroAssembler::SaveFPRegs(Register location, int first, int count) {
   SubP(location, Operand(count * kDoubleSize));
   for (int i = 0; i < count; i++) {
     DoubleRegister reg = DoubleRegister::from_code(cur++);
-    StoreF(reg, MemOperand(location, i * kDoubleSize));
+    StoreF(reg, StackMemOperand(location, i * kDoubleSize));
   }
 }
 
@@ -3375,7 +3377,7 @@ void MacroAssembler::RestoreFPRegs(Register location, int first, int count) {
   int cur = first + count - 1;
   for (int i = count - 1; i >= 0; i--) {
     DoubleRegister reg = DoubleRegister::from_code(cur--);
-    LoadF(reg, MemOperand(location, i * kDoubleSize));
+    LoadF(reg, StackMemOperand(location, i * kDoubleSize));
   }
   AddP(location, Operand(count * kDoubleSize));
 }
@@ -3507,25 +3509,23 @@ void MacroAssembler::PrepareCallCFunction(int num_reg_arguments,
   int stack_passed_arguments = CalculateStackPassedWords(
       num_reg_arguments, num_double_arguments);
 #ifdef V8_OS_ZOS
-  Register c_sp   = r4; //stack pointer in C/C++
   int stack_space = 16; //save area + debug area + reserved space
-  LoadRR(c_sp , sp);
 #else
   int stack_space = kNumRequiredStackFrameSlots;
-  Register c_sp   = sp;  
 #endif
   if (frame_alignment > kPointerSize) {
     // Make stack end at alignment and make room for stack arguments
     // -- preserving original value of sp.
-    LoadRR(scratch, c_sp);
-    lay(c_sp, MemOperand(c_sp, -(stack_passed_arguments + 1) * kPointerSize));
+    LoadRR(scratch, sp);
+    lay(sp, MemOperand(sp, -(stack_passed_arguments + 1) * kPointerSize));
     DCHECK(IsPowerOf2(frame_alignment));
-    ClearRightImm(c_sp, c_sp, Operand(WhichPowerOf2(frame_alignment)));
-    StoreP(scratch, MemOperand(c_sp, (stack_passed_arguments) * kPointerSize));
+    ClearRightImm(sp, sp, Operand(WhichPowerOf2(frame_alignment)));
+    StoreP(scratch,
+        StackMemOperand(sp, (stack_passed_arguments) * kPointerSize));
   } else {
     stack_space += stack_passed_arguments;
   }
-  lay(c_sp, MemOperand(c_sp, -((stack_space * kPointerSize) + kStackPointerBias)));
+  lay(sp, MemOperand(sp, -stack_space * kPointerSize));
 }
 
 
@@ -3594,8 +3594,7 @@ void MacroAssembler::CallCFunctionHelper(Register function,
   // stays correct.
 #if ABI_USES_FUNCTION_DESCRIPTORS && !defined(USE_SIMULATOR)
   // z/OS uses a function descriptor. When calling C code be aware
-  // of this descriptor and pick up values from it
-  LoadMultipleP(r5, r6, MemOperand(function,0));
+  LoadMultipleP(r5, r6, StackMemOperand(function, 0));
   Register dest = r6;
 #elif ABI_TOC_ADDRESSABILITY_VIA_IP
   Move(ip, function);
@@ -3616,8 +3615,8 @@ void MacroAssembler::CallCFunctionHelper(Register function,
       num_reg_arguments, num_double_arguments);
   int stack_space = kNumRequiredStackFrameSlots + stack_passed_arguments;
   if (ActivationFrameAlignment() > kPointerSize) {
-    // Load the original stack pointer (pre-alignment) from the stack
-    LoadP(sp, MemOperand(sp, stack_space * kPointerSize));
+    // Load the original stack pointer (pre-alignment) from the stack.
+    LoadP(sp, StackMemOperand(sp, stack_space * kPointerSize));
   } else {
     la(sp, MemOperand(sp, stack_space * kPointerSize));
   }
