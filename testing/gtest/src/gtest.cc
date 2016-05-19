@@ -3512,9 +3512,6 @@ std::string FormatEpochTimeInMillisAsIso8601(TimeInMillis ms) {
 #ifdef _MSC_VER
   if (localtime_s(&time_struct, &seconds) != 0)
     return "";  // Invalid ms value
-#elif __MVS__
-  // TODO(mcornac):
-  return "";
 #else
   if (localtime_r(&seconds, &time_struct) == NULL)
     return "";  // Invalid ms value
