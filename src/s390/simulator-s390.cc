@@ -1332,8 +1332,9 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       intptr_t* stack_pointer = reinterpret_cast<intptr_t*>(get_register(sp));
 #ifdef V8_OS_ZOS
       // Todo(muntasir), need to initialize this properly
-      arg[4] = 0xdeadbeef;
-      arg[5] = 0xdeadbeef;
+      arg[3] = stack_pointer[19];
+      arg[4] = stack_pointer[20];
+      arg[5] = stack_pointer[21];
 #else
       arg[5] = stack_pointer[kCalleeRegisterSaveAreaSize / kPointerSize];
 #endif
