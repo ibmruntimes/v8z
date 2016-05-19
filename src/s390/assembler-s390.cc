@@ -701,6 +701,12 @@ void Assembler::nop(int type) {
       // @TODO Need to come up with a better NOP break
       oill(r3, Operand::Zero());
       break;
+    case BASR_CALL_TYPE_NOP:
+      emit2bytes(0x0000);
+      break;
+    case BRAS_CALL_TYPE_NOP:
+      emit2bytes(0x0001);
+      break;
     default:
       UNIMPLEMENTED();
   }

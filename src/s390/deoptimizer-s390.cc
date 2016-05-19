@@ -191,7 +191,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   __ LoadP(r2, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
   __ LoadImmP(r3, Operand(type()));  // bailout type,
 #endif
-
+  
   __ mov(r7, Operand(ExternalReference::isolate_address(isolate())));
 #ifdef V8_OS_ZOS
   // XPLINK linkage requires the remaining args
@@ -213,11 +213,10 @@ void Deoptimizer::EntryGenerator::Generate() {
   // Preserve "deoptimizer" object in register r2 and get the input
   // frame descriptor pointer to r3 (deoptimizer->input_);
 #ifdef V8_OS_ZOS
-  __ LoadP(r2, MemOperand(r3, Deoptimizer::input_offset()));
-  __ LoadRR(r3, r2);
-#else
+  __ LoadRR(r2,r3);
+#endif  
+  
   __ LoadP(r3, MemOperand(r2, Deoptimizer::input_offset()));
-#endif
 
   // Copy core registers into FrameDescription::registers_[kNumRegisters].
   DCHECK(Register::kNumRegisters == kNumberOfRegisters);
@@ -256,6 +255,9 @@ void Deoptimizer::EntryGenerator::Generate() {
 
   // Compute the output frame in the deoptimizer.
   __ push(r2);  // Preserve deoptimizer object across call.
+#ifdef V8_OS_ZOS
+  __ LoadRR(r1, r2); 
+#endif
   // r2: deoptimizer object; r3: scratch.
   __ PrepareCallCFunction(1, r3);
   // Call Deoptimizer::ComputeOutputFrames().

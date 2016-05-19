@@ -81,6 +81,26 @@ int MacroAssembler::CallSize(Register target) {
   return 2;
 }
 
+void MacroAssembler::CallC(Register target) {
+  BlockTrampolinePoolScope block_trampoline_pool(this);
+  Label start;
+  bind(&start);
+  
+  // Statement positions are expected to be recorded when the target
+  // address is loaded.
+  positions_recorder()->WriteRecordedPositions();
+#ifdef V8_OS_ZOS
+  // Branch to target via indirect branch
+  basr(r7, target);
+  nop(BASR_CALL_TYPE_NOP);
+  DCHECK_EQ(CallSize(target) + 2, SizeOfCodeGeneratedSince(&start));
+#else
+  // Branch to target via indirect branch
+  basr(r14, target);
+  DCHECK_EQ(CallSize(target), SizeOfCodeGeneratedSince(&start));
+#endif
+
+}
 
 void MacroAssembler::Call(Register target) {
   BlockTrampolinePoolScope block_trampoline_pool(this);
@@ -3566,7 +3586,32 @@ void MacroAssembler::CallCFunctionHelper(Register function,
   Register dest = function;
 #endif
 
+#ifdef V8_OS_ZOS
+  /*
+  BlockTrampolinePoolScope block_trampoline_pool(this);
+  Label start;
+  
+  Label return_label; 
+  
+  bind(&start);
+ 
+  larl(r7, &return_label);
+  // Statement positions are expected to be recorded when the target
+  // address is loaded.
+  positions_recorder()->WriteRecordedPositions();
+
+  // Branch to target via indirect branch
+  lay(r7, MemOperand(r7, -2));
+  b(dest);
+  bind(&return_label);
+  //basr(r7, dest);
+
+  //DCHECK_EQ(CallSize(dest), SizeOfCodeGeneratedSince(&start));
+  */
+  CallC(dest);
+#else
   Call(dest);
+#endif
   //Javascript stack pointer will be restored by the callee's
   //epilogue
 #ifndef V8_OS_ZOS
