@@ -3587,27 +3587,6 @@ void MacroAssembler::CallCFunctionHelper(Register function,
 #endif
 
 #ifdef V8_OS_ZOS
-  /*
-  BlockTrampolinePoolScope block_trampoline_pool(this);
-  Label start;
-  
-  Label return_label; 
-  
-  bind(&start);
- 
-  larl(r7, &return_label);
-  // Statement positions are expected to be recorded when the target
-  // address is loaded.
-  positions_recorder()->WriteRecordedPositions();
-
-  // Branch to target via indirect branch
-  lay(r7, MemOperand(r7, -2));
-  b(dest);
-  bind(&return_label);
-  //basr(r7, dest);
-
-  //DCHECK_EQ(CallSize(dest), SizeOfCodeGeneratedSince(&start));
-  */
   CallC(dest);
 #else
   Call(dest);

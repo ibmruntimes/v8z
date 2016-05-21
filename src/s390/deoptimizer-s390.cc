@@ -182,12 +182,11 @@ void Deoptimizer::EntryGenerator::Generate() {
 
   // Allocate a new deoptimizer object.
   // Pass six arguments in r2 to r7.
-#ifdef V8_OS_ZOS  
   __ PrepareCallCFunction(6, r7);
+#ifdef V8_OS_ZOS  
   __ LoadP(r1, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
   __ LoadImmP(r2, Operand(type()));  // bailout type,
 #else
-  __ PrepareCallCFunction(6, r7);
   __ LoadP(r2, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
   __ LoadImmP(r3, Operand(type()));  // bailout type,
 #endif
@@ -257,6 +256,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   __ push(r2);  // Preserve deoptimizer object across call.
 #ifdef V8_OS_ZOS
   __ LoadRR(r1, r2); 
+  __ LoadRR(r13, r4);
 #endif
   // r2: deoptimizer object; r3: scratch.
   __ PrepareCallCFunction(1, r3);
@@ -267,7 +267,9 @@ void Deoptimizer::EntryGenerator::Generate() {
       ExternalReference::compute_output_frames_function(isolate()), 1);
   }
   __ pop(r2);  // Restore deoptimizer object (class Deoptimizer).
-
+#ifdef V8_OS_ZOS
+  __ LoadRR(r4, r13);
+#endif
   // Replace the current (input) frame with the output frames.
   Label outer_push_loop, inner_push_loop,
     outer_loop_header, inner_loop_header;
