@@ -835,7 +835,7 @@ Simulator::Simulator(Isolate* isolate) : isolate_(isolate) {
 #if V8_TARGET_ARCH_S390X
   size_t stack_size = 2 * 1024*1024;  // allocate 2MB for stack
 #else
-  size_t stack_size = 1 * 1024*1024;  // allocate 1MB for stack
+  size_t stack_size = 1 * 1024*1024 + 2048;  // allocate 1MB for stack
 #endif
   stack_ = reinterpret_cast<char*>(malloc(stack_size));
   pc_modified_ = false;
@@ -869,7 +869,7 @@ Simulator::Simulator(Isolate* isolate) : isolate_(isolate) {
 // allocated stack area. To be safe in potential stack underflows we leave
 // some buffer below.
 #ifdef V8_OS_ZOS
-  registers_[r4] = reinterpret_cast<intptr_t>(stack_) + stack_size - 2048 - 64;
+  registers_[r4] = reinterpret_cast<intptr_t>(stack_) + stack_size - 64;
 #else
   registers_[sp] = reinterpret_cast<intptr_t>(stack_) + stack_size - 64;
 #endif
@@ -1331,10 +1331,11 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       }
       intptr_t* stack_pointer = reinterpret_cast<intptr_t*>(get_register(sp));
 #ifdef V8_OS_ZOS
-      // Todo(muntasir), need to initialize this properly
-      arg[3] = stack_pointer[19];
-      arg[4] = stack_pointer[20];
-      arg[5] = stack_pointer[21];
+      intptr_t* argument_area = reinterpret_cast<intptr_t*>(get_register(r4)+ 2048 + 16*kPointerSize);
+      arg[3] = argument_area[3];
+      arg[4] = argument_area[4];
+      arg[5] = argument_area[5];
+     
 #else
       arg[5] = stack_pointer[kCalleeRegisterSaveAreaSize / kPointerSize];
 #endif
