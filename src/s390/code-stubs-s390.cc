@@ -1705,7 +1705,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
 #endif
 
   // Reload callee-saved preserved regs, return address reg (r14) and sp
-#if !V8_OS_ZOS
+#ifndef V8_OS_ZOS
   __ LoadMultipleP(r6, sp, MemOperand(sp, 0));
   __ la(sp, MemOperand(sp, 10 * kPointerSize));
 #endif
@@ -1730,7 +1730,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   __ la(sp, MemOperand(sp, 2 * kDoubleSize));
 #endif
 
-#if V8_OS_ZOS
+#ifdef V8_OS_ZOS
   __ LoadRR(r3, r2);
   __ LoadMultipleP(r4, sp, MemOperand(sp, 0));
   __ lay(sp, MemOperand(sp, 12 * kPointerSize));
@@ -2415,7 +2415,11 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ CleanseP(r14);
 
   __ lay(sp, MemOperand(sp, -13 * kPointerSize));
-  __ StoreMultipleP(r3, sp, MemOperand(sp, 0));
+#ifdef V8_OS_ZOS
+  __ StoreMultipleP(r3, r4, StackMemOperand(sp, 0));
+#else
+  __ StoreMultipleP(r3, sp, StackMemOperand(sp, 0));
+#endif
   __ la(fp, MemOperand(sp, 13 * kPointerSize));
 
   // Ensure register assigments are consistent with callee save masks
@@ -2721,7 +2725,11 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ bind(&failure);
   // For failure and exception return null.
   __ mov(r2, Operand(isolate()->factory()->null_value()));
-  __ LoadMultipleP(r3, sp, MemOperand(sp, 0));
+#ifdef V8_OS_ZOS
+  __ LoadMultipleP(r3, r4, StackMemOperand(sp, 0));
+#else
+  __ LoadMultipleP(r3, sp, StackMemOperand(sp, 0));
+#endif
   __ la(sp, MemOperand(sp, 13 * kPointerSize));
   __ la(sp, MemOperand(sp, (4 * kPointerSize)));
   __ Ret();
@@ -2810,14 +2818,22 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
 
   // Return last match info.
   __ LoadP(r2, MemOperand(fp, kLastMatchInfoOffset));
+#ifdef V8_OS_ZOS
+  __ LoadMultipleP(r3, r4, MemOperand(sp, 0));
+#else
   __ LoadMultipleP(r3, sp, MemOperand(sp, 0));
+#endif
   __ la(sp, MemOperand(sp, 13 * kPointerSize));
   __ la(sp, MemOperand(sp, (4 * kPointerSize)));
   __ Ret();
 
   // Do the runtime call to execute the regexp.
   __ bind(&runtime);
-  __ LoadMultipleP(r3, sp, MemOperand(sp, 0));
+#ifdef V8_OS_ZOS
+  __ LoadMultipleP(r3, r4, StackMemOperand(sp, 0));
+#else
+  __ LoadMultipleP(r3, sp, StackMemOperand(sp, 0));
+#endif
   __ la(sp, MemOperand(sp, 13 * kPointerSize));
   __ TailCallRuntime(Runtime::kRegExpExecRT, 4, 1);
 
