@@ -4514,29 +4514,30 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   // Set up arguments
 
 #ifdef V8_OS_ZOS
-  // First 3 arguments passed in registers r1-r3
-  int reg_arg_count   = (argument_count > 3) ? 3 : argument_count;
-  int stack_arg_count = argument_count - reg_arg_count;
-  for (int i = 0; i < reg_arg_count; i++) {
-      intptr_t value = va_arg(parameters, intptr_t);
-      set_register(i + 1, value);
-  }
+  // First 3 arguments passed in registers r1-r3.
+  int reg_arg_max   = 3;
+  int reg_arg_start = 1;
 #else
   // First 5 arguments passed in registers r2-r6.
-  int reg_arg_count   = (argument_count > 5) ? 5 : argument_count;
+  int reg_arg_max   = 5;
+  int reg_arg_start = 2;
+#endif
+  int reg_arg_count   = (argument_count > reg_arg_max) ?
+                        reg_arg_max : argument_count;
   int stack_arg_count = argument_count - reg_arg_count;
   for (int i = 0; i < reg_arg_count; i++) {
-      intptr_t value = va_arg(parameters, intptr_t);
-      set_register(i + 2, value);
+    intptr_t value = va_arg(parameters, intptr_t);
+    set_register(i + reg_arg_start, value);
   }
-#endif
 
 #ifdef V8_OS_ZOS
   // Remaining arguments passed on stack.
   int64_t original_stack = get_register(r4);
   // Compute position of stack on entry to generated code.
   // callee save area + debug_area + arg_area_prefix = 16 * kPointerSize
-  intptr_t entry_stack = original_stack;
+  intptr_t entry_stack = original_stack -
+                         (19 * kPointerSize +
+                          stack_arg_count * sizeof(intptr_t));
 #else
   // Remaining arguments passed on stack.
   int64_t original_stack = get_register(sp);
@@ -4552,7 +4553,7 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   // Store remaining arguments on stack, from low to high memory.
 #ifdef V8_OS_ZOS
   intptr_t* stack_argument = reinterpret_cast<intptr_t*>(entry_stack +
-          (12 * kPointerSize));
+    19 * kPointerSize);
 #else
   intptr_t* stack_argument = reinterpret_cast<intptr_t*>(entry_stack +
     kCalleeRegisterSaveAreaSize);
@@ -4564,7 +4565,11 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   }
 
   va_end(parameters);
+#ifdef V8_OS_ZOS
+  set_register(r4, entry_stack);
+#else
   set_register(sp, entry_stack);
+#endif
 
   // Prepare to execute the code at entry
 #if ABI_USES_FUNCTION_DESCRIPTORS
@@ -4637,11 +4642,20 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   set_register(r12, r12_val);
   set_register(r13, r13_val);
   // Pop stack passed arguments.
+#ifdef V8_OS_ZOS
+  CHECK_EQ(entry_stack, get_register(r4));
+  set_register(r4, original_stack);
+#else
   CHECK_EQ(entry_stack, get_register(sp));
   set_register(sp, original_stack);
+#endif
 
   // Return value register
+#if V8_OS_ZOS
+  intptr_t result = get_register(r3);
+#else
   intptr_t result = get_register(r2);
+#endif
   return result;
 }
 
