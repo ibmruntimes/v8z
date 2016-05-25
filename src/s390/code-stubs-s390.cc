@@ -4292,7 +4292,7 @@ void DirectCEntryStub::Generate(MacroAssembler* masm) {
   // Statement positions are expected to be recorded when the target
   // address is loaded.
   __ positions_recorder()->WriteRecordedPositions();
-
+  
   __ b(ip);  // Callee will return to R14 directly
 }
 
@@ -4301,13 +4301,13 @@ void DirectCEntryStub::GenerateCall(MacroAssembler* masm,
 #if ABI_USES_FUNCTION_DESCRIPTORS && !defined(USE_SIMULATOR)
   // Native AIX/S390X Linux use a function descriptor.
   // __ LoadP(ToRegister(ABI_TOC_REGISTER), MemOperand(target, kPointerSize));
-  __ LoadP(target, MemOperand(target, kPointerSize));  // Instruction address
-#else
   // ip needs to be set for DirectCEentryStub::Generate, and also
   // for ABI_TOC_ADDRESSABILITY_VIA_IP.
+  __ LoadP(ip, MemOperand(target, kPointerSize));
+  __ LoadP(r5, MemOperand(target, 0));
+#else
   __ Move(ip, target);
 #endif
-
   intptr_t code =
       reinterpret_cast<intptr_t>(GetCode().location());
   __ mov(r1, Operand(code, RelocInfo::CODE_TARGET));
@@ -5373,8 +5373,8 @@ void CallApiGetterStub::Generate(MacroAssembler* masm) {
   // -----------------------------------
 
   Register api_function_address = r4;
-
   __ LoadRR(r2, sp);  // r0 = Handle<Name>
+  
   __ AddP(r3, r2, Operand(1 * kPointerSize));  // r3 = PCA
 
   // If ABI passes Handles (pointer-sized struct) in a register:

@@ -2369,9 +2369,29 @@ void MacroAssembler::CallApiFunctionAndReturn(
   // Native call returns to the DirectCEntry stub which redirects to the
   // return address pushed on stack (could have moved after GC).
   // DirectCEntry stub itself is generated early and never moves.
+#ifdef V8_OS_ZOS
+  //Shuffle the arguments from Linux arg registers to XPLINK arg regs
+  //Reassign stack pointer to r4
+  LoadRR(r1,r2);
+  if (function_address.is(r3)) {
+    LoadRR(r2, r3);
+  }
+  else {
+    LoadRR(r2, r3);
+    LoadRR(r3, r4);
+  }
+  lay(r4, MemOperand(sp,-(kStackPointerBias + 18*kPointerSize))); 
+  LoadRR(r10, r7);  //clobbered root register
+  LoadRR(r7, r14);
+  lay(r7, MemOperand(r7, -2));
+#endif
+
   DirectCEntryStub stub(isolate());
   stub.GenerateCall(this, scratch);
-
+#ifdef V8_OS_ZOS
+  LoadRR(r7, r10);
+  InitializeRootRegister();
+#endif
   if (FLAG_log_timer_events) {
     FrameScope frame(this, StackFrame::MANUAL);
     PushSafepointRegisters();
