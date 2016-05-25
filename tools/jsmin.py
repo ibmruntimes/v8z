@@ -134,18 +134,25 @@ class JavaScriptMinifier(object):
       return chr(number + 65)
     else:
       if number < 9:
+        # EBCDIC: a-i ==> 129-137
         return chr(number + 129)
-      elif number >= 9 and number < 18:
+      elif number < 18:
+        # EBCDIC: j-r ==> 145-153
         return chr((number%9) + 145)
-      else:
+      elif number < 26:
+        # EBCDIC: s-z ==> 162-169
         return chr((number%9) + 162)
-      number -= 26
-      if number < 9:
-        return chr(number + 193)
-      elif number >= 9 and number < 18:
-        return chr((number%9) + 209)
       else:
-        return chr((number%9) + 226)
+        number -= 26
+        if number < 9:
+          # EBCDIC: A-I ==> 193-201
+          return chr((number%9) + 193)
+        elif number < 18:
+          # EBCDIC: J-R ==> 209-217
+          return chr((number%9) + 209)
+        else:
+          # EBCDIC: S-Z ==> 226-233
+          return chr((number%9) + 226)
 
   def FindNewName(self, var_name):
     """Finds a new 1-character or 2-character name for a variable.
