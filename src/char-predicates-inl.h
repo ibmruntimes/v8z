@@ -15,17 +15,19 @@ namespace internal {
 // Else, return something outside of 'A'-'Z' and 'a'-'z'.
 // Note: it ignores LOCALE.
 inline int AsciiAlphaToLower(uc32 c) {
-  return c | 0x20;
+  uc32 ascii_c = (uc32)ebcdic2ascii((const char)c); 
+  return ascii_c | 0x20;
 }
 
 
 inline bool IsCarriageReturn(uc32 c) {
-  return c == 0x000D;
+  uc32 ascii_c = (uc32)ebcdic2ascii((const char)c);
+  return ascii_c == 0x000D;
 }
 
 
 inline bool IsLineFeed(uc32 c) {
-  return c == 0x000A;
+  return ebcdic2ascii(c) == 0x000A;
 }
 
 
@@ -38,19 +40,19 @@ inline bool IsInRange(int value, int lower_limit, int higher_limit) {
 
 inline bool IsDecimalDigit(uc32 c) {
   // ECMA-262, 3rd, 7.8.3 (p 16)
-  return IsInRange(c, '0', '9');
+  return IsInRange(ebcdic2ascii(c), ebcdic2ascii('0'), ebcdic2ascii('9'));
 }
 
 
 inline bool IsHexDigit(uc32 c) {
   // ECMA-262, 3rd, 7.6 (p 15)
-  return IsDecimalDigit(c) || IsInRange(AsciiAlphaToLower(c), 'a', 'f');
+  return IsDecimalDigit(c) || IsInRange(AsciiAlphaToLower(c), ebcdic2ascii('a'), ebcdic2ascii('f'));
 }
 
 
 inline bool IsOctalDigit(uc32 c) {
   // ECMA-262, 6th, 7.8.3
-  return IsInRange(c, '0', '7');
+  return IsInRange(ebcdic2ascii(c), ebcdic2ascii('0'), ebcdic2ascii('7'));
 }
 
 
@@ -61,14 +63,15 @@ inline bool IsBinaryDigit(uc32 c) {
 
 
 inline bool IsRegExpWord(uc16 c) {
-  return IsInRange(AsciiAlphaToLower(c), 'a', 'z')
+  return IsInRange(AsciiAlphaToLower(c), ebcdic2ascii('a'), ebcdic2ascii('z'))
       || IsDecimalDigit(c)
       || (c == '_');
 }
 
 
 inline bool IsRegExpNewline(uc16 c) {
-  switch (c) {
+  uc16 ascii_c = (uc16)ebcdic2ascii((const char)c);
+  switch (ascii_c) {
     //   CR           LF           LS           PS
     case 0x000A: case 0x000D: case 0x2028: case 0x2029:
       return false;
