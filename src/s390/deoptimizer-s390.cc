@@ -188,10 +188,10 @@ void Deoptimizer::EntryGenerator::Generate() {
   // Pass six arguments in r2 to r7.
   __ PrepareCallCFunction(6, r7);
 #ifdef V8_OS_ZOS
-  __ LoadP(r1, StackMemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
+  __ LoadP(r1, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
   __ LoadImmP(r2, Operand(type()));  // bailout type,
 #else
-  __ LoadP(r2, StackMemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
+  __ LoadP(r2, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
   __ LoadImmP(r3, Operand(type()));  // bailout type,
 #endif
   
@@ -222,14 +222,14 @@ void Deoptimizer::EntryGenerator::Generate() {
 
   // Copy core registers into FrameDescription::registers_[kNumRegisters].
   DCHECK(Register::kNumRegisters == kNumberOfRegisters);
-  __ mvc(StackMemOperand(r3, FrameDescription::registers_offset()),
+  __ mvc(MemOperand(r3, FrameDescription::registers_offset()),
          StackMemOperand(sp),
          kNumberOfRegisters * kPointerSize);
 
   int double_regs_offset = FrameDescription::double_registers_offset();
   // Copy VFP registers to
   // double_registers_[DoubleRegister::kNumAllocatableRegisters]
-  __ mvc(StackMemOperand(r3, double_regs_offset),
+  __ mvc(MemOperand(r3, double_regs_offset),
          StackMemOperand(sp, kNumberOfRegisters * kPointerSize),
          DoubleRegister::NumAllocatableRegisters() * kDoubleSize);
 
@@ -238,7 +238,7 @@ void Deoptimizer::EntryGenerator::Generate() {
 
   // Compute a pointer to the unwinding limit in register r4; that is
   // the first stack slot not part of the input frame.
-  __ LoadP(r4, StackMemOperand(r3, FrameDescription::frame_size_offset()));
+  __ LoadP(r4, MemOperand(r3, FrameDescription::frame_size_offset()));
   __ AddP(r4, sp);
 
   // Unwind the stack down to - but not including - the unwinding
@@ -250,7 +250,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   __ b(&pop_loop_header, Label::kNear);
   __ bind(&pop_loop);
   __ pop(r6);
-  __ StoreP(r6, StackMemOperand(r5, 0));
+  __ StoreP(r6, MemOperand(r5, 0));
   __ la(r5, MemOperand(r5, kPointerSize));
   __ bind(&pop_loop_header);
   __ CmpP(r4, sp);
@@ -288,7 +288,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   __ bind(&outer_push_loop);
   // Inner loop state: r4 = current FrameDescription*, r5 = loop index.
   __ LoadP(r4, MemOperand(r6, 0));  // output_[ix]
-  __ LoadP(r5, StackMemOperand(r4, FrameDescription::frame_size_offset()));
+  __ LoadP(r5, MemOperand(r4, FrameDescription::frame_size_offset()));
   __ b(&inner_loop_header, Label::kNear);
 
   __ bind(&inner_push_loop);
@@ -314,11 +314,11 @@ void Deoptimizer::EntryGenerator::Generate() {
   }
 
   // Push state, pc, and continuation from the last output frame.
-  __ LoadP(r8, StackMemOperand(r4, FrameDescription::state_offset()));
+  __ LoadP(r8, MemOperand(r4, FrameDescription::state_offset()));
   __ push(r8);
-  __ LoadP(r8, StackMemOperand(r4, FrameDescription::pc_offset()));
+  __ LoadP(r8, MemOperand(r4, FrameDescription::pc_offset()));
   __ push(r8);
-  __ LoadP(r8, StackMemOperand(r4, FrameDescription::continuation_offset()));
+  __ LoadP(r8, MemOperand(r4, FrameDescription::continuation_offset()));
   __ push(r8);
 
   // Restore the registers from the last output frame.
@@ -326,7 +326,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   for (int i = kNumberOfRegisters - 1; i > 0; i--) {
     int offset = (i * kPointerSize) + FrameDescription::registers_offset();
     if ((restored_regs & (1 << i)) != 0) {
-      __ LoadP(ToRegister(i), StackMemOperand(r1, offset));
+      __ LoadP(ToRegister(i), MemOperand(r1, offset));
     }
   }
 

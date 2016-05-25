@@ -33,8 +33,8 @@ inline MemOperand RootMemOperand(Heap::RootListIndex index) {
   return MemOperand(kRootRegister, index << kPointerSizeLog2);
 }
 
-// Generate a MemOperand for loading a field from the stack.
-// This is useful since z/OS uses a biased stack while zLinux does not.
+// Generate a MemOperand for loading a field off of the stack pointer.
+// This is useful since z/OS uses a biased stack pointer while zLinux does not.
 inline MemOperand StackMemOperand(Register rx, Register rb, int offset) {
 #if V8_OS_ZOS
   // TODO(mcornac): Need to check range of offset?
@@ -44,8 +44,8 @@ inline MemOperand StackMemOperand(Register rx, Register rb, int offset) {
 #endif
 }
 
-// Generate a MemOperand for loading a field from the stack.
-// This is useful since z/OS uses a biased stack while zLinux does not.
+// Generate a MemOperand for loading a field off of the stack pointer.
+// This is useful since z/OS uses a biased stack pointer while zLinux does not.
 inline MemOperand StackMemOperand(Register object, Register offset) {
 #if V8_OS_ZOS
   // TODO(mcornac): Need to check range of offset?
@@ -55,8 +55,8 @@ inline MemOperand StackMemOperand(Register object, Register offset) {
 #endif
 }
 
-// Generate a MemOperand for loading a field from the stack.
-// This is useful since z/OS uses a biased stack while zLinux does not.
+// Generate a MemOperand for loading a field off of the stack pointer.
+// This is useful since z/OS uses a biased stack pointer while zLinux does not.
 inline MemOperand StackMemOperand(Register object, int offset) {
 #if V8_OS_ZOS
   // TODO(mcornac): Need to check range of offset?
@@ -66,8 +66,8 @@ inline MemOperand StackMemOperand(Register object, int offset) {
 #endif
 }
 
-// Generate a MemOperand for loading a field from the stack.
-// This is useful since z/OS uses a biased stack while zLinux does not.
+// Generate a MemOperand for loading a field off of the stack pointer.
+// This is useful since z/OS uses a biased stack pointer while zLinux does not.
 inline MemOperand StackMemOperand(Register object) {
   return StackMemOperand(object, 0);
 }

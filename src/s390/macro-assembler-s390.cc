@@ -795,10 +795,10 @@ int MacroAssembler::LeaveFrame(StackFrame::Type type,
                                int stack_adjustment) {
   // Drop the execution stack down to the frame pointer and restore
   // the caller frame pointer and return address.
-  LoadP(r14, StackMemOperand(fp, StandardFrameConstants::kCallerPCOffset));
+  LoadP(r14, MemOperand(fp, StandardFrameConstants::kCallerPCOffset));
   lay(r1, MemOperand(fp,
       StandardFrameConstants::kCallerSPOffset + stack_adjustment));
-  LoadP(fp, StackMemOperand(fp, StandardFrameConstants::kCallerFPOffset));
+  LoadP(fp, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
   LoadRR(sp, r1);
   int frame_ends = pc_offset();
   return frame_ends;
@@ -837,16 +837,16 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
 
   CleanseP(r14);
   Push(r14, fp);
-  LoadRR(fp, sp);
+  la(fp, StackMemOperand(sp));
   // Reserve room for saved entry sp and code object.
   lay(sp, MemOperand(sp, - ExitFrameConstants::kFrameSize));
 
   if (emit_debug_code()) {
-    StoreP(StackMemOperand(fp, ExitFrameConstants::kSPOffset),
+    StoreP(MemOperand(fp, ExitFrameConstants::kSPOffset),
            Operand::Zero(), r1);
   }
   mov(r1, Operand(CodeObject()));
-  StoreP(r1, StackMemOperand(fp, ExitFrameConstants::kCodeOffset));
+  StoreP(r1, MemOperand(fp, ExitFrameConstants::kCodeOffset));
 
   // Save the frame pointer and the context in top.
   mov(r1, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate())));
@@ -895,7 +895,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   // Set the exit frame sp value to point just before the return address
   // location.
   lay(r1, MemOperand(sp, kStackFrameSPSlot * kPointerSize));
-  StoreP(r1, StackMemOperand(fp, ExitFrameConstants::kSPOffset));
+  StoreP(r1, MemOperand(fp, ExitFrameConstants::kSPOffset));
 }
 
 
@@ -1333,7 +1333,7 @@ void MacroAssembler::Throw(Register value) {
   // or cp.
   CmpP(cp, Operand::Zero());
   beq(&skip, Label::kNear);
-  StoreP(cp, StackMemOperand(fp, StandardFrameConstants::kContextOffset));
+  StoreP(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
   bind(&skip);
 
   JumpToHandlerEntry();
@@ -1372,7 +1372,7 @@ void MacroAssembler::ThrowUncatchable(Register value) {
 
   // Set the top handler address to next handler past the top ENTRY handler.
   pop(r4);
-  StoreP(r4, StackMemOperand(r5));
+  StoreP(r4, MemOperand(r5));
   // Get the code object (r3) and state (r4).  Clear the context and frame
   // pointer (0 was saved in the handler).
   pop(r3);
@@ -1394,7 +1394,7 @@ void MacroAssembler::CheckAccessGlobalProxy(Register holder_reg,
   DCHECK(!scratch.is(ip));
 
   // Load current lexical context from the stack frame.
-  LoadP(scratch, StackMemOperand(fp, StandardFrameConstants::kContextOffset));
+  LoadP(scratch, MemOperand(fp, StandardFrameConstants::kContextOffset));
   // In debug mode, make sure the lexical context is set.
 #ifdef DEBUG
   CmpP(scratch, Operand::Zero());
@@ -3594,7 +3594,8 @@ void MacroAssembler::CallCFunctionHelper(Register function,
   // stays correct.
 #if ABI_USES_FUNCTION_DESCRIPTORS && !defined(USE_SIMULATOR)
   // z/OS uses a function descriptor. When calling C code be aware
-  LoadMultipleP(r5, r6, StackMemOperand(function, 0));
+  // of this descriptor and pick up values from it.
+  LoadMultipleP(r5, r6, MemOperand(function, 0));
   Register dest = r6;
 #elif ABI_TOC_ADDRESSABILITY_VIA_IP
   Move(ip, function);

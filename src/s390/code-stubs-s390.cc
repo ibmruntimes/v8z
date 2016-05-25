@@ -1434,8 +1434,8 @@ void CEntryStub::Generate(MacroAssembler* masm) {
 #if V8_TARGET_ARCH_S390X && !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
   // If return value is on the stack, pop it to registers.
   if (result_size_ > 1) {
-    __ LoadP(r3, StackMemOperand(r2, kPointerSize));
-    __ LoadP(r2, StackMemOperand(r2));
+    __ LoadP(r3, MemOperand(r2, kPointerSize));
+    __ LoadP(r2, MemOperand(r2));
   }
 #endif
 
@@ -1591,17 +1591,19 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   // Set up frame pointer for the frame to be pushed.
   // Need to add kPointerSize, because sp has one extra
   // frame already for the frame type being pushed later.
-  __ lay(fp, MemOperand(sp, -EntryFrameConstants::kCallerFPOffset +
-                            kPointerSize));
+  __ lay(fp, StackMemOperand(sp, -EntryFrameConstants::kCallerFPOffset +
+                                 kPointerSize));
 
 
   // If this is the outermost JS call, set js_entry_sp value.
   Label non_outermost_js;
   ExternalReference js_entry_sp(Isolate::kJSEntrySPAddress, isolate());
   __ mov(r7, Operand(ExternalReference(js_entry_sp)));
-  __ LoadAndTestP(r8, StackMemOperand(r7));
+  __ LoadAndTestP(r8, MemOperand(r7));
   __ bne(&non_outermost_js, Label::kNear);
-  __ StoreP(fp, StackMemOperand(r7));
+  // Store biased fp as js_entry_sp.
+  __ lay(ip, MemOperand(fp, -2048));
+  __ StoreP(ip, MemOperand(r7));
   __ LoadSmiLiteral(ip, Smi::FromInt(StackFrame::OUTERMOST_JSENTRY_FRAME));
   Label cont;
   __ b(&cont, Label::kNear);
@@ -1684,14 +1686,14 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   __ bne(&non_outermost_js_2, Label::kNear);
   __ mov(r8, Operand::Zero());
   __ mov(r7, Operand(ExternalReference(js_entry_sp)));
-  __ StoreP(r8, StackMemOperand(r7));
+  __ StoreP(r8, MemOperand(r7));
   __ bind(&non_outermost_js_2);
 
   // Restore the top frame descriptors from the stack.
   __ pop(r5);
   __ mov(ip,
          Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate())));
-  __ StoreP(r5, StackMemOperand(ip));
+  __ StoreP(r5, MemOperand(ip));
 
   // Reset the stack to the callee saved registers.
   __ lay(sp, MemOperand(sp, -EntryFrameConstants::kCallerFPOffset));
@@ -1981,8 +1983,8 @@ void ArgumentsAccessStub::GenerateReadElement(MacroAssembler* masm) {
 
   // Check if the calling frame is an arguments adaptor frame.
   Label adaptor;
-  __ LoadP(r4, StackMemOperand(fp, StandardFrameConstants::kCallerFPOffset));
-  __ LoadP(r5, StackMemOperand(r4, StandardFrameConstants::kContextOffset));
+  __ LoadP(r4, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
+  __ LoadP(r5, MemOperand(r4, StandardFrameConstants::kContextOffset));
   STATIC_ASSERT(StackFrame::ARGUMENTS_ADAPTOR < 0x3fffu);
   __ CmpSmiLiteral(r5, Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR), r0);
   __ beq(&adaptor);
@@ -1997,15 +1999,14 @@ void ArgumentsAccessStub::GenerateReadElement(MacroAssembler* masm) {
   __ SubP(r5, r2, r3);
   __ SmiToPtrArrayOffset(r5, r5);
   __ lay(r5, MemOperand(r5, fp));
-  __ LoadP(r2, StackMemOperand(r5, kDisplacement));
+  __ LoadP(r2, MemOperand(r5, kDisplacement));
   __ Ret();
 
   // Arguments adaptor case: Check index against actual arguments
   // limit found in the arguments adaptor frame. Use unsigned
   // comparison to get negative check for free.
   __ bind(&adaptor);
-  __ LoadP(r2,
-           StackMemOperand(r4, ArgumentsAdaptorFrameConstants::kLengthOffset));
+  __ LoadP(r2, MemOperand(r4, ArgumentsAdaptorFrameConstants::kLengthOffset));
   __ CmpLogicalP(r3, r2);
   __ bge(&slow);
 
@@ -2013,7 +2014,7 @@ void ArgumentsAccessStub::GenerateReadElement(MacroAssembler* masm) {
   __ SubP(r5, r2, r3);
   __ SmiToPtrArrayOffset(r5, r5);
   __ AddP(r5, r4);
-  __ LoadP(r2, StackMemOperand(r5, kDisplacement));
+  __ LoadP(r2, MemOperand(r5, kDisplacement));
   __ Ret();
 
   // Slow-case: Handle non-smi or out-of-bounds access to arguments
@@ -2031,15 +2032,14 @@ void ArgumentsAccessStub::GenerateNewSloppySlow(MacroAssembler* masm) {
 
   // Check if the calling frame is an arguments adaptor frame.
   Label runtime;
-  __ LoadP(r5, StackMemOperand(fp, StandardFrameConstants::kCallerFPOffset));
-  __ LoadP(r4, StackMemOperand(r5, StandardFrameConstants::kContextOffset));
+  __ LoadP(r5, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
+  __ LoadP(r4, MemOperand(r5, StandardFrameConstants::kContextOffset));
   STATIC_ASSERT(StackFrame::ARGUMENTS_ADAPTOR < 0x3fffu);
   __ CmpSmiLiteral(r4, Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR), r0);
   __ bne(&runtime);
 
   // Patch the arguments.length and the parameters pointer in the current frame.
-  __ LoadP(r4,
-           StackMemOperand(r5, ArgumentsAdaptorFrameConstants::kLengthOffset));
+  __ LoadP(r4, MemOperand(r5, ArgumentsAdaptorFrameConstants::kLengthOffset));
   __ StoreP(r4, StackMemOperand(sp, 0 * kPointerSize));
   __ SmiToPtrArrayOffset(r4, r4);
   __ AddP(r5, r4);
@@ -2066,8 +2066,8 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
   // Check if the calling frame is an arguments adaptor frame.
   Label runtime;
   Label adaptor_frame, try_allocate;
-  __ LoadP(r5, StackMemOperand(fp, StandardFrameConstants::kCallerFPOffset));
-  __ LoadP(r4, StackMemOperand(r5, StandardFrameConstants::kContextOffset));
+  __ LoadP(r5, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
+  __ LoadP(r4, MemOperand(r5, StandardFrameConstants::kContextOffset));
   STATIC_ASSERT(StackFrame::ARGUMENTS_ADAPTOR < 0x3fffu);
   __ CmpSmiLiteral(r4, Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR), r0);
   __ beq(&adaptor_frame, Label::kNear);
@@ -2078,8 +2078,7 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
 
   // We have an adaptor frame. Patch the parameters pointer.
   __ bind(&adaptor_frame);
-  __ LoadP(r4,
-           StackMemOperand(r5, ArgumentsAdaptorFrameConstants::kLengthOffset));
+  __ LoadP(r4, MemOperand(r5, ArgumentsAdaptorFrameConstants::kLengthOffset));
   __ SmiToPtrArrayOffset(r6, r4);
   __ AddP(r5, r6);
   __ AddP(r5, Operand(StandardFrameConstants::kCallerSPOffset));
@@ -2255,7 +2254,7 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
 
   __ bind(&arguments_loop);
   __ SubP(r6, Operand(kPointerSize));
-  __ LoadP(r8, StackMemOperand(r6, 0));
+  __ LoadP(r8, MemOperand(r6, 0));
   __ SmiToPtrArrayOffset(r7, r1);
   __ AddP(r7, r5);
   __ StoreP(r8, FieldMemOperand(r7, FixedArray::kHeaderSize));
@@ -2283,8 +2282,8 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
   // sp[8] : function
   // Check if the calling frame is an arguments adaptor frame.
   Label adaptor_frame, try_allocate, runtime;
-  __ LoadP(r4, StackMemOperand(fp, StandardFrameConstants::kCallerFPOffset));
-  __ LoadP(r5, StackMemOperand(r4, StandardFrameConstants::kContextOffset));
+  __ LoadP(r4, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
+  __ LoadP(r5, MemOperand(r4, StandardFrameConstants::kContextOffset));
   STATIC_ASSERT(StackFrame::ARGUMENTS_ADAPTOR < 0x3fffu);
   __ CmpSmiLiteral(r5, Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR), r0);
   __ beq(&adaptor_frame, Label::kNear);
@@ -2295,8 +2294,7 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
 
   // Patch the arguments.length and the parameters pointer.
   __ bind(&adaptor_frame);
-  __ LoadP(r3,
-           StackMemOperand(r4, ArgumentsAdaptorFrameConstants::kLengthOffset));
+  __ LoadP(r3, MemOperand(r4, ArgumentsAdaptorFrameConstants::kLengthOffset));
   __ StoreP(r3, StackMemOperand(sp, 0));
   __ SmiToPtrArrayOffset(r5, r3);
   __ AddP(r5, r4);
@@ -2362,7 +2360,7 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
   __ bind(&loop);
   // Pre-decrement r4 with kPointerSize on each iteration.
   // Pre-decrement in order to skip receiver.
-  __ LoadP(r5, StackMemOperand(r4, -kPointerSize));
+  __ LoadP(r5, MemOperand(r4, -kPointerSize));
   __ lay(r4, MemOperand(r4, -kPointerSize));
   // Post-increment r6 with kPointerSize on each iteration.
   __ StoreP(r5, MemOperand(r6));
@@ -2421,7 +2419,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
 #else
   __ StoreMultipleP(r3, sp, StackMemOperand(sp, 0));
 #endif
-  __ la(fp, MemOperand(sp, 13 * kPointerSize));
+  __ la(fp, StackMemOperand(sp, 13 * kPointerSize));
 
   // Ensure register assigments are consistent with callee save masks
   DCHECK(subject.bit() & kCalleeSaved);
@@ -2439,7 +2437,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ beq(&runtime);
 
   // Check that the first argument is a JSRegExp object.
-  __ LoadP(r2, StackMemOperand(fp, kJSRegExpOffset));
+  __ LoadP(r2, MemOperand(fp, kJSRegExpOffset));
   __ JumpIfSmi(r2, &runtime);
   __ CompareObjectType(r2, r3, r3, JS_REGEXP_TYPE);
   __ bne(&runtime);
@@ -2475,7 +2473,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
 
   // Reset offset for possibly sliced string.
   __ LoadImmP(r13, Operand::Zero());
-  __ LoadP(subject, StackMemOperand(fp, kSubjectOffset));
+  __ LoadP(subject, MemOperand(fp, kSubjectOffset));
   __ JumpIfSmi(subject, &runtime);
   __ LoadRR(r5, subject);  // Make a copy of the original subject string.
   __ LoadP(r2, FieldMemOperand(subject, HeapObject::kMapOffset));
@@ -2551,7 +2549,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // Load previous index and check range before r5 is overwritten.  We have to
   // use r5 instead of subject here because subject might have been only made
   // to look like a sequential string when it actually is an external string.
-  __ LoadP(r3, StackMemOperand(fp, kPreviousIndexOffset));
+  __ LoadP(r3, MemOperand(fp, kPreviousIndexOffset));
   __ JumpIfNotSmi(r3, &runtime);
   __ LoadP(r5, FieldMemOperand(r5, String::kLengthOffset));
   __ CmpLogicalP(r5, r3);
@@ -2630,7 +2628,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   // sizes below the previous sp. (Because creating a new stack frame pushes
   // the previous fp onto the stack and moves up sp by 2 * kPointerSize and
   // 13 registers saved on the stack previously)
-  __ LoadP(r2, StackMemOperand(fp, kSubjectOffset + 15 * kPointerSize));
+  __ LoadP(r2, MemOperand(fp, kSubjectOffset + 15 * kPointerSize));
 
   // Argument 2 (r3): Previous index.
   // Already there
@@ -2679,11 +2677,11 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
 
   __ LeaveExitFrame(false, no_reg, true);
 
-  __ la(fp, MemOperand(sp, 13 * kPointerSize));
+  __ la(fp, StackMemOperand(sp, 13 * kPointerSize));
 
   // r2: result (int32)
   // subject: subject string -- needed to reload
-  __ LoadP(subject, StackMemOperand(fp, kSubjectOffset));
+  __ LoadP(subject, MemOperand(fp, kSubjectOffset));
 
   // regexp_data: RegExp data (callee saved)
   // last_match_info_elements: Last match info elements (callee saved)
@@ -2745,7 +2743,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ SmiToShortArrayOffset(r3, r3);
   __ AddP(r3, Operand(2));
 
-  __ LoadP(r2, StackMemOperand(fp, kLastMatchInfoOffset));
+  __ LoadP(r2, MemOperand(fp, kLastMatchInfoOffset));
   __ JumpIfSmi(r2, &runtime);
   __ CompareObjectType(r2, r4, r4, JS_ARRAY_TYPE);
   __ bne(&runtime);
@@ -2818,7 +2816,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ BranchOnCount(r3, &next_capture);
 
   // Return last match info.
-  __ LoadP(r2, StackMemOperand(fp, kLastMatchInfoOffset));
+  __ LoadP(r2, MemOperand(fp, kLastMatchInfoOffset));
 #ifdef V8_OS_ZOS
   __ LoadMultipleP(r3, r4, StackMemOperand(sp, 0));
 #else
@@ -3175,7 +3173,7 @@ void CallConstructStub::Generate(MacroAssembler* masm) {
 
 
 static void EmitLoadTypeFeedbackVector(MacroAssembler* masm, Register vector) {
-  __ LoadP(vector, StackMemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
+  __ LoadP(vector, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
   __ LoadP(vector, FieldMemOperand(vector,
                                    JSFunction::kSharedFunctionInfoOffset));
   __ LoadP(vector, FieldMemOperand(vector,
@@ -4825,7 +4823,7 @@ void StoreArrayLiteralElementStub::Generate(MacroAssembler* masm) {
   __ bind(&slow_elements);
   // call.
   __ Push(r3, r5, r2);
-  __ LoadP(r7, StackMemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
+  __ LoadP(r7, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
   __ LoadP(r7, FieldMemOperand(r7, JSFunction::kLiteralsOffset));
   __ Push(r7, r6);
   __ TailCallRuntime(Runtime::kStoreArrayLiteralElement, 5, 1);
@@ -4865,7 +4863,7 @@ void StubFailureTrampolineStub::Generate(MacroAssembler* masm) {
   __ Call(ces.GetCode(), RelocInfo::CODE_TARGET);
   int parameter_count_offset =
       StubFailureTrampolineFrame::kCallerStackParameterCountFrameOffset;
-  __ LoadP(r3, StackMemOperand(fp, parameter_count_offset));
+  __ LoadP(r3, MemOperand(fp, parameter_count_offset));
   if (function_mode_ == JS_FUNCTION_STUB_MODE) {
     __ AddP(r3, Operand(1));
   }
@@ -5350,18 +5348,23 @@ void CallApiFunctionStub::Generate(MacroAssembler* masm) {
   DCHECK(!api_function_address.is(r2) && !scratch.is(r2));
   // r2 = FunctionCallbackInfo&
   // Arguments is after the return address.
+#ifdef V8_OS_ZOS
+  __ AddP(r2, sp,
+          Operand((kStackFrameExtraParamSlot + 1) * kPointerSize + 2048));
+#else
   __ AddP(r2, sp, Operand((kStackFrameExtraParamSlot + 1) * kPointerSize));
+#endif
   // FunctionCallbackInfo::implicit_args_
-  __ StoreP(scratch, StackMemOperand(r2, 0 * kPointerSize));
+  __ StoreP(scratch, MemOperand(r2, 0 * kPointerSize));
   // FunctionCallbackInfo::values_
   __ AddP(ip, scratch, Operand((FCA::kArgsLength - 1 + argc) * kPointerSize));
-  __ StoreP(ip, StackMemOperand(r2, 1 * kPointerSize));
+  __ StoreP(ip, MemOperand(r2, 1 * kPointerSize));
   // FunctionCallbackInfo::length_ = argc
   __ LoadImmP(ip, Operand(argc));
-  __ StoreW(ip, StackMemOperand(r2, 2 * kPointerSize));
+  __ StoreW(ip, MemOperand(r2, 2 * kPointerSize));
   // FunctionCallbackInfo::is_construct_call = 0
   __ LoadImmP(ip, Operand::Zero());
-  __ StoreW(ip, StackMemOperand(r2, 2 * kPointerSize + kIntSize));
+  __ StoreW(ip, MemOperand(r2, 2 * kPointerSize + kIntSize));
 
   const int kStackUnwindSpace = argc + FCA::kArgsLength + 1;
   ExternalReference thunk_ref =
@@ -5444,7 +5447,7 @@ void CallApiGetterStub::Generate(MacroAssembler* masm) {
   __ CallApiFunctionAndReturn(api_function_address,
                               thunk_ref,
                               kStackUnwindSpace,
-                              StackMemOperand(fp, 6 * kPointerSize),
+                              MemOperand(fp, 6 * kPointerSize),
                               NULL);
 }
 

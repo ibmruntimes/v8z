@@ -234,7 +234,7 @@ void FullCodeGenerator::Generate() {
     // Context is returned in r2.  It replaces the context passed to us.
     // It's saved in the stack and kept live in cp.
     __ LoadRR(cp, r2);
-    __ StoreP(r2, StackMemOperand(fp, StandardFrameConstants::kContextOffset));
+    __ StoreP(r2, MemOperand(fp, StandardFrameConstants::kContextOffset));
     // Copy any necessary parameters into the context.
     int num_parameters = info->scope()->num_parameters();
     for (int i = 0; i < num_parameters; i++) {
@@ -243,7 +243,7 @@ void FullCodeGenerator::Generate() {
         int parameter_offset = StandardFrameConstants::kCallerSPOffset +
             (num_parameters - 1 - i) * kPointerSize;
         // Load parameter from stack.
-        __ LoadP(r2, StackMemOperand(fp, parameter_offset), r0);
+        __ LoadP(r2, MemOperand(fp, parameter_offset), r0);
         // Store it in the context.
         MemOperand target = ContextOperand(cp, var->index());
         __ StoreP(r2, target);
@@ -270,8 +270,7 @@ void FullCodeGenerator::Generate() {
     Comment cmnt(masm_, "[ Allocate arguments object");
     if (!function_in_register) {
       // Load this again, if it's used by the local context below.
-      __ LoadP(r5, StackMemOperand(fp,
-                                   JavaScriptFrameConstants::kFunctionOffset));
+      __ LoadP(r5, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
     } else {
       __ LoadRR(r5, r3);
     }
@@ -467,9 +466,8 @@ void FullCodeGenerator::EmitReturnSequence() {
       int32_t no_frame_start = masm_->pc_offset();
       masm_->LoadP(fp, StackMemOperand(sp));
       masm_->LoadP(r14, StackMemOperand(sp, kPointerSize));
-      masm_->lay(sp,
-                 StackMemOperand(sp,
-                                 (uint32_t)(sp_delta + (2 * kPointerSize))));
+      masm_->lay(sp, StackMemOperand(sp,
+                       (uint32_t)(sp_delta + (2 * kPointerSize))));
       masm_->Ret();
       info_->AddNoFrameRange(no_frame_start, masm_->pc_offset());
     }
@@ -738,7 +736,7 @@ MemOperand FullCodeGenerator::StackOperand(Variable* var) {
   } else {
     offset += JavaScriptFrameConstants::kLocal0Offset;
   }
-  return StackMemOperand(fp, offset);
+  return MemOperand(fp, offset);
 }
 
 
@@ -1613,7 +1611,7 @@ void FullCodeGenerator::VisitRegExpLiteral(RegExpLiteral* expr) {
   // r4 = RegExp pattern
   // r3 = RegExp flags
   // r2 = RegExp literal clone
-  __ LoadP(r2, StackMemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
+  __ LoadP(r2, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
   __ LoadP(r6, FieldMemOperand(r2, JSFunction::kLiteralsOffset));
   int literal_offset =
       FixedArray::kHeaderSize + expr->literal_index() * kPointerSize;
@@ -1667,7 +1665,7 @@ void FullCodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
 
   expr->BuildConstantProperties(isolate());
   Handle<FixedArray> constant_properties = expr->constant_properties();
-  __ LoadP(r5, StackMemOperand(fp,  JavaScriptFrameConstants::kFunctionOffset));
+  __ LoadP(r5, MemOperand(fp,  JavaScriptFrameConstants::kFunctionOffset));
   __ LoadP(r5, FieldMemOperand(r5, JSFunction::kLiteralsOffset));
   __ LoadSmiLiteral(r4, Smi::FromInt(expr->literal_index()));
   __ mov(r3, Operand(constant_properties));
@@ -1817,7 +1815,7 @@ void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
     allocation_site_mode = DONT_TRACK_ALLOCATION_SITE;
   }
 
-  __ LoadP(r5, StackMemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
+  __ LoadP(r5, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
   __ LoadP(r5, FieldMemOperand(r5, JSFunction::kLiteralsOffset));
   __ LoadSmiLiteral(r4, Smi::FromInt(expr->literal_index()));
   __ mov(r3, Operand(constant_elements));
@@ -2020,7 +2018,7 @@ void FullCodeGenerator::VisitYield(Yield* expr) {
       __ beq(&post_runtime);
       __ push(r2);  // generator object
       __ CallRuntime(Runtime::kSuspendJSGeneratorObject, 1);
-      __ LoadP(cp, StackMemOperand(fp, StandardFrameConstants::kContextOffset));
+      __ LoadP(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
       __ bind(&post_runtime);
       __ pop(result_register());
       EmitReturnSequence();
@@ -2090,7 +2088,7 @@ void FullCodeGenerator::VisitYield(Yield* expr) {
       __ RecordWriteField(r2, JSGeneratorObject::kContextOffset, r3, r4,
                           kLRHasBeenSaved, kDontSaveFPRegs);
       __ CallRuntime(Runtime::kSuspendJSGeneratorObject, 1);
-      __ LoadP(cp, StackMemOperand(fp, StandardFrameConstants::kContextOffset));
+      __ LoadP(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
       __ pop(r2);                                      // result
       EmitReturnSequence();
       __ bind(&l_resume);                              // received in r2
@@ -2118,7 +2116,7 @@ void FullCodeGenerator::VisitYield(Yield* expr) {
       CallFunctionStub stub(isolate(), 1, CALL_AS_METHOD);
       __ CallStub(&stub);
 
-      __ LoadP(cp, StackMemOperand(fp, StandardFrameConstants::kContextOffset));
+      __ LoadP(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
       __ Drop(1);  // The function is still on the stack; drop it.
 
       // if (!result.done) goto l_try;
@@ -2211,7 +2209,8 @@ void FullCodeGenerator::EmitGeneratorResume(Expression *generator,
   // r6 = callee's JS function.
   __ PushFixedFrame(r6);
   // Adjust FP to point to saved FP.
-  __ lay(fp, MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
+  __ lay(fp, StackMemOperand(sp,
+                             StandardFrameConstants::kFixedFrameSizeFromFp));
 
   // Load the operand stack size.
   __ LoadP(r5, FieldMemOperand(r3, JSGeneratorObject::kOperandStackOffset));
@@ -2293,7 +2292,7 @@ void FullCodeGenerator::EmitCreateIteratorResult(bool done) {
   __ Push(Smi::FromInt(map->instance_size()));
   __ CallRuntime(Runtime::kAllocateInNewSpace, 1);
   __ LoadP(context_register(),
-           StackMemOperand(fp, StandardFrameConstants::kContextOffset));
+           MemOperand(fp, StandardFrameConstants::kContextOffset));
 
   __ bind(&allocated);
   __ mov(r3, Operand(map));
@@ -2757,7 +2756,7 @@ void FullCodeGenerator::EmitCall(Call* expr, CallIC::CallType call_type) {
 
   RecordJSReturnSite(expr);
   // Restore context register.
-  __ LoadP(cp, StackMemOperand(fp, StandardFrameConstants::kContextOffset));
+  __ LoadP(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
   context()->DropAndPlug(1, r2);
 }
 
@@ -2772,7 +2771,7 @@ void FullCodeGenerator::EmitResolvePossiblyDirectEval(int arg_count) {
 
   // r5: the receiver of the enclosing function.
   int receiver_offset = 2 + info_->scope()->num_parameters();
-  __ LoadP(r5, StackMemOperand(fp, receiver_offset * kPointerSize), r0);
+  __ LoadP(r5, MemOperand(fp, receiver_offset * kPointerSize), r0);
 
   // r4: strict mode.
   __ LoadSmiLiteral(r4, Smi::FromInt(strict_mode()));
@@ -2834,7 +2833,7 @@ void FullCodeGenerator::VisitCall(Call* expr) {
     __ CallStub(&stub);
     RecordJSReturnSite(expr);
     // Restore context register.
-    __ LoadP(cp, StackMemOperand(fp, StandardFrameConstants::kContextOffset));
+    __ LoadP(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
     context()->DropAndPlug(1, r2);
   } else if (call_type == Call::GLOBAL_CALL) {
     EmitCallWithLoadIC(expr);
@@ -3275,18 +3274,18 @@ void FullCodeGenerator::EmitIsConstructCall(CallRuntime* expr) {
                          &if_true, &if_false, &fall_through);
 
   // Get the frame pointer for the calling frame.
-  __ LoadP(r4, StackMemOperand(fp, StandardFrameConstants::kCallerFPOffset));
+  __ LoadP(r4, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
 
   // Skip the arguments adaptor frame if it exists.
   Label check_frame_marker;
-  __ LoadP(r3, StackMemOperand(r4, StandardFrameConstants::kContextOffset));
+  __ LoadP(r3, MemOperand(r4, StandardFrameConstants::kContextOffset));
   __ CmpSmiLiteral(r3, Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR), r0);
   __ bne(&check_frame_marker, Label::kNear);
-  __ LoadP(r4, StackMemOperand(r4, StandardFrameConstants::kCallerFPOffset));
+  __ LoadP(r4, MemOperand(r4, StandardFrameConstants::kCallerFPOffset));
 
   // Check the marker in the calling frame.
   __ bind(&check_frame_marker);
-  __ LoadP(r3, StackMemOperand(r4, StandardFrameConstants::kMarkerOffset));
+  __ LoadP(r3, MemOperand(r4, StandardFrameConstants::kMarkerOffset));
   STATIC_ASSERT(StackFrame::CONSTRUCT < 0x4000);
   __ CmpSmiLiteral(r3, Smi::FromInt(StackFrame::CONSTRUCT), r0);
   PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
@@ -3342,15 +3341,14 @@ void FullCodeGenerator::EmitArgumentsLength(CallRuntime* expr) {
   __ LoadSmiLiteral(r2, Smi::FromInt(info_->scope()->num_parameters()));
 
   // Check if the calling frame is an arguments adaptor frame.
-  __ LoadP(r4, StackMemOperand(fp, StandardFrameConstants::kCallerFPOffset));
-  __ LoadP(r5, StackMemOperand(r4, StandardFrameConstants::kContextOffset));
+  __ LoadP(r4, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
+  __ LoadP(r5, MemOperand(r4, StandardFrameConstants::kContextOffset));
   __ CmpSmiLiteral(r5, Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR), r0);
   __ bne(&exit, Label::kNear);
 
   // Arguments adaptor case: Read the arguments length from the
   // adaptor frame.
-  __ LoadP(r2,
-          StackMemOperand(r4, ArgumentsAdaptorFrameConstants::kLengthOffset));
+  __ LoadP(r2, MemOperand(r4, ArgumentsAdaptorFrameConstants::kLengthOffset));
 
   __ bind(&exit);
   context()->Plug(r2);
@@ -3785,7 +3783,7 @@ void FullCodeGenerator::EmitCallFunction(CallRuntime* expr) {
   __ LoadRR(r3, result_register());
   ParameterCount count(arg_count);
   __ InvokeFunction(r3, count, CALL_FUNCTION, NullCallWrapper());
-  __ LoadP(cp, StackMemOperand(fp, StandardFrameConstants::kContextOffset));
+  __ LoadP(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
   __ b(&done);
 
   __ bind(&runtime);
@@ -4222,7 +4220,7 @@ void FullCodeGenerator::VisitCallRuntime(CallRuntime* expr) {
     __ CallStub(&stub);
 
     // Restore context register.
-    __ LoadP(cp, StackMemOperand(fp, StandardFrameConstants::kContextOffset));
+    __ LoadP(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
 
     context()->DropAndPlug(1, r2);
   } else {
@@ -4748,7 +4746,7 @@ void FullCodeGenerator::EmitLiteralCompareNil(CompareOperation* expr,
 
 
 void FullCodeGenerator::VisitThisFunction(ThisFunction* expr) {
-  __ LoadP(r2, StackMemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
+  __ LoadP(r2, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
   context()->Plug(r2);
 }
 
@@ -4765,7 +4763,7 @@ Register FullCodeGenerator::context_register() {
 
 void FullCodeGenerator::StoreToFrameField(int frame_offset, Register value) {
   DCHECK_EQ(static_cast<int>(POINTER_SIZE_ALIGN(frame_offset)), frame_offset);
-  __ StoreP(value, StackMemOperand(fp, frame_offset));
+  __ StoreP(value, MemOperand(fp, frame_offset));
 }
 
 
@@ -4790,8 +4788,7 @@ void FullCodeGenerator::PushFunctionArgumentForContextAllocation() {
     __ LoadP(ip, ContextOperand(cp, Context::CLOSURE_INDEX));
   } else {
     DCHECK(declaration_scope->is_function_scope());
-    __ LoadP(ip, StackMemOperand(fp,
-                                 JavaScriptFrameConstants::kFunctionOffset));
+    __ LoadP(ip, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
   }
   __ push(ip);
 }
@@ -4887,7 +4884,7 @@ FullCodeGenerator::NestedStatement* FullCodeGenerator::TryFinally::Exit(
   if (*context_length > 0) {
     // Restore the context to its dedicated register and the stack.
     __ LoadP(cp, StackMemOperand(sp, StackHandlerConstants::kContextOffset));
-    __ StoreP(cp, StackMemOperand(fp, StandardFrameConstants::kContextOffset));
+    __ StoreP(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
   }
   __ PopTryHandler();
   __ b(r14, finally_entry_ /*, SetLK*/);

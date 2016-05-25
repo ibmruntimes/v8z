@@ -91,7 +91,9 @@ class S390OperandConverter : public InstructionOperandConverter {
     DCHECK(op->IsStackSlot() || op->IsDoubleStackSlot());
     // The linkage computes where all spill slots are located.
     FrameOffset offset = linkage()->GetFrameOffset(op->index(), frame(), 0);
-    return StackMemOperand(offset.from_stack_pointer() ? sp : fp, offset.offset());
+    return offset.from_stack_pointer() ?
+      StackMemOperand(sp, offset.offset())
+      MemOperand(fp, offset.offset());
   }
 };
 
@@ -781,7 +783,7 @@ void CodeGenerator::AssemblePrologue() {
     int register_save_area_size = 0;
     RegList saves = descriptor->CalleeSavedRegisters();
     __ Push(r14, fp);
-    __ LoadRR(fp, sp);
+    __ la(fp, MemOperand(sp, 2048));
     if (saves != 0 || register_save_area_size) {
       // Save callee-saved registers.
       for (int i = Register::kNumRegisters - 1; i >= 0; i--) {
@@ -805,12 +807,12 @@ void CodeGenerator::AssemblePrologue() {
       Label ok;
       // +2 for return address and saved frame pointer.
       int receiver_slot = info->scope()->num_parameters() + 2;
-      __ LoadP(r4, StackMemOperand(fp, receiver_slot * kPointerSize));
+      __ LoadP(r4, MemOperand(fp, receiver_slot * kPointerSize));
       __ CompareRoot(r4, Heap::kUndefinedValueRootIndex);
       __ bne(&ok);
       __ LoadP(r4, GlobalObjectOperand());
       __ LoadP(r4, FieldMemOperand(r4, GlobalObject::kGlobalProxyOffset));
-      __ StoreP(r4, StackMemOperand(fp, receiver_slot * kPointerSize));
+      __ StoreP(r4, MemOperand(fp, receiver_slot * kPointerSize));
       __ bind(&ok);
     }
 
