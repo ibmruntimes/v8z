@@ -1391,10 +1391,8 @@ void CEntryStub::Generate(MacroAssembler* masm) {
 #if V8_OS_ZOS
     // TODO(mcornac): why do I have to -2?
     __ lay(ra, MemOperand(ra, -2));
-    __ StoreP(ra, StackMemOperand(sp, kStackFrameRASlot * kPointerSize));
-#else
-    __ StoreP(ra, StackMemOperand(sp, kStackFrameRASlot * kPointerSize));
 #endif
+    __ StoreP(ra, StackMemOperand(sp, kStackFrameRASlot * kPointerSize));
     // zLinux ABI requires caller's frame to have sufficient space for callee
     // preserved regsiter save area.
     // __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
@@ -1525,8 +1523,8 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   // Expecting paramters in r2-r6. XPLINK uses r1-r3 for the first three
   // parameters and also places them starting at r4+2112 on the biased stack.
   // Explicitly load argc and argv from stack back into r5/r6 respectively.
-  __ LoadP(r5, MemOperand(r4, 2048 + (19 * kPointerSize)));
-  __ LoadP(r6, MemOperand(r4, 2048 + (20 * kPointerSize)));
+  __ LoadP(r5, StackMemOperand(sp, 19 * kPointerSize));
+  __ LoadP(r6, StackMemOperand(sp, 20 * kPointerSize));
 
   __ LoadRR(r4, r3);
   __ LoadRR(r3, r2);

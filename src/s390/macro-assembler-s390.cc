@@ -2382,7 +2382,7 @@ void MacroAssembler::CallApiFunctionAndReturn(
     LoadRR(r2, r3);
     LoadRR(r3, r4);
   }
-  lay(r4, MemOperand(sp,-(kStackPointerBias + 18*kPointerSize))); 
+  lay(sp, MemOperand(sp, - 18 * kPointerSize)); 
   LoadRR(r10, r7);  //clobbered root register
 #endif
 

@@ -783,7 +783,7 @@ void CodeGenerator::AssemblePrologue() {
     int register_save_area_size = 0;
     RegList saves = descriptor->CalleeSavedRegisters();
     __ Push(r14, fp);
-    __ la(fp, MemOperand(sp, 2048));
+    __ la(fp, StackMemOperand(sp));
     if (saves != 0 || register_save_area_size) {
       // Save callee-saved registers.
       for (int i = Register::kNumRegisters - 1; i >= 0; i--) {

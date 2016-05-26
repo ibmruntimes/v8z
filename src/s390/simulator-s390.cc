@@ -1327,11 +1327,10 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       }
       intptr_t* stack_pointer = reinterpret_cast<intptr_t*>(get_register(sp));
 #ifdef V8_OS_ZOS
-      intptr_t* argument_area = reinterpret_cast<intptr_t*>(get_register(r4)+ 2048 + 16*kPointerSize);
+      intptr_t* argument_area = stack_pointer + 2048 / kPointerSize + 16;
       arg[3] = argument_area[3];
       arg[4] = argument_area[4];
       arg[5] = argument_area[5];
-     
 #else
       arg[5] = stack_pointer[kCalleeRegisterSaveAreaSize / kPointerSize];
 #endif
