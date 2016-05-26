@@ -4311,7 +4311,11 @@ void DirectCEntryStub::GenerateCall(MacroAssembler* masm,
   intptr_t code =
       reinterpret_cast<intptr_t>(GetCode().location());
   __ mov(r1, Operand(code, RelocInfo::CODE_TARGET));
+#ifdef V8_OS_ZOS
+  __ CallC(r1);  // Call the stub.
+#else
   __ Call(r1);  // Call the stub.
+#endif
 }
 
 

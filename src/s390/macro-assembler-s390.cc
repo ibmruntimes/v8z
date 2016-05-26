@@ -2382,8 +2382,6 @@ void MacroAssembler::CallApiFunctionAndReturn(
   }
   lay(r4, MemOperand(sp,-(kStackPointerBias + 18*kPointerSize))); 
   LoadRR(r10, r7);  //clobbered root register
-  LoadRR(r7, r14);
-  lay(r7, MemOperand(r7, -2));
 #endif
 
   DirectCEntryStub stub(isolate());
