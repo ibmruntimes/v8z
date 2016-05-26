@@ -75,7 +75,7 @@ uint16_t Latin1::ConvertNonLatin1ToLatin1(uint16_t c) {
 
 unsigned Utf8::EncodeOneByte(char* str, uint8_t c) {
   static const int kMask = ~(1 << 6);
-  if (c <= kMaxOneByteChar) {
+  if (v8::internal::ebcdic2ascii(c) <= kMaxOneByteChar) {
     str[0] = c;
     return 1;
   }
