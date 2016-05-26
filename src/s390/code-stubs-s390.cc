@@ -1403,8 +1403,8 @@ void CEntryStub::Generate(MacroAssembler* masm) {
     // Load the biased stack pointer into r4 before calling native code
     // Stack Pointer Bias = Xplink Bias(2048) + SaveArea(12 ptrs +
     // Reserved(2ptrs) + Debug Area(1ptr) +
-    // + Arg Area Prefix(1ptr) + Argument Area(2 ptrs).
-     __ lay(r4, MemOperand(sp, -(kStackPointerBias + 18*kPointerSize)));
+    // + Arg Area Prefix(1ptr) + Argument Area(3 ptrs).
+     __ lay(r4, MemOperand(sp, -(kStackPointerBias + 19*kPointerSize)));
 #endif
 
     __ b(target);
