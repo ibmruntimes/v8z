@@ -1346,8 +1346,10 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
          (redirection->type() == ExternalReference::BUILTIN_FP_INT_CALL);
 
       // Place the return address on the stack, making the call GC safe.
-      *reinterpret_cast<intptr_t*>(get_register(sp)
-          + kStackFrameRASlot * kPointerSize) = get_register(r14);
+      // TODO(mcornac): If this is necessary we must find the right slot.
+      // Pushing to slot 0 overwrites important data on stack.
+      // *reinterpret_cast<intptr_t*>(get_register(sp)
+      //    + kStackFrameRASlot * kPointerSize) = get_register(r14);
 
       intptr_t external =
           reinterpret_cast<intptr_t>(redirection->external_function());
