@@ -1331,7 +1331,8 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       }
       intptr_t* stack_pointer = reinterpret_cast<intptr_t*>(get_register(sp));
 #ifdef V8_OS_ZOS
-      intptr_t* argument_area = reinterpret_cast<intptr_t*>(get_register(r4)+ 2048 + 16*kPointerSize);
+      intptr_t* argument_area = reinterpret_cast<intptr_t*>(get_register(r4)
+         + 2048 + 16 * kPointerSize);
       arg[3] = argument_area[3];
       arg[4] = argument_area[4];
       arg[5] = argument_area[5];
@@ -1348,8 +1349,14 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       // Place the return address on the stack, making the call GC safe.
       // TODO(mcornac): If this is necessary we must find the right slot.
       // Pushing to slot 0 overwrites important data on stack.
-      // *reinterpret_cast<intptr_t*>(get_register(sp)
-      //    + kStackFrameRASlot * kPointerSize) = get_register(r14);
+#ifdef V8_OS_ZOS
+      intptr_t* ra_slot = reinterpret_cast<intptr_t*>(get_register(r4)
+         + 2048 + 3 * kPointerSize);
+      *ra_slot = get_register(r7);
+#else
+      *reinterpret_cast<intptr_t*>(get_register(sp)
+         + kStackFrameRASlot * kPointerSize) = get_register(r14);
+#endif
 
       intptr_t external =
           reinterpret_cast<intptr_t>(redirection->external_function());
@@ -1588,7 +1595,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       // Todo(muntasir):In CEntryStub we subtract 2 bytes from the return addr
       // prior to saving it, fixing this up here, need to investigate why we
       // are doing this in CEntryStub prior to removing this
-      int64_t saved_lr = get_register(r7) + 2;
+      int64_t saved_lr = *ra_slot + 2;
 #else
       int64_t saved_lr = *reinterpret_cast<intptr_t*>(get_register(sp)
                              + kStackFrameRASlot * kPointerSize);
