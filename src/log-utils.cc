@@ -186,9 +186,9 @@ void Log::MessageBuilder::AppendDetailed(String* str, bool show_impl_info) {
   }
   for (int i = 0; i < len; i++) {
     uc32 c = str->Get(i);
-    if (c > 0xff) {
+    if (ebcdic2ascii(c) > 0xff) {
       Append("\\u%04x", c);
-    } else if (c < 32 || c > 126) {
+    } else if (ebcdic2ascii(c) < 32 || ebcdic2ascii(c) > 126) {
       Append("\\x%02x", c);
     } else if (c == ',') {
       Append("\\,");

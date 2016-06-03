@@ -1196,7 +1196,7 @@ void String::StringShortPrint(StringStream* accumulator) {
   for (int i = 0; i < len; i++) {
     uint16_t c = stream.GetNext();
 
-    if (c < 32 || c >= 127) {
+    if (ebcdic2ascii(c) < 32 || ebcdic2ascii(c) >= 127) {
       ascii = false;
     }
   }
