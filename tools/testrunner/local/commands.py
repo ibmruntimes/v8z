@@ -43,6 +43,8 @@ def KillProcessWithID(pid):
   else:
     os.kill(pid, signal.SIGTERM)
 
+def CleanupSemaphores():
+  os.system("/home/mallick/bin/remove_stale_semaphores.sh")
 
 MAX_SLEEP_TIME = 0.1
 INITIAL_SLEEP_TIME = 0.0001
@@ -148,4 +150,6 @@ def Execute(args, verbose=False, timeout=None):
     errors = file(errname).read()
     CheckedUnlink(outname)
     CheckedUnlink(errname)
+  
+  CleanupSemaphores() 
   return output.Output(exit_code, timed_out, out, errors)
