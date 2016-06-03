@@ -6471,8 +6471,72 @@ static bool CheckFastAsciiConvert(char* dst,
   }
   return (expected_changed == changed);
 }
+static bool CheckFastEBCDICConvert(char * dst,
+                                   const char* src,
+                                   int length,
+                                   bool changed,
+                                   bool is_to_lower) {
+  bool expected_changed = false;
+  for (int i = 0; i < length ; i++) {
+    if (dst[i] == src[i] ) continue;
+    expected_changed = true;
+    if (is_to_lower) {
+      DCHECK('A' <= src[i] && src[i] <= 'I');
+      DCHECK('J' <= src[i] && src[i] <= 'R');
+      DCHECK('S' <= src[i] && src[i] <= 'Z');
+    } else {
+      DCHECK('a' <= src[i] && src[i] <= 'i');
+      DCHECK('j' <= src[i] && src[i] <= 'r');
+      DCHECK('s' <= src[i] && src[i] <= 'z');
+    }
+    DCHECK(dst[i] == src[i] ^ 0x40);
+  }
+  return (expected_changed == changed);
+}
 #endif
 
+template<class Converter>
+static bool FastEBCDICConvert(char * dst,
+                              const char * src,
+                              int length,
+                              bool * changed_out){
+
+#ifdef DEBUG
+  char* saved_dst = dst;
+  const char* saved_src = src;
+#endif
+  DisallowHeapAllocation no_gc;
+  static const char lo_1   = Converter::kIsToLower ? 'A' - 1 : 'a' - 1;
+  static const char hi_1   = Converter::kIsToLower ? 'I' + 1 : 'i' + 1;
+  
+  static const char lo_2   = Converter::kIsToLower ? 'J' - 1 : 'j' - 1;
+  static const char hi_2   = Converter::kIsToLower ? 'R' + 1 : 'r' + 1;
+  
+  static const char lo_3   = Converter::kIsToLower ? 'S' - 1 : 's' - 1;
+  static const char hi_3   = Converter::kIsToLower ? 'Z' + 1 : 'z' + 1;
+ 
+  const char* const limit = src + length;
+  bool changed = false;
+
+  while (src < limit) {
+    char c = *src;
+    if (lo_1 < c && c < hi_1 ||
+        lo_2 < c && c < hi_2 ||
+        lo_3 < c && c < hi_3) {
+      c ^= 0x40 ; //Convert the zone nibble
+      changed = true;
+    }
+    *dst = c;
+    ++src;
+    ++dst;
+  }
+  
+  DCHECK(CheckFastEBCDICConvert(
+             saved_dst, saved_src, length, changed, Converter::kIsToLower));
+
+  *changed_out = changed;
+  return true;
+}
 
 template<class Converter>
 static bool FastAsciiConvert(char* dst,
@@ -6572,13 +6636,23 @@ MUST_USE_RESULT static Object* ConvertCase(
     String::FlatContent flat_content = s->GetFlatContent();
     DCHECK(flat_content.IsFlat());
     bool has_changed_character = false;
-    bool is_ascii = FastAsciiConvert<Converter>(
-        reinterpret_cast<char*>(result->GetChars()),
-        reinterpret_cast<const char*>(flat_content.ToOneByteVector().start()),
-        length,
-        &has_changed_character);
+    bool is_utf = true;
+    if ('a' == 0x81) {
+       is_utf = !FastEBCDICConvert<Converter>(
+       reinterpret_cast<char*>(result->GetChars()),
+       reinterpret_cast<const char*>(flat_content.ToOneByteVector().start()),
+       length,
+       &has_changed_character);
+       }
+    else {
+       is_utf = !FastAsciiConvert<Converter>(
+       reinterpret_cast<char*>(result->GetChars()),
+       reinterpret_cast<const char*>(flat_content.ToOneByteVector().start()),
+       length,
+       &has_changed_character);
+    }
     // If not ASCII, we discard the result and take the 2 byte path.
-    if (is_ascii) return has_changed_character ? *result : *s;
+    if (!is_utf) return has_changed_character ? *result : *s;
   }
 
   Handle<SeqString> result;  // Same length as input.
