@@ -1321,6 +1321,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
 #if V8_TARGET_ARCH_S390X && !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
       intptr_t result_buffer = 0;
       if (redirection->type() == ExternalReference::BUILTIN_OBJECTPAIR_CALL) {
+        // TODO(mcornac): z/OS ?
         result_buffer = get_register(r2);
         arg0_regnum++;
       }
@@ -1336,7 +1337,6 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       arg[3] = argument_area[3];
       arg[4] = argument_area[4];
       arg[5] = argument_area[5];
-     
 #else
       arg[5] = stack_pointer[kCalleeRegisterSaveAreaSize / kPointerSize];
 #endif
@@ -4562,7 +4562,7 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   // Store remaining arguments on stack, from low to high memory.
 #ifdef V8_OS_ZOS
   intptr_t* stack_argument = reinterpret_cast<intptr_t*>(entry_stack +
-    19 * kPointerSize);
+    kStackPointerBias + 19 * kPointerSize);
 #else
   intptr_t* stack_argument = reinterpret_cast<intptr_t*>(entry_stack +
     kCalleeRegisterSaveAreaSize);
