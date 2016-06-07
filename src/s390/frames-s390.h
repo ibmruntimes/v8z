@@ -33,19 +33,6 @@ int JSCallerSavedCode(int n);
 
 
 // Callee-saved registers preserved when switching from C to JavaScript
-/*#if V8_OS_ZOS
-const RegList kCalleeSaved =
-  1 << 8 |
-  1 << 9 |
-  1 << 10 |
-  1 << 11 |
-  1 << 12 |
-  1 << 13 |
-  1 << 14 |
-  1 << 15;
-
-const int kNumCalleeSaved = 8;
-#else*/
 const RegList kCalleeSaved =
   1 << 6 |   // r6 (argument passing in CEntryStub)
              //    (HandleScope logic in MacroAssembler)
@@ -59,7 +46,6 @@ const RegList kCalleeSaved =
   1 << 13;   // r13 (cp in Javascript)
 
 const int kNumCalleeSaved = 7;
-//#endif
 
 // Number of registers for which space is reserved in safepoints. Must be a
 // multiple of 8.

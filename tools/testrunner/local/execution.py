@@ -202,7 +202,7 @@ class Runner(object):
     self.indicator.Starting()
     if sys.platform.startswith("os390"):
        self._RunSequential()
-    else:   
+    else:
        self._RunInternal(jobs)
     self.indicator.Done()
     if self.failed or self.remaining:
@@ -213,7 +213,7 @@ class Runner(object):
       queue = [];
       for test in self.tests:
           assert test.id >= 0
-      #try:    
+      #try:
           result = RunTest(self._GetJob(test))
           if self.context.predictable:
              update_perf = self._ProcessTestPredictable(test, result, queue)
@@ -231,7 +231,7 @@ class Runner(object):
 
       # Make sure that any allocations were printed in predictable mode.
       #assert not self.context.predictable or self.printed_allocations
-         
+
   def _RunInternal(self, jobs):
     pool = Pool(jobs)
     test_map = {}

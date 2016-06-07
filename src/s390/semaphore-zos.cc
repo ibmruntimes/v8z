@@ -125,7 +125,7 @@ int sem_initialize(int *semid, int value) {
 int sem_init(int *sem, int pshared, unsigned int value) {
   key_t key;
   int ret = -1;
-  
+
   if ((*sem = initsem(IPC_PRIVATE, 1)) == -1) {
     assignSemgetError();  /*assign err code*/
     return -1;

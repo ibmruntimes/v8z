@@ -15,7 +15,7 @@ namespace internal {
 // Else, return something outside of 'A'-'Z' and 'a'-'z'.
 // Note: it ignores LOCALE.
 inline int AsciiAlphaToLower(uc32 c) {
-  uc32 ascii_c = (uc32)ebcdic2ascii((const char)c); 
+  uc32 ascii_c = (uc32)ebcdic2ascii((const char)c);
   return ascii_c | 0x20;
 }
 
@@ -46,7 +46,8 @@ inline bool IsDecimalDigit(uc32 c) {
 
 inline bool IsHexDigit(uc32 c) {
   // ECMA-262, 3rd, 7.6 (p 15)
-  return IsDecimalDigit(c) || IsInRange(AsciiAlphaToLower(c), ebcdic2ascii('a'), ebcdic2ascii('f'));
+  return IsDecimalDigit(c) ||
+         IsInRange(AsciiAlphaToLower(c), ebcdic2ascii('a'), ebcdic2ascii('f'));
 }
 
 

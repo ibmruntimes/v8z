@@ -150,6 +150,6 @@ def Execute(args, verbose=False, timeout=None):
     errors = file(errname).read()
     CheckedUnlink(outname)
     CheckedUnlink(errname)
-  
-  CleanupSemaphores() 
+
+  CleanupSemaphores()
   return output.Output(exit_code, timed_out, out, errors)

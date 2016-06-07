@@ -81,11 +81,12 @@ int MacroAssembler::CallSize(Register target) {
   return 2;
 }
 
+
 void MacroAssembler::CallC(Register target) {
   BlockTrampolinePoolScope block_trampoline_pool(this);
   Label start;
   bind(&start);
-  
+
   // Statement positions are expected to be recorded when the target
   // address is loaded.
   positions_recorder()->WriteRecordedPositions();
@@ -99,8 +100,8 @@ void MacroAssembler::CallC(Register target) {
   basr(r14, target);
   DCHECK_EQ(CallSize(target), SizeOfCodeGeneratedSince(&start));
 #endif
-
 }
+
 
 void MacroAssembler::Call(Register target) {
   BlockTrampolinePoolScope block_trampoline_pool(this);
@@ -2370,18 +2371,17 @@ void MacroAssembler::CallApiFunctionAndReturn(
   // return address pushed on stack (could have moved after GC).
   // DirectCEntry stub itself is generated early and never moves.
 #ifdef V8_OS_ZOS
-  //Shuffle the arguments from Linux arg registers to XPLINK arg regs
-  //Reassign stack pointer to r4
-  LoadRR(r1,r2);
+  // Shuffle the arguments from Linux arg registers to XPLINK arg regs.
+  // Reassign stack pointer to r4.
+  LoadRR(r1, r2);
   if (function_address.is(r3)) {
     LoadRR(r2, r3);
-  }
-  else {
+  } else {
     LoadRR(r2, r3);
     LoadRR(r3, r4);
   }
-  lay(r4, MemOperand(sp,-(kStackPointerBias + 18*kPointerSize))); 
-  LoadRR(r10, r7);  //clobbered root register
+  lay(r4, MemOperand(sp, -(kStackPointerBias + 18 * kPointerSize)));
+  LoadRR(r10, r7);  // Clobbered root register.
 #endif
 
   DirectCEntryStub stub(isolate());
@@ -3443,8 +3443,8 @@ int MacroAssembler::CalculateStackPassedWords(int num_reg_arguments,
                                               int num_double_arguments) {
   int stack_passed_words = 0;
 #ifdef V8_OS_ZOS
-  //XPLINK Linkage reserves space for arguments on the stack
-  //even when passing them via registers
+  // XPLINK Linkage reserves space for arguments on the stack
+  // even when passing them via registers.
   stack_passed_words = num_reg_arguments + num_double_arguments;
 #else
   if (num_double_arguments > DoubleRegister::kNumRegisters) {
@@ -3455,7 +3455,7 @@ int MacroAssembler::CalculateStackPassedWords(int num_reg_arguments,
   if (num_reg_arguments > kRegisterPassedArguments) {
     stack_passed_words += num_reg_arguments - kRegisterPassedArguments;
   }
-#endif  
+#endif
   return stack_passed_words;
 }
 
@@ -3507,12 +3507,12 @@ void MacroAssembler::PrepareCallCFunction(int num_reg_arguments,
   int stack_passed_arguments = CalculateStackPassedWords(
       num_reg_arguments, num_double_arguments);
 #ifdef V8_OS_ZOS
-  Register c_sp   = r4; //stack pointer in C/C++
-  int stack_space = 16; //save area + debug area + reserved space
+  Register c_sp   = r4;  // Stack pointer in C/C++.
+  int stack_space = 16;  // Save area + debug area + reserved space.
   LoadRR(c_sp , sp);
 #else
   int stack_space = kNumRequiredStackFrameSlots;
-  Register c_sp   = sp;  
+  Register c_sp   = sp;
 #endif
   if (frame_alignment > kPointerSize) {
     // Make stack end at alignment and make room for stack arguments
@@ -3525,7 +3525,8 @@ void MacroAssembler::PrepareCallCFunction(int num_reg_arguments,
   } else {
     stack_space += stack_passed_arguments;
   }
-  lay(c_sp, MemOperand(c_sp, -((stack_space * kPointerSize) + kStackPointerBias)));
+  lay(c_sp,
+      MemOperand(c_sp, -((stack_space * kPointerSize) + kStackPointerBias)));
 }
 
 
@@ -3595,7 +3596,7 @@ void MacroAssembler::CallCFunctionHelper(Register function,
 #if ABI_USES_FUNCTION_DESCRIPTORS && !defined(USE_SIMULATOR)
   // z/OS uses a function descriptor. When calling C code be aware
   // of this descriptor and pick up values from it
-  LoadMultipleP(r5, r6, MemOperand(function,0));
+  LoadMultipleP(r5, r6, MemOperand(function, 0));
   Register dest = r6;
 #elif ABI_TOC_ADDRESSABILITY_VIA_IP
   Move(ip, function);
@@ -3609,14 +3610,13 @@ void MacroAssembler::CallCFunctionHelper(Register function,
 #else
   Call(dest);
 #endif
-  //Javascript stack pointer will be restored by the callee's
-  //epilogue
+  // Javascript stack pointer will be restored by the callee's epilogue.
 #ifndef V8_OS_ZOS
   int stack_passed_arguments = CalculateStackPassedWords(
       num_reg_arguments, num_double_arguments);
   int stack_space = kNumRequiredStackFrameSlots + stack_passed_arguments;
   if (ActivationFrameAlignment() > kPointerSize) {
-    // Load the original stack pointer (pre-alignment) from the stack
+    // Load the original stack pointer (pre-alignment) from the stack.
     LoadP(sp, MemOperand(sp, stack_space * kPointerSize));
   } else {
     la(sp, MemOperand(sp, stack_space * kPointerSize));

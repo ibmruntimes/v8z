@@ -6499,8 +6499,7 @@ template<class Converter>
 static bool FastEBCDICConvert(char * dst,
                               const char * src,
                               int length,
-                              bool * changed_out){
-
+                              bool * changed_out) {
 #ifdef DEBUG
   char* saved_dst = dst;
   const char* saved_src = src;
@@ -6508,13 +6507,13 @@ static bool FastEBCDICConvert(char * dst,
   DisallowHeapAllocation no_gc;
   static const char lo_1   = Converter::kIsToLower ? 'A' - 1 : 'a' - 1;
   static const char hi_1   = Converter::kIsToLower ? 'I' + 1 : 'i' + 1;
-  
+
   static const char lo_2   = Converter::kIsToLower ? 'J' - 1 : 'j' - 1;
   static const char hi_2   = Converter::kIsToLower ? 'R' + 1 : 'r' + 1;
-  
+
   static const char lo_3   = Converter::kIsToLower ? 'S' - 1 : 's' - 1;
   static const char hi_3   = Converter::kIsToLower ? 'Z' + 1 : 'z' + 1;
- 
+
   const char* const limit = src + length;
   bool changed = false;
 
@@ -6523,14 +6522,14 @@ static bool FastEBCDICConvert(char * dst,
     if (lo_1 < c && c < hi_1 ||
         lo_2 < c && c < hi_2 ||
         lo_3 < c && c < hi_3) {
-      c ^= 0x40 ; //Convert the zone nibble
+      c ^= 0x40 ;  // Convert the zone nibble.
       changed = true;
     }
     *dst = c;
     ++src;
     ++dst;
   }
-  
+
   DCHECK(CheckFastEBCDICConvert(
              saved_dst, saved_src, length, changed, Converter::kIsToLower));
 
@@ -6643,8 +6642,7 @@ MUST_USE_RESULT static Object* ConvertCase(
        reinterpret_cast<const char*>(flat_content.ToOneByteVector().start()),
        length,
        &has_changed_character);
-       }
-    else {
+    } else {
        is_utf = !FastAsciiConvert<Converter>(
        reinterpret_cast<char*>(result->GetChars()),
        reinterpret_cast<const char*>(flat_content.ToOneByteVector().start()),

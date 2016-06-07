@@ -4292,7 +4292,7 @@ void DirectCEntryStub::Generate(MacroAssembler* masm) {
   // Statement positions are expected to be recorded when the target
   // address is loaded.
   __ positions_recorder()->WriteRecordedPositions();
-  
+
   __ b(ip);  // Callee will return to R14 directly
 }
 
@@ -5381,7 +5381,7 @@ void CallApiGetterStub::Generate(MacroAssembler* masm) {
 
   Register api_function_address = r4;
   __ LoadRR(r2, sp);  // r0 = Handle<Name>
-  
+
   __ AddP(r3, r2, Operand(1 * kPointerSize));  // r3 = PCA
 
   // If ABI passes Handles (pointer-sized struct) in a register:
