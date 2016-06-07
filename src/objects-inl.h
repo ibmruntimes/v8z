@@ -6576,14 +6576,14 @@ bool StringHasher::UpdateIndex(Char c) {
   }
 #endif
 
-  if (c < '0' || c > '9') {
+  if (c < ebcdic2ascii('0') || c > ebcdic2ascii('9')) {
     is_array_index_ = false;
     return false;
   }
-  int d = c - '0';
+  int d = c - ebcdic2ascii('0');
   if (is_first_char_) {
     is_first_char_ = false;
-    if (c == '0' && length_ > 1) {
+    if (c == ebcdic2ascii('0') && length_ > 1) {
       is_array_index_ = false;
       return false;
     }
