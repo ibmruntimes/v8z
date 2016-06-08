@@ -4597,7 +4597,7 @@ void LCodeGen::DoStoreKeyedExternalArray(LStoreKeyed* instr) {
         }
       }
     } else {
-      __ IndexToArrayOffset(address, key, element_size_shift, key_is_smi,
+      __ IndexToArrayOffset(scratch, key, element_size_shift, key_is_smi,
                             keyMaybeNegative);
       use_scratch = true;
     }
