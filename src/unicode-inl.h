@@ -93,7 +93,7 @@ unsigned Utf8::Encode(char* str,
                       int previous,
                       bool replace_invalid) {
   static const int kMask = ~(1 << 6);
-  if (c <= kMaxOneByteChar) {
+  if (v8::internal::ebcdic2ascii(c) <= kMaxOneByteChar) {
     str[0] = c;
     return 1;
   } else if (c <= kMaxTwoByteChar) {
@@ -143,7 +143,7 @@ uchar Utf8::ValueOf(const byte* bytes, unsigned length, unsigned* cursor) {
 }
 
 unsigned Utf8::Length(uchar c, int previous) {
-  if (c <= kMaxOneByteChar) {
+  if (v8::internal::ebcdic2ascii(c) <= kMaxOneByteChar) {
     return 1;
   } else if (c <= kMaxTwoByteChar) {
     return 2;

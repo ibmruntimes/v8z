@@ -1219,7 +1219,7 @@ void String::StringShortPrint(StringStream* accumulator) {
         accumulator->Add("\\r");
       } else if (c == '\\') {
         accumulator->Add("\\\\");
-      } else if (c < 32 || c > 126) {
+      } else if (ebcdic2ascii(c) < 32 || ebcdic2ascii(c) > 126) {
         accumulator->Add("\\x%02x", c);
       } else {
         accumulator->Put(static_cast<char>(c));
