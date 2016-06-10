@@ -3999,7 +3999,17 @@ void Assembler::RelocateInternalReference(Address pc,
 
 
 int Assembler::DecodeInternalReference(Vector<char> buffer, Address pc) {
-/*Todo: decode function descriptors*/
+#if ABI_USES_FUNCTION_DESCRIPTORS
+  uintptr_t *fd = reinterpret_cast<uintptr_t*>(pc);
+  if (fd[0] == 0 && (fd[1] & 0x00000000) == 0) {
+    // Function descriptor
+    SNPrintF(buffer,
+             "[%08" V8PRIxPTR ", %08" V8PRIxPTR "]"
+             "   function descriptor",
+             fd[0], fd[1]);
+    return kPointerSize * 2;
+  }
+#endif
   return 0;
 }
 #endif  // V8_OS_ZOS
