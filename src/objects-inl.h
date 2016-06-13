@@ -6574,7 +6574,6 @@ bool StringHasher::UpdateIndex(Char c) {
   if (sizeof(Char) == 1) {
       c = ebcdic2ascii(c);
   }
-#endif
 
   if (c < ebcdic2ascii('0') || c > ebcdic2ascii('9')) {
     is_array_index_ = false;
@@ -6588,6 +6587,21 @@ bool StringHasher::UpdateIndex(Char c) {
       return false;
     }
   }
+#else
+  if (c < '0' || c > '9') {
+    is_array_index_ = false;
+    return false;
+  }
+  int d = c - '0';
+  if (is_first_char_) {
+    is_first_char_ = false;
+    if (c == '0' && length_ > 1) {
+      is_array_index_ = false;
+      return false;
+    }
+  }
+#endif
+
   if (array_index_ > 429496729U - ((d + 2) >> 3)) {
     is_array_index_ = false;
     return false;
