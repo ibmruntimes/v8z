@@ -174,8 +174,8 @@ template<> struct make_unsigned<int64_t> {
   typedef uint64_t type;
 };
 
-inline const uint8_t& ascii2ebcdic(const char letter) {
 #if V8_OS_ZOS
+inline const uint8_t& ascii2ebcdic(const char letter) {
   static unsigned char a2e[256] = {
   0,1,2,3,55,45,46,47,22,5,37,11,12,13,14,15,
   16,17,18,19,60,61,50,38,24,25,63,39,28,29,30,31,
@@ -195,11 +195,11 @@ inline const uint8_t& ascii2ebcdic(const char letter) {
   220,221,222,223,234,235,236,237,238,239,250,251,252,253,254,255
   };
   return a2e[letter];
+}
 #endif
-  return letter;
-};
-inline const uint8_t& ebcdic2ascii(const char letter) {
+
 #if V8_OS_ZOS
+inline const uint8_t& ebcdic2ascii(const char letter) {
   static const uint8_t e2a[256] = {
   0,1,2,3,156,9,134,127,151,141,142,11,12,13,14,15,
   16,17,18,19,157,133,8,135,24,25,146,143,28,29,30,31,
@@ -219,11 +219,8 @@ inline const uint8_t& ebcdic2ascii(const char letter) {
   48,49,50,51,52,53,54,55,56,57,250,251,252,253,254,255
   };
   return e2a[letter];
-#else
-  return letter;
+}
 #endif
-};
-
 // ----------------------------------------------------------------------------
 // BitField is a help template for encoding and decode bitfield with
 // unsigned content.

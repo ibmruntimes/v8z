@@ -6489,7 +6489,7 @@ static bool CheckFastEBCDICConvert(char * dst,
       DCHECK('j' <= src[i] && src[i] <= 'r');
       DCHECK('s' <= src[i] && src[i] <= 'z');
     }
-    DCHECK(dst[i] == src[i] ^ 0x40);
+    DCHECK(dst[i] == (src[i] ^ 0x40));
   }
   return (expected_changed == changed);
 }
@@ -6519,9 +6519,9 @@ static bool FastEBCDICConvert(char * dst,
 
   while (src < limit) {
     char c = *src;
-    if (lo_1 < c && c < hi_1 ||
-        lo_2 < c && c < hi_2 ||
-        lo_3 < c && c < hi_3) {
+    if (((lo_1 < c) && (c < hi_1)) ||
+        ((lo_2 < c) && (c < hi_2)) ||
+        ((lo_3 < c) && (c < hi_3))) {
       c ^= 0x40 ;  // Convert the zone nibble.
       changed = true;
     }

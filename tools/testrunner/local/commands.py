@@ -32,6 +32,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import platform
 
 from ..local import utils
 from ..objects import output
@@ -47,7 +48,8 @@ def KillProcess(process):
     sys.stderr.write('Error: Process %s already ended.\n' % process.pid)
 
 def CleanupSemaphores():
-  os.system("/home/mallick/bin/remove_stale_semaphores.sh")
+  if (platform.system() == 'OS/390'):
+    os.system("/tmp/cleanup_semaphores.sh")
 
 MAX_SLEEP_TIME = 0.1
 INITIAL_SLEEP_TIME = 0.0001

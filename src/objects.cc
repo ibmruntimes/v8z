@@ -1196,7 +1196,11 @@ void String::StringShortPrint(StringStream* accumulator) {
   for (int i = 0; i < len; i++) {
     uint16_t c = stream.GetNext();
 
+#ifdef V8_OS_ZOS
     if (ebcdic2ascii(c) < 32 || ebcdic2ascii(c) >= 127) {
+#else
+    if (c < 32 || c >= 127) {
+#endif
       ascii = false;
     }
   }
@@ -1219,7 +1223,11 @@ void String::StringShortPrint(StringStream* accumulator) {
         accumulator->Add("\\r");
       } else if (c == '\\') {
         accumulator->Add("\\\\");
+#ifdef V8_OS_ZOS
       } else if (ebcdic2ascii(c) < 32 || ebcdic2ascii(c) > 126) {
+#else
+      } else if (c < 32 || c > 126) {
+#endif
         accumulator->Add("\\x%02x", c);
       } else {
         accumulator->Put(static_cast<char>(c));
@@ -9337,7 +9345,11 @@ bool String::IsUtf8EqualTo(Vector<const char> str, bool allow_prefix_match) {
       if (Get(i++) != unibrow::Utf16::LeadSurrogate(r)) return false;
       if (Get(i) != unibrow::Utf16::TrailSurrogate(r)) return false;
     } else {
+#ifdef V8_OS_ZOS
       if (ebcdic2ascii(Get(i)) != r) return false;
+#else
+      if (Get(i) != r) return false;
+#endif
     }
     utf8_data += cursor;
     remaining_in_str -= cursor;
