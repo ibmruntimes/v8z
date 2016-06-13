@@ -196,9 +196,10 @@ inline const uint8_t& ebcdic2ascii(const char letter) {
   };
   return e2a[letter];
 #else
-  return letter;
+  const uint8_t* letter_to_return = reinterpret_cast<const uint8_t*>(&letter);
+  return *letter_to_return;
 #endif
-};
+}
 
 // ----------------------------------------------------------------------------
 // BitField is a help template for encoding and decode bitfield with
