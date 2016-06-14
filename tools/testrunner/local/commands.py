@@ -37,11 +37,14 @@ from ..local import utils
 from ..objects import output
 
 
-def KillProcessWithID(pid):
-  if utils.IsWindows():
-    os.popen('taskkill /T /F /PID %d' % pid)
-  else:
-    os.kill(pid, signal.SIGTERM)
+def KillProcess(process):
+  try:
+    if utils.IsWindows():
+      os.popen('taskkill /T /F /PID %d' % process.pid)
+    else:
+      process.kill()
+  except OSError:
+    sys.stderr.write('Error: Process %s already ended.\n' % process.pid)
 
 def CleanupSemaphores():
   os.system("/home/mallick/bin/remove_stale_semaphores.sh")
@@ -77,11 +80,15 @@ def RunProcess(verbose, timeout, args, **rest):
     error_mode = SEM_NOGPFAULTERRORBOX
     prev_error_mode = Win32SetErrorMode(error_mode)
     Win32SetErrorMode(error_mode | prev_error_mode)
-  process = subprocess.Popen(
-    shell=utils.IsWindows(),
-    args=popen_args,
-    **rest
-  )
+  try:
+    process = subprocess.Popen(
+      shell=utils.IsWindows(),
+      args=popen_args,
+      **rest
+    )
+  except Exception as e:
+    sys.stderr.write("Error executing: %s\n" % popen_args)
+
   if (utils.IsWindows() and prev_error_mode != SEM_INVALID_VALUE):
     Win32SetErrorMode(prev_error_mode)
   # Compute the end time - if the process crosses this limit we
@@ -96,7 +103,7 @@ def RunProcess(verbose, timeout, args, **rest):
   while exit_code is None:
     if (not end_time is None) and (time.time() >= end_time):
       # Kill the process and wait for it to exit.
-      KillProcessWithID(process.pid)
+      KillProcess(process)
       exit_code = process.wait()
       timed_out = True
     else:
