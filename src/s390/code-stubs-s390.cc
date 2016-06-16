@@ -1422,8 +1422,8 @@ void CEntryStub::Generate(MacroAssembler* masm) {
     __ LoadRR(r2, r3);
   }
   else {
-    __ LoadRR(r2, r1);
     __ LoadRR(r3, r2);
+    __ LoadRR(r2, r1);
   }
 #endif
 
