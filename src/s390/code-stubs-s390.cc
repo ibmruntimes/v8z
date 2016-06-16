@@ -1418,14 +1418,13 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   __ LoadRR(r8, r10);
   __ InitializeRootRegister();  // Rematerializing the root address in r10
 
-  // TODO(mcornac): XPLINK returns one value in r3, extended value in r1-r2.
   if (result_size_ == 1) {
     __ LoadRR(r2, r3);
   }
-//  else {
-//    __ LoadRR(r2, r1);
-//    __ LoadRR(r3, r2);
-//  }
+  else {
+    __ LoadRR(r2, r1);
+    __ LoadRR(r3, r2);
+  }
 #endif
 
   // roohack - do we need to (re)set FPU state?
