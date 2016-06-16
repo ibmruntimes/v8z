@@ -209,9 +209,16 @@ void MacroAssembler::Call(Handle<Code> code,
   DCHECK_EQ(expected_size, SizeOfCodeGeneratedSince(&start));
 }
 
+void MacroAssembler::RetC() {
+#ifdef V8_OS_ZOS
+    b(r7);
+#else
+    b(r14);
+#endif
+}
 
 void MacroAssembler::Ret() {
-  b(r14);
+    b(r14);
 }
 
 
