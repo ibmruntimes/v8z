@@ -49,7 +49,8 @@ def KillProcess(process):
 
 def CleanupSemaphores():
   if (platform.system() == 'OS/390'):
-    os.system("/tmp/cleanup_semaphores.sh")
+    os.system("for u in $(ipcs -s | grep `whoami` | tr -s ' ' | cut -d ' ' -f2) ;"
+              "do ipcrm -s $u; done")
 
 MAX_SLEEP_TIME = 0.1
 INITIAL_SLEEP_TIME = 0.0001
