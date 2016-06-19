@@ -2464,12 +2464,20 @@ void MacroAssembler::CallApiFunctionAndReturn(
   // HandleScope limit has changed. Delete allocated extensions.
   bind(&delete_allocated_handles);
   StoreP(r7, MemOperand(r9, kLimitOffset));
+#ifndef V8_OS_ZOS  
   LoadRR(r6, r2);
+#endif
   PrepareCallCFunction(1, r7);
+#ifdef V8_OS_ZOS
+  mov(r1, Operand(ExternalReference::isolate_address(isolate())));
+#else
   mov(r2, Operand(ExternalReference::isolate_address(isolate())));
+#endif 
   CallCFunction(
       ExternalReference::delete_handle_scope_extensions(isolate()), 1);
+#ifndef V8_OS_ZOS  
   LoadRR(r2, r6);
+#endif 
   b(&leave_exit_frame);
 }
 
