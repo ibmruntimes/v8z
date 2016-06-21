@@ -1321,8 +1321,11 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
 #if V8_TARGET_ARCH_S390X && !ABI_RETURNS_OBJECT_PAIRS_IN_REGS
       intptr_t result_buffer = 0;
       if (redirection->type() == ExternalReference::BUILTIN_OBJECTPAIR_CALL) {
-        // TODO(mcornac): z/OS ?
+#ifdef V8_OS_ZOS
+        result_buffer = get_register(r1);
+#else
         result_buffer = get_register(r2);
+#endif
         arg0_regnum++;
       }
 #endif
@@ -1551,8 +1554,13 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
         if (::v8::internal::FLAG_trace_sim) {
           PrintF("Returned %08x\n", hi_res);
         }
+#ifdef V8_OS_ZOS
+        set_register(r1, hi_res);
+        set_register(r2, lo_res);
+#else
         set_register(r2, hi_res);
         set_register(r3, lo_res);
+#endif
 #else
         if (::v8::internal::FLAG_trace_sim) {
           PrintF("Returned %08x\n", lo_res);
@@ -1582,8 +1590,13 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
                    result.x, result.y);
           }
 #if ABI_RETURNS_OBJECT_PAIRS_IN_REGS
+#ifdef V8_OS_ZOS
+          set_register(r1, result.x);
+          set_register(r2, result.y);
+#else
           set_register(r2, result.x);
           set_register(r3, result.y);
+#endif
 #else
           memcpy(reinterpret_cast<void *>(result_buffer), &result,
                       sizeof(struct ObjectPair));
