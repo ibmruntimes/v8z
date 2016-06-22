@@ -172,12 +172,6 @@ inline bool IsPowerOf2(T x) {
 #define V8PRIxPTR "lx"
 #endif
 
-// xlC z/OS does not define PRIx64
-#if V8_OS_ZOS
-#undef V8PRIx64
-#define V8PRIx64 "lx"
-#endif
-
 // The following macro works on both 32 and 64-bit platforms.
 // Usage: instead of writing 0x1234567890123456
 //      write V8_2PART_UINT64_C(0x12345678,90123456);
