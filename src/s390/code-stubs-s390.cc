@@ -4290,8 +4290,12 @@ void ICCompareStub::GenerateMiss(MacroAssembler* masm) {
 
 // This stub is paired with DirectCEntryStub::GenerateCall
 void DirectCEntryStub::Generate(MacroAssembler* masm) {
+#ifndef V8_OS_ZOS
   __ CleanseP(r14);
-
+#else
+  __ CleanseP(r7);
+  __ StoreP(r7, MemOperand(sp, kStackFrameRASlot * kPointerSize));
+#endif
   // Statement positions are expected to be recorded when the target
   // address is loaded.
   __ positions_recorder()->WriteRecordedPositions();
