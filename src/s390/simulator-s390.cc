@@ -3355,6 +3355,26 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       SetS390ConditionCode<uint8_t>(mem_val, imm_val);
       break;
     }
+    case TR: {
+     //Translate (Mem - Mem)
+      SSInstruction *ssinst = reinterpret_cast<SSInstruction *>(instr);
+      int b1 = ssinst->B1Value();
+      int b2 = ssinst->B2Value();
+      int length = ssinst->Length() + 1;
+      int64_t  b1_val = (b1 == 0) ? 0 : get_register(b1);
+      int64_t  b2_val = (b2 == 0) ? 0 : get_register(b2);
+      intptr_t d1_val = ssinst->D1Value();
+      intptr_t d2_val = ssinst->D2Value();
+      intptr_t target = b1_val + d1_val;
+      intptr_t translation_table = b2_val + d2_val;
+      while(length > 0) {
+        intptr_t table_index   = ReadB(target);
+        uint8_t  translate_val = ReadB(translation_table + table_index);
+        WriteB(target, translate_val); 
+        length--;
+      }
+      break;           
+    }
     case TMY: {
       // Test Under Mask (Mem - Imm) (8)
       int b1 = siyInstr->B1Value();
