@@ -1578,7 +1578,7 @@ ExternalReference ExternalReference::ebcdic_to_ascii_table(){
   return ExternalReference(reinterpret_cast<void *>(reinterpret_cast<intptr_t>(tr_ebcdic_ascii)));
 }
 static const byte tr_ascii_ebcdic[256] = {
-  0,1,2,3,55,45,46,47,22,5,37,11,12,13,14,15,
+  0,1,2,3,55,45,46,47,22,5,21,11,12,13,14,15,
   16,17,18,19,60,61,50,38,24,25,63,39,28,29,30,31,
   64,79,127,123,91,108,80,125,77,93,92,78,107,96,75,97,
   240,241,242,243,244,245,246,247,248,249,122,94,76,126,110,111,

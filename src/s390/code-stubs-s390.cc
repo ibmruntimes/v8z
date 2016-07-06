@@ -3446,6 +3446,15 @@ void StringCharFromCodeGenerator::GenerateSlow(
 
   __ bind(&slow_case_);
   call_helper.BeforeCall(masm);
+#ifdef V8_OS_ZOS
+  __ mov(result_, Operand(ExternalReference::ascii_to_ebcdic_table()));
+  __ lay(sp, MemOperand(sp, -kPointerSize));
+  __ SmiUntag(code_);
+  __ StoreByte(code_ , MemOperand(sp, 0));
+  __ Translate(sp, MemOperand(result_, 0), 0);
+  __ LoadlB(code_ , MemOperand(sp, 0));
+  __ SmiTag(code_);
+#endif
   __ push(code_);
   __ CallRuntime(Runtime::kCharFromCode, 1);
   __ Move(result_, r2);
