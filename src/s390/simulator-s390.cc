@@ -3368,8 +3368,8 @@ bool Simulator::DecodeSixByte(Instruction* instr) {
       intptr_t target = b1_val + d1_val;
       intptr_t translation_table = b2_val + d2_val;
       while(length > 0) {
-        intptr_t table_index   = ReadB(target);
-        uint8_t  translate_val = ReadB(translation_table + table_index);
+        intptr_t table_index   = ReadBU(target);
+        uint8_t  translate_val = ReadBU(translation_table + table_index);
         WriteB(target, translate_val); 
         length--;
       }
