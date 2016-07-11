@@ -27,7 +27,6 @@
 
 
 import xml.etree.ElementTree as xml
-import sys
 
 
 class JUnitTestOutput:
@@ -46,5 +45,4 @@ class JUnitTestOutput:
     self.root.append(testCaseElement)
 
   def FinishAndWrite(self, file):
-    encoding = "cp500" if sys.platform.startswith("os390") else "UTF-8"
-    xml.ElementTree(self.root).write(file, encoding)
+    xml.ElementTree(self.root).write(file, "UTF-8")
