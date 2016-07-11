@@ -221,6 +221,12 @@ inline const uint8_t& ebcdic2ascii(const char letter) {
   return e2a[letter];
 }
 #endif
+
+#ifdef V8_OS_ZOS
+#define GET_ASCII_CODE(byte_char) v8::internal::ebcdic2ascii(byte_char)
+#else
+#define GET_ASCII_CODE(byte_char) byte_char
+#endif
 // ----------------------------------------------------------------------------
 // BitField is a help template for encoding and decode bitfield with
 // unsigned content.
