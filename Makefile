@@ -490,9 +490,9 @@ builddeps:
 	      https://src.chromium.org/chrome/trunk/deps/third_party/icu52 \
 	      third_party/icu --revision 277999 ; \
 	fi
-	svn checkout --force https://github.com/google/googletest.git \
+	svn checkout --force https://github.com/google/googletest.git/trunk/googletest \
 	    testing/gtest --revision 951
-	svn checkout --force https://github.com/google/googlemock.git \
+	svn checkout --force https://github.com/google/googlemock.git/trunk/googlemock \
 	    testing/gmock --revision 286
 
 dependencies: builddeps
