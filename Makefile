@@ -480,8 +480,7 @@ gtags.clean:
 # "dependencies" includes also dependencies required for development.
 # Remember to keep these in sync with the DEPS file.
 builddeps:
-	svn checkout --force http://gyp.googlecode.com/svn/trunk build/gyp \
-	    --revision 1831
+	git clone https://chromium.googlesource.com/external/gyp build/gyp
 	if svn info third_party/icu 2>&1 | grep -q icu46 ; then \
 	  svn switch --force \
 	      https://src.chromium.org/chrome/trunk/deps/third_party/icu52 \
@@ -491,10 +490,10 @@ builddeps:
 	      https://src.chromium.org/chrome/trunk/deps/third_party/icu52 \
 	      third_party/icu --revision 277999 ; \
 	fi
-	svn checkout --force http://googletest.googlecode.com/svn/trunk \
-	    testing/gtest --revision 692
-	svn checkout --force http://googlemock.googlecode.com/svn/trunk \
-	    testing/gmock --revision 485
+	svn checkout --force https://github.com/google/googletest.git/trunk/googletest \
+	    testing/gtest --revision 951
+	svn checkout --force https://github.com/google/googlemock.git/trunk/googlemock \
+	    testing/gmock --revision 286
 
 dependencies: builddeps
 	# The spec is a copy of the hooks in v8's DEPS file.
