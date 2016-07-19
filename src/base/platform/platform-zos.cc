@@ -163,10 +163,12 @@ const char* OS::LocalTimezone(double time, TimezoneCache* cache) {
 double OS::LocalTimeOffset(TimezoneCache* cache) {
   time_t tv = time(NULL);
   struct tm* gmt = gmtime(&tv);
-  double gm_secs    = gmt->tm_sec + (gmt->tm_min * 60) + (gmt->tm_hour * 3600);
+  double gm_secs = gmt->tm_sec + (gmt->tm_min * 60) + (gmt->tm_hour * 3600);
   struct tm* localt = localtime(&tv);
-  double local_secs = localt->tm_sec + (localt->tm_min * 60) + (localt->tm_hour * 3600);
-  return local_secs - gm_secs - (localt->tm_isdst > 0 ? 3600 : 0);
+  double local_secs = localt->tm_sec + (localt->tm_min * 60) +
+                      (localt->tm_hour * 3600);
+  return (local_secs - gm_secs) * msPerSecond -
+         (localt->tm_isdst > 0 ? 3600 * msPerSecond : 0);
 }
 
 
