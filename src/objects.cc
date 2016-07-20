@@ -9496,7 +9496,7 @@ uint32_t StringHasher::ComputeUtf8Hash(Vector<const char> chars,
   // Handle some edge cases
   if (vector_length <= 1) {
     DCHECK(vector_length == 0 ||
-           GET_ASCII_CODE(chars[0]) <=
+           static_cast<uint8_t>(GET_ASCII_CODE(chars[0])) <=
                unibrow::Utf8::kMaxOneByteChar);
     *utf16_length_out = vector_length;
     return HashSequentialString(chars.start(), vector_length, seed);

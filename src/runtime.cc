@@ -6477,7 +6477,6 @@ static bool CheckFastEBCDICConvert(char * dst,
                                    bool changed,
                                    bool is_to_lower) {
   bool expected_changed = false;
-  bool is_char = false;
   for (int i = 0; i < length ; i++) {
     if (dst[i] == src[i] ) continue;
     expected_changed = true;
