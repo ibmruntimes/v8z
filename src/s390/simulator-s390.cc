@@ -4475,7 +4475,11 @@ void Simulator::CallInternal(byte *entry, int reg_arg_count) {
 #endif
 // Remember the values of non-volatile registers.
   int64_t r6_val = get_register(r6);
+#ifdef V8_OS_ZOS
+  int64_t r14_val = get_register(r14);
+#else
   int64_t r7_val = get_register(r7);
+#endif
   int64_t r8_val = get_register(r8);
   int64_t r9_val = get_register(r9);
   int64_t r10_val = get_register(r10);
@@ -4487,7 +4491,7 @@ void Simulator::CallInternal(byte *entry, int reg_arg_count) {
   // Put down marker for end of simulation. The simulator will stop simulation
   // when the PC reaches this value. By saving the "end simulation" value into
   // the LR the simulation stops when returning to this call point.
-#ifndef V8_OS_ZOS
+#ifdef V8_OS_ZOS
   registers_[7] = end_sim_pc;
 #else
   registers_[14] = end_sim_pc;
@@ -4500,7 +4504,11 @@ void Simulator::CallInternal(byte *entry, int reg_arg_count) {
   if (reg_arg_count < 5) {
     set_register(r6, callee_saved_value);
   }
+#ifdef V8_OS_ZOS
+  set_register(r14, callee_saved_value);
+#else
   set_register(r7, callee_saved_value);
+#endif
   set_register(r8, callee_saved_value);
   set_register(r9, callee_saved_value);
   set_register(r10, callee_saved_value);
@@ -4515,7 +4523,11 @@ void Simulator::CallInternal(byte *entry, int reg_arg_count) {
   if (reg_arg_count < 5) {
     CHECK_EQ(callee_saved_value, get_register(r6));
   }
+#ifdef V8_OS_ZOS
+  CHECK_EQ(callee_saved_value, get_register(r14));
+#else
   CHECK_EQ(callee_saved_value, get_register(r7));
+#endif
   CHECK_EQ(callee_saved_value, get_register(r8));
   CHECK_EQ(callee_saved_value, get_register(r9));
   CHECK_EQ(callee_saved_value, get_register(r10));
@@ -4525,7 +4537,11 @@ void Simulator::CallInternal(byte *entry, int reg_arg_count) {
 
   // Restore non-volatile registers with the original value.
   set_register(r6, r6_val);
+#ifdef V8_OS_ZOS
+  set_register(r14, r14_val);
+#else
   set_register(r7, r7_val);
+#endif
   set_register(r8, r8_val);
   set_register(r9, r9_val);
   set_register(r10, r10_val);
