@@ -15,7 +15,7 @@
 #include "src/list-inl.h"
 #include "src/parser.h"
 #include "src/scanner.h"
-
+#pragma convert("ISO8859-1")
 namespace v8 {
 namespace internal {
 
@@ -77,7 +77,7 @@ uc32 Scanner::ScanHexNumber(int expected_length) {
 
   return x;
 }
-
+/*
 #if defined(V8_OS_ZOS)
 static uint32_t max_token_index = 0xff;
 
@@ -341,7 +341,7 @@ static const byte one_char_tokens[] = {
   Token::ILLEGAL
 };
 
-#else
+#else*/
 static uint32_t max_token_index = 0x7f;
 
 // Table of one-character tokens, by character (0x00..0x7f only).
@@ -475,7 +475,7 @@ static const byte one_char_tokens[] = {
   Token::BIT_NOT,      // 0x7e
   Token::ILLEGAL
 };
-#endif
+//#endif
 
 // Ensure that tokens can be stored in a byte.
 STATIC_ASSERT(Token::NUM_TOKENS <= 0x100);
@@ -1632,5 +1632,5 @@ byte* DuplicateFinder::BackupKey(Vector<const uint8_t> bytes,
   backing_store_.AddBlock(bytes);
   return backing_store_.EndSequence().start();
 }
-
+#pragma convert(pop)
 } }  // namespace v8::internal

@@ -1490,16 +1490,24 @@ void CopyCharsUnsigned(uint16_t* dest, const uint16_t* src, int chars) {
   }
 }
 #elif defined(V8_HOST_ARCH_PPC) || defined(V8_HOST_ARCH_S390)
+#ifdef V8_OS_ZOS
+#define  COPY_ASCII_CHARS(dest, src, n) \
+    for (uint32_t byte=0 ; byte<n; byte++)  \
+        dest[byte] = GET_ASCII_CODE(src[byte]);
+#else
+#define COPY_ASCII_CHARS(dest, src, n) \
+    memcpy(dest, src, n);                       
+#endif
 #define CASE(n)                                 \
   case n:                                       \
-    memcpy(dest, src, n);                       \
+    COPY_ASCII_CHARS(dest, src, n);             \
     break
 void CopyCharsUnsigned(uint8_t* dest, const uint8_t* src, int chars) {
   switch (static_cast<unsigned>(chars)) {
     case 0:
       break;
     case 1:
-      *dest = *src;
+      *dest = GET_ASCII_CODE(*src);
       break;
     CASE(2);
     CASE(3);
@@ -1565,7 +1573,7 @@ void CopyCharsUnsigned(uint8_t* dest, const uint8_t* src, int chars) {
     CASE(63);
     CASE(64);
     default:
-      memcpy(dest, src, chars);
+      COPY_ASCII_CHARS(dest, src, chars);
       break;
   }
 }

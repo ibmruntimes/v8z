@@ -24,7 +24,6 @@ namespace internal {
 // nothing with tokens belonging to the respective category.
 
 #define IGNORE_TOKEN(name, string, precedence)
-
 #define TOKEN_LIST(T, K)                                             \
   /* End of source indicator. */                                     \
   T(EOS, "EOS", 0)                                                   \
@@ -159,7 +158,6 @@ namespace internal {
                                                                      \
   /* Scanner-internal use only. */                                   \
   T(WHITESPACE, NULL, 0)
-
 
 class Token {
  public:

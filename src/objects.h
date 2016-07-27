@@ -9195,7 +9195,7 @@ class String: public Name {
     uc16 Get(int i) {
       DCHECK(i < length_);
       DCHECK(state_ != NON_FLAT);
-      if (state_ == ASCII) return GET_ASCII_CODE(onebyte_start[i]);
+      if (state_ == ASCII) return (onebyte_start[i]);
       return twobyte_start[i];
     }
 

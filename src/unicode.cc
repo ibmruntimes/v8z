@@ -53,14 +53,6 @@ static inline bool IsStart(int32_t entry) {
 static bool LookupPredicate(const int32_t* table, uint16_t size, uchar chr) {
   static const int kEntryDist = 1;
   uint16_t value = chr & (kChunkBits - 1);
-#if defined(V8_OS_ZOS)
-  if (value >= 0 && value <= 0xff) {
-     char c  = static_cast<char>(value);
-     v8::base::OS::ConvertToASCII(&c);
-     DCHECK(c <= 0x7f && c>= 0);
-     value = c;
-  }
-#endif
   unsigned int low = 0;
   unsigned int high = size - 1;
   while (high != low) {

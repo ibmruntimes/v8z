@@ -75,7 +75,7 @@ uint16_t Latin1::ConvertNonLatin1ToLatin1(uint16_t c) {
 
 unsigned Utf8::EncodeOneByte(char* str, uint8_t c) {
   static const int kMask = ~(1 << 6);
-  if (GET_ASCII_CODE(c) <= kMaxOneByteChar) {
+  if (c <= kMaxOneByteChar) {
     str[0] = c;
     return 1;
   }
@@ -93,7 +93,7 @@ unsigned Utf8::Encode(char* str,
                       int previous,
                       bool replace_invalid) {
   static const int kMask = ~(1 << 6);
-  if (GET_ASCII_CODE(c) <=  kMaxOneByteChar) {
+  if (c <=  kMaxOneByteChar) {
     str[0] = c;
     return 1;
   } else if (c <= kMaxTwoByteChar) {
@@ -143,7 +143,7 @@ uchar Utf8::ValueOf(const byte* bytes, unsigned length, unsigned* cursor) {
 }
 
 unsigned Utf8::Length(uchar c, int previous) {
-  if (GET_ASCII_CODE(c) <= kMaxOneByteChar) {
+  if (c <= kMaxOneByteChar) {
     return 1;
   } else if (c <= kMaxTwoByteChar) {
     return 2;

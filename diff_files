@@ -1,0 +1,161 @@
+diff -r src/base/macros.h /sandbox/mallick/mailbox/src/base/macros.h
+308a309,313
+> #define CONVERT_TO_ASCII(data, length) \
+>     for (int i = 0; i < length ; i++) { \
+>         data[i] = GET_ASCII_CODE(data[i]);\
+>     }
+> #define NATIVE_ENCODING(byte_char) Ascii2Ebcdic(byte_char)
+310a316,317
+> #define CONVERT_TO_ASCII(data, length)
+> #define NATIVE_ENCODING(byte_char) byte_char
+diff -r src/char-predicates.h /sandbox/mallick/mailbox/src/char-predicates.h
+27,28c27,30
+<     switch (c) {
+<       case '$': case '_': case '\\': return true;
+---
+>     switch (NATIVE_ENCODING((char)c)) {
+>       case '$': 
+>       case '_': 
+>       case '\\': return true;
+diff -r src/char-predicates-inl.h /sandbox/mallick/mailbox/src/char-predicates-inl.h
+18,19c18
+<   uc32 ascii_c = (uc32)GET_ASCII_CODE((const char)c);
+<   return ascii_c | 0x20;
+---
+>   return c | 0x20;
+24,25c23
+<   uc32 ascii_c = (uc32)GET_ASCII_CODE((const char)c);
+<   return ascii_c == 0x000D;
+---
+>   return c == 0x000D;
+30c28
+<   return GET_ASCII_CODE(c) == 0x000A;
+---
+>   return c == 0x000A;
+43c41
+<   return IsInRange(GET_ASCII_CODE(c), GET_ASCII_CODE('0'), GET_ASCII_CODE('9'));
+---
+>   return IsInRange(c, GET_ASCII_CODE('0'), GET_ASCII_CODE('9'));
+50c48
+<          IsInRange(AsciiAlphaToLower(c), GET_ASCII_CODE('a'), GET_ASCII_CODE('f'));
+---
+>          IsInRange(c, GET_ASCII_CODE('a'), GET_ASCII_CODE('f'));
+56c54
+<   return IsInRange(GET_ASCII_CODE(c), GET_ASCII_CODE('0'), GET_ASCII_CODE('7'));
+---
+>   return IsInRange(c, GET_ASCII_CODE('0'), GET_ASCII_CODE('7'));
+62c60
+<   return c == '0' || c == '1';
+---
+>   return c == GET_ASCII_CODE('0') || c == GET_ASCII_CODE('1');
+69c67
+<       || (c == '_');
+---
+>       || (c == GET_ASCII_CODE('_'));
+74,75c72
+<   uc16 ascii_c = (uc16)GET_ASCII_CODE((const char)c);
+<   switch (ascii_c) {
+---
+>   switch (c) {
+diff -r src/factory.cc /sandbox/mallick/mailbox/src/factory.cc
+260c260
+<     *data++ = *ascii_data++;
+---
+>     *data++ = GET_ASCII_CODE(*ascii_data++);
+diff -r src/objects.cc /sandbox/mallick/mailbox/src/objects.cc
+1199c1199
+<     if (GET_ASCII_CODE(c) < 32 || GET_ASCII_CODE(c) >= 127) {
+---
+>     if (c < 32 || c >= 127) {
+diff -r src/scanner.cc /sandbox/mallick/mailbox/src/scanner.cc
+18c18
+< 
+---
+> #pragma convert("ISO8859-1")
+80c80
+< 
+---
+> /*
+344c344
+< #else
+---
+> #else*/
+478c478
+< #endif
+---
+> //#endif
+1635c1635
+< 
+---
+> #pragma convert(pop)
+diff -r src/scanner.h /sandbox/mallick/mailbox/src/scanner.h
+32,33c32,33
+<   uc32 ascii_c = (uc32)GET_ASCII_CODE((const char)c);
+<   ascii_c -= GET_ASCII_CODE('0');
+---
+>   uc32 ascii_c = (uc32)c;
+>   ascii_c -= '0';
+36c36
+<   ascii_c = (ascii_c | 0x20) - (GET_ASCII_CODE('a') - GET_ASCII_CODE('0'));
+---
+>   ascii_c = (ascii_c | 0x20) - ('a' - '0');
+396c396
+<       return !strncmp(token, data, length);
+---
+>       return !memcmp(token, data, length);
+406,407c406,407
+<       *is_get = strncmp(token, "get", 3) == 0;
+<       *is_set = !*is_get && strncmp(token, "set", 3) == 0;
+---
+>       *is_get = memcmp(token, "get", 3) == 0;
+>       *is_set = !*is_get && memcmp(token, "set", 3) == 0;
+diff -r src/token.h /sandbox/mallick/mailbox/src/token.h
+27d26
+< 
+163d161
+< 
+diff -r src/unicode.cc /sandbox/mallick/mailbox/src/unicode.cc
+56,63d55
+< #if defined(V8_OS_ZOS)
+<   if (value >= 0 && value <= 0xff) {
+<      char c  = static_cast<char>(value);
+<      v8::base::OS::ConvertToASCII(&c);
+<      DCHECK(c <= 0x7f && c>= 0);
+<      value = c;
+<   }
+< #endif
+diff -r src/unicode-inl.h /sandbox/mallick/mailbox/src/unicode-inl.h
+78c78
+<   if (GET_ASCII_CODE(c) <= kMaxOneByteChar) {
+---
+>   if (c <= kMaxOneByteChar) {
+96c96
+<   if (GET_ASCII_CODE(c) <=  kMaxOneByteChar) {
+---
+>   if (c <=  kMaxOneByteChar) {
+146c146
+<   if (GET_ASCII_CODE(c) <= kMaxOneByteChar) {
+---
+>   if (c <= kMaxOneByteChar) {
+diff -r src/utils.h /sandbox/mallick/mailbox/src/utils.h
+1492a1493,1500
+> #ifdef V8_OS_ZOS
+> #define  COPY_ASCII_CHARS(dest, src, n) \
+>     for (uint32_t byte=0 ; byte<n; byte++)  \
+>         dest[byte] = GET_ASCII_CODE(src[byte]);
+> #else
+> #define COPY_ASCII_CHARS(dest, src, n) \
+>     memcpy(dest, src, n);                       
+> #endif
+1495c1503
+<     memcpy(dest, src, n);                       \
+---
+>     COPY_ASCII_CHARS(dest, src, n);             \
+1502c1510
+<       *dest = *src;
+---
+>       *dest = GET_ASCII_CODE(*src);
+1568c1576
+<       memcpy(dest, src, chars);
+---
+>       COPY_ASCII_CHARS(dest, src, chars);

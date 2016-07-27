@@ -29,11 +29,11 @@ class ParserRecorder;
 // Returns the value (0 .. 15) of a hexadecimal character c.
 // If c is not a legal hexadecimal character, returns a value < 0.
 inline int HexValue(uc32 c) {
-  uc32 ascii_c = (uc32)GET_ASCII_CODE((const char)c);
-  ascii_c -= GET_ASCII_CODE('0');
+  uc32 ascii_c = (uc32)c;
+  ascii_c -= '0';
   if (static_cast<unsigned>(ascii_c) <= 9) return ascii_c;
   // Detect 0x11..0x16 and 0x31..0x36.
-  ascii_c = (ascii_c | 0x20) - (GET_ASCII_CODE('a') - GET_ASCII_CODE('0'));
+  ascii_c = (ascii_c | 0x20) - ('a' - '0');
   if (static_cast<unsigned>(ascii_c) <= 5) return ascii_c + 10;
   return -1;
 
@@ -393,7 +393,7 @@ class Scanner {
         !literal_contains_escapes()) {
       const char* token =
           reinterpret_cast<const char*>(literal_one_byte_string().start());
-      return !strncmp(token, data, length);
+      return !memcmp(token, data, length);
     }
     return false;
   }
@@ -403,8 +403,8 @@ class Scanner {
         !literal_contains_escapes()) {
       const char* token =
           reinterpret_cast<const char*>(literal_one_byte_string().start());
-      *is_get = strncmp(token, "get", 3) == 0;
-      *is_set = !*is_get && strncmp(token, "set", 3) == 0;
+      *is_get = memcmp(token, "get", 3) == 0;
+      *is_set = !*is_get && memcmp(token, "set", 3) == 0;
     }
   }
 

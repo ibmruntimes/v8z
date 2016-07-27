@@ -257,7 +257,7 @@ MaybeHandle<String> Factory::NewStringFromUtf8(Vector<const char> string,
   uint16_t* data = result->GetChars();
   const char* ascii_data = string.start();
   for (int i = 0; i < non_ascii_start; i++) {
-    *data++ = *ascii_data++;
+    *data++ = GET_ASCII_CODE(*ascii_data++);
   }
   // Now write the remainder.
   decoder->WriteUtf16(data, utf16_length);
