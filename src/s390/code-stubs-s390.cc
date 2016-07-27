@@ -3426,6 +3426,7 @@ void StringCharCodeAtGenerator::GenerateSlow(
   __ Translate(sp, MemOperand(result_, 0), 0);
   __ LoadlB(code_ , MemOperand(sp, 0));
   __ SmiTag(code_);
+  __ pop();
 #endif
   __ LoadRoot(result_, Heap::kSingleCharacterStringCacheRootIndex);
   __ SmiToPtrArrayOffset(code_, code_);
@@ -3453,6 +3454,7 @@ void StringCharFromCodeGenerator::GenerateSlow(
   __ Translate(sp, MemOperand(result_, 0), 0);
   __ LoadlB(code_ , MemOperand(sp, 0));
   __ SmiTag(code_);
+  __ pop();
 #endif
   __ push(code_);
   __ CallRuntime(Runtime::kCharFromCode, 1);
