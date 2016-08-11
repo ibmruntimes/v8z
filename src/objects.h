@@ -9385,7 +9385,7 @@ class String: public Name {
   // first non-ascii character, rather than directly to the non-ascii character.
   // If the return value is >= the passed length, the entire string was ASCII.
   static inline int NonAsciiStart(const char* chars, int length) {
-    const char* start = (const char *)GET_ASCII_CODE(*chars);
+    const char* start = chars;
     const char* limit = chars + length;
 #ifdef V8_HOST_CAN_READ_UNALIGNED
     DCHECK(unibrow::Utf8::kMaxOneByteChar == 0x7F);
