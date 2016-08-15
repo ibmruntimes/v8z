@@ -5,8 +5,14 @@ import re, sys, optparse
 # This is a utility for converting literals in V8 source code from
 # EBCDIC encoding to ASCII.  
 
-#safely ignore these cases
-IGNORE_STRING = "#include|#pragma"
+EBCDIC_PRAGMA_START     = re.compile(r'#pragma\s+convert\s*\(\s*\"IBM-1047\"\s*\)')
+EBCDIC_PRAGMA_END       = re.compile(r"#pragma\s+convert\s*\(\s*pop\s*\)")
+
+MULTILINE_COMMENT_START       = re.compile(r"^\s*/\*")
+MULTILINE_COMMENT_END         = re.compile(r".*\*/\s*")
+
+#ignore lines starting with
+IGNORE_STRING = "#include|#pragma|\s*//"
 IGNORE_RE = re.compile(IGNORE_STRING)
 
 #C-string literals in the source
@@ -98,23 +104,42 @@ def main():
   lines = lines.split('\n')
   result = "";
   
+  ebcdic_encoding = False
+  convert_start = False
+  convert_end = False
+  
+  multiline_comment = False
+  comment_start = False
+  comment_end = False
+  
+  skip_line = False 
+  #Main loop which identifies and encodes literals with hex escape sequences
   for line in lines:
-    if not IGNORE_RE.match(line):
+    comment_start = MULTILINE_COMMENT_START.match(line)
+    convert_start = EBCDIC_PRAGMA_START.match(line)
+    multiline_comment = (multiline_comment or comment_start)\
+                        and (not comment_end)
+    ebcdic_encoding = (ebcdic_encoding or convert_start)\
+                      and (not convert_end)
+    skip_line = IGNORE_RE.match(line)\
+                or multiline_comment or ebcdic_encoding 
+    
+    if not skip_line:
        string_literal     = STRING_RE.findall(line)
        char_literal       = CHAR_RE.findall(line) 
        
        for literal in string_literal: 
            encoded_literal = re.sub(ESCAPE_RE, EncodeEscapeSeq, literal)
            encoded_literal = re.sub(PRINTF_RE, EncodePrintF, encoded_literal) 
-           token_list      = re.split(HEX_RE, encoded_literal)
+           token_list = re.split(HEX_RE, encoded_literal)
            encoded_literal = reduce(lambda x,y: x+y, map(ConvertTokens, token_list))           
-           literal         = "\"" + literal + "\""
+           literal = "\"" + literal + "\""
            encoded_literal = "\"" + encoded_literal + "\""
-           line            = line.replace(literal, encoded_literal)
+           line = line.replace(literal, encoded_literal)
             
        for char in char_literal:
-           encoded_char    = ''
-           escape_seq      = ESCAPE_RE.match(char)
+           encoded_char = ''
+           escape_seq = ESCAPE_RE.match(char)
            if escape_seq:   
               encoded_char = EncodeEscapeSeq(escape_seq)
            else: 
@@ -122,8 +147,11 @@ def main():
            char = "'" + char + "'"   
            encoded_char = "'" + encoded_char + "'"
            line = line.replace(char, encoded_char)
-
+    
+    comment_end = MULTILINE_COMMENT_END.match(line)
+    convert_end = EBCDIC_PRAGMA_END.match(line)
     result = result + line + '\n'
+  
   WriteResult(args[1], result)
   return 0
 
