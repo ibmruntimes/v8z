@@ -20,13 +20,14 @@ STRING_RE          = re.compile(r'"([^"]*)"')
 CHAR_RE            = re.compile(r"'(.{1,2})'")
 
 #TOKENIZER FOR string literal
-ESCAPE_RE      = re.compile(r'\\n|\\t|\\v|\\r|\\f|\\a|\\b|\\\'|\\"|\\\\')
+ESCAPE_RE      = re.compile(r'\\n|\\t|\\v|\\r|\\f|\\a|\\b|\\\'|\\"|\\\\|\\0')
 HEX_RE         = re.compile(r"(\\x[0-9A-Fa-f]{1,2})")
 PRINTF_RE=re.compile('%{1}\s*[-+#0]*\s*[0-9]*[.]*[0-9]*[hljztL]*[iduoxXffFeEgGaAcspn]+')
 
 #CONVERSION TABLES
 ESCAPE_LIT = {"\\n":'\n', "\\t":'\t', "\\v":'\v', "\\r":'\r',  "\\f":'\f',
-              "\\a":'\a', "\\b":'\b', "\\'":'\'', "\\\"":'\"', "\\\\":'\\'}
+              "\\a":'\a', "\\b":'\b', "\\'":'\'', "\\\"":'\"', "\\\\":'\\',
+              "\\0":'\0'}
 
 EBCDIC_TO_ASCII = [
 0x00, 0x01, 0x02, 0x03, 0xff, 0x09, 0xff, 0x7f, 0xff, 0xff, 0xff, 0x0b, 0x0c, 
@@ -79,30 +80,15 @@ def EncodeChars(literal):
 def EncodePrintF(literal):
     return EncodeInEBCDIC(literal.group(0))
 
-def ReadFile(filename):
-  file = open(filename, "rb")
-  try:
-    lines = file.read()
-  finally:
-    file.close()
-  return lines
-
-def WriteResult(filename, content):
-   file = open(filename, "wt")
-   try:
-     lines = file.write(content)
-   finally:
-     file.close()
-
 def main():
   parser = optparse.OptionParser()
   parser.set_usage("""find_string_literal.py input.cc list.txt ...
    input.cc: C file to be scanned
    output.cc: String literals found.""")
   (options, args) = parser.parse_args()
-  lines = ReadFile(args[0])
-  lines = lines.split('\n')
-  result = "";
+  
+  Source = open(args[0], "rt")
+  Target = open(args[1], "at+")
   
   ebcdic_encoding = False
   convert_start = False
@@ -113,8 +99,9 @@ def main():
   comment_end = False
   
   skip_line = False 
+  
   #Main loop which identifies and encodes literals with hex escape sequences
-  for line in lines:
+  for line in Source:
     comment_start = MULTILINE_COMMENT_START.match(line)
     convert_start = EBCDIC_PRAGMA_START.match(line)
     multiline_comment = (multiline_comment or comment_start)\
@@ -150,9 +137,11 @@ def main():
     
     comment_end = MULTILINE_COMMENT_END.match(line)
     convert_end = EBCDIC_PRAGMA_END.match(line)
-    result = result + line + '\n'
+    line = line 
+    Target.write(line) 
   
-  WriteResult(args[1], result)
+  Source.close()
+  Target.close()
   return 0
 
 if __name__ == "__main__":
