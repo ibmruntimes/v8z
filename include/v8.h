@@ -890,7 +890,12 @@ class V8_EXPORT SealHandleScope {
   SealHandleScope(const SealHandleScope&);
   void operator=(const SealHandleScope&);
   void* operator new(size_t size);
-  void operator delete(void*, size_t);
+
+  /*  xlc does not hide this function.
+      Instead it expectes a user definition */
+  void operator delete(void*, size_t) {
+    abort();
+  }
 
   internal::Isolate* isolate_;
   int prev_level_;
