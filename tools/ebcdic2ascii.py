@@ -5,18 +5,18 @@ import re, sys, optparse
 # This is a utility for converting literals in V8 source code from
 # EBCDIC encoding to ASCII.  
 
-EBCDIC_PRAGMA_START     = re.compile(r'#pragma\s+convert\s*\(\s*\"IBM-1047\"\s*\)')
-EBCDIC_PRAGMA_END       = re.compile(r"#pragma\s+convert\s*\(\s*pop\s*\)")
+EBCDIC_PRAGMA_START     = re.compile(r'\s*#pragma\s+convert\s*\(\s*\"IBM-1047\"\s*\)|\s*#pragma\s+convert\s*\(\s*\"ibm-1047\"\s*\)')
+EBCDIC_PRAGMA_END       = re.compile(r"\s*#pragma\s+convert\s*\(\s*pop\s*\)")
 
 MULTILINE_COMMENT_START       = re.compile(r"^\s*/\*")
 MULTILINE_COMMENT_END         = re.compile(r".*\*/\s*")
 
 #ignore lines starting with
-IGNORE_STRING = "#include|#pragma|\s*//"
+IGNORE_STRING = "#include|#pragma|\s*//|extern\s+\"C\""
 IGNORE_RE = re.compile(IGNORE_STRING)
 
 #C-string literals in the source
-STRING_RE          = re.compile(r'"([^"]*)"')
+STRING_RE          = re.compile(r'"(.*?)(?<!\\)"')
 CHAR_RE            = re.compile(r"'(.{1,2})'")
 
 #TOKENIZER FOR string literal
