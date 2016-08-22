@@ -102,15 +102,12 @@ static void * anon_mmap(void * addr, size_t len) {
 #pragma convert("ibm-1047")
 #if defined(__64BIT__)
   __asm(" SYSSTATE ARCHLVL=2,AMODE64=YES\n"
-        " STORAGE OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES\n"
-        " LGR %0,1\n"
-        " LGR %1,15\n"
+        " STORAGE OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES,ADDR=(%0),RTCD=(%1),"
+        "LOC=(31,64)\n"
         :"=r"(p),"=r"(retcode): "r"(len): "r0","r1","r14","r15");
 #else
   __asm(" SYSSTATE ARCHLVL=2\n"
-        " STORAGE OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES\n"
-        " LR %0,1\n"
-        " LR %1,15\n"
+        " STORAGE OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES,ADDR=(%0),RTCD=(%1)\n"
         :"=r"(p),"=r"(retcode): "r"(len): "r0","r1","r14","r15");
 #endif
 #pragma convert(pop)
@@ -123,17 +120,23 @@ static int anon_munmap(void * addr, size_t len) {
 #pragma convert("ibm-1047")
 #if defined (__64BIT__)
   __asm(" SYSSTATE ARCHLVL=2,AMODE64=YES\n"
-          " STORAGE RELEASE,LENGTH=(%2),ADDR=(%1),COND=YES\n"
-          " LGR %0,15\n"
+          " STORAGE RELEASE,LENGTH=(%2),ADDR=(%1),RTCD=(%0),COND=YES\n"
           :"=r"(retcode): "r"(addr), "r"(len) : "r0","r1","r14","r15");
 #else
   __asm(" SYSSTATE ARCHLVL=2\n"
-          " STORAGE RELEASE,LENGTH=(%2),ADDR=(%1),COND=YES\n"
-          " LR %0,15\n"
+          " STORAGE RELEASE,LENGTH=(%2),ADDR=(%1),RTCD=(%0),COND=YES\n"
           :"=r"(retcode): "r"(addr), "r"(len) : "r0","r1","r14","r15");
 #endif
 #pragma convert(pop)
    return retcode;
+}
+
+
+void OS::Free(void* address, const size_t size) {
+  // TODO(1240712): munmap has a return value which is ignored here.
+  int result = anon_munmap(address, size);
+  USE(result);
+  DCHECK(result == 0);
 }
 
 
