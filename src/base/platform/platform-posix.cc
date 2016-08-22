@@ -193,16 +193,14 @@ intptr_t OS::CommitPageSize() {
 }
 
 
+#ifndef V8_OS_ZOS
 void OS::Free(void* address, const size_t size) {
-#if V8_OS_ZOS
-  free(address);
-#else
   // TODO(1240712): munmap has a return value which is ignored here.
   int result = munmap(address, size);
   USE(result);
   DCHECK(result == 0);
-#endif
 }
+#endif
 
 
 // Get rid of writable permission on code allocations.
