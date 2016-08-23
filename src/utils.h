@@ -1507,7 +1507,7 @@ void CopyCharsUnsigned(uint8_t* dest, const uint8_t* src, int chars) {
     case 0:
       break;
     case 1:
-      *dest = GET_ASCII_CODE(*src);
+      *dest = *src;
       break;
     CASE(2);
     CASE(3);
@@ -1573,7 +1573,7 @@ void CopyCharsUnsigned(uint8_t* dest, const uint8_t* src, int chars) {
     CASE(63);
     CASE(64);
     default:
-      COPY_ASCII_CHARS(dest, src, chars);
+      memcpy(dest, src, chars);
       break;
   }
 }

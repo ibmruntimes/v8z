@@ -234,6 +234,7 @@
                     '-qlanglvl=extended',
                     '-qenum=4', '-qbitfield=signed',
                     '-qasm',
+                    '-qconvlit=ISO8859-1',
                     '-qasmlib=sys1.maclib:sys1.modgen',
                     '-D_ISOC99_SOURCE','-D_UNIX03_SOURCE',
                     '-D_XOPEN_SOURCE_EXTENDED=1',

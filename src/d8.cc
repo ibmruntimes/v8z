@@ -62,7 +62,6 @@
 #if V8_OS_AIX
 #define malloc __linux_malloc
 #endif
-
 namespace v8 {
 
 
@@ -510,7 +509,9 @@ void Shell::Read(const v8::FunctionCallbackInfo<v8::Value>& args) {
   args.GetReturnValue().Set(source);
 }
 
-
+#if V8_OS_ZOS
+#pragma convert("IBM-1047")
+#endif
 Handle<String> Shell::ReadFromStdin(Isolate* isolate) {
   static const int kBufferSize = 256;
   char buffer[kBufferSize];
@@ -527,21 +528,27 @@ Handle<String> Shell::ReadFromStdin(Isolate* isolate) {
     if (length == 0) {
       return accumulator;
     } else if (buffer[length-1] != '\n') {
+      __e2a_l(buffer, length);
       accumulator = String::Concat(
           accumulator,
           String::NewFromUtf8(isolate, buffer, String::kNormalString, length));
     } else if (length > 1 && buffer[length-2] == '\\') {
       buffer[length-2] = '\n';
+      __e2a_l(buffer, length);
       accumulator = String::Concat(
           accumulator, String::NewFromUtf8(isolate, buffer,
                                            String::kNormalString, length - 1));
     } else {
+      __e2a_l(buffer, length);  
       return String::Concat(
           accumulator, String::NewFromUtf8(isolate, buffer,
                                            String::kNormalString, length - 1));
     }
   }
 }
+#ifdef V8_OS_ZOS
+#pragma convert(pop)
+#endif
 
 
 void Shell::Load(const v8::FunctionCallbackInfo<v8::Value>& args) {
@@ -1007,7 +1014,9 @@ inline bool operator<(const CounterAndKey& lhs, const CounterAndKey& rhs) {
 }
 #endif  // !V8_SHARED
 
-
+#ifdef V8_OS_ZOS
+#pragma convert("IBM-1047")
+#endif
 void Shell::OnExit() {
   LineEditor* line_editor = LineEditor::Get();
   if (line_editor) line_editor->Close();
@@ -1047,6 +1056,10 @@ void Shell::OnExit() {
   delete counters_file_;
   delete counter_map_;
 #endif  // !V8_SHARED
+#ifdef V8_OS_ZOS
+#pragma convert(pop)
+#endif
+
 }
 
 
@@ -1300,6 +1313,7 @@ void SetFlagsFromString(const char* flags) {
 bool Shell::SetOptions(int argc, char* argv[]) {
   bool logfile_per_isolate = false;
   for (int i = 0; i < argc; i++) {
+    __e2a_s(argv[i]);
     if (strcmp(argv[i], "--stress-opt") == 0) {
       options.stress_opt = true;
       argv[i] = NULL;
@@ -1695,7 +1709,6 @@ int Shell::Main(int argc, char* argv[]) {
 }
 
 }  // namespace v8
-
 
 #ifndef GOOGLE3
 int main(int argc, char* argv[]) {

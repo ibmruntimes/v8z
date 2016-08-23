@@ -305,12 +305,12 @@ inline const uint8_t& Ebcdic2Ascii(const char letter) {
   return e2a[letter];
 }
 
-#define GET_ASCII_CODE(byte_char) Ebcdic2Ascii(byte_char)
+#define GET_ASCII_CODE(byte_char) byte_char
 #define CONVERT_TO_ASCII(data, length) \
     for (int i = 0; i < length ; i++) { \
         data[i] = GET_ASCII_CODE(data[i]);\
     }
-#define NATIVE_ENCODING(byte_char) Ascii2Ebcdic(byte_char)
+#define NATIVE_ENCODING(byte_char) byte_char
 #else
 #define GET_ASCII_CODE(byte_char) byte_char
 #define CONVERT_TO_ASCII(data, length)

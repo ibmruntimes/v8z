@@ -24,7 +24,7 @@ inline bool IsRegExpNewline(uc32 c);
 
 struct IdentifierStart {
   static inline bool Is(uc32 c) {
-    switch (NATIVE_ENCODING((char)c)) {
+    switch (c) {
       case '$': 
       case '_': 
       case '\\': return true;

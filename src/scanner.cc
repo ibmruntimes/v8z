@@ -15,7 +15,6 @@
 #include "src/list-inl.h"
 #include "src/parser.h"
 #include "src/scanner.h"
-#pragma convert("ISO8859-1")
 namespace v8 {
 namespace internal {
 
@@ -1632,5 +1631,4 @@ byte* DuplicateFinder::BackupKey(Vector<const uint8_t> bytes,
   backing_store_.AddBlock(bytes);
   return backing_store_.EndSequence().start();
 }
-#pragma convert(pop)
 } }  // namespace v8::internal

@@ -45,7 +45,8 @@ inline bool IsDecimalDigit(uc32 c) {
 inline bool IsHexDigit(uc32 c) {
   // ECMA-262, 3rd, 7.6 (p 15)
   return IsDecimalDigit(c) ||
-         IsInRange(c, GET_ASCII_CODE('a'), GET_ASCII_CODE('f'));
+         IsInRange(c, GET_ASCII_CODE('a'), GET_ASCII_CODE('f'))||
+         IsInRange(c, GET_ASCII_CODE('A'), GET_ASCII_CODE('F'));
 }
 
 

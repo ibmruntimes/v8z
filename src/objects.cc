@@ -9337,7 +9337,7 @@ bool String::IsUtf8EqualTo(Vector<const char> str, bool allow_prefix_match) {
       if (Get(i++) != unibrow::Utf16::LeadSurrogate(r)) return false;
       if (Get(i) != unibrow::Utf16::TrailSurrogate(r)) return false;
     } else {
-      if (GET_ASCII_CODE(Get(i)) != r) return false;
+      if (Get(i) != r) return false;
     }
     utf8_data += cursor;
     remaining_in_str -= cursor;
@@ -9496,7 +9496,7 @@ uint32_t StringHasher::ComputeUtf8Hash(Vector<const char> chars,
   // Handle some edge cases
   if (vector_length <= 1) {
     DCHECK(vector_length == 0 ||
-           GET_ASCII_CODE(chars[0]) <=
+           (chars[0]) <=
                unibrow::Utf8::kMaxOneByteChar);
     *utf16_length_out = vector_length;
     return HashSequentialString(chars.start(), vector_length, seed);
