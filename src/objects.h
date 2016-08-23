@@ -9398,7 +9398,8 @@ class String: public Name {
     }
 #endif
     while (chars < limit) {
-      if (static_cast<uint8_t>(*chars) > unibrow::Utf8::kMaxOneByteChar) {
+      if (static_cast<uint8_t>(GET_ASCII_CODE(*chars)) >
+          unibrow::Utf8::kMaxOneByteChar) {
         return static_cast<int>(chars - start);
       }
       ++chars;
