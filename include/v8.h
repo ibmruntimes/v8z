@@ -894,7 +894,7 @@ class V8_EXPORT SealHandleScope {
   /*  xlc does not hide this function.
       Instead it expectes a user definition */
   void operator delete(void*, size_t) {
-    abort();
+    assert(0 && "Should not reach this part of the code");
   }
 
   internal::Isolate* isolate_;

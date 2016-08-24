@@ -30,4 +30,8 @@ typedef unsigned __int64 uint64_t;
 
 #endif
 
+#if V8_OS_ZOS
+#include <assert.h>
+#endif
+
 #endif  // V8STDINT_H_
