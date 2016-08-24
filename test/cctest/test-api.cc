@@ -22915,4 +22915,36 @@ TEST(GetOwnPropertyDescriptor) {
   set->Call(x, 1, args);
   CHECK_EQ(v8_num(14), get->Call(x, 0, NULL));
 }
+
+TEST(SealHandleScope) {
+  v8::Isolate* isolate = CcTest::isolate();
+  v8::HandleScope handle_scope(isolate);
+  LocalContext env;
+
+  v8::SealHandleScope seal(isolate);
+
+  // Should fail
+  v8::Local<v8::Object> obj = v8::Object::New(isolate);
+
+  USE(obj);
+}
+
+
+TEST(SealHandleScopeNested) {
+  v8::Isolate* isolate = CcTest::isolate();
+  v8::HandleScope handle_scope(isolate);
+  LocalContext env;
+
+  v8::SealHandleScope seal(isolate);
+
+  {
+    v8::HandleScope handle_scope(isolate);
+
+    // Should work
+    v8::Local<v8::Object> obj = v8::Object::New(isolate);
+
+    USE(obj);
+  }
+}
+
 #endif  // !TEST_API_IN_PARTS || TEST_API_PART2
