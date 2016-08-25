@@ -72,6 +72,7 @@
 #include "unicode/uversion.h"
 #endif
 
+#pragma convert("ISO8859-1")
 #if !defined(_STLP_VENDOR_CSTD) && !defined(V8_OS_ZOS)
 // STLPort and xlC do not import fpclassify and isless into the std namespace.
 using std::fpclassify;
@@ -15650,5 +15651,5 @@ const Runtime::Function* Runtime::FunctionForEntry(Address entry) {
 const Runtime::Function* Runtime::FunctionForId(Runtime::FunctionId id) {
   return &(kIntrinsicFunctions[static_cast<int>(id)]);
 }
-
+#pragma convert(pop)
 } }  // namespace v8::internal

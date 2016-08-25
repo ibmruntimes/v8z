@@ -17,7 +17,7 @@
 #include "src/prototype.h"
 #include "src/stub-cache.h"
 #include "src/vm-state-inl.h"
-
+#pragma convert("ISO8859-1")
 namespace v8 {
 namespace internal {
 
@@ -1659,5 +1659,5 @@ BUILTIN_LIST_DEBUG_A(DEFINE_BUILTIN_ACCESSOR_A)
 #undef DEFINE_BUILTIN_ACCESSOR_C
 #undef DEFINE_BUILTIN_ACCESSOR_A
 
-
+#pragma convert(pop)
 } }  // namespace v8::internal
