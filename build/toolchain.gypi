@@ -624,6 +624,13 @@
           }],
         ],  # conditions
       }],
+      ['OS=="os390"', {
+        'conditions': [
+          [ 'v8_no_strict_aliasing==1', {
+            'cflags': [ '-qnoansialias' ],
+          }],
+        ],  # conditions
+      }],
       ['OS=="solaris"', {
         'defines': [ '__C99FEATURES__=1' ],  # isinf() etc.
       }],
@@ -670,7 +677,7 @@
         },
         'conditions': [
           ['OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="netbsd" or \
-            OS=="qnx" or OS=="aix"', {
+            OS=="qnx" or OS=="aix" or OS=="os390"', {
             'cflags!': [
               '-O0',
               '-O3',
@@ -678,9 +685,13 @@
               '-O1',
               '-Os',
             ],
-            'cflags': [
-              '-fdata-sections',
-              '-ffunction-sections',
+            'conditions': [
+              ['OS!="os390"', {
+                'cflags': [
+                  '-fdata-sections',
+                  '-ffunction-sections',
+                ],
+              }],
             ],
           }],
           ['OS=="mac"', {
@@ -715,7 +726,7 @@
         },
         'conditions': [
           ['OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="netbsd" or \
-            OS=="qnx" or OS=="aix"', {
+            OS=="qnx" or OS=="aix" or OS=="os390"', {
             'cflags!': [
               '-O0',
               '-O3', # TODO(2807) should be -O1.
@@ -775,7 +786,7 @@
         },
         'conditions': [
           ['OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="netbsd" or \
-            OS=="qnx" or OS=="aix"', {
+            OS=="qnx" or OS=="aix" or OS=="os390"', {
             'cflags!': [
               '-O0',
               '-O1',
@@ -868,16 +879,18 @@
       'Release': {
         'conditions': [
           ['OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="netbsd" \
-            or OS=="aix"', {
+            or OS=="aix" or OS=="os390"', {
             'cflags!': [
               '-Os',
             ],
-            'cflags': [
-              '-fdata-sections',
-              '-ffunction-sections',
-              '<(wno_array_bounds)',
-            ],
             'conditions': [
+              ['OS!="os390"', {
+                'cflags': [
+                  '-fdata-sections',
+                  '-ffunction-sections',
+                  '<(wno_array_bounds)',
+                ],
+              }],
               [ 'gcc_version==44 and clang==0', {
                 'cflags': [
                   # Avoid crashes with gcc 4.4 in the v8 test suite.
