@@ -2583,7 +2583,8 @@ class HOptimizedGraphBuilder : public HGraphBuilder, public AstVisitor {
       BailoutId bailout_id);
 
   HInstruction* BuildStringCharCodeAt(HValue* string,
-                                      HValue* index);
+                                      HValue* index,
+                                      bool convert_to_ascii);
 
   HValue* BuildBinaryOperation(
       BinaryOperation* expr,

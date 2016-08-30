@@ -7298,7 +7298,7 @@ void HOptimizedGraphBuilder::BuildLoad(Property* expr,
   if (expr->IsStringAccess()) {
     HValue* index = Pop();
     HValue* string = Pop();
-    HInstruction* char_code = BuildStringCharCodeAt(string, index);
+    HInstruction* char_code = BuildStringCharCodeAt(string, index, false);
     AddInstruction(char_code);
     instr = NewUncasted<HStringCharFromCode>(char_code);
 
@@ -8126,12 +8126,14 @@ bool HOptimizedGraphBuilder::TryInlineBuiltinMethodCall(
         HValue* index = Pop();
         HValue* string = Pop();
         Drop(1);  // Function.
-        HInstruction* char_code =
-            BuildStringCharCodeAt(string, index);
         if (id == kStringCharCodeAt) {
+          HInstruction* char_code =
+              BuildStringCharCodeAt(string, index, true);
           ast_context()->ReturnInstruction(char_code, expr->id());
           return true;
         }
+        HInstruction* char_code =
+            BuildStringCharCodeAt(string, index, false);
         AddInstruction(char_code);
         HInstruction* result = NewUncasted<HStringCharFromCode>(char_code);
         ast_context()->ReturnInstruction(result, expr->id());
@@ -10065,10 +10067,10 @@ void HOptimizedGraphBuilder::VisitCountOperation(CountOperation* expr) {
   return BuildStore(expr, prop, expr->id(), expr->AssignmentId());
 }
 
-
 HInstruction* HOptimizedGraphBuilder::BuildStringCharCodeAt(
     HValue* string,
-    HValue* index) {
+    HValue* index,
+    bool convert_to_ascii) {
   if (string->IsConstant() && index->IsConstant()) {
     HConstant* c_string = HConstant::cast(string);
     HConstant* c_index = HConstant::cast(index);
@@ -10078,7 +10080,7 @@ HInstruction* HOptimizedGraphBuilder::BuildStringCharCodeAt(
       if (i < 0 || i >= s->length()) {
         return New<HConstant>(base::OS::nan_value());
       }
-      return New<HConstant>(s->Get(i));
+      return New<HConstant>(convert_to_ascii ? ebcdic2Ascii[s->Get(i)] : s->Get(i));
     }
   }
   string = BuildCheckString(string);
@@ -11611,7 +11613,7 @@ void HOptimizedGraphBuilder::GenerateStringCharCodeAt(CallRuntime* call) {
   CHECK_ALIVE(VisitForValue(call->arguments()->at(1)));
   HValue* index = Pop();
   HValue* string = Pop();
-  HInstruction* result = BuildStringCharCodeAt(string, index);
+  HInstruction* result = BuildStringCharCodeAt(string, index, true);
   return ast_context()->ReturnInstruction(result, call->id());
 }
 
@@ -11633,7 +11635,7 @@ void HOptimizedGraphBuilder::GenerateStringCharAt(CallRuntime* call) {
   CHECK_ALIVE(VisitForValue(call->arguments()->at(1)));
   HValue* index = Pop();
   HValue* string = Pop();
-  HInstruction* char_code = BuildStringCharCodeAt(string, index);
+  HInstruction* char_code = BuildStringCharCodeAt(string, index, false);
   AddInstruction(char_code);
   HInstruction* result = NewUncasted<HStringCharFromCode>(char_code);
   return ast_context()->ReturnInstruction(result, call->id());
