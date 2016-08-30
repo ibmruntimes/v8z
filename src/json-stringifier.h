@@ -827,7 +827,9 @@ void BasicJsonStringifier::SerializeString_(Handle<String> string) {
 
 template <>
 bool BasicJsonStringifier::DoNotEscape(uint8_t c) {
-  return c >= '#' && c <= '~' && c != '\\';
+  return ebcdic2Ascii[c] >= ebcdic2Ascii['#'] &&
+         ebcdic2Ascii[c] <= ebcdic2Ascii['~'] &&
+         ebcdic2Ascii[c] != ebcdic2Ascii['\\'];
 }
 
 
