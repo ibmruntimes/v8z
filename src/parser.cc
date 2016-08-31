@@ -4561,7 +4561,7 @@ bool RegExpParser::ParseHexEscape(int length, uc32 *value) {
       done = true;
     }
   }
-  *value = val;
+  *value = ascii2Ebcdic[val];
   return true;
 }
 

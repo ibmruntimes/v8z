@@ -816,7 +816,8 @@ void BasicJsonStringifier::SerializeString_(Handle<String> string) {
         Append_<is_ascii, Char>(c);
       } else {
         Append_<is_ascii, uint8_t>(reinterpret_cast<const uint8_t*>(
-            &JsonEscapeTable[c * kJsonEscapeTableEntrySize]));
+            &ascii2Ebcdic[JsonEscapeTable[
+            ebcdic2Ascii[c] * kJsonEscapeTableEntrySize]]));
       }
     }
   }
